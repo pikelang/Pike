@@ -1138,7 +1138,7 @@ test_compile_error([[ string a="abcb"; string b="b"; a=a/b; ]])
 test_compile_error([[ string a="abcb"; string b="b"; a/=b; ]])
 test_compile_error([[ string a="x"; int b; b="x"*17; ]])
 test_compile_error([[ string a="x"; array b; b="x"*17; ]])
-test_compile_error([[ int b=17; string a; a=b*42; ]])
+test_compile_error([[ int b=17; string a = ""; a=b*42; ]])
 test_compile_error([[ int b=17; float c=42.0; b=b/c; ]])
 test_compile_error([[ int b=17; float c=42.0; b/=c; ]])
 test_compile_error([[ int b=17; float c=42.0; b=b*c; ]])
@@ -5878,13 +5878,13 @@ int started;
 Thread.Mutex start_lock = Thread.Mutex();
 Thread.Mutex locker_lock = Thread.Mutex();
 Thread.Mutex locked_mutex = Thread.Mutex();
-Thread.MutexKey locked_mutex_key;
+object(Thread.MutexKey)|zero locked_mutex_key;
 
 void mutex_locker()
 {
   log (mutex_locker, "locker started\n");
   started++;
-  Thread.MutexKey k = start_lock->lock();
+  object(Thread.MutexKey)|zero k = start_lock->lock();
   k = 0;
 
   k = locker_lock->lock();
@@ -5899,10 +5899,10 @@ void mutex_locker()
 void thread_disabler()
 {
   log (thread_disabler, "disabler started\n");
-  Thread.MutexKey locker_key = locker_lock->lock();
+  object(Thread.MutexKey)|zero locker_key = locker_lock->lock();
 
   started++;
-  Thread.MutexKey k = start_lock->lock();
+  object(Thread.MutexKey)|zero k = start_lock->lock();
   k = 0;
 
   sleep (0.1);
@@ -5910,7 +5910,7 @@ void thread_disabler()
   locker_key = 0;
   // Race: Don't want mutex_locker to get the lock on locker_lock
   // until we're in _disable_threads.
-  object disable = _disable_threads();
+  object|zero disable = _disable_threads();
   log (thread_disabler, "disabled\n");
   sleep (0.1);
   disable = 0;
@@ -5922,7 +5922,7 @@ void test()
   locked_mutex_key = locked_mutex->lock();
   started = 0;
 
-  Thread.MutexKey start_key = start_lock->lock();
+  object(Thread.MutexKey)|zero start_key = start_lock->lock();
   object disabler = thread_create (thread_disabler);
   object locker = thread_create (mutex_locker);
   while (started < 2) sleep (0.1);
@@ -5994,7 +5994,7 @@ void test()
     void threads_disabler (string id)
     {
       while (run) {
-	object l = _disable_threads();
+	object|zero l = _disable_threads();
 	rounds[id]++;
 	//werror (id);
 	l = 0;
@@ -6591,9 +6591,9 @@ test_any([[{
 
   test_true(intp(gc()));
   test_true(mappingp (((function) Debug.gc_status)()))
-  test_any([[ array a=({0}); a[0]=a; gc(); a=0; return gc() > 0; ]],1);
-  test_any([[mapping m=([]); m[m]=m; gc(); m=0; return gc() > 0; ]],1);
-  test_any([[multiset m=(<>); m[m]=1; gc(); m=0; return gc() > 0; ]],1);
+  test_any([[ array|zero a=({0}); a[0]=a; gc(); a=0; return gc() > 0; ]],1);
+  test_any([[mapping|zero m=([]); m[m]=m; gc(); m=0; return gc() > 0; ]],1);
+  test_any([[multiset|zero m=(<>); m[m]=1; gc(); m=0; return gc() > 0; ]],1);
   test_any([[{
 #if !constant (_debug)
     int _debug (int d) {return 0;};
@@ -6601,8 +6601,8 @@ test_any([[{
     // Must turn off debug in this test or else we'll get extra
     // references to p in the backlog.
     int dlevel = _debug (0);
-    program p=compile_string("constant a=({0});");
-    object o=p();
+    program|zero p=compile_string("constant a=({0});");
+    object|zero o=p();
     o->a[0]=p;
     gc();
     p=o=0;
@@ -6611,14 +6611,14 @@ test_any([[{
   }]], 1);
 
 test_any([[
-  object o = class {function f; void foo() {}}();
+  object|zero o = class {function f; void foo() {}}();
   o->f = o->foo;
   gc();
   o = 0;
   return gc();
 ]], 0)
 test_any([[
-  object o = class {object o;}();
+  object|zero o = class {object o;}();
   o->o = o;
   gc();
   o = 0;
@@ -6626,7 +6626,7 @@ test_any([[
 ]], 0)
 test_any([[
   class X {function f; void foo() {}};
-  object o1 = X(), o2 = X();
+  object|zero o1 = X(), o2 = X();
   o1->f = o2->foo;
   o2->f = o1->foo;
   gc();
@@ -6635,7 +6635,7 @@ test_any([[
 ]], 2)
 test_any([[
   class X {object o;};
-  object o1 = X(), o2 = X();
+  object|zero o1 = X(), o2 = X();
   o1->o = o2;
   o2->o = o1;
   gc();
@@ -6705,7 +6705,7 @@ test_any([[
   ]])
 
   test_any([[
-    mapping m=([]);
+    mapping|zero m=([]);
     m->self=m;
 
     mapping q=(["foo":"bar","gazonk":1]);
@@ -6755,7 +6755,7 @@ test_any([[
       };
       return bar;
     };
-    function bar = foo();
+    function|zero bar = foo();
     final_res += m->refs; // Should add 0 here.
     bar();
     bar = 0;
@@ -6772,7 +6772,7 @@ test_any([[
       class B {object a; protected void _destruct() {c = class{}();}}
       mixed test()
       {
-	object a = A(), b = B();
+	object|zero a = A(), b = B();
 	a->b = b;
 	b->a = a;
 	a = b = 0;
@@ -6783,7 +6783,7 @@ test_any([[
   ]])
 
   test_any([[{
-    array a = ({({0})}); a[0][0] = a;
+    array|zero a = ({({0})}); a[0][0] = a;
     gc(); a = 0; return gc() > 0;
   }]], 1)
 
@@ -6795,24 +6795,24 @@ test_any([[
 
   test_any([[{
     class Dead {object o;};
-    object o = Dead(); o->o = Dead(); o->o->o = o;
+    object|zero o = Dead(); o->o = Dead(); o->o->o = o;
     gc(); o = 0; return gc() > 0;
   }]], 1)
   test_any([[{
     class Live {object o; protected void _destruct() {}};
-    object o = Live(); o->o = Live(); o->o->o = o;
-    gc(); o = 0; return gc() > 0;
-  }]], 1)
-  test_any([[{
-    class Dead {object o;};
-    class Live {object o; protected void _destruct() {}};
-    object o = Dead(); o->o = Live(); o->o->o = o;
+    object|zero o = Live(); o->o = Live(); o->o->o = o;
     gc(); o = 0; return gc() > 0;
   }]], 1)
   test_any([[{
     class Dead {object o;};
     class Live {object o; protected void _destruct() {}};
-    object o = Live(); o->o = Dead(); o->o->o = o;
+    object|zero o = Dead(); o->o = Live(); o->o->o = o;
+    gc(); o = 0; return gc() > 0;
+  }]], 1)
+  test_any([[{
+    class Dead {object o;};
+    class Live {object o; protected void _destruct() {}};
+    object|zero o = Live(); o->o = Dead(); o->o->o = o;
     gc(); o = 0; return gc() > 0;
   }]], 1)
 
@@ -6847,7 +6847,7 @@ test_any([[
   }]], ({4711, 0x54325827a124*0x12348795482485425}))
 
   test_any_equal([[{
-    object o = class {
+    object|zero o = class {
       array g;
       array a = ({17});
       protected void create() {g = ({this});}
@@ -6858,7 +6858,7 @@ test_any([[
     return all_constants()->kablutt;
   }]], ({17}));
   test_any([[{
-    object o = class {
+    object|zero o = class {
       array g;
       array a = set_weak_flag (({({17})}), 1);
       protected void create() {g = ({this});}
@@ -6871,7 +6871,7 @@ test_any([[
     return gc() >= 3;
   }]], 1);
   test_any_equal([[{
-    object o = class {
+    object|zero o = class {
       array g;
       array a = set_weak_flag (({({17})}), 1);
       protected void create() {g = ({this});}
@@ -6895,9 +6895,9 @@ test_do(add_constant("blatinka");)
     // the intepreter backlog.
     int old_debug = _debug (0);
 #endif
-    object o = class {program p; object o;}();
+    object|zero o = class {program p; object o;}();
     class Resolver (mixed x) {mixed resolv (string id) {return x;}};
-    program p = compile ("constant o = foo;", Resolver (o));
+    program|zero p = compile ("constant o = foo;", Resolver (o));
     o->p = p;
     o->o = p();
     gc();
@@ -6910,21 +6910,21 @@ test_do(add_constant("blatinka");)
 
   test_any([[{
     class Dead {object o;};
-    object o = Dead(); o->o = Dead();
+    object|zero o = Dead(); o->o = Dead();
     array a = set_weak_flag(({o}), 1);
     gc(); o = 0; return gc() > 0;
   }]], 1)
   test_any([[{
     class Dead {object o;};
     class Live {object o; protected void _destruct() {}};
-    object o = Live(); o->o = Dead();
+    object|zero o = Live(); o->o = Dead();
     array a = set_weak_flag(({o}), 1);
     gc(); o = 0; return gc() > 0;
   }]], 1)
   test_any([[{
     class Dead {object o;};
     class Live {object o; protected void _destruct() {}};
-    object o = Dead(); o->o = Live();
+    object|zero o = Dead(); o->o = Live();
     array a = set_weak_flag(({o}), 1);
     gc(); o = 0; return gc() > 0;
   }]], 1)
@@ -6937,7 +6937,7 @@ test_do(add_constant("blatinka");)
   }]]);
 
   test_any([[{
-    array a = ({0}), b = ({a, set_weak_flag (({a}), 1)});
+    array|zero a = ({0}), b = ({a, set_weak_flag (({a}), 1)});
     array x = set_weak_flag (({a}), 1);
     a[0] = b;
     a = b = 0;
@@ -6945,7 +6945,7 @@ test_do(add_constant("blatinka");)
     return !x[0];
   }]], 1);
   test_any([[{
-    mapping a = ([]), b = ([a:set_weak_flag (([a:a]), 1)]);
+    mapping|zero a = ([]), b = ([a:set_weak_flag (([a:a]), 1)]);
     mapping x = set_weak_flag (([a:2]), 1);
     a[b] = b;
     a = b = 0;
@@ -6953,7 +6953,7 @@ test_do(add_constant("blatinka");)
     return !sizeof (x);
   }]], 1);
   test_any([[{
-    multiset a = (<>), b = (<a, set_weak_flag ((<a>), 1)>);
+    multiset|zero a = (<>), b = (<a, set_weak_flag ((<a>), 1)>);
     multiset x = set_weak_flag ((<a>), 1);
     a[b] = 1;
     a = b = 0;
@@ -6985,7 +6985,7 @@ test_do(add_constant("blatinka");)
 
   test_any([[{
     gc();
-    array x = set_weak_flag (({0}), 1);
+    array|zero x = set_weak_flag (({0}), 1);
     x[0] = x;
     multiset b = set_weak_flag ((<x>), 1);
     array a = ({17});
@@ -6996,7 +6996,7 @@ test_do(add_constant("blatinka");)
 
   test_any([[{
     gc();
-    array a = set_weak_flag (({0, this}), 1);
+    array|zero a = set_weak_flag (({0, this}), 1);
     a[0] = a;
     a = 0;
     return gc() >= 1;
@@ -7004,7 +7004,7 @@ test_do(add_constant("blatinka");)
 
   test_any([[{
     gc();
-    array y = set_weak_flag (({0}), 1), z = set_weak_flag (({y}), 1);
+    array|zero y = set_weak_flag (({0}), 1), z = set_weak_flag (({y}), 1);
     y[0] = z;
     y = z = 0;
     return gc() >= 2;
@@ -7027,7 +7027,7 @@ test_do(add_constant("blatinka");)
       }
     };
     gc();
-    object o = Live();
+    object|zero o = Live();
     o = 0;
     int res = gc() >= 3;
     if (all_constants()->my_little_error)
@@ -7061,7 +7061,7 @@ test_do(add_constant("blatinka");)
       }
       array a = allocate (2, Bar)();
     };
-    object o = Foo(Live());
+    object|zero o = Foo(Live());
     o = 0;
     gc(), gc();
     if (all_constants()->my_little_error)
@@ -7069,7 +7069,7 @@ test_do(add_constant("blatinka");)
   }]]);
 
   test_do([[{
-  object o = compile_string(#"
+  object|zero o = compile_string(#"
       class Foo
       {
 	int i;
@@ -7154,7 +7154,7 @@ test_do(add_constant("blatinka");)
     return sizeof (a);
   }]], 1);
   test_any([[{
-    object o = class{}();
+    object|zero o = class{}();
     mapping a = set_weak_flag (([o: o]), 1);
     o = 0;
     return gc() >= 1 && !sizeof (a);
@@ -7239,7 +7239,7 @@ test_do(add_constant("blatinka");)
   }]], ([1: 1, "foo": "foo", 3.14: 3.14]));
 
   test_do([[{
-    object f = class
+    object|zero f = class
     {
       object o = class {}();
       array a = set_weak_flag (({o}), 1);
@@ -7250,7 +7250,7 @@ test_do(add_constant("blatinka");)
     gc();
   }]]);
   test_do([[{
-    object f = class
+    object|zero f = class
     {
       object o = class {}();
       mapping m = set_weak_flag (([1:o]), 1);
@@ -7261,7 +7261,7 @@ test_do(add_constant("blatinka");)
     gc();
   }]]);
   test_do([[{
-    object f = class
+    object|zero f = class
     {
       object o = class {}();
       mapping m = set_weak_flag (([o:1]), 1);
@@ -7272,7 +7272,7 @@ test_do(add_constant("blatinka");)
     gc();
   }]]);
   test_do([[{
-    object f = class
+    object|zero f = class
     {
       object o = class {}();
       multiset m = set_weak_flag ((<o>), 1);
@@ -7340,28 +7340,28 @@ test_do(add_constant("blatinka");)
     return sizeof (m);
   ]], 0)
   test_any([[
-    object o = class{}();
+    object|zero o = class{}();
     mapping m = set_weak_flag (([o: o]), Pike.WEAK_INDICES);
     o = 0;
     gc();
     return sizeof (m);
   ]], 1)
   test_any([[
-    object o = class{}();
+    object|zero o = class{}();
     mapping m = set_weak_flag (([o: o]), Pike.WEAK_VALUES);
     o = 0;
     gc();
     return sizeof (m);
   ]], 1)
   test_any([[
-    object o = class{}();
+    object|zero o = class{}();
     mapping m = set_weak_flag (([o: o]), Pike.WEAK);
     o = 0;
     gc();
     return sizeof (m);
   ]], 0)
   test_any([[
-    object o = class{}();
+    object|zero o = class{}();
     mapping m = set_weak_flag (([o: "x"]), Pike.WEAK_INDICES);
     destruct (o);
     gc();
@@ -7405,7 +7405,7 @@ test_do(add_constant("blatinka");)
 
   test_do([[
     mapping m = set_weak_flag (([]), Pike.WEAK_INDICES);
-    object o = class {object o;}();
+    object|zero o = class {object o;}();
     m[o] = ({1});
     o->o = o;
     o = 0;
@@ -7414,7 +7414,7 @@ test_do(add_constant("blatinka");)
 
   test_do([[
     mapping m = set_weak_flag (([]), Pike.WEAK_INDICES);
-    object o = class {object o;}();
+    object|zero o = class {object o;}();
     m[o] = ({1});
     array a = set_weak_flag (({class (object o) {} (o)}), 1);
     o = 0;
@@ -7426,7 +7426,7 @@ test_do(add_constant("blatinka");)
       mapping x;
       int test()
       {
-	object o = class {
+	object|zero o = class {
 	    mapping a = ([1: this]);
 	    protected void _destruct() {x = a;}
 	  }();
@@ -7441,7 +7441,7 @@ test_do(add_constant("blatinka");)
       multiset x;
       int test()
       {
-	object o = class {
+	object|zero o = class {
 	    multiset a = (<this>);
 	    protected void _destruct() {x = a;}
 	  }();
@@ -7456,7 +7456,7 @@ test_do(add_constant("blatinka");)
       array x;
       int test()
       {
-	object o = class {
+	object|zero o = class {
 	    array a = ({this});
 	    protected void _destruct() {x = a;}
 	  }();
@@ -7472,7 +7472,7 @@ test_do(add_constant("blatinka");)
       Obj x;
       int test()
       {
-	object o = class {
+	object|zero o = class {
 	    Obj a = Obj (this);
 	    protected void _destruct() {x = a;}
 	  }();
@@ -7488,7 +7488,7 @@ test_do(add_constant("blatinka");)
       Obj x;
       int test()
       {
-	object o = class {
+	object|zero o = class {
 	    Obj a = Obj (this);
 	    protected void _destruct() {x = a;}
 	  }();
@@ -7755,7 +7755,7 @@ test_any([[
   class X (void|object a, void|object b) {};
   X o = X (X (X()));
   o->a->a->a = o->a;
-  X o2 = X();
+  object(X)|zero o2 = X();
   o->b = o2;
   o2->a = o->a->a;
   o2 = 0;
@@ -7786,7 +7786,7 @@ test_any([[
   X o = X (X(), X());
   o->a->b = o->b;
   o->b->a = o->a;
-  X o2 = X (X(), X());
+  object(X)|zero o2 = X (X(), X());
   o2->a->b = o2->b;
   o2->b->a = o2->a;
   o2->a->a = o2->b->b = X();
@@ -7848,7 +7848,7 @@ test_any([[
   /* don't save parent */
   class X (void|array|object a, void|array|object b) {};
   array a = ({X (X())});
-  object o = a[0];
+  object|zero o = a[0];
   o->a->a = o; o->b = ({X (X())}); o = o->b[0];
   o->a->a = o; o->b = ({X (X())}); o = o->b[0];
   o->a->a = o; o->b = ({X (X())}); o = o->b[0];
@@ -7860,7 +7860,7 @@ test_any([[
   /* don't save parent */
   class X (void|array|object a, void|array|object b) {};
   array a = ({X (X())});
-  object o = a[0];
+  object|zero o = a[0];
   o->a->a = o; o->a->b = ({X (X())}); o = o->a->b[0];
   o->a->a = o; o->a->b = ({X (X())}); o = o->a->b[0];
   o->a->a = o; o->a->b = ({X (X())}); o = o->a->b[0];
@@ -7894,7 +7894,7 @@ test_program([[
 
   int a()
   {
-    function f = ff();
+    function|zero f = ff();
     int s = Pike.count_memory (0, f());
     f = 0;
     gc();
@@ -8479,8 +8479,8 @@ test_do([[
 // type checks
 test_compile_error([[} int foo() { return]]);
 test_compile_error([[} void foo() { return 1]]);
-test_compile([[mapping a; int b; a = b = 0;]]);
-test_compile_error([[mapping a; int b; a = b = 1;]]);
+test_compile([[mapping|zero a; int b; a = b = 0;]]);
+test_compile_error([[mapping|zero a; int b; a = b = 1;]]);
 test_compile_any([[void a(int q){} void b(function(int:void) f){} void c(){b(a);}]]);
 test_compile_error_any([[void a(int i){} void b(function(:void) f){} void c(){b(a);}]]);
 test_compile_any([[void a(){} function(int:void) b = a;]]);
@@ -15142,7 +15142,7 @@ test_eq(sprintf("%t",this_object()),"object")
 test_eq(sprintf("%t", ({"a"})), "array")
 test_any([[array(string) a = ({"a"}); return sprintf("%t", a);]], "array")
 test_eq(sprintf("%t", 0), "int")
-test_any([[array(string) a = 0; return sprintf("%t", a);]], "int")
+test_any([[array(string)|zero a = 0; return sprintf("%t", a);]], "int")
 test_eq(sprintf("%t", (<>)), "multiset")
 test_eq(sprintf("%t", ([])), "mapping")
 test_eq(sprintf("%t", sin), "function")
