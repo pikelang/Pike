@@ -10689,8 +10689,9 @@ void init_builtin_efuns(void)
 			   tMap(tStr,tArr(tMix)),
 			   tMap(tStr,tOr(tInt0,tVar(2)))),
 
-		 tOr4( tFuncV(tString tFuncV(tInt,tMix,tInt),tMix,tString),
-		       tFuncV(tString tFuncV(tInt,tMix,tInt),tMix,tString),
+		 tOr3( tFuncV(tNStr(tSetvar(0, tInt))
+			      tFuncV(tVar(0), tUnknown, tSetvar(1, tInt)),
+			      tMix, tNStr(tVar(1))),
 		       tFuncV(tString tSet(tMix),tMix,tString),
 		       tFuncV(tString tMap(tMix,tInt), tMix, tString) ),
 
