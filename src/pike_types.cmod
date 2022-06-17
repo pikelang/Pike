@@ -13288,6 +13288,326 @@ struct pike_type *zzap_function_return(struct pike_type *a,
   return NULL;
 }
 
+/* Implementation from https://mc.pp.se/binoprange.c
+ *
+ * Cf LysLysKOM 25306802
+ */
+
+static unsigned INT32 evaluate_binop_min(enum PIKE_TYPE op,
+					 unsigned INT32 amin,
+					 unsigned INT32 amax,
+					 unsigned INT32 bmin,
+					 unsigned INT32 bmax)
+{
+  /* The pivot is the most significant bit that changes in a range.
+   * upper are the bits set above the pivot (these never change).
+   */
+  unsigned INT32 apivot, bpivot, aupper, bupper;
+  if (amin == amax) {
+    apivot = 0;
+    aupper = amin;
+  } else {
+    apivot = 1 << (31 - clz32(amin ^ amax));
+    aupper = amin & ~(apivot | (apivot-1));
+  }
+  if (bmin == bmax) {
+    bpivot = 0;
+    bupper = bmin;
+  } else {
+    bpivot = 1 << (31 - clz32(bmin ^ bmax));
+    bupper = bmin & ~(bpivot | (bpivot-1));
+  }
+  if (!apivot && !bpivot)
+    /* Both ranges are unit length - trivial case */
+    switch (op) {
+#if 0
+    case PIKE_T_INT_OP_OR: return amin | bmin;
+#endif
+    case PIKE_T_INT_OP_AND: return amin & bmin;
+    case PIKE_T_INT_OP_XOR: return amin ^ bmin;
+    default:
+      /* Keep C-compiler happy. */
+      break;
+    }
+
+  /* Swap so that a has the larger pivot (apivot must then be != 0) */
+  if (bpivot > apivot) {
+    unsigned INT32 tmp;
+    tmp = amin; amin = bmin; bmin = tmp;
+    tmp = amax; amax = bmax; bmax = tmp;
+    tmp = apivot; apivot = bpivot; bpivot = tmp;
+    tmp = aupper; aupper = bupper; bupper = tmp;
+  }
+
+  /* Operation specific code */
+  switch (op) {
+#if 0
+  case PIKE_T_INT_OP_OR:
+    /* | min */
+    if (amin > amax) {
+      /* Special case for signed, apivot will be sign bit */
+      if (bpivot == apivot)
+	/* Either min can be achieved by setting the other term to 0 */
+	return (amin < bmin? amin : bmin);
+      else if ((bupper & apivot))
+	/* b is always negative, set a to 0 for min */
+	return bmin;
+      else
+	/* b is always positive, chose a negative */
+	return apivot |
+	  evaluate_binop_minmax(op, 1,
+				amin & (apivot-1), apivot-1,
+				bmin & (apivot-1), (bmax & (apivot-1)));
+    } else if (!(amin & (apivot-1)) || (apivot & bupper)) {
+      /* Either amin is zeroes below the pivot, or the pivot of a is
+	 subsumed by the upper of b.  In this case, we can choose zeros
+	 for a below (and at) the pivot. */
+      return bmin | aupper;
+    } else if (!((~amin) & (apivot-1))) {
+      /* amin is all ones below the pivot, b will not matter below apivot */
+      return amin | bupper;
+    } else {
+      /* a should be selected with zero pivot, but can't be all zeros
+	 below it, pick a new pivot */
+      return aupper | bupper |
+	evaluate_binop_minmax(op, 1,
+			      amin & (apivot-1), apivot-1, bmin & (apivot-1),
+			      (bpivot == apivot? apivot-1 : (bmax & (apivot-1))));
+    }
+#endif
+  case PIKE_T_INT_OP_AND:
+    /* & min */
+    if (amin > amax) {
+      /* Special case for signed, apivot will be sign bit */
+      if (bpivot == apivot || (bupper & apivot))
+	/* Go for negative */
+	return apivot |
+	  evaluate_binop_min(op, amin & (apivot-1), apivot-1,
+			     bmin & (apivot-1),
+			     (bpivot == apivot? (apivot-1) : (bmax & (apivot-1))));
+      else
+	/* b is always positive, 0 (which is in a-range) is min result */
+	return 0;
+    } else if (!(amin & (apivot-1)) || !(apivot & bupper)) {
+      /* Either amin is zeroes below the pivot, or the pivot of a is
+	 subsumed by the upper of b.  In this case, we can choose zeros
+	 for a below (and at) the pivot. */
+      return aupper & bupper;
+    } else {
+      /* a should be selected with zero pivot, but can't be all zeros
+	 below it, pick a new pivot */
+      return (aupper & bupper) |
+	evaluate_binop_min(op,
+			   amin & (apivot-1), apivot-1,
+			   bmin & (apivot-1), bmax & (apivot-1));
+    }
+  case PIKE_T_INT_OP_XOR:
+    /* ^ min */
+    if (amin > amax) {
+      /* Special case for signed, apivot will be sign bit */
+      if (bpivot == apivot) {
+	/* Pivot bit must be chosen diffently to get negative result */
+	unsigned INT32 xmin = /* a positive, b negative */
+	  evaluate_binop_min(op,
+			     0, amax & (apivot-1),
+			     bmin & (apivot-1), apivot-1);
+	unsigned INT32 ymin = /* a negative, b positive */
+	  evaluate_binop_min(op,
+			     amin & (apivot-1), apivot-1,
+			     0, bmax & (apivot-1));
+	return apivot | (xmin < ymin? xmin : ymin);
+      } else if ((bupper & apivot)) {
+	/* b is always negative, chose a positive for negative result */
+	return apivot |
+	  evaluate_binop_min(op,
+			     0, amax & (apivot-1),
+			     bmin & (apivot-1), bmax & (apivot-1));
+      } else {
+	/* b is always positive, chose a negative for negative result */
+	return apivot |
+	  evaluate_binop_min(op,
+			     amin & (apivot-1), apivot-1,
+			     bmin & (apivot-1), bmax & (apivot-1));
+      }
+    } else if (bpivot == apivot) {
+      /* Choose the pivot point for both a and b to cancel them out */
+      return ((aupper ^ bupper) & ~(apivot-1) & ~apivot);
+      } else if ((bupper & apivot)) {
+      /* Set pivot to 1 to cancel bit in b */
+      return ((aupper ^ bupper) & ~(apivot-1) & ~apivot) |
+	evaluate_binop_min(op,
+			   0, amax & (apivot-1),
+			   bmin & (apivot-1), bmax & (apivot-1));
+    } else {
+      /* Set pivot to 0 */
+      return ((aupper ^ bupper) & ~(apivot-1) & ~apivot) |
+	evaluate_binop_min(op,
+			   amin & (apivot-1), apivot-1,
+			   bmin & (apivot-1), bmax & (apivot-1));
+    }
+  default:
+    Pike_fatal("Not implemented!\n");
+  }
+}
+
+static unsigned INT32 evaluate_binop_max(enum PIKE_TYPE op,
+					 unsigned INT32 amin,
+					 unsigned INT32 amax,
+					 unsigned INT32 bmin,
+					 unsigned INT32 bmax)
+{
+  /* The pivot is the most significant bit that changes in a range.
+   * upper are the bits set above the pivot (these never change).
+   */
+  unsigned INT32 apivot, bpivot, aupper, bupper;
+  if (amin == amax) {
+    apivot = 0;
+    aupper = amin;
+  } else {
+    apivot = 1 << (31 - clz32(amin ^ amax));
+    aupper = amin & ~(apivot | (apivot-1));
+  }
+  if (bmin == bmax) {
+    bpivot = 0;
+    bupper = bmin;
+  } else {
+    bpivot = 1 << (31 - clz32(bmin ^ bmax));
+    bupper = bmin & ~(bpivot | (bpivot-1));
+  }
+  if (!apivot && !bpivot)
+    /* Both ranges are unit length - trivial case */
+    switch (op) {
+#if 0
+    case PIKE_T_INT_OP_OR: return amax | bmax;
+#endif
+    case PIKE_T_INT_OP_AND: return amax & bmax;
+    case PIKE_T_INT_OP_XOR: return amax ^ bmax;
+    default:
+      /* Keep C-compiler happy. */
+      break;
+    }
+
+  /* Swap so that a has the larger pivot (apivot must then be != 0) */
+  if (bpivot > apivot) {
+    unsigned INT32 tmp;
+    tmp = amin; amin = bmin; bmin = tmp;
+    tmp = amax; amax = bmax; bmax = tmp;
+    tmp = apivot; apivot = bpivot; bpivot = tmp;
+    tmp = aupper; aupper = bupper; bupper = tmp;
+  }
+
+  /* Operation specific code */
+  switch (op) {
+#if 0
+  case PIKE_T_INT_OP_OR:
+    /* | max */
+    if (amin > amax) {
+      /* Special case for signed, apivot will be sign bit */
+      if ((bupper & apivot))
+	/* b is always negative, so -1 (which is in a-range) is the max */
+	return apivot | (apivot-1);
+      else
+	/* Go for positive result */
+	return evaluate_binop_max(op, 0, amax,
+				  (bpivot == apivot? 0 : bmin), bmax);
+    } else if (!((~amax) & (apivot-1)) || (apivot & bupper)) {
+      /* Either amax is ones below the pivot, or the pivot of a is
+	 subsumed by the upper of b.  In this case, we can choose ones
+	 for a below (and at) the pivot. */
+      return bupper | aupper | apivot | (apivot-1);
+    } else if (!((~amax) & (apivot-1))) {
+      /* amax is all zeros below the pivot */
+      return bmax | aupper | apivot;
+    } else if (bpivot == apivot) {
+      /* a and b have the same pivot; pick one at the pivot point and the
+	 other just below to get the max (all ones at and below pivot) */
+      return bupper | aupper | apivot | (apivot-1);
+    } else {
+      /* a should be selected with one pivot, but can't be all ones
+	 below it, pick a new pivot */
+      return aupper | bupper | apivot |
+	evaluate_binop_max(op,
+			   0, amax & (apivot-1),
+			   bmin & (apivot-1), bmax & (apivot-1));
+    }
+#endif
+  case PIKE_T_INT_OP_AND:
+    /* & max */
+    if (amin > amax) {
+      /* Special case for signed, apivot will be sign bit */
+      if (bpivot == apivot)
+	/* Either max can be achieved by setting the other term to -1 */
+	return (amax > bmax? amax : bmax);
+      else if ((bupper & apivot))
+	/* b is always negative, must choose a positive */
+	return
+	  evaluate_binop_max(op,
+			     0, amax & (apivot-1),
+			     bmin & (apivot-1), bmax & (apivot-1));
+      else
+	/* b is always positive, and it with -1 (which is in a-range)
+	   to get its max */
+	return bmax;
+    } else if (bpivot == apivot || (bupper & apivot)) {
+      /* Need to pick 1 for the a pivot */
+      return (aupper & bupper) | apivot |
+	evaluate_binop_max(op, 0, amax & (apivot-1),
+			   (bpivot == apivot? 0 : (bmin & (apivot-1))),
+			   bmax & (apivot-1));
+    } else {
+      /* b has 0 in the pivot position, so we can simply pick the pivot
+	 point minus 1 for a to get 1:s in all the lower bits */
+      return (aupper & bupper) | (bmax & (apivot-1));
+    }
+  case PIKE_T_INT_OP_XOR:
+    /* ^ max */
+    if (amin > amax) {
+      /* Special case for signed, apivot will be sign bit */
+      if (bpivot == apivot) {
+	/* Pivot bit must be chosen the same to get positive result */
+	unsigned INT32 xmax = /* a positive, b positive */
+	  evaluate_binop_max(op,
+			     0, amax & (apivot-1),
+			     0, bmax & (apivot-1));
+	unsigned INT32 ymax = /* a negative, b negative */
+	  evaluate_binop_max(op,
+			     amin & (apivot-1), apivot-1,
+			     bmin & (apivot-1), apivot-1);
+	return (xmax > ymax? xmax : ymax);
+      } else if ((bupper & apivot)) {
+	/* b is always negative, chose a negative for positive result */
+	return
+	  evaluate_binop_max(op,
+			     amin & (apivot-1), apivot-1,
+			     bmin & (apivot-1), bmax & (apivot-1));
+      } else {
+	/* b is always positive, chose a positive for positive result */
+	return
+	  evaluate_binop_max(op,
+			     0, amax & (apivot-1),
+			     bmin & (apivot-1), bmax & (apivot-1));
+      }
+    } else if (bpivot == apivot) {
+      /* Chose a at the pivot point and b one below to get the max */
+      return (aupper ^ bupper) | apivot | (apivot-1);
+    } else if ((bupper & apivot)) {
+      /* Set pivot to 0 to not cancel bit in b */
+      return ((aupper ^ bupper) & ~(apivot-1)) | apivot |
+	evaluate_binop_max(op,
+			   amin & (apivot-1), apivot-1,
+			   bmin & (apivot-1), bmax & (apivot-1));
+    } else {
+      /* Set pivot to 1 */
+      return ((aupper ^ bupper) & ~(apivot-1)) | apivot |
+	evaluate_binop_max(op,
+			   0, amax & (apivot-1),
+			   bmin & (apivot-1), bmax & (apivot-1));
+    }
+  default:
+    Pike_fatal("Not implemented!\n");
+  }
+}
+
 struct pike_type *low_type_int_op(enum PIKE_TYPE op,
 				  struct pike_type *arg1,
 				  struct pike_type *arg2)
@@ -13308,6 +13628,19 @@ struct pike_type *low_type_int_op(enum PIKE_TYPE op,
     } else {
       maxres = max1 - min2;
     }
+    break;
+  case PIKE_T_INT_OP_AND:
+  case PIKE_T_INT_OP_XOR:
+    minres = (INT32)evaluate_binop_min(op,
+				       (unsigned INT32)min1,
+				       (unsigned INT32)max1,
+				       (unsigned INT32)min2,
+				       (unsigned INT32)max2);
+    maxres = (INT32)evaluate_binop_max(op,
+				       (unsigned INT32)min1,
+				       (unsigned INT32)max1,
+				       (unsigned INT32)min2,
+				       (unsigned INT32)max2);
     break;
   default:
     Pike_fatal("low_type_int_op(): Unknown operator: 0x%04x\n", op);
@@ -13396,6 +13729,8 @@ struct pike_type *apply_type_operator(enum PIKE_TYPE op,
     res = find_lfun_type(arg1, (ptrdiff_t)(void*)arg2);
     break;
   case PIKE_T_INT_OP_SUB:
+  case PIKE_T_INT_OP_AND:
+  case PIKE_T_INT_OP_XOR:
     res = type_int_op(op, arg1, arg2);
     break;
   case PIKE_T_SET_CAR:

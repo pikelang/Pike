@@ -164,6 +164,8 @@ enum PIKE_TYPE {
     PIKE_T_SET_CDR = 0x8380,	/* Set the CDR of the CAR type to CDR. */
 
     PIKE_T_INT_OP_SUB = 0xc080,	/* INT OP `-. */
+    PIKE_T_INT_OP_AND = 0xc180,	/* INT OP `&. */
+    PIKE_T_INT_OP_XOR = 0xc280,	/* INT OP `^. */
 
     PIKE_T_TRANSITIVE = 0x00c0,	/* Repeatedly apply a function type. */
 
@@ -331,7 +333,10 @@ struct svalue
 #define tStr "\006"
 #define tString "\006"
 #define tNStr(T) "\357" T
-#define tStr0 tNStr(tZero)
+/* NB: tStr0 is a misnomer as it refers to the length of
+ *     the string rather than the content.
+ */
+#define tStr0 tLStr(tZero, tUnknown)
 #define tStr7 tNStr(tInt7bit)
 #define tStr8 tNStr(tInt8bit)
 #define tStr16 tNStr(tInt16bit)
@@ -428,6 +433,10 @@ struct svalue
 #define tNegateInt(X)		tSubInt(tInt0, X)
 #define tAddInt(X, Y)		tSubInt(X, tNegateInt(Y))
 #define tInvertInt(X)		tSubInt(tInt_1, X)
+
+#define tAndInt(X, Y)		"\200\301" X Y
+#define tOrInt(X, Y)		tInvertInt(tAndInt(tInvertInt(X), tInvertInt(Y)))
+#define tXorInt(X, Y)		"\200\302" X Y
 
 #define tTransitive(X, Y)	"\300" X Y
 
