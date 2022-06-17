@@ -134,6 +134,7 @@ protected class InternalSocket( protected object(this_program)|zero _other,
   }
 
   protected enum State {
+    STATE_BLOCKING		= 0,
     STATE_NONBLOCKING		= 1,
   }
 
