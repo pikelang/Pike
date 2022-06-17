@@ -969,7 +969,7 @@ class PKCS1_5State
   //! Encrypt or decrypt depending on set mode.
   //! @seealso
   //!   @[set_encrypt_key], @[set_decrypt_key]
-  string(8bit) crypt(string(8bit) s)
+  string(8bit)|zero crypt(string(8bit) s)
   {
     return (encrypt_mode ? encrypt(s) : decrypt(s));
   }
