@@ -1702,6 +1702,9 @@ cond_resolv(Crypto.SHA256, [[
   test_true(P("we have a short salt string but not a short password", "$5$rounds=77777$short$JiO1O3ZpDAxGJeaDIuqCoEFysAe1mZNJRs3pw0KQRd/"))
   test_true(P("a short string", "$5$rounds=123456$asaltof16chars..$gP3VQ/6X7UUEW3HkBn2w1/Ptq2jxPyzV/cZKmF/wJvD"))
   test_true(P("the minimum number is still observed", "$5$rounds=1000$roundstoolow$yfvwcWrQ8l/K0DAWyuPMDNHpIVlTQebY9l/gL972bIC"))
+
+  dnl From Django auth_tests/test_hashers.py
+  test_true(P(string_to_utf8("l\xe8tmein"), "pbkdf2_sha256$320000$seasalt$Toj2II2rBvFiGQcPmUml1Nlni2UtvyRWwz/jz4q6q/4="))
 ]])
 cond_resolv(Crypto.SHA512, [[
   // http://www.akkadia.org/drepper/SHA-crypt.txt
@@ -1714,9 +1717,6 @@ cond_resolv(Crypto.SHA512, [[
   test_true(P("the minimum number is still observed", "$6$rounds=1000$roundstoolow$kUMsbe306n21p9R.FRkW3IGn.S9NPN0x50YhH1xhLsPuWGsUSklZt58jaTfF4ZEQpyUNGc0dqbpBYYBaHHrsX."))
 ]])
 test_do( add_constant( "P" ) )
-
-dnl From Django auth_tests/test_hashers.py
-test_true(Crypto.Password.verify("l\xe8tmein","pbkdf2_sha256$320000$seasalt$Toj2II2rBvFiGQcPmUml1Nlni2UtvyRWwz/jz4q6q/4="))
 
 test_true( Crypto.DH.MODPGroup1 )
 test_true( Crypto.DH.MODPGroup2 )

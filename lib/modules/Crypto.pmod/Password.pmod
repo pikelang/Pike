@@ -12,8 +12,17 @@
 //! Verify a password against a hash.
 //!
 //! This function attempts to support most common
-//! password hashing schemes. The @[hash] can be on any
-//! of the following formats.
+//! password hashing schemes.
+//!
+//! @param password
+//!   Binary password. This is typically is typically a textual
+//!   string normalized according to
+//!     @expr{string_to_utf8(Unicode.normalize(raw_password, "NFC"))@},
+//!   but some operating systems (eg MacOS X) may have other
+//!   conventions.
+//!
+//! @param hash
+//!   The @[hash] can be on any of the following formats.
 //!
 //! LDAP-style (@rfc{2307@}) hashes:
 //! @string
@@ -128,6 +137,22 @@
 //!     where the base hashing alorithm has been switched to @[SHA256].
 //!     This method is apparently used by some versions of Drupal.
 //!
+//!   @value "$pbkdf2$RRRRR$SSSSS$XXXXXXXXXXXXX"
+//!     The string is interpreted as @[SHA1.crypt_pbkdf2()].
+//!
+//!   @value "$pbkdf2-sha256$RRRRR$SSSSS$XXXXXXXXXXXXX"
+//!     The string is interpreted as @[SHA256.crypt_pbkdf2()].
+//!
+//!   @value "$pbkdf2-sha512$RRRRR$SSSSS$XXXXXXXXXXXXX"
+//!     The string is interpreted as @[SHA512.crypt_pbkdf2()].
+//!
+//!   @value "pbkdf2_sha256$RRRRR$SSSSS$XXXXXXXXXXXXX"
+//!     The string is interpreted as the Django variant of
+//!     @[SHA256.crypt_pbkdf2()]. This differs from the standard
+//!     variant (@expr{"$pbkdf2-sha256$"@}) in that the hash is
+//!     encoded with plain @[MIME.encode_base64()] (ie including
+//!     padding (@expr{'='@}) and plus (@expr{'+'@}) characters).
+//!
 //!   @value "XXXXXXXXXXXXX"
 //!     The @expr{XXX@} string (which doesn't begin with @expr{"{"@}) is
 //!     taken to be a password hashed using the classic unix
@@ -158,15 +183,15 @@ int verify(string(8bit) password, string(7bit) hash)
 
   // Compatibility with Drupal upgraded passwords.
   if (has_prefix(hash, "U$P")) {
-    password = Crypto.MD5.hash(password);
+    passwd = Crypto.MD5.hash(passwd);
     hash = hash[1..];
   }
 
   array(string(7bit)) split = [array(string(7bit))](hash/"$");
   switch( split[0] ) {
   case "pbkdf2_sha256":  // As implemented by Django
-    password = string_to_utf8(password);
-    return MIME.encode_base64(Crypto.SHA256.pbkdf2(passwd, split[2], (int)split[1], 32)) == split[3];
+    return MIME.encode_base64(Crypto.SHA256.pbkdf2(passwd, split[2],
+						   (int)split[1], 32)) == split[3];
   }
 
   // Detect the password hashing scheme.
@@ -199,7 +224,7 @@ int verify(string(8bit) password, string(7bit) hash)
     };
     if (hash[0] != '$') {
       if (hash[0] == '_') {
-	// FIXME: BSDI-style crypt(3C).
+	// FIXME: BSDI-style crypt(3C) aka ExtDES.
       }
       return 0;
     }
