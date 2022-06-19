@@ -1780,14 +1780,17 @@ void resolv_type(node *n)
       } else {
 	/* Attempt to get the return type for the function. */
 	struct pike_type *a, *b;
+	struct call_state cs;
 	a = get_type_of_svalue(Pike_sp-1);
 	/* Note: check_splice_call() below eats a reference from a.
 	 * Note: CALL_INHIBIT_WARNINGS is needed since we don't
 	 *       provide a function name (and we don't want
 	 *       warnings here anyway).
 	 */
-	a = check_splice_call(NULL, a, 0, mixed_type_string, NULL,
+	INIT_CALL_STATE(cs);
+	a = check_splice_call(NULL, a, &cs, mixed_type_string, NULL,
 			      CALL_INHIBIT_WARNINGS);
+	FREE_CALL_STATE(cs);
 	if (a) {
 	  b = new_get_return_type(a, 0);
 	  free_type(a);
