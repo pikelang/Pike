@@ -133,7 +133,7 @@ class Thread
     {
       root=temp;
     } while(temp=temp->parent);
-    unread_numbers=0;
+    unread_numbers = (<>);
   }
 }
 

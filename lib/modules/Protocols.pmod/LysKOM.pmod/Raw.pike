@@ -188,7 +188,7 @@ void|array|object recv(mixed x,string what,void|int syn)
 //    werror("<- (%d bytes) (%d asyncs left)\n",sizeof(what),
 // 	  sizeof(indices(async)));
 
-   array|object ires=0;
+   array|object ires = ({});
    buf+=what;
    // wait for newline before we do anything at all
    while (has_value(buf,"\n"))

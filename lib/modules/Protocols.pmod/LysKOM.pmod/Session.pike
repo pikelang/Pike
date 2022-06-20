@@ -267,7 +267,7 @@ class MiscInfo
 				       VAR=CONV;			\
 				    fetch_##WHAT=0;			\
 				    array m=fetch_##WHAT##_callbacks;	\
-				    fetch_##WHAT##_callbacks=0;		\
+				    fetch_##WHAT##_callbacks = ({});	\
 				    m(this);				\
 				 },ARGS);				\
    }									\
