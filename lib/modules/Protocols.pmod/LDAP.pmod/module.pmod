@@ -1159,7 +1159,8 @@ constant ATD_supportedFeatures = ([ // RFC 3674, 2
   "USAGE": "dSAOperation",
 ]);
 
-constant _standard_attr_type_descrs = ([]); // Filled in by create().
+// Filled in by create(). Used by client.pike.
+mapping(string:mixed) _standard_attr_type_descrs = ([]);
 
 //! Constants for Microsoft AD Well-Known Object GUIDs. These are e.g.
 //! used in LDAP URLs:
@@ -1214,7 +1215,7 @@ protected void create()
   // syntax_encode_fns
 
   foreach (indices (syntax_decode_fns), string syntax) {
-    zero|function(string:string) encoder = ([
+    function(string:string)|zero encoder = ([
       utf8_to_string: string_to_utf8,
     ])[syntax_decode_fns[syntax]];
     if (!encoder)
@@ -1728,7 +1729,7 @@ object/*(client)*/ get_connection (string ldap_url, void|string binddn,
   // worth the bother.
 
   if (idle_conns[ldap_url]) {
-    Thread.MutexKey lock = idle_conns_mutex->lock();
+    object(Thread.MutexKey)|zero lock = idle_conns_mutex->lock();
     if (array(object/*(client)*/) conns = idle_conns[ldap_url]) {
     find_connection: {
 	int now = time();

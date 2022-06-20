@@ -118,8 +118,8 @@ protected function(string:string)|zero
                     DO_IF_DEBUG (void|int nowarn))
 {
   if (mapping(string:mixed) attr_descr = get_attr_type_descr (attr)) {
-    if (function(string:string) decoder =
-	syntax_decode_fns[attr_descr->syntax_oid])
+    if (function(string:string)|zero decoder =
+	[function(string:string)|zero]syntax_decode_fns[attr_descr->syntax_oid])
       return decoder;
 #ifdef LDAP_DEBUG
     else if (!get_constant_name (attr_descr->syntax_oid))
@@ -139,8 +139,8 @@ protected function(string:string)|zero
 protected function(string:string)|zero get_attr_encoder (string attr)
 {
   if (mapping(string:mixed) attr_descr = get_attr_type_descr (attr)) {
-    if (function(string:string) encoder =
-	syntax_encode_fns[attr_descr->syntax_oid])
+    if (function(string:string)|zero encoder =
+	[function(string:string)|zero]syntax_encode_fns[attr_descr->syntax_oid])
       return encoder;
 #ifdef LDAP_DEBUG
     else if (!get_constant_name (attr_descr->syntax_oid))
@@ -267,9 +267,9 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
 	  string errmsg = describe_error (err) +			\
 	    "The string is the DN of an entry.\n";			\
 	  if (flags & SEARCH_RETURN_DECODE_ERRORS)			\
-	    DN = Charset.DecodeError (DN, -1, 0, errmsg);               \
+	    DN = Charset.DecodeError (DN, -1, "", errmsg);               \
 	  else								\
-	    throw (Charset.DecodeError (DN, -1, 0, errmsg));            \
+	    throw (Charset.DecodeError (DN, -1, "", errmsg));            \
 	}								\
       } while (0)
 
@@ -295,9 +295,9 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
 		     describe_error (err), ATTR, stringp (dn) ? dn : dn[0], \
 		     decoder, descr1, descr2);				\
 	  if (flags & SEARCH_RETURN_DECODE_ERRORS)			\
-	    VALUE = Charset.DecodeError (VALUE, -1, 0, errmsg);         \
+	    VALUE = Charset.DecodeError (VALUE, -1, "", errmsg);	\
 	  else								\
-	    throw (Charset.DecodeError (VALUE, -1, 0, errmsg));         \
+	    throw (Charset.DecodeError (VALUE, -1, "", errmsg));	\
 	}								\
       } while (0)
 
@@ -311,9 +311,9 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
 		     "in entry with DN %O.\n",				\
 		     describe_error (err), ATTR, stringp (dn) ? dn : dn[0]); \
 	  if (flags & SEARCH_RETURN_DECODE_ERRORS)			\
-	    VALUE = Charset.DecodeError (VALUE, -1, 0, errmsg);         \
+	    VALUE = Charset.DecodeError (VALUE, -1, "", errmsg);	\
 	  else								\
-	    throw (Charset.DecodeError (VALUE, -1, 0, errmsg));         \
+	    throw (Charset.DecodeError (VALUE, -1, "", errmsg));	\
 	}								\
       } while (0)
 
@@ -1458,7 +1458,7 @@ object|zero get_default_filter()
     get_supported_controls();
 #endif
 
-    object cookie = OctetString("");
+    object|zero cookie = OctetString("");
     do {
       PROFILE("send_search_op", {
 	  array ctrls = common_controls;
