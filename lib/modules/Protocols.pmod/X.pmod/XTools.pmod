@@ -39,7 +39,7 @@ class Button
   int button;  // The number of the mouse button used
   //!
 
-  function(object, int, mapping:void) redraw_callback;
+  function(object, int, mapping|zero:void) redraw_callback;
   function(object:void) clicked_callback;
 
   //!

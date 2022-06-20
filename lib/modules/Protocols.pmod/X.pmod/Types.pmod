@@ -291,7 +291,7 @@ class Colormap
   }
 
 
-  protected void create(object disp, int i, object vis)
+  protected void create(object disp, int i, object|zero vis)
   {
     display = disp;
     id = i;
@@ -547,7 +547,7 @@ class Window
 
   //!
   object CreateWindow_req(int x, int y, int width, int height,
-			  int border_width, int depth, object visual)
+			  int border_width, int depth, object|zero visual)
   {
     object req = .Requests.CreateWindow();
     req->depth = depth;  /* CopyFromParent */

@@ -129,7 +129,7 @@ object read_auth_data()
       fname = combine_path(fname, ".Xauthority");
     }
 
-  object key = lock_file(fname);
+  object|zero key = lock_file(fname);
   if (!key)
     return 0;
 
