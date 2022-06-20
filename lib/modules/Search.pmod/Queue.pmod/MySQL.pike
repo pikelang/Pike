@@ -89,7 +89,8 @@ protected int has_uri( string|Standards.URI uri )
 		      to_md5(uri))));
 }
 
-void add_uri( Standards.URI uri, int recurse, string template, void|int force )
+void add_uri( Standards.URI uri, int recurse, string|zero template,
+	      void|int force )
 {
   // The language is encoded in the fragment.
   Standards.URI r = Standards.URI( (string)uri );

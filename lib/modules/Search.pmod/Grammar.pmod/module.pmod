@@ -90,7 +90,7 @@ private array(TextNode) mergeTextNodes(array(TextNode) a, string op) {
   // Only merge nodes in the same field
   foreach (indices(fields), string field) {
     array(TextNode) unMerged = ({});
-    TextNode merged = 0;
+    object(TextNode)|zero merged = 0;
     foreach (fields[field], TextNode t) {
       int canMerge = 0;
       if (op == "and")
@@ -126,7 +126,7 @@ object(ParseNode)|zero optimize(ParseNode node, string|void parentOp) {
   if (!node)
     return 0;
   node->children = map(node->children, optimize, node->op) - ({0});
-  array(ParseNode) newChildren = 0;
+  array(ParseNode)|zero newChildren = 0;
 
   switch (node->op) {
     case "and":
@@ -210,7 +210,7 @@ object(ParseNode)|zero optimize(ParseNode node, string|void parentOp) {
   return node;
 }
 
-private void _validate(ParseNode node, ParseNode parent) {
+private void _validate(ParseNode node, object(ParseNode)|zero parent) {
   map(node->children, _validate, node);
   switch (node->op) {
     case "date":
