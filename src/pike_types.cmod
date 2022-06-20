@@ -12182,6 +12182,12 @@ struct pike_type *low_new_check_call(struct pike_type *fun_type,
     case PIKE_T_SCOPE:
       /* We're good if any part of the nested T_OR is good. */
       flags &= ~CALL_STRICT;
+      /* Attempt using the arg_type as-is first. */
+      if ((tmp = lower_new_check_call(fun_type, arg_type,
+				      flags | CALL_WEAK_VOID, cs, sval
+				      CHECK_CALL_ARGS))) {
+	return tmp;
+      }
       arg_type = arg_type->cdr;
       goto loop;
 
