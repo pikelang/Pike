@@ -115,7 +115,7 @@ class asyncprotocol
   inherit protocolhelper;
 
   string rest;
-  string inbuf, outbuf = "";
+  string|zero inbuf, outbuf = "";
   array next_cbs = ({ });
 
   void io_error(string fmt, mixed ... args) {
