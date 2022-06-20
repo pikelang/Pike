@@ -5966,49 +5966,43 @@ multiset & mapping -> mapping
 
  */
 
+#define LOW_LOG_TYPE(OP)						\
+  tOr8(tFunc(tSetvar(0, tInt) tSetvar(1, tInt),				\
+	     OP(tVar(0), tVar(1))),					\
+       tFunc(tMap(tSetvar(0, tMix), tSetvar(1, tMix))			\
+	     tMap(tSetvar(2, tMix), tSetvar(3, tMix)),			\
+	     tMap(tOr(tVar(0), tVar(2)), tOr(tVar(1), tVar(3)))),	\
+       tFunc(tSet(tSetvar(0, tMix)) tSet(tSetvar(1, tMix)),		\
+	     tSet(tOr(tVar(0), tVar(1)))),				\
+       tFunc(tArr(tSetvar(0, tMix)) tArr(tSetvar(1, tMix)),		\
+	     tArr(tOr(tVar(0), tVar(1)))),				\
+       tFunc(tNStr(tSetvar(0, tInt)) tNStr(tSetvar(1, tInt)),		\
+	     tNStr(OP(tVar(0), tVar(1)))),				\
+       tFunc(tOr(tType(tMix), tPrg(tObj))				\
+	     tOr(tType(tMix), tPrg(tObj)),				\
+	     tType(tMix)),						\
+       tFunc(tObj tMix, tMix),						\
+       tFunc(tMix tObj, tMix)						\
+       )
 
-#define F_AND_TYPE(Z)						\
-	    tOr(tFunc(tSetvar(0,Z),tVar(0)),			\
-		tIfnot(tFuncV(tNone, tNot(Z), tMix),		\
-		       tFuncV(tSetvar(1,Z),tSetvar(2,Z),	\
-			      tOr(tVar(1),tVar(2)))))
-
+#define LOG_TYPE(TRANS)							\
+  tTransitive(tFunc(tSetvar(0, tMix), tVar(0)), TRANS)
 
   ADD_EFUN2("`&",f_and,
-	    tTransitive(tFunc(tSetvar(0,tMix),tVar(0)),
-			tOr9(tFunc(tSetvar(0, tInt) tSetvar(1, tInt),
-				   tAndInt(tVar(0), tVar(1))),
-			     F_AND_TYPE(tArray),
-			     F_AND_TYPE(tMapping),
-			     F_AND_TYPE(tMultiset),
-			     F_AND_TYPE(tString),
-			     F_AND_TYPE(tOr(tType(tMix),tPrg(tObj))),
-			     tFunc(tSetvar(4, tMapping)
-				   tOr(tArray,tMultiset),
-				   tVar(4)),
-			     tFunc(tOr(tArray,tMultiset)
-				   tSetvar(4, tMapping),
-				   tVar(4)),
-			     tOr(tFunc(tMix tObj, tMix),
-				 tFunc(tObj tMix, tMix)))),
+	    LOG_TYPE(tOr3(LOW_LOG_TYPE(tAndInt),
+			  tFunc(tSetvar(4, tMapping)
+				tOr(tArray,tMultiset),
+				tVar(4)),
+			  tFunc(tOr(tArray,tMultiset)
+				tSetvar(4, tMapping),
+				tVar(4)))),
 	    OPT_TRY_OPTIMIZE,optimize_binary,generate_and);
 
-#define LOG_TYPE								\
-  tOr7(tIfnot(tFuncV(tNone, tNot(tObj), tMix),					\
-	      tOr(tFuncV(tMix tObj,tMix,tMix),					\
-		  tFuncV(tObj,tMix,tMix))),					\
-       tOr(tFuncV(tIntPos, tIntPos, tIntPos),					\
-	   tIfnot(tFuncV(tNone, tNot(tIntMinus), tMix),				\
-		  tFuncV(tInt, tInt, tInt))),					\
-       tFuncV(tSetvar(1,tMapping),tSetvar(2,tMapping),tOr(tVar(1),tVar(2))),	\
-       tFuncV(tSetvar(3,tMultiset),tSetvar(4,tMultiset),tOr(tVar(3),tVar(4))),	\
-       tFuncV(tSetvar(5,tArray),tSetvar(6,tArray),tOr(tVar(5),tVar(6))),	\
-       tFuncV(tSetvar(7,tString),tSetvar(8,tString),tOr(tVar(7),tVar(8))),	\
-       tFuncV(tOr(tType(tMix),tPrg(tObj)),tOr(tType(tMix),tPrg(tObj)),tType(tMix)))
+  ADD_EFUN2("`|", f_or, LOG_TYPE(LOW_LOG_TYPE(tOrInt)),
+	    OPT_TRY_OPTIMIZE, optimize_binary, generate_or);
 
-  ADD_EFUN2("`|",f_or,LOG_TYPE,OPT_TRY_OPTIMIZE,optimize_binary,generate_or);
-
-  ADD_EFUN2("`^",f_xor,LOG_TYPE,OPT_TRY_OPTIMIZE,optimize_binary,generate_xor);
+  ADD_EFUN2("`^", f_xor, LOG_TYPE(LOW_LOG_TYPE(tXorInt)),
+	    OPT_TRY_OPTIMIZE, optimize_binary, generate_xor);
 
 #define SHIFT_TYPE							\
   tOr3(tIfnot(tFuncV(tNone, tNot(tObj), tMix),				\
