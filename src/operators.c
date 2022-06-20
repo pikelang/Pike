@@ -5894,7 +5894,7 @@ void init_operators(void)
 	    tTransitive(tFunc(tSetvar(0, tOr7(tObj, tInt, tFloat, tStr,
 					      tArr(tMix), tMapping, tMultiset)),
 			      tVar(0)),
-			tOr7(tOr(tFuncArg(tSetvar(1, tObj),
+			tOr9(tOr(tFuncArg(tSetvar(1, tObj),
 					  tFindLFun(tVar(1), "`+")),
 				 tFunc(tNot(tObj) tObj, tMix)),
 			     tFunc(tSetvar(2, tInt) tSetvar(3, tInt),
@@ -5918,7 +5918,10 @@ void init_operators(void)
 			     tFunc(tSetvar(0, tMapping) tSetvar(1, tMapping),
 				   tOr(tVar(0), tVar(1))),
 			     tFunc(tSetvar(0, tMultiset) tSetvar(1, tMultiset),
-				   tOr(tVar(0), tVar(1))))),
+				   tOr(tVar(0), tVar(1))),
+			     tFunc(tZero tSetvar(0, tOr3(tArray, tMultiset, tMapping)), tVar(0)),
+			     tFunc(tSetvar(0, tOr3(tArray, tMultiset, tMapping)) tZero, tVar(0))
+			     )),
 	    OPT_TRY_OPTIMIZE,optimize_binary,generate_sum);
 
   ADD_EFUN2("`-", f_minus,
