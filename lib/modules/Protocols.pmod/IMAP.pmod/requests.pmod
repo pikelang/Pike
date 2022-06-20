@@ -521,7 +521,7 @@ class fetch
       message_set = server->uid_to_local(session, message_set);
     }
 
-    array fetch_attrs = 0;
+    array|zero fetch_attrs = 0;
     switch(request->type)
     {
     case "atom":
