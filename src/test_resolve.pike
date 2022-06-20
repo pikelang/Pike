@@ -116,7 +116,7 @@ void test_dir(string dir, int|void base_size, object|void handler)
 	  // loading errors aren't hidden.
 	  mixed err;
 	  if (err = catch{
-	    program ret = load_module(file);
+	    program|zero ret = load_module(file);
 	    if (ret && ret->this_program_does_not_exist)
 	      ret = 0;
 	    master()->programs[file] = ret;
