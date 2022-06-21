@@ -1108,7 +1108,7 @@ void debug_push_type(unsigned int type)
     /* Special case: Check if the two top elements are equal. */
     if (Pike_compiler->type_stackp[-1] == Pike_compiler->type_stackp[0]) {
       free_type(*(Pike_compiler->type_stackp--));
-      return;
+      break;
     }
     if (!Pike_compiler->type_stackp[0]) {
       Pike_compiler->type_stackp--;
@@ -1116,7 +1116,7 @@ void debug_push_type(unsigned int type)
 	free_type(Pike_compiler->type_stackp[0]);
 	Pike_compiler->type_stackp[0] = NULL;
       }
-      return;
+      break;
     }
     if (!Pike_compiler->type_stackp[-1]) {
       if ((type & PIKE_T_MASK) == T_AND) {
@@ -1125,14 +1125,14 @@ void debug_push_type(unsigned int type)
 	Pike_compiler->type_stackp[-1] = Pike_compiler->type_stackp[0];
       }
       Pike_compiler->type_stackp--;
-      return;
+      break;
     }
     if (type == T_AND) {
       if ((Pike_compiler->type_stackp[0] == any_type_string) ||
 	  ((Pike_compiler->type_stackp[0] == mixed_type_string) &&
 	   !(Pike_compiler->type_stackp[-1]->flags & PT_FLAG_VOIDABLE))) {
 	free_type(low_pop_type());
-	return;
+	break;
       }
       if ((Pike_compiler->type_stackp[-1] == any_type_string) ||
 	  ((Pike_compiler->type_stackp[-1] == mixed_type_string) &&
@@ -1141,7 +1141,7 @@ void debug_push_type(unsigned int type)
 	free_type(low_pop_type());
 	push_finished_type(t);
 	free_type(t);
-	return;
+	break;
       }
     }
     if (Pike_compiler->type_stackp[0]->type == type) {
@@ -1175,6 +1175,21 @@ void debug_push_type(unsigned int type)
 	(Pike_compiler->type_stackp[0]->type == T_INT)) {
       free_type(*(--Pike_compiler->type_stackp));
       Pike_compiler->type_stackp[0] = Pike_compiler->type_stackp[1];
+      break;
+    }
+    if ((Pike_compiler->type_stackp[0]->type == T_STRING) &&
+	(Pike_compiler->type_stackp[-1]->type == T_STRING)) {
+      struct pike_type *t1 = low_pop_type();
+      struct pike_type *t2 = low_pop_type();
+      push_finished_type(t1->cdr);
+      push_finished_type(t2->cdr);
+      push_type(T_AND);
+      push_finished_type(t1->car);
+      push_finished_type(t2->car);
+      push_type(T_AND);
+      push_type(T_STRING);
+      free_type(t1);
+      free_type(t2);
       break;
     }
     /* FALLTHRU */
