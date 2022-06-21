@@ -4884,7 +4884,9 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
     if (!tmp) return NULL;
     type_stack_mark();
     push_finished_type(tmp);
+#if 0
     push_type_attribute((struct pike_string *)(a->car));
+#endif
     free_type(tmp);
     return pop_unfinished_type();
   case T_SCOPE:
@@ -4913,7 +4915,9 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
     if (!tmp) return NULL;
     type_stack_mark();
     push_finished_type(tmp);
+#if 0
     push_type_attribute((struct pike_string *)(b->car));
+#endif
     free_type(tmp);
     return pop_unfinished_type();
   case T_SCOPE:
