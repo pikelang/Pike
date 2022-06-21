@@ -1127,6 +1127,23 @@ void debug_push_type(unsigned int type)
       Pike_compiler->type_stackp--;
       return;
     }
+    if (type == T_AND) {
+      if ((Pike_compiler->type_stackp[0] == any_type_string) ||
+	  ((Pike_compiler->type_stackp[0] == mixed_type_string) &&
+	   !(Pike_compiler->type_stackp[-1]->flags & PT_FLAG_VOIDABLE))) {
+	free_type(low_pop_type());
+	return;
+      }
+      if ((Pike_compiler->type_stackp[-1] == any_type_string) ||
+	  ((Pike_compiler->type_stackp[-1] == mixed_type_string) &&
+	   !(Pike_compiler->type_stackp[0]->flags & PT_FLAG_VOIDABLE))) {
+	struct pike_type *t = low_pop_type();
+	free_type(low_pop_type());
+	push_finished_type(t);
+	free_type(t);
+	return;
+      }
+    }
     if (Pike_compiler->type_stackp[0]->type == type) {
       /* The top type is the same as our type.
        * Split it and join the parts with the other type.
@@ -1137,15 +1154,38 @@ void debug_push_type(unsigned int type)
       push_finished_type(top->car);
       push_type(type);
       free_type(top);
-      return;
+      break;
     }
     if (type == T_OR) {
+      /* check_trans_type(NULL, NULL, type); */
       struct pike_type *t1 = low_pop_type();
+      /* check_trans_type(NULL, NULL, type); */
       struct pike_type *t2 = low_pop_type();
       low_or_pike_types(t1, t2, 0);
       free_type(t2);
       free_type(t1);
-      return;
+      break;
+    }
+    if ((Pike_compiler->type_stackp[0] == int_type_string) &&
+	(Pike_compiler->type_stackp[-1]->type == T_INT)) {
+      free_type(*(Pike_compiler->type_stackp--));
+      break;
+    }
+    if ((Pike_compiler->type_stackp[-1] == int_type_string) &&
+	(Pike_compiler->type_stackp[0]->type == T_INT)) {
+      free_type(*(--Pike_compiler->type_stackp));
+      Pike_compiler->type_stackp[0] = Pike_compiler->type_stackp[1];
+      break;
+    }
+    /* FALLTHRU */
+  case T_ARRAY:
+  case T_STRING:
+    if ((type == T_ARRAY) || (type == T_STRING)) {
+      if (peek_type_stack() == zero_type_string) {
+	/* Zero-length ==> unrestricted content. */
+	free_type(Pike_compiler->type_stackp[-1]);
+	Pike_compiler->type_stackp[-1] = NULL;
+      }
     }
     /* FALLTHRU */
   case T_FUNCTION:
@@ -1153,8 +1193,6 @@ void debug_push_type(unsigned int type)
   case T_TUPLE:
   case T_MAPPING:
   case PIKE_T_RING:
-  case T_ARRAY:
-  case T_STRING:
   case PIKE_T_TRANSITIVE:
     /* Make a new type of the top two types. */
     --Pike_compiler->type_stackp;
