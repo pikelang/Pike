@@ -915,17 +915,17 @@ test_any([[mapping(object:string)|mapping(string:int) f;
 test_any([[class Foo { protected string `[](mixed y) {return "";} };
 	  object(Foo) foo;
           return sprintf("%O", typeof(foo[0])); ]],
-         "zero | string")
+         "string")
 
 test_any([[class Foo { protected array(int) _indices() {return ({0});} };
 	  object(Foo) foo;
           return sprintf("%O", typeof(indices(foo))); ]],
-         "zero | array(int)")
+         "array(int)")
 
 test_any([[class Foo { protected array(string) _values() {return ({""});} };
 	  object(Foo) foo;
           return sprintf("%O", typeof(values(foo))); ]],
-         "zero | array(string)")
+         "array(string)")
 
 test_any([[mapping(string:int) foo;
 	  array(string) bar;
@@ -7288,7 +7288,7 @@ test_do(add_constant("blatinka");)
   test_any([[mapping q=([ "t":class {} ()]); gc(); if(!objectp(q->t)) return -1; set_weak_flag(q,1); gc(); if(objectp(q->t)) return -2; return 0;]],0);
 
   test_do([[class bar { object foo; protected void create(void|object tmp) { foo=tmp; } };
-             object o=bar(),o2=o;
+             object|zero o=bar(),o2=o;
              for(int e=0;e<10000;e++) o=bar(o);
              o2->foo=o;
              o=o2=0;
@@ -8483,7 +8483,7 @@ test_compile([[mapping|zero a; int b; a = b = 0;]]);
 test_compile_error([[mapping|zero a; int b; a = b = 1;]]);
 test_compile_any([[void a(int q){} void b(function(int:void) f){} void c(){b(a);}]]);
 test_compile_error_any([[void a(int i){} void b(function(:void) f){} void c(){b(a);}]]);
-test_compile_any([[void a(){} function(int:void) b = a;]]);
+test_compile_any([[void a(int i){} function(int:void) b = a;]]);
 test_compile_error_any([[void a(int i){} function(:void) b = a;]]);
 
 // Duplicate local variable
@@ -12230,11 +12230,11 @@ test_do(add_constant("PROG"))
 // equal is already tested a lot in this script
 
 test_any([[
-  class X (string s) {};
+  class X (string|zero s) {};
   return equal (({X ("foo")}), ({X (0)}));
 ]], 0)
 test_any([[
-  class X (string s) {};
+  class X (string|zero s) {};
   return equal (({X (0)}), ({X ("foo")}));
 ]], 0)
 test_any([[
@@ -14265,7 +14265,7 @@ test_compile_error(return class c{int i;void foo(){ destruct(this_object());i=0;
 test_eq(a,this_object()->a)
 
 // - catch
-test_false([[class { string test(string foo) { catch { return lower_case(foo); }; return foo; }}()->test(0); ]])
+test_false([[class { string test(string|zero foo) { catch { return lower_case(foo); }; return foo; }}()->test(0); ]])
 test_true([[catch (1.0 / 0.0)]])
 test_true([[catch {float f = 1.0 / 0.0;}]])
 
@@ -15336,7 +15336,7 @@ dnl This syntax error generates a Fatal with PIKE_DEBUG
 test_compile_error(object(foo bar) o;)
 
 test_do([[
-    class A(object ctx) {
+    class A(object|zero ctx) {
         this_program get(void|int level) {
             this_program ret = this;
 
