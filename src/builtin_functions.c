@@ -10254,7 +10254,7 @@ void init_builtin_efuns(void)
   /* function(string,string:int(0..1))|function(string,string*:array(string)) */
   ADD_EFUN("glob",f_glob,
            tOr3(tFunc(tStr tStr,tInt01),
-                tFunc(tArr(tStr) tStr,tStr),
+                tFunc(tArr(tSetvar(0, tStr)) tStr, tOr(tVar(0), tZero)),
                 tFunc(tOr(tStr,tArr(tStr)) tSetvar(1,tArr(tStr)),tVar(1))),
 	   OPT_TRY_OPTIMIZE);
 
