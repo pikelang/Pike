@@ -1279,19 +1279,7 @@ static ptrdiff_t _parse_JSON5_number(PCHARP str, ptrdiff_t p, ptrdiff_t pe, stru
 					}
 				}
 			} else if (h == 1) {
-				// TODO handle errors better, handle possible bignums and possible better approach.
-				push_string(make_shared_binary_pcharp(ADD_PCHARP(str, i), p-i));
-				push_text("%x");
-				f_sscanf(2);
-				if((PIKE_TYPEOF(Pike_sp[-1]) != PIKE_T_ARRAY) || (Pike_sp[-1].u.array->size != 1)) {
-					state->flags |= JSON5_ERROR;
-					return p;
-				}
-				else {
-					push_int(ITEM(Pike_sp[-1].u.array)[0].u.integer);
-					stack_swap();
-					pop_stack();
-				}
+				pcharp_to_svalue_inumber(Pike_sp++, ADD_PCHARP(str, i), NULL, 16, p - i);
 			} else if (d == 1) {
 #if SIZEOF_FLOAT_TYPE > SIZEOF_DOUBLE
 				push_float((FLOAT_TYPE)STRTOLD_PCHARP(ADD_PCHARP(str, i), NULL));
