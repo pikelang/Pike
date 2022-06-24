@@ -126,7 +126,7 @@ struct color_struct
    struct pike_string *name;
 };
 
-#define tColor tOr3(tArr(tInt),tString,tObj)
+#define tColor tOr3(tLArr(tInt3,tInt8bit),tString,tObj)
 #define tLayerMap tMap(tString,tOr4(tString,tColor,tFloat,tInt))
 
 /* blit.c */

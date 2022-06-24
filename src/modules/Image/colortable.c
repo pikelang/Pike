@@ -4492,7 +4492,12 @@ void init_image_colortable(void)
 		"function(array(array(int)|string|object):void)|"
 		"function(object,void|int,mixed ...:void)|"
 		"function(int,int,int,void|int ...:void) */
-   ADD_FUNCTION("create",image_colortable_create,tOr4(tFunc(tVoid,tVoid),tFunc(tOr(tArr(tColor),tStr),tVoid),tFuncV(tObj tOr(tVoid,tInt),tMix,tVoid),tFuncV(tInt tInt tInt,tOr(tVoid,tInt),tVoid)),0);
+   ADD_FUNCTION("create",image_colortable_create,
+		tOr4(tFunc(tVoid,tVoid),
+		     tFunc(tOr(tArr(tColor),tStr),tVoid),
+		     tFuncV(tObj tOr(tVoid,tInt),tMix,tVoid),
+		     tFuncV(tInt tInt tInt,tOr(tColor,tInt),tVoid)),
+		0);
 
 
    ADD_FUNCTION("_encode", image_colortable__encode,tFunc(tNone,tStr),0);
@@ -4503,7 +4508,12 @@ void init_image_colortable(void)
 		"function(array(array(int)|string|object):void)|"
 		"function(object,void|int,mixed ...:void)|"
 		"function(int,int,int,void|int ...:void) */
-   ADD_FUNCTION("add",image_colortable_add,tOr4(tFunc(tVoid,tVoid),tFunc(tArr(tColor),tVoid),tFuncV(tObj tOr(tVoid,tInt),tMix,tVoid),tFuncV(tInt tInt tInt,tOr(tVoid,tInt),tVoid)),0);
+   ADD_FUNCTION("add",image_colortable_add,
+		tOr4(tFunc(tVoid,tVoid),
+		     tFunc(tArr(tColor),tVoid),
+		     tFuncV(tObj tOr(tVoid,tInt),tMix,tVoid),
+		     tFuncV(tInt tInt tInt,tOr(tColor,tInt),tVoid)),
+		0);
 
    /* function(int:object) */
    ADD_FUNCTION("reduce",image_colortable_reduce,tFunc(tInt,tObj),0);
