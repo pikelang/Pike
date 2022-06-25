@@ -1761,10 +1761,10 @@ static void push_type_field(TYPE_FIELD field)
 	push_type(T_OR);
       }
       if (field & BIT_FUNCTION) {
-	push_type(T_ZERO);
-	push_type(T_ZERO);
+	push_type(T_VOID);
 	push_type(T_MIXED);
 	push_type(T_OR);
+	push_type(PIKE_T_UNKNOWN);
 	push_type(T_MANY);
 	push_type(T_OR);
       }
