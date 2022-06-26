@@ -35,8 +35,8 @@ protected array|zero sedreplace(string s,object re,string with,
                                 array whatin,int first,int lastmod,
                                 multiset flags)
 {
-   array a;
-   string w=0;
+   array|zero a;
+   string w = "";
    array pr=({});
 
    if (!(a=re->split(s)))
@@ -44,7 +44,7 @@ protected array|zero sedreplace(string s,object re,string with,
 
    if (first)
    {
-      array wa;
+      array|zero wa;
       wa=sedreplace(a[0],re,with,whatin,first,lastmod,flags);
       if (wa)
 	 if (!flags["g"])
@@ -66,7 +66,7 @@ protected array|zero sedreplace(string s,object re,string with,
    {
       if (lastmod)
       {
-	 array wa;
+	 array|zero wa;
 	 wa=sedreplace(a[-1],re,with,whatin,first,lastmod,flags);
 	 if (wa)
 	 {
