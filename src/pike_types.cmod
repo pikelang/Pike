@@ -4985,11 +4985,11 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
   case PIKE_T_ATTRIBUTE:
     tmp = low_type_binop(op, a, b->cdr, remap, aflags, bflags, remap_flags);
     if (!tmp) {
-      if (c && (op == PT_BINOP_MINUS)) {
+      if (a && c && (op == PT_BINOP_MINUS)) {
 	ref_push_string((struct pike_string *)b->car);
 	ref_push_type_value(a);
 	ref_push_type_value(b->cdr);
-	safe_apply_current2(PC_POP_TYPE_ATTRIBUTE_FUN_NUM, 3,
+	safe_apply_current2(PC_PUSH_TYPE_ATTRIBUTE_FUN_NUM, 3,
 			    "push_type_attribute");
 	if ((TYPEOF(Pike_sp[-1]) == T_INT) &&
 	    (SUBTYPEOF(Pike_sp[-1]) == NUMBER_NUMBER) &&
