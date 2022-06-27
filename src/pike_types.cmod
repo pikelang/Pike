@@ -4934,32 +4934,47 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
     free_type(tmp);
     return pop_unfinished_type();
   case PIKE_T_ATTRIBUTE:
-    tmp = low_type_binop(op, a->cdr, b, remap, aflags, bflags, remap_flags);
-    if (!tmp) {
-      if (c && (op == PT_BINOP_MINUS)) {
-	ref_push_string((struct pike_string *)a->car);
-	ref_push_type_value(a->cdr);
-	ref_push_type_value(b);
-	safe_apply_current2(PC_POP_TYPE_ATTRIBUTE_FUN_NUM, 3,
-			    "pop_type_attribute");
-	if ((TYPEOF(Pike_sp[-1]) == T_INT) &&
-	    (SUBTYPEOF(Pike_sp[-1]) == NUMBER_NUMBER) &&
-	    (!Pike_sp[-1].u.integer)) {
-	  /* Forced mismatch. */
-	  pop_stack();
-	  return remap_markers(a, remap, remap_flags);
-	}
-	pop_stack();
+    if (b && (b->type == PIKE_T_ATTRIBUTE) && (b->car == a->car)) {
+      /* Types a and b have the same attribute.
+       *
+       * Do NOT call pop_type_attribute() (or push_type_attribute())
+       * in this case.
+       */
+      tmp = low_type_binop(op, a->cdr, b->cdr, remap,
+			   aflags, bflags, remap_flags);
+      if (!tmp) {
+	return NULL;
       }
-      return NULL;
+    } else {
+      tmp = low_type_binop(op, a->cdr, b, remap, aflags, bflags, remap_flags);
+
+      if (!tmp) {
+	if (c && (op == PT_BINOP_MINUS)) {
+	  ref_push_string((struct pike_string *)a->car);
+	  ref_push_type_value(a->cdr);
+	  ref_push_type_value(b);
+	  safe_apply_current2(PC_POP_TYPE_ATTRIBUTE_FUN_NUM, 3,
+			      "pop_type_attribute");
+	  if ((TYPEOF(Pike_sp[-1]) == T_INT) &&
+	      (SUBTYPEOF(Pike_sp[-1]) == NUMBER_NUMBER) &&
+	      (!Pike_sp[-1].u.integer)) {
+	    /* Forced mismatch. */
+	    pop_stack();
+	    return remap_markers(a, remap, remap_flags);
+	  }
+	  pop_stack();
+	}
+	return NULL;
+      }
     }
 
     type_stack_mark();
     push_finished_type(tmp);
-#if 0
-    push_type_attribute((struct pike_string *)(a->car));
-#endif
+    if (op == PT_BINOP_AND) {
+      push_type_attribute((struct pike_string *)(a->car));
+    }
     free_type(tmp);
+
     return pop_unfinished_type();
   case T_SCOPE:
     tmp = low_type_binop(op, a->cdr, b, remap,
@@ -5005,10 +5020,11 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 
     type_stack_mark();
     push_finished_type(tmp);
-#if 0
-    push_type_attribute((struct pike_string *)(b->car));
-#endif
+    if (op == PT_BINOP_AND) {
+      push_type_attribute((struct pike_string *)(b->car));
+    }
     free_type(tmp);
+
     return pop_unfinished_type();
   case T_SCOPE:
     tmp = low_type_binop(op, a, b->cdr, remap,
