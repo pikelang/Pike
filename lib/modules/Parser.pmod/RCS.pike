@@ -596,7 +596,7 @@ string|zero get_contents_for_revision( string|Revision rev,
   if (!base)
     return 0;
 
-  Revision clear_in_next_iter = 0;
+  object(Revision)|zero clear_in_next_iter = 0;
   foreach (reverse(diff_revs), Revision cur) {
     string diff = cur->rcs_text;
     String.Buffer new = String.Buffer();
@@ -671,7 +671,7 @@ string|zero get_contents_for_revision( string|Revision rev,
   }
 
   //  Return for requested revision
-  string res = rev->text;
+  string|zero res = rev->text;
   if (dont_cache_data)
     rev->text = 0;
   return res;
@@ -809,7 +809,7 @@ class Revision
   //!
   //! @seealso
   //!   @[next], @[prev], @[rcs_prev]
-  string rcs_next;
+  string|zero rcs_next;
 
   //! The revision that this revision is based on,
   //! or @expr{0@} if it is the HEAD.
@@ -820,7 +820,7 @@ class Revision
   //!
   //! @seealso
   //!   @[rcs_next]
-  string rcs_prev;
+  string|zero rcs_prev;
 
 
   //! The revision of the ancestor of this revision, or @expr{0@} if this was
@@ -828,14 +828,14 @@ class Revision
   //!
   //! @seealso
   //!   @[next]
-  string ancestor;
+  string|zero ancestor;
 
   //! The revision that succeeds this revision, or @expr{0@} if none exists
   //! (ie if this is the HEAD of the trunk or of a branch).
   //!
   //! @seealso
   //!   @[ancestor]
-  string next;
+  string|zero next;
 
   //! The log message associated with the revision.
   string log;
@@ -876,7 +876,7 @@ class Revision
   //!
   //! @seealso
   //!   @[get_contents_for_revision()], @[rcs_text]
-  string text;
+  string|zero text;
 
   protected string _sprintf(int type)
   {
