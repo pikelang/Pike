@@ -1642,7 +1642,7 @@ expected_dot_dot: TOK_DOT_DOT
   }
   ;
 
-safe_int_range_type: TOK_BITS
+safe_int_range_type_low: TOK_BITS
   {
     push_int_type( 0, (1<<$1->u.sval.u.integer)-1 );
     free_node( $1 );
@@ -1706,6 +1706,13 @@ safe_int_range_type: TOK_BITS
   {
     push_int_type(MIN_INT32, MAX_INT32);
     yyerror("Expected integer range.");
+  }
+  ;
+
+safe_int_range_type: safe_int_range_type_low
+  | safe_int_range_type '|' safe_int_range_type_low
+  {
+    push_type(PIKE_T_OR);
   }
   ;
 
