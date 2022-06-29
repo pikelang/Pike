@@ -289,7 +289,7 @@ class Node
     parent_node = new_parent;
   }
 
-  Node insert_before(Node new_child, Node ref_child)
+  Node insert_before(Node new_child, object(Node)|zero ref_child)
   {
     int pos = ref_child?
       (child_nodes? child_nodes->search(ref_child) : -1) :
@@ -402,6 +402,8 @@ class Document
   protected program EntityReferenceImpl = EntityReference;
 
   protected DOMImplementation implementation;
+
+  // NB: Stored, but not used.
   protected string namespace_uri, qualified_name;
 
   int get_node_type() { return DOCUMENT_NODE; }
@@ -875,13 +877,14 @@ class Entity
 {
   inherit Node;
 
-  protected string name, public_id, system_id, notation_name;
+  protected string name;
+  protected string|zero public_id, system_id, notation_name;
 
   int get_node_type() { return ENTITY_NODE; }
   string get_node_name() { return name; }
-  string get_public_id() { return public_id; }
-  string get_system_id() { return system_id; }
-  string get_notation_name() { return notation_name; }
+  string|zero get_public_id() { return public_id; }
+  string|zero get_system_id() { return system_id; }
+  string|zero get_notation_name() { return notation_name; }
   protected int is_readonly() { return name != 0; }
 
   protected string cast(string to)
@@ -898,8 +901,9 @@ class Entity
 	     ENTITY_REFERENCE_NODE>)[child->get_node_type()];
   }
 
-  protected void create(Document owner, string _name, string p_id, string s_id,
-		     string n_name, DocumentFragment|void value)
+  protected void create(Document owner, string _name,
+			string|zero p_id, string|zero s_id,
+			string|zero n_name, DocumentFragment|void value)
   {
     owner_document = owner;
     public_id = p_id;
@@ -1100,7 +1104,8 @@ class AbstractDOMParser
 
   protected Document create_document(InputSource s)
   {
-    return get_dom_implementation()->create_document(0, 0, 0);
+    // NB: Argument s ignored.
+    return get_dom_implementation()->create_document("", "", 0);
   }
 
   protected object|void parse_callback(string ty, string name, mapping attributes,
