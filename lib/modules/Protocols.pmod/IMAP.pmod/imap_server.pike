@@ -157,7 +157,7 @@ class connection
   function(mapping, string, string, int, int|void:void) log;
 
   protected void create(object f, int timeout, object backend,
-			mapping preauth, int|void debug)
+			mapping|zero preauth, int|void debug)
     {
       io = .server(f, timeout, handle_request, debug);
       db = backend;
