@@ -117,7 +117,7 @@ class HappyEyeballs {
       attempt_connect(); //Queue the next connection attempt
     }
 
-    void got_connection(int success, Stdio.File conn) {
+    void got_connection(int success, object(Stdio.File)|zero conn) {
       if (connecting < 0) return; //Already succeeded!
       if (!success) {
         if (--connecting > 0) return; //Other connections are in flight, all's good
