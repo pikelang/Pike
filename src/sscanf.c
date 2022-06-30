@@ -2017,7 +2017,20 @@ static void push_sscanf_argument_types(PCHARP format, ptrdiff_t format_len,
 	  break;
 
 	case 'c':
-	  /* FIXME: Use the width of the input string and format_len. */
+	  /* FIXME: Also consider the format_len (eg %4c). */
+	  if (!no_assign) {
+	    struct svalue *s =
+	      simple_mapping_string_lookup(state, "sscanf_input_character");
+	    if (s) {
+	      if (TYPEOF(*s) == PIKE_T_TYPE) {
+		/* Use the width of the input string. */
+		push_finished_type(s->u.type);
+	      } else {
+		push_type(PIKE_T_ZERO);
+	      }
+	      break;
+	    }
+	  }
 	  /* FALLTHRU */
         case 'd':
         case 'D':
@@ -2090,10 +2103,22 @@ static void push_sscanf_argument_types(PCHARP format, ptrdiff_t format_len,
       case 'H':
 	if (!no_assign) {
 	  struct svalue *s =
-	    simple_mapping_string_lookup(state, "sscanf_input");
-	  if (s && (TYPEOF(*s) == PIKE_T_TYPE)) {
-	    /* Use the type of the input string. */
-	    push_finished_type(s->u.type);
+	    simple_mapping_string_lookup(state, "sscanf_input_character");
+	  if (s) {
+	    if (TYPEOF(*s) == PIKE_T_TYPE) {
+	      /* Use the width of the input string. */
+	      push_finished_type(s->u.type);
+	      s = simple_mapping_string_lookup(state, "sscanf_input_length");
+	      if (s && (TYPEOF(*s) == PIKE_T_TYPE)) {
+		/* Use the length of the input string. */
+		push_finished_type(s->u.type);
+		push_type(PIKE_T_STRING);
+	      } else {
+		push_unlimited_array_type(PIKE_T_STRING);
+	      }
+	    } else {
+	      push_finished_type(string0_type_string);
+	    }
 	  } else {
 	    push_finished_type(string_type_string);
 	  }
@@ -2163,8 +2188,30 @@ void f___handle_sscanf_format(INT32 args)
   MAKE_CONST_STRING(sscanf_input_string, "sscanf_input");
 
   if (Pike_sp[-5].u.string == sscanf_input_string) {
+    /* Save the type of the input string. */
     mapping_string_insert(state, sscanf_input_string, Pike_sp-3);
-    pop_n_elems(args);
+
+    /* Get the type of the characters of the input string. */
+    push_type_value(index_type(Pike_sp[-3].u.type, int_type_string, NULL));
+    push_constant_text("sscanf_input_character");
+    mapping_insert(state, Pike_sp-1, Pike_sp-2);
+
+    /* Get the range of lengths for substrings of the input string. */
+    type_stack_mark();
+    tmp = key_type(Pike_sp[-5].u.type, NULL);
+    if (tmp) {
+      push_finished_type(tmp);
+      free_type(tmp);
+      push_type(PIKE_T_ZERO);
+      push_type(PIKE_T_INT_OP_RANGE);
+      push_type_value(pop_unfinished_type());
+    } else {
+      push_undefined();
+    }
+    push_constant_text("sscanf_input_length");
+    mapping_insert(state, Pike_sp-1, Pike_sp-2);
+
+    pop_n_elems(args + 4);
     push_undefined();
     return;
   }
