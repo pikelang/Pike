@@ -466,6 +466,8 @@ test_scopes(256, 1, 1)
 test_scopes(16, 17, 0)
 test_scopes(17, 16, 0)
 
+dnl sscanf("", ...) triggers this warning.
+ignore_warning("Indexing the empy string.", [[
 test_any([[
   // LysLysKOM 14180500
   if (1) {
@@ -485,6 +487,7 @@ test_any([[
   }
   return 0;
 ]], 0)
+]])
 
 dnl FIXME: Add test that local and local:: in combination
 dnl        with recursion works correctly.
@@ -5641,10 +5644,14 @@ test_do(class { Stdio.File foo; object bar=foo; })
 test_any(if(int i=1) return i; return 0;,1)
 test_compile(for(int i=0;i<100;i++) return 0;)
 test_compile(foreach(({}),mixed i){i;})
+
+dnl sscanf("", ...) triggers this warning.
+ignore_warning("Indexing the empy string.", [[
 test_compile(sscanf("","%O",mixed foo);foo;)
 test_compile_error(sscanf("","",mixed foo);)
 test_compile_error(sscanf("","%f",float))
 test_compile_error(sscanf("",float))
+]])
 
 // ++
 test_any([[int e; e++; return e;]],1)
@@ -8715,6 +8722,8 @@ test_equal( array_sscanf("xfo\200000x", "%sfoo%s"), ({}) )
 test_equal( array_sscanf("xfo\200000x", "%sfo\400%s"), ({}) )
 test_equal( array_sscanf("xfo\200000x", "%sfo\200000%s"), ({ "x", "x" }) )
 
+dnl sscanf("", ...) triggers this warning.
+ignore_warning("Indexing the empy string.", [[
 test_any([[mixed a; sscanf("","%H",a); return a]],0)
 test_any([[mixed a; sscanf("\0","%H",a); return a]],"")
 test_any([[mixed a; sscanf("\4","%H",a); return a]],0)
@@ -8741,6 +8750,7 @@ test_any([[mixed a; sscanf("\0\0","%-2H",a); return a]],"")
 test_any([[mixed a; sscanf("\4","%-2H",a); return a]],0)
 test_any([[mixed a; sscanf("\4\0","%-2H",a); return a]],0)
 test_any([[mixed a; sscanf("\4\0hello","%-2H",a); return a]],"hell")
+]])
 
 test_any([[
 class Bar {
