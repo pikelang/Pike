@@ -1325,8 +1325,13 @@ TLS_ecdhe_ecdsa_with_aes_256_ccm_8 :	({ KE_ecdhe_ecdsa, CIPHER_aes256, HASH_sha2
    TLS_ecdhe_psk_with_camellia_256_cbc_sha384 : ({ KE_ecdhe_psk, CIPHER_camellia256, HASH_sha384, MODE_cbc }),
 #endif /* Crypto.SHA384 */
 #endif /* Crypto.Camellia */
+   TLS_ecdhe_psk_with_aes_128_ccm_sha256 : ({ KE_ecdhe_psk, CIPHER_aes, HASH_sha256, MODE_ccm }),
+   TLS_ecdhe_psk_with_aes_128_ccm_8_sha256 : ({ KE_ecdhe_psk, CIPHER_aes, HASH_sha256, MODE_ccm_8 }),
 #if constant(Crypto.AES.GCM)
    TLS_ecdhe_psk_with_aes_128_gcm_sha256 : ({ KE_ecdhe_psk, CIPHER_aes, HASH_sha256, MODE_gcm }),
+#if constant(Crypto.SHA384)
+   TLS_ecdhe_psk_with_aes_256_gcm_sha384 : ({ KE_ecdhe_psk, CIPHER_aes256, HASH_sha384, MODE_gcm }),
+#endif /* Crypto.SHA384 */
 #endif /* Crypto.AES.GCM */
 #endif /* Crypto.ECC.Curve */
 ]);
