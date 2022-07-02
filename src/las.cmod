@@ -1040,6 +1040,7 @@ node *debug_mknode(int token, node *a, node *b)
     }
     break;
 
+  case F_CLEAR_LOCAL:
   case F_INC:
   case F_DEC:
   case F_POST_INC:
