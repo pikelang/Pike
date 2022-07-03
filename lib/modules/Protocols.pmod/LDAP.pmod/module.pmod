@@ -658,7 +658,7 @@ constant syntax_decode_fns = ([
 //! These decoders are used on all attribute values returned by
 //! @[Protocols.LDAP.client.result] functions.
 
-constant syntax_encode_fns = ([]); // Filled in from syntax_decode_fns by create().
+mapping(string:function(string:string)|zero) syntax_encode_fns = ([]); // Filled in from syntax_decode_fns by create().
 
 //! @decl constant mapping(string:function(string:string)) syntax_encode_fns;
 //!
