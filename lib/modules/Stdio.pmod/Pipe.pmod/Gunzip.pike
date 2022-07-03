@@ -8,7 +8,7 @@ inherit .Base;
 
 protected void process_init() { _engine = Gz.inflate(-15); }
 
-private Stdio.Buffer temphead = Stdio.Buffer();
+private Stdio.Buffer|zero temphead = Stdio.Buffer();
 
 protected string(8bit) process_header(string(8bit) data) {
   if (temphead) {
