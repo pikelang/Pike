@@ -320,7 +320,7 @@ void init(void|mapping(string:mixed) options) {
   if(options->resize_callback)
     resize_callback = options->resize_callback;
   else
-    resize_callback = lambda(){};
+    resize_callback = lambda(float,int(0..1),float){};
 
   start_driver(options->driver_names, options->title, options->icon_title);
 
@@ -1010,7 +1010,7 @@ class BaseTexture {
 
   //! Paste the image @[i] with alpha channel @[a] at coordinates @[x]
   //! and @[y] in the current texture.
-  void paste( Image.Image i, Image.Image a, int x, int y ) {
+  void paste( zero|Image.Image i, Image.Image a, int x, int y ) {
 #ifdef __NT__
     // We need backing store.  Why, you ask? Because when we switch
     // mode or somebody else does for us, all textures become invalid.
