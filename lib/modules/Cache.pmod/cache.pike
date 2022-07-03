@@ -39,7 +39,7 @@ mixed lookup(string key) {
 // single backend-request.
 private mapping (string:multiset(array)) pending_requests=([]);
 
-private void got_results(string key, int|Cache.Data value) {
+private void got_results(string key, zero|Cache.Data value, mixed ... rest) {
   mixed data=UNDEFINED;
   if (pending_requests[key]) {
     if (value) {
@@ -103,7 +103,7 @@ void alookup(string key,
 void store(string key, mixed value, void|int max_life,
             void|float preciousness, void|multiset(string) dependants ) {
   if (!stringp(key)) key=(string)key; // paranoia
-  multiset(string) rd=UNDEFINED;  // real-dependants, after string-check
+  multiset(string)|void rd=UNDEFINED; // real-dependants, after string-check
   if (dependants) {
     rd=(<>);
     foreach((array)dependants,mixed d) {
