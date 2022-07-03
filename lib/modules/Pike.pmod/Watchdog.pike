@@ -56,9 +56,9 @@ void print_debug()
 #if constant(_disable_threads)
     // Disable all threads to avoid potential locking problems while we
     // have the backtraces. It also gives an atomic view of the state.
-    object threads_disabled = _disable_threads();
+    void|object threads_disabled = _disable_threads();
 #else
-    object threads_disabled = 0;
+    void|object threads_disabled = 0;
 #endif
     gc();
 
