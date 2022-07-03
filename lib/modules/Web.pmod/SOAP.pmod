@@ -112,17 +112,16 @@ class Arguments {
     return Arguments(newvalues);
   }
 
-  protected string _sprintf(int type, void|mapping flags) {
-    string res = UNDEFINED;
+  protected string|zero _sprintf(int type, void|mapping flags) {
     switch (type) {
       case 'O':
-        res = sprintf("%O", values);
+        string res = sprintf("%O", values);
         int indent;
         if (flags && (indent = flags->indent))
           res = replace(res, "\n", "\n" + " " * indent);
-        break;
+        return res;
     }
-    return res;
+    return UNDEFINED;
   }
 }
 
