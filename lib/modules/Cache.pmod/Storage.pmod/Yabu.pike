@@ -143,7 +143,7 @@ void aget(string key,
 
 void delete(string key, void|int(0..1) hard) {
 
-  multiset dependants=0;
+  multiset|zero dependants=0;
 
   if (have_dependants) {
     mapping emeta=metadb->get(key);

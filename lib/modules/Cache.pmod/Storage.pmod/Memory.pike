@@ -66,7 +66,7 @@ private mapping(string:mixed) data=([]);
 
 // these are used by the enumerator. While entries might be deleted while
 // enumerating, it won't bite us.
-private array(string) iter=0;
+private array(string)|zero iter=0;
 private int current=0;
 
 int(0..0)|string first() {

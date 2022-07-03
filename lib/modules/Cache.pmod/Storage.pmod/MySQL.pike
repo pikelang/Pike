@@ -112,7 +112,7 @@ int(0..0)|string next() {
 // the same value, since queries are expensive. It could prove
 // to be a problem for HUGE caches. Let's hope it won't happen..
 void delete(string key, void|int(0..1) hard, void|multiset already_deleted) {
-  multiset dependants=0;
+  multiset|zero dependants=0;
 
   debug("deleting %s\n",key);
   if (have_dependants) {
@@ -159,7 +159,7 @@ void set(string key, mixed value,
 
 int(0..0)|Cache.Data get(string key,void|int notouch) {
   debug("getting value for key %s (nt: %d)",key,notouch);
-  array(mapping) result=0;
+  array(mapping)|zero result=0;
   mixed err=0;
   catch (result=db->query("select unix_timestamp(atime) as atime,"
                           "unix_timestamp(ctime) as ctime,"
@@ -181,7 +181,7 @@ void aget(string key,
 
 //!
 protected void create(string sql_url) {
-  array result=0;
+  array|zero result=0;
   mixed err=0;
   db=Sql.Sql(sql_url);
   // used to determine whether there already is a DB here.

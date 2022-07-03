@@ -142,7 +142,7 @@ void aget(string key,
 }
 
 void delete(string key, void|int(0..1) hard) {
-  multiset(string) dependants=0;
+  multiset(string)|zero dependants=0;
 
   if (have_dependants) {
     string emeta=metadb->fetch(key);
