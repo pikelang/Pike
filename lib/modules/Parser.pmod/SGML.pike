@@ -109,7 +109,7 @@
       }
    }
 
-   protected array(array(SGMLatom|string)) res=({({})});
+   protected array(array(SGMLatom|string))|zero res=({({})});
    protected array(SGMLatom) tagstack=({});
    protected array(object) errors;
 
