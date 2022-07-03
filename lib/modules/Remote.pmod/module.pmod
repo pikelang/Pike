@@ -94,9 +94,9 @@ class Call {
     _async = a;
   }
 
-  //! @decl void create(string objectid, string name, object connection,@
+  //! @decl void create(string|zero objectid, string name, object connection,@
   //!                   object context, int async)
-  protected void create(string oid, string n, object cn, object ct, int a)
+  protected void create(string|zero oid, string n, object cn, object ct, int a)
   {
     objectid = oid;
     name = n;
@@ -282,8 +282,8 @@ class Connection {
     if (closed) return;
 
 #if constant(thread_create)
-    Thread.MutexKey fc_lock = finished_calls_cond_mutex->lock();
-    Thread.MutexKey wb_lock = write_buffer_cond_mutex->lock();
+    void|Thread.MutexKey fc_lock = finished_calls_cond_mutex->lock();
+    void|Thread.MutexKey wb_lock = write_buffer_cond_mutex->lock();
 #endif
 
     if (!(sizeof (pending_calls) ||
@@ -318,8 +318,8 @@ class Connection {
     if (closed > 0) return;
 
 #if constant(thread_create)
-    Thread.MutexKey fc_lock = finished_calls_cond_mutex->lock();
-    Thread.MutexKey wb_lock = write_buffer_cond_mutex->lock();
+    void|Thread.MutexKey fc_lock = finished_calls_cond_mutex->lock();
+    void|Thread.MutexKey wb_lock = write_buffer_cond_mutex->lock();
     closed=1;
     write_buffer_cond->broadcast();
     finished_calls_cond->broadcast();
@@ -382,7 +382,7 @@ class Connection {
   void send(string s)
   {
 #if constant(thread_create)
-    Thread.MutexKey lock = write_buffer_cond_mutex->lock();
+    void|Thread.MutexKey lock = write_buffer_cond_mutex->lock();
     write_buffer += s;
     write_buffer_cond->signal();
     lock = 0;
@@ -403,7 +403,7 @@ class Connection {
   void provide_result(int refno, mixed result)
   {
 #if constant(thread_create)
-    Thread.MutexKey lock = finished_calls_cond_mutex->lock();
+    void|Thread.MutexKey lock = finished_calls_cond_mutex->lock();
     finished_calls[ refno ] = result;
     finished_calls_cond->broadcast();
     lock = 0;
@@ -582,7 +582,7 @@ class Connection {
   {
     DEBUGMSG("write_thread\n");
     while( write_some() ) {
-      Thread.MutexKey lock = write_buffer_cond_mutex->lock();
+      void|Thread.MutexKey lock = write_buffer_cond_mutex->lock();
       if(!(sizeof(write_buffer) || closed)) {
 	if (want_close) try_close();
 	write_buffer_cond->wait(lock);
@@ -648,7 +648,7 @@ class Connection {
     mixed err = catch
     {
 #if constant(thread_create)
-      object lock = finished_calls_cond_mutex->lock();
+      void|object lock = finished_calls_cond_mutex->lock();
 #endif
       send(sprintf("%4c%s", sizeof(s), s)); // Locks write_buffer_cond_mutex.
 #if constant(thread_create)
