@@ -550,7 +550,7 @@ class conxion {
     return !waitforreal && bufcon(this)->start();
   }
 
-  private void done_cb() {
+  private void done_cb(object obj, int reason) {
     if (!i->fillread)
       close();
   }
