@@ -133,7 +133,7 @@ final void sendackcb(function(mixed ...:void) fn, mixed arg) {
 
 // Exchanges protocol support information with the client
 private void exchangeoptions(Client client, function(mixed ...:void) ackcb,
- string namespace, string event, mixed coptions) {
+ string namespace, string event, mixed coptions, mixed ... rest) {
   mapping(string:mixed) ret;
   if (mappingp(coptions)) {
     int i;
@@ -511,7 +511,7 @@ class Client {
   }
 
   private void flushsendq() {
-    Thread.MutexKey lock = flushone.trylock(2);
+    void|Thread.MutexKey lock = flushone.trylock(2);
     if (lock) {		      // There can be only one queue-flusher
       remove_call_out(flushsendq);
       {
@@ -760,7 +760,7 @@ outer:    foreach (qsslots; slot; partqueue sendq)  // Lower slots first
   }
 
   protected string _sprintf(int type, void|mapping flags) {
-    string res=UNDEFINED;
+    void|string res=UNDEFINED;
     switch (type) {
       case 'O':
         res = sprintf(DRIVERNAME"(%s.%d,%d)",

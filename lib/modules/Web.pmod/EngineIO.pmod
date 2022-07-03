@@ -902,7 +902,7 @@ class Socket {
   }
 
   protected string _sprintf(int type, void|mapping flags) {
-    string res=UNDEFINED;
+    void|string res=UNDEFINED;
     switch (type) {
       case 'O':
         res = sprintf(DRIVERNAME"(%s.%d,%s,%d,%d,%d)",

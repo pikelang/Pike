@@ -1017,7 +1017,7 @@ class Request(function(array(string), Request:void) cb) {
     //! argument.
     //!
     //! The returned connection object is in state @[Connection.OPEN].
-    Connection websocket_accept(string protocol, void|array(extension_factory) extensions,
+    Connection websocket_accept(void|string protocol, void|array(extension_factory) extensions,
                                 void|mapping extra_headers) {
         [mapping heads, array _extensions] =
 	    low_websocket_accept(protocol, extensions, extra_headers);
