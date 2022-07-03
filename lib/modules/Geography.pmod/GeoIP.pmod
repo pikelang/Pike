@@ -31,7 +31,7 @@ void parse_77(string line, object tree) {
 class IP {
     object tree;
 
-    void parse(string file_name, function(string,object:array) parse_line) {
+    void parse(string file_name, function(string,object:void) parse_line) {
 	Stdio.FILE f = Stdio.FILE(file_name, "r");
 
 	while (string line = f->gets()) {
