@@ -371,7 +371,7 @@ class bufcon {
   }
 
   final void sendcmd(int mode, void|Result portal) {
-    Thread.MutexKey lock = shortmux->lock();
+    void|Thread.MutexKey lock = shortmux->lock();
     if (portal)
       realbuffer->stashqueue->write(portal);
     if (mode == SYNCSEND) {
@@ -451,7 +451,7 @@ class conxiin {
       [..255]
 #endif
      );
-    Thread.MutexKey lock = fillreadmux->lock();
+    void|Thread.MutexKey lock = fillreadmux->lock();
     if (procmsg && id)
       procmsg = 0, lock = 0, Thread.Thread(id);
     else if (fillread)
@@ -477,7 +477,7 @@ class conxion {
   inherit Stdio.Buffer:o;
   final conxiin i;
 
-  private Thread.Queue qportals;
+  private zero|Thread.Queue qportals;
   final MUTEX shortmux;
   private int closenext;
 
@@ -779,7 +779,7 @@ outer:
     return res;
   }
 
-  protected void create(proxy pgsqlsess, Thread.Queue _qportals, int nossl) {
+  protected void create(proxy pgsqlsess, zero|Thread.Queue _qportals, int nossl) {
     o::create();
     qportals = _qportals;
     synctransact = 1;
@@ -955,7 +955,7 @@ class Result {
       if (!datarowtypes)
         waitfordescribe();
       {
-        Thread.MutexKey lock = closemux->lock();
+        void|Thread.MutexKey lock = closemux->lock();
         if (_fetchlimit) {
           array(Thread.MutexKey) reflock = ({ _fetchlimit = 0 });
           for (;;) {
@@ -1274,7 +1274,7 @@ class Result {
       SUSERERROR("Invalid number of bindings, expected %d, got %d\n",
                  sizeof(dtoid), sizeof(paramValues));
     PD("PrepareBind\n");
-    Thread.MutexKey lock = _ddescribemux->lock();
+    void|Thread.MutexKey lock = _ddescribemux->lock();
     if (!_portalname) {
       _portalname
        = (_unnamedportalkey = pgsqlsess.unnamedportalmux->trylock(1))
@@ -1591,7 +1591,7 @@ class Result {
 
   final void _parseportal() {
     for (;;) {
-      Thread.MutexKey lock = closemux->lock();
+      void|Thread.MutexKey lock = closemux->lock();
       if ((syncparse || syncparse < 0 && pgsqlsess->wasparallelisable)
          && !pgsqlsess->statementsinflight->drained()) {
         lock = 0;				// Unlock while we wait
@@ -2224,7 +2224,7 @@ class proxy {
         showportalstack("LOOPTOP");
 #endif
         if (!sizeof(cr)) {			// Preliminary check, fast path
-          Thread.MutexKey lock = cr->fillreadmux->lock();
+          void|Thread.MutexKey lock = cr->fillreadmux->lock();
           if (!sizeof(cr)) {			// Check for real
             if (!cr->fillread) {
               lock = 0;
