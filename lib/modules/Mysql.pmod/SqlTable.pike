@@ -911,7 +911,7 @@ void conn_delete (Sql.Sql db_conn, string|array where, void|string|array rest)
   UPDATE_MSG ("%O: delete WHERE (%O)%s\n", this, where,
 	      rest ? sprintf (" %O", rest) : "");
 
-  mapping(string|int:mixed) bindings = ([]);
+  void|mapping(string|int:mixed) bindings = ([]);
   if (arrayp (where)) where = handle_argspec (where, bindings);
   if (arrayp (rest)) rest = handle_argspec (rest, bindings);
   if (!sizeof (bindings)) bindings = 0;
@@ -954,7 +954,7 @@ Result conn_select (Sql.Sql db_conn, string|array where,
 //! Like @[select], but a database connection object is passed
 //! explicitly instead of being retrieved via @[get_db].
 {
-  mapping(string:mixed) bindings = ([]);
+  void|mapping(string:mixed) bindings = ([]);
   if (arrayp (where)) where = handle_argspec (where, bindings);
   if (arrayp (select_exprs))
     select_exprs = handle_argspec (select_exprs, bindings);
@@ -980,7 +980,7 @@ array conn_select1 (Sql.Sql db_conn, string|array select_expr,
 //! Like @[select1], but a database connection object is passed
 //! explicitly instead of being retrieved via @[get_db].
 {
-  mapping(string:mixed) bindings = ([]);
+  void|mapping(string:mixed) bindings = ([]);
   if (arrayp (select_expr))
     select_expr = handle_argspec (select_expr, bindings);
   if (arrayp (where)) where = handle_argspec (where, bindings);
@@ -1034,7 +1034,7 @@ array conn_select1 (Sql.Sql db_conn, string|array select_expr,
 }
 
 mapping(string:mixed) conn_get (Sql.Sql db_conn, mixed id,
-				void|array(string) fields)
+				void|array(string|zero) fields)
 //! Like @[get], but a database connection object is passed explicitly
 //! instead of being retrieved via @[get_db].
 {
@@ -1193,7 +1193,7 @@ class Result
   array(mapping(string:mixed)) column_info() {return res->fetch_fields();}
   //! Returns information about the columns in the result.
 
-  mapping(string:mixed) fetch()
+  mapping(string:mixed)|zero fetch()
   //! Fetches the next record from the result and advance the cursor.
   //! Returns zero if there are no more records.
   //!
@@ -1212,7 +1212,7 @@ class Result
     array(string) ent = res->fetch_row();
     if (!ent) return cur_rec = 0;
 
-    mapping(string:mixed) rec;
+    mapping(string|zero:mixed) rec;
 
     if (add_select_expr_names) {
       // Fetch the names of the user supplied select expressions from
@@ -1254,7 +1254,7 @@ class Result
     return res;
   }
 
-  string prepare_select_expr (array(string) fields, string select_exprs,
+  string prepare_select_expr (array(string|zero)|zero fields, string|zero select_exprs,
 			      int with_table_qualifiers)
   // Internal function to initialize all the variables from an
   // optional array of requested fields.
@@ -1413,7 +1413,7 @@ protected string format_rec_compact (mapping(string:mixed) rec)
   return "([\n" + rows * "" + "])";
 }
 
-protected mapping(string:mixed) decode_props (string prop_val, string where)
+protected mapping(string:mixed) decode_props (string prop_val, string|zero where)
 {
   if (prop_val != 0 && prop_val != "") {
     mixed decoded;
@@ -1677,7 +1677,7 @@ protected string make_multi_pk_where (array(mixed) ids, int|void negated)
   }
 }
 
-protected string get_and_merge_props (Sql.mysql conn, string pk_where,
+protected string get_and_merge_props (void|Sql.mysql conn, void|string pk_where,
 				      mapping(string:mixed) prop_changes)
 // Retrieves the current properties for a record (if pk_where is set),
 // merges prop_changes into them, and returns the new value to assign
