@@ -924,9 +924,6 @@ class vec
     protected this_program `-( this_program x ) {
 	return this_program(v-ARG(x));
     }
-    protected this_program `/( this_program x ) {
-	return this_program(v/ARG(x));
-    }
 
     float dot( vec x )
     {
