@@ -4,7 +4,7 @@
 inherit _Gz;
 
 string(8bit)|zero
- check_header(Stdio.Stream f, Stdio.Buffer|string(8bit)|void buf) {
+ check_header(Stdio.Stream|void f, Stdio.Buffer|string(8bit)|void buf) {
   int flags, len;
 
   buf = Stdio.Buffer(buf);
