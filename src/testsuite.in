@@ -866,7 +866,7 @@ test_equal([[ typeof(sprintf("%c\n",  Stdio)); ]],
 test_equal([[ typeof(sprintf("%4[1]c", 17)); ]],
 	   [[ typeof([string(8bit)](mixed)"") ]]);
 test_equal([[ typeof(sprintf("%[1]n", 17)); ]],
-	   [[ typeof([string(zero)](mixed)"") ]]);
+	   [[ typeof("") ]]);
 
 test_equal([[ typeof(aggregate("foo"));]],
 	   [[ typeof([array(string(3: 102..111))](mixed)({})) ]]);
@@ -11619,8 +11619,12 @@ test_equal(1700000000000000000000+class{protected mixed ``+(mixed n){return (<n>
 test_eval_error(Gmp.mpz(1700000000000000000000)+class{protected mixed ``+(mixed n){return (<n>);}}())
 
 test_do([[
-   class A (int x) { protected mixed `+(mixed y) { return this_program(x + (objectp(y)?y->x:y)); } };
-   add_constant("A",A);
+  class A (int x) {
+    protected this_program `+(mixed y) {
+      return this_program(x + (objectp(y)?y->x:y));
+    }
+  };
+  add_constant("A",A);
 ]])
 test_eq(`+(A(3),A(2))->x, 5)
 test_eq(`+(A(3),2)->x, 5)
@@ -11632,8 +11636,12 @@ test_eval_error([[
 test_do(add_constant("A"));
 
 test_do([[
-   class A (int x) { protected mixed ``+(mixed y) { return this_program(x + (objectp(y)?y->x:y)); } };
-   add_constant("A",A);
+  class A (int x) {
+    protected this_program ``+(mixed y) {
+      return this_program(x + (objectp(y)?y->x:y));
+    }
+  };
+  add_constant("A",A);
 ]])
 test_eq(`+(A(3),A(2))->x, 5)
 test_eq(`+(3,A(2))->x, 5)
@@ -11646,9 +11654,9 @@ test_eq(`+(1,2.0,3), 6.0)
 
 test_do([[
   class A {
-    protected mixed `+(string s) { return "`+"+s; }
-    protected mixed ``+(string s) { return s+"``+"; }
-    protected mixed `+=(string s) { return "`+="+s; }
+    protected string `+(mixed s) { return "`+"+s; }
+    protected string ``+(mixed s) { return s+"``+"; }
+    protected string `+=(mixed s) { return "`+="+s; }
   };
   add_constant("A",A);
 ]])
@@ -11728,8 +11736,12 @@ test_eq(`-(5,A(2),A(1))->x, 2)
 test_do(add_constant("A"));
 
 test_do([[
-   class A (int x) { protected mixed `-(mixed y) { return this_program(-x); } };
-   add_constant("A",A);
+  class A (int x) {
+    protected this_program `-(mixed|void y) {
+      return this_program(-x);
+    }
+  };
+  add_constant("A",A);
 ]])
 test_eq(`-(A(5))->x, -5)
 test_eval_error([[
