@@ -6094,7 +6094,7 @@ multiset & mapping -> mapping
 				   tOr3(tArray, tInt, tFloat),
 				   tArr(tArr(tVar(0)))),
 			     tFunc(tNStr(tSetvar(0, tInt))
-				   tOr3(tNStr(tVar(0)), tInt, tFloat),
+				   tOr3(tStr, tInt, tFloat),
 				   tArr(tNStr(tVar(0)))))),
 	    OPT_TRY_OPTIMIZE,0,generate_divide);
 
