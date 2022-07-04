@@ -11758,8 +11758,12 @@ test_eq(`-(Gmp.mpz(1), 4.5), Gmp.mpz(-3))
 // - `/
 
 test_do([[
-   class A (int x) { protected mixed `/(mixed y) { return this_program(x / (objectp(y)?y->x:y)); } };
-   add_constant("A",A);
+  class A (int x) {
+    protected this_program `/(mixed y) {
+      return this_program(x / (objectp(y)?y->x:y));
+    }
+  };
+  add_constant("A",A);
 ]])
 test_eq(`/(A(8),A(2))->x, 4)
 test_eq(`/(A(8),2)->x, 4)
@@ -11772,8 +11776,12 @@ test_eval_error([[
 test_do(add_constant("A"));
 
 test_do([[
-   class A (int x) { protected mixed ``/(mixed y) { return this_program((objectp(y)?y->x:y) / x); } };
-   add_constant("A",A);
+  class A (int x) {
+    protected this_program ``/(mixed y) {
+      return this_program((objectp(y)?y->x:y) / x);
+    }
+  };
+  add_constant("A",A);
 ]])
 test_eq(`/(A(8),A(2))->x, 4)
 test_eq(`/(8,A(2))->x, 4)

@@ -6077,22 +6077,25 @@ multiset & mapping -> mapping
 	    "function(array(0=mixed),array|int|float...:array(array(0)))|"
 	    "function(string,string|int|float...:array(string)) */
   ADD_EFUN2("`/", f_divide,
-	    tOr5(tOr(tFuncArg(tSetvar(1,tObj), tFindLFun(tVar(1), "`/")),
-		     tFuncArg(tNot(tObj),
-			      tIfnot(tFuncV(tNone,tNot(tObj),tMix),
-				     tFuncV(tNone,tMix,tMix)))),
-		 tOr4(tFuncV(tIntPos,tIntPos,tIntPos),
-		      tFuncV(tIntNeg,tIntNeg,tIntPos),
-		      tFuncV(tIntPos,tIntNeg,tIntNeg),
-		      tFuncV(tIntNeg,tIntPos,tIntNeg)),
-		 tIfnot(tFuncV(tNone, tNot(tFlt), tMix),
-			tFuncV(tOr(tFlt,tInt),tOr(tFlt,tInt),tFlt)),
-		 tFuncV(tArr(tSetvar(0,tMix)),
-			tOr3(tArray,tInt,tFlt),
-			tArr(tArr(tVar(0)))),
-		 tFuncV(tNStr(tSetvar(2, tInt)),
-			tOr3(tStr, tInt, tFlt),
-			tArr(tNStr(tVar(2))))),
+	    tTransitive(tUnknown,
+			tOr6(tFuncArg(tSetvar(1, tObj),
+				      tFindLFun(tVar(1), "`/")),
+			     tFuncArg(tSetvar(1, tMix),
+				      tFuncArg(tSetvar(2, tObj),
+					       tApply(tFindLFun(tVar(2), "``/"),
+						      tVar(1)))),
+			     tOr4(tFunc(tIntPos tIntPos, tIntPos),
+				  tFunc(tIntNeg tIntNeg, tIntPos),
+				  tFunc(tIntPos tIntNeg, tIntNeg),
+				  tFunc(tIntNeg tIntPos, tIntNeg)),
+			     tOr(tFunc(tFloat tOr(tFloat, tInt), tFloat),
+				 tFunc(tInt tFloat, tFloat)),
+			     tFunc(tArr(tSetvar(0, tMix))
+				   tOr3(tArray, tInt, tFloat),
+				   tArr(tArr(tVar(0)))),
+			     tFunc(tNStr(tSetvar(0, tInt))
+				   tOr3(tNStr(tVar(0)), tInt, tFloat),
+				   tArr(tNStr(tVar(0)))))),
 	    OPT_TRY_OPTIMIZE,0,generate_divide);
 
   /* function(mixed,object:mixed)|"
