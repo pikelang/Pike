@@ -160,6 +160,7 @@ enum PIKE_TYPE {
     PIKE_T_FIND_LFUN = 0x0180,	/* Look up an lfun in an object type. */
     PIKE_T_GET_RETURN = 0x0280,	/* Get the return type for a function. */
 
+    PIKE_T_APPLY = 0x8180,	/* Apply a function with a single argument. */
     PIKE_T_SET_CAR = 0x8280,	/* Set the CAR of the CAR type to CDR. */
     PIKE_T_SET_CDR = 0x8380,	/* Set the CDR of the CAR type to CDR. */
 
@@ -428,6 +429,7 @@ struct svalue
 #define tUtf8Str		tAttr("utf8", tStr8)
 
 #define tGetReturn(X)		"\200\002" X
+#define tApply(FUN, ARG)	"\200\201" FUN ARG
 #define tFindLFun(X, LFUN)	"\200\001" X LFUN "\0"
 #define tSetCar(X, Y)		"\200\202" X Y
 #define tSetCdr(X, Y)		"\200\203" X Y

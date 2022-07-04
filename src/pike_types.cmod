@@ -306,6 +306,7 @@ static void internal_parse_type(const char **s);
  * GET_RETURN	fun type	-			Added in 8.1
  * SET_CAR	type		type			Added in 8.1
  * SET_CDR	type		type			Added in 8.1
+ * APPLY	fun type	arg type		Added in 8.1
  *
  * Note that the cdr of a FUNCTION is a valid FUNCTION for the rest of
  * the arguments.
@@ -13884,6 +13885,14 @@ struct pike_type *apply_type_operator(enum PIKE_TYPE op,
   switch(op) {
   case PIKE_T_GET_RETURN:
     res = new_get_return_type(arg1, 0);
+    break;
+  case PIKE_T_APPLY:
+    {
+      struct call_state cs;
+      INIT_CALL_STATE(cs);
+      res = low_new_check_call(arg1, arg2, 0, &cs, NULL);
+      FREE_CALL_STATE(cs);
+    }
     break;
   case PIKE_T_FIND_LFUN:
     res = find_lfun_type(arg1, (ptrdiff_t)(void*)arg2);
