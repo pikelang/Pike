@@ -272,7 +272,7 @@ class BufferSocket {
     }
   }
 
-  void read_callback(mixed id, Stdio.Buffer in)
+  void read_callback(mixed id, Stdio.Buffer|string in)
   {
     got_callback();
     DEBUG_WERR("read_callback[%O]: Got %O\n", o->query_fd(), in);
