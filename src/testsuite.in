@@ -4105,10 +4105,10 @@ array(int) a()
 
 
 
-test_true([[Program.implements( class { int x; string y; void foo(int x) {} },
+test_true([[Program.implements( class { int x; string y = ""; void foo(int x) {} },
 	class { void foo(mixed z) {} int x; })]])
-test_false([[Program.implements( class { int x; string y; void foo(int x) {} },
-	class { void foo(mixed z) {} string x; })]])
+test_false([[Program.implements( class { int x; string y = ""; void foo(int x) {} },
+	class { void foo(mixed z) {} string x = ""; })]])
 
 test_eq([[object_program(master())]],[[(program)"/master"]])
 test_compile([[object("master") m = master();]])

@@ -1878,7 +1878,8 @@ new_name: TOK_IDENTIFIER
     type = Pike_compiler->compiler_frame->current_type;
     push_finished_type(type);
     if ((Pike_compiler->compiler_pass == COMPILER_PASS_LAST) &&
-	(!type || (type->type != PIKE_T_AUTO))) {
+	(!type || ((type->type != PIKE_T_AUTO) && (type->type != T_FLOAT)))) {
+      /* NB: Global variables of type float are initialized to 0.0. */
       if (!pike_types_le(zero_type_string, type, 0, 0)) {
 	if (!TEST_COMPAT(8,0) &&
 	    (THIS_COMPILATION->lex.pragmas & ID_STRICT_TYPES)) {
