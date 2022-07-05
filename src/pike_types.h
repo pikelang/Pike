@@ -132,6 +132,9 @@ enum pt_cmp_flags
     PT_FLAG_CMP_VOID_IS_ZERO =		0x0400,	/* Expression context */
     PT_FLAG_CMP_INSEPARABLE =		0x0800,	/* Type may not be split */
     PT_FLAG_CMP_IGNORE_EXTRA_ARGS =	0x1000,	/* Ignore extra args */
+    PT_FLAG_CMP_INEXACT_FUN =		0x2000,	/* Use variant fun check. */
+    PT_FLAG_CMP_INEXACT_ARG =		0x4000,	/* Use variant arg check. */
+    PT_FLAG_CMP_NO_SUBTYPES =		0x8000,	/* Assume subtypes equal. */
   };
 
 /*

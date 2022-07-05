@@ -5627,6 +5627,14 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	return a;
       }
 
+      if ((aflags|bflags) & PT_FLAG_CMP_INEXACT_FUN) {
+	avoidable |= PT_FLAG_CMP_INEXACT_ARG;
+	bvoidable |= PT_FLAG_CMP_INEXACT_ARG;
+
+	aret = mixed_type_string;
+	bret = mixed_type_string;
+      }
+
       type_stack_mark();
 
       switch(op) {
@@ -6245,10 +6253,16 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
       push_type(T_NOT);
       break;
     }
+
     return pop_unfinished_type();
   }
 
   /* Invariant: a->type == b->type. */
+
+  if ((aflags|bflags) & PT_FLAG_CMP_NO_SUBTYPES) {
+    /* No need to look at the subtypes or ranges. */
+    goto done;
+  }
 
   switch(a->type) {
   case T_NOT:
@@ -6456,32 +6470,41 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
   case T_ARRAY:
   case T_MAPPING:
   case T_STRING:
-    /* FIXME: Handle PT_FLAG_CMP_INSEPARABLE. */
-    /* FIXME: The recursive op should probably be inverted. */
-    tmp = low_type_binop(op, a->car, b->car, remap,
-			 0, 0, remap_flags);
-    if (!tmp && (op == PT_BINOP_AND) && a->car && b->car) return NULL;
-    if ((a->type == T_STRING) || (op == PT_BINOP_AND)) {
-      tmp2 = low_type_binop(op, a->cdr, b->cdr, remap,
-			    PT_FLAG_CMP_VOID_IS_ZERO,
-			    PT_FLAG_CMP_VOID_IS_ZERO,
-			    remap_flags);
-    } else {
-      /* Mappings may always result in UNDEFINED on indexing.
-       * Arrays are typically initialized to all zeroes.
-       * Any void values have been up-converted to zeroes.
-       */
-      tmp2 = low_type_binop(op, a->cdr, b->cdr, remap,
-			    PT_FLAG_CMP_NULLABLE|PT_FLAG_CMP_VOID_IS_ZERO,
-			    PT_FLAG_CMP_NULLABLE|PT_FLAG_CMP_VOID_IS_ZERO,
-			    remap_flags);
-    }
-    if (!tmp2 && (op == PT_BINOP_MINUS || (a->cdr && b->cdr))) {
-      if (op == PT_BINOP_AND) {
-	free_type(tmp);
+    {
+      enum pt_cmp_flags subflags = 0;
+
+      if ((aflags|bflags) & PT_FLAG_CMP_INEXACT_ARG) {
+	subflags = PT_FLAG_CMP_NO_SUBTYPES;
+      }
+
+      /* FIXME: Handle PT_FLAG_CMP_INSEPARABLE. */
+      /* FIXME: The recursive op should probably be inverted. */
+      tmp = low_type_binop(op, a->car, b->car, remap,
+			   subflags, subflags, remap_flags);
+      if (!tmp && (op == PT_BINOP_AND) && a->car && b->car) {
 	return NULL;
-      } else if (!tmp) {
-	return NULL;
+      }
+
+      subflags |= PT_FLAG_CMP_VOID_IS_ZERO;
+
+      if ((a->type != T_STRING) && (op != PT_BINOP_AND)) {
+	/* Mappings may always result in UNDEFINED on indexing.
+	 * Arrays are typically initialized to all zeroes.
+	 * Any void values have been up-converted to zeroes.
+	 */
+	subflags |= PT_FLAG_CMP_NULLABLE;
+      }
+
+      tmp2 = low_type_binop(op, a->cdr, b->cdr, remap,
+			    subflags, subflags, remap_flags);
+
+      if (!tmp2 && (op == PT_BINOP_MINUS || (a->cdr && b->cdr))) {
+	if (op == PT_BINOP_AND) {
+	  free_type(tmp);
+	  return NULL;
+	} else if (!tmp) {
+	  return NULL;
+	}
       }
     }
     type_stack_mark();
@@ -6519,16 +6542,27 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
   case T_MULTISET:
   case T_PROGRAM:
   case T_TYPE:
-    /* FIXME: Handle PT_FLAG_CMP_INSEPARABLE. */
-    tmp = low_type_binop(op, a->car, b->car, remap,
-			 0, 0, remap_flags);
-    if (!tmp && ((op != PT_BINOP_AND) || (a->car && b->car))) {
-      return NULL;
+    {
+      enum pt_cmp_flags subflags = 0;
+
+      if ((a->type == T_MULTISET) &&
+	  ((aflags|bflags) & PT_FLAG_CMP_INEXACT_ARG)) {
+	subflags = PT_FLAG_CMP_NO_SUBTYPES;
+      }
+
+      /* FIXME: Handle PT_FLAG_CMP_INSEPARABLE. */
+      tmp = low_type_binop(op, a->car, b->car, remap,
+			   subflags, subflags, remap_flags);
+      if (!tmp && ((op != PT_BINOP_AND) || (a->car && b->car))) {
+	return NULL;
+      }
     }
+
     type_stack_mark();
     push_finished_type(tmp);
     push_type(a->type);
     free_type(tmp);
+
     return pop_unfinished_type();
 
   case T_OBJECT:
@@ -6619,6 +6653,7 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
     return pop_unfinished_type();
   }
 
+ done:
   /* Leaf type. Most likely not reached. */
   if (op & PT_BINOP_AND) {
     add_ref(a);
@@ -10289,7 +10324,9 @@ int check_variant_overload(struct pike_type *a, struct pike_type *b)
    * b - a will then result in Ø, even though b actually can handle
    * some cases that a can't.
    */
-  struct pike_type *diff = type_binop(PT_BINOP_MINUS, a, b, 0, 0, 0);
+  struct pike_type *diff =
+    type_binop(PT_BINOP_MINUS, a, b,
+	       PT_FLAG_CMP_INEXACT_FUN, PT_FLAG_CMP_INEXACT_FUN, 0);
   if (diff) {
     free_type(diff);
     return 1;
@@ -11552,6 +11589,8 @@ static int match_type_svalue(struct pike_type *type,
  * Returns NULL on failure.
  *
  * Returns continuation function type on success.
+ *
+ * Used by the variant dispatcher.
  */
 struct pike_type *check_call_svalue(struct pike_type *fun_type,
 				    INT32 flags,
