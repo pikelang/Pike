@@ -81,7 +81,7 @@ test_hilfe("class { int i=4; }()->i;", "4")
 test_hilfe("indices((<1,2>));","({ /""* 2 elements *""/\n    1,\n    2\n})")
 test_hilfe("void nop(mixed m){};", "")
 test_hilfe("nop(({}));",
-  "Compiler Warning: 1: Returning a void expression. Converted to zero.\n"
+  "Compiler Warning: 1: Returning or yielding a void expression. Converted to zero.\n"
   "0")
 test_hilfe("int a;", "")
 test_hilfe("a++;", "0")
@@ -115,7 +115,7 @@ test_hilfe("int i;", "")
 test_hilfe("i;", "0")
 test_hilfe("void foo() { i++; }", "")
 test_hilfe("foo();",
-  "Compiler Warning: 1: Returning a void expression. Converted to zero.\n"
+  "Compiler Warning: 1: Returning or yielding a void expression. Converted to zero.\n"
   "0")
 test_hilfe("i;", "1")
 test_hilfe("i*2;", "2")
@@ -140,7 +140,7 @@ test_hilfe("i;", "1")
 test_hilfe("mixed x=\"bar\";", "")
 test_hilfe("void foo(mixed x){ x?werror(\"\"):werror(\"\");};","")
 test_hilfe("foo(1);",
-  "Compiler Warning: 1: Returning a void expression. Converted to zero.\n"
+  "Compiler Warning: 1: Returning or yielding a void expression. Converted to zero.\n"
   "0")
 
 test_hilfe("array a = ({1});", "")
