@@ -11015,7 +11015,7 @@ static int low_check_indexing(struct pike_type *type,
      *    for indexing operations that would always fail.
      */
     if (type->car) {
-      return = match_types(type->car, index_type) ? 1 : -1;
+      return match_types(type->car, index_type) ? 1 : -1;
     } else {
       /* NB: Lots of ancient code uses ([])[0] to generate UNDEFINED. */
       return 1;
