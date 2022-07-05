@@ -14203,7 +14203,7 @@ test_equal(version(), "Pike v"+__REAL_MAJOR__+"."+__REAL_MINOR__+" release "+__R
 
 // - zero_type
 test_eq(zero_type(0),0)
-test_eq(zero_type(([])[7]),1)
+test_eq(lambda(mapping (int:mixed) m) {return zero_type(m[7]);} (([])),1)
 test_eq(zero_type(([7: 0])[7]),0)
 test_eq(zero_type(([7: UNDEFINED])[7]),0)
 test_eq(zero_type(UNDEFINED), 1)
