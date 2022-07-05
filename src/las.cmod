@@ -4238,16 +4238,13 @@ void fix_type_field(node *n)
     if (!CAR(n) || (CAR(n)->type == void_type_string)) {
       if (!CAR(n)) {
 	_CAR(n) = mkintnode(0);
-	copy_pike_type(n->type, CAR(n)->type);
       } else {
 	_CAR(n) = mknode(F_COMMA_EXPR, CAR(n), mkintnode(0));
-	copy_pike_type(n->type, CDAR(n)->type);
       }
       if (!Pike_compiler->compiler_frame ||
 	  Pike_compiler->compiler_frame->current_return_type !=
 	  void_type_string) {
-	yywarning("Returning a void expression. Converted to zero.");
-	break;
+	yywarning("Returning or yielding a void expression. Converted to zero.");
       }
     }
     else if(Pike_compiler->compiler_frame &&
