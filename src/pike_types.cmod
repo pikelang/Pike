@@ -5715,7 +5715,7 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	  push_finished_type(tmp);
 	  free_type(tmp);
 
-	  if (avoidable && bvoidable) {
+	  if (avoidable & bvoidable & PT_FLAG_CMP_VOIDABLE) {
 	    /* Time to check the return types. */
 
 	    if (!aret) aret = ai->cdr;
@@ -5863,7 +5863,7 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	  }
 	}
 
-	if (avoidable && bvoidable) {
+	if (avoidable & bvoidable & PT_FLAG_CMP_VOIDABLE) {
 	  /* Both a & b are T_MANY. Check the return type. */
 	  if (!aret) aret = ai->cdr;
 	  if (!bret) bret = bi->cdr;
