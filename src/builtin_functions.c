@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.685 2008/08/22 15:33:50 grubba Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -3507,7 +3507,7 @@ PMOD_EXPORT void f_reverse(INT32 args)
 	for(e=0;e<start;e++)
 	  STR0(s)[e]=STR0(orig)[e];
 	for(;e<end;e++)
-	  STR0(s)[e]=STR0(orig)[end-1-e-start];
+	  STR0(s)[e]=STR0(orig)[end-1-e+start];
 	for(;e<orig->len;e++)
 	  STR0(s)[e]=STR0(orig)[e];
 	break;
@@ -3516,7 +3516,7 @@ PMOD_EXPORT void f_reverse(INT32 args)
 	for(e=0;e<start;e++)
 	  STR1(s)[e]=STR1(orig)[e];
 	for(;e<end;e++)
-	  STR1(s)[e]=STR1(orig)[end-1-e-start];
+	  STR1(s)[e]=STR1(orig)[end-1-e+start];
 	for(;e<orig->len;e++)
 	  STR1(s)[e]=STR1(orig)[e];
 	break;
@@ -3525,7 +3525,7 @@ PMOD_EXPORT void f_reverse(INT32 args)
 	for(e=0;e<start;e++)
 	  STR2(s)[e]=STR2(orig)[e];
 	for(;e<end;e++)
-	  STR2(s)[e]=STR2(orig)[end-1-e-start];
+	  STR2(s)[e]=STR2(orig)[end-1-e+start];
 	for(;e<orig->len;e++)
 	  STR2(s)[e]=STR2(orig)[e];
 	break;
@@ -3538,7 +3538,7 @@ PMOD_EXPORT void f_reverse(INT32 args)
 	for(e=0;e<start;e++)
 	  STR0(s)[e]=STR0(orig)[e];
 	for(;e<end;e++)
-	  STR0(s)[e]=STR0(orig)[end-1-e-start];
+	  STR0(s)[e]=STR0(orig)[end-1-e+start];
 	for(;e<orig->len;e++)
 	  STR0(s)[e]=STR0(orig)[e];
 	break;
@@ -3547,7 +3547,7 @@ PMOD_EXPORT void f_reverse(INT32 args)
 	for(e=0;e<start;e++)
 	  STR1(s)[e]=STR1(orig)[e];
 	for(;e<end;e++)
-	  STR1(s)[e]=STR1(orig)[end-1-e-start];
+	  STR1(s)[e]=STR1(orig)[end-1-e+start];
 	for(;e<orig->len;e++)
 	  STR1(s)[e]=STR1(orig)[e];
 	break;
@@ -3556,7 +3556,7 @@ PMOD_EXPORT void f_reverse(INT32 args)
 	for(e=0;e<start;e++)
 	  STR2(s)[e]=STR2(orig)[e];
 	for(;e<end;e++)
-	  STR2(s)[e]=STR2(orig)[end-1-e-start];
+	  STR2(s)[e]=STR2(orig)[end-1-e+start];
 	for(;e<orig->len;e++)
 	  STR2(s)[e]=STR2(orig)[e];
 	break;
