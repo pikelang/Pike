@@ -13149,6 +13149,7 @@ test_eval_error([[
 
 // - reverse
 test_eq(reverse("reverse"),"esrever")
+test_eq(reverse("foobar", 2, 4), "foabor")
 test_eq(reverse("r\777v\777rs\777"),"\777sr\777v\777r")
 test_eq(reverse("r\7777777v\7777777rs\7777777"),"\7777777sr\7777777v\7777777r")
 test_eq(reverse(""),"")
