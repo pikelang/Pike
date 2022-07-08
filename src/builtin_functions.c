@@ -3104,21 +3104,19 @@ static void f___low_check_call(INT32 args)
       if (!Pike_sp[3-args].u.integer) break;
       /* FALLTHRU */
     default:
-      Pike_error("Bad argument 3 to __low_check_call() expected mapping.\n");
+      Pike_error("Bad argument 4 to __low_check_call() expected mapping.\n");
     }
   }
   if (args > 4) sval = Pike_sp + 4 - args;
+
   LOW_INIT_CALL_STATE(cs, 1, state);
-  if (!(res = low_new_check_call(Pike_sp[-args].u.type,
-				 Pike_sp[1-args].u.type,
-				 flags, &cs, sval))) {
-    pop_n_elems(args);
-    push_undefined();
-  } else {
-    pop_n_elems(args);
-    push_type_value(res);
-  }
+  res = low_new_check_call(Pike_sp[-args].u.type,
+			   Pike_sp[1-args].u.type,
+			   flags, &cs, sval);
   FREE_CALL_STATE(cs);
+
+  pop_n_elems(args);
+  push_type_value(res);
 }
 
 /*! @decl type|zero get_return_type(type fun_type)
@@ -10551,7 +10549,8 @@ void init_builtin_efuns(void)
 	   OPT_TRY_OPTIMIZE);
 
   ADD_EFUN("__low_check_call", f___low_check_call,
-	   tFunc(tType(tCallable) tType(tMix) tOr(tInt,tVoid) tOr(tMix,tVoid),
+	   tFunc(tType(tCallable) tType(tMix) tOr(tInt, tVoid)
+		 tOr(tMapping, tVoid) tOr(tMix, tVoid),
 		 tOr(tType(tCallable), tZero)),
 	   OPT_TRY_OPTIMIZE);
 
