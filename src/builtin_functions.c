@@ -3042,6 +3042,10 @@ static void f___soft_cast(INT32 args)
 
 /*! @decl type|zero low_check_call(type fun_type, type arg_type)
  *! @decl type|zero low_check_call(type fun_type, type arg_type, int flags)
+ *! @decl type|zero low_check_call(type fun_type, type arg_type, int flags, @
+ *!                                mapping state)
+ *! @decl type|zero low_check_call(type fun_type, type arg_type, int flags, @
+ *!                                mapping state, mixed val)
  *!
  *!   Check whether a function of type @[fun_type] may be called
  *!   with a first argument of type @[arg_type].
@@ -3058,6 +3062,14 @@ static void f___soft_cast(INT32 args)
  *!       Both strict types and last argument as above.
  *!   @endint
  *!
+ *! @param state
+ *!   State mapping. This mapping may be used by attribute handlers
+ *!   to store state between different arguments. Note that attribute
+ *!   handlers may alter the contents of the mapping.
+ *!
+ *! @param val
+ *!   Value of the argument if known.
+ *!
  *! @returns
  *!   Returns a continuation type on success.
  *!
@@ -3069,6 +3081,7 @@ static void f___low_check_call(INT32 args)
   INT32 flags = CALL_NOT_LAST_ARG;
   struct call_state cs;
   struct svalue *sval = NULL;
+  struct mapping *state = NULL;
   if (args < 2) Pike_error("Bad number of arguments to __low_check_call().\n");
   if (TYPEOF(Pike_sp[-args]) != PIKE_T_TYPE) {
     Pike_error("Bad argument 1 to __low_check_call() expected type.\n");
@@ -3082,8 +3095,20 @@ static void f___low_check_call(INT32 args)
     }
     flags = Pike_sp[2-args].u.integer ^ CALL_NOT_LAST_ARG;
   }
-  if (args > 3) sval = Pike_sp + 3 - args;
-  LOW_INIT_CALL_STATE(cs, 1, NULL);
+  if (args > 3) {
+    switch(TYPEOF(Pike_sp[3-args])) {
+    case T_MAPPING:
+      state = Pike_sp[3-args].u.mapping;
+      break;
+    case T_INT:
+      if (!Pike_sp[3-args].u.integer) break;
+      /* FALLTHRU */
+    default:
+      Pike_error("Bad argument 3 to __low_check_call() expected mapping.\n");
+    }
+  }
+  if (args > 4) sval = Pike_sp + 4 - args;
+  LOW_INIT_CALL_STATE(cs, 1, state);
   if (!(res = low_new_check_call(Pike_sp[-args].u.type,
 				 Pike_sp[1-args].u.type,
 				 flags, &cs, sval))) {
