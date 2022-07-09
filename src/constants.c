@@ -121,7 +121,7 @@ PMOD_EXPORT struct callable *low_make_callable(c_fun fun,
     type = check_splice_call(name, type, &cs, mixed_type_string, NULL,
 			     CALL_INHIBIT_WARNINGS);
     if (type) {
-      z = new_get_return_type(type, CALL_INHIBIT_WARNINGS);
+      z = new_get_return_type(type, &cs, CALL_INHIBIT_WARNINGS);
       free_type(type);
     }
     f->may_return_void = pike_types_le(z, void_type_string, 0, 0);

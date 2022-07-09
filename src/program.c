@@ -7991,6 +7991,7 @@ static void f_dispatch_variant(INT32 args)
 						       fun_num, flags)) != -1) {
     int i;
     struct pike_type *ret;
+    struct call_state cs;
 
     id = ID_FROM_INT(prog, fun_num);
     add_ref(t = id->type);
@@ -8015,7 +8016,10 @@ static void f_dispatch_variant(INT32 args)
       if (!(t = cont)) break;
     }
     if (!t) continue;
-    ret = new_get_return_type(t, 0);
+
+    INIT_CALL_STATE(cs);
+    ret = new_get_return_type(t, &cs, 0);
+    FREE_CALL_STATE(cs);
 
     if (!ret && (i+1 >= best)) {
       if (((i+1) > best) && expected) {
