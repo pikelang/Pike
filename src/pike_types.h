@@ -442,6 +442,7 @@ struct pike_type *low_new_check_call(struct pike_type *fun_type,
 				     struct call_state *cs,
 				     struct svalue *sval);
 struct pike_type *new_get_return_type(struct pike_type *fun_type,
+				      struct call_state *cs,
 				      INT32 flags);
 struct pike_type *get_first_arg_type(struct pike_type *fun_type,
 				     INT32 flags);

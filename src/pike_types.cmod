@@ -10130,7 +10130,8 @@ static int low_get_return_type(struct pike_type *a, struct pike_type *b)
 
     if (!b || b->type == T_MANY ||
 	(b->car && (b->car->flags & PT_FLAG_VOIDABLE))) {
-      struct pike_type *tmp = new_get_return_type(a, 0);
+      struct pike_type *tmp = new_get_return_type(a, &cs, 0);
+
       if (tmp) {
 	push_finished_type(tmp);
 	push_type(T_OR);
@@ -10394,16 +10395,19 @@ static struct pike_type *low_index_type(struct pike_type *t,
       {
 	if((i=FIND_LFUN(p,LFUN_ARROW))!=-1)
 	{
+	  struct pike_type *ret = NULL;
 	  struct call_state cs;
+
 	  INIT_CALL_STATE(cs);
 	  add_ref(tmp = ID_FROM_INT(p, i)->type);
 	  tmp = new_check_call(lfun_strings[LFUN_ARROW], tmp, CDR(n), &cs, 0);
-	  FREE_CALL_STATE(cs);
 	  if (tmp) {
-	    struct pike_type *ret = new_get_return_type(tmp, 0);
+	    ret = new_get_return_type(tmp, &cs, 0);
 	    free_type(tmp);
-	    if (ret) return ret;
 	  }
+	  FREE_CALL_STATE(cs);
+
+	  if (ret) return ret;
 
 	  /* Invalid type for lfun::`->(). */
 	  add_ref(mixed_type_string);
@@ -10412,17 +10416,19 @@ static struct pike_type *low_index_type(struct pike_type *t,
       }else{
 	if((i=FIND_LFUN(p,LFUN_INDEX)) != -1)
 	{
+	  struct pike_type *ret = NULL;
 	  struct call_state cs;
+
 	  INIT_CALL_STATE(cs);
 	  add_ref(tmp = ID_FROM_INT(p, i)->type);
 	  tmp = new_check_call(lfun_strings[LFUN_INDEX], tmp, CDR(n), &cs, 0);
-	  FREE_CALL_STATE(cs);
 	  if (tmp) {
-	    struct pike_type *ret = new_get_return_type(tmp, 0);
+	    ret = new_get_return_type(tmp, &cs, 0);
 	    free_type(tmp);
-	    if (ret) return ret;
 	  }
+	  FREE_CALL_STATE(cs);
 
+	  if (ret) return ret;
 	  /* Invalid type for lfun::`[](). */
 	  add_ref(mixed_type_string);
 	  return mixed_type_string;
@@ -12014,9 +12020,9 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
      * second argument to fun_type->cdr (or both).
      */
     if (fun_type->car) {
-      tmp = new_get_return_type(fun_type->car, 0);
+      tmp = new_get_return_type(fun_type->car, cs, 0);
     } else {
-      tmp = new_get_return_type(fun_type->cdr, 0);
+      tmp = new_get_return_type(fun_type->cdr, cs, 0);
     }
     if (tmp) {
       tmp2 = low_new_check_call(fun_type->cdr, tmp, 0, cs, NULL);
@@ -12488,9 +12494,10 @@ struct pike_type *low_new_check_call(struct pike_type *fun_type,
  *
  * Returns NULL if more arguments are required.
  *
- * Returns a the type of the return value otherwise.
+ * Returns the type of the return value otherwise.
  */
 struct pike_type *new_get_return_type(struct pike_type *fun_type,
+				      struct call_state *cs,
 				      INT32 flags)
 {
   struct compilation *c = MAYBE_THIS_COMPILATION;
@@ -12523,7 +12530,7 @@ struct pike_type *new_get_return_type(struct pike_type *fun_type,
     goto loop;
 
   case PIKE_T_ATTRIBUTE:
-    tmp = new_get_return_type(fun_type->cdr, flags);
+    tmp = new_get_return_type(fun_type->cdr, cs, flags);
     if (!tmp) break;
     if (c) {
       ref_push_string((struct pike_string *)fun_type->car);
@@ -12551,11 +12558,11 @@ struct pike_type *new_get_return_type(struct pike_type *fun_type,
     goto loop;
 
   case T_OR:
-    if (!(res = new_get_return_type(fun_type->car, flags))) {
+    if (!(res = new_get_return_type(fun_type->car, cs, flags))) {
       fun_type = fun_type->cdr;
       goto loop;
     }
-    if (!(tmp = new_get_return_type(fun_type->cdr, flags))) {
+    if (!(tmp = new_get_return_type(fun_type->cdr, cs, flags))) {
       break;
     }
     if ((res == void_type_string) || (tmp == void_type_string)) {
@@ -12576,10 +12583,10 @@ struct pike_type *new_get_return_type(struct pike_type *fun_type,
     free_type(tmp);
     break;
   case T_AND:
-    if (!(res = new_get_return_type(fun_type->car, flags))) {
+    if (!(res = new_get_return_type(fun_type->car, cs, flags))) {
       break;
     }
-    if (!(tmp = new_get_return_type(fun_type->cdr, flags))) {
+    if (!(tmp = new_get_return_type(fun_type->cdr, cs, flags))) {
       free_type(res);
       res = NULL;
       break;
@@ -12589,7 +12596,7 @@ struct pike_type *new_get_return_type(struct pike_type *fun_type,
     free_type(tmp2);
     break;
   case T_NOT:
-    if (!(res = new_get_return_type(fun_type->car, flags))) {
+    if (!(res = new_get_return_type(fun_type->car, cs, flags))) {
       copy_pike_type(res, mixed_type_string);
     } else if (res->type == T_NOT) {
       tmp = res;
@@ -12620,7 +12627,7 @@ struct pike_type *new_get_return_type(struct pike_type *fun_type,
     } else {
       fun_type = zzap_function_return(tmp, fun_type->car);
     }
-    res = new_get_return_type(fun_type, flags);
+    res = new_get_return_type(fun_type, cs, flags);
     free_type(fun_type);
     break;
   case PIKE_T_OBJECT:
@@ -12681,7 +12688,7 @@ struct pike_type *new_get_return_type(struct pike_type *fun_type,
     if (!tmp) {
       return NULL;
     }
-    res = new_get_return_type(tmp, flags);
+    res = new_get_return_type(tmp, cs, flags);
     free_type(tmp);
     break;
 
@@ -13932,7 +13939,12 @@ struct pike_type *apply_type_operator(enum PIKE_TYPE op,
   struct pike_type *res = NULL;
   switch(op) {
   case PIKE_T_GET_RETURN:
-    res = new_get_return_type(arg1, 0);
+    {
+      struct call_state cs;
+      INIT_CALL_STATE(cs);
+      res = new_get_return_type(arg1, &cs, 0);
+      FREE_CALL_STATE(cs);
+    }
     break;
   case PIKE_T_APPLY:
     {
