@@ -3120,9 +3120,15 @@ static void f___low_check_call(INT32 args)
 }
 
 /*! @decl type|zero get_return_type(type fun_type)
+ *! @decl type|zero get_return_type(type fun_type, mapping state)
  *!
  *!   Check what a function of the type @[fun_type] will
- *!   return if called with no arguments.
+ *!   return if called with no further arguments.
+ *!
+ *! @param state
+ *!   State mapping. This mapping may be used by attribute handlers
+ *!   to store state between different arguments. Note that attribute
+ *!   handlers may alter the contents of the mapping.
  *!
  *! @returns
  *!   Returns the type of the returned value on success
@@ -3131,20 +3137,34 @@ static void f___low_check_call(INT32 args)
  */
 static void f___get_return_type(INT32 args)
 {
+  struct call_state cs;
   struct pike_type *res;
-  if (args != 1) {
+  struct mapping *state = NULL;
+  if (args < 1) {
     Pike_error("Bad number of arguments to __get_return_type().\n");
   }
-  if (TYPEOF(Pike_sp[-1]) != PIKE_T_TYPE) {
+  if (TYPEOF(Pike_sp[-args]) != PIKE_T_TYPE) {
     Pike_error("Bad argument 1 to __get_return_type() expected type.\n");
   }
-  if (!(res = new_get_return_type(Pike_sp[-1].u.type, 0))) {
-    pop_n_elems(args);
-    push_undefined();
-  } else {
-    pop_n_elems(args);
-    push_type_value(res);
+  if (args > 1) {
+    switch(TYPEOF(Pike_sp[1-args])) {
+    case T_MAPPING:
+      state = Pike_sp[1-args].u.mapping;
+      break;
+    case T_INT:
+      if (!Pike_sp[1-args].u.integer) break;
+      /* FALLTHRU */
+    default:
+      Pike_error("Bad argument 2 to __get_return_type() expected mapping.\n");
+    }
   }
+
+  LOW_INIT_CALL_STATE(cs, 1, state);
+  res = new_get_return_type(Pike_sp[-args].u.type, &cs, 0);
+  FREE_CALL_STATE(cs);
+
+  pop_n_elems(args);
+  push_type_value(res);
 }
 
 /*! @decl type|zero get_first_arg_type(type fun_type)
@@ -10556,7 +10576,8 @@ void init_builtin_efuns(void)
 
   /* FIXME: Could have a stricter type. */
   ADD_EFUN("__get_return_type", f___get_return_type,
-	   tFunc(tType(tCallable), tOr(tType(tMix), tZero)),
+	   tFunc(tType(tCallable) tOr(tMapping, tVoid),
+		 tOr(tType(tMix), tZero)),
 	   OPT_TRY_OPTIMIZE);
 
   /* FIXME: Could have a stricter type. */
