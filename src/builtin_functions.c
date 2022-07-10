@@ -10385,10 +10385,11 @@ void init_builtin_efuns(void)
 
   ADD_EFUN("reverse",f_reverse,
 	   tOr4(tFunc(tInt tOr(tVoid, tInt) tOr(tVoid, tInt), tInt),
-		tFunc(tStr tOr(tVoid, tInt) tOr(tVoid, tInt), tStr),
+		tFunc(tSetvar(0, tStr) tOr(tVoid, tInt) tOr(tVoid, tInt),
+		      tVar(0)),
 		tFunc(tSetvar(0, tArray) tOr(tVoid, tInt) tOr(tVoid, tInt),
 		      tVar(0)),
-		tFuncV(tObj, tOr(tMix, tVoid), tMix)),0);
+		tFuncArg(tSetvar(0, tObj), tFindLFun(tVar(0), "_reverse"))), 0);
 
   /* function(mixed,array:array) */
   ADD_EFUN("rows",f_rows,
