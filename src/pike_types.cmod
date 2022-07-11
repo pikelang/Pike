@@ -12136,7 +12136,7 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
 	  struct pike_type *bin_t =
 	    low_type_binop(PT_BINOP_MINUS,
 			   arg_type, tmp2, &remap,
-			   PT_FLAG_CMP_VOID_IS_ZERO,
+			   PT_FLAG_CMP_VOID_IS_ZERO|PT_FLAG_CMP_FUN_ARG,
 			   PT_FLAG_CMP_VOID_IS_ZERO,
 			   remap_flags|PT_FLAG_REMAP_EVAL_MARKERS);
 
@@ -12153,7 +12153,8 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
 
 	    arg_match = low_type_binop(PT_BINOP_AND,
 				       arg_type, tmp2, &remap,
-				       PT_FLAG_CMP_VOID_IS_ZERO,
+				       PT_FLAG_CMP_VOID_IS_ZERO|
+				       PT_FLAG_CMP_FUN_ARG,
 				       PT_FLAG_CMP_VOID_IS_ZERO,
 				       remap_flags);
 
