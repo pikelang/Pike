@@ -1788,7 +1788,7 @@ void resolv_type(node *n)
 	 *       provide a function name (and we don't want
 	 *       warnings here anyway).
 	 */
-	INIT_CALL_STATE(cs);
+	INIT_CALL_STATE(cs, NULL);
 	a = check_splice_call(NULL, a, &cs, mixed_type_string, NULL,
 			      CALL_INHIBIT_WARNINGS);
 	if (a) {
@@ -3828,8 +3828,6 @@ void fix_type_field(node *n)
       enum Pike_opcodes opcode = n->token;
       struct call_state cs;
 
-      INIT_CALL_STATE(cs);
-
       switch(opcode) {
       case F_AND_EQ:
 	efun_name = "`&";
@@ -3901,6 +3899,7 @@ void fix_type_field(node *n)
        *       for new_check_call(),
        */
       n->token = F_ARG_LIST;
+      INIT_CALL_STATE(cs, efun_string);
       f = debug_malloc_pass(new_check_call(efun_string, f, n, &cs, 0));
       n->token = opcode;
       if (f) {
@@ -4119,7 +4118,6 @@ void fix_type_field(node *n)
       }
 #endif
 
-      INIT_CALL_STATE(cs);
       name = get_name_of_function(CAR(n));
 
 #ifdef PIKE_DEBUG
@@ -4127,6 +4125,8 @@ void fix_type_field(node *n)
 	safe_pike_fprintf (stderr, "Checking call to %S at %S:%ld.\n", name,
 			   n->current_file, (long)n->line_number);
 #endif /* PIKE_DEBUG */
+
+      INIT_CALL_STATE(cs, name);
 
       /* NOTE: new_check_call() steals a reference from f! */
       copy_pike_type(f, CAR(n)->type);
@@ -4427,7 +4427,7 @@ void fix_type_field(node *n)
       args = mknode(F_ARG_LIST, CAR(n), CDR(n));
       add_ref(CAR(n));
       if (CDR(n)) add_ref(CDR(n));
-      INIT_CALL_STATE(cs);
+      INIT_CALL_STATE(cs, sscanf_name);
       sscanf_type = new_check_call(sscanf_name, sscanf_type, args, &cs, 0);
       free_node(args);
       if (sscanf_type) {

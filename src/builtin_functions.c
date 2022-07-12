@@ -3109,7 +3109,7 @@ static void f___low_check_call(INT32 args)
   }
   if (args > 4) sval = Pike_sp + 4 - args;
 
-  LOW_INIT_CALL_STATE(cs, 1, state);
+  LOW_INIT_CALL_STATE(cs, NULL, 1, state);
   res = low_new_check_call(Pike_sp[-args].u.type,
 			   Pike_sp[1-args].u.type,
 			   flags, &cs, sval);
@@ -3159,7 +3159,7 @@ static void f___get_return_type(INT32 args)
     }
   }
 
-  LOW_INIT_CALL_STATE(cs, 1, state);
+  LOW_INIT_CALL_STATE(cs, NULL, 1, state);
   res = new_get_return_type(Pike_sp[-args].u.type, &cs, 0);
   FREE_CALL_STATE(cs);
 

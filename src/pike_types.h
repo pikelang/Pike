@@ -198,17 +198,22 @@ enum pt_cmp_flags
 struct call_state
 {
   struct mapping *m;
+  struct pike_string *fun_name;
   INT32 argno;
 };
 
-#define LOW_INIT_CALL_STATE(CS, ARGNO, MAP)	do {	\
-    if (((CS).m = (MAP))) {				\
-      add_ref((CS).m);					\
-    }							\
-    (CS).argno = (ARGNO);				\
+#define LOW_INIT_CALL_STATE(CS, NAME, ARGNO, MAP)	do {	\
+    if (((CS).m = (MAP))) {					\
+      add_ref((CS).m);						\
+    }								\
+    if (!((CS).fun_name = (NAME))) {				\
+      (CS).fun_name = unknown_function_string;			\
+    }								\
+    add_ref((CS).fun_name);					\
+    (CS).argno = (ARGNO);					\
   } while (0)
 
-#define INIT_CALL_STATE(CS)	LOW_INIT_CALL_STATE(CS, 0, NULL)
+#define INIT_CALL_STATE(CS, NAME)	LOW_INIT_CALL_STATE(CS, NAME, 1, NULL)
 
 #define FREE_CALL_STATE(CS) free_call_state(&(CS))
 
@@ -217,6 +222,10 @@ static inline void free_call_state(struct call_state *cs)
   if (cs->m) {
     free_mapping(cs->m);
     cs->m = NULL;
+  }
+  if (cs->fun_name) {
+    free_string(cs->fun_name);
+    cs->fun_name = NULL;
   }
   cs->argno = 0;
 }

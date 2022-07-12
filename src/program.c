@@ -8017,7 +8017,7 @@ static void f_dispatch_variant(INT32 args)
     }
     if (!t) continue;
 
-    INIT_CALL_STATE(cs);
+    INIT_CALL_STATE(cs, NULL);
     ret = new_get_return_type(t, &cs, 0);
     FREE_CALL_STATE(cs);
 

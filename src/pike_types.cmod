@@ -4483,7 +4483,7 @@ static void push_expand_transitive_remap(struct pike_type *cont,
 	}
 
 	push_remap_markers(cont->cdr, remap, flags);
-	INIT_CALL_STATE(cs);
+	INIT_CALL_STATE(cs, NULL);
 	tmp = low_new_check_call(trans, peek_type_stack(), 0, &cs, NULL);
 	FREE_CALL_STATE(cs);
 	compiler_discard_top_type();
@@ -8281,7 +8281,7 @@ static void push_expand_transitive_type(struct pike_type *cont,
 	}
 
 	push_finished_type_with_markers(cont->cdr, markers, 0);
-	INIT_CALL_STATE(cs);
+	INIT_CALL_STATE(cs, NULL);
 	tmp = low_new_check_call(trans, peek_type_stack(), 0, &cs, NULL);
 	FREE_CALL_STATE(cs);
 	compiler_discard_top_type();
@@ -10125,7 +10125,7 @@ static int low_get_return_type(struct pike_type *a, struct pike_type *b)
 
   push_type(PIKE_T_UNKNOWN);
 
-  INIT_CALL_STATE(cs);
+  INIT_CALL_STATE(cs, NULL);
 
   do {
     struct pike_type *cont;
@@ -10400,7 +10400,7 @@ static struct pike_type *low_index_type(struct pike_type *t,
 	  struct pike_type *ret = NULL;
 	  struct call_state cs;
 
-	  INIT_CALL_STATE(cs);
+	  INIT_CALL_STATE(cs, lfun_strings[LFUN_ARROW]);
 	  add_ref(tmp = ID_FROM_INT(p, i)->type);
 	  tmp = new_check_call(lfun_strings[LFUN_ARROW], tmp, CDR(n), &cs, 0);
 	  if (tmp) {
@@ -10421,7 +10421,7 @@ static struct pike_type *low_index_type(struct pike_type *t,
 	  struct pike_type *ret = NULL;
 	  struct call_state cs;
 
-	  INIT_CALL_STATE(cs);
+	  INIT_CALL_STATE(cs, lfun_strings[LFUN_INDEX]);
 	  add_ref(tmp = ID_FROM_INT(p, i)->type);
 	  tmp = new_check_call(lfun_strings[LFUN_INDEX], tmp, CDR(n), &cs, 0);
 	  if (tmp) {
@@ -11036,7 +11036,7 @@ static int low_check_indexing(struct pike_type *type,
       }
       if (i != -1) {
 	struct call_state cs;
-	INIT_CALL_STATE(cs);
+	INIT_CALL_STATE(cs, NULL);
 	type = low_new_check_call(ID_FROM_INT(p, i)->type, index_type,
 				  CALL_NOT_LAST_ARG, &cs, NULL);
 	FREE_CALL_STATE(cs);
@@ -13944,7 +13944,7 @@ struct pike_type *apply_type_operator(enum PIKE_TYPE op,
   case PIKE_T_GET_RETURN:
     {
       struct call_state cs;
-      INIT_CALL_STATE(cs);
+      INIT_CALL_STATE(cs, NULL);
       res = new_get_return_type(arg1, &cs, 0);
       FREE_CALL_STATE(cs);
     }
@@ -13952,7 +13952,7 @@ struct pike_type *apply_type_operator(enum PIKE_TYPE op,
   case PIKE_T_APPLY:
     {
       struct call_state cs;
-      INIT_CALL_STATE(cs);
+      INIT_CALL_STATE(cs, NULL);
       res = low_new_check_call(arg1, arg2, 0, &cs, NULL);
       FREE_CALL_STATE(cs);
     }
