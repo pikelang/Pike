@@ -10402,7 +10402,7 @@ static struct pike_type *low_index_type(struct pike_type *t,
 
 	  INIT_CALL_STATE(cs, lfun_strings[LFUN_ARROW]);
 	  add_ref(tmp = ID_FROM_INT(p, i)->type);
-	  tmp = new_check_call(lfun_strings[LFUN_ARROW], tmp, CDR(n), &cs, 0);
+	  tmp = new_check_call(tmp, CDR(n), &cs, 0);
 	  if (tmp) {
 	    ret = new_get_return_type(tmp, &cs, 0);
 	    free_type(tmp);
@@ -10423,7 +10423,7 @@ static struct pike_type *low_index_type(struct pike_type *t,
 
 	  INIT_CALL_STATE(cs, lfun_strings[LFUN_INDEX]);
 	  add_ref(tmp = ID_FROM_INT(p, i)->type);
-	  tmp = new_check_call(lfun_strings[LFUN_INDEX], tmp, CDR(n), &cs, 0);
+	  tmp = new_check_call(tmp, CDR(n), &cs, 0);
 	  if (tmp) {
 	    ret = new_get_return_type(tmp, &cs, 0);
 	    free_type(tmp);
@@ -13065,8 +13065,7 @@ struct pike_type *get_first_arg_type(struct pike_type *fun_type,
 }
 
 /* NOTE: fun_type loses a reference. */
-struct pike_type *check_splice_call(struct pike_string *fun_name,
-				    struct pike_type *fun_type,
+struct pike_type *check_splice_call(struct pike_type *fun_type,
 				    struct call_state *cs,
 				    struct pike_type *args_type,
 				    struct svalue *sval,
@@ -13097,7 +13096,7 @@ struct pike_type *check_splice_call(struct pike_string *fun_name,
 
 #ifdef PIKE_DEBUG
   if (l_flag>4) {
-    fprintf(stderr, "check_splice_call(\"%s\", ", fun_name->str);
+    fprintf(stderr, "check_splice_call(\"%s\", ", cs->fun_name->str);
     simple_describe_type(fun_type);
     fprintf(stderr, ",\n    %d, ", cs->argno);
     simple_describe_type(args_type);
@@ -13154,10 +13153,10 @@ struct pike_type *check_splice_call(struct pike_string *fun_name,
     /* The splice values are invalid for later arguments. */
     if (!cnt && max_cnt) {
       yywarning("In argument %d to %S: The @-operator argument must be an empty array.",
-		cs->argno, fun_name);
+		cs->argno, cs->fun_name);
     } else if (c->lex.pragmas & ID_STRICT_TYPES) {
       yywarning("In argument %d to %S: The @-operator argument has a max length of %d.",
-		cs->argno, fun_name, cnt);
+		cs->argno, cs->fun_name, cnt);
     }
   }
 
@@ -13176,8 +13175,7 @@ struct pike_type *check_splice_call(struct pike_string *fun_name,
 }
 
 /* NOTE: fun_type loses a reference. */
-static struct pike_type *new_check_call_arg(struct pike_string *fun_name,
-					    struct pike_type *fun_type,
+static struct pike_type *new_check_call_arg(struct pike_type *fun_type,
 					    node *args, struct call_state *cs,
 					    INT32 flags)
 {
@@ -13221,7 +13219,7 @@ static struct pike_type *new_check_call_arg(struct pike_string *fun_name,
     }
 #endif /* PIKE_DEBUG */
 
-    res = check_splice_call(fun_name, fun_type, cs, args->type, sval, flags);
+    res = check_splice_call(fun_type, cs, args->type, sval, flags);
 
 #ifdef PIKE_DEBUG
     if (l_flag>2) {
@@ -13250,7 +13248,7 @@ static struct pike_type *new_check_call_arg(struct pike_string *fun_name,
 	  yytype_report(REPORT_WARNING, NULL, 0, tmp,
 			NULL, 0, args->type,
 			0, "Type mismatch in argument %d to %S.",
-			cs->argno, fun_name);
+			cs->argno, cs->fun_name);
 	  if (tmp) free_type(tmp);
 	} else {
 	  free_type(tmp);
@@ -13272,7 +13270,7 @@ static struct pike_type *new_check_call_arg(struct pike_string *fun_name,
     }
 #endif /* PIKE_DEBUG */
     yytype_report(REPORT_ERROR, NULL, 0, tmp, NULL, 0, args->type,
-		  0, "Bad argument %d to %S.", cs->argno, fun_name);
+		  0, "Bad argument %d to %S.", cs->argno, cs->fun_name);
 
     /* Try advancing with the suggested type, so that we can check
      * the rest of the arguments.
@@ -13308,7 +13306,7 @@ static struct pike_type *new_check_call_arg(struct pike_string *fun_name,
     yytype_report(REPORT_ERROR, NULL, 0, NULL,
 		  NULL, 0, args->type,
 		  0, "Too many arguments to %S (expected %d arguments).",
-		  fun_name, cs->argno - 1);
+		  cs->fun_name, cs->argno - 1);
   }
   free_type(fun_type);
 
@@ -13316,8 +13314,7 @@ static struct pike_type *new_check_call_arg(struct pike_string *fun_name,
 }
 
 /* NOTE: fun_type loses a reference. */
-struct pike_type *new_check_call(struct pike_string *fun_name,
-				 struct pike_type *fun_type,
+struct pike_type *new_check_call(struct pike_type *fun_type,
 				 node *args, struct call_state *cs,
 				 INT32 flags)
 {
@@ -13363,7 +13360,7 @@ struct pike_type *new_check_call(struct pike_string *fun_name,
 	continue;
       }
     } else {
-      fun_type = new_check_call_arg(fun_name, fun_type, args, cs, flags);
+      fun_type = new_check_call_arg(fun_type, args, cs, flags);
       debug_malloc_touch(fun_type);
     }
 
@@ -13388,7 +13385,7 @@ struct pike_type *new_check_call(struct pike_string *fun_name,
 	 * This should be a quite rare case, and the tree is
 	 * most likely very shallow, so this should be safe.
 	 */
-	fun_type = new_check_call(fun_name, fun_type, prev, cs, flags);
+	fun_type = new_check_call(fun_type, prev, cs, flags);
 	debug_malloc_touch(fun_type);
       }
     }

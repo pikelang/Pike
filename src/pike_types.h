@@ -457,14 +457,12 @@ struct pike_type *new_get_return_type(struct pike_type *fun_type,
 				      INT32 flags);
 struct pike_type *get_first_arg_type(struct pike_type *fun_type,
 				     INT32 flags);
-struct pike_type *check_splice_call(struct pike_string *fun_name,
-				    struct pike_type *fun_type,
+struct pike_type *check_splice_call(struct pike_type *fun_type,
 				    struct call_state *cs,
 				    struct pike_type *arg_type,
 				    struct svalue *sval,
 				    INT32 flags);
-struct pike_type *new_check_call(struct pike_string *fun_name,
-				 struct pike_type *fun_type,
+struct pike_type *new_check_call(struct pike_type *fun_type,
 				 node *args, struct call_state *cs,
 				 INT32 flags);
 struct pike_type *zzap_function_return(struct pike_type *t,

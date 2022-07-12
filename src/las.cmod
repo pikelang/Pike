@@ -1789,7 +1789,7 @@ void resolv_type(node *n)
 	 *       warnings here anyway).
 	 */
 	INIT_CALL_STATE(cs, NULL);
-	a = check_splice_call(NULL, a, &cs, mixed_type_string, NULL,
+	a = check_splice_call(a, &cs, mixed_type_string, NULL,
 			      CALL_INHIBIT_WARNINGS);
 	if (a) {
 	  b = new_get_return_type(a, &cs, 0);
@@ -3900,7 +3900,7 @@ void fix_type_field(node *n)
        */
       n->token = F_ARG_LIST;
       INIT_CALL_STATE(cs, efun_string);
-      f = debug_malloc_pass(new_check_call(efun_string, f, n, &cs, 0));
+      f = debug_malloc_pass(new_check_call(f, n, &cs, 0));
       n->token = opcode;
       if (f) {
 	struct pike_type *ret = new_get_return_type(f, &cs, 0);
@@ -4130,7 +4130,7 @@ void fix_type_field(node *n)
 
       /* NOTE: new_check_call() steals a reference from f! */
       copy_pike_type(f, CAR(n)->type);
-      f = debug_malloc_pass(new_check_call(name, f, CDR(n), &cs, 0));
+      f = debug_malloc_pass(new_check_call(f, CDR(n), &cs, 0));
 
       if (!f) {
 	/* Errors have been generated. */
@@ -4428,7 +4428,7 @@ void fix_type_field(node *n)
       add_ref(CAR(n));
       if (CDR(n)) add_ref(CDR(n));
       INIT_CALL_STATE(cs, sscanf_name);
-      sscanf_type = new_check_call(sscanf_name, sscanf_type, args, &cs, 0);
+      sscanf_type = new_check_call(sscanf_type, args, &cs, 0);
       free_node(args);
       if (sscanf_type) {
 	if (!(n->type = new_get_return_type(sscanf_type, &cs, 0))) {

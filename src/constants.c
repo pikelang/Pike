@@ -118,7 +118,7 @@ PMOD_EXPORT struct callable *low_make_callable(c_fun fun,
     struct call_state cs;
     add_ref(type);
     INIT_CALL_STATE(cs, name);
-    type = check_splice_call(name, type, &cs, mixed_type_string, NULL,
+    type = check_splice_call(type, &cs, mixed_type_string, NULL,
 			     CALL_INHIBIT_WARNINGS);
     if (type) {
       z = new_get_return_type(type, &cs, CALL_INHIBIT_WARNINGS);
