@@ -82,6 +82,8 @@ PMOD_EXPORT struct pike_string *literal_mapping_string;
 PMOD_EXPORT struct pike_string *literal_type_string;
 PMOD_EXPORT struct pike_string *literal_mixed_string;
 
+PMOD_EXPORT struct pike_string *unknown_function_string;
+
 /* Special case for converting T_ZERO into int(0) during processing.
  * Note that int(0) is usually automatically converted into T_ZERO,
  * so we need to define the type by hand explicitly here.
@@ -15038,6 +15040,8 @@ void init_types(void)
   literal_type_string = make_shared_string("type");
   literal_mixed_string = make_shared_string("mixed");
 
+  unknown_function_string = make_shared_string("unknown function");
+
 #ifdef PIKE_DEBUG
   pike_type_gc_callback = add_gc_callback(gc_mark_external_types, NULL, NULL);
 #endif
@@ -15132,6 +15136,8 @@ void cleanup_pike_types(void)
   free_string(literal_mapping_string); literal_mapping_string = NULL;
   free_string(literal_type_string); literal_type_string = NULL;
   free_string(literal_mixed_string); literal_mixed_string = NULL;
+
+  free_string(unknown_function_string); unknown_function_string = NULL;
 
 #ifdef PIKE_DEBUG
   remove_callback(pike_type_gc_callback);

@@ -291,6 +291,7 @@ PMOD_EXPORT extern struct pike_string *literal_mapping_string;
 PMOD_EXPORT extern struct pike_string *literal_type_string;
 PMOD_EXPORT extern struct pike_string *literal_mixed_string;
 
+PMOD_EXPORT extern struct pike_string *unknown_function_string;
 
 #define CONSTTYPE(X) make_pike_type(X)
 
