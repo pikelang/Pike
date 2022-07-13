@@ -207,7 +207,7 @@ PIKECLASS Iterator
    *! sequence provided by @[random] should be used.
    */
   PIKEFUN void _random(function rnd_str, function rnd)
-    flags ID_OPTIONAL;
+    flags ID_PROTECTED|ID_OPTIONAL;
     prototype;
   {}
 
