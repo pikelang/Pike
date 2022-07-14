@@ -3847,6 +3847,7 @@ struct remap_state {
   unsigned char map[0x40];
   unsigned INT32 allocated;
   struct mapping *markers[2];
+  struct mapping *state;
 };
 
 #ifdef PIKE_NULL_IS_SPECIAL
@@ -3854,6 +3855,7 @@ struct remap_state {
     memset(&REMAP, 0, sizeof(struct remap_state));	\
     REMAP.markers[0] = NULL;				\
     REMAP.markers[1] = NULL;				\
+    REMAP.state = NULL;					\
   } while(0)
 #else
 #define INIT_REMAP_STATE(REMAP) do {			\
@@ -3869,6 +3871,10 @@ static inline void exit_remap_state(struct remap_state *remap)
   if (remap && remap->markers[1]) {
     free_mapping(remap->markers[1]);
     remap->markers[1] = NULL;
+  }
+  if (remap && remap->state) {
+    free_mapping(remap->state);
+    remap->state = NULL;
   }
 }
 #define EXIT_REMAP_STATE(REMAP) exit_remap_state(&REMAP)
@@ -3896,6 +3902,10 @@ static void simple_describe_remap_state(struct remap_state *remap)
   if (remap->markers[1]) {
     fprintf(stderr, "markers[1]:\n");
     simple_describe_mapping(remap->markers[1]);
+  }
+  if (remap->state) {
+    fprintf(stderr, "state:\n");
+    simple_describe_mapping(remap->state);
   }
 }
 #else

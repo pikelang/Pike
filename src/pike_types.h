@@ -213,7 +213,7 @@ struct call_state
     (CS).argno = (ARGNO);					\
   } while (0)
 
-#define INIT_CALL_STATE(CS, NAME)	LOW_INIT_CALL_STATE(CS, NAME, 1, NULL)
+#define INIT_CALL_STATE(CS, NAME)	LOW_INIT_CALL_STATE(CS, NAME, 0, NULL)
 
 #define FREE_CALL_STATE(CS) free_call_state(&(CS))
 
