@@ -168,6 +168,7 @@ struct compilation
 #define PC_INDEX_TYPE_ATTRIBUTE_FUN_NUM			11
 #define PC_APPLY_TYPE_ATTRIBUTE_FUN_NUM			12
 #define PC_APPLY_ATTRIBUTE_CONSTANT_FUN_NUM		13
+#define PC_EVAL_TYPE_ATTRIBUTE_FUN_NUM			14
 
 extern struct program *null_program;
 extern struct program *placeholder_program;

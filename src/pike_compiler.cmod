@@ -2128,7 +2128,9 @@ static void f_compilation_handle_import(INT32 args)
 #endif /* SUPPORT_COMPILER_HANDLERS */
 }
 
-/*! @decl int(0..1) pop_type_attribute(string attribute, type a, type b)
+/*! @decl int(0..1)|type(mixed) pop_type_attribute(string attribute, @
+ *!                                                type a, type b, @
+ *!                                                mapping|void state)
  *!
  *!   Type attribute handler.
  *!
@@ -2140,9 +2142,16 @@ static void f_compilation_handle_import(INT32 args)
  *!   attribute.
  *!
  *! @returns
- *!   Returns @expr{1@} if the type check should be allowed
- *!   (ie @expr{__attribute__(attribute, a) <= b@}), and
- *!   @expr{0@} (zero) otherwise.
+ *!   Returns one of:
+ *!   @mixed
+ *!     @type type(mixed)
+ *!       An alternative type for @[a] against which @[b]
+ *!       will be matched again.
+ *!     @type int(1..1)
+ *!       Allow the check (ie @expr{__attribute__(attribute, a) <= b@}).
+ *!     @type int(0..0)
+ *!       Do not allow the check.
+ *!   @endmixed
  *!
  *! @seealso
  *!   @[push_type_attribute()], @[index_type_attribute()]
@@ -2153,8 +2162,21 @@ static void f_compilation_pop_type_attribute(INT32 args)
   struct svalue *a, *b;
   struct compilation *c = THIS_COMPILATION;
   struct pike_string *deprecated_string;
+  struct mapping *state = NULL;
 
-  get_all_args(NULL, args, "%W%*%*", &attr, &a, &b);
+#if 0
+  fprintf(stderr, "f_compilation_pop_type_attribute(%d)\n", args);
+  {
+    int i;
+    for (i = 0; i < args; i++) {
+      fprintf(stderr, "  arg #%d: ", i+1);
+      safe_print_svalue(stderr, Pike_sp+i-args);
+      fprintf(stderr, "\n");
+    }
+  }
+#endif
+
+  get_all_args(NULL, args, "%W%*%*.%m", &attr, &a, &b, &state);
 
   if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
     MAKE_CONST_STRING(deprecated_string, "deprecated");
@@ -2230,7 +2252,9 @@ static void f_compilation_suppress_deprecation_warnings(INT32 args)
              c->lex.pragmas & ID_NO_DEPRECATION_WARNINGS);
 }
 
-/*! @decl int(0..1) push_type_attribute(string attribute, type a, type b)
+/*! @decl int(0..1)|type(mixed) push_type_attribute(string attribute, @
+ *!                                                 type a, type b, @
+ *!                                                 mapping|void state)
  *!
  *!   Type attribute handler.
  *!
@@ -2242,9 +2266,16 @@ static void f_compilation_suppress_deprecation_warnings(INT32 args)
  *!   attribute.
  *!
  *! @returns
- *!   Returns @expr{1@} if the type check should be allowed
- *!   (ie @expr{a <= __attribute__(attribute, b)@}), and
- *!   @expr{0@} (zero) otherwise.
+ *!   Returns one of:
+ *!   @mixed
+ *!     @type type(mixed)
+ *!       An alternative type for @[b] against which @[a]
+ *!       will be matched again.
+ *!     @type int(1..1)
+ *!       Allow the check (ie @expr{a <= __attribute__(attribute, b)@}).
+ *!     @type int(0..0)
+ *!       Do not allow the check.
+ *!   @endmixed
  *!
  *! @seealso
  *!   @[pop_type_attribute()], @[index_type_attribute()]
@@ -2254,13 +2285,35 @@ static void f_compilation_push_type_attribute(INT32 args)
   struct pike_string *attr;
   struct svalue *a, *b;
   struct compilation *c = THIS_COMPILATION;
-  struct pike_string *deprecated_string;
+  struct pike_string *test;
+  struct mapping *state = NULL;
+  int funarg = 0;
 
-  get_all_args(NULL, args, "%W%*%*", &attr, &a, &b);
+#if 0
+  fprintf(stderr, "f_compilation_push_type_attribute(%d)\n", args);
+  {
+    int i;
+    for (i = 0; i < args; i++) {
+      fprintf(stderr, "  arg #%d: ", i+1);
+      safe_print_svalue(stderr, Pike_sp+i-args);
+      fprintf(stderr, "\n");
+    }
+  }
+#endif
+
+  get_all_args(NULL, args, "%W%*%*.%m%d", &attr, &a, &b, &state, &funarg);
+
+  if (TYPEOF(*a) != PIKE_T_TYPE) {
+    SIMPLE_ARG_TYPE_ERROR(NULL, 2, "type");
+  }
+  if (TYPEOF(*b) != PIKE_T_TYPE) {
+    SIMPLE_ARG_TYPE_ERROR(NULL, 3, "type");
+  }
+
 
   if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
-    MAKE_CONST_STRING(deprecated_string, "deprecated");
-    if ((attr == deprecated_string) &&
+    MAKE_CONST_STRING(test, "deprecated");
+    if ((attr == test) &&
 	!(c->lex.pragmas & ID_NO_DEPRECATION_WARNINGS) &&
 	!((TYPEOF(*a) == PIKE_T_TYPE) && (a->u.type == zero_type_string))) {
       /* Don't warn about setting deprecated values to zero. */
@@ -2275,9 +2328,8 @@ static void f_compilation_push_type_attribute(INT32 args)
 }
 
 /*! @decl int(0..1) apply_type_attribute(string attribute, @
- *!                                      type a, type|zero b, @
+ *!                                      type a, @
  *!                                      mapping|void state)
- *! @decl int(0..1) apply_type_attribute(string attribute, type a)
  *!
  *!   Type attribute handler.
  *!
@@ -2285,23 +2337,22 @@ static void f_compilation_push_type_attribute(INT32 args)
  *!   Attribute that @[a] had.
  *!
  *! @param a
- *!   Type of the value being called.
- *!
- *! @param b
- *!   Type of the first argument in the call, or
- *!   @[UNDEFINED] if no more arguments.
- *!
- *!   Called during type checking when @[a] has been successfully
- *!   had a partial evaluation with the argument @[b] and
- *!   @[a] had the type attribute @[attribute] before the
- *!   evaluation.
- *!
- *!   The default implementation implements the "deprecated"
- *!   attribute.
+ *!   Continuation of the function being called or @[UNDEFINED]
+ *!   indicating that there are no further arguments.
  *!
  *! @param state
  *!   Mapping intended to hold state during checking of multiple
  *!   arguments.
+ *!
+ *!   Called during type checking when there has been successfull
+ *!   partial evaluation of a function type that had the type
+ *!   attribute @[attribute] before the evaluation.
+ *!
+ *!   The default implementation implements the attributes:
+ *!
+ *!   @dl
+ *!     @item @expr{__deprecated__@}
+ *!   @enddl
  *!
  *! @returns
  *!   Returns @expr{1@} if the type check should be allowed
@@ -2314,21 +2365,33 @@ static void f_compilation_push_type_attribute(INT32 args)
 static void f_compilation_apply_type_attribute(INT32 args)
 {
   struct pike_string *attr;
-  struct svalue *a, *b = NULL;
+  struct svalue *a = NULL;
   struct compilation *c = THIS_COMPILATION;
-  struct pike_string *deprecated_string;
+  struct pike_string *test;
   struct mapping *state = NULL;
 
-  get_all_args(NULL, args, "%W%*.%*%m", &attr, &a, &b, &state);
+#if 0
+  fprintf(stderr, "f_compilation_apply_type_attribute(%d)\n", args);
+  {
+    int i;
+    for (i = 0; i < args; i++) {
+      fprintf(stderr, "  arg #%d: ", i+1);
+      safe_print_svalue(stderr, Pike_sp+i-args);
+      fprintf(stderr, "\n");
+    }
+  }
+#endif
+
+  get_all_args(NULL, args, "%W%*.%m", &attr, &a, &state);
+
+  if (a && (TYPEOF(*a) != PIKE_T_TYPE)) {
+    a = NULL;
+  }
 
   if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
-    MAKE_CONST_STRING(deprecated_string, "deprecated");
-    if ((attr == deprecated_string) &&
-	!(c->lex.pragmas & ID_NO_DEPRECATION_WARNINGS) &&
-	(!b ||
-	 ((TYPEOF(*b) == T_INT) && (SUBTYPEOF(*b) == NUMBER_UNDEFINED) &&
-	  (!b->u.integer)))) {
-      /* push_svalue(a); */
+    MAKE_CONST_STRING(test, "deprecated");
+    if ((attr == test) && !a &&
+	!(c->lex.pragmas & ID_NO_DEPRECATION_WARNINGS)) {
       yytype_report(REPORT_WARNING, NULL, 0, NULL,
 		    NULL, 0, NULL,
 		    0, "Calling a deprecated value.");
@@ -2357,6 +2420,10 @@ static void f_compilation_apply_type_attribute(INT32 args)
  *!
  *! @param cont_type
  *!   Continuation function type after the current argument.
+ *!
+ *! @param state
+ *!   Mapping intended to hold state during checking of multiple
+ *!   arguments.
  *!
  *!   This function is called when a function is called
  *!   with the constant value @[value] and it has been
@@ -2388,6 +2455,19 @@ static void f_compilation_apply_attribute_constant(INT32 args)
   struct pike_string *attribute;
   struct pike_string *test;
   struct svalue *sval;
+
+#if 0
+  fprintf(stderr, "f_compilation_apply_attribute_constant(%d)\n", args);
+  {
+    int i;
+    for (i = 0; i < args; i++) {
+      fprintf(stderr, "  arg #%d: ", i+1);
+      safe_print_svalue(stderr, Pike_sp+i-args);
+      fprintf(stderr, "\n");
+    }
+  }
+#endif
+
   get_all_args(NULL, args, "%S%*", &attribute, &sval);
 
   MAKE_CONST_STRING(test, "sscanf_input");
@@ -2395,6 +2475,10 @@ static void f_compilation_apply_attribute_constant(INT32 args)
     f___handle_sscanf_format(args);
     return;
   }
+
+  /*
+   * Attributes after this require a valid sval.
+   */
 
   if ((TYPEOF(*sval) == T_INT) && !sval->u.integer) {
     pop_n_elems(args);
@@ -2422,6 +2506,40 @@ static void f_compilation_apply_attribute_constant(INT32 args)
     f___handle_sscanf_format(args);
     return;
   }
+  pop_n_elems(args);
+  push_undefined();
+}
+
+/*! @decl type(mixed) eval_type_attribute(string attribute, @
+ *!                                       type t,
+ *!                                       mapping state)
+ */
+static void f_compilation_eval_type_attribute(INT32 args)
+{
+  struct compilation *c;
+  struct pike_string *attribute;
+  struct pike_string *test;
+  struct svalue *sval;
+  struct mapping *state;
+
+#if 0
+  fprintf(stderr, "f_compilation_eval_type_attribute(%d)\n", args);
+  {
+    int i;
+    for (i = 0; i < args; i++) {
+      fprintf(stderr, "  arg #%d: ", i+1);
+      safe_print_svalue(stderr, Pike_sp+i-args);
+      fprintf(stderr, "\n");
+    }
+  }
+#endif
+
+  get_all_args(NULL, args, "%S%*%m", &attribute, &sval, &state);
+
+  if (sval && (TYPEOF(*sval) != PIKE_T_TYPE)) {
+    sval = NULL;
+  }
+
   pop_n_elems(args);
   push_undefined();
 }
@@ -2970,22 +3088,26 @@ static void compile_compiler(void)
 	       tFunc(tStr, tPrg(tObj)), 0);
 
   ADD_FUNCTION("pop_type_attribute", f_compilation_pop_type_attribute,
-	       tFunc(tStr tType(tMix) tType(tMix), tInt01), 0);
+	       tFunc(tStr tType(tMix) tType(tMix)
+		     tOr(tMapping, tVoid), tOr(tInt01, tType(tMix))), 0);
 
   ADD_FUNCTION("push_type_attribute", f_compilation_push_type_attribute,
-	       tFunc(tStr tType(tMix) tType(tMix), tInt01), 0);
+	       tFunc(tStr tType(tMix) tType(tMix)
+		     tOr(tMapping, tVoid), tOr(tInt01, tType(tMix))), 0);
 
   ADD_FUNCTION("index_type_attribute", f_compilation_index_type_attribute,
 	       tFunc(tStr tType(tMix) tType(tMix), tInt01), 0);
 
   ADD_FUNCTION("apply_type_attribute", f_compilation_apply_type_attribute,
-	       tFunc(tStr tType(tMix) tOr(tType(tMix), tZero) tMapping,
-		     tInt01), 0);
+	       tFunc(tStr tType(tMix) tOr(tMapping, tVoid), tInt01), 0);
 
   ADD_FUNCTION("apply_attribute_constant",
 	       f_compilation_apply_attribute_constant,
 	       tFunc(tStr tMix tType(tMix) tType(tFunction) tMapping,
 		     tType(tFunction)), 0);
+
+  ADD_FUNCTION("eval_type_attribute", f_compilation_eval_type_attribute,
+	       tFunc(tStr tType(tMix) tMapping, tOr(tType(tMix), tZero)), 0);
 
   ADD_FUNCTION("_sprintf", f_compilation__sprintf,
 	       tFunc(tInt tOr(tMap(tStr, tMix), tVoid), tStr), ID_PROTECTED);

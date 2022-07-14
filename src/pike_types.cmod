@@ -4956,14 +4956,30 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	  ref_push_string((struct pike_string *)a->car);
 	  ref_push_type_value(a->cdr);
 	  ref_push_type_value(b);
-	  safe_apply_current2(PC_POP_TYPE_ATTRIBUTE_FUN_NUM, 3,
-			      "pop_type_attribute");
+	  if (remap) {
+	    if (!remap->state) {
+	      remap->state = allocate_mapping(4);
+	    }
+	    ref_push_mapping(remap->state);
+	    safe_apply_current2(PC_POP_TYPE_ATTRIBUTE_FUN_NUM, 4,
+				"pop_type_attribute");
+	  } else {
+	    safe_apply_current2(PC_POP_TYPE_ATTRIBUTE_FUN_NUM, 3,
+				"pop_type_attribute");
+	  }
 	  if ((TYPEOF(Pike_sp[-1]) == T_INT) &&
 	      (SUBTYPEOF(Pike_sp[-1]) == NUMBER_NUMBER) &&
 	      (!Pike_sp[-1].u.integer)) {
 	    /* Forced mismatch. */
 	    pop_stack();
 	    return remap_markers(a, remap, remap_flags);
+	  }
+	  if (TYPEOF(Pike_sp[-1]) == PIKE_T_TYPE) {
+	    /* Alternative type for a. */
+	    tmp = low_type_binop(op, Pike_sp[-1].u.type, b, remap,
+				 aflags, bflags, remap_flags);
+	    pop_stack();
+	    return tmp;
 	  }
 	  pop_stack();
 	}
@@ -5007,14 +5023,30 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	ref_push_string((struct pike_string *)b->car);
 	ref_push_type_value(a);
 	ref_push_type_value(b->cdr);
-	safe_apply_current2(PC_PUSH_TYPE_ATTRIBUTE_FUN_NUM, 3,
-			    "push_type_attribute");
+	if (remap) {
+	  if (!remap->state) {
+	    remap->state = allocate_mapping(4);
+	  }
+	  ref_push_mapping(remap->state);
+	  safe_apply_current2(PC_PUSH_TYPE_ATTRIBUTE_FUN_NUM, 4,
+			      "push_type_attribute");
+	} else {
+	  safe_apply_current2(PC_PUSH_TYPE_ATTRIBUTE_FUN_NUM, 3,
+			      "push_type_attribute");
+	}
 	if ((TYPEOF(Pike_sp[-1]) == T_INT) &&
 	    (SUBTYPEOF(Pike_sp[-1]) == NUMBER_NUMBER) &&
 	    (!Pike_sp[-1].u.integer)) {
 	  /* Forced mismatch. */
 	  pop_stack();
 	  return remap_markers(a, remap, remap_flags);
+	}
+	if (TYPEOF(Pike_sp[-1]) == PIKE_T_TYPE) {
+	  /* Alternative type for b. */
+	  tmp = low_type_binop(op, a, Pike_sp[-1].u.type, remap,
+			       aflags, bflags, remap_flags);
+	  pop_stack();
+	  return tmp;
 	}
 	pop_stack();
       }
@@ -11852,10 +11884,9 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
 	cs->m = allocate_mapping(0);
       }
       ref_push_string((struct pike_string *)fun_type->car);
-      ref_push_type_value(fun_type->cdr);
-      ref_push_type_value(arg_type);
+      ref_push_type_value(res);
       ref_push_mapping(cs->m);
-      safe_apply_current2(PC_APPLY_TYPE_ATTRIBUTE_FUN_NUM, 4,
+      safe_apply_current2(PC_APPLY_TYPE_ATTRIBUTE_FUN_NUM, 3,
 			  "apply_type_attribute");
       if ((TYPEOF(Pike_sp[-1]) == T_INT) &&
 	  (SUBTYPEOF(Pike_sp[-1]) == NUMBER_NUMBER) &&
@@ -12118,6 +12149,16 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
       }
 #endif /* PIKE_DEBUG */
 
+      if (!cs->m) {
+	cs->m = allocate_mapping(4);
+      }
+      add_ref(remap.state = cs->m);
+
+      push_int(cs->argno);
+      push_constant_text("argno");
+      mapping_insert(cs->m, Pike_sp-1, Pike_sp-2);
+      pop_n_elems(2);
+
       /* No need to perform advanced checking in the trivial case... */
       if (arg_type != (tmp2 = fun_type->car)) {
 	if (tmp2 == void_type_string) {
@@ -12240,12 +12281,22 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
 	    ref_push_mapping(cs->m);
 	    safe_apply_current(PC_APPLY_ATTRIBUTE_CONSTANT_FUN_NUM, 5);
 	    if (TYPEOF(Pike_sp[-1]) == PIKE_T_TYPE) {
+	      /* Got an alternative type for fun_type.
+	       *
+	       * Merge the two types.
+	       */
 	      type_stack_mark();
 	      push_finished_type(Pike_sp[-1].u.type);
 	      push_finished_type(res);
 	      push_type(T_AND);
 	      free_type(res);
 	      res = pop_unfinished_type();
+	    } else if ((TYPEOF(Pike_sp[-1]) == PIKE_T_INT) &&
+		       !SUBTYPEOF(Pike_sp[-1])) {
+	      /* Attribute handler says mismatch. */
+	      free_type(res);
+	      res = NULL;
+	      tmp2 = NULL;
 	    }
 	    pop_stack();
 	  }
@@ -12536,9 +12587,13 @@ struct pike_type *new_get_return_type(struct pike_type *fun_type,
     tmp = new_get_return_type(fun_type->cdr, cs, flags);
     if (!tmp) break;
     if (c) {
+      if (!cs->m) {
+	cs->m = allocate_mapping(0);
+      }
       ref_push_string((struct pike_string *)fun_type->car);
-      ref_push_type_value(fun_type->cdr);
-      safe_apply_current2(PC_APPLY_TYPE_ATTRIBUTE_FUN_NUM, 2,
+      push_undefined();
+      ref_push_mapping(cs->m);
+      safe_apply_current2(PC_APPLY_TYPE_ATTRIBUTE_FUN_NUM, 3,
 			  "apply_type_attribute");
       if ((TYPEOF(Pike_sp[-1]) == T_INT) &&
 	  (SUBTYPEOF(Pike_sp[-1]) == NUMBER_NUMBER) &&
@@ -12734,6 +12789,31 @@ struct pike_type *new_get_return_type(struct pike_type *fun_type,
   push_finished_type_with_markers(res, a_markers, 0);
 
   free_type(res);
+
+  for (tmp = peek_type_stack();
+       tmp && ((tmp->type == PIKE_T_NAME) || (tmp->type == PIKE_T_ATTRIBUTE));
+       tmp = tmp->cdr) {
+  redo:
+    if (tmp->type == PIKE_T_ATTRIBUTE) {
+      if (!cs->m) {
+	cs->m = allocate_mapping(0);
+      }
+      ref_push_string((struct pike_string *)tmp->car);
+      ref_push_type_value(tmp->cdr);
+      ref_push_mapping(cs->m);
+      safe_apply_current2(PC_EVAL_TYPE_ATTRIBUTE_FUN_NUM, 3,
+			  "eval_type_attribute");
+      if (TYPEOF(Pike_sp[-1]) == PIKE_T_TYPE) {
+	compiler_discard_top_type();
+	push_finished_type(Pike_sp[-1].u.type);
+	pop_stack();
+
+	tmp = peek_type_stack();
+	goto redo;
+      }
+      pop_stack();
+    }
+  }
 
   while(array_cnt--) {
     push_unlimited_array_type(PIKE_T_ARRAY);
