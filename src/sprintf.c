@@ -2352,6 +2352,7 @@ static struct array *parse_sprintf_argument_types(PCHARP format,
   arg_types = Pike_sp[-1].u.array;
 
   /* Adjust the MANY type. */
+  arg_types->type_field |= BIT_INT;
   free_type(ITEM(arg_types)[num_args].u.type);
   SET_SVAL(ITEM(arg_types)[num_args], T_INT, NUMBER_NUMBER, integer, 0);
 
