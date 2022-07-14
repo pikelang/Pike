@@ -397,6 +397,10 @@ struct format_stack
 #define MULTILINE (LINEBREAK | COLUMN_MODE | ROUGH_LINEBREAK | \
 		   INVERSE_COLUMN_MODE | MULTI_LINE | REPEAT)
 
+static struct pike_string *sprintf_args_string;		/* "sprintf_args" */
+static struct pike_string *sprintf_string_string;	/* "sprintf_string" */
+static struct pike_string *sprintf_char_string;		/* "sprintf_char" */
+static struct pike_string *sprintf_lfun_string;		/* "sprintf_lfun" */
 
 /* Generate binary IEEE strings on a machine which uses a different kind
    of floating point internally */
@@ -2013,33 +2017,137 @@ void f_sprintf(INT32 args)
   push_string(finish_string_builder(&r));
 }
 
-#define PSAT_INVALID	1
-#define PSAT_MARKER	2
-#define PSAT_SMARKER	4
+/**
+ *
+ * Note: Steals a reference from t.
+ */
+static void update_sprintf_argument(struct array *a,
+				    int argno,
+				    struct pike_type *t,
+				    int severity)
+{
+  struct svalue *sval;
+  struct pike_type *newt;
+#ifdef PIKE_DEBUG
+  if ((argno < 0) || (argno >= a->size)) {
+    Pike_fatal("Argument #%d is out of range for array of size %d.\n",
+	       argno, a->size);
+  }
+#endif
 
-/* Push the types corresponding to the %-directives in the format string.
+  sval = ITEM(a) + argno;
+
+  if (argno == a->size-1) {
+    /* MANY argument. Inverted behavior here. */
+    if (TYPEOF(*sval) == T_INT) {
+      if (t) {
+	SET_SVAL(*sval, PIKE_T_TYPE, 0, type, t);
+      }
+#ifdef PIKE_DEBUG
+    } else if (TYPEOF(*sval) != PIKE_T_TYPE) {
+      Pike_fatal("Argument #%d has an invalid type: %s\n",
+		 argno, get_name_of_type(TYPEOF(*sval)));
+#endif
+    } else {
+      newt = or_pike_types(t, sval->u.type, 0);
+      free_type(sval->u.type);
+      free_type(t);
+      sval->u.type = newt;
+    }
+
+    return;
+  }
+
+#ifdef PIKE_DEBUG
+  if (TYPEOF(*sval) != PIKE_T_TYPE) {
+    Pike_fatal("Argument #%d has an invalid type: %s\n",
+	       argno, get_name_of_type(TYPEOF(*sval)));
+  }
+#endif
+
+  if ((newt = type_binop(PT_BINOP_AND, t, sval->u.type, 0, 0, 0))) {
+    free_type(sval->u.type);
+    free_type(t);
+    sval->u.type = newt;
+
+    return;
+  }
+
+  yytype_report(severity,
+		NULL, 0, sval->u.type,
+		NULL, 0, t,
+		0, "Conflicting types for sprintf format argument #%d.",
+		argno);
+
+  free_type(t);
+}
+
+/**
+ *
+ * Note: Steals a reference from t.
+ */
+static void update_sprintf_field(struct mapping *state,
+				 const char *field,
+				 struct pike_type *t)
+{
+  struct svalue *oldt = simple_mapping_string_lookup(state, field);
+
+  if (oldt && (TYPEOF(*oldt) == PIKE_T_TYPE)) {
+    push_type_value(or_pike_types(t, oldt->u.type, 0));
+    free_type(t);
+  } else {
+    push_type_value(t);
+  }
+  push_text(field);
+  mapping_insert(state, Pike_sp-1, Pike_sp-2);
+  pop_n_elems(2);
+}
+
+/**
+ * Parse %-directives in a format string and set fields in
+ * the state-mapping accordingly.
  *
  *   severity is the severity level if any syntax errors
  *            are encountered in the format string.
  *
- * Returns -1 on syntax error.
- *         LSB 1 on unhandled (ie position-dependent args).
- *         LSB 0 on success.
+ * Returns NULL on unrecoverable syntax errors. Otherwise
+ * returns an array with the types for the arguments. These
+ * types include attributes for triggering later adjustent
+ * of the "sprintf_result" type. The last element of the
+ * array holds the type for the MANY node if any such arguments
+ * are valid, and zero otherwise.
  *
- *         PSAT_MARKER is set if the marker is in use.
+ * On success the following fields in the state mapping are set:
  *
- *         *min_charp is <= *max_charp if a static character range
- *         has been detected (eg constant string segment, etc).
+ * "sprintf_args": array(type(mixed))|zero
+ *
+ *   Types for the arguments. This includes attributes triggering
+ *   later adjustment of the "sprintf_result" type. the value
+ *   UNDEFINED indicates that there is no valid type for that
+ *   argument.
+ *
+ * "sprintf_result": type(string)
+ *
+ *   Return type for the sprintf() expression so far.
+ *
+ * "sprintf_many": type(mixed)
+ *
+ *   Type for the T_MANY argument if needed. Only used when
+ *   the %[*]... syntax is used. This type is T_OR-ed with
+ *   the types in "sprintf_args" arguments in that case.
+ *   Typically not used, in which case the arguments end
+ *   after the "sprintf_args".
  */
-static int push_sprintf_argument_types(PCHARP format,
-				       ptrdiff_t format_len,
-				       int ret,
-				       int int_marker,
-				       int str_marker,
-				       p_wchar2 *min_charp,
-				       p_wchar2 *max_charp,
-				       int severity)
+static struct array *parse_sprintf_argument_types(PCHARP format,
+						  ptrdiff_t format_len,
+						  struct mapping *state,
+						  int severity)
 {
+  struct array *arg_types;
+  struct pike_type *many_type = NULL;
+  int argno;
+  int num_args = 0;
+  int unlimited_args = 0;
   int tmp, setwhat, e;
   int uses_marker = 0;
   struct svalue *arg=0;	/* pushback argument */
@@ -2048,15 +2156,208 @@ static int push_sprintf_argument_types(PCHARP format,
   PCHARP a,begin;
   PCHARP format_end=ADD_PCHARP(format,format_len);
 
-  p_wchar2 min_char = *min_charp;
-  p_wchar2 max_char = *max_charp;
+  p_wchar2 min_char = 0x7fffffff;
+  p_wchar2 max_char = -0x80000000;
 
   check_c_stack(500);
 
-  /* if (num_arg < 0) num_arg = MAX_INT32; */
-
-  for(a=format;COMPARE_PCHARP(a,<,format_end);INC_PCHARP(a,1))
+  /* First count the number of arguments. */
+  for(a = format, argno = 0; COMPARE_PCHARP(a, <, format_end); INC_PCHARP(a, 1))
   {
+    int uses_pos = 0;
+    int num_snurkel = 0, column;
+    ptrdiff_t width = 0;
+    p_wchar2 c;
+    int uses_tilde = 0;
+
+    if(EXTRACT_PCHARP(a)!='%')
+    {
+      for(e=0;(c = INDEX_PCHARP(a,e)) != '%' &&
+	    COMPARE_PCHARP(ADD_PCHARP(a,e),<,format_end);e++) {
+	if (c < min_char) min_char = c;
+	if (c > max_char) max_char = c;
+      }
+      INC_PCHARP(a,e-1);
+      continue;
+    }
+    column=0;
+    arg=NULL;
+    setwhat=0;
+    begin=a;
+
+    for(INC_PCHARP(a,1);;INC_PCHARP(a,1))
+    {
+      switch(c = EXTRACT_PCHARP(a))
+      {
+      default:
+	if(c < 256 && isprint(c))
+	{
+	  yyreport(severity, type_check_system_string,
+		   0, "Error in format string, %c is not a format.",
+		   c);
+	}else{
+	  yyreport(severity, type_check_system_string,
+		   0, "Error in format string, U%08x is not a format.",
+		   c);
+	}
+	return NULL;
+
+      /* First the modifiers */
+      case '*':
+	argno++;
+	continue;
+
+      case '0':
+      case '1': case '2': case '3':
+      case '4': case '5': case '6':
+      case '7': case '8': case '9':
+      case ';': case '.': case ':':
+      case '-': case '/': case '=':
+      case '#': case '$': case '>':
+      case '|': case ' ': case '+':
+      case '!': case '^': case '_':
+	continue;
+
+      case '@':
+	num_snurkel++;
+	continue;
+
+      case '\'':
+	tmp = 0;
+	for(INC_PCHARP(a, 1);
+	    COMPARE_PCHARP(ADD_PCHARP(a, tmp), <, format_end) &&
+	      (INDEX_PCHARP(a, tmp) != '\'');
+	    tmp++) {
+	}
+
+	if (COMPARE_PCHARP(ADD_PCHARP(a, tmp), <, format_end)) {
+	  INC_PCHARP(a,tmp);
+	  continue;
+	} else {
+	  INC_PCHARP(a,tmp);
+	  yyreport(severity, type_check_system_string,
+		   0, "Unfinished pad string in format string.");
+	  return NULL;
+	}
+
+      case '~':
+      {
+	argno++;
+	continue;
+      }
+
+      case '<':
+	if(!argno) {
+	  yyreport(severity, type_check_system_string,
+		   0, "No last argument.");
+	  return NULL;
+	}
+	uses_pos = 1;
+	continue;
+
+      case '[':
+	INC_PCHARP(a,1);
+	if(EXTRACT_PCHARP(a)=='*') {
+	  argno++;
+	  INC_PCHARP(a,1);
+	  unlimited_args = 1;
+	  uses_pos = 1;
+	}
+        else {
+	  tmp = STRTOL_PCHARP(a, &a, 10);
+	  if (tmp+1 > num_args) {
+	    num_args = tmp+1;
+	  }
+	  uses_pos = 1;
+	}
+	if ((c = EXTRACT_PCHARP(a))!=']') {
+	  yyreport(severity, type_check_system_string,
+		   0, "Expected ] in format string, not %c.",
+		   c);
+	  return NULL;
+	}
+	continue;
+
+        /* now the real operators */
+
+      case '{':
+      {
+	ptrdiff_t cnt;
+	for(e=1, tmp=1; tmp; e++)
+	{
+	  if (!INDEX_PCHARP(a, e) &&
+	      !COMPARE_PCHARP(ADD_PCHARP(a, e), <, format_end)) {
+	    yyreport(severity, type_check_system_string,
+		     0, "Missing %%} in format string.");
+	    return NULL;
+	  } else if(INDEX_PCHARP(a, e) == '%') {
+	    switch(INDEX_PCHARP(a, e+1))
+	    {
+	    case '%': e++; break;
+	    case '}': tmp--; break;
+	    case '{': tmp++; break;
+	    }
+	  }
+	}
+
+	INC_PCHARP(a,e);
+
+	if (!uses_pos) {
+	  argno++;
+	}
+	break;
+      }
+
+      case '%':
+	break;
+
+      case 'n':
+	break;
+
+      case 't':
+      case 'c':
+      case 'x':
+      case 'X':
+      case 'd':
+      case 'u':
+      case 'o':
+      case 'b':
+      case 'e':
+      case 'f':
+      case 'g':
+      case 'E':
+      case 'G':
+      case 'F':
+      case 'O':
+      case 'p':
+      case 'H':
+      case 'q':
+      case 's':
+	if (!uses_pos) {
+	  argno++;
+	}
+	break;
+      }
+      break;
+    }
+  }
+
+  if (argno > num_args) {
+    num_args = argno;
+  }
+
+  push_int(num_args + 1);
+  ref_push_type_value(mixed_type_string);
+  f_allocate(2);
+  arg_types = Pike_sp[-1].u.array;
+
+  /* Adjust the MANY type. */
+  free_type(ITEM(arg_types)[num_args].u.type);
+  SET_SVAL(ITEM(arg_types)[num_args], T_INT, NUMBER_NUMBER, integer, 0);
+
+  for(a = format, argno = 0; COMPARE_PCHARP(a, <, format_end); INC_PCHARP(a, 1))
+  {
+    int pos = -1;
     int num_snurkel, column;
     ptrdiff_t width = 0;
     p_wchar2 c;
@@ -2078,6 +2379,8 @@ static int push_sprintf_argument_types(PCHARP format,
     setwhat=0;
     begin=a;
 
+    type_stack_mark();
+
     for(INC_PCHARP(a,1);;INC_PCHARP(a,1))
     {
       switch(c = EXTRACT_PCHARP(a))
@@ -2093,12 +2396,13 @@ static int push_sprintf_argument_types(PCHARP format,
 		   0, "Error in format string, U%08x is not a format.",
 		   c);
 	}
-	ret = -1;
 	num_snurkel = 0;
 	break;
 
       /* First the modifiers */
       case '*':
+	type_stack_mark();
+
 	if (setwhat < 2) {
 	  push_int_type(0, MAX_INT32);
 	  if (uses_tilde) {
@@ -2117,6 +2421,10 @@ static int push_sprintf_argument_types(PCHARP format,
 	push_int_type(MIN_INT32, MAX_INT32);
 	push_reverse_type(T_MAPPING);
 	push_type(T_OR);
+
+	update_sprintf_argument(arg_types, argno++,
+				pop_unfinished_type(),
+				severity);
 	continue;
 
       case '0':
@@ -2133,7 +2441,6 @@ static int push_sprintf_argument_types(PCHARP format,
 	  if(tmp < 0) {
 	    yyreport(severity, type_check_system_string,
 		     0, "Illegal width %d.", tmp);
-	    ret = -1;
 	  }
 	  width = tmp;
 	  if (width) {
@@ -2163,7 +2470,6 @@ static int push_sprintf_argument_types(PCHARP format,
         if( column & LINEBREAK ) {
 	  yyreport(severity, type_check_system_string,
 		   0, "Can not use both the modifiers / and =.");
-	  ret = -1;
 	}
         continue;
 
@@ -2172,7 +2478,6 @@ static int push_sprintf_argument_types(PCHARP format,
         if( column & ROUGH_LINEBREAK ) {
 	  yyreport(severity, type_check_system_string,
 		   0, "Can not use both the modifiers / and =.");
-	  ret = -1;
 	}
 	if ('\n' < min_char) min_char = '\n';
 	if (' ' > max_char) max_char = ' ';
@@ -2208,50 +2513,54 @@ static int push_sprintf_argument_types(PCHARP format,
 	    INC_PCHARP(a,tmp);
 	    yyreport(severity, type_check_system_string,
 		     0, "Unfinished pad string in format string.");
-	    ret = -1;
 	    break;
 	}
 
       case '~':
       {
+	type_stack_mark();
 	push_finished_type(int_type_string);
-	if (int_marker) {
-	  push_assign_type(int_marker);
-	  uses_marker = 1;
-	}
 	push_unlimited_array_type(T_STRING);
+	push_type_attribute(sprintf_string_string);
+	update_sprintf_argument(arg_types, argno++,
+				pop_unfinished_type(),
+				severity);
 	uses_tilde = 1;
 	continue;
       }
 
       case '<':
-	/* FIXME: !!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
-	ret |= PSAT_INVALID;	/* FAILURE! */
-#if 0
-	if(!lastarg) {
+	if(!argno) {
 	  yyreport(severity, type_check_system_string,
 		   0, "No last argument.");
-	  ret = -1;
 	}
-	arg=lastarg;
-#endif /* 0 */
+	pos = argno-1;
 	continue;
 
       case '[':
-	/* FIXME: !!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
-	ret |= PSAT_INVALID;	/* FAILURE! */
 	INC_PCHARP(a,1);
 	if(EXTRACT_PCHARP(a)=='*') {
-	  push_int_type(0, /*num_arg*/ MAX_INT32);
+	  type_stack_mark();
+	  push_int_type(0, /*num_args*/ MAX_INT32);
+	  update_sprintf_argument(arg_types, argno++,
+				  pop_unfinished_type(),
+				  severity);
 	  INC_PCHARP(a,1);
+
+	  pos = num_args;
 	}
-        else
-	  STRTOL_PCHARP(a,&a,10);
+        else {
+	  pos = STRTOL_PCHARP(a,&a,10);
+	  if (pos < 0) {
+	    yyreport(severity, type_check_system_string,
+		     0, "Invalid argument position: %d.",
+		     pos);
+	  }
+	}
 	if((c = EXTRACT_PCHARP(a))!=']')  {
 	  yyreport(severity, type_check_system_string,
 		   0, "Expected ] in format string, not %c.",
 		   c);
-	  ret = -1;
 	}
 	continue;
 
@@ -2260,13 +2569,15 @@ static int push_sprintf_argument_types(PCHARP format,
       case '{':
       {
 	ptrdiff_t cnt;
+	struct mapping *substate;
+	struct array *subargs;
+	int subnargs = 0;
 	for(e=1,tmp=1;tmp;e++)
 	{
 	  if (!INDEX_PCHARP(a,e) &&
 	      !COMPARE_PCHARP(ADD_PCHARP(a,e),<,format_end)) {
 	    yyreport(severity, type_check_system_string,
 		     0, "Missing %%} in format string.");
-	    ret = -1;
 	    break;
 	  } else if((c = INDEX_PCHARP(a,e)) == '%') {
 	    switch(INDEX_PCHARP(a,e+1))
@@ -2281,27 +2592,36 @@ static int push_sprintf_argument_types(PCHARP format,
 	  }
 	}
 
-	type_stack_mark();
-	/* Note: No need to check the return value, since we
-	 *       simply or all the types together. Thus the
-	 *       argument order isn't significant.
-	 *
-	 * ... Unless there was a syntax error...
-	 */
-	ret = push_sprintf_argument_types(ADD_PCHARP(a,1), e-2, ret,
-					  int_marker, str_marker,
-					  &min_char, &max_char,
-					  severity);
-	/* Join the argument types for our array. */
-	push_type(PIKE_T_ZERO);
-	for (cnt = pop_stack_mark(); cnt > 1; cnt--) {
-	  push_type(T_OR);
-	}
-	push_finished_type(peek_type_stack());	/* dup() */
-	push_unlimited_array_type(PIKE_T_ARRAY);
-	push_type(T_OR);
+	substate = allocate_mapping(4);
 
-	push_unlimited_array_type(PIKE_T_ARRAY);
+	subargs = parse_sprintf_argument_types(ADD_PCHARP(a,1), e-2,
+					       substate, severity);
+	if (subargs) {
+	  subnargs = subargs->size-1;
+	  free_array(subargs);
+	}
+
+	/* Move sprintf_args to our array. */
+	struct svalue *sval =
+	  simple_mapping_string_lookup(substate, "sprintf_args");
+	if (sval && (TYPEOF(*sval) == PIKE_T_TYPE)) {
+	  push_finished_type(sval->u.type);
+	  push_int_type(subnargs, 0x7fffffff);
+	  push_type(PIKE_T_ARRAY);
+	  push_finished_type(sval->u.type);
+	  push_type(T_OR);
+	  push_unlimited_array_type(PIKE_T_ARRAY);
+	} else {
+	  push_finished_type(array_type_string);
+	}
+
+	sval = simple_mapping_string_lookup(substate, "sprintf_result");
+	if (sval && (TYPEOF(*sval) == PIKE_T_TYPE)) {
+	  add_ref(sval->u.type);
+	  update_sprintf_field(state, "sprintf_result", sval->u.type);
+	}
+
+	free_mapping(substate);
 
 	INC_PCHARP(a,e);
 	break;
@@ -2314,10 +2634,6 @@ static int push_sprintf_argument_types(PCHARP format,
 	break;
 
       case 'n':
-	if (num_snurkel) {
-	  /* NOTE: Does take an argument if '@' is active! */
-	  push_type(PIKE_T_ZERO);
-	}
 	break;
 
       case 't':
@@ -2332,15 +2648,11 @@ static int push_sprintf_argument_types(PCHARP format,
 
       case 'c':
       {
-	push_object_type(0, 0);
 	push_int_type(MIN_INT32, MAX_INT32);
-	push_type(T_OR);
 	if (!width) {
-	  if (int_marker) {
-	    push_assign_type(int_marker);
-	    ret |= PSAT_MARKER;
-	  }
-	} else {
+	  push_type_attribute(sprintf_char_string);
+	}
+	if (width) {
 	  if (min_char > 0) min_char = 0;
 	  if (max_char < 255) max_char = 255;
 	}
@@ -2355,8 +2667,6 @@ static int push_sprintf_argument_types(PCHARP format,
         if ('+' < min_char) min_char = '+';
         push_int_type(0, 255);
 	push_unlimited_array_type(T_STRING);
-        push_object_type(0, 0);
-        push_type(T_OR);
         push_int_type(MIN_INT32, MAX_INT32);
         push_type(T_OR);
         break;
@@ -2372,9 +2682,7 @@ static int push_sprintf_argument_types(PCHARP format,
 	if ('1' > max_char) max_char = '1';
         if ('+' < min_char) min_char = '+';
       {
-        push_object_type(0, 0);
         push_int_type(MIN_INT32, MAX_INT32);
-	push_type(T_OR);
 	break;
       }
 
@@ -2384,9 +2692,7 @@ static int push_sprintf_argument_types(PCHARP format,
       case 'E':
       case 'G':
       {
-	push_object_type(0, 0);
 	push_type(PIKE_T_FLOAT);
-	push_type(T_OR);
 	if ('e' > max_char) max_char = 'e';
 	if ('+' < min_char) min_char = '+';
 	break;
@@ -2394,13 +2700,11 @@ static int push_sprintf_argument_types(PCHARP format,
 
       case 'F':
       {
-	push_object_type(0, 0);
 	push_type(PIKE_T_FLOAT);
-	push_type(T_OR);
 	if (min_char > 0) min_char = 0;
 	if (max_char < 255) max_char = 255;
 	break;
-      }	
+      }
 
       case 'O':
       {
@@ -2417,10 +2721,8 @@ static int push_sprintf_argument_types(PCHARP format,
       }
       case 'H':
       {
-	push_object_type(0, 0);
 	push_int_type(0, 255);
 	push_unlimited_array_type(T_STRING);
-	push_type(T_OR);
 	if (min_char > 0) min_char = 0;
 	if (max_char < 255) max_char = 255;
 	break;
@@ -2428,10 +2730,8 @@ static int push_sprintf_argument_types(PCHARP format,
 
       case 'q':
       {
-	push_object_type(0, 0);
 	push_finished_type(int_type_string);
 	push_unlimited_array_type(T_STRING);
-	push_type(T_OR);
 	if (min_char > 32) min_char = 32;	// Control characters and
 	if (max_char < 255) max_char = 255;	// non-8-bit are escaped.
 	break;
@@ -2439,26 +2739,60 @@ static int push_sprintf_argument_types(PCHARP format,
 
       case 's':
       {
-	push_object_type(0, 0);
 	push_finished_type(int_type_string);
 	push_unlimited_array_type(T_STRING);
-	push_type(T_OR);
-	if (str_marker) {
-	  push_assign_type(str_marker);
-	}
-	ret |= PSAT_SMARKER;
+	push_type_attribute(sprintf_string_string);
 	break;
       }
 
       }
       break;
     }
-    while (num_snurkel--) push_unlimited_array_type(T_ARRAY);
+
+    /* NB: %% and %n do not leave anything on the type stack. */
+    if (peek_stack_mark()) {
+      if (num_snurkel) {
+	/* Always allow for an object with lfun::_sprintf(). */
+	push_object_type(0, 0);
+	push_type_attribute(sprintf_lfun_string);
+	push_type(T_OR);
+
+	while (num_snurkel--) push_unlimited_array_type(T_ARRAY);
+      }
+
+      if (pos < 0) {
+	pos = argno++;
+      }
+
+      update_sprintf_argument(arg_types, pos, pop_unfinished_type(),
+			      severity);
+    }
   }
 
-  *min_charp = min_char;
-  *max_charp = max_char;
-  return ret;
+  for (argno = 0; argno < arg_types->size; argno++) {
+    if (TYPEOF(ITEM(arg_types)[argno]) == PIKE_T_TYPE) {
+      struct pike_type *t = ITEM(arg_types)[argno].u.type;
+      add_ref(t);
+      update_sprintf_field(state, "sprintf_args", t);
+    }
+  }
+  /* Always allow for an object with lfun::_sprintf(). */
+  type_stack_mark();
+  push_object_type(0, 0);
+  push_type_attribute(sprintf_lfun_string);
+  update_sprintf_field(state, "sprintf_args", pop_unfinished_type());
+
+  type_stack_mark();
+  if (min_char <= max_char) {
+    push_int_type(min_char, max_char);
+    push_unlimited_array_type(PIKE_T_STRING);
+  } else {
+    push_finished_type(string0_type_string);
+  }
+  update_sprintf_field(state, "sprintf_result", pop_unfinished_type());
+
+  Pike_sp--;
+  return arg_types;
 }
 
 static node *optimize_sprintf(node *n)
@@ -2529,10 +2863,118 @@ static node *optimize_sprintf(node *n)
   return ret;
 }
 
+static struct pike_type *patch_function_type(struct pike_type *fun_type,
+					     struct pike_string *attr,
+					     struct array *args,
+					     struct mapping *state,
+					     int severity)
+{
+  struct pike_type *many = fun_type;
+
+  /* Scan for T_MANY(T_ATTRIBUTE(attr, x), y) */
+  while (many && (many->type == PIKE_T_FUNCTION)) {
+    many = many->cdr;
+  }
+  if (many && (many->type == T_MANY)) {
+    struct pike_type *arg = many->car;
+    while (arg) {
+      int i;
+
+      while (arg && (arg->type == PIKE_T_NAME)) {
+	arg = arg->cdr;
+      }
+      if (!arg || (arg->type != PIKE_T_ATTRIBUTE)) {
+	return NULL;
+      }
+      if (arg->car != (struct pike_type *)attr) {
+	arg = arg->cdr;
+	continue;
+      }
+
+      /* Found. */
+      type_stack_mark();
+      push_finished_type(any_type_string);	/* Return value */
+      i = args->size;
+      i--;
+      if (TYPEOF(ITEM(args)[i]) == PIKE_T_TYPE) {
+	/* [*] in format. */
+	push_finished_type(ITEM(args)[i].u.type);
+	/* Always allow for an object with lfun::_sprintf(). */
+	push_object_type(0, 0);
+	push_type_attribute(sprintf_lfun_string);
+	push_type(T_OR);
+      } else {
+	push_type(T_VOID);
+      }
+      push_type(T_MANY);
+
+      /* Preceed the MANY with the required arguments. */
+      while (i--) {
+	if (TYPEOF(ITEM(args)[i]) == PIKE_T_TYPE) {
+	  push_finished_type(ITEM(args)[i].u.type);
+	} else {
+	  push_type(PIKE_T_UNKNOWN);
+	}
+	/* Always allow for an object with lfun::_sprintf(). */
+	push_object_type(0, 0);
+	push_type_attribute(sprintf_lfun_string);
+	push_type(T_OR);
+	push_type(T_FUNCTION);
+      }
+
+      if (severity < REPORT_ERROR) {
+	/* Not strict mode.
+	 *
+	 * Allow no args too.
+	 */
+	push_finished_type(any_type_string);
+	push_type(T_VOID);
+	push_type(T_MANY);
+	push_type(T_OR);
+      }
+
+      /* Restore preceeding arguments (if any). */
+      i = 0;
+      while (fun_type != many) {
+	i++;
+	push_finished_type(fun_type->car);
+	fun_type = fun_type->cdr;
+      }
+      while (i--) {
+	push_reverse_type(T_FUNCTION);
+      }
+
+      return pop_unfinished_type();
+    }
+  }
+  return NULL;
+}
+
+static void low_handle_sprintf_format(struct svalue *fmt_sval,
+				      struct pike_type *fun_type,
+				      struct mapping *state,
+				      int severity)
+{
+  if (TYPEOF(*fmt_sval) == PIKE_T_STRING) {
+    struct pike_string *fmt = fmt_sval->u.string;
+    struct array *a =
+      parse_sprintf_argument_types(MKPCHARP(fmt->str, fmt->size_shift),
+				   fmt->len, state, severity);
+
+    if (a) {
+      push_type_value(patch_function_type(fun_type, sprintf_args_string,
+					  a, state, severity));
+      free_array(a);
+      return;
+    }
+  }
+  push_undefined();
+}
+
 /*! @decl type(mixed) __handle_sprintf_format(string attr, @
  *!                                           string|zero fmt, @
  *!                                           type arg_type, @
- *!                                           type cont_type, @
+ *!                                           type|zero cont_type, @
  *!                                           mapping state)
  *!
  *!   Type attribute handler for @expr{"sprintf_format"@}.
@@ -2584,26 +3026,31 @@ void f___handle_sprintf_format(INT32 args)
   struct pike_type *res;
   struct pike_type *tmp;
   struct pike_string *attr;
+  struct pike_string *attr2;
   struct pike_string *fmt;
-  int severity = REPORT_ERROR;
+  struct mapping *state;
   int found = 0;
   int fmt_count;
   int marker;
   int str_marker = 0;
   int marker_mask;
 
+#if 0
+  fprintf(stderr, "f___handle_sprintf_format(%d)\n", args);
+  {
+    int i;
+    for (i = 0; i < args; i++) {
+      fprintf(stderr, "  arg #%d: ", i+1);
+      safe_print_svalue(stderr, Pike_sp+i-args);
+      fprintf(stderr, "\n");
+    }
+  }
+#endif
+
   if (args != 5)
     SIMPLE_WRONG_NUM_ARGS_ERROR("__handle_sprintf_format", 5);
   if (TYPEOF(Pike_sp[-5]) != PIKE_T_STRING)
     SIMPLE_ARG_TYPE_ERROR("__handle_sprintf_format", 1, "string");
-  if (TYPEOF(Pike_sp[-4]) != PIKE_T_STRING) {
-    if ((TYPEOF(Pike_sp[-4]) != PIKE_T_INT) || Pike_sp[-4].u.integer) {
-      SIMPLE_ARG_TYPE_ERROR("__handle_sprintf_format", 2, "string");
-    }
-    pop_n_elems(args);
-    push_undefined();
-    return;
-  }
   if (TYPEOF(Pike_sp[-3]) != PIKE_T_TYPE)
     SIMPLE_ARG_TYPE_ERROR("__handle_sprintf_format", 3, "type");
   if (TYPEOF(Pike_sp[-2]) != PIKE_T_TYPE)
@@ -2611,14 +3058,21 @@ void f___handle_sprintf_format(INT32 args)
   if (TYPEOF(Pike_sp[-1]) != PIKE_T_MAPPING)
     SIMPLE_ARG_TYPE_ERROR("__handle_sprintf_format", 5, "mapping");
 
-  tmp = Pike_sp[-2].u.type;
-  if ((tmp->type != PIKE_T_FUNCTION) && (tmp->type != T_MANY)) {
-    SIMPLE_ARG_TYPE_ERROR("__handle_sprintf_format", 4, "type(function)");
-  }
+  state = Pike_sp[-1].u.mapping;
 
 #if 0
-  fprintf(stderr, "__handle_sprintf_format(\"%s\", \"%s\", ...)\n",
-	  Pike_sp[-5].u.string->str, Pike_sp[-4].u.string->str);
+  if (TYPEOF(Pike_sp[-4]) == PIKE_T_STRING) {
+    fprintf(stderr, "__handle_sprintf_format(\"%s\", \"%s\",\n"
+	    "    ",
+	    Pike_sp[-5].u.string->str, Pike_sp[-4].u.string->str);
+  } else {
+    fprintf(stderr, "__handle_sprintf_format(\"%s\", %s,\n"
+	    "    ",
+	    Pike_sp[-5].u.string->str,
+	    get_name_of_type(TYPEOF(Pike_sp[-4])));
+  }
+  simple_describe_type(Pike_sp[-3].u.type);
+  fprintf(stderr, ", ...)\n");
 #endif /* 0 */
 
   MAKE_CONST_STRING(attr, "sprintf_format");
@@ -2626,272 +3080,105 @@ void f___handle_sprintf_format(INT32 args)
     /* Don't complain so loud about syntax errors in
      * relaxed mode.
      */
-    severity = REPORT_NOTICE;
-  } else {
-    MAKE_CONST_STRING(attr, "strict_sprintf_format");
-    if (Pike_sp[-5].u.string != attr) {
-      Pike_error("Bad argument 1 to __handle_sprintf_format(), expected "
-		 "\"sprintf_format\" or \"strict_sprintf_format\", "
-		 "got \"%S\".\n", Pike_sp[-5].u.string);
-    }
+    low_handle_sprintf_format(Pike_sp-4, Pike_sp[-2].u.type,
+			      state, REPORT_NOTICE);
+    return;
   }
 
-  /* Allocate a marker for accumulating the result type. */
-  marker = '0';
-  marker_mask = PT_FLAG_MARKER_0 | PT_FLAG_ASSIGN_0;
-  while (tmp->flags & marker_mask) {
-    marker++;
-    marker_mask <<= 1;
-  }
-  if (marker > '9') marker = 0;
-  else {
-    str_marker = marker + 1;
-    marker_mask <<= 1;
-    while (tmp->flags & marker_mask) {
-      str_marker++;
-      marker_mask <<= 1;
-    }
-    if (str_marker > '9') str_marker = 0;
+  MAKE_CONST_STRING(attr, "strict_sprintf_format");
+  if (Pike_sp[-5].u.string == attr) {
+    low_handle_sprintf_format(Pike_sp-4, Pike_sp[-2].u.type,
+			      state, REPORT_ERROR);
+    return;
   }
 
-  fmt = Pike_sp[-4].u.string;
   MAKE_CONST_STRING(attr, "sprintf_args");
-
-  type_stack_mark();
-  type_stack_mark();
-  for (; tmp; tmp = tmp->cdr) {
-    struct pike_type *arg = tmp->car;
-    int array_cnt = 0;
-    while(arg) {
-      switch(arg->type) {
-      case PIKE_T_ATTRIBUTE:
-	if (arg->car == (struct pike_type *)attr)
-	  break;
-	/* FALLTHRU */
-      case PIKE_T_NAME:
-	arg = arg->cdr;
-	continue;
-      case PIKE_T_ARRAY:
-	array_cnt++;
-	arg = arg->car;
-	continue;
-      default:
-	arg = NULL;
-	break;
-      }
-      break;
+  if (Pike_sp[-5].u.string == attr) {
+    struct svalue *sval = low_mapping_string_lookup(state, attr);
+    if (sval && (TYPEOF(*sval) == PIKE_T_TYPE)) {
+      push_svalue(sval);
+      return;
     }
-    if (arg) {
-      p_wchar2 min_char = 0x7fffffff;
-      p_wchar2 max_char = -0x80000000;
-      int ret;
-
-      type_stack_mark();
-      ret = push_sprintf_argument_types(MKPCHARP(fmt->str, fmt->size_shift),
-					fmt->len, 0, marker, str_marker,
-					&min_char, &max_char, severity);
-      switch(ret) {
-      case PSAT_SMARKER:
-      case PSAT_MARKER|PSAT_SMARKER:
-	if (!str_marker) {
-	  min_char = -0x80000000;
-	  max_char = 0x7fffffff;
-	  ret &= ~PSAT_SMARKER;
-	}
-	/* FALLTHRU */
-      case PSAT_MARKER:
-	if (!marker && (ret & PSAT_MARKER)) {
-	  min_char = -0x80000000;
-	  max_char = 0x7fffffff;
-	  ret &= ~PSAT_MARKER;
-	}
-	/* FALLTHRU */
-      case 0:
-	/* Ok. */
-	if (!array_cnt) {
-	  struct pike_type *trailer;
-	  MAKE_CONST_STRING(attr, "sprintf_result");
-	  pop_stack_mark();
-	  push_type(T_VOID);	/* No more args */
-	  while (tmp->type == PIKE_T_FUNCTION) {
-	    tmp = tmp->cdr;
-	  }
-	  trailer = tmp->cdr;	/* Return type */
-	  while (trailer->type == PIKE_T_NAME) {
-	    trailer = trailer->cdr;
-	  }
-	  if ((trailer->type == PIKE_T_ATTRIBUTE) &&
-	      (trailer->car == (struct pike_type *)attr)) {
-	    /* Push the derived return type. */
-	    if (min_char <= max_char) {
-	      push_int_type(min_char, max_char);
-	      if (ret & PSAT_MARKER) {
-		push_type(marker);
-		push_finished_type(int_type_string);
-		push_type(T_AND);
-		push_type(T_OR);
-	      }
-	    } else if (ret & PSAT_MARKER) {
-	      push_type(marker);
-	    } else {
-	      push_type(PIKE_T_UNKNOWN);
-	    }
-	    push_unlimited_array_type(PIKE_T_STRING);
-	    if (ret & PSAT_SMARKER) {
-	      push_finished_type(int_type_string);	/* Len */
-	      push_type(str_marker);
-	      push_finished_type(string_type_string);
-	      push_type(T_AND);
-	      push_type(str_marker);
-	      push_finished_type(object_type_string);
-	      push_type(T_AND);
-	      push_type_operator(PIKE_T_FIND_LFUN,
-				 (struct pike_type *)(ptrdiff_t)LFUN__SPRINTF);
-	      /* FIXME: Need splice apply with mixed. */
-	      push_type_operator(PIKE_T_GET_RETURN, NULL);
-	      push_type(T_OR);
-	      push_type(PIKE_T_SET_CAR);
-	      push_type(T_OR);
-	    }
-	  } else {
-	    push_finished_type(tmp->cdr);	/* Return type */
-	  }
-	  push_reverse_type(T_MANY);
-	  fmt_count = pop_stack_mark();
-	  while (fmt_count > 1) {
-	    push_reverse_type(T_FUNCTION);
-	    fmt_count--;
-	  }
-	  if (severity < REPORT_ERROR) {
-	    /* Add the type where the fmt isn't sent to sprintf(). */
-	    type_stack_mark();
-	    for (arg = Pike_sp[-2].u.type; arg != tmp; arg = arg->cdr) {
-	      push_finished_type(arg->car);
-	    }
-	    push_type(T_VOID);			/* No more args */
-	    push_finished_type(tmp->cdr);	/* Return type */
-	    push_reverse_type(T_MANY);
-	    fmt_count = pop_stack_mark();
-	    while (fmt_count > 1) {
-	      push_reverse_type(T_FUNCTION);
-	      fmt_count--;
-	    }
-	    push_type(T_OR);
-	  }
-	  res = pop_unfinished_type();
-	  pop_n_elems(args);
-	  push_type_value(res);
-	  return;
-	} else {
-	  /* Join the argument types into the array. */
-	  push_type(PIKE_T_ZERO);
-	  for (fmt_count = pop_stack_mark(); fmt_count > 1; fmt_count--) {
-	    push_type(T_OR);
-	  }
-	  while (array_cnt--) {
-	    push_unlimited_array_type(PIKE_T_ARRAY);
-	  }
-	  if (severity < REPORT_ERROR) {
-	    push_type(T_VOID);
-	    push_type(T_OR);
-	  }
-	  found = 1;
-	}
-	break;
-      case -1:
-	/* Syntax error. */
-	if (severity < REPORT_ERROR) {
-	  /* Add the type where the fmt isn't sent to sprintf(). */
-	  type_stack_pop_to_mark();
-	  if (array_cnt--) {
-	    push_type(PIKE_T_ZERO);	/* No args */
-	    while (array_cnt--) {
-	      push_unlimited_array_type(PIKE_T_ARRAY);
-	      push_type(PIKE_T_ZERO);
-	      push_type(T_OR);
-	    }
-	    push_type(T_VOID);
-	    push_type(T_OR);
-	    push_finished_type(tmp->cdr);	/* Rest type */
-	    push_reverse_type(tmp->type);
-	  } else {
-	    push_type(T_VOID);	/* No more args */
-	    while (tmp->type == PIKE_T_FUNCTION) {
-	      tmp = tmp->cdr;
-	    }
-	    push_finished_type(tmp->cdr);	/* Return type */
-	    push_reverse_type(T_MANY);
-	  }
-	  fmt_count = pop_stack_mark();
-	  while (fmt_count > 1) {
-	    push_reverse_type(T_FUNCTION);
-	    fmt_count--;
-	  }
-	  res = pop_unfinished_type();
-	  pop_n_elems(args);
-	  push_type_value(res);
-	  return;
-	}
-	/* FALLTHRU */
-      default:
-      case PSAT_INVALID:
-      case PSAT_INVALID|PSAT_MARKER:
-	/* There was a position argument or a parse error in strict mode. */
-	pop_stack_mark();
-	pop_stack_mark();
-	type_stack_pop_to_mark();
-	pop_n_elems(args);
-	if (ret & (PSAT_MARKER|PSAT_SMARKER)) {
-	  /* Error or marker that we can't trust. */
-	  push_undefined();
-	} else {
-	  /* Position argument, but we don't need to look at the marker. */
-	  type_stack_mark();
-	  if (min_char <= max_char) {
-	    push_int_type(min_char, max_char);
-	  } else {
-	    push_type(T_ZERO);
-	  }
-	  push_unlimited_array_type(T_STRING);
-	  push_type(T_MIXED);
-	  push_type(T_MANY);
-	  push_type_value(pop_unfinished_type());
-	}
-	return;
-      }
-    } else {
-      push_finished_type(tmp->car);
-    }
-    if (tmp->type == T_MANY) {
-      tmp = tmp->cdr;
-      break;
-    }
-  }
-  if (found) {
-    /* Found, but inside an array, so we need to build the function
-     * type here.
-     */
-    push_finished_type(tmp);	/* Return type. */
-    push_reverse_type(T_MANY);
-    fmt_count = pop_stack_mark();
-    while (fmt_count > 1) {
-      push_reverse_type(T_FUNCTION);
-      fmt_count--;
-    }
-    res = pop_unfinished_type();
-    pop_n_elems(args);
-    push_type_value(res);
-  } else {
-    /* No marker found. */
-#if 0
-    simple_describe_type(Pike_sp[-2].u.type);
-    fprintf(stderr, " ==> No marker found.\n");
-#endif /* 0 */
-    pop_stack_mark();
-    type_stack_pop_to_mark();
     pop_n_elems(args);
     push_undefined();
+    return;
   }
+
+  MAKE_CONST_STRING(attr, "sprintf_result");
+  if (Pike_sp[-5].u.string == attr) {
+    struct svalue *sval = low_mapping_string_lookup(state, attr);
+    if (sval && (TYPEOF(*sval) == PIKE_T_TYPE)) {
+      push_svalue(sval);
+      return;
+    }
+    pop_n_elems(args);
+    push_undefined();
+    return;
+  }
+
+  MAKE_CONST_STRING(attr, "sprintf_string");
+  if (Pike_sp[-5].u.string == attr) {
+    struct pike_type *t;
+    type_stack_mark();
+    push_finished_type(Pike_sp[-3].u.type);
+    update_sprintf_field(state, "sprintf_result", pop_unfinished_type());
+
+    pop_n_elems(args);
+    push_undefined();
+    return;
+  }
+
+  MAKE_CONST_STRING(attr, "sprintf_char");
+  if (Pike_sp[-5].u.string == attr) {
+    struct pike_type *t;
+    type_stack_mark();
+    push_finished_type(Pike_sp[-3].u.type);
+    push_unlimited_array_type(PIKE_T_STRING);
+    update_sprintf_field(state, "sprintf_result", pop_unfinished_type());
+
+    pop_n_elems(args);
+    push_undefined();
+    return;
+  }
+
+  MAKE_CONST_STRING(attr, "sprintf_lfun");
+  if (Pike_sp[-5].u.string == attr) {
+    struct pike_type *t;
+    type_stack_mark();
+    push_finished_type(Pike_sp[-3].u.type);
+    push_type_operator(PIKE_T_FIND_LFUN,
+		       (struct pike_type *)(ptrdiff_t)LFUN__SPRINTF);
+    push_int_type('A', 'z');
+    push_reverse_type(PIKE_T_APPLY);
+    push_type(PIKE_T_GET_RETURN);
+
+    t = pop_unfinished_type();
+    if (!t) {
+      /* Invalid lfun.
+       *
+       * FIXME: Warn? This is still valid for some cases.
+       */
+      t = string_type_string;
+      add_ref(t);
+    } else if (t->type != T_STRING) {
+      /* NB: The lfun may return zero, which we do not want. */
+      struct pike_type *newt =
+	type_binop(PT_BINOP_AND, t, string_type_string, 0, 0, 0);
+      free_type(t);
+      t = newt;
+      if (!t) {
+	t = string_type_string;
+	add_ref(t);
+      }
+    }
+    update_sprintf_field(state, "sprintf_result", t);
+
+    pop_n_elems(args);
+    push_undefined();
+    return;
+  }
+
+  push_undefined();
 }
 
 /*! @decl constant sprintf_format = __attribute__("sprintf_format")
@@ -2993,6 +3280,11 @@ void init_sprintf(void)
 	    OPT_TRY_OPTIMIZE,
 	    optimize_sprintf,
 	    0);
+
+  MAKE_CONST_STRING(sprintf_args_string, "sprintf_args");
+  MAKE_CONST_STRING(sprintf_string_string, "sprintf_string");
+  MAKE_CONST_STRING(sprintf_char_string, "sprintf_char");
+  MAKE_CONST_STRING(sprintf_lfun_string, "sprintf_lfun");
 }
 
 void exit_sprintf(void)

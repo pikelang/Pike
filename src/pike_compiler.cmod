@@ -2287,7 +2287,6 @@ static void f_compilation_push_type_attribute(INT32 args)
   struct compilation *c = THIS_COMPILATION;
   struct pike_string *test;
   struct mapping *state = NULL;
-  int funarg = 0;
 
 #if 0
   fprintf(stderr, "f_compilation_push_type_attribute(%d)\n", args);
@@ -2301,7 +2300,7 @@ static void f_compilation_push_type_attribute(INT32 args)
   }
 #endif
 
-  get_all_args(NULL, args, "%W%*%*.%m%d", &attr, &a, &b, &state, &funarg);
+  get_all_args(NULL, args, "%W%*%*.%m", &attr, &a, &b, &state);
 
   if (TYPEOF(*a) != PIKE_T_TYPE) {
     SIMPLE_ARG_TYPE_ERROR(NULL, 2, "type");
@@ -2310,6 +2309,51 @@ static void f_compilation_push_type_attribute(INT32 args)
     SIMPLE_ARG_TYPE_ERROR(NULL, 3, "type");
   }
 
+  if (state) {
+    MAKE_CONST_STRING(test, "sprintf_args");
+    if (attr == test) {
+      ref_push_string(attr);
+      push_undefined();
+      ref_push_type_value(a->u.type);
+      ref_push_type_value(b->u.type);
+      ref_push_mapping(state);
+      f___handle_sprintf_format(5);
+      return;
+    }
+
+    MAKE_CONST_STRING(test, "sprintf_string");
+    if (attr == test) {
+      ref_push_string(attr);
+      push_undefined();
+      ref_push_type_value(a->u.type);
+      ref_push_type_value(b->u.type);
+      ref_push_mapping(state);
+      f___handle_sprintf_format(5);
+      return;
+    }
+
+    MAKE_CONST_STRING(test, "sprintf_char");
+    if (attr == test) {
+      ref_push_string(attr);
+      push_undefined();
+      ref_push_type_value(a->u.type);
+      ref_push_type_value(b->u.type);
+      ref_push_mapping(state);
+      f___handle_sprintf_format(5);
+      return;
+    }
+
+    MAKE_CONST_STRING(test, "sprintf_lfun");
+    if (attr == test) {
+      ref_push_string(attr);
+      push_undefined();
+      ref_push_type_value(a->u.type);
+      ref_push_type_value(b->u.type);
+      ref_push_mapping(state);
+      f___handle_sprintf_format(5);
+      return;
+    }
+  }
 
   if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
     MAKE_CONST_STRING(test, "deprecated");
@@ -2540,9 +2584,25 @@ static void f_compilation_eval_type_attribute(INT32 args)
     sval = NULL;
   }
 
+  MAKE_CONST_STRING(test, "sprintf_result");
+  if (sval && (attribute == test)) {
+    ref_push_string(attribute);
+    push_undefined();
+    push_svalue(sval);
+    type_stack_mark();
+    push_finished_type(sval->u.type);
+    push_type(T_VOID);
+    push_reverse_type(T_MANY);
+    push_type_value(pop_unfinished_type());
+    ref_push_mapping(state);
+    f___handle_sprintf_format(5);
+    return;
+  }
+
   pop_n_elems(args);
   push_undefined();
 }
+
 
 static void f_compilation__sprintf(INT32 args)
 {
