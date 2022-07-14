@@ -2767,6 +2767,8 @@ static struct array *parse_sprintf_argument_types(PCHARP format,
 
       update_sprintf_argument(arg_types, pos, pop_unfinished_type(),
 			      severity);
+    } else {
+      pop_stack_mark();
     }
   }
 
