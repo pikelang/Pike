@@ -120,7 +120,7 @@ cond([[master()->resolv("Pike.SelectBackend")]], [[
     sfr->set_backend (pb);
     object(Shuffler.Shuffle)|zero sf = sfr->shuffle(f);
     sf->add_source("xyz\n" * 100000);
-    sf->set_done_callback( lambda() { sf->stop(); f->close(); });
+    sf->set_done_callback( lambda(mixed ...) { sf->stop(); f->close(); });
     sf->start();
     string res = "";
     f2->set_backend(pb);
