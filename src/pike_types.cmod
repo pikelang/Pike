@@ -14204,7 +14204,10 @@ struct pike_type *get_type_of_svalue(const struct svalue *s)
     {
       if(is_bignum_object(s->u.object))
       {
-          push_int_type(MIN_INT32, MAX_INT32);
+	push_int_type(MIN_INT32, MAX_INT32);
+	push_object_type(1, s->u.object->prog->id);
+	push_type(T_OR);
+	push_scope_type(0);
       }
       else
       {
