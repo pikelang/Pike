@@ -5245,7 +5245,8 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	  simple_describe_type(tmp2);
 	  fprintf(stderr, "\nop: 0x%04x\n", op);
 	}
-	ret = low_type_binop(op, tmp, tmp2, NULL, aflags, bflags, 0);
+	ret = low_type_binop(op, tmp, tmp2, remap, aflags, bflags,
+			     remap_flags | PT_FLAG_REMAP_INHIBIT);
 	if (remap_flags & PT_FLAG_REMAP_TRACE) {
 	  fprintf(stderr, "tmp op tmp2: ");
 	  simple_describe_type(ret);
