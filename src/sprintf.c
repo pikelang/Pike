@@ -3122,17 +3122,25 @@ void f___handle_sprintf_format(INT32 args)
   MAKE_CONST_STRING(attr, "sprintf_string");
   if (Pike_sp[-5].u.string == attr) {
     struct pike_type *t = Pike_sp[-3].u.type;
-    type_stack_mark();
-    if (!t || ((t->type == PIKE_T_STRING) && (t->car == int_pos_type_string))) {
-      push_finished_type(t);
-    } else {
-      /* Strip the length information. */
-      t = index_type(t, int_type_string, NULL);
-      push_finished_type(t);
-      push_unlimited_array_type(PIKE_T_STRING);
-      free_type(t);
+    if (t) {
+      do {
+	if ((t->type == PIKE_T_STRING) && !t->cdr) {
+	  break;
+	}
+
+	type_stack_mark();
+	if ((t->type == PIKE_T_STRING) && (t->car == int_pos_type_string)) {
+	  push_finished_type(t);
+	} else {
+	  /* Strip the length information. */
+	  t = index_type(t, int_type_string, NULL);
+	  push_finished_type(t);
+	  push_unlimited_array_type(PIKE_T_STRING);
+	  free_type(t);
+	}
+	update_sprintf_field(state, "sprintf_result", pop_unfinished_type());
+      } while(0);
     }
-    update_sprintf_field(state, "sprintf_result", pop_unfinished_type());
 
     pop_n_elems(args);
     push_undefined();
