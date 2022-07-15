@@ -1356,8 +1356,12 @@ int main(int argc, array(string) argv)
 	      watchdog_show_last_test();
 	      log_msg(fname + " failed.\n");
 	      print_code(source);
-	      log_msg_result("o->a(): %O\n"
-                             "o->b(): %O\n", a, b);
+	      log_msg_result("o->a()%s: %O\n"
+                             "o->b()%s: %O\n",
+			     (stringp(a)||arrayp(a))?
+			     sprintf(" [%d elements]", sizeof(a)):"", a,
+			     (stringp(b)||arrayp(b))?
+			     sprintf(" [%d elements]", sizeof(b)):"", b);
 	      errors++;
 	      if (stringp(a) && stringp(b) && (sizeof(a) == sizeof(b)) &&
 		  (sizeof(a) > 20)) {
@@ -1384,8 +1388,12 @@ int main(int argc, array(string) argv)
 	      watchdog_show_last_test();
 	      log_msg(fname + " failed.\n");
 	      print_code(source);
-	      log_msg_result("o->a(): %O\n"
-                             "o->b(): %O\n", a, b);
+	      log_msg_result("o->a()%s: %O\n"
+                             "o->b()%s: %O\n",
+			     (stringp(a)||arrayp(a))?
+			     sprintf(" [%d elements]", sizeof(a)):"", a,
+			     (stringp(b)||arrayp(b))?
+			     sprintf(" [%d elements]", sizeof(b)):"", b);
 	      errors++;
 	      if (stringp(a) && stringp(b) && (sizeof(a) == sizeof(b)) &&
 		  (sizeof(a) > 20)) {
