@@ -863,9 +863,13 @@ test_equal([[ typeof(sprintf("%c\n",  1023)); ]],
 dnl The following is due to (string & sprintf_result) == sprintf_result.
 test_equal([[ typeof(sprintf("%c\n",  Stdio)); ]],
 	   [[ sprintf_result; ]]);
-test_equal([[ typeof(sprintf("%4[1]c", 17)); ]],
+test_equal([[ typeof(sprintf("%4[0]c", 17)); ]],
 	   [[ typeof([string(8bit)](mixed)"") ]]);
-test_equal([[ typeof(sprintf("%[1]n", 17)); ]],
+test_equal([[ typeof(sprintf("%[0]n", 17)); ]],
+	   [[ typeof("") ]]);
+test_equal([[ typeof(sprintf("%4[1]c", 0, 17)); ]],
+	   [[ typeof([string(8bit)](mixed)"") ]]);
+test_equal([[ typeof(sprintf("%[1]n", 0, 17)); ]],
 	   [[ typeof("") ]]);
 
 test_equal([[ typeof(aggregate("foo"));]],
