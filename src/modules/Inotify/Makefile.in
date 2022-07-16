@@ -6,6 +6,7 @@ MODNAME=Inotify
 MODDIR=System.pmod/
 MODULE_PMOD_IN=
 MODULE_WRAPPER_PREFIX=_
+MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 OBJS=inotify.o
 
 @dynamic_module_makefile@
