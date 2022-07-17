@@ -18,11 +18,11 @@ function(int(0..):string) random = Crypto.Random.random_string;
 
 // Accessors
 
-Gmp.mpz get_p() { return p; } //! Returns the modulo.
-Gmp.mpz get_q() { return q; } //! Returns the group order.
-Gmp.mpz get_g() { return g; } //! Returns the generator.
-Gmp.mpz get_y() { return y; } //! Returns the public key.
-Gmp.mpz get_x() { return x; } //! Returns the private key.
+object(Gmp.mpz)|zero get_p() { return p; } //! Returns the modulo.
+object(Gmp.mpz)|zero get_q() { return q; } //! Returns the group order.
+object(Gmp.mpz)|zero get_g() { return g; } //! Returns the generator.
+object(Gmp.mpz)|zero get_y() { return y; } //! Returns the public key.
+object(Gmp.mpz)|zero get_x() { return x; } //! Returns the private key.
 
 
 //! Sets the public key in this DSA object.
@@ -70,7 +70,7 @@ array(Gmp.mpz) raw_sign(Gmp.mpz h, void|Gmp.mpz k)
   if(!k) k = random_exponent();
 
   Gmp.mpz r = [object(Gmp.mpz)](g->powm(k, p) % q);
-  Gmp.mpz s = [object(Gmp.mpz)]((k->invert(q) * (h + x*r)) % q);
+  Gmp.mpz s = [object(Gmp.mpz)]((k->invert(q) * (h + [object(Gmp.mpz)](x*r))) % q);
 
   return ({ r, s });
 }
@@ -191,7 +191,7 @@ array(Gmp.mpz) nist_primes(int l)
 
       Gmp.mpz p = Gmp.mpz(buffer, 256);
 
-      p -= p % (2 * q) - 1;
+      p -= [object(Gmp.mpz)](p % (2 * q) - 1);
 
       if (!p->small_factor() && p->probably_prime_p())
       {
@@ -202,7 +202,7 @@ array(Gmp.mpz) nist_primes(int l)
   }
 }
 
-protected Gmp.mpz find_generator(Gmp.mpz p, Gmp.mpz q)
+protected object(Gmp.mpz)|zero find_generator(Gmp.mpz p, Gmp.mpz q)
 {
   Gmp.mpz e = [object(Gmp.mpz)]((p - 1) / q);
   object(Gmp.mpz)|zero g;
