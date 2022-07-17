@@ -83,7 +83,7 @@ int test_charset_table(string t) {
     write("Can't load %O\n", path);
     return 0;
   }
-  sscanf(code, "%*sstring normalize(%s return out;\n}", code);
+  sscanf(code, "%*sstring|zero normalize(%s return out;\n}", code);
   code = "string normalize("+code+" return out;\n}\n";
   function normalize = compile_string(code)()->normalize;
 
