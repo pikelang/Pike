@@ -48,7 +48,7 @@ constant NULL_SHA1 = "0000000000000000000000000000000000000000";
 //! @seealso
 //!   @[git()], @[try_git()]
 Process.Process low_git(mapping(string:mixed) options,
-			string git_dir, string command, string ... args)
+                        string|zero git_dir, string command, string ... args)
 {
   if (git_dir) {
     return Process.Process(({ git_binary, "--git-dir", git_dir,
@@ -75,7 +75,7 @@ Process.Process low_git(mapping(string:mixed) options,
 //!
 //! @seealso
 //!   @[try_git()], @[low_git()]
-string git(string git_dir, string command, string ... args)
+string git(string|zero git_dir, string command, string ... args)
 {
   array(string) cmd;
   if (git_dir) {
