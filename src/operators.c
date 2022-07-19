@@ -6045,8 +6045,10 @@ multiset & mapping -> mapping
                  tFunc(tFloat tFloat, tFloat),
                  tFunc(tOr(tInt,tFloat) tObj, tOr3(tFloat,tInt,tFloat)),
                  tFunc(tInt tFloat, tFloat),
-                 tFunc(tObj tMix, tOr3(tFloat,tInt,tObj)),
-                 tFunc(tMix tObj, tOr3(tFloat,tInt,tObj)),
+                 tFuncArg(tSetvar(0, tObj), tFindLFun(tVar(0), "`**")),
+                 tFunc(tSetvar(0, tMix) tSetvar(1, tObj),
+		       tGetReturn(tApply(tFindLFun(tVar(1), "``**"),
+					 tVar(0)))),
                  tFunc(tFloat tInt, tFloat)),
             OPT_TRY_OPTIMIZE,0,0);
 
