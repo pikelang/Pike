@@ -6062,12 +6062,8 @@ multiset & mapping -> mapping
 			     tFunc(tArr(tArr(tSetvar(0,tMix)))
 				   tArr(tSetvar(1,tMix)),
 				   tArr(tOr(tVar(0), tVar(1)))),
-			     tOr6(tFunc(tZero tInt, tZero),
-				  tFunc(tInt tZero, tZero),
-				  tFunc(tInt1Plus tInt1Plus, tInt1Plus),
-				  tFunc(tIntMinus tInt1Plus, tIntMinus),
-				  tFunc(tInt1Plus tIntMinus, tIntMinus),
-				  tFunc(tIntMinus tIntMinus, tIntMinus)),
+			     tFunc(tSetvar(0, tInt) tSetvar(1, tInt),
+				   tMulInt(tVar(0), tVar(1))),
 			     tOr(tFunc(tInt tFloat, tFloat),
 				 tFunc(tFloat tOr(tInt, tFloat), tFloat)),
 			     tFunc(tArr(tNStr(tSetvar(0, tInt)))
