@@ -13913,7 +13913,7 @@ struct pike_type *low_type_int_op(enum PIKE_TYPE op,
 {
   INT64 min1 = CAR_TO_INT(arg1), min2 = CAR_TO_INT(arg2);
   INT64 max1 = CDR_TO_INT(arg1), max2 = CDR_TO_INT(arg2);
-  INT64 minres, maxres;
+  INT64 minres = MIN_INT32, maxres = MAX_INT32, tmp;
 
   switch(op) {
   case PIKE_T_INT_OP_SUB:
@@ -13928,6 +13928,29 @@ struct pike_type *low_type_int_op(enum PIKE_TYPE op,
       maxres = max1 - min2;
     }
     break;
+
+  case PIKE_T_INT_OP_MUL:
+    maxres = minres = min1 * min2;
+    tmp = min1 * max2;
+    if (tmp > maxres) {
+      maxres = tmp;
+    } else {
+      minres = tmp;
+    }
+    tmp = max1 * min2;
+    if (tmp > maxres) {
+      maxres = tmp;
+    } else if (tmp < minres) {
+      minres = tmp;
+    }
+    tmp = max1 * max2;
+    if (tmp > maxres) {
+      maxres = tmp;
+    } else if (tmp < minres) {
+      minres = tmp;
+    }
+    break;
+
   case PIKE_T_INT_OP_AND:
   case PIKE_T_INT_OP_XOR:
     minres = (INT32)evaluate_binop_min(op,
@@ -14049,6 +14072,7 @@ struct pike_type *apply_type_operator(enum PIKE_TYPE op,
     res = find_lfun_type(arg1, (ptrdiff_t)(void*)arg2);
     break;
   case PIKE_T_INT_OP_SUB:
+  case PIKE_T_INT_OP_MUL:
   case PIKE_T_INT_OP_AND:
   case PIKE_T_INT_OP_XOR:
   case PIKE_T_INT_OP_RANGE:
