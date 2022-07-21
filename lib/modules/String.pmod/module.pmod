@@ -181,7 +181,7 @@ int(0..100) fuzzymatch(string a, string b)
 
   fuzz = low_fuzzymatch(a, b);
   fuzz += low_fuzzymatch(b, a);
-  fuzz = fuzz*100/(sizeof(a)+sizeof(b));
+  fuzz = fuzz*100/[int(1..)](sizeof(a)+sizeof(b));
 
   return [int(0..100)]fuzz;
 }
