@@ -6088,17 +6088,17 @@ multiset & mapping -> mapping
 				      tFuncArg(tSetvar(2, tObj),
 					       tApply(tFindLFun(tVar(2), "``/"),
 						      tVar(1)))),
-			     tOr4(tFunc(tIntPos tIntPos, tIntPos),
-				  tFunc(tIntNeg tIntNeg, tIntPos),
-				  tFunc(tIntPos tIntNeg, tIntNeg),
-				  tFunc(tIntNeg tIntPos, tIntNeg)),
+			     tOr4(tFunc(tIntPos tInt1Plus, tIntPos),
+				  tFunc(tIntNeg tIntMinus, tIntPos),
+				  tFunc(tIntPos tIntMinus, tIntNeg),
+				  tFunc(tIntNeg tInt1Plus, tIntNeg)),
 			     tOr(tFunc(tFloat tOr(tFloat, tInt), tFloat),
 				 tFunc(tInt tFloat, tFloat)),
 			     tFunc(tArr(tSetvar(0, tMix))
-				   tOr3(tArray, tInt, tFloat),
+				   tOr4(tArray, tInt1Plus, tIntMinus, tFloat),
 				   tArr(tArr(tVar(0)))),
 			     tFunc(tNStr(tSetvar(0, tInt))
-				   tOr3(tStr, tInt, tFloat),
+				   tOr4(tStr, tInt1Plus, tIntMinus, tFloat),
 				   tArr(tNStr(tVar(0)))))),
 	    OPT_TRY_OPTIMIZE,0,generate_divide);
 
