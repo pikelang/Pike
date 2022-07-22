@@ -6109,14 +6109,21 @@ multiset & mapping -> mapping
 	    "function(array(0=mixed),int:array(0))|"
 	    "!function(int,int:mixed)&function(int|float,int|float:float) */
   ADD_EFUN2("`%", f_mod,
-	    tOr7(tFunc(tMix tObj,tMix),
-		 tFunc(tObj tMix,tMix),
-		 tFunc(tInt tIntPos, tIntPos),
-		 tFunc(tInt tIntNeg, tIntNeg),
-		 tFunc(tStr tInt,tStr),
-		 tFunc(tArr(tSetvar(0,tMix)) tInt,tArr(tVar(0))),
-		 tIfnot(tFuncV(tNone, tNot(tFlt), tMix),
-			tFunc(tOr(tInt,tFlt) tOr(tInt,tFlt),tFlt))),
+	    tOr9(tFuncArg(tSetvar(0, tObj), tFindLFun(tVar(0), "`%")),
+		 tFunc(tSetvar(0, tMix) tSetvar(1, tObj),
+		       tGetReturn(tApply(tFindLFun(tVar(1), "``%"), tVar(0)))),
+		 tFunc(tInt tSetvar(0, tInt1Plus),
+		       tRangeInt(tInt0, tSubInt(tVar(0), tInt1))),
+		 tFunc(tInt tSetvar(0, tIntMinus),
+		       tRangeInt(tAddInt(tVar(0), tInt1), tInt0)),
+		 tFunc(tNStr(tSetvar(0, tInt)) tSetvar(1, tInt1Plus),
+		       tLStr(tRangeInt(tInt0, tSubInt(tVar(1), tInt1)), tVar(0))),
+		 tFunc(tNStr(tSetvar(0, tInt)) tSetvar(1, tIntMinus),
+		       tLStr(tRangeInt(tInt0, tSubInt(tInt_1, tVar(1))), tVar(0))),
+		 tFunc(tArr(tSetvar(0,tMix)) tOr(tInt1Plus, tIntMinus),
+		       tArr(tVar(0))),
+		 tFunc(tFloat tOr(tInt, tFloat), tFloat),
+		 tFunc(tInt tFloat, tFloat)),
 	    OPT_TRY_OPTIMIZE,0,generate_mod);
 
   /* function(object:mixed)|function(int:int)|function(float:float)|function(string:string) */
