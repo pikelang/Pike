@@ -6128,12 +6128,13 @@ multiset & mapping -> mapping
 
   /* function(object:mixed)|function(int:int)|function(float:float)|function(string:string) */
   ADD_EFUN2("`~",f_compl,
-	    tOr6(tFunc(tObj,tMix),
+	    tOr6(tFuncArg(tSetvar(0, tObj), tFindLFun(tVar(0), "`~")),
 		 tFunc(tSetvar(1, tInt), tInvertInt(tVar(1))),
 		 tFunc(tFlt,tFlt),
-		 tFunc(tStr,tStr),
+		 tFunc(tLStr(tSetvar(0, tIntPos), tSetvar(1, tInt8bit)),
+		       tLStr(tVar(0), tSubInt(tInt255, tVar(1)))),
 		 tFunc(tType(tSetvar(0, tMix)), tType(tNot(tVar(0)))),
-		 tFunc(tPrg(tObj), tType(tMix))),
+		 tFunc(tPrg(tSetvar(0, tObj)), tType(tNot(tVar(0))))),
 	    OPT_TRY_OPTIMIZE,0,generate_compl);
   /* function(string|multiset|array|mapping|object:int(0..)) */
   ADD_EFUN2("sizeof", f_sizeof,
