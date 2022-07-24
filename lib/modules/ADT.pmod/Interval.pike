@@ -34,6 +34,8 @@ class Boundary(mixed x) {
 	    error("lets see how we do this ;) \n");
 	}
     }
+
+    protected Boundary `~();
 }
 
 class Open {
