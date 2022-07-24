@@ -544,7 +544,6 @@ static struct pike_type *debug_mk_type(unsigned INT32 type,
 #endif /* PIKE_EXTRA_DEBUG */
   if (type == PIKE_T_UNKNOWN) return NULL;
   for(t = pike_type_hash[index]; t; t = t->next) {
-    /* if (type == PIKE_T_AUTO) break; */
 #ifdef PIKE_EXTRA_DEBUG
     if (index == extra_debug_index) {
       fprintf(stderr,
@@ -814,13 +813,6 @@ struct pike_type *debug_peek_type_stack(void)
   return *(Pike_compiler->type_stackp);
 }
 
-static void swap_type_stack(void)
-{
-  struct pike_type *tmp = Pike_compiler->type_stackp[-1];
-  Pike_compiler->type_stackp[-1] = Pike_compiler->type_stackp[0];
-  Pike_compiler->type_stackp[0] = tmp;
-}
-
 void debug_push_int_type(INT_TYPE min, INT_TYPE max)
 {
 #if SIZEOF_INT_TYPE > 4
@@ -967,6 +959,7 @@ void debug_push_type_operator(enum PIKE_TYPE op, struct pike_type *arg)
 {
   struct pike_type *t = *Pike_compiler->type_stackp;
   struct pike_type *tmp;
+  int free_arg = 0;
 
 #ifdef PIKE_DEBUG
   if ((op & PIKE_T_MASK) != 0x80) {
@@ -1084,13 +1077,11 @@ static void push_reverse_joiner_type(unsigned int type)
     }
     /* Make a new type of the top two types. */
     --Pike_compiler->type_stackp;
-#if 0
 #ifdef PIKE_DEBUG
     if ((*Pike_compiler->type_stackp)->type == type) {
       Pike_fatal("Invalid CAR to push_reverse_joiner_type().\n");
     }
 #endif /* PIKE_DEBUG */
-#endif
     *Pike_compiler->type_stackp = mk_type(type,
 					  *Pike_compiler->type_stackp,
 					  *(Pike_compiler->type_stackp+1),
@@ -1109,29 +1100,6 @@ static void push_reverse_joiner_type(unsigned int type)
 static void low_or_pike_types(struct pike_type *t1,
 			      struct pike_type *t2,
 			      int zero_implied);
-
-/* NB: Steals the references to cont and trans. */
-static struct pike_type *mk_transitive_type(struct pike_type *cont,
-					    struct pike_type *trans)
-{
-  struct pike_type *tmp, *tmp2, *ret;
-  switch(cont->type)
-  {
-  case T_OR: case T_AND:
-    add_ref(cont->car);
-    add_ref(trans);
-    tmp = mk_transitive_type(cont->car, trans);
-    add_ref(cont->cdr);
-    tmp2 = mk_transitive_type(cont->cdr, trans);
-    ret = mk_type(cont->type, tmp, tmp2, PT_COPY_BOTH);
-    free_type(cont);
-    break;
-  default:
-    ret = mk_type(PIKE_T_TRANSITIVE, cont, trans, PT_COPY_BOTH);
-    break;
-  }
-  return ret;
-}
 
 void debug_push_type(unsigned int type)
 {
@@ -1243,20 +1211,13 @@ void debug_push_type(unsigned int type)
   case T_TUPLE:
   case T_MAPPING:
   case PIKE_T_RING:
+  case PIKE_T_TRANSITIVE:
     /* Make a new type of the top two types. */
     --Pike_compiler->type_stackp;
     *Pike_compiler->type_stackp = mk_type(type,
 					  *(Pike_compiler->type_stackp+1),
 					  *Pike_compiler->type_stackp,
 					  PT_COPY_BOTH);
-    break;
-
-  case PIKE_T_TRANSITIVE:
-    /* Make a new type of the top two types. */
-    --Pike_compiler->type_stackp;
-    *Pike_compiler->type_stackp =
-      mk_transitive_type(*(Pike_compiler->type_stackp+1),
-			 *Pike_compiler->type_stackp);
     break;
 
   case T_PROGRAM:
@@ -1606,7 +1567,7 @@ static void debug_push_finished_type_with_markers(struct pike_type *type,
     /* Assign. */
     int marker = PTR_TO_INT(type->car);
 #ifdef PIKE_TYPE_DEBUG
-    if ((l_flag > 2) || (marker >= 7)) {
+    if (l_flag > 2) {
       fprintf(stderr, "Assign to marker $%"PRINTPTRDIFFT"d.\n",
 	      CAR_TO_INT(type));
     }
@@ -1614,7 +1575,7 @@ static void debug_push_finished_type_with_markers(struct pike_type *type,
     if (marker_set & (PT_FLAG_ASSIGN_0 << marker)) {
       /* The assignment should be kept as-is. */
 #ifdef PIKE_TYPE_DEBUG
-      if ((l_flag > 2) || (marker >= 7)) {
+      if (l_flag > 2) {
 	fprintf(stderr, "Keep assignment.\n");
       }
 #endif /* PIKE_TYPE_DEBUG */
@@ -1627,7 +1588,7 @@ static void debug_push_finished_type_with_markers(struct pike_type *type,
       return;
     } else {
 #ifdef PIKE_TYPE_DEBUG
-      if ((l_flag > 2) || (marker >= 7)) {
+      if (l_flag > 2) {
 	fprintf(stderr, "Strip assignment.\n");
       }
 #endif /* PIKE_TYPE_DEBUG */
@@ -2366,9 +2327,6 @@ static void internal_parse_type(const char **s)
  * the types for the functions can be easily stored in strings.
  * It takes a string on the exact same format as Pike and returns a type
  * struct.
- *
- * NB: Used by the efun __parse_pike_type(), which in turn is
- *     used by build_pgtk.pike.
  */
 struct pike_type *parse_type(const char *s)
 {
@@ -2408,11 +2366,7 @@ void simple_describe_type(struct pike_type *s)
   SET_CYCLIC_RET(1);
 
   if (s) {
-#ifdef PIKE_DEBUG
-    if (l_flag > 10) {
-      fprintf(stderr, "[[[%p:%ld]]]", s, (long)s->refs);
-    }
-#endif
+    /* fprintf(stderr, "[[[%p]]]", s); */
     switch(s->type & PIKE_T_MASK) {
       case '0': case '1': case '2': case '3': case '4':
       case '5': case '6': case '7': case '8': case '9':
@@ -3262,6 +3216,10 @@ int get_int_type_range(struct pike_type *t, INT_TYPE *range)
   return ret;
 }
 
+static void low_or_pike_types(struct pike_type *t1,
+			      struct pike_type *t2,
+			      int zero_implied);
+
 /* Push either t1, t2 or the OR of t1 and t2.
  * Returns -1 if t1 was pushed.
  *          0 if the OR was pushed. (Successful join)
@@ -3281,7 +3239,6 @@ static int lower_or_pike_types(struct pike_type *t1,
   int ret = 0;
   struct pike_type *t = NULL;
   struct pike_type *top = NULL;
-  struct pike_type *free_me = NULL;
 #if 0
   fprintf(stderr, "    lower_or_pike_types(");
   simple_describe_type(t1);
@@ -3299,34 +3256,8 @@ static int lower_or_pike_types(struct pike_type *t1,
     ret = -1;
   } else if ((zero_implied & 1) && (t1->type == T_ZERO)) {
     t = t2;
-    if ((zero_implied & 2) && (t2->type == T_INT)) {
-      if ((CAR_TO_INT(t2) <= 0) && (CDR_TO_INT(t2) >= 0)) {
-	/* No need to do anything. */
-      } else {
-	int min = CAR_TO_INT(t2);
-	int max = CDR_TO_INT(t2);
-	if (max < 0) max = 0;
-	if (min > 0) min = 0;
-	type_stack_mark();
-	push_int_type(min, max);
-	free_me = t = pop_unfinished_type();
-      }
-    }
   } else if ((zero_implied & 1) && (t2->type == T_ZERO)) {
     t = t1;
-    if ((zero_implied & 2) && (t1->type == T_INT)) {
-      if ((CAR_TO_INT(t1) <= 0) && (CDR_TO_INT(t1) >= 0)) {
-	/* No need to do anything. */
-      } else {
-	int min = CAR_TO_INT(t1);
-	int max = CDR_TO_INT(t1);
-	if (max < 0) max = 0;
-	if (min > 0) min = 0;
-	type_stack_mark();
-	push_int_type(min, max);
-	free_me = t = pop_unfinished_type();
-      }
-    }
   } else if ((t1->type == T_NOT) && pike_types_le(t1->car, t2, 0, 0)) {
     t = mixed_type_string;
   } else if ((t2->type == T_NOT) && pike_types_le(t2->car, t1, 0, 0)) {
@@ -3565,10 +3496,11 @@ static int lower_or_pike_types(struct pike_type *t1,
 	if ((max2 < MAX_INT32) && (min1 > max2 + 1)) {
 	  /* No overlap. */
 	  push_finished_type(t);
+#ifdef PIKE_DEBUG
 	} else if ((max1 < MAX_INT32) && (min2 > max1 + 1)) {
 	  /* No overlap and wrong order! */
-	  push_finished_type(t);
-	  swap_type_stack();
+	  Pike_fatal("Bad integer ordering in lower_or_pike_types().\n");
+#endif
 	} else {
 	  Pike_compiler->type_stackp--;
 	  free_type(top);
@@ -3634,7 +3566,6 @@ static int lower_or_pike_types(struct pike_type *t1,
       break;
     }
   }
-  free_type(free_me);
   return ret;
 }
 
@@ -5715,9 +5646,8 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
       int nargs;
       struct pike_type *ai = a;
       struct pike_type *bi = b;
-      /* FIXME: Only use implicit nullable for legacy types. */
-      enum pt_cmp_flags avoidable = PT_FLAG_CMP_NULLABLE;
-      enum pt_cmp_flags bvoidable = PT_FLAG_CMP_NULLABLE;
+      enum pt_cmp_flags avoidable = 0;
+      enum pt_cmp_flags bvoidable = 0;
 
       if ((b->type == T_MANY) && !b->car &&
 	  ((b->cdr == mixed_type_string) || (b->cdr == any_type_string))) {
@@ -5773,8 +5703,8 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	  /* Check the argument. */
 
 	  /* NB: The MANY argument is always voidable. */
-	  if (ai->type == T_MANY) avoidable = PT_FLAG_CMP_VOIDABLE;
-	  if (bi->type == T_MANY) bvoidable = PT_FLAG_CMP_VOIDABLE;
+	  if (ai->type == T_MANY) avoidable |= PT_FLAG_CMP_VOIDABLE;
+	  if (bi->type == T_MANY) bvoidable |= PT_FLAG_CMP_VOIDABLE;
 
 #if 0
 	  fprintf(stderr, "arg_check(op: 0x%x, ", op);
@@ -5798,12 +5728,6 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	   */
 	  tmp = low_type_binop(PT_BINOP_OR, ai->car, bi->car, remap,
 			       avoidable, bvoidable, remap_flags);
-
-	  if (remap_flags & PT_FLAG_REMAP_TRACE) {
-	    fprintf(stderr, "tmp: ");
-	    simple_describe_type(tmp);
-	    fprintf(stderr, "\n");
-	  }
 
 	  /* Advance to the next argument. */
 	  if (ai->type == T_FUNCTION) {
@@ -5889,14 +5813,16 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	 *		 ==>  T_FUNCTION(A - B, X) |	# Keep and
 	 *		      T_FUNCTION(A, Z)		# Recurse
 	 *
+	 *   T_FUNCTION(A - B, X) | T_FUNCTION(A, X - Y)
+	 *
 	 * T_MANY analogous with T_MANY substituted for T_FUNCTION above.
 	 */
 
 	/* Check the argument. */
 
 	/* NB: The MANY argument is always voidable. */
-	if (ai->type == T_MANY) avoidable = PT_FLAG_CMP_VOIDABLE;
-	if (bi->type == T_MANY) bvoidable = PT_FLAG_CMP_VOIDABLE;
+	if (ai->type == T_MANY) avoidable |= PT_FLAG_CMP_VOIDABLE;
+	if (bi->type == T_MANY) bvoidable |= PT_FLAG_CMP_VOIDABLE;
 
 #if 0
 	fprintf(stderr, "arg_check(op: 0x%x, ", op);
@@ -6737,7 +6663,7 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	return NULL;
       }
       if (a->cdr) {
-	if ((a->cdr == b->cdr) && (!b->car || a->car)) {
+	if (a->cdr == b->cdr) {
 	  return NULL;
 	}
 	if (a->car && b->car) {
@@ -6762,7 +6688,6 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
       }
       break;
     default:
-      fprintf(stderr, "Unsupported operation for objects. Binop: 0x%02x\n", op);
       break;
     }
 
@@ -8545,11 +8470,6 @@ static struct pike_type *low_match_types2(struct pike_type *a,
 	}
 #endif /* PIKE_DEBUG */
 
-	if (a->cdr && b && (a->cdr->type == T_OBJECT) &&
-	    (b->type == T_MAPPING)) {
-	  pike_gdb_breakpoint(0);
-	}
-
 	type_stack_mark();
 	push_finished_type_with_markers(b, b_markers, 0);
 	tmp = pop_unfinished_type();
@@ -8569,7 +8489,7 @@ static struct pike_type *low_match_types2(struct pike_type *a,
 	a_markers[m] = pop_unfinished_type();
 
 #ifdef PIKE_TYPE_DEBUG
-	if ((l_flag > 2) || (m >= 7)) {
+	if (l_flag>2) {
 	  fprintf(stderr, "%*sa_markers[%d]=",
 		  indent*2, "", m);
 	  simple_describe_type(a_markers[m]);
@@ -8706,11 +8626,6 @@ static struct pike_type *low_match_types2(struct pike_type *a,
       {
 	struct pike_type *filtered_a = NULL;
 
-	if (b->cdr && a && (b->cdr->type == T_OBJECT) &&
-	    (a->type == T_MAPPING)) {
-	  pike_gdb_breakpoint(0);
-	}
-
 	type_stack_mark();
 	push_finished_type_with_markers(a, a_markers, 0);
 	tmp=pop_unfinished_type();
@@ -8729,7 +8644,7 @@ static struct pike_type *low_match_types2(struct pike_type *a,
 	free_type(tmp);
 	b_markers[m] = pop_unfinished_type();
 #ifdef PIKE_TYPE_DEBUG
-	if ((l_flag > 2) || (m >= 7)) {
+	if (l_flag>2) {
 	  fprintf(stderr, "%*sb_markers[%d]=",
 		  indent*2, "", m);
 	  simple_describe_type(b_markers[m]);
@@ -9186,12 +9101,7 @@ static int low_pike_types_le(struct pike_type *a, struct pike_type *b,
 			     int array_cnt, unsigned int flags)
 {
   int res;
-  int save_l = l_flag;
   DECLARE_CYCLIC();
-
-  if (b && a && (b->type == T_MANY) && (a->type == PIKE_T_TRANSITIVE)) {
-    l_flag = 3;
-  }
 
 #ifdef PIKE_TYPE_DEBUG
   if (l_flag>2) {
@@ -9224,13 +9134,7 @@ static int low_pike_types_le(struct pike_type *a, struct pike_type *b,
 
     fprintf(stderr, "%*s= %d\n", indent*2, "", res);
   }
-
-  if (l_flag != save_l) {
-    fprintf(stderr, "\n---------\n\n");
-  }
 #endif /* PIKE_TYPE_DEBUG */
-
-  l_flag = save_l;
   return res;
 }
 
@@ -9370,11 +9274,6 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
     int m = CAR_TO_INT(b);
     ret = low_pike_types_le(a, b->cdr, array_cnt, flags);
 
-    if (b->cdr && a && (b->cdr->type == T_OBJECT) &&
-	(a->type == T_MAPPING)) {
-      pike_gdb_breakpoint(0);
-    }
-
     if (flags & LE_A_B_SWAPPED) {
       aa_markers = b_markers;
       bb_markers = a_markers;
@@ -9398,7 +9297,7 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
       free_type(tmp);
       bb_markers[m] = pop_unfinished_type();
 #ifdef PIKE_TYPE_DEBUG
-      if ((l_flag > 2) || (m >= 7)) {
+      if (l_flag>2) {
 	if (flags & LE_A_B_SWAPPED) {
 	  fprintf(stderr, "%*sa_markers[%c]=",
 		  indent * 2, "", (char)(m+'0'));
@@ -9616,11 +9515,6 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
     int m = CAR_TO_INT(a);
     ret = low_pike_types_le(a->cdr, b, array_cnt, flags);
 
-    if (a->cdr && b && (a->cdr->type == T_OBJECT) &&
-	(b->type == T_MAPPING)) {
-      pike_gdb_breakpoint(0);
-    }
-
     if (flags & LE_A_B_SWAPPED) {
       aa_markers = b_markers;
       bb_markers = a_markers;
@@ -9643,7 +9537,7 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
       free_type(tmp);
       aa_markers[m] = pop_unfinished_type();
 #ifdef PIKE_TYPE_DEBUG
-      if ((l_flag > 2) || (m >= 7)) {
+      if (l_flag>2) {
 	if (flags & LE_A_B_SWAPPED) {
 	  fprintf(stderr, "%*sb_markers[%c]=",
 		  indent * 2, "", (char)(m+'0'));
@@ -10869,87 +10763,27 @@ static struct pike_type *debug_low_range_type(struct pike_type *t,
   case T_STRING:
     /* Check that the index types are compatible with int. */
     {
-      /* Validate index1 and index2 type against index type. */
-      INT_TYPE index_range[2] = { MAX_INT32, MIN_INT32 };
-      INT_TYPE index1_range[2] = { MAX_INT32, MIN_INT32 };
-      INT_TYPE index2_range[2] = { MAX_INT32, MIN_INT32 };
-      INT_TYPE result_range[2] = { 0, MIN_INT32 };
-      if (index1_type) {
-	if (!get_int_type_range(index1_type, index1_range)) {
-	  ref_push_type_value(t);
-	  yytype_report(REPORT_WARNING, NULL, 0, int_type_string,
-			NULL, 0, index1_type,
-			1, "Bad argument 1 to range operator on %O.");
-	  /* Bad index1 type. */
-	  return 0;
-	}
-      } else {
-	index1_range[1] = index1_range[0] = 0;
+      /* FIXME: Validate index1 and index2 type against index type. */
+      if (index1_type && !match_types(int_type_string, index1_type)) {
+	ref_push_type_value(t);
+	yytype_report(REPORT_WARNING, NULL, 0, int_type_string,
+		      NULL, 0, index1_type,
+		      1, "Bad argument 1 to range operator on %O.");
+	/* Bad index1 type. */
+	return 0;
       }
-      if (index2_type) {
-	if (!get_int_type_range(index2_type, index2_range)) {
-	  ref_push_type_value(t);
-	  yytype_report(REPORT_WARNING, NULL, 0, int_type_string,
-			NULL, 0, index2_type,
-			1, "Bad argument 2 to range operator on %O.");
-	  /* Bad index2 type. */
-	  return 0;
-	}
-      } else {
-	index2_range[0] = index2_range[1] = MAX_INT32;
-      }
-      if (t->car && !get_int_type_range(t->car, index_range)) {
-	/* FIXME: Strange index range for t. */
+      if (index2_type && !match_types(int_type_string, index2_type)) {
+	ref_push_type_value(t);
+	yytype_report(REPORT_WARNING, NULL, 0, int_type_string,
+		      NULL, 0, index2_type,
+		      1, "Bad argument 2 to range operator on %O.");
+	/* Bad index2 type. */
+	return 0;
       }
       /* FIXME: Adjust index type of result to be from
        *        min(index1) to max(index2).
        * FIXME: Do we need to check against the index type too?
        */
-      /* The range is from max(0, min(index2, index) - max(index1)) to
-       * min(max(index2, index) - max(0, min(index1)))
-       */
-      if (index_range[1] < MAX_INT32) {
-	if (index1_range[0] >= index_range[1]) {
-	  /* Result is always empty. */
-	  result_range[1] = 0;
-	} else {
-	  if (index2_range[0] > index_range[0]-1) {
-	    index2_range[0] = index_range[0]-1;
-	  }
-	  if (index2_range[1] > index_range[1]-1) {
-	    index2_range[1] = index_range[1]-1;
-	  }
-	}
-      }
-      if (index2_range[1] < 0) {
-	/* Result is always empty. */
-	result_range[1] = 0;
-      } else {
-	if (index2_range[1] >= MAX_INT32) {
-	  result_range[1] = index_range[1];
-	}
-	result_range[1] = 1 + index2_range[1] - index1_range[0];
-	if (result_range[1] < 0) result_range[1] = 0;
-	result_range[0] = 1 + index2_range[0] - index1_range[1];
-	if (result_range[0] < 0) result_range[0] = 0;
-      }
-#if 0
-      type_stack_mark();
-      if (result_range[1]) {
-	push_finished_type(t->cdr);
-      } else {
-	push_type(PIKE_T_UNKNOWN);
-      }
-      push_int_type(result_range[0], result_range[1]);
-      push_type(t->type);
-      return pop_unfinished_type();
-#else
-      fprintf(stderr, "%s(%ld..%ld)[int(%ld..%ld)..int(%ld..%ld)] ==> %s(%ld..%ld)\n",
-	      get_name_of_type(t->type), index_range[0], index_range[1],
-	      index1_range[0], index1_range[1],
-	      index2_range[0], index2_range[1],
-	      get_name_of_type(t->type), result_range[0], result_range[1]);
-#endif
     }
     /* FALLTHROUGH */
   default:
@@ -10987,13 +10821,6 @@ struct pike_type *range_type(struct pike_type *type,
   if(!t) {
     yytype_report(REPORT_ERROR, NULL, 0, NULL, NULL, 0, NULL,
 		  0, "Invalid range operation.");
-    fprintf(stderr, "type: ");
-    simple_describe_type(type);
-    fprintf(stderr, "\nindex1: ");
-    simple_describe_type(index1_type);
-    fprintf(stderr, "\nindex2: ");
-    simple_describe_type(index2_type);
-    fprintf(stderr, "\n");
     copy_pike_type(t, type);
   }
   return t;
@@ -11605,7 +11432,7 @@ struct pike_type *soft_cast(struct pike_type *soft_type,
 {
   if (flags & SOFT_WEAKER) {
     return type_binop(PT_BINOP_AND, orig_type, soft_type,
-		      PT_FLAG_CMP_NULLABLE, 0, PT_FLAG_REMAP_TRACE);
+		      PT_FLAG_CMP_NULLABLE, 0, 0);
   } else {
     return type_binop(PT_BINOP_AND, orig_type, soft_type, 0, 0, 0);
   }
@@ -12048,7 +11875,6 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
   /* Count the number of array levels. */
   while(fun_type && (fun_type->type == PIKE_T_ARRAY)) {
     array_cnt++;
-    if (!fun_type->cdr) break;
     fun_type = fun_type->cdr;
   }
 
@@ -12500,7 +12326,6 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
     /* Not a callable. */
     break;
   }
-
   /* CAVEAT EMPTOR: When flags & CALL_ARG_LVALUE the
    *                PT_FLAG_REMAP_SWAP_MARKERS flag in remap_flags
    *                may be inverted here if the code above has exited
@@ -12521,15 +12346,13 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
     return res;
   }
 
-  if (array_cnt && res) {
-    type_stack_mark();
-    push_finished_type(res);
-    free_type(res);
-    while(array_cnt--) {
-      push_unlimited_array_type(PIKE_T_ARRAY);
-    }
-    res = pop_unfinished_type();
+  type_stack_mark();
+  push_finished_type(res);
+  free_type(res);
+  while(array_cnt--) {
+    push_unlimited_array_type(PIKE_T_ARRAY);
   }
+  res = pop_unfinished_type();
 
 #ifdef PIKE_DEBUG
   if (l_flag>2) {
