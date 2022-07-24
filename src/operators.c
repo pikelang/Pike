@@ -1765,6 +1765,7 @@ PMOD_EXPORT void f_add(INT32 args)
   case BIT_INT:
   {
     INT_TYPE size = Pike_sp[-args].u.integer;
+    int all_undef = !size && SUBTYPEOF(Pike_sp[-args]);
     for(e = -args+1; e < 0; e++)
     {
       if (DO_INT_TYPE_ADD_OVERFLOW(size, Pike_sp[e].u.integer, &size))
@@ -1773,9 +1774,15 @@ PMOD_EXPORT void f_add(INT32 args)
         f_add(args);
         return;
       }
+      all_undef = all_undef && !size && SUBTYPEOF(Pike_sp[e]);
     }
     Pike_sp-=args;
-    push_int(size);
+    if (all_undef) {
+      /* Adding UNDEFINED's give UNDEFINED. */
+      push_undefined();
+    } else {
+      push_int(size);
+    }
     break;
   }
 
