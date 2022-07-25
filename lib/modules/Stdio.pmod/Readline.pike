@@ -1,5 +1,38 @@
 #pike __REAL_VERSION__
 
+//! Terminal-aware line-based input.
+//!
+//! @example
+//!   // Get a Readline object connected to Stdio.stdin/Stdio.stdout.
+//!   Stdio.Readline readline = Stdio.Readline();
+//!
+//!   // Enable history.
+//!   string|zero history_dump = Stdio.read_file(history_file);
+//!   if (history_dump) {
+//!     readline->enable_history(history_dump/"\n");
+//!   } else {
+//!     readline->enable_history(512);	// 512 lines of history.
+//!   }
+//!
+//!   // Add a completion handler.
+//!   readline->get_input_controller()->bind("\t", handle_completions);
+//!
+//!   // Output some message.
+//!   readline->message("Welcome to some application.\n");
+//!
+//!   // Set a prompt.
+//!   readline->set_prompt("> ");
+//!
+//!   // Read some input.
+//!   string command = readline->read();
+//!
+//!   // Save the history.
+//!   Stdio.write_file(history_file, readline->get_history()->encode());
+//!
+//! @seealso
+//!   @[enable_history()], @[get_history()], @[get_input_controller()],
+//!   @[message()], @[read()], @[set_prompt()]
+
 //!
 //! @fixme
 //!   Ought to have support for charset conversion.
