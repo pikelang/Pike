@@ -749,8 +749,8 @@ static void pipe_input(INT32 args)
        size_t len = s.st_size - filep;
        if(S_ISREG(s.st_mode)	/* regular file */
 	  && (filep >= 0)	/* lseek() succeeded. */
-	  && ((m=(char *)mmap(0, len, PROT_READ,
-			      MAP_FILE|MAP_SHARED,fd,filep))+1))
+	  && ((m = mmap(0, len, PROT_READ,
+			MAP_FILE|MAP_SHARED, fd, filep)) != MAP_FAILED))
        {
 	 mmapped += len;
 
