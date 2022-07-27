@@ -1585,7 +1585,10 @@ void eof()
     newline_func(0);
 }
 
-//! Print a message to the output device
+//! Print a message to the output device.
+//!
+//! @seealso
+//!   @[write()]
 void message(string msg)
 {
   int p = cursorpos;
@@ -1599,8 +1602,10 @@ void message(string msg)
   setcursorpos(p);
 }
 
-//! @fixme
-//!   Document this function
+//! Print a message to the output device with optional word wrap.
+//!
+//! @seealso
+//!   @[message()]
 void write(string msg,void|int word_wrap)
 {
   int p = cursorpos;
@@ -1662,8 +1667,20 @@ void set_blocking()
   set_nonblocking(0);
 }
 
-//! @fixme
-//!   Document this function
+//! Read a line of data from the input.
+//!
+//! @param data
+//!   Initial/default value that the user may edit.
+//!
+//! @param local_prompt
+//!   Alternative prompt. Defaults to the prompt set by @[set_prompt()].
+//!
+//! @param attrs
+//!   Alternative prompt attributes. Defaults to the attributes set
+//!   by @[set_prompt()].
+//!
+//! @seealso
+//!   @[read()]
 string|zero edit(string data, string|void local_prompt,
                  array(string)|void attrs)
 {
@@ -1707,8 +1724,20 @@ string|zero edit(string data, string|void local_prompt,
   return (res>=0 || sizeof(readtext)) && readtext;
 }
 
-//! @fixme
-//!   Document this function
+//! Read a line of data from the input.
+//!
+//! @param prompt
+//!   Alternative prompt. Defaults to the prompt set by @[set_prompt()].
+//!
+//! @param attrs
+//!   Alternative prompt attributes. Defaults to the attributes set
+//!   by @[set_prompt()].
+//!
+//! This function is essentially a short hand for
+//! @code{edit("", prompt, attrs)@}.
+//!
+//! @seealso
+//!   @[edit()]
 string read(string|void prompt, array(string)|void attrs)
 {
   return edit("", prompt, attrs);
