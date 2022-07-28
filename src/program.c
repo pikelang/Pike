@@ -7197,14 +7197,16 @@ INT32 define_function(struct pike_string *name,
 	     *
 	     * Cf Calendar.TimeRanges.TimeRange.
 	     */
-	    int iterator_lfun;
+	    int iterator_lfun, compat_id;
 	    for (iterator_lfun = LFUN__ITERATOR_NEXT_FUN;
 		 iterator_lfun <= LFUN__ITERATOR_VALUE_FUN;
 		 iterator_lfun++) {
-	      if (really_low_find_shared_string_identifier(
+	      if ((compat_id=really_low_find_shared_string_identifier(
                     lfun_compat_strings[iterator_lfun],
                     dmalloc_touch(struct program *, prog),
-		    SEE_PROTECTED) < 0) {
+		    SEE_PROTECTED)) < 0 ||
+		  IDENTIFIER_IS_VARIABLE(ID_FROM_PTR(prog,
+		    prog->identifier_references + compat_id)->identifier_flags)) {
 		/* One of them is missing. */
 		goto skip_special_cases;
 	      }
@@ -8104,10 +8106,13 @@ PMOD_EXPORT int low_find_lfun(struct program *p, enum LFUN lfun)
 	  for (iterator_lfun = LFUN__ITERATOR_NEXT_FUN;
 	       iterator_lfun <= LFUN__ITERATOR_VALUE_FUN;
 	       iterator_lfun++) {
-	    if (really_low_find_shared_string_identifier(
+	    int compat_id;
+	    if ((compat_id = really_low_find_shared_string_identifier(
                   lfun_compat_strings[iterator_lfun],
                   dmalloc_touch(struct program *, p),
-		  SEE_PROTECTED) < 0) {
+		  SEE_PROTECTED)) < 0 ||
+		IDENTIFIER_IS_VARIABLE(ID_FROM_PTR(p,
+		  p->identifier_references + compat_id)->identifier_flags)) {
 	      /* One of them is missing. */
 	      return -1;
 	    }
