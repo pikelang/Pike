@@ -1636,8 +1636,15 @@ private void read_newline(string s)
   readtext = s;
 }
 
-//! @fixme
-//!   Document this function
+//! Set a function to be called every time a line is completed.
+//!
+//! @param f
+//!   Function to call when a line is completed, or @expr{0@} (zero) to
+//!   disable. It will be called with a string when a line is completed,
+//!   and @expr{0@} (zero) when @[eof()] is called.
+//!
+//! @seealso
+//!   @[set_blocking()], @[read()]
 void set_nonblocking(function(string|zero:void)|zero f)
 {
   int p=cursorpos;
@@ -1660,8 +1667,12 @@ void set_nonblocking(function(string|zero:void)|zero f)
   }
 }
 
-//! @fixme
-//!   Document this function
+//! Disable nonblocking mode.
+//!
+//! This is equivalent to calling @expr{set_nonblocking(0)@}.
+//!
+//! @seealso
+//!   @[set_nonblocking()]
 void set_blocking()
 {
   set_nonblocking(0);
