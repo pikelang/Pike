@@ -1220,7 +1220,7 @@ class TeletexString
 
   string(0..255) get_der_content()
   {
-    return [string(0..255)]replace(value, [array(string)]encode_from,
+    return [string(0..255)]replace(value, encode_from,
 				   [array(string(0..255))]encode_to);
   }
 
@@ -1232,8 +1232,7 @@ class TeletexString
     der = contents;
 
     array(string) parts =
-      replace (contents, [array(string)]decode_from,
-	       [array(string)]decode_to) / DEC_COMB_MARK;
+      replace (contents, decode_from, decode_to) / DEC_COMB_MARK;
     value = parts[0];
     foreach (parts[1..], string part)
       value += (decode_comb[part[..1]] || DEC_ERR(part[..1])) + part[2..];
