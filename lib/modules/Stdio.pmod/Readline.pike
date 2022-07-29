@@ -1754,8 +1754,21 @@ string read(string|void prompt, array(string)|void attrs)
   return edit("", prompt, attrs);
 }
 
-//! @fixme
-//!   Document this function
+//! Enable/disable history.
+//!
+//! @param hist
+//!   @mixed
+//!     @type zero
+//!       Disable history.
+//!     @type int(1..)
+//!       Enable history of max @[hist] lines. If history is already enabled
+//!       it is kept and the maximum number of lines adjusted.
+//!     @type array(string)
+//!       Set the history to this array of lines. The maximum number of lines
+//!       is set to 512.
+//!     @type History
+//!       Use this @[History] object.
+//!   @endmixed
 void enable_history(array(string)|History|int hist)
 {
   if (objectp(hist))
@@ -1770,8 +1783,7 @@ void enable_history(array(string)|History|int hist)
     historyobj = History(hist);
 }
 
-//! @fixme
-//!   Document this function
+//! Get the currently active @[History] object (if any).
 History get_history()
 {
   return historyobj;
