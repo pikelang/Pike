@@ -180,18 +180,24 @@ o Runtime
 
 o Operator functions
 
-  Calling operator functions with more than two arguments will now
-  work correctly for objects, where previously only the first two
-  objects where added.
+  - Calling operator functions with more than two arguments will now
+    work correctly for objects, where previously only the first two
+    objects where added.
 
-  When adding arrays, multisets and mappings, UNDEFINED will now
-  always be ignored. Previously it was only ignored when first in the
-  argument list, otherwise an exception would be thrown.
+  - When adding arrays, multisets and mappings, UNDEFINED will now
+    always be ignored. Previously it was only ignored when first in the
+    argument list, otherwise an exception would be thrown.
 
-  The LFUNs will now be called with a consistent number of
-  arguments. Pike implementations rarely implemented varargs on
-  operator LFUNs, so this change should address many potential hidden
-  errors.
+  - Adding UNDEFINED with UNDEFINED now results in UNDEFINED
+    (rather than 0).
+
+  - The LFUNs will now be called with a consistent number of
+    arguments. Pike implementations rarely implemented varargs on
+    operator LFUNs, so this change should address many potential hidden
+    errors.
+
+  - Most operators that use LFUNs now have types that check
+    that the arguments to the corresponding LFUN are correct.
 
 o Pike.Backend
 
