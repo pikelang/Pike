@@ -6022,19 +6022,18 @@ multiset & mapping -> mapping
   ADD_EFUN2("`^", f_xor, LOG_TYPE(LOW_LOG_TYPE(tXorInt)),
 	    OPT_TRY_OPTIMIZE, optimize_binary, generate_xor);
 
-#define SHIFT_TYPE							\
-  tOr3(tIfnot(tFuncV(tNone, tNot(tObj), tMix),				\
-	      tOr(tFunc(tMix tObj,tMix),				\
-		  tFunc(tObj tMix,tMix))),				\
+#define SHIFT_TYPE(LFUN)						\
+  tOr4(tFuncArg(tSetvar(0,tObj), tFindLFun(tVar(0), LFUN)),		\
+       tFunc(tSetvar(0, tMix) tSetvar(1, tObj),				\
+	     tGetReturn(tApply(tFindLFun(tVar(1), "`"LFUN), tVar(0)))), \
        tOr3(tFunc(tInt1Plus tIntPos, tIntPos),				\
-	    tFunc(tInt0 tIntPos, tInt0),				\
+	    tFunc(tOr(tInt0,tZero) tIntPos, tInt0),			\
 	    tFunc(tIntMinus tIntPos, tIntNeg)),				\
-       tIfnot(tFuncV(tNot(tFloat), tNot(tIntPos), tMix),		\
-	      tFunc(tAnd(tFloat, tNot(tInt0)) tIntPos, tFloat)))
+       tFunc(tFloat tIntPos, tFloat))
 
-  ADD_EFUN2("`<<", f_lsh, SHIFT_TYPE, OPT_TRY_OPTIMIZE,
+  ADD_EFUN2("`<<", f_lsh, SHIFT_TYPE("`<<"), OPT_TRY_OPTIMIZE,
 	    may_have_side_effects, generate_lsh);
-  ADD_EFUN2("`>>", f_rsh, SHIFT_TYPE, OPT_TRY_OPTIMIZE,
+  ADD_EFUN2("`>>", f_rsh, SHIFT_TYPE("`>>"), OPT_TRY_OPTIMIZE,
 	    may_have_side_effects, generate_rsh);
 
   /* !function(!object...:mixed)&function(mixed...:mixed)|"
