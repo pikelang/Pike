@@ -5855,16 +5855,20 @@ class Encoder
 
       else if (is_joinnode(what)) {
 	ENC_MSG ("  is a joinnode\n");
-	object modules = Builtin.array_iterator (what->joined_modules);
-	object|mapping value;
-      check_dirnode:
-        if (modules && (value = modules->value()) && is_dirnode(value)) {
-	  string name = program_path_to_name (value->dirname);
-	  modules += 1;
-	  foreach (modules;; value)
-            if (!is_dirnode(value) ||
-		program_path_to_name (value->dirname) != name)
-	      break check_dirnode;
+	string|zero name;
+	foreach(what->joined_modules, object|mapping value) {
+	  if (!is_dirnode(value)) {
+	    name = UNDEFINED;
+	    break;
+	  }
+	  if (!name) {
+	    name = program_path_to_name(value->dirname);
+	  } else if (name != program_path_to_name(value->dirname)) {
+	    name = UNDEFINED;
+	    break;
+	  }
+	}
+	if (name) {
 	  ENC_MSG ("  joinnode has consistent name %O\n", name);
 	  if (string|array ref = compare_resolved (name, what, resolv (name),
 						   module_object))
