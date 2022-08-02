@@ -173,7 +173,7 @@ unsigned int rec_size_svalue( struct svalue *s, struct mapping **m );
 
 /* From iterators.cmod. */
 PMOD_EXPORT void f_get_iterator(INT32 args);
-int foreach_iterate(struct object *o, int do_step);
+int foreach_iterate(struct object *o);
 
 /* From builtin.cmod. */
 PMOD_EXPORT void f_cq__describe_program(INT32 args);
