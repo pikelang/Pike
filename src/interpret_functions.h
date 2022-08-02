@@ -1747,12 +1747,13 @@ OPCODE0(F_MAKE_ITERATOR, "get_iterator", 0, {
 
 /* Stack is: iterator, index lvalue, value lvalue. */
 OPCODE0_BRANCH (F_FOREACH_START, "foreach start", 0, {
+    /* Branch on iterator failure. */
   DO_IF_DEBUG (
     if(TYPEOF(Pike_sp[-5]) != PIKE_T_OBJECT)
       Pike_fatal ("Iterator gone from stack.\n");
   );
   /* FIXME: object subtype. */
-  if (foreach_iterate (Pike_sp[-5].u.object, 0))
+  if (foreach_iterate (Pike_sp[-5].u.object))
     DONT_BRANCH();
   else {
     DO_BRANCH();
@@ -1761,12 +1762,13 @@ OPCODE0_BRANCH (F_FOREACH_START, "foreach start", 0, {
 
 /* Stack is: iterator, index lvalue, value lvalue. */
 OPCODE0_BRANCH(F_FOREACH_LOOP, "foreach loop", 0, {
+    /* Branch on iterator success. */
   DO_IF_DEBUG (
     if(TYPEOF(Pike_sp[-5]) != PIKE_T_OBJECT)
       Pike_fatal ("Iterator gone from stack.\n");
   );
   /* FIXME: object subtype. */
-  if(foreach_iterate(Pike_sp[-5].u.object, 1))
+  if(foreach_iterate(Pike_sp[-5].u.object))
   {
     DO_BRANCH();
   }else{

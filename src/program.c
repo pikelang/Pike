@@ -1538,35 +1538,51 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!   Called by @[reverse()].
  */
 
-/*! @decl int lfun::_iterator_next()
+/*! @decl mixed lfun::_iterator_next()
  *!
  *!   Called in @[Iterator] objects by foreach.
  *!
  *!   Advances the iterator one step.
  *!
- *! @note
- *!   This is the preferred way to advance an iterator, since it
- *!   reduces the overhead.
+ *!   Iterators start at the position before the first element,
+ *!   and @tt{foreach@} calls this function repeatedly until it
+ *!   returns @[UNDEFINED].
+ *!
+ *!   Calling it again after it has returned @[UNDEFINED] will
+ *!   typically cause it to restart the iteration with the
+ *!   first element (ie the start and end sentinel values are
+ *!   the same).
  *!
  *! @returns
- *!   Returns @tt{1@} if it succeeded in advancing, and
- *!   @tt{0@} (zero) if it has reached the end of the iterator.
+ *!   Returns @[UNDEFINED] if there are no more elements in the
+ *!   iterator. Otherwise it may return any other value, which
+ *!   for convenience will be used as index and/or value in case
+ *!   there is no @[lfun::_iterator_index()] and/or no
+ *!   @[lfun::_iterator_value()].
+ *!
+ *! @seealso
+ *!   @[lfun::_iterator_index()], @[lfun::_iterator_value()]
  */
 
 /*! @decl mixed lfun::_iterator_index()
  *!
- *!   Called in @[Iterator] objects by foreach.
+ *!   Called in @[Iterator] objects by foreach (optional).
  *!
  *!   Returns the current index for an iterator, or @[UNDEFINED]
- *!   if the iterator doesn't point to any item.
+ *!   if the iterator doesn't point to any item. If this
+ *!   function is not present, the return value from
+ *!   @[lfun::_iterator_next()] will be used.
  *!
  *!   If there's no obvious index set then the index is the current
  *!   position in the data set, counting from @expr{0@} (zero).
+ *!
+ *! @seealso
+ *!   @[lfun::_iterator_next()], @[lfun::_iterator_value()]
  */
 
 /*! @decl mixed lfun::_iterator_value()
  *!
- *!   Called in @[Iterator] objects by foreach.
+ *!   Called in @[Iterator] objects by foreach (optional).
  *!
  *!   Returns the current value for an iterator, or @[UNDEFINED]
  *!   if the iterator doesn't point to any item.
@@ -3043,6 +3059,9 @@ int override_identifier (struct reference *new_ref, struct pike_string *name,
   return id;
 }
 
+static void f_compat__iterator_next(INT32 args);
+static ptrdiff_t alignof_variable(int run_time_type);
+
 void fixate_program(void)
 {
   struct compilation *c = THIS_COMPILATION;
@@ -3257,8 +3276,6 @@ void fixate_program(void)
     p->num_identifier_index = i;
   }
 
-  p->flags |= PROGRAM_FIXED;
-
   {
     int found = 1;		/* Assume __INIT */
     int n;
@@ -3317,6 +3334,53 @@ void fixate_program(void)
       }
     }
   }
+
+  if (((i = FIND_LFUN(p, LFUN__ITERATOR_NEXT_FUN)) >= 0) &&
+      (ID_FROM_INT(p, i)->name != lfun_strings[LFUN__ITERATOR_NEXT_FUN])) {
+    /* We need a compat lfun::_iterator_next().
+     *
+     * NB: Do this with the lower level functions to avoid complaints
+     *     about adding symbols in COMPILER_PASS_LAST.
+     *
+     * NB: Due to the symbols being ID_PROTECTED we can still add
+     *     them after setting up the identifier_index table above.
+     */
+    union idptr func;
+    struct reference ref;
+#ifdef PIKE_DEBUG
+    /* Silence complaints about adding identifiers in the last pass. */
+    Pike_compiler->compiler_pass = COMPILER_PASS_FIRST;
+#endif
+    func.c_fun = f_compat__iterator_next;
+    i = low_add_identifier(c, ID_FROM_INT(p, i)->type,
+			   lfun_strings[LFUN__ITERATOR_NEXT_FUN],
+			   IDENTIFIER_C_FUNCTION, 0, func,
+			   PIKE_T_FUNCTION);
+    ref.id_flags = ID_LOCAL|ID_PROTECTED;
+    ref.identifier_offset = i;
+    ref.inherit_offset = 0;
+    ref.run_time_type = PIKE_T_UNKNOWN;
+    i = p->num_identifier_references;
+    add_to_identifier_references(ref);
+    /* Update the lfun table. */
+    p->lfuns[p->lfuns[LFUN__ITERATOR_NEXT_FUN >> 4] +
+	     (LFUN__ITERATOR_NEXT_FUN & 0x0f)] = i;
+
+    /* Add the state variable for f_compat__iterator_next(). */
+    push_constant_text("__iterator_state__");
+    i = low_define_variable(Pike_sp[-1].u.string, bool_type_string,
+			    ID_LOCAL|ID_PROTECTED|ID_PRIVATE|ID_USED,
+			    low_add_storage(sizeof_variable(PIKE_T_INT),
+					    alignof_variable(PIKE_T_INT), 0),
+			    PIKE_T_INT);
+    pop_stack();
+#ifdef PIKE_DEBUG
+    /* Silence complaints about adding identifiers in the last pass. */
+    Pike_compiler->compiler_pass = COMPILER_PASS_LAST;
+#endif
+  }
+
+  p->flags |= PROGRAM_FIXED;
 
   /* Complain about unused private symbols. */
   for (i = 0; i < p->num_identifier_references; i++) {
@@ -8063,6 +8127,45 @@ static void f_dispatch_variant(INT32 args)
     }
   } else {
     Pike_error("Too many arguments to %S().\n", name);
+  }
+}
+
+/**
+ * Compatibility lfun::_iterator_next() for code that uses
+ * the old iterator API.
+ *
+ * Note: We have a private state variable at ref + 1.
+ */
+static void f_compat__iterator_next(INT32 args)
+{
+  struct pike_frame *fp = Pike_fp;
+  int state_var = fp->fun + 1;
+  int fun;
+
+  push_int(0);
+  low_object_index_no_free(Pike_sp-1, fp->current_object, state_var);
+  if (UNSAFE_IS_ZERO(Pike_sp-1)) {
+    /* First call. */
+
+    fun = FIND_LFUN(fp->current_program, LFUN_NOT);
+    if (fun < 0) Pike_error("Iterator lacks `!.\n");
+    apply_current(fun, 0);
+    if (!UNSAFE_IS_ZERO(Pike_sp-1)) {
+      push_undefined();
+      return;
+    }
+    push_int(1);
+    object_low_set_index(fp->current_object, state_var, Pike_sp-1);
+    return;
+  }
+  /* FIXME: Ought to apply next() in the current inherit, but this is
+   *        likely good enough.
+   */
+  apply(fp->current_object, "next", 0);
+  if (UNSAFE_IS_ZERO(Pike_sp-1)) {
+    pop_stack();
+    push_undefined();
+    object_low_set_index(fp->current_object, state_var, Pike_sp-1);
   }
 }
 
