@@ -47,6 +47,7 @@ int max_correct_args;
 
 PMOD_EXPORT struct pike_type *string0_type_string;
 PMOD_EXPORT struct pike_type *string_type_string;
+PMOD_EXPORT struct pike_type *bool_type_string;
 PMOD_EXPORT struct pike_type *int_type_string;
 PMOD_EXPORT struct pike_type *int_pos_type_string;
 PMOD_EXPORT struct pike_type *float_type_string;
@@ -15106,6 +15107,7 @@ void init_types(void)
 
   type_stack_mark();	/* Type stack marker sentinel. */
 
+  bool_type_string = CONSTTYPE(tInt01);
   int_type_string = CONSTTYPE(tInt);	/* MUST come before string and array! */
   int_pos_type_string = CONSTTYPE(tIntPos);
   string0_type_string = CONSTTYPE(tStr0);
@@ -15195,6 +15197,8 @@ void cleanup_pike_types(void)
   string0_type_string = NULL;
   free_type(string_type_string);
   string_type_string = NULL;
+  free_type(bool_type_string);
+  bool_type_string = NULL;
   free_type(int_type_string);
   int_type_string = NULL;
   free_type(int_pos_type_string);

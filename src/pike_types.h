@@ -265,6 +265,7 @@ static inline void free_type(struct pike_type *t)
 extern int max_correct_args;
 PMOD_EXPORT extern struct pike_type *string0_type_string;
 PMOD_EXPORT extern struct pike_type *string_type_string;
+PMOD_EXPORT extern struct pike_type *bool_type_string;
 PMOD_EXPORT extern struct pike_type *int_type_string;
 PMOD_EXPORT extern struct pike_type *int_pos_type_string;
 PMOD_EXPORT extern struct pike_type *float_type_string;
