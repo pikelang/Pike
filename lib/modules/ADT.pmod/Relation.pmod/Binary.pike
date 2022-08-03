@@ -1,11 +1,15 @@
-// An abstract data type for binary relations.
+//! An abstract data type for binary relations.
+//!
+//! This datatype implements something similar to
+//! a set of tuples <@tt{left@}, @tt{right@}>, or
+//! a multi-valued mapping.
 
 #pike __REAL_VERSION__
 
-private mapping val   = ([]);
-private mixed   id;
-private int     items = 0;
-private int     need_recount = 0;
+private mapping(mixed:multiset) val          = ([]);
+private mixed                   id;
+private int                     items        = 0;
+private int                     need_recount = 0;
 
 constant is_binary_relation = 1;
 
@@ -249,63 +253,58 @@ protected void create(void|mixed _id, void|mapping|object _initial)
 //! available as index/value pairs.
 protected class _get_iterator {
 
-  protected int(0..) ipos;
-  protected int(0..) vpos;
-  protected int(0..1) finished = 1;
+  protected int(-1..) ipos = -1;
+  protected int(-1..) vpos = -1;
 
-  protected array lefts;
-  protected array rights;
-
-  protected void create() {
-    first();
-  }
+  protected array lefts = indices(val);
+  protected array rights = ({});
 
   protected mixed _iterator_index() {
-    return finished ? UNDEFINED : lefts[ipos];
+    if (ipos < 0) return UNDEFINED;
+    return lefts[ipos];
   }
 
   protected mixed _iterator_value() {
-    return finished ? UNDEFINED : rights[vpos];
+    if (ipos < 0) return UNDEFINED;
+    return rights[vpos];
   }
 
-  protected int(0..1) `!() {
-    return finished;
-  }
-
-  protected int(0..1) _iterator_next() {
-
-    if(finished || (ipos==sizeof(lefts)-1 &&
-		    vpos==sizeof(rights)-1)) {
-      finished = 1;
-      return 0;
-    }
-
+  protected int(0..) _iterator_next()
+  {
     vpos++;
-    if(vpos>sizeof(rights)-1 && !finished) {
+    if (vpos >= sizeof(rights)) {
       ipos++;
-      rights = indices(val[lefts[ipos]]);
       vpos = 0;
+      if (ipos >= sizeof(lefts)) {
+	ipos = -1;
+	vpos = -1;
+	return UNDEFINED;
+      }
+      rights = indices(val(lefts[ipos]));
+      // NB: We assume that rights is not empty.
     }
 
-    return 1;
+    return ipos;
   }
 
   protected this_program `+=(int steps) {
     if (steps < 0) error ("Cannot step backwards.\n");
-    while(steps--)
-      _iterator_next();
+    while(steps--) {
+      if (zero_type(_iterator_next())) {
+	// Stop at the last element.
+	ipos = sizeof(lefts) - 1;
+	vpos = sizeof(rights) - 1;
+	break;
+      }
+    }
     return this;
   }
 
-  int(0..1) first() {
-    lefts = indices(val);
-    if(sizeof(lefts)) {
-      rights = indices(val[lefts[0]]);
-      finished = 0;
-    }
-    else
-      finished = 1;
-    return !finished;
+  int(0..1) first()
+  {
+    ipos = -1;
+    vpos = -1;
+    return !!sizeof(lefts);
   }
 }
 
