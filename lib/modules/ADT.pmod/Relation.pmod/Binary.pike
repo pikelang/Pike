@@ -280,7 +280,7 @@ protected class _get_iterator {
 	vpos = -1;
 	return UNDEFINED;
       }
-      rights = indices(val(lefts[ipos]));
+      rights = indices(val[lefts[ipos]]);
       // NB: We assume that rights is not empty.
     }
 
