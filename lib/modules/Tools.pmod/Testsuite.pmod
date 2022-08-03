@@ -588,11 +588,10 @@ class Test
 class Testsuite
 {
   protected int(0..) _sizeof();
-  protected this_program `+(mixed steps);
-  protected int(0..1) `!();
   protected int(0..1) _iterator_next();
   protected int(0..) _iterator_index();
   protected Test _iterator_value();
+  protected this_program `+(int steps);
   optional string name();
 }
 
@@ -674,25 +673,16 @@ class M4Testsuite
 
   // Iterator API
 
-  protected int position;
-
-  protected int(0..1) `!()
-  {
-    return position >= sizeof(tests);
-  }
+  protected int position = -1;
 
   protected int(0..) _iterator_next()
   {
     position++;
-    return position < sizeof(tests);
-  }
-
-  protected this_program `+(mixed steps)
-  {
-    if(!intp(steps))
-      error("Can only step forward integer number of steps.\n");
-    position += steps;
-    return this;
+    if (position >= sizeof(tests)) {
+      position = -1;
+      return UNDEFINED;
+    }
+    return position;
   }
 
   protected int _iterator_index()
@@ -702,11 +692,27 @@ class M4Testsuite
 
   protected Test _iterator_value()
   {
-    if( `!() ) return UNDEFINED;
+    if (position < 0) return UNDEFINED;
     Test ret = M4Test(tests[position]);
     if(compat)
       ret->add_plugin(compat);
     return ret;
+  }
+
+  // Convenience API
+
+  protected this_program `+(int steps)
+  {
+    if (!intp(steps)) {
+      error("Can only step forward integer number of steps.\n");
+    }
+    position += steps;
+    if (position >= sizeof(tests)) {
+      position = sizeof(tests) - 1;
+    } else if (position <= -1) {
+      position = -1;
+    }
+    return this;
   }
 }
 
@@ -1038,7 +1044,7 @@ test_equal(max($2,$1,$3), $3)
 
   protected Test _iterator_value()
   {
-    if( `!() ) return UNDEFINED;
+    if (position < 0) return UNDEFINED;
     Test ret = tests[position];
     if(compat)
       ret->add_plugin(compat);
