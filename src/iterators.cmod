@@ -422,28 +422,18 @@ PIKECLASS mapping_iterator
     {
 #ifdef PIKE_MAPPING_KEYPAIR_LOOP
       size_t k = call_random(THIS->md->size);
-      THIS->current = MD_KEYPAIRS(THIS->md, THIS->md->hashsize) + k;
+      THIS->current =
+	k?(MD_KEYPAIRS(THIS->md, THIS->md->hashsize) + k - 1):0;
 #else /* !PIKE_MAPPING_KEYPAIR_LOOP */
+      THIS->current = 0;
+      THIS->bucket = -1;
       if(THIS->md && THIS->md->hashsize)
       {
         int count = call_random(THIS->md->size);
-        int b;
-        for(b=0; b<THIS->md->hashsize; b++) {
-          struct keypair *k;
-          for(k=THIS->md->hash[THIS->bucket]; k; k=k->next)
-            if( count-- < 0 )
-            {
-              THIS->bucket = b;
-              THIS->current = k;
-              goto done;
-            }
-        }
-      }else{
-	THIS->bucket=-1;
-	THIS->current=0;
+	while (count--) {
+	  mi_step(THIS);
+	}
       }
-    done:
-      step_bucket(THIS);
 #endif /* PIKE_MAPPING_KEYPAIR_LOOP */
       REF_RETURN Pike_fp->current_object;
     }
@@ -587,9 +577,9 @@ PIKECLASS array_iterator
     flags ID_PROTECTED;
     {
       if(THIS->a && THIS->a->size)
-        THIS->pos=call_random(THIS->a->size);
+        THIS->pos = call_random(THIS->a->size) - 1;
       else
-	THIS->pos=0;
+	THIS->pos = -1;
       REF_RETURN Pike_fp->current_object;
     }
 
@@ -820,9 +810,11 @@ PIKECLASS multiset_iterator
 	sub_msnode_ref (THIS->l);
 	THIS->nodepos = -1;
       }
-      if (!multiset_is_empty (THIS->l))
+      if (!multiset_is_empty (THIS->l)) {
+	int count = call_random(multiset_sizeof (THIS->l));
 	THIS->nodepos =
-          multiset_get_nth (THIS->l, call_random(multiset_sizeof (THIS->l)));
+          count?multiset_get_nth (THIS->l, count - 1):-1;
+      }
       REF_RETURN Pike_fp->current_object;
     }
 
@@ -980,9 +972,9 @@ PIKECLASS string_iterator
     flags ID_PROTECTED;
     {
       if(THIS->s->len)
-        THIS->pos=call_random(THIS->s->len);
+        THIS->pos = call_random(THIS->s->len) - 1;
       else
-	THIS->pos=0;
+	THIS->pos = -1;
       REF_RETURN Pike_fp->current_object;
     }
 
