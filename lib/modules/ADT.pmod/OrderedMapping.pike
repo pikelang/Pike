@@ -242,54 +242,43 @@ protected string _sprintf(int t) {
 }
 
 protected class InternalIterator {
-  private int idx = 0;
+  private int idx = -1;
 
   protected int _sizeof() {
     return sizeof(__indices);
   }
 
-  protected bool _iterator_next() {
-    return idx < sizeof(__indices) && ++idx < sizeof(__indices);
+  protected int _iterator_next() {
+    if (++idx < sizeof(__indices)) {
+      return idx;
+    }
+    idx = -1;
+    return UNDEFINED;
   }
 
 
   bool first() {
-    idx = 0;
+    idx = -1;
     return !!sizeof(__indices);
   }
 
 
   protected string _iterator_index() {
-    return __indices[idx];
+    return (idx >= 0) ? __indices[idx] : UNDEFINED;
   }
 
 
   protected mixed _iterator_value() {
-    return __map[__indices[idx]];
-  }
-
-
-  protected this_program `+(int steps) {
-    this_program x = this_program();
-    x += idx + steps;
-    return x;
-  }
-
-
-  protected this_program `-(int steps) {
-    this_program x = this_program();
-    x += idx - steps;
-    return x;
+    return (idx >= 0) ? __map[__indices[idx]] : UNDEFINED;
   }
 
 
   protected this_program `+=(int steps) {
     idx += steps;
+    if (idx >= sizeof(__indices)) {
+      idx = sizeof(__indices) - 1;
+    }
+    if (idx < -1) idx = -1;
     return this;
-  }
-
-
-  protected bool `!() {
-    return idx >= sizeof(__indices);
   }
 }
