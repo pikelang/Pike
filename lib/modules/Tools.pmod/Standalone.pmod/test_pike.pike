@@ -73,19 +73,20 @@ array(string) find_testsuites(string dir)
 class ScriptTestsuite(string|zero file_name)
 {
   inherit Testsuite;
+
+  int pos = -1;
+
   protected int(1..1) _sizeof() { return 1; }
-  protected this_program `+(mixed steps)
-  {
-    if(steps) file_name = 0;
-    return this;
-  }
-  protected int(0..1) `!() { return !file_name; }
   protected int(0..0) _iterator_next()
   {
-    file_name = 0;
+    pos++;
+    if (pos) {
+      pos = -1;
+      return UNDEFINED;
+    }
     return 0;
   }
-  protected int(0..) _iterator_index() { return 0; }
+  protected int(0..) _iterator_index() { return pos && UNDEFINED; }
   protected Test _iterator_value()
   {
     return Test(file_name, 1, 1, "RUNCT",
