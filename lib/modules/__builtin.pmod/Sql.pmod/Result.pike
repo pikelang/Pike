@@ -213,46 +213,35 @@ this_program next_result();
 
 class _get_iterator
 {
-  protected int|array(string|int) row = fetch_row();
-  protected int pos = 0;
+  protected int|array(string|int) row = UNDEFINED;
 
   protected int _iterator_index()
   {
-    return pos;
+    if (!row) return UNDEFINED;
+    return index;
   }
 
   protected int|array(string|int) _iterator_value()
   {
+    if (!row) return UNDEFINED;
     return row;
   }
 
-  protected int(0..1) _iterator_next()
+  protected int _iterator_next()
   {
-    pos++;
-    return !!(row = fetch_row());
+    if (row = fetch_row()) {
+      return index;
+    }
+    row = UNDEFINED;
+    return UNDEFINED;
   }
 
   protected this_program `+=(int steps)
   {
     if(!steps) return this;
     if(steps<0) error("Iterator must advance a positive numbe of steps.\n");
-    if(steps>1)
-    {
-      pos += steps-1;
-      seek(steps-1);
-    }
-    _iterator_next();
+    seek(steps);
     return this;
-  }
-
-  protected int(0..1) `!()
-  {
-    return eof();
-  }
-
-  protected int _sizeof()
-  {
-    return num_fields();
   }
 }
 
