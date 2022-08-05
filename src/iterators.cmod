@@ -270,6 +270,133 @@ PIKECLASS Iterator
   {}
 }
 
+/*! @class CompatIterator
+ *!
+ *! Wrapper for iterators implementing the Pike 8.0 and
+ *! earlier iterator API. Used transparantly by
+ *! @[predef::get_iterator()] to provide an iterator
+ *! suitable for @[foreach()].
+ *!
+ *! @note
+ *!   This class provides only those functions that are required
+ *!   by the iterator API. It does not proxy any other functions.
+ *!
+ *! @seealso
+ *!   @[get_iterator()]
+ */
+PIKECLASS CompatIterator
+{
+  /*! @decl inherit Iterator
+   */
+  INHERIT Iterator;
+
+  PIKEVAR object iter flags ID_PRIVATE;
+
+  CVAR int count;
+
+  /*! @decl void create(Iterator old_style_iterator)
+   */
+  PIKEFUN void create(object iter)
+    flags ID_PROTECTED;
+  {
+    /* In the old API the following functions were required
+     * (in order of use):
+     *
+     * `!(), next() or `+=(), index(), value()
+     */
+#define REQUIRE_LFUN(LFUN) do {				\
+      if (FIND_LFUN(iter->prog, LFUN) < 0) {	\
+	SIMPLE_BAD_ARG_ERROR(NULL, 1, "Iterator");	\
+      }							\
+    } while(0)
+    REQUIRE_LFUN(LFUN_NOT);
+    REQUIRE_LFUN(LFUN__ITERATOR_INDEX_FUN);
+    REQUIRE_LFUN(LFUN__ITERATOR_VALUE_FUN);
+    if ((FIND_LFUN(iter->prog, LFUN__ITERATOR_NEXT_FUN) < 0) &&
+	(FIND_LFUN(iter->prog, LFUN_ADD_EQ) < 0)) {
+      SIMPLE_BAD_ARG_ERROR(NULL, 1, "Iterator");
+    }
+    if (THIS->iter) {
+      free_object(THIS->iter);
+    }
+    THIS->iter = iter;
+    add_ref(THIS->iter);
+    THIS->count = 0;
+  }
+
+  PIKEFUN mixed _iterator_next()
+    flags ID_PROTECTED;
+  {
+    int fun;
+    if (!THIS->iter || !THIS->iter->prog) {
+      goto fail;
+    }
+    if (!THIS->count) {
+      fun = FIND_LFUN(THIS->iter->prog, LFUN_NOT);
+      apply_low(THIS->iter, fun, 0);
+      if (!UNSAFE_IS_ZERO(Pike_sp-1)) {
+	goto fail;
+      }
+      THIS->count++;
+    } else {
+      fun = FIND_LFUN(THIS->iter->prog, LFUN__ITERATOR_NEXT_FUN);
+      if (fun < 0) {
+	fun = FIND_LFUN(THIS->iter->prog, LFUN_ADD_EQ);
+	push_int(1);
+	apply_low(THIS->iter, fun, 1);
+	pop_stack();
+	fun = FIND_LFUN(THIS->iter->prog, LFUN_NOT);
+	apply_low(THIS->iter, fun, 0);
+	if (!UNSAFE_IS_ZERO(Pike_sp-1)) {
+	  goto fail;
+	}
+      } else {
+	apply_low(THIS->iter, fun, 0);
+	if (UNSAFE_IS_ZERO(Pike_sp-1)) {
+	  goto fail;
+	}
+      }
+    }
+
+    fun = FIND_LFUN(THIS->iter->prog, LFUN__ITERATOR_INDEX_FUN);
+    apply_low(THIS->iter, fun, 0);
+    return;
+
+  fail:
+    if (THIS->iter) {
+      free_object(THIS->iter);
+      THIS->iter = NULL;
+    }
+    push_undefined();
+  }
+
+  PIKEFUN mixed _iterator_index()
+    flags ID_PROTECTED;
+  {
+    int fun;
+    if (!THIS->iter || !THIS->iter->prog || !THIS->count) {
+      push_undefined();
+      return;
+    }
+    fun = FIND_LFUN(THIS->iter->prog, LFUN__ITERATOR_INDEX_FUN);
+    apply_low(THIS->iter, fun, 0);
+  }
+
+  PIKEFUN mixed _iterator_value()
+    flags ID_PROTECTED;
+  {
+    int fun;
+    if (!THIS->iter || !THIS->iter->prog || !THIS->count) {
+      push_undefined();
+      return;
+    }
+    fun = FIND_LFUN(THIS->iter->prog, LFUN__ITERATOR_VALUE_FUN);
+    apply_low(THIS->iter, fun, 0);
+  }
+}
+/*! @endclass
+ */
+
 /* Calls the random(int) function of the top of the stack with the
    given range limit. */
 static unsigned INT_TYPE call_random(unsigned INT_TYPE limit)
@@ -1867,8 +1994,9 @@ PIKECLASS string_split_iterator
  *!       it's called in it with the arguments @[args] to create the iterator.
  *!
  *!       If @[data] is an object that lacks @[lfun::_get_iterator] then
- *!       it's assumed to already be an iterator object, and is simply
- *!       returned.
+ *!       it's checked if it has @[lfun::_iterator_next()] in which case
+ *!       it will simply be returned. Otherwise an attempt to wrap it in
+ *!       a @[CompatIterator] will be performed.
  *!     @type array
  *!       If @[data] is an array, an @[Array.Iterator] object will be
  *!       returned.
@@ -1938,7 +2066,15 @@ PIKEFUN object(Iterator) get_iterator(object|array|mapping|multiset|string data,
 	return;
       }
 
-      /* Assume it already is an iterator... */
+      fun = FIND_LFUN(p->inherits[SUBTYPEOF(*data)].prog,
+		      LFUN__ITERATOR_NEXT_FUN);
+      if ((fun >= 0) &&
+	  (ID_FROM_INT(p->inherits[SUBTYPEOF(*data)].prog, fun)->name ==
+	   lfun_strings[LFUN__ITERATOR_NEXT_FUN])) {
+	/* Assume it already is an iterator... */
+	return;
+      }
+      push_object(clone_object(CompatIterator_program, 1));
       return;
     }
 
