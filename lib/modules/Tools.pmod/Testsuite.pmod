@@ -591,7 +591,7 @@ class Testsuite
   protected int(0..1) _iterator_next();
   protected int(0..) _iterator_index();
   protected Test _iterator_value();
-  protected this_program `+(int steps);
+  this_program skip(int steps);
   optional string name();
 }
 
@@ -701,7 +701,7 @@ class M4Testsuite
 
   // Convenience API
 
-  protected this_program `+(int steps)
+  this_program skip(int steps)
   {
     if (!intp(steps)) {
       error("Can only step forward integer number of steps.\n");

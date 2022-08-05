@@ -92,6 +92,10 @@ class ScriptTestsuite(string|zero file_name)
     return Test(file_name, 1, 1, "RUNCT",
                 sprintf("array a() { return Tools.Testsuite.run_script (({ %q })); }", file_name));
   }
+  this_program skip(int steps)
+  {
+    pos += steps;
+  }
 }
 
 object(Testsuite)|zero read_tests( string fn ) {
@@ -942,7 +946,7 @@ int main(int argc, array(string) argv)
                 0 && subprocess && ("pid " + getpid())}) * ", ");
       int qmade, qskipped, qmadep, qskipp;
 
-      tests+=start;
+      tests->skip(start);
       foreach(tests; int e; Test test)
       {
 	if (!((e-start) % 10))
