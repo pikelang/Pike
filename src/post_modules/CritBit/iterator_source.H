@@ -1,3 +1,4 @@
+/* -*- mode: C; c-basic-offset: 4; -*- */
     DOCSTART() @class _get_iterator
      *! Iterator class for tree_class trees. Supports iterating over ranges
      *! with arbitrary stepping and direction.
@@ -18,6 +19,7 @@
 	CVAR cb_value lastval;
 	CVAR size_t * revv, lastrev;
 	CVAR INT_TYPE step;
+	CVAR cb_key start;
 	CVAR cb_key stop;
 
 
@@ -36,12 +38,20 @@
 	    SET_SVAL_TYPE(THIS->lastval, T_VOID);
 	    THIS->lastnode = NULL;
 	    THIS->step = 1;
+	    THIS->start.len.chars = 0;
+	    THIS->start.len.bits = 0;
+	    THIS->start.str = (cb_string)0;
 	    THIS->stop.len.chars = 0;
 	    THIS->stop.len.bits = 0;
 	    THIS->stop.str = (cb_string)0;
 	}
 
 	EXIT {
+	    if (THIS->start.len.chars || THIS->start.len.bits ||
+		THIS->start.str) {
+		CB_FREE_KEY(THIS->start);
+	    }
+
 	    if (THIS->stop.len.chars || THIS->stop.len.bits || THIS->stop.str) {
 		CB_FREE_KEY(THIS->stop);
 	    }
@@ -154,6 +164,9 @@
 	    THIS->revv = &(T->rev);
 	    THIS->tree = T->tree.root;
 
+	    THIS->start.len.chars = 0;
+	    THIS->start.len.bits = 0;
+
 	    THIS->stop.len.chars = 0;
 	    THIS->stop.len.bits = 0;
 
@@ -182,7 +195,6 @@
                 }
 
                 if (start) {
-                  cb_key s;
                   if (encode_fun >= 0) {
                     push_svalue(start);
                     apply_low(tree, encode_fun, 1);
@@ -191,37 +203,11 @@
                     if (!((1<<TYPEOF(*start)) & T_KEY))
                       SIMPLE_ARG_TYPE_ERROR("create", 2, cmod_STRFY_EVAL(key_ptype));
                   }
-                  s = CB_LOW_KEY_FROM_SVALUE(start);
-
-                  t = cb_index(THIS->tree, s);
-
-                  if (!t) {
-                    t = (THIS->step < 0)
-                      ? cb_find_previous(THIS->tree, s)
-                      : cb_find_next(THIS->tree, s);
-                    if (t && (THIS->stop.len.chars || THIS->stop.len.bits)) {
-                      /* check if we ran over stop */
-                      if (THIS->step < 0) {
-                        if (CB_KEY_LT(t->key, THIS->stop))
-                          t = NULL;
-                      } else {
-                        if (CB_KEY_LT(THIS->stop, t->key))
-                          t = NULL;
-                      }
-                    }
-                  }
+                  THIS->start = CB_LOW_KEY_FROM_SVALUE(start);
+		  CB_ADD_KEY_REF(THIS->start);
                 }
 
-                if (!t) t = (THIS->step < 0)
-                          ? cb_find_last(THIS->tree)
-                          : cb_find_first(THIS->tree);
-
-		if (t) {
-		    CB_GET_VALUE(t, &THIS->lastval);
-		    THIS->lastkey = t->key;
-		    CB_ADD_KEY_REF(THIS->lastkey);
-		}
-		THIS->lastnode = t;
+		THIS->lastnode = NULL;
             }
             pop_n_elems(args);
         }
@@ -232,14 +218,63 @@
 	    ref_push_object(Pike_fp->current_object);
 	}
 
-	PIKEFUN int _iterator_next()
+	PIKEFUN mixed _iterator_next()
 	  flags ID_PROTECTED;
 	{
-	    if(cmod_CONCAT_EVAL(tree_class,_,iterator_class,_step)()) {
-		push_int(1);
+	    struct object *tree = TREE_CLASSIFY(_get_iterator_find_parent)();
+	    TREE_T *T = GET_TREE_STORAGE(tree);
+
+	    if (!THIS->lastnode) {
+		cb_node_t t = NULL;
+
+		if (THIS->start.len.chars || THIS->start.len.bits) {
+		    t = cb_index(THIS->tree, THIS->start);
+
+		    if (!t) {
+			if (THIS->step < 0) {
+			    t = cb_find_previous(THIS->tree, THIS->start);
+			} else {
+			    t = cb_find_next(THIS->tree, THIS->start);
+			}
+		    }
+		} else {
+		    if (THIS->step < 0) {
+			t = cb_find_last(THIS->tree);
+		    } else {
+			t = cb_find_first(THIS->tree);
+		    }
+		}
+
+		if (t && (THIS->stop.len.chars || THIS->stop.len.bits)) {
+		    if (THIS->step < 0) {
+			if (CB_KEY_LT(t->key, THIS->stop)) {
+			    t = NULL;
+			}
+		    } else {
+			if (CB_KEY_LT(THIS->stop, t->key)) {
+			    t = NULL;
+			}
+		    }
+		}
+
+		if (!t) {
+		    push_undefined();
+		    return;
+		}
+
+		CB_GET_VALUE(t, &THIS->lastval);
+		THIS->lastkey = t->key;
+		CB_ADD_KEY_REF(THIS->lastkey);
+		THIS->lastnode = t;
+	    } else if (!cmod_CONCAT_EVAL(tree_class,_,iterator_class,_step)()) {
+		push_undefined();
 		return;
 	    }
-	    push_undefined();
+
+	    CB_PUSH_KEY(THIS->lastkey);
+	    if (T->decode_fun >= 0) {
+		apply_low(tree, T->decode_fun, 1);
+	    }
 	    return;
 	}
 
@@ -264,12 +299,6 @@
 		return;
 	    }
 	    push_undefined();
-	}
-
-	PIKEFUN int `!()
-	  flags ID_PROTECTED;
-	{
-	    push_int(!THIS->lastnode);
 	}
     }
     DOCSTART() @endclass DOCEND()

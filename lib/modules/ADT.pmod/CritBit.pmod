@@ -1,4 +1,4 @@
-#pike __REAL_VERSION__
+#pike __REAL_VERSION__	// -*- mode: Pike; c-basic-offset: 4; -*-
 #require constant(ADT._CritBit)
 
 //! @ignore
@@ -601,50 +601,49 @@ class MultiTree {
 	return ret;
     }
 
-    class MultiIterator {
-	array oit, it;
+    class MultiIterator
+    {
+	Iterator it;
+	int treeno;
+	int step;
+	int start;
+	int stop;
 
-	protected void create(int step, mixed|void start, mixed|void stop) {
-	    int i = undefinedp(start) ? 0 : itree(start);
-	    int j = undefinedp(stop) ? sizeof(trees)-1 : itree(stop);
-
-	    array t = trees[i..j];
-	    j = sizeof(t);
-
-	    if (j == 1) {
-		t[0] = get_iterator(t[0], step, start, stop);
-	    } else {
-		t[0] = get_iterator(t[0], step, start);
-		for (i = 1; i < j-1; i++)
-		    t[i] = get_iterator(t[i], step);
-		t[-1] = get_iterator(t[-1], step, start);
-	    }
-
-	    this::oit = t;
-	    this::it = t + ({ });
-	}
-
-	protected int(0..1) `!() {
-	    while (sizeof(it) && !it[0]) it = it[1..];
-	    return !sizeof(it);
-	}
-
-	protected int(0..1) _iterator_next()
+	protected void create(int step, mixed|void start, mixed|void stop)
         {
-	    while (sizeof(it) && !iterator_next(it[0])) it = it[1..];
-	    return !!sizeof(it);
+	    this::step = step;
+	    this::start = start;
+	    this::stop = stop;
+	    treeno = 0;
+
+	    it = get_iterator(trees[0], step, start, stop);
+	}
+
+	protected mixed _iterator_next()
+        {
+	    while(1) {
+		mixed val = iterator_next(it);
+		if (!undefinedp(val)) return val;
+
+		// Try the next tree.
+		treeno++;
+		if (treeno >= sizeof(trees)) {
+		    treeno = 0;
+		    it = get_iterator(trees[0], step, start, stop);
+		    return UNDEFINED;
+		}
+		it = get_iterator(trees[treeno], step, start, stop);
+	    }
 	}
 
 	protected mixed _iterator_value()
         {
-	    if (!sizeof(it)) return UNDEFINED;
-	    return iterator_value(it[0]);
+	    return iterator_value(it);
 	}
 
 	protected mixed _iterator_index()
         {
-	    if (!sizeof(it)) return UNDEFINED;
-	    return iterator_index(it[0]);
+	    return iterator_index(it);
 	}
 
 	protected object _get_iterator() {
