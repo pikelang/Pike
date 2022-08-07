@@ -13,7 +13,7 @@
 //! but of a class that inherits it, like @[sql_array_result]
 //! or @[sql_object_result].
 
-local inherit __builtin.Sql.Result;
+inherit __builtin.Sql.Result;
 
 //! The actual result.
 mixed master_res;
