@@ -59,7 +59,7 @@ protected string _sprintf(int type, mapping|void flags)
 //!   existing, and this symbol thus essentially being a noop..
 //!
 //! @deprecated __builtin.Sql.Result.
-__deprecated__ array|this_program `master_res()
+local __deprecated__ array|this_program `master_res()
 {
   return this;
 }

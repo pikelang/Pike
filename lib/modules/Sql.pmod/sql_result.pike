@@ -16,7 +16,7 @@
 inherit __builtin.Sql.Result;
 
 //! The actual result.
-mixed master_res;
+array|__builtin.Sql.Result master_res;
 
 //! Skip past a number of rows.
 //!
