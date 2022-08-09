@@ -372,7 +372,7 @@ class Reverse(object tree) {
     }
 
     object get_subtree(mixed k) {
-	return this_program(tree->subtree(k));
+	return this_program(tree->get_subtree(k));
     }
 
     protected int(0..1) _equal(mixed other) {
@@ -387,7 +387,7 @@ class Reverse(object tree) {
     }
 
     mixed nth(int n) {
-	return tree->nth(sizeof(tree)-n);
+	return tree->nth(sizeof(tree)-(n+1));
     }
 
     protected mixed _random(function rnd_str, function rnd) {
