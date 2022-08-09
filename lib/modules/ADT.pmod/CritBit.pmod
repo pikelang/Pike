@@ -558,10 +558,14 @@ class MultiTree {
 	return max(@trees->depth());
     }
 
-    this_program get_subtree(mixed k) {
+    this_program get_subtree(mixed|void k) {
 	this_program ret = this_program();
-	int i = itree(k);
-	ret->trees[i] = trees[i]->get_subtree(k);
+	if (!undefinedp(k)) {
+	    int i = itree(k);
+	    ret->trees[i] = trees[i]->get_subtree(k);
+	} else {
+	    ret->trees = trees->get_subtree();
+	}
 	return ret;
     }
 
@@ -609,14 +613,22 @@ class MultiTree {
 	int start;
 	int stop;
 
-	protected void create(int step, mixed|void start, mixed|void stop)
+	protected void create(int|void step, mixed|void start, mixed|void stop)
         {
-	    this::step = step;
+	    this::step = step || 1;
 	    this::start = start;
 	    this::stop = stop;
-	    treeno = 0;
+	    if (undefinedp(start)) {
+		if (step < 0) {
+		    treeno = sizeof(trees) - 1;
+		} else {
+		    treeno = 0;
+		}
+	    } else {
+		treeno = itree(start);
+	    }
 
-	    it = get_iterator(trees[0], step, start, stop);
+	    it = get_iterator(trees[treeno], step, start, stop);
 	}
 
 	protected mixed _iterator_next()
@@ -626,10 +638,15 @@ class MultiTree {
 		if (!undefinedp(val)) return val;
 
 		// Try the next tree.
-		treeno++;
-		if (treeno >= sizeof(trees)) {
-		    treeno = 0;
-		    it = get_iterator(trees[0], step, start, stop);
+		if (step < 0) {
+		    treeno--;
+		} else {
+		    treeno++;
+		}
+		if ((treeno >= sizeof(trees)) || (treeno < 0)) {
+		    treeno += sizeof(trees);
+		    treeno %= sizeof(trees);
+		    it = get_iterator(trees[treeno], step, start, stop);
 		    return UNDEFINED;
 		}
 		it = get_iterator(trees[treeno], step, start, stop);
