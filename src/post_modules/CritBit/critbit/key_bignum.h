@@ -66,7 +66,7 @@ static inline mp_limb_t CB_GET_CHAR(cb_string s, ptrdiff_t n) {
 }
 
 #define CB_WIDTH(s)	(sizeof(cb_char)*8)
-#define CB_LENGTH(str)	0
+#define CB_LENGTH(str)	1
 #define CB_SIZE(key)	(-abs(K2G(key)->_mp_size))
 #define CB_GET_BIT(str, size)			\
 	(BITN(cb_char, CB_GET_CHAR((str), (size).chars), (size).bits))

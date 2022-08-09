@@ -166,9 +166,11 @@
 
 	    THIS->start.len.chars = 0;
 	    THIS->start.len.bits = 0;
+	    THIS->start.str = 0;
 
 	    THIS->stop.len.chars = 0;
 	    THIS->stop.len.bits = 0;
+	    THIS->stop.str = 0;
 
 	    encode_fun = T->encode_fun;
 
@@ -182,29 +184,35 @@
 		}
 
                 if (stop) {
-                  if (encode_fun >= 0) {
-                    push_svalue(stop);
-                    apply_low(tree, encode_fun, 1);
-                    assign_svalue(stop, Pike_sp-1);
-                    pop_stack();
-                    if (!((1<<TYPEOF(*stop)) & T_KEY))
-                      SIMPLE_ARG_TYPE_ERROR("create", 3, cmod_STRFY_EVAL(key_ptype));
-                  }
-                  THIS->stop = CB_LOW_KEY_FROM_SVALUE(stop);
-                  CB_ADD_KEY_REF(THIS->stop);
+		    if (encode_fun >= 0) {
+			push_svalue(stop);
+			apply_low(tree, encode_fun, 1);
+			assign_svalue(stop, Pike_sp-1);
+			pop_stack();
+		    }
+#ifdef CB_FIX_SVALUE
+		    CB_FIX_SVALUE(stop);
+#endif
+		    if (!((1<<TYPEOF(*stop)) & T_KEY))
+			SIMPLE_ARG_TYPE_ERROR("create", 3, cmod_STRFY_EVAL(key_ptype));
+		    THIS->stop = CB_LOW_KEY_FROM_SVALUE(stop);
+		    CB_ADD_KEY_REF(THIS->stop);
                 }
 
                 if (start) {
-                  if (encode_fun >= 0) {
-                    push_svalue(start);
-                    apply_low(tree, encode_fun, 1);
-                    assign_svalue(start, Pike_sp-1);
-                    pop_stack();
-                    if (!((1<<TYPEOF(*start)) & T_KEY))
-                      SIMPLE_ARG_TYPE_ERROR("create", 2, cmod_STRFY_EVAL(key_ptype));
-                  }
-                  THIS->start = CB_LOW_KEY_FROM_SVALUE(start);
-		  CB_ADD_KEY_REF(THIS->start);
+		    if (encode_fun >= 0) {
+			push_svalue(start);
+			apply_low(tree, encode_fun, 1);
+			assign_svalue(start, Pike_sp-1);
+			pop_stack();
+		    }
+#ifdef CB_FIX_SVALUE
+		    CB_FIX_SVALUE(start);
+#endif
+		    if (!((1<<TYPEOF(*start)) & T_KEY))
+			SIMPLE_ARG_TYPE_ERROR("create", 2, cmod_STRFY_EVAL(key_ptype));
+		    THIS->start = CB_LOW_KEY_FROM_SVALUE(start);
+		    CB_ADD_KEY_REF(THIS->start);
                 }
 
 		THIS->lastnode = NULL;
@@ -227,7 +235,7 @@
 	    if (!THIS->lastnode) {
 		cb_node_t t = NULL;
 
-		if (THIS->start.len.chars || THIS->start.len.bits) {
+		if (THIS->start.len.chars || THIS->start.len.bits || THIS->start.str) {
 		    t = cb_index(THIS->tree, THIS->start);
 
 		    if (!t) {
@@ -245,7 +253,7 @@
 		    }
 		}
 
-		if (t && (THIS->stop.len.chars || THIS->stop.len.bits)) {
+		if (t && (THIS->stop.len.chars || THIS->stop.len.bits || THIS->stop.str)) {
 		    if (THIS->step < 0) {
 			if (CB_KEY_LT(t->key, THIS->stop)) {
 			    t = NULL;

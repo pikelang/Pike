@@ -26,6 +26,12 @@ static inline void CB_PRINT_KEY(struct string_builder *buf, cb_key key) {
 } while(0)
 #define CB_PUSH_KEY(key)	ref_push_object((key).str);
 #define CB_STRING_FROM_SVALUE(v)	((v)->u.object)
+#define CB_FIX_SVALUE(v) do {						\
+    push_svalue(v);							\
+    convert_stack_top_to_bignum();					\
+    assign_svalue(v, Pike_sp-1);					\
+    pop_stack();							\
+  } while(0)
 #define CB_LOW_KEY_FROM_SVALUE(x) CB_KEY_FROM_STRING(CB_STRING_FROM_SVALUE(x))
 #include "tree_high.c"
 
