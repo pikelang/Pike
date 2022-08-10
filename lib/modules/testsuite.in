@@ -1465,10 +1465,10 @@ test_any([[
   foreach (i;; int v)
     if (v > 3) break;
   foreach (i;; int v)
-    if (v < 5) break;
+    if (v < 6) break;
   foreach (i;; int v)
     return v;
-]], 4)
+]], 6)
 test_eq( sizeof(Array.Iterator(({1,2,3,4}))), 4 )
 
 test_do(add_constant("random",Random.Deterministic(17)->random))
