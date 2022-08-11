@@ -1358,9 +1358,6 @@ class Result
 
   protected class Iterator (protected int cached_num_rows)
   {
-    protected int `!() {return cur_row >= cached_num_rows;}
-    protected int _sizeof() {return cached_num_rows;}
-
     protected string _sprintf (int flag)
     {
       return flag == 'O' &&
@@ -1371,27 +1368,21 @@ class Result
 
     protected int _iterator_index()
     {
+      if (!cur_rec) return UNDEFINED;
       return cur_row < cached_num_rows ? cur_row : UNDEFINED;
     }
 
     protected mapping(string:mixed) _iterator_value()
     {
-      if (!cur_rec) fetch();
+      if (!cur_rec) return UNDEFINED;
       return cur_row < cached_num_rows ? cur_rec : UNDEFINED;
     }
 
     protected int _iterator_next()
     {
       fetch();
-      return cur_row < cached_num_rows;
-    }
-
-    protected Iterator `+= (int steps)
-    // Old interface for pike 7.4 compat.
-    {
-      if (steps < 0) error ("Stepping backwards not supported.\n");
-      while (steps--) if (!_iterator_next()) break;
-      return this;
+      if (!cur_rec) return UNDEFINED;
+      return cur_row < cached_num_rows ? cur_row: UNDEFINED;
     }
   }
 }
