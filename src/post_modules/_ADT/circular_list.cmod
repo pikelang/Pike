@@ -358,7 +358,7 @@ PIKECLASS CircularList
  *!   @[start].
  *!
  *! @returns
- *!   Returns the index of the found value or @expr{UNDEFINED@}.
+ *!   Returns the index of the found value or @expr{-1@}.
  *!
  *! @throws
  *!   An error if the start is out of range.
@@ -898,19 +898,19 @@ PIKECLASS CircularList
 	add_ref(THIS->obj = list);
 	if (start) // if there was an start index supplied
 	{
-	  THIS->pos=start->u.integer;
-	  if (THIS->list->a && ((THIS->pos > THIS->list->size)
-				   || (THIS->pos < 0)))
+	  THIS->pos = start->u.integer - 1;
+	  if (THIS->list->a && ((THIS->pos >= THIS->list->size)
+				   || (THIS->pos < -1)))
 	  {
 	      Pike_error("Index %d is out of array range 0 - %d.\n",
-			 THIS->pos,
+			 THIS->pos + 1,
 			 THIS->list->size);
           }
           pop_n_elems(2);
 	}
 	else
 	{
-          THIS->pos = 0;
+          THIS->pos = -1;
           pop_stack();
 	}
       }
@@ -964,15 +964,15 @@ PIKECLASS CircularList
       flags ID_PROTECTED;
     {
       if (!THIS->list || !THIS->list->a) {
-	push_int(0);
+	push_undefined();
 	return;
       }
       THIS->pos++;
       if (THIS->pos >= THIS->list->size) {
-	THIS->pos = THIS->list->size;
-	push_int(0);
+	THIS->pos = -1;
+	push_undefined();
       } else {
-	push_int(1);
+	push_int(THIS->pos);
       }
     }
 
@@ -1069,13 +1069,13 @@ PIKECLASS CircularList
       if (!steps)
       {
 	RETURN (THIS->list &&
-		(THIS->pos + 1) <= THIS->list->size);
+		(THIS->pos + 1) < THIS->list->size);
       }
       else
       {
 	RETURN (THIS->list &&
 		(THIS->pos + steps->u.integer) >= 0 &&
-		(THIS->pos + steps->u.integer) <= THIS->list->size);
+		(THIS->pos + steps->u.integer) < THIS->list->size);
       }
     }
 
@@ -1098,7 +1098,7 @@ PIKECLASS CircularList
       {
 	RETURN (THIS->list &&
 		(THIS->pos - steps->u.integer) >= 0 &&
-		(THIS->pos - steps->u.integer) <= THIS->list->size);
+		(THIS->pos - steps->u.integer) < THIS->list->size);
       }
     }
 

@@ -110,6 +110,83 @@ test_equal(indices(adth),[[ ({9,10}) ]])
 test_equal(values(adth),[[ ({26,27}) ]])
 test_do(add_constant("adth"))
 
+dnl - ADT.CircularList
+
+dnl create(array)
+test_do(add_constant("clst", ADT.CircularList((array(string))
+                                              reverse(indices(allocate(10))))))
+dnl _sizeof()
+test_eq(sizeof(clst), 10)
+dnl _indices()
+test_equal(indices(clst), indices(allocate(10)))
+dnl _values()
+test_equal(values(clst), (array(string))reverse(indices(allocate(10))))
+dnl `[]()
+dnl `[]=()
+dnl `+()
+dnl _equal()
+dnl _insert_element()
+dnl _remove_element()
+dnl _search()
+test_eq(search(clst, "3"), 6)
+test_eq(search(clst, "3", 6), 6)
+test_eq(search(clst, "3", 7), -1)
+dnl add()
+dnl allocate()
+dnl cast()
+test_equal((array(int))clst, reverse(indices(allocate(10))))
+dnl clear()
+dnl delete_value()
+dnl is_empty()
+test_false(clst->is_empty())
+dnl max_size()
+test_eq(clst->max_size(), 10)
+dnl peek_back()
+test_eq(clst->peek_back(), "0")
+dnl peek_front()
+test_eq(clst->peek_front(), "9")
+dnl pop_back()
+test_eq(clst->pop_back(), "0")
+test_eq(clst->peek_back(), "1")
+dnl pop_front()
+test_eq(clst->pop_front(), "9")
+test_eq(clst->peek_front(), "8")
+test_eq(sizeof(clst), 8)
+dnl push_back()
+test_do(clst->push_back("00"))
+test_eq(clst->peek_back(), "00")
+dnl push_front()
+test_do(clst->push_front("99"))
+test_eq(clst->peek_front(), "99")
+dnl _get_iterator()
+test_any_equal([[
+  object it = get_iterator(clst);
+  array(int) idx = ({});
+  array(string) vals = ({});
+  array(int) prevp = ({});
+  array(int) nextp = ({});
+  array(int) prev2p = ({});
+  array(int) next2p = ({});
+  array(int) prevn2p = ({});
+  array(int) nextn2p = ({});
+  foreach(it; int id; string val) {
+    idx += ({ id });
+    vals += ({ val });
+    prevp += ({ it->has_previous() });
+    prev2p += ({ it->has_previous(2) });
+    prevn2p += ({ it->has_previous(-2) });
+    nextp += ({ it->has_next() });
+    next2p += ({ it->has_next(2) });
+    nextn2p += ({ it->has_next(-2) });
+  }
+  return ({ idx, vals, prevp, nextp, prev2p, next2p, prevn2p, nextn2p });
+]], ({ indices(allocate(10)), ({ "99", @("87654321"/""), "00" }),
+       ({ 0 }) + allocate(9, 1), allocate(9, 1) + ({ 0 }),
+       ({ 0, 0 }) + allocate(8, 1), allocate(8, 1) + ({ 0, 0 }),
+       allocate(8, 1) + ({ 0, 0 }), ({ 0, 0 }) + allocate(8, 1),
+  }))
+test_do(add_constant("clst"))
+
 dnl - ADT.LowLevelStack
 cond_begin([[ ADT["LowLevelStack"] ]])
 test_any([[
