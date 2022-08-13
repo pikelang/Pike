@@ -817,37 +817,6 @@ PIKECLASS CircularList
     pop_stack();
   }
 
-  /*! @decl CircularListIterator _get_iterator(void|int ind)
-   *!   Create and initiate a new CircularListIterator that could be used
-   *!   to iterate over this list.
-   *!
-   *! @param ind
-   *!   If an @[ind] value is supplied the iterator will be positioned at
-   *!   that index.
-   *!
-   *! @returns
-   *!   An iterator.
-   */
-
-
-
-  /*! @decl CircularListIterator first()
-   *!   Create and initiate a new CircularListIterator that could be used
-   *!   to iterate over this list.
-   *!
-   *! @returns
-   *!   An iterator positioned at the first element in the list.
-   */
-
-
-  /*! @decl CircularListIterator last()
-   *!   Create and initiate a new CircularListIterator that could be used
-   *!   to iterate over this list.
-   *!
-   *! @returns
-   *!   An iterator positioned after the last element in the list.
-   */
-
 
 #ifdef PIKE_NULL_IS_SPECIAL
   INIT
@@ -927,7 +896,8 @@ PIKECLASS CircularList
     {
       if(!THIS->list ||
 	 !THIS->list->a ||
-	 THIS->pos >= THIS->list->size)
+	 (THIS->pos < 0) ||
+	 (THIS->pos >= THIS->list->size))
       {
 	push_undefined();
       }
@@ -949,7 +919,8 @@ PIKECLASS CircularList
     {
       if(!THIS->list ||
 	 !THIS->list->a ||
-	 THIS->pos >= THIS->list->size)
+	 (THIS->pos < 0) ||
+	 (THIS->pos >= THIS->list->size))
       {
 	push_undefined();
       }
@@ -991,14 +962,17 @@ PIKECLASS CircularList
       new = OBJ2_CIRCULARLIST_CIRCULARLISTITERATOR(o);
       new[0]=*THIS;
       add_ref(THIS->obj);
+      if ((steps < 0) && (new->pos < 0)) {
+	new->pos = new->list->size;
+      }
       new->pos+=steps;
       if (new->pos < 0)
       {
-	new->pos = 0;
+	new->pos = -1;
       }
-      else if (new->pos > new->list->size)
+      else if (new->pos >= new->list->size)
       {
-	new->pos = new->list->size;
+	new->pos = -1;
       }
       RETURN o;
     }
@@ -1014,14 +988,19 @@ PIKECLASS CircularList
 
     PIKEFUN object `+=(int steps)
     {
+      if (steps < 0) {
+	if (THIS->pos < 0) {
+	  THIS->pos = THIS->list->size;
+	}
+      }
       THIS->pos+=steps;
       if (THIS->pos < 0)
       {
-	THIS->pos = 0;
+	THIS->pos = -1;
       }
-      else if (THIS->pos > THIS->list->size)
+      else if (THIS->pos >= THIS->list->size)
       {
-	THIS->pos = THIS->list->size;
+	THIS->pos = -1;
       }
 
       REF_RETURN Pike_fp->current_object;
@@ -1044,14 +1023,17 @@ PIKECLASS CircularList
       new = OBJ2_CIRCULARLIST_CIRCULARLISTITERATOR(o);
       new[0]=*THIS;
       add_ref(THIS->obj);
+      if ((steps > 0) && (new->pos < 0)) {
+	new->pos = new->list->size;
+      }
       new->pos-=steps;
       if (new->pos < 0)
       {
-	new->pos = 0;
+	new->pos = -1;
       }
-      else if (new->pos > new->list->size)
+      else if (new->pos >= new->list->size)
       {
-	new->pos = new->list->size;
+	new->pos = -1;
       }
       RETURN o;
     }
@@ -1287,6 +1269,18 @@ PIKECLASS CircularList
   /*! @endclass
   */
 
+  /*! @decl CircularListIterator _get_iterator(void|int ind)
+   *!   Create and initiate a new CircularListIterator that could be used
+   *!   to iterate over this list.
+   *!
+   *! @param ind
+   *!   If an @[ind] value is supplied the iterator will be positioned at
+   *!   that index.
+   *!
+   *! @returns
+   *!   An iterator.
+   */
+
   PIKEFUN object _get_iterator(void|int ind)
   {
     ref_push_object(Pike_fp->current_object);
@@ -1299,22 +1293,49 @@ PIKECLASS CircularList
   }
 
 
+  /*! @decl __deprecated__ CircularListIterator first()
+   *!   Create and initiate a new CircularListIterator that could be used
+   *!   to iterate over this list.
+   *!
+   *! @returns
+   *!   An iterator positioned before the first element of the list.
+   *!
+   *! @deprecated _get_iterator()
+   *!   With the Pike 8.1 and later iterator API this is identical
+   *!   to @[last()] and @[_get_iterator()].
+   *!
+   *! @seealso
+   *!   @[_get_iterator()], @[last()]
+   */
 
   PIKEFUN object first()
+    rawtype tDeprecated(tFunc(tNone, tObj));
   {
     ref_push_object(Pike_fp->current_object);
     push_object(clone_object(CircularList_CircularListIterator_program, 1));
   }
 
 
+  /*! @decl __deprecated__ CircularListIterator last()
+   *!   Create and initiate a new CircularListIterator that could be used
+   *!   to iterate over this list.
+   *!
+   *! @returns
+   *!   An iterator positioned after the last element of the list.
+   *!
+   *! @deprecated _get_iterator()
+   *!   With the Pike 8.1 and later iterator API this is identical
+   *!   to @[first()] and @[_get_iterator()].
+   *!
+   *! @seealso
+   *!   @[_get_iterator()], @[first()]
+   */
 
   PIKEFUN object last()
+    rawtype tDeprecated(tFunc(tNone, tObj));
   {
-    struct svalue ind;
-    SET_SVAL(ind, T_INT, NUMBER_NUMBER, integer, THIS_CIRCULARLIST->size);
     ref_push_object(Pike_fp->current_object);
-    push_svalue(&ind);
-    push_object(clone_object(CircularList_CircularListIterator_program, 2));
+    push_object(clone_object(CircularList_CircularListIterator_program, 1));
   }
 
 
