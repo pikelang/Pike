@@ -1085,18 +1085,6 @@ PIKECLASS CircularList
     }
 
 
-    /*! @decl int(0..1) `!()
-     *! @returns
-     *!    Returns @tt{false@} if the iterator has reached the end.
-     */
-
-    PIKEFUN int(0..1) `!()
-    {
-      RETURN (THIS->list &&
-	      THIS->pos  == THIS->list->size);
-    }
-
-
     /*! @decl int(0..1) _equal(mixed iter)
      *!    Compare this iterator with another iterator.
      *!
