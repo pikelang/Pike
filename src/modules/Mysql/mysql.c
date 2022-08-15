@@ -1147,10 +1147,10 @@ static void low_query(INT32 args, char *name, int flags)
     MYSQL_DISALLOW();
 
     if (sp[-args].u.string->len <= 512) {
-      Pike_error("%s(): Query \"%s\" failed (%s)\n",
-		 name, query, err);
+      Pike_error("%s(): Query \"%s\" failed (%d: %s)\n",
+		 name, query, tmp, err);
     } else {
-      Pike_error("%s(): Query failed (%s)\n", name, err);
+      Pike_error("%s(): Query failed (%d: %s)\n", name, tmp, err);
     }
   }
 
