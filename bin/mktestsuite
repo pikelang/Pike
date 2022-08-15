@@ -131,11 +131,16 @@ define(test_any, [[DOTEST(EQ,dnl
 mixed a() { [[\$1]]; }
 mixed b() { return [[\$2]]; })]])
 
+define(test_any_deprecated, [[DOTEST(EQ,dnl
+#pragma no_deprecation_warnings
+mixed a() { [[\$1]]; }
+mixed b() { return [[\$2]]; })]])
+
 define(test_any_equal, [[DOTEST(EQUAL,dnl
 mixed a() { [[\$1]]; }
 mixed b() { return [[\$2]]; })]])
 
-define(test_any_deprecated, [[DOTEST(EQ,dnl
+define(test_any_equal_deprecated, [[DOTEST(EQUAL,dnl
 #pragma no_deprecation_warnings
 mixed a() { [[\$1]]; }
 mixed b() { return [[\$2]]; })]])
@@ -144,11 +149,16 @@ define(test_eq,[[DOTEST(EQ,dnl
 mixed a() { return [[\$1]]; }
 mixed b() { return [[\$2]]; })]])
 
+define(test_eq_deprecated,[[DOTEST(EQ,dnl
+#pragma no_deprecation_warnings
+mixed a() { return [[\$1]]; }
+mixed b() { return [[\$2]]; })]])
+
 define(test_equal,[[DOTEST(EQUAL,dnl
 mixed a() { return [[\$1]]; }
 mixed b() { return [[\$2]]; })]])
 
-define(test_eq_deprecated,[[DOTEST(EQ,dnl
+define(test_equal_deprecated,[[DOTEST(EQUAL,dnl
 #pragma no_deprecation_warnings
 mixed a() { return [[\$1]]; }
 mixed b() { return [[\$2]]; })]])
@@ -159,7 +169,15 @@ mixed a() { [[\$1]]; })]])
 define(test_true, [[DOTEST(TRUE,dnl
 mixed a() { return [[\$1]]; })]])
 
+define(test_true_deprecated, [[DOTEST(TRUE,dnl
+#pragma no_deprecation_warnings
+mixed a() { return [[\$1]]; })]])
+
 define(test_false, [[DOTEST(FALSE,dnl
+mixed a() { return [[\$1]]; })]])
+
+define(test_false_deprecated, [[DOTEST(FALSE,dnl
+#pragma no_deprecation_warnings
 mixed a() { return [[\$1]]; })]])
 
 define(test_compile,[[DOTEST(COMPILE,dnl
