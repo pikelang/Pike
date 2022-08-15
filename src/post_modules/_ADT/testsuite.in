@@ -1126,9 +1126,9 @@ test_true(programp(_ADT.CircularList.CircularListIterator))
 
 test_true(programp(_ADT.CircularList.CircularListIterator))
 
-test_true(objectp(_ADT.CircularList(({1,2,3}))->first()))
+test_true_deprecated(objectp(_ADT.CircularList(({1,2,3}))->first()))
 
-test_true(objectp(_ADT.CircularList(({1,2,3}))->last()))
+test_true_deprecated(objectp(_ADT.CircularList(({1,2,3}))->last()))
 
 test_true(objectp(get_iterator(_ADT.CircularList(({1,2,3})))))
 
@@ -1154,7 +1154,7 @@ test_any(_ADT.CircularList.CircularListIterator i =
 
 
 test_any(_ADT.CircularList l = _ADT.CircularList(10);
-	 _ADT.CircularList.CircularListIterator i = l->first();
+	 _ADT.CircularList.CircularListIterator i = get_iterator(l);
 	 l->push_front(10);
 	 l->push_front(11);
 	 l->push_back(12);
@@ -1167,29 +1167,39 @@ test_any(_ADT.CircularList.CircularListIterator i =
 
 
 test_any(_ADT.CircularList l = _ADT.CircularList(10);
-	 _ADT.CircularList.CircularListIterator i = l->first();
+	 _ADT.CircularList.CircularListIterator i = get_iterator(l);
 	 l->push_front(10);
 	 l->push_front(11);
 	 l->push_back(12);
 	 return iterator_index(i), 0)
 
 test_any(_ADT.CircularList l = _ADT.CircularList(({1,2,3,4}));
+	 _ADT.CircularList.CircularListIterator i = get_iterator(l);
+	 l->pop_back();
+	 return zero_type(iterator_value(i)), 1)
+
+test_any_deprecated(_ADT.CircularList l = _ADT.CircularList(({1,2,3,4}));
 	 _ADT.CircularList.CircularListIterator i = l->last();
 	 l->pop_back();
 	 return zero_type(iterator_value(i)), 1)
 
 test_any(_ADT.CircularList l = _ADT.CircularList(({1,2,3,4}));
+	 _ADT.CircularList.CircularListIterator i = get_iterator(l);
+	 l->pop_back();
+	 return zero_type(iterator_index(i)), 1)
+
+test_any_deprecated(_ADT.CircularList l = _ADT.CircularList(({1,2,3,4}));
 	 _ADT.CircularList.CircularListIterator i = l->last();
 	 l->pop_back();
 	 return zero_type(iterator_index(i)), 1)
 
 test_any(_ADT.CircularList l = _ADT.CircularList(({1,2,3,4}));
-	 _ADT.CircularList.CircularListIterator i = l->first();
+	 _ADT.CircularList.CircularListIterator i = get_iterator(l);
 	 l->pop_front();
 	 return iterator_value(i), 2)
 
 test_any(_ADT.CircularList l = _ADT.CircularList(({1,2,3,4}));
-	 _ADT.CircularList.CircularListIterator i = l->first();
+	 _ADT.CircularList.CircularListIterator i = get_iterator(l);
 	 l->pop_front();
 	 return iterator_index(i), 0)
 
@@ -1198,82 +1208,88 @@ test_any(_ADT.CircularList l = _ADT.CircularList(({1,2,3,4}));
 test_true(zero_type(iterator_value(_ADT.CircularList(({1,2,3}))->last())))
 
 
-  test_any(_ADT.CircularList.CircularListIterator i =
-	   _ADT.CircularList(({1,2,3}))->last();
-	   return  zero_type(iterator_index(i)), 1)
+
+test_any(_ADT.CircularList.CircularListIterator i =
+	 get_iterator(_ADT.CircularList(({1,2,3})));
+	 return undefinedp(iterator_index(i)), 1)
+
+
+test_any_deprecated(_ADT.CircularList.CircularListIterator i =
+	 _ADT.CircularList(({1,2,3}))->last();
+	 return undefinedp(iterator_index(i)), 1)
 
 **************************** test + and += *********************************
 
 
 test_any(_ADT.CircularList.CircularListIterator i =
-	 _ADT.CircularList(({1,2,3,4}))->first();
+	 get_iterator(_ADT.CircularList(({1,2,3,4})));
 	 i = i + 1;
 	 return iterator_value(i), 2)
 
 
 test_any(_ADT.CircularList.CircularListIterator i =
-	 _ADT.CircularList(({1,2,3,4}))->first();
+	 get_iterator(_ADT.CircularList(({1,2,3,4})));
 	 i = i + 1;
 	 return iterator_index(i), 1)
 
 
 test_any(_ADT.CircularList.CircularListIterator i =
-	 _ADT.CircularList(({1,2,3,4}))->last();
+	 get_iterator(_ADT.CircularList(({1,2,3,4})));
 	 i = i + (-1);
 	 return iterator_value(i), 4)
 
 
 test_any(_ADT.CircularList.CircularListIterator i =
-	 _ADT.CircularList(({1,2,3,4}))->first();
+	 get_iterator(_ADT.CircularList(({1,2,3,4})));
 	 i = i + 10;
 	 return zero_type(iterator_value(i)), 1)
 
 
 test_any(_ADT.CircularList.CircularListIterator i =
-	 _ADT.CircularList(({1,2,3,4}))->first();
+	 get_iterator(_ADT.CircularList(({1,2,3,4})));
 	 i = i + 10;
 	 return zero_type(iterator_index(i)), 1)
 
 
 test_any(_ADT.CircularList.CircularListIterator i =
-	 _ADT.CircularList(({1,2,3,4}))->first();
+	 get_iterator(_ADT.CircularList(({1,2,3,4})));
 	 i = i + (-1);
 	 return iterator_value(i), 1)
 
 
 test_any(_ADT.CircularList.CircularListIterator i =
-	 _ADT.CircularList(({1,2,3,4}))->first();
+	 get_iterator(_ADT.CircularList(({1,2,3,4})));
 	 i += 2;
 	 return iterator_value(i), 3)
 
 
 test_any(_ADT.CircularList.CircularListIterator i =
-	  _ADT.CircularList(({1,2,3,4}))->first();
+	  get_iterator(_ADT.CircularList(({1,2,3,4})));
 	  i += 10;
 	  return zero_type(iterator_index(i)), 1)
 
 
 test_any(_ADT.CircularList.CircularListIterator i =
-	  _ADT.CircularList(({1,2,3,4}))->first();
+	  get_iterator(_ADT.CircularList(({1,2,3,4})));
 	  i += 10;
 	  return zero_type(iterator_value(i)), 1)
 
 
 test_any(_ADT.CircularList.CircularListIterator i =
-	 _ADT.CircularList(({1,2,3,4}))->first();
+	 get_iterator(_ADT.CircularList(({1,2,3,4})));
 	 i += (-1);
 	 return iterator_value(i), 1)
 
 
 test_any(_ADT.CircularList.CircularListIterator i =
-	 _ADT.CircularList(({1,2,3,4}))->last();
+	 get_iterator(_ADT.CircularList(({1,2,3,4})));
 	 i += (-1);
 	 return iterator_value(i), 4)
 
 
 
 test_any(_ADT.CircularList l = _ADT.CircularList(10);
-	 _ADT.CircularList.CircularListIterator i = l->first();
+	 _ADT.CircularList.CircularListIterator i = get_iterator(l);
 	 l->push_front(10);
 	 l->push_front(11);
 	 l->push_back(12);
@@ -1281,7 +1297,7 @@ test_any(_ADT.CircularList l = _ADT.CircularList(10);
 	 return iterator_value(i), 12)
 
 test_any(_ADT.CircularList l = _ADT.CircularList(10);
-	 _ADT.CircularList.CircularListIterator i = l->first();
+	 _ADT.CircularList.CircularListIterator i = get_iterator(l);
 	 l->push_front(10);
 	 l->push_front(11);
 	 l->push_back(12);
@@ -1289,7 +1305,7 @@ test_any(_ADT.CircularList l = _ADT.CircularList(10);
 	 return iterator_index(i), 2)
 
 test_any(_ADT.CircularList l = _ADT.CircularList(10);
-	 _ADT.CircularList.CircularListIterator i = l->first();
+	 _ADT.CircularList.CircularListIterator i = get_iterator(l);
 	 l->push_front(10);
 	 l->push_front(11);
 	 l->push_back(12);
@@ -1297,7 +1313,7 @@ test_any(_ADT.CircularList l = _ADT.CircularList(10);
 	 return zero_type(iterator_value(i)), 1)
 
 test_any(_ADT.CircularList l = _ADT.CircularList(10);
-	 _ADT.CircularList.CircularListIterator i = l->first();
+	 _ADT.CircularList.CircularListIterator i = get_iterator(l);
 	 l->push_front(10);
 	 l->push_front(11);
 	 l->push_back(12);
@@ -1306,7 +1322,7 @@ test_any(_ADT.CircularList l = _ADT.CircularList(10);
 
 
 test_any(_ADT.CircularList l = _ADT.CircularList(10);
-	 _ADT.CircularList.CircularListIterator i = l->first();
+	 _ADT.CircularList.CircularListIterator i = get_iterator(l);
 	 l->push_front(10);
 	 l->push_front(11);
 	 l->push_back(12);
@@ -1314,7 +1330,7 @@ test_any(_ADT.CircularList l = _ADT.CircularList(10);
 	 return iterator_value(i), 12)
 
 test_any(_ADT.CircularList l = _ADT.CircularList(10);
-	 _ADT.CircularList.CircularListIterator i = l->first();
+	 _ADT.CircularList.CircularListIterator i = get_iterator(l);
 	 l->push_front(10);
 	 l->push_front(11);
 	 l->push_back(12);
@@ -1322,7 +1338,7 @@ test_any(_ADT.CircularList l = _ADT.CircularList(10);
 	 return iterator_index(i), 2)
 
 test_any(_ADT.CircularList l = _ADT.CircularList(10);
-	 _ADT.CircularList.CircularListIterator i = l->first();
+	 _ADT.CircularList.CircularListIterator i = get_iterator(l);
 	 l->push_front(10);
 	 l->push_front(11);
 	 l->push_back(12);
@@ -1330,7 +1346,7 @@ test_any(_ADT.CircularList l = _ADT.CircularList(10);
 	 return zero_type(iterator_value(i)), 1)
 
 test_any(_ADT.CircularList l = _ADT.CircularList(10);
-	 _ADT.CircularList.CircularListIterator i = l->first();
+	 _ADT.CircularList.CircularListIterator i = get_iterator(l);
 	 l->push_front(10);
 	 l->push_front(11);
 	 l->push_back(12);
@@ -1340,20 +1356,20 @@ test_any(_ADT.CircularList l = _ADT.CircularList(10);
 
 
 test_any(_ADT.CircularList l = _ADT.CircularList(({1,2,3,4}));
-	 _ADT.CircularList.CircularListIterator i = l->first();
+	 _ADT.CircularList.CircularListIterator i = get_iterator(l);
 	 i+=3;
 	 l->pop_back();
 	 return zero_type(iterator_value(i)), 1)
 
 test_any(_ADT.CircularList l = _ADT.CircularList(({1,2,3,4}));
-	 _ADT.CircularList.CircularListIterator i = l->first();
+	 _ADT.CircularList.CircularListIterator i = get_iterator(l);
 	 i+=3;
 	 l->pop_back();
 	 return zero_type(iterator_index(i)), 1)
 
 
 test_any(_ADT.CircularList l = _ADT.CircularList(({1,2,3,4}));
-	 _ADT.CircularList.CircularListIterator i = l->first();
+	 _ADT.CircularList.CircularListIterator i = get_iterator(l);
 	 i+=3;
 	 l->pop_back();
 	 l->pop_back();
@@ -1361,7 +1377,7 @@ test_any(_ADT.CircularList l = _ADT.CircularList(({1,2,3,4}));
 	 return iterator_value(i), 2)
 
 test_any(_ADT.CircularList l = _ADT.CircularList(({1,2,3,4}));
-	 _ADT.CircularList.CircularListIterator i = l->first();
+	 _ADT.CircularList.CircularListIterator i = get_iterator(l);
 	 i+=3;
 	 l->pop_back();
 	 l->pop_back();
@@ -1373,67 +1389,67 @@ test_any(_ADT.CircularList l = _ADT.CircularList(({1,2,3,4}));
 
 
 test_any(_ADT.CircularList.CircularListIterator i =
-	 _ADT.CircularList(({1,2,3,4}))->last();
+	 get_iterator(_ADT.CircularList(({1,2,3,4})));
 	 i = i - 1;
 	 return iterator_value(i), 4)
 
 
 test_any(_ADT.CircularList.CircularListIterator i =
-	 _ADT.CircularList(({1,2,3,4}))->last();
+	 get_iterator(_ADT.CircularList(({1,2,3,4})));
 	 i = i - 1;
 	 return iterator_index(i), 3)
 
 
 test_any(_ADT.CircularList.CircularListIterator i =
-	 _ADT.CircularList(({1,2,3,4}))->first();
+	 get_iterator(_ADT.CircularList(({1,2,3,4})));
 	 i = i - (-1);
 	 return iterator_value(i), 2)
 
 
 test_any(_ADT.CircularList.CircularListIterator i =
-	 _ADT.CircularList(({1,2,3,4}))->last();
+	 get_iterator(_ADT.CircularList(({1,2,3,4})));
 	 i = i - 10;
 	 return iterator_value(i), 1)
 
 
 test_any(_ADT.CircularList.CircularListIterator i =
-	 _ADT.CircularList(({1,2,3,4}))->last();
+	 get_iterator(_ADT.CircularList(({1,2,3,4})));
 	 i = i - 10;
 	 return iterator_index(i), 0)
 
 
 test_any(_ADT.CircularList.CircularListIterator i =
-	 _ADT.CircularList(({1,2,3,4}))->last();
+	 get_iterator(_ADT.CircularList(({1,2,3,4})));
 	 i = i - (-1);
 	 return (zero_type(iterator_value(i))), 1)
 
 
 test_any(_ADT.CircularList.CircularListIterator i =
-	 _ADT.CircularList(({1,2,3,4}))->last();
+	 get_iterator(_ADT.CircularList(({1,2,3,4})));
 	 i -= 2;
 	 return iterator_value(i), 3)
 
 
 test_any(_ADT.CircularList.CircularListIterator i =
-	  _ADT.CircularList(({1,2,3,4}))->last();
+	  get_iterator(_ADT.CircularList(({1,2,3,4})));
 	  i -= 10;
 	  return iterator_index(i), 0)
 
 
 test_any(_ADT.CircularList.CircularListIterator i =
-	  _ADT.CircularList(({1,2,3,4}))->last();
+	  get_iterator(_ADT.CircularList(({1,2,3,4})));
 	  i -= 10;
 	  return iterator_value(i), 1)
 
 
 test_any(_ADT.CircularList.CircularListIterator i =
-	 _ADT.CircularList(({1,2,3,4}))->last();
+	 get_iterator(_ADT.CircularList(({1,2,3,4})));
 	 i -= (-1);
 	 return zero_type(iterator_value(i)), 1)
 
 
 test_any(_ADT.CircularList.CircularListIterator i =
-	 _ADT.CircularList(({1,2,3,4}))->first();
+	 get_iterator(_ADT.CircularList(({1,2,3,4})));
 	 i -= (-1);
 	 return iterator_value(i), 2)
 
@@ -1442,7 +1458,7 @@ test_any(_ADT.CircularList l = _ADT.CircularList(10);
 	 l->push_front(10);
 	 l->push_front(11);
 	 l->push_back(12);
-	 _ADT.CircularList.CircularListIterator i = l->last();
+	 _ADT.CircularList.CircularListIterator i = get_iterator(l);
 	 i-=3;
 	 return iterator_value(i), 11)
 
@@ -1450,12 +1466,12 @@ test_any(_ADT.CircularList l = _ADT.CircularList(10);
 	 l->push_front(10);
 	 l->push_front(11);
 	 l->push_back(12);
-	 _ADT.CircularList.CircularListIterator i = l->last();
+	 _ADT.CircularList.CircularListIterator i = get_iterator(l);
 	 i-=3;
 	 return iterator_index(i), 0)
 
 test_any(_ADT.CircularList l = _ADT.CircularList(10);
-	 _ADT.CircularList.CircularListIterator i = l->last();
+	 _ADT.CircularList.CircularListIterator i = get_iterator(l);
 	 l->push_front(10);
 	 l->push_front(11);
 	 l->push_back(12);
@@ -1466,13 +1482,13 @@ test_any(_ADT.CircularList l = _ADT.CircularList(10);
 	 l->push_front(10);
 	 l->push_front(11);
 	 l->push_back(12);
-	 _ADT.CircularList.CircularListIterator i = l->last();
+	 _ADT.CircularList.CircularListIterator i = get_iterator(l);
 	 i-=4;
 	 return iterator_index(i), 0)
 
 
 test_any(_ADT.CircularList l = _ADT.CircularList(10);
-	 _ADT.CircularList.CircularListIterator i = l->last();
+	 _ADT.CircularList.CircularListIterator i = get_iterator(l);
 	 l->push_front(10);
 	 l->push_front(11);
 	 l->push_back(12);
@@ -1483,12 +1499,12 @@ test_any(_ADT.CircularList l = _ADT.CircularList(10);
 	 l->push_front(10);
 	 l->push_front(11);
 	 l->push_back(12);
-	 _ADT.CircularList.CircularListIterator i = l->last();
+	 _ADT.CircularList.CircularListIterator i = get_iterator(l);
 	 i=i-3;
 	 return iterator_index(i), 0)
 
 test_any(_ADT.CircularList l = _ADT.CircularList(10);
-	 _ADT.CircularList.CircularListIterator i = l->last();
+	 _ADT.CircularList.CircularListIterator i = get_iterator(l);
 	 l->push_front(10);
 	 l->push_front(11);
 	 l->push_back(12);
@@ -1499,25 +1515,25 @@ test_any(_ADT.CircularList l = _ADT.CircularList(10);
 	 l->push_front(10);
 	 l->push_front(11);
 	 l->push_back(12);
-	 _ADT.CircularList.CircularListIterator i = l->last();
+	 _ADT.CircularList.CircularListIterator i = get_iterator(l);
 	 i=i-4;
 	 return iterator_index(i), 0)
 
 
 test_any(_ADT.CircularList l = _ADT.CircularList(({1,2,3,4}));
-	 _ADT.CircularList.CircularListIterator i = l->last();
+	 _ADT.CircularList.CircularListIterator i = get_iterator(l);
 	 i=i-4;
 	 l->pop_front();
 	 return iterator_value(i), 2)
 
 test_any(_ADT.CircularList l = _ADT.CircularList(({1,2,3,4}));
-	 _ADT.CircularList.CircularListIterator i = l->last();
+	 _ADT.CircularList.CircularListIterator i = get_iterator(l);
 	 i=i-4;
 	 l->pop_front();
 	 return iterator_index(i), 0)
 
 test_any(_ADT.CircularList l = _ADT.CircularList(({1,2,3,4}));
-	 _ADT.CircularList.CircularListIterator i = l->last();
+	 _ADT.CircularList.CircularListIterator i = get_iterator(l);
 	 i=i-4;
 	 l->pop_front();
 	 l->pop_front();
@@ -1525,7 +1541,7 @@ test_any(_ADT.CircularList l = _ADT.CircularList(({1,2,3,4}));
 	 return iterator_value(i), 4)
 
 test_any(_ADT.CircularList l = _ADT.CircularList(({1,2,3,4}));
-	 _ADT.CircularList.CircularListIterator i = l->last();
+	 _ADT.CircularList.CircularListIterator i = get_iterator(l);
 	 i=i-4;
 	 l->pop_front();
 	 l->pop_front();
@@ -1535,25 +1551,25 @@ test_any(_ADT.CircularList l = _ADT.CircularList(({1,2,3,4}));
 ************************ test has_next **********************************
 
 test_true(_ADT.CircularList.CircularListIterator i =
-	  _ADT.CircularList(({1,2,3,4}))->first()->has_next())
+	  get_iterator(_ADT.CircularList(({1,2,3,4})))->has_next())
 
 
 test_false(_ADT.CircularList.CircularListIterator i =
-	   _ADT.CircularList(({1,2,3,4}))->last()->has_next())
+	   (get_iterator(_ADT.CircularList(({1,2,3,4}))) - 1)->has_next())
 
 
 test_true(_ADT.CircularList.CircularListIterator i =
-	  _ADT.CircularList(({1,2,3,4}))->first()->has_next(2))
+	  get_iterator(_ADT.CircularList(({1,2,3,4})))->has_next(2))
 
 test_false(_ADT.CircularList.CircularListIterator i =
-	  _ADT.CircularList(({1,2,3,4}))->first()->has_next(5))
+	  get_iterator(_ADT.CircularList(({1,2,3,4})))->has_next(5))
 
 
 test_false(_ADT.CircularList.CircularListIterator i =
-	   _ADT.CircularList(({1,2,3,4}))->first()->has_next(-1))
+	   get_iterator(_ADT.CircularList(({1,2,3,4})))->has_next(-1))
 
 test_any(_ADT.CircularList l = _ADT.CircularList(10);
-	 _ADT.CircularList.CircularListIterator i = l->first();
+	 _ADT.CircularList.CircularListIterator i = get_iterator(l);
 	 l->push_front(10);
 	 l->push_front(11);
 	 l->push_back(12);
@@ -1561,7 +1577,7 @@ test_any(_ADT.CircularList l = _ADT.CircularList(10);
 
 
 test_any(_ADT.CircularList l = _ADT.CircularList(10);
-	 _ADT.CircularList.CircularListIterator i = l->first();
+	 _ADT.CircularList.CircularListIterator i = get_iterator(l);
 	 l->push_front(10);
 	 l->push_front(11);
 	 l->push_back(12);
@@ -1571,30 +1587,30 @@ test_any(_ADT.CircularList l = _ADT.CircularList(10);
 
 
 test_true(_ADT.CircularList.CircularListIterator i =
-	  _ADT.CircularList(({1,2,3,4}))->last()->has_previous())
+	  get_iterator(_ADT.CircularList(({1,2,3,4})))->has_previous())
 
 
 test_false(_ADT.CircularList.CircularListIterator i =
-	   _ADT.CircularList(({1,2,3,4}))->first()->has_previous())
+	   get_iterator(_ADT.CircularList(({1,2,3,4})))->has_previous())
 
 
 test_true(_ADT.CircularList.CircularListIterator i =
-	  _ADT.CircularList(({1,2,3,4}))->last()->has_previous(2))
+	  get_iterator(_ADT.CircularList(({1,2,3,4})))->has_previous(2))
 
 
 test_false(_ADT.CircularList.CircularListIterator i =
-	   _ADT.CircularList(({1,2,3,4}))->last()->has_previous(5))
+	   get_iterator(_ADT.CircularList(({1,2,3,4})))->has_previous(5))
 
 
 test_false(_ADT.CircularList.CircularListIterator i =
-	  _ADT.CircularList(({1,2,3,4}))->last()->has_previous(-1))
+	  get_iterator(_ADT.CircularList(({1,2,3,4})))->has_previous(-1))
 
 
 test_any(_ADT.CircularList l = _ADT.CircularList(10);
 	 l->push_front(10);
 	 l->push_front(11);
 	 l->push_back(12);
-	 _ADT.CircularList.CircularListIterator i = l->last();
+	 _ADT.CircularList.CircularListIterator i = get_iterator(l);
 	 return (i->has_previous(2)), 1)
 
 
@@ -1602,81 +1618,70 @@ test_any(_ADT.CircularList l = _ADT.CircularList(10);
 	 l->push_front(10);
 	 l->push_front(11);
 	 l->push_back(12);
-	 _ADT.CircularList.CircularListIterator i = l->last();
+	 _ADT.CircularList.CircularListIterator i = get_iterator(l);
 	 return (i->has_previous(4)), 0)
-
-******************************** test `! ***********************************
-
-test_false(!(_ADT.CircularList(({1,2,3,4}))->first()))
-
-
-test_false(!(get_iterator(_ADT.CircularList(({1,2,3,4})), 3)))
-
-
-test_true(!(_ADT.CircularList(({1,2,3,4}))->last()))
-
 
 **************************** test _equal ***********************************
 
 test_any(_ADT.CircularList a = _ADT.CircularList(({1,2,3,4,5,6,7,8,9}));
 	 _ADT.CircularList b = a;
-	 return equal (a->first(), b->first()), 1);
+	 return equal (get_iterator(a), get_iterator(b)), 1);
 
 
 test_any(_ADT.CircularList a = _ADT.CircularList(({1,2,3,4,5,6,7,8,9}));
 	 _ADT.CircularList b = a;
-	 return equal ((a->first() +1), (b->first() + 1)), 1);
+	 return equal ((get_iterator(a) +1), (get_iterator(b) + 1)), 1);
 
 
 test_any(_ADT.CircularList a = _ADT.CircularList(({1,2,3,4,5,6,7,8,9}));
 	 _ADT.CircularList b = a;
-	 return equal ((a->first() + 1), b->first()), 0);
+	 return equal ((get_iterator(a) + 1), get_iterator(b)), 0);
 
 
 test_any(_ADT.CircularList a = _ADT.CircularList(({1,2,3,4,5,6,7,8,9}));
 	 _ADT.CircularList b = _ADT.CircularList(({1,2,3,4,5,6,7,8,9}));
-	 return equal (a->first(), b->first()), 0);
+	 return equal (get_iterator(a), get_iterator(b)), 0);
 
 ************************** test `< and `> *********************************
 
 
 test_any(_ADT.CircularList a = _ADT.CircularList(({1,2,3,4,5,6,7,8,9}));
 	 _ADT.CircularList b = a;
-	 return (a->first() < b->first()), 0);
+	 return (get_iterator(a) < get_iterator(b)), 0);
 
 
 test_any(_ADT.CircularList a = _ADT.CircularList(({1,2,3,4,5,6,7,8,9}));
 	 _ADT.CircularList b = a;
-	 return (a->first() > b->first()), 0);
+	 return (get_iterator(a) > get_iterator(b)), 0);
 
 
 test_any(_ADT.CircularList a = _ADT.CircularList(({1,2,3,4,5,6,7,8,9}));
 	 _ADT.CircularList b = a;
-	 return ((a->first() + 1) > b->first()), 1);
+	 return ((get_iterator(a) + 1) > get_iterator(b)), 1);
 
 
 test_any(_ADT.CircularList a = _ADT.CircularList(({1,2,3,4,5,6,7,8,9}));
 	 _ADT.CircularList b = a;
-	 return ((a->first() + 1) < b->first()), 0);
+	 return ((get_iterator(a) + 1) < get_iterator(b)), 0);
 
 
 test_any(_ADT.CircularList a = _ADT.CircularList(({1,2,3,4,5,6,7,8,9}));
 	 _ADT.CircularList b = a;
-	 return (a->first() < (b->first() +1)), 1);
+	 return (get-iterator(a) < (get_iterator(b) + 1)), 1);
 
 
 test_any(_ADT.CircularList a = _ADT.CircularList(({1,2,3,4,5,6,7,8,9}));
 	 _ADT.CircularList b = a;
-	 return (a->first() >(b->first()+1)), 0);
+	 return (get_iterator(a) > (get_iterator(b) + 1)), 0);
 
 
 test_any(_ADT.CircularList a = _ADT.CircularList(({1,2,3,4,5,6,7,8,9}));
 	 _ADT.CircularList b = _ADT.CircularList(({99,66,44}));
-	 return ((a->first() + 1) > b->first()), 1);
+	 return ((get_iterator(a) + 1) > get_iterator(b)), 1);
 
 test_any(_ADT.CircularList a = _ADT.CircularList(({1,2,3,4,5,6,7,8,9}));
 	 _ADT.CircularList b = _ADT.CircularList(({-23, 88, a}));
-	 return (a->first() < (b->first()+1)), 1);
+	 return (get_iterator(a) < (get_iterator(b) + 1)), 1);
 
 
 ************************** test distance *********************************
@@ -1684,47 +1689,47 @@ test_any(_ADT.CircularList a = _ADT.CircularList(({1,2,3,4,5,6,7,8,9}));
 
 test_any(_ADT.CircularList a = _ADT.CircularList(({1,2,3,4,5,6,7,8,9}));
 	 _ADT.CircularList b = a;
-	 return (a->first()->distance(b->first())), 0);
+	 return (get_iterator(a)->distance(get_iterator(b))), 0);
 
 
 test_any(_ADT.CircularList a = _ADT.CircularList(({1,2,3,4,5,6,7,8,9}));
 	 _ADT.CircularList b = a;
-	 return (a->first()->distance(b->last())), 9);
+	 return (get_iterator(a)->distance(get_iterator(b))), 9);
 
 
 test_any(_ADT.CircularList a = _ADT.CircularList(({1,2,3,4,5,6,7,8,9}));
 	 _ADT.CircularList b = a;
-	 return ((a->first() + 1) > b->first()), 1);
+	 return ((get_iterator(a) + 1) > get_iterator(b)), 1);
 
 
 test_any(_ADT.CircularList a = _ADT.CircularList(({1,2,3,4,5,6,7,8,9}));
 	 _ADT.CircularList b = a;
-	 return ((a->first() + 5)->distance(b->first())), -5);
+	 return ((get_iterator(a) + 5)->distance(get_iterator(b))), -5);
 
 
 test_any(_ADT.CircularList a = _ADT.CircularList(({1,2,3,4,5,6,7,8,9}));
 	 _ADT.CircularList b = a;
-	 return (a->first()->distance((b->first() +11))), 9);
+	 return (get_iterator(a)->distance((get_iterator(b) + 11))), 9);
 
 test_any(_ADT.CircularList a = _ADT.CircularList(({1,2,3,4,5,6,7,8,9}));
 	 _ADT.CircularList b = _ADT.CircularList(({99,66,44}));
-	 return (a->first()->distance(b->last())), 3);
+	 return (get_iterator(a)->distance(get_iterator(b))), 3);
 
 test_any(_ADT.CircularList a = _ADT.CircularList(({1,2,3,4,5,6,7,8,9}));
 	 _ADT.CircularList b = _ADT.CircularList(({-23, 88, a}));
-	 return (a->last()->distance(b->first())), -9);
+	 return (get_iterator(a)->distance(get_iterator(b))), -9);
 
 ********************** test get_collection *******************************
 
 test_any(_ADT.CircularList a = _ADT.CircularList(({1,2,3,4,5,6,7,8,9}));
-	 _ADT.CircularList.CircularListIterator i = a->first();
+	 _ADT.CircularList.CircularListIterator i = get_iterator(a);
 	 return (i->get_collection() == a), 1);
 
 ************************* test set_value *********************************
 
 
 test_any(_ADT.CircularList a = _ADT.CircularList(({1,2,3,4,5,6,7,8,9}));
-	 a->first()->set_value(99);
+	 get_iterator(a)->set_value(99);
 	 return a[0], 99);
 
 
@@ -1733,6 +1738,6 @@ test_any(_ADT.CircularList a = _ADT.CircularList(({1,2,3,4,5,6,7,8,9}));
 
 
 test_any(_ADT.CircularList a = _ADT.CircularList(({1,2,3,4,5,6,7,8,9}));
-	 a->last()->set_value(99);
-	 return zero_type(iterator_value(a->last())), 1);
+	 get_iterator(a)->set_value(99);
+	 return zero_type(iterator_value(get_iterator(a))), 1);
 END_MARKER
