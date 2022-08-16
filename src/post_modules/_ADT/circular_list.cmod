@@ -1169,15 +1169,18 @@ PIKECLASS CircularList
      *!    Returns distance between this iterator and @[iter].
      *! @throws
      *!    An error if the two iterator could not be compared.
+     *!
+     *! @note
+     *!    This operation is only valid if both iterators are
+     *!    for the same @[CircularList] object.
      */
 
     PIKEFUN int distance(object iter)
     {
-      if (iter->prog == CircularList_CircularListIterator_program)
-      {
-
-	struct CircularList_CircularListIterator_struct *i =
-	  OBJ2_CIRCULARLIST_CIRCULARLISTITERATOR(iter);
+      struct CircularList_CircularListIterator_struct *i = NULL;
+      if ((iter->prog == CircularList_CircularListIterator_program) &&
+	  (i = OBJ2_CIRCULARLIST_CIRCULARLISTITERATOR(iter)) &&
+	  (i->list == THIS->list)) {
 	RETURN (i->pos - THIS->pos);
       }
       else
