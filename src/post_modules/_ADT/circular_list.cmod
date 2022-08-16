@@ -1215,7 +1215,8 @@ PIKECLASS CircularList
     PIKEFUN mixed set_value(mixed val)
     {
       if (THIS->list &&
-	  THIS->pos < THIS->list->size)
+	  (THIS->pos >= 0) &&
+	  (THIS->pos < THIS->list->size))
       {
 	struct svalue ind;
 	struct svalue retval;
@@ -1240,14 +1241,14 @@ PIKECLASS CircularList
       }
     }
 
-#ifdef PIKE_NULL_IS_SPECIAL
     INIT
     {
-      THIS->list=0;
-      THIS->pos=0;
+      THIS->pos = -1;
+#ifdef PIKE_NULL_IS_SPECIAL
+      THIS->list = NULL;
       THIS->obj = NULL;
-    }
 #endif
+    }
 
     EXIT
       gc_trivial;
