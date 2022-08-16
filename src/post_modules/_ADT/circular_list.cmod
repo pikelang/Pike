@@ -1048,16 +1048,17 @@ PIKECLASS CircularList
 
     PIKEFUN int(0..1) has_next(void|int steps)
     {
-      if (!steps)
-      {
-	RETURN (THIS->list &&
-		(THIS->pos + 1) < THIS->list->size);
+      int pos = THIS->pos;
+      if (!THIS->list || !THIS->list->size) {
+	RETURN 0;
       }
-      else
-      {
-	RETURN (THIS->list &&
-		(THIS->pos + steps->u.integer) >= 0 &&
-		(THIS->pos + steps->u.integer) < THIS->list->size);
+      if (!steps) {
+	RETURN ((pos + 1) < THIS->list->size);
+      } else if (steps->u.integer < 0) {
+	if (pos < 0) pos = THIS->list->size;
+	RETURN ((pos + steps->u.integer) >= 0);
+      } else {
+	RETURN ((pos + steps->u.integer) < THIS->list->size);
       }
     }
 
@@ -1071,16 +1072,17 @@ PIKECLASS CircularList
 
     PIKEFUN int(0..1) has_previous(void|int steps)
     {
-      if (!steps)
-      {
-	RETURN (THIS->list &&
-		(THIS->pos) > 0);
+      int pos = THIS->pos;
+      if (!THIS->list || !THIS->list->size) {
+	RETURN 0;
       }
-      else
-      {
-	RETURN (THIS->list &&
-		(THIS->pos - steps->u.integer) >= 0 &&
-		(THIS->pos - steps->u.integer) < THIS->list->size);
+      if (!steps) {
+	RETURN !!pos;
+      } else if (steps->u.integer < 0) {
+	RETURN ((pos - steps->u.integer) < THIS->list->size);
+      } else {
+	if (pos < 0) pos = THIS->list->size;
+	RETURN ((pos - steps->u.integer) >= 0);
       }
     }
 
