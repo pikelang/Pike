@@ -609,18 +609,24 @@ F_COMMA_EXPR(F_INITIALIZE(0, 1), 2):
 // x = expr; --x;  ==>  x = expr-1;
 F_COMMA_EXPR(F_ASSIGN(1 = +[!depend_p($$, $$)], 0), F_DEC($1, -)):
   {
+    struct pike_type *t = $1->type;
     $$ = mknode(F_ASSIGN, $1,
 		mkefuncallnode("`-",
-			       mknode(F_ARG_LIST, $0, mkintnode(1))));
+			       mknode(F_ARG_LIST,
+				      mksoftcastnode(t, $0),
+				      mkintnode(1))));
   }
   ;
 
 // x = expr; ++x;  ==>  x = expr+1;
 F_COMMA_EXPR(F_ASSIGN(1 = +[!depend_p($$, $$)], 0), F_INC($1, -)):
   {
+    struct pike_type *t = $1->type;
     $$ = mknode(F_ASSIGN, $1,
 		mkefuncallnode("`+",
-			       mknode(F_ARG_LIST, $0, mkintnode(1))));
+			       mknode(F_ARG_LIST,
+				      mksoftcastnode(t, $0),
+				      mkintnode(1))));
   }
   ;
 
@@ -628,10 +634,13 @@ F_COMMA_EXPR(F_ASSIGN(1 = +[!depend_p($$, $$)], 0), F_INC($1, -)):
 F_COMMA_EXPR(F_ASSIGN(1 = +[!depend_p($$, $$)], 0),
 	     F_COMMA_EXPR(F_DEC($1, -), 2)):
   {
+    struct pike_type *t = $1->type;
     $$ = mknode(F_COMMA_EXPR,
 		mknode(F_ASSIGN, $1,
 		       mkefuncallnode("`-",
-				      mknode(F_ARG_LIST, $0, mkintnode(1)))),
+				      mknode(F_ARG_LIST,
+					     mksoftcastnode(t, $0),
+					     mkintnode(1)))),
 		$2);
   }
   ;
@@ -640,10 +649,13 @@ F_COMMA_EXPR(F_ASSIGN(1 = +[!depend_p($$, $$)], 0),
 F_COMMA_EXPR(F_ASSIGN(1 = +[!depend_p($$, $$)], 0),
 	     F_COMMA_EXPR(F_INC($1, -), 2)):
   {
+    struct pike_type *t = $1->type;
     $$ = mknode(F_COMMA_EXPR,
 		mknode(F_ASSIGN, $1,
 		       mkefuncallnode("`+",
-				      mknode(F_ARG_LIST, $0, mkintnode(1)))),
+				      mknode(F_ARG_LIST,
+					     mksoftcastnode(t, $0),
+					     mkintnode(1)))),
 		$2);
   }
   ;
@@ -656,9 +668,12 @@ F_COMMA_EXPR(F_ASSIGN(1 = F_LOCAL, 0),
 		   [ $1->u.integer.a == $$->u.integer.a ]
 		   [ $1->u.integer.b == $$->u.integer.b ], -)):
   {
+    struct pike_type *t = $1->type;
     $$ = mknode(F_ASSIGN, $1,
 		mkefuncallnode("`-",
-			       mknode(F_ARG_LIST, $0, mkintnode(1))));
+			       mknode(F_ARG_LIST,
+				      mksoftcastnode(t, $0),
+				      mkintnode(1))));
   }
   ;
 
@@ -668,9 +683,12 @@ F_COMMA_EXPR(F_ASSIGN(1 = F_LOCAL, 0),
 		   [ $1->u.integer.a == $$->u.integer.a ]
 		   [ $1->u.integer.b == $$->u.integer.b ], -)):
   {
+    struct pike_type *t = $1->type;
     $$ = mknode(F_ASSIGN, $1,
 		mkefuncallnode("`+",
-			       mknode(F_ARG_LIST, $0, mkintnode(1))));
+			       mknode(F_ARG_LIST,
+				      mksoftcastnode(t, $0),
+				      mkintnode(1))));
   }
   ;
 
@@ -680,10 +698,13 @@ F_COMMA_EXPR(F_ASSIGN(1 = F_LOCAL, 0),
 				[$1->u.integer.a == $$->u.integer.a]
 				[$1->u.integer.b == $$->u.integer.b], -), 2)):
   {
+    struct pike_type *t = $1->type;
     $$ = mknode(F_COMMA_EXPR,
 		mknode(F_ASSIGN, $1,
 		       mkefuncallnode("`-",
-				      mknode(F_ARG_LIST, $0, mkintnode(1)))),
+				      mknode(F_ARG_LIST,
+					     mksoftcastnode(t, $0),
+					     mkintnode(1)))),
 		$2);
   }
   ;
@@ -694,10 +715,13 @@ F_COMMA_EXPR(F_ASSIGN(1 = F_LOCAL, 0),
 				[$1->u.integer.a == $$->u.integer.a]
 				[$1->u.integer.b == $$->u.integer.b], -), 2)):
   {
+    struct pike_type *t = $1->type;
     $$ = mknode(F_COMMA_EXPR,
 		mknode(F_ASSIGN, $1,
 		       mkefuncallnode("`+",
-				      mknode(F_ARG_LIST, $0, mkintnode(1)))),
+				      mknode(F_ARG_LIST,
+					     mksoftcastnode(t, $0),
+					     mkintnode(1)))),
 		$2);
   }
   ;
