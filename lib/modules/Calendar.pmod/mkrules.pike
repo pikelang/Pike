@@ -14,6 +14,10 @@
 #charset iso-8859-1
 #pike __REAL_VERSION__
 
+#if !constant(zero)
+typedef int(0..0) zero;
+#endif
+
 object cal=Calendar.ISO->set_timezone("UTC");
 function Year=cal->Year;
 object nleapy=Year(1999);
