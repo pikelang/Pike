@@ -2552,6 +2552,7 @@ mapping abbr2zones =
      "Africa/Lagos",
      "Africa/Libreville",
      "Africa/Luanda",
+     "Africa/Lubumbashi",
      "Africa/Malabo",
      "Africa/Ndjamena",
      "Africa/Niamey",
