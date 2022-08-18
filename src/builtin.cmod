@@ -6134,6 +6134,10 @@ PIKECLASS List
 
 #define HEAD_SENTINEL(this)	((struct pike_list_node *)(&this->head))
 #define TAIL_SENTINEL(this)	((struct pike_list_node *)(&this->tail))
+#define HEAD_TO_LIST(headptr)	((struct List_struct *)headptr)
+#define TAIL_TO_LIST(tailptr)	((struct List_struct *)			\
+				 (((char *)tailptr) -			\
+				  OFFSETOF(List_struct, tail)))
 
   /* Sentinel overlap description:
    *
@@ -6558,7 +6562,7 @@ PIKECLASS List
      *       cur may however refer to a detached node, or to sentinels.
      */
 
-    static struct List_struct *List__get_iterator_find_parent()
+    static struct List_struct *List__get_iterator_find_parent(void)
     {
       struct external_variable_context loc;
 
@@ -6572,7 +6576,7 @@ PIKECLASS List
 
     INIT
     {
-      add_ref(THIS->cur = List__get_iterator_find_parent()->head);
+      add_ref(THIS->cur = HEAD_SENTINEL(List__get_iterator_find_parent()));
       THIS->ind = 0;
     }
 
@@ -6803,28 +6807,28 @@ PIKECLASS List
       parent = (struct List_struct *)(loc.o->storage +
 				      loc.inherit->storage_offset);
       free_list_node(THIS->cur);
-      add_ref(THIS->cur = parent->head);
+      add_ref(THIS->cur = HEAD_SENTINEL(parent));
       THIS->ind = 0;
       pop_n_elems(args);
-      if (THIS->cur->next) {
+      if (parent->head->next) {
 	push_int(1);
       } else {
 	push_undefined();
       }
     }
 
-    /*! @decl protected int(0..1) _iterator_next()
+    /*! @decl protected mixed _iterator_next()
      *!
      *!   Advance to the next element in the list.
      *!
      *! @returns
-     *!   Returns @expr{1@} on success, and @expr{0@} (zero)
+     *!   Returns the new element on success, and @[UNDEFINED]
      *!   at the end of the list.
      *!
      *! @seealso
      *!   @[prev()]
      */
-    PIKEFUN int(0..1) _iterator_next()
+    PIKEFUN mixed _iterator_next()
       flags ID_PROTECTED;
     {
       struct pike_list_node *next;
@@ -6832,10 +6836,18 @@ PIKECLASS List
 	free_list_node(THIS->cur);
 	add_ref(THIS->cur = next);
 	THIS->ind++;
-        if (next->next)
-          RETURN 1;
+      } else {
+	/* We are at the tail sentinel. */
+	next = TAIL_TO_LIST(THIS->cur)->head;
+	free_list_node(THIS->cur);
+	add_ref(THIS->cur = next);
+	THIS->ind = 0;
       }
-      RETURN 0;
+      if (next->next) {
+	push_svalue(&next->val);
+      } else {
+	push_undefined();
+      }
     }
 
     /*! @decl int(0..1) next()
