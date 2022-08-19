@@ -409,7 +409,8 @@ class DeltatextIterator
   //! being the total number of revisions in the rcs file)
   protected int _iterator_index()
   {
-    return this_no;
+    if (!this_no) return UNDEFINED;
+    return this_no - 1;
   }
 
   //! @returns
@@ -419,34 +420,16 @@ class DeltatextIterator
     return revisions[this_rev];
   }
 
-  //! @returns
-  //! 1 if the iterator has processed all deltatext entries, 0 otherwise.
-  protected int(0..1) `!()
-  {
-    return finished;
-  }
-
-  //! Advance @[nsteps] sections.
+  //! Advance the iterator one step.
   //!
-  //! @returns
-  //!   Returns the iterator object.
-  protected this_program `+=(int nsteps)
+  //! Returns @[UNDEFINED] when the iterator is finished, and
+  //! otherwise the same as @[_iterator_index()].
+  protected int _iterator_next()
   {
-    while(nsteps--)
-      _iterator_next();
-    return this;
-  }
-
-  //! like @expr{@[`+=](1)@}, but returns 0 if the iterator is finished
-  protected int(0..1) _iterator_next()
-  {
-    return read_next() && (++this_no, 1);
-  }
-
-  //! Restart not implemented; always returns 0 (==failed)
-  int(0..1) first()
-  {
-    return 0;
+    if (read_next()) {
+      return this_no++;
+    }
+    return UNDEFINED;
   }
 
   //! Chops off the first deltatext section from the token array @[raw] and
