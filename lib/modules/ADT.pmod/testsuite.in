@@ -187,6 +187,63 @@ test_any_equal([[
   }))
 test_do(add_constant("clst"))
 
+dnl - ADT.List
+
+dnl create(array)
+test_do(add_constant("lst", ADT.List(@((array(string))
+                                       reverse(indices(allocate(10)))))))
+dnl is_empty()
+test_false(lst->is_empty())
+dnl _sizeof()
+test_eq(sizeof(lst), 10)
+dnl _sprintf()
+dnl _reverse()
+dnl head()
+test_eq(lst->head(), "9")
+dnl tail()
+test_eq(lst->tail(), "0")
+dnl pop()
+test_eq(lst->pop(), "9")
+dnl pop_back()
+test_eq(lst->pop_back(), "0")
+test_eq(sizeof(lst), 8)
+dnl _values()
+test_equal(values(lst), (array(string))reverse(indices(allocate(10))[1..8]))
+dnl cast()
+test_equal((array(int))lst, reverse(indices(allocate(10))[1..8]))
+dnl `[]()
+dnl append()
+test_do(lst->append("+"));
+dnl insert()
+test_do(lst->insert("-"));
+test_eq(sizeof(lst), 10)
+dnl _equal()
+dnl _get_iterator()
+test_any_equal([[
+  object it = get_iterator(lst);
+  array(int) idx = ({});
+  array(string) vals = ({});
+  foreach(it; int id; string val) {
+    idx += ({ id });
+    vals += ({ val });
+    it->set(val + val);
+  }
+  foreach(it; int id; string val) {
+    idx += ({ id });
+    vals += ({ val });
+    it->set(val + val);
+  }
+  return ({ idx, vals, (array)lst });
+]], ({ indices(allocate(10)) * 2,
+       ("-87654321+"/"") + ("--8877665544332211++"/2),
+       "----88887777666655554444333322221111++++"/4,
+  }))
+dnl flush()
+test_do(lst->flush())
+test_false(sizeof(lst))
+test_true(lst->is_empty())
+test_do(add_constant("lst"))
+
 dnl - ADT.LowLevelStack
 cond_begin([[ ADT["LowLevelStack"] ]])
 test_any([[
