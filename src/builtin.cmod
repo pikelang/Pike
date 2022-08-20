@@ -6833,7 +6833,7 @@ PIKECLASS List
     {
       struct pike_list_node *next;
       if (!THIS->cur) {
-	add_ref(THIS->cur = List__get_iterator_find_parent()->head);
+	add_ref(THIS->cur = next = List__get_iterator_find_parent()->head);
 	THIS->ind = 0;
       } else if ((next = THIS->cur->next)) {
 	free_list_node(THIS->cur);
@@ -6868,7 +6868,7 @@ PIKECLASS List
     {
       struct pike_list_node *next;
       if (!THIS->cur) {
-	add_ref(THIS->cur = List__get_iterator_find_parent()->head);
+	add_ref(THIS->cur = next = List__get_iterator_find_parent()->head);
 	THIS->ind = 0;
       } else if ((next = THIS->cur->next)) {
 	free_list_node(THIS->cur);
