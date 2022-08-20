@@ -6420,11 +6420,9 @@ PIKECLASS List
   PIKEFUN array _values()
     flags ID_PROTECTED;
   {
-      struct array * a;
-      push_int(THIS->num_elems);
-      f_allocate(1);
+      struct array *a = allocate_array(THIS->num_elems);
+      push_array(a);
 
-      a = Pike_sp[-1].u.array;
       if (THIS->num_elems) {
 	struct pike_list_node *node = THIS->head;
 	int i;
@@ -6433,7 +6431,9 @@ PIKECLASS List
 	  node = node->next;
 	}
       }
-    }
+
+      array_fix_type_field(a);
+  }
 
   /*! @decl array|zero cast(string type)
    *!
