@@ -6577,7 +6577,7 @@ PIKECLASS List
     INIT
     {
       add_ref(THIS->cur = HEAD_SENTINEL(List__get_iterator_find_parent()));
-      THIS->ind = 0;
+      THIS->ind = -1;
     }
 
     EXIT
@@ -6808,7 +6808,7 @@ PIKECLASS List
 				      loc.inherit->storage_offset);
       free_list_node(THIS->cur);
       add_ref(THIS->cur = HEAD_SENTINEL(parent));
-      THIS->ind = 0;
+      THIS->ind = -1;
       pop_n_elems(args);
       if (parent->head->next) {
 	push_int(1);
@@ -6832,7 +6832,10 @@ PIKECLASS List
       flags ID_PROTECTED;
     {
       struct pike_list_node *next;
-      if ((next = THIS->cur->next)) {
+      if (!THIS->cur) {
+	add_ref(THIS->cur = List__get_iterator_find_parent()->head);
+	THIS->ind = 0;
+      } else if ((next = THIS->cur->next)) {
 	free_list_node(THIS->cur);
 	add_ref(THIS->cur = next);
 	THIS->ind++;
@@ -6864,13 +6867,21 @@ PIKECLASS List
     PIKEFUN int(0..1) next()		/* Compat. */
     {
       struct pike_list_node *next;
-      if ((next = THIS->cur->next)) {
+      if (!THIS->cur) {
+	add_ref(THIS->cur = List__get_iterator_find_parent()->head);
+	THIS->ind = 0;
+      } else if ((next = THIS->cur->next)) {
 	free_list_node(THIS->cur);
 	add_ref(THIS->cur = next);
 	THIS->ind++;
-        if (next->next)
-          RETURN 1;
       }
+      if (THIS->cur->next) {
+	RETURN 1;
+      }
+      /* End sentinel. */
+      free_list_node(THIS->cur);
+      THIS->cur = NULL;
+      THIS->ind = -1;
       RETURN 0;
     }
 
