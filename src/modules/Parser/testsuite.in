@@ -1,5 +1,7 @@
 START_MARKER
 
+dnl - Parser.HTML
+
 define(test_parser, [[
   define([[WIDENER]], "\0")
   test_any_equal($1,$2)
@@ -1319,5 +1321,28 @@ test_any([[
   my_parser->_set_entity_callback(entity_callback);
   return my_parser->finish("<a href=\"mailto:&foobar;\"></a>")->read();
 ]], "<a href=\"mailto:&nbsp;\"></a>")
+
+dnl - Parser.RCS
+
+test_do(add_constant("rcsraw", Stdio.read_file("SRCDIR/testdata/COPYRIGHT,v")))
+test_do(add_constant("rcsobj", Parser.RCS("SRCDIR/testdata/COPYRIGHT,v", 0)))
+test_do(add_constant("rcsarr", rcsobj->parse_admin_section(rcsraw)))
+test_eq(sizeof(rcsarr), 66);
+test_do(add_constant("rcsarr", rcsobj->parse_delta_sections(rcsarr)))
+test_eq(sizeof(rcsarr), 65);
+test_do([[
+  mapping rcsrevs = ([]);
+  foreach(rcsobj->DeltatextIterator(rcsarr); int n; Parser.RCS.Revision rev) {
+    rcsrevs[rev->revision] = rev;
+  }
+  werror("rcsrevs: %O\n", rcsrevs);
+  add_constant("rcsrevs", rcsrevs);
+]])
+test_eq(sizeof(rcsrevs), 13)
+
+test_do(add_constant("rcsrevs"))
+test_do(add_constant("rcsarr"))
+test_do(add_constant("rcsobj"))
+test_do(add_constant("rcsraw"))
 
 END_MARKER
