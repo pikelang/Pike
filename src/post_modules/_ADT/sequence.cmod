@@ -29,7 +29,7 @@
 DECLARATIONS
 
 /*! @class Sequence
- *! The sequence work similar to an array but has the possibilities to
+ *! The sequence work similar to an array but has the possibility to
  *! insert and remove elements. It also has a more powerful iterator.
  */
 
@@ -231,7 +231,7 @@ PIKECLASS Sequence
  *! Xor operator
  *! Perform a xor on this sequence and the @[coll] sequence by returning
  *! those values that is present in one of the sequences but not in both
- *! adapters as a new @[Sequence].
+ *! sequences as a new @[Sequence].
  *! The values are compared using `==.
  *!
  *! @param coll
@@ -271,8 +271,8 @@ PIKECLASS Sequence
     if (TYPEOF(*coll) == T_OBJECT &&
 	coll->u.object->prog == Sequence_program)
     {
-      struct Sequence_struct *adapter = OBJ2_SEQUENCE(coll->u.object);
-      RETURN  (array_equal_p(THIS->a, adapter->a, 0));
+      struct Sequence_struct *other = OBJ2_SEQUENCE(coll->u.object);
+      RETURN  (array_equal_p(THIS->a, other->a, 0));
     }
     RETURN 0;
   }
@@ -280,7 +280,7 @@ PIKECLASS Sequence
   /*! @decl array _indices()
    *!
    *! @returns
-   *!   The indices in this adapter as an array.
+   *!   The indices in this sequence as an array.
    */
 
   PIKEFUN array _indices()
@@ -376,7 +376,7 @@ PIKECLASS Sequence
 /*! @decl int _sizeof()
  *!
  *! @returns
- *!   The number of elements in this adapter.
+ *!   The number of elements in this sequence.
  */
 
   PIKEFUN int _sizeof()
@@ -387,7 +387,7 @@ PIKECLASS Sequence
   /*! @decl array _values()
    *!
    *! @returns
-   *!   The values in this adapter as an array.
+   *!   The values in this sequence as an array.
    */
 
   PIKEFUN array _values()
@@ -753,7 +753,7 @@ PIKECLASS Sequence
     /*! @decl int(0..1) has_next(void|int steps)
      *! @returns
      *!    Returns @tt{true@} if it is possible to move @[steps] steps
-     *!    forwards, if @[steps] weren't supplied it check if it is
+     *!    forwards, if @[steps] is not supplied it checks if it is
      *!    possible to move one step forward.
      */
 
@@ -776,7 +776,7 @@ PIKECLASS Sequence
     /*! @decl int(0..1) has_previous(void|int steps)
      *! @returns
      *!    Returns @tt{true@} if it is possible to move @[steps] steps
-     *!    backwards, if @[steps] weren't supplied it check if it is
+     *!    backwards, if @[steps] is not supplied it checks if it is
      *!    possible to move one step backward.
      */
 
@@ -864,8 +864,8 @@ PIKECLASS Sequence
      *!    Greater then operator.
      *!
      *! @returns
-     *!    Returns @tt{true@} if this iterator has a higher index
-     *!    then @[iter].
+     *!    Returns @tt{true@} if this iterator is at a higher index
+     *!    than @[iter].
      */
 
 
@@ -942,7 +942,7 @@ PIKECLASS Sequence
 	struct svalue ind;
 	struct svalue retval;
 
-	//if there is someone else using the array but the adapter
+	// If there is someone else than us using the array.
 	if (THIS->sequence->a->refs > 1)
 	{
 	  //copy it
