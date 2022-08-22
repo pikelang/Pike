@@ -35,8 +35,6 @@ DECLARATIONS
 
 PIKECLASS Sequence
 {
-
-  CVAR int pos;
   CVAR struct array *a;
 
 
