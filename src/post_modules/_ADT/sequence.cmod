@@ -517,39 +517,6 @@ PIKECLASS Sequence
   }
 
 
-
-  /*! @decl SequenceIterator _get_iterator(void|int ind)
-   *!   Create and initiate a new SequenceIterator that could be used
-   *!   to iterate over this sequence.
-   *!
-   *! @param ind
-   *!   If an @[ind] value is supplied the iterator will be positioned at
-   *!   that index.
-   *!
-   *! @returns
-   *!   An iterator.
-   */
-
-
-
-  /*! @decl SequenceIterator first()
-   *!   Create and initiate a new SequenceIterator that could be used
-   *!   to iterate over this sequence.
-   *!
-   *! @returns
-   *!   An iterator positioned at the first element in the sequence.
-   */
-
-
-  /*! @decl SequenceIterator last()
-   *!   Create and initiate a new SequenceIterator that could be used
-   *!   to iterate over this sequence.
-   *!
-   *! @returns
-   *!   An iterator positioned after the last element in the sequence.
-   */
-
-
   INIT
   {
     add_ref(THIS->a = &empty_array);
@@ -575,7 +542,8 @@ PIKECLASS Sequence
 
   /*! @decl void create(object sequence, void|int start)
    *!   Creates a new iterator for the sequence @[sequence]. If start is
-   *!   supplied it will try to position the iterator at @[start].
+   *!   supplied it will try to position the iterator so that the next
+   *!   iteration starts at @[start].
    *!
    */
 
@@ -592,19 +560,19 @@ PIKECLASS Sequence
 	add_ref(THIS->obj = sequence);
 	if (start) // if there was an start index supplied
 	{
-	  THIS->pos=start->u.integer;
-	  if (THIS->sequence->a && ((THIS->pos > THIS->sequence->a->size)
-				   || (THIS->pos < 0)))
+	  THIS->pos = start->u.integer - 1;
+	  if (THIS->sequence->a && ((THIS->pos >= THIS->sequence->a->size)
+				   || (THIS->pos < -1)))
 	  {
 	      Pike_error("Index %d is out of array range 0 - %d.\n",
-			 THIS->pos,
+			 THIS->pos + 1,
 			 THIS->sequence->a->size);
           }
           pop_n_elems(2);
 	}
 	else
 	{
-          THIS->pos = 0;
+          THIS->pos = -1;
           pop_stack();
 	}
       }
@@ -622,7 +590,8 @@ PIKECLASS Sequence
     {
       if(!THIS->sequence ||
 	 !THIS->sequence->a ||
-	 THIS->pos >= THIS->sequence->a->size)
+	 (THIS->pos >= THIS->sequence->a->size) ||
+	 (THIS->pos < 0))
       {
 	push_undefined();
       }
@@ -644,7 +613,8 @@ PIKECLASS Sequence
     {
       if(!THIS->sequence ||
 	 !THIS->sequence->a ||
-	 THIS->pos >= THIS->sequence->a->size)
+	 (THIS->pos >= THIS->sequence->a->size) ||
+	 (THIS->pos < 0))
       {
 	push_undefined();
       }
@@ -654,19 +624,32 @@ PIKECLASS Sequence
       }
     }
 
+    /*! @decl int _iterator_next()
+     *!
+     *! Advance to the next position in the sequence.
+     *!
+     *! @returns
+     *!   Returns the new position, or @[UNDEFINED] if
+     *!   the end of the sequence is reached.
+     *!
+     *! @note
+     *!   Calling this function when the end of the sequence
+     *!   has already been reached restarts the iterator
+     *!   at the first element of the sequence (if any).
+     */
     PIKEFUN int _iterator_next()
       flags ID_PROTECTED;
     {
       if (!THIS->sequence || !THIS->sequence->a) {
-	push_int(0);
+	push_undefined();
 	return;
       }
       THIS->pos++;
       if (THIS->pos >= THIS->sequence->a->size) {
-	THIS->pos = THIS->sequence->a->size;
-	push_int(0);
+	THIS->pos = -1;
+	push_undefined();
       } else{
-	push_int(1);
+	push_int(THIS->pos);
       }
     }
 
@@ -685,14 +668,22 @@ PIKECLASS Sequence
       new = OBJ2_SEQUENCE_SEQUENCEITERATOR(o);
       new[0]=*THIS;
       add_ref(THIS->obj);
-      new->pos+=steps;
-      if (new->pos < 0)
-      {
-	new->pos = 0;
-      }
-      else if (new->pos > new->sequence->a->size)
-      {
-	new->pos = new->sequence->a->size;
+      if (steps < 0) {
+	if (new->pos < 0) {
+	  new->pos += new->sequence->a->size + steps;
+	} else {
+	  new->pos += steps;
+	}
+	if (new->pos < 0)
+	{
+	  new->pos = -1;
+	}
+      } else {
+	new->pos += steps;
+	if (new->pos >= new->sequence->a->size)
+	{
+	  new->pos = -1;
+	}
       }
       RETURN o;
     }
@@ -708,14 +699,17 @@ PIKECLASS Sequence
 
     PIKEFUN object `+=(int steps)
     {
+      if ((steps < 0) && (THIS->pos < 0)) {
+	THIS->pos += THIS->sequence->a->size;
+      }
       THIS->pos+=steps;
       if (THIS->pos < 0)
       {
-	THIS->pos = 0;
+	THIS->pos = -1;
       }
-      else if (THIS->pos > THIS->sequence->a->size)
+      else if (THIS->pos >= THIS->sequence->a->size)
       {
-	THIS->pos = THIS->sequence->a->size;
+	THIS->pos = -1;
       }
 
       REF_RETURN Pike_fp->current_object;
@@ -737,14 +731,21 @@ PIKECLASS Sequence
       new = OBJ2_SEQUENCE_SEQUENCEITERATOR(o);
       new[0]=*THIS;
       add_ref(THIS->obj);
-      new->pos-=steps;
-      if (new->pos < 0)
-      {
-	new->pos = 0;
-      }
-      else if (new->pos > new->sequence->a->size)
-      {
-	new->pos = new->sequence->a->size;
+      if (steps > 0) {
+	if (new->pos < 0) {
+	  new->pos += new->sequence->a->size - steps;
+	} else {
+	  new->pos -= steps;
+	}
+	if (new->pos < 0) {
+	  new->pos = -1;
+	}
+      } else {
+	new->pos -= steps;
+	if (new->pos >= new->sequence->a->size)
+	{
+	  new->pos = -1;
+	}
       }
       RETURN o;
     }
@@ -785,26 +786,15 @@ PIKECLASS Sequence
       if (!steps)
       {
 	RETURN (THIS->sequence && THIS->sequence->a &&
-		(THIS->pos) > 0);
+		(THIS->pos) >= 0);
       }
       else
       {
 	RETURN (THIS->sequence && THIS->sequence->a &&
-		(THIS->pos - steps->u.integer) >= 0 &&
+		(THIS->pos - steps->u.integer) >= -1 &&
+		(THIS->pos - steps->u.integer) &&
 		(THIS->pos - steps->u.integer) <= THIS->sequence->a->size);
       }
-    }
-
-
-    /*! @decl int(0..1) `!()
-     *! @returns
-     *!    Returns @tt{false@} if the iterator has reached the end.
-     */
-
-    PIKEFUN int(0..1) `!()
-    {
-      RETURN (THIS->sequence && THIS->sequence->a &&
-	      THIS->pos  == THIS->sequence->a->size);
     }
 
 
@@ -937,7 +927,8 @@ PIKECLASS Sequence
     PIKEFUN mixed set_value(mixed val)
     {
       if (THIS->sequence && THIS->sequence->a &&
-	  THIS->pos < THIS->sequence->a->size)
+	  (THIS->pos >= 0) &&
+	  (THIS->pos < THIS->sequence->a->size))
       {
 	struct svalue ind;
 	struct svalue retval;
@@ -983,6 +974,19 @@ PIKECLASS Sequence
   /*! @endclass
   */
 
+
+  /*! @decl SequenceIterator _get_iterator(void|int ind)
+   *!   Create and initiate a new SequenceIterator that could be used
+   *!   to iterate over this sequence.
+   *!
+   *! @param ind
+   *!   If an @[ind] value is supplied the iterator will be positioned at
+   *!   that index.
+   *!
+   *! @returns
+   *!   An iterator.
+   */
+
   PIKEFUN object _get_iterator(void|int ind)
   {
     ref_push_object(Pike_fp->current_object);
@@ -994,6 +998,13 @@ PIKECLASS Sequence
   }
 
 
+  /*! @decl SequenceIterator first()
+   *!   Create and initiate a new SequenceIterator that could be used
+   *!   to iterate over this sequence.
+   *!
+   *! @returns
+   *!   An iterator positioned at the first element in the sequence.
+   */
 
   PIKEFUN object first()
   {
@@ -1002,6 +1013,13 @@ PIKECLASS Sequence
   }
 
 
+  /*! @decl SequenceIterator last()
+   *!   Create and initiate a new SequenceIterator that could be used
+   *!   to iterate over this sequence.
+   *!
+   *! @returns
+   *!   An iterator positioned after the last element in the sequence.
+   */
 
   PIKEFUN object last()
   {
