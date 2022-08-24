@@ -355,6 +355,69 @@ test_any([[
 
 dnl - ADT.Scheduler
 
+dnl - ADT.Sequence
+
+dnl create(array)
+test_do(add_constant("seq", ADT.Sequence((array(string))
+                                         reverse(indices(allocate(10))))))
+dnl `[]()
+dnl `[]=()
+dnl `+()
+dnl `-()
+dnl `&()
+dnl `|()
+dnl `^()
+dnl _equal()
+dnl _indices()
+test_equal(indices(seq), indices(allocate(10)))
+dnl _insert_element()
+dnl _remove_element()
+dnl _search()
+test_eq(search(seq, "3"), 6)
+test_eq(search(seq, "3", 6), 6)
+test_eq(search(seq, "3", 7), -1)
+dnl _sizeof()
+test_eq(sizeof(seq), 10)
+dnl _values()
+test_equal(values(seq), (array(string))reverse(indices(allocate(10))))
+dnl add()
+dnl cast()
+test_equal((array(int))seq, reverse(indices(allocate(10))))
+dnl clear()
+dnl delete_value()
+dnl is_empty()
+test_false(seq->is_empty())
+dnl max_size()
+test_eq(seq->max_size(), -1)
+dnl _get_iterator()
+test_any_equal([[
+  object it = get_iterator(seq);
+  array(int) idx = ({});
+  array(string) vals = ({});
+  array(int) prevp = ({});
+  array(int) nextp = ({});
+  array(int) prev2p = ({});
+  array(int) next2p = ({});
+  array(int) prevn2p = ({});
+  array(int) nextn2p = ({});
+  foreach(it; int id; string val) {
+    idx += ({ id });
+    vals += ({ val });
+    prevp += ({ it->has_previous() });
+    prev2p += ({ it->has_previous(2) });
+    prevn2p += ({ it->has_previous(-2) });
+    nextp += ({ it->has_next() });
+    next2p += ({ it->has_next(2) });
+    nextn2p += ({ it->has_next(-2) });
+  }
+  return ({ idx, vals, prevp, nextp, prev2p, next2p, prevn2p, nextn2p });
+]], ({ indices(allocate(10)), "9876543210"/"",
+       ({ 0 }) + allocate(9, 1), allocate(9, 1) + ({ 0 }),
+       ({ 0, 0 }) + allocate(8, 1), allocate(8, 1) + ({ 0, 0 }),
+       allocate(8, 1) + ({ 0, 0 }), ({ 0, 0 }) + allocate(8, 1),
+  }))
+test_do(add_constant("seq"))
+
 dnl - ADT.Stack
 
 test_any([[
