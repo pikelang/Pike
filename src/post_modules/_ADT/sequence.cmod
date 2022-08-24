@@ -760,16 +760,18 @@ PIKECLASS Sequence
 
     PIKEFUN int(0..1) has_next(void|int steps)
     {
+      int pos = THIS->pos;
+      if (!THIS->sequence || !THIS->sequence->a) {
+	RETURN 0;
+      }
       if (!steps)
       {
-	RETURN (THIS->sequence && THIS->sequence->a &&
-		(THIS->pos + 1) <= THIS->sequence->a->size);
-      }
-      else
-      {
-	RETURN (THIS->sequence && THIS->sequence->a &&
-		(THIS->pos + steps->u.integer) >= 0 &&
-		(THIS->pos + steps->u.integer) <= THIS->sequence->a->size);
+	RETURN ((pos + 1) < THIS->sequence->a->size);
+      } else if (steps->u.integer < 0) {
+	if (pos < 0) pos = THIS->sequence->a->size;
+	RETURN ((pos + steps->u.integer) >= 0);
+      } else {
+	RETURN ((pos + steps->u.integer) < THIS->sequence->a->size);
       }
     }
 
@@ -783,17 +785,17 @@ PIKECLASS Sequence
 
     PIKEFUN int(0..1) has_previous(void|int steps)
     {
-      if (!steps)
-      {
-	RETURN (THIS->sequence && THIS->sequence->a &&
-		(THIS->pos) >= 0);
+      int pos = THIS->pos;
+      if (!THIS->sequence || !THIS->sequence->a || !THIS->sequence->a->size) {
+	RETURN 0;
       }
-      else
-      {
-	RETURN (THIS->sequence && THIS->sequence->a &&
-		(THIS->pos - steps->u.integer) >= -1 &&
-		(THIS->pos - steps->u.integer) &&
-		(THIS->pos - steps->u.integer) <= THIS->sequence->a->size);
+      if (!steps) {
+	RETURN !!pos;
+      } else if (steps->u.integer < 0) {
+	RETURN ((pos - steps->u.integer) < THIS->sequence->a->size);
+      } else {
+	if (pos < 0) pos = THIS->sequence->a->size;
+	RETURN ((pos - steps->u.integer) >= 0);
       }
     }
 
