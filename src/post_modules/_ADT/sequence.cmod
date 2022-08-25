@@ -670,7 +670,7 @@ PIKECLASS Sequence
       add_ref(THIS->obj);
       if (steps < 0) {
 	if (new->pos < 0) {
-	  new->pos += new->sequence->a->size + steps;
+	  new->pos = new->sequence->a->size + steps;
 	} else {
 	  new->pos += steps;
 	}
@@ -700,7 +700,7 @@ PIKECLASS Sequence
     PIKEFUN object `+=(int steps)
     {
       if ((steps < 0) && (THIS->pos < 0)) {
-	THIS->pos += THIS->sequence->a->size;
+	THIS->pos = THIS->sequence->a->size;
       }
       THIS->pos+=steps;
       if (THIS->pos < 0)
@@ -733,7 +733,7 @@ PIKECLASS Sequence
       add_ref(THIS->obj);
       if (steps > 0) {
 	if (new->pos < 0) {
-	  new->pos += new->sequence->a->size - steps;
+	  new->pos = new->sequence->a->size - steps;
 	} else {
 	  new->pos -= steps;
 	}
@@ -1025,11 +1025,8 @@ PIKECLASS Sequence
 
   PIKEFUN object last()
   {
-    struct svalue ind;
-    SET_SVAL(ind, T_INT, NUMBER_NUMBER, integer, THIS_SEQUENCE->a->size);
     ref_push_object(Pike_fp->current_object);
-    push_svalue(&ind);
-    push_object(clone_object(Sequence_SequenceIterator_program, 2));
+    push_object(clone_object(Sequence_SequenceIterator_program, 1));
   }
 
 
