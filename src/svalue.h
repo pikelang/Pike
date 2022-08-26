@@ -407,6 +407,7 @@ struct svalue
 #define tStringIndicable tOr5(tMapping,tObj,tFunction,tPrg(tObj),tMultiset)
 #define tRef tOr(tString,tComplex)
 #define tIfnot(X,Y) tAnd(tNot(X),Y)
+#define tIfexists(X, FUN) tIfnot(tFuncV(tNone, tNot(X), tMix), FUN)
 #define tAny tOr(tVoid,tMix)
 #define tAttr(X,Y) "\356\0" X "\0" Y
 #define tName(X,Y) "\361\0" X "\0" Y
