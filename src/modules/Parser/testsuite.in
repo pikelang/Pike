@@ -1335,7 +1335,7 @@ test_do([[
   foreach(rcsobj->DeltatextIterator(rcsarr); int n; Parser.RCS.Revision rev) {
     rcsrevs[rev->revision] = rev;
   }
-  werror("rcsrevs: %O\n", rcsrevs);
+  // werror("rcsrevs: %O\n", rcsrevs);
   add_constant("rcsrevs", rcsrevs);
 ]])
 test_eq(sizeof(rcsrevs), 13)
