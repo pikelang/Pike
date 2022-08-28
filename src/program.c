@@ -2011,6 +2011,7 @@ static int add_identifier(struct compilation *c,
 {
   struct reference ref;
   struct identifier dummy;
+  int zap_type = 0;
   int n;
 
   if (modifier_flags & ID_PRIVATE) modifier_flags |= ID_LOCAL|ID_PROTECTED;
@@ -2021,6 +2022,16 @@ static int add_identifier(struct compilation *c,
     identifier_flags |= IDENTIFIER_WEAK;
   }
 
+  if ((identifier_flags & IDENTIFIER_WEAK) && (!type || !(type->flags & PT_FLAG_NULLABLE))) {
+    type_stack_mark();
+    push_finished_type(type);
+    push_type(PIKE_T_ZERO);
+    push_type(T_OR);
+
+    type = pop_unfinished_type();
+    zap_type = 1;
+  }
+
   ref.id_flags = modifier_flags;
   ref.identifier_offset =
     low_add_identifier(c, type, name,
@@ -2028,6 +2039,10 @@ static int add_identifier(struct compilation *c,
 		       func, run_time_type);
   ref.inherit_offset = 0;
   ref.run_time_type = PIKE_T_UNKNOWN;
+
+  if (zap_type) {
+    free_type(type);
+  }
 
   if ((identifier_flags & (IDENTIFIER_VARIABLE|IDENTIFIER_ALIAS)) ==
       IDENTIFIER_VARIABLE) {
@@ -6632,7 +6647,16 @@ int define_variable(struct pike_string *name,
       struct identifier *id = ID_FROM_PTR(Pike_compiler->new_program, ref);
 
       free_type(id->type);
-      copy_pike_type(id->type, type);
+      if ((flags & ID_WEAK) && (!type || !(type->flags & PT_FLAG_NULLABLE))) {
+	type_stack_mark();
+	push_finished_type(type);
+	push_type(PIKE_T_ZERO);
+	push_type(T_OR);
+
+	id->type = pop_unfinished_type();
+      } else {
+	copy_pike_type(id->type, type);
+      }
       return n;
     }
   }
