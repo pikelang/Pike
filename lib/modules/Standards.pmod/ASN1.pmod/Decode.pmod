@@ -85,6 +85,9 @@ protected array(int) read_identifier(Stdio.Buffer data)
 //!   from @[Standards.ASN1.Types]. Combined tag numbers may be
 //!   generated using @[Standards.ASN1.Types.make_combined_tag].
 //!
+//! @param secure
+//!   Will fail if the encoded ASN.1 isn't in its canonical encoding.
+//!
 //! @returns
 //!   An object from @[Standards.ASN1.Types] or, either
 //!   @[Standards.ASN1.Decode.Primitive] or
@@ -95,7 +98,8 @@ protected array(int) read_identifier(Stdio.Buffer data)
 //!   Handling of implicit and explicit ASN.1 tagging, as well as
 //!   other context dependence, is next to non_existant.
 .Types.Object der_decode(Stdio.Buffer data,
-                         mapping(int:program(.Types.Object)) types)
+                         mapping(int:program(.Types.Object)) types,
+                         void|int(0..1) secure)
 {
   [int(0..3) cls, int constructed, int(0..) tag] = read_identifier(data);
 
@@ -130,7 +134,7 @@ protected array(int) read_identifier(Stdio.Buffer data)
       array(.Types.Object) elements = ({ });
 
       while (sizeof(data))
-	elements += ({ der_decode(data, types) });
+        elements += ({ der_decode(data, types, secure) });
 
       if (cls==2 && sizeof(elements)==1)
       {
@@ -155,8 +159,7 @@ protected array(int) read_identifier(Stdio.Buffer data)
     {
       DBG("Element %d\n", i);
       res->decode_constructed_element
-	(i, der_decode(data,
-		       res->element_types(i, types)));
+        (i, der_decode(data, res->element_types(i, types), secure));
     }
     return res;
   }
@@ -168,7 +171,7 @@ protected array(int) read_identifier(Stdio.Buffer data)
     .Types.Object res = ([program]p)();
     res->cls = cls;
     res->tag = tag;
-    return res->decode_primitive((string(8bit))data, this, types);
+    return res->decode_primitive((string(8bit))data, this, types, secure);
   }
 
   return Primitive(cls, tag, (string(8bit))data);
@@ -234,7 +237,8 @@ mapping(int:program(.Types.Object)) universal_types =
 }
 
 //! Works just like @[simple_der_decode], except it will return
-//! @expr{0@} if there is trailing data in the provided ASN.1 @[data].
+//! @expr{0@} on errors, including if there is leading or trailing
+//! data in the provided ASN.1 @[data].
 //!
 //! @seealso
 //!   @[simple_der_decode]
@@ -243,7 +247,10 @@ object(.Types.Object)|zero secure_der_decode(string(0..255) data,
 {
   types = types ? universal_types+[mapping]types : universal_types;
   Stdio.Buffer buf = Stdio.Buffer(data)->set_error_mode(1);
-  .Types.Object ret = der_decode(buf, [mapping]types);
-  if( sizeof(buf) ) return 0;
-  return ret;
+  catch {
+    .Types.Object ret = der_decode(buf, [mapping]types, 1);
+    if( sizeof(buf) ) return 0;
+    return ret;
+  };
+  return 0;
 }

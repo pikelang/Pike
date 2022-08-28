@@ -21,10 +21,10 @@ test_do( add_constant("P", lambda(object o)
 test_eval_error(Standards.ASN1.Decode.simple_der_decode(""))
 
 test_eval_error(Standards.ASN1.Decode.simple_der_decode(""))
-test_eval_error(Standards.ASN1.Decode.secure_der_decode(""))
+test_eq(Standards.ASN1.Decode.secure_der_decode(""), 0)
 
 test_eval_error(Standards.ASN1.Decode.simple_der_decode(String.hex2string("a2184515521e4c5d26f05590543c696ca2bd04b7754a18107d7f62744fbcb3a52ee80de3dca53339c3f6b2196afe3c540adfeb92686029f2")))
-test_eval_error(Standards.ASN1.Decode.secure_der_decode(String.hex2string("a2184515521e4c5d26f05590543c696ca2bd04b7754a18107d7f62744fbcb3a52ee80de3dca53339c3f6b2196afe3c540adfeb92686029f2")))
+test_eq(Standards.ASN1.Decode.secure_der_decode(String.hex2string("a2184515521e4c5d26f05590543c696ca2bd04b7754a18107d7f62744fbcb3a52ee80de3dca53339c3f6b2196afe3c540adfeb92686029f2")), 0)
 
 define(test_decode,[[
   test_eq(P(Standards.ASN1.Decode.simple_der_decode(String.hex2string($1))),$2)
@@ -221,6 +221,16 @@ test_equal([[ sort( ({
 test_eq(Standards.ASN1.Decode.secure_der_decode("\1\1\0")->get_der(),
 "\1\1\0")
 test_eq(Standards.ASN1.Decode.secure_der_decode("\1\1\0\0"), 0)
+
+test_any([[
+  string sig = String.hex2string("3082003d021d00a545d62d6e336775fb6a9b8495721646a54bd8c6173fc0a2295a1b7b021c068259cf902e5d55eb26e7bf850a82d40fc5456b3a902679612ea4a8");
+
+  object o = Standards.ASN1.Decode.simple_der_decode(sig);
+  if( o[0]->value != 17405257248838891816469921369101584473558545790090909834630401760123 ) return 0;
+  if( o[1]->value != 685496968505591163571084568128572561995827594072077741814321161384 ) return 0;
+  o = Standards.ASN1.Decode.secure_der_decode(sig);
+  return 1;
+]], 1)
 
 test_any([[
   // Sequence(Integer(4),Integer(7))
