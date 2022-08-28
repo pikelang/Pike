@@ -641,16 +641,20 @@ protected class KeptConnection
 
    void disconnect()
    {
-      Thread.MutexKey key = connection_cache_mux->lock(2);
-      connection_cache[lookup]-=({this});
-      if (!sizeof(connection_cache[lookup]))
-	 m_delete(connection_cache,lookup);
-      remove_call_out(disconnect); // if called externally
+      if (global::this)
+      {
+         Thread.MutexKey key = connection_cache_mux->lock(2);
+
+         connection_cache[lookup]-=({this});
+         if (!sizeof(connection_cache[lookup]))
+            m_delete(connection_cache,lookup);
+         remove_call_out(disconnect); // if called externally
+         connections_kept_n--;
+         if (!--connections_host_n[lookup])
+            m_delete(connections_host_n,lookup);
+      }
 
       if (q && q->con) {q->con->close(); destruct(q->con);}
-      connections_kept_n--;
-      if (!--connections_host_n[lookup])
-	 m_delete(connections_host_n,lookup);
       destruct(q);
       destruct(this);
    }
