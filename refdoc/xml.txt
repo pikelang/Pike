@@ -304,6 +304,13 @@ array
  
      <array><valuetype><int/></valuetype></array>
 
+   If the length of the array is specified it is given in a <length>
+   child element:
+
+     array(3)
+
+     <array><length>3</length></array>
+
 function
    The types of the arguments and the return type are given (the order 
    of the <argtype> elements is significant, of course):

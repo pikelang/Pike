@@ -1023,8 +1023,17 @@ string parse_type(Node n, void|string debug) {
 
   case "array":
     ret += "<code class='datatype'>array</code>";
-    c = n->get_first_element("valuetype");
-    if(c) ret += "(" + parse_type( get_first_element(c) ) + ")";
+    c = n->get_first_element("length");
+    d = n->get_first_element("valuetype");
+    if(c||d) {
+      ret += "(";
+      if(c) {
+        ret += c->value_of_node();
+        if(d) ret += ":";
+      }
+      if(d) ret += parse_type( get_first_element(d) );
+      ret += ")";
+    }
     break;
 
   case "mapping":

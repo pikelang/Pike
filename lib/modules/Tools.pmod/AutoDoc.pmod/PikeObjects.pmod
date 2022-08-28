@@ -130,10 +130,12 @@ class ArrayType {
   }
 
   string xml(.Flags|void flags) {
-    if (!valuetype)
+    string xml = "";
+    if (length>-1) xml += xmltag("length", (string)length);
+    if (valuetype) xml += xmltag("valuetype", valuetype->xml(flags));
+    if (xml=="" )
       return ::xml(flags);
-    return xmltag("array",
-                  xmltag("valuetype", valuetype->xml(flags)));
+    return xmltag("array", xml);
   }
 }
 
