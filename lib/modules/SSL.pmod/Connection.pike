@@ -742,11 +742,11 @@ int send_streaming_data (string(8bit) data)
 //!
 //! @returns
 //! @int
-//!   @elem value -1
+//!   @value -1
 //!     A Fatal error occurred and processing should stop.
-//!   @elem value 0
+//!   @value 0
 //!     Processing can continue.
-//!   @elem value 1
+//!   @value 1
 //!     Connection should close.
 //! @endint
 int(-1..1) handle_alert(int level, int description)

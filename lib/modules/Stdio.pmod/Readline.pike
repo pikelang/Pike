@@ -1745,7 +1745,7 @@ string|zero edit(string data, string|void local_prompt,
 //!   by @[set_prompt()].
 //!
 //! This function is essentially a short hand for
-//! @code{edit("", prompt, attrs)@}.
+//! @expr{edit("", prompt, attrs)@}.
 //!
 //! @seealso
 //!   @[edit()]

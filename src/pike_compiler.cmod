@@ -2555,7 +2555,7 @@ static void f_compilation_apply_attribute_constant(INT32 args)
 }
 
 /*! @decl type(mixed) eval_type_attribute(string attribute, @
- *!                                       type t,
+ *!                                       type t, @
  *!                                       mapping state)
  */
 static void f_compilation_eval_type_attribute(INT32 args)

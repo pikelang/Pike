@@ -1294,7 +1294,7 @@ PIKECLASS CircularList
    *! @returns
    *!   An iterator positioned before the first element of the list.
    *!
-   *! @deprecated _get_iterator()
+   *! @deprecated _get_iterator
    *!   With the Pike 8.1 and later iterator API this is identical
    *!   to @[last()] and @[_get_iterator()].
    *!
@@ -1317,7 +1317,7 @@ PIKECLASS CircularList
    *! @returns
    *!   An iterator positioned after the last element of the list.
    *!
-   *! @deprecated _get_iterator()
+   *! @deprecated _get_iterator
    *!   With the Pike 8.1 and later iterator API this is identical
    *!   to @[first()] and @[_get_iterator()].
    *!
