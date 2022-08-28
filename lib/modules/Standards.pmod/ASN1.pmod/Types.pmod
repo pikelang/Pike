@@ -90,7 +90,8 @@ class Object
 				function(Stdio.Buffer,
 					 mapping(int:program(Object)):
 					 Object) decoder,
-				mapping(int:program(Object)) types);
+                                mapping(int:program(Object)) types,
+                                void|int(0..1) secure);
   void begin_decode_constructed(string raw);
   void decode_constructed_element(int i, object e);
   __deprecated__ void end_decode_constructed(int length) { }
@@ -261,7 +262,8 @@ class String
 				function(Stdio.Buffer,
 					 mapping(int:program(Object)):
 					 Object)|void decoder,
-				mapping(int:program(Object))|void types) {
+                                mapping(int:program(Object))|void types,
+                                void|int(0..1) secure) {
     record_der_contents(contents);
     value = contents;
     return this;
@@ -317,7 +319,8 @@ class Boolean
 				function(Stdio.Buffer,
 					 mapping(int:program(Object)):
 					 Object)|void decoder,
-				mapping(int:program(Object))|void types) {
+                                mapping(int:program(Object))|void types,
+                                void|int(0..1) secure) {
     record_der_contents(contents);
     if( contents=="" ) error("Illegal boolean value.\n");
     value = (contents != "\0");
@@ -377,10 +380,13 @@ class Integer
   }
 
   this_object decode_primitive(string(0..255) contents,
-				function(Stdio.Buffer,
-					 mapping(int:program(Object)):
-					 Object)|void decoder,
-				mapping(int:program(Object))|void types) {
+                               function(Stdio.Buffer,
+                                        mapping(int:program(Object)):
+                                        Object)|void decoder,
+                               mapping(int:program(Object))|void types,
+                               void|int(0..1) secure) {
+    if( secure && sizeof(contents)>1 && contents[0]==0 )
+      error("Leading zero.");
     record_der_contents(contents);
     value = Gmp.mpz(contents, 256);
     if (contents[0] & 0x80)  /* Negative */
@@ -443,7 +449,8 @@ class Real
                                function(Stdio.Buffer,
                                         mapping(int:program(Object)):
                                         Object) decoder,
-                               mapping(int:program(Object))|void types) {
+                               mapping(int:program(Object))|void types,
+                               void|int(0..1) secure) {
     if( contents=="" ) { value = 0.0; return this; }
     int first = contents[0];
     switch( first )
@@ -570,7 +577,8 @@ class BitString
 				function(Stdio.Buffer,
 					 mapping(int:program(Object)):
 					 Object)|void decoder,
-				mapping(int:program(Object))|void types) {
+                                mapping(int:program(Object))|void types,
+                                void|int(0..1) secure) {
     record_der_contents(contents);
     if (!sizeof(contents))
       return 0;
@@ -644,7 +652,8 @@ class Null
 				function(Stdio.Buffer,
 					 mapping(int:program(Object)):
 					 Object)|void decoder,
-				mapping(int:program(Object))|void types) {
+                                mapping(int:program(Object))|void types,
+                                void|int(0..1) secure) {
     record_der_contents(contents);
     return !sizeof(contents) && this;
   }
@@ -698,7 +707,8 @@ class Identifier
 				function(Stdio.Buffer,
 					 mapping(int:program(Object)):
 					 Object)|void decoder,
-				mapping(int:program(Object))|void types) {
+                                mapping(int:program(Object))|void types,
+                                void|int(0..1) secure) {
     record_der_contents(contents);
 
     if (contents[0] < 120)
@@ -802,7 +812,8 @@ class UTF8String
 				function(Stdio.Buffer,
 					 mapping(int:program(Object)):
 					 Object)|void decoder,
-				mapping(int:program(Object))|void types) {
+                                     mapping(int:program(Object))|void types,
+                                     void|int(0..1) secure) {
     der = contents;
     if (catch {
       value = utf8_to_string(contents);
@@ -832,7 +843,8 @@ class Sequence
 				function(Stdio.Buffer,
 					 mapping(int:program(Object)):
 					 Object) decoder,
-				mapping(int:program(Object)) types) {
+                                mapping(int:program(Object)) types,
+                                void|int(0..1) secure) {
     der = contents;
     elements = ({});
     Stdio.Buffer data = Stdio.Buffer(contents);
@@ -1079,10 +1091,11 @@ class UniversalString
   }
 
   this_program decode_primitive (string contents,
-				function(Stdio.Buffer,
-					 mapping(int:program(Object)):
-					 Object)|void decoder,
-				mapping(int:program(Object))|void types) {
+                                 function(Stdio.Buffer,
+                                          mapping(int:program(Object)):
+                                          Object)|void decoder,
+                                 mapping(int:program(Object))|void types,
+                                 void|int(0..1) secure) {
     error( "Decoding not implemented\n" ); contents;
   }
 }
@@ -1110,10 +1123,11 @@ class BMPString
   }
 
   this_program decode_primitive (string(0..255) contents,
-				function(Stdio.Buffer,
-					 mapping(int:program(Object)):
-					 Object)|void decoder,
-				mapping(int:program(Object))|void types) {
+                                 function(Stdio.Buffer,
+                                          mapping(int:program(Object)):
+                                          Object)|void decoder,
+                                 mapping(int:program(Object))|void types,
+                                 void|int(0..1) secure) {
     der = contents;
     value = unicode_to_string (contents);
     return this;
