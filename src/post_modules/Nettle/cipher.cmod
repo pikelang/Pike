@@ -4110,7 +4110,7 @@ PIKECLASS BlockCipher16
 
     PIKEFUN int(1..) iv_size()
     {
-      apply_external(1, f_Nettle_Cipher_block_size_fun_num, args);
+      push_int(13);
     }
 
     /*! @class State
@@ -4225,22 +4225,17 @@ PIKECLASS BlockCipher16
 
 	iv->flags |= STRING_CLEAR_ON_EXIT;
 	NO_WIDE_STRING(iv);
+        if (iv_len < 7 || iv_len > 13) {
+          Pike_error("Nonce length must be between 7 and 13 bytes.\n");
+	}
 
 	reset_string_builder(&THIS->abuf);
 	reset_string_builder(&THIS->pbuf);
-	if (iv_len < 7) {
-	  Pike_error("Too short nonce for CCM. Must be at least 7 bytes.\n");
-	}
-	if (THIS->nonce) {
+        if (THIS->nonce) {
 	  free_string(THIS->nonce);
 	  THIS->nonce = NULL;
 	}
-	if (iv_len > 13) {
-	  THIS->nonce = string_slice(iv, 0, 12);
-	  iv_len = 13;
-	} else {
-	  add_ref(THIS->nonce = iv);
-	}
+        add_ref(THIS->nonce = iv);
 
 	ctr_iv = STR0(THIS->ctr->iv);
 
@@ -4251,6 +4246,16 @@ PIKECLASS BlockCipher16
 
 	RETURN this_object();
       }
+
+      PIKEFUN int(0..) iv_size()
+	optflags OPT_EXTERNAL_DEPEND;
+      {
+        if( THIS->nonce )
+          push_int(THIS->nonce->len);
+        else
+          push_int(13);
+      }
+
 
       PIKEFUN object(Nettle_AEAD_State) update(string(8bit) public_data)
       {
