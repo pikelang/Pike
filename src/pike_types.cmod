@@ -15578,7 +15578,9 @@ void gc_check_type (struct pike_type *t)
          * they are not touched by the GC */
 	debug_gc_check (t->car, " as car in a type");
 #endif
-	debug_gc_check (t->cdr, " as cdr in a type");
+	if (t->cdr) {
+	  debug_gc_check (t->cdr, " as cdr in a type");
+	}
 	break;
       case T_MULTISET:
       case T_NOT:
