@@ -388,8 +388,8 @@ static void gdbmmod_firstkey(INT32 args)
   {
     push_string(DATUM_TO_STRING(ret));
     free(ret.dptr);
-  }else{
-    push_int(0);
+  } else {
+    push_undefined();
   }
 }
 
@@ -447,8 +447,8 @@ static void gdbmmod_nextkey(INT32 args)
   {
     push_string(DATUM_TO_STRING(ret));
     free(ret.dptr);
-  }else{
-    push_int(0);
+  } else {
+    push_undefined();
   }
 }
 
@@ -589,33 +589,30 @@ static void gdbmmod_sync(INT32 UNUSED(args))
 static void gdbmmod_iter_first(INT32 UNUSED(args))
 {
   struct gdbm_glue *this=THIS;
-  gdbmmod_firstkey(0);
-  if( Pike_sp[-1].u.string )
-    this->iter = Pike_sp[-1].u.string;
-  Pike_sp--;
-  push_int( !!this->iter );
+  if (this->iter) {
+    free_string(this->iter);
+  }
+  this->iter = NULL;
 }
 
 static void gdbmmod_iter_next(INT32 UNUSED(args))
 {
   struct gdbm_glue *this=THIS;
-  if(!this->iter)
-  {
-      push_undefined();
-      return;
+
+  if(!this->iter) {
+    gdbmmod_firstkey(0);
+  } else {
+    push_string( this->iter );
+    this->iter = NULL;
+    gdbmmod_nextkey(1);
   }
-  push_string( this->iter );
-  gdbmmod_nextkey(1);
-  if( TYPEOF(Pike_sp[-1]) != PIKE_T_STRING )
-  {
-    this->iter = 0;
-    push_undefined();
+
+  if( TYPEOF(Pike_sp[-1]) == PIKE_T_STRING ) {
+    this->iter = Pike_sp[-1].u.string;
+    add_ref(this->iter);
     return;
   }
-  this->iter = Pike_sp[-1].u.string;
-  push_int(1);
-  return;
-
+  push_undefined();
 }
 
 static void gdbmmod_iter_index(INT32 UNUSED(args))
@@ -625,11 +622,6 @@ static void gdbmmod_iter_index(INT32 UNUSED(args))
     ref_push_string( this->iter );
   else
     push_undefined();
-}
-
-static void gdbmmod_iter_no_value(INT32 UNUSED(args))
-{
-  push_int( !THIS->iter );
 }
 
 static void gdbmmod_iter_value(INT32 UNUSED(args))
@@ -695,9 +687,8 @@ static void gdbmmod_values(INT32 UNUSED(args))
 static void gdbmmod_get_iterator(INT32 UNUSED(args))
 {
   push_object( clone_object( iterator, 0 ) );
+  THIS->iter = NULL;
   *((struct gdbm_glue *)Pike_sp[-1].u.object->storage) = *THIS;
-  apply(Pike_sp[-1].u.object, "first", 0);
-  pop_stack();
 }
 
 
@@ -807,8 +798,6 @@ PIKE_MODULE_INIT
   ADD_FUNCTION("_iterator_index", gdbmmod_iter_index, tFunc(tNone,tStr8),
 	       ID_PROTECTED);
   ADD_FUNCTION("_iterator_value", gdbmmod_iter_value, tFunc(tNone,tStr8),
-	       ID_PROTECTED);
-  ADD_FUNCTION("`!",    gdbmmod_iter_no_value, tFunc(tNone,tInt01),
 	       ID_PROTECTED);
   set_exit_callback(exit_gdbm_iterator);
   iterator = end_program();
