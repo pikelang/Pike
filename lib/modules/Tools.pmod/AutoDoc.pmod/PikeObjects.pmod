@@ -113,14 +113,20 @@ class ArrayType {
   //! The @[Type] of the array elements.
   Type valuetype;
 
+  //! The length or the array, or -1 if undefined.
+  int length = -1;
+
   //!
   protected void create() { ::create("array"); }
 
   string print() {
-    if (valuetype)
-      return "array(" + valuetype->print() + ")";
-    else
-      return "array";
+    string ret = "array";
+    if (valuetype || length>-1) ret += "(";
+    if (length>-1) ret += length;
+    if (valuetype && length>-1) ret += ":";
+    if (valuetype) ret += valuetype->print();
+    if (valuetype || length>-1) ret += ")";
+    return ret;
   }
 
   string xml(.Flags|void flags) {

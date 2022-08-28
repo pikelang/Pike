@@ -355,6 +355,12 @@ ArrayType parseArray() {
   ArrayType a = ArrayType();
   if (peekToken() == "(") {
     readToken();
+    if (lookAhead(1) == ":") {
+      a->length = (int)readToken();
+      if (eat((<":",")">))==")") {
+        return a;
+      }
+    }
     a->valuetype = parseOrType();
     eat(")");
   }
