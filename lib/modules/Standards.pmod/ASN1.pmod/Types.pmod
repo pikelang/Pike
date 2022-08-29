@@ -352,8 +352,12 @@ class Integer
                                         Object)|void decoder,
                                mapping(int:program(Object))|void types,
                                void|int(0..1) secure) {
-    if( secure && sizeof(contents)>1 && contents[0]==0 )
-      error("Leading zero.");
+    if ( (secure && (sizeof(contents)>1)) &&
+	 (((contents[0]==0) && !(contents[1] & 0x80)) ||
+	  ((contents[0] == 255) && (contents[1] & 0x80))) ) {
+      // werror("Contents: %O\n", contents);
+      error("Leading zero in integer encoding.\n");
+    }
     value = Gmp.mpz(contents, 256);
     if (contents[0] & 0x80)  /* Negative */
       value -= pow(256, sizeof(contents));
