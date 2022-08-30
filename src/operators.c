@@ -456,39 +456,41 @@ PMOD_EXPORT void o_cast(struct pike_type *type, INT32 run_time_type)
     if(TYPEOF(Pike_sp[-1]) == T_OBJECT)
     {
       struct object *o = Pike_sp[-1].u.object;
-      int f = FIND_LFUN(o->prog->inherits[SUBTYPEOF(Pike_sp[-1])].prog, LFUN_CAST);
-      if(f == -1) {
-        if (run_time_type == T_MAPPING) {
-          stack_dup();
-          f_indices(1);
-          stack_swap();
-          f_values(1);
-          f_mkmapping(2);
-          goto emulated_type_ok;
-        }
-	if (run_time_type != T_PROGRAM) {
-	  Pike_error("No cast method in object.\n");
+      int f = FIND_LFUN(o->prog->inherits[SUBTYPEOF(Pike_sp[-1])].prog,
+			LFUN_CAST);
+      if(f >= 0) {
+	push_static_text(get_name_of_type(run_time_type));
+	apply_low(o, f, 1);
+
+	if (!IS_UNDEFINED(Pike_sp-1)) {
+	  stack_pop_keep_top();
+
+	  goto check_cast;
 	}
+
+	pop_stack();
+      }
+
+      if (run_time_type == T_MAPPING) {
+	stack_dup();
+	f_indices(1);
+	stack_swap();
+	f_values(1);
+	f_mkmapping(2);
+	goto emulated_type_ok;
+      }
+
+      if (run_time_type == T_PROGRAM) {
 	f_object_program(1);
 	return;
       }
-      push_static_text(get_name_of_type(type->type));
-      apply_low(o, f, 1);
 
-      if (run_time_type == T_PROGRAM) {
-	if (IS_UNDEFINED(Pike_sp-1)) {
-	  pop_stack();
-	  f_object_program(1);
-	  return;
-	}
-      }
-
-      stack_pop_keep_top();
-
-      if(TYPEOF(Pike_sp[-1]) == T_INT &&
-         SUBTYPEOF(Pike_sp[-1]) == NUMBER_UNDEFINED)
+      if (f >= 0) {
         Pike_error("Cannot cast this object to %s.\n",
-                   get_name_of_type(type->type));
+                   get_name_of_type(run_time_type));
+      } else {
+	Pike_error("No cast method in object.\n");
+      }
 
     } else
 
@@ -715,6 +717,7 @@ PMOD_EXPORT void o_cast(struct pike_type *type, INT32 run_time_type)
       }
   }
 
+ check_cast:
   if(run_time_type != TYPEOF(Pike_sp[-1]))
   {
     switch(TYPEOF(Pike_sp[-1])) {
