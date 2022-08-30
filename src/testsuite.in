@@ -9545,7 +9545,9 @@ test_eq([[(string) ({'z', -0x80000000, '.'})]], "z\x80000000.")
 test_eval_error([[(string) ({-0x80000001})]])
 test_eval_error([[(int)class { protected mixed cast() { return UNDEFINED; } }();]])
 test_eval_error([[(string)class { protected mixed cast() { return UNDEFINED; } }();]])
-test_eval_error([[(mapping)class { protected mixed cast() { return UNDEFINED; } }();]])
+dnl There is a default rule for casting objects to mapping.
+test_equal([[(mapping)class { protected mixed cast() { return UNDEFINED; } }();]], ([]))
+test_eval_error([[(mapping)class { protected mixed cast() { error("Cast\n"); } }();]])
 
 test_any([[
   // Cast to subtyped object.
