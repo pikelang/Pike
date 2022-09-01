@@ -1535,10 +1535,22 @@ PMOD_EXPORT TYPE_FIELD array_fix_type_field(struct array *v)
   for(e=0; e<v->size; e++) {
     check_svalue (ITEM(v) + e);
     t |= BITOF(ITEM(v)[e]);
-    if (!(t & BIT_INT) && (TYPEOF(ITEM(v)[e]) == PIKE_T_OBJECT) &&
-	(ITEM(v)[e].u.object->prog == bignum_program)) {
-      /* Lie, and claim that the array contains integers too. */
+    if (!(t & BIT_INT) &&
+	(((TYPEOF(ITEM(v)[e]) == PIKE_T_OBJECT) &&
+	  ((ITEM(v)[e].u.object->prog == bignum_program) ||
+	   !ITEM(v)[e].u.object->prog)) ||
+	 ((TYPEOF(ITEM(v)[e]) == PIKE_T_FUNCTION) &&
+	  (SUBTYPEOF(ITEM(v)[e]) != FUNCTION_BUILTIN) &&
+	  !ITEM(v)[e].u.object->prog))) {
+      /*
+       * Bignum or destructed object or destructed function.
+       *
+       * Lie, and claim that the array contains integers too.
+       */
       t |= BIT_INT;
+#ifdef PIKE_DEBUG
+      v->type_field |= BIT_INT;
+#endif
     }
   }
 
