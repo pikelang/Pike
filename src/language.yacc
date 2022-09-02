@@ -1844,6 +1844,11 @@ opt_array_type: '(' full_type ')'
   { push_unlimited_array_type(T_ARRAY); }
   | '(' safe_int_range_type ':' ')'
   { push_type(T_MIXED); push_reverse_type(T_ARRAY); }
+  | '(' safe_int_range_type ')'
+  {
+    yyerror("Missing ':' after length in array type.");
+    push_type(T_MIXED); push_reverse_type(T_ARRAY);
+  }
   ;
 
 opt_mapping_type: '('
