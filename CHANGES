@@ -9,6 +9,17 @@ o Unlimited character constant size.
   There is no longer any limit to the size of character constants,
   e.g. 'acdefghijk' creates the bignum 0x61636465666768696a6b.
 
+o Syntax for specifying default values for function arguments added.
+
+  The function definition
+
+    string foo(string bar = "bar") { return bar; }
+
+  will now result in a function(string|void:string) that returns
+  "bar" if called with no arguments or UNDEFINED, and its argument
+  otherwise. The local variable 'bar' above will be typed string
+  (ie not string|void) in the function body.
+
 o 'auto' type added.
 
   This is much like a strict typed mixed. The actual type is deduced

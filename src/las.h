@@ -44,6 +44,9 @@ typedef struct node_s node;
 /* var used in subscope -- needs to be saved when function returns */
 #define LOCAL_VAR_USED_IN_SCOPE         2
 
+/* Var is an argument. def is used for default value. */
+#define LOCAL_VAR_IS_ARGUMENT		4
+
 struct local_variable
 {
   struct pike_string *name;

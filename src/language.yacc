@@ -317,6 +317,7 @@ int yylex(YYSTYPE *yylval);
 %type <n> TOK_STRING
 %type <n> TOK_NUMBER
 %type <n> TOK_BITS
+%type <n> optional_default_value
 %type <n> optional_rename_inherit
 %type <n> optional_identifier
 %type <n> implicit_identifier
@@ -824,7 +825,7 @@ def: modifiers optional_attributes simple_type optional_constant
       }
     }
   }
-  arguments close_paren_or_missing
+  arguments ')'
   {
     int e;
 
@@ -899,6 +900,10 @@ def: modifiers optional_attributes simple_type optional_constant
     for(; e>=0; e--)
     {
       push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
+      if (Pike_compiler->compiler_frame->variable[e].def) {
+	push_type(T_VOID);
+	push_type(T_OR);
+      }
       push_type(T_FUNCTION);
     }
 
@@ -1022,6 +1027,21 @@ def: modifiers optional_attributes simple_type optional_constant
 	{
 	  my_yyerror("Missing name for argument %d.", e - $<number>8);
 	} else {
+	  node *def = Pike_compiler->compiler_frame->variable[e].def;
+	  if (def) {
+	    /* if (undefinedp($e)) { $e = def; } */
+	    check_args =
+	      mknode(F_COMMA_EXPR, check_args,
+		     mknode(F_POP_VALUE,
+			    mknode(F_LAND,
+				   mkefuncallnode("undefinedp",
+						  mklocalnode(e, 0)),
+				   mknode(F_ASSIGN,
+					  mklocalnode(e, 0),
+					  def)), NULL));
+	    add_ref(def);
+	  }
+
 	  if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
 	      /* FIXME: Should probably use some other flag. */
 	      if ((runtime_options & RUNTIME_CHECK_TYPES) &&
@@ -1146,7 +1166,6 @@ def: modifiers optional_attributes simple_type optional_constant
 #endif
     pop_compiler_frame();
     free_node($5);
-    free_node($10);
     free_node($<n>11);
   }
   | modifiers optional_attributes simple_type
@@ -1249,7 +1268,12 @@ optional_identifier: TOK_IDENTIFIER
   | /* empty */ { $$=0; }
   ;
 
+optional_default_value: '=' expr0 { $$ = $2; }
+  | /* empty */ { $$ = NULL; }
+  ;
+
 new_arg_name: full_type optional_dot_dot_dot optional_identifier
+              optional_default_value
   {
     int i;
     if(Pike_compiler->varargs) yyerror("Can't define more arguments after ...");
@@ -1263,7 +1287,18 @@ new_arg_name: full_type optional_dot_dot_dot optional_identifier
     if($2)
     {
       push_unlimited_array_type(T_ARRAY);
+
       Pike_compiler->varargs=1;
+    }
+
+    if ($4) {
+      if ($2) {
+	yyerror("Varargs variable with default value.");
+	free_node($4);
+	$4 = NULL;
+      } else if (!$3) {
+	yywarning("Unnamed variable with default value.");
+      }
     }
 
     if(!$3)
@@ -1276,18 +1311,21 @@ new_arg_name: full_type optional_dot_dot_dot optional_identifier
       my_yyerror("Variable %S appears twice in argument list.",
 		 $3->u.sval.u.string);
 
-    i = add_local_name($3->u.sval.u.string, compiler_pop_type(),0);
+    i = add_local_name($3->u.sval.u.string, compiler_pop_type(), $4);
     if (i >= 0) {
       /* Don't warn about unused arguments. */
       Pike_compiler->compiler_frame->variable[i].flags |= LOCAL_VAR_IS_USED;
+      if ($4) {
+	Pike_compiler->compiler_frame->variable[i].flags |=
+	  LOCAL_VAR_IS_ARGUMENT;
+      }
     }
     free_node($3);
   }
   ;
 
-func_args: '(' arguments close_paren_or_missing
+func_args: '(' arguments ')'
   {
-    free_node($3);
     $$=$2;
   }
   ;
@@ -2478,7 +2516,24 @@ lambda: TOK_LAMBDA line_number_info implicit_identifier start_lambda
     Pike_compiler->varargs=0;
     push_type(T_MANY);
     for(; e>=0; e--) {
+      node *def = Pike_compiler->compiler_frame->variable[e].def;
       push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
+      if (def) {
+	push_type(T_VOID);
+	push_type(T_OR);
+
+	/* if (undefinedp($e)) { $e = def; } */
+	$7 = mknode(F_COMMA_EXPR,
+		    mknode(F_POP_VALUE,
+			   mknode(F_LAND,
+				  mkefuncallnode("undefinedp",
+						 mklocalnode(e, 0)),
+				  mknode(F_ASSIGN,
+					 mklocalnode(e, 0),
+					 def)), NULL),
+		    $7);
+	add_ref(def);
+      }
       push_type(T_FUNCTION);
     }
 
@@ -2575,7 +2630,11 @@ local_function: TOK_IDENTIFIER start_function func_args
     push_type(T_MANY);
     for(; e>=0; e--) {
       push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
-    push_type(T_FUNCTION);
+      if (Pike_compiler->compiler_frame->variable[e].def) {
+	push_type(T_VOID);
+	push_type(T_OR);
+      }
+      push_type(T_FUNCTION);
     }
 
     type=compiler_pop_type();
@@ -2628,8 +2687,27 @@ local_function: TOK_IDENTIFIER start_function func_args
     struct compilation *c = THIS_COMPILATION;
     struct pike_string *save_file = c->lex.current_file;
     int save_line = c->lex.current_line;
+    int e = $3 - 1;
     c->lex.current_file = $1->current_file;
     c->lex.current_line = $1->line_number;
+
+    if (Pike_compiler->varargs) e--;
+    for(; e>=0; e--) {
+      node *def = Pike_compiler->compiler_frame->variable[e].def;
+      if (def) {
+	/* if (undefinedp($e)) { $e = def; } */
+	$5 = mknode(F_COMMA_EXPR,
+		    mknode(F_POP_VALUE,
+			   mknode(F_LAND,
+				  mkefuncallnode("undefinedp",
+						 mklocalnode(e, 0)),
+				  mknode(F_ASSIGN,
+					 mklocalnode(e, 0),
+					 def)), NULL),
+		    $5);
+	add_ref(def);
+      }
+    }
 
     $5=mknode(F_COMMA_EXPR,$5,mknode(F_RETURN,mkintnode(0),0));
 
@@ -2756,6 +2834,10 @@ local_generator: TOK_IDENTIFIER start_function func_args
     push_type(T_MANY);
     for(; e>=0; e--) {
       push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
+      if (Pike_compiler->compiler_frame->variable[e].def) {
+	push_type(T_VOID);
+	push_type(T_OR);
+      }
       push_type(T_FUNCTION);
     }
 
@@ -2813,6 +2895,7 @@ local_generator: TOK_IDENTIFIER start_function func_args
     struct pike_string *name;
     int generator_stack_local;
     int f;
+    int e = $3 - 1;
 
     c->lex.current_file = $1->current_file;
     c->lex.current_line = $1->line_number;
@@ -2865,6 +2948,24 @@ local_generator: TOK_IDENTIFIER start_function func_args
 		mknode(F_ASSIGN, mklocalnode(generator_stack_local, 0),
 		       mkefuncallnode("aggregate", NULL)),
 		mknode(F_RETURN, mkgeneratornode(f), NULL));
+
+    if(Pike_compiler->varargs) e--;
+    for(; e>=0; e--) {
+      node *def = Pike_compiler->compiler_frame->variable[e].def;
+      if (def) {
+	/* if (undefinedp($e)) { $e = def; } */
+	$5 = mknode(F_COMMA_EXPR,
+		    mknode(F_POP_VALUE,
+			   mknode(F_LAND,
+				  mkefuncallnode("undefinedp",
+						 mklocalnode(e, 0)),
+				  mknode(F_ASSIGN,
+					 mklocalnode(e, 0),
+					 def)), NULL),
+		    $5);
+	add_ref(def);
+      }
+    }
 
     debug_malloc_touch($5);
     f = dooptcode(i->name,
@@ -5466,7 +5567,8 @@ static node *lexical_islocal(struct pike_string *str)
           q->variable[e].flags |= LOCAL_VAR_USED_IN_SCOPE;
 	}
 
-	if(f->variable[e].def) {
+	if(f->variable[e].def &&
+	   !(f->variable[e].flags & LOCAL_VAR_IS_ARGUMENT)) {
 	  /*fprintf(stderr, "Found prior definition of \"%s\"\n", str->str); */
 	  return copy_node(f->variable[e].def);
 	}
