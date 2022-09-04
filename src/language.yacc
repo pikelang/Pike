@@ -1154,7 +1154,16 @@ def: modifiers optional_attributes simple_type optional_constant
 	Pike_compiler->compiler_frame->variable[e].flags |= LOCAL_VAR_IS_USED;
       }
       if( Pike_compiler->compiler_frame->current_return_type->type == PIKE_T_AUTO )
-          yyerror("'auto' return type not allowed for prototypes\n");
+          yyerror("'auto' return type not allowed for prototypes.");
+      for(e=0; e<$<number>8+$9; e++)
+      {
+	node *def = Pike_compiler->compiler_frame->variable[e].def;
+	if (def) {
+	  low_yyreport(REPORT_WARNING, def->current_file, def->line_number,
+		       parser_system_string, 0,
+		       "Argument default values are not supported in prototypes.");
+	}
+      }
     }
 #ifdef PIKE_DEBUG
     if (Pike_compiler->compiler_frame != $6) {
