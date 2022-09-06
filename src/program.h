@@ -85,6 +85,7 @@ enum LFUN {
     LFUN_CREATE,
     LFUN__DESTRUCT,
     LFUN__SPRINTF,
+    LFUN___CREATE__,
 
     /* Group 1 */
     LFUN_ADD 			= 0x10,

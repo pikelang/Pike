@@ -132,6 +132,7 @@ const char *const lfun_names[]  = {
   "create",
   "\0_destruct\0destroy",
   "_sprintf",
+  "__create__",
   0,
 
   "`+",
@@ -225,6 +226,7 @@ static const char *const raw_lfun_types[] = {
   tFuncV(tNone, tUnknown, tVoid),		/* "create", */
   tFunc(tInt03, tInt01),			/* "_destruct", */
   tFunc(tInt7bit tMap(tStr, tInt), tStr),	/* "_sprintf", */
+  tFuncV(tNone, tUnknown, tVoid),		/* "__create__", */
   0,
 
   tFunc(tUnknown, tMix),			/* "`+", */
@@ -408,28 +410,22 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!   @[args] are the arguments passed when the program was called.
  *!
  *! @note
- *!   This function can be created implicitly
- *!   by the compiler using the syntax:
- *! @code
- *! class Foo(int foo) {
- *!   int bar;
- *! }
- *! @endcode
- *!   In the above case an implicit @[lfun::create()] is created, and
- *!   it's equivalent to:
- *! @code
- *! class Foo {
- *!   int foo;
- *!   int bar;
- *!   protected void create(int foo)
- *!   {
- *!     this::foo = foo;
- *!   }
- *! }
- *! @endcode
+ *!   If there exists an implicitly created @[lfun::__create__()]
+ *!   its arguments will be prepended to @[args] (affecting the
+ *!   prototype for @[lfun::create()]), and a call to it will be
+ *!   prepended to the code of @[lfun::create()].
+ *!
+ *! @note
+ *!   In Pike 8.0 and earlier the code equivalent to
+ *!   @[lfun::__create__()] was inlined at the beginning
+ *!   of @[lfun::create()].
+ *!
+ *! @note
+ *!   If this function does not exist, but @[lfun::__create__()]
+ *!   does, it will instead be called directly.
  *!
  *! @seealso
- *!   @[lfun::__INIT()], @[lfun::_destruct()]
+ *!   @[lfun::__create__()], @[lfun::__INIT()], @[lfun::_destruct()]
  */
 
 /*! @decl void lfun::_destruct (void|int reason)
@@ -542,6 +538,47 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!
  *! @seealso
  *!   @[lfun::create()], @[predef::destruct()]
+ */
+
+/*! @decl void lfun::__create__(__unknown__ ... args)
+ *!
+ *!   Low-level object creation callback.
+ *!
+ *!   This function is generated automatically by the compiler for
+ *!   inline classes that declare parameters. A call to it and its
+ *!   arguments are automatically added to user-supplied @[lfun::create()]
+ *!
+ *! @note
+ *!   This function is typically created implicitly
+ *!   by the compiler using the syntax:
+ *! @code
+ *! class Foo(int foo) {
+ *!   int bar;
+ *! }
+ *! @endcode
+ *!   In the above case an implicit @[lfun::__create__()] is created, and
+ *!   it's equivalent to:
+ *! @code
+ *! class Foo {
+ *!   int foo;
+ *!   int bar;
+ *!   local protected void __create__(int foo)
+ *!   {
+ *!     this::foo = foo;
+ *!   }
+ *! }
+ *! @endcode
+ *!
+ *! @note
+ *!   Note also that in case @[lfun::create()] does not exist,
+ *!   this function will be called instead.
+ *!
+ *! @note
+ *!   This function did not exist in Pike 8.0 and earlier (where it
+ *!   was instead automatically inlined in @[lfun::create()].
+ *!
+ *! @seealso
+ *!   @[lfun::create()], @[lfun::__INIT()]
  */
 
 /*! @decl mixed lfun::`+(zero arg)
@@ -8162,6 +8199,15 @@ PMOD_EXPORT int low_find_lfun(struct program *p, enum LFUN lfun)
 	  yywarning("Compat: Substituting %S() for %S().",
 		    lfun_compat_name, lfun_name);
 	}
+      }
+    } else if (lfun == LFUN_CREATE) {
+      /* NB: In the first pass, we do not know yet if there'll
+       *     be an lfun::create() later, in which case the type
+       *     may differ from the type for lfun::__create__().
+       */
+      if (p->flags & PROGRAM_PASS_1_DONE) {
+	/* No lfun::create(), but there might be an lfun::__create__(). */
+	return low_find_lfun(p, LFUN___CREATE__);
       }
     }
   }
