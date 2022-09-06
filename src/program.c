@@ -2444,7 +2444,9 @@ struct node_s *find_inherited_identifier(struct program_state *inherit_state,
       if (res->token == F_ARG_LIST) res = mkefuncallnode("aggregate", res);
       return res;
     }
-    inh = -1;
+
+    /* Restore the argument. */
+    inh = INHERIT_ALL;
   } else {
     if (inh > 0) {
       /* Specified inherit. */
@@ -2504,8 +2506,15 @@ struct node_s *find_inherited_identifier(struct program_state *inherit_state,
       }
       return mkidentifiernode(id);
     }
-    if (inh < 0) inh = -1;
   }
+
+  if (ident == lfun_strings[LFUN_CREATE]) {
+    /* Try looking up __create__ instead. */
+    return find_inherited_identifier(inherit_state, inherit_depth, inh,
+				     lfun_strings[LFUN___CREATE__]);
+  }
+
+  if (inh < 0) inh = -1;
 
   return program_magic_identifier(inherit_state, inherit_depth, inh, ident, 1);
 }
