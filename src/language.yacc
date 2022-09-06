@@ -800,6 +800,9 @@ def: modifiers optional_attributes simple_type optional_constant
       if ($5->u.sval.u.string == create_string) {
 	/* Prepend the create arguments. */
 	if (Pike_compiler->num_create_args < 0) {
+	  /* __create__() has varargs.
+	   * Inhibit further arguments in the explicit create().
+	   */
 	  Pike_compiler->varargs = 1;
 	  for (e = 0; e < -Pike_compiler->num_create_args; e++) {
 	    struct identifier *id =
@@ -881,10 +884,18 @@ def: modifiers optional_attributes simple_type optional_constant
       Pike_compiler->compiler_frame->lexical_scope |= SCOPE_SCOPE_USED;
     }
 
+    if ($<number>8 && (Pike_compiler->num_create_args < 0) && $9) {
+      /* Do not allow further arguments if __create__() is varargs.
+       *
+       * NB: No need to complain that $9 != 0, as this should already
+       *     have triggered a complaint when the corresponding variable
+       *     was declared due to varargs being set.
+       */
+      $9 = 0;
+    }
     e = $<number>8 + $9 - 1;
-    if(Pike_compiler->varargs && $9 &&
-       (!$<number>8 || (Pike_compiler->num_create_args >= 0)))
-    {
+    if (Pike_compiler->varargs) {
+      /* NB: This is set when either __create__() or create() has varargs. */
       push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
       e--;
       if (Pike_compiler->compiler_frame->variable[e+1].type->type != T_ARRAY) {
@@ -897,7 +908,7 @@ def: modifiers optional_attributes simple_type optional_constant
       push_type(T_VOID);
     }
     push_type(T_MANY);
-    for(; e>=0; e--)
+    for(; e >= $<number>8; e--)
     {
       push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
       if (Pike_compiler->compiler_frame->variable[e].def) {
@@ -905,6 +916,28 @@ def: modifiers optional_attributes simple_type optional_constant
 	push_type(T_OR);
       }
       push_type(T_FUNCTION);
+    }
+    if (e >= 0) {
+      /* __create__() arguments. */
+      int i = FIND_LFUN(Pike_compiler->new_program, LFUN___CREATE__);
+      struct identifier *id = ID_FROM_INT(Pike_compiler->new_program, i);
+      struct pike_type *t = id->type;
+      struct pike_type *trailer = compiler_pop_type();
+
+      while (t && (t->type == T_FUNCTION)) {
+	push_finished_type(t->car);
+	t = t->cdr;
+      }
+
+      push_finished_type(trailer);
+      free_type(trailer);
+
+      t = id->type;
+
+      while (t && (t->type == T_FUNCTION)) {
+	push_reverse_type(T_FUNCTION);
+	t = t->cdr;
+      }
     }
 
     if (Pike_compiler->current_attributes) {
@@ -1019,7 +1052,7 @@ def: modifiers optional_attributes simple_type optional_constant
 		     mknode(F_RETURN, mkgeneratornode(f), NULL));
       }
 
-      for(e=0; e<$<number>8+$9; e++)
+      for(e=$<number>8; e<$<number>8+$9; e++)
       {
 	if((e >= $<number>8) &&
 	   (!Pike_compiler->compiler_frame->variable[e].name ||
@@ -1067,14 +1100,28 @@ def: modifiers optional_attributes simple_type optional_constant
       }
 
       if ($<number>8) {
-	/* Hook in the initializers for the create arguments. */
-	for (e = $<number>8; e--;) {
-	  $12 = mknode(F_COMMA_EXPR,
-		       mknode(F_POP_VALUE,
-			      mknode(F_ASSIGN, mkidentifiernode(e),
-				     mklocalnode(e, 0)), NULL),
-		       $12);
+	/* Generate code that calls __create__(). */
+	node *args = NULL;
+	e = $<number>8;
+	if (Pike_compiler->varargs) {
+	  e--;
+	  args = mknode(F_PUSH_ARRAY,
+			mklocalnode(e, 0),
+			NULL);
 	}
+	while (e--) {
+	  args = mknode(F_ARG_LIST, mklocalnode(e, 0), args);
+	}
+
+	e = FIND_LFUN(Pike_compiler->new_program, LFUN___CREATE__);
+	check_args =
+	  mknode(F_COMMA_EXPR,
+		 mknode(F_POP_VALUE,
+			mknode(F_APPLY,
+			       mkidentifiernode(e),
+			       args),
+			NULL),
+		 check_args);
       }
 
       {
@@ -2418,7 +2465,8 @@ default: TOK_DEFAULT ':'  { $$=mknode(F_DEFAULT,0,0); }
 continue: TOK_CONTINUE optional_label { $$=mknode(F_CONTINUE,$2,0); } ;
 
 /* This variant is used to push the compiler context for
- * functions without a declared return type (ie lambdas).
+ * functions without a declared return type (ie lambdas
+ * or implicit lfun::__create__()).
  */
 start_lambda: /* empty */
   {
@@ -3034,9 +3082,11 @@ local_generator: TOK_IDENTIFIER start_function func_args
   ;
 
 create_arg: modifiers simple_type optional_dot_dot_dot TOK_IDENTIFIER
+  optional_default_value
   {
     struct pike_type *type;
     int ref_no;
+    int l_no;
 
     if (Pike_compiler->num_create_args < 0) {
       yyerror("Can't define more variables after ...");
@@ -3059,9 +3109,9 @@ create_arg: modifiers simple_type optional_dot_dot_dot TOK_IDENTIFIER
      */
     ref_no = define_variable($4->u.sval.u.string, type,
 			     Pike_compiler->current_modifiers);
-    free_type(type);
 
-    if (Pike_compiler->num_create_args != ref_no) {
+    if ((Pike_compiler->num_create_args != ref_no) &&
+	(Pike_compiler->num_create_args != -ref_no)) {
       my_yyerror("Multiple definitions of create variable %S (%d != %d).",
 		 $4->u.sval.u.string,
 		 Pike_compiler->num_create_args, ref_no);
@@ -3069,8 +3119,22 @@ create_arg: modifiers simple_type optional_dot_dot_dot TOK_IDENTIFIER
     if ($3) {
       /* Encode varargs marker as negative number of args. */
       Pike_compiler->num_create_args = -(ref_no + 1);
+
+      if ($5) {
+	yyerror("Varargs variable with default value.");
+	free_node($5);
+	$5 = NULL;
+      }
     } else {
       Pike_compiler->num_create_args = ref_no + 1;
+    }
+
+    l_no = add_local_name($4->u.sval.u.string, type, $5);
+    Pike_compiler->compiler_frame->variable[l_no].flags |=
+      LOCAL_VAR_IS_ARGUMENT | LOCAL_VAR_IS_USED;
+
+    if (ref_no != l_no) {
+      my_yyerror("Variables out of sync for __create__().");
     }
 
     /* free_type(type); */
@@ -3094,12 +3158,137 @@ create_arguments: /* empty */ optional_comma { $$=0; }
   ;
 
 optional_create_arguments: /* empty */ { $$ = 0; }
-  | '(' create_arguments close_paren_or_missing
+  | start_lambda '(' create_arguments ')'
   {
+    node *n = NULL;
+    int e = $3;
+
+    type_stack_mark();
+    push_type(T_VOID);
+
+    if (Pike_compiler->num_create_args < 0) {
+      e--;
+      push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
+      pop_type_stack(T_ARRAY);
+      compiler_discard_top_type();
+
+      if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
+	/* FIXME: Should probably use some other flag. */
+	if ((runtime_options & RUNTIME_CHECK_TYPES) &&
+	    (Pike_compiler->compiler_frame->variable[e].type !=
+	     mixed_type_string)) {
+	  node *local_node;
+
+	  /* fprintf(stderr, "Creating soft cast node for local #%d\n", e);*/
+
+	  local_node = mkcastnode(mixed_type_string, mklocalnode(e, 0));
+
+	  /* NOTE: The cast to mixed above is needed to avoid generating
+	   *       compilation errors, as well as avoiding optimizations
+	   *       in mksoftcastnode().
+	   */
+	  n =
+	    mknode(F_COMMA_EXPR, n,
+		   mksoftcastnode(Pike_compiler->compiler_frame->variable[e].type,
+				  local_node));
+	}
+      }
+      n =
+	mknode(F_COMMA_EXPR, n,
+	       mknode(F_POP_VALUE,
+		      mknode(F_ASSIGN, mkidentifiernode(e),
+			     mklocalnode(e, 0)), NULL));
+    } else {
+      push_type(T_VOID);
+    }
+    push_type(T_MANY);
+
+    while (e-- > 0) {
+      node *def = Pike_compiler->compiler_frame->variable[e].def;
+
+      push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
+
+      n =
+	mknode(F_COMMA_EXPR,
+	       mknode(F_POP_VALUE,
+		      mknode(F_ASSIGN, mkidentifiernode(e),
+			     mklocalnode(e, 0)), NULL),
+	       n);
+
+      if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
+	/* FIXME: Should probably use some other flag. */
+	if ((runtime_options & RUNTIME_CHECK_TYPES) &&
+	    (Pike_compiler->compiler_frame->variable[e].type !=
+	     mixed_type_string)) {
+	  node *local_node;
+
+	  /* fprintf(stderr, "Creating soft cast node for local #%d\n", e);*/
+
+	  local_node = mkcastnode(mixed_type_string, mklocalnode(e, 0));
+
+	  /* NOTE: The cast to mixed above is needed to avoid generating
+	   *       compilation errors, as well as avoiding optimizations
+	   *       in mksoftcastnode().
+	   */
+	  n =
+	    mknode(F_COMMA_EXPR,
+		   mksoftcastnode(Pike_compiler->compiler_frame->variable[e].type,
+				  local_node),
+		   n);
+	}
+      }
+
+      if (def) {
+	/* if (undefinedp($e)) { $e = def; } */
+	push_type(T_VOID);
+	push_type(T_OR);
+
+	n =
+	  mknode(F_COMMA_EXPR,
+		 mknode(F_POP_VALUE,
+			mknode(F_LAND,
+			       mkefuncallnode("undefinedp",
+					      mklocalnode(e, 0)),
+			       mknode(F_ASSIGN,
+				      mklocalnode(e, 0),
+				      def)), NULL),
+		  n);
+	add_ref(def);
+      }
+
+      push_type(T_FUNCTION);
+    }
+
+    n = mknode(F_COMMA_EXPR, n,
+	       mknode(F_RETURN, mkintnode(0), NULL));
+
+    define_function(lfun_strings[LFUN___CREATE__], peek_type_stack(),
+		    ID_PROTECTED|ID_LOCAL,
+		    IDENTIFIER_PIKE_FUNCTION |
+		    ((Pike_compiler->num_create_args < 0)?
+		     IDENTIFIER_VARARGS:0),
+		    0, OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
+
+    dooptcode(lfun_strings[LFUN___CREATE__], n, peek_type_stack(),
+	      ID_PROTECTED|ID_LOCAL);
+
+    compiler_discard_type();
+
+#ifdef PIKE_DEBUG
+    if (Pike_compiler->compiler_frame != $1) {
+      Pike_fatal("Lost track of compiler_frame!\n"
+		 "  Got: %p (Expected: %p) Previous: %p\n",
+		 Pike_compiler->compiler_frame, $1,
+		 Pike_compiler->compiler_frame->previous);
+    }
+#endif
+    pop_compiler_frame();
+
     /* NOTE: One more than the number of arguments, so that we
-<     *       can detect the case of no parenthesis below. */
-    $$ = $2 + 1;
-    free_node($3);
+     *       can detect the case of no parenthesis below when
+     *       we define the user lfun::create() function.
+     */
+    $$ = $3 + 1;
   }
   ;
 
@@ -3197,144 +3386,6 @@ anon_class: TOK_CLASS line_number_info
   optional_create_arguments failsafe_program
   {
     struct program *p;
-
-    /* Check if we have create arguments but no locally defined create(). */
-    if ($6) {
-      struct pike_string *create_string = NULL;
-      struct reference *ref = NULL;
-      struct identifier *id = NULL;
-      int ref_id;
-      MAKE_CONST_STRING(create_string, "create");
-      if (((ref_id = isidentifier(create_string)) < 0) ||
-	  (ref = PTR_FROM_INT(Pike_compiler->new_program, ref_id))->inherit_offset ||
-	  ((id = ID_FROM_PTR(Pike_compiler->new_program, ref))->func.offset == -1)) {
-	int e;
-	struct pike_type *type = NULL;
-	int nargs = Pike_compiler->num_create_args;
-
-	push_compiler_frame(SCOPE_LOCAL);
-
-	/* Init: Prepend the create arguments. */
-	if (Pike_compiler->num_create_args < 0) {
-	  for (e = 0; e < -Pike_compiler->num_create_args; e++) {
-	    id = Pike_compiler->new_program->identifiers + e;
-	    add_ref(id->type);
-	    add_local_name(id->name, id->type, 0);
-	    /* Note: add_local_name() above will return e. */
-	    Pike_compiler->compiler_frame->variable[e].flags |=
-	      LOCAL_VAR_IS_USED;
-	  }
-	} else {
-	  for (e = 0; e < Pike_compiler->num_create_args; e++) {
-	    id = Pike_compiler->new_program->identifiers + e;
-	    add_ref(id->type);
-	    add_local_name(id->name, id->type, 0);
-	    /* Note: add_local_name() above will return e. */
-	    Pike_compiler->compiler_frame->variable[e].flags |=
-	      LOCAL_VAR_IS_USED;
-	  }
-	}
-
-	/* First: Deduce the type for the create() function. */
-	push_type(T_VOID); /* Return type. */
-
-	if ((e = nargs) < 0) {
-	  /* Varargs */
-	  e = nargs = -nargs;
-	  push_finished_type(Pike_compiler->compiler_frame->variable[--e].type);
-	  pop_type_stack(T_ARRAY); /* Pop one level of array. */
-	  compiler_discard_top_type();
-	} else {
-	  /* Not varargs. */
-	  push_type(T_VOID);
-	}
-	push_type(T_MANY);
-	while(e--) {
-	  push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
-	  push_type(T_FUNCTION);
-	}
-
-	type = compiler_pop_type();
-
-	/* Second: Declare the function. */
-
-	Pike_compiler->compiler_frame->current_function_number=
-	  define_function(create_string, type,
-			  ID_INLINE | ID_PROTECTED,
-			  IDENTIFIER_PIKE_FUNCTION |
-			  (Pike_compiler->num_create_args < 0?IDENTIFIER_VARARGS:0),
-			  0,
-			  OPT_SIDE_EFFECT);
-
-	if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
-	  node *create_code = NULL;
-	  int f;
-
-	  /* Third: Generate the initialization code.
-	   *
-	   * global_arg = [type]local_arg;
-	   * [,..]
-	   */
-
-	  for(e=0; e<nargs; e++)
-	  {
-	    if(!Pike_compiler->compiler_frame->variable[e].name ||
-	       !Pike_compiler->compiler_frame->variable[e].name->len)
-	    {
-	      my_yyerror("Missing name for argument %d.",e);
-	    } else {
-	      node *local_node = mklocalnode(e, 0);
-
-	      /* FIXME: Should probably use some other flag. */
-	      if ((runtime_options & RUNTIME_CHECK_TYPES) &&
-		  (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) &&
-		  (Pike_compiler->compiler_frame->variable[e].type !=
-		   mixed_type_string)) {
-		/* fprintf(stderr, "Creating soft cast node for local #%d\n", e);*/
-
-		local_node = mkcastnode(mixed_type_string, local_node);
-
-		/* NOTE: The cast to mixed above is needed to avoid generating
-		 *       compilation errors, as well as avoiding optimizations
-		 *       in mksoftcastnode().
-		 */
-		local_node = mksoftcastnode(Pike_compiler->compiler_frame->
-					    variable[e].type, local_node);
-	      }
-	      create_code =
-		mknode(F_COMMA_EXPR, create_code,
-		       mknode(F_ASSIGN, mkidentifiernode(e), local_node));
-	    }
-	  }
-
-	  /* Fourth: Add a return 0; at the end. */
-
-	  create_code = mknode(F_COMMA_EXPR,
-			       mknode(F_POP_VALUE, create_code, NULL),
-			       mknode(F_RETURN, mkintnode(0), NULL));
-
-	  /* Fifth: Define the function. */
-
-	  f=dooptcode(create_string, create_code, type, ID_PROTECTED);
-
-#ifdef PIKE_DEBUG
-	  if(Pike_interpreter.recoveries &&
-	     Pike_sp-Pike_interpreter.evaluator_stack < Pike_interpreter.recoveries->stack_pointer)
-	    Pike_fatal("Stack error (underflow)\n");
-
-	  if(Pike_compiler->compiler_pass == COMPILER_PASS_FIRST &&
-	     f!=Pike_compiler->compiler_frame->current_function_number)
-	    Pike_fatal("define_function screwed up! %d != %d\n",
-		       f, Pike_compiler->compiler_frame->current_function_number);
-#endif
-	}
-
-	/* Done. */
-
-	free_type(type);
-	pop_compiler_frame();
-      }
-    }
 
     if(Pike_compiler->compiler_pass != COMPILER_PASS_LAST)
       p=end_first_pass(0);
@@ -3455,144 +3506,6 @@ named_class: TOK_CLASS line_number_info simple_identifier
   optional_create_arguments failsafe_program
   {
     struct program *p;
-
-    /* Check if we have create arguments but no locally defined create(). */
-    if ($6) {
-      struct pike_string *create_string = NULL;
-      struct reference *ref = NULL;
-      struct identifier *id = NULL;
-      int ref_id;
-      MAKE_CONST_STRING(create_string, "create");
-      if (((ref_id = isidentifier(create_string)) < 0) ||
-	  (ref = PTR_FROM_INT(Pike_compiler->new_program, ref_id))->inherit_offset ||
-	  ((id = ID_FROM_PTR(Pike_compiler->new_program, ref))->func.offset == -1)) {
-	int e;
-	struct pike_type *type = NULL;
-	int nargs = Pike_compiler->num_create_args;
-
-	push_compiler_frame(SCOPE_LOCAL);
-
-	/* Init: Prepend the create arguments. */
-	if (Pike_compiler->num_create_args < 0) {
-	  for (e = 0; e < -Pike_compiler->num_create_args; e++) {
-	    id = Pike_compiler->new_program->identifiers + e;
-	    add_ref(id->type);
-	    add_local_name(id->name, id->type, 0);
-	    /* Note: add_local_name() above will return e. */
-	    Pike_compiler->compiler_frame->variable[e].flags |=
-	      LOCAL_VAR_IS_USED;
-	  }
-	} else {
-	  for (e = 0; e < Pike_compiler->num_create_args; e++) {
-	    id = Pike_compiler->new_program->identifiers + e;
-	    add_ref(id->type);
-	    add_local_name(id->name, id->type, 0);
-	    /* Note: add_local_name() above will return e. */
-	    Pike_compiler->compiler_frame->variable[e].flags |=
-	      LOCAL_VAR_IS_USED;
-	  }
-	}
-
-	/* First: Deduce the type for the create() function. */
-	push_type(T_VOID); /* Return type. */
-
-	if ((e = nargs) < 0) {
-	  /* Varargs */
-	  e = nargs = -nargs;
-	  push_finished_type(Pike_compiler->compiler_frame->variable[--e].type);
-	  pop_type_stack(T_ARRAY); /* Pop one level of array. */
-	  compiler_discard_top_type();
-	} else {
-	  /* Not varargs. */
-	  push_type(T_VOID);
-	}
-	push_type(T_MANY);
-	while(e--) {
-	  push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
-	  push_type(T_FUNCTION);
-	}
-
-	type = compiler_pop_type();
-
-	/* Second: Declare the function. */
-
-	Pike_compiler->compiler_frame->current_function_number=
-	  define_function(create_string, type,
-			  ID_INLINE | ID_PROTECTED,
-			  IDENTIFIER_PIKE_FUNCTION |
-			  (Pike_compiler->num_create_args < 0?IDENTIFIER_VARARGS:0),
-			  0,
-			  OPT_SIDE_EFFECT);
-
-	if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
-	  node *create_code = NULL;
-	  int f;
-
-	  /* Third: Generate the initialization code.
-	   *
-	   * global_arg = [type]local_arg;
-	   * [,..]
-	   */
-
-	  for(e=0; e<nargs; e++)
-	  {
-	    if(!Pike_compiler->compiler_frame->variable[e].name ||
-	       !Pike_compiler->compiler_frame->variable[e].name->len)
-	    {
-	      my_yyerror("Missing name for argument %d.",e);
-	    } else {
-	      node *local_node = mklocalnode(e, 0);
-
-	      /* FIXME: Should probably use some other flag. */
-	      if ((runtime_options & RUNTIME_CHECK_TYPES) &&
-		  (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) &&
-		  (Pike_compiler->compiler_frame->variable[e].type !=
-		   mixed_type_string)) {
-		/* fprintf(stderr, "Creating soft cast node for local #%d\n", e);*/
-
-		local_node = mkcastnode(mixed_type_string, local_node);
-
-		/* NOTE: The cast to mixed above is needed to avoid generating
-		 *       compilation errors, as well as avoiding optimizations
-		 *       in mksoftcastnode().
-		 */
-		local_node = mksoftcastnode(Pike_compiler->compiler_frame->
-					    variable[e].type, local_node);
-	      }
-	      create_code =
-		mknode(F_COMMA_EXPR, create_code,
-		       mknode(F_ASSIGN, mkidentifiernode(e), local_node));
-	    }
-	  }
-
-	  /* Fourth: Add a return 0; at the end. */
-
-	  create_code = mknode(F_COMMA_EXPR,
-			       mknode(F_POP_VALUE, create_code, NULL),
-			       mknode(F_RETURN, mkintnode(0), NULL));
-
-	  /* Fifth: Define the function. */
-
-	  f=dooptcode(create_string, create_code, type, ID_PROTECTED);
-
-#ifdef PIKE_DEBUG
-	  if(Pike_interpreter.recoveries &&
-	     Pike_sp-Pike_interpreter.evaluator_stack < Pike_interpreter.recoveries->stack_pointer)
-	    Pike_fatal("Stack error (underflow)\n");
-
-	  if(Pike_compiler->compiler_pass == COMPILER_PASS_FIRST &&
-	     f!=Pike_compiler->compiler_frame->current_function_number)
-	    Pike_fatal("define_function screwed up! %d != %d\n",
-		       f, Pike_compiler->compiler_frame->current_function_number);
-#endif
-	}
-
-	/* Done. */
-
-	free_type(type);
-	pop_compiler_frame();
-      }
-    }
 
     /* Update the type for the program constant,
      * since we may have a lfun::create().
