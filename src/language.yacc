@@ -3387,6 +3387,30 @@ anon_class: TOK_CLASS line_number_info
   {
     struct program *p;
 
+    /* Check if we have __create__() but no locally defined create(). */
+    if ($6) {
+      struct reference *ref = NULL;
+      struct identifier *id = NULL;
+      int ref_id;
+      if (((ref_id = isidentifier(lfun_strings[LFUN_CREATE])) < 0) ||
+	  (ref = PTR_FROM_INT(Pike_compiler->new_program, ref_id))->inherit_offset ||
+	  ((id = ID_FROM_PTR(Pike_compiler->new_program, ref))->func.offset == -1)) {
+	/* There is no create() or it is inherited or it is a prototype. */
+	push_compiler_frame(SCOPE_LOCAL);
+
+	ref_id = FIND_LFUN(Pike_compiler->new_program, LFUN___CREATE__);
+	ref = PTR_FROM_INT(Pike_compiler->new_program, ref_id);
+	id = ID_FROM_PTR(Pike_compiler->new_program, ref);
+
+	ref_id = define_function(lfun_strings[LFUN_CREATE],
+				 id->type, ref->id_flags,
+				 id->identifier_flags, &id->func,
+				 id->opt_flags);
+
+	pop_compiler_frame();
+      }
+    }
+
     if(Pike_compiler->compiler_pass != COMPILER_PASS_LAST)
       p=end_first_pass(0);
     else
@@ -3506,6 +3530,30 @@ named_class: TOK_CLASS line_number_info simple_identifier
   optional_create_arguments failsafe_program
   {
     struct program *p;
+
+    /* Check if we have __create__() but no locally defined create(). */
+    if ($6) {
+      struct reference *ref = NULL;
+      struct identifier *id = NULL;
+      int ref_id;
+      if (((ref_id = isidentifier(lfun_strings[LFUN_CREATE])) < 0) ||
+	  (ref = PTR_FROM_INT(Pike_compiler->new_program, ref_id))->inherit_offset ||
+	  ((id = ID_FROM_PTR(Pike_compiler->new_program, ref))->func.offset == -1)) {
+	/* There is no create() or it is inherited or it is a prototype. */
+	push_compiler_frame(SCOPE_LOCAL);
+
+	ref_id = FIND_LFUN(Pike_compiler->new_program, LFUN___CREATE__);
+	ref = PTR_FROM_INT(Pike_compiler->new_program, ref_id);
+	id = ID_FROM_PTR(Pike_compiler->new_program, ref);
+
+	ref_id = define_function(lfun_strings[LFUN_CREATE],
+				 id->type, ref->id_flags,
+				 id->identifier_flags, &id->func,
+				 id->opt_flags);
+
+	pop_compiler_frame();
+      }
+    }
 
     /* Update the type for the program constant,
      * since we may have a lfun::create().

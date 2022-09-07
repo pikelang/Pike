@@ -401,7 +401,7 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!   @[lfun::create()]
  */
 
-/*! @decl void lfun::create(zero ... args)
+/*! @decl void lfun::create(__unknown__ ... args)
  *!
  *!   Object creation callback.
  *!
@@ -571,7 +571,7 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!
  *! @note
  *!   Note also that in case @[lfun::create()] does not exist,
- *!   this function will be called instead.
+ *!   it will be created as an alias for this function.
  *!
  *! @note
  *!   This function did not exist in Pike 8.0 and earlier (where it
@@ -2506,12 +2506,6 @@ struct node_s *find_inherited_identifier(struct program_state *inherit_state,
       }
       return mkidentifiernode(id);
     }
-  }
-
-  if (ident == lfun_strings[LFUN_CREATE]) {
-    /* Try looking up __create__ instead. */
-    return find_inherited_identifier(inherit_state, inherit_depth, inh,
-				     lfun_strings[LFUN___CREATE__]);
   }
 
   if (inh < 0) inh = -1;
@@ -8208,15 +8202,6 @@ PMOD_EXPORT int low_find_lfun(struct program *p, enum LFUN lfun)
 	  yywarning("Compat: Substituting %S() for %S().",
 		    lfun_compat_name, lfun_name);
 	}
-      }
-    } else if (lfun == LFUN_CREATE) {
-      /* NB: In the first pass, we do not know yet if there'll
-       *     be an lfun::create() later, in which case the type
-       *     may differ from the type for lfun::__create__().
-       */
-      if (p->flags & PROGRAM_PASS_1_DONE) {
-	/* No lfun::create(), but there might be an lfun::__create__(). */
-	return low_find_lfun(p, LFUN___CREATE__);
       }
     }
   }
