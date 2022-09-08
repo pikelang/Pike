@@ -807,8 +807,55 @@ test_any_equal([[
   return ret;
 ]], ({ 1, 2, 3, "End of stream.\n" }))
 
-dnl bug in for loop optimization in combination with +=
+dnl Function with default value.
+test_any_equal([[
+  class A {
+    string foo(string bar = "foo") { return bar; }
+  }
 
+  A o = A();
+  return ({ o->foo(), o->foo(UNDEFINED), o->foo("bar") });
+]], ({ "foo", "foo", "bar" }))
+
+dnl Generator with default value.
+
+dnl Lambda with default value.
+test_any_equal([[
+  function(string|void:string) f = lambda(string bar = "foo") { return bar; };
+  return ({ f(), f(UNDEFINED), f("bar") });
+]], ({ "foo", "foo", "bar" }))
+
+dnl Local function with default value.
+test_any_equal([[
+  string f(string bar = "foo") { return bar; };
+  return ({ f(), f(UNDEFINED), f("bar") });
+]], ({ "foo", "foo", "bar" }))
+
+dnl Local generator with default value.
+
+dnl Named class with implicit create with default value.
+test_any_equal([[
+  class foo(string bar = "foo") {
+    protected void create(string blag = bar) { bar += blag; }
+  }
+
+  return ({ foo(), foo(UNDEFINED), foo("bar"), foo("bar", UNDEFINED),
+            foo("bar", "baz"), foo(UNDEFINED, "bar") })->bar;
+]], ({ "foofoo", "foofoo", "barbar", "barbar",
+       "barbaz", "foobar" }))
+
+dnl Anonymous class with implicit create with default value.
+test_any_equal([[
+  program foo = class(string bar = "foo") {
+      protected void create(string blag = bar) { bar += blag; }
+    };
+
+  return ({ foo(), foo(UNDEFINED), foo("bar"), foo("bar", UNDEFINED),
+            foo("bar", "baz"), foo(UNDEFINED, "bar") })->bar;
+]], ({ "foofoo", "foofoo", "barbar", "barbar",
+       "barbaz", "foobar" }))
+
+dnl bug in for loop optimization in combination with +=
 test_any([[
 array v=({1,2,3});
   for (int i=0; i<sizeof(v); i++)
