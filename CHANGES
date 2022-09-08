@@ -20,6 +20,10 @@ o Syntax for specifying default values for function arguments added.
   otherwise. The local variable 'bar' above will be typed string
   (ie not string|void) in the function body.
 
+  The syntax is also valid for implicit create:
+
+    class foo(string bar = "bar") {}
+
 o 'auto' type added.
 
   This is much like a strict typed mixed. The actual type is deduced
