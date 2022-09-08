@@ -49,9 +49,8 @@ string(0..127) string2hex(string(0..255) s)
 //! @seealso
 //! @[`*()]
 //!
-string implode_nicely(array(string|int|float) foo, string|void separator)
+string implode_nicely(array(string|int|float) foo, string|void separator="and")
 {
-  if(!separator) separator="and";
   array(string) bar = (array(string))foo;
   switch(sizeof(foo))
   {
