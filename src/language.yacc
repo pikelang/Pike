@@ -335,7 +335,6 @@ int yylex(YYSTYPE *yylval);
 %type <n> safe_apply_with_line_info
 %type <n> open_paren_with_line_info
 %type <n> open_paren_or_safe_apply_with_line_info
-%type <n> close_paren_or_missing
 %type <n> open_bracket_with_line_info
 %type <n> block_or_semi
 %type <n> break
@@ -701,19 +700,6 @@ safe_apply_with_line_info: TOK_SAFE_APPLY
 
 open_paren_or_safe_apply_with_line_info: open_paren_with_line_info
   | safe_apply_with_line_info
-  ;
-
-close_paren_or_missing: ')'
-  {
-    /* Used to hold line-number info */
-    $$ = mkintnode(0);
-  }
-  | /* empty */
-  {
-    yyerror("Missing ')'.");
-    /* Used to hold line-number info */
-    $$ = mkintnode(0);
-  }
   ;
 
 close_brace_or_missing: '}'
