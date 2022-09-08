@@ -675,6 +675,23 @@ array parseArgList(int|void allowLiterals) {
       // Note: identifier may be zero for unnamed arguments in prototypes.
       argnames += ({ identifier });
       argtypes += ({ typ });
+
+      if (peekToken() == "=") {
+	// FIXME: Consider documenting the default value in the
+	//        trivial case (ie literal constant).
+	eat("=");
+	skipUntil((< ",", ")", ";", EOF >));
+
+	// Adjust the type to be '|void'.
+	if (argtypes[-1]->types) {
+	  // Or-type.
+	  argtypes[-1]->types += ({ VoidType() });
+	} else {
+	  typ = OrType();
+	  typ->types = ({ argtypes[-1], VoidType() });
+	  argtypes[-1] = typ;
+	}
+      }
     }
     else {
       if (typ) {
