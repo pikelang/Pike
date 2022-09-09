@@ -113,25 +113,39 @@ class ArrayType {
   //! The @[Type] of the array elements.
   Type valuetype;
 
-  //! The length or the array, or -1 if undefined.
-  int length = -1;
+  //! The length of the array.
+  object(Type) length;
 
   //!
   protected void create() { ::create("array"); }
 
   string print() {
     string ret = "array";
-    if (valuetype || length>-1) ret += "(";
-    if (length>-1) ret += length;
-    if (valuetype && length>-1) ret += ":";
-    if (valuetype) ret += valuetype->print();
-    if (valuetype || length>-1) ret += ")";
+    if (valuetype || length) {
+      ret += "(";
+      if (length) {
+	if (length->classname == "int") {
+	  if (length->min || length->max) {
+	    ret += length->min || "";
+	    if (length->min != length->max) {
+	      ret += "..";
+	      ret += length->max || "";
+	    }
+	  }
+	} else {
+	  ret += length->print();
+	}
+	ret += ":";
+      }
+      if (valuetype) ret += valuetype->print();
+      ret += ")";
+    }
     return ret;
   }
 
   string xml(.Flags|void flags) {
     string xml = "";
-    if (length>-1) xml += xmltag("length", (string)length);
+    if (length) xml += xmltag("length", length->xml(flags));
     if (valuetype) xml += xmltag("valuetype", valuetype->xml(flags));
     if (xml=="" )
       return ::xml(flags);

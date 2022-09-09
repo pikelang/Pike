@@ -355,13 +355,32 @@ ArrayType parseArray() {
   ArrayType a = ArrayType();
   if (peekToken() == "(") {
     readToken();
-    if (lookAhead(1) == ":") {
-      a->length = (int)readToken();
-      if (eat((<":",")">))==")") {
-        return a;
+    Type t;
+    if ((peekToken()[0] >= '0') && (peekToken()[0] <= '9')) {
+      t = IntType();
+      if ((lookAhead(1) == ":") &&
+	  !has_suffix(peekToken(), "bit") &&
+	  !has_suffix(peekToken(), "bits")) {
+	// Integer literal followed by a ':'.
+	t->min = t->max = eatLiteral();
+      } else {
+	lowParseRange(t);
       }
+    } else if (peekToken() == "..") {
+      t = IntType();
+      lowParseRange(t);
+    } else if (peekToken() != ":") {
+      t = parseOrType();
     }
-    a->valuetype = parseOrType();
+    if (peekToken() == ":") {
+      a->length = t;
+      eat(":");
+      if (peekToken() != ")") {
+	a->valuetype = parseOrType();
+      }
+    } else {
+      a->valuetype = t;
+    }
     eat(")");
   }
   return a;
@@ -411,36 +430,45 @@ FunctionType parseFunction() {
 }
 
 
+StringType|IntType lowParseRange(StringType|IntType s)
+{
+  string tk;
+
+  switch (peekToken()) {
+  case "zero":
+    eat("zero");
+    s->min = s->max = "0";
+    return s;
+  case "..":
+    break;
+  default:
+    s->min = eatLiteral();
+    if(sscanf(s->min, "%sbit", s->min) ||
+       (<"bit","bits">)[(tk = peekToken())] )
+    {
+      if (tk) eat(tk);
+
+      s->max = (string)((1<<(int)s->min)-1);
+      s->min = "0";
+      return s;
+    }
+  }
+
+  eat("..");
+
+  if (!(<")", ",", ":">)[peekToken()])
+    s->max = eatLiteral();
+
+  return s;
+}
+
 StringType|IntType parseRange(StringType|IntType s)
 {
   string tk;
   if (peekToken() == "(") {
     readToken();
-    switch (peekToken()) {
-    case "zero":
-      eat("zero");
-      s->min = s->max = "0";
-      eat(")");
-      return s;
-    case "..":
-      break;
-    default:
-      s->min = eatLiteral();
-      if(sscanf(s->min, "%sbit", s->min) ||
-	 (<"bit","bits">)[(tk = peekToken())] )
-      {
-        if (tk) eat(tk);
-        eat(")");
-        s->max = (string)((1<<(int)s->min)-1);
-        s->min = "0";
-        return s;
-      }
-    }
 
-    eat("..");
-
-    if (peekToken() != ")")
-      s->max = eatLiteral();
+    lowParseRange(s);
 
     eat(")");
   }

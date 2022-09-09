@@ -490,29 +490,45 @@ void build_box(Node n, String.Buffer ret, string first, string second, function 
   nicebox(rows, ret);
 }
 
-// type(min..max)
-string range_type( string type, Node min, Node max )
+// min..max
+string low_range_type( Node min, Node max )
 {
     // Work with plain text; if there's no node, that's the same as an empty node.
     string min_text = min ? parse_text(min) : "";
     string max_text = max ? parse_text(max) : "";
     if( min_text == "" && max_text == "" )
-        return type;
+        return "";
     if( min_text == "" )
-        return type+"(.."+max_text+")";
+        return ".." + max_text;
     if( max_text == "" )
-        return type+"("+min_text+"..)";
+        return min_text + "..";
 
     int low = (int)min_text;
     int high = (int)max_text;
 
     if( low == 0 && high && (high+1)->popcount() == 1 )
     {
-      if( high == 1 && type == "int" )
-        return "bool";
-      return type+"("+strlen((high)->digits(2))+"bit)";
+      return strlen((high)->digits(2)) + "bit";
     }
-    return type+"("+low+".."+high+")";
+    if (low == high) {
+      return low + "";
+    }
+    return low + ".." + high;
+}
+
+// type(min..max)
+string range_type( string type, Node min, Node max )
+{
+  // Work with plain text; if there's no node, that's the same as an empty node.
+  string ret = low_range_type(min, max);
+
+  if ((ret == "1bit") && (type == "int")) {
+    return "bool";
+  }
+
+  if (ret == "") return type;
+
+  return type + "(" + ret + ")";
 }
 
 Tools.Standalone.pike_to_html code_highlighter;
@@ -1028,8 +1044,17 @@ string parse_type(Node n, void|string debug) {
     if(c||d) {
       ret += "(";
       if(c) {
-        ret += c->value_of_node();
-        if(d) ret += ":";
+	Node l = get_first_element(c);
+	if (l->get_tag_name() == "int") {
+	  // Trivial case.
+	  ret += ("<code class='datatype'>" +
+		  low_range_type(l->get_first_element("min"),
+				 l->get_first_element("max")) +
+		  "</code>");
+	} else {
+	  ret += parse_type(l);
+	}
+        ret += ":";
       }
       if(d) ret += parse_type( get_first_element(d) );
       ret += ")";
