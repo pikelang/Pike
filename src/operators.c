@@ -6078,10 +6078,20 @@ multiset & mapping -> mapping
 			     tFunc(tArr(tNStr(tSetvar(0, tInt)))
 				   tNStr(tSetvar(1, tInt)),
 				   tNStr(tOr(tVar(0), tVar(1)))),
-			     tFunc(tArr(tSetvar(0,tMix)) tOr(tInt, tFloat),
-				   tArr(tVar(0))),
-			     tFunc(tNStr(tSetvar(0, tInt)) tOr(tInt, tFloat),
-				   tNStr(tVar(0))))),
+			     tOr(tFunc(tLArr(tSetvar(1, tIntPos),
+					     tSetvar(0,tMix))
+				       tSetvar(2, tIntPos),
+				       tLArr(tMulInt(tVar(1), tVar(2)),
+					     tVar(0))),
+				 tFunc(tArr(tSetvar(0,tMix)) tFloat,
+				       tArr(tVar(0)))),
+			     tOr(tFunc(tLStr(tSetvar(1, tIntPos),
+					     tSetvar(0, tInt))
+				       tSetvar(2, tIntPos),
+				       tLStr(tMulInt(tVar(1), tVar(2)),
+					     tVar(0))),
+				 tFunc(tNStr(tSetvar(0, tInt)) tFloat,
+				       tNStr(tVar(0)))))),
 	    OPT_TRY_OPTIMIZE,optimize_binary,generate_multiply);
 
   /* !function(!object...:mixed)&function(mixed...:mixed)|"
