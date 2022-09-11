@@ -352,32 +352,30 @@ string int2size( int size )
 
 //! Expands tabs in a string to ordinary spaces, according to common
 //! tabulation rules.
-string expand_tabs(string s, int|void tab_width,
-		   string|void substitute_tab,
-		   string|void substitute_space,
-		   string|void substitute_newline)
+string expand_tabs(string s, int(1..) tab_width = 8,
+		   string tab = " ",
+		   string space = " ",
+		   string newline = "\n")
 {
-  string tab = substitute_tab || " ",
-	 space = substitute_space || " ",
-	 newline = substitute_newline || "\n";
-  return map(s/"\n", line_expand_tab, tab_width||8, space, tab) * newline;
+  return map(s/"\n", line_expand_tab, tab_width, space, tab) * newline;
 }
 
 // the \n splitting is done in our caller for speed improvement
-protected string line_expand_tab(string line, int tab_width,
-			      string space, string tab)
+protected string line_expand_tab(string line, int(1..) tab_width,
+				 string space, string tab)
 {
   string result = "";
-  int col, next_tab_stop, i;
+  int(0..) col, next_tab_stop;
   while(sizeof(line))
   {
     sscanf(line, "%[ \t\n]%[^ \t\n]%s", string ws, string chunk, line);
-    for(i=0; i<sizeof(ws); i++)
-      switch(ws[i])
+    foreach(ws; ; int ch)
+      switch(ch)
       {
 	case '\t':
-	  next_tab_stop = col + tab_width - (col % tab_width);
-	  result += tab * (next_tab_stop - col);
+	  int(0..) num_spaces = [int(0..)](tab_width - (col % tab_width));
+	  next_tab_stop = col + num_spaces;
+	  result += tab * num_spaces;
 	  col = next_tab_stop;
 	  break;
 
