@@ -151,16 +151,14 @@ protected class _HMAC
     //! @param b
     //!   Block size. Must be larger than or equal to the @[digest_size()].
     //!   Defaults to the @[block_size()].
-    protected void create (string(8bit) passwd, void|int b)
+    protected void create (string(8bit) passwd, int(1..) b = block_size())
     {
-      if (!b)
-	b = block_size();
-      else if (digest_size()>b)
+      if (digest_size()>b)
 	error("Block size is less than hash digest size.\n");
       if (sizeof(passwd) > b)
 	passwd = hash(passwd);
       if (sizeof(passwd) < b)
-	passwd = passwd + "\0" * (b - sizeof(passwd));
+	passwd = passwd + "\0" * [int(1..)](b - sizeof(passwd));
 
       ikey = [string(8bit)](passwd ^ ("6" * b));
       okey = [string(8bit)](passwd ^ ("\\" * b));
@@ -256,9 +254,9 @@ protected class _HMAC
   //! Returns a new @[State] object initialized with a @[password],
   //! and optionally block size @[b]. Block size defaults to the hash
   //! function block size.
-  protected State `()(string(8bit) password, void|int b)
+  protected State `()(string(8bit) password, int(1..) b = block_size())
   {
-    if (!b || (b == block_size())) {
+    if (b == block_size()) {
       return State(password);
     }
     // Unusual block size.
@@ -302,8 +300,8 @@ private void b64enc(String.Buffer dest, int a, int b, int c, int sz)
 //!   @[crypt_md5()]
 string(7bit) crypt_hash(string(8bit) password, string(8bit) salt, int(0..) rounds)
 {
-  int dsz = digest_size();
-  int plen = sizeof(password);
+  int(1..) dsz = [int(1..)]digest_size();
+  int(0..) plen = sizeof(password);
 
   if (!rounds) rounds = 5000;
   if (rounds < 1000) rounds = 1000;
@@ -347,7 +345,7 @@ string(7bit) crypt_hash(string(8bit) password, string(8bit) salt, int(0..) round
   string(8bit) dp = digest();					/* 15 */
 
   if (dsz != plen) {
-    dp *= 1 + (plen-1)/dsz;					/* 16 */
+    dp *= [int(1..)](1 + (plen-1)/dsz);				/* 16 */
     dp = dp[..plen-1];
   }
 
@@ -357,7 +355,7 @@ string(7bit) crypt_hash(string(8bit) password, string(8bit) salt, int(0..) round
   string(8bit) ds = digest();					/* 19 */
 
   if (dsz != sizeof(salt)) {
-    ds *= 1 + (sizeof(salt)-1)/dsz;				/* 20 */
+    ds *= [int(1..)](1 + (sizeof(salt)-1)/dsz);			/* 20 */
     ds = ds[..sizeof(salt)-1];
   }
 
@@ -569,7 +567,7 @@ string(8bit) pbkdf2(string(8bit) password, string(8bit) salt,
   password = "CENSORED";
 
   string(8bit) res = "";
-  int dsz = digest_size();
+  int(0..) dsz = digest_size();
   int fragno;
   while (sizeof(res) < bytes) {
     string(8bit) frag = "\0" * dsz;
@@ -800,7 +798,7 @@ string(8bit)|zero eme_oaep_encode(string(8bit) message,
 
   // b. Generate an octet string PS consisting of k - mLen - 2hLen - 2
   //    zero octets. The length of PS may be zero.
-  string(8bit) ps = "\0" * (bytes - (sizeof(message) + 2*hlen + 2));
+  string(8bit) ps = "\0" * [int(0..)](bytes - (sizeof(message) + 2*hlen + 2));
 
   // c. Concatenate lHash, PS, a single octet with hexadecimal value
   //    0x01, and the message M to form a data block DB of length
@@ -945,19 +943,16 @@ string(8bit)|zero eme_oaep_decode(string(8bit) message,
 //! @seealso
 //!   @[emsa_pss_verify()], @[mgf1()].
 string(8bit)|zero emsa_pss_encode(string(8bit) message, int(1..) bits,
-                                  string(8bit)|void salt,
+                                  string(8bit) salt = "",
                                   function(string(8bit), int(0..):
-                                           string(8bit))|void mgf)
+                                           string(8bit)) mgf = mgf1)
 {
-  if (!mgf) mgf = mgf1;
-  if (!salt) salt = "";
-
   // 1. If the length of M is greater than the input limitation for the
   //    hash function (2^61 - 1 octets for SHA-1), output "message too
   //    long" and stop.
   /* N/A */
 
-  int emlen = (bits+7)/8;
+  int(1..) emlen = [int(1..)]((bits+7)/8);
 
   // 3. If emLen < hLen + sLen + 2, output "encoding error" and stop.
   if (emlen < sizeof([string]salt) + digest_size() + 2) return 0;
@@ -981,7 +976,8 @@ string(8bit)|zero emsa_pss_encode(string(8bit) message, int(1..) bits,
 
   // 7. Generate an octet string PS consisting of emLen - sLen - hLen - 2
   //    zero octets. The length of PS may be 0.
-  string(8bit) ps = "\0" * (emlen - (sizeof([string]salt) + sizeof(h) + 2));
+  string(8bit) ps = "\0" *
+    [int(0..)](emlen - (sizeof([string]salt) + sizeof(h) + 2));
 
   // 8. Let DB = PS || 0x01 || salt; DB is an octet string of length
   //    emLen - hLen - 1.
