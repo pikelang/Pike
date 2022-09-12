@@ -464,7 +464,6 @@ StringType|IntType lowParseRange(StringType|IntType s)
 
 StringType|IntType parseRange(StringType|IntType s)
 {
-  string tk;
   if (peekToken() == "(") {
     readToken();
 
