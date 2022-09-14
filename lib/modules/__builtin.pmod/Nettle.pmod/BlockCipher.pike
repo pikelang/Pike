@@ -106,7 +106,7 @@ protected class _CTR
 	string(8bit) chunk = iv->digits(256);
 	iv++;
 	if (sizeof(chunk) < _block_size) {
-	  chunk = "\0"*(_block_size - sizeof(chunk)) + chunk;
+	  chunk = "\0" * [int(1..)](_block_size - sizeof(chunk)) + chunk;
 	}
 	chunk = obj->crypt(chunk);
 	buf->add(chunk[..len-1]);
