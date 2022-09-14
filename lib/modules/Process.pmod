@@ -458,7 +458,7 @@ protected array(string) runpike;
 //! @seealso
 //!   @[Process.Process]
 Process spawn_pike(array(string) argv, void|mapping(string:mixed) options,
-		   array(string)|void launcher)
+                   array(string) launcher = ({}))
 {
   if (!runpike) {
     array(string) res = ({
@@ -495,7 +495,6 @@ Process spawn_pike(array(string) argv, void|mapping(string:mixed) options,
       res[0] = search_path(res[0]);
     runpike = res;
   }
-  if (!launcher) launcher = ({});
   return Process(launcher + runpike + argv, options);
 }
 
@@ -545,13 +544,10 @@ Process spawn_pike(array(string) argv, void|mapping(string:mixed) options,
 //!   Process.run( ({ "ls", "-l" }), ([ "cwd":"/etc" ]) );
 //!   Process.run( "ls -l" );
 //!   Process.run( "awk -F: '{print $2}'", ([ "stdin":"foo:2\nbar:17\n" ]) );
-mapping run(string|array(string) cmd, void|mapping modifiers)
+mapping run(string|array(string) cmd, mapping modifiers = ([]))
 {
   string gotstdout="", gotstderr="", stdin_str;
   int exitcode;
-
-  if(!modifiers)
-    modifiers = ([]);
 
   if((modifiers->stdout && !callablep(modifiers->stdout))
     || (modifiers->stderr && !callablep(modifiers->stderr)))
@@ -1034,7 +1030,7 @@ class Spawn
 
    private object low_spawn(array(Stdio.File) fdp,
 			    array(Stdio.File) fd_to_close,
-			    string cmd, void|array(string) args,
+                            string cmd, void|array(string) args=({}),
 			    void|mapping(string:string) env,
 			    string|void cwd)
    {
@@ -1066,9 +1062,9 @@ class Spawn
 	    pied->set_close_on_exec(1);
 
 	    if (env)
-	       exece(cmd,args||({}),env);
+               exece(cmd,args,env);
 	    else
-	       exece(cmd,args||({}));
+               exece(cmd,args);
 
             error( "pike: failed to exece %O: %s.\n", cmd,
                    strerror(errno()) );

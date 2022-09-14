@@ -105,8 +105,8 @@ protected int lookingAtDateStart(void|int offset) {
 
 
 //!
-protected void create(mapping(string:mixed)|void opt) {
-  options = opt || ([ "implicit" : "or" ]);
+protected void create(mapping(string:mixed) opt = ([ "implicit" : "or" ])) {
+  options = opt;
   if (!options["fields"])
     options["fields"] = getDefaultFields();
 }

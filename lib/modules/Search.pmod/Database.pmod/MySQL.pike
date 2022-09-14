@@ -24,11 +24,10 @@ protected
   int init_done = 0;
 };
 
-protected void create(string db_url, void|mapping _options)
+protected void create(string db_url, mapping options = ([]))
 {
   host = db_url;
   get_db();
-  options = _options || ([]);
   mergefile_path = options->mergefiles;
 
   if(!mergefile_path)
@@ -253,15 +252,13 @@ mapping|zero get_uri_and_language(int|array(int) doc_id)
 		      ((array(string))doc_id)*","+")");
     return mkmapping( (array(int))a->id, a );
   }
-  else
-  {
-    array a=db->query("select document.language,uri.uri from document,uri "
-		      "where uri.id=document.uri_id and document.id=%d",doc_id);
-    if(!sizeof(a))
-      return 0;
 
-    return (["uri":1,"language":1]) & a[0];
-  }
+  array a=db->query("select document.language,uri.uri from document,uri "
+                    "where uri.id=document.uri_id and document.id=%d",doc_id);
+  if(!sizeof(a))
+    return 0;
+
+  return (["uri":1,"language":1]) & a[0];
 }
 
 void remove_uri(string|Standards.URI uri)
@@ -352,14 +349,12 @@ Search.ResultSet get_deleted_documents()
 
   if(max_id==deleted_max && count == deleted_count)
     return deleted_documents;
-  else
-  {
-    array ids =  (array(int))db->query("select doc_id from deleted_document "
-				       "order by doc_id")->doc_id;
-    deleted_count = count;
-    deleted_max = max_id;
-    return deleted_documents = Search.ResultSet(ids);
-  }
+
+  array ids =  (array(int))db->query("select doc_id from deleted_document "
+                                     "order by doc_id")->doc_id;
+  deleted_count = count;
+  deleted_max = max_id;
+  return deleted_documents = Search.ResultSet(ids);
 }
 
 Search.ResultSet get_all_documents()
@@ -521,22 +516,20 @@ array(string) expand_word_glob(string g, void|int max_hits)
 			   "          LIMIT %d",
 			   first_word_sql, g_sql, max_hits)->word,
 		 utf8_to_string);
-    } else {
-      return map(db->query("SELECT DISTINCT word "
-			   "           FROM word_hit "
-			   "          WHERE word LIKE %s "
-			   "       ORDER BY word ASC "
-			   "          LIMIT %d",
-			   g_sql, max_hits)->word,
-		 utf8_to_string);
     }
-  } else {
     return map(db->query("SELECT DISTINCT word "
-			 "           FROM word_hit "
-			 "          WHERE word LIKE %s",
-			 g_sql)->word,
-	       utf8_to_string);
+                         "           FROM word_hit "
+                         "          WHERE word LIKE %s "
+                         "       ORDER BY word ASC "
+                         "          LIMIT %d",
+                         g_sql, max_hits)->word,
+               utf8_to_string);
   }
+  return map(db->query("SELECT DISTINCT word "
+                       "           FROM word_hit "
+                       "          WHERE word LIKE %s",
+                       g_sql)->word,
+             utf8_to_string);
 }
 
 
@@ -637,8 +630,7 @@ protected string make_fields_sql(void|array(string) wanted_fields)
   Sql.Sql db = get_db();
   if(wanted_fields && sizeof(wanted_fields))
     return " and name IN ('"+map(wanted_fields,db->quote)*"','"+"')";
-  else
-    return "";
+  return "";
 }
 
 mapping(string:string) get_metadata(int|Standards.URI|string uri,
@@ -759,8 +751,7 @@ protected
     array a = db->query("select doc_id from lastmodified order by doc_id desc limit 1");
     if(!sizeof(a))
       return 0;
-    else
-      return (int)a[0]->doc_id;
+    return (int)a[0]->doc_id;
   }
 };
 
@@ -769,19 +760,17 @@ _WhiteFish.DateSet get_global_dateset()
   int max_doc_id = get_max_doc_id();
   if(max_doc_id == dateset_cache_max_doc_id)
     return dateset_cache;
-  else
-  {
-    Sql.Sql db = get_db();
-    array a = db->query("select doc_id,at from lastmodified where "
-			"doc_id > %d order by doc_id asc", dateset_cache_max_doc_id);
 
-    dateset_cache_max_doc_id = max_doc_id;
-    if(!dateset_cache)
-      dateset_cache = _WhiteFish.DateSet();
-    dateset_cache->add_many( (array(int))a->doc_id,
-			     (array(int))a->at );
-    return dateset_cache;
-  }
+  Sql.Sql db = get_db();
+  array a = db->query("select doc_id,at from lastmodified where "
+                      "doc_id > %d order by doc_id asc", dateset_cache_max_doc_id);
+
+  dateset_cache_max_doc_id = max_doc_id;
+  if(!dateset_cache)
+    dateset_cache = _WhiteFish.DateSet();
+  dateset_cache->add_many( (array(int))a->doc_id,
+                           (array(int))a->at );
+  return dateset_cache;
 }
 
 protected
@@ -795,22 +784,20 @@ _WhiteFish.DateSet get_global_publ_dateset()
   int max_doc_id = get_max_doc_id();
   if(max_doc_id == publ_dateset_cache_max_doc_id)
     return publ_dateset_cache;
-  else
-  {
-    Sql.Sql db = get_db();
-    array(mapping(string:mixed)) a =
-      db->query("SELECT doc_id, value FROM metadata "
-		" WHERE name = 'publish-time' "
-		"   AND doc_id > %d ORDER BY doc_id ASC",
-		publ_dateset_cache_max_doc_id);
 
-    publ_dateset_cache_max_doc_id = max_doc_id;
-    if(!publ_dateset_cache)
-      publ_dateset_cache = _WhiteFish.DateSet();
-    publ_dateset_cache->add_many( (array(int))a->doc_id,
+  Sql.Sql db = get_db();
+  array(mapping(string:mixed)) a =
+    db->query("SELECT doc_id, value FROM metadata "
+              " WHERE name = 'publish-time' "
+              "   AND doc_id > %d ORDER BY doc_id ASC",
+              publ_dateset_cache_max_doc_id);
+
+  publ_dateset_cache_max_doc_id = max_doc_id;
+  if(!publ_dateset_cache)
+    publ_dateset_cache = _WhiteFish.DateSet();
+  publ_dateset_cache->add_many( (array(int))a->doc_id,
 				  (array(int))a->value );
-    return publ_dateset_cache;
-  }
+  return publ_dateset_cache;
 }
 
 // ----------------------------------------------
@@ -1395,10 +1382,9 @@ array(array) get_most_common_words(void|int count)
 	      "    LIMIT %d", count || 10);
 
   if(!sizeof(a))
-    return ({ });
-  else
-    return Array.transpose( ({ map(a->word, my_denormalize),
-			       (array(int))a->c }) );
+    return ({});
+  return Array.transpose( ({ map(a->word, my_denormalize),
+                             (array(int))a->c }) );
 }
 
 void list_url_by_prefix(string url_prefix, function(string:void) cb)
