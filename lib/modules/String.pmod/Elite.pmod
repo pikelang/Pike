@@ -170,10 +170,9 @@ mapping(string:array(string)) elite_char8 =
 //! elite_word only do character-based translation,
 //! for instance from "k" to "|<", but no language
 //! translation (no "cool" to "kewl").
-string elite_word(string in, void|int(0..100) leetp, void|int(0..2) eightbit)
+string elite_word(string in, int(0..100) leetp=50, int(0..2) eightbit=0)
 {
-  if (undefinedp(leetp)) leetp=50; // aim for 50% leetness
-  else if (!leetp)
+  if (!leetp)
     return replace(in,"\1001\1002\1003"/1,"fpl"/1);
 
   array v;
@@ -245,10 +244,8 @@ string elite_word(string in, void|int(0..100) leetp, void|int(0..2) eightbit)
 //! cool->kewl etc), then optional translations
 //! (ok->k, dude->dood, -ers -> -orz), then
 //! calls elite_word on the resulting words.
-string elite_string(string in, void|int(0..100) leetp, void|int(0..1) eightbit)
+string elite_string(string in, int(0..100) leetp=50, int(0..1) eightbit=0)
 {
-  if (undefinedp(leetp)) leetp=50; // aim for 50% leetness
-
   in=" "+in+" ";
   foreach (elite_short;;[string what,array(string)|string dest])
   {

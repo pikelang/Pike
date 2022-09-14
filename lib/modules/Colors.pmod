@@ -94,10 +94,10 @@ variant array(int(0..255)) cmyk_to_rgb(array(int) cmyk)
 //! default value (or black if none is provided) if it failes.
 //!
 array(3:int(0..255)) parse_color(string|zero name,
-				 void|array(3:int(0..255)) def)
+                                 array(3:int(0..255)) def=({ 0,0,0 }))
 {
   Image.Color.Color color;
-  if(!name || !sizeof(name)) return def||({ 0,0,0 }); // Odd color...
+  if(!name || !sizeof(name)) return def; // Odd color...
 
   if(color=Image.Color.guess(name)) return color->rgb();
 
@@ -105,7 +105,7 @@ array(3:int(0..255)) parse_color(string|zero name,
   if(color=Image.Color.guess(name)) return color->rgb();
 
   // Lets call it black and be happy..... :-)
-  return def||({ 0,0,0 });
+  return def;
 }
 
 //! Tries to find a name to color described by  the provided RGB

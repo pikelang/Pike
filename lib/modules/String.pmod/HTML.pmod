@@ -85,12 +85,11 @@ string select(string name, array(string)|array(array(string)) choices,
 //! @seealso
 //!   @[pad_rows]
 string simple_obox( array(array(string)) rows,
-		    void|string frame_color, void|string cell_color,
+                    void|string frame_color, string cell_color="#ffffff",
 		    void|string width, void|string padding,
 		    void|function(int,int,string,string:string) cell_callback )
 {
   .Buffer res = .Buffer();
-  if(!cell_color) cell_color = "#ffffff";
   if(cell_callback) {
     foreach(rows; int y; array(string) row) {
       res->add("<tr>");
@@ -110,19 +109,17 @@ string simple_obox( array(array(string)) rows,
   return wrap_simple_obox((string)res, frame_color, width, padding);
 }
 
-private string wrap_simple_obox( string rows, void|string frame_color,
-				 void|string width, void|string padding ) {
-  if(!frame_color) frame_color = "#000000";
+private string wrap_simple_obox( string rows, string frame_color="#000000",
+                                 string width="1", string padding="3" ) {
   return "<table bgcolor='" + frame_color + "' cellspacing='0' cellpadding='0' border='0'><tr><td>\n"
-    "<table bgcolor='" + frame_color + "' cellspacing='" + (width||"1") + "' cellpadding='" +
-    (padding||"3") + "' border='0'>\n" + rows + "</table></td></tr></table>";
+    "<table bgcolor='" + frame_color + "' cellspacing='" + width + "' cellpadding='" +
+    padding + "' border='0'>\n" + rows + "</table></td></tr></table>";
 }
 
 //! Pads out the rows in a array of rows to equal length. The new elements in
 //! the rows will have the value provided in @[padding], or "&nbsp;".
-array(array(string)) pad_rows( array(array(string)) rows, void|string padding ) {
+array(array(string)) pad_rows( array(array(string)) rows, string padding="&nbsp;" ) {
   int m = max( @map(rows, sizeof) );
-  if(!padding) padding = "&nbsp;";
   for(int i; i<sizeof(rows); i++)
     if(sizeof(rows[i])<m)
       rows[i] = rows[i] + allocate(m-sizeof(rows[i]), padding);
