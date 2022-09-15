@@ -977,7 +977,7 @@ void debug_push_type_operator(enum PIKE_TYPE op, struct pike_type *arg)
   case PIKE_T_SCOPE:
     /* Deferred evaluation. */
     if (op & 0x8000) {
-      add_ref(arg);
+      if (arg) add_ref(arg);
       *Pike_compiler->type_stackp = mk_type(op,
 					    *Pike_compiler->type_stackp,
 					    arg,
