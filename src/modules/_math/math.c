@@ -258,7 +258,7 @@ void f_atanh(INT32 args)
 }
 
 /*! @decl float sqrt(float f)
- *! @decl int sqrt(int i)
+ *! @decl int(0..) sqrt(int(0..) i)
  *! @decl mixed sqrt(object o)
  *!
  *! Returns the square root of @[f], or in the integer case, the square root
@@ -420,7 +420,9 @@ void f_round(INT32 args)
 }
 
 
-/*! @decl int|float|object limit(int|float|object minval, int|float|object x, int|float|object maxval)
+/*! @decl int|float|object limit(int|float|object minval, @
+ *!                              int|float|object x, @
+ *!                              int|float|object maxval)
  *!
  *! Limits the value @[x] so that it's between @[minval] and @[maxval].
  *! If @[x] is an object, it must implement the @[lfun::`<] method.
@@ -658,7 +660,8 @@ PIKE_MODULE_INIT
 
   /* function(float:float)|function(int:int) */
   ADD_EFUN("sqrt",f_sqrt,tOr3(tFunc(tFlt,tFlt),
-			      tFunc(tInt,tInt),
+			      tFunc(tSetvar(0, tIntPos),
+				    tRangeInt(tZero, tVar(0))),
 			      tFunc(tObj,tMix)),0);
 
   /* function(int|float:float) */
@@ -684,32 +687,60 @@ PIKE_MODULE_INIT
   /* function(int|float:float) */
   ADD_EFUN("round",f_round,tFunc(tNUM,tFlt),0);
 
-#define MINMAX_TYPE							\
-  tOr4(tIfnot(tFuncV(tNone,tNot(tString),tMix),				\
-	      tFuncV(tString,tString,tString)),				\
-       tFunc(tVoid,tInt0),						\
-       tIfnot(tFuncV(tNone,tNot(tOr(tInt,tFloat)),tMix),		\
-	      tFuncV(tSetvar(0,tOr(tInt,tFloat)),			\
-                     tSetvar(1,tOr(tInt,tFloat)),tOr(tVar(0),tVar(1)))),\
-       tIfnot(tFuncV(tNone,tNot(tOr(tObj,tMix)),tMix),			\
-	      tFuncV(tSetvar(0,tOr(tObj,tMix)),				\
-		     tSetvar(1,tOr(tObj,tMix)),tOr(tVar(0),tVar(1)))))
+#define MINMAX_TYPE(OP)							\
+  tOr(tFunc(tNone, tInt0),						\
+      tTransitive(tFunc(tSetvar(0, tOr4(tInt, tFloat, tString, tObj)),	\
+			tVar(0)),					\
+		  tOr4(tFunc(tSetvar(0, tInt) tSetvar(1, tInt),		\
+			     OP(tVar(0), tVar(1))),			\
+		       tFunc(tSetvar(0, tOr(tFloat, tObj))		\
+			     tSetvar(1, tOr3(tInt, tFloat, tObj)),	\
+			     tOr(tVar(0), tVar(1))),			\
+		       tFunc(tSetvar(0, tInt)				\
+			     tSetvar(1, tOr(tFloat, tObj)),		\
+			     tOr(tVar(0), tVar(1))),			\
+		       tFunc(tSetvar(0, tString) tSetvar(1, tString),	\
+			     tOr(tVar(0), tVar(1))))))
 
-  ADD_EFUN("max", f_max, MINMAX_TYPE, 0);
-  ADD_EFUN("min", f_min, MINMAX_TYPE, 0);
+  ADD_EFUN("max", f_max, MINMAX_TYPE(tMaxInt), 0);
+  ADD_EFUN("min", f_min, MINMAX_TYPE(tMinInt), 0);
 
   ADD_EFUN("limit",f_limit,
-	   tFunc(tSetvar(0,tOr3(tFlt,tInt,tObj))
-		 tSetvar(1,tOr3(tFlt,tInt,tObj))
-		 tSetvar(2,tOr3(tFlt,tInt,tObj)),
-		 tOr3(tVar(0),tVar(1),tVar(2))),0);
+	   tOr4(tFunc(tSetvar(0, tInt) tSetvar(1, tInt) tSetvar(2, tInt),
+		      tRangeInt(tMinInt(tMaxInt(tVar(0), tVar(1)), tVar(2)),
+				tMaxInt(tVar(0), tMinInt(tVar(1), tVar(2))))),
+		tFunc(tSetvar(0, tOr(tFlt, tObj))
+		      tSetvar(1, tOr3(tFlt, tInt, tObj))
+		      tSetvar(2, tOr3(tFlt, tInt, tObj)),
+		      tOr3(tVar(0),tVar(1), tVar(2))),
+		tFunc(tSetvar(0, tOr3(tFlt, tInt, tObj))
+		      tSetvar(1, tOr(tFlt, tObj))
+		      tSetvar(2, tOr3(tFlt, tInt, tObj)),
+		      tOr3(tVar(0),tVar(1), tVar(2))),
+		tFunc(tSetvar(0, tOr3(tFlt, tInt, tObj))
+		      tSetvar(1, tOr3(tFlt, tInt, tObj))
+		      tSetvar(2, tOr(tFlt, tObj)),
+		      tOr3(tVar(0), tVar(1), tVar(2)))), 0);
 
   /* function(float|int|object:float|int|object) */
-  ADD_EFUN2("abs", f_abs, tFunc(tSetvar(0, tOr3(tFlt, tInt, tObj)), tVar(0)),
+  ADD_EFUN2("abs", f_abs,
+	    tOr(tFunc(tSetvar(0, tInt),
+		      tMaxInt(tVar(0), tNegateInt(tVar(0)))),
+		tFunc(tSetvar(0, tOr(tFlt, tObj)), tVar(0))),
 	    OPT_TRY_OPTIMIZE, optimize_abs, 0);
 
   /* function(mixed,mixed|void:int) */
-  ADD_EFUN("sgn",f_sgn,tFunc(tMix tOr(tMix,tVoid),tInt_11),0);
+  ADD_EFUN("sgn", f_sgn,
+	   tOr6(tFunc(tInt1Plus, tInt1),
+		tFunc(tZero, tZero),
+		tFunc(tIntMinus, tInt_1),
+		tFunc(tSetvar(0, tInt) tSetvar(1, tInt),
+		      tAnd(tRangeInt(tInt_1,
+				     tMaxInt(tSubInt(tVar(0), tVar(1)), tInt_1)),
+			   tRangeInt(tMinInt(tSubInt(tVar(0), tVar(1)), tInt1),
+				     tInt1))),
+		tFunc(tOr(tFloat, tObj), tInt_11),
+		tFunc(tNot(tInt) tMix, tInt_11)), 0);
 }
 
 PIKE_MODULE_EXIT {}
