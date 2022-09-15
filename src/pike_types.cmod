@@ -3290,7 +3290,7 @@ static int lower_or_pike_types(struct pike_type *t1,
       break;
     case T_STRING:
       {
-	low_or_pike_types(t1->cdr, t2->cdr, 1);
+	low_or_pike_types(t1->cdr, t2->cdr, 0);
 	push_unlimited_array_type(T_STRING);
 	return 0;
       }
