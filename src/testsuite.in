@@ -926,7 +926,7 @@ test_any([[int|string a;
 	   string s = sprintf("%O", typeof(aggregate(a)));
 	   return (< "array(string) | array(int)", "array(string | int)", "array(int | string)" >)[s];]], 1);
 test_any([[return sprintf("%O", typeof(aggregate()));]], "array(zero:)");
-test_any([[int i; return (< "int", "int | zero", "zero | int" >)
+test_any([[int i; return (< "int", "int | zero", "zero | int", "int(0..)" >)
                           [sprintf("%O", typeof(max(i,0)))];]], 1)
 
 test_any([[array(string) a; return sprintf("%O", typeof(a[0])); ]], "string")
