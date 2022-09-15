@@ -13969,6 +13969,30 @@ struct pike_type *low_type_int_op(enum PIKE_TYPE op,
     minres = min1;
     maxres = max2;
     break;
+  case PIKE_T_INT_OP_MIN:
+    if (min1 <= min2) {
+      minres = min1;
+    } else {
+      minres = min2;
+    }
+    if (max1 <= max2) {
+      maxres = max1;
+    } else {
+      maxres = max2;
+    }
+    break;
+  case PIKE_T_INT_OP_MAX:
+    if (min1 <= min2) {
+      minres = min2;
+    } else {
+      minres = min1;
+    }
+    if (max1 <= max2) {
+      maxres = max2;
+    } else {
+      maxres = max1;
+    }
+    break;
   default:
     Pike_fatal("low_type_int_op(): Unknown operator: 0x%04x\n", op);
     break;
@@ -14077,6 +14101,8 @@ struct pike_type *apply_type_operator(enum PIKE_TYPE op,
   case PIKE_T_INT_OP_AND:
   case PIKE_T_INT_OP_XOR:
   case PIKE_T_INT_OP_RANGE:
+  case PIKE_T_INT_OP_MIN:
+  case PIKE_T_INT_OP_MAX:
     res = type_int_op(op, arg1, arg2);
     break;
   case PIKE_T_SET_CAR:
