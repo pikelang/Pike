@@ -7,78 +7,78 @@
 //!   @url{https://www.iana.org/assignments/http-status-codes/http-status-codes.txt@}
 enum StatusCode {
   // 1xx: Informational - Request received, continuing process
-  HTTP_CONTINUE			= 100, //! @rfc{2616:10.1.1@}: Continue
-  HTTP_SWITCH_PROT		= 101, //! @rfc{2616:10.1.2@}: Switching protocols
-  DAV_PROCESSING		= 102, //! @rfc{2518:10.1@}: Processing
-  HTTP_EARLY_HINTS		= 103, //! @rfc{8297:2@}: Early Hints
+  HTTP_CONTINUE			= 100, //! @rfc{2616:10.1.1@}: 100 Continue
+  HTTP_SWITCH_PROT		= 101, //! @rfc{2616:10.1.2@}: 101 Switching protocols
+  DAV_PROCESSING		= 102, //! @rfc{2518:10.1@}: 102 Processing
+  HTTP_EARLY_HINTS		= 103, //! @rfc{8297:2@}: 103 Early Hints
 
   // 2xx: Success - The action was successfully received, understood, and accepted
-  HTTP_OK			= 200, //! @rfc{2616:10.2.1@}: OK
-  HTTP_CREATED			= 201, //! @rfc{2616:10.2.2@}: Created
-  HTTP_ACCEPTED			= 202, //! @rfc{2616:10.2.3@}: Accepted
-  HTTP_NONAUTHORATIVE		= 203, //! @rfc{2616:10.2.4@}: Non-Authorative Information
-  HTTP_NO_CONTENT		= 204, //! @rfc{2616:10.2.5@}: No Content
-  HTTP_RESET_CONTENT		= 205, //! @rfc{2616:10.2.6@}: Reset Content
-  HTTP_PARTIAL_CONTENT		= 206, //! @rfc{2616:10.2.7@}: Partial Content
-  DAV_MULTISTATUS		= 207, //! @rfc{2518:10.2@}: Multi-Status
-  DAV_ALREADY_REPORTED		= 208, //! @rfc{5842:7.1@}: Already Reported
-  DELTA_HTTP_IM_USED		= 226, //! @rfc{3229:10.4.1@}: IM Used
+  HTTP_OK			= 200, //! @rfc{2616:10.2.1@}: 200 OK
+  HTTP_CREATED			= 201, //! @rfc{2616:10.2.2@}: 201 Created
+  HTTP_ACCEPTED			= 202, //! @rfc{2616:10.2.3@}: 202 Accepted
+  HTTP_NONAUTHORATIVE		= 203, //! @rfc{2616:10.2.4@}: 203 Non-Authorative Information
+  HTTP_NO_CONTENT		= 204, //! @rfc{2616:10.2.5@}: 204 No Content
+  HTTP_RESET_CONTENT		= 205, //! @rfc{2616:10.2.6@}: 205 Reset Content
+  HTTP_PARTIAL_CONTENT		= 206, //! @rfc{2616:10.2.7@}: 206 Partial Content
+  DAV_MULTISTATUS		= 207, //! @rfc{2518:10.2@}: 207 Multi-Status
+  DAV_ALREADY_REPORTED		= 208, //! @rfc{5842:7.1@}: 208 Already Reported
+  DELTA_HTTP_IM_USED		= 226, //! @rfc{3229:10.4.1@}: 226 IM Used
 
   // 3xx: Redirection - Further action must be taken in order to complete the request
-  HTTP_MULTIPLE			= 300, //! @rfc{2616:10.3.1@}: Multiple Choices
-  HTTP_MOVED_PERM		= 301, //! @rfc{2616:10.3.2@}: Moved Permanently
-  HTTP_FOUND			= 302, //! @rfc{2616:10.3.3@}: Found
-  HTTP_SEE_OTHER		= 303, //! @rfc{2616:10.3.4@}: See Other
-  HTTP_NOT_MODIFIED		= 304, //! @rfc{2616:10.3.5@}: Not Modified
-  HTTP_USE_PROXY		= 305, //! @rfc{2616:10.3.6@}: Use Proxy
+  HTTP_MULTIPLE			= 300, //! @rfc{2616:10.3.1@}: 300 Multiple Choices
+  HTTP_MOVED_PERM		= 301, //! @rfc{2616:10.3.2@}: 301 Moved Permanently
+  HTTP_FOUND			= 302, //! @rfc{2616:10.3.3@}: 302 Found
+  HTTP_SEE_OTHER		= 303, //! @rfc{2616:10.3.4@}: 303 See Other
+  HTTP_NOT_MODIFIED		= 304, //! @rfc{2616:10.3.5@}: 304 Not Modified
+  HTTP_USE_PROXY		= 305, //! @rfc{2616:10.3.6@}: 305 Use Proxy
   // @rfc{2616:10.3.7@}: 306 not used but reserved.
-  HTTP_TEMP_REDIRECT		= 307, //! @rfc{2616:10.3.8@}: Temporary Redirect
-  HTTP_PERM_REDIRECT		= 308, //! @rfc{7538:3@}: Permanent Redirect
+  HTTP_TEMP_REDIRECT		= 307, //! @rfc{2616:10.3.8@}: 307 Temporary Redirect
+  HTTP_PERM_REDIRECT		= 308, //! @rfc{7538:3@}: 308 Permanent Redirect
 
   // 4xx: Client Error - The request contains bad syntax or cannot be fulfilled
-  HTTP_BAD			= 400, //! @rfc{2616:10.4.1@}: Bad Request
-  HTTP_UNAUTH			= 401, //! @rfc{2616:10.4.2@}: Unauthorized
-  HTTP_PAY			= 402, //! @rfc{2616:10.4.3@}: Payment Required
-  HTTP_FORBIDDEN		= 403, //! @rfc{2616:10.4.4@}: Forbidden
-  HTTP_NOT_FOUND		= 404, //! @rfc{2616:10.4.5@}: Not Found
-  HTTP_METHOD_INVALID		= 405, //! @rfc{2616:10.4.6@}: Method Not Allowed
-  HTTP_NOT_ACCEPTABLE		= 406, //! @rfc{2616:10.4.7@}: Not Acceptable
-  HTTP_PROXY_AUTH_REQ		= 407, //! @rfc{2616:10.4.8@}: Proxy Authentication Required
-  HTTP_TIMEOUT			= 408, //! @rfc{2616:10.4.9@}: Request Timeout
-  HTTP_CONFLICT			= 409, //! @rfc{2616:10.4.10@}: Conflict
-  HTTP_GONE			= 410, //! @rfc{2616:10.4.11@}: Gone
-  HTTP_LENGTH_REQ		= 411, //! @rfc{2616:10.4.12@}: Length Required
-  HTTP_PRECOND_FAILED		= 412, //! @rfc{2616:10.4.13@}: Precondition Failed
-  HTTP_REQ_TOO_LARGE		= 413, //! @rfc{2616:10.4.14@}: Request Entity Too Large
-  HTTP_URI_TOO_LONG		= 414, //! @rfc{2616:10.4.15@}: Request-URI Too Long
-  HTTP_UNSUPP_MEDIA		= 415, //! @rfc{2616:10.4.16@}: Unsupported Media Type
-  HTTP_BAD_RANGE		= 416, //! @rfc{2616:10.4.17@}: Requested Range Not Satisfiable
-  HTTP_EXPECT_FAILED		= 417, //! @rfc{2616:10.4.18@}: Expectation Failed
-  HTCPCP_TEAPOT			= 418, //! @rfc{2324:2.3.2@}: I'm a teapot
-  HTTP_MISDIRECTED_REQ		= 421, //! @rfc{7540:9.1.2@}: Misdirected Request
-  DAV_UNPROCESSABLE		= 422, //! @rfc{2518:10.3@}: Unprocessable Entry
-  DAV_LOCKED			= 423, //! @rfc{2518:10.4@}: Locked
-  DAV_FAILED_DEP		= 424, //! @rfc{2518:10.5@}: Failed Dependency
-  TLS_TOO_EARLY			= 425, //! @rfc{8470:5.2@}: Too Early
-  TLS_UPGRADE_REQUIRED		= 426, //! @rfc{2817:4.2@}: Upgrade Required
-  HTTP_PRECOND_REQUIRED		= 428, //! @rfc{6585:3@}: Precondition required
-  HTTP_TOO_MANY_REQUESTS	= 429, //! @rfc{6585:4@}: Too Many Requests
-  HTTP_HEADERS_TOO_LARGE	= 431, //! @rfc{6585:5@}: Request Header Fields Too Large
+  HTTP_BAD			= 400, //! @rfc{2616:10.4.1@}: 400 Bad Request
+  HTTP_UNAUTH			= 401, //! @rfc{2616:10.4.2@}: 401 Unauthorized
+  HTTP_PAY			= 402, //! @rfc{2616:10.4.3@}: 402 Payment Required
+  HTTP_FORBIDDEN		= 403, //! @rfc{2616:10.4.4@}: 403 Forbidden
+  HTTP_NOT_FOUND		= 404, //! @rfc{2616:10.4.5@}: 404 Not Found
+  HTTP_METHOD_INVALID		= 405, //! @rfc{2616:10.4.6@}: 405 Method Not Allowed
+  HTTP_NOT_ACCEPTABLE		= 406, //! @rfc{2616:10.4.7@}: 406 Not Acceptable
+  HTTP_PROXY_AUTH_REQ		= 407, //! @rfc{2616:10.4.8@}: 407 Proxy Authentication Required
+  HTTP_TIMEOUT			= 408, //! @rfc{2616:10.4.9@}: 408 Request Timeout
+  HTTP_CONFLICT			= 409, //! @rfc{2616:10.4.10@}: 409 Conflict
+  HTTP_GONE			= 410, //! @rfc{2616:10.4.11@}: 410 Gone
+  HTTP_LENGTH_REQ		= 411, //! @rfc{2616:10.4.12@}: 411 Length Required
+  HTTP_PRECOND_FAILED		= 412, //! @rfc{2616:10.4.13@}: 412 Precondition Failed
+  HTTP_REQ_TOO_LARGE		= 413, //! @rfc{2616:10.4.14@}: 413 Request Entity Too Large
+  HTTP_URI_TOO_LONG		= 414, //! @rfc{2616:10.4.15@}: 414 Request-URI Too Long
+  HTTP_UNSUPP_MEDIA		= 415, //! @rfc{2616:10.4.16@}: 415 Unsupported Media Type
+  HTTP_BAD_RANGE		= 416, //! @rfc{2616:10.4.17@}: 416 Requested Range Not Satisfiable
+  HTTP_EXPECT_FAILED		= 417, //! @rfc{2616:10.4.18@}: 417 Expectation Failed
+  HTCPCP_TEAPOT			= 418, //! @rfc{2324:2.3.2@}: 418 I'm a teapot
+  HTTP_MISDIRECTED_REQ		= 421, //! @rfc{7540:9.1.2@}: 421 Misdirected Request
+  DAV_UNPROCESSABLE		= 422, //! @rfc{2518:10.3@}: 422 Unprocessable Entry
+  DAV_LOCKED			= 423, //! @rfc{2518:10.4@}: 423 Locked
+  DAV_FAILED_DEP		= 424, //! @rfc{2518:10.5@}: 424 Failed Dependency
+  TLS_TOO_EARLY			= 425, //! @rfc{8470:5.2@}: 425 Too Early
+  TLS_UPGRADE_REQUIRED		= 426, //! @rfc{2817:4.2@}: 426 Upgrade Required
+  HTTP_PRECOND_REQUIRED		= 428, //! @rfc{6585:3@}: 428 Precondition required
+  HTTP_TOO_MANY_REQUESTS	= 429, //! @rfc{6585:4@}: 429 Too Many Requests
+  HTTP_HEADERS_TOO_LARGE	= 431, //! @rfc{6585:5@}: 431 Request Header Fields Too Large
 
-  HTTP_LEGALLY_RESTRICTED	= 451, //! @rfc{7725:3@}: Unavailable For Legal Reasons
+  HTTP_LEGALLY_RESTRICTED	= 451, //! @rfc{7725:3@}: 451 Unavailable For Legal Reasons
 
   // 5xx: Server Error - The server failed to fulfill an apparently valid request
-  HTTP_INTERNAL_ERR		= 500, //! @rfc{2616:10.5.1@}: Internal Server Error
-  HTTP_NOT_IMPL			= 501, //! @rfc{2616:10.5.2@}: Not Implemented
-  HTTP_BAD_GW			= 502, //! @rfc{2616:10.5.3@}: Bad Gateway
-  HTTP_UNAVAIL			= 503, //! @rfc{2616:10.5.4@}: Service Unavailable
-  HTTP_GW_TIMEOUT		= 504, //! @rfc{2616:10.5.5@}: Gateway Timeout
-  HTTP_UNSUPP_VERSION		= 505, //! @rfc{2616:10.5.6@}: HTTP Version Not Supported
-  TCN_VARIANT_NEGOTIATES	= 506, //! @rfc{2295:8.1@}: Variant Also Negotiates
-  DAV_STORAGE_FULL		= 507, //! @rfc{2518:10.6@}: Insufficient Storage
-  DAV_LOOP_DETECTED		= 508, //! @rfc{5842:7.2@}: Loop Detected
-  HTTP_NOT_EXTENDED		= 510, //! @rfc{2774:7@}: Not Extended (obsolete)
-  HTTP_NET_AUTH_REQUIRED	= 511, //! @rfc{6585:6@}: Network Authentication Required
+  HTTP_INTERNAL_ERR		= 500, //! @rfc{2616:10.5.1@}: 500 Internal Server Error
+  HTTP_NOT_IMPL			= 501, //! @rfc{2616:10.5.2@}: 501 Not Implemented
+  HTTP_BAD_GW			= 502, //! @rfc{2616:10.5.3@}: 502 Bad Gateway
+  HTTP_UNAVAIL			= 503, //! @rfc{2616:10.5.4@}: 503 Service Unavailable
+  HTTP_GW_TIMEOUT		= 504, //! @rfc{2616:10.5.5@}: 504 Gateway Timeout
+  HTTP_UNSUPP_VERSION		= 505, //! @rfc{2616:10.5.6@}: 505 HTTP Version Not Supported
+  TCN_VARIANT_NEGOTIATES	= 506, //! @rfc{2295:8.1@}: 506 Variant Also Negotiates
+  DAV_STORAGE_FULL		= 507, //! @rfc{2518:10.6@}: 507 Insufficient Storage
+  DAV_LOOP_DETECTED		= 508, //! @rfc{5842:7.2@}: 508 Loop Detected
+  HTTP_NOT_EXTENDED		= 510, //! @rfc{2774:7@}: 510 Not Extended (obsolete)
+  HTTP_NET_AUTH_REQUIRED	= 511, //! @rfc{6585:6@}: 511 Network Authentication Required
 };
 
 //! Mapping from @[StatusCode] to descriptive string.
