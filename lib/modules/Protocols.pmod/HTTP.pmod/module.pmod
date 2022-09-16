@@ -1,75 +1,97 @@
 #pike __REAL_VERSION__
 
-// Informational
-constant HTTP_CONTINUE		= 100; // RFC 2616 10.1.1: Continue
-constant HTTP_SWITCH_PROT	= 101; // RFC 2616 10.1.2: Switching protocols
-constant DAV_PROCESSING		= 102; // RFC 2518 10.1: Processing
+//! HTTP Status codes.
+//!
+//! @seealso
+//!   @[response_codes],
+//!   @url{https://www.iana.org/assignments/http-status-codes/http-status-codes.txt@}
+enum StatusCode {
+  // 1xx: Informational - Request received, continuing process
+  HTTP_CONTINUE			= 100, //! @rfc{2616:10.1.1@}: Continue
+  HTTP_SWITCH_PROT		= 101, //! @rfc{2616:10.1.2@}: Switching protocols
+  DAV_PROCESSING		= 102, //! @rfc{2518:10.1@}: Processing
+  HTTP_EARLY_HINTS		= 103, //! @rfc{8297:2@}: Early Hints
 
-// Successful
-constant HTTP_OK		= 200; // RFC 2616 10.2.1: OK
-constant HTTP_CREATED		= 201; // RFC 2616 10.2.2: Created
-constant HTTP_ACCEPTED		= 202; // RFC 2616 10.2.3: Accepted
-constant HTTP_NONAUTHORATIVE	= 203; // RFC 2616 10.2.4: Non-Authorative Information
-constant HTTP_NO_CONTENT	= 204; // RFC 2616 10.2.5: No Content
-constant HTTP_RESET_CONTENT	= 205; // RFC 2616 10.2.6: Reset Content
-constant HTTP_PARTIAL_CONTENT	= 206; // RFC 2616 10.2.7: Partial Content
-constant DAV_MULTISTATUS	= 207; // RFC 2518 10.2: Multi-Status
-constant DELTA_HTTP_IM_USED	= 226; // RFC 3229 10.4.1: IM Used
+  // 2xx: Success - The action was successfully received, understood, and accepted
+  HTTP_OK			= 200, //! @rfc{2616:10.2.1@}: OK
+  HTTP_CREATED			= 201, //! @rfc{2616:10.2.2@}: Created
+  HTTP_ACCEPTED			= 202, //! @rfc{2616:10.2.3@}: Accepted
+  HTTP_NONAUTHORATIVE		= 203, //! @rfc{2616:10.2.4@}: Non-Authorative Information
+  HTTP_NO_CONTENT		= 204, //! @rfc{2616:10.2.5@}: No Content
+  HTTP_RESET_CONTENT		= 205, //! @rfc{2616:10.2.6@}: Reset Content
+  HTTP_PARTIAL_CONTENT		= 206, //! @rfc{2616:10.2.7@}: Partial Content
+  DAV_MULTISTATUS		= 207, //! @rfc{2518:10.2@}: Multi-Status
+  DAV_ALREADY_REPORTED		= 208, //! @rfc{5842:7.1@}: Already Reported
+  DELTA_HTTP_IM_USED		= 226, //! @rfc{3229:10.4.1@}: IM Used
 
-// Redirection
-constant HTTP_MULTIPLE		= 300; // RFC 2616 10.3.1: Multiple Choices
-constant HTTP_MOVED_PERM	= 301; // RFC 2616 10.3.2: Moved Permanently
-constant HTTP_FOUND		= 302; // RFC 2616 10.3.3: Found
-constant HTTP_SEE_OTHER		= 303; // RFC 2616 10.3.4: See Other
-constant HTTP_NOT_MODIFIED	= 304; // RFC 2616 10.3.5: Not Modified
-constant HTTP_USE_PROXY		= 305; // RFC 2616 10.3.6: Use Proxy
-// RFC 2616 10.3.7: 306 not used but reserved.
-constant HTTP_TEMP_REDIRECT	= 307; // RFC 2616 10.3.8: Temporary Redirect
+  // 3xx: Redirection - Further action must be taken in order to complete the request
+  HTTP_MULTIPLE			= 300, //! @rfc{2616:10.3.1@}: Multiple Choices
+  HTTP_MOVED_PERM		= 301, //! @rfc{2616:10.3.2@}: Moved Permanently
+  HTTP_FOUND			= 302, //! @rfc{2616:10.3.3@}: Found
+  HTTP_SEE_OTHER		= 303, //! @rfc{2616:10.3.4@}: See Other
+  HTTP_NOT_MODIFIED		= 304, //! @rfc{2616:10.3.5@}: Not Modified
+  HTTP_USE_PROXY		= 305, //! @rfc{2616:10.3.6@}: Use Proxy
+  // @rfc{2616:10.3.7@}: 306 not used but reserved.
+  HTTP_TEMP_REDIRECT		= 307, //! @rfc{2616:10.3.8@}: Temporary Redirect
+  HTTP_PERM_REDIRECT		= 308, //! @rfc{7538:3@}: Permanent Redirect
 
-// Client errors
-constant HTTP_BAD		= 400; // RFC 2616 10.4.1: Bad Request
-constant HTTP_UNAUTH		= 401; // RFC 2616 10.4.2: Unauthorized
-constant HTTP_PAY		= 402; // RFC 2616 10.4.3: Payment Required
-constant HTTP_FORBIDDEN		= 403; // RFC 2616 10.4.4: Forbidden
-constant HTTP_NOT_FOUND		= 404; // RFC 2616 10.4.5: Not Found
-constant HTTP_METHOD_INVALID	= 405; // RFC 2616 10.4.6: Method Not Allowed
-constant HTTP_NOT_ACCEPTABLE	= 406; // RFC 2616 10.4.7: Not Acceptable
-constant HTTP_PROXY_AUTH_REQ	= 407; // RFC 2616 10.4.8: Proxy Authentication Required
-constant HTTP_TIMEOUT		= 408; // RFC 2616 10.4.9: Request Timeout
-constant HTTP_CONFLICT		= 409; // RFC 2616 10.4.10: Conflict
-constant HTTP_GONE		= 410; // RFC 2616 10.4.11: Gone
-constant HTTP_LENGTH_REQ	= 411; // RFC 2616 10.4.12: Length Required
-constant HTTP_PRECOND_FAILED	= 412; // RFC 2616 10.4.13: Precondition Failed
-constant HTTP_REQ_TOO_LARGE	= 413; // RFC 2616 10.4.14: Request Entity Too Large
-constant HTTP_URI_TOO_LONG	= 414; // RFC 2616 10.4.15: Request-URI Too Long
-constant HTTP_UNSUPP_MEDIA	= 415; // RFC 2616 10.4.16: Unsupported Media Type
-constant HTTP_BAD_RANGE		= 416; // RFC 2616 10.4.17: Requested Range Not Satisfiable
-constant HTTP_EXPECT_FAILED	= 417; // RFC 2616 10.4.18: Expectation Failed
-constant HTCPCP_TEAPOT		= 418; // RFC 2324 2.3.2: I'm a teapot
-constant HTTP_MISDIRECTED_REQ	= 421; // RFC 7540 9.1.2: Misdirected Request
-constant DAV_UNPROCESSABLE	= 422; // RFC 2518 10.3: Unprocessable Entry
-constant DAV_LOCKED		= 423; // RFC 2518 10.4: Locked
-constant DAV_FAILED_DEP		= 424; // RFC 2518 10.5: Failed Dependency
+  // 4xx: Client Error - The request contains bad syntax or cannot be fulfilled
+  HTTP_BAD			= 400, //! @rfc{2616:10.4.1@}: Bad Request
+  HTTP_UNAUTH			= 401, //! @rfc{2616:10.4.2@}: Unauthorized
+  HTTP_PAY			= 402, //! @rfc{2616:10.4.3@}: Payment Required
+  HTTP_FORBIDDEN		= 403, //! @rfc{2616:10.4.4@}: Forbidden
+  HTTP_NOT_FOUND		= 404, //! @rfc{2616:10.4.5@}: Not Found
+  HTTP_METHOD_INVALID		= 405, //! @rfc{2616:10.4.6@}: Method Not Allowed
+  HTTP_NOT_ACCEPTABLE		= 406, //! @rfc{2616:10.4.7@}: Not Acceptable
+  HTTP_PROXY_AUTH_REQ		= 407, //! @rfc{2616:10.4.8@}: Proxy Authentication Required
+  HTTP_TIMEOUT			= 408, //! @rfc{2616:10.4.9@}: Request Timeout
+  HTTP_CONFLICT			= 409, //! @rfc{2616:10.4.10@}: Conflict
+  HTTP_GONE			= 410, //! @rfc{2616:10.4.11@}: Gone
+  HTTP_LENGTH_REQ		= 411, //! @rfc{2616:10.4.12@}: Length Required
+  HTTP_PRECOND_FAILED		= 412, //! @rfc{2616:10.4.13@}: Precondition Failed
+  HTTP_REQ_TOO_LARGE		= 413, //! @rfc{2616:10.4.14@}: Request Entity Too Large
+  HTTP_URI_TOO_LONG		= 414, //! @rfc{2616:10.4.15@}: Request-URI Too Long
+  HTTP_UNSUPP_MEDIA		= 415, //! @rfc{2616:10.4.16@}: Unsupported Media Type
+  HTTP_BAD_RANGE		= 416, //! @rfc{2616:10.4.17@}: Requested Range Not Satisfiable
+  HTTP_EXPECT_FAILED		= 417, //! @rfc{2616:10.4.18@}: Expectation Failed
+  HTCPCP_TEAPOT			= 418, //! @rfc{2324:2.3.2@}: I'm a teapot
+  HTTP_MISDIRECTED_REQ		= 421, //! @rfc{7540:9.1.2@}: Misdirected Request
+  DAV_UNPROCESSABLE		= 422, //! @rfc{2518:10.3@}: Unprocessable Entry
+  DAV_LOCKED			= 423, //! @rfc{2518:10.4@}: Locked
+  DAV_FAILED_DEP		= 424, //! @rfc{2518:10.5@}: Failed Dependency
+  TLS_TOO_EARLY			= 425, //! @rfc{8470:5.2@}: Too Early
+  TLS_UPGRADE_REQUIRED		= 426, //! @rfc{2817:4.2@}: Upgrade Required
+  HTTP_PRECOND_REQUIRED		= 428, //! @rfc{6585:3@}: Precondition required
+  HTTP_TOO_MANY_REQUESTS	= 429, //! @rfc{6585:4@}: Too Many Requests
+  HTTP_HEADERS_TOO_LARGE	= 431, //! @rfc{6585:5@}: Request Header Fields Too Large
 
-constant HTTP_LEGALLY_RESTRICTED= 451; // Draft: Unavailable for Legal Reasons
+  HTTP_LEGALLY_RESTRICTED	= 451, //! @rfc{7725:3@}: Unavailable For Legal Reasons
 
-// Server errors
-constant HTTP_INTERNAL_ERR	= 500; // RFC 2616 10.5.1: Internal Server Error
-constant HTTP_NOT_IMPL		= 501; // RFC 2616 10.5.2: Not Implemented
-constant HTTP_BAD_GW		= 502; // RFC 2616 10.5.3: Bad Gateway
-constant HTTP_UNAVAIL		= 503; // RFC 2616 10.5.4: Service Unavailable
-constant HTTP_GW_TIMEOUT	= 504; // RFC 2616 10.5.5: Gateway Timeout
-constant HTTP_UNSUPP_VERSION	= 505; // RFC 2616 10.5.6: HTTP Version Not Supported
-constant TCN_VARIANT_NEGOTIATES	= 506; // RFC 2295 8.1: Variant Also Negotiates
-constant DAV_STORAGE_FULL	= 507; // RFC 2518 10.6: Insufficient Storage
+  // 5xx: Server Error - The server failed to fulfill an apparently valid request
+  HTTP_INTERNAL_ERR		= 500, //! @rfc{2616:10.5.1@}: Internal Server Error
+  HTTP_NOT_IMPL			= 501, //! @rfc{2616:10.5.2@}: Not Implemented
+  HTTP_BAD_GW			= 502, //! @rfc{2616:10.5.3@}: Bad Gateway
+  HTTP_UNAVAIL			= 503, //! @rfc{2616:10.5.4@}: Service Unavailable
+  HTTP_GW_TIMEOUT		= 504, //! @rfc{2616:10.5.5@}: Gateway Timeout
+  HTTP_UNSUPP_VERSION		= 505, //! @rfc{2616:10.5.6@}: HTTP Version Not Supported
+  TCN_VARIANT_NEGOTIATES	= 506, //! @rfc{2295:8.1@}: Variant Also Negotiates
+  DAV_STORAGE_FULL		= 507, //! @rfc{2518:10.6@}: Insufficient Storage
+  DAV_LOOP_DETECTED		= 508, //! @rfc{5842:7.2@}: Loop Detected
+  HTTP_NOT_EXTENDED		= 510, //! @rfc{2774:7@}: Not Extended (obsolete)
+  HTTP_NET_AUTH_REQUIRED	= 511, //! @rfc{6585:6@}: Network Authentication Required
+};
 
+//! Mapping from @[StatusCode] to descriptive string.
+//!
+//! @seealso
+//!   @[StatusCode]
 constant response_codes =
 ([
   // Informational
   100:"100 Continue",
   101:"101 Switching Protocols",
   102:"102 Processing", // WebDAV
-  103:"103 Checkpoint",
+  103:"103 Early Hints",
   122:"122 Request-URI too long", // a non standard IE7 error
 
   // Successful
@@ -81,6 +103,7 @@ constant response_codes =
   205:"205 Reset Content",
   206:"206 Partial Content", // Byte ranges
   207:"207 Multi-Status", // WebDAV
+  208:"208 Already Reported", // WebDAV
   226:"226 IM Used", // RFC 3229
 
   // Redirection
@@ -92,7 +115,7 @@ constant response_codes =
   305:"305 Use Proxy",
   306:"306 Switch Proxy", // Deprecated
   307:"307 Temporary Redirect", // retry request elsewhere, don't change method.
-  308:"308 Resume Incomplete",
+  308:"308 Permanent Redirect",
 
   // Client Error
   400:"400 Bad Request",
@@ -118,9 +141,12 @@ constant response_codes =
   422:"422 Unprocessable Entity", // WebDAV
   423:"423 Locked", // WebDAV
   424:"424 Failed Dependency", // WebDAV
-  425:"425 Unordered Collection", // RFC3648
+  425:"425 Too Early",
   426:"426 Upgrade Required", // RFC2817
-  451:"451 Unavailable for Legal Reasons", // draft-tbray-http-legally-restricted-status
+  428:"428 Precondition Required",
+  429:"429 Too Many Requests",
+  431:"431 Request Header Fields Too Large",
+  451:"451 Unavailable For Legal Reasons", // RFC7725
 
   // Internal Server Errors
   500:"500 Internal Server Error.",
@@ -131,8 +157,10 @@ constant response_codes =
   505:"505 HTTP Version Not Supported",
   506:"506 Variant Also Negotiates", // RFC2295
   507:"507 Insufficient Storage", // WebDAV / RFC4918
+  508:"508 Loop Detected", // WebDAV / RFC5842
   509:"509 Bandwidth Limit Exceeded", // An Apache defined extension in popular use
   510:"510 Not Extended", // RFC2774
+  511:"511 Network Authentication Required",
   598:"598 Network read timeout error", // Informal extension used by some HTTP proxies
   599:"599 Network connect timeout error", // Informal extension used by some HTTP proxies
 ]);
