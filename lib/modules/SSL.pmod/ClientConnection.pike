@@ -222,7 +222,7 @@ protected Packet client_hello(string(8bit)|void server_name,
   int packet_size = sizeof(struct)+sizeof(extensions)+2;
   ext (EXTENSION_padding, packet_size>255 && packet_size<512)
   {
-    int padding = max(0, 512-packet_size-4);
+    int(0..) padding = max(0, 512-packet_size-4);
     SSL3_DEBUG_MSG("SSL.ClientConnection: Adding %d bytes of padding.\n",
                    padding);
     return Buffer()->add("\0"*padding);
