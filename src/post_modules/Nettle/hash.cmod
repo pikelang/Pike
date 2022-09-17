@@ -81,11 +81,11 @@ PIKECLASS Hash
       push_int(THIS->meta->digest_size);
     }
 
-  /*! @decl int(0..) block_size()
+  /*! @decl int(1..) block_size()
    *!
    *! Returns the internal block size of the hash algorithm.
    */
-    PIKEFUN int(0..) block_size()
+    PIKEFUN int(1..) block_size()
     optflags OPT_TRY_OPTIMIZE;
     {
       if (!THIS->meta)
