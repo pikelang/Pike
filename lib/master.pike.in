@@ -1163,7 +1163,7 @@ protected string cpp(string data, mapping|string|void current_file,
 //! @seealso
 //! @[compile()], @[cpp()], @[compile_file()]
 //!
-program compile_string(string source, void|string filename,
+program compile_string(string source, string filename="-",
 		       object|void handler,
 		       void|program p,
 		       void|object o,
@@ -1173,7 +1173,7 @@ program compile_string(string source, void|string filename,
   werror ("%*s>>> compile_string %O\n", GET_MSG_DEPTH, "", filename);
   INC_MSG_DEPTH();
 #endif
-  string code = cpp(source, filename||"-", 1, handler,
+  string code = cpp(source, filename, 1, handler,
                     compat_major, compat_minor,
                     (undefinedp(_show_if_constant_errors)?
                      show_if_constant_errors:
@@ -3566,7 +3566,7 @@ class CompatResolver
   //!   if path is a ZIP archive, this argument will determine the path within
   //!   the archive to be searched.
   //!
-  void add_module_path(string path, string|void subpath)
+  void add_module_path(string path, string subpath="modules")
     {
       path=normalize_path(combine_path_with_cwd(path));
 
@@ -3576,8 +3576,7 @@ class CompatResolver
         object fs;
         catch(fs = resolv("Filesystem.Zip")(path));
         if(fs) add_filesystem_handler(path, fs);
-        if(!subpath) subpath = "modules";
-	path = combine_path(path, subpath);
+        path = combine_path(path, subpath);
       }
 
       root_module->add_path(path);
@@ -4994,9 +4993,9 @@ class Describer
 
 
 string program_path_to_name ( string path,
-			      void|string module_prefix,
-			      void|string module_suffix,
-			      void|string object_suffix )
+                              string module_prefix="",
+                              string module_suffix="",
+                              string object_suffix="" )
 //! Converts a module path on the form @expr{"Foo.pmod/Bar.pmod"@} or
 //! @expr{"/path/to/pike/lib/modules/Foo.pmod/Bar.pmod"@} to a module
 //! identifier on the form @expr{"Foo.Bar"@}.
@@ -5065,18 +5064,18 @@ string program_path_to_name ( string path,
   path = prefix + path;
 
   if (has_suffix(path, ".module.pmod")) {
-    return (module_prefix || "") + path[..<12] + (module_suffix || "");
+    return module_prefix + path[..<12] + module_suffix;
   }
   if (has_suffix(path, ".pmod")) {
-    return (module_prefix || "") + path[..<5] + (module_suffix || "");
+    return module_prefix + path[..<5] + module_suffix;
   }
   if (has_suffix(path, ".so")) {
-    return (module_prefix || "") + path[..<3] + (module_suffix || "");
+    return module_prefix + path[..<3] + module_suffix;
   }
   if (has_suffix(path, ".pike")) {
-    return path[..<5] + (object_suffix || "");
+    return path[..<5] + object_suffix;
   }
-  return path + (object_suffix || "");
+  return path + object_suffix;
 }
 
 

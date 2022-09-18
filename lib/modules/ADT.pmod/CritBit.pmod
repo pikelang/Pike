@@ -84,10 +84,9 @@ array(string) sort_ipv4(array(string) a, array ... data) {
     return a;
 }
 
-string get_ipv4(int ip, void|int prefix) {
+string get_ipv4(int ip, int prefix=32) {
     string ret;
 
-    if (undefinedp(prefix)) prefix = 32;
     prefix = limit(0, prefix, 32);
     ip &= ~(0xffffffff >> prefix);
     ret = sprintf("%d.%d.%d.%d",
