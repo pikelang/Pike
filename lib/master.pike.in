@@ -138,6 +138,8 @@ private constant Files = _static_modules._Stdio;
 private function(string,mixed...:int) write = Files()->_stdout->write;
 private function(string,mixed...:int) werror = Files()->_stderr->write;
 
+private object|zero Pike_Lazy;		// Used by the default encoder.
+
 // Tell Pike.count_memory this is global.
 constant pike_cycle_depth = 0;
 
@@ -5725,6 +5727,18 @@ class Encoder
 		     val, id[0]);
 	    break find_id;
 	  }
+
+	if (objectp(child)) {
+	  if (!Pike_Lazy) {
+	    Pike_Lazy = resolv("Pike.Lazy");
+	  }
+
+	  if (parent == Pike_Lazy) {
+	    id = child->path/".";
+	    ENC_MSG("  found as LazyValue%{.%s%}.\n", id);
+	    break find_id;
+	  }
+	}
 
 	if (try) {
 	  ENC_MSG("Cannot find %O in %O.\n", child, parent);
