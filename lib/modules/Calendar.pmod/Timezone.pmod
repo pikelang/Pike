@@ -1030,7 +1030,7 @@ class Runtime_timezone_compiler
 
 #ifdef RTTZC_TIMING
        float td=time(t);
-       werror("dump %O: %O\n",rule_name,td-t1);
+       werror("dump %O: %O\n", id, td-t1);
 #endif
 
 #ifdef RTTZC_DEBUG
@@ -1038,16 +1038,17 @@ class Runtime_timezone_compiler
 #endif
 
        program p;
-       mixed err=catch { p=compile_string(c, 0, compile_handler); };
+       mixed err=catch { p=compile_string(c, UNDEFINED, compile_handler); };
        if (err)
        {
 	 int i=0;
-	 foreach (c/"\n",string line) write("%2d: %s\n",++i,line);
+	 werror("Failed to compile timezone rule %O.\n", id);
+	 foreach (c/"\n",string line) werror("%2d: %s\n",++i,line);
 	 error(err);
        }
 #ifdef RTTZC_TIMING
        float t3=time(t);
-       werror("compile %O: %O\n",rule_name,t3-td);
+       werror("compile %O: %O\n", id, t3-td);
 #endif
        return rule_cache[id] = p;
      }
@@ -1287,11 +1288,12 @@ class Runtime_timezone_compiler
 #endif
 
        program p;
-       mixed err=catch { p=compile_string(c, 0, compile_handler); };
+       mixed err=catch { p=compile_string(c, UNDEFINED, compile_handler); };
        if (err)
        {
 	 int i=0;
-	 foreach (c/"\n",string line) write("%2d: %s\n",++i,line);
+	 werror("Failed to compile timezone zone %O.\n", id);
+	 foreach (c/"\n",string line) werror("%2d: %s\n",++i,line);
 	 throw(err);
        }
        object zo=p();
