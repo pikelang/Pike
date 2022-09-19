@@ -14017,7 +14017,7 @@ test_program_eq([[
 	  return ::foo() + \"|\" +
 	    this->id() + id() + B::id() + global::this->id() + global::id();
 	}
-      }", 0, Handler())();
+      }", UNDEFINED, Handler())();
 
     return c->D()->foo();
   }
@@ -14040,7 +14040,7 @@ test_program_eq([[
 
   object a()
   {
-    object o = compile_string ("inherit X;", 0, Handler())();
+    object o = compile_string ("inherit X;", UNDEFINED, Handler())();
     return o->parent();
   }
 ]], this)
