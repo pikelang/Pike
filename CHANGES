@@ -24,6 +24,19 @@ o Syntax for specifying default values for function arguments added.
 
     class foo(string bar = "bar") {}
 
+o Major changes to the compiler type checker.
+
+  - The type for the value 0 or UNDEFINED now needs to be
+    declared explicitly. For convenience the symbol 'zero'
+    now evaluates to the type 'zero'.
+
+o '__unknown__' type added.
+
+  This is a type that is the inverse of the type mixed|void,
+  and is used eg in the type for the empty string
+  string(zero:__unknown) and for the generic function type
+  function(__unknown__...:mixed).
+
 o 'auto' type added.
 
   This is much like a strict typed mixed. The actual type is deduced
