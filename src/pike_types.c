@@ -173,7 +173,6 @@ struct pike_type *debug_compiler_pop_type(void)
     struct pike_type *res;
     compiler_discard_type();
     add_ref(res = mixed_type_string);
-    type_stack_mark();
     return res;
   }else{
     return debug_pop_type();
