@@ -3148,6 +3148,7 @@ optional_create_arguments: /* empty */ { $$ = 0; }
   {
     node *n = NULL;
     int e = $3;
+    struct pike_type *t;
 
     type_stack_mark();
     push_type(T_VOID);
@@ -3248,17 +3249,18 @@ optional_create_arguments: /* empty */ { $$ = 0; }
     n = mknode(F_COMMA_EXPR, n,
 	       mknode(F_RETURN, mkintnode(0), NULL));
 
-    define_function(lfun_strings[LFUN___CREATE__], peek_type_stack(),
+    t = pop_unfinished_type();
+
+    define_function(lfun_strings[LFUN___CREATE__], t,
 		    ID_PROTECTED|ID_LOCAL,
 		    IDENTIFIER_PIKE_FUNCTION |
 		    ((Pike_compiler->num_create_args < 0)?
 		     IDENTIFIER_VARARGS:0),
 		    0, OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
 
-    dooptcode(lfun_strings[LFUN___CREATE__], n, peek_type_stack(),
-	      ID_PROTECTED|ID_LOCAL);
+    dooptcode(lfun_strings[LFUN___CREATE__], n, t, ID_PROTECTED|ID_LOCAL);
 
-    compiler_discard_type();
+    free_type(t);
 
 #ifdef PIKE_DEBUG
     if (Pike_compiler->compiler_frame != $1) {
