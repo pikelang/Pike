@@ -162,14 +162,20 @@ static void clear_markers(void)
   }
 }
 
-void compiler_discard_type (void)
+static void low_discard_type (void)
 {
   ptrdiff_t len = pop_stack_mark();
-  TYPE_STACK_DEBUG("paranoid_pop_type");
+  TYPE_STACK_DEBUG("discard_type");
   for (;len > 0; len--) {
     /* Get rid of excess junk. */
     free_type(*(Pike_compiler->type_stackp--));
   }
+}
+
+void compiler_discard_type (void)
+{
+  low_discard_type();
+  type_stack_mark();
 }
 
 struct pike_type *debug_pop_type(void)
@@ -188,7 +194,6 @@ struct pike_type *debug_compiler_pop_type(void)
     struct pike_type *res;
     compiler_discard_type();
     add_ref(res = mixed_type_string);
-    type_stack_mark();
     return res;
   }else{
     return debug_pop_type();
