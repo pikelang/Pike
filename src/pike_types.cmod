@@ -5967,7 +5967,6 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 
       if (op != PT_BINOP_AND) {
 	compiler_discard_type();
-	type_stack_mark();
 
 	push_remap_markers(b, remap,
 			   remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
@@ -5997,10 +5996,12 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
       while (nargs--) {
 	push_reverse_type(T_FUNCTION);
       }
+
       return pop_unfinished_type();
 
     function_fail:
-      compiler_discard_type();
+      low_discard_type();
+
       return NULL;
     }
 
@@ -6499,7 +6500,7 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 
       if ((op == PT_BINOP_MINUS) && (aflags & PT_FLAG_CMP_INSEPARABLE)) {
 	if ((nbounds != 1) || (peek_type_stack() != a)) {
-	  compiler_discard_type();
+	  low_discard_type();
 	  return NULL;
 	}
       }
@@ -7844,7 +7845,7 @@ static struct pike_type *low_intersect_types(struct pike_type *a,
       return pop_unfinished_type();
 
     function_fail:
-      compiler_discard_type();
+      low_discard_type();
       pop_stack_mark();
       return NULL;
     }
