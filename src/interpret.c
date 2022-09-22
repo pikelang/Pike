@@ -1117,7 +1117,7 @@ void dump_backlog(void)
     );                                                                 \
     debug_malloc_touch (cc);                                           \
     UNSETJMP (cc->recovery);                                           \
-    frame_set_expendible(Pike_fp, cc->save_expendible);                \
+    Pike_fp->expendible = cc->save_expendible;			       \
     Pike_interpreter.catch_ctx = cc->prev;                             \
     really_free_catch_context (cc);                                    \
   } while (0)
@@ -1398,7 +1398,7 @@ PIKE_OPCODE_T *setup_catch_context(PIKE_OPCODE_T *addr)
 #else
       init_recovery (&new_catch_ctx->recovery, 0);
 #endif
-    new_catch_ctx->save_expendible = frame_get_expendible(Pike_fp);
+    new_catch_ctx->save_expendible = Pike_fp->expendible;
 
     /* Note: no prologue. */
     new_catch_ctx->continue_reladdr = (INT32)get_unaligned32(addr);
@@ -1411,7 +1411,7 @@ PIKE_OPCODE_T *setup_catch_context(PIKE_OPCODE_T *addr)
       });
   }
 
-  Pike_fp->expendible_offset = Pike_fp->num_locals;
+  Pike_fp->expendible = Pike_fp->locals + Pike_fp->num_locals;
 
   /* Need to adjust next_addr by sizeof(INT32) to skip past the jump
    * address to the continue position after the catch block. */
@@ -1436,7 +1436,7 @@ PIKE_OPCODE_T *handle_caught_exception(void)
 
   debug_malloc_touch_named (cc, "(3)");
   UNSETJMP (cc->recovery);
-  frame_set_expendible(Pike_fp, cc->save_expendible);
+  Pike_fp->expendible = cc->save_expendible;
   move_svalue (Pike_sp++, &throw_value);
   mark_free_svalue (&throw_value);
   low_destruct_objects_to_destruct();
