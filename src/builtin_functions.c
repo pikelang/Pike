@@ -3894,91 +3894,6 @@ PMOD_EXPORT void f_indices(INT32 args)
   push_array(a);
 }
 
-/* this should probably be moved to pike_types.c or something */
-#define FIX_OVERLOADED_TYPE(n, lf, X) fix_overloaded_type(n,lf,X,CONSTANT_STRLEN(X))
-/* FIXME: This function messes around with the implementation of pike_type,
- * and should probably be in pike_types.h instead.
- */
-static node *fix_overloaded_type(node *n, int lfun, const char *deftype, int UNUSED(deftypelen))
-{
-  node **first_arg;
-  struct pike_type *t, *t2;
-  first_arg=my_get_arg(&_CDR(n), 0);
-  if(!first_arg) return 0;
-  t=first_arg[0]->type;
-  if(!t || match_types(t, object_type_string))
-  {
-    while (t) {
-      if (t->type == PIKE_T_NAME) {
-	/* Skip any name-nodes. */
-	t = t->cdr;
-      } else if (t->type == T_OR) {
-	/* FIXME: Ought to handle or-nodes generically here. */
-
-	/* Handle some common cases. */
-	if ((t->car == zero_type_string) ||
-	    (t->car == void_type_string)) {
-	  t = t->cdr;
-	} else if ((t->cdr == zero_type_string) ||
-		   (t->cdr == void_type_string)) {
-	  t = t->car;
-	} else {
-	  break;
-	}
-      } else {
-	break;
-      }
-    }
-
-    if(t && (t->type == T_OBJECT))
-    {
-      struct program *p = id_to_program(CDR_TO_INT(t));
-      if(p)
-      {
-	int fun=FIND_LFUN(p, lfun);
-
-	/* FIXME: function type string should really be compiled from
-	 * the arguments so that or:ed types are handled correctly
-	 */
-	if(fun!=-1 &&
-	   (t2 = check_call(function_type_string, ID_FROM_INT(p, fun)->type,
-			    0)))
-	{
-	  free_type(n->type);
-	  n->type = t2;
-	  return 0;
-	}
-      }
-    }
-
-    /* If it is an object, it *may* be overloaded, we or with
-     * the deftype....
-     */
-#if 1
-    if(deftype)
-    {
-      t2 = make_pike_type(deftype);
-      t = n->type;
-      n->type = or_pike_types(t,t2,0);
-      free_type(t);
-      free_type(t2);
-    }
-#endif
-  }
-
-  return 0; /* continue optimization */
-}
-
-static node *fix_indices_type(node *n)
-{
-  return FIX_OVERLOADED_TYPE(n, LFUN__INDICES, tArray);
-}
-
-static node *fix_values_type(node *n)
-{
-  return FIX_OVERLOADED_TYPE(n, LFUN__VALUES, tArray);
-}
-
 static node *fix_aggregate_mapping_type(node *n)
 {
   struct pike_type *types[2] = { NULL, NULL };
@@ -10319,17 +10234,17 @@ void init_builtin_efuns(void)
 
   ADD_EFUN("hash_value",f_hash_value,tFunc(tMix,tIntPos),OPT_TRY_OPTIMIZE);
 
-  ADD_EFUN2("indices",f_indices,
-	    tOr6(tFunc(tLArr(tSetvar(1, tIntPos), tMix),tArr(tVar(1))),
-		 tFunc(tMap(tSetvar(1, tMix), tMix), tArr(tVar(1))),
-		 tFunc(tSet(tSetvar(1, tMix)), tArr(tVar(1))),
-		 tFunc(tLStr(tSetvar(1, tIntPos), tInt), tArr(tVar(1))),
-		 tFunc(tPrg(tObj), tArr(tStr)),
-		 tFuncArg(tSetvar(2, tObj),
-			  tOr(tFindLFun(tVar(2), "_indices"),
-			      tIfnot(tFindLFun(tVar(2), "_indices"),
-				     tFunc(tNone, tArr(tStr)))))),
-	    OPT_TRY_OPTIMIZE,fix_indices_type,0);
+  ADD_EFUN("indices",f_indices,
+	   tOr6(tFunc(tLArr(tSetvar(1, tIntPos), tMix),tArr(tVar(1))),
+		tFunc(tMap(tSetvar(1, tMix), tMix), tArr(tVar(1))),
+		tFunc(tSet(tSetvar(1, tMix)), tArr(tVar(1))),
+		tFunc(tLStr(tSetvar(1, tIntPos), tInt), tArr(tVar(1))),
+		tFunc(tPrg(tObj), tArr(tStr)),
+		tFuncArg(tSetvar(2, tObj),
+			 tOr(tFindLFun(tVar(2), "_indices"),
+			     tIfnot(tFindLFun(tVar(2), "_indices"),
+				    tFunc(tNone, tArr(tStr)))))),
+	   OPT_TRY_OPTIMIZE);
 
   ADD_EFUN2("undefinedp", f_undefinedp, tFunc(tMix,tInt01), OPT_TRY_OPTIMIZE,
             0, generate_undefinedp);
@@ -10484,7 +10399,7 @@ void init_builtin_efuns(void)
 	   tOr(tFunc(tStr,tStr),tFunc(tInt,tInt)),OPT_TRY_OPTIMIZE);
 
   /* function(string|multiset:array(int))|function(array(0=mixed)|mapping(mixed:0=mixed)|object|program:array(0)) */
-  ADD_EFUN2("values",f_values,
+  ADD_EFUN("values",f_values,
 	   tOr6(tFunc(tMultiset, tArr(tInt01)),
 	        tFunc(tNStr(tSetvar(0, tInt)), tArr(tVar(0))),
 	        tFunc(tSetvar(1, tArray), tVar(1)),
@@ -10494,7 +10409,7 @@ void init_builtin_efuns(void)
 			 tOr(tFindLFun(tVar(2), "_values"),
 			     tIfnot(tFindLFun(tVar(2), "_values"),
 				    tFunc(tNone, tArr(tMix)))))),
-	    0, fix_values_type, 0);
+	   0);
 
   /* function(string|multiset(array(int))|function(array(0=mixed)|mapping(mixed:0=mixed)|object|program:array(0)) */
   ADD_EFUN2("types", f_types,
