@@ -119,6 +119,7 @@ static void bootstrap_push_int64 (INT64 i)
 }
 
 PMOD_EXPORT void (*push_int64) (INT64) = bootstrap_push_int64;
+PMOD_EXPORT void (*ulongest_to_svalue_no_free)(struct svalue *sv, UINT64 i);
 PMOD_EXPORT int (*int64_from_bignum) (INT64 *, struct object *) = NULL;
 PMOD_EXPORT void (*reduce_stack_top_bignum) (void) = NULL;
 #endif
