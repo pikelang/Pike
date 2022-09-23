@@ -5556,16 +5556,22 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
   case TWOT(T_OBJECT, T_MANY):
   case TWOT(T_OBJECT, T_PROGRAM):
   case TWOT(T_OBJECT, PIKE_T_TRANSITIVE):
-    a = low_object_lfun_type(a, LFUN_CALL);
-    if (!a) return NULL;
+    tmp = low_object_lfun_type(a, LFUN_CALL);
+    if (!tmp) {
+      break;
+    }
+    a = tmp;
     goto loop;
 
   case TWOT(T_FUNCTION, T_OBJECT):
   case TWOT(T_MANY, T_OBJECT):
   case TWOT(T_PROGRAM, T_OBJECT):
   case TWOT(PIKE_T_TRANSITIVE, T_OBJECT):
-    b = low_object_lfun_type(b, LFUN_CALL);
-    if (!b) return NULL;
+    tmp = low_object_lfun_type(b, LFUN_CALL);
+    if (!tmp) {
+      break;
+    }
+    b = tmp;
     goto loop;
 
   case TWOT(PIKE_T_TRANSITIVE, T_MANY):
