@@ -72,7 +72,7 @@ Calendar.Rule.Timezone UTC=Calendar.Rule.Timezone(0,"UTC");
 
 Calendar.Rule.Timezone locale=0;
 
-protected function(:Calendar.Rule.Timezone) _locale()
+protected Calendar.Rule.Timezone _locale()
 {
    Calendar.Rule.Timezone tz;
 
