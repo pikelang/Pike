@@ -11141,6 +11141,8 @@ static int low_check_indexing(struct pike_type *type,
 
     case T_INT:
     case T_PROGRAM:
+    case PIKE_T_TYPE:
+      /* NB: In some circumstances program(X) gets converted into type(X). */
       return match_types(string_type_string, index_type);
 
   case T_MIXED:
