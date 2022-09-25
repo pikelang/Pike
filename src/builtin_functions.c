@@ -10273,7 +10273,8 @@ void init_builtin_efuns(void)
 
   /* function(mixed:program|function) */
   ADD_EFUN2("object_program", f_object_program,
-	    tFunc(tMix, tOr(tPrg(tObj),tFunction)),
+	    tOr(tFunc(tSetvar(0, tObj), tPrg(tVar(0))),
+		tFunc(tNot(tObj), tZero)),
 	    OPT_TRY_OPTIMIZE, fix_object_program_type, 0);
 
   /* function(mixed:int) */
