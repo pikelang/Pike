@@ -2365,6 +2365,7 @@ struct pike_type *parse_type(const char *s)
 
 void simple_describe_type(struct pike_type *s)
 {
+  struct pike_type *sub = NULL;
   DECLARE_CYCLIC();
   if (BEGIN_CYCLIC(s, NULL)) {
     Pike_fatal("Circular type!\n");
@@ -2452,17 +2453,21 @@ void simple_describe_type(struct pike_type *s)
 	    simple_describe_type(s->car);
 	    fprintf(stderr, ": ");
 	  }
-	  s = s->cdr;
-	  if (s && (s != int_type_string)) {
-	    while (s->type == T_OR) {
+	  sub = s->cdr;
+	  if (sub && (sub != int_type_string)) {
+	    while (sub->type == T_OR) {
 	      struct pike_type *char_type = s->car;
-	      while(char_type->type == T_ASSIGN) {
+	      while(char_type && (char_type->type == T_ASSIGN)) {
 		char_type = char_type->cdr;
 	      }
 
+	      if (!char_type) {
+		sub = sub->cdr;
+		continue;
+	      }
 	      if (char_type->type == T_ZERO) {
 		fprintf(stderr, "zero | ");
-		s = s->cdr;
+		sub = sub->cdr;
 		continue;
 	      }
 	      if (char_type->type == T_MIXED) {
@@ -2471,8 +2476,14 @@ void simple_describe_type(struct pike_type *s)
 		continue;
 	      }
 	      if ((char_type->type >= '0') && (char_type->type <= '9')) {
-		fprintf(stderr, "$%c | ", char_type->type);
-		s = s->cdr;
+		fprintf(stderr, "$%d | ", char_type->type - '0');
+		sub = sub->cdr;
+		continue;
+	      }
+	      if ((char_type->type & PIKE_T_MASK) == PIKE_T_OPERATOR) {
+		simple_describe_type(char_type);
+		fprintf(stderr, " | ");
+		sub = sub->cdr;
 		continue;
 	      }
 #ifdef PIKE_DEBUG
@@ -2502,28 +2513,19 @@ void simple_describe_type(struct pike_type *s)
 		}
 	      }
 	      fprintf(stderr, " | ");
-	      s = s->cdr;
+	      sub = sub->cdr;
 	    }
-	    while(s->type == T_ASSIGN) {
-	      s = s->cdr;
-	    }
-	    if (!s) {
+	    if (!sub) {
 	      fprintf(stderr, "__unknown__");
-	    } else if (s->type == T_ZERO) {
+	    } else if (sub->type == T_ZERO) {
 	      fprintf(stderr, "zero");
-	    } else if (s->type == T_MIXED) {
+	    } else if (sub->type == T_MIXED) {
 	      fprintf(stderr, "mixed");
-	    } else if ((s->type >= '0') && (s->type <= '9')) {
-	      fprintf(stderr, "$%c", s->type);
-	    } else {
-#ifdef PIKE_DEBUG
-	      if (s->type != T_INT) {
-		Pike_fatal("Invalid node type (%d:%s) in string type.\n",
-			   s->type, get_name_of_type(s->type));
-	      }
-#endif /* PIKE_DEBUG */
-	      min = CAR_TO_INT(s);
-	      max = CDR_TO_INT(s);
+	    } else if ((sub->type >= '0') && (sub->type <= '9')) {
+	      fprintf(stderr, "$%d", sub->type - '0');
+	    } else if (sub->type == T_INT) {
+	      min = CAR_TO_INT(sub);
+	      max = CDR_TO_INT(sub);
 	      if (!min && max && max != MAX_INT32 && !(max & (max+1))) {
 		int j = 0;
 		while (max) {
@@ -2542,6 +2544,8 @@ void simple_describe_type(struct pike_type *s)
 		  }
 		}
 	      }
+	    } else {
+	      simple_describe_type(sub);
 	    }
 	  }
 	  fprintf(stderr, ")");
@@ -2565,26 +2569,28 @@ void simple_describe_type(struct pike_type *s)
       case T_FUNCTION:
       case T_MANY:
 	fprintf(stderr, "function(");
-	while(s->type == T_FUNCTION) {
-	  simple_describe_type(s->car);
-	  s = s->cdr;
-	  if (s &&
-	      ((s->type == T_FUNCTION) ||
-	       ((s->type == T_MANY) && (s->car != void_type_string)))) {
+	sub = s;
+	while(sub && (sub->type == T_FUNCTION)) {
+	  simple_describe_type(sub->car);
+	  sub = sub->cdr;
+	  if (!sub) break;
+	  if ((sub->type == T_FUNCTION) ||
+	      ((sub->type == T_MANY) &&
+	       (!sub->car || (sub->car->type != T_VOID)))) {
 	    fprintf(stderr, ", ");
 	  }
 	}
-	if (!s || (s->type != T_MANY)) {
+	if (!sub || (sub->type != T_MANY)) {
 	  fprintf(stderr, ", @");
-	  simple_describe_type(s);
+	  simple_describe_type(sub);
 	  fprintf(stderr, ")");
 	} else {
-	  if (!s->car || (s->car->type != T_VOID)) {
-	    simple_describe_type(s->car);
+	  if (!sub->car || (sub->car->type != T_VOID)) {
+	    simple_describe_type(sub->car);
 	    fprintf(stderr, "...");
 	  }
 	  fprintf(stderr, ":");
-	  simple_describe_type(s->cdr);
+	  simple_describe_type(sub->cdr);
 	  fprintf(stderr, ")");
 	}
 	break;
