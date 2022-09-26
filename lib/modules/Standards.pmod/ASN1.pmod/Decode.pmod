@@ -171,7 +171,7 @@ protected array(int) read_identifier(Stdio.Buffer data)
     .Types.Object res = ([program]p)();
     res->cls = cls;
     res->tag = tag;
-    return res->decode_primitive((string(8bit))data, this, types, secure);
+    return res->decode_primitive((string(8bit))data, this_function, types, secure);
   }
 
   return Primitive(cls, tag, (string(8bit))data);
