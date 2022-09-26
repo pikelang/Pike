@@ -5931,10 +5931,11 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	  if (!aret) aret = ai->cdr;
 	  if (!bret) bret = bi->cdr;
 
-	  /* NB: Ignore the return type if matching against void. */
-	  if (bret != void_type_string) {
+	  /* NB: Ignore the return type if matching against void or mixed. */
+	  if ((bret != void_type_string) && (bret != mixed_type_string)) {
 	    tmp = low_type_binop(PT_BINOP_MINUS, aret, bret, remap,
-				 PT_FLAG_CMP_VOIDABLE, 0, remap_flags);
+				 PT_FLAG_CMP_VOIDABLE|PT_FLAG_CMP_VOID_IS_ZERO,
+				 0, remap_flags);
 
 	    if (tmp) {
 	      /* Not full overlap for the return value. */
