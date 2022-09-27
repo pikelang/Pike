@@ -12705,8 +12705,27 @@ struct pike_type *new_get_return_type(struct pike_type *fun_type,
     }
     break;
   case PIKE_T_TYPE:
-    /* Casting requires an argument... */
-    res = NULL;
+    /* Casting requires an argument, unless it is type(object)... */
+    res = type_binop(PT_BINOP_AND, fun_type->car, object_type_string, 0, 0, 0);
+    if (res) {
+      /* Handle the program(object(Foo))(...) case.
+       *
+       * FIXME: Handle the type(object(Foo))(mixed val_to_cast) case.
+       */
+      tmp = find_lfun_type(res, LFUN_CREATE);
+      if (!tmp) {
+	/* No create() ==> No arguments required.
+	 *
+	 * res already contains the return type.
+	 */
+	break;
+      }
+      fun_type = zzap_function_return(tmp, res);
+      free_type(tmp);
+      free_type(res);
+      res = new_get_return_type(fun_type, cs, flags);
+      free_type(fun_type);
+    }
     break;
   case PIKE_T_PROGRAM:
     tmp = low_object_lfun_type(fun_type->car, LFUN_CREATE);
