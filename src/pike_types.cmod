@@ -13373,14 +13373,30 @@ static struct pike_type *new_check_call_arg(struct pike_type *fun_type,
 	fprintf(stderr, " OK.\n");
       }
 #endif /* PIKE_DEBUG */
+
       if (c->lex.pragmas & ID_STRICT_TYPES) {
 	if (!(tmp = low_new_check_call(fun_type, args->type,
 				       flags|CALL_STRICT, cs, sval))) {
 	  tmp = get_first_arg_type(fun_type, flags);
-	  yytype_report(REPORT_WARNING, NULL, 0, tmp,
-			NULL, 0, args->type,
-			0, "Type mismatch in argument %d to %S.",
-			cs->argno, cs->fun_name);
+
+	  /* NB: Double-check. This is needed for some functions
+	   *     which split types in obscure places.
+	   * Eg object_program():
+	   *      scope(0, function(object:program)|function(~object:zero))
+	   *    In this above case tmp will be mixed, but low_new_check_call()
+	   *    will still fail if args->type is mixed.
+	   */
+	  if (!pike_types_le(args->type, tmp,
+			     PT_FLAG_CMP_VOID_IS_ZERO,
+			     PT_FLAG_CMP_VOID_IS_ZERO)) {
+	    yytype_report(REPORT_WARNING, NULL, 0, tmp,
+			  NULL, 0, args->type,
+			  0, "Type mismatch in argument %d to %S.",
+			  cs->argno, cs->fun_name);
+	    yytype_report(REPORT_WARNING, NULL, 0, NULL,
+			  NULL, 0, fun_type,
+			  0, "Function.");
+	  }
 	  if (tmp) free_type(tmp);
 	} else {
 	  free_type(tmp);
