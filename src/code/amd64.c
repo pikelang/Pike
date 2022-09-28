@@ -1595,6 +1595,9 @@ void amd64_update_pc(void)
 {
   INT32 tmp = PIKE_PC, disp;
   const enum amd64_reg tmp_reg = P_REG_RAX;
+#ifdef PIKE_AMD64_VALIDATE_RSP
+  LABELS();
+#endif
 
   if(amd64_prev_stored_pc == - 1)
   {
@@ -1626,6 +1629,15 @@ void amd64_update_pc(void)
       fprintf (stderr, "pc %d  update pc - already up-to-date\n", tmp);
 #endif
    }
+
+#ifdef PIKE_AMD64_VALIDATE_RSP
+  mov_reg_reg(P_REG_RSP, tmp_reg);
+  and_reg_imm(tmp_reg, 0x0f);
+  je(&label_A);
+  /* Broken RSP */
+  call_reg(tmp_reg);	/* Jump to zero-page should trigger a SIGSEGV. */
+  LABEL_A;
+#endif
 }
 
 

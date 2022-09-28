@@ -34,6 +34,9 @@
 /* Define this if you want some extra (possibly verbose) run time self tests */
 #undef PIKE_EXTRA_DEBUG
 
+/* Define this to enable some experimental code. */
+#undef PIKE_EXPERIMENTAL
+
 /* Define to make Pike do a full cleanup at exit to detect leaks. */
 #undef DO_PIKE_CLEANUP
 
@@ -649,6 +652,11 @@ struct mallinfo {
 
 #endif /* HAVE_USR_INCLUDE_MALLOC_H */
 
+#endif
+
+#ifdef PIKE_EXPERIMENTAL
+#define MACHINE_CODE_STACK_FRAMES
+#define PIKE_AMD64_VALIDATE_RSP
 #endif
 
 #endif /* MACHINE_H */

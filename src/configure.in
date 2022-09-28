@@ -1322,6 +1322,10 @@ else
   enable_dlmalloc=no
 fi
 
+MY_AC_ARG_WITH(experimental,
+	       MY_DESCR([--with-experimental],
+			[Enable experimental code.]),
+	       [AC_DEFINE(PIKE_EXPERIMENTAL)])
 MY_AC_ARG_WITH(cleanup-on-exit,
 	       MY_DESCR([--with-cleanup-on-exit],
 			[Do full cleanup at exit to detect leaks better.]),
