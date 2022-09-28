@@ -932,7 +932,7 @@ class OutputBuffer
    }
 }
 
-private void extend_timeout() {
+private void extend_timeout(mixed ... ignored) {
   remove_call_out(send_timeout);
   call_out(send_timeout, send_timeout_delay);
 }
