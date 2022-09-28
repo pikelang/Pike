@@ -368,7 +368,7 @@ PMOD_EXPORT void count_memory_in_pike_types(size_t *n, size_t *s);
 void init_types(void);
 ptrdiff_t peek_stack_mark(void);
 ptrdiff_t pop_stack_mark(void);
-void debug_pop_type_stack(unsigned int expected);
+int debug_pop_type_stack(unsigned int expected);
 void type_stack_pop_to_mark(void);
 void type_stack_reverse(void);
 struct pike_type *debug_peek_type_stack(void);
@@ -514,7 +514,7 @@ PMOD_EXPORT void set_program_id_to_id( int (*to)(int) );
 #define make_pike_type(X) \
  ((struct pike_type *)debug_malloc_pass(debug_make_pike_type(X)))
 #define peek_type_stack() ((struct pike_type *)debug_malloc_pass(debug_peek_type_stack()))
-#define pop_type_stack(E) do { debug_malloc_pass(debug_peek_type_stack()); debug_pop_type_stack(E); } while(0)
+#define pop_type_stack(E)  (debug_malloc_pass(debug_peek_type_stack()), debug_pop_type_stack(E))
 #define push_int_type(MIN,MAX) do { debug_push_int_type(MIN,MAX);debug_malloc_pass(debug_peek_type_stack()); } while(0)
 #define push_unlimited_array_type(ARRAY_OR_STRING) do { debug_push_unlimited_array_type(ARRAY_OR_STRING);debug_malloc_pass(debug_peek_type_stack()); } while(0)
 #define push_object_type(FLAG,ID) do { debug_push_object_type(FLAG,ID);debug_malloc_pass(debug_peek_type_stack()); } while(0)

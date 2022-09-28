@@ -1334,7 +1334,7 @@ void debug_push_type(unsigned int type)
 }
 
 /* Pop one level of types. This is the inverse of push_type() */
-void debug_pop_type_stack(unsigned int expected)
+int debug_pop_type_stack(unsigned int expected)
 {
   struct pike_type *top;
   if(Pike_compiler->type_stackp<type_stack)
@@ -1342,7 +1342,11 @@ void debug_pop_type_stack(unsigned int expected)
 
   top = *(Pike_compiler->type_stackp);
   /* Special case... */
-  if (!top || top->type == T_MIXED) return;	/* Probably due to an earlier error */
+  if (!top || (top->type == T_MIXED) ||
+      ((top == any_type_string) && (expected != T_OR))) {
+    /* Probably due to an earlier error */
+    return 0;
+  }
 
   Pike_compiler->type_stackp--;
 #ifdef PIKE_DEBUG
@@ -1406,8 +1410,7 @@ void debug_pop_type_stack(unsigned int expected)
   case PIKE_T_NAME:
     /* Pop the name and recurse. */
     push_finished_type(top->cdr);
-    pop_type_stack(expected);
-    break;
+    return pop_type_stack(expected);
 
   case PIKE_T_OPERATOR:
     if (top->type & 0x8000) {
@@ -1422,6 +1425,8 @@ void debug_pop_type_stack(unsigned int expected)
   free_type(top);
 
   TYPE_STACK_DEBUG("pop_type_stack");
+
+  return 1;
 }
 
 void debug_push_reverse_type(unsigned int type)

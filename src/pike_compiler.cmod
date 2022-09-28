@@ -3801,8 +3801,9 @@ PIKECLASS AutoCodecClass
 	/* Varargs marker. */
 	e = -e;
 	push_finished_type(prog->identifiers[--e].type);
-	pop_type_stack(PIKE_T_ARRAY);
-	compiler_discard_top_type();
+	if (pop_type_stack(PIKE_T_ARRAY)) {
+	  compiler_discard_top_type();
+	}
 	n = mknode(F_PUSH_ARRAY, mkidentifiernode(e), NULL);
       } else {
 	push_finished_type(prog->identifiers[--e].type);

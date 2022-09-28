@@ -887,8 +887,9 @@ def: modifiers optional_attributes simple_type optional_constant
       if (Pike_compiler->compiler_frame->variable[e+1].type->type != T_ARRAY) {
 	yywarning("Varargs variable is not an array!! (Internal error)");
       } else {
-	pop_type_stack(T_ARRAY);
-	compiler_discard_top_type();
+	if (pop_type_stack(T_ARRAY)) {
+	  compiler_discard_top_type();
+	}
       }
     }else{
       push_type(T_VOID);
@@ -1138,8 +1139,9 @@ def: modifiers optional_attributes simple_type optional_constant
         {
           push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
           e--;
-          pop_type_stack(T_ARRAY);
-	  compiler_discard_top_type();
+          if (pop_type_stack(T_ARRAY)) {
+	    compiler_discard_top_type();
+	  }
         }else{
           push_type(T_VOID);
         }
@@ -2494,8 +2496,9 @@ lambda: TOK_LAMBDA line_number_info implicit_identifier start_lambda
       {
 	push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
 	e--;
-	pop_type_stack(T_ARRAY);
-	compiler_discard_top_type();
+	if (pop_type_stack(T_ARRAY)) {
+	  compiler_discard_top_type();
+	}
       }else{
 	push_type(T_VOID);
       }
@@ -2553,8 +2556,9 @@ lambda: TOK_LAMBDA line_number_info implicit_identifier start_lambda
     {
       push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
       e--;
-      pop_type_stack(T_ARRAY);
-      compiler_discard_top_type();
+      if (pop_type_stack(T_ARRAY)) {
+	compiler_discard_top_type();
+      }
     }else{
       push_type(T_VOID);
     }
@@ -2667,8 +2671,9 @@ local_function: TOK_IDENTIFIER start_function func_args
     {
       push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
       e--;
-      pop_type_stack(T_ARRAY);
-      compiler_discard_top_type();
+      if (pop_type_stack(T_ARRAY)) {
+	compiler_discard_top_type();
+      }
     }else{
       push_type(T_VOID);
     }
@@ -2871,8 +2876,9 @@ local_generator: TOK_IDENTIFIER start_function func_args
     {
       push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
       e--;
-      pop_type_stack(T_ARRAY);
-      compiler_discard_top_type();
+      if (pop_type_stack(T_ARRAY)) {
+	compiler_discard_top_type();
+      }
     }else{
       push_type(T_VOID);
     }
@@ -3156,8 +3162,9 @@ optional_create_arguments: /* empty */ { $$ = 0; }
     if (Pike_compiler->num_create_args < 0) {
       e--;
       push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
-      pop_type_stack(T_ARRAY);
-      compiler_discard_top_type();
+      if (pop_type_stack(T_ARRAY)) {
+	compiler_discard_top_type();
+      }
 
       if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
 	/* FIXME: Should probably use some other flag. */
