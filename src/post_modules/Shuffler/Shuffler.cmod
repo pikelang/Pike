@@ -931,14 +931,14 @@ PIKECLASS Shuffle
   }
 
   PIKEFUN void add_source(mixed source,
-			  int|object|function(object, int:array(string))|
+			  int|object|function(object, int:array(string)|zero)|
 			  void start, int|object|void length)
    /*! @decl void add_source( mixed source, int|void start, int|void length );
     *! @decl void add_source( mixed source, @
-    *!                        function(Shuffle, int:array(string)) wrap_cb );
+    *!                        function(Shuffle, int:array(string)|zero) wrap_cb );
     *! @decl void add_source( array source);
     *! @decl void add_source( array source, @
-    *!                        function(Shuffle, int:array(string)) wrap_cb );
+    *!                        function(Shuffle, int:array(string)|zero) wrap_cb );
     *! Add a new source to the list of data sources.
     *! The data from the sources will be sent in order.
     *!
