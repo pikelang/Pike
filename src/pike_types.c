@@ -989,7 +989,11 @@ void debug_pop_type_stack(unsigned int expected)
 
   top = *(Pike_compiler->type_stackp);
   /* Special case... */
-  if (top->type == T_MIXED) return;	/* Probably due to an earlier error */
+  if ((top->type == T_MIXED) ||
+      ((top == any_type_string) && (expected != T_OR))) {
+    /* Probably due to an earlier error */
+    return;
+  }
 
   Pike_compiler->type_stackp--;
 #ifdef PIKE_DEBUG
