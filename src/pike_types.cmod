@@ -10529,6 +10529,35 @@ static struct pike_type *low_index_type(struct pike_type *t,
     add_ref(mixed_type_string);
     return mixed_type_string;
 
+  case PIKE_T_TYPE:
+    {
+      /* NB: Currently indexing is only supported for type(object)
+       *     in order to keep it compatible with program(object).
+       */
+      struct pike_type *tmp = type_binop(PT_BINOP_AND,
+					 t->car, object_type_string,
+					 0, 0, 0);
+      if (!tmp) {
+	return NULL;
+      }
+      free_type(tmp);
+    }
+    /* FALLTHRU */
+
+  case T_PROGRAM:
+    {
+      /* Programs may only be indexed with strings. */
+      struct pike_type *tmp = type_binop(PT_BINOP_AND,
+					 index_type, string_type_string,
+					 0, 0, 0);
+      if (!tmp) {
+	return NULL;
+      }
+      free_type(tmp);
+      add_ref(mixed_type_string);
+      return mixed_type_string;
+    }
+
   case T_MIXED:
     if (pragmas & ID_STRICT_TYPES) {
       yywarning("Indexing mixed.");
@@ -10541,7 +10570,6 @@ static struct pike_type *low_index_type(struct pike_type *t,
     goto comefrom_int_index;
 
   case T_ZERO:
-  case T_TYPE:
   case PIKE_T_RING:
   case T_VOID:
   case T_FLOAT:
