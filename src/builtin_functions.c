@@ -10242,7 +10242,7 @@ void init_builtin_efuns(void)
 		tFunc(tPrg(tObj), tArr(tStr)),
 		tFuncArg(tSetvar(2, tObj),
 			 tOr(tFindLFun(tVar(2), "_indices"),
-			     tIfnot(tFindLFun(tVar(2), "_indices"),
+			     tIfnot(tThreshold(tFindLFun(tVar(2), "_indices")),
 				    tFunc(tNone, tArr(tStr)))))),
 	   OPT_TRY_OPTIMIZE);
 
@@ -10405,10 +10405,10 @@ void init_builtin_efuns(void)
 	        tFunc(tNStr(tSetvar(0, tInt)), tArr(tVar(0))),
 	        tFunc(tSetvar(1, tArray), tVar(1)),
 	        tFunc(tMap(tMix, tSetvar(0, tMix)), tArr(tVar(0))),
-	        tFunc(tPrg(tObj), tArr(tStr)),
+	        tFunc(tPrg(tObj), tArr(tMix)),
 	        tFuncArg(tSetvar(2, tObj),
 			 tOr(tFindLFun(tVar(2), "_values"),
-			     tIfnot(tFindLFun(tVar(2), "_values"),
+			     tIfnot(tThreshold(tFindLFun(tVar(2), "_values")),
 				    tFunc(tNone, tArr(tMix)))))),
 	   0);
 
