@@ -503,7 +503,7 @@ class Params
     foreach (args; string k; string v)
       params += ({ Param(k, v) });
 
-    return this_object;
+    return this_object();
   }
 
   //! Append @[p] to the internal array.
