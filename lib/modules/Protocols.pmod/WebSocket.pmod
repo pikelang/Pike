@@ -610,8 +610,9 @@ class Connection {
 
     //! Read HTTP response from remote endpoint and handle connection
     //! upgrade.
-    protected void http_read(mixed _id, string data,
-                             object hp, array(extension_factory) extensions, mapping rext) {
+    protected void http_read(mixed _id, string data, object hp,
+			     array(object|extension_factory) extensions,
+			     mapping rext) {
 
         if (state != CONNECTING) {
           websocket_closed();
@@ -706,7 +707,6 @@ class Connection {
 
             if (arrayp(extensions)) {
                 mapping ext = parse_websocket_extensions(headers["sec-websocket-extensions"]);
-                array tmp = ({ });
 
                 /* we finish the extension negotiation */
                 foreach (extensions; int i; object|extension_factory f) {
@@ -1279,7 +1279,7 @@ constant deflate_default_options = ([
 //! @note
 //!     If the @expr{permessage-deflate@} extension is not being used, it falls back to use
 //!     @[defragment].
-object permessagedeflate(void|mapping default_options) {
+extension_factory permessagedeflate(void|mapping default_options) {
 #if constant(Gz.deflate)
   default_options = deflate_default_options + (default_options||([]));
 
@@ -1338,7 +1338,7 @@ object permessagedeflate(void|mapping default_options) {
     return _permessagedeflate(options);
   };
 #else
-  object factory() {
+  object factory(mixed ...) {
     return defragment();
   }
 #endif
