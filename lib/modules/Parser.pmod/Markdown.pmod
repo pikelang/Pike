@@ -600,7 +600,7 @@ class Lexer
 
   //! Main lexing entry point. Subclass Lexer and override this to add
   //! post-processing or other changes.
-  object_program lex(string src)
+  this_program lex(string src)
   {
     src = replace(src, ([ "\r\n"   : "\n",
                           "\r"     : "\n",
