@@ -151,7 +151,7 @@ private Regexp xxsua = Regexp(";MSIE|Trident/");
 //!
 //! @seealso
 //!  @[Socket.create()]
-final object(Socket)|zero farm(object createtype,
+final object(Socket)|zero farm(program(Socket) createtype,
                                Protocols.WebSocket.Request req,
  void|mapping(string:mixed) options) {
   string sid;
