@@ -392,7 +392,7 @@ string udp(string msg, string ip) {
 	ret += "\0\0\0\0""\0\0\0\0""\0\0\0\0";
       else
 	ret += sprintf("%4c%4c%4c", t->num_completed(),
-		       t->num_seeds(), t->num_leechers);
+		       t->num_seeds(), t->num_leechers());
     }
     return make_udp_header(2, header->transaction_id) + ret;
     break;
