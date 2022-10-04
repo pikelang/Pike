@@ -554,7 +554,7 @@ string server_derive_master_secret(string data)
 
     if (catch
 	{
-	  dh_state->set_other(struct->get_bignum);
+	  dh_state->set_other(struct->get_bignum());
 	} || !struct->is_empty())
       {
 	send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
