@@ -144,11 +144,16 @@ protected mapping(string:string|array(string)) decode_photoshop_data(string data
     
     if (block[0]) {
       // Photoshop 6.0 format with header description text of variable length.
+      // The description text is padded with NUL so that it together with its
+      // length field is even.
       // The two bytes after the description text is zero padding, then comes
       // the two bytes of data length.
+      //
+      // Cf https://www.adobe.com/devnet-apps/photoshop/fileformatashtml/#50577409_46269
       int dsclen = block[0];
       //werror("dsclen: %d\n", dsclen);
       block_type_2 = block[1..dsclen];
+      dsclen |= 1;	// Skip pascal string NUL-pad.
       block_length = short_value(block[dsclen+3..dsclen+4]);
       info = block[5+dsclen..4+dsclen+block_length];
     }
@@ -160,9 +165,11 @@ protected mapping(string:string|array(string)) decode_photoshop_data(string data
     }
 
 #if 0
-    werror("block_length: %O\n"
+    werror("block_type_2: %O\n"
+	   "block_length: %O\n"
 	   "actual length: %O\n"
-	   "info: %O\n", block_length, sizeof(info), info);
+	   "info: %O\n",
+	   block_type_2, block_length, sizeof(info), info);
 #endif /* 0 */
 
     while (sizeof(info)) {
@@ -320,7 +327,7 @@ mapping get_information(Stdio.File fd)
     do {
       string app = fd->read(2);
       if (sizeof(app) != 2)
-      break;
+	break;
       string length_s = fd->read(2);
       int length;
       if (sizeof(length_s) == 2)
