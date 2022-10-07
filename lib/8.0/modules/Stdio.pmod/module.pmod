@@ -1,8 +1,18 @@
 #pike 8.1
 
+//! Pike 8.0 compatibility @[predef::Stdio] implementation.
+
+#pragma no_deprecation_warnings
+
+//! @decl inherit 8.1::Stdio
+
+//! @ignore
+inherit Stdio.module;
+//! @endignore
+
 class File
 {
-  inherit Stdio.File;
+  inherit ::this_program;
 
   // NB: Deprecated in Pike 7.8.
   optional __deprecated__ this_program set_peek_file_before_read_callback(int(0..1) ignored)
@@ -16,7 +26,7 @@ class File
 
 class FILE
 {
-  inherit Stdio.FILE;
+  inherit ::this_program;
 
   // NB: Deprecated in Pike 7.8.
   optional __deprecated__ this_program set_peek_file_before_read_callback(int(0..1) ignored)
@@ -27,4 +37,3 @@ class FILE
     return this;
   }
 }
-
