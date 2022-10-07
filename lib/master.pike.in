@@ -774,26 +774,23 @@ protected class CompilerEnvironment
     //!
     void change_compiler_compatibility(int major, int minor)
     {
-      // Make sure to inform the low-level code that
-      // we are changing compatibility.
-      ::change_compiler_compatibility(major, minor);
-
-      if ((major == compat_major) && (minor == compat_minor) &&
-	  compat_handler) {
-	// Optimization: Already at this compat level.
-	return;
-      }
       if (((major == -1) && (minor == -1)) ||
 	  ((major == __REAL_MAJOR__) && (minor == __REAL_MINOR__))) {
-	if ((compat_major == __REAL_MAJOR__) &&
-	    (compat_minor == __REAL_MINOR__)) {
-	  // Optimization again: Already at this compat level.
-	  return;
-	}
 	compat_handler = 0;
-      } else {
+      } else if (!compat_handler ||
+		 (compat_handler->major != major) ||
+		 (compat_handler->minor != minor)) {
 	compat_handler = get_compilation_handler(major, minor);
       }
+
+      // Make sure to inform the low-level code that
+      // we are changing compatibility.
+      //
+      // Note that this MUST be done after compat_handler has been
+      // updated, as it calls get_default_module(), which in Hilfe
+      // calls get_active_compilation_handler() (which returns the
+      // compat_handler) in order to call get_default_module() in it.
+      ::change_compiler_compatibility(major, minor);
     }
 
     //!
@@ -3495,6 +3492,8 @@ class CompatResolver
 
   mapping(string:string) predefines = master()->initial_predefines;
   string ver;
+  int major;
+  int minor;
 
   //! If we fail to resolv, try the fallback.
   //!
@@ -3510,6 +3509,12 @@ class CompatResolver
   {
     resolv_debug("CompatResolver(%O, %O)\n", version, fallback_resolver);
     ver=(string)version;
+    if (objectp(version)) {
+      major = version->major;
+      minor = version->minor;
+    } else {
+      [major, minor] = ((array(int))(ver/".") + ({-2, -2}))[..1];
+    }
 #if 0
     if (version) {
       root_module->symbol = ver + "::";
