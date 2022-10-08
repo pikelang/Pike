@@ -1,5 +1,57 @@
 START_MARKER
 
+// - Standards.IIM
+test_equal(
+  Standards.IIM.get_information(Stdio.FakeFile(
+    // NB: This is real (including typos) JFIF and metadata blocks,
+    //     but everything else is removed.
+    // Testvector for issue #10094.
+    String.hex2string(#"
+ffd8
+ffe00010 4a464946 00010101 012c012c 0000
+ffed01d6 50686f74 6f73686f 7020332e 30003842 494d0404 04697074 63000000
+01b51c02 05002e42 72697461 696e2053 636f746c 616e6420 556b7261 696e6520
+4e617469 6f6e7320 4c656167 75652053 6f636365 721c020a 0001351c 020f0001
+531c0214 0008534f 43205753 4f431c02 37000832 30323230 3932311c 023c000b
+31353239 31372b30 3030301c 0250000d 53636f74 74204865 7070656c 6c1c0255
+00035354 521c025a 0007476c 6173676f 771c0265 00034742 521c026e 00024150
+1c027300 0241501c 02740038 436f7079 72696768 74203230 32322054 68652041
+73736f63 69617465 64205072 6573732e 20416c6c 20726967 68747320 72657365
+72766564 1c027800 c7556b72 61696e69 616e2066 616e7320 63686565 72207072
+696f7220 746f2074 68652073 74617220 6f662074 68652055 45464120 4e617469
+6f6e7320 4c656167 75652073 6f636365 72206d61 74636820 62657477 65656e20
+53636f74 6c616e64 20616e64 20556b72 61696e65 2c206174 2048616d 7064656e
+20506172 6b2c2069 6e20476c 6173676f 772c2053 636f746c 616e642c 20576564
+6e657364 61792c20 53657074 2e203231 2c203230 32322e20 28415020 50686f74
+6f2f5363 6f747420 48657070 656c6c29 1c027a00 02484100
+"))),[[
+  ([
+    "by-line": ({ "Scott Heppell" }),
+    "by-line title": ({ "STR" }),
+    "caption/abstract": ({
+      "Ukrainian fans cheer prior to the star of the UEFA Nations League "
+      "soccer match between Scotland and Ukraine, at Hampden Park, "
+      "in Glasgow, Scotland, Wednesday, Sept. 21, 2022. "
+      "(AP Photo/Scott Heppell)"
+    }),
+    "category": ({ "S" }),
+    "charset": ({ "macintosh" }),
+    "city": ({ "Glasgow" }),
+    "copyright notice": ({
+      "Copyright 2022 The Associated Press. All rights reserved"
+    }),
+    "country/primary location name": ({ "GBR" }),
+    "credit": ({ "AP" }),
+    "date created": ({ "20220921" }),
+    "object name": ({ "Britain Scotland Ukraine Nations League Soccer" }),
+    "source": ({ "AP" }),
+    "supplemental category": ({ "SOC WSOC" }),
+    "time created": ({ "152917+0000" }),
+    "urgency": ({ "5" }),
+    "writer/editor": ({ "HA" }),
+  ])
+]])
+
 // - Standards.ISO639_2
 test_equal(Standards.ISO639_2.get_language("swe"),"Swedish")
 test_equal(Standards.ISO639_2.get_language("xxx"),0)
