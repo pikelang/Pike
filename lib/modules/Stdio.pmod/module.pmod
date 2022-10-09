@@ -47,7 +47,7 @@ final constant DATA_CHUNK_SIZE = 64 * 1024;
 class Stream
 {
   //!
-  string read(int(0..) nbytes);
+  string read(int(0..)|void nbytes);
 
   //!
   int(-1..) write(string data);
@@ -56,7 +56,7 @@ class Stream
   int close();
 
   //!
-  optional string read_oob(int(0..) nbytes);
+  optional string read_oob(int(0..)|void nbytes);
   optional int(-1..) write_oob(string data);
   optional mapping(string:int)|zero tcgetattr();
   optional int tcsetattr(mapping(string:int) attr, string|void when);
