@@ -280,7 +280,7 @@ protected mapping(string:string|array(string)) decode_photoshop_data(string data
 //!
 //! @returns
 //!   Returns a mapping containing any found IPTC IIM data.
-mapping get_information(Stdio.File fd)
+mapping get_information(Stdio.BlockFile fd)
 {
   string marker = fd->read(2);
   string photoshop_data = "";
