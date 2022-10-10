@@ -31,6 +31,53 @@ final constant DATA_CHUNK_SIZE = 64 * 1024;
 //! Size used in various places to divide incoming or outgoing data
 //! into chunks.
 
+//! The Stdio.InputStream API.
+//!
+//! This class exists purely for typing reasons.
+//!
+//! Use in types in place of @[Stdio.File] where only blocking
+//! stream-oriented I/O in the read direction is done with the object.
+//!
+//! This class lists the minimum functionality guaranteed to exist in
+//! all Stream objects that are opened for reading.
+//!
+//! @seealso
+//! @[Stream], @[NonblockingInputStream], @[InputBlockFile], @[File], @[FILE]
+//!
+class InputStream
+{
+  //!
+  string read(int(0..)|void nbytes);
+
+  //!
+  int close();
+
+  //!
+  optional string read_oob(int(0..)|void nbytes);
+  optional mapping(string:int)|zero tcgetattr();
+  optional int tcsetattr(mapping(string:int) attr, string|void when);
+}
+
+//! Mixin for converting an @[InputStream] into a @[Stream].
+//!
+//! This class exists purely for typing reasons.
+//!
+//! @note
+//!   Typically you will not want to use this class
+//!   directly, but instead use one of the classes
+//!   that inherits it.
+//!
+//! @seealso
+//!   @[InputStream], @[Stream], @[BlockFile]
+class OutputStreamMixin
+{
+  //!
+  int(-1..) write(string data);
+
+  //!
+  optional int(-1..) write_oob(string data);
+}
+
 //! The Stdio.Stream API.
 //!
 //! This class exists purely for typing reasons.
@@ -42,24 +89,16 @@ final constant DATA_CHUNK_SIZE = 64 * 1024;
 //! all Stream objects.
 //!
 //! @seealso
-//! @[NonblockingStream], @[BlockFile], @[File], @[FILE]
+//! @[InputStream], @[NonblockingStream], @[BlockFile], @[File], @[FILE]
 //!
 class Stream
 {
-  //!
-  string read(int(0..)|void nbytes);
+  inherit InputStream;
 
-  //!
-  int(-1..) write(string data);
+  inherit OutputStreamMixin;
 
-  //!
-  int close();
-
-  //!
-  optional string read_oob(int(0..)|void nbytes);
-  optional int(-1..) write_oob(string data);
-  optional mapping(string:int)|zero tcgetattr();
-  optional int tcsetattr(mapping(string:int) attr, string|void when);
+  //! @decl @Pike.Annotations.Implements(InputStream)
+  @__builtin.Implements(InputStream);
 }
 
 //! Argument to @[Stdio.File()->tcsetattr()].
@@ -78,7 +117,7 @@ constant TCSADRAIN = "TCSADRAIN";
 //! and empty the input buffers.
 constant TCSAFLUSH = "TCSAFLUSH";
 
-//! The Stdio.NonblockingStream API.
+//! The Stdio.NonblockingInputStream API.
 //!
 //! This class exists purely for typing reasons.
 //!
@@ -86,27 +125,22 @@ constant TCSAFLUSH = "TCSAFLUSH";
 //! blocking stream-oriented I/O is done with the object.
 //!
 //! @seealso
-//! @[Stream], @[BlockFile], @[File], @[FILE]
+//! @[InputStream], @[NonblockingStream], @[InputBlockFile], @[File], @[FILE]
 //!
-class NonblockingStream
+class NonblockingInputStream
 {
-  inherit Stream;
+  inherit InputStream;
 
-  //! @decl @Pike.Annotations.Implements(Stream)
-  @__builtin.Implements(Stream);
+  //! @decl @Pike.Annotations.Implements(InputStream)
+  @__builtin.Implements(InputStream);
 
   //!
   void set_read_callback( function|zero f );
-  void set_write_callback( function|zero f );
   void set_close_callback( function|zero f );
   optional void set_fs_event_callback( function|zero f, int event_mask, mixed ... rest );
 
   //!
   optional void set_read_oob_callback(function|zero f)
-  {
-    error("OOB not implemented for this stream type\n");
-  }
-  optional void set_write_oob_callback(function|zero f)
   {
     error("OOB not implemented for this stream type\n");
   }
@@ -128,6 +162,79 @@ class NonblockingStream
   int(0..1) set_nodelay(int(0..1)|void state);
 }
 
+//! Mixin for converting a @[NonblockingInputStream]
+//! into a @[NonblockingStream].
+//!
+//! This class exists purely for typing reasons.
+//!
+//! @note
+//!   Typically you will not want to use this class
+//!   directly, but instead use one of the classes
+//!   that inherits it.
+//!
+//! @seealso
+//!   @[NonblockingInputStream], @[NonblockingStream]
+class NonblockingOutputStreamMixin
+{
+  inherit OutputStreamMixin;
+
+  //!
+  void set_write_callback( function|zero f );
+
+  //!
+  optional void set_write_oob_callback(function|zero f)
+  {
+    error("OOB not implemented for this stream type\n");
+  }
+}
+
+//! The Stdio.NonblockingStream API.
+//!
+//! This class exists purely for typing reasons.
+//!
+//! Use in types in place of @[Stdio.File] where nonblocking and/or
+//! blocking stream-oriented I/O is done with the object.
+//!
+//! @seealso
+//! @[Stream], @[NonblockingInputStream], @[BlockFile], @[File], @[FILE]
+//!
+class NonblockingStream
+{
+  inherit NonblockingInputStream;
+
+  //! @decl @Pike.Annotations.Implements(Stream)
+  @__builtin.Implements(Stream);
+
+  inherit NonblockingOutputStreamMixin;
+}
+
+//! The Stdio.InputBlockFile API.
+//!
+//! This class exists purely for typing reasons.
+//!
+//! Use in types in place of @[Stdio.File] where only blocking
+//! I/O in the read direction is done with the object.
+//!
+//! @seealso
+//! @[InputStream], @[NonblockingInputStream], @[BlockFile], @[File], @[FILE]
+//!
+class InputBlockFile
+{
+  inherit InputStream;
+
+  //! @decl @Pike.Annotations.Implements(InputStream)
+  @__builtin.Implements(InputStream);
+
+  //!
+  int seek(int to, string|void how);
+
+  //!
+  int tell();
+}
+
+// Name reserved for future compat.
+constant OutputBlockFileMixin = OutputStreamMixin;
+
 //! The Stdio.BlockFile API.
 //!
 //! This class exists purely for typing reasons.
@@ -136,20 +243,19 @@ class NonblockingStream
 //! I/O is done with the object.
 //!
 //! @seealso
-//! @[Stream], @[NonblockingStream], @[File], @[FILE]
+//! @[Stream], @[NonblockingStream], @[InputBlockStream], @[File], @[FILE]
 //!
 class BlockFile
 {
-  inherit Stream;
+  inherit InputBlockFile;
+
+  inherit OutputStreamMixin;
+
+  //! @decl @Pike.Annotations.Implements(InputBlockFile)
+  @__builtin.Implements(InputBlockFile);
 
   //! @decl @Pike.Annotations.Implements(Stream)
   @__builtin.Implements(Stream);
-
-  //!
-  int seek(int to, string|void how);
-
-  //!
-  int tell();
 }
 
 //! The various read_callback signatures.
@@ -1962,6 +2068,9 @@ class Port
 class FILE
 {
   inherit File : file;
+
+  //! @decl @Pike.Annotations.Implements(File)
+  @__builtin.Implements(File);
 
   // This is needed since it was overloaded in File above.
   protected Fd fd_factory()
