@@ -5,6 +5,8 @@
 
 #pike __REAL_VERSION__
 
+#pragma strict_types
+
 //! IPTC Information Interchange Model data
 //! (aka "IPTC header") extraction.
 //!
@@ -120,12 +122,12 @@ protected int short_value(string str)
   //return (str[1]<<8)|str[0];
 }
 
-protected mapping(string:string|array(string)) decode_photoshop_data(string data)
+protected mapping(string:array(string)) decode_photoshop_data(string data)
 {
-  mapping(string:string|array(string)) res = ([]);
+  mapping(string:array(string)) res = ([]);
 
   // 0x0404 is IPTC IIM
-  array blocks = (data / "8BIM\4\4")[1..];
+  array(string) blocks = (data / "8BIM\4\4")[1..];
   if (!sizeof(blocks)) {
     werror("No 8BIM/IPTC IIM markers found in data\n");
     return res;
@@ -138,9 +140,9 @@ protected mapping(string:string|array(string)) decode_photoshop_data(string data
       continue;
     }
 
-    string block_type_2;
+    string block_type_2 = "";
     int block_length;
-    string info;
+    string info = "";
 
     if (block[0]) {
       // Photoshop 6.0 format with header description text of variable length.
@@ -215,7 +217,7 @@ protected mapping(string:string|array(string)) decode_photoshop_data(string data
 	(string)record_set + ":" + (string)id;
 
       if (label == "coded character set") {
-	string charset = ([
+	string|zero charset = ([
 	  "\e%/@": "UTF-16",	// ISO-IR 162 (NB: Actually UCS-2 level 1)
 	  "\e%/A": "UTF-32",	// ISO-IR 163 (NB: Actually UCS-4 level 1)
 	  "\e%/B": "ISO-8859-1",// ISO-IR 125 (NB: Actually binary)
@@ -280,7 +282,7 @@ protected mapping(string:string|array(string)) decode_photoshop_data(string data
 //!
 //! @returns
 //!   Returns a mapping containing any found IPTC IIM data.
-mapping get_information(Stdio.BlockFile fd)
+mapping(string:array(string)) get_information(Stdio.InputStream fd)
 {
   string marker = fd->read(2);
   string photoshop_data = "";
@@ -293,7 +295,7 @@ mapping get_information(Stdio.BlockFile fd)
     sscanf(tmp, "%*2c%-4c", offset);
     offset -= 30;
     if (offset < 0) return ([]);
-    if (offset > 0) fd->read(offset);
+    if (offset > 0) fd->read([int(1..)]offset);
     marker = fd->read(2);	// Should be a PS header.
   }
   if (marker == "%!") {
@@ -301,8 +303,7 @@ mapping get_information(Stdio.BlockFile fd)
     // Note: We use the split iterator by hand to make sure '\r' is
     //       valid as a line terminator.
     foreach(String.SplitIterator(marker, (<'\r','\n'>), 1,
-				 fd->read_function(8192));
-	    int lineno; string line) {
+				 fd->read_function(8192)); ; string line) {
       if (line[0] != '%') continue;
       if (bytes < 0) sscanf(line, "%%BeginPhotoshop:%*[ ]%d", bytes);
       else if (has_prefix(line, "%EndPhotoshop")) {
@@ -346,7 +347,7 @@ mapping get_information(Stdio.BlockFile fd)
 
   if (!sizeof(photoshop_data)) return ([]);
 
-  mapping res = decode_photoshop_data(photoshop_data);
+  mapping(string:array(string)) res = decode_photoshop_data(photoshop_data);
 
   if (sizeof(res)) {
     // IIMV 4.1 Chapter 3 Section 1.6 (a):
@@ -389,7 +390,7 @@ mapping get_information(Stdio.BlockFile fd)
     //
     // We attempt some DWIM...
 
-    string charset;
+    string charset = "";
     if (!res->charset) {
       charset = "macintosh";
     } else {
@@ -404,10 +405,10 @@ mapping get_information(Stdio.BlockFile fd)
     }
     //werror("Charset: %O\n", charset);
     res->charset = ({ charset });
-    object decoder = Charset.decoder(charset);
+    Charset.Decoder decoder = Charset.decoder(charset);
     foreach(res; string key; array(string) vals) {
       res[key] = map(vals,
-		     lambda(string val, object decoder) {
+		     lambda(string val, Charset.Decoder decoder) {
 		       return decoder->feed(val)->drain();
 		     }, decoder);
     }
