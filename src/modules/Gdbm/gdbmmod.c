@@ -792,9 +792,9 @@ PIKE_MODULE_INIT
 
   start_new_program();
   ADD_STORAGE(struct gdbm_glue);
-  ADD_FUNCTION("first", gdbmmod_iter_first,tFunc(tNone,tInt01),0);
-  ADD_FUNCTION("_iterator_next",  gdbmmod_iter_next, tFunc(tNone,tInt01),
-	       ID_PROTECTED);
+  ADD_FUNCTION("first", gdbmmod_iter_first, tFunc(tNone,tVoid), 0);
+  ADD_FUNCTION("_iterator_next",  gdbmmod_iter_next,
+	       tFunc(tNone, tOr(tStr8,tZero)), ID_PROTECTED);
   ADD_FUNCTION("_iterator_index", gdbmmod_iter_index, tFunc(tNone,tStr8),
 	       ID_PROTECTED);
   ADD_FUNCTION("_iterator_value", gdbmmod_iter_value, tFunc(tNone,tStr8),
