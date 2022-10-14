@@ -5030,12 +5030,17 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
   case T_SCOPE:
     tmp = low_type_binop(op, a->cdr, b, remap,
 			 aflags | PT_FLAG_CMP_INSEPARABLE, bflags,
-			 remap_flags);
-    if (!tmp) return NULL;
-    type_stack_mark();
-    push_finished_type(tmp);
-    push_scope_type(CAR_TO_INT(a));
+			 PT_FLAG_REMAP_INEXACT | remap_flags);
+    if (!tmp) {
+      return NULL;
+    }
     free_type(tmp);
+
+    type_stack_mark();
+    push_remap_markers(a, remap, remap_flags);
+    push_remap_markers(b, remap, remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+    push_binop(op);
+
     return pop_unfinished_type();
   }
   switch(b?b->type:PIKE_T_UNKNOWN) {
@@ -5096,12 +5101,17 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
   case T_SCOPE:
     tmp = low_type_binop(op, a, b->cdr, remap,
 			 aflags, bflags | PT_FLAG_CMP_INSEPARABLE,
-			 remap_flags);
-    if (!tmp) return NULL;
-    type_stack_mark();
-    push_finished_type(tmp);
-    push_scope_type(CAR_TO_INT(b));
+			 PT_FLAG_REMAP_INEXACT | remap_flags);
+    if (!tmp) {
+      return NULL;
+    }
     free_type(tmp);
+
+    type_stack_mark();
+    push_remap_markers(a, remap, remap_flags);
+    push_remap_markers(b, remap, remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+    push_binop(op);
+
     return pop_unfinished_type();
   }
 
