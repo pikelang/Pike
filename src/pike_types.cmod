@@ -6595,24 +6595,30 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
     type_stack_mark();
     if (op == PT_BINOP_MINUS) {
       if (tmp) {
-	push_finished_type(a->cdr);
-	push_finished_type(tmp);
-	push_type(a->type);
+	if (tmp2) {
+	  /* There is a partial overlap for both indices (car)
+	   * and values (cdr). Keep the original types and
+	   * defer the operation to later.
+	   */
+	  free_type(tmp2);
+	  push_remap_markers(a, remap, remap_flags);
+	  push_remap_markers(b, remap,
+			     remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+	  push_type(T_NOT);
+	  push_reverse_type(T_AND);
+	} else {
+	  push_remap_markers(a->cdr, remap, remap_flags);
+	  push_finished_type(tmp);
+	  push_type(a->type);
+	}
 	free_type(tmp);
-      }
-      if (tmp2) {
+      } else if (tmp2) {
 	push_finished_type(tmp2);
-	push_finished_type(a->car);
+	push_remap_markers(a->car, remap, remap_flags);
 	push_type(a->type);
 	free_type(tmp2);
-      }
-      switch(peek_stack_mark()) {
-      case 0:
+      } else {
 	push_type(PIKE_T_UNKNOWN);
-	break;
-      case 2:
-	push_type(T_OR);
-	break;
       }
     } else {
       /* PT_BINOP_AND */
