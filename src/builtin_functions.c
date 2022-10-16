@@ -3894,6 +3894,7 @@ PMOD_EXPORT void f_indices(INT32 args)
   push_array(a);
 }
 
+#if 0
 static node *fix_aggregate_mapping_type(node *n)
 {
   struct pike_type *types[2] = { NULL, NULL };
@@ -4036,6 +4037,7 @@ static node *fix_aggregate_mapping_type(node *n)
   }
   return NULL;
 }
+#endif
 
 /*! @decl array values(string|array|mapping|multiset|object x)
  *!
@@ -10124,8 +10126,13 @@ void init_builtin_efuns(void)
 
   /* function(0=mixed ...:mapping(0:0)) */
   ADD_EFUN2("aggregate_mapping",f_aggregate_mapping,
-	    tFuncV(tNone,tSetvar(0,tMix),tMap(tVar(0),tVar(0))),
-	    OPT_TRY_OPTIMIZE, fix_aggregate_mapping_type, 0);
+	    tOr(tFunc(tNone, tMap(tUnknown, tUnknown)),
+		tTransitive(tFunc(tSetvar(0, tMix) tSetvar(1, tMix),
+				  tMap(tVar(0), tVar(1))),
+			    tFunc(tSetvar(2, tMap(tMix, tMix))
+				  tSetvar(0, tMix) tSetvar(1, tMix),
+				  tOr(tVar(2), tMap(tVar(0), tVar(1)))))),
+	    OPT_TRY_OPTIMIZE, NULL, 0);
 
   /* function(:mapping(string:mixed)) */
   ADD_EFUN("all_constants",f_all_constants,
