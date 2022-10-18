@@ -10129,9 +10129,10 @@ void init_builtin_efuns(void)
 	    tOr(tFunc(tNone, tMap(tUnknown, tUnknown)),
 		tTransitive(tFunc(tSetvar(0, tMix) tSetvar(1, tMix),
 				  tMap(tVar(0), tVar(1))),
-			    tFunc(tSetvar(2, tMap(tMix, tMix))
+			    tFunc(tMap(tSetvar(2, tMix), tSetvar(3, tMix))
 				  tSetvar(0, tMix) tSetvar(1, tMix),
-				  tOr(tVar(2), tMap(tVar(0), tVar(1)))))),
+				  tMap(tOr(tVar(2), tVar(0)),
+				       tOr(tVar(3), tVar(1)))))),
 	    OPT_TRY_OPTIMIZE, NULL, 0);
 
   /* function(:mapping(string:mixed)) */
