@@ -5340,13 +5340,13 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 
     return pop_unfinished_type();
   case T_SCOPE:
-    tmp = low_type_binop(op, a->cdr, b, remap,
+    tmp = low_type_binop(PT_BINOP_AND, a->cdr, b, remap,
 			 aflags | PT_FLAG_CMP_INSEPARABLE, bflags,
 			 PT_FLAG_REMAP_INEXACT | remap_flags);
-    if (!tmp) {
+    free_type(tmp);
+    if ((!tmp) ^ (op != PT_BINOP_AND)) {
       return NULL;
     }
-    free_type(tmp);
 
     type_stack_mark();
     if (op == PT_BINOP_AND) {
@@ -5420,13 +5420,13 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 
     return pop_unfinished_type();
   case T_SCOPE:
-    tmp = low_type_binop(op, a, b->cdr, remap,
+    tmp = low_type_binop(PT_BINOP_AND, a, b->cdr, remap,
 			 aflags, bflags | PT_FLAG_CMP_INSEPARABLE,
 			 PT_FLAG_REMAP_INEXACT | remap_flags);
-    if (!tmp) {
+    free_type(tmp);
+    if ((!tmp) ^ (op != PT_BINOP_AND)) {
       return NULL;
     }
-    free_type(tmp);
 
     type_stack_mark();
     push_remap_markers(b, remap, remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
