@@ -2763,7 +2763,7 @@ static void low_describe_int_range(struct string_builder *s,
 
 void low_describe_type(struct string_builder *s, struct pike_type *t)
 {
-  check_c_stack(1024);
+  fatal_check_c_stack(1024);
   if (!t) {
     string_builder_strcat(s, "__unknown__");
     return;
@@ -3598,7 +3598,7 @@ static void low_or_pike_types(struct pike_type *t1,
   struct pike_type *arg1 = t1;
   struct pike_type *arg2 = t2;
 #endif
-  check_c_stack(1024);
+  fatal_check_c_stack(1024);
 #if 0
   fprintf(stderr, "  low_or_pike_types(");
   simple_describe_type(t1);

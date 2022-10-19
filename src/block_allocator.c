@@ -316,7 +316,7 @@ found:
 #ifdef PIKE_DEBUG
 	print_allocator(a);
 #endif
-	Pike_error("Trying to free unknown block %p.\n", ptr);
+	Pike_fatal("Trying to free unknown block %p.\n", ptr);
     }
     PIKE_MEMPOOL_FREE(a, ptr, a->l.block_size);
 }
