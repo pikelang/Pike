@@ -947,6 +947,7 @@ static void free_compilation(struct compilation *c)
      *     find the node_allocator.
      */
     struct program_state fake_compiler, *orig_compiler = Pike_compiler;
+    memset(&fake_compiler, 0, sizeof(fake_compiler));
     fake_compiler.compiler = c;
     Pike_compiler = &fake_compiler;
 
