@@ -814,22 +814,38 @@ test_any_equal([[
   }
 
   A o = A();
-  return ({ o->foo(), o->foo(UNDEFINED), o->foo("bar") });
-]], ({ "foo", "foo", "bar" }))
+  return ({ o->foo(), o->foo(UNDEFINED), o->foo(0), o->foo("bar") });
+]], ({ "foo", "foo", "foo", "bar" }))
+test_any_equal([[
+  class A {
+    int foo(int bar = 17) { return bar; }
+  }
+
+  A o = A();
+  return ({ o->foo(), o->foo(UNDEFINED), o->foo(0), o->foo(18) });
+]], ({ 17, 17, 0, 18 }))
 
 dnl Generator with default value.
 
 dnl Lambda with default value.
 test_any_equal([[
   function(string|void:string) f = lambda(string bar = "foo") { return bar; };
-  return ({ f(), f(UNDEFINED), f("bar") });
-]], ({ "foo", "foo", "bar" }))
+  return ({ f(), f(UNDEFINED), f(0), f("bar") });
+]], ({ "foo", "foo", "foo", "bar" }))
+test_any_equal([[
+  function(int|void:int) f = lambda(int bar = 17) { return bar; };
+  return ({ f(), f(UNDEFINED), f(0), f(18) });
+]], ({ 17, 17, 0, 18 }))
 
 dnl Local function with default value.
 test_any_equal([[
   string f(string bar = "foo") { return bar; };
-  return ({ f(), f(UNDEFINED), f("bar") });
-]], ({ "foo", "foo", "bar" }))
+  return ({ f(), f(UNDEFINED), f(0), f("bar") });
+]], ({ "foo", "foo", "foo", "bar" }))
+test_any_equal([[
+  int f(int bar = 17) { return bar; };
+  return ({ f(), f(UNDEFINED), f(0), f(18) });
+]], ({ 17, 17, 0, 18 }))
 
 dnl Local generator with default value.
 
@@ -839,10 +855,23 @@ test_any_equal([[
     protected void create(string blag = bar) { bar += blag; }
   }
 
-  return ({ foo(), foo(UNDEFINED), foo("bar"), foo("bar", UNDEFINED),
+  return ({ foo(), foo(UNDEFINED), foo(0), foo("bar"), foo("bar", UNDEFINED),
+	    foo("bar", 0), foo(0, "bar"), foo(UNDEFINED, UNDEFINED), foo(0, 0),
             foo("bar", "baz"), foo(UNDEFINED, "bar") })->bar;
-]], ({ "foofoo", "foofoo", "barbar", "barbar",
+]], ({ "foofoo", "foofoo", "foofoo", "barbar", "barbar",
+       "barbar", "foobar", "foofoo", "foofoo",
        "barbaz", "foobar" }))
+test_any_equal([[
+  class foo(int bar = 17) {
+    protected void create(int blag = bar) { bar += blag; }
+  }
+
+  return ({ foo(), foo(UNDEFINED), foo(0), foo(18), foo(18, UNDEFINED),
+	    foo(18, 0), foo(0, 18), foo(UNDEFINED, UNDEFINED), foo(0, 0),
+            foo(18, 19), foo(UNDEFINED, 18) })->bar;
+]], ({ 34, 34, 0, 36, 36,
+       18, 18, 34, 0,
+       37, 35 }))
 
 dnl Anonymous class with implicit create with default value.
 test_any_equal([[
@@ -850,10 +879,23 @@ test_any_equal([[
       protected void create(string blag = bar) { bar += blag; }
     };
 
-  return ({ foo(), foo(UNDEFINED), foo("bar"), foo("bar", UNDEFINED),
+  return ({ foo(), foo(UNDEFINED), foo(0), foo("bar"), foo("bar", UNDEFINED),
+	    foo("bar", 0), foo(0, "bar"), foo(UNDEFINED, UNDEFINED), foo(0, 0),
             foo("bar", "baz"), foo(UNDEFINED, "bar") })->bar;
-]], ({ "foofoo", "foofoo", "barbar", "barbar",
+]], ({ "foofoo", "foofoo", "foofoo", "barbar", "barbar",
+       "barbar", "foobar", "foofoo", "foofoo",
        "barbaz", "foobar" }))
+test_any_equal([[
+  program foo = class(int bar = 17) {
+      protected void create(int blag = bar) { bar += blag; }
+    };
+
+  return ({ foo(), foo(UNDEFINED), foo(0), foo(18), foo(18, UNDEFINED),
+	    foo(18, 0), foo(0, 18), foo(UNDEFINED, UNDEFINED), foo(0, 0),
+            foo(18, 19), foo(UNDEFINED, 18) })->bar;
+]], ({ 34, 34, 0, 36, 36,
+       18, 18, 34, 0,
+       37, 35 }))
 
 dnl bug in for loop optimization in combination with +=
 test_any([[

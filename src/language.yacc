@@ -190,6 +190,7 @@ static node *lexical_islocal(struct pike_string *);
 static node *safe_inc_enum(node *n);
 static node *find_versioned_identifier(struct pike_string *identifier,
 				       int major, int minor);
+static node *set_default_value(int e, node *def);
 static int call_handle_import(void);
 static void update_current_type(void);
 
@@ -1049,17 +1050,8 @@ def: modifiers optional_attributes simple_type optional_constant
 	} else {
 	  node *def = Pike_compiler->compiler_frame->variable[e].def;
 	  if (def) {
-	    /* if (undefinedp($e)) { $e = def; } */
 	    check_args =
-	      mknode(F_COMMA_EXPR, check_args,
-		     mknode(F_POP_VALUE,
-			    mknode(F_LAND,
-				   mkefuncallnode("undefinedp",
-						  mklocalnode(e, 0)),
-				   mknode(F_ASSIGN,
-					  mklocalnode(e, 0),
-					  def)), NULL));
-	    add_ref(def);
+	      mknode(F_COMMA_EXPR, check_args, set_default_value(e, def));
 	  }
 
 	  if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
@@ -2571,17 +2563,7 @@ lambda: TOK_LAMBDA line_number_info implicit_identifier start_lambda
 	push_type(T_VOID);
 	push_type(T_OR);
 
-	/* if (undefinedp($e)) { $e = def; } */
-	$7 = mknode(F_COMMA_EXPR,
-		    mknode(F_POP_VALUE,
-			   mknode(F_LAND,
-				  mkefuncallnode("undefinedp",
-						 mklocalnode(e, 0)),
-				  mknode(F_ASSIGN,
-					 mklocalnode(e, 0),
-					 def)), NULL),
-		    $7);
-	add_ref(def);
+	$7 = mknode(F_COMMA_EXPR, set_default_value(e, def), $7);
       }
       push_type(T_FUNCTION);
     }
@@ -2745,17 +2727,7 @@ local_function: TOK_IDENTIFIER start_function func_args
     for(; e>=0; e--) {
       node *def = Pike_compiler->compiler_frame->variable[e].def;
       if (def) {
-	/* if (undefinedp($e)) { $e = def; } */
-	$5 = mknode(F_COMMA_EXPR,
-		    mknode(F_POP_VALUE,
-			   mknode(F_LAND,
-				  mkefuncallnode("undefinedp",
-						 mklocalnode(e, 0)),
-				  mknode(F_ASSIGN,
-					 mklocalnode(e, 0),
-					 def)), NULL),
-		    $5);
-	add_ref(def);
+	$5 = mknode(F_COMMA_EXPR, set_default_value(e, def), $5);
       }
     }
 
@@ -3004,17 +2976,7 @@ local_generator: TOK_IDENTIFIER start_function func_args
     for(; e>=0; e--) {
       node *def = Pike_compiler->compiler_frame->variable[e].def;
       if (def) {
-	/* if (undefinedp($e)) { $e = def; } */
-	$5 = mknode(F_COMMA_EXPR,
-		    mknode(F_POP_VALUE,
-			   mknode(F_LAND,
-				  mkefuncallnode("undefinedp",
-						 mklocalnode(e, 0)),
-				  mknode(F_ASSIGN,
-					 mklocalnode(e, 0),
-					 def)), NULL),
-		    $5);
-	add_ref(def);
+	$5 = mknode(F_COMMA_EXPR, set_default_value(e, def), $5);
       }
     }
 
@@ -3233,21 +3195,10 @@ optional_create_arguments: /* empty */ { $$ = 0; }
       }
 
       if (def) {
-	/* if (undefinedp($e)) { $e = def; } */
 	push_type(T_VOID);
 	push_type(T_OR);
 
-	n =
-	  mknode(F_COMMA_EXPR,
-		 mknode(F_POP_VALUE,
-			mknode(F_LAND,
-			       mkefuncallnode("undefinedp",
-					      mklocalnode(e, 0)),
-			       mknode(F_ASSIGN,
-				      mklocalnode(e, 0),
-				      def)), NULL),
-		  n);
-	add_ref(def);
+	n = mknode(F_COMMA_EXPR, set_default_value(e, def), n);
       }
 
       push_type(T_FUNCTION);
@@ -5625,6 +5576,31 @@ static node *find_versioned_identifier(struct pike_string *identifier,
   change_compiler_compatibility(old_major, old_minor);
 
   return res;
+}
+
+static node *set_default_value(int e, node *def)
+{
+  add_ref(def);
+
+  if (Pike_compiler->compiler_frame->variable[e].type->flags &
+      PT_FLAG_NULLABLE) {
+    /* if (undefinedp($e)) { $e = def; } */
+    return mknode(F_POP_VALUE,
+		  mknode(F_LAND,
+			 mkefuncallnode("undefinedp",
+					mklocalnode(e, 0)),
+			 mknode(F_ASSIGN,
+				mklocalnode(e, 0),
+				def)), NULL);
+  }
+
+  /* if (!$e) { $e = def; } */
+  return mknode(F_POP_VALUE,
+		mknode(F_LOR,
+		       mklocalnode(e, 0),
+		       mknode(F_ASSIGN,
+			      mklocalnode(e, 0),
+			      def)), NULL);
 }
 
 static int call_handle_import(void)
