@@ -388,6 +388,7 @@ int parse_type(array t, int p)
 	  case "!":
 	    continue;
 
+	  case "__deprecated__":
 	  case "object":
 	  case "program":
 	  case "function":
@@ -614,6 +615,7 @@ class PikeType
 	  else return "void";
 	}
 
+        case "__deprecated__":
 	case "=":
 	case "&":
 	  return args[-1]->basetype();
@@ -693,6 +695,7 @@ class PikeType
 	case "|":
 	  return `|(@args->basetypes());
 
+        case "__deprecated__":
 	case "=":
 	case "&":
 	  return args[-1]->basetypes();
@@ -882,6 +885,9 @@ class PikeType
 	  if(ret=="tArr(tMix)") return "tArray";
 	  return ret;
 
+        case "__deprecated__":
+	  return sprintf("tDeprecated(%s)", args[0]->output_c_type());
+
         case "type":
 	  return sprintf("tType(%s)", args[0]->output_c_type());
 
@@ -1013,6 +1019,9 @@ class PikeType
 	  if(tmp=="mixed") return ret;
 	  return sprintf("%s(%s)",ret,tmp);
 	}
+
+	case "__deprecated__":
+	  return sprintf("%s(%s)", ret, args[0]->output_pike_type(0));
 
 	case "function":
 	  array(string) tmp=args->output_pike_type(0);
@@ -1209,6 +1218,7 @@ class PikeType
 		args=({ PikeType(tok[1..]) });
 		break;
 
+	      case "__deprecated__":
 	      case "array":
 	      case "multiset":
 		args=({ PikeType(tok[1..]) });
