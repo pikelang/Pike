@@ -2822,7 +2822,7 @@ static int my_grantpt(int m)
 #ifndef HAVE_OPENPTY
 #define HAVE_OPENPTY
 #endif
-#elif defined(HAVE_POSIX_OPENPT)
+#elif defined(HAVE_POSIX_OPENPT) && defined(HAVE_PTSNAME)
 static int fd_openpty(int *master, int *slave, void *ignored_name,
 		      void *ignored_termp, void *ignored_winp)
 {
@@ -2835,7 +2835,11 @@ static int fd_openpty(int *master, int *slave, void *ignored_name,
   }
   m = posix_openpt(O_RDWR | O_NOCTTY);
   if (m < 0) return -1;
-  if (!grantpt(m) && !unlockpt(m) && (sname = ptsname(m))) {
+  if (
+#ifdef HAVE_GRANTPT
+      !grantpt(m) &&
+#endif
+      !unlockpt(m) && (sname = ptsname(m))) {
     int s = open(sname, O_RDWR | O_NOCTTY);
     if (s >= 0) {
       *master = m;
