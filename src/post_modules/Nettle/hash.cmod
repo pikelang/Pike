@@ -152,7 +152,7 @@ PIKECLASS Hash
     return 0;
   }
 
-  /*! @decl string(0..255) hash(Stdio.File|Stdio.Buffer|String.Buffer|System.Memory source, void|int(0..) bytes)
+  /*! @decl string(0..255) hash(Stdio.File|Stdio.Buffer|String.Buffer|System.Memory source, void|int(0..)|__deprecated__(int(..-1)) bytes)
    *!
    *!  Works as a (faster) shortcut for e.g.
    *!  @expr{State()->update(Stdio.read_file(file))->digest()@},
@@ -161,14 +161,14 @@ PIKECLASS Hash
    *!
    *! @param bytes
    *!   The number of bytes of the file object @[file] that should be
-   *!   hashed. Negative numbers are ignored and the whole file is
-   *!   hashed.
+   *!   hashed. Zero and negative numbers are ignored and the whole file is
+   *!   hashed. Support for negative numbers is deprecated.
    *!
    *! @seealso
    *!   @[Stdio.File], @[State()->update()] and
    *!   @[State()->digest()].
    */
-  PIKEFUN string(0..255) hash(object in, void|int(0..) bytes)
+  PIKEFUN string(0..255) hash(object in, void|int(0..)|__deprecated__(int(..-1)) bytes)
     optflags OPT_EXTERNAL_DEPEND;
     {
     void *ctx;

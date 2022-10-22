@@ -38,12 +38,12 @@ string(8bit) hash(string(8bit) data)
 //!
 //! @param bytes
 //!   The number of bytes of the @[source] object that should be
-//!   hashed. Zero and negative numbers are ignored and the whole file
-//!   is hashed.
+//!   hashed. Zero and negative values are ignored and the whole file
+//!   is hashed. Support for negative values is deprecated.
 //!
 //! @[Stdio.File], @[Stdio.Buffer], @[String.Buffer], @[System.Memory]
 variant string(8bit) hash(Stdio.File|Stdio.Buffer|String.Buffer|System.Memory source,
-                    int|void bytes)
+			  int(0..)|void bytes)
 {
   function(int|void:string(8bit))|zero f;
 
@@ -75,6 +75,12 @@ variant string(8bit) hash(Stdio.File|Stdio.Buffer|String.Buffer|System.Memory so
       return hash( f() );
   }
   error("Incompatible object\n");
+}
+
+variant string(8bit) hash(Stdio.File|Stdio.Buffer|String.Buffer|System.Memory source,
+			  __deprecated__(int(..-1)) bytes)
+{
+  return hash( source );
 }
 
 //! JWS algorithm id (if any) for the HMAC sub-module.
