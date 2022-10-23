@@ -626,9 +626,9 @@ class HKDF
 
   //! Initializes the HKDF object with a RFC 5869 2.2
   //! HKDF-Extract(salt, IKM) call.
-  protected void create(string(8bit) password, void|string(8bit) salt)
+  protected void create(string(8bit) password,
+			string(8bit) salt = "\0"*digest_size())
   {
-    if(!salt) salt = "\0"*digest_size();
     prk = salt;
     extract(password);
   }
@@ -784,7 +784,7 @@ string(8bit) mgf1(string(8bit) seed, int(0..) bytes)
 string(8bit)|zero eme_oaep_encode(string(8bit) message,
                                   int(1..) bytes,
                                   string(8bit) seed,
-                                  string(8bit)|void label,
+                                  string(8bit) label = "",
                                   function(string(8bit), int(0..):
                                            string(8bit))|void mgf)
 {
@@ -799,7 +799,6 @@ string(8bit)|zero eme_oaep_encode(string(8bit) message,
   // EME-OAEP encoding (see Figure 1 below):
   // a. If the label L is not provided, let L be the empty string. Let
   //    lHash = Hash(L), an octet string of length hLen (see the note below).
-  if (!label) label = "";
   string(8bit) lhash = hash([string]label);
 
   // b. Generate an octet string PS consisting of k - mLen - 2hLen - 2
@@ -859,7 +858,7 @@ string(8bit)|zero eme_oaep_encode(string(8bit) message,
 //! @seealso
 //!   @[eme_oaep_encode()], @rfc{3447:7.1.2@}
 string(8bit)|zero eme_oaep_decode(string(8bit) message,
-                                  string(8bit)|void label,
+                                  string(8bit) label = "",
                                   function(string(8bit), int(0..):
                                            string(8bit))|void mgf)
 {
@@ -874,7 +873,6 @@ string(8bit)|zero eme_oaep_decode(string(8bit) message,
   // a. If the label L is not provided, let L be the empty string. Let
   //    lHash = Hash(L), an octet string of length hLen (see the note
   //    in Section 7.1.1).
-  if (!label) label = "";
   string(8bit) lhash = hash([string]label);
 
   // b. Separate the encoded message EM into a single octet Y, an octet
@@ -1033,10 +1031,8 @@ string(8bit)|zero emsa_pss_encode(string(8bit) message, int(1..) bits,
 int(0..1) emsa_pss_verify(string(8bit) message, string(8bit) sign,
 			  int(1..) bits, int(0..)|void saltlen,
 			  function(string(8bit), int(0..):
-				   string(8bit))|void mgf)
+				   string(8bit)) mgf = mgf1)
 {
-  if (!mgf) mgf = mgf1;
-
   // 1. If the length of M is greater than the input limitation for
   //    the hash function (2^61 - 1 octets for SHA-1), output
   //    "inconsistent" and stop.
@@ -1125,7 +1121,7 @@ int(0..1) emsa_pss_verify(string(8bit) message, string(8bit) sign,
 //!   The maximum number of digits of the one-time password. Defaults
 //!   to 6. Note that the result is usually 0-padded to this length
 //!   for user display purposes.
-int hotp(string(8bit) secret, int factor, void|int length)
+int hotp(string(8bit) secret, int factor, int(1..) length = 6)
 {
   // 1
   string(8bit) hs = HMAC(secret)(sprintf("%8c",factor));
@@ -1137,7 +1133,7 @@ int hotp(string(8bit) secret, int factor, void|int length)
   snum &= 0x7fffffff;
 
   // 3
-  return snum % [int]pow(10, length||6);
+  return snum % [int]pow(10, length);
 }
 
 // Salted password cache for SCRAM
