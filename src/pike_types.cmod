@@ -4957,170 +4957,6 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
     }
   }
 
-  /* Attributes and names. */
-  switch(a?a->type:PIKE_T_UNKNOWN) {
-  case PIKE_T_NAME:
-    tmp = low_type_binop(op, a->cdr, b, remap, aflags, bflags, remap_flags);
-    if (!tmp) return NULL;
-    if (tmp != a->cdr) return tmp;
-    type_stack_mark();
-    push_finished_type(tmp);
-    push_type_name((struct pike_string *)(a->car));
-    free_type(tmp);
-    return pop_unfinished_type();
-  case PIKE_T_ATTRIBUTE:
-    if (b && (b->type == PIKE_T_ATTRIBUTE) && (b->car == a->car)) {
-      /* Types a and b have the same attribute.
-       *
-       * Do NOT call pop_type_attribute() (or push_type_attribute())
-       * in this case.
-       */
-      tmp = low_type_binop(op, a->cdr, b->cdr, remap,
-			   aflags, bflags, remap_flags);
-      if (!tmp) {
-	return NULL;
-      }
-    } else {
-      tmp = low_type_binop(op, a->cdr, b, remap, aflags, bflags, remap_flags);
-
-      if (!tmp) {
-	if (c && (op == PT_BINOP_MINUS)) {
-	  ref_push_string((struct pike_string *)a->car);
-	  ref_push_type_value(a->cdr);
-	  ref_push_type_value(b);
-	  if (remap) {
-	    if (!remap->state) {
-	      remap->state = allocate_mapping(4);
-	    }
-	    ref_push_mapping(remap->state);
-	    safe_apply_current2(PC_POP_TYPE_ATTRIBUTE_FUN_NUM, 4,
-				"pop_type_attribute");
-	  } else {
-	    safe_apply_current2(PC_POP_TYPE_ATTRIBUTE_FUN_NUM, 3,
-				"pop_type_attribute");
-	  }
-	  if ((TYPEOF(Pike_sp[-1]) == T_INT) &&
-	      (SUBTYPEOF(Pike_sp[-1]) == NUMBER_NUMBER) &&
-	      (!Pike_sp[-1].u.integer)) {
-	    /* Forced mismatch. */
-	    pop_stack();
-	    return remap_markers(a, remap, remap_flags);
-	  }
-	  if (TYPEOF(Pike_sp[-1]) == PIKE_T_TYPE) {
-	    /* Alternative type for a. */
-	    tmp = low_type_binop(op, Pike_sp[-1].u.type, b, remap,
-				 aflags, bflags, remap_flags);
-	    pop_stack();
-	    return tmp;
-	  }
-	  pop_stack();
-	}
-	return NULL;
-      }
-    }
-
-    type_stack_mark();
-    push_finished_type(tmp);
-    if (op == PT_BINOP_AND) {
-      push_type_attribute((struct pike_string *)(a->car));
-    }
-    free_type(tmp);
-
-    return pop_unfinished_type();
-  case T_SCOPE:
-    tmp = low_type_binop(op, a->cdr, b, remap,
-			 aflags | PT_FLAG_CMP_INSEPARABLE, bflags,
-			 PT_FLAG_REMAP_INEXACT | remap_flags);
-    if (!tmp) {
-      return NULL;
-    }
-    free_type(tmp);
-
-    type_stack_mark();
-    if (op == PT_BINOP_AND) {
-      push_remap_markers(a, remap, remap_flags);
-    } else {
-      push_remap_markers(b, remap, remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
-      push_remap_markers(a, remap, remap_flags);
-      push_binop(op);
-    }
-
-    return pop_unfinished_type();
-  }
-  switch(b?b->type:PIKE_T_UNKNOWN) {
-  case PIKE_T_NAME:
-    tmp = low_type_binop(op, a, b->cdr, remap, aflags, bflags, remap_flags);
-    if (!tmp) return NULL;
-    if (tmp != b->cdr) return tmp;
-    type_stack_mark();
-    push_finished_type(tmp);
-    push_type_name((struct pike_string *)(b->car));
-    free_type(tmp);
-    return pop_unfinished_type();
-  case PIKE_T_ATTRIBUTE:
-    tmp = low_type_binop(op, a, b->cdr, remap, aflags, bflags, remap_flags);
-    if (!tmp) {
-      if (a && c && (op == PT_BINOP_MINUS)) {
-	ref_push_string((struct pike_string *)b->car);
-	ref_push_type_value(a);
-	ref_push_type_value(b->cdr);
-	if (remap) {
-	  if (!remap->state) {
-	    remap->state = allocate_mapping(4);
-	  }
-	  ref_push_mapping(remap->state);
-	  safe_apply_current2(PC_PUSH_TYPE_ATTRIBUTE_FUN_NUM, 4,
-			      "push_type_attribute");
-	} else {
-	  safe_apply_current2(PC_PUSH_TYPE_ATTRIBUTE_FUN_NUM, 3,
-			      "push_type_attribute");
-	}
-	if ((TYPEOF(Pike_sp[-1]) == T_INT) &&
-	    (SUBTYPEOF(Pike_sp[-1]) == NUMBER_NUMBER) &&
-	    (!Pike_sp[-1].u.integer)) {
-	  /* Forced mismatch. */
-	  pop_stack();
-	  return remap_markers(a, remap, remap_flags);
-	}
-	if (TYPEOF(Pike_sp[-1]) == PIKE_T_TYPE) {
-	  /* Alternative type for b. */
-	  tmp = low_type_binop(op, a, Pike_sp[-1].u.type, remap,
-			       aflags, bflags, remap_flags);
-	  pop_stack();
-	  return tmp;
-	}
-	pop_stack();
-      }
-      return NULL;
-    }
-
-    type_stack_mark();
-    push_finished_type(tmp);
-    if (op == PT_BINOP_AND) {
-      push_type_attribute((struct pike_string *)(b->car));
-    }
-    free_type(tmp);
-
-    return pop_unfinished_type();
-  case T_SCOPE:
-    tmp = low_type_binop(op, a, b->cdr, remap,
-			 aflags, bflags | PT_FLAG_CMP_INSEPARABLE,
-			 PT_FLAG_REMAP_INEXACT | remap_flags);
-    if (!tmp) {
-      return NULL;
-    }
-    free_type(tmp);
-
-    type_stack_mark();
-    push_remap_markers(b, remap, remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
-    if (op != PT_BINOP_AND) {
-      push_remap_markers(a, remap, remap_flags);
-      push_binop(op);
-    }
-
-    return pop_unfinished_type();
-  }
-
   /* Check consolidated types. */
   switch(a?a->type:PIKE_T_UNKNOWN) {
   case T_OR:
@@ -5422,6 +5258,181 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
     }
     free_type(tmp);
     free_type(tmp2);
+
+    return pop_unfinished_type();
+  }
+
+  /* Attributes and names. */
+  switch(a?a->type:PIKE_T_UNKNOWN) {
+  case PIKE_T_NAME:
+    tmp = low_type_binop(op, a->cdr, b, remap, aflags, bflags, remap_flags);
+    if (!tmp) {
+      return NULL;
+    }
+    if (tmp != a->cdr) {
+      return tmp;
+    }
+    type_stack_mark();
+    push_finished_type(tmp);
+    push_type_name((struct pike_string *)(a->car));
+    free_type(tmp);
+
+    return pop_unfinished_type();
+  case PIKE_T_ATTRIBUTE:
+    if (b && (b->type == PIKE_T_ATTRIBUTE) && (b->car == a->car)) {
+      /* Types a and b have the same attribute.
+       *
+       * Do NOT call pop_type_attribute() (or push_type_attribute())
+       * in this case.
+       */
+      tmp = low_type_binop(op, a->cdr, b->cdr, remap,
+			   aflags, bflags, remap_flags);
+      if (!tmp) {
+	return NULL;
+      }
+    } else {
+      tmp = low_type_binop(op, a->cdr, b, remap, aflags, bflags, remap_flags);
+
+      if (!tmp) {
+	if (c && (op == PT_BINOP_MINUS)) {
+	  ref_push_string((struct pike_string *)a->car);
+	  ref_push_type_value(a->cdr);
+	  ref_push_type_value(b);
+	  if (remap) {
+	    if (!remap->state) {
+	      remap->state = allocate_mapping(4);
+	    }
+	    ref_push_mapping(remap->state);
+	    safe_apply_current2(PC_POP_TYPE_ATTRIBUTE_FUN_NUM, 4,
+				"pop_type_attribute");
+	  } else {
+	    safe_apply_current2(PC_POP_TYPE_ATTRIBUTE_FUN_NUM, 3,
+				"pop_type_attribute");
+	  }
+	  if ((TYPEOF(Pike_sp[-1]) == T_INT) &&
+	      (SUBTYPEOF(Pike_sp[-1]) == NUMBER_NUMBER) &&
+	      (!Pike_sp[-1].u.integer)) {
+	    /* Forced mismatch. */
+	    pop_stack();
+	    return remap_markers(a, remap, remap_flags);
+	  }
+	  if (TYPEOF(Pike_sp[-1]) == PIKE_T_TYPE) {
+	    /* Alternative type for a. */
+	    tmp = low_type_binop(op, Pike_sp[-1].u.type, b, remap,
+				 aflags, bflags, remap_flags);
+	    pop_stack();
+	    return tmp;
+	  }
+	  pop_stack();
+	}
+	return NULL;
+      }
+    }
+
+    type_stack_mark();
+    push_finished_type(tmp);
+    if (op == PT_BINOP_AND) {
+      push_type_attribute((struct pike_string *)(a->car));
+    }
+    free_type(tmp);
+
+    return pop_unfinished_type();
+  case T_SCOPE:
+    tmp = low_type_binop(op, a->cdr, b, remap,
+			 aflags | PT_FLAG_CMP_INSEPARABLE, bflags,
+			 PT_FLAG_REMAP_INEXACT | remap_flags);
+    if (!tmp) {
+      return NULL;
+    }
+    free_type(tmp);
+
+    type_stack_mark();
+    if (op == PT_BINOP_AND) {
+      push_remap_markers(a, remap, remap_flags);
+    } else {
+      push_remap_markers(b, remap, remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+      push_remap_markers(a, remap, remap_flags);
+      push_binop(op);
+    }
+
+    return pop_unfinished_type();
+  }
+  switch(b?b->type:PIKE_T_UNKNOWN) {
+  case PIKE_T_NAME:
+    tmp = low_type_binop(op, a, b->cdr, remap, aflags, bflags, remap_flags);
+    if (!tmp) {
+      return NULL;
+    }
+    if (tmp != b->cdr) {
+      return tmp;
+    }
+    type_stack_mark();
+    push_finished_type(tmp);
+    push_type_name((struct pike_string *)(b->car));
+    free_type(tmp);
+
+    return pop_unfinished_type();
+  case PIKE_T_ATTRIBUTE:
+    tmp = low_type_binop(op, a, b->cdr, remap, aflags, bflags, remap_flags);
+    if (!tmp) {
+      if (a && c && (op == PT_BINOP_MINUS)) {
+	ref_push_string((struct pike_string *)b->car);
+	ref_push_type_value(a);
+	ref_push_type_value(b->cdr);
+	if (remap) {
+	  if (!remap->state) {
+	    remap->state = allocate_mapping(4);
+	  }
+	  ref_push_mapping(remap->state);
+	  safe_apply_current2(PC_PUSH_TYPE_ATTRIBUTE_FUN_NUM, 4,
+			      "push_type_attribute");
+	} else {
+	  safe_apply_current2(PC_PUSH_TYPE_ATTRIBUTE_FUN_NUM, 3,
+			      "push_type_attribute");
+	}
+	if ((TYPEOF(Pike_sp[-1]) == T_INT) &&
+	    (SUBTYPEOF(Pike_sp[-1]) == NUMBER_NUMBER) &&
+	    (!Pike_sp[-1].u.integer)) {
+	  /* Forced mismatch. */
+	  pop_stack();
+	  return remap_markers(a, remap, remap_flags);
+	}
+	if (TYPEOF(Pike_sp[-1]) == PIKE_T_TYPE) {
+	  /* Alternative type for b. */
+	  tmp = low_type_binop(op, a, Pike_sp[-1].u.type, remap,
+			       aflags, bflags, remap_flags);
+	  pop_stack();
+	  return tmp;
+	}
+	pop_stack();
+      }
+      return NULL;
+    }
+
+    type_stack_mark();
+    push_finished_type(tmp);
+    if (op == PT_BINOP_AND) {
+      push_type_attribute((struct pike_string *)(b->car));
+    }
+    free_type(tmp);
+
+    return pop_unfinished_type();
+  case T_SCOPE:
+    tmp = low_type_binop(op, a, b->cdr, remap,
+			 aflags, bflags | PT_FLAG_CMP_INSEPARABLE,
+			 PT_FLAG_REMAP_INEXACT | remap_flags);
+    if (!tmp) {
+      return NULL;
+    }
+    free_type(tmp);
+
+    type_stack_mark();
+    push_remap_markers(b, remap, remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+    if (op != PT_BINOP_AND) {
+      push_remap_markers(a, remap, remap_flags);
+      push_binop(op);
+    }
+
     return pop_unfinished_type();
   }
 
