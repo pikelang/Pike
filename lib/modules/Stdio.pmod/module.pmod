@@ -49,6 +49,18 @@ class InputStream
   //!
   string read(int(0..)|void nbytes);
 
+  function(:string) read_function(int nbytes)
+  //! Returns a function that when called will call @[read] with
+  //! nbytes as argument. Can be used to get various callback
+  //! functions, eg for the fourth argument to
+  //! @[String.SplitIterator].
+  {
+    return lambda()
+    {
+      return read(nbytes);
+    };
+  }
+
   //!
   int close();
 
