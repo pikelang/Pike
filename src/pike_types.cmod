@@ -4038,6 +4038,8 @@ static void store_marker(struct remap_state *remap, int marker,
 
   if (!remap || !marker) return;
 
+  if (flags & PT_FLAG_REMAP_NO_STORE_MARKERS) return;
+
   if (!remap->markers[marker_set]) {
     remap->markers[marker_set] = allocate_mapping(10);
   }
