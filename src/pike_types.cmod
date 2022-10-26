@@ -5776,6 +5776,16 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 #endif
 
 	  /* FIXME: Use implicit nullable for legacy types? */
+	  if (((ai->flags|bi->flags) & PT_FLAG_ASSIGN) &&
+	      !(remap_flags & PT_FLAG_REMAP_NO_STORE_MARKERS)) {
+	    /* Make sure that markers are set properly. */
+	    tmp = low_type_binop(PT_BINOP_AND, ai->car, bi->car, remap,
+				 avoidable, bvoidable,
+				 remap_flags);
+	    if (!tmp) {
+	      remap_flags |= PT_FLAG_REMAP_NO_STORE_MARKERS;
+	    } else free_type(tmp);
+	  }
 	  /* NOTE: Intentional use of PT_BINOP_OR below!
 	   *       Note that for function types a larger type for
 	   *       the arguments implies that the function type
@@ -5788,7 +5798,8 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	   *       than function(zero:mixed).
 	   */
 	  tmp = low_type_binop(PT_BINOP_OR, ai->car, bi->car, remap,
-			       avoidable, bvoidable, remap_flags);
+			       avoidable, bvoidable,
+			       remap_flags | PT_FLAG_REMAP_NO_STORE_MARKERS);
 
 	  /* Advance to the next argument. */
 	  if (ai->type == T_FUNCTION) {
@@ -6034,20 +6045,17 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
       }
 
       nargs = peek_stack_mark();
-      if ((ai && (ai->type == PIKE_T_TRANSITIVE)) ||
-	  (bi && (bi->type == PIKE_T_TRANSITIVE))) {
-	/* Expand ai and/or bi. */
-	tmp =
-	  low_type_binop(op, ai, bi, remap, aflags, bflags, remap_flags);
-	push_finished_type(tmp);
-	free_type(tmp);
-      } else {
-	push_remap_markers(bi, remap,
-			   remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
-	push_remap_markers(ai, remap, remap_flags);
-
-	push_binop(op);
-      }
+#if 0
+      fprintf(stderr, "op: 0x%04x\n"
+	      "ai: ", op);
+      simple_describe_type(ai);
+      fprintf(stderr, "\nbi: ");
+      simple_describe_type(bi);
+      fprintf(stderr, "\n");
+#endif
+      tmp = low_type_binop(op, ai, bi, remap, aflags, bflags, remap_flags);
+      push_finished_type(tmp);
+      free_type(tmp);
 
       while (nargs--) {
 	push_reverse_type(T_FUNCTION);
