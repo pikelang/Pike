@@ -4977,15 +4977,19 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	remap->markers[marker_set] = copy_mapping(orig_markers);
       }
       tmp = low_type_binop(op, a->car, b, remap, aflags, bflags, remap_flags);
-      if ((remap_flags & PT_FLAG_REMAP_INEXACT) && tmp) {
+      /* NB: We need to examine b closer even in inexact mode if
+       *     there are marker assignments in b.
+       */
+      if ((remap_flags & PT_FLAG_REMAP_INEXACT) && tmp &&
+	  !(b->flags & PT_FLAG_ASSIGN)) {
 	if ((op == PT_BINOP_AND) || (op == PT_BINOP_MINUS)) {
 	  if (orig_markers) {
 	    do_free_mapping(remap->markers[marker_set]);
 	    remap->markers[marker_set] = orig_markers;
 	  }
 	  free_type(tmp);
-	  add_ref(a);
-	  return a;
+
+	  return remap_markers(a, remap, remap_flags);
 	}
       }
       if (orig_markers) {
