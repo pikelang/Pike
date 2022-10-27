@@ -9617,6 +9617,7 @@ void init_program(void)
   lfun_types = allocate_mapping(NUM_LFUNS + 1);
   for (i=0; i < NELEM(lfun_names); i++,n++) {
     const char *name, *compat_name = NULL;
+    struct pike_type *t;
     if (!lfun_names[i]) {
       n |= 0xf;
       continue;
@@ -9642,7 +9643,15 @@ void init_program(void)
     SET_SVAL(key, T_STRING, 0, string, lfun_strings[n]);
     mapping_insert(lfun_ids, &key, &id);
 
-    SET_SVAL(val, T_TYPE, 0, type, make_pike_type(raw_lfun_types[i]));
+    t = make_pike_type(raw_lfun_types[i]);
+    if (t->type == PIKE_T_SCOPE) {
+      /* Strip the scope wrapper. */
+      SET_SVAL(val, T_TYPE, 0, type, t->cdr);
+      add_ref(t->cdr);
+      free_type(t);
+    } else {
+      SET_SVAL(val, T_TYPE, 0, type, t);
+    }
     mapping_insert(lfun_types, &key, &val);
 
     if (compat_name) {
