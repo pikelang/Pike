@@ -1218,13 +1218,35 @@ void debug_push_type(unsigned int type)
   case T_TUPLE:
   case T_MAPPING:
   case PIKE_T_RING:
-  case PIKE_T_TRANSITIVE:
     /* Make a new type of the top two types. */
     --Pike_compiler->type_stackp;
     *Pike_compiler->type_stackp = mk_type(type,
 					  *(Pike_compiler->type_stackp+1),
 					  *Pike_compiler->type_stackp,
 					  PT_COPY_BOTH);
+    break;
+
+  case PIKE_T_TRANSITIVE:
+    --Pike_compiler->type_stackp;
+    if (!Pike_compiler->type_stackp[1]) {
+      /* Shorthand: No car ==> copy from cdr. */
+      if (!Pike_compiler->type_stackp[0]) {
+	/* Invalid. */
+	break;
+      }
+      Pike_compiler->type_stackp[1] = Pike_compiler->type_stackp[0];
+      add_ref(Pike_compiler->type_stackp[1]);
+    } else if (!Pike_compiler->type_stackp[0]) {
+      /* No recurring function ==> noop. */
+      Pike_compiler->type_stackp[0] = Pike_compiler->type_stackp[1];
+      break;
+    }
+
+    /* Note: Copy flags from car only. */
+    *Pike_compiler->type_stackp = mk_type(type,
+					  *(Pike_compiler->type_stackp+1),
+					  *Pike_compiler->type_stackp,
+					  PT_COPY_CAR);
     break;
 
   case T_PROGRAM:
