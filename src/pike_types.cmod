@@ -4457,21 +4457,7 @@ static void push_expand_transitive_remap(struct pike_type *cont,
 {
   struct pike_type *tmp;
   TYPE_STACK_DEBUG("expand_transitive_remap");
-  switch(cont?(cont->type & PIKE_T_MASK):PIKE_T_UNKNOWN) {
-  case PIKE_T_UNKNOWN:
-    if (!trans) {
-      push_type(PIKE_T_UNKNOWN);
-    } else {
-      /* A car of __unknown__ is short-hand for having it identical
-       * to the cdr.
-       *
-       * NB: Use ALTERNATE set of markers to de-couple the markers
-       *     of trans from those of the rest of the function.
-       */
-      push_expand_transitive_remap(trans, trans, remap,
-				   flags|PT_FLAG_REMAP_ALTERNATE, num_args);
-    }
-    break;
+  switch(cont->type & PIKE_T_MASK) {
   case T_OR: case T_AND:
     push_expand_transitive_remap(cont->cdr, trans, remap, flags, num_args);
     push_expand_transitive_remap(cont->car, trans, remap, flags, num_args);
@@ -4486,14 +4472,14 @@ static void push_expand_transitive_remap(struct pike_type *cont,
      * function(a, @transitive(function(b, ...:c), X)
      */
     push_expand_transitive_remap(cont->cdr, trans, remap, flags, num_args + 1);
-    push_remap_markers(cont->car, remap, flags);
+    push_finished_type(cont->car);
     push_type(cont->type);
     break;
   case T_MANY:
     if (num_args) {
       /* No need to expand further for now. */
       push_finished_type(trans);
-      push_remap_markers(cont, remap, flags);
+      push_finished_type(cont);
       push_type(PIKE_T_TRANSITIVE);
     } else {
       /* Two cases:
@@ -4519,7 +4505,7 @@ static void push_expand_transitive_remap(struct pike_type *cont,
        */
       DECLARE_CYCLIC();
 
-      push_remap_markers(cont, remap, flags);
+      push_finished_type(cont);
 
       if (!BEGIN_CYCLIC(cont, trans)) {
 	struct call_state cs;
@@ -4527,18 +4513,17 @@ static void push_expand_transitive_remap(struct pike_type *cont,
 	SET_CYCLIC_RET(1);
 
 	/* Check many arg. */
-	push_remap_markers(cont->car, remap, flags);
-	if (peek_type_stack() != void_type_string) {
+	if (cont->car != void_type_string) {
 	  push_finished_type(trans);
-	  push_remap_markers(cont, remap, flags);
+	  push_finished_type(cont);
 	  push_type(PIKE_T_TRANSITIVE);
-	  push_reverse_type(PIKE_T_FUNCTION);
+	  push_finished_type(cont->car);
+	  push_type(PIKE_T_FUNCTION);
 	  push_type(T_OR);
-	} else {
-	  compiler_discard_top_type();
 	}
 
-	push_remap_markers(cont->cdr, remap, flags);
+	/* Expand the return value from cont. */
+	push_remap_markers(cont->cdr, remap, flags|PT_FLAG_REMAP_EVAL_MARKERS);
 	INIT_CALL_STATE(cs, NULL);
 	tmp = low_new_check_call(trans, peek_type_stack(), 0, &cs, NULL);
 	FREE_CALL_STATE(cs);
@@ -4584,6 +4569,12 @@ static void push_expand_transitive_remap(struct pike_type *cont,
 
 /* Partially expand transitive types, so that eg matching
  * against function types works as expected.
+ *
+ * NB: Misnomer!
+ *     No remapping actually performed in the expansion stage!
+ *     Remapping only done when copying trans function to
+ *     cont function and when evaluating the cont function's
+ *     result.
  */
 static struct pike_type *expand_transitive_remap(struct pike_type *fun,
 						 struct remap_state *remap,
@@ -4593,15 +4584,26 @@ static struct pike_type *expand_transitive_remap(struct pike_type *fun,
   struct pike_type *cont_type;
   assert(fun->type == PIKE_T_TRANSITIVE);
 
+#ifdef PIKE_DEBUG
+  if (l_flag > 2) {
+    fprintf(stderr, "expand_transitive_remap(");
+    simple_describe_type(fun);
+    fprintf(stderr, ")\n");
+    simple_describe_remap_state(remap);
+  }
+#endif
+
   type_stack_mark();
   push_expand_transitive_remap(fun->car, fun->cdr, remap, flags, 0);
 
-#if 0
-  fprintf(stderr, "expand_transitive_remap(");
-  simple_describe_type(fun);
-  fprintf(stderr, ") ==> ");
-  simple_describe_type(peek_type_stack());
-  fprintf(stderr, "\n");
+#ifdef PIKE_DEBUG
+  if (l_flag > 2) {
+    fprintf(stderr, "expand_transitive_remap(");
+    simple_describe_type(fun);
+    fprintf(stderr, ") ==> ");
+    simple_describe_type(peek_type_stack());
+    fprintf(stderr, "\n");
+  }
 #endif
 
   return pop_unfinished_type();
