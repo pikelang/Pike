@@ -5680,7 +5680,7 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
     /* FALLTHRU */
 
   case TWOT(PIKE_T_TRANSITIVE, T_FUNCTION):
-    tmp = expand_transitive_remap(a, NULL, 0);
+    tmp = expand_transitive_remap(a, remap, remap_flags);
     ret = low_type_binop(op, tmp, b, remap, aflags, bflags, remap_flags);
     free_type(tmp);
     return ret;
@@ -5706,9 +5706,11 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
     }
     /* FALLTHRU */
   case TWOT(T_FUNCTION, PIKE_T_TRANSITIVE):
-    tmp = expand_transitive_remap(b, NULL, 0);
+    tmp = expand_transitive_remap(b, remap,
+				  remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
     ret = low_type_binop(op, a, tmp, remap, aflags, bflags, remap_flags);
     free_type(tmp);
+
     return ret;
 
   case TWOT(PIKE_T_TRANSITIVE, PIKE_T_TRANSITIVE):
@@ -7126,7 +7128,7 @@ static struct pike_type *low_subtract_types(struct pike_type *a,
   case TWOT(PIKE_T_TRANSITIVE, T_MANY):
   case TWOT(PIKE_T_TRANSITIVE, T_PROGRAM):
   case TWOT(PIKE_T_TRANSITIVE, PIKE_T_TRANSITIVE):
-    tmp = expand_transitive_remap(a, NULL, 0);
+    tmp = expand_transitive_remap(a, remap, remap_flags);
     ret = low_subtract_types(tmp, b, remap, aflags, bflags, remap_flags);
     free_type(tmp);
     return ret;
@@ -7134,7 +7136,8 @@ static struct pike_type *low_subtract_types(struct pike_type *a,
   case TWOT(T_FUNCTION, PIKE_T_TRANSITIVE):
   case TWOT(T_MANY, PIKE_T_TRANSITIVE):
   case TWOT(T_PROGRAM, PIKE_T_TRANSITIVE):
-    tmp = expand_transitive_remap(b, NULL, 0);
+    tmp = expand_transitive_remap(b, remap,
+				  remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
     ret = low_subtract_types(a, tmp, remap, aflags, bflags, remap_flags);
     free_type(tmp);
     return ret;
@@ -7807,7 +7810,7 @@ static struct pike_type *low_intersect_types(struct pike_type *a,
   case TWOT(PIKE_T_TRANSITIVE, T_MANY):
   case TWOT(PIKE_T_TRANSITIVE, T_PROGRAM):
   case TWOT(PIKE_T_TRANSITIVE, PIKE_T_TRANSITIVE):
-    tmp = expand_transitive_remap(a, NULL, 0);
+    tmp = expand_transitive_remap(a, remap, remap_flags);
     ret = low_intersect_types(tmp, b, remap, aflags, bflags, remap_flags);
     free_type(tmp);
     return ret;
@@ -7815,7 +7818,8 @@ static struct pike_type *low_intersect_types(struct pike_type *a,
   case TWOT(T_FUNCTION, PIKE_T_TRANSITIVE):
   case TWOT(T_MANY, PIKE_T_TRANSITIVE):
   case TWOT(T_PROGRAM, PIKE_T_TRANSITIVE):
-    tmp = expand_transitive_remap(b, NULL, 0);
+    tmp = expand_transitive_remap(b, remap,
+				  remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
     ret = low_intersect_types(a, tmp, remap, aflags, bflags, remap_flags);
     free_type(tmp);
     return ret;
