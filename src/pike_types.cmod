@@ -5649,10 +5649,19 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 
   case TWOT(PIKE_T_TRANSITIVE, T_MANY):
     if (op == PT_BINOP_AND) {
+      if ((b->car != void_type_string) &&
+	  !(aflags & PT_FLAG_CMP_KEEP_TRANSITIVE)) {
+	tmp = expand_transitive_remap(a, remap, remap_flags);
+	ret = low_type_binop(op, tmp, b, remap,
+			     aflags|PT_FLAG_CMP_KEEP_TRANSITIVE,
+			     bflags, remap_flags);
+	free_type(tmp);
+	return ret;
+      }
       type_stack_mark();
       tmp = low_type_binop(op, a->car, b, remap, aflags, bflags, remap_flags);
       push_finished_type(tmp);
-      if (tmp || !a->car) {
+      if ((tmp || !a->car) && (b->car != void_type_string)) {
 	free_type(tmp);
 	tmp = low_type_binop(op, a->cdr, b, NULL, aflags, bflags, remap_flags);
 	if (tmp) {
@@ -5687,18 +5696,28 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 
   case TWOT(T_MANY, PIKE_T_TRANSITIVE):
     if (op == PT_BINOP_AND) {
-      type_stack_mark();
-      tmp = low_type_binop(op, a, b->car, remap, aflags, bflags, remap_flags);
-      push_finished_type(tmp);
-      if (tmp || !b->car) {
+      if ((a->car != void_type_string) &&
+	  !(bflags & PT_FLAG_CMP_KEEP_TRANSITIVE)) {
+	tmp = expand_transitive_remap(b, remap,
+				      remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+	ret = low_type_binop(op, a, tmp, remap, aflags,
+			     bflags|PT_FLAG_CMP_KEEP_TRANSITIVE, remap_flags);
 	free_type(tmp);
-	tmp = low_type_binop(op, a, b->cdr, NULL, aflags, bflags, remap_flags);
-	if (tmp) {
-	  push_finished_type(tmp);
-	  free_type(tmp);
-	  push_reverse_type(PIKE_T_TRANSITIVE);
-	}
+	return ret;
       }
+
+      tmp = low_type_binop(op, a, b->car, remap, aflags, bflags, remap_flags);
+      if (tmp || (a->car == void_type_string)) {
+	return tmp;
+      }
+
+      type_stack_mark();
+      push_finished_type(tmp);
+      free_type(tmp);
+
+      push_finished_type(b->cdr);
+      push_reverse_type(PIKE_T_TRANSITIVE);
+
       return pop_unfinished_type();
     } else if (!a->car || (a->car == void_type_string)) {
       return low_type_binop(op, a, b->car ? b->car : b->cdr, remap,

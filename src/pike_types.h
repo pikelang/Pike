@@ -137,6 +137,7 @@ enum pt_cmp_flags
     PT_FLAG_CMP_INEXACT_ARG =		0x4000,	/* Use variant arg check. */
     PT_FLAG_CMP_NO_SUBTYPES =		0x8000,	/* Assume subtypes equal. */
     PT_FLAG_CMP_FUN_ARG =		0x10000,/* Argument to function. */
+    PT_FLAG_CMP_KEEP_TRANSITIVE =	0x20000,/* Do not expand transitive. */
   };
 
 /*
