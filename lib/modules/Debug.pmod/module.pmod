@@ -1206,7 +1206,7 @@ object perf_map_tree;
 //! machine code by pike.
 void generate_perf_map() {
   // Avoid ADT.CritBit compile time dependency to Debug module
-  perf_map_tree = master()->resolv("ADT.CritBit.IntTree")();
+  object new_perf_map_tree = Pike.Lazy.ADT.CritBit.IntTree();
   array programs = ({ });
   map_all_programs(lambda(program prog) {
     programs += ({ prog });
@@ -1215,13 +1215,19 @@ void generate_perf_map() {
     mapping layout = get_program_layout(p);
     string perf_map = get_perf_map(p, layout);
     if (!perf_map) continue;
-    perf_map_tree[min(@values(layout))] = perf_map;
+    new_perf_map_tree[min(@values(layout))] = perf_map;
   }
 
-  Stdio.File o = Stdio.File(sprintf("/tmp/perf-%d.map", getpid()), "wct");
+  perf_map_tree = new_perf_map_tree;
 
-  o->write(values(perf_map_tree));
+  string dstnam = sprintf("/tmp/perf-%d.map", getpid());
+  string tmpnam = sprintf("%s.%d.tmp",
+			  dstnam, Thread.this_thread()->id_number());
+  Stdio.File o = Stdio.File(tmpnam, "wct");
+
+  o->write(values(new_perf_map_tree));
   o->close();
+  mv(tmpnam, dstnam);
 }
 
 //! Updates the perf map file with new program @expr{p@}.
