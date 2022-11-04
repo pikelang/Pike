@@ -161,15 +161,12 @@ protected class LowState {
 
 #if constant(Nettle.rsa_generate_keypair)
 
-  this_program generate_key(int bits, void|int e)
+  this_program generate_key(int bits, int(1..) e = 0x10001)
   {
     // While a smaller e is possible, and more efficient, using 0x10001
     // has become standard and is the only value supported by several
     // TLS implementations.
-    if(!e)
-      e = 0x10001;
-    else
-    {
+    if(e != 0x10001) {
       if(!(e&1)) error("e needs to be odd.\n");
       if(e<3) error("e is too small.\n");
       if(e->size()>bits) error("e has to be smaller in size than the key.\n");
@@ -209,12 +206,11 @@ protected class LowState {
   //! random function set with @[set_random()]. The public exponent @[e]
   //! will be used, which defaults to 65537. Keys must be at least 89
   //! bits.
-  this_program generate_key(int(128..) bits, void|int|Gmp.mpz e)
+  this_program generate_key(int(128..) bits, int(1..)|Gmp.mpz e = 0x10001)
   {
     if (bits < 128)
       error( "Ridiculously small key.\n" );
-    if( e )
-    {
+    if( e != 0x10001 ) {
       if(!(e&1)) error("e needs to be odd.\n");
       if(e<3) error("e is too small.\n");
       if(e->size()>bits) error("e has to be smaller in size than the key.\n");
@@ -223,6 +219,12 @@ protected class LowState {
 	error("e: %O is too large.\n", e);
       }
     }
+
+    // For a while it was thought that small exponents were a security
+    // problem, but turned out was a padding problem. The exponent
+    // 0x10001 has however become common practice, although a smaller
+    // value would be more efficient.
+    Gmp.mpz pub = Gmp.mpz(e);
 
     /* NB: When multiplying two n-bit integers,
      *     you're most likely to get an (2n - 1)-bit result.
@@ -249,12 +251,6 @@ protected class LowState {
 				      Gmp.mpz([object(Gmp.mpz)](q-1)));
 
       array(Gmp.mpz) gs; /* gcd(pub, phi), and pub^-1 mod phi */
-
-      // For a while it was thought that small exponents were a security
-      // problem, but turned out was a padding problem. The exponent
-      // 0x10001 has however become common practice, although a smaller
-      // value would be more efficient.
-      Gmp.mpz pub = Gmp.mpz(e || 0x10001);
 
       // For security reason we need to ensure no common denominator
       // between n and phi. We could create a different exponent, but
@@ -472,9 +468,9 @@ class PSSState {
     //! @param saltlen
     //!   Length of the salt for the signature. Defaults to the
     //!   value returned by @[salt_size()].
-    Sequence pkcs_signature_algorithm_id(.Hash hash, int(0..)|void saltlen)
+    Sequence pkcs_signature_algorithm_id(.Hash hash,
+					 int(0..) saltlen = default_salt_size)
     {
-      if (undefinedp(saltlen)) saltlen = default_salt_size;
       return PKCS_RSA->pss_signature_algorithm_id(hash, saltlen);
     }
 
@@ -547,10 +543,8 @@ class PSSState {
     //! @seealso
     //!   @[pkcs_verify()], @[salt_size()], @rfc{3447:8.1.1@}
     string(8bit) pkcs_sign(string(8bit) message, .Hash h,
-			   string(8bit)|int(0..)|void salt)
+			   string(8bit)|int(0..) salt = default_salt_size)
     {
-      if (undefinedp(salt)) salt = default_salt_size;
-
       //    1. EMSA-PSS encoding: Apply the EMSA-PSS encoding operation
       //       (Section 9.1.1) to the message M to produce an encoded
       //       message EM of length \ceil ((modBits - 1)/8) octets such
@@ -605,10 +599,8 @@ class PSSState {
     //! @seealso
     //!   @rfc{3447:8.1.2@}
     int(0..1) pkcs_verify(string(8bit) message, .Hash h, string(8bit) sign,
-			  int(0..)|void saltlen)
+			  int(0..) saltlen = default_salt_size)
     {
-      if (undefinedp(saltlen)) saltlen = default_salt_size;
-
       // 1. Length checking: If the length of the signature S is not k
       //    octets, output "invalid signature" and stop.
       if (sizeof(sign) != n->size(256)) {
@@ -684,8 +676,8 @@ class PSSState {
     //!   @[pkcs_sign()], @[salt_size()], @rfc{7515:3.5@}
     string(7bit)|zero
       jose_sign(string(8bit) message,
-                mapping(string(7bit):string(7bit)|int)|void headers,
-                .Hash|void h)
+                mapping(string(7bit):string(7bit)|int) headers = ([]),
+                .Hash h = .SHA256)
     {
       // FIXME: Consider selecting depending on key size.
       //        https://www.keylength.com/en/4/ says the
@@ -696,16 +688,14 @@ class PSSState {
       //       >2030	3073 bits	256 bits
       //      >>2030	7680 bits	384 bits
       //     >>>2030	15360 bits	512 bits
-      if (!h) h = .SHA256;
-      string(7bit)|zero alg = jwa([object(.Hash)]h);
+      string(7bit)|zero alg = jwa(h);
       if (!alg) return 0;
-      headers = headers || ([]);
       headers += ([ "alg": alg ]);
       string(7bit) tbs =
 	sprintf("%s.%s",
 		MIME.encode_base64url(string_to_utf8(Standards.JSON.encode(headers))),
 		MIME.encode_base64url(message));
-      string(8bit) raw = pkcs_sign(tbs, [object(.Hash)]h, h->digest_size());
+      string(8bit) raw = pkcs_sign(tbs, h, h->digest_size());
       if (!raw) return 0;
       return sprintf("%s.%s", tbs, MIME.encode_base64url(raw));
     }
@@ -858,8 +848,8 @@ class PKCS1_5State
   //!   @[pkcs_verify()], @[salt_size()], @rfc{7515@}
   string(7bit)|zero
     jose_sign(string(8bit) message,
-              mapping(string(7bit):string(7bit)|int)|void headers,
-              .Hash|void h)
+              mapping(string(7bit):string(7bit)|int) headers = ([]),
+              .Hash h = .SHA256)
   {
     // NB: Identical to the code in PSSState, but duplication
     //     is necessary to bind to the correct variants of
@@ -873,16 +863,14 @@ class PKCS1_5State
     //	       >2030	3073 bits	256 bits
     //	      >>2030	7680 bits	384 bits
     //	     >>>2030	15360 bits	512 bits
-    h = h || .SHA256;
     string(7bit)|zero alg = jwa([object(.Hash)]h);
     if (!alg) return 0;
-    headers = headers || ([]);
     headers += ([ "alg": alg ]);
     string(7bit) tbs =
       sprintf("%s.%s",
 	      MIME.encode_base64url(string_to_utf8(Standards.JSON.encode(headers))),
 	      MIME.encode_base64url(message));
-    string(8bit) raw = pkcs_sign(tbs, [object(.Hash)]h);
+    string(8bit) raw = pkcs_sign(tbs, h);
     if (!raw) return 0;
     return sprintf("%s.%s", tbs, MIME.encode_base64url(raw));
   }
@@ -999,7 +987,7 @@ class PKCS1_5State
   //!       set in the object will be used.
   //!   @endint
   Gmp.mpz rsa_pad(string(8bit) message, int(1..2) type,
-		  function(int(0..):string(8bit))|void random)
+		  function(int(0..):string(8bit)) random = this::random)
   {
     string(8bit) padding = "";
 
@@ -1017,7 +1005,6 @@ class PKCS1_5State
       padding = sprintf("%@c", allocate([int(8..)]len, 0xff));
       break;
     case 2:
-      if( !random ) random = this::random;
       do {
 	padding += random([int(0..)](len-sizeof(padding))) - "\0";
       }  while( sizeof(padding)<len );

@@ -384,10 +384,8 @@ class State {
 
   //! Sign the message @[h]. Returns the signature as two @[Gmp.mpz]
   //! objects.
-  array(Gmp.mpz) raw_sign(Gmp.mpz h, void|Gmp.mpz k)
+  array(Gmp.mpz) raw_sign(Gmp.mpz h, Gmp.mpz k = random_exponent())
   {
-    if(!k) k = random_exponent();
-
     Gmp.mpz r = [object(Gmp.mpz)](g->powm(k, p) % q);
     Gmp.mpz s = [object(Gmp.mpz)]((k->invert(q) * (h + [object(Gmp.mpz)](x*r))) % q);
 

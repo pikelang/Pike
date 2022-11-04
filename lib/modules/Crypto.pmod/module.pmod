@@ -93,15 +93,12 @@ class Sign {
 //! @seealso
 //!   @[verify_crypt_md5]
 string(8bit) make_crypt_md5(string(8bit) password,
-                            void|string(8bit) salt)
+                            string(8bit) salt =
+			    MIME.encode_base64(.Random.random_string(6)))
 {
-  if(salt)
-    sscanf([string]salt, "%s$", salt);
-  else
-    salt = ([function(string(8bit):string(7bit))]MIME["encode_base64"])
-      (.Random.random_string(6));
+  sscanf(salt, "%s$", salt);
 
-  return "$1$" + [string]salt + "$" + Nettle.crypt_md5(password, [string]salt);
+  return "$1$" + salt + "$" + Nettle.crypt_md5(password, salt);
 }
 
 //! Verifies the @[password] against the crypt_md5 hash.
