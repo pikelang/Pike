@@ -1399,7 +1399,6 @@ HFILES=						\
   stralloc.protos					\
   mapping.protos					\
   block_allocator.protos					\
-  dynamic_buffer.protos				\
   buffer.protos				\
   svalue.protos					\
   dynamic_load.protos				\

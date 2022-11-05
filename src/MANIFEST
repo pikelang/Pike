@@ -560,8 +560,3 @@ Miscellaneous
   version.c
   version.h
     Version info.
-
-Obsolete
-
-  dynamic_buffer.h
-    Compat layer for ancient buffer implemented on top of buffer.[ch].
