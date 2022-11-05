@@ -13,14 +13,11 @@ protected string make_sig(object o, mapping(string:mixed) info, object|void p)
 {
   if(p)
     return "("+Array.map(values(p), make_sig, info)*""+")"+make_sig(o, info);
-  else {
-    if(info->classisprimitive_method(o))
-      return info->primitives[o];
-    else if(info->classisarray_method(o))
-      return replace((string)info->classgetname_method(o), ".", "/");
-    else
-      return "L"+replace((string)info->classgetname_method(o), ".", "/")+";";
-  }
+  if(info->classisprimitive_method(o))
+    return info->primitives[o];
+  if(info->classisarray_method(o))
+    return replace((string)info->classgetname_method(o), ".", "/");
+  return "L"+replace((string)info->classgetname_method(o), ".", "/")+";";
 }
 
 protected void check_exception(mapping(string:mixed) info)
@@ -46,11 +43,10 @@ protected mixed wrap_result(mixed x, mapping(string:mixed) info)
     object cls = info->getclass_method(x);
     if(cls->is_array()) {
       return jarray(x, info);
-    } else {
-      return jobject(info->classes[cls] || jclass(cls, info), x, info);
     }
-  } else
-    return x;
+    return jobject(info->classes[cls] || jclass(cls, info), x, info);
+  }
+  return x;
 }
 
 protected array unwrap_args(array a)
@@ -72,8 +68,7 @@ jobject JBoolean(int i)
 {
   if(i)
    return pkg["java/lang/Boolean"]->_constructor("(Z)V")(1);
-  else
-   return pkg["java/lang/Boolean"]->_constructor("(Z)V")(0);
+  return pkg["java/lang/Boolean"]->_constructor("(Z)V")(0);
 }
 
 //!
@@ -246,8 +241,7 @@ protected class jmethod {
       mm = select_proto(args);
     if(obj)
       return wrap_result(mm(obj, @unwrap_args(args)), info);
-    else
-      return wrap_result(mm(@unwrap_args(args)), info);
+    return wrap_result(mm(@unwrap_args(args)), info);
   }
 
   protected void create(mapping(string:mixed) i, object|zero o,
@@ -339,10 +333,8 @@ protected class jobject {
 	return obj;
       case "_monitor_enter":
 	return obj->monitor_enter;
-      default:
-	return `[](n);
-      } else
-	return `[](n);
+      }
+    return `[](n);
   }
 
   protected void create(object c, object o, mapping(string:mixed) i)
@@ -388,12 +380,11 @@ protected class jarray {
   {
     if(n == "length")
       return sizeof(obj);
-    else if(n == "_obj")
+    if(n == "_obj")
       return obj;
-    else if(n == "_monitor_enter")
+    if(n == "_monitor_enter")
       return obj->monitor_enter;
-    else
-      return UNDEFINED;
+    return UNDEFINED;
   }
 
   protected mixed `[]=(int n, mixed value)
@@ -560,10 +551,8 @@ protected class jclass {
 	return obj->alloc;
       case "_register_natives":
 	return obj->register_natives;
-      default:
-	return `[](n);
-      } else
-	return `[](n);
+      }
+    return `[](n);
   }
 
   protected object|zero `()(mixed ... args)
@@ -771,8 +760,7 @@ protected class package {
 						  string sn;
 						  if(sscanf(p,n+"%[^.]",sn)==1)
 						    return sn;
-						  else
-						    return 0;
+                                                  return 0;
 						}, (name==""?n:n+"."))-({0});
     subpackages = mkmapping(subs, allocate(sizeof(subs)));
   }
