@@ -1060,6 +1060,7 @@ node *debug_mknode(int token, node *a, node *b)
 
   case F_SET_LOCAL_NAME:
   case F_SET_LOCAL_TYPE:
+  case F_SET_LOCAL_FLAGS:
   case F_SET_LOCAL_END:
     /* Protect against the node being removed by the optimizer. */
     res->node_info |= OPT_NOT_CONST|OPT_SIDE_EFFECT;
@@ -4531,6 +4532,7 @@ void fix_type_field(node *n)
 
   case F_SET_LOCAL_NAME:
   case F_SET_LOCAL_TYPE:
+  case F_SET_LOCAL_FLAGS:
   case F_SET_LOCAL_END:
     copy_pike_type(n->type, void_type_string);
     break;

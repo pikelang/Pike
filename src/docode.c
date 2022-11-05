@@ -3046,6 +3046,14 @@ static int do_docode2(node *n, int flags)
     emit2(F_SET_LOCAL_TYPE, CAR(n)->u.sval.u.integer, tmp1);
     return 0;
 
+  case F_SET_LOCAL_FLAGS:
+    if (CAR(n)->u.sval.u.integer & LOCAL_VAR_USED_IN_SCOPE)
+    {
+      emit2(F_SET_LOCAL_FLAGS, CAR(n)->u.sval.u.integer,
+            CDR(n)->u.sval.u.integer);
+    }
+    return 0;
+
   case F_SET_LOCAL_END:
     emit1(F_SET_LOCAL_END, CAR(n)->u.sval.u.integer);
     return 0;

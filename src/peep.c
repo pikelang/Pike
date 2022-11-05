@@ -573,6 +573,10 @@ INT32 assemble(int store_linenumbers)
       }
       break;
 
+    case F_SET_LOCAL_FLAGS:
+      Pike_compiler->compiler_frame->variable[c->arg].flags |= c->arg2;
+      break;
+
     case F_SET_LOCAL_END:
       if (store_linenumbers) {
 	store_linenumber_local_end(c->arg);

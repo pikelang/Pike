@@ -3307,6 +3307,7 @@ void push_compiler_frame(int lexical_scope)
   f->opt_flags = OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND; /* FIXME: Should be 0. */
   f->generator_local = -1;
   f->generator_jumptable = NULL;
+  memset(&f->variable, 0, sizeof(f->variable));
   Pike_compiler->compiler_frame=f;
 }
 
@@ -3334,6 +3335,8 @@ node *low_pop_local_variables(int level, node *block)
 				     mkstrnode(var->name)),
 			      mknode(F_SET_LOCAL_TYPE, mkintnode(e),
 				     mktypenode(var->type)),
+			      mknode(F_SET_LOCAL_FLAGS, mkintnode(e),
+                                     mkintnode(var->flags)),
 			      block,
 			      mknode(F_POP_VALUE,
 				     mknode(F_CLEAR_LOCAL,

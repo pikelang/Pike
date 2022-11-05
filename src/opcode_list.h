@@ -102,6 +102,8 @@ OPCODE_NOCODE("assign_self", F_ASSIGN_SELF, 0)
 OPCODE_NOCODE("set_local_name", F_SET_LOCAL_NAME, I_HASARG2)
 /* local_num, constant_num */
 OPCODE_NOCODE("set_local_type", F_SET_LOCAL_TYPE, I_HASARG2)
+/* local num, flags */
+OPCODE_NOCODE("set_local_flags", F_SET_LOCAL_FLAGS, I_HASARG2)
 /* local_num */
 OPCODE_NOCODE("set_local_end", F_SET_LOCAL_END, I_HASARG)
 
