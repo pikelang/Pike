@@ -117,6 +117,11 @@ switch ( expression )
     statement3;
     break;
 
+  case constant5
+  case constant6:
+    statement4;
+    // Fallthrough
+
   default:
     statement5;
 }
