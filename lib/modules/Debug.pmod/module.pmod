@@ -1221,8 +1221,12 @@ void generate_perf_map() {
   perf_map_tree = new_perf_map_tree;
 
   string dstnam = sprintf("/tmp/perf-%d.map", getpid());
+#if constant(Thread.this_thread)
   string tmpnam = sprintf("%s.%d.tmp",
 			  dstnam, Thread.this_thread()->id_number());
+#else
+  string tmpnam = dstnam + ".tmp";
+#endif
   Stdio.File o = Stdio.File(tmpnam, "wct");
 
   o->write(values(new_perf_map_tree));
