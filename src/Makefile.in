@@ -1371,46 +1371,46 @@ uncompress_header: $(SRCDIR)/uncompressor.c header_uncompress
 	test "`wc -c header_uncompress|sed 's/[^0-9]//g'`" = "`wc -c uncompress_header|sed 's/[^0-9]//g'`"
 
 HFILES=						\
-  operators.protos					\
+  operators.protos				\
   array.protos					\
-  fd_control.protos					\
-  backend.protos					\
+  fd_control.protos				\
+  backend.protos				\
   fdlib.protos					\
   bignum.protos					\
   fsort.protos					\
-  pike_memory.protos					\
-  pike_types.protos					\
-  gc.protos						\
+  pike_memory.protos				\
+  pike_types.protos				\
+  gc.protos					\
   port.protos					\
-  callback.protos					\
-  program.protos					\
-  interpret.protos					\
-  constants.protos					\
-  language.protos					\
+  callback.protos				\
+  program.protos				\
+  interpret.protos				\
+  constants.protos				\
+  language.protos				\
   queue.protos					\
-  cpp.protos						\
+  cpp.protos					\
   rusage.protos					\
   cyclic.protos					\
-  lex.protos						\
+  lex.protos					\
   signal_handler.protos				\
   pike_search.protos				\
   docode.protos					\
   main.protos					\
-  stralloc.protos					\
-  mapping.protos					\
-  block_allocator.protos					\
-  buffer.protos				\
+  stralloc.protos				\
+  mapping.protos				\
+  block_allocator.protos			\
+  buffer.protos					\
   svalue.protos					\
   dynamic_load.protos				\
   module_support.protos				\
-  threads.protos					\
-  multiset.protos					\
+  threads.protos				\
+  multiset.protos				\
   encode.protos					\
   object.protos					\
   error.protos					\
-  opcodes.protos					\
-  version.protos                                    \
-  builtin.protos					\
+  opcodes.protos				\
+  version.protos				\
+  builtin.protos				\
   iterators.protos				\
   rbtree.protos
 
