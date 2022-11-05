@@ -137,7 +137,7 @@ PMOD_EXPORT int query_nonblocking(int fd)
 
 #ifdef SOL_TCP
 static int gsockopt(int fd, int opt) {
-  int val;
+  int val = 0;
   socklen_t old_len = (socklen_t) sizeof(int);
   while (getsockopt(fd, SOL_TCP, opt,
                     &val, &old_len) < 0 && errno == EINTR);
