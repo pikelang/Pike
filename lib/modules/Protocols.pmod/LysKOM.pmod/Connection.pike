@@ -48,9 +48,8 @@ string software_version;
 //!   @member string "whoami"
 //!	present as this user (default is from uid/getpwent and hostname).
 //! @endmapping
-protected void create(string server,void|mapping options)
+protected void create(string server, mapping options = ([]))
 {
-   if (!options) options=([]);
    con=Raw(server,options->port,options->whoami);
    if (!con->con)
    {

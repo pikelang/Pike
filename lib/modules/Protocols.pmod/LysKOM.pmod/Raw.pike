@@ -313,9 +313,21 @@ void connection_lost()
 }
 
 
-protected void create(string server,void|int port,void|string whoami)
+protected void create(string server, int(1..) port = 4894,
+		      string whoami = (
+#if constant(getpwuid) && constant(getuid)
+				       (getpwuid(getuid())||({"*unknown*"}))[0]+
+#else
+				       "*unknown*"
+#endif
+				       "%"
+#if constant(uname)
+				       +uname()->nodename
+#else
+				       "*unknown*"
+#endif
+				       ))
 {
-   if (!port) port=4894;
    con=Stdio.File();
    if (!con->connect(server,port))
    {
@@ -326,19 +338,7 @@ protected void create(string server,void|int port,void|string whoami)
      return;
    }
 
-   conwrite("A"+H(whoami||
-#if constant(getpwuid) && constant(getuid)
-		  (getpwuid(getuid())||({"*unknown*"}))[0]+
-#else
-		  "*unknown*"
-#endif
-		  "%"
-#if constant(uname)
-		  +uname()->nodename
-#else
-		  "*unknown*"
-#endif
-		  ));
+   conwrite("A"+H(whoami));
    string reply=con->read(7);
 #ifdef LYSKOM_DEBUG
    werror("<- %O\n",reply);

@@ -40,7 +40,7 @@ mapping(int:object) _conference=([]);
 //!
 //! @seealso
 //!   @[Connection]
-protected void create(object|string _server,void|mapping options)
+protected void create(object|string _server, mapping options = ([]))
 {
    if (objectp(_server)) // clone
    {
@@ -55,7 +55,7 @@ protected void create(object|string _server,void|mapping options)
    }
    server=_server;
    con=Connection(_server,options);
-   user=(options && options->login)?person(options->login):0;
+   user = options->login ? person(options->login) : 0;
    protlevel=con->protocol_level;
 
    /* setup async stuff */
@@ -1191,14 +1191,12 @@ this_program logout()
 //! @seealso
 //!   @[Conference.create_text()], @[Text.comment()], @[Text.footnote()]
 object|void create_text(string subject,string body,
-			void|mapping options,
+			mapping options = ([]),
 			void|function callback,
 			void|mixed ...extra)
 {
    string text=replace(subject,"\n"," ")+"\n"+body;
    MiscInfo misc=MiscInfo(options);
-
-   if (!options) options=([]);
 
    return _create_text(text,misc,
 		       options->aux_items,
@@ -1208,7 +1206,7 @@ object|void create_text(string subject,string body,
 
 object|void _create_text(string textstring,
 			 MiscInfo misc,
-			 void|array(AuxItemInput) aux_items,
+			 array(AuxItemInput) aux_items = ({}),
 			 int anonymous,
 			 void|function callback,
 			 void|mixed ...extra)
@@ -1224,7 +1222,7 @@ object|void _create_text(string textstring,
    if(protlevel<10)
      call += "_old";
    else
-     args += ({ aux_items || ({}) });
+     args += ({ aux_items });
 
    if (callback)
    {
