@@ -8120,6 +8120,8 @@ export BUILD_BASE
 if test "$pike_cv_sys_os" = "Windows_NT"; then
   # If this doesn't begin with '/', it's relative to pike.exe.
   default_master=../lib/master.pike
+elif test "$pike_cv_sys_os" = "AmigaOS"; then
+  default_master=PROGDIR:lib/master.pike
 else
   default_master=$prefix/pike/%d.%d.%d/lib/master.pike
 fi
