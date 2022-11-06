@@ -544,7 +544,7 @@ Process spawn_pike(array(string) argv, void|mapping(string:mixed) options,
 //!   Process.run( ({ "ls", "-l" }), ([ "cwd":"/etc" ]) );
 //!   Process.run( "ls -l" );
 //!   Process.run( "awk -F: '{print $2}'", ([ "stdin":"foo:2\nbar:17\n" ]) );
-//!   Process.run( ({ "echo Output will be immediately written to stdour" }),
+//!   Process.run( ({ "echo Output will be immediately written to stdout" }),
 //!                ([ "stdout": lambda(string s) { write(s); },
 //!                   "stderr": lambda(string e) { werror(e); } ]) );
 
