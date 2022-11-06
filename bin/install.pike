@@ -64,13 +64,7 @@ Directory root = Directory("SourceDir",
 int last_len;
 int redump_all;
 string pike;
-array(string) files_to_delete=({});
-array(string) files_to_not_delete=({});
-array(string) to_dump=({});
-array(array(string)) to_export=({});
 
-
-int export;
 int no_gui;
 int verbose;
 int no_autodoc;
@@ -111,26 +105,26 @@ int istty()
   return istty_cache>0;
 }
 
-void status1(string fmt, mixed ... args)
+void status1_impl(string fmt, mixed ... args)
 {
-  if (!export) {
-    status_clear();
+  status_clear();
 #ifdef USE_GTK
-    if(label1)
-    {
-      label7->set_text(sprintf(fmt,@args)-"\n");
-      GTK.flush();
-      return;
-    }
+  if(label1)
+  {
+    label7->set_text(sprintf(fmt,@args)-"\n");
+    GTK.flush();
+    return;
+  }
 #endif
 
-    // Ugly thing, but status_clear does not indent in non-tty mode...
-    if(!istty())
-      write("   ");
-  }
+  // Ugly thing, but status_clear does not indent in non-tty mode...
+  if(!istty())
+    write("   ");
 
   write(fmt+"\n", @args);
 }
+
+function(string, mixed ... : void) status1 = status1_impl;
 
 string some_strerror(int err)
 {
@@ -153,40 +147,9 @@ void error_msg (string msg, mixed... args)
   werror (msg, @args);
 }
 
-void fail(string fmt, mixed ... args)
-{
-  int err=errno();
-#ifdef USE_GTK
-  if(label1)
-  {
-    status1(fmt,@args);
-    hbuttonbox1->add(button1=GTK.Button("Exit")->show());
-    button1->signal_connect("pressed",do_exit,0);
-
-    label6->set_text("Click Exit to exit installation program.");
-
-    // UGLY!!! -Hubbe
-    while(1) { sleep(0.1); GTK.flush(); }
-  }
-#endif
-
-  error_msg("%s: %s\n",sprintf(fmt,@args),some_strerror(err));
-  werror("Current directory = %s\n",getcwd());
-  werror("**Installation failed..\n");
-  exit(1);
-}
-
-
-void status(string|void doing, void|string file, string|void msg)
+void status_impl(string|void doing, void|string file, string|void msg)
 {
   if(!file) file="";
-
-  if (export) {
-    if(msg) file+=" "+msg;
-    if(doing) file=doing+": "+file;
-    if (file != "") write (file + "\n");
-    return;
-  }
 
 #ifdef USE_GTK
   if(label1)
@@ -223,6 +186,8 @@ void status(string|void doing, void|string file, string|void msg)
   last_len=t;
   write(s);
 }
+
+function (string|void, void|string, string|void : void) status = status_impl;
 
 void status_clear(void|int all)
 {
@@ -785,51 +750,6 @@ array(string) get_subdirs (string dir)
   return sort (dirs[1..]);
 }
 
-mapping already_created=([]);
-int mkdirhier(string orig_dir)
-{
-  int tomove;
-  if(export) return 1;
-  string dir=orig_dir;
-  if(already_created[orig_dir]) return 1;
-
-  if(dir=="" || (sizeof(dir)==2 && dir[-1]==':')) return 1;
-  dir=fakeroot(dir);
-
-  status("Creating",dir+"/");
-
-  mixed s=file_stat(dir);
-  if(s)
-  {
-    if(s[1]<0)
-      return already_created[orig_dir]=1;
-
-    if(glob("*.pmod",dir))
-    {
-      if(!mv(dir,dir+".tmp"))
-	fail("mv(%s,%s)",dir,dir+".tmp");
-      tomove=1;
-    }else{
-      // FIXME: ask user if he wants to override
-      error_msg ("Warning: Directory '%s' already exists as a file.\n",dir);
-      if(!mv(dir,dir+".old"))
-	fail("mv(%s,%s)",dir,dir+".old");
-    }
-  }
-
-  mkdirhier(dirname(dir));
-  if(!mkdir(dir))
-    fail("mkdir(%s)",dir);
-
-  chmod(dir,0755);
-
-  if(tomove)
-    if(!mv(dir+".tmp",dir+"/module.pmod"))
-      fail("mv(%s,%s)",dir+".tmp",dir+"/module.pmod");
-
-  return already_created[orig_dir]=1;
-}
-
 int compare_files(string a,string b)
 {
   mixed sa=file_stat(a);
@@ -847,245 +767,12 @@ int compare_to_file(string data,string a)
   return 0;
 }
 
-#ifdef SUPPORT_WIX
-
-int low_install_regkey(string path, string root, string key,
-		       string name, string value, string id)
-{
-  if (export != 2) {
-    error("Only supported in wix mode.\n");
-  }
-  global::root->install_regkey(path, root, key, name, value, id);
-}
-
-void recurse_uninstall_file(Directory d, string pattern)
-{
-  if (export != 2) {
-    error("Only supported in wix mode.\n");
-  }
-  d->recurse_uninstall_file(pattern);
-}
-		       
-int low_uninstall_file(string path)
-{
-  if (export != 2) {
-    error("Only supported in wix mode.\n");
-  }
-  root->uninstall_file(path);
-}
-
-#endif /* SUPPORT_WIX */
-
-void export_file (string from, string tmp, string to, void|string id)
-// from: File source. tmp: Name in the build/unpack tree. Same as from
-// for files already in the build tree. to: Final destination (only
-// used in WiX mode).
-{
-  if (!export) error ("Not in export mode.\n");
-
-  if (export == 2) {
-#ifdef SUPPORT_WIX
-    mapping translator = ([
-      "":"",
-      replace (prefix, "\\", "/"):"",
-      replace (getcwd(), "\\", "/"):"",
-    ]);
-    root->install_file(translate(replace (to, "\\", "/"), translator),
-		       from, id);
-#else /* !SUPPORT_WIX */
-    error("Wix mode not supported.\n");
-#endif /* SUPPORT_WIX */
-  } else if (export == 3) {
-    to_export += ({({from, to})});
-  } else {
-    to_export += ({({from, tmp})});
-  }
-}
-
-int low_install_file(string from,
-		     string to,
-		     void|int mode,
-		     void|string id)
-{
-  installed_files++;
-  if(export)
-  {
-    export_file (from, from, to, id);
-    return 1;
-  }
-
-  to=fakeroot(to);
-
-  status("Installing",to);
-
-  if(compare_files(from,to))
-  {
-    status("Installing",to,"Already installed");
-    return 0;
-  }
-  mkdirhier(dirname(to));
-  if(!mode) {
-    Stdio.Stat st = file_stat(from);
-    if(!st)
-      exit(1, "Could not find file %O\n", from);
-    int src_mode = st->mode;
-    if (src_mode & 0111) {
-      // Executable.
-      mode = 0755;
-    } else {
-      mode = 0644;
-    }
-  }
-
-  string tmpfile=to+"-"+getpid()+"-"+time();
-  if(!Stdio.cp(from,tmpfile))
-    fail("copy(%s,%s)",from,tmpfile);
-
-  // Chown and chgrp not implemented yet
-  chmod(tmpfile,mode);
-
-  // Need to rename the old file to .old
-  if(file_stat(to))
-  {
-    rm(to+".old"); // Ignore errors
-#if constant(hardlink)
-    if( catch { hardlink(to,to+".old"); })
-#endif
-      mv(to,to+".old");
-  }
-  if(!mv(tmpfile,to))
-    fail("mv(%s,%s)",tmpfile,to);
-  rm(to+".old"); // Ignore errors
-
-  return 1;
-}
-
-int install_file(string from,
-		 string to,
-		 void|int mode,
-		 void|int dump)
-{
-  int ret;
-  if(query_num_arg() == 2)
-    ret=low_install_file(from,to);
-  else
-    ret=low_install_file(from,to,mode);
-
-  array(string) tmp=to/".";
-  string ext=tmp[-1];
-
-  if((ret || redump_all) && dump)
-  {
-    switch(ext)
-    {
-      case "pike":
-	if(glob("*/master.pike",to)) break;
-
-      case "pmod":
-	to_dump+=({to});
-    }
-  }
-
-  // This magic deletes the remnants of static modules
-  // when dynamic modules are installed.
-  if(ret && ext == "so")
-  {
-    tmp[-1]="pmod";
-    files_to_delete+=({ tmp*"." });
-  }else{
-    files_to_not_delete+=({ to });
-  }
-  return ret;
-}
-
-// Install the file if it exists, but don't complain if it doesn't.
-int try_install_file(string from,
-		 string to,
-		 void|int mode,
-		 void|int dump)
-{
-  if(file_stat(from)) {
-    if(query_num_arg()==2)
-      return install_file(from, to);
-    else
-      return install_file(from, to, mode, dump);
-  }
-  return 0;
-}
-
-
-void create_file(string dest, string content)
-{
-  status("Creating", dest);
-  if (compare_to_file(content, dest)) {
-    status("Creating", dest, "Already created");
-    return;
-  }
-  Stdio.write_file(dest, content);
-  if (!export) status("Creating", dest, "done");
-}
-
 string stripslash(string s)
 {
   while(sizeof(s)>1 && s[-1]=='/') s=s[..sizeof(s)-2];
   return s;
 }
 
-
-void install_dir(string from, string to, int dump)
-{
-  from=stripslash(from);
-  to=stripslash(to);
-
-  installed_files++;
-  mkdirhier(to);
-  foreach(get_dir(from),string file)
-  {
-    if(file=="testsuite.in") continue;
-    if(file[..1]==".#") continue;
-    if(file[0]=='#' && file[-1]=='#') continue;
-    if(file[-1]=='~') continue;
-    if(has_suffix(file, ".test")) continue;
-    mixed stat=file_stat(combine_path(from,file));
-    if (stat) {
-      if(stat[1]==-2) {
-	install_dir(combine_path(from,file),combine_path(to,file),dump);
-      } else if (stat[0] & 0111) {
-	// Executable
-	install_file(combine_path(from,file),combine_path(to,file),0755,dump);
-      } else {
-	// Not executable
-	install_file(combine_path(from,file),combine_path(to,file),0644,dump);
-      }
-    } else {
-      werror(sprintf("\nstat:0, from:%O, file:%O, combined:%O\n",
-		     from, file, combine_path(from, file)));
-    }
-  }
-}
-
-// Install the file if it exists, but don't complain if it doesn't.
-void try_install_dir(string from,
-		    string to,
-		    int dump)
-{
-  if(file_stat(from))
-    install_dir(from, to, dump);
-}
-
-void install_header_files(string from, string to)
-{
-  installed_files++;
-  from=stripslash(from);
-  to=stripslash(to);
-  mkdirhier(to);
-  foreach(get_dir(from),string file)
-    {
-      if(file[..1]==".#") continue;
-      if(file[-1]!='h' || file[-2]!='.') continue;
-      install_file(combine_path(from,file),combine_path(to,file));
-    }
-}
 
 mapping vars=([]);
 
@@ -1128,8 +815,6 @@ string fakeroot(string s)
   if(reg->match(s)) return s;
   return vars->fakeroot+s;
 }
-
-string export_base_name;
 
 int mklink(string from, string to)
 {
@@ -1204,601 +889,6 @@ void tarfilter(string filename)
 #ifdef __NT__
 constant tmpdir="~piketmp";
 #endif /* __NT__ */
-
-void do_export()
-{
-  if (export == 2) {
-#ifdef SUPPORT_WIX
-    // Minimize the number of src directives.
-    root->set_sources();
-
-    // Clean up dumped files and modules on uninstall.
-    recurse_uninstall_file(root->sub_dirs["lib"], "*.o");
-
-    // Note: TARGETDIR is the root install dir for the msi,
-    // PIKE_TARGETDIR might be a different dir if Pike_module.wxs is
-    // included in an installer that wants to install pike somewhere
-    // else.
-
-    // We need to have a unique name for the TARGETDIR
-    // due to light not rewriting [TARGETDIR] in the
-    // property custom action below.
-    //
-    // Note: The directory we get merged into must also have
-    //       this id as long as the bug exists.
-    root->extra_ids["PIKE_TARGETDIR"] = 1;
-
-    // Generate the XML directory tree.
-    WixNode xml_root =
-      Standards.XML.Wix.get_module_xml(root, "Pike", version_str,
-				       "IDA", "Pike dist", version_guid,
-				       "Merge with this", "300");
-
-    WixNode module_node = xml_root->
-      get_first_element("Wix")->
-      get_first_element("Module");
-
-    module_node->
-      add_child(WixNode("CustomAction", ([
-			  "Id":"SetFinalizePike",
-			  "Property":"FinalizePike",
-			  "Value":"[PIKE_TARGETDIR]",
-			  "Execute":"immediate",
-			])))->
-      add_child(line_feed)->
-      add_child(WixNode("CustomAction", ([
-			  "Id":"FinalizePike",
-			  "BinaryKey":"PikeInstaller",
-			  "VBScriptCall":"FinalizePike",
-			  // The following are necessary to allow the script to
-			  // run with elevated privileges in UAC mode.
-			  "Execute":"deferred",
-			  "Impersonate": "no",
-			])))->
-      add_child(line_feed)->
-      add_child(WixNode("Binary", ([
-			  "Id":"PikeInstaller",
-			  "src":"PikeWin32Installer.vbs",
-			])))->
-      add_child(line_feed)->
-      add_child(WixNode("InstallExecuteSequence", ([]), "\n")->
-		add_child(WixNode("Custom", ([
-				    "Action":"SetFinalizePike",
-				    "After":"WriteRegistryValues",
-				  ]), "REMOVE=\"\""))->
-		add_child(line_feed)->
-		add_child(WixNode("Custom", ([
-				    "Action":"FinalizePike",
-				    "After":"SetFinalizePike",
-				  ]), "REMOVE=\"\""))->
-		add_child(line_feed))->
-      add_child(line_feed);
-
-    create_file("Pike_module.wxs", xml_root->render_xml());
-
-#ifdef GENERATE_WIX_UI
-    // Generate the UserInterface
-
-    status("Creating", /*export_base_name*/"Pike"+"_ui.wxs");
-
-    xml_root = Parser.XML.Tree.SimpleRootNode()->
-      add_child(Parser.XML.Tree.SimpleHeaderNode((["version":"1.0",
-						   "encoding":"utf-8"])))->
-      add_child(WixNode("Wix", ([
-			  "xmlns":"http://schemas.microsoft.com/wix/2003/01/wi",
-			]))->
-		add_child(WixNode("Fragment", ([
-				    "Id":"PikeUI",
-				  ]))->
-			  add_child(UI()->gen_xml())->
-			  add_child(WixNode("Binary", ([
-					      "Id":"Pike_banner",
-					      "src":"Pike_banner.bmp"
-					    ])))));
-
-    Stdio.write_file(/*export_base_name*/"Pike"+"_ui.wxs",
-		     xml_root->render_xml());
-
-#endif /* GENERATE_WIX_UI */
-
-#ifdef GENERATE_WIX_ACTIONS
-    // Generate the custom actions needed to install the master,
-    // and finalize the pike binary.
-
-    status("Creating", export_base_name+"_actions.wxs");
-
-    string run_install =
-      "bin\\pike -DNOT_INSTALLED"
-      " -mbuild\\master.pike bin\\install.pike"
-      " BASEDIR=.";
-    WixNode fragment_list =
-      WixNode("Fragment", ([
-		"Id":"PikeActions",
-	      ]))->
-      add_child(WixNode("CustomAction", ([
-			  "Id":"FinalizePike",
-			  "Directory":"TARGETDIR",
-			  "ExeCommand":run_install + " --finalize",
-			])))->
-      add_child(WixNode("CustomAction", ([
-			  "Id":"InstallMaster",
-			  "Directory":"TARGETDIR",
-			  "ExeCommand":run_install + " --install-master",
-			])));
-
-    xml_root = Parser.XML.Tree.SimpleRootNode()->
-      add_child(Parser.XML.Tree.SimpleHeaderNode((["version":"1.0",
-						   "encoding":"utf-8"])))->
-      add_child(WixNode("Wix", ([
-			  "xmlns":"http://schemas.microsoft.com/wix/2003/01/wi",
-			]))->
-		add_child(fragment_list));
-
-    Stdio.write_file(export_base_name+"_actions.wxs", xml_root->render_xml());
-
-#endif /* GENERATE_WIX_ACTIONS */
-
-#if 0
-    // Generate the main wxs file.
-
-    status("Creating", export_base_name+".wxs");
-
-    WixNode product_node = WixNode("Product", ([
-				     "Name":"Pike",
-				     "Language":"1033",
-				     "UpgradeCode":pike_upgrade_guid,
-				     "Id":Standards.UUID.make_version1(-1)->str(),
-				     "Version":sprintf("%d.%d.%d",
-						       __REAL_MAJOR__,
-						       __REAL_MINOR__,
-						       __REAL_BUILD__),
-				     "Manufacturer":"IDA",
-				   ]))->
-      add_child(WixNode("Package", ([
-			  "Manufacturer":"IDA",
-			  "Languages":"1033",
-			  "InstallerVersion":"300",
-			  "Platforms":"Intel",
-			  "Id":Standards.UUID.make_version1(-1)->str(),
-			  "Compressed":"yes",
-			  "SummaryCodepage":"1252",
-			])))->
-      add_child(WixNode("Media", ([
-			  "Id":"1",
-			  "EmbedCab":"yes",
-			  "Cabinet":"Pike.cab",
-			])))->
-      add_child(WixNode("Directory", ([
-			  "Id":"TARGETDIR",
-			  "Name":"SourceDir",
-			]))->
-		add_child(WixNode("Merge", ([
-				    "Id":"Pike",
-				    "Language":"1033",
-				    "src":export_base_name+"_module.msm",
-				    "DiskId":"1",
-				  ]))))->
-      add_child(WixNode("Feature", ([
-			  "Id":"F_Pike",
-			  "Title":sprintf("Pike %d.%d.%d",
-					  __REAL_MAJOR__,
-					  __REAL_MINOR__,
-					  __REAL_BUILD__),
-			  "Level":"1",
-			  "ConfigurableDirectory":"TARGETDIR",
-			]))->
-		add_child(WixNode("MergeRef", ([
-				    "Id":"Pike",
-				  ]))))->
-      add_child(WixNode("Upgrade", ([
-			  "Id":Standards.UUID.make_version1(-1)->str(),
-			]))->
-		add_child(WixNode("UpgradeVersion", ([
-				    "Minimum":sprintf("%d.0.0",
-						      __REAL_MAJOR__),
-				    "Property":"NEWERPRODUCTFOUND",
-				    "OnlyDetect":"yes",
-				    "IncludeMinimum":"yes",
-				  ]))))->
-      add_child(WixNode("CustomAction", ([
-			  "Id":"QueryTarget",
-			  "Property":"TARGETDIR",
-			  "Value":"[ProgramFilesFolder][ProductName]",
-			  "Execute":"firstSequence",
-			])))
-->
-      add_child(WixNode("InstallExecuteSequence", ([]))->
-		add_child(WixNode("Custom", ([
-				    "Action":"QueryTarget",
-				    "Before":"InstallFiles",
-				  ]),
-				  "TARGETDIR=\"\""))
-#if 0
-->
-		add_child(WixNode("Custom", ([
-				    "Action":"FinalizePike",
-				    "After":"InstallFiles",
-				  ])))->
-		add_child(WixNode("Custom", ([
-				    "Action":"InstallMaster",
-				    "After":"FinalizePike",
-				  ])))
-#endif /* 0 */
-		)
-#if 0
-->
-      add_child(WixNode("UI", ([]))->
-		add_child(WixNode("Dialog", ([
-				    "Id":"TargetDialog",
-				    "Title":"[ProductName]",
-				    "TrackDiskSpace":"yes",
-				    "Width":"373",
-				    "Height":"287",
-				  ]))->
-			  add_child(WixNode("Control", ([
-					      "Id":"TargetEdit",
-					      "Type":"PathEdit",
-					      "Property":"TARGETDIR",
-					      "Sunken":"yes",
-					      "Width":"258",
-					      "Height":"18",
-					      "X":"18",
-					      "Y":"126",
-					    ])))->
-			  add_child(WixNode("Control", ([
-					      "Id":"NextButton",
-					      "Type":"PushButton",
-					      "Default":"yes",
-					      "Width":"66",
-					      "Height":"18",
-					      "X":"300",
-					      "Y":"261",
-					    ]))->
-				    add_child(WixNode("Publish", ([
-							"Event":"SetTarget",
-							"Value":"TARGETDIR",
-						      ])))->
-				    add_child(WixNode("Publish", ([
-							"Event":"EndDialog",
-							"Value":"Return"
-						      ])))))->
-		add_child(WixNode("InstallUISequence", ([]))->
-			  add_child(WixNode("Custom", ([
-					      "Action":"QueryTarget",
-					      "Before":"TargetDialog",
-					    ])))->
-			  add_child(WixNode("Show", ([
-					      "Dialog":"TargetDialog",
-					      "Before":"ProgressForm",
-					    ])))))
-#endif /* 0 */
-;
-
-    xml_root = Parser.XML.Tree.SimpleRootNode()->
-      add_child(Parser.XML.Tree.SimpleHeaderNode((["version":"1.0",
-						   "encoding":"utf-8"])))->
-      add_child(WixNode("Wix", ([
-			  "xmlns":"http://schemas.microsoft.com/wix/2003/01/wi",
-			]))->add_child(product_node));
-
-    Stdio.write_file(export_base_name+".wxs", xml_root->render_xml());
-#endif /* 0 */
-#else /* !SUPPORT_WIX */
-    error("Wix mode not supported.\n");
-#endif /* SUPPORT_WIX */
-  } else if (export == 3) {
-    export=0;
-
-    cd("..");
-
-  [array(string) to_export_from, array(string) to_export_tmp] =
-    Array.transpose (to_export);
-
-  // Link in files outside the build tree during the lha.
-  for (int i = 0; i < sizeof (to_export_from); i++) {
-    string tmpname = to_export_tmp[i];
-    to_export_tmp[i] =
-      combine_path (export_base_name, to_export_tmp[i]);
-    if (to_export_from[i] != tmpname) {
-      rm (to_export_tmp[i]);
-      Stdio.mkdirhier(dirname(to_export_tmp[i]));
-#if constant(hardlink)
-      hardlink (combine_path(getcwd(), to_export_from[i]), to_export_tmp[i]);
-#else
-      mklink (combine_path(getcwd(), to_export_from[i]), to_export_tmp[i]);
-#endif
-    }
-    else
-      to_export_from[i] = 0;
-  }
-
-  string master_src=combine_path(vars->LIBDIR_SRC,"master.pike.in");
-  string unpack_master=combine_path(export_base_name, "lib/master.pike");
-  rm(unpack_master);
-  make_master(unpack_master, master_src, "PROGDIR:lib", "PROGDIR:include/pike",
-	      0, cflags, ldflags);
-
-  string tmpmsg=".";
-
-  string lhaarg="cq";
-  foreach(to_export_tmp/25.0, array files_to_lha)
-    {
-      status("Creating", export_base_name+".lha", tmpmsg);
-      tmpmsg+=".";
-      Process.create_process(({"lha",lhaarg,export_base_name+".lha"})+ files_to_lha)
-	->wait();
-      lhaarg="aq";
-    }
-
-  // Clean up symlinks again.
-  for (int i = 0; i < sizeof (to_export_from); i++)
-    if (to_export_from[i])
-      rm (to_export_tmp[i]);
-
-  status("Cleaning up","");
-
-  Process.create_process( ({ "rm","-rf",
-			     export_base_name,
-  }) ) ->wait();
-
-  status1("Export done");
-  } else {
-#ifdef __NT__
-  status("Creating",export_base_name+".burk");
-  Stdio.File p=Stdio.File(export_base_name+".burk","wc");
-  string msg="   Loading installation script, please wait...";
-  p->write("w%4c%s",sizeof(msg),msg);
-
-#define TRANSLATE(X,Y) combine_path(".",X) : Y
-  mapping translator = ([
-    TRANSLATE(vars->BASEDIR,tmpdir),
-    TRANSLATE(vars->LIBDIR_SRC,tmpdir+"/lib"),
-    TRANSLATE(vars->SRCDIR,tmpdir+"/src"),
-    TRANSLATE(vars->TMP_BINDIR,tmpdir+"/bin"),
-    TRANSLATE(vars->MANDIR_SRC,tmpdir+"/share/man"),
-    TRANSLATE(vars->DOCDIR_SRC,tmpdir+"/refdoc"),
-    TRANSLATE(vars->TMP_LIBDIR,tmpdir+"/build/lib"),
-    "unpack_master.pike" : tmpdir+"/build/master.pike",
-    "":tmpdir+"/build",
-  ]);
-
-  [array(string) to_export_from, array(string) to_export_tmp] =
-    Array.transpose (to_export);
-  array(string) translated_names = Array.map(to_export_tmp, translate, translator);
-  array(string) dirs=Array.uniq(Array.map(translated_names, dirname));
-  while(1)
-  {
-    array(string) d2=Array.map(dirs, dirname) - dirs;
-    if(!sizeof(d2)) break;
-    dirs+=Array.uniq(d2);
-  }
-  dirs-=({""});
-  sort(dirs);
-
-  foreach(dirs, string dir) p->write("d%4c%s",sizeof(dir),dir);
-  foreach(Array.transpose(  ({ to_export_from, translated_names }) ),
-	  [ string file, string file_name ])
-    {
-      status("Adding",file);
-      if (string f=Stdio.read_file(file)) {
-	p->write("f%4c%s%4c",sizeof(file_name),file_name,sizeof(f));
-	p->write(f);
-      } else {
-	//  Huh? File could not be found.
-	error_msg ("-------------------\n"
-		   "Warning: Could not add file: %s. File not found!\n"
-		   "-------------------\n", file);
-      }
-    }
-
-  // FIXME, support $INSTALL_SCRIPT (or similar)
-
-#define TRVAR(X) translate(combine_path(vars->X,"."), translator)
-
-  array(string) env=({
-//    "PIKE_MODULE_PATH="+TRVAR(TMP_LIBDIR)+"/modules:"+TRVAR(LIBDIR_SRC)+"/modules",
-//    "PIKE_PROGRAM_PATH=",
-//    "PIKE_INCLUDE_PATH="+TRVAR(LIBDIR_SRC)+"/include",
-  });
-
-  foreach(env, string e)
-    p->write("e%4c%s",sizeof(e),e);
-
-#define RELAY(X) " " #X "=" + TRVAR(X)+
-
-  string cmd=
-    replace(translate("pike.exe", translator),"/","\\")+
-    " -m"+translate("unpack_master.pike", translator)+
-    " -DNOT_INSTALLED" +
-    " "+translate( combine_path(vars->TMP_BINDIR,"install.pike"), translator)+
-    RELAY(TMP_LIBDIR)
-    RELAY(LIBDIR_SRC)
-    RELAY(SRCDIR)
-    RELAY(TMP_BINDIR)
-    RELAY(MANDIR_SRC)
-    RELAY(DOCDIR_SRC)
-    RELAY(BASEDIR)
-    " TMP_BUILDDIR="+translate("", translator)+
-    (((vars->PIKE_MODULE_RELOC||"") != "")? " PIKE_MODULE_RELOC=1":"")+
-    " $" // $ = @argv
-    ;
-
-  p->write("s%4c%s",sizeof(cmd),cmd);
-
-  array(string) to_delete=translated_names + ({translate("pike.tmp",translator)});
-  to_delete=Array.uniq(to_delete);
-  to_delete+=reverse(dirs);
-
-  // Generate cleanup
-  foreach(to_delete, string del)
-    p->write("D%4c%s",sizeof(del),del);
-
-  p->write("q\0\0\0\0");
-  p->close("rw");
-
-  if(last_len)
-  {
-    status(0,"");
-    status(0,"");
-  }
-
-#else
-  export=0;
-
-  cd("..");
-
-  string tmpname = sprintf("PtmP%07x",random(0xfffffff));
-
-  status("Creating","script glue");
-
-  Stdio.write_file(tmpname+".x",
-		   "#!/bin/sh\n"
-#"TARFILE=\"$1\"; shift
-ARGS=''
-
-INSTALL_SCRIPT='bin/install.pike'
-
-while [ $# != 0 ]
-do
-    case \"$1\" in
-              -v|\\
-       --version) echo \""+version()+
-#" Copyright (C) 1994-2022 IDA, Linköping University
-Pike comes with ABSOLUTELY NO WARRANTY; This is free software and you
-are welcome to redistribute it under certain conditions; Read the
-files COPYING and COPYRIGHT in the Pike distribution for more details.
-\";
-		  rm -f "+tmpname+#".x
-                  exit 0 ;;
-
-              -h|\\
-          --help) echo \"" + helptext + #"\"
-		  rm -f "+tmpname+#".x
-                  exit 0 ;;
-
-      --features) echo \"" + Tools.Install.features()*"\n" + #"\"
-		  rm -f "+tmpname+#".x
-                  exit 0 ;;
-
-    --list-files) tar xf \"$TARFILE\" "+tmpname+#".tar.gz
-                  tar tfz "+tmpname+#".tar.gz
-                  rm -f "+tmpname+".x "+tmpname+#".tar.gz
-                  exit 0 ;;
-
-              -s|\\
-        --script) shift
-                  INSTALL_SCRIPT=\"$1\" ;;
-
-               *) ARGS=\"$ARGS '`echo \\\"$1\\\" | sed -e \\\"s/'/'\\\\\\\"'\\\\\\\"'/g\\\"`'\" ;;
-    esac
-    shift
-done
-"
-		   "echo \"   Loading installation script, please wait...\"\n"
-		   "tar xf \"$TARFILE\" "+tmpname+".tar.gz\n"
-		   "gzip -dc "+tmpname+".tar.gz | tar xf -\n"
-		   "rm -rf "+tmpname+".tar.gz\n"
-		   "( cd '"+export_base_name+".dir'\n"
-		   "  eval \"build/pike -mmaster.pike -DNOT_INSTALLED "
-		                "\\\"$INSTALL_SCRIPT\\\" \\\n"
-		   "  TMP_LIBDIR=\\\"build/lib\\\"\\\n"
-		   "  LIBDIR_SRC=\\\"lib\\\"\\\n"
-		   "  SRCDIR=\\\"src\\\"\\\n"
-		   "  TMP_BINDIR=\\\"bin\\\"\\\n"
-		   "  TMP_BUILDDIR=\\\"build\\\"\\\n"
-		   "  MANDIR_SRC=\\\"share/man\\\"\\\n"
-		   "  DOCDIR_SRC=\\\"refdoc\\\"\\\n"
-		   "  PIKE_MODULE_RELOC=\\\"" + vars->PIKE_MODULE_RELOC +
-		                       "\\\"\\\n"
-		   "  $ARGS\"\n"
-		   ")\n"
-		   "rm -rf '"+export_base_name+".dir' "+tmpname+".x\n"
-    );
-  chmod(tmpname+".x",0755);
-  string script=sprintf("#!/bin/sh\n"
-			"tar xf \"$0\" %s.x\n"
-			"exec ./%s.x \"$0\" \"$@\"\n",
-			tmpname, tmpname);
-  if(sizeof(script) >= 100)
-  {
-    error_msg ("Script too long!!\n");
-    exit(1);
-  }
-
-  array(string) parts = script/"/";
-  mkdirhier( parts[..sizeof(parts)-2]*"/");
-  Stdio.write_file(script,"");
-
-  [array(string) to_export_from, array(string) to_export_tmp] =
-    Array.transpose (to_export);
-
-  // Link in files outside the build tree during the tar.
-  for (int i = 0; i < sizeof (to_export_from); i++) {
-    string tmpname = to_export_tmp[i];
-    to_export_tmp[i] =
-      combine_path (export_base_name+".dir", to_export_tmp[i]);
-    if (to_export_from[i] != tmpname) {
-      rm (to_export_tmp[i]);
-      mklink (to_export_from[i], to_export_tmp[i]);
-    }
-    else
-      to_export_from[i] = 0;
-  }
-
-  string tmpmsg=".";
-
-  string tararg="cf";
-  foreach(to_export_tmp/25.0, array files_to_tar)
-    {
-      status("Creating", tmpname+".tar", tmpmsg);
-      tmpmsg+=".";
-      Process.create_process(({"tar",tararg,tmpname+".tar"})+ files_to_tar)
-	->wait();
-      tararg="rf";
-    }
-
-  // Clean up symlinks again.
-  for (int i = 0; i < sizeof (to_export_from); i++)
-    if (to_export_from[i])
-      rm (to_export_tmp[i]);
-
-  status("Filtering to root/root ownership", tmpname+".tar");
-  tarfilter(tmpname+".tar");
-
-  status("Creating", tmpname+".tar.gz");
-
-  Process.create_process(({"gzip","-9",tmpname+".tar"}))->wait();
-
-  status("Creating", export_base_name);
-
-  //  Setting COPYFILE_DISABLE avoids a "._PtmP..." resource file to be added
-  //  on OS X which otherwise would hinder self-extraction from bootstrapping.
-  Process.create_process( ({ "tar","cf", export_base_name,
-			     script, tmpname+".x", tmpname+".tar.gz" }),
-			  ([ "env" : ([ "COPYFILE_DISABLE" : "true" ]) ]) )
-    ->wait();
-
-  status("Filtering to root/root ownership", export_base_name);
-  tarfilter(export_base_name);
-
-  chmod(export_base_name,0755);
-
-  status("Cleaning up","");
-
-  Process.create_process( ({ "rm","-rf",
-			     export_base_name+".dir",
-			     export_base_name+".x",
-			     tmpname+".x",
-			     tmpname+".tar.gz",
-			     parts[0],
-  }) ) ->wait();
-
-  status1("Export done");
-#endif
-  }
-
-  exit(0);
-}
 
 #ifdef USE_GTK
 object window1;
@@ -1922,7 +1012,7 @@ int next()
   return 1;
 }
 
-void begin_wizard(array(string) argv)
+void begin_wizard(array(string) argv, string prefix)
 {
   // FIXME:
   // We should display the GPL licence and make the user
@@ -1987,698 +1077,6 @@ void begin_wizard(array(string) argv)
   window1->show_all();
 }
 #endif
-
-
-int traditional;
-string prefix;
-string exec_prefix;
-string lib_prefix;
-string include_prefix;
-string doc_prefix;
-string man_prefix;
-string cflags;
-string ldflags;
-string lnk;
-string old_exec_prefix;
-object interactive;
-string install_type="--interactive";
-
-
-int pre_install(array(string) argv)
-{
-  if( vars->prefix )
-    prefix = vars->prefix;
-  else {
-#ifdef __NT__
-    prefix = RegGetValue(HKEY_LOCAL_MACHINE,
-			 "SOFTWARE\\Microsoft\\Windows\\CurrentVersion",
-			 "ProgramFilesDir");
-#else
-    prefix = "/usr/local";
-#endif
-  }
-
-  if(!vars->TMP_BINDIR)
-    vars->TMP_BINDIR=combine_path(vars->SRCDIR,"../bin");
-
-  if(!vars->TMP_BUILDDIR) vars->TMP_BUILDDIR=".";
-
-  cflags = vars->cflags;
-  ldflags = vars->ldflags;
-
-  while(1)
-  {
-    // werror("install_type: %O...\r\n", install_type);
-  switch(install_type)
-  {
-    case "--traditional":
-      exec_prefix=vars->exec_prefix||(prefix+"/bin/");
-      lib_prefix=vars->lib_prefix||(prefix+"/lib/pike/");
-      include_prefix =
-	vars->include_prefix || combine_path(prefix,"include","pike");
-      doc_prefix =
-	vars->doc_prefix || combine_path(prefix, "doc", "pike");
-      man_prefix=vars->man_prefix||(prefix+"/share/man/");
-      break;
-
-    case "--interactive":
-
-#ifdef USE_GTK
-      catch  {
-	if(!no_gui)
-	{
-#ifndef __NT__ // We are using GTK on Win32!! no DISPLAY required
-	  if(getenv("DISPLAY"))
-#endif
-	  {
-	    begin_wizard(argv);
-	    return -1;
-	  }
-	}
-      };
-#endif
-
-      status1("");
-
-      interactive=Tools.Install.Readline();
-      interactive->set_cwd("../");
-
-      write("   Welcome to the interactive "+version()+
-	    " installation script.\n"
-	    "\n" +
-	    (interactive->get_input_controller()->dumb ?
-	     "   The script will guide you through the installation process by asking\n"
-	     "   a few questions. You will be able to confirm your settings before\n"
-	     "   the installation begins.\n"
-	     :
-	     "   The script will guide you through the installation process by asking\n"
-	     "   a few questions. Whenever you input a path or a filename, you may use\n"
-	     "   the <tab> key to perform filename completion. You will be able to\n"
-	     "   confirm your settings before the installation begins.\n")
-	    );
-
-      string confirm, bin_path = vars->pike_name;
-      do {
-	write("\n");
-
-	prefix = interactive->edit_directory(prefix,"Install prefix: ");
-	prefix = interactive->absolute_path(prefix);
-
-	if(!vars->pike_name)
-	{
-#if constant(symlink)
-	  bin_path=interactive->edit_filename
-		   (combine_path(vars->exec_prefix ||
-				 combine_path(prefix, "bin"),
-				 "pike"), "Pike binary name: ");
-#else
-	  bin_path=combine_path(
-#ifdef __NT__
-				"\\",
-#else
-				"/",
-#endif
-				getcwd(),prefix,"pike",
-				replace(version()-"Pike v"," release ","."),
-				"bin","pike");
-#endif
-	}
-
-	bin_path = interactive->absolute_path(bin_path);
-
-	write("\n");
-	confirm =
-	  lower_case(interactive->
-		     edit("", "Are the settings above correct [Y/n/quit]? "));
-	if(confirm == "quit")
-	{
-	  // Maybe clean up?
-	  destruct(interactive);
-	  exit(0);
-	}
-
-      } while(!(confirm == "" || confirm == "y"));
-
-      write("\n");
-
-      vars->pike_name = bin_path;
-
-      destruct(interactive);
-      install_type="--new-style";
-      continue;
-
-    case "--export-amigaos":
-      export = 3;
-    case "--wix-module":
-      export = export || 2;
-    case "--export":
-      export = export || 1;
-      string ver = replace( version(), ([ " ":"-", " release ":"." ]) );
-#if constant(uname) && !defined(CROSS_INSTALL)
-      mapping(string:string) u = uname();
-      if( u->sysname=="AIX" )
-      {
-	export_base_name = sprintf("%s-%s-%s.%s",
-				   ver,
-				   u->sysname,
-				   u->version,
-				   u->release);
-      }
-      else {
-	export_base_name = sprintf("%s-%s-%s-%s",
-				   ver,
-				   u->sysname,
-				   u->release,
-				   u->machine);
-      }
-      export_base_name = (replace(export_base_name, (["/": "-", "?": ""]))
-			  / " " - ({""})
-			 ) * "-";
-#else
-      export_base_name = ver;
-#endif
-
-      status1("Building export %s", export_base_name);
-
-#ifndef __NT__
-      if (export == 1) {
-	if (!mkdir(export_base_name+".dir")) {
-	  error("Failed to create directory %O: %s\n",
-		export_base_name+".dir", strerror(errno()));
-	}
-
-	mklink(vars->LIBDIR_SRC,export_base_name+".dir/lib");
-	mklink(vars->SRCDIR,export_base_name+".dir/src");
-	mklink(getcwd(),export_base_name+".dir/build");
-	mklink(vars->TMP_BINDIR,export_base_name+".dir/bin");
-	mklink(vars->MANDIR_SRC,export_base_name+".dir/share/man");
-	mklink(vars->DOCDIR_SRC,export_base_name+".dir/refdoc");
-
-	cd(export_base_name+".dir");
-
-	vars->TMP_LIBDIR="build/lib";
-	vars->LIBDIR_SRC="lib";
-	vars->SRCDIR="src";
-	vars->TMP_BINDIR="bin";
-	vars->MANDIR_SRC="share/man";
-	vars->DOCDIR_SRC="refdoc";
-	vars->TMP_BUILDDIR="build";
-      } else if (export == 3) {
-	if (!mkdir(export_base_name)) {
-	  error("Failed to create directory %O: %s\n",
-		export_base_name, strerror(errno()));
-	}
-	vars->TMP_BUILDDIR=getcwd();
-	cd(export_base_name);
-	vars->pike_name = "pike";
-	vars->prefix = prefix = "";
-	exec_prefix = "";
-      }
-#endif
-
-    case "":
-    default:
-    case "--new-style":
-      if(!(lnk=vars->pike_name) || !sizeof(lnk)) {
-	lnk = combine_path(vars->exec_prefix || combine_path(vars->prefix, "bin"),
-			   "pike");
-	old_exec_prefix=vars->exec_prefix; // to make the directory for pike link
-      }
-      if (export != 3) {
-        prefix = combine_path("/", getcwd(), prefix, "pike",
-			      replace(version()-"Pike v"," release ","."));
-	exec_prefix=combine_path(prefix,"bin");
-      }
-      lib_prefix=combine_path(prefix,"lib");
-      doc_prefix=combine_path(prefix,"doc");
-      include_prefix=combine_path(prefix,"include","pike");
-      man_prefix=combine_path(prefix,"share/man");
-      if (export) {
-	low_install_file(combine_path(vars->TMP_BINDIR,"install.pike"),
-			 combine_path(prefix, "bin/install.pike"));
-      }
-      break;
-  case "--finalize":
-    prefix = getcwd();
-    exec_prefix = combine_path(prefix, "bin");
-    lib_prefix = combine_path(prefix, "lib");
-    if (!vars->TMP_BUILDDIR) vars->TMP_BUILDDIR="bin";
-    finalize_pike();
-    status1("Finalizing done.");
-    return 0;
-  case "--install-master":
-    prefix = getcwd();
-    exec_prefix = combine_path(prefix, "bin");
-    lib_prefix = combine_path(prefix, "lib");
-    include_prefix = combine_path(prefix,"include","pike");
-    make_master("lib/master.pike", "lib/master.pike.in",
-		lib_prefix, include_prefix, UNDEFINED, cflags, ldflags);
-    status1("Installing master done.");
-    return 0;
-
-  case "--wix":
-#ifdef SUPPORT_WIX
-    export = 1; // Only to get plain messages from status() etc.
-    make_wix();
-#else /* !SUPPORT_WIX */
-    error("Wix mode not supported with this pike.\n");
-#endif /* SUPPORT_WIX */
-    return 0;
-  }
-  break;
-  }
-
-  do_install();
-  return 0;
-}
-
-#ifdef SUPPORT_WIX
-
-string add_msm (Directory root, string msm_glob, string descr,
-		void|string targetdir, void|string language)
-{
-  if (string msm_dir = getenv ("CRT_MSM_PATH")) {
-    string msm_file;
-
-    if (Stdio.is_dir (msm_dir)) {
-      array(string) all_files = get_dir (msm_dir);
-      array(string) files = ({});
-      foreach (all_files, string file)
-	if (glob (msm_glob, lower_case (file)))
-	  files += ({file});
-      switch (sizeof (files)) {
-	case 1:
-	  msm_file = files[0];
-	  break;
-	case 2..:
-	  error_msg ("Warning: More than one msm for %s found:\n"
-		     "%{  %s\n%}",
-		     descr, map (files,
-				 lambda (string file) {
-				   return combine_path (msm_dir, file);
-				 }));
-	  return 0;
-      }
-    }
-
-    if (!msm_file) {
-      error_msg ("Warning: No file found matching %s - "
-		 "the msm for %s won't be included.\n",
-		 combine_path (msm_dir, msm_glob), descr);
-      return 0;
-    }
-
-    string id =
-      has_suffix (lower_case (msm_file), ".msm") ?
-      msm_file[..sizeof (msm_file) - 5] : msm_file;
-    root->merge_module (".", combine_path (msm_dir, msm_file),
-			id, targetdir || "TARGETDIR", language);
-    status ("Adding merge module", combine_path (msm_dir, msm_file));
-    return id;
-  }
-
-  else {
-    error_msg ("Warning: CRT_MSM_PATH not set - can't find msm for %s.\n",
-	       descr);
-    return 0;
-  }
-}
-
-// Create a versioned root wix file that installs Pike_module.msm.
-void make_wix()
-{
-  Directory root = Directory("SourceDir",
-			     Standards.UUID.UUID(version_guid)->encode(),
-			     "TARGETDIR");
-  /* Workaround for bug in light. */
-  root->extra_ids["PIKE_TARGETDIR"] = 1;
-
-  // Note: TARGETDIR and PIKE_TARGETDIR are always the same dir here.
-
-  root->merge_module(".", "Pike_module.msm", "Pike", "TARGETDIR");
-
-  // FIXME: Use the proper WIX method for this.
-  // FIXME: Add an installer action that refreshes the icons in the
-  // shell (call SHChangeNotify somehow?)
-  root->install_regkey("bin", "HKCR", ".pike", "", "pike_file",
-		       "RE__PF");
-  root->install_regkey("bin", "HKCR", "pike_file", "", "Pike Script File",
-		       "RE__PSF");
-  root->install_regkey("bin", "HKCR", "pike_file\\shell\\run", "",
-		       "Run", "RE__VERB");
-  root->install_regkey("bin", "HKCR", "pike_file\\shell\\run\\command", "",
-		       "\"[TARGETDIR]bin\\pike.exe\" \"%1\" %*",
-		       "RE__COMMAND");
-  root->install_regkey("bin", "HKCR", "pike_file\\DefaultIcon", "",
-		       "[TARGETDIR]bin\\pike.exe", "RE__ICON");
-
-  root->install_regkey("bin", "HKCR", ".pmod", "", "pike_module",
-		       "RE__PM");
-  root->install_regkey("bin", "HKCR", "pike_module", "", "Pike Module File",
-		       "RE__PMF");
-  //FIXME: Should have a diffrent icon. Traditionally "pike_blue.ico".
-  root->install_regkey("bin", "HKCR", "pike_module\\DefaultIcon", "",
-		       "[TARGETDIR]bin\\pike.exe", "RE__PMICON");
-
-  string title = 
-#if 1
-    "Pike"
-#else /* !1 */
-    sprintf("Pike v%d.%d release %d",
-	    __REAL_MAJOR__, __REAL_MINOR__, __REAL_BUILD__)
-#endif /* 1 */
-    ;
-
-  WixNode feature_node =
-    WixNode("Feature", ([
-	      "ConfigurableDirectory":"TARGETDIR",
-	      "Title":title,
-	      "Level":"1",
-	      "Id":"F_Pike",
-	    ]))->
-    add_child(line_feed)->
-    add_child(WixNode ("ComponentRef",
-		       (["Id": root->get_component_id("bin")])))->
-    add_child(line_feed)->
-    add_child(WixNode("MergeRef", ([ "Id":"Pike" ])))->
-    add_child(line_feed);
-
-#ifndef PRIVATE_CRT
-  if (include_crt) {
-    // Always include the nondebug CRT since some lib dlls might be
-    // using it.
-    //
-    // NB: This ought to be in Pike_module.wxs, but merge modules cannot
-    // contain merge modules
-
-    string crt_arch;
-    mapping(string:mixed) u = uname();
-    if (u->sysname && has_prefix (u->sysname, "Win"))
-      // We're running on windows (presumably we're using the pike
-      // which is being packaged) so we can look up the arch from
-      // the uname data.
-      crt_arch = (["i86pc": "x86", "amd64": "x86_x64"])[uname()->machine];
-    if (!crt_arch)
-      // Probably not running on windows. Use a "*" glob to pick up
-      // whatever the build environment has got in $CRT_MSM_PATH.
-      crt_arch = "*";
-
-    if (string id =
-	add_msm (root, "microsoft_*_crt_" + crt_arch + ".msm",
-		 "MS CRT", 0, "0"))
-      feature_node->add_child (WixNode ("MergeRef", (["Id": id])))
-		  ->add_child (line_feed);
-    if (string id =
-	add_msm (root, "policy_*_microsoft_*_crt_" + crt_arch + ".msm",
-		 "MS CRT policy", 0, "0"))
-      feature_node->add_child (WixNode ("MergeRef", (["Id": id])))
-		  ->add_child (line_feed);
-    if (include_crt == "debug") {
-      if (string id =
-	  add_msm (root, "microsoft_*_debugcrt_" + crt_arch + ".msm",
-		   "MS debug CRT", 0, "0"))
-	feature_node->add_child (WixNode ("MergeRef", (["Id": id])))
-		    ->add_child (line_feed);
-      if (string id =
-	  add_msm (root, "policy_*_microsoft_*_debugcrt_" + crt_arch + ".msm",
-		   "MS debug CRT policy", 0, "0"))
-	feature_node->add_child (WixNode ("MergeRef", (["Id": id])))
-		    ->add_child (line_feed);
-      error_msg ("Warning: MS debug CRT is included - "
-		 "it is not redistributable.\n");
-      error_msg (#"\
-Warning: Some libs might be linked to the release CRT so you might get
-an extra CRT instance.\n");
-    }
-  }
-#endif
-
-  // Generate the XML.
-  Parser.XML.Tree.SimpleRootNode root_node =
-    Parser.XML.Tree.SimpleRootNode()->
-    add_child(Parser.XML.Tree.SimpleHeaderNode((["version": "1.0",
-						 "encoding": "utf-8"])))->
-    add_child(WixNode("Wix", (["xmlns":Standards.XML.Wix.wix_ns]))->
-	      add_child(line_feed)->
-	      add_child(WixNode("Product", ([
-				  "Manufacturer":"IDA",
-				  "Name":title,
-				  "Language":"1033",
-				  "UpgradeCode":pike_upgrade_guid,
-				  "Id":version_guid,
-				  "Version":version_str,
-				]))->
-			add_child(line_feed)->
-			add_child(WixNode("Package", ([
-					    "Manufacturer":"IDA",
-					    "Languages":"1033",
-					    "Compressed":"yes",
-					    "InstallerVersion":"300",
-					    "Platforms":"Intel",
-					    "SummaryCodepage":"1252",
-					    "Id":version_guid,
-					  ])))->
-			add_child(line_feed)->
-			add_child(WixNode("Media", ([
-					    "Cabinet":"Pike.cab",
-					    "EmbedCab":"yes",
-					    "Id":"1",
-					  ])))->
-			add_child(line_feed)->
-			add_child(root->gen_xml(UNDEFINED, "1"))->
-			add_child(line_feed)->
-			add_child(feature_node)->
-			add_child(line_feed)->
-			add_child(WixNode("AdminExecuteSequence", ([]), "\n")->
-				  add_child(WixNode("Custom", ([
-						      "Before":"CostInitialize",
-						      "Action":"DIRCA_TARGETDIR",
-						    ]), "TARGETDIR=\"\""))->
-				  add_child(line_feed))->
-			add_child(line_feed)->
-			add_child(WixNode("InstallExecuteSequence", ([
-					  ]), "\n")->
-				  add_child(WixNode("Custom", ([
-						      "Before":"ValidateProductID",
-						      "Action":"DIRCA_TARGETDIR",
-						    ]), "TARGETDIR=\"\""))->
-				  add_child(line_feed)->
-				  add_child(WixNode("RemoveExistingProducts", ([
-						      "After":"InstallInitialize",
-						    ])))->
-				  add_child(line_feed))->
-			add_child(line_feed)->
-			add_child(WixNode("FragmentRef", ([
-					    "Id":"PikeUI",
-					  ])))->
-			add_child(line_feed))->
-	      add_child (line_feed))->
-    add_child(line_feed);
-
-  create_file("Pike.wxs", root_node->render_xml());
-}
-
-#endif /* SUPPORT_WIX */
-
-void collect_dlls (function(string:void) handle_dll)
-{
-  // $PIKE_BUILD_ROOT/dll contains placeholders for the dlls that need
-  // to be included in the install package. install.pike searches for
-  // these in PATH. The contents of the files here are not important;
-  // they can be zero length. The MS CRT dlls shouldn't be here,
-  // though (see add_msm instead).
-  if (string pike_build_root = getenv ("PIKE_BUILD_ROOT"))
-    if (array(string) dlls = get_dir (combine_path (pike_build_root, "dll"))) {
-    dll_loop:
-      foreach (dlls, string dll_name) {
-	dll_name = lower_case (dll_name);
-	if (has_suffix (dll_name, ".dll")) {
-	  foreach (getenv ("PATH") / ";", string path) {
-	    string dll_path = combine_path (path, dll_name);
-	    if (Stdio.exist (dll_path)) {
-	      handle_dll (normalize_path (dll_path));
-	      continue dll_loop;
-	    }
-	  }
-	  error_msg ("Warning: Could not find dll %s to include.\n", dll_name);
-	}
-      }
-    }
-}
-
-// Create a master.pike with the correct lib_prefix
-void make_master(string dest, string master, string lib_prefix,
-		 string include_prefix, string|void share_prefix,
-		 string|void cflags, string|void ldflags)
-{
-  status("Finalizing",master);
-  string master_data=Stdio.read_file(master);
-  if (!master_data) {
-    error("Failed to read master template file %O\n", master);
-  }
-  master_data=replace(master_data, ({
-			"#lib_prefix#",
-			"#include_prefix#",
-			"#share_prefix#",
-			"#doc_prefix#",
-			"#cflags#",
-			"#ldflags#",
-		      }), ({
-			replace(lib_prefix,"\\","\\\\"),
-			replace(include_prefix,"\\","\\\\"),
-			replace(share_prefix||"#share_prefix#", "\\", "\\\\"),
-			replace(doc_prefix||"#doc_prefix#", "\\", "\\\\"),
-			replace(cflags||"", "\\", "\\\\"),
-			replace(ldflags||"", "\\", "\\\\"),
-		      }));
-  if((vars->PIKE_MODULE_RELOC||"") != "")
-    master_data = replace(master_data, "#undef PIKE_MODULE_RELOC",
-			  "#define PIKE_MODULE_RELOC 1");
-  if(compare_to_file(master_data, dest)) {
-    status("Finalizing",dest,"- already finalized");
-    return;
-  }
-  Stdio.write_file(dest,master_data);
-  status("Finalizing",master,"done");
-}
-
-// Install file while fixing CC= and CXX= w.r.t. smartlink
-void fix_smartlink(string src, string dest, string include_prefix)
-{
-  status("Finalizing",src);
-  string data=Stdio.read_file(src);
-  data = map(data/"\n", lambda(string s) {
-			  string cc;
-			  if(2==sscanf(s, "CC=%*s/smartlink %s", cc))
-			    return "CC="+include_prefix+"/smartlink "+cc;
-			  else if(2==sscanf(s, "CXX=%*s/smartlink %s", string cxx))
-			    return "CXX="+include_prefix+"/smartlink "+cxx;
-			  else
-			    return s;
-			})*"\n";
-  if(compare_to_file(data, dest)) {
-    status("Finalizing",dest,"- already finalized");
-    return;
-  }
-  Stdio.write_file(fakeroot(dest),data);
-  status("Finalizing",fakeroot(dest),"done");
-}
-
-// dump modules (and master)
-void dump_modules()
-{
-  string master=combine_path(lib_prefix,"master.pike");
-  Stdio.Stat s1=file_stat(master);
-  Stdio.Stat s2=file_stat(master+".o");
-  mapping(string:mapping(string:string)) options = ([
-    "env":getenv()-([
-      "PIKE_PROGRAM_PATH":"",
-      "PIKE_MODULE_PATH":"",
-      "PIKE_INCLUDE_PATH":"",
-      "PIKE_MASTER":"",
-      ]) ]);
-
-
-  if(!s2 || s1->mtime>=s2->mtime || redump_all)
-  {
-    int retcode;
-    mixed error = catch {
-      if(file_stat(fakeroot(pike))) {
-	object p=
-	  Process.create_process( ({fakeroot(pike),"-m",
-	    combine_path(vars->SRCDIR,"dumpmaster.pike"),
-	    @(vars->fakeroot?({"--fakeroot="+vars->fakeroot}):({})),
-	    master}), options);
-	retcode=p->wait();
-      }
-      else
-	error_msg ("Pike binary %O could not be found.\n"
-		   "Dumping of master.pike failed (not fatal).\n",
-		   fakeroot(pike));
-    };
-    if(error)
-      error_msg ("Dumping of master.pike failed (not fatal)\n%s\n",
-		 describe_backtrace(error));
-    if(retcode)
-      error_msg ("Dumping of master.pike failed (not fatal) (0x%:08x)\n",
-		 retcode);
-  }
-
-  if(!sizeof(to_dump)) return;
-
-  rm("dumpmodule.log");
-
-  foreach(to_dump, string mod)
-    if (file_stat(mod+".o"))
-      rm(mod+".o");
-
-  array cmd=({ fakeroot(pike) });
-
-  if(vars->fakeroot)
-    cmd+=({
-      sprintf("-DPIKE_FAKEROOT=%O",vars->fakeroot),
-      sprintf("-DPIKE_FAKEROOT_OMIT=%O",
-	      map( ({
-		getcwd(),
-		vars->LIBDIR_SRC,
-		vars->SRCDIR,
-		vars->TMP_BINDIR,
-		vars->MANDIR_SRC,
-		vars->DOCDIR_SRC,
-		vars->TMP_LIBDIR,
-		vars->BASEDIR,
-		vars->fakeroot,
-		   }) - ({ 0 }), globify)*":"),
-      "-m",combine_path(vars->TMP_LIBDIR,"master.pike")
-    });
-
-  cmd+=({ "-x", "dump",
-	  "--log-file",	// --distquiet below might override this.
-#ifdef USE_GTK
-	  label1?"--distquiet":
-#endif
-	  (verbose ? "--verbose" : "--quiet")});
-
-  // Dump 25 modules at a time as to not confuse systems with
-  // very short memory for application arguments.
-
-  int offset = 1;
- dumploop:
-  foreach(to_dump/25.0, array delta_dump)
-  {
-    mixed err = catch {
-      object p=
-	Process.create_process(cmd +
-			       ( istty() ?
-				 ({
-				   sprintf("--progress-bar=%d,%d",
-					   offset, sizeof(to_dump))
-				 }) : ({}) ) +
-			       delta_dump, options);
-      int retcode=p->wait();
-      if (retcode) {
-	error_msg("Dumping of some modules failed (not fatal) (0x%:08x):\n"
-		  "%{  %O\n%}",
-		  retcode, delta_dump);
-	break dumploop;
-      }
-    };
-    if (err) {
-      error_msg ("Failed to spawn module dumper (not fatal):\n"
-		 "%s\n", describe_backtrace(err));
-      break;
-    }
-
-    offset += sizeof(delta_dump);
-  }
-
-  if(progress_bar)
-    // The last files copied do not really count (should
-    // really be a third phase)...
-    progress_bar->set_phase(1.0, 0.0);
-
-  status_clear(1);
-}
 
 // Recalculate adhoc signature hashes on macOS after updating the master cookie
 array(int) find_macho_signature(Stdio.File f)
@@ -2814,33 +1212,682 @@ void fix_macos_adhoc_signature(Stdio.File f, int|void offset, int|void length)
   }
 }
 
-void finalize_pike()
-{
-  pike=combine_path(exec_prefix,"pike");
 
-  // Ugly way to detect NT installation
-  string pike_bin_file=combine_path(vars->TMP_BUILDDIR,"pike");
-  string suffix = "";
-  if(file_stat(pike_bin_file+".exe"))
+int traditional;
+string exec_prefix;
+string lib_prefix;
+string include_prefix;
+string doc_prefix;
+string man_prefix;
+string cflags;
+string ldflags;
+string lnk;
+string old_exec_prefix;
+object interactive;
+string install_type="--interactive";
+
+class InstallHandler(mapping vars, string prefix) {
+
+  protected mapping already_created=([]);
+  protected array(string) files_to_delete=({});
+  protected array(string) files_to_not_delete=({});
+  protected array(string) to_dump=({});
+
+  protected void create()
   {
-    pike_bin_file+=".exe";
-    pike+=".exe";
-    suffix = ".exe";
+    setup_paths();
   }
 
-  if(export) {
-    low_install_file(pike_bin_file, pike, 0755, "BIN_PIKE");
-#ifdef SUPPORT_WIX
-    if (export == 2) {
-      low_install_regkey("bin", "HKLM",
-			 "SYSTEM\\CurrentControlSet\\Services\\SharedAccess\\Parameters\\FirewallPolicy\\StandardProfile\\AuthorizedApplications\\List",
-			 "[#BIN_PIKE]",
-			 "[#BIN_PIKE]:*:Enabled:Pike",
-			 "RE__BIN_PIKE");
-      low_uninstall_file("bin/*.old");
+  protected void setup_paths()
+  {
+    exec_prefix = combine_path(prefix, "bin");
+    lib_prefix = combine_path(prefix, "lib");
+    include_prefix = combine_path(prefix,"include","pike");
+    if (!vars->TMP_BUILDDIR) vars->TMP_BUILDDIR="bin";
+  }
+
+  void fail(string fmt, mixed ... args)
+  {
+    int err=errno();
+#ifdef USE_GTK
+    if(label1)
+    {
+      status1(fmt,@args);
+      hbuttonbox1->add(button1=GTK.Button("Exit")->show());
+      button1->signal_connect("pressed",do_exit,0);
+
+      label6->set_text("Click Exit to exit installation program.");
+
+      // UGLY!!! -Hubbe
+      while(1) { sleep(0.1); GTK.flush(); }
     }
-#endif /* SUPPORT_WIX */
-  } else {
+#endif
+
+    error_msg("%s: %s\n",sprintf(fmt,@args),some_strerror(err));
+    werror("Current directory = %s\n",getcwd());
+    werror("**Installation failed..\n");
+    exit(1);
+  }
+
+  int mkdirhier(string orig_dir)
+  {
+    int tomove;
+    string dir=orig_dir;
+    if(already_created[orig_dir]) return 1;
+
+    if(dir=="" || (sizeof(dir)==2 && dir[-1]==':')) return 1;
+    dir=fakeroot(dir);
+
+    status("Creating",dir+"/");
+
+    mixed s=file_stat(dir);
+    if(s)
+    {
+      if(s[1]<0)
+	return already_created[orig_dir]=1;
+
+      if(glob("*.pmod",dir))
+      {
+	if(!mv(dir,dir+".tmp"))
+	  fail("mv(%s,%s)",dir,dir+".tmp");
+	tomove=1;
+      }else{
+	// FIXME: ask user if he wants to override
+	error_msg ("Warning: Directory '%s' already exists as a file.\n",dir);
+	if(!mv(dir,dir+".old"))
+	  fail("mv(%s,%s)",dir,dir+".old");
+      }
+    }
+
+    mkdirhier(dirname(dir));
+    if(!mkdir(dir))
+      fail("mkdir(%s)",dir);
+
+    chmod(dir,0755);
+
+    if(tomove)
+      if(!mv(dir+".tmp",dir+"/module.pmod"))
+	fail("mv(%s,%s)",dir+".tmp",dir+"/module.pmod");
+
+    return already_created[orig_dir]=1;
+  }
+
+  void create_file(string dest, string content)
+  {
+    status("Creating", dest);
+    if (compare_to_file(content, dest)) {
+      status("Creating", dest, "Already created");
+      return;
+    }
+    Stdio.write_file(dest, content);
+    if (status == global::status_impl)
+      status("Creating", dest, "done");
+  }
+
+  int low_install_file(string from,
+		       string to,
+		       void|int mode,
+		       void|string id)
+  {
+    installed_files++;
+
+    to=fakeroot(to);
+
+    status("Installing",to);
+
+    if(compare_files(from,to))
+    {
+      status("Installing",to,"Already installed");
+      return 0;
+    }
+    mkdirhier(dirname(to));
+    if(!mode) {
+      Stdio.Stat st = file_stat(from);
+      if(!st)
+	exit(1, "Could not find file %O\n", from);
+      int src_mode = st->mode;
+      if (src_mode & 0111) {
+	// Executable.
+	mode = 0755;
+      } else {
+	mode = 0644;
+      }
+    }
+
+    string tmpfile=to+"-"+getpid()+"-"+time();
+    if(!Stdio.cp(from,tmpfile))
+      fail("copy(%s,%s)",from,tmpfile);
+
+    // Chown and chgrp not implemented yet
+    chmod(tmpfile,mode);
+
+    // Need to rename the old file to .old
+    if(file_stat(to))
+    {
+      rm(to+".old"); // Ignore errors
+#if constant(hardlink)
+      if( catch { hardlink(to,to+".old"); })
+#endif
+	mv(to,to+".old");
+    }
+    if(!mv(tmpfile,to))
+      fail("mv(%s,%s)",tmpfile,to);
+    rm(to+".old"); // Ignore errors
+
+    return 1;
+  }
+
+  int install_file(string from,
+		   string to,
+		   void|int mode,
+		   void|int dump)
+  {
+    int ret;
+    if(query_num_arg() == 2)
+      ret=low_install_file(from,to);
+    else
+      ret=low_install_file(from,to,mode);
+
+    array(string) tmp=to/".";
+    string ext=tmp[-1];
+
+    if((ret || redump_all) && dump)
+    {
+      switch(ext)
+      {
+      case "pike":
+	if(glob("*/master.pike",to)) break;
+
+      case "pmod":
+	to_dump+=({to});
+      }
+    }
+
+    // This magic deletes the remnants of static modules
+    // when dynamic modules are installed.
+    if(ret && ext == "so")
+    {
+      tmp[-1]="pmod";
+      files_to_delete+=({ tmp*"." });
+    }else{
+      files_to_not_delete+=({ to });
+    }
+    return ret;
+  }
+
+  // Install the file if it exists, but don't complain if it doesn't.
+  int try_install_file(string from,
+		       string to,
+		       void|int mode,
+		       void|int dump)
+  {
+    if(file_stat(from)) {
+      if(query_num_arg()==2)
+	return install_file(from, to);
+      else
+	return install_file(from, to, mode, dump);
+    }
+    return 0;
+  }
+
+  void install_dir(string from, string to, int dump)
+  {
+    from=stripslash(from);
+    to=stripslash(to);
+    
+    installed_files++;
+    mkdirhier(to);
+    foreach(get_dir(from),string file)
+    {
+      if(file=="testsuite.in") continue;
+      if(file[..1]==".#") continue;
+      if(file[0]=='#' && file[-1]=='#') continue;
+      if(file[-1]=='~') continue;
+      if(has_suffix(file, ".test")) continue;
+      mixed stat=file_stat(combine_path(from,file));
+      if (stat) {
+	if(stat[1]==-2) {
+	  install_dir(combine_path(from,file),combine_path(to,file),dump);
+	} else if (stat[0] & 0111) {
+	  // Executable
+	  install_file(combine_path(from,file),combine_path(to,file),0755,dump);
+	} else {
+	  // Not executable
+	  install_file(combine_path(from,file),combine_path(to,file),0644,dump);
+	}
+      } else {
+	werror(sprintf("\nstat:0, from:%O, file:%O, combined:%O\n",
+		       from, file, combine_path(from, file)));
+      }
+    }
+  }
+
+  // Install the file if it exists, but don't complain if it doesn't.
+  void try_install_dir(string from,
+		       string to,
+		       int dump)
+  {
+    if(file_stat(from))
+      install_dir(from, to, dump);
+  }
+
+  void install_header_files(string from, string to)
+  {
+    installed_files++;
+    from=stripslash(from);
+    to=stripslash(to);
+    mkdirhier(to);
+    foreach(get_dir(from),string file)
+      {
+	if(file[..1]==".#") continue;
+	if(file[-1]!='h' || file[-2]!='.') continue;
+	install_file(combine_path(from,file),combine_path(to,file));
+      }
+  }
+
+  // Create a master.pike with the correct lib_prefix
+  void make_master(string dest, string master, string lib_prefix,
+		   string include_prefix, string|void share_prefix,
+		   string|void cflags, string|void ldflags)
+  {
+    status("Finalizing",master);
+    string master_data=Stdio.read_file(master);
+    if (!master_data) {
+      error("Failed to read master template file %O\n", master);
+    }
+    master_data=replace(master_data, ({
+			  "#lib_prefix#",
+			  "#include_prefix#",
+			  "#share_prefix#",
+			  "#doc_prefix#",
+			  "#cflags#",
+			  "#ldflags#",
+			}), ({
+			  replace(lib_prefix,"\\","\\\\"),
+			  replace(include_prefix,"\\","\\\\"),
+			  replace(share_prefix||"#share_prefix#", "\\", "\\\\"),
+			  replace(doc_prefix||"#doc_prefix#", "\\", "\\\\"),
+			  replace(cflags||"", "\\", "\\\\"),
+			  replace(ldflags||"", "\\", "\\\\"),
+			}));
+    if((vars->PIKE_MODULE_RELOC||"") != "")
+      master_data = replace(master_data, "#undef PIKE_MODULE_RELOC",
+			    "#define PIKE_MODULE_RELOC 1");
+    if(compare_to_file(master_data, dest)) {
+      status("Finalizing",dest,"- already finalized");
+      return;
+    }
+    Stdio.write_file(dest,master_data);
+    status("Finalizing",master,"done");
+  }
+
+  // Install file while fixing CC= and CXX= w.r.t. smartlink
+  void fix_smartlink(string src, string dest, string include_prefix)
+  {
+    status("Finalizing",src);
+    string data=Stdio.read_file(src);
+    data = map(data/"\n", lambda(string s) {
+      string cc;
+      if(2==sscanf(s, "CC=%*s/smartlink %s", cc))
+	return "CC="+include_prefix+"/smartlink "+cc;
+      else if(2==sscanf(s, "CXX=%*s/smartlink %s", string cxx))
+	return "CXX="+include_prefix+"/smartlink "+cxx;
+      else
+	return s;
+    })*"\n";
+    if(compare_to_file(data, dest)) {
+      status("Finalizing",dest,"- already finalized");
+      return;
+    }
+    Stdio.write_file(fakeroot(dest),data);
+    status("Finalizing",fakeroot(dest),"done");
+  }
+
+  // dump modules (and master)
+  void dump_modules()
+  {
+    string master=combine_path(lib_prefix,"master.pike");
+    Stdio.Stat s1=file_stat(master);
+    Stdio.Stat s2=file_stat(master+".o");
+    mapping(string:mapping(string:string)) options = ([
+      "env":getenv()-([
+	"PIKE_PROGRAM_PATH":"",
+	"PIKE_MODULE_PATH":"",
+	"PIKE_INCLUDE_PATH":"",
+	"PIKE_MASTER":"",
+      ]) ]);
+
+
+    if(!s2 || s1->mtime>=s2->mtime || redump_all)
+    {
+      int retcode;
+      mixed error = catch {
+	  if(file_stat(fakeroot(pike))) {
+	    object p=
+	      Process.create_process( ({fakeroot(pike),"-m",
+					combine_path(vars->SRCDIR,"dumpmaster.pike"),
+					@(vars->fakeroot?({"--fakeroot="+vars->fakeroot}):({})),
+					master}), options);
+	    retcode=p->wait();
+	  }
+	  else
+	    error_msg ("Pike binary %O could not be found.\n"
+		       "Dumping of master.pike failed (not fatal).\n",
+		       fakeroot(pike));
+	};
+      if(error)
+	error_msg ("Dumping of master.pike failed (not fatal)\n%s\n",
+		   describe_backtrace(error));
+      if(retcode)
+	error_msg ("Dumping of master.pike failed (not fatal) (0x%:08x)\n",
+		   retcode);
+    }
+
+    if(!sizeof(to_dump)) return;
+
+    rm("dumpmodule.log");
+
+    foreach(to_dump, string mod)
+      if (file_stat(mod+".o"))
+	rm(mod+".o");
+
+    array cmd=({ fakeroot(pike) });
+
+    if(vars->fakeroot)
+      cmd+=({
+	sprintf("-DPIKE_FAKEROOT=%O",vars->fakeroot),
+	sprintf("-DPIKE_FAKEROOT_OMIT=%O",
+		map( ({
+		       getcwd(),
+		       vars->LIBDIR_SRC,
+		       vars->SRCDIR,
+		       vars->TMP_BINDIR,
+		       vars->MANDIR_SRC,
+		       vars->DOCDIR_SRC,
+		       vars->TMP_LIBDIR,
+		       vars->BASEDIR,
+		       vars->fakeroot,
+		     }) - ({ 0 }), globify)*":"),
+	"-m",combine_path(vars->TMP_LIBDIR,"master.pike")
+      });
+
+    cmd+=({ "-x", "dump",
+	    "--log-file",	// --distquiet below might override this.
+#ifdef USE_GTK
+	    label1?"--distquiet":
+#endif
+	    (verbose ? "--verbose" : "--quiet")});
+
+    // Dump 25 modules at a time as to not confuse systems with
+    // very short memory for application arguments.
+
+    int offset = 1;
+  dumploop:
+    foreach(to_dump/25.0, array delta_dump)
+    {
+      mixed err = catch {
+	  object p=
+	    Process.create_process(cmd +
+				   ( istty() ?
+				     ({
+				       sprintf("--progress-bar=%d,%d",
+					       offset, sizeof(to_dump))
+				     }) : ({}) ) +
+				   delta_dump, options);
+	  int retcode=p->wait();
+	  if (retcode) {
+	    error_msg("Dumping of some modules failed (not fatal) (0x%:08x):\n"
+		      "%{  %O\n%}",
+		      retcode, delta_dump);
+	    break dumploop;
+	  }
+	};
+      if (err) {
+	error_msg ("Failed to spawn module dumper (not fatal):\n"
+		   "%s\n", describe_backtrace(err));
+	break;
+      }
+
+      offset += sizeof(delta_dump);
+    }
+
+    if(progress_bar)
+      // The last files copied do not really count (should
+      // really be a third phase)...
+      progress_bar->set_phase(1.0, 0.0);
+
+    status_clear(1);
+  }
+
+  protected void create_progress_bar()
+  {
+    status1("Installing Pike in %s, please wait...\n", fakeroot(prefix));
+    catch {
+      files_to_install = (int)Stdio.read_file
+	(combine_path(vars->TMP_BUILDDIR, "num_files_to_install"));
+
+      if(files_to_install)
+	progress_bar =
+	  Tools.Install.ProgressBar("Installing", 0,
+				    files_to_install, 0.0, 0.2);
+    };
+  }
+
+#ifdef __NT__
+  protected void export_and_install_dll_and_pdb()
+  {
+    // Export and install needed dll files (like libmySQL.dll if
+    // available) that have been copied to the build dir.
+    foreach(glob("*.dll", get_dir(vars->TMP_BUILDDIR)), string dll_name)
+      install_file(combine_path(vars->TMP_BUILDDIR, dll_name),
+		   combine_path(exec_prefix, dll_name));
+	
+    // Copy the Program Database (debuginfo)
+    if(file_stat(combine_path(vars->TMP_BUILDDIR, "pike.pdb")))
+      install_file(combine_path(vars->TMP_BUILDDIR, "pike.pdb"),
+		   combine_path(exec_prefix, "pike.pdb"));
+  } 
+
+  protected void install_dlls_and_crt()
+  {
+#ifdef PRIVATE_CRT
+    // Copy the manifests at install time.
+    foreach (glob ("*.manifest", get_dir (vars->TMP_BUILDDIR)), string file)
+      install_file (combine_path (vars->TMP_BUILDDIR, file),
+		    combine_path (exec_prefix, file));
+#endif	// PRIVATE_CRT
+
+    export_and_install_dll_and_pdb();
+  }
+#endif
+
+  protected void do_install_libpike()
+  {
+    low_install_file("pike.so", combine_path(vars->TMP_LIBDIR, "pike.so"));
+  }
+
+  protected void do_install_master(string master_src)
+  {
+    make_master(combine_path(vars->TMP_LIBDIR,"master.pike"), master_src,
+		lib_prefix, include_prefix, UNDEFINED, cflags, ldflags);
+  }
+
+  protected void do_install_aux()
+  {
+  }
+
+  void do_install()
+  {
+    create_progress_bar();
+    
+    mixed err = catch {
+
+	finalize_pike();
+#ifdef __NT__
+	install_dlls_and_crt();
+#endif
+
+	install_file(combine_path(vars->TMP_BUILDDIR,"pike.syms"),
+		     pike+".syms");
+	
+	// Support installation in LIBPIKE mode.
+	if (file_stat("pike.so")) {
+	  do_install_libpike();
+	}
+
+	do_install_master(combine_path(vars->LIBDIR_SRC,"master.pike.in"));
+	do_install_aux();
+	
+	install_dir(vars->TMP_LIBDIR,lib_prefix,1);
+	install_dir(vars->LIBDIR_SRC,lib_prefix,1);
+
+	install_header_files(vars->SRCDIR,include_prefix);
+	install_header_files(combine_path(vars->SRCDIR,"code"),
+			     combine_path(include_prefix,"code"));
+	install_header_files(vars->TMP_BUILDDIR,include_prefix);
+
+	install_file(combine_path(vars->SRCDIR,"make_variables.in"),
+		     combine_path(include_prefix,"make_variables.in"));
+	install_file(combine_path(vars->SRCDIR,"aclocal.m4"),
+		     combine_path(include_prefix,"aclocal.m4"));
+	install_file(combine_path(vars->SRCDIR,"run_autoconfig"),
+		     combine_path(include_prefix,"run_autoconfig"));
+	install_file(combine_path(vars->SRCDIR,"precompile2.sh"),
+		     combine_path(include_prefix,"precompile.sh"), 0755);
+
+	if (!no_autodoc) {
+	  // install the core extracted autodocs
+	  try_install_file(combine_path(vars->TMP_BUILDDIR, "autodoc.xml"),
+			   combine_path(doc_prefix, "src", "core_autodoc.xml"));
+	  try_install_dir(combine_path(vars->TMP_BUILDDIR, "doc_build", "images"),
+			  combine_path(doc_prefix, "src", "images"), 0);
+	}
+	else {
+	  mkdirhier(combine_path(doc_prefix, "src", "images"));
+	}
+	// create a directory for extracted module documentation
+	mkdirhier(combine_path(doc_prefix, "src", "extracted"));
+
+	try_install_dir(combine_path(vars->DOCDIR_SRC, "presentation"),
+			combine_path(doc_prefix, "src", "presentation"), 0);
+	try_install_dir(combine_path(vars->DOCDIR_SRC, "src_images"),
+			combine_path(doc_prefix, "src", "src_images"), 0);
+	try_install_dir(combine_path(vars->DOCDIR_SRC, "structure"),
+			combine_path(doc_prefix, "src", "structure"), 0);
+	try_install_dir(combine_path(vars->DOCDIR_SRC, "chapters"),
+			combine_path(doc_prefix, "src", "chapters"), 0);
+
+	foreach(({"Makefile", "doxfilter.sh", "doxygen.cfg", "inlining.txt",
+		  "keywords.txt", "syntax.txt", "tags.txt", "template.xsl",
+		  "xml.txt", }), string f)
+	  install_file(combine_path(vars->DOCDIR_SRC, f),
+		       combine_path(doc_prefix, "src", f));
+
+	foreach(({"install_module", "smartlink",
+		  "fixdepends.sh", "mktestsuite", "test_pike.pike"}), string f)
+	  install_file(combine_path(vars->TMP_BINDIR,f),
+		       combine_path(include_prefix,f));
+
+	install_file(combine_path(vars->TMP_BINDIR,"precompile_installed.pike"),
+		     combine_path(include_prefix,"precompile.pike"));
+
+	mkdirhier(combine_path(include_prefix, "modules"));
+	fix_smartlink(combine_path(vars->TMP_BUILDDIR,
+				   "modules/dynamic_module_makefile"),
+		      combine_path(include_prefix,
+				   "modules/dynamic_module_makefile"),
+		      include_prefix);
+	fix_smartlink(combine_path(vars->TMP_BUILDDIR,
+				   "propagated_variables"),
+		      combine_path(include_prefix, 
+				   "propagated_variables"),
+		      include_prefix);
+	fix_smartlink(combine_path(vars->TMP_BUILDDIR,"specs"),
+		      combine_path(include_prefix,"specs"), include_prefix);
+
+	if(file_stat(vars->MANDIR_SRC))
+	  {
+	    install_dir(vars->MANDIR_SRC,combine_path(man_prefix,"man1"),0);
+	  }
+      };
+
+    status_clear();
+
+    if(err) throw(err);
+
+    catch {
+      Stdio.write_file(combine_path(vars->TMP_BUILDDIR,"num_files_to_install"),
+		       sprintf("%d\n",installed_files));
+      write_num_files_to_export();
+    };
+
+    files_to_install=0;
+
+    do_post_install_actions();
+  }
+
+  protected void write_num_files_to_export()
+  {
+  }
+
+  protected void do_post_install_actions()
+  {
+    dump_modules();
+
+    // Delete any .pmod files that would shadow the .so
+    // files that we just installed. For a new installation
+    // this never does anything. -Hubbe
+    Array.map(files_to_delete - files_to_not_delete,rm);
+
+#if constant(symlink)
+    if(lnk)
+    {
+      status("Creating",lnk);
+      mixed s=file_stat(fakeroot(lnk),1);
+      if(s)
+      {
+	if(!mv(fakeroot(lnk),fakeroot(lnk+".old")))
+	{
+	  error_msg ("Failed to move %s\n",lnk);
+	  exit(1);
+	}
+      }
+      if (old_exec_prefix) {
+	mkdirhier(fakeroot(old_exec_prefix));
+      }
+      mkdirhier(fakeroot(dirname(lnk)));
+      symlink(pike,fakeroot(lnk));
+      catch {
+	rm(fakeroot(lnk)+__MAJOR__+__MINOR__);
+	symlink(pike,fakeroot(lnk)+__MAJOR__+__MINOR__);
+      };
+      status("Creating",lnk,"done");
+    }
+#endif
+
+    progress_bar = 0;
+    status1("Pike installation completed successfully.");
+  }
+
+  void finalize_pike()
+  {
+    pike=combine_path(exec_prefix,"pike");
+
+    // Ugly way to detect NT installation
+    string pike_bin_file=combine_path(vars->TMP_BUILDDIR,"pike");
+    string suffix = "";
+    if(file_stat(pike_bin_file+".exe"))
+    {
+      pike_bin_file+=".exe";
+      pike+=".exe";
+      suffix = ".exe";
+    }
+
+    low_finalize_pike(pike_bin_file, suffix);
+  }
+
+  void low_finalize_pike(string pike_bin_file, string suffix)
+  {
     status("Finalizing",pike_bin_file);
     string pike_bin=Stdio.read_file(pike_bin_file);
 
@@ -2888,56 +1935,489 @@ void finalize_pike()
   }
 }
 
-void do_install()
-{
-  if(!export)
-  {
-    status1("Installing Pike in %s, please wait...\n", fakeroot(prefix));
-    catch {
-      files_to_install = (int)Stdio.read_file
-	(combine_path(vars->TMP_BUILDDIR, "num_files_to_install"));
+class FakerootSetupHandler {
+  inherit InstallHandler;
 
-      if(files_to_install)
-	progress_bar =
-	  Tools.Install.ProgressBar("Installing", 0,
-				    files_to_install, 0.0, 0.2);
-    };
+  protected void create(mapping vars, string tmp)
+  {
+    this::vars = vars;
+
+    if(tmp[-1]=='/' || tmp[-1]=='\\')
+      tmp=tmp[..sizeof(tmp)-2];
+
+    // Create the fakeroot if it doesn't exist
+    // This must be done with fakeroot unset since
+    // it would create fakeroot/fakeroot otherwise
+    mkdirhier(tmp);
+    vars->fakeroot=tmp;
+  }
+}
+
+class SimpleStatus
+{
+  protected void status1_impl(string fmt, mixed ... args)
+  {
+    write(fmt+"\n", @args);
   }
 
-  mixed err = catch {
+  protected void status_impl(string|void doing, void|string file, string|void msg)
+  {
+    if(!file) file="";
 
-      finalize_pike();
+    if(msg) file+=" "+msg;
+    if(doing) file=doing+": "+file;
+    if (file != "") write (file + "\n");
+  }
 
+  protected void set_simple_status(int simple)
+  {
+    status1 = (simple? status1_impl : global::status1_impl);
+    status = (simple? status_impl : global::status_impl);
+  }
+  
+  protected void create()
+  {
+    set_simple_status(1);
+  }
+}  
+
+
+#ifdef SUPPORT_WIX
+class WixInstallHandler {
+  inherit SimpleStatus;
+  inherit InstallHandler;
+
+  protected void create()
+  {
+    SimpleStatus::create();
+  }
+  
+  protected string add_msm (Directory root, string msm_glob, string descr,
+			    void|string targetdir, void|string language)
+  {
+    if (string msm_dir = getenv ("CRT_MSM_PATH")) {
+      string msm_file;
+
+      if (Stdio.is_dir (msm_dir)) {
+	array(string) all_files = get_dir (msm_dir);
+	array(string) files = ({});
+	foreach (all_files, string file)
+	  if (glob (msm_glob, lower_case (file)))
+	    files += ({file});
+	switch (sizeof (files)) {
+	case 1:
+	  msm_file = files[0];
+	  break;
+	case 2..:
+	  error_msg ("Warning: More than one msm for %s found:\n"
+		     "%{  %s\n%}",
+		     descr, map (files,
+				 lambda (string file) {
+				   return combine_path (msm_dir, file);
+				 }));
+	  return 0;
+	}
+      }
+
+      if (!msm_file) {
+	error_msg ("Warning: No file found matching %s - "
+		   "the msm for %s won't be included.\n",
+		   combine_path (msm_dir, msm_glob), descr);
+	return 0;
+      }
+
+      string id =
+	has_suffix (lower_case (msm_file), ".msm") ?
+	msm_file[..sizeof (msm_file) - 5] : msm_file;
+      root->merge_module (".", combine_path (msm_dir, msm_file),
+			  id, targetdir || "TARGETDIR", language);
+      status ("Adding merge module", combine_path (msm_dir, msm_file));
+      return id;
+    }
+
+    else {
+      error_msg ("Warning: CRT_MSM_PATH not set - can't find msm for %s.\n",
+		 descr);
+      return 0;
+    }
+  }
+
+  // Create a versioned root wix file that installs Pike_module.msm.
+  void make_wix()
+  {
+    Directory root = Directory("SourceDir",
+			       Standards.UUID.UUID(version_guid)->encode(),
+			       "TARGETDIR");
+    /* Workaround for bug in light. */
+    root->extra_ids["PIKE_TARGETDIR"] = 1;
+
+    // Note: TARGETDIR and PIKE_TARGETDIR are always the same dir here.
+
+    root->merge_module(".", "Pike_module.msm", "Pike", "TARGETDIR");
+
+    // FIXME: Use the proper WIX method for this.
+    // FIXME: Add an installer action that refreshes the icons in the
+    // shell (call SHChangeNotify somehow?)
+    root->install_regkey("bin", "HKCR", ".pike", "", "pike_file",
+			 "RE__PF");
+    root->install_regkey("bin", "HKCR", "pike_file", "", "Pike Script File",
+			 "RE__PSF");
+    root->install_regkey("bin", "HKCR", "pike_file\\shell\\run", "",
+			 "Run", "RE__VERB");
+    root->install_regkey("bin", "HKCR", "pike_file\\shell\\run\\command", "",
+			 "\"[TARGETDIR]bin\\pike.exe\" \"%1\" %*",
+			 "RE__COMMAND");
+    root->install_regkey("bin", "HKCR", "pike_file\\DefaultIcon", "",
+			 "[TARGETDIR]bin\\pike.exe", "RE__ICON");
+
+    root->install_regkey("bin", "HKCR", ".pmod", "", "pike_module",
+			 "RE__PM");
+    root->install_regkey("bin", "HKCR", "pike_module", "", "Pike Module File",
+			 "RE__PMF");
+    //FIXME: Should have a diffrent icon. Traditionally "pike_blue.ico".
+    root->install_regkey("bin", "HKCR", "pike_module\\DefaultIcon", "",
+			 "[TARGETDIR]bin\\pike.exe", "RE__PMICON");
+
+    string title = 
+#if 1
+      "Pike"
+#else /* !1 */
+      sprintf("Pike v%d.%d release %d",
+	      __REAL_MAJOR__, __REAL_MINOR__, __REAL_BUILD__)
+#endif /* 1 */
+      ;
+
+    WixNode feature_node =
+      WixNode("Feature", ([
+		"ConfigurableDirectory":"TARGETDIR",
+		"Title":title,
+		"Level":"1",
+		"Id":"F_Pike",
+	      ]))->
+      add_child(line_feed)->
+      add_child(WixNode ("ComponentRef",
+			 (["Id": root->get_component_id("bin")])))->
+      add_child(line_feed)->
+      add_child(WixNode("MergeRef", ([ "Id":"Pike" ])))->
+      add_child(line_feed);
+
+#ifndef PRIVATE_CRT
+    if (include_crt) {
+      // Always include the nondebug CRT since some lib dlls might be
+      // using it.
+      //
+      // NB: This ought to be in Pike_module.wxs, but merge modules cannot
+      // contain merge modules
+
+      string crt_arch;
+      mapping(string:mixed) u = uname();
+      if (u->sysname && has_prefix (u->sysname, "Win"))
+	// We're running on windows (presumably we're using the pike
+	// which is being packaged) so we can look up the arch from
+	// the uname data.
+	crt_arch = (["i86pc": "x86", "amd64": "x86_x64"])[uname()->machine];
+      if (!crt_arch)
+	// Probably not running on windows. Use a "*" glob to pick up
+	// whatever the build environment has got in $CRT_MSM_PATH.
+	crt_arch = "*";
+
+      if (string id =
+	  add_msm (root, "microsoft_*_crt_" + crt_arch + ".msm",
+		   "MS CRT", 0, "0"))
+	feature_node->add_child (WixNode ("MergeRef", (["Id": id])))
+	  ->add_child (line_feed);
+      if (string id =
+	  add_msm (root, "policy_*_microsoft_*_crt_" + crt_arch + ".msm",
+		   "MS CRT policy", 0, "0"))
+	feature_node->add_child (WixNode ("MergeRef", (["Id": id])))
+	  ->add_child (line_feed);
+      if (include_crt == "debug") {
+	if (string id =
+	    add_msm (root, "microsoft_*_debugcrt_" + crt_arch + ".msm",
+		     "MS debug CRT", 0, "0"))
+	  feature_node->add_child (WixNode ("MergeRef", (["Id": id])))
+	    ->add_child (line_feed);
+	if (string id =
+	    add_msm (root, "policy_*_microsoft_*_debugcrt_" + crt_arch + ".msm",
+		     "MS debug CRT policy", 0, "0"))
+	  feature_node->add_child (WixNode ("MergeRef", (["Id": id])))
+	    ->add_child (line_feed);
+	error_msg ("Warning: MS debug CRT is included - "
+		   "it is not redistributable.\n");
+	error_msg (#"\
+Warning: Some libs might be linked to the release CRT so you might get
+an extra CRT instance.\n");
+      }
+    }
+#endif
+
+    // Generate the XML.
+    Parser.XML.Tree.SimpleRootNode root_node =
+      Parser.XML.Tree.SimpleRootNode()->
+      add_child(Parser.XML.Tree.SimpleHeaderNode((["version": "1.0",
+						   "encoding": "utf-8"])))->
+      add_child(WixNode("Wix", (["xmlns":Standards.XML.Wix.wix_ns]))->
+		add_child(line_feed)->
+		add_child(WixNode("Product", ([
+				    "Manufacturer":"IDA",
+				    "Name":title,
+				    "Language":"1033",
+				    "UpgradeCode":pike_upgrade_guid,
+				    "Id":version_guid,
+				    "Version":version_str,
+				  ]))->
+			  add_child(line_feed)->
+			  add_child(WixNode("Package", ([
+					      "Manufacturer":"IDA",
+					      "Languages":"1033",
+					      "Compressed":"yes",
+					      "InstallerVersion":"300",
+					      "Platforms":"Intel",
+					      "SummaryCodepage":"1252",
+					      "Id":version_guid,
+					    ])))->
+			  add_child(line_feed)->
+			  add_child(WixNode("Media", ([
+					      "Cabinet":"Pike.cab",
+					      "EmbedCab":"yes",
+					      "Id":"1",
+					    ])))->
+			  add_child(line_feed)->
+			  add_child(root->gen_xml(UNDEFINED, "1"))->
+			  add_child(line_feed)->
+			  add_child(feature_node)->
+			  add_child(line_feed)->
+			  add_child(WixNode("AdminExecuteSequence", ([]), "\n")->
+				    add_child(WixNode("Custom", ([
+							"Before":"CostInitialize",
+							"Action":"DIRCA_TARGETDIR",
+						      ]), "TARGETDIR=\"\""))->
+				    add_child(line_feed))->
+			  add_child(line_feed)->
+			  add_child(WixNode("InstallExecuteSequence", ([
+					    ]), "\n")->
+				    add_child(WixNode("Custom", ([
+							"Before":"ValidateProductID",
+							"Action":"DIRCA_TARGETDIR",
+						      ]), "TARGETDIR=\"\""))->
+				    add_child(line_feed)->
+				    add_child(WixNode("RemoveExistingProducts", ([
+							"After":"InstallInitialize",
+						      ])))->
+				    add_child(line_feed))->
+			  add_child(line_feed)->
+			  add_child(WixNode("FragmentRef", ([
+					      "Id":"PikeUI",
+					    ])))->
+			  add_child(line_feed))->
+		add_child (line_feed))->
+      add_child(line_feed);
+
+    create_file("Pike.wxs", root_node->render_xml());
+  }
+}
+#endif
+
+class TraditionalInstallHandler {
+  inherit InstallHandler;
+
+  protected void setup_paths()
+  {
+    exec_prefix=vars->exec_prefix||(prefix+"/bin/");
+    lib_prefix=vars->lib_prefix||(prefix+"/lib/pike/");
+    include_prefix =
+      vars->include_prefix || combine_path(prefix,"include","pike");
+    doc_prefix =
+      vars->doc_prefix || combine_path(prefix, "doc", "pike");
+    man_prefix=vars->man_prefix||(prefix+"/share/man/");
+  }
+}
+
+class NewStyleInstallHandler {
+  inherit InstallHandler;
+
+  protected void generate_prefix()
+  {
+    if(!(lnk=vars->pike_name) || !sizeof(lnk)) {
+      lnk = combine_path(vars->exec_prefix || combine_path(vars->prefix, "bin"),
+			 "pike");
+      old_exec_prefix=vars->exec_prefix; // to make the directory for pike link
+    }
+    prefix = combine_path("/", getcwd(), prefix, "pike",
+			  replace(version()-"Pike v"," release ","."));
+    exec_prefix=combine_path(prefix,"bin");
+  }
+
+  protected void setup_paths()
+  {
+    generate_prefix();
+    lib_prefix=combine_path(prefix,"lib");
+    doc_prefix=combine_path(prefix,"doc");
+    include_prefix=combine_path(prefix,"include","pike");
+    man_prefix=combine_path(prefix,"share/man");
+  }
+}
+
+class ExportInstallHandler {
+  inherit SimpleStatus;
+  inherit NewStyleInstallHandler;
+  protected int allow_mkdirhier = 0;
+  protected string export_base_name;
+  
+  protected void create_export_base()
+  {
+  }
+
+  protected string get_export_base_name(string ver)
+  {
+#if constant(uname) && !defined(CROSS_INSTALL)
+    mapping(string:string) u = uname();
+    string ret;
+    if( u->sysname=="AIX" )
+    {
+      ret = sprintf("%s-%s-%s.%s",
+		    ver,
+		    u->sysname,
+		    u->version,
+		    u->release);
+    }
+    else {
+      ret = sprintf("%s-%s-%s-%s",
+		    ver,
+		    u->sysname,
+		    u->release,
+		    u->machine);
+    }
+    return (replace(ret, (["/": "-", "?": ""]))
+	    / " " - ({""})
+	    ) * "-";
+#else
+    return ver;
+#endif
+  }
+  
+  protected void setup_paths()
+  {
+    export_base_name = get_export_base_name(replace( version(), ([ " ":"-", " release ":"." ]) ));
+
+    status1("Building export %s", export_base_name);
+
+    create_export_base();
+    ::setup_paths();
+    low_install_file(combine_path(vars->TMP_BINDIR,"install.pike"),
+		     combine_path(prefix, "bin/install.pike"));
+  }
+
+  int mkdirhier(string orig_dir)
+  {
+    if(!allow_mkdirhier) return 1;
+    ::mkdirhier(orig_dir);
+  }
+
+  void fix_smartlink(string src, string dest, string include_prefix)
+  {
+  }
+
+  void export_file (string from, string tmp, string to, void|string id);
+  // from: File source. tmp: Name in the build/unpack tree. Same as from
+  // for files already in the build tree. to: Final destination (only
+  // used in WiX mode).
+
+  int low_install_file(string from,
+		       string to,
+		       void|int mode,
+		       void|string id)
+  {
+    installed_files++;
+    export_file (from, from, to, id);
+    return 1;
+  }
+
+  protected void write_num_files_to_export()
+  {
+    low_install_file(combine_path(vars->TMP_BUILDDIR,"num_files_to_install"),
+		     combine_path(prefix, "build/num_files_to_install"));
+  }
+
+  protected void do_post_install_actions()
+  {
+    do_export();
+  }
+
+  protected void create_progress_bar()
+  {
+  }
+
+  protected void do_install_build_aux()
+  {
+      low_install_file(combine_path(vars->SRCDIR,"install-welcome"),
+		       combine_path(prefix, "build/install-welcome"));
+      low_install_file(combine_path(vars->SRCDIR,"dumpmaster.pike"),
+		       combine_path(prefix, "build/dumpmaster.pike"));
+  }
+  
+  protected void do_install_aux()
+  {
+    low_install_file(combine_path(vars->TMP_BUILDDIR,"specs"),
+		     combine_path(include_prefix, "specs"));
+    low_install_file(combine_path(vars->TMP_BUILDDIR,
+				  "modules/dynamic_module_makefile"),
+		     combine_path(include_prefix, 
+				  "modules/dynamic_module_makefile"));
+    low_install_file(combine_path(vars->TMP_BUILDDIR,
+				  "propagated_variables"),
+		     combine_path(include_prefix, 
+				  "propagated_variables"));
+
+    do_install_build_aux();
+    
+    void basefile(string x) {
+      string from = combine_path(vars->BASEDIR,x);
+      if(!Stdio.cp(from, x))
+	error_msg ("Could not copy %s to %s.\n", from ,x);
+      low_install_file(x, combine_path(prefix, x));
+    };
+    
+    basefile("ANNOUNCE");
+    basefile("COPYING");
+    basefile("COPYRIGHT");
+  }
+
+  
 #ifdef __NT__
-    if (export) {
-      collect_dlls (lambda (string dll_path) {
-		      status ("Including dll", dll_path);
-		      string name = basename (dll_path);
-		      export_file (dll_path,
-				   combine_path (vars->TMP_BUILDDIR, name),
-				   combine_path (exec_prefix, name));
-		    });
+  protected void check_vc8()
+  {
+  }
 
-      // $PIKE_BUILD_ROOT/install-tree contains other files that needs
-      // to be added to the installation. The paths below this
-      // directory will be mirrored below the pike installation
-      // directory.
-      if (string pike_build_root = getenv ("PIKE_BUILD_ROOT")) {
-	string install_tree_path = combine_path (pike_build_root,
-						 "install-tree");
-	ADT.Queue install_dirs = ADT.Queue (install_tree_path);
-	while (string path = install_dirs->get()) {
-	  foreach (get_dir (path) || ({}), string dirent) {
-	    dirent = combine_path (path, dirent);
-	    if (Stdio.Stat stat = file_stat (dirent)) {
-	      if (stat->isdir)
-		install_dirs->put (dirent);
-	      else if (stat->isreg) {
-		string install_path = dirent[sizeof (install_tree_path) + 1..];
-		export_file (dirent,
-			     combine_path (vars->TMP_BUILDDIR, install_path),
-			     combine_path (prefix, install_path));
-	      }
+  protected void install_dlls_and_crt()
+  {
+    collect_dlls (lambda (string dll_path) {
+      status ("Including dll", dll_path);
+      string name = basename (dll_path);
+      export_file (dll_path,
+		   combine_path (vars->TMP_BUILDDIR, name),
+		   combine_path (exec_prefix, name));
+    });
+    
+    // $PIKE_BUILD_ROOT/install-tree contains other files that needs
+    // to be added to the installation. The paths below this
+    // directory will be mirrored below the pike installation
+    // directory.
+    if (string pike_build_root = getenv ("PIKE_BUILD_ROOT")) {
+      string install_tree_path = combine_path (pike_build_root,
+					       "install-tree");
+      ADT.Queue install_dirs = ADT.Queue (install_tree_path);
+      while (string path = install_dirs->get()) {
+	foreach (get_dir (path) || ({}), string dirent) {
+	  dirent = combine_path (path, dirent);
+	  if (Stdio.Stat stat = file_stat (dirent)) {
+	    if (stat->isdir)
+	      install_dirs->put (dirent);
+	    else if (stat->isreg) {
+	      string install_path = dirent[sizeof (install_tree_path) + 1..];
+	      export_file (dirent,
+			   combine_path (vars->TMP_BUILDDIR, install_path),
+			   combine_path (prefix, install_path));
 	    }
 	  }
 	}
@@ -2945,16 +2425,7 @@ void do_install()
     }
 
 #ifndef PRIVATE_CRT
-    if (export == 1 && include_crt &&
-	Stdio.is_file (combine_path (vars->TMP_BUILDDIR,
-				     "pike.exe.manifest"))) {
-      error_msg (#"\
-Warning: Using the old exe installer with VC8 doesn't work well. Your
-package probably won't work unless the user already has the MS CRTs
-installed. You might want to try to enable private CRT packaging; see
-the PRIVATE_CRT stuff in install.pike.\n");
-    }
-
+    check_vc8();
 #else  // PRIVATE_CRT
     // This way of packaging the CRT dlls is currently disabled in
     // favor of the msm files. If you enable this you probably need to
@@ -2972,299 +2443,1043 @@ the PRIVATE_CRT stuff in install.pike.\n");
     // are really identical of course). Also, if that error is resolved
     // I'd suspect each dll would get its own runtime CRT instance then
     // so it probably wouldn't work anyway.
-    if (export) {
-      if (include_crt) {
-	// Find and copy dynamic CRT dlls (and manifest files as
-	// required by MSVC 8.0) to the build dir.
-	//
-	// Note that this currently is adapted for MSVC 8.0 but it
-	// could be adapted to find the runtime libraries for other
-	// MSVC versions and other compilers.
-
-	if (!Stdio.is_file (combine_path (vars->TMP_BUILDDIR,
-					  "pike.exe.manifest")))
-	  error_msg ("Warning: Got request to include CRT libraries "
-		     "but this doesn't look like a build made by VC8 "
-		     "(or something compatible).\n");
-
-	else {
-	  string msvc_arch = getenv ("MSVC_ARCH");
-	  if (!msvc_arch)
-	    // MSVC_ARCH should be set in the build environment. It's
-	    // the same arch identifier that you give to MSVC's
-	    // vcvarsall.bat to set up the build environment
-	    // (vcvarsall.bat doesn't set it - you have to).
-	    error_msg ("Warning: MSVC_ARCH not set - "
-		       "cannot find CRT dlls to include.\n");
-
-	  else
-	    find_crt: {
-	      // The path should contain .../Microsoft Visual Studio
-	      // XXX/VC/bin, so we search relative to it for the redist
-	      // dir.
-	      foreach (getenv ("PATH") / ";", string bin_dir) {
-		string redist_dir = combine_path (bin_dir, "../redist");
-		if (Stdio.is_dir (redist_dir)) {
-		  array(string) subdirs =
-		    map (get_subdirs (redist_dir), lower_case);
-		  subdirs = glob ("*/" + msvc_arch + "/*." +
-				  (include_crt == "debug" ? "debug" : "") +
-				  "crt", subdirs);
-
-		  switch (sizeof (subdirs)) {
-		    case 1:
-		      foreach (get_dir (subdirs[0]), string file)
-			export_file (combine_path (subdirs[0], file),
-				     combine_path (vars->TMP_BUILDDIR, file),
-				     combine_path (exec_prefix, file));
-		      break find_crt;
-
-		    case 2..:
-		      error_msg ("Warning: More than one CRT directory found:\n"
-				 "%{  %s\n%}", subdirs);
-		      break find_crt;
-		  }
+    if (include_crt) {
+      // Find and copy dynamic CRT dlls (and manifest files as
+      // required by MSVC 8.0) to the build dir.
+      //
+      // Note that this currently is adapted for MSVC 8.0 but it
+      // could be adapted to find the runtime libraries for other
+      // MSVC versions and other compilers.
+      
+      if (!Stdio.is_file (combine_path (vars->TMP_BUILDDIR,
+					"pike.exe.manifest")))
+	error_msg ("Warning: Got request to include CRT libraries "
+		   "but this doesn't look like a build made by VC8 "
+		   "(or something compatible).\n");
+      
+      else {
+	string msvc_arch = getenv ("MSVC_ARCH");
+	if (!msvc_arch)
+	  // MSVC_ARCH should be set in the build environment. It's
+	  // the same arch identifier that you give to MSVC's
+	  // vcvarsall.bat to set up the build environment
+	  // (vcvarsall.bat doesn't set it - you have to).
+	  error_msg ("Warning: MSVC_ARCH not set - "
+		     "cannot find CRT dlls to include.\n");
+	      
+	else
+	find_crt: {
+	    // The path should contain .../Microsoft Visual Studio
+	    // XXX/VC/bin, so we search relative to it for the redist
+	    // dir.
+	    foreach (getenv ("PATH") / ";", string bin_dir) {
+	      string redist_dir = combine_path (bin_dir, "../redist");
+	      if (Stdio.is_dir (redist_dir)) {
+		array(string) subdirs =
+		  map (get_subdirs (redist_dir), lower_case);
+		subdirs = glob ("*/" + msvc_arch + "/*." +
+				(include_crt == "debug" ? "debug" : "") +
+				"crt", subdirs);
+		
+		switch (sizeof (subdirs)) {
+		case 1:
+		  foreach (get_dir (subdirs[0]), string file)
+		    export_file (combine_path (subdirs[0], file),
+				 combine_path (vars->TMP_BUILDDIR, file),
+				 combine_path (exec_prefix, file));
+		  break find_crt;
+		  
+		case 2..:
+		  error_msg ("Warning: More than one CRT directory found:\n"
+			     "%{  %s\n%}", subdirs);
+		  break find_crt;
 		}
 	      }
-
-	      error_msg ("Warning: Couldn't find any CRT directory "
-			 "by searching PATH:\n"
-			 "%{  %s\n%}", getenv ("PATH") / ";");
 	    }
-	}
+	    
+	    error_msg ("Warning: Couldn't find any CRT directory "
+		       "by searching PATH:\n"
+		       "%{  %s\n%}", getenv ("PATH") / ";");
+	  }
       }
-    }
-
-    else {
-      // Copy the manifests at install time.
-      foreach (glob ("*.manifest", get_dir (vars->TMP_BUILDDIR)), string file)
-	install_file (combine_path (vars->TMP_BUILDDIR, file),
-		      combine_path (exec_prefix, file));
     }
 #endif	// PRIVATE_CRT
-
-    // Export and install needed dll files (like libmySQL.dll if
-    // available) that have been copied to the build dir.
-    foreach(glob("*.dll", get_dir(vars->TMP_BUILDDIR)), string dll_name)
-      install_file(combine_path(vars->TMP_BUILDDIR, dll_name),
-		   combine_path(exec_prefix, dll_name));
-
-    // Copy the Program Database (debuginfo)
-    if(file_stat(combine_path(vars->TMP_BUILDDIR, "pike.pdb")))
-      install_file(combine_path(vars->TMP_BUILDDIR, "pike.pdb"),
-		   combine_path(exec_prefix, "pike.pdb"));
-#endif
-
-    install_file(combine_path(vars->TMP_BUILDDIR,"pike.syms"),
-		 pike+".syms");
     
-    // Support installation in LIBPIKE mode.
-    if (file_stat("pike.so")) {
-      if (export == 1) {
-	low_install_file("pike.so", combine_path(prefix, "build/pike.so"));
-      }
-      low_install_file("pike.so", combine_path(vars->TMP_LIBDIR, "pike.so"));
-    }
-
-    string master_src=combine_path(vars->LIBDIR_SRC,"master.pike.in");
-
-    if(export)
-    {
-      string unpack_master = "master.pike";
-      if (export == 1) {
-#ifdef __NT__
-	// We don't want to overwrite the main master...
-	// This is undone by the translator.
-	unpack_master = "unpack_master.pike";
-	make_master(unpack_master, master_src,
-		    tmpdir+"/build/lib", tmpdir+"/build", tmpdir+"/lib",
-		    cflags, ldflags);
-#else
-	make_master(unpack_master, master_src, "build/lib", "build", "lib",
-		    cflags, ldflags);
+    export_and_install_dll_and_pdb();
+  }
 #endif
-	low_install_file(unpack_master,
-			 combine_path(prefix, "build/master.pike"));
-#ifdef SUPPORT_WIX
-      } else {
-#if 0
-	unpack_master = "unpack_master.pike";
-	make_master(unpack_master, master_src, "lib", "include/pike",
-		    UNDEFINED, cflags, ldflags);
-	low_install_file(unpack_master,
-			 combine_path(prefix, "lib/master.pike"));
-#endif
-	low_install_file(combine_path(vars->SRCDIR,
-				      "../packaging/windows/pike.ico"),
-			 combine_path(prefix, "lib/pike.ico"));
-	root->uninstall_file("lib/master.pike");
-#endif /* SUPPORT_WIX */
-      }
 
-      low_install_file(combine_path(vars->TMP_BUILDDIR,"specs"),
-		       combine_path(include_prefix, "specs"));
-      low_install_file(combine_path(vars->TMP_BUILDDIR,
-				    "modules/dynamic_module_makefile"),
-		       combine_path(include_prefix, 
-				    "modules/dynamic_module_makefile"));
-      low_install_file(combine_path(vars->TMP_BUILDDIR,
-				    "propagated_variables"),
-		       combine_path(include_prefix, 
-				    "propagated_variables"));
-      if (export != 3) {
-	low_install_file(combine_path(vars->SRCDIR,"install-welcome"),
-			 combine_path(prefix, "build/install-welcome"));
-	low_install_file(combine_path(vars->SRCDIR,"dumpmaster.pike"),
-			 combine_path(prefix, "build/dumpmaster.pike"));
-      }
+  void do_export();
 
-      void basefile(string x) {
-	string from = combine_path(vars->BASEDIR,x);
-	if(!Stdio.cp(from, x))
-	  error_msg ("Could not copy %s to %s.\n", from ,x);
-	low_install_file(x, combine_path(prefix, x));
-      };
-
-      basefile("ANNOUNCE");
-      basefile("COPYING");
-      basefile("COPYRIGHT");
-    }
-    else
-      make_master(combine_path(vars->TMP_LIBDIR,"master.pike"), master_src,
-		  lib_prefix, include_prefix, UNDEFINED, cflags, ldflags);
-
-    install_dir(vars->TMP_LIBDIR,lib_prefix,1);
-    install_dir(vars->LIBDIR_SRC,lib_prefix,1);
-
-    install_header_files(vars->SRCDIR,include_prefix);
-    install_header_files(combine_path(vars->SRCDIR,"code"),
-			 combine_path(include_prefix,"code"));
-    install_header_files(vars->TMP_BUILDDIR,include_prefix);
-
-    install_file(combine_path(vars->SRCDIR,"make_variables.in"),
-		 combine_path(include_prefix,"make_variables.in"));
-    install_file(combine_path(vars->SRCDIR,"aclocal.m4"),
-		 combine_path(include_prefix,"aclocal.m4"));
-    install_file(combine_path(vars->SRCDIR,"run_autoconfig"),
-		 combine_path(include_prefix,"run_autoconfig"));
-    install_file(combine_path(vars->SRCDIR,"precompile2.sh"),
-		 combine_path(include_prefix,"precompile.sh"), 0755);
-
-    if (!no_autodoc) {
-      // install the core extracted autodocs
-      try_install_file(combine_path(vars->TMP_BUILDDIR, "autodoc.xml"),
-		       combine_path(doc_prefix, "src", "core_autodoc.xml"));
-      try_install_dir(combine_path(vars->TMP_BUILDDIR, "doc_build", "images"),
-		  combine_path(doc_prefix, "src", "images"), 0);
-    }
-    else if(!export) {
-      mkdirhier(combine_path(doc_prefix, "src", "images"));
-    }
-    // create a directory for extracted module documentation
-    if(!export)
-      mkdirhier(combine_path(doc_prefix, "src", "extracted"));
-
-    try_install_dir(combine_path(vars->DOCDIR_SRC, "presentation"),
-		    combine_path(doc_prefix, "src", "presentation"), 0);
-    try_install_dir(combine_path(vars->DOCDIR_SRC, "src_images"),
-		    combine_path(doc_prefix, "src", "src_images"), 0);
-    try_install_dir(combine_path(vars->DOCDIR_SRC, "structure"),
-		    combine_path(doc_prefix, "src", "structure"), 0);
-    try_install_dir(combine_path(vars->DOCDIR_SRC, "chapters"),
-		    combine_path(doc_prefix, "src", "chapters"), 0);
-
-    foreach(({"Makefile", "doxfilter.sh", "doxygen.cfg", "inlining.txt",
-	      "keywords.txt", "syntax.txt", "tags.txt", "template.xsl",
-	      "xml.txt", }), string f)
-      install_file(combine_path(vars->DOCDIR_SRC, f),
-		   combine_path(doc_prefix, "src", f));
-
-    foreach(({"install_module", "smartlink",
-	      "fixdepends.sh", "mktestsuite", "test_pike.pike"}), string f)
-      install_file(combine_path(vars->TMP_BINDIR,f),
-		   combine_path(include_prefix,f));
-
-    install_file(combine_path(vars->TMP_BINDIR,"precompile_installed.pike"),
-		 combine_path(include_prefix,"precompile.pike"));
-
-    if(!export) {
-      mkdirhier(combine_path(include_prefix, "modules"));
-      fix_smartlink(combine_path(vars->TMP_BUILDDIR,
-				 "modules/dynamic_module_makefile"),
-		    combine_path(include_prefix,
-				 "modules/dynamic_module_makefile"),
-		    include_prefix);
-      fix_smartlink(combine_path(vars->TMP_BUILDDIR,
-				 "propagated_variables"),
-		    combine_path(include_prefix, 
-				 "propagated_variables"),
-		    include_prefix);
-      fix_smartlink(combine_path(vars->TMP_BUILDDIR,"specs"),
-		    combine_path(include_prefix,"specs"), include_prefix);
-    }
-
-    if(file_stat(vars->MANDIR_SRC))
-    {
-      install_dir(vars->MANDIR_SRC,combine_path(man_prefix,"man1"),0);
-    }
-  };
-
-
-  status_clear();
-
-  if(err) throw(err);
-
-  catch {
-    Stdio.write_file(combine_path(vars->TMP_BUILDDIR,"num_files_to_install"),
-		     sprintf("%d\n",installed_files));
-    if (export && export != 3) {
-      low_install_file(combine_path(vars->TMP_BUILDDIR,"num_files_to_install"),
-		       combine_path(prefix, "build/num_files_to_install"));
-    }
-  };
-
-  files_to_install=0;
-
-  if(export)
+  void low_finalize_pike(string pike_bin_file, string suffix)
   {
-    do_export();
-  }else{
-    dump_modules();
+    low_install_file(pike_bin_file, pike, 0755, "BIN_PIKE");
+  }
+}
 
-    // Delete any .pmod files that would shadow the .so
-    // files that we just installed. For a new installation
-    // this never does anything. -Hubbe
-    Array.map(files_to_delete - files_to_not_delete,rm);
+class BurkExportInstallHandler {
+  inherit ExportInstallHandler;
+  protected array(array(string)) to_export=({});
 
-#if constant(symlink)
-    if(lnk)
-    {
-      status("Creating",lnk);
-      mixed s=file_stat(fakeroot(lnk),1);
-      if(s)
-      {
-	if(!mv(fakeroot(lnk),fakeroot(lnk+".old")))
-	{
-	  error_msg ("Failed to move %s\n",lnk);
-	  exit(1);
-	}
-      }
-      if (old_exec_prefix) {
-	mkdirhier(fakeroot(old_exec_prefix));
-      }
-      mkdirhier(fakeroot(dirname(lnk)));
-      symlink(pike,fakeroot(lnk));
-      catch {
-	rm(fakeroot(lnk)+__MAJOR__+__MINOR__);
-	symlink(pike,fakeroot(lnk)+__MAJOR__+__MINOR__);
-      };
-      status("Creating",lnk,"done");
+  protected void create_export_base()
+  {
+#ifndef NT
+    if (!mkdir(export_base_name+".dir")) {
+      error("Failed to create directory %O: %s\n",
+	    export_base_name+".dir", strerror(errno()));
     }
+
+    mklink(vars->LIBDIR_SRC,export_base_name+".dir/lib");
+    mklink(vars->SRCDIR,export_base_name+".dir/src");
+    mklink(getcwd(),export_base_name+".dir/build");
+    mklink(vars->TMP_BINDIR,export_base_name+".dir/bin");
+    mklink(vars->MANDIR_SRC,export_base_name+".dir/share/man");
+    mklink(vars->DOCDIR_SRC,export_base_name+".dir/refdoc");
+
+    cd(export_base_name+".dir");
+
+    vars->TMP_LIBDIR="build/lib";
+    vars->LIBDIR_SRC="lib";
+    vars->SRCDIR="src";
+    vars->TMP_BINDIR="bin";
+    vars->MANDIR_SRC="share/man";
+    vars->DOCDIR_SRC="refdoc";
+    vars->TMP_BUILDDIR="build";
 #endif
   }
 
-  progress_bar = 0;
-  status1("Pike installation completed successfully.");
+  void export_file (string from, string tmp, string to, void|string id)
+  {
+    to_export += ({({from, tmp})});
+  }
+
+  protected void do_install_libpike()
+  {
+    low_install_file("pike.so", combine_path(prefix, "build/pike.so"));
+    ::do_install_libpike();
+  }
+
+  protected void do_install_master(string master_src)
+  {
+    string unpack_master = "master.pike";
+#ifdef __NT__
+    // We don't want to overwrite the main master...
+    // This is undone by the translator.
+    unpack_master = "unpack_master.pike";
+    make_master(unpack_master, master_src,
+		tmpdir+"/build/lib", tmpdir+"/build", tmpdir+"/lib",
+		cflags, ldflags);
+#else
+    make_master(unpack_master, master_src, "build/lib", "build", "lib",
+		cflags, ldflags);
+#endif
+    low_install_file(unpack_master,
+		     combine_path(prefix, "build/master.pike"));
+  }
+
+  void do_export()
+  {
+#ifdef __NT__
+    status("Creating",export_base_name+".burk");
+    Stdio.File p=Stdio.File(export_base_name+".burk","wc");
+    string msg="   Loading installation script, please wait...";
+    p->write("w%4c%s",sizeof(msg),msg);
+
+#define TRANSLATE(X,Y) combine_path(".",X) : Y
+    mapping translator = ([
+      TRANSLATE(vars->BASEDIR,tmpdir),
+      TRANSLATE(vars->LIBDIR_SRC,tmpdir+"/lib"),
+      TRANSLATE(vars->SRCDIR,tmpdir+"/src"),
+      TRANSLATE(vars->TMP_BINDIR,tmpdir+"/bin"),
+      TRANSLATE(vars->MANDIR_SRC,tmpdir+"/share/man"),
+      TRANSLATE(vars->DOCDIR_SRC,tmpdir+"/refdoc"),
+      TRANSLATE(vars->TMP_LIBDIR,tmpdir+"/build/lib"),
+      "unpack_master.pike" : tmpdir+"/build/master.pike",
+      "":tmpdir+"/build",
+    ]);
+
+    [array(string) to_export_from, array(string) to_export_tmp] =
+      Array.transpose (to_export);
+    array(string) translated_names = Array.map(to_export_tmp, translate, translator);
+    array(string) dirs=Array.uniq(Array.map(translated_names, dirname));
+    while(1)
+    {
+      array(string) d2=Array.map(dirs, dirname) - dirs;
+      if(!sizeof(d2)) break;
+      dirs+=Array.uniq(d2);
+    }
+    dirs-=({""});
+    sort(dirs);
+
+    foreach(dirs, string dir) p->write("d%4c%s",sizeof(dir),dir);
+    foreach(Array.transpose(  ({ to_export_from, translated_names }) ),
+	    [ string file, string file_name ])
+    {
+      status("Adding",file);
+      if (string f=Stdio.read_file(file)) {
+	p->write("f%4c%s%4c",sizeof(file_name),file_name,sizeof(f));
+	p->write(f);
+      } else {
+	//  Huh? File could not be found.
+	error_msg ("-------------------\n"
+		   "Warning: Could not add file: %s. File not found!\n"
+		   "-------------------\n", file);
+      }
+    }
+
+    // FIXME, support $INSTALL_SCRIPT (or similar)
+
+#define TRVAR(X) translate(combine_path(vars->X,"."), translator)
+
+    array(string) env=({
+      //    "PIKE_MODULE_PATH="+TRVAR(TMP_LIBDIR)+"/modules:"+TRVAR(LIBDIR_SRC)+"/modules",
+      //    "PIKE_PROGRAM_PATH=",
+      //    "PIKE_INCLUDE_PATH="+TRVAR(LIBDIR_SRC)+"/include",
+    });
+
+    foreach(env, string e)
+      p->write("e%4c%s",sizeof(e),e);
+
+#define RELAY(X) " " #X "=" + TRVAR(X)+
+
+    string cmd=
+      replace(translate("pike.exe", translator),"/","\\")+
+      " -m"+translate("unpack_master.pike", translator)+
+      " -DNOT_INSTALLED" +
+      " "+translate( combine_path(vars->TMP_BINDIR,"install.pike"), translator)+
+      RELAY(TMP_LIBDIR)
+      RELAY(LIBDIR_SRC)
+      RELAY(SRCDIR)
+      RELAY(TMP_BINDIR)
+      RELAY(MANDIR_SRC)
+      RELAY(DOCDIR_SRC)
+      RELAY(BASEDIR)
+      " TMP_BUILDDIR="+translate("", translator)+
+      (((vars->PIKE_MODULE_RELOC||"") != "")? " PIKE_MODULE_RELOC=1":"")+
+      " $" // $ = @argv
+      ;
+
+    p->write("s%4c%s",sizeof(cmd),cmd);
+
+    array(string) to_delete=translated_names + ({translate("pike.tmp",translator)});
+    to_delete=Array.uniq(to_delete);
+    to_delete+=reverse(dirs);
+
+    // Generate cleanup
+    foreach(to_delete, string del)
+      p->write("D%4c%s",sizeof(del),del);
+
+    p->write("q\0\0\0\0");
+    p->close("rw");
+
+    if(last_len)
+    {
+      status(0,"");
+      status(0,"");
+    }
+
+#else
+    allow_mkdirhier = 1;
+    set_simple_status(0);
+
+    cd("..");
+
+    string tmpname = sprintf("PtmP%07x",random(0xfffffff));
+
+    status("Creating","script glue");
+
+    Stdio.write_file(tmpname+".x",
+		     "#!/bin/sh\n"
+#"TARFILE=\"$1\"; shift
+ARGS=''
+
+INSTALL_SCRIPT='bin/install.pike'
+
+while [ $# != 0 ]
+do
+    case \"$1\" in
+              -v|\\
+       --version) echo \""+version()+
+#" Copyright (C) 1994-2022 IDA, Linköping University
+Pike comes with ABSOLUTELY NO WARRANTY; This is free software and you
+are welcome to redistribute it under certain conditions; Read the
+files COPYING and COPYRIGHT in the Pike distribution for more details.
+\";
+		  rm -f "+tmpname+#".x
+                  exit 0 ;;
+
+              -h|\\
+          --help) echo \"" + helptext + #"\"
+		  rm -f "+tmpname+#".x
+                  exit 0 ;;
+
+      --features) echo \"" + Tools.Install.features()*"\n" + #"\"
+		  rm -f "+tmpname+#".x
+                  exit 0 ;;
+
+    --list-files) tar xf \"$TARFILE\" "+tmpname+#".tar.gz
+                  tar tfz "+tmpname+#".tar.gz
+                  rm -f "+tmpname+".x "+tmpname+#".tar.gz
+                  exit 0 ;;
+
+              -s|\\
+        --script) shift
+                  INSTALL_SCRIPT=\"$1\" ;;
+
+               *) ARGS=\"$ARGS '`echo \\\"$1\\\" | sed -e \\\"s/'/'\\\\\\\"'\\\\\\\"'/g\\\"`'\" ;;
+    esac
+    shift
+done
+"
+		     "echo \"   Loading installation script, please wait...\"\n"
+		     "tar xf \"$TARFILE\" "+tmpname+".tar.gz\n"
+		     "gzip -dc "+tmpname+".tar.gz | tar xf -\n"
+		     "rm -rf "+tmpname+".tar.gz\n"
+		     "( cd '"+export_base_name+".dir'\n"
+		     "  eval \"build/pike -mmaster.pike -DNOT_INSTALLED "
+		     "\\\"$INSTALL_SCRIPT\\\" \\\n"
+		     "  TMP_LIBDIR=\\\"build/lib\\\"\\\n"
+		     "  LIBDIR_SRC=\\\"lib\\\"\\\n"
+		     "  SRCDIR=\\\"src\\\"\\\n"
+		     "  TMP_BINDIR=\\\"bin\\\"\\\n"
+		     "  TMP_BUILDDIR=\\\"build\\\"\\\n"
+		     "  MANDIR_SRC=\\\"share/man\\\"\\\n"
+		     "  DOCDIR_SRC=\\\"refdoc\\\"\\\n"
+		     "  PIKE_MODULE_RELOC=\\\"" + vars->PIKE_MODULE_RELOC +
+		     "\\\"\\\n"
+		     "  $ARGS\"\n"
+		     ")\n"
+		     "rm -rf '"+export_base_name+".dir' "+tmpname+".x\n"
+		     );
+    chmod(tmpname+".x",0755);
+    string script=sprintf("#!/bin/sh\n"
+			  "tar xf \"$0\" %s.x\n"
+			  "exec ./%s.x \"$0\" \"$@\"\n",
+			  tmpname, tmpname);
+    if(sizeof(script) >= 100)
+    {
+      error_msg ("Script too long!!\n");
+      exit(1);
+    }
+
+    array(string) parts = script/"/";
+    mkdirhier( parts[..sizeof(parts)-2]*"/");
+    Stdio.write_file(script,"");
+
+    [array(string) to_export_from, array(string) to_export_tmp] =
+      Array.transpose (to_export);
+
+    // Link in files outside the build tree during the tar.
+    for (int i = 0; i < sizeof (to_export_from); i++) {
+      string tmpname = to_export_tmp[i];
+      to_export_tmp[i] =
+	combine_path (export_base_name+".dir", to_export_tmp[i]);
+      if (to_export_from[i] != tmpname) {
+	rm (to_export_tmp[i]);
+	mklink (to_export_from[i], to_export_tmp[i]);
+      }
+      else
+	to_export_from[i] = 0;
+    }
+
+    string tmpmsg=".";
+
+    string tararg="cf";
+    foreach(to_export_tmp/25.0, array files_to_tar)
+    {
+      status("Creating", tmpname+".tar", tmpmsg);
+      tmpmsg+=".";
+      Process.create_process(({"tar",tararg,tmpname+".tar"})+ files_to_tar)
+	->wait();
+      tararg="rf";
+    }
+
+    // Clean up symlinks again.
+    for (int i = 0; i < sizeof (to_export_from); i++)
+      if (to_export_from[i])
+	rm (to_export_tmp[i]);
+
+    status("Filtering to root/root ownership", tmpname+".tar");
+    tarfilter(tmpname+".tar");
+
+    status("Creating", tmpname+".tar.gz");
+
+    Process.create_process(({"gzip","-9",tmpname+".tar"}))->wait();
+
+    status("Creating", export_base_name);
+
+    //  Setting COPYFILE_DISABLE avoids a "._PtmP..." resource file to be added
+    //  on OS X which otherwise would hinder self-extraction from bootstrapping.
+    Process.create_process( ({ "tar","cf", export_base_name,
+			       script, tmpname+".x", tmpname+".tar.gz" }),
+			    ([ "env" : ([ "COPYFILE_DISABLE" : "true" ]) ]) )
+      ->wait();
+
+    status("Filtering to root/root ownership", export_base_name);
+    tarfilter(export_base_name);
+
+    chmod(export_base_name,0755);
+
+    status("Cleaning up","");
+
+    Process.create_process( ({ "rm","-rf",
+			       export_base_name+".dir",
+			       export_base_name+".x",
+			       tmpname+".x",
+			       tmpname+".tar.gz",
+			       parts[0],
+			    }) ) ->wait();
+
+    status1("Export done");
+#endif
+  }
+
+#ifdef __NT__
+  protected void check_vc8()
+  {
+    if (include_crt &&
+	Stdio.is_file (combine_path (vars->TMP_BUILDDIR,
+				     "pike.exe.manifest"))) {
+      error_msg (#"\
+Warning: Using the old exe installer with VC8 doesn't work well. Your
+package probably won't work unless the user already has the MS CRTs
+installed. You might want to try to enable private CRT packaging; see
+the PRIVATE_CRT stuff in install.pike.\n");
+    }
+  }
+#endif
+}
+
+class WixExportInstallHandler {
+  inherit ExportInstallHandler;
+
+  void export_file (string from, string tmp, string to, void|string id)
+  {
+#ifdef SUPPORT_WIX
+    mapping translator = ([
+      "":"",
+      replace (prefix, "\\", "/"):"",
+      replace (getcwd(), "\\", "/"):"",
+    ]);
+    root->install_file(translate(replace (to, "\\", "/"), translator),
+		       from, id);
+#else /* !SUPPORT_WIX */
+    error("Wix mode not supported.\n");
+#endif /* SUPPORT_WIX */
+  }
+
+  protected void do_install_master(string master_src)
+  {
+#ifdef SUPPORT_WIX
+#if 0
+    string unpack_master = "unpack_master.pike";
+    make_master(unpack_master, master_src, "lib", "include/pike",
+		UNDEFINED, cflags, ldflags);
+    low_install_file(unpack_master,
+		     combine_path(prefix, "lib/master.pike"));
+#endif
+    low_install_file(combine_path(vars->SRCDIR,
+				  "../packaging/windows/pike.ico"),
+		     combine_path(prefix, "lib/pike.ico"));
+    root->uninstall_file("lib/master.pike");
+#endif /* SUPPORT_WIX */
+  }
+
+#ifdef SUPPORT_WIX
+  protected int low_install_regkey(string path, string root, string key,
+				   string name, string value, string id)
+  {
+    global::root->install_regkey(path, root, key, name, value, id);
+  }
+
+  protected void recurse_uninstall_file(Directory d, string pattern)
+  {
+    d->recurse_uninstall_file(pattern);
+  }
+
+  protected int low_uninstall_file(string path)
+  {
+    root->uninstall_file(path);
+  }
+#endif /* SUPPORT_WIX */
+
+  void do_export()
+  {
+#ifdef SUPPORT_WIX
+    // Minimize the number of src directives.
+    root->set_sources();
+
+    // Clean up dumped files and modules on uninstall.
+    recurse_uninstall_file(root->sub_dirs["lib"], "*.o");
+
+    // Note: TARGETDIR is the root install dir for the msi,
+    // PIKE_TARGETDIR might be a different dir if Pike_module.wxs is
+    // included in an installer that wants to install pike somewhere
+    // else.
+
+    // We need to have a unique name for the TARGETDIR
+    // due to light not rewriting [TARGETDIR] in the
+    // property custom action below.
+    //
+    // Note: The directory we get merged into must also have
+    //       this id as long as the bug exists.
+    root->extra_ids["PIKE_TARGETDIR"] = 1;
+
+    // Generate the XML directory tree.
+    WixNode xml_root =
+      Standards.XML.Wix.get_module_xml(root, "Pike", version_str,
+				       "IDA", "Pike dist", version_guid,
+				       "Merge with this", "300");
+
+    WixNode module_node = xml_root->
+      get_first_element("Wix")->
+      get_first_element("Module");
+
+    module_node->
+      add_child(WixNode("CustomAction", ([
+			  "Id":"SetFinalizePike",
+			  "Property":"FinalizePike",
+			  "Value":"[PIKE_TARGETDIR]",
+			  "Execute":"immediate",
+			])))->
+      add_child(line_feed)->
+      add_child(WixNode("CustomAction", ([
+			  "Id":"FinalizePike",
+			  "BinaryKey":"PikeInstaller",
+			  "VBScriptCall":"FinalizePike",
+			  // The following are necessary to allow the script to
+			  // run with elevated privileges in UAC mode.
+			  "Execute":"deferred",
+			  "Impersonate": "no",
+			])))->
+      add_child(line_feed)->
+      add_child(WixNode("Binary", ([
+			  "Id":"PikeInstaller",
+			  "src":"PikeWin32Installer.vbs",
+			])))->
+      add_child(line_feed)->
+      add_child(WixNode("InstallExecuteSequence", ([]), "\n")->
+		add_child(WixNode("Custom", ([
+				    "Action":"SetFinalizePike",
+				    "After":"WriteRegistryValues",
+				  ]), "REMOVE=\"\""))->
+		add_child(line_feed)->
+		add_child(WixNode("Custom", ([
+				    "Action":"FinalizePike",
+				    "After":"SetFinalizePike",
+				  ]), "REMOVE=\"\""))->
+		add_child(line_feed))->
+      add_child(line_feed);
+
+    create_file("Pike_module.wxs", xml_root->render_xml());
+
+#ifdef GENERATE_WIX_UI
+    // Generate the UserInterface
+
+    status("Creating", /*export_base_name*/"Pike"+"_ui.wxs");
+
+    xml_root = Parser.XML.Tree.SimpleRootNode()->
+      add_child(Parser.XML.Tree.SimpleHeaderNode((["version":"1.0",
+						   "encoding":"utf-8"])))->
+      add_child(WixNode("Wix", ([
+			  "xmlns":"http://schemas.microsoft.com/wix/2003/01/wi",
+			]))->
+		add_child(WixNode("Fragment", ([
+				    "Id":"PikeUI",
+				  ]))->
+			  add_child(UI()->gen_xml())->
+			  add_child(WixNode("Binary", ([
+					      "Id":"Pike_banner",
+					      "src":"Pike_banner.bmp"
+					    ])))));
+
+    Stdio.write_file(/*export_base_name*/"Pike"+"_ui.wxs",
+		     xml_root->render_xml());
+      
+#endif /* GENERATE_WIX_UI */
+
+#ifdef GENERATE_WIX_ACTIONS
+    // Generate the custom actions needed to install the master,
+    // and finalize the pike binary.
+
+    status("Creating", export_base_name+"_actions.wxs");
+
+    string run_install =
+      "bin\\pike -DNOT_INSTALLED"
+      " -mbuild\\master.pike bin\\install.pike"
+      " BASEDIR=.";
+    WixNode fragment_list =
+      WixNode("Fragment", ([
+		"Id":"PikeActions",
+	      ]))->
+      add_child(WixNode("CustomAction", ([
+			  "Id":"FinalizePike",
+			  "Directory":"TARGETDIR",
+			  "ExeCommand":run_install + " --finalize",
+			])))->
+      add_child(WixNode("CustomAction", ([
+			  "Id":"InstallMaster",
+			  "Directory":"TARGETDIR",
+			  "ExeCommand":run_install + " --install-master",
+			])));
+
+    xml_root = Parser.XML.Tree.SimpleRootNode()->
+      add_child(Parser.XML.Tree.SimpleHeaderNode((["version":"1.0",
+						   "encoding":"utf-8"])))->
+      add_child(WixNode("Wix", ([
+			  "xmlns":"http://schemas.microsoft.com/wix/2003/01/wi",
+			]))->
+		add_child(fragment_list));
+
+    Stdio.write_file(export_base_name+"_actions.wxs", xml_root->render_xml());
+
+#endif /* GENERATE_WIX_ACTIONS */
+
+#if 0
+    // Generate the main wxs file.
+
+    status("Creating", export_base_name+".wxs");
+
+    WixNode product_node = WixNode("Product", ([
+				     "Name":"Pike",
+				     "Language":"1033",
+				     "UpgradeCode":pike_upgrade_guid,
+				     "Id":Standards.UUID.make_version1(-1)->str(),
+				     "Version":sprintf("%d.%d.%d",
+						       __REAL_MAJOR__,
+						       __REAL_MINOR__,
+						       __REAL_BUILD__),
+				     "Manufacturer":"IDA",
+				   ]))->
+      add_child(WixNode("Package", ([
+			  "Manufacturer":"IDA",
+			  "Languages":"1033",
+			  "InstallerVersion":"300",
+			  "Platforms":"Intel",
+			  "Id":Standards.UUID.make_version1(-1)->str(),
+			  "Compressed":"yes",
+			  "SummaryCodepage":"1252",
+			])))->
+      add_child(WixNode("Media", ([
+			  "Id":"1",
+			  "EmbedCab":"yes",
+			  "Cabinet":"Pike.cab",
+			])))->
+      add_child(WixNode("Directory", ([
+			  "Id":"TARGETDIR",
+			  "Name":"SourceDir",
+			]))->
+		add_child(WixNode("Merge", ([
+				    "Id":"Pike",
+				    "Language":"1033",
+				    "src":export_base_name+"_module.msm",
+				    "DiskId":"1",
+				  ]))))->
+      add_child(WixNode("Feature", ([
+			  "Id":"F_Pike",
+			  "Title":sprintf("Pike %d.%d.%d",
+					  __REAL_MAJOR__,
+					  __REAL_MINOR__,
+					  __REAL_BUILD__),
+			  "Level":"1",
+			  "ConfigurableDirectory":"TARGETDIR",
+			]))->
+		add_child(WixNode("MergeRef", ([
+				    "Id":"Pike",
+				  ]))))->
+      add_child(WixNode("Upgrade", ([
+			  "Id":Standards.UUID.make_version1(-1)->str(),
+			]))->
+		add_child(WixNode("UpgradeVersion", ([
+				    "Minimum":sprintf("%d.0.0",
+						      __REAL_MAJOR__),
+				    "Property":"NEWERPRODUCTFOUND",
+				    "OnlyDetect":"yes",
+				    "IncludeMinimum":"yes",
+				  ]))))->
+      add_child(WixNode("CustomAction", ([
+			  "Id":"QueryTarget",
+			  "Property":"TARGETDIR",
+			  "Value":"[ProgramFilesFolder][ProductName]",
+			  "Execute":"firstSequence",
+			])))
+      ->
+      add_child(WixNode("InstallExecuteSequence", ([]))->
+		add_child(WixNode("Custom", ([
+				    "Action":"QueryTarget",
+				    "Before":"InstallFiles",
+				  ]),
+				  "TARGETDIR=\"\""))
+#if 0
+		->
+		add_child(WixNode("Custom", ([
+				    "Action":"FinalizePike",
+				    "After":"InstallFiles",
+				  ])))->
+		add_child(WixNode("Custom", ([
+				    "Action":"InstallMaster",
+				    "After":"FinalizePike",
+				  ])))
+#endif /* 0 */
+		)
+#if 0
+      ->
+      add_child(WixNode("UI", ([]))->
+		add_child(WixNode("Dialog", ([
+				    "Id":"TargetDialog",
+				    "Title":"[ProductName]",
+				    "TrackDiskSpace":"yes",
+				    "Width":"373",
+				    "Height":"287",
+				  ]))->
+			  add_child(WixNode("Control", ([
+					      "Id":"TargetEdit",
+					      "Type":"PathEdit",
+					      "Property":"TARGETDIR",
+					      "Sunken":"yes",
+					      "Width":"258",
+					      "Height":"18",
+					      "X":"18",
+					      "Y":"126",
+					    ])))->
+			  add_child(WixNode("Control", ([
+					      "Id":"NextButton",
+					      "Type":"PushButton",
+					      "Default":"yes",
+					      "Width":"66",
+					      "Height":"18",
+					      "X":"300",
+					      "Y":"261",
+					    ]))->
+				    add_child(WixNode("Publish", ([
+							"Event":"SetTarget",
+							"Value":"TARGETDIR",
+						      ])))->
+				    add_child(WixNode("Publish", ([
+							"Event":"EndDialog",
+							"Value":"Return"
+						      ])))))->
+		add_child(WixNode("InstallUISequence", ([]))->
+			  add_child(WixNode("Custom", ([
+					      "Action":"QueryTarget",
+					      "Before":"TargetDialog",
+					    ])))->
+			  add_child(WixNode("Show", ([
+					      "Dialog":"TargetDialog",
+					      "Before":"ProgressForm",
+					    ])))))
+#endif /* 0 */
+      ;
+
+    xml_root = Parser.XML.Tree.SimpleRootNode()->
+      add_child(Parser.XML.Tree.SimpleHeaderNode((["version":"1.0",
+						   "encoding":"utf-8"])))->
+      add_child(WixNode("Wix", ([
+			  "xmlns":"http://schemas.microsoft.com/wix/2003/01/wi",
+			]))->add_child(product_node));
+
+    Stdio.write_file(export_base_name+".wxs", xml_root->render_xml());
+#endif /* 0 */
+#else /* !SUPPORT_WIX */
+    error("Wix mode not supported.\n");
+#endif /* SUPPORT_WIX */
+  }
+
+  void low_finalize_pike(string pike_bin_file, string suffix)
+  {
+    ::low_finalize_pike(pike_bin_file, suffix);
+#ifdef SUPPORT_WIX
+    low_install_regkey("bin", "HKLM",
+		       "SYSTEM\\CurrentControlSet\\Services\\SharedAccess\\Parameters\\FirewallPolicy\\StandardProfile\\AuthorizedApplications\\List",
+		       "[#BIN_PIKE]",
+		       "[#BIN_PIKE]:*:Enabled:Pike",
+		       "RE__BIN_PIKE");
+    low_uninstall_file("bin/*.old");
+#endif /* SUPPORT_WIX */
+  }
+}
+
+class AmigaOSExportInstallHandler {
+  inherit ExportInstallHandler;
+  protected array(array(string)) to_export=({});
+
+  protected void generate_prefix()
+  {
+  }
+
+  protected void create_export_base()
+  {
+    if (!mkdir(export_base_name)) {
+      error("Failed to create directory %O: %s\n",
+	    export_base_name, strerror(errno()));
+    }
+    vars->TMP_BUILDDIR=getcwd();
+    cd(export_base_name);
+    vars->prefix = prefix = "";
+    exec_prefix = "";
+  }
+
+  protected string get_export_base_name(string ver)
+  {
+    return sprintf("%s-AmigaOS", ver);
+  }
+
+  void export_file (string from, string tmp, string to, void|string id)
+  {
+    to_export += ({({from, to})});
+  }
+
+  protected void do_install_master(string master_src)
+  {
+    make_master("master.pike", master_src, "PROGDIR:lib", "PROGDIR:include/pike",
+		0, cflags, ldflags);
+    low_install_file(combine_path(getcwd(), "master.pike"), "lib/master.pike");
+  }
+  
+  protected void write_num_files_to_export()
+  {
+  }
+
+  protected void do_install_build_aux()
+  {
+  }
+
+  void do_export()
+  {
+    allow_mkdirhier = 1;
+    set_simple_status(0);
+
+    cd("..");
+
+    [array(string) to_export_from, array(string) to_export_tmp] =
+      Array.transpose (to_export);
+
+    // Link in files outside the build tree during the lha.
+    for (int i = 0; i < sizeof (to_export_from); i++) {
+      string tmpname = to_export_tmp[i];
+      to_export_tmp[i] =
+	combine_path (export_base_name, to_export_tmp[i]);
+      if (to_export_from[i] != tmpname && !file_stat(to_export_tmp[i])) {
+	Stdio.mkdirhier(dirname(to_export_tmp[i]));
+#if constant(hardlink)
+	hardlink (combine_path(getcwd(), to_export_from[i]), to_export_tmp[i]);
+#else
+	mklink (combine_path(getcwd(), to_export_from[i]), to_export_tmp[i]);
+#endif
+      }
+      else
+	to_export_from[i] = 0;
+    }
+
+    string tmpmsg=".";
+
+    string lhaarg="cq";
+    foreach(to_export_tmp/25.0, array files_to_lha)
+    {
+      status("Creating", export_base_name+".lha", tmpmsg);
+      tmpmsg+=".";
+      Process.create_process(({"lha",lhaarg,export_base_name+".lha"})+ files_to_lha)
+	->wait();
+      lhaarg="aq";
+    }
+
+    // Clean up symlinks again.
+    for (int i = 0; i < sizeof (to_export_from); i++)
+      if (to_export_from[i])
+	rm (to_export_tmp[i]);
+
+    status("Cleaning up","");
+
+    Process.create_process( ({ "rm","-rf",
+			       export_base_name,
+			    }) ) ->wait();
+
+    status1("Export done");
+  }
+}
+
+int pre_install(array(string) argv)
+{
+  InstallHandler install_handler;
+  string prefix;
+  if( vars->prefix )
+    prefix = vars->prefix;
+  else {
+#ifdef __NT__
+    prefix = RegGetValue(HKEY_LOCAL_MACHINE,
+			 "SOFTWARE\\Microsoft\\Windows\\CurrentVersion",
+			 "ProgramFilesDir");
+#else
+    prefix = "/usr/local";
+#endif
+  }
+
+  if(!vars->TMP_BINDIR)
+    vars->TMP_BINDIR=combine_path(vars->SRCDIR,"../bin");
+
+  if(!vars->TMP_BUILDDIR) vars->TMP_BUILDDIR=".";
+
+  cflags = vars->cflags;
+  ldflags = vars->ldflags;
+
+  switch(install_type)
+  {
+    case "--traditional":
+      install_handler = TraditionalInstallHandler(vars, prefix);
+      break;
+
+    case "--interactive":
+
+#ifdef USE_GTK
+      catch  {
+	if(!no_gui)
+	{
+#ifndef __NT__ // We are using GTK on Win32!! no DISPLAY required
+	  if(getenv("DISPLAY"))
+#endif
+	  {
+	    begin_wizard(argv, prefix);
+	    return -1;
+	  }
+	}
+      };
+#endif
+
+      status1("");
+
+      interactive=Tools.Install.Readline();
+      interactive->set_cwd("../");
+
+      write("   Welcome to the interactive "+version()+
+	    " installation script.\n"
+	    "\n" +
+	    (interactive->get_input_controller()->dumb ?
+	     "   The script will guide you through the installation process by asking\n"
+	     "   a few questions. You will be able to confirm your settings before\n"
+	     "   the installation begins.\n"
+	     :
+	     "   The script will guide you through the installation process by asking\n"
+	     "   a few questions. Whenever you input a path or a filename, you may use\n"
+	     "   the <tab> key to perform filename completion. You will be able to\n"
+	     "   confirm your settings before the installation begins.\n")
+	    );
+
+      string confirm, bin_path = vars->pike_name;
+      do {
+	write("\n");
+
+	prefix = interactive->edit_directory(prefix,"Install prefix: ");
+	prefix = interactive->absolute_path(prefix);
+
+	if(!vars->pike_name)
+	{
+#if constant(symlink)
+	  bin_path=interactive->edit_filename
+		   (combine_path(vars->exec_prefix ||
+				 combine_path(prefix, "bin"),
+				 "pike"), "Pike binary name: ");
+#else
+	  bin_path=combine_path(
+#ifdef __NT__
+				"\\",
+#else
+				"/",
+#endif
+				getcwd(),prefix,"pike",
+				replace(version()-"Pike v"," release ","."),
+				"bin","pike");
+#endif
+	}
+
+	bin_path = interactive->absolute_path(bin_path);
+
+	write("\n");
+	confirm =
+	  lower_case(interactive->
+		     edit("", "Are the settings above correct [Y/n/quit]? "));
+	if(confirm == "quit")
+	{
+	  // Maybe clean up?
+	  destruct(interactive);
+	  exit(0);
+	}
+
+      } while(!(confirm == "" || confirm == "y"));
+
+      write("\n");
+
+      vars->pike_name = bin_path;
+
+      destruct(interactive);
+      install_type="--new-style";
+      install_handler = NewStyleInstallHandler(vars, prefix);
+      break;
+
+    case "--export-amigaos":
+      install_handler = AmigaOSExportInstallHandler(vars, prefix);
+      break;
+    case "--wix-module":
+      install_handler = WixExportInstallHandler(vars, prefix);
+      break;
+    case "--export":
+      install_handler = BurkExportInstallHandler(vars, prefix);
+      break;
+
+    case "":
+    default:
+    case "--new-style":
+      install_handler = NewStyleInstallHandler(vars, prefix);
+      break;
+    case "--finalize":
+      install_handler = InstallHandler(vars, getcwd());
+      install_handler->finalize_pike();
+      status1("Finalizing done.");
+      return 0;
+    case "--install-master":
+      install_handler = InstallHandler(vars, getcwd());
+      install_handler->make_master("lib/master.pike", "lib/master.pike.in",
+				   lib_prefix, include_prefix, UNDEFINED,
+				   cflags, ldflags);
+      status1("Installing master done.");
+      return 0;
+
+  case "--wix":
+#ifdef SUPPORT_WIX
+    WixInstallHandler()->make_wix();
+#else /* !SUPPORT_WIX */
+    error("Wix mode not supported with this pike.\n");
+#endif /* SUPPORT_WIX */
+    return 0;
+  }
+
+  install_handler->do_install();
+  return 0;
+}
+
+void collect_dlls (function(string:void) handle_dll)
+{
+  // $PIKE_BUILD_ROOT/dll contains placeholders for the dlls that need
+  // to be included in the install package. install.pike searches for
+  // these in PATH. The contents of the files here are not important;
+  // they can be zero length. The MS CRT dlls shouldn't be here,
+  // though (see add_msm instead).
+  if (string pike_build_root = getenv ("PIKE_BUILD_ROOT"))
+    if (array(string) dlls = get_dir (combine_path (pike_build_root, "dll"))) {
+    dll_loop:
+      foreach (dlls, string dll_name) {
+	dll_name = lower_case (dll_name);
+	if (has_suffix (dll_name, ".dll")) {
+	  foreach (getenv ("PATH") / ";", string path) {
+	    string dll_path = combine_path (path, dll_name);
+	    if (Stdio.exist (dll_path)) {
+	      handle_dll (normalize_path (dll_path));
+	      continue dll_loop;
+	    }
+	  }
+	  error_msg ("Warning: Could not find dll %s to include.\n", dll_name);
+	}
+      }
+    }
 }
 
 int main(int argc, array(string) argv)
@@ -3369,15 +3584,6 @@ int main(int argc, array(string) argv)
   // Some magic for the fakeroot stuff
   string tmp = m_delete(vars, "fakeroot");
   if(tmp && tmp!="")
-  {
-    if(tmp[-1]=='/' || tmp[-1]=='\\')
-      tmp=tmp[..sizeof(tmp)-2];
-
-    // Create the fakeroot if it doesn't exist
-    // This must be done with fakeroot unset since
-    // it would create fakeroot/fakeroot otherwise
-    mkdirhier(tmp);
-    vars->fakeroot=tmp;
-  }
+    FakerootSetupHandler(vars, tmp);
   return pre_install(argv);
 }
