@@ -264,6 +264,28 @@ o ADT.OrderedMapping
 Incompatible changes
 --------------------
 
+o Simplified the Iterator API.
+
+  - Renamed Iterator API functions and made them LFUNs:
+
+    o index() ==> iterator_index()
+
+    o value() ==> iterator_value()
+
+    o next() ==> iterator_next()
+
+  - Iterators now start at the position before the first element
+    to be iterated over. This position may be the the same
+    position as after the last element.
+
+  - The only function that is required for an Iterator is
+    iterator_next(). It should advance the iterator one
+    element, and return UNDEFINED if the position is now
+    after the last element. It may return any other value
+    otherwise. The returned value will be used in place of
+    the values returned by iterator_index() and/or
+    iterator_value() if they do not exist.
+
 o Sql.Sql is no longer a wrapper class, but a function.
 
   The wrapper class has been obsoleted by introduction of the
