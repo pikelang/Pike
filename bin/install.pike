@@ -895,6 +895,8 @@ void export_file (string from, string tmp, string to, void|string id)
 #else /* !SUPPORT_WIX */
     error("Wix mode not supported.\n");
 #endif /* SUPPORT_WIX */
+  } else if (export == 3) {
+    to_export += ({({from, to})});
   } else {
     to_export += ({({from, tmp})});
   }
@@ -1484,6 +1486,62 @@ void do_export()
 #else /* !SUPPORT_WIX */
     error("Wix mode not supported.\n");
 #endif /* SUPPORT_WIX */
+  } else if (export == 3) {
+    export=0;
+
+    cd("..");
+
+  [array(string) to_export_from, array(string) to_export_tmp] =
+    Array.transpose (to_export);
+
+  // Link in files outside the build tree during the lha.
+  for (int i = 0; i < sizeof (to_export_from); i++) {
+    string tmpname = to_export_tmp[i];
+    to_export_tmp[i] =
+      combine_path (export_base_name, to_export_tmp[i]);
+    if (to_export_from[i] != tmpname) {
+      rm (to_export_tmp[i]);
+      Stdio.mkdirhier(dirname(to_export_tmp[i]));
+#if constant(hardlink)
+      hardlink (combine_path(getcwd(), to_export_from[i]), to_export_tmp[i]);
+#else
+      mklink (combine_path(getcwd(), to_export_from[i]), to_export_tmp[i]);
+#endif
+    }
+    else
+      to_export_from[i] = 0;
+  }
+
+  string master_src=combine_path(vars->LIBDIR_SRC,"master.pike.in");
+  string unpack_master=combine_path(export_base_name, "lib/master.pike");
+  rm(unpack_master);
+  make_master(unpack_master, master_src, "PROGDIR:lib", "PROGDIR:include/pike",
+	      0, cflags, ldflags);
+
+  string tmpmsg=".";
+
+  string lhaarg="cq";
+  foreach(to_export_tmp/25.0, array files_to_lha)
+    {
+      status("Creating", export_base_name+".lha", tmpmsg);
+      tmpmsg+=".";
+      Process.create_process(({"lha",lhaarg,export_base_name+".lha"})+ files_to_lha)
+	->wait();
+      lhaarg="aq";
+    }
+
+  // Clean up symlinks again.
+  for (int i = 0; i < sizeof (to_export_from); i++)
+    if (to_export_from[i])
+      rm (to_export_tmp[i]);
+
+  status("Cleaning up","");
+
+  Process.create_process( ({ "rm","-rf",
+			     export_base_name,
+  }) ) ->wait();
+
+  status1("Export done");
   } else {
 #ifdef __NT__
   status("Creating",export_base_name+".burk");
@@ -2069,8 +2127,10 @@ int pre_install(array(string) argv)
       install_type="--new-style";
       continue;
 
+    case "--export-amigaos":
+      export = 3;
     case "--wix-module":
-      export = 2;
+      export = export || 2;
     case "--export":
       export = export || 1;
       string ver = replace( version(), ([ " ":"-", " release ":"." ]) );
@@ -2123,6 +2183,16 @@ int pre_install(array(string) argv)
 	vars->MANDIR_SRC="share/man";
 	vars->DOCDIR_SRC="refdoc";
 	vars->TMP_BUILDDIR="build";
+      } else if (export == 3) {
+	if (!mkdir(export_base_name)) {
+	  error("Failed to create directory %O: %s\n",
+		export_base_name, strerror(errno()));
+	}
+	vars->TMP_BUILDDIR=getcwd();
+	cd(export_base_name);
+	vars->pike_name = "pike";
+	vars->prefix = prefix = "";
+	exec_prefix = "";
       }
 #endif
 
@@ -2134,9 +2204,11 @@ int pre_install(array(string) argv)
 			   "pike");
 	old_exec_prefix=vars->exec_prefix; // to make the directory for pike link
       }
-      prefix = combine_path("/", getcwd(), prefix, "pike",
-			    replace(version()-"Pike v"," release ","."));
-      exec_prefix=combine_path(prefix,"bin");
+      if (export != 3) {
+        prefix = combine_path("/", getcwd(), prefix, "pike",
+			      replace(version()-"Pike v"," release ","."));
+	exec_prefix=combine_path(prefix,"bin");
+      }
       lib_prefix=combine_path(prefix,"lib");
       doc_prefix=combine_path(prefix,"doc");
       include_prefix=combine_path(prefix,"include","pike");
@@ -3039,11 +3111,12 @@ the PRIVATE_CRT stuff in install.pike.\n");
 				    "propagated_variables"),
 		       combine_path(include_prefix, 
 				    "propagated_variables"));
-      low_install_file(combine_path(vars->SRCDIR,"install-welcome"),
-		       combine_path(prefix, "build/install-welcome"));
-      low_install_file(combine_path(vars->SRCDIR,"dumpmaster.pike"),
-		       combine_path(prefix, "build/dumpmaster.pike"));
-
+      if (export != 3) {
+	low_install_file(combine_path(vars->SRCDIR,"install-welcome"),
+			 combine_path(prefix, "build/install-welcome"));
+	low_install_file(combine_path(vars->SRCDIR,"dumpmaster.pike"),
+			 combine_path(prefix, "build/dumpmaster.pike"));
+      }
 
       void basefile(string x) {
 	string from = combine_path(vars->BASEDIR,x);
@@ -3144,7 +3217,7 @@ the PRIVATE_CRT stuff in install.pike.\n");
   catch {
     Stdio.write_file(combine_path(vars->TMP_BUILDDIR,"num_files_to_install"),
 		     sprintf("%d\n",installed_files));
-    if (export) {
+    if (export && export != 3) {
       low_install_file(combine_path(vars->TMP_BUILDDIR,"num_files_to_install"),
 		       combine_path(prefix, "build/num_files_to_install"));
     }
@@ -3208,6 +3281,7 @@ int main(int argc, array(string) argv)
     ({"--export",Getopt.NO_ARG,({"--export"})}),
     ({"--wix", Getopt.NO_ARG, ({ "--wix" })}),
     ({"--wix-module", Getopt.NO_ARG, ({ "--wix-module" })}),
+    ({"--export-amigaos",Getopt.NO_ARG,({"--export-amigaos"})}),
     ({"--traditional",Getopt.NO_ARG,({"--traditional"})}),
     ({"--verbose",Getopt.NO_ARG,({"--verbose"})}),
     ({"--redump-all",Getopt.NO_ARG,({"--redump-all"})}),

@@ -640,6 +640,17 @@ wix_export: Pike.msi
 	cp Pike.msi $(BASEDIR)/Pike-v$(VER)-win32.msi ;\
 	cp config.info $(BASEDIR)/Pike-v$(VER)-win32.info
 
+amigaos_export:
+	@$(RUNPIKE) $(TMP_BINDIR)/install.pike --export-amigaos \
+	  `test -f autodoc.xml || echo --no-autodoc` \
+	  lib_prefix="$(lib_prefix)" \
+	  TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" \
+	  SRCDIR="$(SRCDIR)" DOCDIR_SRC="$(DOCDIR_SRC)" \
+	  MANDIR_SRC="$(MANDIR_SRC)" \
+	  man_prefix="$(man_prefix)" fakeroot="$(buildroot)" \
+	  PIKE_MODULE_RELOC="$(PIKE_MODULE_RELOC)" \
+	  cflags="@DYNAMIC_MODULE_FLAGS@" ldflags=""
+
 force :
 	@:
 
