@@ -13,6 +13,7 @@ string|array(int) path = ({});
 mapping(int:this_program) trie;
 
 protected array(int) index;
+protected string|array(int) iterator_position;
 
 protected void create(string|array(int)|void key, int|void offset)
 {
@@ -184,7 +185,7 @@ protected void update_index()
   }
 }
 
-string|array(int) first()
+protected string|array(int) _first()
 {
   if (!trie) return UNDEFINED;
   update_index();
@@ -193,11 +194,17 @@ string|array(int) first()
   return o->path;
 }
 
+string|array(int) first()
+{
+  iterator_position = UNDEFINED;
+  return _first();
+}
+
 string|array(int) next(string|array(int) base)
 {
   if (!trie) return UNDEFINED;
   if (sizeof(base) <= offset) {
-    return first();
+    return _first();
   }
   this_program o = trie[base[offset]];
   if (o) {
@@ -220,6 +227,26 @@ string|array(int) next(string|array(int) base)
     }
   }
   return UNDEFINED;
+}
+
+protected string|array(int) _iterator_next()
+{
+  if (!iterator_position) {
+    return iterator_position = _first();
+  }
+  return iterator_position = next(iterator_position);
+}
+
+protected mixed _iterator_value()
+{
+  if (!iterator_position) return UNDEFINED;
+  return lookup(iterator_position);
+}
+
+protected string|array(int) _iterator_index()
+{
+  if (!iterator_position) return UNDEFINED;
+  return iterator_position;
 }
 
 protected string render_path()
