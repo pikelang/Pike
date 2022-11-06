@@ -1140,6 +1140,28 @@ int mklink(string from, string to)
   return 0;
 }
 
+#ifdef CROSS_INSTALL
+string source_version;
+string version()
+{
+  if (!source_version) {
+    mapping(string:int) defs = ([]);
+    Stdio.File f = Stdio.File(combine_path(vars->SRCDIR, "version.h"));
+    foreach(f->line_iterator();; string line) {
+      string def;
+      int n;
+      if (2 == sscanf(line, "#define %s %d", def, n))
+	defs[def] = n;
+    }
+    source_version = sprintf("Pike v%d.%d release %d",
+			     defs["PIKE_MAJOR_VERSION"],
+			     defs["PIKE_MINOR_VERSION"],
+			     defs["PIKE_BUILD_VERSION"]);
+  }
+  return source_version;
+}
+#endif
+
 string helptext=#"Usage: $TARFILE [options] [variables]
 
 Options:
@@ -2052,7 +2074,7 @@ int pre_install(array(string) argv)
     case "--export":
       export = export || 1;
       string ver = replace( version(), ([ " ":"-", " release ":"." ]) );
-#if constant(uname)
+#if constant(uname) && !defined(CROSS_INSTALL)
       mapping(string:string) u = uname();
       if( u->sysname=="AIX" )
       {
