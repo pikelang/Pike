@@ -361,9 +361,9 @@ class Widestring
 {
    inherit Plain;
 
-   protected void create(string pattern,int options=OPTION.UTF8,void|object table)
+   protected void create(string pattern,void|int options,void|object table)
    {
-      ::create(string_to_utf8(pattern),options,table);
+      ::create(string_to_utf8(pattern),options|OPTION.UTF8,table);
    }
 
    protected string _sprintf(int t,mapping fum)
