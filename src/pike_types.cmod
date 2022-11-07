@@ -11914,8 +11914,8 @@ struct pike_type *check_call_svalue(struct pike_type *fun_type,
     if (!tmp) {
       /* No create() -- No arguments. */
       /* FIXME: Multiple cases:
-       *          Untyped object.		function(mixed|void...:obj)
-       *          Failed to lookup program id.	function(mixed|void...:obj)
+       *          Untyped object.		function(mixed...:obj)
+       *          Failed to lookup program id.	function(mixed...:obj)
        *          Program does not have a create().	function(:obj)
        *
        * We simply ignore the args.
@@ -12184,8 +12184,8 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
     if (!tmp) {
       /* No create() -- No arguments. */
       /* FIXME: Multiple cases:
-       *          Untyped object.		function(mixed|void...:obj)
-       *          Failed to lookup program id.	function(mixed|void...:obj)
+       *          Untyped object.		function(mixed...:obj)
+       *          Failed to lookup program id.	function(mixed...:obj)
        *          Program does not have a create().	function(:obj)
        *
        * We simply ignore the args.

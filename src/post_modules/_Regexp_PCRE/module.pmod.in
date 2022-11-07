@@ -139,7 +139,7 @@ class Plain
 //!    );
 //! (4) Result: "foo from bar dot org"
 //! @endcode
-   string replace(string subject,string|function with, mixed|void ... args)
+   string replace(string subject,string|function with, mixed ... args)
    {
     int i=0;
     String.Buffer res = String.Buffer();
@@ -273,7 +273,7 @@ class Plain
     return sprintf(subst, m, @comp);
   }
 
-  string _replace_positional(string subject,string|function with, mixed|void ... args)
+  string _replace_positional(string subject,string|function with, mixed ... args)
    {
       int i=0;
       String.Buffer buf = String.Buffer();

@@ -827,7 +827,7 @@ def: modifiers optional_attributes simple_type optional_constant
 
     if ($1 & ID_GENERATOR) {
       /* Adjust the type to be a function that returns
-       * a function(mixed|void, function(mixed|void...:void)|void:X).
+       * a function(mixed|void, function(mixed...:void)|void:X).
        */
       push_type(T_VOID);
       push_type(T_MANY);
@@ -1005,7 +1005,7 @@ def: modifiers optional_attributes simple_type optional_constant
 	}
 
 	/* Adjust the type to be a function that returns
-	 * a function(mixed|void, function(mixed|void...:void)|void:X).
+         * a function(mixed|void, function(mixed...:void)|void:X).
 	 */
 	push_type(T_VOID);
 	push_type(T_MANY);
@@ -2800,7 +2800,7 @@ local_generator: TOK_IDENTIFIER start_function func_args
     push_finished_type(Pike_compiler->compiler_frame->current_return_type);
 
     /* Adjust the type to be a function that returns
-     * a function(mixed|void, function(mixed|void...:void)|void:X).
+     * a function(mixed|void, function(mixed...:void)|void:X).
      */
     push_type(T_VOID);
     push_type(T_MANY);
@@ -2938,7 +2938,7 @@ local_generator: TOK_IDENTIFIER start_function func_args
     }
 
     /* Adjust the type to be a function that returns
-     * a function(mixed|void, function(mixed|void...:void)|void:X).
+     * a function(mixed|void, function(mixed...:void)|void:X).
      */
     push_type(T_VOID);
     push_type(T_MANY);

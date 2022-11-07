@@ -4491,7 +4491,7 @@ void init_image_colortable(void)
    /* function(void:void)|"
 		"function(array(array(int)|string|object):void)|"
 		"function(object,void|int,mixed ...:void)|"
-		"function(int,int,int,void|int ...:void) */
+                "function(int,int,int,int ...:void) */
    ADD_FUNCTION("create",image_colortable_create,
 		tOr4(tFunc(tVoid,tVoid),
 		     tFunc(tOr(tArr(tColor),tStr),tVoid),
@@ -4507,7 +4507,7 @@ void init_image_colortable(void)
    /* function(void:void)|"
 		"function(array(array(int)|string|object):void)|"
 		"function(object,void|int,mixed ...:void)|"
-		"function(int,int,int,void|int ...:void) */
+                "function(int,int,int,int ...:void) */
    ADD_FUNCTION("add",image_colortable_add,
 		tOr4(tFunc(tVoid,tVoid),
 		     tFunc(tArr(tColor),tVoid),

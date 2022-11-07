@@ -265,7 +265,7 @@ void chown(string filename, int|object owner, int|object group)
 #endif
 }
 
-array find(void|function(Filesystem.Stat, mixed|void...:int) mask,
+array find(void|function(Filesystem.Stat, mixed...:int) mask,
 	   mixed|void ... extra)
 {
   array(Filesystem.Stat) res = ({});

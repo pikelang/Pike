@@ -1193,7 +1193,7 @@ this_program logout()
 object|void create_text(string subject,string body,
 			mapping options = ([]),
 			void|function callback,
-			void|mixed ...extra)
+                        mixed ...extra)
 {
    string text=replace(subject,"\n"," ")+"\n"+body;
    MiscInfo misc=MiscInfo(options);
@@ -1209,7 +1209,7 @@ object|void _create_text(string textstring,
 			 array(AuxItemInput) aux_items = ({}),
 			 int anonymous,
 			 void|function callback,
-			 void|mixed ...extra)
+                         mixed ...extra)
 {
    int|object res;
    string call;
