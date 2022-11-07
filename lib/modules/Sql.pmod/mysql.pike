@@ -425,7 +425,7 @@ string latin1_to_utf8 (string s, int extended)
 }
 
 string utf8_encode_query (string q,
-                          function(string, mixed...:string) encode_fn,
+                          function(string, __unknown__...:string) encode_fn,
 			  mixed ... extras)
 //! Encodes the appropriate sections of the query with @[encode_fn].
 //! Everything except strings prefixed by an introducer (i.e.
