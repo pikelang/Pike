@@ -376,10 +376,11 @@ class Varchars {
   inherit Chars;
   protected int min,max;
 
-  protected void create(void|int _min, void|int _max, void|string _value) {
+  protected void create(void|int _min, void|int _max,
+			string _value = " " * _min) {
     min = _min;
     max = _max;
-    set(_value || " "*min);
+    set(_value);
   }
 
   void set(string in) {

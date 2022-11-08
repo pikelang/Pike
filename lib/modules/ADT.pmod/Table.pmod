@@ -34,9 +34,9 @@ class table {
     return ap?v:v[0];
   }
 
-  this_program copy(array|void tab, array|void fie, array|void typ)
+  this_program copy(array tab = table, array fie = fields, array typ = types)
   {
-    return this_program(tab||table,fie||fields,typ||types);
+    return this_program(tab, fie, typ);
   }
 
   //! This method returns a binary string representation of the table. It is
@@ -420,7 +420,7 @@ class table {
 object Separated = class {
   protected string _string(mixed x) { return (string)x; }
 
-  object decode(string s, void|mapping options)
+  object decode(string s, mapping options = ([]))
   {
     string rowsep = options->rowsep||"\n";
     string colsep = options->colsep||"\t";
@@ -428,9 +428,8 @@ object Separated = class {
     return table(t[1..], t[0], options->types);
   }
 
-  mixed encode(object t, void|mapping options)
+  mixed encode(object t, mapping options = ([]))
   {
-    options = options || ([]);
     string rowsep = options->rowsep||"\n";
     string colsep = options->colsep||"\t";
     return Array.map(({ indices(t) }) + values(t),
@@ -457,9 +456,8 @@ object ASCII = class {
   //! @expr{"indent"@} is used with a number, the table will be
   //! indented with that number of space characters.
 
-  string encode(object t, void|mapping options)
+  string encode(object t, mapping options = ([]))
   {
-    options = options || ([]);
     mapping sizes = ([]);
     array fields = indices(t);
     string indent = " " * options->indent;
@@ -504,9 +502,8 @@ object SQL = class {
     return 0;
   }
 
-  array encode(object t, void|mapping options)
+  array encode(object t, mapping options = ([]))
   {
-    options = options||([]);
     string tablename = options->tablename||"sql_encode_default_table";
 
     array queries = ({});

@@ -125,18 +125,18 @@ mixed pop(void|int val)
 //! or 32 if none is given.
 //! @seealso
 //!   @[create]
-void reset(int|void initial_size)
+void reset(int(1..) initial_size = 32)
 {
-  arr = allocate(initial_size || 32);
+  arr = allocate(initial_size);
   ptr = 0;
 }
 
 //! An initial stack size can be given when
 //! a stack is cloned. The default value is
 //! 32.
-protected void create(int|void initial_size)
+protected void create(int(1..) initial_size = 32)
 {
-  arr = allocate(initial_size || 32);
+  arr = allocate(initial_size);
 }
 
 //! Sets the stacks content to the provided array.

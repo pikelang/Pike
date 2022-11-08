@@ -83,9 +83,9 @@ class struct {
   //! Appends a bignum @[i] as a variable string preceded with an
   //! unsigned integer of the size @[len_width] declaring the length
   //! of the string. @[len_width] defaults to 2.
-  this_program put_bignum(Gmp.mpz i, int(0..)|void len_width)
+  this_program put_bignum(Gmp.mpz i, int(1..) len_width = 2)
   {
-    return [object(this_program)]add_hstring(i->digits(256),len_width||2);
+    return [object(this_program)]add_hstring(i->digits(256), len_width);
   }
 
   //! Appends the fix sized string @[s] to the buffer.
@@ -141,9 +141,9 @@ class struct {
   }
 
   //! Reads a bignum written by @[put_bignum] from the buffer.
-  Gmp.mpz get_bignum(int|void len)
+  Gmp.mpz get_bignum(int(1..) len = 2)
   {
-      return Gmp.mpz(read_hstring(len||2),256);
+    return Gmp.mpz(read_hstring(len), 256);
   }
 
   //! Get the remaining data from the buffer and clears the buffer.
