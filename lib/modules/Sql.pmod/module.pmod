@@ -312,9 +312,9 @@ Connection Sql(string|zero host,
 //!
 //! @seealso
 //!   @[8.0::Sql.Sql], @[Connection]
-variant Connection Sql(__deprecated__(Connection) con, void|string db)
+variant Connection Sql(__deprecated__(Connection) con, string db = "")
 {
-  if (db && db != "") {
+  if (db != "") {
     con->select_db(db);
   }
 

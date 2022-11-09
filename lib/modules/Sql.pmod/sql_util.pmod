@@ -80,10 +80,9 @@ protected NullArg null_arg = NullArg();
 //!   @endarray
 array(string|mapping(string|int:mixed))
   handle_extraargs(string query, array(mixed) extraargs,
-		   void|mapping(string|int:mixed) bindings) {
+		   mapping(string|int:mixed) bindings = ([])) {
 
   array(mixed) args=allocate(sizeof(extraargs));
-  if (!bindings) bindings = ([]);
 
   int a, new_bindings;
   foreach(extraargs; int j; mixed s) {

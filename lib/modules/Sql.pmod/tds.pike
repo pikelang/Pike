@@ -1738,8 +1738,8 @@ string error()
 //!
 //! @seealso
 //!   @[Sql.Sql()]
-protected void create(string|void server, string|void database,
-		      string|void user, string|void password,
+protected void create(string|void server, string database = "default",
+		      string user = "", string password = "",
 		      mapping|void options)
 {
   if (con) {
@@ -1755,6 +1755,5 @@ protected void create(string|void server, string|void database,
   } else {
     server = "127.0.0.1";
   }
-  Connect(server, port, database || "default",
-	  user || "", password || "");
+  Connect(server, port, database, user, password);
 }

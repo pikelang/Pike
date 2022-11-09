@@ -15,12 +15,12 @@ string server_info () {
   return "sybase/10.X or 11.X";
 }
 
-void create(void|string host, void|string db, void|string user,
-	    void|string _pass, void|mapping options) {
+void create(string host = "", string db = "", string user = "",
+	    string _pass = "", void|mapping options) {
   string pass = _pass;
   _pass = "CENSORED";
-  mo::create(host||"", db||"", user||"", pass||"", options);
-  if (db && stringp(db) && sizeof(db))
+  mo::create(host, db, user, pass, options);
+  if (sizeof(db))
     mo::big_query("use " + db);
 }
 
