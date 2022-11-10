@@ -4491,6 +4491,11 @@ void fix_type_field(node *n)
     }
     break;
 
+  case F_CLEAR_LOCAL:
+    /* F_CLEAR_LOCAL is valid as an lvalue... */
+    copy_pike_type(n->type, CAR(n)->type);
+    break;
+
   case F_LOCAL:
     {
       struct compiler_frame *f = Pike_compiler->compiler_frame;

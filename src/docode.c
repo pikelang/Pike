@@ -902,6 +902,10 @@ static void emit_multi_assign(node *vals, node *vars, int no)
   }
 
   switch(var->token) {
+  case F_CLEAR_LOCAL:
+    var = CAR(var);
+    emit1(F_CLEAR_LOCAL, var->u.integer.a);
+    /* FALLTHRU */
   case F_LOCAL:
     if(var->u.integer.a >=
        find_local_frame(var->u.integer.b)->max_number_of_locals)
@@ -909,11 +913,6 @@ static void emit_multi_assign(node *vals, node *vars, int no)
 
     if(var->u.integer.b) goto normal_assign;
 
-    if (var->node_info & OPT_ASSIGNMENT) {
-      /* Initialize. */
-      emit0(F_CONST0);
-      emit1(F_ASSIGN_LOCAL_AND_POP, var->u.integer.a);
-    }
     code_expression(val, 0, "RHS");
     emit_multi_assign(vals, vars, no+1);
     emit1(F_ASSIGN_LOCAL_AND_POP, var->u.integer.a );
@@ -997,6 +996,7 @@ static int do_docode2(node *n, int flags)
   struct compilation *c = THIS_COMPILATION;
   ptrdiff_t tmp1,tmp2,tmp3;
   int ret;
+  node *tmpn;
 
   if(!n) return 0;
 
@@ -1012,6 +1012,7 @@ static int do_docode2(node *n, int flags)
 
       case F_ARRAY_LVALUE:
       case F_LVALUE_LIST:
+      case F_CLEAR_LOCAL:
       case F_LOCAL:
       case F_GLOBAL:
       case F_INDEX:
@@ -1464,28 +1465,29 @@ static int do_docode2(node *n, int flags)
       /* FALLTHRU */
     default:
       do_not_suboptimize_assign:
-      switch(CAR(n)->token)
+      tmpn = CAR(n);
+      switch(tmpn->token)
       {
       case F_GLOBAL:
-	  if(CAR(n)->u.integer.b) goto normal_assign;
+	  if(tmpn->u.integer.b) goto normal_assign;
 	  code_expression(CDR(n), 0, "RHS");
-          emit_assign_global( CAR(n)->u.integer.a, flags & DO_POP );
+          emit_assign_global( tmpn->u.integer.a, flags & DO_POP );
           break;
+      case F_CLEAR_LOCAL:
+	/* Initialize. */
+	tmpn = CAR(tmpn);
+	emit1(F_CLEAR_LOCAL, tmpn->u.integer.a);
+	/* FALLTHRU */
       case F_LOCAL:
-	if(CAR(n)->u.integer.a >=
-	   find_local_frame(CAR(n)->u.integer.b)->max_number_of_locals)
+	if(tmpn->u.integer.a >=
+	   find_local_frame(tmpn->u.integer.b)->max_number_of_locals)
 	  yyerror("Illegal to use local variable here.");
 
-	if(CAR(n)->u.integer.b) goto normal_assign;
+	if(tmpn->u.integer.b) goto normal_assign;
 
-	if (CAR(n)->node_info & OPT_ASSIGNMENT) {
-	  /* Initialize. */
-	  emit0(F_CONST0);
-	  emit1(F_ASSIGN_LOCAL_AND_POP, CAR(n)->u.integer.a);
-	}
 	code_expression(CDR(n), 0, "RHS");
 	emit1(flags & DO_POP ? F_ASSIGN_LOCAL_AND_POP:F_ASSIGN_LOCAL,
-	     CAR(n)->u.integer.a );
+	     tmpn->u.integer.a );
 	break;
 
       case F_GET_SET:
@@ -1573,20 +1575,6 @@ static int do_docode2(node *n, int flags)
       }
       return flags & DO_POP ? 0 : 1;
     }
-
-  case F_CLEAR_LOCAL:
-#ifdef PIKE_DEBUG
-    if (!CAR(n) || (CAR(n)->token != F_LOCAL) || CAR(n)->u.integer.b) {
-      print_tree(n);
-      Pike_fatal("Invalid CLEAR_LOCAL variable.\n");
-    }
-#endif
-    emit1(F_CLEAR_LOCAL, CAR(n)->u.integer.a);
-    if (!(flags & DO_POP)) {
-      emit0(F_CONST0);
-      return 1;
-    }
-    return 0;
 
   case F_LAND:
   case F_LOR:
@@ -2937,6 +2925,17 @@ static int do_docode2(node *n, int flags)
 
     }
 
+  case F_CLEAR_LOCAL:
+#ifdef PIKE_DEBUG
+    if (!CAR(n) || (CAR(n)->token != F_LOCAL) || CAR(n)->u.integer.b) {
+      print_tree(n);
+      Pike_fatal("Invalid CLEAR_LOCAL variable.\n");
+    }
+#endif
+    n = CAR(n);
+    emit1(F_CLEAR_LOCAL, n->u.integer.a);
+    /* FALLTHRU */
+
   case F_LOCAL:
     if(n->u.integer.a >=
        find_local_frame(n->u.integer.b)->max_number_of_locals)
@@ -2955,21 +2954,10 @@ static int do_docode2(node *n, int flags)
     }else{
       if(flags & WANT_LVALUE)
       {
-	if (n->node_info & OPT_ASSIGNMENT) {
-	  /* Initialize the variable. */
-	  emit0(F_CONST0);
-	  emit1(F_ASSIGN_LOCAL_AND_POP, n->u.integer.a);
-	}
 	emit1(F_LOCAL_LVALUE, n->u.integer.a);
 	return 2;
       }else{
-	if (n->node_info & OPT_ASSIGNMENT) {
-	  /* Initialize the variable. */
-	  emit0(F_CONST0);
-	  emit1(F_ASSIGN_LOCAL, n->u.integer.a);
-	} else {
-	  emit1(F_LOCAL, n->u.integer.a);
-	}
+	emit1(F_LOCAL, n->u.integer.a);
 	return 1;
       }
     }
