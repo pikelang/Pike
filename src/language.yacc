@@ -3729,10 +3729,15 @@ optional_else_part: { $$=0; }
 safe_lvalue: lvalue
   {
     if (!(THIS_COMPILATION->lex.pragmas & ID_STRICT_TYPES) && $1) {
-      if ($1->token == F_ARRAY_LVALUE) {
-	mark_lvalues_as_used(CAR($1));
-      } else if (($1->token == F_LOCAL) && !($1->u.integer.b)) {
-	Pike_compiler->compiler_frame->variable[$1->u.integer.a].flags |=
+      node *var = $1;
+      /* FIXME: Consider marking these as used always. */
+      if (var->token == F_CLEAR_LOCAL) {
+	var = CAR(var);
+      }
+      if (var->token == F_ARRAY_LVALUE) {
+	mark_lvalues_as_used(CAR(var));
+      } else if ((var->token == F_LOCAL) && !(var->u.integer.b)) {
+	Pike_compiler->compiler_frame->variable[var->u.integer.a].flags |=
 	  LOCAL_VAR_IS_USED;
       }
     }
