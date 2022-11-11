@@ -5366,8 +5366,8 @@ static void mark_lvalues_as_used(node *n)
       /* Can happen if a variable hasn't been declared. */
     } else if (var->token == F_ARRAY_LVALUE) {
       mark_lvalues_as_used(CAR(var));
-    } else if ((var->token == F_LOCAL) && !(CAR(n)->u.integer.b)) {
-      Pike_compiler->compiler_frame->variable[CAR(n)->u.integer.a].flags |=
+    } else if ((var->token == F_LOCAL) && !(var->u.integer.b)) {
+      Pike_compiler->compiler_frame->variable[var->u.integer.a].flags |=
 	LOCAL_VAR_IS_USED;
     }
     n = CDR(n);
