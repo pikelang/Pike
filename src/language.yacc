@@ -5358,11 +5358,15 @@ int add_local_name(struct pike_string *str,
 static void mark_lvalues_as_used(node *n)
 {
   while (n && n->token == F_LVALUE_LIST) {
-    if (!CAR(n)) {
+    node *var = CAR(n);
+    if (var && (var->token == F_CLEAR_LOCAL)) {
+      var = CAR(var);
+    }
+    if (!var) {
       /* Can happen if a variable hasn't been declared. */
-    } else if (CAR(n)->token == F_ARRAY_LVALUE) {
-      mark_lvalues_as_used(CAAR(n));
-    } else if ((CAR(n)->token == F_LOCAL) && !(CAR(n)->u.integer.b)) {
+    } else if (var->token == F_ARRAY_LVALUE) {
+      mark_lvalues_as_used(CAR(var));
+    } else if ((var->token == F_LOCAL) && !(CAR(n)->u.integer.b)) {
       Pike_compiler->compiler_frame->variable[CAR(n)->u.integer.a].flags |=
 	LOCAL_VAR_IS_USED;
     }
