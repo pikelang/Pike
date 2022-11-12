@@ -185,6 +185,7 @@ static struct pike_string *get_new_name(struct pike_string *prefix);
 int add_local_name(struct pike_string *, struct pike_type *, node *);
 int low_add_local_name(struct compiler_frame *,
 		       struct pike_string *, struct pike_type *, node *);
+static void mark_lvalue_as_used(node *n);
 static void mark_lvalues_as_used(node *n);
 static node *lexical_islocal(struct pike_string *);
 static node *safe_inc_enum(node *n);
@@ -3729,17 +3730,7 @@ optional_else_part: { $$=0; }
 safe_lvalue: lvalue
   {
     if (!(THIS_COMPILATION->lex.pragmas & ID_STRICT_TYPES) && $1) {
-      node *var = $1;
-      /* FIXME: Consider marking these as used always. */
-      if (var->token == F_CLEAR_LOCAL) {
-	var = CAR(var);
-      }
-      if (var->token == F_ARRAY_LVALUE) {
-	mark_lvalues_as_used(CAR(var));
-      } else if ((var->token == F_LOCAL) && !(var->u.integer.b)) {
-	Pike_compiler->compiler_frame->variable[var->u.integer.a].flags |=
-	  LOCAL_VAR_IS_USED;
-      }
+      mark_lvalue_as_used($1);
     }
   }
   | error { $$=0; }
@@ -5358,23 +5349,35 @@ int add_local_name(struct pike_string *str,
 			    def);
 }
 
+/* Mark local variable as used. */
+static void mark_lvalue_as_used(node *n)
+{
+  while (n) {
+    switch(n->token) {
+    case F_CLEAR_LOCAL:
+      n = CAR(n);
+      break;
+    case F_LOCAL:
+      if (!n->u.integer.b) {
+	Pike_compiler->compiler_frame->variable[n->u.integer.a].flags |=
+	  LOCAL_VAR_IS_USED;
+      }
+      return;
+    case F_ARRAY_LVALUE:
+      mark_lvalues_as_used(CAR(n));
+      return;
+    default:
+      return;
+    }
+  }
+}
+
 /* Mark local variables declared in a multi-assign or sscanf expression
  * as used. */
 static void mark_lvalues_as_used(node *n)
 {
-  while (n && n->token == F_LVALUE_LIST) {
-    node *var = CAR(n);
-    if (var && (var->token == F_CLEAR_LOCAL)) {
-      var = CAR(var);
-    }
-    if (!var) {
-      /* Can happen if a variable hasn't been declared. */
-    } else if (var->token == F_ARRAY_LVALUE) {
-      mark_lvalues_as_used(CAR(var));
-    } else if ((var->token == F_LOCAL) && !(var->u.integer.b)) {
-      Pike_compiler->compiler_frame->variable[var->u.integer.a].flags |=
-	LOCAL_VAR_IS_USED;
-    }
+  while (n && (n->token == F_LVALUE_LIST)) {
+    mark_lvalue_as_used(CAR(n));
     n = CDR(n);
   }
 }
