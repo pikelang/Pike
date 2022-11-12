@@ -279,7 +279,7 @@ mixed call(string api_method, void|ParamsArg params,
   case "":
     // Ancient.
     if (_auth && !_auth->is_expired()) {
-      if (string a = _auth->access_token) {
+      if (string|zero a = _auth->access_token) {
 	p += Web.Auth.Param(ACCESS_TOKEN_PARAM_NAME, a);
       }
     }
@@ -290,9 +290,12 @@ mixed call(string api_method, void|ParamsArg params,
 	      MIME.encode_base64(_auth->get_client_id() + ":" +
 				 _auth->get_client_secret()));
     break;
-  default:
-    request_headers->Authorization =
-      sprintf("%s %s", AUTHORIZATION_METHOD, _auth->access_token);
+  default: {
+      if (string|zero a = _auth->access_token) {
+        request_headers->Authorization =
+          sprintf("%s %s", AUTHORIZATION_METHOD, a);
+      }
+    }
     break;
   }
 
