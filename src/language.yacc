@@ -191,7 +191,7 @@ static node *lexical_islocal(struct pike_string *);
 static node *safe_inc_enum(node *n);
 static node *find_versioned_identifier(struct pike_string *identifier,
 				       int major, int minor);
-static node *set_default_value(int e, node *def);
+static node *set_default_value(int e);
 static int call_handle_import(void);
 static void update_current_type(void);
 
@@ -1049,11 +1049,7 @@ def: modifiers optional_attributes simple_type optional_constant
 	{
 	  my_yyerror("Missing name for argument %d.", e - $<number>8);
 	} else {
-	  node *def = Pike_compiler->compiler_frame->variable[e].def;
-	  if (def) {
-	    check_args =
-	      mknode(F_COMMA_EXPR, check_args, set_default_value(e, def));
-	  }
+	  check_args = mknode(F_COMMA_EXPR, check_args, set_default_value(e));
 
 	  if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
 	      /* FIXME: Should probably use some other flag. */
@@ -2564,7 +2560,7 @@ lambda: TOK_LAMBDA line_number_info implicit_identifier start_lambda
 	push_type(T_VOID);
 	push_type(T_OR);
 
-	$7 = mknode(F_COMMA_EXPR, set_default_value(e, def), $7);
+	$7 = mknode(F_COMMA_EXPR, set_default_value(e), $7);
       }
       push_type(T_FUNCTION);
     }
@@ -2726,10 +2722,7 @@ local_function: TOK_IDENTIFIER start_function func_args
 
     if (Pike_compiler->varargs) e--;
     for(; e>=0; e--) {
-      node *def = Pike_compiler->compiler_frame->variable[e].def;
-      if (def) {
-	$5 = mknode(F_COMMA_EXPR, set_default_value(e, def), $5);
-      }
+      $5 = mknode(F_COMMA_EXPR, set_default_value(e), $5);
     }
 
     $5=mknode(F_COMMA_EXPR,$5,mknode(F_RETURN,mkintnode(0),0));
@@ -2975,10 +2968,7 @@ local_generator: TOK_IDENTIFIER start_function func_args
 
     if(Pike_compiler->varargs) e--;
     for(; e>=0; e--) {
-      node *def = Pike_compiler->compiler_frame->variable[e].def;
-      if (def) {
-	$5 = mknode(F_COMMA_EXPR, set_default_value(e, def), $5);
-      }
+      $5 = mknode(F_COMMA_EXPR, set_default_value(e), $5);
     }
 
     debug_malloc_touch($5);
@@ -3199,7 +3189,7 @@ optional_create_arguments: /* empty */ { $$ = 0; }
 	push_type(T_VOID);
 	push_type(T_OR);
 
-	n = mknode(F_COMMA_EXPR, set_default_value(e, def), n);
+	n = mknode(F_COMMA_EXPR, set_default_value(e), n);
       }
 
       push_type(T_FUNCTION);
@@ -5590,12 +5580,27 @@ static node *find_versioned_identifier(struct pike_string *identifier,
   return res;
 }
 
-static node *set_default_value(int e, node *def)
+static node *set_default_value(int e)
 {
-  add_ref(def);
+  node *def = Pike_compiler->compiler_frame->variable[e].def;
+  struct pike_type *type = Pike_compiler->compiler_frame->variable[e].type;
+  struct pike_string *name = Pike_compiler->compiler_frame->variable[e].name;
 
-  if (Pike_compiler->compiler_frame->variable[e].type->flags &
-      PT_FLAG_NULLABLE) {
+  if (!init) return NULL;
+
+  if (type->flags & PT_FLAG_VOIDABLE) {
+    if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
+      yytype_report(REPORT_WARNING,
+		    NULL, 0, NULL,
+		    NULL, 0, type,
+		    0, "Extraneous void in type for variable with default %S.",
+		    name);
+    }
+  }
+
+  add_ref(init);
+
+  if (type->flags & PT_FLAG_NULLABLE) {
     /* if (undefinedp($e)) { $e = def; } */
     return mknode(F_POP_VALUE,
 		  mknode(F_LAND,
