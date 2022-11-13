@@ -5586,7 +5586,7 @@ static node *set_default_value(int e)
   struct pike_type *type = Pike_compiler->compiler_frame->variable[e].type;
   struct pike_string *name = Pike_compiler->compiler_frame->variable[e].name;
 
-  if (!init) return NULL;
+  if (!def) return NULL;
 
   if (type->flags & PT_FLAG_VOIDABLE) {
     if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
@@ -5598,7 +5598,7 @@ static node *set_default_value(int e)
     }
   }
 
-  add_ref(init);
+  add_ref(def);
 
   if (type->flags & PT_FLAG_NULLABLE) {
     /* if (undefinedp($e)) { $e = def; } */
