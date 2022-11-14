@@ -21,15 +21,18 @@ typedef void (*c_fun)(INT32);
 
 struct compiler_frame;		/* Avoid gcc warning. */
 
-int islocal(struct pike_string *str);
+/*
+ * Prototypes for functions in language.yacc.
+ */
 int low_add_local_name(struct compiler_frame *frame,
                        struct pike_string *str,
                        struct pike_type *type,
-                       node *def);
+                       node *def,
+		       node *init);
 int add_local_name(struct pike_string *str,
                    struct pike_type *type,
-                   node *def);
-int verify_declared(struct pike_string *str);
+                   node *init);
+int islocal(struct pike_string *str);
 
 
 #ifndef STRUCT_NODE_S_DECLARED
@@ -51,7 +54,9 @@ struct local_variable
 {
   struct pike_string *name;
   struct pike_type *type;
-  node *def;
+  node *def;		/* Definition; typically a local function or constant.
+			 */
+  node *init;		/* Initial/default value. */
   /* FIXME: Consider moving these two to the def node above? */
   struct pike_string *file;
   int line;

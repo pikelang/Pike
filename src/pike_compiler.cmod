@@ -3316,10 +3316,12 @@ node *low_pop_local_variables(int level, node *block)
   struct compilation *c = THIS_COMPILATION;
   while(Pike_compiler->compiler_frame->current_number_of_locals > level)
   {
+    struct local_variable *var;
     int e;
     e=--(Pike_compiler->compiler_frame->current_number_of_locals);
+    var = Pike_compiler->compiler_frame->variable + e;
+
     if (block) {
-      struct local_variable *var = Pike_compiler->compiler_frame->variable + e;
       /* NB: We assign 0 to all dead local variables here regardless of
        *     their types, so we use F_CLEAR_LOCAL rather than F_ASSIGN
        *     with 0 to avoid complaints about type mismatches (which
@@ -3366,21 +3368,23 @@ node *low_pop_local_variables(int level, node *block)
       }
     }
     if ((Pike_compiler->compiler_pass == COMPILER_PASS_LAST) &&
-	!(Pike_compiler->compiler_frame->variable[e].flags &
-	  LOCAL_VAR_IS_USED)) {
-      ref_push_string(Pike_compiler->compiler_frame->variable[e].name);
+	!(var->flags & LOCAL_VAR_IS_USED)) {
+      ref_push_string(var->name);
       low_yyreport(REPORT_WARNING,
-		   Pike_compiler->compiler_frame->variable[e].file,
-		   Pike_compiler->compiler_frame->variable[e].line,
+		   var->file,
+		   var->line,
 		   parser_system_string,
 		   1, "Unused local variable %s.");
     }
-    free_string(Pike_compiler->compiler_frame->variable[e].name);
-    free_type(Pike_compiler->compiler_frame->variable[e].type);
-    if(Pike_compiler->compiler_frame->variable[e].def)
-      free_node(Pike_compiler->compiler_frame->variable[e].def);
+    free_string(var->name);
+    free_type(var->type);
+    if(var->def) {
+      free_node(var->def);
 
+    }
     free_string(Pike_compiler->compiler_frame->variable[e].file);
+    if(var->init)
+      free_node(var->init);
   }
   return block;
 }
@@ -3396,22 +3400,21 @@ node *pop_local_variables(int level, node *block)
      *        actually is used from a nested scope. */
     for(;level<Pike_compiler->compiler_frame->min_number_of_locals;level++)
     {
+      struct local_variable *var =
+	Pike_compiler->compiler_frame->variable + level;
       if ((Pike_compiler->compiler_pass == COMPILER_PASS_LAST) &&
-	  !(Pike_compiler->compiler_frame->variable[level].flags &
-	    LOCAL_VAR_IS_USED)) {
-	ref_push_string(Pike_compiler->compiler_frame->variable[level].name);
+	  !(var->flags & LOCAL_VAR_IS_USED)) {
+	ref_push_string(var->name);
 	low_yyreport(REPORT_WARNING,
-		     Pike_compiler->compiler_frame->variable[level].file,
-		     Pike_compiler->compiler_frame->variable[level].line,
+		     var->file,
+		     var->line,
 		     parser_system_string,
 		     1, "Unused local variable %s.");
 	/* Make sure we only warn once... */
-	Pike_compiler->compiler_frame->variable[level].flags |=
-	  LOCAL_VAR_IS_USED;
+	var->flags |= LOCAL_VAR_IS_USED;
       }
-      free_string(Pike_compiler->compiler_frame->variable[level].name);
-      copy_shared_string(Pike_compiler->compiler_frame->variable[level].name,
-			 empty_pike_string);
+      free_string(var->name);
+      copy_shared_string(var->name, empty_pike_string);
       /* FIXME: Do we need to keep the filenames? */
     }
   }

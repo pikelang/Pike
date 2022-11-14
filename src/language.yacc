@@ -180,11 +180,12 @@
 
 /* #define LAMBDA_DEBUG	1 */
 
+/*
+ * Prototypes for static functions.
+ * NB: Other functions have their prototypes in las.h.
+ */
 static void yyerror_reserved(const char *keyword);
 static struct pike_string *get_new_name(struct pike_string *prefix);
-int add_local_name(struct pike_string *, struct pike_type *, node *);
-int low_add_local_name(struct compiler_frame *,
-		       struct pike_string *, struct pike_type *, node *);
 static void mark_lvalue_as_used(node *n);
 static void mark_lvalues_as_used(node *n);
 static node *lexical_islocal(struct pike_string *);
@@ -900,7 +901,7 @@ def: modifiers optional_attributes simple_type optional_constant
     for(; e >= $<number>8; e--)
     {
       push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
-      if (Pike_compiler->compiler_frame->variable[e].def) {
+      if (Pike_compiler->compiler_frame->variable[e].init) {
 	push_type(T_VOID);
 	push_type(T_OR);
       }
@@ -1182,9 +1183,9 @@ def: modifiers optional_attributes simple_type optional_constant
       if (Pike_compiler->compiler_pass == COMPILER_PASS_FIRST) {
 	for(e=0; e<$<number>8+$9; e++)
 	{
-	  node *def = Pike_compiler->compiler_frame->variable[e].def;
-	  if (def) {
-	    low_yyreport(REPORT_WARNING, def->current_file, def->line_number,
+	  node *init = Pike_compiler->compiler_frame->variable[e].init;
+	  if (init) {
+	    low_yyreport(REPORT_WARNING, init->current_file, init->line_number,
 			 parser_system_string, 0,
 			 "Argument default values are not supported in prototypes.");
 	  }
@@ -2327,7 +2328,7 @@ local_constant_name: TOK_IDENTIFIER '=' safe_expr0
     }
     if(!type) type = mixed_type_string;
     add_ref(type);
-    add_local_name($1->u.sval.u.string, type, $3);
+    low_add_local_name(NULL, $1->u.sval.u.string, type, $3, NULL);
     /* Note: Intentionally not marked as used. */
     free_node($1);
   }
@@ -2554,9 +2555,9 @@ lambda: TOK_LAMBDA line_number_info implicit_identifier start_lambda
     Pike_compiler->varargs=0;
     push_type(T_MANY);
     for(; e>=0; e--) {
-      node *def = Pike_compiler->compiler_frame->variable[e].def;
+      node *init = Pike_compiler->compiler_frame->variable[e].init;
       push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
-      if (def) {
+      if (init) {
 	push_type(T_VOID);
 	push_type(T_OR);
 
@@ -2659,7 +2660,7 @@ local_function: TOK_IDENTIFIER start_function func_args
     push_type(T_MANY);
     for(; e>=0; e--) {
       push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
-      if (Pike_compiler->compiler_frame->variable[e].def) {
+      if (Pike_compiler->compiler_frame->variable[e].init) {
 	push_type(T_VOID);
 	push_type(T_OR);
       }
@@ -2704,7 +2705,7 @@ local_function: TOK_IDENTIFIER start_function func_args
     }
 
     low_add_local_name(Pike_compiler->compiler_frame->previous,
-		       $1->u.sval.u.string, type, n);
+		       $1->u.sval.u.string, type, n, NULL);
 
     $<number>$=id;
     free_string(name);
@@ -2851,7 +2852,7 @@ local_generator: TOK_IDENTIFIER start_function func_args
     push_type(T_MANY);
     for(; e>=0; e--) {
       push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
-      if (Pike_compiler->compiler_frame->variable[e].def) {
+      if (Pike_compiler->compiler_frame->variable[e].init) {
 	push_type(T_VOID);
 	push_type(T_OR);
       }
@@ -2896,7 +2897,7 @@ local_generator: TOK_IDENTIFIER start_function func_args
     }
 
     low_add_local_name(Pike_compiler->compiler_frame->previous,
-		       $1->u.sval.u.string, type, n);
+		       $1->u.sval.u.string, type, n, NULL);
 
     $<number>$=id;
     free_string(name);
@@ -3151,7 +3152,7 @@ optional_create_arguments: /* empty */ { $$ = 0; }
     push_type(T_MANY);
 
     while (e-- > 0) {
-      node *def = Pike_compiler->compiler_frame->variable[e].def;
+      node *init = Pike_compiler->compiler_frame->variable[e].init;
 
       push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
 
@@ -3185,7 +3186,7 @@ optional_create_arguments: /* empty */ { $$ = 0; }
 	}
       }
 
-      if (def) {
+      if (init) {
 	push_type(T_VOID);
 	push_type(T_OR);
 
@@ -5255,8 +5256,12 @@ static int low_islocal(struct compiler_frame *f,
 int low_add_local_name(struct compiler_frame *frame,
 		       struct pike_string *str,
 		       struct pike_type *type,
-		       node *def)
+		       node *def,
+		       node *init)
 {
+  if (!frame) {
+    frame = Pike_compiler->compiler_frame;
+  }
 
   if (str->len) {
     int tmp=low_islocal(frame,str);
@@ -5269,11 +5274,12 @@ int low_add_local_name(struct compiler_frame *frame,
 
     if(type == void_type_string)
     {
-      my_yyerror("Local variable %S is void.\n", str);
+      my_yyerror("Local variable %S is void.", str);
     }
   }
 
   debug_malloc_touch(def);
+  debug_malloc_touch(init);
   debug_malloc_touch(type);
   debug_malloc_touch(str);
   /* NOTE: The number of locals can be 0..255 (not 256), due to
@@ -5285,6 +5291,7 @@ int low_add_local_name(struct compiler_frame *frame,
 	       str);
     free_type(type);
     if (def) free_node(def);
+    if (init) free_node(init);
     return -1;
   } else {
     int var = frame->current_number_of_locals;
@@ -5301,6 +5308,7 @@ int low_add_local_name(struct compiler_frame *frame,
     frame->variable[var].name = str;
     reference_shared_string(str);
     frame->variable[var].def = def;
+    frame->variable[var].init = init;
 
     frame->variable[var].line = THIS_COMPILATION->lex.current_line;
     copy_shared_string(frame->variable[var].file,
@@ -5328,15 +5336,12 @@ int low_add_local_name(struct compiler_frame *frame,
 
 /* argument must be a shared string */
 /* Note that this function eats a reference to 'type' */
-/* If def is nonzero, it also eats a ref to def */
+/* If init is nonzero, it also eats a ref to init */
 int add_local_name(struct pike_string *str,
 		   struct pike_type *type,
-		   node *def)
+		   node *init)
 {
-  return low_add_local_name(Pike_compiler->compiler_frame,
-			    str,
-			    type,
-			    def);
+  return low_add_local_name(NULL, str, type, NULL, init);
 }
 
 /* Mark local variable as used. */
@@ -5428,7 +5433,7 @@ static node *add_protected_variable(struct pike_string *name,
   } else if (depth) {
     f->lexical_scope|=SCOPE_SCOPE_USED;
     tmp_name = get_new_name(name);
-    id = low_add_local_name(f, tmp_name, type, NULL);
+    id = low_add_local_name(f, tmp_name, type, NULL, NULL);
     free_string(tmp_name);
     if(f->min_number_of_locals < id+1)
       f->min_number_of_locals = id+1;
@@ -5438,7 +5443,7 @@ static node *add_protected_variable(struct pike_string *name,
     }
     n = mklocalnode(id, depth);
   }
-  id = add_local_name(name, type, n);
+  id = low_add_local_name(NULL, name, type, n, NULL);
   if (id >= 0) {
     if (initializer) {
       return mknode(F_ASSIGN, mklocalnode(id,0), initializer);
@@ -5582,11 +5587,11 @@ static node *find_versioned_identifier(struct pike_string *identifier,
 
 static node *set_default_value(int e)
 {
-  node *def = Pike_compiler->compiler_frame->variable[e].def;
+  node *init = Pike_compiler->compiler_frame->variable[e].init;
   struct pike_type *type = Pike_compiler->compiler_frame->variable[e].type;
   struct pike_string *name = Pike_compiler->compiler_frame->variable[e].name;
 
-  if (!def) return NULL;
+  if (!init) return NULL;
 
   if (type->flags & PT_FLAG_VOIDABLE) {
     if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
@@ -5598,7 +5603,7 @@ static node *set_default_value(int e)
     }
   }
 
-  add_ref(def);
+  add_ref(init);
 
   if (type->flags & PT_FLAG_NULLABLE) {
     /* if (undefinedp($e)) { $e = def; } */
@@ -5608,7 +5613,7 @@ static node *set_default_value(int e)
 					mklocalnode(e, 0)),
 			 mknode(F_ASSIGN,
 				mklocalnode(e, 0),
-				def)), NULL);
+				init)), NULL);
   }
 
   /* if (!$e) { $e = def; } */
@@ -5617,7 +5622,7 @@ static node *set_default_value(int e)
 		       mklocalnode(e, 0),
 		       mknode(F_ASSIGN,
 			      mklocalnode(e, 0),
-			      def)), NULL);
+			      init)), NULL);
 }
 
 static int call_handle_import(void)
