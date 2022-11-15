@@ -3805,6 +3805,10 @@ void fix_type_field(node *n)
   case F_POW_EQ:
   case F_MOD_EQ:
   case F_DIV_EQ:
+  case F_INC:
+  case F_DEC:
+  case F_POST_INC:
+  case F_POST_DEC:
     /*  <lval> <op>= <rval> */
     {
       const char *efun_name = NULL;
@@ -3832,9 +3836,13 @@ void fix_type_field(node *n)
 	efun_name = "`>>";
 	break;
       case F_ADD_EQ:
+      case F_INC:
+      case F_POST_INC:
 	efun_name = "`+";
 	break;
       case F_SUB_EQ:
+      case F_DEC:
+      case F_POST_DEC:
 	efun_name = "`-";
 	break;
       case F_MULT_EQ:
@@ -4206,19 +4214,6 @@ void fix_type_field(node *n)
     }
 
     n->type = or_pike_types(CADR(n)->type, CDDR(n)->type, 0);
-    break;
-
-  case F_INC:
-  case F_DEC:
-  case F_POST_INC:
-  case F_POST_DEC:
-    if (CAR(n)) {
-      /* The expression gets the type from the variable. */
-      /* FIXME: Ought to strip non-applicable subtypes from the type. */
-      copy_pike_type(n->type, CAR(n)->type);
-    } else {
-      copy_pike_type(n->type, mixed_type_string);
-    }
     break;
 
   case F_RETURN:

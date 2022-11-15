@@ -607,7 +607,7 @@ F_COMMA_EXPR(F_INITIALIZE(0, 1), 2):
   F_COMMA_EXPR(F_ASSIGN($0, $1), $2);
 
 // x = expr; --x;  ==>  x = expr-1;
-F_COMMA_EXPR(F_ASSIGN(1 = +[!depend_p($$, $$)], 0), F_DEC($1, -)):
+F_COMMA_EXPR(F_ASSIGN(1 = +[!depend_p($$, $$)], 0), F_DEC($1, *)):
   {
     struct pike_type *t = $1->type;
     $$ = mknode(F_ASSIGN, $1,
@@ -619,7 +619,7 @@ F_COMMA_EXPR(F_ASSIGN(1 = +[!depend_p($$, $$)], 0), F_DEC($1, -)):
   ;
 
 // x = expr; ++x;  ==>  x = expr+1;
-F_COMMA_EXPR(F_ASSIGN(1 = +[!depend_p($$, $$)], 0), F_INC($1, -)):
+F_COMMA_EXPR(F_ASSIGN(1 = +[!depend_p($$, $$)], 0), F_INC($1, *)):
   {
     struct pike_type *t = $1->type;
     $$ = mknode(F_ASSIGN, $1,
@@ -647,7 +647,7 @@ F_COMMA_EXPR(F_ASSIGN(1 = +[!depend_p($$, $$)], 0),
 
 // x = expr; ++x;  ==>  x = expr+1;
 F_COMMA_EXPR(F_ASSIGN(1 = +[!depend_p($$, $$)], 0),
-	     F_COMMA_EXPR(F_INC($1, -), 2)):
+	     F_COMMA_EXPR(F_INC($1, *), 2)):
   {
     struct pike_type *t = $1->type;
     $$ = mknode(F_COMMA_EXPR,
@@ -681,7 +681,7 @@ F_COMMA_EXPR(F_ASSIGN(1 = F_LOCAL, 0),
 F_COMMA_EXPR(F_ASSIGN(1 = F_LOCAL, 0),
 	     F_INC(F_LOCAL
 		   [ $1->u.integer.a == $$->u.integer.a ]
-		   [ $1->u.integer.b == $$->u.integer.b ], -)):
+		   [ $1->u.integer.b == $$->u.integer.b ], *)):
   {
     struct pike_type *t = $1->type;
     $$ = mknode(F_ASSIGN, $1,
@@ -713,7 +713,7 @@ F_COMMA_EXPR(F_ASSIGN(1 = F_LOCAL, 0),
 F_COMMA_EXPR(F_ASSIGN(1 = F_LOCAL, 0),
 	     F_COMMA_EXPR(F_INC(F_LOCAL
 				[$1->u.integer.a == $$->u.integer.a]
-				[$1->u.integer.b == $$->u.integer.b], -), 2)):
+				[$1->u.integer.b == $$->u.integer.b], *), 2)):
   {
     struct pike_type *t = $1->type;
     $$ = mknode(F_COMMA_EXPR,
@@ -1030,12 +1030,12 @@ F_ADD_EQ(0 [ $$->token != F_AUTO_MAP_MARKER ],
 // a += 1  ->  ++a
 F_ADD_EQ(0, 1 = F_CONSTANT[TYPEOF($$->u.sval) == T_INT]
 	 [($$->u.sval.u.integer) == 1]):
-  F_INC($0, -);
+  F_INC($0, 1);
 
 // a += -1  ->  --a
 F_ADD_EQ(0, 1 = F_CONSTANT[TYPEOF($$->u.sval) == T_INT]
 	 [($$->u.sval.u.integer) == -1]):
-  F_DEC($0, -);
+  F_DEC($0, 1);
 
 
 // a -= 0  ->  a
@@ -1047,12 +1047,12 @@ F_SUB_EQ(0 [ $$->token != F_AUTO_MAP_MARKER ],
 // a -= 1  ->  --a
 F_SUB_EQ(0, 1 = F_CONSTANT[TYPEOF($$->u.sval) == T_INT]
 	 [($$->u.sval.u.integer) == 1]):
-  F_DEC($0, -);
+  F_DEC($0, 1);
 
 // a -= -1  ->  ++a
 F_SUB_EQ(0, 1 = F_CONSTANT[TYPEOF($$->u.sval) == T_INT]
 	 [($$->u.sval.u.integer) == -1]):
-  F_INC($0, -);
+  F_INC($0, 1);
 
 // a += ({ args... })  ->  F_APPEND_ARRAY(a, args...)
 F_ADD_EQ(0, F_APPLY(F_CONSTANT
@@ -1542,7 +1542,8 @@ F_FOR(0 = F_APPLY(1 = F_CONSTANT
     ));
 
     tmp1 = mknode(F_COMMA_EXPR, mkcastnode(void_type_string,
-					   mknode(inc ? F_DEC : F_INC, tmp1, 0)), tmp2);
+					   mknode(inc ? F_DEC : F_INC, tmp1,
+						  mkintnode(1))), tmp2);
     goto use_tmp1;
   }
  next_for_opt:
@@ -1580,7 +1581,7 @@ F_INC_LOOP(F_VAL_LVAL(0 = +[ !($$->tree_info & (OPT_SIDE_EFFECT|OPT_ASSIGNMENT|
 						OPT_CASE|OPT_CONTINUE|
 						OPT_BREAK|OPT_RETURN)) ]),
 	   -):
-  F_POP_VALUE('?'(F_LT(F_INC($1, -), $0), ':'(F_ASSIGN($1, $0), -)), -);
+  F_POP_VALUE('?'(F_LT(F_INC($1, 1), $0), ':'(F_ASSIGN($1, $0), -)), -);
 
 // Decremental loop with empty body ==> assignment.
 F_DEC_LOOP(F_VAL_LVAL(0 = +[ !($$->tree_info & (OPT_SIDE_EFFECT|OPT_ASSIGNMENT|
@@ -1590,7 +1591,7 @@ F_DEC_LOOP(F_VAL_LVAL(0 = +[ !($$->tree_info & (OPT_SIDE_EFFECT|OPT_ASSIGNMENT|
 						OPT_CASE|OPT_CONTINUE|
 						OPT_BREAK|OPT_RETURN)) ]),
 	   -):
-  F_POP_VALUE('?'(F_GT(F_DEC($1, -), $0), ':'(F_ASSIGN($1, $0), -)), -);
+  F_POP_VALUE('?'(F_GT(F_DEC($1, 1), $0), ':'(F_ASSIGN($1, $0), -)), -);
 
 // // If the loop variable is unused, we can throw it away.
 // F_DEC_LOOP(F_VAL_LVAL(0,
@@ -1618,25 +1619,25 @@ F_LOOP(0, F_POP_VALUE(1, -)):
 // loop(n) ++x;  ==>  x+=n;
 F_LOOP(0 = +[ !depend_p($$, $$) ],
        F_INC [ pike_types_le($$->type, int_type_string, 0, 0) ]
-       (1 = +[ !depend_p($$, $$) ], -)):
+       (1 = +[ !depend_p($$, $$) ], *)):
   F_POP_VALUE(F_ADD_EQ($1, $0), -);
 
 // loop(n) x++;  ==>  x+=n;
 F_LOOP(0 = +[ !depend_p($$, $$) ],
        F_POST_INC [ pike_types_le($$->type, int_type_string, 0, 0) ]
-       (1 = +[ !depend_p($$, $$) ], -)):
+       (1 = +[ !depend_p($$, $$) ], *)):
   F_POP_VALUE(F_ADD_EQ($1, $0), -);
 
 // loop(n) --x;  ==>  x-=n;
 F_LOOP(0 = +[ !depend_p($$, $$) ],
        F_DEC [ pike_types_le($$->type, int_type_string, 0, 0) ]
-       (1 = +[ !depend_p($$, $$) ], -)):
+       (1 = +[ !depend_p($$, $$) ], *)):
   F_POP_VALUE(F_SUB_EQ($1, $0), -);
 
 // loop(n) x--;  ==>  x-=n;
 F_LOOP(0 = +[ !depend_p($$, $$) ],
        F_POST_DEC [ pike_types_le($$->type, int_type_string, 0, 0) ]
-       (1 = +[ !depend_p($$, $$) ], -)):
+       (1 = +[ !depend_p($$, $$) ], *)):
   F_POP_VALUE(F_SUB_EQ($1, $0), -);
 
 // loop(n) x+=k;  ==> if (n > 0) x += k*n;

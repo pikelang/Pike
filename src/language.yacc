@@ -4042,8 +4042,8 @@ expr2: expr3
     $$ = mksoftcastnode($1->u.sval.u.type, $2);
     free_node($1);
   }
-  | TOK_INC expr4       { $$=mknode(F_INC,$2,0); }
-  | TOK_DEC expr4       { $$=mknode(F_DEC,$2,0); }
+  | TOK_INC expr4       { $$ = mknode(F_INC, $2, mkintnode(1)); }
+  | TOK_DEC expr4       { $$ = mknode(F_DEC, $2, mkintnode(1)); }
   | TOK_NOT expr2        { $$=mkopernode("`!",$2,0); }
   | '~' expr2
   {
@@ -4067,8 +4067,8 @@ expr2: expr3
   ;
 
 expr3: expr4
-  | expr4 TOK_INC       { $$=mknode(F_POST_INC,$1,0); }
-  | expr4 TOK_DEC       { $$=mknode(F_POST_DEC,$1,0); }
+  | expr4 TOK_INC       { $$ = mknode(F_POST_INC, $1, mkintnode(1)); }
+  | expr4 TOK_DEC       { $$ = mknode(F_POST_DEC, $1, mkintnode(1)); }
   ;
 
 /* FIXMEs
