@@ -3928,6 +3928,14 @@ void fix_type_field(node *n)
 			  NULL, 0, f,
 			  0, "Bad type in assignment.");
 	  } else {
+#if 0
+	    /* FIXME: Disabled due to there being no syntax to cast
+	     *        the source type.
+	     *
+	     * Consider:
+	     *   int(2bit) i = 1;
+	     *   i--;	// Warning that int(-1..2) can't be assigned to i.
+	     */
 	    if ((c->lex.pragmas & ID_STRICT_TYPES) &&
 		(f != zero_type_string)) {
 	      struct pike_string *t1 = describe_type(f);
@@ -3943,6 +3951,7 @@ void fix_type_field(node *n)
 	      free_string(t2);
 	      free_string(t1);
 	    }
+#endif /* 0 */
 #if 0
 	    if (runtime_options & RUNTIME_CHECK_TYPES) {
 	      /* The following is NOT correct code! */
