@@ -1,0 +1,54 @@
+subject: Pike 8.0.1786: Synch with Roxen 7.0.730. Crypto.DSA, Concurrent.Promise, Standards.{EXIF,IIM}, Web.API
+from: fec9b7f5bf9caacb975c668c95c54eca364ee120
+to: 16a79a4bb257b4cf8a25ec47e7669cd329a6dcfe
+originator: Henrik Grubbström (Grubba) <grubba@grubba.org>
+depends: 2022-03-01T144018
+restart: true
+
+Synch with Roxen 7.0.730/Pike 8.0.1786.
+
+Multiple changes:
+
+• Standards.IIM: Fix alignment of Photoshop 6 block scanner.
+
+https://www.adobe.com/devnet-apps/photoshop/fileformatashtml/
+says that the pascal string containing the description text
+is NUL-padded to an even length.
+
+Fixes #10094.
+
+• Crypto.DSA: Fix rejection of signatures with offset r and/or s.
+
+Fixes #10077.
+
+• Protocols.TELNET: Avoid backtrace when fd is gone.
+
+  Don't stringify missing data in readline_callback() but instead let the next callback handle EOF.
+
+• Concurrent.Promise: Disable debug output.
+
+• Web.Api: Accept all 200-series result codes as success.
+
+Eg Github uses status code 202 on success.
+
+• Web.Api: Authenticate with the Authorization header by default.
+
+Sending OAuth authorization information via query variables has been
+deprecated by RFC6750 (and others), and some endpoints (eg GitHub)
+do no longer support the old method.
+
+Switch to using
+
+  Authorization: Bearer <access_token>
+
+by default.
+
+Also updates Web.Api.Github accordingly.
+
+• Standards.EXIF: Improved robustness of IFD parser.
+
+This notably makes the IFD parser stop attempt to parse IFDs
+after the EXIF IFD. It seems that it is common for the EXIF
+IFD to not be followed by an IFD list terminator.
+
+Also adds some references to the EXIF 2.2 standard.
