@@ -1,0 +1,9 @@
+Modified files:
+  pike/lib/modules/Concurrent.pmod
+  pike/lib/modules/Crypto.pmod/DSA.pmod
+  pike/lib/modules/Debug.pmod/module.pmod
+  pike/lib/modules/Protocols.pmod/TELNET.pmod
+  pike/lib/modules/Standards.pmod/EXIF.pmod
+  pike/lib/modules/Standards.pmod/IIM.pmod
+  pike/lib/modules/Web.pmod/Api.pmod/Api.pike
+  pike/lib/modules/Web.pmod/Api.pmod/Github.pmod
