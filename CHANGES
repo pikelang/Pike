@@ -201,6 +201,9 @@ o Compiler
   - The compiler could get confused by combinations of labels
     with inline functions or constant expressions.
 
+  - The type checker now checks that operator assignment
+    expressions are valid.
+
 o Runtime
 
   The runtime could get confused by PROGRAM_DESTRUCT_IMMEDIATE
