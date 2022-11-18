@@ -160,7 +160,7 @@ class Process
   //!   @[split_quoted_string()], @[Tools.Standalone.forkd],
   //!   @[set_forkd_default()], @[get_forkd_default()]
   protected void create( string|array(string) command_args,
-			 void|mapping(string:mixed) modifiers )
+			 mapping(string:mixed) modifiers = ([]) )
   {
     if( stringp( command_args ) ) {
       command_args = split_quoted_string( [string]command_args
@@ -170,7 +170,7 @@ class Process
 				  );
     }
 
-    mapping(string:mixed) new_modifiers = (modifiers || ([])) + ([]);
+    mapping(string:mixed) new_modifiers = modifiers + ([]);
 
     if (new_modifiers->keep_signals) {
       // This option is currently not supported with forkd.
@@ -1034,7 +1034,7 @@ class Spawn
 
    private object low_spawn(array(Stdio.File) fdp,
 			    array(Stdio.File) fd_to_close,
-                            string cmd, void|array(string) args=({}),
+                            string cmd, array(string) args=({}),
 			    void|mapping(string:string) env,
 			    string|void cwd)
    {
