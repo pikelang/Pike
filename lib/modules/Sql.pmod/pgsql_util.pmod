@@ -1353,7 +1353,8 @@ class Result {
                 else {
                   value = (string)value;
                   if (cenc == UTF8CHARSET
-                    && (dtoid[i] != BYTEAOID || String.width(value) > 8))
+                    && (dtoid[i] != BYTEAOID && dtoid[i] != UUIDOID
+                     || String.width(value) > 8))
                       /*
                        *  FIXME For BYTEAOID and wide strings we should
                        *  throw an error here, but for historical reasons and
