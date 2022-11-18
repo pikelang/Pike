@@ -1305,6 +1305,7 @@ class Result {
             case BYTEAOID:
             case TEXTOID:
             case XMLOID:
+            case UUIDOID:
             case BPCHAROID:
             case VARCHAROID:;
           }
