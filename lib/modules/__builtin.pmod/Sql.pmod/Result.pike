@@ -25,9 +25,9 @@ int index;
 //! This is a helper function for implementations to update the @[index].
 //!
 //! It is typically called from @[fetch_row()].
-protected int increment_index(int|void val)
+protected int increment_index(int val = 1)
 {
-  index += val || undefinedp(val);
+  index += val;
   return index;
 }
 
