@@ -3243,6 +3243,8 @@ PIKECLASS BlockCipher16
       {
 	struct pike_string *mac_mask;
 
+	fprintf(stderr, "CCM: init_mac_mask(\"%s\")\n", caller);
+
 	if (!THIS->nonce) {
 	  /* NB: Default to nonce of 13 NULs. */
 	  add_ref(THIS->nonce = nul13_string);
@@ -3262,11 +3264,14 @@ PIKECLASS BlockCipher16
 	}
 	if (THIS->mac_mask) free_string(THIS->mac_mask);
 	add_ref(THIS->mac_mask = mac_mask);
+	fprintf(stderr, "CCM: mac_mask: %p\n", mac_mask);
 	pop_stack();
       }
 
       PIKEFUN string(8bit) crypt(string(8bit) data)
       {
+	fprintf(stderr, "CCM: crypt: pbuf.s->len: %ld\n", THIS->pbuf.s->len);
+
 	if (!data->len) {
 	  return;
 	}
@@ -3472,6 +3477,8 @@ PIKECLASS BlockCipher16
 	} else if (bytes > 16) {
 	  bytes = 16;
 	}
+
+	fprintf(stderr, "CCM:digest: pstr->len: %ld\n", pstr->len);
 
 	res = begin_shared_string(bytes);
 

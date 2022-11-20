@@ -63,28 +63,32 @@ int main (int argc, array(string) argv)
 			       tlscon->is_open(),
 			       objectp (tlscon->shutdown()),
 			       tlscon->errno()});
+	    array(int) expected;
 	    int successful;
 	    if (clean_close) {
 	      if (block)
 		// Clean close in blocking mode should block in
 		// tlscon->close until the other thread destructs the
 		// server and we get ECONNRESET.
-		successful = equal (res, ({1, 1, 0, 0, System.ECONNRESET}));
+		expected = ({ 1, 1, 0, 0, System.ECONNRESET });
 	      else
 		// Clean close in nonblocking mode shouldn't really
 		// close the fd, but the later shutdown should, and
 		// then set EPIPE.
-		successful = equal (res, ({1, 0, 2, 0, System.EPIPE}));
+		expected = ({ 1, 0, 2, 0, System.EPIPE });
 	    }
 	    else {
 	      // A nonclean close always succeeds without any ado.
-	      successful = equal (res, ({1, 0, 0, 0, 0}));
+	      expected = ({ 1, 0, 0, 0, 0 });
 	    }
+	    successful = equal(res, expected);
 	    if (!successful)
 	      Tools.Testsuite.log_msg (
-		"Async tls close on stalled connection failed: "
-		"clean_close=%d block=%d res=%{%O %}\n",
-		clean_close, block, res);
+		"Async tls close on stalled connection failed:\n"
+		"clean_close=%d block=%d\n"
+		"res=%{%O %}\n"
+		"exp=%{%O %}\n",
+		clean_close, block, res, expected);
 	    Tools.Testsuite.report_result (successful, !successful);
 	    _exit (!successful);
 	  })

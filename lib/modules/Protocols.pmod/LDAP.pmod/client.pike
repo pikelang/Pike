@@ -706,6 +706,8 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
     if(lauth->scheme == "ldaps") {
       SSL.File ssl_fd = SSL.File(low_fd, context);
       ssl_fd->set_blocking();	// NB: SSL.File defaults to non-blocking mode.
+      // NB: Apparently there are LDAPS servers that accept connections and
+      //     hold the connection open, but never reply to the client hello.
       ssl_fd->set_timeout(10.0);
       if (!ssl_fd->connect()) {
 	ERROR("Failed to connect to LDAPS server.\n");

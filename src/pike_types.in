@@ -1,0 +1,150 @@
+% -*- Erlang -*-
+%
+% Type definitions for Pike.
+%
+% 2013-07-31 Henrik Grubbström
+%
+% This file is fed to the type compiler
+% to generate the corresponding C-code.
+%
+% We attempt to use Erlang-style syntax:
+%
+%   Functions and atoms are all lower-case.
+%   (Atoms are converted to all upper-case by the type compiler.)
+%
+%   Arguments start with an upper-case character.
+%
+%   Strings and integers are as in Pike.
+%
+%   Function match criteria are listed after the when operator
+%   and separated by commas before the returns (->) operator.
+%
+% We differ from Erlang in the following ways:
+%
+%   Functions are always terminated with a '.'
+%   even if there are more cases.
+%
+%   Operators are the C-operators where meaningful.
+%
+%   Functions have type definitions.
+
+%
+% Some basic definitions.
+%
+
+-record(pike_type, { type, car, cdr }).
+
+low_is_same_type(T1, T2) -> T1 == T2.
+or_pike_types(T1, T2)
+  when T1 == T2
+       -> T1.
+
+%
+% Basic types
+%
+
+% array
+
+get_name_of_type(t_array) -> "array".
+
+% mapping
+
+get_name_of_type(t_mapping) -> "mapping".
+
+% multiset
+
+get_name_of_type(t_multiset) -> "multiset".
+
+% object
+
+get_name_of_type(t_object) -> "object".
+
+% function
+
+get_name_of_type(t_function) -> "function".
+
+% program
+
+get_name_of_type(t_program) -> "program".
+
+% string
+
+get_name_of_type(t_string) -> "string".
+
+% type
+
+get_name_of_type(t_type) -> "type".
+
+% int
+
+get_name_of_type(t_int) -> "int".
+
+describe_type(T) when
+      T#pike_type.type == T_INT,
+      T#pike_type.min == -0x80000000,
+      T#pike_type.max == 0x7fffffff
+    -> "int".
+describe_type(T) when
+      T#pike_type.type == T_INT,
+      T#pike_type.min == -0x80000000,
+      T#pike_type.max != 0x7fffffff
+      -> "int(.." ++ T#max ++ ")".
+describe_type(T) when
+      T#pike_type.type == T_INT,
+      T#pike_type.min != -0x80000000,
+      T#pike_type.max != 0x7fffffff
+      -> "int(" ++ T#min ++ ".." ++ T#max ++ ")".
+describe_type(T) when
+      T#pike_type.type == t_int,
+      T#pike_type.min != -0x80000000,
+      T#pike_type.max == 0x7fffffff
+      -> "int(" ++ T#min ++ "..)".
+
+compile_type_to_runtime_type(T) when
+      T#pike_type.type == t_int
+      -> t_int.
+
+or_pike_types($A, $B, $C) :-
+	type($A, T_INT),
+	type($B, T_INT),
+	type($C, T_INT),
+	min($A, $AMIN),
+	min($B, $BMIN),
+	min($C, $CMIN),
+	max($A, $AMAX),
+	max($B, $BMAX),
+	max($C, $CMAX),
+	>=($AMIN, $CMIN),
+	>=($BMIN, $CMIN),
+	<=($AMAX, $CMAX),
+	<=($BMAX, $CMAX).
+
+% float
+
+get_name_of_type(t_float) -> "float".
+
+describe_type(T) when
+	T#pike_type.type == t_float
+    -> "float".
+
+compile_type_to_runtime_type($T) when
+	T#pike_type.type == t_float
+    -> t_float.
+
+
+% zero
+
+get_name_of_type(t_zero) -> "zero".
+
+% void
+
+get_name_of_type(t_void) -> "void".
+
+% mixed
+
+get_name_of_type(t_mixed) -> "mixed".
+
+%
+% Other types.
+%
+
