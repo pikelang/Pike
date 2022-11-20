@@ -1170,21 +1170,11 @@ class Typedef {
 }
 
 //! The values inside @expr{enum Foo { ... }@}
+//!
+//! These are currently handled identically to normal constants.
 class EnumConstant {
   //!
-  inherit PikeObject;
-
-  //!
-  constant objtype = "constant";
-
-  string xml(.Flags|void flags) {
-    mapping m = ([]) + standardAttributes(flags);
-    return opentag(objtype, m) + standardTags(flags)
-      + standardEnd(flags);
-  }
-  string print() {
-    return "constant";  // for now...
-  }
+  inherit Constant;
 }
 
 //! The enum container.
