@@ -13,7 +13,7 @@ OBJS=json5.o
 # Ragel targets
 
 # Enable this to include ragel in the build chain.
-#ENABLE_RAGEL=yes
+ENABLE_RAGEL=yes
 
 # NB: Support for the -C option has apparently been removed in favor
 #     of instead having separate binaries for each target language.

@@ -796,6 +796,7 @@ protected class Monitor(string path,
       if (!st || ((old_st->mode & S_IFMT) != (st->mode & S_IFMT))) {
 	// File deleted or changed type.
 
+	MON_WERR("Deleted: %O:%O\n", path, old_st);
 	int delay;
 	// Propagate deletions to any submonitors.
 	if (files) {
@@ -811,6 +812,7 @@ protected class Monitor(string path,
 	}
 	if (delay) {
 	  // Delay the notification until the submonitors have notified.
+	  MON_WERR("delay notification: %O.\n", path);
 	  this::st = old_st;
 	  next_poll = time(1);
 	  adjust_monitor(this);
@@ -831,6 +833,7 @@ protected class Monitor(string path,
 	    check_for_release(MF_AUTO, MF_AUTO);
 	  }
 
+	  MON_WERR("Notify deletion: %O.\n", path);
 	  file_deleted(path, old_st);
 	  return 1;
 	}

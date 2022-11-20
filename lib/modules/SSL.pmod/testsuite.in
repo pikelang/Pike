@@ -455,7 +455,7 @@ test_any([[
 cond_end // thread_create
 
 test_do([[
-  add_constant("client_msg", random_string(65519));
+  add_constant("client_msg", ((string)enumerate(256)) + ((string)reverse(enumerate(256))));
 ]])
 
 test_do([[
@@ -924,7 +924,7 @@ test_do([[
 			      session);
 
     if (!fail && (sessionid != session->identity)) {
-      fail = "New session.";
+      fail = "New session.\n";
     }
 
     if (fail) {
@@ -1504,6 +1504,7 @@ array(int) a() {
 }
 ]])
 
+
 dnl client_ver, client_bits, client_strict,
 dnl server_ver, server_bits, server_strict, exp_suite
 define(test_suite_b, [[
@@ -1647,7 +1648,7 @@ test_do([[
 
   class Context
   {
-    inherit SSL.Context;
+    inherit TestContext;
 
     string(8bit) get_psk_hint()
     {
@@ -1738,7 +1739,7 @@ test_do([[
     }
   };
 
-  add_constant("TestContext", Context);
+  add_constant("PSKContext", Context);
   SSL.Context ctx = Context();
   ctx->random = random_string;
   // Disable use of session tickets.
@@ -1752,7 +1753,7 @@ define(test_psk,[[
 
     int a()
     {
-      SSL.Context client_ctx = TestContext(({$1}));
+      SSL.Context client_ctx = PSKContext(({$1}));
       string fail =
         low_test_ssl_connection(server_ctx, client_ctx, client_msg,
                                 $1, PROTOCOL_TLS_MAX);
@@ -1794,6 +1795,57 @@ test_psk(TLS_dhe_psk_with_aes_128_cbc_sha)
 test_psk(TLS_rsa_psk_with_aes_128_cbc_sha)
 cond_resolv(Crypto.ECC.Curve, [[
 test_psk(TLS_ecdhe_psk_with_aes_128_cbc_sha)
+]])
+
+test_do([[
+  SSL.Context ctx = TestContext();
+  ctx->random = random_string;
+  // Disable use of session tickets.
+  ctx->extensions[SSL.Constants.EXTENSION_session_ticket] = 0;
+  add_constant("server_ctx", ctx);
+]])
+
+dnl ALPN
+dnl server_alpn, client_alpn
+define(test_alpn, [[
+  test_program([[
+    import SSL.Constants;
+
+    int a() {
+      int exp_protocol = min($2, $5);
+
+      log_status("Testing ALPN...");,
+
+      server_ctx->advertised_protocols = $1;
+      server_ctx->expect_fail = 0;
+
+      SSL.Context client_ctx = TestContext();
+      client_ctx->random = random_string;
+      client_ctx->advertised_protocols = $2;
+
+      string(8bit)|zero expected_alpn;
+      if ($1 && $2) {
+        if (sizeof($1 & $2)) {
+	  // Server wins.
+          expected_alpn = ($1 & $2)[0];
+        } else {
+	  server_ctx->expect_fail = client_ctx->expect_fail = 1;
+	  expected_alpn = "";	// Invalid.
+        }
+      }
+
+      string fail =
+	low_test_ssl_connection(server_ctx, client_ctx, exp_suite && client_msg,
+				exp_suite, exp_version);
+      if (fail && exp_suite) {
+	log_ssl_failure(client_ctx->min_version, client_ctx->max_version,
+			server_ctx->min_version, server_ctx->max_version,
+			fail, server_ctx->preferred_suites);
+	return 0;
+      }
+      return 1;
+    };
+  ]])
 ]])
 
 test_do([[

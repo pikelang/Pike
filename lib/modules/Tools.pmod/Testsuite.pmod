@@ -324,7 +324,7 @@ array(int) low_run_script (array(string) command, mapping opts)
   }
 
   Process.create_process pid =
-    Process.create_process (command, opts + (["stdout": p2]));
+    Process.create_process (command, opts + (["stdout": p2, "stderr": p2]));
   p2->close();
   all_constants()->__watchdog_new_pid (pid->pid());
 

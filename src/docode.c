@@ -84,10 +84,11 @@ static int current_stack_depth = 0;
       Pike_fatal("current_label points to an unused statement_label.\n");	\
   )									\
   if (current_label->break_label == -2) {				\
+    assert(current_label->prev);					\
     DO_IF_DEBUG(							\
       if (current_label->prev->break_label == -2)			\
         Pike_fatal("Found two open statement_label entries in a row.\n");	\
-    )									\
+    );									\
     cleanup_frame__.prev = current_label->prev->cleanups;		\
     current_label->prev->cleanups = &cleanup_frame__;			\
   }									\
@@ -3085,6 +3086,7 @@ INT32 do_code_block(node *n, int identifier_flags)
 {
   struct compilation *c = THIS_COMPILATION;
   struct reference *id = NULL;
+  struct string_builder buf, *disassembly = NULL;
   INT32 entry_point;
   INT32 generator_switch = -1, *generator_jumptable = NULL;
   int aggregate_cnum = -1;
@@ -3319,7 +3321,22 @@ INT32 do_code_block(node *n, int identifier_flags)
 
     DO_CODE_BLOCK(n);
   }
-  entry_point = assemble(1);
+  if (
+#ifdef PIKEDEBUG
+      (a_flag > 2) ||
+#endif
+      (c->lex.pragmas & ID_DISASSEMBLE)) {
+    init_string_builder(disassembly = &buf, 0);
+  }
+
+  entry_point = assemble(disassembly, 1);
+
+  if (disassembly) {
+    /* NUL-terminate and output. */
+    string_builder_putchar(disassembly, 0);
+    fprintf(stderr, "%s", disassembly->s->str);
+    free_string_builder(disassembly);
+  }
 
   current_stack_depth = cleanup_frame__.stack_depth;
   POP_AND_DONT_CLEANUP;
@@ -3339,6 +3356,7 @@ INT32 docode(node *n)
   int generator_local_save = Pike_compiler->compiler_frame->generator_local;
   struct byte_buffer instrbuf_save = instrbuf;
   struct statement_label *label_save;
+  struct string_builder buf, *disassembly = NULL;
 
   label_save = current_label;
   current_label = NULL;
@@ -3373,7 +3391,23 @@ INT32 docode(node *n)
   POP_AND_DONT_CLEANUP;
 
   insert_opcode0(F_DUMB_RETURN, n->line_number, n->current_file);
-  entry_point = assemble(0);		/* Don't store linenumbers. */
+
+  if (
+#ifdef PIKEDEBUG
+      (a_flag > 3) ||
+#endif
+      (c->lex.pragmas & ID_DISASSEMBLE)) {
+    init_string_builder(disassembly = &buf, 0);
+  }
+
+  entry_point = assemble(disassembly, 0);	/* Don't store linenumbers. */
+
+  if (disassembly) {
+    /* NUL-terminate and output. */
+    string_builder_putchar(disassembly, 0);
+    fprintf(stderr, "%s", disassembly->s->str);
+    free_string_builder(disassembly);
+  }
 
   instrbuf=instrbuf_save;
   Pike_compiler->compiler_frame->generator_local = generator_local_save;
@@ -3381,7 +3415,9 @@ INT32 docode(node *n)
   current_stack_depth = cleanup_frame__.stack_depth;
   POP_AND_DONT_CLEANUP;
   POP_STATEMENT_LABEL;
+
   Pike_compiler->compiler_frame->generator_local = generator_local_save;
+  assert(!current_label);
   current_label = label_save;
   label_no = label_no_save;
 

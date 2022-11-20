@@ -124,7 +124,8 @@ void mapping_free_keypair(struct mapping_data *md, struct keypair *k)
 }
 
 static inline int check_type_contains(TYPE_FIELD types, const struct svalue * s) {
-    return (TYPEOF(*s) == PIKE_T_OBJECT || types & (BIT_OBJECT|(1 << TYPEOF(*s))));
+    return (TYPEOF(*s) == PIKE_T_OBJECT ||
+	    types & (BIT_OBJECT|(1 << TYPEOF(*s))));
 }
 
 static inline int check_type_overlaps(TYPE_FIELD t1, TYPE_FIELD t2) {
@@ -151,11 +152,19 @@ static void check_mapping_type_fields(const struct mapping *m)
       if (TYPEOF(k->val) > MAX_TYPE)
 	Pike_fatal("Invalid mapping keypair value type: %s\n",
 		   get_name_of_type(TYPEOF(k->val)));
-      val_types |= 1 << TYPEOF(k->val);
+      if ((TYPEOF(k->val) == T_INT) && !k->val.u.integer) {
+	val_types |= 1 << PIKE_T_ZERO;
+      } else {
+	val_types |= 1 << TYPEOF(k->val);
+      }
       if (TYPEOF(k->ind) > MAX_TYPE)
 	Pike_fatal("Invalid maping keypair index type: %s\n",
 		   get_name_of_type(TYPEOF(k->ind)));
-      ind_types |= 1 << TYPEOF(k->ind);
+      if ((TYPEOF(k->ind) == T_INT) && !k->ind.u.integer) {
+	ind_types |= 1 << PIKE_T_ZERO;
+      } else {
+	ind_types |= 1 << TYPEOF(k->ind);
+      }
     }
 
   if(val_types & ~(m->data->val_types))
@@ -420,8 +429,16 @@ static void mapping_rehash_backwards_evil(struct mapping_data *md,
     md->hash[h]=k;
 
     /* update */
-    md->ind_types |= 1<< (TYPEOF(k->ind));
-    md->val_types |= 1<< (TYPEOF(k->val));
+    if ((TYPEOF(k->ind) == T_INT) && !k->ind.u.integer) {
+      md->ind_types |= 1 << PIKE_T_ZERO;
+    } else {
+      md->ind_types |= 1 << (TYPEOF(k->ind));
+    }
+    if ((TYPEOF(k->val) == T_INT) && !k->val.u.integer) {
+      md->val_types |= 1 << PIKE_T_ZERO;
+    } else {
+      md->val_types |= 1 << (TYPEOF(k->val));
+    }
     md->size++;
   }
 }
@@ -517,8 +534,16 @@ static void mapping_rehash_backwards_good(struct mapping_data *md,
     md->hash[h]=k;
 
     /* update */
-    md->ind_types |= 1<< (TYPEOF(k->ind));
-    md->val_types |= 1<< (TYPEOF(k->val));
+    if ((TYPEOF(k->ind) == T_INT) && !k->ind.u.integer) {
+      md->ind_types |= 1 << PIKE_T_ZERO;
+    } else {
+      md->ind_types |= 1 << (TYPEOF(k->ind));
+    }
+    if ((TYPEOF(k->val) == T_INT) && !k->val.u.integer) {
+      md->val_types |= 1 << PIKE_T_ZERO;
+    } else {
+      md->val_types |= 1 << (TYPEOF(k->val));
+    }
     md->size++;
   }
 }
@@ -898,8 +923,16 @@ PMOD_EXPORT void mapping_fix_type_field(struct mapping *m)
 
   NEW_MAPPING_LOOP(m->data)
     {
-      val_types |= 1 << TYPEOF(k->val);
-      ind_types |= 1 << TYPEOF(k->ind);
+      if ((TYPEOF(k->val) == T_INT) && !k->val.u.integer) {
+	val_types |= 1 << PIKE_T_ZERO;
+      } else {
+	val_types |= 1 << TYPEOF(k->val);
+      }
+      if ((TYPEOF(k->ind) == T_INT) && !k->ind.u.integer) {
+	ind_types |= 1 << PIKE_T_ZERO;
+      } else {
+	ind_types |= 1 << TYPEOF(k->ind);
+      }
     }
 
 #ifdef PIKE_DEBUG
@@ -1057,8 +1090,16 @@ PMOD_EXPORT void low_mapping_insert(struct mapping *m,
 #endif /* !PIKE_MAPPING_KEYPAIR_LOOP */
   k->next=md->hash[h];
   md->hash[h]=k;
-  md->ind_types |= 1 << TYPEOF(*key);
-  md->val_types |= 1 << TYPEOF(*val);
+  if ((TYPEOF(*key) == T_INT) && !key->u.integer) {
+    md->ind_types |= 1 << PIKE_T_ZERO;
+  } else {
+    md->ind_types |= 1 << TYPEOF(*key);
+  }
+  if ((TYPEOF(*val) == T_INT) && !val->u.integer) {
+    md->val_types |= 1 << PIKE_T_ZERO;
+  } else {
+    md->val_types |= 1 << TYPEOF(*val);
+  }
   assign_svalue_no_free(& k->ind, key);
   assign_svalue_no_free(& k->val, val);
   k->hval = h2;
@@ -1197,8 +1238,12 @@ PMOD_EXPORT union anything *mapping_get_item_ptr(struct mapping *m,
   assign_svalue_no_free(& k->ind, key);
   SET_SVAL(k->val, T_INT, NUMBER_NUMBER, integer, 0);
   k->hval = h2;
-  md->ind_types |= 1 << TYPEOF(*key);
-  md->val_types |= BIT_INT;
+  if ((TYPEOF(*key) == T_INT) && !key->u.integer) {
+    md->ind_types |= 1 << PIKE_T_ZERO;
+  } else {
+    md->ind_types |= 1 << TYPEOF(*key);
+  }
+  md->val_types |= BIT_ZERO;
   md->size++;
 #ifdef MAPPING_SIZE_DEBUG
   if(m->data ==md)
@@ -1430,8 +1475,16 @@ PMOD_EXPORT void map_atomic_get_set(struct mapping *m,
 #endif /* !PIKE_MAPPING_KEYPAIR_LOOP */
   k->next=md->hash[h];
   md->hash[h]=k;
-  md->ind_types |= 1 << TYPEOF(*key);
-  md->val_types |= 1 << TYPEOF(*from_to);
+  if ((TYPEOF(*key) == T_INT) && !key->u.integer) {
+    md->ind_types |= 1 << PIKE_T_ZERO;
+  } else {
+    md->ind_types |= 1 << TYPEOF(*key);
+  }
+  if ((TYPEOF(*from_to) == T_INT) && !from_to->u.integer) {
+    md->val_types |= 1 << PIKE_T_ZERO;
+  } else {
+    md->val_types |= 1 << TYPEOF(*from_to);
+  }
   assign_svalue_no_free(& k->ind, key);
   k->val = *from_to;
   k->hval = h2;
@@ -1500,8 +1553,16 @@ PMOD_EXPORT void check_mapping_for_destruct(struct mapping *m)
 #endif
 	  debug_malloc_touch(md);
 	}else{
-	  val_types |= 1 << TYPEOF(k->val);
-	  ind_types |= 1 << TYPEOF(k->ind);
+	  if ((TYPEOF(k->val) == T_INT) && !k->val.u.integer) {
+	    val_types |= 1 << PIKE_T_ZERO;
+	  } else {
+	    val_types |= 1 << TYPEOF(k->val);
+	  }
+	  if ((TYPEOF(k->ind) == T_INT) && !k->ind.u.integer) {
+	    ind_types |= 1 << PIKE_T_ZERO;
+	  } else {
+	    ind_types |= 1 << TYPEOF(k->ind);
+	  }
 	  prev=&k->next;
 	}
       }
@@ -1686,6 +1747,10 @@ PMOD_EXPORT struct array *mapping_indices(struct mapping *m)
   NEW_MAPPING_LOOP(m->data) assign_svalue(s++, & k->ind);
 
   a->type_field = m->data->ind_types;
+  if (a->type_field & BIT_ZERO) {
+    /* Backward compat. */
+    a->type_field |= BIT_INT;
+  }
 
 #ifdef PIKE_DEBUG
   if(d_flag > 1) check_mapping_type_fields(m);
@@ -2859,14 +2924,22 @@ void check_mapping(const struct mapping *m)
       if (TYPEOF(k->ind) > MAX_TYPE)
 	Pike_fatal("Invalid maping keypair index type: %s\n",
 		   get_name_of_type(TYPEOF(k->ind)));
-      if(! ( (1 << TYPEOF(k->ind)) & (md->ind_types) ))
-	Pike_fatal("Mapping indices type field lies.\n");
+      if(! ( (1 << TYPEOF(k->ind)) & (md->ind_types) )) {
+	if ((TYPEOF(k->ind) != T_INT) || k->ind.u.integer ||
+	    !(BIT_ZERO & md->ind_types)) {
+	  Pike_fatal("Mapping indices type field lies.\n");
+	}
+      }
 
       if (TYPEOF(k->val) > MAX_TYPE)
 	Pike_fatal("Invalid mapping keypair value type: %s\n",
 		   get_name_of_type(TYPEOF(k->val)));
-      if(! ( (1 << TYPEOF(k->val)) & (md->val_types) ))
-	Pike_fatal("Mapping values type field lies.\n");
+      if(! ( (1 << TYPEOF(k->val)) & (md->val_types) )) {
+	if ((TYPEOF(k->val) != T_INT) || k->val.u.integer ||
+	    !(BIT_ZERO & md->val_types)) {
+	  Pike_fatal("Mapping values type field lies.\n");
+	}
+      }
 
       check_svalue(& k->ind);
       check_svalue(& k->val);
@@ -3001,8 +3074,16 @@ PMOD_EXPORT void visit_mapping (struct mapping *m, int action, void *extra)
 	    M->debug_size--;						\
 	);								\
       } else {								\
-	VAL_TYPES |= 1 << TYPEOF(k->val);				\
-	IND_TYPES |= 1 << TYPEOF(k->ind);				\
+	if ((TYPEOF(k->val) == T_INT) && !k->val.u.integer) {		\
+	  VAL_TYPES |= 1 << PIKE_T_ZERO;				\
+	} else {							\
+	  VAL_TYPES |= 1 << TYPEOF(k->val);				\
+	}								\
+	if ((TYPEOF(k->ind) == T_INT) && !k->ind.u.integer) {		\
+	  IND_TYPES |= 1 << PIKE_T_ZERO;				\
+	} else {							\
+	  IND_TYPES |= 1 << TYPEOF(k->ind);				\
+	}								\
 	k++;								\
       }									\
     }									\
@@ -3034,8 +3115,16 @@ PMOD_EXPORT void visit_mapping (struct mapping *m, int action, void *extra)
 	    M->debug_size--;						\
 	);								\
       }else{								\
-	VAL_TYPES |= 1 << TYPEOF(k->val);				\
-	IND_TYPES |= 1 << TYPEOF(k->ind);				\
+	if ((TYPEOF(k->val) == T_INT) && !k->val.u.integer) {		\
+	  VAL_TYPES |= 1 << PIKE_T_ZERO;				\
+	} else {							\
+	  VAL_TYPES |= 1 << TYPEOF(k->val);				\
+	}								\
+	if ((TYPEOF(k->ind) == T_INT) && !k->ind.u.integer) {		\
+	  IND_TYPES |= 1 << PIKE_T_ZERO;				\
+	} else {							\
+	  IND_TYPES |= 1 << TYPEOF(k->ind);				\
+	}								\
 	prev=&k->next;							\
       }									\
     }									\

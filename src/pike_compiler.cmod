@@ -2355,8 +2355,18 @@ static void f_compilation_push_type_attribute(INT32 args)
     }
   }
 
+  if (TYPEOF(*a) != PIKE_T_TYPE) {
+    SIMPLE_BAD_ARG_ERROR("push_type_attribute", 2, "type");
+  }
+
+  if (TYPEOF(*b) != PIKE_T_TYPE) {
+    SIMPLE_BAD_ARG_ERROR("push_type_attribute", 3, "type");
+  }
+
   if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
+    struct pike_string *utf8_string;
     MAKE_CONST_STRING(test, "deprecated");
+    MAKE_CONST_STRING(utf8_string, "utf8");
     if ((attr == test) &&
 	!(c->lex.pragmas & ID_NO_DEPRECATION_WARNINGS) &&
 	!((TYPEOF(*a) == PIKE_T_TYPE) && (a->u.type == zero_type_string))) {
@@ -2365,6 +2375,12 @@ static void f_compilation_push_type_attribute(INT32 args)
       yytype_report(REPORT_WARNING, NULL, 0, NULL,
 		    NULL, 0, NULL,
 		    1, "Using deprecated %O value.");
+    }
+    if ((attr == utf8_string) && (c->lex.pragmas & ID_STRICT_TYPES)) {
+      /* Warn about expected utf-8 strings. */
+      yytype_report(REPORT_WARNING, NULL, 0, b->u.type,
+		    NULL, 0, a->u.type,
+		    0, NULL);
     }
   }
   pop_n_elems(args);
@@ -3561,6 +3577,7 @@ PIKECLASS Implements
   PIKEFUN void create(program api)
     flags ID_PROTECTED;
   {
+    fprintf(stderr, "%p: Implements(%p), refs: %d\n", Pike_sp, api, Pike_fp->current_object->refs);
     if (THIS->api) Pike_error("Already initialized.\n");
     add_ref(THIS->api = api);
   }

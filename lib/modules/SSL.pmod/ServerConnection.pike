@@ -47,6 +47,19 @@ protected Packet server_hello_packet()
   SSL3_DEBUG_MSG("Writing server hello, with version: %s\n",
                  fmt_version(version));
   struct->add(server_random);
+  // FIXME: If tickets_enabled:
+  //          If ticket provided:
+  //            Accepted: The identity provided by the client.
+  //            Rejected: Empty.
+  //          Not provided: Empty.
+  //
+  // RFC 4507 3.4:
+  //   If the server accepts the ticket and the Session ID is not empty,
+  //   then it MUST respond with the same Session ID present in the
+  //   ClientHello.
+  //
+  // It is probably best to handle this when processing the received
+  // EXTENSION_session_ticket_tls.
   struct->add_hstring(session->identity, 1);
   struct->add_int(session->cipher_suite, 2);
   struct->add_int(session->compression_algorithm, 1);
@@ -324,14 +337,32 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 
       SSL3_DEBUG_MSG("SSL.ServerConnection: CLIENT_HELLO\n");
 
+      SSL3_DEBUG_MSG("Input: %s\n", String.string2hex((string)input));
+
       client_version =
         [int(0x300..0x300)|ProtocolVersion]input->read_int(2);
+
+      if (dtls) {
+	// There's no such thing as DTLS 0xfefe.
+	COND_FATAL(((client_version & 0xff00) != 0xfe00) ||
+		   (client_version == 0xfefe),
+		   ALERT_protocol_version,
+		   sprintf("Invalid DTLS protocol version %s.\n",
+			   fmt_version(client_version)));
+
+	// Remap DTLS version to TLS version.
+	client_version ^= PROTOCOL_TLS_1_2^PROTOCOL_DTLS_1_2;
+	if (client_version == PROTOCOL_TLS_1_0) {
+	  // DTLS 1.0 is based on TLS 1.1.
+	  client_version = PROTOCOL_TLS_1_1;
+	}
+      }
 
       // TLS 1.3: Servers MAY abort the handshake upon receiving a
       // ClientHello with legacy_version 0x0304 or later.
       COND_FATAL(client_version > PROTOCOL_TLS_1_2, ALERT_protocol_version,
-                 sprintf("Unsupported version %s.\n",
-                         fmt_version(client_version)));
+		 sprintf("Unsupported version %s.\n",
+			 fmt_version(client_version)));
 
       array(int(16bit)) versions = context->get_versions(client_version);
       COND_FATAL(!sizeof(versions), ALERT_protocol_version,
@@ -343,6 +374,16 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 
       client_random = input->read(32);
       string(8bit) session_id = input->read_hstring(1);
+
+      if (dtls) {
+	COND_FATAL(version < PROTOCOL_TLS_1_1, ALERT_protocol_version,
+		   sprintf("Selected version %s is not compatible with DTLS.\n",
+			   fmt_version(version)));
+
+	string(8bit) dtls_cookie = input->read_hstring(1);
+
+	// FIXME: Generate cookie and validate.
+      }
 
       int cipher_len = input->read_int(2);
       COND_FATAL(cipher_len & 1, ALERT_unexpected_message,
@@ -360,6 +401,9 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
                      fmt_version(client_version),
                      session_id, fmt_cipher_suites(cipher_suites),
                      compression_methods);
+
+      werror("input: %O (%d bytes): %s\n",
+	     input, sizeof(input), String.string2hex((string)input));
 
       Stdio.Buffer early_data = Stdio.Buffer();
       int missing_secure_renegotiation = secure_renegotiation;
@@ -657,8 +701,15 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
                          ALERT_illegal_parameter,
                          "Extended-master-secret: Invalid extension.\n");
 
-              SSL3_DEBUG_MSG("Extended-master-secret: Enabled.\n");
-              session->extended_master_secret = 1;
+	      if (version == PROTOCOL_SSL_3_0) {
+		// RFC 7627 6.4: No SSL 3.0 Support
+		SSL3_DEBUG_MSG("Extended-master-secret: "
+			       "Not supported with SSL 3.0.\n");
+		session->extended_master_secret = 0;
+	      } else {
+		SSL3_DEBUG_MSG("Extended-master-secret: Enabled.\n");
+		session->extended_master_secret = 1;
+	      }
             }
             break;
 
@@ -914,6 +965,10 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 
       SSL3_DEBUG_MSG("SSL.ServerConnection: FINISHED\n");
 
+#if 0
+      send_packet(change_cipher_packet());
+      expect_change_cipher--;
+#endif
       if(version == PROTOCOL_SSL_3_0) {
         my_digest=hash_messages("CLNT");
         digest = input->read(36);

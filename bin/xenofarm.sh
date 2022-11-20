@@ -49,6 +49,11 @@ xenofarm_post_build() {
   log_end $?
   [ $LASTERR = 0 ] || return 1
   
+  log_start doc
+  $MAKE doc >xenofarm_result/doclog.txt 2>&1
+  log_end $?
+  [ $LASTERR = 0 ] || return 1
+
   log_start export
   $MAKE bin_export > xenofarm_result/exportlog.txt 2>&1
   log_end $?

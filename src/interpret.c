@@ -102,7 +102,7 @@ PMOD_EXPORT unsigned long evaluator_callback_calls = 0;
 #endif
 
 
-int fast_check_threads_counter = 0;
+PMOD_EXPORT unsigned int fast_check_threads_counter = 1<<8;
 
 PMOD_EXPORT int Pike_stack_size = EVALUATOR_STACK_SIZE;
 
@@ -1969,6 +1969,7 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
       Pike_fatal("Odd offset!\n");
     }
 #endif /* PIKE_OPCODE_ALIGN */
+#if 0
 #ifdef DISASSEMBLE_CODE
     DISASSEMBLE_CODE(pc, 16*4);
 #else /* !DISASSEMBLE_CODE */
@@ -1981,6 +1982,7 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
 	      ((int *)pc)[i+3]);
     }
 #endif /* DISASSEMBLE_CODE */
+#endif /* 0 */
   }
   x = eval_instruction_low(pc);
   pike_trace(3, "-    eval_instruction(%p) ==> %d\n", pc, x);

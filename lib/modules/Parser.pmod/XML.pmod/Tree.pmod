@@ -1717,8 +1717,10 @@ class XMLParser
 	  extras->xmlns->namespace_stack->top()[0] = default_namespace;
 	}
       }
-      catch( data=xp->autoconvert(data) );
-      container_stack = ADT.Stack();
+      mixed err = catch( data=xp->autoconvert(data) );
+      if (err) {
+	master()->handle_error(err);
+      }
       foreach(xp->parse(data, parse_xml_callback,
                         sizeof(extras) && extras),
               this_program child)

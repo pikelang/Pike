@@ -4291,11 +4291,16 @@ PMOD_EXPORT void dump_program_tables (const struct program *p, int indent)
     struct identifier *id = p->identifiers + d;
 
     fprintf(stderr,
-	    "%*s  %4d: %5x %6"PRINTPTRDIFFT"d %4d \"%s\"\n"
-	    "%*s        %s:%ld\n",
+	    "%*s  %4d: %5x %6"PRINTPTRDIFFT"d %4d \"%s\"\n",
 	    indent, "",
 	    d, id->identifier_flags, id->func.offset,
-	    id->run_time_type, id->name->str,
+	    id->run_time_type, id->name->str);
+    fprintf(stderr,
+	    "%*s                          ", indent, "");
+    simple_describe_type(id->type);
+    fprintf(stderr, "\n");
+    fprintf(stderr,
+	    "%*s        %s:%ld\n",    
 	    indent, "",
 	    p->num_strings?p->strings[id->filename_strno]->str:"-",
 	    (long)id->linenumber);
@@ -4576,11 +4581,13 @@ void check_program(struct program *p)
     }
 
     if(p->identifier_references[e].identifier_offset >
-       p->inherits[p->identifier_references[e].inherit_offset].prog->num_identifiers)
+       p->inherits[p->identifier_references[e].inherit_offset].prog->num_identifiers) {
+      dump_program_tables(p, 0);
       Pike_fatal("Identifier offset %d is wrong! %d > %d\n",
 	    e,
 	    p->identifier_references[e].identifier_offset,
 	    p->inherits[p->identifier_references[e].inherit_offset].prog->num_identifiers);
+    }
 
     i=ID_FROM_INT(p, e);
 
@@ -4780,12 +4787,17 @@ PMOD_EXPORT void add_program_annotation(int inh, struct svalue *val)
   }
   if (val) {
     if (inherit->annotations) {
+      fprintf(stderr, "multiset_add()\n");
       multiset_add(inherit->annotations, val);
     } else {
+      fprintf(stderr, "aggregate_multiset()\n");
+      fprintf(stderr, "val->refs: %d\n", val->u.object->refs);
       push_svalue(val);
+      fprintf(stderr, "val->refs: %d\n", val->u.object->refs);
       f_aggregate_multiset(1);
       inherit->annotations = Pike_sp[-1].u.multiset;
       Pike_sp--;
+      fprintf(stderr, "val->refs: %d\n", val->u.object->refs);
     }
   }
 }
@@ -5038,6 +5050,8 @@ struct program *end_first_pass(int finish)
     CDFPRINTF("th(%ld) %p Compilation errors (%d).\n",
               (long)th_self(), Pike_compiler->new_program,
               Pike_compiler->num_parse_error);
+
+    dump_program_tables(Pike_compiler->new_program, 0);
     prog=0;
   }else{
     prog=Pike_compiler->new_program;
@@ -7879,7 +7893,7 @@ int really_low_find_variant_identifier(struct pike_string *name,
   int id, i, depth, last_inh;
   int tentative = -1;
 
-#if 1
+#if 0
 #ifdef COMPILER_DEBUG
   fprintf(stderr,"th(%ld) %p Trying to find variant \"%s\" start=%d flags=%d\n"
 	  "  type: ",
@@ -8016,8 +8030,23 @@ static void f_dispatch_variant(INT32 args)
 
     /* Check whether the type is compatible with our arguments. */
     for (i = 0; i < args; i++) {
-      struct pike_type *cont =
+      struct pike_type *cont;
+#if 0
+      fprintf(stderr, "Trying %s variant ", name->str);
+      simple_describe_type(t);
+      fprintf(stderr, "...");
+#endif
+      cont =
 	check_call_svalue(t, 0, Pike_sp+i - (args + expected));
+#if 0
+      if (cont) {
+	fprintf(stderr, " ==> ");
+	simple_describe_type(cont);
+	fprintf(stderr, "\n");
+      } else {
+	fprintf(stderr, " ==> NULL\n");
+      }
+#endif
       if (!cont && (i >= best)) {
 	if ((i > best) && expected) {
 	  pop_n_elems(expected);
@@ -8145,8 +8174,8 @@ PMOD_EXPORT int low_find_lfun(struct program *p, enum LFUN lfun)
   if (i < 0 || !(p->flags & PROGRAM_FIXED)) {
     return i;
   }
-  id = ID_FROM_INT(p, i);
 #if 0
+  id = ID_FROM_INT(p, i);
   if (IDENTIFIER_IS_PIKE_FUNCTION(id->identifier_flags) &&
       (id->func.offset == -1)) {
     /* Function prototype. */
@@ -10152,6 +10181,8 @@ PMOD_EXPORT struct program *program_from_type(const struct pike_type *t)
   default:
     return NULL;
   }
+
+  fprintf(stderr, "  ==> id_to_program(%d)\n", (int)(ptrdiff_t)t->cdr);
 
   return id_to_program((int)(ptrdiff_t)t->cdr);
 }

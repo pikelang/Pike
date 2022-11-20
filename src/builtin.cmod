@@ -5968,6 +5968,14 @@ PIKEFUN void deserialize(object o,
 /*! @endmodule
  */
 
+PIKEFUN array fake_map(array a, function fun, mixed ... extras)
+  rawtype tFuncArg(tArr(tSetvar(0, tMix)),
+		   tFuncArg(tFuncArg(tVar(0),
+				     tSetvar(1, tFuncV(tNone, tMix, tMix))),
+			    tArr(tVar(1))));
+{
+}
+
 /*! @module ADT
  */
 

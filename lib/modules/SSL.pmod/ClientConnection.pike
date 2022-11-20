@@ -20,6 +20,7 @@ protected string _sprintf(int t)
 }
 
 protected Packet client_hello(string(8bit)|void server_name,
+			      string(8bit)|void dtls_cookie,
                               array(Packet)|void early_data)
 {
   Buffer struct = Buffer();
@@ -41,6 +42,10 @@ protected Packet client_hello(string(8bit)|void server_name,
 
   struct->add(client_random);
   struct->add_hstring(session->identity || "", 1);
+
+  if (dtls) {
+    struct->add_hstring(dtls_cookie || "", 1);
+  }
 
   array(int) cipher_suites = [array] context->preferred_suites;
   if ((state & CONNECTION_handshaking) && !secure_renegotiation) {
@@ -651,12 +656,11 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 
           remote_extensions[extension_type] = 1;
 
-          if( !context->extensions[extension_type] )
-          {
-            SSL3_DEBUG_MSG("Ignored extension %O (%d bytes)\n",
-                           extension_type, sizeof(extension_data));
-            continue;
-          }
+          COND_FATAL(!context->extensions[extension_type],
+		     ALERT_handshake_failure,
+		     sprintf("Got unsolicited extension %s (%d bytes)\n",
+			     fmt_constant(extension_type, "EXTENSION"),
+			     sizeof(extension_data)));
 
 	  switch(extension_type) {
 	  case EXTENSION_renegotiation_info:
@@ -749,7 +753,8 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 	  case EXTENSION_extended_master_secret:
 	    {
 	      COND_FATAL(sizeof(extension_data) ||
-                         (min(@context->supported_versions) >= PROTOCOL_TLS_1_3),
+                         (min(@context->supported_versions) >= PROTOCOL_TLS_1_3) ||
+			 (max(@context->supported_versions) < PROTOCOL_TLS_1_0),
                          ALERT_illegal_parameter,
                          "Extended-master-secret: Invalid extension.\n");
 

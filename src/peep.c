@@ -166,7 +166,7 @@ void update_arg(int instr,INT32 arg)
 
 /**** Bytecode Generator *****/
 
-INT32 assemble(int store_linenumbers)
+INT32 assemble(struct string_builder *disassembly, int store_linenumbers)
 {
   INT32 entry_point;
   INT32 max_label=-1,tmp;
@@ -182,6 +182,8 @@ INT32 assemble(int store_linenumbers)
   int relabel;
   int reoptimize = relabel = !(debug_options & NO_PEEP_OPTIMIZING);
   struct lex *lex;
+  INT_TYPE prev_line = -1;
+  struct pike_string *prev_file = NULL;
   CHECK_COMPILER();
   lex = &THIS_COMPILATION->lex;
 
@@ -500,22 +502,27 @@ INT32 assemble(int store_linenumbers)
 		 e, c - ((p_instr *)buffer_ptr(&instrbuf)));
     }
 #endif
-    if(
-#ifdef PIKEDEBUG
-       ((a_flag > 2) && store_linenumbers) ||
-       (a_flag > 3) ||
-#endif
-       (lex->pragmas & ID_DISASSEMBLE))
+    if(disassembly)
     {
 #ifdef PIKE_DEBUG
       if (c->opcode == F_POP_SYNCH_MARK) synch_depth--;
-      fprintf(stderr, "===%4ld %4lx %*s", (long)c->line,
-              (unsigned long)PIKE_PC, synch_depth, "");
-#else
-      fprintf(stderr, "===%4ld %4lx ", (long)c->line, (unsigned long)PIKE_PC);
 #endif
-      dump_instr(c);
-      fprintf(stderr,"\n");
+      if (prev_file != c->file) {
+	string_builder_append_file_directive(disassembly,
+					     Pike_compiler->new_program->program + PIKE_PC,
+					     c->file);
+	prev_file = c->file;
+	prev_line = -1;
+      }
+      if (prev_line != c->line) {
+	string_builder_append_line_directive(disassembly,
+					     Pike_compiler->new_program->program + PIKE_PC,
+					     c->line);
+	prev_line = c->line;
+      }
+      string_builder_append_pike_opcode(disassembly,
+					Pike_compiler->new_program->program + PIKE_PC,
+					c->opcode, c->arg, c->arg2);
 #ifdef PIKE_DEBUG
       if (c->opcode == F_SYNCH_MARK) synch_depth++;
 #endif
@@ -603,6 +610,15 @@ INT32 assemble(int store_linenumbers)
 	Pike_fatal("Duplicate label %d!\n", c->arg);
 #endif
       FLUSH_CODE_GENERATOR_STATE();
+      if (disassembly) {
+	char label_buf[16];
+	sprintf(label_buf, ".%d:", c->arg);
+	string_builder_append_disassembly(disassembly,
+					  (size_t)(Pike_compiler->new_program->program + PIKE_PC),
+					  Pike_compiler->new_program->program + PIKE_PC,
+					  Pike_compiler->new_program->program + PIKE_PC,
+					  label_buf, NULL, NULL);
+      }
       labels[c->arg] = (INT32)PIKE_PC;
       if ((e+1 < length) &&
 	  (c[1].opcode != F_LABEL) &&
@@ -730,10 +746,11 @@ INT32 assemble(int store_linenumbers)
     }
 
 #ifdef DISASSEMBLE_CODE
-    if((lex->pragmas & ID_DISASSEMBLE) && PIKE_PC > opcode_start)
+    if(disassembly && PIKE_PC > opcode_start)
     {
-        DISASSEMBLE_CODE(Pike_compiler->new_program->program + opcode_start,
-                         (PIKE_PC - opcode_start)*sizeof(PIKE_OPCODE_T));
+      DISASSEMBLE_CODE(disassembly,
+		       Pike_compiler->new_program->program + opcode_start,
+		       (PIKE_PC - opcode_start)*sizeof(PIKE_OPCODE_T));
     }
 #endif
 
@@ -824,7 +841,10 @@ INT32 assemble(int store_linenumbers)
     fprintf(stderr, "Code at offset %"PRINTSIZET"d through %"PRINTSIZET"d:\n",
 	    fun_start, Pike_compiler->new_program->num_program-1);
 #ifdef DISASSEMBLE_CODE
-    DISASSEMBLE_CODE(Pike_compiler->new_program->program + fun_start, len);
+    if (disassembly) {
+      DISASSEMBLE_CODE(disassembly,
+		       Pike_compiler->new_program->program + fun_start, len);
+    }
 #else /* !DISASSEMBLE_CODE */
     {
       /* FIXME: Hexdump here. */

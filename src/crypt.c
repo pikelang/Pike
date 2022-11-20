@@ -217,10 +217,12 @@ char *crypt(const char *pw, const char *salt)
 {
 
         char pwb[66];
-        static char result[16];
-        register char *p = pwb, *p2;
+        char result[16+9];	/* 9 is 1+4+4 */
+        register char *p = pwb, *p2 = result;
         struct ordering new_etr;
         register int i;
+	int count = 25;
+	int saltlen = 2;
 
         while (*pw && p < &pwb[64]) {
                 register int j = 7;
@@ -237,13 +239,39 @@ char *crypt(const char *pw, const char *salt)
 
         while (p < &pwb[66]) *p++ = 0;
 
+	if (*salt == '_') {
+		/* BSDi-style DES. */
+		*p2++ = '_';
+		salt++;
+		count = 0;
+		for (i = 0; i < 4; i++) {
+			register char c = *salt++;
+
+			if (!c) {
+				c = *--salt;
+			}
+			*p2++ = c;
+
+			if ( c > 'Z') c -= 6 + 7 + '.'; /* c was a lower case letter */
+			else if ( c > '9') c -= 7 + '.';/* c was upper case letter */
+			else c -= '.';                  /* c was digit, '.' or '/'. */
+			                                /* now, 0 <= c <= 63 */
+			count |= c << (i*6);
+		}
+		saltlen = 4;
+	}
+
         new_etr = etr;
         EP = &new_etr;
-        for (i = 0; i < 2; i++) {
+        for (i = 0; i < saltlen; i++) {
                 register char c = *salt++;
                 register int j;
 
-                result[i] = c;
+		if (!c) {
+		  c = *--salt;
+		}
+
+                *p2++ = c;
                 if ( c > 'Z') c -= 6 + 7 + '.'; /* c was a lower case letter */
                 else if ( c > '9') c -= 7 + '.';/* c was upper case letter */
                 else c -= '.';                  /* c was digit, '.' or '/'. */
@@ -258,13 +286,10 @@ char *crypt(const char *pw, const char *salt)
                 }
         }
 
-        if (result[1] == 0) result[1] = result[0];
-
         for (i = 0; i < 25; i++) encrypt(pwb,0);
         EP = &etr;
 
         p = pwb;
-        p2 = result+2;
         while (p < &pwb[66]) {
                 register int c = 0;
                 register int j = 6;

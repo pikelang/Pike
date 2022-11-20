@@ -3,7 +3,7 @@ START_MARKER
 test_do([[
   class TestMonitor
   {
-    inherit Filesystem.Monitor.symlinks;
+    inherit Filesystem.Monitor.debug; //symlinks;
 
     enum Event {
       EVT_DATA_CHANGED = 1,
@@ -87,31 +87,37 @@ test_do([[
 
     void data_changed (string path)
     {
+      ::data_changed(path);
       evts += ({ ([ EVT_DATA_CHANGED: path ]) });
     }
 
     void attr_changed (string path, Stdio.Stat st)
     {
+      ::attr_changed(path, st);
       evts += ({ ([ EVT_ATTR_CHANGED: path ]) });
     }
 
     void file_exists (string path, Stdio.Stat st)
     {
+      ::file_exists(path, st);
       evts += ({ ([ EVT_FILE_EXISTS: path ]) });
     }
 
     void file_created (string path, Stdio.Stat st)
     {
+      ::file_created(path, st);
       evts += ({ ([ EVT_FILE_CREATED: path ]) });
     }
 
     void file_deleted (string path)
     {
+      ::file_deleted(path);
       evts += ({ ([ EVT_FILE_DELETED: path ]) });
     }
 
     void stable_data_change (string path, Stdio.Stat st)
     {
+      ::stable_data_change(path, st);
       evts += ({ ([ EVT_STABLE_DATA_CHANGE: path ]) });
     }
   };

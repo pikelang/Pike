@@ -429,6 +429,9 @@ struct svalue
 #define tSprintfArgs(X)		tAttr("sprintf_args", X)
 #define tDeprecated(X)		tAttr("deprecated", X)
 #define tUtf8Str		tAttr("utf8", tStr8)
+#define tLfunObj(X)		tAttr("lfun::" X, tObj)
+#define tLfunArgs(X)		tAttr("lfun_args", X)
+#define tLfunReturn(X)		tAttr("lfun_return", X)
 
 #define tGetReturn(X)		"\200\002" X
 #define tApply(FUN, ARG)	"\200\201" FUN ARG
@@ -533,15 +536,16 @@ extern struct program *pike_trampoline_program;
 /* SAFE_IS_ZERO is compatible with the old IS_ZERO, but you should
  * consider using UNSAFE_IS_ZERO instead, since exceptions thrown from
  * `! functions will be propagated correctly then. */
-#define UNSAFE_IS_ZERO(X) (PIKE_TYPEOF(*(X))==PIKE_T_INT?(X)->u.integer==0:(1<<PIKE_TYPEOF(*(X)))&(BIT_OBJECT|BIT_FUNCTION)?!complex_svalue_is_true(X):0)
-#define SAFE_IS_ZERO(X) (PIKE_TYPEOF(*(X))==PIKE_T_INT?(X)->u.integer==0:(1<<PIKE_TYPEOF(*(X)))&(BIT_OBJECT|BIT_FUNCTION)?!safe_svalue_is_true(X):0)
+#define UNSAFE_IS_ZERO(X) (PIKE_TYPEOF(*(X))==PIKE_T_INT?(X)->u.integer==0:(1<<(PIKE_TYPEOF(*(X))&PIKE_T_MASK))&(BIT_OBJECT|BIT_FUNCTION)?!complex_svalue_is_true(X):0)
+#define SAFE_IS_ZERO(X) (PIKE_TYPEOF(*(X))==PIKE_T_INT?(X)->u.integer==0:(1<<(PIKE_TYPEOF(*(X))&PIKE_T_MASK))&(BIT_OBJECT|BIT_FUNCTION)?!safe_svalue_is_true(X):0)
 
 #define IS_UNDEFINED(X) (check_svalue (X), PIKE_TYPEOF(*(X))==PIKE_T_INT&&PIKE_SUBTYPEOF(*(X))==NUMBER_UNDEFINED)
 
 #define IS_DESTRUCTED(X)                                                \
-  ((PIKE_TYPEOF(*(X)) == PIKE_T_OBJECT && !(X)->u.object->prog) ||	\
- (PIKE_TYPEOF(*(X)) == PIKE_T_FUNCTION &&				\
-  PIKE_SUBTYPEOF(*(X)) != FUNCTION_BUILTIN				\
+  (((PIKE_TYPEOF(*(X))&PIKE_T_MASK) == PIKE_T_OBJECT &&			\
+    !(X)->u.object->prog) ||						\
+   ((PIKE_TYPEOF(*(X))&PIKE_T_MASK) == PIKE_T_FUNCTION &&		\
+    PIKE_SUBTYPEOF(*(X)) != FUNCTION_BUILTIN				\
   && (!(X)->u.object->prog                                              \
       || ((X)->u.object->prog == pike_trampoline_program                \
           && !((struct pike_trampoline *)(X)->u.object->storage)        \

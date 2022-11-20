@@ -112,8 +112,8 @@ class Socket {
 
   void cleanup()
   {
-    DEBUG_WERR("Cleanup: Input: %d, Output: %d\n",
-	       input_finished, output_finished);
+    DEBUG_WERR("Cleanup [%d]: Input: %d, Output: %d\n",
+	       o->query_fd(), input_finished, output_finished);
     if(input_finished && output_finished)
     {
       DEBUG_WERR("Closing fd:%O\n", o->query_fd());
@@ -430,6 +430,8 @@ array(object) stdtest(program Socket)
   object sock,sock2;
   int warned = 0;
 
+  DEBUG_WERR("Stdtest(%O): #%d\n", Socket, _tests);
+
   sock=Socket();
   int attempt;
   while(1)
@@ -502,9 +504,9 @@ array(object) stdtest(program Socket)
 	    port2::errno(), strerror(port2::errno()));
   }
   DO_IF_BACKEND(sock2->set_backend(backend));
-  DEBUG_WERR("Socket connected: %O <==> %O\n",
-	     sock2->query_address(1),
-	     sock2->query_address());
+  DEBUG_WERR("Socket connected: %O [%d] <==> %O [%d]\n",
+	     sock2->query_address(1), sock2->query_fd(),
+	     sock2->query_address(), sock->o->query_fd());
   sock2=Socket(sock2);
   sock->output_buffer="foo";
   sock2->expected_data="foo";
@@ -573,6 +575,7 @@ void finish(program Socket)
         sleep(!(_tests&3));
 #endif
 #endif
+    DEBUG_WERR("Test #%d...\n", _tests);
     switch(_tests)
     {
       case 1:
@@ -909,6 +912,7 @@ int main(int argc, array(string) argv)
   DEBUG_WERR("port2: %O\n", port2::query_address());
   sscanf(port2::query_address(),"%*s %d",portno2);
 
+  _tests=1;
 #ifdef OOB_DEBUG
   start();
   _tests=49;

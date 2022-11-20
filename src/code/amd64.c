@@ -5333,12 +5333,11 @@ size_t amd64_disassemble_modrm(PIKE_OPCODE_T *pc,
   return bytes;
 }
 
-void amd64_disassemble_code(PIKE_OPCODE_T *pc, size_t len)
+void amd64_disassemble_code(struct string_builder *buf,
+			    PIKE_OPCODE_T *pc, size_t len)
 {
-  struct string_builder buf;
   size_t pos;
 
-  init_string_builder(&buf, 0);
   for (pos = 0; pos < len;) {
     size_t op_start = pos;
     size_t i;
@@ -5455,13 +5454,8 @@ void amd64_disassemble_code(PIKE_OPCODE_T *pc, size_t len)
       }
     }
 
-    string_builder_append_disassembly(&buf, (size_t)(pc + op_start),
+    string_builder_append_disassembly(buf, (size_t)(pc + op_start),
 				      pc + op_start, pc + pos,
 				      opcode, params, NULL);
   }
-
-  /* NUL-terminate. */
-  string_builder_putchar(&buf, 0);
-  fprintf(stderr, "%s", buf.s->str);
-  free_string_builder(&buf);
 }

@@ -118,7 +118,7 @@ PMOD_EXPORT struct callable *low_make_callable(c_fun fun,
     struct call_state cs;
     add_ref(type);
     INIT_CALL_STATE(cs, name);
-    type = check_splice_call(type, &cs, mixed_type_string, NULL,
+    type = check_splice_call(type, &cs, array_type_string, NULL,
 			     CALL_INHIBIT_WARNINGS);
     if (type) {
       z = new_get_return_type(type, &cs, CALL_INHIBIT_WARNINGS);
@@ -186,6 +186,11 @@ PMOD_EXPORT void quick_add_efun(const char *name, ptrdiff_t name_length,
 
   n = make_shared_binary_string(name, name_length);
   t = make_pike_type(type);
+  if (!strcmp(name, "max")) {
+    fprintf(stderr, "EFUN: \"%s\": ", name);
+    simple_describe_type(t);
+    fprintf(stderr, "\n\n");
+  }
   add_ref(n);
   SET_SVAL(s, T_FUNCTION, FUNCTION_BUILTIN, efun,
 	   low_make_callable(fun, n, t, flags, optimize, docode));

@@ -99,6 +99,11 @@ TREE_CLASSIFY(_transform_svalue_to_key)(const struct svalue * s) {
       if (!((1<<TYPEOF(*s)) & T_KEY))
 	Pike_error("Expected type " cmod_STRFY_EVAL(key_ptype) ".\n");
       key = CB_LOW_KEY_FROM_SVALUE(s);
+#cmod_ifdef DEBUG
+	if (((size_t)(key.str->str)) < 0x4000) {
+	  Pike_fatal("CritBit: Bad key.\n");
+	}
+#cmod_endif
     }
     return key;
 }

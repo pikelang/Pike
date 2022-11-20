@@ -127,6 +127,8 @@ EOF
     fi
   fi
 
+  AC_CHECK_FUNCS(mpfr_get_z_2exp mpfr_get_z_exp)
+
 else
   AC_MSG_ERROR([
 

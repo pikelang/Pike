@@ -38,6 +38,9 @@ int tls_iv;
 
 //! TLS 1.2 IV salt.
 //! This is used as a prefix for the IV for the AEAD cipher algorithms.
+//!
+//! In TLS 1.3 and later this is xored with the sequence number to
+//! generate the implicit iv for the AEAD.
 string salt;
 
 //! Destructively decrypts a packet (including inflating and MAC-verification,
@@ -72,6 +75,9 @@ Alert|Packet decrypt_packet(Packet packet)
   int hmac_size = mac && (session->truncated_hmac ? 10 :
 			  session->cipher_spec->?hash_size);
   int padding;
+
+  SSL3_DEBUG_CRYPT_MSG("DECRYPT: seq_num: %O, hmac_size: %O, crypt: %O, \n",
+		       packet->seq_num, hmac_size, crypt);
 
   if (undefinedp(packet->seq_num) && (hmac_size || crypt)) {
     packet->seq_num = next_seq_num++;
@@ -157,7 +163,11 @@ Alert|Packet decrypt_packet(Packet packet)
 
       // NB: Only valid in TLS 1.2 and later.
       string iv;
-      if (session->cipher_spec->explicit_iv_size) {
+      if (version >= PROTOCOL_TLS_1_3) {
+	// Xor the sequence number with the initial iv
+	// to generate the TLS 1.3 nonce.
+	iv = sprintf("%*c", sizeof(salt), packet->seq_num) ^ salt;
+      } else if (session->cipher_spec->explicit_iv_size) {
 	// The message consists of explicit_iv + crypted-msg + digest.
 	iv = salt + msg[..session->cipher_spec->explicit_iv_size-1];
       } else {
@@ -174,9 +184,10 @@ Alert|Packet decrypt_packet(Packet packet)
       crypt->set_iv(iv);
       string auth_data;
       if (version >= PROTOCOL_TLS_1_3) {
+	// NB: The record version in TLS 1.3 is hard coded to TLS 1.0.
 	auth_data = sprintf("%8c%c%2c",
 			    packet->seq_num, packet->content_type,
-			    version);
+			    PROTOCOL_TLS_1_0);
       } else {
 	auth_data = sprintf("%8c%c%2c%2c",
 			    packet->seq_num, packet->content_type, version,
@@ -307,6 +318,7 @@ Alert|Packet encrypt_packet(Packet packet, Context ctx)
   int hmac_size = mac && (session->truncated_hmac ? 10 :
 			  session->cipher_spec->?hash_size);
 
+
   if (mac && !session->encrypt_then_mac) {
     digest = mac->hash_packet(packet)[..hmac_size-1];
     hmac_size = 0;
@@ -344,7 +356,11 @@ Alert|Packet encrypt_packet(Packet packet, Context ctx)
       // FIXME: Do we need to pay attention to threads here?
       string explicit_iv = "";
       string iv;
-      if (session->cipher_spec->explicit_iv_size) {
+      if (version >= PROTOCOL_TLS_1_3) {
+	// Xor the sequence number with the initial iv
+	// to generate the TLS 1.3 nonce.
+	iv = sprintf("%*c", sizeof(salt), packet->seq_num) ^ salt;
+      } else if (session->cipher_spec->explicit_iv_size) {
 	// RFC 5288 3:
 	// The nonce_explicit MAY be the 64-bit sequence number.
 	//
@@ -363,11 +379,11 @@ Alert|Packet encrypt_packet(Packet packet, Context ctx)
       crypt->set_iv(iv);
       string auth_data;
       if (version >= PROTOCOL_TLS_1_3) {
-	auth_data = sprintf("%8c%c%2c",
+	auth_data = sprintf("%8c%1c%2c",
 			    packet->seq_num, packet->content_type,
 			    PROTOCOL_TLS_1_0);
       } else {
-	auth_data = sprintf("%8c%c%2c%2c",
+	auth_data = sprintf("%8c%1c%2c%2c",
 			    packet->seq_num, packet->content_type,
 			    version, sizeof(data));
       }

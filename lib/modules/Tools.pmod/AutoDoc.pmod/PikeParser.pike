@@ -147,6 +147,8 @@ class ParseError
     this::pos = pos;
     parse_message = message;
     ::create (sprintf ("PikeParser: %s:%d: %s\n", filename, pos, message), bt);
+
+    werror(describe_backtrace(bt || backtrace()));
   }
 }
 

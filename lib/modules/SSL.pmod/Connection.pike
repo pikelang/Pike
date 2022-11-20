@@ -141,7 +141,7 @@ Packet handshake_packet(int(8bit) type,
   string(8bit) str = sprintf("%1c%3H", type, (string(8bit))data);
   add_handshake_message(str);
 
-  /* FIXME: One need to split large packages. */
+  // NB: DTLS fragmentation of large packets is done by to_write().
   return Packet(version, PACKET_handshake, str);
 }
 
@@ -493,6 +493,10 @@ constant PRI_application = 3;
 protected ADT.Queue alert_q = ADT.Queue();
 protected ADT.Queue urgent_q = ADT.Queue();
 protected ADT.Queue application_q = ADT.Queue();
+protected ADT.Queue dtls_resend_q = ADT.Queue();
+
+protected mixed dtls_resend_co;
+protected int|float dtls_resend_to;
 
 //! Returns a string describing the current connection state.
 string describe_state()
@@ -524,6 +528,34 @@ string describe_state()
 protected string _sprintf(int t)
 {
   if (t == 'O') return sprintf("SSL.Connection(%s)", describe_state());
+}
+
+protected void do_dtls_resend()
+{
+  Packet p;
+
+  if (!sizeof(dtls_resend_q)) return;
+
+  while (p = dtls_resend_q->try_read()) {
+    urgent_q->put(p);
+  }
+  dtls_resend_to *= 2;
+  dtls_resend_co = call_out(do_dtls_resend, dtls_resend_to);
+}
+
+protected void enter_state(int state)
+{
+  handshake_state = state;
+
+  if (dtls) {
+    dtls_resend_q->clear();
+
+    if (dtls_resend_co) {
+      remove_call_out(dtls_resend_co);
+    }
+    dtls_resend_to = 0.5;
+    dtls_resend_co = call_out(do_dtls_resend, dtls_resend_to);
+  }
 }
 
 //! Called with alert object, sequence number of bad packet,
@@ -564,7 +596,7 @@ protected object(Packet)|zero recv_packet()
       // reasons. This could be a non-HTTP port or we would want to
       // use HSTS.
       SSL3_DEBUG_MSG("Initial incorrect data %O\n",
-                     ((string)read_buffer[..25]));
+                     (((string)read_buffer)[..25]));
     }
     return alert(ALERT_fatal, ALERT_unexpected_message);
   default:
@@ -609,8 +641,8 @@ void send_packet(Packet packet, int|void priority)
     expect_change_cipher = 0;
     certificate_state = 0;
     state = [int(0..0)|ConnectionState](state | CONNECTION_handshaking);
-    handshake_state = STATE_wait_for_hello;
     previous_handshake = 0;
+    enter_state(STATE_wait_for_hello);
   }
 
   SSL3_DEBUG_MSG("SSL.Connection->send_packet: type %d, pri %d, %O\n",
@@ -660,6 +692,47 @@ int(-1..2) to_write(Stdio.Buffer output)
   if (!packet)
     return !!(state & CONNECTION_local_closing);
 
+  if (dtls) {
+    if ((packet->content_type == PACKET_handshake) ||
+	(packet->content_type == PACKET_change_cipher_spec)) {
+      dtls_resend_q->put(packet);
+    }
+
+    if (packet->content_type == PACKET_handshake) {
+      int version = packet->version;
+      Stdio.Buffer input = Stdio.Buffer(packet->fragment);
+      int handshake_type = input->read_int(1);
+      int full_len = sizeof(packet->fragment);
+      int seq = packet->seqence_no;
+      int offset;
+      do {
+	// FIXME: Support dynamic fragment lengths.
+	string(8bit) frag = input->try_read(1024);
+	// NB: Set a bit above the low 8 bit to indicate that this
+	//     is a fragmented packet. The bit is then automatically
+	//     stripped by %1c.
+	Packet frag_packet =
+	  Packet(version, PACKET_handshake|0x100,
+		 sprintf("%1c%3c%2c%3c%3H",
+			 handshake_type,
+			 full_len,
+			 seq,
+			 offset,
+			 frag));
+	if (!offset) {
+	  // First fragment.
+	  packet = frag_packet;
+	} else {
+	  // Put remaining fragments on the alert queue,
+	  // so that they are sent as soon as possible.
+	  alert_q->put(frag_packet);
+	}
+
+	offset += sizeof(frag);
+      } while (sizeof(input));
+    }
+  }
+
   SSL3_DEBUG_MSG("SSL.Connection: writing packet of type %d, %O\n",
                  packet->content_type, packet->fragment[..6]);
   if (packet->content_type == PACKET_alert)
@@ -708,10 +781,16 @@ void send_renegotiate();
 //! Send an application data packet. If the data block is too large
 //! then as much as possible of the beginning of it is sent. The size
 //! of the sent data is returned.
+//!
+//! @note
+//!   For DTLS if the data block is too large (larger than @[dtls_mtu])
+//!   @expr{-1@} will be returned.
 int send_streaming_data (string(8bit) data)
 {
   int size = sizeof(data);
   if (!size) return 0;
+
+  if (dtls && (size > session->max_packet_size)) return -1;
 
   if ((!sent) && (version < PROTOCOL_TLS_1_1) &&
       (session->cipher_spec->cipher_type == CIPHER_block) &&
@@ -1000,6 +1079,12 @@ protected void got_dtls_handshake_fragment(string(8bit) data)
     // Truncated fragment.
     return;
   }
+
+  werror("DTLS Handshake Packet #%d (%d bytes) %s: %d bytes @ %d:\n"
+	 "\t%s (%d bytes)\n",
+	 seq, len, fmt_constant(mt, "HANDSHAKE"),
+	 frag_len, offset, String.string2hex(data), sizeof(data));
+
   if ((seq < next_handshake_message_seq) ||
       (seq > (next_handshake_message_seq + 16)) ||
       (offset > len)) {
@@ -1010,10 +1095,13 @@ protected void got_dtls_handshake_fragment(string(8bit) data)
   if ((offset + frag_len) > len) {
     // Paranoia - Fragment out of bounds.
     frag_len = len - offset;
+    werror("Truncating fragment length to %d\n", frag_len);
   }
   if (sizeof(data) > frag_len) {
     // More paranoia - Extraneous data in fragment.
     data = data[..frag_len-1];
+    werror("Truncating data to %s (%d bytes)\n",
+	   String.string2hex(data), sizeof(data));
   }
   array(HandshakeFragment|zero)|zero frags = handshake_fragments[seq];
   if (sizeof(frags || ({})) &&
@@ -1062,7 +1150,14 @@ protected string(8bit) get_dtls_handshake_data()
 	    next_handshake_message_seq,
 	    0, frag->len,
 	    frag->data);
+  werror("Returning completed DTLS handshake packet #%d (%d bytes) %s:\n"
+	 "  %s (%d bytes)\n",
+	 next_handshake_message_seq, frag->len,
+	 fmt_constant(frag->mt, "HANDSHAKE"),
+	 String.string2hex(packet), sizeof(packet));
+
   m_delete(handshake_fragments, next_handshake_message_seq++);
+
   return packet;
 }
 
@@ -1108,6 +1203,8 @@ Stdio.Buffer alert_buffer = Stdio.Buffer();
 //! This function is intended to be called from an i/o read callback.
 string(8bit)|int(-1..1) got_data(string(8bit) data)
 {
+  SSL3_DEBUG_MSG("got_data(%s)\n", String.string2hex(data));
+
   if (state & (CONNECTION_peer_closed|CONNECTION_local_fatal)) {
     // The peer has closed the connection, or we sent a fatal.
     return 1;

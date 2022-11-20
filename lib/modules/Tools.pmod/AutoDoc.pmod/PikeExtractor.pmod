@@ -246,6 +246,7 @@ private class Extractor {
       object(PikeObject)|array(PikeObject)|Annotation p = parser->parseDecl();
 
       if (objectp(p) && p->is_annotation) {
+	// c->annotations += ({ p });
 	return ({ ({ p }), 0 });
       }
 
@@ -342,6 +343,8 @@ private class Extractor {
       int docsMark = parser->getReadDocComments();
 
       string s = parser->peekToken();
+
+      werror("s: %O\n", s);
 
       if (s == ";") {      // allow a semi-colon at the top level
         parser->eat(";");
@@ -518,7 +521,7 @@ private class Extractor {
 
       mapping(string:int) contexts = ([]);
 
-      foreach(decls, object(PikeObject)|Annotation obj) {
+      foreach(decls, PikeObject obj) {
 	if (obj->objtype == "annotation") {
 	  c->annotations += ({ obj });
 	}

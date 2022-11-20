@@ -1,63 +1,19 @@
-
-#line 1 "rl/json5_number.rl"
-/* vim:syntax=ragel
-*/
-
-
-#line 24 "rl/json5_number.rl"
-
-
 static ptrdiff_t _parse_JSON5_number(PCHARP str, ptrdiff_t p, ptrdiff_t pe, struct parser_state *state) {
 	ptrdiff_t i = p;
 	ptrdiff_t eof = pe;
 	int cs;
-	int d=0, h=0, s=0;
+	int d = 0, h = 0, s = 0;
 	
-	
-	static const int JSON5_number_start = 24;
-	static const int JSON5_number_first_final = 24;
-	static const int JSON5_number_error = 0;
-	
-	static const int JSON5_number_en_main = 24;
-	
-	static const char _JSON5_number_nfa_targs[] = {
-		0, 0
-	};
-	
-	static const char _JSON5_number_nfa_offsets[] = {
-		0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0
-	};
-	
-	static const char _JSON5_number_nfa_push_actions[] = {
-		0, 0
-	};
-	
-	static const char _JSON5_number_nfa_pop_trans[] = {
-		0, 0
-	};
-	
-	
-	#line 33 "rl/json5_number.rl"
-	
-	
-	
+	static const int  JSON5_number_start  = 24;
+	static const int  JSON5_number_first_final  = 24;
+	static const int  JSON5_number_error  = 0;
+	static const int  JSON5_number_en_main  = 24;
 	{
-		cs = (int)JSON5_number_start;
+		cs = ( int ) JSON5_number_start;
+		
 	}
-	
-	#line 35 "rl/json5_number.rl"
-	
-	
 	{
-		if ( p == pe )
-		goto _test_eof;
-		switch ( cs )
-		{
+		switch ( cs  ) {
 			case 24:
 			goto st_case_24;
 			case 0:
@@ -144,1114 +100,1640 @@ static ptrdiff_t _parse_JSON5_number(PCHARP str, ptrdiff_t p, ptrdiff_t pe, stru
 			goto st_case_22;
 			case 23:
 			goto st_case_23;
+			
 		}
-		goto st_out;
+		p+= 1;
 		st_case_24:
-		switch( (((int)INDEX_PCHARP(str, p))) ) {
-			case 13: {
-				goto ctr24;
+		if ( p == pe  )
+		goto _out24;
+		
+		switch ( (((int)INDEX_PCHARP(str, p))) ) {
+			case 13:
+			{
+				goto _ctr32;
+				
 			}
-			case 32: {
-				goto ctr24;
+			case 32:
+			{
+				goto _ctr32;
+				
 			}
-			case 44: {
-				goto ctr26;
+			case 44:
+			{
+				goto _ctr34;
+				
 			}
-			case 46: {
-				goto ctr27;
+			case 46:
+			{
+				goto _ctr35;
+				
 			}
-			case 47: {
-				goto ctr28;
+			case 47:
+			{
+				goto _ctr36;
+				
 			}
-			case 48: {
-				goto st31;
+			case 48:
+			{
+				goto _st31;
+				
 			}
-			case 58: {
-				goto ctr26;
+			case 58:
+			{
+				goto _ctr34;
+				
 			}
-			case 69: {
-				goto ctr31;
+			case 69:
+			{
+				goto _ctr39;
+				
 			}
-			case 73: {
-				goto ctr32;
+			case 73:
+			{
+				goto _ctr40;
+				
 			}
-			case 78: {
-				goto ctr33;
+			case 78:
+			{
+				goto _ctr41;
+				
 			}
-			case 93: {
-				goto ctr26;
+			case 93:
+			{
+				goto _ctr34;
+				
 			}
-			case 101: {
-				goto ctr31;
+			case 101:
+			{
+				goto _ctr39;
+				
 			}
-			case 125: {
-				goto ctr26;
+			case 125:
+			{
+				goto _ctr34;
+				
 			}
+			
 		}
-		if ( (((int)INDEX_PCHARP(str, p))) < 43 ) {
-			if ( 9 <= (((int)INDEX_PCHARP(str, p))) && (((int)INDEX_PCHARP(str, p))) <= 10 ) {
-				goto ctr24;
-			}
-		} else if ( (((int)INDEX_PCHARP(str, p))) > 45 ) {
-			if ( 49 <= (((int)INDEX_PCHARP(str, p))) && (((int)INDEX_PCHARP(str, p))) <= 57 ) {
-				goto st32;
-			}
-		} else {
-			goto st26;
-		}
+		if ( (((int)INDEX_PCHARP(str, p))) < 43  )
 		{
-			goto st0;
+			if ( 9 <= (((int)INDEX_PCHARP(str, p))) && (((int)INDEX_PCHARP(str, p))) <= 10  )
+			{
+				goto _ctr32;
+				
+			}
+			
+			
 		}
+		
+		else if ( (((int)INDEX_PCHARP(str, p))) > 45  )
+		{
+			if ( 49 <= (((int)INDEX_PCHARP(str, p))) && (((int)INDEX_PCHARP(str, p))) <= 57  )
+			{
+				goto _st32;
+				
+			}
+			
+			
+		}
+		
+		else
+		{
+			goto _st26;
+			
+		}
+		
+		goto _st0;
+		_st0:
 		st_case_0:
-		st0:
-		cs = 0;
-		goto _out;
-		ctr24:
+		goto _out0;
+		_ctr32:
 		{
-			#line 11 "rl/json5_number.rl"
-			
 			p--;
-			{p+= 1; cs = 25; goto _out;}
+			{
+				p+= 1;
+				cs = 25;
+				goto _out;
+			}
+			
+			
 		}
 		
-		goto st25;
-		st25:
+		
+		goto _st25;
+		_st25:
 		p+= 1;
-		if ( p == pe )
-		goto _test_eof25;
 		st_case_25:
-		switch( (((int)INDEX_PCHARP(str, p))) ) {
-			case 13: {
-				goto st25;
+		if ( p == pe  )
+		goto _out25;
+		
+		switch ( (((int)INDEX_PCHARP(str, p))) ) {
+			case 13:
+			{
+				goto _st25;
+				
 			}
-			case 32: {
-				goto st25;
+			case 32:
+			{
+				goto _st25;
+				
 			}
-			case 47: {
-				goto st1;
+			case 47:
+			{
+				goto _st1;
+				
 			}
+			
 		}
-		if ( 9 <= (((int)INDEX_PCHARP(str, p))) && (((int)INDEX_PCHARP(str, p))) <= 10 ) {
-			goto st25;
-		}
+		if ( 9 <= (((int)INDEX_PCHARP(str, p))) && (((int)INDEX_PCHARP(str, p))) <= 10  )
 		{
-			goto st0;
+			goto _st25;
+			
 		}
-		st1:
+		
+		goto _st0;
+		_st1:
 		p+= 1;
-		if ( p == pe )
-		goto _test_eof1;
 		st_case_1:
-		switch( (((int)INDEX_PCHARP(str, p))) ) {
-			case 42: {
-				goto st2;
+		if ( p == pe  )
+		goto _out1;
+		
+		switch ( (((int)INDEX_PCHARP(str, p))) ) {
+			case 42:
+			{
+				goto _st2;
+				
 			}
-			case 47: {
-				goto st4;
+			case 47:
+			{
+				goto _st4;
+				
 			}
+			
 		}
-		{
-			goto st0;
-		}
-		st2:
+		goto _st0;
+		_st2:
 		p+= 1;
-		if ( p == pe )
-		goto _test_eof2;
 		st_case_2:
-		if ( (((int)INDEX_PCHARP(str, p))) == 42 ) {
-			goto st3;
-		}
+		if ( p == pe  )
+		goto _out2;
+		
+		if ( (((int)INDEX_PCHARP(str, p))) == 42  )
 		{
-			goto st2;
+			goto _st3;
+			
 		}
-		st3:
+		
+		goto _st2;
+		_st3:
 		p+= 1;
-		if ( p == pe )
-		goto _test_eof3;
 		st_case_3:
-		switch( (((int)INDEX_PCHARP(str, p))) ) {
-			case 42: {
-				goto st3;
+		if ( p == pe  )
+		goto _out3;
+		
+		switch ( (((int)INDEX_PCHARP(str, p))) ) {
+			case 42:
+			{
+				goto _st3;
+				
 			}
-			case 47: {
-				goto st25;
+			case 47:
+			{
+				goto _st25;
+				
 			}
+			
 		}
-		{
-			goto st2;
-		}
-		st4:
+		goto _st2;
+		_st4:
 		p+= 1;
-		if ( p == pe )
-		goto _test_eof4;
 		st_case_4:
-		if ( (((int)INDEX_PCHARP(str, p))) == 10 ) {
-			goto st25;
-		}
+		if ( p == pe  )
+		goto _out4;
+		
+		if ( (((int)INDEX_PCHARP(str, p))) == 10  )
 		{
-			goto st4;
+			goto _st25;
+			
 		}
-		st26:
+		
+		goto _st4;
+		_st26:
 		p+= 1;
-		if ( p == pe )
-		goto _test_eof26;
 		st_case_26:
-		switch( (((int)INDEX_PCHARP(str, p))) ) {
-			case 13: {
-				goto ctr24;
+		if ( p == pe  )
+		goto _out26;
+		
+		switch ( (((int)INDEX_PCHARP(str, p))) ) {
+			case 13:
+			{
+				goto _ctr32;
+				
 			}
-			case 32: {
-				goto ctr24;
+			case 32:
+			{
+				goto _ctr32;
+				
 			}
-			case 44: {
-				goto ctr26;
+			case 44:
+			{
+				goto _ctr34;
+				
 			}
-			case 46: {
-				goto ctr27;
+			case 46:
+			{
+				goto _ctr35;
+				
 			}
-			case 47: {
-				goto ctr28;
+			case 47:
+			{
+				goto _ctr36;
+				
 			}
-			case 48: {
-				goto st31;
+			case 48:
+			{
+				goto _st31;
+				
 			}
-			case 58: {
-				goto ctr26;
+			case 58:
+			{
+				goto _ctr34;
+				
 			}
-			case 69: {
-				goto ctr31;
+			case 69:
+			{
+				goto _ctr39;
+				
 			}
-			case 73: {
-				goto ctr32;
+			case 73:
+			{
+				goto _ctr40;
+				
 			}
-			case 78: {
-				goto ctr33;
+			case 78:
+			{
+				goto _ctr41;
+				
 			}
-			case 93: {
-				goto ctr26;
+			case 93:
+			{
+				goto _ctr34;
+				
 			}
-			case 101: {
-				goto ctr31;
+			case 101:
+			{
+				goto _ctr39;
+				
 			}
-			case 125: {
-				goto ctr26;
+			case 125:
+			{
+				goto _ctr34;
+				
 			}
-		}
-		if ( (((int)INDEX_PCHARP(str, p))) > 10 ) {
-			if ( 49 <= (((int)INDEX_PCHARP(str, p))) && (((int)INDEX_PCHARP(str, p))) <= 57 ) {
-				goto st32;
-			}
-		} else if ( (((int)INDEX_PCHARP(str, p))) >= 9 ) {
-			goto ctr24;
-		}
-		{
-			goto st0;
-		}
-		ctr26:
-		{
-			#line 11 "rl/json5_number.rl"
 			
-			p--;
-			{p+= 1; cs = 27; goto _out;}
+		}
+		if ( (((int)INDEX_PCHARP(str, p))) > 10  )
+		{
+			if ( 49 <= (((int)INDEX_PCHARP(str, p))) && (((int)INDEX_PCHARP(str, p))) <= 57  )
+			{
+				goto _st32;
+				
+			}
+			
+			
 		}
 		
-		goto st27;
-		st27:
+		else if ( (((int)INDEX_PCHARP(str, p))) >= 9  )
+		{
+			goto _ctr32;
+			
+		}
+		
+		goto _st0;
+		_ctr34:
+		{
+			p--;
+			{
+				p+= 1;
+				cs = 27;
+				goto _out;
+			}
+			
+			
+		}
+		
+		
+		goto _st27;
+		_st27:
 		p+= 1;
-		if ( p == pe )
-		goto _test_eof27;
 		st_case_27:
-		{
-			goto st0;
-		}
-		ctr27:
-		{
-			#line 20 "rl/json5_number.rl"
-			d = 1;}
+		if ( p == pe  )
+		goto _out27;
 		
-		goto st28;
-		st28:
+		goto _st0;
+		_ctr35:
+		{
+			d = 1;
+		}
+		
+		
+		goto _st28;
+		_st28:
 		p+= 1;
-		if ( p == pe )
-		goto _test_eof28;
 		st_case_28:
-		switch( (((int)INDEX_PCHARP(str, p))) ) {
-			case 13: {
-				goto ctr24;
+		if ( p == pe  )
+		goto _out28;
+		
+		switch ( (((int)INDEX_PCHARP(str, p))) ) {
+			case 13:
+			{
+				goto _ctr32;
+				
 			}
-			case 32: {
-				goto ctr24;
+			case 32:
+			{
+				goto _ctr32;
+				
 			}
-			case 44: {
-				goto ctr26;
+			case 44:
+			{
+				goto _ctr34;
+				
 			}
-			case 47: {
-				goto ctr28;
+			case 47:
+			{
+				goto _ctr36;
+				
 			}
-			case 58: {
-				goto ctr26;
+			case 58:
+			{
+				goto _ctr34;
+				
 			}
-			case 69: {
-				goto ctr31;
+			case 69:
+			{
+				goto _ctr39;
+				
 			}
-			case 93: {
-				goto ctr26;
+			case 93:
+			{
+				goto _ctr34;
+				
 			}
-			case 101: {
-				goto ctr31;
+			case 101:
+			{
+				goto _ctr39;
+				
 			}
-			case 125: {
-				goto ctr26;
+			case 125:
+			{
+				goto _ctr34;
+				
 			}
-		}
-		if ( (((int)INDEX_PCHARP(str, p))) > 10 ) {
-			if ( 48 <= (((int)INDEX_PCHARP(str, p))) && (((int)INDEX_PCHARP(str, p))) <= 57 ) {
-				goto st28;
-			}
-		} else if ( (((int)INDEX_PCHARP(str, p))) >= 9 ) {
-			goto ctr24;
-		}
-		{
-			goto st0;
-		}
-		ctr28:
-		{
-			#line 11 "rl/json5_number.rl"
 			
-			p--;
-			{p+= 1; cs = 29; goto _out;}
+		}
+		if ( (((int)INDEX_PCHARP(str, p))) > 10  )
+		{
+			if ( 48 <= (((int)INDEX_PCHARP(str, p))) && (((int)INDEX_PCHARP(str, p))) <= 57  )
+			{
+				goto _st28;
+				
+			}
+			
+			
 		}
 		
-		goto st29;
-		st29:
+		else if ( (((int)INDEX_PCHARP(str, p))) >= 9  )
+		{
+			goto _ctr32;
+			
+		}
+		
+		goto _st0;
+		_ctr36:
+		{
+			p--;
+			{
+				p+= 1;
+				cs = 29;
+				goto _out;
+			}
+			
+			
+		}
+		
+		
+		goto _st29;
+		_st29:
 		p+= 1;
-		if ( p == pe )
-		goto _test_eof29;
 		st_case_29:
-		switch( (((int)INDEX_PCHARP(str, p))) ) {
-			case 42: {
-				goto st2;
-			}
-			case 47: {
-				goto st4;
-			}
-		}
-		{
-			goto st0;
-		}
-		ctr31:
-		{
-			#line 18 "rl/json5_number.rl"
-			d = 1;}
+		if ( p == pe  )
+		goto _out29;
 		
-		goto st5;
-		st5:
+		switch ( (((int)INDEX_PCHARP(str, p))) ) {
+			case 42:
+			{
+				goto _st2;
+				
+			}
+			case 47:
+			{
+				goto _st4;
+				
+			}
+			
+		}
+		goto _st0;
+		_ctr39:
+		{
+			d = 1;
+		}
+		
+		
+		goto _st5;
+		_st5:
 		p+= 1;
-		if ( p == pe )
-		goto _test_eof5;
 		st_case_5:
-		switch( (((int)INDEX_PCHARP(str, p))) ) {
-			case 43: {
-				goto st6;
+		if ( p == pe  )
+		goto _out5;
+		
+		switch ( (((int)INDEX_PCHARP(str, p))) ) {
+			case 43:
+			{
+				goto _st6;
+				
 			}
-			case 45: {
-				goto st6;
+			case 45:
+			{
+				goto _st6;
+				
 			}
+			
 		}
-		if ( 48 <= (((int)INDEX_PCHARP(str, p))) && (((int)INDEX_PCHARP(str, p))) <= 57 ) {
-			goto st30;
-		}
+		if ( 48 <= (((int)INDEX_PCHARP(str, p))) && (((int)INDEX_PCHARP(str, p))) <= 57  )
 		{
-			goto st0;
+			goto _st30;
+			
 		}
-		st6:
+		
+		goto _st0;
+		_st6:
 		p+= 1;
-		if ( p == pe )
-		goto _test_eof6;
 		st_case_6:
-		if ( 48 <= (((int)INDEX_PCHARP(str, p))) && (((int)INDEX_PCHARP(str, p))) <= 57 ) {
-			goto st30;
-		}
+		if ( p == pe  )
+		goto _out6;
+		
+		if ( 48 <= (((int)INDEX_PCHARP(str, p))) && (((int)INDEX_PCHARP(str, p))) <= 57  )
 		{
-			goto st0;
+			goto _st30;
+			
 		}
-		st30:
+		
+		goto _st0;
+		_st30:
 		p+= 1;
-		if ( p == pe )
-		goto _test_eof30;
 		st_case_30:
-		switch( (((int)INDEX_PCHARP(str, p))) ) {
-			case 13: {
-				goto ctr24;
+		if ( p == pe  )
+		goto _out30;
+		
+		switch ( (((int)INDEX_PCHARP(str, p))) ) {
+			case 13:
+			{
+				goto _ctr32;
+				
 			}
-			case 32: {
-				goto ctr24;
+			case 32:
+			{
+				goto _ctr32;
+				
 			}
-			case 44: {
-				goto ctr26;
+			case 44:
+			{
+				goto _ctr34;
+				
 			}
-			case 47: {
-				goto ctr28;
+			case 47:
+			{
+				goto _ctr36;
+				
 			}
-			case 58: {
-				goto ctr26;
+			case 58:
+			{
+				goto _ctr34;
+				
 			}
-			case 93: {
-				goto ctr26;
+			case 93:
+			{
+				goto _ctr34;
+				
 			}
-			case 125: {
-				goto ctr26;
+			case 125:
+			{
+				goto _ctr34;
+				
 			}
+			
 		}
-		if ( (((int)INDEX_PCHARP(str, p))) > 10 ) {
-			if ( 48 <= (((int)INDEX_PCHARP(str, p))) && (((int)INDEX_PCHARP(str, p))) <= 57 ) {
-				goto st30;
-			}
-		} else if ( (((int)INDEX_PCHARP(str, p))) >= 9 ) {
-			goto ctr24;
-		}
+		if ( (((int)INDEX_PCHARP(str, p))) > 10  )
 		{
-			goto st0;
+			if ( 48 <= (((int)INDEX_PCHARP(str, p))) && (((int)INDEX_PCHARP(str, p))) <= 57  )
+			{
+				goto _st30;
+				
+			}
+			
+			
 		}
-		st31:
+		
+		else if ( (((int)INDEX_PCHARP(str, p))) >= 9  )
+		{
+			goto _ctr32;
+			
+		}
+		
+		goto _st0;
+		_st31:
 		p+= 1;
-		if ( p == pe )
-		goto _test_eof31;
 		st_case_31:
-		switch( (((int)INDEX_PCHARP(str, p))) ) {
-			case 13: {
-				goto ctr24;
+		if ( p == pe  )
+		goto _out31;
+		
+		switch ( (((int)INDEX_PCHARP(str, p))) ) {
+			case 13:
+			{
+				goto _ctr32;
+				
 			}
-			case 32: {
-				goto ctr24;
+			case 32:
+			{
+				goto _ctr32;
+				
 			}
-			case 44: {
-				goto ctr26;
+			case 44:
+			{
+				goto _ctr34;
+				
 			}
-			case 46: {
-				goto ctr27;
+			case 46:
+			{
+				goto _ctr35;
+				
 			}
-			case 47: {
-				goto ctr28;
+			case 47:
+			{
+				goto _ctr36;
+				
 			}
-			case 58: {
-				goto ctr26;
+			case 58:
+			{
+				goto _ctr34;
+				
 			}
-			case 69: {
-				goto ctr31;
+			case 69:
+			{
+				goto _ctr39;
+				
 			}
-			case 88: {
-				goto ctr36;
+			case 88:
+			{
+				goto _ctr45;
+				
 			}
-			case 93: {
-				goto ctr26;
+			case 93:
+			{
+				goto _ctr34;
+				
 			}
-			case 101: {
-				goto ctr31;
+			case 101:
+			{
+				goto _ctr39;
+				
 			}
-			case 120: {
-				goto ctr36;
+			case 120:
+			{
+				goto _ctr45;
+				
 			}
-			case 125: {
-				goto ctr26;
+			case 125:
+			{
+				goto _ctr34;
+				
 			}
+			
 		}
-		if ( (((int)INDEX_PCHARP(str, p))) > 10 ) {
-			if ( 48 <= (((int)INDEX_PCHARP(str, p))) && (((int)INDEX_PCHARP(str, p))) <= 57 ) {
-				goto st32;
-			}
-		} else if ( (((int)INDEX_PCHARP(str, p))) >= 9 ) {
-			goto ctr24;
-		}
+		if ( (((int)INDEX_PCHARP(str, p))) > 10  )
 		{
-			goto st0;
+			if ( 48 <= (((int)INDEX_PCHARP(str, p))) && (((int)INDEX_PCHARP(str, p))) <= 57  )
+			{
+				goto _st32;
+				
+			}
+			
+			
 		}
-		st32:
+		
+		else if ( (((int)INDEX_PCHARP(str, p))) >= 9  )
+		{
+			goto _ctr32;
+			
+		}
+		
+		goto _st0;
+		_st32:
 		p+= 1;
-		if ( p == pe )
-		goto _test_eof32;
 		st_case_32:
-		switch( (((int)INDEX_PCHARP(str, p))) ) {
-			case 13: {
-				goto ctr24;
-			}
-			case 32: {
-				goto ctr24;
-			}
-			case 44: {
-				goto ctr26;
-			}
-			case 46: {
-				goto ctr27;
-			}
-			case 47: {
-				goto ctr28;
-			}
-			case 58: {
-				goto ctr26;
-			}
-			case 69: {
-				goto ctr31;
-			}
-			case 93: {
-				goto ctr26;
-			}
-			case 101: {
-				goto ctr31;
-			}
-			case 125: {
-				goto ctr26;
-			}
-		}
-		if ( (((int)INDEX_PCHARP(str, p))) > 10 ) {
-			if ( 48 <= (((int)INDEX_PCHARP(str, p))) && (((int)INDEX_PCHARP(str, p))) <= 57 ) {
-				goto st32;
-			}
-		} else if ( (((int)INDEX_PCHARP(str, p))) >= 9 ) {
-			goto ctr24;
-		}
-		{
-			goto st0;
-		}
-		ctr36:
-		{
-			#line 19 "rl/json5_number.rl"
-			h = 1;}
+		if ( p == pe  )
+		goto _out32;
 		
-		goto st7;
-		st7:
+		switch ( (((int)INDEX_PCHARP(str, p))) ) {
+			case 13:
+			{
+				goto _ctr32;
+				
+			}
+			case 32:
+			{
+				goto _ctr32;
+				
+			}
+			case 44:
+			{
+				goto _ctr34;
+				
+			}
+			case 46:
+			{
+				goto _ctr35;
+				
+			}
+			case 47:
+			{
+				goto _ctr36;
+				
+			}
+			case 58:
+			{
+				goto _ctr34;
+				
+			}
+			case 69:
+			{
+				goto _ctr39;
+				
+			}
+			case 93:
+			{
+				goto _ctr34;
+				
+			}
+			case 101:
+			{
+				goto _ctr39;
+				
+			}
+			case 125:
+			{
+				goto _ctr34;
+				
+			}
+			
+		}
+		if ( (((int)INDEX_PCHARP(str, p))) > 10  )
+		{
+			if ( 48 <= (((int)INDEX_PCHARP(str, p))) && (((int)INDEX_PCHARP(str, p))) <= 57  )
+			{
+				goto _st32;
+				
+			}
+			
+			
+		}
+		
+		else if ( (((int)INDEX_PCHARP(str, p))) >= 9  )
+		{
+			goto _ctr32;
+			
+		}
+		
+		goto _st0;
+		_ctr45:
+		{
+			h = 1;
+		}
+		
+		
+		goto _st7;
+		_st7:
 		p+= 1;
-		if ( p == pe )
-		goto _test_eof7;
 		st_case_7:
-		if ( (((int)INDEX_PCHARP(str, p))) < 65 ) {
-			if ( 48 <= (((int)INDEX_PCHARP(str, p))) && (((int)INDEX_PCHARP(str, p))) <= 57 ) {
-				goto st33;
-			}
-		} else if ( (((int)INDEX_PCHARP(str, p))) > 70 ) {
-			if ( 97 <= (((int)INDEX_PCHARP(str, p))) && (((int)INDEX_PCHARP(str, p))) <= 102 ) {
-				goto st33;
-			}
-		} else {
-			goto st33;
-		}
+		if ( p == pe  )
+		goto _out7;
+		
+		if ( (((int)INDEX_PCHARP(str, p))) < 65  )
 		{
-			goto st0;
+			if ( 48 <= (((int)INDEX_PCHARP(str, p))) && (((int)INDEX_PCHARP(str, p))) <= 57  )
+			{
+				goto _st33;
+				
+			}
+			
+			
 		}
-		st33:
+		
+		else if ( (((int)INDEX_PCHARP(str, p))) > 70  )
+		{
+			if ( 97 <= (((int)INDEX_PCHARP(str, p))) && (((int)INDEX_PCHARP(str, p))) <= 102  )
+			{
+				goto _st33;
+				
+			}
+			
+			
+		}
+		
+		else
+		{
+			goto _st33;
+			
+		}
+		
+		goto _st0;
+		_st33:
 		p+= 1;
-		if ( p == pe )
-		goto _test_eof33;
 		st_case_33:
-		switch( (((int)INDEX_PCHARP(str, p))) ) {
-			case 13: {
-				goto ctr37;
+		if ( p == pe  )
+		goto _out33;
+		
+		switch ( (((int)INDEX_PCHARP(str, p))) ) {
+			case 13:
+			{
+				goto _ctr46;
+				
 			}
-			case 32: {
-				goto ctr37;
+			case 32:
+			{
+				goto _ctr46;
+				
 			}
-			case 44: {
-				goto ctr38;
+			case 44:
+			{
+				goto _ctr47;
+				
 			}
-			case 47: {
-				goto ctr39;
+			case 47:
+			{
+				goto _ctr48;
+				
 			}
-			case 58: {
-				goto ctr38;
+			case 58:
+			{
+				goto _ctr47;
+				
 			}
-			case 93: {
-				goto ctr38;
+			case 93:
+			{
+				goto _ctr47;
+				
 			}
-			case 125: {
-				goto ctr38;
+			case 125:
+			{
+				goto _ctr47;
+				
 			}
+			
 		}
-		if ( (((int)INDEX_PCHARP(str, p))) < 48 ) {
-			if ( 9 <= (((int)INDEX_PCHARP(str, p))) && (((int)INDEX_PCHARP(str, p))) <= 10 ) {
-				goto ctr37;
+		if ( (((int)INDEX_PCHARP(str, p))) < 48  )
+		{
+			if ( 9 <= (((int)INDEX_PCHARP(str, p))) && (((int)INDEX_PCHARP(str, p))) <= 10  )
+			{
+				goto _ctr46;
+				
 			}
-		} else if ( (((int)INDEX_PCHARP(str, p))) > 57 ) {
-			if ( (((int)INDEX_PCHARP(str, p))) > 70 ) {
-				if ( 97 <= (((int)INDEX_PCHARP(str, p))) && (((int)INDEX_PCHARP(str, p))) <= 102 ) {
-					goto st33;
+			
+			
+		}
+		
+		else if ( (((int)INDEX_PCHARP(str, p))) > 57  )
+		{
+			if ( (((int)INDEX_PCHARP(str, p))) > 70  )
+			{
+				if ( 97 <= (((int)INDEX_PCHARP(str, p))) && (((int)INDEX_PCHARP(str, p))) <= 102  )
+				{
+					goto _st33;
+					
 				}
-			} else if ( (((int)INDEX_PCHARP(str, p))) >= 65 ) {
-				goto st33;
+				
+				
 			}
-		} else {
-			goto st33;
-		}
-		{
-			goto st0;
-		}
-		ctr37:
-		{
-			#line 11 "rl/json5_number.rl"
 			
-			p--;
-			{p+= 1; cs = 34; goto _out;}
+			else if ( (((int)INDEX_PCHARP(str, p))) >= 65  )
+			{
+				goto _st33;
+				
+			}
+			
+			
 		}
 		
-		goto st34;
-		st34:
+		else
+		{
+			goto _st33;
+			
+		}
+		
+		goto _st0;
+		_ctr46:
+		{
+			p--;
+			{
+				p+= 1;
+				cs = 34;
+				goto _out;
+			}
+			
+			
+		}
+		
+		
+		goto _st34;
+		_st34:
 		p+= 1;
-		if ( p == pe )
-		goto _test_eof34;
 		st_case_34:
-		switch( (((int)INDEX_PCHARP(str, p))) ) {
-			case 13: {
-				goto ctr37;
+		if ( p == pe  )
+		goto _out34;
+		
+		switch ( (((int)INDEX_PCHARP(str, p))) ) {
+			case 13:
+			{
+				goto _ctr46;
+				
 			}
-			case 32: {
-				goto ctr37;
+			case 32:
+			{
+				goto _ctr46;
+				
 			}
-			case 44: {
-				goto ctr26;
+			case 44:
+			{
+				goto _ctr34;
+				
 			}
-			case 47: {
-				goto ctr40;
+			case 47:
+			{
+				goto _ctr49;
+				
 			}
-			case 58: {
-				goto ctr26;
+			case 58:
+			{
+				goto _ctr34;
+				
 			}
-			case 93: {
-				goto ctr26;
+			case 93:
+			{
+				goto _ctr34;
+				
 			}
-			case 125: {
-				goto ctr26;
+			case 125:
+			{
+				goto _ctr34;
+				
 			}
-		}
-		if ( 9 <= (((int)INDEX_PCHARP(str, p))) && (((int)INDEX_PCHARP(str, p))) <= 10 ) {
-			goto ctr37;
-		}
-		{
-			goto st0;
-		}
-		ctr40:
-		{
-			#line 11 "rl/json5_number.rl"
 			
-			p--;
-			{p+= 1; cs = 35; goto _out;}
+		}
+		if ( 9 <= (((int)INDEX_PCHARP(str, p))) && (((int)INDEX_PCHARP(str, p))) <= 10  )
+		{
+			goto _ctr46;
+			
 		}
 		
-		goto st35;
-		st35:
+		goto _st0;
+		_ctr49:
+		{
+			p--;
+			{
+				p+= 1;
+				cs = 35;
+				goto _out;
+			}
+			
+			
+		}
+		
+		
+		goto _st35;
+		_st35:
 		p+= 1;
-		if ( p == pe )
-		goto _test_eof35;
 		st_case_35:
-		switch( (((int)INDEX_PCHARP(str, p))) ) {
-			case 42: {
-				goto st8;
+		if ( p == pe  )
+		goto _out35;
+		
+		switch ( (((int)INDEX_PCHARP(str, p))) ) {
+			case 42:
+			{
+				goto _st8;
+				
 			}
-			case 47: {
-				goto st10;
+			case 47:
+			{
+				goto _st10;
+				
 			}
+			
 		}
-		{
-			goto st0;
-		}
-		st8:
+		goto _st0;
+		_st8:
 		p+= 1;
-		if ( p == pe )
-		goto _test_eof8;
 		st_case_8:
-		if ( (((int)INDEX_PCHARP(str, p))) == 42 ) {
-			goto st9;
-		}
+		if ( p == pe  )
+		goto _out8;
+		
+		if ( (((int)INDEX_PCHARP(str, p))) == 42  )
 		{
-			goto st8;
+			goto _st9;
+			
 		}
-		st9:
+		
+		goto _st8;
+		_st9:
 		p+= 1;
-		if ( p == pe )
-		goto _test_eof9;
 		st_case_9:
-		switch( (((int)INDEX_PCHARP(str, p))) ) {
-			case 42: {
-				goto st9;
+		if ( p == pe  )
+		goto _out9;
+		
+		switch ( (((int)INDEX_PCHARP(str, p))) ) {
+			case 42:
+			{
+				goto _st9;
+				
 			}
-			case 47: {
-				goto st34;
+			case 47:
+			{
+				goto _st34;
+				
 			}
+			
 		}
-		{
-			goto st8;
-		}
-		st10:
+		goto _st8;
+		_st10:
 		p+= 1;
-		if ( p == pe )
-		goto _test_eof10;
 		st_case_10:
-		if ( (((int)INDEX_PCHARP(str, p))) == 10 ) {
-			goto st34;
-		}
+		if ( p == pe  )
+		goto _out10;
+		
+		if ( (((int)INDEX_PCHARP(str, p))) == 10  )
 		{
-			goto st10;
-		}
-		ctr38:
-		{
-			#line 11 "rl/json5_number.rl"
+			goto _st34;
 			
-			p--;
-			{p+= 1; cs = 36; goto _out;}
 		}
 		
-		goto st36;
-		st36:
+		goto _st10;
+		_ctr47:
+		{
+			p--;
+			{
+				p+= 1;
+				cs = 36;
+				goto _out;
+			}
+			
+			
+		}
+		
+		
+		goto _st36;
+		_st36:
 		p+= 1;
-		if ( p == pe )
-		goto _test_eof36;
 		st_case_36:
-		switch( (((int)INDEX_PCHARP(str, p))) ) {
-			case 13: {
-				goto ctr24;
+		if ( p == pe  )
+		goto _out36;
+		
+		switch ( (((int)INDEX_PCHARP(str, p))) ) {
+			case 13:
+			{
+				goto _ctr32;
+				
 			}
-			case 32: {
-				goto ctr24;
+			case 32:
+			{
+				goto _ctr32;
+				
 			}
-			case 44: {
-				goto ctr26;
+			case 44:
+			{
+				goto _ctr34;
+				
 			}
-			case 47: {
-				goto ctr28;
+			case 47:
+			{
+				goto _ctr36;
+				
 			}
-			case 58: {
-				goto ctr26;
+			case 58:
+			{
+				goto _ctr34;
+				
 			}
-			case 93: {
-				goto ctr26;
+			case 93:
+			{
+				goto _ctr34;
+				
 			}
-			case 125: {
-				goto ctr26;
+			case 125:
+			{
+				goto _ctr34;
+				
 			}
-		}
-		if ( 9 <= (((int)INDEX_PCHARP(str, p))) && (((int)INDEX_PCHARP(str, p))) <= 10 ) {
-			goto ctr24;
-		}
-		{
-			goto st0;
-		}
-		ctr39:
-		{
-			#line 11 "rl/json5_number.rl"
 			
-			p--;
-			{p+= 1; cs = 37; goto _out;}
+		}
+		if ( 9 <= (((int)INDEX_PCHARP(str, p))) && (((int)INDEX_PCHARP(str, p))) <= 10  )
+		{
+			goto _ctr32;
+			
 		}
 		
-		goto st37;
-		st37:
+		goto _st0;
+		_ctr48:
+		{
+			p--;
+			{
+				p+= 1;
+				cs = 37;
+				goto _out;
+			}
+			
+			
+		}
+		
+		
+		goto _st37;
+		_st37:
 		p+= 1;
-		if ( p == pe )
-		goto _test_eof37;
 		st_case_37:
-		switch( (((int)INDEX_PCHARP(str, p))) ) {
-			case 13: {
-				goto ctr24;
+		if ( p == pe  )
+		goto _out37;
+		
+		switch ( (((int)INDEX_PCHARP(str, p))) ) {
+			case 13:
+			{
+				goto _ctr32;
+				
 			}
-			case 32: {
-				goto ctr24;
+			case 32:
+			{
+				goto _ctr32;
+				
 			}
-			case 42: {
-				goto st8;
+			case 42:
+			{
+				goto _st8;
+				
 			}
-			case 44: {
-				goto ctr26;
+			case 44:
+			{
+				goto _ctr34;
+				
 			}
-			case 47: {
-				goto ctr41;
+			case 47:
+			{
+				goto _ctr52;
+				
 			}
-			case 58: {
-				goto ctr26;
+			case 58:
+			{
+				goto _ctr34;
+				
 			}
-			case 93: {
-				goto ctr26;
+			case 93:
+			{
+				goto _ctr34;
+				
 			}
-			case 125: {
-				goto ctr26;
+			case 125:
+			{
+				goto _ctr34;
+				
 			}
-		}
-		if ( 9 <= (((int)INDEX_PCHARP(str, p))) && (((int)INDEX_PCHARP(str, p))) <= 10 ) {
-			goto ctr24;
-		}
-		{
-			goto st0;
-		}
-		ctr41:
-		{
-			#line 11 "rl/json5_number.rl"
 			
-			p--;
-			{p+= 1; cs = 38; goto _out;}
+		}
+		if ( 9 <= (((int)INDEX_PCHARP(str, p))) && (((int)INDEX_PCHARP(str, p))) <= 10  )
+		{
+			goto _ctr32;
+			
 		}
 		
-		goto st38;
-		st38:
+		goto _st0;
+		_ctr52:
+		{
+			p--;
+			{
+				p+= 1;
+				cs = 38;
+				goto _out;
+			}
+			
+			
+		}
+		
+		
+		goto _st38;
+		_st38:
 		p+= 1;
-		if ( p == pe )
-		goto _test_eof38;
 		st_case_38:
-		switch( (((int)INDEX_PCHARP(str, p))) ) {
-			case 10: {
-				goto st34;
+		if ( p == pe  )
+		goto _out38;
+		
+		switch ( (((int)INDEX_PCHARP(str, p))) ) {
+			case 10:
+			{
+				goto _st34;
+				
 			}
-			case 42: {
-				goto st11;
+			case 42:
+			{
+				goto _st11;
+				
 			}
+			
 		}
-		{
-			goto st10;
-		}
-		st11:
+		goto _st10;
+		_st11:
 		p+= 1;
-		if ( p == pe )
-		goto _test_eof11;
 		st_case_11:
-		switch( (((int)INDEX_PCHARP(str, p))) ) {
-			case 10: {
-				goto st39;
+		if ( p == pe  )
+		goto _out11;
+		
+		switch ( (((int)INDEX_PCHARP(str, p))) ) {
+			case 10:
+			{
+				goto _st39;
+				
 			}
-			case 42: {
-				goto st13;
+			case 42:
+			{
+				goto _st13;
+				
 			}
-		}
-		{
-			goto st11;
-		}
-		ctr42:
-		{
-			#line 11 "rl/json5_number.rl"
 			
+		}
+		goto _st11;
+		_ctr54:
+		{
 			p--;
-			{p+= 1; cs = 39; goto _out;}
+			{
+				p+= 1;
+				cs = 39;
+				goto _out;
+			}
+			
+			
 		}
 		
-		goto st39;
-		st39:
+		
+		goto _st39;
+		_st39:
 		p+= 1;
-		if ( p == pe )
-		goto _test_eof39;
 		st_case_39:
-		switch( (((int)INDEX_PCHARP(str, p))) ) {
-			case 13: {
-				goto ctr42;
+		if ( p == pe  )
+		goto _out39;
+		
+		switch ( (((int)INDEX_PCHARP(str, p))) ) {
+			case 13:
+			{
+				goto _ctr54;
+				
 			}
-			case 32: {
-				goto ctr42;
+			case 32:
+			{
+				goto _ctr54;
+				
 			}
-			case 42: {
-				goto st3;
+			case 42:
+			{
+				goto _st3;
+				
 			}
-			case 44: {
-				goto ctr43;
+			case 44:
+			{
+				goto _ctr55;
+				
 			}
-			case 47: {
-				goto ctr44;
+			case 47:
+			{
+				goto _ctr56;
+				
 			}
-			case 58: {
-				goto ctr43;
+			case 58:
+			{
+				goto _ctr55;
+				
 			}
-			case 93: {
-				goto ctr43;
+			case 93:
+			{
+				goto _ctr55;
+				
 			}
-			case 125: {
-				goto ctr43;
+			case 125:
+			{
+				goto _ctr55;
+				
 			}
-		}
-		if ( 9 <= (((int)INDEX_PCHARP(str, p))) && (((int)INDEX_PCHARP(str, p))) <= 10 ) {
-			goto ctr42;
-		}
-		{
-			goto st2;
-		}
-		ctr43:
-		{
-			#line 11 "rl/json5_number.rl"
 			
-			p--;
-			{p+= 1; cs = 40; goto _out;}
+		}
+		if ( 9 <= (((int)INDEX_PCHARP(str, p))) && (((int)INDEX_PCHARP(str, p))) <= 10  )
+		{
+			goto _ctr54;
+			
 		}
 		
-		goto st40;
-		st40:
+		goto _st2;
+		_ctr55:
+		{
+			p--;
+			{
+				p+= 1;
+				cs = 40;
+				goto _out;
+			}
+			
+			
+		}
+		
+		
+		goto _st40;
+		_st40:
 		p+= 1;
-		if ( p == pe )
-		goto _test_eof40;
 		st_case_40:
-		if ( (((int)INDEX_PCHARP(str, p))) == 42 ) {
-			goto st3;
-		}
+		if ( p == pe  )
+		goto _out40;
+		
+		if ( (((int)INDEX_PCHARP(str, p))) == 42  )
 		{
-			goto st2;
-		}
-		ctr44:
-		{
-			#line 11 "rl/json5_number.rl"
+			goto _st3;
 			
+		}
+		
+		goto _st2;
+		_ctr56:
+		{
 			p--;
-			{p+= 1; cs = 41; goto _out;}
+			{
+				p+= 1;
+				cs = 41;
+				goto _out;
+			}
+			
+			
 		}
 		
-		goto st41;
-		st41:
+		
+		goto _st41;
+		_st41:
 		p+= 1;
-		if ( p == pe )
-		goto _test_eof41;
 		st_case_41:
-		switch( (((int)INDEX_PCHARP(str, p))) ) {
-			case 42: {
-				goto st12;
+		if ( p == pe  )
+		goto _out41;
+		
+		switch ( (((int)INDEX_PCHARP(str, p))) ) {
+			case 42:
+			{
+				goto _st12;
+				
 			}
-			case 47: {
-				goto st11;
+			case 47:
+			{
+				goto _st11;
+				
 			}
+			
 		}
-		{
-			goto st2;
-		}
-		st12:
+		goto _st2;
+		_st12:
 		p+= 1;
-		if ( p == pe )
-		goto _test_eof12;
 		st_case_12:
-		switch( (((int)INDEX_PCHARP(str, p))) ) {
-			case 42: {
-				goto st9;
+		if ( p == pe  )
+		goto _out12;
+		
+		switch ( (((int)INDEX_PCHARP(str, p))) ) {
+			case 42:
+			{
+				goto _st9;
+				
 			}
-			case 47: {
-				goto st25;
+			case 47:
+			{
+				goto _st25;
+				
 			}
+			
 		}
-		{
-			goto st8;
-		}
-		st13:
+		goto _st8;
+		_st13:
 		p+= 1;
-		if ( p == pe )
-		goto _test_eof13;
 		st_case_13:
-		switch( (((int)INDEX_PCHARP(str, p))) ) {
-			case 10: {
-				goto st39;
+		if ( p == pe  )
+		goto _out13;
+		
+		switch ( (((int)INDEX_PCHARP(str, p))) ) {
+			case 10:
+			{
+				goto _st39;
+				
 			}
-			case 42: {
-				goto st13;
+			case 42:
+			{
+				goto _st13;
+				
 			}
-			case 47: {
-				goto st42;
+			case 47:
+			{
+				goto _st42;
+				
 			}
+			
 		}
-		{
-			goto st11;
-		}
-		st42:
+		goto _st11;
+		_st42:
 		p+= 1;
-		if ( p == pe )
-		goto _test_eof42;
 		st_case_42:
-		switch( (((int)INDEX_PCHARP(str, p))) ) {
-			case 9: {
-				goto st42;
+		if ( p == pe  )
+		goto _out42;
+		
+		switch ( (((int)INDEX_PCHARP(str, p))) ) {
+			case 9:
+			{
+				goto _st42;
+				
 			}
-			case 10: {
-				goto st34;
+			case 10:
+			{
+				goto _st34;
+				
 			}
-			case 13: {
-				goto st42;
+			case 13:
+			{
+				goto _st42;
+				
 			}
-			case 32: {
-				goto st42;
+			case 32:
+			{
+				goto _st42;
+				
 			}
-			case 47: {
-				goto st14;
+			case 47:
+			{
+				goto _st14;
+				
 			}
+			
 		}
-		{
-			goto st10;
-		}
-		st14:
+		goto _st10;
+		_st14:
 		p+= 1;
-		if ( p == pe )
-		goto _test_eof14;
 		st_case_14:
-		switch( (((int)INDEX_PCHARP(str, p))) ) {
-			case 10: {
-				goto st34;
-			}
-			case 42: {
-				goto st11;
-			}
-		}
-		{
-			goto st10;
-		}
-		ctr32:
-		{
-			#line 21 "rl/json5_number.rl"
-			s = 1;}
+		if ( p == pe  )
+		goto _out14;
 		
-		goto st15;
-		st15:
+		switch ( (((int)INDEX_PCHARP(str, p))) ) {
+			case 10:
+			{
+				goto _st34;
+				
+			}
+			case 42:
+			{
+				goto _st11;
+				
+			}
+			
+		}
+		goto _st10;
+		_ctr40:
+		{
+			s = 1;
+		}
+		
+		
+		goto _st15;
+		_st15:
 		p+= 1;
-		if ( p == pe )
-		goto _test_eof15;
 		st_case_15:
-		if ( (((int)INDEX_PCHARP(str, p))) == 110 ) {
-			goto st16;
-		}
+		if ( p == pe  )
+		goto _out15;
+		
+		if ( (((int)INDEX_PCHARP(str, p))) == 110  )
 		{
-			goto st0;
+			goto _st16;
+			
 		}
-		st16:
+		
+		goto _st0;
+		_st16:
 		p+= 1;
-		if ( p == pe )
-		goto _test_eof16;
 		st_case_16:
-		if ( (((int)INDEX_PCHARP(str, p))) == 102 ) {
-			goto st17;
-		}
+		if ( p == pe  )
+		goto _out16;
+		
+		if ( (((int)INDEX_PCHARP(str, p))) == 102  )
 		{
-			goto st0;
+			goto _st17;
+			
 		}
-		st17:
+		
+		goto _st0;
+		_st17:
 		p+= 1;
-		if ( p == pe )
-		goto _test_eof17;
 		st_case_17:
-		if ( (((int)INDEX_PCHARP(str, p))) == 105 ) {
-			goto st18;
-		}
+		if ( p == pe  )
+		goto _out17;
+		
+		if ( (((int)INDEX_PCHARP(str, p))) == 105  )
 		{
-			goto st0;
+			goto _st18;
+			
 		}
-		st18:
+		
+		goto _st0;
+		_st18:
 		p+= 1;
-		if ( p == pe )
-		goto _test_eof18;
 		st_case_18:
-		if ( (((int)INDEX_PCHARP(str, p))) == 110 ) {
-			goto st19;
-		}
+		if ( p == pe  )
+		goto _out18;
+		
+		if ( (((int)INDEX_PCHARP(str, p))) == 110  )
 		{
-			goto st0;
+			goto _st19;
+			
 		}
-		st19:
+		
+		goto _st0;
+		_st19:
 		p+= 1;
-		if ( p == pe )
-		goto _test_eof19;
 		st_case_19:
-		if ( (((int)INDEX_PCHARP(str, p))) == 105 ) {
-			goto st20;
-		}
+		if ( p == pe  )
+		goto _out19;
+		
+		if ( (((int)INDEX_PCHARP(str, p))) == 105  )
 		{
-			goto st0;
+			goto _st20;
+			
 		}
-		st20:
+		
+		goto _st0;
+		_st20:
 		p+= 1;
-		if ( p == pe )
-		goto _test_eof20;
 		st_case_20:
-		if ( (((int)INDEX_PCHARP(str, p))) == 116 ) {
-			goto st21;
-		}
+		if ( p == pe  )
+		goto _out20;
+		
+		if ( (((int)INDEX_PCHARP(str, p))) == 116  )
 		{
-			goto st0;
+			goto _st21;
+			
 		}
-		st21:
+		
+		goto _st0;
+		_st21:
 		p+= 1;
-		if ( p == pe )
-		goto _test_eof21;
 		st_case_21:
-		if ( (((int)INDEX_PCHARP(str, p))) == 121 ) {
-			goto st36;
-		}
-		{
-			goto st0;
-		}
-		ctr33:
-		{
-			#line 21 "rl/json5_number.rl"
-			s = 1;}
+		if ( p == pe  )
+		goto _out21;
 		
-		goto st22;
-		st22:
+		if ( (((int)INDEX_PCHARP(str, p))) == 121  )
+		{
+			goto _st36;
+			
+		}
+		
+		goto _st0;
+		_ctr41:
+		{
+			s = 1;
+		}
+		
+		
+		goto _st22;
+		_st22:
 		p+= 1;
-		if ( p == pe )
-		goto _test_eof22;
 		st_case_22:
-		if ( (((int)INDEX_PCHARP(str, p))) == 97 ) {
-			goto st23;
-		}
-		{
-			goto st0;
-		}
-		st23:
-		p+= 1;
-		if ( p == pe )
-		goto _test_eof23;
-		st_case_23:
-		if ( (((int)INDEX_PCHARP(str, p))) == 78 ) {
-			goto st36;
-		}
-		{
-			goto st0;
-		}
-		st_out:
-		_test_eof25: cs = 25; goto _test_eof; 
-		_test_eof1: cs = 1; goto _test_eof; 
-		_test_eof2: cs = 2; goto _test_eof; 
-		_test_eof3: cs = 3; goto _test_eof; 
-		_test_eof4: cs = 4; goto _test_eof; 
-		_test_eof26: cs = 26; goto _test_eof; 
-		_test_eof27: cs = 27; goto _test_eof; 
-		_test_eof28: cs = 28; goto _test_eof; 
-		_test_eof29: cs = 29; goto _test_eof; 
-		_test_eof5: cs = 5; goto _test_eof; 
-		_test_eof6: cs = 6; goto _test_eof; 
-		_test_eof30: cs = 30; goto _test_eof; 
-		_test_eof31: cs = 31; goto _test_eof; 
-		_test_eof32: cs = 32; goto _test_eof; 
-		_test_eof7: cs = 7; goto _test_eof; 
-		_test_eof33: cs = 33; goto _test_eof; 
-		_test_eof34: cs = 34; goto _test_eof; 
-		_test_eof35: cs = 35; goto _test_eof; 
-		_test_eof8: cs = 8; goto _test_eof; 
-		_test_eof9: cs = 9; goto _test_eof; 
-		_test_eof10: cs = 10; goto _test_eof; 
-		_test_eof36: cs = 36; goto _test_eof; 
-		_test_eof37: cs = 37; goto _test_eof; 
-		_test_eof38: cs = 38; goto _test_eof; 
-		_test_eof11: cs = 11; goto _test_eof; 
-		_test_eof39: cs = 39; goto _test_eof; 
-		_test_eof40: cs = 40; goto _test_eof; 
-		_test_eof41: cs = 41; goto _test_eof; 
-		_test_eof12: cs = 12; goto _test_eof; 
-		_test_eof13: cs = 13; goto _test_eof; 
-		_test_eof42: cs = 42; goto _test_eof; 
-		_test_eof14: cs = 14; goto _test_eof; 
-		_test_eof15: cs = 15; goto _test_eof; 
-		_test_eof16: cs = 16; goto _test_eof; 
-		_test_eof17: cs = 17; goto _test_eof; 
-		_test_eof18: cs = 18; goto _test_eof; 
-		_test_eof19: cs = 19; goto _test_eof; 
-		_test_eof20: cs = 20; goto _test_eof; 
-		_test_eof21: cs = 21; goto _test_eof; 
-		_test_eof22: cs = 22; goto _test_eof; 
-		_test_eof23: cs = 23; goto _test_eof; 
+		if ( p == pe  )
+		goto _out22;
 		
-		_test_eof: {}
-		_out: {}
+		if ( (((int)INDEX_PCHARP(str, p))) == 97  )
+		{
+			goto _st23;
+			
+		}
+		
+		goto _st0;
+		_st23:
+		p+= 1;
+		st_case_23:
+		if ( p == pe  )
+		goto _out23;
+		
+		if ( (((int)INDEX_PCHARP(str, p))) == 78  )
+		{
+			goto _st36;
+			
+		}
+		
+		goto _st0;
+		_out24: cs = 24;
+		goto _out; 
+		_out0: cs = 0;
+		goto _out; 
+		_out25: cs = 25;
+		goto _out; 
+		_out1: cs = 1;
+		goto _out; 
+		_out2: cs = 2;
+		goto _out; 
+		_out3: cs = 3;
+		goto _out; 
+		_out4: cs = 4;
+		goto _out; 
+		_out26: cs = 26;
+		goto _out; 
+		_out27: cs = 27;
+		goto _out; 
+		_out28: cs = 28;
+		goto _out; 
+		_out29: cs = 29;
+		goto _out; 
+		_out5: cs = 5;
+		goto _out; 
+		_out6: cs = 6;
+		goto _out; 
+		_out30: cs = 30;
+		goto _out; 
+		_out31: cs = 31;
+		goto _out; 
+		_out32: cs = 32;
+		goto _out; 
+		_out7: cs = 7;
+		goto _out; 
+		_out33: cs = 33;
+		goto _out; 
+		_out34: cs = 34;
+		goto _out; 
+		_out35: cs = 35;
+		goto _out; 
+		_out8: cs = 8;
+		goto _out; 
+		_out9: cs = 9;
+		goto _out; 
+		_out10: cs = 10;
+		goto _out; 
+		_out36: cs = 36;
+		goto _out; 
+		_out37: cs = 37;
+		goto _out; 
+		_out38: cs = 38;
+		goto _out; 
+		_out11: cs = 11;
+		goto _out; 
+		_out39: cs = 39;
+		goto _out; 
+		_out40: cs = 40;
+		goto _out; 
+		_out41: cs = 41;
+		goto _out; 
+		_out12: cs = 12;
+		goto _out; 
+		_out13: cs = 13;
+		goto _out; 
+		_out42: cs = 42;
+		goto _out; 
+		_out14: cs = 14;
+		goto _out; 
+		_out15: cs = 15;
+		goto _out; 
+		_out16: cs = 16;
+		goto _out; 
+		_out17: cs = 17;
+		goto _out; 
+		_out18: cs = 18;
+		goto _out; 
+		_out19: cs = 19;
+		goto _out; 
+		_out20: cs = 20;
+		goto _out; 
+		_out21: cs = 21;
+		goto _out; 
+		_out22: cs = 22;
+		goto _out; 
+		_out23: cs = 23;
+		goto _out; 
+		_out: {
+		
+		}
+		
 	}
-	
-	#line 36 "rl/json5_number.rl"
-	
 	if (cs >= JSON5_number_first_final) {
 		if (!(state->flags&JSON5_VALIDATE)) {
 			if (s == 1) {
 				s = (int)INDEX_PCHARP(str, i);
-				if(s == '+') s=0, i++; 
+				if(s == '+') s = 0, i++; 
 				else if(s == '-') s = -1, i++;
 				// -symbol
 				if(s == -1) {
@@ -1281,11 +1763,11 @@ static ptrdiff_t _parse_JSON5_number(PCHARP str, ptrdiff_t p, ptrdiff_t pe, stru
 			} else if (h == 1) {
 				pcharp_to_svalue_inumber(Pike_sp++, ADD_PCHARP(str, i), NULL, 16, p - i);
 			} else if (d == 1) {
-#if SIZEOF_FLOAT_TYPE > SIZEOF_DOUBLE
+				#if SIZEOF_FLOAT_TYPE > SIZEOF_DOUBLE
 				push_float((FLOAT_TYPE)STRTOLD_PCHARP(ADD_PCHARP(str, i), NULL));
-#else
+				#else
 				push_float((FLOAT_TYPE)STRTOD_PCHARP(ADD_PCHARP(str, i), NULL));
-#endif
+				#endif
 			} else {
 				pcharp_to_svalue_inumber(Pike_sp++, ADD_PCHARP(str, i), NULL, 10, p - i);
 			}

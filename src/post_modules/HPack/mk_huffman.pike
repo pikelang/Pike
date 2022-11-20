@@ -345,6 +345,58 @@ static const unsigned int unpack_index[] = {\n");
   out->add("  256,\n");
   out->add("};\n");
 
+  // Alternative organization of the packing table.
+  mapping(int(0..255):array(int(0..255))|mapping(int(0..255):array(int(0..255))|mapping(int(0..255):array(int(0..255))))) unpack_tree = ([]);
+  array(mapping) unpack_sub = ({ unpack_tree });
+  foreach(pack_tab; int i; [int code, int sym, int bits]) {
+    mapping m = unpack_tree;
+    int(0..255) b = (code>>24) & 0xff;
+    while (bits > 8) {
+      if (!(m[b])) {
+	m[b] = ([]);
+	unpack_sub += ({ m[b] });
+      }
+      m = m[b];
+      code = (code<<8) & 0xffffffff;
+      b = (code>>24) & 0xff;
+      bits -= 8;
+    }
+    m[b] = ({ bits, sym });
+    for (int i = 1; i < (1<<(8-bits)); i++) {
+      m[b + i] = m[b];
+    }
+  }
+
+  out->add(#"
+/* Huffman tree for decoding. Indexed on byte and subtree*256. */
+struct huffpair {
+  unsigned char bits;
+  unsigned char sym;
+};
+static const struct huffpair hufftree[] = {\n");
+  foreach(unpack_sub, mapping(int:int|mapping) sub) {
+    for(int i = 0; i < 256; i++) {
+      array(int)|mapping(int:int|mapping) entry = sub[i];
+      int bits;
+      int sym;
+      if (arrayp(entry)) {
+	[bits, sym] = entry;
+	if (sym == 256) {
+	  // EOS.
+	  bits = 0;
+	  sym = 0;
+	}
+      } else {
+	bits = 0;
+	sym = search(unpack_sub, entry);
+      }
+      out->sprintf("  { %d, 0x%02x, },\n", bits, sym);
+    }
+  }
+  out->add("};\n");
+
+  werror("%d bytes.\n", sizeof(unpack_sub) * 512);
+
   if (argc > 1) {
     Stdio.write_file(argv[1], out->read());
   } else {

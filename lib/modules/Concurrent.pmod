@@ -158,6 +158,7 @@ class Future
   //!   @[set_backend()], @[use_backend()]
   protected void call_callback(function cb, mixed ... args)
   {
+    werror("Future: %O\n", this_function);
     (backend ? backend->call_out : callout)(cb, 0, @args);
   }
 
@@ -167,6 +168,7 @@ class Future
   //!   @[get()], @[try_get()]
   this_program wait()
   {
+    werror("Future: %O\n", this_function);
     if (state <= STATE_PENDING) {
       Thread.MutexKey key = mux->lock();
       while (state <= STATE_PENDING) {
@@ -234,6 +236,7 @@ class Future
   this_program on_success(function(mixed, __unknown__ ... : void) cb,
 			  mixed ... extra)
   {
+    werror("Future: %O\n", this_function);
     object(Thread.MutexKey)|zero key = mux->lock();
     switch (state) {
       case STATE_FULFILLED:
@@ -245,6 +248,7 @@ class Future
         // Rely on interpreter lock to add to success_cbs before state changes
         // again
         success_cbs += ({ ({ cb, @extra }) });
+	break;
     }
     return this_program::this;
   }
@@ -279,6 +283,7 @@ class Future
   this_program on_failure(function(mixed, __unknown__ ... : void) cb,
 			  mixed ... extra)
   {
+    werror("Future: %O\n", this_function);
     object(Thread.MutexKey)|zero key = mux->lock();
     switch (state) {
       case STATE_REJECTED:
@@ -315,6 +320,7 @@ class Future
 		       function(mixed, __unknown__ ... : mixed) fun,
 		       array(mixed) ctx)
   {
+    werror("Future: %O\n", this_function);
     mixed f;
     if (mixed err = catch (f = fun(val, @ctx)))
       p->failure(err);
@@ -400,6 +406,7 @@ class Future
   this_program map(function(mixed, __unknown__ ... : mixed) fun,
 		   mixed ... extra)
   {
+    werror("Future: %O\n", this_function);
     Promise p = promise_factory();
     on_failure(p->failure);
     on_success(apply, p, fun, extra);

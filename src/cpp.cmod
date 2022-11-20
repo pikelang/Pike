@@ -483,8 +483,10 @@ PIKECLASS CPP
 
   INIT
   {
-    init_string_builder(&THIS->buf, 0);
-    THIS->current_line = 1;
+    struct CPP_struct *this = THIS;
+
+    init_string_builder(&this->buf, 0);
+    this->current_line = 1;
   }
 
   EXIT
@@ -2710,7 +2712,6 @@ static struct pike_string *filter_bom(struct pike_string *data)
 #define DATA(X) INDEX_PCHARP(data,X)
 #define HAS_PREFIX(X) \
   ((begins_with(X,ADD_PCHARP(data,pos),sizeof(X),len-pos,0)) ? (pos += NELEM(X)),1 : 0)
-
 
 static void add_quoted_string( const void *str, ptrdiff_t len, int shift,
 			       struct string_builder *dst )

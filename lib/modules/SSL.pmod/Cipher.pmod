@@ -200,7 +200,7 @@ class CipherSpec {
     if( signature_alg == SIGNATURE_anonymous )
       return struct;
 
-    string data = cookie + (string)struct;
+    string data = sprintf("%s%s", cookie, struct);
 
     // RFC 5246 4.7
     if( session->version >= PROTOCOL_TLS_1_2 )
@@ -469,9 +469,10 @@ class KeyExchange(object context, object session, object connection,
 
     if(struct)
     {
+      string data = sprintf("%s%s%s", client_random, server_random, struct);
       mixed err = catch {
           verification_ok = session->cipher_spec->verify(
-            session, client_random + server_random + (string)struct, input);
+            session, data, input);
         };
 #ifdef SSL3_DEBUG
       if( err ) {
@@ -2257,6 +2258,18 @@ object(CipherSpec)|zero lookup(int suite, ProtocolVersion|int version,
 	      fmt_constant(ke_method, "KE") );
       return 0;
     }
+
+    // In TLS 1.3 the explicit iv was removed, and replaced with
+    // an initial iv xored with the sequence number.
+    res->iv_size += res->explicit_iv_size;
+    res->explicit_iv_size = 0;
+    // TLS 1.3 draft 6:
+    // The length of the per-record nonce (iv_length) is set to max(8 bytes,
+    // N_MIN) for the AEAD algorithm (see [RFC5116] Section 4).  An AEAD
+    // algorithm where N_MAX is less than 8 bytes MUST not be used with TLS.
+    //
+    // NB: This also fixes ChaCha20/POLY1305 where both values are 0 above.
+    if (res->iv_size < 8) res->iv_size = 8;
   } else {
     switch(ke_method)
     {

@@ -297,18 +297,16 @@ PMOD_EXPORT void assign_no_ref_svalue(struct svalue *to,
 				      const struct svalue *val,
 				      const struct object *owner)
 {
-  if (((TYPEOF(*to) != PIKE_T_OBJECT) &&
-       (TYPEOF(*to) != PIKE_T_FUNCTION)) ||
-      (to->u.object != owner)) {
+  if (!(TYPEOF(*to) & PIKE_T_NO_REF_FLAG)) {
     free_svalue(to);
   }
   if (val) {
-    if (((TYPEOF(*val) != PIKE_T_OBJECT) &&
-	 (TYPEOF(*val) != PIKE_T_FUNCTION)) ||
+    if (((TYPEOF(*val) != PIKE_T_OBJECT) && (TYPEOF(*val) != PIKE_T_FUNCTION)) ||
 	(val->u.object != owner)) {
       assign_svalue_no_free(to, val);
     } else {
-      *to = *val;
+      SET_SVAL(*to, TYPEOF(*val)|PIKE_T_NO_REF_FLAG, SUBTYPEOF(*val),
+	       object, val->u.object);
     }
   } else {
     SET_SVAL(*to, PIKE_T_INT, NUMBER_UNDEFINED, integer, 0);

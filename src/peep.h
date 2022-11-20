@@ -36,7 +36,7 @@ ptrdiff_t insert_opcode1(unsigned int f,
 ptrdiff_t insert_opcode0(int f, INT_TYPE current_line,
 			 struct pike_string *current_file);
 void update_arg(int instr,INT32 arg);
-INT32 assemble(int store_linenumbers);
+INT32 assemble(struct string_builder *disassembly, int store_linenumbers);
 /* Prototypes end here */
 
 #endif

@@ -45,6 +45,7 @@ constant PACKET_types = (< PACKET_change_cipher_spec,
 >);
 
 constant PACKET_MAX_SIZE = 0x4000;	// 2^14.
+constant DTLS_PACKET_MAX_SIZE = 1400;	// Typical UDP MTU with some overhead.
 
 /* Handshake states */
 constant STATE_wait_for_hello		= 0;
@@ -166,6 +167,9 @@ constant HASH_lookup = ([
 #endif
   HASH_sha1:   Crypto.SHA1,
   HASH_md5:    Crypto.MD5,
+  HASH_none:	0,
+
+  HASH_intrinsic: 0,
 ]);
 
 //! Signature algorithms from TLS 1.2.
@@ -872,6 +876,9 @@ string fmt_version(ProtocolVersion version)
   if (version <= PROTOCOL_SSL_3_0) {
     return sprintf("SSL %d.%d", version>>8, version & 0xff);
   }
+  if ((version & 0xff00) == 0xfe00) {
+    return sprintf("DTLS 1.%d", (~version) & 0xff);
+  }
   version -= PROTOCOL_TLS_1_0 - 0x100;
   return sprintf("TLS %d.%d", version>>8, version & 0xff);
 }
@@ -1358,6 +1365,37 @@ constant HANDSHAKE_key_update           = 24; // TLS 1.3 draft.
 constant HANDSHAKE_next_protocol	= 67;	// draft-agl-tls-nextprotoneg
 constant HANDSHAKE_message_hash         = 254; // TLS 1.3 draft.
 
+constant HANDSHAKE_ORDER_SERVER = ([
+  // 0th flight:
+  HANDSHAKE_hello_request:		0,	// Any time.
+  HANDSHAKE_hello_verify_request:	1,	// Before server_hello.	
+
+  // 1st flight:
+  HANDSHAKE_server_hello:		10,	// Initiating message.
+  HANDSHAKE_supplemental_data:		11,	// Directly after server_hello.
+  HANDSHAKE_certificate:		12,	// After server_hello.
+  HANDSHAKE_certificate_url:		12,	// Instead of certificate.
+  HANDSHAKE_certificate_status:		13,	// After cert, before kex.
+  HANDSHAKE_server_key_exchange:	14,	// After cert.
+  HANDSHAKE_certificate_request:	15,	// After kex.
+  HANDSHAKE_server_hello_done:		16,	// After cert request.
+
+  // 2nd flight:
+  HANDSHAKE_new_session_ticket:		20,	// Before finished.
+  HANDSHAKE_finished:			21,
+]);
+
+constant HANDSHAKE_ORDER_CLIENT = ([
+  // 1st flight:
+  HANDSHAKE_client_hello:		1,	// Initiating message.
+
+  // 2nd flight:
+  HANDSHAKE_certificate:		11,	// After client_hello.
+  HANDSHAKE_certificate_url:		11,	// Instead of certificate.
+  HANDSHAKE_client_key_exchange:	16,
+  HANDSHAKE_certificate_verify:		17,
+  HANDSHAKE_finished:			20,
+]);
 
 //! Don't request nor check any certificate.
 constant AUTHLEVEL_none		= 0;

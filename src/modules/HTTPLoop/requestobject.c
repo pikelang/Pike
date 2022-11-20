@@ -736,7 +736,9 @@ static void actually_send(struct send_args *a)
 
  end:
   DWERROR("all written.. \n");
-  bulkmode_restore(a->to->fd, oldbulkmode);
+  if (data) {
+    bulkmode_restore(a->to->fd, oldbulkmode);
+  }
   {
     struct args *arg = a->to;
     LOG(a->sent, a->to, atoi(foo));

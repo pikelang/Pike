@@ -342,13 +342,18 @@ protected int(0..0)|float backend_once(int|void nonwaiting_mode)
 	}								\
       }									\
 									\
-      if (!stream) {							\
+      if (!stream || !conn) {						\
 	SSL3_DEBUG_MSG ("Backend ended after close.\n");		\
 	break;								\
       }									\
 									\
       if (!(REPEAT_COND)) {						\
 	SSL3_DEBUG_MSG ("Local backend ended - repeat condition false\n"); \
+	break;								\
+      }									\
+									\
+      if (!stream || !conn) {						\
+	SSL3_DEBUG_MSG ("Backend ended after repeat check.\n");		\
 	break;								\
       }									\
     }									\
@@ -1639,6 +1644,8 @@ void set_alert_callback (function(object,int|object,string:void)|zero alert)
   if (close_state == STREAM_UNINITIALIZED || !conn)
     error ("Doesn't have any connection.\n");
 #endif
+  // FIXME: LysLysKOM 21685461: Support setting the callback
+  //        before connect() or accept().
   conn->set_alert_callback (
     alert &&
     lambda (object packet, int|object seq_num, string alert_context) {
@@ -1899,6 +1906,10 @@ int is_open()
       closed = conn->state & CONNECTION_closed;
       RETURN (close_state == CLEAN_CLOSE ?
 	      ((closed != CONNECTION_closed) && 2) : !closed);
+#if 0
+    } else {
+      werror("%O->is_open(): close_state: %O\n", this, close_state);
+#endif
     }
   } LEAVE;
   return 0;
@@ -1961,7 +1972,7 @@ protected int queue_write()
   // Allow write_buffer to contain at most buffer_limit + 2^14 + 2048
   // bytes.
  loop:
-  while (sizeof(write_buffer) < buffer_limit) {
+  while (write_buffer && (sizeof(write_buffer) < buffer_limit)) {
     res = conn->to_write(write_buffer);
 
 #ifdef SSL3_DEBUG_TRANSPORT
@@ -1990,6 +2001,7 @@ protected int queue_write()
     }
 
     res = 0;
+    if (!conn) return -1;	// Some other thread closed us.
   }
 
   if (!sizeof(write_buffer) || write_errno) {

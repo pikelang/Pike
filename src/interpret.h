@@ -618,13 +618,13 @@ PMOD_EXPORT extern unsigned long evaluator_callback_calls;
     low_check_threads_etc();						\
   } while (0)
 
-PMOD_EXPORT extern int fast_check_threads_counter;
+PMOD_EXPORT extern unsigned int fast_check_threads_counter;
 
 #define fast_check_threads_etc(X) do {					\
     DO_IF_DEBUG (if (Pike_interpreter.trace_level > 2)			\
 		   fprintf (stderr, "- thread yield point\n"));		\
-    if (++fast_check_threads_counter >= (1 << (X))) {			\
-      fast_check_threads_counter = 0;					\
+    if (!--fast_check_threads_counter) {				\
+      fast_check_threads_counter = 1<<8;				\
       low_check_threads_etc();						\
     }									\
   } while(0)

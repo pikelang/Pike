@@ -1017,7 +1017,7 @@ string(8bit)|zero emsa_pss_encode(string(8bit) message, int(1..) bits,
 //!   Number of significant bits in @[sign].
 //!
 //! @param saltlen
-//!   Length of the salt used.
+//!   Length of the salt used. @expr{-1@} indicates auto detect.
 //!
 //! @param mgf
 //!   Mask generation function to use.
@@ -1026,10 +1026,14 @@ string(8bit)|zero emsa_pss_encode(string(8bit) message, int(1..) bits,
 //! @returns
 //!   Returns @expr{1@} on success and @expr{0@} (zero) on failure.
 //!
+//! @note
+//!   Note that the salt length autodetect mode has some potential of
+//!   being open to attack and should not be used in normal operation.
+//!
 //! @seealso
 //!   @[emsa_pss_verify()], @[mgf1()].
 int(0..1) emsa_pss_verify(string(8bit) message, string(8bit) sign,
-			  int(1..) bits, int(0..)|void saltlen,
+			  int(1..) bits, int(-1..)|void saltlen,
 			  function(string(8bit), int(0..):
 				   string(8bit))|void mgf)
 {
@@ -1041,7 +1045,11 @@ int(0..1) emsa_pss_verify(string(8bit) message, string(8bit) sign,
   /* N/A */
 
   // 3. If emLen < hLen + sLen + 2, output "inconsistent" and stop.
-  if (sizeof(sign) < digest_size() + [int]saltlen + 2) {
+  if (saltlen >= 0) {
+    if (sizeof(sign) < digest_size() + [int]saltlen + 2) {
+      return 0;
+    }
+  } else if (sizeof(sign) < digest_size() + 2) {
     return 0;
   }
 
@@ -1085,9 +1093,22 @@ int(0..1) emsa_pss_verify(string(8bit) message, string(8bit) sign,
   //     not zero or if the octet at position emLen - hLen - sLen - 1
   //     (the leftmost position is "position 1") does not have
   //     hexadecimal value 0x01, output "inconsistent" and stop.
-  string(8bit) ps = db[..sizeof(sign) -(sizeof(mhash) + [int]saltlen + 3)];
-  if ((ps != "\0"*sizeof(ps)) || (db[sizeof(ps)] != 0x01)) {
-    return 0;
+  if (saltlen >= 0) {
+    string(8bit) ps = db[..sizeof(sign) -(sizeof(mhash) + [int]saltlen + 3)];
+    if ((ps != "\0"*sizeof(ps)) || (db[sizeof(ps)] != 0x01)) {
+      return 0;
+    }
+  } else {
+    int plen;
+    for (plen = 0; !db[plen]; plen++)
+      ;
+    if (db[plen] != 0x01) {
+      return 0;
+    }
+    saltlen = [int(-1..)](sizeof(sign) - (sizeof(mhash) + plen + 2));
+    if (saltlen < 0) {
+      return 0;
+    }
   }
 
   // 11. Let salt be the last sLen octets of DB.

@@ -11,6 +11,7 @@
 #include "stralloc.h"
 #include "pike_types.h"
 #include "pike_error.h"
+#include "pike_compiler.h"
 #include "mapping.h"
 #include "object.h"
 #include "operators.h"
@@ -83,6 +84,39 @@ static const char* get_fname(const char *fname)
   return (Pike_fp->context->prog->identifiers + Pike_fp->fun)->name->str;
 }
 
+PMOD_EXPORT void bad_arg_error_field(const char *fnname,
+				     INT32 args,
+				     int argno,
+				     INT32 expected,
+				     struct svalue *got)
+{
+  char buf[1000];
+  int e;
+  struct svalue *frame = Pike_sp - args;
+  buf[0]=0;
+  for(e=0;e<16;e++)
+  {
+    if(expected & (1<<e))
+    {
+      if(buf[0])
+      {
+	if(expected & 0xffff & (0xffff << e))
+	  strcat(buf,", ");
+	else
+	  strcat(buf," or ");
+      }
+      strcat(buf, get_name_of_type(e));
+    }
+  }
+
+  if (!got) got = frame + argno - 1;
+
+  bad_arg_error(get_fname(fnname), args, argno, buf, got,
+		"Bad argument %d to %s(), (expecting %s, got %s)\n",
+		argno, fnname, expected,
+		get_name_of_type(TYPEOF(frame[argno-1])));
+}
+
 /* This function generates errors if any of the args first arguments
  * is not OK.
  */
@@ -104,34 +138,10 @@ PMOD_EXPORT void check_all_args(const char *fnname, int args, ... )
   case ERR_TOO_MANY:
     new_error(get_fname(fnname), "Too many arguments.\n", Pike_sp, args);
     break;
-
   case ERR_BAD_ARG:
-  {
-    char buf[1000];
-    int e;
-    buf[0]=0;
-    for(e=0;e<16;e++)
-    {
-      if(tmp.expected & (1<<e))
-      {
-	if(buf[0])
-	{
-	  if(tmp.expected & 0xffff & (0xffff << e))
-	    strcat(buf,", ");
-	  else
-	    strcat(buf," or ");
-	}
-	strcat(buf, get_name_of_type(e));
-      }
-    }
-
-    Pike_error("Bad argument %d to %s(), (expecting %s, got %s)\n",
-	  tmp.argno+1,
-          get_fname(fnname),
-	  buf,
-	  get_name_of_type(tmp.got));
+    bad_arg_error_field(fnname, args, tmp.argno+1,
+			tmp.expected, Pike_sp + args - tmp.argno);
     break;
-  }
   }
 }
 
@@ -666,6 +676,22 @@ PMOD_EXPORT void *pike_module_import_symbol(const char *name,
   free_string(str);
   return 0;
 }
+
+#if 0
+PMOD_EXPORT int simple_inherit(struct pike_string *program_symbol)
+{
+  struct program *p = resolve_program(program_symbol);
+  int inh_num = Pike_compiler->new_program->num_inherits;
+  if (!p) {
+    yyreport(REPORT_ERROR, parser_system_string,
+	     "Failed to resolve program %S.", program_symbol);
+    return -1;
+  }
+  low_inherit(p, NULL, -1, 0, 0, NULL);
+  free_program(p);
+  return inh_num;
+}
+#endif /* 0 */
 
 #ifdef DO_PIKE_CLEANUP
 void cleanup_module_support (void)

@@ -246,7 +246,7 @@ array(string) get_doc_parents(string doc_sha1)
   if (!undefinedp(parents)) return parents;
   mapping(string:array(string)) commit = get_commit(git_dir, doc_sha1);
   if (commit->parent) {
-    doc_to_parents[doc_sha1] = commit->parent;
+    parents = doc_to_parents[doc_sha1] = commit->parent;
   }
   // Get the sha1 for the autodoc.xml blob while we're at it.
   if (commit->tree) {
@@ -704,16 +704,37 @@ void export_autodoc_for_ref(string ref)
 {
   string start_doc_rev;
   string start_src_rev;
-  array(string) src_revs;
-  if ((start_doc_rev = doc_refs[ref]) &&
-      (start_src_rev = doc_to_src[start_doc_rev] &&
-       doc_to_src[start_doc_rev][-1])) {
-    src_revs = git("rev-list", "--topo-order",
-		   start_src_rev + ".." + src_refs[ref])/"\n";
-    exporter->reset(ref, start_doc_rev);
+  array(string) src_revs = git("rev-list", "--topo-order", src_refs[ref])/"\n";
+  if (start_doc_rev = doc_refs[ref]) {
+    string start_src_rev;
+    mapping(string:int) src_lookup =
+      mkmapping(values(src_revs), indices(src_revs));
+    do {
+      foreach (reverse(doc_to_src[start_doc_rev] || ({})), string src_rev) {
+	if (src_lookup[src_rev]) {
+	  // Found.
+	  start_src_rev = src_rev;
+	  break;
+	}
+      }
+      if (start_src_rev) break;
+      // Not found -- Traverse up first parent.
+      start_doc_rev = (get_doc_parents(start_doc_rev) || ([]))[0];
+    } while (start_doc_rev);
+
+    if (start_doc_rev) {
+      src_revs = src_revs[src_lookup[start_src_rev]..];
+      // Update the ref in case there has been a rebase.
+      git("update-ref", ref, start_doc_rev);
+      exporter->reset(ref, start_doc_rev);
+    } else {
+      // This ref has lost its initial commit.
+      // Zap the old value.
+      git("update-ref", "-d", ref);
+      exporter->reset(ref);
+    }
   } else {
     // This is a not previously exported ref.
-    src_revs = git("rev-list", "--topo-order", src_refs[ref])/"\n";
     exporter->reset(ref);
   }
   foreach(reverse(src_revs); int i; string src_rev) {

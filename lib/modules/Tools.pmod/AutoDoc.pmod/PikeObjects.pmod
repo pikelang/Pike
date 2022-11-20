@@ -596,7 +596,8 @@ class Annotation
 	format_xml(buf, elem);
       } else {
 	switch(elem) {
-	case ",": case "(": case "{": case "[": case ")": case "}": case "]":
+	case ",":
+	case "(": case "{": case "[": case ")": case "}": case "]":
 	  // Separator.
 	  if (end_tag) {
 	    buf->add(end_tag);

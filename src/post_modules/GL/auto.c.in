@@ -83,18 +83,7 @@ static int check_234_args(char *func, INT32 args, int mn, int mx, int ty,
   }
   for(i=0; i<args; i++)
     if(!((tt=1<<TYPEOF(s[i]))&ty)) {
-      char buf[32];
-      int n=0;
-      buf[0]='\0';
-      for(tt=0; ty; tt++)
-	if(ty&(1<<tt)) {
-	  ty&=~(1<<tt);
-	  if(n++)
-	    strncat(buf, " or ", sizeof(buf)-strlen(buf)-1);
-	  strncat(buf, get_name_of_type(tt), sizeof(buf)-strlen(buf)-1);
-	}
-      Pike_error("%s: got %s, expected %s.\n", func,
-		 get_name_of_type(TYPEOF(s[i])), buf);
+      bad_arg_error_field(func, s, args, i+1, ty);
     } else
       tr|=tt;
   if(tr==(BIT_INT|BIT_FLOAT))

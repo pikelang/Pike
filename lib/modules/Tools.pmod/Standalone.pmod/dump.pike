@@ -215,15 +215,21 @@ do_dump: {
     {
       if(!p->dont_dump_module && !p->dont_dump_program && !p->this_program_does_not_exist)
       {
-	string s;
+	string s, s2;
 	if ((err = catch {
 	    s=([function](mixed)encode_value)(p, master()->Encoder(p), @debug_level);
 	    // werror("\n------------------------\n\n");
-	    p=([function](mixed)decode_value)(s, master()->Decoder(), @debug_level);
-	  }))
+	    program p2 = ([function](mixed)decode_value)(s, master()->Decoder(), @debug_level);
+#if 0
+	    s2 = ([function](mixed)encode_value)(p2, master()->Encoder(p2), @debug_level);
+#endif
+	  })) {
 	  logmsg_long(describe_backtrace(err));
-
-	else if(programp(p))
+#if 0
+	} else if (s != s2) {
+	  logmsg("Inconsistent encoding of file %O.\n", file);
+#endif
+	} else if(programp(p))
 	{
 	  string dir = combine_path (outfile, "..");
 	  if (!Stdio.is_dir (fakeroot(dir)))

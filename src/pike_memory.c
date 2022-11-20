@@ -1485,6 +1485,19 @@ char *do_pad(char *mem, long size)
 #define FD2PTR(X) (void *)(ptrdiff_t)((X)*4+1)
 #define PTR2FD(X) (((ptrdiff_t)(X))>>2)
 
+static void hex_dump(void *mem, size_t len)
+{
+  unsigned char *bytes = mem;
+  size_t i;
+
+  for (i = 0; i < len; i++) {
+    fprintf(stderr, "%02x%s",
+	    bytes[i],
+	    (i == len-1)?"":
+	    ((i & 0x0f) == 0x0f)?"\n\t":
+	    ((i & 0x07) == 0x07)?"  ":" ");
+  }
+}
 
 void check_pad(struct memhdr *mh, int freeok)
 {
@@ -1537,6 +1550,12 @@ void check_pad(struct memhdr *mh, int freeok)
       out_biking=1;
       fprintf(stderr,"Pre-padding overwritten for "
 	      "block at %p (size %ld)!\n", mem, size);
+      fprintf(stderr,
+	      "Expected: ");
+      hex_dump(rndbuf + q, DEBUG_MALLOC_PAD);
+      fprintf(stderr, "\n"
+	      "Got     : ");
+      hex_dump(mem - DEBUG_MALLOC_PAD, DEBUG_MALLOC_PAD);
       describe(mem);
       abort();
     }
@@ -1546,6 +1565,12 @@ void check_pad(struct memhdr *mh, int freeok)
       out_biking=1;
       fprintf(stderr,"Post-padding overwritten for "
 	      "block at %p (size %ld)!\n", mem, size);
+      fprintf(stderr,
+	      "Expected: ");
+      hex_dump(rndbuf + q, DEBUG_MALLOC_PAD);
+      fprintf(stderr, "\n"
+	      "Got     : ");
+      hex_dump(mem + size, DEBUG_MALLOC_PAD);
       describe(mem);
       abort();
     }

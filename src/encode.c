@@ -34,7 +34,7 @@
 #include "sprintf.h"
 #include "modules/Gmp/my_gmp.h"
 
-/* #define ENCODE_DEBUG */
+#define ENCODE_DEBUG
 
 /* Use the old encoding method for programs. */
 /* #define OLD_PIKE_ENCODE_PROGRAM */
@@ -3096,7 +3096,7 @@ static INT32 decode_portable_bytecode(struct decode_data *data, INT32 string_no)
 #undef EMIT_BYTECODE2
   }
   UNSET_ONERROR(err);
-  return assemble(1);
+  return assemble(NULL, 1);
 }
 
 static void low_do_decode (struct decode_data *data);
@@ -4420,13 +4420,12 @@ static void decode_value2(struct decode_data *data)
 		  });
 		if (func.offset != -1) {
 #ifdef ENCODE_DEBUG
-		  int old_a_flag;
+		  int old_a_flag = a_flag;
 #endif
 		  EDB(2,
 		  {
 		    fprintf(stderr, "%*sDecoding portable bytecode.\n",
 			    data->depth, "");
-		    old_a_flag = a_flag;
 		    a_flag = (a_flag > (data->debug-1))?a_flag:(data->debug-1);
 		  });
 		  func.offset = decode_portable_bytecode(data, func.offset);

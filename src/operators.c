@@ -2706,9 +2706,15 @@ PMOD_EXPORT void o_and(void)
   case T_TYPE:
   {
     struct pike_type *t;
+#if 0
     t = intersect_types(Pike_sp[-2].u.type, Pike_sp[-1].u.type, 0, 0, 0);
+#else
+    t = type_binop(PT_BINOP_AND, Pike_sp[-2].u.type, Pike_sp[-1].u.type,
+		   0, 0, PT_FLAG_REMAP_TRACE);
+#endif
     pop_n_elems(2);
-    push_type_value(t);
+    if (t) push_type_value(t);
+    else push_undefined();
     return;
   }
 

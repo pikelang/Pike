@@ -4425,7 +4425,8 @@ PIKEFUN int enable_external_runloop(int enable)
   INIT
   {
     struct Backend_struct *me =
-      THIS->backend = (struct Backend_struct *)(((char *)THIS) + pdb_offset);
+      THIS->backend = (struct Backend_struct *)(((char *)THIS) + pdb_offset -
+						PollDeviceBackend_storage_offset);
 
     PDWERR("[%d]BACKEND[%d]: Registering device backend...\n",
            THR_NO, me->id);
@@ -5072,7 +5073,8 @@ PIKECLASS PollBackend
   INIT
   {
     struct Backend_struct *me =
-      THIS->backend = (struct Backend_struct *)(((char *)THIS) + pb_offset);
+      THIS->backend = (struct Backend_struct *)(((char *)THIS) + pb_offset -
+						PollBackend_storage_offset);
 
     PDWERR("[%d]BACKEND[%d]: init generic\n", THR_NO, me->id);
 
@@ -5624,7 +5626,8 @@ PIKECLASS SelectBackend
   INIT
   {
     struct Backend_struct *me =
-      THIS->backend = (struct Backend_struct *)(((char *)THIS) + sb_offset);
+      THIS->backend = (struct Backend_struct *)(((char *)THIS) + sb_offset -
+						SelectBackend_storage_offset);
 
     PDWERR("[%d]BACKEND[%d]: init generic\n", THR_NO, me->id);
 

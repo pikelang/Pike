@@ -2317,6 +2317,8 @@ void f_mutex_lock(INT32 args)
   {
     if(threads_disabled)
     {
+      /* NB: The exit callback unlinks us. */
+      destruct(o);
       free_object(o);
       Pike_error("Cannot wait for mutexes when threads are disabled!\n");
     }
@@ -2382,6 +2384,8 @@ void f_mutex_lock(INT32 args)
 
 #ifdef PICKY_MUTEX
   if (!Pike_fp->current_object->prog) {
+    /* The mutex has been destructed during our wait. */
+    destruct(o);
     free_object (o);
     if (!m->num_waiting) {
       co_destroy (&m->condition);
@@ -3149,9 +3153,30 @@ static void f_mutex_key__sprintf(INT32 args)
     return;
   }
   if (THIS_KEY->mutex_obj) {
-    push_text("Thread.MutexKey(/* %O */)");
+    push_text("Thread.MutexKey(/* %O %s*/)");
     ref_push_object(THIS_KEY->mutex_obj);
-    f_sprintf(2);
+    switch(THIS_KEY->kind) {
+    case KEY_UNINITIALIZED:
+      push_text("(unlinked) ");
+      break;
+    case KEY_INITIALIZED:
+      push_text("(unlocked) ");
+      break;
+    case KEY_SHARED:
+      push_text("(shared) ");
+      break;
+    case KEY_DOWNGRADED:
+      push_text("(downgraded) ");
+      break;
+    case KEY_PENDING:
+      push_text("(waiting) ");
+      break;
+    case KEY_EXCLUSIVE:
+      /* Empty string used here for maximum backward-compat. */
+      push_text("");
+      break;
+    }
+    f_sprintf(3);
   } else {
     push_text("Thread.MutexKey(/* Unlocked */)");
   }
@@ -3513,6 +3538,7 @@ void f_cond_wait(INT32 args)
   struct object *key_obj, *mutex_obj;
   struct mutex_storage *mut;
   struct key_storage *key;
+  enum key_kind kind;
   struct pike_cond *c;
   INT_TYPE seconds = 0, nanos = 0;
 
@@ -3539,7 +3565,8 @@ void f_cond_wait(INT32 args)
     Pike_error("Bad argument 1 to wait()\n");
   }
 
-  if (key->kind != KEY_EXCLUSIVE) {
+  kind = key->kind;
+  if (kind != KEY_EXCLUSIVE) {
     Pike_error("Bad argument 1 to wait()\n");
   }
 
@@ -3587,9 +3614,18 @@ void f_cond_wait(INT32 args)
     Pike_error("Mutex was destructed while waiting for cond.\n");
   }
 
+  if (!key_obj->prog) {
+    /* NB: We are holding a reference to the mutex object
+     *     that we have stolen from the key.
+     */
+    free_object(mutex_obj);
+    Pike_error("MutexKey was destructed while waiting for cond.\n");
+  }
+
   /* Lock mutex */
   mut->num_waiting++;
-  {
+  switch(kind) {
+  case KEY_EXCLUSIVE:
     key->kind = KEY_PENDING;
     if ((key->next = mut->key)) {
       key->next->prev = key;
@@ -3603,7 +3639,11 @@ void f_cond_wait(INT32 args)
       SWAP_IN_CURRENT_THREAD();
       check_threads_etc();
     }
-    key->kind = KEY_EXCLUSIVE;
+    key->kind = kind;
+    break;
+  default:
+    Pike_fatal("Unsupported mutex kind: %d.\n", kind);
+    break;
   }
   mut->num_waiting--;
 

@@ -2570,7 +2570,7 @@ local_function: TOK_IDENTIFIER start_function func_args
     push_type(T_MANY);
     for(; e>=0; e--) {
       push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
-    push_type(T_FUNCTION);
+      push_type(T_FUNCTION);
     }
 
     type=compiler_pop_type();
@@ -3870,11 +3870,11 @@ return: optional_continue TOK_RETURN expected_semicolon
 		   Pike_compiler->compiler_frame->current_return_type,
 		   void_type_string, 0);
     }
-    $$ = mknode(F_RETURN, mkintnode(0), mkintnode($1));
+    $$ = mknode(F_RETURN, mkintnode(0), $1?mkintnode($1):NULL);
   }
   | optional_continue TOK_RETURN safe_comma_expr expected_semicolon
   {
-    $$ = mknode(F_RETURN, $3, mkintnode($1));
+    $$ = mknode(F_RETURN, $3, $1?mkintnode($1):NULL);
   }
   ;
 

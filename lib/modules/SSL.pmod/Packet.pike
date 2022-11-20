@@ -6,6 +6,7 @@ import .Constants;
 
 int content_type;
 ProtocolVersion protocol_version;
+int dtls;
 string(8bit) fragment = "";  /* At most 2^14 */
 
 int seq_num = UNDEFINED;
@@ -19,7 +20,7 @@ constant HEADER_SIZE = 5;
 protected int marginal_size;
 
 /* Circular dependence */
-program Alert = master()->resolv("SSL")["Alert"];
+protected local program Alert = master()->resolv("SSL")["Alert"];
 
 //! @param version
 //!   The version sent packets will be created for.
@@ -28,6 +29,17 @@ program Alert = master()->resolv("SSL")["Alert"];
 //!   TLS fragment.
 protected void create(ProtocolVersion version, void|int extra)
 {
+  if ((version & 0xff00) == 0xfe00) {
+    dtls = 1;
+    switch(version) {
+    case PROTOCOL_DTLS_1_0:
+      version = PROTOCOL_TLS_1_1;
+      break;
+    default:
+      version = PROTOCOL_TLS_1_2;
+      break;
+    }
+  }
   if (version >= PROTOCOL_TLS_1_3)
     version = PROTOCOL_TLS_1_2; // TLS 1.3 record_version
   protocol_version = version;
@@ -37,6 +49,17 @@ protected void create(ProtocolVersion version, void|int extra)
 protected variant void create(ProtocolVersion version,
                               int content_type, string(8bit) fragment)
 {
+  if ((version & 0xff00) == 0xfe00) {
+    dtls = 1;
+    switch(version) {
+    case PROTOCOL_DTLS_1_0:
+      version = PROTOCOL_TLS_1_1;
+      break;
+    default:
+      version = PROTOCOL_TLS_1_2;
+      break;
+    }
+  }
   if (version >= PROTOCOL_TLS_1_3)
     version = PROTOCOL_TLS_1_2; // TLS 1.3 record_version
   protocol_version = version;
@@ -92,6 +115,28 @@ int(-1..1) recv(Stdio.Buffer data)
   }
 
   protocol_version = data->read_int16();
+
+#ifdef SSL3_DEBUG
+  werror("Packet version %s\n", fmt_version(protocol_version));
+#endif
+
+  if ((protocol_version & 0xff00) == 0xfe00) {
+    dtls = 1;
+    switch(protocol_version) {
+    case PROTOCOL_DTLS_1_0:
+      protocol_version = PROTOCOL_TLS_1_1;
+      break;
+    default:
+      protocol_version = PROTOCOL_TLS_1_2;
+      break;
+    }
+
+    seq_num = data->read_int(8);
+#ifdef SSL3_DEBUG
+    werror("DTLS Packet #%d\n", seq_num);
+#endif
+  }
+
   if ((protocol_version & ~0xff) != PROTOCOL_SSL_3_0 ||
       protocol_version > PROTOCOL_TLS_1_2)
     return -1;
@@ -133,8 +178,9 @@ void send(Stdio.Buffer output)
 protected string _sprintf(int t)
 {
   if(t!='O') return UNDEFINED;
-  if(fragment == "") return sprintf("SSL.Packet(empty)");
+  if(fragment == "") return sprintf("%O(empty)", object_program(this));
   string type = fmt_constant(content_type, "PACKET")[7..];
-  return sprintf("SSL.Packet(#%d, %s, %d bytes)",
+  return sprintf("%O(#0x%016x, %s, %d bytes)",
+		 object_program(this),
 		 seq_num, type, fragment && sizeof(fragment));
 }

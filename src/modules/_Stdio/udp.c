@@ -208,7 +208,7 @@ static void push_new_udp_object(int factory_fun_num, int fd)
   struct object *o = NULL;
   struct udp_storage *udp;
   ONERROR err;
-  struct inherit *inh;
+  struct inherit *inh = NULL;
   struct identifier *i;
 
   SET_ONERROR(err, do_close_udp, (ptrdiff_t) fd);
@@ -217,6 +217,11 @@ static void push_new_udp_object(int factory_fun_num, int fd)
       !(o = Pike_sp[-1].u.object)->prog ||
       ((inh = &o->prog->inherits[SUBTYPEOF(Pike_sp[-1])])->prog !=
        Pike_fp->context->prog)) {
+    fprintf(stderr, "o->prog: %p\n"
+	    "inh: %p\n"
+	    "inh->prog: %p\n"
+	    "context->prog: %p\n",
+	    o->prog, inh, inh?inh->prog:NULL, Pike_fp->context->prog);
     Pike_error("Invalid return value from fd_factory(). "
 	       "Expected object(is Stdio.UDP).\n");
   }
@@ -1724,6 +1729,8 @@ void init_stdio_udp(void)
 
   ADD_STORAGE(struct udp_storage);
 
+  PIKE_MAP_VARIABLE("_errno", OFFSETOF(udp_storage, my_errno),
+                    tIntPos, PIKE_T_INT, ID_PROTECTED);
   PIKE_MAP_VARIABLE("_read_callback", OFFSETOF(udp_storage, read_callback),
 		    tFunc(tNone, tInt_10), PIKE_T_MIXED, ID_PROTECTED|ID_PRIVATE);
 

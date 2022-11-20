@@ -431,8 +431,10 @@ PMOD_EXPORT struct object *debug_clone_object(struct program *p, int args)
     SET_ONERROR(tmp, do_free_object, o);
     debug_malloc_touch(o);
   }
+
   call_c_initializers(o);
   debug_malloc_touch(o);
+
   call_pike_initializers(o,args);
   debug_malloc_touch(o);
   debug_malloc_touch(o->storage);
@@ -746,12 +748,16 @@ PMOD_EXPORT struct object *get_master(void)
 
     /* fprintf(stderr, "Initializing master...\n"); */
 
+    ref_push_object(master_object);
+
     call_c_initializers(master_object);
     call_pike_initializers(master_object,0);
 
     f = find_identifier ("is_pike_master", master_program);
     if (f >= 0)
       object_low_set_index (master_object, f, (struct svalue *)&svalue_int_one);
+
+    pop_stack();
 
     /* fprintf(stderr, "Master loaded.\n"); */
 
@@ -1127,6 +1133,8 @@ void low_destruct_objects_to_destruct(void)
   if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_FREE)
     Pike_fatal("Can't meddle with the object link list in gc pass %d.\n", Pike_in_gc);
 #endif
+
+  if (!objects_to_destruct) return;
 
   /* We unlink the list from objects_to_destruct before processing it,
    * to avoid that reentrant calls to this function go through all

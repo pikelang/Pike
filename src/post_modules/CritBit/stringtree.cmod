@@ -57,6 +57,7 @@ PIKECLASS StringTree {
 #cmod_define extra_doc
 #cmod_include "redefine.H"
 
+#cmod_define DEBUG
 #cmod_include "tree_header.H"
 #cmod_include "iterator_source.H"
 #undef THIS

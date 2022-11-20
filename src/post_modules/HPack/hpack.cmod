@@ -94,6 +94,7 @@ PIKEFUN string(8bit) huffman_encode(string(8bit) str)
   push_string(end_shared_string(res));
 }
 
+#if 1
 static const struct huffentry *find_huffentry(unsigned INT32 huffbuf)
 {
   const struct huffentry *entry;
@@ -212,6 +213,92 @@ PIKEFUN string(8bit) huffman_decode(string(8bit) str)
   pop_stack();
   push_string(finish_string_builder(&out));
 }
+#else
+/*! @decl string(8bit) huffman_decode(string(8bit) str)
+ *!
+ *! Decodes the string @[str] encoded with the static huffman code specified
+ *! in RFC 7541 appendix B.
+ *!
+ *! @param str
+ *!   String to decode.
+ *!
+ *! @returns
+ *!   Returns the decoded string.
+ *!
+ *! @seealso
+ *!   @[huffman_encode()].
+ */
+PIKEFUN string(8bit) Qhuffman_decode(string(8bit) str)
+{
+  unsigned char *inbytes = STR0(str);
+  struct string_builder out;
+  unsigned INT32 huffbuf = 0;
+  unsigned INT32 huffbits = 0;
+  ptrdiff_t i;
+  const struct huffpair *tree = hufftree;
+
+  init_string_builder(&out, 0);
+
+  for (i = 0; i < str->len; i++, inbytes++) {
+    unsigned int c = *inbytes;
+    unsigned char b;
+    huffbits += 8;
+    huffbuf |= c << (32 - huffbits);
+    do {
+      b = huffbuf >> 24;
+      if (!tree[b].bits) {
+	huffbits -= 8;
+	huffbuf <<= 8;
+	if (!tree[b].sym) break;	/* EOS */
+	tree = &hufftree[tree[b].sym << 8];
+      } else {
+	huffbits -= tree[b].bits;
+	huffbuf <<= tree[b].bits;
+	string_builder_putchar(&out, tree[b].sym);
+	tree = hufftree;
+      }
+    } while (huffbits >= 8);
+  }
+
+  while (huffbits) {
+    unsigned char b;
+    huffbuf |= ((unsigned INT32)~0) >> huffbits;
+    if (huffbuf == (unsigned INT32)~0) {
+      /* EOS */
+      huffbits = 0;
+      break;
+    }
+    if (huffbits < 5) break;
+    do {
+      b = huffbuf >> 24;
+      if (!tree[b].bits) {
+	huffbits -= 8;
+	huffbuf <<= 8;
+	if (!tree[b].sym) {
+	  /* EOS */
+	  huffbits = 0;
+	  tree = hufftree;
+	  break;
+	}
+	tree = &hufftree[tree[b].sym << 8];
+      } else {
+	huffbits -= tree[b].bits;
+	huffbuf <<= tree[b].bits;
+	string_builder_putchar(&out, tree[b].sym);
+	tree = hufftree;
+      }
+    } while (huffbits > 0);
+  }
+  if (huffbits || (tree != hufftree)) {
+    /* Invalid encoding. */
+    free_string_builder(&out);
+    Pike_error("Invalid huffman encoding.\n");
+  }
+
+  pop_stack();
+  push_string(finish_string_builder(&out));
+}
+#endif
 
 /*! @endmodule
  */

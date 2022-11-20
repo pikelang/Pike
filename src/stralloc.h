@@ -75,11 +75,13 @@ struct substring_pike_string {
 
 #define CLEAR_STRING_CHECKED(X) do{(X)->flags &= ~STRING_CHECKED_MASK;}while(0)
 
-#define free_string(s) do{ \
+#define free_string(s) do{     \
     struct pike_string *_=(s); \
-    debug_malloc_touch(_); \
-    if(sub_ref(_)<=0) \
-      really_free_string(_); \
+    if (_) {		       \
+      debug_malloc_touch(_);   \
+      if(sub_ref(_)<=0)	       \
+	really_free_string(_); \
+    }			       \
   } while(0)
 
 #define my_hash_string(X) PTR_TO_INT(X)

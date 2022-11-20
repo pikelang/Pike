@@ -226,7 +226,11 @@ class Curve {
     string(8bit) pkcs_sign(string(8bit) message, .Hash h)
     {
       array sign = map(raw_sign(h->hash(message)), Integer);
-      return Sequence(sign)->get_der();
+      string(8bit) res = Sequence(sign)->get_der();
+      if (!pkcs_verify(message, h, res)) {
+	error("Signature algorithm failure!\n");
+      }
+      return res;
     }
 
     // FIXME: Consider implementing RFC 6979.

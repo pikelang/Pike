@@ -1043,7 +1043,11 @@ class PikeType
 	    int i;
 	    for (i = 0; high; high >>= 1, i++)
 	      ;
-	    return sprintf("%s(%dbit)", ret, i);
+	    if (i == 31) {
+	      return sprintf("%s(0..)", ret);
+	    } else {
+	      return sprintf("%s(%dbit)", ret, i);
+	    }
 	  }
 	  ret=sprintf("%s(%s..%s)",
 		      ret,
@@ -1943,6 +1947,7 @@ int gid;
 class ParseBlock
 {
   array code=({});
+  array inherits=({});
   array addfuncs=({});
   array exitfuncs=({});
   array declarations=({});
@@ -2080,7 +2085,12 @@ sprintf("        } else {\n"
 	    }
 	    check_used[inh_offset] = 1;
 	    check_used[inh_storage] = 1;
+#if 0
+	    // This breaks Nettle hogweed for some reason.
+	    inherits +=
+#else
 	    addfuncs +=
+#endif
 	      IFDEF(define,
 		    ({
 		      PC.Token(
@@ -2539,13 +2549,15 @@ static struct %s *%s_gdb_dummy_ptr;
 #endif\n", structname, base),
 		    })
 	  +declarations;
-	addfuncs = ({
+	addfuncs = inherits + ({
 	  IFDEF("THIS_"+upper_case(base), ({
 		  PC.Token(sprintf("  %s_storage_offset = "
 				   "ADD_STORAGE(struct %s);",
 				   base, structname)),
 		})),
 	}) + addfuncs;
+      } else {
+	addfuncs = inherits + addfuncs;
       }
 
       x=ret/({"DECLARE_STORAGE"});

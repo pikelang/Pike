@@ -1422,7 +1422,7 @@ node *debug_mkthisnode(struct program *parent_prog, int inherit_num)
   node *res;
 
 #ifdef PIKE_DEBUG
-  if ((inherit_num < -1) || (inherit_num > 65535)) {
+  if ((inherit_num < -2) || (inherit_num > 65535)) {
     Pike_fatal("This is bad: %p, %d\n", parent_prog, inherit_num);
   }
 #endif /* PIKE_DEBUG */
@@ -1433,6 +1433,7 @@ node *debug_mkthisnode(struct program *parent_prog, int inherit_num)
   if (inherit_num >= 0) {
     push_object_type(1, parent_prog->inherits[inherit_num].prog->id);
   } else {
+    inherit_num = -1;
     push_object_type(0, parent_prog->id);
   }
   res->type = pop_unfinished_type();
@@ -1776,7 +1777,7 @@ void resolv_type(node *n)
     switch(TYPEOF(Pike_sp[-1])) {
     case T_FUNCTION:
       if((p = program_from_function(Pike_sp-1))) {
-        push_object_type(0, p->id);
+	push_object_type(0, p->id);
 	break;
       } else {
 	/* Attempt to get the return type for the function. */
@@ -1789,7 +1790,7 @@ void resolv_type(node *n)
 	 *       warnings here anyway).
 	 */
 	INIT_CALL_STATE(cs, NULL);
-	a = check_splice_call(a, &cs, mixed_type_string, NULL,
+	a = check_splice_call(a, &cs, array_type_string, NULL,
 			      CALL_INHIBIT_WARNINGS);
 	if (a) {
 	  b = new_get_return_type(a, &cs, 0);
@@ -3335,9 +3336,9 @@ void fix_foreach_type(node *val_lval)
                                            tMix), tVar(0)),
                                 tFunc(tSet(tSetvar(1, tMix)),
                                       tVar(1)),
-                                tFuncArg(tSetvar(2, tObj),
-					 tFindLFun(tOr(tVar(2),
-						       tGetReturn(tFindLFun(tVar(2),
+                                tFuncArg(tSetvar(7, tObj),
+					 tFindLFun(tOr(tVar(7),
+						       tGetReturn(tFindLFun(tVar(7),
 									    "_get_iterator"))),
 						   "_iterator_index"))));
         index_type = check_call(foreach_call_type, index_fun_type, 0);
@@ -3375,14 +3376,14 @@ void fix_foreach_type(node *val_lval)
         MAKE_CONSTANT_TYPE(value_fun_type,
                            tOr5(tFunc(tArr(tSetvar(0, tMix)),
                                       tVar(0)),
-                                tFunc(tNStr(tSetvar(1, tMix)),
+                                tFunc(tNStr(tSetvar(1, tInt)),
 				      tVar(1)),
                                 tFunc(tMap(tMix,tSetvar(2, tMix)),
                                       tVar(2)),
                                 tFunc(tMultiset, tInt1),
-                                tFuncArg(tSetvar(3, tObj),
-					 tFindLFun(tOr(tVar(3),
-						       tGetReturn(tFindLFun(tVar(3),
+                                tFuncArg(tSetvar(7, tObj),
+					 tFindLFun(tOr(tVar(7),
+						       tGetReturn(tFindLFun(tVar(7),
 									    "_get_iterator"))),
 						   "_iterator_value"))));
         value_type = check_call(foreach_call_type, value_fun_type, 0);
@@ -3404,6 +3405,12 @@ void fix_foreach_type(node *val_lval)
             } else if (c->lex.pragmas & ID_STRICT_TYPES) {
               level = REPORT_WARNING;
             }
+	    if (level != REPORT_NOTICE) {
+	      yytype_report(level,
+			    NULL, 0, value_fun_type,
+			    NULL, 0, foreach_call_type,
+			    0, "Suspect foreach_call_type.");
+	    }
             yytype_report(level,
                           NULL, 0, CDR(lvalues)->type,
                           NULL, 0, value_type,
@@ -3660,6 +3667,9 @@ void fix_type_field(node *n)
 		      NULL, 0, CDR(n)->type, 0,
 		      "Soft cast with non-type.");
       }
+      fprintf(stderr, "Expression: ");
+      print_tree(n);
+      fprintf(stderr, "\n");
     }
     /* FALLTHRU */
   case F_CAST:
@@ -3675,6 +3685,7 @@ void fix_type_field(node *n)
   case F_LAND:
   case F_LOR:
     if (!CAR(n) || CAR(n)->type == void_type_string) {
+      print_tree(n->parent);
       yyerror("Conditional uses void expression.");
       copy_pike_type(n->type, mixed_type_string);
       break;
@@ -4541,6 +4552,14 @@ void fix_type_field(node *n)
   case F_MAGIC_ANNOTATIONS:
     /* FIXME: Could have a stricter type for ::_annotations. */
     MAKE_CONSTANT_TYPE(n->type, tF_MAGIC_ANNOTATIONS);
+    break;
+
+  case F_GENERATOR:
+    if (CAR(n)) {
+      copy_pike_type(n->type, CAR(n)->type);
+    } else {
+      copy_pike_type(n->type, mixed_type_string);
+    }
     break;
 
   case F_SET_LOCAL_NAME:

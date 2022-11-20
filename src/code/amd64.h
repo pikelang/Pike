@@ -95,5 +95,6 @@ extern ptrdiff_t amd64_prev_stored_pc;
 
 #define READ_INCR_BYTE(PC)	EXTRACT_UCHAR((PC)++)
 
-void amd64_disassemble_code(PIKE_OPCODE_T *pc, size_t len);
-#define DISASSEMBLE_CODE(PC, LEN)	amd64_disassemble_code((PC), (LEN))
+void amd64_disassemble_code(struct string_builder *buf,
+			    PIKE_OPCODE_T *pc, size_t len);
+#define DISASSEMBLE_CODE(BUF, PC, LEN)	amd64_disassemble_code((BUF), (PC), (LEN))

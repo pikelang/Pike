@@ -574,6 +574,8 @@ protected array(string|mapping(string|int:mixed))
   }
 
   query = sprintf(query, @args);
+  werror("handle_extra_args() ==> query: %O, bindings: %O\n",
+	 query, bindings);
   if (sizeof(bindings)) return ({ query, bindings });
   return ({ query });
 }
@@ -1147,7 +1149,7 @@ array(string) list_tables(string|void wild)
 //!   @[list_fields()]
 protected array(mapping(string:mixed))|zero low_list_fields(string table)
 {
-
+  werror("low_list_fields(%O)\n", table);
   catch {
     array(mapping(string:mixed)) res =
       query("SHOW FIELDS FROM \'" + table + "\'");
@@ -1171,7 +1173,15 @@ protected array(mapping(string:mixed))|zero low_list_fields(string table)
 		     }, table);
     return res;
   };
-  return 0;
+  werror("SHOW FIELDS failed.\n");
+
+  .Result res = big_query("SELECT * FROM " + table);
+  werror("RAW: %O\n", res->fetch_fields());
+  return map(res->fetch_fields(),
+	     lambda(mapping(string:mixed) entry, string table) {
+	       if (!entry->table) entry->table = table;
+	       return entry;
+	     }, table);
 }
 
 //! List fields available in the specified table

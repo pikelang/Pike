@@ -1222,6 +1222,30 @@ test_compile_any([[
   }
 ]])
 
+test_eval_error([[
+  // Test Pike.DestructImmediate.
+  class Foo {
+    inherit Pike.DestructImmediate;
+    void _destruct() {}
+  }
+  object foo = Foo();
+  error("Foo!\n");
+]])
+
+test_eval_error([[
+  // Test Pike.DestructImmediate.
+  class Foo {
+    inherit Pike.DestructImmediate;
+    void _destruct() {
+      catch {
+        error("Bar!\n");
+      };
+    }
+  }
+  object foo = Foo();
+  error("Foo!\n");
+]])
+
 test_any([[
   // Test Pike.InhibitDestruct.
   class Foo {
@@ -14542,6 +14566,17 @@ test_compile_warning(
     }
   };
 )
+test_compile_any(
+  class Foo {
+    function(int:int) foo;
+  }
+  class Bar {
+    function(int:int)|__deprecated__(function(int, int, int|void:int)) foo;
+  }
+
+  object(Foo) f = Bar();
+  object(Bar) b = Foo();
+)
 
 // - modifiers, compile time access properties
 
@@ -15507,7 +15542,7 @@ void bar()
 ")]])
 define(dump_test_module, [[test_tests([[ array a() {
   Tools.Testsuite.log_status("Dumping ]]$1[[, case=$2");
-  return Tools.Testsuite.run_script(({"-M", "recursive_module_dump_test", "-x", "dump", "recursive_module_dump_test/]]$1[["}));
+  return Tools.Testsuite.run_script(({"-M", "recursive_module_dump_test", "-x", "dump", "--debug=2", "recursive_module_dump_test/]]$1[["}));
 }]])]])
 define(try_load_test_module, [[test_tests([[ array a() {
   Tools.Testsuite.log_status("Instantiating TestModule.A, case=$1");

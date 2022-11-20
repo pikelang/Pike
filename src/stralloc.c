@@ -207,8 +207,10 @@ PMOD_EXPORT void check_string_range( struct pike_string *str,
 
 void low_set_index(struct pike_string *s, ptrdiff_t pos, int value)
 {
+#if 0
 #ifdef PIKE_DEBUG
-  if(pos > s->len || pos<0) {
+  if((pos > s->len) ||
+     (pos<0)) {
     if (s->len) {
       Pike_fatal("String index %"PRINTPTRDIFFT"d is out of "
 		 "range 0..%"PRINTPTRDIFFT"d.\n",
@@ -221,6 +223,7 @@ void low_set_index(struct pike_string *s, ptrdiff_t pos, int value)
 
   if(pos == s->len && value)
     Pike_fatal("string zero termination foul!\n");
+#endif
 #endif
   s->flags |= STRING_NOT_HASHED;
 
@@ -573,7 +576,8 @@ static void link_pike_string(struct pike_string *s, size_t hval)
   }
 
   if (PIKE_MEM_NOT_DEF_RANGE (s->str, (s->len + 1) << s->size_shift))
-    Pike_fatal ("Got undefined contents in pike string %p.\n", s);
+    Pike_fatal ("Got undefined contents in pike string %p, \"%s\".\n", s,
+		s->str);
 #endif
 
   h=HMODULO(hval);
@@ -653,7 +657,10 @@ PMOD_EXPORT struct pike_string *debug_begin_wide_shared_string(size_t len, enum 
 
   if ((ptrdiff_t)len < 0 || DO_SIZE_T_ADD_OVERFLOW(len, 1, &bytes) ||
       DO_SIZE_T_MUL_OVERFLOW(bytes, 1 << shift, &bytes)) {
-    Pike_error("String is too large.\n");
+    Pike_fatal("String is too large. (Shift: %d, len: %ld)\n",
+	       shift, (long)len);
+    Pike_error("String is too large. (Shift: %d, len: %ld)\n",
+	       shift, (long)len);
   }
 
 #ifdef PIKE_DEBUG
@@ -1051,8 +1058,13 @@ void unlink_pike_string(struct pike_string *s)
     tmp = tmp->next;
   }
 
-  if( !tmp )
-    Pike_fatal("unlink on non-shared string\n");
+  if( !tmp ) {
+    if (s->size_shift) {
+      Pike_fatal("Unlink on non-shared wide string.\n", s->len, s->str);
+    } else {
+      Pike_fatal("Unlink on non-shared string \"%.*s\".\n", s->len, s->str);
+    }
+  }
 
   s->next=(struct pike_string *)(ptrdiff_t)-1;
   num_strings--;
@@ -1891,9 +1903,9 @@ PMOD_EXPORT ptrdiff_t string_search(struct pike_string *haystack,
 
 static struct pike_string *make_shared_substring( struct pike_string *s,
 						  ptrdiff_t start,
-						  ptrdiff_t len,
-						  enum size_shift shift)
+						  ptrdiff_t len )
 {
+  enum size_shift shift = s->size_shift;
   struct pike_string *existing;
   struct substring_pike_string *res;
   void *strstart = s->str+(start<<shift);
@@ -1903,6 +1915,10 @@ static struct pike_string *make_shared_substring( struct pike_string *s,
   {
     add_ref(existing);
     return existing;
+  }
+  if (index_shared_string(s, start + len)) {
+    /* No NUL-termination -- No luck. */
+    return make_shared_binary_pcharp(MKPCHARP(strstart, shift), len);
   }
   res = ba_alloc(&substring_allocator);
 #ifdef PIKE_DEBUG
@@ -1978,7 +1994,7 @@ PMOD_EXPORT struct pike_string *string_slice(struct pike_string *s,
 	      find_magnitude2(((p_wchar2*)s->str)+start,len)==2)))
   {
     /* If there is no change of maginute, make a substring. */
-    return make_shared_substring( s, start, len, s->size_shift );
+    return make_shared_substring( s, start, len );
   }
 
   switch(s->size_shift)

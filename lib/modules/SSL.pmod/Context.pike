@@ -227,6 +227,7 @@ multiset(int) extensions = (<
   EXTENSION_signed_certificate_timestamp,
   EXTENSION_early_data,
   EXTENSION_padding,
+  EXTENSION_extended_master_secret,
 >);
 
 //
