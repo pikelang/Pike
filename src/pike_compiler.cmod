@@ -3341,6 +3341,7 @@ node *low_pop_local_variables(int level, node *block)
                                      mkintnode(var->flags)),
 			      block,
 			      mknode(F_POP_VALUE,
+				     var->def ? mkintnode(0) :
 				     mknode(F_CLEAR_LOCAL,
 					    mklocalnode(e, 0),
 					    NULL),
@@ -3360,6 +3361,7 @@ node *low_pop_local_variables(int level, node *block)
 	block = mknestednodes(F_COMMA_EXPR,
 			      block,
 			      mknode(F_POP_VALUE,
+				     var->def ? mkintnode(0) :
 				     mknode(F_CLEAR_LOCAL,
 					    mklocalnode(e, 0),
 					    NULL),

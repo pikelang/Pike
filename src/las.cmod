@@ -846,6 +846,11 @@ node *debug_mknode(int token, node *a, node *b)
       Pike_fatal("Attempt to create an F_EXTERNAL-node with mknode()!\n");
     case F_GET_SET:
       Pike_fatal("Attempt to create an F_GET_SET-node with mknode()!\n");
+    case F_CLEAR_LOCAL:
+      if (!a || (a->token != F_LOCAL)) {
+	Pike_fatal("Invalid CLEAR_LOCAL-node!\n");
+      }
+      break;
 #endif /* PIKE_DEBUG */
 
 #define OPERNODE(X,Y) case X: return mkopernode(("`" #Y), a, b )
@@ -1250,33 +1255,35 @@ node *debug_mkversionnode(int major, int minor)
 
 node *debug_mklocalnode(int var, int depth)
 {
-  struct compiler_frame *f;
+  struct compiler_frame *f=Pike_compiler->compiler_frame;
   int e;
-  node *res = mkemptynode();
+  node *res;
+
+#ifdef PIKE_DEBUG
+  if (depth < 0) {
+    Pike_fatal("Internal error. Using old AST!\n");
+  }
+#endif
+  if (!depth) {
+    res = f->variable[var].def;
+    if (res) {
+      add_ref(res);
+      return res;
+    }
+  }
+
+  res = mkemptynode();
   res->token = F_LOCAL;
-
-  f=Pike_compiler->compiler_frame;
-  for(e=0;e<depth;e++) f=f->previous;
-  copy_pike_type(res->type, f->variable[var].type);
-
   res->node_info = OPT_NOT_CONST;
   res->tree_info = res->node_info;
-  if (res->type && (res->type->type == PIKE_T_AUTO)) {
-    res->node_info |= OPT_TYPE_NOT_FIXED;
-  }
 #ifdef __CHECKER__
   _CDR(res) = 0;
 #endif
   res->u.integer.a = var;
-  if (depth < 0) {
-    /* First appearance of this variable.
-     * Add initialization code.
-     */
-    res->node_info |= OPT_ASSIGNMENT;
-    res->u.integer.b = 0;
-  } else {
-    res->u.integer.b = depth;
-  }
+  res->u.integer.b = depth;
+
+  for(e=0;e<depth;e++) f=f->previous;
+  copy_pike_type(res->type, f->variable[var].type);
 
   return res;
 }
