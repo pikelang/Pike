@@ -174,10 +174,11 @@ class Verifier {
   //!    @[get_algorithms()]
   int(0..1) verify(Sequence algorithm, string(8bit) msg,
                    string(8bit) signature,
-                   mapping(Identifier:Crypto.Hash)|void verifier_algorithms)
+                   mapping(Identifier:Crypto.Hash) verifier_algorithms =
+		   algorithms)
   {
     DBG("Verify hash %O\n", algorithm[0]);
-    Crypto.Hash hash = (verifier_algorithms || algorithms)[algorithm[0]];
+    Crypto.Hash hash = verifier_algorithms[algorithm[0]];
     if (!hash) return 0;
     return pkc && pkc->pkcs_verify(msg, hash, signature);
   }
@@ -1382,12 +1383,14 @@ protected int make_key_usage_flags(Crypto.Sign.State c)
 //!   @[sign_key()], @[sign_tbs()]
 string make_selfsigned_certificate(Crypto.Sign.State c, int ttl,
                                    mapping|array name,
-                                   mapping(Identifier:Sequence)|void extensions,
-                                   void|Crypto.Hash h, void|int serial)
+                                   mapping(Identifier:Sequence) extensions =
+				   ([]),
+                                   Crypto.Hash h = Crypto.SHA256,
+				   int serial =
+				   (int)Gmp.mpz(Standards.UUID.
+						make_version1(-1)->encode(),
+						256))
 {
-  if(!serial)
-    serial = (int)Gmp.mpz(Standards.UUID.make_version1(-1)->encode(), 256);
-
   Sequence dn = .PKCS.Certificate.build_distinguished_name(name);
 
   void add(string name, Object data, void|int critical)
@@ -1396,8 +1399,6 @@ string make_selfsigned_certificate(Crypto.Sign.State c, int ttl,
     if(!extensions[id])
       extensions[id] = make_extension(id, data, critical);
   };
-
-  if(!extensions) extensions = ([]);
 
   // While RFC 3280 section 4.2.1.2 suggest to only hash the BIT
   // STRING part of the subjectPublicKey, it is only a suggestion.
@@ -1408,17 +1409,17 @@ string make_selfsigned_certificate(Crypto.Sign.State c, int ttl,
 
   add("basicConstraints", Sequence(({})), 1);
 
-  return sign_key(dn, c, c, h||Crypto.SHA256, dn, serial, ttl, extensions);
+  return sign_key(dn, c, c, h, dn, serial, ttl, extensions);
 }
 
 string make_site_certificate(TBSCertificate ca, Crypto.Sign.State ca_key,
                              Crypto.Sign.State c, int ttl, mapping|array name,
-                             mapping|void extensions,
-                             void|Crypto.Hash h, void|int serial)
+                             mapping extensions = ([]),
+                             Crypto.Hash h = Crypto.SHA256,
+			     int serial =
+			     (int)Gmp.mpz(Standards.UUID.
+					  make_version1(-1)->encode(), 256))
 {
-  if(!serial)
-    serial = (int)Gmp.mpz(Standards.UUID.make_version1(-1)->encode(), 256);
-
   Sequence dn = .PKCS.Certificate.build_distinguished_name(name);
 
   void add(string name, Object data, void|int critical)
@@ -1428,21 +1429,20 @@ string make_site_certificate(TBSCertificate ca, Crypto.Sign.State ca_key,
       extensions[id] = make_extension(id, data, critical);
   };
 
-  if(!extensions) extensions = ([]);
   // FIXME: authorityKeyIdentifier
   add("keyUsage", build_keyUsage(make_key_usage_flags(c)), 1);
 
   add("basicConstraints", Sequence(({})), 1);
-  return sign_key(ca->subject, c, ca_key, h||Crypto.SHA256, dn, serial, ttl, extensions);
+  return sign_key(ca->subject, c, ca_key, h, dn, serial, ttl, extensions);
 }
 
 string make_root_certificate(Crypto.Sign.State c, int ttl, mapping|array name,
-			     mapping(Identifier:Sequence)|void extensions,
-			     void|Crypto.Hash h, void|int serial)
+			     mapping(Identifier:Sequence) extensions = ([]),
+			     Crypto.Hash h = Crypto.SHA256,
+			     int serial =
+			     (int)Gmp.mpz(Standards.UUID.
+					  make_version1(-1)->encode(), 256))
 {
-  if(!serial)
-    serial = (int)Gmp.mpz(Standards.UUID.make_version1(-1)->encode(), 256);
-
   Sequence dn = .PKCS.Certificate.build_distinguished_name(name);
 
   void add(string name, Object data, void|int critical)
@@ -1451,8 +1451,6 @@ string make_root_certificate(Crypto.Sign.State c, int ttl, mapping|array name,
     if(!extensions[id])
       extensions[id] = make_extension(id, data, critical);
   };
-
-  if(!extensions) extensions = ([]);
 
   // While RFC 3280 section 4.2.1.2 suggest to only hash the BIT
   // STRING part of the subjectPublicKey, it is only a suggestion.
@@ -1462,7 +1460,7 @@ string make_root_certificate(Crypto.Sign.State c, int ttl, mapping|array name,
   add("keyUsage", build_keyUsage(KU_keyCertSign|KU_cRLSign), 1);
   add("basicConstraints", Sequence(({Boolean(1)})), 1);
 
-  return sign_key(dn, c, c, h||Crypto.SHA256, dn, serial, ttl, extensions);
+  return sign_key(dn, c, c, h, dn, serial, ttl, extensions);
 }
 
 //! Decodes a certificate and verifies that it is structually sound.
