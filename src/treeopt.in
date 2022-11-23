@@ -1675,27 +1675,7 @@ F_LOOP(0 = +[ !depend_p($$, $$)]
 // FIXME: Currently broken for many cases, since the SHARED_NODES
 //        mode is gone.
 '?'(0 = +[ node_is_tossable($$) ], ':'( F_RETURN($0, 2), 1)) :
-{
-  struct pike_type *type = $0->type;
-  struct pike_string *tmpname;
-  int tmpvar;
-
-  MAKE_CONST_STRING(tmpname, " ");
-  tmpvar = islocal(tmpname);
-  if(tmpvar == -1)
-  {
-    add_ref(mixed_type_string);
-    tmpvar = add_local_name(tmpname, mixed_type_string, 0);
-  }
-  if (tmpvar >= 0) {
-    $$ = mknode('?', mknode(F_ASSIGN, mklocalnode(tmpvar, 0), $0),
-		mknode(':',mknode(F_RETURN,
-				  mksoftcastnode(type, mklocalnode(tmpvar,0)),
-				  $2),
-		       $1));
-  }
-}
-;
+  F_COMMA_EXPR(F_RETURN_IF_TRUE($0, $2), $1);
 
 // convert all X_EQ(1,2) to $1 = $1 X $2
 // These are all identical except for the chosen operanodetype.

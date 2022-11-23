@@ -453,6 +453,7 @@ static INT32 count_continue_returns(node *n)
   switch(n->token)
   {
   case F_RETURN:
+  case F_RETURN_IF_TRUE:
     /* FIXME: continue returns in expressions are likely to be broken. */
     if (CDR(n) && CDR(n)->u.sval.u.integer) ret = 1;
 
@@ -2538,11 +2539,17 @@ static int do_docode2(node *n, int flags)
     return 0;
   }
 
+  case F_RETURN_IF_TRUE:
   case F_RETURN: {
     struct statement_label *p;
     int in_catch = 0;
     int continue_label = -1;
+    int skip_label = -1;
     do_docode(CAR(n),0);
+
+    if (n->token == F_RETURN_IF_TRUE) {
+      skip_label = do_jump(F_BRANCH_AND_POP_WHEN_ZERO, -1);
+    }
 
     if ((Pike_compiler->compiler_frame->generator_local != -1) &&
 	CDR(n) && CDR(n)->u.sval.u.integer) {
@@ -2674,6 +2681,9 @@ static int do_docode2(node *n, int flags)
 	modify_stack_depth(1);
 	return 1;
       }
+    }
+    if (skip_label != -1) {
+      ins_label(skip_label);
     }
     return 0;
   }
