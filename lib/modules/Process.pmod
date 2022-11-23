@@ -547,7 +547,7 @@ Process spawn_pike(array(string) argv, void|mapping(string:mixed) options,
 //!   Process.run( ({ "echo Output will be immediately written to stdout" }),
 //!                ([ "stdout": lambda(string s) { write(s); },
 //!                   "stderr": lambda(string e) { werror(e); } ]) );
-
+//!
 mapping run(string|array(string) cmd, mapping modifiers = ([]))
 {
   string gotstdout="", gotstderr="", stdin_str;
