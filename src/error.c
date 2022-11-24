@@ -23,6 +23,7 @@
 #include "pike_types.h"
 #include "sprintf.h"
 #include "pikecode.h"
+#include "pike_compiler.h"
 
 /* __attribute__ only applies to function declarations, not
    definitions, so we disable them here. */
@@ -527,6 +528,7 @@ static void call_atfatals(void)
 PMOD_EXPORT DECLSPEC(noreturn) void debug_va_fatal(const char *fmt, va_list args) ATTRIBUTE((noreturn))
 {
   static int in_fatal = 0;
+  struct compilation *c = MAYBE_THIS_COMPILATION;
 
   /* fprintf(stderr, "Raw error: %s\n", fmt); */
 
@@ -562,6 +564,13 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_va_fatal(const char *fmt, va_list args
   if(Pike_in_gc)
     fprintf(stderr,"Pike was in GC stage %d when this fatal occurred.\n",Pike_in_gc);
   Pike_in_gc = GC_PASS_DISABLED;
+
+  if (c) {
+    fprintf(stderr, "Compiler was compiling %s line %ld when "
+	    "this fatal occurred.\n",
+	    c->lex.current_file ? c->lex.current_file->str : "-",
+	    (long)c->lex.current_line);
+  }
 
   d_flag=Pike_interpreter.trace_level=0;
 
