@@ -1308,10 +1308,22 @@ optional_default_value: '=' expr0 { $$ = $2; }
   | /* empty */ { $$ = NULL; }
   ;
 
-new_arg_name: full_type optional_dot_dot_dot optional_identifier
-              optional_default_value
+new_arg_name: full_type optional_dot_dot_dot
+  {
+    /* This is needed in order to avoid issues with eg using cast
+     * in the optional_default_value.
+     *
+     * An alternative could be to use simple_type instead of full_type.
+     */
+    type_stack_mark();
+  }
+  optional_identifier optional_default_value
   {
     int i;
+
+    /* Pop the mark form above. */
+    pop_stack_mark();
+
     if(Pike_compiler->varargs) yyerror("Can't define more arguments after ...");
 
     if (TEST_COMPAT(8, 0) &&
@@ -1327,36 +1339,36 @@ new_arg_name: full_type optional_dot_dot_dot optional_identifier
       Pike_compiler->varargs=1;
     }
 
-    if ($4) {
+    if ($5) {
       if ($2) {
 	yyerror("Varargs variable with default value.");
-	free_node($4);
-	$4 = NULL;
-      } else if (!$3) {
+	free_node($5);
+	$5 = NULL;
+      } else if (!$4) {
 	yywarning("Unnamed variable with default value.");
       }
     }
 
-    if(!$3)
+    if(!$4)
     {
-      $3=mkstrnode(empty_pike_string);
+      $4 = mkstrnode(empty_pike_string);
     }
 
-    if($3->u.sval.u.string->len &&
-       islocal($3->u.sval.u.string) >= 0)
+    if($4->u.sval.u.string->len &&
+       islocal($4->u.sval.u.string) >= 0)
       my_yyerror("Variable %S appears twice in argument list.",
-		 $3->u.sval.u.string);
+		 $4->u.sval.u.string);
 
-    i = add_local_name($3->u.sval.u.string, compiler_pop_type(), $4);
+    i = add_local_name($4->u.sval.u.string, compiler_pop_type(), $5);
     if (i >= 0) {
       /* Don't warn about unused arguments. */
       Pike_compiler->compiler_frame->variable[i].flags |= LOCAL_VAR_IS_USED;
-      if ($4) {
+      if ($5) {
 	Pike_compiler->compiler_frame->variable[i].flags |=
 	  LOCAL_VAR_IS_ARGUMENT;
       }
     }
-    free_node($3);
+    free_node($4);
   }
   ;
 
