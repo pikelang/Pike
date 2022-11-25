@@ -3035,25 +3035,36 @@ static int do_docode2(node *n, int flags)
     return 1;
 
   case F_SET_LOCAL_NAME:
-    tmp1 = store_prog_string(CDR(n)->u.sval.u.string);
-    emit2(F_SET_LOCAL_NAME, CAR(n)->u.sval.u.integer, tmp1);
-    return 0;
+    if (CAR(n) && (CAR(n)->token == F_LOCAL) && !CAR(n)->u.integer.b &&
+	CDR(n) && (CDR(n)->token == F_ARG_LIST)) {
+      /* F_SET_LOCAL_NAME(F_LOCAL(stack_offset, 0),
+       *                  F_ARG_LIST(F_CONSTANT(T_STRING, "varname"),
+       *                             F_CONSTANT(T_INT, varflags)))
+       */
+      tmp2 = CAR(n)->u.integer.a;
 
-  case F_SET_LOCAL_TYPE:
-    tmp1 = store_constant(&CDR(n)->u.sval, 0, NULL);
-    emit2(F_SET_LOCAL_TYPE, CAR(n)->u.sval.u.integer, tmp1);
-    return 0;
+      /* varname. */
+      tmp1 = store_prog_string(CDAR(n)->u.sval.u.string);
+      emit2(F_SET_LOCAL_NAME, tmp2, tmp1);
 
-  case F_SET_LOCAL_FLAGS:
-    if (CAR(n)->u.sval.u.integer & LOCAL_VAR_USED_IN_SCOPE)
-    {
-      emit2(F_SET_LOCAL_FLAGS, CAR(n)->u.sval.u.integer,
-            CDR(n)->u.sval.u.integer);
+      /* vartype. Taken from the type for the F_LOCAL node. */
+      ref_push_type_value(CAR(n)->type);
+      tmp1 = store_constant(Pike_sp - 1, 0, NULL);
+      pop_stack();
+      emit2(F_SET_LOCAL_TYPE, tmp2, tmp1);
+
+      /* varflags. */
+      tmp1 = CDDR(n)->u.sval.u.integer;
+      if (tmp1 & LOCAL_VAR_USED_IN_SCOPE) {
+	emit2(F_SET_LOCAL_FLAGS, tmp2, tmp1);
+      }
     }
     return 0;
 
   case F_SET_LOCAL_END:
-    emit1(F_SET_LOCAL_END, CAR(n)->u.sval.u.integer);
+    if (CAR(n) && (CAR(n)->token == F_LOCAL) && !CAR(n)->u.integer.b) {
+      emit1(F_SET_LOCAL_END, CAR(n)->u.integer.a);
+    }
     return 0;
 
   default:

@@ -3333,12 +3333,10 @@ node *low_pop_local_variables(int level, node *block)
        */
       if (var->name->len) {
 	block = mknestednodes(F_COMMA_EXPR,
-			      mknode(F_SET_LOCAL_NAME, mkintnode(e),
-				     mkstrnode(var->name)),
-			      mknode(F_SET_LOCAL_TYPE, mkintnode(e),
-				     mktypenode(var->type)),
-			      mknode(F_SET_LOCAL_FLAGS, mkintnode(e),
-                                     mkintnode(var->flags)),
+			      mknode(F_SET_LOCAL_NAME, mklocalnode(e, 0),
+				     mknode(F_ARG_LIST,
+					    mkstrnode(var->name),
+					    mkintnode(var->flags))),
 			      block,
 			      mknode(F_POP_VALUE,
 				     var->def ? mkintnode(0) :
@@ -3346,7 +3344,7 @@ node *low_pop_local_variables(int level, node *block)
 					    mklocalnode(e, 0),
 					    NULL),
 				     NULL),
-			      mknode(F_SET_LOCAL_END, mkintnode(e), NULL),
+			      mknode(F_SET_LOCAL_END, mklocalnode(e, 0), NULL),
 			      NULL);
       } else {
 	/* No name; this is typically used for internal temporary variables,
