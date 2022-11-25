@@ -3044,7 +3044,7 @@ static int do_docode2(node *n, int flags)
       tmp2 = CAR(n)->u.integer.a;
 
       /* varname. */
-      tmp1 = store_prog_string(CDAR(n)->u.sval.u.string);
+      tmp1 = store_prog_string(CADR(n)->u.sval.u.string);
       emit2(F_SET_LOCAL_NAME, tmp2, tmp1);
 
       /* vartype. Taken from the type for the F_LOCAL node. */
