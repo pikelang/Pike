@@ -4547,8 +4547,6 @@ void fix_type_field(node *n)
     break;
 
   case F_SET_LOCAL_NAME:
-  case F_SET_LOCAL_TYPE:
-  case F_SET_LOCAL_FLAGS:
   case F_SET_LOCAL_END:
     copy_pike_type(n->type, void_type_string);
     break;
