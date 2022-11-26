@@ -2393,343 +2393,7 @@ struct pike_type *parse_type(const char *s)
 
 void simple_describe_type(struct pike_type *s)
 {
-  struct pike_type *sub = NULL;
-  DECLARE_CYCLIC();
-  if (BEGIN_CYCLIC(s, NULL)) {
-    Pike_fatal("Circular type!\n");
-  }
-  SET_CYCLIC_RET(1);
-
-  if (s) {
-    /* fprintf(stderr, "[[[%p]]]", s); */
-    switch(s->type & PIKE_T_MASK) {
-      case '0': case '1': case '2': case '3': case '4':
-      case '5': case '6': case '7': case '8': case '9':
-	fprintf(stderr, "$%d", s->type-'0');
-	break;
-
-      case PIKE_T_NAME:
-	fprintf(stderr, "{ %s = ", ((struct pike_string *)s->car)->str);
-	simple_describe_type(s->cdr);
-	fprintf(stderr, " }");
-	break;
-
-      case PIKE_T_ATTRIBUTE:
-	{
-	  struct pike_string *deprecated;
-	  MAKE_CONST_STRING(deprecated, "deprecated");
-	  if (((struct pike_string *)s->car) == deprecated) {
-	    fprintf(stderr, "__deprecated__(");
-	  } else {
-	    fprintf(stderr, "__attribute__(\"%s\", ",
-		    ((struct pike_string *)s->car)->str);
-	  }
-	  simple_describe_type(s->cdr);
-	  fprintf(stderr, ")");
-	}
-	break;
-
-      case T_SCOPE:
-	fprintf(stderr, "scope(%"PRINTPTRDIFFT"d, ", CAR_TO_INT(s));
-	simple_describe_type(s->cdr);
-	fprintf(stderr, ")");
-	break;
-      case T_TUPLE:
-	fprintf(stderr, "tuple(");
-	simple_describe_type(s->car);
-	fprintf(stderr, ", ");
-	simple_describe_type(s->cdr);
-	fprintf(stderr, ")");
-	break;
-      case T_ASSIGN:
-	fprintf(stderr, "($%"PRINTPTRDIFFT"d = ", CAR_TO_INT(s));
-	simple_describe_type(s->cdr);
-	fprintf(stderr, ")");
-	break;
-      case T_INT:
-	{
-	  INT32 min = CAR_TO_INT(s);
-	  INT32 max = CDR_TO_INT(s);
-	  fprintf(stderr, "int");
-	  if(min!=MIN_INT32 || max!=MAX_INT32) {
-	    if (!min && max && !(max & (max+1))) {
-	      int j = 0;
-	      while (max) {
-		max >>= 1;
-		j++;
-	      }
-	      fprintf(stderr, "(%dbit)", j);
-	    } else if (min == max) {
-	      fprintf(stderr, "(%ld)", (long)min);
-	    } else {
-	      fprintf(stderr, "(%ld..%ld)",(long)min,(long)max);
-	    }
-	  }
-	  break;
-	}
-      case T_FLOAT: fprintf(stderr, "float"); break;
-      case T_STRING:
-	{
-	  INT32 min;
-	  INT32 max;
-	  fprintf(stderr, "string");
-	  if ((s->car == int_pos_type_string) && (s->cdr == int_type_string)) {
-	    break;
-	  }
-	  fprintf(stderr, "(");
-	  if (s->car != int_pos_type_string) {
-	    simple_describe_type(s->car);
-	    fprintf(stderr, ": ");
-	  }
-	  sub = s->cdr;
-	  if (sub && (sub != int_type_string)) {
-	    while (sub->type == T_OR) {
-	      struct pike_type *char_type = s->car;
-	      while(char_type && (char_type->type == T_ASSIGN)) {
-		char_type = char_type->cdr;
-	      }
-
-	      if (!char_type) {
-		sub = sub->cdr;
-		continue;
-	      }
-	      if (char_type->type == T_ZERO) {
-		fprintf(stderr, "zero | ");
-		sub = sub->cdr;
-		continue;
-	      }
-	      if (char_type->type == T_MIXED) {
-		fprintf(stderr, "mixed | ");
-		s = s->cdr;
-		continue;
-	      }
-	      if ((char_type->type >= '0') && (char_type->type <= '9')) {
-		fprintf(stderr, "$%d | ", char_type->type - '0');
-		sub = sub->cdr;
-		continue;
-	      }
-	      if ((char_type->type & PIKE_T_MASK) == PIKE_T_OPERATOR) {
-		simple_describe_type(char_type);
-		fprintf(stderr, " | ");
-		sub = sub->cdr;
-		continue;
-	      }
-#ifdef PIKE_DEBUG
-	      if (char_type->type != T_INT) {
-		Pike_fatal("Invalid node type (%d:%s) in string type.\n",
-			   char_type->type, get_name_of_type(char_type->type));
-	      }
-#endif /* PIKE_DEBUG */
-	      min = CAR_TO_INT(char_type);
-	      max = CDR_TO_INT(char_type);
-	      if (!min && max && max != MAX_INT32 && !(max & (max+1))) {
-		int j = 0;
-		while (max) {
-		  max >>= 1;
-		  j++;
-		}
-		fprintf(stderr, "%dbit", j);
-	      } else {
-		if ((min != MIN_INT32) || (max == min)) {
-		  fprintf(stderr, "%d", min);
-		}
-		if (max != min) {
-		  fprintf(stderr, "..");
-		  if (max != MAX_INT32) {
-		    fprintf(stderr, "%d", max);
-		  }
-		}
-	      }
-	      fprintf(stderr, " | ");
-	      sub = sub->cdr;
-	    }
-	    if (!sub) {
-	      fprintf(stderr, "__unknown__");
-	    } else if (sub->type == T_ZERO) {
-	      fprintf(stderr, "zero");
-	    } else if (sub->type == T_MIXED) {
-	      fprintf(stderr, "mixed");
-	    } else if ((sub->type >= '0') && (sub->type <= '9')) {
-	      fprintf(stderr, "$%d", sub->type - '0');
-	    } else if (sub->type == T_INT) {
-	      min = CAR_TO_INT(sub);
-	      max = CDR_TO_INT(sub);
-	      if (!min && max && max != MAX_INT32 && !(max & (max+1))) {
-		int j = 0;
-		while (max) {
-		  max >>= 1;
-		  j++;
-		}
-		fprintf(stderr, "%dbit", j);
-	      } else {
-		if ((min != MIN_INT32) || (min == max)) {
-		  fprintf(stderr, "%d", min);
-		}
-		if (min != max) {
-		  fprintf(stderr, "..");
-		  if (max != MAX_INT32) {
-		    fprintf(stderr, "%d", max);
-		  }
-		}
-	      }
-	    } else {
-	      simple_describe_type(sub);
-	    }
-	  }
-	  fprintf(stderr, ")");
-	  break;
-	}
-      case T_TYPE:
-	fprintf(stderr, "type(");
-	simple_describe_type(s->car);
-	fprintf(stderr, ")");
-	break;
-      case T_PROGRAM:
-	fprintf(stderr, "program(");
-	simple_describe_type(s->car);
-	fprintf(stderr, ")");
-	break;
-      case T_OBJECT:
-	fprintf(stderr, "object(%s %"PRINTPTRDIFFT"d)",
-	       s->car?"is":"implements",
-		CDR_TO_INT(s));
-	break;
-      case T_FUNCTION:
-      case T_MANY:
-	fprintf(stderr, "function(");
-	sub = s;
-	while(sub && (sub->type == T_FUNCTION)) {
-	  simple_describe_type(sub->car);
-	  sub = sub->cdr;
-	  if (!sub) break;
-	  if ((sub->type == T_FUNCTION) ||
-	      ((sub->type == T_MANY) &&
-	       (!sub->car || (sub->car->type != T_VOID)))) {
-	    fprintf(stderr, ", ");
-	  }
-	}
-	if (!sub || (sub->type != T_MANY)) {
-	  fprintf(stderr, ", @");
-	  simple_describe_type(sub);
-	  fprintf(stderr, ")");
-	} else {
-	  if (!sub->car || (sub->car->type != T_VOID)) {
-	    simple_describe_type(sub->car);
-	    fprintf(stderr, "...");
-	  }
-	  fprintf(stderr, ":");
-	  simple_describe_type(sub->cdr);
-	  fprintf(stderr, ")");
-	}
-	break;
-      case T_ARRAY: /* FIXME: cdr */
-	fprintf(stderr, "array(");
-	if (s->car != int_pos_type_string) {
-	  simple_describe_type(s->car);
-	  fprintf(stderr, ":");
-	}
-	simple_describe_type(s->cdr);
-	fprintf(stderr, ")");
-	break;
-      case T_MAPPING:
-	fprintf(stderr, "mapping(");
-	simple_describe_type(s->car);
-	fprintf(stderr, ":");
-	simple_describe_type(s->cdr);
-	fprintf(stderr, ")");
-	break;
-      case T_MULTISET:
-	fprintf(stderr, "multiset(");
-	simple_describe_type(s->car);
-	fprintf(stderr, ")");
-	break;
-
-      case PIKE_T_UNKNOWN: fprintf(stderr, "unknown"); break;
-      case PIKE_T_RING:
-	fprintf(stderr, "ring(");
-	simple_describe_type(s->car);
-	fprintf(stderr, "\260");
-	simple_describe_type(s->cdr);
-	fprintf(stderr, ")");
-	break;
-      case T_OR:
-	fprintf(stderr, "or(");
-	simple_describe_type(s->car);
-	fprintf(stderr, "|");
-	simple_describe_type(s->cdr);
-	fprintf(stderr, ")");
-	break;
-      case T_AND:
-	fprintf(stderr, "and(");
-	simple_describe_type(s->car);
-	fprintf(stderr, "&");
-	simple_describe_type(s->cdr);
-	fprintf(stderr, ")");
-	break;
-      case T_NOT:
-	fprintf(stderr, "not(");
-	simple_describe_type(s->car);
-	fprintf(stderr, ")");
-	break;
-      case T_VOID: fprintf(stderr, "void"); break;
-      case T_ZERO: fprintf(stderr, "zero"); break;
-      case T_MIXED: fprintf(stderr, "mixed"); break;
-      case PIKE_T_AUTO:
-	fprintf(stderr, "auto");
-	if (s->car && (s->car->type != T_ZERO)) {
-	  fprintf(stderr, "(");
-	  simple_describe_type(s->car);
-	  fprintf(stderr, ")");
-	}
-	break;
-
-      case PIKE_T_OPERATOR:
-	fprintf(stderr, "operator<0x%04x>(", s->type);
-	simple_describe_type(s->car);
-	if (s->type & 0x8000) {
-	  fprintf(stderr, ",");
-	  simple_describe_type(s->cdr);
-	  fprintf(stderr, ")");
-	} else {
-	  switch(s->type) {
-	  case PIKE_T_FIND_LFUN:
-	    fprintf(stderr, ",\"%s\")", STR0(lfun_strings[CDR_TO_INT(s)]));
-	    break;
-	  default:
-	    if (s->cdr) {
-	      fprintf(stderr, ",0x%08"PRINTPTRDIFFT"x)", CDR_TO_INT(s));
-	    } else {
-	      fprintf(stderr, ")");
-	    }
-	    break;
-	  }
-	}
-	break;
-
-      case PIKE_T_TRANSITIVE:
-	fprintf(stderr, "transitive(");
-	simple_describe_type(s->car);
-	fprintf(stderr, ", ");
-	simple_describe_type(s->cdr);
-	fprintf(stderr, ")");
-	break;
-
-      default:
-	fprintf(stderr, "Unknown type node: %d, %p:%p",
-	       s->type, s->car, s->cdr);
-#ifdef DEBUG_MALLOC
-	debug_malloc_dump_references(s, 0, 2, 0);
-#endif
-	break;
-    }
-    if (s && s->flags && (l_flag > 10)) {
-      fprintf(stderr, "[%06x]", s->flags);
-    }
-  } else {
-    fprintf(stderr, "__unknown__");
-  }
-
-  END_CYCLIC();
+  safe_pike_fprintf(stderr, "%T", s);
 }
 
 static void low_describe_int_range(struct string_builder *s,
@@ -2785,11 +2449,20 @@ static void low_describe_int_range(struct string_builder *s,
 
 void low_describe_type(struct string_builder *s, struct pike_type *t)
 {
+#ifdef PIKE_DEBUG
+  DECLARE_CYCLIC();
+#endif
   fatal_check_c_stack(1024);
   if (!t) {
     string_builder_strcat(s, "__unknown__");
     return;
   }
+#ifdef PIKE_DEBUG
+  if (BEGIN_CYCLIC(s, t)) {
+    Pike_fatal("Circular type!\n");
+  }
+  SET_CYCLIC_RET(1);
+#endif
   switch(t->type)	/* NB: No masking here! */
   {
     case '0': case '1': case '2': case '3': case '4':
@@ -3081,13 +2754,15 @@ void low_describe_type(struct string_builder *s, struct pike_type *t)
 	break;
       }
   }
+#ifdef PIKE_DEBUG
+  END_CYCLIC();
+#endif
 }
 
 struct pike_string *describe_type(struct pike_type *type)
 {
   struct string_builder s;
   ONERROR err;
-  if(!type) return make_shared_string("mixed");
   init_string_builder(&s, 0);
   SET_ONERROR(err, free_string_builder, &s);
   low_describe_type(&s, type);
