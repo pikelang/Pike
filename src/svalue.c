@@ -1950,6 +1950,24 @@ PMOD_EXPORT void safe_print_short_svalue_compact (FILE *out, const union anythin
   no_pike_calls--;
 }
 
+PMOD_EXPORT void pike_vfprintf (FILE *out, const char *fmt, va_list args)
+{
+  struct string_builder s;
+  init_string_builder (&s, 0);
+  string_builder_vsprintf (&s, fmt, args);
+  low_set_index (s.s, s.s->len, 0);
+  fputs (s.s->str, out);
+  free_string_builder (&s);
+}
+
+PMOD_EXPORT void pike_fprintf (FILE *out, const char *fmt, ...)
+{
+  va_list args;
+  va_start (args, fmt);
+  pike_vfprintf (out, fmt, args);
+  va_end (args);
+}
+
 #ifdef PIKE_DEBUG
 /* These are only defined in debug mode since no_pike_calls ought to
  * be controlled with a flag per format spec instead. When that's
@@ -1957,14 +1975,9 @@ PMOD_EXPORT void safe_print_short_svalue_compact (FILE *out, const union anythin
 
 PMOD_EXPORT void safe_pike_vfprintf (FILE *out, const char *fmt, va_list args)
 {
-  struct string_builder s;
-  init_string_builder (&s, 0);
   no_pike_calls++;
-  string_builder_vsprintf (&s, fmt, args);
+  pike_vfprintf(out, fmt, args);
   no_pike_calls--;
-  low_set_index (s.s, s.s->len, 0);
-  fputs (s.s->str, out);
-  free_string_builder (&s);
 }
 
 PMOD_EXPORT void safe_pike_fprintf (FILE *out, const char *fmt, ...)
