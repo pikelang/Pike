@@ -574,7 +574,7 @@ INT32 assemble(int store_linenumbers)
       break;
 
     case F_SET_LOCAL_FLAGS:
-      Pike_compiler->compiler_frame->variable[c->arg].flags |= c->arg2;
+      Pike_compiler->compiler_frame->local_names[c->arg].flags |= c->arg2;
       break;
 
     case F_SET_LOCAL_END:
@@ -967,12 +967,12 @@ static inline int argument2(int offset)
 }
 
 /* This is used from two peep.in rules, merely because coverity did not
- * like accessing ...->variables[arguments(1)], as arguments() could in theory
+ * like accessing ...->local_names[arguments(1)], as arguments() could in theory
  * return a negative value. Neither very pretty nor generic... */
 static inline unsigned int check_local_var_flag(int var, int flag)
 {
   if (var >= 0)
-    return Pike_compiler->compiler_frame->variable[var].flags & flag;
+    return Pike_compiler->compiler_frame->local_names[var].flags & flag;
 
   return 0;
 }

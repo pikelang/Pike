@@ -50,7 +50,7 @@ typedef struct node_s node;
 /* Var is an argument. def is used for default value. */
 #define LOCAL_VAR_IS_ARGUMENT		4
 
-struct local_variable
+struct local_name
 {
   struct pike_string *name;
   struct pike_type *type;
@@ -83,7 +83,7 @@ struct compiler_frame
   int generator_local;
   int generator_index;
   INT32 *generator_jumptable;
-  struct local_variable variable[MAX_LOCAL];
+  struct local_name local_names[MAX_LOCAL];	/* Local symbols. */
 };
 
 /* Also used in struct node_identifier */

@@ -3087,7 +3087,7 @@ static void emit_save_locals(struct compiler_frame *f)
       if (local_var_idx >= num_locals) {
         break;
       }
-      if (f->variable[local_var_idx].flags & LOCAL_VAR_USED_IN_SCOPE) {
+      if (f->local_names[local_var_idx].flags & LOCAL_VAR_USED_IN_SCOPE) {
         bitmask |= 1 << idx;
       }
     }

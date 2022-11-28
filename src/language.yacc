@@ -799,7 +799,7 @@ def: modifiers optional_attributes simple_type optional_constant
 	    add_ref(id->type);
 	    add_local_name(empty_pike_string, id->type, 0);
 	    /* Note: add_local_name() above will return e. */
-	    Pike_compiler->compiler_frame->variable[e].flags |=
+	    Pike_compiler->compiler_frame->local_names[e].flags |=
 	      LOCAL_VAR_IS_USED;
 	  }
 	} else {
@@ -809,7 +809,7 @@ def: modifiers optional_attributes simple_type optional_constant
 	    add_ref(id->type);
 	    add_local_name(empty_pike_string, id->type, 0);
 	    /* Note: add_local_name() above will return e. */
-	    Pike_compiler->compiler_frame->variable[e].flags |=
+	    Pike_compiler->compiler_frame->local_names[e].flags |=
 	      LOCAL_VAR_IS_USED;
 	  }
 	}
@@ -866,7 +866,7 @@ def: modifiers optional_attributes simple_type optional_constant
       add_local_name(empty_pike_string, function_type_string, 0);
 
       for (e = 0; e <= Pike_compiler->compiler_frame->generator_local; e++) {
-	Pike_compiler->compiler_frame->variable[e].flags |=
+	Pike_compiler->compiler_frame->local_names[e].flags |=
 	  LOCAL_VAR_IS_USED | LOCAL_VAR_USED_IN_SCOPE;
       }
 
@@ -885,9 +885,9 @@ def: modifiers optional_attributes simple_type optional_constant
     e = $<number>8 + $9 - 1;
     if (Pike_compiler->varargs) {
       /* NB: This is set when either __create__() or create() has varargs. */
-      push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
+      push_finished_type(Pike_compiler->compiler_frame->local_names[e].type);
       e--;
-      if (Pike_compiler->compiler_frame->variable[e+1].type->type != T_ARRAY) {
+      if (Pike_compiler->compiler_frame->local_names[e+1].type->type != T_ARRAY) {
 	yywarning("Varargs variable is not an array!! (Internal error)");
       } else {
 	if (pop_type_stack(T_ARRAY)) {
@@ -900,8 +900,8 @@ def: modifiers optional_attributes simple_type optional_constant
     push_type(T_MANY);
     for(; e >= $<number>8; e--)
     {
-      push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
-      if (Pike_compiler->compiler_frame->variable[e].init) {
+      push_finished_type(Pike_compiler->compiler_frame->local_names[e].type);
+      if (Pike_compiler->compiler_frame->local_names[e].init) {
 	push_type(T_VOID);
 	push_type(T_OR);
       }
@@ -1045,8 +1045,8 @@ def: modifiers optional_attributes simple_type optional_constant
       for(e=$<number>8; e<$<number>8+$9; e++)
       {
 	if((e >= $<number>8) &&
-	   (!Pike_compiler->compiler_frame->variable[e].name ||
-	    !Pike_compiler->compiler_frame->variable[e].name->len))
+	   (!Pike_compiler->compiler_frame->local_names[e].name ||
+	    !Pike_compiler->compiler_frame->local_names[e].name->len))
 	{
 	  my_yyerror("Missing name for argument %d.", e - $<number>8);
 	} else {
@@ -1055,7 +1055,7 @@ def: modifiers optional_attributes simple_type optional_constant
 	  if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
 	      /* FIXME: Should probably use some other flag. */
 	      if ((runtime_options & RUNTIME_CHECK_TYPES) &&
-		  (Pike_compiler->compiler_frame->variable[e].type !=
+		  (Pike_compiler->compiler_frame->local_names[e].type !=
 		   mixed_type_string)) {
 		node *local_node;
 
@@ -1069,7 +1069,7 @@ def: modifiers optional_attributes simple_type optional_constant
 		 */
 		check_args =
 		  mknode(F_COMMA_EXPR, check_args,
-			 mksoftcastnode(Pike_compiler->compiler_frame->variable[e].type,
+			 mksoftcastnode(Pike_compiler->compiler_frame->local_names[e].type,
 					local_node));
 	      }
 	  }
@@ -1127,7 +1127,7 @@ def: modifiers optional_attributes simple_type optional_constant
         if(Pike_compiler->varargs &&
            (!$<number>8 || (Pike_compiler->num_create_args >= 0)))
         {
-          push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
+          push_finished_type(Pike_compiler->compiler_frame->local_names[e].type);
           e--;
           if (pop_type_stack(T_ARRAY)) {
 	    compiler_discard_top_type();
@@ -1138,7 +1138,7 @@ def: modifiers optional_attributes simple_type optional_constant
         push_type(T_MANY);
         for(; e>=0; e--)
         {
-          push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
+          push_finished_type(Pike_compiler->compiler_frame->local_names[e].type);
           push_type(T_FUNCTION);
         }
 
@@ -1176,14 +1176,14 @@ def: modifiers optional_attributes simple_type optional_constant
     } else {
       /* Prototype; don't warn about unused arguments. */
       for (e = Pike_compiler->compiler_frame->current_number_of_locals; e--;) {
-	Pike_compiler->compiler_frame->variable[e].flags |= LOCAL_VAR_IS_USED;
+	Pike_compiler->compiler_frame->local_names[e].flags |= LOCAL_VAR_IS_USED;
       }
       if( Pike_compiler->compiler_frame->current_return_type->type == PIKE_T_AUTO )
           yyerror("'auto' return type not allowed for prototypes.");
       if (Pike_compiler->compiler_pass == COMPILER_PASS_FIRST) {
 	for(e=0; e<$<number>8+$9; e++)
 	{
-	  node *init = Pike_compiler->compiler_frame->variable[e].init;
+	  node *init = Pike_compiler->compiler_frame->local_names[e].init;
 	  if (init) {
 	    low_yyreport(REPORT_WARNING, init->current_file, init->line_number,
 			 parser_system_string, 0,
@@ -1362,9 +1362,9 @@ new_arg_name: full_type optional_dot_dot_dot
     i = add_local_name($4->u.sval.u.string, compiler_pop_type(), $5);
     if (i >= 0) {
       /* Don't warn about unused arguments. */
-      Pike_compiler->compiler_frame->variable[i].flags |= LOCAL_VAR_IS_USED;
+      Pike_compiler->compiler_frame->local_names[i].flags |= LOCAL_VAR_IS_USED;
       if ($5) {
-	Pike_compiler->compiler_frame->variable[i].flags |=
+	Pike_compiler->compiler_frame->local_names[i].flags |=
 	  LOCAL_VAR_IS_ARGUMENT;
       }
     }
@@ -2156,7 +2156,7 @@ new_local_name: TOK_IDENTIFIER
     if (id >= 0) {
       if (!(THIS_COMPILATION->lex.pragmas & ID_STRICT_TYPES)) {
 	/* Only warn about unused initialized variables in strict types mode. */
-	Pike_compiler->compiler_frame->variable[id].flags |= LOCAL_VAR_IS_USED;
+	Pike_compiler->compiler_frame->local_names[id].flags |= LOCAL_VAR_IS_USED;
       }
       $$ = mknode(F_INITIALIZE, mklocalnode(id, 0), $4);
     } else
@@ -2496,7 +2496,7 @@ lambda: TOK_LAMBDA line_number_info implicit_identifier start_lambda
       e=$5-1;
       if($<number>$)
       {
-	push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
+	push_finished_type(Pike_compiler->compiler_frame->local_names[e].type);
 	e--;
 	if (pop_type_stack(T_ARRAY)) {
 	  compiler_discard_top_type();
@@ -2507,7 +2507,7 @@ lambda: TOK_LAMBDA line_number_info implicit_identifier start_lambda
       Pike_compiler->varargs=0;
       push_type(T_MANY);
       for(; e>=0; e--) {
-	push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
+	push_finished_type(Pike_compiler->compiler_frame->local_names[e].type);
 	push_type(T_FUNCTION);
       }
       type=compiler_pop_type();
@@ -2556,7 +2556,7 @@ lambda: TOK_LAMBDA line_number_info implicit_identifier start_lambda
     e=$5-1;
     if($<number>6)
     {
-      push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
+      push_finished_type(Pike_compiler->compiler_frame->local_names[e].type);
       e--;
       if (pop_type_stack(T_ARRAY)) {
 	compiler_discard_top_type();
@@ -2567,8 +2567,8 @@ lambda: TOK_LAMBDA line_number_info implicit_identifier start_lambda
     Pike_compiler->varargs=0;
     push_type(T_MANY);
     for(; e>=0; e--) {
-      node *init = Pike_compiler->compiler_frame->variable[e].init;
-      push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
+      node *init = Pike_compiler->compiler_frame->local_names[e].init;
+      push_finished_type(Pike_compiler->compiler_frame->local_names[e].type);
       if (init) {
 	push_type(T_VOID);
 	push_type(T_OR);
@@ -2661,7 +2661,7 @@ local_function: TOK_IDENTIFIER start_function func_args
     e=$3-1;
     if(Pike_compiler->varargs)
     {
-      push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
+      push_finished_type(Pike_compiler->compiler_frame->local_names[e].type);
       e--;
       if (pop_type_stack(T_ARRAY)) {
 	compiler_discard_top_type();
@@ -2671,8 +2671,8 @@ local_function: TOK_IDENTIFIER start_function func_args
     }
     push_type(T_MANY);
     for(; e>=0; e--) {
-      push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
-      if (Pike_compiler->compiler_frame->variable[e].init) {
+      push_finished_type(Pike_compiler->compiler_frame->local_names[e].type);
+      if (Pike_compiler->compiler_frame->local_names[e].init) {
 	push_type(T_VOID);
 	push_type(T_OR);
       }
@@ -2767,9 +2767,9 @@ local_function: TOK_IDENTIFIER start_function func_args
      */
 
     localid=Pike_compiler->compiler_frame->current_number_of_locals-1;
-    if(Pike_compiler->compiler_frame->variable[localid].def)
+    if(Pike_compiler->compiler_frame->local_names[localid].def)
     {
-      $$=copy_node(Pike_compiler->compiler_frame->variable[localid].def);
+      $$=copy_node(Pike_compiler->compiler_frame->local_names[localid].def);
     }else{
       if(Pike_compiler->compiler_frame->lexical_scope &
 	 (SCOPE_SCOPE_USED | SCOPE_SCOPED))
@@ -2844,7 +2844,7 @@ local_generator: TOK_IDENTIFIER start_function func_args
     add_local_name(empty_pike_string, function_type_string, 0);
 
     for (e = 0; e <= Pike_compiler->compiler_frame->generator_local; e++) {
-      Pike_compiler->compiler_frame->variable[e].flags |=
+      Pike_compiler->compiler_frame->local_names[e].flags |=
 	LOCAL_VAR_IS_USED | LOCAL_VAR_USED_IN_SCOPE;
     }
 
@@ -2853,7 +2853,7 @@ local_generator: TOK_IDENTIFIER start_function func_args
     e=$3-1;
     if(Pike_compiler->varargs)
     {
-      push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
+      push_finished_type(Pike_compiler->compiler_frame->local_names[e].type);
       e--;
       if (pop_type_stack(T_ARRAY)) {
 	compiler_discard_top_type();
@@ -2863,8 +2863,8 @@ local_generator: TOK_IDENTIFIER start_function func_args
     }
     push_type(T_MANY);
     for(; e>=0; e--) {
-      push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
-      if (Pike_compiler->compiler_frame->variable[e].init) {
+      push_finished_type(Pike_compiler->compiler_frame->local_names[e].type);
+      if (Pike_compiler->compiler_frame->local_names[e].init) {
 	push_type(T_VOID);
 	push_type(T_OR);
       }
@@ -3011,9 +3011,9 @@ local_generator: TOK_IDENTIFIER start_function func_args
      */
 
     localid=Pike_compiler->compiler_frame->current_number_of_locals-1;
-    if(Pike_compiler->compiler_frame->variable[localid].def)
+    if(Pike_compiler->compiler_frame->local_names[localid].def)
     {
-      $$=copy_node(Pike_compiler->compiler_frame->variable[localid].def);
+      $$=copy_node(Pike_compiler->compiler_frame->local_names[localid].def);
     }else{
       if(Pike_compiler->compiler_frame->lexical_scope &
 	 (SCOPE_SCOPE_USED | SCOPE_SCOPED))
@@ -3088,7 +3088,7 @@ create_arg: modifiers simple_type optional_dot_dot_dot TOK_IDENTIFIER
     }
 
     l_no = add_local_name($4->u.sval.u.string, type, $5);
-    Pike_compiler->compiler_frame->variable[l_no].flags |=
+    Pike_compiler->compiler_frame->local_names[l_no].flags |=
       LOCAL_VAR_IS_ARGUMENT | LOCAL_VAR_IS_USED;
 
     if (ref_no != l_no) {
@@ -3127,7 +3127,7 @@ optional_create_arguments: /* empty */ { $$ = 0; }
 
     if (Pike_compiler->num_create_args < 0) {
       e--;
-      push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
+      push_finished_type(Pike_compiler->compiler_frame->local_names[e].type);
       if (pop_type_stack(T_ARRAY)) {
 	compiler_discard_top_type();
       }
@@ -3135,7 +3135,7 @@ optional_create_arguments: /* empty */ { $$ = 0; }
       if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
 	/* FIXME: Should probably use some other flag. */
 	if ((runtime_options & RUNTIME_CHECK_TYPES) &&
-	    (Pike_compiler->compiler_frame->variable[e].type !=
+	    (Pike_compiler->compiler_frame->local_names[e].type !=
 	     mixed_type_string)) {
 	  node *local_node;
 
@@ -3149,7 +3149,7 @@ optional_create_arguments: /* empty */ { $$ = 0; }
 	   */
 	  n =
 	    mknode(F_COMMA_EXPR, n,
-		   mksoftcastnode(Pike_compiler->compiler_frame->variable[e].type,
+		   mksoftcastnode(Pike_compiler->compiler_frame->local_names[e].type,
 				  local_node));
 	}
       }
@@ -3164,9 +3164,9 @@ optional_create_arguments: /* empty */ { $$ = 0; }
     push_type(T_MANY);
 
     while (e-- > 0) {
-      node *init = Pike_compiler->compiler_frame->variable[e].init;
+      node *init = Pike_compiler->compiler_frame->local_names[e].init;
 
-      push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
+      push_finished_type(Pike_compiler->compiler_frame->local_names[e].type);
 
       n =
 	mknode(F_COMMA_EXPR,
@@ -3178,7 +3178,7 @@ optional_create_arguments: /* empty */ { $$ = 0; }
       if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
 	/* FIXME: Should probably use some other flag. */
 	if ((runtime_options & RUNTIME_CHECK_TYPES) &&
-	    (Pike_compiler->compiler_frame->variable[e].type !=
+	    (Pike_compiler->compiler_frame->local_names[e].type !=
 	     mixed_type_string)) {
 	  node *local_node;
 
@@ -3192,7 +3192,7 @@ optional_create_arguments: /* empty */ { $$ = 0; }
 	   */
 	  n =
 	    mknode(F_COMMA_EXPR,
-		   mksoftcastnode(Pike_compiler->compiler_frame->variable[e].type,
+		   mksoftcastnode(Pike_compiler->compiler_frame->local_names[e].type,
 				  local_node),
 		   n);
 	}
@@ -4129,10 +4129,10 @@ optional_block: /* EMPTY */ { $$=0; }
     struct pike_string *save_file = c->lex.current_file;
     int save_line = c->lex.current_line;
     int args_used =
-      Pike_compiler->compiler_frame->variable[0].flags & LOCAL_VAR_IS_USED;
+      Pike_compiler->compiler_frame->local_names[0].flags & LOCAL_VAR_IS_USED;
 
     /* Don't warn about the argument if unused. */
-    Pike_compiler->compiler_frame->variable[0].flags |= LOCAL_VAR_IS_USED;
+    Pike_compiler->compiler_frame->local_names[0].flags |= LOCAL_VAR_IS_USED;
 
     c->lex.current_file = $2->current_file;
     c->lex.current_line = $2->line_number;
@@ -4227,7 +4227,7 @@ apply:
       {
         add_ref($1->type);
         temporary = add_local_name(empty_pike_string, $1->type, 0);
-        Pike_compiler->compiler_frame->variable[temporary].flags |=
+        Pike_compiler->compiler_frame->local_names[temporary].flags |=
 	  LOCAL_VAR_IS_USED;
         $$=mknode(F_LAND,
                   mknode(F_ASSIGN, mklocalnode(temporary,0), $1),
@@ -4339,7 +4339,7 @@ expr5: literal_expr
         $1->type->refs++;
 
         temporary = add_local_name(empty_pike_string, $1->type, 0);
-        Pike_compiler->compiler_frame->variable[temporary].flags |= LOCAL_VAR_IS_USED;
+        Pike_compiler->compiler_frame->local_names[temporary].flags |= LOCAL_VAR_IS_USED;
         $$=mknode(F_LAND,
                   mknode(F_ASSIGN, mklocalnode(temporary,0), $1),
                   mknode(F_INDEX,  mklocalnode(temporary,0), $4));
@@ -4372,7 +4372,7 @@ expr5: literal_expr
         $1->type->refs++;
 
         temporary = add_local_name(empty_pike_string, $1->type, 0);
-        Pike_compiler->compiler_frame->variable[temporary].flags |= LOCAL_VAR_IS_USED;
+        Pike_compiler->compiler_frame->local_names[temporary].flags |= LOCAL_VAR_IS_USED;
         $$=mknode(F_LAND,
                   mknode(F_ASSIGN, mklocalnode(temporary,0), $1),
                   mknode(F_RANGE,  mklocalnode(temporary,0), range) );
@@ -4442,7 +4442,7 @@ expr5: literal_expr
       {
         add_ref($1->type);
         temporary = add_local_name(empty_pike_string, $1->type, 0);
-        Pike_compiler->compiler_frame->variable[temporary].flags |=
+        Pike_compiler->compiler_frame->local_names[temporary].flags |=
 	  LOCAL_VAR_IS_USED;
         $$=mknode(F_LAND,
                   mknode(F_ASSIGN, mklocalnode(temporary,0), $1),
@@ -5254,8 +5254,8 @@ static int low_islocal(struct compiler_frame *f,
 {
   int e;
   for(e=f->current_number_of_locals-1;e>=0;e--)
-    if(f->variable[e].name==str) {
-      f->variable[e].flags |= LOCAL_VAR_IS_USED;
+    if(f->local_names[e].name==str) {
+      f->local_names[e].flags |= LOCAL_VAR_IS_USED;
       return e;
     }
   return -1;
@@ -5281,7 +5281,7 @@ int low_add_local_name(struct compiler_frame *frame,
     {
       my_yyerror("Duplicate local variable %S, "
 		 "previous declaration on line %d\n",
-		 str, frame->variable[tmp].line);
+		 str, frame->local_names[tmp].line);
     }
 
     if(type == void_type_string)
@@ -5316,23 +5316,23 @@ int low_add_local_name(struct compiler_frame *frame,
       free_type(type);
       copy_pike_type(type, zero_type_string);
     }
-    frame->variable[var].type = type;
-    frame->variable[var].name = str;
+    frame->local_names[var].type = type;
+    frame->local_names[var].name = str;
     reference_shared_string(str);
-    frame->variable[var].def = def;
-    frame->variable[var].init = init;
+    frame->local_names[var].def = def;
+    frame->local_names[var].init = init;
 
-    frame->variable[var].line = THIS_COMPILATION->lex.current_line;
-    copy_shared_string(frame->variable[var].file,
+    frame->local_names[var].line = THIS_COMPILATION->lex.current_line;
+    copy_shared_string(frame->local_names[var].file,
 		       THIS_COMPILATION->lex.current_file);
 
     if (frame->generator_local != -1) {
-      frame->variable[var].flags = LOCAL_VAR_IS_USED | LOCAL_VAR_USED_IN_SCOPE;
+      frame->local_names[var].flags = LOCAL_VAR_IS_USED | LOCAL_VAR_USED_IN_SCOPE;
     } else if (pike_types_le(void_type_string, type, 0, 0)) {
       /* Don't warn about unused voidable variables. */
-      frame->variable[var].flags = LOCAL_VAR_IS_USED;
+      frame->local_names[var].flags = LOCAL_VAR_IS_USED;
     } else {
-      frame->variable[var].flags = 0;
+      frame->local_names[var].flags = 0;
     }
 
     frame->current_number_of_locals++;
@@ -5366,7 +5366,7 @@ static void mark_lvalue_as_used(node *n)
       break;
     case F_LOCAL:
       if (!n->u.integer.b) {
-	Pike_compiler->compiler_frame->variable[n->u.integer.a].flags |=
+	Pike_compiler->compiler_frame->local_names[n->u.integer.a].flags |=
 	  LOCAL_VAR_IS_USED;
       }
       return;
@@ -5484,11 +5484,11 @@ static node *lexical_islocal(struct pike_string *str)
   {
     for(e=f->current_number_of_locals-1;e>=0;e--)
     {
-      if(f->variable[e].name==str)
+      if(f->local_names[e].name==str)
       {
 	struct compiler_frame *q=Pike_compiler->compiler_frame;
 
-	f->variable[e].flags |= LOCAL_VAR_IS_USED;
+	f->local_names[e].flags |= LOCAL_VAR_IS_USED;
 
 	while(q!=f)
 	{
@@ -5501,13 +5501,13 @@ static node *lexical_islocal(struct pike_string *str)
 
 	  if(q->min_number_of_locals < e+1)
 	    q->min_number_of_locals = e+1;
-          q->variable[e].flags |= LOCAL_VAR_USED_IN_SCOPE;
+          q->local_names[e].flags |= LOCAL_VAR_USED_IN_SCOPE;
 	}
 
-	if(f->variable[e].def &&
-	   !(f->variable[e].flags & LOCAL_VAR_IS_ARGUMENT)) {
+	if(f->local_names[e].def &&
+	   !(f->local_names[e].flags & LOCAL_VAR_IS_ARGUMENT)) {
 	  /*fprintf(stderr, "Found prior definition of \"%s\"\n", str->str); */
-	  return copy_node(f->variable[e].def);
+	  return copy_node(f->local_names[e].def);
 	}
 
 	return mklocalnode(e,depth);
@@ -5599,9 +5599,9 @@ static node *find_versioned_identifier(struct pike_string *identifier,
 
 static node *set_default_value(int e)
 {
-  node *init = Pike_compiler->compiler_frame->variable[e].init;
-  struct pike_type *type = Pike_compiler->compiler_frame->variable[e].type;
-  struct pike_string *name = Pike_compiler->compiler_frame->variable[e].name;
+  node *init = Pike_compiler->compiler_frame->local_names[e].init;
+  struct pike_type *type = Pike_compiler->compiler_frame->local_names[e].type;
+  struct pike_string *name = Pike_compiler->compiler_frame->local_names[e].name;
 
   if (!init) return NULL;
 

@@ -429,8 +429,8 @@ int check_tailrecursion(void)
   if(debug_options & NO_TAILRECURSION) return 0;
   for(e=0;e<Pike_compiler->compiler_frame->max_number_of_locals;e++)
   {
-    if(!pike_type_allow_premature_toss(
-      Pike_compiler->compiler_frame->variable[e].type))
+    struct local_name *var = Pike_compiler->compiler_frame->local_names + e;
+    if(!pike_type_allow_premature_toss(var->type))
       return 0;
   }
   return 1;
@@ -1265,7 +1265,7 @@ node *debug_mklocalnode(int var, int depth)
   }
 #endif
   if (!depth) {
-    res = f->variable[var].def;
+    res = f->local_names[var].def;
     if (res) {
       add_ref(res);
       return res;
@@ -1283,7 +1283,7 @@ node *debug_mklocalnode(int var, int depth)
   res->u.integer.b = depth;
 
   for(e=0;e<depth;e++) f=f->previous;
-  copy_pike_type(res->type, f->variable[var].type);
+  copy_pike_type(res->type, f->local_names[var].type);
 
   return res;
 }
@@ -3254,8 +3254,8 @@ static void fix_auto_node(node *n, struct pike_type *type)
   switch(n->token) {
   case F_LOCAL:
     if (!n->u.integer.b) {
-      struct local_variable *var =
-	&Pike_compiler->compiler_frame->variable[n->u.integer.a];
+      struct local_name *var =
+	&Pike_compiler->compiler_frame->local_names[n->u.integer.a];
       if (var->type) free_type(var->type);
       copy_pike_type(var->type, type);
     }
@@ -4515,7 +4515,7 @@ void fix_type_field(node *n)
 	f = f->previous;
       }
       if (f) {
-	copy_pike_type(n->type, f->variable[n->u.integer.a].type);
+	copy_pike_type(n->type, f->local_names[n->u.integer.a].type);
       } else {
 	copy_pike_type(n->type, mixed_type_string);
       }

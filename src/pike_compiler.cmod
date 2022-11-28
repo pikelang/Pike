@@ -3307,7 +3307,7 @@ void push_compiler_frame(int lexical_scope)
   f->opt_flags = OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND; /* FIXME: Should be 0. */
   f->generator_local = -1;
   f->generator_jumptable = NULL;
-  memset(&f->variable, 0, sizeof(f->variable));
+  memset(&f->local_names, 0, sizeof(f->local_names));
   Pike_compiler->compiler_frame=f;
 }
 
@@ -3316,10 +3316,10 @@ node *low_pop_local_variables(int level, node *block)
   struct compilation *c = THIS_COMPILATION;
   while(Pike_compiler->compiler_frame->current_number_of_locals > level)
   {
-    struct local_variable *var;
+    struct local_name *var;
     int e;
     e=--(Pike_compiler->compiler_frame->current_number_of_locals);
-    var = Pike_compiler->compiler_frame->variable + e;
+    var = Pike_compiler->compiler_frame->local_names + e;
 
     if (block) {
       /* NB: We assign 0 to all dead local variables here regardless of
@@ -3380,9 +3380,8 @@ node *low_pop_local_variables(int level, node *block)
     free_type(var->type);
     if(var->def) {
       free_node(var->def);
-
     }
-    free_string(Pike_compiler->compiler_frame->variable[e].file);
+    free_string(Pike_compiler->compiler_frame->local_names[e].file);
     if(var->init)
       free_node(var->init);
   }
@@ -3400,8 +3399,8 @@ node *pop_local_variables(int level, node *block)
      *        actually is used from a nested scope. */
     for(;level<Pike_compiler->compiler_frame->min_number_of_locals;level++)
     {
-      struct local_variable *var =
-	Pike_compiler->compiler_frame->variable + level;
+      struct local_name *var =
+	Pike_compiler->compiler_frame->local_names + level;
       if ((Pike_compiler->compiler_pass == COMPILER_PASS_LAST) &&
 	  !(var->flags & LOCAL_VAR_IS_USED)) {
 	ref_push_string(var->name);
