@@ -184,9 +184,9 @@ class Chunk {
   //! @endignore
   private inherit FileIO:file;
 
-  private Table parent;
+  private object(Table)|zero parent;
   private int magic, compress, write;
-  private string start_time, filename;
+  private string|zero start_time, filename;
 
   /* Point in file from which new chunks can be allocated. */
   private int eof = 0;
