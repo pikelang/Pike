@@ -2310,15 +2310,12 @@ constant_expr: safe_expr0
 
 local_constant_name: TOK_IDENTIFIER '=' safe_expr0
   {
-    struct pike_type *type;
-
     /* Ugly hack to make sure that $3 is optimized */
     {
       int tmp=Pike_compiler->compiler_pass;
       $3=mknode(F_COMMA_EXPR,$3,0);
       optimize_node($3);
       Pike_compiler->compiler_pass=tmp;
-      type=$3->u.node.a->type;
     }
 
     if(!is_const($3))
@@ -2334,13 +2331,11 @@ local_constant_name: TOK_IDENTIFIER '=' safe_expr0
         pop_n_elems((INT32)(tmp - 1));
 	if($3) free_node($3);
 	$3=mksvaluenode(Pike_sp-1);
-	type=$3->type;
 	pop_stack();
       }
     }
-    if(!type) type = mixed_type_string;
-    add_ref(type);
-    low_add_local_name(NULL, $1->u.sval.u.string, type, $3, NULL);
+    low_add_local_name(NULL, $1->u.sval.u.string, NULL,
+		       $3?$3:mknode(F_UNDEFINED, 0, 0), NULL);
     /* Note: Intentionally not marked as used. */
     free_node($1);
   }
@@ -2705,19 +2700,17 @@ local_function: TOK_IDENTIFIER start_function func_args
     }
     Pike_compiler->varargs=0;
     Pike_compiler->compiler_frame->current_function_number=id;
+    free_type(type);
 
     n=0;
-    if(Pike_compiler->compiler_pass > COMPILER_PASS_FIRST &&
-       (i=ID_FROM_INT(Pike_compiler->new_program, id)))
-    {
-      if(i->identifier_flags & IDENTIFIER_SCOPED)
-	n = mktrampolinenode(id, Pike_compiler->compiler_frame->previous);
-      else
-	n = mkidentifiernode(id);
-    }
+    i = ID_FROM_INT(Pike_compiler->new_program, id);
+    if(i->identifier_flags & IDENTIFIER_SCOPED)
+      n = mktrampolinenode(id, Pike_compiler->compiler_frame->previous);
+    else
+      n = mkidentifiernode(id);
 
     low_add_local_name(Pike_compiler->compiler_frame->previous,
-		       $1->u.sval.u.string, type, n, NULL);
+		       $1->u.sval.u.string, NULL, n, NULL);
 
     $<number>$=id;
     free_string(name);
@@ -2897,19 +2890,17 @@ local_generator: TOK_IDENTIFIER start_function func_args
     }
     Pike_compiler->varargs=0;
     Pike_compiler->compiler_frame->current_function_number=id;
+    free_type(type);
 
     n=0;
-    if(Pike_compiler->compiler_pass > COMPILER_PASS_FIRST &&
-       (i=ID_FROM_INT(Pike_compiler->new_program, id)))
-    {
-      if(i->identifier_flags & IDENTIFIER_SCOPED)
-	n = mktrampolinenode(id, Pike_compiler->compiler_frame->previous);
-      else
-	n = mkidentifiernode(id);
-    }
+    i = ID_FROM_INT(Pike_compiler->new_program, id);
+    if(i->identifier_flags & IDENTIFIER_SCOPED)
+      n = mktrampolinenode(id, Pike_compiler->compiler_frame->previous);
+    else
+      n = mkidentifiernode(id);
 
     low_add_local_name(Pike_compiler->compiler_frame->previous,
-		       $1->u.sval.u.string, type, n, NULL);
+		       $1->u.sval.u.string, NULL, n, NULL);
 
     $<number>$=id;
     free_string(name);
@@ -5263,7 +5254,9 @@ static int low_islocal(struct compiler_frame *f,
 
 
 /* Add a local variable to the current function in frame.
- * NOTE: Steals the references to type and def, but not to str.
+ * NOTE: Steals a reference to each of type, def and init, but not to str.
+ *
+ * NB: type MUST be NULL if def is not NULL.
  */
 int low_add_local_name(struct compiler_frame *frame,
 		       struct pike_string *str,
@@ -5308,6 +5301,18 @@ int low_add_local_name(struct compiler_frame *frame,
   } else {
     int var = frame->current_number_of_locals;
 
+    if (def) {
+      /* Take the type from the definition node. */
+#ifdef PIKE_DEBUG
+      if (type) {
+        Pike_fatal("Type specified for local alias!\n");
+      }
+#endif
+      free_type(type);
+      type = def->type;
+      if (type) add_ref(type);
+    }
+
     if (pike_types_le(type, void_type_string, 0, 0)) {
       if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
 	yywarning("Declaring local variable %S with type void "
@@ -5315,12 +5320,6 @@ int low_add_local_name(struct compiler_frame *frame,
       }
       free_type(type);
       copy_pike_type(type, zero_type_string);
-    }
-    if (def) {
-      /* Take the type from the definition node. */
-      free_type(type);
-      type = def->type;
-      if (type) add_ref(type);
     }
     frame->local_names[var].type = type;
     frame->local_names[var].name = str;
