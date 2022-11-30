@@ -5316,6 +5316,12 @@ int low_add_local_name(struct compiler_frame *frame,
       free_type(type);
       copy_pike_type(type, zero_type_string);
     }
+    if (def) {
+      /* Take the type from the definition node. */
+      free_type(type);
+      type = def->type;
+      if (type) add_ref(type);
+    }
     frame->local_names[var].type = type;
     frame->local_names[var].name = str;
     reference_shared_string(str);
