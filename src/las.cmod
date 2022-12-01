@@ -2207,6 +2207,7 @@ node *copy_node(node *n)
     b=mknewintnode(0);
     if(b->type) free_type(b->type);
     *b=*n;
+    b->refs = 1;
     copy_pike_type(b->type, n->type);
     return b;
 
