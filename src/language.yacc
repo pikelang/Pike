@@ -5491,29 +5491,7 @@ static node *lexical_islocal(struct pike_string *str)
     {
       if(f->local_names[e].name==str)
       {
-	struct compiler_frame *q=Pike_compiler->compiler_frame;
-
 	f->local_names[e].flags |= LOCAL_VAR_IS_USED;
-
-	while(q!=f)
-	{
-	  q->lexical_scope|=SCOPE_SCOPED;
-	  q=q->previous;
-	}
-
-	if(depth) {
-	  q->lexical_scope|=SCOPE_SCOPE_USED;
-
-	  if(q->min_number_of_locals < e+1)
-	    q->min_number_of_locals = e+1;
-          q->local_names[e].flags |= LOCAL_VAR_USED_IN_SCOPE;
-	}
-
-	if(f->local_names[e].def &&
-	   !(f->local_names[e].flags & LOCAL_VAR_IS_ARGUMENT)) {
-	  /*fprintf(stderr, "Found prior definition of \"%s\"\n", str->str); */
-	  return copy_node(f->local_names[e].def);
-	}
 
 	return mklocalnode(e,depth);
       }

@@ -1264,12 +1264,30 @@ node *debug_mklocalnode(int var, int depth)
     Pike_fatal("Internal error. Using old AST!\n");
   }
 #endif
-  if (!depth) {
-    res = f->local_names[var].def;
-    if (res) {
-      add_ref(res);
-      return res;
+  for(e = 0; e < depth; e++) {
+    f->lexical_scope |= SCOPE_SCOPED;
+    f = f->previous;
+  }
+  if (depth) {
+    f->lexical_scope |= SCOPE_SCOPE_USED;
+    f->local_names[var].flags |= LOCAL_VAR_USED_IN_SCOPE;
+
+    /* FIXME: Consider setting f->local_names[var].def->u.integer.b
+     *        to -1 to indicate LOCAL_VAR_USED_IN_SCOPE.
+     *
+     *        It would then be trivial to test for in peep.in
+     *        et al, and would remove the need for the
+     *        F_SET_LOCAL_FLAGS pseudo opcode.
+     */
+    if (f->min_number_of_locals <= var) {
+      f->min_number_of_locals = var + 1;
     }
+  }
+  if (f->local_names[var].def &&
+      (f->local_names[var].def->token != F_LOCAL)) {
+    res = f->local_names[var].def;
+    add_ref(res);
+    return res;
   }
 
   res = mkemptynode();
@@ -1281,8 +1299,6 @@ node *debug_mklocalnode(int var, int depth)
 #endif
   res->u.integer.a = var;
   res->u.integer.b = depth;
-
-  for(e=0;e<depth;e++) f=f->previous;
   copy_pike_type(res->type, f->local_names[var].type);
 
   return res;
