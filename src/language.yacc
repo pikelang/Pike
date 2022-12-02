@@ -5264,6 +5264,8 @@ int low_add_local_name(struct compiler_frame *frame,
 		       node *def,
 		       node *init)
 {
+  int var;
+
   if (!frame) {
     frame = Pike_compiler->compiler_frame;
   }
@@ -5298,56 +5300,56 @@ int low_add_local_name(struct compiler_frame *frame,
     if (def) free_node(def);
     if (init) free_node(init);
     return -1;
-  } else {
-    int var = frame->current_number_of_locals;
-
-    if (def) {
-      /* Take the type from the definition node. */
-#ifdef PIKE_DEBUG
-      if (type) {
-        Pike_fatal("Type specified for local alias!\n");
-      }
-#endif
-      free_type(type);
-      type = def->type;
-      if (type) add_ref(type);
-    }
-
-    if (pike_types_le(type, void_type_string, 0, 0)) {
-      if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
-	yywarning("Declaring local variable %S with type void "
-		  "(converted to type zero).", str);
-      }
-      free_type(type);
-      copy_pike_type(type, zero_type_string);
-    }
-    frame->local_names[var].type = type;
-    frame->local_names[var].name = str;
-    reference_shared_string(str);
-    frame->local_names[var].def = def;
-    frame->local_names[var].init = init;
-
-    frame->local_names[var].line = THIS_COMPILATION->lex.current_line;
-    copy_shared_string(frame->local_names[var].file,
-		       THIS_COMPILATION->lex.current_file);
-
-    if (frame->generator_local != -1) {
-      frame->local_names[var].flags = LOCAL_VAR_IS_USED | LOCAL_VAR_USED_IN_SCOPE;
-    } else if (pike_types_le(void_type_string, type, 0, 0)) {
-      /* Don't warn about unused voidable variables. */
-      frame->local_names[var].flags = LOCAL_VAR_IS_USED;
-    } else {
-      frame->local_names[var].flags = 0;
-    }
-
-    frame->current_number_of_locals++;
-    if(frame->current_number_of_locals > frame->max_number_of_locals)
-    {
-      frame->max_number_of_locals = frame->current_number_of_locals;
-    }
-
-    return var;
   }
+
+  var = frame->current_number_of_locals;
+
+  if (def) {
+    /* Take the type from the definition node. */
+#ifdef PIKE_DEBUG
+    if (type) {
+      Pike_fatal("Type specified for local alias!\n");
+    }
+#endif
+    free_type(type);
+    type = def->type;
+    if (type) add_ref(type);
+  }
+
+  if (pike_types_le(type, void_type_string, 0, 0)) {
+    if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
+      yywarning("Declaring local variable %S with type void "
+		"(converted to type zero).", str);
+    }
+    free_type(type);
+    copy_pike_type(type, zero_type_string);
+  }
+  frame->local_names[var].type = type;
+  frame->local_names[var].name = str;
+  reference_shared_string(str);
+  frame->local_names[var].def = def;
+  frame->local_names[var].init = init;
+
+  frame->local_names[var].line = THIS_COMPILATION->lex.current_line;
+  copy_shared_string(frame->local_names[var].file,
+		     THIS_COMPILATION->lex.current_file);
+
+  if (frame->generator_local != -1) {
+    frame->local_names[var].flags = LOCAL_VAR_IS_USED | LOCAL_VAR_USED_IN_SCOPE;
+  } else if (pike_types_le(void_type_string, type, 0, 0)) {
+    /* Don't warn about unused voidable variables. */
+    frame->local_names[var].flags = LOCAL_VAR_IS_USED;
+  } else {
+    frame->local_names[var].flags = 0;
+  }
+
+  frame->current_number_of_locals++;
+  if(frame->current_number_of_locals > frame->max_number_of_locals)
+  {
+    frame->max_number_of_locals = frame->current_number_of_locals;
+  }
+
+  return var;
 }
 
 
