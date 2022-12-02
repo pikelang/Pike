@@ -165,6 +165,7 @@ node *debug_mkapplynode(node *func,node *args);
 node *debug_mkefuncallnode(char *function, node *args);
 node *debug_mkopernode(char *oper_id, node *arg1, node *arg2);
 node *debug_mkversionnode(int major, int minor);
+node *internal_mklocalnode(struct compiler_frame *f, int var);
 node *debug_mklocalnode(int var, int depth);
 node *debug_mkidentifiernode(int i);
 node *debug_mktrampolinenode(int i, struct compiler_frame *depth);
@@ -219,6 +220,7 @@ void fix_foreach_type(node *lval_lval);
 #define mkefuncallnode(function, args) dmalloc_touch(node *, debug_mkefuncallnode(function, dmalloc_touch(node *, args)))
 #define mkopernode(oper_id, arg1, arg2) dmalloc_touch(node *, debug_mkopernode(oper_id, dmalloc_touch(node *, arg1), dmalloc_touch(node *, arg2)))
 #define mkversionnode(major, minor) dmalloc_touch(node *, debug_mkversionnode(major, minor))
+#define internal_mklocalnode(frame, var) dmalloc_touch(node *, internal_mklocalnode(frame, var))
 #define mklocalnode(var, depth) dmalloc_touch(node *, debug_mklocalnode(var, depth))
 #define mkidentifiernode(i) dmalloc_touch(node *, debug_mkidentifiernode(i))
 #define mktrampolinenode(i,f) dmalloc_touch(node *, debug_mktrampolinenode(i, f))

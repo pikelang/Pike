@@ -3380,6 +3380,9 @@ node *low_pop_local_variables(int level, node *block)
     free_type(var->type);
     if(var->def) {
       free_node(var->def);
+
+      /* Mark the variable as free. */
+      var->def = NULL;
     }
     free_string(Pike_compiler->compiler_frame->local_names[e].file);
     if(var->init)

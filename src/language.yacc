@@ -5304,30 +5304,37 @@ int low_add_local_name(struct compiler_frame *frame,
 
   var = frame->current_number_of_locals;
 
-  if (def) {
-    /* Take the type from the definition node. */
+  if (!def) {
+    /* Define a local variable. */
+    if (pike_types_le(type, void_type_string, 0, 0)) {
+      if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
+	yywarning("Declaring local variable %S with type void "
+		  "(converted to type zero).", str);
+      }
+      free_type(type);
+      copy_pike_type(type, zero_type_string);
+    }
+
+    def = internal_mklocalnode(frame, var);
 #ifdef PIKE_DEBUG
+    if (def->type) {
+      Pike_fatal("Internal local already has a type!\n");
+    }
+#endif
+    def->type = type;
+#ifdef PIKE_DEBUG
+  } else {
     if (type) {
       Pike_fatal("Type specified for local alias!\n");
     }
 #endif
-    free_type(type);
-    type = def->type;
-    if (type) add_ref(type);
   }
 
-  if (pike_types_le(type, void_type_string, 0, 0)) {
-    if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
-      yywarning("Declaring local variable %S with type void "
-		"(converted to type zero).", str);
-    }
-    free_type(type);
-    copy_pike_type(type, zero_type_string);
-  }
-  frame->local_names[var].type = type;
   frame->local_names[var].name = str;
   reference_shared_string(str);
   frame->local_names[var].def = def;
+  frame->local_names[var].type = def->type;
+  if (def->type) add_ref(def->type);
   frame->local_names[var].init = init;
 
   frame->local_names[var].line = THIS_COMPILATION->lex.current_line;

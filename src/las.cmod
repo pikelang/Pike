@@ -1259,6 +1259,37 @@ node *debug_mkversionnode(int major, int minor)
   return res;
 }
 
+#ifdef internal_mklocalnode
+#undef internal_mklocalnode
+#endif
+node *internal_mklocalnode(struct compiler_frame *f, int var)
+{
+  int e;
+  node *res;
+
+  if (!f) {
+    f = Pike_compiler->compiler_frame;
+  }
+
+#ifdef PIKE_DEBUG
+  if (f->local_names[var].def) {
+    Pike_fatal("Local variable $%d already initialized!\n", var);
+  }
+#endif
+
+  res = mkemptynode();
+  res->token = F_LOCAL;
+  res->node_info = OPT_NOT_CONST;
+  res->tree_info = res->node_info;
+#ifdef __CHECKER__
+  _CDR(res) = 0;
+#endif
+  res->u.integer.a = var;
+  res->u.integer.b = 0;
+
+  return res;
+}
+
 node *debug_mklocalnode(int var, int depth)
 {
   struct compiler_frame *f=Pike_compiler->compiler_frame;
@@ -1289,9 +1320,15 @@ node *debug_mklocalnode(int var, int depth)
       f->min_number_of_locals = var + 1;
     }
   }
-  if (f->local_names[var].def &&
+  if (!depth || !f->local_names[var].def ||
       (f->local_names[var].def->token != F_LOCAL)) {
     res = f->local_names[var].def;
+#ifdef PIKE_DEBUG
+    if (!res) {
+      Pike_fatal("Local variable $%d:%d not initialized properly!\n",
+		 depth, var);
+    }
+#endif
     add_ref(res);
     return res;
   }
