@@ -257,6 +257,7 @@ static int low_count_args(node *n)
   case F_INC_NEQ_LOOP:
   case F_BREAK:
   case F_RETURN:
+  case F_RETURN_IF_TRUE:
   case F_CONTINUE:
   case F_FOREACH:
     return 0;
@@ -370,9 +371,13 @@ struct pike_type *find_return_type(node *n)
 
   optimize(n);
 
-  if (n->token == F_RETURN) {
+  if ((n->token == F_RETURN) ||
+      (n->token == F_RETURN_IF_TRUE)) {
     if (CAR(n)) {
       if (CAR(n)->type) {
+	/* FIXME: In the F_RETURN_IF_TRUE case zero should
+	 *        be removed from the type.
+	 */
 	copy_pike_type(a, CAR(n)->type);
       } else {
 #ifdef PIKE_DEBUG
@@ -994,6 +999,7 @@ node *debug_mknode(int token, node *a, node *b)
     break;
 
   case F_RETURN:
+  case F_RETURN_IF_TRUE:
     res->node_info |= OPT_RETURN;
     break;
 
@@ -4250,6 +4256,7 @@ void fix_type_field(node *n)
     break;
 
   case F_RETURN:
+  case F_RETURN_IF_TRUE:
     if (!CAR(n) || (CAR(n)->type == void_type_string)) {
       if (!CAR(n)) {
 	_CAR(n) = mkintnode(0);
