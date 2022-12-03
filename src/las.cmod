@@ -837,6 +837,20 @@ node *debug_mknode(int token, node *a, node *b)
 	yyerror("Illegal lvalue.");
       }
       break;
+
+    case F_CLEAR_LOCAL:
+      if (!a || (a->token != F_LOCAL)) {
+	/* NB: For code simplicity we attempt to create F_CLEAR_LOCAL
+	 *     nodes for all local symbols when they go out of scope.
+	 *     F_CLEAR_LOCAL is only valid for F_LOCAL nodes.
+	 *     Fall back to just a zero. The optimizer will get rid
+	 *     of it properly later.
+	 */
+	free_node(a);
+	return mkintnode(0);
+      }
+      break;
+
 #ifdef PIKE_DEBUG
     case F_CAST:
     case F_SOFT_CAST:
@@ -851,11 +865,6 @@ node *debug_mknode(int token, node *a, node *b)
       Pike_fatal("Attempt to create an F_EXTERNAL-node with mknode()!\n");
     case F_GET_SET:
       Pike_fatal("Attempt to create an F_GET_SET-node with mknode()!\n");
-    case F_CLEAR_LOCAL:
-      if (!a || (a->token != F_LOCAL)) {
-	Pike_fatal("Invalid CLEAR_LOCAL-node!\n");
-      }
-      break;
 #endif /* PIKE_DEBUG */
 
 #define OPERNODE(X,Y) case X: return mkopernode(("`" #Y), a, b )
