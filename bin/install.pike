@@ -2517,13 +2517,12 @@ class ExportInstallHandler {
   }
 }
 
-class BurkExportInstallHandler {
+class TarExportInstallHandler {
   inherit ExportInstallHandler;
   protected array(array(string)) to_export=({});
 
   protected void create_export_base()
   {
-#ifndef NT
     if (!mkdir(export_base_name+".dir")) {
       error("Failed to create directory %O: %s\n",
 	    export_base_name+".dir", strerror(errno()));
@@ -2545,7 +2544,6 @@ class BurkExportInstallHandler {
     vars->MANDIR_SRC="share/man";
     vars->DOCDIR_SRC="refdoc";
     vars->TMP_BUILDDIR="build";
-#endif
   }
 
   void export_file (string from, string tmp, string to, void|string id)
@@ -2561,124 +2559,14 @@ class BurkExportInstallHandler {
 
   protected void do_install_master(string master_src)
   {
-    string unpack_master = "master.pike";
-#ifdef __NT__
-    // We don't want to overwrite the main master...
-    // This is undone by the translator.
-    unpack_master = "unpack_master.pike";
-    make_master(unpack_master, master_src,
-		tmpdir+"/build/lib", tmpdir+"/build", tmpdir+"/lib",
+    make_master("master.pike", master_src, "build/lib", "build", "lib",
 		cflags, ldflags);
-#else
-    make_master(unpack_master, master_src, "build/lib", "build", "lib",
-		cflags, ldflags);
-#endif
-    low_install_file(unpack_master,
+    low_install_file("master.pike",
 		     combine_path(prefix, "build/master.pike"));
   }
 
   void do_export()
   {
-#ifdef __NT__
-    status("Creating",export_base_name+".burk");
-    Stdio.File p=Stdio.File(export_base_name+".burk","wc");
-    string msg="   Loading installation script, please wait...";
-    p->write("w%4c%s",sizeof(msg),msg);
-
-#define TRANSLATE(X,Y) combine_path(".",X) : Y
-    mapping translator = ([
-      TRANSLATE(vars->BASEDIR,tmpdir),
-      TRANSLATE(vars->LIBDIR_SRC,tmpdir+"/lib"),
-      TRANSLATE(vars->SRCDIR,tmpdir+"/src"),
-      TRANSLATE(vars->TMP_BINDIR,tmpdir+"/bin"),
-      TRANSLATE(vars->MANDIR_SRC,tmpdir+"/share/man"),
-      TRANSLATE(vars->DOCDIR_SRC,tmpdir+"/refdoc"),
-      TRANSLATE(vars->TMP_LIBDIR,tmpdir+"/build/lib"),
-      "unpack_master.pike" : tmpdir+"/build/master.pike",
-      "":tmpdir+"/build",
-    ]);
-
-    [array(string) to_export_from, array(string) to_export_tmp] =
-      Array.transpose (to_export);
-    array(string) translated_names = Array.map(to_export_tmp, translate, translator);
-    array(string) dirs=Array.uniq(Array.map(translated_names, dirname));
-    while(1)
-    {
-      array(string) d2=Array.map(dirs, dirname) - dirs;
-      if(!sizeof(d2)) break;
-      dirs+=Array.uniq(d2);
-    }
-    dirs-=({""});
-    sort(dirs);
-
-    foreach(dirs, string dir) p->write("d%4c%s",sizeof(dir),dir);
-    foreach(Array.transpose(  ({ to_export_from, translated_names }) ),
-	    [ string file, string file_name ])
-    {
-      status("Adding",file);
-      if (string f=Stdio.read_file(file)) {
-	p->write("f%4c%s%4c",sizeof(file_name),file_name,sizeof(f));
-	p->write(f);
-      } else {
-	//  Huh? File could not be found.
-	error_msg ("-------------------\n"
-		   "Warning: Could not add file: %s. File not found!\n"
-		   "-------------------\n", file);
-      }
-    }
-
-    // FIXME, support $INSTALL_SCRIPT (or similar)
-
-#define TRVAR(X) translate(combine_path(vars->X,"."), translator)
-
-    array(string) env=({
-      //    "PIKE_MODULE_PATH="+TRVAR(TMP_LIBDIR)+"/modules:"+TRVAR(LIBDIR_SRC)+"/modules",
-      //    "PIKE_PROGRAM_PATH=",
-      //    "PIKE_INCLUDE_PATH="+TRVAR(LIBDIR_SRC)+"/include",
-    });
-
-    foreach(env, string e)
-      p->write("e%4c%s",sizeof(e),e);
-
-#define RELAY(X) " " #X "=" + TRVAR(X)+
-
-    string cmd=
-      replace(translate("pike.exe", translator),"/","\\")+
-      " -m"+translate("unpack_master.pike", translator)+
-      " -DNOT_INSTALLED" +
-      " "+translate( combine_path(vars->TMP_BINDIR,"install.pike"), translator)+
-      RELAY(TMP_LIBDIR)
-      RELAY(LIBDIR_SRC)
-      RELAY(SRCDIR)
-      RELAY(TMP_BINDIR)
-      RELAY(MANDIR_SRC)
-      RELAY(DOCDIR_SRC)
-      RELAY(BASEDIR)
-      " TMP_BUILDDIR="+translate("", translator)+
-      (((vars->PIKE_MODULE_RELOC||"") != "")? " PIKE_MODULE_RELOC=1":"")+
-      " $" // $ = @argv
-      ;
-
-    p->write("s%4c%s",sizeof(cmd),cmd);
-
-    array(string) to_delete=translated_names + ({translate("pike.tmp",translator)});
-    to_delete=Array.uniq(to_delete);
-    to_delete+=reverse(dirs);
-
-    // Generate cleanup
-    foreach(to_delete, string del)
-      p->write("D%4c%s",sizeof(del),del);
-
-    p->write("q\0\0\0\0");
-    p->close("rw");
-
-    if(last_len)
-    {
-      status(0,"");
-      status(0,"");
-    }
-
-#else
     allow_mkdirhier = 1;
     set_simple_status(0);
 
@@ -2831,10 +2719,140 @@ done
 			    }) ) ->wait();
 
     status1("Export done");
-#endif
   }
+}
 
 #ifdef __NT__
+class BurkExportInstallHandler {
+  inherit ExportInstallHandler;
+  protected array(array(string)) to_export=({});
+
+  void export_file (string from, string tmp, string to, void|string id)
+  {
+    to_export += ({({from, tmp})});
+  }
+
+  protected void do_install_libpike()
+  {
+    low_install_file("pike.so", combine_path(prefix, "build/pike.so"));
+    ::do_install_libpike();
+  }
+
+  protected void do_install_master(string master_src)
+  {
+    string unpack_master = "master.pike";
+    // We don't want to overwrite the main master...
+    // This is undone by the translator.
+    unpack_master = "unpack_master.pike";
+    make_master(unpack_master, master_src,
+		tmpdir+"/build/lib", tmpdir+"/build", tmpdir+"/lib",
+		cflags, ldflags);
+    low_install_file(unpack_master,
+		     combine_path(prefix, "build/master.pike"));
+  }
+
+  void do_export()
+  {
+    status("Creating",export_base_name+".burk");
+    Stdio.File p=Stdio.File(export_base_name+".burk","wc");
+    string msg="   Loading installation script, please wait...";
+    p->write("w%4c%s",sizeof(msg),msg);
+
+#define TRANSLATE(X,Y) combine_path(".",X) : Y
+    mapping translator = ([
+      TRANSLATE(vars->BASEDIR,tmpdir),
+      TRANSLATE(vars->LIBDIR_SRC,tmpdir+"/lib"),
+      TRANSLATE(vars->SRCDIR,tmpdir+"/src"),
+      TRANSLATE(vars->TMP_BINDIR,tmpdir+"/bin"),
+      TRANSLATE(vars->MANDIR_SRC,tmpdir+"/share/man"),
+      TRANSLATE(vars->DOCDIR_SRC,tmpdir+"/refdoc"),
+      TRANSLATE(vars->TMP_LIBDIR,tmpdir+"/build/lib"),
+      "unpack_master.pike" : tmpdir+"/build/master.pike",
+      "":tmpdir+"/build",
+    ]);
+
+    [array(string) to_export_from, array(string) to_export_tmp] =
+      Array.transpose (to_export);
+    array(string) translated_names = Array.map(to_export_tmp, translate, translator);
+    array(string) dirs=Array.uniq(Array.map(translated_names, dirname));
+    while(1)
+    {
+      array(string) d2=Array.map(dirs, dirname) - dirs;
+      if(!sizeof(d2)) break;
+      dirs+=Array.uniq(d2);
+    }
+    dirs-=({""});
+    sort(dirs);
+
+    foreach(dirs, string dir) p->write("d%4c%s",sizeof(dir),dir);
+    foreach(Array.transpose(  ({ to_export_from, translated_names }) ),
+	    [ string file, string file_name ])
+    {
+      status("Adding",file);
+      if (string f=Stdio.read_file(file)) {
+	p->write("f%4c%s%4c",sizeof(file_name),file_name,sizeof(f));
+	p->write(f);
+      } else {
+	//  Huh? File could not be found.
+	error_msg ("-------------------\n"
+		   "Warning: Could not add file: %s. File not found!\n"
+		   "-------------------\n", file);
+      }
+    }
+
+    // FIXME, support $INSTALL_SCRIPT (or similar)
+
+#define TRVAR(X) translate(combine_path(vars->X,"."), translator)
+
+    array(string) env=({
+      //    "PIKE_MODULE_PATH="+TRVAR(TMP_LIBDIR)+"/modules:"+TRVAR(LIBDIR_SRC)+"/modules",
+      //    "PIKE_PROGRAM_PATH=",
+      //    "PIKE_INCLUDE_PATH="+TRVAR(LIBDIR_SRC)+"/include",
+    });
+
+    foreach(env, string e)
+      p->write("e%4c%s",sizeof(e),e);
+
+#define RELAY(X) " " #X "=" + TRVAR(X)+
+
+    string cmd=
+      replace(translate("pike.exe", translator),"/","\\")+
+      " -m"+translate("unpack_master.pike", translator)+
+      " -DNOT_INSTALLED" +
+      " "+translate( combine_path(vars->TMP_BINDIR,"install.pike"), translator)+
+      RELAY(TMP_LIBDIR)
+      RELAY(LIBDIR_SRC)
+      RELAY(SRCDIR)
+      RELAY(TMP_BINDIR)
+      RELAY(MANDIR_SRC)
+      RELAY(DOCDIR_SRC)
+      RELAY(BASEDIR)
+      " TMP_BUILDDIR="+translate("", translator)+
+      (((vars->PIKE_MODULE_RELOC||"") != "")? " PIKE_MODULE_RELOC=1":"")+
+      " $" // $ = @argv
+      ;
+
+    p->write("s%4c%s",sizeof(cmd),cmd);
+
+    array(string) to_delete=translated_names + ({translate("pike.tmp",translator)});
+    to_delete=Array.uniq(to_delete);
+    to_delete+=reverse(dirs);
+
+    // Generate cleanup
+    foreach(to_delete, string del)
+      p->write("D%4c%s",sizeof(del),del);
+
+    p->write("q\0\0\0\0");
+    p->close("rw");
+
+    if(last_len)
+    {
+      status(0,"");
+      status(0,"");
+    }
+
+  }
+
   protected void check_vc8()
   {
     if (include_crt &&
@@ -2847,15 +2865,15 @@ installed. You might want to try to enable private CRT packaging; see
 the PRIVATE_CRT stuff in install.pike.\n");
     }
   }
-#endif
 }
+#endif /* __NT__ */
 
+#ifdef SUPPORT_WIX
 class WixExportInstallHandler {
   inherit ExportInstallHandler;
 
   void export_file (string from, string tmp, string to, void|string id)
   {
-#ifdef SUPPORT_WIX
     mapping translator = ([
       "":"",
       replace (prefix, "\\", "/"):"",
@@ -2863,14 +2881,10 @@ class WixExportInstallHandler {
     ]);
     root->install_file(translate(replace (to, "\\", "/"), translator),
 		       from, id);
-#else /* !SUPPORT_WIX */
-    error("Wix mode not supported.\n");
-#endif /* SUPPORT_WIX */
   }
 
   protected void do_install_master(string master_src)
   {
-#ifdef SUPPORT_WIX
 #if 0
     string unpack_master = "unpack_master.pike";
     make_master(unpack_master, master_src, "lib", "include/pike",
@@ -2882,10 +2896,8 @@ class WixExportInstallHandler {
 				  "../packaging/windows/pike.ico"),
 		     combine_path(prefix, "lib/pike.ico"));
     root->uninstall_file("lib/master.pike");
-#endif /* SUPPORT_WIX */
   }
 
-#ifdef SUPPORT_WIX
   protected int low_install_regkey(string path, string root, string key,
 				   string name, string value, string id)
   {
@@ -2901,11 +2913,9 @@ class WixExportInstallHandler {
   {
     root->uninstall_file(path);
   }
-#endif /* SUPPORT_WIX */
 
   void do_export()
   {
-#ifdef SUPPORT_WIX
     // Minimize the number of src directives.
     root->set_sources();
 
@@ -3180,24 +3190,20 @@ class WixExportInstallHandler {
 
     Stdio.write_file(export_base_name+".wxs", xml_root->render_xml());
 #endif /* 0 */
-#else /* !SUPPORT_WIX */
-    error("Wix mode not supported.\n");
-#endif /* SUPPORT_WIX */
   }
 
   void low_finalize_pike(string pike_bin_file, string suffix)
   {
     ::low_finalize_pike(pike_bin_file, suffix);
-#ifdef SUPPORT_WIX
     low_install_regkey("bin", "HKLM",
 		       "SYSTEM\\CurrentControlSet\\Services\\SharedAccess\\Parameters\\FirewallPolicy\\StandardProfile\\AuthorizedApplications\\List",
 		       "[#BIN_PIKE]",
 		       "[#BIN_PIKE]:*:Enabled:Pike",
 		       "RE__BIN_PIKE");
     low_uninstall_file("bin/*.old");
-#endif /* SUPPORT_WIX */
   }
 }
+#endif /* SUPPORT_WIX */
 
 class AmigaOSExportInstallHandler {
   inherit ExportInstallHandler;
@@ -3419,10 +3425,18 @@ int pre_install(array(string) argv)
       install_handler = AmigaOSExportInstallHandler(vars, prefix);
       break;
     case "--wix-module":
+#ifdef SUPPORT_WIX
       install_handler = WixExportInstallHandler(vars, prefix);
+#else
+      error("Wix mode not supported.\n");
+#endif
       break;
     case "--export":
+#ifdef __NT__
       install_handler = BurkExportInstallHandler(vars, prefix);
+#else
+      install_handler = TarExportInstallHandler(vars, prefix);
+#endif
       break;
 
     case "":
