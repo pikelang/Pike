@@ -1955,8 +1955,8 @@ PMOD_EXPORT void pike_vfprintf (FILE *out, const char *fmt, va_list args)
   struct string_builder s;
   init_string_builder (&s, 0);
   string_builder_vsprintf (&s, fmt, args);
-  low_set_index (s.s, s.s->len, 0);
-  fputs (s.s->str, out);
+  /* FIXME: Handle wide strings. */
+  fwrite(s.s->str, s.s->len, 1, out);
   free_string_builder (&s);
 }
 
