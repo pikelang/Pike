@@ -533,6 +533,12 @@ ifelse([$3], , , [$3
 fi
 ])
 
+AC_DEFUN([PIKE_IS_CROSS_COMPILING], [[${ac_cv_prog_cc_cross:-${cross_compiling}}]])
+AC_DEFUN([PIKE_OVERRIDE_CROSS_COMPILING], [[
+if [ -n "${ac_cv_prog_cc_cross}" -o -z "${cross_compiling}" ]; then
+ac_cv_prog_cc_cross=$1; else cross_compiling=$1; fi
+]])
+
 dnl PIKE_SEARCH_LIBS(FUNCTION, CALL-CODE, SEARCH-LIBS,
 dnl                  [ACTION-IF-FOUND], [ACTION-IF-NOT-FOUND],
 dnl                  [OTHER-LIBRARIES])
@@ -603,7 +609,7 @@ pushdef([AC_CHECK_SIZEOF],
   define(<<AC_CV_NAME>>, translit(ac_cv_sizeof_$1, [ *], [_p]))dnl
   changequote([, ])dnl
   PIKE_REQUIRE_AC_CC_IS_RNT()dnl
-  if test "x$cross_compiling" = "xyes" -o "x$pike_cc_is_rnt" = "xyes"; then
+  if test x"PIKE_IS_CROSS_COMPILING" = x"yes" -o "x$pike_cc_is_rnt" = "xyes"; then
     AC_MSG_CHECKING(size of $1 ... crosscompiling or rnt)
     AC_CACHE_VAL(AC_CV_NAME,[
       cat > conftest.$ac_ext <<EOF
@@ -744,7 +750,7 @@ AC_DEFUN(PIKE_AC_CHECK_OS, [
   AC_PATH_PROG(uname_prog,uname,no)
   AC_MSG_CHECKING(operating system)
   AC_CACHE_VAL(pike_cv_sys_os, [
-    if test "$cross_compiling" = "yes"; then
+    if test "PIKE_IS_CROSS_COMPILING" = "yes"; then
       case "$host_alias" in
 	*amigaos*)	pike_cv_sys_os="AmigaOS";;
 	*linux*)	pike_cv_sys_os="Linux";;
@@ -900,18 +906,14 @@ define([AC_LOW_MODULE_INIT],
     # since autoconf macros like AC_TRY_RUN will complain bitterly then.
     CROSS=yes
   else
-    CROSS="$ac_cv_prog_cc_cross"
-    # newer autoconf
-    if test x"$CROSS" = x; then
-      CROSS="$cross_compiling"
-    fi
+    CROSS="PIKE_IS_CROSS_COMPILING"
   fi
   AC_SUBST(CROSS)
 
   if test "x$enable_binary" = "xno"; then
     RUNPIKE="USE_PIKE"
   else
-    if test "x$cross_compiling" = "xyes"; then
+    if test x"PIKE_IS_CROSS_COMPILING" = x"yes"; then
       RUNPIKE="USE_PIKE"
     else
       RUNPIKE="DEFAULT_RUNPIKE"

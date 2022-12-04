@@ -286,26 +286,26 @@ fi
 
 if test "x$GCC" = "xno"; then
 
-  if test "x$ac_cv_prog_cc_cross" = "xyes"; then
+  if test x"PIKE_IS_CROSS_COMPILING" = x"yes"; then
     # The AIX 5L/cc beta can not generate working binaries without a
     # data-segment...
     AC_MSG_CHECKING([if we are really using a cross-compiler])
 
     AC_CACHE_VAL(pike_cv_datasegment_required, [
-      ac_cv_prog_cc_cross=no;
+      PIKE_OVERRIDE_CROSS_COMPILING(no)
       AC_TRY_RUN([int foo;main(){return(0);}], [
         pike_cv_datasegment_required=yes
       ], [
         pike_cv_datasegment_required=no
-	ac_cv_prog_cc_cross=yes
+	PIKE_OVERRIDE_CROSS_COMPILING(yes)
       ], [
         pike_cv_datasegment_required=no
-	ac_cv_prog_cc_cross=yes
+        PIKE_OVERRIDE_CROSS_COMPILING(yes)
       ])
     ])
     if test "x$pike_cv_datasegment_required" = "xyes"; then
       AC_MSG_RESULT([no -- Applying data-segment kludge])
-      ac_cv_prog_cc_cross=no
+      PIKE_OVERRIDE_CROSS_COMPILING(no)
       cat >conftest.c <<EOF
 static int foo;
 EOF
@@ -399,7 +399,7 @@ AC_SUBST(BUILDDIR)
 if test "x$enable_binary" = "xno"; then
   CROSS=yes
 else
-  CROSS="$ac_cv_prog_cc_cross"
+  CROSS="PIKE_IS_CROSS_COMPILING"
 fi
 AC_SUBST(CROSS)
 
@@ -407,7 +407,7 @@ if test "x$enable_binary" = "xno"; then
   CC="$BINDIR/nobinary_dummy cc"
   RUNPIKE="USE_PIKE"
   RUNTPIKE="USE_PIKE"
-elif test "x$cross_compiling" = "xyes"; then
+elif test x"PIKE_IS_CROSS_COMPILING" = x"yes"; then
   RUNPIKE="DEFAULT_RUNPIKE"
   RUNTPIKE="USE_PIKE"
 else
@@ -726,7 +726,7 @@ else
     PIKE_MSG_WARN([rntcc/rntcl/rnticl/rntecl detected.])
     AC_PATH_PROGS(SMARTBUILDCC,gcc cc egcs,gcc, $PATH:$EXTRA_PATH)
     echo Using $SMARTBUILDCC to compile smartlink.
-  elif test "x$ac_cv_prog_cc_cross" = "xyes"; then
+  elif test x"PIKE_IS_CROSS_COMPILING" = x"yes"; then
     PIKE_MSG_WARN([Crosscompiler detected.])
     AC_PATH_PROGS(SMARTBUILDCC, gcc cc egcs, gcc, /usr/bin:/bin/:/usr/ccs/bin:/usr/local/bin:/usr/pkg/bin:/opt/pkg/bin:/usr/sfw/bin:/opt/sfw/bin:/opt/csw/bin:$PATH:$EXTRA_PATH)
     echo Using $SMARTBUILDCC to compile smartlink.
@@ -8268,7 +8268,7 @@ pike............ $PIKE
 install......... $INSTALL
 shared object... .$SO
 libs............ $LIBS
-cross-compiled.. $cross_compiling
+cross-compiled.. PIKE_IS_CROSS_COMPILING
 building lib.... $enable_pikelib
 CPPFLAGS........$CPPFLAGS
 CFLAGS (opt)....$OPTIMIZE$opt_reasons
