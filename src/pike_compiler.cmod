@@ -3369,20 +3369,18 @@ node *low_pop_local_variables(int level, node *block)
 	!(var->flags & LOCAL_VAR_IS_USED)) {
       ref_push_string(var->name);
       low_yyreport(REPORT_WARNING,
-		   var->file,
-		   var->line,
+		   var->def?var->def->current_file:NULL,
+		   var->def?var->def->line_number:0,
 		   parser_system_string,
 		   1, "Unused local variable %s.");
     }
     free_string(var->name);
-    free_type(var->type);
     if(var->def) {
       free_node(var->def);
 
       /* Mark the variable as free. */
       var->def = NULL;
     }
-    free_string(Pike_compiler->compiler_frame->local_names[e].file);
     if(var->init)
       free_node(var->init);
   }
@@ -3406,8 +3404,8 @@ node *pop_local_variables(int level, node *block)
 	  !(var->flags & LOCAL_VAR_IS_USED)) {
 	ref_push_string(var->name);
 	low_yyreport(REPORT_WARNING,
-		     var->file,
-		     var->line,
+		     var->def?var->def->current_file:NULL,
+		     var->def?var->def->line_number:0,
 		     parser_system_string,
 		     1, "Unused local variable %s.");
 	/* Make sure we only warn once... */

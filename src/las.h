@@ -53,13 +53,10 @@ typedef struct node_s node;
 struct local_name
 {
   struct pike_string *name;
-  struct pike_type *type;
-  node *def;		/* Definition; typically a local function or constant.
+  node *def;		/* Definition; typically a F_LOCAL node,
+			 * but may eg be a local function.
 			 */
   node *init;		/* Initial/default value. */
-  /* FIXME: Consider moving these two to the def node above? */
-  struct pike_string *file;
-  int line;
   unsigned int flags;
 };
 

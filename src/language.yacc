@@ -885,9 +885,9 @@ def: modifiers optional_attributes simple_type optional_constant
     e = $<number>8 + $9 - 1;
     if (Pike_compiler->varargs) {
       /* NB: This is set when either __create__() or create() has varargs. */
-      push_finished_type(Pike_compiler->compiler_frame->local_names[e].type);
+      push_finished_type(Pike_compiler->compiler_frame->local_names[e].def->type);
       e--;
-      if (Pike_compiler->compiler_frame->local_names[e+1].type->type != T_ARRAY) {
+      if (Pike_compiler->compiler_frame->local_names[e+1].def->type->type != T_ARRAY) {
 	yywarning("Varargs variable is not an array!! (Internal error)");
       } else {
 	if (pop_type_stack(T_ARRAY)) {
@@ -900,7 +900,7 @@ def: modifiers optional_attributes simple_type optional_constant
     push_type(T_MANY);
     for(; e >= $<number>8; e--)
     {
-      push_finished_type(Pike_compiler->compiler_frame->local_names[e].type);
+      push_finished_type(Pike_compiler->compiler_frame->local_names[e].def->type);
       if (Pike_compiler->compiler_frame->local_names[e].init) {
 	push_type(T_VOID);
 	push_type(T_OR);
@@ -1055,7 +1055,7 @@ def: modifiers optional_attributes simple_type optional_constant
 	  if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
 	      /* FIXME: Should probably use some other flag. */
 	      if ((runtime_options & RUNTIME_CHECK_TYPES) &&
-		  (Pike_compiler->compiler_frame->local_names[e].type !=
+		  (Pike_compiler->compiler_frame->local_names[e].def->type !=
 		   mixed_type_string)) {
 		node *local_node;
 
@@ -1069,7 +1069,7 @@ def: modifiers optional_attributes simple_type optional_constant
 		 */
 		check_args =
 		  mknode(F_COMMA_EXPR, check_args,
-			 mksoftcastnode(Pike_compiler->compiler_frame->local_names[e].type,
+			 mksoftcastnode(Pike_compiler->compiler_frame->local_names[e].def->type,
 					local_node));
 	      }
 	  }
@@ -1127,7 +1127,7 @@ def: modifiers optional_attributes simple_type optional_constant
         if(Pike_compiler->varargs &&
            (!$<number>8 || (Pike_compiler->num_create_args >= 0)))
         {
-          push_finished_type(Pike_compiler->compiler_frame->local_names[e].type);
+          push_finished_type(Pike_compiler->compiler_frame->local_names[e].def->type);
           e--;
           if (pop_type_stack(T_ARRAY)) {
 	    compiler_discard_top_type();
@@ -1138,7 +1138,7 @@ def: modifiers optional_attributes simple_type optional_constant
         push_type(T_MANY);
         for(; e>=0; e--)
         {
-          push_finished_type(Pike_compiler->compiler_frame->local_names[e].type);
+          push_finished_type(Pike_compiler->compiler_frame->local_names[e].def->type);
           push_type(T_FUNCTION);
         }
 
@@ -2491,7 +2491,7 @@ lambda: TOK_LAMBDA line_number_info implicit_identifier start_lambda
       e=$5-1;
       if($<number>$)
       {
-	push_finished_type(Pike_compiler->compiler_frame->local_names[e].type);
+	push_finished_type(Pike_compiler->compiler_frame->local_names[e].def->type);
 	e--;
 	if (pop_type_stack(T_ARRAY)) {
 	  compiler_discard_top_type();
@@ -2502,7 +2502,7 @@ lambda: TOK_LAMBDA line_number_info implicit_identifier start_lambda
       Pike_compiler->varargs=0;
       push_type(T_MANY);
       for(; e>=0; e--) {
-	push_finished_type(Pike_compiler->compiler_frame->local_names[e].type);
+	push_finished_type(Pike_compiler->compiler_frame->local_names[e].def->type);
 	push_type(T_FUNCTION);
       }
       type=compiler_pop_type();
@@ -2551,7 +2551,7 @@ lambda: TOK_LAMBDA line_number_info implicit_identifier start_lambda
     e=$5-1;
     if($<number>6)
     {
-      push_finished_type(Pike_compiler->compiler_frame->local_names[e].type);
+      push_finished_type(Pike_compiler->compiler_frame->local_names[e].def->type);
       e--;
       if (pop_type_stack(T_ARRAY)) {
 	compiler_discard_top_type();
@@ -2563,7 +2563,7 @@ lambda: TOK_LAMBDA line_number_info implicit_identifier start_lambda
     push_type(T_MANY);
     for(; e>=0; e--) {
       node *init = Pike_compiler->compiler_frame->local_names[e].init;
-      push_finished_type(Pike_compiler->compiler_frame->local_names[e].type);
+      push_finished_type(Pike_compiler->compiler_frame->local_names[e].def->type);
       if (init) {
 	push_type(T_VOID);
 	push_type(T_OR);
@@ -2656,7 +2656,7 @@ local_function: TOK_IDENTIFIER start_function func_args
     e=$3-1;
     if(Pike_compiler->varargs)
     {
-      push_finished_type(Pike_compiler->compiler_frame->local_names[e].type);
+      push_finished_type(Pike_compiler->compiler_frame->local_names[e].def->type);
       e--;
       if (pop_type_stack(T_ARRAY)) {
 	compiler_discard_top_type();
@@ -2666,7 +2666,7 @@ local_function: TOK_IDENTIFIER start_function func_args
     }
     push_type(T_MANY);
     for(; e>=0; e--) {
-      push_finished_type(Pike_compiler->compiler_frame->local_names[e].type);
+      push_finished_type(Pike_compiler->compiler_frame->local_names[e].def->type);
       if (Pike_compiler->compiler_frame->local_names[e].init) {
 	push_type(T_VOID);
 	push_type(T_OR);
@@ -2846,7 +2846,7 @@ local_generator: TOK_IDENTIFIER start_function func_args
     e=$3-1;
     if(Pike_compiler->varargs)
     {
-      push_finished_type(Pike_compiler->compiler_frame->local_names[e].type);
+      push_finished_type(Pike_compiler->compiler_frame->local_names[e].def->type);
       e--;
       if (pop_type_stack(T_ARRAY)) {
 	compiler_discard_top_type();
@@ -2856,7 +2856,7 @@ local_generator: TOK_IDENTIFIER start_function func_args
     }
     push_type(T_MANY);
     for(; e>=0; e--) {
-      push_finished_type(Pike_compiler->compiler_frame->local_names[e].type);
+      push_finished_type(Pike_compiler->compiler_frame->local_names[e].def->type);
       if (Pike_compiler->compiler_frame->local_names[e].init) {
 	push_type(T_VOID);
 	push_type(T_OR);
@@ -3118,7 +3118,7 @@ optional_create_arguments: /* empty */ { $$ = 0; }
 
     if (Pike_compiler->num_create_args < 0) {
       e--;
-      push_finished_type(Pike_compiler->compiler_frame->local_names[e].type);
+      push_finished_type(Pike_compiler->compiler_frame->local_names[e].def->type);
       if (pop_type_stack(T_ARRAY)) {
 	compiler_discard_top_type();
       }
@@ -3126,7 +3126,7 @@ optional_create_arguments: /* empty */ { $$ = 0; }
       if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
 	/* FIXME: Should probably use some other flag. */
 	if ((runtime_options & RUNTIME_CHECK_TYPES) &&
-	    (Pike_compiler->compiler_frame->local_names[e].type !=
+	    (Pike_compiler->compiler_frame->local_names[e].def->type !=
 	     mixed_type_string)) {
 	  node *local_node;
 
@@ -3140,7 +3140,7 @@ optional_create_arguments: /* empty */ { $$ = 0; }
 	   */
 	  n =
 	    mknode(F_COMMA_EXPR, n,
-		   mksoftcastnode(Pike_compiler->compiler_frame->local_names[e].type,
+		   mksoftcastnode(Pike_compiler->compiler_frame->local_names[e].def->type,
 				  local_node));
 	}
       }
@@ -3157,7 +3157,7 @@ optional_create_arguments: /* empty */ { $$ = 0; }
     while (e-- > 0) {
       node *init = Pike_compiler->compiler_frame->local_names[e].init;
 
-      push_finished_type(Pike_compiler->compiler_frame->local_names[e].type);
+      push_finished_type(Pike_compiler->compiler_frame->local_names[e].def->type);
 
       n =
 	mknode(F_COMMA_EXPR,
@@ -3169,7 +3169,7 @@ optional_create_arguments: /* empty */ { $$ = 0; }
       if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
 	/* FIXME: Should probably use some other flag. */
 	if ((runtime_options & RUNTIME_CHECK_TYPES) &&
-	    (Pike_compiler->compiler_frame->local_names[e].type !=
+	    (Pike_compiler->compiler_frame->local_names[e].def->type !=
 	     mixed_type_string)) {
 	  node *local_node;
 
@@ -3183,7 +3183,7 @@ optional_create_arguments: /* empty */ { $$ = 0; }
 	   */
 	  n =
 	    mknode(F_COMMA_EXPR,
-		   mksoftcastnode(Pike_compiler->compiler_frame->local_names[e].type,
+		   mksoftcastnode(Pike_compiler->compiler_frame->local_names[e].def->type,
 				  local_node),
 		   n);
 	}
@@ -5274,9 +5274,14 @@ int low_add_local_name(struct compiler_frame *frame,
     int tmp=low_islocal(frame,str);
     if(tmp>=0 && tmp >= frame->last_block_level)
     {
-      my_yyerror("Duplicate local variable %S, "
-		 "previous declaration on line %d\n",
-		 str, frame->local_names[tmp].line);
+      struct local_name *l = frame->local_names + tmp;
+      if (l->def) {
+	my_yyerror("Duplicate local identifier %S, "
+		   "previous declaration on line %d.",
+		   str, l->def->line_number);
+      } else {
+	my_yyerror("Duplicate local identifier %S.", str);
+      }
     }
 
     if(type == void_type_string)
@@ -5333,13 +5338,7 @@ int low_add_local_name(struct compiler_frame *frame,
   frame->local_names[var].name = str;
   reference_shared_string(str);
   frame->local_names[var].def = def;
-  frame->local_names[var].type = def->type;
-  if (def->type) add_ref(def->type);
   frame->local_names[var].init = init;
-
-  frame->local_names[var].line = THIS_COMPILATION->lex.current_line;
-  copy_shared_string(frame->local_names[var].file,
-		     THIS_COMPILATION->lex.current_file);
 
   if (frame->generator_local != -1) {
     frame->local_names[var].flags = LOCAL_VAR_IS_USED | LOCAL_VAR_USED_IN_SCOPE;
@@ -5592,7 +5591,7 @@ static node *find_versioned_identifier(struct pike_string *identifier,
 static node *set_default_value(int e)
 {
   node *init = Pike_compiler->compiler_frame->local_names[e].init;
-  struct pike_type *type = Pike_compiler->compiler_frame->local_names[e].type;
+  struct pike_type *type = Pike_compiler->compiler_frame->local_names[e].def->type;
   struct pike_string *name = Pike_compiler->compiler_frame->local_names[e].name;
 
   if (!init) return NULL;
