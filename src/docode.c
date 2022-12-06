@@ -539,11 +539,20 @@ static int do_lfun_call(int id, node *args)
    *
    * * Check that the current function doesn't contain scoped functions.
    */
-    if(Pike_compiler->compiler_frame->is_inline || (ref->id_flags & (ID_INLINE|ID_PRIVATE)))
+    if(Pike_compiler->compiler_frame->is_inline ||
+       (ref->id_flags & (ID_INLINE|ID_PRIVATE)))
     {
       /* Identifier is declared inline/local
        * or in inlining pass.
        */
+      enum Pike_opcodes recur = F_RECUR;
+      if (!check_tailrecursion()) {
+	/* Tail recursion is not safe (ie there might be stuff in
+	 * local variables (eg Thread.MutexKey objects) that have
+	 * side effects if they are cleared.
+	 */
+	recur = F_RECUR_VOLATILE;
+      }
       if ((ref->id_flags & (ID_INLINE|ID_PRIVATE)) &&
 	  (!Pike_compiler->compiler_frame->is_inline)) {
 	/* Explicit local:: reference in first pass.
@@ -553,10 +562,10 @@ static int do_lfun_call(int id, node *args)
 	 * Note that we in this case don't know if we are overloaded or
 	 * not, and thus can't RECUR to the recur_label.
 	 */
-	do_jump(F_RECUR, 0);
+	do_jump(recur, 0);
       } else {
 	Pike_compiler->compiler_frame->recur_label =
-	  do_jump(F_RECUR, Pike_compiler->compiler_frame->recur_label);
+	  do_jump(recur, Pike_compiler->compiler_frame->recur_label);
       }
     } else {
       /* Recur if not overloaded. */

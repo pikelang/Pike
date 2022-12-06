@@ -633,6 +633,10 @@ INT32 assemble(int store_linenumbers)
       jumps[c->arg]=tmp;
       break;
 
+    case F_VOLATILE_RECUR:
+      c->opcode = F_RECUR;
+      /* FALLTHRU */
+
     default:
       switch(instrs[c->opcode - F_OFFSET].flags & I_IS_MASK)
       {

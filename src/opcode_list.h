@@ -90,7 +90,10 @@ OPCODE_NOCODE("typeof", F_TYPEOF, 0)
 /* Alias for F_RETURN, but cannot be optimized into a tail recursion call */
 OPCODE_NOCODE("volatile_return", F_VOLATILE_RETURN, 0)
 
-/* Alias for F_ASSIGN, used when LHS has side-effects that should                                         
+/* Alias for F_RECUR, but cannot be optimized into a tail recursion call */
+OPCODE_NOCODE("volatile_recur", F_VOLATILE_RECUR, I_ISPTRJUMP|I_UPDATE_ALL)
+
+/* Alias for F_ASSIGN, used when LHS has side-effects that should
  * only be evaluated once. */
 OPCODE_NOCODE("assign_self", F_ASSIGN_SELF, 0)
 

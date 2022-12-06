@@ -751,7 +751,7 @@ COMPL POP_N_ELEMS[$2a > 0]: POP_N_ELEMS($2a)
 NOT POP_N_ELEMS[$2a > 0]: POP_N_ELEMS($2a)
 SIZEOF POP_N_ELEMS[$2a > 0]: POP_N_ELEMS($2a)
 
-RECUR RETURN [check_tailrecursion()] : TAIL_RECUR ($1a)
+RECUR RETURN : TAIL_RECUR ($1a)
 
 // This doesn't really work
 // MARK TAIL_RECUR : BRANCH ($2a)
