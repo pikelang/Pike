@@ -551,7 +551,7 @@ static int do_lfun_call(int id, node *args)
 	 * local variables (eg Thread.MutexKey objects) that have
 	 * side effects if they are cleared.
 	 */
-	recur = F_RECUR_VOLATILE;
+	recur = F_VOLATILE_RECUR;
       }
       if ((ref->id_flags & (ID_INLINE|ID_PRIVATE)) &&
 	  (!Pike_compiler->compiler_frame->is_inline)) {
