@@ -257,6 +257,7 @@ static int low_count_args(node *n)
   case F_INC_NEQ_LOOP:
   case F_BREAK:
   case F_RETURN:
+  case F_VOLATILE_RETURN:
   case F_RETURN_IF_TRUE:
   case F_CONTINUE:
   case F_FOREACH:
@@ -372,6 +373,7 @@ struct pike_type *find_return_type(node *n)
   optimize(n);
 
   if ((n->token == F_RETURN) ||
+      (n->token == F_VOLATILE_RETURN) ||
       (n->token == F_RETURN_IF_TRUE)) {
     if (CAR(n)) {
       if (CAR(n)->type) {
@@ -1008,6 +1010,7 @@ node *debug_mknode(int token, node *a, node *b)
     break;
 
   case F_RETURN:
+  case F_VOLATILE_RETURN:
   case F_RETURN_IF_TRUE:
     res->node_info |= OPT_RETURN;
     break;
@@ -2631,6 +2634,7 @@ static void low_print_tree(node *foo,int needlval)
     return;
 
   case F_RETURN:
+  case F_VOLATILE_RETURN:
     switch(CDR(foo)?CDR(foo)->u.sval.u.integer:0) {
     case 2:
       fputs("yield", stderr);
@@ -4302,6 +4306,7 @@ void fix_type_field(node *n)
     break;
 
   case F_RETURN:
+  case F_VOLATILE_RETURN:
   case F_RETURN_IF_TRUE:
     if (!CAR(n) || (CAR(n)->type == void_type_string)) {
       if (!CAR(n)) {

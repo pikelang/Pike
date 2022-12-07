@@ -3888,7 +3888,15 @@ return: optional_continue TOK_RETURN expected_semicolon
   }
   | optional_continue TOK_RETURN safe_comma_expr expected_semicolon
   {
-    $$ = mknode(F_RETURN, $3, mkintnode($1));
+    if (!($3->tree_info & (OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT|OPT_APPLY)) ||
+	check_tailrecursion()) {
+      $$ = mknode(F_RETURN, $3, mkintnode($1));
+    } else {
+      /* The expression might be doing something that depends on
+       * us holding eg a Thread.MutexKey.
+       */
+      $$ = mknode(F_VOLATILE_RETURN, $3, mkintnode($1));
+    }
   }
   ;
 

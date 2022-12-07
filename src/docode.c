@@ -2549,6 +2549,7 @@ static int do_docode2(node *n, int flags)
   }
 
   case F_RETURN_IF_TRUE:
+  case F_VOLATILE_RETURN:
   case F_RETURN: {
     struct statement_label *p;
     int in_catch = 0;
@@ -2635,7 +2636,8 @@ static int do_docode2(node *n, int flags)
       }
     }
 
-    emit0(in_catch ? F_VOLATILE_RETURN : F_RETURN);
+    emit0(((n->token == F_VOLATILE_RETURN) || in_catch) ?
+	  F_VOLATILE_RETURN : F_RETURN);
 
     if (continue_label != -1) {
       modify_stack_depth(-1);
