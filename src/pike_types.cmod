@@ -14774,6 +14774,7 @@ struct pike_type *debug_make_pike_type(const char *serialized_type)
 int pike_type_allow_premature_toss(struct pike_type *type)
 {
  again:
+  if (!type) return 1;
 #if 0
   fprintf(stderr, "pike_type_allow_premature_toss(): Type: %d\n",
 	  type->type);
