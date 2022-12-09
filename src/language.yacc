@@ -828,6 +828,8 @@ def: modifiers optional_attributes simple_type optional_constant
     push_finished_type(Pike_compiler->compiler_frame->current_return_type);
 
     if ($1 & ID_GENERATOR) {
+      struct pike_string *name;
+
       /* Adjust the type to be a function that returns
        * a function(mixed|void, function(mixed...:void)|void:X).
        */
@@ -850,20 +852,24 @@ def: modifiers optional_attributes simple_type optional_constant
 
       /* Entry point variable. */
       add_ref(int_type_string);
+      MAKE_CONST_STRING(name, "__generator_entry_point__");
       Pike_compiler->compiler_frame->generator_local =
-	add_local_name(empty_pike_string, int_type_string, 0);
+	add_local_name(name, int_type_string, 0);
 
       /* Stack contents to restore. */
       add_ref(array_type_string);
-      add_local_name(empty_pike_string, array_type_string, 0);
+      MAKE_CONST_STRING(name, "__generator_stack__");
+      add_local_name(name, array_type_string, 0);
 
       /* Resumption argument. */
       add_ref(mixed_type_string);
-      add_local_name(empty_pike_string, mixed_type_string, 0);
+      MAKE_CONST_STRING(name, "__generator_argument__");
+      add_local_name(name, mixed_type_string, 0);
 
       /* Resumption callback. */
       add_ref(function_type_string);
-      add_local_name(empty_pike_string, function_type_string, 0);
+      MAKE_CONST_STRING(name, "__generator_callback__");
+      add_local_name(name, function_type_string, 0);
 
       for (e = 0; e <= Pike_compiler->compiler_frame->generator_local; e++) {
 	Pike_compiler->compiler_frame->local_names[e].flags |=
@@ -2821,20 +2827,24 @@ local_generator: TOK_IDENTIFIER start_function func_args
 
     /* Entry point variable. */
     add_ref(int_type_string);
+    MAKE_CONST_STRING(name, "__generator_entry_point__");
     Pike_compiler->compiler_frame->generator_local =
-      add_local_name(empty_pike_string, int_type_string, 0);
+      add_local_name(name, int_type_string, 0);
 
     /* Stack contents to restore. */
     add_ref(array_type_string);
-    add_local_name(empty_pike_string, array_type_string, 0);
+    MAKE_CONST_STRING(name, "__generator_stack__");
+    add_local_name(name, array_type_string, 0);
 
     /* Resumption argument. */
     add_ref(mixed_type_string);
-    add_local_name(empty_pike_string, mixed_type_string, 0);
+    MAKE_CONST_STRING(name, "__generator_argument__");
+    add_local_name(name, mixed_type_string, 0);
 
     /* Resumption callback. */
     add_ref(function_type_string);
-    add_local_name(empty_pike_string, function_type_string, 0);
+    MAKE_CONST_STRING(name, "__generator_callback__");
+    add_local_name(name, function_type_string, 0);
 
     for (e = 0; e <= Pike_compiler->compiler_frame->generator_local; e++) {
       Pike_compiler->compiler_frame->local_names[e].flags |=
