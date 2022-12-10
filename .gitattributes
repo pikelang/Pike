@@ -18,7 +18,6 @@ testfont binary
 # List of files that currently have lines indented with tab or
 # a mix of tabs and spaces.
 # Remove when they no longer have any initial tabs.
-/ANNOUNCE mixed_indent
 /Makefile mixed_indent
 /bin/export.pike mixed_indent
 /bin/fake_dynamic_load.pike mixed_indent
