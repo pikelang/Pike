@@ -1,9 +1,13 @@
-[attr]binary -text -crlf -diff -ident -filter
 [attr]mixed_indent -filter
 # The space-indent filter is typically defined with:
 # $ git config --global filter.space-indent.clean 'unexpand --first-only'
 # $ git config --global filter.space-indent.smudge 'cat'
 [attr]space_indent filter=space-indent
+# The tab-indent filter is typically defined with:
+# $ git config --global filter.tab-indent.clean 'expand --initial'
+# $ git config --global filter.tab-indent.smudge 'cat'
+[attr]tab_indent filter=tab-indent
+[attr]binary -text -crlf -diff -ident -filter -mixed_indent -space_indent -tab_indent
 * text ident space_indent
 *.db binary
 *.gif binary
@@ -13,12 +17,18 @@
 *.png binary
 *.pnm binary
 *.tiff binary
-install-welcome binary
-testfont binary
+# Some binary files without extensions.
+/src/install-welcome binary
+/src/modules/Image/testfont binary
+# List of files that should be indented with tab as per tradition:
+Makefile -space_indent tab_indent
+Makefile.in -space_indent tab_indent
+Makefile.rl -space_indent tab_indent
+/lib/modules/Calendar.pmod/tzdata/** -space_indent tab_indent
+/packaging/debian/rules -space_indent tab_indent
 # List of files that currently have lines indented with tab or
 # a mix of tabs and spaces.
 # Remove when they no longer have any initial tabs.
-/Makefile mixed_indent
 /bin/export.pike mixed_indent
 /bin/fake_dynamic_load.pike mixed_indent
 /bin/fixdepends.sh mixed_indent
@@ -112,23 +122,6 @@ testfont binary
 /lib/modules/Calendar.pmod/mkrules.pike mixed_indent
 /lib/modules/Calendar.pmod/module.pmod mixed_indent
 /lib/modules/Calendar.pmod/testsuite.in mixed_indent
-/lib/modules/Calendar.pmod/tzdata/Makefile mixed_indent
-/lib/modules/Calendar.pmod/tzdata/NEWS mixed_indent
-/lib/modules/Calendar.pmod/tzdata/README mixed_indent
-/lib/modules/Calendar.pmod/tzdata/africa mixed_indent
-/lib/modules/Calendar.pmod/tzdata/antarctica mixed_indent
-/lib/modules/Calendar.pmod/tzdata/asia mixed_indent
-/lib/modules/Calendar.pmod/tzdata/australasia mixed_indent
-/lib/modules/Calendar.pmod/tzdata/backzone mixed_indent
-/lib/modules/Calendar.pmod/tzdata/checklinks.awk mixed_indent
-/lib/modules/Calendar.pmod/tzdata/checktab.awk mixed_indent
-/lib/modules/Calendar.pmod/tzdata/europe mixed_indent
-/lib/modules/Calendar.pmod/tzdata/leapseconds.awk mixed_indent
-/lib/modules/Calendar.pmod/tzdata/northamerica mixed_indent
-/lib/modules/Calendar.pmod/tzdata/southamerica mixed_indent
-/lib/modules/Calendar.pmod/tzdata/theory.html mixed_indent
-/lib/modules/Calendar.pmod/tzdata/ziguard.awk mixed_indent
-/lib/modules/Calendar.pmod/tzdata/zishrink.awk mixed_indent
 /lib/modules/Charset.pmod/Tables.pmod/iso88591.pmod mixed_indent
 /lib/modules/Charset.pmod/module.pmod mixed_indent
 /lib/modules/Concurrent.pmod mixed_indent
@@ -443,21 +436,16 @@ testfont binary
 /lib/modules/testsuite.in mixed_indent
 /packaging/debian/changelog mixed_indent
 /packaging/debian/pike7.9-core.postrm mixed_indent
-/packaging/debian/rules mixed_indent
-/packaging/windows/Makefile mixed_indent
-/refdoc/Makefile mixed_indent
 /refdoc/chapters/control_structures.xml mixed_indent
 /refdoc/chapters/introduction.xml mixed_indent
 /refdoc/chapters/modules.xml mixed_indent
 /refdoc/chapters/operators.xml mixed_indent
 /refdoc/keywords.txt mixed_indent
 /refdoc/presentation/wiki.pike mixed_indent
-/refdoc/src_images/pike_logo.gif mixed_indent
 /refdoc/structure/modref.css mixed_indent
 /refdoc/structure/modref.js mixed_indent
 /refdoc/structure/traditional.xml mixed_indent
 /refdoc/template.xsl mixed_indent
-/src/Makefile.in mixed_indent
 /src/OCPikeInterpreter.m mixed_indent
 /src/Pike_ui.wxs mixed_indent
 /src/aclocal.m4 mixed_indent
@@ -552,7 +540,6 @@ testfont binary
 /src/modules/Gmp/mpz_glue.c mixed_indent
 /src/modules/Gmp/my_gmp.h mixed_indent
 /src/modules/Gmp/testsuite.in mixed_indent
-/src/modules/HTTPLoop/Makefile.in mixed_indent
 /src/modules/HTTPLoop/accept_and_parse.c mixed_indent
 /src/modules/HTTPLoop/cache.c mixed_indent
 /src/modules/HTTPLoop/cache.h mixed_indent
@@ -562,7 +549,6 @@ testfont binary
 /src/modules/HTTPLoop/timeout.c mixed_indent
 /src/modules/HTTPLoop/util.c mixed_indent
 /src/modules/HTTPLoop/wwwserver.pike mixed_indent
-/src/modules/Image/Makefile.in mixed_indent
 /src/modules/Image/assembly.s mixed_indent
 /src/modules/Image/blit.c mixed_indent
 /src/modules/Image/blit_layer_include.h mixed_indent
@@ -573,7 +559,6 @@ testfont binary
 /src/modules/Image/colortable_lookup.h mixed_indent
 /src/modules/Image/corner2.psd mixed_indent
 /src/modules/Image/dct.c mixed_indent
-/src/modules/Image/encodings/Makefile.in mixed_indent
 /src/modules/Image/encodings/_xpm.c mixed_indent
 /src/modules/Image/encodings/any.c mixed_indent
 /src/modules/Image/encodings/atari.c mixed_indent
@@ -613,7 +598,6 @@ testfont binary
 /src/modules/Image/polyfill.c mixed_indent
 /src/modules/Image/search.c mixed_indent
 /src/modules/Image/test_layers.in mixed_indent
-/src/modules/Image/testfont mixed_indent
 /src/modules/Image/testsuite.in mixed_indent
 /src/modules/Inotify/inotify.cmod mixed_indent
 /src/modules/Inotify/testsuite.in mixed_indent
@@ -627,7 +611,6 @@ testfont binary
 /src/modules/MPI/configure.in mixed_indent
 /src/modules/MPI/mpi.cmod mixed_indent
 /src/modules/MPI/typed_array.H mixed_indent
-/src/modules/Makefile.in mixed_indent
 /src/modules/Math/math_matrix.c mixed_indent
 /src/modules/Math/math_module.c mixed_indent
 /src/modules/Math/matrix_code.h mixed_indent
@@ -675,7 +658,6 @@ testfont binary
 /src/modules/Yp/configure.in mixed_indent
 /src/modules/Yp/module.pmod.in mixed_indent
 /src/modules/Yp/yp.c mixed_indent
-/src/modules/_Charset/Makefile.in mixed_indent
 /src/modules/_Charset/charsetmod.cmod mixed_indent
 /src/modules/_Charset/iso2022.cmod mixed_indent
 /src/modules/_Charset/make_gb18030_h.pike mixed_indent
@@ -683,7 +665,6 @@ testfont binary
 /src/modules/_Charset/make_jisx0213_tables_h.pike mixed_indent
 /src/modules/_Charset/testsuite.in mixed_indent
 /src/modules/_Debug/debug.cmod mixed_indent
-/src/modules/_Ffmpeg/Makefile.in mixed_indent
 /src/modules/_Ffmpeg/configure.in mixed_indent
 /src/modules/_Ffmpeg/ffmpeg.c mixed_indent
 /src/modules/_Gz/configure.in mixed_indent
@@ -707,7 +688,6 @@ testfont binary
 /src/modules/_Protocols_DNS_SD/sd.c mixed_indent
 /src/modules/_Roxen/roxen.c mixed_indent
 /src/modules/_Roxen/testsuite.in mixed_indent
-/src/modules/_Stdio/Makefile.in mixed_indent
 /src/modules/_Stdio/async_tls_close_test.pike mixed_indent
 /src/modules/_Stdio/buffer.cmod mixed_indent
 /src/modules/_Stdio/configure.in mixed_indent
@@ -741,7 +721,6 @@ testfont binary
 /src/modules/static_module_makefile.in mixed_indent
 /src/modules/sybase/configure.in mixed_indent
 /src/modules/sybase/sybase.cmod mixed_indent
-/src/modules/system/Makefile.in mixed_indent
 /src/modules/system/configure.in mixed_indent
 /src/modules/system/memory.c mixed_indent
 /src/modules/system/nt.c mixed_indent
@@ -801,19 +780,16 @@ testfont binary
 /src/post_modules/CritBit/tree_low.h mixed_indent
 /src/post_modules/CritBit/tree_source.H mixed_indent
 /src/post_modules/GL/GLSL.cmod mixed_indent
-/src/post_modules/GL/Makefile.in mixed_indent
 /src/post_modules/GL/auto.c.in mixed_indent
 /src/post_modules/GL/autodoc.pike mixed_indent
 /src/post_modules/GL/configure.in mixed_indent
 /src/post_modules/GL/gen.pike mixed_indent
 /src/post_modules/GL/top.c mixed_indent
-/src/post_modules/GLUT/Makefile.in mixed_indent
 /src/post_modules/GLUT/auto.c.in mixed_indent
 /src/post_modules/GLUT/gen.pike mixed_indent
 /src/post_modules/GSSAPI/configure.in mixed_indent
 /src/post_modules/GSSAPI/gssapi.cmod mixed_indent
 /src/post_modules/GSSAPI/test.pike mixed_indent
-/src/post_modules/GTK2/Makefile.in mixed_indent
 /src/post_modules/GTK2/build_pgtk.pike mixed_indent
 /src/post_modules/GTK2/check_signals.pike mixed_indent
 /src/post_modules/GTK2/configure.in mixed_indent
@@ -822,13 +798,6 @@ testfont binary
 /src/post_modules/GTK2/output/split.pike mixed_indent
 /src/post_modules/GTK2/output/util.pike mixed_indent
 /src/post_modules/GTK2/pgtk.h mixed_indent
-/src/post_modules/GTK2/refdoc/images/gtk2_colorselection.png mixed_indent
-/src/post_modules/GTK2/refdoc/images/gtk2_filechooserdialog.png mixed_indent
-/src/post_modules/GTK2/refdoc/images/gtk2_fileselection.png mixed_indent
-/src/post_modules/GTK2/refdoc/images/gtk2_fontselectiondialog.png mixed_indent
-/src/post_modules/GTK2/refdoc/images/gtk2_togglebutton_2.png mixed_indent
-/src/post_modules/GTK2/refdoc/images/gtk2_viewport.png mixed_indent
-/src/post_modules/GTK2/refdoc/images/gtk2_viewport_2.png mixed_indent
 /src/post_modules/GTK2/source/common_draw.inc mixed_indent
 /src/post_modules/GTK2/source/encode_truecolor.c mixed_indent
 /src/post_modules/GTK2/source/gdkcolormap.pre mixed_indent
@@ -958,14 +927,11 @@ testfont binary
 /src/post_modules/GTK2/source/pangolayoutline.pre mixed_indent
 /src/post_modules/GTK2/source/pangotabarray.pre mixed_indent
 /src/post_modules/GTK2/source/support.c mixed_indent
-/src/post_modules/HPack/Makefile.in mixed_indent
 /src/post_modules/HPack/hpack.cmod mixed_indent
 /src/post_modules/HPack/mk_huffman.pike mixed_indent
 /src/post_modules/HPack/module.pmod.in mixed_indent
 /src/post_modules/HPack/testsuite.in mixed_indent
 /src/post_modules/JSON/JSON.pmod.in mixed_indent
-/src/post_modules/JSON/Makefile.in mixed_indent
-/src/post_modules/JSON/Makefile.rl mixed_indent
 /src/post_modules/JSON/json.cmod mixed_indent
 /src/post_modules/JSON/json_array.c mixed_indent
 /src/post_modules/JSON/json_mapping.c mixed_indent
@@ -981,8 +947,6 @@ testfont binary
 /src/post_modules/JSON/rl/json_string_utf8.rl mixed_indent
 /src/post_modules/JSON/testsuite.in mixed_indent
 /src/post_modules/JSON5/JSON5.pmod.in mixed_indent
-/src/post_modules/JSON5/Makefile.in mixed_indent
-/src/post_modules/JSON5/Makefile.rl mixed_indent
 /src/post_modules/JSON5/json5.cmod mixed_indent
 /src/post_modules/JSON5/json5_array.c mixed_indent
 /src/post_modules/JSON5/json5_mapping.c mixed_indent
@@ -999,7 +963,6 @@ testfont binary
 /src/post_modules/JSON5/rl/json5_string_utf8.rl mixed_indent
 /src/post_modules/JSON5/testsuite.in mixed_indent
 /src/post_modules/Kerberos/kerberos.cmod mixed_indent
-/src/post_modules/Makefile.in mixed_indent
 /src/post_modules/MsgPack/msgpack.cmod mixed_indent
 /src/post_modules/Nettle/aead.H mixed_indent
 /src/post_modules/Nettle/aead.cmod mixed_indent
@@ -1021,7 +984,6 @@ testfont binary
 /src/post_modules/SDL/configure.in mixed_indent
 /src/post_modules/SQLite/sqlite.cmod mixed_indent
 /src/post_modules/SQLite/testsuite.in mixed_indent
-/src/post_modules/Shuffler/Makefile.in mixed_indent
 /src/post_modules/Shuffler/Shuffler.cmod mixed_indent
 /src/post_modules/Shuffler/a_source_int8.c mixed_indent
 /src/post_modules/Shuffler/a_source_pikestring.c mixed_indent
@@ -1032,7 +994,6 @@ testfont binary
 /src/post_modules/Shuffler/e_source_block_pikestream.c mixed_indent
 /src/post_modules/Shuffler/f_source_system_memory.c mixed_indent
 /src/post_modules/Shuffler/test_shuffle.pike mixed_indent
-/src/post_modules/Unicode/Makefile.in mixed_indent
 /src/post_modules/Unicode/buffer.c mixed_indent
 /src/post_modules/Unicode/buffer.h mixed_indent
 /src/post_modules/Unicode/make_decompose.pike mixed_indent
