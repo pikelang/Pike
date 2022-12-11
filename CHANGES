@@ -120,6 +120,10 @@ o Image.XCF
 o Image.XWD
 
   Improved size check better detects malformed XWD images.
+
+o Nettle.IDEA
+
+  Fixed to properly clear an internal copy of key material from memory.
   
 o Protocols.LDAP.client
 
