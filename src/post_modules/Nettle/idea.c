@@ -31,6 +31,7 @@
  */
 
 #include "global.h"
+#include "pike_memory.h"
 #include "idea.h"
 
 /*-------------------------------------------------------------*/
@@ -169,7 +170,7 @@ idea_invert(unsigned INT16 *d,
   *--p = t1;
   /* Copy and destroy temp copy */
   memcpy(d, temp, sizeof(temp));
-  memset(temp, 0, sizeof(temp));
+  secure_zero(temp, sizeof(temp));
 } /* idea_invert */
 
 /*
