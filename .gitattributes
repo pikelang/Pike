@@ -1,10 +1,10 @@
 [attr]mixed_indent -filter
 # The space-indent filter is typically defined with:
-# $ git config --global filter.space-indent.clean 'unexpand --first-only'
+# $ git config --global filter.space-indent.clean 'expand --initial'
 # $ git config --global filter.space-indent.smudge 'cat'
 [attr]space_indent filter=space-indent
 # The tab-indent filter is typically defined with:
-# $ git config --global filter.tab-indent.clean 'expand --initial'
+# $ git config --global filter.tab-indent.clean 'unexpand --first-only'
 # $ git config --global filter.tab-indent.smudge 'cat'
 [attr]tab_indent filter=tab-indent
 [attr]binary -text -crlf -diff -ident -filter -mixed_indent -space_indent -tab_indent
