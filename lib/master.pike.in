@@ -1167,7 +1167,8 @@ program compile_string(string source, string filename="-",
 		       object|void handler,
 		       void|program p,
 		       void|object o,
-		       void|int _show_if_constant_errors)
+                       int show_if_constant_errors =
+                       this::show_if_constant_errors)
 {
 #ifdef RECUR_COMPILE_DEBUG
   werror ("%*s>>> compile_string %O\n", GET_MSG_DEPTH, "", filename);
@@ -1175,9 +1176,7 @@ program compile_string(string source, string filename="-",
 #endif
   string code = cpp(source, filename, 1, handler,
                     compat_major, compat_minor,
-                    (undefinedp(_show_if_constant_errors)?
-                     show_if_constant_errors:
-                     _show_if_constant_errors));
+                    show_if_constant_errors);
   program ret;
   if(code)
     ret = compile(code,
