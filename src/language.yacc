@@ -5627,8 +5627,19 @@ static node *set_default_value(int e)
 
   add_ref(init);
 
+  if (Pike_compiler->compiler_frame->local_names[e].def->token != F_LOCAL) {
+    /* Unconditional initializer.
+     *
+     * $e = init;
+     */
+    return mknode(F_POP_VALUE,
+                  mknode(F_ASSIGN,
+                         mklocalnode(e, 0),
+                         init), NULL);
+  }
+
   if (type->flags & PT_FLAG_NULLABLE) {
-    /* if (undefinedp($e)) { $e = def; } */
+    /* if (undefinedp($e)) { $e = init; } */
     return mknode(F_POP_VALUE,
 		  mknode(F_LAND,
 			 mkefuncallnode("undefinedp",
@@ -5638,7 +5649,7 @@ static node *set_default_value(int e)
 				init)), NULL);
   }
 
-  /* if (!$e) { $e = def; } */
+  /* if (!$e) { $e = init; } */
   return mknode(F_POP_VALUE,
 		mknode(F_LOR,
 		       mklocalnode(e, 0),
