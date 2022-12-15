@@ -2592,10 +2592,10 @@ lambda: TOK_LAMBDA line_number_info implicit_identifier start_lambda
       if (var->init && (var->def->token == F_LOCAL)) {
 	push_type(T_VOID);
 	push_type(T_OR);
-
-	$7 = mknode(F_COMMA_EXPR, set_default_value(e), $7);
       }
       push_type(T_FUNCTION);
+
+      $7 = mknode(F_COMMA_EXPR, set_default_value(e), $7);
     }
 
     type=compiler_pop_type();
@@ -3223,11 +3223,10 @@ optional_create_arguments: /* empty */ { $$ = 0; }
       if (var->init && (var->def->token == F_LOCAL)) {
 	push_type(T_VOID);
 	push_type(T_OR);
-
-	n = mknode(F_COMMA_EXPR, set_default_value(e), n);
       }
-
       push_type(T_FUNCTION);
+
+      n = mknode(F_COMMA_EXPR, set_default_value(e), n);
     }
 
     n = mknode(F_COMMA_EXPR, n,
