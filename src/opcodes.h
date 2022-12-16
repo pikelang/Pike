@@ -170,6 +170,9 @@ enum Pike_opcodes
 #include "opcode_list.h"
 
   /* These are only used for the parse tree. */
+  F_LOCAL_INDIRECT,	/* F_LOCAL that has not yet been allocated
+                         * a slot in the Pike_fp->locals array.
+                         */
 
   F_SPACE = ' ',
   F_COLON = ':',

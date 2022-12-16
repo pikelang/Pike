@@ -50,12 +50,25 @@ typedef struct node_s node;
 /* Var is an argument. def is used for default value. */
 #define LOCAL_VAR_IS_ARGUMENT		4
 
+/**
+ * Represents a single mapping from symbol to local
+ * definition. Usually an F_LOCAL or F_LOCAL_INDIRECT
+ * node (ie a local variable), but may also be eg
+ * an F_CONSTANT node or an F_TRAMPOLINE node.
+ *
+ * NB: Only valid while the corresponding block
+ *     is being parsed. Will be reused while
+ *     parsing later blocks.
+ *
+ * Cf struct compiler_frame::local_names[].
+ */
 struct local_name
 {
   struct pike_string *name;
-  node *def;		/* Definition; typically a F_LOCAL node,
-			 * but may eg be a local function.
-			 */
+  node *def;		/* Definition; typically an F_LOCAL or
+                         * F_LOCAL_INDIRECT node, but may eg
+                         * be a local function or constant.
+                         */
   node *init;		/* Initial/default value. */
   unsigned int flags;
 };
@@ -67,9 +80,12 @@ struct compiler_frame
 
   struct pike_type *current_type;
   struct pike_type *current_return_type;
-  int current_number_of_locals;
-  int max_number_of_locals;
+  int current_number_of_locals;	/* Current number of local_names. */
+  int max_number_of_locals;	/* Number of variables needed in the
+                                 * stack frame.
+                                 */
   int min_number_of_locals;
+  int next_local_offset;	/* Next stack offset for locals. */
   int last_block_level; /* used to detect variables declared in same block */
   int num_args;
   int lexical_scope;
@@ -81,6 +97,7 @@ struct compiler_frame
   int generator_index;
   INT32 *generator_jumptable;
   struct local_name local_names[MAX_LOCAL];	/* Local symbols. */
+  unsigned char local_variables[MAX_LOCAL];	/* Local variable allocation. */
 };
 
 /* Also used in struct node_identifier */

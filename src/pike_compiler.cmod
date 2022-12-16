@@ -3298,6 +3298,7 @@ void push_compiler_frame(int lexical_scope)
   f->current_number_of_locals=0;
   f->max_number_of_locals=0;
   f->min_number_of_locals=0;
+  f->next_local_offset = 0;
   f->last_block_level=-1;
 
   f->current_function_number=-2; /* no function */
@@ -3308,6 +3309,7 @@ void push_compiler_frame(int lexical_scope)
   f->generator_local = -1;
   f->generator_jumptable = NULL;
   memset(&f->local_names, 0, sizeof(f->local_names));
+  memset(&f->local_variables, 0, sizeof(f->local_variables));
   Pike_compiler->compiler_frame=f;
 }
 
