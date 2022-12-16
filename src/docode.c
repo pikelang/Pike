@@ -498,6 +498,7 @@ int generate_call_function(node *n)
 static struct compiler_frame *find_local_frame(INT32 depth)
 {
   struct compiler_frame *f=Pike_compiler->compiler_frame;
+  /* NB: Negative depth (ie -1) must be handled as depth == 0. */
   while(--depth>=0) f=f->previous;
   return f;
 }
@@ -2948,7 +2949,7 @@ static int do_docode2(node *n, int flags)
 
   case F_CLEAR_LOCAL:
 #ifdef PIKE_DEBUG
-    if (!CAR(n) || (CAR(n)->token != F_LOCAL) || CAR(n)->u.integer.b) {
+    if (!CAR(n) || (CAR(n)->token != F_LOCAL) || (CAR(n)->u.integer.b > 0)) {
       print_tree(n);
       Pike_fatal("Invalid CLEAR_LOCAL variable.\n");
     }
@@ -2959,17 +2960,21 @@ static int do_docode2(node *n, int flags)
 
   case F_LOCAL:
     if(n->u.integer.a >=
-       find_local_frame(n->u.integer.b)->max_number_of_locals)
-      yyerror("Illegal to use local variable here.");
+       find_local_frame(n->u.integer.b)->max_number_of_locals) {
+      Pike_fatal("Local variable $%d out of range (max: %d).\n",
+                 n->u.integer.a,
+                 find_local_frame(n->u.integer.b)->max_number_of_locals);
+    }
 
-    if(n->u.integer.b)
+    if((tmp1 = n->u.integer.b))
     {
+      if (tmp1 < 0) tmp1 = 0;	/* LOCAL_VAR_USED_IN_SCOPE */
       if(flags & WANT_LVALUE)
       {
-	emit2(F_LEXICAL_LOCAL_LVALUE, n->u.integer.a, n->u.integer.b);
+        emit2(F_LEXICAL_LOCAL_LVALUE, n->u.integer.a, tmp1);
 	return 2;
       }else{
-	emit2(F_LEXICAL_LOCAL, n->u.integer.a, n->u.integer.b);
+        emit2(F_LEXICAL_LOCAL, n->u.integer.a, tmp1);
 	return 1;
       }
     }else{
@@ -3108,6 +3113,37 @@ static void emit_save_locals(struct compiler_frame *f)
   }
 }
 
+static void bind_local_variables(struct compiler_frame *frame, node *n)
+{
+  if (!n) return;
+
+  switch(n->token) {
+  case F_LOCAL_INDIRECT:
+    low_bind_local(frame, n);
+    break;
+
+  case F_SET_LOCAL_END:
+    n = CAR(n);
+    if (n && (n->token == F_LOCAL) && !n->u.integer.b) {
+      /* Mark the offset as unused. */
+      release_local(frame, n->u.integer.a);
+    }
+    break;
+
+  default:
+    if (!(n->tree_info & OPT_NOT_CONST)) {
+      break;
+    }
+    if (car_is_node(n)) {
+      bind_local_variables(frame, CAR(n));
+    }
+    if (cdr_is_node(n)) {
+      bind_local_variables(frame, CDR(n));
+    }
+    break;
+  }
+}
+
 /* Used to generate code for functions. */
 INT32 do_code_block(node *n, int identifier_flags)
 {
@@ -3119,6 +3155,9 @@ INT32 do_code_block(node *n, int identifier_flags)
   int save_label_no = label_no;
   struct statement_label *save_label;
   int tmp1, tmp2;
+
+  /* Start by binding all remaining unbound local variables. */
+  bind_local_variables(Pike_compiler->compiler_frame, n);
 
   if (Pike_compiler->compiler_frame->current_function_number >= 0) {
     id = Pike_compiler->new_program->identifier_references +
@@ -3358,7 +3397,10 @@ INT32 do_code_block(node *n, int identifier_flags)
   return entry_point;
 }
 
-/* Used by eval_low() to build code for constant expressions. */
+/* Used by eval_low() to build code for constant expressions.
+ *
+ * NB: This implies that n never contains local variables.
+ */
 INT32 docode(node *n)
 {
   struct compilation *c = THIS_COMPILATION;

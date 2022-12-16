@@ -799,6 +799,7 @@ def: modifiers optional_attributes simple_type optional_constant
 	    add_ref(id->type);
 	    add_local_name(empty_pike_string, id->type, 0);
 	    /* Note: add_local_name() above will return e. */
+            bind_local(NULL, e);
 	    Pike_compiler->compiler_frame->local_names[e].flags |=
 	      LOCAL_VAR_IS_USED;
 	  }
@@ -809,6 +810,7 @@ def: modifiers optional_attributes simple_type optional_constant
 	    add_ref(id->type);
 	    add_local_name(empty_pike_string, id->type, 0);
 	    /* Note: add_local_name() above will return e. */
+            bind_local(NULL, e);
 	    Pike_compiler->compiler_frame->local_names[e].flags |=
 	      LOCAL_VAR_IS_USED;
 	  }
@@ -855,21 +857,25 @@ def: modifiers optional_attributes simple_type optional_constant
       MAKE_CONST_STRING(name, "__generator_entry_point__");
       Pike_compiler->compiler_frame->generator_local =
 	add_local_name(name, int_type_string, 0);
+      bind_local(NULL, Pike_compiler->compiler_frame->generator_local);
 
       /* Stack contents to restore. */
       add_ref(array_type_string);
       MAKE_CONST_STRING(name, "__generator_stack__");
-      add_local_name(name, array_type_string, 0);
+      bind_local(NULL,
+                 add_local_name(name, array_type_string, 0));
 
       /* Resumption argument. */
       add_ref(mixed_type_string);
       MAKE_CONST_STRING(name, "__generator_argument__");
-      add_local_name(name, mixed_type_string, 0);
+      bind_local(NULL,
+                 add_local_name(name, mixed_type_string, 0));
 
       /* Resumption callback. */
       add_ref(function_type_string);
       MAKE_CONST_STRING(name, "__generator_callback__");
-      add_local_name(name, function_type_string, 0);
+      bind_local(NULL,
+                 add_local_name(name, function_type_string, 0));
 
       for (e = 0; e <= Pike_compiler->compiler_frame->generator_local; e++) {
 	Pike_compiler->compiler_frame->local_names[e].flags |=
@@ -1385,6 +1391,7 @@ new_arg_name: full_type optional_dot_dot_dot
 	Pike_compiler->compiler_frame->local_names[i].flags |=
 	  LOCAL_VAR_IS_ARGUMENT;
       }
+      bind_local(NULL, i);
     }
     free_node($4);
   }
@@ -2851,21 +2858,25 @@ local_generator: TOK_IDENTIFIER start_function func_args
     MAKE_CONST_STRING(name, "__generator_entry_point__");
     Pike_compiler->compiler_frame->generator_local =
       add_local_name(name, int_type_string, 0);
+    bind_local(NULL, Pike_compiler->compiler_frame->generator_local);
 
     /* Stack contents to restore. */
     add_ref(array_type_string);
     MAKE_CONST_STRING(name, "__generator_stack__");
-    add_local_name(name, array_type_string, 0);
+    bind_local(NULL,
+               add_local_name(name, array_type_string, 0));
 
     /* Resumption argument. */
     add_ref(mixed_type_string);
     MAKE_CONST_STRING(name, "__generator_argument__");
-    add_local_name(name, mixed_type_string, 0);
+    bind_local(NULL,
+               add_local_name(name, mixed_type_string, 0));
 
     /* Resumption callback. */
     add_ref(function_type_string);
     MAKE_CONST_STRING(name, "__generator_callback__");
-    add_local_name(name, function_type_string, 0);
+    bind_local(NULL,
+               add_local_name(name, function_type_string, 0));
 
     for (e = 0; e <= Pike_compiler->compiler_frame->generator_local; e++) {
       Pike_compiler->compiler_frame->local_names[e].flags |=
@@ -3112,6 +3123,7 @@ create_arg: modifiers simple_type optional_dot_dot_dot TOK_IDENTIFIER
     }
 
     l_no = add_local_name($4->u.sval.u.string, type, $5);
+    bind_local(NULL, l_no);
     Pike_compiler->compiler_frame->local_names[l_no].flags |=
       LOCAL_VAR_IS_ARGUMENT | LOCAL_VAR_IS_USED;
 
@@ -5291,6 +5303,61 @@ static int low_islocal(struct compiler_frame *f,
   return -1;
 }
 
+int low_bind_local(struct compiler_frame *frame, node *n)
+{
+  int local_no;
+  if (!frame) {
+    frame = Pike_compiler->compiler_frame;
+  }
+  if (!n || (n->token != F_LOCAL_INDIRECT)) {
+    if (n && (n->token == F_LOCAL) && (n->u.integer.b <= 0)) {
+      return n->u.integer.a;
+    }
+    return -1;
+  }
+
+  local_no = n->u.integer.a;
+
+  n->token = F_LOCAL;
+  do {
+    if ((n->u.integer.a = frame->next_local_offset++) >= MAX_LOCAL) {
+      yyerror("Too many local variables.");
+      n->u.integer.a = -1;
+      return -1;
+    }
+  } while (frame->local_variables[n->u.integer.a]);
+  frame->local_variables[n->u.integer.a] = local_no + 1;
+
+  if (frame->next_local_offset > frame->max_number_of_locals) {
+    frame->max_number_of_locals = frame->next_local_offset;
+  }
+
+  return n->u.integer.a;
+}
+
+int bind_local(struct compiler_frame *frame, int local_no)
+{
+  node *n;
+  if (!frame) {
+    frame = Pike_compiler->compiler_frame;
+  }
+  n = frame->local_names[local_no].def;
+#ifdef PIKE_DEBUG
+  if (!n) Pike_fatal("No def for local #%d!\n", local_no);
+#endif
+  return low_bind_local(frame, n);
+}
+
+void release_local(struct compiler_frame *frame, int var)
+{
+  if (!frame) {
+    frame = Pike_compiler->compiler_frame;
+  }
+  frame->local_variables[var] = 0;
+  if (frame->next_local_offset > var) {
+    frame->next_local_offset = var;
+  }
+}
 
 /* Add a local variable to the current function in frame.
  * NOTE: Steals a reference to each of type, def and init, but not to str.

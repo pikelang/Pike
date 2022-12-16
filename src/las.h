@@ -24,6 +24,9 @@ struct compiler_frame;		/* Avoid gcc warning. */
 /*
  * Prototypes for functions in language.yacc.
  */
+int low_bind_local(struct compiler_frame *frame, node *n);
+int bind_local(struct compiler_frame *frame, int local_no);
+void release_local(struct compiler_frame *frame, int var);
 int low_add_local_name(struct compiler_frame *frame,
                        struct pike_string *str,
                        struct pike_type *type,
