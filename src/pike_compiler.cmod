@@ -3320,10 +3320,18 @@ node *low_pop_local_variables(int level, node *block)
   {
     struct local_name *var;
     int e;
+
     e=--(Pike_compiler->compiler_frame->current_number_of_locals);
     var = Pike_compiler->compiler_frame->local_names + e;
 
-    if (block) {
+    if (var->def &&
+        ((var->def->token == F_LOCAL) ||
+         (var->def->token == F_LOCAL_INDIRECT)) &&
+        !(var->flags & LOCAL_VAR_USED_IN_SCOPE)) {
+      /* We have a local variable on the stack,
+       * and it is not used from an external
+       * context (ie from a trampoline).
+       */
       /* NB: We assign 0 to all dead local variables here regardless of
        *     their types, so we use F_CLEAR_LOCAL rather than F_ASSIGN
        *     with 0 to avoid complaints about type mismatches (which
@@ -3333,37 +3341,25 @@ node *low_pop_local_variables(int level, node *block)
        *     embedded in F_CLEAR_LOCAL) in order for treeopt not
        *     to break the generated code.
        */
-      if (var->name->len) {
+      block = mknestednodes(F_COMMA_EXPR,
+                            block,
+                            mknode(F_POP_VALUE,
+                                   mknode(F_COMMA_EXPR,
+                                          mknode(F_CLEAR_LOCAL,
+                                                 mklocalnode(e, 0),
+                                                 NULL),
+                                          mknode(F_SET_LOCAL_END,
+                                                 mklocalnode(e, 0), NULL)),
+                                   NULL),
+                            NULL);
+      if (var->name && var->name->len) {
+        /* We have a name. Save the variable info. */
 	block = mknestednodes(F_COMMA_EXPR,
 			      mknode(F_SET_LOCAL_NAME, mklocalnode(e, 0),
 				     mknode(F_ARG_LIST,
 					    mkstrnode(var->name),
 					    mkintnode(var->flags))),
 			      block,
-			      mknode(F_POP_VALUE,
-				     mknode(F_CLEAR_LOCAL,
-					    mklocalnode(e, 0),
-					    NULL),
-				     NULL),
-			      mknode(F_SET_LOCAL_END, mklocalnode(e, 0), NULL),
-			      NULL);
-      } else {
-	/* No name; this is typically used for internal temporary variables,
-	 * eg for the safe-indexing operators.
-	 *
-	 * As we're in the middle of an expression, it gets
-	 * confused by the void expressions.
-	 *
-	 * Skip generating variable information, as it will
-	 * only be "" and mixed anyway.
-	 */
-	block = mknestednodes(F_COMMA_EXPR,
-			      block,
-			      mknode(F_POP_VALUE,
-				     mknode(F_CLEAR_LOCAL,
-					    mklocalnode(e, 0),
-					    NULL),
-				     NULL),
 			      NULL);
       }
     }
@@ -3376,50 +3372,28 @@ node *low_pop_local_variables(int level, node *block)
 		   parser_system_string,
 		   1, "Unused local variable %s.");
     }
-    free_string(var->name);
+    if (var->name) {
+      free_string(var->name);
+      var->name = NULL;
+    }
+    if(var->init)
+      free_node(var->init);
     if(var->def) {
       free_node(var->def);
 
       /* Mark the variable as free. */
       var->def = NULL;
     }
-    if(var->init)
-      free_node(var->init);
   }
+
   return block;
 }
 
 node *pop_local_variables(int level, node *block)
 {
-#if 1
-  struct compilation *c = THIS_COMPILATION;
-  /* We need to save the variables Kuppo (but not their names) */
-  if(level < Pike_compiler->compiler_frame->min_number_of_locals)
-  {
-    /* FIXME: Consider using flags to indicate whether a local variable
-     *        actually is used from a nested scope. */
-    for(;level<Pike_compiler->compiler_frame->min_number_of_locals;level++)
-    {
-      struct local_name *var =
-	Pike_compiler->compiler_frame->local_names + level;
-      if ((Pike_compiler->compiler_pass == COMPILER_PASS_LAST) &&
-	  !(var->flags & LOCAL_VAR_IS_USED)) {
-	ref_push_string(var->name);
-	low_yyreport(REPORT_WARNING,
-		     var->def?var->def->current_file:NULL,
-		     var->def?var->def->line_number:0,
-		     parser_system_string,
-		     1, "Unused local variable %s.");
-	/* Make sure we only warn once... */
-	var->flags |= LOCAL_VAR_IS_USED;
-      }
-      free_string(var->name);
-      copy_shared_string(var->name, empty_pike_string);
-      /* FIXME: Do we need to keep the filenames? */
-    }
-  }
-#endif
-  return low_pop_local_variables(level, block);
+  node *ret;
+  ret = low_pop_local_variables(level, block);
+  return ret;
 }
 
 
@@ -3433,7 +3407,7 @@ void pop_compiler_frame(void)
     Pike_fatal("Popping out of compiler frames\n");
 #endif
 
-  low_pop_local_variables(0, NULL);
+  free_node(low_pop_local_variables(0, NULL));
   if(f->current_type)
     free_type(f->current_type);
 

@@ -821,7 +821,7 @@ def: modifiers optional_attributes simple_type optional_constant
   }
   arguments ')'
   {
-    int e;
+    int e, ee;
 
     /* Adjust opt_flags in case we've got an optional_constant. */
     Pike_compiler->compiler_frame->opt_flags = $4;
@@ -898,7 +898,8 @@ def: modifiers optional_attributes simple_type optional_constant
     if (Pike_compiler->varargs) {
       /* NB: This is set when either __create__() or create() has varargs. */
       struct local_name *var;
-      var = Pike_compiler->compiler_frame->local_names + e;
+      ee = Pike_compiler->compiler_frame->local_variables[e] - 1;
+      var = Pike_compiler->compiler_frame->local_names + ee;
       push_finished_type(var->def->type);
       e--;
       if (var->def->type->type != T_ARRAY) {
@@ -915,7 +916,8 @@ def: modifiers optional_attributes simple_type optional_constant
     for(; e >= $<number>8; e--)
     {
       struct local_name *var;
-      var = Pike_compiler->compiler_frame->local_names + e;
+      ee = Pike_compiler->compiler_frame->local_variables[e] - 1;
+      var = Pike_compiler->compiler_frame->local_names + ee;
       push_finished_type(var->def->type);
       if (var->init && (var->def->token == F_LOCAL)) {
 	push_type(T_VOID);
@@ -1060,24 +1062,24 @@ def: modifiers optional_attributes simple_type optional_constant
 
       for(e=$<number>8; e<$<number>8+$9; e++)
       {
-	if((e >= $<number>8) &&
-	   (!Pike_compiler->compiler_frame->local_names[e].name ||
-	    !Pike_compiler->compiler_frame->local_names[e].name->len))
-	{
+        int ee = Pike_compiler->compiler_frame->local_variables[e] - 1;
+        struct local_name *var;
+        var = Pike_compiler->compiler_frame->local_names + ee;
+        if((e >= $<number>8) && (!var->name || !var->name->len) &&
+           (var->def->token == F_LOCAL)) {
 	  my_yyerror("Missing name for argument %d.", e - $<number>8);
 	} else {
-	  check_args = mknode(F_COMMA_EXPR, check_args, set_default_value(e));
+          check_args = mknode(F_COMMA_EXPR, check_args, set_default_value(ee));
 
 	  if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
 	      /* FIXME: Should probably use some other flag. */
 	      if ((runtime_options & RUNTIME_CHECK_TYPES) &&
-		  (Pike_compiler->compiler_frame->local_names[e].def->type !=
-		   mixed_type_string)) {
+                  (var->def->type != mixed_type_string)) {
 		node *local_node;
 
 		/* fprintf(stderr, "Creating soft cast node for local #%d\n", e);*/
 
-		local_node = mkcastnode(mixed_type_string, mklocalnode(e, 0));
+                local_node = mkcastnode(mixed_type_string, mklocalnode(ee, 0));
 
 		/* NOTE: The cast to mixed above is needed to avoid generating
 		 *       compilation errors, as well as avoiding optimizations
@@ -1085,8 +1087,7 @@ def: modifiers optional_attributes simple_type optional_constant
 		 */
 		check_args =
 		  mknode(F_COMMA_EXPR, check_args,
-			 mksoftcastnode(Pike_compiler->compiler_frame->local_names[e].def->type,
-					local_node));
+                         mksoftcastnode(var->def->type, local_node));
 	      }
 	  }
 	}
@@ -1095,15 +1096,18 @@ def: modifiers optional_attributes simple_type optional_constant
       if ($<number>8) {
 	/* Generate code that calls __create__(). */
 	node *args = NULL;
+        int ee;
 	e = $<number>8;
 	if (Pike_compiler->varargs) {
 	  e--;
+          ee = Pike_compiler->compiler_frame->local_variables[e] - 1;
 	  args = mknode(F_PUSH_ARRAY,
-			mklocalnode(e, 0),
+                        mklocalnode(ee, 0),
 			NULL);
 	}
 	while (e--) {
-	  args = mknode(F_ARG_LIST, mklocalnode(e, 0), args);
+          ee = Pike_compiler->compiler_frame->local_variables[e] - 1;
+          args = mknode(F_ARG_LIST, mklocalnode(ee, 0), args);
 	}
 
 	e = FIND_LFUN(Pike_compiler->new_program, LFUN___CREATE__);
@@ -1137,6 +1141,7 @@ def: modifiers optional_attributes simple_type optional_constant
           Pike_compiler->compiler_frame->current_return_type->type == PIKE_T_AUTO)
       {
         /* Change "auto" return type to actual return type. */
+        int ee;
         push_finished_type(Pike_compiler->compiler_frame->current_return_type->car);
 
         e = $<number>8 + $9 - 1;
@@ -1144,7 +1149,8 @@ def: modifiers optional_attributes simple_type optional_constant
            (!$<number>8 || (Pike_compiler->num_create_args >= 0)))
         {
           struct local_name *var;
-          var = Pike_compiler->compiler_frame->local_names + e;
+          ee = Pike_compiler->compiler_frame->local_variables[e] - 1;
+          var = Pike_compiler->compiler_frame->local_names + ee;
           push_finished_type(var->def->type);
           e--;
           if (pop_type_stack(T_ARRAY)) {
@@ -1157,7 +1163,8 @@ def: modifiers optional_attributes simple_type optional_constant
         for(; e>=0; e--)
         {
           struct local_name *var;
-          var = Pike_compiler->compiler_frame->local_names + e;
+          ee = Pike_compiler->compiler_frame->local_variables[e] - 1;
+          var = Pike_compiler->compiler_frame->local_names + ee;
           push_finished_type(var->def->type);
           if (var->init && (var->def->token == F_LOCAL)) {
             push_type(T_VOID);
@@ -1199,15 +1206,19 @@ def: modifiers optional_attributes simple_type optional_constant
       c->lex.current_file = save_file;
     } else {
       /* Prototype; don't warn about unused arguments. */
+      int ee;
       for (e = Pike_compiler->compiler_frame->current_number_of_locals; e--;) {
-	Pike_compiler->compiler_frame->local_names[e].flags |= LOCAL_VAR_IS_USED;
+        ee = Pike_compiler->compiler_frame->local_variables[e] - 1;
+        Pike_compiler->compiler_frame->local_names[ee].flags |= LOCAL_VAR_IS_USED;
       }
       if( Pike_compiler->compiler_frame->current_return_type->type == PIKE_T_AUTO )
           yyerror("'auto' return type not allowed for prototypes.");
       if (Pike_compiler->compiler_pass == COMPILER_PASS_FIRST) {
 	for(e=0; e<$<number>8+$9; e++)
 	{
-	  node *init = Pike_compiler->compiler_frame->local_names[e].init;
+          node *init;
+          ee = Pike_compiler->compiler_frame->local_variables[e] - 1;
+          init = Pike_compiler->compiler_frame->local_names[ee].init;
 	  if (init) {
 	    low_yyreport(REPORT_WARNING, init->current_file, init->line_number,
 			 parser_system_string, 0,
@@ -2512,11 +2523,13 @@ lambda: TOK_LAMBDA line_number_info implicit_identifier start_lambda
 
     if (Pike_compiler->compiler_pass == COMPILER_PASS_FIRST) {
       /* Define a tentative prototype for the lambda. */
+      int ee;
       push_finished_type(mixed_type_string);
       e=$5-1;
       if($<number>$)
       {
-	push_finished_type(Pike_compiler->compiler_frame->local_names[e].def->type);
+        ee = Pike_compiler->compiler_frame->local_variables[e] - 1;
+        push_finished_type(Pike_compiler->compiler_frame->local_names[ee].def->type);
 	e--;
 	if (pop_type_stack(T_ARRAY)) {
 	  compiler_discard_top_type();
@@ -2528,7 +2541,8 @@ lambda: TOK_LAMBDA line_number_info implicit_identifier start_lambda
       push_type(T_MANY);
       for(; e>=0; e--) {
         struct local_name *var;
-        var = Pike_compiler->compiler_frame->local_names + e;
+        ee = Pike_compiler->compiler_frame->local_variables[e] - 1;
+        var = Pike_compiler->compiler_frame->local_names + ee;
         push_finished_type(var->def->type);
         if (var->init && (var->def->token == F_LOCAL)) {
           push_type(T_VOID);
@@ -2553,7 +2567,7 @@ lambda: TOK_LAMBDA line_number_info implicit_identifier start_lambda
   failsafe_block
   {
     struct pike_type *type;
-    int f,e;
+    int f, e, ee;
     struct pike_string *name;
     struct compilation *c = THIS_COMPILATION;
     struct pike_string *save_file = c->lex.current_file;
@@ -2582,7 +2596,8 @@ lambda: TOK_LAMBDA line_number_info implicit_identifier start_lambda
     e=$5-1;
     if($<number>6)
     {
-      push_finished_type(Pike_compiler->compiler_frame->local_names[e].def->type);
+      ee = Pike_compiler->compiler_frame->local_variables[e] - 1;
+      push_finished_type(Pike_compiler->compiler_frame->local_names[ee].def->type);
       e--;
       if (pop_type_stack(T_ARRAY)) {
 	compiler_discard_top_type();
@@ -2594,7 +2609,8 @@ lambda: TOK_LAMBDA line_number_info implicit_identifier start_lambda
     push_type(T_MANY);
     for(; e>=0; e--) {
       struct local_name *var;
-      var = Pike_compiler->compiler_frame->local_names + e;
+      ee = Pike_compiler->compiler_frame->local_variables[e] - 1;
+      var = Pike_compiler->compiler_frame->local_names + ee;
       push_finished_type(var->def->type);
       if (var->init && (var->def->token == F_LOCAL)) {
 	push_type(T_VOID);
@@ -2602,7 +2618,7 @@ lambda: TOK_LAMBDA line_number_info implicit_identifier start_lambda
       }
       push_type(T_FUNCTION);
 
-      $7 = mknode(F_COMMA_EXPR, set_default_value(e), $7);
+      $7 = mknode(F_COMMA_EXPR, set_default_value(ee), $7);
     }
 
     type=compiler_pop_type();
@@ -2678,7 +2694,7 @@ local_function: TOK_IDENTIFIER start_function func_args
   {
     struct pike_string *name;
     struct pike_type *type;
-    int id,e;
+    int id, e, ee;
     node *n;
     struct identifier *i=0;
 
@@ -2688,7 +2704,8 @@ local_function: TOK_IDENTIFIER start_function func_args
     e=$3-1;
     if(Pike_compiler->varargs)
     {
-      push_finished_type(Pike_compiler->compiler_frame->local_names[e].def->type);
+      ee = Pike_compiler->compiler_frame->local_variables[e] - 1;
+      push_finished_type(Pike_compiler->compiler_frame->local_names[ee].def->type);
       e--;
       if (pop_type_stack(T_ARRAY)) {
 	compiler_discard_top_type();
@@ -2699,7 +2716,8 @@ local_function: TOK_IDENTIFIER start_function func_args
     push_type(T_MANY);
     for(; e>=0; e--) {
       struct local_name *var;
-      var = Pike_compiler->compiler_frame->local_names + e;
+      ee = Pike_compiler->compiler_frame->local_variables[e] - 1;
+      var = Pike_compiler->compiler_frame->local_names + ee;
       push_finished_type(var->def->type);
       if (var->init && (var->def->token == F_LOCAL)) {
 	push_type(T_VOID);
@@ -2826,7 +2844,7 @@ local_generator: TOK_IDENTIFIER start_function func_args
   {
     struct pike_string *name;
     struct pike_type *type;
-    int id,e;
+    int id, e, ee;
     node *n;
     struct identifier *i=0;
 
@@ -2888,7 +2906,8 @@ local_generator: TOK_IDENTIFIER start_function func_args
     e=$3-1;
     if(Pike_compiler->varargs)
     {
-      push_finished_type(Pike_compiler->compiler_frame->local_names[e].def->type);
+      ee = Pike_compiler->compiler_frame->local_variables[e] - 1;
+      push_finished_type(Pike_compiler->compiler_frame->local_names[ee].def->type);
       e--;
       if (pop_type_stack(T_ARRAY)) {
 	compiler_discard_top_type();
@@ -2899,7 +2918,8 @@ local_generator: TOK_IDENTIFIER start_function func_args
     push_type(T_MANY);
     for(; e>=0; e--) {
       struct local_name *var;
-      var = Pike_compiler->compiler_frame->local_names + e;
+      ee = Pike_compiler->compiler_frame->local_variables[e] - 1;
+      var = Pike_compiler->compiler_frame->local_names + ee;
       push_finished_type(var->def->type);
       if (var->init && (var->def->token == F_LOCAL)) {
 	push_type(T_VOID);
@@ -2959,7 +2979,7 @@ local_generator: TOK_IDENTIFIER start_function func_args
     struct pike_type *generator_type;
     struct pike_string *name;
     int generator_stack_local;
-    int f;
+    int f, ee;
     int e = $3 - 1;
 
     c->lex.current_file = $1->current_file;
@@ -3016,7 +3036,8 @@ local_generator: TOK_IDENTIFIER start_function func_args
 
     if(Pike_compiler->varargs) e--;
     for(; e>=0; e--) {
-      $5 = mknode(F_COMMA_EXPR, set_default_value(e), $5);
+      ee = Pike_compiler->compiler_frame->local_variables[e] - 1;
+      $5 = mknode(F_COMMA_EXPR, set_default_value(ee), $5);
     }
 
     debug_malloc_touch($5);
@@ -3200,6 +3221,10 @@ optional_create_arguments: /* empty */ { $$ = 0; }
     push_type(T_MANY);
 
     while (e-- > 0) {
+      /* NB: Currently there is no need to go indirectly via local_variables,
+       *     as all create_args have been bound directly (there is no support
+       *     for having them bound via F_ARRAY_LVALUE yet).
+       */
       struct local_name *var = Pike_compiler->compiler_frame->local_names + e;
 
       push_finished_type(var->def->type);
@@ -3232,6 +3257,9 @@ optional_create_arguments: /* empty */ { $$ = 0; }
 	}
       }
 
+      /* NB: var->def->token is currently always F_LOCAL, but forward
+       *     compat is trivial here, so.
+       */
       if (var->init && (var->def->token == F_LOCAL)) {
 	push_type(T_VOID);
 	push_type(T_OR);
@@ -5403,47 +5431,54 @@ int low_add_local_name(struct compiler_frame *frame,
   /* NOTE: The number of locals can be 0..255 (not 256), due to
    *       the use of READ_INCR_BYTE() in apply_low.h.
    */
-  if (frame->current_number_of_locals == MAX_LOCAL-1)
-  {
-    my_yyerror("Too many local variables: no space for local variable %S.",
-	       str);
-    free_type(type);
-    if (def) free_node(def);
-    if (init) free_node(init);
-    return -1;
+  do {
+    var = frame->current_number_of_locals;
+
+    if (var >= MAX_LOCAL-1)
+    {
+      my_yyerror("Too many local variables: no space for local variable %S.",
+                 str);
+      free_type(type);
+      if (def) free_node(def);
+      if (init) free_node(init);
+      return -1;
+    }
+
+    frame->current_number_of_locals++;
+  } while (frame->local_names[var].def);
+
+  if (var >= frame->max_number_of_locals) {
+    frame->max_number_of_locals = var + 1;
   }
 
-  var = frame->current_number_of_locals;
-
-  if (!def) {
-    /* Define a local variable. */
-    if (pike_types_le(type, void_type_string, 0, 0)) {
-      if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
-	yywarning("Declaring local variable %S with type void "
-		  "(converted to type zero).", str);
-      }
-      free_type(type);
-      copy_pike_type(type, zero_type_string);
+  if (type && pike_types_le(type, void_type_string, 0, 0)) {
+    if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
+      yywarning("Declaring local variable %S with type void "
+                "(converted to type zero).", str);
     }
-
-    def = internal_mklocalnode(frame, var);
-#ifdef PIKE_DEBUG
-    if (def->type) {
-      Pike_fatal("Internal local already has a type!\n");
-    }
-#endif
-    def->type = type;
-#ifdef PIKE_DEBUG
-  } else {
-    if (type) {
-      Pike_fatal("Type specified for local alias!\n");
-    }
-#endif
   }
 
   frame->local_names[var].name = str;
   reference_shared_string(str);
-  frame->local_names[var].def = def;
+  if (def) {
+    frame->local_names[var].def = def;
+#ifdef PIKE_DEBUG
+    if (type) {
+      Pike_fatal("Type specified for local alias!\n");
+    }
+#endif
+  } else {
+    frame->local_names[var].def = def = internal_mklocalnode(frame, var);
+#ifdef PIKE_DEBUG
+    if (frame->local_names[var].def->type) {
+      Pike_fatal("Internal local already has a type!\n");
+    }
+#endif
+    def->type = type;
+  }
+  if (type && (type->type == PIKE_T_AUTO)) {
+    frame->local_names[var].def->node_info |= OPT_TYPE_NOT_FIXED;
+  }
   frame->local_names[var].init = init;
 
   if (frame->generator_local != -1) {
@@ -5455,11 +5490,6 @@ int low_add_local_name(struct compiler_frame *frame,
     frame->local_names[var].flags = 0;
   }
 
-  frame->current_number_of_locals++;
-  if(frame->current_number_of_locals > frame->max_number_of_locals)
-  {
-    frame->max_number_of_locals = frame->current_number_of_locals;
-  }
 
   return var;
 }
@@ -5485,9 +5515,16 @@ static void mark_lvalue_as_used(node *n)
       break;
     case F_LOCAL:
       if (!n->u.integer.b) {
-	Pike_compiler->compiler_frame->local_names[n->u.integer.a].flags |=
-	  LOCAL_VAR_IS_USED;
+        int ee =
+          Pike_compiler->compiler_frame->local_variables[n->u.integer.a] - 1;
+        struct local_name *var =
+          Pike_compiler->compiler_frame->local_names + ee;
+        var->flags |= LOCAL_VAR_IS_USED;
       }
+      return;
+    case F_LOCAL_INDIRECT:
+      Pike_compiler->compiler_frame->local_names[n->u.integer.a].flags |=
+        LOCAL_VAR_IS_USED;
       return;
     case F_ARRAY_LVALUE:
       mark_lvalues_as_used(CAR(n));
