@@ -844,15 +844,15 @@ node *debug_mknode(int token, node *a, node *b)
       break;
 
     case F_CLEAR_LOCAL:
-      if (!a || (a->token != F_LOCAL)) {
-	/* NB: For code simplicity we attempt to create F_CLEAR_LOCAL
-	 *     nodes for all local symbols when they go out of scope.
-	 *     F_CLEAR_LOCAL is only valid for F_LOCAL nodes.
-	 *     Fall back to just a zero. The optimizer will get rid
-	 *     of it properly later.
-	 */
-	free_node(a);
-	return mkintnode(0);
+      if (!a || ((a->token != F_LOCAL) && (a->token != F_LOCAL_INDIRECT))) {
+        /* NB: For code simplicity we attempt to create F_CLEAR_LOCAL
+         *     nodes for all local symbols when they go out of scope.
+         *     F_CLEAR_LOCAL is only valid for F_LOCAL nodes.
+         *     Fall back to just a zero. The optimizer will get rid
+         *     of it properly later.
+         */
+        free_node(a);
+        return mkintnode(0);
       }
       break;
 
