@@ -138,7 +138,12 @@ union node_data
 
 struct node_s
 {
+#ifdef PIKE_DEBUG
+  /* Used to keep track of leaked nodes. */
+  GC_MARKER_MEMBERS;
+#else
   unsigned INT32 refs;
+#endif
   struct pike_string *current_file;
   struct pike_type *type;
   struct pike_string *name;

@@ -845,7 +845,7 @@ static void f_compilation_env_filter_exception(INT32 args)
  *!   compilation).
  */
 
-void node_walker(struct ba_iterator * it, void * data)
+static void node_walker(struct ba_iterator * it, void * data)
 {
   struct compilation *c = data;
   do {
@@ -857,21 +857,6 @@ void node_walker(struct ba_iterator * it, void * data)
      */
     if (tmp->token == USHRT_MAX) continue;
 
-#ifdef PIKE_DEBUG
-    if(!c->cumulative_parse_error)
-    {
-      fprintf(stderr,"Free node at %p, (%s:%ld) (token=%d:%s).\n",
-              (void *)tmp,
-              tmp->current_file->str, (long)tmp->line_number,
-              tmp->token, get_token_name(tmp->token));
-
-      debug_malloc_dump_references(tmp,0,2,0);
-
-      if(tmp->token==F_CONSTANT)
-        print_tree(tmp);
-    }
-    /* else */
-#endif
     {
       /* Free the node and be happy */
       /* Make sure we don't free any nodes twice */
@@ -890,6 +875,44 @@ void node_walker(struct ba_iterator * it, void * data)
     }
   } while (ba_it_step(it));
 }
+
+#ifdef PIKE_DEBUG
+static void node_marker(struct ba_iterator * it, void * data)
+{
+  struct compilation *c = data;
+  do {
+    node * tmp = ba_it_val(it);
+
+    if (car_is_node(tmp)) {
+      _CAR(tmp)->gc_refs++;
+    }
+    if (cdr_is_node(tmp)) {
+      _CDR(tmp)->gc_refs++;
+    }
+  } while (ba_it_step(it));
+}
+
+static void node_reporter(struct ba_iterator * it, void * data)
+{
+  struct compilation *c = data;
+  do {
+    node * tmp = ba_it_val(it);
+
+    if (tmp->refs > tmp->gc_refs) {
+      fprintf(stderr,"Free node at %p, (%s:%ld) (token=%d:%s).\n",
+              (void *)tmp,
+              tmp->current_file->str, (long)tmp->line_number,
+              tmp->token, get_token_name(tmp->token));
+
+      debug_malloc_dump_references(tmp,0,2,0);
+
+      if (tmp->token == F_CONSTANT) {
+        print_tree(tmp);
+      }
+    }
+  } while (ba_it_step(it));
+}
+#endif
 
 static void free_compilation(struct compilation *c)
 {
@@ -943,17 +966,31 @@ static void free_compilation(struct compilation *c)
   {
     /* NB: The Pike_compiler has already been changed when we run,
      *     so we need to reinstate a compiler that refers to us
-     *     during the ba_walk(), so that really_free_node_s() can
-     *     find the node_allocator.
+     *     during the ba_walk(), so that really_free_node_s(), and
+     *     count_memory_in_node_ss() can find the node_allocator.
      */
     struct program_state fake_compiler, *orig_compiler = Pike_compiler;
     memset(&fake_compiler, 0, sizeof(fake_compiler));
     fake_compiler.compiler = c;
+    fake_compiler.compat_major = c->major;
+    fake_compiler.compat_minor = c->minor;
     Pike_compiler = &fake_compiler;
 
-    ba_walk(&c->node_allocator, &node_walker, c);
+#ifdef PIKE_DEBUG
+    /* NB: The type stacks are needed in case Pike_fatal() is called
+     *     as it may call code that uses eg f_dispatch_function().
+     */
+    fake_compiler.type_stackp = orig_compiler->type_stackp;
+    fake_compiler.pike_type_mark_stackp = orig_compiler->pike_type_mark_stackp;
 
-    Pike_compiler = orig_compiler;
+    if (!c->cumulative_parse_error) {
+      ba_walk(&c->node_allocator, &node_marker, c);
+
+      ba_walk(&c->node_allocator, &node_reporter, c);
+    }
+#endif
+
+    ba_walk(&c->node_allocator, &node_walker, c);
 
 #ifdef PIKE_DEBUG
     if(!c->cumulative_parse_error) {
@@ -962,7 +999,20 @@ static void free_compilation(struct compilation *c)
       if (n)
 	Pike_fatal("Failed to free %"PRINTSIZET"d nodes when compiling!\n",n);
     }
+
+    if ((fake_compiler.type_stackp != orig_compiler->type_stackp) ||
+        (fake_compiler.pike_type_mark_stackp !=
+         orig_compiler->pike_type_mark_stackp)) {
+      Pike_fatal("Compiler cleanup left droppings on type stack!\n"
+                 "type_stackp: %p (expected: %p)\n"
+                 "mark_stackp: %p (expected: %p)\n",
+                 fake_compiler.type_stackp, orig_compiler->type_stackp,
+                 fake_compiler.pike_type_mark_stackp,
+                 orig_compiler->pike_type_mark_stackp);
+    }
 #endif
+
+    Pike_compiler = orig_compiler;
   }
   c->cumulative_parse_error=0;
   ba_destroy(&c->node_allocator);
