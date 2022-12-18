@@ -4198,8 +4198,6 @@ optional_block: /* EMPTY */ { $$=0; }
     struct compilation *c = THIS_COMPILATION;
     struct pike_string *save_file = c->lex.current_file;
     int save_line = c->lex.current_line;
-    int args_used =
-      Pike_compiler->compiler_frame->local_names[0].flags & LOCAL_VAR_IS_USED;
 
     /* Don't warn about the argument if unused. */
     Pike_compiler->compiler_frame->local_names[0].flags |= LOCAL_VAR_IS_USED;
