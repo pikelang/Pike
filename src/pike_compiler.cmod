@@ -3378,31 +3378,38 @@ node *low_pop_local_variables(int level, node *block)
 
     if (var->def &&
         ((var->def->token == F_LOCAL) ||
-         (var->def->token == F_LOCAL_INDIRECT)) &&
-        !(var->flags & LOCAL_VAR_USED_IN_SCOPE)) {
-      /* We have a local variable on the stack,
-       * and it is not used from an external
-       * context (ie from a trampoline).
-       */
-      /* NB: We assign 0 to all dead local variables here regardless of
-       *     their types, so we use F_CLEAR_LOCAL rather than F_ASSIGN
-       *     with 0 to avoid complaints about type mismatches (which
-       *     are irrelevant as the variables will no longer be used).
-       *
-       * NB: We must have an explicit F_POP_VALUE here (ie not
-       *     embedded in F_CLEAR_LOCAL) in order for treeopt not
-       *     to break the generated code.
-       */
-      block = mknode(F_COMMA_EXPR,
-                     block,
-                     mknode(F_POP_VALUE,
-                            mknode(F_COMMA_EXPR,
-                                   mknode(F_CLEAR_LOCAL,
-                                          mklocalnode(e, 0),
-                                          NULL),
-                                   mknode(F_SET_LOCAL_END,
-                                          mklocalnode(e, 0), NULL)),
-                            NULL));
+         (var->def->token == F_LOCAL_INDIRECT))) {
+      /* We have a local variable on the stack. */
+      if (!(var->flags & LOCAL_VAR_USED_IN_SCOPE)) {
+        /* The variable is not used from an external
+         * context (ie not from a trampoline).
+         */
+        /* NB: We assign 0 to all dead local variables here regardless of
+         *     their types, so we use F_CLEAR_LOCAL rather than F_ASSIGN
+         *     with 0 to avoid complaints about type mismatches (which
+         *     are irrelevant as the variables will no longer be used).
+         *
+         * NB: We must have an explicit F_POP_VALUE here (ie not
+         *     embedded in F_CLEAR_LOCAL) in order for treeopt not
+         *     to break the generated code.
+         */
+        block = mknode(F_COMMA_EXPR,
+                       block,
+                       mknode(F_POP_VALUE,
+                              mknode(F_COMMA_EXPR,
+                                     mknode(F_CLEAR_LOCAL,
+                                            mklocalnode(e, 0),
+                                            NULL),
+                                     mknode(F_SET_LOCAL_END,
+                                            mklocalnode(e, 0), NULL)),
+                              NULL));
+      } else if (var->def->token == F_LOCAL) {
+        /* Add a special mark in local_variables, so that
+         * docode.c:emit_save_locals() can see us.
+         */
+        Pike_compiler->compiler_frame->
+          local_variables[var->def->u.integer.a] = 255;
+      }
       if (var->name && var->name->len) {
         /* We have a name. Save the variable info. */
         block = mknode(F_COMMA_EXPR,
