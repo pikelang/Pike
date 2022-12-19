@@ -3360,6 +3360,7 @@ void push_compiler_frame(int lexical_scope)
   f->generator_jumptable = NULL;
   memset(&f->local_names, 0, sizeof(f->local_names));
   memset(&f->local_variables, 0, sizeof(f->local_variables));
+  memset(&f->local_shared, 0, sizeof(f->local_shared));
   Pike_compiler->compiler_frame=f;
 }
 
@@ -3403,12 +3404,6 @@ node *low_pop_local_variables(int level, node *block)
                                      mknode(F_SET_LOCAL_END,
                                             mklocalnode(e, 0), NULL)),
                               NULL));
-      } else if (var->def->token == F_LOCAL) {
-        /* Add a special mark in local_variables, so that
-         * docode.c:emit_save_locals() can see us.
-         */
-        Pike_compiler->compiler_frame->
-          local_variables[var->def->u.integer.a] = 255;
       }
       if (var->name && var->name->len) {
         /* We have a name. Save the variable info. */

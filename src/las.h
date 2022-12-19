@@ -101,6 +101,7 @@ struct compiler_frame
   INT32 *generator_jumptable;
   struct local_name local_names[MAX_LOCAL];	/* Local symbols. */
   unsigned char local_variables[MAX_LOCAL];	/* Local variable allocation. */
+  unsigned INT16 local_shared[(MAX_LOCAL + 15)>>4];	/* Shared locals. */
 };
 
 /* Also used in struct node_identifier */

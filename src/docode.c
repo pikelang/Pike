@@ -3096,18 +3096,8 @@ static void emit_save_locals(struct compiler_frame *f)
   unsigned INT16 idx;
   int num_locals = f->max_number_of_locals;
 
-  for (offset = 0; offset < (MAX_LOCAL >> 4) + 1; offset++) {
-    unsigned int bitmask = 0;
-    for (idx = 0; idx < 16; idx++) {
-      int local_var_idx = offset * 16 + idx;
-      int local_var;
-      if (!f->local_variables[local_var_idx]) continue;
-      local_var = f->local_variables[local_var_idx] - 1;
-      if ((local_var == 254) ||
-          (f->local_names[local_var].flags & LOCAL_VAR_USED_IN_SCOPE)) {
-        bitmask |= 1 << idx;
-      }
-    }
+  for (offset = 0; offset < (num_locals >> 4) + 1; offset++) {
+    unsigned int bitmask = f->local_shared[offset];
     if (bitmask) {
       emit1(F_SAVE_LOCALS, (offset << 16) | bitmask);
     }

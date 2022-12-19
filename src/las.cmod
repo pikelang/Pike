@@ -1373,6 +1373,7 @@ node *debug_mklocalnode(int var, int depth)
 
   /* Mark the local as scoped. */
   def->u.integer.b = -1;
+  f->local_shared[def->u.integer.a>>4] |= 1 << (def->u.integer.a & 0xf);
 
   res = mkemptynode();
   res->token = F_LOCAL;
