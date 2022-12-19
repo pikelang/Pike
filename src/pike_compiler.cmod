@@ -3363,7 +3363,9 @@ void push_compiler_frame(int lexical_scope)
   Pike_compiler->compiler_frame=f;
 }
 
+#undef low_pop_local_variables
 node *low_pop_local_variables(int level, node *block)
+#define low_pop_local_variables(LEVEL, BLOCK)	dmalloc_touch(node *, low_pop_local_variables(LEVEL, dmalloc_touch(node *, BLOCK)))
 {
   struct compilation *c = THIS_COMPILATION;
   while(Pike_compiler->compiler_frame->current_number_of_locals > level)
@@ -3391,26 +3393,24 @@ node *low_pop_local_variables(int level, node *block)
        *     embedded in F_CLEAR_LOCAL) in order for treeopt not
        *     to break the generated code.
        */
-      block = mknestednodes(F_COMMA_EXPR,
-                            block,
-                            mknode(F_POP_VALUE,
-                                   mknode(F_COMMA_EXPR,
-                                          mknode(F_CLEAR_LOCAL,
-                                                 mklocalnode(e, 0),
-                                                 NULL),
-                                          mknode(F_SET_LOCAL_END,
-                                                 mklocalnode(e, 0), NULL)),
-                                   NULL),
-                            NULL);
+      block = mknode(F_COMMA_EXPR,
+                     block,
+                     mknode(F_POP_VALUE,
+                            mknode(F_COMMA_EXPR,
+                                   mknode(F_CLEAR_LOCAL,
+                                          mklocalnode(e, 0),
+                                          NULL),
+                                   mknode(F_SET_LOCAL_END,
+                                          mklocalnode(e, 0), NULL)),
+                            NULL));
       if (var->name && var->name->len) {
         /* We have a name. Save the variable info. */
-	block = mknestednodes(F_COMMA_EXPR,
-			      mknode(F_SET_LOCAL_NAME, mklocalnode(e, 0),
-				     mknode(F_ARG_LIST,
-					    mkstrnode(var->name),
-					    mkintnode(var->flags))),
-			      block,
-			      NULL);
+        block = mknode(F_COMMA_EXPR,
+                       mknode(F_SET_LOCAL_NAME, mklocalnode(e, 0),
+                              mknode(F_ARG_LIST,
+                                     mkstrnode(var->name),
+                                     mkintnode(var->flags))),
+                       block);
       }
     }
     if ((Pike_compiler->compiler_pass == COMPILER_PASS_LAST) &&
@@ -3439,7 +3439,9 @@ node *low_pop_local_variables(int level, node *block)
   return block;
 }
 
+#undef pop_local_variables
 node *pop_local_variables(int level, node *block)
+#define pop_local_variables(LEVEL, BLOCK)	dmalloc_touch(node *, pop_local_variables(LEVEL, dmalloc_touch(node *, BLOCK)))
 {
   node *ret;
   ret = low_pop_local_variables(level, block);

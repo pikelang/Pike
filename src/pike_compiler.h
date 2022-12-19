@@ -223,4 +223,7 @@ void cleanup_pike_compiler(void);
 void low_cleanup_pike_compiler(void);
 /* Prototypes end here */
 
+#define low_pop_local_variables(LEVEL, BLOCK)	dmalloc_touch(node *, low_pop_local_variables(LEVEL, dmalloc_touch(node *, BLOCK)))
+#define pop_local_variables(LEVEL, BLOCK)	dmalloc_touch(node *, pop_local_variables(LEVEL, dmalloc_touch(node *, BLOCK)))
+
 #endif	/* !PIKE_COMPILER_H */
