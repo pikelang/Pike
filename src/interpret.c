@@ -2385,9 +2385,9 @@ void LOW_POP_PIKE_FRAME_slow_path(struct pike_frame *frame)
 
     /* find the highest set bit */
     for (i = num_locals - 1; i >= 0; i--) {
-      unsigned INT16 bitmask = frame->save_locals_bitmask[i / 16];
+      unsigned INT16 bitmask = frame->save_locals_bitmask[i >> 4];
 
-      if (bitmask & (1 << (i % 16))) {
+      if (bitmask & (1 << (i & 0xf))) {
         num_new_locals = i + 1;
         break;
       }
@@ -2409,9 +2409,9 @@ void LOW_POP_PIKE_FRAME_slow_path(struct pike_frame *frame)
       a->size--;
 
       for (i = 0; i < num_new_locals; i++) {
-        unsigned INT16 bitmask = frame->save_locals_bitmask[i / 16];
+        unsigned INT16 bitmask = frame->save_locals_bitmask[i >> 4];
 
-        if (bitmask & (1 << (i % 16))) {
+        if (bitmask & (1 << (i & 0xf))) {
           assign_svalue_no_free(s + i, locals + i);
         }
       }
