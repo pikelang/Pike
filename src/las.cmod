@@ -1316,18 +1316,18 @@ node *debug_mklocalnode(int var, int depth)
   node *def;
   int stack_offset;
 
-#ifdef PIKE_DEBUG
-  if (depth < 0) {
-    Pike_fatal("Internal error. Using old AST!\n");
-  }
-#endif
   for(e = 0; e < depth; e++) {
     f->lexical_scope |= SCOPE_SCOPED;
     f = f->previous;
   }
   if (depth) {
+    if (depth < 0) {
+      f->lexical_scope |= SCOPE_SCOPED;
+      f->local_names[var].flags |= LOCAL_VAR_USED_IN_SCOPE;
+    } else {
+      f->local_names[var].flags |= LOCAL_VAR_IS_USED | LOCAL_VAR_USED_IN_SCOPE;
+    }
     f->lexical_scope |= SCOPE_SCOPE_USED;
-    f->local_names[var].flags |= LOCAL_VAR_USED_IN_SCOPE;
 
     /* FIXME: Consider setting f->local_names[var].def->u.integer.b
      *        to -1 to indicate LOCAL_VAR_USED_IN_SCOPE.

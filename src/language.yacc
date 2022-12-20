@@ -857,32 +857,32 @@ def: modifiers optional_attributes simple_type optional_constant
       MAKE_CONST_STRING(name, "__generator_entry_point__");
       Pike_compiler->compiler_frame->generator_local =
 	add_local_name(name, int_type_string, 0);
-      bind_local(NULL, Pike_compiler->compiler_frame->generator_local);
 
       /* Stack contents to restore. */
       add_ref(array_type_string);
       MAKE_CONST_STRING(name, "__generator_stack__");
-      bind_local(NULL,
-                 add_local_name(name, array_type_string, 0));
+      add_local_name(name, array_type_string, 0);
 
       /* Resumption argument. */
       add_ref(mixed_type_string);
       MAKE_CONST_STRING(name, "__generator_argument__");
-      bind_local(NULL,
-                 add_local_name(name, mixed_type_string, 0));
+      add_local_name(name, mixed_type_string, 0);
 
       /* Resumption callback. */
       add_ref(function_type_string);
       MAKE_CONST_STRING(name, "__generator_callback__");
-      bind_local(NULL,
-                 add_local_name(name, function_type_string, 0));
+      add_local_name(name, function_type_string, 0);
 
-      for (e = 0; e <= Pike_compiler->compiler_frame->generator_local; e++) {
-	Pike_compiler->compiler_frame->local_names[e].flags |=
-	  LOCAL_VAR_IS_USED | LOCAL_VAR_USED_IN_SCOPE;
+      /* All of the above and the arguments are scoped. */
+      for (e = 0; e < Pike_compiler->compiler_frame->generator_local + 4; e++) {
+        /* Force local #e to be scoped. */
+        node *n = mklocalnode(e, -1);
+        if (e >= Pike_compiler->compiler_frame->generator_local) {
+          /* Mark all generator locals as used. */
+          mark_lvalue_as_used(n);
+        }
+        free_node(n);
       }
-
-      Pike_compiler->compiler_frame->lexical_scope |= SCOPE_SCOPE_USED;
     }
 
     if ($<number>8 && (Pike_compiler->num_create_args < 0) && $9) {
@@ -2876,32 +2876,32 @@ local_generator: TOK_IDENTIFIER start_function func_args
     MAKE_CONST_STRING(name, "__generator_entry_point__");
     Pike_compiler->compiler_frame->generator_local =
       add_local_name(name, int_type_string, 0);
-    bind_local(NULL, Pike_compiler->compiler_frame->generator_local);
 
     /* Stack contents to restore. */
     add_ref(array_type_string);
     MAKE_CONST_STRING(name, "__generator_stack__");
-    bind_local(NULL,
-               add_local_name(name, array_type_string, 0));
+    add_local_name(name, array_type_string, 0);
 
     /* Resumption argument. */
     add_ref(mixed_type_string);
     MAKE_CONST_STRING(name, "__generator_argument__");
-    bind_local(NULL,
-               add_local_name(name, mixed_type_string, 0));
+    add_local_name(name, mixed_type_string, 0);
 
     /* Resumption callback. */
     add_ref(function_type_string);
     MAKE_CONST_STRING(name, "__generator_callback__");
-    bind_local(NULL,
-               add_local_name(name, function_type_string, 0));
+    add_local_name(name, function_type_string, 0);
 
-    for (e = 0; e <= Pike_compiler->compiler_frame->generator_local; e++) {
-      Pike_compiler->compiler_frame->local_names[e].flags |=
-	LOCAL_VAR_IS_USED | LOCAL_VAR_USED_IN_SCOPE;
+    /* All of the above and the arguments are scoped. */
+    for (e = 0; e < Pike_compiler->compiler_frame->generator_local + 4; e++) {
+      /* Force local #e to be scoped. */
+      node *n = mklocalnode(e, -1);
+      if (e >= Pike_compiler->compiler_frame->generator_local) {
+        /* Mark all generator locals as used. */
+        mark_lvalue_as_used(n);
+      }
+      free_node(n);
     }
-
-    Pike_compiler->compiler_frame->lexical_scope |= SCOPE_SCOPE_USED;
 
     e=$3-1;
     if(Pike_compiler->varargs)
@@ -5356,6 +5356,21 @@ int low_bind_local(struct compiler_frame *frame, node *n)
 
   if (frame->next_local_offset > frame->max_number_of_locals) {
     frame->max_number_of_locals = frame->next_local_offset;
+  }
+
+  if (frame->generator_local) {
+    /* For generators all locals need to be scoped.
+     *
+     * NB: We do not need to mess with the frame flags,
+     *     as that has already been done when
+     *     generator_local was set.
+     */
+    n->u.integer.b = -1;
+    frame->local_names[local_no].flags |= LOCAL_VAR_USED_IN_SCOPE;
+    frame->local_shared[n->u.integer.a>>4] |= 1 << (n->u.integer.a & 0xf);
+    if (frame->min_number_of_locals <= n->u.integer.a) {
+      frame->min_number_of_locals = n->u.integer.a + 1;
+    }
   }
 
   return n->u.integer.a;
