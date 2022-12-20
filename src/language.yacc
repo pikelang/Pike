@@ -5527,7 +5527,7 @@ static void mark_lvalue_as_used(node *n)
       n = CAR(n);
       break;
     case F_LOCAL:
-      if (!n->u.integer.b) {
+      if (n->u.integer.b <= 0) {
         int ee =
           Pike_compiler->compiler_frame->local_variables[n->u.integer.a] - 1;
         struct local_name *var =
