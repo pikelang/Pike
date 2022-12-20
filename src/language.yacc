@@ -5358,7 +5358,7 @@ int low_bind_local(struct compiler_frame *frame, node *n)
     frame->max_number_of_locals = frame->next_local_offset;
   }
 
-  if (frame->generator_local) {
+  if (frame->generator_local != -1) {
     /* For generators all locals need to be scoped.
      *
      * NB: We do not need to mess with the frame flags,
