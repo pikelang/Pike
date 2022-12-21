@@ -35,10 +35,10 @@ struct rewind_to {
 
 typedef struct _Buffer Buffer;
 
-extern void init_stdio_buffer(void);
-extern void exit_stdio_buffer(void);
-extern unsigned char *io_add_space_do_something( Buffer *io, size_t bytes, int force );
-extern void io_actually_trigger_output( Buffer *io );
+void init_stdio_buffer(void);
+void exit_stdio_buffer(void);
+PMOD_EXPORT unsigned char *io_add_space_do_something( Buffer *io, size_t bytes, int force );
+PMOD_EXPORT void io_actually_trigger_output( Buffer *io );
 
 PMOD_EXPORT Buffer *io_buffer_from_object(struct object *o);
 
