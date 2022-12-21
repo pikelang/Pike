@@ -307,6 +307,35 @@ static void do_escape_catch(void *UNUSED(ignored))
   emit0(F_ESCAPE_CATCH);
 }
 
+static void zap_dead_locals(struct compilation *c, node *n)
+{
+  if (!n) return;
+
+  switch(n->token) {
+  case F_SET_LOCAL_END:
+    n = CAR(n);
+    if (n->token != F_LOCAL) {
+      break;
+    }
+    if (n->u.integer.b) {
+      break;
+    }
+    emit1(F_CLEAR_LOCAL, n->u.integer.a);
+    break;
+  case F_SET_LOCAL_NAME:
+  case F_CATCH:
+    break;
+  default:
+    if (car_is_node(n)) {
+      zap_dead_locals(c, CAR(n));
+    }
+    if (cdr_is_node(n)) {
+      zap_dead_locals(c, CDR(n));
+    }
+    break;
+  }
+}
+
 #define DO_CODE_BLOCK(X) do_pop(do_docode((X),DO_NOT_COPY | DO_POP ))
 
 int do_docode(node *n, int flags)
@@ -2741,6 +2770,12 @@ static int do_docode2(node *n, int flags)
     ins_label((INT32)tmp1);
 
     POP_AND_DONT_CLEANUP;
+
+    /* Zap any non-scoped locals that were used in the block in case
+     * they hold state. Cf issue #10104.
+     */
+    zap_dead_locals(c, CAR(n));
+
     return 1;
   }
 
