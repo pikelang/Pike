@@ -3148,22 +3148,12 @@ static void bind_local_variables(struct compiler_frame *frame, node *n)
     low_bind_local(frame, n);
     break;
 
-  case F_SET_LOCAL_NAME:
-    break;
-
   case F_SET_LOCAL_END:
     n = CAR(n);
     if (n && (n->token == F_LOCAL) && !n->u.integer.b) {
       /* Mark the offset as unused. */
       release_local(frame, n->u.integer.a);
     }
-    break;
-
-  case F_INITIALIZE:
-  case F_ASSIGN:
-    /* Reverse order to alleviate issue #10104. */
-    bind_local_variables(frame, CDR(n));
-    bind_local_variables(frame, CAR(n));
     break;
 
   default:
