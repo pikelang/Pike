@@ -3381,7 +3381,7 @@ node *low_pop_local_variables(int level, node *block)
         ((var->def->token == F_LOCAL) ||
          (var->def->token == F_LOCAL_INDIRECT))) {
       /* We have a local variable on the stack. */
-      if (!(var->flags & LOCAL_VAR_USED_IN_SCOPE)) {
+      if ((var->def->token != F_LOCAL) || (!var->def->u.integer.b)) {
         /* The variable is not used from an external
          * context (ie not from a trampoline).
          */
