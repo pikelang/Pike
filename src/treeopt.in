@@ -580,27 +580,6 @@ F_COMMA_EXPR(F_ARG_LIST(0, 1), 2):
 F_COMMA_EXPR(0, F_COMMA_EXPR(1, 2)):
   F_COMMA_EXPR(F_COMMA_EXPR($0, $1), $2);
 
-// Dead-code elimination.
-// FIXME: Should it be a warning here?
-// Is really the OPT_CASE needed for the following three?
-F_COMMA_EXPR(0 = F_RETURN, +[!($$->tree_info & OPT_CASE)]):
-  $0;
-
-F_COMMA_EXPR(0 = F_CONTINUE, +[!($$->tree_info & OPT_CASE)]):
-  $0;
-
-F_COMMA_EXPR(0 = F_BREAK, +[!($$->tree_info & OPT_CASE)]):
-  $0;
-
-F_COMMA_EXPR(0 = F_COMMA_EXPR(*, F_RETURN), +[!($$->tree_info & OPT_CASE)]):
-  $0;
-
-F_COMMA_EXPR(0 = F_COMMA_EXPR(*, F_CONTINUE), +[!($$->tree_info & OPT_CASE)]):
-  $0;
-
-F_COMMA_EXPR(0 = F_COMMA_EXPR(*, F_BREAK), +[!($$->tree_info & OPT_CASE)]):
-  $0;
-
 // Simplify code below by converting F_INITIALIZE to F_ASSIGN
 // in this case.
 F_COMMA_EXPR(F_INITIALIZE(0, 1), 2):
