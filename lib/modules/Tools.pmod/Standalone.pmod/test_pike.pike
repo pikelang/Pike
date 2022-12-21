@@ -597,7 +597,7 @@ class TestMaster
 int main(int argc, array(string) argv)
 {
   int watchdog_pid, subprocess, failed_cond;
-  int verbose, prompt, successes, errors, t, check, asmdebug;
+  int verbose, prompt, successes, errors, t, check, asmdebug, optdebug;
   int skipped;
   array(string) forked;
   int start, fail, mem;
@@ -659,8 +659,11 @@ int main(int argc, array(string) argv)
     ({"loop",Getopt.HAS_ARG,({"-l","--loop"})}),
     ({"trace",Getopt.HAS_ARG,({"-t","--trace"})}),
     ({"check",Getopt.MAY_HAVE_ARG,({"-c","--check"})}),
-#if constant(_assembler_debug)
+#if constant(Debug.assembler_debug)
     ({"asm",Getopt.MAY_HAVE_ARG,({"--assembler-debug"})}),
+#endif
+#if constant(Debug.optimizer_debug)
+    ({"opt",Getopt.MAY_HAVE_ARG,({"--optimizer-debug"})}),
 #endif
     ({"mem",Getopt.NO_ARG,({"-m","--mem","--memory"})}),
     ({"auto",Getopt.MAY_HAVE_ARG,({"-a","--auto"})}),
@@ -720,6 +723,7 @@ int main(int argc, array(string) argv)
 	case "trace": t+=foo(opt[1]); break;
 	case "check": check+=foo(opt[1]); break;
         case "asm": asmdebug+=foo(opt[1]); break;
+        case "opt": optdebug+=foo(opt[1]); break;
 	case "mem": mem=1; break;
 
         case "auto":
@@ -801,6 +805,7 @@ int main(int argc, array(string) argv)
     if (t) forked += ({ "--trace=" + t });
     if (check) forked += ({ "--check=" + check });
     if (asmdebug) forked += ({ "--asm=" + asmdebug });
+    if (optdebug) forked += ({ "--asm=" + optdebug });
     if (mem) forked += ({ "--memory" });
     // auto already handled.
     if (failed_cond) forked += ({ "--failed-cond" });
@@ -893,9 +898,13 @@ int main(int argc, array(string) argv)
   array const_names = indices(all_constants());
 #endif
 
-#if constant(_assembler_debug)
+#if constant(Debug.assembler_debug)
   if(asmdebug)
-    _assembler_debug(asmdebug);
+    Debug.assembler_debug(asmdebug);
+#endif
+#if constant(Debug.optimizer_debug)
+  if(optdebug)
+    Debug.optimizer_debug(optdebug);
 #endif
 
   while(loop--)
