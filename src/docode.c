@@ -3156,9 +3156,20 @@ INT32 do_code_block(node *n, int identifier_flags)
   int save_label_no = label_no;
   struct statement_label *save_label;
   int tmp1, tmp2;
+  struct lex *lex = &c->lex;
+
+  if (lex->pragmas & ID_DISASSEMBLE) {
+    fprintf(stderr, "Binding locals for:\n");
+    print_tree(n);
+  }
 
   /* Start by binding all remaining unbound local variables. */
   bind_local_variables(Pike_compiler->compiler_frame, n);
+
+  if (lex->pragmas & ID_DISASSEMBLE) {
+    fprintf(stderr, "Bound locals:\n");
+    print_tree(n);
+  }
 
   if (Pike_compiler->compiler_frame->current_function_number >= 0) {
     id = Pike_compiler->new_program->identifier_references +
