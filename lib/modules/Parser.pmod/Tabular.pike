@@ -121,6 +121,8 @@ private string gets(int n)
 
 class _checkpoint
 {
+  inherit Pike.DestructImmediate;
+
   private string oldalread;
 
   protected void create()
