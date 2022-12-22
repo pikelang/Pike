@@ -643,10 +643,8 @@ PMOD_EXPORT void pike_debug_check_thread (DLOC_DECL)
 
 PMOD_EXPORT void pike_threads_allow (struct thread_state *ts COMMA_DLOC_DECL)
 {
-#ifdef DO_PIKE_CLEANUP
   /* Might get here after th_cleanup() when reporting leaks. */
   if (!ts) return;
-#endif
 
 #ifdef PIKE_DEBUG
   pike_debug_check_thread (DLOC_ARGS_OPT);
@@ -679,9 +677,12 @@ PMOD_EXPORT void pike_threads_allow (struct thread_state *ts COMMA_DLOC_DECL)
 
 PMOD_EXPORT void pike_threads_disallow (struct thread_state *ts COMMA_DLOC_DECL)
 {
-#ifdef DO_PIKE_CLEANUP
+  /* Might get here before threads are started on failure
+   * to create the backend wakeup pipe.
+   *
+   * (Via the SWAP_IN_THREADS_IF_REQUIRED() in error.c:va_error().)
+   */
   if (!ts) return;
-#endif
 
   if (ts->swapped) {
     pike_lock_interpreter (DLOC_ARGS_OPT);
@@ -697,10 +698,8 @@ PMOD_EXPORT void pike_threads_disallow (struct thread_state *ts COMMA_DLOC_DECL)
 PMOD_EXPORT void pike_threads_allow_ext (struct thread_state *ts
 					 COMMA_DLOC_DECL)
 {
-#ifdef DO_PIKE_CLEANUP
   /* Might get here after th_cleanup() when reporting leaks. */
   if (!ts) return;
-#endif
 
 #ifdef PIKE_DEBUG
   pike_debug_check_thread (DLOC_ARGS_OPT);
@@ -737,9 +736,12 @@ PMOD_EXPORT void pike_threads_allow_ext (struct thread_state *ts
 PMOD_EXPORT void pike_threads_disallow_ext (struct thread_state *ts
 					    COMMA_DLOC_DECL)
 {
-#ifdef DO_PIKE_CLEANUP
+  /* Might get here before threads are started on failure
+   * to create the backend wakeup pipe.
+   *
+   * (Via the SWAP_IN_THREADS_IF_REQUIRED() in error.c:va_error().)
+   */
   if (!ts) return;
-#endif
 
   if (ts->swapped) {
     pike_low_lock_interpreter (DLOC_ARGS_OPT);
