@@ -186,6 +186,8 @@
  */
 static void yyerror_reserved(const char *keyword);
 static struct pike_string *get_new_name(struct pike_string *prefix);
+static void redefine_local(struct compiler_frame *frame, int var,
+                           node *def, node *init);
 static void mark_lvalue_as_used(node *n);
 static void mark_lvalues_as_used(node *n);
 static node *lexical_islocal(struct pike_string *);
@@ -1405,6 +1407,31 @@ new_arg_name: full_type optional_dot_dot_dot
       bind_local(NULL, i);
     }
     free_node($4);
+  }
+  | open_bracket_with_line_info low_lvalue_list ']' optional_default_value
+  {
+    node *n = mknode(F_ARRAY_LVALUE, $2, 0);
+    node *init;
+    int i;
+    type_stack_mark();
+    fix_type_field(n);
+    push_finished_type(n->type);
+    if ($4) {
+      push_type(T_VOID);
+      push_type(T_OR);
+    }
+    i = add_local_name(empty_pike_string, pop_unfinished_type(), NULL);
+    Pike_compiler->compiler_frame->local_names[i].flags |= LOCAL_VAR_IS_USED;
+    bind_local(NULL, i);
+    init = mklocalnode(i, 0);
+    if ($4) {
+      init = mknode(F_LOR, init, $4);
+    }
+    /* Redefine local #i as [ $2 ] with an initializer of
+     * orig_i || $4.
+     */
+    redefine_local(NULL, i, n, init);
+    free_node($1);
   }
   ;
 
@@ -5516,6 +5543,30 @@ int add_local_name(struct pike_string *str,
 		   node *init)
 {
   return low_add_local_name(NULL, str, type, NULL, init);
+}
+
+/* Note that this function eats a reference each to 'def' and 'init'. */
+static void redefine_local(struct compiler_frame *frame, int var,
+                           node *def, node *init)
+{
+  if (!frame) {
+    frame = Pike_compiler->compiler_frame;
+  }
+#ifdef PIKE_DEBUG
+  if ((var < 0) || (var >= frame->current_number_of_locals)) {
+    Pike_fatal("No such local: $%d.\n", var);
+  }
+#endif
+  if (def) {
+    free_node(frame->local_names[var].def);
+    frame->local_names[var].def = def;
+  }
+  if (init) {
+    if (frame->local_names[var].init) {
+      free_node(frame->local_names[var].init);
+    }
+    frame->local_names[var].init = init;
+  }
 }
 
 /* Mark local variable as used. */
