@@ -1419,6 +1419,8 @@ new_arg_name: full_type optional_dot_dot_dot
     if ($4) {
       push_type(T_VOID);
       push_type(T_OR);
+      free_type(n->type);
+      copy_pike_type(n->type, peek_type_stack());
     }
     i = add_local_name(empty_pike_string, pop_unfinished_type(), NULL);
     Pike_compiler->compiler_frame->local_names[i].flags |= LOCAL_VAR_IS_USED;
