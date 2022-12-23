@@ -2809,7 +2809,8 @@ local_function: TOK_IDENTIFIER start_function func_args
 
     if (Pike_compiler->varargs) e--;
     for(; e>=0; e--) {
-      $5 = mknode(F_COMMA_EXPR, set_default_value(e), $5);
+      int ee = Pike_compiler->compiler_frame->local_variables[e] - 1;
+      $5 = mknode(F_COMMA_EXPR, set_default_value(ee), $5);
     }
 
     $5=mknode(F_COMMA_EXPR,$5,mknode(F_RETURN,mkintnode(0),0));
