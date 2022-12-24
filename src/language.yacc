@@ -5806,20 +5806,14 @@ static node *set_default_value(int e)
 
   if (!init) return NULL;
 
-  if (type->flags & PT_FLAG_VOIDABLE) {
-    if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
-      yytype_report(REPORT_WARNING,
-		    NULL, 0, NULL,
-		    NULL, 0, type,
-		    0, "Extraneous void in type for variable with default %S.",
-		    name);
-    }
-  }
-
   add_ref(init);
 
   if (Pike_compiler->compiler_frame->local_names[e].def->token != F_LOCAL) {
     /* Unconditional initializer.
+     *
+     * NB: No need to check for F_LOCAL_INDIRECT, as this code is
+     *     currently only run for function arguments, ad they are
+     *     always bound.
      *
      * $e = init;
      */
@@ -5827,6 +5821,16 @@ static node *set_default_value(int e)
                   mknode(F_ASSIGN,
                          mklocalnode(e, 0),
                          init), NULL);
+  }
+
+  if (type->flags & PT_FLAG_VOIDABLE) {
+    if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
+      yytype_report(REPORT_WARNING,
+                    NULL, 0, NULL,
+                    NULL, 0, type,
+                    0, "Extraneous void in type for variable with default %S.",
+                    name);
+    }
   }
 
   if (type->flags & PT_FLAG_NULLABLE) {
