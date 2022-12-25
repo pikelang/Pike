@@ -3882,6 +3882,7 @@ static void decode_value2(struct decode_data *data)
 	  struct pike_string *save_current_file;
 	  struct object *placeholder = NULL;
 	  INT_TYPE save_current_line;
+          int delay;
 #define FOO(NUMTYPE,Y,ARGTYPE,NAME) \
           NUMTYPE PIKE_CONCAT(local_num_, NAME) = 0;
 #include "program_areas.h"
@@ -4787,13 +4788,14 @@ static void decode_value2(struct decode_data *data)
 	  data->depth-=2;
 #endif
 
-	  int delay = unlink_current_supporter(& c->supporter);
-	  UNSET_ONERROR(err);
+          delay = unlink_current_supporter(& c->supporter);
 
 	  if (delay) {
 	    data->support_delay_counter++;
 	    c->supporter.data = data;
 	  }
+
+          UNSET_ONERROR(err);
 
 	  /* De-kludge to get end_first_pass() to free the program. */
 	  Pike_compiler->num_parse_error--;
@@ -4856,6 +4858,8 @@ static void decode_value2(struct decode_data *data)
 	  }
 
 	  if (placeholder) {
+            struct unfinished_obj_link *up;
+
 	    if (placeholder->prog != null_program) {
 	      decode_error(data, NULL,
 			   "Placeholder has been zapped during decoding.\n");
@@ -4868,8 +4872,8 @@ static void decode_value2(struct decode_data *data)
 	      (char *)NULL;
 	    call_c_initializers(placeholder);
 	    /* It's not safe to call __INIT() or create() yet */
-	    struct unfinished_obj_link *up =
-	      ALLOC_STRUCT(unfinished_obj_link);
+
+            up = ALLOC_STRUCT(unfinished_obj_link);
 	    up->next = data->unfinished_placeholders;
 	    data->unfinished_placeholders = up;
 	    add_ref(up->o = placeholder);
