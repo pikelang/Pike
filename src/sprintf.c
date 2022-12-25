@@ -2573,6 +2573,8 @@ static struct array *parse_sprintf_argument_types(PCHARP format,
 	struct mapping *substate;
 	struct array *subargs;
 	int subnargs = 0;
+        struct svalue *sval;
+
 	for(e=1,tmp=1;tmp;e++)
 	{
 	  if (!INDEX_PCHARP(a,e) &&
@@ -2603,8 +2605,7 @@ static struct array *parse_sprintf_argument_types(PCHARP format,
 	}
 
 	/* Move sprintf_args to our array. */
-	struct svalue *sval =
-	  simple_mapping_string_lookup(substate, "sprintf_args");
+        sval = simple_mapping_string_lookup(substate, "sprintf_args");
 	if (sval && (TYPEOF(*sval) == PIKE_T_TYPE)) {
 	  push_finished_type(sval->u.type);
 	  push_int_type(subnargs, 0x7fffffff);
