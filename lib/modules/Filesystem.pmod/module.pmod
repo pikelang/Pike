@@ -286,7 +286,7 @@ class Traversion {
   //! @param sort_fun
   //! Sort function to be applied to directory entries before
   //! traversing. Can also be a filter function.
-  protected void create(string _path, void|int(0..1) _symlink, void|int(0..1) _ignore_errors, void|function(array:array) _sort_fun) {
+  protected void create(string _path=".", void|int(0..1) _symlink, void|int(0..1) _ignore_errors, void|function(array:array) _sort_fun) {
     path = _path;
     if(path[-1]!='/') path+="/";
     files = get_dir(path);
