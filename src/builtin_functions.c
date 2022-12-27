@@ -10165,16 +10165,22 @@ void init_builtin_efuns(void)
   ADD_EFUN("combine_path_amigaos", f_combine_path_amigaos,
 	   tFuncV(tNone, tNStr(tSetvar(0, tInt)),
 		  tNStr(tOr(tVar(0), tIntSlash))), 0);
+#ifdef __NT__
+  /* NB: cl does not like preprocessor directives in macro arguments. */
   ADD_EFUN("combine_path",
-#if defined(__NT__)
 	   f_combine_path_nt,
-#elif defined(__amigaos__)
+           tFuncV(tNone, tNStr(tSetvar(0, tInt)),
+                  tNStr(tOr(tVar(0), tIntSlash))), 0);
+#else /* !NT */
+  ADD_EFUN("combine_path",
+#if defined(__amigaos__)
 	   f_combine_path_amigaos,
 #else
 	   f_combine_path_unix,
 #endif
 	   tFuncV(tNone, tNStr(tSetvar(0, tInt)),
 		  tNStr(tOr(tVar(0), tIntSlash))), 0);
+#endif
 
   ADD_EFUN("compile", f_compile,
 	   tFunc(tStr tOr(tObj, tVoid) tOr(tInt, tVoid) tOr(tInt, tVoid) tOr(tPrg(tObj), tVoid) tOr(tObj, tVoid) ,tPrg(tObj)),
