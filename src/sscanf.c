@@ -55,7 +55,7 @@ static p_wchar2 next_char( PCHARP *str, ptrdiff_t *len )
  * cf https://gcc.gnu.org/bugzilla/show_bug.cgi?id=50569
  * Note that the patch for the above bug is in gcc 4.7.4, but isn't sufficient.
  */
-#define NOINLINE_UNALIGNED	ATTRIBUTE((noinline)) DECLSPEC((noinline))
+#define NOINLINE_UNALIGNED	ATTRIBUTE((noinline)) DECLSPEC(noinline)
 #endif
 
 #if SIZEOF_FLOAT_TYPE > SIZEOF_DOUBLE
@@ -752,7 +752,7 @@ static FLOAT_TYPE NOINLINE_UNALIGNED extract_double_le(const char * x) {
     (SVAL).u.float_number = fun(x);                         \
 } while (0)
 
-static struct pike_string * NOINLINE_UNALIGNED
+static NOINLINE_UNALIGNED struct pike_string *
   get_string_slice( void *input, int shift,
 		    ptrdiff_t offset, ptrdiff_t len,
 		    struct pike_string *str )
