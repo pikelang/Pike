@@ -8,6 +8,7 @@
 src_dir=
 dest_dir=
 bin_dir=
+build_dir=.
 
 up_to_date() {
     src_name="$1"
@@ -64,7 +65,7 @@ recurse () {
          "$bin_dir"mktestsuite "$src_dir$path$fn" >&5 -DSRCDIR="$src_dir$path"
        else
          "$bin_dir"mktestsuite "$src_dir$path$fn" >&5 \
-	   -DSRCDIR="`echo $src_dir$path|sed -e $PIKE_PATH_TRANSLATE|$bin_dir/../src/posix_to_native.sh`"
+           -DSRCDIR="`echo $src_dir$path|sed -e $PIKE_PATH_TRANSLATE|${build_dir}posix_to_native.sh`"
        fi
     fi
 
@@ -78,6 +79,7 @@ for arg do
     --srcdir=*) src_dir="`echo \"\$arg\" | sed -e 's/^--srcdir=//'`";;
     --destdir=*) dest_dir="`echo \"\$arg\" | sed -e 's/^--destdir=//'`";;
     --bindir=*) bin_dir="`echo \"\$arg\" | sed -e 's/^--bindir=//'`";;
+    --builddir=*) build_dir="`echo \"\$arg\" | sed -e 's/^--builddir=//'`";;
   esac
 done
 
@@ -99,6 +101,7 @@ fi
 case "$src_dir" in */) ;; *) src_dir="$src_dir"/;; esac
 case "$dest_dir" in */) ;; *) dest_dir="$dest_dir"/;; esac
 case "$bin_dir" in */) ;; *) bin_dir="$bin_dir"/;; esac
+case "$build_dir" in */) ;; *) build_dir="$build_dir"/;; esac
 
 recurse ""
 
