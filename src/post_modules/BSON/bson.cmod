@@ -120,7 +120,6 @@ struct program * lookup_program(const char * prog)
 
 struct svalue * lookup_svalue(const char * prog)
 {
-  struct svalue * p;
   push_text(prog);
   SAFE_APPLY_MASTER("resolv", 1 );
   if(TYPEOF(Pike_sp[-1]) == PIKE_T_INT)
@@ -533,11 +532,11 @@ const char * decode_next_value(const char * src, const char * src_end, struct ma
  */
 PIKEFUN mapping decode(string(8bit) document)
 {
-  if(document->size_shift)
-    Pike_error("wide strings are not allowed.\n");
-
   const char *src = document->str;
   const char *src_end = src + document->len;
+
+  if(document->size_shift)
+    Pike_error("wide strings are not allowed.\n");
 
   decode_document(src, src_end);
 }
@@ -548,9 +547,10 @@ PIKEFUN mapping decode(Stdio.Buffer document)
   rawtype tFunc(tObjIs_STDIO_BUFFER, tMapping);
 {
   Buffer *io = io_buffer_from_object(document);
+  const char *src, *src_end;
   if (!io) SIMPLE_ARG_TYPE_ERROR("decode_from", 1, "object(Stdio.Buffer)");
-  const char *src = (const char*)io_read_pointer(io);
-  const char *src_end = decode_document(src, src + io_len(io));
+  src = (const char*)io_read_pointer(io);
+  src_end = decode_document(src, src + io_len(io));
   io_consume(io, src_end - src);
 }
 
