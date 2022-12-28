@@ -1069,9 +1069,9 @@ PIKECLASS Shuffler
     ptrdiff_t p = multiset_first(THIS->shuffles);
     for (; p >= 0; p = multiset_next(THIS->shuffles, p)) {
       struct svalue shuf;
+      struct Shuffle_struct *s;
       use_multiset_index(THIS->shuffles, p, shuf);
-      struct Shuffle_struct *s =
-	(struct Shuffle_struct *)shuf.u.object->storage;
+      s = (struct Shuffle_struct *)shuf.u.object->storage;
       if( s->state == RUNNING )
 	_remove_callbacks(s);
     }
@@ -1086,9 +1086,9 @@ PIKECLASS Shuffler
     ptrdiff_t p = multiset_first(THIS->shuffles);
     for (; p >= 0; p = multiset_next(THIS->shuffles, p)) {
       struct svalue shuf;
+      struct Shuffle_struct *s;
       use_multiset_index(THIS->shuffles, p, shuf);
-      struct Shuffle_struct *s =
-	(struct Shuffle_struct *)shuf.u.object->storage;
+      s = (struct Shuffle_struct *)shuf.u.object->storage;
       if( s->state == RUNNING )
 	_set_callbacks(s->self);   /* Shuffle */
     }
