@@ -660,7 +660,7 @@ PIKECLASS Shuffle
         sent = -1;
         if (t->box.fd >= 0) {
           THREADS_ALLOW();
-          sent = writev(t->box.fd, iov, t->iovamount);
+          sent = fd_writev(t->box.fd, iov, t->iovamount);
           THREADS_DISALLOW();
         } else if (t->file_obj) {
           int i;
