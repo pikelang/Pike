@@ -3312,9 +3312,9 @@ int pre_install(array(string) argv)
     prefix = vars->prefix;
   else {
 #ifdef __NT__
-    prefix = RegGetValue(HKEY_LOCAL_MACHINE,
-			 "SOFTWARE\\Microsoft\\Windows\\CurrentVersion",
-			 "ProgramFilesDir");
+    prefix = System.RegGetValue(HKEY_LOCAL_MACHINE,
+                                "SOFTWARE\\Microsoft\\Windows\\CurrentVersion",
+                                "ProgramFilesDir");
 #else
     prefix = "/usr/local";
 #endif
