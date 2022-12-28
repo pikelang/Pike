@@ -159,6 +159,8 @@ static void set_default_master(const char *bin_name)
 #ifdef __NT__
   if (!(*mp == '/' || *mp == '\\' || (isalpha (*mp) && mp[1] == ':'))) {
     char exepath[MAXPATHLEN];
+    if (!*mp) set_master("master.pike");
+
     if (!GetModuleFileName (NULL, exepath, _MAX_PATH))
       fprintf (stderr, "Failed to get path to exe file: %d\n",
 	       GetLastError());
