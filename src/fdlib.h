@@ -158,6 +158,7 @@ struct winsize {
 #define fd_listen(fd,X) debug_fd_listen(dmalloc_touch_fd(fd), (X))
 #define fd_close(fd) debug_fd_close(dmalloc_close_fd(fd))
 #define fd_write(fd,X,Y) debug_fd_write(dmalloc_touch_fd(fd),(X),(Y))
+#define fd_writev(fd,X,Y) debug_fd_writev(dmalloc_touch_fd(fd),(X),(Y))
 #define fd_read(fd,X,Y) debug_fd_read(dmalloc_touch_fd(fd),(X),(Y))
 #define fd_lseek(fd,X,Y) debug_fd_lseek(dmalloc_touch_fd(fd),(X),(Y))
 #define fd_ftruncate(fd,X) debug_fd_ftruncate(dmalloc_touch_fd(fd),(X))
@@ -211,6 +212,7 @@ SOCKFUN1(shutdown, int)
 SOCKFUN1(listen, int)
 PMOD_EXPORT int debug_fd_close(FD fd);
 PMOD_EXPORT ptrdiff_t debug_fd_write(FD fd, void *buf, ptrdiff_t len);
+PMOD_EXPORT ptrdiff_t debug_fd_writev(FD fd, struct iovec *iov, ptrdiff_t n);
 PMOD_EXPORT ptrdiff_t debug_fd_read(FD fd, void *to, ptrdiff_t len);
 PMOD_EXPORT PIKE_OFF_T debug_fd_lseek(FD fd, PIKE_OFF_T pos, int where);
 PMOD_EXPORT int debug_fd_ftruncate(FD fd, PIKE_OFF_T len);
@@ -513,6 +515,7 @@ static char PIKE_UNUSED_ATTRIBUTE *debug_get_current_dir_name(void)
 #endif /* HAVE_BROKEN_F_SETFD */
 
 #define fd_write(fd,X,Y) write(dmalloc_touch_fd(fd),(X),(Y))
+#define fd_writev(fd,X,Y) writev(dmalloc_touch_fd(fd),(X),(Y))
 #define fd_read(fd,X,Y) read(dmalloc_touch_fd(fd),(X),(Y))
 #define fd_lseek(fd,X,Y) lseek(dmalloc_touch_fd(fd),(X),(Y))
 #ifdef HAVE_FTRUNCATE64

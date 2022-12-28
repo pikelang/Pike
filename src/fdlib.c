@@ -2151,6 +2151,17 @@ PMOD_EXPORT ptrdiff_t debug_fd_write(FD fd, void *buf, ptrdiff_t len)
   }
 }
 
+PMOD_EXPORT ptrdiff_t debug_fd_writev(FD fd, struct iovec *iov, ptrdiff_t n)
+{
+  /* NB: writev(2) MUST be atomic. */
+  for(;n--;iov++) {
+    if (!iov->iov_len) continue;
+    return fd_write(fd, iov->iov_base, iov->iov_len);
+  }
+
+  return 0;
+}
+
 PMOD_EXPORT ptrdiff_t debug_fd_read(FD fd, void *to, ptrdiff_t len)
 {
   int type;
