@@ -70,10 +70,11 @@ void drop_privs(string user, void|string group, void|int exception) {
     exit(1, msg, @args);
   }
 
+#if constant(_system.getpwent)
   // FIXME: Reset the cursor for System.getpwent()!
   int uid=-1, gid=-1;
   array|zero pwent;
-  while( pwent = System.getpwent() ) {
+  while( pwent = getpwent() ) {
     if( pwent[0]==user ) {
       uid = [int]pwent[2];
       gid = [int]pwent[3];
@@ -88,7 +89,7 @@ void drop_privs(string user, void|string group, void|int exception) {
     // FIXME: Reset the cursor for System.getgrent()!
     gid = -1;
     array|zero grent;
-    while( grent = System.getgrent() ) {
+    while( grent = getgrent() ) {
       if( grent[0]==group ) {
         gid = [int]grent[2];
         break;
@@ -108,4 +109,7 @@ void drop_privs(string user, void|string group, void|int exception) {
   if( System.setuid(0) == 0 ) {
     my_error("Privileges not actually dropped.\n");
   }
+#else
+  my_error("Dropping of privileges not implemented.\n");
+#endif
 }
