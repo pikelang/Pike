@@ -6070,11 +6070,6 @@ PMOD_EXPORT void f_gmtime(INT32 args)
   encode_struct_tm(tm, 0);
 }
 
-static void my_putenv(void *s)
-{
-  putenv(s);
-}
-
 /*! @decl mapping(string:int) localtime(int timestamp)
  *!
  *!   Convert seconds since 00:00:00 UTC, 1 Jan 1970 into components.
@@ -6137,6 +6132,12 @@ PMOD_EXPORT void f_localtime(INT32 args)
   encode_tm_tz(tm);
 }
 
+static void set_tz(char *tz)
+{
+  putenv(tz);
+  tzset();
+}
+
 time_t mktime_zone(struct tm *date, int other_timezone, int tz)
 {
   time_t retval;
@@ -6178,18 +6179,25 @@ time_t mktime_zone(struct tm *date, int other_timezone, int tz)
 	      tz/3600,
 	      (tz/60)%60,
 	      tz % 60);
-      putenv(tzbuf);
-      if (!orig_tz) {
+      if (orig_tz) {
+        /* NB: orig_tz may point into the buffer that putenv()
+         *     writes to, so we need to make a copy here.
+         */
+        push_text(orig_tz);
+      } else {
 #ifdef PUTENV_ALWAYS_REQUIRES_EQUAL
-	orig_tz = "TZ=";
+        push_text("TZ=");
 #else
-	orig_tz = "TZ";
+        push_text("TZ");
 #endif
       }
-      SET_ONERROR(uwp, my_putenv, orig_tz);
+      orig_tz = Pike_sp[-1].u.string->str;
+      set_tz(tzbuf);
+      SET_ONERROR(uwp, set_tz, orig_tz);
       /* NB: No need to call tzset(); mktime() will call it. */
       retval = mktime_zone(date, 0, 0);
       CALL_AND_UNSET_ONERROR(uwp);
+      pop_stack();
       return retval;
     }
     Pike_error("Time conversion unsuccessful.\n");
