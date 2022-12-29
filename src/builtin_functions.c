@@ -5839,6 +5839,12 @@ PMOD_EXPORT void f_localtime(INT32 args)
   encode_tm_tz(tm);
 }
 
+static void set_tz(char *tz)
+{
+  putenv(tz);
+  tzset();
+}
+
 time_t mktime_zone(struct tm *date, int other_timezone, int tz)
 {
   time_t retval;
@@ -5865,7 +5871,39 @@ time_t mktime_zone(struct tm *date, int other_timezone, int tz)
 
   retval = mktime(date);
   if (date->tm_wday < 0) {
-    /* NB: This happens for times near {MIN,MAX}_TIME_T. */
+    if (other_timezone) {
+      /* NB: This happens for times near {MIN,MAX}_TIME_T. */
+      const char *orig_tz = getenv("TZ");
+      char tzbuf[20];
+      ONERROR uwp;
+      char *tzsgn = tz < 0 ? "-" : "+";
+      if (tz < 0) tz = -tz;
+      sprintf(tzbuf, "TZ=UTC%s%02d:%02d:%02d",
+	      tzsgn,
+	      tz/3600,
+	      (tz/60)%60,
+	      tz % 60);
+      if (orig_tz) {
+        /* NB: orig_tz may point into the buffer that putenv()
+         *     writes to, so we need to make a copy here.
+         */
+        push_text(orig_tz);
+      } else {
+#ifdef PUTENV_ALWAYS_REQUIRES_EQUAL
+        push_text("TZ=");
+#else
+        push_text("TZ");
+#endif
+      }
+      orig_tz = Pike_sp[-1].u.string->str;
+      set_tz(tzbuf);
+      SET_ONERROR(uwp, set_tz, orig_tz);
+      /* NB: No need to call tzset(); mktime() will call it. */
+      retval = mktime_zone(date, 0, 0);
+      CALL_AND_UNSET_ONERROR(uwp);
+      pop_stack();
+      return retval;
+    }
     Pike_error("Time conversion unsuccessful.\n");
   }
 
