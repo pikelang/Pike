@@ -5216,11 +5216,11 @@ static int find_stack_direction(void *foo, int cnt)
 }
 
 int main() {
-  find_stack_direction_funptr = &find_stack_direction;
-  void *bar; exit( find_stack_direction_funptr(&bar, 0x10) > 0);
+  find_stack_direction_funptr = find_stack_direction;
+  void *bar; exit( find_stack_direction_funptr(&bar, 0x10) < 0);
 }
-  ], [ pike_cv_hardware_stack_direction=down
   ], [ pike_cv_hardware_stack_direction=up
+  ], [ pike_cv_hardware_stack_direction=down
   ], [
     AC_MSG_WARN([Defaulting to down.])
     pike_cv_hardware_stack_direction=down
