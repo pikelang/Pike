@@ -68,7 +68,7 @@ static inline INT32 PIKE_UNUSED_ATTRIBUTE FLOAT_TO_COLORL(double X)
    * COLORL range (0 - COLORLMAX, ie (COLORLMAX + 1)) and check
    * for the special case of X == 1.0.
    */
-  unsigned INT32 tmp = X * ((double)COLORLMAX + 1.0);
+  unsigned INT32 tmp = (unsigned INT32)(X * ((double)COLORLMAX + 1.0));
   if (UNLIKELY(tmp > (unsigned INT32)COLORLMAX)) return COLORLMAX;
   return (INT32)tmp;
 }

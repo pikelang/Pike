@@ -1603,6 +1603,9 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 #undef L_TRUNC
 #undef L_OPER
 
+/* FIXME: This operator looks suspect. It probably should be
+ *        scaled by COLORMAX.
+ */
 #define LM_FUNC lm_divide
 #define L_TRUNC(X) MINIMUM(255,(X))
 #define L_OPER(A,B) MINIMUM( (int)((A)/C2F(1+(int)(B))), COLORMAX)
@@ -1611,10 +1614,12 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 #undef L_TRUNC
 #undef L_OPER
 
+/* FIXME: This operator looks suspect. It probably should be
+ *        scaled by COLORMAX.
+ */
 #define LM_FUNC lm_negdivide
-#define L_TRUNC(X) MINIMUM(255,(X))
+#define L_TRUNC(X) (unsigned char)MINIMUM(255,(X))
 #define L_OPER(A,B) 1.0-MINIMUM( (int)((A)/C2F(1+(int)(B))), COLORMAX)
-
 #include "layer_oper.h"
 #undef LM_FUNC
 #undef L_TRUNC
