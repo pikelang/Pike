@@ -1812,8 +1812,23 @@ if test "$cflags_is_set" = "no"; then
   	dynamic_crt_flag=-MD
   	static_crt_flag=-MT
         fi
+
 	# We want the full 32-bit address space (not the default 31-bit).
 	AC_SYS_COMPILER_FLAG(-LARGEADDRESSAWARE,LARGEADDRESSAWARE,LDFLAGS)
+
+        # Inhibit warning:
+        #   LNK4221: no public symbols found; archive
+        #            member will be inaccessible
+        # which is generated when linking a *.lib with some empty
+        # object files (like eg modules/system/syslog.o).
+        AC_SYS_COMPILER_FLAG(-wd4221,wd4221,WARN)
+
+        # Inhibit warning:
+        #   C4244: '/=' : conversion from 'double' to 'float',
+        #                 possible loss of data
+        # Note: Unfortunately this also disables the warning about
+        #       eg conversion from 'long' to 'unsigned char'.
+        AC_SYS_COMPILER_FLAG(-wd4244,wd4244,WARN)
         ;;
       esac
 
