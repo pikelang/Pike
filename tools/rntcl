@@ -174,6 +174,7 @@ int main(int argc, array(string) argv)
     ({"ignore",Getopt.HAS_ARG, ({"-R"}) }),
 #endif
     ({"warn",Getopt.MAY_HAVE_ARG, ({"-W"}) }),
+    ({"warn2",Getopt.HAS_ARG, ({"-w"}) }),
     ({"define",Getopt.HAS_ARG, ({"-D"}) }),
     ({"undefine",Getopt.HAS_ARG, ({"-U"})}),
     ({"output",Getopt.HAS_ARG, ({"-o"}) }),
@@ -337,6 +338,13 @@ int main(int argc, array(string) argv)
 	    default: cflags+=({"-W3"}); break;
 	  }
 	  break;
+
+        case "warn2":
+          // MSVC-native warning flags.
+          // Typically used to inhibit warnings like:
+          //   -wd4221
+          cflags += ({ "-w" + option[1] });
+          break;
 
         case "ldpath":
 	  if (option[1] == "ARGEADDRESSAWARE") {
