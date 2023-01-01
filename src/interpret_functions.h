@@ -564,7 +564,7 @@ OPCODE1(F_LOCAL_LVALUE, "& local", I_UPDATE_SP, {
 
 OPCODE2(F_LEXICAL_LOCAL, "lexical local", I_UPDATE_SP, {
   struct pike_frame *f=Pike_fp;
-  while(arg2--)
+  while(arg2-- > 0)
   {
     f=f->scope;
     if(!f) Pike_error("Lexical scope error.\n");
@@ -575,7 +575,7 @@ OPCODE2(F_LEXICAL_LOCAL, "lexical local", I_UPDATE_SP, {
 
 OPCODE2(F_LEXICAL_LOCAL_LVALUE, "&lexical local", I_UPDATE_SP, {
   struct pike_frame *f=Pike_fp;
-  while(arg2--)
+  while(arg2-- > 0)
   {
     f=f->scope;
     if(!f) Pike_error("Lexical scope error.\n");
