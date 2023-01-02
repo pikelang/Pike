@@ -70,8 +70,9 @@ protected void unlocked_log_msg_cont (string msg)
   }
 
   last_log = 0;
-  if( String.width(msg)>8 )
-    msg = string_to_utf8(msg);
+  if( String.width(msg)>8 ) {
+    msg = string_to_utf8(msg, 1);
+  }
   werror (msg);
   twiddler_counter = -abs (twiddler_counter);
   last_line_inplace = 0;
