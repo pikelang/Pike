@@ -652,7 +652,7 @@ void f_utime(INT32 args)
     b.modtime=mtime;
     do {
       THREADS_ALLOW_UID();
-#ifdef HAVE__UTIME
+#if defined(HAVE__UTIME) && !defined(HAVE_UTIME)
       err = _utime (path, &b);
 #else
       err = utime(path, &b);
