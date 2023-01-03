@@ -22,6 +22,7 @@
 #include "sprintf.h"
 #include "pike_search.h"
 #include "fdlib.h"
+#include "builtin_functions.h"
 
 #include <errno.h>
 
@@ -1063,6 +1064,409 @@ PMOD_EXPORT void string_builder_sprintf(struct string_builder *s,
   va_start(args, fmt);
   string_builder_vsprintf(s, fmt, args);
   va_end(args);
+}
+
+
+/* Standard formats supported by string_builder_strftime():
+ *
+ * Escaped characters:
+ *   '%'	Insert %.
+ *   'n'	Insert newline.
+ *   't'	Insert tab.
+ *
+ * Flags (NB: None of these actually do anything yet):
+ *   '!'	Inhibit numerical padding (Roxen-style).
+ *   '-'	Inhibit numerical padding (glibc-style).
+ *   '#'	Inhibit numerical padding (MSVC-style).
+ *   '^'	Upper-case (glibc-style).
+ *   '~'	Capitalize (Roxen-style).
+ *   'E'	Locale dependent alternative form (glibc-style).
+ *   'O'	Use alternative numeric symbols.
+ *
+ * Formats:
+ *   'a'	Abbreviated weekday name.
+ *   'A'	Weekday name.
+ *   'b'	Abbreviated month name.
+ *   'B'	Month name.
+ *   'c'	Date and time.
+ *   'C'	Century number; 0-prefix.
+ *   'd'	Day of month [1,31]; 0-prefix.
+ *   'D'	Date.
+ *   'e'	Day of month [1,31], space-prefix.
+ *   'F'	ISO 8601 date (C99).
+ *   'g'	Short year for the ISO 8601 week containing the day.
+ *   'G'	Year for the ISO 8601 week containing the day.
+ *   'h'	Abbreviated month name (Single Unix Specification).
+ *   'H'	Hour (24-hour clock) [0,23]; 0-prefix.
+ *   'I'	Hour (12-hour clock) [1,12]; 0-prefix.
+ *   'j'	Day number of year [1,366]; 0-prefix.
+ *   'k'	Hour (24-hour clock); space-prefix.
+ *   'l'	Hour (12-hour clock) [1,12]; space-prefix.
+ *   'm'	Month number [1,12]; 0-prefix.
+ *   'M'	Minute [0,59]; 0-prefix.
+ *   'p'	AM or PM.
+ *   'P'	am or pm
+ *   'q'	Quarter number (Roxen-style).
+ *   'r'	Time in 12-hour clock format with %p.
+ *   'R'	24-hour clock time no seconds.
+ *   's'	Seconds since epoch.
+ *   'S'	Seconds [0,60]; 0-prefix.
+ *   'T'	24-hour clock time including seconds.
+ *   'u'	Weekday as a decimal number [1,7], Monday == 1.
+ *   'U'	Week number of current year [0,53]; 0-prefix,
+ *		Sunday is first day of week.
+ *   'V'	ISO week number of the year as a decimal number [01,53];
+ *		0-prefix.
+ *   'w'	Weekday as a decimal number [0,6], Suday == 0.
+ *   'W'	Week number of year as a decimal number [00,53],
+ *		with Monday as the first day of week 1; 0-prefix.
+ *   'x'	Date in locale preferred format.
+ *   'X'	Time in locale preferred format.
+ *   'y'	Year [00,99]; 0-prefix.
+ *   'Y'	Year [0000,9999]; 0-prefix.
+ *   'z'	Time zone as hour offset from UTC.
+ *   'Z'	Timezone name of abbreviation, or no bytes if
+ *		no timezone information exists.
+ */
+
+/* Compat notes:
+ *
+ * The MSVC implementation of strftime() only supports
+ *
+ *   %a, %A, %b, %B, %c, %d, %H, %I,
+ *   %j, %m, %M, %p, %S, %U, %w, %W,
+ *   %x, %X, %y, %Y, %z, %Z and %%,
+ *
+ * and in debug mode it aborts on any others.
+ */
+
+static const char *internal_strftime_weekdays[7] =
+  { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
+
+static const char *internal_strftime_long_weekdays[7] =
+  { "Sunday", "Monday", "Tuesday", "Wednesday",
+    "Thursday", "Friday", "Saturday" };
+
+static const char *internal_strftime_months[12] =
+  { "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
+
+static const char *internal_strftime_long_months[12] =
+  { "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December" };
+
+PMOD_EXPORT void string_builder_strftime(struct string_builder *s,
+                                         const char *fmt,
+                                         struct tm *tm)
+{
+  char buffer[1024];	/* Used when calling strftime(3C). */
+
+  STACK_LEVEL_START(0);
+  while (*fmt) {
+    if (*fmt == '%') {
+      int prefix = 1;
+      int alt_num = 0;
+      int alt_form = 0;
+      int upper_case = 0;
+
+      fmt++;
+      while (1) {
+        switch (*(fmt++)) {
+          /*
+           * Escaped characters.
+           */
+
+        case '%':
+          string_builder_putchar(s, '%');
+          break;
+
+        case 'n': /* Newline. */
+          string_builder_putchar(s, '\n');
+          break;
+
+        case 't': /* Tab. */
+          string_builder_putchar(s, '\t');
+          break;
+
+          /*
+           * Flags
+           */
+        case '!': /* Inhibit numerical padding (Roxen-style). */
+        case '-': /* Inhibit numerical padding (glibc-style). */
+        case '#': /* Inhibit numerical padding (MSVC-style). */
+          prefix = 0;
+          continue;
+
+        case '^': /* Upper-case (glibc-style). */
+          upper_case = 3;
+          continue;
+
+        case '~': /* Capitalize (Roxen-style). */
+          upper_case = 1;
+          continue;
+
+        case 'E': /* Locale dependent alternative form (glibc-style). */
+          alt_form = 1;
+          continue;
+
+        case 'O': /* Use alternative numeric symbols. */
+          alt_num = 1;
+          continue;
+
+          /*
+           * Formats
+           */
+
+        case 'a': /* Abbreviated weekday name. */
+          string_builder_strcat(s, internal_strftime_weekdays[tm->tm_wday]);
+          break;
+
+        case 'A': /* Weekday name. */
+          string_builder_strcat(s, internal_strftime_long_weekdays[tm->tm_wday]);
+          break;
+
+        case 'b': /* Abbreviated month name. */
+        case 'h': /* Abbreviated month name (Single Unix Specification). */
+          string_builder_strcat(s, internal_strftime_months[tm->tm_mon]);
+          break;
+
+        case 'B': /* Month name. */
+          string_builder_strcat(s, internal_strftime_long_months[tm->tm_mon]);
+          break;
+
+        case 'c': /* Date and time. */
+          string_builder_strftime(s, "%a %b %e %H:%M:%S %Y", tm);
+          break;
+
+        case 'C': /* Century number; 0-prefix. */
+          string_builder_sprintf(s, "%02d", 19 + tm->tm_year/100);
+          break;
+
+        case 'd': /* Day of month [1,31]; 0-prefix. */
+          string_builder_sprintf(s, "%02d", tm->tm_mday);
+          break;
+
+        case 'D': /* Date. */
+          string_builder_strftime(s, "%m/%d/%y", tm);
+          break;
+
+        case 'e': /* Day of month [1,31], space-prefix. */
+          string_builder_sprintf(s, "%2d", tm->tm_mday);
+          break;
+
+        case 'F': /* ISO 8601 date. */
+          string_builder_strftime(s, "%Y-%m-%d", tm);
+          break;
+
+        case 'g': /* Short year for the ISO 8601 week containing the day. */
+          {
+            int wday = (tm->tm_wday + 1) % 7;	/* ISO 8601 weekday number. */
+            if ((wday - tm->tm_yday) >= 4) {
+              /* The day belongs to the last week of the previous year. */
+              string_builder_sprintf(s, "%02d", (99 + tm->tm_year) % 100);
+            } else if ((tm->tm_mon == 11) && ((tm->tm_mday - wday) >= 29)) {
+              /* The day belongs to the first week of the next year. */
+              string_builder_sprintf(s, "%02d", (1 + tm->tm_year) % 100);
+            } else {
+              string_builder_sprintf(s, "%02d", tm->tm_year % 100);
+            }
+          }
+          break;
+
+        case 'G': /* Year for the ISO 8601 week containing the day. */
+          {
+            int wday = (tm->tm_wday + 1) % 7;	/* ISO 8601 weekday number. */
+            if ((wday - tm->tm_yday) >= 4) {
+              /* The day belongs to the last week of the previous year. */
+              string_builder_sprintf(s, "%04d", 1899 + tm->tm_year);
+            } else if ((tm->tm_mon == 11) && ((tm->tm_mday - wday) >= 29)) {
+              /* The day belongs to the first week of the next year. */
+              string_builder_sprintf(s, "%04d", 1901 + tm->tm_year);
+            } else {
+              string_builder_sprintf(s, "%04d", 1900 + tm->tm_year);
+            }
+          }
+          break;
+
+        case 'H': /* Hour (24-hour clock) [0,23]; 0-prefix. */
+          string_builder_sprintf(s, "%02d", tm->tm_hour);
+          break;
+
+        case 'I': /* Hour (12-hour clock) [1,12]; 0-prefix. */
+          string_builder_sprintf(s, "%02d", 1 + (tm->tm_hour + 11) % 12);
+          break;
+
+        case 'j': /* Day number of year [1,366]; 0-prefix. */
+          string_builder_sprintf(s, "%03d", tm->tm_yday);
+          break;
+
+        case 'k': /* Hour (24-hour clock); space-prefix. */
+          string_builder_sprintf(s, "%2d", tm->tm_hour);
+          break;
+
+        case 'l': /* Hour (12-hour clock) [1,12]; space-prefix. */
+          string_builder_sprintf(s, "%2d", 1 + (tm->tm_hour + 11) % 12);
+          break;
+
+        case 'm': /* Month number [1,12]; 0-prefix. */
+          string_builder_sprintf(s, "%02d", tm->tm_mon + 1);
+          break;
+
+        case 'M': /* Minute [0,59]; 0-prefix. */
+          string_builder_sprintf(s, "%02d", tm->tm_min);
+          break;
+
+        case 'p': /* AM or PM. */
+          string_builder_strcat(s, tm->tm_hour < 12 ? "AM" : "PM");
+          break;
+
+        case 'P': /* am or pm */
+          string_builder_strcat(s, tm->tm_hour < 12 ? "am" : "pm");
+          break;
+
+        case 'q': /* Quarter number (Roxen-style). */
+          string_builder_sprintf(s, "%d", tm->tm_mon/3 + 1);
+          break;
+
+        case 'r': /* Time in 12-hour clock format with %p. */
+          string_builder_strftime(s, "%I:%M:%S %p", tm);
+          break;
+
+        case 'R': /* 24-hour clock time no seconds. */
+          string_builder_strftime(s, "%H:%M", tm);
+          break;
+
+        case 's': /* Seconds since epoch. */
+          {
+            time_t t = mktime_zone(tm, 0, 0);
+            string_builder_sprintf(s, "%d", t);
+          }
+          break;
+
+        case 'S': /* Seconds [0,60]; 0-prefix. */
+          string_builder_sprintf(s, "%02d", tm->tm_sec);
+          break;
+
+        case 'T': /* 24-hour clock time including seconds. */
+          string_builder_strftime(s, "%H:%M:%S", tm);
+          break;
+
+        case 'u': /* Weekday as a decimal number [1,7], Monday == 1. */
+          string_builder_sprintf(s, "%d", 1 + ((tm->tm_wday + 6) % 7));
+          break;
+
+        case 'U': /* Week number of current year [0,53]; 0-prefix,
+                   * Sunday is first day of week. */
+          string_builder_sprintf(s, "%02d",
+                                 1 + (tm->tm_yday - tm->tm_wday) / 7);
+          break;
+
+        case 'V': /* ISO week number of the year as a decimal number [01,53];
+                   * 0-prefix. */
+          {
+            int wday = 1 + (tm->tm_wday + 6) % 7;	/* ISO wday. */
+            int weekno = (10 + tm->tm_yday - tm->tm_wday) / 7;
+            if (!weekno || (weekno == 53)) {
+              int y = tm->tm_year + 1900;
+              int p;
+
+              if (!weekno) {
+                /* Last week of previous year. */
+                y--;
+              }
+
+              p = (y + y/4 - y/100 + y/400) % 7;
+              if (p == 4) {
+                weekno = 53;
+              } else {
+                y--;
+                p = (y + y/4 - y/100 + y/400) % 7;
+                if (p == 3) {
+                  weekno = 53;
+                } else if (weekno) {
+                  /* First week of next year. */
+                  weekno = 1;
+                } else {
+                  weekno = 52;
+                }
+              }
+            }
+            string_builder_sprintf(s, "%02d", weekno);
+          }
+          break;
+
+        case 'w': /* Weekday as a decimal number [0,6], Suday == 0. */
+          string_builder_sprintf(s, "%d", tm->tm_wday);
+          break;
+
+        case 'W': /* Week number of year as a decimal number [00,53],
+                   * with Monday as the first day of week 1; 0-prefix. */
+          string_builder_sprintf(s, "%02d",
+                                 ((tm->tm_yday + (5 + tm->tm_wday) % 7) / 7));
+          break;
+
+        case 'x': /* Date in locale preferred format. */
+          buffer[0] = 0;
+          strftime(buffer, sizeof(buffer), "%x", tm);
+          string_builder_strcat(s, buffer);
+          break;
+
+        case 'X': /* Time in locale preferred format. */
+          buffer[0] = 0;
+          strftime(buffer, sizeof(buffer), "%X", tm);
+          string_builder_strcat(s, buffer);
+          break;
+
+        case 'y': /* Year [00,99]; 0-prefix. */
+          string_builder_sprintf(s, "%02d", tm->tm_year % 100);
+          break;
+
+        case 'Y': /* Year [0000,9999]; 0-prefix. */
+          string_builder_sprintf(s, "%04d", 1900 + tm->tm_year);
+          break;
+
+        case 'z': /* Time zone as hour offset from UTC. */
+          {
+            int minutes = (
+#ifdef STRUCT_TM_HAS_GMTOFF
+                           -tm->tm_gmtoff
+#elif defined(STRUCT_TM_HAS___TM_GMTOFF)
+                           -tm->__tm_gmtoff
+#elif defined(HAVE_EXTERNAL_TIMEZONE)
+                           /* Assume dst is one hour. */
+                           timezone - 3600*tm->tm_isdst
+#else
+                           /* Assume dst is one hour. */
+                           -3600*tm->tm_isdst
+#endif
+                           ) / 60;
+            minutes += (minutes/60) * 40;
+            string_builder_sprintf(s, "%+05d", minutes);
+          }
+          break;
+
+        case 'Z': /* Timezone name of abbreviation, or no bytes if
+                   * no timezone information exists. */
+          break;
+
+        default:
+#if 0
+          Pike_fatal("string_builder_vsprintf(): Invalid formatting method: "
+                     "\"%%%c\" 0x%x.\n", (fmt[-1] & 0xff), fmt[-1]);
+#endif
+          string_builder_putchar(s, fmt[-1]);
+          break;
+        }
+        break;
+      }
+    } else {
+      const char *start = fmt;
+      while (*fmt && (*fmt != '%'))
+        fmt++;
+      string_builder_binary_strcat(s, start, fmt-start);
+    }
+  }
+  STACK_LEVEL_DONE(0);
 }
 
 /**
