@@ -147,7 +147,7 @@ PIKECLASS Shuffle
 
   static void take_fd(struct Shuffle_struct*s) {
     if (s->box.fd >= 0) {
-      close(s->box.fd);
+      fd_close(s->box.fd);
       unhook_fd_callback_box(&s->box);
       s->box.fd = -1;
     }
@@ -813,7 +813,7 @@ PIKECLASS Shuffle
                                 "object(Pike.__Backend)");
 	}
       }
-      dupedfd = dup(Pike_sp[-1].u.integer);
+      dupedfd = fd_dup(Pike_sp[-1].u.integer);
       if (dupedfd < 0)
         Pike_error("Out of filedescriptors.");
       change_fd_for_box(&THIS->box, dupedfd);
