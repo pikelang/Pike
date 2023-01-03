@@ -201,7 +201,7 @@ PIKECLASS TM
      *!  The @expr{format@} and @expr{data@} are reversed.
      *!
      *! @seealso
-     *!   @[strptime]
+     *!   @[strftime]
      */
     PIKEFUN int(0..1) strptime( string(1..255) format, string(1..255) data )
     {
@@ -213,6 +213,7 @@ PIKECLASS TM
         RETURN 1;
     }
 #endif /* HAVE_STRPTIME */
+
     /*! @decl string(1..255) strftime( string(1..255) format )
      *!
      *! @seealso
@@ -220,10 +221,13 @@ PIKECLASS TM
      */
     PIKEFUN string(1..255) strftime(string(1..255) format)
     {
-        char buffer[8192];
-        buffer[0] = 0;
-        strftime_zone(buffer, sizeof(buffer), format->str, &THIS->t);
-        push_text(buffer);
+      struct string_builder s;
+
+      init_string_builder(&s, 0);
+
+      string_builder_strftime(&s, format->str, &THIS->t);
+
+      push_string(finish_string_builder(&s));
     }
 
     /*! @decl int(0..60) sec;

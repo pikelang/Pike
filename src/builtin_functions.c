@@ -6465,6 +6465,7 @@ PMOD_EXPORT void f_strptime (INT32 args)
       push_int(0);
 }
 #endif /* HAVE_STRPTIME */
+
 /*! @decl string(1..255) strftime( string(1..255) format, mapping(string:int) tm)
  *!
  *! Convert the structure to a string.
@@ -6597,9 +6598,8 @@ PMOD_EXPORT void f_strptime (INT32 args)
  */
 PMOD_EXPORT void f_strftime (INT32 args)
 {
-    char buffer[8192];
+    struct string_builder s;
     struct tm date;
-    buffer[0] = 0;
 
     unwind_tm();
     get_tm("strftime", 8, &date);
@@ -6607,10 +6607,11 @@ PMOD_EXPORT void f_strftime (INT32 args)
     if (Pike_sp[-1].u.string->size_shift)
       Pike_error("Only 8bit strings are supported\n");
 
-    strftime(buffer, sizeof(buffer), Pike_sp[-1].u.string->str, &date);
+    init_string_builder(&s, 0);
 
-    pop_stack();
-    push_text( buffer );
+    string_builder_strftime(&s, Pike_sp[-1].u.string->str, &date);
+
+    push_string(finish_string_builder(&s));
 }
 
 #define DOES_MATCH_CLASS(EXTRACT_M,EXTRACT_S,ML)                      \
