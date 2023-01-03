@@ -584,12 +584,12 @@ static void ia32_push_svalue (enum ia32_reg svalue_ptr_reg)
   /* Compare the type which is in the lower 16 bits of svalue_ptr_reg. */
   CHECK_VALID_REG (svalue_ptr_reg);
   add_to_program(0x66);		/* Switch to 16 bit operand mode. */
-  add_to_program(0x83);		/* cmp $xx,svalue_ptr_reg */
-  add_to_program(0xf8 | svalue_ptr_reg);
+  add_to_program(0x83);		/* and $xx,svalue_ptr_reg */
+  add_to_program(0xe0 | svalue_ptr_reg);	/* 11 | 100 | reg */
   add_to_program(MIN_REF_TYPE);
   DEALLOC_REG (svalue_ptr_reg);
 
-  add_to_program(0x7c); /* jl bork */
+  add_to_program(0x74); /* jz bork */
   add_to_program(0x02);
 
   CHECK_VALID_REG (tmp_reg);

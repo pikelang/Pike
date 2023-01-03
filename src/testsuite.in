@@ -8311,7 +8311,8 @@ test_equal([[array_sscanf("foo \12345 bar <fie>","%[^<]")]],
             [[ ({"foo \12345 bar " }) ]])
 
 test_eval_error([[
- // Crash bug on Windows
+ // Test that the runtime survives svalues of type T_VOID (16)
+ // on the stack.
  object p = Parser.HTML();
  p->add_tag("x", lambda(object p, mapping m, string h)
    {
