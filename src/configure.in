@@ -1817,6 +1817,11 @@ if test "$cflags_is_set" = "no"; then
 	AC_SYS_COMPILER_FLAG(-LARGEADDRESSAWARE,LARGEADDRESSAWARE,LDFLAGS)
 
         # Inhibit warning:
+        #   LNK4099: PDB 'zlib.pdb' was not found with '...\lib\zlib.lib'
+        #            or at '...\zlib.pdb'; linking object as if no debug info
+        AC_SYS_COMPILER_FLAG(-wd4099,wd4099,WARN)
+
+        # Inhibit warning:
         #   LNK4221: no public symbols found; archive
         #            member will be inaccessible
         # which is generated when linking a *.lib with some empty
