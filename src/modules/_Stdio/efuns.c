@@ -1578,7 +1578,7 @@ static void f_errno(INT32 args)
 #define HAVE_ACCESS
 #endif
 
-#ifdef HAVE_ACCESS
+#if defined(HAVE_ACCESS) || defined(__NT__)
 
 #ifndef R_OK
 #define R_OK	4
@@ -1649,6 +1649,7 @@ static void f_access( INT32 args )
 {
     const char *path;
     int flags, res;
+
     if( args == 2 )
     {
         char *how;
@@ -1674,9 +1675,49 @@ static void f_access( INT32 args )
     }
 
     THREADS_ALLOW_UID();
+#ifdef __NT__
+    /* access() on NT does not supports X_OK, so implement it by hand. */
+    {
+       DWORD attrs = 0;
+       p_wchar1 *wpath;
+
+       wpath = pike_dwim_utf8_to_utf16(path);
+
+       res = -1;
+       attrs = GetFileAttributesW(wpath);
+
+       if (attrs == 0xffffffff) {
+          /* Path does not exist. */
+          set_errno_from_win32_error(GetLastError());
+       } else {
+          /* Path exists. */
+
+          if (attrs & FILE_ATTRIBUTE_DIRECTORY) {
+             /* All directories on WIN32 are RWX. */
+             res = 0;
+          } else if ((flags & W_OK) && (attrs & FILE_ATTRIBUTE_READONLY)) {
+             /* File is read-only. */
+             errno = EPERM;
+          } else if (flags & X_OK) {
+             DWORD binary_type = 0;
+             res = -!GetBinaryTypeW(wpath, &binary_type);
+
+             if (res < 0) {
+                errno = EACCES;
+             }
+          } else {
+             /* All bits ok. */
+             res = 0;
+          }
+      }
+
+      free(wpath);
+    }
+#else /* !__NT__ */
     do {
-        res = access( path, flags );
-    } while( (res == -1) && (errno == EINTR) )
+       res = access( path, flags );
+    } while( (res == -1) && (errno == EINTR) );
+#endif
     THREADS_DISALLOW_UID();
 
     pop_n_elems(args);
