@@ -694,17 +694,21 @@ static void sync(void)
       HANDLE volfile;
 
       if (QueryDosDeviceA(driveletter, device, MAX_PATH*2)) {
-	volfile = CreateFileA(device, FILE_READ_DATA, FILE_SHARE_READ,
+        volfile = CreateFileA(device, GENERIC_WRITE|GENERIC_READ,
+                              FILE_SHARE_WRITE|FILE_SHARE_READ,
 			      NULL, OPEN_EXISTING, 0, NULL);
 	if (volfile != INVALID_HANDLE_VALUE) {
+          FlushFileBuffers(volfile);
 	  CloseHandle(volfile);
 	}
       }
 
       /* Flush the drive. */
-      volfile = CreateFileA(drive, FILE_READ_DATA, FILE_SHARE_READ,
+      volfile = CreateFileA(drive, GENERIC_WRITE|GENERIC_READ,
+                            FILE_SHARE_WRITE|FILE_SHARE_READ,
 			    NULL, OPEN_EXISTING, 0, NULL);
       if (volfile != INVALID_HANDLE_VALUE) {
+        FlushFileBuffers(volfile);
 	CloseHandle(volfile);
       }
     }
