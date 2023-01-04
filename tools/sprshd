@@ -353,10 +353,10 @@ void handle_incoming_connection(object(Stdio.File) io)
 	} else {
           write ("Process %O exited with code %d.\n", p->pid(), code);
 
-#if constant(sync)
+#if constant(System.sync)
           // Attempt to flush any files to disk before informing
           // the other side that we are done.
-          sync();
+          System.sync();
 #endif
 
 	  if (io->write(sprintf("%4c",code)) != 4)
