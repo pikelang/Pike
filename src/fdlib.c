@@ -649,6 +649,34 @@ PMOD_EXPORT char *debug_fd_info(int fd)
   }
 }
 
+PMOD_EXPORT int debug_fd_isatty(int fd)
+{
+  int type;
+  HANDLE h;
+
+  if (fd_to_handle(fd, &type, &h, 0) < 0) {
+    return 0;
+  }
+
+  if (Pike_NT_GetConsoleMode) {
+    DWORD mode = 0;
+    if (Pike_NT_GetConsoleMode(h, &mode)) {
+      release_fd(fd);
+      return 1;
+    }
+  } else {
+    if (GetFileType(h) == FILE_TYPE_CHAR) {
+      /* Assume it is the console. */
+      release_fd(fd);
+      return 1;
+    }
+  }
+
+  errno = ENOTTY;
+  release_fd(fd);
+  return 0;
+}
+
 PMOD_EXPORT int debug_fd_query_properties(int fd, int guess)
 {
   int type;
@@ -2507,12 +2535,6 @@ PMOD_EXPORT int debug_fd_fstat(FD fd, PIKE_STAT_T *s)
   FDDEBUG(fprintf(stderr, "fd_fstat(%d, %p)\n", fd, s));
 
   if (fd_to_handle(fd, &type, &h, 0) < 0) return -1;
-  if (type != FD_FILE)
-  {
-    release_fd(fd);
-    errno=ENOTSUPP;
-    return -1;
-  }
 
   FDDEBUG(fprintf(stderr, "fstat on %d (%ld)\n",
 		  fd, (long)(ptrdiff_t)h));
