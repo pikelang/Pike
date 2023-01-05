@@ -4202,6 +4202,19 @@ static void file_is_open (INT32 args)
   push_int (FD >= 0);
 }
 
+/*! @decl int(0..1) isatty()
+ *!
+ *! Returns true if the file is a terminal.
+ */
+PIKEFUN int(0..1) isatty()
+{
+  int ret = fd_isatty(FD);
+  if (!ret) {
+    ERRNO = errno;
+  }
+  RETURN ret;
+}
+
 /*! @decl int query_fd()
  *!
  *! Returns the file descriptor number associated with this object.
