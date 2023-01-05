@@ -2378,12 +2378,6 @@ PMOD_EXPORT int debug_fd_fstat(FD fd, PIKE_STAT_T *s)
   FDDEBUG(fprintf(stderr, "fd_fstat(%d, %p)\n", fd, s));
 
   if (fd_to_handle(fd, &type, &h, 0) < 0) return -1;
-  if (type != FD_FILE)
-  {
-    release_fd(fd);
-    errno=ENOTSUPP;
-    return -1;
-  }
 
   FDDEBUG(fprintf(stderr, "fstat on %d (%ld)\n",
 		  fd, (long)(ptrdiff_t)h));
