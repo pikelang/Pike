@@ -111,6 +111,8 @@ FILE_FUNC("set_blocking",file_set_blocking, tFunc(tNone,tVoid))
 
 FILE_FUNC ("is_open", file_is_open, tFunc(tNone,tInt))
 /* function(:int) */
+FILE_FUNC ("isatty", file_isatty, tFunc(tNone,tInt))
+/* function(:int) */
 FILE_FUNC("query_fd",file_query_fd, tFunc(tNone,tInt))
 /* function(void:int) */
 FILE_FUNC("release_fd",file_release_fd, tFunc(tVoid,tInt))
