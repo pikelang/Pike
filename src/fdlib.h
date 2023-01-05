@@ -78,6 +78,7 @@ typedef off_t PIKE_OFF_T;
 
 
 #define fd_info(fd) debug_fd_info(dmalloc_touch_fd(fd))
+#define fd_isatty(fd) debug_fd_isatty(dmalloc_touch_fd(fd))
 #define fd_query_properties(fd,Y) \
         debug_fd_query_properties(dmalloc_touch_fd(fd),(Y))
 #define fd_stat(F,BUF) debug_fd_stat(F,BUF)
@@ -127,6 +128,7 @@ PMOD_EXPORT void set_errno_from_win32_error (unsigned long err);
 int fd_to_handle(int fd, int *type, HANDLE *handle, int exclusive);
 void release_fd(int fd);
 PMOD_EXPORT char *debug_fd_info(int fd);
+PMOD_EXPORT int debug_fd_isatty(int fd);
 PMOD_EXPORT int debug_fd_query_properties(int fd, int guess);
 void fd_init(void);
 void fd_exit(void);
@@ -351,6 +353,7 @@ typedef off_t PIKE_OFF_T;
 #define fd_LARGEFILE 0
 #endif /* O_LARGEFILE */
 
+#define fd_isatty(F) isatty(F)
 #define fd_query_properties(X,Y) ( fd_INTERPROCESSABLE | (Y))
 
 #define fd_stat(F,BUF) stat(F,BUF)

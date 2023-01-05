@@ -63,4 +63,10 @@ NTLIBFUNC(kernel32, BOOL, UpdateProcThreadAttribute, (
   PSIZE_T lpReturnSize
 ));
 
+/* This is needed to implement isatty(2) properly. */
+NTLIBFUNC(kernel32, BOOL, GetConsoleMode, (
+  HANDLE hConsoleHandle,
+  LPDWORD lpMode
+));
+
 #endif /* __NT__ */
