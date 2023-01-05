@@ -2098,7 +2098,7 @@ static ptrdiff_t file_write_array(struct my_file *file, struct array *a)
 
   free(iovbase);
 
-  file->my_errno = errno = e;
+  file->my_errno = e;
 
   return written;
 }
@@ -2173,7 +2173,7 @@ static ptrdiff_t file_write_buffer(struct my_file *file, void *ptr, size_t len)
     }
   }
 
-  file->my_errno=errno=e;
+  file->my_errno = e;
 
   return written;
 }
@@ -2255,8 +2255,7 @@ static ptrdiff_t file_write_string(struct my_file *file, struct pike_string *str
     }
   }
 
-  /* Why do we reset errno ? */
-  file->my_errno = errno = e;
+  file->my_errno = e;
 
   return written;
 }
