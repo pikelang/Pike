@@ -23,4 +23,3 @@ lib -text -crlf
 /tools/install-sh foreign_ident
 /tools/isainfo foreign_ident
 /tools/pntld foreign_ident
-/tools/uname foreign_ident

@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# $Id: uname,v 1.27 2008/01/09 14:44:02 grubba Exp $
+# $Id$
 
 . $NTTOOLS
 
@@ -85,7 +85,7 @@ if [ "$S$R$V" = "" ]; then :; else
     # Microsoft Windows 2000 [Version 5.00.2195]
     #       or
     # Microsoft Windows XP [Version 5.1.2600]
-    NT_RAW_VERSION="`sprsh cmd /c ver`"
+    NT_RAW_VERSION="`sprsh cmd /c ver | tail -1`"
   fi
 fi
 
