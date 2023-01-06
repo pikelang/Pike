@@ -936,10 +936,12 @@ test_generic_cipher(Crypto.Blowfish.PCBC)
 test_generic_cipher_autopad(Crypto.Blowfish.CFB)
 test_generic_cipher_autopad(Crypto.Blowfish.OFB)
 test_generic_cipher_autopad(Crypto.Blowfish.CTR)
-test_do([[
-  // Blowfish has lots of weak keys; make sure that make_key() doesn't throw errors.
-  object c = Crypto.Blowfish();
-  for(int i = 0; i < 100000; i++) c->make_key();
+cond_resolv( Nettle.BLOWFISH, [[
+  test_do([[
+    // Blowfish has lots of weak keys; make sure that make_key() doesn't throw errors.
+    object c = Crypto.Blowfish();
+    for(int i = 0; i < 100000; i++) c->make_key();
+  ]])
 ]])
 
 // CAMELLIA
