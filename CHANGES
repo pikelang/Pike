@@ -24,6 +24,16 @@ o Syntax for specifying default values for function arguments added.
 
     class foo(string bar = "bar") {}
 
+o Syntax for using multi-assign in function calls.
+
+  The function definition
+
+    int add([int a, int b], int c) { return a + b + c; }
+
+  will result in a function that may be called as
+
+    add(({ 1, 2 }), 3);
+
 o Major changes to the compiler type checker.
 
   - The type for the value 0 or UNDEFINED now needs to be
