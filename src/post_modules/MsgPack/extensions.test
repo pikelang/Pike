@@ -1,7 +1,7 @@
 // -*- pike -*- TEST: RUN-AS-PIKE-SCRIPT
 
 class A(string(8bit) payload) {
-    string _sprintf(int t) {
+    protected string _sprintf(int t) {
         return sprintf("A(%O)", payload);
     }
 }
