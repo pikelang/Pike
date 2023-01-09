@@ -598,6 +598,7 @@ string ifconfig( string command )
     switch( command )
     {
         case "list if":
+            // Return a '\n'-separated list of interface names.
             switch( system )
             {
                 case Linux:
@@ -606,9 +607,118 @@ string ifconfig( string command )
                     return column(((data/"\n")[*]/" ")[1..<1],0)*"\n";
                 }
                 case NT:
+                    // Using netstat:
+/* > netstat -rn
+ *
+ * IPv4 Route Table
+ * ===========================================================================
+ * Interface List
+ * 0x1 ........................... MS TCP Loopback interface
+ * 0x10003 ...AA BB CC DD EE FF ...... XYZ Adapter
+ * ===========================================================================
+ * ===========================================================================
+ * Active Routes:
+ * Network Destination        Netmask          Gateway       Interface  Metric
+ *           0.0.0.0          0.0.0.0          a.b.c.1          a.b.c.d     10
+ *         127.0.0.0        255.0.0.0        127.0.0.1        127.0.0.1      1
+ *           a.b.c.0    255.255.255.0          a.b.c.d          a.b.c.d     10
+ *           a.b.c.d  255.255.255.255        127.0.0.1        127.0.0.1     10
+ *         a.b.c.255  255.255.255.255          a.b.c.d          a.b.c.d     10
+ *         224.0.0.0        240.0.0.0          a.b.c.d          a.b.c.d     10
+ *   255.255.255.255  255.255.255.255          a.b.c.d          a.b.c.d      1
+ * Default Gateway:      212.247.28.1
+ * ===========================================================================
+ * Persistent Routes:
+ *   None
+ */
+                {
+                    // The strings in the "Interface List" above do not
+                    // seem to be useable for anything (except for the
+                    // interface MAC-address), so we instead return the
+                    // list of interface addresses and prefix.
+                    string data = Process.run(({ "netstat", "-rn" }))->stdout;
+                    // Return the unique values from the "Interface"
+                    // column above.
+                    array(string) interfaces = ({});
+                    foreach(data/"\n", string line) {
+                        if (has_prefix(line, " ")) {
+                            if (sscanf(line,
+                                       "%*[ ]%[^ ]"	// Destination
+                                       "%*[ ]%[^ ]"	// Netmask
+                                       "%*[ ]%[^ ]"	// Gateway
+                                       "%*[ ]%[^ ]"	// Interface
+                                       "%*[ ]%d",	// Metric
+                                       string dest,
+                                       string mask,
+                                       string gw,
+                                       string iface,
+                                       int metric) == 10) {
+                                if (gw != iface) {
+                                    // External GW.
+                                    continue;
+                                }
+                                int di = string_to_ip(dest);
+                                int mi = string_to_ip(mask);
+                                int ii = string_to_ip(iface);
+                                if (di == (mi & ii)) {
+                                    // Network matches masked iface.
+                                    interfaces += ({
+                                        iface + "/" + netmask_to_cidr(mask),
+                                    });
+                                }
+                            }
+                        }
+                    }
+                    return sort(interfaces)*"\n";
+                }
+                    // Using ipconfig:
+/* > ipconfig -all
+ * Windows IP Configuration
+ *
+ *    Host Name . . . . . . . . . . . . : starcraft
+ *    Primary Dns Suffix  . . . . . . . : roxen.com
+ *    Node Type . . . . . . . . . . . . : Unknown
+ *    IP Routing Enabled. . . . . . . . : No
+ *    WINS Proxy Enabled. . . . . . . . : No
+ *    DNS Suffix Search List. . . . . . : roxen.com
+ *
+ * Ethernet adapter Local Area Connection:
+ *
+ *    Connection-specific DNS Suffix  . :
+ *    Description . . . . . . . . . . . : XYZ Adapter
+ *    Physical Address. . . . . . . . . : AA-BB-CC-DD-EE-FF
+ *    DHCP Enabled. . . . . . . . . . . : No
+ *    IP Address. . . . . . . . . . . . : a.b.c.d
+ *    Subnet Mask . . . . . . . . . . . : 255.255.255.0
+ *    Default Gateway . . . . . . . . . : a.b.c.1
+ *    DNS Servers . . . . . . . . . . . : a.b.c.e
+ *                                        a.b.c.f
+ *
+ */
                     error("FIXME: NT not currently supported\n");
                     return Process.run(({ "ipconfig", "/all" }))->stdout;
-
+                    // FIXME: Consider switching to using netsh:
+/* > netsh interface show interface
+ *
+ * Admin State    State          Type             Interface Name
+ * -------------------------------------------------------------------------
+ * Enabled        Unreachable    Dedicated        Local Area Connection
+ * Enabled        Unreachable    Internal         Internal
+ * Enabled        Unreachable    Loopback         Loopback
+ * $ netsh interface ip show address "Local Area Connection"
+ *
+ * Configuration for interface "Local Area Connection"
+ *     DHCP enabled:                         No
+ *     IP Address:                           a.b.c.d
+ *     SubnetMask:                           255.255.255.0
+ *     Default Gateway:                      a.b.c.1
+ *     GatewayMetric:                        0
+ *     InterfaceMetric:                      0
+ *
+ * > netsh interface ipv6 show address "Local Area Connection"
+ * IPv6 is not installed.
+ *
+ */
                 default:
                  {
                      string data = Process.run(({ _ifconfig, "-a" }))->stdout;
@@ -645,6 +755,22 @@ mapping(string:array(string)) local_interfaces()
     mapping(string:array(string)) next__interfaces = ([]);
 
     mapping(string:array(string)) next__broadcast_addresses = ([]);
+#ifdef __NT__
+    foreach( ifconfig("list if" )/"\n", string iface )
+    {
+        array(string) addrs = ({ iface });
+        if (!has_value(iface, ":")) {
+            // Not IPv6. Add the mapped address. */
+            array(string) a = iface/"/";
+            addrs += ({ "::ffff:" + a[0] + "/" + (96 + (int)a[1]) });
+        }
+        if (has_prefix(iface, "127.0.0.1/") || has_prefix(iface, "::1/")) {
+            next__interfaces["lo"] += addrs;
+        } else {
+            next__interfaces["eth"] += addrs;
+        }
+    }
+#else
     foreach( ifconfig("list if" )/"\n", string iface )
     {
         array ips = ({});
@@ -696,6 +822,7 @@ mapping(string:array(string)) local_interfaces()
         if( sizeof( ips ) )
             next__interfaces[iface] = ips;
     }
+#endif
     next__interfaces["lo"] += ({ "::/128" });
     __interfaces = next__interfaces;
     _broadcast_addresses = next__broadcast_addresses;
