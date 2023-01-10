@@ -5745,6 +5745,10 @@ static void encode_tm_tz(const struct tm*tm)
  *!   This function works like @[localtime()] but the result is
  *!   not adjusted for the local time zone.
  *!
+ *! @note
+ *!   Timestamps prior to 1970-01-01T00:00:00 (ie negative timestamps)
+ *!   were not supported on NT and AIX prior to Pike 9.0.
+ *!
  *! @seealso
  *!   @[localtime()], @[time()], @[ctime()], @[mktime()]
  */
@@ -5756,12 +5760,21 @@ PMOD_EXPORT void f_gmtime(INT32 args)
   struct tm *tm;
   LONGEST tt;
   time_t t;
+#if defined(__NT__) || defined(_AIX)
+  int ydelta = 0;
+#endif
 
   get_all_args("gmtime", args, "%l", &tt);
 
 #if SIZEOF_TIME_T < SIZEOF_LONGEST
   if (tt > MAX_TIME_T || tt < MIN_TIME_T)
     SIMPLE_ARG_ERROR ("gmtime", 1, "Timestamp outside valid range.");
+#endif
+#if defined(__NT__) || defined(_AIX)
+  while (tt < 0) {
+    ydelta -= 28;
+    tt += 883612800;
+  }
 #endif
   t = (time_t) tt;
 
@@ -5774,6 +5787,9 @@ PMOD_EXPORT void f_gmtime(INT32 args)
 #endif
   if (!tm) Pike_error ("gmtime() on this system cannot handle "
 		       "the timestamp %"PRINTLONGEST"d.\n", (LONGEST) t);
+#if defined(__NT__) || defined(_AIX)
+  tm->tm_year += ydelta;
+#endif
   pop_n_elems(args);
   encode_struct_tm(tm, 0);
 }
@@ -5815,6 +5831,11 @@ PMOD_EXPORT void f_gmtime(INT32 args)
  *!   Prior to Pike 7.5 the field @expr{"timezone"@} was sometimes not
  *!   present, and was sometimes not adjusted for daylight-saving time.
  *!
+ *! @note
+ *!   Timestamps prior to 1970-01-01T00:00:00 (ie negative timestamps)
+ *!   were not supported on NT and AIX prior to Pike 9.0. Note also
+ *!   that dst-handling may be incorrect for such timestamps.
+ *!
  *! @seealso
  *!   @[Calendar], @[gmtime()], @[time()], @[ctime()], @[mktime()]
  */
@@ -5823,6 +5844,9 @@ PMOD_EXPORT void f_localtime(INT32 args)
   struct tm *tm;
   LONGEST tt;
   time_t t;
+#if defined(__NT__) || defined(_AIX)
+  int ydelta = 0;
+#endif
 
   get_all_args("localtime", args, "%l", &tt);
 
@@ -5830,11 +5854,20 @@ PMOD_EXPORT void f_localtime(INT32 args)
   if (tt > MAX_TIME_T || tt < MIN_TIME_T)
     SIMPLE_ARG_ERROR ("localtime", 1, "Timestamp outside valid range.");
 #endif
+#if defined(__NT__) || defined(_AIX)
+  while (tt < 0) {
+    ydelta -= 28;
+    tt += 883612800;
+  }
+#endif
   t = (time_t) tt;
 
   tm = localtime(&t);
   if (!tm) Pike_error ("localtime() on this system cannot handle "
-		       "the timestamp %ld.\n", (long) t);
+                       "the timestamp %"PRINTINT64"d.\n", (INT64) t);
+#if defined(__NT__) || defined(_AIX)
+  tm->tm_year += ydelta;
+#endif
   pop_n_elems(args);
   encode_tm_tz(tm);
 }
@@ -5849,8 +5882,25 @@ time_t mktime_zone(struct tm *date, int other_timezone, int tz)
 {
   time_t retval;
   int normalised_time;
+#if defined(__NT__) || defined(_AIX)
+  int ydelta = 0;
+  int tdelta = 0;
+#endif
 
   date->tm_wday = -1;		/* flag to determine failure */
+
+#if defined(__NT__) || defined(_AIX)
+  /* mktime() on NT and AIX do not support years before 1970.
+   *
+   * The calendar repeats every 28 years, so offset it appropriately.
+   * Offset years before 1971 in order to avoid issues near 1970-01-01.
+   */
+  while (date->tm_year < 71) {
+    date->tm_year += 28;
+    ydelta -= 28;
+    tdelta -= 883612800;
+  }
+#endif
 
   {
     int sec, min, hour;
@@ -5870,6 +5920,12 @@ time_t mktime_zone(struct tm *date, int other_timezone, int tz)
   }
 
   retval = mktime(date);
+
+#if defined(__NT__) || defined(_AIX)
+  /* Restore tm_year. */
+  date->tm_year += ydelta;
+#endif
+
   if (date->tm_wday < 0) {
     if (other_timezone) {
       /* NB: This happens for times near {MIN,MAX}_TIME_T. */
@@ -5940,10 +5996,15 @@ time_t mktime_zone(struct tm *date, int other_timezone, int tz)
 #endif
     retval += normalised_time + tz;
   }
+#if defined(__NT__) || defined(_AIX)
+  /* Compensate for the year offset above. */
+  retval += tdelta;
+#endif
+
   return retval;
 }
 
-static void unwind_tm()
+static int unwind_tm()
 {
   push_text("sec");
   push_text("min");
@@ -5958,6 +6019,8 @@ static void unwind_tm()
   Pike_sp--;
   dmalloc_touch_svalue(Pike_sp);
   push_array_items(Pike_sp->u.array);
+
+  return 8;
 }
 
 static int get_tm(const char *fname, int args, struct tm *date)
@@ -6021,7 +6084,7 @@ static int get_tm(const char *fname, int args, struct tm *date)
  *!
  *! @note
  *!   On some operating systems (notably AIX and Win32), dates before
- *!   00:00:00 UTC, Jan 1, 1970 are not supported.
+ *!   00:00:00 UTC, Jan 1, 1970 were not supported prior to Pike 9.0.
  *!
  *!   On most 32-bit systems, the supported range of dates is from Dec 13, 1901
  *!   20:45:52 UTC through to Jan 19, 2038 03:14:07 UTC (inclusive).
@@ -6038,15 +6101,14 @@ PMOD_EXPORT void f_mktime (INT32 args)
 {
   struct tm date;
   time_t retval;
-  int normalised_time, tz;
+  int tz;
 
   if (args<1)
     SIMPLE_TOO_FEW_ARGS_ERROR("mktime", 1);
 
   if(args == 1)
   {
-    unwind_tm();
-    args += 7;
+    args += unwind_tm() - 1;
   }
 
   tz = get_tm("mktime", args, &date);
@@ -6309,11 +6371,14 @@ PMOD_EXPORT void f_strftime (INT32 args)
     struct tm date;
     buffer[0] = 0;
 
-    unwind_tm();
-    get_tm("strftime", 8, &date);
+    check_all_args("strftime", args, BIT_STRING, BIT_MAPPING, 0);
+
+    get_tm("strftime", unwind_tm(), &date);
     pop_n_elems(8);
-    if (Pike_sp[-1].u.string->size_shift)
-      Pike_error("Only 8bit strings are supported\n");
+    if ((TYPEOF(Pike_sp[-1]) != PIKE_T_STRING) ||
+        Pike_sp[-1].u.string->size_shift) {
+      Pike_error("Only 8bit strings are supported.\n");
+    }
 
     strftime(buffer, sizeof(buffer), Pike_sp[-1].u.string->str, &date);
 
