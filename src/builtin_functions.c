@@ -6373,8 +6373,8 @@ PMOD_EXPORT void f_strftime (INT32 args)
 
     check_all_args("strftime", args, BIT_STRING, BIT_MAPPING, 0);
 
-    get_tm("strftime", unwind_tm(), &date);
-    pop_n_elems(8);
+    get_tm("strftime", args = unwind_tm(), &date);
+    pop_n_elems(args);
     if ((TYPEOF(Pike_sp[-1]) != PIKE_T_STRING) ||
         Pike_sp[-1].u.string->size_shift) {
       Pike_error("Only 8bit strings are supported.\n");
