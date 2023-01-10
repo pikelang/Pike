@@ -6173,11 +6173,11 @@ static void set_tz(char *tz)
 
 time_t mktime_zone(struct tm *date, int other_timezone, int tz)
 {
-  time_t retval;
+  INT64 retval;
   int normalised_time;
 #if defined(__NT__) || defined(_AIX)
-  int ydelta = 0;
-  int tdelta = 0;
+  unsigned int ydelta = 0;
+  unsigned int tdelta = 0;
 #endif
 
   if (tz <= -3600*100 || tz >= 3600*100)
@@ -6193,8 +6193,8 @@ time_t mktime_zone(struct tm *date, int other_timezone, int tz)
    */
   while (date->tm_year < 71) {
     date->tm_year += 28;
-    ydelta -= 28;
-    tdelta -= 883612800;
+    ydelta += 28;
+    tdelta += 883612800;
   }
 #endif
 
@@ -6219,7 +6219,7 @@ time_t mktime_zone(struct tm *date, int other_timezone, int tz)
 
 #if defined(__NT__) || defined(_AIX)
   /* Restore tm_year. */
-  date->tm_year += ydelta;
+  date->tm_year -= ydelta;
 #endif
 
   if (date->tm_wday < 0) {
@@ -6294,8 +6294,18 @@ time_t mktime_zone(struct tm *date, int other_timezone, int tz)
   }
 #if defined(__NT__) || defined(_AIX)
   /* Compensate for the year offset above. */
-  retval += tdelta;
+  retval -= tdelta;
 #endif
+
+  if ((retval < MIN_TIME_T) || (retval > MAX_TIME_T)) {
+#ifdef EOVERFLOW
+    errno = EOVERFLOW;
+#else
+    /* NT does not have EOVERFLOW. */
+    errno = ERANGE;
+#endif
+    retval = -1;
+  }
 
   return retval;
 }
