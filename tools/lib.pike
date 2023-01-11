@@ -468,6 +468,11 @@ int silent_do_cmd(array(string) cmd, mixed|void filter, int|void silent,
 			while(string s=inout->read())
 			  f->write(s);
 
+                        if (f->write_oob) {
+                          // Send an EOF.
+                          f->write_oob("\4");
+                        }
+
 			signal(signum("SIGINT"), 0);
 			// Some port forwarders doesn't handle unidirectional
 			// close too well and closes the connection completely
