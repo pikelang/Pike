@@ -2388,7 +2388,7 @@ PIKECLASS Backend
 	/* FIXME: This could be too late - the error might be
 	 * clobbered by the callbacks we might have called
 	 * above. */
-	if (!getsockopt (fd, SOL_SOCKET, SO_ERROR, (void *) &err, &len)) {
+        if (!fd_getsockopt (fd, SOL_SOCKET, SO_ERROR, (void *) &err, &len)) {
           PDWERR("[%d]BACKEND[%d]: POLLERR on %d, error=%d\n",
                  THR_NO, me->id, fd, err);
 	  errno = err;
@@ -5381,12 +5381,14 @@ PIKECLASS SelectBackend
 	  int err = 0;
 	  ACCEPT_SIZE_T len = sizeof (err);
           PDWERR("[%d]BACKEND[%d]: exception on %d\n", THR_NO, me->id, i);
-	  if (!getsockopt (i, SOL_SOCKET, SO_ERROR, (void *)&err, &len) &&
+          if (!fd_getsockopt (i, SOL_SOCKET, SO_ERROR, (void *)&err, &len) &&
 	      err) {
             PDWERR("[%d]BACKEND[%d]: error on %d, error=%d\n",
                    THR_NO, me->id, i, err);
 	    box->revents |= PIKE_BIT_FD_ERROR;
 	  } else {
+            PDWERR("[%d]BACKEND[%d]: read oob on %d\n",
+                   THR_NO, me->id, i);
 	    box->revents |= PIKE_BIT_FD_READ_OOB;
 	  }
 	}
