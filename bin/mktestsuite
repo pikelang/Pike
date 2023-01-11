@@ -145,11 +145,29 @@ define(test_any_equal_deprecated, [[DOTEST(EQUAL,dnl
 mixed a() { [[\$1]]; }
 mixed b() { return [[\$2]]; })]])
 
+define(test_any_approx, [[DOTEST(APPROX,dnl
+mixed a() { [[\$1]]; }
+mixed b() { return [[\$2]]; })]])
+
+define(test_any_approx_deprecated, [[DOTEST(APPROX,dnl
+#pragma no_deprecation_warnings
+mixed a() { [[\$1]]; }
+mixed b() { return [[\$2]]; })]])
+
 define(test_eq,[[DOTEST(EQ,dnl
 mixed a() { return [[\$1]]; }
 mixed b() { return [[\$2]]; })]])
 
 define(test_eq_deprecated,[[DOTEST(EQ,dnl
+#pragma no_deprecation_warnings
+mixed a() { return [[\$1]]; }
+mixed b() { return [[\$2]]; })]])
+
+define(test_approx,[[DOTEST(APPROX,dnl
+mixed a() { return [[\$1]]; }
+mixed b() { return [[\$2]]; })]])
+
+define(test_approx_deprecated,[[DOTEST(APPROX,dnl
 #pragma no_deprecation_warnings
 mixed a() { return [[\$1]]; }
 mixed b() { return [[\$2]]; })]])
@@ -205,6 +223,10 @@ void a() { class [[\$1]] { [[\$2]] }
 
 define(test_program, [[DOTEST(TRUE,dnl
 [[\$1]])]])
+
+define(test_program_approx, [[DOTEST(APPROX,dnl
+[[\$1]]
+mixed b() {return [[\$2]];})]])
 
 define(test_program_eq, [[DOTEST(EQ,dnl
 [[\$1]]

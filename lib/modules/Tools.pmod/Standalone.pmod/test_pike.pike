@@ -26,6 +26,8 @@ int maybe_tty = 1;
 
 mapping(string:int) cond_cache=([]);
 
+float float_precision = 1.0;
+
 #if constant(thread_create)
 #define HAVE_DEBUG
 #endif
@@ -766,6 +768,16 @@ int main(int argc, array(string) argv)
       }
     }
 
+  int mantissa_bits = Pike.get_runtime_info()->float_size - 9;
+  if (mantissa_bits > 23) {
+    // 32-bit IEEE has 23 bits mantissa.
+    // 64-bit IEEE has 52-bits mantissa.
+    mantissa_bits -= 3;
+  }
+
+  // NB: Allow fluctuation in the least significant decimal digit (ie 4bits).
+  float_precision = 1.0/(1<<(mantissa_bits - 5));
+
   // For easy access in spawned test scripts.
   putenv ("TEST_VERBOSITY", (string) verbose);
   putenv ("TEST_ON_TTY", (string) (maybe_tty && Stdio.Terminfo.is_tty()));
@@ -1420,6 +1432,60 @@ int main(int argc, array(string) argv)
 		}
 	      }
 	    }
+            break;
+
+          case "APPROX":
+            int match = 0;
+            float delta = 1.0;
+            if (floatp(a) && floatp(b)) {
+              if (a != 0.0) {
+                if (a > 0.0) {
+                  delta = a;
+                } else {
+                  delta = -a;
+                }
+              }
+              if (b != 0.0) {
+                if (b > 0.0) {
+                  if (b < delta) {
+                    delta = b;
+                  }
+                } else {
+                  if (-b < delta) {
+                    delta = -b;
+                  }
+                }
+              } else {
+                // When comparing against 0.0, we allow for
+                // a float_precision discrepancy.
+                if (delta > 1.0) {
+                  delta = 1.0;
+                }
+              }
+              delta *= float_precision;
+              match = ((a + delta >= b) && (a - delta <= b));
+            } else {
+              // For convenience, allow returning eg strings
+              // to signal errors.
+              match = equal(a, b);
+            }
+            if (match) {
+              successes++;
+            }
+            else {
+              watchdog_show_last_test();
+              log_msg(fname + " failed.\n");
+              print_code(source);
+              log_msg_result("o->a(): %O\n"
+                             "o->b(): %O\n",
+                             a, b);
+              if (floatp(a) && floatp(b)) {
+                log_msg_result("diff (a - b): %O\n"
+                               "expected precision: %O\n",
+                               a - b, delta);
+              }
+              errors++;
+            }
             break;
 
 	  default:
