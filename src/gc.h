@@ -259,7 +259,7 @@ static inline struct marker *get_marker(void *ptr) {
     return m;
 }
 
-static inline void remove_marker(void *ptr) {
+static inline void remove_marker(void *PIKE_UNUSED(ptr)) {
 }
 
 static inline void move_marker(struct marker *m, void *ptr) {

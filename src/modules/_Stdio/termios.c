@@ -439,7 +439,7 @@ void file_tcflush(INT32 args)
  *! @seealso
  *!   @[tcflush()]
  */
-void file_tcdrain(INT32 args)
+void file_tcdrain(INT32 PIKE_UNUSED(args))
 {
   push_int(!tcdrain(FD));
 }

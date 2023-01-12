@@ -2685,7 +2685,7 @@ static void f_super_class(INT32 args)
     push_int(0);
 }
 
-static void f_is_array(INT32 args)
+static void f_is_array(INT32 PIKE_UNUSED(args))
 {
   struct jobj_storage *jo = THIS_JOBJ;
   JNIEnv *env;

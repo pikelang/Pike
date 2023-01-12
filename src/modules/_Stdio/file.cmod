@@ -2822,8 +2822,8 @@ static int my_grantpt(int m)
 #define HAVE_OPENPTY
 #endif
 #elif defined(HAVE_POSIX_OPENPT) && defined(HAVE_PTSNAME)
-static int fd_openpty(int *master, int *slave, void *ignored_name,
-		      void *ignored_termp, void *ignored_winp)
+static int fd_openpty(int *master, int *slave, void *PIKE_UNUSED(name),
+                      void *PIKE_UNUSED(termp), void *PIKE_UNUSED(winp))
 {
   int m;
   int s;

@@ -1929,7 +1929,7 @@ static void f_compilation_resolv(INT32 args)
  *! @note
  *!   This function is called by @[change_compiler_compatibility()].
  */
-static void f_compilation_get_compilation_handler(INT32 args)
+static void f_compilation_get_compilation_handler(INT32 PIKE_UNUSED(args))
 {
   struct compilation *c = THIS_COMPILATION;
   struct object *handler;
