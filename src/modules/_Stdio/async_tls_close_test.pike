@@ -69,7 +69,7 @@ int main (int argc, array(string) argv)
 		// Clean close in blocking mode should block in
 		// tlscon->close until the other thread destructs the
 		// server and we get ECONNRESET.
-		successful = equal (res, ({1, 1, 0, 0, System.ECONNRESET}));
+                successful = equal (res, ({1, 0, 0, 0, System.ECONNRESET}));
 	      else
 		// Clean close in nonblocking mode shouldn't really
 		// close the fd, but the later shutdown should, and
