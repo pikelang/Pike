@@ -642,9 +642,14 @@ int close (void|string how, void|int clean_close, void|int dont_throw)
 	local_errno = err;
 	RETURN (0);
       }
-      else if( err != System.EPIPE )
+      else if (!(< System.EPIPE, System.ECONNRESET,
+#ifdef __NT__
+                   System.WSAECONNRESET,
+#endif
+               >)[err]) {
 	// Errors are normally thrown from close().
         error ("Failed to close SSL connection: %s\n", strerror (err));
+      }
     }
 
     if (stream && (stream->query_read_callback() || stream->query_write_callback())) {
