@@ -742,14 +742,9 @@ int close (void|string how, void|int clean_close, void|int dont_throw)
       shutdown();
       local_errno = err;
       if (dont_throw) {
-	local_errno = err;
 	RETURN (0);
       }
-      else if (!(< System.EPIPE, System.ECONNRESET,
-#ifdef __NT__
-                   System.WSAECONNRESET,
-#endif
-               >)[err]) {
+      else if (!(< 0, System.EPIPE, System.ECONNRESET, >)[err]) {
 	// Errors are normally thrown from close().
         error ("Failed to close SSL connection: %s.\n", strerror (err));
       }
