@@ -6176,8 +6176,7 @@ time_t mktime_zone(struct tm *date, int other_timezone, int tz)
   INT64 retval;
   int normalised_time;
 #if defined(__NT__) || defined(_AIX)
-  unsigned int ydelta = 0;
-  unsigned int tdelta = 0;
+  unsigned INT64 ydelta = 0;	/* Number of years. */
 #endif
 
   if (tz <= -3600*100 || tz >= 3600*100)
@@ -6191,10 +6190,9 @@ time_t mktime_zone(struct tm *date, int other_timezone, int tz)
    * The calendar repeats every 28 years, so offset it appropriately.
    * Offset years before 1971 in order to avoid issues near 1970-01-01.
    */
-  while (date->tm_year < 71) {
-    date->tm_year += 28;
-    ydelta += 28;
-    tdelta += 883612800;
+  if (date->tm_year < 71) {
+    ydelta = ((71 + 27 - date->tm_year)/28) * 28;
+    date->tm_year += ydelta;
   }
 #endif
 
@@ -6294,7 +6292,7 @@ time_t mktime_zone(struct tm *date, int other_timezone, int tz)
   }
 #if defined(__NT__) || defined(_AIX)
   /* Compensate for the year offset above. */
-  retval -= tdelta;
+  retval -= ydelta * 31557600;	/* 365 days and 6 hours. */
 #endif
 
   if ((retval < MIN_TIME_T) || (retval > MAX_TIME_T)) {
