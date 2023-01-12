@@ -40,10 +40,29 @@
  */
 FLOAT_TYPE FL(asinh)(FLOAT_TYPE x)
 {
-  if (x < 0) {
-    return -FL(log)(FL(sqrt)(x*x + 1.0) - x);
+  /* Cf https://en.wikipedia.org/wiki/Inverse_hyperbolic_functions */
+  FLOAT_TYPE x2 = x*x;
+  if (x2 < 1.0) {
+    /* Use expansion series when x*x is less than 1.0 in order
+     * to avoid issues with running out of mantissa in the
+     * argument to sqrt().
+     */
+    FLOAT_TYPE res = 0.0;
+    FLOAT_TYPE delta = x;
+    int i = 1;
+
+    while (delta) {
+      res += delta;
+
+      delta *= -i*i * x2;
+      delta /= (i + 1) * (i + 2);
+      i += 2;
+    }
+    return res;
+  } else if (x < 0.0) {
+    return -FL(log)(FL(sqrt)(x2 + 1.0) - x);
   }
-  return FL(log)(FL(sqrt)(x*x + 1.0) + x);
+  return FL(log)(FL(sqrt)(x2 + 1.0) + x);
 }
 FLOAT_TYPE FL(acosh)(FLOAT_TYPE x)
 {
