@@ -3056,6 +3056,7 @@ if test "x$with_devpoll" = "xno"; then :; else
   fi
 
   if test "x$ac_cv_header_sys_devpoll_h" = "xno"; then :; else
+      AC_MSG_CHECKING(whether struct dvpoll has the field dp_setp)
       AC_CACHE_VAL(pike_cv_struct_dvpoll_has_dp_setp, [
           AC_TRY_COMPILE([
 #include <sys/devpoll.h>
