@@ -24,7 +24,8 @@
 #include <fp_class.h>
 #endif
 
-#ifdef HAVE__ISNAN
+#if defined(HAVE__ISNAN) && !defined(HAVE_ISNAN) && !defined(isnan)
+/* Only fall back to using _isnan() if isnan() does not exist. */
 #define PIKE_ISNAN(X) _isnan(X)
 #else
 #define PIKE_ISNAN(X) isnan(X)

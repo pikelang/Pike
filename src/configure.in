@@ -4272,6 +4272,7 @@ AC_CHECK_FUNCS( \
  fpclass \
  fp_class_d \
  isinf \
+ isnan \
  _isnan \
  iszero \
  _finite \
