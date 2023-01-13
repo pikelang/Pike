@@ -3055,6 +3055,22 @@ if test "x$with_devpoll" = "xno"; then :; else
     AC_DEFINE_UNQUOTED(PIKE_POLL_DEVICE, "$pike_cv_poll_device")
   fi
 
+  if test "x$ac_cv_header_sys_devpoll_h" = "xno"; then :; else
+      AC_CACHE_VAL(pike_cv_struct_dvpoll_has_dp_setp, [
+          AC_TRY_COMPILE([
+#include <sys/devpoll.h>
+      ],[
+            struct dvpoll dp;
+            void *set = dp.dp_setp;
+          ],pike_cv_struct_dvpoll_has_dp_setp=yes,
+            pike_cv_struct_dvpoll_has_dp_setp=no)
+      ])
+      AC_MSG_RESULT($pike_cv_struct_dvpoll_has_dp_setp)
+      if test "x$pike_cv_struct_dvpoll_has_dp_setp" = "xyes"; then
+          AC_DEFINE(STRUCT_DVPOLL_HAS_DP_SETP)
+      fi
+  fi
+
   if test "x$ac_cv_header_sys_epoll_h" = "xyes"; then
     AC_MSG_CHECKING(if epoll is available)
     AC_CACHE_VAL(pike_cv_epoll_works, [

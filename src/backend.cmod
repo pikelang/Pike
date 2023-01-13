@@ -2726,6 +2726,16 @@ PIKECLASS Backend
 #define OPEN_POLL_DEVICE(X)	open(PIKE_POLL_DEVICE, O_RDWR)
 #define CHILD_NEEDS_TO_REOPEN
 
+#ifdef STRUCT_DVPOLL_HAS_DP_SETP
+#define DECLARE_POLL_EXTRAS		\
+  POLL_EVENT poll_fds[POLL_SET_SIZE];	\
+  struct dvpoll poll_request = {	\
+    poll_fds,				\
+    POLL_SET_SIZE,			\
+    0,					\
+    NULL,				\
+  }
+#else
 #define DECLARE_POLL_EXTRAS		\
   POLL_EVENT poll_fds[POLL_SET_SIZE];	\
   struct dvpoll poll_request = {	\
@@ -2733,6 +2743,7 @@ PIKECLASS Backend
     POLL_SET_SIZE,			\
     0,					\
   }
+#endif
 
 #define PDB_POLL(PFD, TIMEOUT)					\
   ((poll_request.dp_timeout = (TIMEOUT)),			\

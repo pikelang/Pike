@@ -470,6 +470,9 @@
 /* Define to the poll device (eg "/dev/poll") */
 #undef PIKE_POLL_DEVICE
 
+/* Define this if your struct dvpoll has a dp_setp */
+#undef STRUCT_DVPOLL_HAS_DP_SETP
+
 /* This works on Solaris or any UNIX where
  * waitpid can report ECHILD when running more than one at once
  * (or any UNIX where waitpid actually works)
