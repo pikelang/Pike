@@ -726,6 +726,18 @@ FILE *popen (char *,char *);
 char *getenv (char *);
 #endif
 
+#ifdef HAVE_SYNC_INSTRUCTION_MEMORY
+/* Solaris libc has the function, but no prototype.
+ *
+ * NB: <asm/sunddi.h> has an inline function that shadows
+ *     it when _BOOT is defined.
+ *
+ * There is also a corresponding kernel-api function
+ * kobj_sync_instruction_memory() declared in <sys/kobj_impl.h>.
+ */
+void sync_instruction_memory(caddr_t v, size_t len);
+#endif
+
 /* If this define is present, error() has been renamed to Pike_error() and
  * error.h has been renamed to pike_error.h
  * Expect to see other similar defines in the future. -Hubbe
