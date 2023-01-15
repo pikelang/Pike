@@ -130,6 +130,11 @@ o Protocols.LDAP.client
   LDAP connections secured with TLS/SSL now timeout if the server does not 
   respond within 10 seconds.   
 
+o Runtime
+
+  Fixed an issue where in some situations, some operations on large arrays
+  would have caused an integer overflow in the Pike runtime.
+
 o Sql.mysql
 
   Improved character set handling
