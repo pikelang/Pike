@@ -600,7 +600,7 @@ static INT32 low_lookup(struct array *v,
   b=v->size;
   while(b > a)
   {
-    c=(a+b)/2;
+    c=((unsigned INT32)a+(unsigned INT32)b)/2;
     q=fun(ITEM(v)+c,s);
     
     if(q < 0)
