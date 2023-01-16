@@ -31,7 +31,13 @@
 #include <sys/ioctl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+
+#ifdef HAVE_POLL_H
+#include <poll.h>
+#elif defined(HAVE_SYS_POLL_H)
 #include <sys/poll.h>
+#endif /* HAVE_POLL_H || HAVE_SYS_POLL_H */
+
 #include <fcntl.h>
 #include <time.h>
 #include <unistd.h>
