@@ -848,6 +848,12 @@ PIKECLASS Backend
       case T_INT:
 	new->tv.tv_sec = seconds->u.integer;
 	new->tv.tv_usec = 0;
+        if (!seconds->u.integer) {
+          /* We need accurate time in order to attempt to preserve
+           * ordering between different call_out(f, 0) calls.
+           */
+          INVALIDATE_CURRENT_TIME();
+        }
 	break;
 
       case T_FLOAT:
