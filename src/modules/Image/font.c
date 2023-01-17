@@ -96,11 +96,10 @@ extern const unsigned char image_default_font[];
 
 #include <sys/stat.h>
 
+
 #ifdef HAVE_FCNTL_H
 #include <fcntl.h>
-#endif
-
-#ifdef HAVE_SYS_FCNTL_H
+#elif defined(HAVE_SYS_FCNTL_H)
 #include <sys/fcntl.h>
 #endif
 
