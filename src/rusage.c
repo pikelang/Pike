@@ -312,6 +312,7 @@ PMOD_EXPORT cpu_time_t posix_process_gct_res (void)
 
 #endif
 
+#ifdef MIGHT_HAVE_POSIX_PROCESS_GCT
 /* From Linux man page clock_gettime(3), dated 2003-08-24:
  *
  * NOTE for SMP systems
@@ -337,6 +338,7 @@ static int posix_cputime_is_reliable (void)
 }
 #else
 #define posix_cputime_is_reliable() 1
+#endif
 #endif
 
 #if defined (MIGHT_HAVE_POSIX_MONOTONIC_GRT) &&				\
