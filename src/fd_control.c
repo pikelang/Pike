@@ -43,10 +43,6 @@
 #endif
 #include <errno.h>
 
-#ifdef HAVE_SYS_ERRNO_H
-#include <sys/errno.h>
-#endif
-
 #ifdef HAVE_WINSOCK2_H
 #include <winsock2.h>
 #elif defined(HAVE_WINSOCK_H)

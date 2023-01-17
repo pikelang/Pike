@@ -532,7 +532,7 @@ if test "x$pike_cv_sys_os" = xWindows_NT; then
   PIKE_FUNCS_NEED_DECLS(yes)
 fi
 
-AC_CHECK_HEADERS(unistd.h sys/stat.h sys/types.h sys/errno.h)
+AC_CHECK_HEADERS(unistd.h sys/stat.h sys/types.h)
 
 if test "$GCC" = "yes"; then :; else
 #
