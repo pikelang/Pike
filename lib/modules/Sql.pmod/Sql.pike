@@ -933,6 +933,15 @@ string host_info()
   return "Unknown connection to host";
 }
 
+protected string wild_to_glob(string wild)
+{
+  return replace(wild,
+                 ({ "?", "*", "[", "\\",
+                    "%", "_" }),
+                 ({ "\\?", "\\*", "\\[", "\\\\",
+                    "*", "?" }));
+}
+
 //! List available databases on this SQL-server.
 //!
 //! @param wild
@@ -956,8 +965,7 @@ array(string) list_dbs(string|void wild)
 		   } );
   }
   if (res && wild) {
-    res = filter(res,
-		 Regexp(replace(wild, ({"%", "_"}), ({".*", "."})))->match);
+    return glob(wild_to_glob(wild), res);
   }
   return res;
 }
@@ -992,8 +1000,7 @@ array(string) list_tables(string|void wild)
 		   }, col_name);
   }
   if (res && wild) {
-    res = filter(res,
-		 Regexp(replace(wild, ({"%", "_"}), ({".*", "."})))->match);
+    return glob(wild_to_glob(wild), res);
   }
   return res;
 }
@@ -1015,10 +1022,10 @@ array(mapping(string:mixed)) list_fields(string table, string|void wild)
     }
     if (wild) {
       res = filter(res,
-		   lambda(mapping row, function(string:int) match) {
-		     return match(row->name);
+                   lambda(mapping row, string g) {
+                     return glob(g, row->name);
 		   },
-		   Regexp(replace(wild, ({"%", "_"}), ({".*", "."})))->match);
+                   wild_to_glob(wild));
     }
     return res;
   }
