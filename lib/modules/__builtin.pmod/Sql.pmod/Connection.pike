@@ -1060,8 +1060,7 @@ array(string) list_dbs(string|void wild)
   array(string) res = list_dbs();
 
   if (res && wild) {
-    res = filter(res,
-		 Regexp(replace(wild, ({"%", "_"}), ({".*", "."})))->match);
+    res = glob(.wild_to_glob(wild), res);
   }
   return res;
 }
@@ -1112,8 +1111,7 @@ array(string) list_tables(string|void wild)
   array(string) res = low_list_tables();
 
   if (res && wild) {
-    res = filter(res,
-		 Regexp(replace(wild, ({"%", "_"}), ({".*", "."})))->match);
+    res = glob(.wild_to_glob(wild), res);
   }
   return res;
 }
@@ -1191,8 +1189,11 @@ array(mapping(string:mixed)) list_fields(string table, string|void wild)
   if (res && wild) {
     res =
       filter(res,
-	     map(res->name,
-		 Regexp(replace(wild, ({"%", "_"}), ({".*", "."})))->match));
+             map(res->name,
+                 lambda(string s, string g) {
+                   return glob(g, s);
+                 },
+                 .wild_to_glob(wild)));
   }
 
   return res;

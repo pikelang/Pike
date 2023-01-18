@@ -37,3 +37,12 @@ protected class NullArg
   }
 }
 NullArg null_arg = NullArg();
+
+string wild_to_glob(string wild)
+{
+  return replace(wild,
+                 ({ "?", "*", "[", "\\",
+                    "%", "_" }),
+                 ({ "\\?", "\\*", "\\[", "\\\\",
+                    "*", "?" }));
+}
