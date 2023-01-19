@@ -65,7 +65,7 @@ DECLARATIONS
   static const unsigned char PIKE_CONCAT (NAME, _elements)[] = VALUE;	\
   static const gss_OID_desc PIKE_CONCAT (NAME, _desc) = {		\
     sizeof (PIKE_CONCAT (NAME, _elements)) - 1,				\
-    &PIKE_CONCAT (NAME, _elements),					\
+    (unsigned char *)&PIKE_CONCAT (NAME, _elements),			\
   };									\
   static const gss_OID_desc * const NAME = &PIKE_CONCAT (NAME, _desc)
 
