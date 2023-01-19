@@ -122,13 +122,17 @@ struct pike_string *parser_system_string;
 struct pike_string *type_check_system_string;
 
 /* NOTE: There is a corresponding list to this one in
-   Tools.AutoDoc.PikeObjects
-
-   If new lfuns are added it might be beneficial to also add them to
-   that list.
-*/
+ *       Tools.AutoDoc.PikeObjects
+ *
+ * If new lfuns are added it might be beneficial to also add them to
+ * that list.
+ *
+ * NB: The extra NUL for __INIT is to inhibit an erroneous warning
+ *     by gcc 7.3.0 about offsets outside bounds when initializing
+ *     the compat_name further below.
+ */
 const char *const lfun_names[]  = {
-  "__INIT",
+  "__INIT\0",
   "create",
   "\0_destruct\0destroy",
   "_sprintf",
