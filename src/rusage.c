@@ -312,7 +312,9 @@ PMOD_EXPORT cpu_time_t posix_process_gct_res (void)
 
 #endif
 
-#ifdef MIGHT_HAVE_POSIX_PROCESS_GCT
+#if defined(GCT_RUNTIME_CHOICE) &&	   \
+  (defined(MIGHT_HAVE_POSIX_THREAD_GCT) || \
+   defined(MIGHT_HAVE_POSIX_PROCESS_GCT))
 /* From Linux man page clock_gettime(3), dated 2003-08-24:
  *
  * NOTE for SMP systems
