@@ -478,6 +478,7 @@ PIKECLASS CircularList
         Pike_error("The list is full, could not add value, "
                    "please allocate more space or use force.\n");
       }
+      if (!THIS->a->size) return;
       THIS->size--;
     }
     should_copy();
@@ -499,14 +500,15 @@ PIKECLASS CircularList
    *!       Add this number of new elements to the list.
    */
 
-  PIKEFUN void allocate(int elements)
+  PIKEFUN void allocate(int(0..) elements)
   {
     INT32 size = THIS->a->size+elements;
     INT32 endpos = THIS->a->size - THIS->pos; //distanse of pos from the end
-    if (elements <= 0)
+    if (elements < 0)
     {
       Pike_error("Allocate expects a value larger than zero.\n");
     }
+    if (!elements) return;
     if(THIS->a->refs <= 1 && THIS->a->malloced_size >= size)
     {
       THIS->a->size = size;
@@ -794,6 +796,7 @@ PIKECLASS CircularList
         Pike_error("The list is full, could not add value, "
                    "please allocate more memory or use force.\n");
       }
+      if (!THIS->a->size) return;
       if (++THIS->pos >= THIS->a->size) {
         THIS->pos -= THIS->a->size;
       }
@@ -840,6 +843,8 @@ PIKECLASS CircularList
         Pike_error("The list is full, could not add value, "
                    "please allocate more space or use force.\n");
       }
+      if (!THIS->a->size) return;
+
       THIS->size--;
     }
     should_copy();
@@ -860,10 +865,13 @@ PIKECLASS CircularList
    *!   @[CircularList] with the maximum size of arg.
    */
 
-  PIKEFUN void create(array|int arg)
+  PIKEFUN void create(array|int(0..) arg)
   {
     if (TYPEOF(*arg) == T_INT)
     {
+      if (arg->u.integer < 0) {
+        SIMPLE_ARG_TYPE_ERROR(NULL, 1, "int(0..)");
+      }
       THIS->a =allocate_array_no_init(arg->u.integer, 0);
       THIS->a->type_field = BIT_INT;
     }
