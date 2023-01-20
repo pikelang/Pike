@@ -448,22 +448,39 @@ PIKECLASS CircularList
   }
 
 
-/*! @decl void add(mixed value)
- *!   Add a value at the front of the list
- *!
- *! @param value
- *!   The value to add.
- *!
- *! @throws
- *!   An error if the list is full.
- */
+  /*! @decl void add(mixed value, int(0..1)|void force)
+   *!   Add a value at the front of the list
+   *!
+   *! @param value
+   *!   The value to add.
+   *!
+   *! @param force
+   *!   Add the value even if the list is full, in which case
+   *!   the element at the back of the list will be removed.
+   *!
+   *! @throws
+   *!   An error if the list is full and @[force] is false.
+   *!
+   *! @note
+   *!   @[force] was not supported in Pike 8.0.1800 and earlier.
+   *!
+   *! @note
+   *!   This is the same operation as @[push_front()].
+   *!
+   *! @seealso
+   *!   @[push_back()], @[push_front()]
+   */
 
-  PIKEFUN void add(mixed value)
+  PIKEFUN void add(mixed value, int(0..1)|void force)
   {
     struct svalue ind;
     if (THIS->size == THIS->a->size)
     {
-      Pike_error("The list is full, could not add value, please allocate more space.\n");
+      if (!force || !force->u.integer) {
+        Pike_error("The list is full, could not add value, "
+                   "please allocate more space or use force.\n");
+      }
+      THIS->size--;
     }
     should_copy();
     THIS->pos--;
@@ -747,22 +764,42 @@ PIKECLASS CircularList
   }
 
 
-  /*! @decl void push_back(mixed value)
+  /*! @decl void push_back(mixed value, int(0..1)|void force)
    *!
    *! Add a new value at the end of the list.
    *!
    *! @param value
    *!    The value to add.
+   *!
+   *! @param force
+   *!   Add the value even if the list is full, in which case
+   *!   the element at the front of the list will be removed.
+   *!
+   *! @throws
+   *!   An error if the list is full and @[force] is false.
+   *!
+   *! @note
+   *!   @[force] was not supported in Pike 8.0.1800 and earlier.
+   *!
+   *! @seealso
+   *!   @[add()], @[push_front()]
    */
 
-  PIKEFUN void push_back(mixed value)
+  PIKEFUN void push_back(mixed value, int(0..1)|void force)
   {
     struct svalue ind;
-    should_copy();
     if (THIS->size == THIS->a->size)
     {
-      Pike_error("The list is full, could not add value, please allocate more memory.\n");
+      if (!force || !force->u.integer) {
+        Pike_error("The list is full, could not add value, "
+                   "please allocate more memory or use force.\n");
+      }
+      if (++THIS->pos >= THIS->a->size) {
+        THIS->pos -= THIS->a->size;
+      }
+      THIS->size--;
     }
+    should_copy();
 
     SET_SVAL(ind, T_INT, NUMBER_NUMBER, integer, circ2array(THIS->size));
     THIS->size++;
@@ -770,20 +807,40 @@ PIKECLASS CircularList
   }
 
 
-  /*! @decl void push_front(mixed value)
+  /*! @decl void push_front(mixed value, int(0..1)|void force)
    *!
    *! Add a new value at the front of the list.
    *!
    *! @param value
    *!    The value to add.
+   *!
+   *! @param force
+   *!   Add the value even if the list is full, in which case
+   *!   the element at the back of the list will be removed.
+   *!
+   *! @throws
+   *!   An error if the list is full and @[force] is false.
+   *!
+   *! @note
+   *!   @[force] was not supported in Pike 8.0.1800 and earlier.
+   *!
+   *! @note
+   *!   This is the same operation as @[push_front()].
+   *!
+   *! @seealso
+   *!   @[add()], @[push_back()]
    */
 
-  PIKEFUN void push_front(mixed value)
+  PIKEFUN void push_front(mixed value, int(0..1)|void force)
   {
     struct svalue ind;
     if (THIS->size == THIS->a->size)
     {
-      Pike_error("The list is full, could not add value, please allocate more space.\n");
+      if (!force || !force->u.integer) {
+        Pike_error("The list is full, could not add value, "
+                   "please allocate more space or use force.\n");
+      }
+      THIS->size--;
     }
     should_copy();
     THIS->pos--;
