@@ -3059,8 +3059,12 @@ if test "x$with_devpoll" = "xno"; then :; else
       AC_MSG_CHECKING(whether struct dvpoll has the field dp_setp)
       AC_CACHE_VAL(pike_cv_struct_dvpoll_has_dp_setp, [
           AC_TRY_COMPILE([
+/* NB: The extra field also causes <sys/devpoll.h> to require
+ *     <signal.h> to be included before in order to get sigset_t.
+ */
+#include <signal.h>
 #include <sys/devpoll.h>
-      ],[
+          ],[
             struct dvpoll dp;
             void *set = dp.dp_setp;
           ],pike_cv_struct_dvpoll_has_dp_setp=yes,
