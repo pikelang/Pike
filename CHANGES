@@ -1,3 +1,20 @@
+Changes since Pike 8.0.1738 (release 15)
+----------------------------------------------------------------------
+
+New Features
+------------
+
+o ADT.CircularList
+
+  add(), push_front() and push_back() now take an optional second
+  argument to force overwrite if the list is full.
+
+Building & Tools
+----------------
+
+o Adopted Gz configure checks to work with/accept zlib 1.2.12 changed
+  behaviour.
+
 Changes since Pike 8.0.1116 (release 14)
 ----------------------------------------------------------------------
 
@@ -165,9 +182,6 @@ o Use updated FFI API in Java module, to better support recent libffi.
 
 o Fix testsuite generation for BSD m4 users; POSIX systems must continue
   to use GNU m4 (gm4).
-
-o Adopted Gz configure checks to work with/accept zlib 1.2.12 changed
-  behaviour.
 
 Changes since Pike 8.0.702 (release 13)
 ----------------------------------------------------------------------
