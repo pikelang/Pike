@@ -968,7 +968,7 @@ test_eval_error(_ADT.CircularList a = _ADT.CircularList(({1,2,3,4}));
 
 test_any_equal([[
   // NB: This triggers a special case in push_back().
-  _ADT.CircularList a = _ADT.CircularList();
+  _ADT.CircularList a = _ADT.CircularList(4);
   a->push_front(1);
   a->push_front(2);
   a->push_front(3);
