@@ -966,6 +966,19 @@ test_eval_error(_ADT.CircularList a = _ADT.CircularList(({1,2,3,4}));
 		a->pop_front();
 		return values(a))
 
+test_any_equal([[
+  // NB: This triggers a special case in push_back().
+  _ADT.CircularList a = _ADT.CircularList();
+  a->push_front(1);
+  a->push_front(2);
+  a->push_front(3);
+  a->push_front(4);
+  a->push_front(5, 1);
+  a->push_back(6, 1);
+  a->push_back(7, 1);
+  return values(a);
+]], ({ 3, 2, 6, 7 }))
+
 
 *************************** test cast **************************************
 
