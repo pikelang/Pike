@@ -86,7 +86,9 @@ PIKECLASS CircularList
  *!   An error if the index is out of range.
  */
 
-  PIKEFUN mixed `[](int index) {
+  PIKEFUN mixed `[](int index)
+    flags ID_PROTECTED;
+  {
     struct svalue ind;
     FIX_AND_CHECK_INDEX(index, THIS->size, 0);
     SET_SVAL(ind, T_INT, NUMBER_NUMBER, integer, circ2array(index));
@@ -113,7 +115,9 @@ PIKECLASS CircularList
  */
 
   PIKEFUN mixed `[]=(int index, mixed value, mixed|void context,
-                     int|void access) {
+                     int|void access)
+    flags ID_PROTECTED;
+  {
     struct svalue ind;
     FIX_AND_CHECK_INDEX(index, THIS->size, 0);
     SET_SVAL(ind, T_INT, NUMBER_NUMBER, integer, circ2array(index));
@@ -138,6 +142,7 @@ PIKECLASS CircularList
 
 
   PIKEFUN object `+(object ... coll)
+    flags ID_PROTECTED;
   {
     struct array *a;
     struct CircularList_struct *tmpList;
@@ -214,6 +219,7 @@ PIKECLASS CircularList
 
 
   PIKEFUN int(0..1) _equal(mixed coll)
+    flags ID_PROTECTED;
   {
     if (TYPEOF(*coll) == T_OBJECT &&
 	coll->u.object->prog == CircularList_program)
@@ -278,6 +284,7 @@ PIKECLASS CircularList
    */
 
   PIKEFUN array _indices()
+    flags ID_PROTECTED;
   {
     ptrdiff_t size = THIS->size;
     struct array *a;
@@ -365,6 +372,7 @@ PIKECLASS CircularList
  */
 
   PIKEFUN int _search(mixed value, void|int start)
+    flags ID_PROTECTED;
   {
     int s;
     int retval;
@@ -406,6 +414,7 @@ PIKECLASS CircularList
  */
 
   PIKEFUN int _sizeof()
+    flags ID_PROTECTED;
   {
     RETURN THIS->size;
   }
@@ -417,6 +426,7 @@ PIKECLASS CircularList
    */
 
   PIKEFUN array _values()
+    flags ID_PROTECTED;
   {
     struct array *a;
     int end;
