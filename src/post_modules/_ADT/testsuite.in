@@ -91,12 +91,12 @@ test_eval_error(_ADT.Sequence a = _ADT.Sequence(({1,2,3,4,5,6,7,8,9}));
 
 test_any_equal(_ADT.Sequence a = _ADT.Sequence(({1,2,3,4,5,6,7,8,9}));
 	       int retval = a->_remove_element(1);
-	       return ({a[1], retval, a->_sizeof()}),({3, 2, 8}))
+               return ({a[1], retval, sizeof(a)}),({3, 2, 8}))
 
 
 test_eval_error(_ADT.Sequence a = _ADT.Sequence(({1,2,3,4,5,6,7,8,9}));
 		a->_remove_element(-1);
-		return (a[8] == 9 && a->_sizeof() == 8))
+                return (a[8] == 9 && sizeof(a) == 8))
 
 
 test_any_equal(_ADT.Sequence a = _ADT.Sequence(({1,2,3,4,5,6,7,8,9}));
@@ -118,14 +118,14 @@ test_any_equal(_ADT.Sequence a = _ADT.Sequence(({1,2,3,4,1,2,3,4}));
 
 test_any_equal(_ADT.Sequence a = _ADT.Sequence(({1,2,3,4,5,6,7,8,9}));
 	       mixed retval = a->delete_value(11);
-	       return ({retval, a->_sizeof()}),({-1,9}))
+               return ({retval, sizeof(a)}),({-1,9}))
 
 ********************** test add ********************************************
 
 
 test_true(_ADT.Sequence a = _ADT.Sequence(({1,2,3,4,1,2,3,4}));
 	  a->add(99);
-	  return (a[9] == 99 && a->_sizeof() == 10))
+          return (a[9] == 99 && sizeof(a) == 10))
 
 *************************** test values ************************************
 
@@ -174,16 +174,16 @@ test_any(_ADT.Sequence a = _ADT.Sequence(({1,2,3,4,1,2,3,4}));
 *************************** test search ************************************
 
 test_any(_ADT.Sequence a = _ADT.Sequence(({1,2,3,4,1,2,3,4}));
-          return a->_search(3), 2)
+          return search(a, 3), 2)
 
 test_any(_ADT.Sequence a = _ADT.Sequence(({1,2,3,4,1,2,3,4}));
-          return a->_search(3, 2), 2)
+          return search(a, 3, 2), 2)
 
 test_any(_ADT.Sequence a = _ADT.Sequence(({1,2,3,4,1,2,3,4}));
-          return a->_search(3, 3), 6)
+          return search(a, 3, 3), 6)
 
 test_any(_ADT.Sequence a = _ADT.Sequence(({1,2,3,4,1,2,3,4}));
-          return a->_search(11, 0), -1)
+          return search(a, 11, 0), -1)
 
 *************************** test cast **************************************
 
@@ -762,12 +762,12 @@ test_eval_error(_ADT.CircularList l = _ADT.CircularList(({1,2,3,4,5,6,7,8,9}));
 
 test_any_equal(_ADT.CircularList l = _ADT.CircularList(({1,2,3,4,5,6,7,8,9}));
 	       int retval = l->_remove_element(1);
-	       return ({l[1], retval, l->_sizeof()}),({3, 2, 8}))
+               return ({l[1], retval, sizeof(l)}),({3, 2, 8}))
 
 
 test_eval_error(_ADT.CircularList a = _ADT.CircularList(({1,2,3,4,5,6,7,8,9}));
 		l->_remove_element(-1);
-		return (l[8] == 9 && a->_sizeof() == 8))
+                return (l[8] == 9 && sizeof(a) == 8))
 
 
 test_any_equal(_ADT.CircularList l = _ADT.CircularList(({1,2,3,4,5,6,7,8,9}));
@@ -796,7 +796,7 @@ test_any_equal(_ADT.CircularList l = _ADT.CircularList(({1,2,3,4,1,2,3,4}));
 
 test_any_equal(_ADT.CircularList l = _ADT.CircularList(({1,2,3,4,5,6,7,8,9}));
 	       mixed retval = l->delete_value(11);
-	       return ({retval, l->_sizeof()}),({-1,9}))
+               return ({retval, sizeof(l)}),({-1,9}))
 
 
 test_any_equal(_ADT.CircularList l = _ADT.CircularList(({1,2,3,4,5,6,7,8,9}));
@@ -810,7 +810,7 @@ test_any_equal(_ADT.CircularList l = _ADT.CircularList(({1,2,3,4,5,6,7,8,9}));
 test_true(_ADT.CircularList l = _ADT.CircularList(({1,2,3,4,1,2,3,4}));
 	  l->clear();
 	  l->add(99);
-	  return (l[0] == 99 && l->_sizeof() == 1))
+          return (l[0] == 99 && sizeof(l) == 1))
 
 
 test_eval_error(_ADT.CircularList l = _ADT.CircularList(({1,2,3,4,5,6,7,8,9}));
@@ -873,22 +873,22 @@ test_any(_ADT.CircularList a = _ADT.CircularList(({1,2,3,4,1,2,3,4}));
 *************************** test search ************************************
 
 test_any(_ADT.CircularList l = _ADT.CircularList(({1,2,3,4,1,2,3,4}));
-          return l->_search(3), 2)
+          return search(l, 3), 2)
 
 test_any(_ADT.CircularList l = _ADT.CircularList(({1,2,3,4,1,2,3,4}));
-          return l->_search(3, 2), 2)
+          return search(l, 3, 2), 2)
 
 test_any(_ADT.CircularList l = _ADT.CircularList(({1,2,3,4,1,2,3,4}));
-         return l->_search(3, 3), 6)
+         return search(l, 3, 3), 6)
 
 test_any(_ADT.CircularList l = _ADT.CircularList(({1,2,3,4,1,2,3,4}));
-          return l->_search(11, 0), -1)
+          return search(l, 11, 0), -1)
 
 test_any(_ADT.CircularList l = _ADT.CircularList(({1,2,3,4,1,2,3,4}));
 	 l->clear();
 	 l->add(1);
 	 l->add(2);
-	 return l->_search(3), -1)
+         return search(l, 3), -1)
 
 ************************** test +  - & *************************************
 
@@ -1004,7 +1004,7 @@ test_any_equal(_ADT.CircularList a = _ADT.CircularList(({1,2,3,4,1,2,3,4}));
 	       a->pop_back();
 	       a->add(11);
 	       a->allocate(2);
-               return a->_values(), ({11,1,1,2,3}))
+               return values(a), ({11,1,1,2,3}))
 
 test_any_equal(_ADT.CircularList a = _ADT.CircularList(5);
 	       a->push_front(2);
@@ -1012,7 +1012,7 @@ test_any_equal(_ADT.CircularList a = _ADT.CircularList(5);
 	       a->push_back(3);
 	       a->push_back(4);
 	       a->allocate(5);
-	       return a->_values(), ({1,2,3,4}))
+               return values(a), ({1,2,3,4}))
 
 // LysLysKOM 20179471/Pike mailinglist 13520.
 test_any(
