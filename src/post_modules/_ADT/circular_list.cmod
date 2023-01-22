@@ -619,9 +619,29 @@ PIKECLASS CircularList
   /*! @decl void clear()
    *!   Clear the contents of the list.
    *!
+   *! @deprecated _m_clear()
    */
 
   PIKEFUN void clear()
+  {
+    int oldsize;
+    should_copy();
+    oldsize = THIS->a->size;
+    THIS->a = resize_array(THIS->a, 0);
+    THIS->a = resize_array(THIS->a, oldsize);
+    THIS->size =0;
+    THIS->pos  =0;
+  }
+
+  /*! @decl void _m_clear()
+   *!   Clear the contents of the list.
+   *!
+   *! @seealso
+   *!   @[clear()]
+   */
+
+  PIKEFUN void _m_clear()
+    flags ID_PROTECTED;
   {
     int oldsize;
     should_copy();
