@@ -312,16 +312,24 @@ PIKECLASS CircularList
  *! @throws
  *!   An error if the index is out of range.
  *!
+ *! @note
+ *!  The @[max_size] is increased by one.
+ *!
+ *! @seealso
+ *!   @[_remove_element()]
  */
 
   PIKEFUN void _insert_element(int index, mixed value)
   {
-    FIX_AND_CHECK_INDEX(index, THIS->size, 0);
+    int ind;
+    FIX_AND_CHECK_INDEX(index, THIS->size, 1);
     should_copy();
-    index = circ2array(index);
-    THIS->a = array_insert(THIS->a, value, index);
+    ind = circ2array(index);
+    THIS->a = array_insert(THIS->a, value, ind);
     THIS->size++;
-
+    if (index && (ind <= THIS->pos)) {
+      THIS->pos++;
+    }
   }
 
 /*! @decl mixed _remove_element(int index)
@@ -335,20 +343,26 @@ PIKECLASS CircularList
  *!
  *! @throws
  *!   An error if the index is out of range.
+ *!
+ *! @note
+ *!  The @[max_size] is decreased by one.
+ *!
+ *! @seealso
+ *!   @[_insert_element()]
  */
 
   PIKEFUN mixed _remove_element(int index)
   {
-    struct svalue s;
-
     FIX_AND_CHECK_INDEX(index, THIS->size, 0);
 
     index = circ2array(index);
-    s = *(THIS->a->item + index);
+    push_svalue(THIS->a->item + index);
     should_copy();
     THIS->a = array_remove(THIS->a, index);
     THIS->size--;
-    push_svalue(&s);
+    if (index < THIS->pos) {
+      THIS->pos--;
+    }
   }
 
 
