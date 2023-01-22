@@ -77,7 +77,7 @@ PIKECLASS CircularList
  *! Index operator
  *!
  *! @param index
- *!   The index to get the value for, could be negative to index from the end.
+ *!   The index to get the value for, may be negative to index from the end.
  *!
  *! @returns
  *!   The value at the index @[index]
@@ -872,7 +872,7 @@ PIKECLASS CircularList
    *!   @[force] was not supported in Pike 8.0.1800 and earlier.
    *!
    *! @note
-   *!   This is the same operation as @[push_front()].
+   *!   This is the same operation as @[add()].
    *!
    *! @seealso
    *!   @[add()], @[push_back()]
