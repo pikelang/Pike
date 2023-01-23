@@ -751,11 +751,55 @@ test_eval_error(_ADT.CircularList l = _ADT.CircularList(({1,2,3,4,5,6,7,8,9}));
 	  	return 0)
 
 
+test_any_equal(_ADT.CircularList l = _ADT.CircularList(({1,2,3,4,5,6,7,8,9}));
+               l->clear();
+               l->add(1);
+               l->_insert_element(1, 99);
+               return values(l), ({ 1, 99 }))
+
 test_eval_error(_ADT.CircularList l = _ADT.CircularList(({1,2,3,4,5,6,7,8,9}));
-	  	l->clear();
-		l->add(1);
-		l->_insert_element(1, 99);
-	  	return 0)
+                l->clear();
+                l->add(1);
+                l->_insert_element(2, 99);
+                return 0)
+
+test_any_equal([[
+  array(array(int)) ret = ({});
+  int i;
+  for (i = 0; i < 5; i++) {
+    _ADT.CircularList l = _ADT.CircularList(4);
+    int j;
+    for (j = 0; j < i; j++) {
+      l->push_back("PAD", 1);
+    }
+    for (j = 0; j < 4; j++) {
+      l->push_back(j, 1);
+    }
+    // Insert a 4 after the items pushed above.
+    l->_insert_element(sizeof(l), 4);
+    ret += ({ values(l) });
+  }
+  return ret;
+]], ({ ({ 0, 1, 2, 3, 4 }) * 5 }))
+
+test_any_equal([[
+  array(array(int)) ret = ({});
+  int i;
+  for (i = 0; i < 5; i++) {
+    _ADT.CircularList l = _ADT.CircularList(4);
+    int j;
+    for (j = 0; j < i; j++) {
+      l->push_back("PAD", 1);
+    }
+    for (j = 0; j < 4; j++) {
+      l->push_back(j, 1);
+    }
+    // Insert a -1 before the items pushed above.
+    l->_insert_element(0, -1);
+    ret += ({ values(l) });
+  }
+  return ret;
+]], ({ ({ -1, 0, 1, 2, 3 }) * 5 }))
 
 ************************** test remove ************************************
 
