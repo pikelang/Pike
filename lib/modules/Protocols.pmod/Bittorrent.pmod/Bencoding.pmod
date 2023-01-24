@@ -68,33 +68,54 @@ __deprecated__ array(string|int|array|mapping) _decode(string what)
   return ({ decode(b), b->read() });
 }
 
-//! Encodes a Bittorrent bencoded data chunk.
-string encode(string|int|array|mapping data)
+protected void low_encode(string|int|array|mapping data, Stdio.Buffer buf)
 {
    switch (sprintf("%t",data))
    {
       case "int":
-	 return sprintf("i%de",data);
+         buf->sprintf("i%de",data);
+         break;
       case "string":
-	 return sprintf("%d:%s",strlen(data),data);
+         buf->sprintf("%d:%s", strlen(data), data);
+         break;
       case "array":
-	 return "l"+map(data,encode)*""+"e";
+         buf->add("l");
+         map(data, low_encode, buf);
+         buf->add("e");
+         break;
       case "mapping":
-	 string res="d";
-	 array v=(array)data;
-	 sort(column(v,0),v);
-	 foreach (v;;[string|int|array|mapping key,
-		      string|int|array|mapping value])
-	 {
-	    if (!stringp(key))
-	       error("dictionaries (mappings) must have "
-		     "string keys!\n");
-	    res+=encode(key)+encode(value);
-	 }
-	 return res+"e";
+         buf->add("d");
+         array v=(array)data;
+         sort(column(v,0),v);
+         foreach (v;;[string|int|array|mapping key,
+                      string|int|array|mapping value])
+         {
+            if (!stringp(key))
+               error("dictionaries (mappings) must have "
+                     "string keys!\n");
+            buf->sprintf("%d:%s", strlen(key), key);
+            low_encode(value, buf);
+         }
+         buf->add("e");
+         break;
       default:
-	 error("Cannot Bittorrent-Bencode type: %t\n",data);
+         error("Cannot Bittorrent-Bencode type: %t\n",data);
    }
+}
+
+//! Encodes a Bittorrent bencoded data chunk.
+string encode(string|int|array|mapping data)
+{
+   // Check for the trivial cases.
+   if (intp(data)) {
+      return sprintf("i%de", data);
+   }
+   if (stringp(data)) {
+      return sprintf("%d:%s", strlen(data), data);
+   }
+   Stdio.Buffer buf = Stdio.Buffer();
+   low_encode(data, buf);
+   return buf->read();
 }
 
 private protected array(string) bits=

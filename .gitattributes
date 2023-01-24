@@ -203,7 +203,6 @@ Makefile.rl -space_indent tab_indent
 /lib/modules/Pike.pmod/module.pmod mixed_indent
 /lib/modules/Pike.pmod/testsuite.in mixed_indent
 /lib/modules/Process.pmod mixed_indent
-/lib/modules/Protocols.pmod/Bittorrent.pmod/Bencoding.pmod mixed_indent
 /lib/modules/Protocols.pmod/Bittorrent.pmod/DHT.pike mixed_indent
 /lib/modules/Protocols.pmod/Bittorrent.pmod/DHT.test mixed_indent
 /lib/modules/Protocols.pmod/Bittorrent.pmod/Generator.pike mixed_indent
