@@ -1217,16 +1217,16 @@ int distance_exp(string h1, string h2) {
     return UNDEFINED;
   }
 
-  foreach(h1; int i; int c) {
-    int t = c ^ h2[i];
+  foreach(h1^h2; int i; int t) {
     if (!t) continue;
 
-    int bit = (19-i) * 8;
-    for(int b=7; b >= 0; b--) {
-      if (t >= (1<<b)) {
-	return bit+b;
-      }
-    }
+    int bit = (20-i) * 8;
+    int mask = 0x80;
+    do {
+      bit--;
+      if (t & mask) return bit;
+      mask >>= 1;
+    } while(mask);
 
     return bit;
   }
