@@ -3,6 +3,12 @@
 // DHT testsuite
 //
 
+#ifndef MAX_DHT_NODES
+// Default to testing with 25 nodes.
+#define MAX_DHT_NODES	25
+#endif
+
+// Routing table for 200 nodes.
 constant routing_table_data = #"346a9f2acb261ab701e6a912a481955396f53756	127.0.0.1   	  7000	 1	0
 23519e8b5424632049d52b8c1539ee04bd57cb6c	127.0.0.1   	  7001	 1	1   
 168ac50916731543d425c30efb206e3ba7362695	127.0.0.1   	  7002	 1	2   
@@ -493,6 +499,7 @@ void restore_routing_table(string data, object dht) {
 	dht->add_node(@node_info[0..2]);
       }
     }
+    if (i > MAX_DHT_NODES) break;
   }
 }
 
@@ -514,6 +521,7 @@ int main(int argc, array(string) argv) {
     ]);
     dhts += ({ tmp });
     dhts_by_id[node_id] = tmp->dht;
+    if (i > MAX_DHT_NODES) break;
   }
 
   Tools.Testsuite.log_status("Binding ports for all DHT instances.");
