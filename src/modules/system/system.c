@@ -1876,7 +1876,12 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port,
                   int inet_flags)
 {
 #ifdef HAVE_GETADDRINFO
-  struct addrinfo hints = { 0, PF_UNSPEC, 0, 0, 0, NULL, NULL, NULL, }, *res;
+  struct addrinfo hints = {
+    0, PF_UNSPEC, 0, 0,
+#ifdef STRUCT_ADDRINFO_HAS__AI_PAD
+    0,	/* _ai_pad, only present on Solaris 11 when compiling for SparcV9. */
+#endif
+    0, NULL, NULL, NULL, }, *res;
   char servnum_buf[20];
 #endif /* HAVE_GETADDRINFO */
   int err;

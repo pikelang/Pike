@@ -15,6 +15,9 @@
 @TOP@
 @BOTTOM@
 
+/* Define if struct addrinfo has the field _ai_pad. */
+#undef STRUCT_ADDRINFO_HAS__AI_PAD
+
 /* Define if you have solaris style gethostbyname_r. */
 #undef HAVE_SOLARIS_GETHOSTBYNAME_R
 

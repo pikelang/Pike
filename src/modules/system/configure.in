@@ -143,6 +143,30 @@ if test $pike_cv_have_solaris_gethostbyname_r = yes; then
   AC_DEFINE(HAVE_SOLARIS_GETHOSTBYNAME_R)
 fi
 
+# <netdb.h> struct addrinfo has the field _ai_pad after
+# the field ai_protocol and before the field ai_addrlen
+# on Solaris 11 when compiling for SparcV9.
+AC_MSG_CHECKING(whether struct addrinfo has the field _ai_pad)
+
+AC_CACHE_VAL(pike_cv_struct_addrinfo_has__ai_pad,
+[
+AC_TRY_LINK([
+#define _REENTRANT
+#define _THREAD_SAFE
+#include <netdb.h>
+],[
+  struct addrinfo ai;
+  ai._ai_pad = 0;
+],pike_cv_struct_addrinfo_has__ai_pad=yes,
+pike_cv_struct_addrinfo_has__ai_pad=no)
+])
+
+AC_MSG_RESULT($pike_cv_struct_addrinfo_has__ai_pad)
+
+if test $pike_cv_struct_addrinfo_has__ai_pad = yes; then
+  AC_DEFINE(STRUCT_ADDRINFO_HAS__AI_PAD)
+fi
+
 
 AC_MSG_CHECKING(for OSF1 style gethostbyname_r)
 
