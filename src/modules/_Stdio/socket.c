@@ -137,7 +137,7 @@ static void do_close(struct port *p)
  *!   (even though it was documented as above).
  *!
  *! @seealso
- *!   @[query_id]
+ *!   @[query_id], @[set_accept_callback()]
  */
 static void port_set_id(INT32 args)
 {
@@ -158,6 +158,23 @@ static void port_set_id(INT32 args)
     sub_ref(Pike_fp->current_object);
   }
   pop_n_elems(args-1);
+}
+
+/*! @decl void set_accept_callback(function|void accept_callback)
+ *!
+ *! Change or remove the accept callback.
+ *!
+ *! @param accept_callback
+ *!   New accept callback.
+ *!
+ *! @seealso
+ *!   @[bind()], @[listen()], @[set_id()]
+ */
+static void port_set_accept_callback(INT32 args)
+{
+  push_undefined();	/* Return value and argument fallback if void. */
+  args++;
+  assign_accept_cb(THIS, Pike_sp-args);
 }
 
 /*! @decl mixed query_id()
@@ -809,6 +826,9 @@ void init_stdio_port(void)
   ADD_FUNCTION("listen_fd",port_listen_fd,tFunc(tInt tOr(tVoid,tMix),tInt),0);
   /* function(mixed:mixed) */
   ADD_FUNCTION("set_id",port_set_id,tFunc(tMix,tMix),0);
+  /* function(mixed:void) */
+  ADD_FUNCTION("set_accept_callback", port_set_accept_callback,
+               tFunc(tMix, tVoid), 0);
   /* function(:mixed) */
   ADD_FUNCTION("query_id",port_query_id,tFunc(tNone,tMix),0);
   /* function(:string) */
