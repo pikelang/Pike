@@ -658,6 +658,14 @@ private class Extractor {
       } else {
 	createVars += ({ var });
       }
+      if (parser->peekToken() == "=") {
+        // Default value.
+        Type ot = OrType();
+        ot->types = ({ createMethod->argtypes[-1], VoidType() });
+        createMethod->argtypes[-1] = ot;
+        parser->eat("=");
+        parser->skipUntil((< ",", ")", ";", EOF >));
+      }
       if (parser->peekToken() != ",") break;
       parser->eat(",");
     }
