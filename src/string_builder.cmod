@@ -1297,7 +1297,7 @@ PMOD_EXPORT void string_builder_strftime(struct string_builder *s,
           break;
 
         case 'j': /* Day number of year [1,366]; 0-prefix. */
-          string_builder_sprintf(s, "%03d", tm->tm_yday);
+          string_builder_sprintf(s, "%03d", tm->tm_yday + 1);
           break;
 
         case 'k': /* Hour (24-hour clock); space-prefix. */
