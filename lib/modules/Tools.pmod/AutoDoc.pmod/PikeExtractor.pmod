@@ -333,6 +333,19 @@ private class Extractor {
                    void|string inAt)
   {
     object(Documentation)|zero filedoc = 0;
+
+    object(Method)|zero implicit_create;
+    foreach(c->docGroups, DocGroup dg) {
+      foreach(dg->objects, PikeObject po) {
+        if ((po->objtype == "method") && (po->name == "__create__")) {
+          // Found.
+          implicit_create = po;
+          break;
+        }
+      }
+    }
+    int(0..1) explicit_create;
+
   mainloop:
     for (;;) {
       object(Documentation)|zero doc = 0;
@@ -349,7 +362,7 @@ private class Extractor {
       }
 
       if (s == EOF || s == "}")         // end of class body reached
-        return filedoc;
+        break mainloop;
       if (isDocComment(s)) {
         doc = readAdjacentDocLines();    // read the doc comment lines
         s = parser->peekToken(WITH_NL);
@@ -456,7 +469,8 @@ private class Extractor {
               if (meta->name && meta->name != c->name)
                 extractorError("'@%s %s' doesn't match '@%s %s'",
                                meta->type, meta->name, c->objtype, c->name || "");
-              return 0;  // no filedoc possible
+              filedoc = 0;  // no filedoc possible
+              break mainloop;
 
             default:
               extractorError("@%s is not allowed in Pike files", meta->type);
@@ -519,6 +533,13 @@ private class Extractor {
       mapping(string:int) contexts = ([]);
 
       foreach(decls, object(PikeObject)|Annotation obj) {
+        if (implicit_create && (obj->objtype == "method") &&
+            (obj->name == "create")) {
+          // Prepend the arguments for __create__() to create().
+          obj->argnames = implicit_create->argnames + obj->argnames;
+          obj->argtypes = implicit_create->argtypes + obj->argtypes;
+          explicit_create = 1;
+        }
 	if (obj->objtype == "annotation") {
 	  c->annotations += ({ obj });
 	}
@@ -568,12 +589,27 @@ private class Extractor {
 	}
       }
     } // for (;;)
+
+    if (implicit_create && !explicit_create) {
+      // Add create() that is a copy of __create__().
+      Method create_method = Method();
+      create_method->name = "create";
+      foreach(({ "modifiers", "returntype", "argnames", "argtypes" }),
+              string field) {
+        create_method[field] = implicit_create[field];
+      }
+      c->docGroups += ({
+        DocGroup(({ create_method }), EmptyDoc),
+      });
+    }
+
+    return filedoc;
   }
 
   void parseCreateArgList(Class c) {
     Method createMethod = Method();
-    createMethod->name = "create";
-    createMethod->modifiers = ({ "protected" });
+    createMethod->name = "__create__";
+    createMethod->modifiers = ({ "protected", "local" });
     createMethod->returntype = VoidType();
     createMethod->argnames = ({});
     createMethod->argtypes = ({});
