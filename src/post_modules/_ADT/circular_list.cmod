@@ -709,11 +709,87 @@ PIKECLASS CircularList
    *!
    *! @returns
    *!   Returns the maximal size of this list.
+   *!
+   *! @seealso
+   *!   @[set_max_size()]
    */
 
   PIKEFUN int max_size()
   {
     RETURN THIS->a->size;
+  }
+
+  /*! @decl int set_max_size(int(0..) new_size)
+   *!
+   *! @param new_size
+   *!   The new size of the list.
+   *!
+   *! @returns
+   *!   Returns the old maximal size of the list.
+   *!
+   *! @note
+   *!   When reducing in size, elements that no
+   *!   longer fit are dropped from the back.
+   *!
+   *! @seealso
+   *!   @[max_size()]
+   */
+  PIKEFUN int set_max_size(int(0..) new_size)
+  {
+    struct array *new_a;
+    struct array *old_a = THIS->a;
+
+    push_int(THIS->a->size);
+
+    if (new_size == THIS->a->size) return;
+
+    new_a = allocate_array_no_init(new_size, 0);
+    if (!new_size) {
+      /* Empty! */
+      THIS->size = 0;
+    } else if (!THIS->size) {
+      /* Empty! */
+      new_a->type_field = BIT_INT;
+    } else {
+      int end = THIS->size;
+      int end_pos;
+      if (new_size < old_a->size) {
+        new_a->type_field = old_a->type_field;
+        if (new_size < end) end = new_size;
+      } else {
+        new_a->type_field = old_a->type_field | BIT_INT;
+      }
+
+      /* Move the old contents to the new array.
+       *
+       * NB: We cheat by knowing that T_INT is 0,
+       *     do that we do not need to care about
+       *     reference counting.
+       */
+
+      should_copy();
+
+      end_pos = circ2array(end);
+      if (end_pos <= THIS->pos) {
+        /* Wrap-around. */
+        memcpy(ITEM(new_a), ITEM(old_a) + THIS->pos,
+               (old_a->size - THIS->pos) * sizeof(struct svalue));
+        memset(ITEM(old_a) + THIS->pos, 0,
+               (old_a->size - THIS->pos) * sizeof(struct svalue));
+        memcpy(ITEM(new_a) + (old_a->size - THIS->pos), ITEM(old_a),
+               end_pos * sizeof(struct svalue));
+        memset(ITEM(old_a), 0, end_pos * sizeof(struct svalue));
+      } else {
+        memcpy(ITEM(new_a), ITEM(old_a) + THIS->pos,
+               end * sizeof(struct svalue));
+        memset(ITEM(old_a) + THIS->pos, 0, end * sizeof(struct svalue));
+      }
+      THIS->size = end;
+    }
+    THIS->pos = 0;
+
+    free_array(THIS->a);
+    THIS->a = new_a;
   }
 
   /*! @decl mixed peek_back()
