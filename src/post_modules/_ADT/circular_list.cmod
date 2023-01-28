@@ -634,7 +634,7 @@ PIKECLASS CircularList
   /*! @decl void clear()
    *!   Clear the contents of the list.
    *!
-   *! @deprecated _m_clear()
+   *! @deprecated _m_clear
    */
 
   PIKEFUN void clear()
