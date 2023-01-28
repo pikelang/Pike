@@ -52,8 +52,9 @@ PIKECLASS CircularList
   {
     if (THIS->a->refs > 1)
     {
-      free_array(THIS->a);
-      THIS->a = copy_array(THIS->a);
+      struct array *a = THIS->a;
+      THIS->a = copy_array(a);
+      free_array(a);
     }
   }
 
