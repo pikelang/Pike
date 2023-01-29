@@ -471,6 +471,6 @@ test_js_token("**")
 test_js_token("=")
 test_js_token("==")
 test_js_token("//")
-
+test_js_token("`a${b}\\`c`")
 
 END_MARKER

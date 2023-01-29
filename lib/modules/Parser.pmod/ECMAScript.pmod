@@ -119,6 +119,11 @@ array(string) split(string data)
       pos++;
       break;
 
+    case '`':
+      while( !(data[++pos]=='`' && data[pos-1]!='\\') );
+      pos++;
+      break;
+
     case '/':
       pos++;
       switch(data[pos])
