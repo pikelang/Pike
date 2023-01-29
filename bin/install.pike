@@ -3248,6 +3248,12 @@ class AmigaOSExportInstallHandler {
 
   protected void do_install_build_aux()
   {
+    low_install_file(combine_path(vars->SRCDIR,
+                                  "../packaging/amigaos/InstallPike"),
+                     combine_path(prefix, "InstallPike"));
+    low_install_file(combine_path(vars->SRCDIR,
+                                  "../packaging/amigaos/InstallPike.info"),
+                     combine_path(prefix, "InstallPike.info"));
   }
 
   void do_export()
