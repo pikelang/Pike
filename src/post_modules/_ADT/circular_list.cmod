@@ -45,6 +45,11 @@ PIKECLASS CircularList
   CVAR struct array *a;
   CVAR int size;
 
+#define ASSERT_INITIALIZED()	do {                 \
+    if (!THIS->a) {                                  \
+      Pike_error("CircularList not initialized.\n"); \
+    }                                                \
+  } while(0)
 
   //if there is more than one reference to this array copy it.
 
@@ -91,6 +96,7 @@ PIKECLASS CircularList
     flags ID_PROTECTED;
   {
     struct svalue ind;
+    ASSERT_INITIALIZED();
     FIX_AND_CHECK_INDEX(index, THIS->size, 0);
     SET_SVAL(ind, T_INT, NUMBER_NUMBER, integer, circ2array(index));
     simple_array_index_no_free(Pike_sp, THIS->a, &ind);
@@ -120,6 +126,7 @@ PIKECLASS CircularList
     flags ID_PROTECTED;
   {
     struct svalue ind;
+    ASSERT_INITIALIZED();
     FIX_AND_CHECK_INDEX(index, THIS->size, 0);
     SET_SVAL(ind, T_INT, NUMBER_NUMBER, integer, circ2array(index));
     should_copy();
@@ -150,6 +157,8 @@ PIKECLASS CircularList
     int start=0;
     int i;
     ptrdiff_t sz = THIS->size;
+
+    ASSERT_INITIALIZED();
 
     for (i=0; i < args; i++) {
       // FIXME: Ought to work on collection classes too
@@ -323,6 +332,7 @@ PIKECLASS CircularList
   PIKEFUN void _insert_element(int index, mixed value)
   {
     int ind;
+    ASSERT_INITIALIZED();
     FIX_AND_CHECK_INDEX(index, THIS->size, 1);
     should_copy();
     ind = circ2array(index);
@@ -354,6 +364,7 @@ PIKECLASS CircularList
 
   PIKEFUN mixed _remove_element(int index)
   {
+    ASSERT_INITIALIZED();
     FIX_AND_CHECK_INDEX(index, THIS->size, 0);
 
     index = circ2array(index);
@@ -391,6 +402,7 @@ PIKECLASS CircularList
   {
     int s;
     int retval;
+    if (!THIS->a) RETURN -1;
     if(start)
     {
       if (TYPEOF(*start) != PIKE_T_INT)
@@ -448,26 +460,28 @@ PIKECLASS CircularList
     int tmp;
 
     a=allocate_array_no_init(THIS->size, 0);
-    a->type_field = THIS->a->type_field;
-    end = circ2array(THIS->size);
+    if (THIS->size) {
+      a->type_field = THIS->a->type_field;
+      end = circ2array(THIS->size);
 
-    if (end <= THIS->pos && THIS->size > 0)
-    {
-      //if the list pass the end of the array do it in two parts
-      tmp = THIS->a->size - THIS->pos;
+      if (end <= THIS->pos && THIS->size > 0)
+      {
+        //if the list pass the end of the array do it in two parts
+        tmp = THIS->a->size - THIS->pos;
 
-      assign_svalues_no_free(ITEM(a), ITEM(THIS->a) + THIS->pos,
-			     tmp, THIS->a->type_field);
+        assign_svalues_no_free(ITEM(a), ITEM(THIS->a) + THIS->pos,
+                               tmp, THIS->a->type_field);
 
-      assign_svalues_no_free(ITEM(a)+tmp, ITEM(THIS->a),
-			     THIS->size-tmp, THIS->a->type_field);
-    }
-    else
-    {
-      //just do it direct
+        assign_svalues_no_free(ITEM(a)+tmp, ITEM(THIS->a),
+                               THIS->size-tmp, THIS->a->type_field);
+      }
+      else
+      {
+        //just do it direct
 
-      assign_svalues_no_free(ITEM(a), ITEM(THIS->a) + THIS->pos,
-			     THIS->size, THIS->a->type_field);
+        assign_svalues_no_free(ITEM(a), ITEM(THIS->a) + THIS->pos,
+                               THIS->size, THIS->a->type_field);
+      }
     }
     RETURN a;
   }
@@ -499,6 +513,7 @@ PIKECLASS CircularList
   PIKEFUN void add(mixed value, int(0..1)|void force)
   {
     struct svalue ind;
+    ASSERT_INITIALIZED();
     if (THIS->size == THIS->a->size)
     {
       if (!force || !force->u.integer) {
@@ -530,6 +545,7 @@ PIKECLASS CircularList
   {
     INT32 size = THIS->a->size+elements;
     INT32 endpos = THIS->a->size - THIS->pos; //distanse of pos from the end
+    ASSERT_INITIALIZED();
     if (elements < 0)
     {
       Pike_error("Allocate expects a value larger than zero.\n");
@@ -595,6 +611,7 @@ PIKECLASS CircularList
   PIKEFUN array cast(string type)
     flags ID_PROTECTED;
   {
+    ASSERT_INITIALIZED();
     pop_n_elems(args); /* type as at least one more reference. */
     if (type == literal_array_string)
     {
@@ -639,11 +656,13 @@ PIKECLASS CircularList
 
   PIKEFUN void clear()
   {
-    int oldsize;
-    should_copy();
-    oldsize = THIS->a->size;
-    THIS->a = resize_array(THIS->a, 0);
-    THIS->a = resize_array(THIS->a, oldsize);
+    if (THIS->a) {
+      int oldsize;
+      should_copy();
+      oldsize = THIS->a->size;
+      THIS->a = resize_array(THIS->a, 0);
+      THIS->a = resize_array(THIS->a, oldsize);
+    }
     THIS->size =0;
     THIS->pos  =0;
   }
@@ -658,11 +677,13 @@ PIKECLASS CircularList
   PIKEFUN void _m_clear()
     flags ID_PROTECTED;
   {
-    int oldsize;
-    should_copy();
-    oldsize = THIS->a->size;
-    THIS->a = resize_array(THIS->a, 0);
-    THIS->a = resize_array(THIS->a, oldsize);
+    if (THIS->a) {
+      int oldsize;
+      should_copy();
+      oldsize = THIS->a->size;
+      THIS->a = resize_array(THIS->a, 0);
+      THIS->a = resize_array(THIS->a, oldsize);
+    }
     THIS->size =0;
     THIS->pos  =0;
   }
@@ -680,19 +701,18 @@ PIKECLASS CircularList
 
   PIKEFUN int delete_value(mixed value)
   {
-    INT32 index = array_search(THIS->a, value, THIS->pos);
-    INT32 pos = array2circ(index);
-    if (pos < THIS->size && index > -1)
-    {
-      should_copy();
-      THIS->a = array_remove(THIS->a, index);
-      THIS->size--;
-      RETURN pos;
+    if (THIS->a) {
+      INT32 index = array_search(THIS->a, value, THIS->pos);
+      INT32 pos = array2circ(index);
+      if (pos < THIS->size && index > -1)
+      {
+        should_copy();
+        THIS->a = array_remove(THIS->a, index);
+        THIS->size--;
+        RETURN pos;
+      }
     }
-    else
-    {
-      RETURN -1;
-    }
+    RETURN -1;
   }
 
   /*! @decl int(0..1) is_empty()
@@ -717,6 +737,7 @@ PIKECLASS CircularList
 
   PIKEFUN int max_size()
   {
+    if (!THIS->a) RETURN 0;
     RETURN THIS->a->size;
   }
 
@@ -739,6 +760,8 @@ PIKECLASS CircularList
   {
     struct array *new_a;
     struct array *old_a = THIS->a;
+
+    ASSERT_INITIALIZED();
 
     push_int(THIS->a->size);
 
@@ -911,6 +934,7 @@ PIKECLASS CircularList
   PIKEFUN void push_back(mixed value, int(0..1)|void force)
   {
     struct svalue ind;
+    ASSERT_INITIALIZED();
     if (THIS->size == THIS->a->size)
     {
       if (!force || !force->u.integer) {
@@ -958,6 +982,7 @@ PIKECLASS CircularList
   PIKEFUN void push_front(mixed value, int(0..1)|void force)
   {
     struct svalue ind;
+    ASSERT_INITIALIZED();
     if (THIS->size == THIS->a->size)
     {
       if (!force || !force->u.integer) {
@@ -987,18 +1012,24 @@ PIKECLASS CircularList
 
   PIKEFUN void create(array|int(0..) arg)
   {
+    struct array *old_a = THIS->a;
     if (TYPEOF(*arg) == T_INT)
     {
       if (arg->u.integer < 0) {
         SIMPLE_ARG_TYPE_ERROR(NULL, 1, "int(0..)");
       }
       THIS->a =allocate_array_no_init(arg->u.integer, 0);
-      THIS->a->type_field = BIT_INT;
+      if (arg->u.integer) {
+        THIS->a->type_field = BIT_INT;
+      }
     }
     else if (TYPEOF(*arg) == T_ARRAY)
     {
       add_ref(THIS->a=arg->u.array);
       THIS->size=THIS->a->size;
+    }
+    if (old_a) {
+      free_array(old_a);
     }
     pop_stack();
   }
