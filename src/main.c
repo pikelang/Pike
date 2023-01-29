@@ -292,6 +292,14 @@ static void find_lib_dir(int argc, char **argv)
 #endif /* LIBPIKE */
 }
 
+#ifdef __amigaos__
+static const char version_tag[] __attribute__((used)) =
+  "\0$VER: pike " DEFINETOSTR(PIKE_MAJOR_VERSION)
+     "." DEFINETOSTR(PIKE_MINOR_VERSION)
+     " (" DEFINETOSTR(PIKE_BUILD_DATE)
+     ") build " DEFINETOSTR(PIKE_BUILD_VERSION) "\0";
+#endif
+
 int main(int argc, char **argv)
 {
   JMP_BUF back;
