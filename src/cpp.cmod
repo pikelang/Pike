@@ -1752,7 +1752,7 @@ static void cpp_constant(struct CPP_struct *this, int value)
     }
   } else {
     /* Handle constant(.foo) */
-    push_static_text(".");
+    push_static_text("");
 
     if (safe_apply_current(f_CPP_handle_import_fun_num, 1) &&
 	((1<<TYPEOF(Pike_sp[-1])) & (BIT_MAPPING|BIT_OBJECT|BIT_PROGRAM))) {
