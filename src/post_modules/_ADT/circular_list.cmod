@@ -34,7 +34,7 @@ DECLARATIONS
 /*! @class CircularList
  *! This is an circular list implemented by an array. It has a constant time
  *! complexity for pop and push. It has a limited max size but it can be
- *! increased with the method allocate.
+ *! increased with the methods @[allocate()] or [set_max_size()].
  *!
  */
 
@@ -539,6 +539,9 @@ PIKECLASS CircularList
    *!
    *! @param elements
    *!       Add this number of new elements to the list.
+   *!
+   *! @seealso
+   *!   @[set_max_size()]
    */
 
   PIKEFUN void allocate(int(0..) elements)
@@ -754,7 +757,7 @@ PIKECLASS CircularList
    *!   longer fit are dropped from the back.
    *!
    *! @seealso
-   *!   @[max_size()]
+   *!   @[allocate()], @[max_size()]
    */
   PIKEFUN int set_max_size(int(0..) new_size)
   {
