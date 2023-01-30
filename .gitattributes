@@ -445,6 +445,7 @@ Makefile.rl -space_indent tab_indent
 /refdoc/structure/modref.js mixed_indent
 /refdoc/structure/traditional.xml mixed_indent
 /refdoc/template.xsl mixed_indent
+/src/Makefile.in mixed_indent
 /src/OCPikeInterpreter.m mixed_indent
 /src/Pike_ui.wxs mixed_indent
 /src/aclocal.m4 mixed_indent
