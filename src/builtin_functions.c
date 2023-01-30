@@ -6280,8 +6280,11 @@ time_t mktime_zone(struct tm *date, int other_timezone, int tz)
        *     adjust it and tm_hour if the local time zone is in dst.
        *     This causes an error of typically one hour in dst when
        *     used without preadjustment.
+       *
+       * FIXME: Handle retval outside range of 32-bit time_t.
        */
-      struct tm gmt_tm = *gmtime(&retval);
+      time_t t = retval;
+      struct tm gmt_tm = *gmtime(&t);
       gmt_tm.tm_isdst = date->tm_isdst;
       normalised_time += retval - mktime(&gmt_tm);
     }
