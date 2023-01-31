@@ -9,6 +9,11 @@ int portno;
 string interface;
 function(Request:void) callback;
 
+constant default_port = 443;
+constant default_rsa_bits = 4096;
+constant default_dsa_p_bits = 4096;
+constant default_dsa_q_bits = 160;
+
 //!
 object|function|program request_program=Request;
 
@@ -34,7 +39,7 @@ object|function|program request_program=Request;
 //!   If true, enable SO_REUSEPORT if the OS supports it. See
 //!   @[Stdio.Port.bind] for more information
 protected void create(function(Request:void) callback,
-                      void|int port,
+                      int(1..) port = default_port,
                       void|string interface,
                       void|string|Crypto.Sign.State key,
                       void|string|array(string) certificate,
@@ -42,9 +47,16 @@ protected void create(function(Request:void) callback,
 {
   ::create();
 
-  portno = port || 443;
+  portno = port;
   this::callback=callback;
   this::interface=interface;
+
+  // NB: Bind the port first in case it fails.
+  //     This is in order to not have to do set_default_keycert()
+  //     multiple times.
+  if (!Port::socket::bind(portno, UNDEFINED, this::interface, reuse_port))
+    error("Failed to bind port %s%d: %s\n",
+          interface?interface+":":"", portno, strerror(errno()));
 
   if( key && certificate )
   {
@@ -55,9 +67,7 @@ protected void create(function(Request:void) callback,
   else
     set_default_keycert();
 
-  if (!bind(portno, new_connection, this::interface, reuse_port))
-    error("Failed to bind port %s%d: %s\n",
-          interface?interface+":":"", portno, strerror(errno()));
+  set_accept_callback(new_connection);
 }
 
 protected void _destruct() { close(); }
@@ -78,12 +88,17 @@ protected void set_default_keycert()
 #endif
           }), Crypto.Sign private_key)
   {
+#ifdef WEBSOCKET_DEBUG
+    werror("Generating %s private key and certificate...\n",
+           private_key->name());
+    int t = time();
+#endif
     switch(private_key->name()) {
     case "RSA":
-      private_key->generate_key(4096);
+      private_key->generate_key(default_rsa_bits);
       break;
     case "DSA":
-      private_key->generate_key(4096, 160);
+      private_key->generate_key(default_dsa_p_bits, default_dsa_q_bits);
       break;
     default:
       // ECDSA.
@@ -100,6 +115,9 @@ protected void set_default_keycert()
                                                           3600*24*365, a);
 
     ctx->add_cert( private_key, ({ c }) );
+#ifdef WEBSOCKET_DEBUG
+    werror("Took %d seconds.\n", time() - t);
+#endif
   }
 }
 
