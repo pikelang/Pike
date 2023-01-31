@@ -211,10 +211,19 @@ void wait_for_completion(int|void expect_failure)
   }
 }
 
+class SSLPort_1024
+{
+  inherit Protocols.WebSocket.SSLPort;
+
+  // Reduce the size for the RSA and DSA keys to something
+  // that is reasonable even for old and slow machines.
+  constant default_rsa_bits = 1024;
+  constant default_dsa_p_bits = 1024;
+}
+
 void run_tests()
 {
-  foreach(({ Protocols.WebSocket.Port, Protocols.WebSocket.SSLPort,
-	     BrokenPort,
+  foreach(({ Protocols.WebSocket.Port, SSLPort_1024, BrokenPort,
 	  }), program(Protocols.WebSocket.Port) port_prog) {
     Tools.Testsuite.log_status("Attempting to open a %O port.\n", port_prog);
     // NB: The API doesn't allow for the ANY port.
