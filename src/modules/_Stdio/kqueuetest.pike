@@ -70,8 +70,8 @@ void test9()
   if (testdir) {
     cd("/");
     if (!rm(testdir)) {
-      fail_test("Failed to remove test directory: %O: %s\n",
-                testdir, strerror(errno()));
+      fail_test(sprintf("Failed to remove test directory: %O: %s\n",
+                        testdir, strerror(errno())));
       return;
     }
   }
