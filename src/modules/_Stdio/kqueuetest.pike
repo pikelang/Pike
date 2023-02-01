@@ -4,6 +4,8 @@ final constant TEST_SIZE = 16384;
 
 string testdata = random_string(TEST_SIZE);
 
+string|zero testdir;
+
 int verbose;
 int testno;
 int failures;
@@ -63,7 +65,20 @@ void done()
  *       event type from within Pike.
  */
 
-void test6()
+void test9()
+{
+  if (testdir) {
+    cd("/");
+    if (!rm(testdir)) {
+      fail_test("Failed to remove test directory: %O: %s\n",
+                testdir, strerror(errno()));
+      return;
+    }
+  }
+  next();
+}
+
+void test8()
 {
   log_status("kqueue: NOTE_DELETE\n");
   tf = Stdio.File("kqueue.test");
@@ -76,7 +91,7 @@ void test6()
   call_out(do_delete, 0);
 }
 
-void test5()
+void test7()
 {
   log_status("kqueue: NOTE_ATTRIB\n");
   tf = Stdio.File("kqueue.test");
@@ -89,7 +104,7 @@ void test5()
   call_out(do_chmod, 0);
 }
 
-void test4()
+void test6()
 {
   log_status("kqueue: NOTE_LINK\n");
   tf = Stdio.File("kqueue.test");
@@ -102,7 +117,7 @@ void test4()
   call_out(do_link, 0);
 }
 
-void test3()
+void test5()
 {
   log_status("kqueue: NOTE_RENAME\n");
   tf = Stdio.File("kqueue.tst");
@@ -115,7 +130,7 @@ void test3()
   call_out(do_rename, 0);
 }
 
-void test2()
+void test4()
 {
   log_status("kqueue: NOTE_WRITE\n");
   tf = Stdio.File("kqueue.tst");
@@ -128,7 +143,7 @@ void test2()
   call_out(do_write, 0.1);
 }
 
-void test1()
+void test3()
 {
   log_status("kqueue: NOTE_EXTEND\n");
   /* first, create a test file */
@@ -145,6 +160,29 @@ void test1()
   call_out(do_extend, 0.1);
 }
 
+void test2()
+{
+  if (testdir) {
+    if (!cd(testdir)) {
+      fail_test(sprintf("Failed to change cwd to test directory %O: %s\n",
+                        testdir, strerror(errno())));
+      return;
+    }
+  }
+  next();
+}
+
+void test1()
+{
+  testdir = sprintf("/var/tmp/pike-%d-%d-testdir", getuid(), getpid());
+  if (!mkdir(testdir) && (errno() != System.EEXIST)) {
+    fail_test(sprintf("Failed to create test directory %O: %s\n",
+                      testdir, strerror(errno())));
+    testdir = UNDEFINED;
+    return;
+  }
+  next();
+}
 
 void do_rename()
 {
