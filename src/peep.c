@@ -215,6 +215,7 @@ INT32 assemble(int store_linenumbers)
   INT32 max_pointer=-1;
   int synch_depth = 0;
   size_t fun_start = Pike_compiler->new_program->num_program;
+  struct pike_string *prev_file = NULL;
 #endif
   int relabel;
   int reoptimize = relabel = !(debug_options & NO_PEEP_OPTIMIZING);
@@ -546,10 +547,15 @@ INT32 assemble(int store_linenumbers)
     {
 #ifdef PIKE_DEBUG
       if (c->opcode == F_POP_SYNCH_MARK) synch_depth--;
-      fprintf(stderr, "===%4ld %4lx %*s", (long)c->line,
+      if (c->file != prev_file) {
+        fprintf(stderr, "===           %*s.file \"%s\"\n",
+                synch_depth, "", c->file?c->file->str:"");
+        prev_file = c->file;
+      }
+      fprintf(stderr, "=== %4ld %4lx %*s", (long)c->line,
               (unsigned long)PIKE_PC, synch_depth, "");
 #else
-      fprintf(stderr, "===%4ld %4lx ", (long)c->line, (unsigned long)PIKE_PC);
+      fprintf(stderr, "=== %4ld %4lx ", (long)c->line, (unsigned long)PIKE_PC);
 #endif
       dump_instr(c);
       fprintf(stderr,"\n");
