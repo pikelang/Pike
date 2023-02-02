@@ -30,7 +30,7 @@ OPCODE_NOCODE("filename", F_FILENAME, 0)
 OPCODE_NOCODE("line", F_LINE, 0)
 
 /* Alias for F_EXTERNAL when the identifier is a getter/setter. */
-OPCODE_NOCODE("get/set", F_GET_SET, 0)
+OPCODE_NOCODE("get/set", F_GET_SET, I_TWO_ARGS)
 
 /*
  * These are token values that needn't have an associated code for the
@@ -102,13 +102,16 @@ OPCODE_NOCODE("assign_self", F_ASSIGN_SELF, 0)
  */
 
 /* local_num, string_num */
-OPCODE_NOCODE("set_local_name", F_SET_LOCAL_NAME, I_HASARG2)
+OPCODE_NOCODE("set_local_name", F_SET_LOCAL_NAME,
+              I_TWO_ARGS|I_ARG_T_LOCAL|I_ARG2_T_STRING)
 /* local_num, constant_num */
-OPCODE_NOCODE("set_local_type", F_SET_LOCAL_TYPE, I_HASARG2)
+OPCODE_NOCODE("set_local_type", F_SET_LOCAL_TYPE,
+              I_TWO_ARGS|I_ARG_T_LOCAL|I_ARG2_T_CONST)
 /* local_num, flags */
-OPCODE_NOCODE("set_local_flags", F_SET_LOCAL_FLAGS, I_HASARG2)
+OPCODE_NOCODE("set_local_flags", F_SET_LOCAL_FLAGS,
+              I_TWO_ARGS|I_ARG_T_LOCAL)
 /* local_num */
-OPCODE_NOCODE("set_local_end", F_SET_LOCAL_END, I_HASARG)
+OPCODE_NOCODE("set_local_end", F_SET_LOCAL_END, I_HASARG|I_ARG_T_LOCAL)
 
 /* Initial assignment to local variable. */
 OPCODE_NOCODE("initialize", F_INITIALIZE, 0)

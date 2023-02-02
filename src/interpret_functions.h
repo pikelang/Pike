@@ -251,7 +251,7 @@ OPCODE1(F_NEG_NUMBER, "push -int", I_UPDATE_SP, {
   }
 });
 
-OPCODE1(F_CONSTANT, "constant", I_UPDATE_SP, {
+OPCODE1(F_CONSTANT, "constant", I_UPDATE_SP|I_ARG_T_CONST, {
   push_svalue(& Pike_fp->context->prog->constants[arg1].sval);
   print_return_value();
 });
@@ -269,24 +269,25 @@ OPCODE2(F_REARRANGE,"rearrange",0,{
 
 /* The rest of the basic 'push value' instructions */
 
-OPCODE1_TAIL(F_MARK_AND_STRING, "mark & string", I_UPDATE_SP|I_UPDATE_M_SP, {
+OPCODE1_TAIL(F_MARK_AND_STRING, "mark & string",
+             I_UPDATE_SP|I_UPDATE_M_SP|I_ARG_T_STRING, {
   *(Pike_mark_sp++)=Pike_sp;
 
   ADVERTISE_FALLTHROUGH;
-  OPCODE1(F_STRING, "string", I_UPDATE_SP, {
+  OPCODE1(F_STRING, "string", I_UPDATE_SP|I_ARG_T_STRING, {
     ref_push_string(Pike_fp->context->prog->strings[arg1]);
     print_return_value();
   });
 });
 
 
-OPCODE1(F_ARROW_STRING, "->string", I_UPDATE_SP, {
+OPCODE1(F_ARROW_STRING, "->string", I_UPDATE_SP|I_ARG_T_STRING, {
   ref_push_string(Pike_fp->context->prog->strings[arg1]);
   SET_SVAL_SUBTYPE(Pike_sp[-1], 1); /* Magic */
   print_return_value();
 });
 
-OPCODE1(F_LOOKUP_LFUN, "->lfun", 0, {
+OPCODE1(F_LOOKUP_LFUN, "->lfun", I_ARG_T_GLOBAL, {
   struct object *o;
   struct svalue tmp;
   struct program *p;
@@ -315,13 +316,13 @@ OPCODE1(F_LOOKUP_LFUN, "->lfun", 0, {
   print_return_value();
 });
 
-OPCODE1(F_LFUN, "local function", I_UPDATE_SP, {
+OPCODE1(F_LFUN, "local function", I_UPDATE_SP|I_ARG_T_GLOBAL, {
   ref_push_function (Pike_fp->current_object,
 		     arg1+Pike_fp->context->identifier_level);
   print_return_value();
 });
 
-OPCODE2(F_TRAMPOLINE, "trampoline", I_UPDATE_SP, {
+OPCODE2(F_TRAMPOLINE, "trampoline", I_UPDATE_SP|I_ARG_T_GLOBAL, {
   struct pike_frame *f=Pike_fp;
   DO_IF_DEBUG(INT32 arg2_ = arg2;)
   struct object *o;
@@ -344,17 +345,19 @@ OPCODE2(F_TRAMPOLINE, "trampoline", I_UPDATE_SP, {
 
 /* The not so basic 'push value' instructions */
 
-OPCODE1_TAIL(F_MARK_AND_GLOBAL, "mark & global", I_UPDATE_SP|I_UPDATE_M_SP, {
+OPCODE1_TAIL(F_MARK_AND_GLOBAL, "mark & global",
+             I_UPDATE_SP|I_UPDATE_M_SP|I_ARG_T_GLOBAL, {
   *(Pike_mark_sp++)=Pike_sp;
 
   ADVERTISE_FALLTHROUGH;
-  OPCODE1(F_GLOBAL, "global", I_UPDATE_SP, {
+  OPCODE1(F_GLOBAL, "global", I_UPDATE_SP|I_ARG_T_GLOBAL, {
     low_index_current_object_no_free(Pike_sp, arg1);
     Pike_sp++;
     print_return_value();
   });
 });
 
+/* NB: arg1 is raw storage offset. */
 OPCODE1(F_PRIVATE_GLOBAL, "global <private>", I_UPDATE_SP, {
     struct svalue *sp;
     struct object *co = Pike_fp->current_object;
@@ -365,8 +368,9 @@ OPCODE1(F_PRIVATE_GLOBAL, "global <private>", I_UPDATE_SP, {
     print_return_value();
 });
 
+/* NB: arg1 is raw storage offset. */
 OPCODE2(F_PRIVATE_IF_DIRECT_GLOBAL, "global <private if direct>",
-	I_UPDATE_SP, {
+        I_UPDATE_SP|I_ARG2_T_GLOBAL, {
     struct object *co = Pike_fp->current_object;
     struct inherit *cx = Pike_fp->context;
     if(!co->prog) /* note: generate an error. */
@@ -386,8 +390,9 @@ OPCODE2(F_PRIVATE_IF_DIRECT_GLOBAL, "global <private if direct>",
     }
 });
 
+/* NB: arg1 is raw storage offset. */
 OPCODE2(F_ASSIGN_PRIVATE_IF_DIRECT_GLOBAL,
-	"assign global <private if direct>", 0,
+        "assign global <private if direct>", I_ARG2_T_GLOBAL,
    {
      struct object *co = Pike_fp->current_object;
      struct inherit *cx = Pike_fp->context;
@@ -404,7 +409,9 @@ OPCODE2(F_ASSIGN_PRIVATE_IF_DIRECT_GLOBAL,
       }
    });
 
-OPCODE2(F_ASSIGN_PRIVATE_TYPED_GLOBAL_AND_POP, "assign global <private,typed> and pop", I_UPDATE_SP, {
+/* NB: arg1 is raw storage offset. */
+OPCODE2(F_ASSIGN_PRIVATE_TYPED_GLOBAL_AND_POP,
+        "assign global <private,typed> and pop", I_UPDATE_SP|I_ARG2_T_RTYPE, {
    /* lazy mode. */
   union anything  *tmp_s;
   struct object *o;
@@ -416,7 +423,8 @@ OPCODE2(F_ASSIGN_PRIVATE_TYPED_GLOBAL_AND_POP, "assign global <private,typed> an
   pop_stack();
 });
 
-OPCODE2(F_ASSIGN_PRIVATE_TYPED_GLOBAL, "assign global <private,typed>", 0, {
+OPCODE2(F_ASSIGN_PRIVATE_TYPED_GLOBAL, "assign global <private,typed>",
+        I_ARG2_T_RTYPE, {
   union anything  *tmp;
   struct object *o;
   o = Pike_fp->current_object;
@@ -433,7 +441,8 @@ OPCODE2(F_ASSIGN_PRIVATE_TYPED_GLOBAL, "assign global <private,typed>", 0, {
 #define DO_IF_ELSE_SIZEOF_FLOAT_INT(EQ, NEQ)	do { EQ; } while(0)
 #endif
 
-OPCODE2(F_PRIVATE_TYPED_GLOBAL, "global <private,typed>", I_UPDATE_SP, {
+OPCODE2(F_PRIVATE_TYPED_GLOBAL, "global <private,typed>",
+        I_UPDATE_SP|I_ARG2_T_RTYPE, {
     void *ptr;
     struct object *o;
 
@@ -522,47 +531,48 @@ OPCODE2(F_EXTERNAL_LVALUE, "& external", I_UPDATE_SP, {
   push_obj_index(arg1 + loc.inherit->identifier_level);
 });
 
-OPCODE1(F_MARK_AND_LOCAL, "mark & local", I_UPDATE_SP|I_UPDATE_M_SP, {
+OPCODE1(F_MARK_AND_LOCAL, "mark & local",
+        I_UPDATE_SP|I_UPDATE_M_SP|I_ARG_T_LOCAL, {
   *(Pike_mark_sp++) = Pike_sp;
   push_svalue( Pike_fp->locals + arg1);
   print_return_value();
 });
 
-OPCODE1(F_LOCAL, "local", I_UPDATE_SP, {
+OPCODE1(F_LOCAL, "local", I_UPDATE_SP|I_ARG_T_LOCAL, {
   push_svalue( Pike_fp->locals + arg1);
   print_return_value();
 });
 
-OPCODE2(F_2_LOCALS, "2 locals", I_UPDATE_SP, {
+OPCODE2(F_2_LOCALS, "2 locals", I_UPDATE_SP|I_ARG_T_LOCAL|I_ARG2_T_LOCAL, {
   push_svalue( Pike_fp->locals + arg1);
   print_return_value();
   push_svalue( Pike_fp->locals + arg2);
   print_return_value();
 });
 
-OPCODE2(F_LOCAL_2_LOCAL, "local = local", 0, {
+OPCODE2(F_LOCAL_2_LOCAL, "local = local", I_ARG_T_LOCAL|I_ARG2_T_LOCAL, {
   assign_svalue(Pike_fp->locals + arg1, Pike_fp->locals + arg2);
 });
 
-OPCODE2(F_LOCAL_2_GLOBAL, "global = local", 0, {
+OPCODE2(F_LOCAL_2_GLOBAL, "global = local",I_ARG_T_GLOBAL|I_ARG2_T_LOCAL, {
   object_low_set_index(Pike_fp->current_object,
 		       arg1 + Pike_fp->context->identifier_level,
 		       Pike_fp->locals + arg2);
 });
 
-OPCODE2(F_GLOBAL_2_LOCAL, "local = global", 0, {
+OPCODE2(F_GLOBAL_2_LOCAL, "local = global", I_ARG_T_LOCAL|I_ARG2_T_GLOBAL, {
   free_svalue(Pike_fp->locals + arg2);
   mark_free_svalue (Pike_fp->locals + arg2);
   low_index_current_object_no_free(Pike_fp->locals + arg2, arg1);
 });
 
-OPCODE1(F_LOCAL_LVALUE, "& local", I_UPDATE_SP, {
+OPCODE1(F_LOCAL_LVALUE, "& local", I_UPDATE_SP|I_ARG_T_LOCAL, {
   SET_SVAL(Pike_sp[0], T_SVALUE_PTR, 0, lval, Pike_fp->locals + arg1);
   SET_SVAL_TYPE(Pike_sp[1], T_VOID);
   Pike_sp += 2;
 });
 
-OPCODE2(F_LEXICAL_LOCAL, "lexical local", I_UPDATE_SP, {
+OPCODE2(F_LEXICAL_LOCAL, "lexical local", I_UPDATE_SP|I_ARG_T_LOCAL, {
   struct pike_frame *f=Pike_fp;
   while(arg2-- > 0)
   {
@@ -573,7 +583,7 @@ OPCODE2(F_LEXICAL_LOCAL, "lexical local", I_UPDATE_SP, {
   print_return_value();
 });
 
-OPCODE2(F_LEXICAL_LOCAL_LVALUE, "&lexical local", I_UPDATE_SP, {
+OPCODE2(F_LEXICAL_LOCAL_LVALUE, "&lexical local", I_UPDATE_SP|I_ARG_T_LOCAL, {
   struct pike_frame *f=Pike_fp;
   while(arg2-- > 0)
   {
@@ -595,7 +605,7 @@ OPCODE1(F_ARRAY_LVALUE, "[ lvalues ]", I_UPDATE_SP, {
   Pike_sp++;
 });
 
-OPCODE2(F_CLEAR_N_LOCAL, "clear n local", 0, {
+OPCODE2(F_CLEAR_N_LOCAL, "clear n local", I_ARG_T_LOCAL, {
   struct svalue *locals = Pike_fp->locals;
   int e;
   free_mixed_svalues(locals + arg1, arg2);
@@ -605,12 +615,12 @@ OPCODE2(F_CLEAR_N_LOCAL, "clear n local", 0, {
   }
 });
 
-OPCODE1(F_CLEAR_LOCAL, "clear local", 0, {
+OPCODE1(F_CLEAR_LOCAL, "clear local", I_ARG_T_LOCAL, {
   free_svalue(Pike_fp->locals + arg1);
   SET_SVAL(Pike_fp->locals[arg1], PIKE_T_INT, NUMBER_NUMBER, integer, 0);
 });
 
-OPCODE2(F_ADD_LOCALS_AND_POP, "local += local", 0,
+OPCODE2(F_ADD_LOCALS_AND_POP, "local += local", I_ARG_T_LOCAL|I_ARG2_T_LOCAL,
 {
   struct svalue *dst = Pike_fp->locals+arg1;
   struct svalue *src = Pike_fp->locals+arg2;
@@ -656,7 +666,7 @@ OPCODE2(F_ADD_LOCALS_AND_POP, "local += local", 0,
   }
 });
 
-OPCODE2(F_ADD_LOCAL_INT_AND_POP, "local += number", 0,{
+OPCODE2(F_ADD_LOCAL_INT_AND_POP, "local += number", I_ARG_T_LOCAL,{
   struct svalue *dst = Pike_fp->locals+arg1;
   if( TYPEOF(*dst) == PIKE_T_INT
       && !INT_TYPE_ADD_OVERFLOW(dst->u.integer,arg2) )
@@ -674,7 +684,7 @@ OPCODE2(F_ADD_LOCAL_INT_AND_POP, "local += number", 0,{
   }
 });
 
-OPCODE2(F_ADD_LOCAL_INT, "local += number local", 0,{
+OPCODE2(F_ADD_LOCAL_INT, "local += number local", I_ARG_T_LOCAL,{
   struct svalue *dst = Pike_fp->locals+arg1;
   if( TYPEOF(*dst) == PIKE_T_INT
       && !INT_TYPE_ADD_OVERFLOW(dst->u.integer,arg2) )
@@ -693,7 +703,7 @@ OPCODE2(F_ADD_LOCAL_INT, "local += number local", 0,{
   }
 });
 
-OPCODE1(F_INC_LOCAL, "++local", I_UPDATE_SP, {
+OPCODE1(F_INC_LOCAL, "++local", I_UPDATE_SP|I_ARG_T_LOCAL, {
   struct svalue *dst = Pike_fp->locals+arg1;
   if( (TYPEOF(*dst) == PIKE_T_INT)
       && !INT_TYPE_ADD_OVERFLOW(dst->u.integer, 1) )
@@ -709,7 +719,7 @@ OPCODE1(F_INC_LOCAL, "++local", I_UPDATE_SP, {
   }
 });
 
-OPCODE1(F_POST_INC_LOCAL, "local++", I_UPDATE_SP, {
+OPCODE1(F_POST_INC_LOCAL, "local++", I_UPDATE_SP|I_ARG_T_LOCAL, {
   struct svalue *dst = Pike_fp->locals+arg1;
   if( (TYPEOF(*dst) == PIKE_T_INT)
       && !INT_TYPE_ADD_OVERFLOW(dst->u.integer, 1) )
@@ -725,7 +735,7 @@ OPCODE1(F_POST_INC_LOCAL, "local++", I_UPDATE_SP, {
   }
 });
 
-OPCODE1(F_INC_LOCAL_AND_POP, "++local and pop", 0, {
+OPCODE1(F_INC_LOCAL_AND_POP, "++local and pop", I_ARG_T_LOCAL, {
   struct svalue *dst = Pike_fp->locals+arg1;
   if( (TYPEOF(*dst) == PIKE_T_INT)
       && !INT_TYPE_ADD_OVERFLOW(dst->u.integer, 1) )
@@ -741,7 +751,7 @@ OPCODE1(F_INC_LOCAL_AND_POP, "++local and pop", 0, {
   }
 });
 
-OPCODE1(F_DEC_LOCAL, "--local", I_UPDATE_SP, {
+OPCODE1(F_DEC_LOCAL, "--local", I_UPDATE_SP|I_ARG_T_LOCAL, {
   struct svalue *dst = Pike_fp->locals+arg1;
   if( (TYPEOF(*dst) == PIKE_T_INT)
       && !INT_TYPE_SUB_OVERFLOW(dst->u.integer, 1) )
@@ -757,7 +767,7 @@ OPCODE1(F_DEC_LOCAL, "--local", I_UPDATE_SP, {
   }
 });
 
-OPCODE1(F_POST_DEC_LOCAL, "local--", I_UPDATE_SP, {
+OPCODE1(F_POST_DEC_LOCAL, "local--", I_UPDATE_SP|I_ARG_T_LOCAL, {
   push_svalue( Pike_fp->locals + arg1);
 
   if( (TYPEOF(Pike_fp->locals[arg1]) == PIKE_T_INT)
@@ -773,7 +783,7 @@ OPCODE1(F_POST_DEC_LOCAL, "local--", I_UPDATE_SP, {
   }
 });
 
-OPCODE1(F_DEC_LOCAL_AND_POP, "--local and pop", 0, {
+OPCODE1(F_DEC_LOCAL_AND_POP, "--local and pop", I_ARG_T_LOCAL, {
   struct svalue *dst = Pike_fp->locals+arg1;
   if( (TYPEOF(*dst) == PIKE_T_INT)
       && !INT_TYPE_SUB_OVERFLOW(dst->u.integer, 1) )
@@ -1024,7 +1034,7 @@ OPCODE0(F_ADD_TO_AND_POP, "+= and pop", I_UPDATE_SP, {
    ; /* make gcc happy */
 });
 
-OPCODE1(F_GLOBAL_LVALUE, "& global", I_UPDATE_SP, {
+OPCODE1(F_GLOBAL_LVALUE, "& global", I_UPDATE_SP|I_ARG_T_GLOBAL, {
   ref_push_object(Pike_fp->current_object);
   push_obj_index(arg1 + Pike_fp->context->identifier_level);
 });
@@ -1141,7 +1151,7 @@ OPCODE0(F_POST_DEC, "x--", I_UPDATE_SP, {
   }
 });
 
-OPCODE1(F_ASSIGN_LOCAL, "assign local", 0, {
+OPCODE1(F_ASSIGN_LOCAL, "assign local", I_ARG_T_LOCAL, {
   assign_svalue(Pike_fp->locals+arg1,Pike_sp-1);
 });
 
@@ -1170,7 +1180,8 @@ OPCODE1(F_ASSIGN_ALL_INDICES, "assign[*]", I_UPDATE_SP, {
 });
 
 OPCODE2(F_APPLY_ASSIGN_LOCAL_AND_POP,
-	"apply, assign local and pop", I_UPDATE_SP|I_UPDATE_M_SP, {
+        "apply, assign local and pop",
+        I_UPDATE_SP|I_UPDATE_M_SP|I_ARG_T_CONST|I_ARG2_T_LOCAL, {
   apply_svalue(&((Pike_fp->context->prog->constants + arg1)->sval),
                (INT32)(Pike_sp - *--Pike_mark_sp));
   free_svalue(Pike_fp->locals+arg2);
@@ -1178,7 +1189,8 @@ OPCODE2(F_APPLY_ASSIGN_LOCAL_AND_POP,
   Pike_sp--;
 });
 
-OPCODE2(F_APPLY_ASSIGN_LOCAL, "apply, assign local", I_UPDATE_ALL, {
+OPCODE2(F_APPLY_ASSIGN_LOCAL, "apply, assign local",
+        I_UPDATE_ALL|I_ARG_T_CONST|I_ARG2_T_LOCAL, {
   apply_svalue(&((Pike_fp->context->prog->constants + arg1)->sval),
                (INT32)(Pike_sp - *--Pike_mark_sp));
   assign_svalue(Pike_fp->locals+arg2, Pike_sp-1);
@@ -1189,32 +1201,36 @@ OPCODE0(F_ASSIGN_AND_POP, "assign and pop", I_UPDATE_SP, {
   pop_n_elems(3);
 });
 
-OPCODE1(F_ASSIGN_LOCAL_AND_POP, "assign local and pop", I_UPDATE_SP, {
+OPCODE1(F_ASSIGN_LOCAL_AND_POP, "assign local and pop",
+        I_UPDATE_SP|I_ARG_T_LOCAL, {
   free_svalue(Pike_fp->locals + arg1);
   move_svalue (Pike_fp->locals + arg1, Pike_sp - 1);
   Pike_sp--;
 });
 
-OPCODE2(F_ASSIGN_LOCAL_NUMBER_AND_POP, "assign local number and pop", 0, {
+OPCODE2(F_ASSIGN_LOCAL_NUMBER_AND_POP, "assign local number and pop",
+        I_ARG_T_LOCAL, {
   free_svalue(Pike_fp->locals + arg1);
   SET_SVAL(Pike_fp->locals[arg1], PIKE_T_INT, 0, integer, arg2);
 });
 
-OPCODE1(F_ASSIGN_GLOBAL, "assign global", 0, {
+OPCODE1(F_ASSIGN_GLOBAL, "assign global", I_ARG_T_GLOBAL, {
   object_low_set_index(Pike_fp->current_object,
 		       arg1 + Pike_fp->context->identifier_level,
 		       Pike_sp-1);
 });
 
-OPCODE1(F_ASSIGN_GLOBAL_AND_POP, "assign global and pop", I_UPDATE_SP, {
+OPCODE1(F_ASSIGN_GLOBAL_AND_POP, "assign global and pop",
+        I_UPDATE_SP|I_ARG_T_GLOBAL, {
   object_low_set_index(Pike_fp->current_object,
 		       arg1 + Pike_fp->context->identifier_level,
 		       Pike_sp-1);
   pop_stack();
 });
 
+/* NB: Argument is raw storage offset. */
 OPCODE1(F_ASSIGN_PRIVATE_GLOBAL_AND_POP,
-	"assign private global and pop", I_UPDATE_SP, {
+        "assign private global and pop", I_UPDATE_SP, {
   struct svalue *tmp;
   struct object *co;
   co = Pike_fp->current_object;
@@ -1225,6 +1241,7 @@ OPCODE1(F_ASSIGN_PRIVATE_GLOBAL_AND_POP,
   *tmp = *--Pike_sp;
 });
 
+/* NB: Argument is raw storage offset. */
 OPCODE1(F_ASSIGN_PRIVATE_GLOBAL, "assign private global", I_UPDATE_SP, {
   struct svalue *tmp;
   struct object *co;
@@ -1235,7 +1252,8 @@ OPCODE1(F_ASSIGN_PRIVATE_GLOBAL, "assign private global", I_UPDATE_SP, {
   assign_svalue( tmp, Pike_sp-1 );
 });
 
-OPCODE2(F_ASSIGN_GLOBAL_NUMBER_AND_POP, "assign global number and pop", 0, {
+OPCODE2(F_ASSIGN_GLOBAL_NUMBER_AND_POP, "assign global number and pop",
+        I_ARG_T_GLOBAL, {
   struct svalue tmp;
   SET_SVAL(tmp,PIKE_T_INT,0,integer,arg2);
   object_low_set_index(Pike_fp->current_object,
@@ -1313,7 +1331,8 @@ OPCODE0_BRANCH(F_BRANCH, "branch", 0, {
   DO_BRANCH();
 });
 
-OPCODE2_BRANCH(F_BRANCH_IF_NOT_LOCAL_ARROW, "branch if !local->x", 0, {
+OPCODE2_BRANCH(F_BRANCH_IF_NOT_LOCAL_ARROW, "branch if !local->x",
+               I_ARG_T_STRING|I_ARG2_T_LOCAL, {
   struct svalue tmp;
   SET_SVAL(tmp, PIKE_T_STRING, 1, string,
 	   Pike_fp->context->prog->strings[arg1]);
@@ -1366,7 +1385,8 @@ OPCODE0_BRANCH(F_BRANCH_WHEN_NON_ZERO, "branch if not zero", I_UPDATE_SP, {
   pop_stack();
 });
 
-OPCODE1_BRANCH(F_BRANCH_IF_TYPE_IS_NOT, "branch if type is !=", I_UPDATE_SP, {
+OPCODE1_BRANCH(F_BRANCH_IF_TYPE_IS_NOT, "branch if type is !=",
+               I_UPDATE_SP|I_ARG_T_RTYPE, {
 /*  fprintf(stderr,"******BRANCH IF TYPE IS NOT***** %s\n",get_name_of_type(arg1)); */
   struct object *o;
   if(TYPEOF(Pike_sp[-1]) == T_OBJECT &&
@@ -1393,7 +1413,7 @@ OPCODE1_BRANCH(F_BRANCH_IF_TYPE_IS_NOT, "branch if type is !=", I_UPDATE_SP, {
   pop_stack();
 });
 
-OPCODE1_BRANCH(F_BRANCH_IF_LOCAL, "branch if local", 0, {
+OPCODE1_BRANCH(F_BRANCH_IF_LOCAL, "branch if local", I_ARG_T_LOCAL, {
   if(UNSAFE_IS_ZERO(Pike_fp->locals + arg1))
   {
     DONT_BRANCH();
@@ -1402,7 +1422,7 @@ OPCODE1_BRANCH(F_BRANCH_IF_LOCAL, "branch if local", 0, {
   }
 });
 
-OPCODE1_BRANCH(F_BRANCH_IF_NOT_LOCAL, "branch if !local", 0, {
+OPCODE1_BRANCH(F_BRANCH_IF_NOT_LOCAL, "branch if !local", I_ARG_T_LOCAL, {
   if(!UNSAFE_IS_ZERO(Pike_fp->locals + arg1))
   {
     DONT_BRANCH();
@@ -1621,7 +1641,7 @@ OPCODE0(F_EXIT_CATCH, "exit catch", I_UPDATE_SP, {
   POP_CATCH_CONTEXT;
 });
 
-OPCODE1_JUMP(F_SWITCH, "switch", I_UPDATE_ALL, {
+OPCODE1_JUMP(F_SWITCH, "switch", I_UPDATE_ALL|I_ARG_T_CONST, {
   INT32 tmp;
   PIKE_OPCODE_T *addr;
   JUMP_SET_TO_PC_AT_NEXT (addr);
@@ -1634,7 +1654,7 @@ OPCODE1_JUMP(F_SWITCH, "switch", I_UPDATE_ALL, {
   DO_JUMP_TO(addr + *(INT32*)addr);
 });
 
-OPCODE1_JUMP(F_SWITCH_ON_INDEX, "switch on index", I_UPDATE_ALL, {
+OPCODE1_JUMP(F_SWITCH_ON_INDEX, "switch on index", I_UPDATE_ALL|I_ARG_T_CONST, {
   INT32 tmp;
   PIKE_OPCODE_T *addr;
   struct svalue tmp2;
@@ -1651,7 +1671,8 @@ OPCODE1_JUMP(F_SWITCH_ON_INDEX, "switch on index", I_UPDATE_ALL, {
   DO_JUMP_TO(addr + *(INT32*)addr);
 });
 
-OPCODE2_JUMP(F_SWITCH_ON_LOCAL, "switch on local", 0, {
+OPCODE2_JUMP(F_SWITCH_ON_LOCAL, "switch on local",
+             I_ARG_T_LOCAL|I_ARG2_T_CONST, {
   INT32 tmp;
   PIKE_OPCODE_T *addr;
   JUMP_SET_TO_PC_AT_NEXT (addr);
@@ -1777,7 +1798,8 @@ OPCODE0_BRANCH(F_FOREACH_LOOP, "foreach loop", 0, {
 });
 
 
-OPCODE1_RETURN(F_RETURN_LOCAL,"return local", I_UPDATE_SP|I_UPDATE_FP, {
+OPCODE1_RETURN(F_RETURN_LOCAL,"return local",
+               I_UPDATE_SP|I_UPDATE_FP|I_ARG_T_LOCAL, {
   DO_IF_DEBUG(
     /* special case! Pike_interpreter.mark_stack may be invalid at the time we
      * call return -1, so we must call the callbacks here to
@@ -2037,7 +2059,8 @@ OPCODE0(F_APPEND_MAPPING, "append mapping", I_UPDATE_SP|I_UPDATE_M_SP, {
     o_append_mapping(Pike_sp - *(--Pike_mark_sp));
   });
 
-OPCODE2(F_LOCAL_LOCAL_INDEX, "local[local]", I_UPDATE_SP, {
+OPCODE2(F_LOCAL_LOCAL_INDEX, "local[local]",
+        I_UPDATE_SP|I_ARG_T_LOCAL|I_ARG2_T_LOCAL, {
   struct svalue *s;
   s = Pike_fp->locals + arg1;
   if(TYPEOF(*s) == PIKE_T_STRING) SET_SVAL_SUBTYPE(*s, 0);
@@ -2045,7 +2068,7 @@ OPCODE2(F_LOCAL_LOCAL_INDEX, "local[local]", I_UPDATE_SP, {
   index_no_free(Pike_sp-1,Pike_fp->locals+arg2,s);
 });
 
-OPCODE1(F_LOCAL_INDEX, "local index", 0, {
+OPCODE1(F_LOCAL_INDEX, "local index", I_ARG_T_LOCAL, {
   struct svalue *s;
   struct svalue tmp;
   s = Pike_fp->locals + arg1;
@@ -2055,7 +2078,8 @@ OPCODE1(F_LOCAL_INDEX, "local index", 0, {
   move_svalue (Pike_sp - 1, &tmp);
 });
 
-OPCODE2(F_GLOBAL_LOCAL_INDEX, "global[local]", I_UPDATE_SP, {
+OPCODE2(F_GLOBAL_LOCAL_INDEX, "global[local]",
+        I_UPDATE_SP|I_ARG_T_GLOBAL|I_ARG2_T_LOCAL, {
   struct svalue *s;
   struct svalue tmp;
   low_index_current_object_no_free(Pike_sp, arg1);
@@ -2067,7 +2091,7 @@ OPCODE2(F_GLOBAL_LOCAL_INDEX, "global[local]", I_UPDATE_SP, {
   move_svalue (Pike_sp - 1, &tmp);
 });
 
-OPCODE2(F_LOCAL_ARROW, "local->x", I_UPDATE_SP, {
+OPCODE2(F_LOCAL_ARROW, "local->x", I_UPDATE_SP|I_ARG_T_STRING|I_ARG2_T_LOCAL, {
   struct pike_frame *fp = Pike_fp;
   struct svalue tmp;
   SET_SVAL(tmp, PIKE_T_STRING, 1, string,
@@ -2077,7 +2101,7 @@ OPCODE2(F_LOCAL_ARROW, "local->x", I_UPDATE_SP, {
   print_return_value();
 });
 
-OPCODE1(F_ARROW, "->x", 0, {
+OPCODE1(F_ARROW, "->x", I_ARG_T_STRING, {
   struct svalue tmp;
   struct svalue tmp2;
   SET_SVAL(tmp, PIKE_T_STRING, 1, string,
@@ -2088,7 +2112,7 @@ OPCODE1(F_ARROW, "->x", 0, {
   print_return_value();
 });
 
-OPCODE1(F_STRING_INDEX, "string index", 0, {
+OPCODE1(F_STRING_INDEX, "string index", I_ARG_T_STRING, {
   struct svalue tmp;
   struct svalue tmp2;
   SET_SVAL(tmp, PIKE_T_STRING, 0, string,
@@ -2201,11 +2225,11 @@ OPCODE0(F_SIZEOF_STRING, "sizeof(string)", 0, {
   push_int(val);
 });
 
-OPCODE1(F_SIZEOF_LOCAL, "sizeof local", I_UPDATE_SP, {
+OPCODE1(F_SIZEOF_LOCAL, "sizeof local", I_UPDATE_SP|I_ARG_T_LOCAL, {
   push_int(pike_sizeof(Pike_fp->locals+arg1));
 });
 
-OPCODE1(F_SIZEOF_LOCAL_STRING, "sizeof local string", I_UPDATE_SP, {
+OPCODE1(F_SIZEOF_LOCAL_STRING, "sizeof local string", I_UPDATE_SP|I_ARG_T_LOCAL, {
   push_int(pike_sizeof(Pike_fp->locals+arg1));
 });
 
@@ -2314,7 +2338,7 @@ PIKE_CONCAT(OP,_RETURN)(PIKE_CONCAT3(F_MARK_,OPCODE,_AND_RETURN),	\
 })
 
 
-OPCODE1_JUMP(F_CALL_LFUN , "call lfun", I_UPDATE_ALL, {
+OPCODE1_JUMP(F_CALL_LFUN , "call lfun", I_UPDATE_ALL|I_ARG_T_GLOBAL, {
         PIKE_OPCODE_T *addr;
         JUMP_SET_TO_PC_AT_NEXT (Pike_fp->return_addr);
         if((addr = lower_mega_apply((INT32)(Pike_sp - *--Pike_mark_sp),
@@ -2330,7 +2354,7 @@ OPCODE1_JUMP(F_CALL_LFUN , "call lfun", I_UPDATE_ALL, {
         }
     });
 
-OPCODE2_JUMP(F_CALL_LFUN_N , "call lfun <n>", I_UPDATE_ALL, {
+OPCODE2_JUMP(F_CALL_LFUN_N , "call lfun <n>", I_UPDATE_ALL|I_ARG_T_GLOBAL, {
         PIKE_OPCODE_T *addr;
         JUMP_SET_TO_PC_AT_NEXT (Pike_fp->return_addr);
         if((addr = lower_mega_apply(arg2,
@@ -2346,7 +2370,8 @@ OPCODE2_JUMP(F_CALL_LFUN_N , "call lfun <n>", I_UPDATE_ALL, {
         }
     });
 
-OPCODE1_JUMP(F_CALL_LFUN_AND_POP, "call lfun & pop", I_UPDATE_ALL, {
+OPCODE1_JUMP(F_CALL_LFUN_AND_POP, "call lfun & pop",
+             I_UPDATE_ALL|I_ARG_T_GLOBAL, {
         PIKE_OPCODE_T *addr;
         JUMP_SET_TO_PC_AT_NEXT (Pike_fp->return_addr);
         if((addr = lower_mega_apply((INT32)(Pike_sp - *--Pike_mark_sp),
@@ -2363,7 +2388,8 @@ OPCODE1_JUMP(F_CALL_LFUN_AND_POP, "call lfun & pop", I_UPDATE_ALL, {
         }
     });
 
-OPCODE1_RETURN(F_CALL_LFUN_AND_RETURN , "call lfun & return", I_UPDATE_ALL, {
+OPCODE1_RETURN(F_CALL_LFUN_AND_RETURN , "call lfun & return",
+               I_UPDATE_ALL|I_ARG_T_GLOBAL, {
         PIKE_OPCODE_T *addr;
         if((addr = lower_mega_apply((INT32)(Pike_sp - *--Pike_mark_sp),
                             Pike_fp->current_object,
@@ -2377,7 +2403,8 @@ OPCODE1_RETURN(F_CALL_LFUN_AND_RETURN , "call lfun & return", I_UPDATE_ALL, {
         }
   });
 
-OPCODE1_JUMP(F_MARK_CALL_LFUN, "mark, call lfun" , I_UPDATE_ALL, {
+OPCODE1_JUMP(F_MARK_CALL_LFUN, "mark, call lfun" ,
+             I_UPDATE_ALL|I_ARG_T_GLOBAL, {
     PIKE_OPCODE_T *addr;
     JUMP_SET_TO_PC_AT_NEXT (Pike_fp->return_addr);
     if((addr = lower_mega_apply(0, Pike_fp->current_object,
@@ -2389,7 +2416,8 @@ OPCODE1_JUMP(F_MARK_CALL_LFUN, "mark, call lfun" , I_UPDATE_ALL, {
     }
   });
 
-OPCODE1_JUMP( F_MARK_CALL_LFUN_AND_POP , "mark, call lfun & pop", I_UPDATE_ALL, {
+OPCODE1_JUMP( F_MARK_CALL_LFUN_AND_POP , "mark, call lfun & pop",
+              I_UPDATE_ALL|I_ARG_T_GLOBAL, {
     PIKE_OPCODE_T *addr;
     JUMP_SET_TO_PC_AT_NEXT (Pike_fp->return_addr);
     if((addr = lower_mega_apply(0, Pike_fp->current_object,
@@ -2405,7 +2433,8 @@ OPCODE1_JUMP( F_MARK_CALL_LFUN_AND_POP , "mark, call lfun & pop", I_UPDATE_ALL, 
     }
   });
 
-OPCODE1_RETURN(F_MARK_CALL_LFUN_AND_RETURN , "mark, call lfun & return", I_UPDATE_ALL, {
+OPCODE1_RETURN(F_MARK_CALL_LFUN_AND_RETURN , "mark, call lfun & return",
+               I_UPDATE_ALL|I_ARG_T_GLOBAL, {
     PIKE_OPCODE_T *addr;
     if((addr = lower_mega_apply(0, Pike_fp->current_object,
                                 (arg1+Pike_fp->context->identifier_level))))
@@ -2425,7 +2454,7 @@ MKAPPLY2(OPCODE1,APPLY,"apply",APPLY_SVALUE_STRICT,
 
 MKAPPLY(OPCODE0,CALL_FUNCTION,"call function",APPLY_STACK, 0,0);
 
-OPCODE1_JUMP(F_CALL_OTHER,"call other", I_UPDATE_ALL, {
+OPCODE1_JUMP(F_CALL_OTHER,"call other", I_UPDATE_ALL|I_ARG_T_STRING, {
   INT32 args=(INT32)(Pike_sp - *--Pike_mark_sp);
   struct svalue *s;
   s = Pike_sp-args;
@@ -2483,7 +2512,8 @@ OPCODE1_JUMP(F_CALL_OTHER,"call other", I_UPDATE_ALL, {
   }
 });
 
-OPCODE1_JUMP(F_CALL_OTHER_AND_POP,"call other & pop", I_UPDATE_ALL, {
+OPCODE1_JUMP(F_CALL_OTHER_AND_POP,"call other & pop",
+             I_UPDATE_ALL|I_ARG_T_STRING, {
   INT32 args=(INT32)(Pike_sp - *--Pike_mark_sp);
   struct svalue *s;
   s = Pike_sp-args;
@@ -2545,7 +2575,8 @@ OPCODE1_JUMP(F_CALL_OTHER_AND_POP,"call other & pop", I_UPDATE_ALL, {
   }
 });
 
-OPCODE1_RETURN(F_CALL_OTHER_AND_RETURN,"call other & return", I_UPDATE_ALL, {
+OPCODE1_RETURN(F_CALL_OTHER_AND_RETURN,"call other & return",
+               I_UPDATE_ALL|I_ARG_T_STRING, {
   INT32 args=(INT32)(Pike_sp - *--Pike_mark_sp);
   struct svalue *s;
   s = Pike_sp - args;
@@ -2658,64 +2689,70 @@ OPCODE1_RETURN(F_CALL_OTHER_AND_RETURN,"call other & return", I_UPDATE_ALL, {
   } while (0)
 #endif
 
-OPCODE1(F_CALL_BUILTIN, "call builtin", I_UPDATE_ALL, {
+OPCODE1(F_CALL_BUILTIN, "call builtin", I_UPDATE_ALL|I_ARG_T_CONST, {
   FAST_CHECK_THREADS_ON_CALL();
   DO_CALL_BUILTIN((INT32)(Pike_sp - *--Pike_mark_sp));
 });
 
-OPCODE1(F_CALL_BUILTIN_AND_POP,"call builtin & pop", I_UPDATE_ALL, {
+OPCODE1(F_CALL_BUILTIN_AND_POP,"call builtin & pop",
+        I_UPDATE_ALL|I_ARG_T_CONST, {
   FAST_CHECK_THREADS_ON_CALL();
   DO_CALL_BUILTIN((INT32)(Pike_sp - *--Pike_mark_sp));
   pop_stack();
 });
 
-OPCODE1_RETURN(F_CALL_BUILTIN_AND_RETURN,"call builtin & return", I_UPDATE_ALL, {
+OPCODE1_RETURN(F_CALL_BUILTIN_AND_RETURN,"call builtin & return",
+               I_UPDATE_ALL|I_ARG_T_CONST, {
   FAST_CHECK_THREADS_ON_CALL();
   DO_CALL_BUILTIN((INT32)(Pike_sp - *--Pike_mark_sp));
   DO_DUMB_RETURN;
 });
 
 
-OPCODE1(F_MARK_CALL_BUILTIN, "mark, call builtin", I_UPDATE_ALL, {
+OPCODE1(F_MARK_CALL_BUILTIN, "mark, call builtin",
+        I_UPDATE_ALL|I_ARG_T_CONST, {
   FAST_CHECK_THREADS_ON_CALL();
   DO_CALL_BUILTIN(0);
 });
 
-OPCODE1(F_MARK_CALL_BUILTIN_AND_POP, "mark, call builtin & pop", 0, {
+OPCODE1(F_MARK_CALL_BUILTIN_AND_POP, "mark, call builtin & pop",
+        I_ARG_T_CONST, {
   FAST_CHECK_THREADS_ON_CALL();
   DO_CALL_BUILTIN(0);
   pop_stack();
 });
 
-OPCODE1_RETURN(F_MARK_CALL_BUILTIN_AND_RETURN, "mark, call builtin & return", I_UPDATE_ALL, {
+OPCODE1_RETURN(F_MARK_CALL_BUILTIN_AND_RETURN, "mark, call builtin & return",
+               I_UPDATE_ALL|I_ARG_T_CONST, {
   FAST_CHECK_THREADS_ON_CALL();
   DO_CALL_BUILTIN(0);
   DO_DUMB_RETURN;
 });
 
 
-OPCODE1(F_CALL_BUILTIN1, "call builtin 1", I_UPDATE_ALL, {
+OPCODE1(F_CALL_BUILTIN1, "call builtin 1", I_UPDATE_ALL|I_ARG_T_CONST, {
   FAST_CHECK_THREADS_ON_CALL();
   DO_CALL_BUILTIN(1);
 });
 
-OPCODE2(F_CALL_BUILTIN_N, "call builtin N", I_UPDATE_ALL, {
+OPCODE2(F_CALL_BUILTIN_N, "call builtin N", I_UPDATE_ALL|I_ARG_T_CONST, {
   FAST_CHECK_THREADS_ON_CALL();
   DO_CALL_BUILTIN(arg2);
 });
 
-OPCODE2( F_APPLY_N, "apply N", I_UPDATE_ALL, {
+OPCODE2( F_APPLY_N, "apply N", I_UPDATE_ALL|I_ARG_T_CONST, {
    mega_apply( APPLY_SVALUE_STRICT, arg2, &((Pike_fp->context->prog->constants + arg1)->sval), 0 );
 });
 
-OPCODE1(F_CALL_BUILTIN1_AND_POP, "call builtin1 & pop", I_UPDATE_ALL, {
+OPCODE1(F_CALL_BUILTIN1_AND_POP, "call builtin1 & pop",
+        I_UPDATE_ALL|I_ARG_T_CONST, {
   FAST_CHECK_THREADS_ON_CALL();
   DO_CALL_BUILTIN(1);
   pop_stack();
 });
 
 OPCODE1(F_LTOSVAL_CALL_BUILTIN_AND_ASSIGN, "ltosval, call builtin & assign",
-	I_UPDATE_ALL, {
+        I_UPDATE_ALL|I_ARG_T_CONST, {
   INT32 args = (INT32)(Pike_sp - *--Pike_mark_sp);
   ONERROR uwp;
 
@@ -2761,7 +2798,7 @@ OPCODE1(F_LTOSVAL_CALL_BUILTIN_AND_ASSIGN, "ltosval, call builtin & assign",
 });
 
 OPCODE1(F_LTOSVAL_CALL_BUILTIN_AND_ASSIGN_POP,
-	"ltosval, call builtin, assign & pop", I_UPDATE_ALL, {
+        "ltosval, call builtin, assign & pop", I_UPDATE_ALL|I_ARG_T_CONST, {
   INT32 args = (INT32)(Pike_sp - *--Pike_mark_sp);
   ONERROR uwp;
 
@@ -2864,7 +2901,8 @@ OPCODE1(F_LTOSVAL_CALL_BUILTIN_AND_ASSIGN_POP,
 }while(0)
 
 /* Assume that the number of arguments is correct */
-OPCODE1_PTRJUMP(F_COND_RECUR, "recur if not overloaded", I_UPDATE_ALL, {
+OPCODE1_PTRJUMP(F_COND_RECUR, "recur if not overloaded",
+                I_UPDATE_ALL|I_ARG_T_GLOBAL, {
   PIKE_OPCODE_T *addr;
   struct program *p;
   p = Pike_fp->current_program;
@@ -3101,17 +3139,18 @@ OPCODE2(F_MAGIC_ANNOTATIONS, "::_annotations", I_UPDATE_SP, {
 });
 
 /* Swap the top stack element and a local variable. */
-OPCODE1(F_SWAP_STACK_LOCAL, "swap_stack_local", 0, {
+OPCODE1(F_SWAP_STACK_LOCAL, "swap_stack_local", I_ARG_T_LOCAL, {
     struct svalue tmp = Pike_fp->locals[arg1];
     Pike_fp->locals[arg1] = Pike_sp[-1];
     Pike_sp[-1] = tmp;
   });
 
-OPCODE1(F_GENERATOR, "generator", 0, {
+OPCODE1(F_GENERATOR, "generator", I_ARG_T_GLOBAL, {
     Pike_fp->fun = arg1;
   });
 
-OPCODE1(F_RESTORE_STACK_FROM_LOCAL, "restore_stack", I_UPDATE_SP, {
+OPCODE1(F_RESTORE_STACK_FROM_LOCAL, "restore_stack",
+        I_UPDATE_SP|I_ARG_T_LOCAL, {
     struct array *a;
 
     if(UNLIKELY(TYPEOF(Pike_fp->locals[arg1]) != PIKE_T_ARRAY))
@@ -3143,7 +3182,7 @@ OPCODE1(F_RESTORE_STACK_FROM_LOCAL, "restore_stack", I_UPDATE_SP, {
     }
   });
 
-OPCODE2(F_SAVE_STACK_TO_LOCAL, "save_stack", 0, {
+OPCODE2(F_SAVE_STACK_TO_LOCAL, "save_stack", I_ARG_T_LOCAL, {
     struct svalue *save_sp = frame_get_save_sp(Pike_fp);
     ptrdiff_t len = Pike_sp - save_sp - arg2;
     struct svalue **save_mark_sp = Pike_fp->save_mark_sp;
