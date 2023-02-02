@@ -23,6 +23,7 @@
 #include "interpret.h"
 #include "pikecode.h"
 #include "pike_compiler.h"
+#include "pike_types.h"
 
 static int hasarg(int opcode)
 {
