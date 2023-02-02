@@ -34,15 +34,52 @@ static int hasarg2(int opcode)
   return instrs[opcode-F_OFFSET].flags & I_HASARG2;
 }
 
+static int arg_type(int opcode)
+{
+  return instrs[opcode-F_OFFSET].flags & I_ARG_T_MASK;
+}
+
+static int arg2_type(int opcode)
+{
+  return (instrs[opcode-F_OFFSET].flags >> I_ARG2_T_SHIFT) & I_ARG_T_MASK;
+}
+
+static void dump_arg(int arg, int argt)
+{
+  switch(argt) {
+  case I_ARG_T_CONST:	/* FIXME */
+  default:
+    fprintf(stderr, "%d", arg);
+    break;
+  case I_ARG_T_LOCAL:
+    fprintf(stderr, "$%d", arg);
+    break;
+  case I_ARG_T_RTYPE:
+    fprintf(stderr, "%s", get_name_of_type(arg));
+    break;
+  case I_ARG_T_GLOBAL:
+    safe_pike_fprintf(stderr, "%S",
+                      ID_FROM_INT(Pike_compiler->new_program, arg)->name);
+    break;
+  case I_ARG_T_STRING:
+    safe_pike_fprintf(stderr, "%q",
+                      Pike_compiler->new_program->strings[arg]);
+    break;
+  }
+}
+
 static void dump_instr(p_instr *p)
 {
   if(!p) return;
   fprintf(stderr,"%s",get_token_name(p->opcode));
   if(hasarg(p->opcode))
   {
-    fprintf(stderr,"(%d",p->arg);
-    if(hasarg2(p->opcode))
-      fprintf(stderr,",%d",p->arg2);
+    fprintf(stderr, "(");
+    dump_arg(p->arg, arg_type(p->opcode));
+    if(hasarg2(p->opcode)) {
+      fprintf(stderr, ", ");
+      dump_arg(p->arg2, arg2_type(p->opcode));
+    }
     fprintf(stderr,")");
   }
 }

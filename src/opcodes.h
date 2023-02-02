@@ -17,7 +17,7 @@ struct keyword
 {
   const char *word;
   const int token;
-  const int flags;
+  const unsigned int flags;
 #ifdef PIKE_USE_MACHINE_CODE
   void *address;
 #endif
@@ -50,6 +50,24 @@ struct keyword
 #define I_UPDATE_M_SP	1024	/* Opcode modifies Pike_mark_sp */
 
 #define I_RETURN	2048	/* Opcode may return to the previous frame. */
+
+/* Argument type information for disassembly. */
+#define I_ARG_T_INT	0	/* Argument is integer. */
+#define I_ARG_T_STRING	0x1000	/* Argument is string index. */
+#define I_ARG_T_LOCAL	0x2000	/* Argument is local number. */
+#define I_ARG_T_GLOBAL	0x3000	/* Argument is global number. */
+#define I_ARG_T_RTYPE	0x4000	/* Argument is runtime type. */
+#define I_ARG_T_CONST	0x5000	/* Argument is constant index. */
+#define I_ARG_T_MASK	0x7000	/* Mask for I_ARG_T_* above. */
+
+#define I_ARG2_T_SHIFT	3	/* Bits to shift left for arg2 info. */
+#define I_ARG2_T_INT	0	/* Argument is integer. */
+#define I_ARG2_T_STRING	0x08000	/* Argument is string index. */
+#define I_ARG2_T_LOCAL	0x10000	/* Argument is local number. */
+#define I_ARG2_T_GLOBAL	0x18000	/* Argument is global number. */
+#define I_ARG2_T_RTYPE	0x20000	/* Argument is runtime type. */
+#define I_ARG2_T_CONST	0x28000	/* Argument is constant index. */
+#define I_ARG2_T_MASK	0x38000	/* Mask for I_ARG_T_* above. */
 
 /* Convenience variants */
 #define I_TWO_ARGS	(I_HASARG | I_HASARG2)
