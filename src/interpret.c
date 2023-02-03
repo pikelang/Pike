@@ -392,10 +392,7 @@ int lvalue_to_svalue_no_free(struct svalue *to, struct svalue *lval)
       break;
 
     default:
-      if(SAFE_IS_ZERO(lval))
-        index_error(0,0,lval,lval+1,"Indexing the NULL value.\n");
-      else
-        index_error(0,0,lval,lval+1,"Indexing a basic type.\n");
+      index_error(0, 0, lval, lval+1, NULL);
   }
   return run_time_type;
 }
@@ -471,10 +468,7 @@ PMOD_EXPORT void atomic_get_set_lvalue(struct svalue *lval,
 #endif
 
     default:
-      if(SAFE_IS_ZERO(lval))
-        index_error(0, 0, lval, lval+1, "Indexing the NULL value.\n");
-      else
-        index_error(0, 0, lval, lval+1, "Indexing a basic type.\n");
+      index_error(0, 0, lval, lval+1, NULL);
   }
 }
 
@@ -529,10 +523,7 @@ PMOD_EXPORT void assign_lvalue(struct svalue *lval,struct svalue *from)
     break;
 
   default:
-   if(SAFE_IS_ZERO(lval))
-     index_error(0,0,lval,lval+1,"Indexing the NULL value.\n");
-   else
-     index_error(0,0,lval,lval+1,"Indexing a basic type.\n");
+    index_error(0, 0, lval, lval+1, NULL);
   }
 }
 
@@ -567,10 +558,7 @@ union anything *get_pointer_if_this_type(struct svalue *lval, TYPE_T t)
     case T_MULTISET: return 0;
 
     default:
-      if(SAFE_IS_ZERO(lval))
-        index_error(0,0,lval,lval+1,"Indexing the NULL value.\n");
-      else
-        index_error(0,0,lval,lval+1,"Indexing a basic type.\n");
+      index_error(0, 0, lval, lval+1, NULL);
       return 0;
   }
 }

@@ -79,22 +79,19 @@ void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
       if(i<0 || i>=len)
       {
 	if(len == 0)
-	  Pike_error("Attempt to index the empty string with %"PRINTPIKEINT"d.\n", i);
+          index_error(NULL, 0, what, ind,
+                      "Attempt to index the empty string with %"PRINTPIKEINT"d.\n", i);
 	else
-	  Pike_error("Index %"PRINTPIKEINT"d is out of string range "
-		     "%"PRINTPTRDIFFT"d..%"PRINTPTRDIFFT"d.\n",
-		     i, -len, len - 1);
+          index_error(NULL, 0, what, ind,
+                      "Index %"PRINTPIKEINT"d is out of string range "
+                      "%"PRINTPTRDIFFT"d..%"PRINTPTRDIFFT"d.\n",
+                      i, -len, len - 1);
       } else
 	i=index_shared_string(what->u.string,i);
       SET_SVAL(*to, T_INT, NUMBER_NUMBER, integer, i);
       break;
     }else{
-      if (TYPEOF(*ind) == T_STRING)
-	Pike_error ("Expected integer as string index, got \"%S\".\n",
-		    ind->u.string);
-      else
-	Pike_error ("Expected integer as string index, got %s.\n",
-		    get_name_of_type (TYPEOF(*ind)));
+      index_error(NULL, 0, what, ind, NULL);
     }
 
   case T_FUNCTION:
@@ -110,12 +107,12 @@ void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
       index_no_free(to, what, ind);
       if(IS_UNDEFINED(to)) {
 	if (val) {
-	  Pike_error("Indexing the integer %"PRINTPIKEINT"d "
-		     "with unknown method \"%S\".\n",
-		     val, ind->u.string);
+          index_error(NULL, 0, what, ind,
+                      "Indexing the integer %"PRINTPIKEINT"d "
+                      "with unknown method \"%S\".\n",
+                      val, ind->u.string);
 	} else {
-	  Pike_error("Indexing the NULL value with \"%S\".\n",
-		     ind->u.string);
+          index_error(NULL, 0, what, ind, NULL);
 	}
       }
       break;
@@ -125,26 +122,7 @@ void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 
   default:
   index_error:
-    if (TYPEOF(*ind) == T_INT)
-      Pike_error ("Cannot index %s with %"PRINTPIKEINT"d.\n",
-		  (TYPEOF(*what) == T_INT && !what->u.integer)?
-		  "the NULL value":get_name_of_type(TYPEOF(*what)),
-		  ind->u.integer);
-    else if (TYPEOF(*ind) == T_FLOAT)
-      Pike_error ("Cannot index %s with %"PRINTPIKEFLOAT"e.\n",
-		  (TYPEOF(*what) == T_INT && !what->u.integer)?
-		  "the NULL value":get_name_of_type(TYPEOF(*what)),
-		  ind->u.float_number);
-    else if (TYPEOF(*ind) == T_STRING)
-      Pike_error ("Cannot index %s with \"%S\".\n",
-		  (TYPEOF(*what) == T_INT && !what->u.integer)?
-		  "the NULL value":get_name_of_type(TYPEOF(*what)),
-		  ind->u.string);
-    else
-      Pike_error ("Cannot index %s with %s.\n",
-		  (TYPEOF(*what) == T_INT && !what->u.integer)?
-		  "the NULL value":get_name_of_type(TYPEOF(*what)),
-		  get_name_of_type (TYPEOF(*ind)));
+    index_error(NULL, 0, what, ind, NULL);
   }
 }
 
