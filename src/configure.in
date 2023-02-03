@@ -4016,7 +4016,22 @@ if test "x$pike_cv_thread_t_type" = "xpointer"; then
   AC_DEFINE(PIKE_THREAD_T_IS_POINTER)
 fi
 
-if test "x$pike_cv_sys_os" = "xWindows_NT" -o "x$pike_cv_sys_os" = "xAmigaOS"; then :; else
+if test "x$pike_cv_sys_os" = "xWindows_NT" -o "x$pike_cv_sys_os" = "xAmigaOS"; then
+    :
+elif test "x$pike_cv_sys_os" = "xHaiku" -o "x$pike_cv_sys_os" = "xBeOS"; then
+    # Haiku throws up an interactive window on core-dump, so hard-code
+    # the value.
+    AC_MSG_CHECKING(initial stack limit)
+    AC_CACHE_VAL(pike_cv_initial_stack_size,[
+                     pike_cv_initial_stack_size=16580608
+                 ])
+    if test x$pike_cv_initial_stack_size = x ; then
+        AC_MSG_RESULT(unlimited)
+    else
+        AC_MSG_RESULT($pike_cv_initial_stack_size)
+        AC_DEFINE_UNQUOTED(Pike_INITIAL_STACK_SIZE,$pike_cv_initial_stack_size)
+    fi
+else
   AC_MSG_CHECKING(initial stack limit)
   AC_CACHE_VAL(pike_cv_initial_stack_size,[
     old_core_limit=`ulimit -c`
