@@ -332,7 +332,7 @@ int main()
   set_nonblocking(tmp[0],1);
   signal(SIGALRM, sigalrm_handler1);
   alarm(1);
-  res = read(tmp[0],foo,999);
+  res = recv(tmp[0], foo, 999, 0);
   e = errno;
   alarm(0);
   if ((res >= 0) || (e != EAGAIN)) {
@@ -350,7 +350,7 @@ int main()
   set_nonblocking(tmp[0],0);
   signal(SIGALRM, sigalrm_handler0);
   alarm(1);
-  res = read(tmp[0],foo,999);
+  res = recv(tmp[0], foo, 999, 0);
   e = errno;
   fprintf(stderr,"Failed at end of main; res:%d, errno:%d\n", res, e);
   exit(1);
