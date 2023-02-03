@@ -1057,6 +1057,19 @@ PMOD_EXPORT DECLSPEC(noreturn) void throw_error_object(
 }
 
 /* coverity[+kill] */
+static DECLSPEC(noreturn) void low_throw_error_object(
+  struct object *o,
+  const char *func, const struct svalue *base_sp, int args,
+  const char *desc, ...) ATTRIBUTE((noreturn))
+{
+  va_list foo;
+  va_start(foo,desc);
+  ASSERT_THREAD_SWAPPED_IN();
+  DWERROR("%s(): Throwing an error object\n", func);
+  ERROR_DONE();
+}
+
+/* coverity[+kill] */
 PMOD_EXPORT DECLSPEC(noreturn) void generic_error(
   const char *func,
   const struct svalue *base_sp,  int args,
@@ -1077,7 +1090,59 @@ PMOD_EXPORT DECLSPEC(noreturn) void index_error(
   INIT_ERROR(index);
   ERROR_COPY_SVALUE(index, value);
   ERROR_COPY_SVALUE(index, index);
-  ERROR_DONE();
+  if (!desc) {
+    /* Some default error messages for bad indexing. */
+    push_type_value(get_type_of_svalue(value));
+    push_type_value(get_type_of_svalue(index));
+    if (SAFE_IS_ZERO(value)) {
+      switch(TYPEOF(*index)) {
+      case T_FLOAT:
+        low_throw_error_object(o, func, base_sp, args,
+                               "Indexing the NULL value "
+                               "with %e.\n",
+                               index->u.float_number);
+        break;
+      case T_STRING:
+        low_throw_error_object(o, func, base_sp, args,
+                               "Indexing the NULL value "
+                               "with %q.\n",
+                               index->u.string);
+        break;
+      default:
+        low_throw_error_object(o, func, base_sp, args,
+                               "Indexing the NULL value "
+                               "with a value of type %T.\n",
+                               Pike_sp[-1].u.type);
+        break;
+      }
+    } else {
+      switch(TYPEOF(*index)) {
+      case T_FLOAT:
+        low_throw_error_object(o, func, base_sp, args,
+                               "Indexing a value of type %T "
+                               "with %e.\n",
+                               Pike_sp[-2].u.type, index->u.float_number);
+        break;
+      case T_STRING:
+        low_throw_error_object(o, func, base_sp, args,
+                               "Indexing a value of type %T "
+                               "with %q.\n",
+                               Pike_sp[-2].u.type, index->u.string);
+        break;
+      default:
+        low_throw_error_object(o, func, base_sp, args,
+                               "Indexing a value of type %T "
+                               "with a value of type %T.\n",
+                               Pike_sp[-2].u.type, Pike_sp[-1].u.type);
+        break;
+      }
+    }
+    va_end(foo);
+
+    UNREACHABLE();
+  } else {
+    ERROR_DONE();
+  }
 }
 
 /* coverity[+kill] */
