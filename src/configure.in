@@ -647,6 +647,9 @@ AC_CACHE_VAL(pike_cv_ld_so_run_path_method, [
     Darwin\ *|NetBSD\ *)
       pike_cv_run_path_method=darwin_rpath
     ;;
+    Haiku\ *|BeOS\ *)
+      pike_cv_run_path_method=wl
+    ;;
     *)
       pike_cv_run_path_method=ld_library_path
     ;;
@@ -7565,6 +7568,7 @@ if test -z "$LDSHARED" ; then
     FreeBSD*) LDSHARED="$REALCC -Wl,-Bshareable";;
     NetBSD*) LDSHARED="$REALCC -Wl,-Bshareable";;
     OpenBSD*) LDSHARED="$REALCC -Wl,-Bshareable";;
+    Haiku*|BeOS*) LDSHARED="$REALCC -shared";;
     BSD/OS*)
       case "`uname -r`" in
        [4-9].*) LDSHARED="$REALCC -shared";;
@@ -7627,6 +7631,9 @@ AC_CACHE_VAL(pike_cv_sys_ccshared,[
 	Darwin*)
 	  CCSHARED="-fPIC"
 	;;
+        Haiku*|BeOS*)
+          CCSHARED="-fPIC"
+        ;;
 	Solaris*)
 	  # The Image module runs out of symbol reference space unless we
 	  # use the large PIC model:
@@ -7645,6 +7652,9 @@ AC_CACHE_VAL(pike_cv_sys_ccshared,[
 	Darwin*)
 	  CCSHARED="-fPIC"
 	;;
+        Haiku*|BeOS*)
+          CCSHARED="-fPIC"
+        ;;
         hp*|HP*) CCSHARED="+z"; ;;
 	FreeBSD*) CCSHARED="-fpic";;
 	SCO_SV*) CCSHARED="-KPIC -dy -Bdynamic";;
@@ -7689,6 +7699,7 @@ then
       Darwin*) LINKFORSHARED="-dynamic";;
       hp*|HP*) LINKFORSHARED="-Wl,-E";;
       Linux*) LINKFORSHARED="-rdynamic";;
+      Haiku*|BeOS*) LINKFORSHARED="-Xlinker -export-dynamic";;
       BSD/OS*)
         case "`uname -r`" in
          4.*) LINKFORSHARED="-rdynamic";;
