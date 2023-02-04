@@ -56,6 +56,7 @@ fi
 
 AC_HEADER_DIRENT
 AC_CHECK_LIB(socket, socket)
+AC_CHECK_LIB(network, socket)
 AC_CHECK_LIB(nsl, gethostbyname)
 AC_CHECK_LIB(net, __get_socket_descriptor)
 dnl AC_CHECK_LIB(zfs, libzfs_init)

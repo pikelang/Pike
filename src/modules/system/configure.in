@@ -4,6 +4,7 @@ AC_CONFIG_HEADER(system_machine.h)
 AC_MODULE_INIT(_system)
 
 AC_CHECK_LIB(socket, socket)
+AC_CHECK_LIB(network, socket)
 AC_CHECK_LIB(nsl, gethostbyname)
 AC_CHECK_LIB(net, __get_socket_descriptor)
 

@@ -266,7 +266,7 @@ dnl   fi
 
   # System libs which might be needed
 
-  AC_SEARCH_LIBS(socket, socket)
+  AC_SEARCH_LIBS(socket, socket network)
   AC_SEARCH_LIBS(gethostbyname, nsl)
   AC_SEARCH_LIBS(floor, m)
 

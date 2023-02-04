@@ -3383,6 +3383,9 @@ AC_CHECK_LIB(m, floor)
 
 AC_CHECK_LIB(socket, socket)
 
+# Haiku (and BeOS?) hides socket() et al in -lnetwork.
+AC_CHECK_LIB(network, socket)
+
 AC_CHECK_LIB(util, openpty)
 
 AC_CHECK_LIB(crypt, crypt)
