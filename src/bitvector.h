@@ -91,7 +91,7 @@ static inline unsigned INT32 PIKE_UNUSED_ATTRIBUTE ctz32(unsigned INT32 i) {
 #define ctz16(i) (i ? ctz32(i) : 16)
 #define ctz8(i) (i ? ctz32(i) : 8)
 
-#if !defined(HAVE___BSWAP32) && !defined(HAVE_BSWAP32)
+#if !defined(HAVE___BSWAP32) && !defined(HAVE_BSWAP32) && !defined(bswap32)
 /**
  * Reverses the bytes in the 32-bit integer x.
  */
@@ -178,7 +178,7 @@ static inline unsigned INT32 PIKE_UNUSED_ATTRIBUTE ctz64(UINT64 i) {
 # endif
 }
 
-#if !defined(HAVE___BSWAP64) && !defined(HAVE_BSWAP64)
+#if !defined(HAVE___BSWAP64) && !defined(HAVE_BSWAP64) && !defined(bswap64)
 /**
  * Reverses the bytes in the 64-bit integer x.
  */
@@ -282,7 +282,7 @@ static inline unsigned INT32 PIKE_UNUSED_ATTRIBUTE log2_u32(unsigned INT32 v) {
     return fls32(v) - 1;
 }
 
-#if !defined(HAVE___BSWAP16) && !defined(HAVE_BSWAP16)
+#if !defined(HAVE___BSWAP16) && !defined(HAVE_BSWAP16) && !defined(bswap16)
 #define bswap16(x)     ((unsigned INT16)bswap32((unsigned INT32)x << 16))
 #endif /* !HAVE___BSWAP16 && !HAVE_BSWAP16 */
 
