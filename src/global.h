@@ -612,7 +612,7 @@ typedef struct p_wchar_p
    applicable to OS X. */
 #  define PMOD_EXPORT    __attribute__ ((visibility("default")))
 # elif __GNUC__ >= 4 && !defined(DISABLE_ATTRIBUTE_VISIBILITY)
-#  ifdef DYNAMIC_MODULE
+#  if defined(DYNAMIC_MODULE) || defined(__HAIKU__)
 #    define PMOD_EXPORT  __attribute__ ((visibility("default")))
 #  else
 #    define PMOD_EXPORT  __attribute__ ((visibility("protected")))
