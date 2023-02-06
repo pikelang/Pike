@@ -7440,7 +7440,9 @@ static void get_val_module(void)
     return res.u.object;						\
   }
 
+#undef true
 GET_VAL (true)
+#undef false
 GET_VAL (false)
 GET_VAL (null)
 
