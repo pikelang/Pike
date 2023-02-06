@@ -173,7 +173,7 @@ EOF
           ], [
             AC_CHECK_LIB(network, socket, [
               LIBS="-lnetwork $LIBS"
-            ], [
+            ], [])
           ])
   	fi
   	if echo $LIBS|grep -- -lnsl >&5 2>&5; then
