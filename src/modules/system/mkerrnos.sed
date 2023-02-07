@@ -12,6 +12,7 @@ g
 s/.*/#endif \/* & *\//
 p
 g
+/^[^E]/d
 s/.*/#ifdef WSA&/
 p
 g
