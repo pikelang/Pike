@@ -9,18 +9,6 @@ g
 s/.*/add_integer_constant("&", &, 0);/
 p
 g
-s/.*/#else \/* !& *\//
-p
-g
-s/.*/#ifdef WSA&/
-p
-g
-s/.*/add_integer_constant("&", WSA&, 0);/
-p
-g
-s/.*/#endif \/* WSA& *\//
-p
-g
 s/.*/#endif \/* & *\//
 p
 g
