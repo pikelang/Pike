@@ -82,7 +82,7 @@ if test x$with_oracle = xyes; then
   AC_CACHE_VAL(pike_cv_oracle_oraenv_file, [
     for pike_cv_oracle_oraenv_file in "$with_root/etc/env.d/"*oracle* no; do
       if test -f "$pike_cv_oracle_oraenv_file"; then
-	if egrep '^ORACLE_HOME' "$pike_cv_oracle_oraenv_file" >/dev/null; then
+        if $EGREP '^ORACLE_HOME' "$pike_cv_oracle_oraenv_file" >/dev/null; then
 	  break
 	else
 	  :

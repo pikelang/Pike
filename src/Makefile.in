@@ -68,6 +68,8 @@ INSTALLARGS = --new-style
 YACC=@YACC@
 YFLAGS=-d -v
 
+EGREP=@EGREP@
+
 #
 # This may be -pg
 #
@@ -417,8 +419,8 @@ gcov:
 	  grep -v fatal | \
 	  grep -v -i inline | \
 	  grep -v PIKE_MODULE_EXIT | \
-	  egrep -v '######[ 	]*{$$' | \
-	  egrep -v '######[ 	]*}$$' | \
+	  $(EGREP) -v '######[ 	]*{$$' | \
+	  $(EGREP) -v '######[ 	]*}$$' | \
 	  wc -l | sed -e "s|^|$$f:|" -e 's/:[   ]*/:/' | \
 	  grep -v ':0'; \
 	done | sort -n -t: -k2
@@ -1020,7 +1022,7 @@ doc_clean:
 
 
 pike.syms: $(SRCDIR)/interpret.c $(SRCDIR)/interpreter.h $(SRCDIR)/program.c $(SRCDIR)/builtin_functions.c
-	( cat $(SRCDIR)/*.h *.h | egrep  '^[  ]*#[     ]*define[      ][       ]*[a-zA-Z_0-9]*[       ][      ]*[0-9][xabcdefABCDEF0-9]*[  ]*' ; \
+	( cat $(SRCDIR)/*.h *.h | $(EGREP)  '^[ 	]*#[ 	]*define[ 	][ 	]*[a-zA-Z_0-9]*[ 	][ 	]*[0-9][xabcdefABCDEF0-9]*[ 	]*' ; \
 	echo "#define" `$(CPP) $(PREFLAGS) -DSTEP_BREAK_LINE='STEP_BREAK_LINE __LINE__' $(SRCDIR)/interpreter.h | grep STEP_BREAK_LINE` ) >pike.syms
 
 # We touch the files that depend on language.h_src and

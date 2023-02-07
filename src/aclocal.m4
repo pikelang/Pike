@@ -592,7 +592,7 @@ $2], break, pike_cv_search_$1=no)
 AC_DEFUN([PIKE_AC_CC_IS_RNT],
 [
   if test "x$pike_cc_is_rnt" = "x"; then
-    if echo foo "$CC" | egrep 'rntc.|rnt.cl' >/dev/null; then
+    if echo foo "$CC" | $EGREP 'rntc.|rnt.cl' >/dev/null; then
       pike_cc_is_rnt=yes
     else
       pike_cc_is_rnt=no
@@ -865,6 +865,8 @@ define([AC_LOW_MODULE_INIT],
 [
   
   MY_AC_PROG_CC
+
+  AC_PROG_EGREP
 
   PIKE_SELECT_ABI
 

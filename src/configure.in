@@ -725,7 +725,7 @@ else
   AC_MSG_RESULT(no)
   SMARTBUILDCC="${REALCC-cc}"
 
-  if echo foo "$CC" | egrep 'rntc.|rnt.cl' >/dev/null; then
+  if echo foo "$CC" | $EGREP 'rntc.|rnt.cl' >/dev/null; then
     PIKE_MSG_WARN([rntcc/rntcl/rnticl/rntecl detected.])
     AC_PATH_PROGS(SMARTBUILDCC,gcc cc egcs,gcc, $PATH:$EXTRA_PATH)
     echo Using $SMARTBUILDCC to compile smartlink.
