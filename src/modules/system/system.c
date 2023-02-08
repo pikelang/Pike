@@ -131,8 +131,37 @@
 #endif
 
 /*
+ * Globals
+ */
+
+struct mapping *strerror_lookup = NULL;
+
+/*
  * Functions
  */
+
+static struct pike_string *pike_strerror(int e)
+{
+  struct svalue s;
+  struct svalue *val;
+
+#if EINVAL < 0
+  /* Under some circumstances Haiku can apparently return
+   * positive errnos.
+   */
+  if (e > 0) e = -e;
+#endif
+
+  SET_SVAL(s, PIKE_T_INT, NUMBER_NUMBER, integer, e);
+
+  val = strerror_lookup? low_mapping_lookup(strerror_lookup, &s): NULL;
+
+  if (!val) return NULL;
+
+  if (TYPEOF(*val) == PIKE_T_STRING) return val->u.string;
+
+  return NULL;
+}
 
 /* Helper functions */
 
@@ -3175,7 +3204,7 @@ void f_hw_random(INT32 args)
  */
 void f_strerror(INT32 args)
 {
-  char *s;
+  struct pike_string *s;
   int err;
 
   if(args!=1)
@@ -3185,22 +3214,40 @@ void f_strerror(INT32 args)
 
   err = sp[-args].u.integer;
   pop_n_elems(args);
-  if(err < 0 || err > 256 )
-    s=0;
-  else {
+
+  s = pike_strerror(err);
+  if (s) {
+    ref_push_string(s);
+    return;
+  }
+
+  /* An errno we do not know about, or the lookup table
+   * has not been initialized yet.
+   */
+
 #ifdef HAVE_STRERROR
-    s=strerror(err);
+  {
+    char *s = NULL;
+#if EINVAL > 0
+    /* Some implementations of strerror index an array without
+     * range checking...
+     */
+    if(err > 0 && err < 256 ) {
+      s=strerror(err);
+    }
 #else
-    s=0;
+    /* Negative errnos are apparently valid on this platform
+     * (eg Haiku or BeOS).
+     */
+    s = strerror(err);
 #endif
+    if(s) push_text(s);
   }
-  if(s)
-    push_text(s);
-  else {
-    push_static_text("Error ");
-    push_int(err);
-    f_add(2);
-  }
+#endif
+
+  push_static_text("Error ");
+  push_int(err);
+  f_add(2);
 }
 
 /*
@@ -3209,6 +3256,8 @@ void f_strerror(INT32 args)
 
 PIKE_MODULE_INIT
 {
+  int sz;
+
 #ifdef GETHOSTBYNAME_MUTEX_EXISTS
   mt_init(&gethostbyname_mutex);
 #endif
@@ -3574,7 +3623,21 @@ PIKE_MODULE_INIT
 #endif
 
   /* errnos */
+  sz = Pike_compiler->new_program->num_identifiers;
 #define ADD_ERRNO(VAL, SYM, DESC) add_integer_constant(SYM, VAL, 0);
+#include "add-errnos.h"
+#undef ADD_ERRNO
+
+  /* strerror lookup */
+  strerror_lookup =
+    allocate_mapping(Pike_compiler->new_program->num_identifiers - sz);
+#define ADD_ERRNO(VAL, SYM, DESC)				\
+  if (DESC[0]) {						\
+    push_int(VAL);						\
+    push_text(DESC);						\
+    mapping_insert(strerror_lookup, Pike_sp-2, Pike_sp-1);	\
+    pop_n_elems(2);						\
+  }
 #include "add-errnos.h"
 #undef ADD_ERRNO
 
@@ -3596,4 +3659,6 @@ PIKE_MODULE_EXIT
 #ifdef GETHOSTBYNAME_MUTEX_EXISTS
   mt_destroy(&gethostbyname_mutex);
 #endif
+  free_mapping(strerror_lookup);
+  strerror_lookup = NULL;
 }
