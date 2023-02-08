@@ -1519,44 +1519,6 @@ void f_mv(INT32 args)
   push_int(!i);
 }
 
-/*! @decl string strerror(int errno)
- *!
- *! This function returns a description of an error code. The error
- *! code is usually obtained from eg @[Stdio.File->errno()].
- *!
- *! @note
- *!   On some platforms the string returned can be somewhat nondescriptive.
- */
-void f_strerror(INT32 args)
-{
-  char *s;
-  int err;
-
-  if(args!=1)
-    SIMPLE_WRONG_NUM_ARGS_ERROR("strerror", 1);
-  if(TYPEOF(sp[-args]) != T_INT)
-    SIMPLE_ARG_TYPE_ERROR("strerror", 1, "int");
-
-  err = sp[-args].u.integer;
-  pop_n_elems(args);
-  if(err < 0 || err > 256 )
-    s=0;
-  else {
-#ifdef HAVE_STRERROR
-    s=strerror(err);
-#else
-    s=0;
-#endif
-  }
-  if(s)
-    push_text(s);
-  else {
-    push_static_text("Error ");
-    push_int(err);
-    f_add(2);
-  }
-}
-
 /*! @decl int errno()
  *!
  *! This function returns the system error from the last file operation.
@@ -1805,9 +1767,6 @@ void init_stdio_efuns(void)
 /* function(string,mixed*,void|mapping(string:string):int) */
   ADD_EFUN("exece",f_exece,tFunc(tStr tArr(tMix) tOr(tVoid,tMap(tStr,tStr)),tInt),OPT_SIDE_EFFECT);
 #endif
-
-/* function(int:string) */
-  ADD_EFUN("strerror",f_strerror,tFunc(tInt,tStr),0);
 }
 
 void exit_stdio_efuns(void)

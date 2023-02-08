@@ -32,6 +32,8 @@
 #include "program_id.h"
 #include "sprintf.h"
 
+#include "../system/system.h"	/* For f_strerror(). */
+
 #include <sys/stat.h>
 #ifdef HAVE_SYS_PARAM_H
 #include <sys/param.h>

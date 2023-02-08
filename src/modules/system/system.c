@@ -3165,6 +3165,44 @@ void f_hw_random(INT32 args)
 /*! @endmodule
  */
 
+/*! @decl string strerror(int errno)
+ *!
+ *! This function returns a description of an error code. The error
+ *! code is usually obtained from eg @[Stdio.File->errno()].
+ *!
+ *! @note
+ *!   On some platforms the string returned can be somewhat nondescriptive.
+ */
+void f_strerror(INT32 args)
+{
+  char *s;
+  int err;
+
+  if(args!=1)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("strerror", 1);
+  if(TYPEOF(sp[-args]) != T_INT)
+    SIMPLE_ARG_TYPE_ERROR("strerror", 1, "int");
+
+  err = sp[-args].u.integer;
+  pop_n_elems(args);
+  if(err < 0 || err > 256 )
+    s=0;
+  else {
+#ifdef HAVE_STRERROR
+    s=strerror(err);
+#else
+    s=0;
+#endif
+  }
+  if(s)
+    push_text(s);
+  else {
+    push_static_text("Error ");
+    push_int(err);
+    f_add(2);
+  }
+}
+
 /*
  * Module linkage
  */
@@ -3537,6 +3575,9 @@ PIKE_MODULE_INIT
 
   /* errnos */
 #include "add-errnos.h"
+
+/* function(int:string) */
+  ADD_EFUN("strerror", f_strerror, tFunc(tInt, tStr), 0);
 }
 
 PIKE_MODULE_EXIT

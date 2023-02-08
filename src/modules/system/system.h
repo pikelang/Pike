@@ -24,6 +24,11 @@
  */
 
 /*
+ * system.c
+ */
+void f_strerror(INT32 args);
+
+/*
  * passwords.c
  */
 void f_getgrnam(INT32 args);
