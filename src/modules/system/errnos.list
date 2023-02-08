@@ -1,181 +1,258 @@
-# Haiku/BeOS error codes and error offsets.
-B_ALREADY_RUNNING			# Haiku/BeOS
-B_AMBIGUOUS_APP_LAUNCH			# Haiku/BeOS
-B_APP_ERROR_BASE			# Haiku/BeOS
-B_BAD_ADDRESS				# Haiku/BeOS
-B_BAD_DATA				# Haiku/BeOS
-B_BAD_HANDLER				# Haiku/BeOS
-B_BAD_IMAGE_ID				# Haiku/BeOS
-B_BAD_INDEX				# Haiku/BeOS
-B_BAD_MIME_SNIFFER_RULE			# Haiku/BeOS
-B_BAD_PORT_ID				# Haiku/BeOS
-B_BAD_REPLY				# Haiku/BeOS
-B_BAD_SCRIPT_SYNTAX			# Haiku/BeOS
-B_BAD_SEM_ID				# Haiku/BeOS
-B_BAD_SUBSCRIBER			# Haiku/BeOS
-B_BAD_TEAM_ID				# Haiku/BeOS
-B_BAD_THREAD_ID				# Haiku/BeOS
-B_BAD_THREAD_STATE			# Haiku/BeOS
-B_BAD_TYPE				# Haiku/BeOS
-B_BAD_VALUE				# Haiku/BeOS
-B_BUFFER_NOT_AVAILABLE			# Haiku/BeOS
-B_BUFFER_OVERFLOW			# Haiku/BeOS
-B_BUSTED_PIPE				# Haiku/BeOS
-B_BUSY					# Haiku/BeOS
-B_CANCELED				# Haiku/BeOS
-B_CROSS_DEVICE_LINK			# Haiku/BeOS
-B_DEBUGGER_ALREADY_INSTALLED		# Haiku/BeOS
-B_DEVICE_ERROR_BASE			# Haiku/BeOS
-B_DEVICE_FULL				# Haiku/BeOS
-B_DEVICE_NOT_FOUND			# Haiku/BeOS
-B_DEV_BAD_DRIVE_NUM			# Haiku/BeOS
-B_DEV_BAD_PID				# Haiku/BeOS
-B_DEV_CONFIGURATION_ERROR		# Haiku/BeOS
-B_DEV_CRC_ERROR				# Haiku/BeOS
-B_DEV_DATA_OVERRUN			# Haiku/BeOS
-B_DEV_DATA_UNDERRUN			# Haiku/BeOS
-B_DEV_DISABLED_BY_USER			# Haiku/BeOS
-B_DEV_DOOR_OPEN				# Haiku/BeOS
-B_DEV_FIFO_OVERRUN			# Haiku/BeOS
-B_DEV_FIFO_UNDERRUN			# Haiku/BeOS
-B_DEV_FORMAT_ERROR			# Haiku/BeOS
-B_DEV_ID_ERROR				# Haiku/BeOS
-B_DEV_INVALID_IOCTL			# Haiku/BeOS
-B_DEV_INVALID_PIPE			# Haiku/BeOS
-B_DEV_MEDIA_CHANGED			# Haiku/BeOS
-B_DEV_MEDIA_CHANGE_REQUESTED		# Haiku/BeOS
-B_DEV_MULTIPLE_ERRORS			# Haiku/BeOS
-B_DEV_NOT_READY				# Haiku/BeOS
-B_DEV_NO_MEDIA				# Haiku/BeOS
-B_DEV_NO_MEMORY				# Haiku/BeOS
-B_DEV_PENDING				# Haiku/BeOS
-B_DEV_READ_ERROR			# Haiku/BeOS
-B_DEV_RECALIBRATE_ERROR			# Haiku/BeOS
-B_DEV_RESOURCE_CONFLICT			# Haiku/BeOS
-B_DEV_SEEK_ERROR			# Haiku/BeOS
-B_DEV_STALLED				# Haiku/BeOS
-B_DEV_TIMEOUT				# Haiku/BeOS
-B_DEV_TOO_LATE				# Haiku/BeOS
-B_DEV_UNEXPECTED_PID			# Haiku/BeOS
-B_DEV_UNREADABLE			# Haiku/BeOS
-B_DEV_WRITE_ERROR			# Haiku/BeOS
-B_DIRECTORY_NOT_EMPTY			# Haiku/BeOS
-B_DONT_DO_THAT				# Haiku/BeOS
-B_DUPLICATE_REPLY			# Haiku/BeOS
-B_ENTRY_NOT_FOUND			# Haiku/BeOS
-B_ERROR					# Haiku/BeOS
-B_ERRORS_END				# Haiku/BeOS
-B_FILE_ERROR				# Haiku/BeOS
-B_FILE_EXISTS				# Haiku/BeOS
-B_FILE_NOT_FOUND			# Haiku/BeOS
-B_FILE_TOO_LARGE			# Haiku/BeOS
-B_GENERAL_ERROR_BASE			# Haiku/BeOS
-B_ILLEGAL_DATA				# Haiku/BeOS
-B_INTERFACE_ERROR_BASE			# Haiku/BeOS
-B_INTERRUPTED				# Haiku/BeOS
-B_IO_ERROR				# Haiku/BeOS
-B_IS_A_DIRECTORY			# Haiku/BeOS
-B_LAST_BUFFER_ERROR			# Haiku/BeOS
-B_LAUNCH_FAILED				# Haiku/BeOS
-B_LAUNCH_FAILED_APP_IN_TRASH		# Haiku/BeOS
-B_LAUNCH_FAILED_APP_NOT_FOUND		# Haiku/BeOS
-B_LAUNCH_FAILED_EXECUTABLE		# Haiku/BeOS
-B_LAUNCH_FAILED_FILES_APP_NOT_FOUND	# Haiku/BeOS
-B_LAUNCH_FAILED_NO_PREFERRED_APP	# Haiku/BeOS
-B_LAUNCH_FAILED_NO_RESOLVE_LINK		# Haiku/BeOS
-B_LEGACY_EXECUTABLE			# Haiku/BeOS
-B_LINK_LIMIT				# Haiku/BeOS
-B_MAIL_ACCESS_ERROR			# Haiku/BeOS
-B_MAIL_ERROR_BASE			# Haiku/BeOS
-B_MAIL_INVALID_MAIL			# Haiku/BeOS
-B_MAIL_NO_DAEMON			# Haiku/BeOS
-B_MAIL_NO_RECIPIENT			# Haiku/BeOS
-B_MAIL_UNKNOWN_FIELD			# Haiku/BeOS
-B_MAIL_UNKNOWN_HOST			# Haiku/BeOS
-B_MAIL_UNKNOWN_USER			# Haiku/BeOS
-B_MAIL_WRONG_PASSWORD			# Haiku/BeOS
-B_MEDIA_ADDON_DISABLED			# Haiku/BeOS
-B_MEDIA_ADDON_FAILED			# Haiku/BeOS
-B_MEDIA_ADDON_RESTRICTED		# Haiku/BeOS
-B_MEDIA_ALREADY_CONNECTED		# Haiku/BeOS
-B_MEDIA_APP_ALREADY_REGISTERED		# Haiku/BeOS
-B_MEDIA_APP_NOT_REGISTERED		# Haiku/BeOS
-B_MEDIA_BAD_BUFFER			# Haiku/BeOS
-B_MEDIA_BAD_CLIP_FORMAT			# Haiku/BeOS
-B_MEDIA_BAD_DESTINATION			# Haiku/BeOS
-B_MEDIA_BAD_FORMAT			# Haiku/BeOS
-B_MEDIA_BAD_NODE			# Haiku/BeOS
-B_MEDIA_BAD_SOURCE			# Haiku/BeOS
-B_MEDIA_BUFFERS_NOT_RECLAIMED		# Haiku/BeOS
-B_MEDIA_BUFFER_ALREADY_EXISTS		# Haiku/BeOS
-B_MEDIA_CANNOT_CHANGE_RUN_MODE		# Haiku/BeOS
-B_MEDIA_CANNOT_RECLAIM_BUFFERS		# Haiku/BeOS
-B_MEDIA_CANNOT_SEEK			# Haiku/BeOS
-B_MEDIA_CHANGE_IN_PROGRESS		# Haiku/BeOS
-B_MEDIA_DUPLICATE_FORMAT		# Haiku/BeOS
-B_MEDIA_ERROR_BASE			# Haiku/BeOS
-B_MEDIA_NODE_ALREADY_EXISTS		# Haiku/BeOS
-B_MEDIA_NODE_BUSY			# Haiku/BeOS
-B_MEDIA_NOT_CONNECTED			# Haiku/BeOS
-B_MEDIA_NO_HANDLER			# Haiku/BeOS
-B_MEDIA_REALTIME_DISABLED		# Haiku/BeOS
-B_MEDIA_REALTIME_UNAVAILABLE		# Haiku/BeOS
-B_MEDIA_STALE_CHANGE_COUNT		# Haiku/BeOS
-B_MEDIA_SYSTEM_FAILURE			# Haiku/BeOS
-B_MEDIA_TIME_SOURCE_BUSY		# Haiku/BeOS
-B_MEDIA_TIME_SOURCE_STOPPED		# Haiku/BeOS
-B_MEDIA_TOO_MANY_BUFFERS		# Haiku/BeOS
-B_MEDIA_TOO_MANY_NODES			# Haiku/BeOS
-B_MESSAGE_TO_SELF			# Haiku/BeOS
-B_MIDI_ERROR_BASE			# Haiku/BeOS
-B_MISMATCHED_VALUES			# Haiku/BeOS
-B_MISSING_LIBRARY			# Haiku/BeOS
-B_MISSING_SYMBOL			# Haiku/BeOS
-B_NAME_IN_USE				# Haiku/BeOS
-B_NAME_NOT_FOUND			# Haiku/BeOS
-B_NAME_TOO_LONG				# Haiku/BeOS
-B_NOT_ALLOWED				# Haiku/BeOS
-B_NOT_AN_EXECUTABLE			# Haiku/BeOS
-B_NOT_A_DIRECTORY			# Haiku/BeOS
-B_NOT_A_MESSAGE				# Haiku/BeOS
-B_NOT_INITIALIZED			# Haiku/BeOS
-B_NOT_SUPPORTED				# Haiku/BeOS
-B_NO_ERROR				# Haiku/BeOS
-B_NO_INIT				# Haiku/BeOS
-B_NO_MEMORY				# Haiku/BeOS
-B_NO_MORE_FDS				# Haiku/BeOS
-B_NO_MORE_PORTS				# Haiku/BeOS
-B_NO_MORE_SEMS				# Haiku/BeOS
-B_NO_MORE_TEAMS				# Haiku/BeOS
-B_NO_MORE_THREADS			# Haiku/BeOS
-B_NO_PRINT_SERVER			# Haiku/BeOS
-B_NO_TRANSLATOR				# Haiku/BeOS
-B_OK					# Haiku/BeOS
-B_OS_ERROR_BASE				# Haiku/BeOS
-B_PARTIAL_READ				# Haiku/BeOS
-B_PARTIAL_WRITE				# Haiku/BeOS
-B_PARTITION_TOO_SMALL			# Haiku/BeOS
-B_PERMISSION_DENIED			# Haiku/BeOS
-B_POSIX_ERROR_BASE			# Haiku/BeOS
-B_PRINT_ERROR_BASE			# Haiku/BeOS
-B_READ_ONLY_DEVICE			# Haiku/BeOS
-B_RESOURCE_NOT_FOUND			# Haiku/BeOS
-B_RESOURCE_UNAVAILABLE			# Haiku/BeOS
-B_RESULT_NOT_REPRESENTABLE		# Haiku/BeOS
-B_SERVER_NOT_FOUND			# Haiku/BeOS
-B_SHUTDOWN_CANCELLED			# Haiku/BeOS
-B_SHUTTING_DOWN				# Haiku/BeOS
-B_STORAGE_ERROR_BASE			# Haiku/BeOS
-B_STREAM_NOT_FOUND			# Haiku/BeOS
-B_SUBSCRIBER_NOT_ENTERED		# Haiku/BeOS
-B_TIMED_OUT				# Haiku/BeOS
-B_TOO_MANY_ARGS				# Haiku/BeOS
-B_TRANSLATION_BASE_ERROR		# Haiku/BeOS
-B_TRANSLATION_ERROR_BASE		# Haiku/BeOS
-B_UNKNOWN_EXECUTABLE			# Haiku/BeOS
-B_UNKNOWN_MIME_TYPE			# Haiku/BeOS
-B_UNSUPPORTED				# Haiku/BeOS
-B_WOULD_BLOCK				# Haiku/BeOS
+# Haiku/BeOS error codes and error base offsets.
+B_ALREADY_RUNNING			Already running
+B_AMBIGUOUS_APP_LAUNCH			Ambiguous app launch
+B_APP_ERROR_BASE			# Base for application errors
+B_BAD_ADDRESS				Bad address
+B_BAD_DATA				Bad data
+B_BAD_HANDLER				Bad handler
+B_BAD_IMAGE_ID				Bad image ID
+B_BAD_INDEX				Index not in range for the data set
+B_BAD_MIME_SNIFFER_RULE			Bad sniffer rule
+B_BAD_PORT_ID				Bad port ID
+B_BAD_REPLY				Invalid or unwanted reply
+B_BAD_SCRIPT_SYNTAX			Bad script syntax
+B_BAD_SEM_ID				Bad semaphore ID
+B_BAD_SUBSCRIBER			Bad subscriber
+B_BAD_TEAM_ID				Operation on invalid team
+B_BAD_THREAD_ID				Bad thread ID
+B_BAD_THREAD_STATE			Thread is in inappropriate state
+B_BAD_TYPE				Bad argument type passed to function
+B_BAD_VALUE				Invalid argument
+B_BUFFER_NOT_AVAILABLE			Buffer not available
+B_BUFFER_OVERFLOW			Value too large for defined type
+B_BUSTED_PIPE				Broken pipe
+B_BUSY					Device/File/Resource busy
+B_CANCELED				Operation canceled
+B_CROSS_DEVICE_LINK			Cross-device link
+B_DEBUGGER_ALREADY_INSTALLED		Debugger already installed for this team
+B_DEVICE_ERROR_BASE			# Base for device driver errors
+B_DEVICE_FULL				No space left on device
+B_DEVICE_NOT_FOUND			No such device
+B_DEV_BAD_DRIVE_NUM			Bad drive number
+B_DEV_BAD_PID				Bad device PID
+B_DEV_CONFIGURATION_ERROR		Configuration error
+B_DEV_CRC_ERROR				Device check-sum error
+B_DEV_DATA_OVERRUN			Device data overrun
+B_DEV_DATA_UNDERRUN			Device data underrun
+B_DEV_DISABLED_BY_USER			Disabled by user
+B_DEV_DOOR_OPEN				Drive door open
+B_DEV_FIFO_OVERRUN			Device FIFO overrun
+B_DEV_FIFO_UNDERRUN			Device FIFO underrun
+B_DEV_FORMAT_ERROR			Device format error
+B_DEV_ID_ERROR				Device ID error
+B_DEV_INVALID_IOCTL			Invalid device ioctl
+B_DEV_INVALID_PIPE			Invalid device pipe
+B_DEV_MEDIA_CHANGED			Device media changed
+B_DEV_MEDIA_CHANGE_REQUESTED		Device media change requested
+B_DEV_MULTIPLE_ERRORS			Multiple device errors
+B_DEV_NOT_READY				Device not ready
+B_DEV_NO_MEDIA				No media present
+B_DEV_NO_MEMORY				No device memory
+B_DEV_PENDING				Device pending
+B_DEV_READ_ERROR			Device read error
+B_DEV_RECALIBRATE_ERROR			Device recalibrate error
+B_DEV_RESOURCE_CONFLICT			Resource conflict
+B_DEV_SEEK_ERROR			Device seek error
+B_DEV_STALLED				Device stalled
+B_DEV_TIMEOUT				Device timeout
+B_DEV_TOO_LATE				Device too late
+B_DEV_UNEXPECTED_PID			Unexpected device PID
+B_DEV_UNREADABLE			Device unreadable
+B_DEV_WRITE_ERROR			Device write error
+B_DIRECTORY_NOT_EMPTY			Directory not empty
+B_DONT_DO_THAT				No, really don't do that
+B_DUPLICATE_REPLY			Duplicate reply
+B_ENTRY_NOT_FOUND			No such file or directory
+B_ERROR					General system error
+B_ERRORS_END				# End marker for errors
+B_FILE_ERROR				Bad file descriptor
+B_FILE_EXISTS				File or Directory already exists
+B_FILE_NOT_FOUND			No such file or directory
+B_FILE_TOO_LARGE			File too large
+B_GENERAL_ERROR_BASE			# Base for general (and all) errors
+B_ILLEGAL_DATA				Illegal data
+B_INTERFACE_ERROR_BASE			# Base for user interface errors
+B_INTERRUPTED				Interrupted system call
+B_IO_ERROR				I/O error
+B_IS_A_DIRECTORY			Is a directory
+B_LAST_BUFFER_ERROR			Last buffer
+B_LAUNCH_FAILED				Launch failed
+B_LAUNCH_FAILED_APP_IN_TRASH		Application is in the trash
+B_LAUNCH_FAILED_APP_NOT_FOUND		Application could not be found
+B_LAUNCH_FAILED_EXECUTABLE		File is mistakenly marked as executable
+B_LAUNCH_FAILED_FILES_APP_NOT_FOUND	This file has a preferred app, but it could not be found
+B_LAUNCH_FAILED_NO_PREFERRED_APP	There is no preferred application for this type of file
+B_LAUNCH_FAILED_NO_RESOLVE_LINK		Could not resolve a link
+B_LEGACY_EXECUTABLE			Unsupported legacy executable
+B_LINK_LIMIT				Too many symbolic links
+B_MAIL_ACCESS_ERROR			Mail access error
+B_MAIL_ERROR_BASE
+B_MAIL_INVALID_MAIL			Invalid mail
+B_MAIL_NO_DAEMON			No mail daemon
+B_MAIL_NO_RECIPIENT			No mail recipient
+B_MAIL_UNKNOWN_FIELD			Unknown mail field
+B_MAIL_UNKNOWN_HOST			Mail unknown host
+B_MAIL_UNKNOWN_USER			Unknown mail user
+B_MAIL_WRONG_PASSWORD			Wrong password (mail)
+B_MEDIA_ADDON_DISABLED			Media addon disabled
+B_MEDIA_ADDON_FAILED			Media addon failed
+B_MEDIA_ADDON_RESTRICTED		Media addon restricted
+B_MEDIA_ALREADY_CONNECTED		Already connected
+B_MEDIA_APP_ALREADY_REGISTERED		Application already registered
+B_MEDIA_APP_NOT_REGISTERED		Application not registered
+B_MEDIA_BAD_BUFFER			Bad buffer
+B_MEDIA_BAD_CLIP_FORMAT			Bad clipping format
+B_MEDIA_BAD_DESTINATION			Bad destination
+B_MEDIA_BAD_FORMAT			Bad media format
+B_MEDIA_BAD_NODE			Bad media node
+B_MEDIA_BAD_SOURCE			Bad source
+B_MEDIA_BUFFERS_NOT_RECLAIMED		Buffers not reclaimed
+B_MEDIA_BUFFER_ALREADY_EXISTS		Buffer already exists
+B_MEDIA_CANNOT_CHANGE_RUN_MODE		Cannot change run mode
+B_MEDIA_CANNOT_RECLAIM_BUFFERS		Cannot reclaim buffers
+B_MEDIA_CANNOT_SEEK			Cannot seek
+B_MEDIA_CHANGE_IN_PROGRESS		Change in progress
+B_MEDIA_DUPLICATE_FORMAT		Duplicate format
+B_MEDIA_ERROR_BASE			# Base for media errors
+B_MEDIA_NODE_ALREADY_EXISTS		Media node already exists
+B_MEDIA_NODE_BUSY			Media node busy
+B_MEDIA_NOT_CONNECTED			Not connected
+B_MEDIA_NO_HANDLER			No handler
+B_MEDIA_REALTIME_DISABLED		Realtime disabled
+B_MEDIA_REALTIME_UNAVAILABLE		Realtime unavailable
+B_MEDIA_STALE_CHANGE_COUNT		Stale change count
+B_MEDIA_SYSTEM_FAILURE			System failure
+B_MEDIA_TIME_SOURCE_BUSY		Time source busy
+B_MEDIA_TIME_SOURCE_STOPPED		Time source stopped
+B_MEDIA_TOO_MANY_BUFFERS		Too many buffers
+B_MEDIA_TOO_MANY_NODES			Too many nodes
+B_MESSAGE_TO_SELF			Can't send message to self
+B_MIDI_ERROR_BASE			# Base for MIDI errors
+B_MISMATCHED_VALUES			Mismatched values passed to function
+B_MISSING_LIBRARY			Missing library
+B_MISSING_SYMBOL			Symbol not found
+B_NAME_IN_USE				Name in use
+B_NAME_NOT_FOUND			Name not found
+B_NAME_TOO_LONG				File name too long
+B_NOT_ALLOWED				Operation not allowed
+B_NOT_AN_EXECUTABLE			Not an executable
+B_NOT_A_DIRECTORY			Not a directory
+B_NOT_A_MESSAGE				Data is not a message
+B_NOT_INITIALIZED			Initialization failed
+B_NOT_SUPPORTED				Operation not supported
+B_NO_ERROR				No error
+B_NO_INIT				Initialization failed
+B_NO_MEMORY				Out of memory
+B_NO_MORE_FDS				Too many open files
+B_NO_MORE_PORTS				No more ports available
+B_NO_MORE_SEMS				No more semaphores
+B_NO_MORE_TEAMS				No more teams
+B_NO_MORE_THREADS			No more threads
+B_NO_PRINT_SERVER			No print server
+B_NO_TRANSLATOR				No translator found
+B_OK					No error
+B_OS_ERROR_BASE				# Base for OS errors
+B_PARTIAL_READ				Data read partially
+B_PARTIAL_WRITE				Data written partially
+B_PARTITION_TOO_SMALL			Partition too small to contain filesystem
+B_PERMISSION_DENIED			Permission denied
+B_POSIX_ERROR_BASE			# Base for POSIX errors
+B_PRINT_ERROR_BASE			# Base for printer errors
+B_READ_ONLY_DEVICE			Read-only file system
+B_RESOURCE_NOT_FOUND			Resource not found
+B_RESOURCE_UNAVAILABLE			Resource unavailable
+B_RESULT_NOT_REPRESENTABLE		Range Error
+B_SERVER_NOT_FOUND			Server not found
+B_SHUTDOWN_CANCELLED			System shutdown cancelled
+B_SHUTTING_DOWN				System shutting down
+B_STORAGE_ERROR_BASE			# Base for filesystem errors
+B_STREAM_NOT_FOUND			Stream not found
+B_SUBSCRIBER_NOT_ENTERED		Subscriber not entered
+B_TIMED_OUT				Operation timed out
+B_TOO_MANY_ARGS				Argument too big
+B_TRANSLATION_BASE_ERROR		# Base for locale errors (alt name)
+B_TRANSLATION_ERROR_BASE		# Base for locale errors
+B_UNKNOWN_EXECUTABLE			Unknown executable format
+B_UNKNOWN_MIME_TYPE			Unknown MIME type
+B_UNSUPPORTED				Operation not supported
+B_WOULD_BLOCK				Operation would block
+
+# GNU/Hurd errors.
+ED_ALREADY_OPEN				#Hurd
+ED_DEVICE_DOWN				#Hurd
+ED_INVALID_OPERATION			#Hurd
+ED_INVALID_RECNUM			#Hurd
+ED_INVALID_SIZE				#Hurd
+ED_IO_ERROR				#Hurd
+ED_NO_MEMORY				#Hurd
+ED_NO_SUCH_DEVICE			#Hurd
+ED_READ_ONLY				#Hurd
+ED_WOULD_BLOCK				#Hurd
+EKERN_ABORTED				#Hurd
+EKERN_FAILURE				#Hurd
+EKERN_INTERRUPTED			#Hurd
+EKERN_INVALID_ADDRESS			#Hurd
+EKERN_INVALID_ARGUMENT			#Hurd
+EKERN_INVALID_CAPABILITY		#Hurd
+EKERN_INVALID_HOST			#Hurd
+EKERN_INVALID_NAME			#Hurd
+EKERN_INVALID_RIGHT			#Hurd
+EKERN_INVALID_TASK			#Hurd
+EKERN_INVALID_VALUE			#Hurd
+EKERN_MEMORY_ERROR			#Hurd
+EKERN_MEMORY_FAILURE			#Hurd
+EKERN_NAME_EXISTS			#Hurd
+EKERN_NOT_IN_SET			#Hurd
+EKERN_NOT_RECEIVER			#Hurd
+EKERN_NO_ACCESS				#Hurd
+EKERN_NO_SPACE				#Hurd
+EKERN_PROTECTION_FAILURE		#Hurd
+EKERN_RESOURCE_SHORTAGE			#Hurd
+EKERN_RIGHT_EXISTS			#Hurd
+EKERN_TERMINATED			#Hurd
+EKERN_TIMEDOUT				#Hurd
+EKERN_UREFS_OVERFLOW			#Hurd
+EKERN_WRITE_PROTECTION_FAILURE		#Hurd
+EMACH_RCV_BODY_ERROR			#Hurd
+EMACH_RCV_HEADER_ERROR			#Hurd
+EMACH_RCV_INTERRUPTED			#Hurd
+EMACH_RCV_INVALID_DATA			#Hurd
+EMACH_RCV_INVALID_NAME			#Hurd
+EMACH_RCV_INVALID_NOTIFY		#Hurd
+EMACH_RCV_IN_PROGRESS			#Hurd
+EMACH_RCV_IN_SET			#Hurd
+EMACH_RCV_PORT_CHANGED			#Hurd
+EMACH_RCV_PORT_DIED			#Hurd
+EMACH_RCV_TIMED_OUT			#Hurd
+EMACH_RCV_TOO_LARGE			#Hurd
+EMACH_SEND_INTERRUPTED			#Hurd
+EMACH_SEND_INVALID_DATA			#Hurd
+EMACH_SEND_INVALID_DEST			#Hurd
+EMACH_SEND_INVALID_HEADER		#Hurd
+EMACH_SEND_INVALID_MEMORY		#Hurd
+EMACH_SEND_INVALID_NOTIYF               #Hurd
+EMACH_SEND_INVALID_REPLY		#Hurd
+EMACH_SEND_INVALID_RIGHT		#Hurd
+EMACH_SEND_INVALID_TYPE			#Hurd
+EMACH_SEND_IN_PROGRESS			#Hurd
+EMACH_SEND_MSG_TOO_SMALL		#Hurd
+EMACH_SEND_NOTIFY_IN_PROGRESS		#Hurd
+EMACH_SEND_NO_BUFFER			#Hurd
+EMACH_SEND_NO_NOTIFY			#Hurd
+EMACH_SEND_TIMED_OUT			#Hurd
+EMACH_SEND_WILL_NOTIFY			#Hurd
+EMIG_ARRAY_TOO_LARGE			#Hurd
+EMIG_BAD_ARGUMENTS			#Hurd
+EMIG_BAD_ID				#Hurd
+EMIG_DESTROY_REQUEST			#Hurd
+EMIG_EXCEPTION				#Hurd
+EMIG_NO_REPLY				#Hurd
+EMIG_REMOTE_ERROR			#Hurd
+EMIG_REPLY_MISMATCH			#Hurd
+EMIG_SERVER_DIED			#Hurd
+EMIG_TYPE_ERROR				#Hurd
+
+# C, POSIX and various UNIX errors.
 E2BIG				Argument list too long
 EACCES				Permission denied
 EADDRINUSE			Address already in use
@@ -188,32 +265,34 @@ EALREADY			Operation already in progress
 EAUTH				Authentication error
 EBACKGROUND	#Hurd
 EBADARCH			Bad CPU type in executable
-EBADCALL	#Minix
-EBADCPU		#Minix
+EBADCALL			Illegal system call number (Minix)
+EBADCPU				Invalid CPU (Minix)
 EBADE				Invalid exchange
-EBADEPT		#Minix
+EBADDEST			Not a valid destination address (Minix)
+EBADEPT				Invalid endpoint in OoQ message (Minix)
 EBADEXEC			Bad executable
 EBADF				Bad file number
 EBADFD				File descriptor invalid for this operation
 EBADFILT	#Irix
 EBADFSYS			Corrupted file system detected
-EBADIOCTL	#Minix
+EBADIOCTL			Illegal ioctl for device (Minix)
 EBADMACHO			Malformed Macho file
-EBADMODE	#Minix
+EBADMODE			Bad mode in ioctl (Minix)
 EBADMSG				Not a data message
 EBADR				Invalid request descriptor
-EBADREQUEST	#Minix
+EBADREQUEST			Destination cannot handle request (Minix)
 EBADRPC				RPC struct is bad
 EBADRQC				Invalid request code
 EBADRSPEC	#Irix
 EBADSLT				Invalid slot
+EBADSRCDST			Bad source or destination process (Minix)
 EBADTSPEC	#Irix
 EBADVER				Version number mismatch for loadable kernel module
 EBDHDL		#Irix
 EBFONT				Bad font file format
 EBUFSIZE	#Irix
 EBUSY				Device or resource busy
-ECALLDENIED	#Minix
+ECALLDENIED			No permission for system call (Minix)
 ECANCELED			Operation cancelled
 ECANTEXTENT	#Irix
 ECAPMODE	#FreeBSD
@@ -233,10 +312,10 @@ ECONTROLLER	#Irix
 ECORRUPT			Invalid file system control data
 ECTRLTERM			Remap to controlling terminal
 ED		#Hurd
-EDEADEPT	#Minix
+EDEADEPT			Bad kernel endpoint (Minix)
 EDEADLK				Resource deadlock would occur
 EDEADLOCK			Resource deadlock would occur
-EDEADSRCDST	#Minix
+EDEADSRCDST			Source or destination is not alive (Minix)
 EDELAY		#Irix
 EDESTADDREQ			Destination address required
 EDESTADDRREQ			Destination address required
@@ -249,21 +328,13 @@ EDIRTY				Mounting a dirty file system with out force
 EDISJOINT	#Irix
 EDIST		#AIX
 EDOM				Math argument out of domain of function
-EDONTREPLY	#Minix
+EDONTREPLY			Pseudo-code: don't send a reply (Minix)
 EDOOFUS				Programming error
 EDOTDOT				RFC specific error
 EDQUOT				Disc quota exceeded
+EDSTDIED			Destination just died (Minix)
+EDSTNOTTCH			Destination not reachable (Minix)
 EDUPPKG				Duplicate package name on install
-ED_ALREADY_OPEN		#Hurd
-ED_DEVICE_DOWN		#Hurd
-ED_INVALID_OPERATION	#Hurd
-ED_INVALID_RECNUM	#Hurd
-ED_INVALID_SIZE		#Hurd
-ED_IO_ERROR		#Hurd
-ED_NO_MEMORY		#Hurd
-ED_NO_SUCH_DEVICE	#Hurd
-ED_READ_ONLY		#Hurd
-ED_WOULD_BLOCK		#Hurd
 EEMPTY		#Irix
 EEMULATE	#OSF/1
 EENDIAN				Endian not supported
@@ -277,7 +348,7 @@ EFORMAT				Unformatted media
 EFPOS				File position error
 EFSCORRUPTED	#Irix
 EFTYPE		#BSDs
-EGENERIC	#Minix
+EGENERIC			Generic error (Minix)
 EGRATIOUS	#Hurd
 EGREGIOUS	#Hurd
 EGROUPLOOP	#Irix
@@ -302,31 +373,6 @@ EISDIR				Is a directory
 EISNAM				Is a named type file
 EJOINED		#Irix
 EJUSTRETURN	#FreeBSD
-EKERN_ABORTED		#Hurd
-EKERN_FAILURE		#Hurd
-EKERN_INTERRUPTED	#Hurd
-EKERN_INVALID_ADDRESS	#Hurd
-EKERN_INVALID_ARGUMENT	#Hurd
-EKERN_INVALID_CAPABILITY #Hurd
-EKERN_INVALID_HOST	#Hurd
-EKERN_INVALID_NAME	#Hurd
-EKERN_INVALID_RIGHT	#Hurd
-EKERN_INVALID_TASK	#Hurd
-EKERN_INVALID_VALUE	#Hurd
-EKERN_MEMORY_ERROR	#Hurd
-EKERN_MEMORY_FAILURE	#Hurd
-EKERN_NAME_EXISTS	#Hurd
-EKERN_NOT_IN_SET	#Hurd
-EKERN_NOT_RECEIVER	#Hurd
-EKERN_NO_ACCESS		#Hurd
-EKERN_NO_SPACE		#Hurd
-EKERN_PROTECTION_FAILURE #Hurd
-EKERN_RESOURCE_SHORTAGE	#Hurd
-EKERN_RIGHT_EXISTS	#Hurd
-EKERN_TERMINATED	#Hurd
-EKERN_TIMEDOUT		#Hurd
-EKERN_UREFS_OVERFLOW	#Hurd
-EKERN_WRITE_PROTECTION_FAILURE #Hurd
 EKEYEXPIRED			Key has expired
 EKEYREJECTED			Key was rejected by service
 EKEYREVOKED			Key has been revoked
@@ -341,54 +387,16 @@ ELIBEXEC			Cannot exec a shared library directly
 ELIBMAX				Attempting to link in too many shared libraries
 ELIBSCN				.lib section in a.out corrupted
 ELNRNG				Link number out of range
-ELOCKED		#Minix
+ELOCKED				Can't send message due to deadlock (Minix)
 ELOCKUNMAPPED	#Solaris
 ELOGINLIM	#Irix
 ELOOP				Too many symbolic links encountered
-EMACH_RCV_BODY_ERROR	#Hurd
-EMACH_RCV_HEADER_ERROR	#Hurd
-EMACH_RCV_INTERRUPTED	#Hurd
-EMACH_RCV_INVALID_DATA	#Hurd
-EMACH_RCV_INVALID_NAME	#Hurd
-EMACH_RCV_INVALID_NOTIFY #Hurd
-EMACH_RCV_IN_PROGRESS	#Hurd
-EMACH_RCV_IN_SET	#Hurd
-EMACH_RCV_PORT_CHANGED	#Hurd
-EMACH_RCV_PORT_DIED	#Hurd
-EMACH_RCV_TIMED_OUT	#Hurd
-EMACH_RCV_TOO_LARGE	#Hurd
-EMACH_SEND_INTERRUPTED	#Hurd
-EMACH_SEND_INVALID_DATA	#Hurd
-EMACH_SEND_INVALID_DEST	#Hurd
-EMACH_SEND_INVALID_HEADER #Hurd
-EMACH_SEND_INVALID_MEMORY #Hurd
-EMACH_SEND_INVALID_NOTIYF #Hurd
-EMACH_SEND_INVALID_REPLY #Hurd
-EMACH_SEND_INVALID_RIGHT #Hurd
-EMACH_SEND_INVALID_TYPE	#Hurd
-EMACH_SEND_IN_PROGRESS	#Hurd
-EMACH_SEND_MSG_TOO_SMALL #Hurd
-EMACH_SEND_NOTIFY_IN_PROGRESS #Hurd
-EMACH_SEND_NO_BUFFER	#Hurd
-EMACH_SEND_NO_NOTIFY	#Hurd
-EMACH_SEND_TIMED_OUT	#Hurd
-EMACH_SEND_WILL_NOTIFY	#Hurd
 EMEDIA				Media surface error
 EMEDIUMTYPE			Wrong medium type
 EMEMRETRY	#Irix
 EMFILE				Too many open files
 EMIGRATED	#Irix
 EMIGRATING	#Irix
-EMIG_ARRAY_TOO_LARGE	#Hurd
-EMIG_BAD_ARGUMENTS	#Hurd
-EMIG_BAD_ID		#Hurd
-EMIG_DESTROY_REQUEST	#Hurd
-EMIG_EXCEPTION		#Hurd
-EMIG_NO_REPLY		#Hurd
-EMIG_REMOTE_ERROR	#Hurd
-EMIG_REPLY_MISMATCH	#Hurd
-EMIG_SERVER_DIED	#Hurd
-EMIG_TYPE_ERROR		#Hurd
 EMLINK				Too many links
 EMORE				More to do, send message again
 EMSGSIZE			Message too long
@@ -409,7 +417,7 @@ ENOATTR				No attribute found
 ENOBWD		#Irix
 ENOBUFS				No buffer space available
 ENOCOFFEE	#MirBSD
-ENOCONN		#Minix
+ENOCONN				No such connection (Minix)
 ENOCONNECT			No connection
 ENOCSI				No CSI structure available
 ENODATA				No data available
@@ -467,14 +475,15 @@ ENOTTY				Inappropriate ioctl for device
 ENOTUNIQ			Name not unique on network
 ENOUNLD				Cannot unload kernel module
 ENOUNREG			Cannot unregister kernel module
-ENOURG		#Minix
+ENOURG				No urgent data present (Minix)
 ENXIO				No such device or address
 EOPCOMPLETE			Operation completed at server
 EOPNOTSUPP			Operation not supported on transport endpoint
 EOTHER		#Win32
+EOUTOFBUFS			Not enough buffers left (Minix)
 EOVERFLOW			Value too large for defined data type
 EOWNERDEAD			Owner died
-EPACKSIZE	#Minix
+EPACKSIZE			Invalid packet size for some protocol (Minix)
 EPATHREMOTE			Pathname is remote
 EPERM				Operation not permitted
 EPFNOSUPPORT			Protocol family not supported
@@ -510,10 +519,11 @@ ERREMOTE
 ESAD				Security authentication denied
 ESHLIBVERS			Shared library version mismatch
 ESHUTDOWN			Cannot send after socket shutdown
-ESIGPARM	#Haiku
+ESIGPARM			Signal Error
 ESOCKTNOSUPPORT			Socket type not supported
 ESOFT				I/O completed, but needs relocation
 ESPIPE				Illegal seek
+ESRCDIED			Source just died (Minix)
 ESRCH				No such process
 ESRMNT				Srmount error
 ESRVRFAULT			Server fault on msg pass
@@ -524,11 +534,11 @@ ESYSERROR	#AIX
 ETIME				Timer expired
 ETIMEDOUT			Connection timed out
 ETOOMANYREFS			Too many references: cannot splice
-ETRAPDENIED	#Minix
+ETRAPDENIED			IPC trap not allowed (Minix)
 ETXTBSY				Text file busy
 EUCLEAN				Structure needs cleaning
 EUNATCH				Protocol driver not attached
-EURG		#Minix
+EURG				Urgent data present (Minix)
 EUSERS				Too many users
 EVERSION			Version number mismatch
 EWOULDBLOCK			Operation would block
