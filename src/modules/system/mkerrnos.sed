@@ -1,23 +1,23 @@
 h
-/#/s/#\(.*\)/\/*\1 *\//p
+/^#/s/#\(.*\)/\/*\1 *\//p
 g
-/#/d
+/^#/d
 g
-s/.*/#ifdef &/
+s/\([^ 	]*\).*/#ifdef \1/
 p
 g
-s/.*/add_integer_constant("&", &, 0);/
+s/\([^ 	]*\)[ 	]*\([^#	]*\).*/ADD_ERRNO(\1, "\1", "\2")/
 p
 g
-s/.*/#endif \/* & *\//
+s/\([^ 	]*\).*/#endif \/* \1 *\//
 p
 g
 /^[^E]/d
-s/.*/#ifdef WSA&/
+s/\([^ 	]*\).*/#ifdef WSA\1/
 p
 g
-s/.*/add_integer_constant("WSA&", WSA&, 0);/
+s/\([^ 	]*\)[ 	]*\([^#	]*\).*/ADD_ERRNO(WSA\1, "WSA\1", "\2")/
 p
 g
-s/.*/#endif \/* WSA& *\//
+s/\([^ 	]*\).*/#endif \/* WSA\1 *\//
 p

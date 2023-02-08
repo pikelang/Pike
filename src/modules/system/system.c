@@ -3574,7 +3574,9 @@ PIKE_MODULE_INIT
 #endif
 
   /* errnos */
+#define ADD_ERRNO(VAL, SYM, DESC) add_integer_constant(SYM, VAL, 0);
 #include "add-errnos.h"
+#undef ADD_ERRNO
 
 /* function(int:string) */
   ADD_EFUN("strerror", f_strerror, tFunc(tInt, tStr), 0);
