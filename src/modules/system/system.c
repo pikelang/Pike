@@ -39,6 +39,7 @@
 #include "pike_netlib.h"
 #include "pike_cpulib.h"
 #include "sprintf.h"
+#include "operators.h"
 
 #include <errno.h>
 
