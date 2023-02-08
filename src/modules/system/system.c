@@ -168,84 +168,13 @@ static struct pike_string *pike_strerror(int e)
 
 static void report_error(const char *function_name)
 {
-  char *error_msg = "Unknown reason";
+  int e = errno;
+  struct pike_string *s = pike_strerror(e);
 
-  switch(errno) {
-  case EACCES:
-    error_msg = "Access denied";
-    break;
-#ifdef EDQUOT
-  case EDQUOT:
-    error_msg = "Out of quota";
-    break;
-#endif /* EDQUOT */
-  case EEXIST:
-    error_msg = "Destination already exists";
-    break;
-  case EFAULT:
-    error_msg = "Internal Pike error: Bad Pike string!";
-    break;
-  case EINVAL:
-    error_msg = "Bad argument";
-    break;
-  case EIO:
-    error_msg = "I/O error";
-    break;
-#ifdef ELOOP
-  case ELOOP:
-    error_msg = "Too deep nesting of symlinks";
-    break;
-#endif /* ELOOP */
-#ifdef EMLINK
-  case EMLINK:
-    error_msg = "Too many hardlinks";
-    break;
-#endif /* EMLINK */
-#ifdef EMULTIHOP
-  case EMULTIHOP:
-    error_msg = "The filesystems do not allow hardlinks between them";
-    break;
-#endif /* EMULTIHOP */
-#ifdef ENAMETOOLONG
-  case ENAMETOOLONG:
-    error_msg = "Filename too long";
-    break;
-#endif /* ENAMETOOLONG */
-  case ENOENT:
-    error_msg = "File not found";
-    break;
-#ifdef ENOLINK
-  case ENOLINK:
-    error_msg = "Link to remote machine no longer active";
-    break;
-#endif /* ENOLINK */
-  case ENOSPC:
-    error_msg = "Filesystem full";
-    break;
-  case ENOTDIR:
-    error_msg = "A path component is not a directory";
-    break;
-  case EPERM:
-    error_msg = "Permission denied";
-    break;
-#ifdef EROFS
-  case EROFS:
-    error_msg = "Read-only filesystem";
-    break;
-#endif /* EROFS */
-  case EXDEV:
-    error_msg = "Different filesystems";
-    break;
-#ifdef ESTALE
-  case ESTALE:
-    error_msg = "Stale NFS file handle";
-    break;
-#endif /* ESTALE */
-  case ESRCH:
-    error_msg = "No such process";
-    break;
+  if (s) {
+    Pike_error("%s(): Failed: %S\n", function_name, s);
   }
-  Pike_error("%s(): Failed: %s\n", function_name, error_msg);
+  Pike_error("%s(): Failed: errno %d\n", function_name, e);
 }
 
 
