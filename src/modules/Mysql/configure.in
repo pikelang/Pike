@@ -458,9 +458,19 @@ fi
 #include <stdlib.h>
 int main(int argc, char *argv[])
 {
-#ifdef MYSQL_VERSION_ID
+#if defined(MYSQL_VERSION_ID) || defined(LIBMYSQL_VERSION_ID)
   unsigned long ver = mysql_get_client_version();
-  unsigned long expected_ver = MYSQL_VERSION_ID;
+  unsigned long expected_ver =
+#ifdef LIBMYSQL_VERSION_ID
+    /* This symbol is used by libmysqlclient 6.1.6
+     * on Haiku (and probably others). It still has
+     * MYSQL_VERSION_ID, but it indicates version 5.7.6.
+     */
+    LIBMYSQL_VERSION_ID
+#else
+    MYSQL_VERSION_ID
+#endif
+    ;
 #if defined(MARIADB_PACKAGE_VERSION_ID) && (MARIADB_PACKAGE_VERSION_ID >= 30201)
   /* From MariaDB/mysql_get_client_version(3) (CONC-509/CONC-554):
    *
