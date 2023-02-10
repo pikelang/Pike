@@ -1229,7 +1229,6 @@ cont_2:
       case '*':
 	{
 	  struct svalue *sval;
-	  struct mapping *m;
 	  GET_SVALUE(sval);
 	  if (TYPEOF(*sval) == T_INT) {
 	    tmp = sval->u.integer;
@@ -1963,7 +1962,6 @@ static void free_f_sprintf_data (struct format_stack *fs)
 void low_f_sprintf(INT32 args, struct string_builder *r)
 {
   ONERROR uwp;
-  struct pike_string *ret;
   struct svalue *argp;
   struct format_stack fs;
 
@@ -2157,7 +2155,7 @@ static struct array *parse_sprintf_argument_types(PCHARP format,
   PCHARP format_end=ADD_PCHARP(format,format_len);
 
   p_wchar2 min_char = 0x7fffffff;
-  p_wchar2 max_char = -0x80000000;
+  p_wchar2 max_char = ~min_char;
 
   check_c_stack(500);
 
@@ -2282,7 +2280,6 @@ static struct array *parse_sprintf_argument_types(PCHARP format,
 
       case '{':
       {
-	ptrdiff_t cnt;
 	for(e=1, tmp=1; tmp; e++)
 	{
 	  if (!INDEX_PCHARP(a, e) &&
@@ -2408,7 +2405,7 @@ static struct array *parse_sprintf_argument_types(PCHARP format,
 	  push_int_type(0, MAX_INT32);
 	  if (uses_tilde) {
 	    max_char = 0x7fffffff;
-	    min_char = -0x80000000;
+            min_char = ~max_char;
 	  } else {
 	    if (' ' < min_char) min_char = ' ';
 	    if (' ' > max_char) max_char = ' ';
@@ -2447,7 +2444,7 @@ static struct array *parse_sprintf_argument_types(PCHARP format,
 	  if (width) {
 	    if (uses_tilde) {
 	      max_char = 0x7fffffff;
-	      min_char = -0x80000000;
+              min_char = ~max_char;
 	    } else {
 	      if (' ' < min_char) min_char = ' ';
 	      if (' ' > max_char) max_char = ' ';
@@ -2569,7 +2566,6 @@ static struct array *parse_sprintf_argument_types(PCHARP format,
 
       case '{':
       {
-	ptrdiff_t cnt;
 	struct mapping *substate;
 	struct array *subargs;
 	int subnargs = 0;
@@ -2712,7 +2708,7 @@ static struct array *parse_sprintf_argument_types(PCHARP format,
       {
 	push_type(T_MIXED);
 	max_char = 0x7fffffff;
-	min_char = -0x80000000;
+        min_char = ~max_char;
 	break;
       }
 
@@ -2870,7 +2866,7 @@ static node *optimize_sprintf(node *n)
 static struct pike_type *patch_function_type(struct pike_type *fun_type,
 					     struct pike_string *attr,
 					     struct array *args,
-					     struct mapping *state,
+                                             struct mapping *PIKE_UNUSED(state),
 					     int severity)
 {
   struct pike_type *many = fun_type;
@@ -3027,17 +3023,9 @@ static void low_handle_sprintf_format(struct svalue *fmt_sval,
  */
 void f___handle_sprintf_format(INT32 args)
 {
-  struct pike_type *res;
-  struct pike_type *tmp;
   struct pike_string *attr;
-  struct pike_string *attr2;
-  struct pike_string *fmt;
   struct mapping *state;
   int found = 0;
-  int fmt_count;
-  int marker;
-  int str_marker = 0;
-  int marker_mask;
 
 #if 0
   fprintf(stderr, "f___handle_sprintf_format(%d)\n", args);
@@ -3150,7 +3138,6 @@ void f___handle_sprintf_format(INT32 args)
 
   MAKE_CONST_STRING(attr, "sprintf_char");
   if (Pike_sp[-5].u.string == attr) {
-    struct pike_type *t;
     type_stack_mark();
     push_finished_type(Pike_sp[-3].u.type);
     push_unlimited_array_type(PIKE_T_STRING);
