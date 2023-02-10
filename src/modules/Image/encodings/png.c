@@ -214,7 +214,6 @@ static void image_png___decode(INT32 args)
 {
    int nocrc=0;
    unsigned char *data;
-   struct array *res;
    size_t len;
    struct pike_string *str;
    ONERROR uwp;

@@ -1,4 +1,4 @@
-/*
+/* -*- mode: C; c-basic-offset: 3; -*-
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
@@ -1084,7 +1084,7 @@ static void image_color_dark(INT32 args)
    sp--;
    dmalloc_touch_svalue(sp);
    push_array_items(sp->u.array); /* frees */
-   sp[-1].u.float_number-=0.2;
+   sp[-1].u.float_number -= (FLOAT_TYPE)0.2;
    if (sp[-1].u.float_number<0.0)
       sp[-2].u.float_number-=sp[-1].u.float_number;
    image_make_hsv_color(3);
@@ -1145,12 +1145,12 @@ static void image_color_bright(INT32 args)
 
    if (sp[-2].u.float_number==0.0)
    {
-      sp[-1].u.float_number+=0.2;
+      sp[-1].u.float_number += (FLOAT_TYPE)0.2;
    }
    else
    {
-      sp[-2].u.float_number+=0.2;
-      sp[-1].u.float_number+=0.2;
+      sp[-2].u.float_number += (FLOAT_TYPE)0.2;
+      sp[-1].u.float_number += (FLOAT_TYPE)0.2;
    }
    image_make_hsv_color(3);
 }

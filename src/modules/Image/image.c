@@ -2899,8 +2899,6 @@ void image_yuv_to_rgb(INT32 args)
      d->b = CLAMP(b, 0, 255);
      s++; d++;
    }
-exit_loop:
-   ;	/* Needed to keep some compilers happy. */
    THREADS_DISALLOW();
 
    pop_n_elems(args);

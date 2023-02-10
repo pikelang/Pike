@@ -1495,7 +1495,7 @@ static void _img_sub_colortable(struct neo_colortable *rdest,
 {
    struct neo_colortable tmp1,tmp2;
    struct color_hash_entry *hash,*mark;
-   size_t i,j,hashsize,k;
+   size_t i,j,hashsize;
    struct nct_flat_entry *en;
    struct nct_flat flat;
    struct neo_colortable *dest=rdest;
