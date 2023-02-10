@@ -86,7 +86,7 @@ B_LAUNCH_FAILED_NO_RESOLVE_LINK		Could not resolve a link
 B_LEGACY_EXECUTABLE			Unsupported legacy executable
 B_LINK_LIMIT				Too many symbolic links
 B_MAIL_ACCESS_ERROR			Mail access error
-B_MAIL_ERROR_BASE
+B_MAIL_ERROR_BASE			# Base for mail errors
 B_MAIL_INVALID_MAIL			Invalid mail
 B_MAIL_NO_DAEMON			No mail daemon
 B_MAIL_NO_RECIPIENT			No mail recipient
@@ -347,7 +347,7 @@ EFBIG				File too large
 EFORMAT				Unformatted media
 EFPOS				File position error
 EFSCORRUPTED	#Irix
-EFTYPE		#BSDs
+EFTYPE				Inappropriate file type or format
 EGENERIC			Generic error (Minix)
 EGRATIOUS	#Hurd
 EGREGIOUS	#Hurd
@@ -420,7 +420,7 @@ ENOCOFFEE	#MirBSD
 ENOCONN				No such connection (Minix)
 ENOCONNECT			No connection
 ENOCSI				No CSI structure available
-ENODATA				No data available
+ENODATA				No data available on STREAM
 ENODEV				No such device
 ENOENT				No such file or directory
 ENOEXEC				Exec format error
@@ -443,7 +443,7 @@ ENOMSG				No message of desired type
 ENONDP				Need an NDP (8087...) to run
 ENONET				Machine is not on the network
 ENOPKG				Package not installed
-ENOPOLICY	#MacOS
+ENOPOLICY			No such policy registered
 ENOPROC		#Irix
 ENOPROTOOPT			Protocol not available
 ENOREG				Cannot register required kernel module
@@ -451,8 +451,8 @@ ENOREMOTE			Must be done on local machine
 ENOSERVICE	#Irix
 ENOSHARE	#Cygwin
 ENOSPC				No space left on device
-ENOSR				Out of streams resources
-ENOSTR				Device not a stream
+ENOSR				Out of STREAM resources
+ENOSTR				Device not a STREAM
 ENOSYM				Symbol does not exist in executable
 ENOSYS				Invalid system call number
 ENOTACTIVE	#Solaris
@@ -478,11 +478,11 @@ ENOUNREG			Cannot unregister kernel module
 ENOURG				No urgent data present (Minix)
 ENXIO				No such device or address
 EOPCOMPLETE			Operation completed at server
-EOPNOTSUPP			Operation not supported on transport endpoint
+EOPNOTSUPP			Operation not supported on socket
 EOTHER		#Win32
 EOUTOFBUFS			Not enough buffers left (Minix)
 EOVERFLOW			Value too large for defined data type
-EOWNERDEAD			Owner died
+EOWNERDEAD			Previous owner died
 EPACKSIZE			Invalid packet size for some protocol (Minix)
 EPATHREMOTE			Pathname is remote
 EPERM				Operation not permitted
@@ -497,7 +497,7 @@ EPROTO				Protocol error
 EPROTONOSUPPORT			Protocol not supported
 EPROTOTYPE			Protocol wrong type for socket
 EPWROFF				Device power is off
-EQFULL		#MacOS
+EQFULL				Interface output queue is full
 ERANGE				Math result not representable
 EREFUSED			Double define for NFS
 ERELOC				Object file error in loading kernel module
@@ -531,7 +531,7 @@ ESTALE				Stale file handle
 ESTRPIPE			Streams pipe error
 ESUCCESS			No error
 ESYSERROR	#AIX
-ETIME				Timer expired
+ETIME				STREAM timer expired
 ETIMEDOUT			Connection timed out
 ETOOMANYREFS			Too many references: cannot splice
 ETRAPDENIED			IPC trap not allowed (Minix)
@@ -546,4 +546,7 @@ EWRONGFS	#Irix
 EWRPROTECT			Write-protected media
 EXDEV				Cross-device link
 EXFULL				Exchange full
-LASTERRNO
+
+# Endmarkers:
+ELAST				# Must be equal to largest errno
+LASTERRNO			# Must be equal to largest errno
