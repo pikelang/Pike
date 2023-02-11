@@ -844,13 +844,18 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 	case 'q':
 	  {
 	    struct pike_string *str = va_arg(args, struct pike_string *);
-	    size_t len = str->len;
+            size_t len = str?str->len:0;
 	    size_t buf_len = s->s->len;
 
 	    if (precision && (precision < len)) len = precision;
-	    string_builder_putchar(s, '"');
-	    string_builder_quote_string(s, str, 0, len, QUOTE_NO_STRING_CONCAT);
-	    string_builder_putchar(s, '"');
+            if (str) {
+              string_builder_putchar(s, '"');
+              string_builder_quote_string(s, str, 0, len,
+                                          QUOTE_NO_STRING_CONCAT);
+              string_builder_putchar(s, '"');
+            } else {
+              string_builder_strcat(s, "(NULL)");
+            }
 
 	    len = s->s->len - buf_len;
 	    if (min_width > len) {
@@ -865,10 +870,14 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 	      string_builder_fill(s, min_width - len, MKPCHARP("    ", 0),
 				  4, 0);
 	      if (!(flags & APPEND_LEFT)) {
-		string_builder_putchar(s, '"');
-		string_builder_quote_string(s, str, 0, len,
-					    QUOTE_NO_STRING_CONCAT);
-		string_builder_putchar(s, '"');
+                if (str) {
+                  string_builder_putchar(s, '"');
+                  string_builder_quote_string(s, str, 0, len,
+                                              QUOTE_NO_STRING_CONCAT);
+                  string_builder_putchar(s, '"');
+                } else {
+                  string_builder_strcat(s, "(NULL)");
+                }
 	      }
 	    }
 	  }
