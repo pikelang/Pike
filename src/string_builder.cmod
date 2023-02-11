@@ -2276,7 +2276,6 @@ PIKECLASS Buffer
   {
     PCHARP buf = MKPCHARP_STR(THIS->str.s);
     ptrdiff_t len = THIS->str.s->len;
-    ptrdiff_t i;
     SearchMojt mojt;
     PCHARP res;
 
