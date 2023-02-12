@@ -807,6 +807,7 @@ void riscv_ins_f_byte(unsigned int opcode)
       UPDATE_F_JUMP(branch_op1, PIKE_PC);
       rv_return();
       UPDATE_F_JUMP(branch_op3, PIKE_PC);
+      rv_call_c_opcode(F_POP_VALUE);
     }
     return;
 

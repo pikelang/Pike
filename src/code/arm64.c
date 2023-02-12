@@ -2400,6 +2400,7 @@ static void low_ins_f_byte(unsigned int opcode)
 
           label_generate(&do_return_if_true);
 	  cbnz64_imm(ARM_REG_RVAL, label_dist(&my_pike_return));
+          ins_f_byte(F_POP_VALUE);
       }
       return;
   case F_RETURN:

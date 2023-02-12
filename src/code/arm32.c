@@ -1969,6 +1969,7 @@ static void low_ins_f_byte(unsigned int opcode)
           label_generate(&do_return_if_true);
           arm32_cmp_int(ARM_REG_RVAL, 0);
           b_imm(label_dist(&my_pike_return), ARM_COND_NE);
+          ins_f_byte(F_POP_VALUE);
       }
       return;
   case F_RETURN:
