@@ -29,7 +29,7 @@ struct sb_source
   struct object *obj;
 };
 
-static struct data get_data( struct source *src, off_t len )
+static struct data get_data( struct source *src, off_t PIKE_UNUSED(len) )
 {
   struct sb_source *s = (struct sb_source *)src;
   struct data res;

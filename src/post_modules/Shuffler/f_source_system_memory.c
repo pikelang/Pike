@@ -27,7 +27,7 @@ struct sm_source
   size_t len;
 };
 
-static struct data get_data( struct source *src, off_t len )
+static struct data get_data( struct source *src, off_t PIKE_UNUSED(len) )
 {
   struct sm_source *s = (struct sm_source *)src;
   struct data res;

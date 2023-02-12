@@ -75,7 +75,7 @@ static void frees(struct pf_source*s) {
   }
 }
 
-static struct data get_data( struct source *src, off_t len )
+static struct data get_data( struct source *src, off_t PIKE_UNUSED(len) )
 {
   struct pf_source *s = (struct pf_source *)src;
   struct data res;

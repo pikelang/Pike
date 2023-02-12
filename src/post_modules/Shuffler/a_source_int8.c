@@ -23,7 +23,7 @@ struct i8_source
   char datum;
 };
 
-static struct data get_data( struct source *src, off_t len )
+static struct data get_data( struct source *src, off_t PIKE_UNUSED(len) )
 {
   struct i8_source *s = (struct i8_source *)src;
   struct data res;

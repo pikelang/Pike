@@ -90,7 +90,7 @@ static void setup_callbacks( struct source *src ) {
   set_read_callback( s->fd, (void*)read_callback, s );
 }
 
-static struct data get_data(struct source *src, off_t len)
+static struct data get_data(struct source *src, off_t PIKE_UNUSED(len))
 {
   struct fd_source *s = (struct fd_source *)src;
   struct data res;
