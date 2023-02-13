@@ -635,9 +635,9 @@ static void mpzmod___hash(INT32 args)
 
   pop_n_elems(args);
   if (mpz_sgn(mpz) < 0)
-    push_int(-h);
+    push_int((INT_TYPE)~h);
   else
-    push_int(h);
+    push_int((INT_TYPE)h);
   return;
 }
 
@@ -668,8 +668,6 @@ struct pike_string *low_get_mpz_digits(MP_INT *mpz, int base)
   }
   else if ((base == 256) || (base == -256))
   {
-    size_t i;
-
     if (mpz_sgn(mpz) < 0)
       Pike_error("Only non-negative numbers can be converted to base 256.\n");
 
