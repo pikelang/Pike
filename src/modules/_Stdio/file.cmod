@@ -922,7 +922,7 @@ static ptrdiff_t do_read_into_buffer(int fd,
  * my_file->open_mode can be set properly. */
 static int low_fd_query_properties(int fd)
 {
-  struct stat st;
+  PIKE_STAT_T st;
   PIKE_SOCKADDR addr;
   ACCEPT_SIZE_T len;
   int i;

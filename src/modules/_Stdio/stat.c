@@ -762,7 +762,6 @@ static void stat_index_set (INT32 args)
       SIMPLE_ARG_TYPE_ERROR ("`[]=", 1, "int(0..6)|string");
   }
   else if (TYPEOF(sp[-2]) == T_STRING) {
-    INT_TYPE code;
     struct svalue *tmp;
     tmp = low_mapping_string_lookup( stat_map, sp[-2].u.string );
     if (!tmp)

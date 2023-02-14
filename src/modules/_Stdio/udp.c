@@ -207,7 +207,6 @@ static void push_new_udp_object(int factory_fun_num, int fd)
   struct udp_storage *udp;
   ONERROR err;
   struct inherit *inh;
-  struct identifier *i;
 
   SET_ONERROR(err, do_close_udp, (ptrdiff_t) fd);
   apply_current(factory_fun_num, 0);
@@ -238,8 +237,6 @@ static int got_udp_event (struct fd_callback_box *box, int event);
 static void low_dup_udp(struct udp_storage *to,
 			struct udp_storage *from)
 {
-  size_t ev;
-
   my_set_close_on_exec(to->box.fd, to->box.fd > 2);
 
   unhook_fd_callback_box (&to->box);

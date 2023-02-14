@@ -716,7 +716,6 @@ PIKECLASS Buffer
   {
     struct object *o;
     MP_INT *i;
-    unsigned char *p;
 
     if( !io_avail(io,len) ) return NULL;
     o = fast_clone_object(bignum_program);
@@ -737,9 +736,7 @@ PIKECLASS Buffer
   {
     MP_INT *i = (void*)o->storage;
     MP_INT tmp;
-    int free;
     unsigned char*d;
-    struct pike_string *s;
     int pad = 0;
     ptrdiff_t bytes;
     size_t exp;
@@ -938,7 +935,6 @@ PIKECLASS Buffer
         {
           size_t len;
           void *ptr;
-          struct sysmem *s;
           enum memobj_type t = get_memory_object_memory( p->u.object, &ptr, &len, NULL );
 
           if( !io->buffer && t==MEMOBJ_SYSTEM_MEMORY )
@@ -1551,7 +1547,6 @@ PIKECLASS Buffer
   {
     int i,l = a->size;
     struct svalue *it = a->item;
-    unsigned char *ptr;
     ptrdiff_t n=0;
     ONERROR e;
     Buffer *io = THIS;
@@ -2539,7 +2534,6 @@ PIKECLASS Buffer
   PIKEFUN string(8bit) try_read( int bytes )
   {
     Buffer *this = THIS;
-    struct pike_string *s;
     Pike_sp--;
     /* Hm. signed/unsigned comparisons abound. */
     if( bytes > 0 && (size_t)bytes > io_len(this) )
@@ -2721,7 +2715,6 @@ PIKECLASS Buffer
   {
     Buffer *io = THIS;
     INT_TYPE i;
-    struct object *o;
     struct array *a;
 
     Pike_sp-=2;
@@ -2925,7 +2918,7 @@ PIKECLASS Buffer
 
   INIT {
     Buffer *this = THIS;
-    this->max_waste = 0.615;
+    this->max_waste = (float)0.615;
     this->this = THIS_OBJECT;
   }
 
