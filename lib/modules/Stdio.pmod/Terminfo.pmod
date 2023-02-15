@@ -809,6 +809,7 @@ class MetaTerminfoDB {
 	"/etc/terminfo",
 	// Operating System terminfo.
 	"/lib/terminfo", "/usr/lib/terminfo",
+        "/boot/system/data/terminfo",
 	// Extra terminfo. These are often symlinks to the above.
 	"/usr/share/lib/terminfo", "/usr/share/terminfo",
 	"/usr/share/termcap", "/usr/share/misc/terminfo",
