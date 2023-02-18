@@ -2301,7 +2301,9 @@ PMOD_EXPORT void o_subtract(void)
 	  {
 	     struct mapping *m;
 
-	     int got_cmp_less = !!multiset_get_cmp_less (Pike_sp[-1].u.multiset);
+	     int got_cmp_less =
+               TYPEOF(*multiset_get_cmp_less (Pike_sp[-1].u.multiset)) !=
+               PIKE_T_INT;
 	     struct array *ind = multiset_indices (Pike_sp[-1].u.multiset);
 	     pop_stack();
 	     push_array (ind);
@@ -2614,7 +2616,9 @@ PMOD_EXPORT void o_and(void)
 	   {
 	      struct mapping *m;
 
-	     int got_cmp_less = !!multiset_get_cmp_less (Pike_sp[-1].u.multiset);
+	     int got_cmp_less =
+                 TYPEOF(*multiset_get_cmp_less (Pike_sp[-1].u.multiset)) !=
+                 PIKE_T_INT;
 	     struct array *ind = multiset_indices (Pike_sp[-1].u.multiset);
 	     pop_stack();
 	     push_array (ind);
