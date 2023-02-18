@@ -37,8 +37,8 @@ struct pike_type
 extern struct pike_type **pike_type_hash;
 extern size_t pike_type_hash_size;
 
-#define CAR_TO_INT(TYPE) ((char *) (TYPE)->car - (char *) 0)
-#define CDR_TO_INT(TYPE) ((char *) (TYPE)->cdr - (char *) 0)
+#define CAR_TO_INT(TYPE) ((ptrdiff_t) ((char *) (TYPE)->car))
+#define CDR_TO_INT(TYPE) ((ptrdiff_t) ((char *) (TYPE)->cdr))
 
 /*
  * pike_type flags:

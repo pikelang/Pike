@@ -71,6 +71,7 @@
  } while(0)
 
 #define STEP(X,Y) ((X)+(Y)*size)
+#define DIFF(last, bas) ((((char *)last) - (char *)bas) / size)
 #define TYPE char
 #define ID fsort_n
 #define TMP_AREA

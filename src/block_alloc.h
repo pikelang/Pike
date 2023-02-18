@@ -50,7 +50,7 @@
 #define PTR_HASH_HASHFUN_DEFINED
 
 static inline PIKE_HASH_T PIKE_UNUSED_ATTRIBUTE ptr_hashfun(void * ptr) {
-  PIKE_HASH_T q = (size_t)((char*)ptr - (char*)0);
+  PIKE_HASH_T q = (size_t)((char*)ptr);
   q ^= (q >> 20) ^ (q >> 12);
   return q ^ (q >> 7) ^ (q >> 4);
 }

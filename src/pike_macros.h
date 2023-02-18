@@ -15,7 +15,7 @@
 
 #include "pike_memory.h"
 
-#define PTR_TO_INT(PTR) ((size_t) ((char *) (PTR) - (char *) NULL))
+#define PTR_TO_INT(PTR) ((size_t) ((char *) (PTR)))
 
 #if __GNUC__ >= 4
 #  define OFFSETOF(T,X) __builtin_offsetof(struct T,X)

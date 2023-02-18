@@ -32,9 +32,13 @@
 #define STEP(X,Y) ((X) + (Y))
 #endif
 
+#ifndef DIFF
+#define DIFF(last, bas) ((last) - (bas))
+#define UNDEF_DIFF
+#endif
+
 #define INC(X) X=STEP(X,1)
 #define DEC(X) X=STEP(X,-1)
-#define SIZE PTR_TO_INT(STEP((PTYPE)0,1))
 
 #define PARENT(X) (((X)-1)>>1)
 #define CHILD1(X) (((X)<<1)+1)
@@ -70,7 +74,7 @@ static void MKNAME(_do_sort)(PTYPE bas,
       if(--max_recursion <= 0)
       {
 	ptrdiff_t howmany,x,y,z;
-	howmany=((((char *)last)-((char *)bas))/SIZE)+1;
+	howmany=DIFF(last, bas)+1;
 	if(howmany<2) return;
 
 	for(x=PARENT(howmany-1);x>=0;x--)
@@ -112,7 +116,7 @@ static void MKNAME(_do_sort)(PTYPE bas,
 	return;
       }
 
-      b=STEP(bas,((((char *)last)-((char *)bas))/SIZE)>>1);
+      b=STEP(bas, DIFF(last, bas) >> 1);
       SWAP(bas,b);
       b=last;
       while(a < b)
@@ -207,4 +211,9 @@ void ID(PTYPE bas,
 #ifdef UNDEF_STEP
 #undef STEP
 #undef UNDEF_STEP
+#endif
+
+#ifdef UNDEF_DIFF
+#undef DIFF
+#undef UNDEF_DIFF
 #endif
