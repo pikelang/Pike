@@ -13,15 +13,27 @@
 #include <sys/param.h>
 #endif
 
+#ifdef HAVE_STDALIGN_H
+#include <stdalign.h>
+#endif
+
 #include "pike_memory.h"
 
 #define PTR_TO_INT(PTR) ((size_t) ((char *) (PTR)))
 
-#if __GNUC__ >= 4
+#ifdef offsetof
+#  define OFFSETOF(T, X) offsetof(struct T, X)
+#elif  __GNUC__ >= 4
 #  define OFFSETOF(T,X) __builtin_offsetof(struct T,X)
-#  define ALIGNOF(X) __alignof__(X)
 #else
 #  define OFFSETOF(T, X) PTR_TO_INT(& (((struct T *)NULL)->X))
+#endif
+
+#if defined(alignof) || defined(__alignof_is_defined)
+#  define ALIGNOF(X) alignof(X)
+#elif  __GNUC__ >= 4
+#  define ALIGNOF(X) __alignof__(X)
+#else
 #  define ALIGNOF(X) OFFSETOF({ char ignored_; X fooo_;}, fooo_)
 #endif
 
