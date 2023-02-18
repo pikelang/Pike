@@ -96,7 +96,8 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 					 const char *fmt,
 					 va_list args);
 PMOD_EXPORT void string_builder_sprintf(struct string_builder *s,
-					const char *fmt, ...);
+					const char *fmt, ...)
+  ATTRIBUTE((format (printf, 2, 3)));
 PMOD_EXPORT void string_builder_strftime(struct string_builder *s,
                                          const char *fmt,
                                          struct tm *tm);
@@ -119,7 +120,8 @@ PMOD_EXPORT void string_builder_sprintf_disassembly(struct string_builder *s,
 						    const void *start,
 						    const void *end,
 						    const char *comment,
-						    const char *fmt, ...);
+						    const char *fmt, ...)
+  ATTRIBUTE((format (printf, 6, 7)));
 PMOD_EXPORT void string_builder_append_disassembly_data(struct string_builder *s,
 							size_t address,
 							const void *start,
