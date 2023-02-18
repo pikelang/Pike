@@ -2033,10 +2033,10 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	      /* Inherit */
 
 	      /* Flags that have been set by/after the inherit. */
-	      INT16 inherit_flags_set = 0;
+	      unsigned INT16 inherit_flags_set = 0;
 	      /* Mask of flags that may have been affected by
 	       * the inherit. */
-	      INT16 inherit_flags_mask = ~(ID_HIDDEN|ID_INHERITED);
+	      unsigned INT16 inherit_flags_mask = ~(ID_HIDDEN|ID_INHERITED);
 	      struct inherit *inh = p->inherits + inherit_num;
 	      struct reference *ref = p->identifier_references + d;
 	      int i;
@@ -2061,8 +2061,8 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	      /* Calculate id_flags */
 	      for (i = 0; i < inh->prog->num_identifier_references; i++) {
 		if (ref[i].inherit_offset) {
-		  INT16 id_flags = ref[i].id_flags;
-		  INT16 inh_id_flags =
+		  unsigned INT16 id_flags = ref[i].id_flags;
+		  unsigned INT16 inh_id_flags =
 		    inh->prog->identifier_references[i].id_flags;
 		  /* Ignore identifiers that have been hidden. */
 		  if (!(id_flags & ID_HIDDEN)) {
@@ -3875,7 +3875,7 @@ static void decode_value2(struct decode_data *data)
 	  int byteorder;
 	  int bytecode_method;
 	  int entry_type;
-	  INT16 id_flags;
+	  unsigned INT16 id_flags;
 	  INT16 p_flags;
 	  ptrdiff_t old_pragmas;
 	  struct compilation *c;
