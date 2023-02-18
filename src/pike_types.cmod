@@ -3768,7 +3768,10 @@ static void push_and_fixup_markers(struct pike_type *t,
 				   struct remap_state *remap,
 				   enum pt_remap_flags flags)
 {
-  if (!t || !(t->flags & PT_FLAG_ASSIGN) || !remap || !remap->markers) {
+  int marker_set = !!(flags & PT_FLAG_REMAP_SWAP_MARKERS);
+
+  if (!t || !(t->flags & PT_FLAG_ASSIGN) || !remap ||
+      !remap->markers[marker_set]) {
     /* Type t does not contain any marker assignments,
      * or the remap state has no markers set.
      */
