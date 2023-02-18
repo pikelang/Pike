@@ -192,7 +192,7 @@ static void handle_phrase_hit( Blob **blobs,
 			       int nblobs,
 			       struct object *res,
 			       int docid,
-			       double *field_c[65],
+			       double field_c[65],
 			       double mc )
 {
   int i, j, k;
@@ -217,7 +217,7 @@ static void handle_phrase_hit( Blob **blobs,
     int hit = 1;
     Hit m = wf_blob_hit( blobs[0], i );
     int h = m.raw;
-    if( (add = (*field_c)[ MOFF(m) ]) == 0.0 )
+    if( (add = field_c[ MOFF(m) ]) == 0.0 )
       continue;
 
     for( j = 1; j<nblobs; j++)
@@ -286,7 +286,7 @@ static struct object *low_do_query_phrase( Blob **blobs, int nblobs,
 	if( blobs[i]->docid != min )
 	  goto next;
 
-      handle_phrase_hit( blobs, nblobs, res, min, &field_c, max_c );
+      handle_phrase_hit( blobs, nblobs, res, min, field_c, max_c );
 
     next:
       for( i = 0; i<nblobs; i++ )
