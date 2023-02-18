@@ -479,17 +479,55 @@ PMOD_EXPORT void assign_lvalue(struct svalue *lval,struct svalue *from)
     case T_ARRAY_LVALUE:
     {
       INT32 e;
+      int min_len;
+      int max_len;
+      int more = 0;
+      struct svalue *lvals;
       if(TYPEOF(*from) != T_ARRAY)
 	Pike_error("Trying to assign combined lvalue from non-array.\n");
 
-      if(from->u.array->size < (lval[1].u.array->size>>1))
+      min_len = lval[1].u.array->size;
+      max_len = min_len >> 1;
+      lvals = ITEM(lval[1].u.array);
+      if (min_len & 1) {
+        min_len = lvals[0].u.integer;
+        if (min_len < 0) {
+          more = 1;
+          min_len = ~min_len;
+          max_len--;
+        }
+        lvals++;
+      } else {
+        min_len >>= 1;
+      }
+      if (from->u.array->size < min_len)
 	Pike_error("Not enough values for multiple assign.\n");
 
-      if(from->u.array->size > (lval[1].u.array->size>>1))
+      if ((from->u.array->size > max_len) && !more)
 	Pike_error("Too many values for multiple assign.\n");
 
-      for(e=0;e<from->u.array->size;e++)
-	assign_lvalue(lval[1].u.array->item+(e<<1),from->u.array->item+e);
+      for(e = 0; e < min_len; e++)
+        assign_lvalue(lvals + (e<<1), ITEM(from->u.array) + e);
+
+      if (max_len > min_len) {
+        for(;e < max_len; e++) {
+          if (e >= from->u.array->size) {
+            assign_lvalue(lvals + (e<<1), (struct svalue *)&svalue_undefined);
+          } else {
+            assign_lvalue(lvals + (e<<1), ITEM(from->u.array) + e);
+          }
+        }
+      }
+
+      if (more) {
+        if (e >= from->u.array->size) {
+          ref_push_array(&empty_array);
+        } else {
+          push_array(slice_array(from->u.array, e, from->u.array->size));
+        }
+        assign_lvalue(lvals + (e<<1), Pike_sp-1);
+        pop_stack();
+      }
     }
     break;
 
