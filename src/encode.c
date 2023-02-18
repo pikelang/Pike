@@ -531,7 +531,7 @@ static void encode_type(struct pike_type *t, struct encode_data *data)
 	}
 	addchar('0' + marker);
 	EDB(1, {
-	    ENCODE_WERR(".type    marker, %d", marker);
+	    ENCODE_WERR(".type    marker, %td", marker);
 	  });
 	t = t->cdr;
       }
@@ -554,7 +554,7 @@ static void encode_type(struct pike_type *t, struct encode_data *data)
 	ptrdiff_t val = CAR_TO_INT(t);
 	addchar(val & 0xff);
 	EDB(1, {
-	    ENCODE_WERR(".type    scope, %d", val);
+	    ENCODE_WERR(".type    scope, %td", val);
 	  });
       }
       t = t->cdr;
@@ -580,11 +580,11 @@ static void encode_type(struct pike_type *t, struct encode_data *data)
 
         buffer_add_be32(&data->buf, CAR_TO_INT(t));
 	EDB(1, {
-	    ENCODE_WERR(".data    %d", CAR_TO_INT(t));
+	    ENCODE_WERR(".data    %d", (int)CAR_TO_INT(t));
 	  });
         buffer_add_be32(&data->buf, CDR_TO_INT(t));
 	EDB(1, {
-	    ENCODE_WERR(".data    %d", CDR_TO_INT(t));
+	    ENCODE_WERR(".data    %d", (int)CDR_TO_INT(t));
 	  });
       }
       break;
@@ -610,7 +610,7 @@ static void encode_type(struct pike_type *t, struct encode_data *data)
     {
       addchar(CAR_TO_INT(t));
       EDB(1, {
-	  ENCODE_WERR(".type    %d", CAR_TO_INT(t));
+	  ENCODE_WERR(".type    %d", (int)CAR_TO_INT(t));
 	});
 
       if(t->cdr)
@@ -704,7 +704,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
     if (force_encode && tmp->u.integer < COUNTER_START) {
       EDB(1,
 	  fprintf(stderr, "%*sEncoding delayed thing to <%ld>: ",
-		  data->depth, "", entry_id.u.integer);
+		  data->depth, "", (long)entry_id.u.integer);
 	  if(data->debug == 1)
 	  {
 	    fprintf(stderr,"TAG%d", TYPEOF(*val));
@@ -715,15 +715,15 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
       code_entry (TAG_DELAYED, entry_id.u.integer, data);
       tmp->u.integer = entry_id.u.integer;
       EDB(1, {
-	  ENCODE_WERR(".tag     delayed, %ld", entry_id.u.integer);
+	  ENCODE_WERR(".tag     delayed, %ld", (long)entry_id.u.integer);
 	});
     }
     else {
       EDB(1,fprintf(stderr, "%*sEncoding TAG_AGAIN from <%ld>\n",
-		    data->depth, "", entry_id.u.integer));
+		    data->depth, "", (long)entry_id.u.integer));
       code_entry(TAG_AGAIN, entry_id.u.integer, data);
       EDB(1, {
-	  ENCODE_WERR(".tag     again, %ld", entry_id.u.integer);
+	  ENCODE_WERR(".tag     again, %ld", (long)entry_id.u.integer);
 	});
       goto encode_done;
     }
@@ -735,7 +735,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
     if (TYPEOF(*val) != T_TYPE) {
       entry_id = data->counter;	/* It's always a small integer. */
       EDB(1,fprintf(stderr, "%*sEncoding to <%ld>: ",
-		    data->depth, "", entry_id.u.integer);
+		    data->depth, "", (long)entry_id.u.integer);
 	  if(data->debug == 1)
 	  {
 	    fprintf(stderr,"TAG%d", TYPEOF(*val));
@@ -744,7 +744,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	  }
 	  fputc('\n', stderr););
       EDB(1, {
-	  ENCODE_WERR("# Encoding to tag #%ld", entry_id.u.integer);
+	  ENCODE_WERR("# Encoding to tag #%ld", (long)entry_id.u.integer);
 	});
       if( TYPEOF(*val) < MIN_REF_TYPE || val->u.dummy->refs > 1 )
           mapping_insert(data->encoded, val, &entry_id);
@@ -813,7 +813,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 
       encode_type(val->u.type, data);
       EDB(2,fprintf(stderr, "%*sEncoded type to <%ld>: ",
-		  data->depth, "", data->counter.u.integer);
+		    data->depth, "", (long)data->counter.u.integer);
 	  print_svalue(stderr, val);
 	  fputc('\n', stderr););
       mapping_insert(data->encoded, val, &data->counter);
@@ -965,7 +965,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	code_entry(TAG_FLOAT,x,data);
 	code_entry(TAG_FLOAT,y,data);
 	EDB(1, {
-	    ENCODE_WERR(".float   %ld, %ld", x, y);
+	    ENCODE_WERR(".float   %ld, %d", (long)x, y);
 	  });
       }
       break;
@@ -974,7 +974,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
     case T_ARRAY:
       code_entry(TAG_ARRAY, val->u.array->size, data);
       EDB(1, {
-	  ENCODE_WERR(".entry   array, %ld", val->u.array->size);
+	  ENCODE_WERR(".entry   array, %d", val->u.array->size);
 	});
       for(i=0; i<val->u.array->size; i++)
 	encode_value2(ITEM(val->u.array)+i, data, 0);
@@ -1007,7 +1007,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 
       code_entry(TAG_MAPPING, Pike_sp[-2].u.array->size,data);
       EDB(1, {
-	  ENCODE_WERR(".entry   mapping, %ld", Pike_sp[-2].u.array->size);
+	  ENCODE_WERR(".entry   mapping, %d", Pike_sp[-2].u.array->size);
 	});
       for(i=0; i<Pike_sp[-2].u.array->size; i++)
       {
@@ -1029,7 +1029,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	 * compatible way. */
 	code_entry(TAG_MULTISET, multiset_sizeof (l), data);
 	EDB(1, {
-	    ENCODE_WERR(".entry   multiset, %ld", multiset_sizeof(l));
+	    ENCODE_WERR(".entry   multiset, %d", multiset_sizeof(l));
 	  });
 	if (data->canonic) {
 	  INT32 *order;
@@ -1120,7 +1120,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	      code_number(SUBTYPEOF(*val), data);
 	      EDB(1, {
 		  ENCODE_WERR_COMMENT("inherit",
-				      ".number  %ld", SUBTYPEOF(*val));
+				      ".number  %u", SUBTYPEOF(*val));
 		});
 	      pop_stack();
 	      ref_push_object(val->u.object);
@@ -1342,13 +1342,13 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	/* Byte-order. */
 	code_number(PIKE_BYTEORDER, data);
 	EDB(1, {
-	    ENCODE_WERR_COMMENT("byte-order", ".number  %ld", PIKE_BYTEORDER);
+	    ENCODE_WERR_COMMENT("byte-order", ".number  %d", PIKE_BYTEORDER);
 	  });
 
 	/* flags */
 	code_number(p->flags,data);
 	EDB(1, {
-	    ENCODE_WERR_COMMENT("flags", ".number  %ld", p->flags);
+	    ENCODE_WERR_COMMENT("flags", ".number  %d", p->flags);
 	  });
 
 	/* version */
@@ -1376,7 +1376,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	  code_number( p->PIKE_CONCAT(num_,NAME), data);		\
 	  EDB(1, {							\
 	      ENCODE_WERR_COMMENT(TOSTR(NAME), ".number  %ld",		\
-				  p->PIKE_CONCAT(num_,NAME));		\
+				  (long)p->PIKE_CONCAT(num_,NAME));	\
 	    });								\
 	} while(0);
 
@@ -1386,7 +1386,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	 */
 	code_number(PIKE_BYTECODE_PORTABLE, data);
 	EDB(1, {
-	    ENCODE_WERR("byte-code", ".number  %ld", PIKE_BYTECODE_PORTABLE);
+	    ENCODE_WERR_COMMENT("byte-code", ".number  %d", PIKE_BYTECODE_PORTABLE);
 	  });
 
 	{
@@ -1428,7 +1428,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	    }
 	    code_number(d, data);
 	    EDB(1, {
-		ENCODE_WERR_COMMENT("constant #", ".number  %ld", d);
+		ENCODE_WERR_COMMENT("constant #", ".number  %d", d);
 	      });
 	    /* value */
 	    encode_value2(&p->constants[d].sval, data, 0);
@@ -1539,14 +1539,14 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		code_number(ref->id_flags, data);
 		EDB(1, {
 		    ENCODE_WERR_COMMENT("modifiers",
-					".number  %ld", ref->id_flags);
+					".number  %u", ref->id_flags);
 		  });
 
 		/* inherit_offset */
 		code_number(ref->inherit_offset, data);
 		EDB(1, {
 		    ENCODE_WERR_COMMENT("inherit_offset",
-					".number  %ld", ref->inherit_offset);
+					".number  %u", ref->inherit_offset);
 		  });
 
 		/* identifier_offset */
@@ -1572,7 +1572,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		}
 		code_number(ref_no, data);
 		EDB(1, {
-		    ENCODE_WERR_COMMENT("ref_no", ".number  %ld", ref_no);
+		    ENCODE_WERR_COMMENT("ref_no", ".number  %d", ref_no);
 		  });
 	      } else {
 		int gs_flags = -1;
@@ -1683,7 +1683,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		  code_number(ref->id_flags, data);
 		  EDB(1, {
 		      ENCODE_WERR_COMMENT("modifiers",
-					  ".number  %ld", ref->id_flags);
+					  ".number  %u", ref->id_flags);
 		    });
 
 		  /* name */
@@ -1699,21 +1699,21 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		  code_number(id->filename_strno, data);
 		  EDB(1, {
 		      ENCODE_WERR_COMMENT("filename_strno",
-					  ".number  %ld", id->filename_strno);
+					  ".number  %u", id->filename_strno);
 		    });
 
 		  /* linenumber */
 		  code_number(id->linenumber, data);
 		  EDB(1, {
 		      ENCODE_WERR_COMMENT("linenumber",
-					  ".number  %ld", id->linenumber);
+					  ".number  %ld", (long)id->linenumber);
 		    });
 
 		  /* depth */
 		  code_number(id->func.ext_ref.depth, data);
 		  EDB(1, {
 		      ENCODE_WERR_COMMENT("depth",
-					  ".number  %ld",
+					  ".number  %u",
 					  id->func.ext_ref.depth);
 		    });
 
@@ -1721,7 +1721,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		  code_number(id->func.ext_ref.id, data);
 		  EDB(1, {
 		      ENCODE_WERR_COMMENT("refno",
-					  ".number  %ld",
+					  ".number  %d",
 					  id->func.ext_ref.id);
 		    });
 
@@ -1739,13 +1739,13 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		    code_number(gs_flags, data);
 		    EDB(1, {
 			ENCODE_WERR_COMMENT("modifiers",
-					    ".number  %ld", gs_flags);
+					    ".number  %d", gs_flags);
 		      });
 		  } else {
 		    code_number(ref->id_flags, data);
 		    EDB(1, {
 			ENCODE_WERR_COMMENT("modifiers",
-					    ".number  %ld", ref->id_flags);
+					    ".number  %u", ref->id_flags);
 		      });
 		  }
 
@@ -1762,21 +1762,21 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		  code_number(id->filename_strno, data);
 		  EDB(1, {
 		      ENCODE_WERR_COMMENT("filename_strno",
-					  ".number  %ld", id->filename_strno);
+					  ".number  %u", id->filename_strno);
 		    });
 
 		  /* linenumber */
 		  code_number(id->linenumber, data);
 		  EDB(1, {
 		      ENCODE_WERR_COMMENT("linenumber",
-					  ".number  %ld", id->linenumber);
+					  ".number  %ld", (long)id->linenumber);
 		    });
 
 		  /* offset */
 		  code_number(id->func.const_info.offset, data);
 		  EDB(1, {
 		      ENCODE_WERR_COMMENT("offset",
-					  ".number  %ld",
+					  ".number  %td",
 					  id->func.const_info.offset);
 		    });
 
@@ -1784,14 +1784,14 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		  code_number(id->run_time_type, data);
 		  EDB(1, {
 		      ENCODE_WERR_COMMENT("run_time_type",
-					  ".number  %ld", id->run_time_type);
+					  ".number  %u", id->run_time_type);
 		    });
 
 		  /* opt flags */
 		  code_number(id->opt_flags, data);
 		  EDB(1, {
 		      ENCODE_WERR_COMMENT("opt_flags",
-					  ".number  %ld", id->opt_flags);
+					  ".number  %u", id->opt_flags);
 		    });
 		  break;
 
@@ -1809,13 +1809,13 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		    code_number(gs_flags, data);
 		    EDB(1, {
 			ENCODE_WERR_COMMENT("modifiers",
-					    ".number  %ld", gs_flags);
+					    ".number  %d", gs_flags);
 		      });
 		  } else {
 		    code_number(ref->id_flags, data);
 		    EDB(1, {
 			ENCODE_WERR_COMMENT("modifiers",
-					    ".number  %ld", ref->id_flags);
+					    ".number  %u", ref->id_flags);
 		      });
 		  }
 
@@ -1832,21 +1832,21 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		  code_number(id->filename_strno, data);
 		  EDB(1, {
 		      ENCODE_WERR_COMMENT("filename_strno",
-					  ".number  %ld", id->filename_strno);
+					  ".number  %u", id->filename_strno);
 		    });
 
 		  /* linenumber */
 		  code_number(id->linenumber, data);
 		  EDB(1, {
 		      ENCODE_WERR_COMMENT("linenumber",
-					  ".number  %ld", id->linenumber);
+					  ".number  %ld", (long)id->linenumber);
 		    });
 
 		  /* func_flags (aka identifier_flags) */
 		  code_number(id->identifier_flags, data);
 		  EDB(1, {
 		      ENCODE_WERR_COMMENT("identifier_flags",
-					  ".number  %ld",
+					  ".number  %u",
 					  id->identifier_flags);
 		    });
 
@@ -1871,7 +1871,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		  code_number(id->opt_flags, data);
 		  EDB(1, {
 		      ENCODE_WERR_COMMENT("opt_flags",
-					  ".number  %ld", id->opt_flags);
+					  ".number  %u", id->opt_flags);
 		    });
 		  break;
 
@@ -1970,13 +1970,13 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		    code_number(gs_flags, data);
 		    EDB(1, {
 			ENCODE_WERR_COMMENT("modifiers",
-					    ".number  %ld", gs_flags);
+					    ".number  %d", gs_flags);
 		      });
 		  } else {
 		    code_number(ref->id_flags, data);
 		    EDB(1, {
 			ENCODE_WERR_COMMENT("modifiers",
-					    ".number  %ld", ref->id_flags);
+					    ".number  %u", ref->id_flags);
 		      });
 		  }
 
@@ -1993,14 +1993,14 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		  code_number(id->filename_strno, data);
 		  EDB(1, {
 		      ENCODE_WERR_COMMENT("filename_strno",
-					  ".number  %ld", id->filename_strno);
+					  ".number  %u", id->filename_strno);
 		    });
 
 		  /* linenumber */
 		  code_number(id->linenumber, data);
 		  EDB(1, {
 		      ENCODE_WERR_COMMENT("linenumber",
-					  ".number  %ld", id->linenumber);
+					  ".number  %ld", (long)id->linenumber);
 		    });
 
 		  break;
@@ -2018,7 +2018,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	      code_number(d, data);
 	      EDB(1, {
 		  ENCODE_WERR_COMMENT("ref_no",
-				      ".number  %ld", d);
+				      ".number  %d", d);
 		});
 
 	    next_identifier_ref:
@@ -2089,7 +2089,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	      code_number(inherit_flags_set, data);
 	      EDB(1, {
 		  ENCODE_WERR_COMMENT("modifiers",
-				      ".number  %ld", inherit_flags_set);
+				      ".number  %u", inherit_flags_set);
 		});
 
 	      EDB(5,
@@ -2100,7 +2100,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	      code_number(d_max, data);
 	      EDB(1, {
 		  ENCODE_WERR_COMMENT("max_ref_no",
-				      ".number  %ld", d_max);
+				      ".number  %d", d_max);
 		});
 
 	      /* name */
@@ -2127,21 +2127,21 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	      code_number(inh->parent_identifier, data);
 	      EDB(1, {
 		  ENCODE_WERR_COMMENT("parent_id",
-				      ".number  %ld", inh->parent_identifier);
+				      ".number  %d", inh->parent_identifier);
 		});
 
 	      /* parent_offset */
 	      code_number(inh->parent_offset, data);
 	      EDB(1, {
 		  ENCODE_WERR_COMMENT("parent_offset",
-				      ".number  %ld", inh->parent_offset);
+				      ".number  %d", inh->parent_offset);
 		});
 
 	      /* Number of identifier references. */
 	      code_number(inh->prog->num_identifier_references, data);
 	      EDB(1, {
 		  ENCODE_WERR_COMMENT("num_refs",
-				      ".number  %ld",
+				      ".number  %d",
 				      inh->prog->num_identifier_references);
 		});
 
@@ -2184,7 +2184,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 			data->depth, "", d));
 
 	    EDB(1, {
-		ENCODE_WERR("# Constant #%ld", d);
+		ENCODE_WERR("# Constant #%d", d);
 	      });
 
 	    if (((TYPEOF(p->constants[d].sval) == T_FUNCTION) &&
@@ -2352,7 +2352,7 @@ void f_encode_value(INT32 args)
   for (i = 0; i < data->delayed->size; i++) {
     EDB(1, {
 	string_builder_sprintf(data->debug_buf,
-			       "0x%016x  # Delayed item #%d\n",
+			       "0x%016zx  # Delayed item #%d\n",
 			       data->debug_pos, i);
       });
     encode_value2 (ITEM(data->delayed) + i, data, 2);
@@ -2477,7 +2477,7 @@ void f_encode_value_canonic(INT32 args)
   for (i = 0; i < data->delayed->size; i++) {
     EDB(1, {
 	string_builder_sprintf(data->debug_buf,
-			       "0x%016x  # Delayed item #%d\n",
+			       "0x%016zx  # Delayed item #%d\n",
 			       data->debug_pos, i);
       });
     encode_value2 (ITEM(data->delayed) + i, data, 2);
@@ -3361,7 +3361,7 @@ static void decode_value2(struct decode_data *data)
 	  default:
             push_float((FLOAT_TYPE)ldexp(res, num));
 	    EDB(1, {
-		DECODE_WERR(".float   %d", num);
+		DECODE_WERR(".float   %ld, %ld", (long)res, (long)num);
 	      });
 	    break;
 	}
@@ -3370,7 +3370,7 @@ static void decode_value2(struct decode_data *data)
 
       push_float((FLOAT_TYPE)ldexp(res, num));
       EDB(1, {
-	  DECODE_WERR(".float   %ld, %d", res, num);
+	  DECODE_WERR(".float   %ld, %ld", (long)res, (long)num);
 	});
       break;
     }
@@ -3524,7 +3524,7 @@ static void decode_value2(struct decode_data *data)
       if (num == 4) {
 	decode_number(subtype, data);
 	EDB(1, {
-	    DECODE_WERR_COMMENT("inherit", ".number  %ld", subtype);
+	    DECODE_WERR_COMMENT("inherit", ".number  %d", subtype);
 	  });
       }
       decode_value2(data);
@@ -3901,7 +3901,7 @@ static void decode_value2(struct decode_data *data)
 	      fprintf(stderr, "%*sbyte order:%d\n",
 		      data->depth, "", byteorder));
 	  EDB(1, {
-	      DECODE_WERR_COMMENT("byte-order", ".number  %ld", byteorder);
+	      DECODE_WERR_COMMENT("byte-order", ".number  %d", byteorder);
 	    });
 
 	  if ((byteorder != PIKE_BYTEORDER)
@@ -3920,7 +3920,7 @@ static void decode_value2(struct decode_data *data)
 	  /* Decode flags. */
 	  decode_number(p_flags,data);
 	  EDB(1, {
-	      DECODE_WERR_COMMENT("flags", ".number  %ld", p_flags);
+	      DECODE_WERR_COMMENT("flags", ".number  %d", p_flags);
 	    });
 	  p_flags &= ~(PROGRAM_FINISHED | PROGRAM_OPTIMIZED |
 		       PROGRAM_FIXED | PROGRAM_PASS_1_DONE);
@@ -4094,7 +4094,7 @@ static void decode_value2(struct decode_data *data)
 	    decode_number(PIKE_CONCAT(local_num_, NAME), data);		\
 	    EDB(1, {							\
 		DECODE_WERR_COMMENT(TOSTR(NAME), ".number  %ld",	\
-				    PIKE_CONCAT(local_num_,NAME));	\
+				    (long)PIKE_CONCAT(local_num_,NAME));\
 	      });							\
 	  } while(0);
 #include "program_areas.h"
@@ -4106,7 +4106,7 @@ static void decode_value2(struct decode_data *data)
 			 bytecode_method);
 	  }
 	  EDB(1, {
-	      DECODE_WERR("byte-code", ".number  %ld", bytecode_method);
+	    DECODE_WERR_COMMENT("byte-code", ".number  %d", bytecode_method);
 	    });
 
 	  /* Decode strings */
@@ -4160,7 +4160,7 @@ static void decode_value2(struct decode_data *data)
 	      });
 	    decode_number(efun_no, data);
 	    EDB(1, {
-		DECODE_WERR_COMMENT("constant #", ".number  %ld", efun_no);
+		DECODE_WERR_COMMENT("constant #", ".number  %d", efun_no);
 	      });
 	    EDB(2,
 		fprintf(stderr, "%*sDecoding efun/type constant #%d.\n",
@@ -4240,14 +4240,14 @@ static void decode_value2(struct decode_data *data)
 		  DECODE_WERR(".ident   alias");
 		  break;
 		default:
-		  DECODE_WERR_COMMENT("Unknown", ".ident   %ld", entry_type);
+		  DECODE_WERR_COMMENT("Unknown", ".ident   %d", entry_type);
 		  break;
 		}
 	      });
 	    decode_number(id_flags, data);
 	    EDB(1, {
 		DECODE_WERR_COMMENT("modifiers",
-				    ".number  %ld", id_flags);
+				    ".number  %u", id_flags);
 	      });
 	    if ((entry_type != ID_ENTRY_RAW) &&
 		(entry_type != ID_ENTRY_INHERIT)) {
@@ -4277,13 +4277,13 @@ static void decode_value2(struct decode_data *data)
 	      decode_number(filename_strno, data);
 	      EDB(1, {
 		  DECODE_WERR_COMMENT("filename_strno",
-				      ".number  %ld", filename_strno);
+				      ".number  %u", filename_strno);
 		});
 	      if (filename_strno >= p->num_strings) {
 		ref_push_program(p);
 		decode_error(data, NULL,
-			     "String number out of range: %ld >= %ld",
-			     (long)filename_strno, (long)p->num_strings);
+			     "String number out of range: %u >= %u",
+			     filename_strno, p->num_strings);
 	      }
 	      free_string(c->lex.current_file);
 	      copy_shared_string(c->lex.current_file,
@@ -4314,14 +4314,14 @@ static void decode_value2(struct decode_data *data)
 		decode_number(ref.inherit_offset, data);
 		EDB(1, {
 		    DECODE_WERR_COMMENT("inherit_offset",
-					".number  %ld", ref.inherit_offset);
+					".number  %u", ref.inherit_offset);
 		  });
 
 		/* identifier_offset */
 		/* Actually the id ref number from the inherited program */
 		decode_number(ref_no, data);
 		EDB(1, {
-		    DECODE_WERR_COMMENT("ref_no", ".number  %ld", ref_no);
+		    DECODE_WERR_COMMENT("ref_no", ".number  %d", ref_no);
 		  });
 
                 if (ref.inherit_offset >= p->num_inherits)
@@ -4341,7 +4341,7 @@ static void decode_value2(struct decode_data *data)
 		decode_number(no, data);
 		EDB(1, {
 		    DECODE_WERR_COMMENT("ref_no",
-					".number  %ld", no);
+					".number  %d", no);
 		  });
 
 		if (no < 0 || no > p->num_identifier_references) {
@@ -4369,7 +4369,7 @@ static void decode_value2(struct decode_data *data)
 		decode_number(no, data);
 		EDB(1, {
 		    DECODE_WERR_COMMENT("ref_no",
-					".number  %ld", no);
+					".number  %d", no);
 		  });
 
 		EDB(5,
@@ -4408,7 +4408,7 @@ static void decode_value2(struct decode_data *data)
 		decode_number(func_flags, data);
 		EDB(1, {
 		    DECODE_WERR_COMMENT("identifier_flags",
-					".number  %ld",
+					".number  %u",
 					func_flags);
 		  });
 
@@ -4417,7 +4417,7 @@ static void decode_value2(struct decode_data *data)
 		EDB(1, {
 		    DECODE_WERR_COMMENT("offset",
 					".number  %ld",
-					func.offset);
+					(long)func.offset);
 		  });
 		if (func.offset != -1) {
 #ifdef ENCODE_DEBUG
@@ -4437,7 +4437,7 @@ static void decode_value2(struct decode_data *data)
 		decode_number(opt_flags, data);
 		EDB(1, {
 		    DECODE_WERR_COMMENT("opt_flags",
-					".number  %ld", opt_flags);
+					".number  %u", opt_flags);
 		  });
 
 		/* FIXME:
@@ -4448,7 +4448,7 @@ static void decode_value2(struct decode_data *data)
 		decode_number(no, data);
 		EDB(1, {
 		    DECODE_WERR_COMMENT("ref_no",
-					".number  %ld", no);
+					".number  %d", no);
 		  });
 
 		EDB(5, {
@@ -4520,14 +4520,14 @@ static void decode_value2(struct decode_data *data)
 		decode_number(id.run_time_type, data);
 		EDB(1, {
 		    DECODE_WERR_COMMENT("run_time_type",
-					".number  %ld", id.run_time_type);
+					".number  %u", id.run_time_type);
 		  });
 
 		/* opt_flags */
 		decode_number(id.opt_flags, data);
 		EDB(1, {
 		    DECODE_WERR_COMMENT("opt_flags",
-					".number  %ld", id.opt_flags);
+					".number  %u", id.opt_flags);
 		  });
 
 		ref.run_time_type = PIKE_T_UNKNOWN;
@@ -4537,7 +4537,7 @@ static void decode_value2(struct decode_data *data)
 		decode_number(no, data);
 		EDB(1, {
 		    DECODE_WERR_COMMENT("ref_no",
-					".number  %ld", no);
+					".number  %d", no);
 		  });
 
 		n = isidentifier(id.name);
@@ -4602,7 +4602,7 @@ static void decode_value2(struct decode_data *data)
 		decode_number(depth, data);
 		EDB(1, {
 		    DECODE_WERR_COMMENT("depth",
-					".number  %ld",
+					".number  %d",
 					depth);
 		  });
 
@@ -4610,7 +4610,7 @@ static void decode_value2(struct decode_data *data)
 		decode_number(refno, data);
 		EDB(1, {
 		    DECODE_WERR_COMMENT("refno",
-					".number  %ld",
+					".number  %d",
 					refno);
 		  });
 
@@ -4622,7 +4622,7 @@ static void decode_value2(struct decode_data *data)
 		decode_number(no, data);
 		EDB(1, {
 		    DECODE_WERR_COMMENT("ref_no",
-					".number  %ld", no);
+					".number  %d", no);
 		  });
 
 		EDB(5,
@@ -4664,7 +4664,7 @@ static void decode_value2(struct decode_data *data)
 		decode_number(no, data);
 		EDB(1, {
 		    DECODE_WERR_COMMENT("ref_no",
-					".number  %ld", no);
+					".number  %d", no);
 		  });
 		if (no !=
 		    Pike_compiler->new_program->num_identifier_references) {
@@ -4725,21 +4725,21 @@ static void decode_value2(struct decode_data *data)
 		decode_number(parent_identifier, data);
 		EDB(1, {
 		    DECODE_WERR_COMMENT("parent_id",
-					".number  %ld", parent_identifier);
+					".number  %d", parent_identifier);
 		  });
 
 		/* parent_offset */
 		decode_number(parent_offset, data);
 		EDB(1, {
 		    DECODE_WERR_COMMENT("parent_offset",
-					".number  %ld", parent_offset);
+					".number  %d", parent_offset);
 		  });
 
 		/* Expected number of identifier references. */
 		decode_number(no, data);
 		EDB(1, {
 		    DECODE_WERR_COMMENT("ref_no",
-					".number  %ld", no);
+					".number  %d", no);
 		  });
 
 		if (prog->num_identifier_references != no) {
