@@ -906,12 +906,13 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 	  }
 	  break;
 	case 's':
-	  if (flags & APPEND_WIDTH_LONG) {
+          if (flags & APPEND_WIDTH_MASK) {
 	    /* Wide string: %ws, %ls or %lls
+             * NB: Some platforms use %hs for UTF-16 strings.
 	     */
 	    PCHARP str;
 	    size_t len;
-	    if ((flags & APPEND_WIDTH_LONG)== APPEND_WIDTH_LONG) {
+            if ((flags & APPEND_WIDTH_MASK) != APPEND_WIDTH_LONG_LONG) {
 	      str = MKPCHARP(va_arg(args, p_wchar1 *), 1);
 	    } else {
 	      str = MKPCHARP(va_arg(args, p_wchar2 *), 2);
