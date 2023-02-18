@@ -714,13 +714,14 @@ static INT64 pike_va_int(VA_LIST_PTR args, int flags)
  *
  *   '%'	Insert %.
  *   'a'	Insert double.
+ *   'b'	Insert binary integer (C23-draft).
  *   'c'	Insert character.
  *   'd'	Insert decimal integer.
  *   'e'	Insert double.
  *   'f'	Insert double.
  *   'g'	Insert double.
  *   'o'	Insert octal integer.
- *   'p'	Insert pointer.
+ *   'p'	Insert pointer / Pike extension-prefix.
  *   's'	Insert string.
  *   'u'	Insert unsigned decimal integer.
  *   'x'	Insert lower-case hexadecimal integer.
@@ -734,6 +735,7 @@ static INT64 pike_va_int(VA_LIST_PTR args, int flags)
  *   '-'	Align left.
  *   '0'	Zero pad.
  *   '0'..'9'	Field width.
+ *   '*'	Field width parameter taken from argument (int).
  *   '.'	Precision field width follows.
  *   'h'	Half-width input.
  *   'l'	Long(-er) input.
@@ -741,9 +743,9 @@ static INT64 pike_va_int(VA_LIST_PTR args, int flags)
  *   'w'	Wide input (same as 'l', but only for strings).
  *   'z'	Pointer-width input (size_t).
  *
- * Extended formats supported by string_builder_{v,}sprintf():
+ * Extended formats supported by string_builder_{v,}sprintf()
+ * these accept 'p' as a immediate prefix in order to keep gcc happy:
  *
- *   'b'	Insert binary integer.
  *   'O'	Insert description of svalue.
  *   'q'	Insert quoted pike_string.
  *   'S'	Insert pike_string.
@@ -964,6 +966,11 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 					flags, min_width, precision);
 	  break;
 	case 'p':
+          if ((*fmt == 'O') || (*fmt == 'q') ||
+              (*fmt == 'S') || (*fmt == 'T')) {
+            /* Pike sprintf formatiing extension. */
+            continue;
+          }
 	  string_builder_append_integer(s, pike_va_int(VA_LIST_ADDR(args),
 #if SIZEOF_CHAR_P == SIZEOF_LONG
 						       APPEND_WIDTH_LONG
