@@ -263,7 +263,7 @@ static void DECLSPEC(noreturn) transcode_error_va (
   f_throw (1);
 }
 
-void DECLSPEC(noreturn) transcode_error (
+void DECLSPEC(noreturn) ATTRIBUTE((noreturn)) transcode_error (
   struct pike_string *str, ptrdiff_t pos, struct pike_string *charset,
   int encode, const char *reason, ...)
 {
@@ -273,7 +273,7 @@ void DECLSPEC(noreturn) transcode_error (
   va_end (args);
 }
 
-void DECLSPEC(noreturn) transcoder_error (
+void DECLSPEC(noreturn) ATTRIBUTE((noreturn)) transcoder_error (
   struct pike_string *str, ptrdiff_t pos, int encode, const char *reason, ...)
 {
   struct svalue charset_str;
