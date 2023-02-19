@@ -7536,7 +7536,11 @@ if test -z "$LDSHARED" ; then
         # symbol collisions for e.g. libjpeg which is referenced from both
         # _Image_JPEG and _Image_TIFF. It requires MACOSX_DEPLOYMENT_TARGET
         # which is initialized in smartlink to 10.3.
-        LDSHARED="$REALCC $CFLAGS -bundle -bind_at_load -undefined dynamic_lookup"
+        LDSHARED="$REALCC $CFLAGS -bundle -bind_at_load"
+        case "$MACOSX_DEPLOYMENT_TARGET" in
+          13.*) ;; # -undefined dynamic_lookup is deprecated
+          *) LDSHARED="$LDSHARED -undefined dynamic_lookup";;
+        esac
       else
         # Mac OS X prior to 10.3 need -flat_namespace to support dynamic modules
         LDSHARED="$REALCC $CFLAGS -bundle -bind_at_load -flat_namespace -undefined suppress"
