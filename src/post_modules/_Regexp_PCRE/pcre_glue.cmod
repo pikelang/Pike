@@ -498,8 +498,6 @@ PIKECLASS _pcre
 /*! @endclass
  */
 
-#endif /* HAVE_LIBPCRE */
-
 /*! @decl array(string) split_subject(string subject, @
  *!                        array(int) previous_result)
  *! Convenience function that
@@ -533,6 +531,8 @@ PIKEFUN array(string) split_subject(string subject,array(int) previous_result)
 
    RETURN res;
 }
+
+#endif /* HAVE_LIBPCRE */
 
 /*** module init & exit & stuff *****************************************/
 
