@@ -13229,7 +13229,7 @@ static struct pike_type *new_check_call_arg(struct pike_type *fun_type,
 			     PT_FLAG_CMP_VOID_IS_ZERO)) {
 	    yytype_report(REPORT_WARNING, NULL, 0, tmp,
 			  NULL, 0, args->type,
-			  0, "Type mismatch in argument %d to %S.",
+                          0, "Type mismatch in argument %d to %pS.",
 			  cs->argno, cs->fun_name);
 	    yytype_report(REPORT_WARNING, NULL, 0, NULL,
 			  NULL, 0, fun_type,
@@ -14393,10 +14393,10 @@ void yyexplain_nonmatching_types(int severity_level,
   {
     ref_push_type_value(type_a);
     yytype_report(severity_level, NULL, 0, NULL, a_file, a_line, NULL,
-                  1, "Expected: %pO.");
+                  1, "Expected: %O.");
     ref_push_type_value(type_b);
     yytype_report(severity_level, NULL, 0, NULL, b_file, b_line, NULL,
-                  1, "Got     : %pO.");
+                  1, "Got     : %O.");
   }
 
   /* Protect against circularities. */
