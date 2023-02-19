@@ -663,8 +663,8 @@ MACRO void arm32_call_if(enum arm32_condition cond1, void *a,
                          enum arm32_condition cond2, void *b) {
     enum arm32_register reg = ra_alloc_any();
 
-    unsigned INT32 v1 = (char*)a - (char*)NULL,
-                   v2 = (char*)b - (char*)NULL;
+    unsigned INT32 v1 = (unsigned INT32)a,
+                   v2 = (unsigned INT32)b;
 
     if (v1 < v2) {
         arm32_mov_int(reg, v1);
@@ -884,7 +884,7 @@ MACRO void arm32_epilogue(void) {
 }
 
 MACRO void arm32_call(void *ptr) {
-    unsigned INT32 v = (char*)ptr - (char*)NULL;
+    unsigned INT32 v = (unsigned INT32)ptr;
     enum arm32_register tmp = ra_alloc_any();
 
     /* we convervatively assume that any function could destruct
@@ -1099,7 +1099,7 @@ MACRO void arm32_push_ref_type(unsigned INT32 type, void * ptr) {
                         vreg = ra_alloc_any();
 
     arm32_mov_int(treg, type);
-    arm32_mov_int(vreg, (char*)ptr - (char*)NULL);
+    arm32_mov_int(vreg, (unsigned INT32)ptr);
 
     arm32_push_ptr_type(treg, vreg);
 

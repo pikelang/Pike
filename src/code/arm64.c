@@ -1206,8 +1206,8 @@ MACRO void arm64_call_if_bit_set(enum arm64_register treg, int bit,
     struct label skip;
     enum arm64_register reg = ra_alloc_any();
 
-    UINT64 v1 = (char*)a - (char*)NULL,
-           v2 = (char*)b - (char*)NULL;
+    UINT64 v1 = (UINT64)a;
+           v2 = (UINT64)b;
 
     label_init(&skip);
     if (v1 < v2) {
@@ -1322,7 +1322,7 @@ MACRO void arm64_epilogue(void) {
 }
 
 MACRO void arm64_call(void *ptr) {
-    UINT64 v = (char*)ptr - (char*)NULL;
+    UINT64 v = (UINT64)ptr;
     enum arm64_register tmp = ra_alloc_any();
 
     /* we convervatively assume that any function could destruct
@@ -1537,7 +1537,7 @@ MACRO void arm64_push_ref_type(unsigned INT32 type, void * ptr) {
                         vreg = ra_alloc_any();
 
     arm64_mov_int(treg, ARM64_TYPE_SUBTYPE_64(type));
-    arm64_mov_int(vreg, (char*)ptr - (char*)NULL);
+    arm64_mov_int(vreg, (UINT64)ptr);
 
     arm64_push_ptr_type(treg, vreg);
 
