@@ -2432,7 +2432,7 @@ static void low_describe_int_range(struct string_builder *s,
     }
     break;
   case T_ASSIGN:
-    string_builder_sprintf(s, "$%ld = (", CAR_TO_INT(t));
+    string_builder_sprintf(s, "$%td = (", CAR_TO_INT(t));
     low_describe_int_range(s, t->cdr);
     string_builder_strcat(s, ")");
     break;
@@ -2744,7 +2744,7 @@ void low_describe_type(struct string_builder *s, struct pike_type *t)
 	  if (t->type & 0x8000) {
             string_builder_sprintf(s, ",%pT)", t->cdr);
 	  } else if (t->cdr) {
-	    string_builder_sprintf(s, ",0x%08lx)", CDR_TO_INT(t));
+	    string_builder_sprintf(s, ",0x%08tx)", CDR_TO_INT(t));
 	  } else {
 	    string_builder_strcat(s, ")");
 	  }
