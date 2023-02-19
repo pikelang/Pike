@@ -1366,7 +1366,7 @@ PMOD_EXPORT void string_builder_strftime(struct string_builder *s,
         case 's': /* Seconds since epoch. */
           {
             time_t t = mktime_zone(tm, 0, 0);
-            string_builder_sprintf(s, "%d", t);
+            string_builder_sprintf(s, "%ld", (long)t);
           }
           break;
 
@@ -1712,7 +1712,7 @@ PMOD_EXPORT void string_builder_append_disassembly_data(struct string_builder *s
 
 	buf_len = s->s->len;
 	if (comment) {
-	  string_builder_sprintf(s, " .data    %-20q", &tmp);
+	  string_builder_sprintf(s, " .data    %-20pq", &tmp);
 	  if (UNLIKELY(s->s->len > buf_len + 10 + 20)) {
 	    /* Paranoia: This probably can't happen.
 	     *           Max should be with octal or hex quoting:
@@ -1725,7 +1725,7 @@ PMOD_EXPORT void string_builder_append_disassembly_data(struct string_builder *s
 	    skip_comment = 1;
 	  }
 	} else {
-	  string_builder_sprintf(s, " .data    %q", &tmp);
+	  string_builder_sprintf(s, " .data    %pq", &tmp);
 	}
       } else if (comment) {
 	pos_end = NULL;
