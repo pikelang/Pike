@@ -750,6 +750,12 @@ static INT64 pike_va_int(VA_LIST_PTR args, int flags)
  *   'q'	Insert quoted pike_string.
  *   'S'	Insert pike_string.
  *   'T'	Insert pike_type.
+ *
+ * In addition, the sequence 'px' can be used to insert a pointer
+ * in the same way as 'p'.  This can be used as an escape when printing
+ * a raw pointer immediately followed by a literal O/q/S/T/x.
+ * i.e. '%pxO' prints a raw pointer followed by the letter 'O',
+ * '%pxx' prints a raw pointer followed by the letter 'x'.
  */
 
 /* Values used internally in string_builder_vsprintf() */
@@ -968,9 +974,13 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 	case 'p':
           if ((*fmt == 'O') || (*fmt == 'q') ||
               (*fmt == 'S') || (*fmt == 'T')) {
-            /* Pike sprintf formatiing extension. */
+            /* Pike sprintf formatting extension. */
             continue;
           }
+          if (*fmt == 'x')
+            /* Escape to prevent the following character from being
+               interpreted as an extension */
+            fmt ++;
 	  string_builder_append_integer(s, pike_va_int(VA_LIST_ADDR(args),
 #if SIZEOF_CHAR_P == SIZEOF_LONG
 						       APPEND_WIDTH_LONG
