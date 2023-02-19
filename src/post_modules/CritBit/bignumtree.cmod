@@ -16,7 +16,7 @@ static inline void CB_PRINT_KEY(struct string_builder *buf, cb_key key) {
     struct svalue s;
 
     SET_SVAL(s, PIKE_T_OBJECT, 0, object, key.str);
-    string_builder_sprintf(buf, "%O", &s);
+    string_builder_sprintf(buf, "%pO", &s);
 }
 
 #define CB_LOW_ASSIGN_SVALUE_KEY(key, s)	do {			\
