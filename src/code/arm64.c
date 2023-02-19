@@ -1206,7 +1206,7 @@ MACRO void arm64_call_if_bit_set(enum arm64_register treg, int bit,
     struct label skip;
     enum arm64_register reg = ra_alloc_any();
 
-    UINT64 v1 = (UINT64)a;
+    UINT64 v1 = (UINT64)a,
            v2 = (UINT64)b;
 
     label_init(&skip);
