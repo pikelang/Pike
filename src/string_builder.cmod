@@ -1565,7 +1565,7 @@ PMOD_EXPORT void string_builder_append_disassembly(struct string_builder *s,
 
     if (pos_end) {
       /* Address */
-      string_builder_sprintf(s, "0x%016lx  ", address);
+      string_builder_sprintf(s, "0x%016zx  ", address);
 
       if (pos < pos_end) {
 	/* Memory dump */
@@ -1676,7 +1676,7 @@ PMOD_EXPORT void string_builder_append_disassembly_data(struct string_builder *s
 
     if (pos_end) {
       /* Address */
-      string_builder_sprintf(s, "0x%016lx  ", address);
+      string_builder_sprintf(s, "0x%016zx  ", address);
 
       if (pos < pos_end) {
 	struct pike_string tmp;
