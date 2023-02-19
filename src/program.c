@@ -10759,10 +10759,10 @@ void string_builder_explain_not_compatible(struct string_builder *s,
       ref_push_type_value(ID_FROM_INT(a, i)->type);
       ref_push_type_value(bid->type);
       string_builder_sprintf(s,
-			     "Identifier %S in %O is incompatible with "
-			     "the same in %O.\n"
-			     "Expected: %O\n"
-			     "Got     : %O\n",
+                             "Identifier %pS in %pO is incompatible with "
+                             "the same in %pO.\n"
+                             "Expected: %pO\n"
+                             "Got     : %pO\n",
 			     bid->name, Pike_sp-4,
 			     Pike_sp-3,
 			     Pike_sp-2,
@@ -10805,7 +10805,7 @@ void string_builder_explain_not_implements(struct string_builder *s,
 	continue;		/* It's ok... */
       ref_push_type_value(bid->type);
       string_builder_sprintf(s,
-			     "Missing identifier %O %S.\n",
+                             "Missing identifier %pO %pS.\n",
 			     Pike_sp-1, bid->name);
       pop_stack();
       continue;
@@ -10816,17 +10816,17 @@ void string_builder_explain_not_implements(struct string_builder *s,
       ref_push_type_value(ID_FROM_INT(a, i)->type);
       if(!match_types(ID_FROM_INT(a,i)->type, bid->type)) {
 	string_builder_sprintf(s,
-			       "Type of identifier %S does not match.\n"
-			       "Expected: %O.\n"
-			       "Got     : %O.\n",
+                               "Type of identifier %pS does not match.\n"
+                               "Expected: %pO.\n"
+                               "Got     : %pO.\n",
 			       bid->name,
 			       Pike_sp-2,
 			       Pike_sp-1);
       } else {
 	string_builder_sprintf(s,
-			       "Type of identifier %S is not strictly compatible."
-			       "Expected: %O.\n"
-			       "Got     : %O.\n",
+                               "Type of identifier %pS is not strictly compatible."
+                               "Expected: %pO.\n"
+                               "Got     : %pO.\n",
 			       bid->name,
 			       Pike_sp-2,
 			       Pike_sp-1);
@@ -10965,7 +10965,7 @@ PMOD_EXPORT void string_builder_append_file_directive(struct string_builder *s,
 						      const PIKE_OPCODE_T *addr,
 						      const struct pike_string *file)
 {
-  string_builder_sprintf(s, "0x%016lx%*s%-9s\"",
+  string_builder_sprintf(s, "0x%p%*s%-9s\"",
 			 addr,
 			 15, "",
 			 ".file");
@@ -10977,11 +10977,11 @@ PMOD_EXPORT void string_builder_append_line_directive(struct string_builder *s,
 						      const PIKE_OPCODE_T *addr,
 						      INT_TYPE line)
 {
-  string_builder_sprintf(s, "0x%016lx%*s%-9s%d\n",
+  string_builder_sprintf(s, "0x%p%*s%-9s%ld\n",
 			 addr,
 			 15, "",
 			 ".line",
-			 line);
+                         (long)line);
 }
 
 PMOD_EXPORT void string_builder_append_comment(struct string_builder *s,
@@ -10990,21 +10990,20 @@ PMOD_EXPORT void string_builder_append_comment(struct string_builder *s,
 {
   while (comment && comment[0]) {
     const char *ptr = strchr(comment, '\n');
-    ptrdiff_t bytes;
+    int bytes;
     if (ptr) {
-      bytes = ptr - comment;
+      bytes = (int)(ptr - comment);
     } else {
-      bytes = strlen(comment);
+      bytes = (int)strlen(comment);
     }
     if (addr) {
-      string_builder_sprintf(s, "0x%016lx%*s# %*s\n",
+      string_builder_sprintf(s, "0x%p%*s# %*s\n",
 			     addr,
 			     15, "",
 			     bytes, comment);
       addr = NULL;
     } else {
       string_builder_sprintf(s, "%*s# %*s\n",
-			     addr,
 			     33, "",
 			     bytes, comment);
     }
