@@ -1186,7 +1186,7 @@ struct pike_string *add_string_status(int verbose)
                             alloced_bytes[e], bytes_distinct_strings[e],
                             overhead_bytes[e]);
       if (alloced_bytes[e]) {
-       string_builder_sprintf(&s, "%4d\n",
+       string_builder_sprintf(&s, "%4ld\n",
                               (bytes_distinct_strings[e] +
                                overhead_bytes[e]) * 100 /
                               alloced_bytes[e]);
@@ -1206,7 +1206,7 @@ struct pike_string *add_string_status(int verbose)
                           alloced_bytes[7], bytes_distinct_strings[7],
                           overhead_bytes[7]);
     if (alloced_bytes[7]) {
-      string_builder_sprintf(&s, "%4d\n",
+      string_builder_sprintf(&s, "%4ld\n",
                             (bytes_distinct_strings[7] +
                              overhead_bytes[7]) * 100 /
                             alloced_bytes[7]);
