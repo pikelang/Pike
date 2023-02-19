@@ -1439,12 +1439,10 @@ MACRO void arm32_call_c_opcode(unsigned int opcode) {
   }
 }
 
-MACRO void arm32_free_svalue_off(enum arm32_register src, int off, int guaranteed) {
+MACRO void arm32_free_svalue_off(enum arm32_register src, int off) {
     int no_free = 1;
     struct label done;
     if (src != ARM_REG_ARG1) ra_alloc(ARM_REG_ARG1);
-
-    guaranteed = guaranteed;
 
     off *= sizeof(struct svalue);
 
@@ -1491,8 +1489,8 @@ MACRO void arm32_free_svalue_off(enum arm32_register src, int off, int guarantee
     if (!no_free || src != ARM_REG_ARG1) ra_free(ARM_REG_ARG1);
 }
 
-static void arm32_free_svalue(enum arm32_register reg, int guaranteed_ref) {
-    arm32_free_svalue_off(reg, 0, guaranteed_ref);
+static void arm32_free_svalue(enum arm32_register reg) {
+    arm32_free_svalue_off(reg, 0);
 }
 
 static void arm32_mark(enum arm32_register base, int offset) {
@@ -1631,7 +1629,7 @@ static void low_ins_f_byte(unsigned int opcode)
       break;
   case F_POP_VALUE:
       arm32_change_sp(-1);
-      arm32_free_svalue(ARM_REG_PIKE_SP, 0);
+      arm32_free_svalue(ARM_REG_PIKE_SP);
       return;
   case F_POP_TO_MARK: /* this opcode sucks noodles, introduce F_POP_TO_LOCAL(num) */
       {
@@ -1651,7 +1649,7 @@ static void low_ins_f_byte(unsigned int opcode)
           label_generate(&loop);
 
           arm32_sub_reg_int(ARM_REG_PIKE_SP, ARM_REG_PIKE_SP, 1*sizeof(struct svalue));
-          arm32_free_svalue(ARM_REG_PIKE_SP, 0);
+          arm32_free_svalue(ARM_REG_PIKE_SP);
 
           cmp_reg_reg(ARM_REG_PIKE_SP, reg);
           /* jump if pike_sp > reg */
@@ -1842,8 +1840,8 @@ static void low_ins_f_byte(unsigned int opcode)
           /* COMPLEX POP: */
           label_generate(&real_pop);
 
-          arm32_free_svalue_off(ARM_REG_PIKE_SP, -1, 0);
-          arm32_free_svalue_off(ARM_REG_PIKE_SP, -2, 0);
+          arm32_free_svalue_off(ARM_REG_PIKE_SP, -1);
+          arm32_free_svalue_off(ARM_REG_PIKE_SP, -2);
           /* the order of the free and pop is important, because really_free_svalue should not
            * use that region of the stack we are trying to free */
           arm32_sub_reg_int(ARM_REG_PIKE_SP, ARM_REG_PIKE_SP, 2*sizeof(struct svalue));
@@ -2064,7 +2062,7 @@ static void low_ins_f_byte(unsigned int opcode)
 
           label_generate(&check_rval);
 
-          arm32_free_svalue_off(ARM_REG_PIKE_SP, -1, 0);
+          arm32_free_svalue_off(ARM_REG_PIKE_SP, -1);
 
           label_generate(&done);
           /* push integer to stack */
@@ -2268,7 +2266,7 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
           tmp = ra_alloc_persistent();
           arm32_add_reg_int(tmp, ARM_REG_PIKE_LOCALS, arg1 * sizeof(struct svalue));
 
-          arm32_free_svalue_off(tmp, 0, 0);
+          arm32_free_svalue_off(tmp, 0);
 
           arm32_load_sp_reg();
           arm32_sub_reg_int(ARM_REG_PIKE_SP, ARM_REG_PIKE_SP, sizeof(struct svalue));
@@ -2477,7 +2475,7 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
           tmp = ra_alloc_persistent();
 
           arm32_add_reg_int(tmp, ARM_REG_PIKE_GLOBALS, arg1);
-          arm32_free_svalue_off(tmp, 0, 0);
+          arm32_free_svalue_off(tmp, 0);
           arm32_sub_reg_int(ARM_REG_PIKE_SP, ARM_REG_PIKE_SP, sizeof(struct svalue));
           if (opcode == F_ASSIGN_PRIVATE_GLOBAL_AND_POP) {
               arm32_move_svaluep_nofree(tmp, ARM_REG_PIKE_SP);
