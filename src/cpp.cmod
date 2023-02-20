@@ -55,7 +55,7 @@
 #define DEF_ARG_NEED_COMMA  0x800000
 #define DEF_ARG_MASK        0x0fffff
 
-#ifdef __GNUC__
+#if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC optimize "-Os"
 #endif
 
