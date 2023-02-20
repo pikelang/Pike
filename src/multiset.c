@@ -155,7 +155,7 @@ union nodeptr {
 
 #define NODE_AT(MSD, TYPE, POS) ((struct TYPE *)((char*)(MSD) + OFFSETOF(multiset_data, nodes)) + (POS))
 #define NODE_OFFSET(TYPE, POS)						\
-  PTR_TO_INT (NODE_AT ((struct multiset_data *) NULL, TYPE, POS))
+  (OFFSETOF(multiset_data, nodes) + (POS)*sizeof(struct TYPE))
 
 #define SHIFT_PTR(PTR, FROM, TO) ((char *) (PTR) - (char *) (FROM) + (char *) (TO))
 #define SHIFT_NODEPTR(NODEPTR, FROM_MSD, TO_MSD)			\
