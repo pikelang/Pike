@@ -141,60 +141,61 @@ MAKE_FLAGS=
 # Add alloca.o if you don't have alloca() on your machine.
 #
 CORE_OBJ= \
- language.o \
- bignum.o \
- pike_cpulib.o \
- interpret.o \
- constants.o \
- cpp.o \
- fdlib.o \
- cyclic.o \
  array.o \
  backend.o \
+ bignum.o \
+ block_allocator.o \
+ buffer.o \
+ builtin.o \
+ builtin_functions.o \
  callback.o \
- encode.o \
+ constants.o \
+ cpp.o \
+ cyclic.o \
  docode.o \
  dynamic_load.o \
+ encode.o \
  error.o \
  fd_control.o \
+ fdlib.o \
  fsort.o \
  gc.o \
+ interpret.o \
+ iterators.o \
+ language.o \
+ las.o \
  lex.o \
- multiset.o \
- signal_handler.o \
- pike_search.o \
- pike_types.o \
- pike_embed.o \
  mapping.o \
- block_allocator.o \
- pike_memory.o \
  module_support.o \
- pikecode.o \
+ multiset.o \
  object.o \
- stack_allocator.o \
  opcodes.o \
  operators.o \
+ peep.o \
  pike_compiler.o \
+ pike_cpulib.o \
+ pike_embed.o \
  pike_float.o \
+ pike_memory.o \
+ pike_search.o \
+ pike_types.o \
+ pikecode.o \
  port.o \
  program.o \
+ queue.o \
  rbtree.o \
  rusage.o \
+ signal_handler.o \
+ siphash24.o \
  sprintf.o \
  sscanf.o \
+ stack_allocator.o \
  stralloc.o \
  string_builder.o \
+ svalue.o \
  threads.o \
  version.o \
- queue.o \
- builtin.o \
- iterators.o \
- svalue.o \
- las.o \
- builtin_functions.o \
- siphash24.o \
- buffer.o \
- peep.o @EXTRA_OBJS@
+ @EXTRA_OBJS@
 
 OBJ=$(CORE_OBJ) @MODULE_O@
 
@@ -839,9 +840,9 @@ bench: tinstall
 	else \
 	  if test -f some-sprsh-test ; then \
 	    sprsh `pwd`/test-install/pike/*/bin/pike.exe -DNOT_INSTALLED $(PIKEOPTS) -x benchmark ; \
-          else \
-            `pwd`/test-install/pike/*/bin/pike.exe -DNOT_INSTALLED $(PIKEOPTS) -x benchmark ; \
-          fi \
+	  else \
+	    `pwd`/test-install/pike/*/bin/pike.exe -DNOT_INSTALLED $(PIKEOPTS) -x benchmark ; \
+	  fi \
 	fi
 
 verify_installed: testsuites master-stamp
@@ -937,9 +938,9 @@ type_checker-stamp: $(SRCDIR)/type_checker.in $(SRCDIR)/make_type_checker.pike
 
 master.pike: $(LIBDIR_SRC)/master.pike.in Makefile
 	@if test "x$(PIKE_MODULE_RELOC)" = "x"; \
-          then u=s,x,x,; \
-          else u='s/^#undef PIKE_MODULE_RELOC/#define PIKE_MODULE_RELOC 1/'; \
-        fi; \
+	  then u=s,x,x,; \
+	  else u='s/^#undef PIKE_MODULE_RELOC/#define PIKE_MODULE_RELOC 1/'; \
+	fi; \
 	LC_ALL=C; export LC_ALL; \
 	cmd="sed -e 's!#lib_prefix#!`echo '$(TMP_LIBDIR)' | ./posix_to_native.sh`!' \
 	  -e 's!#share_prefix#!`echo '$(LIBDIR_SRC)' | ./posix_to_native.sh`!' \
