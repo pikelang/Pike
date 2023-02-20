@@ -11,7 +11,7 @@
 #include "critbit/float2svalue.h"
 #define CB_PRINT_KEY(buf, key)			\
 	do { string_builder_sprintf((buf), "%f",\
-				    cb_decode_float((key).str)); } while(0)
+				    (double)cb_decode_float((key).str)); } while(0)
 #include "tree_high.c"
 
 #define DEFAULT_CMOD_STORAGE static
