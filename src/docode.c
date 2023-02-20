@@ -1373,7 +1373,7 @@ static int do_docode2(node *n, int flags)
       if(tmp1 & 1)
 	Pike_fatal("Very internal compiler error.\n");
 #endif
-      emit1(F_ARRAY_LVALUE, (INT32)(tmp1>>1) );
+      emit1(F_ARRAY_LVALUE, tmp1);
       emit0(F_MARK);
       PUSH_CLEANUP_FRAME(do_pop_mark, 0);
       do_docode(CDR(n), 0);
@@ -2789,7 +2789,7 @@ static int do_docode2(node *n, int flags)
       if(tmp1 & 1)
 	Pike_fatal("Very internal compiler error.\n");
 #endif
-      emit1(F_ARRAY_LVALUE, (INT32)(tmp1>>1));
+      emit1(F_ARRAY_LVALUE, tmp1);
       return 2;
 
   case F_ARROW:

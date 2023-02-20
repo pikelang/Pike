@@ -596,10 +596,13 @@ OPCODE2(F_LEXICAL_LOCAL_LVALUE, "&lexical local", I_UPDATE_SP|I_ARG_T_LOCAL, {
 });
 
 OPCODE1(F_ARRAY_LVALUE, "[ lvalues ]", I_UPDATE_SP, {
-  f_aggregate(arg1*2);
+  f_aggregate(arg1);
   Pike_sp[-1].u.array->flags |= ARRAY_LVALUE;
   Pike_sp[-1].u.array->type_field |= BIT_UNFINISHED | BIT_MIXED;
-  /* FIXME: Shouldn't a ref be added here? */
+  /* FIXME: Shouldn't a ref be added here?
+   *
+   * No - T_ARRAY_LVALUE's are not reference-counted!
+   */
   move_svalue (Pike_sp, Pike_sp - 1);
   SET_SVAL_TYPE(Pike_sp[-1], T_ARRAY_LVALUE);
   Pike_sp++;
