@@ -1464,13 +1464,13 @@ static void image_layer_cast(INT32 args)
         s->str[i*4+0] = img[i].r;
         s->str[i*4+1] = img[i].g;
         s->str[i*4+2] = img[i].b;
-        s->str[i*4+3] = 255;
+        s->str[i*4+3] = (COLORTYPE)255;
       }
     else if(alp)
       for(i=0; i<size; i++) {
-        s->str[i*4+0] = 255;
-        s->str[i*4+1] = 255;
-        s->str[i*4+2] = 255;
+        s->str[i*4+0] = (COLORTYPE)255;
+        s->str[i*4+1] = (COLORTYPE)255;
+        s->str[i*4+2] = (COLORTYPE)255;
         s->str[i*4+3] = alp[i].r;
       }
     else
