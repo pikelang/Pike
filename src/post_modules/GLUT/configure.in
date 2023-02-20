@@ -17,7 +17,6 @@ else
     # NOTE: These tests may need to move to the main configure script.
     #       cf comments in the Darwin section of the main configure script.
     AC_SYS_COMPILER_FLAG(-framework GLUT, framework_GLUT, LDFLAGS)
-    AC_SYS_COMPILER_FLAG(-framework GLUT, framework_GLUT, CPPFLAGS)
   ])
   AC_CHECK_HEADERS(GLUT/glut.h)
 

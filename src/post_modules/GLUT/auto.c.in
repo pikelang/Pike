@@ -19,6 +19,7 @@
 #include "operators.h"
 
 #define GLUT_API_VERSION 4
+#define GL_SILENCE_DEPRECATION
 
 #ifdef HAVE_GLUT_GLUT_H
 #include <GLUT/glut.h>
