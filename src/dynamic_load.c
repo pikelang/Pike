@@ -92,7 +92,7 @@ static void *dlopen(const char *foo, int UNUSED(how))
     return NULL;
   }
 
-  res = find_semidynamic_module(name, end - name);
+  res = (void *)find_semidynamic_module(name, end - name);
   free_string(s);
   return res;
 }
