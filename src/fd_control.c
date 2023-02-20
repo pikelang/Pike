@@ -132,6 +132,7 @@ PMOD_EXPORT int query_nonblocking(int fd)
 #endif
 
 #ifdef SOL_TCP
+#ifdef TCP_CORK
 static int gsockopt(int fd, int opt) {
   int val = 0;
   socklen_t old_len = (socklen_t) sizeof(int);
@@ -145,9 +146,11 @@ static void ssockopt(int fd, int opt, int val) {
                     &val, sizeof(val)) < 0 && errno == EINTR);
 }
 #endif
+#endif
 
 PMOD_EXPORT int bulkmode_start(int fd) {
   int ret = 0;
+  (void)fd;
   // FIXME Cache NODELAY/CORK state to avoid getsockopt() system calls
 #ifdef SOL_TCP
 #ifdef TCP_CORK
@@ -161,6 +164,8 @@ PMOD_EXPORT int bulkmode_start(int fd) {
 }
 
 PMOD_EXPORT void bulkmode_restore(int fd, int which) {
+  (void)fd;
+  (void)which;
 #ifdef SOL_TCP
 #ifdef TCP_CORK
   ssockopt(fd, TCP_CORK, 0);	 // Briefly unplug always, to flush data

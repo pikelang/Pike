@@ -71,6 +71,7 @@
 static void gc_check_frame(struct pike_frame *f, const char *place)
 {
   int marker_refs;
+  (void)place;
   if (!f) return;
   marker_refs = debug_gc_check(f, place);
   if (marker_refs) return;

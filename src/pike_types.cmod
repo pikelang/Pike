@@ -8195,7 +8195,7 @@ static void push_expand_transitive_type(struct pike_type *cont,
  */
 static struct pike_type *expand_transitive(struct pike_type *fun,
 					   struct pike_type **markers,
-					   int flags)
+					   int UNUSED(flags))
 {
   struct pike_type *ret_type;
   struct pike_type *cont_type;

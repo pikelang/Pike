@@ -2950,7 +2950,7 @@ void f_mutex__sprintf (INT32 args)
  *! @seealso
  *!   @[Condition]
  */
-void f_mutex_cond(INT32 args)
+void f_mutex_cond(INT32 UNUSED(args))
 {
   ref_push_object_inherit(Pike_fp->current_object,
 			  Pike_fp->context -
@@ -3167,7 +3167,7 @@ static void f_mutex_key__sprintf(INT32 args)
  *! @seealso
  *!   @[upgrade()], @[try_upgrade()]
  */
-static void f_mutex_key_downgrade(INT32 args)
+static void f_mutex_key_downgrade(INT32 UNUSED(args))
 {
   struct key_storage *key = THIS_KEY;
 
@@ -3331,7 +3331,7 @@ static void f_mutex_key_upgrade(INT32 args)
  *! @seealso
  *!   @[downgrade()], @[upgrade()]
  */
-static void f_mutex_key_try_upgrade(INT32 args)
+static void f_mutex_key_try_upgrade(INT32 UNUSED(args))
 {
   struct key_storage *key = THIS_KEY;
 

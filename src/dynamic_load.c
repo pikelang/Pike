@@ -75,7 +75,7 @@ typedef void (*modfun)(void);
 
 #ifdef USE_STATIC_MODULES
 
-static void *dlopen(const char *foo, int how)
+static void *dlopen(const char *foo, int UNUSED(how))
 {
   struct pike_string *s = low_read_file(foo);
   char *name, *end;
@@ -116,7 +116,7 @@ static int dlinit(void)
   return 1;
 }
 
-static void dlclose(void *module)
+static void dlclose(void *UNUSED(module))
 {
 }
 
