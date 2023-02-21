@@ -758,7 +758,7 @@ start_function: /* empty */
     {
       yyerror("Internal compiler error (start_function).");
       copy_pike_type(Pike_compiler->compiler_frame->current_return_type,
-		     mixed_type_string);
+                     any_type_string);
     }else{
       copy_pike_type(Pike_compiler->compiler_frame->current_return_type,
 		     Pike_compiler->compiler_frame->previous->current_type);
