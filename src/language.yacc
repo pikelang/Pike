@@ -359,12 +359,24 @@ int yylex(YYSTYPE *yylval);
 %type <n> default
 %type <n> do
 %type <n> constant_expr
-%type <n> safe_expr0
+%type <n> safe_assignment_expr
 %type <n> splice_expr
-%type <n> expr01
-%type <n> expr1
-%type <n> expr2
-%type <n> expr3 expr0
+%type <n> cond_expr
+%type <n> pow_expr
+%type <n> postfix_expr
+%type <n> unary_expr
+%type <n> cast_expr
+%type <n> mul_expr
+%type <n> add_expr
+%type <n> shift_expr
+%type <n> rel_expr
+%type <n> eq_expr
+%type <n> and_expr
+%type <n> xor_expr
+%type <n> or_expr
+%type <n> land_expr
+%type <n> lor_expr
+%type <n> assignment_expr
 %type <n> apply
 %type <n> expr4
 %type <n> expr5
@@ -441,7 +453,7 @@ optional_rename_inherit: ':' real_string_or_identifier { $$=$2; }
 /* NOTE: This rule pushes a string "name" on the stack in addition
  * to resolving the program reference.
  */
-low_program_ref: safe_expr0
+low_program_ref: safe_assignment_expr
   {
     node *n = $1;
 
@@ -592,7 +604,7 @@ import: TOK_IMPORT constant_expr ';'
   }
   ;
 
-constant_name: TOK_IDENTIFIER '=' safe_expr0
+constant_name: TOK_IDENTIFIER '=' safe_assignment_expr
   {
     /* This can be made more lenient in the future */
 
@@ -660,8 +672,8 @@ constant_name: TOK_IDENTIFIER '=' safe_expr0
     if($3) free_node($3);
     free_node($1);
   }
-  | bad_identifier '=' safe_expr0 { if ($3) free_node($3); }
-  | error '=' safe_expr0 { if ($3) free_node($3); }
+  | bad_identifier '=' safe_assignment_expr { if ($3) free_node($3); }
+  | error '=' safe_assignment_expr { if ($3) free_node($3); }
   ;
 
 constant_list: constant_name
@@ -1318,7 +1330,7 @@ def: modifiers optional_attributes simple_type optional_constant
     }
   ;
 
-static_assertion: TOK_STATIC_ASSERT '(' expr0 ',' expr0 ')'
+static_assertion: TOK_STATIC_ASSERT '(' assignment_expr ',' assignment_expr ')'
   {
     Pike_compiler->init_node =
       mknode(F_COMMA_EXPR, Pike_compiler->init_node,
@@ -1341,7 +1353,7 @@ optional_identifier: TOK_IDENTIFIER
   | /* empty */ { $$=0; }
   ;
 
-optional_default_value: '=' expr0 { $$ = $2; }
+optional_default_value: '=' assignment_expr { $$ = $2; }
   | /* empty */ { $$ = NULL; }
   ;
 
@@ -2081,7 +2093,7 @@ new_name: TOK_IDENTIFIER
 			       Pike_compiler->current_modifiers & (~ID_EXTERN));
     free_type(type);
   }
-  expr0
+  assignment_expr
   {
     if ((Pike_compiler->compiler_pass == COMPILER_PASS_LAST) &&
 	!TEST_COMPAT(7, 8) && ($4) && ($4->token == F_CONSTANT) &&
@@ -2151,7 +2163,7 @@ new_name: TOK_IDENTIFIER
     yyerror("Unexpected end of file in variable definition.");
     free_node($1);
   }
-  | bad_identifier '=' expr0
+  | bad_identifier '=' assignment_expr
   {
     free_node($3);
   }
@@ -2203,7 +2215,7 @@ new_local_name: TOK_IDENTIFIER
     push_finished_type(Pike_compiler->compiler_frame->current_type);
     type_stack_mark();
   }
-  expr0
+  assignment_expr
   {
     int id;
     struct pike_type *type;
@@ -2233,7 +2245,7 @@ new_local_name: TOK_IDENTIFIER
     push_finished_type(Pike_compiler->compiler_frame->current_type);
     type_stack_mark();
   }
-  expr0
+  assignment_expr
   {
     pop_stack_mark();
     update_current_type();
@@ -2342,7 +2354,7 @@ local_name_list: new_local_name
   ;
 
 
-constant_expr: safe_expr0
+constant_expr: safe_assignment_expr
   {
     /* Ugly hack to make sure that $1 is optimized */
     {
@@ -2373,7 +2385,7 @@ constant_expr: safe_expr0
   }
   ;
 
-local_constant_name: TOK_IDENTIFIER '=' safe_expr0
+local_constant_name: TOK_IDENTIFIER '=' safe_assignment_expr
   {
     /* Ugly hack to make sure that $3 is optimized */
     {
@@ -2404,8 +2416,8 @@ local_constant_name: TOK_IDENTIFIER '=' safe_expr0
     /* Note: Intentionally not marked as used. */
     free_node($1);
   }
-  | bad_identifier '=' safe_expr0 { if ($3) free_node($3); }
-  | error '=' safe_expr0 { if ($3) free_node($3); }
+  | bad_identifier '=' safe_assignment_expr { if ($3) free_node($3); }
+  | error '=' safe_assignment_expr { if ($3) free_node($3); }
   ;
 
 local_constant_list: local_constant_name
@@ -3643,7 +3655,7 @@ simple_identifier: TOK_IDENTIFIER
   ;
 
 enum_value: /* EMPTY */ { $$ = 0; }
-  | '=' safe_expr0 { $$ = $2; }
+  | '=' safe_assignment_expr { $$ = $2; }
   ;
 
 /* Previous enum value at $0. */
@@ -3830,7 +3842,7 @@ safe_lvalue: lvalue
   | error { $$=0; }
   ;
 
-safe_expr0: expr0
+safe_assignment_expr: assignment_expr
   | TOK_LEX_EOF { yyerror("Unexpected end of file."); $$=0; }
   | error { $$=0; }
   ;
@@ -3846,7 +3858,7 @@ foreach_lvalues:  ',' safe_lvalue { $$=$2; }
   ;
 
 foreach: TOK_FOREACH save_block_level save_locals line_number_info
-  '(' expr0 foreach_lvalues end_cond
+  '(' assignment_expr foreach_lvalues end_cond
   {
   }
   statement
@@ -4020,20 +4032,20 @@ comma_expr: comma_expr2
   ;
 
 
-comma_expr2: expr0
-  | comma_expr2 ',' expr0
+comma_expr2: assignment_expr
+  | comma_expr2 ',' assignment_expr
   {
     $$ = mknode(F_COMMA_EXPR, mkcastnode(void_type_string, $1), $3);
   }
   ;
 
-splice_expr: expr0
-      | '@' expr0 { $$=mknode(F_PUSH_ARRAY,$2,0); };
+splice_expr: assignment_expr
+      | '@' assignment_expr { $$=mknode(F_PUSH_ARRAY,$2,0); };
 
-expr0: expr01
-  | expr4 assign expr0  { $$=mknode($2,$1,$3); }
+assignment_expr: cond_expr
+  | expr4 assign assignment_expr  { $$=mknode($2,$1,$3); }
   | expr4 assign error { $$=$1; reset_type_stack(); yyerrok; }
-  | open_bracket_with_line_info low_lvalue_list ']' assign expr0
+  | open_bracket_with_line_info low_lvalue_list ']' assign assignment_expr
   {
     if (!(THIS_COMPILATION->lex.pragmas & ID_STRICT_TYPES)) {
       mark_lvalues_as_used($2);
@@ -4049,8 +4061,8 @@ expr0: expr01
 /*  | error { $$=0; reset_type_stack(); } */
   ;
 
-expr01: expr1
-  | expr1 '?' expr01 ':' expr01 { $$=mknode('?',$1,mknode(':',$3,$5)); }
+cond_expr: lor_expr
+  | lor_expr '?' cond_expr ':' cond_expr { $$=mknode('?',$1,mknode(':',$3,$5)); }
   ;
 
 assign: '='    { $$=F_ASSIGN; }
@@ -4096,68 +4108,29 @@ m_expr_list2: assoc_pair
   | m_expr_list2 ',' error
   ;
 
-assoc_pair:  expr0 expected_colon expr0
+assoc_pair:  assignment_expr expected_colon assignment_expr
   {
     $$=mknode(F_ARG_LIST,$1,$3);
   }
-  | expr0 expected_colon error { free_node($1); $$=0; }
+  | assignment_expr expected_colon error { free_node($1); $$=0; }
   ;
 
-expr1: expr2
-  | expr1 TOK_LOR expr1  { $$=mknode(F_LOR,$1,$3); }
-  | expr1 TOK_LAND expr1 { $$=mknode(F_LAND,$1,$3); }
-  | expr1 '|' expr1    { $$=mkopernode("`|",$1,$3); }
-  | expr1 '^' expr1    { $$=mkopernode("`^",$1,$3); }
-  | expr1 '&' expr1    { $$=mkopernode("`&",$1,$3); }
-  | expr1 TOK_EQ expr1   { $$=mkopernode("`==",$1,$3); }
-  | expr1 TOK_NE expr1   { $$=mkopernode("`!=",$1,$3); }
-  | expr1 '>' expr1    { $$=mkopernode("`>",$1,$3); }
-  | expr1 TOK_GE expr1   { $$=mkopernode("`>=",$1,$3); }
-  | expr1 '<' expr1    { $$=mkopernode("`<",$1,$3); }
-  | expr1 TOK_LE expr1   { $$=mkopernode("`<=",$1,$3); }
-  | expr1 TOK_LSH expr1  { $$=mkopernode("`<<",$1,$3); }
-  | expr1 TOK_RSH expr1  { $$=mkopernode("`>>",$1,$3); }
-  | expr1 '+' expr1    { $$=mkopernode("`+",$1,$3); }
-  | expr1 '-' expr1    { $$=mkopernode("`-",$1,$3); }
-  | expr1 '*' expr1    { $$=mkopernode("`*",$1,$3); }
-  | expr1 TOK_POW expr1 { $$=mkopernode("`**",$1,$3); }
-  | expr1 '%' expr1    { $$=mkopernode("`%",$1,$3); }
-  | expr1 '/' expr1    { $$=mkopernode("`/",$1,$3); }
-  | expr1 TOK_LOR error
-  | expr1 TOK_LAND error
-  | expr1 '|' error
-  | expr1 '^' error
-  | expr1 '&' error
-  | expr1 TOK_EQ error
-  | expr1 TOK_NE error
-  | expr1 '>' error
-  | expr1 TOK_GE error
-  | expr1 '<' error
-  | expr1 TOK_LE error
-  | expr1 TOK_LSH error
-  | expr1 TOK_RSH error
-  | expr1 '+' error
-  | expr1 '-' error
-  | expr1 '*' error
-  | expr1 '%' error
-  | expr1 '/' error
+postfix_expr: expr4
+  | postfix_expr TOK_INC { $$ = mknode(F_POST_INC, $1, mkintnode(1)); }
+  | postfix_expr TOK_DEC { $$ = mknode(F_POST_DEC, $1, mkintnode(1)); }
   ;
 
-expr2: expr3
-  | cast expr2
-  {
-    $$ = mkcastnode($1->u.sval.u.type, $2);
-    free_node($1);
-  }
-  | soft_cast expr2
-  {
-    $$ = mksoftcastnode($1->u.sval.u.type, $2);
-    free_node($1);
-  }
-  | TOK_INC expr4       { $$ = mknode(F_INC, $2, mkintnode(1)); }
-  | TOK_DEC expr4       { $$ = mknode(F_DEC, $2, mkintnode(1)); }
-  | TOK_NOT expr2        { $$=mkopernode("`!",$2,0); }
-  | '~' expr2
+pow_expr: postfix_expr
+  | postfix_expr TOK_POW pow_expr { $$=mkopernode("`**",$1,$3); }
+  | postfix_expr TOK_POW error
+  ;
+
+unary_expr: pow_expr
+  | TOK_INC unary_expr { $$ = mknode(F_INC, $2, mkintnode(1)); }
+  | TOK_DEC unary_expr { $$ = mknode(F_DEC, $2, mkintnode(1)); }
+  | TOK_NOT cast_expr { $$ = mkopernode("`!", $2, 0); }
+  | '+' cast_expr { $$ = $2; }
+  | '~' cast_expr
   {
     if ($2 && ($2->token == F_CONSTANT) && (TYPEOF($2->u.sval) == T_INT)) {
       $$ = mkintnode(~($2->u.sval.u.integer));
@@ -4166,7 +4139,7 @@ expr2: expr3
       $$ = mkopernode("`~", $2, 0);
     }
   }
-  | '-' expr2
+  | '-' cast_expr
   {
     if ($2 && ($2->token == F_CONSTANT) && (TYPEOF($2->u.sval) == T_INT) &&
 	!INT_TYPE_NEG_OVERFLOW($2->u.sval.u.integer)) {
@@ -4178,9 +4151,83 @@ expr2: expr3
   }
   ;
 
-expr3: expr4
-  | expr4 TOK_INC       { $$ = mknode(F_POST_INC, $1, mkintnode(1)); }
-  | expr4 TOK_DEC       { $$ = mknode(F_POST_DEC, $1, mkintnode(1)); }
+cast_expr: unary_expr
+  | cast cast_expr
+  {
+    $$ = mkcastnode($1->u.sval.u.type, $2);
+    free_node($1);
+  }
+  | soft_cast cast_expr
+  {
+    $$ = mksoftcastnode($1->u.sval.u.type, $2);
+    free_node($1);
+  }
+  ;
+
+mul_expr: cast_expr
+  | mul_expr '*' cast_expr { $$=mkopernode("`*",$1,$3); }
+  | mul_expr '%' cast_expr { $$=mkopernode("`%",$1,$3); }
+  | mul_expr '/' cast_expr { $$=mkopernode("`/",$1,$3); }
+  | mul_expr '*' error
+  | mul_expr '%' error
+  | mul_expr '/' error
+  ;
+
+add_expr: mul_expr
+  | add_expr '+' mul_expr { $$ = mkopernode("`+", $1, $3); }
+  | add_expr '-' mul_expr { $$ = mkopernode("`-", $1, $3); }
+  | add_expr '+' error
+  | add_expr '-' error
+  ;
+
+shift_expr: add_expr
+  | shift_expr TOK_LSH add_expr { $$ = mkopernode("`<<", $1, $3); }
+  | shift_expr TOK_RSH add_expr { $$ = mkopernode("`>>", $1, $3); }
+  | shift_expr TOK_LSH error
+  | shift_expr TOK_RSH error
+  ;
+
+rel_expr: shift_expr
+  | rel_expr '>' shift_expr    { $$ = mkopernode("`>", $1, $3); }
+  | rel_expr TOK_GE shift_expr { $$ = mkopernode("`>=", $1, $3); }
+  | rel_expr '<' shift_expr    { $$ = mkopernode("`<", $1, $3); }
+  | rel_expr TOK_LE shift_expr { $$ = mkopernode("`<=", $1, $3); }
+  | rel_expr '>' error
+  | rel_expr TOK_GE error
+  | rel_expr '<' error
+  | rel_expr TOK_LE error
+  ;
+
+eq_expr: rel_expr
+  | eq_expr TOK_EQ rel_expr { $$ = mkopernode("`==", $1, $3); }
+  | eq_expr TOK_NE rel_expr { $$ = mkopernode("`!=", $1, $3); }
+  | eq_expr TOK_EQ error
+  | eq_expr TOK_NE error
+  ;
+
+and_expr: eq_expr
+  | and_expr '&' eq_expr { $$ = mkopernode("`&",$1,$3); }
+  | and_expr '&' error
+  ;
+
+xor_expr: and_expr
+  | xor_expr '^' and_expr { $$ = mkopernode("`^", $1, $3); }
+  | xor_expr '^' error
+  ;
+
+or_expr: xor_expr
+  | or_expr '|' xor_expr { $$ = mkopernode("`|", $1, $3); }
+  | or_expr '|' error
+  ;
+
+land_expr: or_expr
+  | land_expr TOK_LAND or_expr { $$ = mknode(F_LAND, $1, $3); }
+  | land_expr TOK_LAND error
+  ;
+
+lor_expr: land_expr
+  | lor_expr TOK_LOR land_expr { $$ = mknode(F_LOR,$1,$3); }
+  | lor_expr TOK_LOR error
   ;
 
 /* FIXMEs
@@ -4408,7 +4455,7 @@ expr5: literal_expr
     COPY_LINE_NUMBER_INFO($$, $2);
     free_node ($2);
   }
-  | expr4 open_bracket_with_line_info expr0 ']'
+  | expr4 open_bracket_with_line_info assignment_expr ']'
   {
     $$=mknode(F_INDEX,$1,$3);
     COPY_LINE_NUMBER_INFO($$, $2);
@@ -4421,7 +4468,7 @@ expr5: literal_expr
     COPY_LINE_NUMBER_INFO($$, $2);
     free_node ($2);
   }
-  | expr4 TOK_SAFE_START_INDEX line_number_info expr0 ']'
+  | expr4 TOK_SAFE_START_INDEX line_number_info assignment_expr ']'
   {
     /* A[?X] to ((tmp=A) && tmp[X]) */
     if( $1 && ($1->token == F_LOCAL) )
@@ -4959,7 +5006,7 @@ gauge: TOK_GAUGE catch_arg
 		  mkfloatnode((FLOAT_TYPE)1e9));
   };
 
-typeof: TOK_TYPEOF '(' expr0 ')'
+typeof: TOK_TYPEOF '(' assignment_expr ')'
   {
     $$ = mknode(F_TYPEOF, $3, 0);
   }
@@ -4997,7 +5044,7 @@ catch: TOK_CATCH
      }
      ;
 
-sscanf: TOK_SSCANF '(' expr0 ',' expr0 lvalue_list ')'
+sscanf: TOK_SSCANF '(' assignment_expr ',' assignment_expr lvalue_list ')'
   {
     if ($6 && !(THIS_COMPILATION->lex.pragmas & ID_STRICT_TYPES)) {
       mark_lvalues_as_used($6);
@@ -5008,14 +5055,14 @@ sscanf: TOK_SSCANF '(' expr0 ',' expr0 lvalue_list ')'
       $$ = mknode(F_SSCANF, mknode(F_ARG_LIST, $3, $5), $6);
     }
   }
-  | TOK_SSCANF '(' expr0 ',' expr0 error ')'
+  | TOK_SSCANF '(' assignment_expr ',' assignment_expr error ')'
   {
     $$=0;
     free_node($3);
     free_node($5);
     yyerrok;
   }
-  | TOK_SSCANF '(' expr0 ',' expr0 error TOK_LEX_EOF
+  | TOK_SSCANF '(' assignment_expr ',' assignment_expr error TOK_LEX_EOF
   {
     $$=0;
     free_node($3);
@@ -5023,40 +5070,40 @@ sscanf: TOK_SSCANF '(' expr0 ',' expr0 lvalue_list ')'
     yyerror("Missing ')'.");
     yyerror("Unexpected end of file.");
   }
-  | TOK_SSCANF '(' expr0 ',' expr0 error '}'
+  | TOK_SSCANF '(' assignment_expr ',' assignment_expr error '}'
   {
     $$=0;
     free_node($3);
     free_node($5);
     yyerror("Missing ')'.");
   }
-  | TOK_SSCANF '(' expr0 ',' expr0 error ';'
+  | TOK_SSCANF '(' assignment_expr ',' assignment_expr error ';'
   {
     $$=0;
     free_node($3);
     free_node($5);
     yyerror("Missing ')'.");
   }
-  | TOK_SSCANF '(' expr0 error ')'
+  | TOK_SSCANF '(' assignment_expr error ')'
   {
     $$=0;
     free_node($3);
     yyerrok;
   }
-  | TOK_SSCANF '(' expr0 error TOK_LEX_EOF
+  | TOK_SSCANF '(' assignment_expr error TOK_LEX_EOF
   {
     $$=0;
     free_node($3);
     yyerror("Missing ')'.");
     yyerror("Unexpected end of file.");
   }
-  | TOK_SSCANF '(' expr0 error '}'
+  | TOK_SSCANF '(' assignment_expr error '}'
   {
     $$=0;
     free_node($3);
     yyerror("Missing ')'.");
   }
-  | TOK_SSCANF '(' expr0 error ';'
+  | TOK_SSCANF '(' assignment_expr error ';'
   {
     $$=0;
     free_node($3);
