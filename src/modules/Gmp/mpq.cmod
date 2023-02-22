@@ -1138,7 +1138,7 @@ float_fallback:
   {
 #ifdef PIKE_DEBUG
     if(!fp) Pike_fatal("ZERO FP\n");
-    if(!THISMPQ) Pike_fatal("ZERO THISMPQ\n");
+    if(!fp->current_storage) Pike_fatal("ZERO storage\n");
 #endif
     mpq_init(THISMPQ);
   }
@@ -1148,7 +1148,7 @@ float_fallback:
   {
 #ifdef PIKE_DEBUG
     if(!fp) Pike_fatal("ZERO FP\n");
-    if(!THISMPQ) Pike_fatal("ZERO THISMPQ\n");
+    if(!fp->current_storage) Pike_fatal("ZERO storage\n");
 #endif
     mpq_clear(THISMPQ);
   }
