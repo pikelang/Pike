@@ -256,7 +256,7 @@ static struct object *low_pcx_decode( struct pike_string *data )
 
   if(b.len < sizeof(struct pcx_header))
     Pike_error("There is not enough data available for this to be a PCX image\n");
-  pcx_header = *((struct pcx_header *)get_chunk(&b,sizeof(struct pcx_header)));
+  memcpy(&pcx_header, get_chunk(&b,sizeof(struct pcx_header)), sizeof(struct pcx_header));
 #if PIKE_BYTEORDER == 1234
   pcx_header.x1 = SWAP_S(pcx_header.x1);
   pcx_header.x2 = SWAP_S(pcx_header.x2);
