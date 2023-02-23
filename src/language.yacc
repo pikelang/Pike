@@ -286,6 +286,7 @@ int yylex(YYSTYPE *yylval);
 %type <number> create_arguments2
 %type <number> create_arg
 %type <number> assign
+%type <number> low_assign
 %type <number> modifier
 %type <number> modifier_list
 %type <number> modifiers
@@ -350,9 +351,6 @@ int yylex(YYSTYPE *yylval);
 %type <n> named_class
 %type <n> enum
 %type <n> enum_value
-%type <n> safe_comma_expr
-%type <n> comma_expr
-%type <n> comma_expr2
 %type <n> range_bound
 %type <n> cond
 %type <n> continue
@@ -361,9 +359,16 @@ int yylex(YYSTYPE *yylval);
 %type <n> constant_expr
 %type <n> safe_assignment_expr
 %type <n> splice_expr
-%type <n> cond_expr
-%type <n> pow_expr
+
+%type <n> literal_expr
+%type <n> unqualified_id_expr
+%type <n> qualified_ident
+%type <n> qualified_id_expr
+%type <n> id_expr
+%type <n> primary_expr
+%type <n> expr4
 %type <n> postfix_expr
+%type <n> pow_expr
 %type <n> unary_expr
 %type <n> cast_expr
 %type <n> mul_expr
@@ -376,25 +381,26 @@ int yylex(YYSTYPE *yylval);
 %type <n> or_expr
 %type <n> land_expr
 %type <n> lor_expr
+%type <n> cond_expr
 %type <n> assignment_expr
+%type <n> comma_expr
+%type <n> init_expr
+%type <n> safe_init_expr
+%type <n> optional_init_expr
+%type <n> void_expr
+%type <n> optional_void_expr
+
 %type <n> apply
-%type <n> expr4
-%type <n> expr5
 %type <n> expr_list
 %type <n> expr_list2
 %type <n> for
 %type <n> for_expr
 %type <n> foreach
 %type <n> gauge
-%type <n> unqualified_idents
-%type <n> qualified_ident
-%type <n> qualified_idents
-%type <n> idents
 %type <n> labeled_statement
 %type <n> lambda
-%type <n> literal_expr
 %type <n> local_name_list
-%type <n> low_idents
+%type <n> low_id_expr
 %type <n> safe_lvalue
 %type <n> lvalue
 %type <n> lvalue_list
@@ -413,10 +419,7 @@ int yylex(YYSTYPE *yylval);
 %type <n> statement_with_semicolon
 %type <n> switch
 %type <n> typeof
-%type <n> unused
-%type <n> unused2
 %type <n> while
-%type <n> optional_comma_expr
 %type <n> low_program_ref
 %type <n> inherit_ref
 %type <n> local_function
@@ -1737,7 +1740,7 @@ basic_type:
  *
  * NB: Introduces shift-reduce conflict on TOK_LOCAL_ID.
  */
-identifier_type: idents
+identifier_type: id_expr
   {
     if ($1) {
       fix_type_field($1);
@@ -2442,7 +2445,7 @@ statements: { $$=0; }
   }
   ;
 
-statement_with_semicolon: unused2 expected_semicolon
+statement_with_semicolon: void_expr expected_semicolon
   ;
 
 normal_label_statement: statement_with_semicolon
@@ -3805,7 +3808,7 @@ save_block_level: /* empty */
   ;
 
 cond: TOK_IF save_block_level save_locals line_number_info
-  '(' safe_comma_expr end_cond statement optional_else_part
+  '(' safe_init_expr end_cond statement optional_else_part
   {
     $$ = mknode('?', $6,
 		mknode(':',
@@ -3880,7 +3883,7 @@ foreach: TOK_FOREACH save_block_level save_locals line_number_info
   ;
 
 do: TOK_DO line_number_info statement
-  TOK_WHILE '(' safe_comma_expr end_cond expected_semicolon
+  TOK_WHILE '(' safe_init_expr end_cond expected_semicolon
   {
     $$=mknode(F_DO,$6,$3);
     COPY_LINE_NUMBER_INFO($$, $2);
@@ -3912,7 +3915,7 @@ expected_semicolon: ';'
   ;
 
 for: TOK_FOR save_block_level save_locals line_number_info
-  '(' unused expected_semicolon for_expr expected_semicolon unused end_cond
+  '(' optional_void_expr expected_semicolon for_expr expected_semicolon optional_void_expr end_cond
   statement
   {
     $$=mknode(F_COMMA_EXPR, mkcastnode(void_type_string, $6),
@@ -3926,7 +3929,7 @@ for: TOK_FOR save_block_level save_locals line_number_info
   ;
 
 while: TOK_WHILE save_block_level save_locals line_number_info
-  '(' safe_comma_expr end_cond statement
+  '(' safe_init_expr end_cond statement
   {
     $$=mknode(F_FOR,$6,mknode(':',$8,NULL));
     COPY_LINE_NUMBER_INFO($$, $4);
@@ -3938,11 +3941,11 @@ while: TOK_WHILE save_block_level save_locals line_number_info
   ;
 
 for_expr: /* EMPTY */ { $$=mkintnode(1); }
-  | safe_comma_expr
+  | safe_init_expr
   ;
 
 switch: TOK_SWITCH save_block_level save_locals line_number_info
-  '(' safe_comma_expr end_cond statement
+  '(' safe_init_expr end_cond statement
   {
     $$=mknode(F_SWITCH,$6,$8);
     COPY_LINE_NUMBER_INFO($$, $4);
@@ -3952,15 +3955,15 @@ switch: TOK_SWITCH save_block_level save_locals line_number_info
   }
   ;
 
-case: TOK_CASE safe_comma_expr expected_colon
+case: TOK_CASE safe_init_expr expected_colon
   {
     $$=mknode(F_CASE,$2,0);
   }
-  | TOK_CASE safe_comma_expr expected_dot_dot optional_comma_expr expected_colon
+  | TOK_CASE safe_init_expr expected_dot_dot optional_init_expr expected_colon
   {
      $$=mknode(F_CASE_RANGE,$2,$4);
   }
-  | TOK_CASE expected_dot_dot safe_comma_expr expected_colon
+  | TOK_CASE expected_dot_dot safe_init_expr expected_colon
   {
      $$=mknode(F_CASE_RANGE,0,$3);
   }
@@ -3998,7 +4001,7 @@ return: optional_continue TOK_RETURN expected_semicolon
     }
     $$ = mknode(F_RETURN, mkintnode(0), mkintnode($1));
   }
-  | optional_continue TOK_RETURN safe_comma_expr expected_semicolon
+  | optional_continue TOK_RETURN safe_init_expr expected_semicolon
   {
     if (!$3 ||
 	!($3->tree_info & (OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT|OPT_APPLY)) ||
@@ -4013,72 +4016,9 @@ return: optional_continue TOK_RETURN expected_semicolon
   }
   ;
 
-unused: { $$=0; }
-  | safe_comma_expr { $$=mkcastnode(void_type_string, $1);  }
-  ;
-
-unused2: comma_expr { $$=mkcastnode(void_type_string, $1);  } ;
-
-optional_comma_expr: { $$=0; }
-  | safe_comma_expr
-  ;
-
-safe_comma_expr: comma_expr
-  | error { $$=0; }
-  ;
-
-comma_expr: comma_expr2
-  | simple_type2 local_name_list { $$=$2; }
-  ;
-
-
-comma_expr2: assignment_expr
-  | comma_expr2 ',' assignment_expr
-  {
-    $$ = mknode(F_COMMA_EXPR, mkcastnode(void_type_string, $1), $3);
-  }
-  ;
 
 splice_expr: assignment_expr
       | '@' assignment_expr { $$=mknode(F_PUSH_ARRAY,$2,0); };
-
-assignment_expr: cond_expr
-  | expr4 assign assignment_expr  { $$=mknode($2,$1,$3); }
-  | expr4 assign error { $$=$1; reset_type_stack(); yyerrok; }
-  | open_bracket_with_line_info low_lvalue_list ']' assign assignment_expr
-  {
-    if (!(THIS_COMPILATION->lex.pragmas & ID_STRICT_TYPES)) {
-      mark_lvalues_as_used($2);
-    }
-    $$=mknode($4,mknode(F_ARRAY_LVALUE,$2,0),$5);
-    COPY_LINE_NUMBER_INFO($$, $1);
-    free_node ($1);
-  }
-  | open_bracket_with_line_info low_lvalue_list ']' error
-    {
-      $$=$2; free_node ($1); reset_type_stack(); yyerrok;
-    }
-/*  | error { $$=0; reset_type_stack(); } */
-  ;
-
-cond_expr: lor_expr
-  | lor_expr '?' cond_expr ':' cond_expr { $$=mknode('?',$1,mknode(':',$3,$5)); }
-  ;
-
-assign: '='    { $$=F_ASSIGN; }
-  | TOK_AND_EQ { $$=F_AND_EQ; }
-  | TOK_OR_EQ  { $$=F_OR_EQ; }
-  | TOK_XOR_EQ { $$=F_XOR_EQ; }
-  | TOK_LSH_EQ { $$=F_LSH_EQ; }
-  | TOK_RSH_EQ { $$=F_RSH_EQ; }
-  | TOK_ADD_EQ { $$=F_ADD_EQ; }
-  | TOK_SUB_EQ { $$=F_SUB_EQ; }
-  | TOK_MULT_EQ{ $$=F_MULT_EQ; }
-  | TOK_POW_EQ { $$=F_POW_EQ; }
-  | TOK_MOD_EQ { $$=F_MOD_EQ; }
-  | TOK_DIV_EQ { $$=F_DIV_EQ; }
-  | TOK_ATOMIC_GET_SET { $$=F_ATOMIC_GET_SET; }
-  ;
 
 optional_comma: { $$=0; } | ',' { $$=1; };
 
@@ -4115,6 +4055,354 @@ assoc_pair:  assignment_expr expected_colon assignment_expr
   | assignment_expr expected_colon error { free_node($1); $$=0; }
   ;
 
+literal_expr: string
+  | TOK_NUMBER
+  | TOK_FLOAT { $$=mkfloatnode((FLOAT_TYPE)$1); }
+  | open_paren_with_line_info '{' expr_list close_brace_or_missing ')'
+    {
+      /* FIXME: May eat lots of stack; cf Standards.FIPS10_4.divisions */
+      $$=mkefuncallnode("aggregate",$3);
+      COPY_LINE_NUMBER_INFO($$, $1);
+      free_node ($1);
+    }
+  | open_paren_with_line_info
+    open_bracket_with_line_info	/* Only to avoid shift/reduce conflicts. */
+    m_expr_list close_bracket_or_missing ')'
+    {
+      /* FIXME: May eat lots of stack; cf Standards.FIPS10_4.divisions */
+      $$=mkefuncallnode("aggregate_mapping",$3);
+      COPY_LINE_NUMBER_INFO($$, $1);
+      free_node ($1);
+      free_node ($2);
+    }
+  | TOK_MULTISET_START line_number_info expr_list TOK_MULTISET_END
+    {
+      /* FIXME: May eat lots of stack; cf Standards.FIPS10_4.divisions */
+      $$=mkefuncallnode("aggregate_multiset",$3);
+      COPY_LINE_NUMBER_INFO($$, $2);
+      free_node ($2);
+    }
+  | TOK_MULTISET_START line_number_info expr_list ')'
+    {
+      yyerror("Missing '>'.");
+      $$=mkefuncallnode("aggregate_multiset",$3);
+      COPY_LINE_NUMBER_INFO($$, $2);
+      free_node ($2);
+    }
+  | TOK_MULTISET_START line_number_info error TOK_MULTISET_END { $$=$2; yyerrok; }
+  | TOK_MULTISET_START line_number_info error ')' {
+    yyerror("Missing '>'.");
+    $$=$2; yyerrok;
+  }
+  | TOK_MULTISET_START line_number_info error TOK_LEX_EOF
+  {
+    $$=$2; yyerror("Missing '>)'.");
+    yyerror("Unexpected end of file.");
+  }
+  | TOK_MULTISET_START line_number_info error ';' { $$=$2; yyerror("Missing '>)'."); }
+  | TOK_MULTISET_START line_number_info error '}' { $$=$2; yyerror("Missing '>)'."); }
+  ;
+
+unqualified_id_expr: low_id_expr
+  | unqualified_id_expr '.' TOK_IDENTIFIER
+  {
+    $$=index_node($1, Pike_compiler->last_identifier?Pike_compiler->last_identifier->str:NULL,
+                  $3->u.sval.u.string);
+    free_node($1);
+    if(Pike_compiler->last_identifier) free_string(Pike_compiler->last_identifier);
+    copy_shared_string(Pike_compiler->last_identifier, $3->u.sval.u.string);
+    free_node($3);
+  }
+  | unqualified_id_expr '.' bad_identifier {}
+  ;
+
+qualified_ident:
+  TOK_PREDEF TOK_COLON_COLON TOK_IDENTIFIER
+  {
+    struct compilation *c = THIS_COMPILATION;
+    node *tmp2;
+
+    if(Pike_compiler->last_identifier)
+      free_string(Pike_compiler->last_identifier);
+    copy_shared_string(Pike_compiler->last_identifier, $3->u.sval.u.string);
+
+    tmp2 = mkconstantsvaluenode(&c->default_module);
+    $$ = index_node(tmp2, "predef", $3->u.sval.u.string);
+    if(!$$->name)
+      add_ref( $$->name=$3->u.sval.u.string );
+    free_node(tmp2);
+    free_node($3);
+  }
+  | TOK_PREDEF TOK_COLON_COLON bad_identifier
+  {
+    $$=0;
+  }
+  | TOK_VERSION TOK_COLON_COLON TOK_IDENTIFIER
+  {
+    $$ = find_versioned_identifier($3->u.sval.u.string,
+                                   $1->u.integer.a, $1->u.integer.b);
+    free_node($1);
+    free_node($3);
+  }
+  | TOK_VERSION TOK_COLON_COLON bad_identifier
+  {
+    free_node($1);
+    $$=0;
+  }
+  | inherit_specifier TOK_IDENTIFIER
+  {
+    int id;
+
+    if(Pike_compiler->last_identifier) free_string(Pike_compiler->last_identifier);
+    copy_shared_string(Pike_compiler->last_identifier, $2->u.sval.u.string);
+
+    $$ = find_inherited_identifier(inherit_state, inherit_depth, $1,
+                                   Pike_compiler->last_identifier);
+    if (!$$) {
+      if ((Pike_compiler->flags & COMPILATION_FORCE_RESOLVE) ||
+          (Pike_compiler->compiler_pass == COMPILER_PASS_LAST)) {
+        if (($1 >= 0) && inherit_state->new_program &&
+            inherit_state->new_program->inherits[$1].name) {
+          my_yyerror("Undefined identifier %S::%S.",
+                     inherit_state->new_program->inherits[$1].name,
+                     Pike_compiler->last_identifier);
+        } else {
+          my_yyerror("Undefined identifier %S.",
+                     Pike_compiler->last_identifier);
+        }
+        $$=0;
+      }
+      else
+        $$=mknode(F_UNDEFINED,0,0);
+    }
+
+    free_node($2);
+  }
+  | inherit_specifier bad_identifier { $$=0; }
+  | inherit_specifier error { $$=0; }
+  | TOK_COLON_COLON TOK_IDENTIFIER
+  {
+    if(Pike_compiler->last_identifier) {
+      free_string(Pike_compiler->last_identifier);
+    }
+    copy_shared_string(Pike_compiler->last_identifier, $2->u.sval.u.string);
+
+    $$ = find_inherited_identifier(Pike_compiler, 0, INHERIT_ALL,
+                                   Pike_compiler->last_identifier);
+    if(!$$)
+    {
+      if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
+        my_yyerror("Undefined identifier ::%S.", $2->u.sval.u.string);
+      }
+      $$=mkintnode(0);
+    }
+    free_node($2);
+  }
+  | TOK_COLON_COLON bad_identifier
+  {
+    $$=0;
+  }
+  ;
+
+qualified_id_expr: qualified_ident
+  | qualified_id_expr '.' TOK_IDENTIFIER
+  {
+    $$=index_node($1, Pike_compiler->last_identifier?Pike_compiler->last_identifier->str:NULL,
+                  $3->u.sval.u.string);
+    free_node($1);
+    if(Pike_compiler->last_identifier) free_string(Pike_compiler->last_identifier);
+    copy_shared_string(Pike_compiler->last_identifier, $3->u.sval.u.string);
+    free_node($3);
+  }
+  | qualified_id_expr '.' bad_identifier {}
+  ;
+
+id_expr: unqualified_id_expr
+  | qualified_id_expr
+  ;
+
+primary_expr: literal_expr
+  | catch
+  | gauge
+  | typeof
+  | sscanf
+  | static_assertion { $$ = mknewintnode(0); }
+  | lambda
+  | implicit_modifiers anon_class { $$ = $2; }
+  | implicit_modifiers enum { $$ = $2; }
+  | apply
+  | expr4 open_bracket_with_line_info '*' ']'
+  {
+    $$=mknode(F_AUTO_MAP_MARKER, $1, 0);
+    COPY_LINE_NUMBER_INFO($$, $2);
+    free_node ($2);
+  }
+  | expr4 open_bracket_with_line_info assignment_expr ']'
+  {
+    $$=mknode(F_INDEX,$1,$3);
+    COPY_LINE_NUMBER_INFO($$, $2);
+    free_node ($2);
+  }
+  | expr4 open_bracket_with_line_info
+    range_bound expected_dot_dot range_bound ']'
+  {
+    $$=mknode(F_RANGE,$1,mknode(':',$3,$5));
+    COPY_LINE_NUMBER_INFO($$, $2);
+    free_node ($2);
+  }
+  | expr4 TOK_SAFE_START_INDEX line_number_info assignment_expr ']'
+  {
+    /* A[?X] to ((tmp=A) && tmp[X]) */
+    if( $1 && ($1->token == F_LOCAL) )
+    {
+      $$=mknode(F_LAND, copy_node($1), mknode(F_INDEX,  $1, $4));
+    }
+    else
+    {
+      fix_type_field( $1 );
+      if( $1 && $1->type )
+      {
+        int temporary;
+        $1->type->refs++;
+
+        temporary = add_local_name(empty_pike_string, $1->type, 0);
+        Pike_compiler->compiler_frame->local_names[temporary].flags |= LOCAL_VAR_IS_USED;
+        $$=mknode(F_LAND,
+                  mknode(F_ASSIGN, mklocalnode(temporary,0), $1),
+                  mknode(F_INDEX,  mklocalnode(temporary,0), $4));
+        $$ = pop_local_variables(temporary, $$);
+      }
+      else
+      {
+        $$=mknode(F_INDEX, $1,$4);
+        yyerror("Indexing unexpected value.");
+      }
+    }
+    COPY_LINE_NUMBER_INFO($$, $3);
+    free_node ($3);
+  }
+  | expr4 TOK_SAFE_START_INDEX  line_number_info
+    range_bound expected_dot_dot range_bound ']'
+  {
+    /* A[?X..Y] to ((tmp=A) && tmp[X..Y]) */
+    node *range = mknode(':',$4,$6);
+    if( $1 && ($1->token == F_LOCAL ) )
+    {
+      $$ = mknode( F_LAND, copy_node($1), mknode(F_RANGE, $1, range) );
+    }
+    else
+    {
+      fix_type_field( $1 );
+      if( $1 && $1->type )
+      {
+        int temporary;
+        $1->type->refs++;
+
+        temporary = add_local_name(empty_pike_string, $1->type, 0);
+        Pike_compiler->compiler_frame->local_names[temporary].flags |= LOCAL_VAR_IS_USED;
+        $$=mknode(F_LAND,
+                  mknode(F_ASSIGN, mklocalnode(temporary,0), $1),
+                  mknode(F_RANGE,  mklocalnode(temporary,0), range) );
+        $$ = pop_local_variables(temporary, $$);
+      }
+      else
+      {
+        $$ = mknode( F_LAND, $1, mknode(F_RANGE,$1,range) );
+        yyerror("Indexing unexpected value.");
+      }
+    }
+    COPY_LINE_NUMBER_INFO($$, $3);
+    free_node ($3);
+  }
+  | expr4 open_bracket_with_line_info error ']'
+  {
+    $$=$1;
+    free_node ($2);
+    yyerrok;
+  }
+  | expr4 open_bracket_with_line_info error TOK_LEX_EOF
+  {
+    $$=$1; yyerror("Missing ']'.");
+    yyerror("Unexpected end of file.");
+    free_node ($2);
+  }
+  | expr4 open_bracket_with_line_info error ';'
+    {$$=$1; yyerror("Missing ']'."); free_node ($2);}
+  | expr4 open_bracket_with_line_info error '}'
+    {$$=$1; yyerror("Missing ']'."); free_node ($2);}
+  | expr4 open_bracket_with_line_info error ')'
+    {$$=$1; yyerror("Missing ']'."); free_node ($2);}
+  | open_paren_with_line_info comma_expr ')'
+    {
+      $$=$2;
+      if ($$) {
+        COPY_LINE_NUMBER_INFO($$, $1);
+      }
+      free_node ($1);
+    }
+  | open_paren_with_line_info error ')' { $$=$1; yyerrok; }
+  | open_paren_with_line_info error TOK_LEX_EOF
+  {
+    $$=$1; yyerror("Missing ')'.");
+    yyerror("Unexpected end of file.");
+  }
+  | open_paren_with_line_info error ';' { $$=$1; yyerror("Missing ')'."); }
+  | open_paren_with_line_info error '}' { $$=$1; yyerror("Missing ')'."); }
+  | expr4 TOK_ARROW line_number_info magic_identifier
+  {
+    $$=mknode(F_ARROW,$1,$4);
+    COPY_LINE_NUMBER_INFO($$, $3);
+    free_node ($3);
+  }
+  | expr4 TOK_SAFE_INDEX line_number_info TOK_IDENTIFIER
+  {
+    /* A->?B to ((tmp=A) && tmp->B) */
+    int temporary;
+    if( $1 && ($1->token == F_LOCAL) )
+    {
+      $$=mknode(F_LAND, copy_node($1), mknode(F_ARROW, $1, $4));
+    }
+    else
+    {
+      fix_type_field( $1 );
+      if( $1 && $1->type )
+      {
+        add_ref($1->type);
+        temporary = add_local_name(empty_pike_string, $1->type, 0);
+        Pike_compiler->compiler_frame->local_names[temporary].flags |=
+          LOCAL_VAR_IS_USED;
+        $$=mknode(F_LAND,
+                  mknode(F_ASSIGN, mklocalnode(temporary,0), $1),
+                  mknode(F_ARROW,  mklocalnode(temporary,0), $4));
+        $$ = pop_local_variables(temporary, $$);
+      }
+      else
+      {
+        $$=mknode(F_ARROW, $1,$4);
+        yyerror("Indexing unexpected value.");
+      }
+    }
+    COPY_LINE_NUMBER_INFO($$, $3);
+    free_node ($3);
+  }
+  | expr4 TOK_ARROW line_number_info error {$$=$1; free_node ($3);}
+  ;
+
+expr4: id_expr | primary_expr
+  | primary_expr '.' line_number_info TOK_IDENTIFIER
+  {
+    $$=index_node($1,".",$4->u.sval.u.string);
+    COPY_LINE_NUMBER_INFO($$, $3);
+    free_node ($1);
+    free_node ($3);
+    free_node ($4);
+  }
+  | bad_expr_ident
+  {
+    $$ = mknewintnode(0);
+  }
+  ;
+
 postfix_expr: expr4
   | postfix_expr TOK_INC { $$ = mknode(F_POST_INC, $1, mkintnode(1)); }
   | postfix_expr TOK_DEC { $$ = mknode(F_POST_DEC, $1, mkintnode(1)); }
@@ -4142,7 +4430,7 @@ unary_expr: pow_expr
   | '-' cast_expr
   {
     if ($2 && ($2->token == F_CONSTANT) && (TYPEOF($2->u.sval) == T_INT) &&
-	!INT_TYPE_NEG_OVERFLOW($2->u.sval.u.integer)) {
+        !INT_TYPE_NEG_OVERFLOW($2->u.sval.u.integer)) {
       $$ = mkintnode(-($2->u.sval.u.integer));
       free_node($2);
     } else {
@@ -4228,6 +4516,72 @@ land_expr: or_expr
 lor_expr: land_expr
   | lor_expr TOK_LOR land_expr { $$ = mknode(F_LOR,$1,$3); }
   | lor_expr TOK_LOR error
+  ;
+
+cond_expr: lor_expr
+  | lor_expr '?' cond_expr ':' cond_expr { $$=mknode('?',$1,mknode(':',$3,$5)); }
+  ;
+
+assignment_expr: cond_expr
+  | expr4 assign assignment_expr  { $$=mknode($2,$1,$3); }
+  | expr4 assign error { $$=$1; reset_type_stack(); yyerrok; }
+  | open_bracket_with_line_info low_lvalue_list ']' low_assign assignment_expr
+  {
+    if (!(THIS_COMPILATION->lex.pragmas & ID_STRICT_TYPES)) {
+      mark_lvalues_as_used($2);
+    }
+    $$=mknode($4,mknode(F_ARRAY_LVALUE,$2,0),$5);
+    COPY_LINE_NUMBER_INFO($$, $1);
+    free_node ($1);
+  }
+  | open_bracket_with_line_info low_lvalue_list ']' error
+    {
+      $$=$2; free_node ($1); reset_type_stack(); yyerrok;
+    }
+/*  | error { $$=0; reset_type_stack(); } */
+  ;
+
+low_assign: '=' { $$=F_ASSIGN; } ;
+
+assign: low_assign
+  | TOK_AND_EQ { $$=F_AND_EQ; }
+  | TOK_OR_EQ  { $$=F_OR_EQ; }
+  | TOK_XOR_EQ { $$=F_XOR_EQ; }
+  | TOK_LSH_EQ { $$=F_LSH_EQ; }
+  | TOK_RSH_EQ { $$=F_RSH_EQ; }
+  | TOK_ADD_EQ { $$=F_ADD_EQ; }
+  | TOK_SUB_EQ { $$=F_SUB_EQ; }
+  | TOK_MULT_EQ{ $$=F_MULT_EQ; }
+  | TOK_POW_EQ { $$=F_POW_EQ; }
+  | TOK_MOD_EQ { $$=F_MOD_EQ; }
+  | TOK_DIV_EQ { $$=F_DIV_EQ; }
+  | TOK_ATOMIC_GET_SET { $$=F_ATOMIC_GET_SET; }
+  ;
+
+comma_expr: assignment_expr
+  | comma_expr ',' assignment_expr
+  {
+    $$ = mknode(F_COMMA_EXPR, mkcastnode(void_type_string, $1), $3);
+  }
+  ;
+
+init_expr: comma_expr
+  | simple_type2 local_name_list { $$=$2; }
+  ;
+
+safe_init_expr: init_expr
+  | error { $$=0; }
+  ;
+
+optional_init_expr: /* empty */ { $$=0; }
+  | safe_init_expr
+  ;
+
+void_expr: init_expr { $$ = mkcastnode(void_type_string, $1); } ;
+
+optional_void_expr: /* empty */ { $$=0; }
+  | void_expr
+  | error { $$=0; }
   ;
 
 /* FIXMEs
@@ -4424,266 +4778,6 @@ implicit_modifiers:
   }
   ;
 
-expr4: idents | expr5
-  | expr5 '.' line_number_info TOK_IDENTIFIER
-  {
-    $$=index_node($1,".",$4->u.sval.u.string);
-    COPY_LINE_NUMBER_INFO($$, $3);
-    free_node ($1);
-    free_node ($3);
-    free_node ($4);
-  }
-  | bad_expr_ident
-  {
-    $$ = mknewintnode(0);
-  }
-  ;
-
-expr5: literal_expr
-  | catch
-  | gauge
-  | typeof
-  | sscanf
-  | static_assertion { $$ = mknewintnode(0); }
-  | lambda
-  | implicit_modifiers anon_class { $$ = $2; }
-  | implicit_modifiers enum { $$ = $2; }
-  | apply
-  | expr4 open_bracket_with_line_info '*' ']'
-  {
-    $$=mknode(F_AUTO_MAP_MARKER, $1, 0);
-    COPY_LINE_NUMBER_INFO($$, $2);
-    free_node ($2);
-  }
-  | expr4 open_bracket_with_line_info assignment_expr ']'
-  {
-    $$=mknode(F_INDEX,$1,$3);
-    COPY_LINE_NUMBER_INFO($$, $2);
-    free_node ($2);
-  }
-  | expr4 open_bracket_with_line_info
-    range_bound expected_dot_dot range_bound ']'
-  {
-    $$=mknode(F_RANGE,$1,mknode(':',$3,$5));
-    COPY_LINE_NUMBER_INFO($$, $2);
-    free_node ($2);
-  }
-  | expr4 TOK_SAFE_START_INDEX line_number_info assignment_expr ']'
-  {
-    /* A[?X] to ((tmp=A) && tmp[X]) */
-    if( $1 && ($1->token == F_LOCAL) )
-    {
-      $$=mknode(F_LAND, copy_node($1), mknode(F_INDEX,  $1, $4));
-    }
-    else
-    {
-      fix_type_field( $1 );
-      if( $1 && $1->type )
-      {
-        int temporary;
-        $1->type->refs++;
-
-        temporary = add_local_name(empty_pike_string, $1->type, 0);
-        Pike_compiler->compiler_frame->local_names[temporary].flags |= LOCAL_VAR_IS_USED;
-        $$=mknode(F_LAND,
-                  mknode(F_ASSIGN, mklocalnode(temporary,0), $1),
-                  mknode(F_INDEX,  mklocalnode(temporary,0), $4));
-	$$ = pop_local_variables(temporary, $$);
-      }
-      else
-      {
-        $$=mknode(F_INDEX, $1,$4);
-        yyerror("Indexing unexpected value.");
-      }
-    }
-    COPY_LINE_NUMBER_INFO($$, $3);
-    free_node ($3);
-  }
-  | expr4 TOK_SAFE_START_INDEX  line_number_info
-    range_bound expected_dot_dot range_bound ']'
-  {
-    /* A[?X..Y] to ((tmp=A) && tmp[X..Y]) */
-    node *range = mknode(':',$4,$6);
-    if( $1 && ($1->token == F_LOCAL ) )
-    {
-      $$ = mknode( F_LAND, copy_node($1), mknode(F_RANGE, $1, range) );
-    }
-    else
-    {
-      fix_type_field( $1 );
-      if( $1 && $1->type )
-      {
-        int temporary;
-        $1->type->refs++;
-
-        temporary = add_local_name(empty_pike_string, $1->type, 0);
-        Pike_compiler->compiler_frame->local_names[temporary].flags |= LOCAL_VAR_IS_USED;
-        $$=mknode(F_LAND,
-                  mknode(F_ASSIGN, mklocalnode(temporary,0), $1),
-                  mknode(F_RANGE,  mklocalnode(temporary,0), range) );
-	$$ = pop_local_variables(temporary, $$);
-      }
-      else
-      {
-        $$ = mknode( F_LAND, $1, mknode(F_RANGE,$1,range) );
-        yyerror("Indexing unexpected value.");
-      }
-    }
-    COPY_LINE_NUMBER_INFO($$, $3);
-    free_node ($3);
-  }
-  | expr4 open_bracket_with_line_info error ']'
-  {
-    $$=$1;
-    free_node ($2);
-    yyerrok;
-  }
-  | expr4 open_bracket_with_line_info error TOK_LEX_EOF
-  {
-    $$=$1; yyerror("Missing ']'.");
-    yyerror("Unexpected end of file.");
-    free_node ($2);
-  }
-  | expr4 open_bracket_with_line_info error ';'
-    {$$=$1; yyerror("Missing ']'."); free_node ($2);}
-  | expr4 open_bracket_with_line_info error '}'
-    {$$=$1; yyerror("Missing ']'."); free_node ($2);}
-  | expr4 open_bracket_with_line_info error ')'
-    {$$=$1; yyerror("Missing ']'."); free_node ($2);}
-  | open_paren_with_line_info comma_expr2 ')'
-    {
-      $$=$2;
-      if ($$) {
-	COPY_LINE_NUMBER_INFO($$, $1);
-      }
-      free_node ($1);
-    }
-  | open_paren_with_line_info error ')' { $$=$1; yyerrok; }
-  | open_paren_with_line_info error TOK_LEX_EOF
-  {
-    $$=$1; yyerror("Missing ')'.");
-    yyerror("Unexpected end of file.");
-  }
-  | open_paren_with_line_info error ';' { $$=$1; yyerror("Missing ')'."); }
-  | open_paren_with_line_info error '}' { $$=$1; yyerror("Missing ')'."); }
-  | expr4 TOK_ARROW line_number_info magic_identifier
-  {
-    $$=mknode(F_ARROW,$1,$4);
-    COPY_LINE_NUMBER_INFO($$, $3);
-    free_node ($3);
-  }
-  | expr4 TOK_SAFE_INDEX line_number_info TOK_IDENTIFIER
-  {
-    /* A->?B to ((tmp=A) && tmp->B) */
-    int temporary;
-    if( $1 && ($1->token == F_LOCAL) )
-    {
-      $$=mknode(F_LAND, copy_node($1), mknode(F_ARROW, $1, $4));
-    }
-    else
-    {
-      fix_type_field( $1 );
-      if( $1 && $1->type )
-      {
-        add_ref($1->type);
-        temporary = add_local_name(empty_pike_string, $1->type, 0);
-        Pike_compiler->compiler_frame->local_names[temporary].flags |=
-	  LOCAL_VAR_IS_USED;
-        $$=mknode(F_LAND,
-                  mknode(F_ASSIGN, mklocalnode(temporary,0), $1),
-                  mknode(F_ARROW,  mklocalnode(temporary,0), $4));
-	$$ = pop_local_variables(temporary, $$);
-      }
-      else
-      {
-        $$=mknode(F_ARROW, $1,$4);
-        yyerror("Indexing unexpected value.");
-      }
-    }
-    COPY_LINE_NUMBER_INFO($$, $3);
-    free_node ($3);
-  }
-  | expr4 TOK_ARROW line_number_info error {$$=$1; free_node ($3);}
-  ;
-
-literal_expr: string
-  | TOK_NUMBER
-  | TOK_FLOAT { $$=mkfloatnode((FLOAT_TYPE)$1); }
-  | open_paren_with_line_info '{' expr_list close_brace_or_missing ')'
-    {
-      /* FIXME: May eat lots of stack; cf Standards.FIPS10_4.divisions */
-      $$=mkefuncallnode("aggregate",$3);
-      COPY_LINE_NUMBER_INFO($$, $1);
-      free_node ($1);
-    }
-  | open_paren_with_line_info
-    open_bracket_with_line_info	/* Only to avoid shift/reduce conflicts. */
-    m_expr_list close_bracket_or_missing ')'
-    {
-      /* FIXME: May eat lots of stack; cf Standards.FIPS10_4.divisions */
-      $$=mkefuncallnode("aggregate_mapping",$3);
-      COPY_LINE_NUMBER_INFO($$, $1);
-      free_node ($1);
-      free_node ($2);
-    }
-  | TOK_MULTISET_START line_number_info expr_list TOK_MULTISET_END
-    {
-      /* FIXME: May eat lots of stack; cf Standards.FIPS10_4.divisions */
-      $$=mkefuncallnode("aggregate_multiset",$3);
-      COPY_LINE_NUMBER_INFO($$, $2);
-      free_node ($2);
-    }
-  | TOK_MULTISET_START line_number_info expr_list ')'
-    {
-      yyerror("Missing '>'.");
-      $$=mkefuncallnode("aggregate_multiset",$3);
-      COPY_LINE_NUMBER_INFO($$, $2);
-      free_node ($2);
-    }
-  | TOK_MULTISET_START line_number_info error TOK_MULTISET_END { $$=$2; yyerrok; }
-  | TOK_MULTISET_START line_number_info error ')' {
-    yyerror("Missing '>'.");
-    $$=$2; yyerrok;
-  }
-  | TOK_MULTISET_START line_number_info error TOK_LEX_EOF
-  {
-    $$=$2; yyerror("Missing '>)'.");
-    yyerror("Unexpected end of file.");
-  }
-  | TOK_MULTISET_START line_number_info error ';' { $$=$2; yyerror("Missing '>)'."); }
-  | TOK_MULTISET_START line_number_info error '}' { $$=$2; yyerror("Missing '>)'."); }
-  ;
-
-unqualified_idents: low_idents
-  | unqualified_idents '.' TOK_IDENTIFIER
-  {
-    $$=index_node($1, Pike_compiler->last_identifier?Pike_compiler->last_identifier->str:NULL,
-		  $3->u.sval.u.string);
-    free_node($1);
-    if(Pike_compiler->last_identifier) free_string(Pike_compiler->last_identifier);
-    copy_shared_string(Pike_compiler->last_identifier, $3->u.sval.u.string);
-    free_node($3);
-  }
-  | unqualified_idents '.' bad_identifier {}
-  ;
-
-qualified_idents: qualified_ident
-  | qualified_idents '.' TOK_IDENTIFIER
-  {
-    $$=index_node($1, Pike_compiler->last_identifier?Pike_compiler->last_identifier->str:NULL,
-		  $3->u.sval.u.string);
-    free_node($1);
-    if(Pike_compiler->last_identifier) free_string(Pike_compiler->last_identifier);
-    copy_shared_string(Pike_compiler->last_identifier, $3->u.sval.u.string);
-    free_node($3);
-  }
-  | qualified_idents '.' bad_identifier {}
-  ;
-
-idents: unqualified_idents
-  | qualified_idents
-  ;
-
 string_or_identifier: TOK_IDENTIFIER
   | string
   ;
@@ -4826,7 +4920,7 @@ inherit_specifier: string_or_identifier TOK_COLON_COLON
   | inherit_specifier bad_inherit TOK_COLON_COLON { $$ = INHERIT_ALL; }
   ;
 
-low_idents: TOK_IDENTIFIER
+low_id_expr: TOK_IDENTIFIER
   {
     if(Pike_compiler->last_identifier) free_string(Pike_compiler->last_identifier);
     copy_shared_string(Pike_compiler->last_identifier, $1->u.sval.u.string);
@@ -4884,100 +4978,12 @@ low_idents: TOK_IDENTIFIER
   }
   ;
 
-qualified_ident:
-  TOK_PREDEF TOK_COLON_COLON TOK_IDENTIFIER
-  {
-    struct compilation *c = THIS_COMPILATION;
-    node *tmp2;
-
-    if(Pike_compiler->last_identifier)
-      free_string(Pike_compiler->last_identifier);
-    copy_shared_string(Pike_compiler->last_identifier, $3->u.sval.u.string);
-
-    tmp2 = mkconstantsvaluenode(&c->default_module);
-    $$ = index_node(tmp2, "predef", $3->u.sval.u.string);
-    if(!$$->name)
-      add_ref( $$->name=$3->u.sval.u.string );
-    free_node(tmp2);
-    free_node($3);
-  }
-  | TOK_PREDEF TOK_COLON_COLON bad_identifier
-  {
-    $$=0;
-  }
-  | TOK_VERSION TOK_COLON_COLON TOK_IDENTIFIER
-  {
-    $$ = find_versioned_identifier($3->u.sval.u.string,
-				   $1->u.integer.a, $1->u.integer.b);
-    free_node($1);
-    free_node($3);
-  }
-  | TOK_VERSION TOK_COLON_COLON bad_identifier
-  {
-    free_node($1);
-    $$=0;
-  }
-  | inherit_specifier TOK_IDENTIFIER
-  {
-    int id;
-
-    if(Pike_compiler->last_identifier) free_string(Pike_compiler->last_identifier);
-    copy_shared_string(Pike_compiler->last_identifier, $2->u.sval.u.string);
-
-    $$ = find_inherited_identifier(inherit_state, inherit_depth, $1,
-				   Pike_compiler->last_identifier);
-    if (!$$) {
-      if ((Pike_compiler->flags & COMPILATION_FORCE_RESOLVE) ||
-	  (Pike_compiler->compiler_pass == COMPILER_PASS_LAST)) {
-	if (($1 >= 0) && inherit_state->new_program &&
-	    inherit_state->new_program->inherits[$1].name) {
-	  my_yyerror("Undefined identifier %S::%S.",
-		     inherit_state->new_program->inherits[$1].name,
-		     Pike_compiler->last_identifier);
-	} else {
-	  my_yyerror("Undefined identifier %S.",
-		     Pike_compiler->last_identifier);
-	}
-	$$=0;
-      }
-      else
-	$$=mknode(F_UNDEFINED,0,0);
-    }
-
-    free_node($2);
-  }
-  | inherit_specifier bad_identifier { $$=0; }
-  | inherit_specifier error { $$=0; }
-  | TOK_COLON_COLON TOK_IDENTIFIER
-  {
-    if(Pike_compiler->last_identifier) {
-      free_string(Pike_compiler->last_identifier);
-    }
-    copy_shared_string(Pike_compiler->last_identifier, $2->u.sval.u.string);
-
-    $$ = find_inherited_identifier(Pike_compiler, 0, INHERIT_ALL,
-				   Pike_compiler->last_identifier);
-    if(!$$)
-    {
-      if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
-	my_yyerror("Undefined identifier ::%S.", $2->u.sval.u.string);
-      }
-      $$=mkintnode(0);
-    }
-    free_node($2);
-  }
-  | TOK_COLON_COLON bad_identifier
-  {
-    $$=0;
-  }
-  ;
-
 range_bound:
   /* empty */
   {$$ = mknode (F_RANGE_OPEN, NULL, NULL);}
-  | comma_expr
+  | init_expr
   {$$ = mknode (F_RANGE_FROM_BEG, $1, NULL);}
-  | '<' comma_expr
+  | '<' init_expr
   {$$ = mknode (F_RANGE_FROM_END, $2, NULL);}
   | TOK_LEX_EOF
   {
@@ -5020,7 +5026,7 @@ typeof: TOK_TYPEOF '(' assignment_expr ')'
   | TOK_TYPEOF '(' error ';' { $$=0; yyerror("Missing ')'."); }
   ;
 
-catch_arg: '(' comma_expr ')'  { $$=$2; }
+catch_arg: '(' init_expr ')'  { $$=$2; }
   | '(' error ')' { $$=0; yyerrok; }
   | '(' error TOK_LEX_EOF
   {
