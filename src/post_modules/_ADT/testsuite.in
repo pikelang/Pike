@@ -1106,6 +1106,21 @@ test_any(
   return sizeof(al),
   262144)
 
+test_any([[
+  // [REPD-489]
+  int k;
+  object a = _ADT.CircularList(10);
+  for (int i = 0; i < 10; i++) {
+    int j = random(a->max_size() - sizeof(a));
+    while (j--) a->push_back(k++);
+    a->allocate(random(23) + 1);
+  }
+  while (k--) {
+    if (a->pop_back() != k) break;
+  }
+  return k;
+]], -1)
+
 ************************** test copy on change *****************************
 
 
