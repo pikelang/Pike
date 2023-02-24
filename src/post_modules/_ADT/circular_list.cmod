@@ -511,7 +511,20 @@ PIKECLASS CircularList
     if (!elements) return;
     if(THIS->a->refs <= 1 && THIS->a->malloced_size >= size)
     {
+      /*       +------------+------------+------------+------------+
+       * Orig: |############|............|############| over-alloc |
+       *       +------------+------------+------------+------------+
+       *                    ^            ^            ^            ^
+       *         (pos+nelem)%a->size    pos        a->size   malloced_size
+       *
+       *       +------------+------------+------------+------------+
+       * New:  |############|............|000000000000|############|
+       *       +------------+------------+------------+------------+
+       *                    ^            ^            ^            ^
+       *         (pos+nelem)%a->size pos-elems       pos        a->size
+       */
       THIS->a->size = size;
+      THIS->a->type_field |= BIT_INT;
       if (THIS->size > 0)
       {
 	memmove(ITEM(THIS->a)+(size-endpos),
@@ -524,25 +537,43 @@ PIKECLASS CircularList
 		 integer, 0);
 	elements--;
       }
-      THIS->a->type_field |= BIT_INT;
     }
     else
     {
+      /*       +------------+------------+------------+
+       * Orig: |############|............|############|
+       *       +------------+------------+------------+
+       *                    ^            ^            ^
+       *          (pos+nelem)%a->size   pos        a->size
+       *
+       *       +------------+------------+------------+------------+
+       * New:  |############|############|............|000000000000|
+       *       +------------+------------+------------+------------+
+       *       ^                         ^                         ^
+       *      pos                   (pos+nelem)                 a->size
+       */
       struct array *a;
       a=allocate_array_no_init(size,  (THIS->a->size >> 1) + 4);
-      a->type_field = THIS->a->type_field;
+      a->type_field = THIS->a->type_field | BIT_INT;
       if (THIS->size >0)
       {
-	//copy from pos to end
-	assign_svalues_no_free(ITEM(a), 
-			       ITEM(THIS->a)+(THIS->pos), 
-			       endpos, 
+        // Copy from pos to orig_size.
+	assign_svalues_no_free(ITEM(a),
+			       ITEM(THIS->a)+(THIS->pos),
+			       endpos,
 			       THIS->a->type_field);
-	//copy from start to size
-	assign_svalues_no_free(ITEM(a)+endpos, 
-			       ITEM(THIS->a), 
-			       THIS->size-endpos, 
+        // Copy from start to pos.
+	assign_svalues_no_free(ITEM(a)+endpos,
+			       ITEM(THIS->a),
+                               THIS->pos,
 			       THIS->a->type_field);
+        endpos = THIS->a->size;
+      } else {
+        endpos = 0;
+      }
+      while (endpos < size) {
+        SET_SVAL(ITEM(a)[endpos], T_INT, NUMBER_NUMBER, integer, 0);
+        endpos++;
       }
       free_array(THIS->a);
       THIS->a=a;
