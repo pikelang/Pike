@@ -821,8 +821,8 @@ PIKECLASS CircularList
       /* Move the old contents to the new array.
        *
        * NB: We cheat by knowing that T_INT is 0,
-       *     do that we do not need to care about
-       *     reference counting.
+       *     due to this we do not need to care
+       *     about reference counting.
        */
 
       should_copy();

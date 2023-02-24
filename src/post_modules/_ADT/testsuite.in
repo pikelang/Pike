@@ -1121,6 +1121,21 @@ test_any([[
   return k;
 ]], -1)
 
+test_any([[
+  // Same, but using set_max_size() instead of allocate().
+  int k;
+  object a = _ADT.CircularList(10);
+  for (int i = 0; i < 10; i++) {
+    int j = random(a->max_size() - sizeof(a));
+    while (j--) a->push_back(k++);
+    a->set_max_size(a->max_size() + random(23) + 1);
+  }
+  while (k--) {
+    if (a->pop_back() != k) break;
+  }
+  return k;
+]], -1)
+
 ************************** test copy on change *****************************
 
 
