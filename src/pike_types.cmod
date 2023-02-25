@@ -5043,7 +5043,7 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 
     type_stack_mark();
     push_finished_type(tmp);
-    if (op == PT_BINOP_AND) {
+    if (op == PT_BINOP_AND || op == PT_BINOP_MINUS) {
       push_type_attribute((struct pike_string *)(a->car));
     }
     free_type(tmp);
