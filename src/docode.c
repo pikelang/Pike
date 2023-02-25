@@ -3182,6 +3182,7 @@ INT32 do_code_block(node *n, int identifier_flags)
   struct statement_label *save_label;
   int tmp1, tmp2;
   struct lex *lex = &c->lex;
+  struct byte_buffer instrbuf_save = instrbuf;
 
   if (lex->pragmas & ID_DISASSEMBLE) {
     fprintf(stderr, "Binding locals for:\n");
@@ -3424,6 +3425,7 @@ INT32 do_code_block(node *n, int identifier_flags)
     DO_CODE_BLOCK(n);
   }
   entry_point = assemble(1);
+  instrbuf=instrbuf_save;
 
   current_stack_depth = cleanup_frame__.stack_depth;
   POP_AND_DONT_CLEANUP;
