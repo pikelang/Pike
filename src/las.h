@@ -179,6 +179,7 @@ struct node_chunk;
 void debug_free_node(node *n);
 node *debug_mknode(int token,node *a,node *b);
 node *mknestednodes(int token, ...);
+void set_node_name(node *n, struct pike_string *name);
 node *debug_mkstrnode(struct pike_string *str);
 node *debug_mkintnode(INT_TYPE nr);
 node *debug_mknewintnode(INT_TYPE nr);

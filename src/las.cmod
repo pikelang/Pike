@@ -1174,6 +1174,12 @@ node *mknestednodes(int token, ...)
   return res;
 }
 
+void set_node_name(node *n, struct pike_string *name)
+{
+  if (!n || !name || n->name) return;
+  add_ref(n->name = name);
+}
+
 node *debug_mkstrnode(struct pike_string *str)
 {
   node *res = mkemptynode();
