@@ -2123,7 +2123,9 @@ node *index_node(node * const n, char *node_name, struct pike_string *id)
   ret=mkconstantsvaluenode(Pike_sp-1);
   pop_stack();
 
-  if (n->name) {
+  if (!n) {
+    set_node_name(ret, id);
+  } else if n->name) {
     ref_push_string(n->name);
     if (n->name->len &&
         (index_shared_string(n->name, n->name->len - 1) == ':')) {
