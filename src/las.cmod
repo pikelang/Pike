@@ -2122,6 +2122,22 @@ node *index_node(node * const n, char *node_name, struct pike_string *id)
   UNSETJMP(tmp);
   ret=mkconstantsvaluenode(Pike_sp-1);
   pop_stack();
+
+  if (n->name) {
+    ref_push_string(n->name);
+    if (n->name->len &&
+        (index_shared_string(n->name, n->name->len - 1) == ':')) {
+      /* Scope. No need for a separator dot. */
+      push_text("");
+    } else {
+      push_text(".");
+    }
+    ref_push_string(id);
+    f_add(3);
+    set_node_name(ret, Pike_sp[-1].u.string);
+    pop_stack();
+  }
+
   return ret;
 }
 

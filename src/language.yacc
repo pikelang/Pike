@@ -4127,6 +4127,8 @@ qualified_ident:
     copy_shared_string(Pike_compiler->last_identifier, $3->u.sval.u.string);
 
     tmp2 = mkconstantsvaluenode(&c->default_module);
+    set_node_name(tmp2, predef_scope_string);
+
     $$ = index_node(tmp2, "predef", $3->u.sval.u.string);
     if(!$$->name)
       add_ref( $$->name=$3->u.sval.u.string );
@@ -4944,6 +4946,8 @@ low_id_expr: TOK_IDENTIFIER
 	$$=mknode(F_UNDEFINED,0,0);
       }
     }
+
+    set_node_name($$, $1->name);
     free_node($1);
   }
   | '.' TOK_IDENTIFIER
@@ -4951,7 +4955,9 @@ low_id_expr: TOK_IDENTIFIER
     push_constant_text("");
     if (call_handle_import()) {
       node *tmp=mkconstantsvaluenode(Pike_sp-1);
+      set_node_name(tmp, empty_pike_string);
       pop_stack();
+
       $$=index_node(tmp, ".", $2->u.sval.u.string);
       free_node(tmp);
     }
@@ -5762,9 +5768,13 @@ static node *lexical_islocal(struct pike_string *str)
     {
       if(f->local_names[e].name==str)
       {
+        node *n;
 	f->local_names[e].flags |= LOCAL_VAR_IS_USED;
 
-	return mklocalnode(e,depth);
+        n = mklocalnode(e, depth);
+        set_node_name(n, str);
+
+        return n;
       }
     }
     if(!(f->lexical_scope & SCOPE_LOCAL)) return 0;
@@ -5844,6 +5854,17 @@ static node *find_versioned_identifier(struct pike_string *identifier,
     }else{
       res = mknode(F_UNDEFINED, 0, 0);
     }
+  }
+
+  if (res) {
+    push_int(major);
+    push_text(".");
+    push_int(minor);
+    push_text("::");
+    ref_push_string(identifier);
+    f_add(5);
+    set_node_name(res, Pike_sp[-1].u.string);
+    pop_stack();
   }
 
   change_compiler_compatibility(old_major, old_minor);
