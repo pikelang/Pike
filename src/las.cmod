@@ -4254,7 +4254,7 @@ void fix_type_field(node *n)
 
 #ifdef PIKE_DEBUG
       if (l_flag>2)
-	safe_pike_fprintf (stderr, "Checking call to %S at %S:%ld.\n", name,
+	safe_pike_fprintf (stderr, "Checking call to %pS at %pS:%ld.\n", name,
 			   n->current_file, (long)n->line_number);
 #endif /* PIKE_DEBUG */
 

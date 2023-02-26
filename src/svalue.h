@@ -935,10 +935,12 @@ PMOD_EXPORT void safe_print_svalue_compact (FILE *out, const struct svalue *s);
 PMOD_EXPORT void print_short_svalue_compact (FILE *out, const union anything *a, TYPE_T type);
 PMOD_EXPORT void safe_print_short_svalue_compact (FILE *out, const union anything *a, TYPE_T type);
 PMOD_EXPORT void pike_vfprintf (FILE *out, const char *fmt, va_list args);
-PMOD_EXPORT void pike_fprintf (FILE *out, const char *fmt, ...);
+PMOD_EXPORT void pike_fprintf (FILE *out, const char *fmt, ...)
+  ATTRIBUTE((format (printf, 2, 3)));
 #ifdef PIKE_DEBUG
 PMOD_EXPORT void safe_pike_vfprintf (FILE *out, const char *fmt, va_list args);
-PMOD_EXPORT void safe_pike_fprintf (FILE *out, const char *fmt, ...);
+PMOD_EXPORT void safe_pike_fprintf (FILE *out, const char *fmt, ...)
+  ATTRIBUTE((format (printf, 2, 3)));
 #else
 #define safe_pike_vfprintf		pike_vfprintf
 #define safe_pike_fprintf		pike_fprintf

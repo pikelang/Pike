@@ -4071,7 +4071,7 @@ void dump_program_desc(struct program *p)
       while (node) {
 	if (TYPEOF(node->i.ind) != T_DELETED) {
 	  low_push_multiset_index(node);
-	  safe_pike_fprintf(stderr, "  %O\n", Pike_sp-1);
+	  safe_pike_fprintf(stderr, "  %pO\n", Pike_sp-1);
 	  pop_stack();
 	}
 	node = low_multiset_next(node);
@@ -4148,7 +4148,7 @@ void dump_program_desc(struct program *p)
 	   node;
 	   node = low_multiset_next(node)) {
 	low_push_multiset_index(node);
-	safe_pike_fprintf(stderr, "    %O\n", Pike_sp-1);
+	safe_pike_fprintf(stderr, "    %pO\n", Pike_sp-1);
 	pop_stack();
       }
     }
@@ -4338,7 +4338,7 @@ PMOD_EXPORT void dump_program_tables (const struct program *p, int indent)
       for (i = 0; node; (node = low_multiset_next(node)), i++) {
 	fprintf(stderr, "%*s        annotation #%d: ", indent, "", i);
 	low_push_multiset_index(node);
-	safe_pike_fprintf(stderr, "%O\n", Pike_sp-1);
+	safe_pike_fprintf(stderr, "%pO\n", Pike_sp-1);
 	pop_stack();
       }
     }
@@ -4365,7 +4365,7 @@ PMOD_EXPORT void dump_program_tables (const struct program *p, int indent)
       for (i = 0; node; (node = low_multiset_next(node)), i++) {
 	fprintf(stderr, "%*s        annotation #%d: ", indent, "", i);
 	low_push_multiset_index(node);
-	safe_pike_fprintf(stderr, "%O\n", Pike_sp-1);
+	safe_pike_fprintf(stderr, "%pO\n", Pike_sp-1);
 	pop_stack();
       }
     }

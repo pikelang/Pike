@@ -59,11 +59,11 @@ static void dump_arg(int arg, int argt)
     fprintf(stderr, "%s", get_name_of_type(arg));
     break;
   case I_ARG_T_GLOBAL:
-    safe_pike_fprintf(stderr, "%S",
+    safe_pike_fprintf(stderr, "%pS",
                       ID_FROM_INT(Pike_compiler->new_program, arg)->name);
     break;
   case I_ARG_T_STRING:
-    safe_pike_fprintf(stderr, "%q",
+    safe_pike_fprintf(stderr, "%pq",
                       Pike_compiler->new_program->strings[arg]);
     break;
   }
