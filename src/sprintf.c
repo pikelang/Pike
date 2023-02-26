@@ -2715,6 +2715,8 @@ static struct array *parse_sprintf_argument_types(PCHARP format,
       case 'p':
       {
 	push_type(T_MIXED);
+        if ('f' > max_char) max_char = 'f';
+        if ('+' < min_char) min_char = '+';
 	break;
       }
       case 'H':
