@@ -772,7 +772,11 @@ int main(int argc, array(string) argv)
   if (mantissa_bits > 23) {
     // 32-bit IEEE has 23 bits mantissa.
     // 64-bit IEEE has 52-bits mantissa.
+    // 128-bit IEEE has 112-bits mantissa.
+    // IBM 128-bit has 106-bits mantissa.
     mantissa_bits -= 3;
+    if (mantissa_bits > 52)
+      mantissa_bits -= 10;
   }
 
   // NB: Allow fluctuation in the least significant decimal digit (ie 4bits).
