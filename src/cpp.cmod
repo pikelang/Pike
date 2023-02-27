@@ -570,12 +570,16 @@ static void cpp_report_vsprintf(struct CPP_struct *this, int severity,
   ATTRIBUTE((noinline));
 static void cpp_report(struct CPP_struct *this, int severity,
 		       const char *fmt, ...)
+  ATTRIBUTE((noinline)) ATTRIBUTE((format (printf, 3, 4)));
+static void cpp_error(struct CPP_struct *this, const char *err)
   ATTRIBUTE((noinline));
-static void cpp_error(struct CPP_struct *this, const char *err) ATTRIBUTE((noinline));
-static void cpp_error_sprintf(struct CPP_struct *this, const char *fmt, ...) ATTRIBUTE((noinline));
+static void cpp_error_sprintf(struct CPP_struct *this, const char *fmt, ...)
+  ATTRIBUTE((noinline)) ATTRIBUTE((format (printf, 2, 3)));
 static void cpp_handle_exception(struct CPP_struct *this,
-				 const char *cpp_error_fmt, ...) ATTRIBUTE((noinline));
-static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...) ATTRIBUTE((noinline));
+                                 const char *cpp_error_fmt, ...)
+  ATTRIBUTE((noinline)) ATTRIBUTE((format (printf, 2, 3)));
+static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
+  ATTRIBUTE((noinline)) ATTRIBUTE((format (printf, 2, 3)));
 struct define_struct *defined_macro = NULL;
 static struct svalue defined_macro_sval;
 
@@ -725,7 +729,7 @@ static void cpp_handle_exception(struct CPP_struct *this,
     }
   }
   if (msg) {
-    cpp_report(this, REPORT_ERROR, "%S", msg);
+    cpp_report(this, REPORT_ERROR, "%pS", msg);
   }
 
   pop_stack();
@@ -1382,7 +1386,7 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
     struct CPP_struct *this = THIS;
 
     if (OUTP()) {
-      cpp_error_sprintf(this, "%O", Pike_sp - 1);
+      cpp_error_sprintf(this, "%pO", Pike_sp - 1);
     }
     push_empty_string();
   }
@@ -1409,7 +1413,7 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
     struct CPP_struct *this = THIS;
 
     if (OUTP()) {
-      cpp_warning(this, "%O", Pike_sp - 1);
+      cpp_warning(this, "%pO", Pike_sp - 1);
     }
     push_empty_string();
   }
@@ -1657,7 +1661,7 @@ static int do_safe_index_call(struct CPP_struct *this, struct pike_string *s)
 
   if (SETJMP_SP(recovery, 1)) {
     if(this->picky_cpp)
-      cpp_warning (this, "Error indexing module with %S.", s);
+      cpp_warning (this, "Error indexing module with %pS.", s);
     res = 0;
     push_undefined();
   } else {
@@ -1732,7 +1736,7 @@ static void cpp_constant(struct CPP_struct *this, int value)
 	    (TYPEOF(Pike_sp[-1]) == T_PROGRAM &&
 	     Pike_sp[-1].u.program == placeholder_program)) {
 	  cpp_error_sprintf (this, "Got placeholder %s (resolver problem) "
-			     "when resolving %S.",
+                             "when resolving %pS.",
 			     get_name_of_type(TYPEOF(Pike_sp[-1])),
 			     str);
 	}
@@ -1746,7 +1750,7 @@ static void cpp_constant(struct CPP_struct *this, int value)
 	mark_free_svalue (&throw_value);
 	res = 0;
       } else if(this->picky_cpp) {
-	cpp_warning (this, "Error resolving %S.", str);
+        cpp_warning (this, "Error resolving %pS.", str);
 	res = 0;
       }
     }
@@ -2593,7 +2597,7 @@ static struct pike_string *recode_string(struct CPP_struct *this, struct pike_st
 
     if (!safe_apply_current(f_CPP_decode_charset_fun_num, 2) ||
 	(TYPEOF(Pike_sp[-1]) != PIKE_T_STRING)) {
-      cpp_handle_exception (this, "Error decoding with charset %S", new_str);
+      cpp_handle_exception (this, "Error decoding with charset %pS", new_str);
       free_string (new_str);
       return data;
     }
@@ -3015,7 +3019,7 @@ static ptrdiff_t calcC(struct CPP_struct *this, PCHARP data, ptrdiff_t len,
 	    if (pos > len) {
 	      INT_TYPE old_line = this->current_line;
 	      this->current_line = start_line;
-	      cpp_error_sprintf(this, "Missing ) in the meta function %S().",
+              cpp_error_sprintf(this, "Missing ) in the meta function %pS().",
 				func_name);
 	      this->current_line = old_line;
 	      free_string (func_name);
@@ -3040,7 +3044,7 @@ static ptrdiff_t calcC(struct CPP_struct *this, PCHARP data, ptrdiff_t len,
 	if(!GOBBLE(')')) {
 	  INT_TYPE old_line = this->current_line;
 	  this->current_line = start_line;
-	  cpp_error_sprintf(this, "Missing ) in the meta function %S().",
+          cpp_error_sprintf(this, "Missing ) in the meta function %pS().",
 			    func_name);
 	  this->current_line = old_line;
 	}
@@ -3048,7 +3052,7 @@ static ptrdiff_t calcC(struct CPP_struct *this, PCHARP data, ptrdiff_t len,
 	if(OUTP())
         {
           if (arg != 1) {
-            cpp_error_sprintf(this, "Bad number of arguments to %S().",
+            cpp_error_sprintf(this, "Bad number of arguments to %pS().",
                               func_name);
             pop_n_elems(arg);
             push_int(0);
@@ -3804,7 +3808,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
 
               if(!GOBBLE(')')) {
                 this->current_line = start_line;
-                cpp_error_sprintf(this, "Missing ) in the macro %S.", d->name);
+                cpp_error_sprintf(this, "Missing ) in the macro %pS.", d->name);
               }
             } else {
 	      push_undefined();
@@ -4129,7 +4133,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
                       pop_n_elems(Pike_sp-save_sp);
                       break;
                     } else if (TYPEOF(Pike_sp[-1]) == PIKE_T_INT) {
-                      cpp_error_sprintf(this, "Couldn't read include file \"%S\".",
+                      cpp_error_sprintf(this, "Couldn't read include file %pq.",
                                         new_file);
                       pop_n_elems(Pike_sp-save_sp);
                       break;
@@ -4795,11 +4799,11 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
               }
 
               if (directive) {
-                cpp_error_sprintf(this, "Unknown preprocessor directive %S.",
+                cpp_error_sprintf(this, "Unknown preprocessor directive %pS.",
                                   directive);
                 free_string(directive);
               } else {
-                cpp_error_sprintf(this, "Invalid preprocessor directive character at %d: '%c'.",
+                cpp_error_sprintf(this, "Invalid preprocessor directive character at %td: '%c'.",
                                   pos, DATA(pos));
               }
             }
@@ -4872,7 +4876,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
       ref_push_string(this->charset);
       apply_current(f_CPP_decode_charset_fun_num, 2);
       if (TYPEOF(Pike_sp[-1]) != PIKE_T_STRING) {
-	cpp_handle_exception (this, "Error decoding with charset %S",
+        cpp_handle_exception (this, "Error decoding with charset %pS",
 			      THIS->charset);
 	Pike_error("Unknown charset.\n");
       }
