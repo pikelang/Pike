@@ -4671,6 +4671,7 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
     /* (a1 | a2) op b  <==> (a1 op b) | (a2 op b) */
     {
       struct mapping *orig_markers = NULL;
+      struct mapping *orig_markers_other = NULL;
       int marker_set = !!(remap_flags & PT_FLAG_REMAP_SWAP_MARKERS);
       if (remap) {
 	/* Do not propagate marker changes between the branches
@@ -4681,8 +4682,16 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	 */
 	orig_markers = remap->markers[marker_set];
 	remap->markers[marker_set] = copy_mapping(orig_markers);
+        orig_markers_other = remap->markers[marker_set ^ 1];
+        remap->markers[marker_set ^ 1] = copy_mapping(orig_markers_other);
       }
       tmp = low_type_binop(op, a->car, b, remap, aflags, bflags, remap_flags);
+      if (remap && !tmp) {
+        /* Unification failed, discard other side marker changes */
+        do_free_mapping(remap->markers[marker_set ^ 1]);
+        remap->markers[marker_set ^ 1] = orig_markers_other;
+      } else if(orig_markers_other)
+        free_mapping(orig_markers_other);
       /* NB: We need to examine b closer even in inexact mode if
        *     there are marker assignments in b.
        */
@@ -4776,6 +4785,7 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
   case T_OR:
     {
       struct mapping *orig_markers = NULL;
+      struct mapping *orig_markers_other = NULL;
       int marker_set = !(remap_flags & PT_FLAG_REMAP_SWAP_MARKERS);
       if (remap) {
 	/* Do not propagate marker changes between the branches
@@ -4786,9 +4796,17 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	 */
 	orig_markers = remap->markers[marker_set];
 	remap->markers[marker_set] = copy_mapping(orig_markers);
+        orig_markers_other = remap->markers[marker_set ^ 1];
+        remap->markers[marker_set ^ 1] = copy_mapping(orig_markers_other);
       }
 
       tmp = low_type_binop(op, a, b->car, remap, aflags, bflags, remap_flags);
+      if (remap && !tmp) {
+        /* Unification failed, discard other side marker changes */
+        do_free_mapping(remap->markers[marker_set ^ 1]);
+        remap->markers[marker_set ^ 1] = orig_markers_other;
+      } else if(orig_markers_other)
+        free_mapping(orig_markers_other);
       if (remap_flags & PT_FLAG_REMAP_INEXACT) {
 	if (tmp && (op == PT_BINOP_AND)) {
 	  if (orig_markers) {
