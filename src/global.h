@@ -449,6 +449,7 @@ void *alloca();
 #  define PIKEFLOAT_MIN		LDBL_MIN
 #  define PIKEFLOAT_EPSILON	LDBL_EPSILON
 #  define PRINTPIKEFLOAT	"L"
+#  define PIKEFLOAT_C(c)        c ## L
 
 #elif defined(WITH_DOUBLE_PRECISION_SVALUE)
 
@@ -462,6 +463,7 @@ void *alloca();
 #  define PIKEFLOAT_MIN		DBL_MIN
 #  define PIKEFLOAT_EPSILON	DBL_EPSILON
 #  define PRINTPIKEFLOAT	""
+#  define PIKEFLOAT_C(c)        c
 
 #else
 
@@ -476,6 +478,7 @@ void *alloca();
 #  define PIKEFLOAT_EPSILON	FLT_EPSILON
 #  define PRINTPIKEFLOAT	""
 #  define FLOAT_ARG_TYPE	double
+#  define PIKEFLOAT_C(c)        c
 
 #endif
 

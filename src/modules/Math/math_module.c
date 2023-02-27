@@ -97,8 +97,8 @@ PIKE_MODULE_INIT
       else free_program(p);
    }
 
-   add_float_constant("pi",3.14159265358979323846  ,ID_LOCAL);
-   add_float_constant("e", 2.7182818284590452354   ,ID_LOCAL);
+   add_float_constant("pi",PIKEFLOAT_C(3.1415926535897932384626433832795029),ID_LOCAL);
+   add_float_constant("e", PIKEFLOAT_C(2.7182818284590452353602874713526625),ID_LOCAL);
    add_float_constant("inf", MAKE_INF(), ID_LOCAL);
    add_float_constant("nan", MAKE_NAN(), ID_LOCAL);
 #ifdef HAS_MPI
