@@ -1171,6 +1171,9 @@ int mspace_mallopt(int, int);
 #include <assert.h>
 #endif /* ABORT_ON_ASSERT_FAILURE */
 #else  /* DEBUG */
+#ifdef assert /* PIKE change */
+#undef assert /* PIKE change */
+#endif        /* PIKE change */
 #define assert(x)
 #endif /* DEBUG */
 #ifndef LACKS_STRING_H
