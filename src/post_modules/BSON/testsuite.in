@@ -13,10 +13,14 @@ define(test_enc,[[
   test_equal(String.string2hex(Standards.BSON.encode([[$1]])),[[$2]])
 ]])
 
-define(test_enc_dec,[[
-    test_equal(Standards.BSON.decode(Standards.BSON.encode(([ "foo" : [[$1]] ]))), ([ "foo" : [[$1]] ]))
-    test_equal(Standards.BSON.decode(Stdio.Buffer(Standards.BSON.encode(([ "foo" : [[$1]] ])))), ([ "foo" : [[$1]] ]))
+define(test_enc_dec2,[[
+    test_equal(Standards.BSON.decode(Standards.BSON.encode(([ "foo" : [[$1]] ]))), ([ "foo" : [[$2]] ]))
+    test_equal(Standards.BSON.decode(Stdio.Buffer(Standards.BSON.encode(([ "foo" : [[$1]] ])))), ([ "foo" : [[$2]] ]))
 ]])
+
+define(test_enc_dec,[[test_enc_dec2([[$1]], [[$1]])]])
+
+define(round_to_double,[[ array_sscanf(sprintf("%8F",[[$1]]),"%8F")[0] ]])
 
 test_true(Val.true)
 
@@ -36,7 +40,8 @@ test_dec("1\0\0\0\4BSON\0&\0\0\0\1""1\0"+ "333333\24@\2"+ "0\0\b\0\0\0awesome\0\
 test_enc_dec(Val.null)
 test_enc_dec(Val.false)
 test_enc_dec(Val.true)
-test_enc_dec(({ 2.153927570104519936e+18, Math.e, Math.pi, Math.inf }));
+test_enc_dec2(({ 2.153927570104519936e+18, Math.e, Math.pi, Math.inf }),
+              ({ 2.153927570104519936e+18, round_to_double(Math.e), round_to_double(Math.pi), Math.inf }))
 test_enc_dec(({ -0xdeadbeefbadf00d, 0xbadf00ddeadbeef }))
 test_enc_dec(Calendar.ISO.Second("unix", 1426759260))
 test_enc_dec(Standards.BSON.Timestamp(0xdeadbeef, 0xcafebabe))
