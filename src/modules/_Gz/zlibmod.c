@@ -163,16 +163,13 @@ static void gz_deflate_create(INT32 args)
       Pike_error("Invalid window size for gz_deflate->create().\n");
   }
 
-#define TTS(type)	(((type) == PIKE_T_STRING && "string")	\
-		      || ((type) == PIKE_T_MAPPING && "mapping")\
-		      || ((type) == PIKE_T_ARRAY && "array")	\
-		      || ((type) == PIKE_T_FLOAT && "float")	\
-		      || ((type) == PIKE_T_INT && "int")	\
-		      || ((type) == PIKE_T_OBJECT && "object")	\
-		      || "mixed")
-#define GET_TYPE(type, name)	((tmp = simple_mapping_string_lookup(m, name)) \
-   && (TYPEOF(*(tmp)) == PIKE_T_##type || (Pike_error("Expected type %s,"\
-       "got type %s for " name ".", TTS(PIKE_T_##type), TTS(TYPEOF(*tmp))), 0)))
+#define GET_TYPE(type, name)						\
+  ((tmp = simple_mapping_string_lookup(m, name))			\
+   && (TYPEOF(*(tmp)) == PIKE_T_##type ||				\
+       (Pike_error("Expected type %s, got type %s for " name ".",	\
+                   get_name_of_type(PIKE_T_##type),			\
+                   get_name_of_type(TYPEOF(*tmp))), 0)))
+
   if(args)
   {
     if (TYPEOF(sp[-args]) == T_MAPPING && args == 1) {
