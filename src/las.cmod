@@ -1927,7 +1927,7 @@ void resolv_type(node *n)
   pop_stack();
 }
 
-node *index_node(node * const n, char *node_name, struct pike_string *id)
+node *index_node(node * const n, struct pike_string *id)
 {
   node *ret;
   JMP_BUF tmp;
@@ -1946,10 +1946,11 @@ node *index_node(node * const n, char *node_name, struct pike_string *id)
 
   if(SETJMP(tmp))
   {
-    if (node_name) {
-      handle_compile_exception ("Couldn't index module %s.", node_name);
+    if (n && n->name) {
+      handle_compile_exception("Couldn't index module %pS with '%pS'.",
+                               n->name, id);
     } else {
-      handle_compile_exception ("Couldn't index module.");
+      handle_compile_exception("Couldn't index module with '%pS'.", id);
     }
   }else{
     resolv_constant(n);
@@ -1958,12 +1959,12 @@ node *index_node(node * const n, char *node_name, struct pike_string *id)
     case T_INT:
       if (!Pike_sp[-1].u.integer) {
 	if(!Pike_compiler->num_parse_error) {
-	  if (node_name) {
-	    my_yyerror("Failed to index module %s with '%S'. "
+          if (n->name) {
+            my_yyerror("Failed to index module %pS with '%pS'. "
 		       "(Module doesn't exist?)",
-		       node_name, id);
+                       n->name, id);
 	  } else {
-	    my_yyerror("Failed to index module with '%S'. "
+            my_yyerror("Failed to index module with '%pS'. "
 		       "(Module doesn't exist?)",
 		       id);
 	  }
@@ -1975,9 +1976,9 @@ node *index_node(node * const n, char *node_name, struct pike_string *id)
     case T_FLOAT:
     case T_STRING:
     case T_ARRAY:
-      if (node_name) {
-	my_yyerror("Failed to index module %s, got %s. (Not a module?)",
-		   node_name, get_name_of_type (TYPEOF(Pike_sp[-1])));
+      if (n->name) {
+        my_yyerror("Failed to index module %pS, got %s. (Not a module?)",
+                   n->name, get_name_of_type (TYPEOF(Pike_sp[-1])));
       } else {
 	my_yyerror("Failed to index a module, got %s. (Not a module?)",
 		   get_name_of_type (TYPEOF(Pike_sp[-1])));
@@ -2020,7 +2021,7 @@ node *index_node(node * const n, char *node_name, struct pike_string *id)
       c = PTR_TO_INT(BEGIN_CYCLIC(Pike_sp[-1].u.refs, id));
       if(c>1)
       {
-	my_yyerror("Recursive module dependency when indexing with '%S'.", id);
+        my_yyerror("Recursive module dependency when indexing with '%pS'.", id);
 	pop_stack();
 	push_int(0);
       }else{
@@ -2031,12 +2032,12 @@ node *index_node(node * const n, char *node_name, struct pike_string *id)
 	  JMP_BUF recovery;
 	  STACK_LEVEL_START(2);
 	  if (SETJMP_SP(recovery, 2)) {
-	    if (node_name) {
-	      handle_compile_exception ("Error looking up '%S' in module %s.",
-					id, node_name);
+            if (n->name) {
+              handle_compile_exception("Error looking up '%pS' in module %pS.",
+                                       id, n->name);
 	    } else {
-	      handle_compile_exception ("Error looking up '%S' in module.",
-					id);
+              handle_compile_exception("Error looking up '%pS' in module.",
+                                       id);
 	    }
 	    push_undefined();
 	    exception = 1;
@@ -2055,11 +2056,11 @@ node *index_node(node * const n, char *node_name, struct pike_string *id)
 	  {
 	    if (!exception) {
 	      struct compilation *c = THIS_COMPILATION;
-	      if (node_name) {
-		my_yyerror("Index '%S' not present in module %s.",
-			   id, node_name);
+              if (n->name) {
+                my_yyerror("Index '%pS' not present in module %pS.",
+                           id, n->name);
 	      } else {
-		my_yyerror("Index '%S' not present in module.", id);
+                my_yyerror("Index '%pS' not present in module.", id);
 	      }
 	      resolv_constant(n);
 	      low_yyreport(REPORT_ERROR, NULL, 0, parser_system_string,
@@ -2084,15 +2085,15 @@ node *index_node(node * const n, char *node_name, struct pike_string *id)
 		Pike_sp[-1].u.program == placeholder_program)) &&
 	      /* Ugly special case: We must be able to get
 	       * predef::__placeholder_object. */
-	      (!node_name || strcmp (node_name, "predef"))) {
-	    if (node_name)
+              (n->name != predef_scope_string)) {
+            if (n->name)
 	      my_yyerror("Got placeholder %s when indexing "
-			 "module %s with '%S'. (Resolver problem.)",
+                         "module %pS with '%pS'. (Resolver problem.)",
 			 get_name_of_type (TYPEOF(Pike_sp[-1])),
-			 node_name, id);
+                         n->name, id);
 	    else
 	      my_yyerror("Got placeholder %s when indexing "
-			 "module with '%S'. (Resolver problem.)",
+                         "module with '%pS'. (Resolver problem.)",
 			 get_name_of_type (TYPEOF(Pike_sp[-1])),
 			 id);
 	  }

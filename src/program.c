@@ -2275,9 +2275,9 @@ struct node_s *find_predef_identifier(struct pike_string *ident)
 {
   struct compilation *c = THIS_COMPILATION;
   node *tmp = mkconstantsvaluenode(&c->default_module);
-  node *ret = index_node(tmp, "predef", ident);
-  if(ret && !ret->name)
-    add_ref(ret->name = ident);
+  node *ret;
+  set_node_name(tmp, predef_scope_string);
+  ret = index_node(tmp, ident);
   free_node(tmp);
   return ret;
 }
@@ -2364,6 +2364,8 @@ struct node_s *resolve_identifier(struct pike_string *ident)
   if (low_resolve_identifier(ident)) {
     ret = mkconstantsvaluenode(Pike_sp-1);
     pop_stack();
+
+    set_node_name(ret, ident);
   }
   return ret;
 }
@@ -2447,6 +2449,13 @@ struct node_s *find_inherited_identifier(struct program_state *inherit_state,
     }
     if (res) {
       if (res->token == F_ARG_LIST) res = mkefuncallnode("aggregate", res);
+
+      push_text("::");
+      ref_push_string(ident);
+      f_add(2);
+      set_node_name(res, Pike_sp[-1].u.string);
+      pop_stack();
+
       return res;
     }
 

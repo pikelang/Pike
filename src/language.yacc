@@ -4106,8 +4106,7 @@ literal_expr: string
 unqualified_id_expr: low_id_expr
   | unqualified_id_expr '.' TOK_IDENTIFIER
   {
-    $$=index_node($1, Pike_compiler->last_identifier?Pike_compiler->last_identifier->str:NULL,
-                  $3->u.sval.u.string);
+    $$ = index_node($1, $3->u.sval.u.string);
     free_node($1);
     if(Pike_compiler->last_identifier) free_string(Pike_compiler->last_identifier);
     copy_shared_string(Pike_compiler->last_identifier, $3->u.sval.u.string);
@@ -4129,7 +4128,7 @@ qualified_ident:
     tmp2 = mkconstantsvaluenode(&c->default_module);
     set_node_name(tmp2, predef_scope_string);
 
-    $$ = index_node(tmp2, "predef", $3->u.sval.u.string);
+    $$ = index_node(tmp2, $3->u.sval.u.string);
     if(!$$->name)
       add_ref( $$->name=$3->u.sval.u.string );
     free_node(tmp2);
@@ -4209,8 +4208,7 @@ qualified_ident:
 qualified_id_expr: qualified_ident
   | qualified_id_expr '.' TOK_IDENTIFIER
   {
-    $$=index_node($1, Pike_compiler->last_identifier?Pike_compiler->last_identifier->str:NULL,
-                  $3->u.sval.u.string);
+    $$ = index_node($1, $3->u.sval.u.string);
     free_node($1);
     if(Pike_compiler->last_identifier) free_string(Pike_compiler->last_identifier);
     copy_shared_string(Pike_compiler->last_identifier, $3->u.sval.u.string);
@@ -4393,7 +4391,7 @@ primary_expr: literal_expr
 expr4: id_expr | primary_expr
   | primary_expr '.' line_number_info TOK_IDENTIFIER
   {
-    $$=index_node($1,".",$4->u.sval.u.string);
+    $$ = index_node($1, $4->u.sval.u.string);
     COPY_LINE_NUMBER_INFO($$, $3);
     free_node ($1);
     free_node ($3);
@@ -4958,7 +4956,7 @@ low_id_expr: TOK_IDENTIFIER
       set_node_name(tmp, empty_pike_string);
       pop_stack();
 
-      $$=index_node(tmp, ".", $2->u.sval.u.string);
+      $$ = index_node(tmp, $2->u.sval.u.string);
       free_node(tmp);
     }
     else
