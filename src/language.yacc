@@ -366,7 +366,6 @@ int yylex(YYSTYPE *yylval);
 %type <n> qualified_id_expr
 %type <n> id_expr
 %type <n> primary_expr
-%type <n> expr4
 %type <n> postfix_expr
 %type <n> pow_expr
 %type <n> unary_expr
@@ -4231,26 +4230,34 @@ primary_expr: literal_expr
   | implicit_modifiers anon_class { $$ = $2; }
   | implicit_modifiers enum { $$ = $2; }
   | apply
-  | expr4 open_bracket_with_line_info '*' ']'
+  | primary_expr '.' line_number_info TOK_IDENTIFIER
+  {
+    $$ = index_node($1, $4->u.sval.u.string);
+    COPY_LINE_NUMBER_INFO($$, $3);
+    free_node ($1);
+    free_node ($3);
+    free_node ($4);
+  }
+  | postfix_expr open_bracket_with_line_info '*' ']'
   {
     $$=mknode(F_AUTO_MAP_MARKER, $1, 0);
     COPY_LINE_NUMBER_INFO($$, $2);
     free_node ($2);
   }
-  | expr4 open_bracket_with_line_info assignment_expr ']'
+  | postfix_expr open_bracket_with_line_info assignment_expr ']'
   {
     $$=mknode(F_INDEX,$1,$3);
     COPY_LINE_NUMBER_INFO($$, $2);
     free_node ($2);
   }
-  | expr4 open_bracket_with_line_info
+  | postfix_expr open_bracket_with_line_info
     range_bound expected_dot_dot range_bound ']'
   {
     $$=mknode(F_RANGE,$1,mknode(':',$3,$5));
     COPY_LINE_NUMBER_INFO($$, $2);
     free_node ($2);
   }
-  | expr4 TOK_SAFE_START_INDEX line_number_info assignment_expr ']'
+  | postfix_expr TOK_SAFE_START_INDEX line_number_info assignment_expr ']'
   {
     /* A[?X] to ((tmp=A) && tmp[X]) */
     if( $1 && ($1->token == F_LOCAL) )
@@ -4281,7 +4288,7 @@ primary_expr: literal_expr
     COPY_LINE_NUMBER_INFO($$, $3);
     free_node ($3);
   }
-  | expr4 TOK_SAFE_START_INDEX  line_number_info
+  | postfix_expr TOK_SAFE_START_INDEX  line_number_info
     range_bound expected_dot_dot range_bound ']'
   {
     /* A[?X..Y] to ((tmp=A) && tmp[X..Y]) */
@@ -4314,23 +4321,23 @@ primary_expr: literal_expr
     COPY_LINE_NUMBER_INFO($$, $3);
     free_node ($3);
   }
-  | expr4 open_bracket_with_line_info error ']'
+  | postfix_expr open_bracket_with_line_info error ']'
   {
     $$=$1;
     free_node ($2);
     yyerrok;
   }
-  | expr4 open_bracket_with_line_info error TOK_LEX_EOF
+  | postfix_expr open_bracket_with_line_info error TOK_LEX_EOF
   {
     $$=$1; yyerror("Missing ']'.");
     yyerror("Unexpected end of file.");
     free_node ($2);
   }
-  | expr4 open_bracket_with_line_info error ';'
+  | postfix_expr open_bracket_with_line_info error ';'
     {$$=$1; yyerror("Missing ']'."); free_node ($2);}
-  | expr4 open_bracket_with_line_info error '}'
+  | postfix_expr open_bracket_with_line_info error '}'
     {$$=$1; yyerror("Missing ']'."); free_node ($2);}
-  | expr4 open_bracket_with_line_info error ')'
+  | postfix_expr open_bracket_with_line_info error ')'
     {$$=$1; yyerror("Missing ']'."); free_node ($2);}
   | open_paren_with_line_info comma_expr ')'
     {
@@ -4348,13 +4355,13 @@ primary_expr: literal_expr
   }
   | open_paren_with_line_info error ';' { $$=$1; yyerror("Missing ')'."); }
   | open_paren_with_line_info error '}' { $$=$1; yyerror("Missing ')'."); }
-  | expr4 TOK_ARROW line_number_info magic_identifier
+  | postfix_expr TOK_ARROW line_number_info magic_identifier
   {
     $$=mknode(F_ARROW,$1,$4);
     COPY_LINE_NUMBER_INFO($$, $3);
     free_node ($3);
   }
-  | expr4 TOK_SAFE_INDEX line_number_info TOK_IDENTIFIER
+  | postfix_expr TOK_SAFE_INDEX line_number_info TOK_IDENTIFIER
   {
     /* A->?B to ((tmp=A) && tmp->B) */
     int temporary;
@@ -4385,25 +4392,14 @@ primary_expr: literal_expr
     COPY_LINE_NUMBER_INFO($$, $3);
     free_node ($3);
   }
-  | expr4 TOK_ARROW line_number_info error {$$=$1; free_node ($3);}
+  | postfix_expr TOK_ARROW line_number_info error {$$=$1; free_node ($3);}
   ;
 
-expr4: id_expr | primary_expr
-  | primary_expr '.' line_number_info TOK_IDENTIFIER
-  {
-    $$ = index_node($1, $4->u.sval.u.string);
-    COPY_LINE_NUMBER_INFO($$, $3);
-    free_node ($1);
-    free_node ($3);
-    free_node ($4);
-  }
+postfix_expr: id_expr | primary_expr
   | bad_expr_ident
   {
     $$ = mknewintnode(0);
   }
-  ;
-
-postfix_expr: expr4
   | postfix_expr TOK_INC { $$ = mknode(F_POST_INC, $1, mkintnode(1)); }
   | postfix_expr TOK_DEC { $$ = mknode(F_POST_DEC, $1, mkintnode(1)); }
   ;
@@ -4519,12 +4515,15 @@ lor_expr: land_expr
   ;
 
 cond_expr: lor_expr
-  | lor_expr '?' cond_expr ':' cond_expr { $$=mknode('?',$1,mknode(':',$3,$5)); }
+  | lor_expr '?' cond_expr ':' assignment_expr
+  {
+    $$ = mknode('?', $1, mknode(':', $3, $5));
+  }
   ;
 
 assignment_expr: cond_expr
-  | expr4 assign assignment_expr  { $$=mknode($2,$1,$3); }
-  | expr4 assign error { $$=$1; reset_type_stack(); yyerrok; }
+  | lor_expr assign assignment_expr  { $$=mknode($2,$1,$3); }
+  | lor_expr assign error { $$=$1; reset_type_stack(); yyerrok; }
   | open_bracket_with_line_info low_lvalue_list ']' low_assign assignment_expr
   {
     if (!(THIS_COMPILATION->lex.pragmas & ID_STRICT_TYPES)) {
@@ -4705,13 +4704,13 @@ optional_block: /* EMPTY */ { $$=0; }
   ;
 
 apply:
-  expr4 open_paren_with_line_info expr_list ')' optional_block
+  postfix_expr open_paren_with_line_info expr_list ')' optional_block
   {
     $$ = mkapplynode($1, mknode(F_ARG_LIST, $3, $5));
     COPY_LINE_NUMBER_INFO($$, $2);
     free_node ($2);
   }
-  | expr4 safe_apply_with_line_info expr_list ')' optional_block
+  | postfix_expr safe_apply_with_line_info expr_list ')' optional_block
   {
     /* A(?B...) to ((tmp=A) && tmp(B...)) */
     int temporary;
@@ -4742,26 +4741,26 @@ apply:
     COPY_LINE_NUMBER_INFO($$, $2);
     free_node ($2);
   }
-  | expr4 open_paren_or_safe_apply_with_line_info error ')' optional_block
+  | postfix_expr open_paren_or_safe_apply_with_line_info error ')' optional_block
   {
     $$=mkapplynode($1, $5);
     free_node ($2);
     yyerrok;
   }
-  | expr4 open_paren_or_safe_apply_with_line_info error TOK_LEX_EOF
+  | postfix_expr open_paren_or_safe_apply_with_line_info error TOK_LEX_EOF
   {
     yyerror("Missing ')'.");
     yyerror("Unexpected end of file.");
     $$=mkapplynode($1, NULL);
     free_node ($2);
   }
-  | expr4 open_paren_or_safe_apply_with_line_info error ';'
+  | postfix_expr open_paren_or_safe_apply_with_line_info error ';'
   {
     yyerror("Missing ')'.");
     $$=mkapplynode($1, NULL);
     free_node ($2);
   }
-  | expr4 open_paren_or_safe_apply_with_line_info error '}'
+  | postfix_expr open_paren_or_safe_apply_with_line_info error '}'
   {
     yyerror("Missing ')'.");
     $$=mkapplynode($1, NULL);
@@ -5129,7 +5128,7 @@ sscanf: TOK_SSCANF '(' assignment_expr ',' assignment_expr lvalue_list ')'
   | TOK_SSCANF '(' error ';' { $$=0; yyerror("Missing ')'."); }
   ;
 
-lvalue: expr4
+lvalue: postfix_expr
   | open_bracket_with_line_info low_lvalue_list ']'
   {
     $$=mknode(F_ARRAY_LVALUE, $2,0);
