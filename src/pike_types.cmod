@@ -13140,10 +13140,10 @@ struct pike_type *check_splice_call(struct pike_type *fun_type,
   } else if (!(flags & CALL_INHIBIT_WARNINGS)) {
     /* The splice values are invalid for later arguments. */
     if (!cnt && max_cnt) {
-      yywarning("In argument %d to %S: The @-operator argument must be an empty array.",
+      yywarning("In argument %d to %pS: The @-operator argument must be an empty array.",
 		cs->argno, cs->fun_name);
     } else if (c->lex.pragmas & ID_STRICT_TYPES) {
-      yywarning("In argument %d to %S: The @-operator argument has a max length of %d.",
+      yywarning("In argument %d to %pS: The @-operator argument has a max length of %d.",
 		cs->argno, cs->fun_name, cnt);
     }
   }

@@ -233,7 +233,7 @@ PIKECLASS define
 	    ref_push_string(d->name);
 	    apply(context_obj, "cpp_error", 3);
 	  } else {
-	    my_yyerror("Expected %d arguments to macro %S(), got none.",
+            my_yyerror("Expected %d arguments to macro %pS(), got none.",
 		       d->args, d->name);
 	  }
 	  push_int(0);
@@ -253,7 +253,7 @@ PIKECLASS define
 	    push_int(arguments2->size);
 	    apply(context_obj, "cpp_error", 4);
 	  } else {
-	    my_yyerror("Bad number of arguments to macro %S(), expected %d"
+            my_yyerror("Bad number of arguments to macro %pS(), expected %d"
 		       ", got %d.",
 		       d->name, d->args, arguments2->size);
 	  }
@@ -314,7 +314,7 @@ PIKECLASS define
 	      safe_apply(context_obj, "cpp_error", 2);
 	      pop_stack();
 	    } else {
-	      my_yyerror("Too few arguments to macro %S.", d->name);
+              my_yyerror("Too few arguments to macro %pS.", d->name);
 	    }
 	    free_string_builder(&s);
 	    push_int(0);
@@ -398,7 +398,7 @@ PIKECLASS define
 	    push_text(get_name_of_type(TYPEOF(Pike_sp[-3])));
 	    safe_apply(context_obj, "cpp_error", 3);
 	  } else {
-	    my_yyerror("Invalid return value from macro %S: %s (expected string).",
+            my_yyerror("Invalid return value from macro %pS: %s (expected string).",
 		       d->name, get_name_of_type(TYPEOF(Pike_sp[-1])));
 	  }
 	  free_string_builder(&s);
@@ -2360,7 +2360,7 @@ static struct define_struct *add_define(struct CPP_struct *this,
     def->parts = Pike_sp[-1].u.array;
     Pike_sp--;
   } else {
-    Pike_error("Expected zero, string or function value for predefine %q.",
+    Pike_error("Expected zero, string or function value for predefine %pq.",
 	       name);
   }
 
@@ -5688,7 +5688,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
     if (!predefs) return;
     NEW_MAPPING_LOOP (predefs->data) {
       if ((TYPEOF(k->ind) != T_STRING) || !k->ind.u.string->len) {
-	Pike_error("Expected nonempty string as predefine name, got %O.\n",
+        Pike_error("Expected nonempty string as predefine name, got %pO.\n",
 		   &k->ind);
       }
 

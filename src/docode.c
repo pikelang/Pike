@@ -1173,7 +1173,7 @@ static int do_docode2(node *n, int flags)
 #endif /* PIKE_DEBUG */
 	  f = id->func.gs_info.getter;
 	  if (f == -1) {
-	    yywarning("Variable %S lacks a getter.", id->name);
+            yywarning("Variable %pS lacks a getter.", id->name);
 	  } else if (!level) {
 	    return do_lfun_call(f + inh->identifier_level, NULL);
 	  } else {
@@ -1563,7 +1563,7 @@ static int do_docode2(node *n, int flags)
 #endif /* PIKE_DEBUG */
           f = id->func.gs_info.setter;
           if (f == -1) {
-            yywarning("Variable %S lacks a setter.", id->name);
+            yywarning("Variable %pS lacks a setter.", id->name);
           } else if (!level) {
             f += inh->identifier_level;
 	    PUSH_CLEANUP_FRAME(do_pop_mark, 0);
@@ -2476,7 +2476,7 @@ static int do_docode2(node *n, int flags)
 	    lbl_name->used = 1;
 	    goto label_found_1;
 	  }
-      my_yyerror("No surrounding statement labeled %S.", name);
+      my_yyerror("No surrounding statement labeled %pS.", name);
       return 0;
 
     label_found_1:
@@ -2544,8 +2544,8 @@ static int do_docode2(node *n, int flags)
 	  struct pike_string *save_file = c->lex.current_file;
 	  c->lex.current_line = name.line_number;
 	  c->lex.current_file = name.file;
-	  my_yyerror("Duplicate nested labels, previous one on line %d.",
-		     lbl_name->line_number);
+          my_yyerror("Duplicate nested labels, previous one on line %ld.",
+                     (long)lbl_name->line_number);
 	  c->lex.current_line = save_line;
 	  c->lex.current_file = save_file;
 	  goto label_check_done;
@@ -2571,7 +2571,7 @@ static int do_docode2(node *n, int flags)
     if (!name.used) {
       low_yyreport(REPORT_WARNING, n->current_file, n->line_number,
 		   parser_system_string, 0,
-                   "Label %S not used.", name.str);
+                   "Label %pS not used.", name.str);
     }
     POP_STATEMENT_LABEL;
     BLOCK_END;

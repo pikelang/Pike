@@ -978,7 +978,7 @@ def: modifiers optional_attributes simple_type optional_constant
 
       if (Pike_compiler->compiler_pass != COMPILER_PASS_FIRST) {
 	if (i < 0) {
-	  my_yyerror("Identifier %S lost after first pass.",
+          my_yyerror("Identifier %pS lost after first pass.",
 		     $5->u.sval.u.string);
 	}
       }
@@ -1407,7 +1407,7 @@ new_arg_name: full_type optional_dot_dot_dot
 
     if($4->u.sval.u.string->len &&
        islocal($4->u.sval.u.string) >= 0)
-      my_yyerror("Variable %S appears twice in argument list.",
+      my_yyerror("Variable %pS appears twice in argument list.",
 		 $4->u.sval.u.string);
 
     i = add_local_name($4->u.sval.u.string, compiler_pop_type(), $5);
@@ -3170,7 +3170,7 @@ create_arg: modifiers simple_type optional_dot_dot_dot TOK_IDENTIFIER
 
     if ((Pike_compiler->num_create_args != ref_no) &&
 	(Pike_compiler->num_create_args != -ref_no)) {
-      my_yyerror("Multiple definitions of create variable %S (%d != %d).",
+      my_yyerror("Multiple definitions of create variable %pS (%d != %d).",
 		 $4->u.sval.u.string,
 		 Pike_compiler->num_create_args, ref_no);
     }
@@ -4163,11 +4163,11 @@ qualified_ident:
           (Pike_compiler->compiler_pass == COMPILER_PASS_LAST)) {
         if (($1 >= 0) && inherit_state->new_program &&
             inherit_state->new_program->inherits[$1].name) {
-          my_yyerror("Undefined identifier %S::%S.",
+          my_yyerror("Undefined identifier %pS::%pS.",
                      inherit_state->new_program->inherits[$1].name,
                      Pike_compiler->last_identifier);
         } else {
-          my_yyerror("Undefined identifier %S.",
+          my_yyerror("Undefined identifier %pS.",
                      Pike_compiler->last_identifier);
         }
         $$=0;
@@ -4192,7 +4192,7 @@ qualified_ident:
     if(!$$)
     {
       if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
-        my_yyerror("Undefined identifier ::%S.", $2->u.sval.u.string);
+        my_yyerror("Undefined identifier ::%pS.", $2->u.sval.u.string);
       }
       $$=mkintnode(0);
     }
@@ -4856,7 +4856,7 @@ inherit_specifier: string_or_identifier TOK_COLON_COLON
 
       if (($1->u.sval.u.string != this_program_string) &&
 	  ($1->u.sval.u.string != this_string)) {
-        my_yyerror("No inherit or surrounding class %S.",
+        my_yyerror("No inherit or surrounding class %pS.",
                    $1->u.sval.u.string);
       }
     }
@@ -4903,11 +4903,11 @@ inherit_specifier: string_or_identifier TOK_COLON_COLON
 #endif /* 0 */
     if (!e) {
       if (inherit_state->new_program->inherits[$1].name) {
-	my_yyerror("No such inherit %S::%S.",
+        my_yyerror("No such inherit %pS::%pS.",
 		   inherit_state->new_program->inherits[$1].name,
 		   $2->u.sval.u.string);
       } else {
-	my_yyerror("No such inherit %S.", $2->u.sval.u.string);
+        my_yyerror("No such inherit %pS.", $2->u.sval.u.string);
       }
       $$ = INHERIT_ALL;
     } else {
@@ -4932,7 +4932,7 @@ low_id_expr: TOK_IDENTIFIER
 					      Pike_compiler->last_identifier, 0))) {
       if((Pike_compiler->flags & COMPILATION_FORCE_RESOLVE) ||
 	 (Pike_compiler->compiler_pass == COMPILER_PASS_LAST)) {
-	my_yyerror("Undefined identifier %S.",
+        my_yyerror("Undefined identifier %pS.",
 		   Pike_compiler->last_identifier);
 	/* FIXME: Add this identifier as a constant in the current program to
 	 *        avoid multiple reporting of the same identifier.
@@ -5509,17 +5509,17 @@ int low_add_local_name(struct compiler_frame *frame,
     {
       struct local_name *l = frame->local_names + tmp;
       if (l->def) {
-	my_yyerror("Duplicate local identifier %S, "
-		   "previous declaration on line %d.",
-		   str, l->def->line_number);
+        my_yyerror("Duplicate local identifier %pS, "
+                   "previous declaration on line %ld.",
+                   str, (long)l->def->line_number);
       } else {
-	my_yyerror("Duplicate local identifier %S.", str);
+        my_yyerror("Duplicate local identifier %pS.", str);
       }
     }
 
     if(type == void_type_string)
     {
-      my_yyerror("Local variable %S is void.", str);
+      my_yyerror("Local variable %pS is void.", str);
     }
   }
 
@@ -5535,7 +5535,7 @@ int low_add_local_name(struct compiler_frame *frame,
 
     if (var >= MAX_LOCAL-1)
     {
-      my_yyerror("Too many local variables: no space for local variable %S.",
+      my_yyerror("Too many local variables: no space for local variable %pS.",
                  str);
       free_type(type);
       if (def) free_node(def);
@@ -5552,7 +5552,7 @@ int low_add_local_name(struct compiler_frame *frame,
 
   if (type && pike_types_le(type, void_type_string, 0, 0)) {
     if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
-      yywarning("Declaring local variable %S with type void "
+      yywarning("Declaring local variable %pS with type void "
                 "(converted to type zero).", str);
     }
   }
@@ -5830,7 +5830,7 @@ static node *find_versioned_identifier(struct pike_string *identifier,
     JMP_BUF tmp;
     if (SETJMP (tmp)) {
       handle_compile_exception ("Couldn't index %d.%d "
-				"default module with \"%S\".",
+                                "default module with %pq.",
 				major, minor, identifier);
     } else {
       push_svalue(&c->default_module);
@@ -5846,7 +5846,7 @@ static node *find_versioned_identifier(struct pike_string *identifier,
   if (!res && !(res = resolve_identifier(identifier))) {
     if((Pike_compiler->flags & COMPILATION_FORCE_RESOLVE) ||
        (Pike_compiler->compiler_pass == COMPILER_PASS_LAST)) {
-      my_yyerror("Undefined identifier %d.%d::%S.",
+      my_yyerror("Undefined identifier %d.%d::%pS.",
 		 major, minor, identifier);
     }else{
       res = mknode(F_UNDEFINED, 0, 0);
@@ -5899,7 +5899,7 @@ static node *set_default_value(int e)
       yytype_report(REPORT_WARNING,
                     NULL, 0, NULL,
                     NULL, 0, type,
-                    0, "Extraneous void in type for variable with default %S.",
+                    0, "Extraneous void in type for variable with default %pS.",
                     name);
     }
   }
@@ -5941,7 +5941,7 @@ static int call_handle_import(void)
       my_yyerror("Couldn't find module to import.");
       return 0;
     }
-    my_yyerror("Invalid return value from handle_import: %O", Pike_sp-1);
+    my_yyerror("Invalid return value from handle_import: %pO", Pike_sp-1);
     pop_stack();
     return 0;
   }

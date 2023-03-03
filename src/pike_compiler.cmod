@@ -648,7 +648,7 @@ static void f_compilation_env_resolv(INT32 args)
     DECLARE_CYCLIC();
     if(BEGIN_CYCLIC(ident, filename))
     {
-      my_yyerror("Recursive module dependency in %S.", ident);
+      my_yyerror("Recursive module dependency in %pS.", ident);
     }else{
       ONERROR err;
 
@@ -3768,7 +3768,7 @@ PIKECLASS OverrideClass
     }
 
     if (found == -1) {
-      my_yyerror("@%O: Symbol ::%S not found.", Pike_sp-1, sym);
+      my_yyerror("@%pO: Symbol ::%pS not found.", Pike_sp-1, sym);
     }
 
     exit_compiler();

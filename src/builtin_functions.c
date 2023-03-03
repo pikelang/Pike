@@ -5168,7 +5168,7 @@ node *optimize_replace(node *n)
 	yywarning("Optimizer failure in replace().");
 	s = format_exception_for_error_msg (&thrown);
 	if (s) {
-	  yywarning ("%S", s);
+          yywarning ("%pS", s);
 	  free_string (s);
 	}
 	free_svalue(&thrown);

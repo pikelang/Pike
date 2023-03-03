@@ -1796,7 +1796,7 @@ void resolv_constant(node *n)
 	push_int(0);
       }
     } else {
-      my_yyerror("Identifier %S is not a constant", i->name);
+      my_yyerror("Identifier %pS is not a constant", i->name);
       push_int(0);
     }
   }
@@ -1912,7 +1912,7 @@ void resolv_type(node *n)
 	struct compilation *c = THIS_COMPILATION;
 	c->flags |= COMPILER_NEED_EXTRA_PASS;
       } else {
-	my_yyerror("Illegal program identifier: %O.", Pike_sp-1);
+        my_yyerror("Illegal program identifier: %pO.", Pike_sp-1);
       }
       push_object_type(0, 0);
       break;
@@ -4075,8 +4075,8 @@ void fix_type_field(node *n)
 		print_tree(n);
 	      }
 #endif /* PIKE_DEBUG */
-	      yywarning("An expression of type %S cannot be assigned to "
-			"a variable of type %S.", t1, t2);
+              yywarning("An expression of type %pS cannot be assigned to "
+                        "a variable of type %pS.", t1, t2);
 	      free_string(t2);
 	      free_string(t1);
 	    }

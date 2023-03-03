@@ -2171,7 +2171,7 @@ static struct node_s *index_modules(struct pike_string *ident,
     JMP_BUF tmp;
 
     if(SETJMP(tmp))
-      handle_compile_exception ("Couldn't index a module with %S.", ident);
+      handle_compile_exception ("Couldn't index a module with %pS.", ident);
     else {
       int e = num_used_modules;
       struct svalue *m = modules - num_used_modules;
@@ -2193,7 +2193,7 @@ static struct node_s *index_modules(struct pike_string *ident,
 	       (TYPEOF(Pike_sp[-1]) == T_PROGRAM &&
 		Pike_sp[-1].u.program == placeholder_program))) {
 	    my_yyerror("Got placeholder %s (resolver problem) "
-		       "when indexing a module with %S.",
+                       "when indexing a module with %pS.",
 		       get_name_of_type (TYPEOF(Pike_sp[-1])), ident);
 	    ret = 0;
 	  }
@@ -2316,7 +2316,7 @@ int low_resolve_identifier(struct pike_string *ident)
 
   ref_push_string(ident);
   if (!safe_apply_current2(PC_RESOLV_FUN_NUM, 1, NULL))
-    handle_compile_exception ("Error resolving '%S'.", ident);
+    handle_compile_exception ("Error resolving '%pS'.", ident);
 
   if (Pike_compiler->compiler_pass != COMPILER_PASS_LAST) {
     /* If we get a program that hasn't gone through pass 1 yet then we
@@ -2340,7 +2340,7 @@ int low_resolve_identifier(struct pike_string *ident)
        (TYPEOF(Pike_sp[-1]) == T_PROGRAM &&
 	Pike_sp[-1].u.program == placeholder_program))) {
     my_yyerror("Got placeholder %s (resolver problem) "
-	       "when resolving '%S'.",
+               "when resolving '%pS'.",
 	       get_name_of_type (TYPEOF(Pike_sp[-1])), ident);
   } else {
     if(!c->resolve_cache)
@@ -2387,7 +2387,7 @@ PMOD_EXPORT struct program *resolve_program(struct pike_string *ident)
     pop_stack();
   }
   if (!ret) {
-    my_yyerror("Invalid program identifier '%S'.", ident);
+    my_yyerror("Invalid program identifier '%pS'.", ident);
   }
   return ret;
 }
@@ -2660,7 +2660,7 @@ struct node_s *program_magic_identifier (struct program_state *state,
       n = find_inherited_identifier(state->previous, state_depth+1,
 				    INHERIT_ALL, name);
       if (!n) {
-	my_yyerror("Failed to find previous inherited definition of %S "
+        my_yyerror("Failed to find previous inherited definition of %pS "
 		   "in parent.", name);
 	return NULL;
       }
@@ -3057,7 +3057,7 @@ int override_identifier (struct reference *new_ref, struct pike_string *name,
        * This is generally a bad idea.
        */
       ref->id_flags |= ID_INLINE|ID_HIDDEN;
-      yywarning("Attempt to override a non local variable %S "
+      yywarning("Attempt to override a non local variable %pS "
 		"with a non-variable.", name);
       continue;
     }
@@ -3312,7 +3312,7 @@ void fixate_program(void)
     }
     if (IDENTIFIER_IS_PIKE_FUNCTION(fun->identifier_flags) &&
 	(fun->func.offset == -1) && (funp->id_flags & ID_INLINE)) {
-      my_yyerror("Missing definition for local function %S.",
+      my_yyerror("Missing definition for local function %pS.",
 		 fun->name);
     }
     if (funp->id_flags & ID_PROTECTED) continue;
@@ -3411,7 +3411,7 @@ void fixate_program(void)
     if (ref->inherit_offset != 0) continue;
 
     if ((ref->id_flags & (ID_HIDDEN|ID_PRIVATE|ID_USED)) == ID_PRIVATE) {
-      yywarning("%S is private but not used anywhere.",
+      yywarning("%pS is private but not used anywhere.",
 		ID_FROM_PTR(p, ref)->name);
     }
   }
@@ -3457,7 +3457,7 @@ void fixate_program(void)
 
 	if((e != i) && (e != -1))
 	{
-	  my_yyerror("Illegal to redefine final identifier %S", name);
+          my_yyerror("Illegal to redefine final identifier %pS", name);
 	}
       }
     }
@@ -6225,7 +6225,7 @@ PMOD_EXPORT struct program *lexical_inherit(int scope_depth,
   for (e = 0; e < scope_depth; e++) {
     state = state->previous;
     if (!state) {
-      my_yyerror("Invalid lexical inherit of symbol %S at depth %d (max_depth: %d).",
+      my_yyerror("Invalid lexical inherit of symbol %pS at depth %d (max_depth: %d).",
 		 symbol, scope_depth, e+1);
       return NULL;
     }
@@ -6385,7 +6385,7 @@ int call_handle_inherit(struct pike_string *s)
     if (TYPEOF(Pike_sp[-1]) != T_INT)
       return 1;
     else {
-      my_yyerror("Couldn't find program %S", s);
+      my_yyerror("Couldn't find program %pS", s);
     }
   else {
     handle_compile_exception ("Error finding program");
@@ -6547,7 +6547,7 @@ PMOD_EXPORT int define_alias(struct pike_string *name, struct pike_type *type,
     if(Pike_compiler->new_program->identifier_references[n].inherit_offset == 0)
     {
       if (!((IDENTIFIERP(n)->id_flags | flags) & ID_EXTERN)) {
-	my_yyerror("Identifier %S defined twice.",name);
+        my_yyerror("Identifier %pS defined twice.",name);
 	return n;
       }
       if (flags & ID_EXTERN) {
@@ -6559,7 +6559,7 @@ PMOD_EXPORT int define_alias(struct pike_string *name, struct pike_type *type,
     if (!(IDENTIFIERP(n)->id_flags & ID_EXTERN)) {
       if (IDENTIFIERP(n)->id_flags & ID_FINAL)
 	my_yyerror("Illegal to redefine 'final' "
-		   "variable/functions %S", name);
+                   "variable/functions %pS", name);
 
       /* FIXME: More. */
     }
@@ -6726,7 +6726,7 @@ int define_variable(struct pike_string *name,
     if(Pike_compiler->new_program->identifier_references[n].inherit_offset == 0)
     {
       if (!((IDENTIFIERP(n)->id_flags | flags) & ID_EXTERN)) {
-	my_yyerror("Identifier %S defined twice.",name);
+        my_yyerror("Identifier %pS defined twice.",name);
 	return n;
       }
       if (flags & ID_EXTERN) {
@@ -6738,7 +6738,7 @@ int define_variable(struct pike_string *name,
     if (!(IDENTIFIERP(n)->id_flags & ID_EXTERN)) {
       if (IDENTIFIERP(n)->id_flags & ID_FINAL)
 	my_yyerror("Illegal to redefine 'final' "
-		   "variable/functions %S", name);
+                   "variable/functions %pS", name);
 
       if(!(IDENTIFIERP(n)->id_flags & ID_INLINE) ||
 	 Pike_compiler->compiler_pass != COMPILER_PASS_FIRST)
@@ -6765,7 +6765,7 @@ int define_variable(struct pike_string *name,
 	if(!IDENTIFIER_IS_VARIABLE(ID_FROM_INT(Pike_compiler->new_program, n)->
 				   identifier_flags))
 	{
-	  my_yyerror("Illegal to redefine inherited symbol %S "
+          my_yyerror("Illegal to redefine inherited symbol %pS "
 		     "as a variable.", name);
 	  return n;
 	}
@@ -6927,7 +6927,7 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
 	c=& p->constants[id->func.const_info.offset].sval;
       } else if (IDENTIFIER_IS_VARIABLE(id->identifier_flags) &&
 		 (state == Pike_compiler)) {
-	my_yyerror("Attempt to make a constant %S of a variable.",
+        my_yyerror("Attempt to make a constant %pS of a variable.",
 		   name);
 	c = NULL;
       } else {
@@ -6951,7 +6951,7 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
     c &&
 #endif
     !svalues_are_constant(c,1,BIT_MIXED,0))
-    my_yyerror("Constant value %S has a reference to this.", name);
+    my_yyerror("Constant value %pS has a reference to this.", name);
 
   if(Pike_compiler->new_program->flags & PROGRAM_PASS_1_DONE)
   {
@@ -7039,18 +7039,18 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
     int overridden;
 
     if(IDENTIFIERP(n)->id_flags & ID_FINAL)
-      my_yyerror("Illegal to redefine 'final' identifier %S", name);
+      my_yyerror("Illegal to redefine 'final' identifier %pS", name);
 
     if(IDENTIFIER_IS_VARIABLE(ID_FROM_INT(Pike_compiler->new_program,
 					  n)->identifier_flags))
     {
-      my_yyerror("Illegal to redefine variable %S as constant.", name);
+      my_yyerror("Illegal to redefine variable %pS as constant.", name);
     }
 
     /* not inherited */
     if(Pike_compiler->new_program->identifier_references[n].inherit_offset == 0)
     {
-      my_yyerror("Identifier %S defined twice.", name);
+      my_yyerror("Identifier %pS defined twice.", name);
       return n;
     }
 
@@ -7348,9 +7348,9 @@ INT32 define_function(struct pike_string *name,
 	  !(orig_pragmas & ID_NO_DEPRECATION_WARNINGS) &&
 	  !deprecated_typep(type)) {
 	if (!(flags & (ID_PROTECTED|ID_PRIVATE))) {
-	  yywarning("Lfun %S() is public.", name);
+          yywarning("Lfun %pS() is public.", name);
 	} else {
-	  yywarning("Lfun %S() is private.", name);
+          yywarning("Lfun %pS() is private.", name);
 	}
       }
     }
@@ -7402,7 +7402,7 @@ INT32 define_function(struct pike_string *name,
       }
       c->lex.pragmas = orig_pragmas;
       if (flags & ID_VARIANT) {
-	my_yyerror("Variants not supported for getter/setters: %S", name);
+        my_yyerror("Variants not supported for getter/setters: %pS", name);
 	flags &= ~ID_VARIANT;
       }
       i = isidentifier(symbol);
@@ -7411,13 +7411,13 @@ INT32 define_function(struct pike_string *name,
 	/* Not an inherited symbol. */
 	struct identifier *id = ID_FROM_INT(prog, i);
 	if (!IDENTIFIER_IS_VARIABLE(id->identifier_flags)) {
-	  my_yyerror("Illegal to redefine function %S with variable.", symbol);
+          my_yyerror("Illegal to redefine function %pS with variable.", symbol);
 	} else if (id->run_time_type != PIKE_T_GET_SET) {
-	  my_yyerror("Illegal to redefine a current variable with a getter/setter: %S.", symbol);
+          my_yyerror("Illegal to redefine a current variable with a getter/setter: %pS.", symbol);
 	} else {
 	  if ((ref->id_flags | ID_USED) != (flags | ID_USED)) {
 	    if (Pike_compiler->compiler_pass == COMPILER_PASS_FIRST) {
-	      yywarning("Modifier mismatch for variable %S.", symbol);
+              yywarning("Modifier mismatch for variable %pS.", symbol);
 	    }
 	    ref->id_flags &= flags | ID_USED;
 	  }
@@ -7512,7 +7512,7 @@ INT32 define_function(struct pike_string *name,
 	 *
 	 *  non-variant definition.
 	 */
-	my_yyerror("Overriding variant function %S() with "
+        my_yyerror("Overriding variant function %pS() with "
 		   "non-variant in the same class.",
 		   name);
       }
@@ -7562,7 +7562,7 @@ INT32 define_function(struct pike_string *name,
       if( !( IDENTIFIER_IS_FUNCTION(funp->identifier_flags) &&
 	     ( (!func || func->offset == -1) || (funp->func.offset == -1))))
       {
-	my_yyerror("Identifier %S defined twice.", name);
+        my_yyerror("Identifier %pS defined twice.", name);
 
 	if (getter_setter != -1) {
 	  struct identifier *id = ID_FROM_INT(prog, getter_setter);
@@ -7613,7 +7613,7 @@ INT32 define_function(struct pike_string *name,
 #endif
 	)
       {
-	my_yyerror("Illegal to redefine 'final' function %S.", name);
+        my_yyerror("Illegal to redefine 'final' function %pS.", name);
       }
 
       if (!(flags & ID_VARIANT) &&
@@ -7634,7 +7634,7 @@ INT32 define_function(struct pike_string *name,
 	    /* FIXME: This doesn't catch all cases, and should probably
 	     *        be moved to a place where it does.
 	     */
-	    my_yyerror("Overloading variant function %S with non-variant in same class.",
+            my_yyerror("Overloading variant function %pS with non-variant in same class.",
 		       name);
 	  }
 	  prog->identifier_references[j].id_flags |= ID_HIDDEN;
@@ -7703,7 +7703,7 @@ INT32 define_function(struct pike_string *name,
 	struct identifier *id = ID_FROM_INT(prog, getter_setter);
 	INT32 old_i = (&id->func.gs_info.getter)[is_setter];
 	if ((old_i >= 0) && (old_i != overridden)) {
-	  my_yyerror("Multiple definitions for %S.", name);
+          my_yyerror("Multiple definitions for %pS.", name);
 	}
 	(&id->func.gs_info.getter)[is_setter] = overridden;
       }
@@ -7766,7 +7766,7 @@ INT32 define_function(struct pike_string *name,
     struct identifier *id = ID_FROM_INT(prog, getter_setter);
     INT32 old_i = (&id->func.gs_info.getter)[is_setter];
     if (old_i >= 0) {
-      my_yyerror("Multiple definitions for %S.", name);
+      my_yyerror("Multiple definitions for %pS.", name);
     }
     (&id->func.gs_info.getter)[is_setter] = i;
   }
@@ -8213,7 +8213,7 @@ PMOD_EXPORT int low_find_lfun(struct program *p, enum LFUN lfun)
 	  }
 	}
 	if (c && !(c->lex.pragmas & ID_NO_DEPRECATION_WARNINGS)) {
-	  yywarning("Compat: Substituting %S() for %S().",
+          yywarning("Compat: Substituting %pS() for %pS().",
 		    lfun_compat_name, lfun_name);
 	}
       }
@@ -8251,7 +8251,7 @@ int lfun_lookup_id(struct pike_string *lfun_name)
     }
     return -1;		/* Compat lfun name. */
   }
-  my_yyerror("Bad entry in lfun lookup table for %S.", lfun_name);
+  my_yyerror("Bad entry in lfun lookup table for %pS.", lfun_name);
   return -1;
 }
 

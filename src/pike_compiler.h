@@ -199,8 +199,10 @@ PMOD_EXPORT void low_yyreport(int severity_level,
 			      INT32 args, const char *fmt, ...);
 PMOD_EXPORT void yyreport(int severity_level, struct pike_string *system,
 			  INT32 args, const char *fmt, ...);
-PMOD_EXPORT void yywarning(char *fmt, ...);
-PMOD_EXPORT void my_yyerror(const char *fmt,...);
+PMOD_EXPORT void yywarning(char *fmt, ...)
+  ATTRIBUTE((format (printf, 1, 2)));
+PMOD_EXPORT void my_yyerror(const char *fmt,...)
+  ATTRIBUTE((format (printf, 1, 2)));
 PMOD_EXPORT void yyerror(const char *s);
 void yytype_report(int severity_level,
 		   struct pike_string *expect_file, INT_TYPE expect_line,
@@ -211,7 +213,8 @@ void yytype_report(int severity_level,
 void yytype_error(const char *msg, struct pike_type *expected_t,
 		  struct pike_type *got_t, unsigned int flags);
 struct pike_string *format_exception_for_error_msg (struct svalue *thrown);
-void handle_compile_exception (const char *yyerror_fmt, ...);
+void handle_compile_exception (const char *yyerror_fmt, ...)
+  ATTRIBUTE((format (printf, 1, 2)));
 void push_compiler_frame(int lexical_scope);
 node *low_pop_local_variables(int level, node *block);
 node *pop_local_variables(int level, node *block);
