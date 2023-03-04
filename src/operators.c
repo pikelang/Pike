@@ -109,7 +109,7 @@ void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 	if (val) {
           index_error(NULL, 0, what, ind,
                       "Indexing the integer %"PRINTPIKEINT"d "
-                      "with unknown method \"%S\".\n",
+                      "with unknown method \"%pS\".\n",
                       val, ind->u.string);
 	} else {
           index_error(NULL, 0, what, ind, NULL);

@@ -894,7 +894,7 @@ unknown_directive:
 	  struct pike_string *dir =
 	    make_shared_binary_string2((p_wchar2 *)buf, len);
 #endif
-	  my_yyerror("Unknown preprocessor directive %S.", dir);
+          my_yyerror("Unknown preprocessor directive %pS.", dir);
 	  free_string(dir);
 	} else {
 	  yyerror("Unknown preprocessor directive.");

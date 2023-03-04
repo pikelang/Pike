@@ -991,7 +991,7 @@ static void emit_multi_assign(node *vals, node *vars, int no)
 #endif /* PIKE_DEBUG */
 	f = id->func.gs_info.setter;
 	if (f == -1) {
-	  yywarning("Variable %S lacks a setter.", id->name);
+          yywarning("Variable %pS lacks a setter.", id->name);
 	} else if (!level) {
 	  f += inh->identifier_level;
 	  emit0(F_MARK);
