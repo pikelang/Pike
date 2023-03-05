@@ -5701,7 +5701,7 @@ static int generate__Static_assert(node *n)
   }
   if (tmp > 1) pop_n_elems(tmp-1);
   if (SAFE_IS_ZERO(Pike_sp-1)) {
-    my_yyerror("Assertion failed: %S", Pike_sp[-2].u.string);
+    my_yyerror("Assertion failed: %pS", Pike_sp[-2].u.string);
   }
   pop_n_elems(2);
   return 1;
