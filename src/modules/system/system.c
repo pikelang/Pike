@@ -2466,14 +2466,14 @@ static void f_getrlimit(INT32 args)
    }
    pop_n_elems(args);
 #ifdef RLIM_INFINITY
-   if (rl.rlim_cur==RLIM_INFINITY)
+   if (rl.rlim_cur==(rlim_t)RLIM_INFINITY)
       push_int(-1);
    else
 #endif
       push_int64( (INT_TYPE)rl.rlim_cur );
 
 #ifdef RLIM_INFINITY
-   if (rl.rlim_max==RLIM_INFINITY)
+   if (rl.rlim_max==(rlim_t)RLIM_INFINITY)
       push_int(-1);
    else
 #endif

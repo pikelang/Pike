@@ -193,7 +193,7 @@ void init_pike_runtime(void (*exit_cb)(int))
     if(!getrlimit(RLIMIT_STACK, &lim))
     {
 #ifdef RLIM_INFINITY
-      if(lim.rlim_cur == RLIM_INFINITY)
+      if(lim.rlim_cur == (rlim_t)RLIM_INFINITY)
 	lim.rlim_cur=1024*1024*32;
 #endif
 
