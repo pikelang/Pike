@@ -294,7 +294,7 @@ PMOD_EXPORT void string_builder_fill(struct string_builder *s,
   }
 
   shift = from.shift;
-  if (shift > (s->s ? s->s->size_shift : 0)) {
+  if (shift > (s->s ? (enum size_shift)s->s->size_shift : eightbit)) {
     /* Check if we really need the extra magnitude. */
     /* FIXME: What about offset? */
     if (shift == 1) {
