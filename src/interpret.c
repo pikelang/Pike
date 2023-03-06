@@ -1991,7 +1991,7 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
     int i;
     fprintf(stderr, "Calling code at %p:\n", pc);
 #ifdef PIKE_OPCODE_ALIGN
-    if (((INT32)pc) % PIKE_OPCODE_ALIGN) {
+    if (((ptrdiff_t)pc) % PIKE_OPCODE_ALIGN) {
       Pike_fatal("Odd offset!\n");
     }
 #endif /* PIKE_OPCODE_ALIGN */
