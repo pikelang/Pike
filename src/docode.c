@@ -956,10 +956,6 @@ static void emit_multi_assign(node *vals, node *vars, int no)
     }
 
     if(var->u.integer.b) goto do_lvalue;
-
-    code_expression(val, 0, "RHS");
-    emit_multi_assign(vals, vars, no+1);
-    emit1(F_ASSIGN_LOCAL_AND_POP, var->u.integer.a );
     break;
 
   case F_GET_SET:
@@ -988,7 +984,7 @@ static void emit_multi_assign(node *vals, node *vars, int no)
 
   /* Emit the assign and pop opcode. */
   switch(var->token) {
-  case F_CLEAR_LOCAL:
+  case F_CLEAR_LOCAL:	/* Paranoia: Should not happen. */
   case F_LOCAL:
     if(var->u.integer.b) goto normal_assign;
 
