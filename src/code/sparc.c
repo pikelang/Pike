@@ -527,21 +527,6 @@ static void sparc_push_int(INT_TYPE x, int sub_type)
   sparc_codegen_state |= SPARC_CODEGEN_SP_NEEDS_STORE;
 }
 
-static void sparc_clear_string_subtype(void)
-{
-  LOAD_PIKE_SP();
-  /* lduh [ %pike_sp, %g0 ], %i0 */
-  SPARC_LDUH(SPARC_REG_I0, SPARC_REG_PIKE_SP,
-	     sparc_pike_sp_bias + OFFSETOF(svalue, tu.t.type), 1);
-  /* subcc %g0, %i0, 8 */
-  SPARC_SUBcc(SPARC_REG_G0, SPARC_REG_I0, PIKE_T_INT, 1);
-  /* be,a .+8 */
-  SPARC_BE(8, 1);
-  /* sth %g0, [ %pike_sp, 2 ] */
-  SPARC_STH(SPARC_REG_G0, SPARC_REG_PIKE_SP,
-	    sparc_pike_sp_bias + OFFSETOF(svalue, tu.t.subtype), 1);
-}
-
 static void sparc_push_lfun(unsigned int no)
 {
   LOAD_PIKE_FP();
