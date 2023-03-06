@@ -941,6 +941,7 @@ static void emit_multi_assign(node *vals, node *vars, int no)
     vars = NULL;
   }
 
+  /* Push the lvalue (if needed). */
   switch(var->token) {
   case F_CLEAR_LOCAL:
     var = CAR(var);
@@ -948,10 +949,13 @@ static void emit_multi_assign(node *vals, node *vars, int no)
     /* FALLTHRU */
   case F_LOCAL:
     if(var->u.integer.a >=
-       find_local_frame(var->u.integer.b)->max_number_of_locals)
-      yyerror("Illegal to use local variable here.");
+       find_local_frame(var->u.integer.b)->max_number_of_locals) {
+      Pike_fatal("Local variable $%d out of range (max: %d).\n",
+                 var->u.integer.a,
+                 find_local_frame(var->u.integer.b)->max_number_of_locals);
+    }
 
-    if(var->u.integer.b) goto normal_assign;
+    if(var->u.integer.b) goto do_lvalue;
 
     code_expression(val, 0, "RHS");
     emit_multi_assign(vals, vars, no+1);
@@ -959,73 +963,55 @@ static void emit_multi_assign(node *vals, node *vars, int no)
     break;
 
   case F_GET_SET:
-    {
-      /* Check for the setter function. */
-      struct program_state *state = Pike_compiler;
-      int program_id = var->u.integer.a;
-      int level = 0;
-      while (state && (state->new_program->id != program_id)) {
-	state = state->previous;
-	level++;
-      }
-      if (!state) {
-	yyerror("Lost parent.");
-      } else {
-	struct reference *ref =
-	  PTR_FROM_INT(state->new_program, var->u.integer.b);
-	struct identifier *id =
-	  ID_FROM_PTR(state->new_program, ref);
-	struct inherit *inh =
-	  INHERIT_FROM_PTR(state->new_program, ref);
-	int f;
-#ifdef PIKE_DEBUG
-	if (!IDENTIFIER_IS_VARIABLE(id->identifier_flags) ||
-	    (id->run_time_type != PIKE_T_GET_SET)) {
-	  Pike_fatal("Not a getter/setter in a F_GET_SET node!\n"
-		     "  identifier_flags: 0x%08x\n"
-		     "  run_time_type; %s (%d)\n",
-		     id->identifier_flags,
-		     get_name_of_type(id->run_time_type),
-		     id->run_time_type);
-	}
-#endif /* PIKE_DEBUG */
-	f = id->func.gs_info.setter;
-	if (f == -1) {
-          yywarning("Variable %pS lacks a setter.", id->name);
-	} else if (!level) {
-	  f += inh->identifier_level;
-	  emit0(F_MARK);
-	  PUSH_CLEANUP_FRAME(do_pop_mark, 0);
-	  code_expression(val, 0, "RHS");
-	  emit_multi_assign(vals, vars, no+1);
-	  emit1(F_CALL_LFUN, f);
-	  POP_AND_DONT_CLEANUP;
-	  emit0(F_POP_VALUE);
-	}
-      }
-    }
-    /* FALLTHRU */
   case F_EXTERNAL:
     /* Check that it is in this context */
     if(Pike_compiler ->new_program->id == var->u.integer.a)
     {
       /* Check that it is a variable */
       if(var->u.integer.b != IDREF_MAGIC_THIS &&
-	 IDENTIFIER_IS_VARIABLE( ID_FROM_INT(Pike_compiler->new_program, var->u.integer.b)->identifier_flags))
+         IDENTIFIER_IS_VARIABLE( ID_FROM_INT(Pike_compiler->new_program, var->u.integer.b)->identifier_flags))
       {
-	code_expression(val, 0, "RHS");
-	emit_multi_assign(vals, vars, no+1);
+        break;
+      }
+    }
+    /* fall through */
+
+  default:
+  do_lvalue:
+    do_docode(var, DO_LVALUE);
+    break;
+  }
+
+  /* Push the value. */
+  code_expression(*valp, 0, "RHS");
+  emit_multi_assign(vals, vars, no);
+
+  /* Emit the assign and pop opcode. */
+  switch(var->token) {
+  case F_CLEAR_LOCAL:
+  case F_LOCAL:
+    if(var->u.integer.b) goto normal_assign;
+
+    emit1(F_ASSIGN_LOCAL_AND_POP, var->u.integer.a );
+    break;
+
+  case F_GET_SET:
+  case F_EXTERNAL:
+    /* Check that it is in this context */
+    if(Pike_compiler ->new_program->id == var->u.integer.a)
+    {
+      /* Check that it is a variable */
+      if(var->u.integer.b != IDREF_MAGIC_THIS &&
+         IDENTIFIER_IS_VARIABLE( ID_FROM_INT(Pike_compiler->new_program, var->u.integer.b)->identifier_flags))
+      {
         emit_assign_global( var->u.integer.b, 1 );
-	break;
+        break;
       }
     }
     /* fall through */
 
   default:
   normal_assign:
-    do_docode(var, DO_LVALUE);
-    if(do_docode(val, 0) != 1) yyerror("RHS is void!");
-    emit_multi_assign(vals, vars, no+1);
     emit0(F_ASSIGN_AND_POP);
     break;
   }
