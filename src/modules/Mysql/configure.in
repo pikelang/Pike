@@ -50,7 +50,12 @@ else
   else
       MY_AC_PATH_PROGS(MARIADB_CONFIG, ${pike_cv_tool_prefix}mariadb_config ${ac_tool_prefix}mariadb_config, no)
   fi
-  if test "x${MARIADB_CONFIG}" = "xno"; then
+  if test "x$with_mysql" = "xyes"; then
+      MY_AC_PATH_PROGS(MYSQL_CONFIG, ${pike_cv_tool_prefix}mysql_config ${ac_tool_prefix}mysql_config, no)
+  else
+      MYSQL_CONFIG=no
+  fi
+  if test "x${MARIADB_CONFIG}${MYSQL_CONFIG}" = "xnono"; then
 
   AC_MSG_CHECKING(for Mysql directory prefix)
   AC_CACHE_VAL(pike_cv_mysql_lib_dir_prefix, [
@@ -125,7 +130,11 @@ else
     fi
   fi
   else
-      echo "MariaDB found. Attempting to use."
+      if test "x${MARIADB_CONFIG}" = "xno"; then
+        MARIADB_CONFIG="${MYSQL_CONFIG}"
+      else
+        echo "MariaDB found. Attempting to use."
+      fi
       # MariaDB
       # NB: mariadb_config doens't distinguish between
       #     LDFLAGS and LIBS
