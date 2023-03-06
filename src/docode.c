@@ -925,7 +925,7 @@ static void emit_multi_assign(node *vals, node *vars, int no)
   struct compilation *c = THIS_COMPILATION;
   node *var;
   node *val;
-  node **valp = my_get_arg(&vals, no);
+  node **valp = my_get_arg(&vals, no++);
 
   if (!vars && (!valp || !*valp)) return;
   if (!(vars && valp && (val = *valp))) {
