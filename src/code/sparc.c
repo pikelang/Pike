@@ -16,6 +16,8 @@
 #include "object.h"
 #include "builtin_functions.h"
 
+#include <inttypes.h>
+
 /*
  * Register definitions
  */
@@ -625,9 +627,25 @@ void sparc_debug_check_registers(int state,
        (cached_sp != Pike_interpreter.stack_pointer)) ||
       ((state & SPARC_CODEGEN_MARK_SP_IS_SET) &&
        (cached_mark_sp != Pike_interpreter.mark_stack_pointer))) {
+#ifdef PIKE_BYTECODE_SPARC64
     Pike_fatal("Bad machine code cache key (0x%04x):\n"
-	       "Cached: ip:0x%08x, fp:0x%08x, sp:0x%08x, m_sp:0x%08x\n"
-	       "  Real: ip:0x%08x, fp:0x%08x, sp:0x%08x, m_sp:0x%08x\n",
+               "Cached: ip:0x%016"PRIx64", fp:0x%016"PRIx64", "
+               "sp:0x%016"PRIx64", m_sp:0x%016"PRIx64"\n"
+               "  Real: ip:0x%016"PRIx64", fp:0x%016"PRIx64", "
+               "sp:0x%016"PRIx64", m_sp:0x%016"PRIx64"\n",
+               state,
+               (INT64)cached_ip, (INT64)cached_fp,
+               (INT64)cached_sp, (INT64)cached_mark_sp,
+               (INT64)Pike_interpreter_pointer,
+               (INT64)Pike_interpreter.frame_pointer,
+               (INT64)Pike_interpreter.stack_pointer,
+               (INT64)Pike_interpreter.mark_stack_pointer);
+#else
+    Pike_fatal("Bad machine code cache key (0x%04x):\n"
+               "Cached: ip:0x%08"PRIx32", fp:0x%08"PRIx32", "
+               "sp:0x%08"PRIx32", m_sp:0x%08"PRIx32"\n"
+               "  Real: ip:0x%08"PRIx32", fp:0x%08"PRIx32", "
+               "sp:0x%08"PRIx32", m_sp:0x%08"PRIx32"\n",
 	       state,
 	       (INT32)cached_ip, (INT32)cached_fp,
 	       (INT32)cached_sp, (INT32)cached_mark_sp,
@@ -635,6 +653,7 @@ void sparc_debug_check_registers(int state,
 	       (INT32)Pike_interpreter.frame_pointer,
 	       (INT32)Pike_interpreter.stack_pointer,
 	       (INT32)Pike_interpreter.mark_stack_pointer);
+#endif
   }
 }
 
