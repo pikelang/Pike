@@ -511,6 +511,9 @@ PIKEFUN void disassemble(function fun)
       struct pike_string *tripples =
 	p->strings[read_program_data(p->program + id->func.offset, -1)];
       switch(tripples->size_shift) {
+#define VALIDINSTR0(X) (0) // A p_wchar0 can never be >= F_OFFSET (257)
+#define VALIDINSTR1(X) ((X) >= F_OFFSET)
+#define VALIDINSTR2(X) ((X) >= F_OFFSET)
 #define CASE(SHIFT)					\
 	case SHIFT:					\
 	  {						\
@@ -518,7 +521,7 @@ PIKEFUN void disassemble(function fun)
 	      PIKE_CONCAT(STR, SHIFT)(tripples);	\
 	    int i=0;					\
 	    while(i < tripples->len) {			\
-	      if (*str >= F_OFFSET) {			\
+	      if (PIKE_CONCAT(VALIDINSTR, SHIFT)(*str)) { \
 		WERR("@@@ %d: %s, %d, %d\n",		\
 		     i/3,				\
 		     instrs[*str - F_OFFSET].		\
@@ -537,6 +540,9 @@ PIKEFUN void disassemble(function fun)
 	CASE(1);
 	CASE(2);
 #undef CASE
+#undef VALIDINSTR0
+#undef VALIDINSTR1
+#undef VALIDINSTR2
       }
     } else {
       WERR("Prototype.\n");
