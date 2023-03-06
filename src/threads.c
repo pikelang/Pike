@@ -3063,7 +3063,7 @@ void init_mutex_key_obj(struct object *UNUSED(o))
   THIS_KEY->kind = KEY_INITIALIZED;
 }
 
-void exit_mutex_key_obj(struct object *DEBUGUSED(o))
+void exit_mutex_key_obj(struct object *UNUSED(o))
 {
   THREADS_FPRINTF(1, "UNLOCK k:%p m:(%p) t:%p o:%p\n",
                   THIS_KEY, THIS_KEY->mut,
