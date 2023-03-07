@@ -838,6 +838,7 @@ static int call_destruct(struct object *o, enum object_destruct_reason reason)
 
       if (SETJMP (jmp)) {
 	UNSETJMP (jmp);
+#ifdef DO_PIKE_CLEANUP
 	if (gc_destruct_everything) {
 	  struct svalue err;
 	  move_svalue (&err, &throw_value);
@@ -856,6 +857,7 @@ static int call_destruct(struct object *o, enum object_destruct_reason reason)
 	  UNSETJMP (jmp);
 	  move_svalue (&throw_value, &err);
 	}
+#endif
 	if (!SETJMP(jmp)) {
 	  call_handle_error();
 	}
