@@ -5128,20 +5128,25 @@ sscanf: TOK_SSCANF '(' assignment_expr ',' assignment_expr lvalue_list ')'
   | TOK_SSCANF '(' error ';' { $$=0; yyerror("Missing ')'."); }
   ;
 
-lvalue: postfix_expr
+lvalue: assignment_expr
   | open_bracket_with_line_info low_lvalue_list ']'
   {
-    $$=mknode(F_ARRAY_LVALUE, $2,0);
+    /* NB: The optional default value is handled by assignment_expr above. */
+    $$ = mknode(F_ARRAY_LVALUE, $2, 0);
     COPY_LINE_NUMBER_INFO($$, $1);
     free_node($1);
   }
-  | type2 TOK_IDENTIFIER
+  | type2 TOK_IDENTIFIER optional_default_value
   {
     int id = add_local_name($2->u.sval.u.string,compiler_pop_type(),0);
     /* Note: Variable intentionally not marked as used. */
-    if (id >= 0)
-      $$ = mknode(F_CLEAR_LOCAL, mklocalnode(id, 0), NULL);
-    else
+    if (id >= 0) {
+      if ($3) {
+        $$ = mknode(F_ASSIGN, mklocalnode(id, 0), $3);
+      } else {
+        $$ = mknode(F_CLEAR_LOCAL, mklocalnode(id, 0), NULL);
+      }
+    } else
       $$ = 0;
     free_node($2);
   }
