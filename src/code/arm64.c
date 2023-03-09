@@ -2505,10 +2505,9 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
 {
   switch (opcode) {
   case F_DUP:
-      if (arg1) break;	/* Fallback to C version. */
       arm64_debug_instr_prologue_0(opcode);
       arm64_load_sp_reg();
-      arm64_push_svaluep_off(ARM_REG_PIKE_SP, -1);
+      arm64_push_svaluep_off(ARM_REG_PIKE_SP, -(arg1 + 1));
       return;
   case F_SWAP:
       if (arg1) break;	/* Fallback to C version. */
@@ -2520,10 +2519,14 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
                             tmp4 = ra_alloc_any();
 
         arm64_load_sp_reg();
-        load64_pair_imm(tmp1, tmp2, ARM_REG_PIKE_SP, -2*(INT32)sizeof(struct svalue));
-        load64_pair_imm(tmp3, tmp4, ARM_REG_PIKE_SP, -1*(INT32)sizeof(struct svalue));
-        store64_pair_imm(tmp1, tmp2, ARM_REG_PIKE_SP, -1*(INT32)sizeof(struct svalue));
-        store64_pair_imm(tmp3, tmp4, ARM_REG_PIKE_SP, -2*(INT32)sizeof(struct svalue));
+        load64_pair_imm(tmp1, tmp2, ARM_REG_PIKE_SP,
+                        -(arg1 + 2)*(INT32)sizeof(struct svalue));
+        load64_pair_imm(tmp3, tmp4, ARM_REG_PIKE_SP,
+                        -1*(INT32)sizeof(struct svalue));
+        store64_pair_imm(tmp1, tmp2, ARM_REG_PIKE_SP,
+                         -1*(INT32)sizeof(struct svalue));
+        store64_pair_imm(tmp3, tmp4, ARM_REG_PIKE_SP,
+                         -(arg1 + 2)*(INT32)sizeof(struct svalue));
 
         ra_free(tmp1);
         ra_free(tmp2);

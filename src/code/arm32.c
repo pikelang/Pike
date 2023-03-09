@@ -2084,10 +2084,9 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
 {
   switch (opcode) {
   case F_DUP:
-      if (arg1) break;	/* Fallback to C version. */
       arm32_debug_instr_prologue_0(opcode);
       arm32_load_sp_reg();
-      arm32_push_svaluep_off(ARM_REG_PIKE_SP, -1);
+      arm32_push_svaluep_off(ARM_REG_PIKE_SP, -(1 + arg1));
       return;
   case F_SWAP:
       if (arg1) break;	/* Fallback to C version. */

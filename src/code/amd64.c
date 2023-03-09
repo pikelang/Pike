@@ -3146,25 +3146,25 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
   maybe_update_pc();
   switch(a) {
   case F_DUP:
-    if (b) break;	/* Fallback to C-version. */
     ins_debug_instr_prologue(b, 0, 0);
     amd64_load_sp_reg();
-    add_reg_imm_reg(sp_reg, -sizeof(struct svalue), P_REG_R10 );
+    add_reg_imm_reg(sp_reg, -sizeof(struct svalue) * (b + 1), P_REG_R10 );
     amd64_push_svaluep( P_REG_R10 );
     return;
 
   case F_SWAP:
-    if (b) break;	/* Fallback to C-version. */
     /*
-      pike_sp[-1] = pike_sp[-2]
-    */
+     * swap(pike_sp - 1, pike_sp - (arg1 + 2))
+     *
+     * NB: *KNOWS* that sizeof(struct svalue) == 16.
+     */
     ins_debug_instr_prologue(b, 0, 0);
     amd64_load_sp_reg();
-    add_reg_imm_reg( sp_reg, -2*sizeof(struct svalue), P_REG_RCX );
+    add_reg_imm_reg( sp_reg, -(b + 2)*sizeof(struct svalue), P_REG_RCX );
     mov_mem128_reg( P_REG_RCX, 0, P_REG_XMM0 );
-    mov_mem128_reg( P_REG_RCX, 16, P_REG_XMM1 );
+    mov_mem128_reg( P_REG_RCX, (b + 1)*16, P_REG_XMM1 );
     mov_reg_mem128( P_REG_XMM1, P_REG_RCX, 0 );
-    mov_reg_mem128( P_REG_XMM0, P_REG_RCX, 16 );
+    mov_reg_mem128( P_REG_XMM0, P_REG_RCX, (b + 1)*16 );
     return;
 
   case F_THIS_OBJECT:
