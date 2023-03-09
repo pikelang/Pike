@@ -1984,37 +1984,6 @@ static void low_ins_f_byte(unsigned int opcode)
       ins_f_byte(F_CONST1);
       ins_f_byte(F_RETURN);
       return;
-  case F_DUP:
-      arm32_debug_instr_prologue_0(opcode);
-      arm32_load_sp_reg();
-      arm32_push_svaluep_off(ARM_REG_PIKE_SP, -1);
-      return;
-  case F_SWAP:
-      arm32_debug_instr_prologue_0(opcode);
-      {
-        enum arm32_register tmp1 = ra_alloc_any(),
-                            tmp2 = ra_alloc_any(),
-                            tmp3 = ra_alloc_any(),
-                            tmp4 = ra_alloc_any();
-
-        ARM_ASSERT(tmp1 < tmp2 && tmp2 < tmp3 && tmp3 < tmp4);
-
-        arm32_load_sp_reg();
-        load_multiple(ARM_REG_PIKE_SP, ARM_MULT_DB, RBIT(tmp1)|RBIT(tmp2)|RBIT(tmp3)|RBIT(tmp4));
-        xor_reg_reg(tmp1, tmp1, tmp3);
-        xor_reg_reg(tmp3, tmp1, tmp3);
-        xor_reg_reg(tmp1, tmp1, tmp3);
-        xor_reg_reg(tmp2, tmp2, tmp4);
-        xor_reg_reg(tmp4, tmp2, tmp4);
-        xor_reg_reg(tmp2, tmp2, tmp4);
-        store_multiple(ARM_REG_PIKE_SP, ARM_MULT_DB, RBIT(tmp1)|RBIT(tmp2)|RBIT(tmp3)|RBIT(tmp4));
-
-        ra_free(tmp1);
-        ra_free(tmp2);
-        ra_free(tmp3);
-        ra_free(tmp4);
-      }
-      return;
   case F_NOT:
       arm32_debug_instr_prologue_0(opcode);
       {
@@ -2114,6 +2083,39 @@ void ins_f_byte(unsigned int opcode)
 void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
 {
   switch (opcode) {
+  case F_DUP:
+      if (arg1) break;	/* Fallback to C version. */
+      arm32_debug_instr_prologue_0(opcode);
+      arm32_load_sp_reg();
+      arm32_push_svaluep_off(ARM_REG_PIKE_SP, -1);
+      return;
+  case F_SWAP:
+      if (arg1) break;	/* Fallback to C version. */
+      arm32_debug_instr_prologue_0(opcode);
+      {
+        enum arm32_register tmp1 = ra_alloc_any(),
+                            tmp2 = ra_alloc_any(),
+                            tmp3 = ra_alloc_any(),
+                            tmp4 = ra_alloc_any();
+
+        ARM_ASSERT(tmp1 < tmp2 && tmp2 < tmp3 && tmp3 < tmp4);
+
+        arm32_load_sp_reg();
+        load_multiple(ARM_REG_PIKE_SP, ARM_MULT_DB, RBIT(tmp1)|RBIT(tmp2)|RBIT(tmp3)|RBIT(tmp4));
+        xor_reg_reg(tmp1, tmp1, tmp3);
+        xor_reg_reg(tmp3, tmp1, tmp3);
+        xor_reg_reg(tmp1, tmp1, tmp3);
+        xor_reg_reg(tmp2, tmp2, tmp4);
+        xor_reg_reg(tmp4, tmp2, tmp4);
+        xor_reg_reg(tmp2, tmp2, tmp4);
+        store_multiple(ARM_REG_PIKE_SP, ARM_MULT_DB, RBIT(tmp1)|RBIT(tmp2)|RBIT(tmp3)|RBIT(tmp4));
+
+        ra_free(tmp1);
+        ra_free(tmp2);
+        ra_free(tmp3);
+        ra_free(tmp4);
+      }
+      return;
   case F_NUMBER:
       arm32_debug_instr_prologue_1(opcode, arg1);
       arm32_push_int(arg1, NUMBER_NUMBER);

@@ -1559,7 +1559,7 @@ static int do_docode2(node *n, int flags)
 #ifndef USE_APPLY_N
               emit0(F_MARK);
 #endif
-              emit0(F_DUP);
+              emit1(F_DUP, 0);
             }
 #ifdef USE_APPLY_N
             emit2(F_CALL_LFUN_N, f, 1);
@@ -1878,7 +1878,7 @@ static int do_docode2(node *n, int flags)
 	}
 	do_docode (CAR(low), DO_NOT_COPY);
 	tmp1 = alloc_label();
-	emit0(F_DUP);
+        emit1(F_DUP, 0);
 	emit0(F_CONST0);
 	do_jump(F_BRANCH_WHEN_GE, tmp1);
 	/* The value is negative. replace it with zero. */

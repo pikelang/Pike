@@ -3060,12 +3060,18 @@ OPCODE0(F_ZERO_TYPE, "zero_type", 0, {
   }
 });
 
-OPCODE0(F_SWAP,"swap",0,{
-  stack_swap();
+/* Swap the stack top with the element arg1 positions below. */
+OPCODE1(F_SWAP, "swap", 0, {
+  if (!arg1) {
+    stack_swap();
+  } else {
+    swap_svalues(Pike_sp - (arg1 + 2), Pike_sp - 1);
+  }
 });
 
-OPCODE0(F_DUP,"dup",I_UPDATE_SP,{
-  stack_dup();
+/* Duplicate the element arg1 positions down on the stack. */
+OPCODE1(F_DUP, "dup", I_UPDATE_SP, {
+  push_svalue(Pike_sp - (arg1 + 1));
 });
 
 OPCODE2(F_THIS, "this", I_UPDATE_SP, {

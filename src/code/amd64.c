@@ -1883,13 +1883,6 @@ void ins_f_byte(unsigned int b)
   addr=instrs[b].address;
   switch(b + F_OFFSET)
   {
-  case F_DUP:
-    ins_debug_instr_prologue(b, 0, 0);
-    amd64_load_sp_reg();
-    add_reg_imm_reg(sp_reg, -sizeof(struct svalue), P_REG_R10 );
-    amd64_push_svaluep( P_REG_R10 );
-    return;
-
 #if 0
   case F_ESCAPE_CATCH:
 
@@ -2336,19 +2329,6 @@ void ins_f_byte(unsigned int b)
       amd64_load_sp_reg();
       LABEL_B;
     }
-    return;
-
-  case F_SWAP:
-    /*
-      pike_sp[-1] = pike_sp[-2]
-    */
-    ins_debug_instr_prologue(b, 0, 0);
-    amd64_load_sp_reg();
-    add_reg_imm_reg( sp_reg, -2*sizeof(struct svalue), P_REG_RCX );
-    mov_mem128_reg( P_REG_RCX, 0, P_REG_XMM0 );
-    mov_mem128_reg( P_REG_RCX, 16, P_REG_XMM1 );
-    mov_reg_mem128( P_REG_XMM1, P_REG_RCX, 0 );
-    mov_reg_mem128( P_REG_XMM0, P_REG_RCX, 16 );
     return;
 
   case F_INDEX:
@@ -3165,6 +3145,28 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
 {
   maybe_update_pc();
   switch(a) {
+  case F_DUP:
+    if (b) break;	/* Fallback to C-version. */
+    ins_debug_instr_prologue(b, 0, 0);
+    amd64_load_sp_reg();
+    add_reg_imm_reg(sp_reg, -sizeof(struct svalue), P_REG_R10 );
+    amd64_push_svaluep( P_REG_R10 );
+    return;
+
+  case F_SWAP:
+    if (b) break;	/* Fallback to C-version. */
+    /*
+      pike_sp[-1] = pike_sp[-2]
+    */
+    ins_debug_instr_prologue(b, 0, 0);
+    amd64_load_sp_reg();
+    add_reg_imm_reg( sp_reg, -2*sizeof(struct svalue), P_REG_RCX );
+    mov_mem128_reg( P_REG_RCX, 0, P_REG_XMM0 );
+    mov_mem128_reg( P_REG_RCX, 16, P_REG_XMM1 );
+    mov_reg_mem128( P_REG_XMM1, P_REG_RCX, 0 );
+    mov_reg_mem128( P_REG_XMM0, P_REG_RCX, 16 );
+    return;
+
   case F_THIS_OBJECT:
     if( b == 0 )
     {

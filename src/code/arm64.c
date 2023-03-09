@@ -2415,31 +2415,6 @@ static void low_ins_f_byte(unsigned int opcode)
       ins_f_byte(F_CONST1);
       ins_f_byte(F_RETURN);
       return;
-  case F_DUP:
-      arm64_debug_instr_prologue_0(opcode);
-      arm64_load_sp_reg();
-      arm64_push_svaluep_off(ARM_REG_PIKE_SP, -1);
-      return;
-  case F_SWAP:
-      arm64_debug_instr_prologue_0(opcode);
-      {
-        enum arm64_register tmp1 = ra_alloc_any(),
-                            tmp2 = ra_alloc_any(),
-                            tmp3 = ra_alloc_any(),
-                            tmp4 = ra_alloc_any();
-
-        arm64_load_sp_reg();
-	load64_pair_imm(tmp1, tmp2, ARM_REG_PIKE_SP, -2*(INT32)sizeof(struct svalue));
-	load64_pair_imm(tmp3, tmp4, ARM_REG_PIKE_SP, -1*(INT32)sizeof(struct svalue));
-	store64_pair_imm(tmp1, tmp2, ARM_REG_PIKE_SP, -1*(INT32)sizeof(struct svalue));
-	store64_pair_imm(tmp3, tmp4, ARM_REG_PIKE_SP, -2*(INT32)sizeof(struct svalue));
-
-        ra_free(tmp1);
-        ra_free(tmp2);
-        ra_free(tmp3);
-        ra_free(tmp4);
-      }
-      return;
   case F_NOT:
       arm64_debug_instr_prologue_0(opcode);
       {
@@ -2529,6 +2504,33 @@ void ins_f_byte(unsigned int opcode)
 void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
 {
   switch (opcode) {
+  case F_DUP:
+      if (arg1) break;	/* Fallback to C version. */
+      arm64_debug_instr_prologue_0(opcode);
+      arm64_load_sp_reg();
+      arm64_push_svaluep_off(ARM_REG_PIKE_SP, -1);
+      return;
+  case F_SWAP:
+      if (arg1) break;	/* Fallback to C version. */
+      arm64_debug_instr_prologue_0(opcode);
+      {
+        enum arm64_register tmp1 = ra_alloc_any(),
+                            tmp2 = ra_alloc_any(),
+                            tmp3 = ra_alloc_any(),
+                            tmp4 = ra_alloc_any();
+
+        arm64_load_sp_reg();
+        load64_pair_imm(tmp1, tmp2, ARM_REG_PIKE_SP, -2*(INT32)sizeof(struct svalue));
+        load64_pair_imm(tmp3, tmp4, ARM_REG_PIKE_SP, -1*(INT32)sizeof(struct svalue));
+        store64_pair_imm(tmp1, tmp2, ARM_REG_PIKE_SP, -1*(INT32)sizeof(struct svalue));
+        store64_pair_imm(tmp3, tmp4, ARM_REG_PIKE_SP, -2*(INT32)sizeof(struct svalue));
+
+        ra_free(tmp1);
+        ra_free(tmp2);
+        ra_free(tmp3);
+        ra_free(tmp4);
+      }
+      return;
   case F_NUMBER:
       arm64_debug_instr_prologue_1(opcode, arg1);
       arm64_push_int(arg1, NUMBER_NUMBER);
