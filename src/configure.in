@@ -1175,15 +1175,16 @@ MY_AC_ARG_WITH(mc-stack-frames, MY_DESCR([--with-mc-stack-frames],
 MY_AC_ARG_WITH(pg, MY_DESCR([--with-pg],[use the gcc -pg option]),
 	       [PROFIL=-pg])
 AC_ARG_WITH(poll, MY_DESCR([--with-poll], [use poll instead of select]), [], [
-  # Neither --with-poll nor --without-poll was specified
+  # Neither --with-poll nor --without-poll was specified.
+  # Default to --with-poll (ie use it if it exists), except for various BSDs.
+  with_poll=yes
   case "$pike_cv_sys_os" in
-    Solaris|HP-UX|OSF1|Linux|UnixWare|OpenUNIX|AIX)
-#    PIKE_MSG_WARN([Defaulting to --with-poll since the OS is $pike_cv_sys_os.])
-# Nothing to warn about, really...
-# NOTE: Darwin (OSX/iOS) have poll, but it's layered on kqueue, so there's no
-#   real benefit to supporting it separately there.
-      with_poll=yes
-    ;;
+      *BSD*|Darwin|*GNU*|next|SunOS)
+          # NOTE: Several of these (eg Darwin) have poll, but it is
+          #       layered on kqueue or select, so there's no real
+          #       benefit to supporting it separately there.
+          with_poll=no
+          ;;
   esac
 ])
 AC_ARG_WITH(max-fd,
