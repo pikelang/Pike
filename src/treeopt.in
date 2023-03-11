@@ -918,6 +918,13 @@ F_LAND(0 = F_LAND(*, +[node_is_false($$)]), *):
 //        0 = +[node_is_false($$)]):
 //   $0;
 
+// Using F_LAND or F_LOR in place of '?'.
+F_POP_VALUE(F_LAND(F_NOT(0, *), 1), *):
+  F_POP_VALUE(F_LOR($0, $1), -);
+
+F_POP_VALUE(F_LOR(F_NOT(0, *), 1), *):
+  F_POP_VALUE(F_LAND($0, $1), -);
+
 // Optimizations of if statements.
 '?'(-, -):
   -;
