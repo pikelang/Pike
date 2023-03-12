@@ -116,4 +116,7 @@ OPCODE_NOCODE("set_local_end", F_SET_LOCAL_END, I_HASARG|I_ARG_T_LOCAL)
 /* Initial assignment to local variable. */
 OPCODE_NOCODE("initialize", F_INITIALIZE, 0)
 
+/* Marker for rest of array in multi assignment. */
+OPCODE_NOCODE("...", F_DOT_DOT_DOT, 0)
+
 OPCODE_NOCODE("instr_max", F_MAX_INSTR, 0)
