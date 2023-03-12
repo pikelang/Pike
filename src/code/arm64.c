@@ -2510,7 +2510,6 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
       arm64_push_svaluep_off(ARM_REG_PIKE_SP, -(arg1 + 1));
       return;
   case F_SWAP:
-      if (arg1) break;	/* Fallback to C version. */
       arm64_debug_instr_prologue_0(opcode);
       {
         enum arm64_register tmp1 = ra_alloc_any(),
