@@ -334,6 +334,12 @@ PMOD_EXPORT void init_interpreter(void)
  * local variable : { svalue pointer (T_SVALUE_PTR), nothing (T_VOID) }
  * global variable : { object, identifier index (T_OBJ_INDEX) } (internal object indexing)
  * lvalue array: { T_ARRAY_LVALUE, array with lvalue pairs }
+ * raw getter/setter: { function (T_FUNCTION), reserved (T_VOID) }
+ *
+ * Notes:
+ *   Raw getter/setters were added in Pike 9.0. They return the value
+ *   that they had on entry, and (if they get an argument) set their
+ *   value to the argument.
  */
 
 int lvalue_to_svalue_no_free(struct svalue *to, struct svalue *lval)
@@ -389,6 +395,12 @@ int lvalue_to_svalue_no_free(struct svalue *to, struct svalue *lval)
       }else{
 	SET_SVAL(*to, T_INT, NUMBER_UNDEFINED, integer, 0);
       }
+      break;
+
+    case T_FUNCTION:
+      apply_svalue(lval, 0);
+      *to = Pike_sp[-1];
+      Pike_sp--;
       break;
 
     default:
@@ -466,6 +478,13 @@ PMOD_EXPORT void atomic_get_set_lvalue(struct svalue *lval,
       }
       break;
 #endif
+
+    case T_FUNCTION:
+      push_svalue(from_to);
+      apply_svalue(lval, 1);
+      swap_svalues(from_to, Pike_sp-1);
+      pop_stack();
+      break;
 
     default:
       index_error(0, 0, lval, lval+1, NULL);
@@ -560,6 +579,12 @@ PMOD_EXPORT void assign_lvalue(struct svalue *lval,struct svalue *from)
       multiset_insert(lval->u.multiset, lval+1);
     break;
 
+  case T_FUNCTION:
+    push_svalue(from);
+    apply_svalue(lval, 1);
+    pop_stack();
+    break;
+
   default:
     index_error(0, 0, lval, lval+1, NULL);
   }
@@ -594,6 +619,9 @@ union anything *get_pointer_if_this_type(struct svalue *lval, TYPE_T t)
       return mapping_get_item_ptr(lval->u.mapping,lval+1,t);
 
     case T_MULTISET: return 0;
+
+    case T_FUNCTION:
+      return 0;
 
     default:
       index_error(0, 0, lval, lval+1, NULL);
