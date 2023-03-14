@@ -4,6 +4,7 @@
 
 need_to_make_depend=no
 prune_flag=""
+localdir=""
 
 case :$PATH: in
    */NT/tools:*)
@@ -17,6 +18,11 @@ if test "x$1" = "x--no-recursion"; then
   shift
 fi
 
+if test "x$1" = "x--keep-localdir"; then
+  localdir=`pwd`
+  shift
+fi
+
 if test "x$1" = "x" ; then
   base=`echo $0 | sed 's@[^/]*$@@g'`
   if test "x$base" != "x" ; then
@@ -25,11 +31,13 @@ if test "x$1" = "x" ; then
 
   localdir=`pwd`
 else
-  localdir=`echo $0 | sed 's@[^/]*$@@g'`
   if test "x$localdir" = "x"; then
-    localdir=`pwd`
-  else
-    localdir=`cd $localdir;pwd`
+    localdir=`echo $0 | sed 's@[^/]*$@@g'`
+    if test "x$localdir" = "x"; then
+      localdir=`pwd`
+    else
+      localdir=`cd $localdir;pwd`
+    fi
   fi
 
   cd "$1"
@@ -57,7 +65,7 @@ if [ "$autoconf:$autoheader" = ":" ]; then
     autoconf=autoconf
     autoheader=autoheader
     # Try supported versions in priority order.
-    for ver in 2.71 2.69 2.64 2.59 2.52 2.50; do
+    for ver in $AUTOCONF_VERSION 2.71 2.69 2.64 2.59 2.52 2.50; do
         if findprog "autoconf-$ver" && findprog "autoheader-$ver"; then
             autoconf="autoconf-$ver"
             autoheader="autoheader-$ver"
