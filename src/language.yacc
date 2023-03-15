@@ -185,7 +185,6 @@
  * NB: Other functions have their prototypes in las.h.
  */
 static void yyerror_reserved(const char *keyword);
-static struct pike_string *get_new_name(struct pike_string *prefix);
 static void redefine_local(struct compiler_frame *frame, int var,
                            node *def, node *init);
 static void mark_lvalue_as_used(node *n);
@@ -5387,7 +5386,7 @@ static void yyerror_reserved(const char *keyword)
   my_yyerror("%s is a reserved word.", keyword);
 }
 
-static struct pike_string *get_new_name(struct pike_string *prefix)
+struct pike_string *get_new_name(struct pike_string *prefix)
 {
   char buf[40];
   /* Generate a name for a global symbol... */

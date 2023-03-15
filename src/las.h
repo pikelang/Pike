@@ -24,6 +24,7 @@ struct compiler_frame;		/* Avoid gcc warning. */
 /*
  * Prototypes for functions in language.yacc.
  */
+struct pike_string *get_new_name(struct pike_string *prefix);
 int low_bind_local(struct compiler_frame *frame, node *n);
 int bind_local(struct compiler_frame *frame, int local_no);
 void release_local(struct compiler_frame *frame, int var);
