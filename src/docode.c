@@ -3100,6 +3100,15 @@ static int do_docode2(node *n, int flags)
     }
     return 0;
 
+  case F_GET_SET_LVALUE:
+    if (flags & WANT_LVALUE) {
+      do_docode(CAR(n), 0);
+      emit0(F_GET_SET_LVALUE);
+      return 2;
+    }
+    yyerror("Invalid r-value.\n");
+    return 0;
+
   default:
     Pike_fatal("Infernal compiler error (unknown parse-tree-token %d).\n", n->token);
     UNREACHABLE(return 0);
