@@ -94,6 +94,9 @@
 #endif /* _MSC_VER <= 1900 */
 #endif /* _MSC_VER */
 
+#endif /* __NT__ */
+
+#if defined(__NT__) || defined(__HAIKU__)
 /* NB: Defaults to 64. */
 #ifndef FD_SETSIZE
 /*
