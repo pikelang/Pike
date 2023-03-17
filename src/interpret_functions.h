@@ -3400,7 +3400,7 @@ OPCODE0(F_ATOMIC_GET_SET, "?=", I_UPDATE_SP, {
 OPCODE0(F_GET_SET_LVALUE, "&get/set", I_UPDATE_SP, {
     SET_SVAL_TYPE(Pike_sp[0], T_VOID);
     Pike_sp++;
-  })
+  });
 
 /*
 #undef PROG_COUNTER
