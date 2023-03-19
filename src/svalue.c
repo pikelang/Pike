@@ -1840,6 +1840,10 @@ PMOD_EXPORT void describe_svalue(struct byte_buffer *buf, const struct svalue *s
       buffer_advance(buf, sprintf(buffer_ensure_space(buf, 50), "<Svalue %p>", s->u.lval));
       break;
 
+    case PIKE_T_ARRAY_LVALUE:
+      buffer_add_str(buf, "<Array lvalue>");
+      break;
+
     default:
       buffer_advance(buf, sprintf(buffer_ensure_space(buf, 50), "<Unknown %d>", TYPEOF(*s)));
       break;
