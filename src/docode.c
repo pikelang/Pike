@@ -920,19 +920,50 @@ static int is_apply_constant_function_arg0( node *n, node *target )
     return 0;
 }
 
+static int count_required_multi_assign(node *lval_list)
+{
+  int res = 0;
+  int pos;
+
+  for (pos = 0; lval_list; pos++) {
+    node *lval = lval_list;
+    lval_list = NULL;
+    if (lval->token == F_LVALUE_LIST)  {
+      lval_list = CDR(lval);
+      lval = CAR(lval);
+    }
+    if (lval->token == F_DOT_DOT_DOT) {
+      res = ~pos;
+      if (lval_list) {
+        yyerror("More variables after ... in multi-assign.");
+        lval_list = NULL;
+      }
+    } else if ((lval->token != F_ASSIGN) &&
+               (lval->token != F_GET_SET_LVALUE) &&
+               (lval->token != F_COMMA_EXPR)) {
+      /* This position is not optional. */
+      res = pos + 1;
+    }
+  }
+
+  return res;
+}
+
 static void emit_multi_assign(node *vals, node *vars, int no)
 {
   struct compilation *c = THIS_COMPILATION;
   node *var;
-  node *val;
   node **valp = my_get_arg(&vals, no++);
 
-  if (!vars && (!valp || !*valp)) return;
-  if (!(vars && valp && (val = *valp))) {
-    yyerror("Argument count mismatch for multi-assignment.\n");
+  if (!vars) {
+    /* No more lvalues. */
+    if (valp && *valp) {
+      yyerror("Too many arguments for multi-assignment.\n");
+    }
     return;
   }
 
+  /* Get the next lvalue. */
   if (vars->token == F_LVALUE_LIST) {
     var = CAR(vars);
     vars = CDR(vars);
@@ -979,8 +1010,13 @@ static void emit_multi_assign(node *vals, node *vars, int no)
   }
 
   /* Push the value. */
-  code_expression(*valp, 0, "RHS");
-  emit_multi_assign(vals, vars, no);
+  if (!valp || !*valp) {
+    yyerror("Too few arguments to multi-assignment.\n");
+    emit0(F_UNDEFINED);
+  } else {
+    code_expression(*valp, 0, "RHS");
+    emit_multi_assign(vals, vars, no);
+  }
 
   /* Emit the assign and pop opcode. */
   switch(var->token) {
@@ -1350,18 +1386,21 @@ static int do_docode2(node *n, int flags)
       return 0;
     } else {
       /* Fall back to the normal assign case. */
-      tmp1=do_docode(CAR(n),DO_LVALUE);
+      emit1(F_NUMBER, count_required_multi_assign(CAR(n)));
+      tmp1 = do_docode(CAR(n), DO_LVALUE|DO_NO_DEFAULT);
 #ifdef PIKE_DEBUG
       if(tmp1 & 1)
 	Pike_fatal("Very internal compiler error.\n");
 #endif
-      emit1(F_ARRAY_LVALUE, tmp1);
+      emit1(F_ARRAY_LVALUE, tmp1 + 1);
       emit0(F_MARK);
       PUSH_CLEANUP_FRAME(do_pop_mark, 0);
       do_docode(CDR(n), 0);
       emit_apply_builtin("aggregate");
       POP_AND_DONT_CLEANUP;
       emit0(F_ASSIGN);
+
+      /* FIXME: Handle default values here. */
       return 1;
     }
 
@@ -2762,16 +2801,17 @@ static int do_docode2(node *n, int flags)
   }
 
   case F_LVALUE_LIST:
-    ret = do_docode(CAR(n),DO_LVALUE);
-    return ret + do_docode(CDR(n),DO_LVALUE);
+    ret = do_docode(CAR(n), flags);
+    return ret + do_docode(CDR(n), flags);
 
     case F_ARRAY_LVALUE:
-      tmp1=do_docode(CAR(n),DO_LVALUE);
+      emit1(F_NUMBER, count_required_multi_assign(CAR(n)));
+      tmp1 = do_docode(CAR(n), flags);
 #ifdef PIKE_DEBUG
       if(tmp1 & 1)
 	Pike_fatal("Very internal compiler error.\n");
 #endif
-      emit1(F_ARRAY_LVALUE, tmp1);
+      emit1(F_ARRAY_LVALUE, tmp1 + 1);
       return 2;
 
   case F_ARROW:
