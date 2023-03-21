@@ -135,6 +135,10 @@ static void image_magic_index(INT32 args)
 	 return;
       }
 
+   if (!Pike_fp->current_object) {
+     Pike_fatal("Image: Lost track of module object!\n");
+   }
+
    stack_dup();
    ref_push_object(fp->current_object);
    stack_swap();
