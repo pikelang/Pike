@@ -2825,7 +2825,7 @@ protected object(TimeRange)|zero dwim_tod(TimeRange origin,
 //        werror("%O %O %O -> %O %O %O (%O)\n",
 //  	     tr->hour_no(),tr->minute_no(),tr->second_no(),
 //  	     h,m,s,tr);
-      if (((int)tr->julian_day() + 0.5) != (int)origin->julian_day()) {
+      if ((int)(tr->julian_day() + 0.5) != (int)origin->julian_day()) {
          // Timezone adjustment has moved tr to a different day.
          // This happens eg for the first 14 seconds of 1900-01-01,
          // which move back to 1899-12-31 in the timezone Europe/Stockholm.
