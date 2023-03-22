@@ -51,6 +51,15 @@ test_dwim("2002-11-19T07:04:03")
 test_dwim("20021119 070403 GMT","GMT")
 test_dwim("20021119 070403")
 
+dnl 1900-01-01 was delayed by 14 seconds in Europe/Stockholm...
+dnl Cf issue #10111.
+test_eq(Calendar.ISO.set_time_zone("Europe/Stockholm")->
+        parse("%y-%M-%DT%h:%m:%s", "1900-01-01T00:00:00")->
+        unix_time(), -2208992400)
+test_eq(Calendar.ISO.set_time_zone("Europe/Stockholm")->
+        parse("%y-%M-%DT%h:%m:%s", "1899-12-31T23:59:59")->
+        unix_time(), -2208992415)
+
 define(test_http,[[
   test_eq(Calendar.ISO.http_time($1)->format_time(),$2)
 ]])
