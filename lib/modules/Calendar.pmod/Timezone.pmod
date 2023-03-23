@@ -1388,7 +1388,12 @@ class Runtime_timezone_compiler
 	  if (sscanf(line, "Zone%*[ \t]%[^ \t]%*[ \t]%s",
 		     zone_name, zone_info) == 4) {
 	    // werror("Creating zone %O.\n", zone_name);
-	    Zone z = current_zone = new_zones[zone_name] = Zone(zone_name);
+            if (!new_zones[zone_name]) {
+              // Some zones appear in multiple places
+              // eg in backzone and europe.
+              new_zones[zone_name] = Zone(zone_name);
+            }
+            Zone z = current_zone = new_zones[zone_name];
 	    z->add_line(zone_info);
 	  } else {
 	    werror("Failed to parse directive %O.\n", line);
@@ -1397,14 +1402,8 @@ class Runtime_timezone_compiler
 	  string zone_name, zone_alias;
 	  if (sscanf(line, "Link%*[ \t]%[^ \t]%*[ \t]%[^ \t]",
 		     zone_name, zone_alias) == 4) {
-	    Zone z = zones[zone_name];
-	    if (z) {
-	      z->add_alias(zone_alias);
-	      new_zones[zone_alias] = z;
-	    } else {
-	      // werror("Deferred alias: %O ==> %O.\n", zone_alias, zone_name);
-	      zone_aliases[zone_alias] = zone_name;
-	    }
+            // werror("Deferred alias: %O ==> %O.\n", zone_alias, zone_name);
+            zone_aliases[zone_alias] = zone_name;
 	  } else {
 	    werror("Failed to parse directive %O.\n", line);
 	  }
@@ -1426,7 +1425,9 @@ class Runtime_timezone_compiler
       // Fixup the zone aliases.
       foreach(zone_aliases; string zone_alias; string zone_name) {
 	Zone z;
-	if ((z = new_zones[zone_name])) {
+        // NB: Do not zap zones that have proper definitions
+        //     in eg backzone.
+        if ((z = new_zones[zone_name]) && !new_zones[zone_alias]) {
 	  z->add_alias(zone_alias);
 	  new_zones[zone_alias] = z;
 	} else {
@@ -1449,21 +1450,41 @@ class Runtime_timezone_compiler
 #endif
       if (!zone_cache) parse_all_rules();
       object ret = zone_cache[s];
-      if (!undefinedp(ret)) return ret || UNDEFINED;
+      if (!undefinedp(ret)) {
+#ifdef RTTZC_DEBUG
+        werror("Found in cache: %O\n", ret);
+#endif
+        return ret || UNDEFINED;
+      }
       Zone z;
       if (!(z = zones[s])) {
 	// Check if it's a known alias.
 	// Note: TZnames.abbr2zones is sorted with
 	//       the most recent user first.
 	array(string) a = .TZnames.abbr2zones[s];
-	if (a && sizeof(a))
+        if (a && sizeof(a)) {
+#ifdef RTTZC_DEBUG
+          werror("Found alias: %O\n", a[0]);
+#endif
 	  return zone_cache[s] = find_zone(a[0]);
+        }
+#ifdef RTTZC_DEBUG
+        werror("Not found!\n");
+#endif
 	return UNDEFINED;
       }
       ret = ZoneCompiler(z->id, z->lines, z->aliases)->compile();
+#ifdef RTTZC_DEBUG
+      werror("Compiled zone: %O\n", ret);
+#endif
       foreach(z->aliases, string zone_alias) {
-	zone_cache[zone_alias] = ret;
-	m_delete(zones, zone_alias);
+        if (!zone_cache[zone_alias]) {
+#ifdef RTTZC_DEBUG
+          werror("Updating aliases: %O\n", zone_alias);
+#endif
+          zone_cache[zone_alias] = ret;
+          m_delete(zones, zone_alias);
+        }
       }
       m_delete(zones, s);
       return ret;
