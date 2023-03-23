@@ -2364,12 +2364,17 @@ static TimeRange dwim_tod(TimeRange origin,string whut,int h,int m,int s)
 //        werror("%O %O %O -> %O %O %O (%O)\n",
 //  	     tr->hour_no(),tr->minute_no(),tr->second_no(),
 //  	     h,m,s,tr);
-      if ((int)(tr->julian_day() + 0.5) != (int)origin->julian_day()) {
+      string tr_ymd = tr->format_ymd_short();
+      string origin_ymd = origin->format_ymd_short();
+      if (tr_ymd != origin_ymd) {
          // Timezone adjustment has moved tr to a different day.
          // This happens eg for the first 14 seconds of 1900-01-01,
          // which move back to 1899-12-31 in the timezone Europe/Stockholm.
-         tr = tr->add((int)(origin->julian_day() + 0.5) -
-                      (int)tr->julian_day(), Day);
+         if (tr_ymd < origin_ymd) {
+            tr = tr->add(1, Day);
+         } else {
+            tr = tr->add(-1, Day);
+         }
       }
       if (tr->hour_no()!=h)
 	 tr=tr->add(h-tr->hour_no(),Hour);
