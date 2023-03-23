@@ -1450,9 +1450,11 @@ class Runtime_timezone_compiler
 	Zone z;
         // NB: Do not zap zones that have proper definitions
         //     in eg backzone.
-        if ((z = new_zones[zone_name]) && !new_zones[zone_alias]) {
-	  z->add_alias(zone_alias);
-	  new_zones[zone_alias] = z;
+        if (z = new_zones[zone_name]) {
+          if (!new_zones[zone_alias]) {
+            z->add_alias(zone_alias);
+            new_zones[zone_alias] = z;
+          }
 	} else {
 	  werror("Zone %O is a link to a nonexistant zone %O.\n",
 		 zone_alias, zone_name);
