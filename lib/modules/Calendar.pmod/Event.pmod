@@ -1,3 +1,4 @@
+/* -*- mode: Pike; c-basic-offset: 3; -*- */
 #pike __REAL_VERSION__
 
 protected constant M_YD=({0,0,31,59,90,120,151,181,212,243,273,304,334});
@@ -168,10 +169,10 @@ class Day_Event
   //! Uses the virtual method @[scan_jd].
   //! @seealso
   //!   @[Event.next]
-  Calendar.TimeRanges.TimeRange next(void|Calendar.TimeRanges.TimeRange from,
-				     void|int(0..1) including)
+   Calendar.TimeRanges.TimeRange
+       next(Calendar.TimeRanges.TimeRange from = std_day(),
+            void|int(0..1) including)
    {
-      if (!from) from=std_day();
       int jd;
       if (including) jd=(int)(from->julian_day());
       else jd=(int)(from->end()->julian_day());
@@ -182,11 +183,10 @@ class Day_Event
   //! Uses the virtual method @[scan_jd].
   //! @seealso
   //!   @[Event.previous]
-  object(Calendar.TimeRanges.TimeRange)|zero
-    previous(void|Calendar.TimeRanges.TimeRange from,
-             void|int(0..1) including)
+   object(Calendar.TimeRanges.TimeRange)|zero
+       previous(Calendar.TimeRanges.TimeRange from = std_day(),
+                void|int(0..1) including)
    {
-      if (!from) from=std_day();
       int jd;
       if (including) jd=(int)(from->end()->julian_day());
       else jd=(floatp(from->julian_day())
@@ -1033,10 +1033,10 @@ class Solar(int|void event_type)
     return utc - (int)round(.ISO.deltat(utc));
   }
 
-  Calendar.TimeRanges.TimeRange next(void|Calendar.TimeRanges.TimeRange from,
-				     void|int(0..1) including)
+   Calendar.TimeRanges.TimeRange
+      next(Calendar.TimeRanges.TimeRange from = std_day(),
+           void|int(0..1) including)
    {
-      if (!from) from=std_day();
       int jd;
       if (including) jd=(int)(from->julian_day());
       else jd=(int)(from->end()->julian_day());
@@ -1047,10 +1047,10 @@ class Solar(int|void event_type)
    //! Uses the virtual method @[scan_jd].
    //! @seealso
    //!   @[Event.previous]
-   Calendar.TimeRanges.TimeRange previous(void|Calendar.TimeRanges.TimeRange from,
-					  void|int(0..1) including)
+   Calendar.TimeRanges.TimeRange
+      previous(void|Calendar.TimeRanges.TimeRange from = std_day(),
+               void|int(0..1) including)
    {
-      if (!from) from=std_day();
       int jd;
       if (including) jd=(int)(from->end()->julian_day());
       else jd=(floatp(from->julian_day())
@@ -1462,17 +1462,17 @@ class TZShift_Event
       timezone=_tz;
    }
 
-   Calendar.TimeRanges.TimeRange next(void|Calendar.TimeRanges.TimeRange from,
-				      void|int(0..1) including)
+   Calendar.TimeRanges.TimeRange
+      next(Calendar.TimeRanges.TimeRange from = std_second(),
+           void|int(0..1) including)
    {
-      if (!from) from=std_second();
       return scan_shift(timezone||from->timezone(),
 			from,1,including);
    }
-   Calendar.TimeRanges.TimeRange previous(void|Calendar.TimeRanges.TimeRange from,
-					  void|int(0..1) including)
+   Calendar.TimeRanges.TimeRange
+      previous(void|Calendar.TimeRanges.TimeRange from = std_second(),
+               void|int(0..1) including)
    {
-      if (!from) from=std_second();
       return scan_shift(timezone||from->timezone(),
 			from,-1,including);
    }

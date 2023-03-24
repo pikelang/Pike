@@ -1,3 +1,5 @@
+/* -*- mode: Pike; c-basic-offset: 3; -*- */
+
 //!
 //! module Calendar
 //! submodule YMD
@@ -849,10 +851,8 @@ class YMD
 		 { return Year("ymd_yn",rules,x,1); });
    }
 
-   cYear year(void|int m)
+   cYear year(int m = 1)
    {
-      if (undefinedp (m)) m=1;
-
       if (!n&&m==-1)
 	 return Year("ymd_y",rules,y,yjd,1);
 
@@ -927,10 +927,8 @@ class YMD
 //!
 //!     If n is negative, it is counted from the end of the range.
 
-   cDay day(void|int m, mixed... ignored)
+   cDay day(int m = 1, mixed... ignored)
    {
-      if (undefinedp (m)) m=1;
-
       if (!n)
 	 return Day("ymd_yd",rules,y,yjd,jd,yd,1);
 
@@ -1185,11 +1183,9 @@ class YMD
         return second()*(int)(how_many(Second)*n);
    }
 
-   array(TimeRange) split(int|float n, void|function|TimeRange with)
+   array(TimeRange) split(int|float n, function|TimeRange with = Second())
    {
-      if(!with)
-        with=Second();
-      else if (functionp(with))
+      if (functionp(with))
         with=promote_program(with);
 
       int length=(int)(how_many(with)/n);
