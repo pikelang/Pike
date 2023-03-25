@@ -1,3 +1,5 @@
+/* -*- mode: Pike; c-basic-offset: 3; -*- */
+
 #charset iso-8859-1
 #pike __REAL_VERSION__
 

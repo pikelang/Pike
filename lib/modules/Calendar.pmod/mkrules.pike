@@ -1,3 +1,5 @@
+/* -*- mode: Pike; c-basic-offset: 3; -*- */
+
 // this is a script to generate rules
 // from timezone data files;
 // ftp://elsie.nci.nih.gov/pub/
@@ -770,7 +772,9 @@ int main(int ac,array(string) am)
    Stdio.File("TZrules.pmod","wtc")->write(t);
    werror("\n");
 
-   t= "#charset utf-8\n"
+   t= "/* -*- mode: Pike; c-basic-offset: 3; -*- */\n"
+      "\n"
+      "#charset utf-8\n"
       "#pike __REAL_VERSION__\n"
       "// ----------------------------------------------------------------\n"
       "// Timezones\n"

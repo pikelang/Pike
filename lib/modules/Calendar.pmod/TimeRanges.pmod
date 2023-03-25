@@ -1,3 +1,5 @@
+/* -*- mode: Pike; c-basic-offset: 3; -*- */
+
 //! module Calendar
 //!
 //! submodule TimeRanges
