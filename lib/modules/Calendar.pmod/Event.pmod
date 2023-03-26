@@ -1048,7 +1048,7 @@ class Solar(int|void event_type)
    //! @seealso
    //!   @[Event.previous]
    Calendar.TimeRanges.TimeRange
-      previous(void|Calendar.TimeRanges.TimeRange from = std_day(),
+      previous(Calendar.TimeRanges.TimeRange from = std_day(),
                void|int(0..1) including)
    {
       int jd;
@@ -1470,7 +1470,7 @@ class TZShift_Event
 			from,1,including);
    }
    Calendar.TimeRanges.TimeRange
-      previous(void|Calendar.TimeRanges.TimeRange from = std_second(),
+      previous(Calendar.TimeRanges.TimeRange from = std_second(),
                void|int(0..1) including)
    {
       return scan_shift(timezone||from->timezone(),
