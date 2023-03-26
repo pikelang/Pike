@@ -713,6 +713,8 @@ void fd_init(void)
   WSADATA wsadata;
   OSVERSIONINFO osversion;
 
+  FDDEBUG(fprintf(stderr, "fd_init()...\n"));
+
   mt_init(&fd_mutex);
   co_init(&fd_cond);
   mt_lock(&fd_mutex);
@@ -2000,17 +2002,19 @@ PMOD_EXPORT FD debug_fd_accept(FD fd, struct sockaddr *addr,
 PMOD_EXPORT int PIKE_CONCAT(debug_fd_,NAME) X1 { \
   SOCKET s; \
   int ret; \
+  int err; \
   FDDEBUG(fprintf(stderr, "fd_" #NAME "(%d, ...)...\n", fd)); \
   if (fd_to_socket(fd, &s, 0) < 0) return -1;		      \
   FDDEBUG(fprintf(stderr, #NAME " on %d (%ld)\n", \
 		  fd, (long)(ptrdiff_t)s)); \
   ret = NAME X2; \
+  err = WSAGetLastError(); \
   release_fd(fd); \
   if(ret == SOCKET_ERROR) { \
-    set_errno_from_win32_error (WSAGetLastError()); \
+    set_errno_from_win32_error (err); \
     ret = -1; \
   } \
-  FDDEBUG(fprintf(stderr, #NAME " returned %d (%d)\n", ret, errno)); \
+  FDDEBUG(fprintf(stderr, #NAME " returned %d (%d:%d)\n", ret, err, errno)); \
   return ret; \
 }
 
@@ -2487,7 +2491,6 @@ PMOD_EXPORT int debug_fd_flock(FD fd, int oper)
 
   return 0;
 }
-
 
 /* Note: s->st_ctime is set to the file creation time. It should
  * probably be the last access time to be closer to the unix
