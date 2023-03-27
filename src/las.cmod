@@ -1392,6 +1392,8 @@ node *debug_mklocalnode(int var, int depth)
   res->u.integer.b = depth;
   copy_pike_type(res->type, def->type);
 
+  set_node_name(res, def->name);
+
   return res;
 }
 

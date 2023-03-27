@@ -5579,6 +5579,7 @@ int low_add_local_name(struct compiler_frame *frame,
 #endif
     def->type = type;
   }
+  set_node_name(def, str);
   if (type && (type->type == PIKE_T_AUTO)) {
     frame->local_names[var].def->node_info |= OPT_TYPE_NOT_FIXED;
   }
@@ -5773,7 +5774,6 @@ static node *lexical_islocal(struct pike_string *str)
 	f->local_names[e].flags |= LOCAL_VAR_IS_USED;
 
         n = mklocalnode(e, depth);
-        set_node_name(n, str);
 
         return n;
       }
