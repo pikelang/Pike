@@ -277,6 +277,13 @@ o ADT.OrderedMapping
 Incompatible changes
 --------------------
 
+o As mentioned above; variables that may be set to 0 or UNDEFINED
+  now need to be declared accordingly. Note that this is not needed
+  for code that is compiled in compat mode for Pike 8.0 or earlier.
+
+o The new stricter type checker may expose old bugs that the
+  old type checker did not find.
+
 o Simplified the Iterator API.
 
   - Renamed Iterator API functions and made them LFUNs:
