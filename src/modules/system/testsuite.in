@@ -166,6 +166,9 @@ cond([[System->normalize_path]],
 	werror ("System.normalize_path (%O) produced 0\n", ff);
 	return 0;
       }
+      if (catch(utf8_to_string(f))) {
+        f = string_to_utf8(f);
+      }
 #ifdef __NT__
       if (!has_suffix (n, "\\testsuite_test\\" + f)) {
 	werror ("System.normalize_path (%O) produced %O\n", ff, n);
@@ -177,6 +180,7 @@ cond([[System->normalize_path]],
 
     if (!test_normalize_path ("foo")) return 0;
     if (!test_normalize_path ("\345\344\366")) return 0;
+    if (!test_normalize_path ("\303\245\303\244\303\266")) return 0;
     return 1;
   ]], 1)
 ]])

@@ -2577,12 +2577,15 @@ static void f_NetWkstaUserEnum(INT32 args)
   }
 }
 
-/*! @decl string(8bit) normalize_path(string(8bit) path)
+/*! @decl utf8_string normalize_path(string(8bit) path)
  *!
  *!   Normalize an existing Windows file system path.
  *!
  *!   The following transformations are currently done:
  *!   @ul
+ *!     @item
+ *!       If the @{path@} is not valid UTF-8, it will be converted
+ *!       into UTF-8.
  *!     @item
  *!       Forward slashes (@expr{'/'@}) are converted to backward
  *!       slashes (@expr{'\'@}).
@@ -3673,7 +3676,7 @@ void init_nt_system_calls(void)
   ADD_EFUN("uname", f_nt_uname,tFunc(tNone,tMapping), OPT_TRY_OPTIMIZE);
   ADD_FUNCTION2("uname", f_nt_uname,tFunc(tNone,tMapping), 0, OPT_TRY_OPTIMIZE);
 
-  ADD_FUNCTION("normalize_path", f_normalize_path, tFunc(tStr, tStr), 0);
+  ADD_FUNCTION("normalize_path", f_normalize_path, tFunc(tStr8, tUtf8Str), 0);
 
   /* LogonUser only exists on NT, link it dynamically */
   if( (advapilib=LoadLibrary("advapi32")) )
