@@ -118,7 +118,7 @@ static void MEMORY_FREE( struct memory_storage *storage )
 #endif
 #ifdef HAVE_SYS_SHM_H
   else if( storage->flags & MEM_FREE_SHMDEL )
-    shmdt( storage->p );
+    shmdt( (void *)storage->p );
 #endif
 #ifdef WIN32SHM
   else if( storage->flags & MEM_FREE_SHMDEL )
