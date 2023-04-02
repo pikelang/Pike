@@ -576,7 +576,7 @@ static node *optimize_abs(node *n)
       /* Both below zero. */
       res_max = (min == INT32_MIN? INT32_MAX : -min);
       res_min = (max == INT32_MIN? INT32_MAX : -max);
-    } else if (-min > max) {
+    } else if (min < -max) {
       /* Zero in interval and more below zero. */
       res_max = (min == INT32_MIN? INT32_MAX : -min);
       res_min = 0;
