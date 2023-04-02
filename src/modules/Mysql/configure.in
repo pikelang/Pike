@@ -140,7 +140,13 @@ else
       #     LDFLAGS and LIBS
       MARIADB_LIBS=""
       MARIADB_LDFLAGS=""
-      set ignored `${MARIADB_CONFIG} --libs_r`
+      if ${MARIADB_CONFIG} --libs_r >/dev/null 2>&1; then
+          set ignored `${MARIADB_CONFIG} --libs_r`
+      else
+          # Some OLD versions of mysql_config do not understand --libs_r.
+          # Seen with MySQL 3.23.49.
+          set ignored `${MARIADB_CONFIG} --libs`
+      fi
       while test "$#" -gt 1; do
         case "$2" in
           -L*)
@@ -179,8 +185,15 @@ else
 	])
       fi
 
-      echo "Adding `${MARIADB_CONFIG} --include` to CPPFLAGS."
-      CPPFLAGS="`${MARIADB_CONFIG} --include` ${CPPFLAGS}"
+      if ${MARIADB_CONFIG} --include >/dev/null 2>&1; then
+          echo "Adding `${MARIADB_CONFIG} --include` to CPPFLAGS."
+          CPPFLAGS="`${MARIADB_CONFIG} --include` ${CPPFLAGS}"
+      else
+          # Some OLD versions of mysql_config do not understand --include.
+          # Seen with MySQL 3.23.49.
+          echo "Adding `${MARIADB_CONFIG} --cflags` to CPPFLAGS."
+          CPPFLAGS="`${MARIADB_CONFIG} --cflags` ${CPPFLAGS}"
+      fi
   fi
 
 
