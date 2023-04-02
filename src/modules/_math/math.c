@@ -574,11 +574,11 @@ static node *optimize_abs(node *n)
       res_min = min;
     } else if (max < 0) {
       /* Both below zero. */
-      res_max = -min;
-      res_min = -max;
+      res_max = (min == INT32_MIN? INT32_MAX : -min);
+      res_min = (max == INT32_MIN? INT32_MAX : -max);
     } else if (-min > max) {
       /* Zero in interval and more below zero. */
-      res_max = -min;
+      res_max = (min == INT32_MIN? INT32_MAX : -min);
       res_min = 0;
     } else {
       /* Zero in interval and more above zero. */
