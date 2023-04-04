@@ -101,6 +101,9 @@ PMOD_EXPORT void string_builder_sprintf(struct string_builder *s,
 PMOD_EXPORT void string_builder_strftime(struct string_builder *s,
                                          const char *fmt,
                                          struct tm *tm);
+PMOD_EXPORT const char *pike_strptime(const char *s,
+                                      const char *fmt,
+                                      struct tm *tm);
 PMOD_EXPORT void string_builder_append_disassembly(struct string_builder *s,
 						   size_t address,
 						   const void *start,

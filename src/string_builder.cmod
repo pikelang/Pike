@@ -1167,20 +1167,23 @@ PMOD_EXPORT void string_builder_sprintf(struct string_builder *s,
  * and in debug mode it aborts on any others.
  */
 
-static const char *internal_strftime_weekdays[7] =
-  { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
+static const char *internal_strftime_weekdays[7 + 1] =
+  { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", NULL };
 
-static const char *internal_strftime_long_weekdays[7] =
+static const char *internal_strftime_long_weekdays[7 + 1] =
   { "Sunday", "Monday", "Tuesday", "Wednesday",
-    "Thursday", "Friday", "Saturday" };
+    "Thursday", "Friday", "Saturday", NULL };
 
-static const char *internal_strftime_months[12] =
+static const char *internal_strftime_months[12 + 1] =
   { "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
+    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", NULL };
 
-static const char *internal_strftime_long_months[12] =
+static const char *internal_strftime_long_months[12 + 1] =
   { "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December" };
+    "July", "August", "September", "October", "November", "December", NULL };
+
+static const char *internal_strftime_ampm[2 + 1] =
+  { "AM", "PM", NULL };
 
 PMOD_EXPORT void string_builder_strftime(struct string_builder *s,
                                          const char *fmt,
@@ -1494,6 +1497,400 @@ PMOD_EXPORT void string_builder_strftime(struct string_builder *s,
     }
   }
   STACK_LEVEL_DONE(0);
+}
+
+static const char *pike_strptime_read_int(const char *s, int *dest, int digits)
+{
+  int res = 0;
+  int c;
+  int n;
+
+  for (n = 0; (n < digits) && (c = *s); s++, digits++) {
+    if (c == ' ') continue;
+    if ((c < '0') || (c > '9')) break;
+    res = res * 10 + c - '0';
+  }
+
+  if (!n) return NULL;
+
+  *dest = res;
+
+  return s;
+}
+
+static const char *pike_strptime_read_str(const char *s,
+                                          int *dest,
+                                          const char **alts)
+{
+  int n;
+  const char *t;
+
+  for (n = 0; (t = alts[n]); n++) {
+    int i;
+    for(i = 0; t[i]; i++) {
+      /* NB: We know that the strings only contain [A-Z][a-z]. */
+      if (!s[i]) break;
+      if ((t[i]|0x20) != (s[i]|0x20)) {
+        break;
+      }
+    }
+    if (!t[i]) {
+      *dest = n;
+      return s;
+    }
+  }
+  return NULL;
+}
+
+const char *low_pike_strptime(const char *s,
+                              const char *fmt,
+                              struct tm *tm,
+                              int *century,
+                              int *ampm)
+{
+  if (!fmt || !tm) return NULL;
+
+  while (*fmt) {
+
+    if (!s) return NULL;
+
+#define STRPTIME_EXPECT(C) do {                 \
+      if (*(s++) != (C)) {                      \
+        return NULL;                            \
+      }                                         \
+    } while(0)
+
+    if (*fmt == '%') {
+      int prefix = 1;
+      int alt_num = 0;
+      int alt_form = 0;
+      int upper_case = 0;
+      int tmp = 0;
+      int sgn = 1;
+
+      fmt++;
+      while (1) {
+        switch (*(fmt++)) {
+          /*
+           * Escaped characters.
+           */
+
+        case '%':
+          STRPTIME_EXPECT('%');
+          break;
+
+        case 'n': /* Newline. */
+          STRPTIME_EXPECT('\n');
+          break;
+
+        case 't': /* Tab. */
+          STRPTIME_EXPECT('\t');
+          break;
+
+          /*
+           * Flags
+           */
+        case '!': /* Inhibit numerical padding (Roxen-style). */
+        case '-': /* Inhibit numerical padding (glibc-style). */
+        case '#': /* Inhibit numerical padding (MSVC-style). */
+          prefix = 0;
+          continue;
+
+        case '^': /* Upper-case (glibc-style). */
+          upper_case = 3;
+          continue;
+
+        case '~': /* Capitalize (Roxen-style). */
+          upper_case = 1;
+          continue;
+
+        case 'E': /* Locale dependent alternative form (glibc-style). */
+          alt_form = 1;
+          continue;
+
+        case 'O': /* Use alternative numeric symbols. */
+          alt_num = 1;
+          continue;
+
+          /*
+           * Formats
+           */
+
+        case 'a': /* Abbreviated weekday name. */
+          s = pike_strptime_read_str(s, &tm->tm_wday,
+                                     internal_strftime_weekdays);
+          break;
+
+        case 'A': /* Weekday name. */
+          s = pike_strptime_read_str(s, &tm->tm_wday,
+                                     internal_strftime_long_weekdays);
+          break;
+
+        case 'b': /* Abbreviated month name. */
+        case 'h': /* Abbreviated month name (Single Unix Specification). */
+          s = pike_strptime_read_str(s, &tm->tm_mon, internal_strftime_months);
+          break;
+
+        case 'B': /* Month name. */
+          s = pike_strptime_read_str(s, &tm->tm_mon,
+                                     internal_strftime_long_months);
+          break;
+
+        case 'c': /* Date and time. */
+          s = low_pike_strptime(s, "%a %b %e %H:%M:%S %Y", tm, century, ampm);
+          break;
+
+        case 'C': /* Century number; 0-prefix. */
+          s = pike_strptime_read_int(s, &tmp, 2);
+          *century = tmp * 100;
+          break;
+
+        case 'd': /* Day of month [1,31]; 0-prefix. */
+          s = pike_strptime_read_int(s, &tm->tm_mday, 2);
+          break;
+
+        case 'D': /* Date. */
+          s = low_pike_strptime(s, "%m/%d/%y", tm, century, ampm);
+          break;
+
+        case 'e': /* Day of month [1,31], space-prefix. */
+          s = pike_strptime_read_int(s, &tm->tm_mday, 2);
+          break;
+
+        case 'F': /* ISO 8601 date. */
+          s = low_pike_strptime(s, "%Y-%m-%d", tm, century, ampm);
+          break;
+
+        case 'g': /* Short year for the ISO 8601 week containing the day. */
+          s = low_pike_strptime(s, "%y", tm, century, ampm);
+          break;
+
+        case 'G': /* Year for the ISO 8601 week containing the day. */
+          s = low_pike_strptime(s, "%Y", tm, century, ampm);
+          break;
+
+        case 'H': /* Hour (24-hour clock) [0,23]; 0-prefix. */
+          s = pike_strptime_read_int(s, &tm->tm_hour, 2);
+          break;
+
+        case 'I': /* Hour (12-hour clock) [1,12]; 0-prefix. */
+          s = pike_strptime_read_int(s, &tm->tm_hour, 2);
+          if (s && (tm->tm_hour == 12)) {
+            tm->tm_hour = 0;
+          }
+          break;
+
+        case 'j': /* Day number of year [1,366]; 0-prefix. */
+          s = pike_strptime_read_int(s, &tm->tm_yday, 3);
+          if (s) {
+            tm->tm_yday--;
+          }
+          break;
+
+        case 'k': /* Hour (24-hour clock); space-prefix. */
+          s = pike_strptime_read_int(s, &tm->tm_hour, 2);
+          break;
+
+        case 'l': /* Hour (12-hour clock) [1,12]; space-prefix. */
+          s = pike_strptime_read_int(s, &tm->tm_hour, 2);
+          if (s && (tm->tm_hour == 12)) {
+            tm->tm_hour = 0;
+          }
+          break;
+
+        case 'm': /* Month number [1,12]; 0-prefix. */
+          s = pike_strptime_read_int(s, &tm->tm_mon, 2);
+          if (s) {
+            tm->tm_mon--;
+          }
+          break;
+
+        case 'M': /* Minute [0,59]; 0-prefix. */
+          s = pike_strptime_read_int(s, &tm->tm_min, 2);
+          break;
+
+        case 'p': /* AM or PM. */
+          s = pike_strptime_read_str(s, ampm, internal_strftime_ampm);
+          break;
+
+        case 'P': /* am or pm */
+          s = pike_strptime_read_str(s, ampm, internal_strftime_ampm);
+          break;
+
+        case 'q': /* Quarter number (Roxen-style). */
+          s = pike_strptime_read_int(s, &tmp, 1);
+          break;
+
+        case 'r': /* Time in 12-hour clock format with %p. */
+          s = low_pike_strptime(s, "%I:%M:%S %p", tm, century, ampm);
+          break;
+
+        case 'R': /* 24-hour clock time no seconds. */
+          s = low_pike_strptime(s, "%H:%M", tm, century, ampm);
+          break;
+
+        case 's': /* Seconds since epoch. */
+          s = pike_strptime_read_int(s, &tmp, 16);
+          if (s) {
+            time_t t = tmp;
+            struct tm *tm_tmp = localtime(&t);
+            if (tm_tmp) {
+              *tm = *tm_tmp;
+            }
+          }
+          break;
+
+        case 'S': /* Seconds [0,60]; 0-prefix. */
+          s = pike_strptime_read_int(s, &tm->tm_sec, 2);
+          break;
+
+        case 'T': /* 24-hour clock time including seconds. */
+          s = low_pike_strptime(s, "%H:%M:%S", tm, century, ampm);
+          break;
+
+        case 'u': /* Weekday as a decimal number [1,7], Monday == 1. */
+          s = pike_strptime_read_int(s, &tm->tm_wday, 1);
+          if (s && (tm->tm_wday == 7)) {
+            tm->tm_wday = 0;
+          }
+          break;
+
+        case 'U': /* Week number of current year [0,53]; 0-prefix,
+                   * Sunday is first day of week. */
+          s = pike_strptime_read_int(s, &tmp, 2);
+          break;
+
+        case 'V': /* ISO week number of the year as a decimal number [01,53];
+                   * 0-prefix. */
+          s = pike_strptime_read_int(s, &tmp, 2);
+          break;
+
+        case 'w': /* Weekday as a decimal number [0,6], Suday == 0. */
+          s = pike_strptime_read_int(s, &tm->tm_wday, 1);
+          break;
+
+        case 'W': /* Week number of year as a decimal number [00,53],
+                   * with Monday as the first day of week 1; 0-prefix. */
+          s = pike_strptime_read_int(s, &tmp, 2);
+          break;
+
+        case 'x': /* Date in locale preferred format. */
+#ifdef HAVE_STRPTIME
+          s = strptime(s, "%x", tm);
+          if (s) {
+            *century = 0;
+          }
+#else
+          s = low_pike_strptime(s, "%F", tm, century, ampm);
+#endif
+          break;
+
+        case 'X': /* Time in locale preferred format. */
+#ifdef HAVE_STRPTIME
+          s = strptime(s, "%X", tm);
+#else
+          s = low_pike_strptime(s, "%T", tm, century, ampm);
+#endif
+          break;
+
+        case 'y': /* Year [00,99]; 0-prefix. */
+          s = pike_strptime_read_int(s, &tmp, 2);
+          if (s && *century) {
+            /* NB: century == 0 ==> full year already parsed. */
+            tm->tm_year = tmp;
+          }
+          break;
+
+        case 'Y': /* Year [0000,9999]; 0-prefix. */
+          s = pike_strptime_read_int(s, &tm->tm_year, 4);
+          if (s) {
+            tm->tm_year -= 1900;
+            *century = 0;
+          }
+          break;
+
+        case 'z': /* Time zone as hour offset from UTC. */
+          sgn = 1;
+          if (*s == '+' || *s == ' ') {
+            s++;
+          } else if (*s == '-') {
+            sgn = -1;
+            s++;
+          }
+          s = pike_strptime_read_int(s, &tmp, 4);
+          if (s) {
+            int h = tmp/100;
+            int m = tmp - h * 100;
+            tmp = sgn * ((h * 60 + m) * 60);
+#ifdef STRUCT_TM_HAS_GMTOFF
+            tm->tm_gmtoff = -tmp;
+#elif defined(STRUCT_TM_HAS___TM_GMTOFF)
+            tm->__tm_gmtoff = -tmp;
+#elif defined(HAVE_EXTERNAL_TIMEZONE)
+            /* FIXME */
+#else
+            /* FIXME */
+#endif
+          }
+          break;
+
+        case 'Z': /* Timezone name of abbreviation, or no bytes if
+                   * no timezone information exists. */
+          /* FIXME! */
+          break;
+
+        default:
+#if 0
+          Pike_fatal("pike_strptime(): Invalid formatting method: "
+                     "\"%%%c\" 0x%x.\n", (fmt[-1] & 0xff), fmt[-1]);
+#endif
+          return NULL;
+          break;
+        }
+        break;
+      }
+    } else {
+      const char *start = fmt;
+      while (*fmt && (*fmt != '%')) {
+        STRPTIME_EXPECT(*fmt);
+        fmt++;
+      }
+    }
+  }
+
+  return s;
+}
+
+/* Reverse of string_builder_strftime() above.
+ *
+ * Behaves as strptime(3C).
+ */
+PMOD_EXPORT const char *pike_strptime(const char *s,
+                                      const char *fmt,
+                                      struct tm *tm)
+{
+  int century = 1950;	/* DWIM marker */
+  int ampm = 0;
+
+  s = low_pike_strptime(s, fmt, tm, &century, &ampm);
+
+  if (ampm && (tm->tm_hour < 12)) {
+    tm->tm_hour += 12;
+  }
+
+  if (century) {
+    if (century == 1950) {
+      /* DWIM: 1950..2049 */
+      if (tm->tm_year < 50) {
+        tm->tm_year += 100;
+      }
+    } else {
+      /* 2-digit century offset * 100. */
+      tm->tm_year += century - 1900;
+    }
+  }
+
+  return s;
 }
 
 /**
