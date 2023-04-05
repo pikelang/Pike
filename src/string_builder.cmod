@@ -1505,7 +1505,7 @@ static const char *pike_strptime_read_int(const char *s, int *dest, int digits)
   int c;
   int n;
 
-  for (n = 0; (n < digits) && (c = *s); s++, digits++) {
+  for (n = 0; (n < digits) && (c = *s); s++, n++) {
     if (c == ' ') continue;
     if ((c < '0') || (c > '9')) break;
     res = res * 10 + c - '0';
