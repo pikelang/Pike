@@ -173,7 +173,7 @@ PIKECLASS TM
     CVAR struct tm_extra extra;
 
 #define strftime_zone strftime
-#define strptime_zone strptime
+#define strptime_zone pike_strptime
 #define localtime_zone(X,Y) localtime(X)
 #ifndef HAVE_EXTERNAL_TIMEZONE
 #undef timezone
@@ -195,14 +195,14 @@ PIKECLASS TM
       this->modified = 0;
     }
 
-#ifdef HAVE_STRPTIME
     /*! @decl int(0..1) strptime( string(1..255) format, string(1..255) data )
      *!
      *! @note
-     *!  The @expr{format@} and @expr{data@} are reversed.
+     *!   The order of @[format] and @[data] are reversed
+     *!   compared to @[predef::strptime()].
      *!
      *! @seealso
-     *!   @[strftime]
+     *!   @[strftime()], @[predef::strftime()], @[predef::strptime()]
      */
     PIKEFUN int(0..1) strptime( string(1..255) format, string(1..255) data )
     {
@@ -213,12 +213,16 @@ PIKECLASS TM
             RETURN 0;
         RETURN 1;
     }
-#endif /* HAVE_STRPTIME */
 
     /*! @decl string(1..255) strftime( string(1..255) format )
      *!
+     *! Format the timestamp into a string.
+     *!
+     *! See @[predef::strftime()] for details.
+     *!
      *! @seealso
-     *!  @[strftime], @[Gettext.setlocale]
+     *!  @[strptime()], @[predef::strftime()], @[predef::strptime()],
+     *!  @[Gettext.setlocale()]
      */
     PIKEFUN string(1..255) strftime(string(1..255) format)
     {

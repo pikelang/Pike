@@ -6430,7 +6430,6 @@ PMOD_EXPORT void f_mktime (INT32 args)
 #endif
 }
 
-#ifdef HAVE_STRPTIME
 /*! @decl mapping(string:int) strptime(string(1..255) data, string(1..255) format)
  *!
  *! Parse the given @[data] using the format in @[format] as a date.
@@ -6528,14 +6527,15 @@ PMOD_EXPORT void f_strptime (INT32 args)
     if (Pike_sp[-1].u.string->size_shift || Pike_sp[-2].u.string->size_shift)
       Pike_error("Only 8bit strings are supported\n");
     memset(&tm, 0, sizeof(tm));
-    ret = strptime(Pike_sp[-2].u.string->str, Pike_sp[-1].u.string->str, &tm);
+    ret = pike_strptime(Pike_sp[-2].u.string->str,
+                        Pike_sp[-1].u.string->str,
+                        &tm);
     pop_n_elems(args);
     if (ret)
       encode_tm_tz(&tm);
     else
       push_int(0);
 }
-#endif /* HAVE_STRPTIME */
 
 /*! @decl string(1..255) strftime( string(1..255) format, mapping(string:int) tm)
  *!
@@ -10618,11 +10618,9 @@ void init_builtin_efuns(void)
 		     tOr(tVoid,tInt) tOr(tVoid,tInt),tInt),
 	       tFunc(tOr(tObj, tMap(tStr, tInt)),tInt)),OPT_TRY_OPTIMIZE);
 
-#ifdef HAVE_STRPTIME
   /* function(string, string:mapping(string:int)) */
   ADD_EFUN("strptime", f_strptime,
            tFunc(tStr tStr, tMap(tStr, tInt)), OPT_TRY_OPTIMIZE);
-#endif
 
   /* function(string,mapping(string:int):string) */
   ADD_EFUN("strftime", f_strftime,
