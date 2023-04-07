@@ -1,5 +1,26 @@
 START_MARKER
 
+dnl - Parser.Markdown
+
+dnl Bug #10107 (aka https://github.com/pikelang/Pike/issues/40)
+test_eq(Parser.Markdown.parse(#"
+## Some Stuff
+
+```html
+
+<head></head>
+
+```
+
+Some text post code fence
+"), #"<h2 id=\"some-stuff\">Some Stuff</h2>
+<pre><code class='lang-html'>
+&lt;head&gt;&lt;/head&gt;
+</code></pre><p>Some text post code fence</p>
+")
+
+dnl - Parser.Pike
+
 define(test_pike_token,[[
 test_equal(Parser.Pike.low_split($1),({$1}))
 ]])

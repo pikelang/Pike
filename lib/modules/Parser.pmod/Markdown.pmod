@@ -1162,13 +1162,13 @@ class Renderer
     }
 
     if (!lang) {
-      return sprintf("<pre%s><code>%s%s</code></pre>%[1]s", attrs(token),
+      return sprintf("<pre%s><code>%s%s</code></pre>", attrs(token),
                      !escaped ? encode_html(code, true) : code,
                      nl());
     }
 
     return sprintf(
-      "<pre%s><code class='%s%s'>%s%s</code></pre>%[3]s", attrs(token),
+      "<pre%s><code class='%s%s'>%s%s</code></pre>", attrs(token),
       options->lang_prefix,
       encode_html(lang),
       !escaped ? encode_html(code, true) : code,
