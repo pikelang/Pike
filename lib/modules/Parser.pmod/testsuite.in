@@ -2,6 +2,8 @@ START_MARKER
 
 dnl - Parser.Markdown
 
+cond_begin([[Parser["Markdown"] ]])
+
 dnl Bug #10107 (aka https://github.com/pikelang/Pike/issues/40)
 test_eq(Parser.Markdown.parse(#"
 ## Some Stuff
@@ -18,6 +20,8 @@ Some text post code fence
 &lt;head&gt;&lt;/head&gt;
 </code></pre><p>Some text post code fence</p>
 ")
+
+cond_end // Parser.Markdown
 
 dnl - Parser.Pike
 
