@@ -1,0 +1,10 @@
+subject: Pike 8.0: Sql.Sql: Use glob() rather than Regexp for wildcard matching.
+from: 16a79a4bb257b4cf8a25ec47e7669cd329a6dcfe
+to: 948565b9f388e36f5078773dad8dd40ae7d52e25
+originator: Henrik Grubbström (Grubba) <grubba@grubba.org>
+depends: 2022-11-16T111442|pike/8.0.1786
+restart: true
+
+Sql.Sql: Use glob() rather than Regexp for wildcard matching.
+
+Fixes issue with errors from Regexp due to wide strings.
