@@ -305,10 +305,8 @@ void mirror_screen( string how )
 //!   @endmapping
 //! @seealso
 //! @[get_drivers]
-void init(void|mapping(string:mixed) options) {
-
-  if(!options)
-    options = ([]);
+void init(mapping(string:mixed) options = ([]))
+{
 
   if(options->event_callback)
     event_callback = options->event_callback;
@@ -1553,18 +1551,20 @@ class Font
   protected float scale_spacing;
 
   //!
-  protected void create( Image.Fonts.Font f, float|void _scale_width,
-			 float|void _scale_spacing ) {
-    font = f;
-    scale_width = _scale_width || 0.69;
-    scale_spacing = _scale_spacing || 0.40;
+  protected void create( Image.Fonts.Font font,
+                         float scale_width = 0.69,
+                         float scale_spacing = 0.40 ) {
+    this::font = font;
+    this::scale_width = scale_width;
+    this::scale_spacing = scale_spacing;
 
-    character_height = f->write("A")->ysize()/2+1;
-    if( f->font && f->font->advance )
-      spacew = (f->font->advance( ' ' )/(2.0*(character_height-1)))
-	*scale_width;
+    character_height = font->write("A")->ysize()/2+1;
+    if( font->font && font->font->advance )
+      spacew = (font->font->advance(' ')/(2.0*(character_height-1))) *
+        scale_width;
     else
-      spacew = (f->write("f")->xsize()/(2.0*(character_height-1)))*scale_width;
+      spacew = (font->write("f")->xsize()/(2.0*(character_height-1))) *
+        scale_width;
   }
 
 
