@@ -916,6 +916,7 @@ static void node_reporter(struct ba_iterator * it, void * data)
 
 static void free_compilation(struct compilation *c)
 {
+  if (!c) return;
   debug_malloc_touch(c);
   if (c->prog) {
     free_string(c->prog);
@@ -1345,8 +1346,6 @@ static void run_cleanup(struct compilation *c, int delayed)
 #endif
 #endif /* PIKE_DEBUG */
 
-  unlock_pike_compiler();
-
   CDFPRINTF("th(%ld) %p run_cleanup(): "
             "lock_depth:%d, compilation_depth:%d\n",
             (long)th_self(), c->target,
@@ -1427,7 +1426,7 @@ static void run_cleanup(struct compilation *c, int delayed)
 #endif
 	if(SETJMP(rec))
 	{
-	  handle_compile_exception (NULL);
+          handle_compile_exception("Failed to initialize placeholder object.");
 	  debug_malloc_touch(c->placeholder);
 	  zap_placeholder(c);
 	}else{
@@ -1445,6 +1444,8 @@ static void run_cleanup(struct compilation *c, int delayed)
   verify_supporters();
   c->flags &= ~(COMPILER_BUSY);
   c->flags |= COMPILER_DONE;
+
+  unlock_pike_compiler();
 }
 
 static int call_delayed_pass2(struct Supporter *s, int finish)
@@ -1787,8 +1788,6 @@ static void f_compilation_compile(INT32 args)
 
   debug_malloc_touch(c);
 
-  verify_supporters();
-
   if (c->flags & COMPILER_DONE) {
     /* Already compiled. */
     pop_n_elems(args);
@@ -1817,6 +1816,8 @@ static void f_compilation_compile(INT32 args)
 #ifdef PIKE_THREADS
   c->saved_lock_depth = lock_depth;
 #endif
+
+  verify_supporters();
 
   init_supporter(& c->supporter,
 		 (supporter_callback *) call_delayed_pass2,
