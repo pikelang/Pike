@@ -4511,7 +4511,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
                           string_builder_append( &str, ADD_PCHARP(data, old_pos), pos-old_pos );
                           continue;
                         }
-                        PUTC(' ');
+                        string_builder_putchar(&str, ' ');
                         SKIPCOMMENT();
                         continue;
                       }
