@@ -3556,6 +3556,308 @@ static void apply_define(struct CPP_struct *this,
   pop_n_elems(Pike_sp + 1 - save_sp);
 }
 
+/**
+ * Parse a macro declaration.
+ *
+ * @param posp
+ *   IN/OUT: Position in the data stream.
+ *
+ * @param def_name
+ *   OUT: Name of the macro.
+ *
+ * @param varargsp
+ *   IN/OUT: Varargs flag.
+ *
+ * Returns the number of arguments.
+ *
+ *   -1 if this is not a function-style macro.
+ *
+ *   Otherwise the number of arguments. Strings with the
+ *   name for each of the arguments are pushed on the stack.
+ *
+ */
+static int parse_define_decl(struct CPP_struct *this,
+                             PCHARP data,
+                             ptrdiff_t len,
+                             ptrdiff_t *posp,
+                             struct pike_string **def_name,
+                             int *varargsp)
+{
+  int argno = -1;
+  int varargs = *varargsp;
+  ptrdiff_t pos = *posp;
+  SKIPSPACE();
+
+  do {
+    *def_name = GOBBLE_IDENTIFIER();
+    if(!*def_name) {
+      cpp_error(this, "Define what?");
+      FIND_EOL();
+      break;
+    }
+
+    if(GOBBLE('('))
+    {
+      argno = 0;
+      SKIPWHITE();
+
+      while(DATA(pos)!=')')
+      {
+        struct pike_string *arg_name;
+        if(argno)
+        {
+          if(!GOBBLE(','))
+            cpp_error(this,
+                      "Expecting comma in macro definition.");
+          SKIPWHITE();
+        }
+        if(varargs)
+          cpp_error(this,"Expected ) after ...");
+
+        arg_name = GOBBLE_IDENTIFIER();
+        if(!arg_name)
+        {
+          cpp_error(this, "Expected argument for macro.");
+          break;
+        }
+
+        check_stack(1);
+        push_string(arg_name);
+
+        SKIPWHITE();
+        argno++;
+        if(argno>=MAX_ARGS)
+        {
+          cpp_error(this, "Too many arguments in macro definition.");
+          pop_stack();
+          argno--;
+        }
+
+        if(DATA(pos)=='.' && DATA(pos+1)=='.' && DATA(pos+2)=='.')
+        {
+          varargs = CPP_MACRO_VARARGS;
+          pos+=3;
+          SKIPWHITE();
+        }
+      }
+
+      if(!GOBBLE(')'))
+        cpp_error(this, "Missing ) in macro definition.");
+    }
+  } while(0);
+
+  SKIPSPACE();
+
+  *varargsp = varargs;
+  *posp = pos;
+  return argno;
+}
+
+/**
+ * Parse the body of a macro.
+ *
+ * @param posp
+ *   IN/OUT: Position in the data stream.
+ *
+ * @param argbase
+ *   IN: Array of svalues containing the parameter names (strings).
+ *   Must contain at least argno entries.
+ *
+ * @param argno
+ *   IN: Expected number of arguments. May be -1 to indicate
+ *   that this is not a function-style macro.
+ *
+ * On return an array representing the parsed data has
+ * been pushed on the pike stack.
+ */
+static void parse_define_body(struct CPP_struct *this,
+                              PCHARP data,
+                              ptrdiff_t len,
+                              ptrdiff_t *posp,
+                              struct svalue *argbase,
+                              int argno,
+                              int flags)
+{
+  struct string_builder str;
+  ptrdiff_t pos = *posp;
+  struct svalue *partbase = Pike_sp;
+  ptrdiff_t tmp3;
+
+  do {
+    SKIPSPACE();
+
+    init_string_builder(&str, 0);
+
+    while(1)
+    {
+      INT32 extra=0;
+      ptrdiff_t old_pos = pos;
+
+      switch(DATA(pos++))
+      {
+      case '/':
+        if(DATA(pos)=='/')
+        {
+          if (this->keep_comments) {
+            FIND_EOL_PRETEND();
+            string_builder_append(&str, ADD_PCHARP(data, old_pos), pos-old_pos);
+            continue;
+          }
+          string_builder_putchar(&str, ' ');
+          FIND_EOL();
+          continue;
+        }
+
+        if(DATA(pos)=='*')
+        {
+          if (this->keep_comments) {
+            SKIPCOMMENT_INC_LINES();
+            string_builder_append(&str, ADD_PCHARP(data, old_pos), pos-old_pos);
+            continue;
+          }
+          string_builder_putchar(&str, ' ');
+          SKIPCOMMENT();
+          continue;
+        }
+
+        string_builder_putchar(&str, '/');
+        continue;
+
+      case '0': case '1': case '2': case '3':	case '4':
+      case '5': case '6': case '7': case '8':	case '9':
+        string_builder_putchar(&str, DATA(pos-1));
+        while(DATA(pos)>='0' && DATA(pos)<='9')
+          string_builder_putchar(&str, DATA(pos++));
+        continue;
+
+      case '\\':
+        if(GOBBLE('\n'))
+        {
+          this->current_line++;
+          PUTNL();
+          continue;
+        }
+        if (DATA(pos) == '\r' && DATA(pos+1) == '\n') {
+          pos += 2;
+          this->current_line++;
+          PUTNL();
+          continue;
+        }
+        /* Identifiers might start with \uxxxx, so try to parse
+         * an identifier now. */
+        goto gobble_identifier_in_define;
+
+      case ',':
+        {
+          int oldpos;
+
+          oldpos = pos;
+          SKIPSPACE_PRETEND();
+
+          if (DATA(pos) == '#' && DATA(pos+1) == '#') {
+            extra|= DEF_ARG_NEED_COMMA;
+            pos += 2;
+            goto concat_identifier;
+          } else {
+            pos = oldpos;
+            goto gobble_identifier_in_define;
+          }
+        }
+      case '#':
+        if(GOBBLE('#'))
+        {
+          extra= (extra & DEF_ARG_NEED_COMMA) | DEF_ARG_NOPRESPACE;
+
+          while(str.s->len && wide_isspace(index_shared_string(str.s,str.s->len-1)))
+            str.s->len--;
+        concat_identifier:
+          if(!str.s->len && Pike_sp-partbase>1)
+          {
+#ifdef PIKE_DEBUG
+            if(TYPEOF(Pike_sp[-1]) != PIKE_T_INT)
+              Pike_fatal("Internal error in CPP\n");
+#endif
+            Pike_sp[-1].u.integer|=DEF_ARG_NOPOSTSPACE;
+          }
+        }else{
+          extra=DEF_ARG_STRINGIFY;
+        }
+        SKIPSPACE();
+        pos++;
+        /* fall through */
+
+      gobble_identifier_in_define:
+      default: {
+        struct pike_string *s;
+        pos--;
+        s = GOBBLE_IDENTIFIER();
+        if (s)
+        {
+          tmp3=pos-1;
+          if(argno>0)
+          {
+            if (s->refs > 1)
+            {
+              ptrdiff_t e;
+              for(e=0;e<argno;e++)
+              {
+                if(argbase[e].u.string == s)
+                {
+                  check_stack(2);
+                  push_string(finish_string_builder(&str));
+                  init_string_builder(&str, 0);
+                  push_int(e | extra);
+                  extra=0;
+                  break;
+                }
+              }
+              if(e!=argno) {
+                free_string (s);
+                continue;
+              }
+            }
+          }
+          string_builder_shared_strcat (&str, s);
+          free_string (s);
+        }else{
+          string_builder_putchar(&str, DATA(pos++));
+        }
+        extra=0;
+        continue;
+      }
+
+      case '"':
+        FIXSTRING(str, 1);
+        continue;
+
+      case '\'':
+        tmp3=pos-1;
+        FIND_END_OF_CHAR();
+        string_builder_append(&str, ADD_PCHARP(data, tmp3), pos - tmp3);
+        continue;
+
+      case '\r':
+        if (DATA(pos) != '\n') {
+          string_builder_putchar(&str, '\r');
+        }
+        break;
+
+      case '\n':
+        PUTNL();
+        this->current_line++;
+        /* Fallthrough */
+      case 0:
+        break;
+      }
+      push_string(finish_string_builder(&str));
+      break;
+    }
+  } while(0);
+  *posp = pos;
+
+  f_aggregate(Pike_sp - partbase);
+}
+
 /*
  * Preprocessor template.
  *
@@ -4416,242 +4718,23 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
                 struct string_builder str;
                 INT32 argno=-1;
                 ptrdiff_t tmp3;
-                struct pike_string *def_name;
+                struct pike_string *def_name = NULL;
                 struct define_struct *def;
-                struct svalue *partbase,*argbase=Pike_sp;
+                struct svalue *argbase = Pike_sp;
                 int varargs=0;
 
-                SKIPSPACE();
+                argno = parse_define_decl(this, data, len, &pos,
+                                          &def_name, &varargs);
 
-                def_name = GOBBLE_IDENTIFIER();
-                if(!def_name) {
-                  cpp_error(this, "Define what?");
-                  FIND_EOL();
+                if (!def_name) {
+                  /* Syntax error, already reported. */
                   break;
                 }
 
-                if(GOBBLE('('))
-                {
-                  argno=0;
-                  SKIPWHITE();
-
-                  while(DATA(pos)!=')')
-                  {
-                    struct pike_string *arg_name;
-                    if(argno)
-                    {
-                      if(!GOBBLE(','))
-                        cpp_error(this,
-                                  "Expecting comma in macro definition.");
-                      SKIPWHITE();
-                    }
-                    if(varargs)
-                      cpp_error(this,"Expected ) after ...");
-
-                    arg_name = GOBBLE_IDENTIFIER();
-                    if(!arg_name)
-                    {
-                      cpp_error(this, "Expected argument for macro.");
-                      break;
-                    }
-
-                    check_stack(1);
-                    push_string(arg_name);
-
-                    SKIPWHITE();
-                    argno++;
-                    if(argno>=MAX_ARGS)
-                    {
-                      cpp_error(this, "Too many arguments in macro definition.");
-                      pop_stack();
-                      argno--;
-                    }
-
-                    if(DATA(pos)=='.' && DATA(pos+1)=='.' && DATA(pos+2)=='.')
-                    {
-                      varargs = CPP_MACRO_VARARGS;
-                      pos+=3;
-                      SKIPWHITE();
-                    }
-                  }
-
-                  if(!GOBBLE(')'))
-                    cpp_error(this, "Missing ) in macro definition.");
-                }
-
-                SKIPSPACE();
-
-                partbase=Pike_sp;
-                init_string_builder(&str, 0);
-
-                while(1)
-                {
-                  INT32 extra=0;
-                  ptrdiff_t old_pos = pos;
-
-                  switch(DATA(pos++))
-                  {
-                    case '/':
-                      if(DATA(pos)=='/')
-                      {
-                        if (this->keep_comments) {
-                          FIND_EOL_PRETEND();
-                          string_builder_append( &str, ADD_PCHARP(data, old_pos), pos-old_pos );
-                          continue;
-                        }
-                        string_builder_putchar(&str, ' ');
-                        FIND_EOL();
-                        continue;
-                      }
-
-                      if(DATA(pos)=='*')
-                      {
-                        if (this->keep_comments) {
-                          SKIPCOMMENT_INC_LINES();
-                          string_builder_append( &str, ADD_PCHARP(data, old_pos), pos-old_pos );
-                          continue;
-                        }
-                        string_builder_putchar(&str, ' ');
-                        SKIPCOMMENT();
-                        continue;
-                      }
-
-                      string_builder_putchar(&str, '/');
-                      continue;
-
-                    case '0': case '1': case '2': case '3':	case '4':
-                    case '5': case '6': case '7': case '8':	case '9':
-                      string_builder_putchar(&str, DATA(pos-1));
-                      while(DATA(pos)>='0' && DATA(pos)<='9')
-                        string_builder_putchar(&str, DATA(pos++));
-                      continue;
-
-                    case '\\':
-                      if(GOBBLE('\n'))
-                      {
-                        this->current_line++;
-                        PUTNL();
-                        continue;
-                      }
-                      if (DATA(pos) == '\r' && DATA(pos+1) == '\n') {
-                        pos += 2;
-                        this->current_line++;
-                        PUTNL();
-                        continue;
-                      }
-                      /* Identifiers might start with \uxxxx, so try to parse
-                       * an identifier now. */
-                      goto gobble_identifier_in_define;
-
-                    case ',':
-                      {
-                        int oldpos;
-
-                        oldpos = pos;
-                        SKIPSPACE_PRETEND();
-
-                        if (DATA(pos) == '#' && DATA(pos+1) == '#') {
-                          extra|= DEF_ARG_NEED_COMMA;
-                          pos += 2;
-                          goto concat_identifier;
-                        } else {
-                          pos = oldpos;
-                          goto gobble_identifier_in_define;
-                        }
-                      }
-                    case '#':
-                      if(GOBBLE('#'))
-                      {
-                        extra= (extra & DEF_ARG_NEED_COMMA) | DEF_ARG_NOPRESPACE;
-
-                        while(str.s->len && wide_isspace(index_shared_string(str.s,str.s->len-1)))
-                          str.s->len--;
-                      concat_identifier:
-                        if(!str.s->len && Pike_sp-partbase>1)
-                        {
-#ifdef PIKE_DEBUG
-                          if(TYPEOF(Pike_sp[-1]) != PIKE_T_INT)
-                            Pike_fatal("Internal error in CPP\n");
-#endif
-                          Pike_sp[-1].u.integer|=DEF_ARG_NOPOSTSPACE;
-                        }
-                      }else{
-                        extra=DEF_ARG_STRINGIFY;
-                      }
-                      SKIPSPACE();
-                      pos++;
-                      /* fall through */
-
-                    gobble_identifier_in_define:
-                    default: {
-                      struct pike_string *s;
-                      pos--;
-                      s = GOBBLE_IDENTIFIER();
-                      if (s)
-                      {
-                        tmp3=pos-1;
-                        if(argno>0)
-                        {
-                          if (s->refs > 1)
-                          {
-                            for(e=0;e<argno;e++)
-                            {
-                              if(argbase[e].u.string == s)
-                              {
-                                check_stack(2);
-                                push_string(finish_string_builder(&str));
-                                init_string_builder(&str, 0);
-                                push_int(e | extra);
-                                extra=0;
-                                break;
-                              }
-                            }
-                            if(e!=argno) {
-                              free_string (s);
-                              continue;
-                            }
-                          }
-                        }
-                        string_builder_shared_strcat (&str, s);
-                        free_string (s);
-                      }else{
-                        string_builder_putchar(&str, DATA(pos++));
-                      }
-                      extra=0;
-                      continue;
-                    }
-
-                    case '"':
-                      FIXSTRING(str, 1);
-                      continue;
-
-                    case '\'':
-                      tmp3=pos-1;
-                      FIND_END_OF_CHAR();
-                      string_builder_append(&str, ADD_PCHARP(data, tmp3), pos - tmp3);
-                      continue;
-
-		    case '\r':
-		      if (DATA(pos) != '\n') {
-			string_builder_putchar(&str, '\r');
-		      }
-		      break;
-
-                    case '\n':
-                      PUTNL();
-                      this->current_line++;
-                      /* Fallthrough */
-                    case 0:
-                      break;
-                  }
-                  push_string(finish_string_builder(&str));
-                  break;
-                }
+                parse_define_body(this, data, len, &pos, argbase, argno, flags);
 
                 if(OUTP())
                 {
-		  f_aggregate(Pike_sp - partbase);
-
                   def = alloc_empty_define(def_name);
                   def->args=argno;
                   def->flags |= varargs;
