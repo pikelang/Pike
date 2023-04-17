@@ -2323,27 +2323,58 @@ static struct pike_string *make_define_name(struct CPP_struct *this,
   return make_shared_string(name);
 }
 
+static int parse_define_decl(struct CPP_struct *this,
+                             PCHARP data,
+                             ptrdiff_t len,
+                             ptrdiff_t *posp,
+                             struct pike_string **def_name,
+                             int *varargsp);
+static void parse_define_body(struct CPP_struct *this,
+                              PCHARP data,
+                              ptrdiff_t len,
+                              ptrdiff_t *posp,
+                              struct svalue *argbase,
+                              int argno,
+                              int flags);
 static struct define_struct *add_define(struct CPP_struct *this,
 					struct pike_string *name,
 					struct svalue *what)
 {
-  struct pike_string *orig_name = name;
+  struct pike_string *def_name = NULL;
   struct define_struct *def;
+  int argno;
+  int varargs = 0;
+  ptrdiff_t pos = 0;
+  struct svalue *argbase = Pike_sp;
+  PCHARP data = MKPCHARP_STR(name);
+  INT_TYPE save_line = this->current_line;
 
   if (!this->defines) {
     this->defines = allocate_mapping(32);
   }
 
-  if( (name->len > 2) &&
-      (index_shared_string(name, name->len-1) == ')') &&
-      (index_shared_string(name, name->len-2) == '(')) {
-    /* Function-style macro. */
-    push_string(name = string_slice(name, 0, name->len-2));
+  argno = parse_define_decl(this, data, name->len, &pos,
+                            &def_name, &varargs);
+
+  THIS->current_line = save_line;
+
+  if (!def_name) {
+    Pike_error("Invalid macro name.\n");
+  }
+
+  push_string(def_name);
+
+  if (pos < name->len) {
+    INC_PCHARP(data, pos);
+    push_string(make_shared_binary_pcharp(data, name->len - pos));
+    Pike_error("Junk after macro name: %pq.\n", Pike_sp[-1].u.string);
   }
 
   /* NB: alloc_empty_define() pushes the define object onto the stack.
    */
-  def = alloc_empty_define(name);
+  def = alloc_empty_define(def_name);
+  def->args = argno;
+  def->flags |= varargs;
 
   if (!what || ((TYPEOF(*what) == PIKE_T_INT) && !what->u.integer)) {
     ref_push_string(empty_pike_string);
@@ -2351,10 +2382,20 @@ static struct define_struct *add_define(struct CPP_struct *this,
     def->parts = Pike_sp[-1].u.array;
     Pike_sp--;
   } else if (TYPEOF(*what) == PIKE_T_ARRAY) {
-    def->parts = what->u.array;
-    add_ref(what->u.array);
-  } else if ((TYPEOF(*what) == PIKE_T_STRING) ||
-	     (TYPEOF(*what) == PIKE_T_FUNCTION)) {
+    /* NB: Copy in order to keep safe from user altering contents. */
+    def->parts = copy_array(what->u.array);
+  } else if (TYPEOF(*what) == PIKE_T_STRING) {
+    struct pike_string *body = what->u.string;
+    data = MKPCHARP_STR(body);
+    pos = 0;
+    parse_define_body(this, data, body->len, &pos, argbase, argno,
+                      CPP_NO_OUTPUT|CPP_REALLY_NO_OUTPUT);
+    /* FIXME: Ought to validate that the entire body was parsed. */
+    def->parts = Pike_sp[-1].u.array;
+    Pike_sp--;
+
+    THIS->current_line = save_line;
+  } else if ((TYPEOF(*what) == PIKE_T_FUNCTION)) {
     push_svalue(what);
     f_aggregate(1);
     def->parts = Pike_sp[-1].u.array;
@@ -2365,14 +2406,8 @@ static struct define_struct *add_define(struct CPP_struct *this,
   }
 
   mapping_string_insert(this->defines, def->name, Pike_sp-1);
-  pop_stack();
 
-  if (orig_name != name) {
-    /* Function-style macro. */
-    def->flags |= CPP_MACRO_VARARGS | CPP_MACRO_KEEP_NL;
-    def->args = 1;
-    pop_stack();
-  }
+  pop_n_elems(Pike_sp - argbase);
 
   return def;
 }
@@ -5644,7 +5679,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
 
     def = add_define(this, name, value);
 
-    if (real_numargs >= -1) {
+    if (real_numargs >= def->args) {
       def->args = real_numargs;
     }
     if (real_flags >= 0) {
@@ -5764,35 +5799,46 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
   }
 
   /*! @decl void define_multiple_macros(mapping(string: @
-   *!                                           string|function|object)|void predefs)
+   *!     string|function|object|array(string|int))|void predefs)
    *!
    *!   Define multiple macros in one operation.
    *!
    *! @param predefs
    *!   Macros to define.
    *!
+   *! @note
+   *!   The values @[predefs] mapping may get updated by the function
+   *!   in order to improve performance of a second call.
+   *!
    *! @seealso
    *!   @[define_macro()], @[CompilationHandler()->get_predefines()],
    *!   @[_take_over_initial_predefines()]
    */
   PIKEFUN void define_multiple_macros(mapping(string:
-					      string|function|object)|void predefs)
+                 string|function|object|array(string|int))|void predefs)
   {
     struct CPP_struct *this = THIS;
     struct keypair *k;
     int e;
     if (!predefs) return;
     NEW_MAPPING_LOOP (predefs->data) {
+      struct define_struct *def;
       if ((TYPEOF(k->ind) != T_STRING) || !k->ind.u.string->len) {
         Pike_error("Expected nonempty string as predefine name, got %pO.\n",
 		   &k->ind);
       }
 
-      add_define(this, k->ind.u.string, &k->val);
+      def = add_define(this, k->ind.u.string, &k->val);
+
+      if (TYPEOF(k->val) != T_ARRAY) {
+        /* Cache the parsed macro body. */
+        free_svalue(&k->val);
+        SET_SVAL(k->val, T_ARRAY, 0, array, copy_array(def->parts));
+      }
     }
   }
 
-  /*! @decl mapping(string:string|function|object) get_predefines()
+  /*! @decl mapping(string:string|function|object|array(string|int)) get_predefines()
    *!
    *!   Get the predefined macros for this preprocessor.
    *!
@@ -5812,7 +5858,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
    *!   @[init_pike_cpp()], @[define_multiple_macros()],
    *!   @[_take_over_initial_predefines()]
    */
-  PIKEFUN mapping(string:string|function|object) get_predefines()
+PIKEFUN mapping(string:string|function|object|array(string|int)) get_predefines()
   {
 #ifndef SUPPORT_HANDLERS
     apply_external(1, f_get_predefines_fun_num, args);

@@ -470,6 +470,13 @@ o Thread.RWMutex
 New features
 ------------
 
+o Command-line options
+
+  - It is now possible to define function-style macros with the
+    command-line option '-D'. Eg:
+
+      $ pike '-DFOO(X)=X'
+
 o predef::backtrace()
 
   predef::backtrace() now takes an optional argument that causes it
