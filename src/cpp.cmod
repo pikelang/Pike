@@ -2370,11 +2370,17 @@ static struct define_struct *add_define(struct CPP_struct *this,
     Pike_error("Junk after macro name: %pq.\n", Pike_sp[-1].u.string);
   }
 
+  if (!argno) {
+    /* Compat with old syntax. */
+    argno = 1;
+    varargs = CPP_MACRO_VARARGS;
+  }
+
   /* NB: alloc_empty_define() pushes the define object onto the stack.
    */
   def = alloc_empty_define(def_name);
   def->args = argno;
-  def->flags |= varargs;
+  def->flags |= varargs | CPP_MACRO_KEEP_NL;
 
   if (!what || ((TYPEOF(*what) == PIKE_T_INT) && !what->u.integer)) {
     ref_push_string(empty_pike_string);
