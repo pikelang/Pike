@@ -10392,6 +10392,12 @@ test_do([[cpp(#"
 FOO(// Pike 7.6 and earlier don't seem to like single
     /* quotes (') in comments in macro arguments. */
 arg)")]])
+test_equal([[cpp(#"
+FOO(foo)", ([
+  "predefines": ([
+    "FOO(X)":"X Y X",
+  ]),
+]))]], "\n foo  Y  foo ")
 
 // The following three tests are in triplicate to force testing in all shifts.
 test_do([[
