@@ -431,6 +431,7 @@ static void fd_backtick__fd(INT32 args)
  *! @decl mixed _write_callback
  *! @decl mixed _read_oob_callback
  *! @decl mixed _write_oob_callback
+ *! @decl mixed _error_callback
  *! @decl mixed _fs_event_callback
  *!
  *! Callback functions installed by @[Stdio.File()->set_callbacks()] et al.
@@ -1847,6 +1848,7 @@ CBFUNCS(read_callback, PIKE_FD_READ)
 CBFUNCS(write_callback, PIKE_FD_WRITE)
 CBFUNCS(read_oob_callback, PIKE_FD_READ_OOB)
 CBFUNCS(write_oob_callback, PIKE_FD_WRITE_OOB)
+CBFUNCS(error_callback, PIKE_FD_ERROR)
 CBFUNCS2(fs_event_callback, PIKE_FD_FS_EVENT)
 
 
@@ -5968,6 +5970,9 @@ static void exit_file_locking(void)
     PIKE_MAP_VARIABLE("_write_oob_callback",
 		      OFFSETOF(my_file, event_cbs[PIKE_FD_WRITE_OOB]),
 		      tMix, PIKE_T_MIXED, 0);
+    PIKE_MAP_VARIABLE("_error_callback",
+                      OFFSETOF(my_file, event_cbs[PIKE_FD_ERROR]),
+                      tMix, PIKE_T_MIXED, 0);
     PIKE_MAP_VARIABLE("_fs_event_callback",
 		      OFFSETOF(my_file, event_cbs[PIKE_FD_FS_EVENT]),
 		      tMix, PIKE_T_MIXED, 0);

@@ -92,6 +92,8 @@ FILE_FUNC("set_write_callback",file_set_write_callback, tFunc(CB_FUNC,tVoid))
 FILE_FUNC("set_read_oob_callback",file_set_read_oob_callback, tFunc(CB_FUNC,tVoid))
 /* function(mixed:void) */
 FILE_FUNC("set_write_oob_callback",file_set_write_oob_callback, tFunc(CB_FUNC,tVoid))
+/* function(mixed:void) */
+FILE_FUNC("set_error_callback", file_set_error_callback, tFunc(CB_FUNC,tVoid))
 /* function(mixed,int:void) */
 FILE_FUNC("set_fs_event_callback",file_set_fs_event_callback, tFunc(tOr(tFunc(tInt,tOr(tVoid,tMixed)), tZero) tInt,tVoid))
 
