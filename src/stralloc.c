@@ -841,6 +841,61 @@ struct pike_string *low_end_shared_string(struct pike_string *s)
   return s;
 }
 
+/**
+ * Count the number of UTF-16 surrogate pairs.
+ *
+ * Return -1 if there are invalid surrogates.
+ */
+static ptrdiff_t count_surrogate_pairs(const p_wchar1 *s, ptrdiff_t len)
+{
+  const p_wchar1 *e = s + len;
+  ptrdiff_t res = 0;
+
+  while (s+1 < e) {
+    switch(*s & 0xfc00) {
+    case 0xdc00:
+      /* Bad surrogate order. */
+      return -1;
+
+    case 0xd800:
+      if ((s[1] & 0xfc00) != 0xdc00) {
+        /* Missing surrogate in pair. */
+        return -1;
+      }
+      s++;
+      res++;
+      break;
+
+    default:
+      break;
+    }
+    s++;
+  }
+  if (s < e && ((*s & 0xf800) == 0xd800)) return -1;
+  return res;
+}
+
+/**
+ * Convert UTF-16 surrogates into wide characters.
+ *
+ * Assumes that all surrogates are valid and that there is
+ * sufficient space in the destination.
+ */
+static void convert_surrogate_pairs(p_wchar2 *dest, const p_wchar1 *s,
+                                    ptrdiff_t slen)
+{
+  const p_wchar1 *e = s + slen - 1;
+
+  while (s < e) {
+    p_wchar2 c = *s++;
+    if ((c & 0xfc00) == 0xdc00) {
+      p_wchar1 c2 = *s++ & 0x3ff;
+      c = ((c & 0x3ff) | c2) + 0x10000;
+    }
+    *dest++ = c;
+  }
+}
+
 /*
  * This function checks if the shift size can be decreased before
  * entering the string in the shared string table
@@ -877,6 +932,17 @@ PMOD_EXPORT struct pike_string *end_shared_string(struct pike_string *s)
        convert_1_to_0(STR0(s2),STR1(s),s->len);
        free_string(s);
        s=s2;
+      }
+      if (s->flags & STRING_CONVERT_SURROGATES) {
+        ptrdiff_t cnt = count_surrogate_pairs(STR1(s), s->len);
+        if (cnt > 0) {
+          s2 = begin_wide_shared_string(s->len - cnt, thirtytwobit);
+          convert_surrogate_pairs(STR2(s2), STR1(s), s->len);
+          free_string(s);
+          s = s2;
+        } else {
+          s->flags &= ~STRING_CONVERT_SURROGATES;
+        }
       }
       break;
 
