@@ -634,13 +634,13 @@ static getlengthsidtype getlengthsid;
 
 LINKFUNC(BOOL,equalsid, (PSID,PSID) );
 LINKFUNC(BOOL,lookupaccountname,
-         (LPCTSTR,LPCTSTR,PSID,LPDWORD,LPTSTR,LPDWORD,PSID_NAME_USE) );
+         (LPCWSTR,LPCWSTR,PSID,LPDWORD,LPWSTR,LPDWORD,PSID_NAME_USE) );
 LINKFUNC(BOOL,lookupaccountsid,
-         (LPCTSTR,PSID,LPTSTR,LPDWORD,LPTSTR,LPDWORD,PSID_NAME_USE) );
+         (LPCWSTR,PSID,LPWSTR,LPDWORD,LPWSTR,LPDWORD,PSID_NAME_USE) );
 LINKFUNC(BOOL,setnamedsecurityinfo,
-         (LPTSTR,SE_OBJECT_TYPE,SECURITY_INFORMATION,PSID,PSID,PACL,PACL) );
+         (LPWSTR,SE_OBJECT_TYPE,SECURITY_INFORMATION,PSID,PSID,PACL,PACL) );
 LINKFUNC(DWORD,getnamedsecurityinfo,
-         (LPTSTR,SE_OBJECT_TYPE,SECURITY_INFORMATION,PSID*,PSID*,PACL*,PACL*,PSECURITY_DESCRIPTOR*) );
+         (LPWSTR,SE_OBJECT_TYPE,SECURITY_INFORMATION,PSID*,PSID*,PACL*,PACL*,PSECURITY_DESCRIPTOR*) );
 
 LINKFUNC(BOOL,initializeacl, (PACL,DWORD,DWORD) );
 LINKFUNC(BOOL,addaccessallowedace, (PACL,DWORD,DWORD,PSID) );
@@ -690,11 +690,17 @@ static void f_sid_account(INT32 args)
   char foo[1];
   DWORD namelen=0;
   DWORD domainlen=0;
-  char *sys=0;
+  p_wchar1 *sys = 0;
   SID_NAME_USE type;
 
   check_all_args(NULL, args, BIT_STRING|BIT_VOID, 0);
-  if(args) sys=sp[-1].u.string->str;
+  if(args && (TYPEOF(sp[-args]) == T_STRING)) {
+    ref_push_string(sp[-args].u.string);
+    push_int(2);
+    f_string_to_unicode(2);
+    args++;
+    sys = (p_wchar1 *)STR0(sp[-1].u.string);
+  }
 
   if(!THIS_PSID) Pike_error("SID->account on uninitialized SID.\n");
   lookupaccountsid(sys,
@@ -708,14 +714,16 @@ static void f_sid_account(INT32 args)
 
   if(namelen && domainlen)
   {
-    struct pike_string *dom=begin_shared_string(domainlen-1);
-    struct pike_string *name=begin_shared_string(namelen-1);
+    struct pike_string *dom = begin_wide_shared_string(domainlen-1, sixteenbit);
+    struct pike_string *name = begin_wide_shared_string(namelen-1, sixteenbit);
+    dom->flags |= STRING_CONVERT_SURROGATES;
+    name->flags |= STRING_CONVERT_SURROGATES;
 
-    if(lookupaccountsid(sys,
+    if (lookupaccountsid(sys,
 			 THIS_PSID,
-			 STR0(name),
+                         STR1(name),
 			 &namelen,
-			 STR0(dom),
+                         STR1(dom),
 			 &domainlen,
 			 &type))
     {
@@ -2696,23 +2704,26 @@ static void f_SetFileAttributes(INT32 args)
  */
 static void f_LookupAccountName(INT32 args)
 {
-  LPCTSTR sys=0;
-  LPCTSTR acc;
+  LPCWSTR sys=0;
+  LPCWSTR acc;
   DWORD sidlen, domainlen;
   SID_NAME_USE tmp;
-  char buffer[1];
+  p_wchar1 buffer[1];
 
   check_all_args(NULL,args,BIT_INT|BIT_STRING, BIT_STRING,0);
   if(TYPEOF(sp[-args]) == T_STRING)
   {
-    if(sp[-args].u.string->size_shift != 0)
-       Pike_error("System name is wide string.\n");
-    sys=STR0(sp[-args].u.string);
+    ref_push_string(sp[-args].u.string);
+    push_int(2);
+    f_string_to_unicode(2);
+    args++;
+    sys = (p_wchar1 *)STR0(sp[-1].u.string);
   }
-  if(sp[1-args].u.string->size_shift != 0)
-    Pike_error("Account name is wide string.\n");
-
-  acc=STR0(sp[1-args].u.string);
+  ref_push_string(sp[1-args].u.string);
+  push_int(2);
+  f_string_to_unicode(2);
+  args++;
+  acc = (p_wchar1 *)STR0(sp[-1].u.string);
 
   sidlen=0;
   domainlen=0;
@@ -2722,20 +2733,21 @@ static void f_LookupAccountName(INT32 args)
 		    acc,
 		    (PSID)buffer,
 		    &sidlen,
-		    (LPTSTR)buffer,
+                    (LPWSTR)buffer,
 		    &domainlen,
 		    &tmp);
 
   if(sidlen && domainlen)
   {
     PSID sid=xalloc(sidlen);
-    struct pike_string *dom=begin_shared_string(domainlen-1);
+    struct pike_string *dom = begin_wide_shared_string(domainlen-1, sixteenbit);
+    dom->flags |= STRING_CONVERT_SURROGATES;
 
     if(lookupaccountname(sys,
 			 acc,
 			 sid,
 			 &sidlen,
-			 (LPTSTR)(STR0(dom)),
+                         (LPWSTR)(STR1(dom)),
 			 &domainlen,
 			 &tmp))
     {
@@ -2905,7 +2917,7 @@ static PACL decode_acl(struct array *arr)
 static void f_SetNamedSecurityInfo(INT32 args)
 {
   struct svalue *sval;
-  char *name;
+  struct pike_string *name;
   struct mapping *m;
   SECURITY_INFORMATION flags=0;
   PSID owner=0;
@@ -2915,7 +2927,7 @@ static void f_SetNamedSecurityInfo(INT32 args)
   DWORD ret;
   SE_OBJECT_TYPE type=SE_FILE_OBJECT;
 
-  get_all_args(NULL, args, "%s%m", &name, &m);
+  get_all_args(NULL, args, "%t%m", &name, &m);
 
   if((sval=low_mapping_string_lookup(m, literal_type_string)))
   {
@@ -2958,9 +2970,15 @@ static void f_SetNamedSecurityInfo(INT32 args)
     flags |= SACL_SECURITY_INFORMATION;
   }
 
+  ref_push_string(name);
+  push_int(2);
+  f_string_to_unicode(2);
+  args++;
+  name = Pike_sp[-1].u.string;
+
   /* FIXME, add dacl and sacl!!!! */
 
-  ret=setnamedsecurityinfo(name,
+  ret = setnamedsecurityinfo((p_wchar1 *)STR0(name),
 			   type,
 			   flags,
 			   owner,
@@ -2983,6 +3001,7 @@ static void f_SetNamedSecurityInfo(INT32 args)
  */
 static void f_GetNamedSecurityInfo(INT32 args)
 {
+  struct pike_string *name;
   PSID owner=0, group=0;
   PACL dacl=0, sacl=0;
   PSECURITY_DESCRIPTOR desc=0;
@@ -3002,7 +3021,14 @@ static void f_GetNamedSecurityInfo(INT32 args)
     case 1: break;
   }
 
-  if(!(ret=getnamedsecurityinfo(sp[-args].u.string->str,
+  name = sp[-args].u.string;
+  ref_push_string(name);
+  push_int(2);
+  f_string_to_unicode(2);
+  args++;
+  name = sp[-1].u.string;
+
+  if(!(ret=getnamedsecurityinfo((p_wchar1 *)STR0(name),
 				type,
 				flags,
 				&owner,
@@ -3704,16 +3730,16 @@ void init_nt_system_calls(void)
       token_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;
     }
 
-    if( (proc=GetProcAddress(advapilib, "LookupAccountNameA")) )
+    if( (proc=GetProcAddress(advapilib, "LookupAccountNameW")) )
       lookupaccountname=(lookupaccountnametype)proc;
 
-    if( (proc=GetProcAddress(advapilib, "LookupAccountSidA")) )
+    if( (proc=GetProcAddress(advapilib, "LookupAccountSidW")) )
       lookupaccountsid=(lookupaccountsidtype)proc;
 
-    if( (proc=GetProcAddress(advapilib, "SetNamedSecurityInfoA")) )
+    if( (proc=GetProcAddress(advapilib, "SetNamedSecurityInfoW")) )
       setnamedsecurityinfo=(setnamedsecurityinfotype)proc;
 
-    if( (proc=GetProcAddress(advapilib, "GetNamedSecurityInfoA")) )
+    if( (proc=GetProcAddress(advapilib, "GetNamedSecurityInfoW")) )
       getnamedsecurityinfo=(getnamedsecurityinfotype)proc;
 
     if( (proc=GetProcAddress(advapilib, "EqualSid")) )
