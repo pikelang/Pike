@@ -649,6 +649,8 @@ LINKFUNC(BOOL,addauditaccessace, (PACL,DWORD,DWORD,PSID,BOOL,BOOL) );
 
 HINSTANCE advapilib;
 
+/*! @class SID
+ */
 #define THIS_PSID (*(PSID *)CURRENT_STORAGE)
 static struct program *sid_program;
 static void init_sid(struct object *o)
@@ -665,6 +667,8 @@ static void exit_sid(struct object *o)
   }
 }
 
+/*! @decl protected int(0..1) `==(mixed x)
+ */
 static void f_sid_eq(INT32 args)
 {
   if(args && TYPEOF(sp[-1]) == T_OBJECT)
@@ -685,6 +689,8 @@ static void f_sid_eq(INT32 args)
   push_int(0);
 }
 
+/*! @decl array(string|int) account(string|void sys)
+ */
 static void f_sid_account(INT32 args)
 {
   char foo[1];
@@ -710,7 +716,6 @@ static void f_sid_account(INT32 args)
 		   foo,
 		   &domainlen,
 		   &type);
-
 
   if(namelen && domainlen)
   {
@@ -742,9 +747,18 @@ static void f_sid_account(INT32 args)
 
 }
 
-/*! @decl object LogonUser(string username, string|zero domain, @
- *!                        string password, int|void logon_type, @
- *!                        int|void logon_provider)
+/*! @endclass
+ */
+
+/*! @class UserToken
+ */
+
+/*! @endclass
+ */
+
+/*! @decl UserToken LogonUser(string username, string|zero domain, @
+ *!                           string password, int|void logon_type, @
+ *!                           int|void logon_provider)
  *!
  *!   Logon a user.
  *!
@@ -776,7 +790,7 @@ static void f_sid_account(INT32 args)
  *!   @endint
  *!
  *! @returns
- *!   Returns a login token object on success, and zero on failure.
+ *!   Returns a login @[UserToken] object on success, and zero on failure.
  *!
  *! @note
  *!   This function is only available on some Win32 systems.
@@ -3768,9 +3782,9 @@ void init_nt_system_calls(void)
       set_init_callback(init_sid);
       set_exit_callback(exit_sid);
       ADD_STORAGE(PSID);
-      ADD_FUNCTION("`==",f_sid_eq,tFunc(tMix,tInt),0);
+      ADD_FUNCTION("`==", f_sid_eq, tFunc(tMix, tInt01), ID_PROTECTED);
       ADD_FUNCTION("account",f_sid_account,
-		   tFunc(tNone,tArr(tOr(tStr,tInt))),0);
+                   tFunc(tOr(tStr, tVoid), tArr(tOr(tStr, tInt))), 0);
       add_program_constant("SID",sid_program=end_program(),0);
 
       ADD_FUNCTION("LookupAccountName",f_LookupAccountName,
