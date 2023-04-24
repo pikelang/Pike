@@ -277,7 +277,7 @@ class Package
     if(!mkdirhier(bootstrap, 0755))
       ERR(("Failed to create bootstrap %O., ", bootstrap));
 
-    Process.create_process(({ "tar", "cf",
+    Process.create_process(({ "tar", "chf",
 			      package_filename,
 			      bootstrap,
 			      setup_filename }))->wait();
@@ -294,7 +294,7 @@ class Package
       array(string) path_parts = package/"/";
       
       cd(path_parts[0..sizeof(path_parts)-2]*"/");
-      Process.create_process(({ "tar", "rf",
+      Process.create_process(({ "tar", "rhf",
 				combine_path(original_wd, package_filename),
 				path_parts[-1] }))->wait();
       cd(original_wd);
