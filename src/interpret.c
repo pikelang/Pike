@@ -3540,6 +3540,20 @@ PMOD_EXPORT void push_static_text( const char *x )
     SET_SVAL_TYPE(*_sp_, PIKE_T_STRING);
 }
 
+PMOD_EXPORT void push_utf16_text(const p_wchar1 *x)
+{
+  struct pike_string *s;
+  ptrdiff_t i;
+
+  /* i = wstrlen(x); */
+  for (i = 0; x[i]; i++)
+    ;
+  s = begin_wide_shared_string(i, sixteenbit);
+  memcpy(s->str, x, i<<1);
+  s->flags |= STRING_CONVERT_SURROGATES;
+  push_string(end_shared_string(s));
+}
+
 /* NOTE: Returns 1 if result on stack, 0 otherwise. */
 PMOD_EXPORT int safe_apply_handler(const char *fun,
 				   struct object *handler,

@@ -386,6 +386,7 @@ PMOD_EXPORT void push_random_string(unsigned len);
 
 PMOD_EXPORT extern void push_text( const char *x );
 PMOD_EXPORT extern void push_static_text( const char *x );
+PMOD_EXPORT extern void push_utf16_text(const p_wchar1 *x);
 
 #define push_constant_text(T) do{					\
     struct svalue *_sp_ = Pike_sp;					\
