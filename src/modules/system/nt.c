@@ -693,7 +693,7 @@ static void f_sid_eq(INT32 args)
  */
 static void f_sid_account(INT32 args)
 {
-  char foo[1];
+  p_wchar1 foo[1];
   DWORD namelen=0;
   DWORD domainlen=0;
   p_wchar1 *sys = 0;
@@ -3290,19 +3290,17 @@ static void f_nt_uname(INT32 args)
   f_aggregate_mapping(n);
 }
 
-
 /**************************/
 /* start Security context */
 
-typedef SECURITY_STATUS (WINAPI *querysecuritypackageinfotype)(SEC_CHAR*,PSecPkgInfo*);
-typedef SECURITY_STATUS (WINAPI *acquirecredentialshandletype)(SEC_CHAR*,SEC_CHAR*,ULONG,PLUID,PVOID,SEC_GET_KEY_FN,PVOID,PCredHandle,PTimeStamp);
+typedef SECURITY_STATUS (WINAPI *querysecuritypackageinfotype)(SEC_WCHAR*,PSecPkgInfo*);
+typedef SECURITY_STATUS (WINAPI *acquirecredentialshandletype)(SEC_WCHAR*,SEC_WCHAR*,ULONG,PLUID,PVOID,SEC_GET_KEY_FN,PVOID,PCredHandle,PTimeStamp);
 typedef SECURITY_STATUS (WINAPI *freecredentialshandletype)(PCredHandle);
 typedef SECURITY_STATUS (WINAPI *acceptsecuritycontexttype)(PCredHandle,PCtxtHandle,PSecBufferDesc,ULONG,ULONG,PCtxtHandle,PSecBufferDesc,PULONG,PTimeStamp);
 typedef SECURITY_STATUS (WINAPI *completeauthtokentype)(PCtxtHandle,PSecBufferDesc);
 typedef SECURITY_STATUS (WINAPI *deletesecuritycontexttype)(PCtxtHandle);
 typedef SECURITY_STATUS (WINAPI *freecontextbuffertype)(PVOID);
 typedef SECURITY_STATUS (WINAPI *querycontextattributestype)(PCtxtHandle,ULONG,PVOID);
-
 
 static querysecuritypackageinfotype querysecuritypackageinfo;
 static acquirecredentialshandletype acquirecredentialshandle;
@@ -3320,7 +3318,7 @@ struct sctx_storage {
   int        hcred_alloced;
   CtxtHandle hctxt;
   int        hctxt_alloced;
-  TCHAR      lpPackageName[1024];
+  struct pike_string *PackageNameUTF16;
   DWORD      cbMaxMessage;
   BYTE *     buf;
   DWORD      cBuf;
@@ -3341,6 +3339,10 @@ static void exit_sctx(struct object *o)
 {
   struct sctx_storage *sctx = THIS_SCTX;
 
+  if (sctx->PackageNameUTF16) {
+    free_string(sctx->PackageNameUTF16);
+    sctx->PackageNameUTF16 = NULL;
+  }
   if (sctx->hctxt_alloced) {
     deletesecuritycontext (&sctx->hctxt);
     sctx->hctxt_alloced = 0;
@@ -3362,17 +3364,26 @@ static void f_sctx_create(INT32 args)
   SECURITY_STATUS ss;
   PSecPkgInfo     pkgInfo;
   TimeStamp       Lifetime;
-  char *          pkgName;
+  struct pike_string *pkgName;
 
-  get_all_args(NULL, args, "%s", &pkgName);
+  get_all_args(NULL, args, "%t", &pkgName);
 
-  lstrcpy(sctx->lpPackageName, pkgName);
-  ss = querysecuritypackageinfo ( sctx->lpPackageName, &pkgInfo);
+  ref_push_string(pkgName);
+  push_int(2);
+  f_string_to_unicode(2);
+  if (sctx->PackageNameUTF16) {
+    free_string(sctx->PackageNameUTF16);
+  }
+  sctx->PackageNameUTF16 = Pike_sp[-1].u.string;
+  Pike_sp--;
+
+  ss = querysecuritypackageinfo ( (p_wchar1 *)STR0(sctx->PackageNameUTF16),
+                                  &pkgInfo);
 
   if (!SEC_SUCCESS(ss))
   {
-    Pike_error("Could not query package info for %s, error 0x%08x.\n",
-               sctx->lpPackageName, ss);
+    Pike_error("Could not query package info for %pS, error 0x%08x.\n",
+               pkgName, ss);
   }
 
   sctx->cbMaxMessage = pkgInfo->cbMaxToken;
@@ -3386,7 +3397,7 @@ static void f_sctx_create(INT32 args)
     freecredentialshandle (&sctx->hcred);
   ss = acquirecredentialshandle (
                                  NULL,
-                                 sctx->lpPackageName,
+                                 (p_wchar1 *)STR0(sctx->PackageNameUTF16),
                                  SECPKG_CRED_INBOUND,
                                  NULL,
                                  NULL,
@@ -3540,7 +3551,9 @@ static void f_sctx_type(INT32 args)
 {
   struct sctx_storage *sctx = THIS_SCTX;
   pop_n_elems(args);
-  push_string(make_shared_string(sctx->lpPackageName));
+  ref_push_string(sctx->PackageNameUTF16);
+  push_int(2);
+  f_unicode_to_string(2);
 }
 
 
@@ -3548,7 +3561,7 @@ static void f_sctx_getusername(INT32 args)
 {
   struct sctx_storage *sctx = THIS_SCTX;
   SECURITY_STATUS   ss;
-  SecPkgContext_Names name;
+  SecPkgContext_NamesW name;
 
   pop_n_elems(args);
 
@@ -3565,7 +3578,7 @@ static void f_sctx_getusername(INT32 args)
     return;
   }
 
-  push_text(name.sUserName);
+  push_utf16_text(name.sUserName);
 
   freecontextbuffer(name.sUserName);
 }
@@ -3991,14 +4004,14 @@ void init_nt_system_calls(void)
                                       VAR=(PIKE_CONCAT(VAR,type))proc; \
                                } while(0)
 
-    LOAD_SECUR_FN(querysecuritypackageinfo, QuerySecurityPackageInfoA);
-    LOAD_SECUR_FN(acquirecredentialshandle, AcquireCredentialsHandleA);
+    LOAD_SECUR_FN(querysecuritypackageinfo, QuerySecurityPackageInfoW);
+    LOAD_SECUR_FN(acquirecredentialshandle, AcquireCredentialsHandleW);
     LOAD_SECUR_FN(freecredentialshandle, FreeCredentialsHandle);
     LOAD_SECUR_FN(acceptsecuritycontext, AcceptSecurityContext);
     LOAD_SECUR_FN(completeauthtoken, CompleteAuthToken);
     LOAD_SECUR_FN(deletesecuritycontext, DeleteSecurityContext);
     LOAD_SECUR_FN(freecontextbuffer, FreeContextBuffer);
-    LOAD_SECUR_FN(querycontextattributes, QueryContextAttributesA);
+    LOAD_SECUR_FN(querycontextattributes, QueryContextAttributesW);
 
     if( querysecuritypackageinfo && acquirecredentialshandle &&
         freecredentialshandle && acceptsecuritycontext &&
