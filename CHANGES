@@ -693,6 +693,11 @@ o String.Buffer & Stdio.Buffer
 
   Added _search().
 
+o System.LookupAccountName(), etc [NT]
+
+  Several NT-specific functions now support wide strings
+  as arguments and as output.
+
 o The self testing framework now supports *.test-files.
 
 o Thread

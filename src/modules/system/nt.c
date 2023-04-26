@@ -617,12 +617,12 @@ void f_attachconsole(INT32 args)
 }
 #endif /* HAVE_ATTACHCONSOLE */
 
-
 static struct program *token_program;
 
 #define THIS_TOKEN (*(HANDLE *)CURRENT_STORAGE)
 
-typedef BOOL (WINAPI *logonusertype)(LPSTR,LPSTR,LPSTR,DWORD,DWORD,PHANDLE);
+typedef BOOL (WINAPI *logonusertype)(LPCWSTR, LPCWSTR, LPCWSTR,
+                                     DWORD, DWORD, PHANDLE);
 typedef DWORD (WINAPI *getlengthsidtype)(PSID);
 
 static logonusertype logonuser;
@@ -797,36 +797,36 @@ static void f_sid_account(INT32 args)
  */
 void f_LogonUser(INT32 args)
 {
-  LPTSTR username, domain, pw;
-  DWORD logontype, logonprovider;
+  struct pike_string *username_str = NULL, *domain_str = NULL, *pw_str = NULL;
+  LPCWSTR username, domain = NULL, pw;
+  int logontype = LOGON32_LOGON_NETWORK;
+  int logonprovider = LOGON32_PROVIDER_DEFAULT;
   HANDLE x;
   BOOL ret;
 
-  check_all_args(NULL, args,
-                 BIT_STRING, BIT_ZERO | BIT_STRING, BIT_STRING,
-		 BIT_INT | BIT_VOID, BIT_INT | BIT_VOID,0);
+  get_all_args(NULL, args, "%t%T%t.%d%d",
+               &username_str, &domain_str, &pw_str,
+               &logontype, &logonprovider);
 
-  username=(LPTSTR)sp[-args].u.string->str;
+  ref_push_string(username_str);
+  push_int(2);
+  f_string_to_unicode(2);
+  username = (LPCWSTR)STR0(sp[-1].u.string);
+  args++;
 
-  if(TYPEOF(sp[1-args]) == T_STRING)
-    domain=(LPTSTR)sp[1-args].u.string->str;
-  else
-    domain=0;
-
-  pw=(LPTSTR)sp[2-args].u.string->str;
-
-  logonprovider=LOGON32_PROVIDER_DEFAULT;
-  logontype=LOGON32_LOGON_NETWORK;
-
-  switch(args)
-  {
-    default: logonprovider=sp[4-args].u.integer;
-    case 4:  logontype=sp[3-args].u.integer;
-    case 3:
-    case 2:
-    case 1:
-    case 0: break;
+  if (domain_str) {
+    ref_push_string(domain_str);
+    push_int(2);
+    f_string_to_unicode(2);
+    domain = (LPCWSTR)STR0(sp[-1].u.string);
+    args++;
   }
+
+  ref_push_string(pw_str);
+  push_int(2);
+  f_string_to_unicode(2);
+  pw = (LPCWSTR)STR0(sp[-1].u.string);
+  args++;
 
   THREADS_ALLOW();
   ret=logonuser(username, domain, pw, logontype, logonprovider, &x);
@@ -3735,12 +3735,14 @@ void init_nt_system_calls(void)
   if( (advapilib=LoadLibrary("advapi32")) )
   {
     FARPROC proc;
-    if( (proc=GetProcAddress(advapilib, "LogonUserA")) )
+    if( (proc=GetProcAddress(advapilib, "LogonUserW")) )
     {
       logonuser=(logonusertype)proc;
 
       /* function(string,string,string,int|void,void|int:object) */
-  ADD_FUNCTION("LogonUser",f_LogonUser,tFunc(tStr tStr tStr tOr(tInt,tVoid) tOr(tVoid,tInt),tObj),0);
+      ADD_FUNCTION("LogonUser", f_LogonUser,
+                   tFunc(tStr tOr(tStr, tZero) tStr tOr(tInt, tVoid)
+                         tOr(tVoid, tInt), tObj), 0);
 
       SIMPCONST(LOGON32_LOGON_BATCH);
       SIMPCONST(LOGON32_LOGON_INTERACTIVE);
