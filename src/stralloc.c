@@ -650,8 +650,19 @@ PMOD_EXPORT struct pike_string *debug_begin_wide_shared_string(size_t len, enum 
   struct pike_string *t = NULL;
   size_t bytes;
   ONERROR fe;
+  int extra = 0;
 
-  if ((ptrdiff_t)len < 0 || DO_SIZE_T_ADD_OVERFLOW(len, 1, &bytes) ||
+#ifdef __NT__
+  if (!shift && !(len & 1)) {
+    /* Make sure that there is space for an extra NUL in
+     * the string_to_unicode() case. Note that len is always
+     * an even number of characters in that case.
+     */
+    extra = 1;
+  }
+#endif
+
+  if ((ptrdiff_t)len < 0 || DO_SIZE_T_ADD_OVERFLOW(len, 1 + extra, &bytes) ||
       DO_SIZE_T_MUL_OVERFLOW(bytes, 1 << shift, &bytes)) {
     Pike_error("String is too large.\n");
   }
@@ -691,6 +702,11 @@ PMOD_EXPORT struct pike_string *debug_begin_wide_shared_string(size_t len, enum 
   DO_IF_DEBUG(t->next = NULL);
   UNSET_ONERROR(fe);
   low_set_index(t,len,0);
+#ifdef __NT__
+  if (extra) {
+    t->str[len + 1] = 0;
+  }
+#endif
   return t;
 }
 
