@@ -1,10 +1,48 @@
 START_MARKER
 
 
+// nt.c:
+
+cond_begin([[(cpp("__NT__")/"\n")[-1] != "__NT__"]])
+
+// AllocConsole		__NT__
+// AttachConsole	__NT__
+// FreeConsole		__NT__
+// GetComputerName	__NT__
+test_true(stringp(System.GetComputerName()))
+// GetFileAttributes	__NT__
+// GetNamedSecurityInfo	__NT__
+// GetUserName		__NT__
+test_true(stringp(System.GetUserName()))
+// LogonUser		__NT__
+// LookupAccountName	__NT__
+test_equal(System.LookupAccount(UNDEFINED, "LocalService")[1..],
+  ({ "NT AUTHORITY", 5 }))
+test_equal(System.LookupAccount(UNDEFINED, "LocalService")[0]->account(),
+  ({ "LOCAL SERVICE", "NT AUTHORITY", 5 }))
+// NetGetAnyDCName	__NT__
+// NetGetDCName		__NT__
+// NetGroupEnum		__NT__
+// NetGroupGetUsers	__NT__
+// NetLocalGroupEnum	__NT__
+// NetLocalGroupGetMembers __NT__
+// NetSessionEnum	__NT__
+// NetUserEnum		__NT__
+// NetUserGetGroups	__NT__
+// NetUserGetInfo	__NT__
+// NetUserGetLocalGroups __NT__
+// NetWkstaUserEnum	__NT__
+// RegGetKeyNames	__NT__
+// RegGetValue		__NT__
+// RegGetValues		__NT__
+// SetFileAttributes	__NT__
+// SetNamedSecurityInfo	__NT__
+// cp			__NT__
+
+cond_end // __NT__
+
 // system.c:
 
-// RegGetValue		__NT__
-// cp			__NT__
 // umask
 // chmod
 // chown		HAVE_CHOWN
