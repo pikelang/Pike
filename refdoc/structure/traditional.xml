@@ -359,10 +359,10 @@
       </section>
       <section title="Microsoft Windows">
 	<subsection title="Registry handling">
-	  <insert-move entity="RegGetKeyNames"/>
+          <insert-move entity="System.RegGetKeyNames"/>
 	  <!-- insert-move entity="HKEY_CLASSES_ROOT"/ -->
-	  <insert-move entity="RegGetValue"/>
-	  <insert-move entity="RegGetValues"/>
+          <insert-move entity="System.RegGetValue"/>
+          <insert-move entity="System.RegGetValues"/>
 	</subsection>
       </section>
     </chapter>
