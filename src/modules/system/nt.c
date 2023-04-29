@@ -188,6 +188,9 @@ static void f_cp(INT32 args)
   push_int(ret);
 }
 
+/*! @module System
+ */
+
 static void push_tchar(const TCHAR *buf, DWORD len)
 {
   push_string(make_shared_binary_pcharp(
@@ -541,9 +544,6 @@ void f_RegGetValues(INT32 args)
   CALL_AND_UNSET_ONERROR(tmp);
   f_aggregate_mapping(i*2);
 }
-
-/*! @module System
- */
 
 /*! @decl int FreeConsole()
  *!
