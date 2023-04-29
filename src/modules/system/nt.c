@@ -2606,7 +2606,7 @@ static void f_NetWkstaUserEnum(INT32 args)
  *!   The following transformations are currently done:
  *!   @ul
  *!     @item
- *!       If the @{path@} is not valid UTF-8, it will be converted
+ *!       If the @[path] is not valid UTF-8, it will be converted
  *!       into UTF-8.
  *!     @item
  *!       Forward slashes (@expr{'/'@}) are converted to backward
