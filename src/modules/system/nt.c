@@ -2919,8 +2919,7 @@ static PACL decode_acl(struct array *arr)
  * Note, this function does not use errno!!
  * (Time to learn how to autodoc... /Hubbe)
  */
-/*! @decl array(mixed) SetNamedSecurityInfo(string name, @
- *!                                         mapping(string:mixed) options)
+/*! @decl int SetNamedSecurityInfo(string name, mapping(string:mixed) options)
  *!
  *! @note
  *!   This function is only available on some Win32 systems.
@@ -3806,7 +3805,7 @@ void init_nt_system_calls(void)
                    tFunc(tOr(tStr, tZero) tStr,tArray),0);
 
       ADD_FUNCTION("SetNamedSecurityInfo",f_SetNamedSecurityInfo,
-		   tFunc(tStr tMap(tStr,tMix),tArray),0);
+                   tFunc(tStr tMap(tStr,tMix), tInt),0);
       ADD_FUNCTION("GetNamedSecurityInfo",f_GetNamedSecurityInfo,
 		   tFunc(tStr tOr(tVoid,tInt),tMapping),0);
 
