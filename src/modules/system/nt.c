@@ -650,6 +650,13 @@ LINKFUNC(BOOL,addauditaccessace, (PACL,DWORD,DWORD,PSID,BOOL,BOOL) );
 HINSTANCE advapilib;
 
 /*! @class SID
+ *!
+ *! Security Identifier.
+ *!
+ *! Objects of this class are returned by @[LookupAccountName()].
+ *!
+ *! @seealso
+ *!   @[LookupAccountName()]
  */
 #define THIS_PSID (*(PSID *)CURRENT_STORAGE)
 static struct program *sid_program;
@@ -690,6 +697,20 @@ static void f_sid_eq(INT32 args)
 }
 
 /*! @decl array(string|int) account(string|void sys)
+ *!
+ *! @returns
+ *!   Returns an array with the following content:
+ *!   @array
+ *!     @elem string 0
+ *!       Account name.
+ *!     @elem string 1
+ *!       Domain name.
+ *!     @elem int(0..) 2
+ *!       Account type.
+ *!   @endarray
+ *!
+ *! @note
+ *!   This function is only available on some Win32 systems.
  */
 static void f_sid_account(INT32 args)
 {
@@ -2711,6 +2732,19 @@ static void f_SetFileAttributes(INT32 args)
 }
 
 /*! @decl array(mixed) LookupAccountName(string|int(0..0) sys, string account)
+ *!
+ *! @returns
+ *!   Returns @expr{0@} (zero) if the @[account] was not found,
+ *!   and an array containing the following on success:
+ *!
+ *!   @array
+ *!     @elem SID 0
+ *!       @[SID] object representing the @[account].
+ *!     @elem string 1
+ *!       Domain name.
+ *!     @elem int 2
+ *!       Account type.
+ *!   @endarray
  *!
  *! @note
  *!   This function is only available on some Win32 systems.
