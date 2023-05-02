@@ -2687,7 +2687,7 @@ static void f_normalize_path(INT32 args)
   free(path);
 }
 
-/*! @decl int GetFileAttributes(string filename)
+/*! @decl int GetFileAttributes(string(8bit) filename)
  *!
  *!   Get the file attributes for the specified file.
  *!
@@ -2700,15 +2700,18 @@ static void f_normalize_path(INT32 args)
 static void f_GetFileAttributes(INT32 args)
 {
   char *file;
+  p_wchar1 *file_utf16;
   DWORD ret;
   get_all_args(NULL, args, "%s", &file);
-  ret=GetFileAttributes( (LPCTSTR) file);
+  file_utf16 = pike_dwim_utf8_to_utf16(file);
+  ret = GetFileAttributesW(file_utf16);
+  free(file_utf16);
   pop_stack();
   errno=GetLastError();
   push_int(ret);
 }
 
-/*! @decl int SetFileAttributes(string filename)
+/*! @decl int SetFileAttributes(string(8bit) filename)
  *!
  *!   Set the file attributes for the specified file.
  *!
@@ -2721,11 +2724,14 @@ static void f_GetFileAttributes(INT32 args)
 static void f_SetFileAttributes(INT32 args)
 {
   char *file;
+  p_wchar1 *file_utf16;
   INT_TYPE attr, ret;
   DWORD tmp;
   get_all_args(NULL, args, "%s%i", &file, &attr);
+  file_utf16 = pike_dwim_utf8_to_utf16(file);
   tmp=attr;
-  ret=SetFileAttributes( (LPCTSTR) file, tmp);
+  ret = SetFileAttributesW(file_utf16, tmp);
+  free(file_utf16);
   pop_stack();
   errno=GetLastError();
   push_int(ret);
@@ -3700,8 +3706,10 @@ void init_nt_system_calls(void)
 {
   /* function(string,string:int) */
 
-  ADD_FUNCTION("GetFileAttributes",f_GetFileAttributes,tFunc(tStr,tInt),0);
-  ADD_FUNCTION("SetFileAttributes",f_SetFileAttributes,tFunc(tStr tInt,tInt),0);
+  ADD_FUNCTION("GetFileAttributes", f_GetFileAttributes,
+               tFunc(tStr8, tInt), 0);
+  ADD_FUNCTION("SetFileAttributes", f_SetFileAttributes,
+               tFunc(tStr8 tInt, tInt), 0);
 
   SIMPCONST(FILE_ATTRIBUTE_ARCHIVE);
   SIMPCONST(FILE_ATTRIBUTE_HIDDEN);
