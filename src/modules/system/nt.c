@@ -235,16 +235,16 @@ static void push_regvalue(DWORD type, char* buffer, DWORD len)
       
     case REG_DWORD_LITTLE_ENDIAN:
       push_int(EXTRACT_UCHAR(buffer)+
-	       (EXTRACT_UCHAR(buffer+1)<<1)+
-	       (EXTRACT_UCHAR(buffer+2)<<2)+
-	       (EXTRACT_UCHAR(buffer+3)<<3));
+               (EXTRACT_UCHAR(buffer+1)<<8)+
+               (EXTRACT_UCHAR(buffer+2)<<16)+
+               (EXTRACT_UCHAR(buffer+3)<<24));
       break;
       
     case REG_DWORD_BIG_ENDIAN:
       push_int(EXTRACT_UCHAR(buffer+3)+
-	       (EXTRACT_UCHAR(buffer+2)<<1)+
-	       (EXTRACT_UCHAR(buffer+1)<<2)+
-	       (EXTRACT_UCHAR(buffer)<<3));
+               (EXTRACT_UCHAR(buffer+2)<<8)+
+               (EXTRACT_UCHAR(buffer+1)<<16)+
+               (EXTRACT_UCHAR(buffer)<<24));
       break;
       
     default:
