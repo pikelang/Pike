@@ -199,6 +199,7 @@ static void push_tchar(const TCHAR *buf, DWORD len)
 
 static void push_regvalue(DWORD type, char* buffer, DWORD len)
 {
+  struct pike_string *str;
   switch(type)
   {
     case REG_RESOURCE_LIST:
@@ -212,42 +213,60 @@ static void push_regvalue(DWORD type, char* buffer, DWORD len)
       if (!len) {
 	push_empty_string();
       } else {
-	push_string(make_shared_binary_string(buffer,len-1));
+        str = begin_wide_shared_string((len>>1) - 1, sixteenbit);
+        str->flags |= STRING_CONVERT_SURROGATES;
+        memcpy(str->str, buffer, len);
+        push_string(end_shared_string(str));
       }
       break;
 
     case REG_EXPAND_SZ:
-      type =
-	ExpandEnvironmentStrings((LPCTSTR)buffer,
-				 buffer+len,
-                                 (DWORD)(sizeof(buffer)-len-1));
-      if(type>sizeof(buffer)-len-1 || !type)
-        Pike_error("Failed to expand data.\n");
-      push_text(buffer+len);
+      if (!len) {
+        push_empty_string();
+      } else {
+        str = begin_wide_shared_string(1024, sixteenbit);
+        str->flags |= STRING_CONVERT_SURROGATES;
+        len =
+          ExpandEnvironmentStringsW((p_wchar1 *)buffer, STR1(str), str->len);
+        /* NB: len includes the terminating NUL. */
+        if ((len >= (DWORD)str->len) || !len) {
+          free_string(str);
+          Pike_error("Failed to expand data.\n");
+        }
+        push_string(end_and_resize_shared_string(str, len-1));
+      }
       break;
 
     case REG_MULTI_SZ:
       if (!len) {
         push_empty_array();
       } else {
-	push_string(make_shared_binary_string(buffer,len-1));
+        str = begin_wide_shared_string((len>>1) - 1, sixteenbit);
+        str->flags |= STRING_CONVERT_SURROGATES;
+        memcpy(str->str, buffer, len);
+        push_string(end_shared_string(str));
 	push_string(make_shared_binary_string("\000",1));
 	f_divide(2);
       }
       break;
 
+#if PIKE_BYTEORDER == 1234
     case REG_DWORD_LITTLE_ENDIAN:
-      push_int(EXTRACT_UCHAR(buffer)+
-               (EXTRACT_UCHAR(buffer+1)<<8)+
-               (EXTRACT_UCHAR(buffer+2)<<16)+
-               (EXTRACT_UCHAR(buffer+3)<<24));
+#else
+    case REG_DWORD_BIG_ENDIAN:
+#endif
+      push_int(*((INT32 *)buffer));
       break;
 
+#if PIKE_BYTEORDER == 1234
     case REG_DWORD_BIG_ENDIAN:
-      push_int(EXTRACT_UCHAR(buffer+3)+
-               (EXTRACT_UCHAR(buffer+2)<<8)+
-               (EXTRACT_UCHAR(buffer+1)<<16)+
-               (EXTRACT_UCHAR(buffer)<<24));
+#else
+    case REG_DWORD_LITTLE_ENDIAN:
+#endif
+      {
+        char buf2[4] = { buffer[3], buffer[2], buffer[1], buffer[0] };
+        push_int(*((INT32 *)buf2));
+      }
       break;
 
     default:
@@ -320,17 +339,30 @@ void f_RegGetValue(INT32 args)
   long ret;
   INT_TYPE hkey_num;
   HKEY new_key;
-  char *key, *ind;
+  struct pike_string *key, *ind;
+  p_wchar1 *key_utf16, *ind_utf16;
   DWORD len,type;
   char buffer[8192];
   len=sizeof(buffer)-1;
-  get_all_args(NULL, args, "%i%s%s", &hkey_num, &key, &ind);
+  get_all_args(NULL, args, "%i%t%t", &hkey_num, &key, &ind);
 
   if ((hkey_num < 0) || ((unsigned int)hkey_num >= NELEM(hkeys))) {
     Pike_error("Unknown hkey: %d.\n", hkey_num);
   }
 
-  ret = RegOpenKeyEx(hkeys[hkey_num], (LPCTSTR)key, 0, KEY_READ,  &new_key);
+  ref_push_string(key);
+  push_int(2);
+  f_string_to_unicode(2);
+  args++;
+  key_utf16 = (p_wchar1 *)STR0(Pike_sp[-1].u.string);
+
+  ref_push_string(ind);
+  push_int(2);
+  f_string_to_unicode(2);
+  args++;
+  ind_utf16 = (p_wchar1 *)STR0(Pike_sp[-1].u.string);
+
+  ret = RegOpenKeyExW(hkeys[hkey_num], key_utf16, 0, KEY_READ, &new_key);
   if ((ret == ERROR_FILE_NOT_FOUND) ||
       (ret == ERROR_PATH_NOT_FOUND)) {
     pop_n_elems(args);
@@ -340,7 +372,7 @@ void f_RegGetValue(INT32 args)
   if(ret != ERROR_SUCCESS)
     throw_nt_error(ret);
 
-  ret=RegQueryValueEx(new_key,ind, 0, &type, buffer, &len);
+  ret = RegQueryValueExW(new_key, ind_utf16, 0, &type, buffer, &len);
   RegCloseKey(new_key);
 
   if(ret==ERROR_SUCCESS)
@@ -399,17 +431,24 @@ static void do_regclosekey(HKEY key)
 void f_RegGetKeyNames(INT32 args)
 {
   INT_TYPE hkey_num;
-  char *key;
+  struct pike_string *key;
+  p_wchar1 *key_utf16;
   int i,ret;
   HKEY new_key;
   ONERROR tmp;
-  get_all_args(NULL, args, "%i%s", &hkey_num, &key);
+  get_all_args(NULL, args, "%i%t", &hkey_num, &key);
 
   if ((hkey_num < 0) || ((unsigned int)hkey_num >= NELEM(hkeys))) {
     Pike_error("Unknown hkey: %d.\n", hkey_num);
   }
 
-  ret = RegOpenKeyEx(hkeys[hkey_num], (LPCTSTR)key, 0, KEY_READ,  &new_key);
+  ref_push_string(key);
+  push_int(2);
+  f_string_to_unicode(2);
+  args++;
+  key_utf16 = (p_wchar1 *)STR0(Pike_sp[-1].u.string);
+
+  ret = RegOpenKeyExW(hkeys[hkey_num], key_utf16, 0, KEY_READ, &new_key);
   if ((ret == ERROR_FILE_NOT_FOUND) ||
       (ret == ERROR_PATH_NOT_FOUND)) {
     pop_n_elems(args);
@@ -425,25 +464,30 @@ void f_RegGetKeyNames(INT32 args)
 
   for(i=0;;i++)
   {
-    TCHAR buf[1024];
-    DWORD len=sizeof(buf)-1;
+    struct pike_string *buf = begin_wide_shared_string(1024, sixteenbit);
+    DWORD len = buf->len;
     FILETIME tmp2;
+
+    buf->flags |= STRING_CONVERT_SURROGATES;
+
     THREADS_ALLOW();
-    ret=RegEnumKeyEx(new_key, i, buf, &len, 0,0,0, &tmp2);
+    ret = RegEnumKeyExW(new_key, i, STR1(buf), &len, 0, 0, 0, &tmp2);
     THREADS_DISALLOW();
     switch(ret)
     {
       case ERROR_SUCCESS:
 	check_stack(1);
-	push_tchar(buf,len);
+        push_string(end_and_resize_shared_string(buf, len));
 	continue;
 
       case ERROR_NO_MORE_ITEMS:
 	break;
 
       default:
+        free_string(buf);
         throw_nt_error(ret);
     }
+    free_string(buf);
     break;
   }
   CALL_AND_UNSET_ONERROR(tmp);
@@ -488,18 +532,25 @@ void f_RegGetKeyNames(INT32 args)
 void f_RegGetValues(INT32 args)
 {
   INT_TYPE hkey_num;
-  char *key;
+  struct pike_string *key;
+  p_wchar1 *key_utf16;
   int i,ret;
   HKEY new_key;
   ONERROR tmp;
 
-  get_all_args(NULL, args, "%i%s", &hkey_num, &key);
+  get_all_args(NULL, args, "%i%t", &hkey_num, &key);
 
   if ((hkey_num < 0) || ((unsigned int)hkey_num >= NELEM(hkeys))) {
     Pike_error("Unknown hkey: %d.\n", hkey_num);
   }
 
-  ret = RegOpenKeyEx(hkeys[hkey_num], (LPCTSTR)key, 0, KEY_READ,  &new_key);
+  ref_push_string(key);
+  push_int(2);
+  f_string_to_unicode(2);
+  args++;
+  key_utf16 = (p_wchar1 *)STR0(Pike_sp[-1].u.string);
+
+  ret = RegOpenKeyExW(hkeys[hkey_num], key_utf16, 0, KEY_READ, &new_key);
 
   if ((ret == ERROR_FILE_NOT_FOUND) ||
       (ret == ERROR_PATH_NOT_FOUND)) {
@@ -515,20 +566,22 @@ void f_RegGetValues(INT32 args)
 
   for(i=0;;i++)
   {
-    TCHAR buf[1024];
+    struct pike_string *buf = begin_wide_shared_string(1024, sixteenbit);
     char buffer[8192];
-    DWORD len=sizeof(buf)-1;
+    DWORD len = buf->len;
     DWORD buflen=sizeof(buffer)-1;
     DWORD type;
 
+    buf->flags |= STRING_CONVERT_SURROGATES;
+
     THREADS_ALLOW();
-    ret=RegEnumValue(new_key, i, buf, &len, 0,&type, buffer, &buflen);
+    ret = RegEnumValueW(new_key, i, STR1(buf), &len, 0, &type, buffer, &buflen);
     THREADS_DISALLOW();
     switch(ret)
     {
       case ERROR_SUCCESS:
 	check_stack(2);
-	push_tchar(buf,len);
+        push_string(end_and_resize_shared_string(buf, len));
 	push_regvalue(type,buffer,buflen);
 	continue;
 
@@ -536,9 +589,11 @@ void f_RegGetValues(INT32 args)
 	break;
 
       default:
+        free_string(buf);
 	RegCloseKey(new_key);
         throw_nt_error(ret);
     }
+    free_string(buf);
     break;
   }
   CALL_AND_UNSET_ONERROR(tmp);
