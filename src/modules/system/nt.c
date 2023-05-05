@@ -61,6 +61,7 @@
 #include "interpret.h"
 #include "operators.h"
 #include "fdlib.h"
+#include "bignum.h"
 
 #define sp Pike_sp
 
@@ -268,6 +269,20 @@ static void push_regvalue(DWORD type, char* buffer, DWORD len)
         push_int(*((INT32 *)buf2));
       }
       break;
+
+#ifdef REG_QWORD_LITTLE_ENDIAN
+    case REG_QWORD_LITTLE_ENDIAN:
+#if PIKE_BYTEORDER == 1234
+      push_int64(*((INT64 *)buffer));
+#else
+      {
+        char buf2[8] = { buffer[7], buffer[6], buffer[5], buffer[4],
+                         buffer[3], buffer[2], buffer[1], buffer[0] };
+        push_int(*((INT64 *)buf2));
+      }
+#endif
+      break;
+#endif
 
     default:
       Pike_error("Cannot handle this data type.\n");
