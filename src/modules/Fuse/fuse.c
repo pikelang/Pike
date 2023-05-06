@@ -254,7 +254,7 @@ struct getdir_storage
 static void f_getdir_callback( INT32 args )
 {
     char *name;
-    get_all_args( NULL, args, "%s", &name );
+    get_all_args( NULL, args, "%c", &name );
     THISGD->filler( THISGD->h, name, 0, 0 );
 }
 

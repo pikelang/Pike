@@ -296,7 +296,7 @@ void f_getgrnam(INT32 args)
 {
   char *str;
   struct group *foo;
-  get_all_args(NULL, args, "%s", &str);
+  get_all_args(NULL, args, "%c", &str);
 
   LOCK_IMUTEX(&password_protection_mutex);
 
@@ -346,7 +346,7 @@ void f_getpwnam(INT32 args)
   char *str;
   struct passwd *foo;
 
-  get_all_args(NULL, args, "%s", &str);
+  get_all_args(NULL, args, "%c", &str);
 
   LOCK_IMUTEX(&password_protection_mutex);
 

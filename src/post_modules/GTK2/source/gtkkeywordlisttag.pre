@@ -25,7 +25,7 @@ void create(string id, string name, array(string) keywords,
     struct svalue *sv;
     GSList *gsl=NULL;
     int i;
-    get_all_args(NULL,args,"%s%s%A%i%i%i%s%s",&id,&name,&a,&sense,
+    get_all_args(NULL,args,"%c%c%A%i%i%i%c%c",&id,&name,&a,&sense,
 		 &matchb,&matche,&begin,&end);
     if (a==NULL || a->size<1) {
       THIS->obj=0;

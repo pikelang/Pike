@@ -17,7 +17,7 @@ void set_name(string name)
   {
     gchar *name;
     GtkRcStyle *style;
-    get_all_args(NULL,args,"%s",&name);
+    get_all_args(NULL,args,"%c",&name);
     style=GTK_RC_STYLE(THIS->obj);
     style->name=g_strdup(name);
   }

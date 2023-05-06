@@ -100,7 +100,7 @@ void create(string filename_or_buffer, ?int size, ?string root, ?string domain)
     struct pike_string *fname;
     char *root=NULL,*dom=NULL;
     INT_TYPE size=0;
-    get_all_args(NULL,args,"%n.%i%s%s",&fname,&size,&root,&dom);
+    get_all_args(NULL,args,"%n.%i%c%c",&fname,&size,&root,&dom);
     if (size==0)
       gl=glade_xml_new(fname->str,root,dom);
     else if ((size < 0) || (size > fname->len))
@@ -122,7 +122,7 @@ void create(string filename_or_buffer, ?int size, ?string root, ?string domain)
   {
     char *name;
     GtkWidget *widget;
-    get_all_args(NULL,args,"%s",&name);
+    get_all_args(NULL,args,"%c",&name);
     widget=glade_xml_get_widget(GLADE_XML(THIS->obj),name);
     pgtk2_pop_n_elems(args);
     push_gobject(widget);
@@ -138,7 +138,7 @@ array(GTK2.Widget) get_widget_prefix(string name)
     char *name;
     GList *gl,*g2;
     int i=0;
-    get_all_args(NULL,args,"%s",&name);
+    get_all_args(NULL,args,"%c",&name);
     gl=g2=glade_xml_get_widget_prefix(GLADE_XML(THIS->obj),name);
     pgtk2_pop_n_elems(args);
     while (g2) {

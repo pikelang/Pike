@@ -140,7 +140,7 @@ static void f_listxattr(INT32 args)
   int do_free = 0;
   int nofollow = 0;
   ssize_t res;
-  get_all_args( "listxattr", args, "%s.%d", &name, &nofollow );
+  get_all_args( "listxattr", args, "%c.%d", &name, &nofollow );
 
   THREADS_ALLOW();
   do {
@@ -220,7 +220,7 @@ static void f_getxattr(INT32 args)
   ssize_t res;
   char *name, *file;
   int nofollow=0;
-  get_all_args( "getxattr", args, "%s%s.%d", &file, &name, &nofollow );
+  get_all_args( "getxattr", args, "%c%c.%d", &file, &name, &nofollow );
 
   THREADS_ALLOW();
   do {
@@ -289,7 +289,7 @@ static void f_removexattr( INT32 args )
   char *name, *file;
   int nofollow=0, rv;
 
-  get_all_args( "removexattr", args, "%s%s.%d", &file, &name, &nofollow );
+  get_all_args( "removexattr", args, "%c%c.%d", &file, &name, &nofollow );
 
   THREADS_ALLOW();
   if (nofollow) {
@@ -345,7 +345,7 @@ static void f_setxattr( INT32 args )
   int flags;
   int rv;
   int nofollow=0;
-  get_all_args( "setxattr", args, "%s%s%S%d.%d", &file, &ind, &val, &flags, &nofollow );
+  get_all_args( "setxattr", args, "%c%c%S%d.%d", &file, &ind, &val, &flags, &nofollow );
 
   THREADS_ALLOW();
   if (nofollow) {
@@ -548,7 +548,7 @@ void f_filesystem_stat( INT32 args )
   unsigned int free_sectors;
   unsigned int total_sectors;
 
-  get_all_args( "filesystem_stat", args, "%s", &path );
+  get_all_args( "filesystem_stat", args, "%c", &path );
 
   root = pike_dwim_utf8_to_utf16(path);
   if (root[0] && root[1] == ':') {
@@ -1616,7 +1616,7 @@ static void f_access( INT32 args )
     {
         char *how;
         int i;
-        get_all_args( "access", args, "%s%s", &path, &how );
+        get_all_args( "access", args, "%c%c", &path, &how );
         flags = 0;
         for( i=0; how[i]; i++ )
         {
@@ -1632,7 +1632,7 @@ static void f_access( INT32 args )
     }
     else
     {
-        get_all_args( "access", args, "%s", &path );
+        get_all_args( "access", args, "%c", &path );
         flags = F_OK;
     }
 

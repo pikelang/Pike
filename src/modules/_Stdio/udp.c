@@ -546,7 +546,7 @@ void udp_enable_multicast(INT32 args)
   char *ip;
   PIKE_SOCKADDR reply;
 
-  get_all_args(NULL, args, "%s", &ip);
+  get_all_args(NULL, args, "%c", &ip);
 
   get_inet_addr(&reply, ip, NULL, -1, THIS->inet_flags);
   INVALIDATE_CURRENT_TIME();
@@ -645,7 +645,7 @@ void udp_add_membership(INT32 args)
   struct ip_mreq sock;
   PIKE_SOCKADDR addr;
 
-  get_all_args(NULL, args, "%s.%s%d", &group, &address, &face);
+  get_all_args(NULL, args, "%c.%c%d", &group, &address, &face);
 
   get_inet_addr(&addr, group, NULL, -1, THIS->inet_flags);
   INVALIDATE_CURRENT_TIME();
@@ -731,7 +731,7 @@ void udp_drop_membership(INT32 args)
   struct ip_mreq sock;
   PIKE_SOCKADDR addr;
 
-  get_all_args(NULL, args, "%s.%s%d", &group, &address, &face);
+  get_all_args(NULL, args, "%c.%c%d", &group, &address, &face);
 
   get_inet_addr(&addr, group, NULL, -1, THIS->inet_flags);
   INVALIDATE_CURRENT_TIME();
@@ -1622,7 +1622,7 @@ static void udp_set_buffer(INT32 args)
   if(FD==-1)
     Pike_error("Port is closed.\n");
 
-  get_all_args(NULL, args, "%+.%s", &bufsize, &c);
+  get_all_args(NULL, args, "%+.%c", &bufsize, &c);
 
   if(bufsize < 0)
     Pike_error("Bufsize must be larger than zero.\n");

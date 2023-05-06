@@ -182,7 +182,7 @@ static void f_cp(INT32 args)
 {
   char *from, *to;
   int ret;
-  get_all_args(NULL, args, "%s%s", &from, &to);
+  get_all_args(NULL, args, "%c%c", &from, &to);
   ret=CopyFile(from, to, 0);
   if(!ret) set_errno_from_win32_error (GetLastError());
   pop_n_elems(args);
@@ -2746,7 +2746,7 @@ static void f_normalize_path(INT32 args)
 {
   char *path = NULL;
 
-  get_all_args("normalize_path", args, "%s", &path);
+  get_all_args("normalize_path", args, "%c", &path);
 
   path = fd_normalize_path(path);
   if (!path) {
@@ -2772,7 +2772,7 @@ static void f_GetFileAttributes(INT32 args)
   char *file;
   p_wchar1 *file_utf16;
   DWORD ret;
-  get_all_args(NULL, args, "%s", &file);
+  get_all_args(NULL, args, "%c", &file);
   file_utf16 = pike_dwim_utf8_to_utf16(file);
   ret = GetFileAttributesW(file_utf16);
   free(file_utf16);
@@ -2797,7 +2797,7 @@ static void f_SetFileAttributes(INT32 args)
   p_wchar1 *file_utf16;
   INT_TYPE attr, ret;
   DWORD tmp;
-  get_all_args(NULL, args, "%s%i", &file, &attr);
+  get_all_args(NULL, args, "%c%i", &file, &attr);
   file_utf16 = pike_dwim_utf8_to_utf16(file);
   tmp=attr;
   ret = SetFileAttributesW(file_utf16, tmp);

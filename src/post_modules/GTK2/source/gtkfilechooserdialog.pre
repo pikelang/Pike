@@ -45,9 +45,9 @@ void create(string title, int|GTK2.Window parent, int mode,
   int i;
 
   if (TYPEOF(Pike_sp[2-1-args]) == PIKE_T_INT)
-    get_all_args(NULL,args,"%s%i%i%a",&s1,&xx,&mm,&a);
+    get_all_args(NULL,args,"%c%i%i%a",&s1,&xx,&mm,&a);
   else
-    get_all_args(NULL,args,"%s%O%i%a",&s1,&o,&mm,&a); 
+    get_all_args(NULL,args,"%c%O%i%a",&s1,&o,&mm,&a); 
   gpa=g_ptr_array_new();
   if (TYPEOF(Pike_sp[4-1-args]) != PIKE_T_ARRAY)
     Pike_error("Wrong type of argument 4.\n");

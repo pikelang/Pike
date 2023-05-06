@@ -20,7 +20,7 @@ void create(string|GTK2.TreeModel|mapping(string:mixed)|void model,
     GtkWidget *gcb;
     if (TYPEOF(Pike_sp[-args]) == PIKE_T_STRING) {
       char *text;
-      get_all_args(NULL,args,"%s",&text);
+      get_all_args(NULL,args,"%c",&text);
       gcb=gtk_combo_box_entry_new_text();
       THIS->obj=G_OBJECT(gcb);
     } else if (TYPEOF(Pike_sp[-args]) == PIKE_T_OBJECT) {

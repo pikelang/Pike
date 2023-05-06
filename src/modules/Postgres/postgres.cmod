@@ -357,7 +357,7 @@ PIKEFUN void select(string db_)
 	PGconn * conn, *newconn;
 	PQ_FETCH();
 
-        get_all_args(NULL,args,"%s", &db);
+        get_all_args(NULL,args,"%c", &db);
 
 	if (!THIS->dblink)
 	  Pike_error ("Driver error. How can you possibly not be linked to a "

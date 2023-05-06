@@ -185,7 +185,7 @@ void f_openlog(INT32 args)
   INT_TYPE p_option, p_facility;
   INT_TYPE option=0, facility=0;
 
-  get_all_args(NULL, args, "%s%i%i", &ident, &p_option, &p_facility);
+  get_all_args(NULL, args, "%c%i%i", &ident, &p_option, &p_facility);
 
   assign_svalue(&log_ident, Pike_sp - args);
 

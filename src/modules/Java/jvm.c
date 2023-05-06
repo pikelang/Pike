@@ -2727,7 +2727,7 @@ static void f_throw_new(INT32 args)
   JNIEnv *env;
   char *cn;
 
-  get_all_args(NULL, args, "%s", &cn);
+  get_all_args(NULL, args, "%c", &cn);
 
   if((env = jvm_procure_env(jo->jvm))) {
 
@@ -3641,7 +3641,7 @@ static void f_find_class(INT32 args)
   char *cn;
   jclass c;
 
-  get_all_args(NULL, args, "%s", &cn);
+  get_all_args(NULL, args, "%c", &cn);
   if((env = jvm_procure_env(Pike_fp->current_object))) {
     c = (*env)->FindClass(env, cn);
     pop_n_elems(args);
@@ -3662,7 +3662,7 @@ static void f_define_class(INT32 args)
   char *name;
   jclass c;
 
-  get_all_args(NULL, args, "%s%o%S", &name, &obj, &str);
+  get_all_args(NULL, args, "%c%o%S", &name, &obj, &str);
   if((ldr = THAT_JOBJ(obj))==NULL)
     Pike_error("Bad argument 2 to define_class().\n");
   if((env = jvm_procure_env(Pike_fp->current_object))) {
@@ -3728,7 +3728,7 @@ static void f_javafatal(INT32 args)
   JNIEnv *env;
   char *msg;
 
-  get_all_args(NULL, args, "%s", &msg);
+  get_all_args(NULL, args, "%c", &msg);
   if((env = jvm_procure_env(Pike_fp->current_object))) {
     (*env)->FatalError(env, msg);
     jvm_vacate_env(Pike_fp->current_object, env);

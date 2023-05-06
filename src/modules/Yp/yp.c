@@ -86,7 +86,7 @@ static void f_server(INT32 args)
   int err;
   char *ret, *map;
 
-  get_all_args(NULL, args, "%s", &map);
+  get_all_args(NULL, args, "%c", &map);
   err = yp_master(this->domain, map, &ret);
 
   YPERROR( err );

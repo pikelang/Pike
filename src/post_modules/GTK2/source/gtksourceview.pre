@@ -121,7 +121,7 @@ void set_marker_pixbuf(string type, GDK2.Pixbuf pixbuf)
   {
     char *type;
     struct object *o1;
-    get_all_args(NULL,args,"%s%o",&type,&o1);
+    get_all_args(NULL,args,"%c%o",&type,&o1);
     gtk_source_view_set_marker_pixbuf(GTK_SOURCE_VIEW(THIS->obj),type,
 			GDK_PIXBUF(get_gobject(o1)));
   }
@@ -135,7 +135,7 @@ GDK2.Pixbuf get_marker_pixbuf(string type)
   {
     char *type;
     GdkPixbuf *gp;
-    get_all_args(NULL,args,"%s",&type);
+    get_all_args(NULL,args,"%c",&type);
     gp=gtk_source_view_get_marker_pixbuf(GTK_SOURCE_VIEW(THIS->obj),type);
     pgtk2_pop_n_elems(args);
     if (gp)

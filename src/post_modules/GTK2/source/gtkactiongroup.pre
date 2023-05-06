@@ -42,7 +42,7 @@ void create(string|mapping(string:mixed) name_or_props)
   if (TYPEOF(Pike_sp[-args]) == PIKE_T_STRING) {
     char *name;
     GtkActionGroup *gag;
-    get_all_args(NULL,args,"%s",&name);
+    get_all_args(NULL,args,"%c",&name);
     gag=gtk_action_group_new(name);
     THIS->obj=G_OBJECT(gag);
   } else {
@@ -104,7 +104,7 @@ void add_action(GTK2.Action action, ?string accelerator)
   {
     struct object *o1;
     char *accel=NULL;
-    get_all_args(NULL,args,"%o.%s",&o1,&accel);
+    get_all_args(NULL,args,"%o.%c",&o1,&accel);
     gtk_action_group_add_action_with_accel(GTK_ACTION_GROUP(THIS->obj),
 			GTK_ACTION(get_gobject(o1)),accel);
   }

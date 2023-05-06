@@ -304,7 +304,7 @@ void font_load(INT32 args)
   int size = 0;
   char *filename = NULL;
 
-  get_all_args(NULL, args, ".%s", &filename);
+  get_all_args(NULL, args, ".%c", &filename);
 
   if (!filename)
   {

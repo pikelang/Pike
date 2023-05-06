@@ -332,7 +332,7 @@ static void memory__mmap(INT32 args,int complain,int private)
    else if (TYPEOF(sp[-args]) == T_STRING)
    {
       char *filename;
-      get_all_args(NULL, args, "%s", &filename); /* 8 bit! */
+      get_all_args(NULL, args, "%c", &filename); /* 8 bit! */
 
       THREADS_ALLOW();
       fd = fd_open(filename,fd_RDWR,0);

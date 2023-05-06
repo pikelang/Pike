@@ -76,7 +76,7 @@ void parse_rc(string rc)
 //! Takes a string and reads it as a gtkrc file.
 {
   char *s;
-  get_all_args(NULL,args,"%s",&s);
+  get_all_args(NULL,args,"%c",&s);
   gtk_rc_parse_string(s);
   pgtk2_pop_n_elems(args);
   push_int(0);
@@ -559,7 +559,7 @@ mapping(string:mixed) get_file_info(string filename)
   char *filename;
   int width,height;
 
-  get_all_args(NULL,args,"%s",&filename);
+  get_all_args(NULL,args,"%c",&filename);
   gpf=gdk_pixbuf_get_file_info(filename,&width,&height);
   pgtk2_pop_n_elems(args);
   k=0;
@@ -658,7 +658,7 @@ void set_default_icon_name(string name)
 //! called on them from a themed icon.
 {
   char *s;
-  get_all_args(NULL,args,"%s",&s);
+  get_all_args(NULL,args,"%c",&s);
   gtk_window_set_default_icon_name(s);
   pgtk2_pop_n_elems(args);
 }
@@ -748,7 +748,7 @@ void set_default_icon_from_file(string filename)
   char *filename;
   int res;
 
-  get_all_args(NULL,args,"%s",&filename);
+  get_all_args(NULL,args,"%c",&filename);
   res=gtk_window_set_default_icon_from_file(filename,&err);
   if (!res)
     Pike_error("Unable to set icon from file %s: %s\n",filename,err->message);
@@ -798,7 +798,7 @@ void add_builtin_icon(string name, int size, GDK2.Pixbuf pixbuf)
     char *name;
     INT_TYPE size;
     struct object *o1;
-    get_all_args(NULL,args,"%s%i%o",&name,&size,&o1);
+    get_all_args(NULL,args,"%c%i%o",&name,&size,&o1);
     gtk_icon_theme_add_builtin_icon(name,size,GDK_PIXBUF(get_gobject(o1)));
   }
   pgtk2_pop_n_elems(args);

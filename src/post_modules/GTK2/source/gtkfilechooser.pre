@@ -268,7 +268,7 @@ int add_shortcut_folder(string folder)
   {
     const char *folder;
     int res;
-    get_all_args(NULL,args,"%s",&folder);
+    get_all_args(NULL,args,"%c",&folder);
     res=gtk_file_chooser_add_shortcut_folder(GTK_FILE_CHOOSER(THIS->obj),
 			folder,NULL);
     pgtk2_pop_n_elems(args);
@@ -282,7 +282,7 @@ void remove_shortcut_folder(string folder)
   pgtk2_verify_inited();
   {
     const char *folder;
-    get_all_args(NULL,args,"%s",&folder);
+    get_all_args(NULL,args,"%c",&folder);
     gtk_file_chooser_remove_shortcut_folder(GTK_FILE_CHOOSER(THIS->obj),
 			folder,NULL);
   }
@@ -316,7 +316,7 @@ int add_shortcut_folder_uri(string uri)
   {
     const char *uri;
     int res;
-    get_all_args(NULL,args,"%s",&uri);
+    get_all_args(NULL,args,"%c",&uri);
     res=gtk_file_chooser_add_shortcut_folder_uri(GTK_FILE_CHOOSER(THIS->obj),
 			uri,NULL);
     pgtk2_pop_n_elems(args);
@@ -330,7 +330,7 @@ void remove_shortcut_folder_uri(string uri)
   pgtk2_verify_inited();
   {
     const char *uri;
-    get_all_args(NULL,args,"%s",&uri);
+    get_all_args(NULL,args,"%c",&uri);
     gtk_file_chooser_remove_shortcut_folder_uri(GTK_FILE_CHOOSER(THIS->obj),
 			uri,NULL);
   }

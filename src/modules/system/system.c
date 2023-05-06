@@ -205,7 +205,7 @@ void f_hardlink(INT32 args)
   char *to;
   int err;
 
-  get_all_args("hardlink",args, "%s%s", &from, &to);
+  get_all_args("hardlink",args, "%c%c", &from, &to);
 
   do {
     THREADS_ALLOW_UID();
@@ -239,7 +239,7 @@ void f_symlink(INT32 args)
   char *to;
   int err;
 
-  get_all_args("symlink",args, "%s%s", &from, &to);
+  get_all_args("symlink",args, "%c%c", &from, &to);
 
   do {
     THREADS_ALLOW_UID();
@@ -274,7 +274,7 @@ void f_readlink(INT32 args)
   char *buf;
   int err;
 
-  get_all_args("readlink",args, "%s", &path);
+  get_all_args("readlink",args, "%c", &path);
 
   buflen = 100;
 
@@ -335,7 +335,7 @@ void f_resolvepath(INT32 args)
   char *buf;
   int len = -1;
 
-  get_all_args("resolvepath", args, "%s", &path);
+  get_all_args("resolvepath", args, "%c", &path);
 
 #ifdef HAVE_RESOLVEPATH
   buflen = 100;
@@ -434,7 +434,7 @@ void f_chmod(INT32 args)
   INT_TYPE mode;
   int err;
 
-  get_all_args("chmod", args, "%s%i", &path, &mode);
+  get_all_args("chmod", args, "%c%i", &path, &mode);
   do {
     THREADS_ALLOW_UID();
     err = chmod(path, mode);
@@ -472,7 +472,7 @@ void f_chown(INT32 args)
   int symlink = 0;
   int err;
 
-  get_all_args("chown", args, "%s%i%i.%d", &path, &uid, &gid, &symlink);
+  get_all_args("chown", args, "%c%i%i.%d", &path, &uid, &gid, &symlink);
 
 #ifndef HAVE_LCHOWN
 #ifdef HAVE_LSTAT
@@ -554,7 +554,7 @@ void f_utime(INT32 args)
   int symlink = 0;
   int err;
 
-  get_all_args("utime", args, "%s%i%i.%d", &path, &atime, &mtime, &symlink);
+  get_all_args("utime", args, "%c%i%i.%d", &path, &atime, &mtime, &symlink);
 
   if (symlink) {
 #ifdef HAVE_LUTIMES
@@ -718,7 +718,7 @@ void f_initgroups(INT32 args)
   int err;
   INT_TYPE group;
 
-  get_all_args("initgroups", args, "%s%i", &user, &group);
+  get_all_args("initgroups", args, "%c%i", &user, &group);
   err = initgroups(user, group);
   if (err < 0) {
     report_error("initgroups");
@@ -2111,7 +2111,7 @@ void f_gethostbyaddr(INT32 args)
   char *name;
   GETHOST_DECLARE;
 
-  get_all_args("gethostbyaddr", args, "%s", &name);
+  get_all_args("gethostbyaddr", args, "%c", &name);
 
   if ((int)(addr = inet_addr(name)) == -1) {
     Pike_error("IP-address must be of the form a.b.c.d.\n");
@@ -2157,7 +2157,7 @@ void f_gethostbyname(INT32 args)
   char *name;
   GETHOST_DECLARE;
 
-  get_all_args("gethostbyname", args, "%s", &name);
+  get_all_args("gethostbyname", args, "%c", &name);
 
   CALL_GETHOSTBYNAME(name);
   INVALIDATE_CURRENT_TIME();
@@ -2574,7 +2574,7 @@ void f_setproctitle(INT32 args)
   char *title;
 
   if (args > 1) f_sprintf(args);
-  get_all_args(NULL, args, "%s", &title);
+  get_all_args(NULL, args, "%c", &title);
   setproctitle("%s", title);
   pop_stack();
 }
@@ -2734,7 +2734,7 @@ static void f_get_netinfo_property(INT32 args)
   ni_status    res;
   unsigned int i, num_replies;
 
-  get_all_args("get_netinfo_property", args, "%s%s%s",
+  get_all_args("get_netinfo_property", args, "%c%c%c",
 	       &domain_str, &path_str, &prop_str);
 
   /* open domain */

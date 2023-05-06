@@ -71,7 +71,7 @@ void insert(GTK2.TextIter iter, string text, int len)
     struct object *o1;
     const gchar *text;
     INT_TYPE len;
-    get_all_args(NULL,args,"%o%s%i",&o1,&text,&len);
+    get_all_args(NULL,args,"%o%c%i",&o1,&text,&len);
     gtk_text_buffer_insert(GTK_TEXT_BUFFER(THIS->obj),
 	(GtkTextIter *)get_pg2object(o1,pgtk2_text_iter_program),text,len);
   }
@@ -99,7 +99,7 @@ int insert_interactive(GTK2.TextIter iter, string text, int len,
     const gchar *text;
     INT_TYPE len,defed;
     int res;
-    get_all_args(NULL,args,"%o%s%i%i",&o1,&text,&len,&defed);
+    get_all_args(NULL,args,"%o%c%i%i",&o1,&text,&len,&defed);
     res=gtk_text_buffer_insert_interactive(GTK_TEXT_BUFFER(THIS->obj),
 	(GtkTextIter *)get_pg2object(o1,pgtk2_text_iter_program),text,len,defed);
     pgtk2_pop_n_elems(args);
@@ -168,7 +168,7 @@ void insert_with_tags(GTK2.TextIter iter, string text, int len, array tags)
     int i;
     GtkTextIter *iter,start;
     GtkTextTag *tag;
-    get_all_args(NULL,args,"%o%s%i%A",&o1,&text,&len,&a);
+    get_all_args(NULL,args,"%o%c%i%A",&o1,&text,&len,&a);
     iter=(GtkTextIter *)get_pg2object(o1,pgtk2_text_iter_program);
     start_offset=gtk_text_iter_get_offset(iter);
     gtk_text_buffer_insert(GTK_TEXT_BUFFER(THIS->obj),iter,text,len);
@@ -207,7 +207,7 @@ void insert_with_tags_by_name(GTK2.TextIter iter, string text, int len,
     GtkTextIter *iter,start;
     GtkTextTag *tag;
     GtkTextTagTable *table;
-    get_all_args(NULL,args,"%o%s%i%A",&o1,&text,&len,&a);
+    get_all_args(NULL,args,"%o%c%i%A",&o1,&text,&len,&a);
     iter=(GtkTextIter *)get_pg2object(o1,pgtk2_text_iter_program);
     start_offset=gtk_text_iter_get_offset(iter);
     gtk_text_buffer_insert(GTK_TEXT_BUFFER(THIS->obj),iter,text,len);
@@ -437,7 +437,7 @@ void insert_child_anchor(GTK2.TextIter iter, GTK2.TextChildAnchor anchor)
     INT_TYPE left;
     const gchar *mark_name=NULL;
     GtkTextMark *gtm;
-    get_all_args(NULL,args,"%o%i.%s",&o1,&left,&mark_name);
+    get_all_args(NULL,args,"%o%i.%c",&o1,&left,&mark_name);
     gtm=gtk_text_buffer_create_mark(GTK_TEXT_BUFFER(THIS->obj),
 	mark_name,(GtkTextIter *)get_pg2object(o1,pgtk2_text_iter_program),left);
     pgtk2_pop_n_elems(args);
@@ -467,7 +467,7 @@ void move_mark_by_name(string name, GTK2.TextIter where)
   {
     struct object *o1;
     const gchar *name;
-    get_all_args(NULL,args,"%s%o",&name,&o1);
+    get_all_args(NULL,args,"%c%o",&name,&o1);
     gtk_text_buffer_move_mark_by_name(GTK_TEXT_BUFFER(THIS->obj),
 		name,(GtkTextIter *)get_pg2object(o1,pgtk2_text_iter_program));
   }
@@ -589,7 +589,7 @@ void apply_tag_by_name(string name, GTK2.TextIter start, GTK2.TextIter end)
   {
     struct object *o1,*o2;
     const gchar *name;
-    get_all_args(NULL,args,"%s%o%o",&name,&o1,&o2);
+    get_all_args(NULL,args,"%c%o%o",&name,&o1,&o2);
     gtk_text_buffer_apply_tag_by_name(GTK_TEXT_BUFFER(THIS->obj),
 		name,(GtkTextIter *)get_pg2object(o1,pgtk2_text_iter_program),
 		(GtkTextIter *)get_pg2object(o2,pgtk2_text_iter_program));
@@ -604,7 +604,7 @@ void remove_tag_by_name(string name, GTK2.TextIter start, GTK2.TextIter end)
   {
     struct object *o1,*o2;
     const gchar *name;
-    get_all_args(NULL,args,"%s%o%o",&name,&o1,&o2);
+    get_all_args(NULL,args,"%c%o%o",&name,&o1,&o2);
     gtk_text_buffer_remove_tag_by_name(GTK_TEXT_BUFFER(THIS->obj),
 		name,(GtkTextIter  *)get_pg2object(o1,pgtk2_text_iter_program),
 		(GtkTextIter *)get_pg2object(o2,pgtk2_text_iter_program));
@@ -641,7 +641,7 @@ void remove_all_tags(GTK2.TextIter start, GTK2.TextIter end)
     GtkTextTag *tag;
     struct keypair *k;
     int e;
-    get_all_args(NULL,args,"%s%m",&name,&m);
+    get_all_args(NULL,args,"%c%m",&name,&m);
     tag=gtk_text_tag_new(name);
     gtk_text_tag_table_add(gtk_text_buffer_get_tag_table(GTK_TEXT_BUFFER(THIS->obj)),tag);
     NEW_MAPPING_LOOP(m->data) {

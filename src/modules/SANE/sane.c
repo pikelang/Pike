@@ -203,7 +203,7 @@ static void f_scanner_create( INT32 args )
 {
   char *name;
   if(!sane_is_inited) init_sane();
-  get_all_args( NULL, args, "%s", &name );
+  get_all_args( NULL, args, "%c", &name );
 
   if( sane_open( name, &THIS->h ) )
     Pike_error("Failed to open scanner \"%s\"\n", name );
@@ -313,7 +313,7 @@ static void f_scanner_set_option( INT32 args )
   FLOAT_TYPE float_value;
   SANE_Int tmp;
   const SANE_Option_Descriptor *d;
-  get_all_args( NULL, args, "%s", &name );
+  get_all_args( NULL, args, "%c", &name );
 
   no = find_option( name, &d );
   if( args > 1 )
@@ -334,7 +334,7 @@ static void f_scanner_set_option( INT32 args )
                             &int_value, &tmp );
        break;
      case SANE_TYPE_STRING:
-       sp++;get_all_args( NULL, args, "%s", &name );sp--;
+       sp++;get_all_args( NULL, args, "%c", &name );sp--;
        sane_control_option( THIS->h, no, SANE_ACTION_SET_VALUE,
                             &name, &tmp );
      case SANE_TYPE_GROUP:
@@ -357,7 +357,7 @@ static void f_scanner_get_option( INT32 args )
   float f;
   SANE_Int tmp;
   const SANE_Option_Descriptor *d;
-  get_all_args( NULL, args, "%s", &name );
+  get_all_args( NULL, args, "%c", &name );
 
   no = find_option( name, &d );
 

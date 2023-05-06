@@ -169,7 +169,7 @@ void set_filename(string filename)
   pgtk2_verify_inited();
   {
     char *file;
-    get_all_args(NULL,args,"%s",&file);
+    get_all_args(NULL,args,"%c",&file);
     gtk_icon_source_set_filename((GtkIconSource *)THIS->obj,file);
   }
   RETURN_THIS();
@@ -196,7 +196,7 @@ void set_icon_name(string name)
   pgtk2_verify_inited();
   {
     char *name;
-    get_all_args(NULL,args,"%s",&name);
+    get_all_args(NULL,args,"%c",&name);
     gtk_icon_source_set_icon_name((GtkIconSource *)THIS->obj,name);
   }
   RETURN_THIS();

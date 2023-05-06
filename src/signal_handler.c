@@ -1880,7 +1880,7 @@ static void f_pid_status_set_priority(INT32 args)
   char *to;
   int r;
 
-  get_all_args(NULL, args, "%s", &to);
+  get_all_args(NULL, args, "%c", &to);
   r = set_priority( THIS->pid, to );
   pop_n_elems(args);
   push_int(r);
@@ -2574,7 +2574,7 @@ void f_set_priority( INT32 args )
   INT_TYPE pid = 0;
   char *plevel;
 
-  get_all_args("set_priority", args, "%s.%+", &plevel, &pid);
+  get_all_args("set_priority", args, "%c.%+", &plevel, &pid);
   pid = set_priority( pid, plevel );
   pop_n_elems(args);
   push_int( pid );

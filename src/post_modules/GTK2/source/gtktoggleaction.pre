@@ -21,7 +21,7 @@ void create(string|mapping(string:mixed) name_or_props, ?string label,
   if (args==4) {
     char *name,*label,*tooltip,*stock_id;
     GtkToggleAction *gt;
-    get_all_args(NULL,args,"%s%s%s%s",&name,&label,&tooltip,&stock_id);
+    get_all_args(NULL,args,"%c%c%c%c",&name,&label,&tooltip,&stock_id);
     gt=gtk_toggle_action_new(name,label,tooltip,stock_id);
     THIS->obj=G_OBJECT(gt);
   } else {

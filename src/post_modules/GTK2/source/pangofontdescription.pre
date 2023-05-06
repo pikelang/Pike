@@ -21,7 +21,7 @@ void create(?string desc)
   pgtk2_verify_setup();
   if (args) {
     char *str;
-    get_all_args(NULL,args,"%s",&str);
+    get_all_args(NULL,args,"%c",&str);
     if (str)
       THIS->obj=(void *)pango_font_description_from_string(str);
     else
@@ -79,7 +79,7 @@ void set_family(string family)
   pgtk2_verify_inited();
   {
     char *str;
-    get_all_args(NULL,args,"%s",&str);
+    get_all_args(NULL,args,"%c",&str);
     pango_font_description_set_family((PangoFontDescription *)THIS->obj,
 		str);
   }

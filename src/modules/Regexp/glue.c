@@ -87,7 +87,7 @@ static void regexp_create(INT32 args)
   {
     const char *str;
     do_free();
-    get_all_args(NULL, args, "%s", &str);
+    get_all_args(NULL, args, "%c", &str);
     THIS->regexp=pike_regcomp(Pike_sp[-args].u.string->str);
   }
 }

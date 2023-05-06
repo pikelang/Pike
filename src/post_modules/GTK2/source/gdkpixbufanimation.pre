@@ -15,7 +15,7 @@ void create(string filename)
     const char *filename;
     GdkPixbufAnimation *gpa;
     GError *error=NULL;
-    get_all_args(NULL,args,"%s",&filename);
+    get_all_args(NULL,args,"%c",&filename);
     gpa=gdk_pixbuf_animation_new_from_file(filename,&error);
     pgtk2_pop_n_elems(args);
     if (gpa==NULL)

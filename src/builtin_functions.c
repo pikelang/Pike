@@ -3643,7 +3643,7 @@ PMOD_EXPORT void f_crypt(INT32 args)
   crypt_data.initialized = 0;
 #endif
 
-  get_all_args("crypt", args, ".%s%s", &pwd, &saltp);
+  get_all_args("crypt", args, ".%c%c", &pwd, &saltp);
 
   if( !pwd )
   {

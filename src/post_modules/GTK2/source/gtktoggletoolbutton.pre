@@ -17,7 +17,7 @@ void create(string|mapping(string:mixed)|void stock_id)
   if (args) {
     if (TYPEOF(Pike_sp[-args]) == PIKE_T_STRING) {
       char *s;
-      get_all_args(NULL,args,"%s",&s);
+      get_all_args(NULL,args,"%c",&s);
       THIS->obj=G_OBJECT(gtk_toggle_tool_button_new_from_stock(s));
     } else {
       INIT_WITH_PROPS(GTK_TYPE_TOGGLE_TOOL_BUTTON);

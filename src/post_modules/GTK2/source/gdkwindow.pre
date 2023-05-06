@@ -285,7 +285,7 @@ void set_icon_name(string name)
 //! Set the icon name to the specified string.
 {
   gchar *t;
-  get_all_args(NULL,args,"%s",&t);
+  get_all_args(NULL,args,"%c",&t);
   gdk_window_set_icon_name(GDK_WINDOW(THIS->obj),t);
   RETURN_THIS();
 }

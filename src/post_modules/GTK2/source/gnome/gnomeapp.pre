@@ -212,7 +212,7 @@ void ok_cancel_modal(string question,
 {
   struct signal_data * d  = ALLOC_STRUCT( signal_data );
   char *message;
-  get_all_args( "ok_cancel_modal", args, "%s%*%*", &message,&d->cb, &d->args );
+  get_all_args( "ok_cancel_modal", args, "%c%*%*", &message,&d->cb, &d->args );
   gnome_app_ok_cancel_modal(GNOME_APP(THIS->obj),message,(void *)replyfunc,d );
   pop_n_elems( args );
   RETURN_THIS();
@@ -225,7 +225,7 @@ void request_string(string question,
 {
   struct signal_data * d  = ALLOC_STRUCT( signal_data );
   char *message;
-  get_all_args( "request_string", args, "%s%*%*", &message,&d->cb, &d->args );
+  get_all_args( "request_string", args, "%c%*%*", &message,&d->cb, &d->args );
   gnome_app_request_string(GNOME_APP(THIS->obj),message,(void *)sreplyfunc,d);
   pop_n_elems( args );
   RETURN_THIS();
@@ -238,7 +238,7 @@ void request_password(string question,
 {
   struct signal_data * d  = ALLOC_STRUCT( signal_data );
   char *message;
-  get_all_args( "request_password", args, "%s%*%*", &message,&d->cb, &d->args );
+  get_all_args( "request_password", args, "%c%*%*", &message,&d->cb, &d->args );
   gnome_app_request_password(GNOME_APP(THIS->obj),message,(void *)sreplyfunc,d);
   pop_n_elems( args );
   RETURN_THIS();
@@ -254,7 +254,7 @@ Gnome.AppProgressKey progress_timeout(string prompt,
   INT_TYPE interval;
   GnomeAppProgressKey k;
   struct object *res;
-  get_all_args( "progress_timeout", args, "%s%i%*%*",
+  get_all_args( "progress_timeout", args, "%c%i%*%*",
                 &message, &interval, &d->cb, &d->args );
   k = gnome_app_progress_timeout(GNOME_APP(THIS->obj), message, interval,
                                  (void *)progressfunc,
@@ -267,7 +267,7 @@ Gnome.AppProgressKey progress_manual(string prompt)
 {
   char *message;
   GnomeAppProgressKey k;
-  get_all_args( "progress_manual", args, "%s", &message );
+  get_all_args( "progress_manual", args, "%c", &message );
   k = gnome_app_progress_manual(GNOME_APP(THIS->obj), message, 0, 0 );
   pop_n_elems( args );
   push_pgdk2object( k, pgnome2_app_progress_key_program );

@@ -569,7 +569,7 @@ void modify_font(Pango.FontDescription font)
   {
     PangoLayout *pl;
     const gchar *str;
-    get_all_args(NULL,args,"%s",&str);
+    get_all_args(NULL,args,"%c",&str);
     pl=gtk_widget_create_pango_layout(GTK_WIDGET(THIS->obj),str);
     pgtk2_pop_n_elems(args);
     push_gobject(pl);
@@ -594,7 +594,7 @@ endrequire;
     const gchar *stock_id,*detail;
     INT_TYPE size;
     GdkPixbuf *gp;
-    get_all_args(NULL,args,"%s%i%s",&stock_id,&size,&detail);
+    get_all_args(NULL,args,"%c%i%c",&stock_id,&size,&detail);
     gp=gtk_widget_render_icon(GTK_WIDGET(THIS->obj),stock_id,size,detail);
     pgtk2_pop_n_elems(args);
     push_gobject(gp);
@@ -630,7 +630,7 @@ mixed style_get_property(string name)
   {
     char *name;
     GValue v = {0};
-    get_all_args(NULL,args,"%s",&name);
+    get_all_args(NULL,args,"%c",&name);
     gtk_widget_style_get_property(GTK_WIDGET(THIS->obj),name,&v);
 /*  pgtk2_push_gvalue(&v); */
     pgtk2_pop_n_elems(args);

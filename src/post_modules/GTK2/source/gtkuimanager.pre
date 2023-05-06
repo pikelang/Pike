@@ -120,7 +120,7 @@ array(GTK2.ActionGroup) get_action_groups()
   {
     char *path;
     GtkWidget *w;
-    get_all_args(NULL,args,"%s",&path);
+    get_all_args(NULL,args,"%c",&path);
     w=gtk_ui_manager_get_widget(GTK_UI_MANAGER(THIS->obj),path);
     pgtk2_pop_n_elems(args);
     push_gobject(w);
@@ -161,7 +161,7 @@ int add_ui_from_string(string buffer)
   {
     const gchar *buff;
     int res;
-    get_all_args(NULL,args,"%s",&buff);
+    get_all_args(NULL,args,"%c",&buff);
     res=gtk_ui_manager_add_ui_from_string(GTK_UI_MANAGER(THIS->obj),
 			buff,-1,NULL);
     pgtk2_pop_n_elems(args);

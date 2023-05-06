@@ -76,7 +76,7 @@ void create(string|mapping options)
   if (TYPEOF(Pike_sp[-1]) == PIKE_T_STRING) {
     char *file;
     
-    get_all_args(NULL,args,"%s",&file);
+    get_all_args(NULL,args,"%c",&file);
     gp=gdk_pixbuf_new_from_file(file,&error);
     if (gp==NULL)
       Pike_error("Unable to load file %s: %s\n",file,error->message);
@@ -222,7 +222,7 @@ int set_option(string key, string value)
   {
     const gchar *key,*value;
     int val;
-    get_all_args(NULL,args,"%s%s",&key,&value);
+    get_all_args(NULL,args,"%c%c",&key,&value);
     val=gdk_pixbuf_set_option(GDK_PIXBUF(THIS->obj),key,value);
     pgtk2_pop_n_elems(args);
     push_int(val);
@@ -278,7 +278,7 @@ endrequire;
     int res;
     GError *error=NULL;
     
-    get_all_args(NULL,args,"%s%n.%m",&filename,&type,&m);
+    get_all_args(NULL,args,"%c%n.%m",&filename,&type,&m);
     if (is_same_string(type,_STR("jpeg"))) {
       const char *quality;
       
@@ -499,7 +499,7 @@ string get_option(string key)
   {
     char *s;
     const gchar *t;
-    get_all_args(NULL,args,"%s",&s);
+    get_all_args(NULL,args,"%c",&s);
     t=gdk_pixbuf_get_option(GDK_PIXBUF(THIS->obj),s);
     pgtk2_pop_n_elems(args);
     PGTK_PUSH_GCHAR(t);

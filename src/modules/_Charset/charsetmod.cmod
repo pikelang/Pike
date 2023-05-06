@@ -943,7 +943,7 @@ static void f_create_multichar(INT32 args)
   const struct multichar_def *def = multichar_map;
   struct multichar_stor *s = (struct multichar_stor *)(Pike_fp->current_storage + multichar_stor_offs);
 
-  get_all_args(NULL, args, "%s", &name);
+  get_all_args(NULL, args, "%c", &name);
 
   while(1) {
     if(def->name == 0)

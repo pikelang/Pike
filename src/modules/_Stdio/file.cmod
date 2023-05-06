@@ -3856,7 +3856,7 @@ static void file_getxattr(INT32 args)
   ssize_t res;
   char *name;
 
-  get_all_args( NULL, args, "%s", &name );
+  get_all_args( NULL, args, "%c", &name );
 
   THREADS_ALLOW();
   do {
@@ -3916,7 +3916,7 @@ static void file_removexattr( INT32 args )
   char *name;
   int mfd = FD;
   int rv;
-  get_all_args( NULL, args, "%s", &name );
+  get_all_args( NULL, args, "%c", &name );
   THREADS_ALLOW();
 #ifdef HAVE_DARWIN_XATTR
   while( ((rv=fremovexattr( mfd, name, 0 )) < 0) && (errno == EINTR))
@@ -3964,7 +3964,7 @@ static void file_setxattr( INT32 args )
   int flags;
   int rv;
   int mfd = FD;
-  get_all_args( NULL, args, "%s%S%d", &ind, &val, &flags );
+  get_all_args( NULL, args, "%c%S%d", &ind, &val, &flags );
   THREADS_ALLOW();
 #ifdef HAVE_DARWIN_XATTR
   while( ((rv=fsetxattr( mfd, ind, val->str,

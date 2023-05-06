@@ -32,7 +32,7 @@ void create(mapping(string:mixed)|string props_or_title,
     gchar *title;
     struct object *o1,*o2,*o3;
 
-    get_all_args(NULL,args,"%s%o%o%o",&name,&o1,&o2,&o3);
+    get_all_args(NULL,args,"%c%o%o%o",&name,&o1,&o2,&o3);
     gpj=gtk_printer_job_new(name,get_gobject(o1),get_gobject(o2),get_gobject(o3));
     pgtk2_pop_n_elems(args);
     THIS->obj=G_OBJECT(gpj);
@@ -63,7 +63,7 @@ int set_source_file(string filename)
     gchar *filename;
     int res;
 
-    get_all_args(NULL,args,"%s",&filename);
+    get_all_args(NULL,args,"%c",&filename);
     res=gtk_print_job_set_source_file(GTK_PRINT_JOB(THIS->obj),filename,&error);
     pgtk2_pop_n_elems(args);
     push_int(res);

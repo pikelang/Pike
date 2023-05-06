@@ -235,7 +235,7 @@ GDK2.Color get_color(?string spec)
   {
     GdkColor *color = NULL;
     char *spec=NULL;
-    get_all_args(NULL,args,".%s",&color);
+    get_all_args(NULL,args,".%c",&color);
     if (!color) {
       /* FIXME: This looks like a leak. /mast */
       color=(GdkColor *)g_malloc(sizeof(GdkColor));

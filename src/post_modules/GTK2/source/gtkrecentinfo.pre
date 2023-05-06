@@ -129,7 +129,7 @@ int has_group(string group_name)
     char *name;
     int hg;
 
-    get_all_args(NULL,args,"%s",&name);
+    get_all_args(NULL,args,"%c",&name);
     hg=gtk_recent_info_has_group((GtkRecentInfo *)THIS->obj,name);
     pgtk2_pop_n_elems(args);
     push_int(hg);
@@ -144,7 +144,7 @@ int has_application()
     char *name;
     int hg;
  
-    get_all_args(NULL,args,"%s",&name);
+    get_all_args(NULL,args,"%c",&name);
     hg=gtk_recent_info_has_application((GtkRecentInfo *)THIS->obj,name);
     pgtk2_pop_n_elems(args);
     push_int(hg);
