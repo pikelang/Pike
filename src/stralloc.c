@@ -1628,7 +1628,7 @@ struct pike_string *realloc_unlinked_string(struct pike_string *a,
   size_t nbytes = (size_t)(size+1) << a->size_shift;
   size_t obytes = (size_t)a->len << a->size_shift;
 
-  if( size < a->len && size-a->len<(signed)sizeof(void*) )
+  if( size < a->len && ((size_t)a->len-size)<sizeof(void*) )
     goto done;
 
   if( nbytes < sizeof(struct pike_string) )
