@@ -1851,6 +1851,65 @@ struct pike_string *modify_shared_string(struct pike_string *a,
   }
 }
 
+#ifdef __NT__
+PMOD_EXPORT p_wchar1 *pike_string_to_utf16(struct pike_string *s)
+{
+  p_wchar1 *res;
+  ptrdiff_t sz;
+
+  if (!s) return NULL;
+
+  switch(s->size_shift) {
+  case sixteenbit:
+    sz = s->len + 1;
+    res = malloc(sz<<1);
+    if (!res) return NULL;
+    memcpy(res, s->str, sz);
+    break;
+
+  case eightbit:
+    sz = s->len + 1;
+    res = malloc(sz<<1);
+    if (!res) return NULL;
+    convert_0_to_1(res, STR0(s), sz);
+    break;
+
+  case thirtytwobit:
+    {
+      ptrdiff_t i;
+      ptrdiff_t j;
+      sz = 0;
+      for (i = 0; i < s->len; i++) {
+        p_wchar2 c = STR2(s)[i];
+        if (c & 0xffff0000) {
+          if ((c < 0) || (c > 0x10ffff)) {
+            /* Invalid in UTF16. */
+            return NULL;
+          }
+          sz++;
+        }
+      }
+      sz++;
+      res = malloc(sz<<1);
+      if (!res) return NULL;
+      /* NB: Intentionally copies the terminating NUL. */
+      for (i = j = 0; i <= s->len; i++, j++) {
+        p_wchar2 c = STR2(s)[i];
+        if (c & 0xffff0000) {
+          c -= 0x10000;
+          res[j++] = 0xd8c00 | (c & 0x3ff);
+          c >>= 10;
+          c |= 0xd800;
+        }
+        res[j] = c;
+      }
+    }
+    break;
+  }
+  return res;
+}
+#endif /* __NT__ */
+
 static void set_flags_for_add( struct pike_string *ret,
                                unsigned char aflags,
                                unsigned char amin,

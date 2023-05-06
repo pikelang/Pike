@@ -351,6 +351,9 @@ struct pike_string *new_realloc_shared_string(struct pike_string *a, INT32 size,
 struct pike_string *modify_shared_string(struct pike_string *a,
                                          INT32 position,
                                          INT32 c);
+#ifdef __NT__
+PMOD_EXPORT p_wchar1 *pike_string_to_utf16(struct pike_string *s);
+#endif
 void update_flags_for_add( struct pike_string *a, const struct pike_string *b);
 PMOD_EXPORT struct pike_string *add_shared_strings(const struct pike_string *a,
                                                    const struct pike_string *b);
