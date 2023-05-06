@@ -212,7 +212,7 @@ static void image_xbm_decode( INT32 args )
 {
   struct pike_string *data;
   struct object *o;
-  get_all_args( NULL, args, "%S", &data );
+  get_all_args( NULL, args, "%n", &data );
   o = load_xbm( data );
   pop_n_elems(args);
   push_object( o );
@@ -248,7 +248,7 @@ static void image_xbm__decode( INT32 args )
   int invert=0, ele;
   struct pike_string *data;
   struct object *i=NULL, *a;
-  get_all_args( NULL, args, "%S", &data );
+  get_all_args( NULL, args, "%n", &data );
 
 
   if (args>1)

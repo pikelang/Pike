@@ -146,7 +146,7 @@ void img_ras_decode(INT32 args)
    size_t numcolors = 0;
    struct nct_flat_entry *entries = NULL;
 
-   get_all_args(NULL, args, "%S", &str);
+   get_all_args(NULL, args, "%n", &str);
 
    if(str->len < 32)
      Pike_error("Image.RAS.decode: header too small\n");

@@ -3132,7 +3132,7 @@ static void file_openat(INT32 args)
   if((dir_fd = FD) < 0)
     Pike_error("File not open.\n");
 
-  get_all_args(NULL, args, "%S.%S%d", &str, &flag_str, &access);
+  get_all_args(NULL, args, "%n.%n%d", &str, &flag_str, &access);
 
   flags = flag_str ? parse(flag_str->str) : FILE_READ;
 
@@ -3594,7 +3594,7 @@ static void file_statat(INT32 args)
   if(FD < 0)
     Pike_error("File not open.\n");
 
-  get_all_args(NULL, args, "%S.%d", &path, &nofollow);
+  get_all_args(NULL, args, "%n.%d", &path, &nofollow);
 
   if (string_has_null(path)) {
     /* Filenames with NUL are not supported. */
@@ -3649,7 +3649,7 @@ static void file_unlinkat(INT32 args)
   if((dir_fd = FD) < 0)
     Pike_error("File not open.\n");
 
-  get_all_args(NULL, args, "%S", &str);
+  get_all_args(NULL, args, "%n", &str);
 
   if (string_has_null(str)) {
     /* Filenames with NUL are not supported. */
@@ -3713,7 +3713,7 @@ static void file_get_dir(INT32 args)
   if(FD < 0)
     Pike_error("File not open.\n");
 
-  get_all_args(NULL, args, ".%S", &path);
+  get_all_args(NULL, args, ".%n", &path);
 
   if (path && string_has_null(path)) {
     /* Filenames with NUL are not supported. */
@@ -3964,7 +3964,7 @@ static void file_setxattr( INT32 args )
   int flags;
   int rv;
   int mfd = FD;
-  get_all_args( NULL, args, "%c%S%d", &ind, &val, &flags );
+  get_all_args( NULL, args, "%c%n%d", &ind, &val, &flags );
   THREADS_ALLOW();
 #ifdef HAVE_DARWIN_XATTR
   while( ((rv=fsetxattr( mfd, ind, val->str,
@@ -5340,12 +5340,12 @@ static void file_connect(INT32 args)
 
   if (args < 4)
   {
-    get_all_args(NULL, args, "%S%*", &dest_addr, &dest_port);
+    get_all_args(NULL, args, "%n%*", &dest_addr, &dest_port);
   }
   else if( args == 5 )
   {
     struct svalue *src_sv;
-    get_all_args(NULL, args, "%S%*%*%*%S",
+    get_all_args(NULL, args, "%n%*%*%*%n",
                  &dest_addr, &dest_port, &src_sv, &src_port, &data);
     if(TYPEOF(*src_sv) != PIKE_T_INT )
     {
@@ -5354,7 +5354,7 @@ static void file_connect(INT32 args)
       src_addr = src_sv->u.string;
     }
   } else {
-    get_all_args(NULL, args, "%S%*%S%*",
+    get_all_args(NULL, args, "%n%*%n%*",
 		 &dest_addr, &dest_port, &src_addr, &src_port);
   }
 

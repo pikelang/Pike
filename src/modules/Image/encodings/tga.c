@@ -836,7 +836,7 @@ void image_tga__decode( INT32 args )
 {
   struct pike_string *data;
   struct image_alpha i;
-  get_all_args( NULL, args, "%S", &data );
+  get_all_args( NULL, args, "%n", &data );
   i = load_image( data );
 
   pop_n_elems(args);
@@ -868,7 +868,7 @@ void image_tga_decode( INT32 args )
 {
   struct pike_string *data;
   struct image_alpha i;
-  get_all_args( NULL, args, "%S", &data );
+  get_all_args( NULL, args, "%n", &data );
   i = load_image(data);
   pop_n_elems(args);
   free_object( i.ao );

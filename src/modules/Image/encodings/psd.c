@@ -385,7 +385,7 @@ static void f_decode_image_channel( INT32 args )
   struct object *io;
   unsigned char *source;
   rgb_group *dst;
-  get_all_args( NULL, args, "%i%i%S", &w,&h,&s);
+  get_all_args( NULL, args, "%i%i%n", &w,&h,&s);
 
   ref_push_string( s );
   push_int( h );
@@ -419,7 +419,7 @@ static void f_decode_image_data( INT32 args )
   struct object *io;
   unsigned char *source, *source2, *source3, *source4;
   rgb_group *dst;
-  get_all_args( NULL, args, "%i%i%i%i%i%S%S",
+  get_all_args( NULL, args, "%i%i%i%i%i%n%n",
                 &w,&h,&d,&m,&c,&s,&ct);
 
   if(!ct->len) ct = NULL;
@@ -751,7 +751,7 @@ static void image_f_psd___decode( INT32 args )
 {
   struct pike_string *s;
   struct buffer b;
-  get_all_args( NULL, args, "%S", &s );
+  get_all_args( NULL, args, "%n", &s );
   if(args > 1)
     pop_n_elems( args-1 );
   if(s->len < 26+4+4+4 ) /* header+color mode+image res+layers */
@@ -783,7 +783,7 @@ static void f_apply_cmap( INT32 args )
   rgb_group *d;
   struct pike_string *cmap;
   int n;
-  get_all_args( NULL, args, "%o%S", &io, &cmap );
+  get_all_args( NULL, args, "%o%n", &io, &cmap );
   if(cmap->len < 256*3)
     Pike_error("Invalid colormap resource\n");
   if(!(i = get_storage( io, image_program )))

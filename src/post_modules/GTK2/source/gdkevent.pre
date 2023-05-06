@@ -35,7 +35,7 @@ mixed _index(string ind)
   struct pike_string *index;
   GdkEvent *e = (GdkEvent *)THIS->obj;
   if(!e) Pike_error("No event\n");
-  get_all_args( "`[]", args, "%S", &index );
+  get_all_args( "`[]", args, "%n", &index );
   last_event_time = gdk_event_get_time( e );
   
   switch( e->type )

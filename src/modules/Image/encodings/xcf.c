@@ -887,7 +887,7 @@ static void image_xcf____decode( INT32 args )
   struct buffer b;
   struct gimp_image res;
   ONERROR err;
-  get_all_args( NULL, args, "%S", &s );
+  get_all_args( NULL, args, "%n", &s );
   if(args > 1)
     Pike_error("Too many arguments to Image.XCF.___decode()\n");
 

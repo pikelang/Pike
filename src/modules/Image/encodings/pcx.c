@@ -352,7 +352,7 @@ void image_pcx_decode( INT32 args )
 {
   struct pike_string *data;
   struct object *o;
-  get_all_args( NULL, args, "%S", &data );
+  get_all_args( NULL, args, "%n", &data );
   o = low_pcx_decode( data );
   pop_n_elems(args);
   push_object( o );
@@ -418,7 +418,7 @@ static void f_rle_encode( INT32 args )
   unsigned char value, *source;
   unsigned char nelems;
   int i;
-  get_all_args( NULL, args, "%S", &data );
+  get_all_args( NULL, args, "%n", &data );
   init_string_builder( &result, 0 );
 
   source = (unsigned char *)data->str;

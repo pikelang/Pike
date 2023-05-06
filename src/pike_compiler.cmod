@@ -2564,7 +2564,7 @@ static void f_compilation_apply_attribute_constant(INT32 args)
   }
 #endif
 
-  get_all_args(NULL, args, "%S%*", &attribute, &sval);
+  get_all_args(NULL, args, "%n%*", &attribute, &sval);
 
   MAKE_CONST_STRING(test, "sscanf_input");
   if (attribute == test) {
@@ -2630,7 +2630,7 @@ static void f_compilation_eval_type_attribute(INT32 args)
   }
 #endif
 
-  get_all_args(NULL, args, "%S%*%m", &attribute, &sval, &state);
+  get_all_args(NULL, args, "%n%*%m", &attribute, &sval, &state);
 
   if (sval && (TYPEOF(*sval) != PIKE_T_TYPE)) {
     sval = NULL;

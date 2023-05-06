@@ -1255,7 +1255,7 @@ static void low_tokenize( INT32 args, int mode )
   INT32 n = 0, l, e, d;
   char *p;
 
-  get_all_args(NULL, args, "%S.%d", &str, &flags);
+  get_all_args(NULL, args, "%n.%d", &str, &flags);
 
   src = STR0(str);
   cnt = str->len;

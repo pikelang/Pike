@@ -110,7 +110,7 @@ static void image_ilbm___decode(INT32 args)
    extern void parse_iff(char *, unsigned char *, ptrdiff_t,
 			 struct mapping *, char *);
 
-   get_all_args(NULL, args, "%S", &str);
+   get_all_args(NULL, args, "%n", &str);
 
    s = (unsigned char *)str->str;
    len = str->len;

@@ -179,7 +179,7 @@ static void regexp_split(INT32 args)
   struct pike_string *s;
   struct regexp *r;
 
-  get_all_args(NULL, args, "%S", &s);
+  get_all_args(NULL, args, "%n", &s);
 
   if(pike_regexec(r=THIS->regexp, s->str))
   {

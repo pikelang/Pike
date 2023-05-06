@@ -2025,7 +2025,7 @@ PMOD_EXPORT void f_unicode_to_string(INT32 args)
   int swab=0;
   p_wchar1 surr1, surr2, surrmask, *str0;
 
-  get_all_args("unicode_to_string", args, "%S.%i", &in, &byteorder);
+  get_all_args("unicode_to_string", args, "%n.%i", &in, &byteorder);
 
   if (in->len & 1) {
     bad_arg_error("unicode_to_string", args, 1, "string", Pike_sp-args,
@@ -2461,7 +2461,7 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
   INT_TYPE extended = 0;
   INT32 min, max;
 
-  get_all_args("utf8_to_string", args, "%S.%i", &in, &extended);
+  get_all_args("utf8_to_string", args, "%n.%i", &in, &extended);
 
   check_string_range(in, 1, &min, &max);
 
@@ -8870,7 +8870,7 @@ PMOD_EXPORT void f_object_variablep(INT32 args)
   struct pike_string *s;
   int ret;
 
-  get_all_args("variablep",args,"%o%S",&o, &s);
+  get_all_args("variablep",args,"%o%n",&o, &s);
 
   if(!o->prog)
     bad_arg_error("variablep", args, 1, "object", Pike_sp-args,

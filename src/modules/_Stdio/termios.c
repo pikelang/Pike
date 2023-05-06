@@ -411,7 +411,7 @@ void file_tcflush(INT32 args)
       MAKE_CONSTANT_SHARED_STRING( s_tciflush, "TCIFLUSH" );
       MAKE_CONSTANT_SHARED_STRING( s_tcoflush, "TCOFLUSH" );
       MAKE_CONSTANT_SHARED_STRING( s_tcioflush, "TCIOFLUSH" );
-      get_all_args( NULL, args, "%S", &a );
+      get_all_args( NULL, args, "%n", &a );
       if(a == s_tciflush )
 	action=TCIFLUSH;
       else if(a == s_tcoflush )

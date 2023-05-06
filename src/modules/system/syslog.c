@@ -260,7 +260,7 @@ void f_syslog(INT32 args)
   struct pike_string *s;
   INT_TYPE pri=0, i;
 
-  get_all_args(NULL, args, "%i%S", &i, &s);
+  get_all_args(NULL, args, "%i%n", &i, &s);
 
   if(i & (1<<0)) pri |= LOG_EMERG;
   if(i & (1<<1)) pri |= LOG_ALERT;

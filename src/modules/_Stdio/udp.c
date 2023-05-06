@@ -1343,7 +1343,7 @@ static void udp_connect(INT32 args)
 
   int tmp;
 
-  get_all_args(NULL, args, "%S%*", &dest_addr, &dest_port);
+  get_all_args(NULL, args, "%n%*", &dest_addr, &dest_port);
 
   if(TYPEOF(*dest_port) != PIKE_T_INT &&
      (TYPEOF(*dest_port) != PIKE_T_STRING || dest_port->u.string->size_shift))

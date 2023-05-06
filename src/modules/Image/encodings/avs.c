@@ -65,7 +65,7 @@ void image_avs_f__decode(INT32 args)
   unsigned char *q;
   rgb_group *img_i, *img_a;
 
-  get_all_args( NULL, args, "%S", &s);
+  get_all_args( NULL, args, "%n", &s);
 
   if (s->len < 12)	/* Width + height + one pixel */
     Pike_error("This is not an AVS file.\n");

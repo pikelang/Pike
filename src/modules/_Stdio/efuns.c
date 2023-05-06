@@ -345,7 +345,7 @@ static void f_setxattr( INT32 args )
   int flags;
   int rv;
   int nofollow=0;
-  get_all_args( "setxattr", args, "%c%c%S%d.%d", &file, &ind, &val, &flags, &nofollow );
+  get_all_args( "setxattr", args, "%c%c%n%d.%d", &file, &ind, &val, &flags, &nofollow );
 
   THREADS_ALLOW();
   if (nofollow) {
@@ -999,7 +999,7 @@ void f_get_dir(INT32 args)
   p_wchar1 *pattern;
   size_t plen;
 
-  get_all_args("get_dir", args, ".%S", &str);
+  get_all_args("get_dir", args, ".%n", &str);
 
   /* NB: The empty string is also an alias for the current directory.
    *     This is a convenience eg when recursing with dirname().

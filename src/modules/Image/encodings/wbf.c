@@ -209,7 +209,7 @@ static void low_image_f_wbf_decode( int args, int mode )
   int map_num_elems = 0;
   struct buffer buff;
 
-  get_all_args( NULL, args, "%S", &s );
+  get_all_args( NULL, args, "%n", &s );
 
   buff.len = s->len;
   buff.str = (unsigned char *)s->str;

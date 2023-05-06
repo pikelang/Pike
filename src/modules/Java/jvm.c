@@ -554,7 +554,7 @@ static void f_method_create(INT32 args)
   JNIEnv *env;
   char *p;
 
-  get_all_args(NULL, args, "%S%S%o", &name, &sig, &class);
+  get_all_args(NULL, args, "%n%n%o", &name, &sig, &class);
 
   if((c = get_storage(class, jclass_program)) == NULL)
     SIMPLE_ARG_TYPE_ERROR("create", 3, "Java class");
@@ -1180,7 +1180,7 @@ static void f_field_create(INT32 args)
     name = NULL;
     sig = NULL;
   } else
-    get_all_args(NULL, args, "%S%S%o", &name, &sig, &class);
+    get_all_args(NULL, args, "%n%n%o", &name, &sig, &class);
 
   if((c = get_storage(class, jclass_program)) == NULL)
     SIMPLE_ARG_TYPE_ERROR("create", 3, "Java class");
@@ -3662,7 +3662,7 @@ static void f_define_class(INT32 args)
   char *name;
   jclass c;
 
-  get_all_args(NULL, args, "%c%o%S", &name, &obj, &str);
+  get_all_args(NULL, args, "%c%o%n", &name, &obj, &str);
   if((ldr = THAT_JOBJ(obj))==NULL)
     Pike_error("Bad argument 2 to define_class().\n");
   if((env = jvm_procure_env(Pike_fp->current_object))) {

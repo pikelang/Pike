@@ -825,7 +825,7 @@ PIKEFUN string _quote(string s_)
 	struct pike_string *s;
 	char *err_msg;
 
-        get_all_args(NULL, args, "%S", &s);
+        get_all_args(NULL, args, "%n", &s);
 
 	ret = begin_shared_string(s->len * 2 + 1);
 #ifdef HAVE_PQESCAPESTRINGCONN

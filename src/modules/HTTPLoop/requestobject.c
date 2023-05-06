@@ -127,7 +127,7 @@ void f_aap_scan_for_query(INT32 args)
   if(args)
   {
     struct pike_string *_s;
-    get_all_args(NULL, args, "%S", &_s);
+    get_all_args(NULL, args, "%n", &_s);
     s = (char *)_s->str;
     len = _s->len;
   }
@@ -321,7 +321,7 @@ void f_aap_index_op(INT32 args)
   }
 
   if(!THIS->request) Pike_error("Reply called. No data available\n");
-  get_all_args(NULL, args, "%S", &s);
+  get_all_args(NULL, args, "%n", &s);
 
   if(s == s_not_query || s==s_query )
   {
@@ -822,7 +822,7 @@ void f_aap_reply_with_cache(INT32 args)
   if(!THIS->request)
     Pike_error("Reply already called.\n");
 
-  get_all_args(NULL, args, "%S%i", &reply, &time_to_keep);
+  get_all_args(NULL, args, "%n%i", &reply, &time_to_keep);
 
   if((size_t)reply->len < (size_t)THIS->request->cache->max_size/2)
   {
