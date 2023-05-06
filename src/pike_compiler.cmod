@@ -470,7 +470,7 @@ static void f_reporter_report(INT32 args)
     f_sprintf(args - 4);
     args = 5;
   }
-  get_all_args(NULL, args, "%d%W%+%W%W",
+  get_all_args(NULL, args, "%d%t%+%t%t",
 	       &level, &filename, &linenumber, &subsystem, &message);
 
   /* Ignore informational level messages */
@@ -640,7 +640,7 @@ static void f_compilation_env_resolv(INT32 args)
   struct object *handler = NULL;
   struct object *compat_handler = NULL;
 
-  get_all_args(NULL, args, "%W%W.%O%O",
+  get_all_args(NULL, args, "%t%t.%O%O",
 	       &ident, &filename, &handler, &compat_handler);
 
   if(get_master())
@@ -1630,7 +1630,7 @@ static void f_compilation_report(INT32 args)
     f_sprintf(args - 4);
     args = 5;
   }
-  get_all_args(NULL, args, "%d%W%+%W%W",
+  get_all_args(NULL, args, "%d%t%+%t%t",
 	       &level, &filename, &linenumber,
 	       &subsystem, &message);
 
@@ -1709,7 +1709,7 @@ static void f_compilation_create(INT32 args)
 
   STACK_LEVEL_START(args);
 
-  get_all_args(NULL, args, ".%W%O%d%d%P%O",
+  get_all_args(NULL, args, ".%t%O%d%d%P%O",
 	       &aprog, &ahandler,
 	       &amajor, &aminor,
 	       &atarget, &aplaceholder);
@@ -1901,7 +1901,7 @@ static void f_compilation_resolv(INT32 args)
   struct object *handler;
   int fun = -1;
 
-  get_all_args(NULL, args, "%W", &sym);
+  get_all_args(NULL, args, "%t", &sym);
 
   ref_push_string(sym);
   ref_push_string(c->lex.current_file);
@@ -2228,7 +2228,7 @@ static void f_compilation_pop_type_attribute(INT32 args)
   }
 #endif
 
-  get_all_args(NULL, args, "%W%*%*.%m", &attr, &a, &b, &state);
+  get_all_args(NULL, args, "%t%*%*.%m", &attr, &a, &b, &state);
 
   if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
     MAKE_CONST_STRING(deprecated_string, "deprecated");
@@ -2270,7 +2270,7 @@ static void f_compilation_index_type_attribute(INT32 args)
   struct compilation *c = THIS_COMPILATION;
   struct pike_string *deprecated_string;
 
-  get_all_args(NULL, args, "%W%*%*", &attr, &a, &b);
+  get_all_args(NULL, args, "%t%*%*", &attr, &a, &b);
 
   if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
     MAKE_CONST_STRING(deprecated_string, "deprecated");
@@ -2352,7 +2352,7 @@ static void f_compilation_push_type_attribute(INT32 args)
   }
 #endif
 
-  get_all_args(NULL, args, "%W%*%*.%m", &attr, &a, &b, &state);
+  get_all_args(NULL, args, "%t%*%*.%m", &attr, &a, &b, &state);
 
   if (TYPEOF(*a) != PIKE_T_TYPE) {
     SIMPLE_ARG_TYPE_ERROR(NULL, 2, "type");
@@ -2478,7 +2478,7 @@ static void f_compilation_apply_type_attribute(INT32 args)
   }
 #endif
 
-  get_all_args(NULL, args, "%W%*.%m", &attr, &a, &state);
+  get_all_args(NULL, args, "%t%*.%m", &attr, &a, &state);
 
   if (a && (TYPEOF(*a) != PIKE_T_TYPE)) {
     a = NULL;

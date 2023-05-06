@@ -311,7 +311,7 @@ static void pdf_show(INT32 args)
    struct pdf_storage *this=THIS;
    struct pike_string *ps;
 
-   get_all_args(NULL, args, "%W", &ps);
+   get_all_args(NULL, args, "%t", &ps);
    if (!this->pdf) Pike_error("PDF not initiated\n");
 
    if (ps->size_shift)
@@ -334,7 +334,7 @@ static void pdf_showxy(INT32 args)
    struct pike_string *ps;
    FLOAT_TYPE x,y;
 
-   get_all_args(NULL, args, "%W%F%F", &ps, &x, &y);
+   get_all_args(NULL, args, "%t%F%F", &ps, &x, &y);
    if (!this->pdf) Pike_error("PDF not initiated\n");
 
    if (ps->size_shift)
@@ -356,7 +356,7 @@ static void pdf_continue_text(INT32 args)
    struct pdf_storage *this=THIS;
    struct pike_string *ps;
 
-   get_all_args(NULL, args, "%W", &ps);
+   get_all_args(NULL, args, "%t", &ps);
    if (!this->pdf) Pike_error("PDF not initiated\n");
 
    if (ps->size_shift)
@@ -401,7 +401,7 @@ static void pdf_stringwidth(INT32 args)
    FLOAT_TYPE res=0.0,size=0.0;
    INT_TYPE font=0;
    struct pike_string *ps=NULL;
-   get_all_args(NULL, args, "%W%i%F", &ps, &font, &size);
+   get_all_args(NULL, args, "%t%i%F", &ps, &font, &size);
    if (ps->size_shift)
       Pike_error("wide strings not supported yet\n");
    if (!this->pdf) Pike_error("PDF not initiated\n");
@@ -846,7 +846,7 @@ static void pdf_open_image(INT32 args)
    char *type=NULL,*source=NULL,*params=NULL;
    struct pike_string *ps;
    INT_TYPE res=0,length=0,width=0,height=0,components=0,bpc=0;
-   get_all_args(NULL, args, "%s%s%W%i%i%i%i%s",
+   get_all_args(NULL, args, "%s%s%t%i%i%i%i%s",
 		&type,&source,&ps,&width,&height,
 		&components,&bpc,&params);
    if (ps->size_shift)

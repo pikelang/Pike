@@ -1874,7 +1874,7 @@ PMOD_EXPORT void f_string_to_unicode(INT32 args)
   ptrdiff_t i;
   unsigned INT_TYPE byteorder = 0;
 
-  get_all_args("string_to_unicode", args, "%W.%i", &in, &byteorder);
+  get_all_args("string_to_unicode", args, "%t.%i", &in, &byteorder);
 
   if (byteorder >= 2) {
     if (byteorder == 2) {
@@ -2208,7 +2208,7 @@ static void f_string_filter_non_unicode( INT32 args )
   static const p_wchar1 replace = 0xfffd;
   static const PCHARP repl_char = {(void*)&replace,1};
 
-  get_all_args("filter_non_unicode", args, "%W", &in);
+  get_all_args("filter_non_unicode", args, "%t", &in);
   check_string_range( in, 1, &min, &max );
 
   if( !in->len || (min >= 0 && max < 0xd800) )
@@ -2285,7 +2285,7 @@ PMOD_EXPORT void f_string_to_utf8(INT32 args)
   INT32 min, max;
   unsigned char * dst;
 
-  get_all_args("string_to_utf8", args, "%W.%i", &in, &extended);
+  get_all_args("string_to_utf8", args, "%t.%i", &in, &extended);
 
   len = in->len;
 

@@ -706,7 +706,7 @@ static void pwrite_n(INT32 args, int shift, int reverse)
    struct pike_string *ps;
    unsigned char *d;
 
-   get_all_args(NULL,args,"%+%W",&pos,&ps);
+   get_all_args(NULL,args,"%+%t",&pos,&ps);
    rpos=(size_t)pos;
    rlen=(ps->len<<shift);
 

@@ -129,7 +129,7 @@ static void f_tokenize( INT32 args )
   int left;
   ONERROR tmp;
 
-  get_all_args(NULL, args, "%W", &data);
+  get_all_args(NULL, args, "%t", &data);
 
   SET_ONERROR(tmp, do_free_arrayptr, &res);
 

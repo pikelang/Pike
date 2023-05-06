@@ -897,7 +897,7 @@ static void f_error_create(INT32 args)
   struct pike_string *msg;
   struct array *bt = NULL;
 
-  get_all_args(NULL, args, "%W.%A", &msg, &bt);
+  get_all_args(NULL, args, "%t.%A", &msg, &bt);
 
   do_free_string(GENERIC_ERROR_THIS->error_message);
   copy_shared_string(GENERIC_ERROR_THIS->error_message, msg);
