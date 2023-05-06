@@ -1710,6 +1710,10 @@ if test "x$with_dtrace" = "xyes"; then
    fi
 fi
 
+if test "x$with_checker" = "xyes"; then
+  AC_DEFINE(__CHECKER__)
+else :; fi
+
 if test "x$with_relocatable_dumped_modules" = xyes; then
   PIKE_MODULE_RELOC=1
 else
