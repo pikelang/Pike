@@ -5839,6 +5839,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
       if (TYPEOF(k->val) != T_ARRAY) {
         /* Cache the parsed macro body. */
         free_svalue(&k->val);
+        m_val_types(predefs) |= (1 << T_ARRAY);
         SET_SVAL(k->val, T_ARRAY, 0, array, copy_array(def->parts));
       }
     }
