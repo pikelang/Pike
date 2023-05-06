@@ -204,7 +204,7 @@ class NSNode {
 	if( sscanf(name, "%s:%s", ns, m)==2 ) {
 	  if(!nss[ns]) {
 	    if(ns=="xml")
-	      add_namespace("xml","xml");
+              add_namespace("http://www.w3.org/XML/1998/namespace", "xml");
 	    else
 	      error("Unknown namespace %s.\n", ns);
 	  }
@@ -334,6 +334,7 @@ class NSNode {
       root = get_first_element();
     }
     ns_nodes[root] = child_namespaces(ns_nodes);
+    m_delete(ns_nodes[root], "xml");
 
     walk_preorder_2(lambda(Node n) {
         switch(n->get_node_type()) {
