@@ -198,7 +198,7 @@ static void push_tchar(const TCHAR *buf, DWORD len)
     MKPCHARP(buf,my_log2(sizeof(TCHAR))),len));
 }
 
-static void push_regvalue(DWORD type, char* buffer, DWORD len)
+static void push_regvalue(DWORD type, char* buffer, DWORD len, int no_expand)
 {
   struct pike_string *str;
   switch(type)
@@ -214,6 +214,7 @@ static void push_regvalue(DWORD type, char* buffer, DWORD len)
       if (!len) {
 	push_empty_string();
       } else {
+      push_reg_sz:
         str = begin_wide_shared_string((len>>1) - 1, sixteenbit);
         str->flags |= STRING_CONVERT_SURROGATES;
         memcpy(str->str, buffer, len);
@@ -225,6 +226,9 @@ static void push_regvalue(DWORD type, char* buffer, DWORD len)
       if (!len) {
         push_empty_string();
       } else {
+        if (no_expand) {
+          goto push_reg_sz;
+        }
         str = begin_wide_shared_string(1024, sixteenbit);
         str->flags |= STRING_CONVERT_SURROGATES;
         len =
@@ -319,7 +323,8 @@ static const HKEY hkeys[] = {
  */
 
 /*! @decl string|int|array(string) RegGetValue(int hkey, string key, @
- *!                                            string index)
+ *!                                            string index, @
+ *!                                            int(0..1)|void no_expand)
  *!
  *!   Get a single value from the register.
  *!
@@ -338,6 +343,10 @@ static const HKEY hkeys[] = {
  *! @param index
  *!   Value name.
  *!
+ *! @param no_expand
+ *!   Set this to @expr{1@} to not expand variables in
+ *!   @expr{REG_EXPAND_SZ@}-values.
+ *!
  *! @returns
  *!   Returns the value stored at the specified location in the register
  *!   if any. Returns @expr{UNDEFINED@} on missing keys, throws errors
@@ -346,20 +355,23 @@ static const HKEY hkeys[] = {
  *! @note
  *!   This function is only available on Win32 systems.
  *!
+ *! @note
+ *!   Prior to Pike 9.0 @expr{REG_EXPAND_SZ@}-values were always expanded.
+ *!
  *! @seealso
  *!   @[RegGetValues()], @[RegGetKeyNames()]
  */
 void f_RegGetValue(INT32 args)
 {
   long ret;
-  INT_TYPE hkey_num;
+  INT_TYPE hkey_num, no_expand = 0;
   HKEY new_key;
   struct pike_string *key, *ind;
   p_wchar1 *key_utf16, *ind_utf16;
   DWORD len,type;
   char buffer[8192];
   len=sizeof(buffer)-1;
-  get_all_args(NULL, args, "%i%t%t", &hkey_num, &key, &ind);
+  get_all_args(NULL, args, "%i%t%t.%i", &hkey_num, &key, &ind, &no_expand);
 
   if ((hkey_num < 0) || ((unsigned int)hkey_num >= NELEM(hkeys))) {
     Pike_error("Unknown hkey: %d.\n", hkey_num);
@@ -393,7 +405,7 @@ void f_RegGetValue(INT32 args)
   if(ret==ERROR_SUCCESS)
   {
     pop_n_elems(args);
-    push_regvalue(type, buffer, len);
+    push_regvalue(type, buffer, len, no_expand);
   } else if (ret == ERROR_FILE_NOT_FOUND) {
     pop_n_elems(args);
     push_undefined();
@@ -510,7 +522,8 @@ void f_RegGetKeyNames(INT32 args)
 }
 
 /*! @decl mapping(string:string|int|array(string)) RegGetValues(int hkey, @
- *!                                                             string key)
+ *!                                                             string key, @
+ *!                                                 int(0..1)|void no_expand)
  *!
  *!   Get multiple values from the register.
  *!
@@ -525,6 +538,10 @@ void f_RegGetKeyNames(INT32 args)
  *!
  *! @param key
  *!   Registry key.
+ *!
+ *! @param no_expand
+ *!   Set this to @expr{1@} to not expand variables in
+ *!   @expr{REG_EXPAND_SZ@}-values.
  *!
  *! @returns
  *!   Returns a mapping with all the values stored at the specified location
@@ -541,19 +558,22 @@ void f_RegGetKeyNames(INT32 args)
  *! @note
  *!   This function is only available on Win32 systems.
  *!
+ *! @note
+ *!   Prior to Pike 9.0 @expr{REG_EXPAND_SZ@}-values were always expanded.
+ *!
  *! @seealso
  *!   @[RegGetValue()], @[RegGetKeyNames()]
  */
 void f_RegGetValues(INT32 args)
 {
-  INT_TYPE hkey_num;
+  INT_TYPE hkey_num, no_expand = 0;
   struct pike_string *key;
   p_wchar1 *key_utf16;
   int i,ret;
   HKEY new_key;
   ONERROR tmp;
 
-  get_all_args(NULL, args, "%i%t", &hkey_num, &key);
+  get_all_args(NULL, args, "%i%t.%i", &hkey_num, &key, &no_expand);
 
   if ((hkey_num < 0) || ((unsigned int)hkey_num >= NELEM(hkeys))) {
     Pike_error("Unknown hkey: %d.\n", hkey_num);
@@ -597,7 +617,7 @@ void f_RegGetValues(INT32 args)
       case ERROR_SUCCESS:
 	check_stack(2);
         push_string(end_and_resize_shared_string(buf, len));
-	push_regvalue(type,buffer,buflen);
+        push_regvalue(type, buffer, buflen, no_expand);
 	continue;
 
       case ERROR_NO_MORE_ITEMS:
@@ -3812,11 +3832,13 @@ void init_nt_system_calls(void)
 
 /* function(int,string,string:string|int|string*) */
   ADD_FUNCTION("RegGetValue", f_RegGetValue,
-               tFunc(tInt tStr tStr, tOr3(tStr, tInt, tArr(tStr))),
+               tFunc(tInt tStr tStr tOr(tVoid, tInt01),
+                     tOr3(tStr, tInt, tArr(tStr))),
                OPT_EXTERNAL_DEPEND);
 
   ADD_FUNCTION("RegGetValues", f_RegGetValues,
-               tFunc(tInt tStr, tMap(tStr, tOr3(tStr, tInt, tArr(tStr)))),
+               tFunc(tInt tStr tOr(tVoid, tInt01),
+                     tMap(tStr, tOr3(tStr, tInt, tArr(tStr)))),
                OPT_EXTERNAL_DEPEND);
 
   ADD_FUNCTION("RegGetKeyNames", f_RegGetKeyNames,
