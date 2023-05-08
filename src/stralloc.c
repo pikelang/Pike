@@ -1852,25 +1852,33 @@ struct pike_string *modify_shared_string(struct pike_string *a,
 }
 
 #ifdef __NT__
-PMOD_EXPORT p_wchar1 *pike_string_to_utf16(struct pike_string *s)
+/**
+ *  Convert a pike_string to a NUL-terminated array of UTF16 characters
+ *  suitable for use with various WIN32-APIs.
+ *
+ *  Throws errors on failure if the LSB of flags is set. Otherwise
+ *  returns NULL on failure.
+ */
+PMOD_EXPORT p_wchar1 *pike_string_to_utf16(struct pike_string *s,
+                                           unsigned int flags)
 {
-  p_wchar1 *res;
+  p_wchar1 *res = NULL;
   ptrdiff_t sz;
 
-  if (!s) return NULL;
+  if (!s) goto done;
 
   switch(s->size_shift) {
   case sixteenbit:
     sz = s->len + 1;
     res = malloc(sz<<1);
-    if (!res) return NULL;
+    if (!res) break;
     memcpy(res, s->str, sz);
     break;
 
   case eightbit:
     sz = s->len + 1;
     res = malloc(sz<<1);
-    if (!res) return NULL;
+    if (!res) break;
     convert_0_to_1(res, STR0(s), sz);
     break;
 
@@ -1882,16 +1890,17 @@ PMOD_EXPORT p_wchar1 *pike_string_to_utf16(struct pike_string *s)
       for (i = 0; i < s->len; i++) {
         p_wchar2 c = STR2(s)[i];
         if (c & 0xffff0000) {
-          if ((c < 0) || (c > 0x10ffff)) {
+          c -= 0x10000;
+          if (c & 0xfff00000) {
             /* Invalid in UTF16. */
-            return NULL;
+            goto done;
           }
           sz++;
         }
       }
       sz++;
       res = malloc(sz<<1);
-      if (!res) return NULL;
+      if (!res) break;
       /* NB: Intentionally copies the terminating NUL. */
       for (i = j = 0; i <= s->len; i++, j++) {
         p_wchar2 c = STR2(s)[i];
@@ -1905,6 +1914,10 @@ PMOD_EXPORT p_wchar1 *pike_string_to_utf16(struct pike_string *s)
       }
     }
     break;
+  }
+ done:
+  if (!res && (flags & 1)) {
+    Pike_error("UTF16 conversion failed.\n");
   }
   return res;
 }
