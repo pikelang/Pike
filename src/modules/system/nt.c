@@ -322,6 +322,11 @@ static const HKEY hkeys[] = {
  *!   @[RegGetValue()], @[RegGetValues()], @[RegGetKeyNames()]
  */
 
+static void do_regclosekey(HKEY key)
+{
+  RegCloseKey(key);
+}
+
 /*! @decl string|int|array(string) RegGetValue(int hkey, string key, @
  *!                                            string index, @
  *!                                            int(0..1)|void no_expand)
@@ -367,29 +372,22 @@ void f_RegGetValue(INT32 args)
   INT_TYPE hkey_num, no_expand = 0;
   HKEY new_key;
   struct pike_string *key, *ind;
-  p_wchar1 *key_utf16, *ind_utf16;
+  ONERROR tmp;
+  p_wchar1 *utf16;
   DWORD len,type;
   char buffer[8192];
   len=sizeof(buffer)-1;
+
   get_all_args(NULL, args, "%i%t%t.%i", &hkey_num, &key, &ind, &no_expand);
 
   if ((hkey_num < 0) || ((unsigned int)hkey_num >= NELEM(hkeys))) {
     Pike_error("Unknown hkey: %d.\n", hkey_num);
   }
 
-  ref_push_string(key);
-  push_int(2);
-  f_string_to_unicode(2);
-  args++;
-  key_utf16 = (p_wchar1 *)STR0(Pike_sp[-1].u.string);
+  utf16 = pike_string_to_utf16(key, 1);
+  ret = RegOpenKeyExW(hkeys[hkey_num], utf16, 0, KEY_READ, &new_key);
+  free(utf16);
 
-  ref_push_string(ind);
-  push_int(2);
-  f_string_to_unicode(2);
-  args++;
-  ind_utf16 = (p_wchar1 *)STR0(Pike_sp[-1].u.string);
-
-  ret = RegOpenKeyExW(hkeys[hkey_num], key_utf16, 0, KEY_READ, &new_key);
   if ((ret == ERROR_FILE_NOT_FOUND) ||
       (ret == ERROR_PATH_NOT_FOUND)) {
     pop_n_elems(args);
@@ -399,8 +397,13 @@ void f_RegGetValue(INT32 args)
   if(ret != ERROR_SUCCESS)
     throw_nt_error(ret);
 
-  ret = RegQueryValueExW(new_key, ind_utf16, 0, &type, buffer, &len);
-  RegCloseKey(new_key);
+  SET_ONERROR(tmp, do_regclosekey, new_key);
+
+  utf16 = pike_string_to_utf16(ind, 1);
+  ret = RegQueryValueExW(new_key, utf16, 0, &type, buffer, &len);
+  free(utf16);
+
+  CALL_AND_UNSET_ONERROR(tmp);
 
   if(ret==ERROR_SUCCESS)
   {
@@ -412,11 +415,6 @@ void f_RegGetValue(INT32 args)
   }else{
     throw_nt_error(ret);
   }
-}
-
-static void do_regclosekey(HKEY key)
-{
-  RegCloseKey(key);
 }
 
 /*! @decl array(string) RegGetKeyNames(int hkey, string key)
@@ -469,13 +467,10 @@ void f_RegGetKeyNames(INT32 args)
     Pike_error("Unknown hkey: %d.\n", hkey_num);
   }
 
-  ref_push_string(key);
-  push_int(2);
-  f_string_to_unicode(2);
-  args++;
-  key_utf16 = (p_wchar1 *)STR0(Pike_sp[-1].u.string);
-
+  key_utf16 = pike_string_to_utf16(key, 1);
   ret = RegOpenKeyExW(hkeys[hkey_num], key_utf16, 0, KEY_READ, &new_key);
+  free(key_utf16);
+
   if ((ret == ERROR_FILE_NOT_FOUND) ||
       (ret == ERROR_PATH_NOT_FOUND)) {
     pop_n_elems(args);
@@ -579,13 +574,9 @@ void f_RegGetValues(INT32 args)
     Pike_error("Unknown hkey: %d.\n", hkey_num);
   }
 
-  ref_push_string(key);
-  push_int(2);
-  f_string_to_unicode(2);
-  args++;
-  key_utf16 = (p_wchar1 *)STR0(Pike_sp[-1].u.string);
-
+  key_utf16 = pike_string_to_utf16(key, 1);
   ret = RegOpenKeyExW(hkeys[hkey_num], key_utf16, 0, KEY_READ, &new_key);
+  free(key_utf16);
 
   if ((ret == ERROR_FILE_NOT_FOUND) ||
       (ret == ERROR_PATH_NOT_FOUND)) {
@@ -3447,7 +3438,7 @@ struct sctx_storage {
   int        hcred_alloced;
   CtxtHandle hctxt;
   int        hctxt_alloced;
-  struct pike_string *PackageNameUTF16;
+  p_wchar1   *PackageNameUTF16;
   DWORD      cbMaxMessage;
   BYTE *     buf;
   DWORD      cBuf;
@@ -3469,7 +3460,7 @@ static void exit_sctx(struct object *o)
   struct sctx_storage *sctx = THIS_SCTX;
 
   if (sctx->PackageNameUTF16) {
-    free_string(sctx->PackageNameUTF16);
+    free(sctx->PackageNameUTF16);
     sctx->PackageNameUTF16 = NULL;
   }
   if (sctx->hctxt_alloced) {
@@ -3497,17 +3488,13 @@ static void f_sctx_create(INT32 args)
 
   get_all_args(NULL, args, "%t", &pkgName);
 
-  ref_push_string(pkgName);
-  push_int(2);
-  f_string_to_unicode(2);
   if (sctx->PackageNameUTF16) {
-    free_string(sctx->PackageNameUTF16);
+    free(sctx->PackageNameUTF16);
+    sctx->PackageNameUTF16 = NULL;
   }
-  sctx->PackageNameUTF16 = Pike_sp[-1].u.string;
-  Pike_sp--;
+  sctx->PackageNameUTF16 = pike_string_to_utf16(pkgName, 1);
 
-  ss = querysecuritypackageinfo ( (p_wchar1 *)STR0(sctx->PackageNameUTF16),
-                                  &pkgInfo);
+  ss = querysecuritypackageinfo(sctx->PackageNameUTF16, &pkgInfo);
 
   if (!SEC_SUCCESS(ss))
   {
@@ -3526,7 +3513,7 @@ static void f_sctx_create(INT32 args)
     freecredentialshandle (&sctx->hcred);
   ss = acquirecredentialshandle (
                                  NULL,
-                                 (p_wchar1 *)STR0(sctx->PackageNameUTF16),
+                                 sctx->PackageNameUTF16,
                                  SECPKG_CRED_INBOUND,
                                  NULL,
                                  NULL,
@@ -3680,9 +3667,7 @@ static void f_sctx_type(INT32 args)
 {
   struct sctx_storage *sctx = THIS_SCTX;
   pop_n_elems(args);
-  ref_push_string(sctx->PackageNameUTF16);
-  push_int(2);
-  f_unicode_to_string(2);
+  push_utf16_text(sctx->PackageNameUTF16);
 }
 
 
