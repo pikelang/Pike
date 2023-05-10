@@ -12526,6 +12526,10 @@ test_true(sizeof(getcwd()))
 test_do(Stdio.recursive_rm("getcwd_test"))
 test_do(mkdir("getcwd_test"))
 test_any([[
+  // NB: getcwd() may return $PWD if it matches the current directory.
+  //     We do not want this as it may differ from the canonic path
+  //     due to symlinks, etc in the path in $PWD, so invalidate $PWD.
+  putenv("PWD");
   string a = getcwd();
   cd("getcwd_test");
   string b = getcwd();
