@@ -12543,6 +12543,50 @@ test_any([[
     ({ a, b, getcwd() });
 #endif
 ]], 1)
+ifefun(Stdio.stdout.cd, [[
+  test_any([[
+    string a = getcwd();
+    Stdio.File f = Stdio.File(".", "r");
+    f->cd("getcwd_test");
+    string b = getcwd();
+    cd("..");
+  #ifdef __NT__
+    return (a==getcwd() && b==a+"\\getcwd_test") || \
+      ({ a, b, getcwd() });
+  #else
+    return (a==getcwd() && b==a+"/getcwd_test") || \
+      ({ a, b, getcwd() });
+  #endif
+  ]], 1)
+  test_any([[
+    string a = getcwd();
+    Stdio.File f = Stdio.File("getcwd_test", "r");
+    f->cd();
+    string b = getcwd();
+    cd("..");
+  #ifdef __NT__
+    return (a==getcwd() && b==a+"\\getcwd_test") || \
+      ({ a, b, getcwd() });
+  #else
+    return (a==getcwd() && b==a+"/getcwd_test") || \
+      ({ a, b, getcwd() });
+  #endif
+  ]], 1)
+  test_any([[
+    string a = getcwd();
+    Stdio.File f = Stdio.File("getcwd_test", "r");
+    f->cd(".");
+    string b = getcwd();
+    cd("..");
+  #ifdef __NT__
+    return (a==getcwd() && b==a+"\\getcwd_test") || \
+      ({ a, b, getcwd() });
+  #else
+    return (a==getcwd() && b==a+"/getcwd_test") || \
+      ({ a, b, getcwd() });
+  #endif
+  ]], 1)
+]])
 test_do(Stdio.recursive_rm("getcwd_test"))
 
 // - getegid

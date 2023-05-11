@@ -689,6 +689,10 @@ o Standards.PKCS
 
   Support PKCS#8 private keys.
 
+o Stdio.Fd
+
+  - Support changing directory relative to an open file.
+
 o String.Buffer & Stdio.Buffer
 
   Added _search().

@@ -1796,6 +1796,56 @@ static void file_read_oob(INT32 args)
   THIS->box.revents &= ~(PIKE_BIT_FD_READ|PIKE_BIT_FD_READ_OOB);
 }
 
+#ifdef HAVE_FCHDIR
+/*! @decl int(0..1) cd(string(8bit)|void relpath)
+ *!
+ *!   Change current directory relative to this file.
+ *!
+ *! @returns
+ *!   Returns @expr{1@} on success and @expr{0@} (zero)
+ *!   on failure.
+ *!
+ *! @seealso
+ *!   @[predef::cd()]
+ */
+PIKEFUN int(0..1) cd(string(8bit)|void relpath)
+{
+  int fd = FD;
+  int ret = 0;
+
+  if(fd < 0) {
+    Pike_error("File not open.\n");
+  }
+
+  if (relpath) {
+    fd = openat(fd, relpath->str, O_RDONLY, 0);
+
+    if (fd < 0) {
+      ERRNO = errno;
+
+      RETURN 0;
+    }
+  }
+
+  ret = !fchdir(fd);
+
+  if (!ret) {
+    ERRNO = errno;
+  }
+
+  if (relpath) {
+    close(fd);
+  }
+
+  /* NOTE: Kludge for glibc 2.36 bug where get_current_dir_name()/getcwd()
+   * does not return the updated directory after fchdir() has been called.
+   */
+  chdir(".");
+
+  RETURN ret;
+}
+#endif /* HAVE_FCHDIR */
+
 static short get_fd_event_flags(struct my_file *f)
 {
   if(f->box.backend)
