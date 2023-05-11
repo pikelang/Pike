@@ -1796,7 +1796,7 @@ static void file_read_oob(INT32 args)
   THIS->box.revents &= ~(PIKE_BIT_FD_READ|PIKE_BIT_FD_READ_OOB);
 }
 
-#ifdef HAVE_FCHDIR
+#if defined(HAVE_FCHDIR) && defined(HAVE_OPENAT)
 /*! @decl int(0..1) cd(string(8bit)|void relpath)
  *!
  *!   Change current directory relative to this file.
