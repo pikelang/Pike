@@ -1812,6 +1812,7 @@ PIKEFUN int(0..1) cd(string(8bit)|void relpath)
 {
   int fd = FD;
   int ret = 0;
+  int e;
 
   if(fd < 0) {
     Pike_error("File not open.\n");
@@ -1829,18 +1830,20 @@ PIKEFUN int(0..1) cd(string(8bit)|void relpath)
 
   ret = !fchdir(fd);
 
+  e = errno;
+
   if (!ret) {
-    ERRNO = errno;
+    ERRNO = e;
   }
 
   if (relpath) {
     close(fd);
   }
 
-  /* NOTE: Kludge for glibc 2.36 bug where get_current_dir_name()/getcwd()
-   * does not return the updated directory after fchdir() has been called.
-   */
-  chdir(".");
+  SAFE_MAYBE_APPLY_MASTER("zap_getcwd_cache", 0);
+  args++;
+
+  errno = e;
 
   RETURN ret;
 }

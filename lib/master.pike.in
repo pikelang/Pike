@@ -1232,6 +1232,10 @@ string|zero master_read_file(string file)
 
 #ifdef GETCWD_CACHE
 protected string current_path;
+void zap_getcwd_cache()
+{
+  current_path = 0;
+}
 int cd(string s)
 {
   current_path=0;
