@@ -1796,7 +1796,7 @@ static void file_read_oob(INT32 args)
   THIS->box.revents &= ~(PIKE_BIT_FD_READ|PIKE_BIT_FD_READ_OOB);
 }
 
-#if defined(HAVE_FCHDIR) && defined(HAVE_OPENAT)
+#ifdef HAVE_FCHDIR
 /*! @decl int(0..1) cd(string(8bit)|void relpath)
  *!
  *!   Change current directory relative to this file.
@@ -1811,41 +1811,55 @@ static void file_read_oob(INT32 args)
 PIKEFUN int(0..1) cd(string(8bit)|void relpath)
 {
   int fd = FD;
+  int close_fd = -1;
   int ret = 0;
-  int e;
 
   if(fd < 0) {
     Pike_error("File not open.\n");
   }
 
+#ifdef HAVE_OPENAT
+  /* NB: Several OSes (eg Solaris 8, MacOS X 10.5, Linux/glibc 2.3.x)
+   *     have fchdir(2) but not openat(2).
+   */
   if (relpath) {
-    fd = openat(fd, relpath->str, O_RDONLY, 0);
+    close_fd = fd = openat(fd, relpath->str, O_RDONLY, 0);
 
-    if (fd < 0) {
-      ERRNO = errno;
-
-      RETURN 0;
-    }
+    if (fd < 0) goto fail;
   }
+#endif /* HAVE_OPENAT */
 
   ret = !fchdir(fd);
 
-  e = errno;
-
-  if (!ret) {
-    ERRNO = e;
-  }
-
-  if (relpath) {
-    close(fd);
-  }
+  if (!ret) goto fail;
 
   SAFE_MAYBE_APPLY_MASTER("zap_getcwd_cache", 0);
   args++;
 
-  errno = e;
+  if (relpath) {
+#ifdef HAVE_OPENAT
+    close(fd);
+#else
+    ret = !chdir(relpath->str);
 
-  RETURN ret;
+    if (!ret) goto fail;
+#endif
+  }
+
+  RETURN 1;
+
+ fail:
+  {
+    int e = errno;
+
+    if (close_fd >= 0) {
+      close(close_fd);
+    }
+
+    ERRNO = errno = e;
+
+    RETURN 0;
+  }
 }
 #endif /* HAVE_FCHDIR */
 
