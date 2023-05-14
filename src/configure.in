@@ -4261,6 +4261,7 @@ AC_CHECK_FUNCS( \
  closefrom \
  crypt \
  crypt_r \
+ fchdir \
  fdwalk \
  ftruncate64 \
  gethrtime \
