@@ -4514,7 +4514,7 @@ lor_expr: land_expr
   ;
 
 cond_expr: lor_expr
-  | lor_expr '?' cond_expr ':' assignment_expr
+  | lor_expr '?' comma_expr ':' assignment_expr
   {
     $$ = mknode('?', $1, mknode(':', $3, $5));
   }
