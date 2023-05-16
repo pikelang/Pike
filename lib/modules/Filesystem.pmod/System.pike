@@ -270,7 +270,7 @@ array find(void|function(Filesystem.Stat, __unknown__...:int) mask,
 {
   array(Filesystem.Stat) res = ({});
   array(Filesystem.Stat) d = get_stats() || ({});
-  array(Filesystem.Stat) r = filter(d, "isdir");
+  array(Filesystem.Stat) r = filter(d, d->isdir);
 
   if(mask)
     res += filter(d-r, mask, @extra);
