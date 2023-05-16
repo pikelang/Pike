@@ -2401,7 +2401,7 @@ static struct define_struct *add_define(struct CPP_struct *this,
     Pike_sp--;
 
     THIS->current_line = save_line;
-  } else if ((TYPEOF(*what) == PIKE_T_FUNCTION)) {
+  } else if (TYPEOF(*what) == PIKE_T_FUNCTION) {
     push_svalue(what);
     f_aggregate(1);
     def->parts = Pike_sp[-1].u.array;
@@ -3717,7 +3717,7 @@ static void parse_define_body(struct CPP_struct *this,
                               ptrdiff_t *posp,
                               struct svalue *argbase,
                               int argno,
-                              int flags)
+                              int UNUSED(flags))
 {
   struct string_builder str;
   ptrdiff_t pos = *posp;
