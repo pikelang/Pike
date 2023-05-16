@@ -893,7 +893,7 @@ static inline void POP_PIKE_FRAME(void) {
 # endif /* PIKE_DEBUG */
   Pike_interpreter.accounted_time += self_time;
 
-  if (frame->context) {
+  if (frame->context && frame->fun != FUNCTION_BUILTIN) {
 # ifdef PIKE_DEBUG
     if (frame->ident >= frame->context->prog->num_identifiers)
       Pike_fatal("Profiling inexistant ident %d / %d\n", (int)frame->ident,
