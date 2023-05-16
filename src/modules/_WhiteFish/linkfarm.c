@@ -14,8 +14,6 @@
 #include "buffer.h"
 #include "blobs.h"
 
-static void exit_linkfarm_struct( );
-
 #define HSIZE 211
 
 static struct program *linkfarm_program;
