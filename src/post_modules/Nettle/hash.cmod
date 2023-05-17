@@ -715,6 +715,16 @@ PIKECLASS Hash
 
 #endif /* NETTLE_SHA3_FIPS202 */
 
+#ifdef HAVE_NETTLE_SM3_H
+
+#cmod_define PIKE_NAME SM3
+#cmod_define NETTLE_NAME sm3
+#cmod_include "hash.H"
+#cmod_undef PIKE_NAME
+#cmod_undef NETTLE_NAME
+
+#endif /* HAVE_NETTLE_SM3_H */
+
 #ifdef HAVE_NETTLE_RIPEMD160_H
 
 #cmod_define PIKE_NAME RIPEMD160
