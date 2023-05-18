@@ -76,6 +76,10 @@ Identifier pkcs_id = Identifier(1, 2, 840, 113549, 1);
 Identifier pkcs_1_id = pkcs_id->append(1);
 Identifier pkcs_9_id = pkcs_id->append(9);
 
+// draft-sca-cfrg-sm3-02 (Jan 2018) 8.1.1: SCA OID Prefix
+// Chinese Cryptography Standardization Technology Committee (CCSTC).
+Identifier ccstc_id = Identifier(1, 2, 156, 10197);
+
 /* For public key (RFC 4055 1.2). */
 Identifier rsa_id = pkcs_1_id->append(1);
 
@@ -215,6 +219,27 @@ Identifier sha224_id = Identifier(2, 16, 840, 1, 101, 3, 4, 2, 4);
 // RFC 8017 B.1:
 Identifier sha512_224_id = Identifier(2, 16, 840, 1, 101, 3, 4, 2, 5);
 Identifier sha512_256_id = Identifier(2, 16, 840, 1, 101, 3, 4, 2, 6);
+
+// draft-sca-cfrg-sm3-02 (Jan 2018) 8.1.2: Hash Algorithms
+Identifier ccstc_hash_id = ccstc_id->append(1, 400);
+Identifier sm3_id = ccstc_id->append(1, 401);
+Identifier sm3_nsk_id = sm3_id->append(1);
+Identifier sm3_sk_id = sm3_id->append(2);
+// draft-sca-cfrg-sm3-02 (Jan 2018) 8.1.3: Integrated Algorithms
+Identifier ccstc_int_id = ccstc_id->append(1, 500);
+// NB: Suspected typo in draft.
+Identifier dsa_sm2sm3 = ccstc_id->append(1, 501);
+// NB: Suspected typo in draft.
+Identifier dsa_sm9sm3 = ccstc_id->append(1, 502);
+// NB: Suspected typo in draft.
+Identifier dsa_rsasm3 = ccstc_id->append(1, 504);
+// draft-sca-cfrg-sm3-02 (Jan 2018) 8.1.4: Standard Identification
+// NB: Suspected typo in draft.
+Identifier sm3_standard_id = ccstc_id->append(6, 1, 1, 4);
+// draft-sca-cfrg-sm3-02 (Jan 2018) 8.2: ISO OID
+// ISO 10118-3 Discrete Hash Functions (deprecated use)
+Identifier dhf_id = Identifier(1, 0, 10118, 3, 0);
+Identifier sm3_dhf_id = dhf_id->append(65);
 
 /*      dhpublicnumber OBJECT IDENTIFIER ::= { iso(1) member-body(2)
                   us(840) ansi-x942(10046) number-type(2) 1 } */
