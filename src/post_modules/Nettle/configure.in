@@ -93,17 +93,34 @@ else
   if test "x$ac_cv_lib_nettle_nettle_ctr_crypt" = "xyes"; then
     PIKE_FEATURE_OK(Nettle)
 
-    # camellia is available in Nettle 2.1 and later.
-    # gcm is available in Nettle 2.2 and later.
-    # ripemd160 is available in Nettle 2.3 and later.
-    # sha3 and gosthash94 are available in Nettle 2.6 and later.
-    # chacha, poly1305 and eax are available in Nettle 3.0 and later.
-    # curve25519 and eddsa are available in Nettle 3.1 and later.
-    # pbkdf2 is available in Nettle 3.1 and later.
-    # version.h was added in Nettle 3.1.1, but nettle_version_{major,minor}()
-    # are first available in Nettle 3.2 and later.
-    # cmac is available in Nettle 3.5 and later.
-    # sm3 is available in Nettle 3.8 and later.
+    # Header file availability in various Nettle releases:
+    #
+    # Nettle 2.1 and later:
+    #   camellia.h
+    # Nettle 2.2 and later:
+    #   gcm.h
+    # Nettle 2.3 and later:
+    #   ripemd160.h
+    # Nettle 2.6 and later:
+    #   gosthash94.h
+    #   sha3.h
+    # Nettle 3.0 and later:
+    #   chacha.h
+    #   eax.h
+    #   poly1305.h
+    # Nettle 3.1 and later:
+    #   curve25519.h
+    #   eddsa.h
+    #   pbkdf2.h
+    # Nettle 3.1.1 and later:
+    #   version.h
+    # Nettle 3.2 and later:
+    #   version.h:nettle_version_{major,minor}
+    # Nettle 3.5 and later:
+    #   cmac.h
+    # Nettle 3.8 and later:
+    #   nist-keywrap.h
+    #   sm3.h
     AC_CHECK_HEADERS(nettle/camellia.h \
 		     nettle/gcm.h \
 		     nettle/ripemd160.h \
