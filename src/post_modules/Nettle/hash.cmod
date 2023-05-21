@@ -743,6 +743,15 @@ PIKECLASS Hash
 #cmod_undef PIKE_NAME
 #cmod_undef NETTLE_NAME
 
+/* gosthash94cp was added in Nettle 3.6. */
+#ifdef GHOSTHASH94CP_BLOCK_SIZE
+#cmod_define PIKE_NAME GOST94CP
+#cmod_define NETTLE_NAME gosthash94cp
+#cmod_include "hash.H"
+#cmod_undef PIKE_NAME
+#cmod_undef NETTLE_NAME
+#endif
+
 #endif
 
 /*! @endmodule Nettle */

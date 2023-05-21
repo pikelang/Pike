@@ -118,6 +118,8 @@ else
     #   version.h:nettle_version_{major,minor}
     # Nettle 3.5 and later:
     #   cmac.h
+    # Nettle 3.6 and later:
+    #   gosthash94.h:gosthash94cp
     # Nettle 3.8 and later:
     #   nist-keywrap.h
     #   sm3.h
