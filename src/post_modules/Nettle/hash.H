@@ -25,7 +25,7 @@ PIKECLASS PIKE_NAME
       hash->meta = &cmod_CONCAT_EVAL(nettle_, NETTLE_NAME);
     }
 
-#ifdef SPECIAL_PBKDF2
+#cmod_ifdef SPECIAL_PBKDF2
   PIKEFUN string(8bit) pbkdf2(string(8bit) password, string(8bit) salt,
                               int rounds, int bytes)
   {
@@ -41,7 +41,7 @@ PIKECLASS PIKE_NAME
                                                (uint8_t *)dst->str);
     push_string(end_shared_string(dst));
   }
-#endif
+#cmod_endif
 
 #ifdef HAVE_NETTLE_HMAC_H
   DOCSTART() @module HMAC

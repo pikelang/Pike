@@ -597,7 +597,7 @@ PIKECLASS Hash
 /* The algorithm objects can be overloaded in pike. */
 
 #cmod_define TOSTR(DEF)	#DEF
-#undef SPECIAL_PBKDF2
+#cmod_undef SPECIAL_PBKDF2
 
 
 #cmod_define PIKE_NAME MD5
@@ -620,9 +620,9 @@ PIKECLASS Hash
 
 #cmod_define PIKE_NAME SHA1
 #cmod_define NETTLE_NAME sha1
-#define SPECIAL_PBKDF2
+#cmod_define SPECIAL_PBKDF2
 #cmod_include "hash.H"
-#undef SPECIAL_PBKDF2
+#cmod_undef SPECIAL_PBKDF2
 #cmod_undef PIKE_NAME
 #cmod_undef NETTLE_NAME
 
@@ -638,9 +638,9 @@ PIKECLASS Hash
 
 #cmod_define PIKE_NAME SHA256
 #cmod_define NETTLE_NAME sha256
-#define SPECIAL_PBKDF2
+#cmod_define SPECIAL_PBKDF2
 #cmod_include "hash.H"
-#undef SPECIAL_PBKDF2
+#cmod_undef SPECIAL_PBKDF2
 #cmod_undef PIKE_NAME
 #cmod_undef NETTLE_NAME
 
