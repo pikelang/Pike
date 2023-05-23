@@ -3520,7 +3520,10 @@ int main(int argc, array(string) argv)
 		      "#cmod_define cmod_STRFY_EVAL(x...)\tcmod_STRFY( x )\n"
 		      "#cmod_define cmod_REDEFINE(x)\tcmod_DEFINE(##x, x)\n"
 		      "#cmod_define cmod_COMMA ,\n"
-		      "#cmod_line 1 %O\n%s", file, x));
+                      "#cmod_line 1 %O\n"
+                      "#cmod_define cmod_DIRECTIVE_EVAL(x...)"
+                      "\tcmod_DIRECTIVE(x)\n"
+                      "%s", file, x));
     x=cpp(x, ([
 	    "current_file" : file,
 	    "prefix" : "cmod",
@@ -3541,6 +3544,10 @@ int main(int argc, array(string) argv)
 				  "cmod_CONCAT()" :
 				  lambda(string ... s) { return s*""; },
 				  "cmod___CMOD__" : "1",
+                                  "cmod_DIRECTIVE()" :
+                                  lambda(string ... s) {
+                                    return sprintf("#%{%s\t%}", s);
+                                  },
 				]))
 	  ]));
   } else
