@@ -662,7 +662,7 @@ PIKECLASS Shuffle
           THREADS_ALLOW();
           sent = fd_writev(t->box.fd, iov, t->iovamount);
           THREADS_DISALLOW();
-          if (sent < 0 && errno == EAGAIN)
+          if (sent < 0 && (errno == EAGAIN || errno == EINTR))
             break;
         } else if (t->file_obj) {
           int i;
