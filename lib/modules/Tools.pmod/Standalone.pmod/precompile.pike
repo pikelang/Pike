@@ -1668,7 +1668,6 @@ array IFDEF(string|array(string) define,
     if(no && sizeof(no))
     {
       ret+=({sprintf("\n#else /* %s */\n",define*", ")});
-      ret+=no;
     }
   }
   ret+=no || ({});
@@ -2009,6 +2008,7 @@ class ParseBlock
 	    string inh_num = make_unique_name(base, name, "inh_num");
 	    string inh_offset = make_unique_name(base, name, "inh_offset");
 	    string inh_storage = make_unique_name(base, name, "inh_storage_offset");
+            string inh_name;
 	    if ((string)name == "::") {
 	      e++;
 	      name = x[e+1];
@@ -2019,6 +2019,7 @@ class ParseBlock
 		inh_offset = make_unique_name(base, name, "inh_offset");
 		inh_storage = make_unique_name(base, name, "inh_storage_offset");
 		name = UNDEFINED;
+                inh_name = sprintf("%q", class_name);
 		pre = ({
 		  PC.Token(
 sprintf("  do {\n"
@@ -2061,6 +2062,11 @@ sprintf("        } else {\n"
 	      }
 	    }
 
+            if (x[e+2] == ":") {
+              inh_name = sprintf("%q", (string)x[e+3]);
+              e += 2;
+            }
+
 	    mapping attributes = parse_attributes(x[e+2..pos]);
 	    if (((string)name)[0] == '\"') {
 	      pre = ({
@@ -2087,6 +2093,7 @@ sprintf("        } else {\n"
 	      }
 	    } else if (name) {
 	      p = mkname(names[(string)name]||(string)name, "program");
+              inh_name = inh_name || sprintf("%q", (string)name);
 	    }
 	    check_used[inh_offset] = 1;
 	    check_used[inh_storage] = 1;
@@ -2099,11 +2106,22 @@ sprintf("        } else {\n"
 				       inh_num),
 			       x[e]->line),
 		    }) + pre + ({
-		      PC.Token(sprintf("%slow_inherit(%s, NULL, %s, "
-				       "%s, %s, NULL);\n",
-				       indent, p, numid, offset,
-				       attributes->flags || "0"),
-			       x[e]->line),
+                      IFDEF("module_strings_defined",
+                            ({
+                              PC.Token(sprintf("%slow_inherit(%s, NULL, %s, "
+                                               "%s, %s, %s);\n",
+                                               indent, p, numid, offset,
+                                               attributes->flags || "0",
+                                               inh_name?allocate_string(inh_name):"NULL"),
+                                       x[e]->line),
+                            }),
+                            ({
+                              PC.Token(sprintf("%slow_inherit(%s, NULL, %s, "
+                                               "%s, %s, NULL);\n",
+                                               indent, p, numid, offset,
+                                               attributes->flags || "0"),
+                                       x[e]->line),
+                            })),
 		      IFDEF(inh_offset + "_used",
 			    ({
 			      PC.Token(sprintf("%s%s = Pike_compiler->new_program->"
