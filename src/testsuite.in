@@ -13167,6 +13167,11 @@ ifefun(mktime,
   // Tue, 15 Oct 2002 09:38:32 GMT
   return mktime(32, 38, 9, 15, 9, 102, 0, 0);
   ]], 1034674712)
+
+  test_any( [[
+  // Mon, 26 Dec 1791, Charles Babbage's birthday
+  return mktime((["year":-109,"mon":11,"mday":26,"timezone":0]));
+  ]], -5617641600)
 ]])
 
 // - multisetp
