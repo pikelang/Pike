@@ -43,6 +43,53 @@ PIKECLASS PIKE_NAME
   }
 #cmod_endif
 
+  /* NB: We support shake() for all hashes that Nettle implements it
+   *     for, but only document it for the known case of SHAKE-256.
+   */
+cmod_DIRECTIVE_EVAL(ifdef, cmod_CONCAT_EVAL(NETTLE_NAME, _shake))
+#cmod_if cmod_STRFY_EVAL(NETTLE_NAME) = "sha3_256"
+  DOCSTART() @decl string(8bit) shake(string(8bit) in, int(0..) bytes)
+   *!
+   *! SHAKE-256 hash. Works as a (faster) shortcut for
+   *! @expr{PIKE_NAME.State()->update(in)->shake(bytes)@}.
+   *!
+   *! This function is similar to @[hash()], but can return an
+   *! arbitrary number of bytes. When @[bytes] is @[digest_size]
+   *! the security is equivalent to that of @[hash()], albeit
+   *! the output is different.
+   *!
+   *! @seealso
+   *!   @[hash()], @[State()->update()] and @[State()->shake()].
+  DOCEND()
+#cmod_endif
+  PIKEFUN string(8bit) shake(string(8bit) in, int(0..) bytes)
+  {
+    struct cmod_CONCAT_EVAL(NETTLE_NAME, _ctx) ctx;
+    struct pike_string *out;
+
+    NO_WIDE_STRING(in);
+
+    /* Only thread this block for significant data size */
+    if (in->len > HASH_THREADS_ALLOW_THRESHOLD) {
+      THREADS_ALLOW();
+      cmod_CONCAT_EVAL(NETTLE_NAME, _init)(&ctx);
+      cmod_CONCAT_EVAL(NETTLE_NAME, _update)(&ctx, in->len,
+                                             (const uint8_t *)in->str);
+      THREADS_DISALLOW();
+    } else {
+      cmod_CONCAT_EVAL(NETTLE_NAME, _init)(&ctx);
+      cmod_CONCAT_EVAL(NETTLE_NAME, _update)(&ctx, in->len,
+                                             (const uint8_t *)in->str);
+    }
+
+    out = begin_shared_string(bytes);
+    cmod_CONCAT_EVAL(NETTLE_NAME, _shake)(&ctx, bytes, (uint8_t *)out->str);
+
+    pop_n_elems(args);
+    push_string(end_shared_string(out));
+  }
+#endif
+
 #ifdef HAVE_NETTLE_HMAC_H
   DOCSTART() @module HMAC
     *!
@@ -219,6 +266,37 @@ PIKECLASS PIKE_NAME
       cmod_CONCAT_EVAL(NETTLE_NAME, _init)(&THIS->NETTLE_NAME);
       instance->ctx = &THIS->NETTLE_NAME;
     }
+
+    /* NB: We support shake() for all hashes that Nettle implements it
+     *     for, but only document it for the known case of SHAKE-256.
+     */
+cmod_DIRECTIVE_EVAL(ifdef, cmod_CONCAT_EVAL(NETTLE_NAME, _shake))
+#cmod_if cmod_STRFY_EVAL(NETTLE_NAME) = "sha3_256"
+    DOCSTART() @decl string(8bit) shake(int(0..) bytes)
+     *!
+     *! SHAKE-256 hash.
+     *!
+     *! This function is similar to @[hash()], but can return an
+     *! arbitrary number of bytes. When @[bytes] is @[digest_size]
+     *! (or more) the security is equivalent to that of @[hash()],
+     *! albeit the output is different.
+     *!
+     *! @seealso
+     *!   @[hash()], @[State()->update()], @[PIKE_NAME.shake()]
+    DOCEND()
+#cmod_endif
+    PIKEFUN string(8bit) shake(int(0..) bytes)
+    {
+      struct pike_string *out;
+
+      out = begin_shared_string(bytes);
+      cmod_CONCAT_EVAL(NETTLE_NAME, _shake)(&THIS->NETTLE_NAME, bytes,
+                                            (uint8_t *)out->str);
+
+      pop_n_elems(args);
+      push_string(end_shared_string(out));
+    }
+#endif
   }
   DOCSTART() @endclass State
   DOCEND()
