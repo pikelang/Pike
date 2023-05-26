@@ -51,7 +51,7 @@ PIKECLASS Hash
 {
   /*! @decl inherit __builtin.Nettle.Hash
    */
-  INHERIT "__builtin.Nettle.Hash";
+  INHERIT "__builtin.Nettle.Hash" : Hash;
 
   CVAR const struct nettle_hash *meta;
 
