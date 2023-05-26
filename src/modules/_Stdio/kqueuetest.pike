@@ -174,7 +174,8 @@ void test2()
 
 void test1()
 {
-  testdir = sprintf("/var/tmp/pike-%d-%d-testdir", getuid(), getpid());
+  string tmpdir = getenv()->TMPDIR || "/var/tmp";
+  testdir = sprintf("%s/pike-%d-%d-testdir", tmpdir, getuid(), getpid());
   if (!mkdir(testdir) && (errno() != System.EEXIST)) {
     fail_test(sprintf("Failed to create test directory %O: %s\n",
                       testdir, strerror(errno())));
