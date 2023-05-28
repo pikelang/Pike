@@ -2106,7 +2106,7 @@ sprintf("        } else {\n"
 				       inh_num),
 			       x[e]->line),
 		    }) + pre + ({
-                      IFDEF("module_strings_defined",
+                      IFDEF("module_strings_declared",
                             ({
                               PC.Token(sprintf("%slow_inherit(%s, NULL, %s, "
                                                "%s, %s, %s);\n",
