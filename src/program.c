@@ -5619,6 +5619,11 @@ PMOD_EXPORT int low_reference_inherited_identifier(struct program_state *q,
   return really_low_reference_inherited_identifier(q, e, i);
 }
 
+/**
+ * Return the shallowest and most recent inherit in p with the name name.
+ *
+ * Returns 0 on failure.
+ */
 int find_inherit(const struct program *p, const struct pike_string *name)
 {
   int e;
