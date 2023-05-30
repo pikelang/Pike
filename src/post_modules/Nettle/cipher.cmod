@@ -5206,6 +5206,7 @@ PIKECLASS BlockCipher16
 
 	if (THIS->object) free_object(THIS->object);
 	add_ref(THIS->object = o);
+        pop_stack();
 
 	inh = INHERIT_FROM_INT(o->prog, f);
 	if (inh->prog == Nettle_Cipher_State_program) {
@@ -5218,7 +5219,6 @@ PIKECLASS BlockCipher16
 	}
 
         THIS->mode = -1;
-        pop_n_elems(2);
       }
 
       /*! @decl string(0..255) name()
