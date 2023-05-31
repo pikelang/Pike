@@ -460,6 +460,85 @@ PIKECLASS Hash
     memset(abcbuf, 0, 3*dsz);
   }
 
+#ifdef HAVE_NETTLE_BALLOON_H
+
+#include <nettle/balloon.h>
+
+  /*! @decl string(0..127) balloon_hash(string(0..255) password, @
+   *!                                   string(0..255) salt,
+   *!                                   int(1..) s_cost,
+   *!                                   int(1..) rounds)
+   *!
+   *!   Password hashing function in @[crypt_hash()]-style.
+   *!
+   *!   Implements the algorithm described in
+   *!   @url{https://eprint.iacr.org/2016/027.pdf@}.
+   *!
+   *! @param password
+   *!   Password to hash.
+   *!
+   *! @param salt
+   *!   Salt for the password.
+   *!
+   *! @param s_cost
+   *!   Memory cost.
+   *!
+   *! @param rounds
+   *!   Number of rounds (also known as @tt{t_cost@}).
+   *!
+   *! @returns
+   *!   Returns the balloon hash of the password.
+   *!
+   *! @note
+   *!   The @[password] memory will be cleared before released.
+   *!
+   *! @note
+   *!   This function is only available with Nettle 3.9 and later.
+   *!
+   *! @seealso
+   *!   @[crypt_hash()]
+   */
+  PIKEFUN string balloon(string password, string salt,
+                         int(1..) s_cost, int(1..) rounds)
+    optflags OPT_EXTERNAL_DEPEND;
+  {
+    void *ctx;
+    char *scratch_buffer;
+    size_t scratch_size;
+    struct pike_string *out;
+    const struct nettle_hash *meta = THIS->meta;
+
+    if (!meta)
+      Pike_error("HashInfo not properly initialized.\n");
+
+    password->flags |= STRING_CLEAR_ON_EXIT;
+
+    ctx = alloca(meta->context_size);
+    if (!ctx)
+      SIMPLE_OUT_OF_MEMORY_ERROR("balloon", meta->context_size);
+
+    scratch_size = balloon_itch(meta->digest_size, s_cost);
+    scratch_buffer = malloc(scratch_size);
+    if (!scratch_buffer) {
+      SIMPLE_OUT_OF_MEMORY_ERROR("balloon", scratch_size);
+    }
+
+    meta->init(ctx);
+
+    out = begin_shared_string(meta->digest_size);
+
+    balloon(ctx, meta->update, meta->digest, meta->digest_size,
+            s_cost, rounds, password->len, STR0(password),
+            salt->len, STR0(salt), scratch_buffer, STR0(out));
+
+    free(scratch_buffer);
+
+    pop_n_elems(args);
+    push_string(end_shared_string(out));
+  }
+
+#endif /* HAVE_NETTLE_BALLOON_H */
+
 #ifdef PIKE_NULL_IS_SPECIAL
   INIT
     {

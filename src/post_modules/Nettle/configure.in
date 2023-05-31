@@ -123,6 +123,8 @@ else
     # Nettle 3.8 and later:
     #   nist-keywrap.h
     #   sm3.h
+    # Nettle 3.9 and later:
+    #   balloon.h
     AC_CHECK_HEADERS(nettle/camellia.h \
 		     nettle/gcm.h \
 		     nettle/ripemd160.h \
@@ -134,6 +136,7 @@ else
                      nettle/version.h nettle/pbkdf2.h nettle/hmac.h \
 		     nettle/cmac.h \
                      nettle/sm3.h \
+                     nettle/balloon.h \
 		    )
     # Check that the libraries match.
     #
