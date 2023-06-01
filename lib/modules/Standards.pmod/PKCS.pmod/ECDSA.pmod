@@ -16,7 +16,9 @@ protected void create()
   foreach(values(Crypto.ECC), mixed c) {
     if (!objectp(c) || !functionp(([object]c)->pkcs_named_curve_id)) continue;
     object(Crypto.ECC.Curve) curve = [object(Crypto.ECC.Curve)]c;
-    curve_lookup[curve->pkcs_named_curve_id()->get_der()] = curve;
+    Standards.ASN1.Types.Identifier id = curve->pkcs_named_curve_id();
+    if (!id) continue;
+    curve_lookup[id->get_der()] = curve;
   }
 }
 
