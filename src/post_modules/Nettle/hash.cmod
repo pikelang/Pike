@@ -460,14 +460,14 @@ PIKECLASS Hash
     memset(abcbuf, 0, 3*dsz);
   }
 
-#ifdef HAVE_NETTLE_BALLOON_H
+#if defined(HAVE_NETTLE_BALLOON_H) && defined(HAVE_NETTLE_BALLOON)
 
 #include <nettle/balloon.h>
 
-  /*! @decl string(0..127) balloon_hash(string(0..255) password, @
-   *!                                   string(0..255) salt,
-   *!                                   int(1..) s_cost,
-   *!                                   int(1..) rounds)
+  /*! @decl string(0..127) balloon(string(0..255) password, @
+   *!                              string(0..255) salt, @
+   *!                              int(1..) s_cost, @
+   *!                              int(1..) rounds)
    *!
    *!   Password hashing function in @[crypt_hash()]-style.
    *!
@@ -537,7 +537,7 @@ PIKECLASS Hash
     push_string(end_shared_string(out));
   }
 
-#endif /* HAVE_NETTLE_BALLOON_H */
+#endif /* HAVE_NETTLE_BALLOON_H && HAVE_NETTLE_BALLOON */
 
 #ifdef PIKE_NULL_IS_SPECIAL
   INIT

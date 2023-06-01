@@ -158,6 +158,7 @@ else
 		   nettle_cmac128_set_key \
 		   nettle_blowfish_bcrypt_hash \
                    nettle_sm3_init \
+                   nettle_balloon \
 		   )
 
     AC_MSG_CHECKING([for idea.c])
