@@ -2074,7 +2074,7 @@ test_eq(Nettle.rsa_unpad(H("02fffeffffffffffff0064"),1),0)
 test_eq(Nettle.rsa_unpad(H("02fffeffffffffffff0064"),2),10)
 test_eq(Nettle.rsa_unpad(H("01ffffffffffffff000064"),1),0)
 cond_resolv(Nettle.ECC_Curve, [[
-  test_eval_error(Nettle.ECC_Curve(5))
+  test_eval_error(Nettle.ECC_Curve(7))
 ]])
 
 test_do([[
