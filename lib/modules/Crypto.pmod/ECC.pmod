@@ -461,6 +461,18 @@ class Curve {
 
 //! @endmodule
 
+//! @module GOST_GC256B
+
+//! @decl inherit Curve
+
+//! @endmodule
+
+//! @module GOST_GC512A
+
+//! @decl inherit Curve
+
+//! @endmodule
+
 //! @ignore
 #if constant(Nettle.SECP192R1)
 Curve SECP_192R1 = Curve(Nettle.SECP192R1);
@@ -477,6 +489,12 @@ Curve SECP_384R1 = Curve(Nettle.SECP384R1);
 #if constant(Nettle.SECP521R1)
 Curve SECP_521R1 = Curve(Nettle.SECP521R1);
 #endif /* constant(Nettle.SECP521R1) */
+#if constant(Nettle.GOST_GC256B)
+Curve GOST_GC256B = Curve(Nettle.GOST_GC256B);
+#endif /* constant(Nettle.GOST_GC256B) */
+#if constant(Nettle.GOST_GC512A)
+Curve GOST_GC512A = Curve(Nettle.GOST_GC512A);
+#endif /* constant(Nettle.GOST_GC512A) */
 //! @endignore
 
 #if constant(Nettle.Curve25519)

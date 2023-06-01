@@ -327,7 +327,7 @@ program_flags PROGRAM_CLEAR_STORAGE;
 
 #endif /* dsa_params_init */
 
-#if defined(HAVE_NETTLE_ECDSA_H) && (defined(HAVE_CURVE_NETTLE_SECP_192R1) || defined(HAVE_CURVE_NETTLE_SECP_224R1) || defined(HAVE_CURVE_NETTLE_SECP_256R1) || defined(HAVE_CURVE_NETTLE_SECP_384R1) || defined(HAVE_CURVE_NETTLE_SECP_521R1))
+#ifdef HAVE_NETTLE_ECDSA_H
 #include <nettle/ecc-curve.h>
 
 #include <nettle/ecc.h>
@@ -339,6 +339,8 @@ program_flags PROGRAM_CLEAR_STORAGE;
 #define SECP256R1 2
 #define SECP384R1 3
 #define SECP521R1 4
+#define GOST_GC256B 5
+#define GOST_GC512A 6
 
 #ifdef NEED_WRAPPER_FOR_CURVE_NETTLE_SECP_192R1
 static const struct ecc_curve *nettle_get_secp_192r1(void) {
@@ -409,6 +411,8 @@ PIKECLASS ECC_Curve
    *!   @value Nettle.SECP256R1
    *!   @value Nettle.SECP384R1
    *!   @value Nettle.SECP521R1
+   *!   @value Nettle.GOST_GC256B
+   *!   @value Nettle.GOST_GC512A
    *! @endint
    */
   PIKEFUN void create(int(0..) curve)
@@ -437,6 +441,12 @@ PIKECLASS ECC_Curve
 #ifdef HAVE_CURVE_NETTLE_SECP_521R1
     case SECP521R1: THIS->curve = nettle_get_secp_521r1(); break;
 #endif /* HAVE_CURVE_NETTLE_SECP_521R1 */
+#ifdef HAVE_CURVE_NETTLE_GOST_GC256B
+    case GOST_GC256B: THIS->curve = nettle_get_gost_gc256b(); break;
+#endif /* HAVE_CURVE_NETTLE_GOST_GC256B */
+#ifdef HAVE_CURVE_NETTLE_GOST_GC512A
+    case GOST_GC512A: THIS->curve = nettle_get_gost_gc512a(); break;
+#endif /* HAVE_CURVE_NETTLE_GOST_GC512A */
     default:
       Pike_error("Invalid curve\n");
       break;
@@ -535,6 +545,18 @@ PIKECLASS ECC_Curve
       return;
     }
 #endif /* HAVE_CURVE_NETTLE_SECP_521R1 */
+#ifdef HAVE_CURVE_NETTLE_GOST_GC256B
+    if (THIS->curve == nettle_get_gost_gc256b()) {
+      ref_push_string(MK_STRING("GOST_GC256B"));
+      return;
+    }
+#endif /* HAVE_CURVE_NETTLE_GOST_GC256B */
+#ifdef HAVE_CURVE_NETTLE_GOST_GC512A
+    if (THIS->curve == nettle_get_gost_gc512a()) {
+      ref_push_string(MK_STRING("GOST_GC512A"));
+      return;
+    }
+#endif /* HAVE_CURVE_NETTLE_GOST_GC512A */
     ref_push_string(MK_STRING("UNKNOWN"));
   }
 
@@ -614,6 +636,18 @@ PIKECLASS ECC_Curve
 	break;
       }
 #endif /* HAVE_CURVE_NETTLE_SECP_521R1 */
+#ifdef HAVE_CURVE_NETTLE_GOST_GC256B
+      if (THIS->curve == nettle_get_gost_gc256b()) {
+        push_int(256);
+        break;
+      }
+#endif /* HAVE_CURVE_NETTLE_GOST_GC256B */
+#ifdef HAVE_CURVE_NETTLE_GOST_GC512A
+      if (THIS->curve == nettle_get_gost_gc512a()) {
+        push_int(512);
+        break;
+      }
+#endif /* HAVE_CURVE_NETTLE_GOST_GC512A */
       push_int(0);
     } while(0);
 #endif /* HAVE_NETTLE_ECC_BIT_SIZE */
@@ -1675,6 +1709,12 @@ hogweed_init(void)
 #ifdef HAVE_CURVE_NETTLE_SECP_521R1
   ADD_INT_CONSTANT("SECP521R1", SECP521R1, 0);
 #endif /* HAVE_CURVE_NETTLE_SECP_521R1 */
+#ifdef HAVE_CURVE_NETTLE_GOST_GC256B
+  ADD_INT_CONSTANT("GOST_GC256B", GOST_GC256B, 0);
+#endif /* HAVE_CURVE_NETTLE_GOST_GC256B */
+#ifdef HAVE_CURVE_NETTLE_GOST_GC512A
+  ADD_INT_CONSTANT("GOST_GC512A", GOST_GC512A, 0);
+#endif /* HAVE_CURVE_NETTLE_GOST_GC512A */
 #endif /* HAVE_NETTLE_ECDSA_H */
 
 #if defined(HAVE_NETTLE_EDDSA_H) && defined(HAVE_NETTLE_CURVE25519_H) && defined(HAVE_NETTLE_ED25519_SHA512_SIGN)

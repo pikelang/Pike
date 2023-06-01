@@ -61,6 +61,8 @@ else
       AC_DEFINE(translit(HAVE_CURVE_NETTLE_$1,[a-z],[A-Z]), 1,
 		[Define if your libnettle has the nettle curve $1.])
     ], [
+      # NB: No need to handle the GOST curves here as they always
+      #     have getters if they exist.
       AC_MSG_CHECKING(if legacy declaration of nettle curve $1 is available)
 
       AC_CACHE_VAL(pike_cv_have_curve_nettle_$1, [
@@ -87,6 +89,8 @@ else
   PIKE_CHECK_NETTLE_ECC_CURVE(secp_256r1)
   PIKE_CHECK_NETTLE_ECC_CURVE(secp_384r1)
   PIKE_CHECK_NETTLE_ECC_CURVE(secp_521r1)
+  PIKE_CHECK_NETTLE_ECC_CURVE(gost_gc256b)
+  PIKE_CHECK_NETTLE_ECC_CURVE(gost_gc512a)
 
   AC_SUBST(IDEA_OBJ)
 
