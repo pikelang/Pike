@@ -399,6 +399,8 @@ test_compile_any([[
   }
 ]])
 
+test_eq((["answer":42])->?answer, 42)
+
 define(test_string_range,[[
     test_any([[
         string s = (string) ({ $1, $1 });
