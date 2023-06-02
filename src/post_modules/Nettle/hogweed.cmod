@@ -1243,6 +1243,91 @@ PIKECLASS ECC_Curve
   }
   /*! @endclass ECDSA
    */
+
+#ifdef HAVE_NETTLE_GOSTDSA_H
+#include <nettle/gostdsa.h>
+
+  PIKECLASS GOSTDSA
+    program_flags PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT|PROGRAM_CLEAR_STORAGE;
+  {
+    /*! @decl inherit ECDSA
+     *!
+     *! This point represents the public key.
+     */
+    EXTRA
+    {
+      /* Perform an inherit of the ECDSA class that our parent contains.
+       */
+      lexical_inherit(1, MK_STRING("ECDSA"), 0, REPORT_ERROR);
+    }
+
+    /*! @decl int(0..1) raw_verify(string(8bit) digest, @
+     *!                            object(Gmp.mpz) r, @
+     *!                            object(Gmp.mpz) s)
+     *!
+     *! Verify the signature @[r], @[s] against the message digest @[digest].
+     */
+    PIKEFUN int(0..1) raw_verify(string(0..255) digest,
+                                 object(Gmp.mpz)|int r,
+                                 object(Gmp.mpz)|int s)
+    {
+      struct ecc_point *pub;
+      struct dsa_signature sig;
+      int ret;
+
+      NO_WIDE_STRING(digest);
+
+      dsa_signature_init(&sig);
+
+      if (!mpz_from_svalue((MP_INT *)&sig.r, r)) {
+        dsa_signature_clear(&sig);
+        SIMPLE_ARG_TYPE_ERROR("raw_verify", 1, "Gmp.mpz|int");
+      }
+      if (!mpz_from_svalue((MP_INT *)&sig.s, s)) {
+        dsa_signature_clear(&sig);
+        SIMPLE_ARG_TYPE_ERROR("raw_verify", 2, "Gmp.mpz|int");
+      }
+
+      pub = &((struct Nettle_ECC_Curve_Point_struct *)
+              get_inherited_storage(2, Nettle_ECC_Curve_Point_program))->
+        point;
+      ret = gostdsa_verify(pub, digest->len, STR0(digest), &sig);
+      dsa_signature_clear(&sig);
+
+      RETURN ret;
+    }
+
+    /*! @decl array(Gmp.mpz) raw_sign(string(8bit) digest)
+     *!
+     *! Sign the message digest @[digest]. Returns the signature
+     *! as two @[Gmp.mpz] objects.
+     */
+    PIKEFUN array(object(Gmp.mpz)) raw_sign(string(8bit) digest)
+    {
+      struct dsa_signature sig;
+      struct object *r, *s;
+      struct Nettle_ECC_Curve_ECDSA_struct *ecdsa;
+
+      NO_WIDE_STRING(digest);
+
+      ecdsa = (struct Nettle_ECC_Curve_ECDSA_struct *)
+        get_inherited_storage(1, Nettle_ECC_Curve_ECDSA_program);
+
+      dsa_signature_init(&sig);
+
+      gostdsa_sign(&ecdsa->key, &ecdsa->random, random_func_wrapper,
+                   digest->len, STR0(digest), &sig);
+
+      push_bignum((MP_INT *)&sig.r);
+      push_bignum((MP_INT *)&sig.s);
+
+      dsa_signature_clear(&sig);
+
+      f_aggregate(2);
+      stack_pop_n_elems_keep_top(args);
+    }
+  }
+#endif /* HAVE_NETTLE_GOSTDSA_H */
 }
 
 /*! @endclass ECC_Curve
