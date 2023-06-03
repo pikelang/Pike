@@ -415,6 +415,15 @@ o Crypto.Checksum
 
   NB: In the future these may be amended to support the Crypto.Hash API.
 
+o Crypto.ECC.Curve.GOSTDSA
+
+  Add support for GOSTDSA (RFC 5832 and RFC 7091).
+
+o Crypto.SHA256.balloon() (and others)
+
+  This is a memory-hard password hashing algorithm. It requires Nettle 3.9
+  or later.
+
 o Parser.ECMAScript
 
   This module simply provides a token splitter for
