@@ -524,13 +524,26 @@ F_COMMA_EXPR(0, -):
 F_COMMA_EXPR(F_CONSTANT, 0 = +):
   $0;
 
-F_COMMA_EXPR(+[node_is_tossable($$)], 0 = +):
+// A, B ==> B
+// If A is tossable and either
+//   A is a void expression, or
+//   B is not a void expression.
+F_COMMA_EXPR(1 = +[node_is_tossable($$)],
+             0 = +[($$->type != void_type_string) ||
+                   ($1->type == void_type_string)]):
   $0;
 
-F_COMMA_EXPR(F_COMMA_EXPR(0, F_CONSTANT), 1 = +):
+F_COMMA_EXPR(F_COMMA_EXPR(0, F_CONSTANT),
+             1 = +[$$->type != void_type_string]):
   F_COMMA_EXPR($0, $1);
 
-F_COMMA_EXPR(F_COMMA_EXPR(0, +[node_is_tossable($$)]), 1 = +):
+// A, B, C ==> A, C
+// If B is tossable and either
+//   B is a void expression, or
+//   C is not a void expression.
+F_COMMA_EXPR(F_COMMA_EXPR(0, 2 = +[node_is_tossable($$)]),
+             1 = +[($$->type != void_type_string) ||
+                   ($2->type == void_type_string)]):
   F_COMMA_EXPR($0, $1);
 
 // Join adjacent F_POP_VALUE's, but not if it would cause the stack to
