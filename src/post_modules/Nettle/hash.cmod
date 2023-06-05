@@ -503,7 +503,7 @@ PIKECLASS Hash
     optflags OPT_EXTERNAL_DEPEND;
   {
     void *ctx;
-    char *scratch_buffer;
+    unsigned char *scratch_buffer;
     size_t scratch_size;
     struct pike_string *out;
     const struct nettle_hash *meta = THIS->meta;
