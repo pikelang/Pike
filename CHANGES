@@ -419,6 +419,10 @@ o Crypto.ECC.Curve.GOSTDSA
 
   Add support for GOSTDSA (RFC 5832 and RFC 7091).
 
+o Crypto.ECC.Curve448
+
+  Add support for Edwards curve 448.
+
 o Crypto.SHA256.balloon() (and others)
 
   This is a memory-hard password hashing algorithm. It requires Nettle 3.9
