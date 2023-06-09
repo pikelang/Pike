@@ -135,8 +135,9 @@ private constant Files = _static_modules._Stdio;
 #define capitalize(X) (upper_case((X)[..0])+(X)[1..])
 #define trim(X) (Builtin.string_trim (X))
 
-private function(string,mixed...:int) write = Files()->_stdout->write;
-private function(string,mixed...:int) werror = Files()->_stderr->write;
+private typedef function(sprintf_format, sprintf_args...:int) fprintf_type;
+private fprintf_type write = Files()->_stdout->write;
+private fprintf_type werror = Files()->_stderr->write;
 
 private object|zero Pike_Lazy;		// Used by the default encoder.
 
