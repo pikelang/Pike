@@ -126,6 +126,8 @@ else
     #   curve448.h
     #   gostdsa.h
     #   gosthash94.h:gosthash94cp
+    # Nettle 3.7 and later:
+    #   streebog.h
     # Nettle 3.8 and later:
     #   nist-keywrap.h
     #   sm3.h
@@ -142,6 +144,7 @@ else
                      nettle/version.h nettle/pbkdf2.h nettle/hmac.h \
 		     nettle/cmac.h \
                      nettle/curve448.h nettle/gostdsa.h \
+                     nettle/streebog.h \
                      nettle/sm3.h \
                      nettle/balloon.h \
 		    )

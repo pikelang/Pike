@@ -833,6 +833,22 @@ PIKECLASS Hash
 
 #endif
 
+#ifdef HAVE_NETTLE_STREEBOG_H
+
+#cmod_define PIKE_NAME STREEBOG256
+#cmod_define NETTLE_NAME streebog256
+#cmod_include "hash.H"
+#cmod_undef PIKE_NAME
+#cmod_undef NETTLE_NAME
+
+#cmod_define PIKE_NAME STREEBOG512
+#cmod_define NETTLE_NAME streebog512
+#cmod_include "hash.H"
+#cmod_undef PIKE_NAME
+#cmod_undef NETTLE_NAME
+
+#endif
+
 /*! @endmodule Nettle */
 
 void
