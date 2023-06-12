@@ -7106,6 +7106,22 @@ pike_serpent_set_key(void *ctx,
 
 #endif	/* HAVE_NETTLE_SERPENT_DECRYPT */
 
+#ifdef HAVE_NETTLE_SM4_CRYPT
+
+#define pike_sm4_set_encrypt_key	sm4_set_encrypt_key
+#define pike_sm4_set_decrypt_key	sm4_set_decrypt_key
+#define sm4_encrypt sm4_crypt
+#define sm4_decrypt sm4_crypt
+
+#cmod_define CIPHER_MODE	BLOCK16_MODE
+#cmod_define PIKE_NAME SM4
+#cmod_define NETTLE_NAME sm4
+#cmod_include "cipher.H"
+#cmod_undef PIKE_NAME
+#cmod_undef NATTLE_NAME
+
+#endif
+
 static void
 pike_twofish_set_key(void *ctx,
 		     ptrdiff_t length, const char *key,

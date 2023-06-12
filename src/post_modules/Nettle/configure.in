@@ -133,6 +133,7 @@ else
     #   sm3.h
     # Nettle 3.9 and later:
     #   balloon.h
+    #   sm4.h
     AC_CHECK_HEADERS(nettle/camellia.h \
 		     nettle/gcm.h \
 		     nettle/ripemd160.h \
@@ -146,7 +147,7 @@ else
                      nettle/curve448.h nettle/gostdsa.h \
                      nettle/streebog.h \
                      nettle/sm3.h \
-                     nettle/balloon.h \
+                     nettle/balloon.h nettle/sm4.h \
 		    )
     # Check that the libraries match.
     #
@@ -164,7 +165,7 @@ else
 		   nettle_cmac128_set_key \
                    nettle_blowfish_bcrypt_hash nettle_ed448_shake256_sign \
                    nettle_sm3_init \
-                   nettle_balloon \
+                   nettle_balloon nettle_sm4_crypt \
 		   )
 
     AC_MSG_CHECKING([for idea.c])
