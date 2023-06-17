@@ -5743,6 +5743,471 @@ PIKECLASS BlockCipher16
    */
 #endif
 
+#ifdef HAVE_NETTLE_OCB_H
+
+#include <nettle/ocb.h>
+
+  /*! @module OCB
+   *!
+   *! Implementation of the OCB mode (@rfc{7253@}).
+   *!
+   *! Works as a wrapper for the cipher implemented by overloading
+   *! the parent class (@[BlockCipher16]).
+   *!
+   *! This is a so-called authenticated encryption with associated data
+   *! (AEAD) algorithm, and in addition to encryption also provides
+   *! message digests.
+   *!
+   *! @note
+   *!   This module requires Nettle 3.9 or later.
+   *!
+   *! @seealso
+   *!   @[CBC], @[CTR], @[BlockCipher16.CCM], @[BlockCipher16.GCM]
+   */
+  PIKEVAR object(Nettle_AEAD) OCB;
+
+  PIKECLASS _OCB
+    program_flags PROGRAM_NEEDS_PARENT|PROGRAM_USES_PARENT;
+  {
+    /*! @decl inherit __builtin.Nettle.AEAD
+     */
+    INHERIT "__builtin.Nettle.AEAD";
+
+    /*! @decl string(8bit) name()
+     *! Returns the name of the base cipher with @expr{".OCB"@} appended.
+     */
+    PIKEFUN string(0..255) name()
+      optflags OPT_TRY_OPTIMIZE;
+    {
+      apply_external(1, f_Nettle_Cipher_name_fun_num, args);
+      push_static_text(".OCB");
+      f_add(2);
+    }
+
+    /*! @decl int(16..16) digest_size()
+     *!   Default digest size (16).
+     */
+    PIKEFUN int(16..16) digest_size()
+    {
+      RETURN OCB_DIGEST_SIZE;
+    }
+
+    PIKEFUN int(16..16) block_size()
+    {
+      RETURN OCB_BLOCK_SIZE;
+    }
+
+    PIKEFUN int(1..) key_size()
+    {
+      apply_external(1, f_Nettle_Cipher_key_size_fun_num, args);
+    }
+
+    PIKEFUN int(15..15) iv_size()
+    {
+      RETURN OCB_MAX_NONCE_SIZE;
+    }
+
+    /*! @class State
+     */
+    PIKECLASS State
+      program_flags PROGRAM_NEEDS_PARENT|PROGRAM_USES_PARENT|PROGRAM_CLEAR_STORAGE;
+    {
+      PIKEVAR object encrypt_object
+        flags ID_PRIVATE|ID_PROTECTED|ID_HIDDEN;
+      CVAR struct Nettle_Cipher_State_struct *encrypt_state;
+      PIKEVAR object decrypt_object
+        flags ID_PRIVATE|ID_PROTECTED|ID_HIDDEN;
+      CVAR struct Nettle_Cipher_State_struct *decrypt_state;
+      CVAR size_t tag_length;
+      CVAR int mode;
+      CVAR struct ocb_key ocb_key;
+      CVAR struct ocb_ctx ocb_ctx;
+
+      /*! @decl inherit AEAD::State
+       */
+
+      EXTRA
+      {
+        /* Perform an inherit of the State class (if any) that our parent
+         * may contain via its inherit of __builtin.Nettle.AEAD.
+         */
+        lexical_inherit(1, MK_STRING("State"), 0, REPORT_WARNING);
+      }
+
+      /*! @decl Cipher::State substate_factory()
+       *!
+       *! Returns the @[Cipher::State] object that this object
+       *! is to operate on.
+       *!
+       *! Defaults to creating the State for the cipher implemented
+       *! in the parent module.
+       */
+      PIKEFUN object(Nettle_Cipher_State) substate_factory()
+        flags ID_PROTECTED;
+      {
+        apply_external(2, Nettle_Cipher_State_program_fun_num, 0);
+      }
+
+      /*! @decl void create()
+       */
+      PIKEFUN void create()
+        flags ID_PROTECTED;
+      {
+        struct object *o;
+        struct inherit *inh;
+        int block_size;
+        int f;
+
+        apply_current(f_Nettle_BlockCipher16_cq__OCB_State_substate_factory_fun_num,
+                      args);
+        if (TYPEOF(Pike_sp[-1]) != T_OBJECT) {
+          Pike_error("Unsupported return value from Cipher::State().\n");
+        }
+        o = Pike_sp[-1].u.object;
+        if (!o->prog) {
+          Pike_error("Cipher::State() returned destructed object.\n");
+        }
+
+        f = find_identifier("crypt", o->prog);
+        if (f < 0) {
+          Pike_error("State object has no crypt() function.\n");
+        }
+
+        apply(o, "block_size", 0);
+
+        if(TYPEOF(Pike_sp[-1]) != T_INT)
+          Pike_error("block_size() didn't return an int.\n");
+
+        block_size = Pike_sp[-1].u.integer;
+
+        if (block_size != OCB_BLOCK_SIZE)
+          Pike_error("Bad block size for OCB: %d.\n", block_size);
+
+        if (THIS->encrypt_object) free_object(THIS->encrypt_object);
+        add_ref(THIS->encrypt_object = o);
+
+        inh = INHERIT_FROM_INT(o->prog, f);
+        if (inh->prog == Nettle_Cipher_State_program) {
+          /* crypt() is from Nettle.Cipher.State.
+           */
+          THIS->encrypt_state = (struct Nettle_Cipher_State_struct *)
+            get_inherit_storage(o, inh - o->prog->inherits);
+        } else {
+          THIS->encrypt_state = NULL;
+        }
+
+        THIS->mode = 0;
+        pop_n_elems(2);
+
+        apply_current(f_Nettle_BlockCipher16_cq__OCB_State_substate_factory_fun_num,
+                      args);
+        if (TYPEOF(Pike_sp[-1]) != T_OBJECT) {
+          Pike_error("Unsupported return value from Cipher::State().\n");
+        }
+        o = Pike_sp[-1].u.object;
+        if (!o->prog) {
+          Pike_error("Cipher::State() returned destructed object.\n");
+        }
+
+        f = find_identifier("crypt", o->prog);
+        if (f < 0) {
+          Pike_error("State object has no crypt() function.\n");
+        }
+
+        apply(o, "block_size", 0);
+
+        if(TYPEOF(Pike_sp[-1]) != T_INT)
+          Pike_error("block_size() didn't return an int.\n");
+
+        block_size = Pike_sp[-1].u.integer;
+
+        if (block_size != OCB_BLOCK_SIZE)
+          Pike_error("Bad block size for OCB: %d.\n", block_size);
+
+        if (THIS->decrypt_object) free_object(THIS->decrypt_object);
+        add_ref(THIS->decrypt_object = o);
+
+        inh = INHERIT_FROM_INT(o->prog, f);
+        if (inh->prog == Nettle_Cipher_State_program) {
+          /* crypt() is from Nettle.Cipher.State.
+           */
+          THIS->decrypt_state = (struct Nettle_Cipher_State_struct *)
+            get_inherit_storage(o, inh - o->prog->inherits);
+        } else {
+          THIS->decrypt_state = NULL;
+        }
+
+        THIS->mode = 0;
+        pop_n_elems(2);
+      }
+
+      /*! @decl string(0..255) name()
+       *! Returns the string @expr{"x.OCB"@} where x is the
+       *! encapsulated algorithm.
+       */
+      PIKEFUN string(8bit) name()
+      {
+        apply(THIS->encrypt_object, "name", args);
+        push_static_text(".OCB");
+        f_add(2);
+      }
+
+      /*! @decl int(16..16) block_size()
+       *! Returns the block size of the encapsulated cipher,
+       *! which is always @expr{16@} for OCB.
+       */
+      PIKEFUN int(16..16) block_size()
+        optflags OPT_TRY_OPTIMIZE;
+      {
+        RETURN OCB_BLOCK_SIZE;
+      }
+
+      /*! @decl int(1..16) digest_size()
+       *!
+       *! Digest size as set by @[set_iv()].
+       *!
+       *! @seealso
+       *!   @[digest()], @[OCB::digest_size()]
+       */
+      PIKEFUN int(1..16) digest_size()
+        optflags OPT_TRY_OPTIMIZE;
+      {
+        if (!THIS->tag_length) {
+          THIS->tag_length = OCB_DIGEST_SIZE;
+        }
+        push_int(THIS->tag_length);
+      }
+
+      /*! @decl int(15..15) iv_size()
+       *! Returns the recommended size for the initialization vector
+       *! (ie @expr{15@}).
+       *!
+       *! Other sizes are allowed, but will be compressed or expanded
+       *! to this size using the encapsulated cipher.
+       */
+      PIKEFUN int(15..15) iv_size()
+        optflags OPT_TRY_OPTIMIZE;
+      {
+        RETURN OCB_MAX_NONCE_SIZE;
+      }
+
+      /*! @decl int(1..) key_size()
+       *! Returns the key size of the encapsulated cipher.
+       */
+      PIKEFUN int(1..) key_size()
+        optflags OPT_EXTERNAL_DEPEND;
+      {
+        apply(THIS->encrypt_object, "key_size", args);
+      }
+
+      /*! @decl this_program set_encrypt_key(string(0..255) key, int|void flags)
+       *!
+       *! Prepare the cipher and the wrapper for encrypting with the given
+       *! @[key]. The @[key] memory will be cleared before released.
+       *!
+       *! @note
+       *!   Note that this operation does not by itself reset the
+       *!   context sufficiently to start a new message; @[set_iv()]
+       *!   needs to be called too.
+       *!
+       *! @seealso
+       *!   @[set_decrypt_key()], @[set_iv()]
+       */
+      PIKEFUN object(Nettle_AEAD_State) set_encrypt_key(string(8bit) key,
+                                                        int|void flags)
+        optflags OPT_SIDE_EFFECT;
+      {
+        pike_nettle_crypt_func func = pike_crypt_func;
+        void *ctx = THIS->encrypt_object;
+        key->flags |= STRING_CLEAR_ON_EXIT;
+
+        ref_push_string(key);
+        if (args > 1) {
+          push_svalue(flags);
+        }
+        apply(THIS->encrypt_object, "set_encrypt_key", args);
+        pop_stack();
+
+        apply(THIS->decrypt_object, "set_decrypt_key", args);
+        pop_stack();
+
+        if (THIS->encrypt_state && THIS->encrypt_state->crypt) {
+          func = THIS->encrypt_state->crypt;
+          ctx = THIS->encrypt_state->ctx;
+        }
+        ocb_set_key(&THIS->ocb_key, ctx, func);
+        THIS->mode = 0;
+
+        push_object(this_object());
+      }
+
+      /*! @decl this_program set_decrypt_key(string(0..255) key, int|void flags)
+       *!
+       *! Prepare the cipher and the wrapper for decrypting with the given
+       *! @[key]. The @[key] memory will be cleared before released.
+       *!
+       *! @note
+       *!   Note that this operation does not by itself reset the
+       *!   context sufficiently to start a new message; @[set_iv()]
+       *!   needs to be called too.
+       *!
+       *! @seealso
+       *!   @[set_encrypt_key()], @[set_iv()]
+       */
+      PIKEFUN object(Nettle_AEAD_State) set_decrypt_key(string(8bit) key,
+                                                        int|void flags)
+        optflags OPT_SIDE_EFFECT;
+      {
+        pike_nettle_crypt_func func = pike_crypt_func;
+        void *ctx = THIS->encrypt_object;
+        key->flags |= STRING_CLEAR_ON_EXIT;
+
+        ref_push_string(key);
+        if (args > 1) {
+          push_svalue(flags);
+        }
+        /* NOTE: OCB always uses the encryption function
+         *       of the underlying cipher!
+         */
+        apply(THIS->encrypt_object, "set_encrypt_key", args);
+        pop_stack();
+
+        apply(THIS->decrypt_object, "set_decrypt_key", args);
+        pop_stack();
+
+        if (THIS->encrypt_state && THIS->encrypt_state->crypt) {
+          func = THIS->encrypt_state->crypt;
+          ctx = THIS->encrypt_state->ctx;
+        }
+        ocb_set_key(&THIS->ocb_key, ctx, func);
+        THIS->mode = 1;
+
+        push_object(this_object());
+      }
+
+      PIKEFUN object(Nettle_AEAD_State) set_iv(string(8bit) iv,
+                                               int(1..16)|void tag_length)
+      {
+        pike_nettle_crypt_func func = pike_crypt_func;
+        void *ctx = THIS->encrypt_object;
+        int iv_len = iv->len;
+        uint8_t *ctr_iv;
+        THIS->tag_length = tag_length?tag_length->u.integer:OCB_DIGEST_SIZE;
+
+        iv->flags |= STRING_CLEAR_ON_EXIT;
+        NO_WIDE_STRING(iv);
+
+        if (THIS->encrypt_state && THIS->encrypt_state->crypt) {
+          func = THIS->encrypt_state->crypt;
+          ctx = THIS->encrypt_state->ctx;
+        }
+
+        ocb_set_nonce(&THIS->ocb_ctx, ctx, func,
+                      THIS->tag_length, iv->len, STR0(iv));
+
+        RETURN this_object();
+      }
+
+      PIKEFUN object(Nettle_AEAD_State) update(string(8bit) public_data)
+      {
+        pike_nettle_crypt_func func = pike_crypt_func;
+        void *ctx = THIS->encrypt_object;
+
+        if (!public_data->len) return;
+
+        NO_WIDE_STRING(public_data);
+
+        if (THIS->encrypt_state && THIS->encrypt_state->crypt) {
+          func = THIS->encrypt_state->crypt;
+          ctx = THIS->encrypt_state->ctx;
+        }
+
+        ocb_update(&THIS->ocb_ctx, &THIS->ocb_key,
+                   ctx, func, public_data->len, STR0(public_data));
+
+        RETURN this_object();
+      }
+
+      PIKEFUN string(8bit) crypt(string(8bit) data)
+      {
+        pike_nettle_crypt_func func = pike_crypt_func;
+        void *ctx = THIS->encrypt_object;
+        struct pike_string *res;
+
+        if (!data->len) {
+          return;
+        }
+
+        NO_WIDE_STRING(data);
+
+        if (THIS->encrypt_state && THIS->encrypt_state->crypt) {
+          func = THIS->encrypt_state->crypt;
+          ctx = THIS->encrypt_state->ctx;
+        }
+
+        res = begin_shared_string(data->len);
+
+        if (!THIS->mode) {
+          ocb_encrypt(&THIS->ocb_ctx, &THIS->ocb_key,
+                      ctx, func, data->len, STR0(res), STR0(data));
+        } else {
+          pike_nettle_crypt_func dfunc = pike_crypt_func;
+          void *dctx = THIS->decrypt_object;
+
+          if (THIS->decrypt_state && THIS->decrypt_state->crypt) {
+            dfunc = THIS->decrypt_state->crypt;
+            dctx = THIS->decrypt_state->ctx;
+          }
+
+          ocb_decrypt(&THIS->ocb_ctx, &THIS->ocb_key, ctx, func,
+                      dctx, dfunc, data->len, STR0(res), STR0(data));
+        }
+
+        push_string(end_shared_string(res));
+      }
+
+      /*! @decl string(8bit) digest()
+       *!
+       *! Returns the OCB authentication tag.
+       *!
+       *! @note
+       *!   The size of the digest is specified in the call to
+       *!   @[set_iv()].
+       *!
+       *! @seealso
+       *!   @[set_iv()], @[digest_size()], @[global::digest_size()]
+       */
+      PIKEFUN string(8bit) digest()
+      {
+        int bytes = 0;
+        pike_nettle_crypt_func func = pike_crypt_func;
+        void *ctx = THIS->encrypt_object;
+        struct pike_string *res;
+
+        if (!THIS->tag_length) {
+          THIS->tag_length = OCB_DIGEST_SIZE;
+        }
+
+        res = begin_shared_string(THIS->tag_length);
+
+        if (THIS->encrypt_state && THIS->encrypt_state->crypt) {
+          func = THIS->encrypt_state->crypt;
+          ctx = THIS->encrypt_state->ctx;
+        }
+
+        ocb_digest(&THIS->ocb_ctx, &THIS->ocb_key, ctx, func,
+                   THIS->tag_length, STR0(res));
+
+        push_string(end_shared_string(res));
+      }
+    }
+    /*! @endclass State
+     */
+  }
+  /*! @endmodule OCB
+   */
+#endif /* HAVE_NETTLE_OCB_H */
+
   /* NB: Declare the storage explicitly to avoid having it declared
    *     inside the #ifdef above.
    */
@@ -5783,6 +6248,13 @@ PIKECLASS BlockCipher16
     apply_current(Nettle_BlockCipher16_cq__CMAC_program_fun_num, 0);
     if (TYPEOF(Pike_sp[-1]) == T_OBJECT) {
       add_ref(THIS_NETTLE_BLOCKCIPHER16->CMAC = Pike_sp[-1].u.object);
+    }
+    pop_stack();
+#endif
+#ifdef HAVE_NETTLE_OCB_H
+    apply_current(Nettle_BlockCipher16_cq__OCB_program_fun_num, 0);
+    if (TYPEOF(Pike_sp[-1]) == T_OBJECT) {
+      add_ref(THIS_NETTLE_BLOCKCIPHER16->OCB = Pike_sp[-1].u.object);
     }
     pop_stack();
 #endif

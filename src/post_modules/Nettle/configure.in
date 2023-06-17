@@ -133,6 +133,7 @@ else
     #   sm3.h
     # Nettle 3.9 and later:
     #   balloon.h
+    #   ocb.h
     #   sm4.h
     AC_CHECK_HEADERS(nettle/camellia.h \
 		     nettle/gcm.h \
@@ -147,7 +148,7 @@ else
                      nettle/curve448.h nettle/gostdsa.h \
                      nettle/streebog.h \
                      nettle/sm3.h \
-                     nettle/balloon.h nettle/sm4.h \
+                     nettle/balloon.h nettle/ocb.h nettle/sm4.h \
 		    )
     # Check that the libraries match.
     #
