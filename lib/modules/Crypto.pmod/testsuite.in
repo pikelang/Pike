@@ -490,7 +490,7 @@ cond_resolv( Crypto.$1.name,[[
     c->set_iv(String.hex2string($3));
     c->update(String.hex2string($4));
     return c->crypt(String.hex2string($6)[..<]]ifelse([[$7]],,[[c->digest_size()]],[[$7]])[[]) + c->digest($7);
-  ]], [[String.hex2string($5) + String.hex2string($6)[<]]ifelse([[$7]],,15,[[$7-1]])[[..] ]])
+  ]], [[String.hex2string($5) + String.hex2string($6)[<]]ifelse([[$7]],,[[Crypto.$1.digest_size()-1]],[[$7-1]])[[..] ]])
 ]])]])
 
 // Crypto.AES.CCM
