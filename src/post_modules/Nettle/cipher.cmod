@@ -6253,7 +6253,7 @@ PIKECLASS BlockCipher16
     }
     pop_stack();
 #endif
-#ifdef HAVE_NETTLE_OCB_H
+#if defined(HAVE_NETTLE_OCB_H) && defined(HAVE_NETTLE_OCB_ENCRYPT)
     apply_current(Nettle_BlockCipher16_cq__OCB_program_fun_num, 0);
     if (TYPEOF(Pike_sp[-1]) == T_OBJECT) {
       add_ref(THIS_NETTLE_BLOCKCIPHER16->OCB = Pike_sp[-1].u.object);
