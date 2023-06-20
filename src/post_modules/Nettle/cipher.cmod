@@ -5743,7 +5743,7 @@ PIKECLASS BlockCipher16
    */
 #endif
 
-#ifdef HAVE_NETTLE_OCB_H
+#if defined(HAVE_NETTLE_OCB_H) && defined(HAVE_NETTLE_OCB_ENCRYPT)
 
 #include <nettle/ocb.h>
 
@@ -5753,6 +5753,8 @@ PIKECLASS BlockCipher16
    *!
    *! Works as a wrapper for the cipher implemented by overloading
    *! the parent class (@[BlockCipher16]).
+   *!
+   *! OCB was initially an acronym for Offset CodeBook.
    *!
    *! This is a so-called authenticated encryption with associated data
    *! (AEAD) algorithm, and in addition to encryption also provides
