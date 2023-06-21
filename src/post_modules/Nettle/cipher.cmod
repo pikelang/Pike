@@ -6842,6 +6842,7 @@ pike_camellia_set_decrypt_key(void *ctx,
 #cmod_define CIPHER_MODE	BLOCK16_MODE
 #cmod_define PIKE_NAME CAMELLIA
 #cmod_define NETTLE_NAME camellia
+#cmod_define NETTLE_MIN_VERSION 2.1
 #cmod_include "cipher.H"
 #cmod_undef PIKE_NAME
 #cmod_undef NETTLE_NAME
@@ -7608,6 +7609,7 @@ pike_sm4_set_decrypt_key(void *ctx,
 #cmod_define CIPHER_MODE	BLOCK16_MODE
 #cmod_define PIKE_NAME SM4
 #cmod_define NETTLE_NAME sm4
+#cmod_define NETTLE_MIN_VERSION 3.9
 #cmod_include "cipher.H"
 #cmod_undef PIKE_NAME
 #cmod_undef NATTLE_NAME
