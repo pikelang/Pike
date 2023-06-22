@@ -540,7 +540,7 @@ MATCH_IS_WIDE(							\
   {								\
     INT32 *order;						\
     set->a=aggregate_array(set_size*2);				\
-    order=get_switch_order(set->a);				\
+    order = get_set_order(set->a);				\
     for(e=0;e<(p_wchar2)set->a->size;e+=2)			\
     {								\
       if(order[e]+1 != order[e+1] &&				\
@@ -1411,7 +1411,7 @@ INPUT_IS_WIDE(								 \
 		  struct svalue tmp;					 \
 		  SET_SVAL(tmp, T_INT, NUMBER_NUMBER,			 \
 			   integer, input[eye]);			 \
-		  x=switch_lookup(set.a, &tmp);				 \
+                  x = set_lookup(set.a, &tmp);                           \
 		  if( set.neg != (x<0 && (x&1)) ) break;		 \
 	        }else{							 \
 		  if(!set.neg) break;					 \
