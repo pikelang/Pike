@@ -1648,8 +1648,7 @@ OPCODE1_JUMP(F_SWITCH, "switch", I_UPDATE_ALL|I_ARG_T_CONST, {
   INT32 tmp;
   PIKE_OPCODE_T *addr;
   JUMP_SET_TO_PC_AT_NEXT (addr);
-  tmp=switch_lookup(Pike_fp->context->prog->
-		    constants[arg1].sval.u.array,Pike_sp-1);
+  tmp = switch_lookup(&Pike_fp->context->prog->constants[arg1].sval, Pike_sp-1);
   addr = (PIKE_OPCODE_T *) DO_ALIGN(PTR_TO_INT(addr), ((ptrdiff_t)sizeof(INT32)));
   addr = (PIKE_OPCODE_T *)(((INT32 *)addr) + (tmp>=0 ? 1+tmp*2 : 2*~tmp));
   if(*(INT32*)addr < 0) FAST_CHECK_THREADS_ON_BRANCH();
@@ -1665,8 +1664,7 @@ OPCODE1_JUMP(F_SWITCH_ON_INDEX, "switch on index", I_UPDATE_ALL|I_ARG_T_CONST, {
   index_no_free(&tmp2, Pike_sp-2, Pike_sp-1);
   move_svalue (Pike_sp++, &tmp2);
 
-  tmp=switch_lookup(Pike_fp->context->prog->
-		    constants[arg1].sval.u.array,Pike_sp-1);
+  tmp = switch_lookup(&Pike_fp->context->prog->constants[arg1].sval, Pike_sp-1);
   pop_n_elems(3);
   addr = (PIKE_OPCODE_T *) DO_ALIGN(PTR_TO_INT(addr), ((ptrdiff_t)sizeof(INT32)));
   addr = (PIKE_OPCODE_T *)(((INT32 *)addr) + (tmp>=0 ? 1+tmp*2 : 2*~tmp));
@@ -1679,8 +1677,8 @@ OPCODE2_JUMP(F_SWITCH_ON_LOCAL, "switch on local",
   INT32 tmp;
   PIKE_OPCODE_T *addr;
   JUMP_SET_TO_PC_AT_NEXT (addr);
-  tmp=switch_lookup(Pike_fp->context->prog->
-		    constants[arg2].sval.u.array,Pike_fp->locals + arg1);
+  tmp = switch_lookup(&Pike_fp->context->prog->constants[arg2].sval,
+                      Pike_fp->locals + arg1);
   addr = (PIKE_OPCODE_T *) DO_ALIGN(PTR_TO_INT(addr), ((ptrdiff_t)sizeof(INT32)));
   addr = (PIKE_OPCODE_T *)(((INT32 *)addr) + (tmp>=0 ? 1+tmp*2 : 2*~tmp));
   if(*(INT32*)addr < 0) FAST_CHECK_THREADS_ON_BRANCH();

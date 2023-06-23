@@ -1471,8 +1471,28 @@ INT32 set_lookup(struct array *a, struct svalue *s)
   return low_lookup(a,s,set_svalue_cmpfun);
 }
 
-INT32 switch_lookup(struct array *a, struct svalue *s)
+/**
+ * Lookup an svalue in a switch table.
+ *
+ * Returns the array index if found, and
+ * if not found the inverse of the index
+ * for the first larger element or the
+ * inverse of the size of the array if
+ * the svalue is larger than all elements
+ * of the array.
+ */
+INT32 switch_lookup(struct svalue *table, struct svalue *s)
 {
+  struct array *a;
+
+#ifdef PIKE_DEBUG
+  if (TYPEOF(*table) != PIKE_T_ARRAY) {
+    Pike_fatal("Unsupported switch lookup table type: %s.\n",
+               get_name_of_type(TYPEOF(*table)));
+  }
+#endif
+  a = table->u.array;
+
   /* face it, it's not there */
 #ifdef PIKE_DEBUG
   if(d_flag > 1)  array_check_type_field(a);
