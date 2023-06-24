@@ -1485,6 +1485,14 @@ INT32 switch_lookup(struct svalue *table, struct svalue *s)
 {
   struct array *a;
 
+  if (TYPEOF(*table) == PIKE_T_MAPPING) {
+    s = low_mapping_lookup(table->u.mapping, s);
+    if (s && (TYPEOF(*s) == PIKE_T_INT)) {
+      return s->u.integer;
+    }
+    return -1;
+  }
+
 #ifdef PIKE_DEBUG
   if (TYPEOF(*table) != PIKE_T_ARRAY) {
     Pike_fatal("Unsupported switch lookup table type: %s.\n",
