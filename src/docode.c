@@ -2288,6 +2288,7 @@ static int do_docode2(node *n, int flags)
   {
     INT32 e,cases,*order;
     INT32 *jumptable;
+    INT32 got_range = 0;
     struct switch_data prev_switch = current_switch;
 #ifdef PIKE_DEBUG
     struct svalue *save_sp=Pike_sp;
@@ -2376,12 +2377,23 @@ static int do_docode2(node *n, int flags)
     if(current_switch.default_label < 0)
       current_switch.default_label = ins_label(-1);
 
-    for(e=1;e<cases*2+2;e++)
+    for(e=1;e<cases*2+2;e++) {
       if(current_switch.jumptable[e]==-1)
 	current_switch.jumptable[e]=current_switch.default_label;
+      else if (e & 1) {
+        got_range = 1;
+      }
+    }
 
     for(e=1; e<cases*2+2; e++)
       update_arg(jumptable[e], current_switch.jumptable[e]);
+
+    if (!got_range) {
+      /* Optimize to common case where ranges are not in use. */
+      push_svalue(Pike_sp-1);
+      f_indices(1);
+      f_mkmapping(2);
+    }
 
     update_arg((INT32)tmp1, store_constant(Pike_sp-1,1,0));
 
@@ -2402,6 +2414,9 @@ static int do_docode2(node *n, int flags)
     return 0;
   }
 
+  /* NB: Pushes the case values on the Pike stack during compilation.
+   *     These will be collected by the case for F_SWITCH above.
+   */
   case F_CASE:
   case F_CASE_RANGE:
   {
