@@ -7,6 +7,11 @@ DOCSTART() @class PIKE_NAME
  *!
  *! Implementation of the PIKE_NAME MAC algorithm.
  *!
+#cmod_ifdef NETTLE_MIN_VERSION
+ *! @note
+ *!   Requires Nettle NETTLE_MIN_VERSION or later.
+#cmod_undef NETTLE_MIN_VERSION
+#cmod_endif
 DOCEND()
 PIKECLASS PIKE_NAME
 {
