@@ -3356,7 +3356,7 @@ PIKE_MODULE_INIT
                       OPT_EXTERNAL_DEPEND);
 #endif /* HAVE_GETPGRP */
 
-#ifdef HAVE_SETPGRP
+#if defined(HAVE_SETPGID) || defined(HAVE_SETPGRP)
   ADD_EFUN("setpgrp", f_setpgrp, tFunc(tNone, tInt),
 	   OPT_SIDE_EFFECT);
   ADD_FUNCTION2("setpgrp", f_setpgrp, tFunc(tNone, tInt), 0,
