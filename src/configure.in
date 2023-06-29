@@ -4239,6 +4239,9 @@ pthread_t gazonk;
 
 #include <stdlib.h>
 #include <pthread.h>
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 
 void *foo(void *bar) { return (void *)getpid();  }
 pthread_mutexattr_t attr;
