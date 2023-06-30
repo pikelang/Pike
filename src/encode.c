@@ -45,18 +45,18 @@
  * both enables debug messages and also lessens the pickyness to
  * sort-of be able to decode programs with the wrong codec. */
 #define EDB(N,X) do { debug_malloc_touch(data); if (data->debug>=N) {X;} } while (0)
-#define ENCODE_WERR_COMMENT(COMMENT, X...) do {				\
+#define ENCODE_WERR_COMMENT(COMMENT, ...) do {				\
     string_builder_sprintf_disassembly(data->debug_buf,			\
 				       data->debug_pos,			\
 				       (((char *)data->buf.end) -	\
 					data->buf.length) +		\
 				       data->debug_pos,			\
 				       data->buf.dst,			\
-				       COMMENT, X);			\
+                                       COMMENT, __VA_ARGS__);           \
     data->debug_pos = data->buf.length -				\
       (((char *)data->buf.end) - ((char *)data->buf.dst));		\
   } while(0)
-#define ENCODE_WERR(X...) ENCODE_WERR_COMMENT(NULL, X)
+#define ENCODE_WERR(...) ENCODE_WERR_COMMENT(NULL, __VA_ARGS__)
 #define ENCODE_FLUSH() do {						\
     size_t end_pos = data->buf.length -					\
       (((char *)data->buf.end) - ((char *)data->buf.dst));		\
@@ -72,15 +72,15 @@
     }									\
   } while(0)
 
-#define DECODE_WERR_COMMENT(COMMENT, X...) do {				\
+#define DECODE_WERR_COMMENT(COMMENT, ...) do {				\
     string_builder_sprintf_disassembly(data->debug_buf,			\
 				       data->debug_ptr,			\
 				       data->data + data->debug_ptr,	\
 				       data->data + data->ptr,		\
-				       COMMENT, X);			\
+                                       COMMENT, __VA_ARGS__);           \
     data->debug_ptr = data->ptr;					\
   } while(0)
-#define DECODE_WERR(X...) DECODE_WERR_COMMENT(NULL, X)
+#define DECODE_WERR(...) DECODE_WERR_COMMENT(NULL, __VA_ARGS__)
 #define DECODE_FLUSH() do {						\
     if (data->debug_ptr < data->ptr) {					\
       string_builder_append_disassembly_data(data->debug_buf,		\
@@ -2755,6 +2755,9 @@ static void low_decode_type(struct decode_data *data)
 
   tmp = GETC();
   if (tmp <= MAX_TYPE) tmp ^= MIN_REF_TYPE;
+  EDB(1, {
+      DECODE_WERR(".type    %s", get_name_of_type(tmp));
+    });
   switch(tmp)
   {
     default:
@@ -2824,8 +2827,14 @@ static void low_decode_type(struct decode_data *data)
 	EDB(6, debug_dump_mem(data->ptr, data->data + data->ptr, 8));
 	min = get_unaligned_be32(data->data + data->ptr);
 	data->ptr += 4;
+        EDB(1, {
+            DECODE_WERR(".data    %d", (int)min);
+          });
 	max = get_unaligned_be32(data->data + data->ptr);
 	data->ptr += 4;
+        EDB(1, {
+            DECODE_WERR(".data    %d", (int)max);
+          });
 
         if (min > max)
           decode_error(data, NULL, "Error in int type (min (%d) > max (%d)).\n", min, max);
@@ -2860,6 +2869,49 @@ static void low_decode_type(struct decode_data *data)
       low_decode_type(data);
       low_decode_type(data);
       push_reverse_type(PIKE_T_ARRAY);
+      break;
+
+    case PIKE_T_OPERATOR:
+      tmp |= GETC()<<8;
+      EDB(1, {
+          DECODE_WERR(".htype    %s", get_name_of_type(tmp));
+        });
+      low_decode_type(data);
+      if (tmp & 0x8000) {
+        low_decode_type(data);
+        push_reverse_type(tmp);
+      } else {
+        switch(tmp) {
+        case PIKE_T_FIND_LFUN:
+          {
+            struct pike_string *str;
+            int lfun = -1;
+            int i;
+            decode_value2(data);
+
+            if (TYPEOF(Pike_sp[-1]) != PIKE_T_STRING) {
+              decode_error(data, NULL, "Lfun name is not a string: %pO\n",
+                           Pike_sp - 1);
+            }
+            str = Pike_sp[-1].u.string;
+            for (i = 0; i < 256; i++) {
+              if (lfun_strings[i] == str) {
+                lfun = i;
+                break;
+              }
+            }
+            if (lfun == -1) {
+              decode_error(data, NULL, "Unknown lfun: %pq\n", str);
+            }
+            pop_stack();
+            push_type_operator(PIKE_T_FIND_LFUN, (struct pike_type *)(ptrdiff_t)lfun);
+            break;
+          }
+        default:
+          decode_error(data, NULL, "Error in type string (%d).\n", tmp);
+          UNREACHABLE(break);
+        }
+      }
       break;
 
     case '0':
