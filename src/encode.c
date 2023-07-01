@@ -1069,25 +1069,14 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
       if(is_bignum_object(val->u.object))
       {
         MP_INT *i = (MP_INT*)val->u.object->storage;
-        char *buffer;
-        size_t l;
 
-        buffer = xalloc(mpz_sizeinbase(i, 36)+2);
-        mpz_get_str( buffer, 36, i );
-        l = strlen(buffer);
 	code_entry(TAG_OBJECT, 2, data);
 	EDB(1, {
 	    ENCODE_WERR(".bignum");
 	});
-        code_entry(TAG_STRING, l, data);
-	EDB(1, {
-	    ENCODE_WERR(".string  %zd", l);
-	});
-        addstr(buffer,l);
-	EDB(1, {
-	    ENCODE_FLUSH();
-	  });
-        free(buffer);
+        push_string(low_get_mpz_digits(i, 36));
+        encode_value2(Pike_sp-1, data, force_encode);
+        pop_stack();
 	break;
       }
 
