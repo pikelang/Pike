@@ -10648,17 +10648,17 @@ void init_builtin_efuns(void)
    * intentionally not part of the prototype, to keep it free for
    * other uses in the future. */
 
-  /* function(mixed,void|object:string) */
+  /* function(mixed,void|object,void|object|int:string) */
   ADD_EFUN("encode_value", f_encode_value,
 	   tFunc(tMix tOr(tVoid,tObj) tOr3(tVoid, tIntPos, tObj),tStr8),
 	   OPT_TRY_OPTIMIZE);
 
-  /* function(mixed,void|object:string) */
+  /* function(mixed,void|object,void|object|int:string) */
   ADD_EFUN("encode_value_canonic", f_encode_value_canonic,
 	   tFunc(tMix tOr(tVoid,tObj) tOr3(tVoid, tIntPos, tObj),tStr8),
 	   OPT_TRY_OPTIMIZE);
 
-  /* function(string,void|object:mixed) */
+  /* function(string,void|object,void|object|int:mixed) */
   ADD_EFUN("decode_value", f_decode_value,
 	   tFunc(tStr tOr3(tVoid,tObj,tInt_10) tOr3(tVoid,tIntPos,tObj),tMix),
 	   OPT_TRY_OPTIMIZE);
