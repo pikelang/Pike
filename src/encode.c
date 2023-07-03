@@ -339,7 +339,7 @@ static void low_addchar(struct byte_buffer *buf, int c, int edb)
       });						\
     addstr((char *)(__str->str),__str->len);            \
   }                                                     \
-  EDB(1, {						\
+  ETRACE({						\
       ENCODE_FLUSH();					\
     });							\
 }while(0)
@@ -697,7 +697,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
   data->depth += 2;
 #endif
 
-  EDB(1, {
+  ETRACE({
       ENCODE_FLUSH();
     });
   ETRACE({
@@ -2224,7 +2224,7 @@ encode_done:;
 #ifdef ENCODE_DEBUG
   data->depth -= 2;
 #endif
-  EDB(1, {
+  ETRACE({
       ENCODE_FLUSH();
     });
 }
@@ -2383,7 +2383,7 @@ void f_encode_value(INT32 args)
 
   UNSET_ONERROR(tmp);
 
-  EDB(1, {
+  ETRACE({
       ENCODE_FLUSH();
     });
 
@@ -2530,7 +2530,7 @@ void f_encode_value_canonic(INT32 args)
 
   UNSET_ONERROR(tmp);
 
-  EDB(1, {
+  ETRACE({
       ENCODE_FLUSH();
     });
 
@@ -2730,9 +2730,6 @@ static DECLSPEC(noreturn) void decode_error (
     STR=begin_wide_shared_string(num, what);				\
     memcpy(STR->str, data->data + data->ptr, sz);			\
     EDB(6, debug_dump_mem(data->ptr, data->data + data->ptr, sz));	\
-    EDB(1, {								\
-	DECODE_FLUSH();							\
-      });								\
     data->ptr += sz;							\
     BITFLIP(STR);							    \
     STR=end_shared_string(STR);                                             \
@@ -2750,7 +2747,7 @@ static DECLSPEC(noreturn) void decode_error (
     EDB(6, debug_dump_mem(data->ptr, data->data + data->ptr, sz));	\
     data->ptr += sz;							\
   }									    \
-  EDB(1, {								\
+  ETRACE({								\
       DECODE_FLUSH();							\
     });									\
 }while(0)
@@ -3332,7 +3329,7 @@ static void decode_value2(struct decode_data *data)
     case TAG_DELAYED:
       EDB (2, fprintf(stderr, "%*sDecoding delay encoded from <%ld>\n",
 		      data->depth, "", (long)num););
-      EDB(1, DECODE_WERR(".tag     delayed, %ld", (long)num));
+      ETRACE(DECODE_WERR(".tag     delayed, %ld", (long)num));
       SET_SVAL(entry_id, T_INT, NUMBER_NUMBER, integer, num);
       if (!(delayed_enc_val = low_mapping_lookup (data->decoded, &entry_id)))
 	decode_error (data, NULL, "Failed to find previous record of "
@@ -3349,7 +3346,7 @@ static void decode_value2(struct decode_data *data)
     case TAG_AGAIN:
       EDB (1, fprintf(stderr, "%*sDecoding TAG_AGAIN from <%ld>\n",
 		      data->depth, "", (long)num););
-      EDB(1, DECODE_WERR(".tag     again, %ld", (long)num));
+      ETRACE(DECODE_WERR(".tag     again, %ld", (long)num));
       SET_SVAL(entry_id, T_INT, NUMBER_NUMBER, integer, num);
       if((tmp2=low_mapping_lookup(data->decoded, &entry_id)))
       {
@@ -4865,7 +4862,7 @@ static void decode_value2(struct decode_data *data)
 	      decode_error(data, NULL, "Unsupported id entry type: %d\n",
 			   entry_type);
 	    }
-	    EDB(1, {
+            ETRACE({
 		DECODE_FLUSH();
 	      });
 
@@ -5238,13 +5235,13 @@ static INT32 my_decode(struct pike_string *tmp,
   data->raw = tmp;
   data->next = current_decode;
   data->debug_buf = debug_buf;
+  data->debug_ptr = 0;
 #ifdef PIKE_THREADS
   data->thread_state = Pike_interpreter.thread_state;
   data->thread_obj = Pike_interpreter.thread_state->thread_obj;
 #endif
 #ifdef ENCODE_DEBUG
   data->debug = debug;
-  data->debug_ptr = 0;
   if (data->debug && !debug_buf) {
     data->debug_buf = debug_buf = &buf;
     init_string_builder(debug_buf, 0);
@@ -5292,7 +5289,7 @@ static INT32 my_decode(struct pike_string *tmp,
 
   UNSET_ONERROR(err);
 
-  EDB(1, {
+  ETRACE({
       DECODE_FLUSH();
     });
 
