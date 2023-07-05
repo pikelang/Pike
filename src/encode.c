@@ -760,8 +760,11 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
       ETRACE({
 	  ENCODE_WERR("# Encoding to tag #%ld", (long)entry_id.u.integer);
 	});
-      if( TYPEOF(*val) < MIN_REF_TYPE || val->u.dummy->refs > 1 )
+      if( (TYPEOF(*val) < MIN_REF_TYPE) || (val->u.dummy->refs > 1) ||
+          ((TYPEOF(*val) == T_OBJECT) &&
+           (QUICK_FIND_LFUN(val->u.object->prog, LFUN___HASH) != -1))) {
           mapping_insert(data->encoded, val, &entry_id);
+      }
       data->counter.u.integer++;
     }
   }
