@@ -13109,6 +13109,11 @@ ifefun(mktime,
   "timezone":0,
 ]) ) ]])
 
+  // Check for mktime() in default timezone having a second count
+  // that is off (observed on Haiku).
+  test_eq([[localtime(mktime(0,0,0,1,0,70))->sec]], 0)
+  test_eq([[localtime(mktime(59,59,23,31,11,69))->sec]], 59)
+
   test_any([[foreach(({1075550400,94691300,220921700,347152100,473382500,
 		       599612900,725843300,852073700,978304100,1104534500,
 		       1230764900,1356995300,1483225700,1609456100,1735686500,
@@ -13172,7 +13177,9 @@ ifefun(mktime,
   // Tue, 15 Oct 2002 09:38:32 GMT
   return mktime(32, 38, 9, 15, 9, 102, 0, 0);
   ]], 1034674712)
-
+]])
+cond([[all_constants()->mktime && (Pike.get_runtime_info()->time_size > 32)]],
+[[
   test_any( [[
   // Mon, 26 Dec 1791, Charles Babbage's birthday
   return mktime((["year":-109,"mon":11,"mday":26,"timezone":0]));
