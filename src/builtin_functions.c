@@ -5880,7 +5880,7 @@ static void set_tz(char *tz)
 
 time_t mktime_zone(struct tm *date, int other_timezone, int tz)
 {
-  INT64 retval;
+  INT64 retval = 0;
   int normalised_time;
 #if defined(__NT__) || defined(_AIX)
   unsigned INT64 ydelta = 0;	/* Number of years. */
@@ -5904,8 +5904,8 @@ time_t mktime_zone(struct tm *date, int other_timezone, int tz)
    * mktime() in order to be able to handle 1969-12-31T23:59:59 (which
    * is indistinguishable from 1970-01-01T00:00:00 after the call).
    */
-  if (date->tm_year < 70) {
-    date->tm_sec--;
+  if ((date->tm_year < 70) && !other_timezone) {
+    retval = -1;
   }
 #endif
 
@@ -5926,7 +5926,7 @@ time_t mktime_zone(struct tm *date, int other_timezone, int tz)
     normalised_time = ((hour * 60) + min) * 60 + sec;
   }
 
-  retval = mktime(date);
+  retval += mktime(date);
 
 #if defined(__NT__) || defined(_AIX)
   /* Restore tm_year. */
