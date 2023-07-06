@@ -5898,6 +5898,15 @@ time_t mktime_zone(struct tm *date, int other_timezone, int tz)
     ydelta = ((71 + 27 - date->tm_year)/28) * 28;
     date->tm_year += ydelta;
   }
+#elif defined(__HAIKU__)
+  /* mktime() on Haiku appears to attempt to support years before 1970
+   * albeit it is off by one second. We compensate before calling
+   * mktime() in order to be able to handle 1969-12-31T23:59:59 (which
+   * is indistinguishable from 1970-01-01T00:00:00 after the call).
+   */
+  if (date->tm_year < 70) {
+    date->tm_sec--;
+  }
 #endif
 
   {
