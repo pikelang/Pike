@@ -2763,8 +2763,10 @@ static DECLSPEC(noreturn) void decode_error (
     EDB(5, fprintf(stderr, "%*s  ==>%"PRINTINT64"d\n",	\
                    data->depth, "", num));              \
     if (comment) {                                      \
-      DECODE_WERR_COMMENT(comment, ".number  "          \
-                          "%"PRINTINT64"d", num);       \
+      ETRACE({                                          \
+          DECODE_WERR_COMMENT(comment, ".number  "      \
+                              "%"PRINTINT64"d", num);   \
+        });                                             \
     }                                                   \
   } while(0)
 
