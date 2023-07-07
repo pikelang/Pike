@@ -2755,14 +2755,18 @@ static DECLSPEC(noreturn) void decode_error (
     });									\
 }while(0)
 
-#define decode_number(X,data) do {		\
-   INT32 what, e;				\
-   INT64 num;					\
-   DECODE("decode_number");			\
-   X=(what & TAG_MASK) | ((UINT64)num<<4);      \
-   EDB(5, fprintf(stderr, "%*s  ==>%ld\n",	\
-		  data->depth, "", (long) X));	\
-  }while(0)					\
+#define decode_number(X, data, comment) do {            \
+    INT32 what, e;                                      \
+    INT64 num;                                          \
+    DECODE("decode_number");                            \
+    num = X = (what & TAG_MASK) | ((UINT64)num<<4);     \
+    EDB(5, fprintf(stderr, "%*s  ==>%"PRINTINT64"d\n",	\
+                   data->depth, "", num));              \
+    if (comment) {                                      \
+      DECODE_WERR_COMMENT(comment, ".number  "          \
+                          "%"PRINTINT64"d", num);       \
+    }                                                   \
+  } while(0)
 
 
 static void restore_type_stack(struct pike_type **old_stackp)
@@ -3618,10 +3622,7 @@ static void decode_value2(struct decode_data *data)
 	});
 
       if (num == 4) {
-	decode_number(subtype, data);
-        ETRACE({
-	    DECODE_WERR_COMMENT("inherit", ".number  %d", subtype);
-	  });
+        decode_number(subtype, data, "inherit");
       }
       decode_value2(data);
 
@@ -3991,14 +3992,11 @@ static void decode_value2(struct decode_data *data)
 	    });
 
 	  /* Decode byte-order. */
-	  decode_number(byteorder, data);
+          decode_number(byteorder, data, "byte-order");
 
 	  EDB(4,
 	      fprintf(stderr, "%*sbyte order:%d\n",
 		      data->depth, "", byteorder));
-          ETRACE({
-	      DECODE_WERR_COMMENT("byte-order", ".number  %d", byteorder);
-	    });
 
 	  if ((byteorder != PIKE_BYTEORDER)
 #if (PIKE_BYTEORDER == 1234)
@@ -4014,10 +4012,7 @@ static void decode_value2(struct decode_data *data)
 	  }
 
 	  /* Decode flags. */
-	  decode_number(p_flags,data);
-          ETRACE({
-	      DECODE_WERR_COMMENT("flags", ".number  %d", p_flags);
-	    });
+          decode_number(p_flags, data, "flags");
 	  p_flags &= ~(PROGRAM_FINISHED | PROGRAM_OPTIMIZED |
 		       PROGRAM_FIXED | PROGRAM_PASS_1_DONE);
 	  p_flags |= PROGRAM_AVOID_CHECK;
@@ -4187,23 +4182,17 @@ static void decode_value2(struct decode_data *data)
 
 	  /* Decode lengths. */
 #define FOO(NUMTYPE,TYPE,ARGTYPE,NAME) do {				\
-	    decode_number(PIKE_CONCAT(local_num_, NAME), data);		\
-            ETRACE({							\
-		DECODE_WERR_COMMENT(TOSTR(NAME), ".number  %ld",	\
-				    (long)PIKE_CONCAT(local_num_,NAME));\
-	      });							\
+            decode_number(PIKE_CONCAT(local_num_, NAME), data,          \
+                          TOSTR(NAME));                                 \
 	  } while(0);
 #include "program_areas.h"
 
 	  /* Byte-code method */
-	  decode_number(bytecode_method, data);
+          decode_number(bytecode_method, data, "byte-code");
 	  if (bytecode_method != PIKE_BYTECODE_PORTABLE) {
 	    decode_error(data, NULL, "Unsupported byte-code method: %d\n",
 			 bytecode_method);
 	  }
-          ETRACE({
-	    DECODE_WERR_COMMENT("byte-code", ".number  %d", bytecode_method);
-	    });
 
 	  /* Decode strings */
 	  for (e=0; e<local_num_strings; e++) {
@@ -4236,7 +4225,7 @@ static void decode_value2(struct decode_data *data)
 	      DECODE_WERR("# Constant table.");
 	    });
 	  /* Decode identifier_references, inherits and identifiers. */
-	  decode_number(entry_type, data);
+          decode_number(entry_type, data, NULL);
 	  EDB(4,
 	      fprintf(stderr, "%*sDecoding identifier references.\n",
 		      data->depth, ""));
@@ -4254,10 +4243,7 @@ static void decode_value2(struct decode_data *data)
 		  DECODE_WERR(".ident   type_constant");
 		}
 	      });
-	    decode_number(efun_no, data);
-            ETRACE({
-		DECODE_WERR_COMMENT("constant #", ".number  %d", efun_no);
-	      });
+            decode_number(efun_no, data, "constant #");
 	    EDB(2,
 		fprintf(stderr, "%*sDecoding efun/type constant #%d.\n",
 			data->depth, "", efun_no));
@@ -4301,7 +4287,7 @@ static void decode_value2(struct decode_data *data)
 	    constant->sval = Pike_sp[-1];
 	    dmalloc_touch_svalue(Pike_sp-1);
 	    Pike_sp -= 1;
-	    decode_number(entry_type, data);
+            decode_number(entry_type, data, NULL);
 	  }
 
 	  while (entry_type != ID_ENTRY_EOT) {
@@ -4340,11 +4326,7 @@ static void decode_value2(struct decode_data *data)
 		  break;
 		}
 	      });
-	    decode_number(id_flags, data);
-            ETRACE({
-		DECODE_WERR_COMMENT("modifiers",
-				    ".number  %u", id_flags);
-	      });
+            decode_number(id_flags, data, "modifiers");
 	    if ((entry_type != ID_ENTRY_RAW) &&
 		(entry_type != ID_ENTRY_INHERIT)) {
 	      /* Common identifier fields. */
@@ -4370,11 +4352,7 @@ static void decode_value2(struct decode_data *data)
 	      }
 
 	      /* filename */
-	      decode_number(filename_strno, data);
-              ETRACE({
-		  DECODE_WERR_COMMENT("filename_strno",
-				      ".number  %u", filename_strno);
-		});
+              decode_number(filename_strno, data, "filename_strno");
 	      if (filename_strno >= p->num_strings) {
 		ref_push_program(p);
 		decode_error(data, NULL,
@@ -4386,11 +4364,7 @@ static void decode_value2(struct decode_data *data)
 				 p->strings[filename_strno]);
 
 	      /* linenumber */
-	      decode_number(c->lex.current_line, data);
-              ETRACE({
-		  DECODE_WERR_COMMENT("linenumber",
-				      ".number  %ld", c->lex.current_line);
-		});
+              decode_number(c->lex.current_line, data, "linenumber");
 
 	      /* Identifier name and type on the pike stack.
 	       * Definition location in c->lex.
@@ -4407,18 +4381,11 @@ static void decode_value2(struct decode_data *data)
 		ref.id_flags = id_flags;
 
 		/* inherit_offset */
-		decode_number(ref.inherit_offset, data);
-                ETRACE({
-		    DECODE_WERR_COMMENT("inherit_offset",
-					".number  %u", ref.inherit_offset);
-		  });
+                decode_number(ref.inherit_offset, data, "inherit_offset");
 
 		/* identifier_offset */
 		/* Actually the id ref number from the inherited program */
-		decode_number(ref_no, data);
-                ETRACE({
-		    DECODE_WERR_COMMENT("ref_no", ".number  %d", ref_no);
-		  });
+                decode_number(ref_no, data, "ref_no");
 
                 if (ref.inherit_offset >= p->num_inherits)
                     decode_error(data, NULL, "Inherit offset out of range %u vs %u.\n",
@@ -4434,11 +4401,7 @@ static void decode_value2(struct decode_data *data)
 		ref.func.offset = 0;
 
 		/* Expected identifier reference number */
-		decode_number(no, data);
-                ETRACE({
-		    DECODE_WERR_COMMENT("ref_no",
-					".number  %d", no);
-		  });
+                decode_number(no, data, "ref_no");
 
 		if (no < 0 || no > p->num_identifier_references) {
 		  EDB (3, dump_program_tables (p, data->depth));
@@ -4462,11 +4425,7 @@ static void decode_value2(struct decode_data *data)
 		int no, n;
 
 		/* Expected identifier offset */
-		decode_number(no, data);
-                ETRACE({
-		    DECODE_WERR_COMMENT("ref_no",
-					".number  %d", no);
-		  });
+                decode_number(no, data, "ref_no");
 
 		EDB(5,
 		    fprintf(stderr,
@@ -4501,20 +4460,10 @@ static void decode_value2(struct decode_data *data)
 		int n;
 
 		/* func_flags (aka identifier_flags) */
-		decode_number(func_flags, data);
-                ETRACE({
-		    DECODE_WERR_COMMENT("identifier_flags",
-					".number  %u",
-					func_flags);
-		  });
+                decode_number(func_flags, data, "identifier_flags");
 
 		/* func */
-		decode_number(func.offset, data);
-                ETRACE({
-		    DECODE_WERR_COMMENT("offset",
-					".number  %ld",
-					(long)func.offset);
-		  });
+                decode_number(func.offset, data, "offset");
 		if (func.offset != -1) {
 #ifdef ENCODE_DEBUG
 		  int old_a_flag = a_flag;
@@ -4530,22 +4479,14 @@ static void decode_value2(struct decode_data *data)
 		}
 
 		/* opt_flags */
-		decode_number(opt_flags, data);
-                ETRACE({
-		    DECODE_WERR_COMMENT("opt_flags",
-					".number  %u", opt_flags);
-		  });
+                decode_number(opt_flags, data, "opt_flags");
 
 		/* FIXME:
 		 *   Verify validity of func_flags, func.offset & opt_flags
 		 */
 
 		/* Expected identifier offset */
-		decode_number(no, data);
-                ETRACE({
-		    DECODE_WERR_COMMENT("ref_no",
-					".number  %d", no);
-		  });
+                decode_number(no, data, "ref_no");
 
 		EDB(5, {
 		  INT_TYPE line;
@@ -4606,35 +4547,23 @@ static void decode_value2(struct decode_data *data)
 		id.identifier_flags = IDENTIFIER_CONSTANT;
 
 		/* offset */
-		decode_number(id.func.const_info.offset, data);
+                decode_number(id.func.const_info.offset, data, "offset");
 
 		/* FIXME:
 		 *   Verify validity of func.const_info.offset
 		 */
 
 		/* run_time_type */
-		decode_number(id.run_time_type, data);
-                ETRACE({
-		    DECODE_WERR_COMMENT("run_time_type",
-					".number  %u", id.run_time_type);
-		  });
+                decode_number(id.run_time_type, data, "run_time_type");
 
 		/* opt_flags */
-		decode_number(id.opt_flags, data);
-                ETRACE({
-		    DECODE_WERR_COMMENT("opt_flags",
-					".number  %u", id.opt_flags);
-		  });
+                decode_number(id.opt_flags, data, "opt_flags");
 
 		ref.run_time_type = PIKE_T_UNKNOWN;
 		ref.func.offset = 0;
 
 		/* Expected identifier number. */
-		decode_number(no, data);
-                ETRACE({
-		    DECODE_WERR_COMMENT("ref_no",
-					".number  %d", no);
-		  });
+                decode_number(no, data, "ref_no");
 
 		n = isidentifier(id.name);
 
@@ -4695,31 +4624,17 @@ static void decode_value2(struct decode_data *data)
 		int n;
 
 		/* depth */
-		decode_number(depth, data);
-                ETRACE({
-		    DECODE_WERR_COMMENT("depth",
-					".number  %d",
-					depth);
-		  });
+                decode_number(depth, data, "depth");
 
 		/* refno */
-		decode_number(refno, data);
-                ETRACE({
-		    DECODE_WERR_COMMENT("refno",
-					".number  %d",
-					refno);
-		  });
+                decode_number(refno, data, "refno");
 
 		/* FIXME:
 		 *   Verify validity of depth and refno.
 		 */
 
 		/* Expected identifier number. */
-		decode_number(no, data);
-                ETRACE({
-		    DECODE_WERR_COMMENT("ref_no",
-					".number  %d", no);
-		  });
+                decode_number(no, data, "ref_no");
 
 		EDB(5,
 		    fprintf(stderr,
@@ -4757,11 +4672,7 @@ static void decode_value2(struct decode_data *data)
 		int no;
 		int save_compiler_flags;
 
-		decode_number(no, data);
-                ETRACE({
-		    DECODE_WERR_COMMENT("ref_no",
-					".number  %d", no);
-		  });
+                decode_number(no, data, "ref_no");
 		if (no !=
 		    Pike_compiler->new_program->num_identifier_references) {
 		  ref_push_program (p);
@@ -4818,25 +4729,13 @@ static void decode_value2(struct decode_data *data)
 		}
 
 		/* parent_identifier */
-		decode_number(parent_identifier, data);
-                ETRACE({
-		    DECODE_WERR_COMMENT("parent_id",
-					".number  %d", parent_identifier);
-		  });
+                decode_number(parent_identifier, data, "parent_id");
 
 		/* parent_offset */
-		decode_number(parent_offset, data);
-                ETRACE({
-		    DECODE_WERR_COMMENT("parent_offset",
-					".number  %d", parent_offset);
-		  });
+                decode_number(parent_offset, data, "parent_offset");
 
 		/* Expected number of identifier references. */
-		decode_number(no, data);
-                ETRACE({
-		    DECODE_WERR_COMMENT("ref_no",
-					".number  %d", no);
-		  });
+                decode_number(no, data, "ref_no");
 
 		if (prog->num_identifier_references != no) {
 		  ref_push_program (p);
@@ -4869,7 +4768,7 @@ static void decode_value2(struct decode_data *data)
 		DECODE_FLUSH();
 	      });
 
-	    decode_number(entry_type, data);
+            decode_number(entry_type, data, NULL);
 	  }
           ETRACE({
 	      DECODE_WERR(".ident   eot");
