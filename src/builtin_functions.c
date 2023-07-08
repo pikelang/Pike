@@ -881,7 +881,6 @@ PMOD_EXPORT void f_upper_case(INT32 args)
  */
 static void f_random_seed(INT32 args)
 {
-  INT_TYPE i;
   pop_n_elems(args);
 }
 
@@ -3892,151 +3891,6 @@ PMOD_EXPORT void f_indices(INT32 args)
   push_array(a);
 }
 
-#if 0
-static node *fix_aggregate_mapping_type(node *n)
-{
-  struct pike_type *types[2] = { NULL, NULL };
-  node *args = CDR(n);
-  struct pike_type *new_type = NULL;
-
-#ifdef PIKE_DEBUG
-  if (l_flag > 2) {
-    fprintf(stderr, "Fixing type for aggregate_mapping():\n");
-    print_tree(n);
-
-    fprintf(stderr, "Original type:");
-    simple_describe_type(n->type);
-  }
-#endif /* PIKE_DEBUG */
-
-  if (args) {
-    node *arg = args;
-    int argno = 0;
-
-    /* Make it easier to find... */
-    args->parent = 0;
-
-    while(arg) {
-#ifdef PIKE_DEBUG
-      if (l_flag > 4) {
-	fprintf(stderr, "Searching for arg #%d...\n", argno);
-      }
-#endif /* PIKE_DEBUG */
-      if (arg->token == F_ARG_LIST) {
-	if (CAR(arg)) {
-	  CAR(arg)->parent = arg;
-	  arg = CAR(arg);
-	  continue;
-	}
-	if (CDR(arg)) {
-	  CDR(arg)->parent = arg;
-	  arg = CDR(arg);
-	  continue;
-	}
-	/* Retrace */
-      retrace:
-#ifdef PIKE_DEBUG
-	if (l_flag > 4) {
-	  fprintf(stderr, "Retracing in search for arg %d...\n", argno);
-	}
-#endif /* PIKE_DEBUG */
-	while (arg->parent &&
-	       (!CDR(arg->parent) || (CDR(arg->parent) == arg))) {
-	  arg = arg->parent;
-	}
-	if (!arg->parent) {
-	  /* No more args. */
-	  break;
-	}
-	arg = arg->parent;
-	CDR(arg)->parent = arg;
-	arg = CDR(arg);
-	continue;
-      }
-      if (arg->token == F_PUSH_ARRAY) {
-	/* FIXME: Should get the type from the pushed array. */
-	/* FIXME: Should probably be fixed in las.c:fix_type_field() */
-	/* FIXME: */
-	MAKE_CONSTANT_TYPE(new_type, tMap(tMixed, tMixed));
-	goto set_type;
-      }
-#ifdef PIKE_DEBUG
-      if (l_flag > 4) {
-	fprintf(stderr, "Found arg #%d:\n", argno);
-	print_tree(arg);
-	simple_describe_type(arg->type);
-      }
-#endif /* PIKE_DEBUG */
-      do {
-	if (types[argno]) {
-	  struct pike_type *t = or_pike_types(types[argno], arg->type, 0);
-	  free_type(types[argno]);
-	  types[argno] = t;
-#ifdef PIKE_DEBUG
-	  if (l_flag > 4) {
-	    fprintf(stderr, "Resulting type for arg #%d:\n", argno);
-	    simple_describe_type(types[argno]);
-	  }
-#endif /* PIKE_DEBUG */
-	} else {
-	  copy_pike_type(types[argno], arg->type);
-	}
-	argno = !argno;
-	/* Handle the special case where CAR & CDR are the same.  */
-      } while (argno && arg->parent && CAR(arg->parent) == CDR(arg->parent));
-      goto retrace;
-    }
-
-    if (argno) {
-      yyerror("Odd number of arguments to aggregate_mapping().");
-      goto done;
-    }
-
-    if (!types[0]) {
-      MAKE_CONSTANT_TYPE(new_type, tMap(tUnknown, tUnknown));
-      goto set_type;
-    }
-
-    type_stack_mark();
-    push_finished_type(types[1]);
-    push_finished_type(types[0]);
-    push_type(T_MAPPING);
-    new_type = pop_unfinished_type();
-  } else {
-    MAKE_CONSTANT_TYPE(new_type, tMap(tUnknown, tUnknown));
-    goto set_type;
-  }
-  if (new_type) {
-  set_type:
-    free_type(n->type);
-    n->type = new_type;
-
-#ifdef PIKE_DEBUG
-    if (l_flag > 2) {
-      fprintf(stderr, "Result type: ");
-      simple_describe_type(new_type);
-    }
-#endif /* PIKE_DEBUG */
-
-    if (n->parent) {
-      n->parent->node_info |= OPT_TYPE_NOT_FIXED;
-    }
-  }
- done:
-  if (args) {
-    /* Not really needed, but... */
-    args->parent = n;
-  }
-  if (types[1]) {
-    free_type(types[1]);
-  }
-  if (types[0]) {
-    free_type(types[0]);
-  }
-  return NULL;
-}
-#endif
-
 /*! @decl array values(string|array|mapping|multiset|object x)
  *!
  *!   Return an array of all possible values from indexing the value
@@ -4258,7 +4112,6 @@ PMOD_EXPORT void f_types(INT32 args)
  */
 PMOD_EXPORT void f_annotations(INT32 args)
 {
-  ptrdiff_t size;
   struct array *a = NULL;
   struct pike_type *default_type = mixed_type_string;
   struct svalue *arg = NULL;
@@ -4324,7 +4177,6 @@ PMOD_EXPORT void f_annotations(INT32 args)
  */
 PMOD_EXPORT void f_direct_program_annotations(INT32 args)
 {
-  ptrdiff_t size;
   struct array *m = NULL;
   struct pike_type *default_type = mixed_type_string;
   struct svalue *arg = NULL;
@@ -6678,7 +6530,6 @@ PMOD_EXPORT void f_strptime (INT32 args)
  */
 PMOD_EXPORT void f_strftime (INT32 args)
 {
-    struct pike_string *fmt;
     struct string_builder s;
     struct tm date;
 
@@ -6975,7 +6826,6 @@ PMOD_EXPORT void f_glob(INT32 args)
     break;
 
   case T_ARRAY: {
-    INT32 j;
     unsigned matches = 0;
     struct svalue *res;
     a=Pike_sp[1-args].u.array;
@@ -8015,7 +7865,6 @@ PMOD_EXPORT void f_diff(INT32 args)
 {
    struct array *seq;
    struct array *cmptbl;
-   struct array *diff;
    struct array *a, *b;
    int uniq;
 
