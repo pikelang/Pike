@@ -402,9 +402,9 @@ static void code_entry(int tag, INT64 num, struct encode_data *data)
   }
 }
 
-static void code_number(ptrdiff_t num, struct encode_data *data)
+static void encode_number(ptrdiff_t num, struct encode_data *data)
 {
-  EDB(5, fprintf(stderr, "%*scode_number(%td)\n",
+  EDB(5, fprintf(stderr, "%*sencode_number(%td)\n",
 		 data->depth, "", num));
   code_entry(num & 15, num >> 4, data);
 }
@@ -1123,7 +1123,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
               ETRACE({
 		  ENCODE_WERR(".entry   object, 4");
 		});
-	      code_number(SUBTYPEOF(*val), data);
+              encode_number(SUBTYPEOF(*val), data);
               ETRACE({
 		  ENCODE_WERR_COMMENT("inherit",
 				      ".number  %u", SUBTYPEOF(*val));
@@ -1346,13 +1346,13 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	  });
 
 	/* Byte-order. */
-	code_number(PIKE_BYTEORDER, data);
+        encode_number(PIKE_BYTEORDER, data);
         ETRACE({
 	    ENCODE_WERR_COMMENT("byte-order", ".number  %d", PIKE_BYTEORDER);
 	  });
 
 	/* flags */
-	code_number(p->flags,data);
+        encode_number(p->flags,data);
         ETRACE({
 	    ENCODE_WERR_COMMENT("flags", ".number  %d", p->flags);
 	  });
@@ -1379,7 +1379,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 
 	/* num_* */
 #define FOO(NUMTYPE,TYPE,ARGTYPE,NAME)	do {				\
-	  code_number( p->PIKE_CONCAT(num_,NAME), data);		\
+          encode_number( p->PIKE_CONCAT(num_,NAME), data);		\
           ETRACE({							\
 	      ENCODE_WERR_COMMENT(TOSTR(NAME), ".number  %ld",		\
 				  (long)p->PIKE_CONCAT(num_,NAME));	\
@@ -1390,7 +1390,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 
 	/* Byte-code method
 	 */
-	code_number(PIKE_BYTECODE_PORTABLE, data);
+        encode_number(PIKE_BYTECODE_PORTABLE, data);
         ETRACE({
 	    ENCODE_WERR_COMMENT("byte-code", ".number  %d", PIKE_BYTECODE_PORTABLE);
 	  });
@@ -1420,19 +1420,19 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	  {
 	    if ((TYPEOF(p->constants[d].sval) == T_FUNCTION) &&
 		(SUBTYPEOF(p->constants[d].sval) == FUNCTION_BUILTIN)) {
-	      code_number(ID_ENTRY_EFUN_CONSTANT, data);
+              encode_number(ID_ENTRY_EFUN_CONSTANT, data);
               ETRACE({
 		  ENCODE_WERR(".ident   efun_constant");
 		});
 	    } else if (TYPEOF(p->constants[d].sval) == T_TYPE) {
-	      code_number(ID_ENTRY_TYPE_CONSTANT, data);
+              encode_number(ID_ENTRY_TYPE_CONSTANT, data);
               ETRACE({
 		  ENCODE_WERR(".ident   type_constant");
 		});
 	    } else {
 	      continue;
 	    }
-	    code_number(d, data);
+            encode_number(d, data);
             ETRACE({
 		ENCODE_WERR_COMMENT("constant #", ".number  %d", d);
 	      });
@@ -1538,18 +1538,18 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		    fprintf(stderr, "%*sencode: encoding raw reference\n",
 			    data->depth, ""));
 
-		code_number(ID_ENTRY_RAW, data);
+                encode_number(ID_ENTRY_RAW, data);
                 ETRACE({
 		    ENCODE_WERR(".ident   raw");
 		  });
-		code_number(ref->id_flags, data);
+                encode_number(ref->id_flags, data);
                 ETRACE({
 		    ENCODE_WERR_COMMENT("modifiers",
 					".number  %u", ref->id_flags);
 		  });
 
 		/* inherit_offset */
-		code_number(ref->inherit_offset, data);
+                encode_number(ref->inherit_offset, data);
                 ETRACE({
 		    ENCODE_WERR_COMMENT("inherit_offset",
 					".number  %u", ref->inherit_offset);
@@ -1576,7 +1576,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		if (ref_no == -1) {
 		  Pike_error("Failed to reverse explicit reference\n");
 		}
-		code_number(ref_no, data);
+                encode_number(ref_no, data);
                 ETRACE({
 		    ENCODE_WERR_COMMENT("ref_no", ".number  %d", ref_no);
 		  });
@@ -1680,13 +1680,13 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	 	  EDB(3, fprintf(stderr, "%*sencode: encoding alias\n",
 				 data->depth, ""));
 
-		  code_number(ID_ENTRY_ALIAS, data);
+                  encode_number(ID_ENTRY_ALIAS, data);
                   ETRACE({
 		      ENCODE_WERR(".ident   alias");
 		    });
 
 		  /* flags */
-		  code_number(ref->id_flags, data);
+                  encode_number(ref->id_flags, data);
                   ETRACE({
 		      ENCODE_WERR_COMMENT("modifiers",
 					  ".number  %u", ref->id_flags);
@@ -1702,21 +1702,21 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		  pop_stack();
 
 		  /* filename */
-		  code_number(id->filename_strno, data);
+                  encode_number(id->filename_strno, data);
                   ETRACE({
 		      ENCODE_WERR_COMMENT("filename_strno",
 					  ".number  %u", id->filename_strno);
 		    });
 
 		  /* linenumber */
-		  code_number(id->linenumber, data);
+                  encode_number(id->linenumber, data);
                   ETRACE({
 		      ENCODE_WERR_COMMENT("linenumber",
 					  ".number  %ld", (long)id->linenumber);
 		    });
 
 		  /* depth */
-		  code_number(id->func.ext_ref.depth, data);
+                  encode_number(id->func.ext_ref.depth, data);
                   ETRACE({
 		      ENCODE_WERR_COMMENT("depth",
 					  ".number  %u",
@@ -1724,7 +1724,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		    });
 
 		  /* refno */
-		  code_number(id->func.ext_ref.id, data);
+                  encode_number(id->func.ext_ref.id, data);
                   ETRACE({
 		      ENCODE_WERR_COMMENT("refno",
 					  ".number  %d",
@@ -1737,18 +1737,18 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		      fprintf(stderr, "%*sencode: encoding constant\n",
 			      data->depth, ""));
 
-		  code_number(ID_ENTRY_CONSTANT, data);
+                  encode_number(ID_ENTRY_CONSTANT, data);
                   ETRACE({
 		      ENCODE_WERR(".ident   constant");
 		    });
 		  if (gs_flags >= 0) {
-		    code_number(gs_flags, data);
+                    encode_number(gs_flags, data);
                     ETRACE({
 			ENCODE_WERR_COMMENT("modifiers",
 					    ".number  %d", gs_flags);
 		      });
 		  } else {
-		    code_number(ref->id_flags, data);
+                    encode_number(ref->id_flags, data);
                     ETRACE({
 			ENCODE_WERR_COMMENT("modifiers",
 					    ".number  %u", ref->id_flags);
@@ -1765,21 +1765,21 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		  pop_stack();
 
 		  /* filename */
-		  code_number(id->filename_strno, data);
+                  encode_number(id->filename_strno, data);
                   ETRACE({
 		      ENCODE_WERR_COMMENT("filename_strno",
 					  ".number  %u", id->filename_strno);
 		    });
 
 		  /* linenumber */
-		  code_number(id->linenumber, data);
+                  encode_number(id->linenumber, data);
                   ETRACE({
 		      ENCODE_WERR_COMMENT("linenumber",
 					  ".number  %ld", (long)id->linenumber);
 		    });
 
 		  /* offset */
-		  code_number(id->func.const_info.offset, data);
+                  encode_number(id->func.const_info.offset, data);
                   ETRACE({
 		      ENCODE_WERR_COMMENT("offset",
 					  ".number  %td",
@@ -1787,14 +1787,14 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		    });
 
 		  /* run-time type */
-		  code_number(id->run_time_type, data);
+                  encode_number(id->run_time_type, data);
                   ETRACE({
 		      ENCODE_WERR_COMMENT("run_time_type",
 					  ".number  %u", id->run_time_type);
 		    });
 
 		  /* opt flags */
-		  code_number(id->opt_flags, data);
+                  encode_number(id->opt_flags, data);
                   ETRACE({
 		      ENCODE_WERR_COMMENT("opt_flags",
 					  ".number  %u", id->opt_flags);
@@ -1807,18 +1807,18 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		      fprintf(stderr, "%*sencode: encoding function\n",
 			      data->depth, ""));
 
-		  code_number(ID_ENTRY_FUNCTION, data);
+                  encode_number(ID_ENTRY_FUNCTION, data);
                   ETRACE({
 		      ENCODE_WERR(".ident   function");
 		    });
 		  if (gs_flags >= 0) {
-		    code_number(gs_flags, data);
+                    encode_number(gs_flags, data);
                     ETRACE({
 			ENCODE_WERR_COMMENT("modifiers",
 					    ".number  %d", gs_flags);
 		      });
 		  } else {
-		    code_number(ref->id_flags, data);
+                    encode_number(ref->id_flags, data);
                     ETRACE({
 			ENCODE_WERR_COMMENT("modifiers",
 					    ".number  %u", ref->id_flags);
@@ -1827,29 +1827,29 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 
 		  /* name */
 		  str_sval.u.string = id->name;
-		  encode_value2(&str_sval, data, 0);
+                  encode_value2(&str_sval, data, 0);
 
 		  /* type */
 		  ref_push_type_value(id->type);
-		  encode_value2(Pike_sp-1, data, 0);
+                  encode_value2(Pike_sp-1, data, 0);
 		  pop_stack();
 
 		  /* filename */
-		  code_number(id->filename_strno, data);
+                  encode_number(id->filename_strno, data);
                   ETRACE({
 		      ENCODE_WERR_COMMENT("filename_strno",
 					  ".number  %u", id->filename_strno);
 		    });
 
 		  /* linenumber */
-		  code_number(id->linenumber, data);
+                  encode_number(id->linenumber, data);
                   ETRACE({
 		      ENCODE_WERR_COMMENT("linenumber",
 					  ".number  %ld", (long)id->linenumber);
 		    });
 
 		  /* func_flags (aka identifier_flags) */
-		  code_number(id->identifier_flags, data);
+                  encode_number(id->identifier_flags, data);
                   ETRACE({
 		      ENCODE_WERR_COMMENT("identifier_flags",
 					  ".number  %u",
@@ -1861,11 +1861,11 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		    /* Code the number of the string containing
 		     * the raw bytecode.
 		     */
-		    code_number(read_program_data(p->program + id->func.offset,
+                    encode_number(read_program_data(p->program + id->func.offset,
 						  -1), data);
 		  } else {
 		    /* Prototype */
-		    code_number(-1, data);
+                    encode_number(-1, data);
 		  }
                   ETRACE({
 		      ENCODE_WERR_COMMENT("offset",
@@ -1874,7 +1874,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		    });
 
 		  /* opt_flags */
-		  code_number(id->opt_flags, data);
+                  encode_number(id->opt_flags, data);
                   ETRACE({
 		      ENCODE_WERR_COMMENT("opt_flags",
 					  ".number  %u", id->opt_flags);
@@ -1968,18 +1968,18 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		      fprintf(stderr, "%*sencode: encoding variable\n",
 			      data->depth, ""));
 		encode_entry_variable:
-		  code_number(ID_ENTRY_VARIABLE, data);
+                  encode_number(ID_ENTRY_VARIABLE, data);
                   ETRACE({
 		      ENCODE_WERR(".ident   variable");
 		    });
 		  if (gs_flags >= 0) {
-		    code_number(gs_flags, data);
+                    encode_number(gs_flags, data);
                     ETRACE({
 			ENCODE_WERR_COMMENT("modifiers",
 					    ".number  %d", gs_flags);
 		      });
 		  } else {
-		    code_number(ref->id_flags, data);
+                    encode_number(ref->id_flags, data);
                     ETRACE({
 			ENCODE_WERR_COMMENT("modifiers",
 					    ".number  %u", ref->id_flags);
@@ -1996,14 +1996,14 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		  pop_stack();
 
 		  /* filename */
-		  code_number(id->filename_strno, data);
+                  encode_number(id->filename_strno, data);
                   ETRACE({
 		      ENCODE_WERR_COMMENT("filename_strno",
 					  ".number  %u", id->filename_strno);
 		    });
 
 		  /* linenumber */
-		  code_number(id->linenumber, data);
+                  encode_number(id->linenumber, data);
                   ETRACE({
 		      ENCODE_WERR_COMMENT("linenumber",
 					  ".number  %ld", (long)id->linenumber);
@@ -2021,7 +2021,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	      }
 
 	      /* Identifier reference number */
-	      code_number(d, data);
+              encode_number(d, data);
               ETRACE({
 		  ENCODE_WERR_COMMENT("ref_no",
 				      ".number  %d", d);
@@ -2059,7 +2059,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	      data->depth += 2;
 #endif
 
-	      code_number(ID_ENTRY_INHERIT, data);
+              encode_number(ID_ENTRY_INHERIT, data);
               ETRACE({
 		  ENCODE_WERR(".ident   inherit");
 		});
@@ -2092,7 +2092,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 			  data->depth, "",
 			  inherit_flags_set, inherit_flags_mask));
 	      inherit_flags_set &= inherit_flags_mask;
-	      code_number(inherit_flags_set, data);
+              encode_number(inherit_flags_set, data);
               ETRACE({
 		  ENCODE_WERR_COMMENT("modifiers",
 				      ".number  %u", inherit_flags_set);
@@ -2103,7 +2103,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 			  data->depth, "", inherit_flags_set));
 
 	      /* Identifier reference level at insertion. */
-	      code_number(d_max, data);
+              encode_number(d_max, data);
               ETRACE({
 		  ENCODE_WERR_COMMENT("max_ref_no",
 				      ".number  %d", d_max);
@@ -2130,21 +2130,21 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	      pop_stack();
 
 	      /* parent_identifier */
-	      code_number(inh->parent_identifier, data);
+              encode_number(inh->parent_identifier, data);
               ETRACE({
 		  ENCODE_WERR_COMMENT("parent_id",
 				      ".number  %d", inh->parent_identifier);
 		});
 
 	      /* parent_offset */
-	      code_number(inh->parent_offset, data);
+              encode_number(inh->parent_offset, data);
               ETRACE({
 		  ENCODE_WERR_COMMENT("parent_offset",
 				      ".number  %d", inh->parent_offset);
 		});
 
 	      /* Number of identifier references. */
-	      code_number(inh->prog->num_identifier_references, data);
+              encode_number(inh->prog->num_identifier_references, data);
               ETRACE({
 		  ENCODE_WERR_COMMENT("num_refs",
 				      ".number  %d",
@@ -2159,7 +2159,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	    }
 	  }
 	  /* End-marker */
-	  code_number(ID_ENTRY_EOT, data);
+          encode_number(ID_ENTRY_EOT, data);
           ETRACE({
 	      ENCODE_WERR_COMMENT("End of identifier table",
 				  ".ident   eot");
