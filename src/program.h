@@ -17,6 +17,8 @@
 #include "string_builder.h"
 #include "gc_header.h"
 
+#include "enum_Pike_opcodes.h"
+
 /* Needed to support dynamic loading on NT */
 PMOD_EXPORT extern struct program_state * Pike_compiler;
 
@@ -1122,7 +1124,6 @@ PMOD_EXPORT void *parent_storage(int depth, struct program *expected);
 PMOD_EXPORT void *get_inherited_storage(int inh, struct program *expected);
 void make_area_executable (char *start, size_t len);
 void make_program_executable(struct program *p);
-enum Pike_opcodes;
 PMOD_EXPORT void string_builder_append_pike_opcode(struct string_builder *s,
 						   const PIKE_OPCODE_T *addr,
 						   enum Pike_opcodes op,
