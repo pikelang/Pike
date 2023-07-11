@@ -2611,21 +2611,28 @@ static DECLSPEC(noreturn) void decode_error (
     });									\
 }while(0)
 
-#define decode_number(X, data, comment) do {            \
-    INT32 what, e;                                      \
-    INT64 num;                                          \
-    DECODE("decode_number");                            \
-    num = X = (what & TAG_MASK) | ((UINT64)num<<4);     \
-    EDB(5, fprintf(stderr, "%*s  ==>%"PRINTINT64"d\n",	\
-                   data->depth, "", num));              \
-    if (comment) {                                      \
-      ETRACE({                                          \
-          DECODE_WERR_COMMENT(comment, ".number  "      \
-                              "%"PRINTINT64"d", num);   \
-        });                                             \
-    }                                                   \
-  } while(0)
+static INT64 decode_number(struct decode_data *data, const char *comment)
+{
+  INT32 what, e;
+  INT64 num;
 
+  DECODE("decode_number");
+  num = (what & TAG_MASK) | ((UINT64)num<<4);
+  EDB(5, fprintf(stderr, "%*s  ==>%"PRINTINT64"d\n",
+                 data->depth, "", num));
+  if (comment) {
+    ETRACE({
+        DECODE_WERR_COMMENT(comment, ".number  "
+                            "%"PRINTINT64"d", num);
+      });
+  }
+
+  return num;
+}
+
+#define decode_number(X, data, comment) do {    \
+    X = decode_number(data, comment);           \
+  } while(0)
 
 static void restore_type_stack(struct pike_type **old_stackp)
 {
