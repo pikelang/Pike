@@ -58,7 +58,7 @@ static int alloc_regs = 0, valid_regs = 0;
 #define CLEAR_REGS() do {} while (0)
 #endif
 
-#define PUSH_INT(X) ins_int((INT32)(X), (void (*)(char))add_to_program)
+#define PUSH_INT(X) ins_int((INT32)(X), (void (*)(unsigned char))add_to_program)
 #define PUSH_ADDR(X) PUSH_INT((X))
 
 #define NOP() add_to_program(0x90); /* for alignment */
