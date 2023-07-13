@@ -4,6 +4,11 @@ AC_CONFIG_HEADER(config.h)
 AC_MODULE_INIT()
 
 AC_HAVE_HEADERS(sys/mman.h linux/mman.h sys/id.h sys/file.h)
-AC_HAVE_FUNCS(mmap munmap geteuid seteuid setresuid madvise)
+AC_HAVE_FUNCS(mmap munmap geteuid seteuid setresuid madvise posix_madvise)
+
+AC_CHECK_DECLS(madvise,,,[
+#include <sys/types.h>
+#include <sys/mman.h>
+])
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )

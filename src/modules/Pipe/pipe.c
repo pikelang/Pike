@@ -42,6 +42,14 @@
 
 #include <fcntl.h>
 
+#ifndef HAVE_POSIX_MADVISE
+#if defined(HAVE_MADVISE) && !HAVE_DECL_MADVISE
+/* Solaris 10 hides the prototype for madvise(3C) when compiling for
+ * XPG4_2 or later, but lacks posix_madvise(3C) from XPG6.
+ */
+extern int madvise(void *, size_t, int);
+#endif
+#endif
 
 #ifndef S_ISREG
 #ifdef S_IFREG
@@ -757,8 +765,11 @@ static void pipe_input(INT32 args)
 	 i->type=I_MMAP;
 	 i->len = len;
 	 i->u.mmap=m;
-#if defined(HAVE_MADVISE) && defined(MADV_SEQUENTIAL)
+
 	 /* Mark the pages as sequential read only access... */
+#if defined(HAVE_POSIX_MADVISE) && defined(POSIX_MADV_SEQUENTIAL)
+         posix_madvise(m, len, POSIX_MADV_SEQUENTIAL);
+#elif defined(HAVE_MADVISE) && defined(MADV_SEQUENTIAL)
 	 madvise(m, len, MADV_SEQUENTIAL);
 #endif
          return;
