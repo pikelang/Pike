@@ -4,6 +4,7 @@
 || for more information.
 */
 
+#include "global.h"
 #include "buffer.h"
 #include "stralloc.h"
 #include "svalue.h"
