@@ -4,14 +4,14 @@
 || for more information.
 */
 
-#include <math.h>
-
 #include "module.h"
 #include "pike_macros.h"
 #include "interpret.h"
 #include "module_support.h"
 
 #include "config.h"
+
+#include <math.h>
 
 #include "whitefish.h"
 #include "resultset.h"
