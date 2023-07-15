@@ -601,6 +601,35 @@ typedef struct p_wchar_p
 # define DMALLOCUSED(x) PIKE_UNUSED(x)
 #endif
 
+/* Add some recognition macros for availability of #pragmas. */
+#ifdef __GNUC__
+# if (__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 4)
+   /* Several #pragmas were added in GCC 4.4. */
+#  define HAVE_PRAGMA_GCC_OPTIMIZE
+#  define HAVE_PRAGMA_GCC_PUSH_POP_OPTIONS
+#  define HAVE_PRAGMA_GCC_RESET_OPTIONS
+# endif
+# if (__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)
+   /* #pragma GCC diagnostic was added in GCC 4.6. */
+#  define HAVE_PRAGMA_GCC_DIAGNOSTIC
+# endif
+# if (__GNUC__ >= 8)
+#  define HAVE_PRAGMA_GCC_UNROLL
+# endif
+#endif
+
+#ifdef __GNUC__
+# if (__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
+/* The noclone attribute was added in GCC 4.5. */
+#  define ATTRIBUTE_NOCLONE	ATTRIBUTE((noinline,noclone))
+# elif defined(__clang__)
+#  define ATTRIBUTE_NOCLONE	ATTRIBUTE((noinline,noclone))
+# endif
+#endif
+#ifndef ATTRIBUTE_NOCLONE
+/* In prior versions of GCC noinline implied noclone. */
+# define ATTRIBUTE_NOCLONE	ATTRIBUTE((noinline))
+#endif
 
 /* PMOD_EXPORT exports a function / variable vfsh. */
 #ifndef PMOD_EXPORT

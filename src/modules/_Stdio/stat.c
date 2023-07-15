@@ -900,7 +900,7 @@ static void stat_values(INT32 args)
    stack_pop_keep_top();
 }
 
-#if defined(__GNUC__) && !defined(__clang__)
+#ifdef HAVE_PRAGMA_GCC_OPTIMIZE
 /* Without this gcc inlines all the function calls to _index_set etc below.
 
    It's really rather pointless. And we really need a better way to

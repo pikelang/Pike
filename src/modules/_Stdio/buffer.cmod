@@ -166,7 +166,7 @@ PIKECLASS Buffer
   }
 
   static void io_unlink_external_storage( Buffer *io )
-    ATTRIBUTE((noclone,noinline));
+    ATTRIBUTE_NOCLONE;
 
   static void io_unlink_external_storage( Buffer *io )
   {
@@ -219,10 +219,10 @@ PIKECLASS Buffer
 
   static struct object *
    io_read_buffer( Buffer *io, size_t len, int do_copy, size_t headroom )
-    ATTRIBUTE((noclone,noinline));
+    ATTRIBUTE_NOCLONE;
 
   PMOD_EXPORT unsigned char *io_add_space_do_something( Buffer *io, size_t bytes, int force )
-    ATTRIBUTE((noclone,noinline));
+    ATTRIBUTE_NOCLONE;
   PMOD_EXPORT unsigned char *io_add_space_do_something( Buffer *io, size_t bytes, int force )
   {
     size_t growth =
@@ -368,7 +368,7 @@ PIKECLASS Buffer
   }
 
   static void io_range_error_throw( Buffer *io, int howmuch )
-    ATTRIBUTE((noclone,noinline));
+    ATTRIBUTE_NOCLONE;
 
   static void io_range_error_throw( Buffer *io, int howmuch )
   {
@@ -398,7 +398,7 @@ PIKECLASS Buffer
   }
 
   static struct pike_string *io_read_string( Buffer *io, ptrdiff_t len )
-    ATTRIBUTE((noclone,noinline));
+    ATTRIBUTE_NOCLONE;
   static size_t io_rewind( Buffer *io, INT_TYPE n );
 
   static void io_do_rewind_on_error( struct rewind_to *e )
@@ -454,10 +454,10 @@ PIKECLASS Buffer
 
   static ptrdiff_t io_call_write( Buffer *io, struct svalue *fun,
 				  ptrdiff_t nbytes )
-    ATTRIBUTE((noclone,noinline));
+    ATTRIBUTE_NOCLONE;
 
   static void io_set_events( Buffer *io, struct my_file *fd, int extra, int set )
-    ATTRIBUTE((noclone,noinline));
+    ATTRIBUTE_NOCLONE;
 
   static void io_set_events( Buffer *UNUSED(io), struct my_file *fd, int extra, int set )
   {
@@ -505,7 +505,7 @@ PIKECLASS Buffer
   }
 
   PMOD_EXPORT void io_actually_trigger_output( Buffer *io )
-    ATTRIBUTE((noclone,noinline));
+    ATTRIBUTE_NOCLONE;
 
   PMOD_EXPORT void io_actually_trigger_output( Buffer *io )
   {
@@ -524,7 +524,7 @@ PIKECLASS Buffer
   }
 
   static int io_range_error( Buffer *io, ptrdiff_t howmuch )
-    ATTRIBUTE((noclone,noinline));
+    ATTRIBUTE_NOCLONE;
 
   static int io_range_error( Buffer *io, ptrdiff_t howmuch )
   {
@@ -730,7 +730,7 @@ PIKECLASS Buffer
   }
 
   static void io_add_bignum( Buffer *io, struct object *o, int width )
-    ATTRIBUTE((noclone,noinline));
+    ATTRIBUTE_NOCLONE;
 
   static void io_add_bignum( Buffer *io, struct object *o, int width )
   {
@@ -872,7 +872,7 @@ PIKECLASS Buffer
 
   /* NOTE: Can return negative integers. */
   static INT_TYPE get_small_int( struct svalue *s )
-    ATTRIBUTE((noclone,noinline));
+    ATTRIBUTE_NOCLONE;
 
   static INT_TYPE get_small_int( struct svalue *s )
   {
