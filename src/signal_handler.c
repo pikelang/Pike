@@ -376,7 +376,7 @@
    using modern OS:es and setting the signal flags correctly, but...)
 */
 
-#if defined(__GNUC__) && !defined(__clang__)
+#ifdef HAVE_PRAGMA_GCC_OPTIMIZE
 #pragma GCC optimize "-Os"
 #endif
 
