@@ -188,7 +188,7 @@ pointless, since gcc will use other sse4 instructions when suitable.
 */
 ATTRIBUTE((target("sse4")))
 #endif
-ATTRIBUTE((hot))
+PIKE_HOT_ATTRIBUTE
 static inline size_t low_hashmem_ia32_crc32( const void *s, size_t len,
 					     size_t nbytes, UINT64 key )
 {
@@ -286,14 +286,14 @@ static void init_hashmem()
 #else
 static void init_hashmem(){}
 
-ATTRIBUTE((hot))
+PIKE_HOT_ATTRIBUTE
   size_t low_hashmem(const void *a, size_t len_, size_t mlen_, UINT64 key_)
 {
     return low_hashmem_siphash24(a, len_, mlen_, key_);
 }
 #endif
 
-ATTRIBUTE((hot))
+PIKE_HOT_ATTRIBUTE
   size_t hashmem(const void *a, size_t len_, size_t mlen_)
 {
   return low_hashmem(a, len_, mlen_, 0);

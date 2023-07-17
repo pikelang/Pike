@@ -10,7 +10,7 @@
 #ifdef __i386__
 ATTRIBUTE((fastcall))
 #endif
-ATTRIBUTE((hot))
+PIKE_HOT_ATTRIBUTE
 PMOD_EXPORT UINT64 low_hashmem_siphash24( const void *s, size_t len, size_t nbytes,
                                                   UINT64 key );
 
@@ -32,14 +32,14 @@ ATTRIBUTE((unused))
 #ifdef __i386__
 ATTRIBUTE((fastcall))
 #endif
-ATTRIBUTE((hot))
+PIKE_HOT_ATTRIBUTE
 PMOD_EXPORT UINT64 low_hashmem_siphash24_uint32( const unsigned INT32 *in, size_t len,
                                                          UINT64 key );
 
 #ifdef __i386__
 ATTRIBUTE((fastcall))
 #endif
-ATTRIBUTE((hot))
+PIKE_HOT_ATTRIBUTE
 PMOD_EXPORT UINT64 low_hashmem_siphash24_uint16( const unsigned INT16 *in, size_t len,
                                                          UINT64 key );
 #else

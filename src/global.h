@@ -619,12 +619,26 @@ typedef struct p_wchar_p
 #endif
 
 #ifdef __GNUC__
+# if (__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3)
+/* The hot and cold attributes are not implemented in GCC
+ * versions prior to 4.3.
+ */
+#  define PIKE_HOT_ATTRIBUTE	ATTRIBUTE((hot))
+#  define PIKE_COLD_ATTRIBUTE	ATTRIBUTE((cold))
+# elif defined(__clang__)
+#  define PIKE_HOT_ATTRIBUTE	ATTRIBUTE((hot))
+#  define PIKE_COLD_ATTRIBUTE	ATTRIBUTE((cold))
+# endif
 # if (__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
 /* The noclone attribute was added in GCC 4.5. */
 #  define ATTRIBUTE_NOCLONE	ATTRIBUTE((noinline,noclone))
 # elif defined(__clang__)
 #  define ATTRIBUTE_NOCLONE	ATTRIBUTE((noinline,noclone))
 # endif
+#endif
+#ifndef PIKE_HOT_ATTRIBUTE
+# define PIKE_HOT_ATTRIBUTE
+# define PIKE_COLD_ATTRIBUTE
 #endif
 #ifndef ATTRIBUTE_NOCLONE
 /* In prior versions of GCC noinline implied noclone. */
