@@ -15761,6 +15761,35 @@ try_load_test_module(5)
 
 test_do(Stdio.recursive_rm("recursive_module_dump_test"))
 
+
+dnl Another dumping test
+test_do(Stdio.recursive_rm("cmod_dependency_dump_test"))
+test_do(mkdir("cmod_dependency_dump_test"))
+test_do(mkdir("cmod_dependency_dump_test/TestModule.pmod"))
+test_do([[Stdio.write_file("cmod_dependency_dump_test/TestModule.pmod/module.pmod", #"
+inherit Parser._parser.XML;
+.Foo.Bar x;
+")]])
+test_do([[Stdio.write_file("cmod_dependency_dump_test/TestModule.pmod/Foo.pmod", #"
+class Bar { inherit .Simple; }
+")]])
+
+test_tests([[ array a() {
+  Tools.Testsuite.log_status("Accessing TestModule.Foo before dump");
+  return Tools.Testsuite.run_script(({"-M", "cmod_dependency_dump_test", "-e", "TestModule.Foo"}));
+}]])
+test_tests([[ array a() {
+  Tools.Testsuite.log_status("Dumping module.pmod");
+  return Tools.Testsuite.run_script(({"-M", "cmod_dependency_dump_test", "-x", "dump", "cmod_dependency_dump_test/TestModule.pmod/module.pmod"}));
+}]])
+test_tests([[ array a() {
+  Tools.Testsuite.log_status("Accessing TestModule.Foo after dump");
+  return Tools.Testsuite.run_script(({"-M", "cmod_dependency_dump_test", "-e", "TestModule.Foo"}));
+}]])
+
+test_do(Stdio.recursive_rm("cmod_dependency_dump_test"))
+
+
 dnl - Deprecated safe indexing
 test_compile_warning( mapping foo; foo?->bar; )
 
