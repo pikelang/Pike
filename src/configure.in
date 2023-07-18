@@ -2037,6 +2037,9 @@ TEST_BUILTIN(_bit_scan_forward, 23, [
     #include <immintrin.h>
 ])
 # Visual Studio builtins
+TEST_BUILTIN_VOID(__assume, [23], [
+    #include <intrin.h>
+])
 TEST_BUILTIN(_BitScanForward, [&lint, 23], [
     #include <intrin.h>
 ])
