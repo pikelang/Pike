@@ -3185,13 +3185,13 @@ PMOD_EXPORT void f_aggregate_multiset (INT32 args)
 struct multiset *copy_multiset_recursively (struct multiset *l,
 					    struct mapping *p)
 {
-  int not_complex;
+  int not_complex = 0;
   struct tree_build_data new;
   struct multiset_data *msd = l->msd;
   union msnode *node;
   int pos;
   struct svalue ind;
-  TYPE_FIELD ind_types, val_types;
+  TYPE_FIELD ind_types = 0, val_types = BIT_INT;
   ONERROR uwp;
 
   debug_malloc_touch (l);
@@ -3202,8 +3202,6 @@ struct multiset *copy_multiset_recursively (struct multiset *l,
 #endif
 
   if (msd->root && ((msd->ind_types | msd->val_types) & BIT_COMPLEX)) {
-    not_complex = 0;
-
     /* Use a dummy empty msd temporarily in the new multiset, since the
      * real one is not suitable for general consumption while it's being
      * built below. This will have the effect that any changes in the
@@ -3212,8 +3210,6 @@ struct multiset *copy_multiset_recursively (struct multiset *l,
     new.l = allocate_multiset (0, msd->flags, &msd->cmp_less);
     new.msd = low_alloc_multiset_data (multiset_sizeof (l), msd->flags);
     assign_svalue_no_free (&new.msd->cmp_less, &msd->cmp_less);
-    ind_types = 0;
-    val_types = BIT_INT;
     add_ref (new.msd2 = msd);
     SET_ONERROR (uwp, free_tree_build_data, &new);
   }
