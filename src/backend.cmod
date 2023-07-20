@@ -1385,7 +1385,6 @@ PIKECLASS Backend
      {
        int e;
        struct array *ret;
-       struct timeval now;
        ONERROR err;
        DECLARE_PROTECT_CALL_OUTS;
 
@@ -1394,29 +1393,35 @@ PIKECLASS Backend
        ret=allocate_array_no_init(0, me->num_pending_calls);
        SET_ONERROR(err, do_free_array, ret);
        ret->type_field = BIT_ARRAY;
-       if(me->num_pending_calls) INACCURATE_GETTIMEOFDAY(&now);
-       for(e=0;e<me->num_pending_calls;e++)
-       {
-	 struct array *v;
-	 v=allocate_array_no_init(CALL(e)->args->size+2, 0);
-	 ITEM(v)[0].u.integer=CALL(e)->tv.tv_sec - now.tv_sec;
 
-	 /* FIXME: ITEM(v)[1] used to be the current object
-	  *        from when the call_out was created, but
-	  *        that is always the backend since the
-	  *        backend.cmod rewrite.
-	  *        Now we just leave it zero.
-	  */
-	 v->type_field = BIT_INT;
+       if(me->num_pending_calls) {
+         struct timeval now;
+         INACCURATE_GETTIMEOFDAY(&now);
 
-	 v->type_field |=
-	   assign_svalues_no_free(ITEM(v)+2,
-				  ITEM(CALL(e)->args),
-				  CALL(e)->args->size,BIT_MIXED);
+         for(e=0;e<me->num_pending_calls;e++)
+         {
+           struct array *v;
+           v=allocate_array_no_init(CALL(e)->args->size+2, 0);
+           ITEM(v)[0].u.integer=CALL(e)->tv.tv_sec - now.tv_sec;
 
-	 SET_SVAL(ITEM(ret)[e], T_ARRAY, 0, array, v);
-	 ret->size++;
+           /* FIXME: ITEM(v)[1] used to be the current object
+            *        from when the call_out was created, but
+            *        that is always the backend since the
+            *        backend.cmod rewrite.
+            *        Now we just leave it zero.
+            */
+           v->type_field = BIT_INT;
+
+           v->type_field |=
+             assign_svalues_no_free(ITEM(v)+2,
+                                    ITEM(CALL(e)->args),
+                                    CALL(e)->args->size,BIT_MIXED);
+
+           SET_SVAL(ITEM(ret)[e], T_ARRAY, 0, array, v);
+           ret->size++;
+         }
        }
+
        UNSET_ONERROR(err);
        UNPROTECT_CALL_OUTS();
        return ret;

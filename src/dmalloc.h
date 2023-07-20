@@ -261,8 +261,8 @@ PMOD_EXPORT struct mallinfo dlmallinfo(void);
 #define debug_malloc_pass_named(X,NAME) (DMALLOC_TRACE_LOG(DMALLOC_NAMED_LOCATION(" " NAME)), (X))
 #define debug_malloc_touch_bt(X) DMALLOC_TRACE_LOG(DMALLOC_LOCATION())
 #define debug_malloc_touch_named_bt(X,NAME) DMALLOC_TRACE_LOG(DMALLOC_NAMED_LOCATION(" " NAME))
-#define dmalloc_touch(TYPE,X) debug_malloc_pass (X)
-#define dmalloc_touch_named(TYPE,X,NAME) debug_malloc_pass_named (X, NAME)
+#define dmalloc_touch(TYPE,X) ((TYPE)debug_malloc_pass(X))
+#define dmalloc_touch_named(TYPE,X,NAME) ((TYPE)debug_malloc_pass_named(X, NAME))
 #else /* DMALLOC_TRACE */
 #define debug_malloc_update_location(X,Y) (X)
 #define dmalloc_touch_svalue(X)
@@ -273,8 +273,8 @@ PMOD_EXPORT struct mallinfo dlmallinfo(void);
 #define debug_malloc_pass_named(X,NAME) (X)
 #define debug_malloc_touch_bt(X)
 #define debug_malloc_touch_named_bt(X,NAME)
-#define dmalloc_touch(TYPE,X) (X)
-#define dmalloc_touch_named(TYPE,X,NAME) (X)
+#define dmalloc_touch(TYPE,X) ((TYPE)(X))
+#define dmalloc_touch_named(TYPE,X,NAME) ((TYPE)(X))
 #endif /* !MALLOC_TRACE */
 
 #endif /* !DEBUG_MALLOC */
