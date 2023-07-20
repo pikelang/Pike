@@ -556,7 +556,7 @@ PMOD_EXPORT extern void push_utf16_text(const p_wchar1 *x);
 		   inh__, Pike_fp->context->prog->num_inherits-1);	\
       if (prog__ && (Pike_fp->context[inh__].prog != prog__))		\
 	Pike_fatal("Inherit #%d has wrong program %p != %p.\n",		\
-		   Pike_fp->context[inh__].prog, prog__);		\
+                   inh__, Pike_fp->context[inh__].prog, prog__);        \
     );									\
     VAR = ((TYPE *)(Pike_fp->current_object->storage +			\
 		    Pike_fp->context[inh__].storage_offset));		\
