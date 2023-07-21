@@ -1677,6 +1677,53 @@ PIKEFUN string|zero program_defined(program p)
     push_int(0);
 }
 
+/*! @decl object clone_to(object placeholder, program p, @
+ *!                       mixed ... p_args)
+ *!
+ *! Coerce a placeholder object into a clone of a program.
+ *!
+ *! @param placeholder
+ *!   Clone of @[__null_program] to alter.
+ *!
+ *! @param p
+ *!   Program to coerce the object to be a clone of.
+ *!
+ *! @param p_args
+ *!   Arguments to pass to @[lfun::create()] in @[p].
+ *!
+ *! @returns
+ *!   Returns @[placeholder] after successful coercion.
+ *!
+ *! @note
+ *!   @[placeholder] may also already be a clone of [p], in which
+ *!   case this operation is a no-op.
+ *!
+ *! @seealso
+ *!   @[__null_program]
+ */
+PIKEFUN object clone_to(object placeholder, program p, mixed ... p_args)
+  efun;
+{
+  if (placeholder->prog == p) {
+    /* Already done. */
+    RETURN placeholder;
+  }
+
+  if (placeholder->prog != null_program) {
+    Pike_error("Placeholder object is not a null_program clone!\n");
+  }
+
+  free_program(placeholder->prog);
+  add_ref(placeholder->prog = p);
+  if (p->storage_needed) {
+    placeholder->storage = xcalloc(p->storage_needed, 1);
+  }
+  call_c_initializers(placeholder);
+  call_pike_initializers(placeholder, args-2);
+
+  RETURN placeholder;
+}
+
 static void f_proxy_create(INT32 args)
 {
   struct object *o;
