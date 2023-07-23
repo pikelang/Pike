@@ -2547,19 +2547,36 @@ program handle_inherit(string pname, string current_file, object|void handler)
 }
 
 object|zero low_cast_to_object(string oname, string|zero current_file,
-                               object|void current_handler)
+                               object|void current_handler,
+                               object|void placeholder)
 {
   program p;
-  object o;
+  object o = placeholder || __null_program();
 
-  p = low_cast_to_program(oname, current_file, current_handler, 1);
-  if(!p) return 0;
+  p = low_cast_to_program(oname, current_file, current_handler, o);
+  if(!p) {
+    destruct(o);
+    return 0;
+  }
+#if 0
+  if (object_program(o) != p) {
+    error("low_cast_to_program() failed to initialize object: %O\n", o);
+  }
+  if (!objects[p]) {
+    object compiler_lock = DefaultCompilerEnvironment->lock();
+    if (!objects[p]) {
+      objects[p] = o;
+    }
+    destruct(compiler_lock);
+  }
+#else
   if(!objectp(o = objects[p])) {
     object compiler_lock = DefaultCompilerEnvironment->lock();
     // NB: p might be a function in a fake_object...
     if(!objectp(o = objects[p])) o = objects[p] = p();
     destruct(compiler_lock);
   }
+#endif
   return o;
 }
 
@@ -2748,7 +2765,7 @@ class dirnode (string dirname, object|void compilation_handler,
     protected array _values() { if(module) return values(module); }
   }
 
-  protected mixed low_ind(string index, int(0..1)|void set_module)
+  protected mixed low_ind(string index, object|void placeholder)
   {
     array(string) paths;
 
@@ -2795,9 +2812,10 @@ class dirnode (string dirname, object|void compilation_handler,
 	//        low_findprog() and the caches.
 	mixed ret;
 	if (ret = catch {
-	    if (objectp(ret = low_cast_to_object(fname, 0, compilation_handler))) {
+            if (objectp(ret = low_cast_to_object(fname, 0, compilation_handler,
+                                                 placeholder))) {
 	      // This assignment is needed for eg the Calendar module.
-	      if (set_module) module = ret;
+              if (placeholder) module = ret;
 	      if(mixed tmp=ret->_module_value) ret=tmp;
 	      DEC_RESOLV_MSG_DEPTH();
 	      resolv_debug("dirnode(%O)->ind(%O) => found submodule %O:%O\n",
@@ -6150,11 +6168,32 @@ class Encoder
   }
 }
 
-class Decoder (void|string fname, void|int mkobj, void|object handler)
+class Decoder(void|string fname,
+              void|__deprecated__(int)|object placeholder,
+              void|object handler)
 //! @appears Pike.Decoder
 //!
 //! Codec for use with @[decode_value]. This is the decoder
 //! corresponding to @[Encoder]. See that one for more details.
+//!
+//! @param fname
+//!   Name of file being decoded.
+//!
+//! @param placeholder
+//!   Make a singleton object of the program being decoded.
+//!   One of:
+//!   @mixed
+//!     @type void|zero
+//!       Do not make an object.
+//!     @type object
+//!       Object to alter into the singleton.
+//!       MUST be a clone of @[__null_program()].
+//!     @type __deprecated__(int(1..1))
+//!       Old API: Generate a singleton object.
+//!   @endmixed
+//!
+//! @param handler
+//!   Handler object to use.
 {
   protected int unregistered = 1;
 
@@ -6168,8 +6207,12 @@ class Decoder (void|string fname, void|int mkobj, void|object handler)
       unregistered = 0;
       resolv_debug("register %s\n", fname);
       programs[fname]=p;
-      if (mkobj)
+      if (placeholder) {
+        if (objectp((mixed)placeholder)) {
+          DEC_RETURN(objects[p] = [object]placeholder);
+        }
 	DEC_RETURN (objectp (objects[p]) ? objects[p] : (objects[p]=__null_program()));
+      }
     }
     DEC_RETURN (0);
   }
@@ -6334,17 +6377,19 @@ class Decoder (void|string fname, void|int mkobj, void|object handler)
 // it's really pointless.
 protected mapping(string:Decoder) codecs = set_weak_flag (([]), 1);
 
-Decoder get_codec(string|void fname, int|void mkobj, void|object handler)
+Decoder get_codec(string|void fname,
+                  void|__deprecated__(int)|object placeholder,
+                  void|object handler)
 {
   if (handler)
     // Decoders are currently not reused in this case since it's
     // tricky to set up a weak multilevel mapping for lookup. This is
     // seldom a problem since explicit handlers are fairly rare. If it
     // is then the handler can always override this function.
-    return Decoder (fname, mkobj, handler);
-  string key = fname + "\0" + mkobj;
+    return Decoder (fname, placeholder, handler);
+  string key = fname + "\0" + !!((mixed)placeholder);
   if (codecs[key]) return codecs[key];
-  return codecs[key] = Decoder(fname, mkobj);
+  return codecs[key] = Decoder(fname, placeholder);
 }
 
 class Codec
