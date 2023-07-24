@@ -250,6 +250,9 @@ test_eq(Types.GeneralizedTime()->set_posix(1<<32)->get_der(), "\30\17""210602070
 test_decode("180f32323432303331363132353633325a", "GeneralizedTime(22420316125632Z)")
 test_eq(Types.GeneralizedTime()->set_posix(1<<33)->get_der(), "\30\17""22420316125632Z")
 
+test_do(Standards.ASN1.Decode.simple_der_decode(Standards.ASN1.Types.Identifier(@allocate(587,1))->get_der()))
+test_eval_error(Standards.ASN1.Decode.simple_der_decode(Standards.ASN1.Types.Identifier(@allocate(588,1))->get_der()))
+
 test_do( add_constant("P"); )
 test_do( add_constant("Types"); )
 

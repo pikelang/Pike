@@ -676,6 +676,9 @@ class Identifier
 					 Object)|void decoder,
                                 mapping(int:program(Object))|void types,
                                 void|int(0..1) secure) {
+    // Max size of OID according to RFC 2578
+    if (sizeof(contents) > 586)
+      error("Illegal object identifier.\n");
     if (contents[0] < 120)
       id = ({ contents[0] / 40, contents[0] % 40 });
     else
