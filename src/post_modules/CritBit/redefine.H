@@ -1,3 +1,4 @@
+/* -*- mode: C; c-basic-offset: 4; -*- */
 cmod_REDEFINE(iterator_class)
 cmod_REDEFINE(tree_class)
 cmod_REDEFINE(cmod_OBJ2_TREE)

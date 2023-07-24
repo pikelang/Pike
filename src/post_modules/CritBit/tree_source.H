@@ -1,3 +1,4 @@
+/* -*- mode: C; c-basic-offset: 4; -*- */
 #ifndef CB_GC_RECURSE_KEY
 # define CB_GC_RECURSE_KEY(X)
 #endif

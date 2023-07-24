@@ -1,3 +1,4 @@
+/* -*- mode: C; c-basic-offset: 4; -*- */
     DOCSTART() @decl key_ptype|int common_prefix()
      *! Returns the common prefix of all keys.
      *! If the tree has no elements, @[UNDEFINED] is returned.

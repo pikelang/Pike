@@ -1,3 +1,4 @@
+/* -*- mode: C; c-basic-offset: 4; -*- */
 DOCSTART() @class tree_class
  *! This class implements a CritBit-tree/trie that can be used as a
  *! mapping-like data structure. Values of @expr{key_ptype@} can be

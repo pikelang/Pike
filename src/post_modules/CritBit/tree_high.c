@@ -1,3 +1,4 @@
+/* -*- mode: C; c-basic-offset: 4; -*- */
 static inline void cb_print_key(struct string_builder *, const cb_key);
 static inline size_t _low_cb_check_node(cb_node_t node, const char *, int);
 

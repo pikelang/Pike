@@ -1,3 +1,4 @@
+/* -*- mode: C; c-basic-offset: 4; -*- */
 #ifndef CB_FLOAT_H
 #define CB_FLOAT_H
 #include <math.h>

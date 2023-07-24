@@ -1,3 +1,4 @@
+/* -*- mode: C; c-basic-offset: 4; -*- */
 #ifndef _PTR_VALUE_H
 #define _PTR_VALUE_H
 

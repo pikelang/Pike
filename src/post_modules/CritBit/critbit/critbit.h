@@ -1,3 +1,4 @@
+/* -*- mode: C; c-basic-offset: 4; -*- */
 #ifndef CB_CRITBIT_H
 #define CB_CRITBIT_H
 #define CONCAT2_(a, b)		a ## b

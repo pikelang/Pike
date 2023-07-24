@@ -1,3 +1,4 @@
+/* -*- mode: C; c-basic-offset: 4; -*- */
 #include <stdlib.h>
 #include <sys/types.h>
 

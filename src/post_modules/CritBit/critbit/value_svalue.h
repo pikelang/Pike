@@ -1,3 +1,4 @@
+/* -*- mode: C; c-basic-offset: 4; -*- */
 #ifndef CB_VALUE_SVALUE_H
 #define CB_VALUE_SVALUE_H
 #include "svalue.h"

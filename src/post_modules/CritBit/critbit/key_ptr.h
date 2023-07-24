@@ -1,3 +1,4 @@
+/* -*- mode: C; c-basic-offset: 4; -*- */
 #ifndef CB_KEY_PTR_H
 #define CB_KEY_PTR_H
 #include "global.h"

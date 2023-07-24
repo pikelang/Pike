@@ -1,3 +1,4 @@
+/* -*- mode: C; c-basic-offset: 4; -*- */
 #ifndef CB_KEY_PIKEINT_H
 #define CB_KEY_PIKEINT_H
 #include "bitvector.h"
