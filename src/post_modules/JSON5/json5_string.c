@@ -1,10 +1,11 @@
 #line 1 "rl/json5_string.rl"
-/* vim:syntax=ragel
+/* -*- mode: C; c-basic-offset: 4; -*-
+* vim:syntax=ragel
 */
 #define HEX2DEC(x) ((x) <= '9' ? (x) - '0' : ((x) < 'G') ? (x) - 'A' + 10 : (x) - 'a' + 10)
 
 
-#line 147 "rl/json5_string.rl"
+#line 148 "rl/json5_string.rl"
 
 
 static ptrdiff_t _parse_JSON5_string(PCHARP str, ptrdiff_t p, ptrdiff_t pe, struct parser_state *state) {

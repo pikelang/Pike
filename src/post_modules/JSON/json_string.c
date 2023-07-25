@@ -1,15 +1,16 @@
 
 #line 1 "rl/json_string.rl"
-/* vim:syntax=ragel
+/* -*- mode: C; c-basic-offset: 4; -*-
+* vim:syntax=ragel
 */
 #define HEX2DEC(x) ((x) <= '9' ? (x) - '0' : ((x) < 'G') ? (x) - 'A' + 10 : (x) - 'a' + 10)
 
 
-#line 98 "rl/json_string.rl"
+#line 99 "rl/json_string.rl"
 
 
 static ptrdiff_t _parse_JSON_string(PCHARP str, ptrdiff_t p, ptrdiff_t pe, struct parser_state *state) {
-	int hexchr0, hexchr1;
+	int hexchr0 = 0, hexchr1 = 0;
 	ptrdiff_t start = p, mark=0;
 	struct string_builder s;
 	int cs;
