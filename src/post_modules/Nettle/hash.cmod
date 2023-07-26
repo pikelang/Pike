@@ -174,7 +174,7 @@ PIKECLASS Hash
     void *ctx;
     size_t len;
     int fd;
-    char *read_buffer;
+    void *read_buffer;
     PIKE_STAT_T st;
     struct pike_string *out;
     const struct nettle_hash *meta = THIS->meta;
@@ -187,11 +187,11 @@ PIKECLASS Hash
       SIMPLE_OUT_OF_MEMORY_ERROR("hash", meta->context_size);
     meta->init(ctx);
 
-    if( get_memory_object_memory(in, (void **)&read_buffer, &len, NULL) )
+    if( get_memory_object_memory(in, &read_buffer, &len, NULL) )
     {
       if( bytes )
         len = MINIMUM(len, (size_t)MAXIMUM(bytes->u.integer,0) );
-      meta->update( ctx, len, (const uint8_t*)read_buffer);
+      meta->update( ctx, len, read_buffer);
       goto ret_meta;
     }
 
@@ -215,14 +215,14 @@ PIKECLASS Hash
       int bytes_left = bytes->u.integer;
       int read_bytes = MINIMUM(8192, bytes_left);
       while(read_bytes>0 && (len=fd_read(fd, read_buffer, read_bytes))>0) {
-	meta->update(ctx, len, (const uint8_t *)read_buffer);
+        meta->update(ctx, len, read_buffer);
 	bytes_left -= read_bytes;
 	read_bytes = MINIMUM(8192, bytes_left);
       }
     }
     else
       while((len=fd_read(fd, read_buffer, 8192))>0)
-	meta->update(ctx, len, (const uint8_t *)read_buffer);
+        meta->update(ctx, len, read_buffer);
 
     free(read_buffer);
 
