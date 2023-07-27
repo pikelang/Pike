@@ -3656,29 +3656,36 @@ static int parse_define_decl(struct CPP_struct *this,
           cpp_error(this,"Expected ) after ...");
 
         arg_name = GOBBLE_IDENTIFIER();
-        if(!arg_name)
-        {
-          cpp_error(this, "Expected argument for macro.");
-          break;
-        }
-
-        check_stack(1);
-        push_string(arg_name);
-
         SKIPWHITE();
-        argno++;
-        if(argno>=MAX_ARGS)
-        {
-          cpp_error(this, "Too many arguments in macro definition.");
-          pop_stack();
-          argno--;
-        }
 
         if(DATA(pos)=='.' && DATA(pos+1)=='.' && DATA(pos+2)=='.')
         {
           varargs = CPP_MACRO_VARARGS;
           pos+=3;
           SKIPWHITE();
+
+          if (!arg_name) {
+            /* Default to C99-name for varargs macro. */
+            arg_name = MK_STRING("__VA_ARGS__");
+            add_ref(arg_name);
+          }
+        }
+
+        if(!arg_name)
+        {
+          cpp_error(this, "Expected argument name for macro.");
+          break;
+        }
+
+        check_stack(1);
+        push_string(arg_name);
+
+        argno++;
+        if(argno>=MAX_ARGS)
+        {
+          cpp_error(this, "Too many arguments in macro definition.");
+          pop_stack();
+          argno--;
         }
       }
 
