@@ -2497,6 +2497,20 @@ PIKEFUN int get_weak_flag(multiset m)
 }
 
 /*! @decl program __empty_program(int|void line, string|void file)
+ *!
+ *! @param line
+ *!   Optional line number of @[file] where the program to be compiled
+ *!   definition starts.
+ *!
+ *! @param file
+ *!   Optional file name where the program to be compiled is defined.
+ *!
+ *! @returns
+ *!   Returns a virgin (ie empty) program suitable as the target
+ *!   argument to @[PikeCompiler()].
+ *!
+ *! @seealso
+ *!   @[__null_program], @[PikeCompiler], @[compile_string()]
  */
 PIKEFUN program __empty_program(int|zero|void line, string|void file)
   efun;
