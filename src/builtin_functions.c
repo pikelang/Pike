@@ -1180,7 +1180,7 @@ PMOD_EXPORT void f_search(INT32 args)
 	  if (args > 2) {
 	    int fun = find_identifier("set_index", p);
 	    if (fun < 0)
-	      Pike_error ("Cannot call unknown function \"%s\".\n", fun);
+              Pike_error ("Cannot call unknown function \"set_index\".\n");
 	    apply_low(o, fun + id_level, args-2);
 	    pop_stack();
 	  }
@@ -2512,7 +2512,7 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
 	if ((c & 0xc0) != 0x80)						\
           bad_arg_error ("utf8_to_string", args, 1,                     \
 			 NULL, Pike_sp - args,				\
-			 "Expected continuation character at index %d, " \
+                         "Expected continuation character at index %td, " \
 			 "got 0x%02x.\n",				\
 			 i, c);						\
       } while (0)
@@ -2521,7 +2521,7 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
         bad_arg_error ("utf8_to_string", args, 1,                       \
 		       NULL, Pike_sp - args,				\
 		       "UTF-8 sequence beginning with %s0x%02x "	\
-		       "at index %"PRINTPTRDIFFT"d %s.\n",		\
+                       "at index %td %s.\n",				\
 		       prefix, c, i, problem);				\
       } while (0)
 

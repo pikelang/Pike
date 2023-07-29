@@ -343,7 +343,7 @@ PIKECLASS TM
             f_TM_unix_time(0);
             break;
         default:
-            Pike_error("Can not format as %c", flag );
+          Pike_error("Can not format as '%c'", (int)flag );
         }
         if( post_sum )
         {
@@ -1797,7 +1797,7 @@ static void f_proxy_getter(INT32 args)
   }
 
   if (TYPEOF(*storage) != PIKE_T_OBJECT) {
-    Pike_error("Proxy for %O not initialized.\n",
+    Pike_error("Proxy for %pO not initialized.\n",
 	       Pike_fp->context->prog->constants + 1);
   }
 
@@ -1836,7 +1836,7 @@ static void f_proxy_setter(INT32 args)
   }
 
   if (TYPEOF(*storage) != PIKE_T_OBJECT) {
-    Pike_error("Proxy for %O not initialized.\n",
+    Pike_error("Proxy for %pO not initialized.\n",
 	       &Pike_fp->context->prog->constants[1].sval);
   }
 
@@ -1869,7 +1869,7 @@ static void f_proxy_fun(INT32 args)
   struct identifier *id;
 
   if (TYPEOF(*storage) != PIKE_T_OBJECT) {
-    Pike_error("Proxy for %O not initialized.\n",
+    Pike_error("Proxy for %pO not initialized.\n",
 	       Pike_fp->context->prog->constants + 1);
   }
 
@@ -1902,7 +1902,7 @@ static void f_proxy__sprintf(INT32 args)
   struct identifier *id;
 
   if (TYPEOF(*storage) != PIKE_T_OBJECT) {
-    Pike_error("Proxy for %O not initialized.\n",
+    Pike_error("Proxy for %pO not initialized.\n",
 	       Pike_fp->context->prog->constants + 1);
   }
 
@@ -2910,7 +2910,7 @@ PIKECLASS RandomInterface
     struct object *co;
 
     if (f < 0)
-      Pike_error("Calling undefined lfun::%S.\n", lfun_strings[LFUN__RANDOM]);
+      Pike_error("Calling undefined lfun::%pS.\n", lfun_strings[LFUN__RANDOM]);
 
     co = Pike_fp->current_object;
     ref_push_function(co, f_RandomInterface_random_string_fun_num);
@@ -3014,7 +3014,8 @@ PIKECLASS RandomSystem
 	close(random_fd);
 	random_fd = -1;
 
-	Pike_error("Failed to read %d bytes from /dev/urandom.\n", len);
+        Pike_error("Failed to read %"PRINTINT64"d bytes from /dev/urandom.\n",
+                   (INT64)len);
       }
       str += sz;
       len -= sz;
@@ -4132,7 +4133,7 @@ PIKECLASS LiveBacktraceFrame
   {
     struct pike_frame *fp = THIS->fp;
     if (!fp || (l >= fp->num_locals)) {
-      Pike_error("No such local: #%d\n", l);
+      Pike_error("No such local: #%ld\n", (long)l);
     }
     push_svalue(fp->locals + l);
   }
@@ -4141,7 +4142,7 @@ PIKECLASS LiveBacktraceFrame
   {
     struct pike_frame *fp = THIS->fp;
     if (!fp || (l >= fp->num_locals)) {
-      Pike_error("No such local: #%d\n", l);
+      Pike_error("No such local: #%ld\n", (long)l);
     }
     assign_svalue(fp->locals + l, val);
   }
@@ -4150,7 +4151,7 @@ PIKECLASS LiveBacktraceFrame
   {
     struct pike_frame *fp = THIS->fp;
     if (!fp || (l >= fp->num_locals)) {
-      Pike_error("No such local: #%d\n", l);
+      Pike_error("No such local: #%ld\n", (long)l);
     }
     apply_current(f_LiveBacktraceFrame_fill_in_file_and_line_fun_num, 0);
     pop_stack();
@@ -4169,7 +4170,7 @@ PIKECLASS LiveBacktraceFrame
   {
     struct pike_frame *fp = THIS->fp;
     if (!fp || (l >= fp->num_locals)) {
-      Pike_error("No such local: #%d\n", l);
+      Pike_error("No such local: #%ld\n", (long)l);
     }
     apply_current(f_LiveBacktraceFrame_fill_in_file_and_line_fun_num, 0);
     pop_stack();
