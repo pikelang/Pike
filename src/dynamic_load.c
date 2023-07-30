@@ -503,12 +503,12 @@ void f_load_module(INT32 args)
 
     if (str->len < 1024) {
       throw_error_object (err_obj, "load_module", args,
-			  "load_module(\"%s\") failed: %s\n",
-                          module_name->str, str->str);
+                          "load_module(%pq) failed: %pS\n",
+                          module_name, str);
     } else {
       throw_error_object (err_obj, "load_module", args,
-                          "load_module(\"%s\") failed.\n",
-                          module_name->str);
+                          "load_module(%pq) failed.\n",
+                          module_name);
     }
   }
 
@@ -534,7 +534,7 @@ void f_load_module(INT32 args)
     init = CAST_TO_FUN(dlsym(module, "_pike_module_init"));
     if (!init) {
       dlclose(module);
-      Pike_error("pike_module_init missing in dynamic module \"%S\".\n",
+      Pike_error("pike_module_init missing in dynamic module %pq.\n",
 		 module_name);
     }
   }
@@ -544,7 +544,7 @@ void f_load_module(INT32 args)
     exit = CAST_TO_FUN(dlsym(module, "_pike_module_exit"));
     if (!exit) {
       dlclose(module);
-      Pike_error("pike_module_exit missing in dynamic module \"%S\".\n",
+      Pike_error("pike_module_exit missing in dynamic module %pq.\n",
 		 module_name);
     }
   }
@@ -615,7 +615,7 @@ void f_load_module(INT32 args)
       free_string(new_module->name);
       free(new_module);
       END_CYCLIC();
-      Pike_error("Failed to initialize dynamic module \"%S\".\n",
+      Pike_error("Failed to initialize dynamic module %pq.\n",
 		 module_name);
     }
   }
