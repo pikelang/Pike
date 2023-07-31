@@ -230,12 +230,15 @@ PMOD_EXPORT DECLSPEC(noreturn) void pike_throw(void) ATTRIBUTE((noreturn));
 PMOD_EXPORT DECLSPEC(noreturn) void low_error(const char *buf) ATTRIBUTE((noreturn));
 PMOD_EXPORT void va_make_error (const char *fmt, va_list args);
 PMOD_EXPORT void DECLSPEC(noreturn) va_error(const char *fmt, va_list args) ATTRIBUTE((noreturn));
-PMOD_EXPORT void make_error (const char *fmt, ...);
-PMOD_EXPORT DECLSPEC(noreturn) void Pike_error(const char *fmt,...) ATTRIBUTE((noreturn));
+PMOD_EXPORT void make_error (const char *fmt, ...)
+  ATTRIBUTE((format (printf, 1, 2)));
+PMOD_EXPORT DECLSPEC(noreturn) void Pike_error(const char *fmt,...)
+  ATTRIBUTE((noreturn)) ATTRIBUTE((format (printf, 1, 2)));
 PMOD_EXPORT DECLSPEC(noreturn) void new_error(const char *name, const char *text, struct svalue *oldsp, INT32 args) ATTRIBUTE((noreturn));
 PMOD_EXPORT void exit_on_error(const void *msg);
 PMOD_EXPORT void fatal_on_error(const void *msg);
-PMOD_EXPORT DECLSPEC(noreturn) void debug_fatal(const char *fmt, ...) ATTRIBUTE((noreturn));
+PMOD_EXPORT DECLSPEC(noreturn) void debug_fatal(const char *fmt, ...)
+  ATTRIBUTE((noreturn)) ATTRIBUTE((format (printf, 1, 2)));
 PMOD_EXPORT DECLSPEC(noreturn) void generic_error_va(
   struct object *o, const char *func, const struct svalue *base_sp, int args,
   const char *fmt, va_list *fmt_args)
@@ -243,30 +246,37 @@ PMOD_EXPORT DECLSPEC(noreturn) void generic_error_va(
 PMOD_EXPORT DECLSPEC(noreturn) void throw_error_object(
   struct object *o,
   const char *func, int args,
-  const char *desc, ...) ATTRIBUTE((noreturn));
+  const char *desc, ...)
+  ATTRIBUTE((noreturn)) ATTRIBUTE((format (printf, 4, 5)));
 PMOD_EXPORT void DECLSPEC(noreturn) generic_error(
   const char *func,
   const struct svalue *base_sp,  int args,
-  const char *desc, ...) ATTRIBUTE((noreturn));
+  const char *desc, ...)
+  ATTRIBUTE((noreturn)) ATTRIBUTE((format (printf, 4, 5)));
 PMOD_EXPORT DECLSPEC(noreturn) void index_error(
   const char *func, int args,
   struct svalue *val,
   struct svalue *ind,
-  const char *desc, ...) ATTRIBUTE((noreturn));
+  const char *desc, ...)
+  ATTRIBUTE((noreturn)) ATTRIBUTE((format (printf, 5, 6)));
 PMOD_EXPORT DECLSPEC(noreturn) void bad_arg_error(
   const char *func, int args,
   int which_arg,
   const char *expected_type,
   struct svalue *got,
-  const char *desc, ...)  ATTRIBUTE((noreturn));
+  const char *desc, ...)
+  ATTRIBUTE((noreturn)) ATTRIBUTE((format (printf, 6, 7)));
 PMOD_EXPORT void DECLSPEC(noreturn) math_error(
   const char *func, int args,
   struct svalue *number,
-  const char *desc, ...) ATTRIBUTE((noreturn));
+  const char *desc, ...)
+  ATTRIBUTE((noreturn)) ATTRIBUTE((format (printf, 4, 5)));
 PMOD_EXPORT void DECLSPEC(noreturn) out_of_memory_error (
   const char *func, int args,
-  size_t amount) ATTRIBUTE((noreturn));
-PMOD_EXPORT void wrong_number_of_args_error(const char *name, int args, int expected)
+  size_t amount)
+  ATTRIBUTE((noreturn));
+PMOD_EXPORT void wrong_number_of_args_error(const char *name, int args,
+                                            int expected)
   ATTRIBUTE((noreturn));
 void init_error(void);
 void cleanup_error(void);
