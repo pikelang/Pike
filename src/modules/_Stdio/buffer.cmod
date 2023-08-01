@@ -2289,9 +2289,9 @@ PIKECLASS Buffer
       {
         /* FIXME: Use real json error? */
         if( err )
-          Pike_error("Syntax error in json at offset %d: %s,\n", -stop, err );
+          Pike_error("Syntax error in json at offset %td: %s,\n", -stop, err );
         else
-          Pike_error("Syntax error in json at offset %d.\n", -stop );
+          Pike_error("Syntax error in json at offset %td.\n", -stop );
       }
     }
     else
@@ -2307,7 +2307,8 @@ PIKECLASS Buffer
           push_undefined();
         }
         else
-          Pike_error("Missing whitespace between json values at offset %d.\n", stop );
+          Pike_error("Missing whitespace between json values at offset %td.\n",
+                     stop );
       }
       else
       {

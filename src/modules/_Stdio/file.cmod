@@ -694,11 +694,11 @@ static void close_fd(int quiet)
 	    if (SETJMP (jmp))
 	      call_handle_error();
 	    else {
-	      Pike_error("Failed to close file: %S\n", Pike_sp[-1].u.string);
+              Pike_error("Failed to close file: %pS\n", Pike_sp[-1].u.string);
 	    }
 	    UNSETJMP (jmp);
 	  } else {
-	    Pike_error("Failed to close file: %S\n", Pike_sp[-1].u.string);
+            Pike_error("Failed to close file: %pS\n", Pike_sp[-1].u.string);
 	  }
 	  break;
 
@@ -4199,7 +4199,7 @@ static void file_set_nonblocking(INT32 UNUSED(args))
     ERRNO=errno;
     push_int (ERRNO);
     f_strerror (1);
-    Pike_error("Stdio.File->set_nonblocking() failed: %S\n",
+    Pike_error("Stdio.File->set_nonblocking() failed: %pS\n",
 	       Pike_sp[-1].u.string);
   }
 
@@ -5817,7 +5817,8 @@ PMOD_EXPORT void create_proxy_pipe(struct object *o, int for_reading)
   push_int(fd_INTERPROCESSABLE);
   apply(n,"pipe",1);
   if(TYPEOF(Pike_sp[-1]) != PIKE_T_OBJECT)
-    Pike_error("Failed to create proxy pipe (errno=%d)!\n",get_file_storage(n)->my_errno);
+    Pike_error("Failed to create proxy pipe (errno=%ld)!\n",
+               get_file_storage(n)->my_errno);
   n2=Pike_sp[-1].u.object;
   /* Stack is now: pipe(read), pipe(write) */
   if(for_reading)
