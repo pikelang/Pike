@@ -4952,7 +4952,7 @@ static int mc_cycle_depth_from_obj (struct object *o)
     int i = find_shared_string_identifier (pike_cycle_depth_str.u.string, p);
     INT_TYPE line;
     struct pike_string *file = get_identifier_line (p, i, &line);
-    make_error ("Object got non-integer pike_cycle_depth %O at %S:%ld.\n",
+    make_error ("Object got non-integer pike_cycle_depth %pO at %pS:%ld.\n",
 		&val, file, (long)line);
     free_svalue (&val);
     free_svalue (&throw_value);
@@ -4970,7 +4970,7 @@ static int mc_cycle_depth_from_obj (struct object *o)
     int i = find_shared_string_identifier (pike_cycle_depth_str.u.string, p);
     INT_TYPE line;
     struct pike_string *file = get_identifier_line (p, i, &line);
-    make_error ("Object got negative pike_cycle_depth at %S:%ld.\n",
+    make_error ("Object got negative pike_cycle_depth %pO at %pS:%ld.\n",
 		&val, file, (long)line);
     free_svalue (&throw_value);
     move_svalue (&throw_value, --Pike_sp);

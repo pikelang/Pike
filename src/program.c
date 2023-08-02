@@ -3094,7 +3094,7 @@ int override_identifier (struct reference *new_ref, struct pike_string *name,
 			  NULL, 0, sub_id->type,
 			  NULL, 0, ID_FROM_PTR(Pike_compiler->new_program,
 					       new_ref)->type,
-			  0, "Type mismatch when overloading function %S.",
+                          0, "Type mismatch when overloading function %pS.",
 			  name);
 	  }
 	} else {
@@ -3113,7 +3113,7 @@ int override_identifier (struct reference *new_ref, struct pike_string *name,
 	    yytype_report(REPORT_WARNING,
 			  NULL, 0, sub_id->type,
 			  NULL, 0, new_id->type,
-			  0, "Type mismatch when overloading %S.", name);
+                          0, "Type mismatch when overloading %pS.", name);
 	  }
 	}
       }
@@ -3283,7 +3283,7 @@ void fixate_program(void)
 	      if (!pike_types_le(funb->type, fun->type, 0, 0)) {
 		yytype_report(REPORT_WARNING, NULL, 0, fun->type,
 			      NULL, 0, funb->type,
-			      0, "Type mismatch when overloading %S.",
+                              0, "Type mismatch when overloading %pS.",
 			      fun->name);
 	      }
 	    }
@@ -3298,7 +3298,7 @@ void fixate_program(void)
 	      if (!pike_types_le(fun->type, funb->type, 0, 0)) {
 		yytype_report(REPORT_WARNING, NULL, 0, funb->type,
 			      NULL, 0, fun->type,
-			      0, "Type mismatch when overloading %S.",
+                              0, "Type mismatch when overloading %pS.",
 			      fun->name);
 	      }
 	    }
@@ -4938,7 +4938,7 @@ struct program *end_first_pass(int finish)
 			NULL, 0, NULL,
 			Pike_compiler->new_program->strings[id->filename_strno],
 			id->linenumber, id->type,
-			0, "Function %S() masked by later variant.",
+                        0, "Function %pS() masked by later variant.",
 			name);
 	  ref_push_type_value(type);
 	  low_yyreport(REPORT_WARNING,
@@ -6241,7 +6241,7 @@ PMOD_EXPORT struct program *lexical_inherit(int scope_depth,
 					     SEE_PROTECTED|SEE_PRIVATE);
   if (class_fun_num < 0) {
     yyreport(failure_severity_level, parser_system_string, 0,
-	     "Symbol to inherit (%S) not found in parent scope #%d.",
+             "Symbol to inherit (%pS) not found in parent scope #%d.",
 	     symbol, scope_depth);
     return NULL;
   }
@@ -6249,7 +6249,7 @@ PMOD_EXPORT struct program *lexical_inherit(int scope_depth,
   prog = low_program_from_function(state->fake_object, class_fun_num);
   if (!prog) {
     yyreport(failure_severity_level, parser_system_string, 0,
-	     "Symbol %S in parent scope #%d is not a program.",
+             "Symbol %pS in parent scope #%d is not a program.",
 	     symbol, scope_depth);
     return NULL;
   }
@@ -6762,7 +6762,7 @@ int define_variable(struct pike_string *name,
 	  yytype_report(level, NULL, 0,
 			ID_FROM_INT(Pike_compiler->new_program, n)->type,
 			NULL, 0, type, 0,
-			"Illegal to redefine inherited variable %S "
+                        "Illegal to redefine inherited variable %pS "
 			"with different type.", name);
 	}
 
@@ -6782,7 +6782,7 @@ int define_variable(struct pike_string *name,
 	  yytype_report(REPORT_ERROR, NULL, 0,
 			ID_FROM_INT(Pike_compiler->new_program, n)->type,
 			NULL, 0, type, 0,
-			"Illegal to redefine inherited variable %S "
+                        "Illegal to redefine inherited variable %pS "
 			"with different type.", name);
 	  return n;
 	}
@@ -7343,7 +7343,7 @@ INT32 define_function(struct pike_string *name,
 	  yytype_report(level,
 			NULL, 0, lfun_type->u.type,
 			NULL, 0, type,
-			0, "Type mismatch for callback function %S:", name);
+                        0, "Type mismatch for callback function %pS:", name);
 	}
       }
       c->lex.pragmas = orig_pragmas;
@@ -7403,7 +7403,7 @@ INT32 define_function(struct pike_string *name,
 	}
 	yytype_report(level, NULL, 0, gs_type,
 		      NULL, 0, type, 0,
-		       "Type mismatch for callback function %S:", name);
+                      "Type mismatch for callback function %pS:", name);
       }
       c->lex.pragmas = orig_pragmas;
       if (flags & ID_VARIANT) {
@@ -7588,7 +7588,7 @@ INT32 define_function(struct pike_string *name,
 	  yytype_report(REPORT_ERROR, NULL, 0,
 			funp->type,
 			NULL, 0, type, 0,
-			"Prototype doesn't match for function %S.", name);
+                        "Prototype doesn't match for function %pS.", name);
 	}
       }
 
@@ -8050,7 +8050,7 @@ int really_low_find_variant_identifier(struct pike_string *name,
       yytype_report(REPORT_WARNING,
 		    NULL, 0, ID_FROM_INT(prog, tentative)->type,
 		    NULL, 0, type,
-		    0, "Variant type mismatch in second pass for %S.",
+                    0, "Variant type mismatch in second pass for %pS.",
 		    name);
     }
     id = tentative;
@@ -8146,7 +8146,7 @@ static void f_dispatch_variant(INT32 args)
   }
   if (!expected) {
     /* No variants listed? */
-    Pike_error("No variants of %S() to dispatch to!\n", name);
+    Pike_error("No variants of %pS() to dispatch to!\n", name);
   }
   if (expected > 1) {
     f_or(expected);
@@ -8154,14 +8154,14 @@ static void f_dispatch_variant(INT32 args)
   f___get_first_arg_type(1);
   if (!UNSAFE_IS_ZERO(Pike_sp-1)) {
     if (best < args) {
-      Pike_error("Bad argument %d to %S(). Expected %O.\n",
+      Pike_error("Bad argument %d to %pS(). Expected %pO.\n",
 		 best + 1, name, Pike_sp-1);
     } else {
-      Pike_error("Too few arguments to %S(). Expected %O.\n",
+      Pike_error("Too few arguments to %pS(). Expected %pO.\n",
 		 name, Pike_sp-1);
     }
   } else {
-    Pike_error("Too many arguments to %S().\n", name);
+    Pike_error("Too many arguments to %pS().\n", name);
   }
 }
 
@@ -10693,7 +10693,7 @@ void yyexplain_not_implements(int severity_level,
       yytype_report(severity_level,
 		    bid_file, bid_line, bid->type,
 		    a_file, a_line, NULL,
-		    0, "Missing identifier %S.", bid->name);
+                    0, "Missing identifier %pS.", bid->name);
       continue;
     }
 
@@ -10708,13 +10708,13 @@ void yyexplain_not_implements(int severity_level,
 	yytype_report(severity_level,
 		      bid_file, bid_line, bid->type,
 		      aid_file, aid_line, ID_FROM_INT(a, i)->type,
-		      0, "Type of identifier %S does not match.", bid->name);
+                      0, "Type of identifier %pS does not match.", bid->name);
       } else {
 	yytype_report((severity_level < REPORT_WARNING)?
 		      severity_level : REPORT_WARNING,
 		      bid_file, bid_line, bid->type,
 		      aid_file, aid_line, ID_FROM_INT(a, i)->type,
-		      0, "Type of identifier %S is not strictly compatible.",
+                      0, "Type of identifier %pS is not strictly compatible.",
 		      bid->name);
       }
       continue;

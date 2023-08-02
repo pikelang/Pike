@@ -2041,7 +2041,7 @@ PMOD_EXPORT void object_low_atomic_get_set_index(struct object *o,
 				      ref->run_time_type, from_to);
   }
   else if (rtt == PIKE_T_FREE) {
-    Pike_error("Attempt to store data in extern variable %S.\n", i->name);
+    Pike_error("Attempt to store data in extern variable %pS.\n", i->name);
   } else {
     ref->func.offset = INHERIT_FROM_INT(p, f)->storage_offset +
       i->func.offset;
@@ -2135,7 +2135,7 @@ PMOD_EXPORT void object_low_set_index(struct object *o,
     object_lower_set_index(o, ref->func, ref->run_time_type, from);
   }
   else if (rtt == PIKE_T_FREE) {
-    Pike_error("Attempt to store data in extern variable %S.\n", i->name);
+    Pike_error("Attempt to store data in extern variable %pS.\n", i->name);
   } else {
     ref->func.offset = INHERIT_FROM_INT(p, f)->storage_offset +
       i->func.offset;
@@ -2190,7 +2190,7 @@ PMOD_EXPORT void object_atomic_get_set_index2(struct object *o,
   if(f < 0)
   {
     if (TYPEOF(*index) == T_STRING && index->u.string->len < 1024)
-      Pike_error("No such variable (%S) in object.\n", index->u.string);
+      Pike_error("No such variable (%pS) in object.\n", index->u.string);
     else
       Pike_error("No such variable in object.\n");
   }else{
@@ -2308,7 +2308,7 @@ PMOD_EXPORT void object_set_index2(struct object *o,
   if(f < 0)
   {
     if (TYPEOF(*index) == T_STRING && index->u.string->len < 1024)
-      Pike_error("No such variable (%S) in object.\n", index->u.string);
+      Pike_error("No such variable (%pS) in object.\n", index->u.string);
     else
       Pike_error("No such variable in object.\n");
   }else{
@@ -2463,7 +2463,7 @@ union anything *object_get_item_ptr(struct object *o,
   if(f < 0)
   {
     if (TYPEOF(*index) == T_STRING && index->u.string->len < 1024)
-      Pike_error("No such variable (%S) in object.\n", index->u.string);
+      Pike_error("No such variable (%pS) in object.\n", index->u.string);
     else
       Pike_error("No such variable in object.\n");
   }else{
@@ -3509,7 +3509,7 @@ static void f_magic_set_index(INT32 args)
   if(f<0)
   {
     if (s->len < 1024)
-      Pike_error("No such variable (%S) in object.\n", s);
+      Pike_error("No such variable (%pS) in object.\n", s);
     else
       Pike_error("No such variable in object.\n");
   }

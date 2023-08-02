@@ -2756,9 +2756,13 @@ void* low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 
     case T_STRING:
       if (s->u.string->len > 20) {
-	Pike_error("Attempt to call the string \"%20S\"...\n", s->u.string);
+        /* NB: Cast in order to suppress warning about using precision
+         *     with the %p-format.
+         */
+        ((void (*)(const char *,...))Pike_error)
+          ("Attempt to call the string %.20pq...\n", s->u.string);
       } else {
-	Pike_error("Attempt to call the string \"%S\"\n", s->u.string);
+        Pike_error("Attempt to call the string %pq\n", s->u.string);
       }
       break;
 
@@ -2902,7 +2906,7 @@ void* low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
       PIKE_ERROR("destructed object", "Apply on destructed object.\n", Pike_sp, args);
     lfun = FIND_LFUN(o->prog, fun);
     if (lfun < 0)
-      Pike_error ("Cannot call undefined lfun %S.\n", lfun_strings[fun]);
+      Pike_error ("Cannot call undefined lfun %pS.\n", lfun_strings[fun]);
     fun = lfun;
     goto apply_low;
   }
@@ -3584,7 +3588,7 @@ PMOD_EXPORT int safe_apply_handler(const char *fun,
 	push_int(0);
       }
       else {
-	Pike_error("Invalid return value from %s: %O\n",
+        Pike_error("Invalid return value from %s: %pO\n",
 		   fun, Pike_sp-1);
       }
     }
@@ -3607,7 +3611,7 @@ PMOD_EXPORT void apply_lfun(struct object *o, int lfun, int args)
 	       Pike_sp, args);
 
   if ((fun = (int)FIND_LFUN(o->prog, lfun)) < 0)
-    Pike_error("Calling undefined lfun::%S.\n", lfun_strings[lfun]);
+    Pike_error("Calling undefined lfun::%pS.\n", lfun_strings[lfun]);
 
   apply_low(o, fun, args);
 }
@@ -3620,7 +3624,7 @@ PMOD_EXPORT void apply_shared(struct object *o,
   if (id >= 0)
     apply_low(o, id, args);
   else
-    Pike_error("Cannot call unknown function \"%S\".\n", fun);
+    Pike_error("Cannot call unknown function %pq.\n", fun);
 }
 
 PMOD_EXPORT void apply(struct object *o, const char *fun, int args)

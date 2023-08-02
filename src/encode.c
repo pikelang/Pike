@@ -204,8 +204,8 @@ static struct object *lookup_codec (struct pike_string *codec_name)
     else {
       apply_svalue (Pike_sp - 1, 0);
       if (TYPEOF(Pike_sp[-1]) != T_OBJECT)
-	Pike_error ("master()->%s() did not return an object. Got: %O\n",
-		    codec_name->str, Pike_sp - 1);
+        Pike_error ("master()->%pS() did not return an object. Got: %pO\n",
+                    codec_name, Pike_sp - 1);
       m = (--Pike_sp)->u.object;
       pop_stack();
       return m;
@@ -1621,11 +1621,11 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		   */
 		  if ((i < 0) || !is_variant_dispatcher(p, i)) {
 		    Pike_error("Failed to find dispatcher for inherited "
-			       "variant function: %S\n", id->name);
+                               "variant function: %pS\n", id->name);
 		  }
 		  if (PTR_FROM_INT(p, i)->inherit_offset) {
-		    Pike_error("Dispatcher for variant function %S "
-			       "is inherited.\n", id->name);
+                    Pike_error("Dispatcher for variant function %pS "
+                               "is inherited.\n", id->name);
 		  }
 		  gs_flags = ref->id_flags & PTR_FROM_INT(p, i)->id_flags;
 		  if (id_dumped[PTR_FROM_INT(p, i)->identifier_offset]) {
@@ -1847,7 +1847,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		  }
 		  /* Not supported. */
 		  Pike_error("Cannot encode functions implemented in C "
-			     "(identifier=\"%S\").\n",
+                             "(identifier=%pq).\n",
 			     id->name);
 		  break;
 

@@ -414,10 +414,10 @@ PMOD_EXPORT void array_atomic_get_set(struct array *a, INT32 i,
 
   if(i<0 || i>=a->size) {
     if (a->size) {
-      Pike_error("Index %"PRINTPIKEINT"d is out of array range "
+      Pike_error("Index %d is out of array range "
 		 "%d..%d.\n", p, -a->size, a->size-1);
     } else {
-      Pike_error("Attempt to index the empty array with %"PRINTPIKEINT"d.\n", p);
+      Pike_error("Attempt to index the empty array with %d.\n", p);
     }
   }
 
@@ -2609,7 +2609,7 @@ PMOD_EXPORT struct pike_string *implode(struct array *a,
 	   continue;		    /* skip zero (strings) */
 	 /* FALLTHROUGH */
       default:
-	Pike_error("Array element %d is not a string\n", ae-a->item);
+        Pike_error("Array element %td is not a string\n", ae-a->item);
 	break;
       case T_STRING:
 	delims++;

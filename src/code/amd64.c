@@ -1275,8 +1275,8 @@ void amd64_ins_entry(void)
   amd64_flush_code_generator_state();
 
   if( PIKE_PC - orig_ppc != ENTRY_PROLOGUE_SIZE ) /* sanity check */
-    Pike_fatal("ENTRY_PROLOGUE_SIZE incorrectly set, should be 0x%x\n",
-               PIKE_PC-orig_ppc );
+    Pike_fatal("ENTRY_PROLOGUE_SIZE incorrectly set, should be 0x%lx\n",
+               (unsigned long)(PIKE_PC-orig_ppc) );
 }
 
 void amd64_flush_code_generator_state(void)
