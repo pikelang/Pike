@@ -314,7 +314,7 @@ PMOD_EXPORT void o_cast_to_string(void)
 	INT_TYPE val;
 	if (TYPEOF(a->item[i]) != T_INT) {
 	  Pike_error(
-         "Can only cast array(int) to string, item %d is not an integer: %O\n",
+         "Can only cast array(int) to string, item %d is not an integer: %pO\n",
 	   i, a->item + i);
 	}
 	val = a->item[i].u.integer;
@@ -1185,7 +1185,7 @@ void o_check_soft_cast(struct svalue *s, struct pike_type *type)
     free_type(sval_type);
 
     bad_arg_error(NULL, -1, 1, t1->str, Pike_sp-1,
-		  "%s(): Soft cast failed.\n%S",
+                  "%s(): Soft cast failed.\n%pS",
 		  fname, s.s);
 
     UNREACHABLE(CALL_AND_UNSET_ONERROR(tmp1));

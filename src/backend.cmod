@@ -1734,7 +1734,8 @@ PIKECLASS Backend
        me->update_fd_set_handler(me, me->handler_data,
 				 fd, old_events, new_events, flags);
      } else {
-       Pike_fatal("No update_fd_set_handler set[%p, %d, 0x%04x, 0x%04x].\n");
+       Pike_fatal("No update_fd_set_handler set[%p, %d, 0x%04x, 0x%04x].\n",
+                  me, fd, old_events, new_events);
      }
    }
 

@@ -270,7 +270,8 @@ INT32 assemble(int store_linenumbers)
 
     if (!(triples = begin_wide_shared_string(3*(length+num_linedirectives),
 					      2))) {
-      Pike_fatal("Failed to allocate wide string of length %d 3*(%d + %d).\n",
+      Pike_fatal("Failed to allocate wide string of length %"PRINTPTRDIFFT"d "
+                 "3*(%"PRINTPTRDIFFT"d + %"PRINTPTRDIFFT"d).\n",
 		 3*(length+num_linedirectives), length, num_linedirectives);
     }
     previous_file = NULL;
@@ -306,7 +307,9 @@ INT32 assemble(int store_linenumbers)
     }
 #ifdef PIKE_DEBUG
     if (current_triple != STR2(triples) + 3*(length + num_linedirectives)) {
-      Pike_fatal("Triple length mismatch %d != %d 3*(%d + %d)\n",
+      Pike_fatal("Triple length mismatch %"PRINTPTRDIFFT"d "
+                 "!= %"PRINTPTRDIFFT"d 3*(%"PRINTPTRDIFFT"d "
+                 "+ %"PRINTPTRDIFFT"d)\n",
 		 current_triple - STR2(triples),
 		 3*(length + num_linedirectives),
 		 length, num_linedirectives);
@@ -967,7 +970,7 @@ static inline p_instr *insopt0(int f, INT_TYPE cl, struct pike_string *cf)
 static void debug(void)
 {
   if (num_instrs != (long)buffer_content_length(&instrbuf) / (long)sizeof(p_instr)) {
-    Pike_fatal("PEEP: instrbuf lost count (%d != %d)\n",
+    Pike_fatal("PEEP: instrbuf lost count (%ld != %ld)\n",
 	       num_instrs, (long)buffer_content_length(&instrbuf) / (long)sizeof(p_instr));
   }
   if(buffer_content_length(&instrbuf))
