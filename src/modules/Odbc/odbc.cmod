@@ -347,8 +347,8 @@ void odbc_error(const char *fun, const char *msg,
   switch(_code) {
   case SQL_SUCCESS:
   case SQL_SUCCESS_WITH_INFO:
-    Pike_error("%s(): %s:\n"
-	  "%d:%ls:%ls\n",
+    ((void (*)(const char *,...))Pike_error)("%s(): %s:\n"
+          "%d:%"PRINTSQLWCHAR"s:%"PRINTSQLWCHAR"s\n",
 	  fun, msg, code, errcode, errmsg);
     break;
   case SQL_ERROR:

@@ -173,7 +173,7 @@ static void push_sql_float(int UNUSED(i))
   SQLDOUBLE *res = (SQLDOUBLE *)data->str;
 
   if (data->len != sizeof(SQLDOUBLE)) {
-    Pike_error("Invalid floating point field length: %d\n", data->len);
+    Pike_error("Invalid floating point field length: %td\n", data->len);
   }
 
   Pike_sp--;
@@ -204,7 +204,7 @@ static void push_sql_int(int UNUSED(i))
     break;
   default:
     Pike_sp++;
-    Pike_error("Invalid integer field length: %d\n", data->len);
+    Pike_error("Invalid integer field length: %td\n", data->len);
     break;
   }
   free_string(data);
@@ -218,7 +218,7 @@ static void push_numeric(int UNUSED(i))
   MP_INT *mp;
 
   if (data->len != sizeof(SQL_NUMERIC_STRUCT)) {
-    Pike_error("Invalid numeric field length: %d\n", data->len);
+    Pike_error("Invalid numeric field length: %td\n", data->len);
   }
 
   res = fast_clone_object(bignum_program);
