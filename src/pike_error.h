@@ -342,7 +342,8 @@ PMOD_EXPORT extern const char msg_out_of_mem_2[];
 
 PMOD_EXPORT extern const char msg_div_by_zero[];
 #define SIMPLE_DIVISION_BY_ZERO_ERROR(FUNC) \
-     math_error(FUNC, args, 0, msg_div_by_zero)
+  ((void (*)(const char *, int, struct svalue *, const char *, ...)) \
+   math_error)(FUNC, args, 0, msg_div_by_zero)
 
 #ifndef PIKE_DEBUG
 #define check_recovery_context() ((void)0)

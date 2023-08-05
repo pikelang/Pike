@@ -172,7 +172,7 @@ static void report_error(const char *function_name)
   struct pike_string *s = pike_strerror(e);
 
   if (s) {
-    Pike_error("%s(): Failed: %S\n", function_name, s);
+    Pike_error("%s(): Failed: %pS\n", function_name, s);
   }
   Pike_error("%s(): Failed: errno %d\n", function_name, e);
 }
