@@ -169,7 +169,7 @@ static void encode_mapcont (struct encode_context *ctx, struct mapping *m)
     }
 
     if (TYPEOF(k->ind) != T_STRING)
-      Pike_error ("Cannot json encode mapping with non-string index %O.\n",
+      Pike_error ("Cannot json encode mapping with non-string index %pO.\n",
 		  &k->ind);
     json_encode_recur (ctx, &k->ind);
 
@@ -229,7 +229,7 @@ static void encode_mapcont_canon (struct encode_context *ctx, struct mapping *m)
     }
 
     if (TYPEOF(*ind) != T_STRING)
-      Pike_error ("Cannot json encode mapping with non-string index %O.\n",
+      Pike_error ("Cannot json encode mapping with non-string index %pO.\n",
 		  ind);
     json_encode_recur (ctx, ind);
 
@@ -252,7 +252,7 @@ static void json_encode_recur (struct encode_context *ctx, struct svalue *val)
   check_c_stack (1024);
 
   if (IS_COMPLEX_TYPE(type) && BEGIN_CYCLIC (val->u.ptr, 0))
-    Pike_error ("Cyclic data structure - already visited %O.\n", val);
+    Pike_error ("Cyclic data structure - already visited %pO.\n", val);
 
   switch (type) {
     case PIKE_T_STRING: {
@@ -344,7 +344,7 @@ static void json_encode_recur (struct encode_context *ctx, struct svalue *val)
 	if (fun < 0) {
 	  int args = 2;
 	  if (!ctx->callback)
-	    Pike_error ("Cannot json encode object %O "
+            Pike_error ("Cannot json encode object %pO "
 			"without encode_json function.\n", val);
 	  if (TYPEOF(*ctx->callback) == PIKE_T_STRING) {
 	    string_builder_shared_strcat (&ctx->buf, ctx->callback->u.string);
@@ -367,7 +367,7 @@ static void json_encode_recur (struct encode_context *ctx, struct svalue *val)
 	  apply_low (o, fun, args);
 	}
 	if (TYPEOF(Pike_sp[-1]) != PIKE_T_STRING)
-	  Pike_error ("Expected string from %O->encode_json(), got %s.\n",
+          Pike_error ("Expected string from %pO->encode_json(), got %s.\n",
 		      val, get_name_of_type (TYPEOF(Pike_sp[-1])));
 	string_builder_shared_strcat (&ctx->buf, Pike_sp[-1].u.string);
 	free_string ((--Pike_sp)->u.string);
