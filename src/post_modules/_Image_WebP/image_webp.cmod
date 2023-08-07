@@ -553,7 +553,7 @@ PIKEFUN string(0..255) encode( object(Image.Image) i,
     if( rgba ) free( rgba );
 
     if( size == 0  )
-        Pike_error( (const char *)result );
+        Pike_error( "%s", (char *)result );
 
     push_string( make_shared_binary_string( (const char *)result, size ) );
     free( result );

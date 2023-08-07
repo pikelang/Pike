@@ -396,7 +396,7 @@ static void image_ft_face_create( INT32 args )
   }
   er = FT_Select_Charmap(TFACE, best_enc);
   if( er )
-    Pike_error("Failed to set a character map for the font %S\n",
+    Pike_error("Failed to set a character map for the font %pS\n",
 	       sp[-args].u.string);
 }
 

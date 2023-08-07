@@ -763,10 +763,10 @@ static struct buffer save_tga(struct image *img, struct image *alpha,
 
   /* Just write the header. */
   if (std_fwrite((void *)&hdr, sizeof (hdr), 1, fp) != 1)
-    Pike_error(msg_out_of_mem);
+    out_of_memory_error(NULL, -1, sizeof(hdr));
 
   if (std_fwrite ((void *)SAVE_ID_STRING, hdr.idLength, 1, fp) != 1)
-    Pike_error(msg_out_of_mem);
+    out_of_memory_error(NULL, -1, hdr.idLength);
 
   /* Allocate a new set of pixels. */
 
@@ -807,7 +807,7 @@ static struct buffer save_tga(struct image *img, struct image *alpha,
 	datalen/pixsize)
     {
       free(data);
-      Pike_error(msg_out_of_mem);
+      out_of_memory_error(NULL, -1, datalen);
     }
     free(data);
   }

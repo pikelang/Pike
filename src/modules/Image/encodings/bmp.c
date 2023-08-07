@@ -739,7 +739,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
 	 case 1:
 	    break;
 	 default:
-            Pike_error("Image.BMP.decode: Unexpected bits per pixel value (%d) in image with palette.\n");
+            Pike_error("Image.BMP.decode: Unexpected bits per pixel value (%d) in image with palette.\n", bpp);
 
       }
 
