@@ -1531,6 +1531,34 @@ static void native_dispatch(struct native_method_context *ctx,
 #define ffi_sarg SINT_ARG
 #endif
 
+/* Work-around for some versions of libffi using C11-syntax
+ * (albeit C89-syntax valid) when declaring the ffi_closure
+ * typedef. With an old compiler the struct lacks some fields.
+ * This causes sizeof(ffi_closure) to be too small, leading to
+ * buffer overruns, etc.
+ *
+ * NB: We only use this struct as an argument to sizeof().
+ */
+struct pike_ffi_closure {
+  union {
+    ffi_closure ffi_c;
+#ifdef FFI_TRAMPOLINE_SIZE
+    /* NB: The following is compatible with at least
+     *     libffi 2.00-beta, 3.0.4 and 3.4.4.
+     */
+    struct {
+      union {
+        char pad[FFI_TRAMPOLINE_SIZE];
+        void *ptr;
+      } u;
+      void *ptr0;
+      void (*funptr)(void *, void *, void *, void *);
+      void *ptr1;
+    } pike_c;
+#endif
+  } u;
+};
+
 struct cpu_context {
 #ifdef HAVE_FFI_PREP_CLOSURE_LOC
   ffi_closure *closure;
@@ -1669,7 +1697,16 @@ static void *make_stub(struct cpu_context *ctx, void *data, int statc,
     Pike_error("ffi error %d\n", s);
 
 #ifdef HAVE_FFI_PREP_CLOSURE_LOC
-  if (!(ctx->closure = ffi_closure_alloc(sizeof(ffi_closure), &r)))
+  /* NB: On some platforms with older compilers sizeof(ffi_closure)
+   *     is too small to contain the trampoline code, leading to
+   *     buffer overruns and obscure failures.
+   *
+   *     We instead use sizeof(struct pike_ffi_closure) here
+   *     to make sure that we have enough space.
+   *
+   *     See also the declaration of struct pike_ffi_closure above.
+   */
+  if (!(ctx->closure = ffi_closure_alloc(sizeof(struct pike_ffi_closure), &r)))
     Pike_error("ffi failed to allocate closure\n");
   s = ffi_prep_closure_loc (ctx->closure, &ctx->cif,
 			    ffi_dispatch, data, r);
