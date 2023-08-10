@@ -296,7 +296,7 @@ static int get_pushed_gss_oid (struct pike_string *dd_oid, gss_OID gss_oid)
       Pike_sp[-1].u.string->size_shift ||
       Pike_sp[-1].u.string->len < 3 ||
       Pike_sp[-1].u.string->str[0] != 0x6) {
-    Pike_error ("encode_der_oid function returned a bogus value: %O\n",
+    Pike_error ("encode_der_oid function returned a bogus value: %pO\n",
 		Pike_sp - 1);
   }
 
@@ -350,7 +350,7 @@ static struct pike_string *get_dd_oid (const gss_OID_desc * const gss_oid)
   apply_svalue (&decode_der_oid, 1);
   if (TYPEOF(Pike_sp[-1]) != T_STRING ||
       Pike_sp[-1].u.string->size_shift) {
-    Pike_error ("decode_der_oid function returned a bogus value: %O.\n",
+    Pike_error ("decode_der_oid function returned a bogus value: %pO.\n",
 		Pike_sp - 1);
   }
 
