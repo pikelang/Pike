@@ -993,7 +993,8 @@ PIKECLASS BufferedCipher
 
 	/* FIXME: Shouldn't this be supported? */
 	if (bytes > str->len)
-	  Pike_error("Invalid padding (%d > %d)\n", bytes, str->len);
+          Pike_error("Invalid padding (%ld > %ld)\n",
+                     (long)bytes, (long)str->len);
 
 	switch( m )
 	{
