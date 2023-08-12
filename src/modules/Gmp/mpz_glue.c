@@ -2237,10 +2237,10 @@ static void mpzmod_random(INT32 args)
     // could be smarter here, but it's easy to introduce bias by
     // mistake.
 
-    push_int(bytes);
+    push_int((int)bytes);
     apply_svalue(&sp[-2], 1);
     if (TYPEOF(sp[-1]) != T_STRING)
-      Pike_error("random_string(%ld) returned non string.\n", bytes);
+      Pike_error("random_string(%u) returned non string.\n", bytes);
     if ((unsigned)sp[-1].u.string->len != bytes ||
         sp[-1].u.string->size_shift != 0)
       Pike_error("Wrong size random string generated.\n");
