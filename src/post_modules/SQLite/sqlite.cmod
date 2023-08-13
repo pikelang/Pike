@@ -48,7 +48,7 @@ static void SQLite_handle_error(sqlite3 *db)
   if (db) {
     push_text(sqlite3_errmsg(db));
     f_utf8_to_string(1);
-    Pike_error("Sql.SQLite: %S\n", Pike_sp[-1].u.string);
+    Pike_error("Sql.SQLite: %pS\n", Pike_sp[-1].u.string);
   } else {
     Pike_error("Sql.SQLite: Internal module error\n");
   }
@@ -100,7 +100,7 @@ static void bind_arguments(sqlite3 *db,
       idx = sqlite3_bind_parameter_index(stmt, Pike_sp[-1].u.string->str);
       pop_stack();
       if(!idx)
-	Pike_error("Unknown bind index \"%S\".\n", k->ind.u.string);
+        Pike_error("Unknown bind index \"%pS\".\n", k->ind.u.string);
       break;
     default:
       Pike_error("Bind index is not int|string.\n");
