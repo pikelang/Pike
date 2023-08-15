@@ -300,9 +300,7 @@ class GtkFunction(Class parent,
       }
       if( required )
         emit( "  if( args < "+required+" )\n"
-              "    Pike_error("+S("Too few arguments, %d required, got %d\n",
-                                  1,1,16)+",\n"
-              "               "+required+", args);\n");
+              "    SIMPLE_WRONG_NUM_ARGS_ERROR(NULL, " + required + ");\n");
 
       a = 0;
       foreach( arg_types, Type t )
@@ -463,7 +461,7 @@ class Member( string name, Type type, int set,
 	"{\n"
 	+ type->c_declare( 0 )+
 	"  if( args != 1)\n"
-	"    Pike_error("+S("Wrong number of arguments.\n",1,1,16)+");\n"
+        "    SIMPLE_WRONG_NUM_ARGS_ERROR(NULL, 1);\n"
 	+ type->c_fetch_from_stack( 0 ) +
 	"  "+parent->c_cast( "THIS->obj" )+"->"+name[4..]+" = "+type->c_pass_to_function(0)+";\n"
 	"  RETURN_THIS();\n"
@@ -474,7 +472,7 @@ class Member( string name, Type type, int set,
 	"void "+glue_c_name(c_name())+#"( INT32 args )\n"
 	"{\n"
 	"  if( args )\n"
-	"    Pike_error("+S("Too many arguments.\n",1,1,1)+");\n"
+        "    SIMPLE_WRONG_NUM_ARGS_ERROR(NULL, 0);\n"
 	+type->direct_push( parent->c_cast( "THIS->obj" ) +"->"+name )+
 	"\n}\n\n";
     }
@@ -498,7 +496,7 @@ class Property( string name, Type type, int set,
       ret="void "+glue_c_name(c_name())+"( INT32 args )\n{\n"
 	+type->c_declare(0);
       ret+="  if( args != 1 )\n"
-	"    Pike_error("+S("Wrong number of arguments.\n",1,1,16)+");\n"
+        "    SIMPLE_WRONG_NUM_ARGS_ERROR(NULL, 1);\n"
 	+ type->c_fetch_from_stack( 0 ) + "  ";
       ret=ret+"g_object_set(THIS->obj,\""+replace(name[4..],"_","-")+"\",";
       switch (type->name) {
@@ -518,7 +516,7 @@ class Property( string name, Type type, int set,
       ret="void "+glue_c_name(c_name())+"( INT32 args )\n{\n"
 	+type->c_declare(0);
       ret=ret + "  if ( args )\n"
-	"    Pike_error("+S("Too many arguments.\n",1,1,16)+");\n"
+        "    SIMPLE_WRONG_NUM_ARGS_ERROR(NULL, 0);\n"
 	"  g_object_get(G_OBJECT(THIS->obj),\""+replace(name,"_","-")+"\",&a0"
 	",NULL);\n"
 	+type->direct_push(type->c_pass_to_function(0))+
@@ -891,7 +889,8 @@ class Type
 //       declare = "  gchar *a%[0]d = 0;\n";
        fetch =
              "  if( TYPEOF(Pike_sp[%[0]d-args]) != PIKE_T_STRING )\n"
-             "    Pike_error( "+S("Illegal argument %d, expected string\n",1,0,16)+",\n                %[0]d);\n"
+             "    SIMPLE_ARG_TYPE_ERROR(NULL, %[0]d + 1, " +
+               S("string",1,0,26) + ");\n"
              "  a%[0]d = PGTK_GETSTR( &Pike_sp[%[0]d-args] );\n";
        free = "  PGTK_FREESTR( a%[0]d );\n";
        pass = "a%[0]d";
@@ -985,7 +984,7 @@ class Type
          fetch =
 #"
   if( TYPEOF(Pike_sp[%[0]d-args]) != PIKE_T_ARRAY )
-    Pike_error("+S("Bad argument %d, expected array\n", 1,0,16)+#",\n                %[0]d);
+    SIMPLE_ARG_TYPE_ERROR(NULL, %[0]d + 1, " + S("array",1,0,26) + #");
   _a%[0]d = Pike_sp[%[0]d-args].u.array;
 "+(check_size||"")+
 "  a%[0]d = g_malloc0( sizeof( a%[0]d[0] ) * (_a%[0]d->size "+
