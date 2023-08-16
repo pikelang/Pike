@@ -1126,6 +1126,7 @@ void pgtk2__low_get_property(GObject *g, char *prop) {
       {
 	if (gps->value_type==g_type_from_name("GdkColor")) {
 	  GdkColor *gc;
+          int args = -1;
 	  gc=g_malloc(sizeof(GdkColor));
 	  if (gc==NULL)
             SIMPLE_OUT_OF_MEMORY_ERROR(NULL, sizeof(GdkColor));
