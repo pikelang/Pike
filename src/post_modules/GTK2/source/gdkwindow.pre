@@ -19,7 +19,8 @@ void create(GDK2.Window|int parent, mapping|void attributes)
     w=gdk_window_foreign_new(id);
     THIS->obj=G_OBJECT(w);
     if (!THIS->obj)
-      Pike_error("The window with id 0x%x does not exist\n",id);
+      Pike_error("The window with id 0x%lx does not exist\n",
+                 (unsigned long)id);
   } else if (TYPEOF(Pike_sp[-args]) == PIKE_T_OBJECT) {
     struct object *parent;
     struct mapping *m;
