@@ -328,7 +328,7 @@ static void set_error (char * newerror)
 		PQfinish(conn);
 		PQ_UNLOCK();
 		THREADS_DISALLOW();
-		Pike_error("Could not connect to database. Reason: \"%S\".\n",
+                Pike_error("Could not connect to database. Reason: \"%pS\".\n",
 			   THIS->last_error);
 		conn=NULL;
 	}
@@ -634,7 +634,7 @@ yupbegin:       res=PQexec(conn,"BEGIN");
 			pgdebug("\tBad.\n");
 			set_error(PQerrorMessage(conn));
 			PQclear(res);
-			Pike_error("Postgres error: %S\n", THIS->last_error);
+                        Pike_error("Postgres error: %pS\n", THIS->last_error);
 		case PGRES_TUPLES_OK:
 			pgdebug("\tResult.\n");
                         THIS->last_rows=PQntuples(res);
@@ -833,7 +833,7 @@ PIKEFUN string _quote(string s_)
 	if (err != 0) {
 		err_msg = PQerrorMessage(THIS->dblink);
 		set_error(err_msg);
-		Pike_error(err_msg);
+                Pike_error("%s", err_msg);
 	}
 #else
 	len = PQescapeString(ret->str, s->str, s->len);
