@@ -128,15 +128,6 @@ void handle_incoming_connection(object(Stdio.File) io)
     cmd[e]=io->read(len);
   }
 
-  object pi=Stdio.File();
-  object pe=Stdio.File();
-#ifdef NO_IPC
-  object p2=pi->pipe();
-  object pe2=pe->pipe();
-#else
-  object p2=pi->pipe(Stdio.PROP_IPC);
-  object pe2=pe->pipe(Stdio.PROP_IPC);
-#endif
   string dir=cmd[0];
   cmd=cmd[1..];
 
@@ -283,6 +274,16 @@ void handle_incoming_connection(object(Stdio.File) io)
     }
 #endif
 
+  object pi=Stdio.File();
+  object pe=Stdio.File();
+#ifdef NO_IPC
+  object p2=pi->pipe();
+  object pe2=pe->pipe();
+#else
+  object p2=pi->pipe(Stdio.PROP_IPC);
+  object pe2=pe->pipe(Stdio.PROP_IPC);
+#endif
+
 #if __VERSION__ >= 0.699999
    if(io->read_oob)
    {
@@ -294,8 +295,13 @@ void handle_incoming_connection(object(Stdio.File) io)
        {
 	 string tmp=io->read_oob(1);
 	 if(!tmp || !sizeof(tmp)) return;
-	 werror("**Interrupt received, killing child.\n");
-	 p->kill(9);
+         if (tmp == "\4") {
+           werror("**EOF.\n");
+           io->close("w");
+           return;
+         }
+         werror("**Interrupt %O received, killing child.\n", tmp);
+         p && p->kill(9);
        }
      });
    }
