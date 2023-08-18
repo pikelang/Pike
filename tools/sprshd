@@ -363,15 +363,23 @@ void handle_incoming_connection(object(Stdio.File) io)
 	    werror ("Write on %O failed: %d\n", io, io->errno());
 	}
       }else{
-	werror("create_process failed: %s", master()->describe_error (err));
+        string msg = master->describe_error(err);
+        msg = sprintf("SPRSHD: create_process failed: %s", msg);
 	if(!dir || sizeof(dir)<2 ||
+           has_suffix(msg, " (267).\n") ||	// ERROR_DIRECTORY
 	   (dir[1] != ':' &&
 	    !has_prefix (dir, "\\\\") &&
-	    !has_prefix (dir, "//")))
-	  werror("\n*** %O is probably not mapped on the windows machine! ***\n\n", dir);
+            !has_prefix (dir, "//"))) {
+          msg += sprintf("\n*** %O is probably not mapped on the windows machine! ***\n\n", dir);
+        }
+        werror("%s", msg);
 	destruct(p2);
+        io->write(sprintf("%c%3c%s",
+                          env->__handles_stderr?2:0,
+                          sizeof(msg),
+                          msg));
 	io->write(sprintf("%4c",0));
-	io->write(sprintf("%4c",69));
+        io->write(sprintf("%4c", 69));	// EX_UNAVAILABLE
       }
   }
 
