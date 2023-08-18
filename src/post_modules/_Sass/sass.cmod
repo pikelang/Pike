@@ -321,7 +321,7 @@ PIKECLASS Api
 
         if ((err = sass_context_get_error_status (ctx_out))) {
           const char *errstr = sass_context_get_error_message (ctx_out);
-          Pike_error("Failed generating source map (code: %ld): %s\n",
+          Pike_error("Failed generating source map (code: %d): %s\n",
                      err, errstr);
         }
       }
@@ -406,7 +406,7 @@ PIKECLASS Api
 
     if (err) {
       const char *errstr = sass_context_get_error_message (ctx_out);
-      Pike_error("Sass compile error (code: %ld):\n%s\n", err, errstr);
+      Pike_error("Sass compile error (code: %d):\n%s\n", err, errstr);
     }
 
     out = sass_context_get_output_string (ctx_out);
@@ -420,7 +420,7 @@ PIKECLASS Api
 
         if ((err = sass_context_get_error_status (ctx_out))) {
           const char *errstr = sass_context_get_error_message (ctx_out);
-          Pike_error("Failed generating source map (code: %ld): %s\n",
+          Pike_error("Failed generating source map (code: %d): %s\n",
                      err, errstr);
         }
       }
