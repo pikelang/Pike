@@ -369,7 +369,7 @@ void handle_incoming_connection(object(Stdio.File) io)
 	    werror ("Write on %O failed: %d\n", io, io->errno());
 	}
       }else{
-        string msg = master->describe_error(err);
+        string msg = master()->describe_error(err);
         msg = sprintf("SPRSHD: create_process failed: %s", msg);
 	if(!dir || sizeof(dir)<2 ||
            has_suffix(msg, " (267).\n") ||	// ERROR_DIRECTORY
