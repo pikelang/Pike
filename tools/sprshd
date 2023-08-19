@@ -297,7 +297,7 @@ void handle_incoming_connection(object(Stdio.File) io)
 	 if(!tmp || !sizeof(tmp)) return;
          if (tmp == "\4") {
            werror("**EOF.\n");
-           io->close("w");
+           io->close("r");
            return;
          }
          werror("**Interrupt %O received, killing child.\n", tmp);
