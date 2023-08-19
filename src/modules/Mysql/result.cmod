@@ -589,8 +589,8 @@ PIKEFUN void low_seek(int row)
      * num_rows - 1 causes it to set the cursor to NULL, which
      * is what we want.
      */
-    Pike_error("Specified row (%d) out of range [0..%d].\n",
-	       row, mysql_num_rows(PIKE_MYSQL_RES->result));
+    Pike_error("Specified row (%ld) out of range [0..%llu].\n",
+               (long)row, mysql_num_rows(PIKE_MYSQL_RES->result));
   }
 
   mysql_data_seek(PIKE_MYSQL_RES->result, row);
