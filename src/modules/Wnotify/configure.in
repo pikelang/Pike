@@ -2,7 +2,15 @@ AC_INIT(wnotify.cmod)
 AC_MODULE_INIT()
 AC_CONFIG_HEADER(wnotify_config.h)
 
-AC_CHECK_HEADERS(WinBase.h FileAPI.h)
+AC_CHECK_HEADERS(WinBase.h FileAPI.h,,,[
+#include <Windows.h>
+#ifdef HAVE_WINBASE_H
+#include <WinBase.h>
+#endif
+#ifdef HAVE_FILEAPI_H
+#include <FileAPI.h>
+#endif
+])
 
 MY_CHECK_FUNCTION(FindFirstChangeNotification,
 [
