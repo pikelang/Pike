@@ -603,7 +603,7 @@ static void f_zap(INT32 args) {
   close (secfd);
 
   if(!result)
-    Pike_error(dvb->low_errmsg);
+    Pike_error("%s", dvb->low_errmsg);
 
   push_int(result);
 }
