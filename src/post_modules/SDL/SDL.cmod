@@ -2801,7 +2801,7 @@ PIKECLASS Music {
     }
     THIS->music = Mix_LoadMUS(fname->str);
     if(THIS->music == NULL) {
-      Pike_error("Failed to load %S: %s\n",
+      Pike_error("Failed to load %pS: %s\n",
 		 fname, SDL_GetError());
     }
     THIS->generation = audio_generation;
