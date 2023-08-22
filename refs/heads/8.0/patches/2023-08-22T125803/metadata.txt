@@ -1,0 +1,37 @@
+subject: Pike 8.0: Synch with Roxen 7.1.517-r1, Calendar.YMD, Filesystem.System
+from: 948565b9f388e36f5078773dad8dd40ae7d52e25
+to: c123eb4f6d3a07fe6b6acefd907b82820de26a00
+originator: Henrik Grubbström (Grubba) <grubba@grubba.org>
+depends: 2023-04-11T132820
+restart: true
+
+Multiple changes:
+
+• release number bumped to 8.0.1840 by export.pike
+
+• Filesystem.System: Fix filtering in find().
+
+filter() when called with a string as the second argument requires
+it to resolve to a function or zero. Filesystem.Stat()->isdir is
+no longer a function, so filter() failed when it evaluated to 1.
+
+Fixes #10121.
+
+• Calendar.YMD: Survive timezone shift backwards at midnight far from UTC.
+
+Use format_ymd_short() to detect shifts in days. Julian days are
+always in UTC. Assumes that the day shift is at most +/- one day.
+
+Fixes #10111.
+
+• Calendar.YMD: Fix rounding error.
+
+Fixes issue #10111.
+
+• Calendar.YMD: Survive timezone shift backward at midnight.
+
+Fixes eg handling of 1900-01-01T00:00:00 in the timezone
+Europe/Stockholm, where the first 14 seconds of the year
+were moved back to 1899-12-31.
+
+Fixes #10111.
