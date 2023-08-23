@@ -4354,6 +4354,7 @@ AC_CHECK_FUNCS( \
  isnan \
  _isnan \
  iszero \
+ finite \
  _finite \
  signbit \
  nan \

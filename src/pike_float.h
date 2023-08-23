@@ -35,6 +35,8 @@
 #define PIKE_ISINF(X)	isinf(X)
 #elif defined(HAVE_ISFINITE)
 #define PIKE_ISINF(X)   (!isfinite(X))
+#elif defined(HAVE_FINITE)
+#define PIKE_ISINF(X)   (!finite(X))
 #elif defined(HAVE__FINITE)
 #define PIKE_ISINF(X)   (!_finite(X))
 #else
