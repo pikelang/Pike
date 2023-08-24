@@ -264,7 +264,7 @@ void handle_incoming_connection(object(Stdio.File) io)
   object po=Stdio.File();
   object pe=Stdio.File();
 #ifdef NO_IPC
-  object pi = po->pipe();
+  object pi = pi2->pipe();
   object po2=po->pipe();
   object pe2=pe->pipe();
 #else
@@ -275,7 +275,7 @@ void handle_incoming_connection(object(Stdio.File) io)
 
   thread_create(lambda() {
                   while(pi) {
-                    string tmp = io->read();
+                    string tmp = io->read(1024, 1);
                     if (!pi) return;
                     if (!tmp) {
                       werror("**EOF.\n");
