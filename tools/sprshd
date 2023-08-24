@@ -268,7 +268,7 @@ void handle_incoming_connection(object(Stdio.File) io)
   object po2=po->pipe();
   object pe2=pe->pipe();
 #else
-  object pi = po->pipe(Stdio.PROP_IPC);
+  object pi = pi2->pipe(Stdio.PROP_IPC);
   object po2=po->pipe(Stdio.PROP_IPC);
   object pe2=pe->pipe(Stdio.PROP_IPC);
 #endif
