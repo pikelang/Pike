@@ -252,37 +252,45 @@ void handle_incoming_connection(object(Stdio.File) io)
     }
 
     default:
-#ifdef WINE
-      void my_proxy(Stdio.File from, Stdio.File to)
- 	{	
-	  while(string s=from->read(128,1))
-	    if(to->write(s)!=strlen(s))
-	      return;
-	  if(p) p->kill(9); /* DIE! */
-	}
 
-    {
-      werror("Proxying.....\n");
-      object p3=Stdio.File();
-#ifdef NO_IPC
-      object p4=p3->pipe();
-#else
-      object p4=p3->pipe(Stdio.PROP_IPC);
-#endif
-      thread_create(my_proxy,io,p4);
-      io=p3;
-    }
-#endif
+      // Pipes:
+      //
+      // Use		Us		Subprocess
+      // stdin		pi		pi2
+      // stdout		po		po2
+      // stderr		pe		pe2
 
-  object pi=Stdio.File();
+  object pi2 = Stdio.File();
+  object po=Stdio.File();
   object pe=Stdio.File();
 #ifdef NO_IPC
-  object p2=pi->pipe();
+  object pi = po->pipe();
+  object po2=po->pipe();
   object pe2=pe->pipe();
 #else
-  object p2=pi->pipe(Stdio.PROP_IPC);
+  object pi = po->pipe(Stdio.PROP_IPC);
+  object po2=po->pipe(Stdio.PROP_IPC);
   object pe2=pe->pipe(Stdio.PROP_IPC);
 #endif
+
+  thread_create(lambda() {
+                  while(pi) {
+                    string tmp = io->read();
+                    if (!pi) return;
+                    if (!tmp) {
+                      werror("**EOF.\n");
+                      pi->close();
+                      destruct(pi);
+                      return;
+                    }
+                    if (pi->write(tmp) != sizeof(tmp)) {
+                      werror("**WEOF.\n");
+                      pi->close();
+                      destruct(pi);
+                      return;
+                    }
+                  }
+                });
 
 #if __VERSION__ >= 0.699999
    if(io->read_oob)
@@ -298,6 +306,10 @@ void handle_incoming_connection(object(Stdio.File) io)
          if (tmp == "\4") {
            werror("**EOF.\n");
            io->close("r");
+           if (pi) {
+             pi->close();
+             destruct(pi);
+           }
            return;
          }
          werror("**Interrupt %O received, killing child.\n", tmp);
@@ -311,15 +323,16 @@ void handle_incoming_connection(object(Stdio.File) io)
 	p=Process.create_process(cmd,
 				 ([
 #ifndef WINE
-				   "stdin":io,
-				   "stdout":p2,
+                                   "stdin":pi2,
+                                   "stdout":po2,
 				   "stderr":pe2,
 #endif
 				   "cwd":dir,
 				   "env":env,
 				   ]));
       };
-      destruct(p2);
+      destruct(pi2);
+      destruct(po2);
       destruct(pe2);
       if(!err)
       {
@@ -328,17 +341,17 @@ void handle_incoming_connection(object(Stdio.File) io)
 #endif
 
 #ifdef NO_IPC
-	thread_create(monitor,p2,p);
+        thread_create(monitor, io, p);
 #endif
 	
 	object proxythread;
 	if(env->__handles_stderr)
 	{
 	  proxythread=thread_create(myproxy,pe,io,2,p);
-	  myproxy(pi,io,1,p);
+          myproxy(po,io,1,p);
 	}else{
 	  proxythread=thread_create(myproxy,pe,io,0,p);
-	  myproxy(pi,io,0,p);
+          myproxy(po,io,0,p);
 	}
 #ifdef DEBUG
 	werror ("Process %O: Waiting for stderr on %O to close.\n",
@@ -379,7 +392,6 @@ void handle_incoming_connection(object(Stdio.File) io)
           msg += sprintf("\n*** %O is probably not mapped on the windows machine! ***\n\n", dir);
         }
         werror("%s", msg);
-	destruct(p2);
         io->write(sprintf("%c%3c%s",
                           env->__handles_stderr?2:0,
                           sizeof(msg),
