@@ -2128,7 +2128,7 @@ AC_DEFUN(PIKE_PKG_CONFIG,
       PIKE_LOW_PKG_CONFIG([$1], [LDFLAGS],  [--libs-only-L])
       PIKE_LOW_PKG_CONFIG([$1], [LIBS],     [--libs-only-l --libs-only-other])
       AC_MSG_CHECKING([if $1 breaks compilation...])
-      AC_TRY_COMPILE([
+      AC_TRY_LINK([
 #include <stdio.h>
 #include <stdlib.h>
 ],[
