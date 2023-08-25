@@ -521,8 +521,8 @@ static struct define_struct *find_define(struct CPP_struct *this, struct pike_st
   return (struct define_struct *)get_storage(s->u.object, define_program);
 }
 
-static ptrdiff_t calc(struct CPP_struct *this, PCHARP data, ptrdiff_t len,
-		      ptrdiff_t tmp, int flags);
+static ptrdiff_t calc(struct CPP_struct *this, const PCHARP data,
+                      ptrdiff_t len, ptrdiff_t tmp, int flags);
 
 
   /*! @decl void report(SeverityLevel severity, @
@@ -587,7 +587,6 @@ static void cpp_report_vsprintf(struct CPP_struct *this, int severity,
 				const char *fmt, va_list args)
 {
   struct string_builder s;
-  struct pike_string *msg;
 
   if (severity >= REPORT_ERROR) {
     /* NB: This increment is here (and not in report()), to allow
@@ -1489,7 +1488,6 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
 
     if (OUTP()) {
       int major, minor;
-      ptrdiff_t tmp;
       PCHARP ptr;
 
       string_builder_strcat(&this->buf, "#pike ");
@@ -1839,7 +1837,8 @@ static p_wchar2 readchar( PCHARP data, ptrdiff_t *pos, struct CPP_struct *this )
 }
 
 
-static ptrdiff_t readstring( struct CPP_struct *this, const PCHARP data, ptrdiff_t len, ptrdiff_t pos,
+static ptrdiff_t readstring( struct CPP_struct *this, const PCHARP data,
+                             ptrdiff_t len, ptrdiff_t pos,
 			     struct string_builder*nf, int  nl_ok)
 {
   while(1)
@@ -1892,7 +1891,8 @@ static ptrdiff_t readstring( struct CPP_struct *this, const PCHARP data, ptrdiff
   return pos;
 }
 
-static ptrdiff_t readstring_lit( struct CPP_struct *this, const PCHARP data, ptrdiff_t len, ptrdiff_t pos,
+static ptrdiff_t readstring_lit( struct CPP_struct *this, const PCHARP data,
+                                 ptrdiff_t len, ptrdiff_t pos,
 			     struct string_builder*nf, INT32 ec)
 {
   INT32 ch;
@@ -1914,8 +1914,9 @@ static ptrdiff_t readstring_lit( struct CPP_struct *this, const PCHARP data, ptr
   return pos;
 }
 
-static ptrdiff_t fixstring(struct CPP_struct *this, const PCHARP data, ptrdiff_t len,
-			   ptrdiff_t pos, struct string_builder *nf, int outp)
+static ptrdiff_t fixstring(struct CPP_struct *this, const PCHARP data,
+                           ptrdiff_t len, ptrdiff_t pos,
+                           struct string_builder *nf, int outp)
 {
   int trailing_newlines=0;
   if(outp) string_builder_putchar(nf, '"');
@@ -1988,7 +1989,8 @@ static ptrdiff_t find_end_of_line( struct CPP_struct *this, const PCHARP data,
 }
 
 
-static ptrdiff_t find_end_of_comment( struct CPP_struct *this, const PCHARP data, ptrdiff_t len,
+static ptrdiff_t find_end_of_comment( struct CPP_struct *this,
+                                      const PCHARP data, ptrdiff_t len,
                                       ptrdiff_t pos, int emit)
 {
   pos++;
@@ -2062,12 +2064,12 @@ static ptrdiff_t find_end_quote(struct CPP_struct *this, const PCHARP data,
 
 
 static ptrdiff_t find_end_brace(struct CPP_struct *this,
-				PCHARP data,
+                                const PCHARP data,
 				ptrdiff_t len,
 				ptrdiff_t pos);
 
 static ptrdiff_t find_end_parenthesis(struct CPP_struct *this,
-				      PCHARP data,
+                                      const PCHARP data,
 				      ptrdiff_t len,
 				      ptrdiff_t pos)
 /* pos is after the open paren. Returns the position after the close paren. */
@@ -2138,7 +2140,9 @@ static ptrdiff_t find_end_brace(struct CPP_struct *this,
   }
 }
 
-static struct pike_string *gobble_identifier (struct CPP_struct *this, const PCHARP data, ptrdiff_t *pos)
+static struct pike_string *gobble_identifier (struct CPP_struct *this,
+                                              const PCHARP data,
+                                              ptrdiff_t *pos)
 {
   ptrdiff_t p = *pos;
   struct string_builder sb;
@@ -2324,13 +2328,13 @@ static struct pike_string *make_define_name(struct CPP_struct *this,
 }
 
 static int parse_define_decl(struct CPP_struct *this,
-                             PCHARP data,
+                             const PCHARP data,
                              ptrdiff_t len,
                              ptrdiff_t *posp,
                              struct pike_string **def_name,
                              int *varargsp);
 static void parse_define_body(struct CPP_struct *this,
-                              PCHARP data,
+                              const PCHARP data,
                               ptrdiff_t len,
                               ptrdiff_t *posp,
                               struct svalue *argbase,
@@ -2767,7 +2771,8 @@ static void add_quoted_string( const void *str, ptrdiff_t len, int shift,
   free_string(x);
 }
 
-static ptrdiff_t find_eos( struct CPP_struct *this, const PCHARP data, ptrdiff_t len, ptrdiff_t pos )
+static ptrdiff_t find_eos( struct CPP_struct *this, const PCHARP data,
+                           ptrdiff_t len, ptrdiff_t pos )
 {
     while(pos < len)
     {
@@ -2802,7 +2807,8 @@ static ptrdiff_t find_eos( struct CPP_struct *this, const PCHARP data, ptrdiff_t
     return pos;
 }
 
-static ptrdiff_t skipwhite(struct CPP_struct *this, const PCHARP data, ptrdiff_t pos)
+static ptrdiff_t skipwhite(struct CPP_struct *this, const PCHARP data,
+                           ptrdiff_t pos)
 {
   do
   {
@@ -2836,7 +2842,8 @@ static ptrdiff_t skipwhite(struct CPP_struct *this, const PCHARP data, ptrdiff_t
   return pos;
 }
 
-static ptrdiff_t skipspace(struct CPP_struct *this, const PCHARP data, ptrdiff_t pos, int emit)
+static ptrdiff_t skipspace(struct CPP_struct *this, const PCHARP data,
+                           ptrdiff_t pos, int emit)
 {
   do {
     int c;
@@ -2913,16 +2920,16 @@ static int begins_with( const char *prefix, const PCHARP stack, int len, int rem
 }
 
 static ptrdiff_t low_cpp(struct CPP_struct *this,
-                         PCHARP data,
+                         const PCHARP data,
                          ptrdiff_t len,
                          int flags,
                          struct pike_string *charset);
 
-static ptrdiff_t calc1(struct CPP_struct *this, PCHARP data, ptrdiff_t len,
-		       ptrdiff_t pos, int flags);
+static ptrdiff_t calc1(struct CPP_struct *this, const PCHARP data,
+                       ptrdiff_t len, ptrdiff_t pos, int flags);
 
-static ptrdiff_t calcC(struct CPP_struct *this, PCHARP data, ptrdiff_t len,
-		       ptrdiff_t pos, int flags)
+static ptrdiff_t calcC(struct CPP_struct *this, const PCHARP data,
+                       ptrdiff_t len, ptrdiff_t pos, int flags)
 {
   SKIPWHITE();
 
@@ -3164,8 +3171,8 @@ static ptrdiff_t calcC(struct CPP_struct *this, PCHARP data, ptrdiff_t len,
   return pos;
 }
 
-static ptrdiff_t calcB(struct CPP_struct *this, PCHARP data, ptrdiff_t len,
-		       ptrdiff_t pos, int flags)
+static ptrdiff_t calcB(struct CPP_struct *this, const PCHARP data,
+                       ptrdiff_t len, ptrdiff_t pos, int flags)
 {
   CALC_DUMPPOS("before calcB");
 
@@ -3184,8 +3191,8 @@ static ptrdiff_t calcB(struct CPP_struct *this, PCHARP data, ptrdiff_t len,
   return pos;
 }
 
-static ptrdiff_t calcA(struct CPP_struct *this,PCHARP data, ptrdiff_t len,
-		       ptrdiff_t pos, int flags)
+static ptrdiff_t calcA(struct CPP_struct *this, const PCHARP data,
+                       ptrdiff_t len, ptrdiff_t pos, int flags)
 {
   CALC_DUMPPOS("before calcA");
 
@@ -3226,8 +3233,8 @@ static ptrdiff_t calcA(struct CPP_struct *this,PCHARP data, ptrdiff_t len,
   return pos;
 }
 
-static ptrdiff_t calc9(struct CPP_struct *this, PCHARP data, ptrdiff_t len,
-		       ptrdiff_t pos, int flags)
+static ptrdiff_t calc9(struct CPP_struct *this, const PCHARP data,
+                       ptrdiff_t len, ptrdiff_t pos, int flags)
 {
   CALC_DUMPPOS("before calc9");
 
@@ -3260,8 +3267,8 @@ static ptrdiff_t calc9(struct CPP_struct *this, PCHARP data, ptrdiff_t len,
   return pos;
 }
 
-static ptrdiff_t calc8(struct CPP_struct *this, PCHARP data, ptrdiff_t len,
-		       ptrdiff_t pos, int flags)
+static ptrdiff_t calc8(struct CPP_struct *this, const PCHARP data,
+                       ptrdiff_t len, ptrdiff_t pos, int flags)
 {
   CALC_DUMPPOS("before calc8");
 
@@ -3294,8 +3301,8 @@ static ptrdiff_t calc8(struct CPP_struct *this, PCHARP data, ptrdiff_t len,
   return pos;
 }
 
-static ptrdiff_t calc7b(struct CPP_struct *this, PCHARP data, ptrdiff_t len,
-			ptrdiff_t pos, int flags)
+static ptrdiff_t calc7b(struct CPP_struct *this, const PCHARP data,
+                        ptrdiff_t len, ptrdiff_t pos, int flags)
 {
   CALC_DUMPPOS("before calc7b");
 
@@ -3344,8 +3351,8 @@ static ptrdiff_t calc7b(struct CPP_struct *this, PCHARP data, ptrdiff_t len,
   return pos;
 }
 
-static ptrdiff_t calc7(struct CPP_struct *this, PCHARP data, ptrdiff_t len,
-		       ptrdiff_t pos, int flags)
+static ptrdiff_t calc7(struct CPP_struct *this, const PCHARP data,
+                       ptrdiff_t len, ptrdiff_t pos, int flags)
 {
   CALC_DUMPPOS("before calc7");
 
@@ -3377,8 +3384,8 @@ static ptrdiff_t calc7(struct CPP_struct *this, PCHARP data, ptrdiff_t len,
   return pos;
 }
 
-static ptrdiff_t calc6(struct CPP_struct *this, PCHARP data, ptrdiff_t len,
-		       ptrdiff_t pos, int flags)
+static ptrdiff_t calc6(struct CPP_struct *this, const PCHARP data,
+                       ptrdiff_t len, ptrdiff_t pos, int flags)
 {
   CALC_DUMPPOS("before calc6");
 
@@ -3397,8 +3404,8 @@ static ptrdiff_t calc6(struct CPP_struct *this, PCHARP data, ptrdiff_t len,
   return pos;
 }
 
-static ptrdiff_t calc5(struct CPP_struct *this, PCHARP data, ptrdiff_t len,
-		       ptrdiff_t pos, int flags)
+static ptrdiff_t calc5(struct CPP_struct *this, const PCHARP data,
+                       ptrdiff_t len, ptrdiff_t pos, int flags)
 {
   CALC_DUMPPOS("before calc5");
 
@@ -3416,8 +3423,8 @@ static ptrdiff_t calc5(struct CPP_struct *this, PCHARP data, ptrdiff_t len,
   return pos;
 }
 
-static ptrdiff_t calc4(struct CPP_struct *this, PCHARP data, ptrdiff_t len,
-		       ptrdiff_t pos, int flags)
+static ptrdiff_t calc4(struct CPP_struct *this, const PCHARP data,
+                       ptrdiff_t len, ptrdiff_t pos, int flags)
 {
   CALC_DUMPPOS("before calc4");
 
@@ -3435,8 +3442,8 @@ static ptrdiff_t calc4(struct CPP_struct *this, PCHARP data, ptrdiff_t len,
   return pos;
 }
 
-static ptrdiff_t calc3(struct CPP_struct *this, PCHARP data, ptrdiff_t len,
-		       ptrdiff_t pos, int flags)
+static ptrdiff_t calc3(struct CPP_struct *this, const PCHARP data,
+                       ptrdiff_t len, ptrdiff_t pos, int flags)
 {
 
   CALC_DUMPPOS("before calc3");
@@ -3463,8 +3470,8 @@ static ptrdiff_t calc3(struct CPP_struct *this, PCHARP data, ptrdiff_t len,
   return pos;
 }
 
-static ptrdiff_t calc2(struct CPP_struct *this, PCHARP data, ptrdiff_t len,
-		       ptrdiff_t pos, int flags)
+static ptrdiff_t calc2(struct CPP_struct *this, const PCHARP data,
+                       ptrdiff_t len, ptrdiff_t pos, int flags)
 {
 
   CALC_DUMPPOS("before calc2");
@@ -3491,8 +3498,8 @@ static ptrdiff_t calc2(struct CPP_struct *this, PCHARP data, ptrdiff_t len,
   return pos;
 }
 
-static ptrdiff_t calc1(struct CPP_struct *this, PCHARP data, ptrdiff_t len,
-		       ptrdiff_t pos, int flags)
+static ptrdiff_t calc1(struct CPP_struct *this, const PCHARP data,
+                       ptrdiff_t len, ptrdiff_t pos, int flags)
 {
   CALC_DUMPPOS("before calc1");
 
@@ -3516,8 +3523,8 @@ static ptrdiff_t calc1(struct CPP_struct *this, PCHARP data, ptrdiff_t len,
   return pos;
 }
 
-static ptrdiff_t calc(struct CPP_struct *this, PCHARP data, ptrdiff_t len,
-		      ptrdiff_t tmp, int flags)
+static ptrdiff_t calc(struct CPP_struct *this, const PCHARP data,
+                      ptrdiff_t len, ptrdiff_t tmp, int flags)
 {
   JMP_BUF recovery;
   ptrdiff_t pos;
@@ -3553,14 +3560,14 @@ static void apply_define(struct CPP_struct *this,
 			 struct pike_string *charset)
 {
   struct svalue *save_sp = Pike_sp;
-  JMP_BUF tmp;
+  JMP_BUF uwp;
 
   /* Keep d around... */
   push_svalue(&d->self);
 
   stack_swap();
 
-  if (!SETJMP(tmp)) {
+  if (!SETJMP(uwp)) {
     if ((d->args == 1) && !Pike_sp[-1].u.array->size &&
 	!(d->flags & CPP_MACRO_VARARGS)) {
       // Allow a single argument to be left out.
@@ -3572,7 +3579,7 @@ static void apply_define(struct CPP_struct *this,
     push_int(flags);
     apply_lfun(d->self.u.object, LFUN_CALL, 3);
 
-    UNSETJMP(tmp);
+    UNSETJMP(uwp);
 
     if (TYPEOF(Pike_sp[-1]) == PIKE_T_STRING) {
       int save_flags = d->flags;
@@ -3588,7 +3595,7 @@ static void apply_define(struct CPP_struct *this,
       this->compile_errors++;
     }
   } else {
-    UNSETJMP(tmp);
+    UNSETJMP(uwp);
 
     this->compile_errors++;
   }
@@ -3618,7 +3625,7 @@ static void apply_define(struct CPP_struct *this,
  *
  */
 static int parse_define_decl(struct CPP_struct *this,
-                             PCHARP data,
+                             const PCHARP data,
                              ptrdiff_t len,
                              ptrdiff_t *posp,
                              struct pike_string **def_name,
@@ -3719,7 +3726,7 @@ static int parse_define_decl(struct CPP_struct *this,
  * been pushed on the pike stack.
  */
 static void parse_define_body(struct CPP_struct *this,
-                              PCHARP data,
+                              const PCHARP data,
                               ptrdiff_t len,
                               ptrdiff_t *posp,
                               struct svalue *argbase,
@@ -3919,12 +3926,12 @@ static void parse_define_body(struct CPP_struct *this,
  *     The result of this is added to a temporary buffer.
  */
 static ptrdiff_t low_cpp(struct CPP_struct *this,
-                           PCHARP data,
+                           const PCHARP data,
 			   ptrdiff_t len,
 			   int flags,
 			   struct pike_string *charset)
 {
-  ptrdiff_t pos, tmp, e;
+  ptrdiff_t pos, tmp;
   int include_mode;
   INT_TYPE first_line = this->current_line;
   /* FIXME: What about this->current_file? */
@@ -4706,7 +4713,6 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
 
                 if((flags & (CPP_NO_OUTPUT | CPP_REALLY_NO_OUTPUT)) == CPP_NO_OUTPUT)
                 {
-		  INT32 nflags;
 		  struct pike_string *s;
 		  SKIPSPACE();
 
@@ -4735,7 +4741,6 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
 
                 if((flags & (CPP_NO_OUTPUT | CPP_REALLY_NO_OUTPUT)) == CPP_NO_OUTPUT)
                 {
-		  INT32 nflags;
 		  struct pike_string *s;
 		  SKIPSPACE();
 
@@ -4763,9 +4768,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
 
               if(GOBBLE_WORD(define_))
               {
-                struct string_builder str;
                 INT32 argno=-1;
-                ptrdiff_t tmp3;
                 struct pike_string *def_name = NULL;
                 struct define_struct *def;
                 struct svalue *argbase = Pike_sp;
@@ -4835,7 +4838,6 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
 
               if (GOBBLE_WORD(charset_)) {
                 ptrdiff_t p;
-                struct pike_string *s;
 
                 if (flags & (CPP_EXPECT_ENDIF | CPP_EXPECT_ELSE)) {
                   /* Only allowed at the top-level */
@@ -5731,7 +5733,6 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
   PIKEFUN void define_ansi_macros()
   {
     struct CPP_struct *this = THIS;
-    struct define_struct *def;
 
     /* These attempt to be compatible with the C standard. */
     DO_MAGIC_DEFINE(__LINE__);
