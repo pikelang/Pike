@@ -34,6 +34,14 @@
 #include <socket.h>
 #endif /* HAVE_SOCKET_H */
 
+#ifdef HAVE_UTIME_H
+#include <utime.h>
+#endif
+
+#ifdef HAVE_SYS_UTIME_H
+#include <sys/utime.h>
+#endif
+
 #include "pike_netlib.h"
 
 #define fd_INTERPROCESSABLE   1
@@ -119,6 +127,12 @@ struct winsize {
 #define TIOCSWINSZ	_IOW('T', 0x14, struct winsize)
 #endif
 
+#ifdef HAVE__WUTIME64
+#define fd_utimbuf	__utimbuf64
+#else
+#define fd_utimbuf	_utimbuf
+#endif
+
 #define SOCKFUN1(NAME,T1) PMOD_EXPORT int PIKE_CONCAT(debug_fd_,NAME) (FD,T1);
 #define SOCKFUN2(NAME,T1,T2) PMOD_EXPORT int PIKE_CONCAT(debug_fd_,NAME) (FD,T1,T2);
 #define SOCKFUN3(NAME,T1,T2,T3) PMOD_EXPORT int PIKE_CONCAT(debug_fd_,NAME) (FD,T1,T2,T3);
@@ -132,6 +146,7 @@ struct winsize {
         debug_fd_query_properties(dmalloc_touch_fd(fd),(Y))
 #define fd_stat(F,BUF) debug_fd_stat(F,BUF)
 #define fd_lstat(F,BUF) debug_fd_stat(F,BUF)
+#define fd_utime(F, BUF)	debug_fd_utime(F, BUF)
 #define fd_truncate(F,LEN)	debug_fd_truncate(F,LEN)
 #define fd_rmdir(DIR)	debug_fd_rmdir(DIR)
 #define fd_unlink(FILE)	debug_fd_unlink(FILE)
@@ -188,6 +203,7 @@ p_wchar1 *low_dwim_utf8_to_utf16(const p_wchar0 *str, size_t len);
 PMOD_EXPORT p_wchar1 *pike_dwim_utf8_to_utf16(const p_wchar0 *str);
 PMOD_EXPORT p_wchar0 *pike_utf16_to_utf8(const p_wchar1 *str);
 PMOD_EXPORT int debug_fd_stat(const char *file, PIKE_STAT_T *buf);
+PMOD_EXPORT int debug_fd_utime(const char *file, const struct fd_utimbuf *buf);
 PMOD_EXPORT int debug_fd_truncate(const char *file, INT64 len);
 PMOD_EXPORT int debug_fd_rmdir(const char *dir);
 PMOD_EXPORT int debug_fd_unlink(const char *file);
@@ -404,11 +420,14 @@ typedef off_t PIKE_OFF_T;
 #define fd_LARGEFILE 0
 #endif /* O_LARGEFILE */
 
+#define fd_utimbuf	utimbuf
+
 #define fd_isatty(F) isatty(F)
 #define fd_query_properties(X,Y) ( fd_INTERPROCESSABLE | (Y))
 
 #define fd_stat(F,BUF) stat(F,BUF)
 #define fd_lstat(F,BUF) lstat(F,BUF)
+#define fd_utime(F, BUF)	utime(F, BUF)
 #ifdef HAVE_TRUNCATE64
 #define fd_truncate(F,LEN)	truncate64(F,LEN)
 #else

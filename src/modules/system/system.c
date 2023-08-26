@@ -40,6 +40,7 @@
 #include "pike_cpulib.h"
 #include "sprintf.h"
 #include "operators.h"
+#include "fdlib.h"
 
 #include <errno.h>
 
@@ -88,14 +89,6 @@
 #ifdef HAVE_SYS_PRCTL_H
 #include <sys/prctl.h>
 #endif /* HAVE_SYS_PRCTL_H */
-
-#ifdef HAVE_UTIME_H
-#include <utime.h>
-#endif
-
-#ifdef HAVE_SYS_UTIME_H
-#include <sys/utime.h>
-#endif
 
 #ifdef HAVE_NETINFO_NI_H
 #include <netinfo/ni.h>
@@ -601,21 +594,13 @@ void f_utime(INT32 args)
 
   {
     /*&#()&@(*#&$ NT ()*&#)(&*@$#*/
-#ifdef _UTIMBUF_DEFINED
-    struct _utimbuf b;
-#else
-    struct utimbuf b;
-#endif
+    struct fd_utimbuf b;
 
     b.actime=atime;
     b.modtime=mtime;
     do {
       THREADS_ALLOW_UID();
-#if defined(HAVE__UTIME) && !defined(HAVE_UTIME)
-      err = _utime (path, &b);
-#else
-      err = utime(path, &b);
-#endif
+      err = fd_utime(path, &b);
       THREADS_DISALLOW_UID();
       if (err >= 0 || errno != EINTR) break;
       check_threads_etc();

@@ -1413,6 +1413,27 @@ PMOD_EXPORT int debug_fd_stat(const char *file, PIKE_STAT_T *buf)
   return(0);
 }
 
+PMOD_EXPORT int debug_fd_utime(const char *file, const struct fd_utimbuf *times)
+{
+  p_wchar1 *fname = pike_dwim_utf8_to_utf16(file);
+  int ret;
+
+  if (!fname) {
+    errno = ENOMEM;
+    return -1;
+  }
+
+#ifdef HAVE__WUTIME64
+  ret = _wutime64(fname, times);
+#else
+  ret = _wutime(fname, times);
+#endif
+
+  free(fname);
+
+  return ret;
+}
+
 PMOD_EXPORT int debug_fd_truncate(const char *file, INT64 len)
 {
   p_wchar1 *fname = pike_dwim_utf8_to_utf16(file);
