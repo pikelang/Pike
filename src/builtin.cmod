@@ -1898,8 +1898,6 @@ static void f_proxy__sprintf(INT32 args)
   /* NB: We only have a single variable in storage. */
   struct svalue *storage = (struct svalue *)Pike_fp->current_storage;
   struct object *obj;
-  struct inherit *inh;
-  struct identifier *id;
 
   if (TYPEOF(*storage) != PIKE_T_OBJECT) {
     Pike_error("Proxy for %pO not initialized.\n",
@@ -2045,8 +2043,6 @@ PMOD_EXPORT struct program *proxy_factory(struct program *p,
       yyerror("Aliases not supported (yet).");
     } else if (IDENTIFIER_IS_VARIABLE(id->identifier_flags) ||
 	       IDENTIFIER_IS_CONSTANT(id->identifier_flags)) {
-      struct pike_string *fun_name;
-
       /* Getter. */
       type_stack_mark();
       push_finished_type(id->type);
@@ -7629,7 +7625,7 @@ void exit_builtin(void)
   if (env_allocs) free_mapping (env_allocs);
 #endif
 #ifdef __NT__
-  if (crypto_handle) CloseHandle(crypto_handle);
+  if (crypto_handle) CryptReleaseContext(crypto_handle, 0);
 #else
   if (random_fd!=-1) close(random_fd);
 #endif
