@@ -2191,7 +2191,6 @@ static int do_docode2(node *n, int flags)
     }
     else
     {
-      struct pike_string *tmp;
       node *foo;
 
       emit0(F_MARK);
@@ -3174,7 +3173,6 @@ static void emit_save_locals(struct compiler_frame *f)
 {
   struct compilation *c = THIS_COMPILATION;
   unsigned INT16 offset;
-  unsigned INT16 idx;
   int num_locals = f->max_number_of_locals;
 
   for (offset = 0; offset < (num_locals >> 4) + 1; offset++) {
