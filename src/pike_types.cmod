@@ -965,7 +965,6 @@ static struct pike_type *apply_type_operator(enum PIKE_TYPE op,
 void debug_push_type_operator(enum PIKE_TYPE op, struct pike_type *arg)
 {
   struct pike_type *t = *Pike_compiler->type_stackp;
-  struct pike_type *tmp;
   int free_arg = 0;
 
 #ifdef PIKE_DEBUG
@@ -3455,7 +3454,6 @@ static struct pike_type *find_lfun_type(struct pike_type *t, int lfun)
 {
   struct pike_type *ret = NULL;
   struct pike_type *tmp;
-  struct svalue *s;
 
  loop:
   if (!t) return NULL;
@@ -3532,22 +3530,25 @@ static struct pike_type *find_lfun_type(struct pike_type *t, int lfun)
   }
 
 #if 0
-  /* FIXME: This does not work, as lfun_types contains narrow types
-   *        (zero for arguments, etc), while we here want the wide type
-   *        (mixed for arguments, etc).
-   */
-  s = low_mapping_string_lookup(lfun_types, lfun_strings[lfun]);
+  {
+    /* FIXME: This does not work, as lfun_types contains narrow types
+     *        (zero for arguments, etc), while we here want the wide type
+     *        (mixed for arguments, etc).
+     */
+    struct svalue *s;
+    s = low_mapping_string_lookup(lfun_types, lfun_strings[lfun]);
 
 #ifdef PIKE_DEBUG
-  if (!s) {
-    Pike_fatal("Unknown lfun: %s\n", STR0(lfun_strings[lfun]));
-  }
+    if (!s) {
+      Pike_fatal("Unknown lfun: %s\n", STR0(lfun_strings[lfun]));
+    }
 #endif
 
-  if (TYPEOF(*s) == PIKE_T_TYPE) {
-    ret = s->u.type;
-    add_ref(ret);
-    return ret;
+    if (TYPEOF(*s) == PIKE_T_TYPE) {
+      ret = s->u.type;
+      add_ref(ret);
+      return ret;
+    }
   }
 
   return NULL;
@@ -4258,8 +4259,6 @@ static struct pike_type *expand_transitive_remap(struct pike_type *fun,
 						 struct remap_state *remap,
 						 enum pt_remap_flags flags)
 {
-  struct pike_type *ret_type;
-  struct pike_type *cont_type;
   assert(fun->type == PIKE_T_TRANSITIVE);
 
 #ifdef PIKE_DEBUG
@@ -4468,8 +4467,7 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
   struct pike_type *tmp, *tmp2, *ret;
   struct pike_type *aret = NULL, *bret = NULL;
   struct compilation *c = MAYBE_THIS_COMPILATION;
-  enum pt_cmp_flags avoidable;
-  enum pt_cmp_flags bvoidable;
+  enum pt_cmp_flags tmp_flags;
 
  recur:
   switch(op) {
@@ -4480,9 +4478,9 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
     tmp = a;
     a = b;
     b = tmp;
-    avoidable = aflags;
+    tmp_flags = aflags;
     aflags = bflags;
-    bflags = avoidable;
+    bflags = tmp_flags;
     remap_flags ^= PT_FLAG_REMAP_SWAP_MARKERS;
     op = PT_BINOP_MINUS;
     break;
@@ -6181,7 +6179,6 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
       int i;
       int nbounds = 1;
       INT32 bound;
-      INT32 other;
 
       /*
        * Implementation notes:
@@ -6906,7 +6903,6 @@ static struct pike_type *low_subtract_types(struct pike_type *a,
      *     Keep for later evaluation.
      */
     {
-      int nargs;
       struct pike_type *ai = a;
       struct pike_type *bi = b;
       int got_empty = 0;
@@ -8215,8 +8211,6 @@ static struct pike_type *expand_transitive(struct pike_type *fun,
 					   struct pike_type **markers,
 					   int UNUSED(flags))
 {
-  struct pike_type *ret_type;
-  struct pike_type *cont_type;
   assert(fun->type == PIKE_T_TRANSITIVE);
   assert(markers);
 
@@ -11893,7 +11887,6 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
 
     {
       struct remap_state remap;
-      struct pike_type *old_res;
       struct pike_type *fun_cont;
       enum pt_remap_flags remap_flags = 0;
       struct pike_type *arg_match = NULL;
