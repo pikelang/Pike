@@ -21,6 +21,12 @@ NTLIBFUNC(kernel32, BOOL, MoveFileExW, (
   DWORD dwFlags                /* move options  */
 ));
 
+NTLIBFUNC(kernel32, BOOL, CreateHardLinkW, (
+  LPCWSTR lpFileName,
+  LPCWSTR lpExistingFileName,
+  LPSECURITY_ATTRIBUTES lpSecurityAttributes
+));
+
 /* The following are needed for pty handling,
  * and taken from <consoleapi.h> and <processthreadsapi.h>.
  */

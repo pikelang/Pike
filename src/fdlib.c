@@ -1475,6 +1475,38 @@ PMOD_EXPORT int debug_fd_truncate(const char *file, INT64 len)
   return 0;
 }
 
+PMOD_EXPORT int debug_fd_link(const char *oldpath, const char *newpath)
+{
+  if (!Pike_NT_CreateHardLinkW) {
+    errno = ENOTSUPP;
+    return -1;
+  }
+
+  {
+    p_wchar1 *oname = pike_dwim_utf8_to_utf16(oldpath);
+    ONERROR uwp;
+    p_wchar1 *nname;
+    int ret = 0;
+
+    SET_ONERROR(uwp, free, oname);
+
+    /* FIXME: Consider prefixing with "\\\\?\\" (4 characters)
+     *        to allow paths longer than 260 characters.
+     */
+    nname = pike_dwim_utf8_to_utf16(newpath);
+
+    if (!Pike_NT_CreateHardLinkW(nname, oname, NULL)) {
+      set_errno_from_win32_error(GetLastError());
+      ret = -1;
+    }
+
+    free(nname);
+    CALL_AND_UNSET_ONERROR(uwp);
+
+    return ret;
+  }
+}
+
 PMOD_EXPORT int debug_fd_rmdir(const char *dir)
 {
   p_wchar1 *dname = pike_dwim_utf8_to_utf16(dir);

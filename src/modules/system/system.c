@@ -181,7 +181,7 @@ static void report_error(const char *function_name)
  *! available to the Pike programmer.
  */
 
-#ifdef HAVE_LINK
+#if defined(HAVE_LINK) || defined(__NT__)
 /*! @decl void hardlink(string from, string to)
  *!
  *! Create a hardlink named @[to] from the file @[from].
@@ -202,7 +202,7 @@ void f_hardlink(INT32 args)
 
   do {
     THREADS_ALLOW_UID();
-    err = link(from, to);
+    err = fd_link(from, to);
     THREADS_DISALLOW_UID();
     if (err >= 0 || errno != EINTR) break;
     check_threads_etc();
@@ -213,7 +213,7 @@ void f_hardlink(INT32 args)
   }
   pop_n_elems(args);
 }
-#endif /* HAVE_LINK */
+#endif /* HAVE_LINK || __NT__ */
 
 #ifdef HAVE_SYMLINK
 /*! @decl void symlink(string from, string to)
@@ -3179,12 +3179,18 @@ PIKE_MODULE_INIT
   /*
    * From this file:
    */
-#ifdef HAVE_LINK
+#if defined(HAVE_LINK) || defined(__NT__)
 
-/* function(string, string:void) */
-  ADD_EFUN("hardlink", f_hardlink,tFunc(tStr tStr,tVoid), OPT_SIDE_EFFECT);
-  ADD_FUNCTION2("hardlink", f_hardlink,tFunc(tStr tStr,tVoid), 0, OPT_SIDE_EFFECT);
-#endif /* HAVE_LINK */
+#ifdef __NT__
+  if (Pike_NT_CreateHardLinkW) {
+#endif
+    /* function(string, string:void) */
+    ADD_EFUN("hardlink", f_hardlink, tFunc(tStr tStr, tVoid), OPT_SIDE_EFFECT);
+    ADD_FUNCTION2("hardlink", f_hardlink, tFunc(tStr tStr, tVoid), 0, OPT_SIDE_EFFECT);
+#ifdef __NT__
+  }
+#endif
+#endif /* HAVE_LINK || __NT__ */
 #ifdef HAVE_SYMLINK
 
 /* function(string, string:void) */
