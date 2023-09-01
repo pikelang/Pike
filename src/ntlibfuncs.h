@@ -27,6 +27,12 @@ NTLIBFUNC(kernel32, BOOL, CreateHardLinkW, (
   LPSECURITY_ATTRIBUTES lpSecurityAttributes
 ));
 
+NTLIBFUNC(kernel32, BOOL, CreateSymbolicLinkW, (
+  LPCWSTR lpSymlinkFileName,
+  LPCWSTR lpTargetFileName,
+  DWORD dwFlags
+));
+
 /* The following are needed for pty handling,
  * and taken from <consoleapi.h> and <processthreadsapi.h>.
  */

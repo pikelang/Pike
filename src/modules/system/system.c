@@ -215,7 +215,7 @@ void f_hardlink(INT32 args)
 }
 #endif /* HAVE_LINK || __NT__ */
 
-#ifdef HAVE_SYMLINK
+#if defined(HAVE_SYMLINK) || defined(__NT__)
 /*! @decl void symlink(string from, string to)
  *!
  *! Create a symbolic link named @[to] that points to @[from].
@@ -236,7 +236,7 @@ void f_symlink(INT32 args)
 
   do {
     THREADS_ALLOW_UID();
-    err = symlink(from, to);
+    err = fd_symlink(from, to);
     THREADS_DISALLOW_UID();
     if (err >= 0 || errno != EINTR) break;
     check_threads_etc();
@@ -247,7 +247,7 @@ void f_symlink(INT32 args)
   }
   pop_n_elems(args);
 }
-#endif /* HAVE_SYMLINK */
+#endif /* HAVE_SYMLINK || __NT__ */
 
 #ifdef HAVE_READLINK
 /*! @decl string readlink(string path)
@@ -3191,12 +3191,18 @@ PIKE_MODULE_INIT
   }
 #endif
 #endif /* HAVE_LINK || __NT__ */
-#ifdef HAVE_SYMLINK
+#if defined(HAVE_SYMLINK) || defined(__NT__)
 
-/* function(string, string:void) */
-  ADD_EFUN("symlink", f_symlink,tFunc(tStr tStr,tVoid), OPT_SIDE_EFFECT);
-  ADD_FUNCTION2("symlink", f_symlink,tFunc(tStr tStr,tVoid), 0, OPT_SIDE_EFFECT);
-#endif /* HAVE_SYMLINK */
+#ifdef __NT__
+  if (Pike_NT_CreateSymbolicLinkW) {
+#endif
+    /* function(string, string:void) */
+    ADD_EFUN("symlink", f_symlink, tFunc(tStr tStr, tVoid), OPT_SIDE_EFFECT);
+    ADD_FUNCTION2("symlink", f_symlink, tFunc(tStr tStr, tVoid), 0, OPT_SIDE_EFFECT);
+#ifdef __NT__
+  }
+#endif
+#endif /* HAVE_SYMLINK || __NT__ */
 #ifdef HAVE_READLINK
 
 /* function(string:string) */

@@ -37,13 +37,25 @@
 
 #include <time.h>
 
-/* Old versions of the headerfiles don't have this constant... */
+/* Old versions of the headerfiles don't have these constants... */
 #ifndef INVALID_SET_FILE_POINTER
 #define INVALID_SET_FILE_POINTER ((DWORD)-1)
 #endif
 
 #ifndef ENOTSOCK
 #define ENOTSOCK	WSAENOTSOCK
+#endif
+
+#ifndef ERROR_DIRECTORY_NOT_SUPPORTED
+#define ERROR_DIRECTORY_NOT_SUPPORTED	336L
+#endif
+
+#ifndef SYMBOLIC_LINK_FLAG_DIRECTORY
+#define SYMBOLIC_LINK_FLAG_DIRECTORY			0x1
+#endif
+
+#ifndef SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE
+#define SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE	0x2
 #endif
 
 #include "threads.h"
@@ -202,6 +214,7 @@ static const unsigned long pike_doserrtab[][2] = {
   {  ERROR_INFLOOP_IN_RELOC_CHAIN,	ENOEXEC		}, /* 202 */
   {  ERROR_FILENAME_EXCED_RANGE,	ENOENT,		}, /* 206 */
   {  ERROR_NESTING_NOT_ALLOWED,		EAGAIN,		}, /* 215 */
+  {  ERROR_DIRECTORY_NOT_SUPPORTED,	EISDIR,		}, /* 336 */
   {  ERROR_NOT_ENOUGH_QUOTA,		ENOMEM,		}, /* 1816 */
 };
 
@@ -1501,6 +1514,43 @@ PMOD_EXPORT int debug_fd_link(const char *oldpath, const char *newpath)
     }
 
     free(nname);
+    CALL_AND_UNSET_ONERROR(uwp);
+
+    return ret;
+  }
+}
+
+PMOD_EXPORT int debug_fd_symlink(const char *target, const char *linkpath)
+{
+  if (!Pike_NT_CreateSymbolicLinkW) {
+    errno = ENOTSUPP;
+    return -1;
+  }
+
+  {
+    p_wchar1 *tname = pike_dwim_utf8_to_utf16(target);
+    ONERROR uwp;
+    p_wchar1 *lnk;
+    int ret = 0;
+
+    SET_ONERROR(uwp, free, tname);
+
+    /* FIXME: Consider prefixing with "\\\\?\\" (4 characters)
+     *        to allow paths longer than 260 characters.
+     */
+    lnk = pike_dwim_utf8_to_utf16(linkpath);
+
+    if (!Pike_NT_CreateSymbolicLinkW(tname, lnk,
+                                     SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE) &&
+        ((GetLastError() != ERROR_DIRECTORY_NOT_SUPPORTED) ||
+         !Pike_NT_CreateSymbolicLinkW(tname, lnk,
+                                      SYMBOLIC_LINK_FLAG_DIRECTORY |
+                                      SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE))) {
+      set_errno_from_win32_error(GetLastError());
+      ret = -1;
+    }
+
+    free(lnk);
     CALL_AND_UNSET_ONERROR(uwp);
 
     return ret;

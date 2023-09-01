@@ -149,6 +149,7 @@ struct winsize {
 #define fd_utime(F, BUF)	debug_fd_utime(F, BUF)
 #define fd_truncate(F,LEN)	debug_fd_truncate(F,LEN)
 #define fd_link(OLD,NEW)	debug_fd_link(OLD,NEW)
+#define fd_symlink(F,PATH)	debug_fd_symlink(F,PATH)
 #define fd_rmdir(DIR)	debug_fd_rmdir(DIR)
 #define fd_unlink(FILE)	debug_fd_unlink(FILE)
 #define fd_mkdir(DIR,MODE)	debug_fd_mkdir(DIR,MODE)
@@ -207,6 +208,7 @@ PMOD_EXPORT int debug_fd_stat(const char *file, PIKE_STAT_T *buf);
 PMOD_EXPORT int debug_fd_utime(const char *file, const struct fd_utimbuf *buf);
 PMOD_EXPORT int debug_fd_truncate(const char *file, INT64 len);
 PMOD_EXPORT int debug_fd_link(const char *oldpath, const char *newpath);
+PMOD_EXPORT int debug_fd_symlink(const char *target, const char *linkpath);
 PMOD_EXPORT int debug_fd_rmdir(const char *dir);
 PMOD_EXPORT int debug_fd_unlink(const char *file);
 PMOD_EXPORT int debug_fd_mkdir(const char *dir, int mode);
@@ -436,6 +438,7 @@ typedef off_t PIKE_OFF_T;
 #define fd_truncate(F,LEN)	truncate(F,LEN)
 #endif
 #define fd_link(OLD,NEW)	link(OLD,NEW)
+#define fd_symlink(F,PATH)	symlink(F,PATH)
 #define fd_rmdir(DIR)	rmdir(DIR)
 #define fd_unlink(FILE)	unlink(FILE)
 #if MKDIR_ARGS == 2
