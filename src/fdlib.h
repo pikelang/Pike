@@ -65,6 +65,7 @@
 #define TTY_CAPABILITIES (fd_TTY | fd_INTERPROCESSABLE | fd_BIDIRECTIONAL | fd_CAN_NONBLOCK)
 
 #include <winbase.h>
+#include <winioctl.h>
 
 typedef int FD;
 
@@ -150,6 +151,7 @@ struct winsize {
 #define fd_truncate(F,LEN)	debug_fd_truncate(F,LEN)
 #define fd_link(OLD,NEW)	debug_fd_link(OLD,NEW)
 #define fd_symlink(F,PATH)	debug_fd_symlink(F,PATH)
+#define fd_readlink(F,B,SZ)	debug_fd_readlink(F,B,SZ)
 #define fd_rmdir(DIR)	debug_fd_rmdir(DIR)
 #define fd_unlink(FILE)	debug_fd_unlink(FILE)
 #define fd_mkdir(DIR,MODE)	debug_fd_mkdir(DIR,MODE)
@@ -209,6 +211,8 @@ PMOD_EXPORT int debug_fd_utime(const char *file, const struct fd_utimbuf *buf);
 PMOD_EXPORT int debug_fd_truncate(const char *file, INT64 len);
 PMOD_EXPORT int debug_fd_link(const char *oldpath, const char *newpath);
 PMOD_EXPORT int debug_fd_symlink(const char *target, const char *linkpath);
+PMOD_EXPORT ptrdiff_t debug_fd_readlink(const char *file,
+                                        char *buf, size_t bufsiz);
 PMOD_EXPORT int debug_fd_rmdir(const char *dir);
 PMOD_EXPORT int debug_fd_unlink(const char *file);
 PMOD_EXPORT int debug_fd_mkdir(const char *dir, int mode);
@@ -439,6 +443,7 @@ typedef off_t PIKE_OFF_T;
 #endif
 #define fd_link(OLD,NEW)	link(OLD,NEW)
 #define fd_symlink(F,PATH)	symlink(F,PATH)
+#define fd_readlink(F,B,SZ)	readlink(F,B,SZ)
 #define fd_rmdir(DIR)	rmdir(DIR)
 #define fd_unlink(FILE)	unlink(FILE)
 #if MKDIR_ARGS == 2

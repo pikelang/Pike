@@ -58,6 +58,10 @@
 #define SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE	0x2
 #endif
 
+#ifndef FSCTL_GET_REPARSE_POINT
+#define FSCTL_GET_REPARSE_POINT				0x0900a8
+#endif
+
 #include "threads.h"
 #include "signal_handler.h"
 
@@ -1555,6 +1559,122 @@ PMOD_EXPORT int debug_fd_symlink(const char *target, const char *linkpath)
 
     return ret;
   }
+}
+
+/* NB: Copied from
+ * https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/ntifs/ns-ntifs-_reparse_data_buffer
+ * in order to support compilation with old SDKs.
+ *
+ * The REPARSE_DATA_BUFFER type seems to typically be defined in <Ntifs.h>.
+ */
+struct Pike_NT_REPARSE_DATA_BUFFER_struct {
+  ULONG  ReparseTag;
+  USHORT ReparseDataLength;
+  USHORT Reserved;
+  union {
+    struct {
+      USHORT SubstituteNameOffset;
+      USHORT SubstituteNameLength;
+      USHORT PrintNameOffset;
+      USHORT PrintNameLength;
+      ULONG  Flags;
+      WCHAR  PathBuffer[1];
+    } SymbolicLinkReparseBuffer;
+    struct {
+      USHORT SubstituteNameOffset;
+      USHORT SubstituteNameLength;
+      USHORT PrintNameOffset;
+      USHORT PrintNameLength;
+      WCHAR  PathBuffer[1];
+    } MountPointReparseBuffer;
+    struct {
+      UCHAR DataBuffer[1];
+    } GenericReparseBuffer;
+  } DUMMYUNIONNAME;
+};
+
+PMOD_EXPORT ptrdiff_t debug_fd_readlink(const char *file,
+                                        char *buf, size_t bufsiz)
+{
+  p_wchar1 *fname = pike_dwim_utf8_to_utf16(file);
+  HANDLE h;
+  DWORD bytes = 0;
+  int ret = -1;
+  int e = EINVAL; /* Not a symlink. */
+
+  if (!fname) {
+    errno = ENOMEM;
+    return -1;
+  }
+
+  h = CreateFileW(fname, 0, 0, 0, OPEN_EXISTING,
+                  FILE_FLAG_OPEN_REPARSE_POINT|
+                  FILE_FLAG_BACKUP_SEMANTICS, 0);
+
+  if (h != INVALID_HANDLE_VALUE) {
+    struct Pike_NT_REPARSE_DATA_BUFFER_struct *reparse;
+    size_t sz = sizeof(struct Pike_NT_REPARSE_DATA_BUFFER_struct) +
+      bufsiz * 2 + 2;
+
+    e = ENOMEM;
+    if ((reparse = malloc(sz))) {
+      e = EINVAL;
+      if (DeviceIoControl(h, FSCTL_GET_REPARSE_POINT, 0, 0,
+                          reparse, sz, &bytes, 0)) {
+        p_wchar1 *dest = NULL;
+        size_t destlen = 0;
+        p_wchar0 *utf8_buf;
+
+        switch(reparse->ReparseTag) {
+        case IO_REPARSE_TAG_SYMLINK:
+          /* Adjust the struct to be what you typically expect... */
+          reparse->SymbolicLinkReparseBuffer.SubstituteNameOffset /= 2;
+          reparse->SymbolicLinkReparseBuffer.SubstituteNameLength /= 2;
+
+          dest = reparse->SymbolicLinkReparseBuffer.PathBuffer +
+            reparse->SymbolicLinkReparseBuffer.SubstituteNameOffset;
+          destlen = reparse->SymbolicLinkReparseBuffer.SubstituteNameLength;
+          break;
+        case IO_REPARSE_TAG_MOUNT_POINT:
+          /* Adjust the struct to be what you typically expect... */
+          reparse->MountPointReparseBuffer.SubstituteNameOffset /= 2;
+          reparse->MountPointReparseBuffer.SubstituteNameLength /= 2;
+
+          dest = reparse->MountPointReparseBuffer.PathBuffer +
+            reparse->MountPointReparseBuffer.SubstituteNameOffset;
+          destlen = reparse->MountPointReparseBuffer.SubstituteNameLength;
+          break;
+        }
+
+        if (dest) {
+          /* NUL terminate. */
+          dest[destlen] = 0;
+
+          e = ENOMEM;
+          utf8_buf = pike_utf16_to_utf8(dest);
+
+          if (utf8_buf) {
+            strncpy(buf, utf8_buf, bufsiz);
+            ret = strlen(utf8_buf) + 1;	/* Include NUL. */
+            if ((size_t)ret > bufsiz) ret = bufsiz;
+            e = 0;
+
+            free(utf8_buf);
+          }
+        }
+      }
+      free(reparse);
+    }
+  }
+
+  CloseHandle(h);
+
+  if (e) {
+    errno = e;
+    return -1;
+  }
+
+  return ret;
 }
 
 PMOD_EXPORT int debug_fd_rmdir(const char *dir)

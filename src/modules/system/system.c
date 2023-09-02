@@ -249,7 +249,7 @@ void f_symlink(INT32 args)
 }
 #endif /* HAVE_SYMLINK || __NT__ */
 
-#ifdef HAVE_READLINK
+#if defined(HAVE_READLINK) || defined(__NT__)
 /*! @decl string readlink(string path)
  *!
  *! Returns what the symbolic link @[path] points to.
@@ -279,7 +279,7 @@ void f_readlink(INT32 args)
 
     do {
       THREADS_ALLOW_UID();
-      err = readlink(path, buf, buflen);
+      err = fd_readlink(path, buf, buflen);
       THREADS_DISALLOW_UID();
       if (err >= 0 || errno != EINTR) break;
       check_threads_etc();
@@ -296,7 +296,7 @@ void f_readlink(INT32 args)
   pop_n_elems(args);
   push_string(make_shared_binary_string(buf, err));
 }
-#endif /* HAVE_READLINK */
+#endif /* HAVE_READLINK || __NT__ */
 
 #if !defined(HAVE_RESOLVEPATH) && !defined(HAVE_REALPATH)
 #ifdef HAVE_READLINK
@@ -3203,12 +3203,12 @@ PIKE_MODULE_INIT
   }
 #endif
 #endif /* HAVE_SYMLINK || __NT__ */
-#ifdef HAVE_READLINK
+#if defined(HAVE_READLINK) || defined(__NT__)
 
 /* function(string:string) */
   ADD_EFUN("readlink", f_readlink,tFunc(tStr,tStr), OPT_EXTERNAL_DEPEND);
   ADD_FUNCTION2("readlink", f_readlink,tFunc(tStr,tStr), 0, OPT_EXTERNAL_DEPEND);
-#endif /* HAVE_READLINK */
+#endif /* HAVE_READLINK || __NT__ */
 #if defined(HAVE_RESOLVEPATH) || defined(HAVE_REALPATH)
 
 /* function(string:string) */
