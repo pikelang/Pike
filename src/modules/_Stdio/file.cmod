@@ -3751,6 +3751,52 @@ static void file_unlinkat(INT32 args)
 #endif /* HAVE_UNLINKAT */
 #endif /* HAVE_FSTATAT */
 
+#ifdef HAVE_LINKAT
+/*! @decl void hardlinkat(string(8bit) from, string(8bit) to, @
+ *!                       Stdio.File|void tofd)
+ *!
+ *! Create a hardlink named @[to] from the file @[from], where
+ *! @[from] is relative to this file, and @[to] is relative to
+ *! @[tofd] unless it is not set in which case it is also relative
+ *! to this file.
+ *!
+ *! @note
+ *!   This function is not available on all platforms.
+ *!
+ *! @seealso
+ *!   @[hardlink()], @[unlinkat()]
+ */
+PIKEFUN void hardlinkat(string(8bit) from, string(8bit) to, object|void tofd)
+{
+  int ffd = FD;
+  int tfd = FD;
+  int err;
+
+  if (tofd) {
+    struct my_file *tfds = get_file_storage(tofd);
+
+    if (!tfds || (tfds->box.fd < 0)) {
+      Pike_error("Tofd is not an open file.\n");
+    }
+
+    tfd = tfds->box.fd;
+  }
+
+  do {
+    THREADS_ALLOW_UID();
+    err = linkat(ffd, from->str, tfd, to->str, 0);
+    THREADS_DISALLOW_UID();
+    if (err >= 0 || errno != EINTR) break;
+    check_threads_etc();
+  } while (1);
+
+  if (err < 0) {
+    report_os_error("hardlinkat");
+  }
+  pop_n_elems(args);
+}
+#endif /* HAVE_LINKAT */
+
 #if defined(HAVE_FDOPENDIR) && defined(HAVE_OPENAT)
 /*! @decl array(string) get_dir(string|void path)
  *!
