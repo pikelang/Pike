@@ -159,7 +159,7 @@ static struct pike_string *pike_strerror(int e)
 
 /* Helper functions */
 
-static void report_error(const char *function_name)
+void report_os_error(const char *function_name)
 {
   int e = errno;
   struct pike_string *s = pike_strerror(e);
@@ -209,7 +209,7 @@ void f_hardlink(INT32 args)
   } while (1);
 
   if (err < 0) {
-    report_error("hardlink");
+    report_os_error("hardlink");
   }
   pop_n_elems(args);
 }
@@ -243,7 +243,7 @@ void f_symlink(INT32 args)
   } while (1);
 
   if (err < 0) {
-    report_error("symlink");
+    report_os_error("symlink");
   }
   pop_n_elems(args);
 }
@@ -291,7 +291,7 @@ void f_readlink(INT32 args)
 	  (err >= buflen - 1));
 
   if (err < 0) {
-    report_error("readlink");
+    report_os_error("readlink");
   }
   pop_n_elems(args);
   push_string(make_shared_binary_string(buf, err));
@@ -373,7 +373,7 @@ void f_resolvepath(INT32 args)
 #endif /* HAVE_RESOLVEPATH */
 
   if (len < 0) {
-    report_error("resolvepath");
+    report_os_error("resolvepath");
   }
   pop_n_elems(args);
   push_string(make_shared_binary_string(buf, len));
@@ -436,7 +436,7 @@ void f_chmod(INT32 args)
     check_threads_etc();
   } while (1);
   if (err < 0) {
-    report_error("chmod");
+    report_os_error("chmod");
   }
   pop_n_elems(args);
 }
@@ -513,7 +513,7 @@ void f_chown(INT32 args)
 #endif
 
   if (err < 0) {
-    report_error("chown");
+    report_os_error("chown");
   }
   pop_n_elems(args);
 }
@@ -564,7 +564,7 @@ void f_utime(INT32 args)
       check_threads_etc();
     } while (1);
     if (err < 0)
-      report_error("utime");
+      report_os_error("utime");
     pop_n_elems(args);
     return;
 
@@ -613,7 +613,7 @@ void f_utime(INT32 args)
 #endif
 
   if (err < 0) {
-    report_error("utime");
+    report_os_error("utime");
   }
   pop_n_elems(args);
 }
@@ -706,7 +706,7 @@ void f_initgroups(INT32 args)
   get_all_args("initgroups", args, "%c%i", &user, &group);
   err = initgroups(user, group);
   if (err < 0) {
-    report_error("initgroups");
+    report_os_error("initgroups");
   }
   pop_n_elems(args);
 }
@@ -733,7 +733,7 @@ void f_cleargroups(INT32 args)
   pop_n_elems(args);
   err = setgroups(0, (gid_t *)gids);
   if (err < 0) {
-    report_error("cleargroups");
+    report_os_error("cleargroups");
   }
 }
 
@@ -778,7 +778,7 @@ void f_setgroups(INT32 args)
 
   err = setgroups(size, gids);
   if (err < 0) {
-    report_error("setgroups");
+    report_os_error("setgroups");
   }
 }
 #endif /* HAVE_SETGROUPS */
@@ -820,7 +820,7 @@ void f_getgroups(INT32 args)
   free(gids);
 
   if (numgrps < 0) {
-    report_error("getgroups");
+    report_os_error("getgroups");
   }
 
   f_aggregate(numgrps);
@@ -1071,7 +1071,7 @@ void f_getpgrp(INT32 args)
   pgid = getpgrp();
 #endif
   if (pgid < 0)
-    report_error("getpgrp");
+    report_os_error("getpgrp");
 
   push_int(pgid);
 }
@@ -1099,7 +1099,7 @@ void f_setpgrp(INT32 args)
 #endif /* HAVE_SETPGRP_BSD */
 #endif /* HAVE_SETPGID */
   if (pid < 0)
-    report_error("setpgrp");
+    report_os_error("setpgrp");
 
   push_int(pid);
 }
@@ -1127,7 +1127,7 @@ void f_getsid(INT32 args)
   pop_n_elems(args);
   pid = getsid(pid);
   if (pid < 0)
-       report_error("getsid");
+    report_os_error("getsid");
   push_int(pid);
 }
 #endif
@@ -1148,7 +1148,7 @@ void f_setsid(INT32 args)
   pop_n_elems(args);
   pid = setsid();
   if (pid < 0)
-       report_error("setsid");
+    report_os_error("setsid");
   push_int(pid);
 }
 #endif

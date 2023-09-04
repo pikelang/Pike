@@ -26,6 +26,7 @@
 /*
  * system.c
  */
+void report_os_error(const char *function_name);
 void f_strerror(INT32 args);
 
 /*
