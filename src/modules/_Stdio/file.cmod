@@ -3764,7 +3764,7 @@ static void file_unlinkat(INT32 args)
  *!   This function is not available on all platforms.
  *!
  *! @seealso
- *!   @[hardlink()], @[unlinkat()]
+ *!   @[hardlink()], @[symlinkat()], @[unlinkat()]
  */
 PIKEFUN void hardlinkat(string(8bit) from, string(8bit) to, object|void tofd)
 {
@@ -3796,6 +3796,38 @@ PIKEFUN void hardlinkat(string(8bit) from, string(8bit) to, object|void tofd)
   pop_n_elems(args);
 }
 #endif /* HAVE_LINKAT */
+
+#ifdef HAVE_SYMLINKAT
+/*! @decl void symlinkat(string(8bit) from, string(8bit) to)
+ *!
+ *! Create a symbolic link named @[to] that points to @[from],
+ *! where @[to] is relative to this file..
+ *!
+ *! @note
+ *!   This function is not available on all platforms.
+ *!
+ *! @seealso
+ *!   @[hardlinkat()], @[symlink()], @[unlinkat()]
+ */
+PIKEFUN void symlinkat(string(8bit) from, string(8bit) to)
+{
+  int fd = FD;
+  int err;
+
+  do {
+    THREADS_ALLOW_UID();
+    err = symlinkat(from->str, fd, to->str);
+    THREADS_DISALLOW_UID();
+    if (err >= 0 || errno != EINTR) break;
+    check_threads_etc();
+  } while (1);
+
+  if (err < 0) {
+    report_os_error("symlinkat");
+  }
+  pop_n_elems(args);
+}
+#endif /* HAVE_SYMLINKAT */
 
 #if defined(HAVE_FDOPENDIR) && defined(HAVE_OPENAT)
 /*! @decl array(string) get_dir(string|void path)
