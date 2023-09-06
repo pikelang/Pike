@@ -193,6 +193,11 @@ test_any([[
   return (string)o;
 ]], "<x><a/><q/><r/><c/></x>")
 
+test_eq([[Parser.XML.Tree.parse_input("<x a='\"1\"' b=\"'2'\" c='3'/>")->render_xml(0,0,0,0)]], "<x a='\"1\"' b=\"'2'\" c='3'/>")
+test_eq([[Parser.XML.Tree.parse_input("<x a='\"1\"' b=\"'2'\" c='3'/>")->render_xml(0,0,0,1)]], "<x a='\"1\"' b=\"'2'\" c=\"3\"/>")
+test_eq([[Parser.XML.Tree.parse_input("<x a='\"1\"' b=\"'2'\" c='3'/>")->render_xml(0,0,0,2)]], "<x a='\"1\"' b='&apos;2&apos;' c='3'/>")
+test_eq([[Parser.XML.Tree.parse_input("<x a='\"1\"' b=\"'2'\" c='3'/>")->render_xml(0,0,0,3)]], "<x a=\"&quot;1&quot;\" b=\"'2'\" c=\"3\"/>")
+
 // NSTree
 
 // XML NS section 2

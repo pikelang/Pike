@@ -151,41 +151,25 @@ string roxen_text_quote(string data) {
 //! Quotes the string given in @[data] by escaping &, <, >, ' and ".
 string attribute_quote(string data, void|string ignore)
 {
-  switch(ignore)
-  {
-  case "\"":
-    return replace(data, ([ "'":"&apos;",
-                            "&":"&amp;",
-                            "\n":"&#10;",
-                            "\r":"&#13;",
-                            "<":"&lt;",
-                            ">":"&gt;" ]) );
-  case "'":
-    return replace(data, ([ "\"":"&quot;",
-                            "&":"&amp;",
-                            "\n":"&#10;",
-                            "\r":"&#13;",
-                            "<":"&lt;",
-                            ">":"&gt;" ]) );
-
-  default:
-    return replace(data, ([ "\"":"&quot;",
-                            "'":"&apos;",
-                            "&":"&amp;",
-                            "\n":"&#10;",
-                            "\r":"&#13;",
-                            "<":"&lt;",
-                            ">":"&gt;" ]) );
-  }
+  mapping m = ([ "\"":"&quot;",
+                 "'":"&apos;",
+                 "&":"&amp;",
+                 "\n":"&#10;",
+                 "\r":"&#13;",
+                 "<":"&lt;",
+                 ">":"&gt;" ]);
+  if( ignore ) m_delete(m, ignore);
+  return replace(data, m);
 }
 
 //! Quotes strings just like @[attribute_quote], but entities in the
 //! form @tt{&foo.bar;@} will not be quoted.
-string roxen_attribute_quote(string data)
+string roxen_attribute_quote(string data, void|string ignore)
 {
-  return replace(roxen_text_quote(data),
-		 ([ "\"":"&quot;",
-		    "'":"&apos;" ]));
+  mapping m = ([ "\"":"&quot;",
+                 "'":"&apos;" ]);
+  if( ignore ) m_delete(m, ignore);
+  return replace(roxen_text_quote(data), m);
 }
 
 void throw_error(string str, mixed ... args)
@@ -1173,7 +1157,8 @@ protected class VirtualNode {
   protected void low_render_xml(String.Buffer data, Node n,
 			     function(string:string) textq,
                              function(string,void|string:string) attrq,
-			     void|mapping(string:string) namespace_lookup)
+                             void|mapping(string:string) namespace_lookup,
+                             void|int(0..3) quote_mode)
   {
     string tagname;
     switch(n->get_node_type()) {
@@ -1188,7 +1173,14 @@ protected class VirtualNode {
       data->add("<", tagname);
       if (mapping attr = n->get_short_attributes()) {
         foreach(sort(indices(attr)), string a) {
-          if( has_value(attr[a], "'") )
+          int quote = quote_mode & 1; // 0=', 1="
+          if( !(quote_mode & 2) ) {
+            if( !quote && has_value(attr[a], "\'") )
+              quote = 1;
+            else if( quote && has_value(attr[a], "\"") )
+              quote = 0;
+          }
+          if( quote )
             data->add(" ", a, "=\"", attrq(attr[a], "'"), "\"");
           else
             data->add(" ", a, "='", attrq(attr[a], "\""), "'");
@@ -1279,7 +1271,7 @@ protected class VirtualNode {
 
     array(Node) children = n->get_children();
     foreach(children, Node n) {
-      low_render_xml(data, n, textq, attrq, namespace_lookup);
+      low_render_xml(data, n, textq, attrq, namespace_lookup, quote_mode);
     }
 
     if (n->get_node_type() == XML_ELEMENT) {
@@ -1485,9 +1477,23 @@ protected class VirtualNode {
   //!   encoding set in the document XML processing instruction will
   //!   be used, with UTF-8 as a fallback. Setting this value will
   //!   change the XML processing instruction, if present.
+  //!
+  //! @param quote_mode
+  //!   @int
+  //!     @value 0
+  //!       Defaults to single quote, but use double quote if it
+  //!       avoids escaping.
+  //!     @value 1
+  //!       Defaults to double quote, but use single quote if it
+  //!       avoids escaping.
+  //!     @value 2
+  //!       Use only single quote.
+  //!     @value 3
+  //!       Use only double quote.
+  //!   @endint
   string render_xml(void|int(0..1) preserve_roxen_entities,
                     void|mapping(string:string) namespace_lookup,
-                    void|string encoding)
+                    void|string encoding, void|int(0..3) quote_mode)
   {
     String.Buffer data = String.Buffer();
     if( encoding )
@@ -1504,10 +1510,10 @@ protected class VirtualNode {
     if(preserve_roxen_entities)
       low_render_xml(data, this, roxen_text_quote,
 		     roxen_attribute_quote,
-		     namespace_lookup);
+                     namespace_lookup, quote_mode);
     else
       low_render_xml(data, this, text_quote, attribute_quote,
-                     namespace_lookup);
+                     namespace_lookup, quote_mode);
     return get_encoder(encoding)->feed((string)data)->drain();
   }
 
