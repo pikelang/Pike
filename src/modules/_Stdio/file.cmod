@@ -3807,7 +3807,7 @@ PIKEFUN void hardlinkat(string(8bit) from, string(8bit) to, object|void tofd)
  *!   This function is not available on all platforms.
  *!
  *! @seealso
- *!   @[hardlinkat()], @[symlink()], @[unlinkat()]
+ *!   @[hardlinkat()], @[symlink()], @[readlinkat()], @[unlinkat()]
  */
 PIKEFUN void symlinkat(string(8bit) from, string(8bit) to)
 {
@@ -3828,6 +3828,52 @@ PIKEFUN void symlinkat(string(8bit) from, string(8bit) to)
   pop_n_elems(args);
 }
 #endif /* HAVE_SYMLINKAT */
+
+#ifdef HAVE_READLINKAT
+/*! @decl string readlinkat(string(8bit) path)
+ *!
+ *! Returns what the symbolic link @[path] points to,
+ *! where @[path] is relative to the open file.
+ *!
+ *! @note
+ *!   This function is not available on all platforms.
+ *!
+ *! @seealso
+ *!   @[readlink()], @[symlink()], @[symlinkat()]
+ */
+PIKEFUN string(8bit) readlinkat(string(8bit) path)
+{
+  int fd = FD;
+  char *buf;
+  ptrdiff_t buflen = 100;
+  ptrdiff_t err = 0;
+
+  do {
+    buflen *= 2;
+    if (!(buf = alloca(buflen))) {
+      Pike_error("Out of memory.\n");
+    }
+
+    do {
+      THREADS_ALLOW_UID();
+      err = readlinkat(fd, path->str, buf, buflen);
+      THREADS_DISALLOW_UID();
+      if (err >= 0 || errno != EINTR) break;
+      check_threads_etc();
+    } while (1);
+  } while(
+#ifdef ENAMETOOLONG
+          ((err < 0) && (errno == ENAMETOOLONG)) ||
+#endif /* ENAMETOOLONG */
+          (err >= buflen - 1));
+
+  if (err < 0) {
+    report_os_error("readlinkat");
+  }
+  pop_n_elems(args);
+  push_string(make_shared_binary_string(buf, err));
+}
+#endif /* HAVE_READLINKAT */
 
 #if defined(HAVE_FDOPENDIR) && defined(HAVE_OPENAT)
 /*! @decl array(string) get_dir(string|void path)

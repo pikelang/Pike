@@ -74,7 +74,7 @@ AC_HAVE_FUNCS(readdir_r statvfs statfs ustat lseek64 lstat fsync \
  madvise poll setsockopt getprotobyname inet_ntoa \
  inet_ntop execve listxattr flistxattr getxattr fgetxattr setxattr fsetxattr \
  fdopendir pathconf fpathconf dirfd \
- fstatat openat unlinkat linkat symlinkat \
+ fstatat openat unlinkat linkat symlinkat readlinkat \
  kqueue access)
 
 AC_MSG_CHECKING([whether IPPROTO_IPV6 exists])
