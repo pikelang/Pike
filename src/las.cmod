@@ -303,7 +303,6 @@ static int low_count_args(node *n)
 INT32 count_args(node *n)
 {
   int total = 0;
-  int a,b;
   node *orig = n;
   node *orig_parent;
   node *prev = NULL;
@@ -1288,7 +1287,6 @@ node *debug_mkversionnode(int major, int minor)
 #endif
 node *internal_mklocalnode(struct compiler_frame *f, int var)
 {
-  int e;
   node *res;
 
   if (!f) {

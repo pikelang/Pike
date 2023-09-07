@@ -202,7 +202,7 @@ node *debug_mksoftcastnode(struct pike_type *type, node *n);
 void resolv_constant(node *n);
 void resolv_class(node *n);
 void resolv_class(node *n);
-node *index_node(node *n, struct pike_string *id);
+node *index_node(node * const n, struct pike_string *id);
 int node_is_eq(node *a,node *b);
 node *debug_mktypenode(struct pike_type *t);
 node *debug_mkconstantsvaluenode(const struct svalue *s);
