@@ -907,7 +907,7 @@ static void midflight_remove_node_fast (struct multiset *l,
    * copy-on-write here and remove it in all copies, but then we'd
    * have to find another way than (l->msd != msd) to signal the tree
    * change to the calling code. */
-  struct svalue ind, val;
+  struct svalue ind;
   union msnode *node = RBNODE (RBSTACK_PEEK (*track));
 
   /* Postpone free since the msd might be copied in unlink_node. */
@@ -2102,7 +2102,7 @@ PMOD_EXPORT int multiset_delete_2 (struct multiset *l,
 	  goto not_found;
 
 	case FIND_EQUAL: {
-	  struct svalue ind, val;
+          struct svalue ind;
 	  struct rb_node_hdr *node = RBSTACK_PEEK (rbstack);
 
 	  UNSET_ONERROR (uwp);
@@ -2183,7 +2183,6 @@ static void multiset_delete_node (struct multiset *l,
     }
 
     else {
-      struct svalue val;
       struct rb_node_hdr *node = RBSTACK_PEEK (rbstack);
 
       /* Step backwards until the existing node is found. */
