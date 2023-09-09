@@ -439,11 +439,13 @@ static void do_yyparse(void)
  *!       @endint
  *!   @endul
  *!
- *!   If there's no master object yet, the diagnostic is output to
- *!   @[Stdio.stderr].
+ *!   If there's no master object yet, the diagnostic is UTF8-encoded
+ *!   and output to @[Stdio.stderr].
  *!
  *! @note
  *!   In Pike 7.8 and earlier @[MasterObject()->report()] was not called.
+ *!
+ *!   In Pike 8.0 the fallback output was not UTF8-encoded.
  *!
  *! @seealso
  *!   @[PikeCompiler()->report()]
@@ -487,16 +489,19 @@ static void f_reporter_report(INT32 args)
 	args++;
       }
     } else {
-      const char *fname = filename->str;
-      if (filename->size_shift) {
-	fname = "WIDE";
-      }
+      ref_push_string(filename);
+      f_string_to_utf8(1);
+      ref_push_string(message);
+      f_string_to_utf8(1);
+      args += 2;
       if (level >= REPORT_ERROR) {
 	fprintf(stderr, "%s:%ld: Error: %s\n",
-		fname, (long)linenumber, message->str);
+                Pike_sp[-2].u.string->str, (long)linenumber,
+                Pike_sp[-1].u.string->str);
       } else {
 	fprintf(stderr, "%s:%ld: Warning: %s\n",
-		fname, (long)linenumber, message->str);
+                Pike_sp[-2].u.string->str, (long)linenumber,
+                Pike_sp[-1].u.string->str);
       }
       fflush(stderr);
     }
