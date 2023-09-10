@@ -1588,7 +1588,9 @@ static void f_compilation_report(INT32 args)
   INT_TYPE linenumber;
   struct pike_string *subsystem;
   struct pike_string *message;
+#ifdef SUPPORT_COMPILER_HANDLERS
   struct object *handler = NULL;
+#endif /* SUPPORT_COMPILER_HANDLERS */
   int fun = -1;
 
   /* FIXME: get_all_args() ought to have a marker
@@ -1628,6 +1630,7 @@ static void f_compilation_report(INT32 args)
   apply_external(1, CE_REPORT_FUN_NUM, args);
   return;
 
+#ifdef SUPPORT_COMPILER_HANDLERS
  apply_handler:
   /* Ignore informational level messages */
   if (level < REPORT_WARNING) return;
@@ -1644,6 +1647,7 @@ static void f_compilation_report(INT32 args)
   ref_push_string(message);
   apply_low(handler, fun, 3);
   stack_pop_n_elems_keep_top(args);
+#endif /* SUPPORT_COMPILER_HANDLERS */
 }
 
 /*! @decl void create(string|void source, @
@@ -1903,7 +1907,9 @@ static void f_compilation_resolv(INT32 args)
 {
   struct pike_string *sym;
   struct compilation *c = THIS_COMPILATION;
+#ifdef SUPPORT_COMPILER_HANDLERS
   struct object *handler;
+#endif /* SUPPORT_COMPILER_HANDLERS */
   int fun = -1;
 
   get_all_args(NULL, args, "%t", &sym);
@@ -1938,7 +1944,9 @@ static void f_compilation_resolv(INT32 args)
 static void f_compilation_get_compilation_handler(INT32 PIKE_UNUSED(args))
 {
   struct compilation *c = THIS_COMPILATION;
+#ifdef SUPPORT_COMPILER_HANDLERS
   struct object *handler;
+#endif /* SUPPORT_COMPILER_HANDLERS */
   int fun = -1;
 
 #ifdef SUPPORT_COMPILER_HANDLERS
@@ -1977,7 +1985,9 @@ static void f_compilation_get_compilation_handler(INT32 PIKE_UNUSED(args))
 static void f_compilation_get_default_module(INT32 args)
 {
   struct compilation *c = THIS_COMPILATION;
+#ifdef SUPPORT_COMPILER_HANDLERS
   struct object *handler;
+#endif /* SUPPORT_COMPILER_HANDLERS */
   int fun = -1;
 
 #ifdef SUPPORT_COMPILER_HANDLERS
@@ -2120,7 +2130,9 @@ static void f_compilation_change_compiler_compatibility(INT32 args)
 static void f_compilation_handle_inherit(INT32 args)
 {
   struct compilation *c = THIS_COMPILATION;
+#ifdef SUPPORT_COMPILER_HANDLERS
   struct object *handler;
+#endif /* SUPPORT_COMPILER_HANDLERS */
   int fun = -1;
 
   if (args > 1) pop_n_elems(args-1);
@@ -2156,7 +2168,9 @@ static void f_compilation_handle_inherit(INT32 args)
 static void f_compilation_handle_import(INT32 args)
 {
   struct compilation *c = THIS_COMPILATION;
+#ifdef SUPPORT_COMPILER_HANDLERS
   struct object *handler;
+#endif /* SUPPORT_COMPILER_HANDLERS */
   int fun = -1;
 
   if (args > 1) pop_n_elems(args-1);
@@ -2617,7 +2631,6 @@ static void f_compilation_apply_attribute_constant(INT32 args)
  */
 static void f_compilation_eval_type_attribute(INT32 args)
 {
-  struct compilation *c;
   struct pike_string *attribute;
   struct pike_string *test;
   struct svalue *sval;
