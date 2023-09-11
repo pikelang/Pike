@@ -939,7 +939,6 @@ PMOD_EXPORT int low_is_equal(const struct svalue *a,
 	 */
 	struct object *a_obj = NULL, *b_obj = NULL;
 	int a_fun = SUBTYPEOF(*a), b_fun = SUBTYPEOF(*b);
-	struct identifier *a_id, *b_id;
 	if ((a_fun == FUNCTION_BUILTIN) || (b_fun == FUNCTION_BUILTIN)) {
 	  /* NB: Handled by is_eq() above. */
 	  return 0;
