@@ -2930,7 +2930,6 @@ OPCODE1_PTRJUMP(F_COND_RECUR, "recur if not overloaded",
      (ID_FROM_INT(p, arg1+Pike_fp->context->identifier_level)->
       identifier_flags & IDENTIFIER_SCOPE_USED))
   {
-    ptrdiff_t num_locals;
     PIKE_OPCODE_T *faddr;
     PIKE_OPCODE_T *addr2;
     INT32 args = (INT32)(Pike_sp - *--Pike_mark_sp);

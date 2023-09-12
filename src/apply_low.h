@@ -296,8 +296,6 @@
 
       case IDENTIFIER_PIKE_FUNCTION:
       {
-	int num_args;
-	int num_locals;
 	PIKE_OPCODE_T *pc;
 
 #ifdef PIKE_DEBUG
