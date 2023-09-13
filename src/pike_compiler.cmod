@@ -1584,11 +1584,11 @@ static void f_compilation_report(INT32 args)
 {
   struct compilation *c = THIS_COMPILATION;
   int level;
+#ifdef SUPPORT_COMPILER_HANDLERS
   struct pike_string *filename;
   INT_TYPE linenumber;
   struct pike_string *subsystem;
   struct pike_string *message;
-#ifdef SUPPORT_COMPILER_HANDLERS
   struct object *handler = NULL;
 #endif /* SUPPORT_COMPILER_HANDLERS */
   int fun = -1;

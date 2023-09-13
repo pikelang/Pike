@@ -669,7 +669,6 @@ constant_name: TOK_IDENTIFIER '=' safe_assignment_expr
 	pop_stack();
       }
     }
-  const_def_ok:
     if($3) free_node($3);
     free_node($1);
   }
@@ -4150,8 +4149,6 @@ qualified_ident:
   }
   | inherit_specifier TOK_IDENTIFIER
   {
-    int id;
-
     if(Pike_compiler->last_identifier) free_string(Pike_compiler->last_identifier);
     copy_shared_string(Pike_compiler->last_identifier, $2->u.sval.u.string);
 
