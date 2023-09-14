@@ -101,7 +101,7 @@ static unsigned char *pike_memrolx(unsigned char *dst, const unsigned char *src,
   /* FIXME: Could be possibly optimized by reading larger quantities on
    *        big-endian architectures.
    */
-  size_t i, k;
+  size_t k;
 
   if (!n) return dst;
 
@@ -1528,7 +1528,6 @@ PIKECLASS BlockCipher
 	  get_inherited_storage(1, Nettle_BlockCipher_cq__CBC_State_program);
 
 	struct pike_string *propagated;
-	ONERROR uwp;
 	int block_size = cbc_state->block_size;
 
 	NO_WIDE_STRING(data);
@@ -4914,7 +4913,6 @@ PIKECLASS BlockCipher16
 	pike_nettle_crypt_func func = pike_crypt_func;
 	void *ctx = THIS->object;
 	int iv_len = iv->len;
-	uint8_t *ctr_iv;
 
 	iv->flags |= STRING_CLEAR_ON_EXIT;
 	NO_WIDE_STRING(iv);
@@ -7201,7 +7199,9 @@ pike_des3_set_key(void *c,
 		  int force)
 {
   struct des3_ctx *ctx = (struct des3_ctx *) c;
+#ifdef DES_WEAK_KEY
   int i;
+#endif
   char nkotb[24];
 
   switch( length ) {

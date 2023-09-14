@@ -1209,7 +1209,6 @@ PIKECLASS ECC_Curve
     PIKEFUN array(object(Gmp.mpz)) raw_sign(string(8bit) digest)
     {
       struct dsa_signature sig;
-      struct object *r, *s;
 
       NO_WIDE_STRING(digest);
 
