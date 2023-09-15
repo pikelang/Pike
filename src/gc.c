@@ -6168,7 +6168,6 @@ void identify_loop_visit_leave(void *UNUSED(thing), int type, void *UNUSED(extra
 void f_identify_cycle(INT32 args)
 {
   struct svalue *s;
-  struct mc_marker *m;
   struct svalue *k;
 
   if (args != 1)
