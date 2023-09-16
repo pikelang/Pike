@@ -46,7 +46,6 @@ struct source *source_int8_make( struct svalue *s,
 				       INT64 start, INT64 len )
 {
   struct i8_source *res;
-  INT64 slen;
 
   if (TYPEOF(*s) != PIKE_T_INT)
     return 0;

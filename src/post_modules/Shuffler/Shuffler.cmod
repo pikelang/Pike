@@ -541,7 +541,7 @@ PIKECLASS Shuffle
     int reason = -2;
     SHUFFLE_DEBUG2("__send_more_callback(%d)\n", t, amount );
     do {		/* Outer loop, start over as long as amount > 0 */
-      int sent, len, amntleft = amount;
+      int sent, amntleft = amount;
       struct iovec *iov;
 
       t->iovamount = -1;
