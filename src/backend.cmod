@@ -1197,7 +1197,7 @@ PIKECLASS Backend
    static int backend_find_call_out(struct Backend_struct *me,
 				    struct array *co_info)
      {
-       size_t hval, fun_hval;
+       size_t hval;
        struct Backend_CallOut_struct *c;
 
        if(!co_info || !me->num_pending_calls) return -1;
