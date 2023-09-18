@@ -2052,7 +2052,6 @@ static int add_identifier(struct compilation *c,
 			  int run_time_type)
 {
   struct reference ref;
-  struct identifier dummy;
   int zap_type = 0;
   int n;
 
@@ -2630,7 +2629,6 @@ struct node_s *program_magic_identifier (struct program_state *state,
       struct program *parent;
       struct pike_string *name = NULL;
       int e;
-      int i;
 
       /* Find the name of the current class. */
       parent = state->previous->new_program;
@@ -3652,7 +3650,6 @@ void low_start_new_program(struct program *p,
 #endif
     }
   }else{
-    int e;
     tmp.u.program=p;
     add_ref(p);
     if((pass != COMPILER_PASS_FIRST) && name)
@@ -4969,8 +4966,6 @@ struct program *end_first_pass(int finish)
     id->type = type;
     id->opt_flags = opt_flags;
     prog->identifier_references[e].id_flags |= id_flags & ~(ID_VARIANT|ID_LOCAL);
-  next_ref:
-    ;
   }
 
   debug_malloc_touch(Pike_compiler->fake_object);
@@ -6334,8 +6329,6 @@ void compiler_do_inherit(node *n,
 	}
       }
 
-  continue_inherit:
-
       /* FIXME: Support external constants. */
       if(numid != IDREF_MAGIC_THIS &&
 	 (IDENTIFIER_IS_CONSTANT((i=ID_FROM_INT(p, numid))->
@@ -6451,7 +6444,6 @@ int isidentifier(const struct pike_string *s)
 int low_define_alias(struct pike_string *name, struct pike_type *type,
 		     int flags, int depth, int refno)
 {
-  int n;
   int e;
 
   struct compilation *c = THIS_COMPILATION;
@@ -6855,7 +6847,6 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
 {
   int n;
   struct compilation *cc = THIS_COMPILATION;
-  struct identifier dummy;
   struct reference ref;
   struct pike_type *type;
   unsigned int opt_flags;
