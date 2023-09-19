@@ -205,7 +205,8 @@ object decode( string data, mapping|void options )
   be->remove_call_out(co);
   int ret_code = pid->wait();
   if(ret_code)
-    error("Ghostscript failed with exit code: %O:\n%s\n", ret_code, output);
+    error("Ghostscript failed with exit code: %O:\n%O\n%s\n",
+          ret_code, command, output);
   object i= Image.PNM.decode( output );
 
   if (data) {
