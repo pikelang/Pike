@@ -396,7 +396,7 @@ PMOD_EXPORT void o_cast_to_string(void)
       i = org;
 
       if( org < 0 )
-        i = -i;
+        i = -org;
 
       goto jin;				       /* C as a macro assembler :-) */
       do
