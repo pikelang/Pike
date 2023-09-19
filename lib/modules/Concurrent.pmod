@@ -1010,7 +1010,7 @@ class Promise
 	  state = STATE_REJECTION_REPORTED;
 	}
       }
-      failure_cbs = success_cbs = 0;		// Free memory and references
+      failure_cbs = success_cbs = ({});		// Free memory and references
     }
     else
     {
