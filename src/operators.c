@@ -398,18 +398,18 @@ PMOD_EXPORT void o_cast_to_string(void)
       if( org < 0 )
         i = -org;
 
-      goto jin;				       /* C as a macro assembler :-) */
       do
       {
+        *b-- = '0'+(i%10);
         i /= 10;
-jin:    *b-- = '0'+(i%10);
       }
-      while( i >= 10 );
+      while( i );
 
       if( org < 0 )
         *b = '-';
       else
         b++;
+
       s = make_shared_string(b);
     }
     break;
