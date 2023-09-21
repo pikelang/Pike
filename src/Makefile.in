@@ -1212,7 +1212,7 @@ post_modules/modlist.h: post-modules-stamp
 
 post_modules/linker_options: post-modules-stamp
 
-pike-complete-stamp: pike post-modules-stamp
+pike-complete-stamp: pike@EXEEXT@ post-modules-stamp
 	@touch pike-complete-stamp
 
 $(SRCDIR)/interpret_protos.h_src: $(SRCDIR)/interpret_functions.h $(SRCDIR)/strip_opcodes
