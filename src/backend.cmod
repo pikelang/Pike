@@ -512,10 +512,19 @@ PIKECLASS Backend
     CVAR INT32 pos;
     CVAR size_t fun_hval;
     CVAR struct timeval tv;
+
+    /* The {next,prev}_fun chain is a list of call_outs of
+     * functions having the same fun_hval % hash_size.
+     */
     CVAR struct Backend_CallOut_struct *next_fun;
     CVAR struct Backend_CallOut_struct **prev_fun;
+
+    /* The {next,prev}_arr chain is a list of call_outs that
+     * have args arrays that hash to the same bucket.
+     */
     CVAR struct Backend_CallOut_struct *next_arr;
     CVAR struct Backend_CallOut_struct **prev_arr;
+
     /*! @decl protected array args
      *!
      *! The array containing the function and arguments.
