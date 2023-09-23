@@ -429,7 +429,6 @@ PMOD_EXPORT void exit_on_error(const void *msg)
 
   else {
     struct byte_buffer buf = BUFFER_INIT();
-    char *s;
     struct svalue thrown;
 
     inhibit_errors = 1;
