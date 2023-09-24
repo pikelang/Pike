@@ -1430,7 +1430,7 @@ PMOD_EXPORT int debug_fd_stat(const char *file, PIKE_STAT_T *buf)
   return(0);
 }
 
-PMOD_EXPORT int debug_fd_utime(const char *file, const struct fd_utimbuf *times)
+PMOD_EXPORT int debug_fd_utime(const char *file, struct fd_utimbuf *times)
 {
   p_wchar1 *fname = pike_dwim_utf8_to_utf16(file);
   int ret;
@@ -2417,7 +2417,7 @@ PMOD_EXPORT ptrdiff_t debug_fd_writev(FD fd, struct iovec *iov, ptrdiff_t n)
   return 0;
 }
 
-PMOD_EXPORT ptrdiff_t debug_fd_read(FD fd, void *to, ptrdiff_t len)
+PMOD_EXPORT ptrdiff_t debug_fd_read(FD fd, void *to, size_t len)
 {
   int type;
   DWORD ret;

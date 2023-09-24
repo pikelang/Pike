@@ -207,7 +207,7 @@ p_wchar1 *low_dwim_utf8_to_utf16(const p_wchar0 *str, size_t len);
 PMOD_EXPORT p_wchar1 *pike_dwim_utf8_to_utf16(const p_wchar0 *str);
 PMOD_EXPORT p_wchar0 *pike_utf16_to_utf8(const p_wchar1 *str);
 PMOD_EXPORT int debug_fd_stat(const char *file, PIKE_STAT_T *buf);
-PMOD_EXPORT int debug_fd_utime(const char *file, const struct fd_utimbuf *buf);
+PMOD_EXPORT int debug_fd_utime(const char *file, struct fd_utimbuf *buf);
 PMOD_EXPORT int debug_fd_truncate(const char *file, INT64 len);
 PMOD_EXPORT int debug_fd_link(const char *oldpath, const char *newpath);
 PMOD_EXPORT int debug_fd_symlink(const char *target, const char *linkpath);
@@ -239,7 +239,7 @@ SOCKFUN1(listen, int)
 PMOD_EXPORT int debug_fd_close(FD fd);
 PMOD_EXPORT ptrdiff_t debug_fd_write(FD fd, void *buf, ptrdiff_t len);
 PMOD_EXPORT ptrdiff_t debug_fd_writev(FD fd, struct iovec *iov, ptrdiff_t n);
-PMOD_EXPORT ptrdiff_t debug_fd_read(FD fd, void *to, ptrdiff_t len);
+PMOD_EXPORT ptrdiff_t debug_fd_read(FD fd, void *to, size_t len);
 PMOD_EXPORT PIKE_OFF_T debug_fd_lseek(FD fd, PIKE_OFF_T pos, int where);
 PMOD_EXPORT int debug_fd_ftruncate(FD fd, PIKE_OFF_T len);
 PMOD_EXPORT int debug_fd_flock(FD fd, int oper);
