@@ -1238,7 +1238,6 @@ struct pike_string *add_string_status(int verbose)
                           "------------------------------------------------------------\n");
     for(e = 0; e < 8; e++) {
       int shift = e & 3;
-      ptrdiff_t overhead;
       if (!num_distinct_strings[e]) continue;
       if (shift != 3) {
        if (e < 4) {
@@ -1765,7 +1764,7 @@ struct pike_string *modify_shared_string(struct pike_string *a,
   {
     /* We *might* need to shrink the string */
     struct pike_string *b;
-    unsigned int size,tmp;
+    enum size_shift size, tmp;
 
     switch(a->size_shift)
     {
@@ -1807,6 +1806,9 @@ struct pike_string *modify_shared_string(struct pike_string *a,
 	    STR1(b)[index]=c;
 	    free_string(a);
 	    return end_shared_string(b);
+
+          default:
+            break;
 	}
     }
   }
