@@ -2302,7 +2302,6 @@ static void f_feed_std16e(INT32 args)
 PIKEFUN object rfc1345(string charset, int|void encoder, string|void rep,
 		       function(string:string)|void repcb)
 {
-  struct pike_string *str;
   int lo=0, hi=num_charset_def-1;
   p_wchar1 const *tabl;
 
