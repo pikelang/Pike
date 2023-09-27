@@ -54,6 +54,7 @@ PMOD_EXPORT struct object *get_val_null(void);
 PMOD_EXPORT struct program *get_sql_null_prog(void);
 
 PMOD_EXPORT void f_equal(INT32 args);
+PMOD_EXPORT void f_hash( INT32 args );
 PMOD_EXPORT void f_copy_value(INT32 args);
 PMOD_EXPORT void f_lower_case(INT32 args);
 PMOD_EXPORT void f_upper_case(INT32 args);
