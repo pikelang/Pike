@@ -459,30 +459,35 @@ protected class DocParserClass {
     return t->xml();
   }
 
-  protected string valueArgHandler(string keyword, string arg) {
+  protected string valueArgHandler(string keyword, string arg)
+  {
     //  werror("This is the @value arg handler ");
-    .PikeParser parser = .PikeParser(arg, currentPosition);
-    //  werror("&&& %O\n", arg);
-    string s = parser->parseLiteral() || parser->parseIdents();
-    string|zero s2 = 0;
-    int dots = 0;
-    if (parser->peekToken() == "..") {
-      dots = 1;
-      parser->readToken();
-      s2 = parser->parseLiteral() || parser->parseIdents();
-    }
-    parser->eat(EOF);
-    if (s)
-      if (s2)
-        return xmltag("minvalue", xmlquote(s))
-          + xmltag("maxvalue", xmlquote(s2));
+    catch {
+      // NB: Throws errors on some syntax errors.
+      .PikeParser parser = .PikeParser(arg, currentPosition);
+
+      //  werror("&&& %O\n", arg);
+      string s = parser->parseLiteral() || parser->parseIdents();
+      string|zero s2 = 0;
+      int dots = 0;
+      if (parser->peekToken() == "..") {
+        dots = 1;
+        parser->readToken();
+        s2 = parser->parseLiteral() || parser->parseIdents();
+      }
+      parser->eat(EOF);
+      if (s)
+        if (s2)
+          return xmltag("minvalue", xmlquote(s))
+            + xmltag("maxvalue", xmlquote(s2));
+        else
+          return dots ? xmltag("minvalue", xmlquote(s)) : xmlquote(s);
       else
-        return dots ? xmltag("minvalue", xmlquote(s)) : xmlquote(s);
-    else
-      if (s2)
-        return xmltag("maxvalue", xmlquote(s2));
-      else
-        parseError("@value: expected identifier or literal constant, got %O", arg);
+        if (s2)
+          return xmltag("maxvalue", xmlquote(s2));
+    };
+
+    parseError("@value: expected identifier or literal constant, got %O", arg);
     return "";
   }
 
