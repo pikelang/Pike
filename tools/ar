@@ -34,7 +34,12 @@ case "`echo $CC`" in
       *x*) exit 1 ;;
       *q*|*r*)
 	do_cmd lib -nologo "-OUT:`fixpath $OUTPUT`" `fixpath $@`
+
+        # Copy *.a file to *.lib to work-around warning D9024.
         winname="`echo $OUTPUT | sed -e 's/^lib\(.*\)\.a/\1.lib/'`"
+        if [ "$winname" = "$OUTPUT" ]; then
+          winname="`echo $OUTPUT | sed -e 's/^\(.*\)\.a/\1.lib/'`"
+        fi
         if [ "$winname" != "$OUTPUT" ]; then
 	  # Perform the copy on the WIN32 side to make sure
 	  # we won't be affected by filesystem buffers.

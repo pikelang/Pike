@@ -410,6 +410,14 @@ int main(int argc, array(string) argv)
       break;
     }
 
+  foreach(argv; int i; string arg) {
+    // NB: ar copies *.a to *.lib.
+    //     Use the *.lib file to avoid warning D9024.
+    if (has_suffix(arg, ".a")) {
+      argv[i] = arg[..sizeof(arg)-3] + ".lib";
+    }
+  }
+
   cflags+=Array.map(Array.map(argv[1..],fixpath), o_to_obj);
 
   foreach(argv[1..], string tmp)
