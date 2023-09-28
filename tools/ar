@@ -33,7 +33,12 @@ case "`echo $CC`" in
       *d*) exit 1 ;;
       *x*) exit 1 ;;
       *q*|*r*)
-	do_cmd lib -nologo "-OUT:`fixpath $OUTPUT`" `fixpath $@`
+        # NB: Inhibits warning
+        #   LNK4221: no public symbols found; archive
+        #            member will be inaccessible
+        # Which is generated when linking a *.lib with some empty
+        # object files (like eg modules/system/syslog.o).
+        do_cmd lib -nologo "-ignore:4221" "-OUT:`fixpath $OUTPUT`" `fixpath $@`
 
         # Copy *.a file to *.lib to work-around warning D9024.
         winname="`echo $OUTPUT | sed -e 's/^lib\(.*\)\.a/\1.lib/'`"
