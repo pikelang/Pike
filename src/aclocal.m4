@@ -1506,8 +1506,8 @@ define([DO_IF_OS],
 dnl variable, file-path
 AC_DEFUN(PIKE_CHECK_FILE_ABI,
 [
-  PIKE_filetype=`file "$2" 2>/dev/null | sed -e 's/.*://'`
-  PIKE_filetype_L=`file -L "$2" 2>/dev/null | sed -e 's/.*://'`
+  PIKE_filetype=`file "$2" 2>/dev/null | sed -e 's/[^:]*://'`
+  PIKE_filetype_L=`file -L "$2" 2>/dev/null | sed -e 's/[^:]*://'`
   case "[$]PIKE_filetype:[$]PIKE_filetype_L" in
     *64-bit*)
       $1=64
