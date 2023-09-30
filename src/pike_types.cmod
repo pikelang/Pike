@@ -5785,11 +5785,10 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	return pop_unfinished_type();
 
       default:
-	/* Fall back to complex_function below. */
+        /* Fall back to the complex function case below. */
 	break;
       }
 
-    complex_function:
       /* Either of ai and/or bi is a complex type. */
 
       if (op != PT_BINOP_AND) {
