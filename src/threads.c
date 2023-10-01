@@ -4337,7 +4337,6 @@ static struct Pike_interpreter_struct *original_interpreter = NULL;
 void th_init(void)
 {
   ptrdiff_t mutex_key_offset;
-  ptrdiff_t rwmutex_key_offset;
 
 #ifdef UNIX_THREADS
 
