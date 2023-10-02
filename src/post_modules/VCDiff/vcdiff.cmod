@@ -185,6 +185,28 @@ PIKECLASS Decoder {
     THIS->decoder_state = 2;
   }
 
+  PIKEFUN int(0..1) set_max_window_size(int(0..2147483647)|void size)
+  {
+    if (size) {
+      RETURN vcdiff_decoder_set_max_window_size(THIS->vcdecoder,
+                                                size->u.integer);
+    }
+
+    /* Reset to default at 64MB. */
+    RETURN vcdiff_decoder_set_max_window_size(THIS->vcdecoder, 67108864);
+  }
+
+  PIKEFUN int(0..1) set_max_file_size(int(0..2147483647)|void size)
+  {
+    if (size) {
+      RETURN vcdiff_decoder_set_max_file_size(THIS->vcdecoder,
+                                              size->u.integer);
+    }
+
+    /* Reset to default at 64MB. */
+    RETURN vcdiff_decoder_set_max_file_size(THIS->vcdecoder, 67108864);
+  }
+
   PIKEFUN string decode (string data)
   {
     push_int (1);
