@@ -1,0 +1,16 @@
+subject: Pike 8.0: Concurrent.Promise: {success,failure}_cbs need to always contain arrays.  query_{success,failure}_callbacks() do not like when they contain zeroes.  Fixes [WS-670].
+from: c123eb4f6d3a07fe6b6acefd907b82820de26a00
+to: c90481722087341af056e9f83635b3ff1edf6b88
+originator: Erik Allemann
+depends: 2023-08-22T125803|pike/8.0.1840
+restart: true
+
+• Concurrent.Promise: {success,failure}_cbs need to always contain arrays.
+
+query_{success,failure}_callbacks() do not like when they contain zeroes.
+
+Fixes [WS-670].
+
+Already fixed in Pike master (a3dfc367775d52d9907e8d7f5f6a142cd36c57c1).
+
+• release number bumped to 8.0.1841 by export.pike
