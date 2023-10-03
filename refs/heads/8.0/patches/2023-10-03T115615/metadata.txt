@@ -1,0 +1,8 @@
+subject: Pike 8.0: Image.PS: Improved diagnostics on ghostscript failure.
+from: c90481722087341af056e9f83635b3ff1edf6b88
+to: a0500f56e89400e1f8f52d10a62eda9f104b7acc
+originator: Erik Allemann
+depends: 2023-10-03T115527
+restart: true
+
+• Image.PS: Improved diagnostics on ghostscript failure.
