@@ -5804,6 +5804,19 @@ static node *safe_inc_enum(node *n)
   return ret;
 }
 
+static void safe_index(void)
+{
+  JMP_BUF tmp;
+  STACK_LEVEL_START(2);
+  if (SETJMP_SP(tmp, 2)) {
+    push_undefined();
+  } else {
+    f_index(2);
+  }
+  STACK_LEVEL_DONE(1);
+  UNSETJMP(tmp);
+}
+
 static node *find_versioned_identifier(struct pike_string *identifier,
 				       int major, int minor)
 {
@@ -5828,20 +5841,12 @@ static node *find_versioned_identifier(struct pike_string *identifier,
       res = mkconstantsvaluenode(efun);
   }
   else if (TYPEOF(c->default_module) != T_INT) {
-    JMP_BUF tmp;
-    if (SETJMP (tmp)) {
-      handle_compile_exception ("Couldn't index %d.%d "
-                                "default module with %pq.",
-				major, minor, identifier);
-    } else {
-      push_svalue(&c->default_module);
-      ref_push_string(identifier);
-      f_index (2);
-      if (!IS_UNDEFINED(Pike_sp - 1))
-	res = mkconstantsvaluenode(Pike_sp - 1);
-      pop_stack();
-    }
-    UNSETJMP(tmp);
+    push_svalue(&c->default_module);
+    ref_push_string(identifier);
+    safe_index();
+    if (!IS_UNDEFINED(Pike_sp - 1))
+      res = mkconstantsvaluenode(Pike_sp - 1);
+    pop_stack();
   }
 
   if (!res && !(res = resolve_identifier(identifier))) {
