@@ -1,0 +1,10 @@
+subject: Pike 8.0: release number bumped to 8.0.1847 by export.pike
+from: 04330858706a8f8813ef822972354b8564fb30fc
+to: b1d5d4f6af280d80f8558874d897452daf00d2fb
+originator: Erik Allemann
+depends: 2023-10-03T121106
+restart: true
+
+• release number bumped to 8.0.1847 by export.pike
+
+• release number bumped to 8.0.1846 by export.pike
