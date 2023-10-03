@@ -1,0 +1,12 @@
+subject: Pike 8.0: Tools.AutoDoc.DocParser: Improved error handling for @value.
+from: a0500f56e89400e1f8f52d10a62eda9f104b7acc
+to: b2059db3dc10e8d56a2d1b754e1bc789a52f618c
+originator: Erik Allemann
+depends: 2023-10-03T115615
+restart: true
+
+• Tools.AutoDoc.DocParser: Improved error handling for @value.
+
+• release number bumped to 8.0.1843 by export.pike
+
+• release number bumped to 8.0.1842 by export.pike
