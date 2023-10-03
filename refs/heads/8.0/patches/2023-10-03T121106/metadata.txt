@@ -1,0 +1,14 @@
+subject: Pike 8.0: VCDiff.Decoder: Add set_max_{file,window}_size().  These are needed to raise the file size limit above 64MB.
+from: b2059db3dc10e8d56a2d1b754e1bc789a52f618c
+to: 04330858706a8f8813ef822972354b8564fb30fc
+originator: Erik Allemann
+depends: 2023-10-03T115721
+restart: true
+
+• VCDiff.Decoder: Add set_max_{file,window}_size().
+
+These are needed to raise the file size limit above 64MB.
+
+• release number bumped to 8.0.1845 by export.pike
+
+• release number bumped to 8.0.1844 by export.pike
