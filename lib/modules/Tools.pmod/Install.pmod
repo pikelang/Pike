@@ -63,6 +63,7 @@ array(string) features()
              "_Ffmpeg", "GL", "GLUT", "Gdbm", "Crypto.ECC.Curve25519",
 	     "Gmp", "Gz", "_Image_FreeType", "_Image_GIF", "_Image_JPEG",
              "_Image_TIFF", "_Image_TTF", "_Image_XFace", "Image.PNG",
+             "_Image_WebP",
 	     "Java.machine", "Mird", "Msql", "Mysql", "Odbc", "Oracle",
 	     "PDF.PDFlib", "Perl",
              "Postgres", "SANE", "SDL", "Ssleay", "Yp", "sybase", "_WhiteFish",
