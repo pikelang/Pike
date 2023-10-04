@@ -400,7 +400,6 @@ static void f_do_query_phrase( INT32 args )
  *! certain word. Call repeatedly until it returns @expr{0@}.
  */
 {
-  double proximity_coefficients[8];
   double field_coefficients[65];
   int numblobs, i;
   Blob **blobs;
