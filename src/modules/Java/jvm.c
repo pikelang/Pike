@@ -31,6 +31,11 @@
 #include "signal_handler.h"
 #include "pike_types.h"
 
+#ifdef __NT__
+/* Needed for yywarning(). */
+#include "pike_compiler.h"
+#endif
+
 #ifdef HAVE_JAVA
 
 #include <locale.h>
@@ -198,10 +203,10 @@ static JNIEnv *jvm_procure_env(struct object *jvm)
   if(j) {
 
 #ifdef _REENTRANT
-    void *env;
+    JNIEnv *env;
 
-    if(JNI_OK == (*j->jvm)->GetEnv(j->jvm, &env, JNI_VERSION_1_2)) {
-      return (JNIEnv *)env;
+    if(JNI_OK == (*j->jvm)->GetEnv(j->jvm, (void **)&env, JNI_VERSION_1_2)) {
+      return env;
     }
 
     if(j->tl_env != NULL && j->tl_env->prog != NULL) {
@@ -211,7 +216,7 @@ static JNIEnv *jvm_procure_env(struct object *jvm)
       else {
 	env = ((struct att_storage *)((Pike_sp[-1].u.object)->storage))->env;
 	pop_n_elems(1);
-	return (JNIEnv *)env;
+        return env;
       }
     }
 
@@ -228,7 +233,7 @@ static JNIEnv *jvm_procure_env(struct object *jvm)
       safe_apply(j->tl_env, "set", 1);
 
     pop_n_elems(1);
-    return (JNIEnv *)env;
+    return env;
 #else
     return j->env;
 #endif /* _REENTRANT */
@@ -2316,8 +2321,6 @@ struct natives_storage {
 static void make_java_exception(struct object *jvm, JNIEnv *env,
 				struct svalue *v)
 {
-  union anything *a;
-  struct generic_error_struct *gen_err;
   struct jvm_storage *j = get_storage(jvm, jvm_program);
 
   if(!j)

@@ -41,13 +41,13 @@ static int open_nt_dll(void)
     for (i = 0; i < 2; i++, root = HKEY_LOCAL_MACHINE) {
       WCHAR *subkeyname = L"1.2";
       HKEY subkey;
-      int code;
 
       if (RegOpenKeyExW(root, keyname, 0, KEY_READ, &key) != ERROR_SUCCESS)
 	continue;
 
+      len = MAX_PATH * sizeof(WCHAR);
       if ((RegQueryValueExW(key, L"CurrentVersion", 0,
-			    &type, buffer, &len) == ERROR_SUCCESS) &&
+                            &type, (LPBYTE)buffer, &len) == ERROR_SUCCESS) &&
 	  type == REG_SZ) {
 	subkeyname = buffer;
       } else {
@@ -68,10 +68,13 @@ static int open_nt_dll(void)
       if(RegOpenKeyExW(key, subkeyname, 0, KEY_READ, &subkey) ==
 	 ERROR_SUCCESS) {
 
-	len = sizeof(buffer)-16;
+        len = MAX_PATH * sizeof(WCHAR);
 
 	if(ERROR_SUCCESS == RegQueryValueExW(subkey, L"RuntimeLib", 0,
-					     &type, buffer, &len)) {
+                                             &type, (LPBYTE)buffer, &len)) {
+          RegCloseKey(subkey);
+          RegCloseKey(key);
+
 	  switch(type) {
 	  case REG_SZ:
 	    len /= sizeof(WCHAR);
@@ -86,6 +89,9 @@ static int open_nt_dll(void)
 	      }
 	    }
 	    break;
+          default:
+            /* Unsupported value. */
+            continue;
 	  }
 	  /* Success! */
 	  break;
@@ -106,8 +112,13 @@ static int open_nt_dll(void)
   }
 
 #ifdef PIKE_DLL_DEBUG
-  fwprintf(stderr, L"JVM libname: %s\r\n", libname);
+  fwprintf(stderr, L"JVM libname: %s\r\n", libname?libname:L"NULL");
 #endif /* PIKE_DLL_DEBUG */
+
+  if (!libname) {
+    /* JVM not found. */
+    return -1;
+  }
 
   /* Java 6 and 7 jvm.dll have dependencies on msvcr71.dll and msvcr100.dll
    * respectively. They are located in the parent directory of the one
