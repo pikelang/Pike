@@ -205,7 +205,10 @@ static JNIEnv *jvm_procure_env(struct object *jvm)
 #ifdef _REENTRANT
     JNIEnv *env;
 
-    if(JNI_OK == (*j->jvm)->GetEnv(j->jvm, (void **)&env, JNI_VERSION_1_2)) {
+    /* NB: Second argument is actually a void **, but some versions
+     *     of gcc (like eg 3.4.3) complain about type-punning then.
+     */
+    if(JNI_OK == (*j->jvm)->GetEnv(j->jvm, (void *)&env, JNI_VERSION_1_2)) {
       return env;
     }
 
