@@ -744,8 +744,8 @@ PIKE_MODULE_EXIT {
 
 PIKE_MODULE_INIT
 {
-  struct program *db;
 #if defined(HAVE_GDBM_H) && defined(HAVE_LIBGDBM)
+  struct program *db;
   start_new_program();
   ADD_STORAGE(struct gdbm_glue);
 
