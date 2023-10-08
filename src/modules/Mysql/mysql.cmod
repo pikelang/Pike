@@ -425,7 +425,9 @@ static void low_query(INT32 args, char *name, int flags);
 
 static void connection_set_charset (struct pike_string *charset)
 {
+#ifdef HAVE_MYSQL_SET_CHARACTER_SET
   int res;
+#endif
   MYSQL *mysql = PIKE_MYSQL->mysql;
 
 #if defined (HAVE_MYSQL_OPTIONS) && defined (HAVE_MYSQL_SET_CHARSET_NAME)
