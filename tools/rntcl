@@ -570,6 +570,9 @@ int main(int argc, array(string) argv)
     //     unknown option") into errors.
     //     We hide warning LNK4099 "PDB 'xxx.pdb' not found", as it is
     //     unmaskable with cl prior to 2013.
+    //     We hide warning LNK4204 "'xxx.pdb' is missing debugging
+    //     information for referencing module; linking object as if
+    //     no debug info".
     // ECL: We also convert warning 147 into an error, and command line
     //      remark "option not supported" into an error.
     ret=silent_do_cmd(cmd, lambda(string line, void|int channel)
@@ -623,7 +626,8 @@ int main(int argc, array(string) argv)
 			    }
 			  }
 #else /* !ECL */
-                          foreach (({ "LNK4099" }), string warn_num) {
+                          foreach (({ "LNK4099", "LNK4204" }),
+                                   string warn_num) {
                             if (has_value(lines[i],
                                           "warning " + warn_num + ": ")) {
                               lines[i] = 0;
