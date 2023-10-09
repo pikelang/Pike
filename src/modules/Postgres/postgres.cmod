@@ -594,7 +594,7 @@ yupbegin:       res=PQexec(conn,"BEGIN");
 	THIS->lastcommit=lastcommit;
 
         if (paramValues) {
-	  xfree(paramValues);
+          xfree((void *)paramValues);
         }
 
 	pop_n_elems(args);
