@@ -26,6 +26,7 @@
 #include "gc.h"
 #include "threads.h"
 #include "operators.h"
+#include "sprintf.h"
 
 #ifdef HAVE_COM
 
