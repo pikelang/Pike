@@ -568,6 +568,8 @@ int main(int argc, array(string) argv)
     // first, we need to get rid of that to make configure behave.
     // CL: We also convert warnings D4002 and D9002 (both are "ignoring
     //     unknown option") into errors.
+    //     We hide warning LNK4099 "PDB 'xxx.pdb' not found", as it is
+    //     unmaskable with cl prior to 2013.
     // ECL: We also convert warning 147 into an error, and command line
     //      remark "option not supported" into an error.
     ret=silent_do_cmd(cmd, lambda(string line, void|int channel)
@@ -591,6 +593,8 @@ int main(int argc, array(string) argv)
 			}
 			trailer[channel] = lines[-1];
 			lines = lines[..sizeof(lines)-2];
+
+                      next_line:
 			for(int i; i < sizeof(lines); i++) {
 			  // FIXME: The following checks should
 			  // probably only check the stderr (2) or
@@ -599,6 +603,8 @@ int main(int argc, array(string) argv)
 			  // Better not, since cl.exe is known to happily send
 			  // errors/warnings to either stdout and stderr.. :P
 			  // /mast
+
+                          if (lines[i] == "") continue;
 #ifdef ECL
 			  // Warning 147 is prototype mismatch.
 			  // for some reason this isn't an error.
@@ -617,6 +623,13 @@ int main(int argc, array(string) argv)
 			    }
 			  }
 #else /* !ECL */
+                          foreach (({ "LNK4099" }), string warn_num) {
+                            if (has_value(lines[i],
+                                          "warning " + warn_num + ": ")) {
+                              lines[i] = 0;
+                              continue next_line;
+                            }
+                          }
 			  foreach (({"D4002", "D9002"}), string warn_num) {
 			    if (has_value (lines[i], "Command line warning " +
 					   warn_num)) {
@@ -626,6 +639,7 @@ int main(int argc, array(string) argv)
 			  }
 #endif /* ECL */
 			}
+                        lines -= ({ 0 });
 			if (sizeof(lines)) {
 			  if (channel == 2) werror (lines * "\n" + "\n");
 			  else write(lines*"\n" + "\n");
