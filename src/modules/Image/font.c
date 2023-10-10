@@ -819,7 +819,7 @@ void font_set_yspacing_scale(INT32 args)
   if(!THIS) Pike_error("font->set_yspacing_scale(): No font loaded.\n");
   get_all_args(NULL, args, "%f", &f);
 
-  if(f <= 0.0) f=0.1;
+  if (f <= 0.0) f = (FLOAT_TYPE)0.1;
   THIS->yspacing_scale = (double)f;
 }
 
