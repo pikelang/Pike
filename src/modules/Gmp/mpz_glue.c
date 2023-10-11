@@ -2549,10 +2549,10 @@ PIKE_MODULE_INIT
    *     We thus need to look up the symbol by hand.
    */
   {
-    HINSTANCE gmp_dll = LoadLibrary("gmp");
+    HINSTANCE gmp_dll = LoadLibraryA("gmp");
     if (gmp_dll) {
       const char **gmp_version_var =
-	GetProcAddress(gmp_dll, DEFINETOSTR(gmp_version));
+        (void *)GetProcAddress(gmp_dll, DEFINETOSTR(gmp_version));
       if (gmp_version_var) {
 	const char *gmp_version = *gmp_version_var;
 	add_string_constant("version", gmp_version, 0);
