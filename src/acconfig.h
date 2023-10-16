@@ -674,4 +674,11 @@ struct mallinfo {
 
 #endif
 
+#ifdef PIKE_DEBUG
+#ifndef YYDEBUG
+/* May also be set above. */
+#define YYDEBUG 1
+#endif /* YYDEBUG */
+#endif
+
 #endif /* MACHINE_H */
