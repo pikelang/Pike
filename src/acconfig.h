@@ -607,6 +607,13 @@ struct mallinfo {
 
 #endif
 
+#ifdef PIKE_DEBUG
+#ifndef YYDEBUG
+/* May also be set above. */
+#define YYDEBUG 1
+#endif /* YYDEBUG */
+#endif
+
 #ifdef PIKE_EXPERIMENTAL
 #define MACHINE_CODE_STACK_FRAMES
 #define PIKE_AMD64_VALIDATE_RSP
