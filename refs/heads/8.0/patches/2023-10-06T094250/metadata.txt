@@ -1,11 +1,9 @@
 subject: Pike 8.0: Tools.Install: Add Image.WebP to the list of features.
 from: b1d5d4f6af280d80f8558874d897452daf00d2fb
-to: a40355da3d9689215809efcac5cd4396a9f1c609
+to: 2b62c360b037cd3fcbd413bd5517ffaf9bc4083e
 originator: Erik Allemann
 depends: 2023-10-03T140830
 restart: true
-
-• release number bumped to 8.0.1849 by export.pike
 
 • release number bumped to 8.0.1848 by export.pike
 
