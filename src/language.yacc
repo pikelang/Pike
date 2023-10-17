@@ -111,7 +111,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.236 2001/03/30 19:07:39 grubba Exp $");
+RCSID("$Id$");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -2123,7 +2123,11 @@ create_arg: modifiers type_or_error optional_stars optional_dot_dot_dot TOK_IDEN
     free_node($5);
     $$=0;
   }
-  | modifiers type_or_error optional_stars bad_identifier { $$=0; }
+  | modifiers type_or_error optional_stars optional_dot_dot_dot bad_identifier { $$=0; }
+  | modifiers type_or_error optional_stars optional_dot_dot_dot {
+    yyerror("Missing identifier.");
+    $$=0;
+  }
   ;
 
 create_arguments2: create_arg { $$ = 1; }
