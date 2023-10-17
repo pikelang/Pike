@@ -2569,7 +2569,11 @@ create_arg: modifiers type_or_error optional_stars optional_dot_dot_dot TOK_IDEN
     free_node($5);
     $$=0;
   }
-  | modifiers type_or_error optional_stars bad_identifier { $$=0; }
+  | modifiers type_or_error optional_stars optional_dot_dot_dot bad_identifier { $$=0; }
+  | modifiers type_or_error optional_stars optional_dot_dot_dot {
+    yyerror("Missing identifier.");
+    $$=0;
+  }
   ;
 
 create_arguments2: create_arg { $$ = 1; }
