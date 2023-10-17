@@ -3173,6 +3173,32 @@ string efoo(string e)
 ]],0);
 
 test_any([[
+ Stdio.write_file("testsuite_test.pmod",
+#"
+// Bug 10130.
+// This crashed pike due to broken error recovery.
+
+class Bang(pang) {
+  void bang() {}
+}
+");
+
+ // Compilation handler that hides compilation errors.
+ class handler
+ {
+   void compile_error(string file, int line, string err)
+   {
+     // log_msg("file: %O, line: %O, err: %O\n", file, line, err);
+   }
+ };
+
+ catch {
+   compile_string(".Bang bang;\n", "testsuite_test", handler());
+ };
+ return 0;
+]],0);
+
+test_any([[
 // infokom:350113
  Stdio.recursive_rm("testsuite_test_dir.pmod");
  mkdir("testsuite_test_dir.pmod");
