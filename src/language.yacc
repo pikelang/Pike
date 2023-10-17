@@ -3198,7 +3198,11 @@ create_arg: modifiers simple_type optional_dot_dot_dot TOK_IDENTIFIER
     free_node($4);
     $$=0;
   }
-  | modifiers simple_type bad_identifier { $$=0; }
+  | modifiers simple_type optional_dot_dot_dot bad_identifier { $$=0; }
+  | modifiers simple_type optional_dot_dot_dot {
+    yyerror("Missing identifier.");
+    $$=0;
+  }
   ;
 
 create_arguments2: create_arg { $$ = 1; }
