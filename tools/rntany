@@ -26,5 +26,8 @@ int main(int argc, array(string) argv)
   if(ret)
     werror("The command returned error code %d.\n",ret);
 
+  // Attempt to flush the NFS cache.
+  array(string) files = get_dir(".");
+
   exit(ret);
 }
