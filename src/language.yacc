@@ -3222,14 +3222,14 @@ optional_create_arguments: /* empty */ { $$ = 0; }
   | start_lambda '(' create_arguments ')'
   {
     node *n = NULL;
-    int e = $3;
+    int e = Pike_compiler->num_create_args;
     struct pike_type *t;
 
     type_stack_mark();
     push_type(T_VOID);
 
-    if (Pike_compiler->num_create_args < 0) {
-      e--;
+    if (e < 0) {
+      e = 1 - e;
       push_finished_type(Pike_compiler->compiler_frame->local_names[e].def->type);
       if (pop_type_stack(T_ARRAY)) {
 	compiler_discard_top_type();
