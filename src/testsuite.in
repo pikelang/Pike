@@ -2669,7 +2669,7 @@ string efoo(string e)
 test_any([[
  Stdio.write_file("testsuite_test.pmod",
 #"
-// Bug 10130.
+// Bug 10130 and 10131.
 // This crashed pike due to broken error recovery.
 
 class Bang(pang) {
@@ -2687,7 +2687,7 @@ class Bang(pang) {
  };
 
  catch {
-   compile_string(".Bang bang;\n", "testsuite_test", handler());
+   compile_string(".testsuite_test.Bang bang;\n", "testsuite_test", handler());
  };
  return 0;
 ]],0);
