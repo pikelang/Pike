@@ -2593,8 +2593,9 @@ optional_create_arguments: /* empty */ { $$ = 0; }
   | '(' create_arguments close_paren_or_missing
   {
     /* NOTE: One more than the number of arguments, so that we
-<     *       can detect the case of no parenthesis below. */
-    $$ = $2 + 1;
+     *       can detect the case of no parenthesis below. */
+    $$ = (Pike_compiler->num_create_args < 0) ?
+      (1 - Pike_compiler->num_create_args):(1 + Pike_compiler->num_create_args);
     free_node($3);
   }
   ;
