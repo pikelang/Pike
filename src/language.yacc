@@ -3229,7 +3229,7 @@ optional_create_arguments: /* empty */ { $$ = 0; }
     push_type(T_VOID);
 
     if (e < 0) {
-      e = 1 - e;
+      e = - e - 1;
       push_finished_type(Pike_compiler->compiler_frame->local_names[e].def->type);
       if (pop_type_stack(T_ARRAY)) {
 	compiler_discard_top_type();
