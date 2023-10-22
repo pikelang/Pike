@@ -31,6 +31,18 @@ DECLARATIONS
 
 #ifdef HAVE_KRB5
 
+/* Some implementations of kerberos define some macros that
+ * conflict with autoconf. This has been observed with eg
+ * <krb5/win-mac.h> as provided by kfw 3.2.2 on NT.
+ */
+#undef HAVE_NETINET_IN_H
+#undef HAVE_STRING_H
+#undef HAVE_STRDUP
+#undef HAVE_STRERROR
+#undef HAVE_STDARG_H
+#undef HAVE_SYS_TYPES_H
+#undef HAVE_STDLIB_H
+
 #ifdef HAVE_KRB5_H
 #include <krb5.h>
 #else
