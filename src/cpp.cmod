@@ -422,6 +422,29 @@ PIKECLASS define
     pop_n_elems(args);
     push_string(finish_string_builder(&s));
   }
+
+  PIKEFUN int(0..1) _equal(mixed other)
+    flags ID_PROTECTED;
+  {
+    if (TYPEOF(*other) == PIKE_T_OBJECT) {
+      struct object *o = other->u.object;
+
+      if (o->prog == define_program) {
+        struct define_struct *d = GET_DEFINE_STORAGE(o);
+        struct define_struct *self = THIS;
+        if ((d->name == self->name) &&
+            (d->magic == self->magic) &&
+            (d->args == self->args) &&
+            (d->flags == self->flags) &&
+            (array_equal_p(d->parts, self->parts, NULL))) {
+          push_int(1);
+          return;
+        }
+      }
+    }
+
+    push_int(0);
+  }
 }
 /*! @endclass define
  */
