@@ -2478,6 +2478,7 @@ PMOD_EXPORT int object_equal_p(struct object *a, struct object *b, struct proces
   struct processing curr;
 
   if(a == b) return 1;
+  if (!a || !b) return 0;
   if(a->prog != b->prog) return 0;
 
   curr.pointer_a = a;
