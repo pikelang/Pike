@@ -2355,14 +2355,15 @@ PMOD_EXPORT int mapping_equal_p(struct mapping *a, struct mapping *b, struct pro
   struct mapping_data *md;
   INT32 e,eq=1;
 
+  if (a == b) return 1;
+  if (!a || !b) return 0;
+
 #ifdef PIKE_DEBUG
   if(a->data->refs <=0)
     Pike_fatal("Zero refs in mapping->data\n");
   if(b->data->refs <=0)
     Pike_fatal("Zero refs in mapping->data\n");
 #endif
-
-  if(a==b) return 1;
 
   if (a->data == b->data) return 1;
 

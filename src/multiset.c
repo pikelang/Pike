@@ -2969,6 +2969,7 @@ PMOD_EXPORT int multiset_equal_p (struct multiset *a, struct multiset *b,
   debug_malloc_touch (a->msd);
 
   if (a == b) return 1;
+  if (!a || !b) return 0;
 
   debug_malloc_touch (b);
   debug_malloc_touch (b->msd);
