@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.169 2005/10/04 07:19:05 nilsson Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -281,6 +281,8 @@ static void f_getxattr(INT32 args)
     }
     while( (res < 0) && (errno == ERANGE) );
   }
+
+  pop_n_elems(args);
 
   if( res < 0 )
   {
