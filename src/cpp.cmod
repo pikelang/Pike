@@ -2375,6 +2375,7 @@ static struct define_struct *add_define(struct CPP_struct *this,
   struct svalue *argbase = Pike_sp;
   PCHARP data = MKPCHARP_STR(name);
   INT_TYPE save_line = this->current_line;
+  struct svalue *old_def = NULL;
 
   if (!this->defines) {
     this->defines = allocate_mapping(32);
@@ -2436,6 +2437,11 @@ static struct define_struct *add_define(struct CPP_struct *this,
   } else {
     Pike_error("Expected zero, string or function value for predefine %pq.",
 	       name);
+  }
+
+  old_def = low_mapping_string_lookup(this->defines, def->name);
+  if (old_def && !is_equal(old_def, Pike_sp-1)) {
+    cpp_warning(this, "Redefining macro %pS.", def->name);
   }
 
   mapping_string_insert(this->defines, def->name, Pike_sp-1);
@@ -4822,6 +4828,9 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
                       cpp_error(this,
                                 "Illegal to redefine a macro during its expansion.");
                     } else {
+                      if (d && !is_equal(&d->self, &def->self)) {
+                        cpp_warning(this, "Redefining macro %pS.", def->name);
+                      }
 		      mapping_string_insert(this->defines, def->name, Pike_sp-1);
                     }
                   }
