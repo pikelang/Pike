@@ -263,6 +263,8 @@ static void f_getxattr(INT32 args)
     } while( (res < 0) && (errno == ERANGE) );
   }
 
+  pop_n_elems(args);
+
   if( res < 0 )
   {
     if( do_free && ptr )
