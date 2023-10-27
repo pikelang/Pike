@@ -102,6 +102,18 @@ struct pike_string * cb_ptype_from_key_ipv4(cb_key key) {
 }
 
 PIKECLASS IPv4Tree {
+#cmod_undef iterator_class
+#cmod_undef tree_class
+#cmod_undef cmod_OBJ2_TREE
+#cmod_undef T_KEY
+#cmod_undef key_ptype
+#cmod_undef sval_type
+#cmod_undef sample_key
+#cmod_undef sample_keys
+#cmod_undef ordered_keys
+#cmod_undef reverse_ordered_keys
+#cmod_undef sample_value
+#cmod_undef extra_doc
 #cmod_define iterator_class Iterator
 #cmod_define tree_class IPv4Tree
 #cmod_define cmod_OBJ2_TREE OBJ2_IPV4TREE
