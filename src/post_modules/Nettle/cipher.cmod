@@ -7613,7 +7613,7 @@ pike_sm4_set_decrypt_key(void *ctx,
 #cmod_define NETTLE_MIN_VERSION 3.9
 #cmod_include "cipher.H"
 #cmod_undef PIKE_NAME
-#cmod_undef NATTLE_NAME
+#cmod_undef NETTLE_NAME
 
 #endif
 
