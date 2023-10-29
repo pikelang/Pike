@@ -3921,16 +3921,14 @@ static void parse_define_body(struct CPP_struct *this,
         continue;
 
       case '\r':
-        if (DATA(pos) != '\n') {
-          string_builder_putchar(&str, '\r');
-        }
-        break;
-
       case '\n':
-        PUTNL();
-        this->current_line++;
+        /* Unget the line break. */
+        pos--;
+
         /* Fallthrough */
       case 0:
+        /* Done. */
+
         break;
       }
       push_string(finish_string_builder(&str));
