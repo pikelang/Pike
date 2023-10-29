@@ -165,6 +165,11 @@ o Standards.BSON
   Improved robustness of the BSON parser with regards to large size headers
   and truncated input data.
 
+o Stdio.Buffer.RewindKey
+
+  Fixed a NULL pointer dereferences that occured in manually created
+  Stdio.Buffer.RewindKey objects.
+
 Building & Tools
 ----------------
 
