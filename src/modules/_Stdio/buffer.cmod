@@ -2293,14 +2293,18 @@ fail: CALL_AND_UNSET_ONERROR(e);
      */
     PIKEFUN void update()
     {
-      if( THIS->obj->prog && THIS->io )
+      if( THIS->io && THIS->obj->prog )
         THIS->rewind_to = THIS->io->offset;
     }
 
     EXIT {
-      if( THIS->io && THIS->obj->prog )
-        THIS->io->locked_move--;
-      free_object( THIS->obj );
+      if( THIS->io )
+      {
+        if( THIS->obj->prog )
+          THIS->io->locked_move--;
+
+        free_object( THIS->obj );
+      }
     }
 
     PIKEFUN void destroy( int reason )
