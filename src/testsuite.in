@@ -1135,6 +1135,21 @@ test_equal([[
 	(({ 0, 1, 2, 3 })){ return __ARGS__; }
 ]], ({ 0, 1, 2, 3}))
 
+// Issue #10133 (aka LysLysKOM 26044077).
+test_any_equal([[
+  array call(function cb) { return cb(42); }
+  array f() {
+    return call() {
+      array ret = __ARGS__;
+      mixed value = 1234;	// NB: Scoped variable.
+      function ff = lambda() { return value; };
+      return ret;
+    };
+  }
+
+  return f();
+]], ({ 42 }))
+
 // Argument checking
 
 // Test new_check_call.
