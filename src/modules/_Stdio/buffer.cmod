@@ -977,7 +977,7 @@ PIKECLASS Buffer
    *! Please note that this funcition will read all data from the
    *! filedescriptor unless it's set to be non-blocking.
    */
-  PIKEFUN int(-1..) input_from( object f, int|void _nbytes, int|void _once )
+  PIKEFUN int(-1..) input_from( object f, int(0..)|void _nbytes, int|void _once )
   {
     Buffer *io = THIS;
     size_t sz = io_len( io );
@@ -1104,7 +1104,7 @@ PIKECLASS Buffer
    *!   API in it.
    */
   PIKEFUN int(-1..) output_to( object|function(string(8bit):int) f,
-			       int|void nbytes )
+			       int(0..)|void nbytes )
   {
     Buffer *io = THIS;
     ptrdiff_t written = 0;
@@ -1192,7 +1192,7 @@ PIKECLASS Buffer
    *! Will return UNDEFINED if there is not enough buffer space
    *! available unless error mode is set to throw errors.
    */
-  PIKEFUN int read_sint( int nbytes )
+  PIKEFUN int read_sint( int(0..) nbytes )
   {
     Buffer *io = THIS;
     struct pike_string *tmp;
@@ -1249,9 +1249,6 @@ PIKECLASS Buffer
     Buffer *io = THIS;
     int byte = 0;
     if( _byte ) byte = _byte->u.integer;
-
-    if( nbytes < 0 )
-      Pike_error("Cannot add negative padding.\n");
 
     memset( io_add_space( io, nbytes,0), byte, nbytes );
     io->len += nbytes;
@@ -1401,13 +1398,13 @@ PIKECLASS Buffer
     ref_push_object(THIS_OBJECT);
   }
 
-  /*! @decl Buffer add_hstring( string(8bit) data, int size_size )
-   *! @decl Buffer add_hstring( Stdio.Buffer data, int size_size )
-   *! @decl Buffer add_hstring( System.Memory data, int size_size )
-   *! @decl Buffer add_hstring( String.Buffer data, int size_size )
-   *! @decl Buffer add_hstring( int(8bit) data, int size_size )
-   *! @decl Buffer add_hstring( array data, int size_size )
-   *! @decl Buffer add_hstring( int|string(8bit)|Stdio.Buffer|System.Memory|array data, int size_size, int offset )
+  /*! @decl Buffer add_hstring( string(8bit) data, int(0..) size_size )
+   *! @decl Buffer add_hstring( Stdio.Buffer data, int(0..) size_size )
+   *! @decl Buffer add_hstring( System.Memory data, int(0..) size_size )
+   *! @decl Buffer add_hstring( String.Buffer data, int(0..) size_size )
+   *! @decl Buffer add_hstring( int(8bit) data, int(0..) size_size )
+   *! @decl Buffer add_hstring( array data, int(0..) size_size )
+   *! @decl Buffer add_hstring( int|string(8bit)|Stdio.Buffer|System.Memory|array data, int(0..) size_size, int(0..) offset )
    *!
    *! Adds length of data followed by @[data] to the buffer.
    *!
@@ -1449,7 +1446,7 @@ PIKECLASS Buffer
   */
   PIKEFUN Buffer add_hstring(
    int|string(8bit)|object|array(int|string(8bit)|Buffer|array) str,
-   int size_size, void|int offset )
+   int(0..) size_size, void|int(0..) offset )
   {
     Buffer *io = THIS;
     size_t len = io_svalue_len(io, str);
@@ -1475,7 +1472,7 @@ PIKECLASS Buffer
    *! @[width] must be less than Int.NATIVE_MAX.
    *!
    */
-  PIKEFUN Buffer add_int( object|int i, int width )
+  PIKEFUN Buffer add_int( object|int i, int(0..) width )
   {
     pop_stack(); /* width */
     if( TYPEOF(*i) == PIKE_T_INT )
@@ -1501,7 +1498,7 @@ PIKECLASS Buffer
    *! @[size_width] must be less than Int.NATIVE_MAX.
    *!
    */
-  PIKEFUN Buffer add_hint( object|int i, int len_width )
+  PIKEFUN Buffer add_hint( object|int i, int(0..) len_width )
   {
     int width;
     pop_stack(); /* width */
@@ -1543,7 +1540,7 @@ PIKECLASS Buffer
    *! be represented in a size_t, or if the buffer cannot grow due to
    *! an out of memory condition.
    */
-  PIKEFUN Buffer add_ints( array(int) a, int bpi )
+  PIKEFUN Buffer add_ints( array(int) a, int(8bit) bpi )
   {
     int i,l = a->size;
     struct svalue *it = a->item;
@@ -1552,9 +1549,6 @@ PIKECLASS Buffer
     Buffer *io = THIS;
 
     io_unwrite_on_error(io, &e);
-
-    if( bpi < 0 )
-      Pike_error("Illegal int width.\n");
 
 #if SIZEOF_LONG == 4
       if( DO_INT32_MUL_OVERFLOW( l, bpi, &n ) )
@@ -1840,7 +1834,7 @@ PIKECLASS Buffer
    *!
    *! Note that pike string can not be longer than 0x7fffffff bytes (~2Gb).
    */
-  PIKEFUN string(8bit) read_hstring( int bytes, void|int offset )
+  PIKEFUN string(8bit) read_hstring( int(0..) bytes, void|int offset )
   {
     INT64 len;
     Buffer *io = THIS;
@@ -2154,8 +2148,8 @@ PIKECLASS Buffer
     push_int(0);
   }
 
-  /*! @decl Buffer read_buffer( int n )
-   *! @decl Buffer read_buffer( int n, bool copy )
+  /*! @decl Buffer read_buffer( int(0..) n )
+   *! @decl Buffer read_buffer( int(0..) n, bool copy )
    *!
    *! Same as @[read], but returns the result as an Buffer.
    *!
@@ -2169,7 +2163,7 @@ PIKECLASS Buffer
    *!  should be parsed before the next whatever is extracted from
    *!  the buffer, but do take care.
    */
-  PIKEFUN Buffer read_buffer( int bytes, int|void copy )
+  PIKEFUN Buffer read_buffer( int(0..) bytes, int|void copy )
   {
     int do_copy = 0;
     struct object *o;
@@ -2413,13 +2407,11 @@ PIKECLASS Buffer
    *!
    *! Make sure that at least @[n] bytes of space are available in this buffer.
    */
-  PIKEFUN void allocate( int n )
+  PIKEFUN void allocate( int(0..) n )
   {
     Buffer *io = THIS;
     Pike_sp--;
     if (!n) return;
-    if (n < 0)
-      SIMPLE_BAD_ARG_ERROR("allocate()", 1, "int(0..1)");
     io_add_space(io, n, 0);
   }
 
@@ -2429,7 +2421,7 @@ PIKECLASS Buffer
    *!
    *! Returns -1 on error and the amount of space still left otherwise.
    */
-  PIKEFUN int(-1..) consume( int n )
+  PIKEFUN int(-1..) consume( int(0..) n )
   {
     Pike_sp--;
     if (LIKELY(io_avail(THIS, n)))
@@ -2474,13 +2466,13 @@ PIKECLASS Buffer
    *!
    *! You can call @[unread(0)] to see how much.
    */
-  PIKEFUN int(-1..) unread( int bytes )
+  PIKEFUN int(-1..) unread( int(0..) bytes )
   {
     Pike_sp--;
     push_int64( io_rewind( THIS, bytes ) );
   }
 
-  /*! @decl string(8bit) read( int n )
+  /*! @decl string(8bit) read( int(0..) n )
    *!
    *! Read @[n] bytes of data from the buffer.
    *!
@@ -2517,7 +2509,7 @@ PIKECLASS Buffer
     push_string( io_read_string(THIS, io_len(THIS)) );
   }
 
-  /*! @decl string(8bit) try_read(int len)
+  /*! @decl string(8bit) try_read(int(0..) len)
    *!
    *! Attempt to read some data from the buffer.
    *!
@@ -2532,7 +2524,7 @@ PIKECLASS Buffer
    *! @seealso
    *!   @[read()]
    */
-  PIKEFUN string(8bit) try_read( int bytes )
+  PIKEFUN string(8bit) try_read( int(0..) bytes )
   {
     Buffer *this = THIS;
     Pike_sp--;
@@ -2596,7 +2588,7 @@ PIKECLASS Buffer
       push_int(-1);
   }
 
-  /*! @decl int read_int( int n )
+  /*! @decl int read_int( int(0..) n )
    *!
    *! Read a network byte order unsigned number of size n*8 bits, then
    *! return it.
@@ -2607,7 +2599,7 @@ PIKECLASS Buffer
    *! @seealso
    *!   @[read_le_int]
    */
-  PIKEFUN int(0..) read_int( int len )
+  PIKEFUN int(0..) read_int( int(0..) len )
   {
     Buffer *io = THIS;
     struct object *o;
@@ -2629,7 +2621,7 @@ PIKECLASS Buffer
     push_int(-1);
   }
 
-  /*! @decl int read_le_int( int n )
+  /*! @decl int read_le_int( int(0..) n )
    *!
    *! Read a little endian byte order unsigned number of size n*8 bits,
    *! then return it.
@@ -2640,7 +2632,7 @@ PIKECLASS Buffer
    *! @seealso
    *!   @[read_int]
    */
-  PIKEFUN int(0..) read_le_int( int len )
+  PIKEFUN int(0..) read_le_int( int(0..) len )
   {
     Buffer *io = THIS;
     struct object *o;
@@ -2662,7 +2654,7 @@ PIKECLASS Buffer
     push_int(-1);
   }
 
-  /*! @decl int read_hint( int n )
+  /*! @decl int read_hint( int(0..) n )
    *!
    *! Read a network byte order unsigned number of size n*8 bits, then
    *! read another network byte order number of the size indicated by
@@ -2671,7 +2663,7 @@ PIKECLASS Buffer
    *! Will return -1 if there is not enough buffer space available
    *! unless error mode is set to throw errors.
    */
-  PIKEFUN int(0..) read_hint( int size_len )
+  PIKEFUN int(0..) read_hint( int(0..) size_len )
   {
     Buffer *io = THIS;
     ONERROR e;
@@ -2704,7 +2696,7 @@ PIKECLASS Buffer
     CALL_AND_UNSET_ONERROR(e);
   }
 
-  /*! @decl array(int) read_ints( int n, int width )
+  /*! @decl array(int) read_ints( int n, int(8bit) width )
    *!
    *! Read a list of @[n] network byte order unsigned numbers each of
    *! size @[width]*8 bits, then return it.
@@ -2712,7 +2704,7 @@ PIKECLASS Buffer
    *! Will return 0 if there is not enough buffer space available
    *! unless error mode is set to throw errors.
    */
-  PIKEFUN array(int(0..)) read_ints( int num, int len )
+  PIKEFUN array(int(0..)) read_ints( int num, int(8bit) len )
   {
     Buffer *io = THIS;
     INT_TYPE i;

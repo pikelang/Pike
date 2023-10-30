@@ -179,7 +179,7 @@ class Point {
     switch(buf->read_int(1))
     {
     case 4:
-      int size = bytes();
+      int(0..) size = bytes();
 
       if (sizeof(buf) != size*2)
 	error("Invalid size in point format.\n");

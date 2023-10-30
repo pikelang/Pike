@@ -103,7 +103,7 @@ protected array(int) read_identifier(Stdio.Buffer data)
 {
   [int(0..3) cls, int constructed, int(0..) tag] = read_identifier(data);
 
-  int len = data->read_int8();
+  int(0..) len = data->read_int8();
   // if( !cls && !constructed && !tag && !len )
   //   error("End-of-contents not supported.\n");
   if( !cls && !tag )
