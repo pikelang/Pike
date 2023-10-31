@@ -4619,6 +4619,7 @@ optional_block: /* EMPTY */ { $$=0; }
     push_type(T_MIXED);
     push_unlimited_array_type(T_ARRAY);
     add_local_name(args_string, compiler_pop_type(), 0);
+    bind_local(NULL, 0);
   }
   statements end_block
   {
