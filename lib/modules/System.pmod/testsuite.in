@@ -1,0 +1,31 @@
+
+START_MARKER
+
+dnl - System.TM
+
+// Issue #10129/LysLysKOM 26017901
+test_any_equal([[
+  array(string) ret = ({});
+  System.TM tm = System.TM();
+  ret += ({ tm->asctime() });
+  tm = System.TM(0);
+  ret += ({ tm->asctime() });
+  tm = System.TM(1697121800);
+  ret += ({ tm->asctime() });
+  tm->gmtime(0);
+  ret += ({ tm->asctime() });
+  tm->gmtime(1697121800);
+  ret += ({ tm->asctime() });
+  // tm->localtime(1697121800);		// Assumes CET/CEST
+  // ret += ({ tm->asctime() });
+  return ret;
+]], [[({
+  "Mon Jan  1 00:00:00 1900\n",
+  "Mon Jan  1 00:00:00 1970\n",
+  "Thu Oct 12 14:43:20 2023\n",
+  "Mon Jan  1 00:00:00 1970\n",
+  "Thu Oct 12 14:43:20 2023\n",
+  // "Thu Oct 12 16:43:20 2023\n",  
+})]])
+
+END_MARKER
