@@ -1,0 +1,52 @@
+subject: Pike 8.0: Various Pike fixes.
+from: 2b62c360b037cd3fcbd413bd5517ffaf9bc4083e
+to: 198b86144acb6e5744ae44dc03b6b5d4af6770c4
+originator: Erik Allemann
+depends: 2023-10-06T094250|pike/8.0.1848
+restart: true
+
+• release number bumped to 8.0.1859 by export.pike
+
+• release number bumped to 8.0.1858 by export.pike
+
+• CHANGES: Add note about Stdio.Buffer.RewindKey fixes
+
+• Stdio.Buffer: Fix NULL-derefs in manually created RewindKey()s
+
+• release number bumped to 8.0.1857 by export.pike
+
+• release number bumped to 8.0.1856 by export.pike
+
+• Pop args in getxattr().
+
+Fixes #10132.
+
+• release number bumped to 8.0.1855 by export.pike
+
+• release number bumped to 8.0.1854 by export.pike
+
+• Compiler: Fix issue with implicit create argument counting.
+
+The value in the parse tree also includes bad and missing identifiers.
+
+Fixes #10131.
+
+• Testsuite: Fix issue with the test for bug #10130/#10131.
+
+• release number bumped to 8.0.1853 by export.pike
+
+• release number bumped to 8.0.1852 by export.pike
+
+• Testsuite: Added test of Bug #10130.
+
+• Compiler: Recover from missing identifier in implicit create().
+
+Fixes #10130.
+
+• release number bumped to 8.0.1851 by export.pike
+
+• release number bumped to 8.0.1850 by export.pike
+
+• Configure: PIKE_DEBUG now implies YYDEBUG.
+
+• release number bumped to 8.0.1849 by export.pike
