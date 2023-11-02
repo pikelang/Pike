@@ -7,25 +7,25 @@ dnl - System.TM
 test_any_equal([[
   array(string) ret = ({});
   System.TM tm = System.TM();
-  ret += ({ tm->asctime() });
+  ret += ({ tm->asctime(), tm->zone || "UTC" });
   tm = System.TM(0);
-  ret += ({ tm->asctime() });
+  ret += ({ tm->asctime(), tm->zone || "UTC" });
   tm = System.TM(1697121800);
-  ret += ({ tm->asctime() });
+  ret += ({ tm->asctime(), tm->zone || "UTC" });
   tm->gmtime(0);
-  ret += ({ tm->asctime() });
+  ret += ({ tm->asctime(), tm->zone || "UTC" });
   tm->gmtime(1697121800);
-  ret += ({ tm->asctime() });
+  ret += ({ tm->asctime(), tm->zone || "UTC" });
   // tm->localtime(1697121800);		// Assumes CET/CEST
-  // ret += ({ tm->asctime() });
+  // ret += ({ tm->asctime(), tm->zone || "CEST" });
   return ret;
 ]], [[({
-  "Mon Jan  1 00:00:00 1900\n",
-  "Mon Jan  1 00:00:00 1970\n",
-  "Thu Oct 12 14:43:20 2023\n",
-  "Mon Jan  1 00:00:00 1970\n",
-  "Thu Oct 12 14:43:20 2023\n",
-  // "Thu Oct 12 16:43:20 2023\n",  
+  "Mon Jan  1 00:00:00 1900\n", "UTC",
+  "Thu Jan  1 00:00:00 1970\n", "UTC",
+  "Thu Oct 12 14:43:20 2023\n", "UTC",
+  "Thu Jan  1 00:00:00 1970\n", "UTC",
+  "Thu Oct 12 14:43:20 2023\n", "UTC",
+  // "Thu Oct 12 16:43:20 2023\n", "CEST",
 })]])
 
 END_MARKER
