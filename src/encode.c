@@ -3345,7 +3345,7 @@ static void decode_value2(struct decode_data *data)
       struct pike_type *t;
 
       if (!data->codec && data->explicit_codec)
-        Pike_error(DECODING_NEEDS_CODEC_ERROR);
+        Pike_error("%s", DECODING_NEEDS_CODEC_ERROR);
 
       ETRACE({
 	  DECODE_WERR(".entry   type, %ld", (long)num);
@@ -3474,7 +3474,7 @@ static void decode_value2(struct decode_data *data)
       int subtype = 0;
 
       if (!data->codec && data->explicit_codec)
-        Pike_error(DECODING_NEEDS_CODEC_ERROR);
+        Pike_error("%s", DECODING_NEEDS_CODEC_ERROR);
 
       ETRACE({
 	  if (!num) {
@@ -3642,7 +3642,7 @@ static void decode_value2(struct decode_data *data)
 
     case TAG_FUNCTION:
       if (!data->codec && data->explicit_codec)
-        Pike_error(DECODING_NEEDS_CODEC_ERROR);
+        Pike_error("%s", DECODING_NEEDS_CODEC_ERROR);
 
       ETRACE({
 	  if (num) {
@@ -3724,7 +3724,7 @@ static void decode_value2(struct decode_data *data)
 
     case TAG_PROGRAM:
       if (!data->codec && data->explicit_codec)
-        Pike_error(DECODING_NEEDS_CODEC_ERROR);
+        Pike_error("%s", DECODING_NEEDS_CODEC_ERROR);
       EDB(3,
 	  fprintf(stderr, "%*s  TAG_PROGRAM(%ld)\n",
 		  data->depth, "", (long)num));
@@ -5322,7 +5322,7 @@ static void rec_restore_value(char **v, ptrdiff_t *l, int no_codec)
     return;
 
   case TAG_OBJECT:
-    if (no_codec) Pike_error(DECODING_NEEDS_CODEC_ERROR);
+    if (no_codec) Pike_error("%s", DECODING_NEEDS_CODEC_ERROR);
     if(t<0) decode_error(current_decode, NULL,
 			 "length of object is negative.\n");
     if(*l < t) decode_error(current_decode, NULL, "string too short\n");
@@ -5332,7 +5332,7 @@ static void rec_restore_value(char **v, ptrdiff_t *l, int no_codec)
     return;
 
   case TAG_FUNCTION:
-    if (no_codec) Pike_error(DECODING_NEEDS_CODEC_ERROR);
+    if (no_codec) Pike_error("%s", DECODING_NEEDS_CODEC_ERROR);
     if(t<0) decode_error(current_decode, NULL,
 			 "length of function is negative.\n");
     if(*l < t) decode_error(current_decode, NULL, "string too short\n");
@@ -5342,7 +5342,7 @@ static void rec_restore_value(char **v, ptrdiff_t *l, int no_codec)
     return;
 
   case TAG_PROGRAM:
-    if (no_codec) Pike_error(DECODING_NEEDS_CODEC_ERROR);
+    if (no_codec) Pike_error("%s", DECODING_NEEDS_CODEC_ERROR);
     if(t<0) decode_error(current_decode, NULL,
 			 "length of program is negative.\n");
     if(*l < t) decode_error(current_decode, NULL, "string too short\n");
