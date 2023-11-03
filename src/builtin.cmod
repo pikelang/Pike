@@ -411,6 +411,7 @@ PIKECLASS TM
             RETURN 0;
 
         THIS->t = *res;
+        THIS->unix_time = t;
         THIS->modified = 0;
         RETURN 1;
     }
@@ -429,6 +430,7 @@ PIKECLASS TM
             RETURN 0;
 
         THIS->t = *res;
+        THIS->unix_time = t;
 	SET_ZONE(THIS, "UTC");	/* Override timezone */
         THIS->modified = 0;
         RETURN 1;
@@ -454,6 +456,7 @@ PIKECLASS TM
 	RETURN 0;
 
       THIS->t = *res;
+      THIS->unix_time = t;
       SET_ZONE(THIS, "UTC");	/* Override timezone */
       THIS->modified = 0;
       RETURN 1;
@@ -514,6 +517,7 @@ PIKECLASS TM
         /* Setting it to other timezones than UTC is not supported (yet) */
         if (use_utc)
           SET_ZONE(THIS, "UTC");
+        THIS->modified = 0;
         pop_n_elems(args);
     }
 
