@@ -471,7 +471,6 @@ testfont binary
 /src/modules/Image/blit_layer_include.h foreign_ident
 /src/modules/Image/colors.c foreign_ident
 /src/modules/Image/colors.h foreign_ident
-/src/modules/Image/colortable.c foreign_ident
 /src/modules/Image/colortable.h foreign_ident
 /src/modules/Image/colortable_lookup.h foreign_ident
 /src/modules/Image/configure.in foreign_ident
