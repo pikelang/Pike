@@ -736,6 +736,7 @@ test_do([[
     int exp_suite = -1;
 
     foreach(suites, int suite) {
+      // NB: Cf SSL.Session()->is_supported_suite().
       if (exp_version < PROTOCOL_TLS_1_2) {
 	int ke = CIPHER_SUITES[suite ][0];
 	if ((ke == KE_ecdh_rsa) || (ke == KE_dh_rsa)) {
@@ -749,6 +750,11 @@ test_do([[
 	  // to TLS 1.2.
 	  continue;
 	}
+        if (CIPHER_SUITES[suite][2] > HASH_sha1) {
+          // TLS 1.1 and earlier do not support hashes other than
+          // SHA1 and MD5.
+          continue;
+        }
 	if (client_max < PROTOCOL_TLS_1_0) {
 	  // SSL 3.0 doesn't support extensions, so it can't support ECC.
 	  if ((ke == KE_ecdh_ecdsa) || (ke == KE_ecdhe_ecdsa) ||
