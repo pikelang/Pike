@@ -632,6 +632,7 @@ static struct nct_flat _img_reduce_number_of_colors(struct nct_flat flat,
 						    rgbl_group sf)
 {
    ptrdiff_t i,j;
+   size_t realloc_size;
    struct nct_flat_entry *newe;
    rgbd_group pos={0.5,0.5,0.5},space={0.5,0.5,0.5};
 
@@ -650,7 +651,14 @@ static struct nct_flat _img_reduce_number_of_colors(struct nct_flat flat,
 
    free(flat.entries);
 
-   flat.entries=realloc(newe,i*sizeof(struct nct_flat_entry));
+   realloc_size=i*sizeof(struct nct_flat_entry);
+
+   /* realloc() frees if size is 0 */
+   if (realloc_size)
+     flat.entries=realloc(newe, realloc_size);
+   else
+     flat.entries=NULL;
+
    flat.numentries=i;
    if (!flat.entries) {
      free(newe);
@@ -3113,6 +3121,7 @@ static INLINE void _build_cubicle(struct neo_colortable *nct,
    struct nct_flat_entry *fe=nct->u.flat.entries;
    INT32 n = nct->u.flat.numentries;
 
+   size_t realloc_size;
    int i=0;
    int *p = xalloc(n * sizeof(INT32));
    int *pp; /* write */
@@ -3168,7 +3177,13 @@ static INLINE void _build_cubicle(struct neo_colortable *nct,
 #endif
 
    cub->n = i;
-   cub->index = realloc(p, i * sizeof(INT32));
+   realloc_size = i * sizeof(INT32);
+
+   /* realloc() would free if size was 0 */
+   if (realloc_size)
+     cub->index = realloc(p, realloc_size);
+   else
+     cub->index = NULL;
 
    if (!cub->index) 
       cub->index=p; /* out of memory, or weird */
