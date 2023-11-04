@@ -366,6 +366,7 @@ int yylex(YYSTYPE *yylval);
 %type <n> id_expr
 %type <n> primary_expr
 %type <n> postfix_expr
+%type <n> prefix_expr
 %type <n> pow_expr
 %type <n> unary_expr
 %type <n> cast_expr
@@ -4404,14 +4405,17 @@ postfix_expr: id_expr | primary_expr
   | postfix_expr TOK_DEC { $$ = mknode(F_POST_DEC, $1, mkintnode(1)); }
   ;
 
-pow_expr: postfix_expr
-  | postfix_expr TOK_POW pow_expr { $$=mkopernode("`**",$1,$3); }
-  | postfix_expr TOK_POW error
+prefix_expr: postfix_expr
+  | TOK_INC prefix_expr { $$ = mknode(F_INC, $2, mkintnode(1)); }
+  | TOK_DEC prefix_expr { $$ = mknode(F_DEC, $2, mkintnode(1)); }
+  ;
+
+pow_expr: prefix_expr
+  | prefix_expr TOK_POW pow_expr { $$=mkopernode("`**",$1,$3); }
+  | prefix_expr TOK_POW error
   ;
 
 unary_expr: pow_expr
-  | TOK_INC unary_expr { $$ = mknode(F_INC, $2, mkintnode(1)); }
-  | TOK_DEC unary_expr { $$ = mknode(F_DEC, $2, mkintnode(1)); }
   | TOK_NOT cast_expr { $$ = mkopernode("`!", $2, 0); }
   | '+' cast_expr { $$ = $2; }
   | '~' cast_expr
