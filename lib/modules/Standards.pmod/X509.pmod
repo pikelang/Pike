@@ -1738,7 +1738,8 @@ mapping(string:array(Verifier))
     // Try the merged certificate files first.
     foreach(({ "ca-certificates.crt", "ca-bundle.crt", "ca-bundle.trust.crt" }),
 	    string fname) {
-      string(8bit) pem = Stdio.read_bytes(combine_path(dir, fname));
+      string(8bit) pem;
+      catch { pem = Stdio.read_bytes(combine_path(dir, fname)); };
       if (pem) {
 	found |= add_pem(pem);
       }
@@ -1760,7 +1761,8 @@ mapping(string:array(Verifier))
 	      // Old name for SystemCACertificates.keychain.
 	      "X509Certificates",
 	    }), string fname) {
-      string keychain = Stdio.read_bytes(combine_path(dir, fname));
+      string keychain;
+      catch { keychain = Stdio.read_bytes(combine_path(dir, fname)); };
       if (keychain) {
 	Apple.Keychain chain = Apple.Keychain(keychain);
 	foreach(chain->certs, TBSCertificate tbs) {
@@ -1778,7 +1780,8 @@ mapping(string:array(Verifier))
       }
       fname = combine_path(dir, fname);
       if (!Stdio.is_file(fname)) continue;
-      string(8bit) pem = Stdio.read_bytes(fname);
+      string(8bit) pem;
+      catch { pem = Stdio.read_bytes(fname); };
       if (!pem) continue;
       add_pem(pem);
     }
