@@ -734,7 +734,7 @@ void *mexec_alloc(size_t sz)
     res = low_mexec_alloc(hdr, sz);
 #ifdef PIKE_DEBUG
     if (!res) {
-      Pike_fatal("mexec_alloc(%d) failed to allocate from grown hdr!\n",
+      Pike_fatal("mexec_alloc(%"PRINTSIZET"u) failed to allocate from grown hdr!\n",
 		 sz);
     }
 #endif /* PIKE_DEBUG */
@@ -847,7 +847,7 @@ void *mexec_realloc(void *ptr, size_t sz)
       res = low_mexec_alloc(hdr, sz);
 #ifdef PIKE_DEBUG
       if (!res) {
-	Pike_fatal("mexec_realloc(%p, %d) failed to allocate from grown hdr!\n",
+	Pike_fatal("mexec_realloc(%p, %"PRINTSIZET"u) failed to allocate from grown hdr!\n",
 		   ptr, sz);
       }
 #endif /* PIKE_DEBUG */

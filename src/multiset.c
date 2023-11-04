@@ -502,12 +502,12 @@ static struct multiset_data *resize_multiset_data (struct multiset_data *old,
     Pike_fatal ("Attempt to resize multiset_data with several refs.\n");
   if (verbatim) {
     if (newsize < old->allocsize)
-      Pike_fatal ("Cannot shrink multiset_data (from %d to %d) in verbatim mode.\n",
+      Pike_fatal ("Cannot shrink multiset_data (from %d to %"PRINTINT64"d) in verbatim mode.\n",
 	     old->allocsize, newsize);
   }
   else
     if (newsize < old->size)
-      Pike_fatal ("Cannot resize multiset_data with %d elements to %d.\n",
+      Pike_fatal ("Cannot resize multiset_data with %d elements to %"PRINTINT64"d.\n",
 	     old->size, newsize);
   if (newsize == old->allocsize)
     Pike_fatal ("Unnecessary resize of multiset_data to same size.\n");

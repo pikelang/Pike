@@ -3174,7 +3174,7 @@ void fixate_program(void)
 	continue;
       }
       if (fun->func.const_info.offset >= inh->prog->num_constants) {
-	Pike_fatal("Constant %s offset (%d) out of whack (max: %ld)!\n",
+	Pike_fatal("Constant %s offset (%"PRINTPTRDIFFT"d) out of whack (max: %ld)!\n",
 		   fun->name?fun->name->str:"<no-name>",
 		   fun->func.const_info.offset,
 		   (long)inh->prog->num_constants);
@@ -3192,7 +3192,7 @@ void fixate_program(void)
 	  ptrdiff_t offset = inh->storage_offset + fun->func.offset +
 	    sizeof_variable(fun->run_time_type);
 	  if (offset > p->storage_needed) {
-	    Pike_fatal("Variable %s offset (%ld (%d)) out of whack (max: %ld)!\n",
+	    Pike_fatal("Variable %s offset (%ld (%"PRINTPTRDIFFT"d)) out of whack (max: %ld)!\n",
 		       fun->name?fun->name->str:"<no-name>",
 		       (long)offset, fun->func.offset,
 		       (long)p->storage_needed);
@@ -4530,7 +4530,7 @@ void check_program(struct program *p)
     if(p->constants[e].name) check_string(p->constants[e].name);
 #else /* ! 0 */
     if (p->constants[e].offset >= p->num_identifiers) {
-      Pike_fatal("Constant initializer outside num_identifiers (%d >= %d).\n",
+      Pike_fatal("Constant initializer outside num_identifiers (%"PRINTPTRDIFFT"d >= %d).\n",
 		 p->constants[e].offset, p->num_identifiers);
     }
 #endif /* 0 */
