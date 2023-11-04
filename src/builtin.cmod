@@ -408,21 +408,39 @@ PIKECLASS TM
         RETURN THIS->unix_time;
     }
 
+    static const char *tm_days_of_week[] = {
+      "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat",
+    };
+
+    static const char *tm_months_of_year[] = {
+      "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+    };
+
     /*! @decl string asctime()
      *! Return a string representing the time. Mostly useful for debug
-     *! purposes, the exact format is very locale (see
-     *! @[Gettext.setlocale]) and OS dependent.
+     *! purposes.
+     *!
+     *! @note
+     *!   In versions of Pike prior to Pike 8.0.1866 the exact format
+     *!   was very locale (see @[Gettext.setlocale]) and OS dependent.
      */
     PIKEFUN string asctime()
     {
         FIX_THIS();
         {
-#define STRFTIME_MAXSIZE 26
-          char s[STRFTIME_MAXSIZE];
-          if( !strftime(s, STRFTIME_MAXSIZE, "%c\n", &THIS->t) )
-            push_undefined();
-          else
-            push_text(s);
+          struct tm *tm = &THIS->t;
+
+          push_constant_text("%s %s %2d %02d:%02d:%02d %04d\n");
+          push_text(tm_days_of_week[tm->tm_wday]);
+          push_text(tm_months_of_year[tm->tm_mon]);
+          push_int(tm->tm_mday);
+          push_int(tm->tm_hour);
+          push_int(tm->tm_min);
+          push_int(tm->tm_sec);
+          push_int(1900 + tm->tm_year);
+
+          f_sprintf(8);
         }
     }
 
