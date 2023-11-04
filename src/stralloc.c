@@ -717,7 +717,7 @@ static struct pike_string * make_static_string(const char * str, size_t len,
 #ifdef PIKE_DEBUG
   gc_init_marker(t);
   if (generic_extract(str, shift, len)) {
-    Pike_fatal("Static string \"%.*s\" is not NUL-terminated!\n", len, str);
+    Pike_fatal("Static string \"%.*s\" is not NUL-terminated!\n", (int)len, str);
   }
 #endif
   dmalloc_register(t, sizeof(struct pike_string), DMALLOC_LOCATION());
@@ -741,7 +741,7 @@ PMOD_EXPORT struct pike_string * make_shared_static_string(const char *str, size
 
 #ifdef PIKE_DEBUG
   if (generic_extract(str, shift, len)) {
-    Pike_fatal("Static string \"%.*s\" is not NUL-terminated!\n", len, str);
+    Pike_fatal("Static string \"%.*s\" is not NUL-terminated!\n", (int)len, str);
   }
 #endif
 
