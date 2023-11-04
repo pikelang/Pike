@@ -4319,6 +4319,7 @@ AC_CHECK_FUNCS( \
  times \
  truncate64 \
  tzset \
+ snprintf \
  _snprintf \
  wait3 \
  wait4 \
