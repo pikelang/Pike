@@ -81,6 +81,11 @@ o Image.BMP
 
   Improved size check better detects malformed BMP images.
 
+o Image.Colortable
+
+  Guarded against two cases in which we might have performed invalid
+  memory access (use after free/double free).
+
 o Image.GIF
 
   - Improve detection of malformed LZW bit sizes.
