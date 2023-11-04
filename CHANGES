@@ -1,4 +1,4 @@
-Pike 8.1: Changes since Pike 8.0 (scratch area for future release notes)
+Pike 9.0: Changes since Pike 8.0 (scratch area for future release notes)
 ------------------------------------------------------------------------
 
 New language features
@@ -192,6 +192,14 @@ o Returning void
     void a() { return; }
     void b() { return a(); }
 
+o Cleaned up expression grammar.
+
+  The base expression grammar now mirrors that of the C-standard.
+
+  This makes it easier to understand what the various expression
+  productions mean.
+
+o Added the unary +-operator (noop).
 
 Bug fixes
 ---------
