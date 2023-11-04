@@ -485,6 +485,7 @@ PIKECLASS TM
      *! The timezone will always be UTC when using this function.
      */
     PIKEFUN void create( int|object(Gmp.mpz)|object(Gmp.bignum) _t )
+      flags ID_PROTECTED;
     {
         f_TM_gmtime( 1 );
         if( Pike_sp[-1].u.integer == 0 )
@@ -496,6 +497,7 @@ PIKECLASS TM
      *! Construct a new TM, all fields will be set to 0.
      */
     PIKEFUN void create( )
+      flags ID_PROTECTED;
     {
         memset( &THIS->t, 0, sizeof( struct tm ) );
         THIS->t.tm_isdst = -1;
@@ -514,6 +516,7 @@ PIKECLASS TM
     PIKEFUN void create( int year, int(0..11) mon, int(1..31) mday,
                          int(0..24) hour, int(0..59) min, int(0..59) sec,
                          string|void timezone )
+      flags ID_PROTECTED;
     {
         struct tm *t = &THIS->t;
         int use_utc = 0;
