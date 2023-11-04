@@ -1813,6 +1813,11 @@ void resolv_class(node *n)
     case T_OBJECT:
       if(!Pike_sp[-1].u.object->prog)
       {
+        if (n->name) {
+          my_yyerror("%pS is destructed.", n->name);
+        } else {
+          yyerror("Attempt to get the program from a destructed object.");
+        }
 	pop_stack();
 	push_int(0);
       }else{
@@ -1821,8 +1826,10 @@ void resolv_class(node *n)
       break;
 
     default:
-      if (Pike_compiler->compiler_pass != COMPILER_PASS_FIRST)
+      if ((Pike_compiler->compiler_pass != COMPILER_PASS_FIRST) ||
+          (Pike_compiler->flags & COMPILATION_FORCE_RESOLVE)) {
 	yyerror("Illegal program identifier");
+      }
       pop_stack();
       push_int(0);
 
