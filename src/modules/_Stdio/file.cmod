@@ -143,7 +143,7 @@
 #define UNIX_SOCKET_CAPABILITIES (fd_INTERPROCESSABLE | fd_BIDIRECTIONAL | fd_CAN_NONBLOCK | fd_CAN_SHUTDOWN | fd_SEND_FD)
 #endif
 
-#ifndef HAVE_DIRFD
+#if !defined(HAVE_DIRFD) && !defined(dirfd)
 #ifdef HAVE_DIR_DD_FD
 #define dirfd(dir__)	(((DIR*)dir__)->dd_fd)
 #define HAVE_DIRFD
