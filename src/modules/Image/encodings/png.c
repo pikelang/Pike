@@ -2,7 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: png.c,v 1.100 2010/03/02 17:27:03 grubba Exp $
 */
 
 #include "global.h"
