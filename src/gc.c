@@ -3860,8 +3860,8 @@ size_t do_gc(int explicit_call)
       }
 
       destruct_object (o, reason);
-      free_object(o);
       gc_free_extra_ref(o);
+      free_object(o);
 #if defined (PIKE_DEBUG) || defined (DO_PIKE_CLEANUP)
       destruct_count++;
 #endif
