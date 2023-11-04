@@ -1434,6 +1434,14 @@ int main(int argc, array(string) argv)
 		    log_msg("  %4d: 0x%04x != 0x%04x\n", i, a[i], b[i]);
 		  }
 		}
+              } else if (arrayp(a) && arrayp(b) && (sizeof(a) == sizeof(b))) {
+                log_msg("Differences at:\n");
+                int i;
+                for(i = 0; i < sizeof(a); i++) {
+                  if (!equal(a[i], b[i])) {
+                    log_msg("  %4d: %O != %O\n", i, a[i], b[i]);
+                  }
+                }
 	      }
 	    }
             break;
