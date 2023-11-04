@@ -6,12 +6,12 @@
 
 inherit Stdio.Buffer;
 
-this_program add_hstring(string(8bit)|Stdio.Buffer str, int sz)
+this_program add_hstring(string(8bit)|Stdio.Buffer str, int(0..) sz)
 {
   return [object(this_program)]::add_hstring(str,sz);
 }
 
-this_program add_int(int i, int sz)
+this_program add_int(int i, int(0..) sz)
 {
   return [object(this_program)]::add_int(i,sz);
 }
@@ -33,7 +33,7 @@ protected void create(void|string(8bit)|Stdio.Buffer s)
 //! Appends an array of unsigned integers of width @[item_size]
 //! to the buffer, preceded with an unsigned integer @[len] declaring
 //! the size of the array in bytes.
-this_program add_int_array(array(int) data, int(0..) item_size, int(0..) len)
+this_program add_int_array(array(int) data, int(8bit) item_size, int(0..) len)
 {
   add_int(sizeof(data)*item_size, len );
   return [object(this_program)]add_ints(data,item_size);
@@ -53,7 +53,7 @@ this_program add_string_array(array(string(8bit)) data, int(0..) item_size,
 
 //! Reads an array of integers as written by @[add_int_array]
 //! from the buffer.
-array(int) read_int_array(int item_size, int len)
+array(int) read_int_array(int(8bit) item_size, int(0..) len)
 {
   int size = read_int(len);
   int elems = size/item_size;

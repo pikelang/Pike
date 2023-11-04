@@ -1266,7 +1266,7 @@ string(8bit)|int(-1..1) got_data(string(8bit) data)
 	      break;
 	    }
 
-	    int len = 1+3+sizeof(input);
+            int(0..) len = 1+3+sizeof(input);
 	    if (dtls) len += 2 + 3 + 3;	// Fragmentation info.
 	    key->rewind();
 	    Stdio.Buffer raw = handshake_buffer->read_buffer(len);
