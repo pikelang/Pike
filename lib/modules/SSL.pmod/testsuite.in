@@ -750,7 +750,7 @@ test_do([[
 	  // to TLS 1.2.
 	  continue;
 	}
-        if (CIPHER_SUITES[suite][2] > HASH_sha1) {
+        if (CIPHER_SUITES[suite][2] > HASH_sha) {
           // TLS 1.1 and earlier do not support hashes other than
           // SHA1 and MD5.
           continue;
