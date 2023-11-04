@@ -8,6 +8,8 @@
 
 #include "bson_config.h"
 
+#include "global.h"
+
 #if HAVE_ARPA_INET_H
 #include <arpa/inet.h>
 #endif /* HAVE_ARPA_INET_H */
