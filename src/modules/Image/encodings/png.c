@@ -1719,7 +1719,7 @@ static void image_png_encode(INT32 args)
 #ifdef PIKE_DEBUG
 	 if (d != (unsigned char *)(ps->str + ps->len)) {
 	   Pike_fatal("PNG data doesn't align properly "
-		      "%d x %d (%d bpp) len: %ld, got: %ld.\n",
+		      "%"PRINTPIKEINT"d x %"PRINTPIKEINT"d (%d bpp) len: %ld, got: %ld.\n",
 		      img->xsize, img->ysize, bpp,
 		      (long)ps->len, (long)(d - (unsigned char *)ps->str));
 	 }
