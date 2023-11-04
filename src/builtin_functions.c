@@ -5893,6 +5893,8 @@ time_t mktime_zone(struct tm *date, int other_timezone, int tz)
    *
    * The calendar repeats every 28 years, so offset it appropriately.
    * Offset years before 1971 in order to avoid issues near 1970-01-01.
+   *
+   * FIXME: Compensate for century/400-year adjustment.
    */
   if (date->tm_year < 71) {
     ydelta = ((71 + 27 - date->tm_year)/28) * 28;
