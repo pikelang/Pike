@@ -8294,6 +8294,14 @@ test_false([[ objectp((int)"2147483648" / 2) ]])
 test_eq("13934998268672547360069539025",
         [[ (string)(48324683476346278246238462784624627348 / 3467864333) ]])
 
+// Power.
+test_eq("262144", [[ (string)(4**3**2) ]])
+test_eq("-9", [[ (string)(-3**2) ]])
+test_eq("16", [[ (string)lambda(){int a=3; return ++a**2;}() ]])
+test_eq("9", [[ (string)lambda(){int a=3; return a++**2;}() ]])
+test_eq("625", [[ (string)lambda(){int a=3; return 5**++a;}() ]])
+test_eq("125", [[ (string)lambda(){int a=3; return 5**a++;}() ]])
+
 // - sscanf.
 test_eq("12345678901234567890",
 	   [[ (string)array_sscanf("12345678901234567890", "%d")[0] ]])
