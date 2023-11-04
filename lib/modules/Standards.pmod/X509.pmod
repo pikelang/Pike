@@ -1661,7 +1661,8 @@ mapping(string:array(Verifier)) load_authorities(string|array(string)|void root_
     // Try the merged certificate files first.
     foreach(({ "ca-certificates.crt", "ca-bundle.crt", "ca-bundle.trust.crt" }),
 	    string fname) {
-      string pem = Stdio.read_bytes(combine_path(dir, fname));
+      string pem;
+      catch { pem = Stdio.read_bytes(combine_path(dir, fname)); };
       if (pem) {
 	Standards.PEM.Messages messages = Standards.PEM.Messages(pem);
 	foreach(messages->fragments, string|Standards.PEM.Message m) {
@@ -1692,7 +1693,8 @@ mapping(string:array(Verifier)) load_authorities(string|array(string)|void root_
 	      // Old name for SystemCACertificates.keychain.
 	      "X509Certificates",
 	    }), string fname) {
-      string keychain = Stdio.read_bytes(combine_path(dir, fname));
+      string keychain;
+      catch { keychain = Stdio.read_bytes(combine_path(dir, fname)); };
       if (keychain) {
 	Apple.Keychain chain = Apple.Keychain(keychain);
 	foreach(chain->certs, TBSCertificate tbs) {
@@ -1714,7 +1716,8 @@ mapping(string:array(Verifier)) load_authorities(string|array(string)|void root_
       }
       fname = combine_path(dir, fname);
       if (!Stdio.is_file(fname)) continue;
-      string pem = Stdio.read_bytes(fname);
+      string pem;
+      catch { pem = Stdio.read_bytes(fname); };
       if (!pem) continue;
       string cert = Standards.PEM.simple_decode(pem);
       if (!cert) continue;
