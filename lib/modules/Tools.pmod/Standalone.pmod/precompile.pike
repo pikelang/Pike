@@ -1047,6 +1047,8 @@ class PikeType
 	    if (!high) {
 	      if (ret == "int") return "zero";
 	      return sprintf("%s(zero)", ret);
+            } else if (ret == "int" && high == 0x7fffffff) {
+              return "int(0..)";
 	    }
 
 	    int i;
