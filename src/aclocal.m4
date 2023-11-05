@@ -1599,6 +1599,16 @@ AC_DEFUN(PIKE_SELECT_ABI,
 	    fi
 	  fi
 	done
+        if test -h "$d/pkg-config" && readlink >/dev/null 2>&1 "$d/pkg-config"; then
+          link_target=`readlink "$d/pkg-config"`
+          case "$link_target" in
+            *-pkg-config"$exeext")
+               PIKE_CHECK_FILE_ABI(file_abi, "$link_target")
+               if test "x$file_abi" = "x$pike_cv_abi"; then
+                 pike_cv_tool_prefix=`echo "$link_target" | sed -e 's|.*/||g' -e 's|pkg-config.*||'`
+               fi;;
+          esac
+        fi
         if test "x$pike_cv_tool_prefix" = x; then :; else
 	  break;
 	fi
