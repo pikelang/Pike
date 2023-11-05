@@ -6,10 +6,6 @@
 //! This module contains constants used with elliptic curve algorithms.
 
 
-// The module dumper has problems with the overloaded ECDSA class,
-// so inhibit dumping of this module for now.
-constant dont_dump_module = 1;
-
 //! The definition of an elliptic curve.
 //!
 //! Objects of this class are typically not created by the user.
