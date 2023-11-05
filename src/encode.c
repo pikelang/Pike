@@ -2940,6 +2940,15 @@ static void low_decode_type(struct decode_data *data)
   (X)=pop_unfinished_type();			\
 } while(0)
 
+static void cleanup_placeholder (void *compilation)
+{
+  struct compilation *c = compilation;
+  if (c->placeholder && c->placeholder->prog != null_program) {
+    free_program(c->placeholder->prog);
+    add_ref(c->placeholder->prog = null_program);
+  }
+}
+
 static void cleanup_new_program_decode (void *compilation)
 {
   struct compilation *c = compilation;
@@ -2949,6 +2958,7 @@ static void cleanup_new_program_decode (void *compilation)
   Pike_compiler->new_program->flags &= ~PROGRAM_AVOID_CHECK;
   unlink_current_supporter(& c->supporter);
   end_first_pass(0);
+  cleanup_placeholder(c);
 }
 
 static void restore_current_file(void *save_current_file)
@@ -3976,6 +3986,9 @@ static void decode_value2(struct decode_data *data)
 		  decode_error(data, NULL, "Placeholder object is not "
 			       "a __null_program clone.\n");
 		}
+		free_program(c->placeholder->prog);
+		add_ref(c->placeholder->prog = p);
+		p->flags |= PROGRAM_AVOID_CHECK;
 	      } else if (TYPEOF(Pike_sp[-1]) != T_INT ||
 			 Pike_sp[-1].u.integer) {
 		decode_error (data, NULL, "Expected placeholder object or zero "
@@ -4655,6 +4668,7 @@ static void decode_value2(struct decode_data *data)
 	  }
 
           UNSET_ONERROR(err);
+	  SET_ONERROR(err, cleanup_placeholder, c);
 
 	  /* De-kludge to get end_first_pass() to free the program. */
 	  Pike_compiler->num_parse_error--;
@@ -4719,13 +4733,14 @@ static void decode_value2(struct decode_data *data)
 	  if (placeholder) {
             struct unfinished_obj_link *up;
 
-	    if (placeholder->prog != null_program) {
+	    if (placeholder->prog == null_program) {
+	      free_program(placeholder->prog);
+	      add_ref(placeholder->prog = p);
+	    } else if (placeholder->prog != p) {
 	      decode_error(data, NULL,
 			   "Placeholder has been zapped during decoding.\n");
 	    }
 	    debug_malloc_touch(placeholder);
-	    free_program(placeholder->prog);
-	    add_ref(placeholder->prog = p);
 	    placeholder->storage = p->storage_needed ?
 	      (char *)xcalloc(p->storage_needed, 1) :
 	      (char *)NULL;
@@ -4775,6 +4790,7 @@ static void decode_value2(struct decode_data *data)
 
 	  /* The program should be consistent now. */
 	  p->flags &= ~PROGRAM_AVOID_CHECK;
+          UNSET_ONERROR(err);
 
 	  EDB(5, fprintf(stderr, "%*sProgram flags: 0x%04x\n",
 			 data->depth, "", p->flags));
@@ -4894,28 +4910,6 @@ static void free_decode_data (struct decode_data *data, int delay,
   free_object (data->thread_obj);
 #endif
 
-#ifdef PIKE_DEBUG
-  if (!free_after_error) {
-    NEW_MAPPING_LOOP (data->decoded->data) {
-      if (TYPEOF(k->val) == T_PROGRAM &&
-	  !(k->val.u.program->flags & PROGRAM_PASS_1_DONE)) {
-	ONERROR err;
-	/* Move some references to the stack so that they
-	 * will be freed when decode_error() throws, but
-	 * still be available to decode_error().
-	 */
-	push_string(data->data_str);
-	push_mapping(data->decoded);
-	SET_ONERROR(err, free, data);
-
-	decode_error (data, NULL,
-		      "Got unfinished program <%pO> after decode: %pO\n",
-		      &k->ind, &k->val);
-	UNSET_ONERROR(err);
-      }
-    }
-  }
-#endif
   free_string(data->data_str);
   free_mapping(data->decoded);
   free( (char *) data);
