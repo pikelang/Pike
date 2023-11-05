@@ -770,6 +770,9 @@ static int apply_opt_flags_for_sval(struct svalue *s)
     }
     return apply_opt_flags_for_ref(s->u.object->prog,
 				   FIND_LFUN(s->u.object->prog, LFUN_CALL));
+
+  case PIKE_T_TYPE:
+    return 0;
   }
   return OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND;
 }
@@ -936,6 +939,10 @@ node *debug_mknode(int token, node *a, node *b)
 	    case T_FUNCTION:
 	      opt_flags = apply_opt_flags_for_sval(&a->u.sval);
 	      break;
+
+            case PIKE_T_TYPE:
+              opt_flags = 0;
+              break;
 
 	    case T_PROGRAM:
 	      if(a->u.sval.u.program->flags & PROGRAM_CONSTANT) {
