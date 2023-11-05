@@ -722,7 +722,7 @@ class Node
 
     res += "PikeDoc.registerSymbol('" + cp + "', PikeDoc.isInline)\n";
 
-    #define LOW_MAKE_INDEX_JS(CHILDREN) do { \
+#define LOW_MAKE_INDEX_JS(CHILDREN) do {                         \
       res += low_make_index_js2(((#CHILDREN)/"_")[0], CHILDREN); \
     } while (0)
 
@@ -733,6 +733,8 @@ class Node
     LOW_MAKE_INDEX_JS(method_children);
     LOW_MAKE_INDEX_JS(operator_children);
     LOW_MAKE_INDEX_JS(member_children);
+
+#undef LOW_MAKE_INDEX_JS
 
     res += ".finish();\n";
 
@@ -752,6 +754,8 @@ class Node
     LOW_MAKE_INDEX_JS(method_children);
     LOW_MAKE_INDEX_JS(operator_children);
     LOW_MAKE_INDEX_JS(member_children);
+
+#undef LOW_MAKE_INDEX_JS
 
     return res +
       "children = module_children.concat(class_children,\n"
@@ -1343,12 +1347,14 @@ class TopNode {
     string res = ::make_index_js();
     res -= "\n.finish();";
 
-#define LOW_MAKE_INDEX_JS(CHILDREN) do {                                \
+#define LOW_MAKE_INDEX_JS(CHILDREN) do {                         \
       res += low_make_index_js2(((#CHILDREN)/"_")[0], CHILDREN); \
     } while (0)
 
     LOW_MAKE_INDEX_JS(namespace_children);
     LOW_MAKE_INDEX_JS(appendix_children);
+
+#undef LOW_MAKE_INDEX_JS
 
     res += ".finish();";
 
