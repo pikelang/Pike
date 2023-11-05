@@ -42,10 +42,6 @@
 	PIKE_ERROR("destructed object->function",
 	      "Cannot call functions in destructed objects.\n", Pike_sp, args);
 
-      if(!(p->flags & (PROGRAM_PASS_1_DONE|PROGRAM_AVOID_CHECK)))
-	PIKE_ERROR("__empty_program() -> function",
-	      "Cannot call functions in unfinished objects.\n", Pike_sp, args);
-
 #ifdef PIKE_DEBUG
       if(fun>=(int)p->num_identifier_references)
       {
@@ -93,6 +89,15 @@
 
       function = new_frame->context->prog->identifiers + ref->identifier_offset;
       new_frame->fun = (unsigned INT16)fun;
+
+      if(!(p->flags & (PROGRAM_PASS_1_DONE|PROGRAM_AVOID_CHECK)) &&
+         ((function->identifier_flags &
+           (IDENTIFIER_TYPE_MASK|IDENTIFIER_ALIAS)) != IDENTIFIER_CONSTANT)) {
+        free_pike_frame(new_frame);
+
+        PIKE_ERROR("__empty_program() -> function",
+                   "Cannot call functions in unfinished objects.\n", Pike_sp, args);
+      }
 
 
 #ifdef PIKE_DEBUG
