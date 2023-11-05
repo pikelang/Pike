@@ -2940,12 +2940,12 @@ static void low_decode_type(struct decode_data *data)
   (X)=pop_unfinished_type();			\
 } while(0)
 
-static void cleanup_placeholder (void *compilation)
+static void cleanup_placeholder (void **_placeholder)
 {
-  struct compilation *c = compilation;
-  if (c->placeholder && c->placeholder->prog != null_program) {
-    free_program(c->placeholder->prog);
-    add_ref(c->placeholder->prog = null_program);
+  struct object *placeholder = *_placeholder;
+  if (placeholder && placeholder->prog != null_program) {
+    free_program(placeholder->prog);
+    add_ref(placeholder->prog = null_program);
   }
 }
 
@@ -2958,7 +2958,6 @@ static void cleanup_new_program_decode (void *compilation)
   Pike_compiler->new_program->flags &= ~PROGRAM_AVOID_CHECK;
   unlink_current_supporter(& c->supporter);
   end_first_pass(0);
-  cleanup_placeholder(c);
 }
 
 static void restore_current_file(void *save_current_file)
@@ -3844,6 +3843,7 @@ static void decode_value2(struct decode_data *data)
 	  struct program *p;
 	  ONERROR err;
 	  ONERROR err2;
+          ONERROR err3;
 	  int byteorder;
 	  int bytecode_method;
 	  int entry_type;
@@ -3939,6 +3939,10 @@ static void decode_value2(struct decode_data *data)
 	  } else
 	    p = NULL;
 
+          /* This onerror must be set before enter_compiler() in order to
+           * not reference the compiler's Pike stack frame. */
+          SET_ONERROR(err3, cleanup_placeholder, &placeholder);
+
 	  enter_compiler(NULL, 0);
 
 	  c = THIS_COMPILATION;
@@ -3968,7 +3972,10 @@ static void decode_value2(struct decode_data *data)
 	  if (data->support_compilation &&
 	      data->support_compilation->supporter.prog == p &&
 	      data->support_compilation->placeholder != NULL)
+          {
 	    add_ref(c->placeholder = data->support_compilation->placeholder);
+            placeholder = c->placeholder;
+          }
 	  else
 	  {
 	    int fun = find_identifier("__register_new_program",
@@ -3982,6 +3989,7 @@ static void decode_value2(struct decode_data *data)
 	      if(TYPEOF(Pike_sp[-1]) == T_OBJECT)
 	      {
 		add_ref(c->placeholder=Pike_sp[-1].u.object);
+                placeholder = c->placeholder;
 		if(c->placeholder->prog != null_program) {
 		  decode_error(data, NULL, "Placeholder object is not "
 			       "a __null_program clone.\n");
@@ -4668,7 +4676,6 @@ static void decode_value2(struct decode_data *data)
 	  }
 
           UNSET_ONERROR(err);
-	  SET_ONERROR(err, cleanup_placeholder, c);
 
 	  /* De-kludge to get end_first_pass() to free the program. */
 	  Pike_compiler->num_parse_error--;
@@ -4790,7 +4797,7 @@ static void decode_value2(struct decode_data *data)
 
 	  /* The program should be consistent now. */
 	  p->flags &= ~PROGRAM_AVOID_CHECK;
-          UNSET_ONERROR(err);
+          UNSET_ONERROR(err3);
 
 	  EDB(5, fprintf(stderr, "%*sProgram flags: 0x%04x\n",
 			 data->depth, "", p->flags));
