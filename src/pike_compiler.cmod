@@ -276,7 +276,6 @@ int unlink_current_supporter(struct Supporter *c)
               "supporter=%p (prog %p) depends on %p (prog %p).\n",
               (long) th_self(), c, c->prog,
               c->depends_on, c->depends_on->prog);
-    c->depends_on = NULL;
   }
   current_supporter=c->previous;
 #ifdef PIKE_DEBUG
