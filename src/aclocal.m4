@@ -1506,8 +1506,8 @@ define([DO_IF_OS],
 dnl variable, file-path
 AC_DEFUN(PIKE_CHECK_FILE_ABI,
 [
-  PIKE_filetype=`file "$2" 2>/dev/null | sed -e 's/[^:]*://'`
-  PIKE_filetype_L=`file -L "$2" 2>/dev/null | sed -e 's/[^:]*://'`
+  PIKE_filetype=`file "$2" 2>/dev/null | sed -e 's/[[^:]]*://'`
+  PIKE_filetype_L=`file -L "$2" 2>/dev/null | sed -e 's/[[^:]]*://'`
   case "[$]PIKE_filetype:[$]PIKE_filetype_L" in
     *64-bit*)
       $1=64
@@ -1757,6 +1757,10 @@ AC_DEFUN(PIKE_SELECT_ABI,
 	done
         if test -h "$d/pkg-config" && readlink >/dev/null 2>&1 "$d/pkg-config"; then
           link_target=`readlink "$d/pkg-config"`
+          case "$link_target" in
+            /*) ;;
+            *) link_target="$d/$link_target";;
+          esac
           case "$link_target" in
             *-pkg-config"$exeext")
                PIKE_CHECK_FILE_ABI(file_abi, "$link_target")
