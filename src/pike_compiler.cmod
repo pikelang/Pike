@@ -261,6 +261,18 @@ int unlink_current_supporter(struct Supporter *c)
 #endif
   debug_malloc_touch(c);
   verify_supporters();
+  if (c->dependants) {
+    struct Supporter *s;
+    for (s = c->dependants; s; s = s->next_dependant) {
+#ifdef PIKE_DEBUG
+      if (s->depends_on != c) Pike_fatal("Dependant does not depend on us.\n");
+#endif
+      /* NB: depends_on may only contain supporters that are
+       *     on the current supporter list.
+       */
+      s->depends_on = NULL;
+    }
+  }
   if(c->depends_on)
   {
 #ifdef PIKE_DEBUG
@@ -310,6 +322,7 @@ int call_dependants(struct Supporter *s, int finish)
     CDFPRINTF("th(%ld) dependant: %p (prog %p) (data:%p).\n",
               (long) th_self(), tmp, tmp->prog, tmp->data);
     s->dependants=tmp->next_dependant;
+    tmp->depends_on = NULL;
 #ifdef PIKE_DEBUG
     tmp->next_dependant=0;
 #endif

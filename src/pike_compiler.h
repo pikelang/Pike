@@ -42,7 +42,13 @@ struct Supporter
   /* The supporter furthest in on the current_supporter linked list
    * that this one depends on. When it gets unlinked from that list,
    * this becomes a back pointer for the dependants linked list
-   * below. */
+   * below.
+   *
+   * NOTE: NOT reference-counted (the reference is held via the
+   *       current_supporters list. This means that it MUST be
+   *       set to NULL when the depended on supporter is unlinked
+   *       from the current_supporters list.
+   */
 
   struct Supporter *dependants, *next_dependant;
   /* dependants points to a linked list of supporters that depends on
@@ -51,9 +57,12 @@ struct Supporter
    * unlinked from the current_supporter list. */
 
   struct svalue self;
-  /* CompilerEnvironment object for this supporter.
-   * NB: NOT reference counted!
-   * NB: Subtyped to the CompilerEnvironment inherit.
+  /* CompilerEnvironment.PikeCompiler object for this supporter.
+   * Used for adding references to supporters held by previous,
+   * dependants and next_dependant above.
+   *
+   * NB: NOT reference counted directly!
+   * NB: Subtyped to the CompilerEnvironment.PikeCompiler inherit.
    */
 
   supporter_callback *fun;
