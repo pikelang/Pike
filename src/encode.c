@@ -3853,6 +3853,7 @@ static void decode_value2(struct decode_data *data)
 	  struct compilation *c;
 	  struct pike_string *save_current_file;
 	  struct object *placeholder = NULL;
+          int init_placeholder = 0;
 	  INT_TYPE save_current_line;
           int delay;
 #define FOO(NUMTYPE,Y,ARGTYPE,NAME) \
@@ -4708,6 +4709,7 @@ static void decode_value2(struct decode_data *data)
 	  if (c->placeholder && !delay) {
 	    push_object(placeholder = c->placeholder);
 	    c->placeholder = NULL;
+            init_placeholder = 1;
 	  }
 
 	  exit_compiler();
@@ -4737,7 +4739,7 @@ static void decode_value2(struct decode_data *data)
 #include "program_areas.h"
 	  }
 
-	  if (placeholder) {
+          if (init_placeholder) {
             struct unfinished_obj_link *up;
 
 	    if (placeholder->prog == null_program) {
