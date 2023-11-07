@@ -3197,6 +3197,8 @@ static void decode_value2(struct decode_data *data)
   struct svalue entry_id, *tmp2;
   struct svalue *delayed_enc_val;
 
+  STACK_LEVEL_START(0);
+
 #ifdef ENCODE_DEBUG
   data->depth += 2;
 #endif
@@ -3732,6 +3734,8 @@ static void decode_value2(struct decode_data *data)
 
 
     case TAG_PROGRAM:
+      STACK_LEVEL_CHECK(0);
+
       if (!data->codec && data->explicit_codec)
         Pike_error("%s", DECODING_NEEDS_CODEC_ERROR);
       EDB(3,
@@ -3758,6 +3762,8 @@ static void decode_value2(struct decode_data *data)
 			   Pike_sp - 1);
 	    pop_stack();
 	    push_undefined();
+
+            STACK_LEVEL_CHECK(1);
 	    break;
 	  }
 
@@ -3765,12 +3771,15 @@ static void decode_value2(struct decode_data *data)
 	    EDB(2, fprintf(stderr, "%*sKeeping %s to keep parent pointer.\n",
 			   data->depth, "",
 			   get_name_of_type(TYPEOF(Pike_sp[-1]))));
+            STACK_LEVEL_CHECK(1);
 	    break;
 	  }
 
 	  add_ref(p);
 	  pop_stack();
 	  push_program(p);
+
+          STACK_LEVEL_CHECK(1);
 	  break;
 	}
 
@@ -3795,6 +3804,8 @@ static void decode_value2(struct decode_data *data)
 	  if(TYPEOF(Pike_sp[-1]) != T_PROGRAM && data->pickyness)
 	    decode_error(data, NULL, "Failed to decode program. Got: %pO\n",
 			 Pike_sp - 1);
+
+          STACK_LEVEL_CHECK(1);
 	  break;
 
         case 3:
@@ -3817,6 +3828,8 @@ static void decode_value2(struct decode_data *data)
 	    decode_error(data, NULL, "Failed to decode program by ID. "
 			 "Expected integer, got: %pO\n", Pike_sp - 1);
 	  }
+
+          STACK_LEVEL_CHECK(1);
 	  break;
 
 	case 5: {		/* Forward reference for new-style encoding. */
@@ -3835,6 +3848,7 @@ static void decode_value2(struct decode_data *data)
 
 	  data->delay_counter++;
 
+          STACK_LEVEL_CHECK(1);
 	  break;
 	}
 
@@ -4683,11 +4697,14 @@ static void decode_value2(struct decode_data *data)
 
 	  p->flags |= PROGRAM_PASS_1_DONE;
 
+          STACK_LEVEL_CHECK(0);
+
 	  /* Fixate & optimize
 	   *
 	   * lfuns and identifier_index
 	   */
 	  ref_push_program (p);
+          STACK_LEVEL_CHECK(1);
 	  if (delay && (p->flags & PROGRAM_USES_PARENT)) {
 	    /* Kludge for end_first_pass(0) not allocating
 	     * parent_info_storage (intentionally).
@@ -4705,6 +4722,7 @@ static void decode_value2(struct decode_data *data)
 
 	  pop_stack();
 	  push_program(p);
+          STACK_LEVEL_CHECK(1);
 
 	  if (c->placeholder && !delay) {
 	    push_object(placeholder = c->placeholder);
@@ -4761,6 +4779,8 @@ static void decode_value2(struct decode_data *data)
 	    data->unfinished_placeholders = up;
 	    add_ref(up->o = placeholder);
 	    pop_stack();
+
+            STACK_LEVEL_CHECK(1);
 	  }
 
 	  /* Decode the actual constants
@@ -4821,6 +4841,8 @@ static void decode_value2(struct decode_data *data)
 #ifdef ENCODE_DEBUG
 	  data->depth -= 2;
 #endif
+
+          STACK_LEVEL_CHECK(1);
 	  goto decode_done;
 	}
 
@@ -4844,6 +4866,8 @@ decode_done:;
 #ifdef ENCODE_DEBUG
   data->depth -= 2;
 #endif
+
+  STACK_LEVEL_DONE(1);
 }
 
 static struct decode_data *current_decode = NULL;
@@ -4966,6 +4990,8 @@ static INT32 my_decode(struct pike_string *tmp,
   struct string_builder buf;
 #endif
 
+  STACK_LEVEL_START(0);
+
   /* FIXME: Why not use CYCLIC? */
   /* Attempt to avoid infinite recursion on circular structures. */
   for (data = current_decode; data; data=data->next) {
@@ -4979,6 +5005,8 @@ static INT32 my_decode(struct pike_string *tmp,
       struct svalue val = SVALUE_INIT_INT (COUNTER_START);
       if ((res = low_mapping_lookup(data->decoded, &val))) {
 	push_svalue(res);
+
+        STACK_LEVEL_CHECK(1);
 	return 1;
       }
       /* Possible recursion detected. */
@@ -5076,6 +5104,8 @@ static INT32 my_decode(struct pike_string *tmp,
     delay = 0;
     free_decode_data (data, delay, 0);
   }
+
+  STACK_LEVEL_DONE(1);
 
   return 1;
 }
@@ -5412,6 +5442,8 @@ void f_decode_value(INT32 args)
   int debug = 0;
   struct string_builder *debug_buf = NULL;
 
+  STACK_LEVEL_START(args);
+
   check_all_args("decode_value", args,
 		 BIT_STRING,
 		 BIT_VOID | BIT_INT | BIT_OBJECT | BIT_ZERO,
@@ -5478,6 +5510,8 @@ void f_decode_value(INT32 args)
       }
   }
 
+  STACK_LEVEL_CHECK(args);
+
   if(!my_decode(s, codec, explicit_codec, debug, debug_buf))
   {
     char *v=s->str;
@@ -5491,6 +5525,11 @@ void f_decode_value(INT32 args)
     rec_restore_value(&v, &l, !codec && explicit_codec);
     CALL_AND_UNSET_ONERROR (uwp);
   }
+
+  STACK_LEVEL_CHECK(args + 1);
+
   assign_svalue(Pike_sp-args-1, Pike_sp-1);
   pop_n_elems(args);
+
+  STACK_LEVEL_DONE(1);
 }
