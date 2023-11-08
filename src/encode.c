@@ -719,6 +719,17 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 
   if((tmp=low_mapping_lookup(data->encoded, val)))
   {
+    if (TYPEOF(*tmp) == T_STRING || TYPEOF(*tmp) == T_ARRAY) {
+      /* Special case:  This is a program that we need to resolv again.
+         The name is saved so that it can be found in the cache. */
+      code_entry(TAG_PROGRAM, 0, data);
+      ETRACE({
+          ENCODE_WERR(".entry   program");
+        });
+      data->counter.u.integer++; /* dummy */
+      encode_value2(tmp, data, 0);
+      goto encode_done;
+    }
     entry_id = *tmp;		/* It's always a small integer. */
     if (entry_id.u.integer < COUNTER_START)
       entry_id.u.integer = CONVERT_ENTRY_ID (entry_id.u.integer);
@@ -2067,6 +2078,15 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	  }
 	}
       }else{
+        /* Avoid caching of the program itself since we may need to
+           redo the lookup with force resolve later.  The name can be
+           cached though; this is handled as a special case above. */
+        if (TYPEOF(Pike_sp[-1]) == T_STRING ||
+            TYPEOF(Pike_sp[-1]) == T_ARRAY)
+          mapping_insert(data->encoded, val, Pike_sp-1);
+        else
+          map_delete(data->encoded, val);
+
 	code_entry(TAG_PROGRAM, 0, data);
         ETRACE({
 	    ENCODE_WERR(".entry   program");
