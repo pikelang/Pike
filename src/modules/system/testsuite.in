@@ -16,9 +16,9 @@ test_true(stringp(System.GetComputerName()))
 test_true(stringp(System.GetUserName()))
 // LogonUser		__NT__
 // LookupAccountName	__NT__
-test_equal(System.LookupAccount(UNDEFINED, "LocalService")[1..],
+test_equal(System.LookupAccountName(UNDEFINED, "LocalService")[1..],
   ({ "NT AUTHORITY", 5 }))
-test_equal(System.LookupAccount(UNDEFINED, "LocalService")[0]->account(),
+test_equal(System.LookupAccountName(UNDEFINED, "LocalService")[0]->account(),
   ({ "LOCAL SERVICE", "NT AUTHORITY", 5 }))
 // NetGetAnyDCName	__NT__
 // NetGetDCName		__NT__
