@@ -46,7 +46,7 @@
  * sort-of be able to decode programs with the wrong codec. */
 #define EDB(N,X) do { debug_malloc_touch(data); if (data->debug>=N) {X;} } while (0)
 #ifndef PIKE_DEBUG
-#error ENCODE_DEBUG requires PIKE_DEBUG
+#define dump_program_tables(P, DEPTH)
 #endif
 #else
 #define EDB(N,X) do { debug_malloc_touch(data); } while (0)
