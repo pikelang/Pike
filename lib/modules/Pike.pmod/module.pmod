@@ -123,6 +123,10 @@ constant get_return_type = predef::__get_return_type;
 constant get_first_arg_type = predef::__get_first_arg_type;
 constant get_type_attributes = predef::__get_type_attributes;
 
+#if constant(__builtin.__switch_lookup)
+constant switch_lookup = __builtin.__switch_lookup;
+#endif
+
 // precompile.pike checks for this
 #if constant(__builtin.__HAVE_CPP_PREFIX_SUPPORT__)
 //! This constant exists and has the value 1 if cpp supports

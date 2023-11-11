@@ -691,6 +691,7 @@ PIKEFUN string basetype(mixed x)
 }
 
 /*! @decl int __switch_lookup(array|mapping switch_table, mixed val)
+ *! @appears Pike.switch_lookup
  *!
  *! Lookup a @expr{switch@}-case.
  *!
