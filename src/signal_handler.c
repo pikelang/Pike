@@ -2345,16 +2345,22 @@ extern int pike_make_pipe(int *);
 #define PROCE_CHROOT		13
 #define PROCE_CLRCLOEXEC	14
 
+#ifdef B_POSIX_ERROR_BASE
+#define ERRNO_OFFSET	B_POSIX_ERROR_BASE
+#else
+#define ERRNO_OFFSET	0
+#endif
+
 #define PROCERROR(err, id)	do { int _l, _i; \
-    buf[0] = err; buf[1] = errno; buf[2] = id; \
+    buf[0] = err; buf[1] = errno - ERRNO_OFFSET; buf[2] = id; \
     for(_i = 0; _i < 3; _i += _l) { \
       while (((_l = write(control_pipe[1], buf + _i, 3 - _i)) < 0) && \
              (errno == EINTR)) \
         ; \
-      if (_l < 0) exit (99 - errno); \
+      if (_l < 0) exit (99 - (errno - ERRNO_OFFSET)); \
     } \
     while((_l = close(control_pipe[1])) < 0 && errno==EINTR); \
-    if (_l < 0) exit (99 + errno); \
+    if (_l < 0) exit (99 + (errno - ERRNO_OFFSET)); \
     exit(99); \
   } while(0)
 
@@ -3847,6 +3853,8 @@ void f_create_process(INT32 args)
 #endif /* !HAVE_VFORK */
 
       PROC_FPRINTF("[%d] Parent: Wait for child...\n", getpid());
+
+      buf[0] = buf[1] = buf[2] = 0;
       /* Wait for exec or error */
 #if defined(EBADF) && defined(EPIPE)
       /* Attempt to workaround spurious errors from read(2) on FreeBSD. */
@@ -3883,55 +3891,57 @@ void f_create_process(INT32 args)
 	Pike_error("read(2) failed with errno %d.\n", olderrno);
       } else {
 	/* Something went wrong in the child. */
+        int child_errno = buf[1] + ERRNO_OFFSET;
 	switch(buf[0]) {
 	case PROCE_CHDIR:
 	  if (buf[2]) {
-	    Pike_error("chdir(\"/\") in chroot failed. errno:%d.\n", buf[1]);
+            Pike_error("chdir(\"/\") in chroot failed. errno:%d.\n",
+                       child_errno);
 	  }
-	  Pike_error("chdir() failed. errno:%d.\n", buf[1]);
+          Pike_error("chdir() failed. errno:%d.\n", child_errno);
 	  break;
 	case PROCE_DUP:
-	  Pike_error("dup() failed. errno:%d.\n", buf[1]);
+          Pike_error("dup() failed. errno:%d.\n", child_errno);
 	  break;
 	case PROCE_DUP2:
-	  if (buf[1] == EINVAL) {
+          if (child_errno == EINVAL) {
 	    Pike_error("dup2(x, %d) failed with EINVAL.\n", buf[2]);
 	  }
-	  Pike_error("dup2(x, %d) failed. errno:%d.\n", buf[2], buf[1]);
+          Pike_error("dup2(x, %d) failed. errno:%d.\n", buf[2], child_errno);
 	  break;
 	case PROCE_SETGID:
-	  Pike_error("setgid(%d) failed. errno:%d\n", buf[2], buf[1]);
+          Pike_error("setgid(%d) failed. errno:%d\n", buf[2], child_errno);
 	  break;
 #ifdef HAVE_SETGROUPS
 	case PROCE_SETGROUPS:
-	  if (buf[1] == EINVAL) {
+          if (child_errno == EINVAL) {
 	    Pike_error("setgroups() failed with EINVAL.\n"
 		       "Too many supplementary groups (%d)?\n",
 		       storage.num_wanted_gids);
 	  }
-	  Pike_error("setgroups() failed. errno:%d.\n", buf[1]);
+          Pike_error("setgroups() failed. errno:%d.\n", child_errno);
 	  break;
 #endif
 	case PROCE_GETPWUID:
-	  Pike_error("getpwuid(%d) failed. errno:%d.\n", buf[2], buf[1]);
+          Pike_error("getpwuid(%d) failed. errno:%d.\n", buf[2], child_errno);
 	  break;
 	case PROCE_INITGROUPS:
-	  Pike_error("initgroups() failed. errno:%d.\n", buf[1]);
+          Pike_error("initgroups() failed. errno:%d.\n", child_errno);
 	  break;
 	case PROCE_SETUID:
-	  if (buf[1] == EINVAL) {
+          if (child_errno == EINVAL) {
 	    Pike_error("Invalid uid: %d.\n", (int)wanted_uid);
 	  }
-	  Pike_error("setuid(%d) failed. errno:%d.\n", buf[2], buf[1]);
+          Pike_error("setuid(%d) failed. errno:%d.\n", buf[2], child_errno);
 	  break;
 	case PROCE_SETSID:
           Pike_error("setsid() failed.\n");
 	  break;
 	case PROCE_SETCTTY:
-          Pike_error("Failed to set controlling TTY. errno:%d.\n", buf[1]);
+          Pike_error("Failed to set controlling TTY. errno:%d.\n", child_errno);
 	  break;
 	case PROCE_EXEC:
-	  switch(buf[1]) {
+          switch(child_errno) {
 	  case ENOENT:
 	    Pike_error("Executable file not found.\n");
 	    break;
@@ -3945,24 +3955,24 @@ void f_create_process(INT32 args)
 #endif /* E2BIG */
 	  }
 
-	  Pike_error("exec() failed. errno:%d. File not found?\n", buf[1]);
+          Pike_error("exec() failed. errno:%d. File not found?\n", child_errno);
 	  break;
 	case PROCE_CLOEXEC:
 	  Pike_error("set_close_on_exec(%d, 1) failed. errno:%d.\n",
-		     buf[2], buf[1]);
+                     buf[2], child_errno);
 	  break;
 	case PROCE_CLRCLOEXEC:
 	  Pike_error("set_close_on_exec(%d, 0) failed. errno:%d.\n",
-		     buf[2], buf[1]);
+                     buf[2], child_errno);
 	  break;
 	case PROCE_CHROOT:
-	  Pike_error("chroot() failed. errno:%d.\n", buf[1]);
+          Pike_error("chroot() failed. errno:%d.\n", child_errno);
 	  break;
 	case 0:
 	  /* read() probably failed. */
 	default:
-	  Pike_error("Child failed: %d, %d, %d, %d, %d!\n",
-		     buf[0], buf[1], buf[2], e, olderrno);
+          Pike_error("Child failed: %d, %d (%d), %d, %d, %d!\n",
+                     buf[0], child_errno, buf[1], buf[2], e, olderrno);
 	  break;
 	}
       }
@@ -4008,12 +4018,13 @@ void f_create_process(INT32 args)
 
 #ifdef PROC_DEBUG
       if (e < 0) {
+        int ee = errno - ERRNO_OFFSET;
 	char buf[5] = {
-	  '0' + (errno/1000)%10,
-	  '0' + (errno/100)%10,
-	  '0' + (errno/10)%10,
-	  '0' + errno%10,
-	  '\n'
+          '0' + (ee/1000)%10,
+          '0' + (ee/100)%10,
+          '0' + (ee/10)%10,
+          '0' + ee%10,
+          '\n'
 	};
 
 	write(2, debug_prefix, sizeof(debug_prefix));
