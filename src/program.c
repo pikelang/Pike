@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.753 2008/09/04 11:36:45 grubba Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -5613,7 +5613,7 @@ INT32 define_function(struct pike_string *name,
        *
        * FIXME: Force PRIVATE?
        */
-      flags |= ID_PROTECTED /* | ID_PRIVATE | ID_INLINE | ID_USED */;
+      flags |= ID_PROTECTED | ID_USED /* | ID_PRIVATE | ID_INLINE */;
       free_type(symbol_type);
       free_string(symbol);
     }
