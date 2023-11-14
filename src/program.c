@@ -6175,7 +6175,7 @@ INT32 define_function(struct pike_string *name,
        *
        * FIXME: Force PRIVATE?
        */
-      flags |= ID_PROTECTED /* | ID_PRIVATE | ID_INLINE | ID_USED */;
+      flags |= ID_PROTECTED | ID_USED /* | ID_PRIVATE | ID_INLINE */;
       free_type(symbol_type);
       free_string(symbol);
     }
