@@ -81,7 +81,6 @@ PIKECLASS TM
     CVAR int modified;
     CVAR struct tm_extra extra;
 
-#define strftime_zone strftime
 #define strptime_zone strptime
 #define asctime_zone asctime
 #define localtime_zone(X,Y) localtime(X)
@@ -94,6 +93,86 @@ PIKECLASS TM
         if(THIS->modified)                                            \
           fix_tm(THIS);                                               \
     }  while(0)
+
+#ifdef __NT__
+    /* NB: strftime() on NT crashes on unsupported formats. */
+static size_t strftime_zone(char *buf, size_t bufsiz, const char *fmt,
+                            const struct tm *tm)
+{
+  size_t res = 0;
+  while (*fmt) {
+    if (*fmt == '%') {
+      char fmtbuf[4];
+      const char *subfmt = fmtbuf;
+      size_t subres;
+
+      switch(*++fmt) {
+      case 0:
+        return 0;
+
+      case 'a': case 'A': case 'b': case 'B': case 'c': case 'd':
+      case 'H': case 'I': case 'j': case 'm': case 'M': case 'p':
+      case 'S': case 'U': case 'w': case 'W': case 'x': case 'X':
+      case 'y': case 'Y': case 'z': case 'Z':
+        /* These are the format supported by VS2008 CRT.
+         *
+         * cf https://forums.codeguru.com/showthread.php?564601-Strange-crash-with-strftime()&p=2235341#post2235341
+         */
+        sprintf(fmtbuf, "%%%c", *fmt);
+        break;
+
+        /* Define some aliases that we expect to exist. */
+      case 'h':
+        subfmt = "%B";
+        break;
+
+      case 'e':
+        subfmt = "%d";
+        break;
+
+      case 'D':
+        subfmt = "%m/%d/%y";
+        break;
+
+      case 'n':
+        subfmt = "\n";
+        break;
+
+      case 'R':
+        subfmt = "%H:%M";
+        break;
+
+      case 't':
+        subfmt = "\t";
+        break;
+
+      case 'T':
+        subfmt = "%H:%M:%S";
+        break;
+
+      default:
+        sprintf(fmtbuf, "%%%%%c", *fmt);
+        break;
+      }
+
+      subres = strftime(buf, bufsiz, subfmt, tm);
+      if (!subres && (subfmt[1] != 'p')) return 0;
+      buf += subres;
+      res += subres;
+      fmt++;
+    } else {
+      if (!bufsiz) return 0;
+      *buf++ = *fmt++;
+      bufsiz--;
+      res++;
+    }
+  }
+
+  return res;
+}
+#else	/* !__NT__ */
+#define strftime_zone strftime
+#endif	/* __NT__ */
 
     static void fix_tm(struct TM_struct *this)
     {
