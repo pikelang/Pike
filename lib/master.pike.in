@@ -2874,6 +2874,10 @@ class dirnode (string dirname, object|void compilation_handler,
       return cache[index];
     }
 
+    if(module == predef::__placeholder_object)
+      // Need to check again, reinstate the checker...
+      module = module_checker();
+
     if(module)
     {
       mixed o;
@@ -2912,7 +2916,7 @@ class dirnode (string dirname, object|void compilation_handler,
 
   protected mixed `[]=(string index, mixed value)
   {
-    if(module && has_index(module, index))
+    if(module && module != predef::__placeholder_object && has_index(module, index))
       return module[index]=value,cache[index]=value;
     error("No such variable (%s) in object.\n", index);
   }
