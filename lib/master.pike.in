@@ -2721,48 +2721,60 @@ class dirnode (string dirname, object|void compilation_handler,
 
   protected class module_checker
   {
-    protected int `!()
+    private mixed get()
     {
-      resolv_debug ("dirnode(%O)->module_checker()->`!()\n",dirname);
+      if (module != this) return module;
+
+      resolv_debug ("dirnode(%O)->module_checker()->get()\n",dirname);
 
       if (mixed err = catch {
-	// Look up module.
-        if (module = cache["module"] ||
-            low_ind("module", __null_program())) {
-	  /* This allows for `[] to have side effects first time
-	   * it is called. (Specifically, the Calendar module uses
-	   * this).
-	   */
-	  cache=([]);
+        // Look up module.
+        mixed m = cache["module"] || low_ind("module", __null_program());
+        if (m == predef::__placeholder_object) {
+          resolv_debug("dirnode(%O)->module_checker()->get() => placeholder\n",
+                       dirname);
+          // Don't replace module yet
+          return m;
+        } else if (module = m) {
+          /* This allows for `[] to have side effects first time
+           * it is called. (Specifically, the Calendar module uses
+           * this).
+           */
+          cache=([]);
           deprecated_cache=([]);
-	  _cache_full=0;
-	}
-	resolv_debug("dirnode(%O)->module_checker()->`!() => %s\n",
-		     dirname, !module ? "doesn't exist" : "exists");
-	return !module;
+          _cache_full=0;
+        }
+        resolv_debug("dirnode(%O)->module_checker()->get() => %s\n",
+                     dirname, !module ? "doesn't exist" : "exists");
+        return module;
       }) {
-	//werror ("findmodule error: " + call_describe_backtrace (err));
+        //werror ("findmodule error: " + call_describe_backtrace (err));
 
-	// findmodule() failed. This can occur due to circularities
-	// between encode_value()'ed programs.
-	// The error will then typically be:
-	// "Cannot call functions in unfinished objects."
+        // findmodule() failed. This can occur due to circularities
+        // between encode_value()'ed programs.
+        // The error will then typically be:
+        // "Cannot call functions in unfinished objects."
 
-	// Pretend not to exist for now...
-	resolv_debug("dirnode(%O)->module_checker()->`!() => failure, doesn't exist\n",
-		     dirname);
-	return 1;
+        // Pretend not to exist for now...
+        resolv_debug("dirnode(%O)->module_checker()->get() => failure, doesn't exist\n",
+                     dirname);
+        return 0;
       }
+    }
+
+    protected int `!()
+    {
+      return !get();
     }
 
     protected mixed `[](string index)
       {
         resolv_debug ("dirnode(%O)->module_checker()[%O] => %O\n",
 		      dirname, index, module[?index]);
-	return module[?index];
+	return get()[?index];
       }
-    protected array(string) _indices() { if(module) return indices(module); }
-    protected array _values() { if(module) return values(module); }
+    protected array(string) _indices() { if(mixed m=get()) return indices(m); }
+    protected array _values() { if(mixed m=get()) return values(m); }
   }
 
   protected mixed low_ind(string index, object|void placeholder)
@@ -2874,10 +2886,6 @@ class dirnode (string dirname, object|void compilation_handler,
       return cache[index];
     }
 
-    if(module == predef::__placeholder_object)
-      // Need to check again, reinstate the checker...
-      module = module_checker();
-
     if(module)
     {
       mixed o;
@@ -2916,7 +2924,7 @@ class dirnode (string dirname, object|void compilation_handler,
 
   protected mixed `[]=(string index, mixed value)
   {
-    if(module && module != predef::__placeholder_object && has_index(module, index))
+    if(module && has_index(module, index))
       return module[index]=value,cache[index]=value;
     error("No such variable (%s) in object.\n", index);
   }
