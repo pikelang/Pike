@@ -4970,6 +4970,29 @@ test_compile_warning([[
   };
 ]])
 
+test_compile_warning([[
+  class Test {
+    private string `private_getter() {
+      return "private";
+    }
+  };
+]]);
+
+test_any([[
+  // Bug #10136.
+  class Test {
+    private string `private_getter() {
+      return "private";
+    }
+
+    string get() {
+      return private_getter;
+    }
+  }
+
+  return Test()->get();
+]], "private");
+
 test_do([[
   // bug 3006
   class X {
