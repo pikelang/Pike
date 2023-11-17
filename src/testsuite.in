@@ -10475,6 +10475,24 @@ FOO(foo)", ([
     "FOO(X)":"X Y X",
   ]),
 ]))]], "\n foo  Y  foo ")
+test_any_equal([[
+  // Bug #10135
+#define ENTRY(A, B, C, ARGS ...) ({ ({ C, ARGS }), ({ A, B }) })
+  return ({ ENTRY(1, 1, "%s", "one"),
+            ENTRY(1, 1, "%s %s", "one", "two"),
+            ENTRY(1, 1, "%s %s %s", "one", "two", "three"),
+            ENTRY(1, 1, "%s %d", "one", 2),
+            ENTRY(1, 1, "%s %d %d", "one", 2, 3),
+            ENTRY(1, 1, "%s %d %s", "one", 2, "three"),
+  });
+]],[[ ({
+    ({ ({ "%s", "one" }), ({ 1, 1 }) }),
+    ({ ({ "%s %s", "one", "two" }), ({ 1, 1 }) }),
+    ({ ({ "%s %s %s", "one", "two", "three" }), ({ 1, 1 }) }),
+    ({ ({ "%s %d", "one", 2 }), ({ 1, 1 }) }),
+    ({ ({ "%s %d %d", "one", 2, 3 }), ({ 1, 1 }) }),
+    ({ ({ "%s %d %s", "one", 2, "three" }), ({ 1, 1 }) }),
+  }) ]])
 
 // The following three tests are in triplicate to force testing in all shifts.
 test_do([[

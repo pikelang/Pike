@@ -272,8 +272,8 @@ PIKECLASS define
 	} else if ((d->flags & CPP_MACRO_VARARGS) &&
 		   (arguments2->size > d->args)) {
 	  /* Join all the varargs with commas. */
-	  push_array(slice_array(arguments2, 0, d->args-1));
-	  push_array(slice_array(arguments2, d->args-1, arguments2->size));
+          push_array(friendly_slice_array(arguments2, 0, d->args-1));
+          push_array(friendly_slice_array(arguments2, d->args-1, arguments2->size));
 	  push_text(",");
 	  o_multiply();
 	  f_aggregate(1);
