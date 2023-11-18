@@ -775,6 +775,14 @@ PMOD_EXPORT ptrdiff_t array_search(struct array *v, const struct svalue *s,
  * @param start the beginning element to be included
  * @param end the element beyond the end of the slice
  * @return an array consisting of v[start..end-1]
+ *
+ * NOTE: Dangerous as it has an unconventional API!
+ * The original array will keep its reference regardless
+ * of whether it has been reused (and thus been altered)
+ * or not.
+ *
+ * The conventional API would have been to steal/free a reference
+ * from v. This is NOT done here!
  */
 PMOD_EXPORT struct array *slice_array(struct array *v, ptrdiff_t start,
 				      ptrdiff_t end)
