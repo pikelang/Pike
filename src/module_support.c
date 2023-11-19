@@ -457,8 +457,10 @@ static int va_get_args_2(struct svalue *s,
 	  /* FALLTHRU */
 
 	default:
-	  if (*fmt == 'P' && UNSAFE_IS_ZERO(s))
+	  if (*fmt == 'P' && UNSAFE_IS_ZERO(s)) {
 	    *cast_arg(ptr, struct program **) = NULL;
+            break;
+          }
 	  goto type_err;
       }
       break;
