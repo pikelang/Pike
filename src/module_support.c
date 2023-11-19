@@ -79,8 +79,10 @@ PMOD_EXPORT int check_args(int args, ...)
 
 static const char* get_fname(const char *fname)
 {
+  struct identifier *id;
   if (fname) return fname;
-  return (Pike_fp->context->prog->identifiers + Pike_fp->fun)->name->str;
+  id = ID_FROM_INT(Pike_fp->current_program, Pike_fp->fun);
+  return id->name->str;
 }
 
 /* This function generates errors if any of the args first arguments
