@@ -161,7 +161,7 @@ protected class LowState {
 
 #if constant(Nettle.rsa_generate_keypair)
 
-  this_program generate_key(int bits, int(1..) e = 0x10001)
+  this_program generate_key(int(89..) bits, int(1..) e = 0x10001)
   {
     // While a smaller e is possible, and more efficient, using 0x10001
     // has become standard and is the only value supported by several
@@ -190,7 +190,7 @@ protected class LowState {
     int len = (bits + 7) / 8;
     int bit_to_set = 1 << ( (bits - 1) % 8);
 
-    Gmp.mpz p;
+    object(Gmp.mpz)|zero p;
 
     do {
       string(8bit) s = r([int(0..)]len);
@@ -199,14 +199,14 @@ protected class LowState {
 		  256)->next_prime();
     } while (p->size() > bits);
 
-    return p;
+    return [object]p;
   }
 
   //! Generate a valid RSA key pair with the size @[bits] using the
   //! random function set with @[set_random()]. The public exponent @[e]
   //! will be used, which defaults to 65537. Keys must be at least 89
   //! bits.
-  this_program generate_key(int(128..) bits, int(1..)|Gmp.mpz e = 0x10001)
+  this_program generate_key(int(89..) bits, int(1..)|Gmp.mpz e = 0x10001)
   {
     if (bits < 128)
       error( "Ridiculously small key.\n" );
@@ -236,12 +236,12 @@ protected class LowState {
     int s1 = bits / 2; /* Size of the first prime */
     int s2 = 1 + bits - s1;
 
-    string(8bit) msg = "A" * (bits/8-3-8);
+    string(8bit) msg = "A" * (([int(11..)](bits/8))-3-8);
 
     do {
-      Gmp.mpz p;
-      Gmp.mpz q;
-      Gmp.mpz mod;
+      object(Gmp.mpz)|zero p;
+      object(Gmp.mpz)|zero q;
+      object(Gmp.mpz)|zero mod;
       do {
 	p = get_prime(s1, random);
 	q = get_prime(s2, random);
@@ -250,7 +250,7 @@ protected class LowState {
       Gmp.mpz phi = [object(Gmp.mpz)](Gmp.mpz([object(Gmp.mpz)](p-1))*
 				      Gmp.mpz([object(Gmp.mpz)](q-1)));
 
-      array(Gmp.mpz) gs; /* gcd(pub, phi), and pub^-1 mod phi */
+      array(Gmp.mpz)|zero gs; /* gcd(pub, phi), and pub^-1 mod phi */
 
       // For security reason we need to ensure no common denominator
       // between n and phi. We could create a different exponent, but
