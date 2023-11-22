@@ -4866,6 +4866,21 @@ void compiler_add_program_annotations(int inh, node *annotations)
   }
 }
 
+static void zap_constants(struct program *p)
+{
+  /* Free the constants in the failed program, to untangle the
+   * cyclic references we might have to this program, typically
+   * in parent pointers in nested classes. */
+  if (p->constants) {
+    int i;
+    for (i = 0; i < p->num_constants; i++) {
+      free_svalue(&p->constants[i].sval);
+      SET_SVAL(p->constants[i].sval, T_INT, NUMBER_NUMBER,
+               integer, 0);
+    }
+  }
+}
+
 /**
  * End the current compilation pass.
  *
@@ -5102,6 +5117,7 @@ struct program *end_first_pass(int finish)
     CDFPRINTF("th(%ld) %p Compilation errors (%d).\n",
               (long)th_self(), Pike_compiler->new_program,
               Pike_compiler->num_parse_error);
+    zap_constants(prog);
     prog=0;
   }else{
     prog=Pike_compiler->new_program;
@@ -5127,6 +5143,7 @@ struct program *end_first_pass(int finish)
       fixate_program();
       if(Pike_compiler->num_parse_error)
       {
+        zap_constants(prog);
 	free_program(prog);
 	prog=0;
       }else{
