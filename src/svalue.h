@@ -172,6 +172,7 @@ enum PIKE_TYPE {
     PIKE_T_INT_OP_MIN = 0xc480,	/* int(MIN(min(car), min(cdr)) .. MIN(max(car), max(cdr))) */
     PIKE_T_INT_OP_MAX = 0xc580,	/* int(MAX(min(car), min(cdr)) .. MAX(max(car), max(cdr))) */
     PIKE_T_INT_OP_MUL = 0xc680,	/* INT OP `*. */
+    PIKE_T_INT_OP_DIV = 0xc780,	/* INT OP `/. */
 
     PIKE_T_TRANSITIVE = 0x00c0,	/* Repeatedly apply a function type. */
 
@@ -455,6 +456,7 @@ struct svalue
 #define tMaxInt(X, Y)		"\200\305" X Y
 
 #define tMulInt(X, Y)		"\200\306" X Y
+#define tDivInt(X, Y)		"\200\307" X Y
 
 #define tTransitive(X, Y)	"\300" X Y
 

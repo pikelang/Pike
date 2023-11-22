@@ -13729,6 +13729,49 @@ struct pike_type *low_type_int_op(enum PIKE_TYPE op,
     }
     break;
 
+  case PIKE_T_INT_OP_DIV:
+    if ((min2 <= 0) && (max2 >= 0)) break;	/* arg2 may be zero. */
+    if ((min1 == MIN_INT32) && (max1 == MAX_INT32)) break; /* arg1 unlimited. */
+
+    if (max2 < 0) {
+      /* arg2 < 0 */
+      /* Negate arg1 and arg2. */
+      INT64 tmp = (max2 == MIN_INT32)?MAX_INT32:-max2;
+      max2 = (min2 == MIN_INT32)?MAX_INT32:-min2;
+      min2 = tmp;
+
+      tmp = (min1 == MIN_INT32)?MAX_INT32:(min1 == MAX_INT32)?MIN_INT32:-min1;
+      min1 = (max1 == MIN_INT32)?MAX_INT32:(max1 == MAX_INT32)?MIN_INT32:-max1;
+      max1 = tmp;
+    }
+
+    /* arg2 > 0 */
+    if (max1 < 0) {
+      /* arg1 < 0 */
+      if (max2 < MAX_INT32) {
+        maxres = max1 / max2;
+      } else {
+        maxres = 0;
+      }
+      if (min1 > MIN_INT32) {
+        minres = min1 / min2;
+      }
+    } else {
+      if (max1 < MAX_INT32) {
+        maxres = max1 / min2;
+      }
+      if (min1 >= 0) {
+        if (max2 < MAX_INT32) {
+          minres = min1 / max2;
+        } else {
+          minres = 0;
+        }
+      } else if (min1 > MIN_INT32) {
+        minres = min1 / min2;
+      }
+    }
+    break;
+
   case PIKE_T_INT_OP_AND:
   case PIKE_T_INT_OP_XOR:
     minres = (INT32)evaluate_binop_min(op,
@@ -13879,6 +13922,7 @@ struct pike_type *apply_type_operator(enum PIKE_TYPE op,
     break;
   case PIKE_T_INT_OP_SUB:
   case PIKE_T_INT_OP_MUL:
+  case PIKE_T_INT_OP_DIV:
   case PIKE_T_INT_OP_AND:
   case PIKE_T_INT_OP_XOR:
   case PIKE_T_INT_OP_RANGE:
