@@ -1206,6 +1206,7 @@ static int run_pass1(struct compilation *c)
     if(c->placeholder->prog != null_program)
     {
       yyerror("Placeholder argument is not a null_program clone!");
+      free_object(c->placeholder);
       c->placeholder=0;
       debug_malloc_touch(c->placeholder);
     }else{
