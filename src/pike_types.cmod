@@ -13750,11 +13750,19 @@ struct pike_type *low_type_int_op(enum PIKE_TYPE op,
       /* arg1 < 0 */
       if (max2 < MAX_INT32) {
         maxres = max1 / max2;
+        if (max1 % max2) {
+          /* Round towards negative infinity. Cf o_divide(). */
+          maxres--;
+        }
       } else {
         maxres = 0;
       }
       if (min1 > MIN_INT32) {
         minres = min1 / min2;
+        if (min1 % min2) {
+          /* Round towards negative infinity. Cf o_divide(). */
+          minres--;
+        }
       }
     } else {
       if (max1 < MAX_INT32) {
@@ -13768,6 +13776,10 @@ struct pike_type *low_type_int_op(enum PIKE_TYPE op,
         }
       } else if (min1 > MIN_INT32) {
         minres = min1 / min2;
+        if (min1 % min2) {
+          /* Round towards negative infinity. Cf o_divide(). */
+          minres--;
+        }
       }
     }
     break;
