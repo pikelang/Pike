@@ -659,14 +659,10 @@ static struct pike_type *debug_mk_type(unsigned INT32 type,
     /* Do not create a type node when not needed in some common cases. */
     switch(type) {
     case PIKE_T_SCOPE:
-    case PIKE_T_ASSIGN:
       return NULL;
     case PIKE_T_NAME:
-    case PIKE_T_ATTRIBUTE:
       free_string((struct pike_string *)debug_malloc_pass(car));
       return NULL;
-    case PIKE_T_FUNCTION:
-    case PIKE_T_MANY:
     case PIKE_T_AND:
       free_type(car);
       return NULL;
