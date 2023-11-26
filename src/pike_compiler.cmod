@@ -1436,7 +1436,7 @@ static void run_cleanup(struct compilation *c, int delayed)
   {
     if (c->placeholder)
     {
-      if (c->target->flags & PROGRAM_FINISHED) {
+      if (c->p->flags & PROGRAM_FINISHED) {
 	JMP_BUF rec;
 	/* Initialize the placeholder. */
 #ifdef PIKE_DEBUG
