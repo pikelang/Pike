@@ -991,11 +991,20 @@ void debug_push_type_operator(enum PIKE_TYPE op, struct pike_type *arg)
 
   /* Attempt to propagate the operator towards the leaf nodes. */
   switch(t?(t->type & PIKE_T_MASK):PIKE_T_UNKNOWN) {
+  case PIKE_T_SCOPE:
+    if (!(t->flags & PT_FLAG_MARK_ASSIGN)) {
+      Pike_compiler->type_stackp--;
+      push_finished_type(t->cdr);
+      push_type_operator(op, arg);
+      push_scope_type(0);
+      free_type(t);
+      break;
+    }
+    /* FALLTHRU */
   case '0': case '1': case '2': case '3': case '4':
   case '5': case '6': case '7': case '8': case '9':
   case T_ASSIGN:
   case PIKE_T_OPERATOR:
-  case PIKE_T_SCOPE:
     /* Deferred evaluation. */
     if (op & 0x8000) {
       if (arg) add_ref(arg);
@@ -1054,11 +1063,17 @@ void debug_push_type_operator(enum PIKE_TYPE op, struct pike_type *arg)
   default:
     /* Check the second argument. */
     switch(((op & 0x8000) && arg)?(arg->type & PIKE_T_MASK):PIKE_T_UNKNOWN) {
+    case PIKE_T_SCOPE:
+      if (!(arg->flags & PT_FLAG_MARK_ASSIGN)) {
+        push_type_operator(op, arg->cdr);
+        push_scope_type(0);
+        break;
+      }
+      /* FALLTHRU */
     case '0': case '1': case '2': case '3': case '4':
     case '5': case '6': case '7': case '8': case '9':
     case T_ASSIGN:
     case PIKE_T_OPERATOR:
-    case PIKE_T_SCOPE:
       /* Deferred evaluation. */
       add_ref(arg);
       *Pike_compiler->type_stackp = mk_type(op,
@@ -13879,6 +13894,7 @@ struct pike_type *type_int_op(enum PIKE_TYPE op,
       break;
     case PIKE_T_ATTRIBUTE:
     case PIKE_T_NAME:
+    case PIKE_T_SCOPE:
       arg1 = arg1->cdr;
       continue;
     }
@@ -13892,6 +13908,7 @@ struct pike_type *type_int_op(enum PIKE_TYPE op,
       break;
     case PIKE_T_ATTRIBUTE:
     case PIKE_T_NAME:
+    case PIKE_T_SCOPE:
       arg2 = arg2->cdr;
       continue;
     }
@@ -13906,6 +13923,29 @@ struct pike_type *type_int_op(enum PIKE_TYPE op,
     /* FIXME: Check type for LFUN corresponding to op. */
     add_ref(mixed_type_string);
     return mixed_type_string;
+  }
+  /* NB: When scopes are involved, the operator may not have
+   *     propagated all the way to the leaves.
+   */
+  switch(arg1->type) {
+  case PIKE_T_OR:
+    return type_binop(PT_BINOP_OR,
+                      type_int_op(op, arg1->car, arg2),
+                      type_int_op(op, arg1->cdr, arg2), 0, 0, 0);
+  case PIKE_T_AND:
+    return type_binop(PT_BINOP_AND,
+                      type_int_op(op, arg1->car, arg2),
+                      type_int_op(op, arg1->cdr, arg2), 0, 0, 0);
+  }
+  switch(arg2->type) {
+  case PIKE_T_OR:
+    return type_binop(PT_BINOP_OR,
+                      type_int_op(op, arg1, arg2->car),
+                      type_int_op(op, arg1, arg2->cdr), 0, 0, 0);
+  case PIKE_T_AND:
+    return type_binop(PT_BINOP_AND,
+                      type_int_op(op, arg1, arg2->car),
+                      type_int_op(op, arg1, arg2->cdr), 0, 0, 0);
   }
   if (arg1->type != arg2->type) return NULL;
   switch(arg1->type) {
