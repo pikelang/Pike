@@ -13915,11 +13915,27 @@ struct pike_type *type_int_op(enum PIKE_TYPE op,
     break;
   }
   if (arg1->type == PIKE_T_OBJECT) {
+    if ((CDR_TO_INT(arg1) == PROG_GMP_MPZ_ID) ||
+        (CDR_TO_INT(arg1) == PROG_GMP_BIGNUM_ID)) {
+      type_stack_mark();
+      push_finished_type(arg1);
+      push_finished_type(int_type_string);
+      push_type(T_OR);
+      return pop_unfinished_type();
+    }
     /* FIXME: Check type for LFUN corresponding to op. */
     add_ref(mixed_type_string);
     return mixed_type_string;
   }
   if (arg2->type == PIKE_T_OBJECT) {
+    if ((CDR_TO_INT(arg2) == PROG_GMP_MPZ_ID) ||
+        (CDR_TO_INT(arg2) == PROG_GMP_BIGNUM_ID)) {
+      type_stack_mark();
+      push_finished_type(arg2);
+      push_finished_type(int_type_string);
+      push_type(T_OR);
+      return pop_unfinished_type();
+    }
     /* FIXME: Check type for LFUN corresponding to op. */
     add_ref(mixed_type_string);
     return mixed_type_string;
