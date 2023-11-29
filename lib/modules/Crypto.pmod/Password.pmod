@@ -120,6 +120,8 @@ int verify(string password, string hash)
 {
   if (hash == "") return 1;
 
+  int ret;
+
   // Detect the password hashing scheme.
   // First check for an LDAP-style marker.
   string scheme = "crypt";
@@ -180,11 +182,25 @@ int verify(string password, string hash)
 
       // cf http://www.akkadia.org/drepper/SHA-crypt.txt
     case "5":	// SHA-256
-      return Crypto.SHA256.crypt_hash(password, salt, rounds) ==
+      ret = Crypto.SHA256.crypt_hash(password, salt, rounds) ==
+        [string(0..127)]hash;
+      if (ret || (sizeof(passwd) & (sizeof(passwd)-1))) return ret;
+      return Crypto.SHA256.crypt_hash_pike(password, salt, rounds) ==
+        [string(0..127)]hash;
+
+    case "5p":	// SHA-256 (pike)
+      return Crypto.SHA256.crypt_hash_pike(password, salt, rounds) ==
         [string(0..127)]hash;
 #if constant(Nettle.SHA512_Info)
     case "6":	// SHA-512
-      return Crypto.SHA512.crypt_hash(password, salt, rounds) ==
+      ret = Crypto.SHA512.crypt_hash(password, salt, rounds) ==
+        [string(0..127)]hash;
+      if (ret || (sizeof(passwd) & (sizeof(passwd)-1))) return ret;
+      return Crypto.SHA512.crypt_hash_pike(password, salt, rounds) ==
+        [string(0..127)]hash;
+
+    case "6p":	// SHA-512 (pike)
+      return Crypto.SHA512.crypt_hash_pike(password, salt, rounds) ==
         [string(0..127)]hash;
 #endif
     }
@@ -314,11 +330,21 @@ string(0..127) hash(string password, string|void scheme, int|void rounds)
     crypt_hash = Crypto.SHA512.crypt_hash;
     scheme = "6";
     break;
+  case "6p":
+  case "$6p$":
+    crypt_hash = Crypto.SHA512.crypt_hash_pike;
+    scheme = "6p";
+    break;
 #endif
   case "5":
   case "$5$":
     crypt_hash = Crypto.SHA256.crypt_hash;
     scheme = "5";
+    break;
+  case "5p":
+  case "$5p$":
+    crypt_hash = Crypto.SHA256.crypt_hash_pike;
+    scheme = "5p";
     break;
   case "1":
   case "$1$":
