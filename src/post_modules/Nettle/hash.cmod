@@ -255,6 +255,10 @@ PIKECLASS HashInfo
    *!
    *!   The @[password] memory will be cleared before released.
    *!
+   *! @note
+   *!   In Pike 8.0.1876 and earlier this function generated incompatible
+   *!   hashes for passwords that had a length that was a power of 2.
+   *!
    *! @seealso
    *!   @[crypt_md5()]
    */
@@ -341,7 +345,7 @@ PIKECLASS HashInfo
 
     meta->update(ctx, plen - i, abcbuf);			/* 10 */
 
-    for (i = 1; i < plen; i <<= 1) {				/* 11 */
+    for (i = 1; i <= plen; i <<= 1) {				/* 11 */
       if (plen & i) {
 	meta->update(ctx, dsz, abcbuf);
       } else {

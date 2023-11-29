@@ -106,6 +106,10 @@ protected constant base64tab =
 //!   This is the algorithm used by @tt{crypt(2)@} in
 //!   methods @tt{$5$@} (SHA256) and @tt{$6$@} (SHA512).
 //!
+//! @note
+//!   In Pike 8.0.1876 and earlier this function generated incompatible
+//!   hashes for passwords that had a length that was a power of 2.
+//!
 //! @seealso
 //!   @[crypt_md5()]
 string crypt_hash(string password, string salt, int rounds)
@@ -137,7 +141,7 @@ string crypt_hash(string password, string salt, int rounds)
     }
   }
 
-  for (int i = 1; i < sizeof(password); i <<= 1) {		/* 11 */
+  for (int i = 1; i <= sizeof(password); i <<= 1) {		/* 11 */
     if (sizeof(password) & i) {
       update(b);
     } else {
