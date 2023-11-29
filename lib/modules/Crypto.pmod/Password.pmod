@@ -187,6 +187,8 @@ int verify(string(8bit) password, string(7bit) hash)
     hash = hash[1..];
   }
 
+  int ret;
+
   array(string(7bit)) split = [array(string(7bit))](hash/"$");
   switch( split[0] ) {
   case "pbkdf2_sha256":  // As implemented by Django
@@ -259,15 +261,32 @@ int verify(string(8bit) password, string(7bit) hash)
 	sscanf(salt, "rounds=%u", rounds);
 	sscanf(hash, "%s$%s", salt, hash);
       }
-      return Crypto.SHA256.crypt_hash(passwd, salt, rounds) == hash;
+      ret = Crypto.SHA256.crypt_hash(passwd, salt, rounds) == hash;
+      if (ret || (sizeof(passwd) & (sizeof(passwd)-1))) return ret;
+      return Crypto.SHA256.crypt_hash_pike(passwd, salt, rounds) == hash;
 
+    case "5p":	// SHA-256 (pike)
+      if (salt && has_prefix(salt, "rounds=")) {
+        sscanf(salt, "rounds=%u", rounds);
+        sscanf(hash, "%s$%s", salt, hash);
+      }
+      return Crypto.SHA256.crypt_hash_pike(passwd, salt, rounds) == hash;
 #if constant(Crypto.SHA512)
     case "6":	// SHA-512
       if (salt && has_prefix(salt, "rounds=")) {
 	sscanf(salt, "rounds=%u", rounds);
 	sscanf(hash, "%s$%s", salt, hash);
       }
-      return Crypto.SHA512.crypt_hash(passwd, salt, rounds) == hash;
+      ret = Crypto.SHA512.crypt_hash(passwd, salt, rounds) == hash;
+      if (ret || (sizeof(passwd) & (sizeof(passwd)-1))) return ret;
+      return Crypto.SHA512.crypt_hash_pike(passwd, salt, rounds) == hash;
+
+    case "6p":	// SHA-512 (pike)
+      if (salt && has_prefix(salt, "rounds=")) {
+        sscanf(salt, "rounds=%u", rounds);
+        sscanf(hash, "%s$%s", salt, hash);
+      }
+      return Crypto.SHA512.crypt_hash_pike(passwd, salt, rounds) == hash;
 #endif
 
     case "pbkdf2":		// PBKDF2 with SHA1
@@ -507,10 +526,20 @@ string(7bit) hash(string(8bit) password, string(7bit)|void scheme,
     crypt_hash = Crypto.SHA512.crypt_hash;
     scheme = "6";
     break;
+  case "6p":
+  case "$6p$":
+    crypt_hash = Crypto.SHA512.crypt_hash_pike;
+    scheme = "6p";
+    break;
 #endif
   case "5":
     crypt_hash = Crypto.SHA256.crypt_hash;
     scheme = "5";
+    break;
+  case "5p":
+  case "$5p$":
+    crypt_hash = Crypto.SHA256.crypt_hash_pike;
+    scheme = "5p";
     break;
 #if constant(Nettle.bcrypt_hash)
   case "2":	// Blowfish (obsolete)
