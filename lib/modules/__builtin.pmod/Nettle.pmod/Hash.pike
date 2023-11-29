@@ -266,13 +266,13 @@ string(7bit) crypt_hash(string(8bit) password, string(8bit) salt,
   // FIXME: Send the first param directly to create()?
   State hash_obj = State();
 
-  function(string:State) update = hash_obj->update;
-  function(:string) digest = hash_obj->digest;
+  function(string(8bit):State) update = hash_obj->update;
+  function(:string(8bit)) digest = hash_obj->digest;
 
   salt = salt[..15];
 
   /* NB: Comments refer to http://www.akkadia.org/drepper/SHA-crypt.txt */
-  string b = update(password + salt + password)->digest();	/* 5-8 */
+  string(8bit) b = update(password + salt + password)->digest(); /* 5-8 */
 
   update(password + salt);					/* 2-3 */
 
@@ -294,12 +294,12 @@ string(7bit) crypt_hash(string(8bit) password, string(8bit) salt,
     }
   }
 
-  string a = digest();						/* 12 */
+  string(8bit) a = digest();					/* 12 */
 
   for (int i = 0; i < sizeof(password); i++) {			/* 14 */
     update(password);
   }
-  string dp = digest();						/* 15 */
+  string(8bit) dp = digest();					/* 15 */
 
   if (sizeof(dp) && (sizeof(dp) != sizeof(password))) {
     dp *= 1 + (sizeof(password)-1)/sizeof(dp);			/* 16 */
@@ -309,7 +309,7 @@ string(7bit) crypt_hash(string(8bit) password, string(8bit) salt,
   for(int i = 0; i < 16 + (a[0] & 0xff); i++) {			/* 18 */
     update(salt);
   }
-  string ds = digest();						/* 19 */
+  string(8bit) ds = digest();					/* 19 */
 
   if (sizeof(ds) && (sizeof(ds) != sizeof(salt))) {
     ds *= 1 + (sizeof(salt)-1)/sizeof(ds);			/* 20 */
