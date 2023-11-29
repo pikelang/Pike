@@ -84,6 +84,10 @@
 //!     Source: Unix crypt using SHA-256 and SHA-512
 //!     @url{http://www.akkadia.org/drepper/SHA-crypt.txt@}
 //!
+//!   @value "$3$$XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+//!     This is interpreted as the NT LANMANAGER (NTLM) password
+//!     hash. It is a hax representation of MD4 of the password.
+//!
 //!   @value "$1$SSSSSSSS$XXXXXXXXXXXXXXXXXXXXXX"
 //!     The string is interpreted according to the GNU libc2 extension
 //!     of @expr{crypt(3C)@} where @expr{SSSSSSSS@} is up to 8 chars of
@@ -116,6 +120,8 @@ int verify(string(8bit) password, string(8bit) hash)
 {
   if (hash == "") return 1;
 
+  int ret;
+
   // Detect the password hashing scheme.
   // First check for an LDAP-style marker.
   string scheme = "crypt";
@@ -141,7 +147,9 @@ int verify(string(8bit) password, string(8bit) hash)
   case "crypt":	// RFC 2307
     // First try the operating systems crypt(3C),
     // since it might support more schemes than we do.
-    if ((hash == "") || crypt(password, hash)) return 1;
+    catch {
+      if ((hash == "") || crypt(password, hash)) return 1;
+    };
     if (hash[0] != '$') {
       if (hash[0] == '_') {
 	// FIXME: BSDI-style crypt(3C).
@@ -167,15 +175,31 @@ int verify(string(8bit) password, string(8bit) hash)
     case "2y":	// Blowfish (stronger)
       break;
 
+    case "nt":
     case "3":	// MD4 NT LANMANAGER (FreeBSD)
+      return this::hash(password, "3")[4..] == [string(7bit)]hash;
       break;
 
       // cf http://www.akkadia.org/drepper/SHA-crypt.txt
     case "5":	// SHA-256
-      return Crypto.SHA256.crypt_hash(password, salt, rounds) ==
+      ret = Crypto.SHA256.crypt_hash(password, salt, rounds) ==
+        [string(7bit)]hash;
+      if (ret || (sizeof(passwd) & (sizeof(passwd)-1))) return ret;
+      return Crypto.SHA256.crypt_hash_pike(password, salt, rounds) ==
+        [string(7bit)]hash;
+
+    case "5p":	// SHA-256 (pike)
+      return Crypto.SHA256.crypt_hash_pike(password, salt, rounds) ==
         [string(7bit)]hash;
 #if constant(Crypto.SHA512)
     case "6":	// SHA-512
+      ret = Crypto.SHA512.crypt_hash(password, salt, rounds) ==
+        [string(7bit)]hash;
+      if (ret || (sizeof(passwd) & (sizeof(passwd)-1))) return ret;
+      return Crypto.SHA512.crypt_hash_pike(password, salt, rounds) ==
+        [string(7bit)]hash;
+
+    case "6p":	// SHA-512 (pike)
       return Crypto.SHA512.crypt_hash(password, salt, rounds) ==
         [string(7bit)]hash;
 #endif
@@ -214,6 +238,10 @@ int verify(string(8bit) password, string(8bit) hash)
 //!     @value "$5$"
 //!       @[SHA256.crypt_hash()] with 96 bits of salt and a default
 //!       of @expr{5000@} rounds.
+//!
+//!     @value "3"
+//!     @value "NT"
+//!       The NTLM MD4 hash.
 //!
 //!     @value "1"
 //!     @value "$1$"
@@ -303,11 +331,21 @@ string(7bit) hash(string(8bit) password, string(7bit)|void scheme,
     crypt_hash = Crypto.SHA512.crypt_hash;
     scheme = "6";
     break;
+  case "6p":
+  case "$6p$":
+    crypt_hash = Crypto.SHA512.crypt_hash_pike;
+    scheme = "6p";
+    break;
 #endif
   case "5":
   case "$5$":
     crypt_hash = Crypto.SHA256.crypt_hash;
     scheme = "5";
+    break;
+  case "5p":
+  case "$5p$":
+    crypt_hash = Crypto.SHA256.crypt_hash_pike;
+    scheme = "5p";
     break;
   case "1":
   case "$1$":
@@ -319,6 +357,12 @@ string(7bit) hash(string(8bit) password, string(7bit)|void scheme,
     break;
   case "":
     return crypt(password);
+
+  case "nt":
+    scheme = "NT";
+  case "3":
+    password = [string(8bit)](reverse((string_to_unicode(password)/2)[*])*"");
+    return "$"+scheme+"$$"+String.string2hex(Crypto.MD4.hash(password));
 
   case "sha":
   case "{sha}":
@@ -352,7 +396,7 @@ string(7bit) hash(string(8bit) password, string(7bit)|void scheme,
 
   // NB: The salt must be printable.
   string(7bit) salt =
-    MIME.encode_base64(Crypto.Random.random_string(salt_size))[..salt_size-1];
+    replace(MIME.encode_base64(Crypto.Random.random_string(salt_size))[..salt_size-1], "+", ".");
 
   string(8bit) hash = crypt_hash(password, salt, rounds);
 
