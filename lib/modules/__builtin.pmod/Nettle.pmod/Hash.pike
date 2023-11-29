@@ -112,7 +112,8 @@ protected constant base64tab =
 //!
 //! @seealso
 //!   @[crypt_md5()]
-string crypt_hash(string password, string salt, int rounds)
+string(7bit) crypt_hash(string(8bit) password, string(8bit) salt,
+                        int(0..) rounds)
 {
   if (!rounds) rounds = 5000;
   if (rounds < 1000) rounds = 1000;

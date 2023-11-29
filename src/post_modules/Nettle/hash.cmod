@@ -243,7 +243,8 @@ PIKECLASS HashInfo
     }
   }
 
-  /*! @decl string(0..127) crypt_hash(string password, string salt, rounds)
+  /*! @decl string(7bit) crypt_hash(string(8bit) password, @
+   *!                               string(8bit) salt, int(0..) rounds)
    *!
    *!   Password hashing function in @[crypt_md5()]-style.
    *!
@@ -262,7 +263,13 @@ PIKECLASS HashInfo
    *! @seealso
    *!   @[crypt_md5()]
    */
-  PIKEFUN string(0..127) crypt_hash(string password, string salt, int rounds)
+  PIKEFUN string(0..127) crypt_hash(string password,
+                                    string salt, int rounds)
+    /* NB: We use a weaker type above to allow us to delay
+     *     throwing errors on wide strings until we've had
+     *     time to censor the password string.
+     */
+    rawtype tFunc(tStr8 tStr8 tIntPos, tStr7);
   {
     struct pike_string *res;
     const struct nettle_hash *meta = THIS->meta;
