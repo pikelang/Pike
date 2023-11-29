@@ -184,7 +184,7 @@ int verify(string(8bit) password, string(8bit) hash)
     case "5":	// SHA-256
       ret = Crypto.SHA256.crypt_hash(password, salt, rounds) ==
         [string(7bit)]hash;
-      if (ret || (sizeof(passwd) & (sizeof(passwd)-1))) return ret;
+      if (ret || (sizeof(password) & (sizeof(password)-1))) return ret;
       return Crypto.SHA256.crypt_hash_pike(password, salt, rounds) ==
         [string(7bit)]hash;
 
@@ -195,7 +195,7 @@ int verify(string(8bit) password, string(8bit) hash)
     case "6":	// SHA-512
       ret = Crypto.SHA512.crypt_hash(password, salt, rounds) ==
         [string(7bit)]hash;
-      if (ret || (sizeof(passwd) & (sizeof(passwd)-1))) return ret;
+      if (ret || (sizeof(password) & (sizeof(password)-1))) return ret;
       return Crypto.SHA512.crypt_hash_pike(password, salt, rounds) ==
         [string(7bit)]hash;
 
