@@ -160,7 +160,7 @@ int verify(string(8bit) password, string(8bit) hash)
     // Then try our implementations.
     sscanf(hash, "$%s$%s$%s", scheme, string(8bit) salt, string(8bit) hash);
     if( !salt || !hash ) return 0;
-    int rounds = UNDEFINED;
+    int(0..) rounds = UNDEFINED;
     if (has_prefix(salt, "rounds=")) {
       sscanf(salt, "rounds=%d", rounds);
       sscanf(hash, "%s$%s", salt, hash);
@@ -292,14 +292,14 @@ int verify(string(8bit) password, string(8bit) hash)
 //!   @[verify()], @[predef::crypt()], @[Nettle.crypt_md5()],
 //!   @[Nettle.Hash()->crypt_hash()]
 string(7bit) hash(string(8bit) password, string(7bit)|void scheme,
-                  int|void rounds)
+                  int(0..)|void rounds)
 {
-  function(string(8bit), string(7bit), int:string(8bit)) crypt_hash;
+  function(string(8bit), string(7bit), int(0..):string(8bit)) crypt_hash;
   int(0..) salt_size = 16;
-  int default_rounds = 5000;
+  int(0..) default_rounds = 5000;
 
   string(7bit) render_crypt_hash(string(7bit) scheme, string(7bit) salt,
-                                 string(8bit) hash, int rounds)
+                                 string(8bit) hash, int(0..) rounds)
   {
     if (rounds != default_rounds) {
       salt = "rounds=" + rounds + "$" + salt;
@@ -312,13 +312,13 @@ string(7bit) hash(string(8bit) password, string(7bit)|void scheme,
   };
 
   string(7bit) render_ldap_hash(string(8bit) scheme, string(7bit) salt,
-                                string(8bit) hash, int rounds)
+                                string(8bit) hash, int(0..) rounds)
   {
     if (scheme[0] != '{') scheme = "{" + scheme + "}";
     return [string(7bit)]upper_case(scheme) + MIME.encode_base64(hash + salt);
   };
 
-  function(string(7bit), string(7bit), string(8bit), int:string(7bit)) render_hash = render_crypt_hash;
+  function(string(7bit), string(7bit), string(8bit), int(0..):string(7bit)) render_hash = render_crypt_hash;
 
   switch(lower_case(scheme)) {
   case "crypt":
@@ -362,7 +362,8 @@ string(7bit) hash(string(8bit) password, string(7bit)|void scheme,
     scheme = "NT";
   case "3":
     password = [string(8bit)](reverse((string_to_unicode(password)/2)[*])*"");
-    return "$"+scheme+"$$"+String.string2hex(Crypto.MD4.hash(password));
+    return [string(7bit)]
+      ("$"+scheme+"$$"+String.string2hex(Crypto.MD4.hash(password)));
 
   case "sha":
   case "{sha}":
@@ -395,7 +396,7 @@ string(7bit) hash(string(8bit) password, string(7bit)|void scheme,
   if (!rounds) rounds = default_rounds;
 
   // NB: The salt must be printable.
-  string(7bit) salt =
+  string(7bit) salt = [string(7bit)]
     replace(MIME.encode_base64(Crypto.Random.random_string(salt_size))[..salt_size-1], "+", ".");
 
   string(8bit) hash = crypt_hash(password, salt, rounds);
