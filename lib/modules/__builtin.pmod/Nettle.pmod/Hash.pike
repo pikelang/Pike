@@ -312,6 +312,9 @@ private void b64enc(String.Buffer dest, int a, int b, int c, int sz)
 string(7bit) crypt_hash(string(8bit) password, string(8bit) salt,
                         int(0..) rounds)
 {
+  int(1..) dsz = [int(1..)]digest_size();
+  int(0..) plen = sizeof(password);
+
   if (!rounds) rounds = 5000;
   if (rounds < 1000) rounds = 1000;
   if (rounds > 999999999) rounds = 999999999;
@@ -319,73 +322,72 @@ string(7bit) crypt_hash(string(8bit) password, string(8bit) salt,
   // FIXME: Send the first param directly to create()?
   State hash_obj = State();
 
-  function(string:State) update = hash_obj->update;
-  function(:string) digest = hash_obj->digest;
+  function(string(8bit):State) update = hash_obj->update;
+  function(:string(8bit)) digest = hash_obj->digest;
 
   salt = salt[..15];
 
   /* NB: Comments refer to http://www.akkadia.org/drepper/SHA-crypt.txt */
-  string b = update(password + salt + password)->digest();	/* 5-8 */
+  string(8bit) b = update(password + salt + password)->digest();/* 5-8 */
+  update(password);						/* 2 */
+  update(salt);							/* 3 */
 
-  update(password + salt);					/* 2-3 */
-
-  if (sizeof(b)) {
+  void crypt_add(string(8bit) in, int len)
+  {
     int i;
-    for (i=sizeof(password); i <= sizeof(b); i += sizeof(b)) {	/* 9 */
-      update(b);
-    }
-    if (i) {							/* 10 */
-      update(b[..i-1]);
-    }
-  }
+    for (; i+dsz<len; i += dsz)
+      update(in);
+    update(in[..len-i-1]);
+  };
 
-  for (int i = 1; i <= sizeof(password); i <<= 1) {		/* 11 */
-    if (sizeof(password) & i) {
+  crypt_add(b, plen);						/* 9-10 */
+
+  for (int i = 1; i <= plen; i <<= 1) {				/* 11 */
+    if (plen & i)
       update(b);
-    } else {
+    else
       update(password);
-    }
   }
 
-  string a = digest();						/* 12 */
+  string(8bit) a = digest();					/* 12 */
 
-  for (int i = 0; i < sizeof(password); i++) {			/* 14 */
+  for (int i = 0; i < plen; i++)				/* 14 */
     update(password);
-  }
-  string dp = digest();						/* 15 */
 
-  if (sizeof(dp) && (sizeof(dp) != sizeof(password))) {
-    dp *= 1 + (sizeof(password)-1)/sizeof(dp);			/* 16 */
-    dp = dp[..sizeof(password)-1];
+  string(8bit) dp = digest();					/* 15 */
+
+  if (dsz != plen) {
+    dp *= [int(1..)](1 + (plen-1)/dsz);				/* 16 */
+    dp = dp[..plen-1];
   }
 
-  for(int i = 0; i < 16 + (a[0] & 0xff); i++) {			/* 18 */
+  for(int i = 0; i < 16 + (a[0] & 0xff); i++)			/* 18 */
     update(salt);
-  }
-  string ds = digest();						/* 19 */
 
-  if (sizeof(ds) && (sizeof(ds) != sizeof(salt))) {
-    ds *= 1 + (sizeof(salt)-1)/sizeof(ds);			/* 20 */
+  string(8bit) ds = digest();					/* 19 */
+
+  if (dsz != sizeof(salt)) {
+    ds *= [int(1..)](1 + (sizeof(salt)-1)/dsz);			/* 20 */
     ds = ds[..sizeof(salt)-1];
   }
 
   for (int r = 0; r < rounds; r++) {				/* 21 */
-    if (r & 1) {						/* b */
-      hash(dp);
-    } else {							/* c */
-      hash(a);
-    }
-    if (r % 3) {						/* d */
-      hash(ds);
-    }
-    if (r % 7) {						/* e */
-      hash(dp);
-    }
-    if (r & 1) {						/* f */
-      hash(a);
-    } else {							/* g */
-      hash(dp);
-    }
+    if (r & 1)
+      crypt_add(dp, plen);					/* b */
+    else							/* c */
+      update(a);
+
+    if (r % 3)							/* d */
+      crypt_add(ds, sizeof(salt));
+
+    if (r % 7)							/* e */
+      crypt_add(dp, plen);
+
+    if (r & 1)							/* f */
+      update(a);
+    else							/* g */
+      crypt_add(dp, plen);
+
     a = digest();						/* h */
   }
 
