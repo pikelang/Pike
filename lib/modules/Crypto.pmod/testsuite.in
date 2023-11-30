@@ -1696,10 +1696,10 @@ test_false( Crypto.Password.verify("hej","{x}") )
 test_false( Crypto.Password.verify("hej","{md5}") )
 test_false( Crypto.Password.verify("hej","{sha}") )
 test_true( Crypto.Password.verify("hej","{crypt}") )
-Crypto.Password.verify("hej","$x$");
-Crypto.Password.verify("hej","$1$$");
-Crypto.Password.verify("hej","$5$$");
-Crypto.Password.verify("hej","$6$$");
+test_false( Crypto.Password.verify("hej","$x$") )
+test_false( Crypto.Password.verify("hej","$1$$") )
+test_false( Crypto.Password.verify("hej","$5$$") )
+test_false( Crypto.Password.verify("hej","$6$$") )
 test_do([[
   add_constant( "P", Crypto.Password.verify );
 ]])
@@ -1790,6 +1790,18 @@ cond_resolv(Crypto.SHA256, [[
   test_true(P("we have a short salt string but not a short password", "$5$rounds=77777$short$JiO1O3ZpDAxGJeaDIuqCoEFysAe1mZNJRs3pw0KQRd/"))
   test_true(P("a short string", "$5$rounds=123456$asaltof16chars..$gP3VQ/6X7UUEW3HkBn2w1/Ptq2jxPyzV/cZKmF/wJvD"))
   test_true(P("the minimum number is still observed", "$5$rounds=1000$roundstoolow$yfvwcWrQ8l/K0DAWyuPMDNHpIVlTQebY9l/gL972bIC"))
+  // From Pike #10137
+  // Test some passwords with lengths that are powers of 2.
+  test_true(P("pass", "$5$rounds=10000$salt$Lffn09CeAx2gukDdao1thbgNhgpn41BG4JJNh0Nk6C/"))
+  test_false(P("pass", "$5p$rounds=10000$salt$Lffn09CeAx2gukDdao1thbgNhgpn41BG4JJNh0Nk6C/"))
+  test_true(P("pass", "$5$rounds=10000$salt$s2.jgIPueybkP3hvZqjt3ql5emK9LDBUGvrNc8Cfq3B"))
+  test_true(P("pass", "$5p$rounds=10000$salt$s2.jgIPueybkP3hvZqjt3ql5emK9LDBUGvrNc8Cfq3B"))
+  test_true(P("pass", "$5$rounds=10000$Pjj07C7RqLD+ydig$Heqa8mVcO6ttpcXxxtmYoRF6kuPDbieJgy8YPkNNpl."))
+  test_true(P("pass", "$5p$rounds=10000$Pjj07C7RqLD+ydig$Heqa8mVcO6ttpcXxxtmYoRF6kuPDbieJgy8YPkNNpl."))
+  test_true(P("pass", "$5$rounds=10000$Pjj07C7RqLD+ydig$56R7PRLYPMhN07ZhnoGFCKkNK5.N0ZDY0hViH4yG19/"))
+  test_false(P("pass", "$5p$rounds=10000$Pjj07C7RqLD+ydig$56R7PRLYPMhN07ZhnoGFCKkNK5.N0ZDY0hViH4yG19/"))
+  test_true(P("pass", "$5$rounds=10000$PKoyOiOCTDQTwjBS$jgKXglMIaloY8JPEz/Zp14q1S6qrG2DShYeEUuO4YC4"))
+  test_true(P("pass", "$5p$rounds=10000$PKoyOiOCTDQTwjBS$jgKXglMIaloY8JPEz/Zp14q1S6qrG2DShYeEUuO4YC4"))
 
   dnl From Django auth_tests/test_hashers.py
   test_true(P(string_to_utf8("l\xe8tmein"), "pbkdf2_sha256$320000$seasalt$Toj2II2rBvFiGQcPmUml1Nlni2UtvyRWwz/jz4q6q/4="))
@@ -1803,6 +1815,20 @@ cond_resolv(Crypto.SHA512, [[
   test_true(P("we have a short salt string but not a short password", "$6$rounds=77777$short$WuQyW2YR.hBNpjjRhpYD/ifIw05xdfeEyQoMxIXbkvr0gge1a1x3yRULJ5CCaUeOxFmtlcGZelFl5CxtgfiAc0"))
   test_true(P("a short string", "$6$rounds=123456$asaltof16chars..$BtCwjqMJGx5hrJhZywWvt0RLE8uZ4oPwcelCjmw2kSYu.Ec6ycULevoBK25fs2xXgMNrCzIMVcgEJAstJeonj1"))
   test_true(P("the minimum number is still observed", "$6$rounds=1000$roundstoolow$kUMsbe306n21p9R.FRkW3IGn.S9NPN0x50YhH1xhLsPuWGsUSklZt58jaTfF4ZEQpyUNGc0dqbpBYYBaHHrsX."))
+  // From Pike #10137
+  // Test some passwords with lengths that are powers of 2.
+  test_true(P("pass", "$6$rounds=10000$salt$OSEwMhCIwtjyui53YYIYdyKYKKMcnmS2EbioMYM3/7ya4jWlyYim8VJvMW4cVEgVkO.a.YBgUKiMtpAGUQSXf."))
+  test_false(P("pass", "$6p$rounds=10000$salt$OSEwMhCIwtjyui53YYIYdyKYKKMcnmS2EbioMYM3/7ya4jWlyYim8VJvMW4cVEgVkO.a.YBgUKiMtpAGUQSXf."))
+  test_true(P("pass", "$6$rounds=10000$salt$gJkLS5cThyks4JXgQ8x3UNvwYLNW22AHZdM70xoRvEma//RJfeBOC/Ik0EddD7DLI9Sau9pYCV29OLzxxVFph1"))
+  test_true(P("pass", "$6p$rounds=10000$salt$gJkLS5cThyks4JXgQ8x3UNvwYLNW22AHZdM70xoRvEma//RJfeBOC/Ik0EddD7DLI9Sau9pYCV29OLzxxVFph1"))
+  test_true(P("pass", "$6$rounds=10000$UrtM9r9XUEqEp1H3$X.OaL5Jp8PNtjkgKPUdGv7hxFg.jjF0U0dqLnscH3F45socUKOP6jWK2hDtvZAj2f1/I1u7Sgc3n3U7MMJDIi1"))
+  test_true(P("pass", "$6p$rounds=10000$UrtM9r9XUEqEp1H3$X.OaL5Jp8PNtjkgKPUdGv7hxFg.jjF0U0dqLnscH3F45socUKOP6jWK2hDtvZAj2f1/I1u7Sgc3n3U7MMJDIi1"))
+  test_true(P("password", "$6$rounds=10000$salt$dE5fLfpn2uXfkz.eouwYK/BjrHRu.piovQPjwlE06fDJHwMlg2l.IqEBUIfWBzf7YPXOAddB3FM7rnXHHKVNt."))
+  test_false(P("password", "$6p$rounds=10000$salt$dE5fLfpn2uXfkz.eouwYK/BjrHRu.piovQPjwlE06fDJHwMlg2l.IqEBUIfWBzf7YPXOAddB3FM7rnXHHKVNt."))
+  test_true(P("password", "$6$rounds=10000$salt$aaSSVStpZx9F9OYvj2130N4GR9uJcP/A10FvDYjBQWbs2RAYN.9iCJb9GvREy9Huz7H6Bp6u5SlHEEcrxaDPi0"))
+  test_true(P("password", "$6p$rounds=10000$salt$aaSSVStpZx9F9OYvj2130N4GR9uJcP/A10FvDYjBQWbs2RAYN.9iCJb9GvREy9Huz7H6Bp6u5SlHEEcrxaDPi0"))
+  test_true(P("password", "$6$rounds=10000$CfcWNrK0SB8eROnk$a/agNPy2AKOVf4qNTHRXw16nUSjHeINZCTxgw5PjLlRBFnxJ6DDI/rebM3I8LD8pubgOji7ps70JddbFUWo190"))
+  test_true(P("password", "$6p$rounds=10000$CfcWNrK0SB8eROnk$a/agNPy2AKOVf4qNTHRXw16nUSjHeINZCTxgw5PjLlRBFnxJ6DDI/rebM3I8LD8pubgOji7ps70JddbFUWo190"))
 ]])
 test_do( add_constant( "P" ) )
 
