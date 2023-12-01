@@ -47,18 +47,23 @@ class Constructed (int cls, int tag, string(8bit) raw, array(.Types.Object) elem
   string(8bit) get_der_content() { return raw; }
 }
 
-protected int read_varint(Stdio.Buffer data)
+protected int read_varint(Stdio.Buffer data,
+                          void|int(0..1) secure)
 {
   int ret, byte;
   do {
     ret <<= 7;
     byte = data->read_int8();
     ret |= (byte & 0x7f);
+    if (secure && !ret) {
+      error("Non-canonical encoding of integer.\n");
+    }
   } while (byte & 0x80);
   return ret;
 }
 
-protected array(int) read_identifier(Stdio.Buffer data)
+protected array(int) read_identifier(Stdio.Buffer data,
+                                     void|int(0..1) secure)
 {
   int byte = data->read_int8();
 
@@ -66,8 +71,12 @@ protected array(int) read_identifier(Stdio.Buffer data)
   int const = (byte >> 5) & 1;
   int tag = byte & 0x1f;
 
-  if( tag == 0x1f )
-    tag = read_varint(data);
+  if( tag == 0x1f ) {
+    tag = read_varint(data, secure);
+    if (secure && (tag == (tag & 0x1f)) && (tag != 0x1f)) {
+      error("Non-canonical encoding of tag 0x%02x.\n", tag);
+    }
+  }
 
   return ({ cls, const, tag });
 }
@@ -96,7 +105,8 @@ protected array(int) read_identifier(Stdio.Buffer data)
                          mapping(int:program(.Types.Object)) types,
                          void|int(0..1) secure)
 {
-  [int cls, int const, int tag] = read_identifier(data);
+  [int(0..3) cls, int constructed, int(0..) tag] =
+    read_identifier(data, secure);
 
   int len = data->read_int8();
   if( !cls && !const && !tag && !len )
@@ -107,7 +117,14 @@ protected array(int) read_identifier(Stdio.Buffer data)
       error("Illegal size.\n");
     if (len == 0x80)
       error("Indefinite length form not supported.\n");
+    if (secure) {
+      if (!data->read_int8())
+        error("Non-canonical length encoding.\n");
+      data->unread(1);
+    }
     len = data->read_int(len & 0x7f);
+    if (secure && (len == (len & 0x7f)))
+      error("Non-canonical length encoding.\n");
   }
   DBG("class %O, construced=%d, tag=%d, length=%d\n",
       ({"universal","application","context","private"})[cls], const, tag, len);
