@@ -47,18 +47,23 @@ class Constructed (int cls, int tag, string(8bit) raw, array(.Types.Object) elem
   string(8bit) get_der_content() { return raw; }
 }
 
-protected int read_varint(Stdio.Buffer data)
+protected int read_varint(Stdio.Buffer data,
+                          void|int(0..1) secure)
 {
   int ret, byte;
   do {
     ret <<= 7;
     byte = data->read_int8();
     ret |= (byte & 0x7f);
+    if (secure && !ret) {
+      error("Non-canonical encoding of integer.\n");
+    }
   } while (byte & 0x80);
   return ret;
 }
 
-protected array(int) read_identifier(Stdio.Buffer data)
+protected array(int) read_identifier(Stdio.Buffer data,
+                                     void|int(0..1) secure)
 {
   int byte = data->read_int8();
 
@@ -66,8 +71,12 @@ protected array(int) read_identifier(Stdio.Buffer data)
   int constructed = (byte >> 5) & 1;
   int tag = byte & 0x1f;
 
-  if( tag == 0x1f )
-    tag = read_varint(data);
+  if( tag == 0x1f ) {
+    tag = read_varint(data, secure);
+    if (secure && (tag == (tag & 0x1f)) && (tag != 0x1f)) {
+      error("Non-canonical encoding of tag 0x%02x.\n", tag);
+    }
+  }
 
   return ({ cls, constructed, tag });
 }
@@ -80,6 +89,9 @@ protected array(int) read_identifier(Stdio.Buffer data)
 //!   from @[Standards.ASN1.Types]. Combined tag numbers may be
 //!   generated using @[Standards.ASN1.Types.make_combined_tag].
 //!
+//! @param secure
+//!   Will fail if the encoded ASN.1 isn't in its canonical encoding.
+//!
 //! @returns
 //!   An object from @[Standards.ASN1.Types] or, either
 //!   @[Standards.ASN1.Decode.Primitive] or
@@ -90,9 +102,11 @@ protected array(int) read_identifier(Stdio.Buffer data)
 //!   Handling of implicit and explicit ASN.1 tagging, as well as
 //!   other context dependence, is next to non_existant.
 .Types.Object der_decode(Stdio.Buffer data,
-                         mapping(int:program(.Types.Object)) types)
+                         mapping(int:program(.Types.Object)) types,
+                         void|int(0..1) secure)
 {
-  [int(0..3) cls, int constructed, int(0..) tag] = read_identifier(data);
+  [int(0..3) cls, int constructed, int(0..) tag] =
+    read_identifier(data, secure);
 
   int len = data->read_int8();
   if( !cls && !constructed && !tag && !len )
@@ -103,7 +117,14 @@ protected array(int) read_identifier(Stdio.Buffer data)
       error("Illegal size.\n");
     if (len == 0x80)
       error("Indefinite length form not supported.\n");
+    if (secure) {
+      if (!data->read_int8())
+        error("Non-canonical length encoding.\n");
+      data->unread(1);
+    }
     len = data->read_int(len & 0x7f);
+    if (secure && (len == (len & 0x7f)))
+      error("Non-canonical length encoding.\n");
   }
   DBG("class %O, constructed=%d, tag=%d, length=%d\n",
       ({"universal","application","context","private"})[cls],
@@ -123,7 +144,7 @@ protected array(int) read_identifier(Stdio.Buffer data)
       array(.Types.Object) elements = ({ });
 
       while (sizeof(data))
-	elements += ({ der_decode(data, types) });
+        elements += ({ der_decode(data, types, secure) });
 
       if (cls==2 && sizeof(elements)==1)
       {
@@ -148,8 +169,7 @@ protected array(int) read_identifier(Stdio.Buffer data)
     {
       DBG("Element %d\n", i);
       res->decode_constructed_element
-	(i, der_decode(data,
-		       res->element_types(i, types)));
+        (i, der_decode(data, res->element_types(i, types), secure));
     }
     return res;
   }
@@ -161,7 +181,7 @@ protected array(int) read_identifier(Stdio.Buffer data)
     .Types.Object res = p();
     res->cls = cls;
     res->tag = tag;
-    return res->decode_primitive((string(8bit))data, this_object(), types);
+    return res->decode_primitive((string(8bit))data, this_function, types, secure);
   }
 
   return Primitive(cls, tag, (string(8bit))data);
@@ -222,23 +242,27 @@ mapping(int:program(.Types.Object)) universal_types =
 .Types.Object simple_der_decode(string(0..255) data,
 				mapping(int:program(.Types.Object))|void types)
 {
-  types = types ? universal_types+types : universal_types;
-  return der_decode(Stdio.Buffer(data)->set_error_mode(1), types);
+  types = types ? universal_types+[mapping]types : universal_types;
+  return der_decode(Stdio.Buffer(data)->set_error_mode(1), [mapping]types);
 }
 
 //! Works just like @[simple_der_decode], except it will return
-//! @expr{0@} if there is trailing data in the provided ASN.1 @[data].
+//! @expr{0@} on errors, including if there is leading or trailing
+//! data in the provided ASN.1 @[data].
 //!
 //! @seealso
 //!   @[simple_der_decode]
 .Types.Object secure_der_decode(string(0..255) data,
 				mapping(int:program(.Types.Object))|void types)
 {
-  types = types ? universal_types+types : universal_types;
+  types = types ? universal_types+[mapping]types : universal_types;
   Stdio.Buffer buf = Stdio.Buffer(data)->set_error_mode(1);
-  .Types.Object ret = der_decode(buf, types);
-  if( sizeof(buf) ) return 0;
-  return ret;
+  catch {
+    .Types.Object ret = der_decode(buf, [mapping]types, 1);
+    if( sizeof(buf) ) return 0;
+    return ret;
+  };
+  return 0;
 }
 
 
