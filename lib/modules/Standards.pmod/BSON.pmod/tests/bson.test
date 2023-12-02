@@ -170,10 +170,10 @@ void main(int n, array args)
     return;
   }
 
-  foreach(glob("*.json",get_dir(__DIR__)), string file)
+  foreach(glob("*.json",master()->master_get_dir(__DIR__)), string file)
   {
     file = combine_path(__DIR__,file);
-    do_tests( Standards.JSON.decode(Stdio.read_file(file)) );
+    do_tests( Standards.JSON.decode(master()->master_read_file(file)) );
   }
 
   Tools.Testsuite.report_result(success, fail);
