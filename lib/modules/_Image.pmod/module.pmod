@@ -73,7 +73,7 @@ mapping|zero _decode( string data, int(0..1)|void exif )
       format = "PS";
     };
     break;
-#if constant(Image.WebP.decode)
+#if constant(_Image_WebP.decode)
   case "RIFF":
       if( has_value( data[..20], "WEBPVP8 ") )
       {
@@ -93,7 +93,7 @@ mapping|zero _decode( string data, int(0..1)|void exif )
       if (csum != 65535) {
 	// FIXME: Verify checksum.
       }
-#if constant(Image.TIFF.decode)
+#if constant(_Image_TIFF.decode)
       if (tiff_start && tiff_len) {
 	catch {
 	  i = Image.TIFF.decode(data[tiff_start..tiff_start + tiff_len -1]);
@@ -114,7 +114,7 @@ mapping|zero _decode( string data, int(0..1)|void exif )
 
 
   // Use the low-level decode function to get the alpha channel.
-#if constant(Image.GIF)
+#if constant(_Image_GIF)
   if (!i) {
     catch
     {
@@ -132,7 +132,7 @@ mapping|zero _decode( string data, int(0..1)|void exif )
 #endif
 
   // Use the low-level EXIF decode function if applicable
-#if constant(Image.JPEG)
+#if constant(_Image_JPEG)
   if (!i && data[..1] == "\xff\xd8") {
       mapping res = (exif? Image.JPEG.exif_decode( data ) : Image.JPEG._decode( data ));
       i = res->image;
@@ -194,7 +194,7 @@ array(Image.Layer)|zero decode_layers( string data, mapping|void opt )
   if(!data)
     return 0;
 
-#if constant(Image.GIF)
+#if constant(_Image_GIF)
   catch( i = Image["GIF"]->decode_layers( data ) );
 #endif
 
