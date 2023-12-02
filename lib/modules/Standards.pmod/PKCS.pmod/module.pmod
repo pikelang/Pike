@@ -17,9 +17,9 @@ import Standards.ASN1.Types;
 
 private object RSA;
 private object DSA;
-#if constant(Crypto.ECC.Curve)
+#if constant(Nettle.ECC_Curve)
 private object ECDSA;
-#endif /* Crypto.ECC.Curve */
+#endif /* Nettle.ECC_Curve */
 
 //! Parse a PKCS#10 SubjectPublicKeyInfo (cf @rfc{5280:4.1@} and @rfc{7468:13@}).
 //!
@@ -46,7 +46,7 @@ Crypto.Sign.State parse_public_key(Sequence seq)
       DSA = master()->resolv("Standards.PKCS.DSA");
     return DSA->parse_public_key(seq->elements[1]->value);
   }
-#if constant(Crypto.ECC.Curve)
+#if constant(Nettle.ECC_Curve)
   // RFC 5915:1a.
   if ((alg_id == .Identifiers.ec_id) ||
       (alg_id == .Identifiers.ec_dh_id) ||
@@ -57,7 +57,7 @@ Crypto.Sign.State parse_public_key(Sequence seq)
       ECDSA->parse_ec_parameters(seq->elements[0]->elements[1]);
     return ECDSA->parse_public_key(seq->elements[1]->value, curve);
   }
-#endif /* Crypto.ECC.Curve */
+#endif /* Nettle.ECC_Curve */
   return UNDEFINED;
 }
 
@@ -100,7 +100,7 @@ Crypto.Sign.State parse_private_key(Sequence seq)
       DSA = master()->resolv("Standards.PKCS.DSA");
     return DSA->parse_private_key(seq->elements[2]->value);
   }
-#if constant(Crypto.ECC.Curve)
+#if constant(Nettle.ECC_Curve)
   // RFC 5915:1a.
   if ((alg_id == .Identifiers.ec_id) ||
       (alg_id == .Identifiers.ec_dh_id) ||
@@ -111,7 +111,7 @@ Crypto.Sign.State parse_private_key(Sequence seq)
       ECDSA->parse_ec_parameters(seq->elements[1]->elements[1]);
     return ECDSA->parse_private_key(seq->elements[2]->value, curve);
   }
-#endif /* Crypto.ECC.Curve */
+#endif /* Nettle.ECC_Curve */
   return UNDEFINED;
 }
 
