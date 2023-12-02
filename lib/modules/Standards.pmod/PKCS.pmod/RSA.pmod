@@ -3,7 +3,7 @@
 
 #pike __REAL_VERSION__
 // #pragma strict_types
-#require constant(Crypto.RSA)
+#require constant(Nettle.Hash)
 
 import Standards.ASN1.Types;
 
