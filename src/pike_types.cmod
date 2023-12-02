@@ -488,9 +488,6 @@ static struct pike_type *debug_mk_type(unsigned INT32 type,
   hash ^= (hash >> 7) ^ (hash >> 4);
 
   index = hash & pike_type_hash_size;
-#ifdef PIKE_EXTRA_DEBUG
-  static unsigned INT32 extra_debug_index = (unsigned INT32)~0;
-#endif /* PIKE_EXTRA_DEBUG */
 #ifdef PIKE_DEBUG
   /* PIKE_DEBUG code */
   if ((type & ~PIKE_T_MASK) && ((type & PIKE_T_MASK) != PIKE_T_OPERATOR)) {
@@ -514,61 +511,8 @@ static struct pike_type *debug_mk_type(unsigned INT32 type,
   }
   /* End PIKE_DEBUG code */
 #endif
-#ifdef PIKE_EXTRA_DEBUG
-  if ((!~extra_debug_index) &&
-      (type == T_FUNCTION) &&
-      (car->type == T_STRING) &&
-      (cdr->type == T_FUNCTION) &&
-      (cdr->car->type == T_STRING) &&
-      (cdr->cdr->type == T_MANY) &&
-      (cdr->cdr->car->type == T_VOID) &&
-      (cdr->cdr->cdr->type == T_STRING)) {
-    /* Attempt to detect why we get a core-dump on OSF/1
-     * when loading Unicode.so from test_resolv.
-     *
-     * The problem triggs when the type for normalize() is created.
-     * function(string,string:string)
-     *	/grubba 2005-02-04
-     *
-     * Load order:
-     *   Module		Hashtable status	Note
-     *   Nettle.so	OK
-     *   ___Oracle.so	-			load_module() fails.
-     *   Image.so	-			loads ok.
-     *   Unicode.so	FAIL
-     *
-     * pike_type node:
-     *   Field		Before			After
-     *     t		1404b5020		1404b5020
-     *     t->type	4 (function)		65535 (unknown)
-     *     t->car	1404863f8 (1404863f8)	140557560 (1404863f8)
-     *     t->cdr	1404b43d8 (1404b43d8)	400000000 (1404b43d8)
-     *     t->next	0			100000000
-     *  /grubba 2005-06-03
-     */
-    extra_debug_index = index;
-  }
-#endif /* PIKE_EXTRA_DEBUG */
   if (type == PIKE_T_UNKNOWN) return NULL;
   for(t = pike_type_hash[index]; t; t = t->next) {
-#ifdef PIKE_EXTRA_DEBUG
-    if (index == extra_debug_index) {
-      fprintf(stderr,
-	      "  %s:%d:PIKE_EXTRA_DEBUG:\n"
-	      "    t: %p\n",
-	      __FILE__, __LINE__,
-	      t);
-      fprintf(stderr,
-	      "    t->type:%d (%s)\n"
-	      "    t->car: %p (%p)\n"
-	      "    t->cdr: %p (%p)\n"
-	      "    t->next:%p\n",
-	      t->type, get_name_of_type(t->type),
-	      t->car, car,
-	      t->cdr, cdr,
-	      t->next);
-    }
-#endif /* PIKE_EXTRA_DEBUG */
     if ((t->hash == hash) && (t->type == type) &&
 	(t->car == car) && (t->cdr == cdr)) {
       /* Free car & cdr as appropriate. */
