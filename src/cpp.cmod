@@ -1680,6 +1680,10 @@ static int do_safe_index_call(struct CPP_struct *this, struct pike_string *s)
   JMP_BUF recovery;
   if(!s) return 0;
 
+  if (TYPEOF(Pike_sp[-1]) == PIKE_T_OBJECT && Pike_sp[-1].u.object->prog &&
+      !(Pike_sp[-1].u.object->prog->flags & PROGRAM_PASS_1_DONE)) {
+    cpp_error_sprintf (this, "Indexing unfinished module %pO with %pS.", Pike_sp-1, s);
+  }
   if (SETJMP_SP(recovery, 1)) {
     if(this->picky_cpp)
       cpp_warning (this, "Error indexing module with %pS.", s);
@@ -1692,6 +1696,14 @@ static int do_safe_index_call(struct CPP_struct *this, struct pike_string *s)
     res=!(UNSAFE_IS_ZERO(Pike_sp-1) && SUBTYPEOF(Pike_sp[-1]) == NUMBER_UNDEFINED);
   }
   UNSETJMP(recovery);
+  if ((TYPEOF(Pike_sp[-1]) == T_OBJECT &&
+       Pike_sp[-1].u.object == placeholder_object) ||
+      (TYPEOF(Pike_sp[-1]) == T_PROGRAM &&
+       Pike_sp[-1].u.program == placeholder_program)) {
+    cpp_error_sprintf (this, "Got placeholder %s (resolver problem) "
+                       "when indexing with %pS.",
+                       get_name_of_type(TYPEOF(Pike_sp[-1])), s);
+  }
   return res;
 }
 
