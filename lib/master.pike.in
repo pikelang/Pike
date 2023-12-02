@@ -2826,6 +2826,9 @@ class dirnode (string dirname, object|void compilation_handler,
 	if (ret = catch {
             if (objectp(ret = low_cast_to_object(fname, 0, compilation_handler,
                                                  placeholder))) {
+              if (object_program(ret) == __null_program)
+                // Module is still in cpp
+                return predef::__placeholder_object;
 	      // This assignment is needed for eg the Calendar module.
               if (placeholder) module = ret;
 	      if(mixed tmp=ret->_module_value) ret=tmp;
