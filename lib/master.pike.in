@@ -1276,9 +1276,9 @@ array(string) master_get_dir(string|void x)
   {
     object h = fs_map[y];
     x = x[sizeof(y)+1..];
-    return h->get_dir(x);
+    return h->get_dir(fakeroot(x));
   }
-  else return predef::get_dir(x);
+  else return predef::get_dir(fakeroot(x));
 }
 
 object(Stat)|zero master_file_stat(string x)
@@ -1320,9 +1320,9 @@ object(Stat)|zero master_file_stat(string x)
   {
     object h = fs_map[y];
     x = x[sizeof(y)+1..];
-    return h->stat(x);
+    return h->stat(fakeroot(x));
   }
-  else return predef::file_stat(x);
+  else return predef::file_stat(fakeroot(x));
 }
 #else
 //constant master_file_stat = predef::file_stat;
@@ -1336,9 +1336,9 @@ Stat master_file_stat(string file)
     object h = fs_map[x];
     file = file[sizeof(x)+1..];
 
-    return h->stat(file);
+    return h->stat(fakeroot(file));
   }
-  else return predef::file_stat(file);
+  else return predef::file_stat(fakeroot(file));
 }
 
 array master_get_dir(string file)
@@ -1349,9 +1349,9 @@ array master_get_dir(string file)
     object h = fs_map[x];
     file = file[sizeof(x)+1..];
 
-    return h->get_dir(file);
+    return h->get_dir(fakeroot(file));
   }
-  else return predef::get_dir(file);
+  else return predef::get_dir(fakeroot(file));
 }
 
 #endif // FILE_STAT_CACHE
