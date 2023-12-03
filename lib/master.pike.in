@@ -5916,6 +5916,14 @@ class Encoder
 
     if (objectp (what)) {
 
+      if (string id = rev_static_modules[object_program (what)]) {
+        ENC_MSG ("  is an instantiated static module\n",);
+        string name = id[1..]; // remove "s"
+        mixed resolved = resolv (name);
+        if (objectp (resolved) && object_program (resolved) == object_program (what))
+          return "r" + name;
+      }
+
       if (is_dirnode(what)) {
 	ENC_MSG ("  is a dirnode\n");
 	string name = program_path_to_name (what->dirname);
