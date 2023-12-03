@@ -416,6 +416,10 @@ o Stdio.FakePipe
 
 o Parser.Markdown
 
+o Crypto.AES.OCB etc
+
+  Add support for the AEAD OCB.
+
 o Crypto.Checksum
 
   This module collect non-cryptographic checksums. Support for crc32,
