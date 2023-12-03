@@ -18,7 +18,7 @@ object master()
 
 //! Wrapper for iterators that implements the 8.0 and
 //! earlier iterator API.
-protected class Iterator
+class Iterator
 {
   protected predef::Iterator it;
 
