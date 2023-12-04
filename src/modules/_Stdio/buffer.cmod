@@ -238,7 +238,7 @@ PIKECLASS Buffer
     {
         growth = bytes;
         if( io->allocated + growth < io->allocated )
-            Pike_error("Buffer too large, can not have more than %lu bytes.",
+            Pike_error("Buffer too large, can not have more than %"PRINTSIZET"u bytes.",
                        (size_t)-1);
     }
 

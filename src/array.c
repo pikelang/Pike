@@ -121,7 +121,7 @@ PMOD_EXPORT struct array *real_allocate_array(ptrdiff_t size,
 
   return v;
 TOO_BIG:
-  Pike_error("Too large array (size %ld is too big).\n", length);
+  Pike_error("Too large array (size %"PRINTSIZET"d is too big).\n", length);
 }
 
 /**
