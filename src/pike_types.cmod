@@ -13824,6 +13824,8 @@ struct pike_type *type_int_op(enum PIKE_TYPE op,
 			      struct pike_type *arg1,
 			      struct pike_type *arg2)
 {
+  struct pike_type *tmp1 = NULL, *tmp2 = NULL, *ret = NULL;
+
   while (1) {
     if (!arg1 || !arg2) {
       return NULL;
@@ -13889,23 +13891,35 @@ struct pike_type *type_int_op(enum PIKE_TYPE op,
    */
   switch(arg1->type) {
   case PIKE_T_OR:
-    return type_binop(PT_BINOP_OR,
-                      type_int_op(op, arg1->car, arg2),
-                      type_int_op(op, arg1->cdr, arg2), 0, 0, 0);
+    ret = type_binop(PT_BINOP_OR,
+                     tmp1 = type_int_op(op, arg1->car, arg2),
+                     tmp2 = type_int_op(op, arg1->cdr, arg2), 0, 0, 0);
+    free_type(tmp1);
+    free_type(tmp2);
+    return ret;
   case PIKE_T_AND:
-    return type_binop(PT_BINOP_AND,
-                      type_int_op(op, arg1->car, arg2),
-                      type_int_op(op, arg1->cdr, arg2), 0, 0, 0);
+    ret = type_binop(PT_BINOP_AND,
+                     tmp1 = type_int_op(op, arg1->car, arg2),
+                     tmp2 = type_int_op(op, arg1->cdr, arg2), 0, 0, 0);
+    free_type(tmp1);
+    free_type(tmp2);
+    return ret;
   }
   switch(arg2->type) {
   case PIKE_T_OR:
-    return type_binop(PT_BINOP_OR,
-                      type_int_op(op, arg1, arg2->car),
-                      type_int_op(op, arg1, arg2->cdr), 0, 0, 0);
+    ret = type_binop(PT_BINOP_OR,
+                     tmp1 = type_int_op(op, arg1, arg2->car),
+                     tmp2 = type_int_op(op, arg1, arg2->cdr), 0, 0, 0);
+    free_type(tmp1);
+    free_type(tmp2);
+    return ret;
   case PIKE_T_AND:
-    return type_binop(PT_BINOP_AND,
-                      type_int_op(op, arg1, arg2->car),
-                      type_int_op(op, arg1, arg2->cdr), 0, 0, 0);
+    ret = type_binop(PT_BINOP_AND,
+                     tmp1 = type_int_op(op, arg1, arg2->car),
+                     tmp2 = type_int_op(op, arg1, arg2->cdr), 0, 0, 0);
+    free_type(tmp1);
+    free_type(tmp2);
+    return ret;
   }
   if (arg1->type != arg2->type) return NULL;
   switch(arg1->type) {
