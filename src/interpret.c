@@ -2808,17 +2808,23 @@ void* low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 	if(Pike_sp != expected_stack + !s->u.efun->may_return_void)
 	{
 	  if(Pike_sp < expected_stack)
-	    Pike_fatal("Function popped too many arguments: %S\n",
-		       s->u.efun->name);
+            Pike_fatal("Function popped too many arguments: %s\n",
+                       s->u.efun->name->size_shift == 0 ?
+                       s->u.efun->name->str : "[widestring fn name]");
 	  if(Pike_sp>expected_stack+1)
-	    Pike_fatal("Function left droppings on stack: %S\n",
-		       s->u.efun->name);
+            Pike_fatal("Function left droppings on stack: %s\n",
+                       s->u.efun->name->size_shift == 0 ?
+                       s->u.efun->name->str : "[widestring fn name]");
 	  if(Pike_sp == expected_stack && !s->u.efun->may_return_void)
-	    Pike_fatal("Non-void function returned without return value on stack: %S %d\n",
-		       s->u.efun->name, s->u.efun->may_return_void);
+            Pike_fatal("Non-void function returned without return value on stack: %s %d\n",
+                       s->u.efun->name->size_shift == 0 ?
+                       s->u.efun->name->str : "[widestring fn name]",
+                       s->u.efun->may_return_void);
 	  if(Pike_sp==expected_stack+1 && s->u.efun->may_return_void)
-	    Pike_fatal("Void function returned with a value on the stack: %S %d\n",
-		       s->u.efun->name, s->u.efun->may_return_void);
+            Pike_fatal("Void function returned with a value on the stack: %s %d\n",
+                       s->u.efun->name->size_shift == 0 ?
+                       s->u.efun->name->str : "[widestring fn name]",
+                       s->u.efun->may_return_void);
 	}
 #endif
 
