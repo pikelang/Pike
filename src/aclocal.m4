@@ -1216,12 +1216,12 @@ $1 tmp;
       found=no
       for mod in $2 ; do
 	AC_TRY_RUN([
-#include <stddef.h>
-#include <stdio.h>
-
 #define CONFIGURE_TEST
 #include "global.h"
 #include "pike_int_types.h"
+
+#include <stddef.h>
+#include <stdio.h>
 
 int main() {
   char buf[50];
