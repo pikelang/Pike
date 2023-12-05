@@ -6517,12 +6517,18 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
   return NULL;
 }
 
+#undef type_binop
 struct pike_type *type_binop(enum pt_binop op,
 			     struct pike_type *a,
 			     struct pike_type *b,
 			     enum pt_cmp_flags aflags,
 			     enum pt_cmp_flags bflags,
 			     enum pt_remap_flags remap_flags)
+#define type_binop(OP, A, B, C, D, E)                                     \
+  ((struct pike_type *)debug_malloc_pass(type_binop(OP,                   \
+                                                    debug_malloc_pass(A), \
+                                                    debug_malloc_pass(B), \
+                                                    C, D, E)))
 {
   struct remap_state remap;
   struct pike_type *ret;
@@ -13820,9 +13826,14 @@ struct pike_type *low_type_int_op(enum PIKE_TYPE op,
   return pop_unfinished_type();
 }
 
+#undef type_int_op
 struct pike_type *type_int_op(enum PIKE_TYPE op,
 			      struct pike_type *arg1,
 			      struct pike_type *arg2)
+#define type_int_op(OP, A, B)\
+  ((struct pike_type *)debug_malloc_pass(type_int_op(OP,                   \
+                                                     debug_malloc_pass(A), \
+                                                     debug_malloc_pass(B))))
 {
   struct pike_type *tmp1 = NULL, *tmp2 = NULL, *ret = NULL;
 

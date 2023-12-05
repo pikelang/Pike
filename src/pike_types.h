@@ -552,4 +552,15 @@ PMOD_EXPORT void set_program_id_to_id( int (*to)(int) );
 #define push_finished_type_backwards debug_push_finished_type_backwards
 #endif
 
+#define type_binop(OP, A, B, C, D, E)                                     \
+  ((struct pike_type *)debug_malloc_pass(type_binop(OP,                   \
+                                                    debug_malloc_pass(A), \
+                                                    debug_malloc_pass(B), \
+                                                    C, D, E)))
+
+#define type_int_op(OP, A, B)\
+  ((struct pike_type *)debug_malloc_pass(type_int_op(OP,                   \
+                                                     debug_malloc_pass(A), \
+                                                     debug_malloc_pass(B))))
+
 #endif
