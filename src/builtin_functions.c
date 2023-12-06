@@ -5771,9 +5771,58 @@ PMOD_EXPORT void f_gmtime(INT32 args)
     SIMPLE_ARG_ERROR ("gmtime", 1, "Timestamp outside valid range.");
 #endif
 #if defined(__NT__) || defined(_AIX)
-  while (tt < 0) {
-    ydelta -= 28;
-    tt += 883612800;
+  if (tt < 0) {
+    int wdays = 0;
+    while (tt <-11644473600LL) {	/* 1601-01-01T00:00:00 UTC */
+      ydelta -= 400;
+      tt += 12622780800LL;		/* 400 years in seconds. */
+      /* NB: Even number of weeks! */
+    }
+    while (tt < -3155673600LL) {	/* 1870-01-01T00:00:00 UTC */
+      ydelta -= 100;
+      tt += 3155673600LL;		/* 100 years in seconds. */
+      wdays += 5;			/* (3155673600/3600/24) % 7 */
+    }
+    if (tt < -2177452800LL) {		/* 1901-01-01T00:00:00 UTC */
+      if (tt >= -2208988800LL) {	/* 1900-01-01T00:00:00 UTC */
+        ydelta -= 6;
+        tt += 189302400;		/* 6 years in seconds. */
+      } else {
+        tt -= 3600 * 24;		/* Add a fake leap-day for 1900. */
+        wdays += 6;
+      }
+    }
+    switch(wdays % 7) {
+    case 0: break;
+    case 1:
+      ydelta += 12;
+      tt -= 378691200;			/* 12 years in seconds. */
+      break;
+    case 2:
+      ydelta += 24;
+      tt -= 757382400;			/* 24 years in seconds. */
+      break;
+    case 3:
+      ydelta += 8;
+      tt -= 252460800;			/* 8 years in seconds. */
+      break;
+    case 4:
+      ydelta += 20;
+      tt -= 631152000;			/* 20 years in seconds. */
+      break;
+    case 5:
+      ydelta += 4;
+      tt -= 126230400;			/* 4 years in seconds. */
+      break;
+    case 6:
+      ydelta += 16;
+      tt -= 504921600;			/* 16 years in seconds. */
+      break;
+    }
+    while (tt < 0) {			/* 1970-01-01T00:00:00 UTC */
+      ydelta -= 28;
+      tt += 883612800;			/* 28 years in seconds. */
+    }
   }
 #endif
   t = (time_t) tt;
@@ -5855,9 +5904,59 @@ PMOD_EXPORT void f_localtime(INT32 args)
     SIMPLE_ARG_ERROR ("localtime", 1, "Timestamp outside valid range.");
 #endif
 #if defined(__NT__) || defined(_AIX)
-  while (tt < 0) {
-    ydelta -= 28;
-    tt += 883612800;
+  if (tt < 0) {
+    /* FIXME: Best effort; the cutoff times should be timezone-dependent. */
+    int wdays = 0;
+    while (tt <-11644473600LL) {	/* 1601-01-01T00:00:00 UTC */
+      ydelta -= 400;
+      tt += 12622780800LL;		/* 400 years in seconds. */
+      /* NB: Even number of weeks! */
+    }
+    while (tt < -3155673600LL) {	/* 1870-01-01T00:00:00 UTC */
+      ydelta -= 100;
+      tt += 3155673600LL;		/* 100 years in seconds. */
+      wdays += 5;			/* (3155673600/3600/24) % 7 */
+    }
+    if (tt < -2177452800LL) {		/* 1901-01-01T00:00:00 UTC */
+      if (tt >= -2208988800LL) {	/* 1900-01-01T00:00:00 UTC */
+        ydelta -= 6;
+        tt += 189302400;		/* 6 years in seconds. */
+      } else {
+        tt -= 3600 * 24;		/* Add a fake leap-day for 1900. */
+        wdays += 6;
+      }
+    }
+    switch(wdays % 7) {
+    case 0: break;
+    case 1:
+      ydelta += 12;
+      tt -= 378691200;			/* 12 years in seconds. */
+      break;
+    case 2:
+      ydelta += 24;
+      tt -= 757382400;			/* 24 years in seconds. */
+      break;
+    case 3:
+      ydelta += 8;
+      tt -= 252460800;			/* 8 years in seconds. */
+      break;
+    case 4:
+      ydelta += 20;
+      tt -= 631152000;			/* 20 years in seconds. */
+      break;
+    case 5:
+      ydelta += 4;
+      tt -= 126230400;			/* 4 years in seconds. */
+      break;
+    case 6:
+      ydelta += 16;
+      tt -= 504921600;			/* 16 years in seconds. */
+      break;
+    }
+    while (tt < 0) {			/* 1970-01-01T00:00:00 UTC */
+      ydelta -= 28;
+      tt += 883612800;			/* 28 years in seconds. */
+    }
   }
 #endif
   t = (time_t) tt;
