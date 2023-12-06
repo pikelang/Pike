@@ -3831,6 +3831,48 @@ void low_start_new_program(struct program *p,
 	str++;
       }
     }
+    if (Pike_compiler->new_program->constants) {
+      struct program_constant *c = Pike_compiler->new_program->constants;
+      int j = Pike_compiler->new_program->num_constants;
+      while(j--) {
+        free_svalue(&c->sval);
+        c++;
+      }
+    }
+    if (Pike_compiler->new_program->inherits) {
+      struct inherit *i = Pike_compiler->new_program->inherits;
+      int j = Pike_compiler->new_program->num_inherits;
+      while(j--) {
+        if (i->annotations)
+          free_multiset(i->annotations);
+        if(i->name)
+          free_string(i->name);
+        if(i->parent)
+          free_object(i->parent);
+        if(i->prog && i != Pike_compiler->new_program->inherits)
+          free_program(i->prog);
+        i++;
+      }
+    }
+    if (Pike_compiler->new_program->identifiers) {
+      struct identifier *id = Pike_compiler->new_program->identifiers;
+      int j = Pike_compiler->new_program->num_identifiers;
+      while(j--) {
+        if(id->name)
+          free_string(id->name);
+        if(id->type)
+          free_type(id->type);
+        id++;
+      }
+    }
+    if (Pike_compiler->new_program->annotations) {
+      struct multiset **m = Pike_compiler->new_program->annotations;
+      int j = Pike_compiler->new_program->num_annotations;
+      while(j--) {
+        do_free_multiset(*m);
+        m++;
+      }
+    }
 
 #define START_SIZE 64
 #ifdef PIKE_USE_MACHINE_CODE
