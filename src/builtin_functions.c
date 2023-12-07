@@ -5980,9 +5980,10 @@ static void set_tz(char *tz)
 time_t mktime_zone(struct tm *date, int other_timezone, int tz)
 {
   INT64 retval = 0;
+  INT64 ret;
   int normalised_time;
 #if defined(__NT__) || defined(_AIX)
-  unsigned INT64 ydelta = 0;	/* Number of years. */
+  INT64 ydelta = 0;	/* Number of years. */
 #endif
 
   date->tm_wday = -1;		/* flag to determine failure */
@@ -5992,12 +5993,31 @@ time_t mktime_zone(struct tm *date, int other_timezone, int tz)
    *
    * The calendar repeats every 28 years, so offset it appropriately.
    * Offset years before 1971 in order to avoid issues near 1970-01-01.
-   *
-   * FIXME: Compensate for century/400-year adjustment.
    */
-  if (date->tm_year < 71) {
-    ydelta = ((71 + 27 - date->tm_year)/28) * 28;
-    date->tm_year += ydelta;
+  if ((date->tm_year <= -300) || (date->tm_year > 130)) {
+    int y = (100 - date->tm_year)/400;
+    date->tm_year += y * 400;
+    ydelta += y * 400;
+    retval -= y * 12622780800LL;	/* 400 years in seconds. */
+  }
+  if (date->tm_year <= -30) {		/* Before 1870. */
+    int y = -date->tm_year/100;
+    date->tm_year += y * 100;
+    ydelta += y * 100;
+    retval -= y * 3155673600LL;		/* 100 years in seconds. */
+  }
+  if (date->tm_year < 0) {
+    retval += 3600 * 24;		/* Fake a leap day for 1900. */
+  } else if (!date->tm_year) {		/* 1900 is not a leap-year. */
+    date->tm_year += 6;
+    ydelta += 6;
+    retval -= 189302400;		/* 6 years in seconds. */
+  }
+  if ((date->tm_year < 71) || (date->tm_year > 130)) {
+    int y = ((71 + 27 - date->tm_year)/28);
+    date->tm_year += y * 28;
+    ydelta += y * 28;
+    retval -= 883612800LL * y;		/* 28 years in seconds. */
   }
 #elif defined(__HAIKU__)
   /* mktime() on Haiku appears to attempt to support years before 1970
@@ -6027,12 +6047,7 @@ time_t mktime_zone(struct tm *date, int other_timezone, int tz)
     normalised_time = ((hour * 60) + min) * 60 + sec;
   }
 
-  retval += mktime(date);
-
-#if defined(__NT__) || defined(_AIX)
-  /* Restore tm_year. */
-  date->tm_year -= ydelta;
-#endif
+  ret = mktime(date);
 
   if (date->tm_wday < 0) {
     if (other_timezone) {
@@ -6063,10 +6078,16 @@ time_t mktime_zone(struct tm *date, int other_timezone, int tz)
       set_tz(tzbuf);
       SET_ONERROR(uwp, set_tz, orig_tz);
       /* NB: No need to call tzset(); mktime() will call it. */
-      retval = mktime_zone(date, 0, 0);
+      ret = mktime_zone(date, 0, 0);
       CALL_AND_UNSET_ONERROR(uwp);
       pop_stack();
-      return retval;
+
+#if defined(__NT__) || defined(_AIX)
+      /* Restore tm_year. */
+      date->tm_year -= ydelta;
+#endif
+
+      return retval + ret;
     }
     Pike_error("Time conversion unsuccessful.\n");
   }
@@ -6099,18 +6120,21 @@ time_t mktime_zone(struct tm *date, int other_timezone, int tz)
        *
        * FIXME: Handle retval outside range of 32-bit time_t.
        */
-      time_t t = retval;
+      time_t t = ret;
       struct tm gmt_tm = *gmtime(&t);
       gmt_tm.tm_isdst = date->tm_isdst;
-      normalised_time += retval - mktime(&gmt_tm);
+      normalised_time += ret - mktime(&gmt_tm);
     }
 #endif
-    retval += normalised_time + tz;
+    ret += normalised_time + tz;
   }
+
 #if defined(__NT__) || defined(_AIX)
-  /* Compensate for the year offset above. */
-  retval -= ydelta * 31557600;	/* 365 days and 6 hours. */
+  /* Restore tm_year. */
+  date->tm_year -= ydelta;
 #endif
+
+  retval += ret;
 
   if ((retval < MIN_TIME_T) || (retval > MAX_TIME_T)) {
 #ifdef EOVERFLOW
