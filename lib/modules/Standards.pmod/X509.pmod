@@ -848,7 +848,7 @@ class TBSCertificate
       write("%O : %O\n", .PKCS.Identifiers.reverse_ce_ids[i]||i, o);
   }
 
-  protected string _sprintf(int t)
+  protected string _sprintf(int t, mapping opt)
   {
     if( t!='O' ) return UNDEFINED;
     mapping m = cast("mapping");
@@ -860,7 +860,7 @@ class TBSCertificate
 	m[.PKCS.Identifiers.reverse_ce_ids[i]||i] = fmt_asn1(o);
       }
     };
-    return sprintf("%O(%O)", this_program, m);
+    return sprintf("%O(%*O)", this_program, opt, m);
   }
 
   //! Populates the object from a certificate decoded into an ASN.1
