@@ -90,7 +90,7 @@ final multiset(proxy) clients = set_weak_flag((<>), Pike.WEAK);
 
 mapping describenodata
  = (["datarowdesc":({}), "datarowtypes":({}), "datatypeoid":({})]);
-private multiset censoroptions = (<"use_ssl", "force_ssl",
+private multiset censoroptions = (<"use_ssl", "force_ssl", "ssl_context",
  "cache_autoprepared_statements", "reconnect", "text_query", "is_superuser",
  "server_encoding", "server_version", "integer_datetimes",
  "session_authorization">);
@@ -716,7 +716,8 @@ outer:
           string s = socket.read(1);
           switch (sizeof(s) && s[0]) {
             case 'S':
-              SSL.File fcon = SSL.File(socket, SSL.Context());
+              PD("Context %O\n", pgsqlsess.options.ssl_context);
+              SSL.File fcon = SSL.File(socket, pgsqlsess.options.ssl_context || SSL.Context());
               if (fcon->connect()) {
                 socket->set_backend(local_backend);
                 socket = fcon;

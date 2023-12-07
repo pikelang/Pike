@@ -137,6 +137,10 @@ protected string _sprintf(int type) {
 //!   @member int "force_ssl"
 //!	If the database supports and allows SSL connections, the session
 //!	will be SSL encrypted, if not, the connection will abort.
+//!   @member SSL.Context "ssl_context"
+//!	If SSL is used (due to either of the above being set), this context
+//!     will define the settings used; otherwise, a default SSL.Context()
+//!     will be used.
 //!   @member int "text_query"
 //!	Send queries to and retrieve results from the database using text
 //!     instead of the, generally more efficient, default native binary method.
