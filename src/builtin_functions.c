@@ -6140,11 +6140,17 @@ time_t mktime_zone(struct tm *date, int other_timezone, int tz)
    * The calendar repeats every 28 years, so offset it appropriately.
    * Offset years before 1971 in order to avoid issues near 1970-01-01.
    */
-  if ((date->tm_year <= -300) || (date->tm_year > 130)) {
+  if (date->tm_year <= -300) {
     int y = (100 - date->tm_year)/400;
     date->tm_year += y * 400;
     ydelta += y * 400;
     retval -= y * 12622780800LL;	/* 400 years in seconds. */
+  } else if (date->tm_year > 130) {
+    /* NB: Duplicate of the above due to rounding to zero. */
+    int y = (date->tm_year + 300)/400;
+    date->tm_year -= y * 400;
+    ydelta -= y * 400;
+    retval += y * 12622780800LL;	/* 400 years in seconds. */
   }
   if (date->tm_year <= -30) {		/* Before 1870. */
     int y = -date->tm_year/100;
