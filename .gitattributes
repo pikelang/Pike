@@ -714,7 +714,6 @@ Makefile.rl -space_indent tab_indent
 /src/modules/_WhiteFish/whitefish.c mixed_indent
 /src/modules/_math/math.c mixed_indent
 /src/modules/common_module_makefile.in mixed_indent
-/src/modules/configure.in mixed_indent
 /src/modules/dynamic_module_makefile.in mixed_indent
 /src/modules/semidynamic_module_makefile.in mixed_indent
 /src/modules/static_module_makefile.in mixed_indent
@@ -1019,7 +1018,6 @@ Makefile.rl -space_indent tab_indent
 /src/post_modules/_Regexp_PCRE/pcre_glue.cmod mixed_indent
 /src/post_modules/_Regexp_PCRE/testsuite.in mixed_indent
 /src/post_modules/_Sass/configure.in mixed_indent
-/src/post_modules/configure.in mixed_indent
 /src/precompile.sh.in mixed_indent
 /src/program.c mixed_indent
 /src/program.h mixed_indent

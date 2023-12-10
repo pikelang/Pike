@@ -2202,3 +2202,23 @@ Optional Packages:
 m4_divert_once([HELP_WITH], AS_HELP_STRING([--with-site-prefixes=path], [:-separated list of prefixes to search for include, lib and bin dirs.]))
 m4_divert_once([HELP_WITH], AS_HELP_STRING([--with-exclude-site-prefixes=path], [:-separated list of prefixes to exclude for include, lib and bin dirs.]))
 ])
+
+AC_DEFUN([PIKE_DIVERT_BEFORE_HELP],
+[ifdef([m4_divert_text], [m4_divert_text([PARSE_ARGS],[$1])],
+       [ifdef([AC_DIVERT], [AC_DIVERT([PARSE_ARGS],[$1])],[$2])])])
+
+AC_DEFUN([PIKE_FOREACH_CONFIG_SUBDIR], [
+  for $1 in `(cd $srcdir ; echo *)`
+  do
+    if test -d "$srcdir/[$]$1" ; then
+      if test -f "$srcdir/[$]$1/configure.in"; then
+        $2
+      fi
+    fi
+  done
+])
+
+AC_DEFUN([PIKE_DYNAMIC_CONFIG_SUBDIRS], [PIKE_DIVERT_BEFORE_HELP([
+  ac_subdirs_all=''
+  PIKE_FOREACH_CONFIG_SUBDIR([a], [ac_subdirs_all="$ac_subdirs_all $a"])
+])])
