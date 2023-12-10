@@ -1249,10 +1249,6 @@ if test "x$with_gmp" = xno; then
   AC_MSG_ERROR([The GMP library is required to compile Pike.])
 fi
 
-if test "x$with_poll" = "xyes"; then
-  AC_DEFINE(HAVE_AND_USE_POLL)
-else :; fi
-
 if test "x$with_valgrind" = "xno"; then
   VALGRIND=""
   VALGRINDARGS=""
@@ -3071,6 +3067,7 @@ AC_CHECK_TYPES([HPCON, LPPROC_THREAD_ATTRIBUTE_LIST, LPSTARTUPINFOEXW,
 # SVID explicitly defines setjmp() not to save the signal mask.
 AC_CHECK_FUNCS(sigsetjmp _setjmp siglongjmp _longjmp)
 
+default_backend_method=select
 # Make it possible to disable use of /dev/poll.
 if test "x$with_devpoll" = "xno"; then :; else
   AC_CHECK_HEADERS(sys/devpoll.h sys/event.h sys/epoll.h)
@@ -3093,6 +3090,7 @@ if test "x$with_devpoll" = "xno"; then :; else
   fi
 
   if test "x$ac_cv_header_sys_devpoll_h" = "xno"; then :; else
+      default_backend_method="devpoll ($pike_cv_poll_device)"
       AC_MSG_CHECKING(whether struct dvpoll has the field dp_setp)
       AC_CACHE_VAL(pike_cv_struct_dvpoll_has_dp_setp, [
           AC_TRY_COMPILE([
@@ -3111,6 +3109,10 @@ if test "x$with_devpoll" = "xno"; then :; else
       if test "x$pike_cv_struct_dvpoll_has_dp_setp" = "xyes"; then
           AC_DEFINE(STRUCT_DVPOLL_HAS_DP_SETP)
       fi
+  fi
+
+  if test "x$ac_cv_func_kqueue" = "xyes"; then
+    default_backend_method=kqueue
   fi
 
   if test "x$ac_cv_header_sys_epoll_h" = "xyes"; then
@@ -3168,6 +3170,7 @@ int main(int argc, char **argv)
     ])
     AC_MSG_RESULT($pike_cv_epoll_works)
     if test "x$pike_cv_epoll_works" = "xyes"; then
+      default_backend_method=epoll
       AC_DEFINE(WITH_EPOLL)
     fi
   fi
@@ -4384,6 +4387,13 @@ AC_CHECK_FUNCS( \
  thread_info \
  host_get_clock_service \
 )
+
+if test "x$with_poll:$ac_cv_func_poll" = "xyes:yes"; then
+  AC_DEFINE(HAVE_AND_USE_POLL)
+  if test "x$default_backend_method" = "xselect"; then
+    default_backend_method=poll
+  fi
+else :; fi
 
 # SunOS 4 realloc() returns NULL when reallocing NULL.
 AC_MSG_CHECKING([if realloc(NULL, SZ) works])
@@ -8411,6 +8421,7 @@ fi
 cat >>config.info <<EOF
 
 features:
+PAD_FEATURE([backend])$default_backend_method
 PAD_FEATURE([dynamic loading])$pike_cv_sys_dynamic_loading
 PAD_FEATURE([threads])$using_threads
 PAD_FEATURE([signal handler])$signal_handler
