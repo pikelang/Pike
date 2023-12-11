@@ -5822,36 +5822,36 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
     pop_stack();
 #endif /* 0 */
 
-    simple_add_define(this, "__PIKE__", " 1 ");
+    simple_add_define(this, "__PIKE__", "1");
 
     simple_add_define(this, "__REAL_VERSION__",
-		      " " DEFINETOSTR(PIKE_MAJOR_VERSION) "."
-		      DEFINETOSTR(PIKE_MINOR_VERSION) " ");
+                      DEFINETOSTR(PIKE_MAJOR_VERSION) "."
+                      DEFINETOSTR(PIKE_MINOR_VERSION));
     simple_add_define(this, "__REAL_MAJOR__",
-		      " " DEFINETOSTR(PIKE_MAJOR_VERSION) " ");
+                      DEFINETOSTR(PIKE_MAJOR_VERSION));
     simple_add_define(this, "__REAL_MINOR__",
-		      " " DEFINETOSTR(PIKE_MINOR_VERSION) " ");
+                      DEFINETOSTR(PIKE_MINOR_VERSION));
     simple_add_define(this, "__BUILD__",
-		      " " DEFINETOSTR(PIKE_BUILD_VERSION) " ");
+                      DEFINETOSTR(PIKE_BUILD_VERSION));
     simple_add_define(this, "__REAL_BUILD__",
-		      " " DEFINETOSTR(PIKE_BUILD_VERSION) " ");
-    simple_add_define(this, "__AUTO_BIGNUM__", " 1 ");
+                      DEFINETOSTR(PIKE_BUILD_VERSION));
+    simple_add_define(this, "__AUTO_BIGNUM__", "1");
 #ifdef __NT__
-    simple_add_define(this, "__NT__", " 1 ");
+    simple_add_define(this, "__NT__", "1");
 #endif
 #ifdef __amigaos__
-    simple_add_define(this, "__amigaos__", " 1 ");
+    simple_add_define(this, "__amigaos__", "1");
 #endif
 #ifdef __APPLE__
-    simple_add_define(this, "__APPLE__", " 1 ");
+    simple_add_define(this, "__APPLE__", "1");
 #endif
 #ifdef __HAIKU__
-    simple_add_define(this, "__HAIKU__", " 1 ");
+    simple_add_define(this, "__HAIKU__", "1");
 #endif
     simple_add_define(this, "SIZEOF_INT",
-		      " " DEFINETOSTR(SIZEOF_INT) " ");
+                      DEFINETOSTR(SIZEOF_INT));
     simple_add_define(this, "SIZEOF_FLOAT",
-		      " " DEFINETOSTR(SIZEOF_FLOAT) " ");
+                      DEFINETOSTR(SIZEOF_FLOAT));
   }
 
   /*! @decl void define_multiple_macros(mapping(string: @
