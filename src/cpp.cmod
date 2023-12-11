@@ -435,7 +435,8 @@ PIKECLASS define
         if ((d->name == self->name) &&
             (d->magic == self->magic) &&
             (d->args == self->args) &&
-            (d->flags == self->flags) &&
+            ((d->flags & CPP_MACRO_VARARGS) ==
+             (self->flags & CPP_MACRO_VARARGS)) &&
             (array_equal_p(d->parts, self->parts, NULL))) {
           push_int(1);
           return;
