@@ -1210,7 +1210,7 @@ dnl and see that they can connect properly.
 test_tests([[
 import SSL.Constants;
 array(int) a() {
-#define __NT__
+#define __NT__ 1
   int successes;
   int tests;
   int skip;
@@ -1314,7 +1314,7 @@ dnl all suites defined for that version.
 test_tests([[
 import SSL.Constants;
 array(int) a() {
-#define __NT__
+#define __NT__ 1
   int successes;
   int tests;
   int skip;
@@ -1391,7 +1391,7 @@ test_do([[
 test_tests([[
 import SSL.Constants;
 array(int) a() {
-#define __NT__
+#define __NT__ 1
   int successes;
   int tests;
   int skip;
