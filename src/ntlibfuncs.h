@@ -81,4 +81,11 @@ NTLIBFUNC(kernel32, BOOL, GetConsoleMode, (
   LPDWORD lpMode
 ));
 
+/* This has the same API as GetSystemTimeAsFileTime(),
+ * but has better precision than 1/64 seconds.
+ */
+NTLIBFUNC(kernel32, VOID, GetSystemTimePreciseAsFileTime, (
+  LPFILETIME lpSystemTimeAsFileTime
+));
+
 #endif /* __NT__ */

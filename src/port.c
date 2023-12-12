@@ -47,6 +47,8 @@ time_t time (time_t *);
 #ifdef HAVE_GETSYSTEMTIMEASFILETIME
 #include <winbase.h>
 
+#include "fdlib.h"
+
 PMOD_EXPORT void GETTIMEOFDAY(struct timeval *t)
 {
   union {
@@ -54,7 +56,17 @@ PMOD_EXPORT void GETTIMEOFDAY(struct timeval *t)
     FILETIME ft_struct;
   } ft;
 
-  GetSystemTimeAsFileTime(&ft.ft_struct);
+  if (Pike_NT_GetSystemTimePreciseAsFileTime) {
+    /* We assume that this call actually has some precision.
+     * Available on Windows 8/Windows Server 2012 and later.
+     */
+    Pike_NT_GetSystemTimePreciseAsFileTime(&ft.ft_struct);
+  } else {
+    /* NB: This typically has a precision of 1/64 seconds
+     *     (ie 15625 usec).
+     */
+    GetSystemTimeAsFileTime(&ft.ft_struct);
+  }
 
   ft.ft_scalar /= 10;
 #ifndef __GNUC__
