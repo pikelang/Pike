@@ -62,10 +62,23 @@ PMOD_EXPORT void GETTIMEOFDAY(struct timeval *t)
      */
     Pike_NT_GetSystemTimePreciseAsFileTime(&ft.ft_struct);
   } else {
+    static unsigned __int64 prev_scalar;
+    static unsigned __int64 now;
+
     /* NB: This typically has a precision of 1/64 seconds
      *     (ie 15625 usec).
      */
     GetSystemTimeAsFileTime(&ft.ft_struct);
+
+    if (prev_scalar != ft.ft_scalar) {
+      if ((now < ft.ft_scalar) || (prev_scalar > ft.ft_scalar)) {
+        /* The typical case, or the system clock has been back-dated. */
+        now = ft.ft_scalar - 10;	/* Compensate for the 1 usec below. */
+      }
+      prev_scalar = ft.ft_scalar;
+    }
+    now += 10;	/* 1 usec */
+    ft.ft_scalar = now;
   }
 
   ft.ft_scalar /= 10;
