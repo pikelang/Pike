@@ -49,6 +49,11 @@ time_t time (time_t *);
 
 #include "fdlib.h"
 
+#ifdef CONFIGURE_TEST
+Pike_NT_GetSystemTimePreciseAsFileTime_type
+  Pike_NT_GetSystemTimePreciseAsFileTime = NULL;
+#endif
+
 PMOD_EXPORT void GETTIMEOFDAY(struct timeval *t)
 {
   union {
