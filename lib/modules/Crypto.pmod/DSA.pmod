@@ -145,13 +145,12 @@ class State {
       string(8bit) seed = random(SEED_LENGTH);
       Gmp.mpz s = Gmp.mpz(seed, 256);
 
-      string(8bit) h = [string(8bit)]
-	(nist_hash(s) ^ nist_hash( [object(Gmp.mpz)](s + 1) ));
+      string(8bit) h = (nist_hash(s) ^ nist_hash(s + 1));
 
       h = sprintf("%c%s%c",
-		  [int(8bit)](h[0] | 0x80),
+                  (h[0] | 0x80),
 		  h[1..<1],
-		  [int(8bit)](h[-1] | 1));
+                  (h[-1] | 1));
 
       Gmp.mpz q = Gmp.mpz(h, 256);
 
@@ -168,10 +167,10 @@ class State {
 	int k;
 
 	for (k = 0; k<= n; k++)
-	  buffer = nist_hash( [object(Gmp.mpz)](s + j + k) ) + buffer;
+          buffer = nist_hash(s + j + k) + buffer;
 
 	buffer = buffer[sizeof(buffer) - L/8 ..];
-	buffer[0] = [int(8bit)](buffer[0] | 0x80);
+        buffer[0] = buffer[0] | 0x80;
 
 	Gmp.mpz p = Gmp.mpz(buffer, 256);
 
@@ -188,12 +187,12 @@ class State {
 
   protected Gmp.mpz find_generator(Gmp.mpz p, Gmp.mpz q)
   {
-    Gmp.mpz e = [object(Gmp.mpz)]((p - 1) / q);
-    Gmp.mpz g;
+    Gmp.mpz e = ((p - 1) / q);
+    Gmp.mpz g = p;
 
     do {
       /* A random number in { 2, 3, ... p - 2 } */
-      g = ([object(Gmp.mpz)](random_number( [object(Gmp.mpz)](p-3) ) + 2))
+      g = (random_number(p-3) + 2)
 	/* Exponentiate to get an element of order 1 or q */
 	->powm(e, p);
     } while (g == 1);
