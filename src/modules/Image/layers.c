@@ -1095,7 +1095,7 @@ static void image_layer_available_modes(INT32 args)
 }
 
 /*
-**! method array(string) description()
+**! method array(string) descriptions()
 **!     Layer descriptions
 */
 static void image_layer_descriptions(INT32 args)

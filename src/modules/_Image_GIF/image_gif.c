@@ -2146,8 +2146,8 @@ void image_gif_decode(INT32 args)
 }
 
 /*
-**! method object decode_layers(string data)
-**! method object decode_layers(array _decoded)
+**! method array(object) decode_layers(string data)
+**! method array(object) decode_layers(array _decoded)
 **! method object decode_layer(string data)
 **! method object decode_layer(array _decoded)
 **!	Decodes GIF data and creates an array of layers
