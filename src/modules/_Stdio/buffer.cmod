@@ -1144,6 +1144,10 @@ PIKECLASS Buffer
 
       if( (inh->prog == file_program) &&
 	  (ref->identifier_offset == fd_write_identifier_offset) ) {
+        /* FIXME: This code is currently typically dead due to
+         *        Stdio.File overloading write() with a function
+         *        that cares about outbuffer.
+         */
 	struct my_file *fd =
 	  get_inherit_storage( f->u.object, ref->inherit_offset );
 	while( sz > written )
@@ -1156,7 +1160,7 @@ PIKECLASS Buffer
 	    continue;
 	  if( res <= 0 ) {
 	    fd->my_errno = errno;
-	    if (!written) written = -1;
+            if (!written) written = res;
 	    break;
 	  }
 	  io_consume( io, res );
@@ -1174,7 +1178,7 @@ PIKECLASS Buffer
       ptrdiff_t wr = io_call_write( io, f, rd );
       if( wr <= 0 )
       {
-	if (!written) written = -1;
+        if (!written) written = wr;
 	break;
       }
       written += wr;
