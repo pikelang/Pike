@@ -5982,14 +5982,15 @@ time_t mktime_zone(struct tm *date, int other_timezone, int tz)
   INT64 retval = 0;
   INT64 ret;
   int normalised_time;
-#if defined(__NT__) || defined(_AIX)
+#if defined(__NT__) || defined(_AIX) || defined(__APPLE__)
   INT64 ydelta = 0;	/* Number of years. */
 #endif
 
   date->tm_wday = -1;		/* flag to determine failure */
 
-#if defined(__NT__) || defined(_AIX)
+#if defined(__NT__) || defined(_AIX) || defined(__APPLE__)
   /* mktime() on NT and AIX do not support years before 1970.
+   * mktime() on macOS does not support years before 1900.
    *
    * The calendar repeats every 28 years, so offset it appropriately.
    * Offset years before 1971 in order to avoid issues near 1970-01-01.
@@ -5999,13 +6000,16 @@ time_t mktime_zone(struct tm *date, int other_timezone, int tz)
     date->tm_year += y * 400;
     ydelta += y * 400;
     retval -= y * 12622780800LL;	/* 400 years in seconds. */
-  } else if (date->tm_year > 130) {
+  }
+#ifndef __APPLE__
+  else if (date->tm_year > 130) {
     /* NB: Duplicate of the above due to rounding to zero. */
     int y = (date->tm_year + 300)/400;
     date->tm_year -= y * 400;
     ydelta -= y * 400;
     retval += y * 12622780800LL;	/* 400 years in seconds. */
   }
+#endif
   if (date->tm_year <= -30) {		/* Before 1870. */
     int y = -date->tm_year/100;
     date->tm_year += y * 100;
@@ -6019,7 +6023,13 @@ time_t mktime_zone(struct tm *date, int other_timezone, int tz)
     ydelta += 6;
     retval -= 189302400;		/* 6 years in seconds. */
   }
-  if ((date->tm_year < 71) || (date->tm_year > 130)) {
+  if (
+#ifdef __APPLE__
+      date->tm_year < 0
+#else
+      (date->tm_year < 71) || (date->tm_year > 130)
+#endif
+      ) {
     int y = ((71 + 27 - date->tm_year)/28);
     date->tm_year += y * 28;
     ydelta += y * 28;
@@ -6088,7 +6098,7 @@ time_t mktime_zone(struct tm *date, int other_timezone, int tz)
       CALL_AND_UNSET_ONERROR(uwp);
       pop_stack();
 
-#if defined(__NT__) || defined(_AIX)
+#if defined(__NT__) || defined(_AIX) || defined(__APPLE__)
       /* Restore tm_year. */
       date->tm_year -= ydelta;
 #endif
@@ -6135,7 +6145,7 @@ time_t mktime_zone(struct tm *date, int other_timezone, int tz)
     ret += normalised_time + tz;
   }
 
-#if defined(__NT__) || defined(_AIX)
+#if defined(__NT__) || defined(_AIX) || defined(__APPLE__)
   /* Restore tm_year. */
   date->tm_year -= ydelta;
 #endif
