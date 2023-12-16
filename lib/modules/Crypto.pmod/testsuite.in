@@ -688,6 +688,7 @@ test_eq( S(RSA->pkcs_sign(Gmp.mpz(331)->digits(256), Crypto.SHA1)), "00fd12bb296
 test_true( RSA->raw_verify("fl\0rpzprutt",RSA->raw_sign("fl\0rpzprutt")) )
 test_false( RSA->raw_verify("fl\0rpzputt",RSA->raw_sign("fl\0rpzprutt")) )
 test_eq( RSA->decrypt(RSA->encrypt("fl\0rpzprutt")), "fl\0rpzprutt" )
+test_eval_error( RSA->decrypt("\0" + RSA->encrypt("fl\0rpzprutt")) )
 test_eq( RSA->key_size(), 512 )
 test_true( RSA->public_key_equal(RSA) )
 test_false( RSA->public_key_equal(Crypto.RSA()->generate_key(512)) )
