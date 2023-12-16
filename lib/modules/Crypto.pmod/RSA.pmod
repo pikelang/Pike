@@ -307,6 +307,9 @@ class State {
   //! Decrypt a message encrypted with @[encrypt].
   string(8bit) decrypt(string(8bit) s)
   {
+    if (has_prefix(s, "\0") && (s != "\0")) {
+      error("Invalid RSA cipher text.\n");
+    }
     return rsa_unpad(Gmp.smpz(s, 256)->powm(d, n), 2);
   }
 
