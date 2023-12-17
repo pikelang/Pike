@@ -3516,8 +3516,28 @@ static void f_create(INT32 args)
     jint errcode;
     void *vp; /* To avoid aliasing. */
     if((errcode = JNI_CreateJavaVM(&j->jvm, &vp, &j->vm_args))) {
-      Pike_error("Failed to create virtual machine: %s (%d)\n",
-		 pike_jni_error(errcode), errcode);
+
+#if SIZEOF_CHAR_P < 8
+      /* 32-bit jvms typically want to allocate the heap
+       * in one block.
+       */
+      if (errcode == JNI_ENOMEM) {
+        /* Out of memory.
+         *
+         * Retry with a reduced java heap size.
+         */
+        j->vm_args.options[j->vm_args.nOptions].optionString = "-Xmx128M";
+        j->vm_args.options[j->vm_args.nOptions].extraInfo = NULL;
+        j->vm_args.nOptions++;
+
+        errcode = JNI_CreateJavaVM(&j->jvm, &vp, &j->vm_args);
+      }
+#endif
+
+      if(errcode) {
+        Pike_error("Failed to create virtual machine: %s (%d)\n",
+                   pike_jni_error(errcode), errcode);
+      }
     }
     j->env = vp;
   }
