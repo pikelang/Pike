@@ -1153,8 +1153,8 @@ void forget_old_sessions()
     if(session->last_activity < t)
     {
       SSL3_DEBUG_MSG("SSL.Context->forget_old_sessions: "
-                     "garbing session %O due to session_lifetime limit\n",
-                     id);
+                     "garbing session %s due to session_lifetime limit\n",
+                     String.string2hex(id));
       m_delete (session_cache, id);
     }
   }
@@ -1165,10 +1165,15 @@ void forget_old_sessions()
 //! disabled.
 object(Session)|zero lookup_session(string id)
 {
-  if (use_cache)
-    return session_cache[id];
-  else
-    return 0;
+  object(Session)|zero res = use_cache && session_cache[id];
+  if (!res && use_cache) {
+    SSL3_DEBUG_MSG("%O: Failed to lookup session %s.\n"
+                   "%O: Sessions in cache: %O\n",
+                   this_function, String.string2hex(id),
+                   this_function,
+                   map(indices(session_cache), String.string2hex));
+  }
+  return res;
 }
 
 //! Decode a session ticket and return the corresponding session
@@ -1271,12 +1276,13 @@ void record_session(Session s)
         // Randomly delete sessions to keep within the limit.
         if( to_delete-- < 0 ) break;
         SSL3_DEBUG_MSG("SSL.Context->record_session: "
-                       "garbing session %O due to max_sessions limit\n", id);
+                       "garbing session %O due to max_sessions limit\n",
+                       String.string2hex(id));
         m_delete (session_cache, id);
       }
     }
     SSL3_DEBUG_MSG("SSL.Context->record_session: caching session %O\n",
-                   s->identity);
+                   String.string2hex(s->identity));
     session_cache[s->identity] = s;
   }
 }
@@ -1284,7 +1290,8 @@ void record_session(Session s)
 //! Invalidate a session for resumption and remove it from the cache.
 void purge_session(Session s)
 {
-  SSL3_DEBUG_MSG("SSL.Context->purge_session: %O\n", s->identity || "");
+  SSL3_DEBUG_MSG("SSL.Context->purge_session: %O\n",
+                 String.string2hex(s->identity || ""));
   if (s->identity)
     m_delete (session_cache, s->identity);
   /* RFC 4346 7.2:

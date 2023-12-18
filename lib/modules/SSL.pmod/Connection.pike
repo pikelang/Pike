@@ -800,8 +800,8 @@ int(-1..1) handle_alert(int level, int description)
   }
 #ifdef SSL3_DEBUG
   else
-    werror("SSL.Connection: Received warning alert %O\n",
-           ALERT_descriptions[description]);
+    SSL3_DEBUG_MSG("SSL.Connection: Received warning alert %O\n",
+                   ALERT_descriptions[description]);
 #endif
   return 0;
 }
