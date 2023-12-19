@@ -1447,11 +1447,66 @@ Future resolve(mixed value)
 //! @note
 //!   The returned @[Future] does NOT have any state (eg backend)
 //!   propagated from the @[futures]. This must be done by hand.
+//!
+//! @seealso
+//!   @[serialize()]
 Future traverse(array(Future) futures,
 		function(mixed, __unknown__ ... : mixed) fun,
 		mixed ... extra)
 {
   return results(futures->map(fun, @extra));
+}
+
+//! Return a @[Future] that represents the array of mapping @[fun]
+//! sequentially over the results of the completed @[futures].
+//!
+//! This function differs from @[traverse()] in that only one call
+//! of @[fun] will be active at a time. This is useful when each
+//! call of @[fun] uses lots of resources, but may increase latency.
+//!
+//! If @[fun()] fails for one of the items, it will not be called
+//! for any others.
+//!
+//! @note
+//!   The returned @[Future] does NOT have any state (eg backend)
+//!   propagated from the @[futures]. This must be done by hand.
+//!
+//! @seealso
+//!   @[traverse()]
+Future serialize(array(Future) futures,
+                 function(mixed, __unknown__ ... : mixed) fun,
+                 mixed ... extra)
+{
+  array(Promise) promises = allocate(sizeof(futures), Promise)();
+
+  if (!sizeof(promises)) {
+    return resolve(({}));
+  }
+
+  void do_one(mixed val, int idx, array(Future) futures,
+              array(Promise) promises,
+              function(mixed, __unknown__ ... : mixed) fun,
+              array(mixed) extra)
+  {
+    if (idx > -1) {
+      promises[idx]->success(val);
+    }
+    idx++;
+    if (idx < sizeof(futures)) {
+      Future f = futures[idx];
+      f = f->map(fun, @extra);
+      f->on_success(do_one, idx, futures, promises, fun, extra);
+      f->on_failure(lambda(mixed err, int idx, array(Promise) promises) {
+                      while(idx < sizeof(promises)) {
+                        promises[idx++]->failure(err);
+                      }
+                    }, idx, promises);
+    }
+  }
+
+  do_one(UNDEFINED, -1, futures, promises, fun, extra);
+
+  return results(promises->future());
 }
 
 //! Return a @[Future] that represents the accumulated results of
