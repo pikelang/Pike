@@ -30,6 +30,9 @@ __deprecated__ void write(mixed ... items)
 
 //! @decl void put(mixed ... items)
 //! Adds @[items] to the queue.
+//!
+//! @seealso
+//!   @[get()], @[peek()]
 void put(mixed ... items)
 {
   l += items;
@@ -44,6 +47,9 @@ __deprecated__ mixed read()
 //! @decl mixed get()
 //! Returns the next element from the queue, or @expr{UNDEFINED@} if
 //! the queue is empty.
+//!
+//! @seealso
+//!   @[peek()], @[put()]
 mixed get()
 {
   if( !sizeof(l) ) return UNDEFINED;
@@ -53,10 +59,17 @@ mixed get()
 }
 
 //! Returns the next element from the queue without removing it from
-//! the queue. Returns @expr{0@} if the queue is empty.
+//! the queue. Returns @expr{UNDEFINED@} if the queue is empty.
+//!
+//! @note
+//!   Prior to Pike 9.0 this function returned a plain @expr{0@}
+//!   when the queue was empty.
+//!
+//! @seealso
+//!   @[get()], @[put()]
 mixed peek()
 {
-  return sizeof(l) && l[0];
+  return sizeof(l)?l[0]:UNDEFINED;
 }
 
 //! Returns true if the queue is empty, otherwise zero.
