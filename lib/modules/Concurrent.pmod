@@ -1412,7 +1412,7 @@ Future traverse(array(Future) futures,
 //! @seealso
 //!   @[traverse()]
 Future serialize(array(Future) futures,
-                 function(mixed, __unknown__ ... : mixed) fun,
+                 function(mixed, mixed ... : mixed) fun,
                  mixed ... extra)
 {
   array(Promise) promises = allocate(sizeof(futures), Promise)();
@@ -1423,7 +1423,7 @@ Future serialize(array(Future) futures,
 
   void do_one(mixed val, int idx, array(Future) futures,
               array(Promise) promises,
-              function(mixed, __unknown__ ... : mixed) fun,
+              function(mixed, mixed ... : mixed) fun,
               array(mixed) extra)
   {
     if (idx > -1) {
@@ -1440,7 +1440,7 @@ Future serialize(array(Future) futures,
                       }
                     }, idx, promises);
     }
-  }
+  };
 
   do_one(UNDEFINED, -1, futures, promises, fun, extra);
 
