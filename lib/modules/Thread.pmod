@@ -87,7 +87,7 @@ class Fifo {
   //! thread writes one.
   //!
   //! @seealso
-  //!   @[try_read()], @[read_array()], @[write()]
+  //!   @[peek()], @[try_read()], @[read_array()], @[write()]
   //!
   mixed read()
   {
@@ -98,13 +98,13 @@ class Fifo {
     return res;
   }
 
-  //! This function retrieves a value from the fifo if there is any
+  //! This function retrieves a value from the fifo if there are any
   //! there. Values will be returned in the order they were written.
   //! If there are no values present in the fifo then @[UNDEFINED]
   //! will be returned.
   //!
   //! @seealso
-  //!   @[read()]
+  //!   @[peek()], @[read()]
   //!
   mixed try_read()
   {
@@ -112,6 +112,22 @@ class Fifo {
     object|zero key = lock::lock();
     if (!num) return UNDEFINED;
     mixed res = read_unlocked();
+    key = 0;
+    return res;
+  }
+
+  //! This function returns the next value in the fifo if there are
+  //! any there. If there are no values present in the fifo then
+  //! @[UNDEFINED] will be returned.
+  //!
+  //! @seealso
+  //!   @[read()], @[try_read()]
+  mixed peek()
+  {
+    if (!num) return UNDEFINED;
+    object|zero key = lock::lock();
+    if (!num) return UNDEFINED;
+    mixed res = buffer[num];
     key = 0;
     return res;
   }
@@ -282,7 +298,7 @@ class Queue {
   //! thread writes one.
   //!
   //! @seealso
-  //!   @[try_read()], @[write()]
+  //!   @[peek()], @[try_read()], @[write()]
   //!
   mixed read()
   {
@@ -295,13 +311,13 @@ class Queue {
     return tmp;
   }
 
-  //! This function retrieves a value from the queue if there is any
+  //! This function retrieves a value from the queue if there are any
   //! there. Values will be returned in the order they were written.
-  //! If there are no values present in the fifo then @[UNDEFINED]
+  //! If there are no values present in the queue then @[UNDEFINED]
   //! will be returned.
   //!
   //! @seealso
-  //!   @[write()]
+  //!   @[peek()], @[read()], @[write()]
   //!
   mixed try_read()
   {
@@ -310,6 +326,22 @@ class Queue {
     if (w_ptr == r_ptr) return UNDEFINED;
     mixed tmp=buffer[r_ptr];
     buffer[r_ptr++] = 0;	// Throw away any references.
+    key=0;
+    return tmp;
+  }
+
+  //! This function returns the next value in the queue if there are
+  //! any there. If there are no values present in the queue then
+  //! @[UNDEFINED] will be returned.
+  //!
+  //! @seealso
+  //!   @[peek()], @[read()], @[try_read()], @[write()]
+  mixed peek()
+  {
+    if (w_ptr == r_ptr) return UNDEFINED;
+    object|zero key = lock::lock();
+    if (w_ptr == r_ptr) return UNDEFINED;
+    mixed tmp=buffer[r_ptr];
     key=0;
     return tmp;
   }
@@ -1149,7 +1181,7 @@ class Condition (protected Mutex|void mutex)
 // Fallback implementation of Thread.Fifo.
 class Fifo
 {
-  array buffer;
+  array buffer = ({});
   int ptr, num;
   int read_tres, write_tres;
 
@@ -1168,6 +1200,12 @@ class Fifo
     buffer[ptr++] = 0;	// Throw away any references.
     ptr%=sizeof(buffer);
     return tmp;
+  }
+
+  mixed peek()
+  {
+    if (!num) return UNDEFINED;
+    return buffer[ptr];
   }
 
   array read_array()
@@ -1253,6 +1291,12 @@ class Queue
     mixed tmp=buffer[r_ptr];
     buffer[r_ptr++] = 0;	// Throw away any references.
     return tmp;
+  }
+
+  mixed peek()
+  {
+    if (w_ptr == r_ptr) return UNDEFINED;
+    return buffer[r_ptr];
   }
 
   array read_array()
