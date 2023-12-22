@@ -103,13 +103,14 @@ define(test_ssl, [[
     void server_send_data()
     {
       trigged = 2;
-      int bytes = server->write(server_buf);
-      server_buf = server_buf[bytes..];
-      if (!sizeof(server_buf)) {
+      if (sizeof(server_buf)) {
+        int bytes = server->write (server_buf);
+        server_buf = server_buf[bytes..];
+      } else {
         server->set_write_callback(UNDEFINED);
         if (state) {
-          server->close();
           state = 2;
+          server->close();
         }
       }
     };
@@ -139,9 +140,10 @@ define(test_ssl, [[
     void client_send_data()
     {
       trigged = 2;
-      int bytes = client->write(client_send_buf[..4095]);
-      client_send_buf = client_send_buf[bytes..];
-      if (!sizeof(client_send_buf)) {
+      if (sizeof(client_send_buf)) {
+        int bytes = client->write(client_send_buf[..4095]);
+        client_send_buf = client_send_buf[bytes..];
+      } else {
         client->set_write_callback(UNDEFINED);
         state = 1;
       }
@@ -172,7 +174,8 @@ define(test_ssl, [[
     return (state == 3) ? client_recv_buf : state;
   ]], $5)
 ]])
-
+]])
+cond_resolv(Crypto.Hash, [[
   test_ssl(0,0,0,0,client_msg)
   test_ssl(0,1,0,0,client_msg)
   test_ssl(1,1,0,0,0)
