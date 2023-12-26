@@ -2352,8 +2352,8 @@ PMOD_EXPORT ptrdiff_t debug_fd_write(FD fd, void *buf, ptrdiff_t len)
 
   if (fd_to_handle(fd, &kind, &handle, 0) < 0) return -1;
 
-  FDDEBUG(fprintf(stderr, "Writing %d bytes to %d (%d)\n",
-		  len, fd, (long)(ptrdiff_t)handle));
+  FDDEBUG(fprintf(stderr, "Writing %ld bytes to %d (%d)\n",
+                  (long)len, fd, (long)(ptrdiff_t)handle));
 
   switch(kind)
   {
@@ -2371,7 +2371,7 @@ PMOD_EXPORT ptrdiff_t debug_fd_write(FD fd, void *buf, ptrdiff_t len)
 	  }
 	  return -1;
 	}
-	FDDEBUG(fprintf(stderr, "Wrote %d bytes to %d)\n", len, fd));
+        FDDEBUG(fprintf(stderr, "Wrote %ld bytes to %d)\n", (long)ret, fd));
 	return ret;
       }
 
@@ -2428,8 +2428,8 @@ PMOD_EXPORT ptrdiff_t debug_fd_read(FD fd, void *to, size_t len)
 
   if (fd_to_handle(fd, &type, &handle, 0) < 0) return -1;
 
-  FDDEBUG(fprintf(stderr,"Reading %d bytes from %d (%d) to %lx\n",
-		  len, fd, (long)(ptrdiff_t)handle,
+  FDDEBUG(fprintf(stderr,"Reading %ld bytes from %d (%d) to %lx\n",
+                  (long)len, fd, (long)(ptrdiff_t)handle,
 		  (unsigned long)(ptrdiff_t)to));
 
   switch(type)
