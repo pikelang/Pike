@@ -950,12 +950,17 @@ PIKEFUN string(0..255) hex2string(string hex)
     if( tmp==16 ) { l--; i--; continue; }
     *p = tmp<<4;
     tmp = hexdecode[*q++];
-    if( tmp==16 ) Pike_error("Illegal hex format.\n");
+    if( tmp==16 ) {
+      free_string(s);
+      Pike_error("Illegal hex format.\n");
+    }
     *p++ |= tmp;
     l -= 2;
   }
-  if( l && hexdecode[*q]!=16 )
+  if( l && hexdecode[*q]!=16 ) {
+    free_string(s);
     Pike_error("Illegal hex format.\n");
+  }
 
   if( hex->len>>1 == i>>1 )
     RETURN end_shared_string(s);
