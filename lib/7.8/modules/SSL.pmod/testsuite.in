@@ -108,8 +108,8 @@ define(test_ssl, [[
         server_buf = server_buf[bytes..];
       } else {
         server->set_write_callback(UNDEFINED);
-        if (state) {
-          state = 2;
+        if (state & 1) {
+          state |= 2;
           server->close();
         }
       }
@@ -140,18 +140,17 @@ define(test_ssl, [[
     void client_send_data()
     {
       trigged = 2;
-      if (sizeof(client_send_buf)) {
-        int bytes = client->write(client_send_buf[..4095]);
-        client_send_buf = client_send_buf[bytes..];
-      } else {
+      int bytes = client->write(client_send_buf[..4095]);
+      client_send_buf = client_send_buf[bytes..];
+      if (!sizeof(client_send_buf)) {
         client->set_write_callback(UNDEFINED);
-        state = 1;
+        state |= 1;
       }
     };
     void client_got_close()
     {
       trigged = 2;
-      if (state == 2) state = 3;
+      state |= 4;
       client->close();
     };
     void client_alert(mixed ... ignored)
@@ -171,7 +170,7 @@ define(test_ssl, [[
       Pike.DefaultBackend(0.1);
     }
 
-    return (state == 3) ? client_recv_buf : state;
+    return (state == 7) ? client_recv_buf : state;
   ]], $5)
 ]])
 ]])
