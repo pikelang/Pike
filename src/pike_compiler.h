@@ -222,7 +222,7 @@ void yytype_report(int severity_level,
 void yytype_error(const char *msg, struct pike_type *expected_t,
 		  struct pike_type *got_t, unsigned int flags);
 struct pike_string *format_exception_for_error_msg (struct svalue *thrown);
-void handle_compile_exception (const char *yyerror_fmt, ...)
+PMOD_EXPORT void handle_compile_exception (const char *yyerror_fmt, ...)
   ATTRIBUTE((format (printf, 1, 2)));
 void push_compiler_frame(int lexical_scope);
 node *low_pop_local_variables(int level, node *block);

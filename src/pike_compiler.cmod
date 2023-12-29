@@ -3011,7 +3011,7 @@ struct pike_string *format_exception_for_error_msg (struct svalue *thrown)
   }
 }
 
-void handle_compile_exception (const char *yyerror_fmt, ...)
+PMOD_EXPORT void handle_compile_exception (const char *yyerror_fmt, ...)
 {
   struct svalue thrown;
   struct compilation *c = THIS_COMPILATION;
