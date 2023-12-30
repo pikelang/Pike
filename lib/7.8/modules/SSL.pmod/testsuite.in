@@ -100,6 +100,7 @@ define(test_ssl, [[
     int trigged = 10;
 
     string server_buf = "";
+    int server_received;
     void server_send_data()
     {
       trigged = 2;
@@ -108,7 +109,7 @@ define(test_ssl, [[
         server_buf = server_buf[bytes..];
       } else {
         server->set_write_callback(UNDEFINED);
-        if (state & 1) {
+        if ((state & 1) && (server_received == sizeof(client_msg))) {
           state |= 2;
           server->close();
         }
@@ -118,6 +119,7 @@ define(test_ssl, [[
     {
       trigged = 2;
       if (!sizeof(server_buf)) server->set_write_callback(server_send_data);
+      server_received += sizeof(data);
       server_buf += data;
     };
     void server_got_close()
