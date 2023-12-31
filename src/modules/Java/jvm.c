@@ -30,6 +30,7 @@
 #include "operators.h"
 #include "signal_handler.h"
 #include "pike_types.h"
+#include "pike_compiler.h"
 
 #ifdef __NT__
 /* Needed for yywarning(). */
@@ -4142,6 +4143,20 @@ PIKE_MODULE_INIT
 #endif /* _REENTRANT */
   add_program_constant("jvm", jvm_program = end_program(), 0);
   jvm_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;
+  {
+    JMP_BUF rec;
+    if (SETJMP(rec)) {
+      handle_compile_exception("Failed to initialize jvm.");
+    } else {
+      struct object *machine;
+      push_constant_text("CLASSPATH");
+      SAFE_APPLY_MASTER("getenv", 1);
+      machine = clone_object(jvm_program, 1);
+      add_object_constant("__machine", machine, ID_PROTECTED);
+      free_object(machine);
+    }
+    UNSETJMP(rec);
+  }
 #endif /* HAVE_JAVA */
 }
 

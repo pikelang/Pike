@@ -777,13 +777,6 @@ protected class package {
 //! cls is a jclass object; call it to create a jobject, which will have all the methods of the Java class.
 //!
 //! Example: Java.pkg.FooClass()->getResult();
-object pkg;
-
-protected void create()
-{
-  machine = jvm(getenv("CLASSPATH"));
-  if(machine)
-    pkg = package("", (["jvm":machine]));
-}
+object pkg = package("", ([ "jvm":__machine ]));
 
 #endif /* Java.jvm */
