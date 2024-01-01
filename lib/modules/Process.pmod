@@ -919,6 +919,8 @@ __deprecated__ Process spawn(string command,
 //!
 //! @seealso
 //!   @[system], @[popen]
+//!
+//! @deprecated Process.Process
 {
   mapping(string:mixed) data=(["env":getenv()]);
   if(stdin) data->stdin=stdin;
@@ -945,6 +947,8 @@ __deprecated__ Process spawn(string command,
 //!
 //! @seealso
 //!   @[system], @[spawn]
+//!
+//! @deprecated Process.Process
 
 //! @decl Stdio.FILE popen(string command, string mode)
 //! Open a "process" for reading or writing.  The @[command] is executed
@@ -962,6 +966,8 @@ __deprecated__ Process spawn(string command,
 //!
 //! @seealso
 //!   @[system], @[spawn]
+//!
+//! @deprecated Process.Process
 
 variant __deprecated__ string popen(string s) {
    return fpopen(s)->read();
@@ -1003,10 +1009,24 @@ __deprecated__ int system(string command, void|Stdio.Stream stdin,
 //!   corresponding streams for this process are used for those that
 //!   are left out.
 //!
+//! @returns
+//!   Returns the exit code for the subprocess on normal completion.
+//!   Returns the negation of the last signal code if it terminated
+//!   due to a signal.
+//!
+//! @note
+//!   In Pike 8.0 and earlier this function returned the result
+//!   straight from @[Process.Process()->wait()].
+//!
+//! @deprecated Process.Process
+//!
 //! @seealso
 //!   @[spawn], @[popen]
 {
-  return spawn(command, stdin, stdout, stderr)->wait();
+  Process p = spawn(command, stdin, stdout, stderr);
+  int ret = p->wait();
+  if (ret < 0) ret = -p->last_signal();
+  return ret;
 }
 
 #pragma deprecation_warnings
