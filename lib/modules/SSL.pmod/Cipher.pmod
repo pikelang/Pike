@@ -600,7 +600,7 @@ class KeyExchangeRSA
   int(0..1) init_client()
   {
     rsa = session->peer_public_key;
-    return 1;
+    return session->validate_rsa_key(rsa);
   }
 
   int(0..1) init_server()

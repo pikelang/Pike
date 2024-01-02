@@ -833,3 +833,8 @@ int(0..1) reusable_as(Session other)
     equal(ecc_curves, other->ecc_curves) &&
     equal(ffdhe_groups, other->ffdhe_groups);
 }
+
+//! Validate that KE RSA key is more than 512 bits or exportable.
+int(0..1) validate_rsa_key(Crypto.RSA.State rsa) {
+  return cipher_spec->is_exportable==1 || rsa->key_size()>512;
+}
