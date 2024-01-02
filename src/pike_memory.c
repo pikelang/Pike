@@ -2044,8 +2044,13 @@ PMOD_EXPORT void *debug_malloc(size_t s, LOCATION location)
 {
   char *m;
 
-  /* Complain on attempts to allocate more than 128MB memory */
-  if (s > (size_t)0x08000000) {
+  /* Complain on attempts to allocate more than 16M svalues
+   * (typically 128MB on ILP32 and 256MB on LP64).
+   *
+   * Note that Tools.Shoot.Foreach3 assumes that it is
+   * possible to allocate an array with 10000000 svalues.
+   */
+  if (s > (size_t)(0x01000000 * sizeof(struct svalue))) {
     Pike_fatal("malloc(0x%08lx) -- Huge malloc!\n", (unsigned long)s);
   }
 
