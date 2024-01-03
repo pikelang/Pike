@@ -618,6 +618,10 @@ void f_load_module(INT32 args)
       struct svalue *save_sp=Pike_sp;
 #endif
       new_module->exit();
+
+      /* Clean up any objects that may have code residing in the module. */
+      destruct_objects_to_destruct();
+
 #ifdef PIKE_DEBUG
       if(Pike_sp != save_sp)
 	Pike_fatal("pike_module_exit in %s left "
