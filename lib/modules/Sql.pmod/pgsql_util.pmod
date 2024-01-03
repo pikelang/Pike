@@ -1981,7 +1981,7 @@ class proxy {
   final int(0..1) clearmessage;
   final int(0..1) untolderror;
   final mixed delayederror;
-  private mapping(string:array(mixed)) notifylist = ([]);
+  final mapping(string:array(mixed)) notifylist = ([]);
   final mapping(string:string) runtimeparameter;
   final mapping(string:mapping(string:mixed)) prepareds = ([]);
   final int pportalcount;
