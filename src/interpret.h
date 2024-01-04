@@ -909,4 +909,11 @@ static inline void POP_PIKE_FRAME(void) {
   LOW_POP_PIKE_FRAME (frame);
 }
 
+#ifdef DYNAMIC_MODULE
+/* Protect against strings keeping references to data in unloaded
+ * dynamic modules.
+ */
+#define push_static_text	push_text
+#endif
+
 #endif

@@ -558,4 +558,11 @@ static inline enum size_shift PIKE_UNUSED_ATTRIBUTE min_magnitude(const unsigned
 #define WIDE_ISALNUM(C)	(((C) < 256)?isidchar(C):0)
 #define WIDE_ISDIGIT(C)	((C)>='0' && (C)<='9')
 
+#ifdef DYNAMIC_MODULE
+/* Protect against strings keeping references to data in unloaded
+ * dynamic modules.
+ */
+#define make_shared_static_string	make_shared_wide_string
+#endif
+
 #endif /* STRALLOC_H */
