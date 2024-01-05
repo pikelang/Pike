@@ -710,7 +710,7 @@ PMOD_EXPORT struct pike_string *debug_begin_wide_shared_string(size_t len, enum 
   return t;
 }
 
-PMOD_EXPORT struct pike_string * make_shared_wide_string(void *str, size_t len,
+PMOD_EXPORT struct pike_string * make_shared_wide_string(const void *str, size_t len,
                                                          enum size_shift shift)
 {
   struct pike_string *s = begin_wide_shared_string(len, shift);
