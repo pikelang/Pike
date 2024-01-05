@@ -8127,7 +8127,7 @@ done
 
 if test x$with_dynamic_modules = xyes ; then
   dmmsrc="modules/dynamic_module_makefile.in"
-  DYNAMIC_MODULE_FLAGS="-DDYNAMIC_MODULE"
+  DYNAMIC_MODULE_FLAGS=""
   CCSHARED="${CCSHARED} ${DYNAMIC_MODULE_FLAGS}"
   PIKE_LIB="libpike.so"
   MODULE_O=tmodule.o
