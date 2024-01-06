@@ -12,7 +12,7 @@ AC_HAVE_HEADERS(sys/types.h sys/socket.h arpa/inet.h sys/socketvar.h pty.h \
   direct.h sys/wait.h process.h sys/file.h net/netdb.h unistd.h sys/termios.h \
   termios.h poll.h sys/poll.h sys/select.h sys/un.h netinet/tcp.h \
   sys/sendfile.h sys/ioctl.h linux/if.h linux/magic.h sys/xattr.h libzfs.h \
-  AvailabilityMacros.h sys/stropts.h,,,[
+  AvailabilityMacros.h sys/stropts.h libutil.h,,,[
 /* Needed for <sys/socket.h> on FreeBSD 4.9. */
 #include <sys/types.h>
 /* Needed for <sys/socketvar.h> on Solaris 10. */
@@ -22,6 +22,13 @@ AC_HAVE_HEADERS(sys/types.h sys/socket.h arpa/inet.h sys/socketvar.h pty.h \
 /* Needed for <sys/mount.h> on OpenBSD */
 #ifdef HAVE_SYS_PARAM_H
 #include <sys/param.h>
+#endif
+/* Likely needed for <libutil.h> on FreeBSD. */
+#ifdef HAVE_TERMIOS_H
+#include <termios.h>
+#elif defined(HAVE_SYS_TERMIOS_H)
+/* NB: Deprecated by <termios.h> above. */
+#include <sys/termios.h>
 #endif
 ])
 

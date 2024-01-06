@@ -74,6 +74,10 @@
 #include <sys/termios.h>
 #endif
 
+#ifdef HAVE_LIBUTIL_H
+#include <libutil.h>
+#endif
+
 #ifdef HAVE_LINUX_IF_H
 #include <linux/if.h>
 #endif
