@@ -4078,59 +4078,17 @@ elif test "x$pike_cv_sys_os" = "xHaiku" -o "x$pike_cv_sys_os" = "xBeOS"; then
         AC_DEFINE_UNQUOTED(Pike_INITIAL_STACK_SIZE,$pike_cv_initial_stack_size)
     fi
 else
+  # Note: On some platforms (eg Solaris 11) the old test has been
+  #       observed to hang intermittently. Use ulimit -s (kbytes)
+  #       and subtract 64 kbytes for a redzone.
   AC_MSG_CHECKING(initial stack limit)
   AC_CACHE_VAL(pike_cv_initial_stack_size,[
-    old_core_limit=`ulimit -c`
-    ulimit -Sc 0
-    rm -f confdefs.out.2 >/dev/null 2>&1 || :
-    AC_TRY_RUN([
-#include <stdio.h>
-#include <stdlib.h>
-
-      static int depth=0;
-      FILE *f;
-
-      void save_depth(void);
-
-      void use_stack(void *page)
-      {
-        void *X[8190];
-        X[0]=page;
-        save_depth();
-        use_stack(&X);
-      }
-
-      void save_depth(void)
-      {
-        depth+=sizeof(void *)*8192;
-        fprintf(f,"%d\n",depth);
-        fflush(f);
-        if(depth>0x80000000) exit(0);
-      }
-
-      int main(int argc)
-      {
-        f=fopen("confdefs.out.2", "w");
-	/* weird filename to circumvent configure weirdness */
-        save_depth();
-        use_stack(0);
-      }
-    ], [pike_cv_initial_stack_size=''], [
-      pike_cv_initial_stack_size=32768
-      while read x; do
-	# Some paranoia in case fprintf outputs junk at and of stack...
-	if test "$pike_cv_initial_stack_size" -lt "$x"; then
-          pike_cv_initial_stack_size="$x";
-	fi
-      done <confdefs.out.2
-      if test "$pike_cv_initial_stack_size" = "32768"; then
-	# Some sort of unsupported failure.
-	pike_cv_initial_stack_size=''
-      fi
-    ], [pike_cv_initial_stack_size=''])
-    ulimit -c $old_core_limit
-    unset old_core_limit
-    rm -f confdefs.out.2 >/dev/null 2>/dev/null || :
+    stack_limit=`ulimit -s 2>/dev/null || echo unlimited`
+    if test "x$stack_limit" = "xunlimited"; then
+      pike_cv_initial_stack_size=''
+    else
+      pike_cv_initial_stack_size=`awk "BEGIN { print $stack_limit * 1024 - 65536; }" </dev/null`
+    fi
   ])
   if test x$pike_cv_initial_stack_size = x ; then
     AC_MSG_RESULT(unlimited)
