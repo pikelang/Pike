@@ -1549,6 +1549,9 @@ AC_DEFUN(PIKE_CHECK_FILE_ABI,
   esac
 ])
 
+dnl Check the default ABI of the compiler.
+dnl
+dnl Result: $pike_cv_default_compiler_abi (one of 32, 64 or unknown).
 AC_DEFUN(PIKE_CHECK_DEFAULT_ABI,
 [
   if test "x$ac_cv_objext" = "x"; then
@@ -1576,8 +1579,59 @@ EOF
   AC_MSG_RESULT($pike_cv_default_compiler_abi)
 ])
 
+dnl Check the default ABI of the platform.
+dnl This is typically the same as that of the compiler,
+dnl but on some platforms (eg Solaris) it defaults to
+dnl the legacy ABI.
+dnl
+dnl Result: $pike_cv_native_abi (one of 32, 64 or unknown).
+AC_DEFUN(PIKE_CHECK_NATIVE_ABI,
+[
+  AC_REQUIRE([PIKE_CHECK_DEFAULT_ABI])dnl
+
+  AC_MSG_CHECKING([what the native ABI is])
+
+  # Default to the compiler default.
+  pike_cv_native_abi="$pike_cv_default_compiler_abi"
+
+  case "x`uname -m`" in
+    x*64)
+      pike_cv_native_abi="64"
+      ;;
+    xalpha)
+      pike_cv_native_abi="64"
+      ;;
+  esac
+
+  if type isainfo 2>/dev/null >/dev/null; then
+    # Solaris
+    pike_cv_native_abi="`isainfo -b`"
+  elif type sysctl 2>/dev/null >/dev/null; then
+    # MacOS X or Linux.
+    #
+    # On MacOS X hw.optional.64bitop is set to 1 if
+    # 64bit is supported and useful.
+    if test "`sysctl -n hw.optional.64bitops 2>/dev/null`" = "1"; then
+      pike_cv_native_abi="64"
+    fi
+    # On MacOS X hw.cpu64bit_capable is set to 1 if
+    # 64bit is supported and useful.
+    if test "`sysctl -n hw.cpu64bit_capable 2>/dev/null`" = "1"; then
+      pike_cv_wanted_abi="64"
+    fi
+  fi
+
+  AC_MSG_RESULT($pike_cv_native_abi)
+])
+
+dnl Check the ABI wanted by the user.
+dnl Defaults to the native ABI for the platform.
+dnl
+dnl Result: $pike_cv_wanted_abi (one of 32 or 64).
 AC_DEFUN(PIKE_WITH_ABI,
 [
+  AC_REQUIRE([PIKE_CHECK_NATIVE_ABI])dnl
+
   AC_ARG_WITH(abi, MY_DESCR([--with-abi=32/64],
 			    [specify ABI to use in case there are multiple]))
 
@@ -1592,36 +1646,9 @@ AC_DEFUN(PIKE_WITH_ABI,
       ;;
       *)
         # Defaults
-	if test "x$pike_cv_default_compiler_abi" = "xunknown"; then
+        pike_cv_wanted_abi="$pike_cv_native_abi"
+        if test "x$pike_cv_wanted_abi" = "xunknown"; then
           pike_cv_wanted_abi="32"
-	else
-	  # Default to the compiler default.
-	  pike_cv_wanted_abi="$pike_cv_default_compiler_abi"
-	fi
-        case "x`uname -m`" in
-          x*64)
-            pike_cv_wanted_abi="64"
-          ;;
-          xalpha)
-	    pike_cv_wanted_abi="64"
-          ;;
-        esac
-        if type isainfo 2>/dev/null >/dev/null; then
-          # Solaris
-          pike_cv_wanted_abi="`isainfo -b`"
-        elif type sysctl 2>/dev/null >/dev/null; then
-          # MacOS X or Linux.
-          #
-          # On MacOS X hw.optional.64bitop is set to 1 if
-          # 64bit is supported and useful.
-          if test "`sysctl -n hw.optional.64bitops 2>/dev/null`" = "1"; then
-            pike_cv_wanted_abi="64"
-          fi
-          # On MacOS X hw.cpu64bit_capable is set to 1 if
-          # 64bit is supported and useful.
-          if test "`sysctl -n hw.cpu64bit_capable 2>/dev/null`" = "1"; then
-            pike_cv_wanted_abi="64"
-          fi
         fi
       ;;
     esac
@@ -1677,6 +1704,7 @@ AC_DEFUN(PIKE_ATTEMPT_ABI64,
   fi
 ])
 
+dnl Select the ABI to target.
 AC_DEFUN(PIKE_SELECT_ABI,
 [
   AC_REQUIRE([PIKE_CHECK_DEFAULT_ABI])dnl
