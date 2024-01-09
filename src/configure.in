@@ -4081,13 +4081,37 @@ else
   # Note: On some platforms (eg Solaris 11) the old test has been
   #       observed to hang intermittently. Use ulimit -s (kbytes)
   #       and subtract 64 kbytes for a redzone.
+  #
+  # For reference:
+  #
+  #   Platform                  Old        New     Diff  ulimit -s
+  #   MacOS X 10.5/ppc     67076096   67039232    36864      65532
+  #   MacOS X 14.2/arm64   67043328   67026944    16384      65520
+  #   FreeBSD 13/x86_64   536870912  536805376    65536     524288
+  #   Linux 2.6/x86_64     12517376   10420224  2097152      10240
+  #   Linux 4.9/aarch64     8323072    8323072        0       8192
+  #   Linux 4.9/aarch32(e)  8290304    8257536    32768       8192
+  #   Linux 5.4/ppc64       8323072    8323072        0       8192
+  #   Linux 5.4/ppc32(e)    8290304    8257536    32768       8192
+  #   Linux 6.1/riscv64     8323072    8323072        0       8192
+  #   Linux 6.5/x86_64      8323072    8323072        0       8192
+  #   SunOS 5.8/sun4u       8323072    8323072        0       8192
+  #   SunOS 5.10/x86_64    10485760   10485760        0      10304
+  #   SunOS 5.11/x86_64     8323072    8323072        0       8192
+  #   SunOS 5.11/sun4v      8323072    8323072        0       8192
+  #
+  # NB: The entry for Linux 2.6/x86_64 hints that the granularity
+  #     for the limit on Linux is in 4 MB increments.
   AC_MSG_CHECKING(initial stack limit)
   AC_CACHE_VAL(pike_cv_initial_stack_size,[
     stack_limit=`ulimit -s 2>/dev/null || echo unlimited`
     if test "x$stack_limit" = "xunlimited"; then
       pike_cv_initial_stack_size=''
-    else
+    elif test "x$pike_cv_native_abi" = "x$pike_cv_abi"; then
       pike_cv_initial_stack_size=`awk "BEGIN { print $stack_limit * 1024 - 65536; }" </dev/null`
+    else
+      # Subtract an extra 64 kbytes for non-native emulation stack.
+      pike_cv_initial_stack_size=`awk "BEGIN { print $stack_limit * 1024 - 131072; }" </dev/null`
     fi
   ])
   if test x$pike_cv_initial_stack_size = x ; then
