@@ -1780,7 +1780,7 @@ int query_fd()
 //! @returns
 //!   Returns the file descriptor number associated with this object.
 {
-  return stream->query_fd ? stream->query_fd() : -1;
+  return stream->?query_fd ? stream->query_fd() : -1;
 }
 
 void set_id (mixed id)
