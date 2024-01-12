@@ -620,8 +620,11 @@ outer:
             i->history += ({">>" + (string)this});
             i->history = i->history[<PG_DEBUGHISTORY - 1 ..];
 #endif
-            shuffle->add_source(this);
-            shuffle->start(1, 1);
+            if (!shuffle) output_to(socket); // SSL connections are currently unable to take advantage of the Shuffler
+            else {
+              shuffle->add_source(this);
+              shuffle->start(1, 1);
+            }
           }
         } while (0);
         started = 0;
@@ -746,10 +749,14 @@ outer:
         error(strerror(socket->errno()) + ".\n");
       socket->set_backend(local_backend);
       socket->set_buffer_mode(i, 0);
-      socket->set_nonblocking(i->read_cb, 0, close);
-      shuffle = shuffler->shuffle(socket);
-      if (nossl != 2)
-        Thread.Thread(pgsqlsess->processloop, this);
+      socket->set_nonblocking(i->read_cb, lambda(mixed ... args) {
+        PD("Socket writable, initiating processloop\n");
+        socket->set_write_callback(0);
+        if (!socket->query_context)
+          shuffle = shuffler->shuffle(socket); // Use the shuffler only on non-encrypted connections
+        if (nossl != 2)
+          Thread.Thread(pgsqlsess->processloop, this);
+      }, close);
       return;
     };
     PD("Connect error %s\n", describe_backtrace(err));
