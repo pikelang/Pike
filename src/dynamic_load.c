@@ -422,6 +422,45 @@ static void cleanup_compilation(void *UNUSED(ignored))
   }
 }
 
+static DECLSPEC(noreturn)
+  void module_load_error(const char *err,
+                         struct pike_string *module_name,
+                         INT32 args)
+  ATTRIBUTE((noreturn));
+static void module_load_error(const char *err, struct pike_string *module_name,
+                              INT32 args)
+{
+  struct object *err_obj = fast_clone_object(module_load_error_program);
+#define LOADERR_STRUCT(OBJ)                             \
+  ((struct module_load_error_struct *)                  \
+   (err_obj->storage + module_load_error_offset))
+
+  struct pike_string *str;
+  if (err) {
+    if (err[strlen (err) - 1] == '\n')
+      push_string (make_shared_binary_string (err, strlen (err) - 1));
+    else
+      push_text (err);
+  }
+  else
+    push_static_text ("Unknown reason");
+
+  add_ref (LOADERR_STRUCT (err_obj)->path = module_name);
+  add_ref (LOADERR_STRUCT (err_obj)->reason = str = Pike_sp[-1].u.string);
+  pop_stack();
+
+  /* NB: str is still valid here as LOADER_STRUCT->reason holds a reference. */
+  if (str->len < 1024) {
+    throw_error_object (err_obj, "load_module", args,
+                        "load_module(%pq) failed: %pS\n",
+                        module_name, str);
+  }
+
+  throw_error_object (err_obj, "load_module", args,
+                      "load_module(%pq) failed.\n",
+                      module_name);
+}
+
 /*! @decl program load_module(string module_name)
  *!
  *! Load a binary module.
@@ -480,36 +519,8 @@ void f_load_module(INT32 args)
 		  RTLD_NOW /*|RTLD_GLOBAL*/  );
   }
 
-  if(!module)
-  {
-    struct object *err_obj = fast_clone_object(module_load_error_program);
-#define LOADERR_STRUCT(OBJ) \
-    ((struct module_load_error_struct *) (err_obj->storage + module_load_error_offset))
-
-    const char *err = dlerror();
-    struct pike_string *str;
-    if (err) {
-      if (err[strlen (err) - 1] == '\n')
-	push_string (make_shared_binary_string (err, strlen (err) - 1));
-      else
-	push_text (err);
-    }
-    else
-      push_static_text ("Unknown reason");
-
-    add_ref (LOADERR_STRUCT (err_obj)->path = Pike_sp[-args - 1].u.string);
-    add_ref (LOADERR_STRUCT (err_obj)->reason = str = Pike_sp[-1].u.string);
-    pop_stack();
-
-    if (str->len < 1024) {
-      throw_error_object (err_obj, "load_module", args,
-                          "load_module(%pq) failed: %pS\n",
-                          module_name, str);
-    } else {
-      throw_error_object (err_obj, "load_module", args,
-                          "load_module(%pq) failed.\n",
-                          module_name);
-    }
+  if(!module) {
+    module_load_error(dlerror(), module_name, args);
   }
 
 #ifdef PIKE_DEBUG
@@ -619,8 +630,9 @@ void f_load_module(INT32 args)
       free_string(new_module->name);
       free(new_module);
       END_CYCLIC();
-      Pike_error("Failed to initialize dynamic module %pq.\n",
-		 module_name);
+
+      module_load_error("Failed to initialize dynamic module.",
+                        module_name, args);
     }
   }
   END_CYCLIC();
