@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-//! This module contains various HTTP Authentication implements for
+//! This module contains various HTTP Authentication implementations for
 //! both server and client use. A Client implementation would
 //! typically call the @[make_authenticator] method with the incoming
 //! WWW-Authenticate header to get a @[Client] object. For each HTTP
