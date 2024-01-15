@@ -11,6 +11,14 @@ else
   dnl GMP is required and tested for in Gmp module. We just want LIBS
   dnl updated here.
   AC_CHECK_LIB(gmp, main)
+
+  # Some versions of Nettle on NT have a <nettle/nettle-stdint.h> that
+  # triggers "warning C4142: benign redefinition of type".
+  DO_IF_OS(Windows_NT,
+  [
+      AC_SYS_COMPILER_FLAG(-wd4142, wd4142, WARN)
+  ])
+
   AC_MSG_CHECKING(CryptAcquireContext in -ladvapi32)
   AC_CACHE_VAL(pike_cv_nettle_advapi32_CryptAcquireContext,
   [
