@@ -45,8 +45,8 @@ fi
 if_autoconf(2,50,[
   if test "x$cache_file" = "x/dev/null"; then
     if uname | grep -i windows >/dev/null; then
-      PIKE_MSG_WARN([Windows detected.])
-      PIKE_MSG_WARN([Enabling the configure cache for performance reasons.])
+      PIKE_MSG_NOTE([Windows detected.])
+      PIKE_MSG_NOTE([Enabling the configure cache for performance reasons.])
       cache_file=./config.cache
       if test -r "$cache_file"; then
 	echo "loading cache $cache_file"
@@ -99,7 +99,7 @@ AC_ARG_ENABLE(pikelib, MY_DESCR([--enable-pikelib],
 	     [enable_pikelib=yes], [enable_pikelib=no])
 
 if test "x$enable_pikelib" != "xno"; then
-   PIKE_MSG_WARN([BUILDING PIKE AS A LIBRARY -- HIGHLY EXPERIMENTAL!])
+   PIKE_MSG_NOTE([BUILDING PIKE AS A LIBRARY -- EXPERIMENTAL!])
    AC_DEFINE(LIBPIKE)
 fi
 
@@ -8462,6 +8462,14 @@ if test -f config.warnings; then
   echo 'Warnings and notes summary:' >>config.info
   echo >>config.info
   cat config.warnings >>config.info
+elif test -f config.notes; then
+  echo >>config.info
+  echo 'Notes summary:' >>config.info
+fi
+
+if test -f config.notes; then
+  echo >>config.info
+  cat config.notes >>config.info
 fi
 
 echo
