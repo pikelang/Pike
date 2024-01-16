@@ -174,7 +174,7 @@ array(string) split(string data)
           }
 
           // Really all of ID_Continue
-          while( (< 'g', 'i', 'm', 'u', 'y' >)[data[pos]] ) pos++;
+          while( (< 'd', 'g', 'i', 'm', 's', 'u', 'v', 'y' >)[data[pos]] ) pos++;
 
           //          werror("%O\n", data[start..pos-1]);
           break;
