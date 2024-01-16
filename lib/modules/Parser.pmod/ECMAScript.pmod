@@ -55,6 +55,10 @@ array(string) split(string data)
 
     case '.':
       pos++;
+      if( data[pos]=='.' && data[pos+1]=='.' ) {
+        pos+=2;
+        break;
+      }
       if( data[pos]<'0' || data[pos]>'9' ) break;
       // fallthrough
     case '0'..'9':
@@ -131,6 +135,10 @@ array(string) split(string data)
       case '/':
         while( !((< '\n', '\r', 0x2028, 0x2029, 0 >)[data[pos++]]) );
         pos--;
+        break;
+
+      case '=':
+        pos++;
         break;
 
       default:
@@ -218,10 +226,10 @@ array(string) split(string data)
       }
       break;
 
-      // FIXME: < > <= >= << >> >>> <<= >>= >>>=
     case '<': case '>':
       pos++;
       if( (< '<', '=', '>' >)[data[pos]]) pos++;
+      if( data[pos]=='>' ) pos++;
       if( data[pos]=='=' ) pos++;
       break;
 
@@ -238,7 +246,7 @@ array(string) split(string data)
       break;
 
     case '=':
-      if( data[pos+1]=='>' ) { pos++; break; }
+      if( data[pos+1]=='>' ) { pos+=2; break; }
       // Fallthrough
     case '!':
       pos++;
@@ -252,8 +260,17 @@ array(string) split(string data)
     case ':': case ';':
     case '~':
     case ',':
+      pos++;
+      break;
+
     case '?':
       pos++;
+      if( data[pos]=='?' ) {
+        pos++;
+        if( data[pos]=='=' ) pos++;
+      } else if( data[pos]=='.' ) {
+        pos++;
+      }
       break;
 
     default:
