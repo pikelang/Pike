@@ -3069,11 +3069,11 @@ if test "x$ac_cv_have_xmath_h:$ac_cv_have_ymath_h" = "xno:no" ; then :; else
     #   The double field is named _Double in MSVC 9 (2007),
     #   but just _D in a prerelease dated 2000-06-15.
     AC_CHECK_MEMBER(_Dconst._Double, [
-      AC_DEFINE(INFINITY, (_Dconst._Double),
+      AC_DEFINE(INFINITY, (_Inf._Double),
                 [Expression that evaluates to the double value inf.])
     ],[
       AC_CHECK_MEMBER(_Dconst._D, [
-        AC_DEFINE(INFINITY, (_Dconst._D))
+        AC_DEFINE(INFINITY, (_Inf._D))
       ],[],[
 #ifdef HAVE_XMATH_H
 #include <xmath.h>
