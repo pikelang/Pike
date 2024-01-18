@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: system.c,v 1.183 2007/09/12 11:16:54 grubba Exp $
+|| $Id$
 */
 
 /*
@@ -1988,18 +1988,6 @@ void f_gethostbyname(INT32 args)
 }  
 #endif /* HAVE_GETHOSTBYNAME */
 
-#if defined(GETHOSTBYNAME_MUTEX_EXISTS) || defined(GETSERVBYNAME_MUTEX_EXISTS)
-static void cleanup_after_fork(struct callback *cb, void *arg0, void *arg1)
-{
-#ifdef GETHOSTBYNAME_MUTEX_EXISTS
-  mt_init(&gethostbyname_mutex);
-#endif
-#ifdef GETSERVBYNAME_MUTEX_EXISTS
-  mt_init(&getservbyname_mutex);
-#endif
-}
-#endif
-
 extern void init_passwd(void);
 extern void init_system_memory(void);
 
@@ -3014,9 +3002,6 @@ static void f_getrusage(INT32 args)
 
 PIKE_MODULE_INIT
 {
-#ifdef GETHOSTBYNAME_MUTEX_EXISTS
-  mt_init(&gethostbyname_mutex);
-#endif
   /*
    * From this file:
    */
@@ -3343,11 +3328,6 @@ PIKE_MODULE_INIT
   init_passwd();
   init_system_memory();
 
-#if defined(GETHOSTBYNAME_MUTEX_EXISTS) || defined(GETSERVBYNAME_MUTEX_EXISTS)
-  dmalloc_accept_leak(add_to_callback(& fork_child_callback,
-				      cleanup_after_fork, 0, 0));
-#endif
-
 
 #ifdef __NT__
   {
@@ -3367,9 +3347,6 @@ PIKE_MODULE_EXIT
     extern void exit_nt_system_calls(void);
     exit_nt_system_calls();
   }
-#endif
-#ifdef GETHOSTBYNAME_MUTEX_EXISTS
-  mt_destroy(&gethostbyname_mutex);
 #endif
 #if defined(HAVE_GETRLIMIT) || defined(HAVE_SETRLIMIT)
   if (s_cpu) {
