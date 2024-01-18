@@ -2157,18 +2157,6 @@ void f_gethostbyname(INT32 args)
 }
 #endif /* HAVE_GETHOSTBYNAME */
 
-#if defined(GETHOSTBYNAME_MUTEX_EXISTS) || defined(GETSERVBYNAME_MUTEX_EXISTS)
-static void cleanup_after_fork(struct callback *cb, void *arg0, void *arg1)
-{
-#ifdef GETHOSTBYNAME_MUTEX_EXISTS
-  mt_init(&gethostbyname_mutex);
-#endif
-#ifdef GETSERVBYNAME_MUTEX_EXISTS
-  mt_init(&getservbyname_mutex);
-#endif
-}
-#endif
-
 extern void init_passwd(void);
 extern void init_system_memory(void);
 
@@ -3173,9 +3161,6 @@ PIKE_MODULE_INIT
 {
   int sz;
 
-#ifdef GETHOSTBYNAME_MUTEX_EXISTS
-  mt_init(&gethostbyname_mutex);
-#endif
   /*
    * From this file:
    */
@@ -3523,11 +3508,6 @@ PIKE_MODULE_INIT
   init_passwd();
   init_system_memory();
 
-#if defined(GETHOSTBYNAME_MUTEX_EXISTS) || defined(GETSERVBYNAME_MUTEX_EXISTS)
-  dmalloc_accept_leak(add_to_callback(& fork_child_callback,
-				      cleanup_after_fork, 0, 0));
-#endif
-
 #ifdef HAVE_DAEMON
   ADD_FUNCTION2("daemon", f_daemon, tFunc(tInt tInt, tInt),
                 0, OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND);
@@ -3582,9 +3562,6 @@ PIKE_MODULE_EXIT
 #endif
 #ifdef HAVE_SYSLOG
   free_svalue(&log_ident);
-#endif
-#ifdef GETHOSTBYNAME_MUTEX_EXISTS
-  mt_destroy(&gethostbyname_mutex);
 #endif
   free_mapping(strerror_lookup);
   strerror_lookup = NULL;
