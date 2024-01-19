@@ -324,7 +324,6 @@ static void low_addchar(struct byte_buffer *buf, int c, int edb)
   const struct pike_string *__str = (S);                \
   if(__str->size_shift)                                 \
   {                                                     \
-    int q;                                              \
     code_entry(TAG_STRING,-1, data);                    \
     code_entry(__str->size_shift, __str->len, data);    \
     ETRACE({						\
@@ -595,8 +594,6 @@ static void encode_type(struct pike_type *t, struct encode_data *data)
 
     case T_INT:
       {
-	ptrdiff_t val;
-
         buffer_add_be32(&data->buf, CAR_TO_INT(t));
         ETRACE({
 	    ENCODE_WERR(".data    %d", (int)CAR_TO_INT(t));
@@ -2174,7 +2171,9 @@ void f_encode_value(INT32 args)
 {
   ONERROR tmp;
   struct encode_data d, *data;
+#ifdef ENCODE_DEBUG
   struct string_builder debug_buf;
+#endif
   int i;
   data=&d;
 
@@ -3137,9 +3136,6 @@ static int call_delayed_decode(struct Supporter *s, int finish)
       free_svalue(&throw_value);
       mark_free_svalue (&throw_value);
     } else {
-      int e;
-      struct keypair *k;
-
       while(data->unfinished_programs)
 	{
 	  struct unfinished_prog_link *tmp=data->unfinished_programs;
