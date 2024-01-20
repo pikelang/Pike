@@ -7,6 +7,7 @@ AC_CONFIG_HEADER(machine.h)
 AC_SUBST(CONFIG_HEADERS)
 
 rm -f config.warnings 2>/dev/null
+rm -f config.notes 2>/dev/null
 
 if_autoconf(2,50,, [
   PIKE_MSG_WARN([configure script has been generated with autoconf 2.13 or earlier.])
@@ -186,7 +187,9 @@ else
   if test ! -z "$pike_cv_prog_CC_save" -a ! -z "$CC" -a "$CC" != "$pike_cv_prog_CC_save"
   then
     PIKE_MSG_WARN([CC is different than last time Pike was compiled,
-It is probably best to delete ./config.cache before proceeding.])
+It is probably best to delete ./config.cache before proceeding.
+Current CC:  $CC
+Previous CC: $pike_cv_prog_CC_save])
   fi
 
   pike_cv_prog_CC_save="$CC"
@@ -8496,10 +8499,10 @@ if test -f config.warnings; then
 elif test -f config.notes; then
   echo >>config.info
   echo 'Notes summary:' >>config.info
+  echo >>config.info
 fi
 
 if test -f config.notes; then
-  echo >>config.info
   cat config.notes >>config.info
 fi
 
