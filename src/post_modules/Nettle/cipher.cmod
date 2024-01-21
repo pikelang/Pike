@@ -55,14 +55,8 @@ static struct pike_string *nul16_string = NULL;
 /* Generic callback function for Nettle in case the crypt()
  * function in the object isn't a Nettle function.
  */
-#ifdef dsa_params_init
-/* Nettle 3.0 */
-static void pike_crypt_func(const void *object, pike_nettle_size_t length,
-			    uint8_t *dst, const uint8_t *src)
-#else
 static void pike_crypt_func(void *object, pike_nettle_size_t length,
 			    uint8_t *dst, const uint8_t *src)
-#endif
 {
   struct pike_string *str;
   push_string(make_shared_binary_string((const char *)src, length));
@@ -1370,7 +1364,7 @@ PIKECLASS BlockCipher
       {
 	struct pike_string *result;
 	ONERROR uwp;
-	pike_nettle_crypt_func func = pike_crypt_func;
+        pike_nettle_crypt_func func = (pike_nettle_crypt_func)pike_crypt_func;
 	void *ctx = THIS->object;
 	struct pike_string *iv = THIS->iv;
 	int block_size = THIS->block_size;
@@ -1398,12 +1392,14 @@ PIKECLASS BlockCipher
 	    /* Protect the iv from being freed by a different thread. */
 	    add_ref(iv);
 	    THREADS_ALLOW();
-	    cbc_encrypt(ctx, func, block_size, STR0(iv),
+            cbc_encrypt(ctx, (pike_nettle_cipher_func)func,
+                        block_size, STR0(iv),
 			data->len, STR0(result), STR0(data));
 	    THREADS_DISALLOW();
 	    free_string(iv);
 	  } else {
-	    cbc_encrypt(ctx, func, block_size, STR0(iv),
+            cbc_encrypt(ctx, (pike_nettle_cipher_func)func,
+                        block_size, STR0(iv),
 			data->len, STR0(result), STR0(data));
 	  }
 	}
@@ -1413,12 +1409,14 @@ PIKECLASS BlockCipher
 	    /* Protect the iv from being freed by a different thread. */
 	    add_ref(iv);
 	    THREADS_ALLOW();
-	    cbc_decrypt(ctx, func, block_size, STR0(iv),
+            cbc_decrypt(ctx, (pike_nettle_cipher_func)func,
+                        block_size, STR0(iv),
 			data->len, STR0(result), STR0(data));
 	    THREADS_DISALLOW();
 	    free_string(iv);
 	  } else {
-	    cbc_decrypt(ctx, func, block_size, STR0(iv),
+            cbc_decrypt(ctx, (pike_nettle_cipher_func)func,
+                        block_size, STR0(iv),
 			data->len, STR0(result), STR0(data));
 	  }
 	}
@@ -3144,12 +3142,12 @@ PIKECLASS BlockCipher
 	  /* Protect the iv from being freed by a different thread. */
 	  add_ref(iv);
 	  THREADS_ALLOW();
-	  ctr_crypt(ctx, func, block_size, STR0(iv),
+          ctr_crypt(ctx, (pike_nettle_cipher_func)func, block_size, STR0(iv),
 		    data->len, STR0(result), STR0(data));
 	  THREADS_DISALLOW();
 	  free_string(iv);
 	} else {
-	  ctr_crypt(ctx, func, block_size, STR0(iv),
+          ctr_crypt(ctx, (pike_nettle_cipher_func)func, block_size, STR0(iv),
 		    data->len, STR0(result), STR0(data));
 	}
 
@@ -3414,8 +3412,6 @@ PIKECLASS BlockCipher
       PIKEFUN object set_encrypt_key(string(0..255) key, int|void flags)
 	optflags OPT_SIDE_EFFECT;
       {
-	pike_nettle_crypt_func func = pike_crypt_func;
-	void *ctx = THIS->object;
 	key->flags |= STRING_CLEAR_ON_EXIT;
 	apply(THIS->object, "set_encrypt_key", args);
 	pop_stack();
@@ -3438,8 +3434,6 @@ PIKECLASS BlockCipher
       PIKEFUN object set_decrypt_key(string(0..255) key, int|void flags)
 	optflags OPT_SIDE_EFFECT;
       {
-	pike_nettle_crypt_func func = pike_crypt_func;
-	void *ctx = THIS->object;
 	key->flags |= STRING_CLEAR_ON_EXIT;
 	/* NOTE: OFB always uses the encryption function
 	 *       of the underlying cipher!
@@ -4866,7 +4860,7 @@ PIKECLASS BlockCipher16
 	  func = THIS->crypt_state->crypt;
 	  ctx = THIS->crypt_state->ctx;
 	}
-	eax_set_key(&THIS->eax_key, ctx, func);
+        eax_set_key(&THIS->eax_key, ctx, (pike_nettle_cipher_func)func);
 	THIS->mode = 0;
 
 	push_object(this_object());
@@ -4902,7 +4896,7 @@ PIKECLASS BlockCipher16
 	  func = THIS->crypt_state->crypt;
 	  ctx = THIS->crypt_state->ctx;
 	}
-	eax_set_key(&THIS->eax_key, ctx, func);
+        eax_set_key(&THIS->eax_key, ctx, (pike_nettle_cipher_func)func);
 	THIS->mode = 1;
 
 	push_object(this_object());
@@ -4923,7 +4917,8 @@ PIKECLASS BlockCipher16
 	}
 
 	eax_set_nonce(&THIS->eax_ctx, &THIS->eax_key,
-		      ctx, func, iv->len, STR0(iv));
+                      ctx, (pike_nettle_cipher_func)func,
+                      iv->len, STR0(iv));
 
 	RETURN this_object();
       }
@@ -4943,7 +4938,8 @@ PIKECLASS BlockCipher16
 	}
 
 	eax_update(&THIS->eax_ctx, &THIS->eax_key,
-		   ctx, func, public_data->len, STR0(public_data));
+                   ctx, (pike_nettle_cipher_func)func,
+                   public_data->len, STR0(public_data));
 
 	RETURN this_object();
       }
@@ -4969,10 +4965,12 @@ PIKECLASS BlockCipher16
 
 	if (!THIS->mode) {
 	  eax_encrypt(&THIS->eax_ctx, &THIS->eax_key,
-		      ctx, func, data->len, STR0(res), STR0(data));
+                      ctx, (pike_nettle_cipher_func)func,
+                      data->len, STR0(res), STR0(data));
 	} else {
 	  eax_decrypt(&THIS->eax_ctx, &THIS->eax_key,
-		      ctx, func, data->len, STR0(res), STR0(data));
+                      ctx, (pike_nettle_cipher_func)func,
+                      data->len, STR0(res), STR0(data));
 	}
 
 	push_string(end_shared_string(res));
@@ -5022,7 +5020,8 @@ PIKECLASS BlockCipher16
 	}
 
 	eax_digest(&THIS->eax_ctx, &THIS->eax_key,
-		   ctx, func, bytes, STR0(res));
+                   ctx, (pike_nettle_cipher_func)func,
+                   bytes, STR0(res));
 
 	push_string(end_shared_string(res));
       }
@@ -5300,7 +5299,7 @@ PIKECLASS BlockCipher16
 	  func = THIS->crypt_state->crypt;
 	  ctx = THIS->crypt_state->ctx;
 	}
-	gcm_set_key(&THIS->gcm_key, ctx, func);
+        gcm_set_key(&THIS->gcm_key, ctx, (pike_nettle_cipher_func)func);
 	THIS->mode = 0;
 
 	push_object(this_object());
@@ -5335,7 +5334,7 @@ PIKECLASS BlockCipher16
 	  func = THIS->crypt_state->crypt;
 	  ctx = THIS->crypt_state->ctx;
 	}
-	gcm_set_key(&THIS->gcm_key, ctx, func);
+        gcm_set_key(&THIS->gcm_key, ctx, (pike_nettle_cipher_func)func);
 	THIS->mode = 1;
 
 	push_object(this_object());
@@ -5454,22 +5453,22 @@ PIKECLASS BlockCipher16
 	  if ((data->len >= CIPHER_THREADS_ALLOW_THRESHOLD) &&
 	      (func != pike_crypt_func)) {
 	    THREADS_ALLOW();
-	    gcm_encrypt(gcm_ctx, gcm_key, ctx, func,
+            gcm_encrypt(gcm_ctx, gcm_key, ctx, (pike_nettle_cipher_func)func,
 			data->len, STR0(result), STR0(data));
 	    THREADS_DISALLOW();
 	  } else {
-	    gcm_encrypt(gcm_ctx, gcm_key, ctx, func,
+            gcm_encrypt(gcm_ctx, gcm_key, ctx, (pike_nettle_cipher_func)func,
 			data->len, STR0(result), STR0(data));
 	  }
 	} else {
 	  if ((data->len >= CIPHER_THREADS_ALLOW_THRESHOLD) &&
 	      (func != pike_crypt_func)) {
 	    THREADS_ALLOW();
-	    gcm_decrypt(gcm_ctx, gcm_key, ctx, func,
+            gcm_decrypt(gcm_ctx, gcm_key, ctx, (pike_nettle_cipher_func)func,
 			data->len, STR0(result), STR0(data));
 	    THREADS_DISALLOW();
 	  } else {
-	    gcm_decrypt(gcm_ctx, gcm_key, ctx, func,
+            gcm_decrypt(gcm_ctx, gcm_key, ctx, (pike_nettle_cipher_func)func,
 			data->len, STR0(result), STR0(data));
 	  }
 	}
@@ -5516,7 +5515,8 @@ PIKECLASS BlockCipher16
 	  ctx = THIS->crypt_state->ctx;
 	}
 
-	gcm_digest(&THIS->gcm_ctx, &THIS->gcm_key, ctx, func,
+        gcm_digest(&THIS->gcm_ctx, &THIS->gcm_key,
+                   ctx, (pike_nettle_cipher_func)func,
 		   GCM_BLOCK_SIZE, STR0(result));
 
 	THIS->dmode |= NO_ADATA | NO_CDATA;
@@ -5616,10 +5616,12 @@ PIKECLASS BlockCipher16
 	  crypt_ctx = THIS->crypt_state->ctx;
 	}
 
-	cmac128_set_key(&THIS->cmac_key, crypt_ctx, crypt_func);
+        cmac128_set_key(&THIS->cmac_key, crypt_ctx,
+                        (pike_nettle_cipher_func)crypt_func);
 
 	if (data) {
-	  cmac128_update(&THIS->cmac_ctx, crypt_ctx, crypt_func,
+          cmac128_update(&THIS->cmac_ctx, crypt_ctx,
+                         (pike_nettle_cipher_func)crypt_func,
 			 data->len, STR0(data));
 	}
 
@@ -5636,7 +5638,8 @@ PIKECLASS BlockCipher16
 	  crypt_ctx = THIS->crypt_state->ctx;
 	}
 
-	cmac128_update(&THIS->cmac_ctx, crypt_ctx, crypt_func,
+        cmac128_update(&THIS->cmac_ctx, crypt_ctx,
+                       (pike_nettle_cipher_func)crypt_func,
 		       data->len, STR0(data));
       }
 
@@ -5661,7 +5664,8 @@ PIKECLASS BlockCipher16
 	  crypt_ctx = THIS->crypt_state->ctx;
 	}
 
-	cmac128_digest(&THIS->cmac_ctx, &THIS->cmac_key, crypt_ctx, crypt_func,
+        cmac128_digest(&THIS->cmac_ctx, &THIS->cmac_key,
+                       crypt_ctx, (pike_nettle_cipher_func)crypt_func,
 		       len, STR0(digest));
 
 	push_string(end_shared_string(digest));
@@ -6036,7 +6040,7 @@ PIKECLASS BlockCipher16
           func = THIS->encrypt_state->crypt;
           ctx = THIS->encrypt_state->ctx;
         }
-        ocb_set_key(&THIS->ocb_key, ctx, func);
+        ocb_set_key(&THIS->ocb_key, ctx, (pike_nettle_cipher_func)func);
         THIS->mode = 0;
 
         push_object(this_object());
@@ -6080,7 +6084,7 @@ PIKECLASS BlockCipher16
           func = THIS->encrypt_state->crypt;
           ctx = THIS->encrypt_state->ctx;
         }
-        ocb_set_key(&THIS->ocb_key, ctx, func);
+        ocb_set_key(&THIS->ocb_key, ctx, (pike_nettle_cipher_func)func);
         THIS->mode = 1;
 
         push_object(this_object());
@@ -6103,7 +6107,7 @@ PIKECLASS BlockCipher16
           ctx = THIS->encrypt_state->ctx;
         }
 
-        ocb_set_nonce(&THIS->ocb_ctx, ctx, func,
+        ocb_set_nonce(&THIS->ocb_ctx, ctx, (pike_nettle_cipher_func)func,
                       THIS->tag_length, iv->len, STR0(iv));
 
         RETURN this_object();
@@ -6124,7 +6128,8 @@ PIKECLASS BlockCipher16
         }
 
         ocb_update(&THIS->ocb_ctx, &THIS->ocb_key,
-                   ctx, func, public_data->len, STR0(public_data));
+                   ctx, (pike_nettle_cipher_func)func,
+                   public_data->len, STR0(public_data));
 
         RETURN this_object();
       }
@@ -6150,7 +6155,8 @@ PIKECLASS BlockCipher16
 
         if (!THIS->mode) {
           ocb_encrypt(&THIS->ocb_ctx, &THIS->ocb_key,
-                      ctx, func, data->len, STR0(res), STR0(data));
+                      ctx, (pike_nettle_cipher_func)func,
+                      data->len, STR0(res), STR0(data));
         } else {
           pike_nettle_crypt_func dfunc = pike_crypt_func;
           void *dctx = THIS->decrypt_object;
@@ -6160,8 +6166,10 @@ PIKECLASS BlockCipher16
             dctx = THIS->decrypt_state->ctx;
           }
 
-          ocb_decrypt(&THIS->ocb_ctx, &THIS->ocb_key, ctx, func,
-                      dctx, dfunc, data->len, STR0(res), STR0(data));
+          ocb_decrypt(&THIS->ocb_ctx, &THIS->ocb_key,
+                      ctx, (pike_nettle_cipher_func)func,
+                      dctx, (pike_nettle_cipher_func)dfunc,
+                      data->len, STR0(res), STR0(data));
         }
 
         push_string(end_shared_string(res));
@@ -6196,7 +6204,8 @@ PIKECLASS BlockCipher16
           ctx = THIS->encrypt_state->ctx;
         }
 
-        ocb_digest(&THIS->ocb_ctx, &THIS->ocb_key, ctx, func,
+        ocb_digest(&THIS->ocb_ctx, &THIS->ocb_key,
+                   ctx, (pike_nettle_cipher_func)func,
                    THIS->tag_length, STR0(res));
 
         push_string(end_shared_string(res));
