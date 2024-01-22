@@ -85,7 +85,8 @@ void amd64_init_interpreter_state(void);
   } while(0)
 #define ins_byte(VAL)		add_to_program(VAL)
 #define ins_data(VAL)		ins_int((VAL), add_to_program)
-#define read_program_data(PTR, OFF)	(INT32)get_unaligned32((PTR) + (sizeof(INT32)*(OFF)))
+#define read_program_data(PTR, OFF)	\
+  (INT32)get_unaligned32((PTR) + (((ptrdiff_t)sizeof(INT32)) * (OFF)))
 
 void amd64_update_pc(void);
 

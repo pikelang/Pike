@@ -40,9 +40,9 @@ void ins_byte(INT32 val);
 void ins_data(INT32 val);
 	Insert a 32bit value at the current offset.
 
-INT32 read_program_data(PIKE_OPCODE_T *origin, int offset)
+INT32 read_program_data(PIKE_OPCODE_T *origin, ptrdiff_t offset)
 	Read a data item stored by ins_data. Note that the offset
-	is in number of data units.
+	is in number of data units, and that it may be negative.
 
 void ins_f_byte(unsigned int op);
 	Insert the opcode 'op' at the current offset.
