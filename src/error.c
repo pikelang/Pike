@@ -1138,7 +1138,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void index_error(
     }
     va_end(foo);
 
-    UNREACHABLE();
+    UNREACHABLE(;);
   } else {
     ERROR_DONE();
   }
