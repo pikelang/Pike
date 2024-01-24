@@ -129,16 +129,15 @@ static void stack_swap2(int args)
 static void com_throw_error(HRESULT hr)
 {
   LPVOID lpMsgBuf;
-  ONERROR tmp;
   FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER |
                 FORMAT_MESSAGE_FROM_SYSTEM |
                 FORMAT_MESSAGE_IGNORE_INSERTS, NULL, hr,
                 MAKELANGID(LANG_NEUTRAL,
                            SUBLANG_DEFAULT),(LPTSTR) &lpMsgBuf,
                 0, NULL);
-  SET_ONERROR(tmp, LocalFree, lpMsgBuf);
-  Pike_error("Com Error: %s\n", lpMsgBuf);
-  UNREACHABLE(CALL_AND_UNSET_ONERROR(tmp));
+  push_text(lpMsgBuf);
+  LocalFree(lpMsgBuf);
+  Pike_error("Com Error: %pS\n", Pike_sp[-1].u.string);
 }
 
 static void com_throw_error2(HRESULT hr, EXCEPINFO excep)
