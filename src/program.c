@@ -114,7 +114,7 @@ static const int lock_depth = 1;
 #include "compilation.h"
 
 struct pike_string *this_program_string, *this_string, *args_string;
-static struct pike_string *this_function_string;
+struct pike_string *this_function_string;
 static struct pike_string *UNDEFINED_string;
 struct pike_string *predef_scope_string;
 
