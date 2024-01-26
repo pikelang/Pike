@@ -1,0 +1,16 @@
+subject: Pike 8.0: Sync with 8.0.1876 (Roxen 7.2.251-r1)
+from: 198b86144acb6e5744ae44dc03b6b5d4af6770c4
+to: abb3559fa2e9f7af4edf9e7ae841d1fed50fb06e
+originator: Henrik Grubbström (Grubba) <grubba@grubba.org>
+depends: 2023-11-01T091959
+restart: true
+
+Multiple fixes:
+
+• release number bumped to 8.0.1876 by export.pike
+
+• Standards.X509: Ignore root cert files which can not be read
+
+• Testsuite [SSL]: Fix backport typo.
+
+• Testsuite [SSL]: Fix issue with SHA256 being selected for SSL 3.0.
