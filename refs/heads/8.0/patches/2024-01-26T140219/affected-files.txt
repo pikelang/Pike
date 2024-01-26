@@ -1,0 +1,7 @@
+Modified files:
+  pike/lib/modules/Concurrent.pmod
+  pike/lib/modules/Crypto.pmod/Password.pmod
+  pike/lib/modules/Crypto.pmod/RSA.pmod
+  pike/lib/modules/Standards.pmod/ASN1.pmod/Decode.pmod
+  pike/lib/modules/Standards.pmod/ASN1.pmod/Types.pmod
+  pike/lib/modules/__builtin.pmod/Nettle.pmod/Hash.pike
