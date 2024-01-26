@@ -340,7 +340,7 @@ PMOD_EXPORT p_wchar2 generic_extract(const void *str, enum size_shift size,
     case sixteenbit:   return ((p_wchar1 *)str)[pos];
     case thirtytwobit: return ((p_wchar2 *)str)[pos];
   }
-  UNREACHABLE(return 0);
+  UNREACHABLE();
 }
 
 static void locate_problem(int (*isproblem)(const struct pike_string *))
@@ -1020,7 +1020,7 @@ PMOD_EXPORT struct pike_string * debug_make_shared_binary_pcharp(const PCHARP st
     case thirtytwobit:
       return make_shared_binary_string2((p_wchar2 *)(str.ptr),  len);
   }
-  UNREACHABLE(return NULL);
+  UNREACHABLE();
 }
 
 PMOD_EXPORT struct pike_string * debug_make_shared_pcharp(const PCHARP str)
@@ -2156,7 +2156,7 @@ PMOD_EXPORT struct pike_string *string_slice(struct pike_string *s,
     case thirtytwobit:
       return make_shared_binary_string2(STR2(s)+start,len);
   }
-  UNREACHABLE(return 0);
+  UNREACHABLE();
 }
 
 /*** replace function ***/
@@ -2487,7 +2487,7 @@ PMOD_EXPORT PCHARP MEMCHR_PCHARP(const PCHARP ptr, int chr, ptrdiff_t len)
     case sixteenbit:   return MKPCHARP(MEMCHR1((p_wchar1 *)ptr.ptr,chr,len),1);
     case thirtytwobit: return MKPCHARP(MEMCHR2((p_wchar2 *)ptr.ptr,chr,len),2);
   }
-  UNREACHABLE(MKPCHARP(0,0));
+  UNREACHABLE();
 }
 
 const unsigned char hexdecode[256] =
@@ -3125,7 +3125,7 @@ PMOD_EXPORT p_wchar0 *require_wstring0(const struct pike_string *s,
     case thirtytwobit:
       return 0;
   }
-  UNREACHABLE(return 0);
+  UNREACHABLE();
 }
 
 PMOD_EXPORT p_wchar1 *require_wstring1(const struct pike_string *s,
@@ -3145,7 +3145,7 @@ PMOD_EXPORT p_wchar1 *require_wstring1(const struct pike_string *s,
     case thirtytwobit:
       return 0;
   }
-  UNREACHABLE(return 0);
+  UNREACHABLE();
 }
 
 
@@ -3168,7 +3168,7 @@ PMOD_EXPORT p_wchar2 *require_wstring2(const struct pike_string *s,
       *to_free=0;
       return STR2(s);
   }
-  UNREACHABLE(return 0);
+  UNREACHABLE();
 }
 
 PMOD_EXPORT int wide_isspace(int c)

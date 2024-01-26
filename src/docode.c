@@ -3165,7 +3165,7 @@ static int do_docode2(node *n, int flags)
 
   default:
     Pike_fatal("Infernal compiler error (unknown parse-tree-token %d).\n", n->token);
-    UNREACHABLE(return 0);
+    UNREACHABLE();
   }
 }
 
@@ -3351,7 +3351,7 @@ INT32 do_code_block(node *n, int identifier_flags)
       if (!sval) {
 	yyerror("predef::aggregate() is missing.\n");
 	Pike_fatal("No aggregate!\n");
-	UNREACHABLE(return 0);
+        UNREACHABLE();
       }
       aggregate_cnum = store_constant(sval, 0, NULL);
       emit1(F_CALL_BUILTIN, aggregate_cnum);

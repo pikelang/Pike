@@ -1467,7 +1467,7 @@ static void put_out_feed_range(struct parser_html_storage *this,
       pop_stack();
       head=head->next;
    }
-   UNREACHABLE(return);
+   UNREACHABLE();
 }
 
 /* ------------------------ */
@@ -2541,7 +2541,7 @@ static newstate handle_result(struct parser_html_storage *this,
 	 Pike_error("Parser.HTML: illegal result from callback: "
 		    "not 0, string or array\n");
    }
-   UNREACHABLE(return STATE_DONE);
+   UNREACHABLE();
 }
 
 static void clear_start(struct parser_html_storage *this)
@@ -3869,7 +3869,7 @@ static void try_feed(int finished)
 	    break;
       }
    }
-   UNREACHABLE(return);
+   UNREACHABLE();
 }
 
 /****** feed ****************************************/

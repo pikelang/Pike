@@ -316,7 +316,7 @@ static void low_push_safearray(SAFEARRAY *psa, UINT dims,
   {
     /* TODO: Handle more array types */
     Pike_error("Unknown vartype: %d\n", vtype);
-    UNREACHABLE(return);
+    UNREACHABLE();
   }
 
   SafeArrayGetLBound(psa, curdim, &lbound);
@@ -581,7 +581,7 @@ static void cval_push_result(INT32 args, int flags)
   if (FAILED(hr))
   {
     com_throw_error2(hr, exc);
-    UNREACHABLE(return);
+    UNREACHABLE();
   }
 
   pop_n_elems(args);
@@ -1032,7 +1032,7 @@ static void f_cobj_setprop(INT32 args)
   if (FAILED(hr))
   {
     com_throw_error2(hr, exc);
-    UNREACHABLE(return);
+    UNREACHABLE();
   }
 
   pop_n_elems(args);
@@ -1076,7 +1076,7 @@ static void f_cobj_call_method(INT32 args)
   if (FAILED(hr))
   {
     com_throw_error2(hr, exc);
-    UNREACHABLE(return);
+    UNREACHABLE();
   }
 
   pop_n_elems(args);
@@ -1779,7 +1779,7 @@ static void f_get_constants(INT32 args)
     if (FAILED(hr))
     {
       com_throw_error(hr);
-      UNREACHABLE(return);
+      UNREACHABLE();
     }
   }
   else if (TYPEOF(Pike_sp[-args]) == PIKE_T_OBJECT &&

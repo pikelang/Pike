@@ -236,12 +236,12 @@ struct timeval;
 #endif
 
 #ifdef HAS___BUILTIN_UNREACHABLE
-# define UNREACHABLE(X) __builtin_unreachable()
+# define UNREACHABLE()	__builtin_unreachable()
 #elif defined(HAS___ASSUME)
-# define UNREACHABLE(X)	__assume(0)
+# define UNREACHABLE()	__assume(0)
 #else
 # include <setjmp.h>
-# define UNREACHABLE(X) longjmp(NULL, 0)
+# define UNREACHABLE()	longjmp(NULL, 0)
 #endif
 
 #ifdef HAS___BUILTIN_ASSUME
@@ -249,7 +249,7 @@ struct timeval;
 #elif defined(HAS___ASSUME)
 # define STATIC_ASSUME(X) __assume(X)
 #else
-# define STATIC_ASSUME(X) do { if (!(X)) UNREACHABLE(0); } while(0)
+# define STATIC_ASSUME(X) do { if (!(X)) UNREACHABLE(); } while(0)
 #endif
 
 #ifdef HAS___BUILTIN_CONSTANT_P

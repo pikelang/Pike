@@ -1188,8 +1188,8 @@ void o_check_soft_cast(struct svalue *s, struct pike_type *type)
                   "%s(): Soft cast failed.\n%pS",
 		  fname, s.s);
 
-    UNREACHABLE(CALL_AND_UNSET_ONERROR(tmp1));
-    UNREACHABLE(CALL_AND_UNSET_ONERROR(tmp0));
+    UNREACHABLE();
+    UNREACHABLE();
   }
 }
 
@@ -4910,7 +4910,7 @@ static const char *range_func_name (int bound_types)
       Pike_fatal ("Unexpected bound_types.\n");
 #endif
   }
-  UNREACHABLE(return "Unexpected bound_types");
+  UNREACHABLE();
 }
 
 PMOD_EXPORT void o_range2 (int bound_types)

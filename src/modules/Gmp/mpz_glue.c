@@ -693,7 +693,7 @@ struct pike_string *low_get_mpz_digits(MP_INT *mpz, int base)
   else
   {
     Pike_error("Invalid base.\n");
-    UNREACHABLE(return 0);
+    UNREACHABLE();
   }
 
   return s;
@@ -1009,7 +1009,7 @@ double double_from_sval(struct svalue *s)
     default:
       Pike_error("Bad argument, expected a number of some sort.\n");
   }
-  UNREACHABLE(return (double)0.0);
+  UNREACHABLE();
 }
 
 #define BINFUN2(name, errmsg_op, fun, OP, f_op, LFUN)			\

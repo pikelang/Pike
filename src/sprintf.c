@@ -981,7 +981,7 @@ static int do_one(struct format_stack *fs,
     if(argument >= num_arg) \
     { \
       sprintf_error(fs, "Too few arguments to sprintf.\n"); \
-      UNREACHABLE(break); \
+      UNREACHABLE(); \
     } \
     VAR=lastarg=argp+(argument++); \
   }
@@ -994,7 +994,7 @@ static int do_one(struct format_stack *fs,
     if(argument >= num_arg) \
     { \
       sprintf_error(fs, "Too few arguments to sprintf.\n"); \
-      UNREACHABLE(break); \
+      UNREACHABLE(); \
     } \
     VAR=argp+argument; \
   }
@@ -1007,7 +1007,7 @@ static int do_one(struct format_stack *fs,
     { \
       sprintf_error(fs, "Wrong type for argument %d: expected %s, got %s.\n",argument+1,TYPE_NAME, \
 		    get_name_of_type(TYPEOF(*tmp_))); \
-      UNREACHABLE(break); \
+      UNREACHABLE(); \
     } \
     VAR=tmp_->u.EXTENSION; \
   }
@@ -1355,7 +1355,7 @@ cont_2:
 	  if (!INDEX_PCHARP(a,e) &&
 	      !COMPARE_PCHARP(ADD_PCHARP(a,e),<,format_end)) {
 	    sprintf_error(fs, "Missing %%} in format string.\n");
-            UNREACHABLE(break);
+            UNREACHABLE();
 	  } else if(INDEX_PCHARP(a,e)=='%') {
 	    switch(INDEX_PCHARP(a,e+1))
 	    {

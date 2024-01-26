@@ -690,7 +690,8 @@ PMOD_EXPORT int is_identical(const struct svalue *a, const struct svalue *b)
 
   default:
     Pike_fatal("Unknown type %x\n", TYPEOF(*a));
-    UNREACHABLE(return 0);
+    UNREACHABLE();
+    break;
   }
 
 }
@@ -849,7 +850,8 @@ PMOD_EXPORT int is_eq(const struct svalue *a, const struct svalue *b)
 #ifdef PIKE_DEBUG
     Pike_fatal("Unknown type %x\n", TYPEOF(*a));
 #endif
-    UNREACHABLE(return 0);
+    UNREACHABLE();
+    break;
   }
 }
 

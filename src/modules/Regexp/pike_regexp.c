@@ -841,7 +841,7 @@ int pike_regexec(regexp *prog, char *string)
     return 1;
   }
 
-  UNREACHABLE(return 0);
+  UNREACHABLE();
 }
 
 /*

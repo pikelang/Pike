@@ -8292,7 +8292,7 @@ PMOD_EXPORT int low_find_lfun(struct program *p, enum LFUN lfun)
 PMOD_EXPORT int find_lfun_fatal(struct program *UNUSED(p), enum LFUN lfun)
 {
   Pike_fatal("Invalid lfun number: %d\n", lfun);
-  UNREACHABLE(return -1);
+  UNREACHABLE();
 }
 #endif
 

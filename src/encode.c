@@ -517,7 +517,8 @@ static void encode_type(struct pike_type *t, struct encode_data *data)
   switch(t->type & PIKE_T_MASK) {
     default:
       Pike_fatal("error in type tree: 0x%04x.\n", t->type);
-      UNREACHABLE(break);
+      UNREACHABLE();
+      break;
 
     case PIKE_T_OPERATOR:
       if (t->type & 0x8000) {
@@ -2695,7 +2696,8 @@ static void low_decode_type(struct decode_data *data)
   {
     default:
       decode_error(data, NULL, "Error in type string (%d).\n", tmp);
-      UNREACHABLE(break);
+      UNREACHABLE();
+      break;
 
     case T_ASSIGN:
       tmp = GETC();
@@ -2842,7 +2844,8 @@ static void low_decode_type(struct decode_data *data)
           }
         default:
           decode_error(data, NULL, "Error in type string (%d).\n", tmp);
-          UNREACHABLE(break);
+          UNREACHABLE();
+          break;
         }
       }
       break;

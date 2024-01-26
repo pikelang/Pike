@@ -899,7 +899,7 @@ static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
 	    if(e>=match_len)						 \
 	    {								 \
 	      Pike_error("Missing %%} in format string.\n");		 \
-              UNREACHABLE(break);                                        \
+              UNREACHABLE();                                             \
 	    }								 \
 	    if(match[e]=='%')						 \
 	    {								 \
@@ -1253,7 +1253,7 @@ INPUT_IS_WIDE(								 \
 									 \
 		case 's':						 \
 		  Pike_error("Illegal to have two adjecent %%s.\n");	 \
-                  UNREACHABLE(return 0);                                 \
+                  UNREACHABLE();                                         \
 									 \
 	  /* sscanf("foo-bar","%s%d",a,b) might not work as expected */	 \
 		case 'd':						 \
@@ -1571,7 +1571,7 @@ INT32 low_sscanf_pcharp(PCHARP input, ptrdiff_t len,
       return very_low_sscanf_2_2(input.ptr, len, format.ptr, format_len,
                                  chars_matched, &ok, 0, flags);
   }
-  UNREACHABLE(return 0);
+  UNREACHABLE();
 }
 
 /* Simplified interface to very_low_sscanf_{0,1,2}_{0,1,2}(). */
@@ -1641,7 +1641,7 @@ INT32 low_sscanf(struct pike_string *data, struct pike_string *format,
     break;
   }
 
-  UNREACHABLE(return 0);
+  UNREACHABLE();
 }
 
 /*! @decl int sscanf(string data, string format, mixed ... lvalues)

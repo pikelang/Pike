@@ -5879,7 +5879,7 @@ static int compat_box_dispatcher (struct fd_callback_box *box, int event)
       Pike_fatal ("Unexpected event type %d.\n", event);
 #endif
   }
-  UNREACHABLE(return 0);
+  UNREACHABLE();
 }
 
 #define LOW_WRAP_SET_CB(CB, EVENT_BIT, SFLAGS, CFLAGS)			\

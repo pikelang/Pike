@@ -1138,7 +1138,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void index_error(
     }
     va_end(foo);
 
-    UNREACHABLE(;);
+    UNREACHABLE();
   } else {
     ERROR_DONE();
   }
@@ -1206,7 +1206,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void out_of_memory_error (
 {
   resource_error (func, args, amount,
                   amount ? msg_out_of_mem_2 : msg_out_of_mem, amount);
-  UNREACHABLE(return);
+  UNREACHABLE();
 }
 
 /* coverity[+kill] */

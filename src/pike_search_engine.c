@@ -39,7 +39,7 @@ PCHARP PxC3(NAME,NSHIFT,N)(void *s,	        \
     INTERCASE(NAME,1);				\
     INTERCASE(NAME,2);				\
   }                                             \
-  UNREACHABLE(return haystack);                 \
+  UNREACHABLE();                                \
 }						\
 						\
 static const struct SearchMojtVtable PxC3(NAME,NSHIFT,_vtable) = {	\

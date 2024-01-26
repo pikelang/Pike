@@ -50,7 +50,7 @@ struct program *resultset_program;
 struct object *wf_not_resultset( struct object *o )
 {
   Pike_fatal("%p is not a resultset!\n", o );
-  UNREACHABLE(return 0);
+  UNREACHABLE();
 }
 #else
 static struct program *resultset_program;
