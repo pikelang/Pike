@@ -407,7 +407,7 @@ class conxiin {
 
   final Thread.Condition fillread;
   final MUTEX fillreadmux;
-  final int procmsg;
+  final int procmsg, synchronous_callbacks;
   private int didreadcb;
 
 #if PG_DEBUGHISTORY > 0
@@ -453,7 +453,7 @@ class conxiin {
      );
     void|Thread.MutexKey lock = fillreadmux->lock();
     if (procmsg && id)
-      procmsg = 0, lock = 0, Thread.Thread(id);
+      procmsg = 0, lock = 0, synchronous_callbacks ? id() : Thread.Thread(id);
     else if (fillread)
       didreadcb = 1, fillread.signal();
     return 0;
@@ -652,7 +652,7 @@ outer:
       {
         Thread.MutexKey lock = i->fillreadmux->lock();
         if (i->fillread) {  // Delayed close() after flushing the output buffer
-          shuffle->set_done_callback(done_cb);
+          if (shuffle) shuffle->set_done_callback(done_cb);
           i->fillread.signal();
           i->fillread = 0;
         }
@@ -690,7 +690,7 @@ outer:
         if (socket->set_non_blocking)
           socket->set_non_blocking();			// Drop all callbacks
         PD("%d>Close socket\n", socket->query_fd());
-        shuffle->stop();
+        if (shuffle) shuffle->stop();
         socket->close();		// This will be an asynchronous close
       }
       destruct(this);
@@ -754,6 +754,8 @@ outer:
         socket->set_write_callback(0);
         if (!socket->query_context)
           shuffle = shuffler->shuffle(socket); // Use the shuffler only on non-encrypted connections
+        else
+          i->synchronous_callbacks = 1;
         if (nossl != 2)
           Thread.Thread(pgsqlsess->processloop, this);
       }, close);
@@ -2255,7 +2257,6 @@ class proxy {
         msgsreceived++;
         bytesreceived += 1 + msglen;
         int errtype = NOERROR;
-        PD("%d<", ci->socket->query_fd());
         switch (msgtype) {
           array getcols() {
             int bintext = cr->read_int8();
