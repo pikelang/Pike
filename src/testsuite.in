@@ -626,7 +626,7 @@ dnl Generator function tests.
 dnl Trivial generator function.
 test_any_equal([[
   class Foo {
-    continue int foo(int start, int end)
+    __generator__ int foo(int start, int end)
     {
       while (start < end)
 	continue return start++;
@@ -647,7 +647,7 @@ test_any_equal([[
 dnl Generator function with stack.
 test_any_equal([[
   class Foo {
-    continue int|float foo(int end)
+    __generator__ int|float foo(int end)
     {
       return 1000.0 + gauge {
 	  int i = 0;
@@ -672,7 +672,7 @@ test_any_equal([[
 dnl Generator function with catch.
 test_any_equal([[
   class Foo {
-    continue int|string foo(int end)
+    __generator__ int|string foo(int end)
     {
       return describe_error(catch {
 	  int i = 0;
@@ -698,7 +698,7 @@ dnl Generator function with catch and global variable.
 test_any_equal([[
   class Foo {
     int start = 1;
-    continue int|string foo(int end)
+    __generator__ int|string foo(int end)
     {
       return describe_error(catch {
 	  int i;
@@ -722,7 +722,7 @@ test_any_equal([[
 
 dnl Trivial local generator function.
 test_any_equal([[
-  continue int foo(int start, int end)
+  __generator__ int foo(int start, int end)
   {
     while (start < end)
       continue return start++;
@@ -741,7 +741,7 @@ test_any_equal([[
 
 dnl Local generator function with stack.
 test_any_equal([[
-  continue int|float foo(int end)
+  __generator__ int|float foo(int end)
   {
     return 1000.0 + gauge {
 	int i = 0;
@@ -764,7 +764,7 @@ test_any_equal([[
 
 dnl Local generator function with catch.
 test_any_equal([[
-  continue int|string foo(int end)
+  __generator__ int|string foo(int end)
   {
     return describe_error(catch {
 	int i = 0;
@@ -788,7 +788,7 @@ test_any_equal([[
 dnl Local generator function with catch and external variable.
 test_any_equal([[
   int start = 1;
-  continue int|string foo(int end)
+  __generator__ int|string foo(int end)
   {
     return describe_error(catch {
 	int i;

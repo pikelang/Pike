@@ -69,6 +69,7 @@
 %token TOK_FOR "for"
 %token TOK_FUNCTION_ID "function"
 %token TOK_GAUGE "gauge"
+%token TOK_GENERATOR "__generator__"
 %token TOK_GLOBAL "global"
 %token TOK_IDENTIFIER "identifier"
 %token TOK_RESERVED "reserved identifier"
@@ -1487,7 +1488,7 @@ modifier:
   | TOK_INLINE     { $$ = ID_INLINE; }
   | TOK_VARIANT    { $$ = ID_VARIANT; }
   | TOK_WEAK       { $$ = ID_WEAK; }
-  | TOK_CONTINUE   { $$ = ID_GENERATOR; }
+  | TOK_GENERATOR  { $$ = ID_GENERATOR; }
   | TOK_UNUSED     { $$ = ID_USED; }
   ;
 
@@ -1502,6 +1503,7 @@ magic_identifiers1:
   | TOK_INLINE     { $$ = "inline"; }
   | TOK_OPTIONAL   { $$ = "optional"; }
   | TOK_VARIANT    { $$ = "variant"; }
+  | TOK_GENERATOR  { $$ = "__generator__"; }
   | TOK_WEAK       { $$ = "__weak__"; }
   | TOK_UNUSED     { $$ = "__unused__"; }
   | TOK_STATIC_ASSERT	{ $$ = "_Static_assert"; }
@@ -2485,7 +2487,7 @@ statement: normal_label_statement
   | default
   | labeled_statement
   | simple_type2 local_function { $$=mkcastnode(void_type_string, $2); }
-  | TOK_CONTINUE simple_type2 local_generator
+  | TOK_GENERATOR simple_type2 local_generator
   {
     /* NB: The alternative of prefixing the local_function rule above with
      *     an optional_continue causes lots of shift/reduce conflicts.

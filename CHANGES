@@ -153,15 +153,15 @@ o Complain about shadowed variant functions.
 
 o Syntax for generator functions added.
 
-  continue is now treated as a modifier, and causes such functions
-  to become generator functions, where calling the function sets
-  up a restartable function context.
+  - Added the new modifier __generator__, which causes such functions
+    to become generator functions, where calling the function sets
+    up a restartable function context.
 
-  continue may also preceed return statements, which causes
-  the generator function state to be saved before returning.
+  - continue may preceed return statements, which causes
+    the generator function state to be saved before returning.
 
-  Alternatively the "function" Pike.yield() may be used to return
-  a value, and restart with a value from the restarter.
+    Alternatively the "function" Pike.yield() may be used to return
+    a value, and restart with a value from the restarter.
 
   Restartable functions get the type signature
 

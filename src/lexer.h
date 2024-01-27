@@ -644,6 +644,8 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	    return TOK_DEPRECATED_ID;
 	  if(ISWORD("__func__"))
 	    return TOK_FUNCTION_NAME;
+          if(ISWORD("__generator__"))
+            return TOK_GENERATOR;
 	  if(ISWORD("__weak__"))
 	    return TOK_WEAK;
 	  if(ISWORD("__unused__"))
