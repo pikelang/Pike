@@ -3389,6 +3389,7 @@ void push_compiler_frame(int lexical_scope)
   f->is_inline=0;
   f->num_args=-1;
   f->opt_flags = OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND; /* FIXME: Should be 0. */
+  f->generator_fun = -1;
   f->generator_local = -1;
   f->generator_jumptable = NULL;
   memset(&f->local_names, 0, sizeof(f->local_names));

@@ -2521,7 +2521,7 @@ struct node_s *find_inherited_identifier(struct program_state *inherit_state,
     }
   }
 
-  if (inh < 0) inh = -1;
+  if ((inh < 0) && (inh != INHERIT_GENERATOR)) inh = -1;
 
   return program_magic_identifier(inherit_state, inherit_depth, inh, ident, 1);
 }
@@ -2567,7 +2567,10 @@ struct node_s *find_inherited_identifier(struct program_state *inherit_state,
  *   qualified with. -1 when no specific inherit has been specified; ie
  *   either when the identifier has no prefix (colon_colon_ref == 0) or
  *   when the identifier has the prefix :: without any preceding identifier
- *   (colon_colon_ref == 1).
+ *   (colon_colon_ref == 1). -4 when the inherit `continue` has been
+ *   specified (only valid for generators and async functions and the
+ *   symbol `this_function`), in which case it will refer to the "inner"
+ *   function. Otherwise it will refer to the outer function.
  *
  * @param ident
  *   Identifier to look up.
@@ -2677,6 +2680,18 @@ struct node_s *program_magic_identifier (struct program_state *state,
     int i;
     if ((i = Pike_compiler->compiler_frame->current_function_number) >= 0) {
       struct identifier *id;
+
+      if (colon_colon_ref && (inherit_num == INHERIT_GENERATOR)) {
+        if (Pike_compiler->compiler_frame->generator_fun != -1) {
+          i = Pike_compiler->compiler_frame->generator_fun;
+          return mktrampolinenode(i, Pike_compiler->compiler_frame);
+        } else {
+          yyerror("continue::-scope is only valid in generator "
+                  "functions");
+        }
+        colon_colon_ref = 0;
+      }
+
       id = ID_FROM_INT(Pike_compiler->new_program, i);
       if (colon_colon_ref) {
 	if (inherit_num == -1) inherit_num = INHERIT_ALL;

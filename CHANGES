@@ -163,6 +163,10 @@ o Syntax for generator functions added.
     Alternatively the "function" Pike.yield() may be used to return
     a value, and restart with a value from the restarter.
 
+  - continue::this_function may be used to refer to the restartable
+    function from within restartable functions. This is useful eg
+    when setting callbacks.
+
   Restartable functions get the type signature
 
     X fun(mixed|void value, function(mixed|void: void)|void resume_cb)

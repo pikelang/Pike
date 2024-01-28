@@ -97,8 +97,9 @@ struct compiler_frame
   int recur_label;
   int is_inline;
   unsigned int opt_flags;
-  int generator_local;
-  int generator_index;
+  int generator_fun;		/* Reference to generator inner function. */
+  int generator_local;		/* Local num for __generator_entry_point__. */
+  int generator_index;		/* Number of generator jumps. */
   INT32 *generator_jumptable;
   struct local_name local_names[MAX_LOCAL];	/* Local symbols. */
   unsigned char local_variables[MAX_LOCAL];	/* Local variable allocation. */

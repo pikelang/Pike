@@ -580,6 +580,7 @@ struct inherit
 #define INHERIT_LOCAL	-1	/* Self and not overrideable (force local). */
 #define INHERIT_GLOBAL	-2	/* Self and overrideable. */
 #define INHERIT_ALL	-3	/* All inherits but not self. */
+#define INHERIT_GENERATOR -4	/* Only for continue::this_function. */
 
 
 /* PROGRAM_* flags. Currently INT16. */

@@ -868,6 +868,19 @@ def: modifiers optional_attributes simple_type optional_constant
       push_type(T_OR);
       push_type(T_FUNCTION);
 
+      /* Allocate a function id for the generator. */
+      ref_push_string($5->u.sval.u.string);
+      push_constant_text("\0generator");
+      f_add(2);
+      Pike_compiler->compiler_frame->generator_fun =
+        define_function(Pike_sp[-1].u.string,
+                        peek_type_stack(),
+                        ID_INLINE|ID_PROTECTED|ID_PRIVATE|ID_USED,
+                        IDENTIFIER_PIKE_FUNCTION|IDENTIFIER_SCOPED,
+                        NULL,
+                        0);
+      pop_stack();
+
       /* Entry point variable. */
       add_ref(int_type_string);
       MAKE_CONST_STRING(name, "__generator_entry_point__");
@@ -1025,13 +1038,16 @@ def: modifiers optional_attributes simple_type optional_constant
 	yywarning("Extern declared function definition.");
       }
 
-      if ($1 & ID_GENERATOR) {
+      if (Pike_compiler->compiler_frame->generator_fun != -1) {
 	struct pike_type *generator_type;
 	int generator_stack_local;
 
-	ref_push_string($5->u.sval.u.string);
-	push_constant_text("\0generator");
-	f_add(2);
+        ref_push_string(ID_FROM_INT(Pike_compiler->new_program,
+                                    Pike_compiler->compiler_frame->generator_fun)->name);
+
+        generator_stack_local =
+          Pike_compiler->compiler_frame->generator_local + 1;
+
 	if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST &&
 	    Pike_compiler->compiler_frame->current_return_type->type == PIKE_T_AUTO) {
 	  /* Change "auto" return type to actual return type. */
@@ -1065,8 +1081,6 @@ def: modifiers optional_attributes simple_type optional_constant
 		      ID_INLINE|ID_PROTECTED|ID_PRIVATE|ID_USED);
 	pop_stack();
 
-	generator_stack_local =
-	  Pike_compiler->compiler_frame->generator_local + 1;
 	Pike_compiler->compiler_frame->generator_local = -1;
 	free_type(Pike_compiler->compiler_frame->current_return_type);
 	Pike_compiler->compiler_frame->current_return_type = generator_type;
@@ -2916,6 +2930,20 @@ local_generator: TOK_IDENTIFIER start_function func_args
     push_type(T_OR);
     push_type(T_FUNCTION);
 
+    ref_push_string($1->u.sval.u.string);
+    push_constant_text("\0generator");
+    f_add(2);
+    name = get_new_name(Pike_sp[-1].u.string);
+    pop_stack();
+    Pike_compiler->compiler_frame->generator_fun =
+      define_function(name,
+                      peek_type_stack(),
+                      ID_INLINE|ID_PROTECTED|ID_PRIVATE|ID_USED,
+                      IDENTIFIER_PIKE_FUNCTION|IDENTIFIER_SCOPED,
+                      NULL,
+                      0);
+    free_string(name);
+
     /* Entry point variable. */
     add_ref(int_type_string);
     MAKE_CONST_STRING(name, "__generator_entry_point__");
@@ -3030,11 +3058,9 @@ local_generator: TOK_IDENTIFIER start_function func_args
     c->lex.current_file = $1->current_file;
     c->lex.current_line = $1->line_number;
 
-    ref_push_string($1->u.sval.u.string);
-    push_constant_text("\0generator");
-    f_add(2);
-    name = get_new_name(Pike_sp[-1].u.string);
-    pop_stack();
+    name = ID_FROM_INT(Pike_compiler->new_program,
+                       Pike_compiler->compiler_frame->generator_fun)->name;
+    add_ref(name);
 
     if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST &&
 	Pike_compiler->compiler_frame->current_return_type->type == PIKE_T_AUTO) {
@@ -4153,6 +4179,17 @@ qualified_ident:
   {
     free_node($1);
     $$=0;
+  }
+  | TOK_CONTINUE TOK_COLON_COLON TOK_IDENTIFIER
+  {
+    if ($3->u.sval.u.string != this_function_string) {
+      yyerror("Invalid use of continue::-scope.");
+      $$ = 0;
+    } else {
+      $$ = program_magic_identifier(Pike_compiler, 0, INHERIT_GENERATOR,
+                                    this_function_string, 1);
+    }
+    free_node($3);
   }
   | inherit_specifier TOK_IDENTIFIER
   {
