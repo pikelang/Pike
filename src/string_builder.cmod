@@ -23,6 +23,7 @@
 #include "pike_search.h"
 #include "fdlib.h"
 #include "builtin_functions.h"
+#include "multiset.h"
 
 #include <errno.h>
 
@@ -744,16 +745,19 @@ static INT64 pike_va_int(VA_LIST_PTR args, int flags)
  *   'z'	Pointer-width input (size_t).
  *
  * Extended formats supported by string_builder_{v,}sprintf()
- * these accept 'p' as a immediate prefix in order to keep gcc happy:
+ * these accept 'p' as an immediate prefix in order to keep gcc happy:
  *
- *   'O'	Insert description of svalue.
- *   'q'	Insert quoted pike_string.
- *   'S'	Insert pike_string.
- *   'T'	Insert pike_type.
+ *   'A'	Insert description of a struct array *.
+ *   'm'	Insert description of a struct mapping *.
+ *   'M'	Insert description of a struct multiset *.
+ *   'O'	Insert description of a struct svalue *.
+ *   'q'	Insert quoted struct pike_string *.
+ *   'S'	Insert struct pike_string *.
+ *   'T'	Insert description of a struct pike_type *.
  *
  * In addition, the sequence 'px' can be used to insert a pointer
  * in the same way as 'p'.  This can be used as an escape when printing
- * a raw pointer immediately followed by a literal O/q/S/T/x.
+ * a raw pointer immediately followed by a literal A/m/M/O/q/S/T/x.
  * i.e. '%pxO' prints a raw pointer followed by the letter 'O',
  * '%pxx' prints a raw pointer followed by the letter 'x'.
  */
@@ -840,6 +844,33 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 	  low_describe_type(s, va_arg(args, struct pike_type *));
 	  break;
 
+        case 'A':
+          {
+            /* FIXME: Doesn't care about field or integer widths yet. */
+            struct byte_buffer buf = BUFFER_INIT();
+            describe_array(&buf, va_arg(args, struct array *), NULL, 0);
+            string_builder_binary_strcat(s, buffer_ptr(&buf), buffer_content_length(&buf));
+            buffer_free(&buf);
+          }
+          break;
+        case 'm':
+          {
+            /* FIXME: Doesn't care about field or integer widths yet. */
+            struct byte_buffer buf = BUFFER_INIT();
+            describe_mapping(&buf, va_arg(args, struct mapping *), NULL, 0);
+            string_builder_binary_strcat(s, buffer_ptr(&buf), buffer_content_length(&buf));
+            buffer_free(&buf);
+          }
+          break;
+        case 'M':
+          {
+            /* FIXME: Doesn't care about field or integer widths yet. */
+            struct byte_buffer buf = BUFFER_INIT();
+            describe_multiset(&buf, va_arg(args, struct multiset *), NULL, 0);
+            string_builder_binary_strcat(s, buffer_ptr(&buf), buffer_content_length(&buf));
+            buffer_free(&buf);
+          }
+          break;
 	case 'O':
 	  {
 	    /* FIXME: Doesn't care about field or integer widths yet. */
@@ -972,7 +1003,8 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 					flags, min_width, precision);
 	  break;
 	case 'p':
-          if ((*fmt == 'O') || (*fmt == 'q') ||
+          if ((*fmt == 'A') || (*fmt == 'm') || (*fmt == 'M') ||
+              (*fmt == 'O') || (*fmt == 'q') ||
               (*fmt == 'S') || (*fmt == 'T')) {
             /* Pike sprintf formatting extension. */
             continue;
