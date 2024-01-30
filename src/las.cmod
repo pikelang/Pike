@@ -249,6 +249,16 @@ static int low_count_args(node *n)
   case F_SOFT_CAST:
     return count_args(CAR(n));
 
+  case F_RETURN:
+  case F_VOLATILE_RETURN:
+  case F_RETURN_IF_TRUE:
+    if (CDR(n) && (CDR(n)->token == F_CONSTANT) &&
+        (TYPEOF(CDR(n)->u.sval) == T_INT) &&
+        (CDR(n)->u.sval.u.integer == 2)) {
+      /* yield(). */
+      return 1;
+    }
+    /* FALLTHRU */
   case F_CASE:
   case F_CASE_RANGE:
   case F_FOR:
@@ -259,9 +269,6 @@ static int low_count_args(node *n)
   case F_DEC_NEQ_LOOP:
   case F_INC_NEQ_LOOP:
   case F_BREAK:
-  case F_RETURN:
-  case F_VOLATILE_RETURN:
-  case F_RETURN_IF_TRUE:
   case F_CONTINUE:
   case F_FOREACH:
     return 0;
