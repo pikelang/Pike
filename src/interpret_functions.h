@@ -3151,6 +3151,17 @@ OPCODE1(F_SWAP_STACK_LOCAL, "swap_stack_local", I_ARG_T_LOCAL, {
     Pike_sp[-1] = tmp;
   });
 
+/* Assign the first stack value to the local if it is equal
+ * to the second atomically.
+ */
+OPCODE1(F_TEST_AND_SET_LOCAL, "test_and_set_local", I_ARG_T_LOCAL|I_UPDATE_SP, {
+    if (is_eq(Pike_sp-1, Pike_fp->locals + arg1)) {
+      assign_svalue(Pike_fp->locals + arg1, Pike_sp-2);
+    }
+    pop_stack();
+    pop_stack();
+  });
+
 OPCODE1(F_GENERATOR, "generator", I_ARG_T_GLOBAL, {
     Pike_fp->fun = arg1;
   });
