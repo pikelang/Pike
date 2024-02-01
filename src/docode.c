@@ -483,6 +483,7 @@ static INT32 count_continue_returns(node *n)
   {
   case F_RETURN:
   case F_RETURN_IF_TRUE:
+  case F_VOLATILE_RETURN:
     /* FIXME: continue returns in expressions are likely to be broken. */
     if (CDR(n) && CDR(n)->u.sval.u.integer) ret = 1;
 
@@ -2619,7 +2620,10 @@ static int do_docode2(node *n, int flags)
     struct statement_label *p;
     int in_catch = 0;
     int continue_label = -1;
+    int resume_label = -1;
     int skip_label = -1;
+
+    /* Evaluate the expression. */
     do_docode(CAR(n),0);
 
     if (n->token == F_RETURN_IF_TRUE) {
@@ -2633,6 +2637,27 @@ static int do_docode2(node *n, int flags)
        * Note that we must save the stack before we start
        * popping marks etc in the label loop below.
        */
+
+      /* Check if __generator_entry_point__ is -2
+       * in which case we have already been called.
+       *
+       * Note that we reset __generator_entry_point__ to -1,
+       * so that the next yield will not be passed.
+       *
+       * Note also that the interpreter lock must not
+       * be released before we reach the F_RETURN or similar.
+       * This means that opcodes that call pike functions
+       * or backward branches may not be used.
+       *
+       * The return expression is still on the stack after
+       * the branch.
+       */
+      emit1(F_NUMBER, -2);
+      emit1(F_NUMBER, -1);
+      emit1(F_SWAP_STACK_LOCAL,
+            Pike_compiler->compiler_frame->generator_local);
+      resume_label = do_jump(F_BRANCH_WHEN_EQ, -1);
+
       /* Count the number of active catches. */
       for (p = current_label; p; p = p->prev) {
 	struct cleanup_frame *q;
@@ -2644,6 +2669,7 @@ static int do_docode2(node *n, int flags)
       }
       if (in_catch) {
 	emit1(F_PUSH_CATCHES, in_catch);
+        modify_stack_depth(2 * in_catch);
 	/* NB: For simplicity we save the return value, as it is
 	 *     followed by 2*in_catch items that we must save.
 	 *
@@ -2679,14 +2705,25 @@ static int do_docode2(node *n, int flags)
      * the cleanup is handled wholesale in low_return et al.
      * Alternatively we could handle this too in low_return and
      * then allow tail recursion of these kind of returns too. */
+    in_catch = 0;
     for (p = current_label; p; p = p->prev) {
       struct cleanup_frame *q;
       for (q = p->cleanups; q; q = q->prev) {
 	if (q->cleanup == do_escape_catch) {
-	  in_catch = 1;
+	  in_catch++;
 	  do_escape_catch(q->cleanup_arg);
 	}
 #ifdef PIKE_DEBUG
+        else if (Pike_compiler->compiler_frame->generator_local != -1) {
+          /* There may be active marks if we are in a yield-expression.
+           *
+           * NB: We do not need to restore the mark stack here in the
+           *     non-DEBUG case as it will be done by F_RETURN below.
+           */
+          if (q->cleanup == (cleanup_func) do_pop_mark) {
+            do_pop_mark(NULL);
+          }
+        }
 	/* Have to pop marks from F_SYNCH_MARK too if the debug level
 	 * is high enough to get them inserted, otherwise we'll get
 	 * false alarms from debug checks in e.g. POP_CATCH_CONTEXT. */
@@ -2705,6 +2742,8 @@ static int do_docode2(node *n, int flags)
 	  F_VOLATILE_RETURN : F_RETURN);
 
     if (continue_label != -1) {
+      int pop_skip_label = -1;
+
       modify_stack_depth(-1);
       Pike_compiler->compiler_frame->generator_jumptable[
         Pike_compiler->compiler_frame->generator_index++] =
@@ -2717,11 +2756,17 @@ static int do_docode2(node *n, int flags)
 	 */
 	struct svalue *save_sp = Pike_sp;
 
+        /* Return value followed by catch contexts "pushed" by
+         * F_PUSH_CATCHES/F_SAVE_STACK_TO_LOCAL/F_RESTORE_STACK_FROM_LOCAL
+         *
+         * See F_PUSH_CATCHES above.
+         */
+        modify_stack_depth(1 + in_catch*2);
+
 	for (p = current_label; p; p = p->prev) {
 	  struct cleanup_frame *q;
 	  for (q = p->cleanups; q; q = q->prev) {
 	    if (q->cleanup == (cleanup_func) do_escape_catch) {
-	      in_catch = 1;
 	      push_int((ptrdiff_t)q->cleanup_arg);
 	    }
 	  }
@@ -2729,14 +2774,27 @@ static int do_docode2(node *n, int flags)
 
 	while (Pike_sp > save_sp) {
 	  do_jump(F_CATCH_AT, Pike_sp[-1].u.integer);
+          modify_stack_depth(-2);
 	  emit0(F_ENTRY);
 	  pop_stack();
 	}
 
-	do_pop(1);	/* Pop the return value. */
+        /* NB: The restored return value is on the stack here.
+         *     it will be removed by the resume_label pop().
+         */
+      } else {
+        pop_skip_label = do_branch(-1);
       }
 
-      /* Call the resumption callback. */
+      /* Resume. */
+      ins_label(resume_label);
+      do_pop(1);	/* Pop the (restored) return value. */
+
+      if (pop_skip_label != -1) {
+        ins_label(pop_skip_label);
+      }
+
+      /* Call the resumption callback if it is set. */
       emit0(F_MARK);
       emit0(F_UNDEFINED);
       emit1(F_SWAP_STACK_LOCAL,
@@ -2751,6 +2809,10 @@ static int do_docode2(node *n, int flags)
       ins_label(tmp2);
 
       if (CDR(n) ->u.sval.u.integer == 2) {
+        /* yield().
+         *
+         * Push the resumption value.
+         */
 	emit0(F_UNDEFINED);
 	emit1(F_SWAP_STACK_LOCAL,
 	      Pike_compiler->compiler_frame->generator_local + 2);
@@ -3286,7 +3348,7 @@ INT32 do_code_block(node *n, int identifier_flags)
     emit1(F_ALIGN, sizeof(INT32));
 
     /* NB: Three implicit states:
-     *     -1: return UNDEFINED;	// Termination state.
+     *     -1: return UNDEFINED;	// Termination state. Goto state -2.
      *      0: code			// Code start.
      *    ...
      *      *: return UNDEFINED;	// Termination state (again).
@@ -3319,9 +3381,17 @@ INT32 do_code_block(node *n, int identifier_flags)
     }
     emit0(F_NOTREACHED);
 
-    /* Termination state. (-1, default) */
+    /* Termination state. (-2, -1, default) */
     Pike_compiler->compiler_frame->generator_jumptable[
       Pike_compiler->compiler_frame->generator_index++] = ins_label(-1);
+    /* Set the state to -2 if it is -1.
+     * This is used in yield() to detect the race that
+     * the function has been called before the yield
+     * has completed.
+     */
+    emit1(F_NUMBER, -2);
+    emit1(F_NUMBER, -1);
+    emit1(F_TEST_AND_SET_LOCAL, Pike_compiler->compiler_frame->generator_local);
     emit0(F_UNDEFINED);
     emit0(F_RETURN);
 

@@ -4293,12 +4293,14 @@ PIKEFUN mapping(string:int|string) get_runtime_info()
 
 /*! @decl mixed yield(mixed val)
  *!
- *! Stop execution of the current generator function for now,
+ *! Stop execution of the current restartable function for now,
  *! and return the value @[val].
  *!
  *! @returns
  *!   Evaluates to the first argument passed to the
- *!   generator function on restart.
+ *!   restartable function on restart, or if it has
+ *!   already been called, the value passed at that
+ *!   time.
  *!
  *! Calling this special form is similar to the statement:
  *!
@@ -4310,10 +4312,15 @@ PIKEFUN mapping(string:int|string) get_runtime_info()
  *! to pass a value back.
  *!
  *! @note
- *!   Use of this function is only valid in generator functions.
+ *!   Use of this function is only valid in restartable functions.
+ *!
+ *! @throws
+ *!   The second argument to a restartable function may be
+ *!   a function that throws a value. That value will appear
+ *!   to have been thrown via @[yield()].
  *!
  *! @seealso
- *!   Generator functions
+ *!   @[await()], Generator functions
  */
 PIKEFUN mixed yield(mixed val)
   optfunc optimize_yield;

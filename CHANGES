@@ -151,17 +151,23 @@ o The inherit statement's argument is now a proper
 
 o Complain about shadowed variant functions.
 
-o Syntax for generator functions added.
+o Syntax for generator (and restartable) functions added.
 
   - Added the new modifier __generator__, which causes such functions
     to become generator functions, where calling the function sets
     up a restartable function context.
 
   - continue may preceed return statements, which causes
-    the generator function state to be saved before returning.
+    the restartable function state to be saved before returning.
 
     Alternatively the "function" Pike.yield() may be used to return
     a value, and restart with a value from the restarter.
+
+  - Re-entrant/concurrent calls of restartable functions save
+    the argument(s) (NB: only one set), returns UNDEFINED, and
+    causes the next continue return or yield() in the initial
+    function call to continue immediately with the new argument(s)
+    instead of returning.
 
   - continue::this_function may be used to refer to the restartable
     function from within restartable functions. This is useful eg
