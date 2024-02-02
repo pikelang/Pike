@@ -31,6 +31,9 @@
 
 // All docs live in module.pmod.in This file, and Fuse, requires C99.
 
+/*! @module Fuse
+ */
+
 static struct object *global_fuse_obj; // There Can Be Only One
 
 #define DEFAULT_ERRNO() do{if((TYPEOF(Pike_sp[-1]) == T_INT) && Pike_sp[-1].u.integer) return -Pike_sp[-1].u.integer;return -ENOENT;}while(0)
@@ -1195,6 +1198,9 @@ PIKE_MODULE_INIT
     add_integer_constant("FUSE_MAJOR_VERSION", FUSE_MAJOR_VERSION, 0);
     add_integer_constant("FUSE_MINOR_VERSION", FUSE_MINOR_VERSION, 0);
 }
+
+/*! @endmodule
+ */
 #else
 PIKE_MODULE_EXIT
 {
