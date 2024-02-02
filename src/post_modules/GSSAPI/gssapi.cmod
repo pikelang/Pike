@@ -683,13 +683,13 @@ PIKECLASS Error
    */
   INHERIT generic_error;
 
+  /*! @decl constant is_gssapi_error = 1
+   *! @decl constant error_type = "gssapi_error"
+   *!
+   *! Object recognition constants.
+   */
   EXTRA
   {
-    /*! @decl constant is_gssapi_error = 1
-     *! @decl constant error_type = "gssapi_error"
-     *!
-     *! Object recognition constants.
-     */
     add_string_constant ("error_type", "gssapi_error", 0);
     add_integer_constant ("is_gssapi_error", 1, 0);
 
@@ -1010,13 +1010,13 @@ PIKECLASS MissingServicesError
    */
   INHERIT generic_error;
 
+  /*! @decl constant is_gssapi_missing_services_error = 1
+   *! @decl constant error_type = "gssapi_missing_services_error"
+   *!
+   *! Object recognition constants.
+   */
   EXTRA
   {
-    /*! @decl constant is_gssapi_missing_services_error = 1
-     *! @decl constant error_type = "gssapi_missing_services_error"
-     *!
-     *! Object recognition constants.
-     */
     add_string_constant ("error_type", "gssapi_missing_services_error", 0);
     add_integer_constant ("is_gssapi_missing_services_error", 1, 0);
 
