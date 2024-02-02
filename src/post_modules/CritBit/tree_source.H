@@ -69,9 +69,9 @@ cmod_DEFINE_EVAL(COPY_TREE, TREE_CLASSIFY(_copy_tree))
 
 cmod_DEFINE_EVAL(COPY_NODE, TREE_CLASSIFY(_copy_node))
 
-    /*! @decl mixed _m_delete(mixed key)
+    DOCSTART() @decl mixed _m_delete(mixed key)
      *! m_delete callback.
-     */
+    DOCEND()
     PIKEFUN mixed _m_delete(mixed key)
 	flags ID_PROTECTED;
     {
@@ -235,10 +235,10 @@ DOCEND()
 	stack_pop_keep_top();
     }
 
-    /*! @decl mapping cast(string type)
+    DOCSTART() @decl mapping cast(string type)
      *! Cast callback. Supports only cast to mapping and
      *! behaves as the inverse of create().
-     */
+    DOCEND()
     PIKEFUN mapping cast(string type)
 	flags ID_PROTECTED;
     {
@@ -253,11 +253,11 @@ DOCEND()
         push_undefined();
     }
 
-    /*! @decl mixed nth(int(0..) n)
+    DOCSTART() @decl mixed nth(int(0..) n)
      *! Get the @expr{n@}th entry in order.
      *! @returns
      *! 	An array @expr{({ key, value })@}.
-     */
+    DOCEND()
     PIKEFUN mixed nth(int n) {
 	cb_node_t node;
 
@@ -279,11 +279,11 @@ DOCEND()
 	return;
     }
 
-    /*! @decl array _random(function random_string, function random)
+    DOCSTART() @decl array _random(function random_string, function random)
      *! Get a random entry.
      *! @returns
      *! 	An array @expr{({ key, value })@}.
-     */
+    DOCEND()
     PIKEFUN array _random(function random_string, function random)
 	flags ID_PROTECTED;
     {
@@ -310,8 +310,8 @@ DOCEND()
 	return;
     }
 
-    /*! @decl mixed `[](mixed key)
-     */
+    DOCSTART() @decl mixed `[](mixed key)
+    DOCEND()
     PIKEFUN mixed `[](mixed key)
 	flags ID_PROTECTED;
     {
@@ -330,8 +330,8 @@ DOCEND()
 	push_undefined();
     }
 
-    /*! @decl int(0..1) _equal(mixed o)
-     */
+    DOCSTART() @decl int(0..1) _equal(mixed o)
+    DOCEND()
     PIKEFUN int _equal(mixed o)
 	flags ID_PROTECTED;
     {
@@ -364,9 +364,9 @@ DOCEND()
 	return;
     }
 
-    /*! @decl mixed `-(mixed o)
+    DOCSTART() @decl mixed `-(mixed o)
      *! Sub[s]tract two trees from each other (key-wise).
-     */
+    DOCEND()
     PIKEFUN mixed `-(mixed o)
 	flags ID_PROTECTED;
     {
@@ -400,9 +400,9 @@ DOCEND()
 	return;
     }
 
-    /*! @decl mixed `+(mixed o)
+    DOCSTART() @decl mixed `+(mixed o)
      *!	Add callback. Returns the union of two trees.
-     */
+    DOCEND()
     PIKEFUN mixed `+(mixed o)
 	flags ID_PROTECTED;
     {
@@ -443,10 +443,10 @@ DOCEND()
 	return;
     }
 
-    /*! @decl mixed `[..](mixed a, int atype, mixed b, int btype)
+    DOCSTART() @decl mixed `[..](mixed a, int atype, mixed b, int btype)
      *! @seealso
      *! 	@[predef::`[..]]
-     */
+    DOCEND()
     PIKEFUN mixed `[..](mixed a, int atype, mixed b, int btype)
 	flags ID_PROTECTED;
     {
@@ -607,10 +607,10 @@ range_do_clone:
 	push_undefined();
     }
 
-    /*! @decl string bkey(mixed key)
+    DOCSTART() @decl string bkey(mixed key)
      *! Render the internally used binary representation of
      *! the key into a string as a strings of '0's and '1's.
-     */
+    DOCEND()
     PIKEFUN string bkey(mixed key) {
 	struct string_builder s;
 	cb_key k;
@@ -663,9 +663,9 @@ range_do_clone:
 	push_undefined();
     }
 
-    /*! @decl int(0..) depth()
+    DOCSTART() @decl int(0..) depth()
      *! Calculate the depth of the tree.
-     */
+    DOCEND()
     PIKEFUN int depth() {
 	if (THIS->tree.root) {
 	    push_int(cb_get_depth(THIS->tree.root));
