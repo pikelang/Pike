@@ -78,6 +78,9 @@ static SIGNED char qprtab[(1<<(CHAR_BIT-1))-'0'];
 #define CT_QUOTE   9
 unsigned char rfc822ctype[1<<CHAR_BIT];
 
+/*! @module MIME
+ */
+
 /*! @decl constant TOKENIZE_KEEP_ESCAPES
  *!
  *! Don't unquote backslash-sequences in quoted strings during tokenizing.
@@ -89,9 +92,6 @@ unsigned char rfc822ctype[1<<CHAR_BIT];
 #define TOKENIZE_KEEP_ESCAPES	1
 
 /** Externally available functions **/
-
-/*! @module MIME
- */
 
 /* Initialize and start module */
 
