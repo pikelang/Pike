@@ -2744,7 +2744,6 @@ static int do_docode2(node *n, int flags)
     if (continue_label != -1) {
       int pop_skip_label = -1;
 
-      modify_stack_depth(-1);
       Pike_compiler->compiler_frame->generator_jumptable[
         Pike_compiler->compiler_frame->generator_index++] =
 	ins_label(continue_label);
