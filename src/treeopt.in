@@ -368,7 +368,10 @@ F_POP_VALUE(F_GET_SET, *):
 // Popping of zero elements.
 // This set of rules also protects the rule
 //   F_COMMA(F_POP(0), F_POP(1)) => F_POP(F_COMMA(0, 1))
-F_POP_VALUE(0 = F_RETURN, *):
+F_POP_VALUE(0 = F_RETURN(*, -), *):
+  $0;
+
+F_POP_VALUE(0 = F_RETURN(*, F_CONSTANT [TYPEOF($$->u.sval) == T_INT] [!$$->u.sval.u.integer]), *):
   $0;
 
 F_POP_VALUE(0 = F_CONTINUE, *):
@@ -779,7 +782,10 @@ F_ARG_LIST(0, F_ARG_LIST(1, 2)):
 // FIXME: Should it be a warning here?
 // Do people even write code where this is trigged? return in an srgument-list?
 // Is really the OPT_CASE needed for the following three?
-F_ARG_LIST(0 = F_RETURN, +[!($$->tree_info & OPT_CASE)]):
+F_ARG_LIST(0 = F_RETURN(*, -), +[!($$->tree_info & OPT_CASE)]):
+  $0;
+
+F_ARG_LIST(0 = F_RETURN(*, F_CONSTANT [TYPEOF($$->u.sval) == T_INT] [!$$->u.sval.u.integer]), +[!($$->tree_info & OPT_CASE)]):
   $0;
 
 F_ARG_LIST(0 = F_CONTINUE, +[!($$->tree_info & OPT_CASE)]):
@@ -788,7 +794,10 @@ F_ARG_LIST(0 = F_CONTINUE, +[!($$->tree_info & OPT_CASE)]):
 F_ARG_LIST(0 = F_BREAK, +[!($$->tree_info & OPT_CASE)]):
   $0;
 
-F_ARG_LIST(0 = F_COMMA_EXPR(*, F_RETURN), +[!($$->tree_info & OPT_CASE)]):
+F_ARG_LIST(0 = F_COMMA_EXPR(*, F_RETURN(*, -)), +[!($$->tree_info & OPT_CASE)]):
+  $0;
+
+F_ARG_LIST(0 = F_COMMA_EXPR(*, F_RETURN(*, F_CONSTANT [TYPEOF($$->u.sval) == T_INT] [!$$->u.sval.u.integer])), +[!($$->tree_info & OPT_CASE)]):
   $0;
 
 F_ARG_LIST(0 = F_COMMA_EXPR(*, F_CONTINUE), +[!($$->tree_info & OPT_CASE)]):
