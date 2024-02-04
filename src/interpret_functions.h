@@ -3163,6 +3163,7 @@ OPCODE1(F_TEST_AND_SET_LOCAL, "test_and_set_local", I_ARG_T_LOCAL|I_UPDATE_SP, {
   });
 
 OPCODE1(F_GENERATOR, "generator", I_ARG_T_GLOBAL, {
+    save_locals(Pike_fp);
     Pike_fp->fun = arg1;
   });
 

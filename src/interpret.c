@@ -2426,6 +2426,67 @@ struct pike_frame *alloc_pike_frame(void)
     return alloc_pike_frame();
 }
 
+void save_locals(struct pike_frame *frame)
+{
+  int num_new_locals = 0;
+  int num_locals;
+  int i;
+
+  if (!frame ||
+      ((frame->flags & (PIKE_FRAME_SAVE_LOCALS|PIKE_FRAME_MALLOCED_LOCALS)) !=
+       PIKE_FRAME_SAVE_LOCALS)) {
+    /* Not relevant or already done. */
+    return;
+  }
+
+  num_locals = frame->num_locals;
+
+  /* find the highest set bit */
+  for (i = num_locals - 1; i >= 0; i--) {
+    unsigned INT16 bitmask = frame->save_locals_bitmask[i >> 4];
+
+    if (bitmask & (1 << (i & 0xf))) {
+      num_new_locals = i + 1;
+      break;
+    }
+  }
+
+  if (num_new_locals)
+  {
+    struct array *a = allocate_array(num_new_locals + 1);
+    struct svalue *locals = frame->locals;
+    unsigned INT16 bitmask = 0;
+    struct svalue *s = ITEM(a) + 1;
+
+    /* Self-reference for reference-counting purposes. */
+    SET_SVAL(ITEM(a)[0], PIKE_T_ARRAY, 0, array, a);
+    /* NB: Make sure that the self-reference is not counted as
+     *     part of the actual array contents for gc purposes.
+     */
+    s = ++ITEM(a);
+    a->size--;
+
+    for (i = 0; i < num_new_locals; i++) {
+      unsigned INT16 bitmask = frame->save_locals_bitmask[i >> 4];
+
+      if (bitmask & (1 << (i & 0xf))) {
+        assign_svalue_no_free(s + i, locals + i);
+      }
+    }
+
+    frame->locals = s;
+    frame->flags |= PIKE_FRAME_MALLOCED_LOCALS;
+  } else {
+    frame->locals = NULL;
+  }
+
+  frame->flags &= ~PIKE_FRAME_SAVE_LOCALS;
+
+  free(frame->save_locals_bitmask);
+
+  frame->num_locals = num_new_locals;
+}
+
 void LOW_POP_PIKE_FRAME_slow_path(struct pike_frame *frame)
 {
   debug_malloc_touch(frame);
@@ -2433,54 +2494,7 @@ void LOW_POP_PIKE_FRAME_slow_path(struct pike_frame *frame)
   if (frame->flags & PIKE_FRAME_MALLOCED_LOCALS) {
     /* Already done. */
   } else if (frame->flags & PIKE_FRAME_SAVE_LOCALS) {
-    int num_new_locals = 0;
-    int num_locals = frame->num_locals;
-    int i;
-
-    /* find the highest set bit */
-    for (i = num_locals - 1; i >= 0; i--) {
-      unsigned INT16 bitmask = frame->save_locals_bitmask[i >> 4];
-
-      if (bitmask & (1 << (i & 0xf))) {
-        num_new_locals = i + 1;
-        break;
-      }
-    }
-
-    if (num_new_locals)
-    {
-      struct array *a = allocate_array(num_new_locals + 1);
-      struct svalue *locals = frame->locals;
-      unsigned INT16 bitmask = 0;
-      struct svalue *s = ITEM(a) + 1;
-
-      /* Self-reference for reference-counting purposes. */
-      SET_SVAL(ITEM(a)[0], PIKE_T_ARRAY, 0, array, a);
-      /* NB: Make sure that the self-reference is not counted as
-       *     part of the actual array contents for gc purposes.
-       */
-      s = ++ITEM(a);
-      a->size--;
-
-      for (i = 0; i < num_new_locals; i++) {
-        unsigned INT16 bitmask = frame->save_locals_bitmask[i >> 4];
-
-        if (bitmask & (1 << (i & 0xf))) {
-          assign_svalue_no_free(s + i, locals + i);
-        }
-      }
-
-      frame->locals = s;
-      frame->flags |= PIKE_FRAME_MALLOCED_LOCALS;
-    } else {
-      frame->locals = NULL;
-    }
-
-    frame->flags &= ~PIKE_FRAME_SAVE_LOCALS;
-
-    free(frame->save_locals_bitmask);
-
-    frame->num_locals = num_new_locals;
+    save_locals(frame);
   } else if (!(frame->flags & PIKE_FRAME_MALLOCED_LOCALS)) {
     frame->locals = NULL;
     frame->num_locals = 0;
