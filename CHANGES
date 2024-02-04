@@ -160,7 +160,7 @@ o Syntax for generator (and restartable) functions added.
   - continue may preceed return statements, which causes
     the restartable function state to be saved before returning.
 
-    Alternatively the "function" Pike.yield() may be used to return
+    Alternatively the "function" yield() may be used to return
     a value, and restart with a value from the restarter.
 
   - Re-entrant/concurrent calls of restartable functions save
@@ -178,9 +178,9 @@ o Syntax for generator (and restartable) functions added.
     X fun(mixed|void value, function(mixed|void: void)|void resume_cb)
 
   where X is the declared return type of the generator function,
-  value is the value to be returned by Pike.yield(), and resume_cb
+  value is the value to be returned by yield(), and resume_cb
   is a function that will be called at the yield point. resume_cb
-  may be used to eg behave as if Pike.yield() had thrown an error.
+  may be used to eg behave as if yield() had thrown an error.
 
 o Machine code support for more architectures.
 

@@ -4291,6 +4291,9 @@ PIKEFUN mapping(string:int|string) get_runtime_info()
   f_aggregate_mapping(7*2);
 }
 
+/*! @endmodule
+ */
+
 /*! @decl mixed yield(mixed val)
  *!
  *! Stop execution of the current restartable function for now,
@@ -4320,7 +4323,7 @@ PIKEFUN mapping(string:int|string) get_runtime_info()
  *!   to have been thrown via @[yield()].
  *!
  *! @seealso
- *!   @[await()], Generator functions
+ *!   @[await()], Restartable functions
  */
 PIKEFUN mixed yield(mixed val)
   optfunc optimize_yield;
@@ -4339,8 +4342,6 @@ static node *optimize_yield(node *n)
   return NULL;
 }
 
-/*! @endmodule
- */
 
 void low_backtrace(struct Pike_interpreter_struct *i, int flags)
 {
