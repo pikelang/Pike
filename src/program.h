@@ -57,6 +57,9 @@ extern struct pike_string *args_string;
 extern struct pike_string *this_function_string;
 extern struct pike_string *predef_scope_string;
 
+extern struct pike_string *Concurrent_Promise_string;
+extern struct pike_string *success_string;
+
 /* Common compiler subsystems */
 extern struct pike_string *parser_system_string;
 extern struct pike_string *type_check_system_string;
@@ -396,8 +399,9 @@ struct program_constant
 #define ID_VARIANT	  0x400 /* Function is overloaded by argument. */
 #define ID_WEAK		  0x800 /* Variable has weak references. */
 #define ID_GENERATOR	 0x1000	/* Function is a generator. */
+#define ID_ASYNC	 0x2000	/* Function is an async function. */
 
-#define ID_MODIFIER_MASK 0x1fff
+#define ID_MODIFIER_MASK 0x2fff
 
 #define ID_STRICT_TYPES             0x8000 /* #pragma strict_types */
 #define ID_SAVE_PARENT             0x10000 /* #pragma save_parent */

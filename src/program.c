@@ -117,6 +117,8 @@ struct pike_string *this_program_string, *this_string, *args_string;
 struct pike_string *this_function_string;
 static struct pike_string *UNDEFINED_string;
 struct pike_string *predef_scope_string;
+struct pike_string *Concurrent_Promise_string;
+struct pike_string *success_string;
 
 /* Common compiler subsystems */
 struct pike_string *parser_system_string;
@@ -2686,7 +2688,7 @@ struct node_s *program_magic_identifier (struct program_state *state,
           i = Pike_compiler->compiler_frame->generator_fun;
           return mktrampolinenode(i, Pike_compiler->compiler_frame);
         } else {
-          yyerror("continue::-scope is only valid in generator "
+          yyerror("continue::-scope is only valid in async and generator "
                   "functions");
         }
         colon_colon_ref = 0;
@@ -9693,6 +9695,9 @@ void init_program(void)
   MAKE_CONST_STRING(UNDEFINED_string,"UNDEFINED");
   MAKE_CONST_STRING(args_string, "__args__");
   MAKE_CONST_STRING(predef_scope_string, "predef::");
+
+  MAKE_CONST_STRING(Concurrent_Promise_string, "Concurrent.Promise");
+  MAKE_CONST_STRING(success_string, "success");
 
   MAKE_CONST_STRING(parser_system_string, "parser");
   MAKE_CONST_STRING(type_check_system_string, "type_check");

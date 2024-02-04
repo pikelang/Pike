@@ -4294,10 +4294,18 @@ PIKEFUN mapping(string:int|string) get_runtime_info()
 /*! @endmodule
  */
 
-/*! @decl mixed yield(mixed val)
+/*! @decl mixed yield(mixed|void val)
  *!
  *! Stop execution of the current restartable function for now,
  *! and return the value @[val].
+ *!
+ *! @param val
+ *!   Value to be returned from the restartable function.
+ *!
+ *!   May be omitted in functions returning @expr{void@}
+ *!   (including asynchronous functions). For asynchronous
+ *!   functions this means that @[Concurrent.Promise()->success()]
+ *!   in the implicit @[Concurrent.Promise] will not be called.
  *!
  *! @returns
  *!   Evaluates to the first argument passed to the
@@ -4325,7 +4333,7 @@ PIKEFUN mapping(string:int|string) get_runtime_info()
  *! @seealso
  *!   @[await()], Restartable functions
  */
-PIKEFUN mixed yield(mixed val)
+PIKEFUN mixed yield(mixed|void val)
   optfunc optimize_yield;
   prototype;
   efun;

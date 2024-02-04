@@ -638,6 +638,8 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	  break;
 	case TWO_CHAR('_','_'):
 	  if(len < 5) break;
+          if(ISWORD("__async__"))
+            return TOK_ASYNC;
 	  if(ISWORD("__attribute__"))
 	    return TOK_ATTRIBUTE_ID;
 	  if(ISWORD("__deprecated__"))

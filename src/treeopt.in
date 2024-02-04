@@ -36,11 +36,6 @@
 F_APPLY(-, 0 = *):
   F_COMMA_EXPR(F_POP_VALUE($0, -), 0);
 
-// Attempt to return a void expression.
-// The compiler has already complained about it, so just make a valid node.
-F_RETURN(-, 0 = *):
-  F_RETURN(0, $0);
-
 // @({ a, b, c })  =>  a, b, c
 // Nonconstant array
 F_PUSH_ARRAY(F_APPLY(F_CONSTANT

@@ -98,6 +98,7 @@ struct compiler_frame
   int is_inline;
   unsigned int opt_flags;
   int generator_fun;		/* Reference to generator inner function. */
+  int generator_is_async;	/* __async__ generator function. */
   int generator_local;		/* Local num for __generator_entry_point__. */
   int generator_index;		/* Number of generator jumps. */
   INT32 *generator_jumptable;
@@ -186,6 +187,7 @@ node *debug_mkstrnode(struct pike_string *str);
 node *debug_mkintnode(INT_TYPE nr);
 node *debug_mknewintnode(INT_TYPE nr);
 node *debug_mkfloatnode(FLOAT_TYPE foo);
+node *debug_mkarrownode(node *n, const char *str);
 node *debug_mkprgnode(struct program *p);
 node *debug_mkapplynode(node *func,node *args);
 node *debug_mkefuncallnode(char *function, node *args);
@@ -241,6 +243,7 @@ void fix_foreach_type(node *lval_lval);
 #define mkintnode(nr)       dmalloc_touch(node *, debug_mkintnode(nr))
 #define mknewintnode(nr)    dmalloc_touch(node *, debug_mknewintnode(nr))
 #define mkfloatnode(foo)    dmalloc_touch(node *, debug_mkfloatnode(foo))
+#define mkarrownode(val, str) dmalloc_touch(node *, debug_mkarrownode(val, str))
 #define mkprgnode(p)        dmalloc_touch(node *, debug_mkprgnode(p))
 #define mkapplynode(func, args) dmalloc_touch(node *, debug_mkapplynode(dmalloc_touch(node *, func),dmalloc_touch(node *, args)))
 #define mkefuncallnode(function, args) dmalloc_touch(node *, debug_mkefuncallnode(function, dmalloc_touch(node *, args)))

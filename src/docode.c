@@ -2622,12 +2622,33 @@ static int do_docode2(node *n, int flags)
     int continue_label = -1;
     int resume_label = -1;
     int skip_label = -1;
+    int got_val;
+
 
     /* Evaluate the expression. */
-    do_docode(CAR(n),0);
+    got_val = do_docode(CAR(n),0);
 
     if (n->token == F_RETURN_IF_TRUE) {
-      skip_label = do_jump(F_BRANCH_AND_POP_WHEN_ZERO, -1);
+      if (got_val) {
+        skip_label = do_jump(F_BRANCH_AND_POP_WHEN_ZERO, -1);
+      } else {
+        skip_label = do_jump(F_BRANCH, -1);
+      }
+    }
+
+    if (Pike_compiler->compiler_frame->generator_is_async && got_val) {
+      /* __async__ function.
+       *
+       * Move the return value to the Promise, and return UNDEFINED.
+       */
+      emit1(F_MARK_X, 1);
+      emit1(F_LOCAL, Pike_compiler->compiler_frame->generator_local + 4);
+      emit1(F_SWAP, 0);
+      emit1(F_CALL_OTHER_AND_POP, store_prog_string(success_string));
+      emit0(F_UNDEFINED);
+    } else if (!got_val) {
+      emit0(F_UNDEFINED);
+      modify_stack_depth(1);
     }
 
     if ((Pike_compiler->compiler_frame->generator_local != -1) &&

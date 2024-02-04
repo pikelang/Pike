@@ -50,6 +50,7 @@
 %token TOK_ADD_EQ "+="
 %token TOK_AND_EQ "&="
 %token TOK_ARRAY_ID "array"
+%token TOK_ASYNC "__async__"
 %token TOK_ATTRIBUTE_ID "__attribute__"
 %token TOK_BREAK "break"
 %token TOK_CASE "case"
@@ -845,10 +846,25 @@ def: modifiers optional_attributes simple_type optional_constant
     /* construct the function type */
     push_finished_type(Pike_compiler->compiler_frame->current_return_type);
 
-    if ($1 & ID_GENERATOR) {
+    if ($1 & (ID_GENERATOR|ID_ASYNC)) {
       struct pike_string *name;
+      int num_state_vars = 4;
 
-      /* Adjust the type to be a function that returns
+      /*
+       * Build the type for the inner function.
+       */
+
+      if ($1 & ID_ASYNC) {
+        Pike_compiler->compiler_frame->generator_is_async = 1;
+
+        /* NB: The inner function of an async function
+         *     always returns void.
+         */
+        compiler_discard_type();
+        push_type(T_VOID);
+      }
+
+      /* Adjust the return type to be a function that returns
        * a function(mixed|void, function(mixed...:void)|void:X).
        */
       push_type(T_VOID);
@@ -881,6 +897,14 @@ def: modifiers optional_attributes simple_type optional_constant
                         0);
       pop_stack();
 
+      if (Pike_compiler->compiler_frame->generator_is_async) {
+        /* An async function returns a Concurrent.Future
+         * containing X.
+         */
+        compiler_discard_type();
+        push_object_type(0, 0);  /* FIXME: object(Concurrent.Future<X>). */
+      }
+
       /* Entry point variable. */
       add_ref(int_type_string);
       MAKE_CONST_STRING(name, "__generator_entry_point__");
@@ -902,8 +926,16 @@ def: modifiers optional_attributes simple_type optional_constant
       MAKE_CONST_STRING(name, "__generator_callback__");
       add_local_name(name, function_type_string, 0);
 
+      if (Pike_compiler->compiler_frame->generator_is_async) {
+        /* Result promise. */
+        add_ref(object_type_string);
+        MAKE_CONST_STRING(name, "__async_promise__");
+        add_local_name(name, object_type_string, 0);
+        num_state_vars++;
+      }
+
       /* All of the above and the arguments are scoped. */
-      for (e = 0; e < Pike_compiler->compiler_frame->generator_local + 4; e++) {
+      for (e = 0; e < Pike_compiler->compiler_frame->generator_local + num_state_vars; e++) {
         /* Force local #e to be scoped. */
         node *n = mklocalnode(e, -1);
         if (e >= Pike_compiler->compiler_frame->generator_local) {
@@ -1042,14 +1074,42 @@ def: modifiers optional_attributes simple_type optional_constant
 	struct pike_type *generator_type;
 	int generator_stack_local;
 
+        /* Generate the inner (ie restartable) function first. */
+
         ref_push_string(ID_FROM_INT(Pike_compiler->new_program,
                                     Pike_compiler->compiler_frame->generator_fun)->name);
 
         generator_stack_local =
           Pike_compiler->compiler_frame->generator_local + 1;
 
-	if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST &&
-	    Pike_compiler->compiler_frame->current_return_type->type == PIKE_T_AUTO) {
+        if (Pike_compiler->compiler_frame->generator_is_async) {
+          /* The inner function of an async function always returns void. */
+          push_type(T_VOID);
+
+          /*
+           * {
+           *   __async_promise__->failure(catch {
+           *       $12;
+           *     });
+           *   return;
+           * }
+           *
+           * Note that $12 always has an F_RETURN at the end.
+           *
+           * Note also that the F_RETURN has a NULL value-expression
+           * to avoid the implicit call of __async_promise__->success()
+           * that docode adds.
+           */
+          $12 =
+            mknode(F_COMMA_EXPR,
+                   mkapplynode(mkarrownode(mklocalnode(generator_stack_local + 3, 0),
+                                           "failure"),
+                               mknode(F_ARG_LIST,
+                                      mknode(F_CATCH, $12, NULL),
+                                      NULL)),
+                   mknode(F_RETURN, NULL, NULL));
+        } else if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST &&
+                   Pike_compiler->compiler_frame->current_return_type->type == PIKE_T_AUTO) {
 	  /* Change "auto" return type to actual return type. */
 	  push_finished_type(Pike_compiler->compiler_frame->current_return_type->car);
 	} else {
@@ -1058,6 +1118,8 @@ def: modifiers optional_attributes simple_type optional_constant
 
 	/* Adjust the type to be a function that returns
          * a function(mixed|void, function(mixed...:void)|void:X).
+         *
+         * This is the type for the inner function.
 	 */
 	push_type(T_VOID);
 	push_type(T_MANY);
@@ -1081,13 +1143,57 @@ def: modifiers optional_attributes simple_type optional_constant
 		      ID_INLINE|ID_PROTECTED|ID_PRIVATE|ID_USED);
 	pop_stack();
 
+        /* Now it is time for the outer function. */
 	Pike_compiler->compiler_frame->generator_local = -1;
+        Pike_compiler->compiler_frame->generator_is_async = 0;
+        /* Set the return type for the outer function. */
 	free_type(Pike_compiler->compiler_frame->current_return_type);
-	Pike_compiler->compiler_frame->current_return_type = generator_type;
-	$12 = mknode(F_COMMA_EXPR,
-		     mknode(F_ASSIGN, mklocalnode(generator_stack_local, 0),
-			    mkefuncallnode("aggregate", NULL)),
-		     mknode(F_RETURN, mkgeneratornode(f), NULL));
+        if ($1 & ID_ASYNC) {
+          free_type(generator_type);
+          /* FIXME: Should be object(Concurrent.Future<T>) */
+          Pike_compiler->compiler_frame->current_return_type =
+            object_type_string;
+          add_ref(object_type_string);
+        } else {
+          Pike_compiler->compiler_frame->current_return_type = generator_type;
+        }
+        if ($1 & ID_ASYNC) {
+          /*
+           * {
+           *   __generator_stack__ = aggregate();
+           *   __async_promise__ = Concurrent.Promise();
+           *   mkgenerator(f)();
+           *   return __async_promise__->future();
+           * }
+           */
+          $12 = mknestednodes(F_COMMA_EXPR,
+                              mknode(F_ASSIGN,
+                                     mklocalnode(generator_stack_local, 0),
+                                     mkefuncallnode("aggregate", NULL)),
+                              mknode(F_ASSIGN,
+                                     mklocalnode(generator_stack_local + 3, 0),
+                                     mkapplynode(resolve_identifier(Concurrent_Promise_string),
+                                                 mknode(F_ARG_LIST, NULL, NULL))),
+                              mkapplynode(mkgeneratornode(f),
+                                          mknode(F_ARG_LIST, NULL, NULL)),
+                              mknode(F_RETURN,
+                                     mkapplynode(mkarrownode(mklocalnode(generator_stack_local + 3, 0),
+                                                             "future"),
+                                                 mknode(F_ARG_LIST, NULL, NULL)),
+                                     mkintnode(0)),
+                              NULL);
+        } else {
+          /*
+           * {
+           *   __generator_stack__ = aggregate();
+           *   return mkgenerator(f);
+           * }
+           */
+          $12 = mknode(F_COMMA_EXPR,
+                       mknode(F_ASSIGN, mklocalnode(generator_stack_local, 0),
+                              mkefuncallnode("aggregate", NULL)),
+                       mknode(F_RETURN, mkgeneratornode(f), NULL));
+        }
       }
 
       for(e=$<number>8; e<$<number>8+$9; e++)
@@ -1503,6 +1609,7 @@ modifier:
   | TOK_VARIANT    { $$ = ID_VARIANT; }
   | TOK_WEAK       { $$ = ID_WEAK; }
   | TOK_GENERATOR  { $$ = ID_GENERATOR; }
+  | TOK_ASYNC      { $$ = ID_ASYNC; }
   | TOK_UNUSED     { $$ = ID_USED; }
   ;
 
@@ -1517,6 +1624,7 @@ magic_identifiers1:
   | TOK_INLINE     { $$ = "inline"; }
   | TOK_OPTIONAL   { $$ = "optional"; }
   | TOK_VARIANT    { $$ = "variant"; }
+  | TOK_ASYNC      { $$ = "__async__"; }
   | TOK_GENERATOR  { $$ = "__generator__"; }
   | TOK_WEAK       { $$ = "__weak__"; }
   | TOK_UNUSED     { $$ = "__unused__"; }
@@ -2899,6 +3007,7 @@ local_function: TOK_IDENTIFIER start_function func_args
   }
   ;
 
+/* FIXME: Add support for TOK_ASYNC here! */
 local_generator: TOK_IDENTIFIER start_function func_args
   {
     struct pike_string *name;

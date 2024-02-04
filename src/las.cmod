@@ -1236,6 +1236,15 @@ node *debug_mkfloatnode(FLOAT_TYPE foo)
   return res;
 }
 
+node *debug_mkarrownode(node *n, const char *str)
+{
+  node *ret;
+  push_text(str);
+  ret = mknode(F_ARROW, n, mkconstantsvaluenode(Pike_sp-1));
+  pop_stack();
+  return ret;
+}
+
 
 node *debug_mkprgnode(struct program *p)
 {
@@ -4379,8 +4388,15 @@ void fix_type_field(node *n)
   case F_VOLATILE_RETURN:
   case F_RETURN_IF_TRUE:
     if (!CAR(n) || (CAR(n)->type == void_type_string)) {
-      if (!CAR(n)) {
-	_CAR(n) = mkintnode(0);
+      if (Pike_compiler->compiler_frame &&
+          (Pike_compiler->compiler_frame->generator_local != -1) &&
+          (Pike_compiler->compiler_frame->generator_is_async)) {
+        /* Allow empty yield() or return in async functions.
+         *
+         * These are converted into the corresponding return UNDEFINED
+         * by docode, and are used to indicate that __async_promise__->
+         * success() should not be called before returning.
+         */
       } else {
 	_CAR(n) = mknode(F_COMMA_EXPR, CAR(n), mkintnode(0));
       }

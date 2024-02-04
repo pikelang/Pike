@@ -182,6 +182,33 @@ o Syntax for generator (and restartable) functions added.
   is a function that will be called at the yield point. resume_cb
   may be used to eg behave as if yield() had thrown an error.
 
+o Syntax for asynchronous functions added.
+
+  - Added the new modifier __async__, which causes such functions
+    to become asynchronous functions, which automatically return
+    Concurrent.Future objects.
+
+    Asynchronous functions are implemented with generators with
+    some differences. Eg:
+
+      __async__ T foo(mixed ... args) {
+        // ...
+      }
+
+    Behaves similar to:
+
+      Concurrent.Future/*<T>*/ foo(mixed ... args) {
+        Concurrent.Promise __async_promise__ = Concurrent.Promise();
+        __async_promise__->failure(catch {
+            __async_promise__->success(
+              __generator__ lambda() {
+                // ...
+              }()()
+            );
+          });
+        return __async_promise__->future();
+      }
+
 o Machine code support for more architectures.
 
   There's now machine code support for arm32 and arm64.
