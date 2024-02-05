@@ -316,6 +316,13 @@ class Future
   //!
   //!   On failure it is called with two arguments; the failure
   //!   value and @[predef::throw] as the second argument.
+  //!
+  //! @note
+  //!   Used by @[predef::await()], in which case @[cb] will be
+  //!   a generator function.
+  //!
+  //! @seealso
+  //!   @[on_success()], @[on_failure()], @[predef::await()], @[predef::throw()]
   this_program on_await(function(mixed,
                                  function(mixed, __unknown__ ... : void)|void:void) cb)
   {

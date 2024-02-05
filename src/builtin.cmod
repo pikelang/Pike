@@ -4350,6 +4350,70 @@ static node *optimize_yield(node *n)
   return NULL;
 }
 
+/*! @decl mixed await(Concurrent.Future future)
+ *!
+ *! Stop execution of the current restartable function for now.
+ *! Resume when the future completes.
+ *!
+ *! @returns
+ *!   Evaluates to the result of the future if it succeeds.
+ *!
+ *! @throws
+ *!   Throws an error if the future failed.
+ *!
+ *! Calling this special form is similar to the statement:
+ *!
+ *!   @code
+ *!     future->on_await(continue::this_function);
+ *!     yield(0);
+ *!   @endcode
+ *!
+ *! @note
+ *!   Use of this function is only valid in restartable functions.
+ *!
+ *! @note
+ *!   No checks that the @[future] has actually completed are
+ *!   performed. It is assumed that nothing else will call
+ *!   the restartable function during the wait.
+ *!
+ *! @seealso
+ *!   @[Concurrent.Future()->get()], @[yield()], Restartable functions
+ */
+PIKEFUN mixed await(object future)
+  optfunc optimize_await;
+  prototype;
+  efun;
+{
+}
+
+static node *optimize_await(node *n)
+{
+  if (n) {
+    /* FIXME: If not in a generator or async function: warn and change
+     *        to a call of future->get()?
+     */
+    /*
+     * {
+     *   f->on_await(continue::this_function);
+     *   yield();
+     * }
+     */
+    node *ret =
+      mknode(F_COMMA_EXPR,
+             mkcastnode(void_type_string,
+                        mkapplynode(mkarrownode(CDR(n), "on_await"),
+                                    mknode(F_ARG_LIST,
+                                           program_magic_identifier(Pike_compiler, 0,
+                                                                    INHERIT_GENERATOR,
+                                                                    this_function_string,
+                                                                    1),
+                                           NULL))),
+             mknode(F_RETURN, NULL, mkintnode(2)));
+    ADD_NODE_REF(CDR(n));
+    return ret;
+  }
+  return NULL;
+}
 
 void low_backtrace(struct Pike_interpreter_struct *i, int flags)
 {
