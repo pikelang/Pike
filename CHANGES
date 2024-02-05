@@ -209,6 +209,10 @@ o Syntax for asynchronous functions added.
         return __async_promise__->future();
       }
 
+  - Add Concurrent.Future()->on_async()
+
+    This function is shorthand for on_success(f)->on_failure(f, throw).
+
 o Machine code support for more architectures.
 
   There's now machine code support for arm32 and arm64.

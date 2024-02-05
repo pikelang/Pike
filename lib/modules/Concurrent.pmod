@@ -309,6 +309,19 @@ class Future
     return column(failure_cbs, 0);
   }
 
+  //! Set both success and failure callbacks.
+  //!
+  //! @param cb
+  //!   Callback to call with the success value on success.
+  //!
+  //!   On failure it is called with two arguments; the failure
+  //!   value and @[predef::throw] as the second argument.
+  this_program on_await(function(mixed,
+                                 function(mixed, __unknown__ ... : void)|void:void) cb)
+  {
+    return on_success(cb)->on_failure(cb, throw);
+  }
+
   //! Apply @[fun] with @[val] followed by the contents of @[ctx],
   //! and update @[p] with the result.
   protected void apply(mixed val, Promise p,
