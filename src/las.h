@@ -92,6 +92,7 @@ struct compiler_frame
   int next_local_offset;	/* Next stack offset for locals. */
   int last_block_level; /* used to detect variables declared in same block */
   int num_args;
+  int varargs;
   int lexical_scope;
   int current_function_number;
   int recur_label;

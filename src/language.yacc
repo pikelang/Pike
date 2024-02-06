@@ -809,7 +809,7 @@ def: modifiers optional_attributes simple_type optional_constant
 	  /* __create__() has varargs.
 	   * Inhibit further arguments in the explicit create().
 	   */
-	  Pike_compiler->varargs = 1;
+          Pike_compiler->compiler_frame->varargs = 1;
 	  for (e = 0; e < -Pike_compiler->num_create_args; e++) {
 	    struct identifier *id =
 	      Pike_compiler->new_program->identifiers + e;
@@ -956,7 +956,7 @@ def: modifiers optional_attributes simple_type optional_constant
       $9 = 0;
     }
     e = $<number>8 + $9 - 1;
-    if (Pike_compiler->varargs) {
+    if (Pike_compiler->compiler_frame->varargs) {
       /* NB: This is set when either __create__() or create() has varargs. */
       struct local_name *var;
       ee = Pike_compiler->compiler_frame->local_variables[e] - 1;
@@ -1043,11 +1043,10 @@ def: modifiers optional_attributes simple_type optional_constant
 			$<n>$->u.sval.u.type,
 			$1 & (~ID_EXTERN),
 			IDENTIFIER_PIKE_FUNCTION |
-			(Pike_compiler->varargs?IDENTIFIER_VARARGS:0),
+                        (Pike_compiler->compiler_frame->varargs?
+                         IDENTIFIER_VARARGS:0),
 			0,
 			$4);
-
-      Pike_compiler->varargs=0;
     }
   }
   block_or_semi
@@ -1234,7 +1233,7 @@ def: modifiers optional_attributes simple_type optional_constant
 	node *args = NULL;
         int ee;
 	e = $<number>8;
-	if (Pike_compiler->varargs) {
+        if (Pike_compiler->compiler_frame->varargs) {
 	  e--;
           ee = Pike_compiler->compiler_frame->local_variables[e] - 1;
 	  args = mknode(F_PUSH_ARRAY,
@@ -1281,7 +1280,7 @@ def: modifiers optional_attributes simple_type optional_constant
         push_finished_type(Pike_compiler->compiler_frame->current_return_type->car);
 
         e = $<number>8 + $9 - 1;
-        if(Pike_compiler->varargs &&
+        if(Pike_compiler->compiler_frame->varargs &&
            (!$<number>8 || (Pike_compiler->num_create_args >= 0)))
         {
           struct local_name *var;
@@ -1495,7 +1494,9 @@ new_arg_name: full_type optional_dot_dot_dot
     /* Pop the mark form above. */
     pop_stack_mark();
 
-    if(Pike_compiler->varargs) yyerror("Can't define more arguments after ...");
+    if(Pike_compiler->compiler_frame->varargs) {
+      yyerror("Can't define more arguments after ...");
+    }
 
     if (TEST_COMPAT(8, 0) &&
 	!pike_types_le(zero_type_string, peek_type_stack(), 0, 0)) {
@@ -1507,7 +1508,7 @@ new_arg_name: full_type optional_dot_dot_dot
     {
       push_unlimited_array_type(T_ARRAY);
 
-      Pike_compiler->varargs=1;
+      Pike_compiler->compiler_frame->varargs=1;
     }
 
     if ($5) {
@@ -2684,16 +2685,12 @@ lambda: TOK_LAMBDA line_number_info implicit_identifier start_lambda
     struct pike_type *type;
     int e;
 
-    $<number>$ = Pike_compiler->varargs;
-    Pike_compiler->varargs = 0;
-
     if (Pike_compiler->compiler_pass == COMPILER_PASS_FIRST) {
       /* Define a tentative prototype for the lambda. */
       int ee;
       push_finished_type(mixed_type_string);
       e=$5-1;
-      if($<number>$)
-      {
+      if (Pike_compiler->compiler_frame->varargs) {
         ee = Pike_compiler->compiler_frame->local_variables[e] - 1;
         push_finished_type(Pike_compiler->compiler_frame->local_names[ee].def->type);
 	e--;
@@ -2703,7 +2700,6 @@ lambda: TOK_LAMBDA line_number_info implicit_identifier start_lambda
       }else{
 	push_type(T_VOID);
       }
-      Pike_compiler->varargs=0;
       push_type(T_MANY);
       for(; e>=0; e--) {
         struct local_name *var;
@@ -2760,8 +2756,7 @@ lambda: TOK_LAMBDA line_number_info implicit_identifier start_lambda
     }
 
     e=$5-1;
-    if($<number>6)
-    {
+    if (Pike_compiler->compiler_frame->varargs) {
       ee = Pike_compiler->compiler_frame->local_variables[e] - 1;
       push_finished_type(Pike_compiler->compiler_frame->local_names[ee].def->type);
       e--;
@@ -2771,7 +2766,6 @@ lambda: TOK_LAMBDA line_number_info implicit_identifier start_lambda
     }else{
       push_type(T_VOID);
     }
-    Pike_compiler->varargs=0;
     push_type(T_MANY);
     for(; e>=0; e--) {
       struct local_name *var;
@@ -2868,7 +2862,7 @@ local_function: TOK_IDENTIFIER start_function func_args
     push_finished_type(Pike_compiler->compiler_frame->current_return_type);
 
     e=$3-1;
-    if(Pike_compiler->varargs)
+    if(Pike_compiler->compiler_frame->varargs)
     {
       ee = Pike_compiler->compiler_frame->local_variables[e] - 1;
       push_finished_type(Pike_compiler->compiler_frame->local_names[ee].def->type);
@@ -2912,11 +2906,11 @@ local_function: TOK_IDENTIFIER start_function func_args
 			 type,
 			 ID_PROTECTED | ID_PRIVATE | ID_INLINE | ID_USED,
 			 IDENTIFIER_PIKE_FUNCTION |
-			 (Pike_compiler->varargs?IDENTIFIER_VARARGS:0),
+                         (Pike_compiler->compiler_frame->varargs?
+                          IDENTIFIER_VARARGS:0),
 			 0,
 			 OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
     }
-    Pike_compiler->varargs=0;
     Pike_compiler->compiler_frame->current_function_number=id;
     free_type(type);
 
@@ -2944,7 +2938,7 @@ local_function: TOK_IDENTIFIER start_function func_args
     c->lex.current_file = $1->current_file;
     c->lex.current_line = $1->line_number;
 
-    if (Pike_compiler->varargs) e--;
+    if (Pike_compiler->compiler_frame->varargs) e--;
     for(; e>=0; e--) {
       int ee = Pike_compiler->compiler_frame->local_variables[e] - 1;
       $5 = mknode(F_COMMA_EXPR, set_default_value(ee), $5);
@@ -3086,7 +3080,7 @@ local_generator: TOK_IDENTIFIER start_function func_args
     }
 
     e=$3-1;
-    if(Pike_compiler->varargs)
+    if(Pike_compiler->compiler_frame->varargs)
     {
       ee = Pike_compiler->compiler_frame->local_variables[e] - 1;
       push_finished_type(Pike_compiler->compiler_frame->local_names[ee].def->type);
@@ -3130,11 +3124,11 @@ local_generator: TOK_IDENTIFIER start_function func_args
 			 type,
 			 ID_PROTECTED | ID_PRIVATE | ID_INLINE | ID_USED,
 			 IDENTIFIER_PIKE_FUNCTION |
-			 (Pike_compiler->varargs?IDENTIFIER_VARARGS:0),
+                         (Pike_compiler->compiler_frame->varargs?
+                          IDENTIFIER_VARARGS:0),
 			 0,
 			 OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
     }
-    Pike_compiler->varargs=0;
     Pike_compiler->compiler_frame->current_function_number=id;
     free_type(type);
 
@@ -3214,7 +3208,7 @@ local_generator: TOK_IDENTIFIER start_function func_args
 		       mkefuncallnode("aggregate", NULL)),
 		mknode(F_RETURN, mkgeneratornode(f), NULL));
 
-    if(Pike_compiler->varargs) e--;
+    if(Pike_compiler->compiler_frame->varargs) e--;
     for(; e>=0; e--) {
       ee = Pike_compiler->compiler_frame->local_variables[e] - 1;
       $5 = mknode(F_COMMA_EXPR, set_default_value(ee), $5);
