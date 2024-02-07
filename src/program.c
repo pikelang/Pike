@@ -7625,9 +7625,10 @@ INT32 define_function(struct pike_string *name,
 
     ref = prog->identifier_references[i];
 
-    if (funp->identifier_flags & IDENTIFIER_HAS_BODY)
-      /* Keep this flag. */
-      function_flags |= IDENTIFIER_HAS_BODY;
+    /* Keep some identifier flags. */
+    function_flags |=
+      (funp->identifier_flags &
+       (IDENTIFIER_HAS_BODY | IDENTIFIER_SCOPED | IDENTIFIER_SCOPE_USED));
 
     if(!(ref.id_flags & ID_INHERITED)) /* not inherited */
     {
