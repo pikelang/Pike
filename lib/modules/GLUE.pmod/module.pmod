@@ -318,7 +318,8 @@ void init(mapping(string:mixed) options = ([]))
   if(options->resize_callback)
     resize_callback = options->resize_callback;
   else
-    resize_callback = lambda(float,int(0..1),float){};
+    resize_callback =
+      lambda(float aspect, int(0..1) hidden, float z_rotation){};
 
   start_driver(options->driver_names, options->title, options->icon_title);
 
