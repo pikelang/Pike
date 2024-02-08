@@ -912,6 +912,36 @@ test_any_equal([[
   return ret;
 ]], 11)
 
+dnl Trivial local async function.
+test_any_equal([[
+  __async__ int foo(Concurrent.Future f)
+  {
+    return await(f) + 10;
+  }
+
+  Concurrent.Promise p = Concurrent.Promise();
+  Concurrent.Future res = foo(p->future());
+
+  int done;
+  int ret = -1;
+  res->on_success(lambda(int val) {
+    ret = val;
+    done = 1;
+  });
+  res->on_failure(lambda(mixed err) {
+    master()->handle_error(err);
+    done = 1;
+  });
+
+  p->success(1);
+
+  for (int i = 0; !done && i < 10; i++) {
+    if (!Pike.DefaultBackend(0.1)) break;
+  }
+
+  return ret;
+]], 11)
+
 dnl Function with default value.
 test_any_equal([[
   class A {

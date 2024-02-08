@@ -187,6 +187,17 @@
  * NB: Other functions have their prototypes in las.h.
  */
 static void yyerror_reserved(const char *keyword);
+static int compiler_declare_prototype(int modifiers,
+                                      struct pike_string *identifier,
+                                      int num_args, int num_create_args,
+                                      int opt_flags);
+static void add_parent_local_function(struct pike_string *identifier, int id);
+static int compiler_define_function(int modifiers,
+                                    struct pike_string *identifier,
+                                    struct pike_type *fun_type,
+                                    node *block,
+                                    int num_args, int num_create_args,
+                                    int opt_flags);
 static void redefine_local(struct compiler_frame *frame, int var,
                            node *def, node *init);
 static void mark_lvalue_as_used(node *n);
@@ -288,6 +299,7 @@ int yylex(YYSTYPE *yylval);
 %type <number> create_arg
 %type <number> assign
 %type <number> low_assign
+%type <number> local_modifier
 %type <number> modifier
 %type <number> modifier_list
 %type <number> modifiers
@@ -343,6 +355,7 @@ int yylex(YYSTYPE *yylval);
 %type <n> open_paren_with_line_info
 %type <n> open_paren_or_safe_apply_with_line_info
 %type <n> open_bracket_with_line_info
+%type <n> function_block
 %type <n> block_or_semi
 %type <n> break
 %type <n> case
@@ -424,7 +437,7 @@ int yylex(YYSTYPE *yylval);
 %type <n> low_program_ref
 %type <n> inherit_ref
 %type <n> local_function
-%type <n> local_generator
+%type <n> local_restartable_function
 %type <n> magic_identifier
 %type <n> simple_identifier
 %type <n> foreach_lvalues
@@ -693,11 +706,14 @@ constant: modifiers TOK_CONSTANT constant_list ';' {}
   | modifiers TOK_CONSTANT error '}' { yyerror("Missing ';'."); }
   ;
 
-block_or_semi: block
+function_block: block
   {
     $$ = mknode(F_COMMA_EXPR,$1,mknode(F_RETURN,mkintnode(0),0));
     COPY_LINE_NUMBER_INFO($$, $1);
   }
+  ;
+
+block_or_semi: function_block
   | ';' { $$ = NULL; }
   | TOK_LEX_EOF { yyerror("Expected ';'."); $$ = NULL; }
   | error { $$ = NULL; }
@@ -838,530 +854,20 @@ def: modifiers optional_attributes simple_type optional_constant
   }
   arguments ')'
   {
-    int e, ee;
+    int id;
 
     /* Adjust opt_flags in case we've got an optional_constant. */
     Pike_compiler->compiler_frame->opt_flags = $4;
 
-    /* construct the function type */
-    push_finished_type(Pike_compiler->compiler_frame->current_return_type);
+    id = compiler_declare_prototype($1 & (~ID_EXTERN), $5->u.sval.u.string,
+                                    $9, $<number>8, $4);
 
-    if ($1 & (ID_GENERATOR|ID_ASYNC)) {
-      struct pike_string *name;
-      int num_state_vars = 4;
-
-      /*
-       * Build the type for the inner function.
-       */
-
-      if ($1 & ID_ASYNC) {
-        Pike_compiler->compiler_frame->generator_is_async = 1;
-
-        /* NB: The inner function of an async function
-         *     always returns void.
-         */
-        compiler_discard_type();
-        push_type(T_VOID);
-      }
-
-      /* Adjust the return type to be a function that returns
-       * a function(mixed|void, function(mixed...:void)|void:X).
-       */
-      push_type(T_VOID);
-      push_type(T_MANY);
-
-      push_type(T_VOID);
-      push_type(T_VOID);
-      push_type(T_VOID);
-      push_type(T_MIXED);
-      push_type(T_OR);
-      push_type(T_MANY);
-      push_type(T_OR);
-      push_type(T_FUNCTION);
-
-      push_type(T_VOID);
-      push_type(T_MIXED);
-      push_type(T_OR);
-      push_type(T_FUNCTION);
-
-      /* Allocate a function id for the generator. */
-      ref_push_string($5->u.sval.u.string);
-      push_constant_text("\0generator");
-      f_add(2);
-      Pike_compiler->compiler_frame->generator_fun =
-        define_function(Pike_sp[-1].u.string,
-                        peek_type_stack(),
-                        ID_INLINE|ID_PROTECTED|ID_PRIVATE|ID_USED,
-                        IDENTIFIER_PIKE_FUNCTION|IDENTIFIER_SCOPED,
-                        NULL,
-                        0);
-      pop_stack();
-
-      if (Pike_compiler->compiler_frame->generator_is_async) {
-        /* An async function returns a Concurrent.Future
-         * containing X.
-         */
-        compiler_discard_type();
-        push_object_type(0, 0);  /* FIXME: object(Concurrent.Future<X>). */
-      }
-
-      /* Entry point variable. */
-      add_ref(int_type_string);
-      MAKE_CONST_STRING(name, "__generator_entry_point__");
-      Pike_compiler->compiler_frame->generator_local =
-	add_local_name(name, int_type_string, 0);
-
-      /* Stack contents to restore. */
-      add_ref(array_type_string);
-      MAKE_CONST_STRING(name, "__generator_stack__");
-      add_local_name(name, array_type_string, 0);
-
-      /* Resumption argument. */
-      add_ref(mixed_type_string);
-      MAKE_CONST_STRING(name, "__generator_argument__");
-      add_local_name(name, mixed_type_string, 0);
-
-      /* Resumption callback. */
-      add_ref(function_type_string);
-      MAKE_CONST_STRING(name, "__generator_callback__");
-      add_local_name(name, function_type_string, 0);
-
-      if (Pike_compiler->compiler_frame->generator_is_async) {
-        /* Result promise. */
-        add_ref(object_type_string);
-        MAKE_CONST_STRING(name, "__async_promise__");
-        add_local_name(name, object_type_string, 0);
-        num_state_vars++;
-      }
-
-      /* All of the above and the arguments are scoped. */
-      for (e = 0; e < Pike_compiler->compiler_frame->generator_local + num_state_vars; e++) {
-        /* Force local #e to be scoped. */
-        node *n = mklocalnode(e, -1);
-        if (e >= Pike_compiler->compiler_frame->generator_local) {
-          /* Mark all generator locals as used. */
-          mark_lvalue_as_used(n);
-        }
-        free_node(n);
-      }
-    }
-
-    if ($<number>8 && (Pike_compiler->num_create_args < 0) && $9) {
-      /* Do not allow further arguments if __create__() is varargs.
-       *
-       * NB: No need to complain that $9 != 0, as this should already
-       *     have triggered a complaint when the corresponding variable
-       *     was declared due to varargs being set.
-       */
-      $9 = 0;
-    }
-    e = $<number>8 + $9 - 1;
-    if (Pike_compiler->compiler_frame->varargs) {
-      /* NB: This is set when either __create__() or create() has varargs. */
-      struct local_name *var;
-      ee = Pike_compiler->compiler_frame->local_variables[e] - 1;
-      var = Pike_compiler->compiler_frame->local_names + ee;
-      push_finished_type(var->def->type);
-      e--;
-      if (var->def->type->type != T_ARRAY) {
-	yywarning("Varargs variable is not an array!! (Internal error)");
-      } else {
-	if (pop_type_stack(T_ARRAY)) {
-	  compiler_discard_top_type();
-	}
-      }
-    }else{
-      push_type(T_VOID);
-    }
-    push_type(T_MANY);
-    for(; e >= $<number>8; e--)
-    {
-      struct local_name *var;
-      ee = Pike_compiler->compiler_frame->local_variables[e] - 1;
-      var = Pike_compiler->compiler_frame->local_names + ee;
-      push_finished_type(var->def->type);
-      if (var->init && (var->def->token == F_LOCAL)) {
-	push_type(T_VOID);
-	push_type(T_OR);
-      }
-      push_type(T_FUNCTION);
-    }
-    if (e >= 0) {
-      /* __create__() arguments. */
-      int i = FIND_LFUN(Pike_compiler->new_program, LFUN___CREATE__);
-      struct identifier *id = ID_FROM_INT(Pike_compiler->new_program, i);
-      struct pike_type *t = id->type;
-      struct pike_type *trailer = compiler_pop_type();
-
-      while (t && (t->type == T_FUNCTION)) {
-	push_finished_type(t->car);
-	t = t->cdr;
-      }
-
-      push_finished_type(trailer);
-      free_type(trailer);
-
-      t = id->type;
-
-      while (t && (t->type == T_FUNCTION)) {
-	push_reverse_type(T_FUNCTION);
-	t = t->cdr;
-      }
-    }
-
-    if (Pike_compiler->current_attributes) {
-      node *n = Pike_compiler->current_attributes;
-      while (n) {
-	push_type_attribute(CDR(n)->u.sval.u.string);
-	n = CAR(n);
-      }
-    }
-
-    {
-      struct pike_type *s=compiler_pop_type();
-      int i = isidentifier($5->u.sval.u.string);
-
-      if (Pike_compiler->compiler_pass != COMPILER_PASS_FIRST) {
-	if (i < 0) {
-          my_yyerror("Identifier %pS lost after first pass.",
-		     $5->u.sval.u.string);
-	}
-      }
-
-      $<n>$ = mktypenode(s);
-      free_type(s);
-    }
-
-
-/*    if(Pike_compiler->compiler_pass == COMPILER_PASS_FIRST) */
-    {
-      /* FIXME:
-       * set current_function_number for local functions as well
-       */
-      Pike_compiler->compiler_frame->current_function_number=
-	define_function($5->u.sval.u.string,
-			$<n>$->u.sval.u.type,
-			$1 & (~ID_EXTERN),
-			IDENTIFIER_PIKE_FUNCTION |
-                        (Pike_compiler->compiler_frame->varargs?
-                         IDENTIFIER_VARARGS:0),
-			0,
-			$4);
-    }
+    $<n>$ = mktypenode(ID_FROM_INT(Pike_compiler->new_program, id)->type);
   }
   block_or_semi
   {
-    int e;
-    if($12)
-    {
-      int f;
-      node *check_args = NULL;
-      struct compilation *c = THIS_COMPILATION;
-      struct pike_string *save_file = c->lex.current_file;
-      int save_line  = c->lex.current_line;
-      int num_required_args = 0;
-      struct identifier *i;
-      c->lex.current_file = $5->current_file;
-      c->lex.current_line = $5->line_number;
-
-      if (($1 & ID_EXTERN) &&
-	  (Pike_compiler->compiler_pass == COMPILER_PASS_FIRST)) {
-	yywarning("Extern declared function definition.");
-      }
-
-      if (Pike_compiler->compiler_frame->generator_fun != -1) {
-	struct pike_type *generator_type;
-	int generator_stack_local;
-
-        /* Generate the inner (ie restartable) function first. */
-
-        ref_push_string(ID_FROM_INT(Pike_compiler->new_program,
-                                    Pike_compiler->compiler_frame->generator_fun)->name);
-
-        generator_stack_local =
-          Pike_compiler->compiler_frame->generator_local + 1;
-
-        if (Pike_compiler->compiler_frame->generator_is_async) {
-          /* The inner function of an async function always returns void. */
-          push_type(T_VOID);
-
-          /*
-           * {
-           *   __async_promise__->failure(catch {
-           *       $12;
-           *     });
-           *   return;
-           * }
-           *
-           * Note that $12 always has an F_RETURN at the end.
-           *
-           * Note also that the F_RETURN has a NULL value-expression
-           * to avoid the implicit call of __async_promise__->success()
-           * that docode adds.
-           */
-          $12 =
-            mknode(F_COMMA_EXPR,
-                   mkapplynode(mkarrownode(mklocalnode(generator_stack_local + 3, 0),
-                                           "failure"),
-                               mknode(F_ARG_LIST,
-                                      mknode(F_CATCH, $12, NULL),
-                                      NULL)),
-                   mknode(F_RETURN, NULL, NULL));
-        } else if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST &&
-                   Pike_compiler->compiler_frame->current_return_type->type == PIKE_T_AUTO) {
-	  /* Change "auto" return type to actual return type. */
-	  push_finished_type(Pike_compiler->compiler_frame->current_return_type->car);
-	} else {
-	  push_finished_type(Pike_compiler->compiler_frame->current_return_type);
-	}
-
-	/* Adjust the type to be a function that returns
-         * a function(mixed|void, function(mixed...:void)|void:X).
-         *
-         * This is the type for the inner function.
-	 */
-	push_type(T_VOID);
-	push_type(T_MANY);
-
-	push_type(T_VOID);
-	push_type(T_VOID);
-	push_type(T_VOID);
-	push_type(T_MIXED);
-	push_type(T_OR);
-	push_type(T_MANY);
-	push_type(T_OR);
-	push_type(T_FUNCTION);
-
-	push_type(T_VOID);
-	push_type(T_MIXED);
-	push_type(T_OR);
-	push_type(T_FUNCTION);
-
-	generator_type = compiler_pop_type();
-	f = dooptcode(Pike_sp[-1].u.string, $12, generator_type,
-		      ID_INLINE|ID_PROTECTED|ID_PRIVATE|ID_USED);
-	pop_stack();
-
-        /* Now it is time for the outer function. */
-	Pike_compiler->compiler_frame->generator_local = -1;
-        Pike_compiler->compiler_frame->generator_is_async = 0;
-        /* Set the return type for the outer function. */
-	free_type(Pike_compiler->compiler_frame->current_return_type);
-        if ($1 & ID_ASYNC) {
-          free_type(generator_type);
-          /* FIXME: Should be object(Concurrent.Future<T>) */
-          Pike_compiler->compiler_frame->current_return_type =
-            object_type_string;
-          add_ref(object_type_string);
-        } else {
-          Pike_compiler->compiler_frame->current_return_type = generator_type;
-        }
-        if ($1 & ID_ASYNC) {
-          /*
-           * {
-           *   __generator_stack__ = aggregate();
-           *   __async_promise__ = Concurrent.Promise();
-           *   mkgenerator(f)();
-           *   return __async_promise__->future();
-           * }
-           */
-          $12 = mknestednodes(F_COMMA_EXPR,
-                              mknode(F_ASSIGN,
-                                     mklocalnode(generator_stack_local, 0),
-                                     mkefuncallnode("aggregate", NULL)),
-                              mknode(F_ASSIGN,
-                                     mklocalnode(generator_stack_local + 3, 0),
-                                     mkapplynode(resolve_identifier(Concurrent_Promise_string),
-                                                 mknode(F_ARG_LIST, NULL, NULL))),
-                              mkapplynode(mkgeneratornode(f),
-                                          mknode(F_ARG_LIST, NULL, NULL)),
-                              mknode(F_RETURN,
-                                     mkapplynode(mkarrownode(mklocalnode(generator_stack_local + 3, 0),
-                                                             "future"),
-                                                 mknode(F_ARG_LIST, NULL, NULL)),
-                                     mkintnode(0)),
-                              NULL);
-        } else {
-          /*
-           * {
-           *   __generator_stack__ = aggregate();
-           *   return mkgenerator(f);
-           * }
-           */
-          $12 = mknode(F_COMMA_EXPR,
-                       mknode(F_ASSIGN, mklocalnode(generator_stack_local, 0),
-                              mkefuncallnode("aggregate", NULL)),
-                       mknode(F_RETURN, mkgeneratornode(f), NULL));
-        }
-      }
-
-      for(e=$<number>8; e<$<number>8+$9; e++)
-      {
-        int ee = Pike_compiler->compiler_frame->local_variables[e] - 1;
-        struct local_name *var;
-        var = Pike_compiler->compiler_frame->local_names + ee;
-        if((e >= $<number>8) && (!var->name || !var->name->len) &&
-           (var->def->token == F_LOCAL)) {
-	  my_yyerror("Missing name for argument %d.", e - $<number>8);
-	} else {
-          check_args = mknode(F_COMMA_EXPR, check_args, set_default_value(ee));
-
-	  if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
-	      /* FIXME: Should probably use some other flag. */
-	      if ((runtime_options & RUNTIME_CHECK_TYPES) &&
-                  (var->def->type != mixed_type_string)) {
-		node *local_node;
-
-		/* fprintf(stderr, "Creating soft cast node for local #%d\n", e);*/
-
-                local_node = mkcastnode(mixed_type_string, mklocalnode(ee, 0));
-
-		/* NOTE: The cast to mixed above is needed to avoid generating
-		 *       compilation errors, as well as avoiding optimizations
-		 *       in mksoftcastnode().
-		 */
-		check_args =
-		  mknode(F_COMMA_EXPR, check_args,
-                         mksoftcastnode(var->def->type, local_node));
-	      }
-	  }
-	}
-      }
-
-      if ($<number>8) {
-	/* Generate code that calls __create__(). */
-	node *args = NULL;
-        int ee;
-	e = $<number>8;
-        if (Pike_compiler->compiler_frame->varargs) {
-	  e--;
-          ee = Pike_compiler->compiler_frame->local_variables[e] - 1;
-	  args = mknode(F_PUSH_ARRAY,
-                        mklocalnode(ee, 0),
-			NULL);
-	}
-	while (e--) {
-          ee = Pike_compiler->compiler_frame->local_variables[e] - 1;
-          args = mknode(F_ARG_LIST, mklocalnode(ee, 0), args);
-	}
-
-	e = FIND_LFUN(Pike_compiler->new_program, LFUN___CREATE__);
-	check_args =
-	  mknode(F_COMMA_EXPR,
-		 mknode(F_POP_VALUE,
-			mknode(F_APPLY,
-			       mkidentifiernode(e),
-			       args),
-			NULL),
-		 check_args);
-      }
-
-      {
-	int l = $12->line_number;
-	struct pike_string *f = $12->current_file;
-	if (check_args) {
-	  /* Prepend the arg checking code. */
-	  $12 = mknode(F_COMMA_EXPR, mknode(F_POP_VALUE, check_args, NULL), $12);
-	}
-	c->lex.current_line = l;
-	c->lex.current_file = f;
-      }
-
-      f=dooptcode($5->u.sval.u.string, $12, $<n>11->u.sval.u.type, $1);
-
-      i = ID_FROM_INT(Pike_compiler->new_program, f);
-      i->opt_flags = Pike_compiler->compiler_frame->opt_flags;
-
-      if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST &&
-          Pike_compiler->compiler_frame->current_return_type->type == PIKE_T_AUTO)
-      {
-        /* Change "auto" return type to actual return type. */
-        int ee;
-        push_finished_type(Pike_compiler->compiler_frame->current_return_type->car);
-
-        e = $<number>8 + $9 - 1;
-        if(Pike_compiler->compiler_frame->varargs &&
-           (!$<number>8 || (Pike_compiler->num_create_args >= 0)))
-        {
-          struct local_name *var;
-          ee = Pike_compiler->compiler_frame->local_variables[e] - 1;
-          var = Pike_compiler->compiler_frame->local_names + ee;
-          push_finished_type(var->def->type);
-          e--;
-          if (pop_type_stack(T_ARRAY)) {
-	    compiler_discard_top_type();
-	  }
-        }else{
-          push_type(T_VOID);
-        }
-        push_type(T_MANY);
-        for(; e>=0; e--)
-        {
-          struct local_name *var;
-          ee = Pike_compiler->compiler_frame->local_variables[e] - 1;
-          var = Pike_compiler->compiler_frame->local_names + ee;
-          push_finished_type(var->def->type);
-          if (var->init && (var->def->token == F_LOCAL)) {
-            push_type(T_VOID);
-            push_type(T_OR);
-          }
-          push_type(T_FUNCTION);
-        }
-
-        if (Pike_compiler->current_attributes)
-        {
-          node *n = Pike_compiler->current_attributes;
-          while (n) {
-            push_type_attribute(CDR(n)->u.sval.u.string);
-            n = CAR(n);
-          }
-        }
-
-        free_type( i->type );
-        i->type = compiler_pop_type();
-      }
-
-#ifdef PIKE_DEBUG
-      if(Pike_interpreter.recoveries &&
-	 ((Pike_sp - Pike_interpreter.evaluator_stack) <
-	  Pike_interpreter.recoveries->stack_pointer))
-	Pike_fatal("Stack error (underflow)\n");
-
-      if((Pike_compiler->compiler_pass == COMPILER_PASS_FIRST) &&
-	 (f != Pike_compiler->compiler_frame->current_function_number)) {
-	fprintf(stderr, "define_function()/do_opt_code() failed for symbol %s\n",
-		$5->u.sval.u.string->str);
-	dump_program_desc(Pike_compiler->new_program);
-	Pike_fatal("define_function screwed up! %d != %d\n",
-	      f, Pike_compiler->compiler_frame->current_function_number);
-      }
-#endif
-
-      c->lex.current_line = save_line;
-      c->lex.current_file = save_file;
-    } else {
-      /* Prototype; don't warn about unused arguments. */
-      int ee;
-      for (e = Pike_compiler->compiler_frame->current_number_of_locals; e--;) {
-        ee = Pike_compiler->compiler_frame->local_variables[e] - 1;
-        Pike_compiler->compiler_frame->local_names[ee].flags |= LOCAL_VAR_IS_USED;
-      }
-      if( Pike_compiler->compiler_frame->current_return_type->type == PIKE_T_AUTO )
-          yyerror("'auto' return type not allowed for prototypes.");
-      if (Pike_compiler->compiler_pass == COMPILER_PASS_FIRST) {
-	for(e=0; e<$<number>8+$9; e++)
-	{
-          node *init;
-          ee = Pike_compiler->compiler_frame->local_variables[e] - 1;
-          init = Pike_compiler->compiler_frame->local_names[ee].init;
-	  if (init) {
-	    low_yyreport(REPORT_WARNING, init->current_file, init->line_number,
-			 parser_system_string, 0,
-			 "Argument default values are not supported in prototypes.");
-	  }
-	}
-      }
-    }
+    compiler_define_function($1, $5->u.sval.u.string, $<n>11->u.sval.u.type,
+                             $12, $9, $<number>8, $4);
 #ifdef PIKE_DEBUG
     if (Pike_compiler->compiler_frame != $6) {
       Pike_fatal("Lost track of compiler_frame!\n"
@@ -1591,8 +1097,13 @@ arguments2: new_arg_name { $$ = 1; }
   }
   ;
 
-modifier:
-    TOK_FINAL_ID   { $$ = ID_FINAL | ID_INLINE; }
+local_modifier:
+    TOK_GENERATOR	{ $$ = ID_GENERATOR; }
+  | TOK_ASYNC		{ $$ = ID_ASYNC; }
+  ;
+
+modifier: local_modifier
+  | TOK_FINAL_ID   { $$ = ID_FINAL | ID_INLINE; }
   | TOK_STATIC     {
     $$ = ID_PROTECTED;
     if( !(THIS_COMPILATION->lex.pragmas & ID_NO_DEPRECATION_WARNINGS) &&
@@ -1609,8 +1120,6 @@ modifier:
   | TOK_INLINE     { $$ = ID_INLINE; }
   | TOK_VARIANT    { $$ = ID_VARIANT; }
   | TOK_WEAK       { $$ = ID_WEAK; }
-  | TOK_GENERATOR  { $$ = ID_GENERATOR; }
-  | TOK_ASYNC      { $$ = ID_ASYNC; }
   | TOK_UNUSED     { $$ = ID_USED; }
   ;
 
@@ -2468,7 +1977,7 @@ end_block: '}'
   }
   ;
 
-failsafe_block: block
+failsafe_block: function_block
               | error { $$=0; }
               | TOK_LEX_EOF { yyerror("Unexpected end of file."); $$=0; }
               ;
@@ -2610,14 +2119,7 @@ statement: normal_label_statement
   | default
   | labeled_statement
   | simple_type2 local_function { $$=mkcastnode(void_type_string, $2); }
-  | TOK_GENERATOR simple_type2 local_generator
-  {
-    /* NB: The alternative of prefixing the local_function rule above with
-     *     an optional_continue causes lots of shift/reduce conflicts.
-     *     Thus the separate rule for local_generators.
-     */
-    $$=mkcastnode(void_type_string, $3);
-  }
+  | local_restartable_function { $$=mkcastnode(void_type_string, $1); }
   | implicit_modifiers named_class { $$=mkcastnode(void_type_string, $2); }
   ;
 
@@ -2682,46 +2184,23 @@ lambda: TOK_LAMBDA line_number_info implicit_identifier start_lambda
   func_args
   {
     struct pike_string *name = $3->u.sval.u.string;
-    struct pike_type *type;
-    int e;
 
     if (Pike_compiler->compiler_pass == COMPILER_PASS_FIRST) {
       /* Define a tentative prototype for the lambda. */
-      int ee;
-      push_finished_type(mixed_type_string);
-      e=$5-1;
-      if (Pike_compiler->compiler_frame->varargs) {
-        ee = Pike_compiler->compiler_frame->local_variables[e] - 1;
-        push_finished_type(Pike_compiler->compiler_frame->local_names[ee].def->type);
-	e--;
-	if (pop_type_stack(T_ARRAY)) {
-	  compiler_discard_top_type();
-	}
-      }else{
-	push_type(T_VOID);
+      node *save_attrs = Pike_compiler->current_attributes;
+      Pike_compiler->current_attributes = NULL;
+      compiler_declare_prototype(ID_PROTECTED | ID_PRIVATE |
+                                 ID_INLINE | ID_USED,
+                                 name, $5, 0,
+                                 Pike_compiler->compiler_frame->opt_flags);
+#ifdef PIKE_DEBUG
+      if (Pike_compiler->current_attributes) {
+        Pike_fatal("Unexpected attribute scope.\n");
       }
-      push_type(T_MANY);
-      for(; e>=0; e--) {
-        struct local_name *var;
-        ee = Pike_compiler->compiler_frame->local_variables[e] - 1;
-        var = Pike_compiler->compiler_frame->local_names + ee;
-        push_finished_type(var->def->type);
-        if (var->init && (var->def->token == F_LOCAL)) {
-          push_type(T_VOID);
-          push_type(T_OR);
-        }
-	push_type(T_FUNCTION);
-      }
-      type=compiler_pop_type();
-      Pike_compiler->compiler_frame->current_function_number =
-	define_function(name, type,
-			ID_PROTECTED | ID_PRIVATE | ID_INLINE | ID_USED,
-			IDENTIFIER_PIKE_FUNCTION, NULL,
-			(unsigned INT16)
-			(Pike_compiler->compiler_frame->opt_flags));
-      free_type(type);
+#endif
+      Pike_compiler->current_attributes = save_attrs;
     } else {
-      /* In pass 2 we just reuse the type from pass 1. */
+      /* In pass 2 we just reuse the type from the end of pass 1. */
       Pike_compiler->compiler_frame->current_function_number =
 	isidentifier(name);
     }
@@ -2730,31 +2209,31 @@ lambda: TOK_LAMBDA line_number_info implicit_identifier start_lambda
   {
     struct pike_type *type;
     int f, e, ee;
-    struct pike_string *name;
+    struct pike_string *name = $3->u.sval.u.string;
     struct compilation *c = THIS_COMPILATION;
     struct pike_string *save_file = c->lex.current_file;
     int save_line = c->lex.current_line;
     c->lex.current_file = $2->current_file;
     c->lex.current_line = $2->line_number;
 
-    debug_malloc_touch($7);
-    $7=mknode(F_COMMA_EXPR,$7,mknode(F_RETURN,mkintnode(0),0));
+    /*
+     * Fixup return type.
+     */
     if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
       /* Doing this in pass 1 might induce too strict checks on types
        * in cases where we got placeholders. */
-      type=find_return_type($7);
-      if (type) {
-	push_finished_type(type);
-	free_type(type);
-      } else {
+      type = find_return_type($7);
+      if (!type) {
 	yywarning("Failed to determine return type for lambda.");
-	push_type(T_ZERO);
+        type = zero_type_string;
+        add_ref(type);
       }
-    } else {
-      /* Tentative return type. */
-      push_type(T_MIXED);
+
+      free_type(Pike_compiler->compiler_frame->current_return_type);
+      Pike_compiler->compiler_frame->current_return_type = type;
     }
 
+    push_finished_type(Pike_compiler->compiler_frame->current_return_type);
     e=$5-1;
     if (Pike_compiler->compiler_frame->varargs) {
       ee = Pike_compiler->compiler_frame->local_variables[e] - 1;
@@ -2767,6 +2246,7 @@ lambda: TOK_LAMBDA line_number_info implicit_identifier start_lambda
       push_type(T_VOID);
     }
     push_type(T_MANY);
+
     for(; e>=0; e--) {
       struct local_name *var;
       ee = Pike_compiler->compiler_frame->local_variables[e] - 1;
@@ -2795,10 +2275,10 @@ lambda: TOK_LAMBDA line_number_info implicit_identifier start_lambda
     fprintf(stderr, "\n");
 #endif /* LAMBDA_DEBUG */
 
-    f=dooptcode(name,
-		$7,
-		type,
-		ID_PROTECTED | ID_PRIVATE | ID_INLINE | ID_USED);
+    f = compiler_define_function(ID_PROTECTED | ID_PRIVATE |
+                                 ID_INLINE | ID_USED,
+                                 name, type, $7, $5, 0,
+                                 Pike_compiler->compiler_frame->opt_flags);
 
 #ifdef PIKE_DEBUG
     if (f != Pike_compiler->compiler_frame->current_function_number) {
@@ -2852,110 +2332,34 @@ lambda: TOK_LAMBDA line_number_info implicit_identifier start_lambda
 
 local_function: TOK_IDENTIFIER start_function func_args
   {
-    struct pike_string *name;
-    struct pike_type *type;
-    int id, e, ee;
-    node *n;
-    struct identifier *i=0;
+    struct pike_string *name = get_new_name($1->u.sval.u.string);
+    node *save_attrs = Pike_compiler->current_attributes;
+    Pike_compiler->current_attributes = NULL;
 
-    /***/
-    push_finished_type(Pike_compiler->compiler_frame->current_return_type);
-
-    e=$3-1;
-    if(Pike_compiler->compiler_frame->varargs)
-    {
-      ee = Pike_compiler->compiler_frame->local_variables[e] - 1;
-      push_finished_type(Pike_compiler->compiler_frame->local_names[ee].def->type);
-      e--;
-      if (pop_type_stack(T_ARRAY)) {
-	compiler_discard_top_type();
-      }
-    }else{
-      push_type(T_VOID);
-    }
-    push_type(T_MANY);
-    for(; e>=0; e--) {
-      struct local_name *var;
-      ee = Pike_compiler->compiler_frame->local_variables[e] - 1;
-      var = Pike_compiler->compiler_frame->local_names + ee;
-      push_finished_type(var->def->type);
-      if (var->init && (var->def->token == F_LOCAL)) {
-	push_type(T_VOID);
-	push_type(T_OR);
-      }
-      push_type(T_FUNCTION);
-    }
-
-    type=compiler_pop_type();
-    /***/
-
-    name = get_new_name($1->u.sval.u.string);
-
-#ifdef LAMBDA_DEBUG
-    fprintf(stderr, "%d: LAMBDA: %s 0x%08lx 0x%08lx\n",
-	    Pike_compiler->compiler_pass, name->str,
-	    (long)Pike_compiler->new_program->id,
-	    Pike_compiler->local_class_counter-1);
-#endif /* LAMBDA_DEBUG */
-
-    if(Pike_compiler->compiler_pass > COMPILER_PASS_FIRST)
-    {
-      id=isidentifier(name);
-    }else{
-      id=define_function(name,
-			 type,
-			 ID_PROTECTED | ID_PRIVATE | ID_INLINE | ID_USED,
-			 IDENTIFIER_PIKE_FUNCTION |
-                         (Pike_compiler->compiler_frame->varargs?
-                          IDENTIFIER_VARARGS:0),
-			 0,
-			 OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
-    }
-    Pike_compiler->compiler_frame->current_function_number=id;
-    free_type(type);
-
-    n=0;
-    i = ID_FROM_INT(Pike_compiler->new_program, id);
-    if(i->identifier_flags & IDENTIFIER_SCOPED)
-      n = mktrampolinenode(id, Pike_compiler->compiler_frame->previous);
-    else
-      n = mkidentifiernode(id);
-
-    low_add_local_name(Pike_compiler->compiler_frame->previous,
-		       $1->u.sval.u.string, NULL, n, NULL);
-
-    $<number>$=id;
+    $<number>$ =
+      compiler_declare_prototype(ID_PROTECTED | ID_PRIVATE |
+                                 ID_INLINE | ID_USED,
+                                 name, $3, 0,
+                                 OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
     free_string(name);
+#ifdef PIKE_DEBUG
+    if (Pike_compiler->current_attributes) {
+      Pike_fatal("Unexpected attribute scope.\n");
+    }
+#endif
+    Pike_compiler->current_attributes = save_attrs;
+
+    add_parent_local_function($1->u.sval.u.string, $<number>$);
   }
   failsafe_block
   {
     int localid;
-    struct identifier *i=ID_FROM_INT(Pike_compiler->new_program, $<number>4);
-    struct compilation *c = THIS_COMPILATION;
-    struct pike_string *save_file = c->lex.current_file;
-    int save_line = c->lex.current_line;
-    int e = $3 - 1;
-    c->lex.current_file = $1->current_file;
-    c->lex.current_line = $1->line_number;
-
-    if (Pike_compiler->compiler_frame->varargs) e--;
-    for(; e>=0; e--) {
-      int ee = Pike_compiler->compiler_frame->local_variables[e] - 1;
-      $5 = mknode(F_COMMA_EXPR, set_default_value(ee), $5);
-    }
-
-    $5=mknode(F_COMMA_EXPR,$5,mknode(F_RETURN,mkintnode(0),0));
-
-    debug_malloc_touch($5);
-    dooptcode(i->name,
-	      $5,
-	      i->type,
-	      ID_PROTECTED | ID_PRIVATE | ID_INLINE);
-
-    i->opt_flags = Pike_compiler->compiler_frame->opt_flags;
-
-    c->lex.current_line = save_line;
-    c->lex.current_file = save_file;
+    struct identifier *i=ID_FROM_INT(Pike_compiler->new_program,$<number>4);
+    int f = compiler_define_function(ID_PROTECTED | ID_PRIVATE |
+                                     ID_INLINE | ID_USED,
+                                     i->name, i->type, $5,
+                                     $3, 0,
+                                     OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
 #ifdef PIKE_DEBUG
     if (Pike_compiler->compiler_frame != $2) {
       Pike_fatal("Lost track of compiler_frame!\n"
@@ -2980,9 +2384,9 @@ local_function: TOK_IDENTIFIER start_function func_args
       if(Pike_compiler->compiler_frame->lexical_scope &
 	 (SCOPE_SCOPE_USED | SCOPE_SCOPED))
       {
-	$$ = mktrampolinenode($<number>4,Pike_compiler->compiler_frame);
+        $$ = mktrampolinenode(f, Pike_compiler->compiler_frame);
       }else{
-	$$ = mkidentifiernode($<number>4);
+        $$ = mkidentifiernode(f);
       }
     }
   }
@@ -3001,239 +2405,51 @@ local_function: TOK_IDENTIFIER start_function func_args
   }
   ;
 
-/* FIXME: Add support for TOK_ASYNC here! */
-local_generator: TOK_IDENTIFIER start_function func_args
+/* NB: The alternative of prefixing the local_function rule above with
+ *     an optional_local_modifier causes lots of shift/reduce conflicts.
+ *     Thus the separate rule for local_restartable_functions.
+ */
+local_restartable_function: local_modifier simple_type2 TOK_IDENTIFIER
+  start_function func_args
   {
-    struct pike_string *name;
-    struct pike_type *type;
-    int id, e, ee;
-    node *n;
-    struct identifier *i=0;
+    struct pike_string *name = get_new_name($3->u.sval.u.string);
+    node *save_attrs = Pike_compiler->current_attributes;
+    Pike_compiler->current_attributes = NULL;
 
-    /***/
-    push_finished_type(Pike_compiler->compiler_frame->current_return_type);
-
-    /* Adjust the type to be a function that returns
-     * a function(mixed|void, function(mixed...:void)|void:X).
-     */
-    push_type(T_VOID);
-    push_type(T_MANY);
-
-    push_type(T_VOID);
-    push_type(T_VOID);
-    push_type(T_VOID);
-    push_type(T_MIXED);
-    push_type(T_OR);
-    push_type(T_MANY);
-    push_type(T_OR);
-    push_type(T_FUNCTION);
-
-    push_type(T_VOID);
-    push_type(T_MIXED);
-    push_type(T_OR);
-    push_type(T_FUNCTION);
-
-    ref_push_string($1->u.sval.u.string);
-    push_constant_text("\0generator");
-    f_add(2);
-    name = get_new_name(Pike_sp[-1].u.string);
-    pop_stack();
-    Pike_compiler->compiler_frame->generator_fun =
-      define_function(name,
-                      peek_type_stack(),
-                      ID_INLINE|ID_PROTECTED|ID_PRIVATE|ID_USED,
-                      IDENTIFIER_PIKE_FUNCTION|IDENTIFIER_SCOPED,
-                      NULL,
-                      0);
+    $<number>$ =
+      compiler_declare_prototype($1 | ID_PROTECTED | ID_PRIVATE |
+                                 ID_INLINE | ID_USED,
+                                 name, $5, 0,
+                                 OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
     free_string(name);
-
-    /* Entry point variable. */
-    add_ref(int_type_string);
-    MAKE_CONST_STRING(name, "__generator_entry_point__");
-    Pike_compiler->compiler_frame->generator_local =
-      add_local_name(name, int_type_string, 0);
-
-    /* Stack contents to restore. */
-    add_ref(array_type_string);
-    MAKE_CONST_STRING(name, "__generator_stack__");
-    add_local_name(name, array_type_string, 0);
-
-    /* Resumption argument. */
-    add_ref(mixed_type_string);
-    MAKE_CONST_STRING(name, "__generator_argument__");
-    add_local_name(name, mixed_type_string, 0);
-
-    /* Resumption callback. */
-    add_ref(function_type_string);
-    MAKE_CONST_STRING(name, "__generator_callback__");
-    add_local_name(name, function_type_string, 0);
-
-    /* All of the above and the arguments are scoped. */
-    for (e = 0; e < Pike_compiler->compiler_frame->generator_local + 4; e++) {
-      /* Force local #e to be scoped. */
-      node *n = mklocalnode(e, -1);
-      if (e >= Pike_compiler->compiler_frame->generator_local) {
-        /* Mark all generator locals as used. */
-        mark_lvalue_as_used(n);
-      }
-      free_node(n);
+#ifdef PIKE_DEBUG
+    if (Pike_compiler->current_attributes) {
+      Pike_fatal("Unexpected attribute scope.\n");
     }
+#endif
+    Pike_compiler->current_attributes = save_attrs;
 
-    e=$3-1;
-    if(Pike_compiler->compiler_frame->varargs)
-    {
-      ee = Pike_compiler->compiler_frame->local_variables[e] - 1;
-      push_finished_type(Pike_compiler->compiler_frame->local_names[ee].def->type);
-      e--;
-      if (pop_type_stack(T_ARRAY)) {
-	compiler_discard_top_type();
-      }
-    }else{
-      push_type(T_VOID);
-    }
-    push_type(T_MANY);
-    for(; e>=0; e--) {
-      struct local_name *var;
-      ee = Pike_compiler->compiler_frame->local_variables[e] - 1;
-      var = Pike_compiler->compiler_frame->local_names + ee;
-      push_finished_type(var->def->type);
-      if (var->init && (var->def->token == F_LOCAL)) {
-	push_type(T_VOID);
-	push_type(T_OR);
-      }
-      push_type(T_FUNCTION);
-    }
-
-    type=compiler_pop_type();
-    /***/
-
-    name = get_new_name($1->u.sval.u.string);
-
-#ifdef LAMBDA_DEBUG
-    fprintf(stderr, "%d: LAMBDA: %s 0x%08lx 0x%08lx\n",
-	    Pike_compiler->compiler_pass, name->str,
-	    (long)Pike_compiler->new_program->id,
-	    Pike_compiler->local_class_counter-1);
-#endif /* LAMBDA_DEBUG */
-
-    if(Pike_compiler->compiler_pass > COMPILER_PASS_FIRST)
-    {
-      id=isidentifier(name);
-    }else{
-      id=define_function(name,
-			 type,
-			 ID_PROTECTED | ID_PRIVATE | ID_INLINE | ID_USED,
-			 IDENTIFIER_PIKE_FUNCTION |
-                         (Pike_compiler->compiler_frame->varargs?
-                          IDENTIFIER_VARARGS:0),
-			 0,
-			 OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
-    }
-    Pike_compiler->compiler_frame->current_function_number=id;
-    free_type(type);
-
-    n=0;
-    i = ID_FROM_INT(Pike_compiler->new_program, id);
-    if(i->identifier_flags & IDENTIFIER_SCOPED)
-      n = mktrampolinenode(id, Pike_compiler->compiler_frame->previous);
-    else
-      n = mkidentifiernode(id);
-
-    low_add_local_name(Pike_compiler->compiler_frame->previous,
-		       $1->u.sval.u.string, NULL, n, NULL);
-
-    $<number>$=id;
-    free_string(name);
+    add_parent_local_function($3->u.sval.u.string, $<number>$);
   }
   failsafe_block
   {
     int localid;
-    struct identifier *i=ID_FROM_INT(Pike_compiler->new_program, $<number>4);
-    struct compilation *c = THIS_COMPILATION;
-    struct pike_string *save_file = c->lex.current_file;
-    int save_line = c->lex.current_line;
-    struct pike_type *generator_type;
-    struct pike_string *name;
-    int generator_stack_local;
-    int f, ee;
-    int e = $3 - 1;
-
-    c->lex.current_file = $1->current_file;
-    c->lex.current_line = $1->line_number;
-
-    name = ID_FROM_INT(Pike_compiler->new_program,
-                       Pike_compiler->compiler_frame->generator_fun)->name;
-    add_ref(name);
-
-    if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST &&
-	Pike_compiler->compiler_frame->current_return_type->type == PIKE_T_AUTO) {
-      /* Change "auto" return type to actual return type. */
-      push_finished_type(Pike_compiler->compiler_frame->current_return_type->car);
-    } else {
-      push_finished_type(Pike_compiler->compiler_frame->current_return_type);
-    }
-
-    /* Adjust the type to be a function that returns
-     * a function(mixed|void, function(mixed...:void)|void:X).
-     */
-    push_type(T_VOID);
-    push_type(T_MANY);
-
-    push_type(T_VOID);
-    push_type(T_VOID);
-    push_type(T_VOID);
-    push_type(T_MIXED);
-    push_type(T_OR);
-    push_type(T_MANY);
-    push_type(T_OR);
-    push_type(T_FUNCTION);
-
-    push_type(T_VOID);
-    push_type(T_MIXED);
-    push_type(T_OR);
-    push_type(T_FUNCTION);
-
-    generator_type = compiler_pop_type();
-    f = dooptcode(name, $5, generator_type,
-		  ID_INLINE | ID_PROTECTED | ID_PRIVATE | ID_USED);
-    free_string(name);
-
-    generator_stack_local =
-      Pike_compiler->compiler_frame->generator_local + 1;
-    Pike_compiler->compiler_frame->generator_local = -1;
-    free_type(Pike_compiler->compiler_frame->current_return_type);
-    Pike_compiler->compiler_frame->current_return_type = generator_type;
-    $5 = mknode(F_COMMA_EXPR,
-		mknode(F_ASSIGN, mklocalnode(generator_stack_local, 0),
-		       mkefuncallnode("aggregate", NULL)),
-		mknode(F_RETURN, mkgeneratornode(f), NULL));
-
-    if(Pike_compiler->compiler_frame->varargs) e--;
-    for(; e>=0; e--) {
-      ee = Pike_compiler->compiler_frame->local_variables[e] - 1;
-      $5 = mknode(F_COMMA_EXPR, set_default_value(ee), $5);
-    }
-
-    debug_malloc_touch($5);
-    f = dooptcode(i->name,
-		  $5,
-		  i->type,
-		  ID_PROTECTED | ID_PRIVATE | ID_INLINE | ID_USED);
-
-    i->opt_flags = Pike_compiler->compiler_frame->opt_flags;
-
-    c->lex.current_line = save_line;
-    c->lex.current_file = save_file;
+    struct identifier *i = ID_FROM_INT(Pike_compiler->new_program, $<number>6);
+    int f = compiler_define_function($1 | ID_PROTECTED | ID_PRIVATE |
+                                     ID_INLINE | ID_USED,
+                                     i->name, i->type, $7,
+                                     $5, 0,
+                                     OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
 #ifdef PIKE_DEBUG
-    if (Pike_compiler->compiler_frame != $2) {
+    if (Pike_compiler->compiler_frame != $4) {
       Pike_fatal("Lost track of compiler_frame!\n"
 		 "  Got: %p (Expected: %p) Previous: %p\n",
-		 Pike_compiler->compiler_frame, $2,
+                 Pike_compiler->compiler_frame, $4,
 		 Pike_compiler->compiler_frame->previous);
     }
 #endif
     pop_compiler_frame();
-    free_node($1);
+    free_node($3);
 
     /* WARNING: If the local function adds more variables we are screwed */
     /* WARNING2: if add_local_name stops adding local variables at the end,
@@ -3254,13 +2470,13 @@ local_generator: TOK_IDENTIFIER start_function func_args
       }
     }
   }
-  | TOK_IDENTIFIER start_function error
+  | local_modifier simple_type2 TOK_IDENTIFIER start_function error
   {
 #ifdef PIKE_DEBUG
-    if (Pike_compiler->compiler_frame != $2) {
+    if (Pike_compiler->compiler_frame != $4) {
       Pike_fatal("Lost track of compiler_frame!\n"
 		 "  Got: %p (Expected: %p) Previous: %p\n",
-		 Pike_compiler->compiler_frame, $2,
+                 Pike_compiler->compiler_frame, $4,
 		 Pike_compiler->compiler_frame->previous);
     }
 #endif
@@ -5534,6 +4750,574 @@ static void yyerror_reserved(const char *keyword)
   my_yyerror("%s is a reserved word.", keyword);
 }
 
+static int compiler_declare_prototype(int modifiers,
+                                      struct pike_string *identifier,
+                                      int num_args, int num_create_args,
+                                      int opt_flags)
+{
+  struct pike_type *type;
+  int id, e, ee;
+  node *n;
+  struct identifier *i=0;
+
+  /*
+   * Construct the function type
+   */
+  if (modifiers & (ID_ASYNC|ID_GENERATOR)) {
+    struct pike_string *name;
+    int num_state_vars = 4;
+
+    if (modifiers & ID_ASYNC) {
+      Pike_compiler->compiler_frame->generator_is_async = 1;
+
+      /* NB: The inner function of an async function
+       *     always returns void.
+       */
+      push_type(T_VOID);
+    } else {
+      push_finished_type(Pike_compiler->compiler_frame->current_return_type);
+    }
+
+    /* Adjust the type to be a function that returns
+     * a function(mixed|void, function(mixed...:void)|void:X).
+     */
+    push_type(T_VOID);
+    push_type(T_MANY);
+
+    push_type(T_VOID);
+    push_type(T_VOID);
+    push_type(T_VOID);
+    push_type(T_MIXED);
+    push_type(T_OR);
+    push_type(T_MANY);
+    push_type(T_OR);
+    push_type(T_FUNCTION);
+
+    push_type(T_VOID);
+    push_type(T_MIXED);
+    push_type(T_OR);
+    push_type(T_FUNCTION);
+
+    /* Allocate a function id for the generator. */
+    ref_push_string(identifier);
+    push_constant_text("\0generator");
+    f_add(2);
+
+    Pike_compiler->compiler_frame->generator_fun =
+      define_function(Pike_sp[-1].u.string,
+                      peek_type_stack(),
+                      ID_INLINE|ID_PROTECTED|ID_PRIVATE|ID_USED,
+                      IDENTIFIER_PIKE_FUNCTION|IDENTIFIER_SCOPED,
+                      NULL,
+                      0);
+
+    pop_stack();
+
+    if (Pike_compiler->compiler_frame->generator_is_async) {
+      /* An async function returns a Concurrent.Future
+       * containing X.
+       */
+      compiler_discard_type();
+      push_object_type(0, 0);	/* FIXME: object(Concurrent.Future). */
+    }
+
+    /* Entry point variable. */
+    add_ref(int_type_string);
+    MAKE_CONST_STRING(name, "__generator_entry_point__");
+    Pike_compiler->compiler_frame->generator_local =
+      add_local_name(name, int_type_string, 0);
+
+    /* Stack contents to restore. */
+    add_ref(array_type_string);
+    MAKE_CONST_STRING(name, "__generator_stack__");
+    add_local_name(name, array_type_string, 0);
+
+    /* Resumption argument. */
+    add_ref(mixed_type_string);
+    MAKE_CONST_STRING(name, "__generator_argument__");
+    add_local_name(name, mixed_type_string, 0);
+
+    /* Resumption callback. */
+    add_ref(function_type_string);
+    MAKE_CONST_STRING(name, "__generator_callback__");
+    add_local_name(name, function_type_string, 0);
+
+    if (Pike_compiler->compiler_frame->generator_is_async) {
+      /* Result promise. */
+      add_ref(object_type_string);
+      MAKE_CONST_STRING(name, "__async_promise__");
+      add_local_name(name, object_type_string, 0);
+      num_state_vars++;
+    }
+
+    /* All of the above and the arguments are scoped. */
+    for (e = 0;
+         e < Pike_compiler->compiler_frame->generator_local + num_state_vars;
+         e++) {
+      /* Force local #e to be scoped. */
+      node *n = mklocalnode(e, -1);
+      if (e >= Pike_compiler->compiler_frame->generator_local) {
+        /* Mark all generator locals as used. */
+        mark_lvalue_as_used(n);
+      }
+      free_node(n);
+    }
+  } else {
+    push_finished_type(Pike_compiler->compiler_frame->current_return_type);
+  }
+
+  if (num_create_args && (Pike_compiler->num_create_args < 0) && num_args) {
+    /* Do not allow further arguments if __create__() is varargs.
+     *
+     * NB: No need to complain that num_args != 0, as this should already
+     *     have triggered a complaint when the corresponding variable
+     *     was declared due to varargs being set.
+     */
+    num_args = 0;
+  }
+  e = num_create_args + num_args - 1;
+  if(Pike_compiler->compiler_frame->varargs) {
+    /* NB: This is set when either __create__() or create() has varargs. */
+    struct local_name *var;
+    ee = Pike_compiler->compiler_frame->local_variables[e] - 1;
+    var = Pike_compiler->compiler_frame->local_names + ee;
+    push_finished_type(var->def->type);
+    e--;
+    if (var->def->type->type != T_ARRAY) {
+      yywarning("Varargs variable is not an array!! (Internal error)");
+    } else {
+      if (pop_type_stack(T_ARRAY)) {
+        compiler_discard_top_type();
+      }
+    }
+  } else {
+    push_type(T_VOID);
+  }
+  push_type(T_MANY);
+  for(; e >= num_create_args; e--) {
+    struct local_name *var;
+    ee = Pike_compiler->compiler_frame->local_variables[e] - 1;
+    var = Pike_compiler->compiler_frame->local_names + ee;
+    push_finished_type(var->def->type);
+    if (var->init && (var->def->token == F_LOCAL)) {
+      push_type(T_VOID);
+      push_type(T_OR);
+    }
+    push_type(T_FUNCTION);
+  }
+
+  if (e >= 0) {
+    /* __create__() arguments. */
+    int i = FIND_LFUN(Pike_compiler->new_program, LFUN___CREATE__);
+    struct identifier *id = ID_FROM_INT(Pike_compiler->new_program, i);
+    struct pike_type *t = id->type;
+    struct pike_type *trailer = compiler_pop_type();
+
+    while (t && (t->type == T_FUNCTION)) {
+      push_finished_type(t->car);
+      t = t->cdr;
+    }
+
+    push_finished_type(trailer);
+    free_type(trailer);
+
+    t = id->type;
+
+    while (t && (t->type == T_FUNCTION)) {
+      push_reverse_type(T_FUNCTION);
+      t = t->cdr;
+    }
+  }
+
+  if (Pike_compiler->current_attributes) {
+    node *n = Pike_compiler->current_attributes;
+    while (n) {
+      push_type_attribute(CDR(n)->u.sval.u.string);
+      n = CAR(n);
+    }
+  }
+
+  type = compiler_pop_type();
+  /***/
+
+#ifdef LAMBDA_DEBUG
+  fprintf(stderr, "%d: LAMBDA: %s 0x%08lx 0x%08lx\n",
+          Pike_compiler->compiler_pass, identifier->str,
+          (long)Pike_compiler->new_program->id,
+          Pike_compiler->local_class_counter-1);
+#endif /* LAMBDA_DEBUG */
+
+  if(Pike_compiler->compiler_pass != COMPILER_PASS_FIRST) {
+    id = isidentifier(identifier);
+
+    if (id < 0) {
+      my_yyerror("Identifier %pS lost after first pass.", identifier);
+    }
+  }
+
+  id = define_function(identifier,
+                       type,
+                       modifiers,
+                       IDENTIFIER_PIKE_FUNCTION |
+                       (Pike_compiler->compiler_frame->varargs?IDENTIFIER_VARARGS:0),
+                       0,
+                       opt_flags);
+
+  Pike_compiler->compiler_frame->current_function_number=id;
+  free_type(type);
+
+  return id;
+}
+
+static void add_parent_local_function(struct pike_string *identifier, int id)
+{
+  struct identifier *i = ID_FROM_INT(Pike_compiler->new_program, id);
+  node *n = NULL;
+
+  if(i->identifier_flags & IDENTIFIER_SCOPED)
+    n = mktrampolinenode(id, Pike_compiler->compiler_frame->previous);
+  else
+    n = mkidentifiernode(id);
+
+  low_add_local_name(Pike_compiler->compiler_frame->previous,
+                     identifier, NULL, n, NULL);
+}
+
+static int compiler_define_function(int modifiers,
+                                    struct pike_string *identifier,
+                                    struct pike_type *fun_type,
+                                    node *block,
+                                    int num_args, int num_create_args,
+                                    int opt_flags)
+{
+  int e;
+  if(block)
+  {
+    int f;
+    node *check_args = NULL;
+    struct compilation *c = THIS_COMPILATION;
+    struct pike_string *save_file = c->lex.current_file;
+    int save_line  = c->lex.current_line;
+    int num_required_args = 0;
+    struct identifier *i;
+    c->lex.current_file = block->current_file;
+    c->lex.current_line = block->line_number;
+
+    if ((modifiers & ID_EXTERN) &&
+        (Pike_compiler->compiler_pass == COMPILER_PASS_FIRST)) {
+      yywarning("Extern declared function definition.");
+    }
+
+    if (Pike_compiler->compiler_frame->generator_fun != -1) {
+      struct pike_type *generator_type;
+      struct pike_string *name;
+      int generator_stack_local;
+
+      /* Generate the inner (ie restartable) function first. */
+
+      name = ID_FROM_INT(Pike_compiler->new_program,
+                         Pike_compiler->compiler_frame->generator_fun)->name;
+      ref_push_string(name);
+
+      generator_stack_local =
+        Pike_compiler->compiler_frame->generator_local + 1;
+
+      if (Pike_compiler->compiler_frame->generator_is_async) {
+        /* The inner function of an async function always returns void. */
+        push_type(T_VOID);
+
+        /*
+         * {
+         *   __async_promise__->failure(catch {
+         *       block;
+         *     });
+         *   return;
+         * }
+         *
+         * Note that the block always has an F_RETURN at the end.
+         *
+         * Note also that the F_RETURN has a NULL value-expression
+         * to avoid the implicit call of __async_promise__->success()
+         * that docode adds.
+         */
+        block =
+          mknode(F_COMMA_EXPR,
+                 mkapplynode(mkarrownode(mklocalnode(generator_stack_local + 3, 0),
+                                         "failure"),
+                             mknode(F_ARG_LIST,
+                                    mknode(F_CATCH, block, NULL),
+                                    NULL)),
+                 mknode(F_RETURN, NULL, NULL));
+      } else if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST &&
+                 Pike_compiler->compiler_frame->current_return_type->type == PIKE_T_AUTO) {
+        /* Change "auto" return type to actual return type. */
+        push_finished_type(Pike_compiler->compiler_frame->current_return_type->car);
+      } else {
+        push_finished_type(Pike_compiler->compiler_frame->current_return_type);
+      }
+
+      /* Adjust the type to be a function that returns
+       * a function(mixed|void, function(mixed...:void)|void:X).
+       *
+       * This is the type for the inner (restartable) function.
+       */
+      push_type(T_VOID);
+      push_type(T_MANY);
+
+      push_type(T_VOID);
+      push_type(T_VOID);
+      push_type(T_VOID);
+      push_type(T_MIXED);
+      push_type(T_OR);
+      push_type(T_MANY);
+      push_type(T_OR);
+      push_type(T_FUNCTION);
+
+      push_type(T_VOID);
+      push_type(T_MIXED);
+      push_type(T_OR);
+      push_type(T_FUNCTION);
+
+      generator_type = compiler_pop_type();
+      f = dooptcode(Pike_sp[-1].u.string, block, generator_type,
+                    ID_INLINE|ID_PROTECTED|ID_PRIVATE|ID_USED);
+      pop_stack();
+
+      /* Now it is time for the outer function. */
+      Pike_compiler->compiler_frame->generator_local = -1;
+      Pike_compiler->compiler_frame->generator_is_async = 0;
+      /* Set the return type for the outer function. */
+      free_type(Pike_compiler->compiler_frame->current_return_type);
+      if (modifiers & ID_ASYNC) {
+        free_type(generator_type);
+        /* FIXME: Should be object(Concurrent.Future<T>) */
+        Pike_compiler->compiler_frame->current_return_type =
+          object_type_string;
+        add_ref(object_type_string);
+      } else {
+        Pike_compiler->compiler_frame->current_return_type = generator_type;
+      }
+      if (modifiers & ID_ASYNC) {
+        /*
+         * {
+         *   __generator_stack__ = aggregate();
+         *   __async_promise__ = Concurrent.Promise();
+         *   mkgenerator(f)();
+         *   return __async_promise__->future();
+         * }
+         */
+        block = mknestednodes(F_COMMA_EXPR,
+                              mknode(F_ASSIGN,
+                                     mklocalnode(generator_stack_local, 0),
+                                     mkefuncallnode("aggregate", NULL)),
+                              mknode(F_ASSIGN,
+                                     mklocalnode(generator_stack_local + 3, 0),
+                                     mkapplynode(resolve_identifier(Concurrent_Promise_string),
+                                                 mknode(F_ARG_LIST, NULL, NULL))),
+                              mkapplynode(mkgeneratornode(f),
+                                          mknode(F_ARG_LIST, NULL, NULL)),
+                              mknode(F_RETURN,
+                                     mkapplynode(mkarrownode(mklocalnode(generator_stack_local + 3, 0),
+                                                             "future"),
+                                                 mknode(F_ARG_LIST, NULL, NULL)),
+                                     mkintnode(0)),
+                              NULL);
+      } else {
+        /*
+         * {
+         *   __generator_stack__ = aggregate();
+         *   return mkgenerator(f);
+         * }
+         */
+        block = mknode(F_COMMA_EXPR,
+                       mknode(F_ASSIGN, mklocalnode(generator_stack_local, 0),
+                              mkefuncallnode("aggregate", NULL)),
+                       mknode(F_RETURN, mkgeneratornode(f), NULL));
+      }
+    }
+
+    for(e = num_create_args; e < num_create_args + num_args; e++)
+    {
+      int ee = Pike_compiler->compiler_frame->local_variables[e] - 1;
+      struct local_name *var;
+      var = Pike_compiler->compiler_frame->local_names + ee;
+      if((e >= num_create_args) && (!var->name || !var->name->len) &&
+         (var->def->token == F_LOCAL) &&
+         (!Pike_compiler->compiler_frame->varargs ||
+          ((e+1) != num_create_args + num_args))) {
+        /* Allow ending with ignored varargs.
+         *
+         * lambda(int a, int b, mixed ...) {...}
+         */
+        my_yyerror("Missing name for argument %d.", e - num_create_args);
+      } else {
+        check_args = mknode(F_COMMA_EXPR, check_args, set_default_value(ee));
+
+        if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
+          /* FIXME: Should probably use some other flag. */
+          if ((runtime_options & RUNTIME_CHECK_TYPES) &&
+              (var->def->type != mixed_type_string)) {
+            node *local_node;
+
+            /* fprintf(stderr, "Creating soft cast node for local #%d\n", e);*/
+
+            local_node = mkcastnode(mixed_type_string, mklocalnode(ee, 0));
+
+            /* NOTE: The cast to mixed above is needed to avoid generating
+             *       compilation errors, as well as avoiding optimizations
+             *       in mksoftcastnode().
+             */
+            check_args =
+              mknode(F_COMMA_EXPR, check_args,
+                     mksoftcastnode(var->def->type, local_node));
+          }
+        }
+      }
+    }
+
+    if (num_create_args) {
+      /* Generate code that calls __create__(). */
+      node *args = NULL;
+      int ee;
+      e = num_create_args;
+      if (Pike_compiler->compiler_frame->varargs) {
+        e--;
+        ee = Pike_compiler->compiler_frame->local_variables[e] - 1;
+        args = mknode(F_PUSH_ARRAY,
+                      mklocalnode(ee, 0),
+                      NULL);
+      }
+      while (e--) {
+        ee = Pike_compiler->compiler_frame->local_variables[e] - 1;
+        args = mknode(F_ARG_LIST, mklocalnode(ee, 0), args);
+      }
+
+      e = FIND_LFUN(Pike_compiler->new_program, LFUN___CREATE__);
+      check_args =
+        mknode(F_COMMA_EXPR,
+               mknode(F_POP_VALUE,
+                      mknode(F_APPLY,
+                             mkidentifiernode(e),
+                             args),
+                      NULL),
+               check_args);
+    }
+
+    {
+      int l = block->line_number;
+      struct pike_string *f = block->current_file;
+      if (check_args) {
+        /* Prepend the arg checking code. */
+        block = mknode(F_COMMA_EXPR, mknode(F_POP_VALUE, check_args, NULL),
+                       block);
+      }
+      c->lex.current_line = l;
+      c->lex.current_file = f;
+    }
+
+    f = dooptcode(identifier, block, fun_type, modifiers);
+
+    i = ID_FROM_INT(Pike_compiler->new_program, f);
+    i->opt_flags = Pike_compiler->compiler_frame->opt_flags;
+
+    /* FIXME: Is the following valid for generator and async functions? */
+    if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST &&
+        Pike_compiler->compiler_frame->current_return_type->type == PIKE_T_AUTO)
+    {
+      /* Change "auto" return type to actual return type. */
+      int ee;
+      push_finished_type(Pike_compiler->compiler_frame->current_return_type->car);
+
+      e = num_create_args + num_args - 1;
+      if(Pike_compiler->compiler_frame->varargs &&
+         (!num_create_args || (Pike_compiler->num_create_args >= 0)))
+      {
+        struct local_name *var;
+        ee = Pike_compiler->compiler_frame->local_variables[e] - 1;
+        var = Pike_compiler->compiler_frame->local_names + ee;
+        push_finished_type(var->def->type);
+        e--;
+        if (pop_type_stack(T_ARRAY)) {
+          compiler_discard_top_type();
+        }
+      }else{
+        push_type(T_VOID);
+      }
+      push_type(T_MANY);
+      for(; e>=0; e--)
+      {
+        struct local_name *var;
+        ee = Pike_compiler->compiler_frame->local_variables[e] - 1;
+        var = Pike_compiler->compiler_frame->local_names + ee;
+        push_finished_type(var->def->type);
+        if (var->init && (var->def->token == F_LOCAL)) {
+          push_type(T_VOID);
+          push_type(T_OR);
+        }
+        push_type(T_FUNCTION);
+      }
+
+      if (Pike_compiler->current_attributes)
+      {
+        node *n = Pike_compiler->current_attributes;
+        while (n) {
+          push_type_attribute(CDR(n)->u.sval.u.string);
+          n = CAR(n);
+        }
+      }
+
+      free_type( i->type );
+      i->type = compiler_pop_type();
+    }
+
+#ifdef PIKE_DEBUG
+    if(Pike_interpreter.recoveries &&
+       ((Pike_sp - Pike_interpreter.evaluator_stack) <
+        Pike_interpreter.recoveries->stack_pointer))
+      Pike_fatal("Stack error (underflow)\n");
+
+    if((Pike_compiler->compiler_pass == COMPILER_PASS_FIRST) &&
+       (f != Pike_compiler->compiler_frame->current_function_number)) {
+      pike_fprintf(stderr,
+                   "define_function()/do_opt_code() failed for symbol %pq\n",
+                   identifier);
+      dump_program_desc(Pike_compiler->new_program);
+      Pike_fatal("define_function screwed up! %d != %d\n",
+                 f, Pike_compiler->compiler_frame->current_function_number);
+    }
+#endif
+
+    c->lex.current_line = save_line;
+    c->lex.current_file = save_file;
+
+    return f;
+  } else {
+    /* Prototype; don't warn about unused arguments. */
+    int ee;
+    for (e = Pike_compiler->compiler_frame->current_number_of_locals; e--;) {
+      ee = Pike_compiler->compiler_frame->local_variables[e] - 1;
+      Pike_compiler->compiler_frame->local_names[ee].flags |= LOCAL_VAR_IS_USED;
+    }
+    if( Pike_compiler->compiler_frame->current_return_type->type == PIKE_T_AUTO )
+      yyerror("'auto' return type not allowed for prototypes.");
+    if (Pike_compiler->compiler_pass == COMPILER_PASS_FIRST) {
+      for(e=0; e < num_create_args + num_args; e++)
+      {
+        node *init;
+        ee = Pike_compiler->compiler_frame->local_variables[e] - 1;
+        init = Pike_compiler->compiler_frame->local_names[ee].init;
+        if (init) {
+          low_yyreport(REPORT_WARNING, init->current_file, init->line_number,
+                       parser_system_string, 0,
+                       "Argument default values are not supported in prototypes.");
+        }
+      }
+    }
+  }
+
+  return -1;
+}
+
 struct pike_string *get_new_name(struct pike_string *prefix)
 {
   char buf[40];
@@ -5741,7 +5525,6 @@ int low_add_local_name(struct compiler_frame *frame,
   } else {
     frame->local_names[var].flags = 0;
   }
-
 
   return var;
 }
