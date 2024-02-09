@@ -2549,7 +2549,34 @@ struct node_s *find_inherited_identifier(struct program_state *inherit_state,
  *! Builtin constant that evaluates to the current function.
  *!
  *! @seealso
- *!   @[this], @[this_object()]
+ *!   @[continue::this_function], @[this], @[this_object()]
+ */
+
+/*! @namespace continue::
+ *!
+ *! Symbols specific for restartable functions.
+ *!
+ *! @seealso
+ *!   @[this_function], Restartable functions
+ */
+
+/*! @decl constant this_function
+ *!
+ *! This symbol is only valid in restartable functions and evaluates
+ *! to the current restartable function (ie the function that will
+ *! continue the current function from the next restart point
+ *! (ie next @[yield()] or continue return). For generator functions
+ *! this is the same value as the value that was returned by the
+ *! "outer" (ie generator) function.
+ *!
+ *! This differs from @[predef::this_function] which evaluates to
+ *! the "outer" function.
+ *!
+ *! @seealso
+ *!   @[predef::this_function], @[predef::this], @[predef::this_object()]
+ */
+
+/*! @endnamespace
  */
 
 /**
