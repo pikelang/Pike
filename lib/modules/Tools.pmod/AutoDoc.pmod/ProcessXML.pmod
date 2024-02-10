@@ -1737,7 +1737,8 @@ class NScopeStack
       if (res) return res;
       current = stack[pos];
     }
-    return 0;
+    // Fall back to looking in predef::.
+    return scopes->lookup(({ "predef::" }) + ref);
   }
 
   void resolveInherits()
