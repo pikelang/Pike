@@ -4757,7 +4757,6 @@ static int compiler_declare_prototype(int modifiers,
 {
   struct pike_type *type;
   int id, e, ee;
-  node *n;
   struct identifier *i=0;
 
   /*
