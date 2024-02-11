@@ -453,7 +453,7 @@ class conxiin {
      );
     void|Thread.MutexKey lock = fillreadmux->lock();
     if (procmsg && id)
-      procmsg = 0, lock = 0, synchronous_callbacks ? id() : Thread.Thread(id);
+      procmsg = 0, lock = 0, synchronous_callbacks ? local_backend->call_out(id, 0) : Thread.Thread(id);
     else if (fillread)
       didreadcb = 1, fillread.signal();
     return 0;
