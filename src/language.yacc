@@ -5140,13 +5140,17 @@ static int compiler_define_function(int modifiers,
       int ee = Pike_compiler->compiler_frame->local_variables[e] - 1;
       struct local_name *var;
       var = Pike_compiler->compiler_frame->local_names + ee;
-      if((e >= num_create_args) && (!var->name || !var->name->len) &&
+      if((!var->name || !var->name->len) &&
+         !TEST_COMPAT(8, 0) &&
          (var->def->token == F_LOCAL) &&
          (!Pike_compiler->compiler_frame->varargs ||
           ((e+1) != num_create_args + num_args))) {
         /* Allow ending with ignored varargs.
          *
          * lambda(int a, int b, mixed ...) {...}
+         *
+         * NB: In Pike 8.0 and earlier lambdas and local functions
+         *     did not require names for parameters.
          */
         my_yyerror("Missing name for argument %d.", e - num_create_args);
       } else {
