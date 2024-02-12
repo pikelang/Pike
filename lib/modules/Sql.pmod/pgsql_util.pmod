@@ -2166,6 +2166,7 @@ class proxy {
         }
       }		      // Do not flush at this point, PostgreSQL 9.4 disapproves
     };
+    ci->i->synchronous_callbacks = 0;
     if (!err)
       procmessage();
   }
