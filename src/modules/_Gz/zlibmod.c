@@ -1033,7 +1033,7 @@ static void gz_uncompress(INT32 args)
  *! @endcode
  *!
  *! @seealso
- *! @[Gz.deflate->deflate()], @[Gz.decompress]
+ *! @[Gz.deflate->deflate()], @[Gz.uncompress]
  */
 static void gz_inflate(INT32 args)
 {
@@ -1242,6 +1242,32 @@ static void gz_inflate_size( INT32 args )
         /* window, really 1<<wbits, max wbits is 16. */
         65536);
 }
+
+/*! @decl constant DEFAULT_STRATEGY
+ *!     The default strategy as selected in the zlib library.
+ */
+/*! @decl constant FILTERED
+ *!     This strategy is intented for data created by a filter or
+ *!     predictor and will put more emphasis on huffman encoding and
+ *!     less on LZ string matching. This is between DEFAULT_STRATEGY
+ *!     and HUFFMAN_ONLY.
+ */
+/*! @decl constant RLE
+ *!     This strategy is even closer to the HUFFMAN_ONLY in that it
+ *!     only looks at the latest byte in the window, i.e. a window
+ *!     size of 1 byte is sufficient for decompression. This mode is
+ *!     not available in all zlib versions.
+ */
+/*! @decl constant HUFFMAN_ONLY
+ *!     This strategy will turn of string matching completely, only
+ *!     doing huffman encoding. Window size doesn't matter in this
+ *!     mode and the data can be decompressed with a zero size window.
+ */
+/*! @decl constant FIXED
+ *!     In this mode dynamic huffman codes are disabled, allowing for
+ *!     a simpler decoder for special applications. This mode is not
+ *!     available in all zlib versions.
+ */
 
 /*! @endmodule
  */
