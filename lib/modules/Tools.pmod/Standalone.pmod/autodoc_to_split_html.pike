@@ -253,7 +253,7 @@ class Node
     return "";
   }
 
-  protected void add_ref(string path, string type, string name,
+  protected Node add_ref(string path, string type, string name,
                          string data, Node n, string c)
   {
     refs[path + name] = Node(type, name, data, n);
@@ -279,6 +279,7 @@ class Node
                           },
                        ]) )->finish(c);
     }
+    return refs[path + name];
   }
 
   array(string)|zero my_parse_docgroup(Parser.HTML p, mapping m, string c)
@@ -356,12 +357,14 @@ class Node
             ( ([ "constant":
                  lambda(Parser.HTML p, mapping m, string c) {
                    string name = Parser.parse_html_entities(m->name);
-                   add_ref(path, "constant", name, "", this, c);
+                   member_children +=
+                     ({ add_ref(path, "constant", name, "", this, c) });
                  },
                  "variable":
                  lambda(Parser.HTML p, mapping m, string c) {
                    string name = Parser.parse_html_entities(m->name);
-                   add_ref(path, "variable", name, "", this, c);
+                   member_children +=
+                     ({ add_ref(path, "variable", name, c || "", this, "") });
                  },
                  "inherit":
                  lambda(Parser.HTML p, mapping m, string c) {
@@ -372,9 +375,16 @@ class Node
                  }
             ]) )->finish(c);
         }
-        else
-          add_ref(path, m["homogen-type"], m["homogen-name"],
-                  "", this, c);
+        else {
+          if (m["homogen-type"] == "inherit") {
+            add_ref(path, m["homogen-type"], m["homogen-name"],
+                    "", this, c);
+          } else {
+            member_children +=
+              ({ add_ref(path, m["homogen-type"], m["homogen-name"],
+                         "", this, c || "") });
+          }
+        }
         break;
 
       }
