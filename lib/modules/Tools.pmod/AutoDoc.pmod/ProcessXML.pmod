@@ -1499,6 +1499,9 @@ class NScope
       if (objectp(scope)) {
 	return scope->name;
       }
+      if (type == "namespace") {
+        return name + path[0];
+      }
       return name + "." + path[0];
     } else if (!objectp(scope)) {
       return 0;
