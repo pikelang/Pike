@@ -90,6 +90,11 @@ string quote(string in) {
   return Parser.XML.Tree.text_quote(in);
 }
 
+// NB: Overloaded by autodoc_to_split_html.
+string cquote(string in) {
+  return quote(in);
+}
+
 string render_tag(string tag, mapping(string:string) attrs, int|void term)
 {
   string res = "<" + tag;
@@ -1687,21 +1692,17 @@ string parse_docgroup(Node n) {
       string type = "<span class='homogen--type'>" +
 	quote(String.capitalize(m["homogen-type"])) +
 	"</span>\n";
-      if(m["homogen-name"]) {
-	ret += type + "<span class='homogen--name'><b>" +
-	  quote((m->belongs?m->belongs+" ":"") + m["homogen-name"]) +
-	  "</b></span>\n";
-      } else {
-	array(string) names =
-	  Array.uniq(map(n->get_elements(m["homogen-type"]),
-			 lambda(Node child) {
-			   return child->get_attributes()->name ||
-			     child->value_of_node();
-			 }));
-	foreach(names, string name)
-	  ret += type +
-	    "<span class='homogen--name'><b>" + quote(name) + "</b></span><br>\n";
-      }
+      array(string) names =
+        Array.uniq(map(n->get_elements(m["homogen-type"]),
+                       lambda(Node child) {
+                         return child->get_attributes()->name ||
+                           child->value_of_node();
+                       }));
+      foreach(names, string name)
+        ret +=
+          "<span class='homogen--name'>"
+          "<a name='" + cquote(name) + "'></a>" +
+          type + "<b>" + quote(name) + "</b></span><br>\n";
     }
     else
       ret += "Syntax";

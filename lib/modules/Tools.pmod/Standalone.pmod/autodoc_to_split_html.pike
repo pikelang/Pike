@@ -77,7 +77,7 @@ array(string) split_reference(string what) {
 }
 
 string create_reference(string from, string to, string text,
-                        string|void xlink_namespace_prefix) {
+                        string xlink_namespace_prefix = "") {
   array a = (to/"::");
   switch(sizeof(a)) {
   case 2:
@@ -96,11 +96,23 @@ string create_reference(string from, string to, string text,
   default:
     error("Bad reference: %O\n", to);
   }
-  if (!xlink_namespace_prefix) xlink_namespace_prefix = "";
+  Node n = refs[to];
+  string name;
+  if (!n) {
+    werror("Referenced node not found for reference from %O to %O\n",
+           from, to);
+  } else {
+    name = n->name;
+    if ((< "variable", "constant", "typedef" >)[n->type]) {
+      a = a[..sizeof(a)-2];
+    }
+  }
   return "<a class='ms reference' " +
     xlink_namespace_prefix +
     "href='" +
-    "../"*max(sizeof(from/"/") - 2, 0) + map(a, cquote)*"/" + ".html'>" +
+    "../"*max(sizeof(from/"/") - 2, 0) + map(a, cquote)*"/" + ".html" +
+    (name?"#" + cquote(name):"") +
+    "'>" +
     String.trim(text) + "</a>";
 }
 
@@ -449,13 +461,18 @@ class Node
   string low_make_link(string to, int|void extra_levels)
   {
     // FIXME: Optimize the length of relative links
+    if (extra_levels < 0) return to;
     int num_segments = sizeof(make_filename()/"/") + extra_levels - 1;
     return ("../"*num_segments)+to;
   }
 
   string make_link(Node to, int|void extra_levels)
   {
-    return low_make_link(to->make_filename(), extra_levels);
+    string fn = to->make_filename() + "#" + cquote(to->name);
+    if ((< "variable", "constant", "typedef" >)[to->type]) {
+      fn = to->parent->make_filename() + "#" + cquote(to->name);
+    }
+    return low_make_link(fn, extra_levels);
   }
 
   array(Node) get_ancestors()
@@ -480,15 +497,6 @@ class Node
         Node res_obj;
 
         if(res_obj = refs[resolution]) {
-          while(res_obj && (<"constant","variable">)[res_obj->type]) {
-            res_obj = res_obj->parent;
-          }
-          if (!res_obj && verbosity) {
-            werror("Found no page to link to for reference %O (%O)\n",
-                   _reference, resolution);
-            return "<code class='reference nolink'>" + _reference +
-                   "</code>";
-          }
           // FIXME: Assert that the reference is correct?
           return create_reference(make_filename(),
                                   res_obj->raw_class_path(),
@@ -706,7 +714,7 @@ class Node
       map(nodes,
           lambda(Node n) {
             return ([ "name":n->name,
-                      "link":n->make_filename(),
+                      "link":make_link(n, -1),
                       "modifiers":sizeof(n->modifiers) && n->modifiers || Val.null ]);
           });
     sort(a->name, a);
@@ -1155,13 +1163,21 @@ class Node
     return (string)contents;
   }
 
+  string node_type_suffix(Node node)
+  {
+    return ([
+      "method":"()",
+    ])[node->type] || "";
+  }
+
   string make_link_list(array(Node) children, int|void extra_levels)
   {
     String.Buffer res = String.Buffer(3500);
     foreach(children, Node node)
       res->add("<li><a href='", make_link(node, extra_levels), "'>",
                Parser.encode_html_entities(node->name),
-               "()</a></li>\n");
+               node_type_suffix(node),
+               "</a></li>\n");
     return (string)res;
   }
 
@@ -1169,20 +1185,12 @@ class Node
   {
     resolve_reference = my_resolve_reference;
 
-    string contents = "";
+    array(Node) children = member_children + enum_children +
+      directive_children + method_children + operator_children;
 
-    foreach(({ enum_children, directive_children, method_children }),
-            array(Node) children)
-    {
+    sort(children->name, children);
 
-      if (children && sizeof(children)) {
-        foreach(children/( sizeof(children)/4.0 ), array(Node) children) {
-          contents += make_link_list(children, extra_levels);
-        }
-      }
-    }
-
-    return contents;
+    return make_link_list(children, extra_levels);
   }
 
   string make_index_page(int|void extra_levels)
