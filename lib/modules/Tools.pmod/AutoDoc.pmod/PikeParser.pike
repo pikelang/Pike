@@ -31,7 +31,7 @@ protected multiset(string) modifiers =
    "private", "local", "public", "protected",
    "inline", "optional", "variant",
 
-   "__generator__",
+   "__async__", "__generator__",
 >);
 
 protected multiset(string) scopeModules =
