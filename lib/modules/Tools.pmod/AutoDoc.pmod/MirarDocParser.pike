@@ -663,6 +663,7 @@ string doctype(string type,void|string indent)
       return nindent+combine_or(doctype(a+"("+b+")"+d,nindent),
 			       doctype(e,nindent));
 
+   a = String.trim_all_whites(a);
    switch (a)
    {
       case "int":
