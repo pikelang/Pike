@@ -442,6 +442,18 @@ class ZeroType {
   protected void create() { ::create("zero"); }
 }
 
+//! The class for representing the unknown type.
+//!
+//! @seealso
+//!   @[Type]
+class UnknownType {
+  //!
+  inherit Type;
+
+  //!
+  protected void create() { ::create("unknown"); }
+}
+
 //! The class for representing union types.
 //!
 //! @seealso

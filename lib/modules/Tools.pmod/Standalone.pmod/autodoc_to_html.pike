@@ -1115,6 +1115,10 @@ string parse_type(Node n, void|string debug) {
     ret += "<code class='datatype'>" + n->get_any_name() + "</code>";
     break;
 
+  case "unknown":
+    ret += "<code class='datatype'>__unknown__</code>";
+    break;
+
   case "string":
   case "int":
       ret += ("<code class='datatype'>" +

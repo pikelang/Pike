@@ -631,6 +631,9 @@ object(Type)|zero parseType() {
     case "zero":
       eat("zero");
       return ZeroType();
+    case "__unknown__":
+      eat("__unknown__");
+      return UnknownType();
 
     case "array":
       return parseArray();
