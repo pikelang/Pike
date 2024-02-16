@@ -109,7 +109,12 @@ string get_ipv4(int ip, int prefix=32) {
 
 //!
 class DateTree {
+    //! @ignore
     inherit C::IntTree;
+    //! @endignore
+
+    //! @decl inherit IntTree
+
     mapping(int:Calendar.TimeRange) backwards = ([]);
 
     //! Encodes a Calendar.TimeRange object into unix timestanp.
