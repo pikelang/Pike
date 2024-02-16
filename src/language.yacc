@@ -300,6 +300,7 @@ int yylex(YYSTYPE *yylval);
 %type <number> assign
 %type <number> low_assign
 %type <number> local_modifier
+%type <number> optional_local_modifier
 %type <number> modifier
 %type <number> modifier_list
 %type <number> modifiers
@@ -2172,6 +2173,10 @@ start_lambda: /* empty */
   }
   ;
 
+optional_local_modifier: /* empty */ { $$ = 0; }
+  | local_modifier
+  ;
+
 implicit_identifier: /* empty */
   {
     struct pike_string *name;
@@ -2180,41 +2185,39 @@ implicit_identifier: /* empty */
   }
   ;
 
-lambda: TOK_LAMBDA line_number_info implicit_identifier start_lambda
-  func_args
+lambda: optional_local_modifier TOK_LAMBDA line_number_info
+        implicit_identifier start_lambda func_args
   {
-    struct pike_string *name = $3->u.sval.u.string;
+    struct pike_string *name = $4->u.sval.u.string;
+    node *save_attrs;
 
-    if (Pike_compiler->compiler_pass == COMPILER_PASS_FIRST) {
-      /* Define a tentative prototype for the lambda. */
-      node *save_attrs = Pike_compiler->current_attributes;
-      Pike_compiler->current_attributes = NULL;
-      compiler_declare_prototype(ID_PROTECTED | ID_PRIVATE |
+    /* Define a tentative prototype for the lambda. */
+    save_attrs = Pike_compiler->current_attributes;
+    Pike_compiler->current_attributes = NULL;
+    $<number>$ =
+      compiler_declare_prototype($1 | ID_PROTECTED | ID_PRIVATE |
                                  ID_INLINE | ID_USED,
-                                 name, $5, 0,
+                                 name, $6, 0,
                                  Pike_compiler->compiler_frame->opt_flags);
 #ifdef PIKE_DEBUG
-      if (Pike_compiler->current_attributes) {
-        Pike_fatal("Unexpected attribute scope.\n");
-      }
-#endif
-      Pike_compiler->current_attributes = save_attrs;
-    } else {
-      /* In pass 2 we just reuse the type from the end of pass 1. */
-      Pike_compiler->compiler_frame->current_function_number =
-	isidentifier(name);
+    if (Pike_compiler->current_attributes) {
+      Pike_fatal("Unexpected attribute scope.\n");
     }
+#endif
+    Pike_compiler->current_attributes = save_attrs;
   }
   failsafe_block
   {
     struct pike_type *type;
     int f, e, ee;
-    struct pike_string *name = $3->u.sval.u.string;
+    struct pike_string *name = $4->u.sval.u.string;
     struct compilation *c = THIS_COMPILATION;
     struct pike_string *save_file = c->lex.current_file;
     int save_line = c->lex.current_line;
-    c->lex.current_file = $2->current_file;
-    c->lex.current_line = $2->line_number;
+    node *save_attrs;
+
+    c->lex.current_file = $3->current_file;
+    c->lex.current_line = $3->line_number;
 
     /*
      * Fixup return type.
@@ -2222,7 +2225,7 @@ lambda: TOK_LAMBDA line_number_info implicit_identifier start_lambda
     if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
       /* Doing this in pass 1 might induce too strict checks on types
        * in cases where we got placeholders. */
-      type = find_return_type($7);
+      type = find_return_type($8);
       if (!type) {
 	yywarning("Failed to determine return type for lambda.");
         type = zero_type_string;
@@ -2231,39 +2234,42 @@ lambda: TOK_LAMBDA line_number_info implicit_identifier start_lambda
 
       free_type(Pike_compiler->compiler_frame->current_return_type);
       Pike_compiler->compiler_frame->current_return_type = type;
+
+      /* Redefine the prototype for the lambda. */
+      save_attrs = Pike_compiler->current_attributes;
+      Pike_compiler->current_attributes = NULL;
+      f = compiler_declare_prototype($1 | ID_PROTECTED | ID_PRIVATE |
+                                     ID_INLINE | ID_USED,
+                                     name, $6, 0,
+                                     Pike_compiler->compiler_frame->opt_flags);
+#ifdef PIKE_DEBUG
+      if (Pike_compiler->current_attributes) {
+        Pike_fatal("Unexpected attribute scope.\n");
+      }
+      if (f != $<number>7) {
+        Pike_fatal("Reference for lambda changed. %d != %d\n",
+                   f, $<number>7);
+      }
+#endif
+      Pike_compiler->current_attributes = save_attrs;
+    } else {
+      f = $<number>7;
     }
 
-    push_finished_type(Pike_compiler->compiler_frame->current_return_type);
-    e=$5-1;
+    e=$6-1;
     if (Pike_compiler->compiler_frame->varargs) {
-      ee = Pike_compiler->compiler_frame->local_variables[e] - 1;
-      push_finished_type(Pike_compiler->compiler_frame->local_names[ee].def->type);
       e--;
-      if (pop_type_stack(T_ARRAY)) {
-	compiler_discard_top_type();
-      }
-    }else{
-      push_type(T_VOID);
     }
-    push_type(T_MANY);
-
     for(; e>=0; e--) {
-      struct local_name *var;
       ee = Pike_compiler->compiler_frame->local_variables[e] - 1;
-      var = Pike_compiler->compiler_frame->local_names + ee;
-      push_finished_type(var->def->type);
-      if (var->init && (var->def->token == F_LOCAL)) {
-	push_type(T_VOID);
-	push_type(T_OR);
-      }
-      push_type(T_FUNCTION);
 
-      $7 = mknode(F_COMMA_EXPR, set_default_value(ee), $7);
+      $8 = mknode(F_COMMA_EXPR, set_default_value(ee), $8);
     }
 
-    type=compiler_pop_type();
+    type = ID_FROM_INT(Pike_compiler->new_program, f)->type;
+    add_ref(type);	/* Avoid free_type() followed by add_ref()... */
 
-    name = $3->u.sval.u.string;
+    name = $4->u.sval.u.string;
 
 #ifdef LAMBDA_DEBUG
     fprintf(stderr, "%d: LAMBDA: %s 0x%08lx 0x%08lx\n%d:   type: ",
@@ -2275,9 +2281,9 @@ lambda: TOK_LAMBDA line_number_info implicit_identifier start_lambda
     fprintf(stderr, "\n");
 #endif /* LAMBDA_DEBUG */
 
-    f = compiler_define_function(ID_PROTECTED | ID_PRIVATE |
+    f = compiler_define_function($1 | ID_PROTECTED | ID_PRIVATE |
                                  ID_INLINE | ID_USED,
-                                 name, type, $7, $5, 0,
+                                 name, type, $8, $6, 0,
                                  Pike_compiler->compiler_frame->opt_flags);
 
 #ifdef PIKE_DEBUG
@@ -2298,35 +2304,37 @@ lambda: TOK_LAMBDA line_number_info implicit_identifier start_lambda
       $$ = mkidentifiernode(f);
     }
     free_type(type);
+
     c->lex.current_line = save_line;
     c->lex.current_file = save_file;
-    free_node($3);
-    free_node ($2);
+    free_node($4);
+    free_node ($3);
 #ifdef PIKE_DEBUG
-    if (Pike_compiler->compiler_frame != $4) {
+    if (Pike_compiler->compiler_frame != $5) {
       Pike_fatal("Lost track of compiler_frame!\n"
 		 "  Got: %p (Expected: %p) Previous: %p\n",
-		 Pike_compiler->compiler_frame, $4,
+                 Pike_compiler->compiler_frame, $5,
 		 Pike_compiler->compiler_frame->previous);
     }
 #endif
     pop_compiler_frame();
   }
-  | TOK_LAMBDA line_number_info implicit_identifier start_lambda error
+  | optional_local_modifier TOK_LAMBDA line_number_info
+    implicit_identifier start_lambda error
   {
 #ifdef PIKE_DEBUG
-    if (Pike_compiler->compiler_frame != $4) {
+    if (Pike_compiler->compiler_frame != $5) {
       Pike_fatal("Lost track of compiler_frame!\n"
 		 "  Got: %p (Expected: %p) Previous: %p\n",
-		 Pike_compiler->compiler_frame, $4,
+                 Pike_compiler->compiler_frame, $5,
 		 Pike_compiler->compiler_frame->previous);
     }
 #endif
     pop_compiler_frame();
     $$ = mkintnode(0);
-    COPY_LINE_NUMBER_INFO($$, $2);
+    COPY_LINE_NUMBER_INFO($$, $3);
+    free_node($4);
     free_node($3);
-    free_node($2);
   }
   ;
 
@@ -4820,46 +4828,51 @@ static int compiler_declare_prototype(int modifiers,
       push_object_type(0, 0);	/* FIXME: object(Concurrent.Future). */
     }
 
-    /* Entry point variable. */
-    add_ref(int_type_string);
-    MAKE_CONST_STRING(name, "__generator_entry_point__");
-    Pike_compiler->compiler_frame->generator_local =
-      add_local_name(name, int_type_string, 0);
+    /* NB: lambdas call this function twice in the last pass.
+     *     Do not add the variables below twice.
+     */
+    if (Pike_compiler->compiler_frame->generator_local < 0) {
+      /* Entry point variable. */
+      add_ref(int_type_string);
+      MAKE_CONST_STRING(name, "__generator_entry_point__");
+      Pike_compiler->compiler_frame->generator_local =
+        add_local_name(name, int_type_string, 0);
 
-    /* Stack contents to restore. */
-    add_ref(array_type_string);
-    MAKE_CONST_STRING(name, "__generator_stack__");
-    add_local_name(name, array_type_string, 0);
+      /* Stack contents to restore. */
+      add_ref(array_type_string);
+      MAKE_CONST_STRING(name, "__generator_stack__");
+      add_local_name(name, array_type_string, 0);
 
-    /* Resumption argument. */
-    add_ref(mixed_type_string);
-    MAKE_CONST_STRING(name, "__generator_argument__");
-    add_local_name(name, mixed_type_string, 0);
+      /* Resumption argument. */
+      add_ref(mixed_type_string);
+      MAKE_CONST_STRING(name, "__generator_argument__");
+      add_local_name(name, mixed_type_string, 0);
 
-    /* Resumption callback. */
-    add_ref(function_type_string);
-    MAKE_CONST_STRING(name, "__generator_callback__");
-    add_local_name(name, function_type_string, 0);
+      /* Resumption callback. */
+      add_ref(function_type_string);
+      MAKE_CONST_STRING(name, "__generator_callback__");
+      add_local_name(name, function_type_string, 0);
 
-    if (Pike_compiler->compiler_frame->generator_is_async) {
-      /* Result promise. */
-      add_ref(object_type_string);
-      MAKE_CONST_STRING(name, "__async_promise__");
-      add_local_name(name, object_type_string, 0);
-      num_state_vars++;
-    }
-
-    /* All of the above and the arguments are scoped. */
-    for (e = 0;
-         e < Pike_compiler->compiler_frame->generator_local + num_state_vars;
-         e++) {
-      /* Force local #e to be scoped. */
-      node *n = mklocalnode(e, -1);
-      if (e >= Pike_compiler->compiler_frame->generator_local) {
-        /* Mark all generator locals as used. */
-        mark_lvalue_as_used(n);
+      if (Pike_compiler->compiler_frame->generator_is_async) {
+        /* Result promise. */
+        add_ref(object_type_string);
+        MAKE_CONST_STRING(name, "__async_promise__");
+        add_local_name(name, object_type_string, 0);
+        num_state_vars++;
       }
-      free_node(n);
+
+      /* All of the above and the arguments are scoped. */
+      for (e = 0;
+           e < Pike_compiler->compiler_frame->generator_local + num_state_vars;
+           e++) {
+        /* Force local #e to be scoped. */
+        node *n = mklocalnode(e, -1);
+        if (e >= Pike_compiler->compiler_frame->generator_local) {
+          /* Mark all generator locals as used. */
+          mark_lvalue_as_used(n);
+        }
+        free_node(n);
+      }
     }
   } else {
     push_finished_type(Pike_compiler->compiler_frame->current_return_type);
