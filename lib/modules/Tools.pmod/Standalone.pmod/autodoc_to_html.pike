@@ -1228,8 +1228,8 @@ void resolve_class_paths(Node n, string|void path, Node|void parent)
     path = "";
     break;
   case "namespace":
-    if ((<"", "lfun">)[name]) {
-      // Censor namespaces other than :: and lfun::
+    if ((<"", "lfun", "continue::" >)[name]) {
+      // Censor namespaces other than ::, continue:: and lfun::
       path = name+"::";
     } else {
       path = "";
@@ -1294,8 +1294,8 @@ string render_class_path(Node n,int|void class_only)
   if (a[0]->get_any_name() == "namespace") {
     a = a->get_attributes()->name;
     a[0] += "::";
-    if ((<"::","lfun::">)[a[0]]) {
-      // Censor namespaces other than :: and lfun::
+    if ((<"::", "continue::", "lfun::">)[a[0]]) {
+      // Censor namespaces other than ::, continue:: and lfun::
       ret = a[0];
     }
     a = a[1..];
