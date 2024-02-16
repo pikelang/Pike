@@ -1725,9 +1725,48 @@ string parse_docgroup(Node n) {
   return ret + lay->_docgroup;
 }
 
+protected mapping(string:string) node_type_groups = ([
+  "inherit":	"0",
+  "typedef":	"1",
+  "constant":	"2",
+  "variable":	"3",
+  "directive":	"4",
+  "method":	"5",
+  "import":	"9",	// Note that these are filtered in the output.
+]);
+
+string node_type_group(Node n)
+{
+  mapping(string:string) attributes = n->get_attributes();
+  string t = attributes["homogen-type"] || n->get_tag_name();
+
+  return node_type_groups[t] || node_type_groups->method;
+}
+
+string docgroup_sort_key(Node n)
+{
+  mapping(string:string) attributes = n->get_attributes();
+
+  string name = attributes["homogen-name"];
+
+  if (!name) {
+    array(string) names = n->get_elements()->get_attributes()->name - ({ 0 });
+    names = sort(names) + ({ "" });
+    name = names[0];
+  }
+
+  return node_type_group(n) + ":" + name;
+}
+
 string parse_children(Node n, string tag, function cb, mixed ... args) {
   string ret = "";
-  foreach(n->get_elements(tag), Node c)
+  array(Node) elements = n->get_elements(tag);
+  if (tag == "docgroup") {
+    sort(map(elements, docgroup_sort_key), elements);
+  } else {
+    sort(elements->get_attributes()->name, elements);
+  }
+  foreach(elements, Node c)
     ret += cb(c, @args);
 
   return ret;
