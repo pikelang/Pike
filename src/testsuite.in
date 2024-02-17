@@ -809,6 +809,87 @@ test_any_equal([[
   return ret;
 ]], ({ 1, 2, 3, "End of stream.\n" }))
 
+dnl Trivial generator lambda.
+test_any_equal([[
+  function(:int) f = __generator__ lambda(int start, int end)
+  {
+    while (start < end)
+      continue return start++;
+    return start;
+  }(4,8);
+
+  array(int) ret = ({});
+  int i;
+  while (!zero_type(i = f())) {
+    ret += ({ i });
+  }
+  return ret;
+]], ({ 4, 5, 6, 7, 8 }))
+
+dnl Generator lambda with stack.
+test_any_equal([[
+  function(:int|float) f = __generator__ lambda(int end)
+  {
+    return 1000.0 + gauge {
+        int i = 0;
+        for (i = 0; i < end; i++) {
+          continue return i;
+        }
+      };
+  }(4);
+
+  array(int) ret = ({});
+  int i;
+  while (!zero_type(i = f())) {
+    ret += ({ (int)i });
+  }
+  return ret;
+  // NB: We assume that the loop executes in under a second.
+]], ({ 0, 1, 2, 3, 1000 }))
+
+dnl Generator lambda with catch.
+test_any_equal([[
+  function(:int|string) f = __generator__ lambda(int end)
+  {
+    return describe_error(catch {
+        int i = 0;
+        for (i = 0; i < end; i++) {
+          continue return i;
+        }
+        error("End of stream.\n");
+      });
+  }(4);
+
+  array(int|string) ret = ({});
+  int|string i;
+  while (!zero_type(i = f())) {
+    ret += ({ i });
+  }
+  return ret;
+]], ({ 0, 1, 2, 3, "End of stream.\n" }))
+
+dnl Generator lambda with catch and external variable.
+test_any_equal([[
+  int start = 1;
+  function(:int|string) f = __generator__ lambda(int end)
+  {
+    return describe_error(catch {
+        int i;
+        for (i = start; i < end; i++) {
+          continue return i;
+        }
+        error("End of stream.\n");
+      });
+  }(4);
+
+  array(int|string) ret = ({});
+  int|string i;
+  while (!zero_type(i = f())) {
+    ret += ({ i });
+  }
+  return ret;
+]], ({ 1, 2, 3, "End of stream.\n" }))
+
 dnl Asynchronous function tests.
 
 dnl Trivial async function awaiting success.
@@ -921,6 +1002,34 @@ test_any_equal([[
 
   Concurrent.Promise p = Concurrent.Promise();
   Concurrent.Future res = foo(p->future());
+
+  int done;
+  int ret = -1;
+  res->on_success(lambda(int val) {
+    ret = val;
+    done = 1;
+  });
+  res->on_failure(lambda(mixed err) {
+    master()->handle_error(err);
+    done = 1;
+  });
+
+  p->success(1);
+
+  for (int i = 0; !done && i < 10; i++) {
+    if (!Pike.DefaultBackend(0.1)) break;
+  }
+
+  return ret;
+]], 11)
+
+dnl Trivial async lambda.
+test_any_equal([[
+  Concurrent.Promise p = Concurrent.Promise();
+  Concurrent.Future res = __async__ lambda(Concurrent.Future f)
+  {
+    return await(f) + 10;
+  }(p->future());
 
   int done;
   int ret = -1;
