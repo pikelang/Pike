@@ -3757,6 +3757,7 @@ void low_start_new_program(struct program *p,
   }
   /* Can't use GC_ALLOC on fake objects, but still it's good to know
    * that they never take over a stale gc marker. */
+  gc_init_marker(Pike_compiler->fake_object);
   if (Pike_in_gc) remove_marker(Pike_compiler->fake_object);
 
   Pike_compiler->fake_object->next=Pike_compiler->fake_object;
