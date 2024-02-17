@@ -5406,6 +5406,33 @@ PMOD_EXPORT void f_sleep(INT32 args)
    low_check_threads_etc();
 }
 
+static node *optimize_sleep(node *apply)
+{
+  if (apply && Pike_compiler->compiler_frame->generator_is_async) {
+    /*
+     * {
+     *   call_out(continue::this_function, X);
+     *   continue return;
+     * }
+     */
+    node *ret =
+      mknode(F_COMMA_EXPR,
+             mkcastnode(void_type_string,
+                        mkefuncallnode("call_out",
+                                       mknode(F_ARG_LIST,
+                                              program_magic_identifier(Pike_compiler, 0,
+                                                                       INHERIT_GENERATOR,
+                                                                       this_function_string,
+                                                                       1),
+                                              CDR(apply)))),
+             mknode(F_RETURN, NULL, mkintnode(1)));
+    ADD_NODE_REF(CDR(apply));
+    return ret;
+  }
+
+  return NULL;
+}
+
 #undef FIX_LEFT
 #undef TIME_ELAPSED
 
@@ -10453,8 +10480,9 @@ void init_builtin_efuns(void)
 	   OPT_TRY_OPTIMIZE);
 
   /* function(float|int,int|void:void) */
-  ADD_EFUN("sleep", f_sleep,
-	   tFunc(tOr(tFlt,tInt) tOr(tInt,tVoid),tVoid),OPT_SIDE_EFFECT);
+  ADD_EFUN2("sleep", f_sleep,
+            tFunc(tOr(tFlt,tInt) tOr(tInt,tVoid),tVoid),
+            OPT_SIDE_EFFECT | OPT_TRY_OPTIMIZE, optimize_sleep, 0);
   ADD_EFUN("delay", f_delay,
 	   tFunc(tOr(tFlt,tInt) tOr(tInt,tVoid),tVoid),OPT_SIDE_EFFECT);
 
