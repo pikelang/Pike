@@ -3560,9 +3560,6 @@ PIKE_MODULE_EXIT
     exit_nt_system_calls();
   }
 #endif
-#ifdef HAVE_SYSLOG
-  free_svalue(&log_ident);
-#endif
   free_mapping(strerror_lookup);
   strerror_lookup = NULL;
 }
