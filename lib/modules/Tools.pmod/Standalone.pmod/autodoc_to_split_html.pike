@@ -148,7 +148,7 @@ class Node
     //if (_type == "class" && search(_data, "<modifiers>") > -1) {
     //  werror("\n\n\n----\n%s\n-------\n\n\n", _data);
     //}
-    if ((< "method", "enum", "variable", "constant" >)[_type]  &&
+    if ((< "method", "enum", "variable", "constant", "typedef" >)[_type]  &&
         search(_data, "<modifiers>") > -1)
     {
       //werror("%s:%s: %s\n", _type, _name, _data);
@@ -348,6 +348,7 @@ class Node
 
       case "constant":
       case "variable":
+      case "typedef":
       case "inherit":
         string path = raw_class_path();
         if(sizeof(path) && (path[-1] != ':')) path += ".";
@@ -365,6 +366,12 @@ class Node
                    string name = Parser.parse_html_entities(m->name);
                    member_children +=
                      ({ add_ref(path, "variable", name, c || "", this, "") });
+                 },
+                 "typedef":
+                 lambda(Parser.HTML p, mapping m, string c) {
+                   string name = Parser.parse_html_entities(m->name);
+                   member_children +=
+                     ({ add_ref(path, "typedef", name, c || "", this, "") });
                  },
                  "inherit":
                  lambda(Parser.HTML p, mapping m, string c) {
