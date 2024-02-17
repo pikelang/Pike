@@ -4557,6 +4557,17 @@ void _main(array(string(0..255)) orig_argv)
     handle_error (err);
     exit(10, "Error: Exiting due to uncaught error.\n");
   }
+
+  if (objectp(ret) &&
+      functionp(ret->on_success) && functionp(ret->on_failure)) {
+    ret->on_success(exit);
+    ret->on_failure(lambda(mixed err) {
+                      handle_error(err);
+                      exit(10, "Error: Exiting due to uncaught error.\n");
+                    });
+    ret = -1;	// Start the backend.
+  }
+
   if(!intp(ret))
     exit(10, "Error: Non-integer value %O returned from main.\n", ret);
 
