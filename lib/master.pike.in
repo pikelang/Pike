@@ -4553,25 +4553,40 @@ void _main(array(string(0..255)) orig_argv)
     };
   // Disable tracing.
   trace = predef::trace(trace);
-  if (err) {
+
+  void got_error(mixed err)
+  {
     handle_error (err);
     exit(10, "Error: Exiting due to uncaught error.\n");
   }
 
-  if (objectp(ret) &&
-      functionp(ret->on_success) && functionp(ret->on_failure)) {
-    ret->on_success(exit);
-    ret->on_failure(lambda(mixed err) {
-                      handle_error(err);
-                      exit(10, "Error: Exiting due to uncaught error.\n");
-                    });
-    ret = -1;	// Start the backend.
+  if (err) {
+    got_error(err);
   }
 
-  if(!intp(ret))
-    exit(10, "Error: Non-integer value %O returned from main.\n", ret);
+  void got_retval(mixed ret)
+  {
+    if (intp(ret)) {
+      if (ret < 0) return;
+      exit([int]ret);
+    }
 
-  if(ret >=0) exit([int]ret);
+    if (objectp(ret) &&
+      functionp(ret->on_success) && functionp(ret->on_failure)) {
+      ret->on_success(this_function);
+      ret->on_failure(got_error);
+      return;
+    }
+
+    if (stringp(ret)) {
+      exit(0, "%s\n", [string]ret);
+    }
+
+    exit(10, "Error: Non-integer value %O returned from main.\n", ret);
+  }
+
+  got_retval(ret);
+
   _async=1;
 
   // Reenable tracing.
