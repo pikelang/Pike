@@ -3164,12 +3164,18 @@ OPCODE1(F_TEST_AND_SET_LOCAL, "test_and_set_local", I_ARG_T_LOCAL|I_UPDATE_SP, {
 
 OPCODE1(F_GENERATOR, "generator", I_ARG_T_GLOBAL, {
     save_locals(Pike_fp);
-    Pike_fp->fun = arg1;
+    Pike_fp->fun = arg1 + Pike_fp->context->identifier_level;
   });
 
 OPCODE1(F_RESTORE_STACK_FROM_LOCAL, "restore_stack",
         I_UPDATE_SP|I_ARG_T_LOCAL, {
     struct array *a;
+
+    DO_IF_DEBUG(
+                if (!(Pike_fp->flags & PIKE_FRAME_MALLOCED_LOCALS)) {
+                  Pike_fatal("Invalid frame. Lost context?\n");
+                }
+                );
 
     if(UNLIKELY(TYPEOF(Pike_fp->locals[arg1]) != PIKE_T_ARRAY))
     {

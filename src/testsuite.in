@@ -1051,6 +1051,72 @@ test_any_equal([[
   return ret;
 ]], 11)
 
+dnl Async with multiple inherit.
+dnl cf https://git.lysator.liu.se/pikelang/pike/-/issues/10144#note_11251
+test_do([[
+  class http_endpoint {
+    void dummy_function() { }
+  }
+
+  class websocket_handler {
+    mapping|Concurrent.Future get_state(int group) { }
+
+    __async__ void _send_updates(array(object) socks, int group,
+                                 mapping|void data) {
+      if (!data) data = await(get_state(group));
+    }
+
+    protected void create(string name) { }
+  }
+
+  class http_websocket {
+    inherit http_endpoint;
+    inherit websocket_handler;
+
+    mapping get_state(int group) { }
+  }
+
+  add_constant("testsuite_http_websocket", http_websocket);
+]])
+test_do([[
+  class Boom {
+    inherit testsuite_http_websocket;
+    protected void create() {
+      _send_updates(({ }), 42);
+    }
+  }
+
+  return Boom();
+]])
+test_do([[
+  add_constant("testsuite_http_websocket");
+]])
+
+dnl Async in nested inherit.
+dnl cf https://git.lysator.liu.se/pikelang/pike/-/issues/10144#note_11254
+test_do([[
+  class EventSub {
+    protected void create() {
+      build_signer();
+    }
+    __async__ void build_signer() { }
+  }
+  add_constant("testsuite_EventSub", EventSub);
+]])
+test_do([[
+  class EventSubSpecial() {
+    inherit testsuite_EventSub;
+    protected void create() {
+      ::create();
+    }
+  }
+
+  return EventSubSpecial();
+]])
+test_do([[
+  add_constant("testsuite_EventSub");
+]])
+
 dnl Function with default value.
 test_any_equal([[
   class A {
