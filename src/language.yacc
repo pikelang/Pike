@@ -187,6 +187,8 @@
  * NB: Other functions have their prototypes in las.h.
  */
 static void yyerror_reserved(const char *keyword);
+static void compiler_define_implicit___create__(void);
+static void compiler_end_class(int has___create__, int parent_constant_id);
 static int compiler_declare_prototype(int modifiers,
                                       struct pike_string *identifier,
                                       int num_args, int num_create_args,
@@ -2577,115 +2579,7 @@ create_arguments: /* empty */ optional_comma { $$=0; }
 optional_create_arguments: /* empty */ { $$ = 0; }
   | start_lambda '(' create_arguments ')'
   {
-    node *n = NULL;
-    int e = Pike_compiler->num_create_args;
-    struct pike_type *t;
-
-    type_stack_mark();
-    push_type(T_VOID);
-
-    if (e < 0) {
-      e = - e - 1;
-      push_finished_type(Pike_compiler->compiler_frame->local_names[e].def->type);
-      if (pop_type_stack(T_ARRAY)) {
-	compiler_discard_top_type();
-      }
-
-      if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
-	/* FIXME: Should probably use some other flag. */
-	if ((runtime_options & RUNTIME_CHECK_TYPES) &&
-	    (Pike_compiler->compiler_frame->local_names[e].def->type !=
-	     mixed_type_string)) {
-	  node *local_node;
-
-	  /* fprintf(stderr, "Creating soft cast node for local #%d\n", e);*/
-
-	  local_node = mkcastnode(mixed_type_string, mklocalnode(e, 0));
-
-	  /* NOTE: The cast to mixed above is needed to avoid generating
-	   *       compilation errors, as well as avoiding optimizations
-	   *       in mksoftcastnode().
-	   */
-	  n =
-	    mknode(F_COMMA_EXPR, n,
-		   mksoftcastnode(Pike_compiler->compiler_frame->local_names[e].def->type,
-				  local_node));
-	}
-      }
-      n =
-	mknode(F_COMMA_EXPR, n,
-	       mknode(F_POP_VALUE,
-		      mknode(F_ASSIGN, mkidentifiernode(e),
-			     mklocalnode(e, 0)), NULL));
-    } else {
-      push_type(T_VOID);
-    }
-    push_type(T_MANY);
-
-    while (e-- > 0) {
-      /* NB: Currently there is no need to go indirectly via local_variables,
-       *     as all create_args have been bound directly (there is no support
-       *     for having them bound via F_ARRAY_LVALUE yet).
-       */
-      struct local_name *var = Pike_compiler->compiler_frame->local_names + e;
-
-      push_finished_type(var->def->type);
-
-      n =
-	mknode(F_COMMA_EXPR,
-	       mknode(F_POP_VALUE,
-		      mknode(F_ASSIGN, mkidentifiernode(e),
-			     mklocalnode(e, 0)), NULL),
-	       n);
-
-      if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
-	/* FIXME: Should probably use some other flag. */
-	if ((runtime_options & RUNTIME_CHECK_TYPES) &&
-            (var->def->type != mixed_type_string)) {
-	  node *local_node;
-
-	  /* fprintf(stderr, "Creating soft cast node for local #%d\n", e);*/
-
-	  local_node = mkcastnode(mixed_type_string, mklocalnode(e, 0));
-
-	  /* NOTE: The cast to mixed above is needed to avoid generating
-	   *       compilation errors, as well as avoiding optimizations
-	   *       in mksoftcastnode().
-	   */
-	  n =
-	    mknode(F_COMMA_EXPR,
-                   mksoftcastnode(var->def->type, local_node),
-		   n);
-	}
-      }
-
-      /* NB: var->def->token is currently always F_LOCAL, but forward
-       *     compat is trivial here, so.
-       */
-      if (var->init && (var->def->token == F_LOCAL)) {
-	push_type(T_VOID);
-	push_type(T_OR);
-      }
-      push_type(T_FUNCTION);
-
-      n = mknode(F_COMMA_EXPR, set_default_value(e), n);
-    }
-
-    n = mknode(F_COMMA_EXPR, n,
-	       mknode(F_RETURN, mkintnode(0), NULL));
-
-    t = pop_unfinished_type();
-
-    define_function(lfun_strings[LFUN___CREATE__], t,
-		    ID_PROTECTED|ID_LOCAL,
-		    IDENTIFIER_PIKE_FUNCTION |
-		    ((Pike_compiler->num_create_args < 0)?
-		     IDENTIFIER_VARARGS:0),
-		    0, OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
-
-    dooptcode(lfun_strings[LFUN___CREATE__], n, t, ID_PROTECTED|ID_LOCAL);
-
-    free_type(t);
+    compiler_define_implicit___create__();
 
 #ifdef PIKE_DEBUG
     if (Pike_compiler->compiler_frame != $1) {
@@ -2798,53 +2692,7 @@ anon_class: TOK_CLASS line_number_info
   }
   optional_create_arguments failsafe_program
   {
-    struct program *p;
-
-    /* Check if we have __create__() but no locally defined create(). */
-    if ($6) {
-      struct reference *ref = NULL;
-      struct identifier *id = NULL;
-      int ref_id;
-      if (((ref_id = isidentifier(lfun_strings[LFUN_CREATE])) < 0) ||
-	  (ref = PTR_FROM_INT(Pike_compiler->new_program, ref_id))->inherit_offset ||
-	  ((id = ID_FROM_PTR(Pike_compiler->new_program, ref))->func.offset == -1)) {
-	/* There is no create() or it is inherited or it is a prototype. */
-	push_compiler_frame(SCOPE_LOCAL);
-
-	ref_id = FIND_LFUN(Pike_compiler->new_program, LFUN___CREATE__);
-	ref = PTR_FROM_INT(Pike_compiler->new_program, ref_id);
-	id = ID_FROM_PTR(Pike_compiler->new_program, ref);
-
-	ref_id = define_function(lfun_strings[LFUN_CREATE],
-				 id->type, ref->id_flags,
-				 id->identifier_flags, &id->func,
-				 id->opt_flags);
-
-	pop_compiler_frame();
-      }
-    }
-
-    if(Pike_compiler->compiler_pass != COMPILER_PASS_LAST)
-      p=end_first_pass(0);
-    else
-      p=end_first_pass(1);
-
-    /* fprintf(stderr, "LANGUAGE.YACC: ANON CLASS end\n"); */
-
-    if(p) {
-      /* Update the type for the program constant,
-       * since we might have a lfun::create(). */
-      struct identifier *i;
-      struct svalue sv;
-      SET_SVAL(sv, T_PROGRAM, 0, program, p);
-      i = ID_FROM_INT(Pike_compiler->new_program, $<number>4);
-      free_type(i->type);
-      i->type = get_type_of_svalue(&sv);
-      free_program(p);
-    } else if (!Pike_compiler->num_parse_error) {
-      /* Make sure code in this class is aware that something went wrong. */
-      Pike_compiler->num_parse_error = 1;
-    }
+    compiler_end_class($6, $<number>4);
 
     $$=mkidentifiernode($<number>4);
 
@@ -2942,64 +2790,7 @@ named_class: TOK_CLASS line_number_info simple_identifier
   }
   optional_create_arguments failsafe_program
   {
-    struct program *p;
-
-    /* Check if we have __create__() but no locally defined create(). */
-    if ($6) {
-      struct reference *ref = NULL;
-      struct identifier *id = NULL;
-      int ref_id;
-      if (((ref_id = isidentifier(lfun_strings[LFUN_CREATE])) < 0) ||
-	  (ref = PTR_FROM_INT(Pike_compiler->new_program, ref_id))->inherit_offset ||
-	  ((id = ID_FROM_PTR(Pike_compiler->new_program, ref))->func.offset == -1)) {
-	/* There is no create() or it is inherited or it is a prototype. */
-	push_compiler_frame(SCOPE_LOCAL);
-
-	ref_id = FIND_LFUN(Pike_compiler->new_program, LFUN___CREATE__);
-	ref = PTR_FROM_INT(Pike_compiler->new_program, ref_id);
-	id = ID_FROM_PTR(Pike_compiler->new_program, ref);
-
-	ref_id = define_function(lfun_strings[LFUN_CREATE],
-				 id->type, ref->id_flags,
-				 id->identifier_flags, &id->func,
-				 id->opt_flags);
-
-	pop_compiler_frame();
-      }
-    }
-
-    /* Update the type for the program constant,
-     * since we may have a lfun::create().
-     *
-     * Do this before end_first_pass(), to keep
-     * override_identifier() et al happy.
-     */
-    {
-      struct identifier *i;
-      struct svalue sv;
-      SET_SVAL(sv, T_PROGRAM, 0, program, Pike_compiler->new_program);
-      i = ID_FROM_INT(Pike_compiler->previous->new_program, $<number>4);
-      free_type(i->type);
-      i->type = get_type_of_svalue(&sv);
-      if (Pike_compiler->new_program->flags & PROGRAM_CONSTANT) {
-	/* Update, in case of @constant. */
-	i->opt_flags = 0;
-      }
-    }
-
-    if(Pike_compiler->compiler_pass != COMPILER_PASS_LAST)
-      p=end_first_pass(0);
-    else
-      p=end_first_pass(1);
-
-    /* fprintf(stderr, "LANGUAGE.YACC: CLASS end\n"); */
-
-    if(p) {
-      free_program(p);
-    } else if (!Pike_compiler->num_parse_error) {
-      /* Make sure code in this class is aware that something went wrong. */
-      Pike_compiler->num_parse_error = 1;
-    }
+    compiler_end_class($6, $<number>4);
 
     $$=mkidentifiernode($<number>4);
 
@@ -4756,6 +4547,185 @@ bad_expr_ident:
 static void yyerror_reserved(const char *keyword)
 {
   my_yyerror("%s is a reserved word.", keyword);
+}
+
+static void compiler_define_implicit___create__(void)
+{
+  node *n = NULL;
+  int e = Pike_compiler->num_create_args;
+  struct pike_type *t;
+
+  free_type(Pike_compiler->compiler_frame->current_return_type);
+  Pike_compiler->compiler_frame->current_return_type = void_type_string;
+  add_ref(void_type_string);
+
+  type_stack_mark();
+  push_type(T_VOID);
+
+  if (e < 0) {
+    e = - e - 1;
+    push_finished_type(Pike_compiler->compiler_frame->local_names[e].def->type);
+    if (pop_type_stack(T_ARRAY)) {
+      compiler_discard_top_type();
+    }
+
+    if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
+      /* FIXME: Should probably use some other flag. */
+      if ((runtime_options & RUNTIME_CHECK_TYPES) &&
+          (Pike_compiler->compiler_frame->local_names[e].def->type !=
+           mixed_type_string)) {
+        node *local_node;
+
+        /* fprintf(stderr, "Creating soft cast node for local #%d\n", e);*/
+
+        local_node = mkcastnode(mixed_type_string, mklocalnode(e, 0));
+
+        /* NOTE: The cast to mixed above is needed to avoid generating
+         *       compilation errors, as well as avoiding optimizations
+         *       in mksoftcastnode().
+         */
+        n =
+          mknode(F_COMMA_EXPR, n,
+                 mksoftcastnode(Pike_compiler->compiler_frame->local_names[e].def->type,
+                                local_node));
+      }
+    }
+    n =
+      mknode(F_COMMA_EXPR, n,
+             mknode(F_POP_VALUE,
+                    mknode(F_ASSIGN, mkidentifiernode(e),
+                           mklocalnode(e, 0)), NULL));
+  } else {
+    push_type(T_VOID);
+  }
+  push_type(T_MANY);
+
+  while (e-- > 0) {
+    /* NB: Currently there is no need to go indirectly via local_variables,
+     *     as all create_args have been bound directly (there is no support
+     *     for having them bound via F_ARRAY_LVALUE yet).
+     */
+    struct local_name *var = Pike_compiler->compiler_frame->local_names + e;
+
+    push_finished_type(var->def->type);
+
+    n =
+      mknode(F_COMMA_EXPR,
+             mknode(F_POP_VALUE,
+                    mknode(F_ASSIGN, mkidentifiernode(e),
+                           mklocalnode(e, 0)), NULL),
+             n);
+
+    if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
+      /* FIXME: Should probably use some other flag. */
+      if ((runtime_options & RUNTIME_CHECK_TYPES) &&
+          (var->def->type != mixed_type_string)) {
+        node *local_node;
+
+        /* fprintf(stderr, "Creating soft cast node for local #%d\n", e);*/
+
+        local_node = mkcastnode(mixed_type_string, mklocalnode(e, 0));
+
+        /* NOTE: The cast to mixed above is needed to avoid generating
+         *       compilation errors, as well as avoiding optimizations
+         *       in mksoftcastnode().
+         */
+        n =
+          mknode(F_COMMA_EXPR,
+                 mksoftcastnode(var->def->type, local_node),
+                 n);
+      }
+    }
+
+    /* NB: var->def->token is currently always F_LOCAL, but forward
+     *     compat is trivial here, so.
+     */
+    if (var->init && (var->def->token == F_LOCAL)) {
+      push_type(T_VOID);
+      push_type(T_OR);
+    }
+    push_type(T_FUNCTION);
+
+    n = mknode(F_COMMA_EXPR, set_default_value(e), n);
+  }
+
+  n = mknode(F_COMMA_EXPR, n,
+             mknode(F_RETURN, mkintnode(0), NULL));
+
+  t = pop_unfinished_type();
+
+  define_function(lfun_strings[LFUN___CREATE__], t,
+                  ID_PROTECTED|ID_LOCAL,
+                  IDENTIFIER_PIKE_FUNCTION |
+                  ((Pike_compiler->num_create_args < 0)?
+                   IDENTIFIER_VARARGS:0),
+                  0, OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
+
+  dooptcode(lfun_strings[LFUN___CREATE__], n, t, ID_PROTECTED|ID_LOCAL);
+
+  free_type(t);
+}
+
+static void compiler_end_class(int has___create__, int parent_constant_id)
+{
+  struct program *p;
+
+  /* Check if we have __create__() but no locally defined create(). */
+  if (has___create__) {
+    struct reference *ref = NULL;
+    struct identifier *id = NULL;
+    int ref_id;
+    if (((ref_id = isidentifier(lfun_strings[LFUN_CREATE])) < 0) ||
+        (ref = PTR_FROM_INT(Pike_compiler->new_program, ref_id))->inherit_offset ||
+        ((id = ID_FROM_PTR(Pike_compiler->new_program, ref))->func.offset == -1)) {
+      /* There is no create() or it is inherited or it is a prototype. */
+      push_compiler_frame(SCOPE_LOCAL);
+
+      ref_id = FIND_LFUN(Pike_compiler->new_program, LFUN___CREATE__);
+      ref = PTR_FROM_INT(Pike_compiler->new_program, ref_id);
+      id = ID_FROM_PTR(Pike_compiler->new_program, ref);
+
+      ref_id = define_function(lfun_strings[LFUN_CREATE],
+                               id->type, ref->id_flags,
+                               id->identifier_flags, &id->func,
+                               id->opt_flags);
+
+      pop_compiler_frame();
+    }
+  }
+
+  /* Update the type for the program constant,
+   * since we may have a lfun::create().
+   *
+   * Do this before end_first_pass(), to keep
+   * override_identifier() et al happy.
+   */
+  {
+    struct identifier *i;
+    struct svalue sv;
+    SET_SVAL(sv, T_PROGRAM, 0, program, Pike_compiler->new_program);
+    i = ID_FROM_INT(Pike_compiler->previous->new_program, parent_constant_id);
+    free_type(i->type);
+    i->type = get_type_of_svalue(&sv);
+    if (Pike_compiler->new_program->flags & PROGRAM_CONSTANT) {
+      /* Update, in case of @constant. */
+      i->opt_flags = 0;
+    }
+  }
+
+  if(Pike_compiler->compiler_pass != COMPILER_PASS_LAST)
+    p=end_first_pass(0);
+  else
+    p=end_first_pass(1);
+
+  /* fprintf(stderr, "LANGUAGE.YACC: ANON CLASS end\n"); */
+
+  if(p) {
+    free_program(p);
+  } else if (!Pike_compiler->num_parse_error) {
+    /* Make sure code in this class is aware that something went wrong. */
+    Pike_compiler->num_parse_error = 1;
+  }
 }
 
 static int compiler_declare_prototype(int modifiers,
