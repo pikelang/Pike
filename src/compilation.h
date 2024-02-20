@@ -165,6 +165,7 @@
   ZMEMBER(INT32,current_modifiers,0)
   ZMEMBER(node *, current_annotations, 0)
   ZMEMBER(node *,current_attributes,0)
+  ZMEMBER(int, num_generics, 0)
   ZMEMBER(int, num_create_args, 0)
   ZMEMBER(int, num_inherits, 0)	/* Used during second pass. */
   STRMEMBER(last_identifier,0)

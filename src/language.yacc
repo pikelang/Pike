@@ -340,6 +340,7 @@ int yylex(YYSTYPE *yylval);
 %type <n> TOK_NUMBER
 %type <n> TOK_BITS
 %type <n> optional_default_value
+%type <n> optional_default_type
 %type <n> optional_rename_inherit
 %type <n> optional_identifier
 %type <n> implicit_identifier
@@ -831,7 +832,8 @@ def: modifiers optional_attributes simple_type optional_constant
           Pike_compiler->compiler_frame->varargs = 1;
 	  for (e = 0; e < -Pike_compiler->num_create_args; e++) {
 	    struct identifier *id =
-	      Pike_compiler->new_program->identifiers + e;
+              Pike_compiler->new_program->identifiers + e +
+              Pike_compiler->num_generics;
 	    add_ref(id->type);
 	    add_local_name(empty_pike_string, id->type, 0);
 	    /* Note: add_local_name() above will return e. */
@@ -842,7 +844,8 @@ def: modifiers optional_attributes simple_type optional_constant
 	} else {
 	  for (e = 0; e < Pike_compiler->num_create_args; e++) {
 	    struct identifier *id =
-	      Pike_compiler->new_program->identifiers + e;
+              Pike_compiler->new_program->identifiers + e +
+              Pike_compiler->num_generics;
 	    add_ref(id->type);
 	    add_local_name(empty_pike_string, id->type, 0);
 	    /* Note: add_local_name() above will return e. */
@@ -985,6 +988,19 @@ optional_identifier: TOK_IDENTIFIER
 
 optional_default_value: '=' assignment_expr { $$ = $2; }
   | /* empty */ { $$ = NULL; }
+  ;
+
+optional_default_type: /* empty */ { $$ = 0; }
+  | '='
+  {
+    type_stack_mark();
+  }
+  full_type
+  {
+    struct pike_type *t = pop_unfinished_type();
+    $$ = mktypenode(t);
+    free_type(t);
+  }
   ;
 
 new_arg_name: full_type optional_dot_dot_dot
@@ -1629,6 +1645,19 @@ function_type_list2: full_type { $$=1; }
   {
   }
   full_type
+  ;
+
+opt_generic_bindings: /* empty */
+  | TOK_MULTISET_START
+  {
+    type_stack_mark();
+  }
+  function_type_list
+  {
+    compiler_discard_type();
+    pop_stack_mark();
+  }
+  TOK_MULTISET_END
   ;
 
 opt_multiset_type: '(' full_type ')'
@@ -2517,12 +2546,13 @@ create_arg: modifiers simple_type optional_dot_dot_dot TOK_IDENTIFIER
     /* Add the identifier globally.
      * Note: Since these are the first identifiers (and references)
      *       to be added to the program, they will be numbered in
-     *       sequence starting at 0 (zero). This means that the
+     *       sequence starting at num_generics. This means that the
      *       counter num_create_args is sufficient extra information
      *       to be able to keep track of them.
      */
     ref_no = define_variable($4->u.sval.u.string, type,
 			     Pike_compiler->current_modifiers);
+    ref_no -= Pike_compiler->num_generics;
 
     if ((Pike_compiler->num_create_args != ref_no) &&
 	(Pike_compiler->num_create_args != -ref_no)) {
@@ -2576,16 +2606,54 @@ create_arguments: /* empty */ optional_comma { $$=0; }
   | create_arguments2 optional_comma
   ;
 
-optional_create_arguments: /* empty */ { $$ = 0; }
-  | start_lambda '(' create_arguments ')'
+generic_type_decl: /* empty */
+  | full_type TOK_IDENTIFIER optional_default_type
+  {
+    compiler_discard_type();
+    if ($3) {
+      push_svalue(&$3->u.sval);
+    } else {
+      ref_push_type_value(mixed_type_string);
+    }
+    add_constant($2->u.sval.u.string, Pike_sp - 1, ID_PROTECTED | ID_INLINE);
+    Pike_compiler->num_generics++;
+    pop_stack();
+    free_node($3);
+    free_node($2);
+  }
+  | TOK_IDENTIFIER optional_default_type
+  {
+    if ($2) {
+      push_svalue(&$2->u.sval);
+    } else {
+      ref_push_type_value(mixed_type_string);
+    }
+    add_constant($1->u.sval.u.string, Pike_sp - 1, ID_PROTECTED | ID_INLINE);
+    Pike_compiler->num_generics++;
+    pop_stack();
+    free_node($2);
+    free_node($1);
+  }
+  ;
+
+generic_type_decl_list: generic_type_decl
+  | generic_type_decl_list ',' generic_type_decl
+  ;
+
+optional_generic_types: /* empty */
+  | TOK_MULTISET_START generic_type_decl_list TOK_MULTISET_END
+  ;
+
+optional_create_arguments: optional_generic_types { $$ = 0; }
+  | optional_generic_types start_lambda '(' create_arguments ')'
   {
     compiler_define_implicit___create__();
 
 #ifdef PIKE_DEBUG
-    if (Pike_compiler->compiler_frame != $1) {
+    if (Pike_compiler->compiler_frame != $2) {
       Pike_fatal("Lost track of compiler_frame!\n"
 		 "  Got: %p (Expected: %p) Previous: %p\n",
-		 Pike_compiler->compiler_frame, $1,
+                 Pike_compiler->compiler_frame, $2,
 		 Pike_compiler->compiler_frame->previous);
     }
 #endif
@@ -2595,7 +2663,7 @@ optional_create_arguments: /* empty */ { $$ = 0; }
      *       can detect the case of no parenthesis below when
      *       we define the user lfun::create() function.
      */
-    $$ = $3 + 1;
+    $$ = $4 + 1;
   }
   ;
 
@@ -3374,8 +3442,8 @@ qualified_id_expr: qualified_ident
   | qualified_id_expr '.' bad_identifier {}
   ;
 
-id_expr: unqualified_id_expr
-  | qualified_id_expr
+id_expr: unqualified_id_expr opt_generic_bindings
+  | qualified_id_expr opt_generic_bindings
   ;
 
 primary_expr: literal_expr
@@ -3553,7 +3621,8 @@ primary_expr: literal_expr
   | postfix_expr TOK_ARROW line_number_info error {$$=$1; free_node ($3);}
   ;
 
-postfix_expr: id_expr | primary_expr
+postfix_expr: id_expr
+  | primary_expr opt_generic_bindings
   | bad_expr_ident
   {
     $$ = mknewintnode(0);
@@ -4593,7 +4662,8 @@ static void compiler_define_implicit___create__(void)
     n =
       mknode(F_COMMA_EXPR, n,
              mknode(F_POP_VALUE,
-                    mknode(F_ASSIGN, mkidentifiernode(e),
+                    mknode(F_ASSIGN,
+                           mkidentifiernode(e + Pike_compiler->num_generics),
                            mklocalnode(e, 0)), NULL));
   } else {
     push_type(T_VOID);
@@ -4612,7 +4682,8 @@ static void compiler_define_implicit___create__(void)
     n =
       mknode(F_COMMA_EXPR,
              mknode(F_POP_VALUE,
-                    mknode(F_ASSIGN, mkidentifiernode(e),
+                    mknode(F_ASSIGN,
+                           mkidentifiernode(e + Pike_compiler->num_generics),
                            mklocalnode(e, 0)), NULL),
              n);
 
