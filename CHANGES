@@ -636,6 +636,10 @@ o MasterObject
 
   - cast_to_program() and cast_to_object() should now be thread safe.
 
+  - main() may now return a Concurrent.Future object, in which case
+    the default backend will be started, and the pike interpreter
+    will terminate when the Concurrent.Future object is fulfilled.
+
 o CompilerEnvironment()->lock()
 
   Access to the compiler lock.
