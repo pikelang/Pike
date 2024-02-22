@@ -5699,19 +5699,20 @@ PIKEFUN function(mixed:void)|zero _get_setter(object o, string s)
  */
 PIKECLASS Null
 {
+  /*! @decl constant is_val_null = 1
+   *!
+   *! Nonzero recognition constant.
+   */
+
+  /*! @decl constant is_sql_null = 1
+   *!
+   *! SQL Null marker.
+   *!
+   *! @deprecated is_val_null
+   */
   EXTRA {
-    /*! @decl constant is_val_null = 1
-     *!
-     *! Nonzero recognition constant.
-     */
     add_integer_constant("is_val_null", 1, 0);
 
-    /*! @decl constant is_sql_null = 1
-     *!
-     *! SQL Null marker.
-     *!
-     *! @deprecated is_val_null
-     */
     add_integer_constant("is_sql_null", 1, 0);
   }
 
