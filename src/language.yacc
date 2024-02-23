@@ -1651,11 +1651,21 @@ opt_generic_bindings: /* empty */
   | TOK_MULTISET_START
   {
     type_stack_mark();
+    /* Save the last identifier for later.
+     *
+     * FIXME: Probably ought to use a node here in order
+     *        to be able to clean up on syntax errors.
+     */
+    $<ptr>$ = Pike_compiler->last_identifier;
+    Pike_compiler->last_identifier = NULL;
   }
   function_type_list
   {
     compiler_discard_type();
     pop_stack_mark();
+    /* Restore the last identifier. */
+    free_string(Pike_compiler->last_identifier);
+    Pike_compiler->last_identifier = $<ptr>2;
   }
   TOK_MULTISET_END
   ;
