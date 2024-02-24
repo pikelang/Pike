@@ -281,7 +281,7 @@ static void internal_parse_type(const char **s);
  * Node:	Car:		Cdr:
  * ---------------------------------------------
  * SCOPE	num vars (int)	type
- * ASSIGN	variable (int)	type
+ * ASSIGN	marker (type)	type			Altered CAR in 9.0
  * NAME		name (string)	type
  * ATTRIBUTE	name (string)	type			Added in 7.7.
  * FUNCTION	type		FUNCTION|MANY
@@ -387,6 +387,7 @@ void debug_free_type(struct pike_type *t)
 
     /* FIXME: Recursion: Should we use a stack? */
     switch(type & PIKE_T_MASK) {
+    case T_ASSIGN:
     case T_FUNCTION:
     case T_MANY:
     case T_TUPLE:
@@ -417,7 +418,6 @@ void debug_free_type(struct pike_type *t)
       goto loop;
 
     case T_SCOPE:
-    case T_ASSIGN:
       /* Free cdr */
       t = (struct pike_type *) cdr;
       if (t) debug_free_type_preamble (t);
@@ -517,6 +517,7 @@ static struct pike_type *debug_mk_type(unsigned INT32 type,
 	(t->car == car) && (t->cdr == cdr)) {
       /* Free car & cdr as appropriate. */
       switch(type & PIKE_T_MASK) {
+      case T_ASSIGN:
       case T_FUNCTION:
       case T_MANY:
       case T_TUPLE:
@@ -545,7 +546,6 @@ static struct pike_type *debug_mk_type(unsigned INT32 type,
       break;
 
       case T_SCOPE:
-      case T_ASSIGN:
 	/* Free cdr */
 	free_type((struct pike_type *)debug_malloc_pass(cdr));
 	break;
@@ -684,7 +684,7 @@ static struct pike_type *debug_mk_type(unsigned INT32 type,
     break;
 
   case T_ASSIGN:
-    t->flags |= PT_FLAG_ASSIGN_0 << PTR_TO_INT(car);
+    t->flags |= (car->flags & PT_FLAG_MARKER) << PT_ASSIGN_SHIFT;
     /* FALLTHRU */
   case T_SCOPE:
     debug_malloc_pass(cdr);
@@ -728,7 +728,7 @@ static struct pike_type *debug_mk_type(unsigned INT32 type,
   }
 #else /* !DEBUG_MALLOC */
   if (type == T_ASSIGN) {
-    t->flags |= PT_FLAG_ASSIGN_0 << PTR_TO_INT(car);
+    t->flags |= (car->flags & PT_FLAG_MARKER) << PT_ASSIGN_SHIFT;
   }
 #endif /* DEBUG_MALLOC */
 
@@ -882,10 +882,8 @@ void debug_push_assign_type(int marker)
   }
 #endif /* PIKE_DEBUG */
 
-  *Pike_compiler->type_stackp = mk_type(T_ASSIGN,
-					(void *)(ptrdiff_t)marker,
-					*Pike_compiler->type_stackp,
-					PT_COPY_CDR);
+  push_type('0' + marker);
+  push_type(T_ASSIGN);	/* FIXME: Only PT_COPY_CDR? */
   TYPE_STACK_DEBUG("push_assign_type");
 }
 
@@ -1187,6 +1185,7 @@ void debug_push_type(unsigned int type)
       }
     }
     /* FALLTHRU */
+  case T_ASSIGN:
   case T_FUNCTION:
   case T_MANY:
   case T_TUPLE:
@@ -1270,7 +1269,6 @@ void debug_push_type(unsigned int type)
     break;
 
   case T_SCOPE:
-  case T_ASSIGN:
   case T_INT:
   case T_OBJECT:
   case PIKE_T_ATTRIBUTE:
@@ -1380,7 +1378,7 @@ int debug_pop_type_stack(unsigned int expected)
     push_finished_type(top->car);
     break;
   case T_SCOPE:
-  case T_ASSIGN:
+  case T_ASSIGN:	/* NB: Compat, unlikely in practice. */
     /* cdr */
     push_finished_type(top->cdr);
     break;
@@ -1573,11 +1571,11 @@ static void debug_push_finished_type_with_markers(struct pike_type *type,
     return;
   } else if (type->type == T_ASSIGN) {
     /* Assign. */
-    int marker = PTR_TO_INT(type->car);
+    struct pike_type *m = type->car;
+    int marker = m->type & 0x0f;
 #ifdef PIKE_TYPE_DEBUG
     if (l_flag > 2) {
-      fprintf(stderr, "Assign to marker $%"PRINTPTRDIFFT"d.\n",
-	      CAR_TO_INT(type));
+      fprintf(stderr, "Assign to marker $%d.\n", marker);
     }
 #endif /* PIKE_TYPE_DEBUG */
     if (marker_set & (PT_FLAG_ASSIGN_0 << marker)) {
@@ -2406,7 +2404,7 @@ static void low_describe_int_range(struct string_builder *s,
     }
     break;
   case T_ASSIGN:
-    string_builder_sprintf(s, "$%td = (", CAR_TO_INT(t));
+    string_builder_sprintf(s, "%pT = (", t->car);
     low_describe_int_range(s, t->cdr);
     string_builder_strcat(s, ")");
     break;
@@ -2446,7 +2444,7 @@ void low_describe_type(struct string_builder *s, struct pike_type *t)
       break;
 
     case T_ASSIGN:
-      string_builder_sprintf(s, "($%d=%pT)", (int)CAR_TO_INT(t), t->cdr);
+      string_builder_sprintf(s, "(%pT=%pT)", t->car, t->cdr);
       break;
 
     case T_SCOPE:
@@ -3761,7 +3759,8 @@ static void push_and_fixup_markers(struct pike_type *t,
   switch(t->type & (0x8000 | PIKE_T_MASK)) {
   case T_ASSIGN:
     {
-      int marker = '0' + CAR_TO_INT(t);
+      struct pike_type *m = t->car;
+      int marker = m->type;
       struct pike_type *t2 = NULL;
       if (lookup_marker(remap, marker | 0x100, flags, &t2)) {
 	push_finished_type(t2);
@@ -3859,7 +3858,8 @@ static void push_remap_markers(struct pike_type *t,
   switch(t->type & PIKE_T_MASK) {
   case T_ASSIGN:
     {
-      int marker = alloc_remap_marker(remap, CAR_TO_INT(t), flags);
+      struct pike_type *m = t->car;
+      int marker = alloc_remap_marker(remap, m->type, flags);
 
       if (!(flags & PT_FLAG_REMAP_EVAL_MARKERS)) {
 	push_remap_markers(t->cdr, remap, flags);
@@ -4528,13 +4528,14 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
   switch(a?a->type:PIKE_T_UNKNOWN) {
   case T_ASSIGN:
     {
+      struct pike_type *m = a->car;
       int marker;
       tmp = low_type_binop(PT_BINOP_AND, a->cdr, b, remap,
 			   aflags, bflags,
 			   (remap_flags & ~PT_FLAG_REMAP_INEXACT) |
 			   PT_FLAG_REMAP_EVAL_MARKERS);
 
-      marker = alloc_remap_marker(remap, CAR_TO_INT(a), remap_flags);
+      marker = alloc_remap_marker(remap, m->type, remap_flags);
       if (remap_flags & PT_FLAG_REMAP_TRACE) {
 	fprintf(stderr, "$%d = ", marker);
 	simple_describe_type(tmp);
@@ -4579,13 +4580,14 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
   switch(b?b->type:PIKE_T_UNKNOWN) {
   case T_ASSIGN:
     {
+      struct pike_type *m = b->car;
       int marker;
       tmp = low_type_binop(PT_BINOP_AND, a, b->cdr, remap,
 			   aflags, bflags,
 			   (remap_flags & ~PT_FLAG_REMAP_INEXACT) |
 			   PT_FLAG_REMAP_EVAL_MARKERS);
 
-      marker = alloc_remap_marker(remap, CAR_TO_INT(b),
+      marker = alloc_remap_marker(remap, m->type,
 				  remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
       if (remap_flags & PT_FLAG_REMAP_TRACE) {
 	fprintf(stderr, "$%d = ", marker);
@@ -6610,7 +6612,8 @@ static struct pike_type *low_subtract_types(struct pike_type *a,
   switch(a->type) {
   case T_ASSIGN:
     {
-      int marker = alloc_remap_marker(remap, CAR_TO_INT(a), remap_flags);
+      struct pike_type *m = a->car;
+      int marker = alloc_remap_marker(remap, m->type, remap_flags);
       tmp = low_subtract_types(a->cdr, b, remap, aflags, bflags, remap_flags);
       if (tmp) {
 	type_stack_mark();
@@ -6619,7 +6622,7 @@ static struct pike_type *low_subtract_types(struct pike_type *a,
 	free_type(tmp);
 	return pop_unfinished_type();
       }
-      free_marker(remap, CAR_TO_INT(a), remap_flags);
+      free_marker(remap, m->type & 0x0f, remap_flags);
       return NULL;
     }
 
@@ -6643,7 +6646,8 @@ static struct pike_type *low_subtract_types(struct pike_type *a,
   switch(b->type) {
   case T_ASSIGN:
     {
-      int marker = alloc_remap_marker(remap, CAR_TO_INT(b),
+      struct pike_type *m = b->car;
+      int marker = alloc_remap_marker(remap, m->type,
 				      remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
       tmp = low_subtract_types(a, b->cdr, remap, aflags, bflags, remap_flags);
       if (tmp) {
@@ -6653,7 +6657,7 @@ static struct pike_type *low_subtract_types(struct pike_type *a,
 	free_type(tmp);
 	return pop_unfinished_type();
       }
-      free_marker(remap, CAR_TO_INT(b),
+      free_marker(remap, m->type & 0x0f,
 		  remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
       return NULL;
     }
@@ -7278,7 +7282,8 @@ static struct pike_type *low_intersect_types(struct pike_type *a,
   switch(a->type) {
   case T_ASSIGN:
     {
-      int marker = alloc_remap_marker(remap, CAR_TO_INT(a), remap_flags);
+      struct pike_type *m = a->car;
+      int marker = alloc_remap_marker(remap, m->type, remap_flags);
       tmp = low_intersect_types(a->cdr, b, remap, aflags, bflags, remap_flags);
       if (tmp) {
 	type_stack_mark();
@@ -7287,14 +7292,15 @@ static struct pike_type *low_intersect_types(struct pike_type *a,
 	free_type(tmp);
 	return pop_unfinished_type();
       }
-      free_marker(remap, CAR_TO_INT(a), remap_flags);
+      free_marker(remap, m->type & 0x0f, remap_flags);
       return NULL;
     }
   }
   switch(b->type) {
   case T_ASSIGN:
     {
-      int marker = alloc_remap_marker(remap, CAR_TO_INT(b),
+      struct pike_type *m = b->car;
+      int marker = alloc_remap_marker(remap, m->type,
 				      remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
       tmp = low_intersect_types(a, b->cdr, remap, aflags, bflags, remap_flags);
       if (tmp) {
@@ -7305,7 +7311,7 @@ static struct pike_type *low_intersect_types(struct pike_type *a,
 	return pop_unfinished_type();
       }
 
-      free_marker(remap, CAR_TO_INT(b),
+      free_marker(remap, m->type & 0x0f,
 		  remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
       return NULL;
     }
@@ -8273,7 +8279,8 @@ static struct pike_type *low_match_types2(struct pike_type *a,
 
   case T_ASSIGN:
     {
-      int m = CAR_TO_INT(a);
+      struct pike_type *mm = a->car;
+      int m = mm->type & 0x0f;
       ret = low_match_types(a->cdr, b, flags);
       if(ret && (!a_markers[m] || b->type != T_VOID))
       {
@@ -8435,7 +8442,8 @@ static struct pike_type *low_match_types2(struct pike_type *a,
 
   case T_ASSIGN:
     {
-      int m = CAR_TO_INT(b);
+      struct pike_type *mm = b->car;
+      int m = mm->type & 0x0f;
       ret = low_match_types(a, b->cdr, flags);
       if(ret && (!b_markers[m] || a->type != T_VOID))
       {
@@ -9086,7 +9094,8 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
   case T_ASSIGN: {
     struct pike_type **aa_markers = a_markers;
     struct pike_type **bb_markers = b_markers;
-    int m = CAR_TO_INT(b);
+    struct pike_type *mm = b->car;
+    int m = mm->type & 0x0f;
     ret = low_pike_types_le(a, b->cdr, array_cnt, flags);
 
     if (flags & LE_A_B_SWAPPED) {
@@ -9327,7 +9336,8 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
   case T_ASSIGN: {
     struct pike_type **aa_markers = a_markers;
     struct pike_type **bb_markers = b_markers;
-    int m = CAR_TO_INT(a);
+    struct pike_type *mm = a->car;
+    int m = mm->type & 0x0f;
     ret = low_pike_types_le(a->cdr, b, array_cnt, flags);
 
     if (flags & LE_A_B_SWAPPED) {
@@ -14477,18 +14487,12 @@ static void low_make_pike_type(unsigned char *type_string,
   case T_SCOPE:
     Pike_fatal("Not supported yet.\n");
 #endif
-  case T_ASSIGN:
-    if ((type_string[1] < '0') || (type_string[1] > '9')) {
-      Pike_fatal("low_make_pike_type(): Bad marker: $%d\n", type_string[1]);
-    }
-    low_make_pike_type(type_string+2, cont);
-    push_assign_type(type_string[1]);
-    break;
   case T_OR:
   case T_AND:
     /* Order independant */
     /* FALLTHRU */
 
+  case T_ASSIGN:
   case T_MANY:
   case T_TUPLE:
   case T_MAPPING:
@@ -14850,6 +14854,7 @@ static void low_type_to_string(struct byte_buffer *buf, struct pike_type *t)
     t = t->cdr;
     goto recurse;
 
+  case T_ASSIGN:
   case PIKE_T_RING:
   case T_TUPLE:
   case T_OR:
@@ -14929,7 +14934,6 @@ static void low_type_to_string(struct byte_buffer *buf, struct pike_type *t)
     goto recurse;
 
   case T_SCOPE:
-  case T_ASSIGN:
     buffer_add_u8(buf, t->type);
     buffer_add_u8(buf, '0' + CAR_TO_INT(t));
     t = t->cdr;
@@ -15203,6 +15207,7 @@ PMOD_EXPORT void *find_type(struct pike_type *t,
   if (res) return res;
 
   switch(t->type & PIKE_T_MASK) {
+    case T_ASSIGN:
     case T_FUNCTION:
     case T_MANY:
     case T_TUPLE:
@@ -15215,7 +15220,6 @@ PMOD_EXPORT void *find_type(struct pike_type *t,
       if (res) return res;
       /* FALLTHRU */
     case T_SCOPE:
-    case T_ASSIGN:
     case PIKE_T_ATTRIBUTE:
     case PIKE_T_NAME:
     case T_ARRAY:
@@ -15282,6 +15286,7 @@ PMOD_EXPORT void visit_type (struct pike_type *t, int action, void *extra)
   }
 
   switch (t->type & PIKE_T_MASK) {
+    case T_ASSIGN:
     case T_FUNCTION:
     case T_MANY:
     case T_TUPLE:
@@ -15297,7 +15302,6 @@ PMOD_EXPORT void visit_type (struct pike_type *t, int action, void *extra)
       }
       /* FALLTHRU */
     case T_SCOPE:
-    case T_ASSIGN:
       visit_type_ref (t->cdr, REF_TYPE_INTERNAL, extra);
       break;
     case T_MULTISET:
@@ -15360,11 +15364,11 @@ void gc_mark_type_as_referenced(struct pike_type *t)
     GC_ENTER(t, PIKE_T_TYPE) {
       switch(t->type & PIKE_T_MASK) {
       case PIKE_T_SCOPE:
-      case T_ASSIGN:
       case PIKE_T_NAME:
       case PIKE_T_ATTRIBUTE:
 	if (t->cdr) gc_mark_type_as_referenced(t->cdr);
 	break;
+      case T_ASSIGN:
       case PIKE_T_FUNCTION:
       case T_MANY:
       case PIKE_T_RING:
@@ -15462,6 +15466,7 @@ void gc_check_type (struct pike_type *t)
 
   GC_ENTER (t, T_TYPE) {
     switch (t->type & PIKE_T_MASK) {
+      case T_ASSIGN:
       case T_FUNCTION:
       case T_MANY:
       case T_TUPLE:
@@ -15500,7 +15505,6 @@ void gc_check_type (struct pike_type *t)
 	}
 	break;
       case T_SCOPE:
-      case T_ASSIGN:
 	if (t->cdr) {
 	  debug_gc_check (t->cdr, " as cdr in a type");
 	}

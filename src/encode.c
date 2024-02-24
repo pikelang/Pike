@@ -541,21 +541,6 @@ static void encode_type(struct pike_type *t, struct encode_data *data)
       t=t->cdr;
       goto one_more_type;
 
-    case T_ASSIGN:
-      {
-	ptrdiff_t marker = CAR_TO_INT(t);
-	if ((marker < 0) || (marker > 9)) {
-	  Pike_fatal("Bad assign marker: %ld\n",
-		     (long)marker);
-	}
-	addchar('0' + marker);
-        ETRACE({
-	    ENCODE_WERR(".type    marker, %td", marker);
-	  });
-	t = t->cdr;
-      }
-      goto one_more_type;
-
     case T_FUNCTION:
       while(t->type == T_FUNCTION) {
 	encode_type(t->car, data);
@@ -579,6 +564,7 @@ static void encode_type(struct pike_type *t, struct encode_data *data)
       t = t->cdr;
       goto one_more_type;
 
+    case T_ASSIGN:
     case T_MAPPING:
     case T_OR:
     case T_AND:
@@ -2700,12 +2686,9 @@ static void low_decode_type(struct decode_data *data)
       break;
 
     case T_ASSIGN:
-      tmp = GETC();
-      if ((tmp < '0') || (tmp > '9')) {
-	decode_error(data, NULL, "Bad marker in type string (%d).\n", tmp);
-      }
-      low_decode_type(data);
-      push_assign_type(tmp);	/* Actually reverse, but they're the same */
+      low_decode_type(data);	/* Marker */
+      low_decode_type(data);	/* Type */
+      push_reverse_type(T_ASSIGN);
       break;
 
     case T_SCOPE:
