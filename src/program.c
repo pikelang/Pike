@@ -2020,6 +2020,7 @@ static int low_add_identifier(struct compilation *c,
 {
   struct identifier dummy;
   int n = Pike_compiler->new_program->num_identifiers;
+  int genny = Pike_compiler->compiler_frame->generator_fun;
 
   copy_shared_string(dummy.name, name);
   copy_pike_type(dummy.type, type);
@@ -2037,7 +2038,19 @@ static int low_add_identifier(struct compilation *c,
 #endif
   debug_add_to_identifiers(dummy);
 
+  if (genny >= 0) {
+    /* Annotations land on the inner generator function, but they're
+    needed on the outer function. So we migrate them. */
+    while (Pike_compiler->new_program->num_annotations <= n) {
+      add_to_annotations(NULL);
+    }
+    Pike_compiler->new_program->annotations[n] = Pike_compiler->new_program->annotations[genny];
+    Pike_compiler->new_program->annotations[genny] = NULL;
+  }
   if (Pike_compiler->current_annotations) {
+    /* Alternatively, recognize that we're compiling the genny itself and
+    leave the annotations where they are (to be picked up by the outer).
+    if (name->len > strlen(name->str)) return n; */
     /* FIXME: What about annotations for eg variant functions? */
     compiler_add_annotations(n, Pike_compiler->current_annotations);
     /* Only annotate a single identifier. */
