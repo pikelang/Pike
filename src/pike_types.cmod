@@ -1429,6 +1429,7 @@ void debug_push_reverse_type(unsigned int type)
   /* fprintf(stderr, "push_reverse_type(%d)\n", type); */
 
   switch(type & 0x80ff) {
+  case PIKE_T_ASSIGN:
   case T_FUNCTION:
   case T_MANY:
   case T_TUPLE:
