@@ -3615,7 +3615,6 @@ static int alloc_remap_marker(struct remap_state *remap, int marker,
   if (!remap || (flags & PT_FLAG_REMAP_INHIBIT)) return '0' | marker;
 
   if (flags & PT_FLAG_REMAP_SWAP_MARKERS) marker |= 0x10;
-  if (flags & PT_FLAG_REMAP_ALTERNATE) marker |= 0x20;
 
   if ((ret = remap->map[marker])) return ret;
 
@@ -3641,7 +3640,6 @@ static int remap_marker(struct remap_state *remap, int marker,
   if (!remap || (flags & PT_FLAG_REMAP_INHIBIT)) return '0' | marker;
 
   if (flags & PT_FLAG_REMAP_SWAP_MARKERS) marker |= 0x10;
-  if (flags & PT_FLAG_REMAP_ALTERNATE) marker |= 0x20;
 
   if ((ret = remap->map[marker])) return ret;
 
@@ -3667,7 +3665,6 @@ static void free_marker(struct remap_state *remap, int marker,
   marker &= 0x0f;
 
   if (flags & PT_FLAG_REMAP_SWAP_MARKERS) marker |= 0x10;
-  if (flags & PT_FLAG_REMAP_ALTERNATE) marker |= 0x20;
 
   if (!(m = remap->map[marker])) return;
 
