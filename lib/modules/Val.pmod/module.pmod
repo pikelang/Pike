@@ -145,6 +145,8 @@ Boolean false = False();
 //! Type for the @[Val.null] object. Do not create more instances of
 //! this - use @[Val.null] instead.
 
+//! @decl inherit Builtin.Null
+
 constant Null = Builtin.Null;
 
 //! @endclass
