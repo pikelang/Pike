@@ -485,7 +485,7 @@ static struct pike_type *debug_mk_type(unsigned INT32 type,
   case PIKE_T_UNKNOWN: return NULL;
   case PIKE_T_OBJECT:
     if (cdr) {
-      struct program *p = id_to_program((int)(ptrdiff_t)cdr);
+      struct program *p = low_id_to_program((int)(ptrdiff_t)cdr, 1);
       if (!p || p->num_generics) {
         /* (Currently) unknown program or program that uses generics. */
         flag_method |= PT_FLAG_GOBJECT;

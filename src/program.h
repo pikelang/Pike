@@ -878,6 +878,7 @@ node *program_magic_identifier (struct program_state *state,
 				struct pike_string *ident,
 				int colon_colon_ref);
 struct program *parent_compilation(int level);
+struct program *low_id_to_program(INT32 id, int inhibit_module_load);
 struct program *id_to_program(INT32 id);
 void optimize_program(struct program *p);
 void fsort_program_identifier_index(unsigned short *start,

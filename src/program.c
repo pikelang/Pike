@@ -2824,7 +2824,7 @@ struct program *parent_compilation(int level)
 #define ID_TO_PROGRAM_CACHE_SIZE 512
 struct program *id_to_program_cache[ID_TO_PROGRAM_CACHE_SIZE];
 
-struct program *id_to_program(INT32 id)
+struct program *low_id_to_program(INT32 id, int inhibit_module_load)
 {
   struct program_state *state;
   struct program *p;
@@ -2858,7 +2858,7 @@ struct program *id_to_program(INT32 id)
     }
   }
 
-  if ((id > 0) && (id < PROG_DYNAMIC_ID_START)) {
+  if ((id > 0) && (id < PROG_DYNAMIC_ID_START) && !inhibit_module_load) {
     /* Reserved id. Attempt to load the proper dynamic module
      * to resolv the id.
      */
@@ -2916,6 +2916,11 @@ struct program *id_to_program(INT32 id)
   }
   /* fprintf(stderr, "not found\n"); */
   return 0;
+}
+
+struct program *id_to_program(INT32 id)
+{
+  return low_id_to_program(id, 0);
 }
 
 /* Here starts routines which are used to build new programs */
