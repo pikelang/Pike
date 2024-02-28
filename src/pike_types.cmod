@@ -478,8 +478,23 @@ static struct pike_type *debug_mk_type(unsigned INT32 type,
    *        of what the adresses of the type nodes are.
    */
   struct pike_type *t;
-  unsigned INT32 index,
-    hash = (unsigned INT32)
+  unsigned INT32 index;
+  unsigned INT32 hash;
+
+  switch(type) {
+  case PIKE_T_UNKNOWN: return NULL;
+  case PIKE_T_OBJECT:
+    if (cdr) {
+      struct program *p = id_to_program((int)(ptrdiff_t)cdr);
+      if (!p || p->num_generics) {
+        /* (Currently) unknown program or program that uses generics. */
+        flag_method |= PT_FLAG_GOBJECT;
+      }
+    }
+    break;
+  }
+
+  hash = (unsigned INT32)
     ((ptrdiff_t)type*0x10204081)^
     (0x8003*PTR_TO_INT(car))^
     ~(0x10001*PTR_TO_INT(cdr));
@@ -488,30 +503,7 @@ static struct pike_type *debug_mk_type(unsigned INT32 type,
   hash ^= (hash >> 7) ^ (hash >> 4);
 
   index = hash & pike_type_hash_size;
-#ifdef PIKE_DEBUG
-  /* PIKE_DEBUG code */
-  if ((type & ~PIKE_T_MASK) && ((type & PIKE_T_MASK) != PIKE_T_OPERATOR)) {
-    /* The bad type node on OSF/1 seems to be:
-     *
-     * type: 0xffff
-     * car:  valid pointer.
-     * cdr:  0x400000000
-     * next: 0x100000000
-     */
-    Pike_fatal("Attempt to create an invalid type node: %d(%s)\n"
-	       "  car: %p\n"
-	       "  cdr: %p\n",
-	       type, get_name_of_type(type),
-	       car, cdr);
-  }
-  if (index > pike_type_hash_size) {
-    Pike_fatal("Modulo operation failed for hash:%u, index:%u, "
-	       "size:%"PRINTSIZET"d.\n",
-	       hash, index, pike_type_hash_size);
-  }
-  /* End PIKE_DEBUG code */
-#endif
-  if (type == PIKE_T_UNKNOWN) return NULL;
+
   for(t = pike_type_hash[index]; t; t = t->next) {
     if ((t->hash == hash) && (t->type == type) &&
 	(t->car == car) && (t->cdr == cdr)) {
@@ -633,14 +625,16 @@ static struct pike_type *debug_mk_type(unsigned INT32 type,
       t->flags = PT_FLAG_MARKER_0 << (type-'0');
     } else if (type == PIKE_T_SCOPE) {
       /* The scope blocks propagation of markers. */
-      t->flags = cdr->flags & ~(PT_FLAG_MARKER|PT_FLAG_ASSIGN);
+      t->flags = cdr->flags & ~PT_FLAG_MARK_ASSIGN;
     } else if (type == T_NOT) {
       if (car) {
 	/* NB: We cannot set the PT_FLAG_MIXED flag,
 	 *     as inverting a non-mixed type does not
 	 *     give mixed.
 	 */
-	t->flags |= (car->flags ^ ~PT_FLAG_MARK_ASSIGN) & ~PT_FLAG_MIXED;
+        t->flags |=
+          (car->flags ^ ~(PT_FLAG_MARK_ASSIGN|PT_FLAG_MASK_GENERICS)) &
+          ~PT_FLAG_MIXED;
       }
     } else if (flag_method & PT_COPY_MORE) {
       if (car && (flag_method & PT_COPY_CAR)) {
@@ -651,10 +645,10 @@ static struct pike_type *debug_mk_type(unsigned INT32 type,
       }
     } else {
       if (car && (flag_method & PT_COPY_CAR)) {
-	t->flags |= car->flags & PT_FLAG_MARK_ASSIGN;
+        t->flags |= car->flags & (PT_FLAG_MARK_ASSIGN|PT_FLAG_MASK_GENERICS);
       }
       if (cdr && (flag_method & PT_COPY_CDR)) {
-	t->flags |= cdr->flags & PT_FLAG_MARK_ASSIGN;;
+        t->flags |= cdr->flags & (PT_FLAG_MARK_ASSIGN|PT_FLAG_MASK_GENERICS);
       }
     }
   }

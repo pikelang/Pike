@@ -711,7 +711,8 @@ struct program
 
   INT16 flags;          /* PROGRAM_* */
   unsigned INT8 alignment_needed;
-  /* 5 bytes padding.. */
+  unsigned INT8 num_generics;
+  /* 4 bytes padding.. */
   struct timeval timestamp;
 
   struct program *next;

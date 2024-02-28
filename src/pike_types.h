@@ -54,6 +54,7 @@ extern size_t pike_type_hash_size;
 #define PT_FLAG_MARKER_8	0x000100	/* The subtree holds a '8'. */
 #define PT_FLAG_MARKER_9	0x000200	/* The subtree holds a '9'. */
 #define PT_FLAG_MARKER		0x0003ff	/* The subtree holds markers. */
+#define PT_FLAG_GENERIC		0x000400	/* The subtree holds generics.*/
 #define PT_ASSIGN_SHIFT		12		/* Number of bits to shift. */
 #define PT_FLAG_ASSIGN_0	0x001000	/* The subtree assigns '0'. */
 #define PT_FLAG_ASSIGN_1	0x002000	/* The subtree assigns '1'. */
@@ -66,8 +67,11 @@ extern size_t pike_type_hash_size;
 #define PT_FLAG_ASSIGN_8	0x100000	/* The subtree assigns '8'. */
 #define PT_FLAG_ASSIGN_9	0x200000	/* The subtree assigns '9'. */
 #define PT_FLAG_ASSIGN		0x3ff000	/* The subtree holds assigns. */
+#define PT_FLAG_GOBJECT		0x400000	/* Object using generics. */
 
 #define PT_FLAG_MARK_ASSIGN	0x3ff3ff	/* Assigns AND Markers. */
+
+#define PT_FLAG_MASK_GENERICS	0x400400	/* Generics used in tree. */
 
 #define PT_FLAG_INT_ONLY	0x1000000	/* Filter non-integers. */
 
