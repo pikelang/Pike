@@ -204,6 +204,12 @@
 /* 1000 - 1999 reserved for GTK. */
 /* 2000 - 2999 reserved for GTK2. */
 
+/* Reserve 0x8000 and up for programs that use generics.
+ *
+ * This is needed in order to avoid having to load dynamic
+ * modules from mk_type() to determine use of generics.
+ */
+#define PROG_GENERICS_ID_START		0x8000
 
 /* Start for dynamically allocated program ids. */
 #define PROG_DYNAMIC_ID_START		0x10000
