@@ -174,7 +174,7 @@ void compiler_discard_type (void)
   type_stack_mark();
 }
 
-static struct pike_type *low_pop_type(void)
+struct pike_type *low_pop_type(void)
 {
   TYPE_STACK_DEBUG("low_pop_type");
 

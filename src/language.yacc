@@ -341,6 +341,7 @@ int yylex(YYSTYPE *yylval);
 %type <n> TOK_BITS
 %type <n> optional_default_value
 %type <n> optional_default_type
+%type <n> opt_generic_bindings
 %type <n> optional_rename_inherit
 %type <n> optional_identifier
 %type <n> implicit_identifier
@@ -577,18 +578,24 @@ inherit_ref:
   }
   ;
 
-inheritance: modifiers TOK_INHERIT inherit_ref optional_rename_inherit ';'
+inheritance: modifiers TOK_INHERIT inherit_ref
+  opt_generic_bindings optional_rename_inherit ';'
   {
     if (($1 & ID_EXTERN) &&
 	(Pike_compiler->compiler_pass == COMPILER_PASS_FIRST)) {
       yywarning("Extern declared inherit.");
     }
+
     if($3)
     {
       struct pike_string *s=Pike_sp[-1].u.string;
-      if($4) s=$4->u.sval.u.string;
+      struct array *bindings = $4?$4->u.sval.u.array:NULL;
+
+      if($5) s = $5->u.sval.u.string;
       compiler_do_inherit($3,$1,s);
     }
+
+    if($5) free_node($5);
     if($4) free_node($4);
     pop_stack();
     if ($3) free_node($3);
@@ -1415,6 +1422,10 @@ identifier_type: id_expr
 
     free_node($1);
   }
+  opt_generic_bindings
+  {
+    free_node($3);
+  }
   | typeof
   {
     if ($1 && CAR($1)) {
@@ -1647,27 +1658,50 @@ function_type_list2: full_type { $$=1; }
   full_type
   ;
 
-opt_generic_bindings: /* empty */
+opt_generic_bindings: /* empty */ { $$ = NULL; }
   | TOK_MULTISET_START
   {
-    type_stack_mark();
     /* Save the last identifier for later.
      *
-     * FIXME: Probably ought to use a node here in order
-     *        to be able to clean up on syntax errors.
+     * NOTE: Uses a node here in order to be able
+     *       to clean up on syntax errors.
      */
-    $<ptr>$ = Pike_compiler->last_identifier;
-    Pike_compiler->last_identifier = NULL;
+    $<n>$ = Pike_compiler->last_identifier?
+      mkstrnode(Pike_compiler->last_identifier):NULL;
+
+    type_stack_mark();
   }
   function_type_list
   {
-    compiler_discard_type();
-    pop_stack_mark();
     /* Restore the last identifier. */
     free_string(Pike_compiler->last_identifier);
-    Pike_compiler->last_identifier = $<ptr>2;
+    Pike_compiler->last_identifier = NULL;
+    if ($<n>2) {
+      copy_shared_string(Pike_compiler->last_identifier,
+                         $<n>2->u.sval.u.string);
+      free_node($<n>2);
+    }
   }
   TOK_MULTISET_END
+  {
+    int cnt = pop_stack_mark();
+
+    $$ = NULL;
+
+    if (cnt) {
+      struct array *ret = allocate_array(cnt);
+
+      push_array(ret);
+
+      while (cnt--) {
+        SET_SVAL(ITEM(ret)[cnt], PIKE_T_TYPE, 0, type, low_pop_type());
+      }
+      ret->type_field = BIT_TYPE;
+
+      $$ = mkconstantsvaluenode(Pike_sp - 1);
+      pop_stack();
+    }
+  }
   ;
 
 opt_multiset_type: '(' full_type ')'
@@ -2625,7 +2659,8 @@ generic_type_decl: /* empty */
     } else {
       ref_push_type_value(mixed_type_string);
     }
-    add_constant($2->u.sval.u.string, Pike_sp - 1, ID_PROTECTED | ID_INLINE);
+    add_constant($2->u.sval.u.string, Pike_sp - 1,
+                 ID_PRIVATE | ID_PROTECTED | ID_INLINE);
     Pike_compiler->num_generics++;
     pop_stack();
     free_node($3);
@@ -2638,7 +2673,8 @@ generic_type_decl: /* empty */
     } else {
       ref_push_type_value(mixed_type_string);
     }
-    add_constant($1->u.sval.u.string, Pike_sp - 1, ID_PROTECTED | ID_INLINE);
+    add_constant($1->u.sval.u.string, Pike_sp - 1,
+                 ID_PRIVATE | ID_PROTECTED | ID_INLINE);
     Pike_compiler->num_generics++;
     pop_stack();
     free_node($2);
@@ -2651,7 +2687,12 @@ generic_type_decl_list: generic_type_decl
   ;
 
 optional_generic_types: /* empty */
-  | TOK_MULTISET_START generic_type_decl_list TOK_MULTISET_END
+  | TOK_MULTISET_START generic_type_decl_list
+  {
+    /* Make sure that mk_type() can detect that we use generics. */
+    Pike_compiler->new_program->num_generics = Pike_compiler->num_generics;
+  }
+  TOK_MULTISET_END
   ;
 
 optional_create_arguments: optional_generic_types { $$ = 0; }
@@ -3452,8 +3493,8 @@ qualified_id_expr: qualified_ident
   | qualified_id_expr '.' bad_identifier {}
   ;
 
-id_expr: unqualified_id_expr opt_generic_bindings
-  | qualified_id_expr opt_generic_bindings
+id_expr: unqualified_id_expr
+  | qualified_id_expr
   ;
 
 primary_expr: literal_expr
@@ -3632,7 +3673,7 @@ primary_expr: literal_expr
   ;
 
 postfix_expr: id_expr
-  | primary_expr opt_generic_bindings
+  | primary_expr
   | bad_expr_ident
   {
     $$ = mknewintnode(0);

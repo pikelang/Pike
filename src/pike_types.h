@@ -394,6 +394,7 @@ void debug_push_scope_type(int level);
 struct pike_type *debug_pop_unfinished_type(void);
 void compiler_discard_top_type (void);
 void compiler_discard_type (void);
+struct pike_type *low_pop_type(void);
 struct pike_type *debug_pop_type(void);
 struct pike_type *debug_compiler_pop_type(void);
 struct pike_type *parse_type(const char *s);
