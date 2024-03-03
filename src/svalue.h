@@ -145,6 +145,8 @@ enum PIKE_TYPE {
     PIKE_T_VAR_8 = '8',
     PIKE_T_VAR_9 = '9',		/* 57 */
 
+    PIKE_T_GENERIC = 64,
+
     /* Operators. These all have 0x80 in the low 8 bits, and
      * a non-zero function number in the next 8 bits.
      *
@@ -394,7 +396,9 @@ struct svalue
 #define tVoid "\020"
 #define tVar(X) #X
 #define tSetvar(X,Y) "\365" #X Y
+#define tAssign(X,Y) "\365" X Y
 #define tScope(X,Y) "\363" #X Y
+#define tGeneric(OBJ,X)	"\100" OBJ tVar(X)
 #define tNot(X) "\375" X
 #define tAnd(X,Y) "\376" X Y
 #define tOr(X,Y) "\377" X Y
