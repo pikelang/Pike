@@ -317,6 +317,7 @@ static void internal_parse_type(const char **s);
  * SET_CAR	type		type			Added in 8.1
  * SET_CDR	type		type			Added in 8.1
  * APPLY	fun type	arg type		Added in 8.1
+ * BIND		assignment	type			Added in 9.0
  *
  * Note that the cdr of a FUNCTION is a valid FUNCTION for the rest of
  * the arguments.
@@ -2733,6 +2734,9 @@ void low_describe_type(struct string_builder *s, struct pike_type *t)
 	  case PIKE_T_SET_CDR:
 	    string_builder_strcat(s, "set_cdr");
 	    break;
+          case PIKE_T_BIND:
+            string_builder_strcat(s, "bind");
+            break;
 	  default:
 	    string_builder_sprintf(s, "operator(0x%04x)", t->type);
 	    break;
@@ -2867,6 +2871,11 @@ int deprecated_typep(struct pike_type *t)
       t = t->cdr;
       continue;
     case PIKE_T_OPERATOR:
+      if (t->type == PIKE_T_BIND) {
+        t = t->cdr;
+        continue;
+      }
+      /* FALLTHRU */
     case PIKE_T_TRANSITIVE:
     case PIKE_T_GENERIC:
       t = t->car;
@@ -8387,15 +8396,25 @@ static struct pike_type *low_match_types2(struct pike_type *a,
        * It also applies any related type operators.
        */
       struct pike_type *t;
-      struct pike_type *t1 = low_match_types(a->car, any_type_string, flags);
-      if (a->type & 0x8000) {
-	struct pike_type *t2 = low_match_types(a->cdr, any_type_string, flags);
-	t = apply_type_operator(a->type, t1, t2);
-	free_type(t2);
+      if (a->type == PIKE_T_BIND) {
+        /* Matching the assign node against mixed is a bad idea. */
+        struct pike_type *t2 =
+          low_match_types(a->cdr, any_type_string, flags);
+        t = apply_type_operator(a->type, a->car, t2);
+        free_type(t2);
       } else {
-	t = apply_type_operator(a->type, t1, a->cdr);
+        struct pike_type *t1 =
+          low_match_types(a->car, any_type_string, flags);
+        if (a->type & 0x8000) {
+          struct pike_type *t2 =
+            low_match_types(a->cdr, any_type_string, flags);
+          t = apply_type_operator(a->type, t1, t2);
+          free_type(t2);
+        } else {
+          t = apply_type_operator(a->type, t1, a->cdr);
+        }
+        free_type(t1);
       }
-      free_type(t1);
 
       if (!t) return NULL;
       ret = low_match_types(t, b, flags);
@@ -10124,7 +10143,7 @@ static struct pike_type *low_index_type(struct pike_type *t,
 #define low_index_type(X,Y,Z) ((struct pike_type *)debug_malloc_pass(low_index_type((X),(Y),(Z))))
 #endif
 {
-  struct pike_type *tmp;
+  struct pike_type *tmp, *ret;
   struct program *p;
   int pragmas = 0;
 
@@ -10163,6 +10182,17 @@ static struct pike_type *low_index_type(struct pike_type *t,
 
   switch(t->type)
   {
+  case PIKE_T_BIND:
+    tmp = low_index_type(t->cdr, index_type, n);
+    if (!tmp || !(tmp->flags & PT_FLAG_MASK_GENERICS)) {
+      return tmp;
+    }
+
+    ret = apply_type_operator(t->type, t->car, tmp);
+    free_type(tmp);
+
+    return ret;
+
   case T_OBJECT:
   {
     p = id_to_program(CDR_TO_INT(t));
@@ -10811,6 +10841,7 @@ static int low_check_indexing(struct pike_type *type,
   case PIKE_T_NAME:
   case T_ASSIGN:
   case T_SCOPE:
+  case PIKE_T_BIND:
     return low_check_indexing(type->cdr, index_type, n);
 
   case T_ARRAY:
@@ -11111,9 +11142,15 @@ struct pike_type *get_argument_type(struct pike_type *fun, int arg_no)
     return fun;
 
   case PIKE_T_OPERATOR:
-    tmp = apply_type_operator(fun->type, fun->car, fun->cdr);
-    if (!tmp) return NULL;
-    tmp2 = get_argument_type(tmp, arg_no);
+    if (fun->type == PIKE_T_BIND) {
+      tmp = get_argument_type(fun->cdr, arg_no);
+      if (!tmp) return NULL;
+      tmp2 = apply_type_operator(fun->type, fun->car, tmp);
+    } else {
+      tmp = apply_type_operator(fun->type, fun->car, fun->cdr);
+      if (!tmp) return NULL;
+      tmp2 = get_argument_type(tmp, arg_no);
+    }
     free_type(tmp);
     return tmp2;
 
@@ -11812,13 +11849,19 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
     break;
 
   case PIKE_T_OPERATOR:
-    tmp = apply_type_operator(fun_type->type, fun_type->car, fun_type->cdr);
-    if (!tmp) {
-      return NULL;
+    if (fun_type->type == PIKE_T_BIND) {
+      tmp = low_new_check_call(fun_type->cdr, arg_type, flags, cs, sval);
+      res = apply_type_operator(fun_type->type, fun_type->car, tmp);
+      free_type(tmp);
+    } else {
+      tmp = apply_type_operator(fun_type->type, fun_type->car, fun_type->cdr);
+      if (!tmp) {
+        return NULL;
+      }
+      res = lower_new_check_call(tmp, arg_type, flags,
+                                 cs, sval CHECK_CALL_ARGS);
+      free_type(tmp);
     }
-    res = lower_new_check_call(tmp, arg_type, flags,
-			       cs, sval CHECK_CALL_ARGS);
-    free_type(tmp);
     break;
 
   case PIKE_T_TRANSITIVE:
@@ -12543,11 +12586,19 @@ struct pike_type *new_get_return_type(struct pike_type *fun_type,
     break;
 
   case PIKE_T_OPERATOR:
-    tmp = apply_type_operator(fun_type->type, fun_type->car, fun_type->cdr);
-    if (!tmp) {
-      return NULL;
+    if (fun_type->type == PIKE_T_BIND) {
+      tmp = new_get_return_type(fun_type->cdr, cs, flags);
+      if (!tmp) {
+        return NULL;
+      }
+      res = apply_type_operator(fun_type->type, fun_type->car, tmp);
+    } else {
+      tmp = apply_type_operator(fun_type->type, fun_type->car, fun_type->cdr);
+      if (!tmp) {
+        return NULL;
+      }
+      res = new_get_return_type(tmp, cs, flags);
     }
-    res = new_get_return_type(tmp, cs, flags);
     free_type(tmp);
     break;
 
@@ -13393,6 +13444,154 @@ struct pike_type *zzap_function_return(struct pike_type *a,
   return NULL;
 }
 
+static void push_apply_bindings(struct pike_type *bind,
+                                struct pike_type *val,
+                                struct mapping *bindings);
+
+static void push_apply_bindings_recur(struct pike_type *t,
+                                      struct mapping *bindings)
+{
+  if (!t || !(t->flags & PT_FLAG_GENERIC)) {
+    /* Common case. */
+    push_finished_type(t);
+  } else switch(t->type & PIKE_T_MASK) {
+    case T_SCOPE:
+      push_apply_bindings_recur(t->cdr, bindings);
+      if (peek_type_stack()) {
+        push_scope_type(CAR_TO_INT(t));
+      }
+      break;
+
+    case PIKE_T_MULTISET:
+    case PIKE_T_NOT:
+    case PIKE_T_TYPE:
+    case PIKE_T_AUTO:
+    case PIKE_T_PROGRAM:
+      /* Unary type. */
+      push_apply_bindings_recur(t->car, bindings);
+      push_type(t->type);
+      break;
+
+    case PIKE_T_GENERIC:
+      {
+        struct svalue *val;
+        ref_push_type_value(t);
+        val = low_mapping_lookup(bindings, Pike_sp-1);
+        if (val && (TYPEOF(*val) == PIKE_T_TYPE)) {
+          push_apply_bindings_recur(val->u.type, bindings);
+        } else {
+          push_finished_type(t);
+        }
+        pop_stack();
+      }
+      break;
+
+    case PIKE_T_ASSIGN:
+    case T_FUNCTION:
+    case T_MANY:
+    case PIKE_T_RING:
+    case PIKE_T_TUPLE:
+    case T_MAPPING:
+    case T_OR:
+    case T_ARRAY:
+    case T_STRING:
+    case PIKE_T_TRANSITIVE:
+      /* Binary type */
+      push_apply_bindings_recur(t->cdr, bindings);
+      push_apply_bindings_recur(t->car, bindings);
+      push_type(t->type);
+      break;
+
+    case PIKE_T_NAME:
+      push_apply_bindings_recur(t->cdr, bindings);
+      break;
+
+    case PIKE_T_ATTRIBUTE:
+      push_apply_bindings_recur(t->cdr, bindings);
+      push_type_attribute((struct pike_string *)t->car);
+      break;
+
+    case PIKE_T_OPERATOR:
+      if (t->type != PIKE_T_BIND) {
+        struct pike_type *arg = t->cdr;
+        push_apply_bindings_recur(t->car, bindings);
+        if ((t->type & 0x8000) && arg) {
+          type_stack_mark();
+          push_apply_bindings_recur(arg, bindings);
+          arg = pop_unfinished_type();
+        }
+        push_type_operator(t->type, arg);
+        if (t->type & 0x8000) {
+          free_type(arg);
+        }
+        break;
+      }
+      push_apply_bindings(t->car, t->cdr, bindings);
+      break;
+
+    default:
+    case T_MIXED:
+      /* This should not be reached as this type should not
+       * have PT_FLAG_GENERIC set.
+       */
+      push_finished_type(t);
+      break;
+  }
+}
+
+static void push_apply_bindings(struct pike_type *bind,
+                                struct pike_type *val,
+                                struct mapping *bindings)
+{
+  if (!bind || !val) {
+    push_finished_type(NULL);
+    return;
+  }
+  if ((bind->type != PIKE_T_ASSIGN) || !bind->car ||
+      (bind->car->type != PIKE_T_GENERIC) || !bind->car->car ||
+      (bind->car->car->type != PIKE_T_OBJECT)) {
+    /* Invalid. */
+    push_apply_bindings_recur(val, bindings);
+    return;
+  }
+
+  if (bindings) {
+    bindings = copy_mapping(bindings);
+  } else {
+    bindings = allocate_mapping(4);
+  }
+
+  /* Generic ==> Binding.
+   *
+   * This is used to keep track of the actual bindings.
+   */
+  ref_push_type_value(bind->car);
+  ref_push_type_value(bind->cdr);
+  mapping_insert(bindings, Pike_sp-2, Pike_sp-1);
+  pop_n_elems(2);
+
+  push_apply_bindings_recur(val, bindings);
+
+  val = peek_type_stack();
+  if (val && (val->flags & PT_FLAG_GOBJECT)) {
+    /* Typed object present in the result. */
+    push_finished_type(bind);
+    push_type(PIKE_T_BIND);
+  }
+
+  free_mapping(bindings);
+}
+
+static struct pike_type *apply_bindings(struct pike_type *bind,
+                                        struct pike_type *val)
+{
+  type_stack_mark();
+
+  push_apply_bindings(bind, val, NULL);
+
+  return pop_unfinished_type();
+}
+
 /* Implementation from https://mc.pp.se/binoprange.c
  *
  * Cf LysLysKOM 25306802
@@ -14016,6 +14215,9 @@ struct pike_type *apply_type_operator(enum PIKE_TYPE op,
       res = low_new_check_call(arg1, arg2, 0, &cs, NULL);
       FREE_CALL_STATE(cs);
     }
+    break;
+  case PIKE_T_BIND:
+    res = apply_bindings(arg1, arg2);
     break;
   case PIKE_T_FIND_LFUN:
     res = find_lfun_type(arg1, (ptrdiff_t)(void*)arg2);

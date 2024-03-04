@@ -166,6 +166,7 @@ enum PIKE_TYPE {
     PIKE_T_APPLY = 0x8180,	/* Apply a function with a single argument. */
     PIKE_T_SET_CAR = 0x8280,	/* Set the CAR of the CAR type to CDR. */
     PIKE_T_SET_CDR = 0x8380,	/* Set the CDR of the CAR type to CDR. */
+    PIKE_T_BIND = 0x8480,	/* Apply the binding in CAR to CDR. */
 
     PIKE_T_INT_OP_SUB = 0xc080,	/* INT OP `-. */
     PIKE_T_INT_OP_AND = 0xc180,	/* INT OP `&. */
