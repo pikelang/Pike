@@ -13585,11 +13585,74 @@ static void push_apply_bindings(struct pike_type *bind,
 static struct pike_type *apply_bindings(struct pike_type *bind,
                                         struct pike_type *val)
 {
+  pike_fprintf(stderr,
+               "apply_bindings(%pT,\n"
+               "               %pT)\n", bind, val);
+
   type_stack_mark();
 
   push_apply_bindings(bind, val, NULL);
 
+  pike_fprintf(stderr,
+               "apply_bindings(%pT,\n"
+               "               %pT)\n"
+               "  ==>          %pT\n",
+               bind, val, peek_type_stack());
   return pop_unfinished_type();
+}
+
+struct pike_type *compiler_apply_bindings(struct pike_type *t,
+                                          struct mapping *bindings)
+{
+  if (!t) return NULL;
+  if (!bindings || !(t->flags & PT_FLAG_MASK_GENERICS)) {
+    add_ref(t);
+    return t;
+  }
+
+  type_stack_mark();
+
+  push_apply_bindings_recur(t, bindings);
+
+  return pop_unfinished_type();
+}
+
+struct mapping *mkbindings(struct program *p, struct array *b)
+{
+  struct mapping *ret;
+  int i;
+
+  if (!p || !p->num_generics || !b || !b->size) return NULL;
+
+  ret = allocate_mapping(p->num_generics);
+
+  for (i = 0; i < p->num_generics; i++) {
+    struct svalue ss;
+    struct svalue *s;
+
+    if (i < b->size) {
+      s = ITEM(b) + i;
+    } else {
+      /* FIXME: Lookup LFUN::__generic_bindings__ in p, and use it. */
+      SET_SVAL(ss, PIKE_T_TYPE, 0, type, mixed_type_string);
+      s = &ss;
+    }
+
+    if ((TYPEOF(*s) == PIKE_T_TYPE) && (i < 10)) {
+      type_stack_mark();
+
+      push_type('0' + i);
+      push_object_type(0, p->id);
+      push_type(PIKE_T_GENERIC);
+
+      push_type_value(pop_unfinished_type());
+
+      mapping_insert(ret, Pike_sp - 1, s);
+      pop_stack();
+    }
+  }
+
+  return ret;
 }
 
 /* Implementation from https://mc.pp.se/binoprange.c
