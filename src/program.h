@@ -558,6 +558,31 @@ struct inherit
    * this can be a string on the form "A::B::C". */
   struct pike_string *name;
 
+  /* The program that holds the identifiers.
+   *
+   * Typically the same as prog, but is changed when inheriting
+   * classes that have generics.
+   *
+   * NB: NOT reference-counted as it is always the prog of one of
+   *     the inherits.
+   *
+   * NB: This together with identifiers_offset make an indirect pointer
+   *     to identifiers_prog->identifiers + identifiers_offset. This
+   *     needs to be indirect due to otherwise needing to keep track
+   *     of any pointers when reallocating identifiers_prog->identifiers.
+   *
+   * See also ID_FROM_PTR/ID_FROM_INT.
+   */
+  struct program *identifiers_prog;
+
+  /* Offset in identifier_prog->identifiers where the identifiers
+   * for this program are held.
+   *
+   * Typically zero, but is changed when inheriting classes that
+   * have generics.
+   */
+  unsigned int identifiers_offset;
+
   /* The set of annotations for this inherit (if any).
    *
    * For inherit #0 these are set either directly via
@@ -781,7 +806,10 @@ static inline struct program *PROG_FROM_PTR(const struct program *p, const struc
 }
 
 static inline struct identifier *ID_FROM_PTR(const struct program *p, const struct reference *x) {
-  return PROG_FROM_PTR(p,x)->identifiers + x->identifier_offset;
+  struct inherit *inh = INHERIT_FROM_PTR(p,x);
+
+  return inh->identifiers_prog->identifiers + inh->identifiers_offset +
+    x->identifier_offset;
 }
 
 static inline struct inherit *INHERIT_FROM_INT(const struct program *p, const unsigned INT16 x) {

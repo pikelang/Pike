@@ -1012,6 +1012,9 @@ PMOD_EXPORT int destruct_object (struct object *o,
     int q;
     struct program *prog = p->inherits[e].prog;
     char *storage = o->storage+p->inherits[e].storage_offset;
+    struct identifier *identifiers =
+      p->inherits[e].identifiers_prog->identifiers +
+      p->inherits[e].identifiers_offset;
 
     if(prog->event_handler)
     {
@@ -1027,7 +1030,7 @@ PMOD_EXPORT int destruct_object (struct object *o,
     for(q=0;q<(int)prog->num_variable_index;q++)
     {
       int d=prog->variable_index[q];
-      struct identifier *id = prog->identifiers + d;
+      struct identifier *id = identifiers + d;
       int identifier_flags = id->identifier_flags;
       int rtt = id->run_time_type;
 
@@ -2756,16 +2759,18 @@ PMOD_EXPORT void visit_object (struct object *o, int action, void *extra)
 
     for (e = p->num_inherits - 1; e >= 0; e--) {
       struct program *inh_prog = inh[e].prog;
+      struct identifier *identifiers =
+        inh[e].identifiers_prog->identifiers +
+        inh[e].identifiers_offset;
       if (!(action & VISIT_NO_REFS)) {
 	unsigned INT16 *inh_prog_var_idxs = inh_prog->variable_index;
-	struct identifier *inh_prog_ids = inh_prog->identifiers;
 	char *inh_storage = storage + inh[e].storage_offset;
 
 	int q, num_vars = (int) inh_prog->num_variable_index;
 
 	for (q = 0; q < num_vars; q++) {
 	  int d = inh_prog_var_idxs[q];
-	  struct identifier *id = inh_prog_ids + d;
+          struct identifier *id = identifiers + d;
 	  int id_flags = id->identifier_flags;
 	  int rtt = id->run_time_type;
 	  void *var;
@@ -2908,13 +2913,17 @@ PMOD_EXPORT void gc_mark_object_as_referenced(struct object *o)
 	for(e=p->num_inherits-1; e>=0; e--)
 	{
 	  int q;
+          struct identifier *identifiers;
 
 	  LOW_SET_FRAME_CONTEXT(p->inherits + e);
+
+          identifiers = pike_frame->context->identifiers_prog->identifiers +
+            pike_frame->context->identifiers_offset;
 
 	  for(q=0;q<(int)pike_frame->context->prog->num_variable_index;q++)
 	  {
 	    int d=pike_frame->context->prog->variable_index[q];
-	    struct identifier *id = pike_frame->context->prog->identifiers + d;
+            struct identifier *id = identifiers + d;
 	    int id_flags = id->identifier_flags;
 	    int rtt = id->run_time_type;
 
@@ -2984,13 +2993,17 @@ PMOD_EXPORT void real_gc_cycle_check_object(struct object *o, int weak)
       for(e=p->num_inherits-1; e>=0; e--)
       {
 	int q;
+        struct identifier *identifiers;
 
 	LOW_SET_FRAME_CONTEXT(p->inherits + e);
+
+        identifiers = pike_frame->context->identifiers_prog->identifiers +
+          pike_frame->context->identifiers_offset;
 
 	for(q=0;q<(int)pike_frame->context->prog->num_variable_index;q++)
 	{
 	  int d=pike_frame->context->prog->variable_index[q];
-	  struct identifier *id = pike_frame->context->prog->identifiers + d;
+          struct identifier *id = identifiers + d;
 	  int id_flags = id->identifier_flags;
 	  int rtt = id->run_time_type;
 
@@ -3064,12 +3077,17 @@ static void gc_check_object(struct object *o)
       for(e=p->num_inherits-1; e>=0; e--)
       {
 	int q;
+        struct identifier *identifiers;
+
 	LOW_SET_FRAME_CONTEXT(p->inherits + e);
+
+        identifiers = pike_frame->context->identifiers_prog->identifiers +
+          pike_frame->context->identifiers_offset;
 
 	for(q=0;q<(int)pike_frame->context->prog->num_variable_index;q++)
 	{
 	  int d=pike_frame->context->prog->variable_index[q];
-	  struct identifier *id = pike_frame->context->prog->identifiers + d;
+          struct identifier *id = identifiers + d;
 	  int id_flags = id->identifier_flags;
 	  int rtt = id->run_time_type;
 

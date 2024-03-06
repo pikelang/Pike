@@ -2880,7 +2880,8 @@ OPCODE1(F_LTOSVAL_CALL_BUILTIN_AND_ASSIGN_POP,
 	get_cpu_time() - Pike_interpreter.unlocked_time;		   \
       new_frame->ident = Pike_fp->ident;				   \
       new_frame->children_base = Pike_interpreter.accounted_time;	   \
-      func = new_frame->context->prog->identifiers + new_frame->ident;	   \
+      func = new_frame->context->identifiers_prog->identifiers +           \
+        new_frame->context->identifiers_offset + new_frame->ident;         \
       func->num_calls++;						   \
       func->recur_depth++;						   \
       W_PROFILING_DEBUG("%p{: Push at %" PRINT_CPU_TIME                    \

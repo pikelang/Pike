@@ -689,7 +689,8 @@ void my_describe_inherit_structure(struct program *p)
 
 static struct inherit dummy_inherit
 #ifdef PIKE_DEBUG
-= {-4711, -4711, -4711, -4711, (size_t) -4711, -4711, NULL, NULL, NULL, NULL}
+= {-4711, -4711, -4711, -4711, (size_t) -4711, -4711,
+   NULL, NULL, NULL, NULL, 0, NULL}
 #endif
 ;
 
@@ -2557,9 +2558,9 @@ void *lower_mega_apply( INT32 args, struct object *o, ptrdiff_t fun )
   if( (p = o->prog) )
   {
     struct svalue *save_sp = Pike_sp - args;
-    struct reference *ref = p->identifier_references + fun;
-    struct inherit *context = p->inherits + ref->inherit_offset;
-    struct identifier *function = context->prog->identifiers + ref->identifier_offset;
+    struct reference *ref = PTR_FROM_INT(p, fun);
+    struct inherit *context = INHERIT_FROM_PTR(p, ref);
+    struct identifier *function = ID_FROM_PTR(p, ref);
     struct svalue *constant = NULL;
     struct pike_frame *new_frame = NULL;
 
@@ -3127,7 +3128,8 @@ void unlink_previous_frame(void)
     cpu_time_t child_time =
       Pike_interpreter.accounted_time - current->children_base;
     struct identifier *function =
-      current->context->prog->identifiers + current->ident;
+      current->context->identifiers_prog->identifiers +
+      current->context->identifiers_offset + current->ident;
     if (!function->recur_depth)
       function->total_time += total_time;
     total_time -= child_time;

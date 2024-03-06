@@ -3119,6 +3119,8 @@ static void compile_compiler(void)
   inh->storage_offset = p->xstorage;
   inh->parent = NULL;
   inh->name = NULL;
+  inh->identifiers_prog = p;
+  inh->identifiers_offset = 0;
   inh->annotations = NULL;
   p->num_inherits = 1;
 
@@ -3151,6 +3153,8 @@ static void compile_compiler(void)
   inh->storage_offset = p2->xstorage;
   inh->parent = NULL;
   inh->name = NULL;
+  inh->identifiers_prog = p2;
+  inh->identifiers_offset = 0;
   inh->annotations = NULL;
   p2->num_inherits = 1;
 

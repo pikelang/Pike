@@ -85,9 +85,9 @@
       new_frame->next = Pike_fp;
       new_frame->current_object = o;
       new_frame->current_program = p;
-      new_frame->context = p->inherits + ref->inherit_offset;
+      new_frame->context = INHERIT_FROM_PTR(p, ref);
 
-      function = new_frame->context->prog->identifiers + ref->identifier_offset;
+      function = ID_FROM_PTR(p, ref);
       new_frame->fun = (unsigned INT16)fun;
 
       if(!(p->flags & (PROGRAM_PASS_1_DONE|PROGRAM_AVOID_CHECK)) &&

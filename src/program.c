@@ -3592,6 +3592,8 @@ void fixate_program(void)
     for(e=0;e<Pike_compiler->new_program->num_inherits;e++)
     {
       struct inherit *i=Pike_compiler->new_program->inherits+e;
+      struct identifier *identifiers =
+        i->identifiers_prog->identifiers + i->identifiers_offset;
       char *tmp;
       struct pike_string *tmp2 = NULL;
       char buffer[50];
@@ -3599,7 +3601,7 @@ void fixate_program(void)
       for(v=0;v<i->prog->num_variable_index;v++)
       {
 	int d=i->prog->variable_index[v];
-	struct identifier *id=i->prog->identifiers+d;
+        struct identifier *id = identifiers + d;
 
 	dmalloc_add_mmap_entry(m,
 			       id->name->str,
@@ -3956,6 +3958,8 @@ void low_start_new_program(struct program *p,
     i.parent_identifier=-1;
     i.parent_offset=OBJECT_PARENT;
     i.name=0;
+    i.identifiers_prog = i.prog;	/* NB: Not reference counted! */
+    i.identifiers_offset = 0;
     i.annotations = NULL;
     add_to_inherits(i);
   }
@@ -7017,7 +7021,7 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
     struct program_state *state = Pike_compiler;
     struct reference *idref = PTR_FROM_INT(c->u.object->prog, SUBTYPEOF(*c));
     struct program *p = PROG_FROM_PTR(c->u.object->prog, idref);
-    struct identifier *id = p->identifiers + idref->identifier_offset;
+    struct identifier *id = ID_FROM_PTR(c->u.object->prog, idref);
     int depth = 0;
     while (state && (c->u.object->prog != state->new_program)) {
       depth++;
