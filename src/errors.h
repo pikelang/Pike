@@ -67,7 +67,7 @@
 /* #define EMPTY (void) &foo; */
 
 #define ERR_INHERIT(NAME) \
-  low_inherit(PIKE_CONCAT(NAME,_error_program),0,0,0,0,0);
+  low_inherit(PIKE_CONCAT(NAME,_error_program),0,0,0,0,0,0);
 
 #define ERR_FUNC(NAME,FUNC,TYPE,FLAGS) \
   ADD_FUNCTION(NAME,FUNC,TYPE,FLAGS);

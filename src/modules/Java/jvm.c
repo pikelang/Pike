@@ -3992,7 +3992,7 @@ PIKE_MODULE_INIT
 
   start_new_program();
   prog.u.program = jobj_program;
-  do_inherit(&prog, 0, NULL);
+  do_inherit(&prog, 0, NULL, NULL);
   ADD_FUNCTION("super_class", f_super_class, tFunc(tNone,tObj), 0);
   ADD_FUNCTION("is_array", f_is_array, tFunc(tNone, tInt01), 0);
   ADD_FUNCTION("is_assignable_from", f_is_assignable_from,
@@ -4014,13 +4014,13 @@ PIKE_MODULE_INIT
   jclass_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;
 
   start_new_program();
-  do_inherit(&prog, 0, NULL);
+  do_inherit(&prog, 0, NULL, NULL);
   ADD_FUNCTION("throw", f_javathrow, tFunc(tNone,tVoid), 0);
   jthrowable_program = end_program();
   jthrowable_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;
 
   start_new_program();
-  do_inherit(&prog, 0, NULL);
+  do_inherit(&prog, 0, NULL, NULL);
   jarray_stor_offs = ADD_STORAGE(struct jarray_storage);
   ADD_FUNCTION("_sizeof", f_javaarray_sizeof, tFunc(tNone,tInt), ID_PROTECTED);
   ADD_FUNCTION("`[]", f_javaarray_getelt,

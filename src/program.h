@@ -330,6 +330,7 @@ union idptr
 #define IDENTIFIER_WEAK	16	/* Used for variables only: Weak reference. */
 #define IDENTIFIER_SCOPED 32   /* This is used for local functions only */
 #define IDENTIFIER_SCOPE_USED 64 /* contains scoped local functions */
+#define IDENTIFIER_COPY 128	/* Idenitifer copied from other program. */
 
 #define IDENTIFIER_IS_FUNCTION(X) ((X) & IDENTIFIER_FUNCTION)
 #define IDENTIFIER_IS_PIKE_FUNCTION(X) (((X) & IDENTIFIER_TYPE_MASK) == IDENTIFIER_PIKE_FUNCTION)
@@ -339,7 +340,7 @@ union idptr
 #define IDENTIFIER_IS_ALIAS(X)	((X) & IDENTIFIER_ALIAS)
 #define IDENTIFIER_IS_SCOPED(X) ((X) & IDENTIFIER_SCOPED)
 
-#define IDENTIFIER_MASK 127
+#define IDENTIFIER_MASK 255
 
 /*
  * Every constant, class, function and variable
@@ -966,21 +967,26 @@ void lower_inherit(struct program *p,
 		   int parent_identifier,
 		   int parent_offset,
 		   INT32 flags,
-		   struct pike_string *name);
+                   struct pike_string *name,
+                   struct array *bindings);
 PMOD_EXPORT void low_inherit(struct program *p,
 			     struct object *parent,
 			     int parent_identifier,
 			     int parent_offset,
 			     INT32 flags,
-			     struct pike_string *name);
+                             struct pike_string *name,
+                             struct array *bindings);
 PMOD_EXPORT struct program *lexical_inherit(int scope_depth,
 					    struct pike_string *symbol,
 					    INT32 flags,
-					    int failure_severity_level);
+                                            int failure_severity_level,
+                                            struct array *bindings);
 PMOD_EXPORT void do_inherit(struct svalue *s,
-		INT32 flags,
-		struct pike_string *name);
-void compiler_do_inherit(node *n, INT32 flags, struct pike_string *name);
+                            INT32 flags,
+                            struct pike_string *name,
+                            struct array *bindings);
+void compiler_do_inherit(node *n, INT32 flags, struct pike_string *name,
+                         struct array *bindings);
 int call_handle_inherit(struct pike_string *s);
 void simple_do_inherit(struct pike_string *s,
 		       INT32 flags,

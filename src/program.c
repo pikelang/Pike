@@ -4698,6 +4698,11 @@ void check_program(struct program *p)
        (p->identifiers[e].run_time_type!=PIKE_T_GET_SET))
       check_type(p->identifiers[e].run_time_type);
 
+    if (p->identifiers[e].identifier_flags & IDENTIFIER_COPY) {
+      /* The identifier actually belongs to some other program. */
+      continue;
+    }
+
     if (!IDENTIFIER_IS_ALIAS(p->identifiers[e].identifier_flags)) {
       if(IDENTIFIER_IS_VARIABLE(p->identifiers[e].identifier_flags))
       {
@@ -4992,12 +4997,32 @@ static void zap_constants(struct program *p)
 struct program *end_first_pass(int finish)
 {
   struct compilation *c = THIS_COMPILATION;
-  int e;
+  int i, e;
   struct program *prog = Pike_compiler->new_program;
   struct pike_string *init_name;
   struct pike_type *init_type = NULL;
   int num_refs = prog->num_identifier_references;
   union idptr dispatch_fun;
+
+  prog->num_generics = Pike_compiler->num_generics;
+
+  /* Update any inherited and copied prototype identifiers. */
+  for (i = 1; i < prog->num_inherits;	/* NB: Starts at 1. */
+       i += prog->inherits[i].prog->num_inherits) {
+    struct inherit *inh = prog->inherits + i;
+    if (inh->identifiers_prog == prog) {
+      /* We hold a copy of the identifiers.
+       *
+       * Note that this also updates any identifiers that we have
+       * indirectly copied via this inherit.
+       */
+      struct identifier *identifiers =
+        prog->identifiers + inh->identifiers_offset;
+      for (e = 0; e < inh->prog->num_identifiers; e++) {
+        identifiers[e].func = inh->prog->identifiers[e].func;
+      }
+    }
+  }
 
   dispatch_fun.c_fun = f_dispatch_variant;
 
@@ -5937,7 +5962,8 @@ void lower_inherit(struct program *p,
 		   int parent_identifier,
 		   int parent_offset,
 		   INT32 flags,
-		   struct pike_string *name)
+                   struct pike_string *name,
+                   struct array *bindings)
 {
   int e;
   ptrdiff_t inherit_offset, storage_offset;
@@ -6064,6 +6090,11 @@ void lower_inherit(struct program *p,
     inherit.storage_offset += storage_offset;
     inherit.inherit_level ++;
 
+    if (p->num_generics && (inherit.identifiers_prog == p)) {
+      /* We will copy the identifiers later. */
+      inherit.identifiers_prog = Pike_compiler->new_program;
+      inherit.identifiers_offset += Pike_compiler->new_program->num_identifiers;
+    }
 
     if(!e)
     {
@@ -6228,6 +6259,31 @@ void lower_inherit(struct program *p,
   Pike_compiler->new_program->inherits[inherit_offset].identifier_ref_offset =
     Pike_compiler->new_program->num_identifier_references;
 
+  if (p->num_generics) {
+    /*
+     * Bind the generics of the inherited program.
+     */
+    struct mapping *bind = mkbindings(p, bindings);
+
+    for (e = 0; e < p->num_identifiers; e++) {
+      struct identifier id = p->identifiers[e];
+
+      if (id.type->flags & PT_FLAG_MASK_GENERICS) {
+        id.type = compiler_apply_bindings(id.type, bind);
+      } else {
+        add_ref(id.type);
+      }
+      if (id.name) add_ref(id.name);
+
+      /* Avoid complaints from consistency checks about offset errors. */
+      id.identifier_flags |= IDENTIFIER_COPY;
+
+      add_to_identifiers(id);
+    }
+
+    free_mapping(bind);
+  }
+
   for (e=0; e < (int)p->num_identifier_references; e++)
   {
     struct reference fun;
@@ -6282,9 +6338,11 @@ PMOD_EXPORT void low_inherit(struct program *p,
 			     int parent_identifier,
 			     int parent_offset,
 			     INT32 flags,
-			     struct pike_string *name)
+                             struct pike_string *name,
+                             struct array *bindings)
 {
-  lower_inherit(p, parent, parent_identifier, parent_offset, flags, name);
+  lower_inherit(p, parent, parent_identifier, parent_offset, flags, name,
+                bindings);
 
   /* Don't do this for OBJECT_PARENT or INHERIT_PARENT inherits.
    * They may show up here from decode_value().
@@ -6328,7 +6386,8 @@ PMOD_EXPORT void low_inherit(struct program *p,
 PMOD_EXPORT struct program *lexical_inherit(int scope_depth,
 					    struct pike_string *symbol,
 					    INT32 flags,
-					    int failure_severity_level)
+                                            int failure_severity_level,
+                                            struct array *bindings)
 {
   struct program_state *state = Pike_compiler;
   int e;
@@ -6367,24 +6426,27 @@ PMOD_EXPORT struct program *lexical_inherit(int scope_depth,
     class_fun_num =
       really_low_reference_inherited_identifier(state, 0, class_fun_num);
   }
-  low_inherit(prog, 0, class_fun_num, 42 + scope_depth, flags, symbol);
+  low_inherit(prog, 0, class_fun_num, 42 + scope_depth, flags, symbol,
+              bindings);
 
   return prog;
 }
 
 PMOD_EXPORT void do_inherit(struct svalue *s,
 			    INT32 flags,
-			    struct pike_string *name)
+                            struct pike_string *name,
+                            struct array *bindings)
 {
   struct object *parent_obj = NULL;
   int parent_id = -1;
   struct program *p = low_program_from_svalue(s, &parent_obj, &parent_id);
-  low_inherit(p, parent_obj, parent_id, 0, flags, name);
+  low_inherit(p, parent_obj, parent_id, 0, flags, name, bindings);
 }
 
 void compiler_do_inherit(node *n,
 			 INT32 flags,
-			 struct pike_string *name)
+                         struct pike_string *name,
+                         struct array *bindings)
 {
   struct program *p;
   struct identifier *i;
@@ -6452,7 +6514,7 @@ void compiler_do_inherit(node *n,
 	  constants[i->func.const_info.offset].sval;
 	if(TYPEOF(*s) != T_PROGRAM)
 	{
-	  do_inherit(s,flags,name);
+          do_inherit(s, flags, name, bindings);
 	  return;
 	}else{
 	  low_inherit(s->u.program,
@@ -6460,7 +6522,8 @@ void compiler_do_inherit(node *n,
 		      numid,
 		      offset+42,
 		      flags,
-		      name);
+                      name,
+                      bindings);
 	}
       }else{
 	yyerror("Inherit identifier is not a constant program.");
@@ -6470,7 +6533,7 @@ void compiler_do_inherit(node *n,
 
     default:
       resolv_class(n);
-      do_inherit(Pike_sp-1, flags, name);
+      do_inherit(Pike_sp-1, flags, name, bindings);
       pop_stack();
   }
 
@@ -6517,7 +6580,7 @@ void simple_do_inherit(struct pike_string *s,
     free_string(s);
     s=name;
   }
-  do_inherit(Pike_sp-1, flags, s);
+  do_inherit(Pike_sp-1, flags, s, NULL);
   free_string(s);
   pop_stack();
 }

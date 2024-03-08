@@ -3040,7 +3040,7 @@ void init_stdio_buffer(void)
 {
   INIT
   start_new_program();
-  low_inherit(generic_error_program,0,0,0,0,0);
+  low_inherit(generic_error_program,0,0,0,0,0,0);
   add_integer_constant( "buffer_error", 1, 0 );
   buffer_error_program = end_program();
 }

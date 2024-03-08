@@ -95,7 +95,7 @@ protected void build_pike_fadds( Class cls, int lvl )
       if( sizeof(cls->inherits) )
 	foreach( cls->inherits, Class c )
 	  res += "  low_inherit( "+glue_c_name(c->c_name())+
-                 "_program,0,0,0,0,0);\n";
+                 "_program,0,0,0,0,0,0);\n";
       else
       {
         res += "  ADD_STORAGE(struct "+

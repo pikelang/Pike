@@ -109,7 +109,7 @@ cmod_DIRECTIVE_EVAL(ifdef, cmod_CONCAT_EVAL(NETTLE_NAME, _shake))
   {
     EXTRA
     {
-      lexical_inherit(1, MK_STRING("_HMAC"), 0, REPORT_ERROR);
+      lexical_inherit(1, MK_STRING("_HMAC"), 0, REPORT_ERROR, NULL);
     }
 
     DOCSTART() @class PIKE_NAME
@@ -124,7 +124,7 @@ cmod_DIRECTIVE_EVAL(ifdef, cmod_CONCAT_EVAL(NETTLE_NAME, _shake))
 
       EXTRA
       {
-        if (lexical_inherit(1, MK_STRING("State"), 0, REPORT_ERROR)) {
+        if (lexical_inherit(1, MK_STRING("State"), 0, REPORT_ERROR, NULL)) {
 	  int hmac_create_fun_num =
 	    FIND_LFUN(Pike_compiler->new_program->inherits[1].prog,
 		      LFUN_CREATE);
@@ -257,7 +257,7 @@ cmod_DIRECTIVE_EVAL(ifdef, cmod_CONCAT_EVAL(NETTLE_NAME, _shake))
       /* Perform an inherit of the Hash.State class that our parent
        * contains via its inherit of Hash.
        */
-      lexical_inherit(1, MK_STRING("State"), 0, REPORT_ERROR);
+      lexical_inherit(1, MK_STRING("State"), 0, REPORT_ERROR, NULL);
     }
 
   CVAR struct cmod_CONCAT_EVAL(NETTLE_NAME, _ctx) NETTLE_NAME;

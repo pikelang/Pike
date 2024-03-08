@@ -1042,7 +1042,7 @@ void init_resultset_program(void)
     ADD_FUNCTION( "between", f_dateset_between,tFunc(tInt tInt,tObj), 0 );
     ADD_FUNCTION( "not_between", f_dateset_not_between,
                   tFunc(tInt tInt,tObj), 0 );
-    do_inherit( &x, 0, NULL );
+    do_inherit( &x, 0, NULL, NULL );
   }
   dateset_program = end_program( );
   add_program_constant( "DateSet", dateset_program,0 );

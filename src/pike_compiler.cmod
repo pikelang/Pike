@@ -3351,7 +3351,7 @@ static void compile_compiler(void)
   }
   add_global_program("Reporter", reporter_program);
 
-  low_inherit(reporter_program, NULL, -1, 0, 0, 0);
+  low_inherit(reporter_program, NULL, -1, 0, 0, 0, 0);
 
   start_new_program();
   Pike_compiler->new_program->id = PROG_COMPILERENVIRONMENT_LOCK_ID;

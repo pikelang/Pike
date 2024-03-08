@@ -2111,7 +2111,11 @@ sprintf("        } else {\n"
                       IFDEF("module_strings_declared",
                             ({
                               PC.Token(sprintf("%slow_inherit(%s, NULL, %s, "
-                                               "%s, %s, %s);\n",
+                                               "%s, %s, %s\n"
+                                               "#ifdef tGeneric\n"
+                                               ", NULL\n"
+                                               "#endif\n"
+                                               ");\n",
                                                indent, p, numid, offset,
                                                attributes->flags || "0",
                                                inh_name?allocate_string(inh_name):"NULL"),
@@ -2119,7 +2123,11 @@ sprintf("        } else {\n"
                             }),
                             ({
                               PC.Token(sprintf("%slow_inherit(%s, NULL, %s, "
-                                               "%s, %s, NULL);\n",
+                                               "%s, %s, NULL\n"
+                                               "#ifdef tGeneric\n"
+                                               ", NULL\n"
+                                               "#endif\n"
+                                               ");\n",
                                                indent, p, numid, offset,
                                                attributes->flags || "0"),
                                        x[e]->line),

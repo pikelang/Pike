@@ -592,7 +592,7 @@ inheritance: modifiers TOK_INHERIT inherit_ref
       struct array *bindings = $4?$4->u.sval.u.array:NULL;
 
       if($5) s = $5->u.sval.u.string;
-      compiler_do_inherit($3,$1,s);
+      compiler_do_inherit($3, $1, s, bindings);
     }
 
     if($5) free_node($5);

@@ -5208,7 +5208,7 @@ void init_signals(void)
 #ifdef HAVE_PTRACE
   start_new_program();
   /* NOTE: This inherit MUST be first! */
-  low_inherit(pid_status_program, NULL, -1, 0, 0, NULL);
+  low_inherit(pid_status_program, NULL, -1, 0, 0, NULL, NULL);
   set_init_callback(init_trace_process);
   set_exit_callback(exit_trace_process);
 

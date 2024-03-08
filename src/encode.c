@@ -4658,7 +4658,7 @@ static void decode_value2(struct decode_data *data)
 		 * storage, inherits and identifier_references
 		 */
 		lower_inherit(prog, parent, parent_identifier,
-			      parent_offset + 42, id_flags, name);
+                              parent_offset + 42, id_flags, name, NULL);
 
 		pop_n_elems(3);
 	      }
