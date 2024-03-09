@@ -10308,6 +10308,26 @@ int check_variant_overload(struct pike_type *a, struct pike_type *b)
   return 0;
 }
 
+struct pike_type *get_obj_type(struct pike_type *t)
+{
+ recur:
+  if (!t) return NULL;
+  switch(t->type) {
+  case T_OBJECT: return t;
+  case PIKE_T_TYPE:
+  case PIKE_T_AUTO:
+  case T_PROGRAM:
+    t = t->car;
+    goto recur;
+  case PIKE_T_SCOPE:
+  case PIKE_T_NAME:
+  case PIKE_T_ATTRIBUTE:
+    t = t->cdr;
+    goto recur;
+  default:
+    return NULL;
+  }
+}
 
 /* FIXME, add the index */
 static struct pike_type *low_index_type(struct pike_type *t,

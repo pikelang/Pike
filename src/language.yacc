@@ -187,6 +187,9 @@
  * NB: Other functions have their prototypes in las.h.
  */
 static void yyerror_reserved(const char *keyword);
+static void compiler_add_generic(struct pike_string *name,
+                                 struct pike_type *type,
+                                 struct pike_type *default_type);
 static void compiler_define_implicit___create__(void);
 static void compiler_end_class(int has___create__, int parent_constant_id);
 static int compiler_declare_prototype(int modifiers,
@@ -1424,6 +1427,36 @@ identifier_type: id_expr
   }
   opt_generic_bindings
   {
+    struct pike_type *obj_type = get_obj_type(peek_type_stack());
+    if (obj_type && (obj_type->flags & PT_FLAG_GOBJECT)) {
+      struct program *p = low_id_to_program(CDR_TO_INT(obj_type), 1);
+      int cnt = p?p->num_generics:1;
+      struct array *bindings = $3?$3->u.sval.u.array:NULL;
+
+      if (bindings && (bindings->size > cnt)) {
+        yywarning("Too many bindings for %pT.", obj_type);
+      }
+
+      while(cnt--) {
+        if (bindings && (cnt < bindings->size)) {
+          push_finished_type(ITEM(bindings)[cnt].u.type);
+        } else {
+          push_type(T_MIXED);
+        }
+
+        push_type('0' + cnt);
+        push_finished_type(obj_type);
+        push_type(PIKE_T_GENERIC);
+
+        push_type(PIKE_T_ASSIGN);
+
+        push_type(PIKE_T_BIND);
+      }
+    } else if ($3) {
+      yywarning("Bindings specified for non-generic type %pT.",
+                peek_type_stack());
+    }
+
     free_node($3);
   }
   | typeof
@@ -2653,30 +2686,17 @@ create_arguments: /* empty */ optional_comma { $$=0; }
 generic_type_decl: /* empty */
   | full_type TOK_IDENTIFIER optional_default_type
   {
-    compiler_discard_type();
-    if ($3) {
-      push_svalue(&$3->u.sval);
-    } else {
-      ref_push_type_value(mixed_type_string);
-    }
-    add_constant($2->u.sval.u.string, Pike_sp - 1,
-                 ID_PRIVATE | ID_PROTECTED | ID_INLINE);
-    Pike_compiler->num_generics++;
-    pop_stack();
+    struct pike_type *t = compiler_pop_type();
+    compiler_add_generic($2->u.sval.u.string, t,
+                         $3?$3->u.sval.u.type:NULL);
+    free_type(t);
     free_node($3);
     free_node($2);
   }
   | TOK_IDENTIFIER optional_default_type
   {
-    if ($2) {
-      push_svalue(&$2->u.sval);
-    } else {
-      ref_push_type_value(mixed_type_string);
-    }
-    add_constant($1->u.sval.u.string, Pike_sp - 1,
-                 ID_PRIVATE | ID_PROTECTED | ID_INLINE);
-    Pike_compiler->num_generics++;
-    pop_stack();
+    compiler_add_generic($1->u.sval.u.string, NULL,
+                         $2?$2->u.sval.u.type:NULL);
     free_node($2);
     free_node($1);
   }
@@ -4667,6 +4687,53 @@ bad_expr_ident:
 static void yyerror_reserved(const char *keyword)
 {
   my_yyerror("%s is a reserved word.", keyword);
+}
+
+static void compiler_add_generic(struct pike_string *name,
+                                 struct pike_type *type,
+                                 struct pike_type *default_type)
+{
+  if (!type) {
+    type = mixed_type_string;
+  }
+  if (!default_type) {
+    default_type = type;
+  } else {
+    /* FIXME: Validate that default_type is a subset of type. */
+  }
+
+  /* Bump num_generics early to make sure that the
+   * push_object_type() below gets PT_FLAG_GOBJECT set.
+   *
+   * Note that Pike_compiler->num_generics is kept from
+   * earlier passes, so reset it here.
+   */
+  Pike_compiler->new_program->num_generics =
+    ++Pike_compiler->num_generics;
+
+  /* FIXME: Save type and default_type somewhere. */
+
+  if (Pike_compiler->new_program->num_generics <= 10) {
+    /* Add a generic variable. */
+    type_stack_mark();
+    push_type('0' + (Pike_compiler->new_program->num_generics - 1));
+    push_object_type(0, Pike_compiler->new_program->id);
+    push_type(PIKE_T_GENERIC);
+    push_type_value(pop_unfinished_type());
+  } else {
+    yyerror("Too many generic variables.");
+    ref_push_type_value(type);
+  }
+
+  /* FIXME: Put the generic typedef in p->module_index_cache instead?
+   *
+   * This implementation affects __create__().
+   */
+  add_constant(name, Pike_sp - 1, ID_PRIVATE | ID_PROTECTED | ID_INLINE | ID_USED);
+
+  /* FIXME: Save the type and default type for later. */
+
+  pop_stack();
 }
 
 static void compiler_define_implicit___create__(void)

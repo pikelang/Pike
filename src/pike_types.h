@@ -432,6 +432,7 @@ int match_types(struct pike_type *a,struct pike_type *b);
 int pike_types_le(struct pike_type *a, struct pike_type *b,
 		  enum pt_cmp_flags aflags, enum pt_cmp_flags bflags);
 int check_variant_overload(struct pike_type *a, struct pike_type *b);
+struct pike_type *get_obj_type(struct pike_type *t);
 struct pike_type *index_type(struct pike_type *type,
 			     struct pike_type *type_of_index,
 			     node *n);
