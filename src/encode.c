@@ -568,6 +568,7 @@ static void encode_type(struct pike_type *t, struct encode_data *data)
     case T_MAPPING:
     case T_OR:
     case T_AND:
+    case PIKE_T_GENERIC:
       encode_type(t->car, data);
       t = t->cdr;
       goto one_more_type;
@@ -2735,6 +2736,7 @@ static void low_decode_type(struct decode_data *data)
     case T_MAPPING:
     case T_OR:
     case T_AND:
+    case PIKE_T_GENERIC:
       low_decode_type(data);
       low_decode_type(data);
       push_reverse_type(tmp);
