@@ -1271,6 +1271,17 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	struct program *p=val->u.program;
 	debug_malloc_touch(p);
 	pop_stack();
+
+        for (d = 0; d < p->num_inherits; d++) {
+          if (p->inherits[d].prog->num_generics) {
+            if (d) {
+              Pike_error("Encoding of inherits binding generics not supported (yet).\n");
+            } else {
+              Pike_error("Encoding of programs using generics not supported (yet).\n");
+            }
+          }
+        }
+
 	if( (p->flags & PROGRAM_HAS_C_METHODS) || p->event_handler )
 	{
 	  int has_local_c_methods = 0;
