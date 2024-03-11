@@ -13828,7 +13828,7 @@ struct mapping *mkbindings(struct program *p, struct array *b)
   struct mapping *ret;
   int i;
 
-  if (!p || !p->num_generics || !b || !b->size) return NULL;
+  if (!p || !p->num_generics) return NULL;
 
   ret = allocate_mapping(p->num_generics);
 
@@ -13836,7 +13836,7 @@ struct mapping *mkbindings(struct program *p, struct array *b)
     struct svalue ss;
     struct svalue *s;
 
-    if (i < b->size) {
+    if (b && (i < b->size)) {
       s = ITEM(b) + i;
     } else {
       /* FIXME: Lookup LFUN::__generic_bindings__ in p, and use it. */
