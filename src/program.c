@@ -6281,7 +6281,7 @@ void lower_inherit(struct program *p,
       add_to_identifiers(id);
     }
 
-    free_mapping(bind);
+    do_free_mapping(bind);
   }
 
   for (e=0; e < (int)p->num_identifier_references; e++)
