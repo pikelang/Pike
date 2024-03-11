@@ -1633,7 +1633,14 @@ static void debug_push_finished_type_with_markers(struct pike_type *type,
     push_type_attribute((struct pike_string *)type->car);
     goto done;
   } else if ((type->type & PIKE_T_MASK) == PIKE_T_OPERATOR) {
-    push_finished_type_with_markers(type->car, markers, marker_set);
+    if ((type->type == PIKE_T_BIND) && type->car &&
+        (type->car->type == PIKE_T_ASSIGN)) {
+      push_finished_type_with_markers(type->car->cdr, markers, marker_set);
+      push_finished_type(type->car->car);
+      push_type(PIKE_T_ASSIGN);
+    } else {
+      push_finished_type_with_markers(type->car, markers, marker_set);
+    }
     if (type->type & 0x8000) {
       struct pike_type *t;
       type_stack_mark();
@@ -13025,6 +13032,20 @@ struct pike_type *get_first_arg_type(struct pike_type *fun_type,
     goto loop;
 
   case PIKE_T_OPERATOR:
+    if (fun_type->type == PIKE_T_BIND) {
+      tmp = get_first_arg_type(fun_type->cdr, flags);
+      if (!tmp) {
+        res = NULL;
+        break;
+      }
+
+      res = apply_type_operator(fun_type->type,
+                                fun_type->car,
+                                tmp);
+      free_type(tmp);
+      break;
+    }
+
     tmp = apply_type_operator(fun_type->type, fun_type->car, fun_type->cdr);
     if (!tmp) {
       res = NULL;
@@ -13670,7 +13691,7 @@ static void push_apply_bindings_recur(struct pike_type *t,
       {
         struct svalue *val;
         ref_push_type_value(t);
-        val = low_mapping_lookup(bindings, Pike_sp-1);
+        val = bindings?low_mapping_lookup(bindings, Pike_sp-1):NULL;
         if (val && (TYPEOF(*val) == PIKE_T_TYPE)) {
           push_apply_bindings_recur(val->u.type, bindings);
         } else {
