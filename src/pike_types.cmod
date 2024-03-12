@@ -11677,6 +11677,7 @@ struct pike_type *check_call_svalue(struct pike_type *fun_type,
     /* FIXME: Save and restore the corresponding marker set. */
   case T_ASSIGN:
   case PIKE_T_NAME:
+  case PIKE_T_BIND:
     fun_type = fun_type->cdr;
     goto loop;
 
@@ -11774,6 +11775,7 @@ struct pike_type *check_call_svalue(struct pike_type *fun_type,
      */
 
     /* FALLTHRU */
+  case PIKE_T_GENERIC:
   case PIKE_T_MIXED:
     copy_pike_type(res, mixed_type_string);
     break;
