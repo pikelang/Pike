@@ -1528,7 +1528,8 @@ static void debug_push_finished_type_with_markers(struct pike_type *type,
   /* We need to replace if there are any markers, or if there's a
    * non-masked assign.
    */
-  if (!(type->flags & (~marker_set | PT_FLAG_MARKER) & PT_FLAG_MARK_ASSIGN)) {
+  if (!(type->flags & (~marker_set | PT_FLAG_MARKER) & PT_FLAG_MARK_ASSIGN) ||
+      (type->type == PIKE_T_GENERIC)) {
     /* Nothing to replace in this subtree. */
 #ifdef PIKE_TYPE_DEBUG
     if (l_flag > 2) {
