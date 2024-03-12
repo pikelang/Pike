@@ -13697,7 +13697,8 @@ static void push_apply_bindings_recur(struct pike_type *t,
         struct svalue *val;
         ref_push_type_value(t);
         val = bindings?low_mapping_lookup(bindings, Pike_sp-1):NULL;
-        if (val && (TYPEOF(*val) == PIKE_T_TYPE)) {
+        if (val && (TYPEOF(*val) == PIKE_T_TYPE) &&
+            (val->u.type != t)) {
           push_apply_bindings_recur(val->u.type, bindings);
         } else {
           push_finished_type(t);
