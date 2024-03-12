@@ -8263,7 +8263,31 @@ static void f_dispatch_variant(INT32 args)
     struct call_state cs;
 
     id = ID_FROM_INT(prog, fun_num);
-    add_ref(t = id->type);
+
+    if (id->type->flags & PT_FLAG_MASK_GENERICS) {
+      int cnt = prog->num_generics;
+
+      type_stack_mark();
+
+      push_finished_type(id->type);
+
+      while (cnt--) {
+        /* FIXME: Use declared max type from program. */
+        push_type(PIKE_T_MIXED);
+
+        push_type('0' + cnt);
+        push_object_type(0, prog->id);
+        push_type(PIKE_T_GENERIC);
+
+        push_type(PIKE_T_ASSIGN);
+
+        push_type(PIKE_T_BIND);
+      }
+
+      t = pop_unfinished_type();
+    } else {
+      add_ref(t = id->type);
+    }
 
     /* Check whether the type is compatible with our arguments. */
     for (i = 0; i < args; i++) {
