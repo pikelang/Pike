@@ -14588,6 +14588,32 @@ struct pike_type *get_type_of_svalue(const struct svalue *s)
       } else {
 	copy_pike_type(ret, ID_FROM_INT(p,SUBTYPEOF(*s))->type);
       }
+
+      if (ret && (ret->flags & PT_FLAG_MASK_GENERICS)) {
+        int cnt = p->num_generics;
+
+        if (cnt) {
+          type_stack_mark();
+
+          push_finished_type(ret);
+          free_type(ret);
+
+          while (cnt--) {
+            /* FIXME: Use declared max type from program. */
+            push_type(PIKE_T_MIXED);
+
+            push_type('0' + cnt);
+            push_object_type(0, p->id);
+            push_type(PIKE_T_GENERIC);
+
+            push_type(PIKE_T_ASSIGN);
+
+            push_type(PIKE_T_BIND);
+          }
+
+          ret = pop_unfinished_type();
+        }
+      }
     }
     return ret;
 
@@ -14659,17 +14685,19 @@ struct pike_type *get_type_of_svalue(const struct svalue *s)
       else
       {
         int cnt;
+        struct program *prog =
+          s->u.object->prog->inherits[SUBTYPEOF(*s)].prog;
 
-	push_object_type(1, s->u.object->prog->id);
+        push_object_type(1, prog->id);
 
         /* NB: We know that bignums do not use generics. */
-        cnt = s->u.object->prog->num_generics;
+        cnt = prog->num_generics;
         while (cnt--) {
           /* FIXME: Use declared max type from program. */
           push_type(PIKE_T_MIXED);
 
           push_type('0' + cnt);
-          push_object_type(0, s->u.object->prog->id);
+          push_object_type(0, prog->id);
           push_type(PIKE_T_GENERIC);
 
           push_type(PIKE_T_ASSIGN);
