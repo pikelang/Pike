@@ -8265,26 +8265,12 @@ static void f_dispatch_variant(INT32 args)
     id = ID_FROM_INT(prog, fun_num);
 
     if (id->type->flags & PT_FLAG_MASK_GENERICS) {
-      int cnt = prog->num_generics;
+      struct mapping *bindings = mkbindings(prog, NULL);
 
-      type_stack_mark();
+      /* FIXME: This applies the default types rether than the max types. */
+      t = compiler_apply_bindings(id->type, bindings);
 
-      push_finished_type(id->type);
-
-      while (cnt--) {
-        /* FIXME: Use declared max type from program. */
-        push_type(PIKE_T_MIXED);
-
-        push_type('0' + cnt);
-        push_object_type(0, prog->id);
-        push_type(PIKE_T_GENERIC);
-
-        push_type(PIKE_T_ASSIGN);
-
-        push_type(PIKE_T_BIND);
-      }
-
-      t = pop_unfinished_type();
+      do_free_mapping(bindings);
     } else {
       add_ref(t = id->type);
     }

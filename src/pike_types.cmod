@@ -14590,29 +14590,15 @@ struct pike_type *get_type_of_svalue(const struct svalue *s)
       }
 
       if (ret && (ret->flags & PT_FLAG_MASK_GENERICS)) {
-        int cnt = p->num_generics;
+        struct mapping *bindings = mkbindings(p, NULL);
 
-        if (cnt) {
-          type_stack_mark();
+        /* FIXME: This applies the default types rether than the max types. */
+        struct pike_type *tmp = compiler_apply_bindings(ret, bindings);
 
-          push_finished_type(ret);
-          free_type(ret);
+        do_free_mapping(bindings);
+        free_type(ret);
 
-          while (cnt--) {
-            /* FIXME: Use declared max type from program. */
-            push_type(PIKE_T_MIXED);
-
-            push_type('0' + cnt);
-            push_object_type(0, p->id);
-            push_type(PIKE_T_GENERIC);
-
-            push_type(PIKE_T_ASSIGN);
-
-            push_type(PIKE_T_BIND);
-          }
-
-          ret = pop_unfinished_type();
-        }
+        ret = tmp;
       }
     }
     return ret;
