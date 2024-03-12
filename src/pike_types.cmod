@@ -14658,7 +14658,24 @@ struct pike_type *get_type_of_svalue(const struct svalue *s)
       }
       else
       {
+        int cnt;
+
 	push_object_type(1, s->u.object->prog->id);
+
+        /* NB: We know that bignums do not use generics. */
+        cnt = s->u.object->prog->num_generics;
+        while (cnt--) {
+          /* FIXME: Use declared max type from program. */
+          push_type(PIKE_T_MIXED);
+
+          push_type('0' + cnt);
+          push_object_type(0, s->u.object->prog->id);
+          push_type(PIKE_T_GENERIC);
+
+          push_type(PIKE_T_ASSIGN);
+
+          push_type(PIKE_T_BIND);
+        }
       }
     }else{
       /* Destructed object */
