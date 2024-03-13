@@ -750,7 +750,6 @@ testfont binary
 /src/modules/sprintf/acconfig.h foreign_ident
 /src/modules/sprintf/configure.in foreign_ident
 /src/modules/sprintf/sprintf.c foreign_ident
-/src/modules/static_module_makefile.in foreign_ident
 /src/modules/sybase/BUGS foreign_ident
 /src/modules/sybase/Makefile.in foreign_ident
 /src/modules/sybase/TODO foreign_ident
