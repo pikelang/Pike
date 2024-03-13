@@ -1013,7 +1013,7 @@ class Promise(<ValueType>)
 //!   @[race()], @[results()], @[all()], @[fold()]
 class AggregatedPromise(<ValueType>)
 {
-  inherit Promise(<array(ValueType)>);
+  inherit Promise(<array(ValueType)|ValueType>);
 
   //! @array
   //!   @elem mapping(int:mixed) 0
