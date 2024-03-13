@@ -511,6 +511,22 @@ static struct pike_type *debug_mk_type(unsigned INT32 type,
       }
     }
     break;
+  case PIKE_T_BIND:
+    if (car && (car->type == PIKE_T_ASSIGN) &&
+        ((car->car == car->cdr) ||
+         ((car->cdr->type == PIKE_T_NAME) && (car->car == car->cdr->cdr)))) {
+      /* Binding of a generic to itself.
+       *
+       * This is typically used to avoid the implicit
+       * binding of generics to their default values.
+       * Eg:
+       *
+       *   this_program(<T>) self() { return this; }
+       */
+      free_type(car);
+      return cdr;
+    }
+    break;
   }
 
   hash = (unsigned INT32)
