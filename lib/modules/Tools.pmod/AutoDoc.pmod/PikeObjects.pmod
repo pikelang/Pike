@@ -379,17 +379,20 @@ class ObjectType {
   //! The name of the class for the object.
   string classname;
 
+  array(Type)|zero bindings;
+
   //!
   protected void create() { ::create("object"); }
 
   string print() {
     if (classname)
-      return "object(" + classname + ")";
+      return "object(" + classname + ")" +
+        (bindings?("(<" + bindings->print() * "," + ">)"):"");
     else
       return "object";
   }
   string xml(.Flags|void flags) {
-    return xmltag("object", classname);
+    return xmltag("object", classname, @((bindings||({}))->xml(flags)));
   }
 }
 
@@ -769,6 +772,17 @@ class Inherit {
   //! Name of the class that is inherited.
   string classname;
 
+  //! Bindings (if any).
+  array(Type) bindings;
+
+  string standardTags(.Flags|void flags) {
+    if (bindings && sizeof(bindings)) {
+      return xmltag("bindings", bindings->xml(flags) * "\n") +
+        ::standardTags(flags);
+    }
+    return ::standardTags(flags);
+  }
+
   string xml(.Flags|void flags) {
     return standardStart(flags) +
       standardTags(flags) +
@@ -831,6 +845,9 @@ class _Class_or_Module {
 
   //! Documented entities that are children to this entity.
   array(DocGroup) docGroups = ({ });
+
+  //! Array of symbol followed by type and default type triples.
+  array(array(string|PikeObject)) generics = ({});
 
   void fixGettersSetters()
   {
@@ -987,6 +1004,11 @@ class _Class_or_Module {
     children -= ({ 0 }); // FIXME
     foreach (children, _Class_or_Module c)
       contents += c->xml(flags);
+    foreach (generics || ({}); int i; array(string|Type) generic) {
+      // Wrap the generics in docgroups.
+      DocGroup dg = DocGroup(({ Generic(i, @generic) }), EmptyDoc);
+      contents += dg->xml(flags);
+    }
     foreach (inherits, Inherit in) {
       // Wrap the undocumented inherits in docgroups.
       DocGroup dg = DocGroup(({in}), EmptyDoc);
@@ -1178,6 +1200,50 @@ class Typedef {
   }
   string print() {
     return ::print() + (type ? " " + type->print() + " " : "") + name;
+  }
+}
+
+//! Represents a generic.
+class Generic {
+  //!
+  inherit Typedef;
+
+  //!
+  constant objtype = "generic";
+
+  //!
+  int generic_argument_number;
+
+  //! Default @[Type].
+  Type default_type = 0;
+
+  protected mapping(string:string) standardAttributes(.Flags|void flags) {
+    mapping(string:string) m = ::standardAttributes(flags);
+    m->index = "" + generic_argument_number;
+    return m;
+  }
+
+  string xml(.Flags|void flags) {
+    return standardStart(flags) + standardTags(flags)
+      + xmltag("type", type->xml(flags))
+      + xmltag("default_type", default_type->xml(flags))
+      + standardEnd(flags);
+  }
+
+  string print() {
+    return ::print() +
+      (default_type? " " + default_type->print() : "");
+  }
+
+  protected void create(int i,
+                        string name,
+                        Type type = MixedType(),
+                        Type default_type = type)
+  {
+    this::generic_argument_number = i;
+    this::name = name;
+    this::type = type;
+    this::default_type = default_type;
   }
 }
 

@@ -524,6 +524,70 @@ string parseProgramName() {
   return s;
 }
 
+array(array(string|Type))|zero parseGenericsDecl()
+{
+  if ((peekToken() != "(") || (lookAhead(1) != "<")) return 0;
+
+  eat("(");
+  eat("<");
+
+  array(array(string|Type)) generics = ({});
+  string name;
+  while ((name = peekToken()) != ">") {
+    if (name == ",") {
+      eat(",");
+      continue;
+    }
+
+    Type t = parseOrType();
+    string sym = peekToken();
+    Type def = t;
+
+    if (!t || (t && (< "=", ",", ">" >)[sym])) {
+      t = def = MixedType();
+    } else {
+      name = eatIdentifier();
+      sym = peekToken();
+    }
+
+    if (sym == "=") {
+      eat("=");
+      def = parseOrType();
+    }
+
+    generics += ({ ({ name, t, def }) });
+  }
+
+  eat(">");
+  eat(")");
+
+  return generics;
+}
+
+array(Type)|zero parseOptionalBindings()
+{
+  if ((peekToken() != "(") || (lookAhead(1) != "<")) return 0;
+
+  eat("(");
+  eat("<");
+
+  array(Type) res = ({});
+  while (peekToken() != ">") {
+    Type t = parseOrType();
+    if (t) {
+      res += ({ t });
+    }
+    if ((peekToken() == ",") || !t) {
+      eat(",");
+    }
+  }
+
+  eat(">");
+  eat(")");
+
+  return res;
+}
+
 ObjectType parseObject() {
   ObjectType obj = ObjectType();
   if (peekToken() == "object") {
@@ -537,11 +601,13 @@ ObjectType parseObject() {
       }
       else
         obj->classname = parseProgramName();
+      obj->bindings = parseOptionalBindings();
       eat(")");
     }
   }
   else
     obj->classname = parseProgramName();
+  obj->bindings = obj->bindings || parseOptionalBindings();
   return obj;
 }
 
@@ -940,6 +1006,7 @@ PikeObject|array(PikeObject)|Annotation parseDecl(mapping|void args) {
 			   ({ ".", ".", "" }))/".")[-1];
       }
     }
+    i->bindings = parseOptionalBindings();
     return i;
   }
   else if (s == "typedef") {

@@ -263,15 +263,16 @@ private class Extractor {
         p->squeezedInDoc = doc;
       }
       if (objectp(p) && p->objtype == "class") {
+        ([object(Class)]p)->generics = parser->parseGenericsDecl();
 	if (parser->peekToken() == "(") {
 	  parser->eat("(");
 	  parseCreateArgList([object(Class)] p);
 	  parser->eat(")");
-	  if (isDocComment(parser->peekToken())) {
-	    Documentation doc = readAdjacentDocLines();
-	    p->squeezedInDoc = doc;
-	  }
 	}
+        if (isDocComment(parser->peekToken())) {
+          Documentation doc = readAdjacentDocLines();
+          p->squeezedInDoc = doc;
+        }
 	if (parser->peekToken() == "{") {
 	  parser->eat("{");
 	  parseClassBody(root, [object(Class)] p, 0);

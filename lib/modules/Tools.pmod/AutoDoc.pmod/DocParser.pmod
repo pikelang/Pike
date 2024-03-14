@@ -912,8 +912,15 @@ protected class DocParserClass {
               parseError("@%s: '%s::' only allowed as @namespace name",
 			 keyword, s);
 	  }
-          if (nameparser->peekToken() != EOF)
-            parseError("@%s: expected %s name, got %O", keyword, keyword, arg);
+          if (keyword == "class") {
+            array(array(string|Type))|zero generics =
+              nameparser->parseGenericsDecl();
+          }
+          if (nameparser->peekToken() != EOF) {
+            // werror("Tokens: %O\n", nameparser->tokens);
+            parseError("@%s: expected %s name, got %O (next: %O)",
+                       keyword, keyword, arg, nameparser->peekToken());
+          }
           meta->name = s;
 	}
 	break;

@@ -42,6 +42,8 @@ mapping lay = ([
  "_fixmebody" : "</dd>",
  "annotation" : "<dd class='body--annotation'>",
  "_annotation" : "</dd>",
+ "generic" : "<dd class='body--generic'>",
+ "_generic" : "</dd>",
 
  "parameter" : "<code class='parameter'>",
  "_parameter" : "</code>",
@@ -1197,6 +1199,7 @@ void resolve_class_paths(Node n, string|void path, Node|void parent)
   case "modifiers":
   case "annotations":
   case "classname":
+  case "generic":
     // We're not interrested in the stuff under the above nodes.
     return;
   default:
@@ -1338,7 +1341,7 @@ string class_name = "";
 
 string parse_not_doc(Node n) {
   string ret = "";
-  int method, argument, variable, num_const, typedf, cppdir;
+  int method, argument, variable, num_const, typedf, cppdir, generics;
 
   if (!n) return "";
 
@@ -1637,6 +1640,16 @@ string parse_not_doc(Node n) {
         "<code class='typedef'>" + c->get_attributes()->name + "</code></code>";
       break;
 
+    case "generic":
+      if (generics++) ret += "<br>\n";
+      ret += "<code><code class='datatype'>__generic__</code> ";
+      ret += parse_type(get_first_element(c->get_first_element("type"))) + " " +
+        "<code class='typedef'>" + c->get_attributes()->name + "</code>";
+      ret += " = " +
+        parse_type(get_first_element(c->get_first_element("default_type"))) +
+        "</code>";
+      break;
+
     case "inherit":
       ret += "<code><span class='datatype'>";
       cc = c->get_first_element("modifiers");
@@ -1648,6 +1661,12 @@ string parse_not_doc(Node n) {
 	  resolve_reference(n->value_of_node(), n->get_attributes());
       } else {
 	ret += Parser.encode_html_entities(n->value_of_node()) + "</span>";
+      }
+      n = c->get_first_element("bindings");
+      if (n) {
+        ret += "(< " +
+          map(n->get_elements(), parse_type) * ", " +
+          " >)";
       }
       if (c->get_attributes()->name) {
 	ret += " : " + "<span class='inherit'>" +
@@ -1726,12 +1745,13 @@ string parse_docgroup(Node n) {
 }
 
 protected mapping(string:string) node_type_groups = ([
-  "inherit":	"0",
-  "typedef":	"1",
-  "constant":	"2",
-  "variable":	"3",
-  "directive":	"4",
-  "method":	"5",
+  "generic":	"0",
+  "inherit":	"1",
+  "typedef":	"2",
+  "constant":	"3",
+  "variable":	"4",
+  "directive":	"5",
+  "method":	"6",
   "import":	"9",	// Note that these are filtered in the output.
 ]);
 
@@ -1740,7 +1760,8 @@ string node_type_group(Node n)
   mapping(string:string) attributes = n->get_attributes();
   string t = attributes["homogen-type"] || n->get_tag_name();
 
-  return node_type_groups[t] || node_type_groups->method;
+  return (node_type_groups[t] || node_type_groups->method) +
+    (attributes->index || "");
 }
 
 string docgroup_sort_key(Node n)
