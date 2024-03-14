@@ -132,8 +132,8 @@ object decode( string data, mapping|void options )
   Stdio.File fd3 = Stdio.File();
   object fd4 = fd3->pipe();
 
-  array command = ({
-    options->binary||find_in_path("gs")||("/bin/sh -c gs "),
+  string binary = options->binary || find_in_path("gs");
+  array command = (binary ? ({ binary }) : ({ "/bin/sh", "-c", "gs" })) + ({
     "-quiet",
     "-sDEVICE="+(options->device||"ppmraw"),
     "-r"+(options->dpi||100),
