@@ -82,6 +82,8 @@ protected function(function(__unknown__ ...:void), int|float, mixed ...:mixed)
 //! future. A Future object is typically produced from a @[Promise]
 //! object by calling its @[future()] method.
 //!
+//! The generic type @[ValueType] is the type for the provided value.
+//!
 //! @seealso
 //!   @[Promise]
 class Future(<ValueType>)
@@ -800,6 +802,8 @@ class Future(<ValueType>)
 //! that is directly returned to the user is the return
 //! value from @[future()].
 //!
+//! The generic type @[ValueType] is the type for the provided value.
+//!
 //! @seealso
 //!   @[Future], @[future()]
 class Promise(<ValueType>)
@@ -1000,6 +1004,9 @@ class Promise(<ValueType>)
 //! code that provides the @[Future] value. The only thing
 //! that is directly returned to the user is the return
 //! value from @[future()].
+//!
+//! The generic type @[ValueType] is the type for the individual
+//! aggregated values.
 //!
 //! @note
 //!   It is currently possible to use this class as a normal @[Promise]
