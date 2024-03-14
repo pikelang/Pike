@@ -51,15 +51,16 @@ object decode( string data, mapping|void options )
     ury = (int)((y1/72.0) * (options->dpi||100)+0.01);
   }
 
-  array command = ({
-    options->binary||find_in_path("gs")||("/bin/sh -c gs "),
+  string binary = options->binary || find_in_path("gs");
+  array command = (binary ? ({ binary }) : ({ "/bin/sh", "-c", "gs" })) + ({
     "-quiet",
     "-sDEVICE="+(options->device||"ppmraw"),
     "-r"+(options->dpi||100),
     "-dNOPAUSE",
     "-sOutputFile=-",
     "-",
-    "-c quit 2>/dev/null" 
+    "-c",
+    "quit",
   });
 
   Process.create_process( command, ([
