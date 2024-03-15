@@ -842,8 +842,7 @@ def: modifiers optional_attributes simple_type optional_constant
           Pike_compiler->compiler_frame->varargs = 1;
 	  for (e = 0; e < -Pike_compiler->num_create_args; e++) {
 	    struct identifier *id =
-              Pike_compiler->new_program->identifiers + e +
-              Pike_compiler->num_generics;
+              Pike_compiler->new_program->identifiers + e;
 	    add_ref(id->type);
 	    add_local_name(empty_pike_string, id->type, 0);
 	    /* Note: add_local_name() above will return e. */
@@ -854,8 +853,7 @@ def: modifiers optional_attributes simple_type optional_constant
 	} else {
 	  for (e = 0; e < Pike_compiler->num_create_args; e++) {
 	    struct identifier *id =
-              Pike_compiler->new_program->identifiers + e +
-              Pike_compiler->num_generics;
+              Pike_compiler->new_program->identifiers + e;
 	    add_ref(id->type);
 	    add_local_name(empty_pike_string, id->type, 0);
 	    /* Note: add_local_name() above will return e. */
@@ -2623,13 +2621,12 @@ create_arg: modifiers simple_type optional_dot_dot_dot TOK_IDENTIFIER
     /* Add the identifier globally.
      * Note: Since these are the first identifiers (and references)
      *       to be added to the program, they will be numbered in
-     *       sequence starting at num_generics. This means that the
-     *       counter num_create_args is sufficient extra information
-     *       to be able to keep track of them.
+     *       sequence. This means that the counter num_create_args
+     *       is sufficient extra information to be able to keep
+     *       track of them.
      */
     ref_no = define_variable($4->u.sval.u.string, type,
 			     Pike_compiler->current_modifiers);
-    ref_no -= Pike_compiler->num_generics;
 
     if ((Pike_compiler->num_create_args != ref_no) &&
 	(Pike_compiler->num_create_args != -ref_no)) {
@@ -4713,6 +4710,8 @@ static void compiler_add_generic(struct pike_string *name,
 
   /* FIXME: Save type and default_type somewhere. */
 
+  ref_push_string(name);
+
   if (Pike_compiler->new_program->num_generics <= 10) {
     /* Add a generic variable. */
     type_stack_mark();
@@ -4725,13 +4724,14 @@ static void compiler_add_generic(struct pike_string *name,
     ref_push_type_value(type);
   }
 
-  /* FIXME: Put the generic typedef in p->module_index_cache instead?
+  /* This does an import of the "module" ([ generic_name: generic_type ]).
    *
-   * This implementation affects __create__().
+   * Note: We *could* reuse the same mapping for all the generics of
+   *       a class, but that would require more complicated code and
+   *       keeping track of the mapping, for a case that is uncommon.
    */
-  add_constant(name, Pike_sp - 1, ID_PRIVATE | ID_PROTECTED | ID_INLINE | ID_USED);
-
-  /* FIXME: Save the type and default type for later. */
+  f_aggregate_mapping(2);
+  use_module(Pike_sp - 1);
 
   pop_stack();
 }
