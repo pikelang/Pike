@@ -70,6 +70,7 @@
 %token TOK_FOR "for"
 %token TOK_FUNCTION_ID "function"
 %token TOK_GAUGE "gauge"
+%token TOK_GENERIC "__generic__"
 %token TOK_GENERATOR "__generator__"
 %token TOK_GLOBAL "global"
 %token TOK_IDENTIFIER "identifier"
@@ -635,6 +636,8 @@ import: TOK_IMPORT constant_expr ';'
   }
   ;
 
+generic: TOK_GENERIC generic_type_decl_list ';'
+
 constant_name: TOK_IDENTIFIER '=' safe_assignment_expr
   {
     /* This can be made more lenient in the future */
@@ -921,6 +924,7 @@ def: modifiers optional_attributes simple_type optional_constant
   | inheritance {}
   | import {}
   | constant {}
+  | generic {}
   | modifiers named_class { free_node($2); }
   | modifiers enum { free_node($2); }
   | annotation ';'
