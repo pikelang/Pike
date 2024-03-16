@@ -3818,6 +3818,51 @@ void fix_type_field(node *n)
     }
     break;
 
+  case F_BIND_GENERICS:
+    {
+      struct pike_type *obj_type = get_obj_type(CAR(n)->type);
+
+      if (!obj_type || !(obj_type->flags & PT_FLAG_MASK_GENERICS)) {
+        if (!obj_type) {
+          yyerror("Bindings specified for non object type.");
+        } else {
+          yywarning("Bindings specified for object type without generics.");
+        }
+        copy_pike_type(n->type, CAR(n)->type);
+      } else {
+        struct array *bindings = CDR(n)->u.sval.u.array;
+        struct program *p = low_id_to_program(CDR_TO_INT(obj_type), 1);
+        int cnt = p?p->num_generics:1;
+
+        if (bindings && (bindings->size > cnt)) {
+          yywarning("Too many bindings for %pT.", obj_type);
+        }
+
+        type_stack_mark();
+        push_finished_type(CAR(n)->type);
+
+        while(cnt--) {
+          if (bindings && (cnt < bindings->size)) {
+            push_finished_type(ITEM(bindings)[cnt].u.type);
+          } else {
+            /* FIXME: Ought to use default type for the generic here. */
+            push_type(T_MIXED);
+          }
+
+          push_type('0' + cnt);
+          push_finished_type(obj_type);
+          push_type(PIKE_T_GENERIC);
+
+          push_type(PIKE_T_ASSIGN);
+
+          push_type(PIKE_T_BIND);
+        }
+
+        n->type = pop_unfinished_type();
+      }
+    }
+    break;
+
   case F_LAND:
   case F_LOR:
     if (!CAR(n) || CAR(n)->type == void_type_string) {

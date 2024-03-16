@@ -2099,6 +2099,9 @@ static int do_docode2(node *n, int flags)
     if (tmp1 > 1) do_pop((INT32)(tmp1 - 1));
     return !!tmp1;
 
+  case F_BIND_GENERICS:
+    return do_docode(CAR(n), flags);
+
   case F_APPLY:
     if(CAR(n)->token == F_CONSTANT)
     {

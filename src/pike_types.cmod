@@ -10346,6 +10346,8 @@ struct pike_type *get_obj_type(struct pike_type *t)
   case PIKE_T_SCOPE:
   case PIKE_T_NAME:
   case PIKE_T_ATTRIBUTE:
+  case PIKE_T_FUNCTION:
+  case PIKE_T_MANY:
     t = t->cdr;
     goto recur;
   default:

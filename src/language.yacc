@@ -482,11 +482,19 @@ optional_rename_inherit: ':' real_string_or_identifier { $$=$2; }
 low_program_ref: safe_assignment_expr
   {
     node *n = $1;
+    node *bindings = NULL;
 
     STACK_LEVEL_START(0);
 
     while (n) {
       switch (n->token) {
+      case F_BIND_GENERICS:
+        if (!bindings) {
+          bindings = CDR(n);
+          add_ref(bindings);
+        }
+        n = CAR(n);
+        continue;
       case F_EXTERNAL:
       case F_GET_SET:
 	$$ = n;
@@ -567,6 +575,10 @@ low_program_ref: safe_assignment_expr
       }
     }
 
+    if (bindings) {
+      $$ = mknode(F_BIND_GENERICS, $$, bindings);
+    }
+
     STACK_LEVEL_DONE(1);
   }
   ;
@@ -582,8 +594,7 @@ inherit_ref:
   }
   ;
 
-inheritance: modifiers TOK_INHERIT inherit_ref
-  opt_generic_bindings optional_rename_inherit ';'
+inheritance: modifiers TOK_INHERIT inherit_ref optional_rename_inherit ';'
   {
     if (($1 & ID_EXTERN) &&
 	(Pike_compiler->compiler_pass == COMPILER_PASS_FIRST)) {
@@ -593,13 +604,15 @@ inheritance: modifiers TOK_INHERIT inherit_ref
     if($3)
     {
       struct pike_string *s=Pike_sp[-1].u.string;
-      struct array *bindings = $4?$4->u.sval.u.array:NULL;
+      if($4) s = $4->u.sval.u.string;
 
-      if($5) s = $5->u.sval.u.string;
-      compiler_do_inherit($3, $1, s, bindings);
+      if ($3->token == F_BIND_GENERICS) {
+        compiler_do_inherit(CAR($3), $1, s, CDR($3)->u.sval.u.array);
+      } else {
+        compiler_do_inherit($3, $1, s, NULL);
+      }
     }
 
-    if($5) free_node($5);
     if($4) free_node($4);
     pop_stack();
     if ($3) free_node($3);
@@ -1405,35 +1418,40 @@ basic_type:
  */
 identifier_type: id_expr
   {
-    if ($1) {
-      fix_type_field($1);
+    node *expr = $1;
+    struct array *bindings = NULL;
+    struct pike_type *obj_type;
+
+    if (expr && (expr->token == F_BIND_GENERICS)) {
+      bindings = CDR(expr)->u.sval.u.array;
+      expr = CAR(expr);
+    }
+
+    if (expr) {
+      fix_type_field(expr);
 
       if ((Pike_compiler->compiler_pass == COMPILER_PASS_LAST) &&
-	  !pike_types_le($1->type, typeable_type_string, 0, 0) &&
+          !pike_types_le(expr->type, typeable_type_string, 0, 0) &&
 	  (THIS_COMPILATION->lex.pragmas & ID_STRICT_TYPES)) {
 	yytype_report(REPORT_WARNING,
-		      $1->current_file, $1->line_number, typeable_type_string,
-		      $1->current_file, $1->line_number, $1->type,
+                      expr->current_file, expr->line_number,
+                      typeable_type_string,
+                      expr->current_file, expr->line_number, expr->type,
 		      0, "Invalid type.");
       }
     }
 
-    resolv_type($1);
+    resolv_type(expr);
 
     /* Attempt to name the type. */
     if (Pike_compiler->last_identifier) {
       push_type_name(Pike_compiler->last_identifier);
     }
 
-    free_node($1);
-  }
-  opt_generic_bindings
-  {
-    struct pike_type *obj_type = get_obj_type(peek_type_stack());
+    obj_type = get_obj_type(peek_type_stack());
     if (obj_type && (obj_type->flags & PT_FLAG_GOBJECT)) {
       struct program *p = low_id_to_program(CDR_TO_INT(obj_type), 1);
       int cnt = p?p->num_generics:1;
-      struct array *bindings = $3?$3->u.sval.u.array:NULL;
 
       if (bindings && (bindings->size > cnt)) {
         yywarning("Too many bindings for %pT.", obj_type);
@@ -1443,6 +1461,7 @@ identifier_type: id_expr
         if (bindings && (cnt < bindings->size)) {
           push_finished_type(ITEM(bindings)[cnt].u.type);
         } else {
+          /* FIXME: Ought to use default type for the generic here. */
           push_type(T_MIXED);
         }
 
@@ -1454,12 +1473,12 @@ identifier_type: id_expr
 
         push_type(PIKE_T_BIND);
       }
-    } else if ($3) {
+    } else if (bindings) {
       yywarning("Bindings specified for non-generic type %pT.",
                 peek_type_stack());
     }
 
-    free_node($3);
+    free_node($1);
   }
   | typeof
   {
@@ -3514,8 +3533,22 @@ qualified_id_expr: qualified_ident
   | qualified_id_expr '.' bad_identifier {}
   ;
 
-id_expr: unqualified_id_expr
-  | qualified_id_expr
+id_expr: unqualified_id_expr opt_generic_bindings
+  {
+    if ($2) {
+      $$ = mknode(F_BIND_GENERICS, $1, $2);
+    } else {
+      $$ = $1;
+    }
+  }
+  | qualified_id_expr opt_generic_bindings
+  {
+    if ($2) {
+      $$ = mknode(F_BIND_GENERICS, $1, $2);
+    } else {
+      $$ = $1;
+    }
+  }
   ;
 
 primary_expr: literal_expr
@@ -3694,7 +3727,17 @@ primary_expr: literal_expr
   ;
 
 postfix_expr: id_expr
-  | primary_expr
+  | primary_expr opt_generic_bindings
+  {
+    if ($2) {
+      if ($1 && ($1->token == F_BIND_GENERICS)) {
+        yyerror("Multiple bindings specified.");
+      }
+      $$ = mknode(F_BIND_GENERICS, $1, $2);
+    } else {
+      $$ = $1;
+    }
+  }
   | bad_expr_ident
   {
     $$ = mknewintnode(0);
