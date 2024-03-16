@@ -174,6 +174,9 @@ string usage = #"[options] <from> > <to>
                   Note that the symbol specified here will be prefixed
                   and suffixed by PROG_/_ID when used as it is used as
                   argument to START_NEW_PROGRAM_ID().
+   num_generics;  The number of generics for this PIKECLASS (if any).
+   bind_generics; The types to bind the generic types in the INHERITed
+                  program to.
    gc_trivial;    Only valid for EXIT functions. This instructs the gc that
                   the EXIT function is trivial and that it's ok to destruct
                   objects of this program in any order. In general, if there
@@ -1583,6 +1586,8 @@ constant valid_attributes = (<
   "prototype",
   "program_flags",
   "program_id",
+  "num_generics",	/* PIKECLASS only. */
+  "bind_generics",	/* INHERIT only. */
 >);
 
 /*
@@ -2099,6 +2104,26 @@ sprintf("        } else {\n"
 	    }
 	    check_used[inh_offset] = 1;
 	    check_used[inh_storage] = 1;
+
+            if (attributes->bind_generics) {
+              array(string) binding_types =
+                map(attributes->bind_generics/",", String.trim_all_whites) -
+                ({ "" });
+              foreach(binding_types, string rawtype) {
+                pre += ({
+                  PC.Token(indent + "push_type_value(make_pike_type(" + rawtype + "));\n"),
+                });
+              }
+              pre += ({
+                PC.Token(indent + sprintf("f_aggregate(%d);\n",
+                                          sizeof(binding_types))),
+              });
+
+              post = ({
+                PC.Token(indent + "pop_stack();\n"),
+              });
+            }
+
 	    addfuncs +=
 	      IFDEF(define,
 		    ({
@@ -2113,23 +2138,27 @@ sprintf("        } else {\n"
                               PC.Token(sprintf("%slow_inherit(%s, NULL, %s, "
                                                "%s, %s, %s\n"
                                                "#ifdef tGeneric\n"
-                                               ", NULL\n"
+                                               ", %s\n"
                                                "#endif\n"
                                                ");\n",
                                                indent, p, numid, offset,
                                                attributes->flags || "0",
-                                               inh_name?allocate_string(inh_name):"NULL"),
+                                               inh_name?allocate_string(inh_name):"NULL",
+                                               attributes->bind_generics?
+                                               "Pike_sp[-1].u.array":"NULL"),
                                        x[e]->line),
                             }),
                             ({
                               PC.Token(sprintf("%slow_inherit(%s, NULL, %s, "
                                                "%s, %s, NULL\n"
                                                "#ifdef tGeneric\n"
-                                               ", NULL\n"
+                                               ", %s\n"
                                                "#endif\n"
                                                ");\n",
                                                indent, p, numid, offset,
-                                               attributes->flags || "0"),
+                                               attributes->flags || "0",
+                                               attributes->bind_generics?
+                                               "Pike_sp[-1].u.array":"NULL"),
                                        x[e]->line),
                             })),
 		      IFDEF(inh_offset + "_used",
@@ -2298,6 +2327,7 @@ sprintf("        } else {\n"
 	    string name=(string)proto[0];
 	    string lname = mkname(base, name);
 	    mapping attributes=parse_attributes(proto[1..]);
+            int num_generics = (int)attributes->num_generics;
 	    names[name] = lname;
 	    ParseBlock subclass = ParseBlock(body[1..sizeof(body)-2],
 					     mkname(base, name), name,
@@ -2353,6 +2383,14 @@ sprintf("        } else {\n"
                                    sprintf("%O", sprintf("\3\0\x7f%3c",
                                                          subclass->local_id)))),
 		    })+
+                    (num_generics ? ({
+                      PC.Token(sprintf("  %s->num_generics = %d;\n",
+                                       program_var, num_generics),
+                               proto[0]->line),
+                      PC.Token(sprintf("  Pike_compiler->num_generics = %d;\n",
+                                       num_generics),
+                               proto[0]->line),
+                    }):({})) +
 		    subclass->addfuncs+
 		    ({
 		      attributes->program_flags?
