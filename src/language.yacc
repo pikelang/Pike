@@ -4828,7 +4828,7 @@ static void compiler_define_implicit___create__(void)
       mknode(F_COMMA_EXPR, n,
              mknode(F_POP_VALUE,
                     mknode(F_ASSIGN,
-                           mkidentifiernode(e + Pike_compiler->num_generics),
+                           mkidentifiernode(e),
                            mklocalnode(e, 0)), NULL));
   } else {
     push_type(T_VOID);
@@ -4848,7 +4848,7 @@ static void compiler_define_implicit___create__(void)
       mknode(F_COMMA_EXPR,
              mknode(F_POP_VALUE,
                     mknode(F_ASSIGN,
-                           mkidentifiernode(e + Pike_compiler->num_generics),
+                           mkidentifiernode(e),
                            mklocalnode(e, 0)), NULL),
              n);
 
