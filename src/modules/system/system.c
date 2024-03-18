@@ -408,8 +408,6 @@ void f_clonefile(INT32 args)
   char *to;
   int err;
 
-  VALID_FILE_IO("clonefile","write");
-
   get_all_args("clonefile",args, "%s%s", &from, &to);
 
   do {
@@ -421,7 +419,7 @@ void f_clonefile(INT32 args)
   } while (1);
 
   if (err < 0) {
-    report_error("clonefile");
+    report_os_error("clonefile");
   }
   pop_n_elems(args);
 }
