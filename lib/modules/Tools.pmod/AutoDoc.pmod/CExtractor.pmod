@@ -113,6 +113,10 @@ protected private class Extractor {
         }
         decls = ({ c });
         tokens = tokens[1..];
+        foreach(meta->decls, PikeObject o) {
+          // Typically generics.
+          c->addChild(o);
+        }
         parseClassBody(c, root);
         .DocParser.Parse p = tokens[0];
         MetaData endmeta = p ? p->metadata() : 0;

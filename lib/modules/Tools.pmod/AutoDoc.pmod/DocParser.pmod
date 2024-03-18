@@ -913,8 +913,10 @@ protected class DocParserClass {
 			 keyword, s);
 	  }
           if (keyword == "class") {
-            array(array(string|Type))|zero generics =
-              nameparser->parseGenericsDecl();
+            foreach(nameparser->parseGenericsDecl() || ({});
+                    int i; array(string|Type) generic) {
+              meta->decls += ({ DocGroup(({ Generic(i, @generic) })) });
+            }
           }
           if (nameparser->peekToken() != EOF) {
             // werror("Tokens: %O\n", nameparser->tokens);
@@ -954,23 +956,26 @@ protected class DocParserClass {
             parseError("@belongs before @decl");
           meta->type = "decl";
           .PikeParser declparser = .PikeParser(arg, currentPosition);
-          PikeObject p = declparser->parseDecl(
+          array(PikeObject)|PikeObject pp = declparser->parseDecl(
             ([ "allowArgListLiterals" : 1,
                "allowScopePrefix" : 1 ]) ); // constants/literals + scope::
           string s = declparser->peekToken();
           if (s != ";" && s != EOF)
             parseError("@decl: expected end of line, got %O", s);
-          int i = search(p->name||"", "::");
-          if (i >= 0) {
-            string scope = p->name[0 .. i + 1];
-            p->name = p->name[i + 2 ..];
-            if (!first && scopeModule != scope)
+          foreach(arrayp(pp)?pp:({pp}), PikeObject p) {
+            int i = search(p->name||"", "::");
+            if (i >= 0) {
+              string scope = p->name[0 .. i + 1];
+              p->name = p->name[i + 2 ..];
+              if (!first && scopeModule != scope)
+                parseError("@decl's must have identical 'scope::' prefix");
+              scopeModule = scope;
+            }
+            else if (!first && scopeModule)
               parseError("@decl's must have identical 'scope::' prefix");
-            scopeModule = scope;
+
+            meta->decls += ({ p });
           }
-          else if (!first && scopeModule)
-            parseError("@decl's must have identical 'scope::' prefix");
-          meta->decls += ({ p });
 	}
 	break;
 

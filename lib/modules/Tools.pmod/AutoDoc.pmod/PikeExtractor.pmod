@@ -503,9 +503,10 @@ private class Extractor {
       foreach (decls, PikeObject obj)
         if (nonGroupable[obj->objtype]) {
           wasNonGroupable = 1;
-          if (sizeof(decls) > 1 && doc)
+          if (sizeof(decls) > 1 && doc && (doc != EmptyDoc)) {
             extractorError("%s are not groupable",
                            String.implode_nicely(indices(nonGroupable)));
+          }
         }
 
       if (doc && !sizeof(decls)) {
@@ -581,11 +582,16 @@ private class Extractor {
           context = "_general";
         doc->xml = parse->doc(context);
       } else {
-	// Make sure that all inherits and imports are added:
+        // Make sure that all generics, inherits and imports are added:
 	foreach(decls, PikeObject obj) {
 	  if ((obj->objtype == "inherit") ||
 	      (obj->objtype == "import")) {
 	    c->addInherit(obj);
+          } else if (obj->objtype == "generic") {
+            DocGroup d = DocGroup(({ obj }), EmptyDoc);
+            d->appears = appears;
+            d->belongs = belongs;
+            c->addGroup(d);
 	  }
 	}
       }

@@ -64,6 +64,7 @@ protected private void processWarning(string message, mixed ... args) {
 // </modifiers>
 //
 // <docgroup>
+//   <generic/>
 //   <method/>
 //   <variable/>
 //   <constant/>
@@ -424,7 +425,7 @@ protected int isText(SimpleNode node) { return node->get_node_type() == XML_TEXT
 protected string renderType(SimpleNode node)
 {
   SimpleNode type_node;
-  if ((< "method", "variable", "constant", "directive",
+  if ((< "method", "variable", "constant", "directive", "generic",
 	 "typedef", "inherit", "import" >)[node->get_any_name()]) {
     type_node = node;
   } else {
@@ -433,6 +434,7 @@ protected string renderType(SimpleNode node)
       node->get_first_element("variable") ||
       node->get_first_element("constant") ||
       node->get_first_element("directive") ||
+      node->get_first_element("generic") ||
       node->get_first_element("typedef") ||
       node->get_first_element("inherit") ||
       node->get_first_element("import");
@@ -560,9 +562,13 @@ void mergeTrees(SimpleNode dest, SimpleNode source)
 	  string name = getName(node);
 
 	  if (!name) {
-	    processError("No name for %s:\n"
-			 "%O\n",
-			 node->get_any_name(), node->render_xml()[..256]);
+            if (node->get_any_name() != "enum") {
+              processError("No name for %s:\n"
+                           "%O\n",
+                           node->get_any_name(), node->render_xml()[..256]);
+            }
+
+            name = "";
 	  }
 
 	  SimpleNode n = dest_children[name];
@@ -692,6 +698,15 @@ void mergeTrees(SimpleNode dest, SimpleNode source)
     array(SimpleNode) nodes = dest_groups[name];
 
     if (!nodes) continue;
+
+    if (sizeof(nodes) > 1) {
+      array(SimpleNode) filtered =
+        filter(nodes, nodes->get_first_element("doc"));
+      if (sizeof(filtered)) {
+        // Keep only the nodes that have documentation.
+        nodes = filtered;
+      }
+    }
 
     if (sizeof(nodes) > 1)
       sort(map(nodes, renderType), nodes);
@@ -1407,7 +1422,7 @@ class NScope
 	    }
 	    break;
 	  default:
-	    // variable, constant, typedef, enum, etc.
+            // variable, constant, typedef, generic, enum, etc.
 	    if (n) {
 	      if (objectp(symbols[n])) {
 		werror("%s is both a %s scope and a %O!\n",

@@ -524,6 +524,37 @@ string parseProgramName() {
   return s;
 }
 
+array(string|Type) parseGenericDecl()
+{
+  string name = peekToken();
+
+  if (lower_case(name) == upper_case(name)) {
+    parseError("Invalid generic declaration.");
+  }
+
+  Type t = parseOrType();
+  string sym = peekToken();
+  Type def = t;
+
+  if (!t || (t && (< "=", ",", ">", ";", EOF >)[sym])) {
+    t = def = MixedType();
+  } else {
+    name = eatIdentifier();
+    sym = peekToken();
+  }
+
+  if (sym == "=") {
+    eat("=");
+    def = parseOrType();
+  }
+
+  if (peekToken() == ",") {
+    eat(",");
+  }
+
+  return ({ name, t, def });
+}
+
 array(array(string|Type))|zero parseGenericsDecl()
 {
   if ((peekToken() != "(") || (lookAhead(1) != "<")) return 0;
@@ -532,30 +563,8 @@ array(array(string|Type))|zero parseGenericsDecl()
   eat("<");
 
   array(array(string|Type)) generics = ({});
-  string name;
-  while ((name = peekToken()) != ">") {
-    if (name == ",") {
-      eat(",");
-      continue;
-    }
-
-    Type t = parseOrType();
-    string sym = peekToken();
-    Type def = t;
-
-    if (!t || (t && (< "=", ",", ">" >)[sym])) {
-      t = def = MixedType();
-    } else {
-      name = eatIdentifier();
-      sym = peekToken();
-    }
-
-    if (sym == "=") {
-      eat("=");
-      def = parseOrType();
-    }
-
-    generics += ({ ({ name, t, def }) });
+  while ((peekToken() != ">") && (peekToken() != EOF)) {
+    generics += ({ parseGenericDecl() });
   }
 
   eat(">");
@@ -1009,6 +1018,16 @@ PikeObject|array(PikeObject)|Annotation parseDecl(mapping|void args) {
     i->bindings = parseOptionalBindings();
     return i;
   }
+  else if (s == "__generic__") {
+    eat("__generic__");
+    array(Generic) generics = ({});
+
+    while ((peekToken() != ";") && (peekToken() != EOF)) {
+      generics += ({ Generic(sizeof(generics), @parseGenericDecl()) });
+    }
+
+    return generics;
+  }
   else if (s == "typedef") {
     Typedef t = Typedef();
     t->position = position;
@@ -1027,6 +1046,8 @@ PikeObject|array(PikeObject)|Annotation parseDecl(mapping|void args) {
     readToken();
     if (peekToken() != "{")
       e->name = eatIdentifier();
+    else
+      e->name = "";
     return e;
   }
   else if ((s == "static_assert") || (s == "_Static_assert")) {

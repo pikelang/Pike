@@ -570,7 +570,8 @@ class DocGroup {
   Documentation documentation = 0;
 
   //!
-  protected void create(array(PikeObject) objs, Documentation doc) {
+  protected void create(array(PikeObject) objs,
+                        Documentation doc = EmptyDoc) {
     documentation = doc;
     objects = objs;
   }

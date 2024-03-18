@@ -924,12 +924,13 @@ class Node
       multiset(string) inhs = (<>);
       if (sizeof(n->inherits)) {
         foreach(n->inherits, array(string) entry) {
-          if (entry[2] == ref) {
+          if ((entry[2] || entry[1]) == ref) {
             if (verbosity && (ref == this_ref)) {
-              werror("Circular inherit in %s.\n", this_ref);
+              werror("Circular inherit in %s.\n", ref);
             }
             continue;   // Infinite loop averted.
           }
+
           q->put(({ weight + 1 }) + entry);
           inhs[entry[2]||entry[1]] = 1;
         }
