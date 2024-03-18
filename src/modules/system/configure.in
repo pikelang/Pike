@@ -23,7 +23,7 @@ AC_CHECK_HEADERS(syslog.h sys/syslog.h sys/types.h unistd.h pwd.h \
         sys/systeminfo.h windows.h sys/param.h utime.h sys/utime.h sys/id.h \
 	sys/time.h sys/shm.h sys/mman.h fcntl.h sys/fcntl.h netinfo/ni.h \
 	sys/prctl.h cygwin/ipc.h cygwin/sem.h cygwin/shm.h ws2tcpip.h \
-	NewAPIs.h sys/loadavg.h)
+	NewAPIs.h sys/loadavg.h sys/clonefile.h)
 
 # some Linux systems have a broken resource.h that compiles anyway /Mirar
 AC_MSG_CHECKING([for working sys/resource.h])
