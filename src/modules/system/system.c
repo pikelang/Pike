@@ -115,6 +115,10 @@
 #include <sys/loadavg.h>
 #endif
 
+#ifdef HAVE_SYS_CLONEFILE_H
+#include <sys/clonefile.h>
+#endif
+
 #include "dmalloc.h"
 
 
@@ -242,7 +246,7 @@ static void report_error(const char *function_name)
  *!   This function is not available on all platforms.
  *!
  *! @seealso
- *!   @[symlink()], @[mv()], @[rm()]
+ *!   @[symlink()], @[clonefile()], @[mv()], @[rm()]
  */
 void f_hardlink(INT32 args)
 {
@@ -278,7 +282,7 @@ void f_hardlink(INT32 args)
  *!   This function is not available on all platforms.
  *!
  *! @seealso
- *!   @[hardlink()], @[readlink()], @[mv()], @[rm()]
+ *!   @[hardlink()], @[readlink()], @[clonefile()], @[mv()], @[rm()]
  */
 void f_symlink(INT32 args)
 {
@@ -432,6 +436,45 @@ void f_resolvepath(INT32 args)
   push_string(make_shared_binary_string(buf, len));
 }
 #endif /* HAVE_RESOLVEPATH || HAVE_REALPATH */
+
+#ifdef HAVE_CLONEFILE
+/*! @decl void clonefile(string from, string to)
+ *!
+ *! Copy a file @[from] with copy-on-write semantics to the destination named
+ *! @[to].
+ *!
+ *! @note
+ *!   This function is currently only available on macOS, and then only when
+ *!   @[from] and @[to] reference a common file system with copy-on-write
+ *!   support (e.g. an APFS volume).
+ *!
+ *! @seealso
+ *!   @[hardlink()], @[symlink()]
+ */
+void f_clonefile(INT32 args)
+{
+  char *from;
+  char *to;
+  int err;
+
+  VALID_FILE_IO("clonefile","write");
+
+  get_all_args("clonefile",args, "%s%s", &from, &to);
+
+  do {
+    THREADS_ALLOW_UID();
+    err = clonefile(from, to, 0);
+    THREADS_DISALLOW_UID();
+    if (err >= 0 || errno != EINTR) break;
+    check_threads_etc();
+  } while (1);
+
+  if (err < 0) {
+    report_error("clonefile");
+  }
+  pop_n_elems(args);
+}
+#endif /* HAVE_CLONEFILE */
 
 /*! @decl int umask(void|int mask)
  *!
@@ -3196,6 +3239,11 @@ PIKE_MODULE_INIT
   ADD_EFUN("resolvepath", f_resolvepath,tFunc(tStr,tStr), OPT_EXTERNAL_DEPEND);
   ADD_FUNCTION2("resolvepath", f_resolvepath,tFunc(tStr,tStr), 0, OPT_EXTERNAL_DEPEND);
 #endif /* HAVE_RESOLVEPATH || HAVE_REALPATH */
+
+#ifdef HAVE_CLONEFILE
+/* function(string, string:void) */
+  ADD_FUNCTION2("clonefile", f_clonefile,tFunc(tStr tStr,tVoid), 0, OPT_SIDE_EFFECT);
+#endif /* HAVE_CLONEFILE */
 
   /* function(int|void:int) */
   ADD_EFUN("umask", f_umask, tFunc(tOr(tInt,tVoid),tInt), OPT_SIDE_EFFECT);
