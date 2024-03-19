@@ -93,6 +93,8 @@ enum LFUN {
     LFUN__DESTRUCT,
     LFUN__SPRINTF,
     LFUN___CREATE__,
+    LFUN___GENERIC_TYPES__,
+    LFUN___GENERIC_BINDINGS__,
 
     /* Group 1 */
     LFUN_ADD 			= 0x10,

@@ -4755,7 +4755,112 @@ static void compiler_add_generic(struct pike_string *name,
   Pike_compiler->new_program->num_generics =
     ++Pike_compiler->num_generics;
 
-  /* FIXME: Save type and default_type somewhere. */
+  /* Update generic_types.
+   *
+   * Conventions:
+   *
+   *   A NULL generic_types means that it is an array of length
+   *   num_generics containing only mixed_type_string.
+   *
+   *   A generic_types array shorter than num_generics is padded
+   *   with mixed_type_string.
+   */
+  if (type != mixed_type_string) {
+    if ((!Pike_compiler->generic_types) ||
+        (Pike_compiler->generic_types->size < Pike_compiler->num_generics)) {
+      int i;
+      int cnt = Pike_compiler->num_generics - 1;
+      if (Pike_compiler->generic_types) {
+        /* NB: Steals one reference to avoid need to free it
+         *     at the assignment below.
+         */
+        cnt -= Pike_compiler->generic_types->size;
+        push_array(Pike_compiler->generic_types);
+      }
+
+      for (i = 0; i < cnt; i++) {
+        ref_push_type_value(mixed_type_string);
+      }
+
+      ref_push_type_value(type);
+
+      f_aggregate(cnt + 1);
+
+      if (Pike_compiler->generic_types) {
+        f_add(2);
+      }
+
+      add_ref(Pike_compiler->generic_types = Pike_sp[-1].u.array);
+      pop_stack();
+    } else {
+      struct svalue * s = ITEM(Pike_compiler->generic_types) +
+        (Pike_compiler->num_generics - 1);
+      free_svalue(s);
+      SET_SVAL(*s, PIKE_T_TYPE, 0, type, type);
+      add_ref(type);
+    }
+  }
+
+  /* Update generic_bindings.
+   *
+   * Conventions:
+   *
+   *   A NULL generic_bindings means that it is identical to
+   *   the generic_types array.
+   *
+   *   A generic_bindings array shorter than num_generics is padded
+   *   with entries from the generic_types array.
+   */
+  if ((default_type != type) ||
+      (Pike_compiler->generic_bindings &&
+       (Pike_compiler->num_generics <=
+        Pike_compiler->generic_bindings->size))) {
+    if (!Pike_compiler->generic_bindings && Pike_compiler->generic_types) {
+      Pike_compiler->generic_bindings =
+        copy_array(Pike_compiler->generic_types);
+    }
+
+    if (!Pike_compiler->generic_bindings ||
+        (Pike_compiler->generic_bindings->size < Pike_compiler->num_generics)) {
+      int i = 0;
+      if (Pike_compiler->generic_bindings) {
+        /* NB: Steals one reference.
+         *
+         *     So no need to free it at the assignment below.
+         */
+        i = Pike_compiler->generic_bindings->size;
+        push_array(Pike_compiler->generic_bindings);
+      }
+
+      for (; i < Pike_compiler->num_generics - 1; i++) {
+        if (Pike_compiler->generic_types &&
+            (i < Pike_compiler->generic_types->size)) {
+          ref_push_type_value(ITEM(Pike_compiler->generic_types)[i-1].u.type);
+        } else {
+          ref_push_type_value(mixed_type_string);
+        }
+      }
+
+      ref_push_type_value(default_type);
+
+      f_aggregate(Pike_compiler->num_generics -
+                  (Pike_compiler->generic_bindings ?
+                   Pike_compiler->generic_bindings->size : 0));
+
+      if (Pike_compiler->generic_bindings) {
+        f_add(2);
+      }
+
+      add_ref(Pike_compiler->generic_bindings = Pike_sp[-1].u.array);
+      pop_stack();
+    } else {
+      struct svalue * s = ITEM(Pike_compiler->generic_bindings) +
+        (Pike_compiler->num_generics - 1);
+      free_svalue(s);
+      SET_SVAL(*s, PIKE_T_TYPE, 0, type, default_type);
+      add_ref(default_type);
+    }
+  }
 
   ref_push_string(name);
 

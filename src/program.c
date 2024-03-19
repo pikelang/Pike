@@ -140,6 +140,8 @@ const char *const lfun_names[]  = {
   "\0_destruct\0destroy",
   "_sprintf",
   "__create__",
+  "__generic_types__",
+  "__generic_bindings__",
   0,
 
   "`+",
@@ -234,6 +236,8 @@ static const char *const raw_lfun_types[] = {
   tFunc(tInt03, tInt01),			/* "_destruct", */
   tFunc(tInt7bit tMap(tStr, tInt), tStr),	/* "_sprintf", */
   tFuncV(tNone, tUnknown, tVoid),		/* "__create__", */
+  tArr(tType(tMix)),				/* "__generic_types__", */
+  tArr(tType(tMix)),				/* "__generic_bindings__", */
   0,
 
   tFunc(tUnknown, tMix),			/* "`+", */
@@ -3833,6 +3837,38 @@ void low_start_new_program(struct program *p,
   debug_malloc_touch(Pike_compiler->fake_object);
   debug_malloc_touch(Pike_compiler->fake_object->storage);
 
+  if (p->num_generics) {
+    /* Copy generics info (if any) from previous pass. */
+
+    int e = FIND_LFUN(p, LFUN___GENERIC_TYPES__);
+    if (e >= 0) {
+      struct reference *ref = PTR_FROM_INT(p, e);
+      if (!ref->inherit_offset) {	/* Not inherited. */
+        struct identifier *id = ID_FROM_PTR(p, ref);
+        if (IDENTIFIER_IS_CONSTANT(id->identifier_flags)) {
+          struct svalue *val = &p->constants[id->func.const_info.offset].sval;
+          if (TYPEOF(*val) == PIKE_T_ARRAY) {
+            add_ref(Pike_compiler->generic_types = val->u.array);
+          }
+        }
+      }
+    }
+
+    e = FIND_LFUN(p, LFUN___GENERIC_BINDINGS__);
+    if (e >= 0) {
+      struct reference *ref = PTR_FROM_INT(p, e);
+      if (!ref->inherit_offset) {	/* Not inherited. */
+        struct identifier *id = ID_FROM_PTR(p, ref);
+        if (IDENTIFIER_IS_CONSTANT(id->identifier_flags)) {
+          struct svalue *val = &p->constants[id->func.const_info.offset].sval;
+          if (TYPEOF(*val) == PIKE_T_ARRAY) {
+            add_ref(Pike_compiler->generic_bindings = val->u.array);
+          }
+        }
+      }
+    }
+  }
+
   if(Pike_compiler->new_program->program)
   {
 #define FOO(NUMTYPE,TYPE,ARGTYPE,NAME)					\
@@ -5191,6 +5227,29 @@ struct program *end_first_pass(int finish)
       }
       /* Remove the msnode_ref added by multiset_first(). */
       sub_msnode_ref(l);
+    }
+  }
+
+  if (Pike_compiler->num_generics) {
+    if (Pike_compiler->generic_types) {
+      push_array(Pike_compiler->generic_types);
+
+      add_constant(lfun_strings[LFUN___GENERIC_TYPES__],
+                   Pike_sp-1,
+                   ID_PRIVATE|ID_PROTECTED|ID_LOCAL|ID_USED);
+
+      pop_stack();
+      Pike_compiler->generic_types = NULL;
+    }
+    if (Pike_compiler->generic_bindings) {
+      push_array(Pike_compiler->generic_bindings);
+
+      add_constant(lfun_strings[LFUN___GENERIC_BINDINGS__],
+                   Pike_sp-1,
+                   ID_PRIVATE|ID_PROTECTED|ID_LOCAL|ID_USED);
+
+      pop_stack();
+      Pike_compiler->generic_bindings = NULL;
     }
   }
 
@@ -8349,17 +8408,26 @@ PMOD_EXPORT int low_find_lfun(struct program *p, enum LFUN lfun)
   unsigned int flags = 0;
   int i;
   struct identifier *id;
+  unsigned int visibility = SEE_PROTECTED;
+
 #ifdef PIKE_DEBUG
   if ((size_t)lfun >= NELEM(lfun_strings)) {
     return find_lfun_fatal(p, lfun);
   }
 #endif
+
+  if ((lfun == LFUN___GENERIC_TYPES__) ||
+      (lfun == LFUN___GENERIC_BINDINGS__)) {
+    /* These need to be private to get the correct behavior. */
+    visibility |= SEE_PRIVATE;
+  }
+
   lfun_name = lfun_strings[lfun];
 
   i = really_low_find_shared_string_identifier(lfun_name,
 					       dmalloc_touch(struct program *,
 							     p),
-					       SEE_PROTECTED);
+                                               visibility);
   if (i < 0) {
     const struct pike_string *lfun_compat_name = lfun_compat_strings[lfun];
     if (lfun_compat_name) {
@@ -8367,7 +8435,7 @@ PMOD_EXPORT int low_find_lfun(struct program *p, enum LFUN lfun)
       i = really_low_find_shared_string_identifier(lfun_compat_name,
 						   dmalloc_touch(struct program *,
 							       p),
-						   SEE_PROTECTED);
+                                                   visibility);
       if ((i >= 0) && !(p->flags & PROGRAM_FINISHED) && !TEST_COMPAT(8,0)) {
 	struct compilation *c = MAYBE_THIS_COMPILATION;
 	if ((lfun >= LFUN__ITERATOR_NEXT_FUN) &&
