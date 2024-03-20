@@ -1451,28 +1451,14 @@ identifier_type: id_expr
     obj_type = get_obj_type(peek_type_stack());
     if (obj_type && (obj_type->flags & PT_FLAG_GOBJECT)) {
       struct program *p = low_id_to_program(CDR_TO_INT(obj_type), 1);
-      int cnt = p?p->num_generics:1;
+      struct mapping *bind = mkbindings(p, bindings);
+      struct pike_type *t = compiler_apply_bindings(peek_type_stack(), bind);
 
-      if (bindings && (bindings->size > cnt)) {
-        yywarning("Too many bindings for %pT.", obj_type);
-      }
+      compiler_discard_top_type();
+      push_finished_type(t);
 
-      while(cnt--) {
-        if (bindings && (cnt < bindings->size)) {
-          push_finished_type(ITEM(bindings)[cnt].u.type);
-        } else {
-          /* FIXME: Ought to use default type for the generic here. */
-          push_type(T_MIXED);
-        }
-
-        push_type('0' + cnt);
-        push_finished_type(obj_type);
-        push_type(PIKE_T_GENERIC);
-
-        push_type(PIKE_T_ASSIGN);
-
-        push_type(PIKE_T_BIND);
-      }
+      free_type(t);
+      do_free_mapping(bind);
     } else if (bindings) {
       yywarning("Bindings specified for non-generic type %pT.",
                 peek_type_stack());
@@ -1739,22 +1725,17 @@ opt_generic_bindings: /* empty */ { $$ = NULL; }
   TOK_MULTISET_END
   {
     int cnt = pop_stack_mark();
+    struct array *ret = allocate_array(cnt);
 
-    $$ = NULL;
+    push_array(ret);
 
-    if (cnt) {
-      struct array *ret = allocate_array(cnt);
-
-      push_array(ret);
-
-      while (cnt--) {
-        SET_SVAL(ITEM(ret)[cnt], PIKE_T_TYPE, 0, type, low_pop_type());
-      }
-      ret->type_field = BIT_TYPE;
-
-      $$ = mkconstantsvaluenode(Pike_sp - 1);
-      pop_stack();
+    while (cnt--) {
+      SET_SVAL(ITEM(ret)[cnt], PIKE_T_TYPE, 0, type, low_pop_type());
     }
+    ret->type_field = BIT_TYPE;
+
+    $$ = mkconstantsvaluenode(Pike_sp - 1);
+    pop_stack();
   }
   ;
 
