@@ -13851,24 +13851,81 @@ struct mapping *mkbindings(struct program *p, struct array *b)
 {
   struct mapping *ret;
   int i;
+  int state = 0;
+  const int lfuns[] = {
+    LFUN___GENERIC_BINDINGS__,
+    LFUN___GENERIC_TYPES__,
+  };
+  struct array *bindings[] = { NULL, NULL };
 
   if (!p || !p->num_generics) return NULL;
 
+  if (b && (b->size > p->num_generics)) {
+    yywarning("Too many bindings for %pP.", p);
+  }
+
   ret = allocate_mapping(p->num_generics);
+
+  for (i = 0; i < 2; i++) {
+    int l = lfuns[i];
+    int f = low_find_lfun(p, l);
+    struct svalue ss;
+
+    if ((f >= 0) && low_program_index_no_free(&ss, p, f, NULL, -1)) {
+      if (TYPEOF(ss) == PIKE_T_ARRAY) {
+        /* NB: We know that the only way that the above indexing operation
+         *     can succeed is if f is a constant. The array thus has a
+         *     reference from the program, and it is safe to keep even
+         *     after we free the svalue below.
+         */
+        bindings[i] = ss.u.array;
+      }
+
+      free_svalue(&ss);
+    }
+  }
 
   for (i = 0; i < p->num_generics; i++) {
     struct svalue ss;
-    struct svalue *s;
+    struct svalue *s = NULL;
+    struct pike_type *t = NULL;
 
-    if (b && (i < b->size)) {
+    if (b && (b->size <= i)) b = NULL;
+
+    while (!b && (state < 2)) {
+      b = bindings[state++];
+      if (b && (i < b->size)) {
+        break;
+      }
+
+      b = NULL;
+    }
+
+    if (b) {
       s = ITEM(b) + i;
-    } else {
-      /* FIXME: Lookup LFUN::__generic_bindings__ in p, and use it. */
-      SET_SVAL(ss, PIKE_T_TYPE, 0, type, mixed_type_string);
+
+      if (TYPEOF(*s) == PIKE_T_TYPE) {
+        t = s->u.type;
+      }
+    }
+
+    if (t && !state && bindings[1] && (i < bindings[1]->size)) {
+      s = NULL;
+      t = and_pike_types(t, ITEM(bindings[1])[i].u.type);
+      if (!t) {
+        my_yyerror("Bad type for generic %d.\n", i + 1);
+
+        s = ITEM(bindings[1]) + i;
+        t = s->u.type;
+      }
+    }
+
+    if (!s) {
+      SET_SVAL(ss, PIKE_T_TYPE, 0, type, t?t:mixed_type_string);
       s = &ss;
     }
 
-    if ((TYPEOF(*s) == PIKE_T_TYPE) && (i < 10)) {
+    if (i < 10) {
       type_stack_mark();
 
       push_type('0' + i);
@@ -13879,6 +13936,10 @@ struct mapping *mkbindings(struct program *p, struct array *b)
 
       mapping_insert(ret, Pike_sp - 1, s);
       pop_stack();
+    }
+
+    if (s == &ss) {
+      free_type(t);
     }
   }
 
