@@ -82,12 +82,14 @@ protected function(function(__unknown__ ...:void), int|float, mixed ...:mixed)
 //! future. A Future object is typically produced from a @[Promise]
 //! object by calling its @[future()] method.
 //!
-//! The generic type @[ValueType] is the type for the provided value.
-//!
 //! @seealso
 //!   @[Promise]
 class Future(<ValueType>)
 {
+  //! @decl __generic__ ValueType
+  //!
+  //! This is the type for the value provided by the @[Future].
+
   protected ValueType|mixed result;
   protected State state;
 
@@ -802,12 +804,14 @@ class Future(<ValueType>)
 //! that is directly returned to the user is the return
 //! value from @[future()].
 //!
-//! The generic type @[ValueType] is the type for the provided value.
-//!
 //! @seealso
 //!   @[Future], @[future()]
 class Promise(<ValueType>)
 {
+  //! @decl __generic__ ValueType
+  //!
+  //! This is the type for the value provided by the inherited @[Future].
+
   inherit Future(<ValueType>);
 
   //! Creates a new promise, optionally initialised from a traditional callback
@@ -1005,9 +1009,6 @@ class Promise(<ValueType>)
 //! that is directly returned to the user is the return
 //! value from @[future()].
 //!
-//! The generic type @[ValueType] is the type for the individual
-//! aggregated values.
-//!
 //! @note
 //!   It is currently possible to use this class as a normal @[Promise]
 //!   (ie without aggregation), but those functions may get removed
@@ -1020,6 +1021,11 @@ class Promise(<ValueType>)
 //!   @[race()], @[results()], @[all()], @[fold()]
 class AggregatedPromise(<ValueType>)
 {
+  //! @decl __generic__ ValueType
+  //!
+  //! This is the type for the value provided by the individual
+  //! aggregated @[Future]s.
+
   inherit Promise(<array(ValueType)|ValueType>);
 
   //! @array
