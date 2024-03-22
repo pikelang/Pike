@@ -1148,17 +1148,8 @@ class Node
 #endif
   }
 
-  protected string make_content()
+  protected string make_content(Parser.XML.Tree.Node n)
   {
-    PROFILE();
-    string err;
-    Parser.XML.Tree.Node n;
-    if(err = catch( n = Parser.XML.Tree.parse_input(data)[0] )) {
-      werror(err + "\n" + data);
-      exit(1);
-    }
-    ENDPROFILE("XML.Tree");
-
     resolve_reference = my_resolve_reference;
 
     if(type=="appendix")
@@ -1329,16 +1320,44 @@ class Node
               "</script>",
               low_make_link(make_load_index_filename()));
 
+    PROFILE();
+    string err;
+    Parser.XML.Tree.Node n;
+    if(err = catch( n = Parser.XML.Tree.parse_input(data)[0] )) {
+      werror(err + "\n" + data);
+      exit(1);
+    }
+    ENDPROFILE("XML.Tree");
+
+    string title_suffix = "";
+    if (type == "class") {
+      Parser.XML.Tree.Node nn = n;
+      while (nn && (< "autodoc", "namespace", "module" >)[nn->get_any_name()]) {
+        nn = nn->get_first_element();
+      }
+      if (nn) {
+        array(Parser.XML.Tree.Node) generics =
+          nn->get_elements("docgroup")->get_first_element("generic") -
+          ({ 0 });
+        string generics_decl = "";
+        if (sizeof(generics)) {
+          array(mapping(string:string)) attrs = generics->get_attributes();
+          sort((array(int))attrs->index, attrs);
+          title_suffix =
+            _Roxen.html_encode_string(" (< " + attrs->name * ", " + " >)");
+        }
+      }
+    }
 
     string res = replace(template,
       (["$navbar$": make_navbar(),
-        "$contents$": make_content(),
+        "$contents$": make_content(n),
         "$prev_url$": prev_url,
         "$prev_title$": _Roxen.html_encode_string(prev_title),
         "$next_url$": next_url,
         "$next_title$": _Roxen.html_encode_string(next_title),
         "$type$": String.capitalize(type),
-        "$title$": _Roxen.html_encode_string(make_class_path(1)),
+        "$title$": _Roxen.html_encode_string(make_class_path(1)) + title_suffix,
         "$style$": style,
         "$script$": script,
         "$dotdot$": extra_prefix,
@@ -1494,7 +1513,7 @@ class TopNode {
     return contents + doc;
   }
 
-  string make_content() {
+  string make_content(Parser.XML.Tree.Node n) {
     resolve_reference = my_resolve_reference;
 
     return make_index_page();

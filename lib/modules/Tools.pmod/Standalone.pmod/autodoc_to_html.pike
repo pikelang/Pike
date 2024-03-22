@@ -355,12 +355,26 @@ string parse_annotations(Node n, void|int noheader)
 ADT.Stack old_class_name = ADT.Stack();
 string parse_class(Node n, void|int noheader) {
   string ret ="";
-  if(!noheader)
+  if(!noheader) {
+    array(Node) generics =
+      n->get_elements("docgroup")->get_first_element("generic") -
+      ({ 0 });
+    string generics_decl = "";
+    if (sizeof(generics)) {
+      array(mapping(string:string)) attrs = generics->get_attributes();
+      sort((array(int))attrs->index, attrs);
+      generics_decl = "</b> (&lt; <b class='ms datatype'>" +
+        (map(attrs->name, quote) * "</b>, <b class='ms datatype'>") +
+        "</b> &gt;)<b class='ms datatype'>";
+    }
+
     ret += "<dl><dt>"
       "<h2 class='header'>Class <b class='ms datatype'>" +
       n->get_attributes()->class_path + n->get_attributes()->name +
-      "</b></h2>\n"
+      generics_decl + "</b>"
+      "</h2>\n"
       "</dt><dd>";
+  }
 
   Node a = n->get_first_element("annotations");
   Node c = n->get_first_element("doc");
