@@ -3987,6 +3987,16 @@ void init_pike_compiler(void)
     low_add_constant("__placeholder_object", &s);
   }
 
+  /*! @decl typedef __attribute__("utf8_string", string(8bit)) utf8_string
+   *!
+   *! String containing UTF-8 encoded data.
+   *!
+   *! This is similar to a @expr{string(8bit)@}, but allows the compiler
+   *! to keep track of whether strings are UTF-8 or not.
+   *!
+   *! @seealso
+   *!   @[string_to_utf8()], @[utf8_to_string()]
+   */
   {
     struct pike_string *attr;
     struct svalue s;
