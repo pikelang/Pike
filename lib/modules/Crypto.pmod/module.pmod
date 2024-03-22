@@ -16,7 +16,8 @@
 //!     The @[Substitution] program is compatible with @[Cipher.State].
 //!
 //!     Also conforming to the API are several helper modules such as
-//!     @[Buffer], @[predef::Nettle.BlockCipher.CBC],
+//!     @[predef::Nettle.BufferedCipher.Buffer],
+//!     @[predef::Nettle.BlockCipher.CBC],
 //!     @[predef::Nettle.BlockCipher16.GCM] and @[Pipe].
 //!
 //!   @item Message Authentication Code modules (MACs)
