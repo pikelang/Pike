@@ -13661,9 +13661,16 @@ struct pike_type *zzap_function_return(struct pike_type *a,
 
     case PIKE_T_OPERATOR:
       {
-	struct pike_type *tmp = apply_type_operator(a->type, a->car, a->cdr);
-	if (!tmp) return NULL;
-	ret = zzap_function_return(tmp, fun_ret);
+        struct pike_type *tmp;
+        if (a->type == PIKE_T_BIND) {
+          tmp = zzap_function_return(a->cdr, fun_ret);
+          if (!tmp) return NULL;
+          ret = apply_type_operator(a->type, a->car, tmp);
+        } else {
+          tmp = apply_type_operator(a->type, a->car, a->cdr);
+          if (!tmp) return NULL;
+          ret = zzap_function_return(tmp, fun_ret);
+        }
 	free_type(tmp);
 	return ret;
       }
