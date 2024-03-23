@@ -13689,6 +13689,16 @@ static void push_apply_bindings(struct pike_type *bind,
 static void push_apply_bindings_recur(struct pike_type *t,
                                       struct mapping *bindings)
 {
+#ifdef PIKE_DEBUG
+  DECLARE_CYCLIC();
+
+  if (BEGIN_CYCLIC((ptrdiff_t)t, (ptrdiff_t)bindings)) {
+    pike_fprintf(stderr, "push_apply_bindings_recur(%pT, %pm)\n", t, bindings);
+    Pike_fatal("Infinite loop when applying bindings.\n");
+  }
+  SET_CYCLIC_RET(1);
+#endif
+
   if (!t || !(t->flags & PT_FLAG_GENERIC)) {
     /* Common case. */
     push_finished_type(t);
@@ -13715,9 +13725,24 @@ static void push_apply_bindings_recur(struct pike_type *t,
         struct svalue *val;
         ref_push_type_value(t);
         val = bindings?low_mapping_lookup(bindings, Pike_sp-1):NULL;
-        if (val && (TYPEOF(*val) == PIKE_T_TYPE) &&
-            (val->u.type != t)) {
-          push_apply_bindings_recur(val->u.type, bindings);
+        if (val && (TYPEOF(*val) == PIKE_T_TYPE)) {
+          if (val->u.type->flags & PT_FLAG_GENERIC) {
+            /* The value contains generics.
+             *
+             * NB: It is possible that the value has a reference
+             *     to ourselves, so remove us from the bindings
+             *     temporarily to avoid an infinite loop.
+             */
+            struct svalue ss;
+            map_delete_no_free(bindings, Pike_sp-1, &ss);
+            /* NB: val is invalid after the above. */
+            push_apply_bindings_recur(ss.u.type, bindings);
+            mapping_insert(bindings, Pike_sp-1, &ss);
+            free_svalue(&ss);
+          } else {
+            /* Common case. Nothing to expand here. */
+            push_finished_type(val->u.type);
+          }
         } else {
           push_finished_type(t);
         }
@@ -13726,6 +13751,12 @@ static void push_apply_bindings_recur(struct pike_type *t,
       break;
 
     case PIKE_T_ASSIGN:
+      /* Assignment type; we must not alter the car! */
+      push_apply_bindings_recur(t->cdr, bindings);
+      push_finished_type(t->car);
+      push_type(t->type);
+      break;
+
     case T_FUNCTION:
     case T_MANY:
     case PIKE_T_RING:
@@ -13776,6 +13807,10 @@ static void push_apply_bindings_recur(struct pike_type *t,
       push_finished_type(t);
       break;
   }
+
+#ifdef PIKE_DEBUG
+  END_CYCLIC();
+#endif
 }
 
 static void push_apply_bindings(struct pike_type *bind,
@@ -13843,6 +13878,23 @@ struct pike_type *compiler_apply_bindings(struct pike_type *t,
   type_stack_mark();
 
   push_apply_bindings_recur(t, bindings);
+
+  if (peek_type_stack() && (peek_type_stack()->flags & PT_FLAG_MASK_GENERICS)) {
+    int e;
+    struct keypair *k;
+
+    NEW_MAPPING_LOOP(bindings->data) {
+      if ((TYPEOF(k->ind) == PIKE_T_TYPE) &&
+          (TYPEOF(k->val) == PIKE_T_TYPE)) {
+        push_finished_type(k->val.u.type);
+        push_finished_type(k->ind.u.type);
+
+        push_type(PIKE_T_ASSIGN);
+
+        push_type(PIKE_T_BIND);
+      }
+    }
+  }
 
   return pop_unfinished_type();
 }
