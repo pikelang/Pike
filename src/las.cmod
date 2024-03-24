@@ -3825,9 +3825,11 @@ void fix_type_field(node *n)
 
       if (!obj_type || !(obj_type->flags & PT_FLAG_GOBJECT)) {
         if (!obj_type) {
-          yyerror("Bindings specified for non object type.");
+          my_yyerror("Bindings specified for non object type %pT.",
+                     CAR(n)->type);
         } else {
-          yywarning("Bindings specified for object type without generics.");
+          yywarning("Bindings specified for object type without generics %pT.",
+                    obj_type);
         }
       } else {
         bind = CDR(n)->u.sval.u.array;
@@ -4741,15 +4743,30 @@ void fix_type_field(node *n)
   }
 
   if (n->type && (n->type->flags & PT_FLAG_MASK_GENERICS)) {
-    /* Bind generics unless we are compiling the same
-     * program and have not specified any bindings.
+    /* Bind generics when:
+     *
+     *  * We have identified the object type with generics to bind.
+     *
+     * And either:
+     *
+     *  * Bindings have been specified explicitly (bind has been
+     *    set with F_BIND_GENERICS above).
+     *
+     *  * There are generics in the type and they belong to a
+     *    different program than the one that we are compiling
+     *    right now.
+     *
+     *  * Do not do the latter if we are the child of a
+     *    F_BIND_GENERICS node.
      */
     struct pike_type *obj_type = get_obj_type(n->type);
 
     if (obj_type && (obj_type->flags & PT_FLAG_MASK_GENERICS) &&
-        (bind || (CDR_TO_INT(obj_type) != Pike_compiler->new_program->id))) {
+        (bind ||
+         ((CDR_TO_INT(obj_type) != Pike_compiler->new_program->id) &&
+          (!n->parent || (n->parent->token != F_BIND_GENERICS))))) {
       struct program *p = low_id_to_program(CDR_TO_INT(obj_type), 1);
-      struct mapping *bindings = mkbindings(p, bind);
+      struct mapping *bindings = mkbindings(p, bind, 0);
       struct pike_type *t = compiler_apply_bindings(n->type, bindings);
       do_free_mapping(bindings);
 

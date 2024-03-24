@@ -478,7 +478,8 @@ struct pike_type *zzap_function_return(struct pike_type *t,
 				       struct pike_type *fun_ret);
 struct pike_type *compiler_apply_bindings(struct pike_type *t,
                                           struct mapping *bindings);
-struct mapping *mkbindings(struct program *p, struct array *b);
+struct mapping *mkbindings(struct program *p, struct array *b,
+                           int inhibit_defaults);
 struct pike_type *get_lax_type_of_svalue( const struct svalue *s );
 struct pike_type *get_type_of_svalue(const struct svalue *s);
 struct pike_type *object_type_to_program_type(struct pike_type *obj_t);

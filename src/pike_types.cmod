@@ -13906,7 +13906,8 @@ struct pike_type *compiler_apply_bindings(struct pike_type *t,
   return pop_unfinished_type();
 }
 
-struct mapping *mkbindings(struct program *p, struct array *b)
+struct mapping *mkbindings(struct program *p, struct array *b,
+                           int inhibit_defaults)
 {
   struct mapping *ret;
   int i;
@@ -13925,7 +13926,7 @@ struct mapping *mkbindings(struct program *p, struct array *b)
 
   ret = allocate_mapping(p->num_generics);
 
-  for (i = 0; i < 2; i++) {
+  for (i = inhibit_defaults; i < 2; i++) {
     int l = lfuns[i];
     int f = low_find_lfun(p, l);
     struct svalue ss;
@@ -13977,6 +13978,31 @@ struct mapping *mkbindings(struct program *p, struct array *b)
         s = ITEM(bindings[1]) + i;
         t = s->u.type;
       }
+    }
+
+    if (t &&
+        (((t->type == PIKE_T_GENERIC) &&
+         (t->car->type == PIKE_T_OBJECT) &&
+         (CDR_TO_INT(t->car) == p->id) &&
+          (t->cdr->type == '0' + i)) ||
+         ((t->type == PIKE_T_NAME) &&
+          (t->cdr->type == PIKE_T_GENERIC) &&
+          (t->cdr->car->type == PIKE_T_OBJECT) &&
+          (CDR_TO_INT(t->cdr->car) == p->id) &&
+          (t->cdr->cdr->type == '0' + i)))) {
+      /* Binding of a generic to itself.
+       *
+       * This is typically used to avoid the implicit
+       * binding of generics to their default values.
+       * Eg:
+       *
+       *   this_program(<T>) self() { return this; }
+       */
+
+      if (s == &ss) {
+        free_type(t);
+      }
+      continue;
     }
 
     if (!s) {
@@ -14734,9 +14760,8 @@ struct pike_type *get_type_of_svalue(const struct svalue *s)
       }
 
       if (ret && (ret->flags & PT_FLAG_MASK_GENERICS)) {
-        struct mapping *bindings = mkbindings(p, NULL);
-
-        /* FIXME: This applies the default types rether than the max types. */
+        /* NB: Apply the max types. */
+        struct mapping *bindings = mkbindings(p, NULL, 1);
         struct pike_type *tmp = compiler_apply_bindings(ret, bindings);
 
         do_free_mapping(bindings);

@@ -6322,7 +6322,7 @@ void lower_inherit(struct program *p,
     /*
      * Bind the generics of the inherited program.
      */
-    struct mapping *bind = mkbindings(p, bindings);
+    struct mapping *bind = mkbindings(p, bindings, 0);
 
     for (e = 0; e < p->num_identifiers; e++) {
       struct identifier id = p->identifiers[e];
@@ -8324,9 +8324,8 @@ static void f_dispatch_variant(INT32 args)
     id = ID_FROM_INT(prog, fun_num);
 
     if (id->type->flags & PT_FLAG_MASK_GENERICS) {
-      struct mapping *bindings = mkbindings(prog, NULL);
-
-      /* FIXME: This applies the default types rether than the max types. */
+      /* NB: Apply the max types. */
+      struct mapping *bindings = mkbindings(prog, NULL, 1);
       t = compiler_apply_bindings(id->type, bindings);
 
       do_free_mapping(bindings);

@@ -1451,7 +1451,7 @@ identifier_type: id_expr
     obj_type = get_obj_type(peek_type_stack());
     if (obj_type && (obj_type->flags & PT_FLAG_GOBJECT)) {
       struct program *p = low_id_to_program(CDR_TO_INT(obj_type), 1);
-      struct mapping *bind = mkbindings(p, bindings);
+      struct mapping *bind = mkbindings(p, bindings, 0);
       struct pike_type *t = compiler_apply_bindings(peek_type_stack(), bind);
 
       compiler_discard_top_type();
