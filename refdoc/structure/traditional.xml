@@ -42,6 +42,9 @@
       <section title="::">
 	<insert-move entity="::"/>
       </section>
+      <section title="continue::">
+        <insert-move entity="continue::"/>
+      </section>
     </chapter>
   </file>
   <file>
