@@ -183,6 +183,10 @@ hash character and the rest of the directive to create indentation in code.</p>
 
 <insert-move entity="cpp::.#elif"/>
 
+<insert-move entity="cpp::.#elifdef"/>
+
+<insert-move entity="cpp::.#elifndef"/>
+
 <insert-move entity="cpp::.#define"/>
 
 <insert-move entity="cpp::.#undef"/>
@@ -220,6 +224,8 @@ hash character and the rest of the directive to create indentation in code.</p>
   <insert-move entity="cpp::.__NT__"/>
   <insert-move entity="cpp::.__PIKE__"/>
   <insert-move entity="cpp::.__amigaos__"/>
+  <insert-move entity="cpp::.__APPLE__"/>
+  <insert-move entity="cpp::.__HAIKU__"/>
   <insert-move entity="cpp::._Pragma"/>
   <insert-move entity="cpp::.static_assert"/>
 </section>
