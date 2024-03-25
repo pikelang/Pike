@@ -382,6 +382,7 @@ void debug_push_int_type(INT_TYPE min, INT_TYPE max);
 void debug_push_unlimited_array_type(enum PIKE_TYPE t);
 void debug_push_object_type(int flag, INT32 id);
 void debug_push_object_type_backwards(int flag, INT32 id);
+void debug_push_concurrent_future_wrapper(void);
 void debug_push_type_attribute(struct pike_string *attr);
 void debug_push_type_name(struct pike_string *name);
 void debug_push_type_operator(enum PIKE_TYPE op, struct pike_type *arg);
@@ -531,6 +532,7 @@ PMOD_EXPORT void set_program_id_to_id( int (*to)(int) );
 #define push_unlimited_array_type(ARRAY_OR_STRING) do { debug_push_unlimited_array_type(ARRAY_OR_STRING);debug_malloc_pass(debug_peek_type_stack()); } while(0)
 #define push_object_type(FLAG,ID) do { debug_push_object_type(FLAG,ID);debug_malloc_pass(debug_peek_type_stack()); } while(0)
 #define push_object_type_backwards(FLAG,ID) do { debug_push_object_type_backwards(FLAG,ID);debug_malloc_pass(debug_peek_type_stack()); } while(0)
+#define push_concurrent_future_wrapper() do { debug_push_concurrent_future_wrapper();debug_malloc_pass(debug_peek_type_stack()); } while(0)
 #define push_scope_type(LEVEL) do { debug_push_scope_type(LEVEL);debug_malloc_pass(debug_peek_type_stack()); } while(0)
 #define push_type_attribute(ATTR) do { debug_push_type_attribute((struct pike_string *)debug_malloc_pass(ATTR));debug_malloc_pass(debug_peek_type_stack()); } while(0)
 #define push_type_name(NAME) do { debug_push_type_name((struct pike_string *)debug_malloc_pass(NAME));debug_malloc_pass(debug_peek_type_stack()); } while(0)
@@ -551,6 +553,7 @@ PMOD_EXPORT void set_program_id_to_id( int (*to)(int) );
 #define push_unlimited_array_type debug_push_unlimited_array_type
 #define push_object_type debug_push_object_type
 #define push_object_type_backwards debug_push_object_type_backwards
+#define push_concurrent_future_wrapper debug_push_concurrent_future_wrapper
 #define push_scope_type debug_push_scope_type
 #define push_type_attribute debug_push_type_attribute
 #define push_type_name debug_push_type_name

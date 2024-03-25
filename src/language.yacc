@@ -5113,11 +5113,11 @@ static int compiler_declare_prototype(int modifiers,
     pop_stack();
 
     if (Pike_compiler->compiler_frame->generator_is_async) {
-      /* An async function returns a Concurrent.Future
-       * containing X.
+      /* An async function returns a Concurrent.Future(<X>).
        */
       compiler_discard_type();
-      push_object_type(0, 0);	/* FIXME: object(Concurrent.Future). */
+      push_finished_type(Pike_compiler->compiler_frame->current_return_type);
+      push_concurrent_future_wrapper();
     }
 
     /* NB: lambdas call this function twice in the last pass.
@@ -5147,9 +5147,10 @@ static int compiler_declare_prototype(int modifiers,
 
       if (Pike_compiler->compiler_frame->generator_is_async) {
         /* Result promise. */
-        add_ref(object_type_string);
+        /* NB: object(Concurrent.Promise)(<X>) */
+        add_ref(peek_type_stack());
         MAKE_CONST_STRING(name, "__async_promise__");
-        add_local_name(name, object_type_string, 0);
+        add_local_name(name, peek_type_stack(), 0);
         num_state_vars++;
       }
 
@@ -5394,10 +5395,11 @@ static int compiler_define_function(int modifiers,
       free_type(Pike_compiler->compiler_frame->current_return_type);
       if (modifiers & ID_ASYNC) {
         free_type(generator_type);
-        /* FIXME: Should be object(Concurrent.Future<T>) */
+        type_stack_mark();
+        push_finished_type(Pike_compiler->compiler_frame->current_return_type);
+        push_concurrent_future_wrapper();
         Pike_compiler->compiler_frame->current_return_type =
-          object_type_string;
-        add_ref(object_type_string);
+          pop_unfinished_type();
       } else {
         Pike_compiler->compiler_frame->current_return_type = generator_type;
       }
@@ -5405,7 +5407,7 @@ static int compiler_define_function(int modifiers,
         /*
          * {
          *   __generator_stack__ = aggregate();
-         *   __async_promise__ = Concurrent.Promise();
+         *   __async_promise__ = Concurrent.Promise(<T>)();
          *   mkgenerator(f)();
          *   return __async_promise__->future();
          * }

@@ -45,6 +45,8 @@ static int indent=0;
 
 int max_correct_args;
 
+static struct program *concurrent_future_program = NULL;
+
 PMOD_EXPORT struct pike_type *string0_type_string;
 PMOD_EXPORT struct pike_type *string_type_string;
 PMOD_EXPORT struct pike_type *bool_type_string;
@@ -892,6 +894,34 @@ void debug_push_object_type(int flag, INT32 id)
 void debug_push_object_type_backwards(int flag, INT32 id)
 {
   push_object_type(flag, id);
+}
+
+/* Converts the top type on the type stack (X) to
+ * object(Concurrent.Future(<X>)).
+ */
+void debug_push_concurrent_future_wrapper(void)
+{
+  if (!concurrent_future_program) {
+    push_text("Concurrent.Future");
+    concurrent_future_program = resolve_program(Pike_sp[-1].u.string);
+    pop_stack();
+
+    if (!concurrent_future_program) {
+      compiler_discard_type();
+      push_object_type(0, 0);
+      return;
+    }
+  }
+
+  push_type('0');
+  push_object_type(0, concurrent_future_program->id);
+  push_type(PIKE_T_GENERIC);
+
+  push_type(PIKE_T_ASSIGN);
+
+  push_object_type(0, concurrent_future_program->id);
+
+  push_reverse_type(PIKE_T_BIND);
 }
 
 void debug_push_scope_type(int level)
@@ -15791,6 +15821,11 @@ void init_types(void)
 
 void cleanup_pike_types(void)
 {
+  if (concurrent_future_program) {
+    free_program(concurrent_future_program);
+    concurrent_future_program = NULL;
+  }
+
   EXIT;
 
 #ifdef DO_PIKE_CLEANUP
