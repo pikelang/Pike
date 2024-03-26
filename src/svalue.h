@@ -146,6 +146,7 @@ enum PIKE_TYPE {
     PIKE_T_VAR_9 = '9',		/* 57 */
 
     PIKE_T_GENERIC = 64,
+    PIKE_T_BIND = 65,		/* Apply the binding in CAR to CDR. */
 
     /* Operators. These all have 0x80 in the low 8 bits, and
      * a non-zero function number in the next 8 bits.
@@ -166,7 +167,6 @@ enum PIKE_TYPE {
     PIKE_T_APPLY = 0x8180,	/* Apply a function with a single argument. */
     PIKE_T_SET_CAR = 0x8280,	/* Set the CAR of the CAR type to CDR. */
     PIKE_T_SET_CDR = 0x8380,	/* Set the CDR of the CAR type to CDR. */
-    PIKE_T_BIND = 0x8480,	/* Apply the binding in CAR to CDR. */
 
     PIKE_T_INT_OP_SUB = 0xc080,	/* INT OP `-. */
     PIKE_T_INT_OP_AND = 0xc180,	/* INT OP `&. */

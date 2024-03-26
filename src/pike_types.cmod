@@ -296,6 +296,7 @@ static void internal_parse_type(const char **s);
  * ARRAY	len type	type			len added in 8.1
  * MULTISET	type		-
  * NOT		type		-
+ * BIND		assignment	type			Added in 9.0
  * GENERIC	owner		marker			Added in 9.0
  * '0'-'9'	-		-			Marker $0-$9.
  * FLOAT	-		-
@@ -319,7 +320,6 @@ static void internal_parse_type(const char **s);
  * SET_CAR	type		type			Added in 8.1
  * SET_CDR	type		type			Added in 8.1
  * APPLY	fun type	arg type		Added in 8.1
- * BIND		assignment	type			Added in 9.0
  *
  * Note that the cdr of a FUNCTION is a valid FUNCTION for the rest of
  * the arguments.
@@ -403,6 +403,7 @@ void debug_free_type(struct pike_type *t)
     case T_STRING:
     case PIKE_T_TRANSITIVE:
     case PIKE_T_GENERIC:
+    case PIKE_T_BIND:
       /* Free car & cdr */
       free_type(car);
       t = (struct pike_type *) cdr;
@@ -558,6 +559,7 @@ static struct pike_type *debug_mk_type(unsigned INT32 type,
       case T_STRING:
       case PIKE_T_TRANSITIVE:
       case PIKE_T_GENERIC:
+      case PIKE_T_BIND:
 	/* Free car & cdr */
 	free_type((struct pike_type *)debug_malloc_pass(car));
 	free_type((struct pike_type *)debug_malloc_pass(cdr));
@@ -704,6 +706,7 @@ static struct pike_type *debug_mk_type(unsigned INT32 type,
   case T_STRING:
   case PIKE_T_TRANSITIVE:
   case PIKE_T_GENERIC:
+  case PIKE_T_BIND:
     debug_malloc_pass(car);
     debug_malloc_pass(cdr);
     break;
@@ -980,6 +983,8 @@ void debug_push_type_name(struct pike_string *name)
 static struct pike_type *apply_type_operator(enum PIKE_TYPE op,
 					     struct pike_type *arg1,
 					     struct pike_type *arg2);
+static struct pike_type *apply_bindings(struct pike_type *bind,
+                                        struct pike_type *val);
 
 void debug_push_type_operator(enum PIKE_TYPE op, struct pike_type *arg)
 {
@@ -1255,6 +1260,7 @@ void debug_push_type(unsigned int type)
   case T_MAPPING:
   case PIKE_T_RING:
   case PIKE_T_GENERIC:
+  case PIKE_T_BIND:
     /* Make a new type of the top two types. */
     --Pike_compiler->type_stackp;
     *Pike_compiler->type_stackp = mk_type(type,
@@ -1430,6 +1436,7 @@ int debug_pop_type_stack(unsigned int expected)
   case T_STRING:
   case PIKE_T_TRANSITIVE:
   case PIKE_T_GENERIC:
+  case PIKE_T_BIND:
     /* Both car & cdr. */
     push_finished_type(top->cdr);
     push_finished_type(top->car);
@@ -1507,6 +1514,7 @@ void debug_push_reverse_type(unsigned int type)
   case PIKE_T_OPERATOR | 0x8000:
   case PIKE_T_TRANSITIVE:
   case PIKE_T_GENERIC:
+  case PIKE_T_BIND:
     {
       /* Binary type-node. -- swap the types. */
       struct pike_type *tmp = Pike_compiler->type_stackp[0];
@@ -1539,6 +1547,7 @@ static int is_int_type(struct pike_type *t)
   case PIKE_T_ATTRIBUTE:
   case PIKE_T_SCOPE:
   case T_ASSIGN:
+  case PIKE_T_BIND:
     t = t->cdr;
     goto loop;
   default:
@@ -1679,15 +1688,19 @@ static void debug_push_finished_type_with_markers(struct pike_type *type,
     push_finished_type_with_markers(type->cdr, markers, marker_set);
     push_type_attribute((struct pike_string *)type->car);
     goto done;
-  } else if ((type->type & PIKE_T_MASK) == PIKE_T_OPERATOR) {
-    if ((type->type == PIKE_T_BIND) && type->car &&
-        (type->car->type == PIKE_T_ASSIGN)) {
+  } else if (type->type == PIKE_T_BIND) {
+    push_finished_type_with_markers(type->cdr, markers, marker_set);
+    if (type->car && (type->car->type == PIKE_T_ASSIGN)) {
       push_finished_type_with_markers(type->car->cdr, markers, marker_set);
       push_finished_type(type->car->car);
       push_type(PIKE_T_ASSIGN);
     } else {
-      push_finished_type_with_markers(type->car, markers, marker_set);
+      push_finished_type(type->car);
     }
+    push_type(PIKE_T_BIND);
+    goto done;
+  } else if ((type->type & PIKE_T_MASK) == PIKE_T_OPERATOR) {
+    push_finished_type_with_markers(type->car, markers, marker_set);
     if (type->type & 0x8000) {
       struct pike_type *t;
       type_stack_mark();
@@ -2523,6 +2536,10 @@ void low_describe_type(struct string_builder *s, struct pike_type *t)
       string_builder_sprintf(s, "(<%pT:%pT>)", t->car, t->cdr);
       break;
 
+    case PIKE_T_BIND:
+      string_builder_sprintf(s, "bind(%pT, %pT)", t->car, t->cdr);
+      break;
+
     case T_ASSIGN:
       string_builder_sprintf(s, "(%pT=%pT)", t->car, t->cdr);
       break;
@@ -2788,9 +2805,6 @@ void low_describe_type(struct string_builder *s, struct pike_type *t)
 	  case PIKE_T_SET_CDR:
 	    string_builder_strcat(s, "set_cdr");
 	    break;
-          case PIKE_T_BIND:
-            string_builder_strcat(s, "bind");
-            break;
 	  default:
 	    string_builder_sprintf(s, "operator(0x%04x)", t->type);
 	    break;
@@ -2922,14 +2936,10 @@ int deprecated_typep(struct pike_type *t)
     case PIKE_T_SCOPE:
     case T_ASSIGN:
     case PIKE_T_NAME:
+    case PIKE_T_BIND:
       t = t->cdr;
       continue;
     case PIKE_T_OPERATOR:
-      if (t->type == PIKE_T_BIND) {
-        t = t->cdr;
-        continue;
-      }
-      /* FALLTHRU */
     case PIKE_T_TRANSITIVE:
     case PIKE_T_GENERIC:
       t = t->car;
@@ -3526,6 +3536,13 @@ static struct pike_type *find_lfun_type(struct pike_type *t, int lfun)
     t = t->cdr;
     goto loop;
 
+  case PIKE_T_BIND:
+    tmp = find_lfun_type(t->cdr, lfun);
+    if (!tmp) return NULL;
+    ret = apply_bindings(t->car, tmp);
+    free_type(tmp);
+    return ret;
+
   case T_OBJECT:
     {
       struct program *p = NULL;
@@ -3848,8 +3865,7 @@ static void store_marker(struct remap_state *remap, int marker,
 static void PIKE_UNUSED_ATTRIBUTE store_generic(struct remap_state *remap, struct pike_type *generic,
                           struct pike_type *value, enum pt_remap_flags flags)
 {
-  struct svalue key, val, *old;
-  struct pike_type *both = NULL;
+  struct svalue key, val;
   int marker_set = !!(flags & PT_FLAG_REMAP_SWAP_MARKERS);
 
   if (!remap || !generic) return;
@@ -3861,19 +3877,12 @@ static void PIKE_UNUSED_ATTRIBUTE store_generic(struct remap_state *remap, struc
   }
 
   SET_SVAL(key, PIKE_T_TYPE, 0, type, generic);
-  old = low_mapping_lookup(remap->markers[marker_set], &key);
   if (value) {
-    if (old && (TYPEOF(*old) == T_TYPE)) {
-      value = both = or_pike_types(old->u.type, value, 0);
-    }
     SET_SVAL(val, T_TYPE, 0, type, value);
-  } else if (!(old && TYPEOF(*old) == T_TYPE)) {
-    SET_SVAL(val, T_INT, NUMBER_NUMBER, integer, 0);
   } else {
-    return;
+    SET_SVAL(val, T_INT, NUMBER_NUMBER, integer, 0);
   }
   mapping_insert(remap->markers[marker_set], &key, &val);
-  free_type(both);
 }
 #define store_generic(REMAP, G, T, F) store_generic(REMAP, G, debug_malloc_pass(T), F)
 
@@ -3965,6 +3974,7 @@ static void push_and_fixup_markers(struct pike_type *t,
   case T_ARRAY:
   case T_STRING:
   case PIKE_T_OPERATOR | 0x8000:
+  case PIKE_T_BIND:
     /* t->car and t->cdr are nodes. */
     push_and_fixup_markers(t->cdr, remap, flags);
     push_and_fixup_markers(t->car, remap, flags);
@@ -4235,6 +4245,7 @@ static void push_remap_markers(struct pike_type *t,
   case PIKE_T_RING:
   case T_ARRAY:
   case T_STRING:
+  case PIKE_T_BIND:
     push_remap_markers(t->car, remap, flags);
     push_remap_markers(t->cdr, remap, flags);
     push_reverse_type(t->type);
@@ -4377,6 +4388,18 @@ static void push_expand_transitive_remap(struct pike_type *cont,
     } else {
       /* We have no idea. */
       push_type(PIKE_T_MIXED);
+    }
+    break;
+  case PIKE_T_BIND:
+    if (num_args) {
+      /* No need to expand futher for now. */
+      push_finished_type(trans);
+      push_finished_type(cont);
+      push_type(PIKE_T_TRANSITIVE);
+    } else {
+      push_expand_transitive_remap(cont->cdr, trans, remap, flags, 0);
+      push_finished_type(cont->car);
+      push_type(PIKE_T_BIND);
     }
     break;
   case PIKE_T_MIXED:
@@ -5381,6 +5404,24 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
       return a;
     }
     break;
+  case PIKE_T_BIND:
+    if (a->car && (a->car->type == PIKE_T_ASSIGN)) {
+      tmp2 = NULL;
+      lookup_generic(remap, a->car->car, remap_flags, &tmp2);
+      store_generic(remap, a->car->car, a->car->cdr, remap_flags);
+      tmp = low_type_binop(op, a->cdr, b, remap, aflags, bflags, remap_flags);
+      store_generic(remap, a->car->car, tmp2, remap_flags);
+      free_type(tmp2);
+
+      tmp2 = apply_bindings(a->car, tmp);
+      free_type(tmp);
+
+      return tmp2;
+    }
+
+    /* BAD. */
+    a = a->cdr;
+    goto loop;
   }
   switch(b ? b->type : PIKE_T_UNKNOWN) {
   case '0': case '1': case '2': case '3': case '4':
@@ -5453,6 +5494,27 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
       return b;
     }
     break;
+  case PIKE_T_BIND:
+    if (b->car && (b->car->type == PIKE_T_ASSIGN)) {
+      tmp2 = NULL;
+      lookup_generic(remap, b->car->car,
+                     remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS, &tmp2);
+      store_generic(remap, b->car->car, b->car->cdr,
+                    remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+      tmp = low_type_binop(op, a, b->cdr, remap, aflags, bflags, remap_flags);
+      store_generic(remap, b->car->car, tmp2,
+                    remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
+      free_type(tmp2);
+
+      tmp2 = apply_bindings(b->car, tmp);
+      free_type(tmp);
+
+      return tmp2;
+    }
+
+    /* BAD. */
+    b = b->cdr;
+    goto loop;
   }
 
   /* Handle a or b being NULL. */
@@ -5657,6 +5719,20 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
     push_binop(op);
 
     return pop_unfinished_type();
+
+  case TWOT(T_FUNCTION, PIKE_T_BIND):
+  case TWOT(T_MANY, PIKE_T_BIND):
+    tmp = low_type_binop(op, a, b->cdr, remap, aflags, bflags, remap_flags);
+    ret = apply_bindings(b->car, tmp);
+    free_type(tmp);
+    return ret;
+
+  case TWOT(PIKE_T_BIND, T_FUNCTION):
+  case TWOT(PIKE_T_BIND, T_MANY):
+    tmp = low_type_binop(op, a->cdr, b, remap, aflags, bflags, remap_flags);
+    ret = apply_bindings(a->car, tmp);
+    free_type(tmp);
+    return ret;
 
   case TWOT(T_FUNCTION, T_FUNCTION):
   case TWOT(T_FUNCTION, T_MANY):
@@ -6252,6 +6328,8 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
       aflags &= ~PT_FLAG_CMP_NULLABLE;
       goto recur;
     }
+
+    /* FIXME: PIKE_T_BIND: !!!!!!!!!!!!!!!! ******************/
 
     if (((a->type & PIKE_T_MASK) == PIKE_T_OPERATOR) ||
 	((b->type & PIKE_T_MASK) == PIKE_T_OPERATOR)) {
@@ -7115,6 +7193,8 @@ static struct pike_type *low_subtract_types(struct pike_type *a,
     free_type(tmp);
     return ret;
 
+    /* FIXME: PIKE_T_BIND!!!!!!!!!!!!!! **********/
+
   case TWOT(T_FUNCTION, PIKE_T_OPERATOR):
   case TWOT(PIKE_T_OPERATOR, T_FUNCTION):
     type_stack_mark();
@@ -7353,6 +7433,7 @@ static struct pike_type *low_subtract_types(struct pike_type *a,
     return pop_unfinished_type();
   }
 
+  /* FIXME: PIKE_T_BIND!!!!!!!!!!!!!!! ****************/
   if (a->type != b->type) {
     if (((a->type & PIKE_T_MASK) == PIKE_T_OPERATOR) ||
 	((b->type & PIKE_T_MASK) == PIKE_T_OPERATOR)) {
@@ -7798,6 +7879,8 @@ static struct pike_type *low_intersect_types(struct pike_type *a,
     free_type(tmp);
     return ret;
 
+    /* FIXME: PIKE_T_BIND!!!!!!!!!!!!!! *****************/
+
   case TWOT(T_FUNCTION, PIKE_T_OPERATOR):
   case TWOT(PIKE_T_OPERATOR, T_FUNCTION):
     type_stack_mark();
@@ -8081,6 +8164,8 @@ static struct pike_type *low_intersect_types(struct pike_type *a,
       return pop_unfinished_type();
     }
   }
+
+  /* FIXME: PIKE_T_BIND!!!!!!!!!!!!!!!! ******************/
 
   if (a->type != b->type) {
     if (((a->type & PIKE_T_MASK) == PIKE_T_OPERATOR) ||
@@ -8433,6 +8518,18 @@ static void push_expand_transitive_type(struct pike_type *cont,
       push_type(PIKE_T_MIXED);
     }
     break;
+  case PIKE_T_BIND:
+    if (num_args) {
+      /* No need to expand futher for now. */
+      push_finished_type(trans);
+      push_finished_type(cont);
+      push_type(PIKE_T_TRANSITIVE);
+    } else {
+      push_expand_transitive_type(cont->cdr, trans, markers, 0);
+      push_finished_type(cont->car);
+      push_type(PIKE_T_BIND);
+    }
+    break;
   case PIKE_T_MIXED:
     push_type(PIKE_T_MIXED);
     break;
@@ -8618,31 +8715,26 @@ static struct pike_type *low_match_types2(struct pike_type *a,
   case PIKE_T_GENERIC:
     return low_match_types(mixed_type_string, b, flags);
 
+  case PIKE_T_BIND:
+    return low_match_types(a->cdr, b, flags);
+
   case PIKE_T_OPERATOR:
     {
       /* First match car & cdr against mixed to evaluate markers.
        * It also applies any related type operators.
        */
       struct pike_type *t;
-      if (a->type == PIKE_T_BIND) {
-        /* Matching the assign node against mixed is a bad idea. */
+      struct pike_type *t1 =
+        low_match_types(a->car, any_type_string, flags);
+      if (a->type & 0x8000) {
         struct pike_type *t2 =
           low_match_types(a->cdr, any_type_string, flags);
-        t = apply_type_operator(a->type, a->car, t2);
+        t = apply_type_operator(a->type, t1, t2);
         free_type(t2);
       } else {
-        struct pike_type *t1 =
-          low_match_types(a->car, any_type_string, flags);
-        if (a->type & 0x8000) {
-          struct pike_type *t2 =
-            low_match_types(a->cdr, any_type_string, flags);
-          t = apply_type_operator(a->type, t1, t2);
-          free_type(t2);
-        } else {
-          t = apply_type_operator(a->type, t1, a->cdr);
-        }
-        free_type(t1);
+        t = apply_type_operator(a->type, t1, a->cdr);
       }
+      free_type(t1);
 
       if (!t) return NULL;
       ret = low_match_types(t, b, flags);
@@ -8784,19 +8876,24 @@ static struct pike_type *low_match_types2(struct pike_type *a,
   case PIKE_T_GENERIC:
     return low_match_types(a, mixed_type_string, flags);
 
+  case PIKE_T_BIND:
+    return low_match_types(a, b->cdr, flags);
+
   case PIKE_T_OPERATOR:
     {
       /* First match car & cdr against mixed to evaluate markers.
        * It also applies any related type operators.
        */
       struct pike_type *t;
-      struct pike_type *t1 = low_match_types(any_type_string, b->car, flags);
+      struct pike_type *t1 =
+        low_match_types(any_type_string, b->car, flags);
       if (b->type & 0x8000) {
-	struct pike_type *t2 = low_match_types(any_type_string, b->cdr, flags);
-	t = apply_type_operator(b->type, t1, t2);
-	free_type(t2);
-      } else {
-	t = apply_type_operator(b->type, t1, b->cdr);
+        struct pike_type *t2 =
+          low_match_types(any_type_string, b->cdr, flags);
+        t = apply_type_operator(b->type, t1, t2);
+        free_type(t2);
+        } else {
+        t = apply_type_operator(b->type, t1, b->cdr);
       }
       free_type(t1);
 
@@ -9437,6 +9534,20 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
     b = mixed_type_string;
     goto recurse;
 
+  case PIKE_T_BIND:
+    {
+      struct pike_type *t1 = apply_bindings(b->car, b->cdr);
+
+      if (t1 && (t1->type == PIKE_T_BIND)) {
+        ret = low_pike_types_le(a, t1->cdr, array_cnt, flags);
+      } else {
+        ret = low_pike_types_le(a, t1, array_cnt, flags);
+      }
+
+      free_type(t1);
+      return ret;
+    }
+
   case PIKE_T_OPERATOR:
     {
       struct pike_type *t1 = b->car;
@@ -9681,6 +9792,20 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
   case PIKE_T_GENERIC:
     a = mixed_type_string;
     goto recurse;
+
+  case PIKE_T_BIND:
+    {
+      struct pike_type *t1 = apply_bindings(a->car, a->cdr);
+
+      if (t1 && (t1->type == PIKE_T_BIND)) {
+        ret = low_pike_types_le(t1->cdr, b, array_cnt, flags);
+      } else {
+        ret = low_pike_types_le(t1, b, array_cnt, flags);
+      }
+
+      free_type(t1);
+      return ret;
+    }
 
   case PIKE_T_OPERATOR:
     {
@@ -10362,12 +10487,15 @@ int check_variant_overload(struct pike_type *a, struct pike_type *b)
   return 0;
 }
 
-struct pike_type *get_obj_type(struct pike_type *t)
+static struct pike_type *low_get_obj_type(struct pike_type *t,
+                                          struct pike_type *expected)
 {
  recur:
   if (!t) return NULL;
   switch(t->type) {
-  case T_OBJECT: return t;
+  case T_OBJECT:
+    if (expected && (expected != t)) return NULL;	/* Inconsistent. */
+    return t;
   case PIKE_T_TYPE:
   case PIKE_T_AUTO:
   case T_PROGRAM:
@@ -10378,11 +10506,27 @@ struct pike_type *get_obj_type(struct pike_type *t)
   case PIKE_T_ATTRIBUTE:
   case PIKE_T_FUNCTION:
   case PIKE_T_MANY:
+  case PIKE_T_BIND:
+  case PIKE_T_ASSIGN:
     t = t->cdr;
     goto recur;
+  case PIKE_T_OR:
+  case PIKE_T_AND:
+    {
+      struct pike_type *tmp = low_get_obj_type(t->car, expected);
+      if (!tmp) return NULL;
+      expected = tmp;
+      t = t->cdr;
+      goto recur;
+    }
   default:
     return NULL;
   }
+}
+
+struct pike_type *get_obj_type(struct pike_type *t)
+{
+  return low_get_obj_type(t, NULL);
 }
 
 /* FIXME, add the index */
@@ -10438,7 +10582,7 @@ static struct pike_type *low_index_type(struct pike_type *t,
       return tmp;
     }
 
-    ret = apply_type_operator(t->type, t->car, tmp);
+    ret = apply_bindings(t->car, tmp);
     free_type(tmp);
 
     return ret;
@@ -11217,6 +11361,7 @@ static int low_count_arguments(struct pike_type *q)
     case PIKE_T_ATTRIBUTE:
     case T_ASSIGN:
     case T_SCOPE:
+    case PIKE_T_BIND:
       return low_count_arguments(q->cdr);
 
     default: return MAX_INT32;
@@ -11391,16 +11536,17 @@ struct pike_type *get_argument_type(struct pike_type *fun, int arg_no)
     free_type(tmp2);
     return fun;
 
+  case PIKE_T_BIND:
+    tmp = get_argument_type(fun->cdr, arg_no);
+    if (!tmp) return NULL;
+    tmp2 = apply_bindings(fun->car, tmp);
+    free_type(tmp);
+    return tmp2;
+
   case PIKE_T_OPERATOR:
-    if (fun->type == PIKE_T_BIND) {
-      tmp = get_argument_type(fun->cdr, arg_no);
-      if (!tmp) return NULL;
-      tmp2 = apply_type_operator(fun->type, fun->car, tmp);
-    } else {
-      tmp = apply_type_operator(fun->type, fun->car, fun->cdr);
-      if (!tmp) return NULL;
-      tmp2 = get_argument_type(tmp, arg_no);
-    }
+    tmp = apply_type_operator(fun->type, fun->car, fun->cdr);
+    if (!tmp) return NULL;
+    tmp2 = get_argument_type(tmp, arg_no);
     free_type(tmp);
     return tmp2;
 
@@ -12102,20 +12248,20 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
     copy_pike_type(res, mixed_type_string);
     break;
 
+  case PIKE_T_BIND:
+    tmp = low_new_check_call(fun_type->cdr, arg_type, flags, cs, sval);
+    res = apply_bindings(fun_type->car, tmp);
+    free_type(tmp);
+    break;
+
   case PIKE_T_OPERATOR:
-    if (fun_type->type == PIKE_T_BIND) {
-      tmp = low_new_check_call(fun_type->cdr, arg_type, flags, cs, sval);
-      res = apply_type_operator(fun_type->type, fun_type->car, tmp);
-      free_type(tmp);
-    } else {
-      tmp = apply_type_operator(fun_type->type, fun_type->car, fun_type->cdr);
-      if (!tmp) {
-        return NULL;
-      }
-      res = lower_new_check_call(tmp, arg_type, flags,
-                                 cs, sval CHECK_CALL_ARGS);
-      free_type(tmp);
+    tmp = apply_type_operator(fun_type->type, fun_type->car, fun_type->cdr);
+    if (!tmp) {
+      return NULL;
     }
+    res = lower_new_check_call(tmp, arg_type, flags,
+                               cs, sval CHECK_CALL_ARGS);
+    free_type(tmp);
     break;
 
   case PIKE_T_TRANSITIVE:
@@ -12839,20 +12985,26 @@ struct pike_type *new_get_return_type(struct pike_type *fun_type,
     }
     break;
 
-  case PIKE_T_OPERATOR:
-    if (fun_type->type == PIKE_T_BIND) {
-      tmp = new_get_return_type(fun_type->cdr, cs, flags);
-      if (!tmp) {
-        return NULL;
-      }
-      res = apply_type_operator(fun_type->type, fun_type->car, tmp);
-    } else {
-      tmp = apply_type_operator(fun_type->type, fun_type->car, fun_type->cdr);
-      if (!tmp) {
-        return NULL;
-      }
-      res = new_get_return_type(tmp, cs, flags);
+  case PIKE_T_BIND:
+    tmp = new_get_return_type(fun_type->cdr, cs, flags);
+    if (!tmp) {
+      return NULL;
     }
+    res = apply_bindings(fun_type->car, tmp);
+    pike_fprintf(stderr,
+                 "\nget_return_type(%pT)\n"
+                 "tmp: %pT\n"
+                 "res: %pT\n",
+                 fun_type, tmp, res);
+    free_type(tmp);
+    break;
+
+  case PIKE_T_OPERATOR:
+    tmp = apply_type_operator(fun_type->type, fun_type->car, fun_type->cdr);
+    if (!tmp) {
+      return NULL;
+    }
+    res = new_get_return_type(tmp, cs, flags);
     free_type(tmp);
     break;
 
@@ -13084,21 +13236,18 @@ struct pike_type *get_first_arg_type(struct pike_type *fun_type,
     fun_type = fun_type->cdr;
     goto loop;
 
-  case PIKE_T_OPERATOR:
-    if (fun_type->type == PIKE_T_BIND) {
-      tmp = get_first_arg_type(fun_type->cdr, flags);
-      if (!tmp) {
-        res = NULL;
-        break;
-      }
-
-      res = apply_type_operator(fun_type->type,
-                                fun_type->car,
-                                tmp);
-      free_type(tmp);
+  case PIKE_T_BIND:
+    tmp = get_first_arg_type(fun_type->cdr, flags);
+    if (!tmp) {
+      res = NULL;
       break;
     }
 
+    res = apply_bindings(fun_type->car, tmp);
+    free_type(tmp);
+    break;
+
+  case PIKE_T_OPERATOR:
     tmp = apply_type_operator(fun_type->type, fun_type->car, fun_type->cdr);
     if (!tmp) {
       res = NULL;
@@ -13689,18 +13838,22 @@ struct pike_type *zzap_function_return(struct pike_type *a,
       push_type(T_MANY);
       return pop_unfinished_type();
 
+    case PIKE_T_BIND:
+      {
+        struct pike_type *tmp;
+        tmp = zzap_function_return(a->cdr, fun_ret);
+        if (!tmp) return NULL;
+        ret = apply_bindings(a->car, tmp);
+        free_type(tmp);
+        return ret;
+      }
+
     case PIKE_T_OPERATOR:
       {
         struct pike_type *tmp;
-        if (a->type == PIKE_T_BIND) {
-          tmp = zzap_function_return(a->cdr, fun_ret);
-          if (!tmp) return NULL;
-          ret = apply_type_operator(a->type, a->car, tmp);
-        } else {
-          tmp = apply_type_operator(a->type, a->car, a->cdr);
-          if (!tmp) return NULL;
-          ret = zzap_function_return(tmp, fun_ret);
-        }
+        tmp = apply_type_operator(a->type, a->car, a->cdr);
+        if (!tmp) return NULL;
+        ret = zzap_function_return(tmp, fun_ret);
 	free_type(tmp);
 	return ret;
       }
@@ -13818,22 +13971,22 @@ static void push_apply_bindings_recur(struct pike_type *t,
       push_type_attribute((struct pike_string *)t->car);
       break;
 
-    case PIKE_T_OPERATOR:
-      if (t->type != PIKE_T_BIND) {
-        struct pike_type *arg = t->cdr;
-        push_apply_bindings_recur(t->car, bindings);
-        if ((t->type & 0x8000) && arg) {
-          type_stack_mark();
-          push_apply_bindings_recur(arg, bindings);
-          arg = pop_unfinished_type();
-        }
-        push_type_operator(t->type, arg);
-        if (t->type & 0x8000) {
-          free_type(arg);
-        }
-        break;
-      }
+    case PIKE_T_BIND:
       push_apply_bindings(t->car, t->cdr, bindings);
+      break;
+
+    case PIKE_T_OPERATOR:
+      struct pike_type *arg = t->cdr;
+      push_apply_bindings_recur(t->car, bindings);
+      if ((t->type & 0x8000) && arg) {
+        type_stack_mark();
+        push_apply_bindings_recur(arg, bindings);
+        arg = pop_unfinished_type();
+      }
+      push_type_operator(t->type, arg);
+      if (t->type & 0x8000) {
+        free_type(arg);
+      }
       break;
 
     default:
@@ -15237,6 +15390,7 @@ static void low_make_pike_type(unsigned char *type_string,
   case PIKE_T_RING:
   case PIKE_T_TRANSITIVE:
   case PIKE_T_GENERIC:
+  case PIKE_T_BIND:
     /* Order dependant */
     low_make_pike_type(type_string+1, cont);
     low_make_pike_type(*cont, cont);
@@ -15525,6 +15679,7 @@ int pike_type_allow_premature_toss(struct pike_type *type)
     case PIKE_T_OPERATOR:
     case PIKE_T_TRANSITIVE:
     case PIKE_T_GENERIC:
+    case PIKE_T_BIND:
       return 0;
 
     case PIKE_T_NAME:
@@ -15963,6 +16118,7 @@ PMOD_EXPORT void *find_type(struct pike_type *t,
     case PIKE_T_RING:
     case PIKE_T_TRANSITIVE:
     case PIKE_T_GENERIC:
+    case PIKE_T_BIND:
       res = find_type(t->car, cb);
       if (res) return res;
       /* FALLTHRU */
@@ -16045,6 +16201,7 @@ PMOD_EXPORT void visit_type (struct pike_type *t, int action, void *extra)
     case T_STRING:
     case PIKE_T_TRANSITIVE:
     case PIKE_T_GENERIC:
+    case PIKE_T_BIND:
       if (t->car) {
 	visit_type_ref (t->car, REF_TYPE_INTERNAL, extra);
       }
@@ -16128,6 +16285,7 @@ void gc_mark_type_as_referenced(struct pike_type *t)
       case PIKE_T_STRING:
       case PIKE_T_TRANSITIVE:
       case PIKE_T_GENERIC:
+      case PIKE_T_BIND:
 	if (t->cdr) gc_mark_type_as_referenced(t->cdr);
       /* FALLTHROUGH */
       case PIKE_T_MULTISET:
@@ -16227,6 +16385,7 @@ void gc_check_type (struct pike_type *t)
       case T_STRING:
       case PIKE_T_TRANSITIVE:
       case PIKE_T_GENERIC:
+      case PIKE_T_BIND:
 	if (t->car) {
 	  debug_gc_check (t->car, " as car in a type");
 	}
