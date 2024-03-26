@@ -13976,18 +13976,20 @@ static void push_apply_bindings_recur(struct pike_type *t,
       break;
 
     case PIKE_T_OPERATOR:
-      struct pike_type *arg = t->cdr;
-      push_apply_bindings_recur(t->car, bindings);
-      if ((t->type & 0x8000) && arg) {
-        type_stack_mark();
-        push_apply_bindings_recur(arg, bindings);
-        arg = pop_unfinished_type();
+      {
+        struct pike_type *arg = t->cdr;
+        push_apply_bindings_recur(t->car, bindings);
+        if ((t->type & 0x8000) && arg) {
+          type_stack_mark();
+          push_apply_bindings_recur(arg, bindings);
+          arg = pop_unfinished_type();
+        }
+        push_type_operator(t->type, arg);
+        if (t->type & 0x8000) {
+          free_type(arg);
+        }
+        break;
       }
-      push_type_operator(t->type, arg);
-      if (t->type & 0x8000) {
-        free_type(arg);
-      }
-      break;
 
     default:
     case T_MIXED:
