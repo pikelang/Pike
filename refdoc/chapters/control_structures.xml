@@ -417,10 +417,11 @@ is run.</p>
 
   <p>Note that if the restartable function has been called concurrently
   (ie before the <tt>continue return</tt> statement has exited the function),
-  the next <tt>continue return</tt> (and <ref>predef::yield()</ref>) will not
-  exit the function, but instead just resume and the returned value thrown away.
-  The concurrent call will have received the return value <tt>UNDEFINED</tt>.
-  Only information about the latest concurrent call is retained.</p>
+  the next <tt>continue return</tt> (or <ref>predef::yield()</ref>) will not
+  exit the function, but instead just resume, and the value to be returned is
+  thrown away. The concurrent call will have received the return value
+  <tt>UNDEFINED</tt>. Only information about the latest concurrent call is
+  retained.</p>
 
   <p><tt>Continue return</tt> is only available in Pike 9.0 and later.</p>
 </subsection>
