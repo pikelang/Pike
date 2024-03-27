@@ -268,6 +268,8 @@ PMOD_EXPORT char *get_name_of_type(TYPE_T t)
 
 #define TWOT(X,Y) (((X) << 8)+(Y))
 
+static int (*program_id_to_id)(int) = NULL;
+
 static int low_pike_types_le(struct pike_type *a, struct pike_type *b,
 			     int array_cnt, unsigned int flags);
 static int low_check_indexing(struct pike_type *type,
@@ -506,7 +508,11 @@ static struct pike_type *debug_mk_type(unsigned INT32 type,
   case PIKE_T_OBJECT:
     if (cdr) {
       int id = (int)(ptrdiff_t)cdr;
-      struct program *p = low_id_to_program(id, 1);
+      struct program *p;
+      if (program_id_to_id) {
+        id = program_id_to_id(id);
+      }
+      p = low_id_to_program(id, 1);
       if ((p && p->num_generics) ||
           ((id < PROG_DYNAMIC_ID_START) && (id & PROG_GENERICS_ID_START))) {
         /* Program that uses generics. */
@@ -875,8 +881,6 @@ void debug_push_unlimited_array_type(enum PIKE_TYPE t)
 
   TYPE_STACK_DEBUG("push_array_type");
 }
-
-static int (*program_id_to_id)(int) = NULL;
 
 PMOD_EXPORT void set_program_id_to_id( int (*to)(int) )
 {
@@ -12991,11 +12995,6 @@ struct pike_type *new_get_return_type(struct pike_type *fun_type,
       return NULL;
     }
     res = apply_bindings(fun_type->car, tmp);
-    pike_fprintf(stderr,
-                 "\nget_return_type(%pT)\n"
-                 "tmp: %pT\n"
-                 "res: %pT\n",
-                 fun_type, tmp, res);
     free_type(tmp);
     break;
 
@@ -13889,7 +13888,7 @@ static void push_apply_bindings_recur(struct pike_type *t,
   SET_CYCLIC_RET(1);
 #endif
 
-  if (!t || !(t->flags & PT_FLAG_GENERIC)) {
+  if (!t || !(t->flags & PT_FLAG_MASK_GENERICS)) {
     /* Common case. */
     push_finished_type(t);
   } else switch(t->type & PIKE_T_MASK) {
@@ -13940,6 +13939,44 @@ static void push_apply_bindings_recur(struct pike_type *t,
       }
       break;
 
+    case PIKE_T_OBJECT:
+      {
+        struct program *p;
+        int id = (int)(ptrdiff_t)t->cdr;
+        int e;
+
+        push_finished_type(t);
+
+        /* Check if we have any bindings for t. */
+        if (!bindings) break;
+        if (program_id_to_id) {
+          id = program_id_to_id(id);
+        }
+        p = low_id_to_program(id, 1);
+        e = p?p->num_generics:1;
+
+        while (e--) {
+          struct svalue sval;
+          struct svalue *s;
+
+          push_type('0' + e);
+          push_object_type(0, id);
+          push_type(PIKE_T_GENERIC);
+
+          SET_SVAL(sval, PIKE_T_TYPE, 0, type, peek_type_stack());
+          s = low_mapping_lookup(bindings, &sval);
+
+          if (s && (TYPEOF(*s) == PIKE_T_TYPE)) {
+            push_finished_type(s->u.type);
+            push_reverse_type(PIKE_T_ASSIGN);
+            push_type(PIKE_T_BIND);
+          } else {
+            compiler_discard_top_type();
+          }
+        }
+      }
+      break;
+
     case PIKE_T_ASSIGN:
       /* Assignment type; we must not alter the car! */
       push_apply_bindings_recur(t->cdr, bindings);
@@ -13964,6 +14001,7 @@ static void push_apply_bindings_recur(struct pike_type *t,
 
     case PIKE_T_NAME:
       push_apply_bindings_recur(t->cdr, bindings);
+      push_type_name((struct pike_string *)t->car);
       break;
 
     case PIKE_T_ATTRIBUTE:
@@ -14010,7 +14048,7 @@ static void push_apply_bindings(struct pike_type *bind,
                                 struct mapping *bindings)
 {
   if (!bind || !val) {
-    push_finished_type(NULL);
+    push_finished_type(val);
     return;
   }
   if ((bind->type != PIKE_T_ASSIGN) || !bind->car ||
@@ -14032,18 +14070,14 @@ static void push_apply_bindings(struct pike_type *bind,
    * This is used to keep track of the actual bindings.
    */
   ref_push_type_value(bind->car);
-  ref_push_type_value(bind->cdr);
+  type_stack_mark();
+  push_apply_bindings_recur(bind->cdr, bindings);
+  push_type_value(pop_unfinished_type());
+
   mapping_insert(bindings, Pike_sp-2, Pike_sp-1);
   pop_n_elems(2);
 
   push_apply_bindings_recur(val, bindings);
-
-  val = peek_type_stack();
-  if (val && (val->flags & PT_FLAG_GOBJECT)) {
-    /* Typed object present in the result. */
-    push_finished_type(bind);
-    push_type(PIKE_T_BIND);
-  }
 
   free_mapping(bindings);
 }
@@ -14062,6 +14096,7 @@ struct pike_type *compiler_apply_bindings(struct pike_type *t,
                                           struct mapping *bindings)
 {
   if (!t) return NULL;
+
   if (!bindings || !(t->flags & PT_FLAG_MASK_GENERICS)) {
     add_ref(t);
     return t;
@@ -14070,23 +14105,6 @@ struct pike_type *compiler_apply_bindings(struct pike_type *t,
   type_stack_mark();
 
   push_apply_bindings_recur(t, bindings);
-
-  if (peek_type_stack() && (peek_type_stack()->flags & PT_FLAG_MASK_GENERICS)) {
-    int e;
-    struct keypair *k;
-
-    NEW_MAPPING_LOOP(bindings->data) {
-      if ((TYPEOF(k->ind) == PIKE_T_TYPE) &&
-          (TYPEOF(k->val) == PIKE_T_TYPE)) {
-        push_finished_type(k->val.u.type);
-        push_finished_type(k->ind.u.type);
-
-        push_type(PIKE_T_ASSIGN);
-
-        push_type(PIKE_T_BIND);
-      }
-    }
-  }
 
   return pop_unfinished_type();
 }
