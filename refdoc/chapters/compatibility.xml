@@ -22,9 +22,28 @@
   <subsection title="Global Functions">
   </subsection>
   <subsection title="Modules">
+    <p>The <ref>Iterator</ref> API has had some changes since Pike 8.0.</p>
     <p>The following modules and functions have moved, been renamed or
       been deleted:
       <matrix>
+        <r><c><ref>8.0::_assembler_debug</ref></c>
+           <c><ref>Debug.assembler_debug</ref></c></r>
+        <r><c><ref>8.0::_debug</ref></c>
+           <c><ref>Debug.debug</ref></c></r>
+        <r><c><ref>8.0::_dump_program_tables</ref></c>
+           <c><ref>Debug.dump_program_tables</ref></c></r>
+        <r><c><ref>8.0::_optimizer_debug</ref></c>
+           <c><ref>Debug.optimizer_debug</ref></c></r>
+        <r><c><ref>8.0::_map_all_objects</ref></c>
+           <c><ref>Debug.map_all_objects</ref></c></r>
+        <r><c><ref>8.0::_refs</ref></c>
+           <c><ref>Debug.refs</ref></c></r>
+        <r><c><ref>8.0::_next</ref></c>
+           <c><ref>Debug.next</ref></c></r>
+        <r><c><ref>8.0::_prev</ref></c>
+           <c><ref>Debug.prev</ref></c></r>
+        <r><c><ref>8.0::next_object</ref></c>
+           <c><ref>Debug.next_object</ref></c></r>
       </matrix>
     </p>
   </subsection>
@@ -98,7 +117,7 @@
 <section title="Pike 7.6 and earlier">
   <subsection title="Deprecated">
     <p>The backward compatibility code for Pike 7.6 and earlier
-       has been removed in Pike 8.2.</p>
+       has been removed in Pike 9.0.</p>
   </subsection>
 </section>
 
