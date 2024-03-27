@@ -1140,8 +1140,7 @@ respectively).</p>
   <subsection title="variant">
     <p>The <tt>variant</tt> modifier is used to provide alternative
     APIs for functions. The different functions will be called
-    depending on what the arguments are provided when the symbol
-    is called.</p>
+    depending on what the arguments are when the symbol is called.</p>
   </subsection>
 
   <subsection title="__weak__">
@@ -1155,6 +1154,13 @@ respectively).</p>
   <subsection title="__unused__">
     <p>The <tt>__unused__</tt> modifier is used to inhibit the
     warning that the symbol is not used.</p>
+
+    <p>Note that this modifier is new in Pike 9.0.</p>
+  </subsection>
+
+  <subsection title="__generator__">
+    <p>The <tt>__generator__</tt> modifier converts a function
+    into a function that returns a restartable function.</p>
 
     <example>
       __generator__ int counter(int start, int stop)
@@ -1179,13 +1185,6 @@ respectively).</p>
         };
       }
     </example>
-
-    <p>Note that this modifier is new in Pike 9.0.</p>
-  </subsection>
-
-  <subsection title="__generator__">
-    <p>The <tt>__generator__</tt> modifier converts a function
-    into a function that returns a restartable function.</p>
 
     <p>Note that this modifier is new in Pike 9.0.</p>
   </subsection>
@@ -1226,8 +1225,8 @@ respectively).</p>
       }
     </example>
 
-    <p>Restartable functions are required to be able to use
-    <ref>predef::await()</ref>.</p>
+    <p>Restartable functions are required in order to be able
+    to use <ref>predef::await()</ref>.</p>
 
     <p>Note that this modifier is new in Pike 9.0.</p>
   </subsection>
