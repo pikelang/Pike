@@ -614,6 +614,7 @@ class DocGroup {
 // REPRESENTATION OF PIKES LEXICAL OBJECTS (class, function, variable ...)
 //========================================================================
 
+//! Class representing an annotation.
 class Annotation
 {
   constant is_annotation = 1;
