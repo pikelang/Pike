@@ -15,11 +15,14 @@
 //     The pragma is to be removed when ptr and arr are declared protected.
 #pragma no_deprecation_warnings
 
+//! Type for the elements on the stack.
+__generic__ ElementType;
+
 __deprecated__(int) ptr;
-__deprecated__(array) arr;
+__deprecated__(array(ElementType)) arr;
 
 //! Push an element on the top of the stack.
-void push(mixed val)
+void push(ElementType val)
 {
   if(ptr == sizeof(arr)) {
     arr += allocate(ptr);
@@ -33,7 +36,7 @@ void push(mixed val)
 //!   Throws an error if called on an empty stack.
 //! @seealso
 //!   @[peek()]
-mixed top()
+ElementType top()
 {
   if (ptr) {
     return arr[ptr-1];
@@ -51,7 +54,7 @@ mixed top()
 //!
 //! @seealso
 //!   @[top()]
-mixed peek(int|void offset)
+ElementType peek(int|void offset)
 {
   if ((offset >= 0) && ((ptr-offset) > 0)) {
     return arr[ptr-offset-1];
@@ -92,7 +95,7 @@ void pop_to(int depth)
 //! from the top. If no value is given the top element is
 //! popped and returned. All popped entries are freed from
 //! the stack.
-mixed pop(void|int val)
+ElementType pop(void|int val)
 {
   mixed ret;
 
@@ -140,7 +143,7 @@ protected void create(int(1..) initial_size = 32)
 }
 
 //! Sets the stacks content to the provided array.
-void set_stack(array stack) {
+void set_stack(array(ElementType) stack) {
   arr = stack;
   ptr = sizeof(arr);
 }
@@ -153,7 +156,7 @@ protected int _sizeof() {
 
 //! @[values] on a stack returns all the entries in
 //! the stack, in order.
-protected array _values() {
+protected array(ElementType) _values() {
   return arr[..ptr-1];
 }
 
@@ -174,14 +177,14 @@ protected int _search(mixed item)
 //! stack with all the elements from both stacks,
 //! and the elements from the second stack at the
 //! top of the new stack.
-protected this_program `+(this_program s) {
-  array elem = arr[..ptr-1]+values(s);
-  this_program ns = this_program(1);
+protected this_program(<mixed>) `+(this_program s) {
+  array(ElementType|mixed) elem = arr[..ptr-1]+values(s);
+  this_program(<mixed>) ns = this_program(<mixed>)(1);
   ns->set_stack(elem);
   return ns;
 }
 
-protected mixed cast(string to)
+protected array(ElementType)|zero cast(string to)
 {
   if( to=="array" )
     return _values();
