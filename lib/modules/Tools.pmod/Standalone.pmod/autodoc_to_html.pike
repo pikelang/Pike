@@ -1786,7 +1786,8 @@ string docgroup_sort_key(Node n)
 
   if (!name) {
     array(string) names = n->get_elements()->get_attributes()->name - ({ 0 });
-    names = sort(names) + ({ "" });
+    sort(map(names, lower_case), names);
+    names += ({ "" });
     name = names[0];
   }
 

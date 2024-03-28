@@ -182,12 +182,12 @@ class Node
     string path = raw_class_path();
     refs[path] = this;
 
-    sort(class_children->name, class_children);
-    sort(module_children->name, module_children);
-    sort(enum_children->name, enum_children);
-    sort(directive_children->name, directive_children);
-    sort(method_children->name, method_children);
-    sort(member_children->name, member_children);
+    sort(map(class_children->name, lower_case), class_children);
+    sort(map(module_children->name, lower_case), module_children);
+    sort(map(enum_children->name, lower_case), enum_children);
+    sort(map(directive_children->name, lower_case), directive_children);
+    sort(map(method_children->name, lower_case), method_children);
+    sort(map(member_children->name, lower_case), member_children);
 
     method_children = check_uniq(method_children);
 
@@ -720,7 +720,7 @@ class Node
             return ([ "name":n->name,
                       "link":n->make_filename() ]);
           });
-    sort(a->name, a);
+    sort(map(a->name, lower_case), a);
     return sprintf("add_%s(%s);\n", name, encode_json(a));
   }
 
@@ -734,7 +734,7 @@ class Node
                       "link":make_link(n, -1),
                       "modifiers":sizeof(n->modifiers) && n->modifiers || Val.null ]);
           });
-    sort(a->name, a);
+    sort(map(a->name, lower_case), a);
     return sprintf(".addChildren('%s', %s)\n", name, encode_json(a));
   }
 
@@ -914,6 +914,7 @@ class Node
       if (!ref) ref = text;
       if (!names[ref]) names[ref] = text;
       if (closure[ref] >= weight) continue; // Already handled.
+
       closure[ref] = weight;
       Node n = refs[ref];
       if (!n) {
@@ -987,7 +988,7 @@ class Node
     array(string) references = indices(closure);
     array(int) weights = values(closure);
     // Secondary sorting order is according to the reference string.
-    sort(references, weights);
+    sort(map(references, lower_case), references, weights);
     // Primary sorting order is according to the weights.
     sort(weights, references);
 
@@ -1197,7 +1198,7 @@ class Node
     array(Node) children = member_children + enum_children +
       directive_children + method_children + operator_children;
 
-    sort(children->name, children);
+    sort(map(children->name, lower_case), children);
 
     return make_link_list(children, extra_levels);
   }
@@ -1430,8 +1431,8 @@ class TopNode {
 
     _data = parser->finish(_data)->read();
     ::create("autodoc", "", _data);
-    sort(namespace_children->name, namespace_children);
-    sort(appendix_children->name, appendix_children);
+    sort(map(namespace_children->name, lower_case), namespace_children);
+    sort(map(appendix_children->name, lower_case), appendix_children);
     foreach(namespace_children, Node x)
       if(x->type=="namespace" && x->name==default_namespace) {
         //      namespace_children -= ({ x });
