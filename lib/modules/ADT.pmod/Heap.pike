@@ -4,15 +4,18 @@
 //! always be greater than or equal to the value of its parent node.
 //! Thus, the top node of the heap will always hold the smallest value.
 
+//! Type for the values on the heap.
+__generic__ ValueType;
+
 //! Heap element.
-class Element (mixed value)
+class Element (<ValueType = ValueType>) (ValueType value)
 {
   int pos = -1;
 
   constant is_adt_heap_element = 1;
 
-  protected int `<(mixed other) { return value < other; }
-  protected int `>(mixed other) { return value > other; }
+  protected int `<(ValueType other) { return value < other; }
+  protected int `>(ValueType other) { return value > other; }
 
   protected string _sprintf(int c)
   {
@@ -23,7 +26,7 @@ class Element (mixed value)
 
 #define SWAP(X,Y) do{ mixed tmp=values[X]; (values[X]=values[Y])->pos = X; (values[Y]=tmp)->pos = Y; }while(0)
 
-protected array(Element) values=allocate(10);
+protected array(Element(<ValueType>)) values=allocate(10);
 protected int num_values;
 
 #ifdef ADT_HEAP_DEBUG
@@ -105,9 +108,9 @@ protected int adjust_up(int elem)
 //!
 //! @seealso
 //!   @[pop()], @[remove()]
-Element push(mixed value)
+Element(<ValueType>) push(ValueType|Element(<ValueType>) value)
 {
-  Element ret;
+  Element(<ValueType>) ret;
   if (objectp(value) && value->is_adt_heap_element) {
     ret = value;
 
@@ -138,7 +141,7 @@ Element push(mixed value)
 //! @returns
 //!   Returns the element handle for the value (if present in the heap),
 //!   and @expr{0@} (zero) otherwise.
-Element adjust(mixed value)
+Element(<ValueType>) adjust(ValueType|Element(<ValueType>) value)
 {
   int pos;
   if (objectp(value) && value->is_adt_heap_element) {
@@ -146,7 +149,7 @@ Element adjust(mixed value)
   } else {
     pos = search(map(values, lambda(Element x) { return x->?value; }), value);
   }
-  Element ret;
+  Element(<ValueType>) ret;
   if(pos>=0) {
     ret = values[pos];
     if(!adjust_up(pos))
@@ -164,12 +167,12 @@ Element adjust(mixed value)
 //!
 //! @seealso
 //!   @[pop()], @[peek()], @[push()], @[remove()]
-Element low_pop()
+Element(<ValueType>) low_pop()
 {
   if(!num_values)
     return UNDEFINED;
 
-  Element value = values[0];
+  Element(<ValueType>) value = values[0];
   value->pos = -1;
   num_values--;
   if(num_values)
@@ -193,9 +196,9 @@ Element low_pop()
 //!
 //! @seealso
 //!   @[low_pop()], @[peek()], @[push()], @[remove()]
-mixed pop()
+ValueType pop()
 {
-  Element value = low_pop();
+  Element(<ValueType>) value = low_pop();
   if(!value)
     error("Heap underflow!\n");
 
@@ -214,7 +217,7 @@ protected int _sizeof() { return num_values; }
 //!
 //! @seealso
 //!   @[peek()], @[low_pop()], @[pop()]
-Element low_peek()
+Element(<ValueType>) low_peek()
 {
   if (!num_values)
     return UNDEFINED;
@@ -231,7 +234,7 @@ Element low_peek()
 //!
 //! @seealso
 //!   @[low_peek()], @[pop()]
-mixed peek()
+ValueType peek()
 {
   if (!num_values)
     return UNDEFINED;
@@ -246,7 +249,7 @@ mixed peek()
 //!
 //! @seealso
 //!   @[push()], @[pop()]
-void remove(mixed value)
+void remove(ValueType|Element(<ValueType>) value)
 {
   int pos;
   if (objectp(value) && value->is_adt_heap_element) {
@@ -276,7 +279,7 @@ protected string _sprintf(int c)
 {
   if (c != 'O') return "ADT.Heap()";
   int cnt = num_values;
-  Element e = sizeof(values) && values[0];
+  Element(<ValueType>) e = sizeof(values) && values[0];
   if (cnt) {
     return sprintf("ADT.Heap(%d elements, top: %O)", cnt, e);
   }
