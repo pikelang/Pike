@@ -243,7 +243,7 @@ protected class Monitor(string path,
 			int file_interval_factor,
 			int stable_time)
 {
-  inherit ADT.Heap.Element;
+  inherit ADT.Heap.Element(<Monitor>);
 
   int next_poll;
   Stdio.Stat st;
