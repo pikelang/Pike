@@ -6,6 +6,7 @@
 //! (where you push objects onto the table in one end and objects are falling
 //! off the table in the other.
 
+//! Type for the individual elements on the history stack.
 __generic__ ValueType;
 
 // The stack where the values are stored.
