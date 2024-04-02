@@ -5184,6 +5184,10 @@ static node *eval(node *n)
       if (!new->type) {
 	new->type = n->type;
 	add_ref(n->type);
+      } else if (n->token == F_BIND_GENERICS) {
+        /* Restore the bindings. */
+        new = mknode(F_BIND_GENERICS, new, CDR(n));
+        add_ref(CDR(n));
       } else if (!pike_types_le(new->type, n->type, 0, 0)) {
 	/* Try consolidating the type information. */
 	struct pike_type *t = soft_cast(n->type, new->type, 0);
