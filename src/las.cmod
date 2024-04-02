@@ -2228,6 +2228,10 @@ node *debug_mktypenode(struct pike_type *t)
   push_finished_type(t);
   push_type(T_TYPE);
   res->type = pop_unfinished_type();
+  if (res->type && (res->type->flags & PT_FLAG_MASK_GENERICS)) {
+    /* fix_type_field() needs to bind the generics. */
+    res->node_info |= OPT_TYPE_NOT_FIXED;
+  }
   return res;
 }
 
@@ -2243,6 +2247,10 @@ node *low_mkconstantsvaluenode(const struct svalue *s)
       res->node_info|=OPT_EXTERNAL_DEPEND;
   }
   res->type = get_type_of_svalue(s);
+  if (res->type && (res->type->flags & PT_FLAG_MASK_GENERICS)) {
+    /* fix_type_field() needs to bind the generics. */
+    res->node_info |= OPT_TYPE_NOT_FIXED;
+  }
   res->tree_info |= OPT_SAFE;
   return res;
 }

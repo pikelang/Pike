@@ -15089,7 +15089,7 @@ struct pike_type *get_type_of_svalue(const struct svalue *s)
   case T_PROGRAM:
   {
     /* FIXME: An alternative would be to push program(object(1,p->id)). */
-    struct pike_type *a;
+    struct pike_type *a = function_type_string;
     struct pike_type *ret_type;
     int id;
 
@@ -15103,33 +15103,23 @@ struct pike_type *get_type_of_svalue(const struct svalue *s)
       if(id>=0)
       {
 	a = ID_FROM_INT(s->u.program, id)->type;
-	if((a = zzap_function_return(a, ret_type))) {
-	  free_type(ret_type);
-	  return a;
-	}
+      } else if (s->u.program->flags & PROGRAM_PASS_1_DONE) {
+        /* All identifiers have been added. No create().
+         */
+        a = NULL;
+      }
+    }
+
+    if (a) {
+      if ((ret = zzap_function_return(a, ret_type))) {
+        free_type(ret_type);
+        return ret;
+      }
 #if 0
-	{
-	  struct pike_string *tmp =
-	    describe_type(ID_FROM_INT(s->u.program, id)->type);
-	  yywarning("Failed to zzap function return for type: %s.", tmp->str);
-	  free_string(tmp);
-	}
+      {
+        yywarning("Failed to zzap function return for type: %pT.", a);
+      }
 #endif /* 0 */
-      }
-      if (!(s->u.program->flags & PROGRAM_PASS_1_DONE)) {
-	/* We haven't added all identifiers in s->u.program yet,
-	 * so we might find a create() later.
-	 */
-	if((a = zzap_function_return(function_type_string, ret_type))) {
-	  free_type(ret_type);
-	  return a;
-	}
-      }
-    } else {
-      if((a = zzap_function_return(function_type_string, ret_type))) {
-	free_type(ret_type);
-	return a;
-      }
     }
 
     type_stack_mark();
