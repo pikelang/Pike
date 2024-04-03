@@ -44,8 +44,38 @@ o '__unknown__' type added.
 
   This is a type that is the inverse of the type mixed|void,
   and is used eg in the type for the empty string
-  string(zero:__unknown) and for the generic function type
+  string(zero:__unknown__) and for the generic function type
   function(__unknown__...:mixed).
+
+o Syntax for declaring and using generic types added.
+
+    class Foo (< T >) (protected T val) {
+      T get_val() { return val; }
+    }
+
+    class Bar (< X, Y >) {
+      inherit Foo (< Y >);
+      X z;
+    }
+
+    class Foobar {
+      __generic__ Z;  // This is equivalent to declaring Foobar (< Z >) above.
+      inherit Bar (< Z, Z >);
+    }
+
+    Bar(<float, int>) bar = Bar(<float, int>)(17);
+
+    bar->z = 1.0;
+
+o Several modules have been updated to use generics.
+
+  - ADT.Heap
+
+  - ADT.Stack
+
+  - Concurrent
+
+  They all default their generics to mixed in order to be backward-compatible.
 
 o 'auto' type added.
 
@@ -197,8 +227,8 @@ o Syntax for asynchronous functions added.
 
     Behaves similar to:
 
-      Concurrent.Future/*<T>*/ foo(mixed ... args) {
-        Concurrent.Promise __async_promise__ = Concurrent.Promise();
+      Concurrent.Future (<T>) foo(mixed ... args) {
+        Concurrent.Promise (<T>) __async_promise__ = Concurrent.Promise(<T>)();
         __async_promise__->failure(catch {
             __async_promise__->success(
               __generator__ lambda() {
