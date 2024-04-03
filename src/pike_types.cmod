@@ -14112,7 +14112,7 @@ struct pike_type *compiler_apply_bindings(struct pike_type *t,
 struct mapping *mkbindings(struct program *p, struct array *b,
                            int inhibit_defaults)
 {
-  struct mapping *ret;
+  struct mapping *ret = NULL;
   int i;
   int state = 0;
   const int lfuns[] = {
@@ -14127,7 +14127,12 @@ struct mapping *mkbindings(struct program *p, struct array *b,
     yywarning("Too many bindings for %pP.", p);
   }
 
-  ret = allocate_mapping(p->num_generics);
+  /* The types may contain generics from the parent class. */
+  ret = mkbindings(p->parent, NULL, inhibit_defaults);
+
+  if (!ret) {
+    ret = allocate_mapping(p->num_generics);
+  }
 
   for (i = inhibit_defaults; i < 2; i++) {
     int l = lfuns[i];
@@ -14202,10 +14207,21 @@ struct mapping *mkbindings(struct program *p, struct array *b,
        *   this_program(<T>) self() { return this; }
        */
 
-      if (s == &ss) {
+      if (!s) {
         free_type(t);
       }
       continue;
+    }
+
+    if (t && (t->flags & PT_FLAG_MASK_GENERICS)) {
+      /* Binding contains generics. */
+      struct pike_type *tmp = compiler_apply_bindings(t, ret);
+
+      if (!s) {
+        free_type(t);
+      }
+      s = NULL;
+      t = tmp;
     }
 
     if (!s) {
