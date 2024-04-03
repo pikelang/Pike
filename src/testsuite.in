@@ -621,6 +621,25 @@ test_any_equal([[
   return ({ A, B, C, D })->sym;
 ]], ({ 1, 2, 1, 2 }))
 
+dnl Tests of generic types.
+
+test_compile_any([[
+// Bug #10151
+//   Bad argument 1 to create.
+//   Expected: { T = { T = (<object(implements G):$0>) } }.
+//   Got     : object(implements program(B)).
+class G (<T>) {
+  class GG (<T = T>) (T t) {}
+}
+class B {
+  inherit G.GG;
+  protected void create()
+  {
+    GG::create(this);	// Bang!
+  }
+}
+]])
+
 dnl Generator function tests.
 
 dnl Trivial generator function.
