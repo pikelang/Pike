@@ -36,23 +36,31 @@
 //! */
 //! @endcode
 
+//! Type for the indices of the mapping.
+__generic__ IndexType;
+
+//! Type for the values of the mapping.
+__generic__ ValueType;
+
 //! @ignore
-private array __internal = ({([]), ({})});
+private array(mapping(IndexType:ValueType)|array(IndexType)) __internal =
+  ({([]), ({})});
 
 #define __map      __internal[0]
 #define __indices  __internal[1]
 //! @endignore
 
-inline private void addelm(mixed key, mixed value) {
+inline private void addelm(IndexType key, ValueType value) {
   __indices += ({ key });
   __map[key] = value;
 }
 
-private void __addelms(mixed ... args) {
+private void __addelms(IndexType|ValueType ... args) {
   if (sizeof(args) % 2 != 0)
     error("Need even number of arguments! ");
   for (int i; i < sizeof(args); i += 2) {
-    mixed key = args[i], val = args[i+1];
+    IndexType key = args[i];
+    ValueType val = args[i+1];
     if (zero_type(__map[key]))
       __indices -= ({ key });
     addelm(key, val);
@@ -71,7 +79,7 @@ private void __addelms(mixed ... args) {
 //! @param args
 //!  Odd arguments are the indices, even arguments the values.
 //!  @expr{"index", "value", "index", "value", ... @}
-protected void create(mixed ... args) {
+protected void create(IndexType|ValueType ... args) {
   __addelms(@args);
 }
 
@@ -86,7 +94,7 @@ protected void create(mixed ... args) {
 //!
 //! @param keys
 //! @param values
-variant protected void create(array keys, array values) {
+variant protected void create(array(IndexType) keys, array(ValueType) values) {
   if (keys && values) {
     if (sizeof(keys) != sizeof(values))
       error("The keys and values arrays must be of the same length! ");
@@ -97,12 +105,13 @@ variant protected void create(array keys, array values) {
   }
 }
 
-variant protected void create(this_program old) {
+variant protected void create(this_program(<IndexType, ValueType>) old) {
   __indices = old->__indices;
   __map = old->__map + ([]);
 }
 
-protected mixed `[]=(mixed key, mixed val) {
+protected program(this_program)|array|function `[]=(IndexType|string(7bit) key,
+                                                    mixed val) {
   switch (key) {
     case "__internal": return __internal;
     case "__addelms": return __addelms;
@@ -119,24 +128,25 @@ private mapping switchblade = ([
   "__addelms": __addelms,
  ]);
 
-inline protected mixed `[](mixed key) {
+inline protected ValueType|array|function `[](mixed key) {
   return switchblade[key] || __map[key];
 }
 
-protected mixed `->=(mixed key, mixed val) {
+protected program(this_program)|array|function `->=(mixed key, mixed val) {
   return `[]=(key, val);
 }
 
-protected mixed `->(mixed key) {
+protected ValueType|array|function `->(mixed key) {
   return `[](key);
 }
 
-protected mixed `+(mixed what) {
+protected this_program `+(mapping|this_program|array what) {
   this_program copy = this_program(this);
   if (mappingp(what)) {
     copy->__map += what;
     copy->__indices += indices(what - __map);
-  } else if (objectp(what) && Program.implements(what, this_program)) {
+  } else if (objectp(what) &&
+             Program.implements(object_program(what), this_program)) {
     copy->__map += what->__map;
     copy->__indices += what->__indices - __indices;
   } else if (arrayp(what))
@@ -146,12 +156,13 @@ protected mixed `+(mixed what) {
   return copy;
 }
 
-protected mixed `-(mixed what) {
+protected this_program `-(this_program|mapping|multiset|array what) {
   this_program copy = this_program(this);
   if (mappingp(what) || multisetp(what)) {
     copy->__map -= what;
     copy->__indices -= indices(what);
-  } else if (objectp(what) && Program.implements(what, this_program)) {
+  } else if (objectp(what) &&
+             Program.implements(object_program(what), this_program)) {
     copy->__map -= what->__map;
     copy->__indices -= what->__indices;
   } else if (arrayp(what)) {
@@ -212,36 +223,23 @@ protected int _sizeof() {
   return sizeof(__indices);
 }
 
-protected mixed _m_delete(string key) {
+protected object(ValueType)|zero _m_delete(IndexType key) {
   __indices -= ({ key });
-  mixed val = __map[key];
-  m_delete(__map, key);
-  return val;
+  return m_delete(__map, key);
 }
 
-protected InternalIterator _get_iterator() {
-  return InternalIterator();
-}
-
-protected array _indices() {
+protected array(IndexType) _indices() {
   return __indices;
 }
 
-protected array _values() {
+protected array(ValueType) _values() {
   array out = ({});
   for (int i = 0; i < sizeof(__indices); )
     out += ({ __map[__indices[i++]] });
   return out;
 }
 
-protected string _sprintf(int t) {
-  string ret = sprintf("([ /* %d elements */\n", sizeof(this));
-  foreach (this; mixed key; mixed value)
-    ret += sprintf("  %O: %O,\n", key, value);
-  return ret + "])";
-}
-
-protected class InternalIterator {
+protected class InternalIterator (< IndexType = IndexType, ValueType = ValueType >) {
   private int idx = -1;
 
   protected int _sizeof() {
@@ -263,17 +261,17 @@ protected class InternalIterator {
   }
 
 
-  protected string _iterator_index() {
+  protected object(IndexType)|zero _iterator_index() {
     return (idx >= 0) ? __indices[idx] : UNDEFINED;
   }
 
 
-  protected mixed _iterator_value() {
+  protected object(ValueType)|zero _iterator_value() {
     return (idx >= 0) ? __map[__indices[idx]] : UNDEFINED;
   }
 
 
-  protected this_program `+=(int steps) {
+  protected this_program(<IndexType, ValueType>) `+=(int steps) {
     idx += steps;
     if (idx >= sizeof(__indices)) {
       idx = sizeof(__indices) - 1;
@@ -281,4 +279,15 @@ protected class InternalIterator {
     if (idx < -1) idx = -1;
     return this;
   }
+}
+
+protected InternalIterator _get_iterator() {
+  return InternalIterator();
+}
+
+protected string _sprintf(int t) {
+  string ret = sprintf("([ /* %d elements */\n", sizeof(this));
+  foreach (this; IndexType key; ValueType value)
+    ret += sprintf("  %O: %O,\n", key, value);
+  return ret + "])";
 }
