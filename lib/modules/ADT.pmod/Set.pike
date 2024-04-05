@@ -10,8 +10,10 @@
 
 #pike __REAL_VERSION__
 
+//! Type for the individual members of the set.
+__generic__ ValueType;
 
-private multiset set;
+private multiset(ValueType) set;
 
 
 //! Remove all items from the set.
@@ -22,25 +24,25 @@ void reset()
 
 
 //! Add @[items] to the set.
-void add(mixed ... items)
+void add(ValueType ... items)
 {
-  foreach(items, mixed item)
+  foreach(items, ValueType item)
     if (!set[item])
       set[item] = 1;
 }
 
 
 //! Remove @[items] from the set.
-void remove(mixed ... items)
+void remove(ValueType ... items)
 {
-  foreach(items, mixed item)
+  foreach(items, ValueType item)
     if (set[item])
       set[item] = 0;
 }
 
 
 //! Check whether a value is a member of the set.
-int(0..1) contains(mixed item)
+int(0..1) contains(ValueType item)
 {
   return set[item];
 }
@@ -63,12 +65,12 @@ int(0..1) is_empty()
 //!
 //! The filtering function @[f] is called with a single, mixed-type
 //! argument which is the member value to be mapped.
-array(mixed) map(function f)
+array(mixed) map(function(ValueType:mixed) f)
 {
   array a = allocate(sizeof(set));
   int   i = 0;
 
-  foreach(indices(set), mixed item)
+  foreach(indices(set), ValueType item)
     a[i++] = f(item);
 
   return a;
@@ -80,11 +82,11 @@ array(mixed) map(function f)
 //!
 //! The filtering function is called with a single mixed-type argument
 //! which is the member value to be checked.
-this_program filter(function f)
+this_program filter(function(ValueType:mixed) f)
 {
   ADT.Set result = ADT.Set();
 
-  foreach(indices(set), mixed item)
+  foreach(indices(set), ValueType item)
     if (f(item))
       result->add(item);
 
@@ -97,13 +99,15 @@ this_program filter(function f)
 //!
 //! The filtering function is called with a single mixed-type argument
 //! which is the member value to be checked.
-this_program filter_destructively(function f)
+//!
+//! @note
+//!   CAVEAT EMPTOR: This function was just a duplicate of @[filter()]
+//!   in Pike 8.0 and earlier.
+this_program filter_destructively(function(ValueType:mixed) f)
 {
-  ADT.Set result = ADT.Set();
-
-  foreach(indices(set), mixed item)
-    if (f(item))
-      result->add(item);
+  foreach(indices(set), ValueType item)
+    if (!f(item))
+      remove(item);
 
   return this;
 }
@@ -116,7 +120,7 @@ this_program filter_destructively(function f)
 //! Subset. A <= B returns true if all items in A are also present in B.
 int(0..1) subset(ADT.Set other)
 {
-  foreach(indices(set), mixed item)
+  foreach(indices(set), ValueType item)
     if (!other->contains(item))
       return 0;
 
@@ -134,15 +138,10 @@ int(0..1) superset(ADT.Set other)
 //! and all items in B are present in A. Otherwise, it returns false.
 protected int(0..1) `==(ADT.Set other)
 {
-  foreach(indices(set), mixed item)
-    if (!other->contains(item))
-      return 0;
+  if (sizeof(this) != sizeof(other))
+    return 0;
 
-  foreach(indices(other), mixed item)
-    if (!contains(item))
-      return 0;
-
-  return 1;
+  return subset(other);
 }
 
 
@@ -169,7 +168,7 @@ protected int(0..1) `>(ADT.Set other)
 
 //! Union. Returns a set containing all elements present in either
 //! or both of the operand sets.
-protected this_program `|(ADT.Set other)
+protected this_program(<mixed>) `|(ADT.Set(<mixed>) other)
 {
   ADT.Set result = ADT.Set(this);
 
@@ -186,7 +185,7 @@ protected mixed `+ = `|; // Addition on sets works the same as union on sets.
 //! present in both the operand sets.
 protected this_program `&(ADT.Set other)
 {
-  return filter(lambda (mixed x) { return other->contains(x);});
+  return filter(lambda (ValueType x) { return other->contains(x);});
 }
 
 
@@ -194,7 +193,7 @@ protected this_program `&(ADT.Set other)
 //! all elements in A that are not also present in B.
 protected this_program `-(ADT.Set other)
 {
-  return filter(lambda (mixed x) { return !other->contains(x);});
+  return filter(lambda (ValueType x) { return !other->contains(x);});
 }
 
 
@@ -208,7 +207,7 @@ protected int(0..1) `[](mixed item)
 
 //! Setting an index V to 0 removes V from the set. Setting it to
 //! a non-0 value adds V as a member of the set.
-protected int `[]=(mixed item, int value)
+protected int `[]=(ValueType item, int value)
 {
   if (value)
     add(item);
@@ -225,7 +224,7 @@ protected int `[]=(mixed item, int value)
 
 //! In analogy with multisets, indices() of an ADT.Set givess an array
 //! containing all members of the set.
-protected array(mixed) _indices()
+protected array(ValueType) _indices()
 {
   return indices(set);
 }
@@ -237,14 +236,14 @@ protected array(mixed) _indices()
 //! is probably rather useless for sets, since the result is an array
 //! which just contain 1's, one for each member of the set. Still,
 //! this function is provided for consistency.
-protected array(mixed) _values()
+protected array(int(1..)) _values()
 {
   return values(set);
 }
 
 
 //! An ADT.Set can be cast to an array or a multiset.
-protected mixed cast(string to)
+protected array(ValueType)|multiset(ValueType) cast(string to)
 {
   switch(to)
   {
@@ -276,7 +275,7 @@ protected string _sprintf(int t) {
 //! Create an ADT.Set, optionally initialized from another ADT.Set or
 //! a compatible type. If no initial data is given, the set will start
 //! out empty.
-protected void create(void|ADT.Set|array|multiset|mapping initial_data)
+protected void create(void|ADT.Set|array(ValueType)|multiset(ValueType)|mapping(ValueType:mixed) initial_data)
 {
   reset();
   if (arrayp(initial_data))
