@@ -12465,6 +12465,12 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
 	}
       }
 
+      if (flags & CALL_WANT_MATCHED_TYPE) {
+        struct pike_type *tmp = or_pike_types(arg_match, cs->matched_type, 0);
+        free_type(cs->matched_type);
+        cs->matched_type = tmp;
+      }
+
       /* Match. */
       if (fun_type->type == PIKE_T_FUNCTION) {
 	struct pike_type *t = NULL;
@@ -13543,6 +13549,11 @@ static struct pike_type *new_check_call_arg(struct pike_type *fun_type,
 
   cs->argno++;
 
+  if (cs->matched_type) {
+    free_type(cs->matched_type);
+    cs->matched_type = NULL;
+  }
+
   if (args->token == F_CONSTANT) {
     sval = &args->u.sval;
   }
@@ -13579,10 +13590,17 @@ static struct pike_type *new_check_call_arg(struct pike_type *fun_type,
 
     return res;
   } else {
+    int arg_flags = flags;
 #ifdef PIKE_DEBUG
     if (l_flag>2) fputc ('\n', stderr);
 #endif
-    if ((res = low_new_check_call(fun_type, args->type, flags, cs, sval))) {
+    if (args->type && (args->type->type == PIKE_T_AUTO) &&
+        (flags & CALL_ARG_LVALUE)) {
+      /* We want the matched type so that we can update args->type. */
+      arg_flags |= CALL_WANT_MATCHED_TYPE;
+    }
+
+    if ((res = low_new_check_call(fun_type, args->type, arg_flags, cs, sval))) {
       /* OK. */
 #ifdef PIKE_DEBUG
       if (l_flag>2) {
@@ -13618,6 +13636,13 @@ static struct pike_type *new_check_call_arg(struct pike_type *fun_type,
 	  free_type(tmp);
 	}
       }
+
+      if ((flags & CALL_ARG_LVALUE) && args &&
+          (args->type->type == PIKE_T_AUTO)) {
+        /* Update auto type with cs->matched_type. */
+        fix_auto_node(args, cs->matched_type);
+      }
+
       free_type(fun_type);
 
       return res;

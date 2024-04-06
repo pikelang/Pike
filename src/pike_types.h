@@ -200,11 +200,13 @@ enum pt_cmp_flags
 #define CALL_ARG_LVALUE		0x0010	/* Argument is lvalue (sscanf). */
 #define CALL_INHIBIT_WARNINGS	0x0020	/* Inhibit warnings. */
 #define CALL_INVERTED_TYPES	0x0040	/* The fun and arg are inverted. */
+#define CALL_WANT_MATCHED_TYPE	0x0080	/* Fill in cs->matched_type. */
 
 struct call_state
 {
   struct mapping *m;
   struct pike_string *fun_name;
+  struct pike_type *matched_type;
   INT32 argno;
 };
 
@@ -216,6 +218,7 @@ struct call_state
       (CS).fun_name = unknown_function_string;			\
     }								\
     add_ref((CS).fun_name);					\
+    (CS).matched_type = NULL;                                   \
     (CS).argno = (ARGNO);					\
   } while (0)
 
@@ -223,6 +226,7 @@ struct call_state
 
 #define FREE_CALL_STATE(CS) free_call_state(&(CS))
 
+static inline void free_type(struct pike_type *t);
 static inline void free_call_state(struct call_state *cs)
 {
   if (cs->m) {
@@ -232,6 +236,10 @@ static inline void free_call_state(struct call_state *cs)
   if (cs->fun_name) {
     free_string(cs->fun_name);
     cs->fun_name = NULL;
+  }
+  if (cs->matched_type) {
+    free_type(cs->matched_type);
+    cs->matched_type = NULL;
   }
   cs->argno = 0;
 }
