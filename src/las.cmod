@@ -3405,18 +3405,26 @@ static int depend2_p(node *n, node *lval)
 
 static int function_type_max=0;
 
-static void fix_auto_node(node *n, struct pike_type *type)
+void fix_auto_node(node *n, struct pike_type *type)
 {
+  if (!n) return;
+
   free_type(n->type);
   copy_pike_type(n->type, type);
+
   switch(n->token) {
+  case F_CLEAR_LOCAL:
+    fix_auto_node(CAR(n), type);
+    break;
   case F_LOCAL:
   case F_LOCAL_INDIRECT:
     if (!n->u.integer.b) {
       struct local_name *var =
 	&Pike_compiler->compiler_frame->local_names[n->u.integer.a];
-      if (var->def->type) free_type(var->def->type);
-      copy_pike_type(var->def->type, type);
+      if (var->def) {
+        free_type(var->def->type);
+        copy_pike_type(var->def->type, type);
+      }
     }
     break;
   case F_EXTERNAL:

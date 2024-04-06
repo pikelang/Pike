@@ -225,6 +225,7 @@ node **my_get_arg(node **a,int n);
 node **is_call_to(node *n, c_fun f);
 void print_tree(node *n);
 struct used_vars;
+void fix_auto_node(node *n, struct pike_type *type);
 void fix_type_field(node *n);
 struct timer_oflo;
 ptrdiff_t eval_low(node *n,int print_error);
