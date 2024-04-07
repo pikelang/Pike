@@ -291,7 +291,7 @@ PMOD_EXPORT extern const char msg_bad_arg[];
  * and EXPECT will be inserted into "Bad argument %d to %s(). Expected
  * %s.\n"
  *
- * @param FUNC The name of the function, e.g. "create".
+ * @param FUNC The name of the function, e.g. "create" REQUIRED.
  * @param ARG The number of the argument, e.g. 1 for the first.
  * @param EXPECT The expected type, e.g. "int(0..1)".
  */

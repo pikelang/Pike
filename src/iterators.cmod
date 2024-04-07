@@ -306,7 +306,7 @@ PIKECLASS CompatIterator
      */
 #define REQUIRE_LFUN(LFUN) do {				\
       if (FIND_LFUN(iter->prog, LFUN) < 0) {	\
-	SIMPLE_BAD_ARG_ERROR(NULL, 1, "Iterator");	\
+        SIMPLE_BAD_ARG_ERROR("create", 1, "Iterator");	\
       }							\
     } while(0)
     REQUIRE_LFUN(LFUN_NOT);
@@ -314,7 +314,7 @@ PIKECLASS CompatIterator
     REQUIRE_LFUN(LFUN__ITERATOR_VALUE_FUN);
     if ((FIND_LFUN(iter->prog, LFUN__ITERATOR_NEXT_FUN) < 0) &&
 	(FIND_LFUN(iter->prog, LFUN_ADD_EQ) < 0)) {
-      SIMPLE_BAD_ARG_ERROR(NULL, 1, "Iterator");
+      SIMPLE_BAD_ARG_ERROR("create", 1, "Iterator");
     }
     if (THIS->iter) {
       free_object(THIS->iter);

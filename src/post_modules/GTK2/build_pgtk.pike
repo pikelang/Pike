@@ -887,9 +887,10 @@ class Type
      case "string":
        declare = " CONST gchar *a%[0]d = 0;\n";
 //       declare = "  gchar *a%[0]d = 0;\n";
+       /* FIXME: Name of function! */
        fetch =
              "  if( TYPEOF(Pike_sp[%[0]d-args]) != PIKE_T_STRING )\n"
-             "    SIMPLE_ARG_TYPE_ERROR(NULL, %[0]d + 1, " +
+             "    SIMPLE_ARG_TYPE_ERROR(\"\", %[0]d + 1, " +
                S("string",1,0,26) + ");\n"
              "  a%[0]d = PGTK_GETSTR( &Pike_sp[%[0]d-args] );\n";
        free = "  PGTK_FREESTR( a%[0]d );\n";
@@ -981,10 +982,11 @@ class Type
          declare = "  int _i%[0]d;\n  struct array *_a%[0]d = 0;\n  " +
                  "CONST "+sub+"\n";
          pass = "a%d";
+         /* FIXME: Name of function! */
          fetch =
 #"
   if( TYPEOF(Pike_sp[%[0]d-args]) != PIKE_T_ARRAY )
-    SIMPLE_ARG_TYPE_ERROR(NULL, %[0]d + 1, " + S("array",1,0,26) + #");
+    SIMPLE_ARG_TYPE_ERROR(\"\", %[0]d + 1, " + S("array",1,0,26) + #");
   _a%[0]d = Pike_sp[%[0]d-args].u.array;
 "+(check_size||"")+
 "  a%[0]d = g_malloc0( sizeof( a%[0]d[0] ) * (_a%[0]d->size "+

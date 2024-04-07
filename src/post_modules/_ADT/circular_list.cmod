@@ -1050,7 +1050,7 @@ PIKECLASS CircularList
     if (TYPEOF(*arg) == T_INT)
     {
       if (arg->u.integer < 0) {
-        SIMPLE_ARG_TYPE_ERROR(NULL, 1, "int(0..)");
+        SIMPLE_ARG_TYPE_ERROR("create", 1, "int(0..)");
       }
       THIS->a =allocate_array_no_init(arg->u.integer, 0);
       if (arg->u.integer) {

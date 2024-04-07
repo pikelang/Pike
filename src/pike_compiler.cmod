@@ -2388,10 +2388,10 @@ static void f_compilation_push_type_attribute(INT32 args)
   get_all_args(NULL, args, "%t%*%*.%m", &attr, &a, &b, &state);
 
   if (TYPEOF(*a) != PIKE_T_TYPE) {
-    SIMPLE_ARG_TYPE_ERROR(NULL, 2, "type");
+    SIMPLE_ARG_TYPE_ERROR("push_type_attribute", 2, "type");
   }
   if (TYPEOF(*b) != PIKE_T_TYPE) {
-    SIMPLE_ARG_TYPE_ERROR(NULL, 3, "type");
+    SIMPLE_ARG_TYPE_ERROR("push_type_attribute", 3, "type");
   }
 
   if (state) {

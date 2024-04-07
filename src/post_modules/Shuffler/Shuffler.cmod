@@ -811,7 +811,7 @@ PIKECLASS Shuffle
       if(TYPEOF(*backend) == PIKE_T_OBJECT && backend->u.object) {
         be = get_storage(backend->u.object, Backend_program);
 	if (!be) {
-          SIMPLE_ARG_TYPE_ERROR("Shuffle->create()", 4,
+          SIMPLE_ARG_TYPE_ERROR("Shuffle->create", 4,
                                 "object(Pike.__Backend)");
 	}
       }

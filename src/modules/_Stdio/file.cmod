@@ -1492,7 +1492,7 @@ PIKEFUN int(0..) read(object o, int(0..)|void offset)
     ptrdiff_t bytes_read;
 
     if (type == MEMOBJ_NONE)
-      SIMPLE_BAD_ARG_ERROR("read()", 1, "int(0..)|Stdio.Buffer|String.Buffer|System.Memory");
+      SIMPLE_BAD_ARG_ERROR("read", 1, "int(0..)|Stdio.Buffer|String.Buffer|System.Memory");
 
     if (m.shift)
       Pike_error("Cannot read into wide-string buffer.\n");
@@ -1500,7 +1500,7 @@ PIKEFUN int(0..) read(object o, int(0..)|void offset)
     if (offset)
     {
       if (type != MEMOBJ_SYSTEM_MEMORY)
-        SIMPLE_BAD_ARG_ERROR("read()", 1, "System.Memory");
+        SIMPLE_BAD_ARG_ERROR("read", 1, "System.Memory");
 
       if ((size_t)offset->u.integer > m.len)
         Pike_error("Offset out of bounds.\n");
@@ -2754,7 +2754,7 @@ static void file_nodelay(INT32 args)
   get_all_args(NULL, args, ".%d", &state);
 
   if (state && state != 1) {
-    SIMPLE_ARG_TYPE_ERROR("set_nodelay()", 1, "int(0..1)");
+    SIMPLE_ARG_TYPE_ERROR("set_nodelay", 1, "int(0..1)");
   }
 
 #ifdef TCP_NODELAY
