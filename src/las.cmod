@@ -3450,7 +3450,6 @@ static void fix_foreach_type(node *val_lval)
   struct compilation *c = THIS_COMPILATION;
   struct call_state cs;
   struct pike_type *fun;
-  int i;
 
   if (!val_lval || (val_lval->token != F_FOREACH_VAL_LVAL)) return;
 
