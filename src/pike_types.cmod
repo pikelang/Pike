@@ -12454,6 +12454,10 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
 	  tmp2 = arg_type;
 	  arg_type = tmp3;
 
+          if (!arg_match) {
+            copy_pike_type(arg_match, tmp2);
+          }
+
 	  remap_flags ^= PT_FLAG_REMAP_SWAP_MARKERS;
 	}
       }
@@ -13537,12 +13541,13 @@ static struct pike_type *new_check_call_arg(struct pike_type *fun_type,
   struct pike_type *tmp = NULL;
   struct pike_type *res = NULL;
   struct svalue *sval = NULL;
+  struct pike_type *arg_type = args?args->type:mixed_type_string;
 
   CHECK_COMPILER();
 
   debug_malloc_touch(fun_type);
 
-  if (!args || !fun_type) {
+  if (!fun_type) {
     debug_malloc_touch(fun_type);
     return fun_type;
   }
@@ -13554,14 +13559,14 @@ static struct pike_type *new_check_call_arg(struct pike_type *fun_type,
     cs->matched_type = NULL;
   }
 
-  if (args->token == F_CONSTANT) {
+  if (args && (args->token == F_CONSTANT)) {
     sval = &args->u.sval;
   }
 
 #ifdef PIKE_DEBUG
   if (l_flag>2) {
     fprintf(stderr, "  Checking argument #%d... ", cs->argno);
-    simple_describe_type(args->type);
+    simple_describe_type(arg_type);
     if (sval) {
       fprintf(stderr, "\n  Constant of type %s",
 	      get_name_of_type(TYPEOF(*sval)));
@@ -13571,14 +13576,14 @@ static struct pike_type *new_check_call_arg(struct pike_type *fun_type,
   }
 #endif /* PIKE_DEBUG */
 
-  if (args->token == F_PUSH_ARRAY) {
+  if (args && (args->token == F_PUSH_ARRAY)) {
 #ifdef PIKE_DEBUG
     if (l_flag>2) {
       fprintf(stderr, "\n  The argument is a splice operator.\n");
     }
 #endif /* PIKE_DEBUG */
 
-    res = check_splice_call(fun_type, cs, args->type, sval, flags);
+    res = check_splice_call(fun_type, cs, arg_type, sval, flags);
 
 #ifdef PIKE_DEBUG
     if (l_flag>2) {
@@ -13594,13 +13599,13 @@ static struct pike_type *new_check_call_arg(struct pike_type *fun_type,
 #ifdef PIKE_DEBUG
     if (l_flag>2) fputc ('\n', stderr);
 #endif
-    if (args->type && (args->type->type == PIKE_T_AUTO) &&
+    if (args && args->type && (args->type->type == PIKE_T_AUTO) &&
         (flags & CALL_ARG_LVALUE)) {
       /* We want the matched type so that we can update args->type. */
       arg_flags |= CALL_WANT_MATCHED_TYPE;
     }
 
-    if ((res = low_new_check_call(fun_type, args->type, arg_flags, cs, sval))) {
+    if ((res = low_new_check_call(fun_type, arg_type, arg_flags, cs, sval))) {
       /* OK. */
 #ifdef PIKE_DEBUG
       if (l_flag>2) {
@@ -13609,7 +13614,7 @@ static struct pike_type *new_check_call_arg(struct pike_type *fun_type,
 #endif /* PIKE_DEBUG */
 
       if (c->lex.pragmas & ID_STRICT_TYPES) {
-	if (!(tmp = low_new_check_call(fun_type, args->type,
+        if (!(tmp = low_new_check_call(fun_type, arg_type,
 				       flags|CALL_STRICT, cs, sval))) {
 	  tmp = get_first_arg_type(fun_type, flags);
 
@@ -13620,11 +13625,12 @@ static struct pike_type *new_check_call_arg(struct pike_type *fun_type,
 	   *    In this above case tmp will be mixed, but low_new_check_call()
 	   *    will still fail if args->type is mixed.
 	   */
-	  if (!pike_types_le(args->type, tmp,
+          if ((flags & CALL_ARG_LVALUE) ||
+              !pike_types_le(arg_type, tmp,
 			     PT_FLAG_CMP_VOID_IS_ZERO,
 			     PT_FLAG_CMP_VOID_IS_ZERO)) {
 	    yytype_report(REPORT_WARNING, NULL, 0, tmp,
-			  NULL, 0, args->type,
+                          NULL, 0, args?arg_type:NULL,
                           0, "Type mismatch in argument %d to %pS.",
 			  cs->argno, cs->fun_name);
 	    yytype_report(REPORT_WARNING, NULL, 0, NULL,
@@ -13637,7 +13643,7 @@ static struct pike_type *new_check_call_arg(struct pike_type *fun_type,
 	}
       }
 
-      if ((flags & CALL_ARG_LVALUE) && args &&
+      if ((flags & CALL_ARG_LVALUE) && arg_type && args &&
           (args->type->type == PIKE_T_AUTO)) {
         /* Update auto type with cs->matched_type. */
         fix_auto_node(args, cs->matched_type);
@@ -13658,7 +13664,7 @@ static struct pike_type *new_check_call_arg(struct pike_type *fun_type,
       fprintf(stderr, " Bad argument.\n");
     }
 #endif /* PIKE_DEBUG */
-    yytype_report(REPORT_ERROR, NULL, 0, tmp, NULL, 0, args->type,
+    yytype_report(REPORT_ERROR, NULL, 0, tmp, NULL, 0, args?arg_type:NULL,
 		  0, "Bad argument %d to %S.", cs->argno, cs->fun_name);
 
     /* Try advancing with the suggested type, so that we can check
@@ -13693,7 +13699,7 @@ static struct pike_type *new_check_call_arg(struct pike_type *fun_type,
     }
 #endif /* PIKE_DEBUG */
     yytype_report(REPORT_ERROR, NULL, 0, NULL,
-		  NULL, 0, args->type,
+                  NULL, 0, args?arg_type:NULL,
 		  0, "Too many arguments to %S (expected %d arguments).",
 		  cs->fun_name, cs->argno - 1);
   }
@@ -13728,7 +13734,8 @@ struct pike_type *new_check_call(struct pike_type *fun_type,
 
   clear_markers();
   while (args && fun_type) {
-    if ((args->token == F_ARG_LIST) || (args->token == F_LVALUE_LIST)) {
+    if ((args->token == F_ARG_LIST) || (args->token == F_LVALUE_LIST) ||
+        (args->token == F_FOREACH_VAL_LVAL) || (args->token == ':')) {
       if (CDR(args)) {
 	num_cdr++;
 	flags |= CALL_NOT_LAST_ARG;
@@ -13736,11 +13743,29 @@ struct pike_type *new_check_call(struct pike_type *fun_type,
       if (args->token == F_LVALUE_LIST) {
 	flags |= CALL_ARG_LVALUE;
       }
-      if (CAR(args)) {
+      if (args->token == ':') {
+        /* NB: Always advance for both car and cdr in this case. */
+        if (CAR(args)) {
+          CAR(args)->parent = args;
+        }
+        fun_type = new_check_call_arg(fun_type, CAR(args), cs, flags);
+        debug_malloc_touch(fun_type);
+        if (CDR(args)) {
+          CDR(args)->parent = args;
+        }
+        if (CDR(args) && !--num_cdr) {
+          flags &= ~CALL_NOT_LAST_ARG;
+        }
+        fun_type = new_check_call_arg(fun_type, CDR(args), cs, flags);
+        debug_malloc_touch(fun_type);
+      } else if (CAR(args)) {
 	CAR(args)->parent = args;
 	args = CAR(args);
 	continue;
       } else if (CDR(args)) {
+        if (args->token == F_FOREACH_VAL_LVAL) {
+          flags |= CALL_ARG_LVALUE;
+        }
 	CDR(args)->parent = args;
 	args = CDR(args);
 	if (!--num_cdr) {
@@ -13764,6 +13789,9 @@ struct pike_type *new_check_call(struct pike_type *fun_type,
 	  flags &= ~CALL_NOT_LAST_ARG;
 	}
 	if (CDR(args) != prev) {
+          if (args->token == F_FOREACH_VAL_LVAL) {
+            flags |= CALL_ARG_LVALUE;
+          }
 	  CDR(args)->parent = args;
 	  args = CDR(args);
 	  break;

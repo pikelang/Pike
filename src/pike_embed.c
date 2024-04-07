@@ -283,6 +283,9 @@ void init_pike_runtime(void (*exit_cb)(int))
   TRACE((stderr, "Init strings...\n"));
   init_shared_string_table();
 
+  TRACE((stderr, "Init las...\n"));
+  init_las();
+
   TRACE((stderr, "Init interpreter...\n"));
   init_interpreter();
 
@@ -442,6 +445,8 @@ void pike_do_exit(int num)
   free_callback_list(&exit_callbacks);
 
   POP_PIKE_FRAME();
+
+  exit_las();
 
   exit_modules();
 
