@@ -246,7 +246,7 @@ class Universe {
      string, mixed ...:void) fn;
     if (!functionp(fn = lookupcb(namespace, data)))
       return fn;
-    fn(id, sendackcb, namespace, @data);
+    ([function]fn)(id, sendackcb, namespace, @data);
     return 0;
   }
 }
@@ -657,7 +657,7 @@ outer:    foreach (qsslots; slot; partqueue sendq)  // Lower slots first
       }
     } else {
       curtype = data[0];
-      data = data[1..];
+      data = ([string]data)[1..];
       switch (curtype) {
         default:	  // Protocol error
           send(ERROR, sprintf("%c,\"Invalid packet type\"", curtype));
@@ -698,7 +698,7 @@ outer:    foreach (qsslots; slot; partqueue sendq)  // Lower slots first
               curackid = (int)s;
           foreach (curevent;; string s)
             i += sizeof(s);
-          curevent = Standards.JSON.decode(data[i..]);
+          curevent = Standards.JSON.decode(([string]data)[i..]);
           curbins = allocate(bins);
           PD("Incoming %c %d %d %O\n", curtype, bins, curackid, curevent);
           switch (curtype) {
@@ -720,7 +720,7 @@ outer:    foreach (qsslots; slot; partqueue sendq)  // Lower slots first
             len = slot >> 5 | data[offset++] << 2;
             if (acc & 0x10)
               len |= data[offset++] << 9;
-            buf->add(data[offset..offset += len]);
+            buf->add(([string]data)[offset..offset += len]);
             switch (acc & 0xc) {
               case 4:				      // finf
                 recv(buf->get());
