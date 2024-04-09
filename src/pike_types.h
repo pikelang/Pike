@@ -435,8 +435,6 @@ struct pike_type *intersect_types(struct pike_type *a,
 				  enum pt_cmp_flags aflags,
 				  enum pt_cmp_flags bflags,
 				  enum pt_remap_flags remap_flags);
-int strict_check_call(struct pike_type *fun_type, struct pike_type *arg_type);
-int check_soft_cast(struct pike_type *to, struct pike_type *from);
 int match_types(struct pike_type *a,struct pike_type *b);
 int pike_types_le(struct pike_type *a, struct pike_type *b,
 		  enum pt_cmp_flags aflags, enum pt_cmp_flags bflags);
@@ -455,9 +453,6 @@ int check_indexing(struct pike_type *type,
 		   node *n);
 int count_arguments(struct pike_type *s);
 int minimum_arguments(struct pike_type *s);
-struct pike_type *check_call(struct pike_type *args,
-			     struct pike_type *type,
-			     int strict);
 struct pike_type *get_argument_type(struct pike_type *fun, int arg_no);
 struct pike_type *soft_cast(struct pike_type *soft_type,
 			    struct pike_type *orig_type,

@@ -72,6 +72,8 @@ PMOD_EXPORT struct pike_type *weak_type_string;	/* array|mapping|multiset|functi
 struct pike_type *sscanf_type_string;
 struct pike_type *sscanf_80_type_string;
 PMOD_EXPORT struct pike_type *utf8_type_string;
+static struct pike_type *int_range_type_string;
+static struct pike_type *max_int_type_string;
 
 PMOD_EXPORT struct pike_string *literal_string_string;
 PMOD_EXPORT struct pike_string *literal_int_string;
@@ -10221,122 +10223,6 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
   return 1;
 }
 
-/*
- * Check the function parameters.
- * Note: The difference between this function, and pike_types_le()
- *       is the more lenient check for T_OR, and the handling of T_ARRAY.
- */
-int strict_check_call(struct pike_type *fun_type,
-		      struct pike_type *arg_type)
-{
-  while ((fun_type->type == T_OR) ||
-	 (fun_type->type == T_ARRAY) ||
-	 (fun_type->type == PIKE_T_SCOPE)) {
-    if (fun_type->type == T_OR) {
-      int res = strict_check_call(fun_type->car, arg_type);
-      if (res) return res;
-      fun_type = fun_type->cdr;
-    } else if (fun_type->type == PIKE_T_SCOPE) {
-      fun_type = fun_type->cdr;
-    } else {
-      fun_type = fun_type->cdr;
-    }
-  }
-  return low_pike_types_le(fun_type, arg_type, 0, 0);
-}
-
-/*
- * Check validity of soft-cast.
- * Note: This uses a weaker check of function arguments, since
- *       people get confused otherwise.
- */
-int check_soft_cast(struct pike_type *to, struct pike_type *from)
-{
-  return low_pike_types_le(to, from, 0, LE_WEAK_OBJECTS);
-}
-
-/**
- * Return the return type from a function call (old API).
- *
- * @param a
- *   The function type.
- *
- * @param b
- *   The function type for the arguments.
- *
- * See also check_call().
- */
-static int low_get_return_type(struct pike_type *a, struct pike_type *b)
-{
-  struct compilation *c = THIS_COMPILATION;
-  struct call_state cs;
-
-  CHECK_COMPILER();
-
-  if (!a) return 0;
-
-  add_ref(a);
-
-  push_type(PIKE_T_UNKNOWN);
-
-  INIT_CALL_STATE(cs, NULL);
-
-  do {
-    struct pike_type *cont;
-
-    if (!b || b->type == T_MANY ||
-	(b->car && (b->car->flags & PT_FLAG_VOIDABLE))) {
-      struct pike_type *tmp = new_get_return_type(a, &cs, 0);
-
-      if (tmp) {
-	push_finished_type(tmp);
-	push_type(T_OR);
-
-	free_type(tmp);
-      }
-
-      if (!b || !b->car ||
-	  ((b->type == T_MANY) && (b->car == void_type_string))) {
-	break;
-      }
-    }
-
-#ifdef PIKE_DEBUG
-    if ((b->type != T_MANY) && (b->type != T_FUNCTION)) {
-      Pike_fatal("Invalid argument type to check_call().\n");
-    }
-#endif
-
-    cont = low_new_check_call(a, b->car, 0, &cs, NULL);
-
-    free_type(a);
-    a = cont;
-
-    if (!a) break;
-
-    if (b->type == T_FUNCTION) b = b->cdr;
-  } while(1);
-
-  FREE_CALL_STATE(cs);
-
-#if 0
-  fprintf(stderr, "==> ");
-  simple_describe_type(peek_type_stack());
-  fprintf(stderr, "\n\n");
-#endif
-
-  free_type(a);
-
-  if (peek_type_stack()) {
-    return 1;
-  }
-
-  compiler_discard_top_type();
-
-  return 0;
-}
-
-
 int match_types(struct pike_type *a, struct pike_type *b)
 {
   struct pike_type *res;
@@ -10847,82 +10733,70 @@ static struct pike_type *debug_low_range_type(struct pike_type *t,
 
     if(p)
     {
-      INT32 i;
+      INT32 i, nargs = 2;
+      int flags = (c->lex.pragmas & ID_STRICT_TYPES) ? CALL_STRICT : 0;
+      struct pike_type *fun = NULL;
+      struct pike_type *args[4] = {
+        index1_type?index1_type:zero_type_string,
+        index2_type?index2_type:max_int_type_string,
+        NULL,
+        NULL,
+      };
+      struct call_state cs;
 
-      if((i = FIND_LFUN(p, LFUN_RANGE)) != -1)
-      {
-	struct pike_type *call_type = NULL;
-	type_stack_mark();
-	push_finished_type(mixed_type_string);
-	push_finished_type(void_type_string);
-	push_type(T_OR);			/* Return type */
-	push_finished_type(void_type_string);	/* Many type */
-	push_type(T_MANY);
-	push_int_type (INDEX_FROM_BEG, OPEN_BOUND); /* arg4 type */
-	push_type(T_FUNCTION);
-	if (index2_type)			/* arg3 type */
-	  push_finished_type(index2_type);
-	else
-	  push_type (T_ZERO);
-	push_type(T_FUNCTION);
-	push_int_type (INDEX_FROM_BEG, OPEN_BOUND); /* arg2 type */
-	push_type(T_FUNCTION);
-	if (index1_type)			/* arg1 type */
-	  push_finished_type(index1_type);
-	else
-	  push_type (T_ZERO);
-	push_type(T_FUNCTION);
-	call_type = pop_unfinished_type();
+      if((i = FIND_LFUN(p, LFUN_RANGE)) != -1) {
+        struct identifier *id = ID_FROM_INT(p, i);
+        args[2] = args[1];
+        args[1] = args[3] = int_range_type_string;
+        nargs = 4;
 
-	if((tmp = check_call(call_type, ID_FROM_INT(p, i)->type, 0))) {
-	  free_type(call_type);
-	  return tmp;
-	}
-	free_type(call_type);
+        fun = id->type;
 
-	add_ref(mixed_type_string);
-	return mixed_type_string;
-      }
-
-      if((i = FIND_LFUN(p, LFUN_INDEX)) != -1)
-      {
+        INIT_CALL_STATE(cs, lfun_strings[LFUN_RANGE]);
+      } else if((i = FIND_LFUN(p, LFUN_INDEX)) != -1) {
 	/* FIXME: Should check for a _sizeof operator if from-the-end
 	 * indexing is done. */
+        struct identifier *id = ID_FROM_INT(p, i);
+        fun = id->type;
 
-	struct pike_type *call_type = NULL;
-	/* FIXME: function_type_string should be replaced with something
-	 * derived from type_string
-	 */
-	type_stack_mark();
-	push_finished_type(mixed_type_string);
-	push_finished_type(void_type_string);
-	push_type(T_OR);			/* Return type */
-	push_finished_type(void_type_string);	/* Many type */
-	push_type(T_MANY);
-	if (index2_type)			/* arg2 type */
-	  push_finished_type(index2_type);
-	else
-	  push_int_type (MAX_INT_TYPE, MAX_INT_TYPE);
-	push_type(T_FUNCTION);
-	if (index1_type)			/* arg1 type */
-	  push_finished_type(index1_type);
-	else
-	  push_type (T_ZERO);
-	push_type(T_FUNCTION);
-	call_type = pop_unfinished_type();
-
-	if((tmp = check_call(call_type, ID_FROM_INT(p, i)->type, 0))) {
-	  free_type(call_type);
-	  return tmp;
-	}
-	free_type(call_type);
-
-	add_ref(mixed_type_string);
-	return mixed_type_string;
+        INIT_CALL_STATE(cs, lfun_strings[LFUN_INDEX]);
+      } else {
+        yywarning("Ranging object without index operator.");
+        return 0;
       }
 
-      yywarning("Ranging object without index operator.");
-      return 0;
+      add_ref(fun);
+
+      for (i = 0; i < nargs; i++) {
+        int last_arg_flags = (i+1 < nargs) ? CALL_NOT_LAST_ARG : 0;
+        cs.argno = i + 1;
+        tmp = low_new_check_call(fun, args[i], flags|last_arg_flags, &cs, NULL);
+        if (!tmp) {
+          if (flags) {
+            tmp = low_new_check_call(fun, args[i], last_arg_flags, &cs, NULL);
+          }
+          if (!tmp) {
+            my_yyerror("Bad argument %d to %pS.",
+                       cs.argno, cs.fun_name);
+            break;
+          } else {
+            yywarning("Type mismatch in argument %d to %pS.",
+                      cs.argno, cs.fun_name);
+          }
+        }
+
+        free_type(fun);
+        fun = tmp;
+      }
+
+      if (tmp) {
+        tmp = new_get_return_type(fun, &cs, 0);
+      }
+      free_type(fun);
+
+      FREE_CALL_STATE(cs);
+
+      return tmp;
     }
     if (c->lex.pragmas & ID_STRICT_TYPES) {
       yywarning("Ranging generic object.");
@@ -11473,53 +11347,6 @@ int minimum_arguments(struct pike_type *s)
 #endif
 
   return ret;
-}
-
-/**
- * Return the return type from a function call (old API).
- *
- * @param type
- *   The function type.
- *
- * @param args
- *   The function type for the arguments.
- *
- * See also low_get_return_type().
- */
-struct pike_type *check_call(struct pike_type *args,
-			     struct pike_type *type,
-			     int strict)
-{
-  clear_markers();
-  type_stack_mark();
-  max_correct_args=0;
-
-  if(low_get_return_type(type, args))
-  {
-    if (strict) {
-      if (!strict_check_call(type, args)) {
-	struct pike_type *func_zero_type;
-
-	MAKE_CONSTANT_TYPE(func_zero_type, tFuncV(tNone,tZero,tMix));
-
-	if (!low_pike_types_le(type, func_zero_type, 0, 0)) {
-	  yytype_report(REPORT_WARNING, NULL, 0, function_type_string,
-			NULL, 0, type,
-			0, "Calling non-function value.");
-	} else {
-	  yytype_report(REPORT_WARNING, NULL, 0, type,
-			NULL, 0, args,
-			0, "Arguments not strictly compatible.");
-	}
-
-	free_type(func_zero_type);
-      }
-    }
-    return pop_unfinished_type();
-  }else{
-    pop_stack_mark();
-    return 0;
-  }
 }
 
 /* Get the type for the specified argument in a function type.
@@ -16026,6 +15853,8 @@ void init_types(void)
 					   tAttr("sscanf_80_format", tStr),
 					   tAttr("sscanf_args", tUnknown), tIntPos));
   utf8_type_string = CONSTTYPE(tUtf8Str);
+  int_range_type_string = CONSTTYPE(tRangeBound);
+  max_int_type_string = CONSTTYPE(tIntMax);
 
   /* add_ref(weak_type_string);	*//* LEAK */
 
@@ -16132,6 +15961,10 @@ void cleanup_pike_types(void)
   sscanf_80_type_string = NULL;
   free_type(utf8_type_string);
   utf8_type_string = NULL;
+  free_type(int_range_type_string);
+  int_range_type_string = NULL;
+  free_type(max_int_type_string);
+  max_int_type_string = NULL;
 
   free_string(literal_string_string); literal_string_string = NULL;
   free_string(literal_int_string); literal_int_string = NULL;

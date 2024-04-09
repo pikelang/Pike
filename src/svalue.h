@@ -380,6 +380,7 @@ struct svalue
 #define tInt_1 "\010\377\377\377\377\377\377\377\377"
 #define tInt_10 "\010\377\377\377\377\000\000\000\000"
 #define tInt_11 "\010\377\377\377\377\000\000\000\001"
+#define tIntMax "\010\177\377\377\377\177\377\377\377"
 #define tIntCharRange(LOW,HIGH) "\010\000\000\000" LOW "\000\000\000" HIGH
 #define tIntChar(CHAR) tIntCharRange(CHAR, CHAR)
 #define tIntDigits tIntCharRange("0", "9")
