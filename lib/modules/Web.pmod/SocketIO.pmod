@@ -459,7 +459,7 @@ class Client {
           aggtext.putchar(len & 0x7f);
           if (len >>= 7)
             aggtext.putchar(len);
-          aggtext.add(ret[curoffset .. curoffset + tocopy]);
+          aggtext.add(([string]ret)[curoffset .. curoffset + tocopy]);
           if (!finf)
             curoffset += tocopy;
           if (sizeof(aggtext) >= mtu)
