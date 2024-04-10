@@ -10777,8 +10777,7 @@ static struct pike_type *debug_low_range_type(struct pike_type *t,
             tmp = low_new_check_call(fun, args[i], last_arg_flags, &cs, NULL);
             if (!tmp) {
               if (i && (nargs == 2)) {
-                yywarning("%pT does not support the ranging operator.",
-                          t->type);
+                yywarning("%pT does not support the ranging operator.", t);
               } else {
                 yytype_report(REPORT_WARNING,
                               NULL, 0, NULL,
