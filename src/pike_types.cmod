@@ -10767,6 +10767,7 @@ static struct pike_type *debug_low_range_type(struct pike_type *t,
 
       add_ref(fun);
 
+      tmp = NULL; /* Silence erroneous warning about tmp used uninitialized. */
       for (i = 0; i < nargs; i++) {
         int last_arg_flags = (i+1 < nargs) ? CALL_NOT_LAST_ARG : 0;
         cs.argno = i + 1;
@@ -10774,15 +10775,26 @@ static struct pike_type *debug_low_range_type(struct pike_type *t,
         if (!tmp) {
           if (flags) {
             tmp = low_new_check_call(fun, args[i], last_arg_flags, &cs, NULL);
+            if (!tmp) {
+              if (i && (nargs == 2)) {
+                yywarning("%pT does not support the ranging operator.",
+                          t->type);
+              } else {
+                yytype_report(REPORT_WARNING,
+                              NULL, 0, NULL,
+                              NULL, 0, args[i],
+                              0, "Bad argument %d to %pS.",
+                              cs.argno, cs.fun_name);
+              }
+            } else {
+              yytype_report(REPORT_WARNING,
+                            NULL, 0, NULL,
+                            NULL, 0, args[i],
+                            0, "Type mismatch in argument %d to %pS.",
+                            cs.argno, cs.fun_name);
+            }
           }
-          if (!tmp) {
-            my_yyerror("Bad argument %d to %pS.",
-                       cs.argno, cs.fun_name);
-            break;
-          } else {
-            yywarning("Type mismatch in argument %d to %pS.",
-                      cs.argno, cs.fun_name);
-          }
+          if (!tmp) break;
         }
 
         free_type(fun);
