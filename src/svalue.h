@@ -401,6 +401,7 @@ struct svalue
 #define tAssign(X,Y) "\365" X Y
 #define tScope(X,Y) "\363" #X Y
 #define tGeneric(OBJ,X)	"\100" OBJ tVar(X)
+#define tBind(ASS, EXPR)	"\101" ASS EXPR
 #define tNot(X) "\375" X
 #define tAnd(X,Y) "\376" X Y
 #define tOr(X,Y) "\377" X Y
