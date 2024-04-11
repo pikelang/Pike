@@ -4294,6 +4294,320 @@ PIKEFUN mapping(string:int|string) get_runtime_info()
 /*! @endmodule
  */
 
+/*! @module Builtin
+ */
+
+/*! @class Future(<ValueType>)
+ *!
+ *! Prototype class for @[Concurrent.Future].
+ *!
+ *! @seealso
+ *!   @[Concurrent.Future], @[Promise]
+ */
+PIKECLASS Future
+  num_generics 1;
+{
+  /*! @decl void set_backend(Backend backend)
+   */
+  PIKEFUN void set_backend(Backend backend)
+    prototype;
+  {
+  }
+
+  /*! @decl Backend get_backend()
+   */
+  PIKEFUN Backend get_backend()
+    prototype;
+  {
+  }
+
+  /*! @decl Promise promise_factory()
+   */
+  PIKEFUN Promise promise_factory()
+    prototype;
+    rawtype tFunc(tNone, tPromise(tFutureValueType));
+  {
+  }
+
+  /*! @decl Future(<ValueType>) wait()
+   */
+  PIKEFUN Future wait()
+    prototype;
+    rawtype tFunc(tNone, tFuture(tFutureValueType));
+  {
+  }
+
+  /*! @decl ValueType get()
+   */
+  PIKEFUN mixed get()
+    prototype;
+    rawtype tFunc(tNone, tFutureValueType);
+  {
+  }
+
+  /*! @decl zero|ValueType get()
+   */
+  PIKEFUN mixed try_get()
+    prototype;
+    rawtype tFunc(tNone, tOr(tZero, tFutureValueType));
+  {
+  }
+
+  /*! @decl Future(<ValueType>) @
+   *!   on_success(function(ValueType, __unknown__ ...: void) cb, @
+   *!              mixed ... extra)
+   */
+  PIKEFUN Future on_success(function cb, mixed ... extra)
+    prototype;
+    rawtype tFuncV(tFuncV(tFutureValueType, tUnknown, tVoid), tMix,
+                   tFuture(tFutureValueType));
+  {
+  }
+
+  /*! @decl array(function(ValueType, __unknown__ ...: void)) @
+   *!   query_success_callbacks()
+   */
+  PIKEFUN array query_success_callbacks()
+    prototype;
+    rawtype tFunc(tNone, tArr(tFuncV(tFutureValueType, tUnknown, tVoid)));
+  {
+  }
+
+  /*! @decl Future(<ValueType>) @
+   *!   on_failure(function(mixed, __unknown__ ...: void) cb, @
+   *!              mixed ... extra)
+   */
+  PIKEFUN Future on_failure(function cb, mixed ... extra)
+    prototype;
+    rawtype tFuncV(tFuncV(tMix, tUnknown, tVoid), tMix,
+                   tFuture(tFutureValueType));
+  {
+  }
+
+  /*! @decl array(function(mixed, __unknown__ ...: void)) @
+   *!   query_failure_callbacks()
+   */
+  PIKEFUN array query_failure_callbacks()
+    prototype;
+    rawtype tFunc(tNone, tArr(tFuncV(tMix, tUnknown, tVoid)));
+  {
+  }
+
+  /*! @decl Future(<ValueType>) @
+   *!   on_await(function(mixed, @
+   *!                     function(mixed, __unknown__ ...: void)|void: void) @
+   *!            cb)
+   */
+  PIKEFUN Future on_await(function cb)
+    prototype;
+    rawtype tFunc(tFunc(tMix tOr(tFuncV(tMix, tUnknown, tVoid), tVoid), tVoid),
+                  tFuture(tFutureValueType));
+  {
+  }
+
+  /*! @decl Future(<mixed>) @
+   *!   map(function(ValueType, __unknown__ ...: mixed) fun, @
+   *!       mixed ... extra)
+   */
+  PIKEFUN Future map(function fun, mixed ... extra)
+    prototype;
+    rawtype tFuncV(tFuncV(tFutureValueType, tUnknown, tSetvar(0, tMix)),
+                   tMix, tFuture(tVar(0)));
+  {
+  }
+
+  /*! @decl Future(<mixed>) @
+   *!   map_with(function(ValueType, __unknown__ ...: Future(<mixed>)) fun, @
+   *!            mixed ... extra)
+   */
+  PIKEFUN Future map_with(function fun, mixed ... extra)
+    prototype;
+    rawtype tFuncV(tFuncV(tFutureValueType, tUnknown, tFuture(tMix)),
+                   tMix, tFuture(tMix));
+  {
+  }
+
+  /*! @decl Future(<mixed>) @
+   *!   recover(function(mixed, __unknown__ ...: mixed) fun, @
+   *!           mixed ... extra)
+   */
+  PIKEFUN Future recover(function fun, mixed ... extra)
+    prototype;
+    rawtype tFuncV(tFuncV(tMix, tUnknown, tSetvar(0, tMix)),
+                   tMix, tFuture(tOr(tVar(0), tFutureValueType)));
+  {
+  }
+
+  /*! @decl Future(<mixed>) @
+   *!   recover_with(function(mixed, __unknown__ ...: Future(<mixed>)) fun, @
+   *!                mixed ... extra)
+   */
+  PIKEFUN Future recover_with(function fun, mixed ... extra)
+    prototype;
+    rawtype tFuncV(tFuncV(tMix, tUnknown, tFuture(tMix)),
+                   tMix, tFuture(tMix));
+  {
+  }
+
+  /*! @decl Future(<ValueType>) @
+   *!   filter(function(ValueType, __unknown__ ...: int(1bit)) fun, @
+   *!          mixed ... extra)
+   */
+  PIKEFUN Future filter(function fun, mixed ... extra)
+    prototype;
+    rawtype tFuncV(tFuncV(tFutureValueType, tUnknown, tInt01),
+                   tMix, tFuture(tFutureValueType));
+  {
+  }
+
+  /*! @decl Future(<mixed>) @
+   *!   transform(function(ValueType, __unknown__ ...: mixed) fun, @
+   *!             function(mixed, __unknown__ ...: mixed) fun, @
+   *!             mixed ... extra)
+   */
+  PIKEFUN Future transform(function success, function failure, mixed ... extra)
+    prototype;
+    rawtype tFuncV(tFuncV(tFutureValueType, tUnknown, tSetvar(0, tMix))
+                   tOr(tFuncV(tMix, tUnknown, tSetvar(1, tMix)), tVoid),
+                   tMix, tFuture(tOr(tVar(0), tVar(1))));
+  {
+  }
+
+  /*! @decl Future(<mixed>) @
+   *!   transform(function(ValueType, __unknown__ ...: Future(<mixed>)) fun, @
+   *!             function(mixed, __unknown__ ...: Future(<mixed>)) fun, @
+   *!             mixed ... extra)
+   */
+  PIKEFUN Future transform_with(function success, function failure,
+                                mixed ... extra)
+    prototype;
+    rawtype tFuncV(tFuncV(tFutureValueType, tUnknown, tFuture(tMix))
+                   tOr(tFuncV(tMix, tUnknown, tFuture(tMix)), tVoid),
+                   tMix, tFuture(tMix));
+  {
+  }
+
+  /*! @decl array(Future(<mixed>)) zip(array(Future(<mixed>)) others)
+   *! @decl array(Future(<mixed>)) zip(Future(<mixed>) ... others)
+   */
+  PIKEFUN Future zip(array(Future) others)
+    prototype;
+    rawtype tOr(tFunc(tArr(tSetvar(0, tFuture(tMix))),
+                      tArr(tOr(tVar(0), tFuture(tFutureValueType)))),
+                tFuncV(tNone, tSetvar(0, tFuture(tMix)),
+                       tArr(tVar(0))));
+  {
+  }
+
+  /*! @decl Future(<mixed>) @
+   *!   then(function(ValueType, __unknown__ ...: mixed)|void onfullfillment, @
+   *!        function(mixed, __unknown__ ...: mixed)|void onrejected, @
+   *!        mixed ... extra)
+   */
+  PIKEFUN Future then(function|void onfulfillment,
+                      function|void onrejected,
+                      mixed ... extra)
+    prototype;
+    rawtype tFuncV(tOr(tFuncV(tFutureValueType, tUnknown, tMix), tVoid)
+                   tOr(tFuncV(tMix, tUnknown, tMix), tVoid),
+                   tMix, tFuture(tMix));
+  {
+  }
+
+  /*! @decl Future(<mixed>) @
+   *!    thencatch(function(mixed, __unknown__ ...: mixed) onrejected, @
+   *!              mixed ... extra)
+   */
+  PIKEFUN Future thencatch(function onrejected, mixed ... extra)
+    prototype;
+    rawtype tFuncV(tFuncV(tMix, tUnknown, tMix),
+                   tMix, tFuture(tMix));
+  {
+  }
+
+  /*! @decl Future(<ValueType>) delay(int|float seconds)
+   */
+  PIKEFUN Future delay(int|float seconds)
+    prototype;
+    rawtype tFunc(tOr(tInt, tFloat), tFuture(tFutureValueType));
+  {
+  }
+
+  /*! @decl Future(<ValueType>) timeout(int|float seconds)
+   */
+  PIKEFUN Future timeout(int|float seconds)
+    prototype;
+    rawtype tFunc(tOr(tInt, tFloat), tFuture(tFutureValueType));
+  {
+  }
+}
+/*! @endclass
+ */
+
+/*! @class Promise(<ValueType>)
+ *!
+ *! Prototype class for @[Concurrent.Promise].
+ *!
+ *! @seealso
+ *!   @[Concurrent.Promise], @[Future]
+ */
+PIKECLASS Promise
+  num_generics 1;
+{
+  /*! @decl inherit Future(<ValueType>)
+   */
+  INHERIT Future
+    bind_generics tPromiseValueType;
+
+  /*! @decl Future(<ValueType>) future()
+   */
+  PIKEFUN Future future()
+    prototype;
+    rawtype tFunc(tNone, tFuture(tPromiseValueType));
+  {
+  }
+
+  /*! @decl Promise(<ValueType>) success(ValueType value, int|void try)
+   */
+  PIKEFUN Promise success(mixed value, int|void try)
+    prototype;
+    rawtype tFunc(tPromiseValueType tOr(tInt, tVoid),
+                  tPromise(tPromiseValueType));
+  {
+  }
+
+  /*! @decl Promise(<ValueType>) try_success(ValueType value)
+   */
+  PIKEFUN Promise try_success(mixed value)
+    prototype;
+    rawtype tFunc(tOr(tPromiseValueType, tZero),
+                  tPromise(tPromiseValueType));
+  {
+  }
+
+  /*! @decl Promise(<ValueType>) failure(mixed value, int|void try)
+   */
+  PIKEFUN Promise failure(mixed value, int|void try)
+    prototype;
+    rawtype tFunc(tMix tOr(tInt, tVoid),
+                  tPromise(tPromiseValueType));
+  {
+  }
+
+  /*! @decl Promise(<ValueType>) try_failure(mixed value)
+   */
+  PIKEFUN Promise try_failure(mixed value)
+    prototype;
+    rawtype tFunc(tMix, tPromise(tPromiseValueType));
+  {
+  }
+}
+/*! @endclass
+ */
+
+/*! @endmodule
+ */
+
 /*! @decl mixed yield(mixed|void val)
  *!
  *! Stop execution of the current restartable function for now,
@@ -4361,15 +4675,17 @@ static node *optimize_yield(node *n)
  *! @throws
  *!   Throws an error if the future failed.
  *!
- *! Calling this special form is similar to the statement:
+ *! Calling this special form is similar to the expression:
  *!
  *!   @code
- *!     future->on_await(continue::this_function);
- *!     yield(0);
+ *!     (future->on_await(continue::this_function), yield())
  *!   @endcode
  *!
  *! @note
- *!   Use of this function is only valid in restartable functions.
+ *!   Use of this from a non-restartable functions causes
+ *!   a compilation warning and falls back to calling
+ *!   @expr{future->get()@}. This will thus then perform
+ *!   a wait blocking the current thread.
  *!
  *! @note
  *!   No checks that the @[future] has actually completed are
@@ -4377,9 +4693,10 @@ static node *optimize_yield(node *n)
  *!   the restartable function during the wait.
  *!
  *! @seealso
- *!   @[Concurrent.Future()->get()], @[yield()], Restartable functions
+ *!   @[Concurrent.Future()->get()], @[yield()],
+ *!   @[continue::this_function], Restartable functions
  */
-PIKEFUN mixed await(object future)
+PIKEFUN mixed await(Future future)
   optfunc optimize_await;
   prototype;
   efun;
@@ -4393,12 +4710,28 @@ static node *optimize_await(node *n)
      *        to a call of future->get()?
      */
     /*
+     * f->get();
+     *
+     * We use this node to get the type expected from the yield().
+     */
+    node *ret;
+    node *get = mkapplynode(mkarrownode(CDR(n), "get"),
+                            mknode(F_ARG_LIST, NULL, NULL));
+    ADD_NODE_REF(CDR(n));
+    fix_type_field(get);
+
+    if (Pike_compiler->compiler_frame->generator_local == -1) {
+      yywarning("Attempt to await from a non-restartable function.");
+      return get;
+    }
+
+    /*
      * {
      *   f->on_await(continue::this_function);
      *   yield();
      * }
      */
-    node *ret =
+    ret =
       mknode(F_COMMA_EXPR,
              mkcastnode(void_type_string,
                         mkapplynode(mkarrownode(CDR(n), "on_await"),
@@ -4410,6 +4743,14 @@ static node *optimize_await(node *n)
                                            NULL))),
              mknode(F_RETURN, NULL, mkintnode(2)));
     ADD_NODE_REF(CDR(n));
+
+    if (get->type && (CDR(ret)->token == F_RETURN)) {
+      /* Copy the type from get() to yield(). */
+      free_type(CDR(ret)->type);
+      add_ref(CDR(ret)->type = get->type);
+    }
+    free_node(get);
+
     return ret;
   }
   return NULL;

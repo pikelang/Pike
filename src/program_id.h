@@ -211,6 +211,15 @@
  */
 #define PROG_GENERICS_ID_START		0x8000
 
+#define     PROG_FUTURE_ID					0x8000
+#define tObjImpl_FUTURE                    "\003\000\000\000\200\000"
+#define tFutureValueType	tGeneric(tObjImpl_FUTURE, 0)
+#define tFuture(X)		tBind(tAssign(tFutureValueType, X), tObjImpl_FUTURE)
+#define     PROG_PROMISE_ID					0x8001
+#define tObjImpl_PROMISE                   "\003\000\000\000\200\001"
+#define tPromiseValueType	tGeneric(tObjImpl_PROMISE, 0)
+#define tPromise(X)		tBind(tAssign(tPromiseValueType, X), tObjImpl_PROMISE)
+
 /* Start for dynamically allocated program ids. */
 #define PROG_DYNAMIC_ID_START		0x10000
 
