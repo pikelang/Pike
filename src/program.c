@@ -118,6 +118,7 @@ struct pike_string *this_function_string;
 static struct pike_string *UNDEFINED_string;
 struct pike_string *predef_scope_string;
 struct pike_string *Concurrent_Promise_string;
+struct pike_string *Concurrent_Future_string;
 struct pike_string *success_string;
 
 /* Common compiler subsystems */
@@ -9875,6 +9876,7 @@ void init_program(void)
   MAKE_CONST_STRING(predef_scope_string, "predef::");
 
   MAKE_CONST_STRING(Concurrent_Promise_string, "Concurrent.Promise");
+  MAKE_CONST_STRING(Concurrent_Future_string, "Concurrent.Future");
   MAKE_CONST_STRING(success_string, "success");
 
   MAKE_CONST_STRING(parser_system_string, "parser");
@@ -9948,6 +9950,9 @@ void init_program(void)
   exit_compiler();
 }
 
+static struct svalue Concurrent_Future_sval = SVALUE_INIT_INT(0);
+static struct svalue Concurrent_Promise_sval = SVALUE_INIT_INT(0);
+
 void cleanup_program(void)
 {
   size_t e;
@@ -9995,6 +10000,9 @@ void cleanup_program(void)
     placeholder_program=0;
   }
 #endif
+
+  free_svalue(&Concurrent_Future_sval);
+  free_svalue(&Concurrent_Promise_sval);
 
   low_cleanup_pike_compiler();
 }
@@ -10623,6 +10631,42 @@ static int low_implements(struct program *a, struct program *b)
   }
   SET_CYCLIC_RET(1);
 
+  if ((b == Future_program) || (b == Promise_program)) {
+    /* Kludge: Swap with the actual Concurrent.Future and
+     *         Concurrent.Promise programs.
+     * This is currently needed due to implements() failing for them.
+     *   /grubba 2024-04-11
+     */
+    struct program *p = NULL;
+
+    if (b == Future_program) {
+      if (TYPEOF(Concurrent_Future_sval) == PIKE_T_INT) {
+        if (low_resolve_identifier(Concurrent_Future_string)) {
+          Concurrent_Future_sval = Pike_sp[-1];
+          Pike_sp--;
+        }
+      }
+      p = program_from_svalue(&Concurrent_Future_sval);
+    } else if (b == Promise_program) {
+      if (TYPEOF(Concurrent_Promise_sval) == PIKE_T_INT) {
+        if (low_resolve_identifier(Concurrent_Promise_string)) {
+          Concurrent_Promise_sval = Pike_sp[-1];
+          Pike_sp--;
+        }
+      }
+      p = program_from_svalue(&Concurrent_Promise_sval);
+    }
+
+    if (p) {
+      b = p;
+
+      if (a == b) {
+        END_CYCLIC();
+        return 1;
+      }
+    }
+  }
+
   for(e=0;e<b->num_identifier_references;e++)
   {
     struct identifier *bid;
@@ -10722,6 +10766,78 @@ static int low_is_compatible(struct program *a, struct program *b)
     return 1;
   }
   SET_CYCLIC_RET(1);
+
+  if ((b == Future_program) || (b == Promise_program)) {
+    /* Kludge: Swap with the actual Concurrent.Future and
+     *         Concurrent.Promise programs.
+     * This is currently needed due to is_compatible() failing for them.
+     *   /grubba 2024-04-11
+     */
+    struct program *p = NULL;
+
+    if (b == Future_program) {
+      if (TYPEOF(Concurrent_Future_sval) == PIKE_T_INT) {
+        if (low_resolve_identifier(Concurrent_Future_string)) {
+          Concurrent_Future_sval = Pike_sp[-1];
+          Pike_sp--;
+        }
+      }
+      p = program_from_svalue(&Concurrent_Future_sval);
+    } else if (b == Promise_program) {
+      if (TYPEOF(Concurrent_Promise_sval) == PIKE_T_INT) {
+        if (low_resolve_identifier(Concurrent_Promise_string)) {
+          Concurrent_Promise_sval = Pike_sp[-1];
+          Pike_sp--;
+        }
+      }
+      p = program_from_svalue(&Concurrent_Promise_sval);
+    }
+
+    if (p) {
+      b = p;
+
+      if (a == b) {
+        END_CYCLIC();
+        return 1;
+      }
+    }
+  }
+
+  if ((a == Future_program) || (a == Promise_program)) {
+    /* Kludge: Swap with the actual Concurrent.Future and
+     *         Concurrent.Promise programs.
+     * This is currently needed due to is_compatible() failing for them.
+     *   /grubba 2024-04-11
+     */
+    struct program *p = NULL;
+
+    if (a == Future_program) {
+      if (TYPEOF(Concurrent_Future_sval) == PIKE_T_INT) {
+        if (low_resolve_identifier(Concurrent_Future_string)) {
+          Concurrent_Future_sval = Pike_sp[-1];
+          Pike_sp--;
+        }
+      }
+      p = program_from_svalue(&Concurrent_Future_sval);
+    } else if (a == Promise_program) {
+      if (TYPEOF(Concurrent_Promise_sval) == PIKE_T_INT) {
+        if (low_resolve_identifier(Concurrent_Promise_string)) {
+          Concurrent_Promise_sval = Pike_sp[-1];
+          Pike_sp--;
+        }
+      }
+      p = program_from_svalue(&Concurrent_Promise_sval);
+    }
+
+    if (p) {
+      a = p;
+
+      if (a == b) {
+        END_CYCLIC();
+        return 1;
+      }
+    }
+  }
 
   /* Optimize the loop somewhat */
   if (a->num_identifier_references < b->num_identifier_references) {

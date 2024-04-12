@@ -177,6 +177,9 @@ PMOD_EXPORT void f_get_iterator(INT32 args);
 int foreach_iterate(struct object *o);
 
 /* From builtin.cmod. */
+extern struct program *Future_program;
+extern struct program *Promise_program;
+
 PMOD_EXPORT void f_cq__describe_program(INT32 args);
 PMOD_EXPORT void f_basetype(INT32 args);
 PMOD_EXPORT void f_int2char(INT32 args);
