@@ -8538,6 +8538,20 @@ PMOD_EXPORT void f__typeof(INT32 args)
 
   t = get_type_of_svalue(Pike_sp-args);
 
+  if (t && (t->flags & PT_FLAG_MASK_GENERICS) &&
+      (TYPEOF(Pike_sp[-args]) == PIKE_T_PROGRAM)) {
+    /* NB: Binding of generics is not done by get_type_of_svalue()
+     *     for programs.
+     */
+    struct mapping *bind =
+      mkbindings(Pike_sp[-args].u.program, NULL, 1);
+    struct pike_type *t2 =
+      compiler_apply_bindings(t, bind);
+    do_free_mapping(bind);
+    free_type(t);
+    t = t2;
+  }
+
   pop_n_elems(args);
   push_type_value(t);
 }
