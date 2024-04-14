@@ -10701,7 +10701,7 @@ void init_builtin_efuns(void)
 
   /* function(string,void|object,void|object|int:mixed) */
   ADD_EFUN("decode_value", f_decode_value,
-	   tFunc(tStr tOr3(tVoid,tObj,tInt_10) tOr3(tVoid,tIntPos,tObj),tMix),
+           tFunc(tStr8 tOr3(tVoid,tObj,tInt_10) tOr3(tVoid,tIntPos,tObj),tMix),
 	   OPT_TRY_OPTIMIZE);
 
   /* function(object,string:int) */

@@ -2113,11 +2113,11 @@ static void free_encode_data(struct encode_data *data)
   free_array(data->delayed);
 }
 
-/*! @decl string encode_value(mixed value, Codec|void codec)
- *! @decl string encode_value(mixed value, Codec|void codec, @
- *!                           String.Buffer trace)
- *! @decl string encode_value(mixed value, Codec|void codec, @
- *!                           int(0..) debug)
+/*! @decl string(8bit) encode_value(mixed value, Codec|void codec)
+ *! @decl string(8bit) encode_value(mixed value, Codec|void codec, @
+ *!                                 String.Buffer trace)
+ *! @decl string(8bit) encode_value(mixed value, Codec|void codec, @
+ *!                                 int(0..) debug)
  *!
  *! Code a value into a string.
  *!
@@ -2280,11 +2280,11 @@ void f_encode_value(INT32 args)
   push_string(buffer_finish_pike_string(&data->buf));
 }
 
-/*! @decl string encode_value_canonic(mixed value, object|void codec)
- *! @decl string encode_value_canonic(mixed value, object|void codec, @
- *!                                   String.buffer trace)
- *! @decl string encode_value_canonic(mixed value, object|void codec, @
- *!                                   int(0..) debug)
+/*! @decl string(8bit) encode_value_canonic(mixed value, object|void codec)
+ *! @decl string(8bit) encode_value_canonic(mixed value, object|void codec, @
+ *!                                         String.buffer trace)
+ *! @decl string(8bit) encode_value_canonic(mixed value, object|void codec, @
+ *!                                         int(0..) debug)
  *!
  *! Code a value into a string on canonical form.
  *!
@@ -5415,7 +5415,8 @@ static void restore_current_decode (struct decode_data *old_data)
 /* Defined in builtin.cmod. */
 extern struct program *MasterCodec_program;
 
-/*! @decl mixed decode_value(string coded_value, void|Codec|int(-1..-1) codec)
+/*! @decl mixed decode_value(string(8bit) coded_value, @
+ *!                          void|Codec|int(-1..-1) codec)
  *!
  *! Decode a value from the string @[coded_value].
  *!
