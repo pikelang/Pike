@@ -808,7 +808,7 @@ this_program sync_request(string server, int port, string query,
   int kept_alive;
   array(string) ips;
 
-  this::real_host = server;
+  this::real_host = http_headers->?Host || http_headers->?host || server;
   // start open the connection
   if(con && con->is_open() &&
      this::host == server &&
