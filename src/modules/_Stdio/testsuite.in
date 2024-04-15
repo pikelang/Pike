@@ -384,10 +384,10 @@ dnl Buffer
 
 test_equal([[Stdio.Buffer("hej")->read(1)]], "h")
 
-test_equal([[Stdio.Buffer("0123456789")[1..2], "0123456789"[1..2] ]])
-test_equal([[Stdio.Buffer("0123456789")[..<2], "0123456789"[..<2] ]])
-test_equal([[Stdio.Buffer("0123456789")[<1..], "0123456789"[<1..] ]])
-test_equal([[Stdio.Buffer("0123456789")[<1..<2], "0123456789"[<1..<2] ]])
+test_equal([[Stdio.Buffer("0123456789")[1..2] ]], "0123456789"[1..2])
+test_equal([[Stdio.Buffer("0123456789")[..<2] ]], "0123456789"[..<2])
+test_equal([[Stdio.Buffer("0123456789")[<1..] ]], "0123456789"[<1..])
+test_equal([[Stdio.Buffer("0123456789")[<1..<2] ]], "0123456789"[<1..<2])
 
 dnl sscanf
 
