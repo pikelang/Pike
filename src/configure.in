@@ -1167,8 +1167,10 @@ MY_DESCR([],[Specify --without-cleanup-on-exit if you do not want this.]),
   else :; fi
 ], [with_valgrind=no])
 AC_ARG_WITH(dtrace, MY_DESCR([--with-dtrace],[embed DTrace probes]))
-AC_ARG_WITH(checker, MY_DESCR([--with-checker],
-			      [add extra memory checking overhead (Purify)]))
+AC_ARG_WITH(checker,
+            MY_DESCR([--with-checker],
+                     [add extra memory checking overhead (Purify,Valgrind)]),
+            [],[with_checker="$with_valgrind"])
 AC_ARG_WITH(gcov, MY_DESCR([--with-gcov],
 			   [compile with support for gcov (gcc-only)]))
 MY_AC_ARG_WITH(profiling, MY_DESCR([--with-profiling],
@@ -1282,9 +1284,9 @@ if test "x$with_dtrace" = "xyes"; then
    fi
 fi
 
-if test "x$with_checker" = "xyes"; then
+if test "x$with_checker" = "xno"; then :; else
   AC_DEFINE(__CHECKER__)
-else :; fi
+fi
 
 if test "x$with_relocatable_dumped_modules" = xyes; then
   PIKE_MODULE_RELOC=1
