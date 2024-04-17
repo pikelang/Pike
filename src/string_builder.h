@@ -92,6 +92,8 @@ PMOD_EXPORT void string_builder_append_integer(struct string_builder *s,
 					       int flags,
 					       size_t min_width,
 					       size_t precision);
+PMOD_EXPORT void string_builder_append_json_double(struct string_builder *s,
+                                                   double d);
 PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 					 const char *fmt,
 					 va_list args);
