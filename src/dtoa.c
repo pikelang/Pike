@@ -20,6 +20,21 @@
 /* Please send bug reports to David M. Gay (dmg at acm dot org,
  * with " at " changed at "@" and " dot " changed to ".").	*/
 
+/* Some minor changes to suppress warnings in Pike:
+ *
+ *   * Fixes some signed/unsigned warnings. These are all within
+ *     PIKE_CHANGE().
+ *
+ *   * The "no break" comments have been changed to FALLTHRU.
+ *
+ *   * One additional FALLTHRU comment has been added.
+ *
+ * /grubba 2024-04-16
+ */
+#ifndef PIKE_CHANGE
+#define PIKE_CHANGE(X)
+#endif
+
 /* On a machine with IEEE extended-precision registers, it is
  * necessary to specify double-precision (53-bit) rounding precision
  * before invoking strtod or dtoa.  If the machine uses (the equivalent
@@ -1597,7 +1612,7 @@ Balloc(int k MTd)
 #else
                 len = (sizeof(Bigint) + (x-1)*sizeof(ULong) + sizeof(double) - 1)
                         /sizeof(double);
-                if (k <= Kmax && pmem_next - private_mem + len <= PRIVATE_mem
+                if (k <= Kmax && pmem_next - private_mem + len <= PIKE_CHANGE((ptrdiff_t))PRIVATE_mem
 #ifdef MULTIPLE_THREADS
                         && TI == TI1
 #endif
@@ -2825,7 +2840,7 @@ gethex(const char **sp, U *rvp, int rounding, int sign MTd)
                 switch(*++s) {
                   case '-':
                         esign = 1;
-                        /* no break */
+                        /* FALLTHRU */
                   case '+':
                         s++;
                   }
@@ -3520,11 +3535,11 @@ strtod(const char *s00, char **se)
         for(s = s00;;s++) switch(*s) {
                 case '-':
                         sign = 1;
-                        /* no break */
+                        /* FALLTHRU */
                 case '+':
                         if (*++s)
                                 goto break2;
-                        /* no break */
+                        /* FALLTHRU */
                 case 0:
                         goto ret0;
                 case '\t':
@@ -3651,6 +3666,7 @@ strtod(const char *s00, char **se)
                 switch(c = *++s) {
                         case '-':
                                 esign = 1;
+                                /* FALLTHRU */
                         case '+':
                                 c = *++s;
                         }
@@ -4898,7 +4914,7 @@ strtod(const char *s00, char **se)
 #endif
 
  static char *
-rv_alloc(int i MTd)
+ rv_alloc(PIKE_CHANGE(unsigned) int i MTd)
 {
         int j, k, *r;
 
@@ -4917,7 +4933,7 @@ rv_alloc(int i MTd)
         }
 
  static char *
-nrv_alloc(const char *s, char *s0, size_t s0len, char **rve, int n MTd)
+ nrv_alloc(const char *s, char *s0, size_t s0len, char **rve, PIKE_CHANGE(unsigned) int n MTd)
 {
         char *rv, *t;
 
@@ -5301,7 +5317,7 @@ dtoa_r(double dd, int mode, int ndigits, int *decpt, int *sign, char **rve, char
                         break;
                 case 2:
                         leftright = 0;
-                        /* no break */
+                        /* FALLTHRU */
                 case 4:
                         if (ndigits <= 0)
                                 ndigits = 1;
@@ -5309,7 +5325,7 @@ dtoa_r(double dd, int mode, int ndigits, int *decpt, int *sign, char **rve, char
                         break;
                 case 3:
                         leftright = 0;
-                        /* no break */
+                        /* FALLTHRU */
                 case 5:
                         i = ndigits + k + 1;
                         ilim = i;
@@ -5321,7 +5337,7 @@ dtoa_r(double dd, int mode, int ndigits, int *decpt, int *sign, char **rve, char
                 buf = rv_alloc(i MTb);
                 blen = sizeof(Bigint) + ((1 << ((int*)buf)[-1]) - 1)*sizeof(ULong) - sizeof(int);
                 }
-        else if (blen <= i) {
+        else if (blen <= PIKE_CHANGE((size_t))i) {
                 buf = 0;
                 if (rve)
                         *rve = buf + i;
