@@ -1849,6 +1849,18 @@ if test "$cflags_is_set" = "no"; then
         # Note: Unfortunately this also disables the warning about
         #       eg conversion from 'long' to 'unsigned char'.
         AC_SYS_COMPILER_FLAG(-wd4244,wd4244,WARN)
+
+        # Inhibit warning:
+        #   C4334: '<<' : result of 32-bit shift implicitly converted
+        #                 to 64 bits (was 64-bit shift intended?)
+        # which is generated in two places in dtoa.c.
+        AC_SYS_COMPILER_FLAG(-wd4334,wd4334,WARN)
+
+        # Inhibit warning:
+        #   C4146: unary minus operator applied to unsigned type,
+        #          result still unsigned
+        # which is generated in two places in dtoa.c.
+        AC_SYS_COMPILER_FLAG(-wd4146,wd4146,WARN)
         ;;
       esac
 

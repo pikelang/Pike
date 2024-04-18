@@ -3292,7 +3292,7 @@ bigcomp(U *rv, const char *s0, BCinfo *bc MTd)
         nd = bc->nd;
         nd0 = bc->nd0;
         p5 = nd + bc->e0 - 1;
-        speccase = 0;
+        PIKE_CHANGE(dd =) speccase = 0;
 #ifndef Sudden_Underflow
         if (rv->d == 0.) {	/* special case: value near underflow-to-zero */
                                 /* threshold was rounded to zero */
@@ -3751,7 +3751,7 @@ strtod(const char *s00, char **se)
                 dval(&rv) = tens[k - 9] * dval(&rv) + z;
                 }
 #endif
-        bd0 = 0;
+        PIKE_CHANGE(bb = bd = bs = delta =) bd0 = 0;
         if (nd <= DBL_DIG
 #ifndef RND_PRODQUOT
 #ifndef Honor_FLT_ROUNDS
@@ -5366,12 +5366,12 @@ dtoa_r(double dd, int mode, int ndigits, int *decpt, int *sign, char **rve, char
 #ifdef USE_BF96 /*{*/
         b = 0;
         if (ilim < 0 && (mode == 3 || mode == 5)) {
-                S = mhi = 0;
+                S = PIKE_CHANGE(mlo =) mhi = 0;
                 goto no_digits;
                 }
         i = 1;
         j = 52 + 0x3ff - be;
-        ulpshift = 0;
+        PIKE_CHANGE(ulpmask =) ulpshift = 0;
         ulplo = 0;
         /* Can we do an exact computation with 64-bit integer arithmetic? */
         if (k < 0) {
