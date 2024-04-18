@@ -804,6 +804,12 @@ o SSL
 
   - SSL.File supports set_buffer_mode().
 
+o Standards.JSON.CANONICAL
+
+  Support RFC 8785-compliant canonical encoding of JSON on platforms
+  where the Pike float type is 64 bits or more. On other platforms
+  a best-effort is performed.
+
 o Standards.PKCS
 
   Support PKCS#8 private keys.
