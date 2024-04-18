@@ -111,75 +111,81 @@ test_true(functionp(Standards.JSON.decode))
 test_true(functionp(Standards.JSON.encode))
 test_true(functionp(Standards.JSON.validate))
 
-dnl rfc8785 3.2.4
-test_eq([[
-  string_to_utf8(Standards.JSON.encode(Standards.JSON.decode(#[
-  {"literals":[null,true,false],"numbers":[333333333.3333333,
-     1e+30,4.5,0.002,1e-27],"string":"\u20ac$\u000f\nA'B\"\\\\\"/"}
-#]), Standards.JSON.CANONICAL))
-]], String.hex2string(#"
-     7b 22 6c 69 74 65 72 61 6c 73 22 3a 5b 6e 75 6c 6c 2c 74 72
-     75 65 2c 66 61 6c 73 65 5d 2c 22 6e 75 6d 62 65 72 73 22 3a
-     5b 33 33 33 33 33 33 33 33 33 2e 33 33 33 33 33 33 33 2c 31
-     65 2b 33 30 2c 34 2e 35 2c 30 2e 30 30 32 2c 31 65 2d 32 37
-     5d 2c 22 73 74 72 69 6e 67 22 3a 22 e2 82 ac 24 5c 75 30 30
-     30 66 5c 6e 41 27 42 5c 22 5c 5c 5c 5c 5c 22 2f 22 7d
-"))
+dnl Standards.JSON.CANONICAL (RFC 8785)
+dnl
+dnl NB: These are only valid on platforms where PIKE_FLOAT is double.
+cond(Pike.get_runtime_info()->float_size >= 64, [[
+  dnl rfc8785 3.2.4
+  test_eq([[
+    string_to_utf8(Standards.JSON.encode(Standards.JSON.decode(#[
+    {"literals":[null,true,false],"numbers":[333333333.3333333,
+       1e+30,4.5,0.002,1e-27],"string":"\u20ac$\u000f\nA'B\"\\\\\"/"}
+  #]), Standards.JSON.CANONICAL))
+  ]], String.hex2string(#"
+       7b 22 6c 69 74 65 72 61 6c 73 22 3a 5b 6e 75 6c 6c 2c 74 72
+       75 65 2c 66 61 6c 73 65 5d 2c 22 6e 75 6d 62 65 72 73 22 3a
+       5b 33 33 33 33 33 33 33 33 33 2e 33 33 33 33 33 33 33 2c 31
+       65 2b 33 30 2c 34 2e 35 2c 30 2e 30 30 32 2c 31 65 2d 32 37
+       5d 2c 22 73 74 72 69 6e 67 22 3a 22 e2 82 ac 24 5c 75 30 30
+       30 66 5c 6e 41 27 42 5c 22 5c 5c 5c 5c 5c 22 2f 22 7d
+  "))
 
-dnl rfc8785 Appendix B
-test_any_equal([[
-  array(string|zero) res = ({});
-  foreach(({
-    "0000000000000000", "8000000000000000",
-    "0000000000000001", "8000000000000001",
-    "7fefffffffffffff", "ffefffffffffffff",
-    "4340000000000000", "c340000000000000",
-    "4430000000000000", "7fffffffffffffff",
-    "7ff0000000000000", "44b52d02c7e14af5",
-    "44b52d02c7e14af6", "44b52d02c7e14af7",
-    "444b1ae4d6e2ef4e", "444b1ae4d6e2ef4f",
-    "444b1ae4d6e2ef50", "3eb0c6f7a0b5ed8c",
-    "3eb0c6f7a0b5ed8d", "41b3de4355555553",
-    "41b3de4355555554", "41b3de4355555555",
-    "41b3de4355555556", "41b3de4355555557",
-    "becbf647612f3696", "43143ff3c1cb0959",
-  }), string hex) {
-    sscanf(String.hex2string(hex), "%8F", float f);
-    string|zero enc;
-    catch {
-      enc = Standards.JSON.encode(f, Standards.JSON.CANONICAL);
-    };
-    res += ({ enc });
-  }
-  return res;
-]], ({
- "0",
- "0",
- "5e-324",
- "-5e-324",
- "1.7976931348623157e+308",
- "-1.7976931348623157e+308",
- "9007199254740992",
- "-9007199254740992",
- "295147905179352830000",
- 0,
- 0,
- "9.999999999999997e+22",
- "1e+23",
- "1.0000000000000001e+23",
- "999999999999999700000",
- "999999999999999900000",
- "1e+21",
- "9.999999999999997e-7",
- "0.000001",
- "333333333.3333332",
- "333333333.33333325",
- "333333333.3333333",
- "333333333.3333334",
- "333333333.33333343",
- "-0.0000033333333333333333",
- "1424953923781206.2",
-}))
+  dnl rfc8785 Appendix B
+  test_any_equal([[
+    array(string|zero) res = ({});
+    foreach(({
+      "0000000000000000", "8000000000000000",
+      "0000000000000001", "8000000000000001",
+      "7fefffffffffffff", "ffefffffffffffff",
+      "4340000000000000", "c340000000000000",
+      "4430000000000000", "7fffffffffffffff",
+      "7ff0000000000000", "44b52d02c7e14af5",
+      "44b52d02c7e14af6", "44b52d02c7e14af7",
+      "444b1ae4d6e2ef4e", "444b1ae4d6e2ef4f",
+      "444b1ae4d6e2ef50", "3eb0c6f7a0b5ed8c",
+      "3eb0c6f7a0b5ed8d", "41b3de4355555553",
+      "41b3de4355555554", "41b3de4355555555",
+      "41b3de4355555556", "41b3de4355555557",
+      "becbf647612f3696", "43143ff3c1cb0959",
+    }), string hex) {
+      sscanf(String.hex2string(hex), "%8F", float f);
+      string|zero enc;
+      catch {
+        enc = Standards.JSON.encode(f, Standards.JSON.CANONICAL);
+      };
+      res += ({ enc });
+    }
+    return res;
+  ]], ({
+    "0",
+    "0",
+    "5e-324",
+    "-5e-324",
+    "1.7976931348623157e+308",
+    "-1.7976931348623157e+308",
+    "9007199254740992",
+    "-9007199254740992",
+    "295147905179352830000",
+    0,
+    0,
+    "9.999999999999997e+22",
+    "1e+23",
+    "1.0000000000000001e+23",
+    "999999999999999700000",
+    "999999999999999900000",
+    "1e+21",
+    "9.999999999999997e-7",
+    "0.000001",
+    "333333333.3333332",
+    "333333333.33333325",
+    "333333333.3333333",
+    "333333333.3333334",
+    "333333333.33333343",
+    "-0.0000033333333333333333",
+    "1424953923781206.2",
+  }))
+]])
+
 // test the special types
 test_eq(Val.true, Standards.JSON.decode("true"))
 test_eq(Val.false, Standards.JSON.decode("false"))
