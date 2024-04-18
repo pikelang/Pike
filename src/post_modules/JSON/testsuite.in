@@ -186,6 +186,78 @@ cond(Pike.get_runtime_info()->float_size >= 64, [[
   }))
 ]])
 
+cond(Pike.get_runtime_info()->float_size == 32, [[
+  dnl rfc8785 3.2.4, adjusted for 32-bit floats.
+  test_eq([[
+    string_to_utf8(Standards.JSON.encode(Standards.JSON.decode(#[
+      {"literals":[null,true,false],"numbers":[333333300,
+       1e+30,4.5,0.002,1e-27],"string":"\u20ac$\u000f\nA'B\"\\\\\"/"}
+  #]), Standards.JSON.CANONICAL))
+  ]], String.hex2string(#"
+       7b 22 6c 69 74 65 72 61 6c 73 22 3a 5b 6e 75 6c 6c 2c 74 72
+       75 65 2c 66 61 6c 73 65 5d 2c 22 6e 75 6d 62 65 72 73 22 3a
+       5b 33 33 33 33 33 33 33 30 30 2c 31 65 2b 33 30 2c 34 2e 35
+       2c 30 2e 30 30 32 30 30 30 30 30 30 31 2c 31 65 2d 32 37 5d
+       2c 22 73 74 72 69 6e 67 22 3a 22 e2 82 ac 24 5c 75 30 30 30
+       66 5c 6e 41 27 42 5c 22 5c 5c 5c 5c 5c 22 2f 22 7d
+  "))
+
+  dnl rfc8785 Appendix B, adjusted for 32-bit floats.
+  test_any_equal([[
+    array(string|zero) res = ({});
+    foreach(({
+      "00000000", "80000000",	// 0.0, -0.0
+      "00000001", "80000001",	// epsilon, -epsilon
+      "7f7fffff", "ff7fffff",	// max, min
+      "4b800000", "cb800000",	// max int, min int
+      "61800000", "7fffffff",	// ~2^68, NaN
+      "7ff00000", "65a96816",	// Infinity, 1e+23 - epsilon
+      "65a96817", "65a96818",	// 1e+23, 1e+23 + epsilon
+      "6258d725", "6258d726",	// 1e+21 - 2epsilon, 1e+21 - epsilon
+      "6258d727", "358637bc",	// 1e+21, 1e-6 - epsilon
+      "358637bd", "45505553",	// 1e-6, 1e+4/3 - 2epsilon
+      "45505554", "45505555",	// 1e+4/3 - epsilon, 1e+4/3
+      "45505556", "45505557",	// 1e+4/3 + epsilon, 1e+4/3 + 2epsilon
+      "b65fb23b", "4a7ffffd",	// -1e-5/3, (max int - 3)/4 round to even
+    }), string hex) {
+      sscanf(String.hex2string(hex), "%4F", float f);
+      string|zero enc;
+      catch {
+        enc = Standards.JSON.encode(f, Standards.JSON.CANONICAL);
+      };
+      res += ({ enc });
+    }
+    return res;
+  ]], ({
+    "0",
+    "0",
+    "1.4012985e-45",
+    "-1.4012985e-45",
+    "3.4028235e+38",
+    "-3.4028235e+38",
+    "16777216",
+    "-16777216",
+    "295147910000000000000",
+    0,
+    0,
+    "9.9999998e+22",
+    "1.0000001e+23",
+    "1.0000002e+23",
+    "999999880000000000000",
+    "999999950000000000000",
+    "1e+21",
+    "9.9999988e-7",
+    "0.000001",
+    "3333.3328",
+    "3333.333",
+    "3333.3333",
+    "3333.3335",
+    "3333.3337",
+    "-0.0000033333333",
+    "4194303.2",
+  }))
+]])
+
 // test the special types
 test_eq(Val.true, Standards.JSON.decode("true"))
 test_eq(Val.false, Standards.JSON.decode("false"))

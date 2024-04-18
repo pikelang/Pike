@@ -327,7 +327,7 @@ static void json_encode_recur (struct encode_context *ctx, struct svalue *val)
         break;
       }
       if (ctx->flags & JSON_CANONICAL) {
-        string_builder_append_json_double(&ctx->buf, (double)f);
+        string_builder_append_json_float_type(&ctx->buf, f);
       } else {
         char b[MAX_FLOAT_SPRINTF_LEN];
         format_pike_float (b, f);
@@ -344,7 +344,7 @@ static void json_encode_recur (struct encode_context *ctx, struct svalue *val)
 	int size = a->size;
 	if (size) {
 	  int i;
-	  if (ctx->indent >= 0 && size > 1) {
+	  if ((ctx->indent >= 0) && (size > 1)) {
 	    int indent = ctx->indent = ctx->indent + 2;
 	    string_builder_putchar (buf, '\n');
 	    string_builder_putchars (buf, ' ', indent);
@@ -480,7 +480,9 @@ static void json_encode_recur (struct encode_context *ctx, struct svalue *val)
  *!
  *!   Note that @rfc{8785@}-compliant output will only be generated
  *!   if this is the only flag that has been set and no indentation
- *!   has been requested.
+ *!   has been requested, and @expr{Pike.get_runtime_info()->float_size
+ *!   == 64@}. In other cases a best effort attempt to comply with
+ *!   @rfc{8785@} will be performed, but deviations may occur.
  *! @enddl
  */
 

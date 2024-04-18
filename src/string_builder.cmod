@@ -819,6 +819,157 @@ void string_builder_append_json_double(struct string_builder *sb, double x)
   pike_freedtoa(digits);
 }
 
+/* Same as the above, but for PIKE_FLOAT. */
+void string_builder_append_json_float_type(struct string_builder *sb,
+                                           FLOAT_TYPE x)
+{
+#if SIZEOF_PIKE_FLOAT == SIZEOF_DOUBLE
+  string_builder_append_json_double(sb, x);
+#else
+  int k, n, sgn;
+  char *digits, *digits_end;
+
+  /* Cf ECMA-262 14th Edition 6.1.6.1.20 Number::toString(x) */
+  /* Notes:
+   *   This is referenced as "Section 7.1.12.1 of [ECMA-262]" in RFC 8785.
+   *
+   *   We only care about radix 10.
+   */
+
+  /* 1. If x is NaN, return "NaN". */
+  if (PIKE_ISNAN(x)) {
+    string_builder_strcat(sb, "NaN");
+    return;
+  }
+
+  /* 2. If x is either +0𝔽 or -0𝔽, return "0". */
+  if (x == 0.0) {
+    string_builder_putchar(sb, '0');
+    return;
+  }
+
+  /* 3. If x < -0𝔽, return the string-concatenation of "-" and
+   *    Number::toString(-x, radix).
+   */
+  if (x < 0.0) {
+    string_builder_putchar(sb, '-');
+  }
+
+  /* 4. If x is +∞𝔽, return "Infinity". */
+  if (PIKE_ISINF(x)) {
+    string_builder_strcat(sb, "Infinity");
+    return;
+  }
+
+  /* 5. Let n, k, and s be integers such that
+   *      k ≥ 1, radix^(k - 1) ≤ s < radix^k,
+   *      𝔽(s × radixn - k) is x,
+   *      and k is as small as possible.
+   *    Note that k is the number of digits in the representation
+   *    of s using radix radix, that s is not divisible by radix,
+   *    and that the least significant digit of s is not necessarily
+   *    uniquely determined by these criteria.
+   */
+  /* Similar to ecvt(3C), but with a dynamically allocated buffer. */
+  digits = pike_dtoa(x, 2,
+                     (SIZEOF_FLOAT_TYPE * 8)/4,
+                     &n, &sgn, &digits_end);
+
+  /* Number of digits in s. */
+  k = (int)(digits_end - digits);
+
+  /* 6. If radix ≠ 10 or n is in the inclusive interval from -5 to 21, then */
+  if ((n >= -5) && (n <= 21)) {
+    /* a. If n ≥ k, then */
+    if (n >= k) {
+      /* i. Return the string-concatenation of:
+       *   * the code units of the k digits of the representation
+       *     of s using radix radix
+       */
+      string_builder_strcat(sb, digits);
+      /*   * n - k occurrences of the code unit 0x0030 (DIGIT ZERO) */
+      string_builder_putchars(sb, '0', n - k);
+    }
+    /* b. Else if n > 0, then */
+    else if (n > 0) {
+      /* i. Return the string-concatenation of:
+       *   * the code units of the most significant n digits of
+       *     the representation of s using radix radix
+       */
+      string_builder_binary_strcat0(sb, (p_wchar0 *)digits, n);
+      /*   * the code unit 0x002E (FULL STOP) */
+      string_builder_putchar(sb, '.');
+      /*   * the code units of the remaining k - n digits of the
+       *     representation of s using radix radix
+       */
+      string_builder_binary_strcat0(sb, (p_wchar0 *)digits + n, k - n);
+    }
+    /* c. Else, */
+    else {
+      /* i. Assert: n ≤ 0. */
+      assert( n <= 0);
+      /* ii. Return the string-concatenation of:
+       *   * the code unit 0x0030 (DIGIT ZERO)
+       */
+      string_builder_putchar(sb, '0');
+      /*   * the code unit 0x002E (FULL STOP) */
+      string_builder_putchar(sb, '.');
+      /*   * -n occurrences of the code unit 0x0030 (DIGIT ZERO) */
+      string_builder_putchars(sb, '0', -n);
+      /*   * the code units of the k digits of the representation
+       *     of s using radix radix
+       */
+      string_builder_strcat(sb, digits);
+    }
+    return;
+  }
+
+  /* 7. NOTE: In this case, the input will be represented using
+   *    scientific E notation, such as 1.2e+3.
+   */
+
+  /* 8. Assert: radix is 10. */
+
+  /* NB: 9, 10, 11 and 12 reshuffled and combined to
+   *     reduce code duplication.
+   */
+
+  /* 11. If k = 1, then
+   *    a. Return the string-concatenation of:
+   *       * the code unit of the single digit of s
+   * 12. Return the string-concatenation of:
+   *    * the code unit of the most significant digit of
+   *      the decimal representation of s
+   */
+  string_builder_putchar(sb, digits[0]);
+
+  if (k > 1) {
+    /*    * the code unit 0x002E (FULL STOP) */
+    string_builder_putchar(sb, '.');
+    /*    * the code units of the remaining k - 1 digits of
+     *      the decimal representation of s
+     */
+    string_builder_strcat(sb, digits+1);
+  }
+
+  /*    * the code unit 0x0065 (LATIN SMALL LETTER E) */
+  string_builder_putchar(sb, 'e');
+
+  /* 9. If n < 0, then
+   *    a. Let exponentSign be the code unit 0x002D (HYPHEN-MINUS).
+   * 10. Else,
+   *    a. Let exponentSign be the code unit 0x002B (PLUS SIGN).
+   *
+   *    * exponentSign
+   *    * the code units of the decimal representation of abs(n - 1)
+   */
+  /* NB: We know than n is not 0, so this is safe. */
+  string_builder_sprintf(sb, "%+d", n - 1);
+
+  pike_freedtoa(digits);
+#endif
+}
+
 /* Kludge around brokeness of gcc/x86_64 */
 #ifdef VA_LIST_IS_STATE_PTR
 #define VA_LIST_PTR		va_list
