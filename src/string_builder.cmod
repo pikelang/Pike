@@ -823,7 +823,7 @@ void string_builder_append_json_double(struct string_builder *sb, double x)
 void string_builder_append_json_float_type(struct string_builder *sb,
                                            FLOAT_TYPE x)
 {
-#if SIZEOF_PIKE_FLOAT == SIZEOF_DOUBLE
+#if SIZEOF_FLOAT_TYPE >= 8
   string_builder_append_json_double(sb, x);
 #else
   int k, n, sgn;
