@@ -5127,6 +5127,21 @@ test_any([[
   return Y(5)->x;
 ]], 7)
 
+dnl Issue #10154
+test_any([[
+  // Triggered infinite recursion.
+  class A {
+    string `prop() { return "A"; }
+  }
+
+  class B {
+    inherit A;
+    string `prop() { return ::prop + "B"; }
+  }
+
+  return B()->prop;
+]], "AB")
+
 test_any([[
   // Since the addition of F_APPEND_MAPPING in set_bar below
   // the setter is not being called anymore. Instead, the mapping
