@@ -2229,7 +2229,6 @@ static int reference_local_identifier(int id)
 {
   struct program *p = Pike_compiler->new_program;
   struct reference *ref = p->identifier_references + id;
-  int d;
   struct reference funp = *ref;
 
   if (ref->id_flags & ID_LOCAL) return id;
