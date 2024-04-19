@@ -2222,6 +2222,56 @@ static struct node_s *index_modules(struct pike_string *ident,
   return 0;
 }
 
+/**
+ * Return local::id.
+ */
+static int reference_local_identifier(int id)
+{
+  struct program *p = Pike_compiler->new_program;
+  struct reference *ref = p->identifier_references + id;
+  int d;
+  struct reference funp = *ref;
+
+  if (ref->id_flags & ID_LOCAL) return id;
+
+  if (IDENTIFIER_IS_VARIABLE(ID_FROM_PTR(p, ref)->identifier_flags)) {
+    /* Allowing local:: on variables would lead to pathological
+     * behavior: If a non-local variable in a class is referenced
+     * both with and without local::, both references would
+     * address the same variable in all cases except where an
+     * inheriting program overrides it (c.f. [bug 1252]).
+     *
+     * Furthermore, that's not how it works currently; if this
+     * error is removed then local:: will do nothing on variables
+     * except forcing a lookup in the closest surrounding class
+     * scope. */
+    yyerror("Cannot make local references to variables.");
+    return id;
+  }
+
+  /* We need to use a different reference to the identifier. */
+
+  /* Check if there already exists a suitable reference. */
+  for(id = 0; id < (int)p->num_identifier_references; id++) {
+    struct reference *refp;
+    refp = p->identifier_references + id;
+
+    if (!(refp->id_flags & ID_LOCAL)) continue;
+
+    if((refp->inherit_offset == funp.inherit_offset) &&
+       (refp->identifier_offset == funp.identifier_offset)) {
+      /* Found. */
+      return id;
+    }
+  }
+
+  /* We need to generate a new reference. */
+  funp.id_flags = (funp.id_flags & ~ID_INHERITED) | ID_INLINE|ID_HIDDEN;
+
+  low_add_to_identifier_references(Pike_compiler, funp);
+  return p->num_identifier_references - 1;
+}
+
 struct node_s *resolve_identifier(struct pike_string *ident);
 
 struct node_s *find_module_identifier(struct pike_string *ident,
@@ -7799,7 +7849,7 @@ INT32 define_function(struct pike_string *name,
 
 	if (getter_setter != -1) {
 	  struct identifier *id = ID_FROM_INT(prog, getter_setter);
-	  (&id->func.gs_info.getter)[is_setter] = i;
+          (&id->func.gs_info.getter)[is_setter] = reference_local_identifier(i);
 	}
 	return i;
       }
@@ -7935,10 +7985,11 @@ INT32 define_function(struct pike_string *name,
       if (getter_setter != -1) {
 	struct identifier *id = ID_FROM_INT(prog, getter_setter);
 	INT32 old_i = (&id->func.gs_info.getter)[is_setter];
-	if ((old_i >= 0) && (old_i != overridden)) {
+        i = reference_local_identifier(overridden);
+        if ((old_i >= 0) && (old_i != i)) {
           my_yyerror("Multiple definitions for %pS.", name);
 	}
-	(&id->func.gs_info.getter)[is_setter] = overridden;
+        (&id->func.gs_info.getter)[is_setter] = i;
       }
       return overridden;
     }
@@ -8001,7 +8052,7 @@ INT32 define_function(struct pike_string *name,
     if (old_i >= 0) {
       my_yyerror("Multiple definitions for %pS.", name);
     }
-    (&id->func.gs_info.getter)[is_setter] = i;
+    (&id->func.gs_info.getter)[is_setter] = reference_local_identifier(i);
   }
 
   return i;
