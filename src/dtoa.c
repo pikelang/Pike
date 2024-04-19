@@ -5395,7 +5395,7 @@ dtoa_r(double dd, int mode, int ndigits, int *decpt, int *sign, char **rve, char
                         }
                 j += k;
                 if (ilim == 0) {
-                        S = mhi = 0;
+                        S = PIKE_CHANGE(mlo =) mhi = 0;
                         if (res > (5ull << j))
                                 goto one_digit;
                         goto no_digits;
@@ -5403,7 +5403,7 @@ dtoa_r(double dd, int mode, int ndigits, int *decpt, int *sign, char **rve, char
                 goto no_div;
                 }
         if (ilim == 0 && j + k >= 0) {
-                S = mhi = 0;
+                S = PIKE_CHANGE(mlo =) mhi = 0;
                 if ((dbits >> 11) > (pfive[k-1] << j))
                         goto one_digit;
                 goto no_digits;
@@ -5549,7 +5549,7 @@ dtoa_r(double dd, int mode, int ndigits, int *decpt, int *sign, char **rve, char
                 if (!(res & 0x7fffffffffffffeull)
                  || !((~res) & 0x7fffffffffffffeull))
                         goto Fast_failed1;
-                S = mhi = 0;
+                S = PIKE_CHANGE(mlo =) mhi = 0;
                 if (res >= 0x5000000000000000ull)
                         goto one_digit;
                 goto no_digits;
@@ -5854,7 +5854,7 @@ dtoa_r(double dd, int mode, int ndigits, int *decpt, int *sign, char **rve, char
                 dval(&eps) = ieps*dval(&u) + 7.;
                 word0(&eps) -= (P-1)*Exp_msk1;
                 if (ilim == 0) {
-                        S = mhi = 0;
+                        S = PIKE_CHANGE(mlo =) mhi = 0;
                         dval(&u) -= 5.;
                         if (dval(&u) > dval(&eps))
                                 goto one_digit;
@@ -5933,7 +5933,7 @@ dtoa_r(double dd, int mode, int ndigits, int *decpt, int *sign, char **rve, char
                 /* Yes. */
                 ds = tens[k];
                 if (ndigits < 0 && ilim <= 0) {
-                        S = mhi = 0;
+                        S = PIKE_CHANGE(mlo =) mhi = 0;
                         if (ilim < 0 || dval(&u) <= 5*ds)
                                 goto no_digits;
                         goto one_digit;
