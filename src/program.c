@@ -2532,44 +2532,7 @@ struct node_s *find_inherited_identifier(struct program_state *inherit_state,
     if (id != -1) {
       if (inh == INHERIT_LOCAL) {
 	/* local:: */
-	struct reference *ref = p->identifier_references + id;
-	if (IDENTIFIER_IS_VARIABLE(ID_FROM_PTR(p, ref)->identifier_flags)) {
-	  /* Allowing local:: on variables would lead to pathological
-	   * behavior: If a non-local variable in a class is referenced
-	   * both with and without local::, both references would
-	   * address the same variable in all cases except where an
-	   * inheriting program overrides it (c.f. [bug 1252]).
-	   *
-	   * Furthermore, that's not how it works currently; if this
-	   * error is removed then local:: will do nothing on variables
-	   * except forcing a lookup in the closest surrounding class
-	   * scope. */
-	  yyerror ("Cannot make local references to variables.");
-	  return NULL;
-	}
-	if (!(ref->id_flags & ID_LOCAL)) {
-	  /* We need to generate a new reference. */
-	  int d;
-	  struct reference funp = *ref;
-	  funp.id_flags = (funp.id_flags & ~ID_INHERITED) | ID_INLINE|ID_HIDDEN;
-	  id = -1;
-	  for(d = 0; d < (int)p->num_identifier_references; d++) {
-	    struct reference *refp;
-	    refp = p->identifier_references + d;
-
-	    if (!(refp->id_flags & ID_LOCAL)) continue;
-
-	    if((refp->inherit_offset == funp.inherit_offset) &&
-	       (refp->identifier_offset == funp.identifier_offset)) {
-	      id = d;
-	      break;
-	    }
-	  }
-	  if (id < 0) {
-	    low_add_to_identifier_references(inherit_state, funp);
-	    id = p->num_identifier_references - 1;
-	  }
-	}
+        id = reference_local_identifier(id);
       }
       if (inherit_depth > 0) {
 	return mkexternalnode(inherit_state->new_program, id);
