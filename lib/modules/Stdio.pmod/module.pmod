@@ -1,4 +1,4 @@
-#charset iso-8859-1
+#charset utf-8
 #pike __REAL_VERSION__
 
 inherit _Stdio;
@@ -904,7 +904,8 @@ class File
   //! @returns
   //!   Returns a @[Concurrent.Future] that resolves into the
   //!   connection object at success.
-  variant Concurrent.Future async_connect(string host, int|string port)
+  variant Concurrent.Future(<this_program>)
+    async_connect(string host, int|string port)
   {
     void attempt_connect(function success, function failure) {
       void callback(int done) {
@@ -1591,7 +1592,7 @@ class File
   //!   deregistered if an end-of-stream occurs, and all events in the
   //!   case of an error. I.e. there won't be any more calls to the
   //!   callbacks unless they are reinstalled. This doesn't affect the
-  //!   callback settings - @[query_read_callback] et al will still
+  //!   callback settings - @[query_read_callback] etÂ al will still
   //!   return the installed callbacks.
   //! @endul
   //!
