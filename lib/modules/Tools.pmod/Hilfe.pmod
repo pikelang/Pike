@@ -1038,6 +1038,14 @@ class Expression {
     if( t=="." ) position++;
 
     for(; position<sizeof(positions); position++) {
+      // NB: It seems the tokenizer does not recognize multiset start
+      //     and multiset end as separate tokens.
+      if ((`[](position+1) == "(") && (`[](position+2) == "<")) {
+        // Generic binding.
+        position = find_matching("(", position+2);
+        if (position < 0) return -1;
+        if (`[](position-1) != ">") return -1;
+      }
       if( notype[ `[](position+1) ] )
         return -1;
       if( `[](position+1)=="." ) {
