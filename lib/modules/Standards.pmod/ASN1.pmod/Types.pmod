@@ -93,7 +93,7 @@ class Object
       mapping(int:program(Object)) types) {
     return types; i;
   }
-  this_program init(mixed ... args) { return this; args; }
+  this_program init(__unknown__ ... args) { return this; }
 
   protected string(0..255) to_base_128(int n)
   {
@@ -1100,6 +1100,8 @@ class MetaExplicit
   mapping(int:program(Object)) valid_types = ([]);
 
   class `() {
+    @Pike.Annotations.Implements(Object);
+
     inherit Compound;
     constant type_name = "EXPLICIT";
     constant constructed = 1;
@@ -1130,11 +1132,10 @@ class MetaExplicit
       return contents->get_der();
     }
 
-    this_program decode_constructed_element(int i, Object e) {
+    void decode_constructed_element(int i, Object e) {
       if (i)
 	error("Unexpected index!\n");
       contents = e;
-      return this;
     }
 
     mapping(int:program(Object)) element_types(int i,
