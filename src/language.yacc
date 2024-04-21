@@ -1459,7 +1459,7 @@ identifier_type: id_expr
 
       free_type(t);
       do_free_mapping(bind);
-    } else if (bindings) {
+    } else if ((Pike_compiler->compiler_pass == COMPILER_PASS_LAST) && bindings) {
       yywarning("Bindings specified for non-generic type %pT.",
                 peek_type_stack());
     }
