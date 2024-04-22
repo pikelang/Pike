@@ -12017,8 +12017,8 @@ test_any_equal([[
   A a = A();
   return mkmapping(indices(a), annotations(a));
 ]], [[
-  ([ "syncfunc":"sync", "asyncfunc":"async",
-     "genfunc":"gen", "asyncgenfunc":"asyncgen" ])
+  ([ "syncfunc":(< "sync" >), "asyncfunc": (< "async" >),
+     "genfunc":(< "gen" >), "asyncgenfunc": (< "asyncgen" >) ])
 ]])
 
 // foop
