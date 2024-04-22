@@ -5065,6 +5065,11 @@ static int compiler_declare_prototype(int modifiers,
   if (modifiers & (ID_ASYNC|ID_GENERATOR)) {
     struct pike_string *name;
     int num_state_vars = 4;
+    node *save_annotations = Pike_compiler->current_annotations;
+    /* NB: Delay annotations, so that they can be attached to
+     *     the "outer" function. Cf issue #10147.
+     */
+    Pike_compiler->current_annotations = NULL;
 
     if (modifiers & ID_ASYNC) {
       Pike_compiler->compiler_frame->generator_is_async = 1;
@@ -5167,6 +5172,8 @@ static int compiler_declare_prototype(int modifiers,
         free_node(n);
       }
     }
+
+    Pike_compiler->current_annotations = save_annotations;
   } else {
     push_finished_type(Pike_compiler->compiler_frame->current_return_type);
   }

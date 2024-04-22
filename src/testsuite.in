@@ -12006,6 +12006,20 @@ test_any_equal([[
     ]),
   })
 ]])
+test_any_equal([[
+  // Issue #10147
+  class A {
+    @"sync": void syncfunc() { }
+    @"async": __async__ void asyncfunc() { }
+    @"gen": __generator__ void genfunc() { }
+    @"asyncgen": __async__ __generator__ void asyncgenfunc() { }
+  }
+  A a = A();
+  return mkmapping(indices(a), annotations(a));
+]], [[
+  ([ "syncfunc":"sync", "asyncfunc":"async",
+     "genfunc":"gen", "asyncgenfunc":"asyncgen" ])
+]])
 
 // foop
 define(do_test_foop,[[
