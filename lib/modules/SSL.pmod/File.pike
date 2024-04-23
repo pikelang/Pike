@@ -507,6 +507,8 @@ int(1bit) accept(string|void pending_data)
 	conn = UNDEFINED;
 	return 0;
       }
+    } else {
+      queue_write();
     }
   } LEAVE;
 
