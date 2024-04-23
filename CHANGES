@@ -409,6 +409,11 @@ o Stdio.Port now has a default id of itself (as documented).
 
   Previously the default id for Stdio.Port objects was 0.
 
+o Thread.Farm()->run() et al now return Concurrent.Future objects.
+
+  Previously they returned Thread.Farm.Result objects (which had
+  similar functionality, but a different API).
+
 o Named classes are always statements.
 
   As mentioned above, it is no longer possible to define a named

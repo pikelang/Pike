@@ -455,6 +455,9 @@ class Queue {
 
 
 //! A thread farm.
+//!
+//! @seealso
+//!   @[8.0::Thread.Farm]
 class Farm
 {
   protected Mutex mutex = Mutex();
@@ -464,173 +467,12 @@ class Farm
   protected function(object, string|zero: void) thread_name_cb;
   protected string thread_name_prefix;
 
-  //! An asynchronous result.
-  //!
-  //! @fixme
-  //!   This class ought to be made @[Concurrent.Future]-compatible.
-  class Result
-  {
-    int ready;
-    mixed value;
-    function(mixed, int(0..1):void) done_cb;
-
-    //! @returns
-    //!   @int
-    //!     @value 1
-    //!       Returns @expr{1@} when the result is available.
-    //!     @value 0
-    //!       Returns @expr{0@} (zero) when the result hasn't
-    //!       arrived yet.
-    //!     @value -1
-    //!       Returns negative on failure.
-    //!   @endint
-    int status()
-    {
-      return ready;
-    }
-
-    //! @returns
-    //!   Returns the result if available, a backtrace on failure,
-    //!   and @expr{0@} (zero) otherwise.
-    mixed result()
-    {
-      return value;
-    }
-
-    //! Wait for completion.
-    protected mixed `()()
-    {
-      object|zero key = mutex->lock();
-      while(!ready)     ft_cond->wait(key);
-      key = 0;
-      if( ready < 0 )   throw( value );
-      return value;
-    }
-
-    //! Register a callback to be called when
-    //! the result is available.
-    //!
-    //! @param to
-    //!   Callback to be called. The first
-    //!   argument to the callback will be
-    //!   the result or the failure backtrace,
-    //!   and the second @expr{0@} (zero) on
-    //!   success, and @expr{1@} on failure.
-    void set_done_cb( function(mixed, int(0..1):void) to )
-    {
-      if( ready )
-        to( value, ready<0 );
-      else
-        done_cb = to;
-    }
-
-    //! Register a failure.
-    //!
-    //! @param what
-    //!   The corresponding backtrace.
-    void provide_error( mixed what )
-    {
-      value = what;
-      ready = -1;
-      if( done_cb )
-        done_cb( what, 1 );
-    }
-
-    //! Register a completed result.
-    //!
-    //! @param what
-    //!   The result to register.
-    void provide( mixed what )
-    {
-      ready = 1;
-      value = what;
-      if( done_cb )
-        done_cb( what, 0 );
-    }
-
-
-    protected string _sprintf( int f )
-    {
-      if (!this)				// Only if not destructed
-        return "(destructed)";
-      switch( f )
-      {
-	case 't':
-	  return "Thread.Farm().Result";
-	case 'O':
-	  return sprintf( "%t(%d %O)", this, ready, value );
-      }
-    }
-  }
-
-  protected void report_errors(mixed err, int is_err)
-  {
-    if (!is_err) return;
-    master()->handle_error(err);
-  }
-
-  //! A wrapper for an asynchronous result.
-  //!
-  //! @note
-  //!   This wrapper is used to detect when the
-  //!   user discards the values returned from
-  //!   @[run()] or @[run_multiple()], so that
-  //!   any errors thrown aren't lost.
-  protected class ResultWrapper
-  {
-    //! @decl inherit Result
-    //!
-    //! Inherits @expr{Pike.ProxyFactory(Result)@}
-    //!
-    //! @seealso
-    //!   @[Pike.ProxyFactory()]
-
-    //! @ignore
-    local inherit Pike.ProxyFactory(Result) : Result;
-    //! @endignore
-
-    protected int(0..1) value_fetched;
-    mixed `value() {
-      value_fetched = 1;
-      return Result::`value();
-    }
-    void `done_cb=(function cb) {
-      if (cb) value_fetched = 1;
-      Result::`done_cb = cb;
-    }
-
-    //! Register a callback to be called when
-    //! the result is available.
-    //!
-    //! @param to
-    //!   Callback to be called. The first
-    //!   argument to the callback will be
-    //!   the result or the failure backtrace,
-    //!   and the second @expr{0@} (zero) on
-    //!   success, and @expr{1@} on failure.
-    void set_done_cb(function cb) {
-      if (cb) value_fetched = 1;
-      Result::set_done_cb(cb);
-    }
-
-    protected void _destruct()
-    {
-      if (!value_fetched /* && !done_cb */) {
-	// Make sure that any errors aren't lost.
-	done_cb = report_errors;
-	if (ready < 0) {
-	  report_errors(value, 1);
-	}
-      }
-    }
-  }
-
   //! A worker thread.
   protected class Handler
   {
     Mutex job_mutex = Mutex();
     Condition cond = Condition();
-    array(object|array(function|array)) job;
+    array(Concurrent.Promise|array(function|array)) job;
     object|zero thread;
 
     float total_time;
@@ -650,7 +492,7 @@ class Farm
 
     void handler()
     {
-      array(object|array(function|array)) q;
+      array(Concurrent.Promise|array(function|array)) q;
       object|zero key = job_mutex->lock();
       ready = 1;
       while( 1 )
@@ -660,15 +502,16 @@ class Farm
         {
           mixed res, err;
           int st = gethrtime();
+          Concurrent.Promise p = q[0];
 
           err = catch(res = q[1][0]( @q[1][1] ));
 
           if( q[0] )
           {
             if( err )
-              ([object]q[0])->provide_error( err );
+              p->failure(err);
             else
-              ([object]q[0])->provide( res );
+              p->success(res);
           }
           object|zero lock = mutex->lock();
           free_threads += ({ this });
@@ -693,11 +536,11 @@ class Farm
       }
     }
 
-    void run( array(function|array) what, object|void resobj )
+    void run( array(function|array) what, Concurrent.Promise|void promise )
     {
       while(!ready) sleep(0.1);
       object|zero key = job_mutex->lock();
-      job = ({ resobj, what });
+      job = ({ promise, what });
       cond->signal();
       key = 0;
     }
@@ -798,7 +641,7 @@ class Farm
   //!   a corresponding array of arguments.
   //!
   //! @returns
-  //!   Returns a @[Result] object with an array
+  //!   Returns a @[Concurrent.Future] object with an array
   //!   with one element for the result for each
   //!   of the functions in @[fun_args].
   //!
@@ -814,19 +657,16 @@ class Farm
   //!
   //! @seealso
   //!   @[run_multiple_async()]
-  Result run_multiple( array(array(function|array)) fun_args )
+  Concurrent.Future(<array>) run_multiple( array(array(function|array)) fun_args )
   {
-    Result r = Result(); // private result..
-    ResultWrapper rw = ResultWrapper(r);
-    r->value = allocate( sizeof( fun_args ) );
-    mapping nl = ([ "num_left":sizeof( fun_args ) ]);
+    array(Concurrent.Future) futures = ({});
     for( int i=0; i<sizeof( fun_args ); i++ )
     {
-      Result r2 = Result();
-      r2->set_done_cb( ValueAdjuster( r, r2, i, nl )->go );
-      job_queue->write( ({ r2, fun_args[i] }) );
+      Concurrent.Promise p = Concurrent.Promise();
+      job_queue->write( ({ p, fun_args[i] }) );
+      futures += ({ p->future() });
     }
-    return rw;
+    return Concurrent.results(futures);
   }
 
 
@@ -870,12 +710,11 @@ class Farm
   //!
   //! @seealso
   //!   @[run_async()]
-  Result run( function f, mixed ... args )
+  Concurrent.Future run( function f, mixed ... args )
   {
-    Result ro = Result();
-    ResultWrapper rw = ResultWrapper(ro);
-    job_queue->write( ({ ro, ({f, args }) }) );
-    return rw;
+    Concurrent.Promise p = Concurrent.Promise();
+    job_queue->write( ({ p, ({f, args }) }) );
+    return p->future();
   }
 
   //! Register a job for the thread farm
