@@ -1436,7 +1436,7 @@ test_any([[
     SSL.File ssl = SSL.File(sock, tlsctx);
     ssl->accept(data);
     queue_size = ssl->query_connection()->query_write_queue_size(); //The queue should be empty
-  }
+  };
   object server; server = Stdio.Port(8086) {server->accept()->set_nonblocking(read_cb);};
   Stdio.File sock = Stdio.File();
   sock->connect("127.0.0.1", 8086);
