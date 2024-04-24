@@ -134,9 +134,9 @@ class Future(<ValueType>)
   //!
   //! @seealso
   //!   @[Promise], @[set_backend()]
-  Promise promise_factory()
+  Promise(<ValueType>) promise_factory()
   {
-    Promise res = Promise();
+    Promise(<ValueType>) res = Promise();
 
     if (backend) {
       res->set_backend(backend);
@@ -1239,7 +1239,7 @@ class AggregatedPromise(<ValueType>)
   {
     return depend(futures);
   }
-  variant this_program(<ValueType>) depend()
+  variant Promise(<ValueType>) depend()
   {
     Promise(<ValueType>) p = promise_factory();
     depend(p->future());
