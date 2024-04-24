@@ -1832,8 +1832,8 @@ test_any([[
     queue_size = ssl->query_connection()->query_write_queue_size(); //The queue should be empty
   };
   object server = Stdio.File();
-  server->set_read_callback(read_cb);
   object client = server->pipe(Stdio.PROP_BIDIRECTIONAL|Stdio.PROP_NONBLOCK);
+  server->set_read_callback(read_cb);
   SSL.File ssl = SSL.File(client, SSL.Context());
   ssl->connect();
   while(Pike.DefaultBackend(0.0)) ;
