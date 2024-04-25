@@ -1826,6 +1826,9 @@ static void f_com__sprintf(INT32 args)
   push_int(0);
 }
 
+/*! @endmodule
+ */
+
 #endif /* HAVE_COM */
 
 PIKE_MODULE_INIT
