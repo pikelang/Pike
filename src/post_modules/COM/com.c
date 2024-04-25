@@ -42,17 +42,8 @@
 #include <winbase.h>
 #endif /* HAVE_WINBASE_H */
 
-#ifdef USE_COM_PROG
-static struct program *com_program = NULL;
-#endif /* USE_COM_PROG */
 static struct program *cobj_program = NULL;
 static struct program *cval_program = NULL;
-
-#ifdef USE_COM_PROG
-struct com_storage {
-  int dummy;
-};
-#endif /* USE_COM_PROG */
 
 struct cobj_storage {
   IDispatch      *pIDispatch;
@@ -65,10 +56,6 @@ struct cval_storage {
   DISPID     dispid;
 };
 
-
-#ifdef USE_COM_PROG
-#define THIS_COM  ((struct com_storage *)(Pike_fp->current_storage))
-#endif /* USE_COM_PROG */
 
 #define THIS_COBJ ((struct cobj_storage *)(Pike_fp->current_storage))
 #define THIS_CVAL ((struct cval_storage *)(Pike_fp->current_storage))
@@ -153,6 +140,9 @@ static void com_throw_error2(HRESULT hr, EXCEPINFO excep)
   else
     com_throw_error(hr);
 }
+
+/*! @module COM
+ */
 
 static void set_variant_arg(VARIANT *v, struct svalue *sv)
 {
@@ -546,6 +536,9 @@ static int push_typeinfo_members(ITypeInfo *pITypeInfo,
 /* cval */
 /********/
 
+/*! @class CVal
+ */
+
 static void cval_push_result(INT32 args, int flags)
 {
   struct cval_storage *cval = THIS_CVAL;
@@ -888,11 +881,16 @@ static void f_cval__sprintf(INT32 args)
 /* { */
 /* } */
 
+/*! @endclass
+ */
 
 
 /********/
 /* cobj */
 /********/
+
+/*! @class CObj
+ */
 
 static void f_cobj_create(INT32 args)
 {
@@ -1255,49 +1253,11 @@ static void f_cobj__indices(INT32 args)
 
 }
 
+/*! @endclass
+ */
 
 /*************************/
 /* COM                   */
-
-
-#ifdef USE_COM_PROG
-static void f_create(INT32 args)
-{
-  struct com_storage *c = THIS_COM;
-
-  pop_n_elems(args);
-
-  push_int(0);
-}
-
-static void init_com_struct(struct object *o)
-{
-  struct com_storage *c = THIS_COM;
-
-}
-
-static void exit_com_struct(struct object *o)
-{
-  struct com_storage *c = THIS_COM;
-
-}
-
-/* #ifdef _REENTRANT */
-/* static void com_gc_check(struct object *o) */
-/* { */
-/*   struct com_storage *c = THIS_COM; */
-
-/* } */
-
-/* static void com_gc_recurse(struct object *o) */
-/* { */
-/*   struct com_storage *c = THIS_COM; */
-
-/* } */
-/* #endif /\* _REENTRANT *\/ */
-
-#endif /* USE_COM_PROG */
-
 
 /* static void f_get_version(INT32 args) */
 /* { */
@@ -1371,6 +1331,8 @@ static void exit_com_struct(struct object *o)
 /*   } */
 /* } */
 
+/*! @decl object CreateObject(string prog_id)
+ */
 static void f_create_object(INT32 args)
 {
   struct object *oo;
@@ -1421,6 +1383,8 @@ static void f_create_object(INT32 args)
   }
 }
 
+/*! @decl object GetObject(string|void filename, string|void prog_id)
+ */
 static void f_get_object(INT32 args)
 {
   struct object      *oo;
@@ -1704,11 +1668,10 @@ void DisplayTypeInfo( LPTYPEINFO pITypeInfo )
 /* test end */
 /* ------------------ */
 
+/*! @decl mixed GetTypeInfo(CObj cobj)
+ */
 static void f_get_typeinfo(INT32 args)
 {
-#ifdef USE_COM_PROG
-  struct com_storage *com = THIS_COM;
-#endif /* USE_COM_PROG */
   struct cobj_storage *co;
   ITypeInfo *ptinfo;
   TYPEATTR *ptattr;
@@ -1742,12 +1705,11 @@ static void f_get_typeinfo(INT32 args)
   ptinfo->lpVtbl->Release(ptinfo);
 }
 
-
+/*! @decl mapping GetConstants(string typelib)
+ *! @decl mapping GetConstants(CObj cobj)
+ */
 static void f_get_constants(INT32 args)
 {
-#ifdef USE_COM_PROG
-  struct com_storage *com = THIS_COM;
-#endif /* USE_COM_PROG */
   struct cobj_storage *co;
   ITypeInfo *ptinfo;
   ITypeLib *ptlib;
@@ -1843,12 +1805,10 @@ static void f_get_constants(INT32 args)
   ptlib->lpVtbl->Release(ptlib);
 }
 
+/*! @decl protected string _sprintf(int c, mapping opts)
+ */
 static void f_com__sprintf(INT32 args)
 {
-#ifdef USE_COM_PROG
-  struct com_storage *com = THIS_COM;
-#endif /* USE_COM_PROG */
-
   if (args < 1 || TYPEOF(Pike_sp[-args]) != PIKE_T_INT)
     Pike_error("Bad argument 1 for Com->_sprintf().\n");
   if (args < 2 || TYPEOF(Pike_sp[1-args]) != PIKE_T_MAPPING)
@@ -1880,49 +1840,50 @@ PIKE_MODULE_INIT
   start_new_program();
   ADD_STORAGE(struct cval_storage);
 
-  ADD_FUNCTION("_value", f_cval__value, tFunc(tVoid,tMix), 0);
+  ADD_FUNCTION("_value", f_cval__value, tFunc(tVoid,tMix), ID_PROTECTED);
 
-  ADD_FUNCTION("`+", f_cval_add, tFunc(tMix,tMix), 0);
-  ADD_FUNCTION("`-", f_cval_minus, tFunc(tMix,tMix), 0);
-  ADD_FUNCTION("`&", f_cval_and, tFunc(tMix,tMix), 0);
-  ADD_FUNCTION("`|", f_cval_or, tFunc(tMix,tMix), 0);
-  ADD_FUNCTION("`^", f_cval_xor, tFunc(tMix,tMix), 0);
-  ADD_FUNCTION("`<<", f_cval_lsh, tFunc(tMix,tMix), 0);
-  ADD_FUNCTION("`>>", f_cval_rsh, tFunc(tMix,tMix), 0);
-  ADD_FUNCTION("`*", f_cval_multiply, tFunc(tMix,tMix), 0);
-  ADD_FUNCTION("`/", f_cval_divide, tFunc(tMix,tMix), 0);
-  ADD_FUNCTION("`%", f_cval_mod, tFunc(tMix,tMix), 0);
-  ADD_FUNCTION("`~", f_cval_compl, tFunc(tVoid,tMix), 0);
-  ADD_FUNCTION("`==", f_cval_eq, tFunc(tMix,tMix), 0);
-  ADD_FUNCTION("`<", f_cval_lt, tFunc(tMix,tMix), 0);
-  ADD_FUNCTION("`>", f_cval_gt, tFunc(tMix,tMix), 0);
+  ADD_FUNCTION("`+", f_cval_add, tFunc(tMix,tMix), ID_PROTECTED);
+  ADD_FUNCTION("`-", f_cval_minus, tFunc(tMix,tMix), ID_PROTECTED);
+  ADD_FUNCTION("`&", f_cval_and, tFunc(tMix,tMix), ID_PROTECTED);
+  ADD_FUNCTION("`|", f_cval_or, tFunc(tMix,tMix), ID_PROTECTED);
+  ADD_FUNCTION("`^", f_cval_xor, tFunc(tMix,tMix), ID_PROTECTED);
+  ADD_FUNCTION("`<<", f_cval_lsh, tFunc(tMix,tMix), ID_PROTECTED);
+  ADD_FUNCTION("`>>", f_cval_rsh, tFunc(tMix,tMix), ID_PROTECTED);
+  ADD_FUNCTION("`*", f_cval_multiply, tFunc(tMix,tMix), ID_PROTECTED);
+  ADD_FUNCTION("`/", f_cval_divide, tFunc(tMix,tMix), ID_PROTECTED);
+  ADD_FUNCTION("`%", f_cval_mod, tFunc(tMix,tMix), ID_PROTECTED);
+  ADD_FUNCTION("`~", f_cval_compl, tFunc(tVoid,tMix), ID_PROTECTED);
+  ADD_FUNCTION("`==", f_cval_eq, tFunc(tMix,tMix), ID_PROTECTED);
+  ADD_FUNCTION("`<", f_cval_lt, tFunc(tMix,tMix), ID_PROTECTED);
+  ADD_FUNCTION("`>", f_cval_gt, tFunc(tMix,tMix), ID_PROTECTED);
 
-  ADD_FUNCTION("__hash", f_cval___hash, tFunc(tVoid,tMix), 0);
-  ADD_FUNCTION("cast", f_cval_cast, tFunc(tMix,tMix), 0);
-  ADD_FUNCTION("`!", f_cval_not, tFunc(tVoid,tMix), 0);
+  ADD_FUNCTION("__hash", f_cval___hash, tFunc(tVoid,tMix), ID_PROTECTED);
+  ADD_FUNCTION("cast", f_cval_cast, tFunc(tMix,tMix), ID_PROTECTED);
+  ADD_FUNCTION("`!", f_cval_not, tFunc(tVoid,tMix), ID_PROTECTED);
 /*   ADD_FUNCTION("`[]", f_cval_ind, tFunc(tMix,tMix), 0); */
 /*   ADD_FUNCTION("`[]=", f_cval_indset, tFunc(tMix,tMix), 0); */
-  ADD_FUNCTION("`[]", f_cval_arrow, tFunc(tMix,tMix), 0);
-  ADD_FUNCTION("`[]=", f_cval_arrow_assign, tFunc(tMix,tMix), 0);
-  ADD_FUNCTION("`->", f_cval_arrow, tFunc(tMix,tMix), 0);
-  ADD_FUNCTION("`->=", f_cval_arrow_assign, tFunc(tMix,tMix), 0);
+  ADD_FUNCTION("`[]", f_cval_arrow, tFunc(tMix,tMix), ID_PROTECTED);
+  ADD_FUNCTION("`[]=", f_cval_arrow_assign, tFunc(tMix,tMix), ID_PROTECTED);
+  ADD_FUNCTION("`->", f_cval_arrow, tFunc(tMix,tMix), ID_PROTECTED);
+  ADD_FUNCTION("`->=", f_cval_arrow_assign, tFunc(tMix,tMix), ID_PROTECTED);
 /*   ADD_FUNCTION("_sizeof", f_cval__sizeof, tFunc(tMix,tMix), 0); */
 /*   ADD_FUNCTION("_indices", f_cval__indices, tFunc(tMix,tMix), 0); */
 /*   ADD_FUNCTION("_values", f_cval__values, tFunc(tMix,tMix), 0); */
-  ADD_FUNCTION("`()", f_cval_func, tFunc(tMix,tMix), 0);
-  ADD_FUNCTION("``+", f_cval_radd, tFunc(tMix,tMix), 0);
-  ADD_FUNCTION("``-", f_cval_rminus, tFunc(tMix,tMix), 0);
-  ADD_FUNCTION("``&", f_cval_rand, tFunc(tMix,tMix), 0);
-  ADD_FUNCTION("``|", f_cval_ror, tFunc(tMix,tMix), 0);
-  ADD_FUNCTION("``^", f_cval_rxor, tFunc(tMix,tMix), 0);
-  ADD_FUNCTION("``<<", f_cval_rlsh, tFunc(tMix,tMix), 0);
-  ADD_FUNCTION("``>>", f_cval_rrsh, tFunc(tMix,tMix), 0);
-  ADD_FUNCTION("``*", f_cval_rmultiply, tFunc(tMix,tMix), 0);
-  ADD_FUNCTION("``/", f_cval_rdivide, tFunc(tMix,tMix), 0);
-  ADD_FUNCTION("``%", f_cval_rmod, tFunc(tMix,tMix), 0);
+  ADD_FUNCTION("`()", f_cval_func, tFunc(tMix,tMix), ID_PROTECTED);
+  ADD_FUNCTION("``+", f_cval_radd, tFunc(tMix,tMix), ID_PROTECTED);
+  ADD_FUNCTION("``-", f_cval_rminus, tFunc(tMix,tMix), ID_PROTECTED);
+  ADD_FUNCTION("``&", f_cval_rand, tFunc(tMix,tMix), ID_PROTECTED);
+  ADD_FUNCTION("``|", f_cval_ror, tFunc(tMix,tMix), ID_PROTECTED);
+  ADD_FUNCTION("``^", f_cval_rxor, tFunc(tMix,tMix), ID_PROTECTED);
+  ADD_FUNCTION("``<<", f_cval_rlsh, tFunc(tMix,tMix), ID_PROTECTED);
+  ADD_FUNCTION("``>>", f_cval_rrsh, tFunc(tMix,tMix), ID_PROTECTED);
+  ADD_FUNCTION("``*", f_cval_rmultiply, tFunc(tMix,tMix), ID_PROTECTED);
+  ADD_FUNCTION("``/", f_cval_rdivide, tFunc(tMix,tMix), ID_PROTECTED);
+  ADD_FUNCTION("``%", f_cval_rmod, tFunc(tMix,tMix), ID_PROTECTED);
 /*   ADD_FUNCTION("`+=", f_cval_inc, tFunc(tMix,tMix), 0); */
 /*   ADD_FUNCTION("_is_type", f_cval__is_type, tFunc(tMix,tMix), 0); */
-  ADD_FUNCTION("_sprintf", f_cval__sprintf, tFunc(tMix,tMix), 0);
+  ADD_FUNCTION("_sprintf", f_cval__sprintf, tFunc(tInt tMapping, tString),
+               ID_PROTECTED);
 /*   ADD_FUNCTION("_equal", f_cval__equal, tFunc(tMix,tMix), 0); */
 /*   ADD_FUNCTION("_m_delete", f_cval__m_delete, tFunc(tMix,tMix), 0); */
 
@@ -1933,26 +1894,25 @@ PIKE_MODULE_INIT
 
   start_new_program();
   ADD_STORAGE(struct cobj_storage);
-  ADD_FUNCTION("create", f_cobj_create, tFunc(tStr,tVoid), 0);
+  ADD_FUNCTION("create", f_cobj_create, tFunc(tStr,tVoid),
+               ID_PROTECTED);
   ADD_FUNCTION("get_prop", f_cobj_getprop, tFunc(tStr,tMix), 0);
   ADD_FUNCTION("set_prop", f_cobj_setprop, tFunc(tStr tMix,tMix), 0);
   ADD_FUNCTION("call_method", f_cobj_call_method, tFunc(tStr,tMix), 0);
-  ADD_FUNCTION("`->", f_cobj_arrow, tFunc(tStr,tMix), 0);
-  ADD_FUNCTION("`->=", f_cobj_arrow_assign, tFunc(tStr tMix,tMix), 0);
-  ADD_FUNCTION("_sprintf", f_cobj__sprintf, tFunc(tMix,tMix), 0);
-  ADD_FUNCTION("_indices", f_cobj__indices, tFunc(tVoid,tMix), 0);
+  ADD_FUNCTION("`->", f_cobj_arrow, tFunc(tStr,tMix),
+               ID_PROTECTED);
+  ADD_FUNCTION("`->=", f_cobj_arrow_assign, tFunc(tStr tMix,tMix),
+               ID_PROTECTED);
+  ADD_FUNCTION("_sprintf", f_cobj__sprintf, tFunc(tInt tMapping, tStr),
+               ID_PROTECTED);
+  ADD_FUNCTION("_indices", f_cobj__indices, tFunc(tVoid,tMix),
+               ID_PROTECTED);
 
   set_init_callback(init_cobj_struct);
   set_exit_callback(exit_cobj_struct);
   cobj_program = end_program();
 /*   add_program_constant("cobj", cobj_program = end_program(), 0); */
   cobj_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;
-
-#ifdef USE_COM_PROG
-  start_new_program();
-  ADD_STORAGE(struct com_storage);
-  ADD_FUNCTION("create", f_create, tFunc(tOr(tStr,tVoid),tVoid), 0);
-#endif /* USE_COM_PROG */
 
 /*   ADD_FUNCTION("get_version", f_get_version, tFunc(tVoid,tInt), 0); */
 /*   ADD_FUNCTION("get_nt_systeminfo", f_get_nt_systeminfo, */
@@ -1963,19 +1923,8 @@ PIKE_MODULE_INIT
   ADD_FUNCTION("GetTypeInfo", f_get_typeinfo, tFunc(tObj,tMix), 0);
   ADD_FUNCTION("GetConstants", f_get_constants,
                tFunc(tOr(tObj,tStr),tMapping), 0);
-  ADD_FUNCTION("_sprintf", f_com__sprintf, tFunc(tMix,tMix), 0);
-
-#ifdef USE_COM_PROG
-  set_init_callback(init_com_struct);
-  set_exit_callback(exit_com_struct);
-/* #ifdef _REENTRANT */
-/*   set_gc_check_callback(com_gc_check); */
-/*   set_gc_recurse_callback(com_gc_recurse); */
-/* #endif /\* _REENTRANT *\/ */
-
-  add_program_constant("com", com_program = end_program(), 0);
-  com_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;
-#endif /* USE_COM_PROG */
+  ADD_FUNCTION("_sprintf", f_com__sprintf, tFunc(tInt tMapping, tStr),
+               ID_PROTECTED);
 
 #endif /* HAVE_COM */
 }
@@ -1983,12 +1932,6 @@ PIKE_MODULE_INIT
 PIKE_MODULE_EXIT
 {
 #ifdef HAVE_COM
-#ifdef USE_COM_PROG
-  if (com_program) {
-    free_program(com_program);
-    com_program=NULL;
-  }
-#endif /* USE_COM_PROG */
   if (cobj_program) {
     free_program(cobj_program);
     cobj_program=NULL;
