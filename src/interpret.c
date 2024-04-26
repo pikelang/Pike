@@ -135,7 +135,8 @@ void gc_mark_stack_external (struct pike_frame *f,
 {
   for (; f; f = f->next)
     GC_ENTER (f, T_PIKE_FRAME) {
-      if (!debug_gc_check (f, " as frame on stack")) {
+      if (!debug_gc_check (f, " as frame on stack") &&
+          f->current_object && f->current_program) {
 	gc_mark_external (f->current_object, " in current_object in frame on stack");
 	gc_mark_external (f->current_program, " in current_program in frame on stack");
 	if (f->locals) {		/* Check really needed? */
@@ -2047,7 +2048,8 @@ static int num_pike_frames;
 
 PMOD_EXPORT void really_free_pike_frame( struct pike_frame *X )
 {
-    free_object(X->current_object);
+    if (X->current_object)
+        free_object(X->current_object);
     if(X->current_program)
         free_program(X->current_program);
     if(X->scope)

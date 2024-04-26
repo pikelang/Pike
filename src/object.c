@@ -223,17 +223,17 @@ PMOD_EXPORT struct object *low_clone(struct program *p)
     add_ref(pike_frame->current_program);	\
   }while(0)
 
-#define LOW_SET_FRAME_CONTEXT(X)					     \
-  pike_frame->context=(X);						     \
-  pike_frame->fun = FUNCTION_BUILTIN;					\
-  pike_frame->current_storage=o->storage+pike_frame->context->storage_offset
+#define LOW_SET_FRAME_CONTEXT(X)					\
+  Pike_fp->context = (X);						\
+  Pike_fp->fun = FUNCTION_BUILTIN;					\
+  Pike_fp->current_storage = o->storage + Pike_fp->context->storage_offset
 
 #define SET_FRAME_CONTEXT(X)						\
   LOW_SET_FRAME_CONTEXT(X)
   
 #define LOW_UNSET_FRAME_CONTEXT()		\
-  pike_frame->context = NULL;			\
-  pike_frame->current_storage = NULL
+  Pike_fp->context = NULL;			\
+  Pike_fp->current_storage = NULL
   
 
 #ifdef DEBUG
@@ -2337,7 +2337,7 @@ PMOD_EXPORT void gc_mark_object_as_referenced(struct object *o)
 	  if(PARENT_INFO(o)->parent)
 	    gc_mark_object_as_referenced(PARENT_INFO(o)->parent);
 
-	LOW_PUSH_FRAME(o, p);
+        GC_SET_CALL_FRAME(o, p);
 
 	for(e=p->num_inherits-1; e>=0; e--)
 	{
@@ -2345,10 +2345,10 @@ PMOD_EXPORT void gc_mark_object_as_referenced(struct object *o)
       
 	  LOW_SET_FRAME_CONTEXT(p->inherits + e);
 
-	  for(q=0;q<(int)pike_frame->context->prog->num_variable_index;q++)
+          for(q=0;q<(int)Pike_fp->context->prog->num_variable_index;q++)
 	  {
-	    int d=pike_frame->context->prog->variable_index[q];
-	    struct identifier *id = pike_frame->context->prog->identifiers + d;
+            int d = Pike_fp->context->prog->variable_index[q];
+            struct identifier *id = Pike_fp->context->prog->identifiers + d;
 	    int id_flags = id->identifier_flags;
 	    int rtt = id->run_time_type;
 
@@ -2359,14 +2359,14 @@ PMOD_EXPORT void gc_mark_object_as_referenced(struct object *o)
 	    if(rtt == T_MIXED)
 	    {
 	      struct svalue *s;
-	      s=(struct svalue *)(pike_frame->current_storage + id->func.offset);
+              s=(struct svalue *)(Pike_fp->current_storage + id->func.offset);
 	      dmalloc_touch_svalue(s);
 	      if ((TYPEOF(*s) != T_OBJECT && TYPEOF(*s) != T_FUNCTION) ||
 		  s->u.object != o || !(id_flags & IDENTIFIER_NO_THIS_REF))
 		gc_mark_svalues(s, 1);
 	    }else{
 	      union anything *u;
-	      u=(union anything *)(pike_frame->current_storage + id->func.offset);
+              u=(union anything *)(Pike_fp->current_storage + id->func.offset);
 #ifdef DEBUG_MALLOC
 	      if (REFCOUNTED_TYPE(rtt)) debug_malloc_touch(u->refs);
 #endif
@@ -2376,13 +2376,13 @@ PMOD_EXPORT void gc_mark_object_as_referenced(struct object *o)
 	    }
 	  }
 
-	  if(pike_frame->context->prog->event_handler)
-	    pike_frame->context->prog->event_handler(PROG_EVENT_GC_RECURSE);
+          if (Pike_fp->context->prog->event_handler)
+            Pike_fp->context->prog->event_handler(PROG_EVENT_GC_RECURSE);
 
 	  LOW_UNSET_FRAME_CONTEXT();
 	}
 
-	LOW_POP_FRAME();
+        GC_UNSET_CALL_FRAME();
       }
     } GC_LEAVE;
   }
@@ -2403,7 +2403,7 @@ PMOD_EXPORT void real_gc_cycle_check_object(struct object *o, int weak)
       if (!o2) Pike_fatal("Object not on gc_internal_object list.\n");
 #endif
 
-      LOW_PUSH_FRAME(o, p);
+      GC_SET_CALL_FRAME(o, p);
 
       for(e=p->num_inherits-1; e>=0; e--)
       {
@@ -2411,10 +2411,10 @@ PMOD_EXPORT void real_gc_cycle_check_object(struct object *o, int weak)
       
 	LOW_SET_FRAME_CONTEXT(p->inherits + e);
 
-	for(q=0;q<(int)pike_frame->context->prog->num_variable_index;q++)
+        for(q=0;q<(int)Pike_fp->context->prog->num_variable_index;q++)
 	{
-	  int d=pike_frame->context->prog->variable_index[q];
-	  struct identifier *id = pike_frame->context->prog->identifiers + d;
+          int d = Pike_fp->context->prog->variable_index[q];
+          struct identifier *id = Pike_fp->context->prog->identifiers + d;
 	  int id_flags = id->identifier_flags;
 	  int rtt = id->run_time_type;
 	
@@ -2425,14 +2425,14 @@ PMOD_EXPORT void real_gc_cycle_check_object(struct object *o, int weak)
 	  if(rtt == T_MIXED)
 	  {
 	    struct svalue *s;
-	    s=(struct svalue *)(pike_frame->current_storage + id->func.offset);
+            s=(struct svalue *)(Pike_fp->current_storage + id->func.offset);
 	    dmalloc_touch_svalue(s);
 	    if ((TYPEOF(*s) != T_OBJECT && TYPEOF(*s) != T_FUNCTION) ||
 		s->u.object != o || !(id_flags & IDENTIFIER_NO_THIS_REF))
 	      gc_cycle_check_svalues(s, 1);
 	  }else{
 	    union anything *u;
-	    u=(union anything *)(pike_frame->current_storage + id->func.offset);
+            u=(union anything *)(Pike_fp->current_storage + id->func.offset);
 #ifdef DEBUG_MALLOC
 	    if (REFCOUNTED_TYPE(rtt)) debug_malloc_touch(u->refs);
 #endif
@@ -2442,13 +2442,13 @@ PMOD_EXPORT void real_gc_cycle_check_object(struct object *o, int weak)
 	  }
 	}
 
-	if(pike_frame->context->prog->event_handler)
-	  pike_frame->context->prog->event_handler(PROG_EVENT_GC_RECURSE);
+        if (Pike_fp->context->prog->event_handler)
+          Pike_fp->context->prog->event_handler(PROG_EVENT_GC_RECURSE);
 
 	LOW_UNSET_FRAME_CONTEXT();
       }
     
-      LOW_POP_FRAME();
+      GC_UNSET_CALL_FRAME();
 
       /* Even though it's essential that the program isn't freed
        * before the object, it doesn't need a strong link. That since
@@ -2478,17 +2478,17 @@ static void gc_check_object(struct object *o)
       if(p->flags & PROGRAM_USES_PARENT && PARENT_INFO(o)->parent)
 	debug_gc_check (PARENT_INFO(o)->parent, " as parent of an object");
 
-      LOW_PUSH_FRAME(o, p);
+      GC_SET_CALL_FRAME(o, p);
     
       for(e=p->num_inherits-1; e>=0; e--)
       {
 	int q;
 	LOW_SET_FRAME_CONTEXT(p->inherits + e);
 
-	for(q=0;q<(int)pike_frame->context->prog->num_variable_index;q++)
+        for(q=0;q<(int)Pike_fp->context->prog->num_variable_index;q++)
 	{
-	  int d=pike_frame->context->prog->variable_index[q];
-	  struct identifier *id = pike_frame->context->prog->identifiers + d;
+          int d = Pike_fp->context->prog->variable_index[q];
+          struct identifier *id = Pike_fp->context->prog->identifiers + d;
 	  int id_flags = id->identifier_flags;
 	  int rtt = id->run_time_type;
 	
@@ -2499,14 +2499,14 @@ static void gc_check_object(struct object *o)
 	  if(rtt == T_MIXED)
 	  {
 	    struct svalue *s;
-	    s=(struct svalue *)(pike_frame->current_storage + id->func.offset);
+            s=(struct svalue *)(Pike_fp->current_storage + id->func.offset);
 	    dmalloc_touch_svalue(s);
 	    if ((TYPEOF(*s) != T_OBJECT && TYPEOF(*s) != T_FUNCTION) ||
 		s->u.object != o || !(id_flags & IDENTIFIER_NO_THIS_REF))
 	      gc_check_svalues(s, 1);
 	  }else{
 	    union anything *u;
-	    u=(union anything *)(pike_frame->current_storage + id->func.offset);
+            u=(union anything *)(Pike_fp->current_storage + id->func.offset);
 #ifdef DEBUG_MALLOC
 	    if (REFCOUNTED_TYPE(rtt)) debug_malloc_touch(u->refs);
 #endif
@@ -2516,12 +2516,13 @@ static void gc_check_object(struct object *o)
 	  }
 	}
       
-	if(pike_frame->context->prog->event_handler)
-	  pike_frame->context->prog->event_handler(PROG_EVENT_GC_CHECK);
+        if(Pike_fp->context->prog->event_handler)
+          Pike_fp->context->prog->event_handler(PROG_EVENT_GC_CHECK);
 
 	LOW_UNSET_FRAME_CONTEXT();
       }
-      LOW_POP_FRAME();
+
+      GC_UNSET_CALL_FRAME();
     }
   } GC_LEAVE;
 }
