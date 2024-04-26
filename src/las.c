@@ -1188,7 +1188,8 @@ node *debug_mkexternalnode(struct program *parent_prog, int i)
     }else{
       res->node_info = OPT_NOT_CONST;
       if (IDENTIFIER_IS_VARIABLE(id->identifier_flags) &&
-	  (id->run_time_type == PIKE_T_GET_SET)) {
+          (id->run_time_type == PIKE_T_GET_SET) &&
+          (PTR_FROM_INT(parent_prog, i)->id_flags & ID_LOCAL)) {
 	/* Special case of F_EXTERNAL for ease of detection. */
 	res->token = F_GET_SET;
       }
