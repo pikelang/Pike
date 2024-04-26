@@ -1,1 +1,10 @@
-
+START_MARKER
+cond_resolv(COM.CreateObject, [[
+  test_true([[
+    stringp(COM.CreateObject("WinNTSystemInfo")->UserName->_value);
+  ]])
+  test_true([[
+    sizeof(indices(COM.CreateObject("Microsoft.Update.SystemInfo.1")));
+  ]])
+]])
+END_MARKER

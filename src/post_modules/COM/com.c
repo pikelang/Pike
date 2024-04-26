@@ -115,14 +115,14 @@ static void stack_swap2(int args)
 
 static void com_throw_error(HRESULT hr)
 {
-  LPVOID lpMsgBuf;
-  FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER |
-                FORMAT_MESSAGE_FROM_SYSTEM |
-                FORMAT_MESSAGE_IGNORE_INSERTS, NULL, hr,
-                MAKELANGID(LANG_NEUTRAL,
-                           SUBLANG_DEFAULT),(LPTSTR) &lpMsgBuf,
-                0, NULL);
-  push_text(lpMsgBuf);
+  LPWSTR lpMsgBuf;
+  FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER |
+                 FORMAT_MESSAGE_FROM_SYSTEM |
+                 FORMAT_MESSAGE_IGNORE_INSERTS, NULL, hr,
+                 MAKELANGID(LANG_NEUTRAL,
+                            SUBLANG_DEFAULT), (void *)&lpMsgBuf,
+                 0, NULL);
+  push_utf16_text(lpMsgBuf);
   LocalFree(lpMsgBuf);
   Pike_error("Com Error: %pS\n", Pike_sp[-1].u.string);
 }
@@ -131,11 +131,10 @@ static void com_throw_error2(HRESULT hr, EXCEPINFO excep)
 {
   if (hr==DISP_E_EXCEPTION && excep.bstrDescription)
   {
-    char errDesc[512];
-    wcstombs(errDesc, excep.bstrDescription, 512);
-    Pike_error("Server Error: Run-time error %d:\n\n %s\n",
+    push_utf16_text(excep.bstrDescription);
+    Pike_error("Server Error: Run-time error %d:\n\n %pS\n",
 	       excep.scode & 0x0000FFFF,  //Lower 16-bits of SCODE
-	       errDesc);                  //Text error description
+               Pike_sp[-1].u.string);     //Text error description
   }
   else
     com_throw_error(hr);
@@ -146,8 +145,6 @@ static void com_throw_error2(HRESULT hr, EXCEPINFO excep)
 
 static void set_variant_arg(VARIANT *v, struct svalue *sv)
 {
-  PCHARP pchar;
-
   VariantInit(v);
 
   switch(TYPEOF(*sv))
@@ -173,12 +170,13 @@ static void set_variant_arg(VARIANT *v, struct svalue *sv)
       break;
 
     case PIKE_T_STRING:
-      pchar = MKPCHARP(malloc(sv->u.string->len * 2 + 2), 1);
-      pike_string_cpy(pchar, sv->u.string);
-      SET_INDEX_PCHARP(pchar, sv->u.string->len, 0);
+      /* Convert it to UTF16 in native byte-order. */
+      ref_push_string(sv->u.string);
+      push_int(2);
+      f_string_to_unicode(2);
       v->vt = VT_BSTR;
-      v->bstrVal = SysAllocString((OLECHAR *)pchar.ptr);
-      free(pchar.ptr);
+      v->bstrVal = SysAllocString((OLECHAR *)STR0(Pike_sp[-1].u.string));
+      pop_stack();
       break;
 
     case PIKE_T_OBJECT:
@@ -831,7 +829,7 @@ static void f_cval__sprintf(INT32 args)
   {
     case 'O':
       init_string_builder(&s, 0);
-      string_builder_sprintf(&s, "Com.cval(\"%s\" %d %x)",
+      string_builder_sprintf(&s, "Com.cval(%pq %d %x)",
 			     cval->method, cval->dispid, cval->pIDispatch);
       push_string(finish_string_builder(&s));
       stack_pop_n_elems_keep_top(args);
@@ -898,16 +896,16 @@ static void f_cobj_create(INT32 args)
   HRESULT hr;
   CLSID clsid;
   struct pike_string *progID;
-  PCHARP progID2;
 
   if (args > 0)
   {
     get_all_args(NULL, args, "%t", &progID);
-    progID2 = MKPCHARP(malloc(progID->len * 2 + 2), 1);
-    pike_string_cpy(progID2, progID);
-    SET_INDEX_PCHARP(progID2, progID->len, 0);
+    ref_push_string(progID);
+    push_int(2);
+    f_string_to_unicode(2);
 
-    hr = CLSIDFromProgID((OLECHAR *)progID2.ptr, &clsid);
+    hr = CLSIDFromProgID((OLECHAR *)STR0(Pike_sp[-1].u.string), &clsid);
+    pop_stack();
     if (!SUCCEEDED(hr))
     {
       pop_n_elems(args);
@@ -966,19 +964,18 @@ static void f_cobj_getprop(INT32 args)
   UINT argErr;
   HRESULT hr;
   struct pike_string *prop;
-  PCHARP propU;
 
   get_all_args(NULL, args, "%t", &prop);
-  propU = MKPCHARP(malloc(prop->len * 2 + 2), 1);
-  pike_string_cpy(propU, prop);
-  SET_INDEX_PCHARP(propU, prop->len, 0);
+  ref_push_string(prop);
+  push_int(2);
+  f_string_to_unicode(2);
 
   create_variant_arg(0, &dpar);
   VariantInit(&res);
-  hr = invoke(cobj, (OLECHAR *)propU.ptr, DISPATCH_PROPERTYGET, dpar,
-              &res, &exc, &argErr);
+  hr = invoke(cobj, (OLECHAR *)STR0(Pike_sp[-1].u.string),
+              DISPATCH_PROPERTYGET, dpar, &res, &exc, &argErr);
   free_variant_arg(&dpar);
-  free(propU.ptr);
+  pop_stack();
 
   if (FAILED(hr))
   {
@@ -1007,7 +1004,6 @@ static void f_cobj_setprop(INT32 args)
   UINT argErr;
   HRESULT hr;
   struct pike_string *prop;
-  PCHARP propU;
 
   if (args!=2)
     Pike_error("Incorrect number of arguments to set_prop.\n");
@@ -1016,16 +1012,18 @@ static void f_cobj_setprop(INT32 args)
     Pike_error("Bad argument 1 to set_prop.\n");
 
   prop = Pike_sp[-args].u.string;
-  propU = MKPCHARP(malloc(prop->len * 2 + 2), 1);
-  pike_string_cpy(propU, prop);
-  SET_INDEX_PCHARP(propU, prop->len, 0);
 
   create_variant_arg(args-1, &dpar);
   VariantInit(&res);
-  hr = invoke(cobj, (OLECHAR *)propU.ptr, DISPATCH_PROPERTYPUT, dpar,
-              &res, &exc, &argErr);
+
+  ref_push_string(prop);
+  push_int(2);
+  f_string_to_unicode(2);
+
+  hr = invoke(cobj, (OLECHAR *)STR0(Pike_sp[-1].u.string),
+              DISPATCH_PROPERTYPUT, dpar, &res, &exc, &argErr);
   free_variant_arg(&dpar);
-  free(propU.ptr);
+  pop_stack();
 
   if (FAILED(hr))
   {
@@ -1051,7 +1049,6 @@ static void f_cobj_call_method(INT32 args)
   UINT argErr;
   HRESULT hr;
   struct pike_string *prop;
-  PCHARP propU;
 
   if (args<1)
     Pike_error("Incorrect number of arguments to call_method.\n");
@@ -1060,16 +1057,18 @@ static void f_cobj_call_method(INT32 args)
     Pike_error("Bad argument 1 to call_method.\n");
 
   prop = Pike_sp[-args].u.string;
-  propU = MKPCHARP(malloc(prop->len * 2 + 2), 1);
-  pike_string_cpy(propU, prop);
-  SET_INDEX_PCHARP(propU, prop->len, 0);
 
   create_variant_arg(args-1, &dpar);
   VariantInit(&res);
-  hr = invoke(cobj, (OLECHAR *)propU.ptr, DISPATCH_METHOD, dpar,
-              &res, &exc, &argErr);
+
+  ref_push_string(prop);
+  push_int(2);
+  f_string_to_unicode(2);
+
+  hr = invoke(cobj, (OLECHAR *)STR0(Pike_sp[-1].u.string),
+              DISPATCH_METHOD, dpar, &res, &exc, &argErr);
   free_variant_arg(&dpar);
-  free(propU.ptr);
+  pop_stack();
 
   if (FAILED(hr))
   {
@@ -1090,10 +1089,9 @@ static void f_cobj_arrow(INT32 args)
 {
   struct cobj_storage *cobj = THIS_COBJ;
   struct svalue *cval_prog;
+  struct pike_string *raw_method;
 
-  if (args<1 || TYPEOF(Pike_sp[-args]) != PIKE_T_STRING ||
-     args>1)
-    Pike_error("Bad args to `->.");
+  get_all_args(NULL, args, "%t", &raw_method);
 
   cval_prog = low_mapping_lookup(cobj->method_map, &Pike_sp[-args]);
 
@@ -1107,19 +1105,15 @@ static void f_cobj_arrow(INT32 args)
     DISPID dispid;
     HRESULT hr;
     struct pike_string *method;
-    OLECHAR method2[MAX_PATH+1];
-    PCHARP  tmp;
 
-    method = Pike_sp[-args].u.string;
+    ref_push_string(raw_method);
+    push_int(2);
+    f_string_to_unicode(2);
+    method = Pike_sp[-1].u.string;
 
-    if (method->len > MAX_PATH)
-      Pike_error("Bad argument to `->: String too long\n");
-    tmp = MKPCHARP((char *)method2, 1);
-    pike_string_cpy(tmp, method);
-    SET_INDEX_PCHARP(tmp, method->len, 0);
-
+    /* NB: The following requires method->str to be a char *, NOT a char[]! */
     hr = cobj->pIDispatch->lpVtbl->
-      GetIDsOfNames(cobj->pIDispatch, &IID_NULL, (OLECHAR **)&tmp.ptr, 1,
+      GetIDsOfNames(cobj->pIDispatch, &IID_NULL, (OLECHAR **)&method->str, 1,
                     GetUserDefaultLCID(), &dispid);
 
     if (FAILED(hr))
@@ -1133,9 +1127,9 @@ static void f_cobj_arrow(INT32 args)
       cv->pIDispatch = cobj->pIDispatch;
       cv->pIDispatch->lpVtbl->AddRef(cv->pIDispatch);
       cv->dispid = dispid;
-      copy_shared_string(cv->method, method);
+      copy_shared_string(cv->method, raw_method);	/* Is this used? */
       push_object(oo);
-      mapping_string_insert(cobj->method_map, method, &Pike_sp[-1]);
+      mapping_string_insert(cobj->method_map, raw_method, &Pike_sp[-1]);
     }
     else {
       free_object(oo);
@@ -1331,7 +1325,7 @@ static void f_cobj__indices(INT32 args)
 /*   } */
 /* } */
 
-/*! @decl object CreateObject(string prog_id)
+/*! @decl CObj CreateObject(string prog_id)
  */
 static void f_create_object(INT32 args)
 {
@@ -1339,17 +1333,16 @@ static void f_create_object(INT32 args)
   HRESULT hr;
   CLSID clsid;
   struct pike_string *progID;
-  PCHARP progID2;
   IDispatch *pDispatch;
 
   get_all_args(NULL, args, "%t", &progID);
 
-  progID2 = MKPCHARP(malloc(progID->len * 2 + 2), 1);
-  pike_string_cpy(progID2, progID);
-  SET_INDEX_PCHARP(progID2, progID->len, 0);
+  ref_push_string(progID);
+  push_int(2);
+  f_string_to_unicode(2);
 
-  hr = CLSIDFromProgID((OLECHAR *)progID2.ptr, &clsid);
-  free(progID2.ptr);
+  hr = CLSIDFromProgID((OLECHAR *)STR0(Pike_sp[-1].u.string), &clsid);
+  pop_stack();
 
   if (FAILED(hr))
   {
@@ -1388,48 +1381,27 @@ static void f_create_object(INT32 args)
 static void f_get_object(INT32 args)
 {
   struct object      *oo;
-  struct pike_string *progID;
-  struct pike_string *filename;
+  struct pike_string *progID = NULL;
+  struct pike_string *filename = NULL;
   HRESULT    hr;
   CLSID      clsid;
-  PCHARP     progID2;
-  OLECHAR    filename2[MAX_PATH+1];
   int        type = 0;
   IDispatch *pDispatch;
 
-  if (args < 1 || args > 2 || (args == 1 && UNSAFE_IS_ZERO(&Pike_sp[-args])))
+  get_all_args(NULL, args, ".%t%t", &filename, &progID);
+
+  if (!filename && !progID)
     Pike_error("Incorrect number of arguments to GetObject.\n");
 
-  if (args >= 1 && !UNSAFE_IS_ZERO(&Pike_sp[-args]))
-  {
-    PCHARP     tmp;
-    type += 0x1;
-
-    if (TYPEOF(Pike_sp[-args]) != PIKE_T_STRING)
-      Pike_error("Bad argument 1 to GetObject\n");
-    filename = Pike_sp[-args].u.string;
-
-    if (filename->len > MAX_PATH)
-      Pike_error("Bad argument 1 to GetObject: Too large\n");
-    tmp = MKPCHARP((char *)filename2, 1);
-    pike_string_cpy(tmp, filename);
-    SET_INDEX_PCHARP(tmp, filename->len, 0);
-  }
-
-  if (args >= 2 && !UNSAFE_IS_ZERO(&Pike_sp[1-args]))
-  {
+  if (progID) {
     type += 0x2;
 
-    if (TYPEOF(Pike_sp[1-args]) != PIKE_T_STRING)
-      Pike_error("Bad argument 2 to GetObject\n");
-    progID = Pike_sp[1-args].u.string;
+    ref_push_string(progID);
+    push_int(2);
+    f_string_to_unicode(2);
 
-    progID2 = MKPCHARP(malloc(progID->len * 2 + 2), 1);
-    pike_string_cpy(progID2, progID);
-    SET_INDEX_PCHARP(progID2, progID->len, 0);
-
-    hr = CLSIDFromProgID((OLECHAR *)progID2.ptr, &clsid);
-    free(progID2.ptr);
+    hr = CLSIDFromProgID((OLECHAR *)STR0(Pike_sp[-1].u.string), &clsid);
+    pop_stack();
 
     if (FAILED(hr))
     {
@@ -1437,6 +1409,14 @@ static void f_get_object(INT32 args)
       push_int(0);
       return;
     }
+  }
+
+  if (filename) {
+    type += 0x1;
+
+    ref_push_string(filename);
+    push_int(2);
+    f_string_to_unicode(2);
   }
 
   switch (type)
@@ -1452,7 +1432,10 @@ static void f_get_object(INT32 args)
         if (FAILED(hr))
           com_throw_error(hr);
 
-        hr = MkParseDisplayName(pbc, filename2, &cEaten, &pmk);
+        hr = MkParseDisplayName(pbc, (p_wchar1 *)STR0(Pike_sp[-1].u.string),
+                                &cEaten, &pmk);
+        pop_stack();
+
         if (FAILED(hr))
         {
           pbc->lpVtbl->Release(pbc);
@@ -1502,20 +1485,22 @@ static void f_get_object(INT32 args)
 
         if (FAILED(hr))
         {
-          pop_n_elems(args);
+          pop_n_elems(args + 1);
           push_int(0);
           return;
         }
 
-        if (FAILED(hr = pPF->lpVtbl->Load(pPF, filename2, 0)) ||
+        if (FAILED(hr = pPF->lpVtbl->Load(pPF, (p_wchar1 *)STR0(Pike_sp[-1].u.string), 0)) ||
             FAILED(hr = pPF->lpVtbl->QueryInterface(pPF, &IID_IDispatch,
                                                     (void **)&pDispatch)) )
         {
           pPF->lpVtbl->Release(pPF);
-          pop_n_elems(args);
+          pop_n_elems(args + 1);
           push_int(0);
           return;
         }
+
+        pop_stack();
 
         pPF->lpVtbl->Release(pPF);
       }
@@ -1727,16 +1712,12 @@ static void f_get_constants(INT32 args)
   if (TYPEOF(Pike_sp[-args]) == PIKE_T_STRING)
   {
     /* String */
-    char *to_free = NULL;
-    OLECHAR *typelib = NULL;
+    ref_push_string(Pike_sp[-args].u.string);
+    push_int(2);
+    f_string_to_unicode(2);
 
-    typelib = require_wstring1(Pike_sp[-args].u.string, &to_free);
-    if (!typelib)
-      Pike_error("Bad argument 1 for Com->GetConstants().\n");
-
-    hr = LoadTypeLib(typelib, &ptlib);
-    if (to_free)
-      free(to_free);
+    hr = LoadTypeLib((p_wchar1 *)STR0(Pike_sp[-1].u.string), &ptlib);
+    pop_stack();
 
     if (FAILED(hr))
     {
