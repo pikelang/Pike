@@ -125,6 +125,59 @@ extern int gc_keep_markers;
 } while(0)
 #endif
 
+#define ADD_GC_CALL_FRAME() do {                          \
+    struct pike_frame *pike_frame = alloc_pike_frame();   \
+    DO_IF_PROFILING(pike_frame->children_base =           \
+                    Pike_interpreter.accounted_time);     \
+    DO_IF_PROFILING(pike_frame->start_time =              \
+                    get_cpu_time() -                      \
+                    Pike_interpreter.unlocked_time);      \
+    W_PROFILING_DEBUG("%p{: Push at %" PRINT_CPU_TIME     \
+                      " %" PRINT_CPU_TIME "\n",           \
+                      Pike_interpreter.thread_state,      \
+                      pike_frame->start_time,             \
+                      pike_frame->children_base);         \
+    pike_frame->next = Pike_fp;                           \
+    pike_frame->current_object = NULL;                    \
+    pike_frame->current_program = NULL;                   \
+    pike_frame->locals = 0;                               \
+    pike_frame->num_locals = 0;                           \
+    pike_frame->fun = FUNCTION_BUILTIN;                   \
+    pike_frame->pc = 0;                                   \
+    pike_frame->context = NULL;                           \
+    Pike_fp = pike_frame;                                 \
+  } while(0)
+
+#define GC_ASSERT_ZAPPED_CALL_FRAME() do {            \
+    DO_IF_DEBUG(if (Pike_fp->current_object) {        \
+        Pike_fatal("Pike_fp->current_object: %p\n",   \
+                   Pike_fp->current_object);          \
+      }                                               \
+      if (Pike_fp->current_program) {                 \
+        Pike_fatal("Pike_fp->current_program: %p\n",  \
+                   Pike_fp->current_program);         \
+      })                                              \
+  } while(0)
+
+#define GC_SET_CALL_FRAME(O, P) do {                         \
+    struct object *gc_save_obj = Pike_fp->current_object;    \
+    struct program *gc_save_prog = Pike_fp->current_program; \
+    Pike_fp->current_object = (O);                           \
+    Pike_fp->current_program = (P);                          \
+
+#define GC_UNSET_CALL_FRAME() \
+    Pike_fp->current_object = gc_save_obj;              \
+    Pike_fp->current_program = gc_save_prog;            \
+  } while(0)
+
+#define GC_POP_CALL_FRAME() do {                      \
+    struct pike_frame *pike_frame = Pike_fp;          \
+    GC_ASSERT_ZAPPED_CALL_FRAME();                    \
+    Pike_fp = pike_frame->next;                       \
+    pike_frame->next = NULL;                          \
+    free_pike_frame(pike_frame);                      \
+  } while(0)
+
 #ifdef PIKE_DEBUG
 
 /* Use this when reallocating a block that you've used any gc_check or

@@ -2077,6 +2077,9 @@ PMOD_EXPORT void locate_references(void *a)
 {
   int tmp, orig_in_gc = Pike_in_gc;
   const char *orig_gc_found_place = gc_found_place;
+
+  ADD_GC_CALL_FRAME();
+
   Pike_in_gc = GC_PASS_LOCATE;
   gc_found_place = NULL;
 
@@ -2101,6 +2104,8 @@ PMOD_EXPORT void locate_references(void *a)
     gc_check_all_types();
   } GC_LEAVE;
 
+  GC_ASSERT_ZAPPED_CALL_FRAME();
+
 #ifdef DEBUG_MALLOC
   {
     extern void dmalloc_find_references_to(void *);
@@ -2116,6 +2121,9 @@ PMOD_EXPORT void locate_references(void *a)
 
   Pike_in_gc = orig_in_gc;
   gc_found_place = orig_gc_found_place;
+
+  GC_POP_CALL_FRAME();
+
   d_flag=tmp;
 }
 
@@ -3508,6 +3516,8 @@ size_t do_gc(int explicit_call)
     Pike_fatal("Panic, less than zero objects!\n");
 #endif
 
+  ADD_GC_CALL_FRAME();		/* Placeholder frame for gc_check_object(). */
+
   last_gc=time(0);
   start_num_objs = num_objects;
   start_allocs = num_allocs;
@@ -3537,6 +3547,8 @@ size_t do_gc(int explicit_call)
     GC_VERBOSE_DO(fprintf(stderr, "| pretouch: %u things\n", n));
   }
 
+  GC_ASSERT_ZAPPED_CALL_FRAME();
+
   /* First we count internal references */
   Pike_in_gc=GC_PASS_CHECK;
   gc_ext_weak_refs = 0;
@@ -3560,6 +3572,8 @@ size_t do_gc(int explicit_call)
   GC_VERBOSE_DO(fprintf(stderr, "| check: %u references in %d things, "
 			"counted %"PRINTSIZET"u weak refs\n",
 			checked, num_objects, gc_ext_weak_refs));
+
+  GC_ASSERT_ZAPPED_CALL_FRAME();
 
   /* Object alloc/free are still disallowed, but refs might be lowered
    * by gc_free_(short_)svalue. */
@@ -3608,6 +3622,8 @@ size_t do_gc(int explicit_call)
 			  marked, weak_freed, delayed_freed, gc_ext_weak_refs));
   }
 
+  GC_ASSERT_ZAPPED_CALL_FRAME();
+
   {
 #ifdef PIKE_DEBUG
     size_t orig_ext_weak_refs = gc_ext_weak_refs;
@@ -3652,6 +3668,8 @@ size_t do_gc(int explicit_call)
 #endif
   }
 
+  GC_ASSERT_ZAPPED_CALL_FRAME();
+
   if (gc_ext_weak_refs) {
     size_t to_free = gc_ext_weak_refs;
 #ifdef PIKE_DEBUG
@@ -3676,6 +3694,8 @@ size_t do_gc(int explicit_call)
 	      to_free - gc_ext_weak_refs, gc_ext_weak_refs,
 	      delayed_freed - obj_count));
   }
+
+  GC_ASSERT_ZAPPED_CALL_FRAME();
 
   if (gc_debug) {
     unsigned n;
@@ -3716,6 +3736,8 @@ size_t do_gc(int explicit_call)
     GC_VERBOSE_DO(fprintf(stderr, "| posttouch\n"));
   }
 
+  GC_ASSERT_ZAPPED_CALL_FRAME();
+
   /* Object alloc/free and reference changes are allowed again now. */
 
   Pike_in_gc=GC_PASS_FREE;
@@ -3723,6 +3745,8 @@ size_t do_gc(int explicit_call)
   weak_freed = 0;
   obj_count = num_objects;
 #endif
+
+  GC_POP_CALL_FRAME();	/* We can now free the frame. */
 
   /* Now we free the unused stuff. The extra refs to gc_internal_*
    * added above are removed just before the calls so we'll get the
