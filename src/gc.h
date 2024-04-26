@@ -161,6 +161,7 @@ extern int gc_keep_markers;
     struct pike_frame *pike_frame = Pike_fp;          \
     GC_ASSERT_ZAPPED_CALL_FRAME();                    \
     Pike_fp = pike_frame->next;                       \
+    pike_frame->next = NULL;                          \
     free_pike_frame(pike_frame);                      \
   } while(0)
 
