@@ -220,6 +220,10 @@
  *!   was added in Pike 7.8. This support can be tested for with the
  *!   constant @[String.__HAVE_SPRINTF_NEGATIVE_F__].
  *!
+ *! @note
+ *!   The @expr{'p'@} operator was enabled by default in Pike 8.1.14
+ *!   (previously it existed in a @tt{#if 0@}-block since Pike 7.5.4).
+ *!
  *! @example
  *! @code
  *! Pike v7.8 release 263 running Hilfe v3.5 (Incremental Pike Frontend)
