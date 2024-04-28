@@ -226,7 +226,7 @@ static void LM_FUNC(rgb_group *s,rgb_group *l,rgb_group *d,
 	    *da=*d=L_LOGIC(L_OPER(s->r,l->r),
 			   L_OPER(s->g,l->g),
 			   L_OPER(s->b,l->b));
-	    l++; s++; sa++; d++; da++;
+            l++; s++; d++; da++;
 	 }
       else
 	 while (len--)
@@ -237,7 +237,7 @@ static void LM_FUNC(rgb_group *s,rgb_group *l,rgb_group *d,
 	       *da=*d=L_LOGIC(L_OPER(s->r,l->r),
 			      L_OPER(s->g,l->g),
 			      L_OPER(s->b,l->b));
-	    l++; s++; la++; sa++; d++; da++;
+            l++; s++; la++; d++; da++;
 	 }
    }
 #endif /* L_LOGIC */
