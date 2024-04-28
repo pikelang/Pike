@@ -119,6 +119,6 @@ OPCODE_NOCODE("initialize", F_INITIALIZE, 0)
 /* Marker for rest of array in multi assignment. */
 OPCODE_NOCODE("...", F_DOT_DOT_DOT, 0)
 
-OPCODE_NOCODE("instr_max", F_MAX_INSTR, 0)
-
 OPCODE_NOCODE("bind_generics", F_BIND_GENERICS, 0)
+
+OPCODE_NOCODE("instr_max", F_MAX_INSTR, 0)
