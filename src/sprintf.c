@@ -240,11 +240,15 @@
  *! Right adjusted [%10d]
  *! Zero padded    [%010d]
  *! ", n, n, n, n);
+ *! @endcode
+ *! @code
  *! Formatting examples:
  *! Left adjusted  [4711      ]
  *! Centered       [   4711   ]
  *! Right adjusted [      4711]
  *! Zero padded    [0000004711]
+ *! @endcode
+ *! @code
  *! (5) Result: 142
  *! int screen_width=70;
  *! > write("%-=*s\n", screen_width,
@@ -253,11 +257,15 @@
  *! >> "users specify their screen size, then the room "+
  *! >> "descriptions will automagically word-wrap as appropriate.\n"+
  *! >> "slosh-n's will of course force a new-line when needed.\n");
+ *! @endcode
+ *! @code
  *! This will wordwrap the specified string within the specified field
  *! size, this is useful say, if you let users specify their screen size,
  *! then the room descriptions will automagically word-wrap as
  *! appropriate.
  *! slosh-n's will of course force a new-line when needed.
+ *! @endcode
+ *! @code
  *! (6) Result: 355
  *! > write("%-=*s %-=*s\n", screen_width/2,
  *! >> "Two columns next to each other (any number of columns will "+
@@ -266,36 +274,48 @@
  *! >> "The - is to specify justification, this is in addherence "+
  *! >> "to std sprintf which defaults to right-justification, "+
  *! >> "this version also supports centre and right justification.");
+ *! @endcode
+ *! @code
  *! Two columns next to each other (any The - is to specify justification,
  *! number of columns will of course    this is in addherence to std
  *! work) independantly word-wrapped,   sprintf which defaults to
  *! can be useful.                      right-justification, this version
  *!                                     also supports centre and right
  *!                                     justification.
+ *! @endcode
+ *! @code
  *! (7) Result: 426
  *! > write("%-$*s\n", screen_width,
  *! >> "Given a\nlist of\nslosh-n\nseparated\n'words',\nthis option\n"+
  *! >> "creates a\ntable out\nof them\nthe number of\ncolumns\n"+
  *! >> "be forced\nby specifying a\npresision.\nThe most obvious\n"+
  *! >> "use is for\nformatted\nls output.");
+ *! @endcode
+ *! @code
  *! Given a          list of          slosh-n
  *! separated        'words',         this option
  *! creates a        table out        of them
  *! the number of    columns          be forced
  *! by specifying a  presision.       The most obvious
  *! use is for       formatted        ls output.
+ *! @endcode
+ *! @code
  *! (8) Result: 312
  *! > write("%-#*s\n", screen_width,
  *! >> "Given a\nlist of\nslosh-n\nseparated\n'words',\nthis option\n"+
  *! >> "creates a\ntable out\nof them\nthe number of\ncolumns\n"+
  *! >> "be forced\nby specifying a\npresision.\nThe most obvious\n"+
  *! >> "use is for\nformatted\nls output.");
+ *! @endcode
+ *! @code
  *! Given a          creates a        by specifying a
  *! list of          table out        presision.
  *! slosh-n          of them          The most obvious
  *! separated        the number of    use is for
  *! 'words',         columns          formatted
  *! this option      be forced        ls output.
+ *! @endcode
+ *! @code
  *! (9) Result: 312
  *! > sample = ([ "align":"left", "valign":"middle" ]);
  *! (10) Result: ([ @xml{/@}* 2 elements *@xml{/@}
@@ -303,24 +323,39 @@
  *!          "valign":"middle"
  *!        ])
  *! > write("<td%{ %s='%s'%}>\n", (array)sample);
+ *! @endcode
+ *! @code
  *! <td valign='middle' align='left'>
+ *! @endcode
+ *! @code
  *! (11) Result: 34
  *! >  write("Of course all the simple printf options "+
  *! >> "are supported:\n %s: %d %x %o %c\n",
  *! >> "65 as decimal, hex, octal and a char",
  *! >> 65, 65, 65, 65);
+ *! @endcode
+ *! @code
  *! Of course all the simple printf options are supported:
  *!  65 as decimal, hex, octal and a char: 65 41 101 A
+ *! @endcode
+ *! @code
  *! (12) Result: 106
  *! > write("%[0]d, %[0]x, %[0]X, %[0]o, %[0]c\n", 75);
+ *! @endcode
+ *! @code
  *! 75, 4b, 4B, 113, K
+ *! @endcode
+ *! @code
  *! (13) Result: 19
- *! > write("%|*s\n",screen_width, "THE END");
- *!                                THE END
- *! (14) Result: 71
- *! > write("%|*s\n", ([ "width":screen_width ]), "ALTERNATIVE END");
- *!                            ALTERNATIVE END
- *! (15) Result: 71
+ *! > write("#%|*s\n#%|*s\n", screen_width, "THE END",
+ *! >>      ([ "width":screen_width ]), "ALTERNATIVE END");
+ *! @endcode
+ *! @code
+ *! #                               THE END
+ *! #                           ALTERNATIVE END
+ *! @endcode
+ *! @code
+ *! (14) Result: 144
  *! @endcode
  *!
  *! @seealso
