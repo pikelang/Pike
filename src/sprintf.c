@@ -208,21 +208,30 @@
  *!   with @[sprintf_args].
  *!
  *! @note
- *!   The @expr{'q'@} operator was added in Pike 7.7.
- *!
- *! @note
- *!   Support for specifying modifiers via a mapping was added in Pike 7.8.
- *!   This support can be tested for with the constant
- *!   @[String.__HAVE_SPRINTF_STAR_MAPPING__].
- *!
- *! @note
- *!   Support for specifying little endian byte order to @expr{'F'@}
- *!   was added in Pike 7.8. This support can be tested for with the
- *!   constant @[String.__HAVE_SPRINTF_NEGATIVE_F__].
- *!
- *! @note
- *!   The @expr{'p'@} operator was enabled by default in Pike 8.1.14
- *!   (previously it existed in a @tt{#if 0@}-block since Pike 7.5.4).
+ *!   Most formats are available in all versions of Pike; the exceptions are:
+ *!   @xml{<matrix><r><c>Format</c><c>Version</c>
+ *!                   <c>Availability constant</c><c>Notes</c></r>
+ *!     <r><c><expr>'*'</expr></c><c>Pike 7.8.238</c>
+ *!        <c><ref>String.__HAVE_SPRINTF_STAR_MAPPING__</ref></c>
+ *!        <c>Support for specifying modifiers via a mapping.</c></r>
+ *!     <r><c><expr>'b'</expr></c><c>Pike 0.7.62</c><c></c><c></c></r>
+ *!     <r><c><expr>'E'</expr></c><c>Pike 0.6.38</c><c></c><c></c></r>
+ *!     <r><c><expr>'F'</expr></c><c>Pike 0.6.38</c><c></c><c></c></r>
+ *!     <r><c><expr>'F'</expr></c><c>Pike 7.8.242</c>
+ *!        <c><ref>String.__HAVE_SPRINTF_NEGATIVE_F__</ref></c>
+ *!        <c>Support for litte endian byte order.</c></r>
+ *!     <r><c><expr>'G'</expr></c><c>Pike 0.6.38</c><c></c><c></c></r>
+ *!     <r><c><expr>'H'</expr></c><c>Pike 7.7.31</c><c></c><c></c></r>
+ *!     <r><c><expr>'p'</expr></c><c>Pike 7.5.4</c><c></c>
+ *!        <c>Implemented but disabled (<expr>#if 0</expr>-block).</c></r>
+ *!     <r><c><expr>'p'</expr></c><c>Pike 8.1.14</c><c></c><c>Enabled.</c></r>
+ *!     <r><c><expr>'q'</expr></c><c>Pike 7.7.28</c><c></c><c></c></r>
+ *!     <r><c><expr>'x'</expr></c><c>Pike 8.1.5</c><c></c>
+ *!        <c>Support for hex-formatting strings.</c></r>
+ *!     <r><c><expr>'X'</expr></c><c>Pike 8.1.5</c><c></c>
+ *!        <c>Support for hex-formatting strings.</c></r>
+ *!     <r><c><expr>'[n]'</expr></c><c>Pike 7.1.5</c><c></c><c></c></r>
+ *!   </matrix>@}
  *!
  *! @example
  *! @code
