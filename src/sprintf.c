@@ -141,13 +141,13 @@
  *!     @value 'o'
  *!       Signed octal integer.
  *!     @value 'x'
- *!       Lowercase signed hexadecimal integer.
+ *!       Lowercase signed hexadecimal integer or 8-bit string.
  *!     @value 'X'
- *!       Uppercase signed hexadecimal integer.
+ *!       Uppercase signed hexadecimal integer or 8-bit string.
  *!     @value 'c'
- *!       Character. If a fieldsize has been specified this will output
- *!       the low-order bytes of the integer in network (big endian) byte
- *!       order. To get little endian byte order, negate the field size.
+ *!       Character (integer). If a fieldsize has been specified this will
+ *!       output the low-order bytes of the integer in network (big endian)
+ *!       byte order. To get little endian byte order, negate the field size.
  *!     @value 'f'
  *!       Float. (Locale dependent formatting.)
  *!     @value 'g'
@@ -215,6 +215,10 @@
  *!        <c><ref>String.__HAVE_SPRINTF_STAR_MAPPING__</ref></c>
  *!        <c>Support for specifying modifiers via a mapping.</c></r>
  *!     <r><c><expr>'b'</expr></c><c>Pike 0.7.62</c><c></c><c></c></r>
+ *!     <r><c><expr>'c'</expr></c><c>Pike 0.7.3</c><c></c>
+ *!        <c>Support for wide characters.</c></r>
+ *!     <r><c><expr>'c'</expr></c><c>Pike 0.7.64</c><c></c>
+ *!        <c>Support for little endian output.</c></r>
  *!     <r><c><expr>'E'</expr></c><c>Pike 0.6.38</c><c></c><c></c></r>
  *!     <r><c><expr>'F'</expr></c><c>Pike 0.6.38</c><c></c><c></c></r>
  *!     <r><c><expr>'F'</expr></c><c>Pike 7.8.242</c>
