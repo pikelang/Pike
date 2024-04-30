@@ -409,6 +409,15 @@ image
    optional attributes width, height and file, where file is the path to
    the normalized-filename file.
 
+matrix
+   A table of values. May only contain <r>-tags.
+
+r
+   A row of a <matrix>. May only contain <c>-tags.
+
+c
+   A column of a row of a <matrix>.
+
 ======================================================================
 g) XML generated from the doc markup
 ----------------------------------------------------------------------
