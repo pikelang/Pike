@@ -1055,7 +1055,7 @@ class Port {
     //!
     protected void create(function(Protocols.HTTP.Server.Request:void) http_cb,
                           function(array(string), Request:void)|void ws_cb,
-                          void|int portno, void|string interface) {
+                          void|int|Stdio.Port portno, void|string interface) {
 
         ::create(http_cb, portno, interface);
 

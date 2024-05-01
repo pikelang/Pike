@@ -13,19 +13,23 @@ object|function|program request_program=.Request;
 
 //!
 protected void create(function(.Request:void) callback,
-		      void|int portno,
+		      void|int|Stdio.Port portno,
 		      void|string interface,
 		      void|int reuse_port)
 {
-  this::portno=portno || 80;
-
   this::callback=callback;
   this::interface=interface;
-  port=Stdio.Port();
-  if (!port->bind(portno,new_connection,interface,reuse_port))
-    error("HTTP.Server.Port: failed to bind port %s%d: %s.\n",
-          interface?interface+":":"",
-          portno,strerror(port->errno()));
+  if (objectp(portno)) {
+    port = portno; //It should be a valid listening port already.
+    port->set_accept_callback(new_connection);
+  } else {
+    this::portno=portno || 80;
+    port=Stdio.Port();
+    if (!port->bind(portno,new_connection,interface,reuse_port))
+      error("HTTP.Server.Port: failed to bind port %s%d: %s.\n",
+            interface?interface+":":"",
+            portno,strerror(port->errno()));
+  }
 }
 
 //! Closes the HTTP port.
