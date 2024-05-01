@@ -2448,6 +2448,11 @@ void describe_mapping(struct byte_buffer *b, struct mapping *m,struct processing
   INT32 e,d;
   char buf[40];
 
+  if (!m) {
+    buffer_add_str(b, "NULL-mapping");
+    return;
+  }
+
 #ifdef PIKE_DEBUG
   if(m->data->refs <=0)
     Pike_fatal("Zero refs in mapping->data\n");

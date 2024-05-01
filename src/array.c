@@ -2355,7 +2355,9 @@ void describe_array_low(struct byte_buffer *buf, struct array *a, struct process
 void simple_describe_array(struct array *a)
 {
   char *s;
-  if (a->size) {
+  if (!a) {
+    fputs("NULL-array\n", stderr);
+  } else if (a->size) {
     struct byte_buffer buf = BUFFER_INIT();
     describe_array_low(&buf,a,0,0);
     fprintf(stderr,"({\n%s\n})\n",buffer_get_string(&buf));
@@ -2372,6 +2374,12 @@ void describe_array(struct byte_buffer *buffer,struct array *a,struct processing
   struct processing doing;
   INT32 e;
   char buf[60];
+
+  if (!a) {
+    buffer_add_str(buffer, "UNDEFINED");
+    return;
+  }
+
   if(! a->size)
   {
     buffer_add_str(buffer, "({ })");

@@ -1348,6 +1348,11 @@ PMOD_EXPORT void describe_svalue(struct byte_buffer *buf, const struct svalue *s
    * the raw error can be printed in exit_on_error. */
   check_c_stack(250);
 
+  if (!s) {
+    buffer_add_str(buf, "NULL");
+    return;
+  }
+
   check_svalue_type (s);
   check_refs(s);
 
