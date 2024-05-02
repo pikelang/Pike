@@ -4657,7 +4657,14 @@ PIKEFUN mixed yield(mixed|void val)
 static node *optimize_yield(node *n)
 {
   if (n) {
-    node *ret = mknode(F_RETURN, CDR(n), mkintnode(2));
+    node *ret;
+
+    if (Pike_compiler->compiler_frame->generator_local == -1) {
+      yyerror("Attempt to yield from a non-restartable function.");
+      return NULL;
+    }
+
+    ret = mknode(F_RETURN, CDR(n), mkintnode(2));
     ADD_NODE_REF(CDR(n));
     return ret;
   }
