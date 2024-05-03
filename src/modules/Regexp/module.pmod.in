@@ -39,7 +39,9 @@ class SimpleRegexp
       if(i == -1)
 	error("Split resulted in unknown substring %O of %O.", a[0], in);
 
-      result += in[..i-1]+(functionp(transform)?transform(a[0]):transform);
+      result += in[..i-1]+(functionp(transform)?
+                           ([function]transform)(a[0]):
+                           transform);
       in = in[i+sizeof(a[0])..];
     }
   }
