@@ -5145,7 +5145,7 @@ test_any([[
 dnl Issue #10154 fall-out
 test_any([[
   // Overloading failed.
-  class Bad {
+  class A {
     string `prop() { return "bad"; }
     string get_prop() { return prop; }
   }
