@@ -5142,6 +5142,22 @@ test_any([[
   return B()->prop;
 ]], "AB")
 
+dnl Issue #10154 fall-out
+test_any([[
+  // Overloading failed.
+  class Bad {
+    string `prop() { return "bad"; }
+    string get_prop() { return prop; }
+  }
+
+  class B {
+    inherit A;
+    string `prop() { return "good"; }
+  }
+
+  return B()->get_prop();
+]], "good")
+
 test_any([[
   // Since the addition of F_APPEND_MAPPING in set_bar below
   // the setter is not being called anymore. Instead, the mapping
