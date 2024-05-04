@@ -17,7 +17,7 @@ DEPENDENCIES
 
 Building from git requires the same tools as building from a source
 distribution (gnu m4, bison and a C compiler, suggested also GNU make
-and libz), and then some.  In addition to thosee requirements, you
+and libz), and then some.  In addition to those requirements, you
 need a working Pike, autoconf and gcc (to generate the dependency
 files; another compiler can be used to do the actual compilation).
 
