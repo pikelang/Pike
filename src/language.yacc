@@ -6,7 +6,11 @@
 
 %pure-parser
 
-/* Expect a single shift/reduce conflict (dangling else). */
+/* Expect some shift/reduce conflicts:
+ * * Dangling else.
+ * * local used as a modifier or as an inherit specifier for a type.
+ *   eg: local ::t foo; or local::t foo;
+ */
 %expect 2
 
 %token TOK_ARROW "->"
