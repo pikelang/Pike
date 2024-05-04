@@ -3536,8 +3536,13 @@ static void f_create(INT32 args)
 #endif
 
       if(errcode) {
-        Pike_error("Failed to create virtual machine: %s (%d)\n",
-                   pike_jni_error(errcode), errcode);
+        /* NB: Throw a compilation error object to have the backtrace
+         *     suppressed in case we were initialized via the Pike
+         *     compiler (likely).
+         */
+        throw_error_object(fast_clone_object(compilation_error_program), 0, 0,
+                           "Failed to create virtual machine: %s (%d)\n",
+                           pike_jni_error(errcode), errcode);
       }
     }
     j->env = vp;
@@ -4146,10 +4151,10 @@ PIKE_MODULE_INIT
   {
     JMP_BUF rec;
     if (SETJMP(rec)) {
-      handle_compile_exception("Failed to initialize jvm.");
+      handle_compile_exception(NULL);
     } else {
       struct object *machine;
-      push_constant_text("CLASSPATH");
+      push_text("CLASSPATH");
       SAFE_APPLY_MASTER("getenv", 1);
       machine = clone_object(jvm_program, 1);
       add_object_constant("__machine", machine, ID_PROTECTED);
