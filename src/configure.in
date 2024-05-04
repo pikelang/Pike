@@ -2969,6 +2969,9 @@ AC_CHECK_HEADERS(winsock2.h sys/rusage.h sys/time.h \
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
 #endif /* !_GNU_SOURCE */
+#ifndef _DEFAULT_SOURCE
+#define _DEFAULT_SOURCE
+#endif /* !_DEFAULT_SOURCE */
 #ifdef __NT__
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
@@ -3033,6 +3036,9 @@ AC_CHECK_TYPES([HPCON, LPPROC_THREAD_ATTRIBUTE_LIST, LPSTARTUPINFOEXW,
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
 #endif /* !_GNU_SOURCE */
+#ifndef _DEFAULT_SOURCE
+#define _DEFAULT_SOURCE
+#endif /* !_DEFAULT_SOURCE */
 #ifdef __NT__
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN

@@ -32,6 +32,11 @@
 #define _GNU_SOURCE
 #endif /* !_GNU_SOURCE */
 
+/* This is needed for SysV stuff. */
+#ifndef _DEFAULT_SOURCE
+#define _DEFAULT_SOURCE
+#endif
+
 #ifdef __NT__
 /* To get <windows.h> to stop including the entire OS,
  * we need to define this one.
