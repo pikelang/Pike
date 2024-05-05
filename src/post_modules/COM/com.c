@@ -1594,6 +1594,8 @@ void EnumTypeInfoMembers( LPTYPEINFO pITypeInfo, LPTYPEATTR pTypeAttr  )
       pITypeInfo->lpVtbl->ReleaseFuncDesc( pITypeInfo, pFuncDesc );
       SysFreeString( pszFuncName );
     }
+
+    fflush(stdout);
   }
 
   if ( pTypeAttr->cVars )
@@ -1614,6 +1616,8 @@ void EnumTypeInfoMembers( LPTYPEINFO pITypeInfo, LPTYPEATTR pTypeAttr  )
       pITypeInfo->lpVtbl->ReleaseVarDesc( pITypeInfo, pVarDesc );
       SysFreeString( pszVarName );
     }
+
+    fflush(stdout);
   }
 
 }
@@ -1645,6 +1649,8 @@ void DisplayTypeInfo( LPTYPEINFO pITypeInfo )
   SysFreeString( pszTypeInfoName );
 
   pITypeInfo->lpVtbl->ReleaseTypeAttr( pITypeInfo, pTypeAttr );
+
+  fflush(stdout);
 }
 
 
