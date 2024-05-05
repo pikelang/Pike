@@ -99,13 +99,14 @@
  *!       as received by @[lfun::_sprintf()]:
  *!       @mapping
  *!         @member int|void "precision"
- *!           Precision.
+ *!           Precision (aka @expr{'.n'@} where n is a number).
  *!         @member int(0..)|void "width"
- *!           Field width.
+ *!           Field width (aka @expr{'n'@} or @expr{':n'@} where n is a number).
  *!         @member int(0..1)|void "flag_left"
- *!           Indicates that the output should be left-aligned.
+ *!           Indicates that the output should be left-aligned
+ *!           (aka @expr{'-'@}).
  *!         @member int(0..)|void "indent"
- *!           Indentation level in @tt{%O@}-mode.
+ *!           Base indentation level in number of spaces in @tt{%O@}-mode.
  *!       @endmapping
  *!     @value "'"
  *!       Set a pad string. @tt{'@} cannot be a part of the pad string (yet).
@@ -178,8 +179,9 @@
  *!       Hexadecimal representation of the memory address of the object.
  *!       Integers and floats have no address, and are printed as themselves.
  *!     @value 'H'
- *!       Binary Hollerith string. Equivalent to @expr{sprintf("%c%s",
- *!       strlen(str), str)@}. Arguments (such as width etc) adjust the
+ *!       Binary Hollerith string.
+ *!       Equivalent to @expr{sprintf("%c%s", strlen(str), str)@}.
+ *!       Arguments (such as width etc) adjust the
  *!       length-part of the format. Requires 8-bit strings.
  *!     @value 'n'
  *!       No argument. Same as @expr{"%s"@} with an empty string as argument.
