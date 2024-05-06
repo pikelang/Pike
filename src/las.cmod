@@ -2719,8 +2719,10 @@ static void low_print_tree(node *foo,int needlval)
     fputs("})", stderr);
     return;
 
-  case F_RETURN:
   case F_VOLATILE_RETURN:
+    fputs("volatile_", stderr);
+    /* FALLTHRU */
+  case F_RETURN:
     switch(CDR(foo)?CDR(foo)->u.sval.u.integer:0) {
     case 2:
       fputs("yield", stderr);
@@ -5032,6 +5034,9 @@ ptrdiff_t eval_low(node *n,int print_error)
   if(l_flag > 3 && n)
   {
     fprintf(stderr,"Evaluation ==> %"PRINTPTRDIFFT"d\n", ret);
+    if (ret > 0) {
+      pike_fprintf(stderr, "Value: %pO\n", Pike_sp - ret);
+    }
   }
 #endif
 
