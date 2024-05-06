@@ -5048,8 +5048,16 @@ static node *eval(node *n)
   node *new;
   ptrdiff_t args;
 
-  if(!is_const(n) || n->node_info & OPT_FLAG_NODE)
+  if(!n || !is_const(n) || (n->node_info & OPT_FLAG_NODE))
     return n;
+
+  if (n->token == F_ARG_LIST) {
+    if (CAR(n)) add_ref(CAR(n));
+    if (CDR(n)) add_ref(CDR(n));
+    new = mknode(F_ARG_LIST, eval(CAR(n)), eval(CDR(n)));
+    free_node(n);
+    return new;
+  }
 
   args=eval_low(n,0);
 
