@@ -129,8 +129,8 @@
       new_frame->pc = 0;
       new_frame->scope=scope;
 
-      if(scope && new_frame->fun == scope->fun)
-      {
+      if(scope && (scope->current_object == o) &&
+         (new_frame->fun == scope->fun)) {
 	/* Continuing a previous function call. */
 
 	/* Generators have two (optional) arguments:
@@ -148,10 +148,13 @@
 
 	/* Switch to the shared locals. */
 	new_frame->locals = scope->locals;
+        if (!(scope->flags & PIKE_FRAME_MALLOCED_LOCALS)) {
+          Pike_fatal("Generator scope not initialized yet.\n");
+        }
 	add_ref(scope->locals[-1].u.array);
 	new_frame->flags |= PIKE_FRAME_MALLOCED_LOCALS;
 	new_frame->args = scope->args;
-	new_frame->num_locals = scope->num_locals;
+        new_frame->num_locals = scope->locals[-1].u.array->size;
 	args = scope->num_args;
 
 	/* Switch to the parent scope. */
