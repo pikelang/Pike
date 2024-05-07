@@ -4730,6 +4730,8 @@ static void compiler_add_generic(struct pike_string *name,
                                  struct pike_type *type,
                                  struct pike_type *default_type)
 {
+  struct pike_type *tmp = NULL;
+
   if (!type) {
     type = mixed_type_string;
   }
@@ -4804,6 +4806,16 @@ static void compiler_add_generic(struct pike_string *name,
    *   A generic_bindings array shorter than num_generics is padded
    *   with entries from the generic_types array.
    */
+  if (default_type != type) {
+    tmp = and_pike_types(default_type, type);
+
+    if (!tmp) {
+      my_yyerror("Invalid default type for generic %pS.\n", name);
+    } else {
+      default_type = tmp;
+    }
+  }
+
   if ((default_type != type) ||
       (Pike_compiler->generic_bindings &&
        (Pike_compiler->num_generics <=
@@ -4879,6 +4891,8 @@ static void compiler_add_generic(struct pike_string *name,
   use_module(Pike_sp - 1);
 
   pop_stack();
+
+  free_type(tmp);
 }
 
 static void compiler_define_implicit___create__(void)
