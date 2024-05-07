@@ -3690,14 +3690,22 @@ primary_expr: literal_expr
       fix_type_field( $1 );
       if( $1 && $1->type )
       {
-        add_ref($1->type);
-        temporary = add_local_name(empty_pike_string, $1->type, 0);
-        Pike_compiler->compiler_frame->local_names[temporary].flags |=
-          LOCAL_VAR_IS_USED;
-        $$=mknode(F_LAND,
-                  mknode(F_ASSIGN, mklocalnode(temporary,0), $1),
-                  mknode(F_ARROW,  mklocalnode(temporary,0), $4));
-        $$ = pop_local_variables(temporary, $$);
+        if ($1->type == zero_type_string) {
+          /* Inline optimization to avoid erroneous indexing error. */
+          $$ = $1;
+          free_node($4);
+          if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST)
+            yywarning("Indexing a NULL-expression.");
+        } else {
+          add_ref($1->type);
+          temporary = add_local_name(empty_pike_string, $1->type, 0);
+          Pike_compiler->compiler_frame->local_names[temporary].flags |=
+            LOCAL_VAR_IS_USED;
+          $$=mknode(F_LAND,
+                    mknode(F_ASSIGN, mklocalnode(temporary,0), $1),
+                    mknode(F_ARROW,  mklocalnode(temporary,0), $4));
+          $$ = pop_local_variables(temporary, $$);
+        }
       }
       else
       {
