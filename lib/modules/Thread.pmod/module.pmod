@@ -259,6 +259,11 @@ class Fifo {
     buffer=allocate(read_tres=size || 128);
   }
 
+  protected int(0..) _sizeof()
+  {
+    return size();
+  }
+
   protected string _sprintf( int f )
   {
     if (!this)				// Only if not destructed
@@ -443,6 +448,11 @@ class Queue {
     key=0;
     r_cond::broadcast();
     return items;
+  }
+
+  protected int(0..) _sizeof()
+  {
+    return size();
   }
 
   protected string _sprintf( int f )

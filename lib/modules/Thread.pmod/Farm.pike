@@ -361,6 +361,11 @@ protected string _sprintf( int f )
   return f=='O' && sprintf( "%O(/* %s */)", this_program, debug_status() );
 }
 
+protected int(0..) _sizeof()
+{
+  return job_queue && sizeof(job_queue);
+}
+
 protected void create()
 {
   dispatcher_thread = thread_create( dispatcher );
