@@ -2395,6 +2395,9 @@ PIKECLASS Buffer
 
     if( !num_used )
     {
+      /* Mismatch.
+       * Do not advance and return zero.
+       */
       if( io_range_error(THIS,0) )
           goto retry;
       pop_n_elems(Pike_sp-start);
@@ -2402,9 +2405,16 @@ PIKECLASS Buffer
     }
     else
     {
+      /* Something (not necessarily an active %-pattern) matched the input.
+       * Advance num_used characters and return non-zero.
+       */
       io_consume( THIS, num_used );
       if( Pike_sp-start > 1 )
         f_add(Pike_sp-start);
+      else if (Pike_sp == start) {
+        /* Match but nothing pushed on stack (cf LysLysKOM 26359608). */
+        push_text("");
+      }
     }
   }
 
