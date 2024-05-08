@@ -2259,6 +2259,9 @@ PIKECLASS Buffer
    *! The non-matching data will be left in the buffer.
    *!
    *! See @[array_sscanf] for more information.
+   *!
+   *! @seealso
+   *!   @[match()], @[predef::sscanf()], @[array_sscanf()]
    */
   PIKEFUN array sscanf( string(8bit) format )
   {
@@ -2365,7 +2368,7 @@ PIKECLASS Buffer
     }
   }
 
-  /*! @decl mixed match(string(8bit) format)
+  /*! @decl string(8bit)|int|float|array match(string(8bit) format)
    *!
    *! Reads data from the beginning of the buffer to match the
    *! specifed format, then return the match.
@@ -2376,11 +2379,26 @@ PIKECLASS Buffer
    *! result is the sum of the matches. Most useful to match
    *! a single value.
    *!
+   *! @returns
+   *!   Returns the sum of the matching %-expressions,
+   *!   @expr{""@} if a prefix (but no %-expression) matches
+   *!   and @[UNDEFINED] on mismatch. Note that the addition
+   *!   may throw errors.
+   *!
+   *! @note
+   *!   Prior to Pike 9.0 @expr{0@} was returned on mismatch
+   *!   and @[format] was returned on a prefix match.
+   *!
    *! @example
-   *! @code
-   *!  // get the next whitespace separated word from the buffer.
-   *!  buffer->match("%*[ \t\r\n]%[^ \t\r\n]");
-   *! @endcode
+   *!   @code
+   *!     // Get the next whitespace separated word from the buffer.
+   *!     buffer->match("%*[ \t\r\n]%[^ \t\r\n]");
+   *!     // Get the next integer as a string.
+   *!     buffer->match("%0s%d");
+   *!   @endcode
+   *!
+   *! @seealso
+   *!   @[sscanf()], @[predef::sscanf()], @[array_sscanf()]
    */
   PIKEFUN string(8bit)|int|float|array match( string(8bit) format )
   {
@@ -2401,7 +2419,7 @@ PIKECLASS Buffer
       if( io_range_error(THIS,0) )
           goto retry;
       pop_n_elems(Pike_sp-start);
-      push_int(0);
+      push_undefined();
     }
     else
     {
