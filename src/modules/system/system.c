@@ -102,6 +102,14 @@
 #include <sys/clonefile.h>
 #endif
 
+#ifdef HAVE_LINUX_FS_H
+#include <linux/fs.h>
+#endif
+
+#ifdef HAVE_SYS_IOCTL_H
+#include <sys/ioctl.h>
+#endif
+
 #define sp Pike_sp
 
 #ifndef NGROUPS_MAX
@@ -388,6 +396,46 @@ void f_resolvepath(INT32 args)
 }
 #endif /* HAVE_RESOLVEPATH || HAVE_REALPATH */
 
+#if !defined(HAVE_CLONEFILE) && defined(HAVE_COPY_FILE_RANGE)
+int clonefile(const char *from, const char *to, int flags)
+{
+  int ret = -1;
+  int fromfd = -1;
+  int tofd = -1;
+  struct stat stat;
+
+  if (flags) {
+    /* No flags are supported currently. */
+    errno = EINVAL;
+    return -1;
+  }
+
+  fromfd = fd_open(from, fd_RDONLY, 0);
+  if (fromfd < 0) return -1;
+
+  if (fd_fstat(fromfd, &stat) < 0) goto cleanup;
+
+  if ((stat.st_mode & S_IFMT) != S_IFREG) {
+    errno = EINVAL;
+    goto cleanup;
+  }
+
+  tofd = fd_open(to, fd_CREAT|fd_TRUNC|fd_RDWR, stat.st_mode);
+  if (tofd < 0) goto cleanup;
+
+  ret = copy_file_range(fromfd, NULL, tofd, NULL, stat.st_size, 0);
+
+ cleanup:
+  if (tofd >= 0) close(tofd);
+
+  if (fromfd >= 0) close(fromfd);
+
+  return ret;
+}
+
+#define HAVE_CLONEFILE
+#endif
+
 #ifdef HAVE_CLONEFILE
 /*! @decl void clonefile(string from, string to)
  *!
@@ -395,9 +443,9 @@ void f_resolvepath(INT32 args)
  *! @[to].
  *!
  *! @note
- *!   This function is currently only available on macOS, and then only when
- *!   @[from] and @[to] reference a common file system with copy-on-write
- *!   support (e.g. an APFS volume).
+ *!   This function is currently only available on macOS and Linux, and then
+ *!   only when @[from] and @[to] reference a common file system with
+ *!   copy-on-write support (e.g. an APFS volume).
  *!
  *! @seealso
  *!   @[hardlink()], @[symlink()]
