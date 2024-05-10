@@ -1707,7 +1707,7 @@ PMOD_EXPORT void f_add(INT32 args)
         push_svalue(s+e);
         if(!pair_add())
         {
-          Pike_error("Addition on unsupported types: %s + %s\nm",
+          Pike_error("Addition on unsupported types: %s + %s\n",
                      get_name_of_type(TYPEOF(*(s+e))),
                      get_name_of_type(TYPEOF(*s)));
         }
