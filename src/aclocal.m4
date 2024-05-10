@@ -1604,7 +1604,7 @@ AC_DEFUN(PIKE_CHECK_NATIVE_ABI,
   esac
 
   if type isainfo 2>/dev/null >/dev/null; then
-    # Solaris
+    # Solaris and rntcl.
     pike_cv_native_abi="`isainfo -b`"
   elif type sysctl 2>/dev/null >/dev/null; then
     # MacOS X or Linux.
