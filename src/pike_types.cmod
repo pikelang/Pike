@@ -976,10 +976,14 @@ void debug_push_type_attribute(struct pike_string *attr)
 void debug_push_type_name(struct pike_string *name)
 {
   /* fprintf(stderr, "push_type_name(\"%s\")\n", name->str); */
-  if ((peek_type_stack() == zero_type_string) && (name->len == 4) &&
-      !name->size_shift && !strcmp(name->str, "zero")) {
+  if (((peek_type_stack() == zero_type_string) && (name->len == 4) &&
+       !name->size_shift && !strcmp(name->str, "zero")) ||
+      (name == this_program_string)) {
     /* Do not generate a name node for zero = zero.
      * This simplifies detecting zero.
+     *
+     * Do not generate a name node for this_program as it may
+     * lead to confusion due to being context dependent.
      */
     return;
   }
