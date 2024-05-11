@@ -309,9 +309,6 @@ static unsigned int TOKENIZE(struct array **res, CHAR *data, unsigned int len)
 	}
 	break;
 
-      case 0:
-	goto failed_to_find_end;
-
       default:
 	if( m_isidchar( data[pos] ) )
 	{
