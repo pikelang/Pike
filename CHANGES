@@ -474,6 +474,7 @@ o Returning UNDEFINED from `+ and ``+ is not allowed and will cause an
 o RegGetValue(), RegGetKeyNames(), RegGetKeyValues(), openlog(),
   syslog() and closelog() have been moved to System.
 
+o The ZXID module has been removed.
 
 New modules and functions
 -------------------------
