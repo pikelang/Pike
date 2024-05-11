@@ -77,7 +77,7 @@ test_hilfe("class A{}", "")
 test_hilfe("A();", "HilfeInput()->A()")
 test_hilfe("A a=A();", "")
 test_hilfe("class { int i=4; }()->i;", "4")
-//  test("class A{}();", "object")
+test_hilfe("class (int x){}(5)->x;", "5")
 test_hilfe("indices((<1,2>));","({ /""* 2 elements *""/\n    1,\n    2\n})")
 test_hilfe("void nop(mixed m){};", "")
 test_hilfe("nop(({}));",
