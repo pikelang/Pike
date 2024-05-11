@@ -872,6 +872,9 @@ o Sql.mysql_result and Sql.mysqls_result have been deprecated.
 
 o call_function() has been deprecated. Use `()() instead.
 
+o Stdio.Buffer()->match has been deprecated.
+  Use Stdio.Buffer()->sscanf() instead.
+
 
 Removed features and modules
 ----------------------------
