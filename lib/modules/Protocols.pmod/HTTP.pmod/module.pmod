@@ -438,18 +438,24 @@ void do_async_method(string method,
 
   if(!request_headers)
     request_headers = ([]);
-  mapping default_headers = ([
-    "user-agent" : "Mozilla/5.0 (compatible; MSIE 6.0; Pike HTTP client)"
-    " Pike/" + __REAL_MAJOR__ + "." + __REAL_MINOR__ + "." + __REAL_BUILD__,
-    "host" : url->host +
-    (url->port!=(url->scheme=="https"?443:80)?":"+url->port:"")]);
 
-  if(url->user || url->password)
-    default_headers->authorization = "Basic "
-				   + MIME.encode_base64(url->user + ":" +
-							(url->password || ""),
-                                                        1);
-  request_headers = default_headers | request_headers;
+  multiset lc_headers = (<>);
+  foreach( request_headers; string header; string value ) {
+    lc_headers[lower_case(header)] = 1;
+  }
+
+  if( !lc_headers["user-agent"] )
+    request_headers["user-agent"] = "Mozilla/5.0 (compatible; MSIE 6.0; Pike HTTP client) Pike/" + __REAL_MAJOR__ + "." + __REAL_MINOR__ + "." + __REAL_BUILD__;
+
+  if( !lc_headers["host"] )
+    request_headers->host = url->host +
+      (url->port!=(url->scheme=="https"?443:80)?":"+url->port:"");
+
+  // Will overwrite any existing authorization header instead of
+  // adding two headers.
+  if( url->user )
+    request_headers->authorization = "Basic "
+      + MIME.encode_base64(url->user + ":" + (url->password || ""), 1);
 
   string query=url->query;
   if(query_variables && sizeof(query_variables))
