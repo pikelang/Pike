@@ -2715,6 +2715,12 @@ static struct pike_string *very_low_parse_xml(struct pike_string *end,
 	break;
 
       case '&':
+        if(toplevel)
+        {
+          XMLERROR("All data must be inside tags");
+          SKIPSPACE();
+          break;
+        }
 	READ_REFERENCE(0,*text,very_low_parse_xml(NULL, text, 1));
 	break;
 
