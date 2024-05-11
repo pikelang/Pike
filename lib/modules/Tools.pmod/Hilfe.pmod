@@ -1303,7 +1303,7 @@ protected class ParserState(Evaluator evaluator) {
 	return 0;
       }
     }
-    if(err = catch( tokens = Parser.Pike.split(line, low_state) )) {
+    if(err = catch( tokens = Parser.Pike.low_split(line, low_state) )) {
       caught_error = err[0];
       return 0;
     }
