@@ -588,8 +588,6 @@ testfont binary
 /src/modules/Parser/initstuff.h foreign_ident
 /src/modules/Parser/parser.c foreign_ident
 /src/modules/Parser/parser.h foreign_ident
-/src/modules/Parser/xml.c foreign_ident
-/src/modules/Parser/xml.cmod foreign_ident
 /src/modules/Pipe/Makefile.in foreign_ident
 /src/modules/Pipe/acconfig.h foreign_ident
 /src/modules/Pipe/configure.in foreign_ident

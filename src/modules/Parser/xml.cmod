@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xml.cmod,v 1.107 2008/11/30 16:45:29 grubba Exp $
+|| $Id$
 */
 
 #include "global.h"
@@ -2756,6 +2756,12 @@ static struct pike_string *very_low_parse_xml(struct pike_string *end,
 	break;
 
       case '&':
+	if(toplevel)
+	{
+	  XMLERROR("All data must be inside tags");
+	  SKIPSPACE();
+	  break;
+	}
 	READ_REFERENCE(0,*text,very_low_parse_xml(NULL, text, 1));
 	break;
 
