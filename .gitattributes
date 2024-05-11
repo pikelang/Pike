@@ -1004,9 +1004,6 @@ Makefile.rl -space_indent tab_indent
 /src/post_modules/VCDiff/vcdiff.cmod mixed_indent
 /src/post_modules/VCDiff/vcdiff_wrapper.cc mixed_indent
 /src/post_modules/VCDiff/vcdiff_wrapper.h mixed_indent
-/src/post_modules/ZXID/configure.in mixed_indent
-/src/post_modules/ZXID/module.pmod.in mixed_indent
-/src/post_modules/ZXID/zxid.cmod mixed_indent
 /src/post_modules/_ADT/circular_list.cmod mixed_indent
 /src/post_modules/_ADT/sequence.cmod mixed_indent
 /src/post_modules/_ADT/sequence.h mixed_indent
