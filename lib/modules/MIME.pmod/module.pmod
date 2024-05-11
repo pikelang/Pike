@@ -390,7 +390,7 @@ protected array(string) reremap(string word, string|function(string:string) sele
 {
   if(max(@values(word))<128)
     return ({ word,0 });
-  string s = stringp(selector)? selector : selector(word);
+  string s = stringp(selector)? selector : ([function]selector)(word);
   return s?
     ({ Charset.encoder(s,replacement,repcb)->feed(word)->drain(), s }) :
     ({ word,0 });
