@@ -318,7 +318,7 @@ string reconstitute_with_line_numbers(array(string|object(Token)|array) tokens)
 	  if(sizeof(ret) && ret[-1]!='\n') ret+="\n";
 	  line=tok->line;
 	  if(tok->file) file=tok->file;
-	  ret+=sprintf("#line %d %O\n",line,file||"-");
+          ret += sprintf("#line %d %q\n", line, file||"-");
 	}
 	tok=tok->text + tok->trailing_whitespaces;
       }
