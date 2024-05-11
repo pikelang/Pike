@@ -2368,7 +2368,7 @@ PIKECLASS Buffer
     }
   }
 
-  /*! @decl string(8bit)|int|float|array match(string(8bit) format)
+  /*! @decl __deprecated__ string(8bit)|int|float|array match(string(8bit) format)
    *!
    *! Reads data from the beginning of the buffer to match the
    *! specifed format, then return the match.
@@ -2397,10 +2397,13 @@ PIKECLASS Buffer
    *!     buffer->match("%0s%d");
    *!   @endcode
    *!
+   *! @deprecated sscanf()
+   *!
    *! @seealso
    *!   @[sscanf()], @[predef::sscanf()], @[array_sscanf()]
    */
   PIKEFUN string(8bit)|int|float|array match( string(8bit) format )
+    type __deprecated__(function(string(8bit): string(8bit)|int|float|array));
   {
     INT32 i;
     ptrdiff_t num_used;
