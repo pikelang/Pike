@@ -93,6 +93,7 @@ string dirlist( string dir, string rel_dir )
 
     foreach( sort( get_dir( dir ) ); int i; string fn )
     {
+        string path = Protocols.HTTP.uri_encode((combine_path(rel_dir, fn)/"/")[*])*"/";
         Stdio.Stat s = file_stat( combine_path(dir, fn) );
         if( !s )
             continue;
@@ -106,7 +107,7 @@ string dirlist( string dir, string rel_dir )
 		    "<td align='right'>%s</td>"
 		    "<td align='right'>%s</td></tr>\n",
                     (i&1?"odd":"even"),
-                    Protocols.HTTP.uri_encode(fn), s->isdir?"/":"",
+                    path, s->isdir?"/":"",
 		    Parser.encode_html_entities(fn), t,
                     s->isdir?"":String.int2size(s->size));
     }
