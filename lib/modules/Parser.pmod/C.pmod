@@ -33,12 +33,58 @@ class UnterminatedStringError
   protected void create(string pre, string post)
   {
     int line = String.count(pre, "\n")+1;
-    err_str = pre+post;
+    err_str = post;
     if( sizeof(post) > 100 )
       ::create(sprintf("Unterminated string %O[%d] at line %d\n",
                        post[..100], sizeof(post)-100, line));
     else
       ::create(sprintf("Unterminated string %O at line %d\n",
+                       post, line));
+  }
+}
+
+class UnterminatedCharacterError
+//! Error thrown when an unterminated character token is encountered.
+{
+  inherit Error.Generic;
+  constant error_type = "unterminated_character";
+  constant is_unterminated_character_error = 1;
+
+  string err_char;
+  //! The character that failed to be tokenized
+
+  protected void create(string pre, string post)
+  {
+    int line = String.count(pre, "\n")+1;
+    err_char = post;
+    if( sizeof(post) > 100 )
+      ::create(sprintf("Unterminated character %O[%d] at line %d\n",
+                       post[..100], sizeof(post)-100, line));
+    else
+      ::create(sprintf("Unterminated character %O at line %d\n",
+                       post, line));
+  }
+}
+
+class UnterminatedCommentError
+//! Error thrown when an unterminated comment token is encountered.
+{
+  inherit Error.Generic;
+  constant error_type = "unterminated_comment";
+  constant is_unterminated_comment_error = 1;
+
+  string err_comment;
+  //! The comment that failed to be tokenized
+
+  protected void create(string pre, string post)
+  {
+    int line = String.count(pre, "\n")+1;
+    err_comment = post;
+    if( sizeof(post) > 100 )
+      ::create(sprintf("Unterminated comment %O[%d] at line %d\n",
+                       post[..100], sizeof(post)-100, line));
+    else
+      ::create(sprintf("Unterminated comment %O at line %d\n",
                        post, line));
   }
 }
@@ -54,9 +100,13 @@ class UnterminatedStringError
   string rem;
   [ret, rem] = splitter(data);
   if(sizeof(rem)) {
-    if(rem[0]=='"')
-      throw(UnterminatedStringError(ret*"", rem));
     if(state) state->remains=rem;
+    else if(rem[0]=='"' || rem[0]=='#')
+      throw(UnterminatedStringError(ret*"", rem));
+    else if(rem[0]=='\'')
+      throw(UnterminatedCharacterError(ret*"", rem));
+    else if(rem[0]=='/')
+      throw(UnterminatedCommentError(ret*"", rem));
   }
   return ret;
 }
