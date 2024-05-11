@@ -1155,6 +1155,11 @@ protected class ParserState(Evaluator evaluator) {
           pstack->push(token);
           continue;
 
+        case "(":
+          if(block=="class" && last=="class")
+            block = "class stop";
+          break;
+
         case "lambda":
           block = token;
           last = token;
@@ -2017,7 +2022,7 @@ class Evaluator {
 
       case "class":
 
-	if(expr[1]=="{") {
+	if(expr[1]=="{" || expr[1]=="(") {
 	  // Unnamed class ("class {}();").
 	  evaluate("return " + expr->code(), 1);
 	}
