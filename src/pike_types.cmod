@@ -122,9 +122,7 @@ void TYPE_STACK_DEBUG(const char *fun)
 	    (long)(Pike_compiler->pike_type_mark_stackp -
 		   pike_type_mark_stack));
     if (Pike_compiler->type_stackp != type_stack) {
-      fprintf(stderr, "%25s  : top: ", "");
-      simple_describe_type(peek_type_stack());
-      fprintf(stderr, "\n");
+      pike_fprintf(stderr, "%25s  : top: %pT\n", "", peek_type_stack());
     }
   }
 }
@@ -241,6 +239,8 @@ PMOD_EXPORT char *get_name_of_type(TYPE_T t)
     case PIKE_T_SET_CDR:	return "PIKE_T_SET_CDR";
 
     case PIKE_T_ATTRIBUTE:	return "PIKE_T_ATTRIBUTE";
+    case PIKE_T_GENERIC:	return "PIKE_T_GENERIC";
+    case PIKE_T_BIND:		return "PIKE_T_BIND";
     case PIKE_T_NSTRING:	return "PIKE_T_NSTRING";
     case PIKE_T_LSTRING:	return "PIKE_T_LSTRING";
     case PIKE_T_LARRAY:		return "PIKE_T_LARRAY";
@@ -2821,7 +2821,11 @@ void low_describe_type(struct string_builder *s, struct pike_type *t)
 	    string_builder_strcat(s, "set_cdr");
 	    break;
 	  default:
-	    string_builder_sprintf(s, "operator(0x%04x)", t->type);
+            if ((t->type & 0xc000) == 0xc000) {
+              string_builder_sprintf(s, "int_op(0x%04x)", t->type);
+            } else {
+              string_builder_sprintf(s, "operator(0x%04x)", t->type);
+            }
 	    break;
 	  }
           string_builder_sprintf(s, "(%pT", t->car);
@@ -4725,6 +4729,10 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 #endif
     break;
   }
+
+  /*
+   * Invariant: op is either PT_BINOP_AND or PT_BINOP_MINUS.
+   */
 
  full_loop:
   if (a == b) {
@@ -8421,6 +8429,22 @@ static struct pike_type *low_match_types(struct pike_type *a,
     fputc('\n', stderr);
   }
 #endif
+
+#ifdef PIKE_DEBUG
+  if (b && (a == void_type_string) &&
+      (!ret != !(b->flags & PT_FLAG_VOIDABLE))) {
+    pike_fprintf(stderr, "Voidable mismatch for %pT flags: 0x%08x\n"
+                 "ret: %pT\n",
+                 b, b->flags, ret);
+  }
+  if (a && (b == void_type_string) &&
+      (!ret != !(a->flags & PT_FLAG_VOIDABLE))) {
+    pike_fprintf(stderr, "Voidable mismatch for %pT flags: 0x%08x\n"
+                 "ret: %pT\n",
+                 a, a->flags, ret);
+  }
+#endif
+
   return ret;
 }
 
@@ -8909,7 +8933,7 @@ static struct pike_type *low_match_types2(struct pike_type *a,
           low_match_types(any_type_string, b->cdr, flags);
         t = apply_type_operator(b->type, t1, t2);
         free_type(t2);
-        } else {
+      } else {
         t = apply_type_operator(b->type, t1, b->cdr);
       }
       free_type(t1);
@@ -10285,11 +10309,6 @@ int pike_types_le(struct pike_type *a, struct pike_type *b,
 {
   struct remap_state remap;
   struct pike_type *tmp, *tmp2 = NULL;
-#ifdef PIKE_EXTRA_DEBUG
-  int res;
-  struct pike_type **save_type_stackp = Pike_compiler->type_stackp;
-  struct pike_type ***save_mark_stackp = Pike_compiler->pike_type_mark_stackp;
-#endif
 
   INIT_REMAP_STATE(remap);
 
@@ -10302,48 +10321,6 @@ int pike_types_le(struct pike_type *a, struct pike_type *b,
 
     tmp2 = remap_markers(tmp, &remap, PT_FLAG_REMAP_EVAL_MARKERS);
   }
-
-#ifdef PIKE_EXTRA_DEBUG
-  clear_markers();
-  res = low_pike_types_le(a, b, 0, 0);
-
-  if ((save_type_stackp != Pike_compiler->type_stackp) ||
-      (save_mark_stackp != Pike_compiler->pike_type_mark_stackp) ||
-      (res != !tmp2)) {
-    struct pike_type *tmp3;
-
-    fprintf(stderr, "pike_types_le mismatch!\n"
-	    "a: ");
-    simple_describe_type(a);
-    fprintf(stderr, "\nb: ");
-    simple_describe_type(b);
-    fprintf(stderr, "\nres: %d\ntmp: ", res);
-    simple_describe_type(tmp);
-    fprintf(stderr, "\ntmp2: ");
-    simple_describe_type(tmp2);
-    fprintf(stderr, "\n\n");
-
-    clear_mapping(remap.markers[0]);
-    clear_mapping(remap.markers[1]);
-
-    tmp3 = low_type_binop(PT_BINOP_MINUS, a, b, &remap,
-			  aflags, bflags, PT_FLAG_REMAP_TRACE);
-    fprintf(stderr, "tmp3: ");
-    simple_describe_type(tmp3);
-    fprintf(stderr, "\n\n");
-
-    if ((save_type_stackp != Pike_compiler->type_stackp) ||
-	(save_mark_stackp != Pike_compiler->pike_type_mark_stackp)) {
-      Pike_fatal("Stack level corruption!\n"
-		 "type stack: %p (expected: %p)\n"
-		 "mark stack: %p (expected: %p)\n",
-		 Pike_compiler->type_stackp, save_type_stackp,
-		 Pike_compiler->pike_type_mark_stackp, save_mark_stackp);
-    }
-
-    free_type(tmp3);
-  }
-#endif
 
   EXIT_REMAP_STATE(remap);
 
@@ -12813,22 +12790,8 @@ struct pike_type *new_get_return_type(struct pike_type *fun_type,
     do {
       if (!match_types(fun_type->car, void_type_string)) {
 	/* Too few arguments. */
-#ifdef PIKE_DEBUG
-	if (fun_type->car && (fun_type->car->flags & PT_FLAG_VOIDABLE)) {
-	  fprintf(stderr, "voidable mismatch for ");
-	  simple_describe_type(fun_type->car);
-	  fprintf(stderr, " flags: 0x%08x\n", fun_type->car->flags);
-	}
-#endif
 	break;
       }
-#ifdef PIKE_DEBUG
-      if (fun_type->car && !(fun_type->car->flags & PT_FLAG_VOIDABLE)) {
-	fprintf(stderr, "voidable mismatch for ");
-	simple_describe_type(fun_type->car);
-	fprintf(stderr, " flags: 0x%08x\n", fun_type->car->flags);
-      }
-#endif
       fun_type = fun_type->cdr;
     } while(fun_type->type == PIKE_T_FUNCTION);
     if (fun_type->type != T_MANY) {
