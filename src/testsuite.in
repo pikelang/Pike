@@ -1078,7 +1078,9 @@ test_do([[
   }
 
   class websocket_handler {
-    mapping|Concurrent.Future get_state(int group) { }
+    mapping|Concurrent.Future get_state(int group) {
+      return Concurrent.resolve(([]));
+    }
 
     __async__ void _send_updates(array(object) socks, int group,
                                  mapping|void data) {
