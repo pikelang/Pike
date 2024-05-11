@@ -392,7 +392,10 @@ test_equal([[Stdio.Buffer("0123456789")[<1..<2] ]], "0123456789"[<1..<2])
 dnl sscanf
 
 test_equal([[Stdio.Buffer("hej")->sscanf("%3c")]], ({6841706}))
-test_equal([[Stdio.Buffer("hej")->match("%3c")]], 6841706)
+test_any_equal([[
+#pragma no_deprecation_warnings
+  return Stdio.Buffer("hej")->match("%3c");
+]], 6841706)
 
 test_any([[
   int i;
@@ -1000,6 +1003,7 @@ test_any([[ return Stdio.Buffer("\1\2\3\4")->read_le_int(4); ]], 0x04030201)
 dnl unread
 
 test_any( [[
+#pragma no_deprecation_warnings
   /* The documentation promises that we can always unread() */
   Stdio.Buffer b = Stdio.Buffer();
   b->add("0" * 90);
