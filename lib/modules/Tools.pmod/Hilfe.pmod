@@ -1307,6 +1307,12 @@ protected class ParserState(Evaluator evaluator) {
       caught_error = err[0];
       return 0;
     }
+    if (low_state->remains && has_prefix(low_state->remains, "\"")) {
+      caught_error =
+        Parser.Pike.UnterminatedStringError(tokens*"", low_state->remains)[0];
+      m_delete(low_state, "remains");
+      return 0;
+    }
     return tokens;
   }
 
