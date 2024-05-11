@@ -1078,13 +1078,14 @@ test_do([[
   }
 
   class websocket_handler {
-    mapping|Concurrent.Future get_state(int group) {
-      return Concurrent.resolve(([]));
+    __async__ mapping get_state(int group) {
+      return ([]);
     }
 
     __async__ void _send_updates(array(object) socks, int group,
                                  mapping|void data) {
-      if (!data) data = await(get_state(group));
+      Concurrent.Future f = get_state(group);
+      if (!data) data = await(f);
     }
 
     protected void create(string name) { }
@@ -1094,7 +1095,9 @@ test_do([[
     inherit http_endpoint;
     inherit websocket_handler;
 
-    mapping get_state(int group) { }
+    __async__ mapping get_state(int group) {
+      return ([ "group": group ]);
+    }
   }
 
   add_constant("testsuite_http_websocket", http_websocket);
