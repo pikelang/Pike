@@ -2038,13 +2038,8 @@ static int low_add_identifier(struct compilation *c,
 #endif
   debug_add_to_identifiers(dummy);
 
-  if (Pike_compiler->current_annotations) {
-    /* FIXME: What about annotations for eg variant functions? */
-    compiler_add_annotations(n, Pike_compiler->current_annotations);
-    /* Only annotate a single identifier. */
-    free_node(Pike_compiler->current_annotations);
-    Pike_compiler->current_annotations = NULL;
-  }
+  /* FIXME: What about annotations for eg variant functions? */
+  compiler_add_annotations(n);
 
   return n;
 }
@@ -3971,6 +3966,7 @@ void low_start_new_program(struct program *p,
       int j = Pike_compiler->new_program->num_annotations;
       while(j--) {
         do_free_multiset(*m);
+        *m = NULL;
         m++;
       }
     }
@@ -4103,6 +4099,7 @@ static void exit_program_struct(struct program *p)
   if (p->annotations) {
     for (e = 0; e < p->num_annotations; e++) {
       do_free_multiset(p->annotations[e]);
+      p->annotations[e] = NULL;
     }
   }
 
@@ -4131,8 +4128,10 @@ static void exit_program_struct(struct program *p)
   if(p->inherits)
     for(e=0; e<p->num_inherits; e++)
     {
-      if (p->inherits[e].annotations)
+      if (p->inherits[e].annotations) {
 	free_multiset(p->inherits[e].annotations);
+        p->inherits[e].annotations = NULL;
+      }
       if(p->inherits[e].name)
 	free_string(p->inherits[e].name);
       if(e)
@@ -4962,14 +4961,28 @@ PMOD_EXPORT void add_annotation(int id, struct svalue *val)
   }
 }
 
-void compiler_add_annotations(int id, node *annotations)
+void compiler_add_annotations(int id)
 {
+  node *annotations = Pike_compiler->current_annotations;
+
+  if (!annotations) return;
+
+  if ((Pike_compiler->new_program->num_annotations > id) &&
+      Pike_compiler->new_program->annotations[id]) {
+    /* Replace existing annotations. */
+    free_multiset(Pike_compiler->new_program->annotations[id]);
+    Pike_compiler->new_program->annotations[id] = NULL;
+  }
+
   while(annotations) {
     node *val_node = CAR(annotations);
     annotations = CDR(annotations);
     if (val_node->token != F_CONSTANT) continue;
     add_annotation(id, &val_node->u.sval);
   }
+
+  free_node(Pike_compiler->current_annotations);
+  Pike_compiler->current_annotations = NULL;
 }
 
 /**
@@ -7230,6 +7243,8 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
 	       cc->compilation_depth, "",
 	       n, id->func.const_info.offset);
 #endif
+
+      compiler_add_annotations(n);
     }
     return n;
   }
@@ -7846,6 +7861,8 @@ INT32 define_function(struct pike_string *name,
 
       free_type(funp->type);
       copy_pike_type(funp->type, type);
+
+      compiler_add_annotations(i);
     }else{
 #ifdef PROGRAM_BUILD_DEBUG
       fprintf(stderr, "%*sidentifier was inherited\n",

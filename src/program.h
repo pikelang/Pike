@@ -932,7 +932,7 @@ void check_program(struct program *p);
 int low_is_variant_dispatcher(struct identifier *id);
 int is_variant_dispatcher(struct program *prog, int fun);
 PMOD_EXPORT void add_annotation(int id, struct svalue *sval);
-void compiler_add_annotations(int id, node *annotations);
+void compiler_add_annotations(int id);
 PMOD_EXPORT void add_program_annotation(int id, struct svalue *sval);
 void compiler_add_program_annotations(int id, node *annotations);
 struct program *end_first_pass(int finish);
