@@ -3851,7 +3851,7 @@ EXTRA
 
 /*! @class AutoCodecClass
  *!
- *! This is the class that implements the @[AutoCodec] annotstion.
+ *! This is the class that implements the @[AutoCodec] annotation.
  */
 struct program *AutoCodecClass_program = NULL;
 struct object *AutoCodec_annotation = NULL;
