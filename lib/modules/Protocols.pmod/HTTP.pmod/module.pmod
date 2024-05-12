@@ -304,7 +304,7 @@ object(.Query)|zero
     error("Can't handle %O or any other protocols than HTTP or HTTPS.\n",
 	  url->scheme);
 
-  con->https = (url->scheme=="https")? 1 : 0;
+  con->https = (url->scheme=="https");
 
   mapping default_headers = ([
     "user-agent" : "Mozilla/5.0 (compatible; MSIE 6.0; Pike HTTP client)"
@@ -434,7 +434,7 @@ void do_async_method(string method,
     error("Can't handle %O or any other protocols than HTTP or HTTPS.\n",
 	  url->scheme);
 
-  con->https = (url->scheme=="https")? 1 : 0;
+  con->https = (url->scheme=="https");
 
   if(!request_headers)
     request_headers = ([]);
