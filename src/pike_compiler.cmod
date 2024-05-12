@@ -2960,6 +2960,9 @@ void yytype_report(int severity_level,
 		   struct pike_type *got_t,
 		   INT32 args, const char *fmt, ...)
 {
+  /* Do not complain about type errors before the types have stabilized. */
+  if (Pike_compiler->compiler_pass != COMPILER_PASS_LAST) return;
+
   if (fmt)
   {
     va_list vargs;
