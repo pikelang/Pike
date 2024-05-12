@@ -1145,12 +1145,17 @@ static void zap_placeholder(struct compilation *c)
 {
   /* fprintf(stderr, "Destructing placeholder.\n"); */
   if (c->placeholder->storage) {
-    yyerror("Placeholder already has storage!");
+    /* Do not complain if we are here because of a
+     * compilation error in pass 2 or later.
+     */
+    if (c->p) {
+      yyerror("Placeholder already has storage!");
 #if 0
-    fprintf(stderr, "Placeholder already has storage!\n"
-	    "placeholder: %p, storage: %p, prog: %p\n",
-	    c->placeholder, c->placeholder->storage, c->placeholder->prog);
+      Pike_fatal("Placeholder already has storage!\n"
+                 "placeholder: %p, storage: %p, prog: %p\n",
+                 c->placeholder, c->placeholder->storage, c->placeholder->prog);
 #endif
+    }
     debug_malloc_touch(c->placeholder);
     destruct(c->placeholder);
   } else {
