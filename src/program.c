@@ -7012,7 +7012,7 @@ int define_variable(struct pike_string *name,
 			   type)) {
 	    level = REPORT_ERROR;
 	  }
-	  yytype_report(level, NULL, 0,
+          yytype_report(level | REPORT_FORCE, NULL, 0,
 			ID_FROM_INT(Pike_compiler->new_program, n)->type,
 			NULL, 0, type, 0,
                         "Illegal to redefine inherited variable %pS "
@@ -7032,7 +7032,7 @@ int define_variable(struct pike_string *name,
 	     PIKE_T_MIXED) &&
 	    (ID_FROM_INT(Pike_compiler->new_program, n)->run_time_type !=
 	     compile_type_to_runtime_type(type))) {
-	  yytype_report(REPORT_ERROR, NULL, 0,
+          yytype_report(REPORT_ERROR | REPORT_FORCE, NULL, 0,
 			ID_FROM_INT(Pike_compiler->new_program, n)->type,
 			NULL, 0, type, 0,
                         "Illegal to redefine inherited variable %pS "

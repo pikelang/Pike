@@ -2843,6 +2843,8 @@ PMOD_EXPORT void va_yyreport(int severity_level,
     Pike_fatal("Stack error (underflow)\n");
 #endif
 
+  severity_level &= REPORT_MASK;
+
   /* Convert type errors to warnings in non-strict compat mode. */
   if ((system == type_check_system_string) &&
       (severity_level == REPORT_ERROR) &&
@@ -2961,7 +2963,8 @@ void yytype_report(int severity_level,
 		   INT32 args, const char *fmt, ...)
 {
   /* Do not complain about type errors before the types have stabilized. */
-  if (Pike_compiler->compiler_pass != COMPILER_PASS_LAST) return;
+  if ((Pike_compiler->compiler_pass != COMPILER_PASS_LAST) &&
+      !(severity_level & REPORT_FORCE)) return;
 
   if (fmt)
   {

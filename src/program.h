@@ -875,6 +875,8 @@ extern struct program *gc_internal_program;
 #define REPORT_WARNING	1	/* Compiler warning. */
 #define REPORT_ERROR	2	/* Compilation error. */
 #define REPORT_FATAL	3	/* Unrecoverable error. */
+#define REPORT_MASK	0x0f	/* Mask for the above. */
+#define REPORT_FORCE	0x10	/* Report regardless of compiler pass. */
 
 
 #define COMPILER_IN_CATCH 1
