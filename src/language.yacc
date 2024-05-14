@@ -69,6 +69,7 @@
 %token TOK_DOT_DOT_DOT "..."
 %token TOK_ELSE "else"
 %token TOK_ENUM "enum"
+%token TOK_EXPERIMENTAL_ID "__experimental__"
 %token TOK_EXTERN "extern"
 %token TOK_FLOAT_ID "float"
 %token TOK_FOR "for"
@@ -1195,6 +1196,7 @@ magic_identifiers2:
   | TOK_ARRAY_ID      { $$ = "array"; }
   | TOK_ATTRIBUTE_ID  { $$ = "__attribute__"; }
   | TOK_DEPRECATED_ID { $$ = "__deprecated__"; }
+  | TOK_EXPERIMENTAL_ID { $$ = "__experimental__"; }
   | TOK_MAPPING_ID    { $$ = "mapping"; }
   | TOK_MULTISET_ID   { $$ = "multiset"; }
   | TOK_OBJECT_ID     { $$ = "object"; }
@@ -1288,6 +1290,18 @@ attribute: TOK_ATTRIBUTE_ID '(' string_constant optional_comma ')'
     struct pike_string *deprecated_string;
     MAKE_CONST_STRING(deprecated_string, "deprecated");
     $$ = mkstrnode(deprecated_string);
+  }
+  | TOK_EXPERIMENTAL_ID '(' ')'
+  {
+    struct pike_string *experimental_string;
+    MAKE_CONST_STRING(experimental_string, "experimental");
+    $$ = mkstrnode(experimental_string);
+  }
+  | TOK_EXPERIMENTAL_ID
+  {
+    struct pike_string *experimental_string;
+    MAKE_CONST_STRING(experimental_string, "experimental");
+    $$ = mkstrnode(experimental_string);
   }
   ;
 
@@ -1413,6 +1427,19 @@ basic_type:
     MAKE_CONST_STRING(deprecated_string, "deprecated");
     push_type(T_MIXED);
     push_type_attribute(deprecated_string);
+  }
+  | TOK_EXPERIMENTAL_ID '(' full_type ')'
+  {
+    struct pike_string *experimental_string;
+    MAKE_CONST_STRING(experimental_string, "experimental");
+    push_type_attribute(experimental_string);
+  }
+  | TOK_EXPERIMENTAL_ID '(' error ')'
+  {
+    struct pike_string *experimental_string;
+    MAKE_CONST_STRING(experimental_string, "experimental");
+    push_type(T_MIXED);
+    push_type_attribute(experimental_string);
   }
   ;
 
@@ -4625,6 +4652,8 @@ bad_inherit: bad_expr_ident
   { yyerror_reserved("do"); }
   | TOK_ENUM
   { yyerror_reserved("enum"); }
+  | TOK_EXPERIMENTAL_ID
+  { yyerror_reserved("__experimental__"); }
   | TOK_FLOAT_ID
   { yyerror_reserved("float");}
   | TOK_FOR

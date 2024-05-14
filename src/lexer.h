@@ -490,7 +490,7 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 
       PIKE_MEM_WO_RANGE (yylval, sizeof (YYSTYPE));
 
-      if(len>1 && len<16)
+      if (len > 1)
       {
 	/* NOTE: TWO_CHAR() will generate false positives with wide strings,
 	 * but that doesn't matter, since ISWORD() will fix it.
@@ -630,12 +630,16 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	  break;
 	case TWO_CHAR('_','_'):
 	  if(len < 5) break;
+          if(ISWORD("__args__"))	/* Handled as an identifier. */
+            break;
           if(ISWORD("__async__"))
             return TOK_ASYNC;
 	  if(ISWORD("__attribute__"))
 	    return TOK_ATTRIBUTE_ID;
 	  if(ISWORD("__deprecated__"))
 	    return TOK_DEPRECATED_ID;
+          if(ISWORD("__experimental__"))
+            return TOK_EXPERIMENTAL_ID;
 	  if(ISWORD("__func__"))
 	    return TOK_FUNCTION_NAME;
           if(ISWORD("__generic__"))
@@ -675,10 +679,6 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	     * - Upper case is used for symbols intended for #if constant().
 	     */
 	    if (tmp->size_shift) {
-	      free_string(tmp);
-	      return TOK_IDENTIFIER;
-	    }
-	    if(ISWORD("__args__")) {
 	      free_string(tmp);
 	      return TOK_IDENTIFIER;
 	    }
@@ -823,6 +823,14 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	  {
 	    lex->pragmas &= ~ID_NO_DEPRECATION_WARNINGS;
 	  }
+          else if (ISWORD("no_experimental_warnings"))
+          {
+            lex->pragmas |= ID_NO_EXPERIMENTAL_WARNINGS;
+          }
+          else if (ISWORD("experimental_warnings"))
+          {
+            lex->pragmas &= ~ID_NO_EXPERIMENTAL_WARNINGS;
+          }
 	  else if (ISWORD("disassemble"))
 	  {
 	    lex->pragmas |= ID_DISASSEMBLE;

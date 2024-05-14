@@ -413,6 +413,7 @@ struct program_constant
 #define ID_DISASSEMBLE             0x80000 /* #pragma disassemble */
 #define ID_DYNAMIC_DOT            0x100000 /* #pragma dynamic_dot */
 #define ID_COMPILER_TRACE	  0x200000 /* #pragma compiler_trace */
+#define ID_NO_EXPERIMENTAL_WARNINGS 0x400000 /* #pragma no_experimental_warnings */
 
 
 /*

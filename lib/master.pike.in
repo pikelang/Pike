@@ -2606,7 +2606,7 @@ protected object Unicode;
 void try_issue_deprecation_warning(object compilation_handler)
 {
   if (object active_compiler = get_active_compiler()) {
-    if (!active_compiler->suppress_deprecation_warnings()) {
+    if (active_compiler->suppress_deprecation_warnings() < 2) {
       call_compile_warning_lineno(compilation_handler,
                                   active_compiler->current_file,
                                   active_compiler->current_line,

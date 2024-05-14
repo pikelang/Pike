@@ -2228,8 +2228,8 @@ static void f_compilation_handle_import(INT32 args)
  *!   @[a] had the type attribute @[attribute] before the
  *!   comparison.
  *!
- *!   The default implementation implements the "deprecated"
- *!   attribute.
+ *!   The default implementation implements the @expr{"deprecated"@}
+ *!   and @expr{"experimental"@} attributes.
  *!
  *! @returns
  *!   Returns one of:
@@ -2252,6 +2252,7 @@ static void f_compilation_pop_type_attribute(INT32 args)
   struct svalue *a, *b;
   struct compilation *c = THIS_COMPILATION;
   struct pike_string *deprecated_string;
+  struct pike_string *experimental_string;
   struct mapping *state = NULL;
 
 #if 0
@@ -2270,12 +2271,21 @@ static void f_compilation_pop_type_attribute(INT32 args)
 
   if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
     MAKE_CONST_STRING(deprecated_string, "deprecated");
+    MAKE_CONST_STRING(experimental_string, "experimental");
     if ((attr == deprecated_string) &&
 	!(c->lex.pragmas & ID_NO_DEPRECATION_WARNINGS)) {
       push_svalue(a);
       yytype_report(REPORT_WARNING, NULL, 0, NULL,
 		    NULL, 0, NULL,
 		    1, "Using deprecated %O value.");
+    }
+    if ((attr == experimental_string) &&
+        !(c->lex.pragmas &
+          (ID_NO_DEPRECATION_WARNINGS|ID_NO_EXPERIMENTAL_WARNINGS))) {
+      push_svalue(a);
+      yytype_report(REPORT_WARNING, NULL, 0, NULL,
+                    NULL, 0, NULL,
+                    1, "Using experimental %O value.");
     }
   }
   pop_n_elems(args);
@@ -2290,8 +2300,8 @@ static void f_compilation_pop_type_attribute(INT32 args)
  *!   indexed with a value of type @[i] and @[a] had the type
  *!   attribute @[attribute] before the comparison.
  *!
- *!   The default implementation implements the "deprecated"
- *!   attribute.
+ *!   The default implementation implements the @expr{"deprecated"@}
+ *!   and @expr{"experimental"@} attributes.
  *!
  *! @returns
  *!   Returns @expr{1@} if the type check should be allowed
@@ -2307,11 +2317,13 @@ static void f_compilation_index_type_attribute(INT32 args)
   struct svalue *a, *b;
   struct compilation *c = THIS_COMPILATION;
   struct pike_string *deprecated_string;
+  struct pike_string *experimental_string;
 
   get_all_args(NULL, args, "%t%*%*", &attr, &a, &b);
 
   if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
     MAKE_CONST_STRING(deprecated_string, "deprecated");
+    MAKE_CONST_STRING(experimental_string, "experimental");
     if ((attr == deprecated_string) &&
 	!(c->lex.pragmas & ID_NO_DEPRECATION_WARNINGS)) {
       push_svalue(a);
@@ -2319,18 +2331,27 @@ static void f_compilation_index_type_attribute(INT32 args)
 		    NULL, 0, NULL,
 		    1, "Indexing a deprecated %O value.");
     }
+    if ((attr == experimental_string) &&
+        !(c->lex.pragmas &
+          (ID_NO_DEPRECATION_WARNINGS|ID_NO_EXPERIMENTAL_WARNINGS))) {
+      push_svalue(a);
+      yytype_report(REPORT_WARNING, NULL, 0, NULL,
+                    NULL, 0, NULL,
+                    1, "Indexing an experimental %O value.");
+    }
   }
   pop_n_elems(args);
   push_int(1);
 }
 
-/*! @decl int(0..1) suppress_deprecation_warnings()
+/*! @decl int(0..2) suppress_deprecation_warnings()
  *!
  *!   Allows to query whether (during an active compilation) deprecation
- *!   warnings are supposed to be suppressed.
+ *!   and experimental warnings are supposed to be suppressed.
  *!
  *! @returns
- *!   @expr{1@} if deprecation warnings should be suppressed,
+ *!   @expr{2@} if deprecation and experimental warnings should be suppressed,
+ *!   @expr{1@} if experimental warnings should be suppressed,
  *!   @expr{0@} otherwise.
  */
 static void f_compilation_suppress_deprecation_warnings(INT32 args)
@@ -2338,8 +2359,14 @@ static void f_compilation_suppress_deprecation_warnings(INT32 args)
     struct compilation *c = THIS_COMPILATION;
 
     pop_n_elems(args);
-    push_int(Pike_compiler->compiler_pass != COMPILER_PASS_LAST ||
-             c->lex.pragmas & ID_NO_DEPRECATION_WARNINGS);
+    if ((Pike_compiler->compiler_pass != COMPILER_PASS_LAST) ||
+        (c->lex.pragmas & ID_NO_DEPRECATION_WARNINGS)) {
+      push_int(2);
+    } else if (c->lex.pragmas & ID_NO_EXPERIMENTAL_WARNINGS) {
+      push_int(1);
+    } else {
+      push_int(0);
+    }
 }
 
 /*! @decl int(0..1)|type(mixed) push_type_attribute(string attribute, @
@@ -2352,8 +2379,8 @@ static void f_compilation_suppress_deprecation_warnings(INT32 args)
  *!   @[b] had the type attribute @[attribute] before the
  *!   comparison.
  *!
- *!   The default implementation implements the "deprecated"
- *!   attribute.
+ *!   The default implementation implements the @expr{"deprecated"@}
+ *!   and @expr{"experimental"@} attributes.
  *!
  *! @returns
  *!   Returns one of:
@@ -2456,6 +2483,17 @@ static void f_compilation_push_type_attribute(INT32 args)
 		    NULL, 0, NULL,
 		    1, "Using deprecated %O value.");
     }
+    MAKE_CONST_STRING(test, "experimental");
+    if ((attr == test) &&
+        !(c->lex.pragmas &
+          (ID_NO_DEPRECATION_WARNINGS|ID_NO_EXPERIMENTAL_WARNINGS)) &&
+        !((TYPEOF(*a) == PIKE_T_TYPE) && (a->u.type == zero_type_string))) {
+      /* Don't warn about setting experimental values to zero. */
+      push_svalue(b);
+      yytype_report(REPORT_WARNING, NULL, 0, NULL,
+                    NULL, 0, NULL,
+                    1, "Using experimental %O value.");
+    }
   }
   pop_n_elems(args);
   push_int(1);
@@ -2486,6 +2524,7 @@ static void f_compilation_push_type_attribute(INT32 args)
  *!
  *!   @dl
  *!     @item @expr{__deprecated__@}
+ *!     @item @expr{__experimental__@}
  *!   @enddl
  *!
  *! @returns
@@ -2529,6 +2568,14 @@ static void f_compilation_apply_type_attribute(INT32 args)
       yytype_report(REPORT_WARNING, NULL, 0, NULL,
 		    NULL, 0, NULL,
 		    0, "Calling a deprecated value.");
+    }
+    MAKE_CONST_STRING(test, "experimental");
+    if ((attr == test) && !a &&
+        !(c->lex.pragmas &
+          (ID_NO_DEPRECATION_WARNINGS|ID_NO_EXPERIMENTAL_WARNINGS))) {
+      yytype_report(REPORT_WARNING, NULL, 0, NULL,
+                    NULL, 0, NULL,
+                    0, "Calling an experimental value.");
     }
   }
   pop_n_elems(args);

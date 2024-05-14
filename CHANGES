@@ -47,6 +47,13 @@ o '__unknown__' type added.
   string(zero:__unknown__) and for the generic function type
   function(__unknown__...:mixed).
 
+o '__experimental__' type attribute added.
+
+  This identifier is analogous to __deprecated__, but warns that
+  the symbol is experimental rather than deprecated. There are
+  also #pragmas {no_,}experimental_warnings that are analogous
+  to the #pragmas {no_,}deprecation_warnings.
+
 o Syntax for declaring and using generic types added.
 
     class Foo (< T >) (protected T val) {
