@@ -3464,7 +3464,7 @@ test_any([[
 
 test_do([[
   // Save our constants for future use...
-  add_constant("__saved_constants__", ([]) + all_constants());
+  add_constant("__saved_constants", ([]) + all_constants());
 ]])
 
 test_any([[
@@ -3855,10 +3855,10 @@ test_do([[
 
 test_do([[
   // Restore constants that were zapped by the various masters used above.
-  foreach(__saved_constants__; string const_name; mixed val) {
+  foreach(__saved_constants; string const_name; mixed val) {
     add_constant(const_name, val);
   }
-  add_constant("__saved_constants__");
+  add_constant("__saved_constants");
 ]])
 
 test_compile_any([[int log() { return 17; } class Greta { int hanna() { return log(); } }]])
