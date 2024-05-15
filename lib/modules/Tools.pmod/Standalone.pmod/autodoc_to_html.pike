@@ -1152,11 +1152,17 @@ string parse_type(Node n, void|string debug) {
       if (attr == "\"deprecated\"") {
 	ret += "<code class='deprecated'>__deprecated__</code> " +
                subtype;
+      } else if (attr == "\"experimental\"") {
+        ret += "<code class='experimental'>__experimental__</code> " +
+               subtype;
       } else {
 	ret += sprintf("__attribute__(%s) %s", attr, subtype);
       }
     } else if (attr == "\"deprecated\"") {
       ret += "<code class='deprecated'>__deprecated__</code>(" +
+             subtype + ")";
+    } else if (attr == "\"experimental\"") {
+      ret += "<code class='experimental'>__experimental__</code>(" +
              subtype + ")";
     } else {
       ret += sprintf("__attribute__(%s, %s)", attr, subtype);

@@ -531,6 +531,9 @@ class AttributeType {
     if (attribute == "\"deprecated\"") {
       return prefix?"__deprecated__ " + subtype->print():
 	"__deprecated__(" + subtype->print() + ")";
+    } else if (attribute == "\"experimental\"") {
+      return prefix?"__experimental__ " + subtype->print():
+        "__experimental__(" + subtype->print() + ")";
     } else {
       return prefix?"__attribute__(" + attribute + ") " + subtype->print():
 	"__attribute__(" + attribute + ", " + subtype->print() + ")";
