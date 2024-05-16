@@ -228,8 +228,6 @@ PIKECLASS ResObj
     switch( step(stmt) ) {
     case SQLITE_DONE:
       THIS->eof = 1;
-      sqlite3_finalize(stmt);
-      THIS->stmt = 0;
       push_int(0);
       return;
     case SQLITE_ROW:
