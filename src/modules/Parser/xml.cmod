@@ -2685,10 +2685,14 @@ static struct pike_string *very_low_parse_xml(struct pike_string *end,
       default:
 	if(toplevel)
 	{
-	  if(!isSpace(PEEK(0)))
-	    XMLERROR("All data must be inside tags");
-	  SKIPSPACE();
-	  break;
+          if( THIS->input->pos==0 && PEEK(0)==0xfeff ) {
+            READ(1);
+            break;
+          }
+          if(!isSpace(PEEK(0)))
+            XMLERROR("All data must be inside tags");
+          SKIPSPACE();
+          break;
 	}
 	POKE(*text, PEEK(0));
 	READ(1);

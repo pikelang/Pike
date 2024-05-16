@@ -852,6 +852,15 @@ test_any([[
 	    });
   return error;
 ]], "All data must be inside tags")
+test_any([[
+  string error;
+  object o = Parser.XML.Simple();
+  o->parse ("\xfeff<a/>",
+            lambda (string type, string name, mapping attrs, string data) {
+              if (type == "error") error = data;
+            });
+  return error;
+]], 0)
 
 // Validating
 END_MARKER
