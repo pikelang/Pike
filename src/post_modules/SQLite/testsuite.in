@@ -72,6 +72,43 @@ cond_resolv( SQLite.SQLite, [[
   ]], 0)
   test_equal( db->big_query("SELECT dd FROM test WHERE aa=16")->fetch_row(), ({ "cd\0e" }))
 
+  dnl Bug #10160
+  test_eq( db->big_query(#"CREATE TABLE IF NOT EXISTS files (
+    FileID INTEGER PRIMARY KEY,
+    FileName TEXT
+)")->fetch_row();, 0 )
+  test_any([[
+    return db->big_query("INSERT INTO files (FileName) VALUES('backup3')")->fetch_row();
+  ]], 0)
+  test_any([[
+    return db->big_query("INSERT INTO files (FileName) VALUES(:fn)", ([":fn":"backup2"]))->fetch_row();
+  ]], 0)
+  test_any([[
+    return db->big_query("INSERT INTO files (FileName) VALUES(%s)", "backup1")->fetch_row();
+  ]], 0)
+  test_any([[
+    return db->big_typed_query("INSERT INTO files (FileName) VALUES('backup6')")->fetch_row();
+  ]], 0)
+  test_any([[
+    return db->big_typed_query("INSERT INTO files (FileName) VALUES(:fn)", ([":fn":"backup5"]))->fetch_row();
+  ]], 0)
+  test_any([[
+    return db->big_typed_query("INSERT INTO files (FileName) VALUES(%s)", "backup4")->fetch_row();
+  ]], 0)
+  test_any([[
+    return db->query("INSERT INTO files (FileName) VALUES('backup9')");
+  ]], 0)
+  test_any([[
+    return db->query("INSERT INTO files (FileName) VALUES(:fn)", ([":fn":"backup8"]));
+  ]], 0)
+  test_any_equal([[
+    return db->query("INSERT INTO files (FileName) VALUES(%s)", "backup7");
+  ]], 0)
+  test_equal(db->query("SELECT FileName FROM files ORDER BY FileName ASC")->FileName,
+             ({ "backup1", "backup2", "backup3",
+                "backup4", "backup5", "backup6",
+                "backup7", "backup8", "backup9" }))
+
   test_do( add_constant("db"); )
   test_do( rm("testdb"); )
 ]])
