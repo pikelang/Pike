@@ -403,8 +403,11 @@ array(mapping(string:mixed))
       }
     }
 
-    if (!fields)
+    if (!fields) {
       fields = res_obj->fetch_fields();
+
+      if (!fields && !sizeof(res)) return 0;
+    }
     if(!sizeof(fields)) return res;
 
     int has_table = fields[0]->table && fields[0]->table!="";
