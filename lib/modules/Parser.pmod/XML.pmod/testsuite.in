@@ -861,6 +861,33 @@ test_any([[
             });
   return error;
 ]], 0)
+test_any([[
+  string error;
+  object o = Parser.XML.Simple();
+  o->parse ("\xfeff<?xml version='1.0'?><a/>",
+            lambda (string type, string name, mapping attrs, string data) {
+              if (type == "error") error = data;
+            });
+  return error;
+]], 0)
+test_any([[
+  string error;
+  object o = Parser.XML.Simple();
+  o->parse ("\xfeff <?xml version='1.0'?><a/>",
+            lambda (string type, string name, mapping attrs, string data) {
+              if (type == "error") error = data;
+            });
+  return error;
+]], "XML header must be at the first byte in the document.")
+test_any([[
+  string error;
+  object o = Parser.XML.Simple();
+  o->parse (" <?xml version='1.0'?><a/>",
+            lambda (string type, string name, mapping attrs, string data) {
+              if (type == "error") error = data;
+            });
+  return error;
+]], "XML header must be at the first byte in the document.")
 
 // Validating
 END_MARKER

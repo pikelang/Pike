@@ -1850,10 +1850,8 @@ static void parse_optional_xmldecl(void)
   {
     struct mapping *m;
 
-#if 0
-    if(THIS->input->pos != 5)
+    if(THIS->input->pos!=5 && !(THIS->input->pos==6 && PEEK(-6)==0xfeff) )
       XMLERROR( "XML header must be at the first byte in the document." );
-#endif
 
     push_constant_text("<?xml");
     push_int(0);
