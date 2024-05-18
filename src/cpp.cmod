@@ -1606,11 +1606,22 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
    *!     @value "all_final"
    *!       Instructs the compiler to mark all symbols as @tt{final@}.
    *!     @value "deprecation_warnings"
-   *!       Enable warnings for use of deprecated symbols (default).
+   *!       Enable warnings for use of deprecated or experimental symbols
+   *!       (default). Note that this does not enable warnings for
+   *!       experimental symbols if those warnings have been disabled
+   *!       explicitly via @expr{"no_experimental_warnings"@}.
    *!     @value "no_deprecation_warnings"
-   *!       Disable warnings for use of deprecated symbols. This is
-   *!       typically used in code that implements the deprecated
+   *!       Disable warnings for use of deprecated or experimental symbols.
+   *!       This is typically used in code that implements the deprecated
    *!       symbols.
+   *!     @value "experimental_warnings"
+   *!       Enable warnings for use of experimental symbols (default).
+   *!       Note that this does not enable warnings for experimental
+   *!       symbols when warnings for deprecated symbols are disabled.
+   *!     @value "no_experimental_warnings"
+   *!       Disable warnings for use of experimental symbols. This is
+   *!       typically used in code that implements or tests the
+   *!       experimental symbols.
    *!     @value "save_parent"
    *!       Cause nested classes to save a reference to their
    *!       surrounding class even if not strictly needed.
