@@ -393,6 +393,8 @@ int yylex(YYSTYPE *yylval);
 %type <n> qualified_ident
 %type <n> qualified_id_expr
 %type <n> id_expr
+%type <n> safe_chain_expr
+%type <n> safe_chain_var
 %type <n> primary_expr
 %type <n> postfix_expr
 %type <n> prefix_expr
@@ -770,7 +772,7 @@ safe_apply_with_line_info: TOK_SAFE_APPLY
   ;
 
 open_paren_or_safe_apply_with_line_info: open_paren_with_line_info
-  | safe_apply_with_line_info
+/*  | safe_apply_with_line_info */	/* FIXME: Causes reduce-reduce conflicts. */
   ;
 
 close_brace_or_missing: '}'
@@ -3563,6 +3565,100 @@ id_expr: unqualified_id_expr opt_generic_bindings
   }
   ;
 
+/* Convert $0 into a F_LOCAL. */
+safe_chain_var:
+  {
+    node *n = $<n>0;
+    if (!n) {
+      $$ = NULL;
+    } else if ((n->token == F_LOCAL) || (n->token == F_LOCAL_INDIRECT)) {
+      /* Reuse the variable. */
+      $$ = copy_node(n);
+    } else {
+      fix_type_field(n);
+
+      if (n->type) {
+        int temp;
+
+        add_ref(n->type);
+        temp = add_local_name(empty_pike_string, n->type, 0);
+        Pike_compiler->compiler_frame->local_names[temp].flags |= LOCAL_VAR_IS_USED;
+        $$ = mklocalnode(temp, 0);
+        $<n>0 = n = mknode(F_ASSIGN, copy_node($$), n);
+      } else {
+        $$ = NULL;
+        yyerror("Indexing unexpected value.");
+      }
+    }
+  }
+  ;
+
+/* NB: $0 is always a F_LOCAL contaning the safe expression, or NULL
+ *     if previous operations have failed. It has typically been
+ *     generated via safe_chain_var above.
+ */
+safe_chain_expr: TOK_SAFE_START_INDEX line_number_info assignment_expr ']'
+  {
+    /* A[?X] */
+    $$ = mknode(F_INDEX, copy_node($<n>0), $3);
+    COPY_LINE_NUMBER_INFO($$, $2);
+    free_node ($2);
+  }
+  | TOK_SAFE_START_INDEX line_number_info
+    range_bound expected_dot_dot range_bound ']'
+  {
+    /* A[?X..Y] */
+    node *range = mknode(':', $3, $5);
+    $$ = mknode(F_RANGE, copy_node($<n>0), range);
+    COPY_LINE_NUMBER_INFO($$, $2);
+    free_node($2);
+  }
+  | TOK_SAFE_INDEX line_number_info magic_identifier
+  {
+    /* A->?B */
+    $$ = mknode(F_ARROW, copy_node($<n>0), $3);
+    COPY_LINE_NUMBER_INFO($$, $2);
+    free_node($2);
+  }
+  | safe_apply_with_line_info expr_list ')' optional_block
+  {
+    /* A(?B...) */
+    $$ = mkapplynode(copy_node($<n>0), mknode(F_ARG_LIST, $2, $4));
+    COPY_LINE_NUMBER_INFO($$, $1);
+    free_node($1);
+  }
+  | safe_chain_expr open_bracket_with_line_info assignment_expr ']'
+  {
+    /* safe_chain_expr[X] */
+    $$ = mknode(F_INDEX, $1, $3);
+    COPY_LINE_NUMBER_INFO($$, $2);
+    free_node ($2);
+  }
+  | safe_chain_expr open_bracket_with_line_info
+    range_bound expected_dot_dot range_bound ']'
+  {
+    /* safe_chain_expr[X..Y] */
+    node *range = mknode(':', $3, $5);
+    $$ = mknode(F_RANGE, $1, range);
+    COPY_LINE_NUMBER_INFO($$, $2);
+    free_node($2);
+  }
+  | safe_chain_expr TOK_ARROW line_number_info magic_identifier
+  {
+    /* safe_chain_expr->?B */
+    $$ = mknode(F_ARROW, $1, $4);
+    COPY_LINE_NUMBER_INFO($$, $3);
+    free_node($3);
+  }
+  | safe_chain_expr open_paren_with_line_info expr_list ')' optional_block
+  {
+    /* safe_chain_expr(B...) */
+    $$ = mkapplynode($1, mknode(F_ARG_LIST, $3, $5));
+    COPY_LINE_NUMBER_INFO($$, $2);
+    free_node($2);
+  }
+  ;
+
 primary_expr: literal_expr
   | catch
   | gauge
@@ -3599,70 +3695,6 @@ primary_expr: literal_expr
     $$=mknode(F_RANGE,$1,mknode(':',$3,$5));
     COPY_LINE_NUMBER_INFO($$, $2);
     free_node ($2);
-  }
-  | postfix_expr TOK_SAFE_START_INDEX line_number_info assignment_expr ']'
-  {
-    /* A[?X] to ((tmp=A) && tmp[X]) */
-    if( $1 && ($1->token == F_LOCAL) )
-    {
-      $$=mknode(F_LAND, copy_node($1), mknode(F_INDEX,  $1, $4));
-    }
-    else
-    {
-      fix_type_field( $1 );
-      if( $1 && $1->type )
-      {
-        int temporary;
-        $1->type->refs++;
-
-        temporary = add_local_name(empty_pike_string, $1->type, 0);
-        Pike_compiler->compiler_frame->local_names[temporary].flags |= LOCAL_VAR_IS_USED;
-        $$=mknode(F_LAND,
-                  mknode(F_ASSIGN, mklocalnode(temporary,0), $1),
-                  mknode(F_INDEX,  mklocalnode(temporary,0), $4));
-        $$ = pop_local_variables(temporary, $$);
-      }
-      else
-      {
-        $$=mknode(F_INDEX, $1,$4);
-        yyerror("Indexing unexpected value.");
-      }
-    }
-    COPY_LINE_NUMBER_INFO($$, $3);
-    free_node ($3);
-  }
-  | postfix_expr TOK_SAFE_START_INDEX  line_number_info
-    range_bound expected_dot_dot range_bound ']'
-  {
-    /* A[?X..Y] to ((tmp=A) && tmp[X..Y]) */
-    node *range = mknode(':',$4,$6);
-    if( $1 && ($1->token == F_LOCAL ) )
-    {
-      $$ = mknode( F_LAND, copy_node($1), mknode(F_RANGE, $1, range) );
-    }
-    else
-    {
-      fix_type_field( $1 );
-      if( $1 && $1->type )
-      {
-        int temporary;
-        $1->type->refs++;
-
-        temporary = add_local_name(empty_pike_string, $1->type, 0);
-        Pike_compiler->compiler_frame->local_names[temporary].flags |= LOCAL_VAR_IS_USED;
-        $$=mknode(F_LAND,
-                  mknode(F_ASSIGN, mklocalnode(temporary,0), $1),
-                  mknode(F_RANGE,  mklocalnode(temporary,0), range) );
-        $$ = pop_local_variables(temporary, $$);
-      }
-      else
-      {
-        $$ = mknode( F_LAND, $1, mknode(F_RANGE,$1,range) );
-        yyerror("Indexing unexpected value.");
-      }
-    }
-    COPY_LINE_NUMBER_INFO($$, $3);
-    free_node ($3);
   }
   | postfix_expr open_bracket_with_line_info error ']'
   {
@@ -3704,45 +3736,6 @@ primary_expr: literal_expr
     COPY_LINE_NUMBER_INFO($$, $3);
     free_node ($3);
   }
-  | postfix_expr TOK_SAFE_INDEX line_number_info TOK_IDENTIFIER
-  {
-    /* A->?B to ((tmp=A) && tmp->B) */
-    int temporary;
-    if( $1 && ($1->token == F_LOCAL) )
-    {
-      $$=mknode(F_LAND, copy_node($1), mknode(F_ARROW, $1, $4));
-    }
-    else
-    {
-      fix_type_field( $1 );
-      if( $1 && $1->type )
-      {
-        if ($1->type == zero_type_string) {
-          /* Inline optimization to avoid erroneous indexing error. */
-          $$ = $1;
-          free_node($4);
-          if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST)
-            yywarning("Indexing a NULL-expression.");
-        } else {
-          add_ref($1->type);
-          temporary = add_local_name(empty_pike_string, $1->type, 0);
-          Pike_compiler->compiler_frame->local_names[temporary].flags |=
-            LOCAL_VAR_IS_USED;
-          $$=mknode(F_LAND,
-                    mknode(F_ASSIGN, mklocalnode(temporary,0), $1),
-                    mknode(F_ARROW,  mklocalnode(temporary,0), $4));
-          $$ = pop_local_variables(temporary, $$);
-        }
-      }
-      else
-      {
-        $$=mknode(F_ARROW, $1,$4);
-        yyerror("Indexing unexpected value.");
-      }
-    }
-    COPY_LINE_NUMBER_INFO($$, $3);
-    free_node ($3);
-  }
   | postfix_expr TOK_ARROW line_number_info error {$$=$1; free_node ($3);}
   ;
 
@@ -3769,6 +3762,16 @@ postfix_expr: id_expr
 prefix_expr: postfix_expr
   | TOK_INC prefix_expr { $$ = mknode(F_INC, $2, mkintnode(1)); }
   | TOK_DEC prefix_expr { $$ = mknode(F_DEC, $2, mkintnode(1)); }
+  | postfix_expr safe_chain_var safe_chain_expr
+  {
+    /* expr SAFE_OP chain ==> ((TMPVAR = expr) && (TMPVAR chain)) */
+    $$ = mknode(F_LAND, $1, $3);
+    if ($2 && ($2 != $1)) {
+      /* safe_chain_var allocated a local variable. */
+      $$ = pop_local_variables($2->u.integer.a, $$);
+    }
+    free_node($2);
+  }
   ;
 
 pow_expr: prefix_expr
@@ -4073,37 +4076,6 @@ apply:
   postfix_expr open_paren_with_line_info expr_list ')' optional_block
   {
     $$ = mkapplynode($1, mknode(F_ARG_LIST, $3, $5));
-    COPY_LINE_NUMBER_INFO($$, $2);
-    free_node ($2);
-  }
-  | postfix_expr safe_apply_with_line_info expr_list ')' optional_block
-  {
-    /* A(?B...) to ((tmp=A) && tmp(B...)) */
-    int temporary;
-    if( $1 && ($1->token == F_LOCAL) )
-    {
-      $$=mknode(F_LAND, copy_node($1), mkapplynode($1, mknode(F_ARG_LIST, $3, $5)));
-    }
-    else
-    {
-      fix_type_field( $1 );
-      if( $1 && $1->type )
-      {
-        add_ref($1->type);
-        temporary = add_local_name(empty_pike_string, $1->type, 0);
-        Pike_compiler->compiler_frame->local_names[temporary].flags |=
-	  LOCAL_VAR_IS_USED;
-        $$=mknode(F_LAND,
-                  mknode(F_ASSIGN, mklocalnode(temporary,0), $1),
-		  mkapplynode(mklocalnode(temporary,0), mknode(F_ARG_LIST, $3, $5)));
-	$$ = pop_local_variables(temporary, $$);
-      }
-      else
-      {
-	$$ = mkapplynode($1, mknode(F_ARG_LIST, $3, $5));
-        yyerror("Indexing unexpected value.");
-      }
-    }
     COPY_LINE_NUMBER_INFO($$, $2);
     free_node ($2);
   }
