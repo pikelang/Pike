@@ -395,6 +395,7 @@ int yylex(YYSTYPE *yylval);
 %type <n> id_expr
 %type <n> safe_chain_expr
 %type <n> safe_chain_var
+%type <n> chain_expr
 %type <n> primary_expr
 %type <n> postfix_expr
 %type <n> prefix_expr
@@ -3565,30 +3566,35 @@ id_expr: unqualified_id_expr opt_generic_bindings
   }
   ;
 
-/* Convert $0 into a F_LOCAL. */
+/* Convert $0 into a (local) variable. */
 safe_chain_var:
   {
     node *n = $<n>0;
     if (!n) {
+      /* Prior syntax error. */
       $$ = NULL;
-    } else if ((n->token == F_LOCAL) || (n->token == F_LOCAL_INDIRECT)) {
-      /* Reuse the variable. */
+    } else if ((n->token == F_LOCAL) ||
+               (n->token == F_LOCAL_INDIRECT) ||
+               (n->token == F_EXTERNAL)) {
+      /* Reuse the variable.
+       *
+       * NB: F_EXTERNAL is safe since we know that it is not a getter/setter.
+       */
       $$ = copy_node(n);
     } else {
+      struct pike_type *t;
+      int temp;
+
       fix_type_field(n);
+      t = n->type;
+      if (!t) t = mixed_type_string;
 
-      if (n->type) {
-        int temp;
-
-        add_ref(n->type);
-        temp = add_local_name(empty_pike_string, n->type, 0);
-        Pike_compiler->compiler_frame->local_names[temp].flags |= LOCAL_VAR_IS_USED;
-        $$ = mklocalnode(temp, 0);
-        $<n>0 = n = mknode(F_ASSIGN, copy_node($$), n);
-      } else {
-        $$ = NULL;
-        yyerror("Indexing unexpected value.");
-      }
+      add_ref(t);
+      temp = add_local_name(empty_pike_string, t, 0);
+      Pike_compiler->compiler_frame->local_names[temp].flags |=
+        LOCAL_VAR_IS_USED;
+      $$ = mklocalnode(temp, 0);
+      $<n>0 = n = mknode(F_ASSIGN, copy_node($$), n);
     }
   }
   ;
@@ -3759,19 +3765,27 @@ postfix_expr: id_expr
   | postfix_expr TOK_DEC { $$ = mknode(F_POST_DEC, $1, mkintnode(1)); }
   ;
 
-prefix_expr: postfix_expr
-  | TOK_INC prefix_expr { $$ = mknode(F_INC, $2, mkintnode(1)); }
-  | TOK_DEC prefix_expr { $$ = mknode(F_DEC, $2, mkintnode(1)); }
-  | postfix_expr safe_chain_var safe_chain_expr
+chain_expr: postfix_expr
+  | chain_expr safe_chain_var safe_chain_expr
   {
     /* expr SAFE_OP chain ==> ((TMPVAR = expr) && (TMPVAR chain)) */
-    $$ = mknode(F_LAND, $1, $3);
-    if ($2 && ($2 != $1)) {
-      /* safe_chain_var allocated a local variable. */
-      $$ = pop_local_variables($2->u.integer.a, $$);
+    if ($2) {
+      $$ = mknode(F_LAND, $1, $3);
+      if ($2 != $1) {
+        /* safe_chain_var allocated a local variable. */
+        $$ = pop_local_variables($2->u.integer.a, $$);
+      }
+      free_node($2);
+    } else {
+      $$ = $1;
+      free_node($3);
     }
-    free_node($2);
   }
+  ;
+
+prefix_expr: chain_expr
+  | TOK_INC chain_expr { $$ = mknode(F_INC, $2, mkintnode(1)); }
+  | TOK_DEC chain_expr { $$ = mknode(F_DEC, $2, mkintnode(1)); }
   ;
 
 pow_expr: prefix_expr
