@@ -602,6 +602,47 @@ arguments to a suitable range. This means that
 
 <!-- FIXME: tell more about indexing and ranges -->
 
+<section title="Conditional indexing operators">
+  <p>When indexing data-structures, it is common for some elements
+  to be optional and thus evaluate to <expr>0</expr>. To simplify
+  deep indexing of such stuctures, the conditional (aka "safe")
+  indexing operators exist (<expr>-&gt;?</expr>, <expr>[?]</expr>
+  and <expr>(?)</expr>). They behave like the corresponding "unsafe"
+  operator (ie <expr>-&gt;</expr>, <expr>[]</expr> and <expr>()</expr>),
+  except for short-circuiting the remainder of the expression to
+  <expr>0</expr> when the indexed value is <expr>0</expr>.</p>
+
+  <p>Examples:
+
+  <code>
+    mapping m = ([
+      "a":([
+        "x": ([]),
+      ]),
+      "b":0,
+    ]);
+  </code>
+
+  <matrix>
+    <r><c><b>Expression</b></c><c><b>Result</b></c></r>
+    <r><c><expr>m->a->x->i</expr></c>
+       <c><expr>UNDEFINED</expr></c></r>
+    <r><c><expr>m->a->y->i</expr></c>
+       <c>Indexing the NULL value with "i".</c></r>
+    <r><c><expr>m->a->y->?i</expr></c>
+       <c><expr>UNDEFINED</expr> (<expr>m->a->y</expr>)</c></r>
+    <r><c><expr>m->b->x->i</expr></c>
+       <c>Indexing the NULL value with "x".</c></r>
+    <r><c><expr>m->b->?x->i</expr></c>
+       <c><expr>0</expr> (<expr>m->b</expr>)</c></r>
+    <r><c><expr>m->a->?y->i</expr></c>
+       <c>Indexing the NULL value with "i".</c></r>
+    <r><c><expr>m->a->?y->?i</expr></c>
+       <c><expr>UNDEFINED</expr> (<expr>m->a->y</expr>)</c></r>
+  </matrix>
+  </p>
+</section>
+
 <section title="The assignment operators">
 
 <p>There is really only one assignment operator, but it can be combined with
