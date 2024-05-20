@@ -1228,7 +1228,10 @@ lex_t.o: $(SRCDIR)/lex_t.c $(SRCDIR)/interpret_protos.h
 language.o: $(SRCDIR)/language.c $(SRCDIR)/object.h $(SRCDIR)/interpret.h $(SRCDIR)/program.h
 
 $(SRCDIR)/language.c_src: $(SRCDIR)/language.yacc
-	@echo "Expect 1 shift/reduce conflict."
+	-@awk 'BEGIN { COUNT=1; } \
+	       /%expect/ { COUNT=$$2; } \
+	       END { print "Expect " COUNT " shift/reduce conflict(s)."; }' \
+	    <$(SRCDIR)/language.yacc 2>/dev/null
 	cd $(SRCDIR) && $(YACC) $(YFLAGS) language.yacc
 	@mv $(SRCDIR)/y.tab.c $(SRCDIR)/language.c_src
 	@mv $(SRCDIR)/y.tab.h $(SRCDIR)/language.h_src
