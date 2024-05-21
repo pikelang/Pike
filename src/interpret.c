@@ -2763,9 +2763,9 @@ void* low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
     {
     case T_INT:
       if (!s->u.integer) {
-	PIKE_ERROR("0", "Attempt to call the NULL-value\n", Pike_sp, args);
+        PIKE_ERROR("0", "Attempt to call the NULL-value.\n", Pike_sp, args);
       } else {
-	Pike_error("Attempt to call the value %"PRINTPIKEINT"d\n",
+        Pike_error("Attempt to call the value %"PRINTPIKEINT"d.\n",
 		   s->u.integer);
       }
       break;
@@ -2778,12 +2778,12 @@ void* low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
         ((void (*)(const char *,...))Pike_error)
           ("Attempt to call the string %.20pq...\n", s->u.string);
       } else {
-        Pike_error("Attempt to call the string %pq\n", s->u.string);
+        Pike_error("Attempt to call the string %pq.\n", s->u.string);
       }
       break;
 
     case T_MAPPING:
-      Pike_error("Attempt to call a mapping\n");
+      Pike_error("Attempt to call a mapping.\n");
       break;
 
     default:
