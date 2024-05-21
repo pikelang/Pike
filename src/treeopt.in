@@ -853,7 +853,7 @@ F_LOR(0, F_LOR(1, 2)):
   F_LOR(F_LOR($0, $1), $2);
 
 F_LOR(0 = F_ASSIGN(*, +[node_is_false($$)]), 2):
-  F_COMMA_EXPR($0, $2);
+  F_COMMA_EXPR(F_POP_VALUE($0, -), $2);
 
 F_LOR(0 = F_INITIALIZE(*, +[node_is_false($$)]), 2):
   F_COMMA_EXPR($0, $2);
@@ -906,7 +906,7 @@ F_LAND(0, F_LAND(1, 2)):
   F_LAND(F_LAND($0, $1), $2);
 
 F_LAND(0 = F_ASSIGN(*, +[node_is_true($$)]), 2):
-  F_COMMA_EXPR($0, $2);
+  F_COMMA_EXPR(F_POP_VALUE($0, -), $2);
 
 F_LAND(0 = F_INITIALIZE(*, +[node_is_true($$)]), 2):
   F_COMMA_EXPR($0, $2);
