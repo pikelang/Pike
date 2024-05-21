@@ -401,6 +401,102 @@ test_compile_any([[
 
 test_eq((["answer":42])->?answer, 42)
 
+test_do([[
+  add_constant("FOO",
+               ([ "a": ([ "x" : ([ "i": ([]), "j": 0 ]), "y": 0 ]), "b": 0,
+                  "d": lambda(){},
+               ]));
+]])
+
+define(test_chain_op, [[
+  test_any_equal([[
+    return describe_error(catch {
+      // Make FOO not a constant...
+      mapping FOO = predef::FOO;
+      mixed x = $1;
+      if (undefinedp(x)) return "UNDEFINED";
+      return x;
+    });
+  ]], $2)
+]])
+
+define(test_chain_op2, [[
+  text_chain_op([[$1]], [[$2]])
+  test_any_equal([[
+    return describe_error(catch {
+      // Test the constant case.
+      mixed x = $1;
+      if (undefinedp(x)) return "UNDEFINED";
+      return x;
+    });
+  ]], $2)
+]])
+
+test_chain_op2(FOO->a->x->i, ([]))
+test_chain_op2(FOO->?a->x->i, ([]))
+test_chain_op2(FOO->a->?x->i, ([]))
+test_chain_op2(FOO->?a->?x->i, ([]))
+test_chain_op2(FOO->a->x->?i, ([]))
+test_chain_op2(FOO->?a->x->?i, ([]))
+test_chain_op2(FOO->a->?x->?i, ([]))
+test_chain_op2(FOO->?a->?x->?i, ([]))
+test_chain_op2(FOO->a->x->j, 0)
+test_chain_op2(FOO->a->x->k, "UNDEFINED")
+test_chain_op2(FOO->a->y->i, "Indexing the NULL value with \"i\".\n")
+test_chain_op2(FOO->a->y->?i, 0)
+test_chain_op2(FOO->a->z->i, "Indexing the NULL value with \"i\".\n")
+test_chain_op2(FOO->a->z->?i, "UNDEFINED")
+test_chain_op2(FOO->b->x->i, "Indexing the NULL value with \"x\".\n")
+test_chain_op2(FOO->b->?x->i, 0)
+test_chain_op2(FOO->b->?x->?i, 0)
+test_chain_op2(FOO->c->x->i, "Indexing the NULL value with \"x\".\n")
+test_chain_op2(FOO->c->?x->i, "UNDEFINED")
+test_chain_op2(FOO->c->?x->?i, "UNDEFINED")
+
+test_chain_op2(FOO["a"]["x"]["i"], ([]))
+test_chain_op2(FOO[?"a"]["x"]["i"], ([]))
+test_chain_op2(FOO["a"][?"x"]["i"], ([]))
+test_chain_op2(FOO[?"a"][?"x"]["i"], ([]))
+test_chain_op2(FOO["a"]["x"][?"i"], ([]))
+test_chain_op2(FOO[?"a"]["x"][?"i"], ([]))
+test_chain_op2(FOO["a"][?"x"][?"i"], ([]))
+test_chain_op2(FOO[?"a"][?"x"][?"i"], ([]))
+test_chain_op2(FOO["a"]["x"]["j"], 0)
+test_chain_op2(FOO["a"]["x"]["k"], "UNDEFINED")
+test_chain_op2(FOO["a"]["y"]["i"], "Indexing the NULL value with \"i\".\n")
+test_chain_op2(FOO["a"]["y"][?"i"], 0)
+test_chain_op2(FOO["a"]["z"]["i"], "Indexing the NULL value with \"i\".\n")
+test_chain_op2(FOO["a"]["z"][?"i"], "UNDEFINED")
+test_chain_op2(FOO["b"]["x"]["i"], "Indexing the NULL value with \"x\".\n")
+test_chain_op2(FOO["b"][?"x"]["i"], 0)
+test_chain_op2(FOO["b"][?"x"][?"i"], 0)
+test_chain_op2(FOO["c"]["x"]["i"], "Indexing the NULL value with \"x\".\n")
+test_chain_op2(FOO["c"][?"x"]["i"], "UNDEFINED")
+test_chain_op2(FOO["c"][?"x"][?"i"], "UNDEFINED")
+
+// NB: Constant-folding will cause compilation errors due to detecting
+//     the zeroes in the constant case.
+test_chain_op(FOO->a->x->j(), "Attempt to call the NULL-value.\n")
+test_chain_op2(FOO->a->x->j(?), 0)
+test_chain_op(FOO->a->x->k(), "Attempt to call the NULL-value.\n")
+test_chain_op2(FOO->a->x->k(?), "UNDEFINED")
+test_chain_op(FOO->a->y()->i, "Attempt to call the NULL-value.\n")
+test_chain_op2(FOO->a->y(?)->i, 0)
+test_chain_op(FOO->a->z()->i, "Attempt to call the NULL-value.\n")
+test_chain_op2(FOO->a->z(?)->i, "UNDEFINED")
+test_chain_op(FOO->b()->x->i, "Attempt to call the NULL-value.\n")
+test_chain_op2(FOO->b(?)->x->i, 0)
+test_chain_op2(FOO->b(?)->x(?)->i, 0)
+test_chain_op(FOO->c()->x->i, "Attempt to call the NULL-value.\n")
+test_chain_op2(FOO->c(?)->x->i, "UNDEFINED")
+test_chain_op2(FOO->c(?)->x(?)->i, "UNDEFINED")
+test_chain_op2(FOO->c(?)()->x->i, "UNDEFINED")
+test_chain_op2(FOO->c(?)()->x(?)->i, "UNDEFINED")
+test_chain_op(FOO->d()()->x->i, "Attempt to call the NULL-value.\n")
+test_chain_op2(FOO->d()(?)->x->i, 0)
+
+test_do(add_constant("FOO");)
+
 define(test_string_range,[[
     test_any([[
         string s = (string) ({ $1, $1 });
