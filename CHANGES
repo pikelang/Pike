@@ -296,6 +296,7 @@ o Cleaned up expression grammar.
 
 o Added the unary +-operator (noop).
 
+
 Bug fixes
 ---------
 
@@ -316,6 +317,10 @@ o Compiler
 
   - The type checker now checks that operator assignment
     expressions are valid.
+
+  - The safe-indexing operators (->?, [?] and (?)) now short-circuit
+    the expression when the operand is false. Previously later unsafe
+    operators were still applied.
 
 o Runtime
 
