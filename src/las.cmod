@@ -1629,10 +1629,15 @@ node *debug_mkcastnode(struct pike_type *type, node *n)
    *
    *        should have a result type of array(array(string)),
    *        rather than array(mixed).
+   *
+   * NOTE: Casts to mixed are used to intentionally clear type
+   *       information, and must thus NOT be affected by the
+   *       above FIXME.
    */
   copy_pike_type(res->type, type);
 
-  if((type != zero_type_string) &&
+  if((type != zero_type_string) && (type != mixed_type_string) &&
+     (type != any_type_string) &&
      (match_types(object_type_string, type) ||
       match_types(program_type_string, type)))
     res->node_info |= OPT_SIDE_EFFECT;
