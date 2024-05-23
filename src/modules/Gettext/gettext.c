@@ -80,6 +80,10 @@ void f_gettext(INT32 args)
 
   get_all_args("Locale.Gettext.gettext", args, "%c.%C%D", &msg, &domain, &cat);
 
+  if ((cat == LC_ALL) && (args > 2)) {
+    SIMPLE_ARG_ERROR("gettext", 3, "The category must not be LC_ALL.\n");
+  }
+
   if (domain) {
     if (args > 2 && Pike_sp[2-args].subtype == NUMBER_NUMBER)
       push_text(dcgettext(domain, msg, cat));
@@ -98,7 +102,7 @@ void f_gettext(INT32 args)
  *! of the specified @[domain] and current locale. If there is
  *! no translation available, @[msg] is returned.
  *!
- *! @note
+ *! @deprecated gettext
  *!   Obsoleted by @[gettext()] in Pike 7.3.
  *!
  *! @seealso
@@ -123,7 +127,7 @@ void f_dgettext(INT32 args)
  *!
  *! If there is no translation available, @[msg] is returned.
  *!
- *! @note
+ *! @deprecated gettext
  *!   Obsoleted by @[gettext()] in Pike 7.3.
  *!
  *! @seealso
@@ -136,6 +140,10 @@ void f_dcgettext(INT32 args)
 
   get_all_args("Locale.Gettext.dcgettext", args, "%c%c%d",
 	       &domain, &msg, &category);
+
+  if ((category == LC_ALL) && (args > 2)) {
+    SIMPLE_ARG_ERROR("dcgettext", 3, "The category must not be LC_ALL.\n");
+  }
 
   push_text(dcgettext(domain, msg, category));
 
@@ -423,6 +431,8 @@ void f_localeconv(INT32 args)
 /*! @decl constant LC_ALL
  *!
  *! Locale category for all of the locale.
+ *!
+ *! Only supported as an argument to @[setlocale()].
  */
 
 /*! @decl constant LC_COLLATE
@@ -441,8 +451,6 @@ void f_localeconv(INT32 args)
  *!
  *! @fixme
  *!   Document this constant.
- *! @note
- *!   This category isn't available on all platforms.
  */
 
 /*! @decl constant LC_MONETARY
@@ -492,9 +500,7 @@ PIKE_MODULE_INIT
   add_integer_constant("LC_ALL", LC_ALL, 0);
   add_integer_constant("LC_COLLATE", LC_COLLATE, 0);
   add_integer_constant("LC_CTYPE", LC_CTYPE, 0);
-#ifdef LC_MESSAGES
   add_integer_constant("LC_MESSAGES", LC_MESSAGES, 0);
-#endif
   add_integer_constant("LC_MONETARY", LC_MONETARY, 0);
   add_integer_constant("LC_NUMERIC", LC_NUMERIC, 0);
   add_integer_constant("LC_TIME", LC_TIME, 0);
