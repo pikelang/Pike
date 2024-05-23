@@ -3,6 +3,8 @@
 //! @seealso
 //!   @[8.0::Thread.Farm]
 
+#require constant(thread_create)
+
 protected .Mutex mutex = .Mutex();
 protected .Condition ft_cond = .Condition();
 protected .Queue job_queue = .Queue();
