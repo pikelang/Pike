@@ -2397,7 +2397,7 @@ PIKECLASS Buffer
    *!     buffer->match("%0s%d");
    *!   @endcode
    *!
-   *! @deprecated sscanf()
+   *! @deprecated sscanf
    *!
    *! @seealso
    *!   @[sscanf()], @[predef::sscanf()], @[array_sscanf()]
