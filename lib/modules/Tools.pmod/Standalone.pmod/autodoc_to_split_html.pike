@@ -1430,6 +1430,10 @@ class TopNode {
                           });
 
     _data = parser->finish(_data)->read();
+    if (has_prefix(_data, "<?xml")) {
+      // Strip <?xml?>-header.
+      _data = (_data/"?>")[1..] * "?>";
+    }
     ::create("autodoc", "", _data);
     sort(map(namespace_children->name, lower_case), namespace_children);
     sort(map(appendix_children->name, lower_case), appendix_children);
