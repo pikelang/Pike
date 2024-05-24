@@ -61,7 +61,7 @@ class InputStream
     };
   }
 
-  //!
+  //! Close the stream.
   int close();
 
   //!
