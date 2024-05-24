@@ -168,7 +168,7 @@ class Plain
           while(c<= (sizeof(v)-2));
         }
 
-        res += with(subject[v[0]..v[1]-1], @substrings, @args);
+        res += ([function]with)(subject[v[0]..v[1]-1], @substrings, @args);
       }
       if (i!=v[1]) i=v[1]; else res->add(subject[i..i++]);
     }
@@ -194,7 +194,7 @@ class Plain
       if (v[0]>0) res->add(subject[0..v[0]-1]);
 
       if (stringp(with)) res->add(with);
-      else res->add(with(subject[v[0]..v[1]-1]));
+      else res->add(([function]with)(subject[v[0]..v[1]-1]));
 
       res->add(subject[v[1]..]);
 
@@ -303,7 +303,8 @@ class Plain
          if (stringp(with))
            buf->add(with);
          else {
-           string o = with(subject[v[0]..v[1]-1], substrings, @args);
+           string o =
+             ([function]with)(subject[v[0]..v[1]-1], substrings, @args);
            buf->add(o);
          }
 

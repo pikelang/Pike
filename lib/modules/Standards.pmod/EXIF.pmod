@@ -995,7 +995,7 @@ protected mapping parse_tag(TIFF file, mapping tags, mapping exif_info,
 	  tags[tag_name]= tag_map[make+"_"+model] || tag_map[make] || format_bytes(str);
 	}
       else if(tag_format=="CUSTOM") {
-	mixed res = tag_map(str,tags);
+	mixed res = ([function]tag_map)(str,tags);
 	if(!undefinedp(res))
 	  tags[tag_name]=res;
       }
@@ -1028,7 +1028,7 @@ protected mapping parse_tag(TIFF file, mapping tags, mapping exif_info,
             tags[tag_name]= tag_map[make+"_"+model] || tag_map[make] || (string)a[i];
           }
       else if(tag_format=="CUSTOM")
-        tags|=tag_map(a);
+        tags|= ([function]tag_map)(a);
       else
         tags[tag_name]=(array(string))a*", ";
     }

@@ -1475,7 +1475,7 @@ test_any([[mapping(object:string)|mapping(string:int) f;
 	 "int")
 
 test_any([[mapping(object:string)|mapping(string:int) f;
-	  return sort((sprintf("%O", typeof(f[0])) - " ")/"|")*"|"; ]],
+          return sort((sprintf("%O", typeof(f[(mixed)0])) - " ")/"|")*"|"; ]],
 	 "int|string")
 
 test_any([[class Foo { protected string `[](mixed y) {return "";} };
@@ -3569,6 +3569,11 @@ test_any([[
 // this crashes Pike /Mirar 2001-05-19
 // I haven't been able to minimize it futher,
 // and it needs to be in a separate module.
+//
+// This triggers a placeholder object needing to
+// be destructed in compiler pass 2 due to the
+// type checking error. The original issue was
+// likely fixed 2001-05-23. /grubba 2024-03-11
 
 mapping es=0;
 

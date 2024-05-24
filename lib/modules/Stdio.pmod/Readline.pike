@@ -522,7 +522,7 @@ class InputController
 	  b[m](m);
 	}
       } else
-	b(s[i..i]);
+	([function]b)(s[i..i]);
     }
     return "";
   }
