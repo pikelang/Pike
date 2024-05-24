@@ -1252,12 +1252,16 @@ array(mapping(string:mixed)) list_fields(string table, string|void wild)
 //!    resp->status_command_complete);
 //! });
 //! @endcode
-public variant .Promise promise_query(string q,
+//!
+//! @note
+//!   This is an experimental API, and is likely to be changed to
+//!   return other objects in future releases of Pike.
+public variant __experimental__ Concurrent.Future promise_query(string q,
                      void|mapping(string|int:mixed) bindings,
                      void|function(array, .Result, array :array) map_cb) {
-  return __builtin.Sql.Promise(this, q, bindings, map_cb);
+  return __builtin.Sql.Promise(this, q, bindings, map_cb)->future();
 }
-public variant .Promise promise_query(string q,
+public variant __experimental__ Concurrent.Future promise_query(string q,
                      function(array, .Result, array :array) map_cb) {
-  return __builtin.Sql.Promise(this, q, 0, map_cb);
+  return __builtin.Sql.Promise(this, q, 0, map_cb)->future();
 }
