@@ -920,6 +920,9 @@ protected array(string) splitRef(string ref) {
     // FIXME: What about module.pike/module.pmod?
     return ref/"/";
   }
+  while(has_prefix(ref, "\0")) {
+    ref = ref[1..];
+  }
   array(string) a = Parser.Pike.split(ref);
   string namespace;
   array result = ({});
