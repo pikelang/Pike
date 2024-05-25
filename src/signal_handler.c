@@ -4566,6 +4566,11 @@ void Pike_f_fork(INT32 args)
     num_threads=1;
 #endif
 
+#if defined(PIKE_USE_MACHINE_CODE) && defined(HAVE_PTHREAD_JIT_WRITE_PROTECT_NP)
+    /* Workaround for spurious crashes when returning to JITed code on macOS */
+    pthread_jit_write_protect_np(1);
+#endif
+
     REINIT_FIFO(sig, unsigned char);
     REINIT_FIFO(wait,wait_data);
 
