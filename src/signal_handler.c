@@ -4746,7 +4746,7 @@ static void f_pid_status_kill(INT32 args)
 
   get_all_args(NULL, args, "%+", &signum);
 
-  PROC_FPRINTF("[%d] kill: pid=%d, signum=%d\n", getpid(), pid, signum);
+  PROC_FPRINTF("[%d] kill: pid=%d, signum=%"PRINTPIKEINT"d\n", getpid(), pid, signum);
 
   THREADS_ALLOW_UID();
   res = !kill(pid, signum);
