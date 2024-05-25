@@ -3011,7 +3011,10 @@ void yytype_report(int severity_level,
 {
   /* Do not complain about type errors before the types have stabilized. */
   if ((Pike_compiler->compiler_pass != COMPILER_PASS_LAST) &&
-      !(severity_level & REPORT_FORCE)) return;
+      !(severity_level & REPORT_FORCE)) {
+    pop_n_elems(args);
+    return;
+  }
 
   if (fmt)
   {
@@ -3714,6 +3717,8 @@ PIKECLASS Implements
       add_ref(compiler);
       low_enter_compiler(compiler, compiler_inh_num);
       /* NB: low_enter_compiler invalidates THIS! */
+      yytype_report(REPORT_ERROR, NULL, 0, NULL, NULL, 0, NULL,
+                    0, "Class is not compatible with %pP.", api);
       yyexplain_not_compatible(REPORT_ERROR, prog, api);
       exit_compiler();
     } else if (!implements(prog, api)) {
@@ -3723,6 +3728,8 @@ PIKECLASS Implements
       add_ref(compiler);
       low_enter_compiler(compiler, compiler_inh_num);
       /* NB: low_enter_compiler invalidates THIS! */
+      yytype_report(REPORT_WARNING, NULL, 0, NULL, NULL, 0, NULL,
+                    0, "Class does not implement the api of %pP.", api);
       yyexplain_not_implements(REPORT_WARNING, prog, api);
       exit_compiler();
     }

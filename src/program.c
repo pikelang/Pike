@@ -10983,6 +10983,7 @@ void yyexplain_not_compatible(int severity_level,
 {
   int e;
   int res = 1;
+  int swapped = 0;
   INT_TYPE a_line = 0;
   INT_TYPE b_line = 0;
   struct pike_string *a_file;
@@ -10994,6 +10995,7 @@ void yyexplain_not_compatible(int severity_level,
     struct program *tmp = a;
     a = b;
     b = tmp;
+    swapped = 1;
   }
 
   if (BEGIN_CYCLIC(a, b)) {
@@ -11034,10 +11036,17 @@ void yyexplain_not_compatible(int severity_level,
       ref_push_string(bid->name);
       ref_push_program(a);
       ref_push_program(b);
-      yytype_report(severity_level,
-		    aid_file, aid_line, ID_FROM_INT(a, i)->type,
-		    bid_file, bid_line, bid->type, 3,
-		    "Identifier %s in %O is incompatible with the same in %O.");
+      if (swapped) {
+        yytype_report(severity_level,
+                      aid_file, aid_line, ID_FROM_INT(a, i)->type,
+                      bid_file, bid_line, bid->type,
+                      3, "Identifier %s in %O is incompatible with the same in %O.");
+      } else {
+        yytype_report(severity_level,
+                      bid_file, bid_line, bid->type,
+                      aid_file, aid_line, ID_FROM_INT(a, i)->type,
+                      3, "Identifier %s in %O is incompatible with the same in %O.");
+      }
     }
   }
   free_string(b_file);
