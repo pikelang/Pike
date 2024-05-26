@@ -10,4 +10,6 @@
 
 inherit Nettle.STREEBOG512;
 
+@Pike.Annotations.Implements(Crypto.Hash);
+
 string name() { return "streebog512"; }

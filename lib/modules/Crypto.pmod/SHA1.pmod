@@ -8,6 +8,8 @@
 
 inherit Nettle.SHA1;
 
+@Pike.Annotations.Implements(Crypto.Hash);
+
 Standards.ASN1.Types.Identifier pkcs_hash_id()
 {
   return Standards.PKCS.Identifiers.sha1_id;

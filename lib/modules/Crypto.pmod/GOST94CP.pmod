@@ -11,4 +11,6 @@
 
 inherit Nettle.GOST94CP;
 
+@Pike.Annotations.Implements(Crypto.Hash);
+
 string name() { return "gost94cp"; }

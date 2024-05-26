@@ -5,3 +5,5 @@
 //! The SALSA20 stream cipher.
 
 inherit Nettle.SALSA20;
+
+@Pike.Annotations.Implements(Crypto.Cipher);

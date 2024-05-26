@@ -15,6 +15,8 @@
 
 inherit Nettle.AES;
 
+@Pike.Annotations.Implements(Crypto.BlockCipher);
+
 #if constant(Nettle.POLY1305_AES)
 
 //! @module POLY1305

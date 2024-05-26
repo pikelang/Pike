@@ -10,6 +10,8 @@
 
 inherit Crypto.SHA3_256;
 
+@Pike.Annotations.Implements(Crypto.Hash);
+
 string(8bit) hash(string(8bit) data, int(0..) bytes = digest_size())
 {
   return shake(data, bytes);

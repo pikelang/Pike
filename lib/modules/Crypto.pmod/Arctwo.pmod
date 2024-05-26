@@ -8,3 +8,5 @@
 //! The cipher is quite weak, and should not be used for new software.
 
 inherit Nettle.ARCTWO;
+
+@Pike.Annotations.Implements(Crypto.BlockCipher);

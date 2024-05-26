@@ -6,3 +6,5 @@
 //! others.
 
 inherit Nettle.Twofish;
+
+@Pike.Annotations.Implements(Crypto.BlockCipher);

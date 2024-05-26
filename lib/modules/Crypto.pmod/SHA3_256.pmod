@@ -7,3 +7,5 @@
 //! octets.
 
 inherit Nettle.SHA3_256;
+
+@Pike.Annotations.Implements(Crypto.Hash);

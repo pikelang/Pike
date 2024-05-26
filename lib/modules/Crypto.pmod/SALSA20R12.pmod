@@ -5,3 +5,5 @@
 //! The @[SALSA20] stream cipher reduced to just 12 rounds.
 
 inherit Nettle.SALSA20R12;
+
+@Pike.Annotations.Implements(Crypto.Cipher);

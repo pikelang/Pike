@@ -8,6 +8,8 @@
 
 inherit Crypto.Sign;
 
+@Pike.Annotations.Implements(Crypto.Sign);
+
 //! Returns the string @expr{"DSA"@}.
 string(8bit) name() { return "DSA"; }
 

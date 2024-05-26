@@ -7,3 +7,5 @@
 //! bits.
 
 inherit Nettle.CAST128;
+
+@Pike.Annotations.Implements(Crypto.BlockCipher);

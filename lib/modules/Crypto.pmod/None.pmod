@@ -14,6 +14,12 @@ inherit .AE;
 //! Implements the empty MAC algorithm.
 inherit .MAC;
 
+@Pike.Annotations.Implements(Crypto.AE);
+
+@Pike.Annotations.Implements(Crypto.MAC);
+
+// @Pike.Annotations.Implements(Crypto.BlockCipher);
+
 string(7bit) name()
 {
   return "Plaintext";

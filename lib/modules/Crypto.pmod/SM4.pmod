@@ -5,3 +5,5 @@
 //! The SM4 block cipher.
 
 inherit Nettle.SM4;
+
+@Pike.Annotations.Implements(Crypto.BlockCipher);
