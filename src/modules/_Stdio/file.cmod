@@ -1972,10 +1972,10 @@ static void file__disable_callbacks(INT32 UNUSED(args))
 }
 
 
-/*! @decl int write(string data)
- *! @decl int write(string format, mixed ... extras)
- *! @decl int write(array(string) data)
- *! @decl int write(array(string) format, mixed ... extras)
+/*! @decl int write(string(8bit) data)
+ *! @decl int write(string(8bit) format, mixed ... extras)
+ *! @decl int write(array(string(8bit)) data)
+ *! @decl int write(array(string(8bit)) format, mixed ... extras)
  *! @decl int write(Stdio.Buffer|String.Buffer|System.Memory data, void|int(0..) offset)
  *!
  *! Write data to a file or a stream.

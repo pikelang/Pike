@@ -49,9 +49,9 @@
 /*! @class Fd
  */
 
-/*! @decl mapping tcgetattr()
- *! @decl int tcsetattr(mapping attr)
- *! @decl int tcsetattr(mapping attr, string when)
+/*! @decl mapping(string(7bit):int) tcgetattr()
+ *! @decl int tcsetattr(mapping(string(7bit):int) attr)
+ *! @decl int tcsetattr(mapping(string(7bit):int) attr, string(7bit) when)
  *!
  *! Gets/sets term attributes. The returned value/the @[attr] parameter
  *! is a mapping on the form
@@ -381,7 +381,7 @@ void file_tcsetattr(INT32 args)
   push_int(!tcsetattr(FD,optional_actions,&ti));
 }
 
-/*! @decl int(0..1) tcflush(string|void flush_direction)
+/*! @decl int(0..1) tcflush(string(7bit)|void flush_direction)
  *!
  *! Flush queued terminal control messages.
  *!
