@@ -7102,14 +7102,14 @@ int define_variable(struct pike_string *name,
   return n;
 }
 
-PMOD_EXPORT int add_constant(struct pike_string *name,
-			     const struct svalue *c,
-			     INT32 flags)
+PMOD_EXPORT int add_typed_constant(struct pike_string *name,
+                                   struct pike_type *type,
+                                   const struct svalue *c,
+                                   INT32 flags)
 {
   int n;
   struct compilation *cc = THIS_COMPILATION;
   struct reference ref;
-  struct pike_type *type;
   unsigned int opt_flags;
   union idptr func;
 
@@ -7203,6 +7203,17 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
     }
   }
 
+  if (type) {
+    add_ref(type);
+  } else if (c) {
+    if( !(flags & ID_INLINE) )
+      type = get_lax_type_of_svalue(c);
+    else
+      type = get_type_of_svalue(c);
+  } else {
+    copy_pike_type(type, mixed_type_string);
+  }
+
   if(
 #if 1
     c &&
@@ -7234,10 +7245,7 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
 	id->func.const_info.offset = store_constant(c, 0, 0);
       }
       free_type(id->type);
-      if( !(flags & ID_INLINE) )
-          id->type = get_lax_type_of_svalue( c );
-      else
-          id->type = get_type_of_svalue( c );
+      id->type = type;	/* We steal a reference from type here. */
 #ifdef PROGRAM_BUILD_DEBUG
       fprintf (stderr, "%*sstored constant #%d at %d\n",
 	       cc->compilation_depth, "",
@@ -7264,10 +7272,6 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
 #if 1
   if (c) {
 #endif
-   if( !(flags & ID_INLINE) )
-      type = get_lax_type_of_svalue( c );
-    else
-      type = get_type_of_svalue( c );
     func.const_info.offset = store_constant(c, 0, 0);
     opt_flags = OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND;
     if(TYPEOF(*c) == PIKE_T_PROGRAM && (c->u.program->flags & PROGRAM_CONSTANT))
@@ -7275,7 +7279,6 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
 #if 1
   }
   else {
-    copy_pike_type(type, mixed_type_string);
     func.const_info.offset = -1;
     opt_flags = 0;
   }
@@ -7331,6 +7334,13 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
   add_to_identifier_references(ref);
 
   return n;
+}
+
+PMOD_EXPORT int add_constant(struct pike_string *name,
+                             const struct svalue *c,
+                             INT32 flags)
+{
+  return add_typed_constant(name, NULL, c, flags);
 }
 
 PMOD_EXPORT int simple_add_constant(const char *name,

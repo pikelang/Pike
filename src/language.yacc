@@ -718,8 +718,8 @@ constant_name: TOK_IDENTIFIER '=' safe_assignment_expr
 	} else {
 	  push_undefined();
 	}
-	add_constant($1->u.sval.u.string, Pike_sp-1,
-		     Pike_compiler->current_modifiers & ~ID_EXTERN);
+        add_typed_constant($1->u.sval.u.string, $3->type, Pike_sp-1,
+                           Pike_compiler->current_modifiers & ~ID_EXTERN);
 	pop_stack();
       }
     }
