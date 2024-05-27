@@ -48,9 +48,9 @@ class Object
 {
   int(0..3) cls = 0;
   int(0..) tag = 0;
-  constant constructed = 0;
+  constant constructed = [int(0..1)](mixed)0;
 
-  constant type_name = "";
+  constant type_name = [string(8bit)](mixed)"";
 
   protected string(8bit) get_der_content()
   {
@@ -80,14 +80,14 @@ class Object
   protected string(0..255)|zero der;
 
   // Should be overridden by subclasses
-  this_program decode_primitive(string contents,
-				function(Stdio.Buffer,
-					 mapping(int:program(Object)):
-					 Object) decoder,
-                                mapping(int:program(Object)) types,
-                                void|int(0..1) secure);
-  void begin_decode_constructed(string raw);
-  void decode_constructed_element(int i, object e);
+  this_program|zero decode_primitive(string(8bit) contents,
+                                     function(Stdio.Buffer,
+                                              mapping(int:program(Object)):
+                                              Object) decoder,
+                                     mapping(int:program(Object)) types,
+                                     void|int(0..1) secure);
+  void begin_decode_constructed(string(8bit) raw);
+  void decode_constructed_element(int i, Object e);
 
   mapping(int:program(Object)) element_types(int i,
       mapping(int:program(Object)) types) {
@@ -158,6 +158,9 @@ class Compound
 {
   inherit Object;
 
+  //!
+  @Pike.Annotations.Implements(Object);
+
   constant constructed = 1;
 
   //! Contents of compound object.
@@ -220,6 +223,9 @@ class String
 {
   inherit Object;
 
+  //!
+  @Pike.Annotations.Implements(Object);
+
   //! value of object
   string value = "";
 
@@ -251,8 +257,9 @@ class String
     value = "";
   }
 
-  void decode_constructed_element(int i, object(this_program) e)
+  void decode_constructed_element(int i, Object ee)
   {
+    object(this_program) e = [object(this_program)]ee;
     value += e->value;
   }
 
@@ -265,6 +272,9 @@ class String
 class Boolean
 {
   inherit Object;
+
+  //!
+  @Pike.Annotations.Implements(Object);
 
   int(0..) tag = 1;
   constant type_name = "BOOLEAN";
@@ -309,6 +319,9 @@ class Integer
 {
   inherit Object;
 
+  //!
+  @Pike.Annotations.Implements(Object);
+
   int(0..) tag = 2;
   constant type_name = "INTEGER";
 
@@ -319,7 +332,7 @@ class Integer
   CODEC(Gmp.mpz);
   //! @endignore
 
-  this_object init(int|object n) {
+  this_program init(int|object n) {
     value = Gmp.mpz(n);
     WERROR("i = %s\n", value->digits());
     return this;
@@ -346,12 +359,12 @@ class Integer
     return s;
   }
 
-  this_object decode_primitive(string(0..255) contents,
-                               function(Stdio.Buffer,
-                                        mapping(int:program(Object)):
-                                        Object)|void decoder,
-                               mapping(int:program(Object))|void types,
-                               void|int(0..1) secure) {
+  this_program decode_primitive(string(0..255) contents,
+                                function(Stdio.Buffer,
+                                         mapping(int:program(Object)):
+                                         Object)|void decoder,
+                                mapping(int:program(Object))|void types,
+                                void|int(0..1) secure) {
     if ( (secure && (sizeof(contents)>1)) &&
 	 (((contents[0]==0) && !(contents[1] & 0x80)) ||
 	  ((contents[0] == 255) && (contents[1] & 0x80))) ) {
@@ -376,6 +389,10 @@ class Integer
 class Enumerated
 {
   inherit Integer;
+
+  //!
+  @Pike.Annotations.Implements(Object);
+
   int(0..) tag = 10;
   constant type_name = "ENUMERATED";
 }
@@ -383,6 +400,9 @@ class Enumerated
 class Real
 {
   inherit Object;
+
+  //!
+  @Pike.Annotations.Implements(Object);
 
   int(0..) tag = 9;
   constant type_name = "REAL";
@@ -411,12 +431,12 @@ class Real
     error("Encoding Real values not supported.\n");
   }
 
-  this_object decode_primitive(string(0..255) contents,
-                               function(Stdio.Buffer,
-                                        mapping(int:program(Object)):
-                                        Object) decoder,
-                               mapping(int:program(Object))|void types,
-                               void|int(0..1) secure) {
+  this_program decode_primitive(string(0..255) contents,
+                                function(Stdio.Buffer,
+                                         mapping(int:program(Object)):
+                                         Object) decoder,
+                                mapping(int:program(Object))|void types,
+                                void|int(0..1) secure) {
     if( contents=="" ) {
       value = 0.0;
       return this;
@@ -492,6 +512,10 @@ class Real
 class BitString
 {
   inherit Object;
+
+  //!
+  @Pike.Annotations.Implements(Object);
+
   int(0..) tag = 3;
   constant type_name = "BIT STRING";
 
@@ -566,8 +590,9 @@ class BitString
     value = "";
   }
 
-  void decode_constructed_element(int i, object(this_program) e)
+  void decode_constructed_element(int i, Object ee)
   {
+    object(this_program) e = [object(this_program)]ee;
     if( unused ) error("Adding to a non-aligned bit stream.\n");
     value += e->value;
     unused = e->unused;
@@ -606,6 +631,10 @@ class BitString
 class OctetString
 {
   inherit String;
+
+  //!
+  @Pike.Annotations.Implements(Object);
+
   int(0..) tag = 4;
   constant type_name = "OCTET STRING";
 }
@@ -614,6 +643,10 @@ class OctetString
 class Null
 {
   inherit Object;
+
+  //!
+  @Pike.Annotations.Implements(Object);
+
   int(0..) tag = 5;
   constant type_name = "NULL";
 
@@ -642,6 +675,10 @@ class Null
 class Identifier
 {
   inherit Object;
+
+  //!
+  @Pike.Annotations.Implements(Object);
+
   int(0..) tag = 6;
   constant type_name = "OBJECT IDENTIFIER";
 
@@ -768,6 +805,10 @@ int(1..1) asn1_utf8_valid (string s)
 class UTF8String
 {
   inherit String;
+
+  //!
+  @Pike.Annotations.Implements(Object);
+
   int(0..) tag = 12;
   constant type_name = "UTF8String";
 
@@ -796,6 +837,10 @@ class UTF8String
 class Sequence
 {
   inherit Compound;
+
+  //!
+  @Pike.Annotations.Implements(Object);
+
   int(0..) tag = 16;
   constant type_name = "SEQUENCE";
 
@@ -827,6 +872,10 @@ class Sequence
 class Set
 {
   inherit Compound;
+
+  //!
+  @Pike.Annotations.Implements(Object);
+
   int(0..) tag = 17;
   constant type_name = "SET";
 
@@ -868,6 +917,10 @@ int(0..1) asn1_printable_valid (string s) {
 class PrintableString
 {
   inherit String;
+
+  //!
+  @Pike.Annotations.Implements(Object);
+
   int(0..) tag = 19;
   constant type_name = "PrintableString";
 }
@@ -885,6 +938,10 @@ int(0..1) asn1_broken_teletex_valid (string s)
 class BrokenTeletexString
 {
   inherit String;
+
+  //!
+  @Pike.Annotations.Implements(Object);
+
   int(0..) tag = 20;
   constant type_name = "TeletexString";	// Alias: T61String
 }
@@ -905,6 +962,10 @@ int(0..1) asn1_IA5_valid (string s)
 class IA5String
 {
   inherit String;
+
+  //!
+  @Pike.Annotations.Implements(Object);
+
   int(0..) tag = 22;
   constant type_name = "IA5STRING";
 }
@@ -912,6 +973,10 @@ class IA5String
 //!
 class VisibleString {
   inherit String;
+
+  //!
+  @Pike.Annotations.Implements(Object);
+
   int(0..) tag = 26;
   constant type_name = "VisibleString";
 }
@@ -922,8 +987,12 @@ class VisibleString {
 class UTC
 {
   inherit String;
+
+  //!
+  @Pike.Annotations.Implements(Object);
+
   int(0..) tag = 23;
-  constant type_name = "UTCTime";
+  constant type_name = [string(7bit)](mixed)"UTCTime";
 
   this_program init(int|string|Calendar.ISO_UTC.Second t)
   {
@@ -983,6 +1052,10 @@ class UTC
 class GeneralizedTime
 {
   inherit UTC;
+
+  //!
+  @Pike.Annotations.Implements(UTC);
+
   int(0..) tag = 24;
   constant type_name = "GeneralizedTime";
 
@@ -1034,6 +1107,10 @@ int(0..0) asn1_universal_valid (string s)
 class UniversalString
 {
   inherit OctetString;
+
+  //!
+  @Pike.Annotations.Implements(Object);
+
   int(0..) tag = 28;
   constant type_name = "UniversalString";
 
@@ -1066,6 +1143,10 @@ int(0..1) asn1_bmp_valid (string s)
 class BMPString
 {
   inherit OctetString;
+
+  //!
+  @Pike.Annotations.Implements(Object);
+
   int(0..) tag = 30;
   constant type_name = "BMPString";
 
@@ -1100,6 +1181,7 @@ class MetaExplicit
   mapping(int:program(Object)) valid_types = ([]);
 
   class `() {
+    //!
     @Pike.Annotations.Implements(Object);
 
     inherit Compound;

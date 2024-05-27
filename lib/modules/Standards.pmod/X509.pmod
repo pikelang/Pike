@@ -164,7 +164,7 @@ mapping(Identifier:Crypto.Hash) get_algorithms()
 }
 
 class Verifier {
-  constant type = "none";
+  constant type = [string(7bit)](mixed)"none";
   Crypto.Sign.State pkc;
 
   //! Verifies the @[signature] of the certificate @[msg] using the
@@ -198,6 +198,9 @@ class Verifier {
 protected class RSAVerifier
 {
   inherit Verifier;
+
+  @Pike.Annotations.Implements(Verifier);
+
   constant type = "rsa";
 
   protected void create(string key) {
@@ -208,6 +211,9 @@ protected class RSAVerifier
 protected class DSAVerifier
 {
   inherit Verifier;
+
+  @Pike.Annotations.Implements(Verifier);
+
   constant type = "dsa";
 
   protected void create(string key, Gmp.mpz p, Gmp.mpz q, Gmp.mpz g)

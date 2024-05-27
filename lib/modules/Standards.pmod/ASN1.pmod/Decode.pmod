@@ -185,10 +185,13 @@ protected array(int) read_identifier(Stdio.Buffer data,
 
   if (p)
   {
-    .Types.Object res = ([program]p)();
+    object(.Types.Object)|zero res = ([program]p)();
     res->cls = cls;
     res->tag = tag;
-    return res->decode_primitive((string(8bit))data, this_function, types, secure);
+    res =
+      res->decode_primitive((string(8bit))data, this_function, types, secure);
+    if (res) return [object]res;
+    error("Invalid DER encoding.\n");
   }
 
   return Primitive(cls, tag, (string(8bit))data);
