@@ -1726,7 +1726,7 @@ PIKECLASS string_split_iterator
   }
 
   /*! @decl void create(string buffer, int|array(int)|multiset(int) split_set,@
-   *!                   int|void flags, function(:string)|void feed)
+   *!                   int|void flags, function(:string|zero)|void feed)
    *! @param buffer
    *!   The string to split.
    *! @param split_set
@@ -1738,7 +1738,7 @@ PIKECLASS string_split_iterator
    *!   and the SplitIterator wants more data.
    */
   PIKEFUN void create(string buffer, int|array(int)|multiset(int) split_set,
-		      int|void flags, function(:string)|void feed)
+                      int|void flags, function(:string|zero)|void feed)
     flags ID_PROTECTED;
     {
       if (THIS->buffer) {
