@@ -10644,19 +10644,26 @@ int find_child(struct program *parent, struct program *child)
 }
 #endif /* 0 */
 
-
-
 /**
  * @return Returns 1 if a implements b.
+ *         Returns -1 if a implements b non strictly.
  */
-static int low_implements(struct program *a, struct program *b)
+static int low_implements(struct program *a, struct program *b,
+                          struct mapping *abind, struct mapping *bbind)
 {
   DECLARE_CYCLIC();
   int e;
-  int ret = 1;
+  int ret = 1;	/* Default to implements strictly. */
+
+#if 0
+  pike_fprintf(stderr, "low_implements(%pP, %pP)...\n", a, b);
+#endif /* 0 */
 
   if (BEGIN_CYCLIC(a, b)) {
     END_CYCLIC();
+#if 0
+    fprintf(stderr, "CYCLIC! ==> 1\n");
+#endif /* 0 */
     return 1;	/* Tentatively ok, */
   }
   SET_CYCLIC_RET(1);
@@ -10691,6 +10698,9 @@ static int low_implements(struct program *a, struct program *b)
       b = p;
 
       if (a == b) {
+#if 0
+        fprintf(stderr, "Futures and Promises ==> 1\n");
+#endif /* 0 */
         END_CYCLIC();
         return 1;
       }
@@ -10699,6 +10709,8 @@ static int low_implements(struct program *a, struct program *b)
 
   for(e=0;e<b->num_identifier_references;e++)
   {
+    struct pike_type *at;
+    struct pike_type *bt;
     struct identifier *bid;
     int i;
     if (b->identifier_references[e].id_flags & (ID_PROTECTED|ID_HIDDEN|ID_VARIANT))
@@ -10710,30 +10722,76 @@ static int low_implements(struct program *a, struct program *b)
       if (b->identifier_references[e].id_flags & (ID_OPTIONAL))
 	continue;		/* It's ok... */
 #if 0
-      fprintf(stderr, "Missing identifier \"%s\"\n", bid->name->str);
+      pike_fprintf(stderr, "Missing identifier %pq\n", bid->name);
 #endif /* 0 */
       ret = 0;
       break;
     }
 
-    if (!pike_types_le(bid->type, ID_FROM_INT(a, i)->type, 0, 0)) {
-      if(!match_types(ID_FROM_INT(a,i)->type, bid->type)) {
+    at = ID_FROM_INT(a,i)->type;
+    bt = bid->type;
+    if (at) {
+      if (at->flags & PT_FLAG_MASK_GENERICS) {
+        at = compiler_apply_bindings(at, abind);
+      } else {
+        add_ref(at);
+      }
+    }
+    if (bt) {
+      if (bt->flags & PT_FLAG_MASK_GENERICS) {
+        bt = compiler_apply_bindings(bt, bbind);
+      } else {
+        add_ref(bt);
+      }
+    }
+
+    if (IDENTIFIER_IS_FUNCTION(bid->identifier_flags) ||
+        IDENTIFIER_IS_CONSTANT(bid->identifier_flags)) {
+      /* For functions, we require the symbol type in a to be stricter
+       * or equal to the type in b.
+       *
+       * Swap the types.
+       */
+      struct pike_type *tmp = at;
+      at = bt;
+      bt = tmp;
+    }
+
 #if 0
-	fprintf(stderr, "Identifier \"%s\" is incompatible.\n",
-		bid->name->str);
+    pike_fprintf(stderr, "Comparing types for %pq: %pT <= %pT?\n",
+                 bid->name, bt, at);
 #endif /* 0 */
-	ret = 0;
+
+    if (!pike_types_le(bt, at, 0, 0)) {
+
+      /* Note negation ==> implements non-strictly. */
+      ret = -match_types(at, bt);
+
+      free_type(at);
+      free_type(bt);
+
+      if (!ret) {
+#if 0
+        pike_fprintf(stderr, "Identifier %pq is incompatible.\n",
+                     bid->name);
+#endif /* 0 */
 	break;
       } else {
 #if 0
-	fprintf(stderr, "Identifier \"%s\" is not strictly compatible.\n",
-		bid->name->str);
+        pike_fprintf(stderr, "Identifier %pq is not strictly compatible.\n",
+                     bid->name);
 #endif /* 0 */
       }
+    } else {
+      free_type(at);
+      free_type(bt);
     }
   }
 
   END_CYCLIC();
+#if 0
+  pike_fprintf(stderr, "low_implements(%pP, %pP) ==> %d\n", a, b, ret);
+#endif /* 0 */
   return ret;
 }
 
@@ -10752,8 +10810,8 @@ static int implements_hval( INT32 aid, INT32 bid )
 PMOD_EXPORT int implements(struct program *a, struct program *b)
 {
   unsigned long hval;
-  if(!a || !b) return -1;
-  if(a==b) return 1;
+  if ((a == b) || !b) return 1;
+  if (!a) return 0;
 
   hval = implements_hval(a->id,b->id);
   if(implements_cache[hval].aid==a->id && implements_cache[hval].bid==b->id)
@@ -10772,7 +10830,7 @@ PMOD_EXPORT int implements(struct program *a, struct program *b)
    *
    * Note also that cyclic calls are handled via low_implements().
    */
-  implements_cache[hval].ret = low_implements(a,b);
+  implements_cache[hval].ret = low_implements(a, b, NULL, NULL);
   implements_cache[hval].aid=a->id;
   implements_cache[hval].bid=b->id;
 
@@ -11081,6 +11139,9 @@ void yyexplain_not_implements(int severity_level,
   {
     struct identifier *bid;
     int i;
+    struct pike_type *at;
+    struct pike_type *bt;
+
     if (b->identifier_references[e].id_flags & (ID_PROTECTED|ID_HIDDEN|ID_VARIANT))
       continue;		/* Skip protected & hidden */
     bid = ID_FROM_INT(b,e);
@@ -11100,14 +11161,33 @@ void yyexplain_not_implements(int severity_level,
       continue;
     }
 
-    if (!pike_types_le(bid->type, ID_FROM_INT(a, i)->type, 0, 0)) {
+    at = ID_FROM_INT(a, i)->type;
+    bt = bid->type;
+
+    if (IDENTIFIER_IS_FUNCTION(bid->identifier_flags) ||
+        IDENTIFIER_IS_CONSTANT(bid->identifier_flags)) {
+      /* For functions, we require the symbol type in a to be stricter
+       * or equal to the type in b.
+       *
+       * Swap the types.
+       */
+      struct pike_type *tmp = at;
+      at = bt;
+      bt = tmp;
+    }
+
+    if (!pike_types_le(bt, at, 0, 0)) {
       INT_TYPE aid_line = a_line;
       INT_TYPE bid_line = b_line;
       struct pike_string *aid_file = get_identifier_line(a, i, &aid_line);
       struct pike_string *bid_file = get_identifier_line(b, e, &bid_line);
       if (!aid_file) aid_file = a_file;
       if (!bid_file) bid_file = b_file;
-      if(!match_types(ID_FROM_INT(a,i)->type, bid->type)) {
+
+      /* NB: The report calls below are safe as they do not use the
+       *     (potentially swapped) at and bt.
+       */
+      if(!match_types(at, bt)) {
 	yytype_report(severity_level,
 		      bid_file, bid_line, bid->type,
 		      aid_file, aid_line, ID_FROM_INT(a, i)->type,
