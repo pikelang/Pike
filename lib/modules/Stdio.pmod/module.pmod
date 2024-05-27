@@ -784,7 +784,7 @@ class File
   //!
   //! @seealso
   //!   @[read_function()], @[write()], @[Fd::read()]
-  string|zero read(int|void nbytes, int(0..1)|void not_all)
+  string(8bit)|zero read(int|void nbytes, int(0..1)|void not_all)
   {
     if (inbuffer) {
       if (!nbytes) return "";
@@ -803,7 +803,7 @@ class File
     return ::read(nbytes, not_all);
   }
 
-  function(:string|zero) read_function(int nbytes)
+  function(:string(8bit)|zero) read_function(int nbytes)
   //! Returns a function that when called will call @[read] with
   //! nbytes as argument. Can be used to get various callback
   //! functions, eg for the fourth argument to
@@ -2094,8 +2094,8 @@ class FILE
 {
   inherit File : file;
 
-  //! @decl @Pike.Annotations.Implements(File)
-  @__builtin.Implements(File);
+  //! @decl @Pike.Annotations.Implements(NonblockingStream)
+  @__builtin.Implements(NonblockingStream);
 
   // This is needed since it was overloaded in File above.
   protected Fd fd_factory()
