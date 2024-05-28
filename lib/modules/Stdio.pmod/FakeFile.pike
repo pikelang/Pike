@@ -321,8 +321,11 @@ void set_blocking_keep_callbacks() { }
 
 //! @seealso
 //!   @[Stdio.File()->set_blocking]
-void set_nonblocking(function rcb, function wcb, function ccb,
-                     void|function rocb, void|function wocb) {
+void set_nonblocking(Stdio.read_callback_t rcb,
+                     Stdio.write_callback_t wcb,
+                     Stdio.close_callback_t ccb,
+                     void|Stdio.read_oob_callback_t rocb,
+                     void|Stdio.write_oob_callback_t wocb) {
   read_cb = rcb;
   write_cb = wcb;
   close_cb = ccb;
@@ -341,47 +344,47 @@ int(0..1) set_nodelay(int(0..1)|void state) { }
 
 //! @seealso
 //!   @[Stdio.File()->set_close_callback]
-void set_close_callback(function cb) { close_cb = cb; }
+void set_close_callback(Stdio.close_callback_t cb) { close_cb = cb; }
 
 //! @seealso
 //!   @[Stdio.File()->set_read_callback]
-void set_read_callback(function cb) {
+void set_read_callback(Stdio.read_callback_t cb) {
   read_cb = cb;
   do_readcb();
 }
 
 //! @seealso
 //!   @[Stdio.File()->set_read_oob_callback]
-void set_read_oob_callback(function cb) { read_oob_cb = cb; }
+void set_read_oob_callback(Stdio.read_oob_callback_t cb) { read_oob_cb = cb; }
 
 //! @seealso
 //!   @[Stdio.File()->set_write_callback]
-void set_write_callback(function cb) { write_cb = cb; }
+void set_write_callback(Stdio.write_callback_t cb) { write_cb = cb; }
 
 //! @seealso
 //!   @[Stdio.File()->set_write_oob_callback]
-void set_write_oob_callback(function cb) { write_oob_cb = cb; }
+void set_write_oob_callback(Stdio.write_oob_callback_t cb) { write_oob_cb = cb; }
 
 
 //! @seealso
 //!   @[Stdio.File()->query_close_callback]
-function query_close_callback() { return close_cb; }
+function|zero query_close_callback() { return close_cb; }
 
 //! @seealso
 //!   @[Stdio.File()->query_read_callback]
-function query_read_callback() { return read_cb; }
+function|zero query_read_callback() { return read_cb; }
 
 //! @seealso
 //!   @[Stdio.File()->query_read_oob_callback]
-function query_read_oob_callback() { return read_oob_cb; }
+function|zero query_read_oob_callback() { return read_oob_cb; }
 
 //! @seealso
 //!   @[Stdio.File()->query_write_callback]
-function query_write_callback() { return write_cb; }
+function|zero query_write_callback() { return write_cb; }
 
 //! @seealso
 //!   @[Stdio.File()->query_write_oob_callback]
-function query_write_oob_callback() { return write_oob_cb; }
+function|zero query_write_oob_callback() { return write_oob_cb; }
 
 protected string _sprintf(int t) {
   return t=='O' && sprintf("%O(%d,%O)", this_program, sizeof(data),
@@ -422,7 +425,7 @@ NOPE(dup2);
 NOPE(lock); // We could implement this
 NOPE(proxy); // We could implement this
 NOPE(query_fd);
-string read_oob(int(0..) nbytes) { LOW_NOPE(read_oob); }
+string read_oob(void|int(0..) nbytes) { LOW_NOPE(read_oob); }
 NOPE(set_close_on_exec);
 NOPE(set_keepalive);
 NOPE(trylock); // We could implement this
