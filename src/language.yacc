@@ -718,7 +718,8 @@ constant_name: TOK_IDENTIFIER '=' safe_assignment_expr
 	} else {
 	  push_undefined();
 	}
-        if ($3->token == F_SOFT_CAST) {
+        if (($3->token == F_SOFT_CAST) ||
+            (($3->token == F_COMMA_EXPR) && (CAR($3)->token == F_SOFT_CAST))) {
           /* Node type set intentionally via a soft-cast. */
           add_typed_constant($1->u.sval.u.string, $3->type, Pike_sp-1,
                              Pike_compiler->current_modifiers & ~ID_EXTERN);
