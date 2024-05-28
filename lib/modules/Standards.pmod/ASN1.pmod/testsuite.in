@@ -68,9 +68,14 @@ dnl
 
 dnl 5.4
 test_decode("03 04 06 6e 5d c0", "BitString(18 011011100101110111)")
-test_false(Standards.ASN1.Decode.simple_der_decode(String.hex2string("03 04 06 6e 5d e0")))
+test_eq(P(Standards.ASN1.Decode.simple_der_decode(String.hex2string("03 04 06 6e 5d e0"))), "BitString(18 011011100101110111)")
+test_false(Standards.ASN1.Decode.secure_der_decode(String.hex2string("03 04 06 6e 5d e0")))
 test_eq(P(Standards.ASN1.Decode.simple_der_decode(String.hex2string("03 81 04 06 6e 5d c0"))), "BitString(18 011011100101110111)")
+test_false(Standards.ASN1.Decode.secure_der_decode(String.hex2string("03 81 04 06 6e 5d c0")))
 test_eq(P(Standards.ASN1.Decode.simple_der_decode(String.hex2string("23 09 03 03 00 6e 5d 03 02 06 c0"))), "BitString(18 011011100101110111)")
+dnl FIXME: Should the following fail?
+test_eq(P(Standards.ASN1.Decode.secure_der_decode(String.hex2string("23 09 03 03 00 6e 5d 03 02 06 c0"))), "BitString(18 011011100101110111)")
+
 
 dnl 5.6
 test_decode("16 0d 74 65 73 74 31 40 72 73 61 2e 63 6f 6d",
