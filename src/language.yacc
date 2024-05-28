@@ -718,8 +718,18 @@ constant_name: TOK_IDENTIFIER '=' safe_assignment_expr
 	} else {
 	  push_undefined();
 	}
-        add_typed_constant($1->u.sval.u.string, $3->type, Pike_sp-1,
-                           Pike_compiler->current_modifiers & ~ID_EXTERN);
+        if ($3->token == F_SOFT_CAST) {
+          /* Node type set intentionally via a soft-cast. */
+          add_typed_constant($1->u.sval.u.string, $3->type, Pike_sp-1,
+                             Pike_compiler->current_modifiers & ~ID_EXTERN);
+        } else {
+          /* Compat: Derive the type from the value.
+           *
+           * Cf LysLysKOM 16630665.
+           */
+          add_typed_constant($1->u.sval.u.string, NULL, Pike_sp-1,
+                             Pike_compiler->current_modifiers & ~ID_EXTERN);
+        }
 	pop_stack();
       }
     }
