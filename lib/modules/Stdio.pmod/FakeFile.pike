@@ -414,7 +414,7 @@ NOPE(connect_unix);
 NOPE(open);
 NOPE(open_socket);
 NOPE(pipe);
-mapping(string:int) tcgetattr() { LOW_NOPE(tcgetattr); }
+mapping(string(7bit):int) tcgetattr() { LOW_NOPE(tcgetattr); }
 int tcsetattr(mapping(string:int) attr, string|void when) { LOW_NOPE(tcsetattr); }
 
 // Stdio.Fd

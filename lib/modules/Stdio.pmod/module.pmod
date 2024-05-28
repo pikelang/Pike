@@ -67,7 +67,8 @@ class InputStream
   //!
   optional string|zero read_oob(int(0..)|void nbytes);
   optional mapping(string(7bit):int)|zero tcgetattr();
-  optional int tcsetattr(mapping(string:int) attr, string(8bit)|void when);
+  optional int tcsetattr(mapping(string(7bit):int) attr,
+                         string(7bit)|void when);
 }
 
 //! Mixin for converting an @[InputStream] into a @[Stream].
