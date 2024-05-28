@@ -48,9 +48,9 @@ class Object
 {
   int(0..3) cls = 0;
   int(0..) tag = 0;
-  constant constructed = [int(0..1)](mixed)0;
+  constant constructed = [int](mixed)0;
 
-  constant type_name = [string(8bit)](mixed)"";
+  constant type_name = [string](mixed)"";
 
   protected string(8bit) get_der_content()
   {
@@ -992,7 +992,7 @@ class UTC
   @Pike.Annotations.Implements(Object);
 
   int(0..) tag = 23;
-  constant type_name = [string(7bit)](mixed)"UTCTime";
+  constant type_name = "UTCTime";
 
   this_program init(int|string|Calendar.ISO_UTC.Second t)
   {
