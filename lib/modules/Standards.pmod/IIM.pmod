@@ -284,12 +284,12 @@ protected mapping(string:array(string)) decode_photoshop_data(string data)
 //!   Returns a mapping containing any found IPTC IIM data.
 mapping(string:array(string)) get_information(Stdio.InputStream fd)
 {
-  string marker = fd->read(2);
+  string|zero marker = fd->read(2);
   string photoshop_data = "";
 
   if (marker == "\xc5\xd0") {
     // Probably a DOS EPS Binary Header.
-    string tmp = fd->read(28);
+    string|zero tmp = fd->read(28);
     if (!has_prefix(tmp, "\xd3\xc6")) return ([]);
     int offset;
     sscanf(tmp, "%*2c%-4c", offset);
@@ -315,10 +315,10 @@ mapping(string:array(string)) get_information(Stdio.InputStream fd)
     }
   } else if (marker == "\xff\xd8") {
     do {
-      string app = fd->read(2);
+      string app = fd->read(2) || "";
       if (sizeof(app) != 2)
 	break;
-      string length_s = fd->read(2);
+      string length_s = fd->read(2) || "";
       int length;
       if (sizeof(length_s) == 2)
 	length = short_value(length_s);
@@ -326,8 +326,9 @@ mapping(string:array(string)) get_information(Stdio.InputStream fd)
 	break;
       //werror ("length: %O\n", short_value(length_s));
 
-      string data = fd->read((length-2) & 0xffff);
-      if (app == "\xff\xed") // APP14 Photoshop
+      string data = fd->read((length-2) & 0xffff) || "";
+      if ((app == "\xff\xed") && // APP14 Photoshop
+          (sizeof(data) == ((length-2) & 0xffff)))
       {
 	//werror("data: %O\n", data);
 	photoshop_data = data;
@@ -336,7 +337,7 @@ mapping(string:array(string)) get_information(Stdio.InputStream fd)
     } while (1);
   } else if (marker == "8B") {
     //  May be a native PSD file. It should start with "8BPS\0\1" to be valid.
-    string marker2 = fd->read(4);
+    string|zero marker2 = fd->read(4);
     if (marker2 == "PS\0\1") {
       photoshop_data = "8BPS\0\1" + fd->read();
     }
