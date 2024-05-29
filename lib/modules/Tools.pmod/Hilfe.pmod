@@ -1715,12 +1715,17 @@ class Evaluator {
         if(type=="class") top=0;
 	multiset(string) new_scope = symbols+(<>);
 
-	// No () for catch, gauge, do and possibly class.
+        // No () for gauge, do and possibly class.
 	// Get variable names for next scope clobber.
 	if(expr[p]=="(") {
 	  p++;
 
 	  switch(type) {
+
+          case "catch":
+            p = relocate(expr, symbols, new_scope, p);
+            p++;
+            break;
 
 	  case "foreach":
 	    p = relocate(expr, symbols, new_scope, p, ",");
@@ -1795,14 +1800,14 @@ class Evaluator {
     werror("%O %O %d\n", (symbols?indices(symbols||(<>))*", ":0),
            (next_symbols?indices(next_symbols||(<>))*", ":0), top );
     p = _relocate(expr, symbols, next_symbols, p, safe_word, top);
-    werror(" relocate %O %O\n", op, expr[op..p]);
+    werror(" relocate %O..%O %O\n", op, p, expr[op..p]);
     return p;
   }
 #endif
 
   protected int relocate( Expression expr, multiset(string) symbols,
 			  multiset(string)|zero next_symbols, int p,
-			  void|string safe_word, void|int(0..1) top) {
+                          void|string safe_word, void|int(0..1) top) {
     // Type declaration?
     int pos = expr->endoftype(p);
     if(pos>=0) {

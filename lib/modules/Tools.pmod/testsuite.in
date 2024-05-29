@@ -206,6 +206,9 @@ test_hilfe( ({ "#\"", "set fisk\";" }), "\"\\n\"\n\"set fisk\"");
 test_hilfe("set hedda", "");
 test_hilfe("f;", "0.0");
 
+test_hilfe("catch(lambda(){i=5;}());", "0");
+test_hilfe("i;", "5");
+
 test_do( add_constant("testhilfe") )
 
 test_true([[ Tools.Hilfe.StdinHilfe ]])
