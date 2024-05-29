@@ -304,7 +304,13 @@ class Boolean
                                 mapping(int:program(Object))|void types,
                                 void|int(0..1) secure) {
     if( contents=="" ) error("Illegal boolean value.\n");
-    value = (contents != "\0");
+    value = ([ "\0": 0, "\377": 1 ])[contents];
+    if (undefinedp(value)) {
+      value = 1;
+      if (secure) {
+        error("Non-canonical boolean value.\n");
+      }
+    }
     return this;
   }
 
