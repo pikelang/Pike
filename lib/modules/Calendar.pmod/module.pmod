@@ -488,6 +488,35 @@ protected array _indices()
 //!
 //! This needs to be reformatted as documentation.
 
+//! @module ISO_UTC
+//!   @[Calendar.ISO] with the timezone set to @expr{"UTC"@}.
+
+//! @decl inherit ISO
+
+//! @endmodule
+
+//! @decl inherit ISO_UTC
+//!
+//! Symbol lookups directly in @[Calendar] default to
+//! looking up the same symbol in @[Calendar.ISO_UTC].
+
+//! @module Bahai
+//!   This is an alias for @[Calendar.Badi].
+
+//! @decl inherit Badi
+
+//! @endmodule
+
+constant II = 1;
+//! Recongnition constant for Calendar module API 2.
+
+//! @module default_rules
+//!   This is the default ruleset (which is ISO).
+
+//! @decl inherit Ruleset
+
+//! @endmodule
+
 #if 1
 protected mixed `[](string what)
 {
