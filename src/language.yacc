@@ -350,6 +350,7 @@ int yylex(YYSTYPE *yylval);
 %type <n> TOK_BITS
 %type <n> optional_default_value
 %type <n> optional_default_type
+%type <n> optional_type
 %type <n> opt_generic_bindings
 %type <n> optional_rename_inherit
 %type <n> optional_identifier
@@ -659,6 +660,7 @@ import: TOK_IMPORT constant_expr ';'
 
 generic: TOK_GENERIC generic_type_decl_list ';'
 
+/* NB: $0 is optional_type. */
 constant_name: TOK_IDENTIFIER '=' safe_assignment_expr
   {
     /* This can be made more lenient in the future */
@@ -718,7 +720,17 @@ constant_name: TOK_IDENTIFIER '=' safe_assignment_expr
 	} else {
 	  push_undefined();
 	}
-        if (($3->token == F_SOFT_CAST) ||
+        if ($<n>0) {
+          /* New-style syntax for typed constants. */
+          struct pike_type *t = $<n>0->u.sval.u.type;
+          if (!pike_types_le($3->type, t, 0, 0)) {
+            yytype_report(REPORT_ERROR, NULL, 0, t, NULL, 0, $3->type,
+                          0, "Bad value for constant.");
+            t = NULL;
+          }
+          add_typed_constant($1->u.sval.u.string, t, Pike_sp-1,
+                             Pike_compiler->current_modifiers & ~ID_EXTERN);
+        } else if (($3->token == F_SOFT_CAST) ||
             (($3->token == F_COMMA_EXPR) && (CAR($3)->token == F_SOFT_CAST))) {
           /* Node type set intentionally via a soft-cast. */
           add_typed_constant($1->u.sval.u.string, $3->type, Pike_sp-1,
@@ -737,22 +749,43 @@ constant_name: TOK_IDENTIFIER '=' safe_assignment_expr
     if($3) free_node($3);
     free_node($1);
   }
-  | bad_identifier '=' safe_assignment_expr { if ($3) free_node($3); }
+  | bad_expr_ident '=' safe_assignment_expr { if ($3) free_node($3); }
   | error '=' safe_assignment_expr { if ($3) free_node($3); }
   ;
 
 constant_list: constant_name
-  | constant_list ',' constant_name
+  | constant_list ',' { $<n>$ = $<n>0; } constant_name
   ;
 
-constant: modifiers TOK_CONSTANT constant_list ';' {}
-  | modifiers TOK_CONSTANT error ';' { yyerrok; }
-  | modifiers TOK_CONSTANT error TOK_LEX_EOF
+optional_type: /* empty */ { $$ = NULL; }
+  | type
   {
+    struct pike_type *t = compiler_pop_type();
+    $$ = mktypenode(t);
+    free_type(t);
+  }
+  ;
+
+constant: modifiers TOK_CONSTANT optional_type constant_list ';'
+  {
+    free_node($3);
+  }
+  | modifiers TOK_CONSTANT optional_type error ';'
+  {
+    free_node($3);
+    yyerrok;
+  }
+  | modifiers TOK_CONSTANT optional_type error TOK_LEX_EOF
+  {
+    free_node($3);
     yyerror("Missing ';'.");
     yyerror("Unexpected end of file.");
   }
-  | modifiers TOK_CONSTANT error '}' { yyerror("Missing ';'."); }
+  | modifiers TOK_CONSTANT optional_type error '}'
+  {
+    free_node($3);
+    yyerror("Missing ';'.");
+  }
   ;
 
 function_block: block

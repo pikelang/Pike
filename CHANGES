@@ -121,6 +121,14 @@ o Syntax for specifying the length of array and string types.
 
   Eg string(4bit: 8bit) is 8-bit strings of lengths 0-15.
 
+o Syntax for specifying the type of named constants.
+
+  Eg constant int(0..1) flag = 0, other = 1;
+
+o Backward-compatible syntax for specifying the type of named constants.
+
+  Eg constant flag = [int(0..1)](mixed)0, other = [int(0..1)](mixed)1;
+
 o ** operator added. It's exponentiation and works with most
   combination of numerical types (int,float,Gmp.mpq,Gmp.mpf,Gmp.mpz)
 
