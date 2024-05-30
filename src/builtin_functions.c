@@ -9103,6 +9103,7 @@ PMOD_EXPORT void f_filter(INT32 args)
 	   pop_n_elems(args-2);
 	 }
 	 else {
+           /* filter(X, mixed ... extra) ==> filter(X, map(X, @extra)) */
 	   memmove(Pike_sp-args+1,Pike_sp-args,args*sizeof(*Pike_sp));
 	   dmalloc_touch_svalue(Pike_sp);
 	   Pike_sp++;
@@ -9113,6 +9114,7 @@ PMOD_EXPORT void f_filter(INT32 args)
 	 f=Pike_sp[-1].u.array;
 	 a=Pike_sp[-2].u.array;
 	 n=a->size;
+         /* FIXME: Ought to use BEGIN_AGGREGATE_ARRAY() et al. */
 	 for (k=m=i=0; i<n; i++)
 	    if (!UNSAFE_IS_ZERO(f->item+i))
 	    {
@@ -9270,13 +9272,17 @@ PMOD_EXPORT void f_filter(INT32 args)
  */
 static node *fix_map_node_info(node *n)
 {
-  int argno;
+  int argno = 1; /* Note: argument 2 has argno 1. */
   node **cb_;
   /* Assume worst case. */
   int node_info = OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND;
 
-  /* Note: argument 2 has argno 1. */
-  for (argno = 1; (cb_ = my_get_arg(&_CDR(n), argno)); argno++) {
+  if (count_args(CDR(n)) == 1) {
+    /* Special case for the single argument case. */
+    argno = 0;
+  }
+
+  for (argno; (cb_ = my_get_arg(&_CDR(n), argno)); argno++) {
     node *cb = *cb_;
 
     if ((cb->token == F_CONSTANT) &&
