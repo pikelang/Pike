@@ -6035,6 +6035,7 @@ test_equal([[ ({ ({1,2}), ({3,4}), ({5,6}) })[*][ ({0,1,1})[*] ] ]],
 test_eq(map("abc", `+, 1), "bcd")
 test_equal(map((["a":1,"b":2]), `+, 1), (["a":2,"b":3]))
 test_equal(map((<1,2,3>), `+, 1), (<2,3,4>))
+test_equal(map(({ lambda(){ return 1; }, lambda(){ return 0; }})), ({ 1, 0 }))
 test_any_equal(class A { constant a=1; constant b=2; }; return map(A, `+ ,1);, (["a":2,"b":3]))
 test_any_equal(class A { protected mixed cast(string t) { if(t=="mapping") return (["a":1,"b":2]);}}; return map(A(), `+, 1);, (["a":2,"b":3]))
 test_any_equal(class A { protected mixed cast(string t) { if(t=="array") return ({1,2,3});}}; return map(A(), `+, 1);, ({2,3,4}))
