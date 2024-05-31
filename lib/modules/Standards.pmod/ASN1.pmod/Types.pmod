@@ -48,9 +48,9 @@ class Object
 {
   int(0..3) cls = 0;
   int(0..) tag = 0;
-  constant constructed = [int](mixed)0;
+  constant int(0..1) constructed = 0;
 
-  constant type_name = [string](mixed)"";
+  constant string(7bit) type_name = "";
 
   protected string(8bit) get_der_content()
   {
@@ -161,7 +161,7 @@ class Compound
   //!
   @Pike.Annotations.Implements(Object);
 
-  constant constructed = 1;
+  constant int(0..1) constructed = 1;
 
   //! Contents of compound object.
   array(Object) elements = ({ });
@@ -277,7 +277,7 @@ class Boolean
   @Pike.Annotations.Implements(Object);
 
   int(0..) tag = 1;
-  constant type_name = "BOOLEAN";
+  constant string(7bit) type_name = "BOOLEAN";
 
   //! value of object
   int value;
@@ -329,7 +329,7 @@ class Integer
   @Pike.Annotations.Implements(Object);
 
   int(0..) tag = 2;
-  constant type_name = "INTEGER";
+  constant string(7bit) type_name = "INTEGER";
 
   //! value of object
   Gmp.mpz value = Gmp.mpz(0);
@@ -400,7 +400,7 @@ class Enumerated
   @Pike.Annotations.Implements(Object);
 
   int(0..) tag = 10;
-  constant type_name = "ENUMERATED";
+  constant string(7bit) type_name = "ENUMERATED";
 }
 
 class Real
@@ -411,7 +411,7 @@ class Real
   @Pike.Annotations.Implements(Object);
 
   int(0..) tag = 9;
-  constant type_name = "REAL";
+  constant string(7bit) type_name = "REAL";
 
   float value = 0.0;
 
@@ -523,7 +523,7 @@ class BitString
   @Pike.Annotations.Implements(Object);
 
   int(0..) tag = 3;
-  constant type_name = "BIT STRING";
+  constant string(7bit) type_name = "BIT STRING";
 
   //! value of object
   string(0..255) value = "";
@@ -642,7 +642,7 @@ class OctetString
   @Pike.Annotations.Implements(Object);
 
   int(0..) tag = 4;
-  constant type_name = "OCTET STRING";
+  constant string(7bit) type_name = "OCTET STRING";
 }
 
 //! Null object
@@ -654,7 +654,7 @@ class Null
   @Pike.Annotations.Implements(Object);
 
   int(0..) tag = 5;
-  constant type_name = "NULL";
+  constant string(7bit) type_name = "NULL";
 
   this_program decode_primitive(string(0..255) contents,
 				function(Stdio.Buffer,
@@ -686,7 +686,7 @@ class Identifier
   @Pike.Annotations.Implements(Object);
 
   int(0..) tag = 6;
-  constant type_name = "OBJECT IDENTIFIER";
+  constant string(7bit) type_name = "OBJECT IDENTIFIER";
 
   //! value of object
   array(int) id = ({});
@@ -816,7 +816,7 @@ class UTF8String
   @Pike.Annotations.Implements(Object);
 
   int(0..) tag = 12;
-  constant type_name = "UTF8String";
+  constant string(7bit) type_name = "UTF8String";
 
   string(0..255) get_der_content()
   {
@@ -848,7 +848,7 @@ class Sequence
   @Pike.Annotations.Implements(Object);
 
   int(0..) tag = 16;
-  constant type_name = "SEQUENCE";
+  constant string(7bit) type_name = "SEQUENCE";
 
   string(0..255) get_der_content()
   {
@@ -883,7 +883,7 @@ class Set
   @Pike.Annotations.Implements(Object);
 
   int(0..) tag = 17;
-  constant type_name = "SET";
+  constant string(7bit) type_name = "SET";
 
   int(-1..1) compare_octet_strings(string r, string s)
   {
@@ -928,7 +928,7 @@ class PrintableString
   @Pike.Annotations.Implements(Object);
 
   int(0..) tag = 19;
-  constant type_name = "PrintableString";
+  constant string(7bit) type_name = "PrintableString";
 }
 
 //!
@@ -949,7 +949,7 @@ class BrokenTeletexString
   @Pike.Annotations.Implements(Object);
 
   int(0..) tag = 20;
-  constant type_name = "TeletexString";	// Alias: T61String
+  constant string(7bit) type_name = "TeletexString";	// Alias: T61String
 }
 
 protected Regexp asn1_IA5_invalid_chars = Regexp ("([\200-\377])");
@@ -973,7 +973,7 @@ class IA5String
   @Pike.Annotations.Implements(Object);
 
   int(0..) tag = 22;
-  constant type_name = "IA5STRING";
+  constant string(7bit) type_name = "IA5STRING";
 }
 
 //!
@@ -984,7 +984,7 @@ class VisibleString {
   @Pike.Annotations.Implements(Object);
 
   int(0..) tag = 26;
-  constant type_name = "VisibleString";
+  constant string(7bit) type_name = "VisibleString";
 }
 
 //! UTCTime
@@ -998,7 +998,7 @@ class UTC
   @Pike.Annotations.Implements(Object);
 
   int(0..) tag = 23;
-  constant type_name = "UTCTime";
+  constant string(7bit) type_name = "UTCTime";
 
   this_program init(int|string|Calendar.ISO_UTC.Second t)
   {
@@ -1063,7 +1063,7 @@ class GeneralizedTime
   @Pike.Annotations.Implements(UTC);
 
   int(0..) tag = 24;
-  constant type_name = "GeneralizedTime";
+  constant string(7bit) type_name = "GeneralizedTime";
 
   // We are currently not doing any management of fractions. X690
   // states that fractions shouldn't have trailing zeroes, and should
@@ -1118,7 +1118,7 @@ class UniversalString
   @Pike.Annotations.Implements(Object);
 
   int(0..) tag = 28;
-  constant type_name = "UniversalString";
+  constant string(7bit) type_name = "UniversalString";
 
   string get_der_content() {
     error( "Encoding not implemented\n" );
@@ -1154,7 +1154,7 @@ class BMPString
   @Pike.Annotations.Implements(Object);
 
   int(0..) tag = 30;
-  constant type_name = "BMPString";
+  constant string(7bit) type_name = "BMPString";
 
   string get_der_content() {
     return string_to_unicode (value);
@@ -1191,8 +1191,8 @@ class MetaExplicit
     @Pike.Annotations.Implements(Object);
 
     inherit Compound;
-    constant type_name = "EXPLICIT";
-    constant constructed = 1;
+    constant string(7bit) type_name = "EXPLICIT";
+    constant int(0..1) constructed = 1;
 
     int(0..3) get_cls() { return real_cls; }
     int(0..) get_tag() { return real_tag; }
