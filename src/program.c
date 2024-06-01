@@ -2082,6 +2082,9 @@ static int add_identifier(struct compilation *c,
 		       func, run_time_type);
   ref.inherit_offset = 0;
   ref.run_time_type = PIKE_T_UNKNOWN;
+#ifdef __CHECKER__
+  ref.func.sval = NULL;		/* Make Coverity happy. */
+#endif
 
   if (zap_type) {
     free_type(type);
