@@ -11,10 +11,12 @@ inherit Crypto.Sign;
 @Pike.Annotations.Implements(Crypto.Sign);
 
 //! Returns the string @expr{"DSA"@}.
-string(8bit) name() { return "DSA"; }
+string(7bit) name() { return "DSA"; }
 
 class State {
   inherit ::this_program;
+
+  @Pike.Annotations.Implements(Crypto.Sign.State);
 
   protected string _sprintf(int t)
   {
@@ -49,7 +51,7 @@ class State {
   }
 
   //! Returns the string @expr{"DSA"@}.
-  string(8bit) name() { return "DSA"; }
+  string(7bit) name() { return "DSA"; }
 
   //
   // --- Key methods
@@ -92,8 +94,9 @@ class State {
 
   //! Compares the public key in this object with that in the provided
   //! DSA object.
-  int(0..1) public_key_equal(this_program dsa)
+  int(0..1) public_key_equal(object other)
   {
+    this_program dsa = [object(this_program)]other;
     return (p == dsa->get_p()) && (q == dsa->get_q()) &&
       (g == dsa->get_g()) && (y == dsa->get_y());
   }
@@ -294,7 +297,7 @@ class State {
 
   //! Returns the PKCS-1 algorithm identifier for DSA and the provided
   //! hash algorithm. Only @[SHA1] supported.
-  object(Sequence)|zero pkcs_signature_algorithm_id(.Hash hash)
+  object(Sequence)|zero pkcs_signature_algorithm_id(__builtin.Nettle.Hash hash)
   {
     switch(hash->name())
     {
@@ -327,7 +330,7 @@ class State {
 
   //! Signs the @[message] with a PKCS-1 signature using hash algorithm
   //! @[h].
-  string(8bit) pkcs_sign(string(8bit) message, .Hash h)
+  string(8bit) pkcs_sign(string(8bit) message, __builtin.Nettle.Hash h)
   {
     array sign = map(raw_sign(hash(message, h)), Standards.ASN1.Types.Integer);
     return Standards.ASN1.Types.Sequence(sign)->get_der();
@@ -339,7 +342,8 @@ class State {
 
   //! Verify PKCS-1 signature @[sign] of message @[message] using hash
   //! algorithm @[h].
-  int(0..1) pkcs_verify(string(8bit) message, .Hash h, string(8bit) sign)
+  int(0..1) pkcs_verify(string(8bit) message, __builtin.Nettle.Hash h,
+                        string(8bit) sign)
   {
     object(Object)|zero a = Standards.ASN1.Decode.secure_der_decode(sign);
 
@@ -366,7 +370,7 @@ class State {
   //
 
   //! Makes a DSA hash of the message @[msg].
-  Gmp.mpz hash(string(8bit) msg, .Hash h)
+  Gmp.mpz hash(string(8bit) msg, __builtin.Nettle.Hash h)
   {
     string(8bit) digest = h->hash(msg)[..q->size()/8-1];
     return [object(Gmp.mpz)](Gmp.mpz(digest, 256) % q);
