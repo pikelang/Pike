@@ -259,7 +259,7 @@ struct cache_entry *aap_cache_lookup(char *s, ptrdiff_t len,
        && !memcmp(e->url,s,len)
        && !memcmp(e->host,ho,hlen))
     {
-      int t = aap_get_time();
+      time_t t = aap_get_time();
       if(e->stale_at < t)
       {
         aap_free_cache_entry( c, e, prev, h );

@@ -4,7 +4,7 @@
 || for more information.
 */
 
-int aap_get_time(void);
+time_t aap_get_time(void);
 ptrdiff_t aap_swrite(int to, char *buf, size_t towrite);
 
 #define H_EXISTS 0

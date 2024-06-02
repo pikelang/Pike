@@ -103,7 +103,7 @@ struct args
 struct log_entry
 {
   struct log_entry *next;
-  int t;
+  time_t t;
   size_t sent_bytes;
   unsigned int reply;
   size_t received_bytes;

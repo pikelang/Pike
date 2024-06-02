@@ -21,6 +21,7 @@
 #include "fdlib.h"
 #include "fd_control.h"
 #include "builtin_functions.h"
+#include "bignum.h"
 
 #include <errno.h>
 #ifdef HAVE_SYS_SOCKET_H
@@ -95,7 +96,7 @@ do { 						\
 
 #define IINSERT(MAP,INDEX,VAL)\
 do { 						\
-  push_int(VAL);				\
+  push_int64(VAL);				\
   push_string(INDEX);                           \
   mapping_insert((MAP),sp-1,sp-2);		\
   sp -= 2;                                      \
@@ -818,7 +819,9 @@ void f_aap_reply_with_cache(INT32 args)
 {
   struct cache_entry *ce;
   struct pike_string *reply;
-  INT_TYPE time_to_keep, t, freed=0;
+  INT_TYPE time_to_keep, freed=0;
+  time_t t;
+
   if(!THIS->request)
     Pike_error("Reply already called.\n");
 

@@ -50,7 +50,7 @@ static PIKE_MUTEX_T aap_timeout_mutex;
 struct timeout
 {
   int raised;
-  int when;
+  time_t when;
   struct timeout *next;
   THREAD_T thr;
 } *first_timeout;
