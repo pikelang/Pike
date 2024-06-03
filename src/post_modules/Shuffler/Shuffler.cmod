@@ -459,7 +459,11 @@ PIKECLASS Shuffle
     */
     optflags OPT_SIDE_EFFECT;
   {
-    SHUFFLE_DEBUG2("set_done_callback(%p)\n", THIS, cb->u.object );
+    SHUFFLE_DEBUG2("set_done_callback(%p)\n", THIS, cb?cb->u.object:NULL  );
+    if (!cb) {
+      push_undefined();
+      cb = Pike_sp-1;
+    }
     assign_svalue( &THIS->done_callback,cb);
   }
 
