@@ -2124,6 +2124,15 @@ static void describe_hostent(struct hostent *hp)
 
     for (p = hp->h_addr_list; *p != 0; p++) {
 #ifdef fd_inet_ntop
+      /* Max size for IPv4 is 4*3(digits) + 3(separator) + 1(nul) == 16.
+       *    nnn.nnn.nnn.nnn
+       * Max size for IPv6 is 8*4(digits) + 7(separator) + 1(nul) == 40.
+       *    xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx
+       * Max size for mixed mode is 6*4 + 4*3 + 6+3(separator) + 1(nul) == 46.
+       *    xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:nnn.nnn.nnn.nnn
+       *
+       * 64 should be safe for now.
+       */
       char buffer[64];
       const char *addr =
         fd_inet_ntop(hp->h_addrtype, *p, buffer, sizeof(buffer));
