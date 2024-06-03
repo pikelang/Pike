@@ -926,6 +926,15 @@ PIKEFUN string library_version()
     push_text(sqlite3_libversion());
 }
 
+/*! @decl int(0..) library_version_number()
+ *!
+ *! Returns the version of the sqlite library used as an integer.
+ */
+PIKEFUN int(0..) library_version_number()
+{
+    push_int(sqlite3_libversion_number());
+}
+
 /*! @endmodule
  */
 
