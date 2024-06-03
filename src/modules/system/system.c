@@ -2125,8 +2125,14 @@ static void describe_hostent(struct hostent *hp)
     for (p = hp->h_addr_list; *p != 0; p++) {
 #ifdef fd_inet_ntop
       char buffer[64];
-
-      push_text(fd_inet_ntop(hp->h_addrtype, *p, buffer, sizeof(buffer)));
+      const char *addr =
+        fd_inet_ntop(hp->h_addrtype, *p, buffer, sizeof(buffer));
+      if (addr) {
+        push_text(addr);
+      } else {
+        /* Very unlikely. */
+        Pike_error("Invalid address.\n");
+      }
 #else
       struct in_addr in;
 
