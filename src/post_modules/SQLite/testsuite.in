@@ -73,20 +73,14 @@ cond_resolv( SQLite.SQLite, [[
   test_equal( db->big_query("SELECT dd FROM test WHERE aa=16")->fetch_row(), ({ "cd\0e" }))
 
   dnl Bug #10160
-  cond(SQLite.library_version_number() < 3003000, [[
-    test_eq( db->big_query(#"CREATE TABLE files (
+  dnl NB: Support for the syntax was added in sqlite 3.3.0 alpha.
+  dnl     cf https://www.sqlite.org/draft/changes.html 2006-01-11:2
+  test_eq( db->big_query("CREATE TABLE " +
+    ((SQLite.library_version_number() >= 3003000)?"IF NOT EXISTS":"") +
+   #" files (
       FileID INTEGER PRIMARY KEY,
       FileName TEXT
     )")->fetch_row();, 0 )
-  ]])
-  cond(SQLite.library_version_number() >= 3003000, [[
-    dnl Support for the syntax was added in sqlite 3.3.0 alpha.
-    dnl cf https://www.sqlite.org/draft/changes.html 2006-01-11:2
-    test_eq( db->big_query(#"CREATE TABLE IF NOT EXISTS files (
-      FileID INTEGER PRIMARY KEY,
-      FileName TEXT
-    )")->fetch_row();, 0 )
-  ]])
   test_any([[
     return db->big_query("INSERT INTO files (FileName) VALUES('backup3')")->fetch_row();
   ]], 0)
