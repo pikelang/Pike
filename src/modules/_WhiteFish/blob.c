@@ -124,6 +124,7 @@ Hit wf_blob_hit( Blob *b, int n )
   {
     hit.type = HIT_NOTHING;
     hit.raw = 0;
+    hit.u.combined = 0;
     return hit;
   }
   else
