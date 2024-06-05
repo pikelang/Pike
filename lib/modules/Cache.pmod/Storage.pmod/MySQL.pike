@@ -118,7 +118,7 @@ void delete(string key, void|int(0..1) hard, void|multiset already_deleted) {
   if (have_dependants) {
     if (already_deleted && already_deleted[key]) // already deleted. Skip
       return;
-    mixed rv=db->query("select dependants from cache where cachekey='%s'",key);
+    mixed rv=db->query("select dependants from cache where cachekey=%s",key);
     if (rv && sizeof(rv) && rv[0]->dependants) { // there are dependants
       dependants=decode_value(rv[0]->dependants);
     }
@@ -126,7 +126,7 @@ void delete(string key, void|int(0..1) hard, void|multiset already_deleted) {
   }
   
   if (already_deleted) already_deleted[key]=1;
-  db->query("delete from cache where cachekey='%s'",key);
+  db->query("delete from cache where cachekey=%s",key);
   
   if (dependants) {
     foreach (indices(dependants),string dep) {
@@ -142,15 +142,15 @@ void set(string key, mixed value,
          void|multiset(string) dependants) {
   debug("setting value for key %s (e: %d, v: %f",key,expire_time,
         preciousness?preciousness:1.0);
-  db->query("delete from cache where cachekey='%s'",key);
+  db->query("delete from cache where cachekey=%s",key);
   db->query("insert into cache "
             "(cachekey,atime,ctime,etime,cost,data, dependants) "
-            "values('%s',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,%s,%s,'%s','%s')",
+            "values(%s,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,%s,%s,%s,%s)",
             key,
-            (expire_time?"FROM_UNIXTIME("+expire_time+")":"0"),
+            (expire_time?db->encode_datetime(expire_time):UNDEFINED),
             (preciousness?(string)preciousness:"1"),
             encode_value(value),
-            (dependants?encode_value(dependants):"NULL")
+            (dependants?encode_value(dependants):UNDEFINED)
             //BUG: this fails when there are no dependants.
             );
   if (dependants)
@@ -164,12 +164,12 @@ int(0..0)|Cache.Data get(string key,void|int notouch) {
   catch (result=db->query("select unix_timestamp(atime) as atime,"
                           "unix_timestamp(ctime) as ctime,"
                           "unix_timestamp(etime) as etime,cost,data "
-                          "from cache where cachekey='%s'",key));
+                          "from cache where cachekey=%s", key));
   if (!result || !sizeof(result))
     return 0;
   if (!notouch)
     catch(db->query("update cache set atime=CURRENT_TIMESTAMP "
-                    "where cachekey='%s'",key));
+                    "where cachekey=%s", key));
   return Data(result[0]);
 }
 
