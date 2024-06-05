@@ -2458,8 +2458,8 @@ PMOD_EXPORT struct pike_string *first_pike_string ()
   {
     for(e=0;e<htable_size;e++)
     {
-      struct pike_string *p;
-      for(p=base_table[e];p;p=p->next) return p;
+      struct pike_string *p = base_table[e];
+      if (p) return p;
     }
   }
   return 0;
