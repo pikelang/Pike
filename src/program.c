@@ -8027,6 +8027,7 @@ INT32 define_function(struct pike_string *name,
   }
 
   ref.run_time_type = PIKE_T_UNKNOWN;
+  ref.func.sval = NULL;
 
   /* Add the reference. */
 
