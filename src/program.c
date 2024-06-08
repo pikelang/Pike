@@ -7296,6 +7296,7 @@ PMOD_EXPORT int add_typed_constant(struct pike_string *name,
 		       func, c ? TYPEOF(*c) : T_MIXED);
   ref.inherit_offset=0;
   ref.run_time_type = PIKE_T_UNKNOWN;
+  ref.func.sval = NULL;
 
   free_pike_type(type);
 
