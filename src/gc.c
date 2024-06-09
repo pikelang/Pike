@@ -647,25 +647,25 @@ int gc_in_cycle_check = 0;
 
 static int gc_is_watching = 0;
 
-int attempt_to_identify(void *something, void **inblock)
+int attempt_to_identify(const void *something, const void **inblock)
 {
   size_t i;
-  struct array *a;
-  struct object *o;
-  struct program *p;
-  struct mapping *m;
-  struct multiset *mu;
-  struct pike_type *t;
-  struct callable *c;
+  const struct array *a;
+  const struct object *o;
+  const struct program *p;
+  const struct mapping *m;
+  const struct multiset *mu;
+  const struct pike_type *t;
+  const struct callable *c;
 
   if (inblock) *inblock = 0;
 
   for (a = first_array; a; a = a->next) {
-    if(a==(struct array *)something) return T_ARRAY;
+    if(a==(const struct array *)something) return T_ARRAY;
   }
 
   for(o=first_object;o;o=o->next) {
-    if(o==(struct object *)something)
+    if(o==(const struct object *)something)
       return T_OBJECT;
     if (o->storage && o->prog &&
 	(char *) something >= o->storage &&
@@ -676,32 +676,32 @@ int attempt_to_identify(void *something, void **inblock)
   }
 
   for(p=first_program;p;p=p->next)
-    if(p==(struct program *)something)
+    if(p==(const struct program *)something)
       return T_PROGRAM;
 
   for(m=first_mapping;m;m=m->next)
-    if(m==(struct mapping *)something)
+    if(m==(const struct mapping *)something)
       return T_MAPPING;
-    else if (m->data == (struct mapping_data *) something)
+    else if (m->data == (const struct mapping_data *) something)
       return T_MAPPING_DATA;
 
   for(mu=first_multiset;mu;mu=mu->next)
-    if(mu==(struct multiset *)something)
+    if(mu==(const struct multiset *)something)
       return T_MULTISET;
-    else if (mu->msd == (struct multiset_data *) something)
+    else if (mu->msd == (const struct multiset_data *) something)
       return T_MULTISET_DATA;
 
-  if(safe_debug_findstring((struct pike_string *)something))
+  if(safe_debug_findstring((const struct pike_string *)something))
     return T_STRING;
 
   if (pike_type_hash)
     for (i = 0; i <= pike_type_hash_size; i++)
       for (t = pike_type_hash[i]; t; t = t->next)
-	if (t == (struct pike_type *) something)
+        if (t == (const struct pike_type *) something)
 	  return T_TYPE;
 
   for (c = first_callable; c; c = c->next)
-    if (c == (struct callable *) something)
+    if (c == (const struct callable *) something)
       return T_STRUCT_CALLABLE;
 
   return PIKE_T_UNKNOWN;
@@ -728,7 +728,9 @@ void describe_location(void *real_memblock,
 		       int flags)
 {
   struct program *p;
-  void *memblock=0, *descblock, *inblock = NULL;
+  void *memblock=0, *descblock;
+  const void *inblock = NULL;
+
   if(!location) return;
 /*  fprintf(stderr,"**Location of (short) svalue: %p\n",location); */
 
@@ -1031,7 +1033,7 @@ static void debug_gc_fatal_va (void *DEBUGUSED(a), int DEBUGUSED(type), int DEBU
 
 #ifdef PIKE_DEBUG
   if (a) {
-    void *inblock = NULL;
+    const void *inblock = NULL;
     /* Temporarily jumping out of gc to avoid being caught in debug
      * checks in describe(). */
     Pike_in_gc = 0;
@@ -1127,12 +1129,12 @@ static void gdb_gc_stop_here(void *UNUSED(a), int weak)
   fprintf(stderr,"----------end------------\n");
 }
 
-void low_describe_something(void *a,
+void low_describe_something(const void *a,
 			    int t,
 			    int indent,
 			    int depth,
 			    int flags,
-			    void *inblock)
+                            const void *inblock)
 {
   struct program *p=(struct program *)a;
   struct marker *m;
@@ -1638,8 +1640,8 @@ again:
   }
 }
 
-void describe_something(void *a, int t, int indent, int depth, int flags,
-			void *inblock)
+void describe_something(const void *a, int t, int indent, int depth, int flags,
+                        const void *inblock)
 {
   int tmp;
   struct program *p=(struct program *)a;
@@ -1693,9 +1695,9 @@ void describe_something(void *a, int t, int indent, int depth, int flags,
   d_flag=tmp;
 }
 
-PMOD_EXPORT void describe(void *x)
+PMOD_EXPORT void describe(const void *x)
 {
-  void *inblock;
+  const void *inblock;
   int type = attempt_to_identify(x, &inblock);
   describe_something(x, type, 0, 0, 0, inblock);
 }

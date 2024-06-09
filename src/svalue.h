@@ -593,7 +593,7 @@ static inline void safe_add_ref(void *ptr)
 }
 
 #ifdef PIKE_DEBUG
-PMOD_EXPORT extern void describe(void *); /* defined in gc.c */
+PMOD_EXPORT extern void describe(const void *); /* defined in gc.c */
 PMOD_EXPORT extern const char msg_type_error[];
 PMOD_EXPORT extern const char msg_assign_svalue_error[];
 

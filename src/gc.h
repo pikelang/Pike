@@ -294,7 +294,7 @@ struct gc_rec_frame;
 
 extern unsigned INT16 gc_generation;
 
-static inline struct marker *find_marker(void *ptr) {
+static inline struct marker *find_marker(const void *ptr) {
     struct marker *m = (struct marker *)ptr;
 
     if (m->gc_generation != gc_generation) return NULL;
@@ -331,7 +331,7 @@ struct callback *debug_add_gc_callback(callback_func call,
 				 void *arg,
 				 callback_func free_func);
 void dump_gc_info(void);
-int attempt_to_identify(void *something, void **inblock);
+int attempt_to_identify(const void *something, const void **inblock);
 void describe_location(void *real_memblock,
 		       int real_type,
 		       void *location,
@@ -341,14 +341,15 @@ void describe_location(void *real_memblock,
 void debug_gc_fatal(void *a, int flags, const char *fmt, ...);
 void debug_gc_fatal_2 (void *a, int type, int flags, const char *fmt, ...);
 #ifdef PIKE_DEBUG
-void low_describe_something(void *a,
+void low_describe_something(const void *a,
 			    int t,
 			    int indent,
 			    int depth,
 			    int flags,
-			    void *inblock);
-void describe_something(void *a, int t, int indent, int depth, int flags, void *inblock);
-PMOD_EXPORT void describe(void *x);
+                            const void *inblock);
+void describe_something(const void *a, int t, int indent, int depth, int flags,
+                        const void *inblock);
+PMOD_EXPORT void describe(const void *x);
 PMOD_EXPORT void debug_describe_svalue(struct svalue *s);
 PMOD_EXPORT void gc_watch(void *a);
 #endif
