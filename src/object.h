@@ -131,7 +131,7 @@ PMOD_EXPORT void object_low_atomic_get_set_index(struct object *o,
 						 struct svalue *from_to);
 PMOD_EXPORT void object_low_set_index(struct object *o,
 				      int f,
-				      struct svalue *from);
+                                      const struct svalue *from);
 PMOD_EXPORT void object_atomic_get_set_index2(struct object *o,
 					      int inherit_level,
 					      struct svalue *key,
@@ -142,12 +142,12 @@ PMOD_EXPORT void object_atomic_get_set_index(struct object *o,
 					     struct svalue *from_to);
 PMOD_EXPORT void object_set_index2(struct object *o,
 				   int inherit_level,
-				   struct svalue *key,
-				   struct svalue *from);
+                                   const struct svalue *key,
+                                   const struct svalue *from);
 PMOD_EXPORT void object_set_index(struct object *o,
 				  int inherit_level,
-				  struct svalue *key,
-				  struct svalue *from);
+                                  const struct svalue *key,
+                                  const struct svalue *from);
 union anything *object_get_item_ptr(struct object *o,
 				    int inherit_level,
 				    struct svalue *key,

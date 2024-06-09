@@ -2061,7 +2061,7 @@ PMOD_EXPORT void object_low_atomic_get_set_index(struct object *o,
  * identifier index without going through `->= or `[]= lfuns. */
 PMOD_EXPORT void object_low_set_index(struct object *o,
 				      int f,
-				      struct svalue *from)
+                                      const struct svalue *from)
 {
   struct identifier *i;
   struct program *p = NULL;
@@ -2101,7 +2101,8 @@ PMOD_EXPORT void object_low_set_index(struct object *o,
     o = loc.o;
   }
 
-  check_destructed(from);
+  /* NB: Cast to get rid of const marker. */
+  check_destructed((void *)from);
   rtt = i->run_time_type;
   id_flags = i->identifier_flags;
 
@@ -2274,8 +2275,8 @@ PMOD_EXPORT void object_atomic_get_set_index(struct object *o,
  * through identifier index. */
 PMOD_EXPORT void object_set_index2(struct object *o,
 				   int inherit_number,
-				   struct svalue *index,
-				   struct svalue *from)
+                                   const struct svalue *index,
+                                   const struct svalue *from)
 {
   struct program *p;
   struct inherit *inh;
@@ -2323,8 +2324,8 @@ PMOD_EXPORT void object_set_index2(struct object *o,
  * `->= or `[]= lfuns, not seeing private and protected etc. */
 PMOD_EXPORT void object_set_index(struct object *o,
 				  int inherit_number,
-				  struct svalue *index,
-				  struct svalue *from)
+                                  const struct svalue *index,
+                                  const struct svalue *from)
 {
   int lfun;
   int fun;
