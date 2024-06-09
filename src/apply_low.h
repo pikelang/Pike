@@ -142,7 +142,7 @@
 	if (args < 2) {
 	  if (!args) push_undefined();
 	  push_undefined();
-	} if (UNLIKELY(args > 2)) {
+        } else if (UNLIKELY(args > 2)) {
 	  pop_n_elems(args-2);
 	}
 

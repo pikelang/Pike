@@ -560,10 +560,10 @@ static const struct case_info case_info[] = {
   { 0x7fffffff, CIM_NONE, 0x0000, },	/* End sentinel. */
 };
 
-static struct case_info *find_ci(INT32 c)
+static const struct case_info *find_ci(INT32 c)
 {
-  static struct case_info *cache = NULL;
-  struct case_info *ci = cache;
+  static const struct case_info *cache = NULL;
+  const struct case_info *ci = cache;
   int lo = 0;
   int hi = NELEM(case_info);
 
@@ -587,13 +587,13 @@ static struct case_info *find_ci(INT32 c)
       hi = mid;
     }
   }
-  return(cache = (struct case_info *)case_info + lo);
+  return(cache = (const struct case_info *)case_info + lo);
 }
 
-static struct case_info *find_ci_shift0(INT32 c)
+static const struct case_info *find_ci_shift0(INT32 c)
 {
-  static struct case_info *cache = NULL;
-  struct case_info *ci = cache;
+  static const struct case_info *cache = NULL;
+  const struct case_info *ci = cache;
   int lo = 0;
   int hi = CASE_INFO_SHIFT0_HIGH;
 
@@ -617,14 +617,14 @@ static struct case_info *find_ci_shift0(INT32 c)
       hi = mid;
     }
   }
-  return(cache = (struct case_info *)case_info + lo);
+  return(cache = (const struct case_info *)case_info + lo);
 }
 
 #define DO_LOWER_CASE(C) do {\
     INT32 c = C; \
     if(c<0xb5){if(c >= 'A' && c <= 'Z' ) C=c+0x20; } \
     /*else if(c==0xa77d) C=0x1d79;*/ else { \
-    struct case_info *ci = find_ci(c); \
+    const struct case_info *ci = find_ci(c); \
     if (ci) { \
       switch(ci->mode) { \
       case CIM_NONE: case CIM_LOWERDELTA: case CIM_LONGLOWERDELTA: break; \
@@ -641,7 +641,7 @@ static struct case_info *find_ci_shift0(INT32 c)
 #define DO_LOWER_CASE_SHIFT0(C) do {\
     INT32 c = C; \
     if(c<0xb5){if(c >= 'A' && c <= 'Z' ) C=c+0x20;}else {\
-    struct case_info *ci = find_ci_shift0(c); \
+    const struct case_info *ci = find_ci_shift0(c); \
     if (ci) { \
       switch(ci->mode) { \
       case CIM_NONE: case CIM_LOWERDELTA: break; \
@@ -657,7 +657,7 @@ static struct case_info *find_ci_shift0(INT32 c)
     INT32 c = C; \
     if(c<0xb5){if(c >= 'a' && c <= 'z' ) C=c-0x20; } \
     /*else if(c==0x1d79) C=0xa77d;*/ else {\
-    struct case_info *ci = find_ci(c); \
+    const struct case_info *ci = find_ci(c); \
     if (ci) { \
       switch(ci->mode) { \
       case CIM_NONE: case CIM_UPPERDELTA: case CIM_LONGUPPERDELTA: break; \
@@ -674,7 +674,7 @@ static struct case_info *find_ci_shift0(INT32 c)
 #define DO_UPPER_CASE_SHIFT0(C) do {\
     INT32 c = C; \
     if(c<0xb5){if(c >= 'a' && c <= 'z' ) C=c-0x20;}else {\
-    struct case_info *ci = find_ci_shift0(c); \
+    const struct case_info *ci = find_ci_shift0(c); \
     if (ci) { \
       switch(ci->mode) { \
       case CIM_NONE: case CIM_UPPERDELTA: break; \
@@ -4679,7 +4679,7 @@ void compile_replace_many(struct replace_many_context *ctx,
 				     ctx->v[prefix].ind->size_shift);
 	if (!tmp) {
 	  /* ctx->v[prefix] is a valid prefix to ctx->v[e]. */
-	} if (tmp == 1) {
+        } if (tmp == 1) {
 	  /* Optimization. */
 	  prefix = -1;
 	} else {
@@ -8589,7 +8589,7 @@ PMOD_EXPORT void f_replace_master(INT32 args)
 
   push_static_text ("is_pike_master");
   args++;
-  object_set_index (new_master, 0, Pike_sp - 1, (struct svalue *) &svalue_int_one);
+  object_set_index (new_master, 0, Pike_sp - 1, (const struct svalue *) &svalue_int_one);
 
   free_object(master_object);
   master_object=new_master;

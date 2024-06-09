@@ -1604,7 +1604,7 @@ PMOD_EXPORT TYPE_FIELD array_fix_type_field(struct array *v)
 
 #ifdef PIKE_DEBUG
 /* Maybe I should have a 'clean' flag for this computation */
-PMOD_EXPORT void array_check_type_field(struct array *v)
+PMOD_EXPORT void array_check_type_field(const struct array *v)
 {
   int e;
   TYPE_FIELD t;

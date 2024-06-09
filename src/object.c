@@ -1798,7 +1798,7 @@ static void object_lower_atomic_get_set_index(struct object *o,
 }
 
 static void object_lower_set_index(struct object *o, union idptr func, int rtt,
-				   struct svalue *from)
+                                   const struct svalue *from)
 {
 #if 0
   /* Alternative implementation.

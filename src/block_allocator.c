@@ -30,7 +30,7 @@ static void ba_check_ptr(struct block_allocator * a, int page, void * ptr, struc
 
 static inline unsigned INT32 ba_block_number(const struct ba_layout * l, const struct ba_page * p,
                                              const void * ptr) {
-    return ((char*)ptr - (char*)BA_BLOCKN(*l, p, 0)) / l->block_size;
+    return ((const char*)ptr - (char*)BA_BLOCKN(*l, p, 0)) / l->block_size;
 }
 
 static inline void ba_dec_layout(struct ba_layout * l, int i) {

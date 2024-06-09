@@ -425,7 +425,7 @@ PMOD_EXPORT void exit_on_error(const void *msg)
   Pike_interpreter.trace_level = 0;
 
   if (inhibit_errors)
-    fprintf (stderr, "Got recursive error in exit_on_error: %s\n", (char *) msg);
+    fprintf (stderr, "Got recursive error in exit_on_error: %s\n", (const char *) msg);
 
   else {
     struct byte_buffer buf = BUFFER_INIT();
@@ -435,12 +435,12 @@ PMOD_EXPORT void exit_on_error(const void *msg)
 
 #ifdef PIKE_DEBUG
     if (d_flag) {
-      fprintf(stderr,"%s\n",(char *)msg);
+      fprintf(stderr,"%s\n",(const char *)msg);
       dump_backlog();
     }
 #endif
 
-    fprintf(stderr,"%s\n",(char *)msg);
+    fprintf(stderr,"%s\n",(const char *)msg);
 
     /* We've reserved LOW_SVALUE_STACK_MARGIN and LOW_C_STACK_MARGIN
      * for this. */
@@ -481,11 +481,11 @@ PMOD_EXPORT void fatal_on_error(const void *msg)
 
 #ifdef PIKE_DEBUG
   if (d_flag) {
-    fprintf(stderr,"%s\n",(char *)msg);
+    fprintf(stderr,"%s\n",(const char *)msg);
     dump_backlog();
   }
 #endif
-  fprintf(stderr,"%s\n",(char *)msg);
+  fprintf(stderr,"%s\n",(const char *)msg);
 
   if (SETJMP(tmp)) {
     fprintf(stderr, "Error in handle_error().\n");
