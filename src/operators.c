@@ -4855,6 +4855,11 @@ static int call_old_range_lfun (int bound_types, struct object *o,
       push_int (0);
       break;
     default:
+#ifdef PIKE_DEBUG
+      Pike_fatal("Invalid low range mask: 0x%02x\n", bound_types);
+#endif
+      /* FALLTHRU */
+    case RANGE_LOW_FROM_END:
       push_svalue (&end_pos);
       move_svalue (Pike_sp++, low);
       mark_free_svalue (low);
@@ -4871,6 +4876,11 @@ static int call_old_range_lfun (int bound_types, struct object *o,
       push_int (MAX_INT_TYPE);
       break;
     default:
+#ifdef PIKE_DEBUG
+      Pike_fatal("Invalid high range mask: 0x%02x\n", bound_types);
+#endif
+      /* FALLTHRU */
+    case RANGE_HIGH_FROM_END:
       push_svalue (&end_pos);
       move_svalue (Pike_sp++, high);
       mark_free_svalue (high);
@@ -4918,6 +4928,20 @@ PMOD_EXPORT void o_range2 (int bound_types)
  * RANGE_LOW_OPEN and/or RANGE_HIGH_OPEN is set in bound_types. */
 {
   struct svalue *ind, *low, *high;
+
+#ifdef PIKE_DEBUG
+  {
+    /* Require exactly one low range bit and one high range bit to be set. */
+    int tmp = bound_types & RANGE_LOW_MASK;
+    if (!tmp || (tmp & (tmp - 1))) {
+      Pike_fatal("Invalid low range operator mask: 0x%02x\n", bound_types);
+    }
+    tmp = bound_types & RANGE_HIGH_MASK;
+    if (!tmp || (tmp & (tmp - 1))) {
+      Pike_fatal("Invalid high range operator mask: 0x%02x\n", bound_types);
+    }
+  }
+#endif
 
   high = bound_types & RANGE_HIGH_OPEN ? Pike_sp : Pike_sp - 1;
   low = bound_types & RANGE_LOW_OPEN ? high : high - 1;

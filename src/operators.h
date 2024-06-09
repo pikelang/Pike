@@ -22,9 +22,11 @@ struct string_assignment_storage
 #define RANGE_LOW_FROM_BEG	0x10
 #define RANGE_LOW_FROM_END	0x20
 #define RANGE_LOW_OPEN		0x40
+#define RANGE_LOW_MASK		0x70
 #define RANGE_HIGH_FROM_BEG	0x01
 #define RANGE_HIGH_FROM_END	0x02
 #define RANGE_HIGH_OPEN		0x04
+#define RANGE_HIGH_MASK		0x07
 
 /* The bound type flags passed to `[..] */
 #define INDEX_FROM_BEG		0
