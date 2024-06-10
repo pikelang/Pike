@@ -29,6 +29,9 @@
  *
  *   * One additional FALLTHRU comment has been added.
  *
+ *   * Fix some potential use of freed/leaked memory in
+ *     conjunction with multadd() overflowing when adding 1 or 2.
+ *
  * /grubba 2024-04-16
  */
 #ifndef PIKE_CHANGE
@@ -3020,7 +3023,7 @@ gethex(const char **sp, U *rvp, int rounding, int sign MTd)
                         switch(rounding) {
                           case Round_near:
                                 if (((b->x[0] & 3) == 3) || (lostbits && (b->x[0] & 1))) {
-                                        multadd(b, 1, 1 MTa);
+                                        PIKE_CHANGE(b =) multadd(b, 1, 1 MTa);
  emin_check:
                                         if (b->x[1] == (1 << (Exp_shift + 1))) {
                                                 rshift(b,1);
@@ -3032,7 +3035,7 @@ gethex(const char **sp, U *rvp, int rounding, int sign MTd)
                           case Round_up:
                                 if (!sign && (lostbits || (b->x[0] & 1))) {
  incr_denorm:
-                                        multadd(b, 1, 2 MTa);
+                                        PIKE_CHANGE(b =) multadd(b, 1, 2 MTa);
                                         check_denorm = 1;
                                         lostbits = 0;
                                         goto emin_check;
