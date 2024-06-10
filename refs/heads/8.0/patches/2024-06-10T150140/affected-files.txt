@@ -1,0 +1,3 @@
+Modified files:
+  pike/lib/modules/Cache.pmod/Storage.pmod/MySQL.pike
+  pike/lib/modules/Tools.pmod/Hilfe.pmod
