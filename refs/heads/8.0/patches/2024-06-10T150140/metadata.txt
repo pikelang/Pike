@@ -1,0 +1,14 @@
+subject: Pike 8.0: Hilfe and Cache.Storage.MySQL
+from: ca3a16410cee25652b45116ec4c3c8ea3d505b71
+to: d48c913f6e3758ebfce060e05f4beee9d47df0c7
+originator: Henrik Grubbström (Grubba) <grubba@grubba.org>
+depends: 2024-06-10T145700|pike/8.0.1912
+restart: true
+
+Multiple fixes:
+
+• Cache.Storage.MySQL: Fix quoting syntax.
+
+Fixes #10167.
+
+• Fix for hilfe bug #10163
