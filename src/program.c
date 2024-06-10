@@ -5195,7 +5195,13 @@ struct program *end_first_pass(int finish)
   }
 
   if (Pike_compiler->init_node) {
-    init_type = low_mapping_string_lookup(lfun_types, init_name)->u.type;
+    struct svalue *sval = low_mapping_string_lookup(lfun_types, init_name);
+#ifdef PIKE_DEBUG
+    if (!sval) {
+      Pike_fatal("Type for __INIT() not present in lfun_types mapping.\n");
+    }
+#endif
+    init_type = sval->u.type;
   }
 
   if (finish == 1) {
