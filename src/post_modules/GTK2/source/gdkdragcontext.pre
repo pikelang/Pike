@@ -21,7 +21,7 @@ void drag_finish(int success, int del)
 {
   INT_TYPE a,b,t;
   get_all_args(NULL,args,"%i%i",&a,&b);
-  gtk_drag_finish((GdkDragContext *)THIS->obj,a,b,time(NULL));
+  gtk_drag_finish((GdkDragContext *)THIS->obj,a,b,(guint32)time(NULL));
   RETURN_THIS();
 }
 
@@ -32,7 +32,7 @@ void drag_status(int action)
   get_all_args(NULL,args,"%i",&o);
   if (o==-1)
     o=((GdkDragContext *)THIS->obj)->suggested_action;
-  gdk_drag_status((GdkDragContext *)THIS->obj,o,time(NULL));
+  gdk_drag_status((GdkDragContext *)THIS->obj,o,(guint32)time(NULL));
   RETURN_THIS();
 }
 
@@ -60,7 +60,7 @@ void drop_reply(int ok)
 {
   INT_TYPE t,o;
   get_all_args(NULL,args,"%i",&o);
-  gdk_drop_reply((GdkDragContext *)THIS->obj,o,time(NULL));
+  gdk_drop_reply((GdkDragContext *)THIS->obj,o,(guint32)time(NULL));
   RETURN_THIS();
 }
 
