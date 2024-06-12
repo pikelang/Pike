@@ -2010,8 +2010,8 @@ PMOD_EXPORT ptrdiff_t multiset_add (struct multiset *l, struct svalue *ind)
 	case FIND_GREATER:
 	  sub_extra_ref (msd);
 	  if (prepare_for_add (l, 1)) {
-            msd = l->msd;
 	    rbstack_shift (rbstack, HDR (msd->nodes), HDR (l->msd->nodes));
+            msd = l->msd;
 	  }
 	  ALLOC_MSNODE (msd, l->node_refs, new);
 	  goto add;
