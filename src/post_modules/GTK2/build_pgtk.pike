@@ -502,6 +502,8 @@ class Property( string name, Type type, int set,
       switch (type->name) {
 	case "uint":
 	case "int":
+        case "uint64":
+        case "int64":
 	case "double":
 	case "float":
 	  ret+="&";
@@ -596,7 +598,10 @@ class Type
       case "Stdio.Buffer":
          return "object";
       case "uint":
+      case "uint64":
 	return "int(0..)"+optp;
+      case "int64":
+        return "int"+optp;
       case "bool":
         return "int(0..1)";
       case "array":
@@ -800,6 +805,8 @@ class Type
 
      case "int":
      case "uint":
+     case "int64":
+     case "uint64":
      case "bool":
        return sprintf( (_push = "  PGTK_PUSH_INT( %s );"), vv );
 
@@ -866,6 +873,14 @@ class Type
        fetch = "  a%[0]d = (gint)PGTK_GETINT(&Pike_sp[%[0]d-args]);\n";
        pass =  "a%[0]d";
        break;
+     case "int64":
+     case "uint64":
+       declare = "  INT64 a%[0]d = 0;\n";
+       if( name == "uint")
+         declare = " unsigned INT64 a%[0]d = 0;\n";
+       fetch = "  a%[0]d = PGTK_GETINT(&Pike_sp[%[0]d-args]);\n";
+       pass =  "a%[0]d";
+       break;
      case "bool":
        declare = "  gboolean a%[0]d = 0;\n";
        fetch = " a%[0]d = !!(gint)PGTK_GETINT(&Pike_sp[%[0]d-args]);\n";
@@ -914,6 +929,7 @@ class Type
               lfree = "  PGTK_FREESTR(a%[0]d[_i%[0]d])";
               break;
             case "int":
+            case "int64": /* Not really, but... */
               array_type = parse_type( SPLIT("int","type") );
               sub = "gint *a%[0]d;";
               pt = 0;
@@ -928,6 +944,7 @@ class Type
               process = "(time_t)PGTK_GETINT(&_a%[0]d->item[_i%[0]d])";
               break;
             case "uint":
+            case "uint64": /* Not really, but... */
               array_type = parse_type( SPLIT("uint","type") );
               sub = "guint *a%[0]d;";
               pt = 0;
@@ -1411,6 +1428,7 @@ class Constant( string name, Type type, string file, int line )
      case "string":
        return "  add_string_constant( "+S(pike_name(),1,0,30)+", "+name+", ID_FINAL );\n";
      case "int":
+     case "int64":
        return "  add_integer_constant( "+S(pike_name(),1,0,30)+", "+name+", ID_FINAL );\n";
      case "float":
        return "  add_float_constant( "+S(pike_name(),1,0,30)+", "+name+", ID_FINAL );\n";
@@ -1495,6 +1513,8 @@ object(Type)|zero parse_type( mixed t )
   {
    case "int":
    case "uint":
+   case "int64":
+   case "uint64":
    case "mapping":
    case "object":
    case "mixed":
