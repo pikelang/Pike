@@ -1402,7 +1402,11 @@ PMOD_EXPORT void debug_list_all_threads(void)
 
 PMOD_EXPORT int count_pike_threads(void)
 {
-  return num_pike_threads;
+  int ret;
+  mt_lock(&thread_table_lock);
+  ret = num_pike_threads;
+  mt_unlock(&thread_table_lock);
+  return ret;
 }
 
 #ifdef HAVE_GETHRTIME
@@ -4236,13 +4240,21 @@ static TH_RETURN_TYPE farm(void *_a)
 
 int th_num_idle_farmers(void)
 {
-  return _num_idle_farmers;
+  int ret;
+  mt_lock(&rosie);
+  ret = _num_idle_farmers;
+  mt_unlock(&rosie);
+  return ret;
 }
 
 
 int th_num_farmers(void)
 {
-  return _num_farmers;
+  int ret;
+  mt_lock(&rosie);
+  ret = _num_farmers;
+  mt_unlock(&rosie);
+  return ret;
 }
 
 static struct farmer *new_farmer(void (*fun)(void *), void *args)
@@ -4256,6 +4268,7 @@ static struct farmer *new_farmer(void (*fun)(void *), void *args)
 
   dmalloc_accept_leak(me);
 
+  mt_lock(&rosie);
   _num_farmers++;
   me->neighbour = 0;
   me->field = args;
@@ -4266,6 +4279,7 @@ static struct farmer *new_farmer(void (*fun)(void *), void *args)
   me->euid = geteuid();
   me->egid = getegid();
 #endif /* HAVE_BROKEN_LINUX_THREAD_EUID */
+  mt_unlock(&rosie);
 
   th_create_small(&me->me, farm, me);
   return me;
