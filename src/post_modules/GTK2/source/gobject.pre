@@ -328,6 +328,7 @@ object set_data(string name, mixed arg)
 
     get_all_args(NULL,args,"%c%*",&name,&sv);
     sv1=(struct svalue *)g_malloc(sizeof(struct svalue));
+    if (!sv1) SIMPLE_OUT_OF_MEMORY_ERROR("set_data", sizeof(struct svalue));
     assign_svalue_no_free(sv1,sv);
     g_object_set_data_full(G_OBJECT(THIS->obj), name, (void *)sv1,
 			   pgtk2_object_destroy_data);
