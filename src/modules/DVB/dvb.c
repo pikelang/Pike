@@ -820,7 +820,7 @@ static int read_t(int fd,unsigned char *buffer,int length,int cks)
 static void f_parse_pat(INT32 args) {
 
   unsigned char buffer[4096];
-  int length,index;
+  unsigned int length, index;
   int n;
 
   int fd;
@@ -854,7 +854,8 @@ static void f_parse_pat(INT32 args) {
   }
 
   length = ((buffer[2] & 0x0F) << 8) | buffer[3];
-  for (index=9; index<length-4 && index<184; index +=4)
+  if (length > 188) length = 188;	/* 184 + 4 == 188 */
+  for (index = 9; index + 4 < length; index += 4)
   {
     p = (buffer[index] << 8) | buffer[index+1];
     push_int(p);
