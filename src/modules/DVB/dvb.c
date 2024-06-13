@@ -1033,7 +1033,7 @@ static void f_parse_pmt(INT32 args)
   StopFilt(dmx);
   close(dmx);
 
-  if (pnr != program_number)
+  if ((pnr != program_number) || (((int)length) > n) || (length < 13))
   {
 /* fprintf(stderr, "Can't find PMT entry\n"); */
     push_int(0);
@@ -1044,7 +1044,7 @@ static void f_parse_pmt(INT32 args)
   info_len = ((buffer[index] & 0x0F) << 8) + buffer[index+1];
   index += 2;
 
-  while (info_len > 0)
+  while ((info_len > 0) && (index + info_len < length))
   {
     if (buffer[index] == 0x09)
       ParseCADescriptor(&stream, &buffer[index+2], buffer[index+1]);
