@@ -110,10 +110,16 @@ void f_aap_log_as_array(INT32 args)
 
 void f_aap_log_exists(INT32 UNUSED(args))
 {
-  if(LTHIS->log->log_head)
-    push_int(1);
-  else
-    push_int(0);
+  struct log *l = LTHIS->log;
+  struct log_entry *le;
+
+  THREADS_ALLOW();
+  mt_lock( &l->log_lock );
+  le = l->log_head;
+  mt_unlock( &l->log_lock );
+  THREADS_DISALLOW();
+
+  push_int(!!le);
 }
 
 void f_aap_log_size(INT32 UNUSED(args))
