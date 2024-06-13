@@ -58,12 +58,12 @@ extern struct program *image_program;
 static struct svalue string_[4];
 
 struct BMHD {
-    unsigned int w, h;
-    int x, y;
+    unsigned INT16 w, h;
+    unsigned INT16 x, y;
     unsigned char nPlanes, masking, compression, pad1;
-    unsigned int transparentColor;
+    unsigned INT16 transparentColor;
     unsigned char xAspect, yAspect;
-    int pageWidth, pageHeight;
+    unsigned INT16 pageWidth, pageHeight;
 };
 
 #define mskNone                 0
