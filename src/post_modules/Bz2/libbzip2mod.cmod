@@ -729,7 +729,7 @@ PIKECLASS File
 
   PIKEFUN int close()
   {
-    if (!THIS->fp) RETURN (1);
+    if (!THIS->fp || !THIS->file) RETURN (1);
     switch(THIS->mode){
     case READ_MODE:
       bzReadClose(&THIS->bzerror,THIS->file);
@@ -744,6 +744,7 @@ PIKECLASS File
     fclose(THIS->fp);
 
     THIS->fp = NULL;
+    THIS->file = NULL;
     THIS->mode = NO_FILE_MODE;
     THIS->small = 0;
 
@@ -777,8 +778,10 @@ PIKECLASS File
 	if(THIS->small == 0){
 	  bzReadClose(&THIS->bzerror,THIS->file);
 	  THIS->small = 1;
-	  bzReadOpen(&THIS->bzerror,tmp,1,0,NULL,0);
+          THIS->file = bzReadOpen(&THIS->bzerror, tmp, 1, 0, NULL, 0);
 	  if(THIS->bzerror != BZ_OK){
+            bzReadClose(&THIS->bzerror, THIS->file);
+            THIS->file = NULL;
 	    Pike_error("Bz2.File->read_open() failed.\n");
 	  }
 	}
@@ -1001,7 +1004,7 @@ PIKECLASS File
   EXIT
     gc_trivial;
     {
-      if(THIS->fp){
+      if (THIS->file) {
 	switch(THIS->mode){
 	case READ_MODE:
 	  bzReadClose(&THIS->bzerror,THIS->file);
@@ -1016,6 +1019,8 @@ PIKECLASS File
 	  Pike_error("This error can never occur.\n");
 #endif
 	}
+      }
+      if(THIS->fp) {
 	fclose(THIS->fp);
       }
     }
