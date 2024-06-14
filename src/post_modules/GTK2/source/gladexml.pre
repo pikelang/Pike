@@ -32,6 +32,14 @@ static void pgtk2__signal_connect(const gchar *handler_name,
 		 "after: %d\n",
 		 handler_name,signal_name,signal_data,after);
 #endif
+  signal_id = g_signal_lookup(signal_name, G_TYPE_FROM_INSTANCE(object));
+  if (!signal_id) {
+    fprintf(stderr,
+            "** WARNING **; Signal \"%s\" not defined in the '%s' "
+            "class ancestry.\n",
+            signal_name, g_type_name(G_TYPE_FROM_INSTANCE(object)));
+    return;
+  }
   get_all_args(NULL,*(INT32 *)args,"%m%*",&callbacks,&data);
 /*
   funname=make_shared_string(handler_name);
@@ -55,14 +63,7 @@ static void pgtk2__signal_connect(const gchar *handler_name,
   }
   assign_svalue_no_free(&b->cb,cb);
   assign_svalue_no_free(&b->args,data);
-  b->signal_id=g_signal_lookup(signal_name,G_TYPE_FROM_INSTANCE(object));
-  if (!b->signal_id) {
-    g_free(b);
-    fprintf(stderr,
-	    "** WARNING **; Signal \"%s\" not defined in the '%s' "
-	    "class ancestry.\n",
-	    signal_name,g_type_name(G_TYPE_FROM_INSTANCE(object)));
-  }
+  b->signal_id = signal_id;
 /*
   id=g_signal_connect_data(G_OBJECT(object),signal_name,
 			   G_CALLBACK(pgtk2_signal_func_wrapper),b,
