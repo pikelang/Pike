@@ -600,8 +600,12 @@ static void gz_deflate(INT32 args)
   if(THIS->state == 1)
   {
     deflateEnd(& THIS->gz);
-    deflateInit(& THIS->gz, THIS->level);
+    THIS->gz.state = NULL;
+    fail = deflateInit(& THIS->gz, THIS->level);
     THIS->state=0;
+    if (fail != Z_OK) {
+      Pike_error("Failed to reinitialize for deflation.\n");
+    }
   }
 
   if(!THIS->gz.state)
@@ -691,8 +695,8 @@ static void init_gz_deflate(struct object *UNUSED(o))
   THIS->gz.zalloc=Z_NULL;
   THIS->gz.zfree=Z_NULL;
   THIS->gz.opaque=(void *)THIS;
+  THIS->gz.state = NULL;
   THIS->state=0;
-  deflateInit(& THIS->gz, THIS->level = Z_DEFAULT_COMPRESSION);
   THIS->epilogue = NULL;
 }
 
@@ -1139,8 +1143,7 @@ static void init_gz_inflate(struct object *UNUSED(o))
   THIS->gz.zalloc=Z_NULL;
   THIS->gz.zfree=Z_NULL;
   THIS->gz.opaque=(void *)THIS;
-  inflateInit(&THIS->gz);
-  inflateEnd(&THIS->gz);
+  THIS->gz.state = NULL;
   THIS->epilogue = NULL;
 }
 
