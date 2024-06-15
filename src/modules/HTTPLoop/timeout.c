@@ -169,6 +169,7 @@ static void *handle_timeouts(void *UNUSED(ignored))
     struct timeout *t;
     mt_lock( &aap_timeout_mutex );
     if (aap_time_to_die) {
+      aap_time_to_die = 2;
       co_signal (&aap_timeout_thread_is_dead);
       mt_unlock (&aap_timeout_mutex);
       break;
@@ -208,7 +209,7 @@ void aap_init_timeouts(void)
   DWERROR("AAP: aap_init_timeouts.\n");
   mt_init(&aap_timeout_mutex);
   co_init (&aap_timeout_thread_is_dead);
-  th_create_small(&aap_timeout_thread, handle_timeouts, 0);
+  aap_timeout_thread = th_create_small(&aap_timeout_thread, handle_timeouts, 0);
   DWERROR("AAP: handle_timeouts started.\n");
 }
 
@@ -219,7 +220,9 @@ void aap_exit_timeouts(void)
   THREADS_ALLOW();
   mt_lock (&aap_timeout_mutex);
   aap_time_to_die = 1;
-  co_wait (&aap_timeout_thread_is_dead, &aap_timeout_mutex);
+  while (aap_time_to_die < 2) {
+    co_wait (&aap_timeout_thread_is_dead, &aap_timeout_mutex);
+  }
   mt_unlock (&aap_timeout_mutex);
   THREADS_DISALLOW();
   mt_destroy (&aap_timeout_mutex);
