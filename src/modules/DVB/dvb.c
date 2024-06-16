@@ -1044,7 +1044,13 @@ static void f_parse_pmt(INT32 args)
   info_len = ((buffer[index] & 0x0F) << 8) + buffer[index+1];
   index += 2;
 
-  while ((info_len > 0) && (index + info_len < length))
+  if (index + info_len > length) {
+/* fprintf(stderr, "Invalid PMT info length.\n"); */
+    push_int(0);
+    return;
+  }
+
+  while (info_len > 0)
   {
     if (buffer[index] == 0x09)
       ParseCADescriptor(&stream, &buffer[index+2], buffer[index+1]);
