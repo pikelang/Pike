@@ -50,12 +50,21 @@ PIKECLASS PIKE_NAME
 
   /* NB: We support shake() for all hashes that Nettle implements it
    *     for, but only document it for the known case of SHAKE-256.
+   *
+   *     In Nettle 3.10 SHAKE-128 is also supported.
    */
 cmod_DIRECTIVE_EVAL(ifdef, cmod_CONCAT_EVAL(NETTLE_NAME, _shake))
-#cmod_if cmod_STRFY_EVAL(NETTLE_NAME) = "sha3_256"
+#cmod_if cmod_STRFY_EVAL(NETTLE_NAME) == "sha3_256" || cmod_STRFY_EVAL(NETTLE_NAME) == "sha3_128"
   DOCSTART() @decl string(8bit) shake(string(8bit) in, int(0..) bytes)
    *!
-   *! SHAKE-256 hash. Works as a (faster) shortcut for
+#cmod_if cmod_STRFY_EVAL(NETTLE_NAME) == "sha3_256"
+   *! SHAKE-256 hash.
+#cmod_elif cmod_STRFY_EVAL(NETTLE_NAME) == "sha3_128"
+   *! SHAKE-128 hash.
+#cmod_else
+   *! SHAKE hash.
+#cmod_endif
+   *! Works as a (faster) shortcut for
    *! @expr{PIKE_NAME.State()->update(in)->shake(bytes)@}.
    *!
    *! This function is similar to @[hash()], but can return an
@@ -274,12 +283,20 @@ cmod_DIRECTIVE_EVAL(ifdef, cmod_CONCAT_EVAL(NETTLE_NAME, _shake))
 
     /* NB: We support shake() for all hashes that Nettle implements it
      *     for, but only document it for the known case of SHAKE-256.
+     *
+     *     In Nettle 3.10 SHAKE-128 is also supported.
      */
 cmod_DIRECTIVE_EVAL(ifdef, cmod_CONCAT_EVAL(NETTLE_NAME, _shake))
-#cmod_if cmod_STRFY_EVAL(NETTLE_NAME) = "sha3_256"
+#cmod_if cmod_STRFY_EVAL(NETTLE_NAME) == "sha3_256" || cmod_STRFY_EVAL(NETTLE_NAME) == "sha3_128"
     DOCSTART() @decl string(8bit) shake(int(0..) bytes)
      *!
+#cmod_if cmod_STRFY_EVAL(NETTLE_NAME) == "sha3_256"
      *! SHAKE-256 hash.
+#cmod_elif cmod_STRFY_EVAL(NETTLE_NAME) == "sha3_128"
+     *! SHAKE-128 hash.
+#cmod_else
+     *! SHAKE hash.
+#cmod_endif
      *!
      *! This function is similar to @[hash()], but can return an
      *! arbitrary number of bytes. When @[bytes] is @[digest_size]
