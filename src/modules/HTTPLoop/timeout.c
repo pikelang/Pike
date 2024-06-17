@@ -209,7 +209,7 @@ void aap_init_timeouts(void)
   DWERROR("AAP: aap_init_timeouts.\n");
   mt_init(&aap_timeout_mutex);
   co_init (&aap_timeout_thread_is_dead);
-  aap_timeout_thread = th_create_small(&aap_timeout_thread, handle_timeouts, 0);
+  th_create_small(&aap_timeout_thread, handle_timeouts, 0);
   DWERROR("AAP: handle_timeouts started.\n");
 }
 
