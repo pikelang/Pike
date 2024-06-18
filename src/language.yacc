@@ -730,9 +730,13 @@ constant_name: TOK_IDENTIFIER '=' safe_assignment_expr
           }
           add_typed_constant($1->u.sval.u.string, t, Pike_sp-1,
                              Pike_compiler->current_modifiers & ~ID_EXTERN);
-        } else if (($3->token == F_SOFT_CAST) ||
-            (($3->token == F_COMMA_EXPR) && (CAR($3)->token == F_SOFT_CAST))) {
-          /* Node type set intentionally via a soft-cast. */
+        } else if ((Pike_compiler->current_modifiers & ID_LOCAL) ||
+                   ($3->token == F_SOFT_CAST) ||
+                   (($3->token == F_COMMA_EXPR) &&
+                    (CAR($3)->token == F_SOFT_CAST))) {
+          /* Node type set intentionally via a soft-cast,
+           * or value is not overridable via inherit.
+           */
           add_typed_constant($1->u.sval.u.string, $3->type, Pike_sp-1,
                              Pike_compiler->current_modifiers & ~ID_EXTERN);
         } else {
