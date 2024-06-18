@@ -987,6 +987,24 @@ PIKECLASS Hash
  */
 #ifdef NETTLE_SHA3_FIPS202
 
+#if 0
+/* Added in Nettle 3.10.
+ *
+ * Disabled since Nettle does not implement the full hash API
+ * for this variant of SHA3. The main issue being that the
+ * symbol nettle_sha3_128 is not defined (due in turn to
+ * missing eg nettle_sha3_128_digest()).
+ */
+#ifdef HAVE_NETTLE_SHA3_128_SHAKE
+#cmod_define PIKE_NAME SHA3_128
+#cmod_define NETTLE_NAME sha3_128
+#cmod_define NETTLE_MIN_VERSION	3.10
+#cmod_include "hash.H"
+#cmod_undef PIKE_NAME
+#cmod_undef NETTLE_NAME
+#endif
+#endif
+
 #cmod_define PIKE_NAME SHA3_224
 #cmod_define NETTLE_NAME sha3_224
 #cmod_include "hash.H"

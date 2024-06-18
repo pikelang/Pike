@@ -143,6 +143,8 @@ else
     #   balloon.h
     #   ocb.h
     #   sm4.h
+    # Nettle 3.10 and later:
+    #   drbg-ctr.h
     AC_CHECK_HEADERS(nettle/camellia.h \
 		     nettle/gcm.h \
 		     nettle/ripemd160.h \
@@ -157,6 +159,7 @@ else
                      nettle/streebog.h \
                      nettle/sm3.h \
                      nettle/balloon.h nettle/ocb.h nettle/sm4.h \
+                     nettle/drbg-ctr.h \
 		    )
     # Check that the libraries match.
     #
@@ -175,6 +178,7 @@ else
                    nettle_blowfish_bcrypt_hash nettle_ed448_shake256_sign \
                    nettle_sm3_init \
                    nettle_balloon nettle_ocb_encrypt nettle_sm4_crypt \
+                   nettle_drbg_ctr_aes256_init nettle_sha3_128_shake \
 		   )
 
     AC_MSG_CHECKING([for idea.c])
