@@ -57,9 +57,6 @@ PIKECLASS PIKE_NAME
   PIKEFUN string(0..255) name()
     optflags OPT_TRY_OPTIMIZE;
     {
-      if (!THIS->meta)
-        Pike_error("Hash not properly initialized.\n");
-
       push_text(DEFINETOSTR(NETTLE_DISPLAY_NAME));
     }
 #cmod_undef NETTLE_DISPLAY_NAME
