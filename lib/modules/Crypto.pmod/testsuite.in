@@ -209,7 +209,7 @@ cond_resolv( Nettle.Fortuna, [[
 
 test_do([[ Stdio.write_file("hash_me", "foo"*1000) ]])
 
-dnl hash, empty-digest, foo1000-digest, block-size, display-name
+dnl hash, empty-digest, foo1000-digest, block-size
 define(test_hash, [[
 cond_resolv( Crypto.$1, [[
   test_do(add_constant("h",Crypto.$1.hash))
@@ -251,12 +251,7 @@ cond_resolv( Crypto.$1, [[
   test_eval_error(h(ADT.Queue()))
   test_eq(S(Crypto.$1()->update("foo"*501)->update("foo"*499)->digest()), "$3")
   test_eq(S(h(Stdio.File("hash_me"))), "$3")
-  test_any([[
-    // NB: SHA512_224 and SHA512_256 returned "sha512-224" and "sha512-256"
-    //     prior to Nettle 3.10.
-    if (sizeof("$5") && (Crypto.$1.name() == lower_case("$1"))) return "$5";
-    return Crypto.$1.name();
-  ]], sizeof("$5")?"$5":lower_case("$1"))
+  test_eq(Crypto.$1.name(), lower_case("$1"))
   test_eq(Crypto.$1.block_size(),$4)
   dnl crypt_hash
   dnl openssl_pbkdf

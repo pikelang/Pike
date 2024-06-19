@@ -966,6 +966,7 @@ PIKECLASS Hash
 
 #cmod_define PIKE_NAME SHA512_224
 #cmod_define NETTLE_NAME sha512_224
+#cmod_define NETTLE_DISPLAY_NAME sha512_224
 #cmod_include "hash.H"
 #cmod_undef PIKE_NAME
 #cmod_undef NETTLE_NAME
@@ -976,6 +977,7 @@ PIKECLASS Hash
 
 #cmod_define PIKE_NAME SHA512_256
 #cmod_define NETTLE_NAME sha512_256
+#cmod_define NETTLE_DISPLAY_NAME sha512_256
 #cmod_include "hash.H"
 #cmod_undef PIKE_NAME
 #cmod_undef NETTLE_NAME

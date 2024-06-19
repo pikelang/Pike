@@ -48,6 +48,23 @@ PIKECLASS PIKE_NAME
   }
 #cmod_endif
 
+#cmod_ifdef NETTLE_DISPLAY_NAME
+  /* Prior to Nettle 3.10 the strings returned for SHA512_224
+   * and SHA512_256 were "sha512-224" and "sha512-256" respectively.
+   *
+   * Use consistent names.
+   */
+  PIKEFUN string(0..255) name()
+    optflags OPT_TRY_OPTIMIZE;
+    {
+      if (!THIS->meta)
+        Pike_error("Hash not properly initialized.\n");
+
+      push_text(DEFINETOSTR(NETTLE_DISPLAY_NAME));
+    }
+#cmod_undef NETTLE_DISPLAY_NAME
+#cmod_endif
+
   /* NB: We support shake() for all hashes that Nettle implements it
    *     for, but only document it for the known case of SHAKE-256.
    *
