@@ -331,7 +331,8 @@ int main(int argc, array(string) argv)
   main_branch = main_branch[sizeof("refs/heads/")..];
 
   if (tag) {
-    string|int(0..0) remote = git_cmd("remote");
+    string|int(0..0) remote =
+      git_cmd("config", "branch." + main_branch + ".remote");
     if (!sizeof(remote)) remote = 0;
     if (remote) git_cmd("pull", "--rebase", remote);
 
