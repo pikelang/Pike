@@ -4572,7 +4572,7 @@ void _main(array(string(0..255)) orig_argv)
     }
 
     if (objectp(ret) &&
-      functionp(ret->on_success) && functionp(ret->on_failure)) {
+        functionp(ret->on_success) && functionp(ret->on_failure)) {
       ret->on_success(this_function);
       ret->on_failure(got_error);
       return;
@@ -4595,8 +4595,10 @@ void _main(array(string(0..255)) orig_argv)
   {
     mixed err=catch
     {
-      while(1)
-	Builtin.__backend(3600.0);
+      while(1) {
+        float s = Builtin.__backend(3600.0);
+        // werror("Waited %g seconds.\n", s);
+      }
     };
     master()->handle_error(err);
   }
