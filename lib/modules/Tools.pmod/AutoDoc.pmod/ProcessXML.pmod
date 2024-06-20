@@ -1783,7 +1783,7 @@ class NScopeStack
 	  if (path) {
 	    top->inherits[inh] = path;
 	    continue;
-	  } else {
+          } else if (inh[0]) {
 	    warn("Failed to resolve inherit %O.\n"
 		 "  Top: %O\n"
 		 "  Scope: %O\n"
@@ -1829,14 +1829,16 @@ class NScopeStack
 	    top->inherits[inh] = nscope;
 	    continue;
 	  }
-	  warn("Failed to lookup inherit %O (loop).\n"
-	       "  Top: %O\n"
-	       "  Scope: %O\n"
-	       "  Path: %O\n"
-	       "  NewScope: %O\n"
-	       "  Stack: %O\n",
-	       inh, top, scope, path, nscope, stack);
-	} else {
+          if (inh[0]) {
+            warn("Failed to lookup inherit %O (loop).\n"
+                 "  Top: %O\n"
+                 "  Scope: %O\n"
+                 "  Path: %O\n"
+                 "  NewScope: %O\n"
+                 "  Stack: %O\n",
+                 inh, top, scope, path, nscope, stack);
+          }
+        } else if (inh[0]) {
 	  warn("Failed to lookup inherit %O.\n"
 	       "  Top: %O\n"
 	       "  Scope: %O\n"
