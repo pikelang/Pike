@@ -46,10 +46,17 @@ int(0..3) extract_cls(int(0..) i) { return [int(0..3)](i & 3); }
 //! Generic, abstract base class for ASN1 data types.
 class Object
 {
+  //! ASN1 type class.
   int(0..3) cls = 0;
+
+  //! ASN1 type tag.
   int(0..) tag = 0;
+
+  //! Flag indicating whether this type is
+  //! a constructed (aka @[Compound]) type or not.
   constant int(0..1) constructed = 0;
 
+  //! ASN1 type name.
   constant string(7bit) type_name = "";
 
   protected string(8bit) get_der_content()
@@ -161,6 +168,7 @@ class Compound
   //!
   @Pike.Annotations.Implements(Object);
 
+  //!
   constant int(0..1) constructed = 1;
 
   //! Contents of compound object.
