@@ -3573,7 +3573,6 @@ int main(int argc, array(string) argv)
   string file = argv[1];
 
   x=Stdio.read_file(file)-"\r";
-
 #if constant(Pike.__HAVE_CPP_PREFIX_SUPPORT__)
   // Make sure that the user specifies the correct
   // minimum API level for build-script compatibility.
@@ -3586,9 +3585,9 @@ int main(int argc, array(string) argv)
 		      "#cmod_define cmod_STRFY_EVAL(x...)\tcmod_STRFY( x )\n"
 		      "#cmod_define cmod_REDEFINE(x)\tcmod_DEFINE(##x, x)\n"
 		      "#cmod_define cmod_COMMA ,\n"
-                      "#cmod_line 1 %O\n"
                       "#cmod_define cmod_DIRECTIVE_EVAL(x...)"
                       "\tcmod_DIRECTIVE(x)\n"
+                      "#cmod_line 1 %q\n"
                       "%s", file, x));
     x=cpp(x, ([
 	    "current_file" : file,
