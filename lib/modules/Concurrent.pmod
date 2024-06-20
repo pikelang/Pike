@@ -1,7 +1,5 @@
 #pike __REAL_VERSION__
 
-// Enable CONCURRENT_DEBUG to get more meaningful broken-promise messages
-
 // #define CONCURRENT_DEBUG
 
 //! Module for handling multiple concurrent events.
@@ -162,6 +160,9 @@ class Future(<ValueType>)
   //!   @[set_backend()], @[use_backend()]
   protected void call_callback(function cb, mixed ... args)
   {
+#ifdef CONCURRENT_DEBUG
+    werror("%O->call_callback(%O%{, %O%})\n", this, cb, args/({}));
+#endif
     (backend ? backend->call_out : callout)(cb, 0, @args);
   }
 
@@ -238,6 +239,9 @@ class Future(<ValueType>)
   this_program(<ValueType>) on_success(function(ValueType, __unknown__ ... : void) cb,
                                        mixed ... extra)
   {
+#ifdef CONCURRENT_DEBUG
+    werror("Future: %O(%O, %O)\n", this_function, cb, extra);
+#endif
     object(Thread.MutexKey)|zero key = mux->lock();
     switch (state) {
       case STATE_FULFILLED:
@@ -283,6 +287,9 @@ class Future(<ValueType>)
   this_program(<ValueType>) on_failure(function(mixed, __unknown__ ... : void) cb,
 			  mixed ... extra)
   {
+#ifdef CONCURRENT_DEBUG
+    werror("Future: %O(%O, %O)\n", this_function, cb, extra);
+#endif
     object(Thread.MutexKey)|zero key = mux->lock();
     switch (state) {
       case STATE_REJECTED:
@@ -866,6 +873,10 @@ class Promise(<ValueType>)
 
   protected this_program finalise(State newstate, mixed value, int try)
   {
+#ifdef CONCURRENT_DEBUG
+    werror("Promise: %O(%d (%d), %O (%O), %d)\n",
+           this_function, newstate, state, value, result, try);
+#endif
     object(Thread.MutexKey)|zero key = mux->lock();
     if (state <= STATE_PENDING)
     {
@@ -879,11 +890,19 @@ class Promise(<ValueType>)
       }
       key = 0;
       cond->broadcast();
+#ifdef CONCURRENT_DEBUG
+      werror("Promise: %O: cbs: %O\n", this_function, cbs);
+#endif
       if (sizeof(cbs))
       {
-        foreach(cbs; ; array cb)
+        foreach(cbs; ; array cb) {
+#ifdef CONCURRENT_DEBUG
+          werror("Scheduling callback %O(%O%{, %O%}).\n",
+                 cb[0], value, cb[1..]/({}));
+#endif
           if (cb)
             call_callback(cb[0], value, @cb[1..]);
+        }
 	if (newstate == STATE_REJECTED) {
 	  state = STATE_REJECTION_REPORTED;
 	}
@@ -896,6 +915,9 @@ class Promise(<ValueType>)
       if (!try)
         error("Promise has already been finalised.\n");
     }
+#ifdef CONCURRENT_DEBUG
+    werror("Promise: %O done.\n", this_function);
+#endif
     return this_program::this;
   }
 
