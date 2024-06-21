@@ -10,4 +10,4 @@ inherit Nettle.GOST94;
 
 @Pike.Annotations.Implements(Crypto.Hash);
 
-string name() { return "gost94"; }
+string(7bit) name() { return "gost94"; }

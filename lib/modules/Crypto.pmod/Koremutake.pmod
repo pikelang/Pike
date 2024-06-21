@@ -34,7 +34,7 @@ protected constant table = ({
 });
 
 //! Encode an integer as a koremutake string.
-string encrypt(int m) {
+string(8bit) encrypt(int m) {
   string c="";
   while(m) {
     c = [string]table[m&127] + c;
@@ -44,7 +44,7 @@ string encrypt(int m) {
 }
 
 //! Decode a koremutake string into an integer.
-int decrypt(string c) {
+int decrypt(string(8bit) c) {
   int m;
   c = upper_case(c);
   while(sizeof(c)) {
@@ -69,13 +69,13 @@ int decrypt(string c) {
 
 // Cipher interface
 
-string name() { return "koremutake"; }
+string(7bit) name() { return "koremutake"; }
 int block_size() { return 1; }
 int key_size() { return 0; }
 
 class `() {
 
-  string name() { return "koremutake"; }
+  string(7bit) name() { return "koremutake"; }
   int block_size() { return 1; }
   int key_size() { return 0; }
 
@@ -92,7 +92,7 @@ class `() {
   }
   this_program make_key() { return this; }
 
-  int|string crypt(int|string x) {
+  int|string(8bit) crypt(int|string(8bit) x) {
     if(mode) {
       if(!stringp(x)) error("Wrong type. Expected string.\n");
       return decrypt([string]x);
