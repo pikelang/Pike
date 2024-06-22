@@ -559,7 +559,8 @@ protected class DocParserClass {
 	      break;
 	    case 0:
 	    default:
-	      parseError("Illegal @ statement.\n");
+              parseError(sprintf("Illegal @%s statement. Arg: %O\n",
+                                 keyword, arg));
 	    }
 	  }
 	  else
