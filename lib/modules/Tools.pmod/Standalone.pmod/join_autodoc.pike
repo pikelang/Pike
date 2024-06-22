@@ -110,7 +110,7 @@ void recurse(array(string) sources, string save_to,
 
       // Adding all *.xml files to the file queue
       if (verbosity > 0)
-	werror("Joining in %s\n", builddir);
+        werror("Joining in %s to %s...\n", builddir, save_to);
       foreach(filter(get_dir(builddir), has_suffix, ".xml"), string fn) {
 	if(fn[0]=='.' || (fn[0]=='#' && fn[-1]=='#')) continue;
 	Stdio.Stat stat = file_stat(builddir+fn);
@@ -244,7 +244,7 @@ string low_join_files(array(string) files, string save_to,
 
   if (!fail) {
     if (verbosity > 0)
-      werror("\rRendering XML...\n");
+      werror("\rRendering XML for %s...\n", save_to);
     SimpleRootNode root = SimpleRootNode();
     root->replace_children(({ SimpleHeaderNode(([ "version":"1.0",
 						  "encoding":"utf-8" ])),
