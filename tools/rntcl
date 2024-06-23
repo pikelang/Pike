@@ -98,6 +98,8 @@ string o_to_obj(string fname)
   return fname;
 }
 
+// Process.system() is deprecated.
+#pragma no_deprecation_warnings
 array|object paranoia_stat(string f)
 {
   string dname;
@@ -122,6 +124,7 @@ array|object paranoia_stat(string f)
   }
   return file_stat(f);
 }
+#pragma deprecation_warnings
 
 void safe_hardlink (string from, string to)
 {
