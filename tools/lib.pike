@@ -15,6 +15,10 @@ void exece(string cmd, array(string) args)
 }
 #endif
 
+#if !constant(zero)
+typedef int(0..0)	zero;
+#endif
+
 // Constants taken from WinNT.h
 constant status_codes = ([
   0x00000080:"Abandoned Wait 0",
@@ -575,7 +579,7 @@ string find_lib_location()
   return __FILE__;
 }
 
-string find_next_in_path(string argv0,string cmd)
+string find_next_in_path(string|zero argv0, string cmd)
 {
   string full_argv0 = combine_path(getcwd(),argv0);
   if(file_stat(full_argv0))
