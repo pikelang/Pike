@@ -19,6 +19,10 @@ void exece(string cmd, array(string) args)
 typedef int(0..0)	zero;
 #endif
 
+#if __VERSION__ < 8.0
+#define protected static
+#endif
+
 // Constants taken from WinNT.h
 constant status_codes = ([
   0x00000080:"Abandoned Wait 0",
@@ -412,7 +416,7 @@ int silent_do_cmd(array(string) cmd, mixed|void filter, int|void silent,
 
 	int werr(string s) { return write(s); }
 
-	void create()
+        protected void create()
 	  {
 	    rl->enable_history(512);
 	    for(int e=0;e<256;e++)
