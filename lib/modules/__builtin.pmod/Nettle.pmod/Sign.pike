@@ -47,10 +47,10 @@ int(0..1) pkcs_verify(string(8bit) message, .Hash h, string(8bit) sign);
 
 //! Returns the PKCS-1 algorithm identifier for the signing algorithm with
 //! the provided hash algorithm.
-Sequence pkcs_signature_algorithm_id(.Hash hash);
+object(Sequence)|zero pkcs_signature_algorithm_id(.Hash hash);
 
 //! Returns the PKCS-1 AlgorithmIdentifier.
-Sequence pkcs_algorithm_identifier();
+object(Sequence)|zero pkcs_algorithm_identifier();
 
 //! Creates a SubjectPublicKeyInfo ASN.1 sequence for the object.
 //! See @rfc{5280:4.1.2.7@}.

@@ -53,7 +53,7 @@ class State
   string(8bit) digest(int|void length);
 
   //! Returns a human readable name for the algorithm.
-  string(8bit) name()
+  string(7bit) name()
   {
     return global::name();
   }
