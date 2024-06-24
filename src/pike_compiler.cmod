@@ -384,6 +384,12 @@ static void do_yyparse(void)
   if (save_sp != Pike_sp) {
 #ifdef PIKE_DEBUG
     if (!Pike_compiler->num_parse_error) {
+      ptrdiff_t i = Pike_sp - save_sp;
+      while (i > 0) {
+        pike_fprintf(stderr, "Dropping #%td: %pO\n",
+                     i, Pike_sp - i);
+        i--;
+      }
       Pike_fatal("yyparse() left %"PRINTPTRDIFFT"d droppings on the stack!\n",
 		 Pike_sp - save_sp);
     }
