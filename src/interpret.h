@@ -187,9 +187,9 @@ PMOD_EXPORT extern const char Pike_check_c_stack_errmsg[];
 #define check_c_stack(MIN_BYTES) do {					\
     low_check_c_stack (Pike_interpreter.c_stack_margin + (MIN_BYTES), {	\
 	low_error(Pike_check_c_stack_errmsg);				\
-	/* Pike_fatal("C stack overflow: x_:%p &x_:%p top:%p margin:%p\n", \
+        /* Pike_fatal("C stack overflow: x_:%tx &x_:%p top:%p margin:%lx\n", \
 	   x_, &x_, Pike_interpreter.stack_top,				\
-	   Pike_interpreter.c_stack_margin + (MIN_BYTES)); */		\
+           (long)Pike_interpreter.c_stack_margin + (MIN_BYTES)); */     \
       });								\
   }while(0)
 
