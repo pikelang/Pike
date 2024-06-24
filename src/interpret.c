@@ -1189,8 +1189,10 @@ PMOD_EXPORT void dump_backlog(void)
        Pike_fatal ("Catch context dropoff.\n");                        \
       if (cc->frame != Pike_fp)                                                \
        Pike_fatal ("Catch context doesn't belong to this frame.\n");   \
-      if (Pike_mark_sp != cc->recovery.mark_sp + Pike_interpreter.mark_stack) \
-       Pike_fatal ("Mark sp diff in catch context pop.\n");            \
+      if (Pike_mark_sp != cc->recovery.mark_sp + Pike_interpreter.mark_stack){ \
+        describe_stack();                                               \
+        Pike_fatal ("Mark sp diff in catch context pop.\n");            \
+      }                                                                 \
     );                                                                 \
     debug_malloc_touch (cc);                                           \
     UNSETJMP (cc->recovery);                                           \
@@ -1209,8 +1211,10 @@ PMOD_EXPORT void dump_backlog(void)
        Pike_fatal ("Catch context dropoff.\n");                        \
       if (cc->frame != Pike_fp)                                                \
        Pike_fatal ("Catch context doesn't belong to this frame.\n");   \
-      if (Pike_mark_sp != cc->recovery.mark_sp + Pike_interpreter.mark_stack) \
-       Pike_fatal ("Mark sp diff in catch context pop.\n");            \
+      if (Pike_mark_sp != cc->recovery.mark_sp + Pike_interpreter.mark_stack){ \
+        describe_stack();                                               \
+        Pike_fatal ("Mark sp diff in catch context pop.\n");            \
+      }                                                                 \
     );                                                                 \
     debug_malloc_touch (cc);                                           \
     UNSETJMP (cc->recovery);                                           \
@@ -2426,6 +2430,64 @@ struct pike_frame *alloc_pike_frame(void)
       num_pike_frames+=FRAMES_PER_CHUNK;
     }
     return alloc_pike_frame();
+}
+
+void describe_stack(void)
+{
+  struct pike_frame *lfp = Pike_fp;
+  struct svalue *spp;
+  struct svalue **mspp;
+  struct catch_context *cc = Pike_interpreter.catch_ctx;
+
+  if (!lfp) {
+    fprintf(stderr, "No frame active!\n");
+    return;
+  }
+
+  pike_fprintf(stderr,
+               "FP: %px\n"
+               "sp: %px (%td) mark_sp: %px (%td)\n",
+               lfp,
+               Pike_sp, Pike_sp - lfp->save_sp,
+               Pike_mark_sp, Pike_mark_sp - lfp->save_mark_sp);
+  if (cc && (cc->recovery.frame_pointer == lfp)) {
+    struct svalue *csp = Pike_interpreter.evaluator_stack +
+      cc->recovery.stack_pointer;
+    struct svalue **cmsp = Pike_interpreter.mark_stack +
+      cc->recovery.mark_sp;
+    pike_fprintf(stderr,
+                 "Catch context:\n"
+                 "  sp: %px (%td) mark_sp: %px (%td)\n",
+                 csp, csp - lfp->save_sp,
+                 cmsp, cmsp - lfp->save_mark_sp);
+  }
+  if (lfp->flags & PIKE_FRAME_MALLOCED_LOCALS) {
+    int i;
+    struct array *a = lfp->locals[-1].u.array;
+    fprintf(stderr, "Locals:\n");
+    for (i = 0; i < a->size; i++) {
+      pike_fprintf(stderr, "  %4d: %pO\n",
+                   i, lfp->locals + i);
+    }
+  }
+  spp = lfp->save_sp;
+  mspp = lfp->save_mark_sp;
+  if (mspp < Pike_mark_sp) {
+    if (*mspp < spp) {
+      spp = *mspp;
+    }
+  }
+  while (spp < Pike_sp) {
+    if (spp == lfp->save_sp) {
+      pike_fprintf(stderr, "Stack frame start\n");
+    }
+    pike_fprintf(stderr, "0x%04tx: %pO\n", (spp - lfp->save_sp) & 0xffff, spp);
+    while ((mspp < Pike_mark_sp) && (*mspp == spp)) {
+      pike_fprintf(stderr, "  Mark #%td\n", mspp - lfp->save_mark_sp);
+      mspp++;
+    }
+    spp++;
+  }
 }
 
 void save_locals(struct pike_frame *frame)

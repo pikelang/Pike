@@ -706,6 +706,7 @@ void simple_debug_instr_prologue_2 (PIKE_INSTR_T instr, INT32 arg1, INT32 arg2);
 PMOD_EXPORT void find_external_context(struct external_variable_context *loc,
 				       int arg2);
 struct pike_frame *alloc_pike_frame(void);
+void describe_stack(void);
 void save_locals(struct pike_frame *frame);
 void LOW_POP_PIKE_FRAME_slow_path(struct pike_frame *frame);
 void really_free_pike_scope(struct pike_frame *scope);
