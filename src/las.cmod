@@ -3752,7 +3752,10 @@ void fix_type_field(node *n)
     }
 
     if(!match_types(CAR(n)->type, mixed_type_string))
-      yyerror("Bad conditional expression.");
+      yytype_report(REPORT_ERROR,
+                    NULL, 0, NULL,
+                    NULL, 0, CAR(n)->type,
+                    0, "Bad conditional expression.");
 
     if (!CDR(n) || CDR(n)->type == void_type_string)
       copy_pike_type(n->type, void_type_string);
@@ -4111,9 +4114,9 @@ void fix_type_field(node *n)
 			NULL, 0, NULL, NULL, 0, type_a,
 			0, "Indexing on illegal type.");
 	  ref_push_type_value(type_b);
-	  low_yyreport((!valid)?REPORT_ERROR:REPORT_WARNING, NULL, 0,
-		       type_check_system_string, 1,
-		       "Index   : %O.");
+          yytype_report((!valid)?REPORT_ERROR:REPORT_WARNING,
+                        NULL, 0, NULL, NULL, 0, NULL,
+                        1, "Index   : %O.");
 	}
       n->type = index_type(type_a, type_b, n);
     } else {
