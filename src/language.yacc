@@ -3076,8 +3076,8 @@ enum_def: /* EMPTY */
 	$<n>0 = safe_inc_enum($<n>0);
 	push_svalue(&$<n>0->u.sval);
       }
-      add_constant($1->u.sval.u.string, Pike_sp-1,
-		   (Pike_compiler->current_modifiers & ~ID_EXTERN) | ID_INLINE);
+      add_typed_constant($1->u.sval.u.string, $<n>0->type, Pike_sp-1,
+                         (Pike_compiler->current_modifiers & ~ID_EXTERN) | ID_INLINE);
       /* Update the type. */
       {
 	struct pike_type *current = pop_unfinished_type();
