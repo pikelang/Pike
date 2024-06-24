@@ -973,6 +973,11 @@ INPUT_IS_WIDE(								 \
              }								 \
           }								 \
 )									 \
+          if (no_assign) {                                               \
+            no_assign = 2;                                               \
+            eye+=field_length;                                           \
+            break;                                                       \
+          }                                                              \
 	  sval.u.integer=0;						 \
 	  if (minus_flag)						 \
 	  {								 \
@@ -1119,7 +1124,12 @@ INPUT_IS_WIDE(								 \
 	  if (flags & SSCANF_FLAG_80_COMPAT) {				 \
 	    /* All integer formats were signed in Pike 8.0 */		 \
 	    if (base < 0) base = -base;					 \
-	  }								 \
+          } else if (plus_flag && (base < 0)) {                          \
+            int c = input[eye] - '0';                                    \
+            if ((c<<1) >= -base) {                                       \
+              plus_flag = -1;                                            \
+            }                                                            \
+          }                                                              \
 									 \
 	  wide_string_to_svalue_inumber(&sval, input+eye, &t,		 \
 					base, field_length,		 \
@@ -1130,7 +1140,21 @@ INPUT_IS_WIDE(								 \
 	    chars_matched[0]=eye;					 \
 	    return matches;						 \
 	  }								 \
+                                                                         \
+          if (plus_flag < 0) {                                           \
+            /* Convert unsigned to signed. */                            \
+            ptrdiff_t n = t - (input + eye);                             \
+            /* Subtract (-base)^^n from sval. */                         \
+            (Pike_sp++)[0] = sval;                                       \
+            push_int(-base);                                             \
+            push_int(n);                                                 \
+            f_exponent(2);                                               \
+            f_minus(2);                                                  \
+            sval = (--Pike_sp)[0];                                       \
+          }                                                              \
+                                                                         \
 	  eye=t-input;							 \
+                                                                         \
 	  break;							 \
 	}								 \
 									 \
@@ -1929,6 +1953,8 @@ static void push_sscanf_argument_types(PCHARP format, ptrdiff_t format_len,
   for(; cnt < format_len; cnt++)
   {
     int no_assign=0;
+    int plus_flag=0;
+    int field_length = -1;
 
     while((cnt<format_len) && (INDEX_PCHARP(format, cnt) != '%'))
       cnt++;
@@ -1947,17 +1973,38 @@ static void push_sscanf_argument_types(PCHARP format, ptrdiff_t format_len,
 	/* FALLTHRU */
 
       case '-':
-      case '+':
       case '!':
+        cnt++;
+        if(cnt >= format_len) {
+          yyreport(REPORT_ERROR, type_check_system_string,
+                   0, "Error in sscanf format string.");
+          break;
+        }
+        continue;
+
+      case '+':
+        plus_flag = 1;
+        cnt++;
+        if(cnt >= format_len) {
+          yyreport(REPORT_ERROR, type_check_system_string,
+                   0, "Error in sscanf format string.");
+          break;
+        }
+        continue;
+
       case '0': case '1': case '2': case '3': case '4':
       case '5': case '6': case '7': case '8': case '9':
-	cnt++;
-	if(cnt>=format_len) {
-	  yyreport(REPORT_ERROR, type_check_system_string,
-		   0, "Error in sscanf format string.");
-	  break;
-	}
-	continue;
+        {
+          PCHARP t;
+          field_length = STRTOL_PCHARP(ADD_PCHARP(format, cnt), &t, 10);
+          cnt = SUBTRACT_PCHARP(t, format);
+          if(cnt >= format_len) {
+            yyreport(REPORT_ERROR, type_check_system_string,
+                     0, "Error in sscanf format string.");
+            break;
+          }
+          continue;
+        }
 
 	case '{':
 	{
@@ -2001,35 +2048,57 @@ static void push_sscanf_argument_types(PCHARP format, ptrdiff_t format_len,
 	}
 
 	case 'n':	/* FIXME: tIntPos? */
+          plus_flag = 0;
+          /* FALLTHRU */
         case 'b':
         case 'o':
         case 'u':
         case 'x':
 	  /* Unsigned integers. */
 	  if (!no_assign) {
-	    if (flags & SSCANF_FLAG_80_COMPAT) {
+            if ((flags & SSCANF_FLAG_80_COMPAT) || plus_flag) {
 	      /* All integer formats were signed in Pike 8.0. */
 	      push_finished_type(int_type_string);
 	    } else {
+              /* FIXME: Adjust range depending on field_length. */
 	      push_int_type(0, 0x7fffffff);
 	    }
 	  }
 	  break;
 
 	case 'c':
-	  /* FIXME: Also consider the format_len (eg %4c). */
 	  if (!no_assign) {
-	    struct svalue *s =
-	      simple_mapping_string_lookup(state, "sscanf_input_character");
-	    if (s) {
-	      if (TYPEOF(*s) == PIKE_T_TYPE) {
-		/* Use the width of the input string. */
-		push_finished_type(s->u.type);
-	      } else {
-		push_type(PIKE_T_ZERO);
-	      }
-	      break;
-	    }
+            if (field_length == -1) {
+              /* Unspecified field-length. */
+              struct svalue *s =
+                simple_mapping_string_lookup(state, "sscanf_input_character");
+              if (s) {
+                if (TYPEOF(*s) == PIKE_T_TYPE) {
+                  /* Use the width of the input string. */
+                  push_finished_type(s->u.type);
+                } else {
+                  push_type(PIKE_T_ZERO);
+                }
+                break;
+              }
+            } else if (plus_flag) {
+              /* Signed. */
+              if ((field_length >= 0) && (field_length < 4)) {
+                push_int_type(~((1<<((field_length<<3) - 1)) - 1),
+                              (1<<((field_length<<3) - 1)) - 1);
+              } else {
+                push_int_type(MIN_INT32, MAX_INT32);
+              }
+              break;
+            } else {
+              /* Unsigned. */
+              if ((field_length >= 0) && (field_length < 4)) {
+                push_int_type(0, (1<<(field_length<<3)) - 1);
+              } else {
+                push_int_type(0, MAX_INT32);
+              }
+              break;
+            }
 	  }
 	  /* FALLTHRU */
         case 'd':
