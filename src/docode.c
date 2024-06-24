@@ -368,11 +368,18 @@ static int is_efun(node *n, c_fun fun)
 
 static void code_expression(node *n, int flags, char *err)
 {
-  switch(do_docode(n, flags & ~DO_POP))
+  int vals;
+
+  switch((vals = do_docode(n, flags & ~DO_POP)))
   {
   case 0: my_yyerror("Void expression for %s",err);
   case 1: return;
   case 2:
+#ifdef PIKE_DEBUG
+    fprintf(stderr, "Tree: ");
+    print_tree(n);
+#endif
+    fprintf(stderr, "Values: %d\n", vals);
     Pike_fatal("Internal compiler error (%s), line %ld, file %s\n",
 	       err,
 	       (long)THIS_COMPILATION->lex.current_line,
