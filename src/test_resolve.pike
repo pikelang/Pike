@@ -129,8 +129,14 @@ void test_dir(string dir, int|void base_size, object|void handler)
 	  }) {
 	    log_msg("Failed to load %O: %s\n",
 		    file, describe_error(err));
-	    num_failed++;
-	    ok=0;
+            if (!objectp(err) || !err->is_module_load_error) {
+              num_failed++;
+              ok=0;
+            } else {
+              // Module load errors are suppressed
+              // by the default master object.
+              num_ok++;
+            }
 	  } else
 #endif /* constant(load_module) */
 	  {
