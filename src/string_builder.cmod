@@ -1183,6 +1183,10 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
             struct svalue sval;
             SET_SVAL(sval, T_PROGRAM, 0, program,
                      va_arg(args, struct program *));
+            if (!sval.u.program) {
+              string_builder_strcat(s, "(NULL)");
+              break;
+            }
             describe_svalue(&buf, &sval, 0, NULL);
             string_builder_binary_strcat(s, buffer_ptr(&buf), buffer_content_length(&buf));
             buffer_free(&buf);
