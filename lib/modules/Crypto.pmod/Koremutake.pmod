@@ -13,8 +13,12 @@
 //! sequence of syllables. The general idea is that word-sounding
 //! pieces of information are a lot easier to remember than a sequence
 //! of digits.
+//!
+//! @note
+//!   This module implements an API that is similar to (but NOT compatible
+//!   with) the generic @[Crypto.Cipher] API.
 
-protected constant table = ({
+protected constant array(string(7bit)) table = ({
  "BA", "BE", "BI", "BO", "BU", "BY", "DA", "DE",
  "DI", "DO", "DU", "DY", "FA", "FE", "FI", "FO",
  "FU", "FY", "GA", "GE", "GI", "GO", "GU", "GY",
@@ -34,22 +38,30 @@ protected constant table = ({
 });
 
 //! Encode an integer as a koremutake string.
-string(8bit) encrypt(int m) {
-  string c="";
+//!
+//! @note
+//!   Encrypts an integer. This is not compatible with the
+//!   @[Crypto.Cipher] API.
+string(7bit) encrypt(int m) {
+  string(7bit) c="";
   while(m) {
-    c = [string]table[m&127] + c;
+    c = table[m&127] + c;
     m >>= 7;
   }
   return c;
 }
 
 //! Decode a koremutake string into an integer.
-int decrypt(string(8bit) c) {
+//!
+//! @note
+//!   Returns an integer. This is not compatible with the
+//!   @[Crypto.Cipher] API.
+int decrypt(string(7bit) c) {
   int m;
-  c = upper_case(c);
+  c = [string(7bit)]upper_case(c);
   while(sizeof(c)) {
     if(sizeof(c)==1) error("Error in cryptogram.\n");
-    string w = c[..1];
+    string(7bit) w = c[..1];
     c = c[2..];
 
     if( (< 'R', 'T' >)[w[1]] ) {
@@ -73,6 +85,7 @@ string(7bit) name() { return "koremutake"; }
 int block_size() { return 1; }
 int key_size() { return 0; }
 
+//!
 class `() {
 
   string(7bit) name() { return "koremutake"; }
@@ -92,7 +105,10 @@ class `() {
   }
   this_program make_key() { return this; }
 
-  int|string(8bit) crypt(int|string(8bit) x) {
+  //! @note
+  //!   Encrypts or returns an integer. This is not compatible with the
+  //!   @[Crypto.Cipher] API.
+  int|string(7bit) crypt(int|string(7bit) x) {
     if(mode) {
       if(!stringp(x)) error("Wrong type. Expected string.\n");
       return decrypt([string]x);
