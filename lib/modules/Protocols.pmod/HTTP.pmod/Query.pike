@@ -202,6 +202,10 @@ protected int ponder_answer( int|void start_position )
    // done
    ok=1;
    remove_async_timeout();
+   if (con && con->set_timeout) {
+     // SSL connection.
+     con->set_timeout(data_timeout && (float)data_timeout);
+   }
 
    if (request_ok) request_ok(this,@extra_args);
    return 1;
@@ -254,6 +258,8 @@ void start_tls(int|void blocking, int|void async)
   if (blocking) {
     ssl->set_blocking();
   }
+
+  ssl->set_timeout(timeout && (float)timeout);
 
   if (!(ssl_session = ssl->connect(real_host, ssl_session))) {
     error("HTTPS connection failed.\n");
