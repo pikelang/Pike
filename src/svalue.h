@@ -359,7 +359,14 @@ struct svalue
 #define tInt2 "\010\000\000\000\002\000\000\000\002"
 #define tInt3 "\010\000\000\000\003\000\000\000\003"
 #define tInt4 "\010\000\000\000\004\000\000\000\004"
+#define tInt127 "\010\000\000\000\177\000\000\000\177"
+#define tInt128 "\010\000\000\000\200\000\000\000\200"
+#define tInt254 "\010\000\000\000\376\000\000\000\376"
 #define tInt255 "\010\000\000\000\377\000\000\000\377"
+#define tInt256 "\010\000\000\001\000\000\000\001\000"
+#define tInt376 "\010\000\000\001\170\000\000\001\170"
+#define tInt65535 "\010\000\000\377\377\000\000\377\377"
+#define tInt65536 "\010\000\001\000\000\000\001\000\000"
 #define tInt01 "\010\000\000\000\000\000\000\000\001"
 #define tInt02 "\010\000\000\000\000\000\000\000\002"
 #define tInt03 "\010\000\000\000\000\000\000\000\003"
@@ -453,6 +460,8 @@ struct svalue
 #define tNegateInt(X)		tSubInt(tInt0, X)
 #define tAddInt(X, Y)		tSubInt(X, tNegateInt(Y))
 #define tInvertInt(X)		tSubInt(tInt_1, X)
+#define tIncInt(X)		tSubInt(X, tInt_1)
+#define tDecInt(X)		tSubInt(X, tInt1)
 
 #define tAndInt(X, Y)		"\200\301" X Y
 #define tOrInt(X, Y)		tInvertInt(tAndInt(tInvertInt(X), tInvertInt(Y)))
