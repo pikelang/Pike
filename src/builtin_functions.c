@@ -10406,7 +10406,25 @@ void init_builtin_efuns(void)
 
   /* function(string:string)|function(int:int) */
   ADD_EFUN("lower_case",f_lower_case,
-	   tOr(tFunc(tStr,tStr), tFunc(tInt,tInt)),OPT_TRY_OPTIMIZE);
+           tOr(tOr5(tFunc(tStr7, tStr7),
+                    tFunc(tNStr(tOr(tRangeInt(tInt128, tInt8bit), tInt376)),
+                          tStr8),
+                    tFunc(tNStr(tOr(tRangeInt(tInt256, tDecInt(tInt376)),
+                                    tRangeInt(tIncInt(tInt376), tInt16bit))),
+                          tStr16),
+                    tFunc(tNStr(tRangeInt(tInt65536, tInt)),
+                          tNStr(tRangeInt(tInt65536, tInt))),
+                    tFunc(tNStr(tIntMinus), tNStr(tIntMinus))),
+               tOr5(tFunc(tInt7bit, tInt7bit),
+                    tFunc(tOr(tRangeInt(tInt128, tInt8bit), tInt376),
+                          tInt8bit),
+                    tFunc(tOr(tRangeInt(tInt256, tDecInt(tInt376)),
+                                    tRangeInt(tIncInt(tInt376), tInt16bit)),
+                          tInt16bit),
+                    tFunc(tRangeInt(tInt65536, tInt),
+                          tRangeInt(tInt65536, tInt)),
+                    tFunc(tIntMinus, tIntMinus))),
+           OPT_TRY_OPTIMIZE);
 
   /* function(mixed:int) */
   ADD_EFUN("mappingp",f_mappingp,tFunc(tMix,tInt01),OPT_TRY_OPTIMIZE);
@@ -10545,7 +10563,25 @@ void init_builtin_efuns(void)
 
   /* function(string:string)|function(int:int) */
   ADD_EFUN("upper_case",f_upper_case,
-	   tOr(tFunc(tStr,tStr),tFunc(tInt,tInt)),OPT_TRY_OPTIMIZE);
+           tOr(tOr6(tFunc(tStr7, tStr7),
+                    tFunc(tNStr(tRangeInt(tInt128, tInt254)),
+                          tNStr(tRangeInt(tInt128, tInt254))),
+                    tFunc(tNStr(tInt255), tNStr(tInt376)),
+                    tFunc(tNStr(tRangeInt(tInt256, tInt16bit)),
+                          tNStr(tRangeInt(tInt256, tInt16bit))),
+                    tFunc(tNStr(tRangeInt(tInt65536, tInt)),
+                          tNStr(tRangeInt(tInt65536, tInt))),
+                    tFunc(tNStr(tIntMinus), tNStr(tIntMinus))),
+               tOr6(tFunc(tInt7bit, tInt7bit),
+                    tFunc(tRangeInt(tInt128, tInt254),
+                          tRangeInt(tInt128, tInt254)),
+                    tFunc(tInt255, tInt376),
+                    tFunc(tRangeInt(tInt256, tInt16bit),
+                          tRangeInt(tInt256, tInt16bit)),
+                    tFunc(tRangeInt(tInt65536, tInt),
+                          tRangeInt(tInt65536, tInt)),
+                    tFunc(tIntMinus, tIntMinus))),
+           OPT_TRY_OPTIMIZE);
 
   /* function(string|multiset:array(int))|function(array(0=mixed)|mapping(mixed:0=mixed)|object|program:array(0)) */
   ADD_EFUN("values",f_values,
