@@ -7213,7 +7213,23 @@ PMOD_EXPORT int add_typed_constant(struct pike_string *name,
   }
 
   if (type) {
-    add_ref(type);
+    struct pike_type *tmp = get_type_of_svalue(c);
+    struct pike_type *tmp2 = and_pike_types(type, tmp);
+    if (tmp2) {
+      if (flags & ID_INLINE) {
+        type = tmp2;
+      } else {
+        free_type(tmp2);
+        add_ref(type);
+      }
+    } else {
+      yytype_report(REPORT_ERROR,
+                    NULL, 0, tmp,
+                    NULL, 0, type,
+                    0, "Invalid type for constant expression.");
+      add_ref(type);
+    }
+    free_type(tmp);
   } else if (c) {
     if( !(flags & ID_INLINE) )
       type = get_lax_type_of_svalue(c);
