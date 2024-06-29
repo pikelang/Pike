@@ -15,10 +15,15 @@
 //! of digits.
 //!
 //! @note
+//!   Note this encoding is NOT suitable for encoding numeric
+//!   quantities where initial zeroes are significant (ie it
+//!   is NOT suitable for eg PIN-numbers).
+//!
+//! @note
 //!   This module implements an API that is similar to (but NOT compatible
 //!   with) the generic @[Crypto.Cipher] API.
 
-protected constant array(string(7bit)) table = ({
+protected local constant array(string(7bit)) table = ({
  "BA", "BE", "BI", "BO", "BU", "BY", "DA", "DE",
  "DI", "DO", "DU", "DY", "FA", "FE", "FI", "FO",
  "FU", "FY", "GA", "GE", "GI", "GO", "GU", "GY",
@@ -37,12 +42,15 @@ protected constant array(string(7bit)) table = ({
  "STA", "STE", "STI", "STO", "STU", "STY", "TRA", "TRE"
 });
 
+protected local constant mapping(string(7bit):int(7bit)) lookup =
+  mkmapping(table, indices(table));
+
 //! Encode an integer as a koremutake string.
 //!
 //! @note
 //!   Encrypts an integer. This is not compatible with the
 //!   @[Crypto.Cipher] API.
-string(7bit) encrypt(int m) {
+string(7bit) encrypt(int(0..) m) {
   string(7bit) c="";
   while(m) {
     c = table[m&127] + c;
@@ -56,22 +64,16 @@ string(7bit) encrypt(int m) {
 //! @note
 //!   Returns an integer. This is not compatible with the
 //!   @[Crypto.Cipher] API.
-int decrypt(string(7bit) c) {
-  int m;
+int(0..) decrypt(string(7bit) c) {
+  int(0..) m;
   c = [string(7bit)]upper_case(c);
   while(sizeof(c)) {
     if(sizeof(c)==1) error("Error in cryptogram.\n");
-    string(7bit) w = c[..1];
-    c = c[2..];
-
-    if( (< 'R', 'T' >)[w[1]] ) {
-      if(!sizeof(c)) error("Error in cryptogram.\n");
-      w += c[..0];
-      c = c[1..];
-    }
-
-    int p = search(table, w);
-    if(p==-1) error("Error in cryptogram %O.\n", w);
+    int(0..1) trigramp = (< 'R', 'T' >)[c[1]];
+    string(7bit) w = c[..1 + trigramp];
+    c = c[2+trigramp..];
+    int(7bit) p = lookup[w];
+    if (undefinedp(p)) error("Error in cryptogram %O.\n", w);
     m <<= 7;
     m += p;
   }
@@ -108,7 +110,7 @@ class `() {
   //! @note
   //!   Encrypts or returns an integer. This is not compatible with the
   //!   @[Crypto.Cipher] API.
-  int|string(7bit) crypt(int|string(7bit) x) {
+  int(0..)|string(7bit) crypt(int(0..)|string(7bit) x) {
     if(mode) {
       if(!stringp(x)) error("Wrong type. Expected string.\n");
       return decrypt([string]x);
