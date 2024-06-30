@@ -24,7 +24,7 @@
 Makefile -space_indent tab_indent
 Makefile.in -space_indent tab_indent
 Makefile.rl -space_indent tab_indent
-/lib/modules/Calendar.pmod/tzdata/** -space_indent tab_indent
+/lib/modules/Calendar.pmod/tzdata/** -space_indent -tab_indent mixed_indent
 /packaging/debian/rules -space_indent tab_indent
 /src/dtoa.c -space_indent tab_indent
 # List of files that currently have lines indented with tab or
