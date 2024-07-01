@@ -7212,29 +7212,31 @@ PMOD_EXPORT int add_typed_constant(struct pike_string *name,
     }
   }
 
-  if (type) {
-    struct pike_type *tmp = get_type_of_svalue(c);
-    struct pike_type *tmp2 = and_pike_types(type, tmp);
-    if (tmp2) {
-      if (flags & ID_INLINE) {
-        type = tmp2;
+  if (c) {
+    if (type) {
+      struct pike_type *tmp = get_type_of_svalue(c);
+      struct pike_type *tmp2 = and_pike_types(type, tmp);
+      if (tmp2) {
+        if (flags & ID_INLINE) {
+          type = tmp2;
+        } else {
+          free_type(tmp2);
+          add_ref(type);
+        }
       } else {
-        free_type(tmp2);
+        yytype_report(REPORT_ERROR,
+                      NULL, 0, tmp,
+                      NULL, 0, type,
+                      0, "Invalid type for constant expression.");
         add_ref(type);
       }
+      free_type(tmp);
     } else {
-      yytype_report(REPORT_ERROR,
-                    NULL, 0, tmp,
-                    NULL, 0, type,
-                    0, "Invalid type for constant expression.");
-      add_ref(type);
+      if( !(flags & ID_INLINE) )
+        type = get_lax_type_of_svalue(c);
+      else
+        type = get_type_of_svalue(c);
     }
-    free_type(tmp);
-  } else if (c) {
-    if( !(flags & ID_INLINE) )
-      type = get_lax_type_of_svalue(c);
-    else
-      type = get_type_of_svalue(c);
   } else {
     copy_pike_type(type, mixed_type_string);
   }
