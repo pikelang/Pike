@@ -164,7 +164,7 @@ mapping(Identifier:Crypto.Hash) get_algorithms()
 }
 
 class Verifier {
-  constant type = [string(7bit)](mixed)"none";
+  constant string(7bit) type = "none";
   Crypto.Sign.State pkc;
 
   //! Verifies the @[signature] of the certificate @[msg] using the
@@ -201,7 +201,7 @@ protected class RSAVerifier
 
   @Pike.Annotations.Implements(Verifier);
 
-  constant type = "rsa";
+  constant string(7bit) type = "rsa";
 
   protected void create(string key) {
     pkc = .PKCS.RSA.parse_public_key(key);
@@ -214,7 +214,7 @@ protected class DSAVerifier
 
   @Pike.Annotations.Implements(Verifier);
 
-  constant type = "dsa";
+  constant string(7bit) type = "dsa";
 
   protected void create(string key, Gmp.mpz p, Gmp.mpz q, Gmp.mpz g)
   {
@@ -226,7 +226,7 @@ protected class DSAVerifier
 protected class ECDSAVerifier
 {
   inherit Verifier;
-  constant type = "ecdsa";
+  constant string(7bit) type = "ecdsa";
 
   protected void create(string(8bit) key, Identifier curve_id)
   {
@@ -249,7 +249,7 @@ protected class ECDSAVerifier
 protected class EdDSAVerifier
 {
   inherit Verifier;
-  constant type = "eddsa";
+  constant string(7bit) type = "eddsa";
 
   protected void create(string(8bit) key, Identifier curve_id)
   {
