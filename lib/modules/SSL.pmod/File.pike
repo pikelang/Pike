@@ -937,6 +937,10 @@ string read (void|int length, void|int(0..1) not_all)
 {
   SSL3_DEBUG_MSG ("SSL.File->read (%d, %d)\n", length, not_all);
 
+  if (!conn) {
+    error("The connection mode has not been set yet!\n");
+  }
+
   ENTER (0) {
     if (read_errno && !sizeof(user_read_buffer)) {
       local_errno = read_errno;
@@ -1042,6 +1046,10 @@ int write(string|array(string) data, mixed... args)
 {
   SSL3_DEBUG_MSG ("SSL.File->write (%t[%d]%{, %t%})\n",
 		  data, sizeof (data), args);
+
+  if (!conn) {
+    error("The connection mode has not been set yet!\n");
+  }
 
   if (sizeof (args)) {
     data = ({ sprintf (arrayp (data) ? data * "" : data, @args) });
