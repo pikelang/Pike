@@ -1392,6 +1392,9 @@ class Variable {
   inherit PikeObject;
 
   //!
+  @Pike.Annotations.Implements(PikeObject);
+
+  //!
   constant objtype = "variable";
 
   //! @[Type] of the variable.
