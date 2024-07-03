@@ -1171,6 +1171,7 @@ void string_builder_explain_not_compatible(struct string_builder *s,
 void string_builder_explain_not_implements(struct string_builder *s,
 					   struct program *a,
 					   struct program *b);
+PMOD_EXPORT struct object *make_promise(void);
 PMOD_EXPORT void *parent_storage(int depth, struct program *expected);
 PMOD_EXPORT void *get_inherited_storage(int inh, struct program *expected);
 void make_area_executable (char *start, size_t len);

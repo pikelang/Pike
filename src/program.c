@@ -11376,6 +11376,27 @@ void string_builder_explain_not_implements(struct string_builder *s,
   END_CYCLIC();
 }
 
+PMOD_EXPORT struct object *make_promise(void)
+{
+  if (TYPEOF(Concurrent_Promise_sval) == PIKE_T_INT) {
+    if (low_resolve_identifier(Concurrent_Promise_string)) {
+      Concurrent_Promise_sval = Pike_sp[-1];
+      Pike_sp--;
+    }
+  }
+
+  apply_svalue(&Concurrent_Promise_sval, 0);
+
+  if (TYPEOF(Pike_sp[-1]) == PIKE_T_OBJECT) {
+    Pike_sp--;
+    dmalloc_touch_svalue(Pike_sp);
+    return Pike_sp->u.object;
+  }
+
+  pop_stack();
+  return NULL;
+}
+
 PMOD_EXPORT void *parent_storage(int depth, struct program *expected)
 {
   struct external_variable_context loc;
