@@ -2343,7 +2343,6 @@ struct node_s *find_predef_identifier(struct pike_string *ident)
 int low_resolve_identifier(struct pike_string *ident)
 {
   struct compilation *c = THIS_COMPILATION;
-  node *ret = NULL;
 
   /* Handle UNDEFINED */
   if (ident == UNDEFINED_string) {
@@ -3199,6 +3198,7 @@ void fixate_program(void)
   CHECK_COMPILER();
 
   if(p->flags & PROGRAM_FIXED) return;
+
 #ifdef PIKE_DEBUG
   if(p->flags & PROGRAM_OPTIMIZED)
     Pike_fatal("Cannot fixate optimized program\n");
@@ -8245,6 +8245,7 @@ PMOD_EXPORT int really_low_find_shared_string_identifier(const struct pike_strin
       return i;
     }
   }
+
   return id;
 }
 
@@ -10717,18 +10718,22 @@ static int low_implements(struct program *a, struct program *b,
 
     if (b == Future_program) {
       if (TYPEOF(Concurrent_Future_sval) == PIKE_T_INT) {
+        enter_compiler(NULL, 0);
         if (low_resolve_identifier(Concurrent_Future_string)) {
           Concurrent_Future_sval = Pike_sp[-1];
           Pike_sp--;
         }
+        exit_compiler();
       }
       p = program_from_svalue(&Concurrent_Future_sval);
     } else if (b == Promise_program) {
       if (TYPEOF(Concurrent_Promise_sval) == PIKE_T_INT) {
+        enter_compiler(NULL, 0);
         if (low_resolve_identifier(Concurrent_Promise_string)) {
           Concurrent_Promise_sval = Pike_sp[-1];
           Pike_sp--;
         }
+        exit_compiler();
       }
       p = program_from_svalue(&Concurrent_Promise_sval);
     }
@@ -10904,18 +10909,22 @@ static int low_is_compatible(struct program *a, struct program *b)
 
     if (b == Future_program) {
       if (TYPEOF(Concurrent_Future_sval) == PIKE_T_INT) {
+        enter_compiler(NULL, 0);
         if (low_resolve_identifier(Concurrent_Future_string)) {
           Concurrent_Future_sval = Pike_sp[-1];
           Pike_sp--;
         }
+        exit_compiler();
       }
       p = program_from_svalue(&Concurrent_Future_sval);
     } else if (b == Promise_program) {
       if (TYPEOF(Concurrent_Promise_sval) == PIKE_T_INT) {
+        enter_compiler(NULL, 0);
         if (low_resolve_identifier(Concurrent_Promise_string)) {
           Concurrent_Promise_sval = Pike_sp[-1];
           Pike_sp--;
         }
+        exit_compiler();
       }
       p = program_from_svalue(&Concurrent_Promise_sval);
     }
@@ -10940,18 +10949,22 @@ static int low_is_compatible(struct program *a, struct program *b)
 
     if (a == Future_program) {
       if (TYPEOF(Concurrent_Future_sval) == PIKE_T_INT) {
+        enter_compiler(NULL, 0);
         if (low_resolve_identifier(Concurrent_Future_string)) {
           Concurrent_Future_sval = Pike_sp[-1];
           Pike_sp--;
         }
+        exit_compiler();
       }
       p = program_from_svalue(&Concurrent_Future_sval);
     } else if (a == Promise_program) {
       if (TYPEOF(Concurrent_Promise_sval) == PIKE_T_INT) {
+        enter_compiler(NULL, 0);
         if (low_resolve_identifier(Concurrent_Promise_string)) {
           Concurrent_Promise_sval = Pike_sp[-1];
           Pike_sp--;
         }
+        exit_compiler();
       }
       p = program_from_svalue(&Concurrent_Promise_sval);
     }
@@ -11379,10 +11392,12 @@ void string_builder_explain_not_implements(struct string_builder *s,
 PMOD_EXPORT struct object *make_promise(void)
 {
   if (TYPEOF(Concurrent_Promise_sval) == PIKE_T_INT) {
+    enter_compiler(NULL, 0);
     if (low_resolve_identifier(Concurrent_Promise_string)) {
       Concurrent_Promise_sval = Pike_sp[-1];
       Pike_sp--;
     }
+    exit_compiler();
   }
 
   apply_svalue(&Concurrent_Promise_sval, 0);
