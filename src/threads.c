@@ -2932,7 +2932,7 @@ void f_mutex_try_shared_lock(INT32 args)
  *! complete successfully when the @[Mutex] is locked.
  *!
  *! @note
- *!   Avoid having multiple @[future_lock]'s for different @[Mutex]es
+ *!   Avoid having multiple @[future_shared_lock]'s for different @[Mutex]es
  *!   pending concurrently in the same conceptual thread as this will
  *!   likely cause dead-locks.
  */
