@@ -1,5 +1,5 @@
-Pike 9.0: Changes since Pike 8.0 (scratch area for future release notes)
-------------------------------------------------------------------------
+Pike 9.0: Changes since Pike 8.0
+----------------------------------------------------------------------
 
 New language features
 ---------------------
@@ -310,7 +310,7 @@ Bug fixes
 
 o Compiler
 
-  - Constant integers outside the 32-bit signed range not longer
+  - Constant integers outside the 32-bit signed range no longer
     get their types mapped to int(-0x80000000) or int(0x7fffffff),
     (depending on sign) but instead keep the generic int type.
     This fixes issues where the type resolution system derived
@@ -395,7 +395,7 @@ Incompatible changes
 
 o As mentioned above; variables that may be set to 0 or UNDEFINED
   now need to be declared accordingly. Note that this is not needed
-  for code that is compiled in compat mode for Pike 8.0 or earlier.
+  for code that is compiled in Pike 8.0 or earlier compat mode.
 
 o The new stricter type checker may expose old bugs that the
   old type checker did not find.
@@ -460,14 +460,14 @@ o glob() has changed.
   This is in order to extend the glob function to cover what
   'standard' glob functions do:
 
-  glob() now accepts quotes (\* to match a single *, as an example)
-  and handles ranges ([abc] for a, b or c, [a-z0-9] for a single
-  character between a and z or 0-9
+  - glob() now accepts quotes (eg \* to match a single *) and
+    handles ranges (eg [abc] for a, b or c, [a-z0-9] for a single
+    character between a and z or 0-9).
 
-  You can also negate a range using ^ or ! ([^a-zA-Z] as an example).
+  - You can also negate a range using ^ or ! (eg [^a-zA-Z]).
 
-  When the first argument (the pattern) to glob is an array, glob now
-  returns which pattern in the array matched.
+  - When the first argument (the pattern) to glob is an array, glob now
+    returns the pattern in the array that matched.
 
 o hash() has been changed to use siphash. The old hash function is
   available under the name hash_8_0(). Note that this is not a
@@ -476,7 +476,8 @@ o hash() has been changed to use siphash. The old hash function is
 o Stdio.UDP()->send() no longer throws errors on EMSGSIZE and EWOULDBLOCK.
 
 o When a thread exits by throwing, the thrown value is propagated to
-  wait(). Previously it was sent directly to master()->handle_error().
+  wait() which in turn will throw the value further. Previously it
+  was sent directly to master()->handle_error().
 
 o String.trim_all_whites() renamed String.trim().
 
