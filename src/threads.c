@@ -2136,6 +2136,16 @@ struct mutex_storage
   int num_waiting;
 };
 
+/* Mapping from weak Mutex to multiset of pending future locks,
+ * where each future lock is represented by an array containing:
+ *
+ *   Index 0: Promise        promise
+ *   Index 1: int(0..1)|void is_shared
+ *
+ * The second element may be left out if zero.
+ */
+static struct mapping *pending_mutex_futures;
+
 enum key_kind
 {
   KEY_UNINITIALIZED = 0,
@@ -2216,6 +2226,9 @@ struct key_storage
  *!   This value is added to the number of seconds specified by @[seconds].
  *!
  *! A timeout of zero seconds disables the timeout.
+ *!
+ *! @returns
+ *!   Returns a @[MutexKey] on success and @expr{0@} (zero) on timeout.
  *!
  *! @note
  *!   The support for timeouts was added in Pike 8.1.14, which was
@@ -2405,6 +2418,142 @@ void f_mutex_lock(INT32 args)
   push_object(o);
 }
 
+/*! @decl MutexKey trylock()
+ *! @decl MutexKey trylock(int type)
+ *!
+ *! This function performs the same operation as @[lock()], but if the mutex
+ *! is already locked, it will return zero instead of sleeping until it's
+ *! unlocked.
+ *!
+ *! @seealso
+ *!   @[lock()]
+ */
+void f_mutex_trylock(INT32 args)
+{
+  struct mutex_storage  *m;
+  struct key_storage *key;
+  struct object *o;
+  INT_TYPE type = 0;
+  int i=0;
+
+  /* No reason to release the interpreter lock here
+   * since we aren't calling any functions that take time.
+   */
+
+  m=THIS_MUTEX;
+
+  get_all_args(NULL, args, ".%i", &type);
+
+  switch(type)
+  {
+    default:
+      bad_arg_error("trylock", args, 2, "int(0..2)", Pike_sp+1-args,
+                    "Unknown mutex locking style: %"PRINTPIKEINT"d\n",type);
+
+    case 0:
+      for (key = m->key; key; key = key->next) {
+        if(key->owner == Pike_interpreter.thread_state)
+        {
+          Pike_error("Recursive mutex locks!\n");
+        }
+      }
+
+    case 2:
+    case 1:
+      break;
+  }
+
+  o=clone_object(mutex_key,0);
+  key = OB2KEY(o);
+
+  if(!m->key)
+  {
+    key->mut = m;
+    add_ref (key->mutex_obj = Pike_fp->current_object);
+    m->key = key;
+    key->kind = KEY_EXCLUSIVE;
+    i=1;
+  }
+
+  pop_n_elems(args);
+  if(i)
+  {
+    push_object(o);
+  } else {
+    /* NB: We know that mutex_key doesn't have an lfun:_destruct()
+     *     that inhibits our destruct().
+     */
+    destruct(o);
+    free_object(o);
+    push_int(0);
+  }
+}
+
+/*! @decl Concurrent.Future(<Thread.MutexKey>) future_lock()
+ *!
+ *! This function is similar to @[lock()], but will return
+ *! a @expr{Concurrent.Future(<Thread.MutexKey>)@} that will
+ *! complete successfully when the @[Mutex] is locked.
+ *!
+ *! @note
+ *!   Avoid having multiple @[future_lock]'s for different @[Mutex]es
+ *!   pending concurrently in the same conceptual thread as this will
+ *!   likely cause dead-locks.
+ */
+static void f_mutex_future_lock(INT32 args)
+{
+  struct object *promise = make_promise();
+
+  DEBUG_CHECK_THREAD();
+
+  push_object(promise);
+  f_aggregate(1);
+
+  /* NB: At this point the promise is held by the array on the stack. */
+
+  push_int(2);
+  f_mutex_trylock(1);
+
+  if (!UNSAFE_IS_ZERO(Pike_sp - 1)) {
+    /* Succeeded in locking synchronously. */
+    apply(promise, "success", 1);
+    pop_stack();
+  } else {
+    /* Need to queue the lock for later. */
+    struct multiset *pending = NULL;
+    struct svalue *s;
+
+    pop_stack();
+
+    if (!pending_mutex_futures) {
+      pending_mutex_futures = allocate_mapping(10);
+      mapping_set_flags(pending_mutex_futures, MAPPING_WEAK_INDICES);
+    }
+
+    ref_push_object(Pike_fp->current_object);	/* FIXME: subtype? */
+
+    s = low_mapping_lookup(pending_mutex_futures, Pike_sp - 1);
+
+    if (!s || (TYPEOF(*s) != PIKE_T_MULTISET)) {
+      pending = allocate_multiset(4, 0, NULL);
+      push_multiset(pending);
+      mapping_insert(pending_mutex_futures, Pike_sp - 2, Pike_sp - 1);
+      pop_stack();
+      /* NB: The pending multiset is now held by the mapping. */
+    } else {
+      pending = s->u.multiset;
+    }
+
+    pop_stack();
+
+    multiset_insert(pending, Pike_sp - 1);
+  }
+
+  apply(promise, "future", 0);
+
+  stack_pop_keep_top();
+}
+
 /*! @decl MutexKey shared_lock()
  *! @decl MutexKey shared_lock(int type)
  *! @decl MutexKey shared_lock(int type, int(0..)|float seconds)
@@ -2439,6 +2588,9 @@ void f_mutex_lock(INT32 args)
  *!   This value is added to the number of seconds specified by @[seconds].
  *!
  *! A timeout of zero seconds disables the timeout.
+ *!
+ *! @returns
+ *!   Returns a @[MutexKey] on success and @expr{0@} (zero) on timeout.
  *!
  *! @note
  *!   Note that the timeout is approximate (best effort), and may
@@ -2678,77 +2830,6 @@ void f_mutex_shared_lock(INT32 args)
   push_object(o);
 }
 
-/*! @decl MutexKey trylock()
- *! @decl MutexKey trylock(int type)
- *!
- *! This function performs the same operation as @[lock()], but if the mutex
- *! is already locked, it will return zero instead of sleeping until it's
- *! unlocked.
- *!
- *! @seealso
- *!   @[lock()]
- */
-void f_mutex_trylock(INT32 args)
-{
-  struct mutex_storage  *m;
-  struct key_storage *key;
-  struct object *o;
-  INT_TYPE type = 0;
-  int i=0;
-
-  /* No reason to release the interpreter lock here
-   * since we aren't calling any functions that take time.
-   */
-
-  m=THIS_MUTEX;
-
-  get_all_args(NULL, args, ".%i", &type);
-
-  switch(type)
-  {
-    default:
-      bad_arg_error("trylock", args, 2, "int(0..2)", Pike_sp+1-args,
-                    "Unknown mutex locking style: %"PRINTPIKEINT"d\n",type);
-
-    case 0:
-      for (key = m->key; key; key = key->next) {
-	if(key->owner == Pike_interpreter.thread_state)
-	{
-	  Pike_error("Recursive mutex locks!\n");
-	}
-      }
-
-    case 2:
-    case 1:
-      break;
-  }
-
-  o=clone_object(mutex_key,0);
-  key = OB2KEY(o);
-
-  if(!m->key)
-  {
-    key->mut = m;
-    add_ref (key->mutex_obj = Pike_fp->current_object);
-    m->key = key;
-    key->kind = KEY_EXCLUSIVE;
-    i=1;
-  }
-
-  pop_n_elems(args);
-  if(i)
-  {
-    push_object(o);
-  } else {
-    /* NB: We know that mutex_key doesn't have an lfun:_destruct()
-     *     that inhibits our destruct().
-     */
-    destruct(o);
-    free_object(o);
-    push_int(0);
-  }
-}
-
 /*! @decl MutexKey try_shared_lock()
  *! @decl MutexKey try_shared_lock(int type)
  *!
@@ -2842,6 +2923,72 @@ void f_mutex_try_shared_lock(INT32 args)
     free_object(o);
     push_int(0);
   }
+}
+
+/*! @decl Concurrent.Future(<Thread.MutexKey>) future_shared_lock()
+ *!
+ *! This function is similar to @[shared_lock()], but will return
+ *! a @expr{Concurrent.Future(<Thread.MutexKey>)@} that will
+ *! complete successfully when the @[Mutex] is locked.
+ *!
+ *! @note
+ *!   Avoid having multiple @[future_lock]'s for different @[Mutex]es
+ *!   pending concurrently in the same conceptual thread as this will
+ *!   likely cause dead-locks.
+ */
+static void f_mutex_future_shared_lock(INT32 args)
+{
+  struct object *promise = make_promise();
+
+  DEBUG_CHECK_THREAD();
+
+  push_object(promise);
+  push_int(1);				/* Shared. */
+  f_aggregate(2);
+
+  /* NB: At this point the promise is held by the array on the stack. */
+
+  push_int(2);
+  f_mutex_try_shared_lock(1);
+
+  if (!UNSAFE_IS_ZERO(Pike_sp - 1)) {
+    /* Succeeded in locking synchronously. */
+    apply(promise, "success", 1);
+    pop_stack();
+  } else {
+    /* Need to queue the lock for later. */
+    struct multiset *pending = NULL;
+    struct svalue *s;
+
+    pop_stack();
+
+    if (!pending_mutex_futures) {
+      pending_mutex_futures = allocate_mapping(10);
+      mapping_set_flags(pending_mutex_futures, MAPPING_WEAK_INDICES);
+    }
+
+    ref_push_object(Pike_fp->current_object);	/* FIXME: subtype? */
+
+    s = low_mapping_lookup(pending_mutex_futures, Pike_sp - 1);
+
+    if (!s || (TYPEOF(*s) != PIKE_T_MULTISET)) {
+      pending = allocate_multiset(4, 0, NULL);
+      push_multiset(pending);
+      mapping_insert(pending_mutex_futures, Pike_sp - 2, Pike_sp - 1);
+      pop_stack();
+      /* NB: The pending multiset is now held by the mapping. */
+    } else {
+      pending = s->u.multiset;
+    }
+
+    pop_stack();
+
+    multiset_insert(pending, Pike_sp - 1);
+  }
+
+  apply(promise, "future", 0);
+
+  stack_pop_keep_top();
 }
 
 /*! @decl Thread.Thread current_locking_thread()
@@ -2977,6 +3124,12 @@ void exit_mutex_obj(struct object *UNUSED(o))
   struct key_storage *key = m->key;
 
   THREADS_FPRINTF(1, "DESTROYING MUTEX m:%p\n", THIS_MUTEX);
+
+  if (pending_mutex_futures) {
+    ref_push_object(Pike_fp->current_object);
+    map_delete(pending_mutex_futures, Pike_sp - 1);
+    pop_stack();
+  }
 
 #ifndef PICKY_MUTEX
   if (key) {
@@ -3134,6 +3287,96 @@ void exit_mutex_key_obj(struct object *UNUSED(o))
       THREADS_DISALLOW();
     } else if (mutex_obj && !mutex_obj->prog) {
       co_destroy (&mut->condition);
+    } else if (pending_mutex_futures &&
+               pending_mutex_futures->data->size) {
+      struct svalue *s;
+      push_object(mutex_obj);	/* Steals reference. */
+      s = low_mapping_lookup(pending_mutex_futures, Pike_sp - 1);
+      if (s && (TYPEOF(*s) == PIKE_T_MULTISET)) {
+        struct multiset *pending = s->u.multiset;
+        int nodeno = multiset_first(pending);
+
+        /* NB: We keep the pending multiset around even if it becomes
+         *     empty as it is likely that it may come in use again for
+         *     this mutex.
+         */
+        if (nodeno >= 0) {
+          for (nodeno; nodeno >= 0;
+               nodeno = multiset_next(pending, nodeno)) {
+            struct array *a;
+            push_multiset_index(pending, nodeno);
+
+            if ((TYPEOF(Pike_sp[-1]) == PIKE_T_ARRAY) &&
+                (a = Pike_sp[-1].u.array)->size &&
+                (TYPEOF(ITEM(a)[0]) == PIKE_T_OBJECT) &&
+                ITEM(a)[0].u.object->prog) {
+              /* Linkely: Valid entry. */
+              int is_shared = 0;
+
+              push_int(2);
+              if ((a->size < 2) || SAFE_IS_ZERO(ITEM(a) + 1)) {
+                apply(mutex_obj, "trylock", 1);
+              } else {
+                is_shared = 1;
+                apply(mutex_obj, "try_shared_lock", 1);
+              }
+
+              if (SAFE_IS_ZERO(Pike_sp - 1)) {
+                pop_stack();
+                pop_stack();
+
+                if (is_shared) {
+                  /* Shared lock failed.
+                   *
+                   * No need to loop further.
+                   */
+                  break;
+                } else {
+                  /* Exclusive lock failed.
+                   *
+                   * There might be a shared lock pending.
+                   */
+                  continue;
+                }
+              }
+
+              /* Locking succeeded. */
+              multiset_delete(pending, Pike_sp - 2);
+
+              apply(ITEM(a)[0].u.object, "success", 1);
+
+              pop_stack();
+              pop_stack();
+
+              if (is_shared) {
+                /* Shared lock succeeded.
+                 *
+                 * There might be more shared locks pending.
+                 */
+                continue;
+              } else {
+                /* Exclusive lock succeeded.
+                 *
+                 * No need to loop further.
+                 */
+                break;
+              }
+            } else {
+              /* Unlikely: Invalid entry. Zap it and try the next (if any). */
+              multiset_delete(pending, Pike_sp - 1);
+
+              pop_stack();
+            }
+          }
+
+          /* Free the msnode_ref that was added by multiset_first(). */
+          sub_msnode_ref(pending);
+        }
+      }
+
+      pop_stack();	/* mutex_obj */
+
+      return;
     }
 
     if (mutex_obj)
@@ -4397,14 +4640,18 @@ void th_init(void)
 	       tOr(tFunc(tOr(tInt02,tVoid) tOr3(tVoid, tIntPos, tFloat),
 			 tObjIs_THREAD_MUTEX_KEY),
 		   tFunc(tInt02 tIntPos tIntPos, tObjIs_THREAD_MUTEX_KEY)), 0);
-  ADD_FUNCTION("shared_lock",f_mutex_shared_lock,
-	       tOr(tFunc(tOr(tInt02,tVoid) tOr3(tVoid, tIntPos, tFloat),
-			 tObjIs_THREAD_MUTEX_KEY),
-		   tFunc(tInt02 tIntPos tIntPos, tObjIs_THREAD_MUTEX_KEY)), 0);
+  ADD_FUNCTION("future_lock",f_mutex_future_lock,
+               tFunc(tNone, tFuture(tObjIs_THREAD_MUTEX_KEY)), 0);
   ADD_FUNCTION("trylock",f_mutex_trylock,
 	       tFunc(tOr(tInt02,tVoid),tObjIs_THREAD_MUTEX_KEY),0);
+  ADD_FUNCTION("shared_lock",f_mutex_shared_lock,
+               tOr(tFunc(tOr(tInt02,tVoid) tOr3(tVoid, tIntPos, tFloat),
+                         tObjIs_THREAD_MUTEX_KEY),
+                   tFunc(tInt02 tIntPos tIntPos, tObjIs_THREAD_MUTEX_KEY)), 0);
   ADD_FUNCTION("try_shared_lock",f_mutex_try_shared_lock,
 	       tFunc(tOr(tInt02,tVoid),tObjIs_THREAD_MUTEX_KEY),0);
+  ADD_FUNCTION("future_shared_lock",f_mutex_future_shared_lock,
+               tFunc(tNone, tFuture(tObjIs_THREAD_MUTEX_KEY)), 0);
   ADD_FUNCTION("current_locking_thread",f_mutex_locking_thread,
 	   tFunc(tNone,tObjIs_THREAD_ID), 0);
   ADD_FUNCTION("current_locking_key",f_mutex_locking_key,
@@ -4566,6 +4813,11 @@ void cleanup_all_other_threads (void)
 void th_cleanup(void)
 {
   th_running = 0;
+
+  if (pending_mutex_futures) {
+    free_mapping(pending_mutex_futures);
+    pending_mutex_futures = NULL;
+  }
 
   if (Pike_interpreter.thread_state) {
     thread_table_delete(Pike_interpreter.thread_state);

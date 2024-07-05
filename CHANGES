@@ -606,9 +606,13 @@ o Protocols.HTTP2
 o Bittorrent.DHT
 o Standards.MsgPack
 
-o Thread.RWMutex
+o Thread.Mutex
 
-  This class implements a multiple reader / single writer mutex. 
+  - Implemented support for multiple readers / single writer
+    operation by adding shared_lock() and try_shared_lock().
+
+  - Asynchronous locking added with future_lock() and
+    future_shared_lock().
 
 
 New features
