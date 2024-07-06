@@ -3285,8 +3285,10 @@ void exit_mutex_key_obj(struct object *UNUSED(o))
       th_yield();
 #endif /* HAVE_NO_YIELD */
       THREADS_DISALLOW();
-    } else if (mutex_obj && !mutex_obj->prog) {
-      co_destroy (&mut->condition);
+    } else if (!mutex_obj || !mutex_obj->prog) {
+      if (mutex_obj) {
+        co_destroy (&mut->condition);
+      }
     } else if (pending_mutex_futures &&
                pending_mutex_futures->data->size) {
       struct svalue *s;
@@ -3724,7 +3726,7 @@ static void f_cond_create(INT32 args)
  *!   A @[Thread.MutexKey] object for a @[Thread.Mutex]. It will be
  *!   unlocked atomically before waiting for the signal and then
  *!   relocked atomically when the signal is received or the timeout
- *!   is reached.
+ *!   is reached. Note that it MUST be an exclusive lock.
  *!
  *! @param seconds
  *!   Seconds to wait before the timeout is reached.
