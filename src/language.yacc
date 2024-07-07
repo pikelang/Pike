@@ -701,9 +701,7 @@ constant_name: TOK_IDENTIFIER '=' safe_assignment_expr
       }
     } else {
       if(!is_const($3)) {
-	if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
-	  yyerror("Constant definition is not constant.");
-	}
+        yyerror_not_constant("Constant", $3);
 	add_constant($1->u.sval.u.string, 0,
 		     Pike_compiler->current_modifiers & ~ID_EXTERN);
       } else {
@@ -2225,8 +2223,7 @@ local_constant_name: TOK_IDENTIFIER '=' safe_assignment_expr
 
     if(!is_const($3))
     {
-      if(Pike_compiler->compiler_pass == COMPILER_PASS_LAST)
-	yyerror("Constant definition is not constant.");
+      yyerror_not_constant("Constant", $3);
     }else{
       ptrdiff_t tmp=eval_low($3,1);
       if(tmp < 1)
@@ -3050,8 +3047,7 @@ enum_def: /* EMPTY */
 
 	if(!is_const($2))
 	{
-	  if(Pike_compiler->compiler_pass == COMPILER_PASS_LAST)
-	    yyerror("Enum definition is not constant.");
+          yyerror_not_constant("Enum", $2);
 	  push_int(0);
 	} else {
 	  if(!Pike_compiler->num_parse_error)

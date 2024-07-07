@@ -221,6 +221,7 @@ void yytype_report(int severity_level,
 		   INT32 args, const char *fmt, ...);
 void yytype_error(const char *msg, struct pike_type *expected_t,
 		  struct pike_type *got_t, unsigned int flags);
+void yyerror_not_constant(const char *prefix, node *expr);
 struct pike_string *format_exception_for_error_msg (struct svalue *thrown);
 PMOD_EXPORT void handle_compile_exception (const char *yyerror_fmt, ...)
   ATTRIBUTE((format (printf, 1, 2)));

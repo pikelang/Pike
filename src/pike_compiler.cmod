@@ -3058,6 +3058,48 @@ void yytype_error(const char *msg, struct pike_type *expected_t,
 		NULL, 0, expected_t, NULL, 0, got_t, 0, "%s", msg);
 }
 
+#ifdef PIKE_DEBUG
+static int yyexplain_non_constant(node *expr)
+{
+  int found = 0;
+
+  /* Report the first node that is
+   *
+   *  * Not constant
+   *
+   *  * And all subnodes are constant.
+   */
+
+  if (is_const(expr)) return 1;
+
+  if (car_is_node(expr)) {
+    found = yyexplain_non_constant(CAR(expr));
+  }
+
+  if (cdr_is_node(expr)) {
+    found = found && yyexplain_non_constant(CDR(expr));
+  }
+
+  if (!found) return 1;
+
+  fprintf(stderr, "Expr: ");
+  print_tree(expr);
+
+  return 0;
+}
+#endif
+
+void yyerror_not_constant(const char *prefix, node *expr)
+{
+  if (Pike_compiler->compiler_pass != COMPILER_PASS_LAST) return;
+
+  my_yyerror("%s definition is not constant %p.", prefix, expr);
+
+#ifdef PIKE_DEBUG
+  yyexplain_non_constant(expr);
+#endif
+}
+
 struct pike_string *format_exception_for_error_msg (struct svalue *thrown)
 {
   struct pike_string *s = NULL;
