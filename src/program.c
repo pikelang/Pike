@@ -1987,7 +1987,6 @@ void ins_int(INT32 i, void (*func)(unsigned char tmp))
   }
 }
 
-
 #if 0
 /* This check is not possible to do since the identifier is added
  * before checking for duplicates in add_constant. */
@@ -3256,6 +3255,7 @@ void fixate_program(void)
 	  ptrdiff_t offset = inh->storage_offset + fun->func.offset +
 	    sizeof_variable(fun->run_time_type);
 	  if (offset > p->storage_needed) {
+            dump_program_tables(p, 0);
 	    Pike_fatal("Variable %s offset (%ld (%"PRINTPTRDIFFT"d)) out of whack (max: %ld)!\n",
 		       fun->name?fun->name->str:"<no-name>",
 		       (long)offset, fun->func.offset,
@@ -3376,6 +3376,9 @@ void fixate_program(void)
 	(fun->func.offset == -1) && (funp->id_flags & ID_INLINE)) {
       my_yyerror("Missing definition for local function %pS.",
 		 fun->name);
+#ifdef PIKE_DEBUG
+      dump_program_tables(p, 0);
+#endif
     }
     if (funp->id_flags & ID_PROTECTED) continue;
     add_to_identifier_index(i);
@@ -3919,6 +3922,9 @@ void low_start_new_program(struct program *p,
     }
 
   }else{
+    /*
+     * (Re-)initialize program tables.
+     */
     static struct pike_string *s;
     struct inherit i;
 
@@ -4498,20 +4504,25 @@ PMOD_EXPORT void dump_program_tables (const struct program *p, int indent)
   }
   fprintf(stderr, "\n"
 	  "%*sIdentifier table:\n"
-	  "%*s  ####: Flags Offset Type Name\n",
-	  indent, "", indent, "");
+          "%*s  ####: Flags Offset Type Name\n"
+          "%*s        Type\n"
+          "%*s        Location\n",
+          indent, "", indent, "", indent, "", indent, "");
   for (d=0; d < p->num_identifiers; d++) {
     struct identifier *id = p->identifiers + d;
 
-    fprintf(stderr,
-	    "%*s  %4d: %5x %6"PRINTPTRDIFFT"d %4d \"%s\"\n"
-	    "%*s        %s:%ld\n",
-	    indent, "",
-	    d, id->identifier_flags, id->func.offset,
-	    id->run_time_type, id->name->str,
-	    indent, "",
-	    p->num_strings?p->strings[id->filename_strno]->str:"-",
-	    (long)id->linenumber);
+    pike_fprintf(stderr,
+                 "%*s  %4d: %5x %6td %4d %pq\n"
+                 "%*s        %pT\n"
+                 "%*s        %s:%ld\n",
+                 indent, "",
+                 d, id->identifier_flags, id->func.offset,
+                 id->run_time_type, id->name,
+                 indent, "", id->type,
+                 indent, "",
+                 (id->filename_strno < p->num_strings)?
+                 p->strings[id->filename_strno]->str:"-",
+                 (long)id->linenumber);
     if ((d < p->num_annotations) && p->annotations[d]) {
       union msnode *node = low_multiset_first(p->annotations[d]->msd);
       int i;
@@ -4550,6 +4561,11 @@ PMOD_EXPORT void dump_program_tables (const struct program *p, int indent)
 	    d, get_name_of_type (TYPEOF(c->sval)),
 	    c->offset);
 #endif /* 0 */
+    if ((TYPEOF(c->sval) == T_INT) ||
+        (TYPEOF(c->sval) == T_FLOAT) ||
+        (TYPEOF(c->sval) == PIKE_T_TYPE)) {
+      pike_fprintf(stderr, "%*s        %pO\n", indent, "", &c->sval);
+    }
   }
 
   fprintf(stderr, "\n"
@@ -7885,6 +7901,22 @@ INT32 define_function(struct pike_string *name,
 	}
       }
 
+#if 0
+      if (flags & ID_USED) {
+        pike_fprintf(stderr, "func: %p, name: %pS\n", func, name);
+
+        pike_fprintf(stderr,
+                     "id_flags: 0x%04x, 0x%04x\n"
+                     "rtt: %d, %d\n"
+                     "opt: 0x%04x, 0x%04x\n"
+                     "type: %pT, %pT\n",
+                     funp->identifier_flags, function_flags,
+                     funp->run_time_type, run_time_type,
+                     funp->opt_flags, opt_flags,
+                     funp->type, type);
+      }
+#endif
+
       if(func)
 	funp->func = *func;
 #if 0 /* prototypes does not override non-prototypes, ok? */
@@ -8408,6 +8440,7 @@ static void f_dispatch_variant(INT32 args)
     for (i = 0; i < args; i++) {
       struct pike_type *cont =
 	check_call_svalue(t, 0, Pike_sp+i - (args + expected));
+
       if (!cont && (i >= best)) {
 	if ((i > best) && expected) {
 	  pop_n_elems(expected);
@@ -10990,6 +11023,7 @@ static int low_is_compatible(struct program *a, struct program *b)
   {
     struct identifier *bid;
     int i;
+
     if (b->identifier_references[e].id_flags & (ID_PROTECTED|ID_HIDDEN|ID_VARIANT))
       continue;		/* Skip protected & hidden */
 
@@ -11007,8 +11041,10 @@ static int low_is_compatible(struct program *a, struct program *b)
 	(ID_FROM_INT(a, i)->run_time_type != PIKE_T_INT)) &&
        !match_types(ID_FROM_INT(a,i)->type, bid->type)) {
 #if 0
-      fprintf(stderr, "Identifier \"%s\" is incompatible.\n",
-	      bid->name->str);
+      pike_fprintf(stderr, "Identifier %pq is incompatible.\n"
+                   "at: %pT\n"
+                   "bt: %pT\n",
+                   bid->name, ID_FROM_INT(a, i)->type, bid->type);
 #endif /* 0 */
       ret = 0;
       break;

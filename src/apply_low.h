@@ -38,9 +38,14 @@
 #endif
 
       p=o->prog;
-      if(!p)
+      if(!p) {
+#ifdef PIKE_DEBUG
+        fprintf(stderr, "o: %p, o->prog: %p (%d), p: %p\n",
+                o, o->prog, o->program_id, p);
+#endif
 	PIKE_ERROR("destructed object->function",
 	      "Cannot call functions in destructed objects.\n", Pike_sp, args);
+      }
 
 #ifdef PIKE_DEBUG
       if(fun>=(int)p->num_identifier_references)

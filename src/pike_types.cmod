@@ -14794,6 +14794,7 @@ struct pike_type *apply_type_operator(enum PIKE_TYPE op,
   return res;
 }
 
+/* NB: Only used to derive the type for non-local constants. */
 struct pike_type *get_lax_type_of_svalue( const struct svalue *c )
 {
   struct pike_type *res;

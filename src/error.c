@@ -925,7 +925,7 @@ static void f_error_create(INT32 args)
  */
 
 #ifdef ERROR_DEBUG
-#define DWERROR(...)	fprintf(stderr, __VA_ARGS__)
+#define DWERROR(...)	pike_fprintf(stderr, __VA_ARGS__)
 #else /* !ERROR_DEBUG */
 #define DWERROR(...)
 #endif /* ERROR_DEBUG */
@@ -1162,8 +1162,8 @@ PMOD_EXPORT DECLSPEC(noreturn) void bad_arg_error(
     ERROR_STRUCT(bad_argument,o)->expected_type = NULL;
   ERROR_COPY_SVALUE(bad_argument, got_value);
 
-  DWERROR("%s():Bad arg %d (expected %s)\n",
-          func, which_argument, expected_type);
+  DWERROR("%s(): Bad arg %d (expected %s)\n",
+          func ? func : "unknown_function", which_argument, expected_type);
   ERROR_DONE();
 }
 

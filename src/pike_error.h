@@ -295,13 +295,13 @@ PMOD_EXPORT extern const char msg_bad_arg[];
  * @param ARG The number of the argument, e.g. 1 for the first.
  * @param EXPECT The expected type, e.g. "int(0..1)".
  */
-#define SIMPLE_ARG_TYPE_ERROR(FUNC, ARG, EXPECT) \
-   bad_arg_error(FUNC, args, ARG, EXPECT, Pike_sp+ARG-1-args,\
-		 msg_bad_arg, ARG, FUNC, EXPECT)
+#define SIMPLE_ARG_TYPE_ERROR(FUNC, ARG, EXPECT) do {           \
+    bad_arg_error(FUNC, args, ARG, EXPECT, Pike_sp+ARG-1-args,  \
+                  msg_bad_arg, ARG, FUNC, EXPECT);              \
+  } while(0)
 /* Less descriptive macro name kept for compatibility. */
 #define SIMPLE_BAD_ARG_ERROR(FUNC, ARG, EXPECT) \
-   bad_arg_error(FUNC, args, ARG, EXPECT, Pike_sp+ARG-1-args,\
-		 msg_bad_arg, ARG, FUNC, EXPECT)
+  SIMPLE_ARG_TYPE_ERROR(FUNC, ARG, EXPECT)
 
 PMOD_EXPORT extern const char msg_bad_arg_2[];
 

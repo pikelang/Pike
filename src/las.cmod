@@ -2578,7 +2578,6 @@ static void low_print_tree(node *foo,int needlval)
 	  name = id->name->str;
 	}
       }
-      fprintf(stderr, "ext(%d:%s)", level, name);
     }
     break;
 

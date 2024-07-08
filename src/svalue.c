@@ -733,7 +733,7 @@ PMOD_EXPORT int is_eq(const struct svalue *a, const struct svalue *b)
 	if ((p = a->u.object->prog) &&
 	    ((fun = FIND_LFUN(p->inherits[SUBTYPEOF(*a)].prog, LFUN_EQ)) != -1))
 	{
-	  /* FIXME: CYCLIC */
+          /* FIXME: CYCLIC, not atomic */
 	  push_svalue(b);
 	  apply_low(a->u.object,
 		    fun + p->inherits[SUBTYPEOF(*a)].identifier_level, 1);
@@ -767,7 +767,7 @@ PMOD_EXPORT int is_eq(const struct svalue *a, const struct svalue *b)
 	if ((p = b->u.object->prog) &&
 	    ((fun = FIND_LFUN(p->inherits[SUBTYPEOF(*b)].prog, LFUN_EQ)) != -1))
 	{
-	  /* FIXME: CYCLIC */
+          /* FIXME: CYCLIC, not atomic */
 	  push_svalue(a);
 	  apply_low(b->u.object,
 		    fun + p->inherits[SUBTYPEOF(*b)].identifier_level, 1);
