@@ -10719,10 +10719,12 @@ int find_child(struct program *parent, struct program *child)
 
 /**
  * @return Returns 1 if a implements b.
- *         Returns -1 if a implements b non strictly.
+ *         Returns -1 if a implements b non-strictly.
+ *
+ * Where non-strictly means that there are identifiers that
+ * have non-empty, but incomplete type overlaps.
  */
-static int low_implements(struct program *a, struct program *b,
-                          struct mapping *abind, struct mapping *bbind)
+static int low_implements(struct program *a, struct program *b)
 {
   DECLARE_CYCLIC();
   int e;
@@ -10789,6 +10791,7 @@ static int low_implements(struct program *a, struct program *b,
     struct pike_type *at;
     struct pike_type *bt;
     struct identifier *bid;
+    struct identifier *aid;
     int i;
     if (b->identifier_references[e].id_flags & (ID_PROTECTED|ID_HIDDEN|ID_VARIANT))
       continue;		/* Skip protected & hidden */
@@ -10805,18 +10808,19 @@ static int low_implements(struct program *a, struct program *b,
       break;
     }
 
-    at = ID_FROM_INT(a,i)->type;
+    aid = ID_FROM_INT(a, i);
+    at = aid->type;
     bt = bid->type;
     if (at) {
       if (at->flags & PT_FLAG_MASK_GENERICS) {
-        at = compiler_apply_bindings(at, abind);
+        at = compiler_apply_bindings(at, NULL);
       } else {
         add_ref(at);
       }
     }
     if (bt) {
       if (bt->flags & PT_FLAG_MASK_GENERICS) {
-        bt = compiler_apply_bindings(bt, bbind);
+        bt = compiler_apply_bindings(bt, NULL);
       } else {
         add_ref(bt);
       }
@@ -10824,14 +10828,38 @@ static int low_implements(struct program *a, struct program *b,
 
     if (IDENTIFIER_IS_FUNCTION(bid->identifier_flags) ||
         IDENTIFIER_IS_CONSTANT(bid->identifier_flags)) {
-      /* For functions, we require the symbol type in a to be stricter
-       * or equal to the type in b.
-       *
-       * Swap the types.
-       */
-      struct pike_type *tmp = at;
-      at = bt;
-      bt = tmp;
+      if (IDENTIFIER_IS_CONSTANT(bid->identifier_flags) &&
+          IDENTIFIER_IS_CONSTANT(aid->identifier_flags)) {
+        struct svalue *aval = NULL;
+        struct svalue *bval = NULL;
+        if (bid->func.const_info.offset >= 0) {
+          struct program *bp = PROG_FROM_INT(b, e);
+          bval = &bp->constants[bid->func.const_info.offset].sval;
+        }
+        if (aid->func.const_info.offset >= 0) {
+          struct program *ap = PROG_FROM_INT(a, i);
+          aval = &ap->constants[aid->func.const_info.offset].sval;
+        }
+        if (aval && bval &&
+            (TYPEOF(*aval) == PIKE_T_PROGRAM) &&
+            (TYPEOF(*bval) == PIKE_T_PROGRAM)) {
+          ret = implements(aval->u.program, bval->u.program);
+          free_type(at);
+          free_type(bt);
+          continue;
+        }
+      }
+
+      {
+        /* For functions, we require the symbol type in a to be stricter
+         * or equal to the type in b.
+         *
+         * Swap the types.
+         */
+        struct pike_type *tmp = at;
+        at = bt;
+        bt = tmp;
+      }
     }
 
 #if 0
@@ -10907,7 +10935,7 @@ PMOD_EXPORT int implements(struct program *a, struct program *b)
    *
    * Note also that cyclic calls are handled via low_implements().
    */
-  implements_cache[hval].ret = low_implements(a, b, NULL, NULL);
+  implements_cache[hval].ret = low_implements(a, b);
   implements_cache[hval].aid=a->id;
   implements_cache[hval].bid=b->id;
 
@@ -11037,17 +11065,40 @@ static int low_is_compatible(struct program *a, struct program *b)
     }
 
     /* Note: Uses weaker check for constant integers. */
-    if(((bid->run_time_type != PIKE_T_INT) ||
-	(ID_FROM_INT(a, i)->run_time_type != PIKE_T_INT)) &&
-       !match_types(ID_FROM_INT(a,i)->type, bid->type)) {
+    if ((bid->run_time_type != PIKE_T_INT) ||
+        (ID_FROM_INT(a, i)->run_time_type != PIKE_T_INT)) {
+      struct pike_type *at = ID_FROM_INT(a,i)->type;
+      struct pike_type *bt = bid->type;
+      if (at) {
+        if (at->flags & PT_FLAG_MASK_GENERICS) {
+          at = compiler_apply_bindings(at, NULL);
+        } else {
+          add_ref(at);
+        }
+      }
+      if (bt) {
+        if (bt->flags & PT_FLAG_MASK_GENERICS) {
+          bt = compiler_apply_bindings(bt, NULL);
+        } else {
+          add_ref(bt);
+        }
+      }
+
+      ret = match_types(at, bt);
+
 #if 0
-      pike_fprintf(stderr, "Identifier %pq is incompatible.\n"
-                   "at: %pT\n"
-                   "bt: %pT\n",
-                   bid->name, ID_FROM_INT(a, i)->type, bid->type);
+      if (!ret) {
+        pike_fprintf(stderr, "Identifier %pq is incompatible.\n"
+                     "at: %pT\n"
+                     "bt: %pT\n",
+                     bid->name, at, bt);
+      }
 #endif /* 0 */
-      ret = 0;
-      break;
+
+      free_type(at);
+      free_type(bt);
+
+      if (!ret) break;
     }
   }
 
@@ -11225,6 +11276,7 @@ void yyexplain_not_implements(int severity_level,
 
   for(e=0;e<b->num_identifier_references;e++)
   {
+    struct identifier *aid;
     struct identifier *bid;
     int i;
     struct pike_type *at;
@@ -11249,19 +11301,43 @@ void yyexplain_not_implements(int severity_level,
       continue;
     }
 
-    at = ID_FROM_INT(a, i)->type;
+    aid = ID_FROM_INT(a, i);
+    at = aid->type;
     bt = bid->type;
 
     if (IDENTIFIER_IS_FUNCTION(bid->identifier_flags) ||
         IDENTIFIER_IS_CONSTANT(bid->identifier_flags)) {
-      /* For functions, we require the symbol type in a to be stricter
-       * or equal to the type in b.
-       *
-       * Swap the types.
-       */
-      struct pike_type *tmp = at;
-      at = bt;
-      bt = tmp;
+      if (IDENTIFIER_IS_CONSTANT(bid->identifier_flags) &&
+          IDENTIFIER_IS_CONSTANT(aid->identifier_flags)) {
+        struct svalue *aval = NULL;
+        struct svalue *bval = NULL;
+        if (bid->func.const_info.offset >= 0) {
+          struct program *bp = PROG_FROM_INT(b, e);
+          bval = &bp->constants[bid->func.const_info.offset].sval;
+        }
+        if (aid->func.const_info.offset >= 0) {
+          struct program *ap = PROG_FROM_INT(a, i);
+          aval = &ap->constants[aid->func.const_info.offset].sval;
+        }
+        if (aval && bval &&
+            (TYPEOF(*aval) == PIKE_T_PROGRAM) &&
+            (TYPEOF(*bval) == PIKE_T_PROGRAM)) {
+          yyexplain_not_implements(severity_level,
+                                   aval->u.program, bval->u.program);
+          continue;
+        }
+      }
+
+      {
+        /* For functions, we require the symbol type in a to be stricter
+         * or equal to the type in b.
+         *
+         * Swap the types.
+         */
+        struct pike_type *tmp = at;
+        at = bt;
+        bt = tmp;
+      }
     }
 
     if (!pike_types_le(bt, at, 0, 0)) {
