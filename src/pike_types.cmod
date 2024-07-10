@@ -5282,6 +5282,11 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
     }
 
     return pop_unfinished_type();
+
+  case PIKE_T_AUTO:
+    return low_type_binop(op, mixed_type_string, b, remap,
+                          aflags, bflags, remap_flags);
+
   }
   switch(b?b->type:PIKE_T_UNKNOWN) {
   case PIKE_T_NAME:
@@ -5360,6 +5365,11 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
     }
 
     return pop_unfinished_type();
+
+  case PIKE_T_AUTO:
+    return low_type_binop(op, a, mixed_type_string, remap,
+                          aflags, bflags, remap_flags);
+
   }
 
   /*
