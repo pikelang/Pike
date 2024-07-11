@@ -12386,8 +12386,14 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
     }
 #endif /* PIKE_DEBUG */
     break;
+
   default:
     /* Not a callable. */
+    yywarning("Not a callable: %pT.", fun_type);
+    /* FALLTHRU */
+  case PIKE_T_UNKNOWN:
+  case PIKE_T_ZERO:
+  case PIKE_T_VOID:
     break;
   }
   /* CAVEAT EMPTOR: When flags & CALL_ARG_LVALUE the
