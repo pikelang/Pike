@@ -130,6 +130,8 @@ enum PIKE_TYPE {
     PIKE_T_GET_SET= 32,	/* Getter setter.
                          * Only valid in struct identifier */
 
+    PIKE_T_MARKER = '$',	/* 36 */
+
     /**
      * Values 0x30 - 0x3f reserved for variables.
      * Only 0x30 - 0x39 used currently.
