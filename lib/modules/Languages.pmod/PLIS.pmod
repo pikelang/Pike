@@ -58,7 +58,8 @@ class Cons
 
   object|zero mapcar(string|function fun, mixed ...extra)
     {
-      object new_car = stringp(fun)? car[fun](@extra) : fun(car, @extra);
+      object new_car = stringp(fun)? car[fun](@extra) :
+        ([function]fun)(car, @extra);
       if (!new_car)
       {
 	werror("No car\n");
@@ -84,9 +85,10 @@ class Cons
 	if (stringp(fun))
 	  return car[fun](@extra);
 	else
-	  return fun(car, @extra);
+          return ([function]fun)(car, @extra);
       }
-      if (stringp(fun) ? car[fun](@extra) : fun(car, @extra))
+      if (stringp(fun) ? car[fun](@extra) :
+          ([function]fun)(car, @extra))
 	return cdr->map(fun, @extra);
       else
       {
