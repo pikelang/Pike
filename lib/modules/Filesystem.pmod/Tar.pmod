@@ -555,7 +555,7 @@ class _Tar
 
 	    if (!filter ||
 		(stringp (filter) ? glob (filter, subpath) :
-		 (filter_res = filter (subpath, r)))) {
+                 (filter_res = ([function]filter)(subpath, r)))) {
 	      string destpath = dest_dir +
 		(stringp (filter_res) ? filter_res : subpath);
 
