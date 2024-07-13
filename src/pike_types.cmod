@@ -12389,7 +12389,9 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
 
   default:
     /* Not a callable. */
-    yywarning("Not a callable: %pT.", fun_type);
+    if (c && !TEST_COMPAT(8, 0)) {
+      yywarning("Not a callable: %pT.", fun_type);
+    }
     /* FALLTHRU */
   case PIKE_T_UNKNOWN:
   case PIKE_T_ZERO:
