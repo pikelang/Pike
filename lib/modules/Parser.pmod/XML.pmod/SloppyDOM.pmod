@@ -913,7 +913,7 @@ protected class NodeWithChildElements
 	format_attrs (res, collected);
       else
 	// Works both when res is Node and array(Node).
-	res->_xml_format (collected);
+        ([array(Node)|Node]res->_xml_format)(collected);
       string formatted = collected->get();
       //werror ("%O: path %O, leaf result %O\n", this, orig_path, formatted);
       return formatted;
