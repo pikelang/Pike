@@ -93,7 +93,7 @@ void recv_command(string s)
     }
   } while (1);
 
-  request_callback(req(tag, line, state));
+  request_callback(([function]req)(tag, line, state));
 }
 
 class recv_line
