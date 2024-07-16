@@ -8932,9 +8932,17 @@ PMOD_EXPORT void f_object_variablep(INT32 args)
 /*! @module Array
  */
 
-/*! @decl array uniq(array a)
+/*! @decl array uniq(array a, function(mixed, mixed:int(0..1))|void cmp)
  *!
  *!   Remove elements that are duplicates.
+ *!
+ *! @param a
+ *!   Array that may contain duplicate elements.
+ *!
+ *! @param cmp
+ *!   Function to use for comparing elements. If not specified, the
+ *!   elements will be compared with @[`==()] and hashed
+ *!   (cf @[lfun::__hash()]).
  *!
  *! @returns
  *!   This function returns an copy of the array @[a] with all
@@ -8943,17 +8951,16 @@ PMOD_EXPORT void f_object_variablep(INT32 args)
  *!   kept.
  *!
  *! @note
- *!   Elements are compared with @[`==]. They are also hashed (see
- *!   @[lfun::__hash] for further details if the array contains
- *!   objects).
+ *!   The @[cmp] argument is only available in Pike 9.1 and later.
  */
 PMOD_EXPORT void f_uniq_array(INT32 args)
 {
   struct array *a, *b;
   struct mapping *m;
+  struct svalue *cmp = NULL;
   int i, j=0,size=0;
 
-  get_all_args(NULL, args, "%a", &a);
+  get_all_args(NULL, args, "%a.%*", &a, &cmp);
   if( !a->size )
   {
     push_empty_array();
@@ -8961,26 +8968,52 @@ PMOD_EXPORT void f_uniq_array(INT32 args)
   }
 
   push_mapping(m = allocate_mapping(a->size));
-  b = allocate_array(a->size);
+  push_array(b = allocate_array(a->size));
+  b->type_field = a->type_field | BIT_INT;
 
-  for(i =0; i< a->size; i++)
-  {
-    mapping_insert(m, ITEM(a)+i, &svalue_int_one);
-    if(m_sizeof(m) != size)
+  if (cmp && ((TYPEOF(*cmp) != PIKE_T_FUNCTION) ||
+              (SUBTYPEOF(*cmp) != FUNCTION_BUILTIN) ||
+              (cmp->u.efun->function != f_eq))) {
+    /* NB: O(n^2)! */
+    for (i = 0; i < a->size; i++) {
+      int k;
+      for (k = 0; k < j; k++) {
+        push_svalue(ITEM(a) + i);
+        push_svalue(ITEM(b) + k);
+        apply_svalue(cmp, 2);
+        if (!UNSAFE_IS_ZERO(Pike_sp-1)) {
+          /* Match. */
+          pop_stack();
+          goto next_i;
+        }
+        pop_stack();
+      }
+
+      assign_svalue_no_free(ITEM(b) + j++, ITEM(a) + i);
+    next_i:
+      /* Statement required. */;
+    }
+  } else {
+    for(i = 0; i < a->size; i++)
     {
-      size=m_sizeof(m);
-      assign_svalue_no_free(ITEM(b)+ j++, ITEM(a)+i);
+      mapping_insert(m, ITEM(a)+i, &svalue_int_one);
+      if(m_sizeof(m) != size)
+      {
+        size=m_sizeof(m);
+        assign_svalue_no_free(ITEM(b) + j++, ITEM(a) + i);
+      }
     }
   }
 
-  b->type_field = a->type_field;
   if (j != a->size) {
     /* There are zeros in the unused fields... */
     b->type_field |= BIT_INT;
+    /* Remove b from the stack. */
+    Pike_sp--;
     b = array_shrink(b, j);
-    b->type_field = a->type_field;
+    push_array(b);
   }
-  push_array(b);
+  b->type_field = a->type_field;
 }
 
 /*! @decl array(mixed) splice(array(mixed) arr1, array(mixed) arr2, @
@@ -10542,7 +10575,9 @@ void init_builtin_efuns(void)
 
   /* function(array:array) */
   ADD_FUNCTION2("uniq_array", f_uniq_array,
-		tFunc(tArr(tSetvar(0,tMix)), tArr(tVar(0))), 0,
+                tFunc(tArr(tSetvar(0, tMix))
+                      tOr(tVoid, tFunc(tVar(0) tVar(0), tInt01)),
+                      tArr(tVar(0))), 0,
 		OPT_TRY_OPTIMIZE);
 
   /* function(mixed:int) */
