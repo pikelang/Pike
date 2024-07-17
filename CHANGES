@@ -9,6 +9,8 @@ o Unlimited character constant size.
   There is no longer any limit to the size of character constants,
   e.g. 'acdefghijk' creates the bignum 0x61636465666768696a6b.
 
+o Syntax for annotating classes and symbols added.
+
 o Syntax for specifying default values for function arguments added.
 
   The function definition

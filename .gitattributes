@@ -10,6 +10,7 @@
 [attr]binary -text -crlf -diff -ident -filter -mixed_indent -space_indent -tab_indent
 * text ident space_indent
 *.db binary
+*.diff binary
 *.gif binary
 *.ibd binary
 *.ico binary
