@@ -790,6 +790,8 @@ static void f_sid_eq(INT32 args)
  *!       Account type.
  *!   @endarray
  *!
+ *!   Returns an array with three zeroes on failure.
+ *!
  *! @note
  *!   This function is only available on some Win32 systems.
  */
@@ -859,7 +861,7 @@ static void f_sid_account(INT32 args)
  */
 
 /*! @decl UserToken LogonUser(string username, string|zero domain, @
- *!                           string password, int|void logon_type, @
+ *!                           string|zero password, int|void logon_type, @
  *!                           int|void logon_provider)
  *!
  *!   Logon a user.
@@ -871,7 +873,7 @@ static void f_sid_account(INT32 args)
  *!   Domain to login on, or zero if local logon.
  *!
  *! @param password
- *!   Password to login with.
+ *!   Password to login with (if required).
  *!
  *! @param logon_type
  *!   One of the following values:
@@ -1343,7 +1345,6 @@ static netapibufferfreetype netapibufferfree;
 
 HINSTANCE netapilib;
 
-
 /*! @decl string|array(string|int) NetUserGetInfo(string username, @
  *!                                               string|int(0..0) server, @
  *!                                               int|void level)
@@ -1555,7 +1556,6 @@ void f_NetUserEnum(INT32 args)
 
   if (to_free1) free(to_free1);
 }
-
 
 /*! @decl array(string|array(string|int)) @
  *!     NetGroupEnum(string|int(0..0)|void server, int|void level)
@@ -2387,7 +2387,6 @@ static LPWSTR get_wstring(struct svalue *s)
   }
 }
 
-
 /* Stuff for NetSessionEnum */
 
 LINKFUNC(NET_API_STATUS, netsessionenum,
@@ -2451,7 +2450,6 @@ static void low_encode_session_info_502(SESSION_INFO_502 *tmp)
 
   f_aggregate(8);
 }
-
 
 static void encode_session_info(BYTE *u, int level)
 {
@@ -3123,9 +3121,9 @@ static void f_SetNamedSecurityInfo(INT32 args)
   push_int(ret);
 }
 
-/*! @decl mapping(mixed:mixed) GetNamedSecurityInfo(string name, @
- *!                                                 int|void type, @
- *!                                                 int|void flags)
+/*! @decl mapping(string:mixed) GetNamedSecurityInfo(string name, @
+ *!                                                  int|void type, @
+ *!                                                  int|void flags)
  *!
  *! @note
  *!   This function is only available on some Win32 systems.
@@ -3413,6 +3411,9 @@ static void f_nt_uname(INT32 args)
 /**************************/
 /* start Security context */
 
+/*! @class SecurityContext
+ */
+
 typedef SECURITY_STATUS (WINAPI *querysecuritypackageinfotype)(SEC_WCHAR*,PSecPkgInfo*);
 typedef SECURITY_STATUS (WINAPI *acquirecredentialshandletype)(SEC_WCHAR*,SEC_WCHAR*,ULONG,PLUID,PVOID,SEC_GET_KEY_FN,PVOID,PCredHandle,PTimeStamp);
 typedef SECURITY_STATUS (WINAPI *freecredentialshandletype)(PCredHandle);
@@ -3477,7 +3478,8 @@ static void exit_sctx(struct object *o)
   }
 }
 
-
+/*! @decl void create(string pkgName)
+ */
 static void f_sctx_create(INT32 args)
 {
   struct sctx_storage *sctx = THIS_SCTX;
@@ -3528,7 +3530,6 @@ static void f_sctx_create(INT32 args)
   }
   sctx->hcred_alloced = 1;
 }
-
 
 BOOL GenServerContext (BYTE *pIn, DWORD cbIn, BYTE *pOut, DWORD *pcbOut,
                        BOOL *pfDone, BOOL fNewConversation)
@@ -3610,7 +3611,8 @@ BOOL GenServerContext (BYTE *pIn, DWORD cbIn, BYTE *pOut, DWORD *pcbOut,
 
 } /* end GenServerContext */
 
-
+/*! @decl array(string|int) gen_context(string)
+ */
 static void f_sctx_gencontext(INT32 args)
 {
   struct sctx_storage *sctx = THIS_SCTX;
@@ -3638,7 +3640,8 @@ static void f_sctx_gencontext(INT32 args)
   f_aggregate(2);
 }
 
-
+/*! @decl array(string|int) get_last_context()
+ */
 static void f_sctx_getlastcontext(INT32 args)
 {
   struct sctx_storage *sctx = THIS_SCTX;
@@ -3654,7 +3657,8 @@ static void f_sctx_getlastcontext(INT32 args)
   f_aggregate(2);
 }
 
-
+/*! @decl int is_done()
+ */
 static void f_sctx_isdone(INT32 args)
 {
   struct sctx_storage *sctx = THIS_SCTX;
@@ -3662,7 +3666,8 @@ static void f_sctx_isdone(INT32 args)
   push_int(sctx->done?1:0);
 }
 
-
+/*! @decl string type()
+ */
 static void f_sctx_type(INT32 args)
 {
   struct sctx_storage *sctx = THIS_SCTX;
@@ -3670,7 +3675,8 @@ static void f_sctx_type(INT32 args)
   push_utf16_text(sctx->PackageNameUTF16);
 }
 
-
+/*! @decl string get_username()
+ */
 static void f_sctx_getusername(INT32 args)
 {
   struct sctx_storage *sctx = THIS_SCTX;
@@ -3697,7 +3703,8 @@ static void f_sctx_getusername(INT32 args)
   freecontextbuffer(name.sUserName);
 }
 
-
+/*! @decl int get_last_error()
+ */
 static void f_sctx_getlasterror(INT32 args)
 {
   struct sctx_storage *sctx = THIS_SCTX;
@@ -3723,6 +3730,9 @@ static void f_sctx_getlasterror(INT32 args)
   f_add(2);
   LocalFree(lpMsgBuf);
 }
+
+/*! @endclass
+ */
 
 /*! @decl string GetComputerName()
  *!
@@ -4230,7 +4240,6 @@ void exit_nt_system_calls(void)
     }
   }
 }
-
 
 #endif
 
