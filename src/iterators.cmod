@@ -2339,6 +2339,7 @@ void init_iterators(void)
 {
   INIT;
   add_global_program ("Iterator", Iterator_program);
+  add_global_program ("CompatIterator", CompatIterator_program);
 }
 
 void exit_iterators(void)
