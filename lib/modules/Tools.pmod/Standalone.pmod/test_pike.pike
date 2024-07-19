@@ -1386,23 +1386,30 @@ int main(int argc, array(string) argv)
 	      watchdog_show_last_test();
 	      log_msg(fname + " failed.\n");
 	      print_code(source);
-	      log_msg_result("o->a()%s: %O\n"
-                             "o->b()%s: %O\n",
-			     (stringp(a)||arrayp(a))?
-			     sprintf(" [%d elements]", sizeof(a)):"", a,
-			     (stringp(b)||arrayp(b))?
-			     sprintf(" [%d elements]", sizeof(b)):"", b);
+              if (stringp(a) && stringp(b) && has_prefix(b, a)) {
+                log_msg_result("o->a() string [%d elements] truncated\n"
+                               "o->b() string [%d elements]\n",
+                               sizeof(a),
+                               sizeof(b));
+              } else {
+                log_msg_result("o->a()%s: %O\n"
+                               "o->b()%s: %O\n",
+                               (stringp(a)||arrayp(a))?
+                               sprintf(" [%d elements]", sizeof(a)):"", a,
+                               (stringp(b)||arrayp(b))?
+                               sprintf(" [%d elements]", sizeof(b)):"", b);
+                if (stringp(a) && stringp(b) && (sizeof(a) == sizeof(b)) &&
+                    (sizeof(a) > 20)) {
+                  log_msg("Differences at:\n");
+                  int i;
+                  for(i = 0; i < sizeof(a); i++) {
+                    if (a[i] != b[i]) {
+                      log_msg("  %4d: 0x%04x != 0x%04x\n", i, a[i], b[i]);
+                    }
+                  }
+                }
+              }
 	      errors++;
-	      if (stringp(a) && stringp(b) && (sizeof(a) == sizeof(b)) &&
-		  (sizeof(a) > 20)) {
-		log_msg("Differences at:\n");
-		int i;
-		for(i = 0; i < sizeof(a); i++) {
-		  if (a[i] != b[i]) {
-		    log_msg("  %4d: 0x%04x != 0x%04x\n", i, a[i], b[i]);
-		  }
-		}
-	      }
 #if 0 && constant(_dump_program_tables)
 	      _dump_program_tables(object_program(o));
 #endif
@@ -1418,31 +1425,38 @@ int main(int argc, array(string) argv)
 	      watchdog_show_last_test();
 	      log_msg(fname + " failed.\n");
 	      print_code(source);
-	      log_msg_result("o->a()%s: %O\n"
-                             "o->b()%s: %O\n",
-			     (stringp(a)||arrayp(a))?
-			     sprintf(" [%d elements]", sizeof(a)):"", a,
-			     (stringp(b)||arrayp(b))?
-			     sprintf(" [%d elements]", sizeof(b)):"", b);
-	      errors++;
-	      if (stringp(a) && stringp(b) && (sizeof(a) == sizeof(b)) &&
-		  (sizeof(a) > 20)) {
-		log_msg("Differences at:\n");
-		int i;
-		for(i = 0; i < sizeof(a); i++) {
-		  if (a[i] != b[i]) {
-		    log_msg("  %4d: 0x%04x != 0x%04x\n", i, a[i], b[i]);
-		  }
-		}
-              } else if (arrayp(a) && arrayp(b) && (sizeof(a) == sizeof(b))) {
-                log_msg("Differences at:\n");
-                int i;
-                for(i = 0; i < sizeof(a); i++) {
-                  if (!equal(a[i], b[i])) {
-                    log_msg("  %4d: %O != %O\n", i, a[i], b[i]);
+              if (stringp(a) && stringp(b) && has_prefix(b, a)) {
+                log_msg_result("o->a() string [%d elements] truncated\n"
+                               "o->b() string [%d elements]\n",
+                               sizeof(a),
+                               sizeof(b));
+              } else {
+                log_msg_result("o->a()%s: %O\n"
+                               "o->b()%s: %O\n",
+                               (stringp(a)||arrayp(a))?
+                               sprintf(" [%d elements]", sizeof(a)):"", a,
+                               (stringp(b)||arrayp(b))?
+                               sprintf(" [%d elements]", sizeof(b)):"", b);
+                if (stringp(a) && stringp(b) && (sizeof(a) == sizeof(b)) &&
+                    (sizeof(a) > 20)) {
+                  log_msg("Differences at:\n");
+                  int i;
+                  for(i = 0; i < sizeof(a); i++) {
+                    if (a[i] != b[i]) {
+                      log_msg("  %4d: 0x%04x != 0x%04x\n", i, a[i], b[i]);
+                    }
+                  }
+                } else if (arrayp(a) && arrayp(b) && (sizeof(a) == sizeof(b))) {
+                  log_msg("Differences at:\n");
+                  int i;
+                  for(i = 0; i < sizeof(a); i++) {
+                    if (!equal(a[i], b[i])) {
+                      log_msg("  %4d: %O != %O\n", i, a[i], b[i]);
+                    }
                   }
                 }
-	      }
+              }
+              errors++;
 	    }
             break;
 
