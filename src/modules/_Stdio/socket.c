@@ -574,6 +574,12 @@ static void port_create(INT32 args)
 
 extern struct program *file_program;
 
+/*! @decl protected Stdio.Fd fd_factory()
+ *!
+ *! Factory creating empty @[Stdio.Fd] objects.
+ *!
+ *! The default implementation creates an empty @[Stdio.Fd] object.
+ */
 static int port_fd_factory_fun_num = -1;
 static void port_fd_factory(INT32 args)
 {
