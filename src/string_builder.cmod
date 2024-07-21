@@ -1039,6 +1039,16 @@ static INT64 pike_va_int(VA_LIST_PTR args, int flags)
  *   'w'	Wide input (same as 'l', but only for strings).
  *   'z'	Pointer-width unsigned input (size_t).
  *
+ * For integers the width modifiers are:
+ *
+ *    ''	int (typically 32-bit).
+ *   'h'	16-bit.
+ *   'l'	long (architecture dependent, typially either 32-bit
+ *      	or 64-bit).
+ *   'll'	64-bit.
+ *   't'	ptrdiff_t.
+ *   'z'	size_t.
+ *
  * Extended formats supported by string_builder_{v,}sprintf()
  * these accept 'p' as an immediate prefix in order to keep gcc happy:
  *
@@ -1050,6 +1060,7 @@ static INT64 pike_va_int(VA_LIST_PTR args, int flags)
  *   'q'	Insert quoted struct pike_string *.
  *   'S'	Insert struct pike_string *.
  *   'T'	Insert description of a struct pike_type *.
+ *   'x'	Insert pointer (only when prefixed with 'p').
  *
  * In addition, the sequence 'px' can be used to insert a pointer
  * in the same way as 'p'.  This can be used as an escape when printing
@@ -1713,7 +1724,7 @@ PMOD_EXPORT void string_builder_strftime(struct string_builder *s,
         case 's': /* Seconds since epoch. */
           {
             time_t t = mktime_zone(tm, 0, 0);
-            string_builder_sprintf(s, "%ld", (long)t);
+            string_builder_sprintf(s, "%lld", (INT64)t);
           }
           break;
 
