@@ -2621,12 +2621,26 @@ static void f_compilation_apply_type_attribute(INT32 args)
  *!   argument checking and to allow for a strengthening
  *!   of the function type based on @[value].
  *!
- *!   The default implementation implements the @expr{"sprintf_format"@},
- *!   @expr{"sscanf_format"@} and @expr{"sscanf_76_format"@} attributes.
+ *!   The default implementation handles the following attributes:
  *!
- *! @param state
- *!   Mapping intended to hold state during checking of multiple
- *!   arguments.
+ *!   @dl
+ *!     @item @[sprintf_args]
+ *!       This marks the arguments to @[sprintf()].
+ *!
+ *!     @item @[sprintf_format] and @[strict_sprintf_format]
+ *!       These mark arguments that will be sent as the first argument
+ *!       to @[sprintf()].
+ *!
+ *!     @item @[sprintf_result]
+ *!       This marks the return value for @[sprintf()].
+ *!
+ *!     @item @[sscanf_format] and @[sscanf_76_format]
+ *!       These mark arguments that will be sent as the second argument
+ *!       to @[sscanf()].
+ *!
+ *!     @item @[sscanf_input]
+ *!       This is the input for @[sscanf()].
+ *!   @enddl
  *!
  *! @returns
  *!   Returns a continuation type if it succeeded in strengthening the type.
