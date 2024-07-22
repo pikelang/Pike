@@ -93,7 +93,7 @@ string dirlist( string dir, string rel_dir )
 
     foreach( sort( get_dir( dir ) ); int i; string fn )
     {
-        string path = Protocols.HTTP.uri_encode((combine_path(rel_dir, fn)/"/")[*])*"/";
+        string path = "/"+Protocols.HTTP.uri_encode((combine_path(rel_dir, fn)/"/")[*])*"/";
         Stdio.Stat s = file_stat( combine_path(dir, fn) );
         if( !s )
             continue;
