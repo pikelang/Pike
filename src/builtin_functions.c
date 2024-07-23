@@ -6246,11 +6246,15 @@ time_t mktime_zone(struct tm *date, int other_timezone, int tz)
       ONERROR uwp;
       char *tzsgn = tz < 0 ? "-" : "+";
       if (tz < 0) tz = -tz;
-      sprintf(tzbuf, "TZ=UTC%s%02d:%02d:%02d",
-	      tzsgn,
-	      tz/3600,
-	      (tz/60)%60,
-	      tz % 60);
+      if (tz) {
+        sprintf(tzbuf, "TZ=UTC%s%02d:%02d:%02d",
+                tzsgn,
+                tz/3600,
+                (tz/60)%60,
+                tz % 60);
+      } else {
+        sprintf(tzbuf, "TZ=UTC");
+      }
       if (orig_tz) {
         /* NB: orig_tz may point into the buffer that putenv()
          *     writes to, so we need to make a copy here.
