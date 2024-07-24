@@ -8956,13 +8956,17 @@ PMOD_EXPORT void f_object_variablep(INT32 args)
  *!
  *! @note
  *!   The @[cmp] argument is only available in Pike 9.1 and later.
+ *!
+ *! @note
+ *!   The @[cmp] function MUST return non-zero for all element pairs
+ *!   that @[predef::`==()] considers equal.
  */
 PMOD_EXPORT void f_uniq_array(INT32 args)
 {
   struct array *a, *b;
   struct mapping *m;
   struct svalue *cmp = NULL;
-  int i, j=0,size=0;
+  int i, j, size = 0;
 
   get_all_args(NULL, args, "%a.%*", &a, &cmp);
   if( !a->size )
@@ -8975,11 +8979,36 @@ PMOD_EXPORT void f_uniq_array(INT32 args)
   push_array(b = allocate_array(a->size));
   b->type_field = a->type_field | BIT_INT;
 
+  for(i = j = 0; i < a->size; i++)
+  {
+    mapping_insert(m, ITEM(a)+i, &svalue_int_one);
+    if(m_sizeof(m) != size)
+    {
+      size=m_sizeof(m);
+      assign_svalue_no_free(ITEM(b) + j++, ITEM(a) + i);
+    }
+  }
+
+  if (j != a->size) {
+    /* There are zeros in the unused fields... */
+    b->type_field |= BIT_INT;
+    /* Remove b from the stack. */
+    Pike_sp--;
+    b = array_shrink(b, j);
+    push_array(b);
+  }
+  b->type_field = a->type_field;
+
   if (cmp && ((TYPEOF(*cmp) != PIKE_T_FUNCTION) ||
               (SUBTYPEOF(*cmp) != FUNCTION_BUILTIN) ||
               (cmp->u.efun->function != f_eq))) {
+    /* Second pass. Use the provided cmp function. */
+    a = b;
+    push_array(b = allocate_array(a->size));
+    b->type_field = a->type_field | BIT_INT;
+
     /* NB: O(n^2)! */
-    for (i = 0; i < a->size; i++) {
+    for (i = j = 0; i < a->size; i++) {
       int k;
       for (k = 0; k < j; k++) {
         push_svalue(ITEM(a) + i);
@@ -8997,27 +9026,17 @@ PMOD_EXPORT void f_uniq_array(INT32 args)
     next_i:
       /* Statement required. */;
     }
-  } else {
-    for(i = 0; i < a->size; i++)
-    {
-      mapping_insert(m, ITEM(a)+i, &svalue_int_one);
-      if(m_sizeof(m) != size)
-      {
-        size=m_sizeof(m);
-        assign_svalue_no_free(ITEM(b) + j++, ITEM(a) + i);
-      }
-    }
-  }
 
-  if (j != a->size) {
-    /* There are zeros in the unused fields... */
-    b->type_field |= BIT_INT;
-    /* Remove b from the stack. */
-    Pike_sp--;
-    b = array_shrink(b, j);
-    push_array(b);
+    if (j != a->size) {
+      /* There are zeros in the unused fields... */
+      b->type_field |= BIT_INT;
+      /* Remove b from the stack. */
+      Pike_sp--;
+      b = array_shrink(b, j);
+      push_array(b);
+    }
+    b->type_field = a->type_field;
   }
-  b->type_field = a->type_field;
 }
 
 /*! @decl array(mixed) splice(array(mixed) arr1, array(mixed) arr2, @
