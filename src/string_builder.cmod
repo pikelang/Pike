@@ -1724,7 +1724,7 @@ PMOD_EXPORT void string_builder_strftime(struct string_builder *s,
         case 's': /* Seconds since epoch. */
           {
             time_t t = mktime_zone(tm, 0, 0);
-            string_builder_sprintf(s, "%lld", (INT64)t);
+            string_builder_sprintf(s, "%"PRINTINT64"d", (INT64)t);
           }
           break;
 
