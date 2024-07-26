@@ -375,9 +375,11 @@ float logn(int|float n, int|float x) { return log(x)/log(n); }
 //! @note
 //!   In Pike versions prior to v8.0, only primes @expr{<= 8161@} were
 //!   considered.
-array(int) factor(int x) {
+array(int(-1..)) factor(int x) {
   if (!x) return ({ 0 });
   if (x==1) return ({ 1 });
+  if (x == -1) return ({ -1 });
+  if (x < 0) return factor(-x) + ({ -1 });
   int f = x->small_factor();
   if(!f) {
     /* No small factors left. */
