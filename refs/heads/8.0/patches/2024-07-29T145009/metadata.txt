@@ -1,0 +1,9 @@
+subject: Pike 8.0: Protocols.HTTP.Query: Enable timeouts for blocking SSL too
+from: d48c913f6e3758ebfce060e05f4beee9d47df0c7
+to: 70b4f0f69a42794c4078fe4de32bc4020feb04fc
+originator: Marcus Wellhardh
+depends: 2024-06-10T150140
+restart: true
+
+Non-responsive blocking https requests will now terminate after
+the set timeout (default 2 minutes).
