@@ -113,28 +113,46 @@ else
     #   gcm.h
     # Nettle 2.3 and later:
     #   ripemd160.h
+    # Nettle 2.5 and later:
+    #   salsa20.h
     # Nettle 2.6 and later:
     #   gosthash94.h
+    #   pbkdf2.h
     #   sha3.h
+    # Nettle 2.7 and later:
+    #   ecdsa.h
+    #   salsa20.h:salsa20r12
+    #   umac.h
     # Nettle 3.0 and later:
+    #   ccm.h
     #   chacha.h
     #   eax.h
     #   poly1305.h
     # Nettle 3.1 and later:
     #   curve25519.h
     #   eddsa.h
-    #   pbkdf2.h
+    #   pbkdf2.h:pbkdf2_hmac_sha512
     # Nettle 3.1.1 and later:
     #   version.h
     # Nettle 3.2 and later:
+    #   sha3.h:FIPS202
     #   version.h:nettle_version_{major,minor}
+    # Nettle 3.4 and later:
+    #   cfb.h
+    #   hkdf.h
     # Nettle 3.5 and later:
+    #   cfb.h:cfb8
     #   cmac.h
+    #   xts.h
     # Nettle 3.6 and later:
+    #   cmac.h:cmac64
     #   curve448.h
     #   gostdsa.h
     #   gosthash94.h:gosthash94cp
+    #   shake256.h
+    #   siv-cmac.h
     # Nettle 3.7 and later:
+    #   blowfish.h:bcrypt
     #   streebog.h
     # Nettle 3.8 and later:
     #   nist-keywrap.h
@@ -142,6 +160,8 @@ else
     # Nettle 3.9 and later:
     #   balloon.h
     #   ocb.h
+    #   sha2.h:sha256_compress
+    #   siv-gcm.h
     #   sm4.h
     # Nettle 3.10 and later:
     #   drbg-ctr.h
@@ -158,7 +178,8 @@ else
                      nettle/curve448.h nettle/gostdsa.h \
                      nettle/streebog.h \
                      nettle/sm3.h \
-                     nettle/balloon.h nettle/ocb.h nettle/sm4.h \
+                     nettle/balloon.h nettle/ocb.h nettle/siv-gcm.h \
+                     nettle/sm4.h \
                      nettle/drbg-ctr.h \
 		    )
     # Check that the libraries match.
