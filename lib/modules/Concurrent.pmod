@@ -821,6 +821,10 @@ class Promise(<ValueType>)
 
   inherit Future(<ValueType>);
 
+#ifdef CONCURRENT_DEBUG
+  protected string final_bt;
+#endif
+
   //! Creates a new promise, optionally initialised from a traditional callback
   //! driven method via @expr{executor(success, failure, @@extra)@}.
   //!
@@ -888,6 +892,11 @@ class Promise(<ValueType>)
       } else {
 	cbs = failure_cbs;
       }
+
+#ifdef CONCURRENT_DEBUG
+      final_bt = master()->describe_backtrace(backtrace());
+#endif
+
       key = 0;
       cond->broadcast();
 #ifdef CONCURRENT_DEBUG
@@ -913,7 +922,14 @@ class Promise(<ValueType>)
     {
       key = 0;
       if (!try)
-        error("Promise has already been finalised.\n");
+        error("Promise has already been finalised.\n"
+#ifdef CONCURRENT_DEBUG
+              "Finalised at:\n"
+              "%s\n"
+              "Failed at:\n",
+              final_bt
+#endif
+              );
     }
 #ifdef CONCURRENT_DEBUG
     werror("Promise: %O done.\n", this_function);
