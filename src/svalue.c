@@ -1362,6 +1362,10 @@ PMOD_EXPORT void describe_svalue(struct byte_buffer *buf, const struct svalue *s
   switch(TYPEOF(*s))
   {
     case T_INT:
+      if (!s->u.integer && SUBTYPEOF(*s) == NUMBER_UNDEFINED) {
+        buffer_add_str(buf, "UNDEFINED");
+        break;
+      }
       {
         int len = sprintf(buffer_ensure_space(buf, INT_SPRINTF_SIZE(INT_TYPE)),
                           "%"PRINTPIKEINT"d", s->u.integer);
@@ -1642,13 +1646,16 @@ PMOD_EXPORT void describe_svalue(struct byte_buffer *buf, const struct svalue *s
 	      SET_CYCLIC_RET(1);
 
 	      debug_malloc_touch(obj);
-
-	      push_int('O');
-	      push_constant_text("indent");
-	      push_int(indent);
-	      f_aggregate_mapping(2);
-	      safe_apply_low2(obj, fun + inh->identifier_level, 2,
-			      master_object?"_sprintf":NULL);
+              if (obj->prog) {
+                push_int('O');
+                push_constant_text("indent");
+                push_int(indent);
+                f_aggregate_mapping(2);
+                safe_apply_low2(obj, fun + inh->identifier_level, 2,
+                                master_object?"_sprintf":NULL);
+              } else {
+                push_text("0");
+              }
 
 	      debug_malloc_touch(obj);
 
