@@ -169,7 +169,7 @@ class Byte {
   protected int(0..255) value;
 
   //! The byte can be initialized with an optional value.
-  protected void create(void|int(0..255) initial_value) {
+  protected void create(int(0..255) initial_value = 0) {
     set(initial_value);
   }
 
@@ -197,7 +197,7 @@ class SByte {
   protected int(-128..127) value;
 
   //! The byte can be initialized with an optional value.
-  protected void create(void|int(-128..127) initial_value) {
+  protected void create(int(-128..127) initial_value = 0) {
     set(initial_value);
   }
 
@@ -227,7 +227,7 @@ class Word {
   protected int(0..) value;
 
   //! The word can be initialized with an optional value.
-  protected void create(void|int(0..65535) initial_value) {
+  protected void create(int(0..65535) initial_value = 0) {
     set(initial_value);
   }
 
@@ -253,7 +253,7 @@ class SWord {
   protected int value;
 
   //! The word can be initialized with an optional value.
-  protected void create(void|int(-32768..32767) initial_value) {
+  protected void create(int(-32768..32767) initial_value = 0) {
     set(initial_value);
   }
 
@@ -293,7 +293,7 @@ class Long {
   int size = 4;
 
   //! The longword can be initialized with an optional value.
-  protected void create(void|int(0..) initial_value) {
+  protected void create(int(0..) initial_value = 0) {
     set(initial_value);
   }
 }
@@ -305,7 +305,7 @@ class SLong {
   int size = 4;
 
   //! The longword can be initialized with an optional value.
-  protected void create(void|int initial_value) {
+  protected void create(int initial_value = 0) {
     set(initial_value);
   }
 }
@@ -318,7 +318,7 @@ class Gnol {
   int size = 4;
 
   //! The longword can be initialized with an optional value.
-  protected void create(void|int(0..) initial_value) {
+  protected void create(int(0..) initial_value = 0) {
     set(initial_value);
   }
 }
@@ -376,7 +376,7 @@ class Varchars {
   inherit Chars;
   protected int min,max;
 
-  protected void create(void|int _min, void|int _max,
+  protected void create(int _min = 0, int _max = 0,
 			string _value = " " * _min) {
     min = _min;
     max = _max;
