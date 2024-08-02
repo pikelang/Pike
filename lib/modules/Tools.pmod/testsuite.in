@@ -131,7 +131,7 @@ test_hilfe("for(int j; j<5; j++) write(\"%d\",j);", "01234Ok.\n")
 test_hilfe("j;", "Compiler Error: 1: Undefined identifier j.\n")
 test_hilfe("for(int i; i<5; i++) write(\"%d\",i);", "01234Ok.\n")
 test_hilfe("i;", "1")
-test_hilfe("catch { for(int i; i<5; i++) write(\"%d\",i); };", "012340")
+test_hilfe("catch { for(int i; i<5; i++) write(\"%d\",i); };", "01234UNDEFINED")
 test_hilfe("i;", "1")
 test_hilfe("class A (int i) { int foo() { return i; } }", "")
 test_hilfe("A(2)->foo();", "2")
@@ -206,7 +206,7 @@ test_hilfe( ({ "#\"", "set fisk\";" }), "\"\\n\"\n\"set fisk\"");
 test_hilfe("set hedda", "");
 test_hilfe("f;", "0.0");
 
-test_hilfe("catch(lambda(){i=5;}());", "0");
+test_hilfe("catch(lambda(){i=5;}());", "UNDEFINED");
 test_hilfe("i;", "5");
 
 test_do( add_constant("testhilfe") )
