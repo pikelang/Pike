@@ -562,9 +562,9 @@ constant f_op_name_lookup = ([
   "F_COMPL":	"f_compl",
 ]);
 
-object(node) read_node(array(string) linepos)
+object(node)|zero read_node(array(string) linepos)
 {
-  object(node) res = node();
+  object(node)|zero res = node();
 
   eat_whitespace();
   int c = data[pos];
@@ -612,6 +612,10 @@ object(node) read_node(array(string) linepos)
     res->token = data[pos..pos];
     pos++;
     eat_whitespace();
+  } else if (c == '*') {
+    pos++;
+    eat_whitespace();
+    res = 0;
   } else {
     string token = read_id();
     if (sizeof(token)) {
