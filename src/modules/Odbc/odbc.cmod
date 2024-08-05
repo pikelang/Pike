@@ -597,6 +597,45 @@ PIKEFUN void select_db(string db)
   /**********************************************/
 }
 
+PIKEFUN string|zero query_db()
+{
+  HDBC hdbc = PIKE_ODBC->hdbc;
+  SQLSMALLINT reslen = 0;
+  SQLSMALLINT infotype = SQL_DATABASE_NAME;
+  SQLRETURN code;
+  struct pike_string *str;
+
+  do {
+    code = SQLGetInfo(hdbc, infotype, NULL, 0, &reslen);
+    if ((code == SQL_SUCCESS) || (code == SQL_SUCCESS_WITH_INFO)) break;
+    switch(infotype) {
+    case SQL_DATABASE_NAME:
+      /* Fall back to data source name. */
+      infotype = SQL_DATA_SOURCE_NAME;
+      break;
+    default:
+      /* FIXME: Fall back to SQLConnectOption(..., SQL_CURRENT_QUALIFIER,...)?
+       */
+      push_undefined();
+      return;
+    }
+  } while (1);
+
+  if (!reslen) {
+    push_undefined();
+    return;
+  }
+
+  str = begin_shared_string(reslen);
+  code = SQLGetInfo(hdbc, infotype, str->str, str->len, &reslen);
+  if ((code == SQL_SUCCESS) || (code == SQL_SUCCESS_WITH_INFO)) {
+    push_string(end_shared_string(str));
+    return;
+  }
+  free_string(str);
+  push_undefined();
+}
+
 /* Needed since free_string() can be a macro */
 static void odbc_free_string(struct pike_string *s)
 {
