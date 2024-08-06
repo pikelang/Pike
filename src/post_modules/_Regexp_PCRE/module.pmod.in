@@ -1,4 +1,4 @@
-// -*- Pike -*-
+//  -*- mode: Pike; c-basic-offset: 3; -*-
 // original author: mirar
 //! @appears Regexp.PCRE
 
