@@ -101,6 +101,8 @@ int main(int argc, char **argv)
   int linking = 1;	/* Maybe */
   int compiling = 1;	/* Maybe */
 
+  int verbose = getenv("SMARTLINK_DEBUG");
+
   prog_name = argv[0];
 
   if (argc < 2) {
@@ -379,12 +381,18 @@ int main(int argc, char **argv)
     if (putenv(full_rpath)) {
       fatal("Out of memory (6)!");
     }
+    if (verbose) {
+      fprintf(stderr, "SMARTLINK: %s\n", full_rpath);
+    }
     /* LD_LIBRARY_PATH
      *     LD_RUN_PATH
      */
     memcpy(full_rpath + 4, "LD_RUN_PATH", 11);
     if (putenv(full_rpath + 4)) {
       fatal("Out of memory (7)!");
+    }
+    if (verbose) {
+      fprintf(stderr, "SMARTLINK: %s\n", full_rpath + 4);
     }
 #else
 #error Unknown method
@@ -422,11 +430,11 @@ int main(int argc, char **argv)
     }
   }
 
-  if (getenv("SMARTLINK_DEBUG")) {
+  if (verbose) {
     int i = 0;
     fprintf(stderr, "SMARTLINK:");
     while (new_argv[i]) {
-      fprintf(stderr, " %s", new_argv[i]);
+      fprintf(stderr, " '%s'", new_argv[i]);
       i++;
     }
     fprintf(stderr, "\n");
