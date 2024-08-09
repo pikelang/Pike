@@ -645,7 +645,7 @@ int main(int argc, char **argv)
     }else{
       if (TYPEOF(throw_value) == T_OBJECT &&
 	  throw_value.u.object->prog == master_load_error_program &&
-	  !get_master()) {
+          !master_object) {
 	/* Report this specific error in a nice way. Since there's no
 	 * master it'd be reported with a raw error dump otherwise. */
 	struct generic_error_struct *err;
