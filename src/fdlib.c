@@ -62,6 +62,10 @@
 #define FSCTL_GET_REPARSE_POINT				0x0900a8
 #endif
 
+#ifndef S_IFLNK
+#define S_IFLNK		0xa000
+#endif
+
 #include "threads.h"
 #include "signal_handler.h"
 
@@ -1430,6 +1434,88 @@ PMOD_EXPORT int debug_fd_stat(const char *file, PIKE_STAT_T *buf)
   return(0);
 }
 
+/* NB: Copied from
+ * https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/ntifs/ns-ntifs-_reparse_data_buffer
+ * in order to support compilation with old SDKs.
+ *
+ * The REPARSE_DATA_BUFFER type seems to typically be defined in <Ntifs.h>.
+ */
+struct Pike_NT_REPARSE_DATA_BUFFER_struct {
+  ULONG  ReparseTag;
+  USHORT ReparseDataLength;
+  USHORT Reserved;
+  union {
+    struct {
+      USHORT SubstituteNameOffset;
+      USHORT SubstituteNameLength;
+      USHORT PrintNameOffset;
+      USHORT PrintNameLength;
+      ULONG  Flags;
+      WCHAR  PathBuffer[1];
+    } SymbolicLinkReparseBuffer;
+    struct {
+      USHORT SubstituteNameOffset;
+      USHORT SubstituteNameLength;
+      USHORT PrintNameOffset;
+      USHORT PrintNameLength;
+      WCHAR  PathBuffer[1];
+    } MountPointReparseBuffer;
+    struct {
+      UCHAR DataBuffer[1];
+    } GenericReparseBuffer;
+  } DUMMYUNIONNAME;
+};
+
+PMOD_EXPORT int debug_fd_lstat(const char *file, PIKE_STAT_T *st)
+{
+  p_wchar1 *fname = pike_dwim_utf8_to_utf16(file);
+  HANDLE h = CreateFileW(fname, GENERIC_READ, 0, 0, OPEN_EXISTING,
+                         FILE_FLAG_OPEN_REPARSE_POINT|
+                         FILE_FLAG_BACKUP_SEMANTICS, 0);
+  char buf[0x10000];
+  DWORD bytes = 0;
+  FILETIME c, a, m;
+
+  free(fname);
+
+  if (h == INVALID_HANDLE_VALUE) {
+    return debug_fd_stat(file, st);
+  }
+
+  if (DeviceIoControl(h,
+                      FSCTL_GET_REPARSE_POINT, 0, 0,
+                      buf, sizeof(buf), &bytes, 0)) {
+    struct Pike_NT_REPARSE_DATA_BUFFER_struct *reparse = (void *)buf;
+    switch (reparse->ReparseTag) {
+    case IO_REPARSE_TAG_SYMLINK:
+      memset(st, 0, sizeof(st));
+      st->st_mode = S_IFLNK;
+      st->st_size =
+        reparse->SymbolicLinkReparseBuffer.SubstituteNameLength +
+        reparse->SymbolicLinkReparseBuffer.PrintNameLength + 2;
+      if (GetFileTime(h, &c, &a, &m)) {
+        /* FIXME: Determine the filesystem type to use
+         * fat_filetimes_to_stattimes when necessary.
+         *
+         * On the other hand; symlinks are most likely not supported on FAT.
+         */
+
+        nonfat_filetimes_to_stattimes(&c, &a, &m, st);
+      }
+      break;
+
+    default:
+      CloseHandle(h);
+
+      return debug_fd_stat(file, st);
+    }
+  }
+
+  CloseHandle(h);
+
+  return 0;
+}
+
 PMOD_EXPORT int debug_fd_utime(const char *file, struct fd_utimbuf *times)
 {
   p_wchar1 *fname = pike_dwim_utf8_to_utf16(file);
@@ -1560,38 +1646,6 @@ PMOD_EXPORT int debug_fd_symlink(const char *target, const char *linkpath)
     return ret;
   }
 }
-
-/* NB: Copied from
- * https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/ntifs/ns-ntifs-_reparse_data_buffer
- * in order to support compilation with old SDKs.
- *
- * The REPARSE_DATA_BUFFER type seems to typically be defined in <Ntifs.h>.
- */
-struct Pike_NT_REPARSE_DATA_BUFFER_struct {
-  ULONG  ReparseTag;
-  USHORT ReparseDataLength;
-  USHORT Reserved;
-  union {
-    struct {
-      USHORT SubstituteNameOffset;
-      USHORT SubstituteNameLength;
-      USHORT PrintNameOffset;
-      USHORT PrintNameLength;
-      ULONG  Flags;
-      WCHAR  PathBuffer[1];
-    } SymbolicLinkReparseBuffer;
-    struct {
-      USHORT SubstituteNameOffset;
-      USHORT SubstituteNameLength;
-      USHORT PrintNameOffset;
-      USHORT PrintNameLength;
-      WCHAR  PathBuffer[1];
-    } MountPointReparseBuffer;
-    struct {
-      UCHAR DataBuffer[1];
-    } GenericReparseBuffer;
-  } DUMMYUNIONNAME;
-};
 
 PMOD_EXPORT ptrdiff_t debug_fd_readlink(const char *file,
                                         char *buf, size_t bufsiz)

@@ -146,7 +146,7 @@ struct winsize {
 #define fd_query_properties(fd,Y) \
         debug_fd_query_properties(dmalloc_touch_fd(fd),(Y))
 #define fd_stat(F,BUF) debug_fd_stat(F,BUF)
-#define fd_lstat(F,BUF) debug_fd_stat(F,BUF)
+#define fd_lstat(F,BUF) debug_fd_lstat(F,BUF)
 #define fd_utime(F, BUF)	debug_fd_utime(F, BUF)
 #define fd_truncate(F,LEN)	debug_fd_truncate(F,LEN)
 #define fd_link(OLD,NEW)	debug_fd_link(OLD,NEW)
