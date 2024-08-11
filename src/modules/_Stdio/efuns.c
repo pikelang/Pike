@@ -72,20 +72,6 @@ static libzfs_handle_t *libzfs_handle;
 #define INVALID_SET_FILE_POINTER ((DWORD)-1)
 #endif
 
-/* Dynamic load of functions that doesn't exist in all Windows versions. */
-
-static HINSTANCE kernel32lib;
-
-#define LINKFUNC(RET,NAME,TYPE) \
-  typedef RET (WINAPI * PIKE_CONCAT(NAME,type)) TYPE ; \
-  static PIKE_CONCAT(NAME,type) NAME
-
-LINKFUNC(BOOL, movefileex, (
-  LPCTSTR lpExistingFileName,  /* file name     */
-  LPCTSTR lpNewFileName,       /* new file name */
-  DWORD dwFlags                /* move options  */
-));
-
 #endif /* __NT__ */
 
 struct array *encode_stat(PIKE_STAT_T *s)
@@ -1701,28 +1687,6 @@ void init_stdio_efuns(void)
 #endif
 #endif /* 0 */
 
-#ifdef __NT__
-  {
-    /* MoveFileEx doesn't exist in W98 and earlier. */
-    /* Correction, it exists but does not work -Hubbe */
-
-    OSVERSIONINFO osversion;
-    osversion.dwOSVersionInfoSize=sizeof(osversion);
-    if(GetVersionEx(&osversion))
-    {
-      switch(osversion.dwPlatformId)
-      {
-	case VER_PLATFORM_WIN32s: /* win32s */
-	case VER_PLATFORM_WIN32_WINDOWS: /* win9x */
-	  break;
-	default:
-	  if ((kernel32lib = LoadLibrary ("kernel32")))
-	    movefileex = (movefileextype) GetProcAddress (kernel32lib, "MoveFileExA");
-      }
-    }
-  }
-#endif
-
 /* function(string,int|void:object) */
   ADD_EFUN("file_stat",f_file_stat,tFunc(tStr tOr(tInt,tVoid),tObjIs_STDIO_STAT), OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
 
@@ -1773,13 +1737,6 @@ void init_stdio_efuns(void)
 
 void exit_stdio_efuns(void)
 {
-#ifdef __NT__
-  if (kernel32lib) {
-    if (FreeLibrary (kernel32lib))
-      movefileex = 0;
-    kernel32lib = 0;
-  }
-#endif
 #if 0
 #ifdef HAVE_LIBZFS_INIT
   libzfs_fini(libzfs_handle);
