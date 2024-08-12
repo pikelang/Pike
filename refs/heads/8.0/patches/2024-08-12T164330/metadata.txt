@@ -1,0 +1,8 @@
+subject: Pike 8.0: SSL.File: Improved robustness for timeout handling.
+from: 70b4f0f69a42794c4078fe4de32bc4020feb04fc
+to: c4bf6f35d351ca89eedd7e072936e2659c4fb85b
+originator: Henrik Grubbström (Grubba) <grubba@grubba.org>
+depends: 2024-07-29T145009
+restart: true
+
+SSL.File: Improved robustness for timeout handling.
