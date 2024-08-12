@@ -76,8 +76,8 @@ protected int(-1..65535) linger_time = -1;
 
 protected int(0..0)|float timeout = 0;
 // The timeout in seconds for blocking operations.
-// This value is passed unmodified to local_backend(), and the
-// integer value 0 thus means infinite timeout.
+// This value is passed unmodified to local_backend->call_out() if not zero,
+// and the integer value 0 thus means no timeout.
 
 protected .Context context;
 // The context to use.
@@ -293,7 +293,19 @@ protected int(0..0)|float backend_once(int|void nonwaiting_mode)
 		     !!stream->query_read_callback(),
 		     !!stream->query_write_callback(),
 		     timeout?(timeout + " seconds"):"infinite");
-      return local_backend(timeout);
+      // NB: For robustness, we handle the timeout via a call_out
+      //     rather than calling local_backend() with the timeout.
+      mixed to_handle;
+      if (timeout) {
+        to_handle = local_backend->call_out(ssl_timeout_callback, timeout);
+      }
+      int ret = local_backend(0);	// NB: Always infinite timeout here.
+      if (to_handle) {
+        // Make sure that the timeout is not triggered the next time
+        // we run the local_backend.
+        local_backend->remove_call_out(to_handle);
+      }
+      return ret;
     }
   }
 }
@@ -301,7 +313,6 @@ protected int(0..0)|float backend_once(int|void nonwaiting_mode)
 // stream is assumed to be operational on entry but might be zero
 // afterwards.
 #define RUN_MAYBE_BLOCKING(REPEAT_COND, NONWAITING_MODE) do {		\
-    int tloop = 0;							\
     while (1) {								\
       float|int(0..0) action;						\
       int nwmode = NONWAITING_MODE;					\
@@ -335,10 +346,6 @@ protected int(0..0)|float backend_once(int|void nonwaiting_mode)
 	  close_errno = write_errno = System.EPIPE;			\
 	  if (close_state != CLEAN_CLOSE)				\
 	    close_state = ABRUPT_CLOSE;					\
-	} else if (timeout && tloop++) {				\
-	  SSL3_DEBUG_MSG ("Timeout waiting on peer - simulating peer fatal.\n"); \
-	  conn->handle_alert(ALERT_fatal, ALERT_internal_error);	\
-	  break;							\
 	}								\
       }									\
 									\
@@ -2055,6 +2062,12 @@ protected int direct_write()
 
   SSL3_DEBUG_MORE_MSG ("direct_write: Ok\n");
   return 1;
+}
+
+protected void ssl_timeout_callback()
+{
+  SSL3_DEBUG_MSG("Timeout waiting on peer - simulating peer fatal.\n");
+  conn && conn->handle_alert(ALERT_fatal, ALERT_internal_error);
 }
 
 protected int ssl_read_callback (int ignored, string input)
