@@ -300,7 +300,7 @@ protected int(0..0)|float backend_once(int|void nonwaiting_mode)
       if (timeout) {
         to_handle = local_backend->call_out(ssl_timeout_callback, timeout);
       }
-      int ret = local_backend(0);	// NB: Always infinite timeout here.
+      int(0..0)|float ret = local_backend(0);	// NB: Always infinite timeout here.
       if (to_handle) {
         // Make sure that the timeout is not triggered the next time
         // we run the local_backend.
