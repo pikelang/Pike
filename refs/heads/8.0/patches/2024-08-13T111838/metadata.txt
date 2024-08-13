@@ -1,0 +1,12 @@
+subject: Pike 8.0: SSL.File: Fix return type for backend_once().
+from: c4bf6f35d351ca89eedd7e072936e2659c4fb85b
+to: 65a8817203e65bbc20d70affa1975027070d4ae1
+originator: Jonas Lonnberg
+depends: 2024-08-12T164330
+restart: true
+
+• SSL.File: Fix return type for backend_once().
+
+• release number bumped to 8.0.1925 by export.pike
+
+• release number bumped to 8.0.1924 by export.pike
