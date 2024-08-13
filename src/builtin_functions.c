@@ -6917,11 +6917,39 @@ static int does_match(struct pike_string *s,int j,
  *! @param glob
  *!   @mixed
  *!    @type string
- *!      The glob pattern. A question sign ('?') matches any character
- *!      and an asterisk ('*') matches a string of arbitrary length. All
- *!      other characters only match themselves.
+ *!      The glob pattern.
+ *!
+ *!      Some characters have special meanings:
+ *!      @int
+ *!        @value '?'
+ *!          A question sign (@expr{'?'@}) matches any character.
+ *!        @value '*'
+ *!          An asterisk (@expr{'*'@}) matches a string of arbitrary length.
+ *!        @value '\\'
+ *!          A back-slash (@expr{'\\'@}) escapes the following character
+ *!          so that it is matched verbatim.
+ *!        @value '['
+ *!          A left-bracket (@expr{'['@}) starts a character range.
+ *!        @value ']'
+ *!          An unescaped right-bracket (@expr{']'@}) ends a character range
+ *!          if a character range is started and otherwise matches itself.
+ *!        @value '^'
+ *!        @value '!'
+ *!          The characters @expr{'^'@} and @expr{'!'@} invert the character
+ *!          range if they are the first character in the range and otherwise
+ *!          match themselves.
+ *!        @value '-'
+ *!          The character @expr{'-'@} separates the first and last characters
+ *!          in a character sequence if a character range is open and otherwise
+ *!          matches itself.
+ *!      @endint
+ *!
+ *!      All other characters only match themselves.
+ *!
  *!    @type array(string)
- *!      the function returns the matching glob if any of the given
+ *!      An array of glob patterns (as above).
+ *!
+ *!      The function returns the matching glob if any of the given
  *!      patterns match. Otherwise 0. If the second argument is an array
  *!      it will behave as if the first argument is a string (see
  *!      below)
@@ -6939,8 +6967,12 @@ static int does_match(struct pike_string *s,int j,
  *!       order).
  *!   @endmixed
  *!
+ *! @note
+ *!   In Pike 8.0 and earlier only @expr{'?'@} and @expr{'*'@} had
+ *!   special meanings. The old implementation is available as @[8.0::glob()].
+ *!
  *! @seealso
- *!   @[sscanf()], @[Regexp]
+ *!   @[8.0::glob()], @[sscanf()], @[Regexp]
  */
 
 static struct pike_string *any_does_match( struct svalue *items, int nglobs, struct pike_string *str )
