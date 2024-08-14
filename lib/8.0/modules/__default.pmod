@@ -167,7 +167,7 @@ protected int|array(string) _glob(string|array(string) a, string|array(string) b
 //! This function differs from @[predef::glob()] in that the
 //! characters @expr{'\\'@} and @expr{'['@} are NOT special,
 //! which means that it is not possible to quote any of the
-//! special characters nor are character sets supported.
+//! special characters nor are character ranges supported.
 //!
 //! Do NOT use unless you know what you are doing.
 //!
