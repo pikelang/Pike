@@ -564,6 +564,18 @@ array(string|mapping(string|int:mixed))
   return .sql_util.handle_extraargs (query, extraargs);
 }
 
+//!
+int insert_id()
+{
+  return master_sql->insert_id();
+}
+
+//!
+int affected_rows()
+{
+  return master_sql->affected_rows();
+}
+
 //! Sends an SQL query synchronously to the underlying SQL-server and
 //! returns the results in untyped mode.
 //!
