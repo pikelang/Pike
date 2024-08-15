@@ -2,6 +2,10 @@
 
 //! Generic base classes for the Sql interfaces.
 
+//! Field to set in the query bindings mapping to set a character set
+//! for just the current query. Only supported by some databases.
+constant QUERY_OPTION_CHARSET = "*charset*";
+
 //! Wrapper to handle conversion of zero to NULL in
 //! @[Connection()->handle_extraargs()].
 //!

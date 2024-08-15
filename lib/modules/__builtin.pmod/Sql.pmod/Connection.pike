@@ -495,12 +495,14 @@ string|object compile_query(string q)
   return q;
 }
 
+// Do not warn about the charset argument below.
+#pragma no_deprecation_warnings
 //! Build a raw SQL query, given the cooked query and the variable bindings
-//! It's meant to be used as an emulation engine for those drivers not
-//! providing such a behaviour directly (i.e. Oracle).
+//! It's meant to be used as an emulation engine for those drivers that do
+//! not provide such behaviour directly (like eg @[Oracle]).
 //! The raw query can contain some variables (identified by prefixing
-//! a colon to a name or a number (i.e. ":var" or  ":2"). They will be
-//! replaced by the corresponding value in the mapping.
+//! a colon to a name or a number (eg @expr{":var"@} or @expr{":2"@})).
+//! They will be replaced by the corresponding value in the mapping.
 //!
 //! @param query
 //!   The query.
@@ -509,11 +511,31 @@ string|object compile_query(string q)
 //!   Mapping containing the variable bindings. Make sure that
 //!   no confusion is possible in the query. If necessary, change the
 //!   variables' names.
+//!
+//! @param charset
+//!   Query charset. Compatibility with Pike 8.0 Mysql API.
+//!   Use the @[QUERY_OPTION_CHARSET] entry in @[bindings] instead.
 protected string emulate_bindings(string query,
-				  mapping(string|int:mixed) bindings)
+                                  mapping(string|int:mixed) bindings,
+                                  __deprecated__(string)|void charset)
 {
-  array(string)k, v;
-  v = map(values(bindings),
+  array(string|int) k;
+  array(string) v;
+
+  if (charset) {
+    bindings[.QUERY_OPTION_CHARSET] = charset;
+  }
+
+  // Reserve binding entries starting with '*' for options.
+  k = filter(indices(bindings),
+             lambda(string|int i) {
+               if (intp(i)) return 1;
+               if (!stringp(i)) return 0;
+               if (has_prefix(i, "*")) return 0;
+               return 1;
+             });
+
+  v = map(map(k, bindings),
 	  lambda(mixed m) {
 	    if(undefinedp(m))
 	      return "NULL";
@@ -527,13 +549,18 @@ protected string emulate_bindings(string query,
 	      return sizeof(m) ? indices(m)[0] : "";
 	    return "'"+(intp(m)?(string)m:quote((string)m))+"'";
 	  });
-  // Throws if mapping key is empty string.
-  k = map(indices(bindings),lambda(string s){
-			      return ( (stringp(s)&&s[0]==':') ?
-				       s : ":"+s);
-			    });
+
+  k = map(k,
+          lambda(string|int s) {
+            if (stringp(s)) {
+              if (has_prefix(s, ":")) return s;
+            }
+            return ":" + s;
+          });
+
   return replace(query,k,v);
 }
+#pragma deprecation_warnings
 
 //! Handle @[sprintf]-based quoted arguments
 //!
@@ -592,6 +619,9 @@ array(string|mapping(string|int:mixed))
   return ({ query });
 }
 
+// Hide warnings about the deprecated charset argument.
+#pragma no_deprecation_warnings
+
 //! Send an SQL query synchronously to the SQL-server and return
 //! the results in untyped mode.
 //!
@@ -631,17 +661,20 @@ variant .Result big_query(object|string q);
 //!
 //! @param bindings
 //!   A mapping containing bindings of variables used in the query.
-//!   A variable is identified by a colon (:) followed by a name or number.
-//!   Each index in the mapping corresponds to one such variable, and the
-//!   value for that index is substituted (quoted) into the query wherever
-//!   the variable is used.
+//!   A variable is identified by a colon (@expr{':'@}) followed by a name
+//!   or number. Each index in the mapping corresponds to one such variable,
+//!   and the value for that index is substituted (quoted) into the query
+//!   wherever the variable is used.
 //!
 //! @code
-//! res = query("SELECT foo FROM bar WHERE gazonk=:baz",
-//!             ([":baz":"value"]));
+//! res = big_query("SELECT foo FROM bar WHERE gazonk=:baz",
+//!                 ([":baz":"value"]));
 //! @endcode
 //!
 //!   Binary values (BLOBs) may need to be placed in multisets.
+//!
+//!   Mapping entries prefixed with an asterisk (@expr{'*'@}) are reserved
+//!   for for database-specific query options (like eg @[QUERY_OPTION_CHARSET]).
 //!
 //! @returns
 //!   An @[Sql.Result] object in untyped
@@ -665,13 +698,17 @@ variant .Result big_query(object|string q);
 //! queries. It typically has less overhead than @[query] also for
 //! ones that return only a few rows.
 //!
+//! @note
+//!   Support for database-specific query options was added in Pike 9.0.
+//!
 //! @seealso
 //!   @[query], @[emulate_bindings], @[streaming_query], @[big_typed_query],
 //!   @[streaming_typed_query]
 variant .Result big_query(object|string q,
-                          mapping(string|int:mixed) bindings)
+                          mapping(string|int:mixed) bindings,
+                          void|__deprecated__(string) charset)
 {
-  return big_query(emulate_bindings(q, bindings));
+  return big_query(emulate_bindings(q, bindings, charset));
 }
 
 //! Send an SQL query synchronously to the SQL-server and return
@@ -683,8 +720,9 @@ variant .Result big_query(object|string q,
 //!
 //! @param extraarg
 //! @param extraargs
-//!   Arguments as you would use in sprintf. They are automatically
-//!   quoted.
+//!   Arguments as you would use in @[sprintf]. They are automatically
+//!   quoted. After the @[sprintf]-style options a mapping with options
+//!   may be specified.
 //!
 //! @code
 //! res = query("select foo from bar where gazonk=%s","value");
@@ -705,11 +743,14 @@ variant .Result big_query(object|string q,
 //! queries. It typically has less overhead than @[query] also for
 //! ones that return only a few rows.
 //!
+//! @note
+//!   Support for specifying an options mapping was added in Pike 9.0.
+//!
 //! @seealso
 //!   @[query], @[handle_extraargs], @[streaming_query]
 variant .Result big_query(object|string q,
                           string|multiset|int|float|object extraarg,
-                          string|multiset|int|float|object ... extraargs)
+                          string|multiset|int|float|object|mapping ... extraargs)
 {
   return big_query(@handle_extraargs(q, ({ extraarg }) + extraargs));
 }
@@ -802,9 +843,10 @@ variant .Result big_typed_query(object|string q)
 //! @seealso
 //!   @[query], @[typed_query], @[big_query], @[streaming_query]
 variant .Result big_typed_query(object|string q,
-                                mapping(string|int:mixed) bindings)
+                                mapping(string|int:mixed) bindings,
+                                void|__deprecated__(string) charset)
 {
-  return big_typed_query(emulate_bindings(q, bindings));
+  return big_typed_query(emulate_bindings(q, bindings, charset));
 }
 
 //! Send an SQL query synchronously to the SQL-server and return
@@ -831,7 +873,7 @@ variant .Result big_typed_query(object|string q,
 //!   @[query], @[typed_query], @[big_query], @[streaming_query]
 variant .Result big_typed_query(object|string q,
                                 string|multiset|int|float|object extraarg,
-                                string|multiset|int|float|object ... extraargs)
+                                string|multiset|int|float|object|mapping ... extraargs)
 {
   return big_typed_query(@handle_extraargs(q, ({ extraarg }) + extraargs));
 }
@@ -867,7 +909,7 @@ variant .Result big_typed_query(object|string q,
 //!   @[query], @[big_typed_query]
 array(mapping(string:mixed)) typed_query(object|string q, mixed ... extraargs)
 {
-  return res_obj_to_array(big_typed_query(q, @extraargs));  
+  return res_obj_to_array(big_typed_query(q, @extraargs));
 }
 
 //! Send an SQL query synchronously to the SQL-server and return
@@ -909,9 +951,10 @@ variant .Result streaming_query(object|string q)
 //! @seealso
 //!   @[big_query], @[streaming_typed_query]
 variant .Result streaming_query(object|string q,
-                                mapping(string:mixed) bindings)
+                                mapping(string:mixed) bindings,
+                                void|__deprecated__(string) charset)
 {
-  return streaming_query(emulate_bindings(q, bindings));
+  return streaming_query(emulate_bindings(q, bindings, charset));
 }
 
 //! Send an SQL query synchronously to the SQL-server and return
@@ -928,7 +971,7 @@ variant .Result streaming_query(object|string q,
 //!   @[big_query], @[streaming_typed_query]
 variant .Result streaming_query(object|string q,
                                 string|multiset|int|float|object extraarg,
-                                string|multiset|int|float|object ... extraargs)
+                                string|multiset|int|float|object|mapping ... extraargs)
 {
   return streaming_query(@handle_extraargs(q, ({ extraarg }) + extraargs));
 }
@@ -967,9 +1010,10 @@ variant .Result streaming_typed_query(object|string q)
 //! @seealso
 //!   @[big_query], @[streaming_query], @[big_typed_query]
 variant .Result streaming_typed_query(object|string q,
-                                      mapping(string|int:mixed) bindings)
+                                      mapping(string|int:mixed) bindings,
+                                      void|__deprecated__(string) charset)
 {
-  return streaming_typed_query(emulate_bindings(q, bindings));
+  return streaming_typed_query(emulate_bindings(q, bindings, charset));
 }
 
 //! Send an SQL query synchronously to the SQL-server and return
@@ -986,10 +1030,12 @@ variant .Result streaming_typed_query(object|string q,
 //!   @[big_query], @[streaming_query], @[big_typed_query]
 variant .Result streaming_typed_query(object|string q,
                                       string|multiset|int|float|object extraarg,
-                                      string|multiset|int|float|object ... extraargs)
+                                      string|multiset|int|float|object|mapping ... extraargs)
 {
   return streaming_typed_query(@handle_extraargs(q, ({ extraarg }) + extraargs));
 }
+
+#pragma deprecation_warnings
 
 //! Create a new database.
 //!
