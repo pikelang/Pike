@@ -1103,7 +1103,7 @@ private void startquery(int forcetext, .pgsql_util.Result portal, string q,
   array from;
   if (bindings) {
     if (forcetext)
-      q = .sql_util.emulate_bindings(q, bindings, this),
+      q = emulate_bindings(q, bindings),
       paramValues = ({});
     else {
       int pi = 0;
