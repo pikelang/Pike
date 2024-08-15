@@ -45,9 +45,9 @@ variant Sql.Result big_query(string query)
 //!     @member string "formatted_query"
 //!       The formatted query.
 //!   @endmapping
-variant Sql.Result big_query(string query, mapping bindings)
+variant Sql.Result big_query(string query, mapping bindings, mixed ... extras)
 {
-  Sql.Result res = ::big_query(query, bindings);
+  Sql.Result res = ::big_query(query, bindings, @extras);
 
   res->_values[0]->bindings = sprintf("%O", bindings);
   res->_values[0]->query = query;
@@ -71,7 +71,7 @@ variant Sql.Result big_query(string query, mapping bindings)
 //!   @endmapping
 variant Sql.Result big_query(string query,
 			     string|int|float|object extraarg,
-			     string|int|float|object ... extraargs)
+                             string|int|float|object|mapping ... extraargs)
 {
   Sql.Result res = ::big_query(query, extraarg, @extraargs);
 

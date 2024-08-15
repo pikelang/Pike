@@ -12,6 +12,10 @@
 //!                     "group=%s", group)->name * ",";
 //! }
 
+//! Field to set in the query bindings mapping to set a character set
+//! for just the current query. Only supported by some databases.
+constant QUERY_OPTION_CHARSET = __builtin.Sql.QUERY_OPTION_CHARSET;
+
 //! @ignore
 // Use getters and Val-> to ensure dynamic resolving in case the
 // values in Val.pmod are replaced.

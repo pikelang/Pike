@@ -674,8 +674,10 @@ protected array|object|mapping|string|int fix_result_charset(array|object|mappin
 }
 
 #define QUERY_BODY(do_query)						\
-  if (bindings)								\
-    query = emulate_bindings(query, bindings);				\
+  if (bindings) {                                                       \
+    query = emulate_bindings(query, bindings);                          \
+    charset = charset || bindings[.QUERY_OPTION_CHARSET];               \
+  }                                                                     \
 									\
   [query, string restore_charset] = fix_query_charset(query, charset);	\
 									\
@@ -700,9 +702,12 @@ protected array|object|mapping|string|int fix_result_charset(array|object|mappin
 									\
   return res;
 
+// Do not warn about the charset argument below.
+#pragma no_deprecation_warnings
+
 variant Result big_query (string query,
 			  mapping(string|int:mixed)|void bindings,
-			  void|string charset)
+                          void|__deprecated__(string) charset)
 //! Sends a query to the server.
 //!
 //! @param query
@@ -710,11 +715,12 @@ variant Result big_query (string query,
 //!
 //! @param bindings
 //!   An optional bindings mapping. See @[Sql.query] for details about
-//!   this.
+//!   this. The mapping may contain a @[QUERY_OPTION_CHARSET] entry with
+//!   the same semantics as the deprecated @[charset] parameter below.
 //!
 //! @param charset
-//!   An optional charset that will be used temporarily while sending
-//!   @[query] to the server. If necessary, a query
+//!   @b{DEPRECATED@} An optional charset that will be used temporarily
+//!   while sending @[query] to the server. If necessary, a query
 //!   @code
 //!     SET character_set_client=@[charset]
 //!   @endcode
@@ -725,6 +731,8 @@ variant Result big_query (string query,
 //!   unicode encode mode (see @[set_unicode_encode_mode]) is enabled
 //!   (the default) and you have some large queries (typically blob
 //!   inserts) where you want to avoid the query parsing overhead.
+//!
+//!   Deprecated; use the entry @[QUERY_OPTION_CHARSET] in @[bindings] instead.
 //!
 //! @returns
 //!   A @[Result] object is returned if the query is of a
@@ -741,7 +749,7 @@ variant Result big_query (string query,
 
 variant Result streaming_query (string query,
 				mapping(string|int:mixed)|void bindings,
-				void|string charset)
+                                void|__deprecated__(string) charset)
 //! Makes a streaming SQL query.
 //!
 //! This function sends the SQL query @[query] to the Mysql-server.
@@ -759,7 +767,7 @@ variant Result streaming_query (string query,
 
 variant Result big_typed_query (string query,
 				mapping(string|int:mixed)|void bindings,
-				void|string charset)
+                                void|__deprecated__(string) charset)
 //! Makes a typed SQL query.
 //!
 //! This function sends the SQL query @[query] to the MySQL server and
@@ -777,7 +785,7 @@ variant Result big_typed_query (string query,
 
 variant Result streaming_typed_query (string query,
 				      mapping(string|int:mixed)|void bindings,
-				      void|string charset)
+                                      void|__deprecated__(string) charset)
 //! Makes a streaming typed SQL query.
 //!
 //! This function acts as the combination of @[streaming_query()]
@@ -788,6 +796,8 @@ variant Result streaming_typed_query (string query,
 {
   QUERY_BODY (streaming_typed_query);
 }
+
+#pragma deprecation_warnings
 
 array(string) list_dbs(string|void wild)
 {
