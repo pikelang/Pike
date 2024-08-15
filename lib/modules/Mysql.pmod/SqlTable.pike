@@ -295,7 +295,8 @@ local string quote (string s)
 
 protected int argspec_counter;
 
-local string handle_argspec (array argspec, mapping(string:mixed) bindings)
+local string handle_argspec(Sql.Sql db_conn, array argspec,
+                            mapping(string:mixed) bindings)
 //! Helper function for use with array style arguments.
 //!
 //! Many functions in this class can take WHERE expressions etc either
@@ -326,8 +327,8 @@ local string handle_argspec (array argspec, mapping(string:mixed) bindings)
     return argspec[0];
   }
   else
-    return Sql.sql_util.handle_extraargs (argspec[0], argspec[1..],
-					  bindings)[0];
+    return db_conn->handle_extraargs(argspec[0],
+                                     argspec[1..] + ({ bindings }))[0];
 }
 
 // Implicit connection handling.
@@ -912,8 +913,8 @@ void conn_delete (Sql.Sql db_conn, string|array where, void|string|array rest)
 	      rest ? sprintf (" %O", rest) : "");
 
   void|mapping(string|int:mixed) bindings = ([]);
-  if (arrayp (where)) where = handle_argspec (where, bindings);
-  if (arrayp (rest)) rest = handle_argspec (rest, bindings);
+  if (arrayp (where)) where = handle_argspec(db_conn, where, bindings);
+  if (arrayp (rest)) rest = handle_argspec(db_conn, rest, bindings);
   if (!sizeof (bindings)) bindings = 0;
 
   db_conn->big_query ("DELETE FROM `" + table + "` "
@@ -955,10 +956,10 @@ Result conn_select (Sql.Sql db_conn, string|array where,
 //! explicitly instead of being retrieved via @[get_db].
 {
   void|mapping(string:mixed) bindings = ([]);
-  if (arrayp (where)) where = handle_argspec (where, bindings);
+  if (arrayp (where)) where = handle_argspec(db_conn, where, bindings);
   if (arrayp (select_exprs))
-    select_exprs = handle_argspec (select_exprs, bindings);
-  if (arrayp (rest)) rest = handle_argspec (rest, bindings);
+    select_exprs = handle_argspec(db_conn, select_exprs, bindings);
+  if (arrayp (rest)) rest = handle_argspec(db_conn, rest, bindings);
   if (!sizeof (bindings)) bindings = 0;
 
   Result res = Result();
@@ -982,9 +983,9 @@ array conn_select1 (Sql.Sql db_conn, string|array select_expr,
 {
   void|mapping(string:mixed) bindings = ([]);
   if (arrayp (select_expr))
-    select_expr = handle_argspec (select_expr, bindings);
-  if (arrayp (where)) where = handle_argspec (where, bindings);
-  if (arrayp (rest)) rest = handle_argspec (rest, bindings);
+    select_expr = handle_argspec(db_conn, select_expr, bindings);
+  if (arrayp (where)) where = handle_argspec(db_conn, where, bindings);
+  if (arrayp (rest)) rest = handle_argspec(db_conn, rest, bindings);
   if (!sizeof (bindings)) bindings = UNDEFINED;
 
   string property;

@@ -541,23 +541,34 @@ protected string emulate_bindings(string query,
 //!   The query as sent to one of the query functions.
 //!
 //! @param extraargs
-//!   The arguments following the query.
+//!   The arguments following the query. The last element of
+//!   the array may be a bindings mapping.
 //!
 //! @returns
-//!   Returns an array with two elements:
+//!   Returns an array with up to two elements:
 //!   @array
 //!     @elem string 0
 //!       The query altered to use bindings-syntax.
 //!     @elem mapping(string|int:mixed) 1
 //!       A bindings mapping. Not present if no bindings were added.
 //!   @endarray
-protected array(string|mapping(string|int:mixed))
+//!
+//! @note
+//!   Support for specifying an initial options mapping was
+//!   added in Pike 9.0.
+array(string|mapping(string|int:mixed))
   handle_extraargs(string query, array(mixed) extraargs)
 {
-  array(mixed) args = allocate(sizeof(extraargs));
   mapping(string:mixed) bindings = ([]);
+  if (sizeof(extraargs) && mappingp(extraargs[-1])) {
+    bindings = extraargs[-1];
+    extraargs = extraargs[..<1];
+  }
+  array(mixed) args = allocate(sizeof(extraargs));
 
-  int a;
+  // NB: Protect against successive calls of handle_extraargs() with
+  //     the same bindings mapping having conflicting entries.
+  int a = sizeof(bindings);
   foreach(extraargs; int j; mixed s) {
     if (stringp(s) || multisetp(s)) {
       string bind_name = ":arg"+(a++);
