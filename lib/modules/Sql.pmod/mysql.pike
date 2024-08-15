@@ -675,7 +675,7 @@ protected array|object|mapping|string|int fix_result_charset(array|object|mappin
 
 #define QUERY_BODY(do_query)						\
   if (bindings)								\
-    query = .sql_util.emulate_bindings(query,bindings,this);		\
+    query = emulate_bindings(query, bindings);				\
 									\
   [query, string restore_charset] = fix_query_charset(query, charset);	\
 									\

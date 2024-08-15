@@ -27,7 +27,7 @@ protected class ZeroWrapper
 }
 
 //! Instance of @[ZeroWrapper] used by @[Connection()->handle_extraargs()].
-ZeroWrapper zero = ZeroWrapper();
+ZeroWrapper zero_arg = ZeroWrapper();
 
 protected class NullArg
 {

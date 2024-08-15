@@ -566,7 +566,7 @@ protected array(string|mapping(string|int:mixed))
       continue;
     }
     if (intp(s) || floatp(s)) {
-      args[j] = s || .zero;
+      args[j] = s || .zero_arg;
       continue;
     }
     if (objectp(s) && s->is_val_null) {
