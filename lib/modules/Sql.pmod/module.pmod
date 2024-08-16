@@ -12,6 +12,8 @@
 //!                     "group=%s", group)->name * ",";
 //! }
 
+constant QUERY_OPTION_CHARSET = "*charset*";
+
 //! @ignore
 // Use getters and Val-> to ensure dynamic resolving in case the
 // values in Val.pmod are replaced.
