@@ -134,13 +134,16 @@ protected mapping(string:int(1..1)) datetime_cols;
 // Mapping tracking all date and time columns (except TIMESTAMP),
 // which can be sent either as strings or integers.
 
-protected string query_charset;
+protected mapping(string:mixed) query_options = ([]);
+// This is typically empty or holds just a single element
+// (Sql.QUERY_OPTION_CHARSET).
+//
 // Mysql charset to use in queries. This is dictated by the table and
 // column names. If none of them are wide, we always use latin1 to
-// avoid the encoding overhead in Sql.mysql (even though that is not
-// strictly correct - mysql latin1 have some different chars in the
-// high control char range of iso-8859-1, but we ignore that). If wide
-// identifiers are found, this is zero to let Sql.mysql fix the
+// avoid the encoding overhead in Sql.mysql (even though this is not
+// strictly correct - mysql latin1 has some different chars in the
+// high control char range of iso-8859-1, but we ignore this). If wide
+// identifiers are found, this is empty to let Sql.mysql fix the
 // charsets, and it better be in unicode encode mode then. This does
 // not affect string constants since we always specify the charset for
 // every string literal.
@@ -207,15 +210,15 @@ protected void create (function(void:Sql.Sql) get_db,
   this::get_db = get_db;
   this::table = table;
 
-  Sql.Sql conn = get_db();
+  Sql.Sql db_conn = get_db();
 
-  query_charset = String.width (table) <= 8 && "latin1";
+  string query_charset = (String.width(table) <= 8) && "latin1";
 
   {
     col_types = ([]);
     timestamp_cols = ([]);
     datetime_cols = ([]);
-    array(mapping(string:mixed)) col_list = conn->list_fields(table);
+    array(mapping(string:mixed)) col_list = db_conn->list_fields(table);
     mapping(string:mixed) prop_col_info;
 
     foreach (col_list, mapping(string:mixed) col_info) {
@@ -252,7 +255,11 @@ protected void create (function(void:Sql.Sql) get_db,
     }
   }
 
-  foreach (conn->query ("SHOW COLUMNS FROM `" + table + "`"),
+  if (query_charset) {
+    query_options[Sql.QUERY_OPTION_CHARSET] = query_charset;
+  }
+
+  foreach (db_conn->query("SHOW COLUMNS FROM `" + table + "`"),
 	   mapping(string:string) col_info)
     if (col_info->Extra == "auto_increment") {
       id_col = col_info->Field;
@@ -261,7 +268,7 @@ protected void create (function(void:Sql.Sql) get_db,
 
   {
     mapping(int:string) pkc = ([]);
-    foreach (conn->query ("SHOW INDEX FROM `" + table + "`"),
+    foreach (db_conn->query("SHOW INDEX FROM `" + table + "`"),
 	     mapping(string:string) ind_col)
       if (ind_col->Key_name == "PRIMARY")
 	pkc[(int) ind_col->Seq_in_index] = ind_col->Column_name;
@@ -707,20 +714,19 @@ int conn_insert (Sql.Sql db_conn, mapping(string:mixed)... records)
 //! Like @[insert], but a database connection object is passed
 //! explicitly instead of being retrieved via @[get_db].
 {
-  Sql.mysql conn = db_conn->master_sql;
 #ifdef MYSQL_DEBUG
   if (!sizeof (records)) error ("Must give at least one record.\n");
 #endif
   UPDATE_MSG ("%O: insert %O\n",
 	      this, sizeof (records) == 1 ? records[0] : records);
   mapping(string:mixed) first_rec = records[0];
-  conn->big_query ("INSERT `" + table + "` " +
-		   make_insert_clause (records),
-		   0, query_charset);
+  db_conn->big_query("INSERT `" + table + "` " +
+                     make_insert_clause(records),
+                     query_options);
   invalidate_cache();
   if (!id_col) return 0;
   if (!has_index (first_rec, id_col))
-    return first_rec[id_col] = conn->insert_id();
+    return first_rec[id_col] = db_conn->insert_id();
   else
     return first_rec[id_col];
 }
@@ -729,19 +735,18 @@ int conn_insert_ignore (Sql.Sql db_conn, mapping(string:mixed)... records)
 //! Like @[insert_ignore], but a database connection object is passed
 //! explicitly instead of being retrieved via @[get_db].
 {
-  Sql.mysql conn = db_conn->master_sql;
 #ifdef MYSQL_DEBUG
   if (!sizeof (records)) error ("Must give at least one record.\n");
 #endif
   UPDATE_MSG ("%O: insert_ignore %O\n",
 	      this, sizeof (records) == 1 ? records[0] : records);
   mapping(string:mixed) first_rec = records[0];
-  conn->big_query ("INSERT IGNORE `" + table + "` " +
-		   make_insert_clause (records),
-		   0, query_charset);
+  db_conn->big_query("INSERT IGNORE `" + table + "` " +
+                     make_insert_clause(records),
+                     query_options);
   invalidate_cache();
   if (!id_col) return 0;
-  int last_insert_id = conn->insert_id();
+  int last_insert_id = db_conn->insert_id();
   if (last_insert_id &&
       sizeof (records) == 1 && !has_index (first_rec, id_col))
     // Only set the field if we got a single record. Otherwise we
@@ -754,20 +759,19 @@ int conn_replace (Sql.Sql db_conn, mapping(string:mixed)... records)
 //! Like @[replace], but a database connection object is passed
 //! explicitly instead of being retrieved via @[get_db].
 {
-  Sql.mysql conn = db_conn->master_sql;
 #ifdef MYSQL_DEBUG
   if (!sizeof (records)) error ("Must give at least one record.\n");
 #endif
   UPDATE_MSG ("%O: replace %O\n",
 	      this, sizeof (records) == 1 ? records[0] : records);
   mapping(string:mixed) first_rec = records[0];
-  conn->big_query ("REPLACE `" + table + "` " +
-		   make_insert_clause (records),
-		   0, query_charset);
+  db_conn->big_query("REPLACE `" + table + "` " +
+                     make_insert_clause(records),
+                     query_options);
   invalidate_cache();
   if (!id_col) return 0;
   if (!has_index (first_rec, id_col))
-    return first_rec[id_col] = conn->insert_id();
+    return first_rec[id_col] = db_conn->insert_id();
   else
     return first_rec[id_col];
 }
@@ -777,7 +781,6 @@ void conn_update (Sql.Sql db_conn, mapping(string:mixed) record,
 //! Like @[update], but a database connection object is passed
 //! explicitly instead of being retrieved via @[get_db].
 {
-  Sql.mysql conn = db_conn->master_sql;
 #ifdef MYSQL_DEBUG
   if (!(<0,1,2>)[clear_other_fields])
     error ("Invalid clear_other_fields flag.\n");
@@ -790,14 +793,14 @@ void conn_update (Sql.Sql db_conn, mapping(string:mixed) record,
   string pk_where = make_pk_where (record);
   if (!pk_where)
     error ("The record lacks a value for a primary key column.\n");
-  record = update_pack_fields (conn, record, pk_where, clear_other_fields);
+  record = update_pack_fields(db_conn, record, pk_where, clear_other_fields);
 
-  conn->big_query ("UPDATE `" + table + "` "
-		   "SET " + make_set_clause (record,
-					     clear_other_fields == 2) + " "
-		   "WHERE " + pk_where + " "
-		   "LIMIT 1",	// The limit is just extra paranoia.
-		   0, query_charset);
+  db_conn->big_query("UPDATE `" + table + "` "
+                     "SET " + make_set_clause(record,
+                                              clear_other_fields == 2) + " "
+                     "WHERE " + pk_where + " "
+                     "LIMIT 1",	// The limit is just extra paranoia.
+                     query_options);
   invalidate_cache();
 }
 
@@ -806,7 +809,6 @@ int conn_insert_or_update (Sql.Sql db_conn, mapping(string:mixed) record,
 //! Like @[insert_or_update], but a database connection object is
 //! passed explicitly instead of being retrieved via @[get_db].
 {
-  Sql.mysql conn = db_conn->master_sql;
 #ifdef MYSQL_DEBUG
   if (!(<0,1,2>)[clear_other_fields])
     error ("Invalid clear_other_fields flag.\n");
@@ -865,22 +867,22 @@ int conn_insert_or_update (Sql.Sql db_conn, mapping(string:mixed) record,
       update_set += ({"`" + col + "`=DEFAULT(`" + col + "`)"});
   }
 
-  conn->big_query ("INSERT `" + table + "` " +
-		   make_insert_clause (({real_cols})) + " " +
-		   (sizeof (update_set) ?
-		    "ON DUPLICATE KEY UPDATE " + update_set * "," : ""),
-		   0, query_charset);
+  db_conn->big_query("INSERT `" + table + "` " +
+                     make_insert_clause(({real_cols})) + " " +
+                     (sizeof(update_set) ?
+                      "ON DUPLICATE KEY UPDATE " + update_set * "," : ""),
+                     query_options);
 
   invalidate_cache();
 
   if (id_col && !has_index (record, id_col))
-    record[id_col] = conn->insert_id();
+    record[id_col] = db_conn->insert_id();
 
   if (sizeof (other_fields) && !clear_other_fields &&
       // affected_rows() returns 2 if a record was updated, 1 if a new
       // one was added, and 0 if nothing happened. We should merge in
       // the property changes for both 2 and 0.
-      conn->affected_rows() != 1) {
+      db_conn->affected_rows() != 1) {
     string where = make_pk_where (record + ([]));
     if (!where) {
       // There's no AUTO_INCREMENT id column and the record doesn't
@@ -898,7 +900,7 @@ int conn_insert_or_update (Sql.Sql db_conn, mapping(string:mixed) record,
 	  add_mysql_value (buf, col_name, val);
 	}
     }
-    update_props (conn, where, other_fields);
+    update_props(db_conn, where, other_fields);
   }
 
   return id_col && record[id_col];
@@ -916,9 +918,9 @@ void conn_delete (Sql.Sql db_conn, string|array where, void|string|array rest)
   if (arrayp (rest)) rest = handle_argspec (rest, bindings);
   if (!sizeof (bindings)) bindings = 0;
 
-  db_conn->master_sql->big_query ("DELETE FROM `" + table + "` "
-				  "WHERE (" + where + ") " + (rest || ""),
-				  bindings);
+  db_conn->big_query("DELETE FROM `" + table + "` "
+                     "WHERE (" + where + ") " + (rest || ""),
+                     bindings);
   invalidate_cache();
 }
 
@@ -927,10 +929,9 @@ void conn_remove (Sql.Sql db_conn, mixed id)
 //! explicitly instead of being retrieved via @[get_db].
 {
   UPDATE_MSG ("%O: remove %O\n", this, id);
-  Sql.mysql conn = db_conn->master_sql;
-  conn->big_query ("DELETE FROM `" + table + "` "
-		   "WHERE " + simple_make_pk_where (id),
-		   0, query_charset);
+  db_conn->big_query("DELETE FROM `" + table + "` "
+                     "WHERE " + simple_make_pk_where(id),
+                     query_options);
   invalidate_cache();
 }
 
@@ -939,11 +940,10 @@ void conn_remove_multi (Sql.Sql db_conn, array(mixed) ids)
 //! explicitly instead of being retrieved via @[get_db].
 {
   UPDATE_MSG ("%O: remove_multi %{%O,%}\n", this, ids);
-  Sql.mysql conn = db_conn->master_sql;
   // FIXME: Split into several queries if the list is very long.
-  conn->big_query ("DELETE FROM `" + table + "` "
-		   "WHERE " + make_multi_pk_where (ids),
-		   0, query_charset);
+  db_conn->big_query("DELETE FROM `" + table + "` "
+                     "WHERE " + make_multi_pk_where(ids),
+                     query_options);
   invalidate_cache();
 }
 
@@ -968,7 +968,7 @@ Result conn_select (Sql.Sql db_conn, string|array where,
   query += res->prepare_select_expr (fields, select_exprs, !!table_refs) +
     " FROM `" + table + "` " + (table_refs || "");
 
-  res->res = db_conn->master_sql->big_typed_query (
+  res->res = db_conn->big_typed_query(
     query + " WHERE (" + where + ") " + (rest || ""), bindings);
 
   return res;
@@ -1006,7 +1006,7 @@ array conn_select1 (Sql.Sql db_conn, string|array select_expr,
     query += select_expr;
   query += " FROM `" + table + "` " + (table_refs || "");
 
-  Sql.mysql_result res = db_conn->master_sql->big_typed_query (
+  Sql.mysql_result res = db_conn->big_typed_query(
     query + " WHERE (" + where + ") " + (rest || ""), bindings);
 
 #ifdef MYSQL_DEBUG
@@ -1038,8 +1038,6 @@ mapping(string:mixed) conn_get (Sql.Sql db_conn, mixed id,
 //! Like @[get], but a database connection object is passed explicitly
 //! instead of being retrieved via @[get_db].
 {
-  Sql.mysql conn = db_conn->master_sql;
-
 #ifdef MYSQL_DEBUG
   if (fields && !sizeof (fields)) error ("No fields selected.\n");
 #endif
@@ -1091,10 +1089,10 @@ mapping(string:mixed) conn_get (Sql.Sql db_conn, mixed id,
 
   string pk_where = simple_make_pk_where (id);
   Mysql.mysql_result res =
-    conn->big_typed_query ("SELECT " + (select_cols * ",") + " "
-			   "FROM `" + table + "` "
-			   "WHERE " + pk_where,
-			   0, query_charset);
+    db_conn->big_typed_query("SELECT " + (select_cols * ",") + " "
+                             "FROM `" + table + "` "
+                             "WHERE " + pk_where,
+                             query_options);
 
   array(string) ent = res->fetch_row();
   if (!ent) return 0;
@@ -1126,15 +1124,14 @@ Result conn_get_multi (Sql.Sql db_conn, array(mixed) ids,
 //! Like @[get_multi], but a database connection object is passed
 //! explicitly instead of being retrieved via @[get_db].
 {
-  Sql.mysql conn = db_conn->master_sql;
   Result res = Result();
   // FIXME: Split into several queries if the list is very long.
   res->res =
-    conn->big_typed_query ("SELECT " +
-			   res->prepare_select_expr (fields, 0, 0) +
-			   " FROM `" + table + "` "
-			   "WHERE " + make_multi_pk_where (ids),
-			   0, query_charset);
+    db_conn->big_typed_query("SELECT " +
+                             res->prepare_select_expr(fields, 0, 0) +
+                             " FROM `" + table + "` "
+                             "WHERE " + make_multi_pk_where(ids),
+                             query_options);
   return res;
 }
 
@@ -1677,18 +1674,18 @@ protected string make_multi_pk_where (array(mixed) ids, int|void negated)
   }
 }
 
-protected string get_and_merge_props (Sql.mysql conn, string pk_where,
-				      mapping(string:mixed) prop_changes)
+protected string get_and_merge_props(Sql.Sql db_conn, string pk_where,
+                                     mapping(string:mixed) prop_changes)
 // Retrieves the current properties for a record (if pk_where is set),
 // merges prop_changes into them, and returns the new value to assign
 // to the properties column.
 {
   mapping(string:mixed) old_props;
   if (array(string) ent = pk_where &&
-      conn->big_query ("SELECT `" + prop_col + "` "
-		       "FROM `" + table + "` "
-		       "WHERE " + pk_where,
-		       0, query_charset)->fetch_row())
+      db_conn->big_query("SELECT `" + prop_col + "` "
+                         "FROM `" + table + "` "
+                         "WHERE " + pk_where,
+                         query_options)->fetch_row())
     old_props = decode_props (ent[0], pk_where);
   else
     old_props = ([]);
@@ -1713,23 +1710,23 @@ protected string get_and_merge_props (Sql.mysql conn, string pk_where,
   return encoded_props;
 }
 
-protected void update_props (Sql.mysql conn, string pk_where,
-			     mapping(string:mixed) prop_changes)
+protected void update_props(Sql.Sql db_conn, string pk_where,
+                            mapping(string:mixed) prop_changes)
 // Updates the properties column by retrieving the current properties
 // and merging prop_changes into them. prop_changes is assumed to only
 // contain properties.
 {
-  string encoded_props = get_and_merge_props (conn, pk_where, prop_changes);
-  conn->big_query ("UPDATE `" + table + "` "
-		   "SET `" + prop_col + "`="
-		   "_binary\"" + quote (encoded_props) + "\" "
-		   "WHERE " + pk_where + " "
-		   "LIMIT 1",	// In case the WHERE condition is bad.
-		   0, query_charset);
+  string encoded_props = get_and_merge_props(db_conn, pk_where, prop_changes);
+  db_conn->big_query("UPDATE `" + table + "` "
+                     "SET `" + prop_col + "`="
+                     "_binary\"" + quote(encoded_props) + "\" "
+                     "WHERE " + pk_where + " "
+                     "LIMIT 1",	// In case the WHERE condition is bad.
+                     query_options);
 }
 
 protected mapping(string:mixed) update_pack_fields (
-  Sql.mysql conn, mapping(string:mixed) rec, string pk_where,
+  Sql.Sql db_conn, mapping(string:mixed) rec, string pk_where,
   int replace_properties)
 // Returns a record mapping where all fields that don't have columns
 // have been packed into a prop_col entry. The table is queried if
@@ -1746,7 +1743,7 @@ protected mapping(string:mixed) update_pack_fields (
 #endif
     if (replace_properties) pk_where = 0;
     else if (!pk_where) pk_where = make_pk_where (rec + ([]));
-    real_cols[prop_col] = get_and_merge_props (conn, pk_where, other_fields);
+    real_cols[prop_col] = get_and_merge_props(db_conn, pk_where, other_fields);
   }
 
   else if (replace_properties && prop_col)
