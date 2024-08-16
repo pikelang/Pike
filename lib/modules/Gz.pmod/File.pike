@@ -122,7 +122,7 @@ String.SplitIterator|Stdio.LineIterator line_iterator( int|void trim )
 {
   if( trim )
     return String.SplitIterator( "",(<'\n','\r'>),1,
-      			   read_function(DATA_CHUNK_SIZE));
+                                 read_function(DATA_CHUNK_SIZE));
   // This one is about twice as fast, but it's way less flexible.
   return Stdio.LineIterator( read_function(DATA_CHUNK_SIZE) );
 }

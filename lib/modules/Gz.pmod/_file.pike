@@ -53,18 +53,19 @@ int open(string|int|Stdio.Stream file, void|string mode)
   strategy = .DEFAULT_STRATEGY;
   window_size = 15;
   if(mode) {
-    mode = filter(mode, lambda(int n) {
-      		    if(n == 'w' || n == 'a')
-      		      write_mode = 1;
-      		    if(n >= '0' && n <= '9')
-      		      level = n - '0';
-      		    else if(n == 'f')
-      		      strategy = .FILTERED;
-      		    else if(n == 'h')
-      		      strategy = .HUFFMAN_ONLY;
-      		    else
-      		      return 1;
-      		  });
+    mode = filter(mode,
+                  lambda(int n) {
+                    if(n == 'w' || n == 'a')
+                      write_mode = 1;
+                    if(n >= '0' && n <= '9')
+                      level = n - '0';
+                    else if(n == 'f')
+                      strategy = .FILTERED;
+                    else if(n == 'h')
+                      strategy = .HUFFMAN_ONLY;
+                    else
+                      return 1;
+                  });
     if(write_mode)
       mode += "c"+(has_value(mode, 'a')? "w":"t");
   }
