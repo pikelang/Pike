@@ -2357,6 +2357,9 @@ PIKECLASS BlockCipher
   /*! @module CFB
    *! Implementation of the Cipher Feed-Back mode (CFB).
    *!
+   *! @note
+   *!   Requires Nettle 3.4 or later.
+   *!
    *! @seealso
    *!   @[CBC], @[GCM]
    */
@@ -2803,6 +2806,8 @@ PIKECLASS BlockCipher
 
   /*! @endmodule CFB
    */
+
+  /* FIXME: Support CFB8 (Nettle 3.5 and later). */
 
   /*! @module CTR
    *! Implementation of the Counter mode (CTR).
@@ -3651,6 +3656,8 @@ PIKECLASS BlockCipher16
     /*! @decl inherit __builtin.Nettle.AE
      */
     INHERIT "__builtin.Nettle.AE";
+
+    /* FIXME: Consider using <nist-keywrap.h>. */
 
     /*! @decl string(8bit) name()
      *! Returns the name of the base cipher with @expr{".KW"@} appended.
@@ -4620,7 +4627,7 @@ PIKECLASS BlockCipher16
    *!   limitiations of the @[BlockCipher16.CCM] mode.
    *!
    *! @note
-   *!   Note that this module is not available in all versions of Nettle.
+   *!   Requires Nettle 3.0 or later.
    *!
    *! @seealso
    *!   @[CBC], @[CTR], @[BlockCipher16.CCM], @[BlockCipher16.GCM]
@@ -5054,7 +5061,7 @@ PIKECLASS BlockCipher16
    *! @expr{Crypto.Camellia.GCM@}
    *!
    *! @note
-   *!   Note that this module is not available in all versions of Nettle.
+   *!   Requires Nettle 2.2 or later.
    *!
    *! @seealso
    *!   @[CBC]
@@ -5544,6 +5551,9 @@ PIKECLASS BlockCipher16
    *! CMAC - Cipher-based Message Authentication Code
    *!
    *! This module implements the CMAC algorithm from @rfc{4493@}.
+   *!
+   *! @note
+   *!   Requires Nettle 3.5 or later.
    */
   PIKEVAR object(Nettle_MAC) CMAC;
 
@@ -5745,6 +5755,8 @@ PIKECLASS BlockCipher16
   /*! @endmodule CMAC
    */
 #endif
+
+  /* FIXME: Add support for CMAC64 (Nettle 3.6 and later). */
 
 #if defined(HAVE_NETTLE_OCB_H) && defined(HAVE_NETTLE_OCB_ENCRYPT)
 
@@ -6216,7 +6228,7 @@ PIKECLASS BlockCipher16
   }
   /*! @endmodule OCB
    */
-#endif /* HAVE_NETTLE_OCB_H */
+#endif /* HAVE_NETTLE_OCB_H && HAVE_NETTLE_OCB_ENCRYPT */
 
   /* NB: Declare the storage explicitly to avoid having it declared
    *     inside the #ifdef above.
@@ -7441,6 +7453,8 @@ pike_salsa20_set_key(void *ctx,
  *!
  *! Implementation of the SALSA20 cipher.
  *!
+ *! @note
+ *!   Requires Nettle 2.5 or later.
  */
 PIKECLASS SALSA20
 {
@@ -7539,6 +7553,8 @@ PIKECLASS SALSA20
  *!
  *! Implementation of the @[SALSA20] cipher reduced to 12 rounds.
  *!
+ *! @note
+ *!   Requires Nettle 2.7 or later.
  */
 PIKECLASS SALSA20R12
 {
