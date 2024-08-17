@@ -1252,6 +1252,9 @@ PIKECLASS ECC_Curve
     /*! @decl inherit ECDSA
      *!
      *! This point represents the public key.
+     *!
+     *! @note
+     *!   Requires Nettle 3.6 or later.
      */
     EXTRA
     {
@@ -1353,6 +1356,9 @@ PIKECLASS ECC_Curve
  *! @note
  *!   The API for this curve differs somewhat from the API
  *!   used by the other @[Curve]s.
+ *!
+ *! @note
+ *!   Requires Nettle 3.1 or later.
  *!
  *! @seealso
  *!   @[Curve], @[Curve448], @rfc{7748@}
@@ -1556,6 +1562,9 @@ PIKECLASS Curve25519
   /*! @class EdDSA
    *!
    *! Edwards Curve Digital Signing Algorithm
+   *!
+   *! @note
+   *!   Requires Nettle 3.1 or later.
    */
   PIKECLASS EdDSA
     program_flags PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT|PROGRAM_CLEAR_STORAGE;
@@ -1790,6 +1799,9 @@ PIKECLASS Curve25519
  *!   The API for this curve differs somewhat from the API
  *!   used by the other @[Curve]s.
  *!
+ *! @note
+ *!   Requires Nettle 3.6 or later.
+ *!
  *! @seealso
  *!   @[Curve], @[Curve25519], @rfc{7748@}
  */
@@ -1994,6 +2006,9 @@ PIKECLASS Curve448
   /*! @class EdDSA
    *!
    *! Edwards Curve Digital Signing Algorithm
+   *!
+   *! @note
+   *!   Requires Nettle 3.6 or later.
    */
   PIKECLASS EdDSA
     program_flags PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT|PROGRAM_CLEAR_STORAGE;

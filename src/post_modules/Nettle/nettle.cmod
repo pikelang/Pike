@@ -97,6 +97,9 @@ PIKEFUN string version()
  *! @note
  *! You should normally use @[Crypto.Password] instead.
  *!
+ *! @note
+ *!   Requires Nettle 2.7 or later.
+ *!
  *! @seealso
  *!   @[Crypto.Password], @[Crypto.BLOWFISH]
  */
@@ -137,6 +140,9 @@ PIKEFUN string(7bit) bcrypt_hash(string(8bit) password, string(7bit) scheme,
  *!
  *! @note
  *!  You should normally use @[Crypto.Password] instead.
+ *!
+ *! @note
+ *!   Requires Nettle 2.7 or later.
  *!
  *! @seealso
  *!   @[Crypto.Password], @[Crypto.BLOWFISH]
