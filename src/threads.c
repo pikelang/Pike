@@ -4446,7 +4446,7 @@ static TH_RETURN_TYPE farm(void *_a)
     int current = prctl(PR_GET_DUMPABLE);
 #endif
 #ifdef HAVE_BROKEN_LINUX_THREAD_EUID
-    if( setegid(arg.egid) != 0 || seteuid(arg.euid) != 0 )
+    if( setegid(me->egid) != 0 || seteuid(me->euid) != 0 )
     {
       WERR("%s:%d: Unexpected error from setegid(2). errno=%d\n",
            __FILE__, __LINE__, errno);
