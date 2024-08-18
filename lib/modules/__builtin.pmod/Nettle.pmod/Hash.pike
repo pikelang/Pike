@@ -306,6 +306,7 @@ private void b64enc(String.Buffer dest, int a, int b, int c, int sz)
 //! @note
 //!   In Pike 8.0.1876 and earlier this function generated incompatible
 //!   hashes for passwords that had a length that was a power of 2.
+//!   See @[crypt_hash_pike()] for details.
 //!
 //! @seealso
 //!   @[crypt_md5()], @[crypt_hash_pike()]
