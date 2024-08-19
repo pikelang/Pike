@@ -174,7 +174,7 @@ else
 		     nettle/dsa.h nettle/umac.h nettle/ecdsa.h \
 		     nettle/curve25519.h nettle/eddsa.h \
                      nettle/version.h nettle/pbkdf2.h nettle/hmac.h \
-		     nettle/cmac.h \
+		     nettle/cmac.h nettle/xts.h \
                      nettle/curve448.h nettle/gostdsa.h \
                      nettle/streebog.h \
                      nettle/sm3.h \
@@ -195,7 +195,7 @@ else
 		   nettle_dsa_sign nettle_umac128_digest nettle_ecdsa_sign \
 		   nettle_curve25519_mul nettle_ed25519_sha512_sign \
                    nettle_version_major \
-		   nettle_cmac128_set_key \
+		   nettle_cmac128_set_key nettle_xts_encrypt_message \
                    nettle_blowfish_bcrypt_hash nettle_ed448_shake256_sign \
                    nettle_sm3_init \
                    nettle_balloon nettle_ocb_encrypt nettle_sm4_crypt \
