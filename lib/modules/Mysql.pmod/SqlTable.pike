@@ -134,9 +134,9 @@ protected mapping(string:int(1..1)) datetime_cols;
 // Mapping tracking all date and time columns (except TIMESTAMP),
 // which can be sent either as strings or integers.
 
-protected mapping(string:mixed) query_options = ([]);
-// This is typically empty or holds just a single element
-// (Sql.QUERY_OPTION_CHARSET).
+protected array(mapping(string:mixed)) query_options_args = ({([])});
+// This is typically empty or holds an array with a mapping that
+// contains just a single element (Sql.QUERY_OPTION_CHARSET).
 //
 // Mysql charset to use in queries. This is dictated by the table and
 // column names. If none of them are wide, we always use latin1 to
@@ -256,7 +256,7 @@ protected void create (function(void:Sql.Sql) get_db,
   }
 
   if (query_charset) {
-    query_options[Sql.QUERY_OPTION_CHARSET] = query_charset;
+    query_options_args[0][Sql.QUERY_OPTION_CHARSET] = query_charset;
   }
 
   foreach (db_conn->query("SHOW COLUMNS FROM `" + table + "`"),
@@ -723,7 +723,7 @@ int conn_insert (Sql.Sql db_conn, mapping(string:mixed)... records)
   mapping(string:mixed) first_rec = records[0];
   db_conn->big_query("INSERT `" + table + "` " +
                      make_insert_clause(records),
-                     query_options);
+                     @query_options_args);
   invalidate_cache();
   if (!id_col) return 0;
   if (!has_index (first_rec, id_col))
@@ -744,7 +744,7 @@ int conn_insert_ignore (Sql.Sql db_conn, mapping(string:mixed)... records)
   mapping(string:mixed) first_rec = records[0];
   db_conn->big_query("INSERT IGNORE `" + table + "` " +
                      make_insert_clause(records),
-                     query_options);
+                     @query_options_args);
   invalidate_cache();
   if (!id_col) return 0;
   int last_insert_id = db_conn->insert_id();
@@ -768,7 +768,7 @@ int conn_replace (Sql.Sql db_conn, mapping(string:mixed)... records)
   mapping(string:mixed) first_rec = records[0];
   db_conn->big_query("REPLACE `" + table + "` " +
                      make_insert_clause(records),
-                     query_options);
+                     @query_options_args);
   invalidate_cache();
   if (!id_col) return 0;
   if (!has_index (first_rec, id_col))
@@ -801,7 +801,7 @@ void conn_update (Sql.Sql db_conn, mapping(string:mixed) record,
                                               clear_other_fields == 2) + " "
                      "WHERE " + pk_where + " "
                      "LIMIT 1",	// The limit is just extra paranoia.
-                     query_options);
+                     @query_options_args);
   invalidate_cache();
 }
 
@@ -872,7 +872,7 @@ int conn_insert_or_update (Sql.Sql db_conn, mapping(string:mixed) record,
                      make_insert_clause(({real_cols})) + " " +
                      (sizeof(update_set) ?
                       "ON DUPLICATE KEY UPDATE " + update_set * "," : ""),
-                     query_options);
+                     @query_options_args);
 
   invalidate_cache();
 
@@ -914,14 +914,14 @@ void conn_delete (Sql.Sql db_conn, string|array where, void|string|array rest)
   UPDATE_MSG ("%O: delete WHERE (%O)%s\n", this, where,
 	      rest ? sprintf (" %O", rest) : "");
 
-  void|mapping(string|int:mixed) bindings = ([]);
-  if (arrayp (where)) where = handle_argspec(db_conn, where, bindings);
-  if (arrayp (rest)) rest = handle_argspec(db_conn, rest, bindings);
-  if (!sizeof (bindings)) bindings = 0;
+  array(mapping(string|int:mixed)) bindings = ({([])});
+  if (arrayp (where)) where = handle_argspec(db_conn, where, @bindings);
+  if (arrayp (rest)) rest = handle_argspec(db_conn, rest, @bindings);
+  if (!sizeof (bindings[0])) bindings = ({});
 
   db_conn->big_query("DELETE FROM `" + table + "` "
                      "WHERE (" + where + ") " + (rest || ""),
-                     bindings);
+                     @bindings);
   invalidate_cache();
 }
 
@@ -932,7 +932,7 @@ void conn_remove (Sql.Sql db_conn, mixed id)
   UPDATE_MSG ("%O: remove %O\n", this, id);
   db_conn->big_query("DELETE FROM `" + table + "` "
                      "WHERE " + simple_make_pk_where(id),
-                     query_options);
+                     @query_options_args);
   invalidate_cache();
 }
 
@@ -944,7 +944,7 @@ void conn_remove_multi (Sql.Sql db_conn, array(mixed) ids)
   // FIXME: Split into several queries if the list is very long.
   db_conn->big_query("DELETE FROM `" + table + "` "
                      "WHERE " + make_multi_pk_where(ids),
-                     query_options);
+                     @query_options_args);
   invalidate_cache();
 }
 
@@ -955,12 +955,12 @@ Result conn_select (Sql.Sql db_conn, string|array where,
 //! Like @[select], but a database connection object is passed
 //! explicitly instead of being retrieved via @[get_db].
 {
-  void|mapping(string:mixed) bindings = ([]);
-  if (arrayp (where)) where = handle_argspec(db_conn, where, bindings);
+  array(mapping(string:mixed)) bindings = ({([])});
+  if (arrayp (where)) where = handle_argspec(db_conn, where, @bindings);
   if (arrayp (select_exprs))
-    select_exprs = handle_argspec(db_conn, select_exprs, bindings);
-  if (arrayp (rest)) rest = handle_argspec(db_conn, rest, bindings);
-  if (!sizeof (bindings)) bindings = 0;
+    select_exprs = handle_argspec(db_conn, select_exprs, @bindings);
+  if (arrayp (rest)) rest = handle_argspec(db_conn, rest, @bindings);
+  if (!sizeof (bindings[0])) bindings = ({});
 
   Result res = Result();
 
@@ -970,7 +970,7 @@ Result conn_select (Sql.Sql db_conn, string|array where,
     " FROM `" + table + "` " + (table_refs || "");
 
   res->res = db_conn->big_typed_query(
-    query + " WHERE (" + where + ") " + (rest || ""), bindings);
+    query + " WHERE (" + where + ") " + (rest || ""), @bindings);
 
   return res;
 }
@@ -981,12 +981,12 @@ array conn_select1 (Sql.Sql db_conn, string|array select_expr,
 //! Like @[select1], but a database connection object is passed
 //! explicitly instead of being retrieved via @[get_db].
 {
-  void|mapping(string:mixed) bindings = ([]);
+  array(mapping(string:mixed)) bindings = ({([])});
   if (arrayp (select_expr))
-    select_expr = handle_argspec(db_conn, select_expr, bindings);
-  if (arrayp (where)) where = handle_argspec(db_conn, where, bindings);
-  if (arrayp (rest)) rest = handle_argspec(db_conn, rest, bindings);
-  if (!sizeof (bindings)) bindings = UNDEFINED;
+    select_expr = handle_argspec(db_conn, select_expr, @bindings);
+  if (arrayp (where)) where = handle_argspec(db_conn, where, @bindings);
+  if (arrayp (rest)) rest = handle_argspec(db_conn, rest, @bindings);
+  if (!sizeof (bindings[0])) bindings = ({});
 
   string property;
   string col_type = col_types[select_expr];
@@ -1008,7 +1008,7 @@ array conn_select1 (Sql.Sql db_conn, string|array select_expr,
   query += " FROM `" + table + "` " + (table_refs || "");
 
   Sql.Result res = db_conn->big_typed_query(
-    query + " WHERE (" + where + ") " + (rest || ""), bindings);
+    query + " WHERE (" + where + ") " + (rest || ""), @bindings);
 
 #ifdef MYSQL_DEBUG
   if (res->num_fields() != 1)
@@ -1093,7 +1093,7 @@ mapping(string:mixed) conn_get (Sql.Sql db_conn, mixed id,
     db_conn->big_typed_query("SELECT " + (select_cols * ",") + " "
                              "FROM `" + table + "` "
                              "WHERE " + pk_where,
-                             query_options);
+                             @query_options_args);
 
   array(string) ent = res->fetch_row();
   if (!ent) return 0;
@@ -1132,7 +1132,7 @@ Result conn_get_multi (Sql.Sql db_conn, array(mixed) ids,
                              res->prepare_select_expr(fields, 0, 0) +
                              " FROM `" + table + "` "
                              "WHERE " + make_multi_pk_where(ids),
-                             query_options);
+                             @query_options_args);
   return res;
 }
 
@@ -1678,7 +1678,7 @@ protected string get_and_merge_props(void|Sql.mysql db_conn,
       db_conn->big_query("SELECT `" + prop_col + "` "
                          "FROM `" + table + "` "
                          "WHERE " + pk_where,
-                         query_options)->fetch_row())
+                         @query_options_args)->fetch_row())
     old_props = decode_props (ent[0], pk_where);
   else
     old_props = ([]);
@@ -1715,7 +1715,7 @@ protected void update_props(Sql.Sql db_conn, string pk_where,
                      "_binary\"" + quote(encoded_props) + "\" "
                      "WHERE " + pk_where + " "
                      "LIMIT 1",	// In case the WHERE condition is bad.
-                     query_options);
+                     @query_options_args);
 }
 
 protected mapping(string:mixed) update_pack_fields (
