@@ -4,6 +4,14 @@
 //! Codec for the Adobe page description language PostScript.
 //! Uses Ghostscript for decoding or built-in support.
 
+protected string find_in_path( string file )
+{
+  string path=getenv("PATH");
+  foreach(path ? path/":" : ({}) , path)
+    if(file_stat(path=combine_path(path,file)))
+      return path;
+}
+
 //! Decodes the postscript @[data] into an image object
 //! using Ghostscript.
 //! @param options
