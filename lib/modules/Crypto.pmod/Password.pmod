@@ -263,6 +263,7 @@ int verify(string(8bit) password, string(7bit) hash)
       }
       ret = Crypto.SHA256.crypt_hash(passwd, salt, rounds) == hash;
       if (ret || (sizeof(passwd) & (sizeof(passwd)-1))) return ret;
+      // Try crypt_hash_pike().
       return Crypto.SHA256.crypt_hash_pike(passwd, salt, rounds) == hash;
 
     case "5p":	// SHA-256 (pike)
@@ -279,6 +280,7 @@ int verify(string(8bit) password, string(7bit) hash)
       }
       ret = Crypto.SHA512.crypt_hash(passwd, salt, rounds) == hash;
       if (ret || (sizeof(passwd) & (sizeof(passwd)-1))) return ret;
+      // Try crypt_hash_pike().
       return Crypto.SHA512.crypt_hash_pike(passwd, salt, rounds) == hash;
 
     case "6p":	// SHA-512 (pike)
