@@ -3636,6 +3636,10 @@ PIKECLASS BlockCipher16
    */
   INHERIT BlockCipher;
 
+  /*! @decl inherit __builtin.Nettle.BlockCipher16Mixin
+   */
+  INHERIT "__builtin.Nettle.BlockCipher16Mixin";
+
   /*! @module KW
    *!
    *! The AES Key Wrapping algorithm from @rfc{3394@}.
