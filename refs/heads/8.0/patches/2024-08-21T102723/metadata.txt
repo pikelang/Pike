@@ -1,0 +1,36 @@
+subject: Pike 8.0: Sql.Sql, Mysql.SqlTable: Make it easier to wrap the database connection.
+from: 65a8817203e65bbc20d70affa1975027070d4ae1
+to: 54e881583ca09dab126ad1cb0e5a393168e95ea3
+originator: Henrik Grubbström (Grubba) <grubba@grubba.org>
+depends: 2024-08-13T111838
+restart: true
+
+Multiple fixes:
+
+• Mysql.SqlTable: Do not give zero bindings to big_query() et al.
+
+The zero confuses Sql.sql_util.handle_extraargs(), which causes
+a bad call of sprintf(), which may fail with obscure errors like:
+"Unfinished pad string in format string."
+
+• Mysql.SqlTable: Avoid explicit use of db_conn->master_sql.
+
+Switches from using eg
+
+  db_conn->master_sql->big_query(q, 0, query_charset)
+
+to
+
+  db_conn->big_query(q, query_options)
+
+This makes it easier to make wrappers for db_conn that wrap
+big_query() et al.
+
+• Sql: Add support for query options.
+
+Adds Sql.QUERY_OPTION_CHARSET.
+
+• Sql.Sql: Add insert_id() and affected_rows().
+
+This makes it possible to avoid the most common cases where
+master_sql is used.
