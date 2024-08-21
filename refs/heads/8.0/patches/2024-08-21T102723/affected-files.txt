@@ -1,0 +1,6 @@
+Modified files:
+  pike/lib/modules/Mysql.pmod/SqlTable.pike
+  pike/lib/modules/Sql.pmod/Sql.pike
+  pike/lib/modules/Sql.pmod/module.pmod
+  pike/lib/modules/Sql.pmod/mysql.pike
+  pike/lib/modules/Sql.pmod/sql_util.pmod
