@@ -1,3 +1,5 @@
+/* -*- mode: Pike; c-basic-offset: 3; -*- */
+
 constant log_msg = Tools.Testsuite.log_msg;
 constant log_status = Tools.Testsuite.log_status;
 
@@ -12,7 +14,7 @@ void exit_test (int failure)
 #define PRE "connecttest (closed): "
 
 void fail()
-{ 
+{
 // can't connect to socket - this is what we expect
    exit_test(0); // ok
 }
@@ -34,7 +36,7 @@ void ok()
 #define PRE "connecttest (open): "
 
 void fail()
-{ 
+{
    log_msg(PRE "can't connect to open port; failure reported\n");
    exit_test(1); // fail
 }
@@ -86,7 +88,7 @@ int main()
    log_status(PRE "using port %d",z);
 
    sleep(0.1);
-   
+
    f->open_socket();
    // NOTE: Some OS's (NT) signal connection failure on the
    //       error callback (aka read_oob callback).
