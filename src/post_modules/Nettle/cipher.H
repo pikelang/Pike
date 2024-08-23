@@ -14,18 +14,24 @@
 #cmod_define BASE_CIPHER	Cipher
 /* Number of inherits to get to the Nettle_Cipher inherit. */
 #cmod_define INHERIT_DEPTH	1
+/* Cipher::State */
+#cmod_define STATE_INHERIT_DEPTH 1
 
 #cmod_elif (CIPHER_MODE == BLOCK16_MODE)
 /* Block cipher with a 16 byte block size. */
 
 #cmod_define BASE_CIPHER	BlockCipher16
 #cmod_define INHERIT_DEPTH	(BLOCKCIPHER16_CIPHER_INHERIT + 1)
+/* BlockCipher16::State::State */
+#cmod_define STATE_INHERIT_DEPTH (1 + 1)
 
 #cmod_else
 /* Block cipher with a block size other than 16 bytes. */
 
 #cmod_define BASE_CIPHER	BlockCipher
 #cmod_define INHERIT_DEPTH	(BLOCKCIPHER_CIPHER_INHERIT + 1)
+/* BlockCipher::State */
+#cmod_define STATE_INHERIT_DEPTH 1
 
 #cmod_endif
 
@@ -96,8 +102,8 @@ PIKECLASS PIKE_NAME
     INIT
     {
       struct Nettle_Cipher_State_struct *state;
-      ASSIGN_CURRENT_STORAGE(state, struct Nettle_Cipher_State_struct, 1,
-			     Nettle_Cipher_State_program);
+      ASSIGN_CURRENT_STORAGE(state, struct Nettle_Cipher_State_struct,
+                             STATE_INHERIT_DEPTH, Nettle_Cipher_State_program);
       state->ctx = &THIS->NETTLE_NAME;
     }
   }
@@ -112,3 +118,4 @@ DOCEND()
 #cmod_undef CIPHER_MODE
 #cmod_undef BASE_CIPHER
 #cmod_undef INHERIT_DEPTH
+#cmod_undef STATE_INHERIT_DEPTH

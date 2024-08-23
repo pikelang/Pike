@@ -641,6 +641,25 @@ define(test_generic_cipher_autopad,[[
   ]])
 ]])
 
+dnl Test keywrapping
+dnl cipher, hex_kek, hex_key, hex_wrap
+define(test_keywrap, [[
+  test_any_equal([[
+    object c = Crypto.$1();
+    object d = Crypto.$1();
+    string kek = H($2);
+    string k = H($3);
+    string w = H($4);
+
+    c->set_encrypt_key(kek);
+    string ww = c->wrap_key(k);
+    d->set_decrypt_key(kek);
+    string kk = d->unwrap_key(ww);
+
+    return ({ kek, kk, ww, });
+  ]], ({ H($2), H($3), H($4) }))
+]])
+
 // AES
 test_generic_cipher(Crypto.AES)
 test_generic_cipher(Crypto.AES.ABC)
@@ -660,6 +679,33 @@ cond_resolv( Nettle.AES, [[
 	      "14151617191A1B1C1E1F202123242526",
 	      "5C6D71CA30DE8B8B00549984D2EC7D4B",
 	      "59AB30F4D4EE6E4FF9907EF65B1FB68C")
+
+  dnl Test vectors from RFC 3394 Section 4.
+  test_keywrap(AES, "000102030405060708090A0B0C0D0E0F",
+               "00112233445566778899AABBCCDDEEFF",
+               "1FA68B0A8112B447 AEF34BD8FB5A7B82 9D3E862371D2CFE5")
+  test_keywrap(AES, "000102030405060708090A0B0C0D0E0F1011121314151617",
+               "00112233445566778899AABBCCDDEEFF",
+               "96778B25AE6CA435 F92B5B97C050AED2 468AB8A17AD84E5D")
+  test_keywrap(AES, "000102030405060708090A0B0C0D0E0F"
+                    "101112131415161718191A1B1C1D1E1F",
+               "00112233445566778899AABBCCDDEEFF",
+               "64E8C3F9CE0F5BA2 63E9777905818A2A 93C8191E7D6E8AE7")
+  test_keywrap(AES, "000102030405060708090A0B0C0D0E0F1011121314151617",
+               "00112233445566778899AABBCCDDEEFF0001020304050607",
+               "031D33264E15D332 68F24EC260743EDC"
+               "E1C6C7DDEE725A93 6BA814915C6762D2")
+  test_keywrap(AES, "000102030405060708090A0B0C0D0E0F"
+                    "101112131415161718191A1B1C1D1E1F",
+               "00112233445566778899AABBCCDDEEFF0001020304050607",
+               "A8F9BC1612C68B3F F6E6F4FBE30E71E4"
+               "769C8B80A32CB895 8CD5D17D6B254DA1")
+  test_keywrap(AES, "000102030405060708090A0B0C0D0E0F"
+                    "101112131415161718191A1B1C1D1E1F",
+               "00112233445566778899AABBCCDDEEFF"
+               "000102030405060708090A0B0C0D0E0F",
+               "28C9F404C4B810F4 CBCCB35CFB87F826 3F5786E2D80ED326"
+               "CBC7F0E71A99F43B FB988B9B7A02DD21")
 
   // AES-CTR Test vectors from RFC 3686 Section 6.
 
