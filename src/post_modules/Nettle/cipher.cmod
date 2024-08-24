@@ -3659,16 +3659,25 @@ PIKECLASS BlockCipher16
       lexical_inherit(1, MK_STRING("State"), 0, REPORT_WARNING, NULL);
     }
 
-    /*! @decl string(8bit) wrap_key(string(8bit) key)
+    /*! @decl string(8bit) wrap_key(string(8bit) key, int(0..1)|void method)
      *!
-     *! The AES Key Wrapping algorithm from @rfc{3394@}.
+     *! The AES Key Wrapping algorithms from @rfc{3394@} and @rfc{5649@}.
      *!
      *! @param key
      *!   Key to wrap.
      *!
-     *! This algorithm is intended to be used to encode
-     *! encryption keys which are a multiple of 8 bytes
-     *! and at least 16 bytes long.
+     *! @param method
+     *!   Method to use to wrap the key. One of:
+     *!   @int
+     *!     @value 0
+     *!       @rfc{3394@} This algorithm is intended to be used to encode
+     *!       encryption keys which are a multiple of 8 bytes and at least
+     *!       16 bytes long. This is the default method.
+     *!     @value 1
+     *!       @rfc{5649@} This algorithm is similar to the above, but
+     *!       supports keys of any length and has an intentionally
+     *!       not compatible result.
+     *!   @endint
      *!
      *! @returns
      *!   Returns the wrapped key.
@@ -3684,7 +3693,7 @@ PIKECLASS BlockCipher16
      *! @seealso
      *!   @[unwrap_key()]
      */
-    PIKEFUN string(8bit) wrap_key(string(8bit) key)
+    PIKEFUN string(8bit) wrap_key(string(8bit) key, int(0..1)|void _method)
     {
       int f, i, j, k;
       union {
@@ -3696,9 +3705,14 @@ PIKECLASS BlockCipher16
       struct pike_string *res;
       pike_nettle_crypt_func func = pike_crypt_func;
       void *ctx = Pike_fp->current_object;
+      unsigned int method = _method?_method->u.integer:0;
 
-      if ((key->len & 0x07) || (key->len < 16)) {
-        Pike_error("Unsupported key length.\n");
+      if (!method) {
+        if ((key->len & 0x07) || (key->len < 16)) {
+          Pike_error("Unsupported key length.\n");
+        }
+      } else if (method > 1) {
+        Pike_error("Unsupported key wrapping method.\n");
       }
 
       f = find_identifier("crypt", Pike_fp->current_program);
@@ -3723,31 +3737,61 @@ PIKECLASS BlockCipher16
         }
       }
 
-      res = begin_shared_string(key->len + 8);
+      res = begin_shared_string((key->len + 15) & ~7);
       push_string(res);		/* Paranoia in case func() throws an error. */
       res->flags |= STRING_CLEAR_ON_EXIT;
       memcpy(res->str + 8, key->str, key->len);
 
       /* Initialize the iv. */
-      memset(buf, 0xa6, 8);
-
-      t.i64 = 0;
-      for (j = 0; j < 6; j++) {
-        for (i = 0; i < key->len; i += 8) {
-          memcpy(buf + 8, res->str + 8 + i, 8);
-          func(ctx, 16, buf, buf);
-          memcpy(res->str + 8 + i, buf + 8, 8);
-          t.i64++;
-          for (k = 0; k < 8; k++) {
+      switch(method) {
+      case 0:
+        memset(buf, 0xa6, 8);
+        break;
+      case 1:
+        if (key->len + 8 < res->len) {
+          memset(res->str + 8 + key->len, 0, res->len - (key->len + 8));
+        }
+        memcpy(buf, "\246YY\246", 4);
+        {
+          union {
+            unsigned INT32 i32;
+            p_wchar0 bin[4];
+          } mli;
+          mli.i32 = (unsigned INT32)key->len;
+          for (k = 0; k < 4; k++) {
 #if PIKE_BYTEORDER == 4321
-            buf[k] ^= t.bin[k];
+            buf[k + 4] ^= mli.bin[k];
 #else
-            buf[k] ^= t.bin[7-k];
+            buf[k + 4] ^= mli.bin[3-k];
 #endif
           }
         }
+        break;
       }
-      memcpy(res->str, buf, 8);
+
+      if (method && (res->len == 16)) {
+        /* Short key. */
+        memcpy(res->str, buf, 8);
+        func(ctx, 16, STR0(res), STR0(res));
+      } else {
+        t.i64 = 0;
+        for (j = 0; j < 6; j++) {
+          for (i = 8; i < res->len; i += 8) {
+            memcpy(buf + 8, res->str + i, 8);
+            func(ctx, 16, buf, buf);
+            memcpy(res->str + i, buf + 8, 8);
+            t.i64++;
+            for (k = 0; k < 8; k++) {
+#if PIKE_BYTEORDER == 4321
+              buf[k] ^= t.bin[k];
+#else
+              buf[k] ^= t.bin[7-k];
+#endif
+            }
+          }
+        }
+        memcpy(res->str, buf, 8);
+      }
 
       secure_zero(buf, sizeof(buf));
 
@@ -3756,18 +3800,30 @@ PIKECLASS BlockCipher16
       push_string(end_shared_string(res));
     }
 
-    /*! @decl string(8bit) unwrap_key(string(8bit) wrap)
+    /*! @decl string(8bit) unwrap_key(string(8bit) wrap, int(0..1)|void method)
      *!
-     *! The AES Key Unwrapping algorithm from @rfc{3394@}.
+     *! The AES Key Unwrapping algorithms from @rfc{3394@} and @rfc{5649@}.
      *!
      *! @param wrap
      *!   Wrapped key to unwrap.
+     *!
+     *! @param method
+     *!   Method that was used to wrap @[wrap]. See @[wrap_key()] for details.
+     *!   @int
+     *!     @value 0
+     *!       @rfc{3394@}
+     *!     @value 1
+     *!       @rfc{5649@}
+     *!   @endint
      *!
      *! This function is intended to be used to decode encryption keys
      *! that have been wrapped by @[wrap_key()].
      *!
      *! @returns
      *!   Returns the unwrapped key.
+     *!
+     *! @throws
+     *!   Throws an error on failure to unwrap the key.
      *!
      *! @note
      *!   Assumes that the @[State] object has been initialized to
@@ -3780,7 +3836,7 @@ PIKECLASS BlockCipher16
      *! @seealso
      *!   @[wrap_key()]
      */
-    PIKEFUN string(8bit) unwrap_key(string(8bit) wrap)
+    PIKEFUN string(8bit) unwrap_key(string(8bit) wrap, int(0..1)|void _method)
     {
       int f, i, j, k;
       union {
@@ -3792,8 +3848,20 @@ PIKECLASS BlockCipher16
       struct pike_string *res;
       pike_nettle_crypt_func func = pike_crypt_func;
       void *ctx = Pike_fp->current_object;
+      unsigned int method = _method?_method->u.integer:0;
+      ptrdiff_t len = 24;
 
-      if ((wrap->len & 0x07) || (wrap->len < 24)) {
+      switch(method) {
+      case 0: break;
+      case 1:
+        len = 16;
+        break;
+      default:
+        Pike_error("Unsupported key wrapping method.\n");
+        break;
+      }
+
+      if ((wrap->len & 0x07) || (wrap->len < len)) {
         Pike_error("Unsupported wrapped key length.\n");
       }
 
@@ -3825,29 +3893,61 @@ PIKECLASS BlockCipher16
       memcpy(buf, wrap->str, 8);
       memcpy(res->str, wrap->str + 8, wrap->len - 8);
 
-      t.i64 = 6 * (res->len >> 3);
-      for (j = 0; j < 6; j++) {
-        for (i = res->len; i;) {
-          i -= 8;
-          for (k = 0; k < 8; k++) {
+      if (method && (wrap->len == 16)) {
+        /* Short key. */
+        memcpy(buf + 8, wrap->str + 8, 8);
+        func(ctx, 16, buf, buf);
+        memcpy(res->str, buf + 8, 8);
+      } else {
+        t.i64 = 6 * (res->len >> 3);
+        for (j = 0; j < 6; j++) {
+          for (i = res->len; i;) {
+            i -= 8;
+            for (k = 0; k < 8; k++) {
 #if PIKE_BYTEORDER == 4321
-            buf[k] ^= t.bin[k];
+              buf[k] ^= t.bin[k];
 #else
-            buf[k] ^= t.bin[7-k];
+              buf[k] ^= t.bin[7-k];
 #endif
-          }
-          t.i64--;
-          memcpy(buf + 8, res->str + i, 8);
+            }
+            t.i64--;
+            memcpy(buf + 8, res->str + i, 8);
 
-          func(ctx, 16, buf, buf);
-          memcpy(res->str + i, buf + 8, 8);
+            func(ctx, 16, buf, buf);
+            memcpy(res->str + i, buf + 8, 8);
+          }
         }
       }
 
       /* Validate the iv against the expected iv. */
-      memset(buf + 8, 0xa6, 8);
-
-      k = memcmp(buf, buf + 8, 8);
+      if (!method) {
+        memset(buf + 8, 0xa6, 8);
+        k = memcmp(buf, buf + 8, 8);
+        len = res->len;
+      } else {
+        union {
+          unsigned INT32 i32;
+          p_wchar0 bin[4];
+        } mli;
+        k = memcmp(buf, "\246YY\246", 4);
+        if (!k) {
+          for (k = 0; k < 4; k++) {
+#if PIKE_BYTEORDER == 4321
+            mli.bin[k] = buf[k + 4];
+#else
+            mli.bin[3-k] = buf[k + 4];
+#endif
+          }
+          len = (ptrdiff_t)mli.i32;
+          if ((res->len >= len) && (res->len < len + 8)) {
+            k = 0;
+            while (res->len > len) {
+              res->len--;
+              k |= res->str[res->len];
+            }
+          }
+        }
+      }
 
       secure_zero(buf, sizeof(buf));
 
@@ -3859,7 +3959,8 @@ PIKECLASS BlockCipher16
 
       add_ref(res);
       pop_stack();
-      push_string(end_shared_string(res));
+
+      push_string(end_and_resize_shared_string(res, len));
     }
   }
   /*! @endclass

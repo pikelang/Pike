@@ -642,7 +642,7 @@ define(test_generic_cipher_autopad,[[
 ]])
 
 dnl Test keywrapping
-dnl cipher, hex_kek, hex_key, hex_wrap
+dnl cipher, hex_kek, hex_key, hex_wrap, [method]
 define(test_keywrap, [[
   test_any_equal([[
     object c = Crypto.$1();
@@ -652,9 +652,17 @@ define(test_keywrap, [[
     string w = H($4);
 
     c->set_encrypt_key(kek);
+]] ifelse([[$5]],,[[
     string ww = c->wrap_key(k);
+]], [[
+    string ww = c->wrap_key(k, $5);
+]]) [[
     d->set_decrypt_key(kek);
+]] ifelse([[$5]],,[[
     string kk = d->unwrap_key(ww);
+]], [[
+    string kk = d->unwrap_key(ww, $5);
+]]) [[
 
     return ({ kek, kk, ww, });
   ]], ({ H($2), H($3), H($4) }))
@@ -707,6 +715,16 @@ cond_resolv( Nettle.AES, [[
                "28C9F404C4B810F4 CBCCB35CFB87F826 3F5786E2D80ED326"
                "CBC7F0E71A99F43B FB988B9B7A02DD21")
 
+  dnl Testvectors from RFC 5649 Section 6.
+  test_keywrap(AES, "5840df6e29b02af1 ab493b705bf16ea1 ae8338f4dcc176a8",
+               "c37b7e6492584340 bed1220780894115 5068f738",
+               "138bdeaa9b8fa7fc 61f97742e72248ee 5ae6ae5360d1ae6a"
+               "5f54f373fa543b6a", 1)
+  test_keywrap(AES, "5840df6e29b02af1 ab493b705bf16ea1 ae8338f4dcc176a8",
+               "466f7250617369",
+               "afbeb0f07dfbf541 9200f2ccb50bb24f", 1)
+]])
+cond_resolv( Nettle.AES, [[
   // AES-CTR Test vectors from RFC 3686 Section 6.
 
   dnl Test Vector #1: Encrypting 16 octets using AES-CTR with 128-bit key
