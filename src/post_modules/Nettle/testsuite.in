@@ -652,17 +652,26 @@ define(test_keywrap, [[
     string w = H($4);
 
     c->set_encrypt_key(kek);
+    string ww;
+    mixed err = catch {
 ]] ifelse([[$5]],,[[
-    string ww = c->wrap_key(k);
+      ww = c->wrap_key(k);
 ]], [[
-    string ww = c->wrap_key(k, $5);
+      ww = c->wrap_key(k, $5);
 ]]) [[
+    };
+    if (err) ww = describe_error(err);
+
     d->set_decrypt_key(kek);
+    string kk;
+    err = catch {
 ]] ifelse([[$5]],,[[
-    string kk = d->unwrap_key(ww);
+      kk = d->unwrap_key(ww);
 ]], [[
-    string kk = d->unwrap_key(ww, $5);
+      kk = d->unwrap_key(ww, $5);
 ]]) [[
+    };
+    if (err) kk = describe_error(err) + "ww: " + String.string2hex(ww) + "\n";
 
     return ({ kek, kk, ww, });
   ]], ({ H($2), H($3), H($4) }))
