@@ -3751,7 +3751,7 @@ PIKECLASS BlockCipher16
         if (key->len + 8 < res->len) {
           memset(res->str + 8 + key->len, 0, res->len - (key->len + 8));
         }
-        memcpy(buf, "\246YY\246", 4);
+        memcpy(buf, "\246YY\246\0\0\0\0", 8);
         {
           union {
             unsigned INT32 i32;
