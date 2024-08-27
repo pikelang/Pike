@@ -1306,6 +1306,7 @@ protected class DummyNScope(string name)
 class NScope
 {
   string name;
+  string node_name;
   string type;
   string path;
   mapping(string:int(1..1)|NScope) symbols = ([]);
@@ -1320,7 +1321,7 @@ class NScope
       tree = tree->get_first_element();
     }
     type = tree->get_any_name();
-    name = tree->get_attributes()->name;
+    node_name = name = tree->get_attributes()->name;
     if (path) {
       name = path + name;
       path = name + ".";
@@ -1490,7 +1491,7 @@ class NScope
   string|zero lookup(array(string) path, int(0..1)|void no_imports )
   {
     if( !sizeof(path) )
-        return 0;
+      return name;
 
     int(1..1)|NScope scope =
       symbols[path[0]] || symbols["/precompiled/"+path[0]];
@@ -1525,6 +1526,36 @@ class NScope
       return 0;
     }
     return scope->lookup(path[1..], 1);
+  }
+
+  array(string|int)|zero low_resolve_inherit(string inh, array(string) path,
+                                             int|void depth)
+  {
+    if (!inherits || !sizeof(inherits)) return 0;
+    if (inherits[inh]) {
+      string|zero found = inherits[inh]->lookup(path);
+      if (found) return ({ depth, found });
+    }
+    array(string|int)|zero res;
+    foreach(inherits; string i; string|NScope s) {
+      if (stringp(s)) continue;
+      if (!s->low_resolve_inherit) {
+        werror("Unexpected inherited scope: %O\n", s);
+        continue;
+      }
+      array(string|int) sub =
+        s->low_resolve_inherit(inh, path, depth + 1);
+      if (sub && (!res || (res[0] > sub[0]))) {
+        res = sub;
+      }
+    }
+    return res;
+  }
+
+  string|zero resolve_inherit(string inh, array(string) path)
+  {
+    array(string|int)|zero res = low_resolve_inherit(inh, path);
+    return res && [string]res[1];
   }
 }
 
@@ -1708,18 +1739,43 @@ class NScopeStack
 	  "7.9":"8.0",
 	  "8.1":"predef",
 	])[inh] || inh;
-	while(pos) {
-	  string|NScope scope;
-	  if (current->inherits && (scope = current->inherits[inh])) {
-	    if (stringp(scope)) scope = lookup(scope);
-	    if (objectp(scope)) {
-	      string res = scope->lookup(ref[1..]);
-	      if (res) return res;
-	    }
-	  }
-	  pos--;
-	  current = stack[pos];
-	}
+        if (inh == "global") {
+        } else {
+          while(pos) {
+            string|NScope scope;
+            /* 1: Direct inherits. */
+            if (current->inherits && (scope = current->inherits[inh])) {
+              if (stringp(scope)) scope = lookup(scope);
+              if (objectp(scope)) {
+                string res = scope->lookup(ref[1..]);
+                if (res) return res;
+              }
+            }
+            /* 2: Name of current class. */
+            if ((<"namespace", "module", "class">)[current->type] &&
+                ((current->node_name == inh) ||
+                 (current->node_name == inh + "::"))) {
+              string res = current->lookup(ref[1..]);
+              if (res) return res;
+            }
+            /* 3: Recurse surrounding parent classes. */
+            pos--;
+            current = stack[pos];
+          }
+          pos = sizeof(stack);
+          current = top;
+          string res;
+          while(pos) {
+            /* 4: Indirect inherits in the current class. */
+            if (current->inherits) {
+              res = current->resolve_inherit(inh, ref[1..]);
+              if (res) return res;
+            }
+            /* 5: Recurse surrounding parent classes. */
+            pos--;
+            current = stack[pos];
+          }
+        }
 	ref = ({ inh + "::" }) + ref[1..];
 	break;
       }
