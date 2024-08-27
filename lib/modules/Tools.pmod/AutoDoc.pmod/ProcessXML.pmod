@@ -1737,7 +1737,8 @@ class NScopeStack
 	  "7.5":"7.6",
 	  "7.7":"7.8",
 	  "7.9":"8.0",
-	  "8.1":"predef",
+          "8.1":"9.0",
+          "9.1":"predef",
 	])[inh] || inh;
         if (inh == "global") {
         } else {
