@@ -457,6 +457,50 @@ protected class Pike_8_0_master
   }
 }
 
+//! Pike 9.0 master compatibility interface.
+//!
+//! Most of the interface is implemented via mixin,
+//! or overloading by more recent masters.
+//!
+//! This interface is used for compatibility with
+//! Pike 9.0.
+//!
+//! @deprecated predef::MasterObject
+//!
+//! @seealso
+//!   @[get_compat_master()], @[master()], @[predef::MasterObject]
+protected class Pike_9_0_master
+{
+  inherit Pike_8_0_master;
+
+  local protected object Pike_9_0_compat_handler;
+  local mixed resolv_or_error(string identifier, string|void current_file,
+                              void|object current_handler)
+  {
+    if (!Pike_9_0_compat_handler) {
+      Pike_9_0_compat_handler = global::get_compilation_handler(9, 0);
+    }
+    return Pike_9_0_compat_handler->resolv_or_error(identifier, current_file,
+                                                    current_handler);
+  }
+  local mixed resolv(string identifier, string|void current_file)
+  {
+    if (!Pike_9_0_compat_handler) {
+      Pike_9_0_compat_handler = global::get_compilation_handler(9, 0);
+    }
+    return Pike_9_0_compat_handler->resolv(identifier, current_file);
+  }
+  object get_compat_master(int major, int minor)
+  {
+    if (major < 9)
+      return Pike_8_0_master::get_compat_master(major, minor);
+    // 9.0
+    if ((major == 9) && (minor < 1))
+      return this::this;
+    return get_compat_master(major, minor);
+  }
+}
+
 //! Namespaces for compat masters.
 //!
 //! This inherit is used to provide compatibility namespaces
@@ -464,7 +508,7 @@ protected class Pike_8_0_master
 //!
 //! @seealso
 //!   @[get_compat_master()]
-protected inherit Pike_8_0_master;
+protected inherit Pike_9_0_master;
 
 //! @namespace predef::
 
@@ -6661,8 +6705,8 @@ protected string _sprintf(int t)
 //!   @[get_compilation_handler()], @[master()]
 object get_compat_master(int major, int minor)
 {
-  if ((major < 8) || ((major == 8) && (minor < 1)))
-    return Pike_8_0_master::get_compat_master(major, minor);
+  if ((major < 9) || ((major == 9) && (minor < 1)))
+    return Pike_9_0_master::get_compat_master(major, minor);
   // 8.1 and later.
   return this;
 }
