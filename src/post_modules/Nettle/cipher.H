@@ -70,7 +70,7 @@ PIKECLASS PIKE_NAME
   PIKECLASS State
     program_flags PROGRAM_NEEDS_PARENT|PROGRAM_USES_PARENT;
   {
-    DOCSTART() @decl inherit Cipher::State
+    DOCSTART() @decl inherit BASE_CIPHER::State
     DOCEND()
 
     EXTRA
