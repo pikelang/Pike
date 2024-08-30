@@ -36,7 +36,7 @@ struct pike_string
   unsigned char flags;
 #ifdef __GCC__
   enum size_shift   size_shift:2;
-  enum string_type  alloc_type:5;
+  enum string_type  alloc_type:4;
   enum struct_type struct_type:1;
 #else /* !__GCC__ */
   /* NB: Some compliers (eg MSVC) use signed integers for the
@@ -44,9 +44,10 @@ struct pike_string
    *     when extracted from the size_shift field.
    */
   unsigned char size_shift:2;
-  unsigned char alloc_type:5;
+  unsigned char alloc_type:4;
   unsigned char struct_type:1;
 #endif /* __GCC__ */
+  unsigned char  string_is_utf8:1;
   unsigned char  min;
   unsigned char  max;
   ptrdiff_t len; /* Not counting terminating NUL. */

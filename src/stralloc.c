@@ -91,6 +91,15 @@ PMOD_EXPORT int string_range_contains_string( struct pike_string *str1,
   return 1;
 }
 
+/**
+ * Check the upper and lower limits of a string.
+ *
+ * If not loose, the fields str->min, str->max and str->string_is_utf8
+ * will be set unless the string has already been checked.
+ *
+ * If provided, *min and *max will be set to their respective
+ * calculated values.
+ */
 PMOD_EXPORT void check_string_range( struct pike_string *str,
                                      int loose,
                                      INT32 *min, INT32 *max )
@@ -148,18 +157,37 @@ PMOD_EXPORT void check_string_range( struct pike_string *str,
     {
       case eightbit:
        {
+         int utf8_valid = 1;
+         int utf8_cont_count = 0;
          p_wchar0 *p = (p_wchar0*)str->str;
          int upper = 0, lower = 0;
          for( i=0; i<str->len; i++,p++ )
          {
+           p_wchar0 c = *p;
            /* For 7-bit strings it's easy to check for
             * lower/uppercase, so do that here as well.
             */
-           if( *p >= 'A' && *p <= 'Z') upper++;
-           if( *p >= 'a' && *p <= 'z') lower++;
+           if( c >= 'A' && c <= 'Z') upper++;
+           if( c >= 'a' && c <= 'z') lower++;
 
-           if( *p > s_max ) s_max = *p;
-           if( *p < s_min ) s_min = *p;
+           if( c > s_max ) s_max = c;
+           if( c < s_min ) s_min = c;
+
+           /* Check whether we have what looks like valid UTF8 in the string. */
+           if (utf8_valid) {
+             if (c & 0x80) {
+               if ((c & 0xc0) == 0x80) {
+                 utf8_cont_count--;
+                 utf8_valid = (utf8_cont_count >= 0);
+               } else if (utf8_cont_count) {
+                 utf8_valid = 0;
+               } else {
+                 utf8_cont_count = clz32((~c) & 0xff) - 25;
+               }
+             } else {
+               utf8_valid = !utf8_cont_count;
+             }
+           }
          }
 
          if( s_max < 128 )
@@ -168,6 +196,10 @@ PMOD_EXPORT void check_string_range( struct pike_string *str,
              str->flags |= STRING_IS_UPPERCASE;
            if( !upper )
              str->flags |= STRING_IS_LOWERCASE;
+         }
+
+         if (utf8_valid && !utf8_cont_count) {
+           str->string_is_utf8 = 1;
          }
        }
        str->min = s_min;
@@ -183,6 +215,7 @@ PMOD_EXPORT void check_string_range( struct pike_string *str,
            if( *p < s_min ) s_min = *p;
          }
        }
+       str->string_is_utf8 = 0;
        str->min = s_min / 256;
        str->max = s_max / 256;
        break;
@@ -196,6 +229,7 @@ PMOD_EXPORT void check_string_range( struct pike_string *str,
            if( *p < s_min ) s_min = *p;
          }
        }
+       str->string_is_utf8 = 0;
        str->min = (unsigned INT32)s_min / (1 << 24);
        str->max = (unsigned INT32)s_max / (1 << 24);
        break;
@@ -1681,6 +1715,7 @@ static struct pike_string *realloc_shared_string(struct pike_string *a,
     r->flags |= a->flags & STRING_CHECKED_MASK;
     r->min = a->min;
     r->max = a->max;
+    r->string_is_utf8 = a->string_is_utf8;
     free_string(a);
     return r;
   }
@@ -1696,6 +1731,7 @@ struct pike_string *new_realloc_shared_string(struct pike_string *a, INT32 size,
   r->flags |= (a->flags & STRING_CHECKED_MASK);
   r->min = a->min;
   r->max = a->max;
+  r->string_is_utf8 = a->string_is_utf8;
   free_string(a);
   return r;
 }
@@ -1937,12 +1973,14 @@ static void set_flags_for_add( struct pike_string *ret,
                                unsigned char aflags,
                                unsigned char amin,
                                unsigned char amax,
+                               unsigned char a_is_utf8,
                                const struct pike_string *b)
 {
   if( !b->len ) {
     ret->flags |= aflags & STRING_CHECKED_MASK;
     ret->min = amin;
     ret->max = amax;
+    ret->string_is_utf8 = a_is_utf8 && b->string_is_utf8;
     return;
   }
   if( aflags & b->flags & STRING_CONTENT_CHECKED )
@@ -1950,6 +1988,7 @@ static void set_flags_for_add( struct pike_string *ret,
     ret->min = MINIMUM( amin, b->min );
     ret->max = MAXIMUM( amax, b->max );
     ret->flags |= STRING_CONTENT_CHECKED;
+    ret->string_is_utf8 = a_is_utf8 && b->string_is_utf8;
   }
   else
     ret->flags &= ~STRING_CONTENT_CHECKED;
@@ -1972,6 +2011,10 @@ void update_flags_for_add( struct pike_string *a, const struct pike_string *b)
 	a->min = b->min;
 	a->max = b->max;
       }
+      /* NB: Not 100% correct; if a ends with a partial UTF-8 sequence
+       *     and b starts with one, the result may be valid UTF-8.
+       */
+      a->string_is_utf8 &= b->string_is_utf8;
     }
     else
       a->flags &= ~STRING_CONTENT_CHECKED;
@@ -1993,7 +2036,7 @@ PMOD_EXPORT struct pike_string *add_shared_strings(const struct pike_string *a,
   pike_string_cpy(tmp,a);
   INC_PCHARP(tmp,a->len);
   pike_string_cpy(tmp,b);
-  set_flags_for_add( ret, a->flags, a->min, a->max, b );
+  set_flags_for_add( ret, a->flags, a->min, a->max, a->string_is_utf8, b );
   return low_end_shared_string(ret);
 }
 
