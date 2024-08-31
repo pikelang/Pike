@@ -194,7 +194,38 @@ void recurse(string srcdir, string builddir, int root_ts, array(string) root)
   // do not recurse into the build dir directory to avoid infinite loop
   // by building the autodoc of the autodoc and so on
   if(search(builddir, srcdir) == -1) {
-    foreach(filter(get_dir(srcdir), has_suffix, ".cmod"), string fn) {
+    array(string) files = get_dir(srcdir);
+    array(string) precompile_args = ({ "--api=max", "-w" });
+
+    // Derive the module name.
+    if (!has_value(files, "interpret.c")) {
+      // We are not in the root source directory.
+      string module_name = "";
+
+      // Default to the source directory name.
+      // NB: srcdir always ends with a "/".
+      module_name = basename(srcdir[..<1]);
+
+      // Check whether the configure script sets a module name.
+      if (has_value(files, "configure.in")) {
+        string data = Stdio.read_file(srcdir + "configure.in");
+        string tmp = "";
+        sscanf(data, "%*AC_MODULE_INIT(%s)", tmp);
+        if (sizeof(tmp)) {
+          module_name = (tmp/".")[-1];
+        }
+      }
+
+      // Check whether the Makefile overrides the module name.
+      if (has_value(files, "Makefile.in")) {
+        string data = Stdio.read_file(srcdir + "Makefile.in");
+        sscanf(data, "%*sMODNAME=%s\n", module_name);
+      }
+
+      // Inform the precompiler of what the module name is.
+      precompile_args += ({ "--base=" + module_name });
+    }
+    foreach(filter(files, has_suffix, ".cmod"), string fn) {
       Stdio.Stat stat = file_stat(srcdir + fn);
       if (!stat || !stat->isreg) continue;
       int mtime = stat->mtime;
@@ -221,8 +252,8 @@ void recurse(string srcdir, string builddir, int root_ts, array(string) root)
 	mixed err;
 	if (err = catch {
 	    Tools.Standalone.precompile()->
-	      main(6, ({ "precompile.pike", "--api=max", "-w",
-			 "-o", srcdir+target, srcdir+fn }));
+              main(6, ({ "precompile.pike" }) + precompile_args +
+                   ({ "-o", srcdir+target, srcdir+fn }));
 	  }) {
 	  // Something failed.
 	  werror("Precompilation of %s to %s failed:\n"
