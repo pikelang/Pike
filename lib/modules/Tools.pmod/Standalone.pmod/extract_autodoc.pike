@@ -210,7 +210,7 @@ void recurse(string srcdir, string builddir, int root_ts, array(string) root)
       if (has_value(files, "configure.in")) {
         string data = Stdio.read_file(srcdir + "configure.in");
         string tmp = "";
-        sscanf(data, "%*AC_MODULE_INIT(%s)", tmp);
+        sscanf(data, "%*sAC_MODULE_INIT(%s)", tmp);
         if (sizeof(tmp)) {
           module_name = (tmp/".")[-1];
         }
