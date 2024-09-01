@@ -1803,7 +1803,7 @@ PIKECLASS Curve25519
  *!   Requires Nettle 3.6 or later.
  *!
  *! @seealso
- *!   @[Curve], @[Curve25519], @rfc{7748@}
+ *!   @[Crypto.ECC.Curve], @[Curve25519], @rfc{7748@}
  */
 PIKECLASS Curve448
 {
