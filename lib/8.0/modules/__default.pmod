@@ -7,7 +7,7 @@
 //! The symbols in this namespace will appear in
 //! programs that use @tt{#pike 8.0@} or lower.
 
-//! @decl inherit predef::
+//! @decl inherit 8.1::
 
 object master()
 {
