@@ -28,7 +28,8 @@ Not all autoconf versions meet Pike's requirements.  Autoconf version
 On a fresh Ubuntu 20.04 the following should be sufficient minimal
 required dependencies to compile Pike from git.
 
-  sudo apt install pike8.0 autoconf bison libgmp-dev nettle-dev
+  sudo apt install make gcc g++ pike8.0 autoconf bison libgmp-dev \
+       nettle-dev
 
 
 CHECKING OUT PIKE FROM GIT
