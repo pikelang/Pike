@@ -647,7 +647,7 @@ mapping(string:string) get_metadata(int|Standards.URI|string uri,
 		    make_fields_sql(wanted_fields),
 		    doc_id);
   mapping md=mkmapping(a->name,a->value);
-#if constant(Gz)
+#if constant(Gz.inflate)
   if(md->body)
     md->body=Gz.inflate()->inflate(md->body);
 #endif
@@ -687,7 +687,7 @@ void set_metadata(Standards.URI|string uri, void|string language,
   {
     if(sizeof(md->body))
       md->body = Unicode.normalize( Unicode.split_words_and_normalize( md->body ) * " ", "C");
-#if constant(Gz)
+#if constant(Gz.deflate)
     md->body = Gz.deflate(6)->deflate(string_to_utf8(md->body[..64000]),
 				      Gz.FINISH);
 #endif
