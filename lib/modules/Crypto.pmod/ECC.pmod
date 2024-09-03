@@ -1141,9 +1141,10 @@ class _Curve448 {
       return jwk;
     }
   }
-}
 
 //! @ignore
+}
+
 Nettle.Curve448 Curve448 = _Curve448();
 //! @endignore
 
