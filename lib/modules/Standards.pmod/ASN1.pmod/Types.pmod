@@ -826,12 +826,12 @@ class UTF8String
   int(0..) tag = 12;
   constant string(7bit) type_name = "UTF8String";
 
-  string(0..255) get_der_content()
+  utf8_string get_der_content()
   {
     return string_to_utf8(value);
   }
 
-  this_program|zero decode_primitive(string(0..255) contents,
+  this_program|zero decode_primitive(utf8_string contents,
                                      function(Stdio.Buffer,
                                               mapping(int:program(Object)):
                                               Object)|void decoder,
