@@ -70,7 +70,7 @@ int main(int argc, array(string) argv)
   }
 
   cwd = getcwd();
-  Protocols.HTTP.Server.Port(handle_request, port, NetUtils.ANY);
+  Protocols.HTTP.Server.Port(handle_request, port, 0);
   write("%s is now accessible on port %d through http, "
         "without password.\n", getcwd(), port);
   return -1;
