@@ -246,7 +246,7 @@ class String
     return this;
   }
 
-  string(0..255) get_der_content() {
+  protected string(0..255) get_der_content() {
     return [string(0..255)]value;
   }
 
@@ -300,7 +300,7 @@ class Boolean
   }
 
   // While every non-zero value is true, the canonical true is 0xff.
-  string(0..255) get_der_content()
+  protected string(0..255) get_der_content()
   {
     return value ? "\377" : "\0";
   }
@@ -352,7 +352,7 @@ class Integer
     return this;
   }
 
-  string(0..255) get_der_content()
+  protected string(0..255) get_der_content()
   {
     string(0..255) s = "";
 
@@ -427,7 +427,7 @@ class Real
   CODEC(float);
   //! @endignore
 
-  string(0..255) get_der_content()
+  protected string(0..255) get_der_content()
   {
     string v = sprintf("%F", value);
     switch(v)
@@ -544,7 +544,7 @@ class BitString
     return this;
   }
 
-  string(0..255) get_der_content()
+  protected string(0..255) get_der_content()
   {
     return [string(0..255)]sprintf("%c%s", unused, value);
   }
@@ -714,7 +714,7 @@ class Identifier
     return this_program(@id, @args);
   }
 
-  string(0..255) get_der_content()
+  protected string(0..255) get_der_content()
   {
     return [string(0..255)]sprintf("%s%@s",
 				   to_base_128(40 * id[0] + id[1]),
@@ -826,7 +826,7 @@ class UTF8String
   int(0..) tag = 12;
   constant string(7bit) type_name = "UTF8String";
 
-  utf8_string get_der_content()
+  protected utf8_string get_der_content()
   {
     return string_to_utf8(value);
   }
@@ -858,7 +858,7 @@ class Sequence
   int(0..) tag = 16;
   constant string(7bit) type_name = "SEQUENCE";
 
-  string(0..255) get_der_content()
+  protected string(0..255) get_der_content()
   {
     WERROR("ASN1.Sequence: elements = '%O\n", elements);
     array(string) a = elements->get_der();
@@ -909,7 +909,7 @@ class Set
     }
   }
 
-  string get_der_content() {
+  protected string get_der_content() {
     WERROR("asn1_set->der: elements = '%O\n", elements);
     array(string) a = elements->get_der();
     WERROR("asn1_set->der: der_encode(elements) = '%O\n", a);
@@ -1128,7 +1128,7 @@ class UniversalString
   int(0..) tag = 28;
   constant string(7bit) type_name = "UniversalString";
 
-  string get_der_content() {
+  protected string get_der_content() {
     error( "Encoding not implemented\n" );
   }
 
@@ -1164,7 +1164,7 @@ class BMPString
   int(0..) tag = 30;
   constant string(7bit) type_name = "BMPString";
 
-  string get_der_content() {
+  protected string get_der_content() {
     return string_to_unicode (value);
   }
 
@@ -1223,7 +1223,7 @@ class MetaExplicit
       return this;
     }
 
-    string get_der_content() {
+    protected string get_der_content() {
       WERROR("asn1_explicit->der: contents = '%O\n", contents);
       return contents->get_der();
     }
