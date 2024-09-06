@@ -1066,6 +1066,7 @@ optional_identifier: TOK_IDENTIFIER
   ;
 
 optional_default_value: '=' assignment_expr { $$ = $2; }
+  | '=' /* empty */ { yyerror("Missing default value expression."); $$ = NULL; }
   | /* empty */ { $$ = NULL; }
   ;
 
