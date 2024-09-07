@@ -13643,6 +13643,23 @@ struct pike_type *new_check_call(struct pike_type *fun_type,
   return fun_type;
 }
 
+/**
+ *  Typechecking for F_ADD_EQ, F_INC, F_POST_INC, et al.
+ *
+ * NB: Does NOT steal a reference from fun_type.
+ */
+struct pike_type *new_check_call_binop(struct pike_type *fun_type,
+                                       node *binop_node,
+                                       struct call_state *cs,
+                                       INT32 flags)
+{
+  if (!fun_type || !binop_node) return NULL;
+  add_ref(fun_type);
+  clear_markers();
+  fun_type = new_check_call_arg(fun_type, CAR(binop_node), cs, flags);
+  return new_check_call_arg(fun_type, CDR(binop_node), cs, flags);
+}
+
 struct pike_type *zzap_function_return(struct pike_type *a,
 				       struct pike_type *fun_ret)
 {

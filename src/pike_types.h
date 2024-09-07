@@ -478,6 +478,10 @@ struct pike_type *check_splice_call(struct pike_type *fun_type,
 struct pike_type *new_check_call(struct pike_type *fun_type,
 				 node *args, struct call_state *cs,
 				 INT32 flags);
+struct pike_type *new_check_call_binop(struct pike_type *fun_type,
+                                       node *binop_node,
+                                       struct call_state *cs,
+                                       INT32 flags);
 struct pike_type *zzap_function_return(struct pike_type *t,
 				       struct pike_type *fun_ret);
 struct pike_type *compiler_apply_bindings(struct pike_type *t,
