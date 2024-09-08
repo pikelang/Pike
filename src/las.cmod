@@ -3900,6 +3900,9 @@ void fix_type_field(node *n)
       enum Pike_opcodes opcode = n->token;
       struct call_state cs;
 
+      /* FIXME: Lookup string via lfun_strings.
+       *        All of these are valid lfun names.
+       */
       switch(opcode) {
       case F_AND_EQ:
 	efun_name = "`&";
@@ -3966,18 +3969,8 @@ void fix_type_field(node *n)
 
       fix_type_field(efun_node);	/* Just in case. */
 
-      /* NOTE: new_check_call() steals a reference from f! */
-      copy_pike_type(f, efun_node->type);
-
-      free_node(efun_node);
-
-      /* NOTE: Temporarily convert the node into an argument list node
-       *       for new_check_call(),
-       */
-      n->token = F_ARG_LIST;
       INIT_CALL_STATE(cs, efun_string);
-      f = debug_malloc_pass(new_check_call(f, n, &cs, 0));
-      n->token = opcode;
+      f = debug_malloc_pass(new_check_call_binop(efun_node->type, n, &cs, 0));
       if (f) {
 	struct pike_type *ret = new_get_return_type(f, &cs, 0);
 	free_type(f);
@@ -3985,6 +3978,8 @@ void fix_type_field(node *n)
       }
 
       FREE_CALL_STATE(cs);
+
+      free_node(efun_node);
 
       if (f && CAR(n)) {
 	/* Check that the returned type is compatible with the
