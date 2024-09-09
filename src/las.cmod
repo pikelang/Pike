@@ -820,6 +820,22 @@ node *debug_mknode(int token, node *a, node *b)
 	token=F_AUTO_MAP;
       break;
 
+    case F_COMMA_EXPR:
+    case F_POP_VALUE:
+      /* Cut code after return and redundant pop_value.
+       *
+       * This helps eg find_return_type() find only relevant
+       * return statements.
+       *
+       * NB: Do not do this for continue return.
+       */
+      if (a && (a->token == F_RETURN) &&
+          (!CDR(a) || !CDR(a)->u.sval.u.integer)) {
+        free_node(b);
+        return a;
+      }
+      break;
+
     case F_INDEX:
       switch((is_automap_arg_list(a) << 1) |
 	     is_automap_arg_list(b))
