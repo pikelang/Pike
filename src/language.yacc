@@ -4247,15 +4247,46 @@ inherit_specifier: string_or_identifier TOK_COLON_COLON
       }
     }
     if (e < 0) {
+      if (($1->u.sval.u.string != this_program_string) &&
+	  ($1->u.sval.u.string != this_string)) {
+        struct mapping *m;
+        struct pike_string *str;
+        my_yyerror("No inherit or surrounding class %pS.",
+                   $1->u.sval.u.string);
+        push_mapping(m = allocate_mapping(state->new_program->num_inherits));
+        state = Pike_compiler;
+        for (depth = 0;; depth++, state = state->previous) {
+          struct program *p = state->new_program;
+          for (e = p->num_inherits; --e;) {	/* NB: Skip inherit #0! */
+            if ((str = p->inherits[e].name)) {
+              struct svalue s;
+              SET_SVAL(s, T_STRING, 0, string, str);
+              low_mapping_insert(m, &s, &s, 0);
+            }
+          }
+          /* The top-level class does not have a name, so break here. */
+          if (depth == c->compilation_depth) break;
+          if ((str = ID_FROM_INT(state->previous->new_program,
+                                 state->parent_identifier)->name)) {
+            struct svalue s;
+            SET_SVAL(s, T_STRING, 0, string, str);
+            low_mapping_insert(m, &s, &s, 0);
+          }
+        }
+        f_indices(1);
+        f_sort(1);
+        push_text(", ");
+        f_multiply(2);
+        str = Pike_sp[-1].u.string;
+        if (str->len) {
+          my_yyerror("Expected one of %pS.", str);
+        }
+        pop_stack();
+      }
+
       inherit_state = Pike_compiler;
       inherit_depth = 0;
       e = INHERIT_SELF;
-
-      if (($1->u.sval.u.string != this_program_string) &&
-	  ($1->u.sval.u.string != this_string)) {
-        my_yyerror("No inherit or surrounding class %pS.",
-                   $1->u.sval.u.string);
-      }
     }
     free_node($1);
     $$ = e;
@@ -4299,6 +4330,10 @@ inherit_specifier: string_or_identifier TOK_COLON_COLON
     }
 #endif /* 0 */
     if (!e) {
+      struct mapping *m;
+      struct program *p;
+      struct pike_string *str;
+
       if (inherit_state->new_program->inherits[$1].name) {
         my_yyerror("No such inherit %pS::%pS.",
 		   inherit_state->new_program->inherits[$1].name,
@@ -4306,6 +4341,26 @@ inherit_specifier: string_or_identifier TOK_COLON_COLON
       } else {
         my_yyerror("No such inherit %pS.", $2->u.sval.u.string);
       }
+
+      p = inherit_state->new_program->inherits[$1].prog;
+      push_mapping(m = allocate_mapping(p->num_inherits));
+      for (e = p->num_inherits; e--;) {	/* NB: Skip inherit #0! */
+        if ((str = p->inherits[e].name)) {
+          struct svalue s;
+          SET_SVAL(s, T_STRING, 0, string, str);
+          low_mapping_insert(m, &s, &s, 0);
+        }
+      }
+      f_indices(1);
+      f_sort(1);
+      push_text(", ");
+      f_multiply(2);
+      str = Pike_sp[-1].u.string;
+      if (str->len) {
+        my_yyerror("Expected one of %pS.", str);
+      }
+      pop_stack();
+
       $$ = INHERIT_ALL;
     } else {
       /* We know stuff about the inherit structure... */
