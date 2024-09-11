@@ -234,6 +234,7 @@ int dooptcode(struct pike_string *name,
 	      struct pike_type *type,
 	      int modifiers);
 void resolv_type(node *n);
+node *make_default_lvalue(node *n);
 void init_las(void);
 void exit_las(void);
 /* Prototypes end here */

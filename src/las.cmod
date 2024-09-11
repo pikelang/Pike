@@ -5392,6 +5392,136 @@ int dooptcode(struct pike_string *name,
   return ret;
 }
 
+/*
+ * Move the expression into a nested function.
+ */
+static node *lexicalize_node(node *n)
+{
+  node *tmp;
+  if (!n) return n;
+  switch(n->token) {
+  case F_CLEAR_LOCAL:
+    /* Remove. Done by the original function. */
+    tmp = lexicalize_node(CAR(n));
+    _CAR(n) = NULL;
+    free_node(n);
+    return tmp;
+  case F_LOCAL:
+    if (n->u.integer.b < 0) {
+      tmp = mklocalnode(n->u.integer.a, 1);
+    } else {
+      tmp = mklocalnode(n->u.integer.a, n->u.integer.b + 1);
+    }
+    set_node_name(tmp, n->name);
+    free_node(n);
+    return tmp;
+  case F_LOCAL_INDIRECT:
+    Pike_compiler->compiler_frame->lexical_scope |= SCOPE_SCOPED;
+    low_bind_local(Pike_compiler->compiler_frame->previous, n);
+    tmp = mklocalnode(n->u.integer.a, 1);
+    set_node_name(tmp, n->name);
+    free_node(n);
+    return tmp;
+  default:
+    if (car_is_node(n)) {
+      _CAR(n) = lexicalize_node(CAR(n));
+    }
+    if (cdr_is_node(n)) {
+      _CDR(n) = lexicalize_node(CDR(n));
+    }
+    return n;
+  }
+}
+
+node *make_default_lvalue(node *n)
+{
+  struct pike_string *funname;
+  struct pike_type *funtype;
+  int fun;
+  node *ret;
+
+  if ((!n) || (n->token != F_ASSIGN)) return n;
+
+  /* Rewrite V = E
+   *
+   * into
+   *
+   *   T get_set(T|void arg)
+   *   {
+   *     return V ?= undefinedp(arg)?E:arg;
+   *   }
+   *
+   * define the local function, and return
+   *
+   *   F_GET_SET_LVALUE(get_set, NULL)
+   *
+   * FIXME: Does NOT handle being called with no arguments
+   *        correctly (should NOT alter V in that case).
+   */
+
+  fix_type_field(n);
+
+  push_compiler_frame(SCOPE_LOCAL);
+
+  if (Pike_compiler->compiler_frame->current_return_type) {
+    free_type(Pike_compiler->compiler_frame->current_return_type);
+  }
+  copy_pike_type(Pike_compiler->compiler_frame->current_return_type,
+                 n->type);
+
+  n = lexicalize_node(n);
+
+  /* This is variable and argument #0. */
+  add_local_name(empty_pike_string, n->type, 0);
+  add_ref(n->type);
+  Pike_compiler->compiler_frame->local_names[0].flags |= LOCAL_VAR_IS_USED;
+
+  if (n->type->flags & PT_FLAG_NULLABLE) {
+    ret = mknode(F_ATOMIC_GET_SET,
+                 CAR(n),
+                 mknode('?', mkefuncallnode("undefinedp", mklocalnode(0, 0)),
+                        mknode(':', CDR(n), mklocalnode(0, 0))));
+    add_ref(CAR(n));
+    add_ref(CDR(n));
+  } else {
+    ret = mknode(F_ATOMIC_GET_SET,
+                 CAR(n),
+                 mknode(F_LOR, mklocalnode(0, 0), CDR(n)));
+    add_ref(CAR(n));
+    add_ref(CDR(n));
+  }
+  ret = mknode(F_RETURN, ret, NULL);
+
+  push_finished_type(n->type);
+  push_type(T_VOID);
+  push_type(T_MANY);
+  push_type(T_VOID);
+  push_finished_type(n->type);
+  push_type(T_OR);
+  push_type(T_FUNCTION);
+  funtype = compiler_pop_type();
+
+  funname = get_new_name(CAR(n)->name);
+
+  fun = dooptcode(funname, ret, funtype,
+                  ID_PROTECTED|ID_PRIVATE|ID_INLINE|ID_USED);
+
+  free_type(funtype);
+  free_string(funname);
+  free_node(n);
+
+  if(Pike_compiler->compiler_frame->lexical_scope & SCOPE_SCOPED) {
+    ret = mktrampolinenode(fun, Pike_compiler->compiler_frame->previous);
+  } else {
+    ret = mkidentifiernode(fun);
+  }
+  ret = mknode(F_GET_SET_LVALUE, ret, NULL);
+
+  pop_compiler_frame();
+
+  return ret;
+}
+
 void init_las(void)
 {
   INIT;
