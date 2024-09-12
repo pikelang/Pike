@@ -2240,8 +2240,12 @@ node *debug_mktypenode(struct pike_type *t)
 {
   node *res = mkemptynode();
   res->token = F_CONSTANT;
-  SET_SVAL(res->u.sval, T_TYPE, 0, type, t);
-  add_ref(t);
+  if (t) {
+    SET_SVAL(res->u.sval, T_TYPE, 0, type, t);
+    add_ref(t);
+  } else {
+    SET_SVAL(res->u.sval, T_INT, NUMBER_UNDEFINED, integer, 0);
+  }
   /* FIXME: Should be type(val) */
   type_stack_mark();
   push_finished_type(t);
