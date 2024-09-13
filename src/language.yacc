@@ -4581,6 +4581,9 @@ sscanf: TOK_SSCANF '(' assignment_expr ',' assignment_expr lvalue_list ')'
   ;
 
 lvalue: assignment_expr
+  {
+    $$ = make_default_lvalue($1);
+  }
   | open_bracket_with_line_info low_lvalue_list ']'
   {
     /* NB: The optional default value is handled by assignment_expr above. */
@@ -4593,13 +4596,17 @@ lvalue: assignment_expr
     int id = add_local_name($2->u.sval.u.string,compiler_pop_type(),0);
     /* Note: Variable intentionally not marked as used. */
     if (id >= 0) {
+      $$ = mknode(F_CLEAR_LOCAL, mklocalnode(id, 0), NULL);
       if ($3) {
-        $$ = mknode(F_ASSIGN, mklocalnode(id, 0), $3);
-      } else {
-        $$ = mknode(F_CLEAR_LOCAL, mklocalnode(id, 0), NULL);
+        $$ = mknode(F_COMMA_EXPR, mkcastnode(void_type_string, $$),
+                    make_default_lvalue(mknode(F_ASSIGN,
+                                               mklocalnode(id, 0),
+                                               $3)));
       }
-    } else
+    } else {
       $$ = 0;
+      free_node($3);
+    }
     free_node($2);
   }
   /* FIXME: Add production for type2 ==> constant type svalue here? */
