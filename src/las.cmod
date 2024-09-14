@@ -5421,7 +5421,6 @@ static node *lexicalize_node(node *n)
     return tmp;
   case F_LOCAL_INDIRECT:
     Pike_compiler->compiler_frame->lexical_scope |= SCOPE_SCOPED;
-    low_bind_local(Pike_compiler->compiler_frame->previous, n);
     tmp = mklocalnode(n->u.integer.a, 1);
     set_node_name(tmp, n->name);
     free_node(n);
@@ -5441,6 +5440,7 @@ node *make_default_lvalue(node *n)
 {
   struct pike_string *funname;
   struct pike_type *funtype;
+  struct pike_type *vartype;
   int fun;
   node *ret;
 
@@ -5467,20 +5467,22 @@ node *make_default_lvalue(node *n)
 
   push_compiler_frame(SCOPE_LOCAL);
 
+  vartype = CAR(n)->type;
+
   if (Pike_compiler->compiler_frame->current_return_type) {
     free_type(Pike_compiler->compiler_frame->current_return_type);
   }
-  copy_pike_type(Pike_compiler->compiler_frame->current_return_type,
-                 n->type);
+  copy_pike_type(Pike_compiler->compiler_frame->current_return_type, vartype);
 
   n = lexicalize_node(n);
 
   /* This is variable and argument #0. */
-  add_local_name(empty_pike_string, n->type, 0);
-  add_ref(n->type);
+  add_local_name(empty_pike_string, vartype, 0);
+  add_ref(vartype);
+  bind_local(NULL, 0);
   Pike_compiler->compiler_frame->local_names[0].flags |= LOCAL_VAR_IS_USED;
 
-  if (n->type->flags & PT_FLAG_NULLABLE) {
+  if (vartype->flags & PT_FLAG_NULLABLE) {
     ret = mknode(F_ATOMIC_GET_SET,
                  CAR(n),
                  mknode('?', mkefuncallnode("undefinedp", mklocalnode(0, 0)),
@@ -5496,11 +5498,11 @@ node *make_default_lvalue(node *n)
   }
   ret = mknode(F_RETURN, ret, NULL);
 
-  push_finished_type(n->type);
+  push_finished_type(vartype);
   push_type(T_VOID);
   push_type(T_MANY);
   push_type(T_VOID);
-  push_finished_type(n->type);
+  push_finished_type(vartype);
   push_type(T_OR);
   push_type(T_FUNCTION);
   funtype = compiler_pop_type();
