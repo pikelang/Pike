@@ -962,6 +962,8 @@ static void emit_multi_assign(node *vals, node *vars, int no)
   struct compilation *c = THIS_COMPILATION;
   node *var;
   node **valp = my_get_arg(&vals, no++);
+  node *opt_default = NULL;
+  int aggregate_rest = 0;
 
   if (!vars) {
     /* No more lvalues. */
@@ -978,6 +980,17 @@ static void emit_multi_assign(node *vals, node *vars, int no)
   } else {
     var = vars;
     vars = NULL;
+  }
+
+  /* Parse lvalue markers. */
+  if (var->token == F_ASSIGN) {
+    /* Default value. */
+    opt_default = CDR(var);
+    var = CAR(var);
+  } else if (var->token == F_DOT_DOT_DOT) {
+    /* Assign the aggregate of the remaining values to the variable. */
+    aggregate_rest = 1;
+    var = CAR(var);
   }
 
   /* Push the lvalue (if needed). */
@@ -1018,11 +1031,44 @@ static void emit_multi_assign(node *vals, node *vars, int no)
   }
 
   /* Push the value. */
-  if (!valp || !*valp) {
-    yyerror("Too few arguments to multi-assignment.\n");
-    emit0(F_UNDEFINED);
+  if (aggregate_rest) {
+    emit0(F_MARK);
+    PUSH_CLEANUP_FRAME(do_pop_mark, 0);
+    for (; valp; valp = my_get_arg(&vals, no++)) {
+      code_expression(*valp, 0, "RHS");
+    }
+    emit_apply_builtin("aggregate");
+    POP_AND_DONT_CLEANUP;
+  } else if (!valp || !*valp) {
+    if (!opt_default) {
+      if (!((var->token == F_COMMA_EXPR) &&
+            (CAR(var)->token == F_POP_VALUE) &&
+            (CAAR(var)->token == F_CLEAR_LOCAL) &&
+            (CDR(var)->token == F_GET_SET_LVALUE))) {
+        yyerror("Too few arguments to multi-assignment.\n");
+      }
+      emit0(F_UNDEFINED);
+    } else {
+      code_expression(opt_default, 0, "RHS");
+    }
   } else {
     code_expression(*valp, 0, "RHS");
+
+    if (opt_default) {
+      int label;
+      if (var->type && (var->type->flags & PT_FLAG_NULLABLE)) {
+        emit1(F_DUP, 0);
+        emit0(F_UNDEFINEDP);
+        label = do_jump(F_BRANCH_AND_POP_WHEN_ZERO, -1);
+        emit0(F_POP_VALUE);	/* Result from undefinedp(). */
+      } else {
+        label = do_jump(F_BRANCH_WHEN_NON_ZERO, -1);
+      }
+      emit0(F_POP_VALUE);	/* Original value. */
+      code_expression(opt_default, 0, "RHS");
+      ins_label(label);
+    }
+
     emit_multi_assign(vals, vars, no);
   }
 
@@ -1076,10 +1122,14 @@ static int do_docode2(node *n, int flags)
 	emit1(F_NUMBER,0);
 	return 2;
 
+      case F_ASSIGN:
+      case F_INITIALIZE:
       case F_ARRAY_LVALUE:
+      case F_GET_SET_LVALUE:
       case F_LVALUE_LIST:
       case F_CLEAR_LOCAL:
       case F_LOCAL:
+      case F_LOCAL_INDIRECT:	/* FIXME: Fatal? */
       case F_GLOBAL:
       case F_INDEX:
       case F_ARROW:
@@ -1447,6 +1497,11 @@ static int do_docode2(node *n, int flags)
   case F_ASSIGN:
   case F_INITIALIZE:
 
+    if ((flags & (DO_LVALUE|DO_NO_DEFAULT)) == (DO_LVALUE|DO_NO_DEFAULT)) {
+      return do_docode(CAR(n), flags);
+    }
+
+    ret = 0;
     if( CAR(n)->token == F_AUTO_MAP_MARKER )
     {
         int depth = 0;
@@ -1478,7 +1533,12 @@ static int do_docode2(node *n, int flags)
         return !(flags&DO_POP);
     }
 
-    switch(CDR(n)->token)
+    if (flags & DO_LVALUE) {
+      ret = do_docode(CAR(n), DO_LVALUE);
+      flags |= DO_POP;
+    }
+
+    switch(CDR(n)?CDR(n)->token:F_OFFSET)
     {
     case F_RANGE:
       if(node_is_eq(CAR(n),CADR(n)))
@@ -1549,8 +1609,11 @@ static int do_docode2(node *n, int flags)
 	/* FALLTHRU */
       case F_LOCAL:
 	if(tmpn->u.integer.a >=
-	   find_local_frame(tmpn->u.integer.b)->max_number_of_locals)
-	  yyerror("Illegal to use local variable here.");
+           find_local_frame(tmpn->u.integer.b)->max_number_of_locals) {
+          Pike_fatal("Local variable $%d out of range (max: %d).\n",
+                     tmpn->u.integer.a,
+                     find_local_frame(tmpn->u.integer.b)->max_number_of_locals);
+        }
 
 	if(tmpn->u.integer.b) goto normal_assign;
 
@@ -1642,8 +1705,8 @@ static int do_docode2(node *n, int flags)
 	emit0(flags & DO_POP ? F_ASSIGN_AND_POP:F_ASSIGN);
 	break;
       }
-      return flags & DO_POP ? 0 : 1;
     }
+    return ret + (flags & DO_POP ? 0 : 1);
 
   case F_LAND:
   case F_LOR:
@@ -3215,7 +3278,10 @@ static int do_docode2(node *n, int flags)
 
   case F_SET_LOCAL_NAME:
     if (CAR(n) && (CAR(n)->token == F_LOCAL) && !CAR(n)->u.integer.b &&
-	CDR(n) && (CDR(n)->token == F_ARG_LIST)) {
+        CDR(n) && (CDR(n)->token == F_ARG_LIST) &&
+        CADR(n) && (CADR(n)->token == F_CONSTANT) &&
+        (TYPEOF(CADR(n)->u.sval) == PIKE_T_STRING) &&
+        CADR(n)->u.sval.u.string->len) {
       /* F_SET_LOCAL_NAME(F_LOCAL(stack_offset, 0),
        *                  F_ARG_LIST(F_CONSTANT(T_STRING, "varname"),
        *                             F_CONSTANT(T_INT, varflags)))
@@ -3242,6 +3308,9 @@ static int do_docode2(node *n, int flags)
 
   case F_SET_LOCAL_END:
     if (CAR(n) && (CAR(n)->token == F_LOCAL) && !CAR(n)->u.integer.b) {
+      /* NB: No need to consider F_LOCAL_INDIRECT here as it will
+       *     only be here if the variable was never used.
+       */
       emit1(F_SET_LOCAL_END, CAR(n)->u.integer.a);
     }
     return 0;
