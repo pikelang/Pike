@@ -3895,6 +3895,12 @@ void fix_type_field(node *n)
     }
     break;
 
+  case F_GET_SET_LVALUE:
+    if (CAR(n)) {
+      n->type = get_first_arg_type(CAR(n)->type, 0);
+    }
+    break;
+
   case F_AND_EQ:
   case F_OR_EQ:
   case F_XOR_EQ:
