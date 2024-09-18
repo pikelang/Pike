@@ -1148,29 +1148,40 @@ new_arg_name: full_type optional_dot_dot_dot
     }
     free_node($4);
   }
-  | open_bracket_with_line_info low_lvalue_list ']' optional_default_value
+  | open_bracket_with_line_info
   {
-    node *n = mknode(F_ARRAY_LVALUE, $2, 0);
+    int i = add_local_name(empty_pike_string, array_type_string, NULL);
+    add_ref(array_type_string);
+    Pike_compiler->compiler_frame->local_names[i].flags |= LOCAL_VAR_IS_USED;
+    bind_local(NULL, i);
+    $<number>$ = i;
+  }
+  low_lvalue_list ']' optional_default_value
+  {
+    node *n = mknode(F_ARRAY_LVALUE, $3, 0);
     node *init;
-    int i;
+    int i = $<number>2;
+
+    /* Update the type for argument #i. */
     type_stack_mark();
     fix_type_field(n);
     push_finished_type(n->type);
-    if ($4) {
+    if ($5) {
       push_type(T_VOID);
       push_type(T_OR);
       free_type(n->type);
       copy_pike_type(n->type, peek_type_stack());
     }
-    i = add_local_name(empty_pike_string, pop_unfinished_type(), NULL);
-    Pike_compiler->compiler_frame->local_names[i].flags |= LOCAL_VAR_IS_USED;
-    bind_local(NULL, i);
+    free_type(Pike_compiler->compiler_frame->local_names[i].def->type);
+    Pike_compiler->compiler_frame->local_names[i].def->type =
+      pop_unfinished_type();
     init = mklocalnode(i, 0);
-    if ($4) {
-      init = mknode(F_LOR, init, $4);
+
+    if ($5) {
+      init = mknode(F_LOR, init, $5);
     }
-    /* Redefine local #i as [ $2 ] with an initializer of
-     * orig_i || $4.
+    /* Redefine local #i as [ $3 ] with an initializer of
+     * orig_i || $5.
      */
     redefine_local(NULL, i, n, init);
     free_node($1);
