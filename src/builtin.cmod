@@ -922,50 +922,79 @@ PMOD_EXPORT
 
 extern const unsigned char hexdecode[256];
 
-/*! @decl string(8bit) hex2string(string(8bit) hex)
+/*! @decl string(8bit) hex2string(string(8bit) hex, int(0..2)|void strict_mode)
  *! @appears String.hex2string
  *!
- *! Convert a string of hexadecimal digits to binary
- *! data. Non-hexadecimal characters will be ignored when between
- *! tuples. Eg. "00 00" is ok, but "0 000" isn't.
+ *! Convert a string of hexadecimal digits to binary data.
+ *!
+ *! @param hex
+ *!   String containing hexadecimal characters.
+ *!
+ *! @param strict_mode
+ *!   Level of strictness. Defaults to @expr{0@}:
+ *!   @int
+ *!     @value 0
+ *!       Traditional mode: Non-hexadecimal characters will be ignored
+ *!       when between tuples.
+ *!       Eg. @expr{"Z00 00"@} is ok, but @expr{"0 00Z0"@} isn't.
+ *!     @value 1
+ *!       Lenient mode: Only Control characters and white-space will
+ *!       be ignored when between tuples.
+ *!       Eg. @expr{"00 00"@} is ok, but @expr{"Z00 00"@} and
+ *!       @expr{"0 000"@} are not.
+ *!     @value 2
+ *!       Strict mode: No non-hexadecimal characters are allowed.
+ *!   @endint
+ *!
+ *! @note
+ *!   The @[strict_mode] parameter was added in Pike 9.0.
  *!
  *! @seealso
  *!   @[string2hex()]
  */
 PMOD_EXPORT
-PIKEFUN string(0..255) hex2string(string hex)
+PIKEFUN string(0..255) hex2string(string(8bit) hex, int(0..2)|void strict_mode)
   optflags OPT_TRY_OPTIMIZE;
 {
-  struct pike_string *s;
+  struct pike_string *s = NULL;
   int tmp, i;
   unsigned char *p, *q = (unsigned char *)hex->str;
   int l = i = hex->len;
+  int strict = strict_mode?strict_mode->u.integer:0;
   if(hex->size_shift) Pike_error("Wide strings are not allowed.\n");
+
+  if ((strict >= 2) && (i & 1)) goto bad;
 
   s = begin_shared_string(l>>1);
   p = (unsigned char *)s->str;
   while( l > 1 )
   {
-    tmp = hexdecode[*q++];
-    if( tmp==16 ) { l--; i--; continue; }
+    int c = *q++;
+    tmp = hexdecode[c];
+    if( tmp==16 ) {
+      if ((strict >= 2) || ((strict == 1) && (c > ' '))) goto bad;
+      l--; i--;
+      continue;
+    }
     *p = tmp<<4;
     tmp = hexdecode[*q++];
-    if( tmp==16 ) {
-      free_string(s);
-      Pike_error("Illegal hex format.\n");
-    }
+    if (tmp == 16) goto bad;
     *p++ |= tmp;
     l -= 2;
   }
-  if( l && hexdecode[*q]!=16 ) {
-    free_string(s);
-    Pike_error("Illegal hex format.\n");
+  if (l) {
+    int c = *q;
+    if ((hexdecode[c] != 16) || ((strict >= 1) && (c > ' '))) goto bad;
   }
 
   if( hex->len>>1 == i>>1 )
     RETURN end_shared_string(s);
   else
     RETURN end_and_resize_shared_string(s, i>>1);
+
+ bad:
+  if (s) free_string(s);
+  Pike_error("Illegal hex format.\n");
 }
 
 /*! @decl array(int) range(string s)
