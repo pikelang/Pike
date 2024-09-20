@@ -214,7 +214,7 @@ class UUID {
       if(sizeof(in)!=32) error("Illegal UUID.\n");
       // fallthrough
     case 32:
-      in = String.hex2string(in);
+      in = String.hex2string(in, 2);
       // fallthrough
     case 16:
       int time_low, time_mid, time_hi_and_version;
