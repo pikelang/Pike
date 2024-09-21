@@ -4089,7 +4089,6 @@ void _main(array(string(0..255)) orig_argv)
   array(string) argv=copy_value(orig_argv);
   int debug,trace,run_tool;
   object tmp;
-  string|zero postparseaction = 0;
 
   predefines = initial_predefines =
     Builtin._take_over_initial_predefines();
@@ -4269,6 +4268,12 @@ void _main(array(string(0..255)) orig_argv)
       object compat_master = get_compat_master (compat_major, compat_minor);
     }
 
+    // Strap Stdio and Gmp.
+    main_resolv( "Stdio.FILE" );
+    main_resolv( "Gmp.bignum" );
+
+    arguments_parsed = 1;
+
     foreach(q, array opts)
     {
       switch(opts[0])
@@ -4287,12 +4292,20 @@ void _main(array(string(0..255)) orig_argv)
 	exit( 0, main_resolv("Tools.MasterHelp")->do_help(opts[1]) );
 
       case "features":
-	postparseaction="features";
-	break;
+        write( main_resolv( "Tools.Install.features" )()*"\n"+"\n" );
+        exit(0);
 
       case "info":
-	postparseaction="info";
-	break;
+        write("Software......Pike\n"
+              "Version......."+version()+"\n"
+              "WWW...........http://pike.lysator.liu.se/\n"
+              "\n"
+              "pike binary..."+_pike_file_name+"\n"+
+              format_paths() + "\n"
+              "Features......"+
+              main_resolv( "Tools.Install.features" )()*"\n              "+
+              "\n");
+        exit(0);
 
       case "showpaths":
         if( stringp(opts[1]) )
@@ -4316,7 +4329,7 @@ void _main(array(string(0..255)) orig_argv)
             break;
 
           default:
-            exit(1, "Unknown path type %s\n", opts[1]);
+            exit(1, "Unknown path type %q\n", opts[1]);
           }
           exit(0);
         }
@@ -4324,7 +4337,6 @@ void _main(array(string(0..255)) orig_argv)
 	exit(0, format_paths());
 
       case "execute":
-	main_resolv( "Gmp.bignum" );
         argv = tmp->get_args(argv,1);
 
 	program prog;
@@ -4375,11 +4387,6 @@ void _main(array(string(0..255)) orig_argv)
 	exit(ret);
 
       case "preprocess":
-	main_resolv( "Stdio.FILE" );
-	main_resolv( "Gmp.bignum" );
-
-	arguments_parsed = 1;
-
 	write(cpp(master_read_file(opts[1]),opts[1]));
 	exit(0);
 
@@ -4410,32 +4417,13 @@ void _main(array(string(0..255)) orig_argv)
     }
 
     argv = tmp->get_args(argv,1);
-  }
-  else
+  } else {
     cur_compat_ver = Version (compat_major, compat_minor);
 
-  main_resolv( "Stdio.FILE" );
-  main_resolv( "Gmp.bignum" );
+    main_resolv( "Stdio.FILE" );
+    main_resolv( "Gmp.bignum" );
 
-  arguments_parsed = 1;
-
-  switch (postparseaction)
-  {
-     case "features":
-       write( main_resolv( "Tools.Install.features" )()*"\n"+"\n" );
-       exit(0);
-
-     case "info":
-       write("Software......Pike\n"
-	     "Version......."+version()+"\n"
-	     "WWW...........http://pike.lysator.liu.se/\n"
-	     "\n"
-	     "pike binary..."+_pike_file_name+"\n"+
-	      format_paths() + "\n"
-	     "Features......"+
-	     main_resolv( "Tools.Install.features" )()*"\n              "+
-	     "\n");
-	exit(0);
+    arguments_parsed = 1;
   }
 
   if(sizeof(argv)==1)
