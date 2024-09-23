@@ -753,7 +753,7 @@ constant_name: TOK_IDENTIFIER '=' safe_assignment_expr
     if($3) free_node($3);
     free_node($1);
   }
-  | bad_expr_ident '=' safe_assignment_expr { if ($3) free_node($3); }
+  | bad_const_expr_ident '=' safe_assignment_expr { if ($3) free_node($3); }
   | error '=' safe_assignment_expr { if ($3) free_node($3); }
   ;
 
@@ -4663,11 +4663,40 @@ bad_identifier: bad_inherit
   { yyerror_reserved("local"); }
   ;
 
-bad_inherit: bad_expr_ident
+bad_inherit: bad_const_expr_ident
   | TOK_ARRAY_ID
   { yyerror_reserved("array"); }
   | TOK_ATTRIBUTE_ID
   { yyerror_reserved("__attribute__"); }
+  | TOK_DEPRECATED_ID
+  { yyerror_reserved("__deprecated__"); }
+  | TOK_EXPERIMENTAL_ID
+  { yyerror_reserved("__experimental__"); }
+  | TOK_FLOAT_ID
+  { yyerror_reserved("float");}
+  | TOK_FUNCTION_ID
+  { yyerror_reserved("function");}
+  | TOK_INT_ID
+  { yyerror_reserved("int"); }
+  | TOK_MAPPING_ID
+  { yyerror_reserved("mapping"); }
+  | TOK_MIXED_ID
+  { yyerror_reserved("mixed"); }
+  | TOK_MULTISET_ID
+  { yyerror_reserved("multiset"); }
+  | TOK_OBJECT_ID
+  { yyerror_reserved("object"); }
+  | TOK_PROGRAM_ID
+  { yyerror_reserved("program"); }
+  | TOK_STRING_ID
+  { yyerror_reserved("string"); }
+  | TOK_UNKNOWN
+  { yyerror_reserved("__unknown__"); }
+  | TOK_VOID_ID
+  { yyerror_reserved("void"); }
+  ;
+
+bad_const_expr_ident: bad_expr_ident
   | TOK_BREAK
   { yyerror_reserved("break"); }
   | TOK_CASE
@@ -4680,22 +4709,14 @@ bad_inherit: bad_expr_ident
   { yyerror_reserved("continue"); }
   | TOK_DEFAULT
   { yyerror_reserved("default"); }
-  | TOK_DEPRECATED_ID
-  { yyerror_reserved("__deprecated__"); }
   | TOK_DO
   { yyerror_reserved("do"); }
   | TOK_ENUM
   { yyerror_reserved("enum"); }
-  | TOK_EXPERIMENTAL_ID
-  { yyerror_reserved("__experimental__"); }
-  | TOK_FLOAT_ID
-  { yyerror_reserved("float");}
   | TOK_FOR
   { yyerror_reserved("for"); }
   | TOK_FOREACH
   { yyerror_reserved("foreach"); }
-  | TOK_FUNCTION_ID
-  { yyerror_reserved("function");}
   | TOK_FUNCTION_NAME
   { yyerror_reserved("__FUNCTION__");}
   | TOK_GAUGE
@@ -4704,36 +4725,18 @@ bad_inherit: bad_expr_ident
   { yyerror_reserved("if"); }
   | TOK_IMPORT
   { yyerror_reserved("import"); }
-  | TOK_INT_ID
-  { yyerror_reserved("int"); }
   | TOK_LAMBDA
   { yyerror_reserved("lambda"); }
-  | TOK_MAPPING_ID
-  { yyerror_reserved("mapping"); }
-  | TOK_MIXED_ID
-  { yyerror_reserved("mixed"); }
-  | TOK_MULTISET_ID
-  { yyerror_reserved("multiset"); }
-  | TOK_OBJECT_ID
-  { yyerror_reserved("object"); }
-  | TOK_PROGRAM_ID
-  { yyerror_reserved("program"); }
   | TOK_RETURN
   { yyerror_reserved("return"); }
   | TOK_SSCANF
   { yyerror_reserved("sscanf"); }
-  | TOK_STRING_ID
-  { yyerror_reserved("string"); }
   | TOK_SWITCH
   { yyerror_reserved("switch"); }
   | TOK_TYPEDEF
   { yyerror_reserved("typedef"); }
   | TOK_TYPEOF
   { yyerror_reserved("typeof"); }
-  | TOK_UNKNOWN
-  { yyerror_reserved("__unknown__"); }
-  | TOK_VOID_ID
-  { yyerror_reserved("void"); }
   | TOK_RESERVED
   {
     ref_push_string($1->u.sval.u.string);
