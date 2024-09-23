@@ -652,6 +652,8 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	    return TOK_UNUSED;
 	  if(ISWORD("__unknown__"))
 	    return TOK_UNKNOWN;
+          if(ISWORD("__pragma_save_parent__"))	/* Handled as an identifier. */
+            break;
 	  /* Allow triple (or more) underscore for the user, and make sure we
 	   * don't get false matches below for wide strings.
 	   */
