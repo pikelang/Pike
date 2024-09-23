@@ -11,7 +11,8 @@ class Timezone
   protected int offset_to_utc;
 
   // timezone name
-  string name;
+  string name = "-";
+  string `zoneid() { return name; }
 
   //! @param offset
   //!   Offset to UTC, not counting DST.
@@ -28,20 +29,21 @@ class Timezone
   //! @fixme
   //! This method takes one integer argument, ignores it and
   //! returns an array with the UTC offset and the timezone name.
-  array tz_ux(int unixtime) {
+  array(int) tz_ux(int unixtime) {
     return ({offset_to_utc,name});
   }
 
   //! @fixme
   //! This method takes one integer argument, ignores it and
   //! returns an array with the UTC offset and the timezone name.
-  array tz_jd(int julian_day) {
+  array(int) tz_jd(int julian_day) {
     return ({offset_to_utc,name});
   }
 
   protected string _sprintf(int t)
   {
-    return t=='O' && "Timezone("+name+")";
+    return t=='O' &&
+       sprintf("Calendar.Rule.Timezone(%O, %O)", offset_to_utc, name);
   }
 
   //! Returns the offset to UTC, not counting DST.
