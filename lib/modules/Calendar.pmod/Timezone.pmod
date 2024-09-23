@@ -111,12 +111,12 @@ protected Calendar.Rule.Timezone _locale()
 	   array(string) a = s/"/";
 	   // Modern zones usually have two levels.
 	   // (Eg Europe/Paris)
-	   tz = Calendar.Timezone[a[<1..]*"/"] ||
+           tz = this[a[<1..]*"/"] ||
 	     // NB: There are some zones that have three levels.
 	     //     (Eg America/Indiana/Indianapolis)
-	     Calendar.Timezone[a[<2..]*"/"] ||
+             this[a[<2..]*"/"] ||
 	     // Old-style zones have a single level.
-	     Calendar.Timezone[a[-1]];
+             this[a[-1]];
 	   if (tz) return tz;
 	 }
        }
@@ -302,6 +302,8 @@ Calendar.Rule.Timezone expert(Calendar.Rule.Timezone try)
 
 class localtime
 {
+   @Pike.Annotations.Implements(Calendar.Rule.Timezone);
+
    constant is_timezone=1;
    constant is_dst_timezone=1;
 
@@ -310,9 +312,10 @@ class localtime
 #endif
 
    string name="local";
+   string `zoneid() { return name; }
 
 // is (midnight) this julian day dst?
-   array tz_jd(int jd)
+   array(int) tz_jd(int jd)
    {
       return tz_ux((jd-2440588)*86400);
    }
@@ -355,7 +358,7 @@ class localtime
    }
 
 // is this unixtime (utc) dst?
-   array tz_ux(int ux)
+   array(int) tz_ux(int ux)
    {
       if (ux<-0x80000000 || ux>0x7fffffff)
 	 error("Time is out of range for Timezone.localtime()\n");
@@ -1206,7 +1209,8 @@ class Runtime_timezone_compiler
 	    else a[6]=rname[a[4]]="tz"+n++;
 
 	 res+=({ "inherit TZHistory;\n"
-		 "Rule.Timezone ",
+                 "@Pike.Annotations.Implements(Calendar.Rule.Timezone);\n"
+                 "protected Rule.Timezone ",
 		 sort(values(rname))*",",";\n"
 		 "Rule.Timezone whatrule(int ux)\n"
 		 "{\n" });
@@ -1257,7 +1261,8 @@ class Runtime_timezone_compiler
 		sprintf(
 		   "protected string _sprintf(int t) { return t=='O' &&"
 		   "%O; }\n"
-		   "string zoneid=%O;\n","Rule.Timezone("+id+")",id)});
+                   "constant zoneid=%O;\n",
+                   sprintf("Calendar.Timezone[%O]", id), id)});
 
 	 return res*"";
       }
@@ -1290,7 +1295,8 @@ class Runtime_timezone_compiler
 #endif
 
        program p;
-       mixed err=catch { p=compile_string(c, UNDEFINED, compile_handler); };
+       mixed err=catch { p=compile_string(c, "Calendar.Timezone." + zone_name,
+                                          compile_handler); };
        if (err)
        {
 	 int i=0;
@@ -1625,13 +1631,16 @@ class Runtime_timezone_compiler
 
    class TZHistory
    {
+      @Pike.Annotations.Implements(Calendar.Rule.Timezone);
+
       constant is_timezone=1;
       constant is_dst_timezone=1;
 
 // figure out what timezone to use
       Calendar.Rule.Timezone whatrule(int ux);
 
-      string name=sprintf("%O",this_program);
+      constant zoneid = "-";
+      string name = zoneid;
 
       array(int) tz_ux(int ux)
       {
