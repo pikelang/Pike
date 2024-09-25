@@ -1173,7 +1173,9 @@ F_FOREACH(F_FOREACH_VAL_LVAL(0, -), 1):
 //   }
 //   ;
 
-// foreach(str/"x", ...)  ==>  foreach(String.SplitIterator(str, 'x'), ...)
+// foreach(str/"x", ...)
+//   ==>
+// foreach(String.SplitIterator(<typeof(str)>)(str, 'x'), ...)
 F_FOREACH(F_FOREACH_VAL_LVAL(F_APPLY(F_CONSTANT
 			     [TYPEOF($$->u.sval) == T_FUNCTION]
 			     [SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN]
@@ -1187,6 +1189,7 @@ F_FOREACH(F_FOREACH_VAL_LVAL(F_APPLY(F_CONSTANT
   extern struct program *string_split_iterator_program;
   node *vars;
   p_wchar2 split = index_shared_string($1->u.sval.u.string, 0);
+  struct pike_type *t = $0->type;
 
   ADD_NODE_REF2($2,
     if ($2->token == ':') {
@@ -1199,7 +1202,8 @@ F_FOREACH(F_FOREACH_VAL_LVAL(F_APPLY(F_CONSTANT
 
   $$ = mknode(F_FOREACH,
 	      mknode(F_FOREACH_VAL_LVAL,
-		     mkapplynode(mkprgnode(string_split_iterator_program),
+                     mkapplynode(mkbindnode(
+                                   mkprgnode(string_split_iterator_program), t),
 				 mknode(F_ARG_LIST, $0,
 					mkintnode(split))),
 		     vars),
@@ -1233,6 +1237,7 @@ F_FOREACH(F_FOREACH_VAL_LVAL(F_APPLY(F_CONSTANT
   extern struct program *string_split_iterator_program;
   node *vars;
   p_wchar2 split = index_shared_string($1->u.sval.u.string, 0);
+  struct pike_type *t = $0->type;
 
   ADD_NODE_REF2($2,
     if ($2->token == ':') {
@@ -1245,7 +1250,8 @@ F_FOREACH(F_FOREACH_VAL_LVAL(F_APPLY(F_CONSTANT
 
   $$ = mknode(F_FOREACH,
 	      mknode(F_FOREACH_VAL_LVAL,
-		     mkapplynode(mkprgnode(string_split_iterator_program),
+                     mkapplynode(mkbindnode(
+                                   mkprgnode(string_split_iterator_program), t),
 				 mknestednodes(F_ARG_LIST,
 					       $0,
 					       mkintnode(split),
@@ -1284,6 +1290,7 @@ F_FOREACH(F_FOREACH_VAL_LVAL(F_APPLY(F_CONSTANT
   extern struct program *string_split_iterator_program;
   node *vars;
   p_wchar2 split = index_shared_string($1->u.sval.u.string, 0);
+  struct pike_type *t = $0->type;
 
   ADD_NODE_REF2($2,
     if ($2->token == ':') {
@@ -1296,7 +1303,8 @@ F_FOREACH(F_FOREACH_VAL_LVAL(F_APPLY(F_CONSTANT
 
   $$ = mknode(F_FOREACH,
 	      mknode(F_FOREACH_VAL_LVAL,
-		     mkapplynode(mkprgnode(string_split_iterator_program),
+                     mkapplynode(mkbindnode(
+                                   mkprgnode(string_split_iterator_program), t),
 				 mknestednodes(F_ARG_LIST, $0,
 					       mkintnode(split),
 					       mkintnode(1),
