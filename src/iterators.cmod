@@ -23,6 +23,7 @@
 #include "operators.h"
 #include "builtin_functions.h"
 #include "constants.h"
+#include "pike_types.h"
 
 #define DEFAULT_CMOD_STORAGE
 
@@ -1345,22 +1346,23 @@ PIKECLASS file_line_iterator
 /*! @module String
  */
 
-/*! @class SplitIterator
+/*! @class SplitIterator(<string StringType>)
  *! @inherit predef::Iterator
  *!
  *! An iterator that iterates over substrings of a string, separated
  *! by a character or several different characters.
  *!
  *! @note
- *!   Typically you don't need to explicitly use the SplitIterator.
+ *!   Typically you don't need to explicitly use the @[SplitIterator].
  *!   Expressions like the following are automatically optimized into
- *!   using a SplitIterator.
+ *!   using a @[SplitIterator].
  *!   @code
  *!     foreach(str/"\n", string line)
  *!       write("%s\n", line);
  *!   @endcode
  */
 PIKECLASS string_split_iterator
+  num_generics 1;
 {
   CVAR struct pike_string *buffer;
   CVAR struct pike_string *current;
@@ -1370,6 +1372,18 @@ PIKECLASS string_split_iterator
   CVAR int split_set_size;
   CVAR int flags;
   CVAR struct svalue feed;
+
+  EXTRA
+  {
+    /* __generic__ string StringType; */
+    ref_push_type_value(string_type_string);
+    f_aggregate(1);
+    add_constant(lfun_strings[LFUN___GENERIC_TYPES__],
+                 Pike_sp - 1,
+                 ID_PRIVATE|ID_PROTECTED|ID_LOCAL|ID_USED);
+    /* add_ref(Pike_compiler->generic_types = Pike_sp[-1].u.array); */
+    pop_stack();
+  }
 
 #define SIMPLE_SKIP(THIS, SHIFT, OFF) 	 	\
   do {						\
@@ -1594,6 +1608,7 @@ PIKECLASS string_split_iterator
 
   PIKEFUN string _iterator_value()
     flags ID_PROTECTED;
+    rawtype tFunc(tNone, tOr(tZero, tStringSplitIterValueType));
     {
       if (THIS->current) {
 	ref_push_string(THIS->current);
@@ -1613,6 +1628,7 @@ PIKECLASS string_split_iterator
     }
 
   PIKEFUN string value()	/* Compat. */
+    rawtype tFunc(tNone, tOr(tZero, tStringSplitIterValueType));
     {
       if (THIS->current) {
 	ref_push_string(THIS->current);
@@ -1725,8 +1741,9 @@ PIKECLASS string_split_iterator
     RETURN res;
   }
 
-  /*! @decl void create(string buffer, int|array(int)|multiset(int) split_set,@
-   *!                   int|void flags, function(:string|zero)|void feed)
+  /*! @decl void create(StringType buffer, @
+   *!                   int|array(int)|multiset(int) split_set,@
+   *!                   int|void flags, function(:StringType|zero)|void feed)
    *! @param buffer
    *!   The string to split.
    *! @param split_set
@@ -1740,6 +1757,11 @@ PIKECLASS string_split_iterator
   PIKEFUN void create(string buffer, int|array(int)|multiset(int) split_set,
                       int|void flags, function(:string|zero)|void feed)
     flags ID_PROTECTED;
+    rawtype tFunc(tStringSplitIterValueType
+                  tOr3(tInt,tArr(tInt),tSet(tInt))
+                  tOr(tInt, tVoid)
+                  tOr(tFunc(tNone, tOr(tStringSplitIterValueType, tZero)),
+                      tVoid), tVoid);
     {
       if (THIS->buffer) {
 	Pike_error("String.split() iterators cannot be reused.\n");

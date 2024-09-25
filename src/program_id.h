@@ -55,7 +55,7 @@
 #define     PROG_MULTISET_ITERATOR_ID				    021
 #define     PROG_STRING_ITERATOR_ID				    022
 #define     PROG_FILE_LINE_ITERATOR_ID				    023
-#define     PROG_STRING_SPLIT_ITERATOR_ID			    024
+#define OLD_PROG_STRING_SPLIT_ITERATOR_ID			    024
 #define     PROG_ITERATOR_ID					    025
 #define tObjImpl_ITERATOR		      "\003\000\000\000\000\025"
 #define   tObjIs_ITERATOR		      "\003\001\000\000\000\025"
@@ -219,6 +219,11 @@
 #define tObjImpl_PROMISE                   "\003\000\000\000\200\001"
 #define tPromiseValueType	tGeneric(tObjImpl_PROMISE, 0)
 #define tPromise(X)		tBind(tAssign(tPromiseValueType, X), tObjImpl_PROMISE)
+
+#define     PROG_STRING_SPLIT_ITERATOR_ID			0x8014
+#define tObjImpl_STRING_SPLIT_ITERATOR     "\003\000\000\000\200\024"
+#define tStringSplitIterValueType	tGeneric(tObjImpl_STRING_SPLIT_ITERATOR, 0)
+#define tStringSplitIter(X)		tBind(tAssign(tStringSplitIterValueType, X), tObjImpl_STRING_SPLIT_ITERATOR)
 
 /* Start for dynamically allocated program ids. */
 #define PROG_DYNAMIC_ID_START		0x10000
