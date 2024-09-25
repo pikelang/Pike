@@ -1195,6 +1195,16 @@ void set_node_name(node *n, struct pike_string *name)
   add_ref(n->name = name);
 }
 
+node *mkbindnode(node *expr, struct pike_type *type)
+{
+  if (!expr || !type) return expr;
+  ref_push_type_value(type);
+  f_aggregate(1);
+  expr = mknode(F_BIND_GENERICS, expr, mkconstantsvaluenode(Pike_sp - 1));
+  pop_stack();
+  return expr;
+}
+
 node *debug_mkstrnode(struct pike_string *str)
 {
   node *res = mkemptynode();
