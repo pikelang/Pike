@@ -4834,8 +4834,10 @@ static void decode_value2(struct decode_data *data)
 #endif
 	    data->pickyness--;
 
-	  /* The program should be consistent now. */
-	  p->flags &= ~PROGRAM_AVOID_CHECK;
+          if (!delay) {
+            /* The program should be consistent now. */
+            p->flags &= ~PROGRAM_AVOID_CHECK;
+          }
           UNSET_ONERROR(err3);
 
 	  EDB(5, fprintf(stderr, "%*sProgram flags: 0x%04x\n",
