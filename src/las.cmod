@@ -1030,6 +1030,14 @@ node *debug_mknode(int token, node *a, node *b)
     res->node_info |= OPT_EXTERNAL_DEPEND | OPT_SIDE_EFFECT;
     break;
 
+  case F_FOREACH_VAL_LVAL:
+    if (a && match_types(a->type, object_type_string)) {
+      /* Possible iterator. Force external dependency even if no lvalues. */
+      res->node_info |= OPT_EXTERNAL_DEPEND | OPT_SIDE_EFFECT;
+    }
+    goto set_default_tree_info;
+    break;
+
   case F_RETURN:
   case F_VOLATILE_RETURN:
   case F_RETURN_IF_TRUE:
