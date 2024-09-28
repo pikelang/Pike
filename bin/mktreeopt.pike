@@ -323,17 +323,17 @@ class node
   int tag = -1;
   string token = "*";
 
-  string tpos;
+  string tpos = "";
 
   array(string) extras = ({});
 
-  object(node)|string car, cdr;	// 0 == Ignored.
+  object(node)|string|zero car, cdr;	// 0 == Ignored.
 
-  object(node)|string real_car, real_cdr;
+  object(node)|string|zero real_car, real_cdr;
 
-  object(node) parent;
+  object(node)|zero parent;
 
-  string action;
+  string action = "";
 
   int node_id = node_cnt++;
 
@@ -379,7 +379,7 @@ class node
     return _copy();
   }
 
-  string _sprintf()
+  protected string _sprintf()
   {
     string s = token;
     if (tag >= 0) {
@@ -393,7 +393,7 @@ class node
       if (real_car || real_cdr) {
 	s += "(";
 	if (objectp(real_car)) {
-	  s += real_car->_sprintf();
+          s += sprintf("%s", real_car);
 	} else if (real_car) {
 	  s += "$" + real_car + "$";
 	} else {
@@ -401,7 +401,7 @@ class node
 	}
 	s += ", ";
 	if (objectp(real_cdr)) {
-	  s += real_cdr->_sprintf();
+          s += sprintf("%s", real_cdr);
 	} else if (real_cdr) {
 	  s += "$" + real_cdr + "$";
 	} else {
@@ -454,7 +454,7 @@ string fix_extras(string s)
   array(string) a = s/"$";
 
   for(int i=1; i < sizeof(a); i++) {
-    string pos;
+    string|zero pos;
     if (a[i] == "") {
       // $$
       pos = tpos;
@@ -490,7 +490,7 @@ void read_car_cdr(object(node) res, array(string) linepos)
       // Useful for common subexpression elimination.
       pos++;
       int tag = read_int();
-      string ntpos;
+      string|zero ntpos;
       if (!(ntpos = marks[tag])) {
 	fail("%s:%d: Tag $%d used before being defined.\n",
 	     fname, line, tag);
@@ -517,7 +517,7 @@ void read_car_cdr(object(node) res, array(string) linepos)
       // Useful for common subexpression elimination.
       pos++;
       int tag = read_int();
-      string ntpos;
+      string|zero ntpos;
       if (!(ntpos = marks[tag])) {
 	fail("%s:%d: Tag $%d used before being defined.\n",
 	     fname, line, tag);
@@ -645,7 +645,7 @@ object(node) read_node(array(string) linepos)
       c = data[pos];
     }
 
-    string f_op_name = f_op_name_lookup[token];
+    string|zero f_op_name = f_op_name_lookup[token];
     if (f_op_name) {
       // We need to convert the short-hand notation to
       // an actual operator call node.
@@ -706,7 +706,7 @@ string fix_action(string s)
 
     array(string) b = new_node/"$";
 
-    mapping(string:int) used_nodes = ([]);
+    mapping(string:int(0..)) used_nodes = ([]);
 
     for(int j=1; j < sizeof(b); j++) {
       int tag = -1;
@@ -861,7 +861,7 @@ void parse_data()
     marks = allocate(10);
 
     array(string) linepos = ({ "" });
-    object(node) n = read_node(linepos);
+    object(node)|zero n = read_node(linepos);
 
     // werror(sprintf("%s:\n", n));
 
@@ -875,7 +875,7 @@ void parse_data()
     expect(':');
     eat_whitespace();
 
-    string action;
+    string action = "";
 
     if (data[pos] == '{') {
       // Code.
@@ -1291,7 +1291,7 @@ string generate_match(array(object(node)) rule_set, string indent)
 	parent_set += ({ n->parent });
       } else {
 	res += do_indent(n->action, indent) + "\n";
-	n->action = 0;
+        n->action = "";
       }
     }
     if (sizeof(car_set) || sizeof(cdr_set)) {
@@ -1376,12 +1376,11 @@ int main(int argc, array(string) argv)
     fail("Filename %O doesn't end with \".in\"\n", fname);
   }
 
-  data = Stdio.File(fname, "r")->read();
+  data = Stdio.File(fname, "r")->read() || "";
 
   parse_data();
 
-  foreach(indices(rules), string rule) {
-    array(object(node)) nodes = rules[rule];
+  foreach(values(rules), array(object(node)) nodes) {
     foreach(nodes, object(node) n) {
       generate_parent(n , 0, "");
     }
