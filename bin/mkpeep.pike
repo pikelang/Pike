@@ -177,14 +177,14 @@ array(string) tokenize(string line) {
 }
 
 class Rule {
-  array(string) from;
-  array(string) to;
+  array(string) from = ({});
+  array(string) to = ({});
   int opcodes;
-  string line;
+  string line = "";
 
   mapping(string:array(string)) varmap = ([]);
 
-  void create(string _line) {
+  protected void create(string _line) {
     line = _line;
     array(string) tokens = tokenize(line);
 
@@ -260,8 +260,8 @@ class Rule {
     from = nt;
   }
 
-  string _sprintf(int t) {
-    return t=='O' ? ("Rule("+line+")") : 0;
+  protected string _sprintf(int t, mapping(string:int)|void opts) {
+    return t=='O' && ("Rule("+line+")");
   }
 }
 
@@ -270,7 +270,7 @@ string treat(string expr)
 {
   array(string) tmp = expr/"$";
   for(int e=1; e<sizeof(tmp); e++) {
-    string rest;
+    string rest = "";
     int num, type;
     if(sscanf(tmp[e], "%d%c%s", num, type, rest)!=3)
       err("Syntax error (3).\n");
@@ -286,7 +286,7 @@ string treat(string expr)
 }
 
 int function_serial;
-string functions = "";
+string(8bit) functions = "";
 
 class Switch(string test) {
   constant is_switch = 1;
@@ -402,7 +402,7 @@ class Breakable {
 array(Switch|Breakable) make_switches(array(Rule) data)
 {
   int i,maxv;
-  string test,cons,var;
+  string test = "", cons = "", var="";
   array(Switch|Breakable) ret = ({});
 
   while(1)
@@ -438,7 +438,7 @@ array(Switch|Breakable) make_switches(array(Rule) data)
     Switch s = Switch(treat(test));
 
     // condition : array(Rule)
-    mapping(string:array(Rule)) d = foo[test];
+    mapping(string:array(Rule)) d = [mapping]foo[test];
     array(string) a = indices(d);
     array(array(Rule)) b = values(d);
     sort(a,b);
