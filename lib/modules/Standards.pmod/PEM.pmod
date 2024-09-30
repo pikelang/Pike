@@ -36,14 +36,15 @@ string(8bit) derive_key(string(8bit) password, string(8bit) salt, int bytes)
 //!
 //! @returns
 //!   Returns the decrypted body text.
-string decrypt_body(string dek_info, string(8bit) body, string(8bit) password)
+string(8bit) decrypt_body(string(8bit) dek_info, string(8bit) body,
+                          string(8bit) password)
 {
   string(8bit) key = password;
   password = "CENSORED";
   if (!dek_info) return body;
-  array(string) d = dek_info/",";
+  array(string(8bit)) d = dek_info/",";
   if (sizeof(d) != 2) error("Unsupported DEK-Info.\n");
-  string method = lower_case(String.trim(d[0]));
+  string(8bit) method = lower_case(String.trim(d[0]));
   object(Crypto.AES.CBC._Buffer)|zero cipher = ([
     "des-cbc": Crypto.DES.CBC.Buffer,
     "des-ede3-cbc": Crypto.DES3.CBC.Buffer,
@@ -74,10 +75,10 @@ string decrypt_body(string dek_info, string(8bit) body, string(8bit) password)
 //!
 //! @returns
 //!   Returns the decrypted body text.
-string|zero decrypt_fragment(Message m, string(8bit) pwd)
+string(8bit)|zero decrypt_fragment(Message m, string(8bit) pwd)
 {
   // FIXME: Check proc-type = "4,ENCRYPTED"?
-  string|zero dek = m->headers["dek-info"];
+  string(8bit)|zero dek = m->headers["dek-info"];
   if(!dek) return 0;;
   return decrypt_body(dek, m->body, pwd);
 }
@@ -97,7 +98,7 @@ class Message
 
   //! Encapsulated headers. If headers occur multiple times, they
   //! will be concatenated separated by delimiting NUL characters.
-  mapping(string:string)|zero headers;
+  mapping(string(8bit):string(8bit))|zero headers;
 
   //! The decode message body.
   string(8bit)|zero body;
@@ -105,9 +106,9 @@ class Message
   //! Message trailer, like @rfc{4880@} checksum.
   string(8bit)|zero trailer;
 
-  protected void create(string|array(string) data)
+  protected void create(string(8bit)|array(string(8bit)) data)
   {
-    array(string) lines = ({});
+    array(string(8bit)) lines = ({});
     if(stringp(data))
     {
        lines = data/"\n";
@@ -115,7 +116,7 @@ class Message
          lines = lines[..<1];
     }
     else
-      lines = [array(string)]data;
+      lines = [array(string(8bit))]data;
 
     if( sscanf(lines[0], "%*[ \t]-----BEGIN %s-----", pre)!=2 )
       return;
@@ -128,7 +129,7 @@ class Message
 
     if( sizeof(lines[-1]) && lines[-1][0]=='=' )
     {
-      string trailing = lines[-1][1..];
+      string(8bit) trailing = lines[-1][1..];
       if( String.bits(trailing) > 7 ) {
         error("Trailer contains 8-bit characters.\n");
       }
@@ -137,7 +138,7 @@ class Message
     }
 
     array res = [array]MIME.parse_headers(lines*"\n");
-    headers = [mapping(string:string)]res[0];
+    headers = [mapping(string(8bit):string(8bit))]res[0];
     string _body = [string]res[1];
     if( String.bits(_body) > 7 ) {
       error("Message body contains 8-bit characters.\n");
@@ -153,18 +154,18 @@ class Messages
   //! The fragments array contains the different message fragments, as
   //! Message objects for decoded messages and strings for
   //! non-messages or incomplete messages.
-  array(string|Message) fragments = ({});
+  array(string(8bit)|Message) fragments = ({});
 
   //! This is a mapping from encapsulation boundary string to Message
   //! objects. All message objects and surrounding text will be
   //! listed, in order, in @[fragments].
-  mapping(string:array(Message)) parts = ([]);
+  mapping(string(8bit):array(Message)) parts = ([]);
 
   //! A Messages object is created with the file or stream data.
-  protected void create(string data)
+  protected void create(string(8bit) data)
   {
-    array(string) current = ({});
-    foreach(data/"\n";; string line)
+    array(string(8bit)) current = ({});
+    foreach(data/"\n";; string(8bit) line)
     {
       if( has_prefix(line, "-----BEGIN ") )
       {
@@ -184,7 +185,7 @@ class Messages
     if(sizeof(current))
       fragments += process(current);
 
-    foreach(fragments;; string|Message part)
+    foreach(fragments;; string(8bit)|Message part)
       if(objectp(part))
       {
         Message msg = [object(Message)]part;
@@ -192,7 +193,7 @@ class Messages
       }
   }
 
-  protected array(string|Message) process(array(string) lines)
+  protected array(string(8bit)|Message) process(array(string(8bit)) lines)
   {
     if( !sizeof(lines) || !has_prefix(lines[0], "-----BEGIN ") )
       return ({ lines*"\n" });
@@ -204,7 +205,7 @@ class Messages
   array(Message) get_fragments(multiset labels)
   {
     array(Message) ret = ({});
-    foreach(fragments, string|Message m)
+    foreach(fragments, string(8bit)|Message m)
     {
       if(objectp(m) && labels[m->pre])
         ret += ({ [object(Message)]m });
@@ -273,7 +274,7 @@ class Messages
 //! Convenience function that decodes a PEM message containing only
 //! one part, and returns it as a string. Returns @expr{0@} for indata
 //! containing no or multiple parts.
-string|zero simple_decode(string pem)
+string(8bit)|zero simple_decode(string(8bit) pem)
 {
   Messages m = Messages(pem);
   return sizeof(m->parts)==1 &&
