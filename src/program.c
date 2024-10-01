@@ -235,7 +235,7 @@ static const char *const raw_lfun_types[] = {
   tFunc(tNone, tVoid),				/* "__INIT", */
   tFuncV(tNone, tUnknown, tVoid),		/* "create", */
   tFunc(tInt03, tInt01),			/* "_destruct", */
-  tFunc(tInt7bit tMap(tStr, tInt), tStr),	/* "_sprintf", */
+  tFunc(tInt7bit tMap(tStr, tInt), tOr(tStr, tZero)),	/* "_sprintf", */
   tFuncV(tNone, tUnknown, tVoid),		/* "__create__", */
   tArr(tType(tMix)),				/* "__generic_types__", */
   tArr(tType(tMix)),				/* "__generic_bindings__", */
@@ -298,7 +298,7 @@ static const char *const raw_lfun_types[] = {
   tFunc(tObj tInt, tArray),			/* "_values", */
   tFunc(tNone, tArray),				/* "_types", */
   tFunc(tObj tInt tInt01, tArray),		/* "_annotations", */
-  tFunc(tNone, tObj),				/* "_get_iterator", */
+  tFunc(tNone, tObjImpl_ITERATOR),		/* "_get_iterator", */
   0,
 
   tFunc(tUnknown, tMix),			/* "`+=", */
