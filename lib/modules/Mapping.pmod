@@ -96,8 +96,10 @@ class ShadowedMapping(protected mapping|ShadowedMapping parent)
   protected mixed _m_delete(mixed ind)
   {
     mixed res = m_delete(shadow, ind);
-    if (undefinedp(res) || (modify_parent == 2)) {
+    if (undefinedp(res)) {
       res = m_delete(parent, ind);
+    } else if (modify_parent == 2) {
+      m_delete(parent, ind);
     }
     joined = 0;
 
