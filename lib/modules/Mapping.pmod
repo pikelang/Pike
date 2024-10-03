@@ -40,7 +40,7 @@ class ShadowedMapping(protected mapping|ShadowedMapping parent)
   //!       entry to be modified is present in @[shadow], it will
   //!       be removed from it.
   //!   @endint
-  protected void create(mapping|void shadow, int(0..1)|void modify_parent)
+  protected void create(mapping|void shadow, int(0..2)|void modify_parent)
   {
     if (shadow) this::shadow = shadow + ([]);
     this::modify_parent = modify_parent;
