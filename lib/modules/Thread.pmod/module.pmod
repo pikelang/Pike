@@ -553,11 +553,11 @@ class ResourceCount {
 // implementations are the C-implementations.
 
 /* Fallback implementation of Thread.Local */
-class Local
+class Local(<ValueType>)
 {
-  protected mixed data;
-  mixed get() {return data;}
-  mixed set (mixed val) {return data = val;}
+  protected ValueType data;
+  ValueType get() { return data; }
+  ValueType set (ValueType val) { return data = val; }
 }
 
 /* Fallback implementation of Thread.MutexKey */

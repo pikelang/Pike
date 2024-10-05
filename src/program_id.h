@@ -27,9 +27,7 @@
 #define     PROG_THREAD_CONDITION_ID                                  5
 #define tObjImpl_THREAD_CONDITION             "\003\000\000\000\000\005"
 #define   tObjIs_THREAD_CONDITION             "\003\001\000\000\000\005"
-#define     PROG_THREAD_LOCAL_ID                                      6
-#define tObjImpl_THREAD_LOCAL                 "\003\000\000\000\000\006"
-#define   tObjIs_THREAD_LOCAL                 "\003\001\000\000\000\006"
+#define OLD_PROG_THREAD_LOCAL_ID                                      6
 #define     PROG_THREAD_DISABLE_THREADS_ID                            7
 #define tObjImpl_THREAD_DISABLE_THREADS       "\003\000\000\000\000\007"
 #define   tObjIs_THREAD_DISABLE_THREADS       "\003\001\000\000\000\007"
@@ -219,6 +217,12 @@
 #define tObjImpl_PROMISE                   "\003\000\000\000\200\001"
 #define tPromiseValueType	tGeneric(tObjImpl_PROMISE, 0)
 #define tPromise(X)		tBind(tAssign(tPromiseValueType, X), tObjImpl_PROMISE)
+
+#define     PROG_THREAD_LOCAL_ID                                0x8006
+#define tObjImpl_THREAD_LOCAL              "\003\000\000\000\200\006"
+#define   tObjIs_THREAD_LOCAL              "\003\001\000\000\200\006"
+#define tThreadLocalValueType	tGeneric(tObjImpl_THREAD_LOCAL, 0)
+#define tThreadLocal(X)		tBind(tAssign(tThreadLocalValueType, X), tObjImpl_THREAD_LOCAL)
 
 #define     PROG_STRING_SPLIT_ITERATOR_ID			0x8014
 #define tObjImpl_STRING_SPLIT_ITERATOR     "\003\000\000\000\200\024"
