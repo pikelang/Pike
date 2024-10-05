@@ -4317,6 +4317,14 @@ void init_thread_local(struct object *ignored)
     thread_local_id++;
 }
 
+/* NB: Used by eg the Java module. */
+PMOD_EXPORT void f_thread_local(INT32 args)
+{
+  struct object *loc = clone_object(thread_local_prog, 0);
+  pop_n_elems(args);
+  push_object(loc);
+}
+
 /*! @decl ValueType get()
  *!
  *! Get the thread local value.
