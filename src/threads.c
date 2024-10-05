@@ -4305,22 +4305,19 @@ static void thread_was_checked(struct object *UNUSED(o))
  *!   so it's always available.
  */
 
-/* FIXME: Why not use an init callback()? */
-void f_thread_local_create( INT32 UNUSED(args) )
+/*! @decl __generic__ ValueType
+ *!
+ *! Type for the value to be stored in the thread local storage.
+ */
+
+void init_thread_local(struct object *ignored)
 {
   static INT32 thread_local_id = 0;
   ((struct thread_local_var *)CURRENT_STORAGE)->id =
     thread_local_id++;
 }
 
-PMOD_EXPORT void f_thread_local(INT32 args)
-{
-  struct object *loc = clone_object(thread_local_prog,0);
-  pop_n_elems(args);
-  push_object(loc);
-}
-
-/*! @decl mixed get()
+/*! @decl ValueType get()
  *!
  *! Get the thread local value.
  *!
@@ -4345,7 +4342,7 @@ void f_thread_local_get(INT32 args)
   }
 }
 
-/*! @decl mixed set(mixed value)
+/*! @decl ValueType set(ValueType value)
  *!
  *! Set the thread local value.
  *!
@@ -4703,19 +4700,34 @@ void th_init(void)
 
   START_NEW_PROGRAM_ID(THREAD_LOCAL);
   ADD_STORAGE(struct thread_local_var);
-  ADD_FUNCTION("get",f_thread_local_get,tFunc(tNone,tMix),0);
-  ADD_FUNCTION("set",f_thread_local_set,tFunc(tSetvar(1,tMix),tVar(1)),0);
-  ADD_FUNCTION("create", f_thread_local_create,
-	       tFunc(tNone,tVoid), ID_PROTECTED);
+  Pike_compiler->num_generics = Pike_compiler->new_program->num_generics = 1;
+  set_init_callback(init_thread_local);
+  ADD_FUNCTION("get", f_thread_local_get,
+               tFunc(tNone, tThreadLocalValueType), 0);
+  ADD_FUNCTION("set", f_thread_local_set,
+               tFunc(tSetvar(0, tThreadLocalValueType), tVar(0)), 0);
 #ifdef PIKE_DEBUG
   set_gc_check_callback(gc_check_thread_local);
 #endif
   thread_local_prog=Pike_compiler->new_program;
   add_ref(thread_local_prog);
   end_class("thread_local", 0);
-  ADD_EFUN("thread_local", f_thread_local,
-	   tFunc(tNone,tObjIs_THREAD_LOCAL),
-	   OPT_EXTERNAL_DEPEND);
+
+  /*! @decl Thread.Local predef::thread_local()
+   *!
+   *! @returns
+   *!   Returns @expr{Thread.Local()@}.
+   *!
+   *! This is primarily intended as a convenience function
+   *! and detection symbol for use by the master before
+   *! the module system has been fully initiated.
+   *!
+   *! @seealso
+   *!   @[Thread.Local]
+   */
+  ref_push_program(thread_local_prog);
+  low_add_constant("thread_local", Pike_sp-1);
+  pop_stack();
 
   START_NEW_PROGRAM_ID(THREAD_ID);
   thread_storage_offset=ADD_STORAGE(struct thread_state);
