@@ -151,7 +151,7 @@ constant pike_cycle_depth = 0;
 #if defined (RESOLV_DEBUG) || defined (RECUR_COMPILE_DEBUG)
 
 #if constant (thread_local)
-protected object _msg_depth = thread_local();
+protected thread_local(<int>) _msg_depth = thread_local();
 // NOTE: May be used before __INIT has completed.
 #define GET_MSG_DEPTH (_msg_depth && _msg_depth->get())
 #define INC_MSG_DEPTH() (_msg_depth && _msg_depth->set (_msg_depth->get() + 1))
@@ -4637,7 +4637,7 @@ void _main(array(string(0..255)) orig_argv)
 }
 
 #if constant(thread_local)
-object inhibit_compile_errors = thread_local();
+thread_local(<mixed>) inhibit_compile_errors = thread_local();
 
 //! Set the compile error, warning and exception behaviour.
 //!
