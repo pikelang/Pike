@@ -282,7 +282,8 @@ protected class Pike_7_8_master
 			  object|void handler);
   void handle_error(array(mixed)|object trace);
   program handle_inherit(string pname, string current_file, object|void handler);
-  mixed handle_import(string what, string|void current_file, object|void handler);
+  mapping(string:mixed)|object|program|zero
+    handle_import(string what, string|void current_file, object|void handler);
   mixed resolv_base(string identifier, string|void current_file);
 
   mixed get_inhibit_compile_errors();
@@ -643,6 +644,22 @@ mapping(string:int) load_time=([]);
 
 #endif // PIKE_AUTORELOAD
 
+protected local class CompilationHandler
+{
+  void compile_error(string file, int line, string err);
+  void compile_exception(object trace);
+  void compile_warning(string file, int line, string err);
+  mapping(string:mixed)|object get_default_module();
+  mapping(string:mixed) get_predefines();
+  mapping(string:mixed)|object|program|zero handle_import(string path,
+                                                          string filename,
+                                                          this_program handler);
+  string handle_include(string header_file, string current_file,
+                        int(0..1) is_local_ref);
+  string read_include(string filename);
+  mixed resolv(string symbol, string filename, this_program handler);
+}
+
 //! @[predef::CompilerEnvironment] that supports handlers.
 protected class CompilerEnvironment
 {
@@ -651,7 +668,8 @@ protected class CompilerEnvironment
 
   //!
   mixed resolv(string identifier, string filename,
-	       object|void handler, object|void compat_handler)
+               CompilationHandler|void handler,
+               CompilationHandler|void compat_handler)
   {
     return master()->resolv(identifier, filename,
 			    handler, compat_handler);
@@ -659,21 +677,24 @@ protected class CompilerEnvironment
 
   //!
   program handle_inherit(string inh, string current_file,
-			 object|void handler, object|void compat_handler)
+                         CompilationHandler|void handler,
+                         CompilationHandler|void compat_handler)
   {
     return master()->handle_inherit(inh, current_file,
 				    handler, compat_handler);
   }
 
   //!
-  program handle_import(string module, string current_file,
-			object|void handler, object|void compat_handler)
+  mapping(string:mixed)|object|program|zero
+    handle_import(string module, string current_file,
+                  CompilationHandler|void handler,
+                  CompilationHandler|void compat_handler)
   {
     return master()->handle_import(module, current_file,
 				   handler, compat_handler);
   }
 
-  object get_compilation_handler(int major, int minor)
+  CompilationHandler get_compilation_handler(int major, int minor)
   {
     return master()->get_compilation_handler(major, minor);
   }
@@ -686,8 +707,8 @@ protected class CompilerEnvironment
     inherit ::this_program;
 
     //!
-    object handler;
-    object compat_handler;
+    CompilationHandler handler;
+    CompilationHandler compat_handler;
 
     //!
     protected mixed apply_handler(string fun, mixed ... args)
@@ -753,7 +774,7 @@ protected class CompilerEnvironment
     }
 
     //!
-    object get_compilation_handler(int major, int minor)
+    CompilationHandler get_compilation_handler(int major, int minor)
     {
       return apply_handler(__func__, major, minor);
     }
@@ -766,7 +787,7 @@ protected class CompilerEnvironment
     }
 
     //!
-    program handle_import(string module)
+    mapping(string:mixed)|object|program|zero handle_import(string module)
     {
       return apply_handler(__func__, module, current_file,
 			   handler, compat_handler);
@@ -3451,7 +3472,8 @@ program|object|zero findmodule(string fullname, object|void handler,
 }
 
 #if 0
-mixed handle_import(string what, string|void current_file, object|void handler)
+mapping(string:mixed)|object|program|zero
+  handle_import(string what, string|void current_file, object|void handler)
 {
   string path;
   if(current_file)
@@ -4593,7 +4615,8 @@ void _main(array(string(0..255)) orig_argv)
 }
 
 #if constant(thread_local)
-thread_local(<mixed>) inhibit_compile_errors = thread_local();
+thread_local(<int(0..1)|CompilationHandler|function(string, int, string:void)>)
+  inhibit_compile_errors = thread_local();
 
 //! Set the compile error, warning and exception behaviour.
 //!
@@ -4621,7 +4644,8 @@ thread_local(<mixed>) inhibit_compile_errors = thread_local();
 //!
 //! @seealso
 //!   @[get_inhibit_compile_errors()]
-void set_inhibit_compile_errors(mixed behaviour)
+void set_inhibit_compile_errors(int(0..1)|CompilationHandler|
+                                function(string, int, string:void) behaviour)
 {
   inhibit_compile_errors->set(behaviour);
 }
@@ -4632,19 +4656,23 @@ void set_inhibit_compile_errors(mixed behaviour)
 //!
 //! @seealso
 //!   @[set_inhibit_compile_errors()]
-mixed get_inhibit_compile_errors()
+int(0..1)|CompilationHandler|function(string, int, string:void)
+  get_inhibit_compile_errors()
 {
   return inhibit_compile_errors->get();
 }
 #else /* !constant(thread_local) */
-mixed inhibit_compile_errors;
+int(0..1)|CompilationHandler|function(string, int, string:void)
+  inhibit_compile_errors;
 
-void set_inhibit_compile_errors(mixed f)
+void set_inhibit_compile_errors(int(0..1)|CompilationHandler|
+                                function(string, int, string:void) f)
 {
   inhibit_compile_errors=f;
 }
 
-mixed get_inhibit_compile_errors()
+int(0..1)|CompilationHandler|function(string, int, string:void)
+  get_inhibit_compile_errors()
 {
   return inhibit_compile_errors;
 }
