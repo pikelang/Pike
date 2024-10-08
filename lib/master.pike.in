@@ -646,18 +646,17 @@ mapping(string:int) load_time=([]);
 
 protected local class CompilationHandler
 {
-  void compile_error(string file, int line, string msg);
-  void compile_exception(object trace);
-  void compile_warning(string file, int line, string msg);
-  mapping(string:mixed)|object get_default_module();
-  mapping(string:mixed) get_predefines();
-  mapping(string:mixed)|object|program|zero handle_import(string path,
-                                                          string filename,
-                                                          this_program handler);
-  string handle_include(string header_file, string current_file,
-                        int(0..1) is_local_ref);
-  string read_include(string filename);
-  mixed resolv(string symbol, string filename, this_program handler);
+  optional void compile_error(string file, int line, string msg);
+  optional void compile_exception(object trace);
+  optional void compile_warning(string file, int line, string msg);
+  optional mapping(string:mixed)|object get_default_module();
+  optional mapping(string:mixed) get_predefines();
+  optional mapping(string:mixed)|object|program|zero
+    handle_import(string path, string filename, this_program handler);
+  optional string handle_include(string header_file, string current_file,
+                                 int(0..1) is_local_ref);
+  optional string read_include(string filename);
+  optional mixed resolv(string symbol, string filename, this_program handler);
 }
 
 //! @[predef::CompilerEnvironment] that supports handlers.
