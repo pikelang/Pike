@@ -196,6 +196,17 @@ protected void exit(int rc, void | string fmt, void | mixed ... args)
   8.1::exit(rc);
 }
 
+//! Backward compatibility implementation of @[predef::compile()].
+//!
+//! This only differs from @[predef::compile()] in that the
+//! argument types are somewhat relaxed.
+program compile(string source, object|void handler,
+                int|void major, int|void minor,
+                program|void target, object|void placeholder)
+{
+  return 8.1::compile(source, handler, major, minor, target, placeholder);
+}
+
 protected Mapping.ShadowedMapping compat_all_constants =
   Mapping.ShadowedMapping(predef::all_constants(),
 			  ([
@@ -219,6 +230,7 @@ protected Mapping.ShadowedMapping compat_all_constants =
                             "next_object": _Debug.next_object,
                             "add_constant": add_constant,
 			    "all_constants": all_constants,
+                            "compile": compile,
                             "master": master,
                             "glob" : glob,
 #ifdef constant(System.RegGetValue)
