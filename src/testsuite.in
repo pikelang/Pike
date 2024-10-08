@@ -5809,7 +5809,7 @@ class Test
 {
     class Resolver (array c)
     {
-      mixed resolv (string id)
+      mixed resolv (string id, string path, object|void handler)
       {
 	if (id == "c") return c;
       }
@@ -7570,7 +7570,9 @@ test_do(add_constant("blatinka");)
     int old_debug = _debug (0);
 #endif
     object|zero o = class {program p; object o;}();
-    class Resolver (mixed x) {mixed resolv (string id) {return x;}};
+    class Resolver(mixed x) {
+      mixed resolv(string id, string filename, object handler) {return x;}
+    };
     program|zero p = compile ("constant o = foo;", Resolver (o));
     o->p = p;
     o->o = p();
