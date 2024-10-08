@@ -913,14 +913,18 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
  *!   @[get_predefines()]
  */
 
-/*! @decl mixed handle_import(string path, string filename, @
- *!                           CompilationHandler handler)
+/*! @decl mapping(string:mixed)|object|program|zero @
+ *!         handle_import(string path, string filename, @
+ *!                       CompilationHandler handler)
  *!
  *!   Called by @[compile()] and @[cpp()] to handle import
  *!   directives specifying specific paths.
  *!
  *! @returns
  *!   Returns the resolved value, or @[UNDEFINED] on failure.
+ *!
+ *! @seealso
+ *!   @[resolv()]
  */
 
 /*! @decl string handle_include(string header_file, string current_file, @

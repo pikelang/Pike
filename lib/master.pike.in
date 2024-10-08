@@ -690,9 +690,9 @@ mapping(string:int) load_time=([]);
 
 protected local class CompilationHandler
 {
-  void compile_error(string file, int line, string err);
+  void compile_error(string file, int line, string msg);
   void compile_exception(object trace);
-  void compile_warning(string file, int line, string err);
+  void compile_warning(string file, int line, string msg);
   mapping(string:mixed)|object get_default_module();
   mapping(string:mixed) get_predefines();
   mapping(string:mixed)|object|program|zero handle_import(string path,
@@ -758,7 +758,7 @@ protected class CompilerEnvironment
     protected mixed apply_handler(string fun, mixed ... args)
     {
       function f;
-      foreach(({ handler, compat_handler }), object o) {
+      foreach(({ handler, compat_handler }), CompilationHandler o) {
 	if (objectp(o) && functionp(f = predef::`->(o, fun))) {
 	  return f(@args);
 	}
@@ -771,7 +771,7 @@ protected class CompilerEnvironment
 		string subsystem, string message,
 		mixed ... extra_args)
     {
-      foreach(({ handler, compat_handler }), object o) {
+      foreach(({ handler, compat_handler }), CompilationHandler o) {
 	if (!objectp(o)) continue;
 	if (functionp(o->report)) {
 	  o->report(severity, filename, linenumber,
@@ -861,7 +861,7 @@ protected class CompilerEnvironment
 
     //!
     protected void create(string|void source,
-			  object|void handler,
+                          CompilationHandler|void handler,
 			  int|void major, int|void minor,
 			  program|void target, object|void placeholder)
     {
@@ -892,15 +892,15 @@ protected class CompilerEnvironment
 
 #if constant(_static_modules.Builtin.__HAVE_CPP_NO_HANDLERS__)
     //!
-    object handler;
-    object compat_handler;
+    CompilationHandler handler;
+    CompilationHandler compat_handler;
 #endif
 
     //!
     protected mixed apply_handler(string fun, mixed ... args)
     {
       function f;
-      foreach(({ handler, compat_handler }), object o) {
+      foreach(({ handler, compat_handler }), CompilationHandler o) {
 	if (objectp(o) && functionp(f = predef::`->(o, fun))) {
 	  return f(@args);
 	}
@@ -959,7 +959,7 @@ protected class CompilerEnvironment
 		string subsystem,
 		sprintf_format message, sprintf_args ... extra_args)
     {
-      foreach(({ handler, compat_handler }), object o) {
+      foreach(({ handler, compat_handler }), CompilationHandler o) {
 	if (!objectp(o)) continue;
 	if (functionp(o->report)) {
 	  o->report(severity, filename, linenumber,
@@ -1068,7 +1068,8 @@ protected class CompilerEnvironment
 
 #if constant(_static_modules.Builtin.__HAVE_CPP_NO_HANDLERS__)
     //! @decl void create(string|void current_file, @
-    //!                   int|string|void charset, object|void handler, @
+    //!                   int|string|void charset, @
+    //!                   CompilationHandler|void handler, @
     //!                   void|int compat_major, void|int compat_minor, @
     //!                   void|int picky_cpp)
     //! @decl void create(mapping(string:mixed) options)
@@ -1086,7 +1087,7 @@ protected class CompilerEnvironment
     //!       #line directives and for locating include files.
     //!     @member int|string "charset"
     //!       Charset to use when processing @expr{data@}.
-    //!     @member object "handler"
+    //!     @member CompilationHandler "handler"
     //!       Compilation handler.
     //!     @member int "compat_major"
     //!       Sets the major pike version used for compat handling.
@@ -1126,7 +1127,8 @@ protected class CompilerEnvironment
     }
 
     protected variant void create(string|void current_file,
-				  int|string|void charset, object|void handler,
+                                  int|string|void charset,
+                                  CompilationHandler|void handler,
 				  void|int compat_major, void|int compat_minor,
 				  void|int picky_cpp)
     {
@@ -1146,7 +1148,7 @@ protected class CompilerEnvironment
 
 #if constant(_static_modules.Builtin.__HAVE_COMPILER_NO_HANDLERS__)
   //!
-  program compile(string source, object|void handler,
+  program compile(string source, CompilationHandler|void handler,
 		  int|void major, int|void minor,
 		  program|void target, object|void placeholder)
   {
@@ -1161,7 +1163,7 @@ protected CompilerEnvironment DefaultCompilerEnvironment =
 
 #if constant(_static_modules.Builtin.__HAVE_COMPILER_NO_HANDLERS__)
 //!
-protected program compile(string source, object|void handler,
+protected program compile(string source, CompilationHandler|void handler,
 			  int|void major, int|void minor,
 			  program|void target, object|void placeholder)
 {
@@ -1199,7 +1201,7 @@ protected object get_active_compilation_handler()
 //!
 //! @seealso
 //!   @[get_active_compilation_handler()], @[compile()], @[CompilationHandler]
-protected object get_active_error_handler()
+protected CompilationHandler get_active_error_handler()
 {
   CompilerEnvironment.PikeCompiler c = get_active_compiler();
   return c && c->handler;
@@ -1207,7 +1209,7 @@ protected object get_active_error_handler()
 
 //!
 protected string cpp(string data, mapping|string|void current_file,
-		     int|string|void charset, object|void handler,
+                     int|string|void charset, CompilationHandler|void handler,
 		     void|int compat_major, void|int compat_minor,
 		     void|int picky_cpp)
 {
@@ -1230,7 +1232,7 @@ protected string cpp(string data, mapping|string|void current_file,
 //! @[compile()], @[cpp()], @[compile_file()]
 //!
 program compile_string(string source, string filename="-",
-		       object|void handler,
+                       CompilationHandler|void handler,
 		       void|program p,
 		       void|object o,
                        int show_if_constant_errors =
@@ -1348,7 +1350,7 @@ array(string) master_get_dir(string|void x)
 
 object(Stat)|zero master_file_stat(string x)
 {
-  object y = find_handler_for_path(file);
+  string y = find_handler_for_path(file);
 
   string dir = combine_path_with_cwd(x);
   string file = BASENAME(dir);
@@ -1421,27 +1423,38 @@ array master_get_dir(string file)
 
 #endif // FILE_STAT_CACHE
 
-//! mount a filesystem handler to be used by the resolver. on its own does noting,
-//! but may be used with @[add_module_path] and friends to enable modules to be loaded
-//! from Filesystem objects.
+//! @decl Filesystem.Base|zero add_filesystem_handler(string mountpoint, @
+//!         Filesystem.Base|zero filesystem)
+//!
+//! Mount a filesystem handler to be used by the resolver. On its own does
+//! nothing, but may be used with @[add_module_path()] and friends to enable
+//! modules to be loaded from @[Filesystem] objects.
 //!
 //! @param mountpoint
-//!  the location in the filesystem to mount the handler
+//!   The location in the filesystem to mount the handler
 //!
 //! @param filesystem
-//!  a filesystem object that will handle requests for the given mountpoint.
+//!   A filesystem object that will handle requests for the given mountpoint.
 //!
 //! @example
-//!  master()->add_filesystem_handler("/foo/bar.zip", Filesystem.Zip("/foo/bar.zip"));
-//!  master()->add_module_path("/foo/bar.zip/lib");
+//!   @code
+//!     master()->add_filesystem_handler("/foo/bar.zip",
+//!                                      Filesystem.Zip("/foo/bar.zip"));
+//!     master()->add_module_path("/foo/bar.zip/lib");
+//!   @endcode
 //!
 //! @seealso
 //!  @[find_handler_for_path()]
-mixed add_filesystem_handler(string mountpoint, object /*Filesystem.Base*/ filesystem)
+object|zero add_filesystem_handler(string mountpoint,
+                                   object|zero /*Filesystem.Base*/ filesystem)
 {
-  mixed rv = fs_map[mountpoint];
-  fs_map[mountpoint] = filesystem;
-  return rv;
+  object|zero old = fs_map[mountpoint];
+  if (filesystem) {
+    fs_map[mountpoint] = filesystem;
+  } else {
+    m_delete(fs_map, mountpoint);
+  }
+  return old;
 }
 
 //! Return the mountpoint for the filesystem handler handling the
@@ -1613,7 +1626,7 @@ void putenv (string varname, void|string value)
 //! @[compile()], @[compile_string()], @[cpp()]
 //!
 program compile_file(string filename,
-		     object|void handler,
+                     CompilationHandler|void handler,
 		     void|program p,
 		     void|object o)
 {
@@ -1793,7 +1806,8 @@ protected void compile_cb_rethrow (object|array err)
   throw (CompileCallbackError (call_describe_error (err), bt));
 }
 
-protected void call_compile_warning_lineno (object handler, string file,
+protected void call_compile_warning_lineno (CompilationHandler|zero handler,
+                                            string file,
                                             int lineno, string msg,
                                             mixed ... args) {
   if (sizeof (args)) msg = sprintf (msg, @args);
@@ -1806,7 +1820,8 @@ protected void call_compile_warning_lineno (object handler, string file,
     compile_warning (file, lineno, msg);
 }
 
-protected void call_compile_warning (object handler, string file,
+protected void call_compile_warning (CompilationHandler|zero handler,
+                                     string file,
 				     string msg, mixed ... args)
 {
     call_compile_warning_lineno(handler, file, 0, msg, @args);
@@ -1977,7 +1992,7 @@ protected string call_describe_error(mixed /* object|array */ err)
 
 protected program|zero low_findprog(string pname,
                                     string ext,
-                                    object|void handler,
+                                    CompilationHandler|void handler,
                                     void|__deprecated__(int)|object placeholder)
 {
   program ret;
@@ -2218,7 +2233,7 @@ void unregister(program p)
 
 protected program findprog(string pname,
 			   string ext,
-			   object|void handler,
+                           CompilationHandler|void handler,
                            void|__deprecated__(int)|object placeholder)
 {
   switch(ext)
@@ -2238,7 +2253,7 @@ protected program findprog(string pname,
 
 program|zero low_cast_to_program(string pname,
                                  string|zero current_file,
-                                 object|void handler,
+                                 CompilationHandler|void handler,
                                  void|__deprecated__(int)|object placeholder)
 {
   string ext;
@@ -2307,7 +2322,7 @@ program|zero low_cast_to_program(string pname,
 //! to aid the master finding the right program.
 program cast_to_program(string pname,
 			string current_file,
-			object|void handler)
+                        CompilationHandler|void handler)
 {
   resolv_debug ("cast_to_program(%O, %O)\n", pname, current_file);
   INC_RESOLV_MSG_DEPTH();
@@ -2504,6 +2519,7 @@ protected void add_constants()
 #endif /* _static_modules.Builtin.__HAVE_COMPILER_NO_HANDLERS__ */
   add_constant("get_active_compilation_handler", get_active_compilation_handler);
   add_constant("get_active_error_handler", get_active_error_handler);
+  add_constant("CompilationHandler", CompilationHandler);
   add_constant("CompilerEnvironment", CompilerEnvironment);
   add_constant("DefaultCompilerEnvironment", DefaultCompilerEnvironment);
   add_constant("cpp", cpp);
@@ -2601,7 +2617,8 @@ protected void create()
 //! it can not be 100% trusted to be a filename.
 //! previous_object(), can be virtually anything in this function, as it
 //! is called from the compiler.
-program handle_inherit(string pname, string current_file, object|void handler)
+program handle_inherit(string pname, string current_file,
+                       CompilationHandler|void handler)
 {
   resolv_debug ("handle_inherit(%O, %O)\n", pname, current_file);
   INC_RESOLV_MSG_DEPTH();
@@ -2612,7 +2629,7 @@ program handle_inherit(string pname, string current_file, object|void handler)
 }
 
 object|zero low_cast_to_object(string oname, string|zero current_file,
-                               object|void current_handler,
+                               CompilationHandler|void current_handler,
                                object|void placeholder)
 {
   program p;
@@ -2649,7 +2666,7 @@ object|zero low_cast_to_object(string oname, string|zero current_file,
 //! to an object because of an implict or explicit cast. This function
 //! may also receive more arguments in the future.
 object cast_to_object(string oname, string current_file,
-		      object|void current_handler)
+                      CompilationHandler|void current_handler)
 {
   resolv_debug ("cast_to_object(%O, %O)\n", oname, current_file);
   INC_RESOLV_MSG_DEPTH();
@@ -2668,7 +2685,7 @@ protected class ZERO_TYPE {};
 
 protected object Unicode;
 
-void try_issue_deprecation_warning(object compilation_handler)
+void try_issue_deprecation_warning(CompilationHandler compilation_handler)
 {
   if (object active_compiler = get_active_compiler()) {
     if (active_compiler->suppress_deprecation_warnings() < 2) {
@@ -2684,7 +2701,7 @@ void try_issue_deprecation_warning(object compilation_handler)
 //!
 //! @seealso
 //!   @[joinnode]
-class dirnode (string dirname, object|void compilation_handler,
+class dirnode (string dirname, CompilationHandler|void compilation_handler,
                string|void name)
 {
   constant is_resolv_dirnode = 1;
@@ -3141,7 +3158,7 @@ class dirnode (string dirname, object|void compilation_handler,
 //! @seealso
 //!   @[dirnode]
 class joinnode (array(object|mapping) joined_modules,
-                object|void compilation_handler,
+                CompilationHandler|void compilation_handler,
                 joinnode|mapping(mixed:int(0..0))|void fallback_module,
                 string|void name)
 {
@@ -3402,7 +3419,7 @@ class joinnode (array(object|mapping) joined_modules,
 }
 
 joinnode handle_import(string path, string|void current_file,
-		       object|void current_handler)
+                       CompilationHandler|void current_handler)
 {
   if(current_file)
   {
@@ -3463,7 +3480,7 @@ joinnode handle_import(string path, string|void current_file,
   return node;
 }
 
-program|object|zero findmodule(string fullname, object|void handler,
+program|object|zero findmodule(string fullname, CompilationHandler|void handler,
 			       void|string name)
 {
   program|object|zero o;
@@ -3517,7 +3534,8 @@ program|object|zero findmodule(string fullname, object|void handler,
 
 #if 0
 mapping(string:mixed)|object|program|zero
-  handle_import(string what, string|void current_file, object|void handler)
+  handle_import(string what, string|void current_file,
+                CompilationHandler|void handler)
 {
   string path;
   if(current_file)
@@ -3592,7 +3610,7 @@ class CompatResolver
 	     0, 0, "predef::");
 
   //! Lookup from handler module to corresponding root_module.
-  mapping(object:joinnode) handler_root_modules = ([]);
+  mapping(CompilationHandler:joinnode) handler_root_modules = ([]);
 
   //! The pike system module path, not including any set by the user.
   array(string) system_module_path=({});
@@ -3841,7 +3859,7 @@ class CompatResolver
   // _static_modules -- default for global::
   // current_handler->get_default_module()->_static_modules
 
-  joinnode get_root_module(object|void current_handler)
+  joinnode get_root_module(CompilationHandler|void current_handler)
   {
     if (!root_module) {
       error("get_root_module(%O): No default root module!\n",
@@ -3878,8 +3896,8 @@ class CompatResolver
 
   //! Look up @[identifier] in the root module.
   mixed resolv_base(string identifier, string|void current_file,
-		    object|void current_handler,
-		    object|void current_compat_handler)
+                    CompilationHandler|void current_handler,
+                    CompilationHandler|void current_compat_handler)
   {
     //      werror("Resolv_base(%O)\n",identifier);
     return get_root_module(current_handler)[identifier];
@@ -3888,7 +3906,7 @@ class CompatResolver
   //! Same as @[resolv], but throws an error instead of returning
   //! @[UNDEFINED] if the resolv failed.
   mixed resolv_or_error(string identifier, string|void current_file,
-			void|object current_handler)
+                        void|CompilationHandler current_handler)
   {
     mixed res = resolv(identifier, current_file, current_handler);
     if(undefinedp(res)) error("Could not resolve %s.\n", identifier);
@@ -3901,8 +3919,8 @@ class CompatResolver
   //!   Returns the value of the @[identifier] if it exists,
   //!   and @[UNDEFINED] otherwise.
   mixed resolv(string identifier, string|void current_file,
-	       object|void current_handler,
-	       object|void current_compat_handler)
+               CompilationHandler|void current_handler,
+               CompilationHandler|void current_compat_handler)
   {
     resolv_debug("resolv(%O, %O)\n",identifier, current_file);
     INC_RESOLV_MSG_DEPTH();
@@ -6287,7 +6305,7 @@ class Encoder
 
 class Decoder(void|string fname,
               void|__deprecated__(int)|object placeholder,
-              void|object handler)
+              void|CompilationHandler handler)
 //! @appears Pike.Decoder
 //!
 //! Codec for use with @[decode_value]. This is the decoder
@@ -6496,7 +6514,7 @@ protected mapping(string:Decoder) codecs = set_weak_flag (([]), 1);
 
 Decoder get_codec(string|void fname,
                   void|__deprecated__(int)|object placeholder,
-                  void|object handler)
+                  void|CompilationHandler handler)
 {
   if (handler)
     // Decoders are currently not reused in this case since it's
