@@ -14077,17 +14077,6 @@ struct mapping *mkbindings(struct program *p, struct array *b,
       }
     }
 
-    if (t && !state && bindings[1] && (i < bindings[1]->size)) {
-      s = NULL;
-      t = and_pike_types(t, ITEM(bindings[1])[i].u.type);
-      if (!t) {
-        my_yyerror("Bad type for generic %d.\n", i + 1);
-
-        s = ITEM(bindings[1]) + i;
-        t = s->u.type;
-      }
-    }
-
     if (t &&
         (((t->type == PIKE_T_GENERIC) &&
          (t->car->type == PIKE_T_OBJECT) &&
@@ -14111,6 +14100,30 @@ struct mapping *mkbindings(struct program *p, struct array *b,
         free_type(t);
       }
       continue;
+    }
+
+    if (t && !state && bindings[1] && (i < bindings[1]->size)) {
+      if (t->flags & PT_FLAG_GENERIC) {
+        type_stack_mark();
+        push_finished_type(t);
+        push_finished_type(ITEM(bindings[1])[i].u.type);
+        push_type(PIKE_T_AND);
+
+        if (!s) {
+          free_type(t);
+        }
+        s = NULL;
+        t = pop_unfinished_type();
+      } else {
+        s = NULL;
+        t = and_pike_types(t, ITEM(bindings[1])[i].u.type);
+        if (!t) {
+          my_yyerror("Bad type for generic %d.\n", i + 1);
+
+          s = ITEM(bindings[1]) + i;
+          t = s->u.type;
+        }
+      }
     }
 
     if (t && (t->flags & PT_FLAG_MASK_GENERICS)) {
