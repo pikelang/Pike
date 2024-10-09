@@ -302,7 +302,7 @@ local string quote (string s)
 
 protected int argspec_counter;
 
-local string handle_argspec(Sql.Sql db_conn, array argspec,
+local string handle_argspec(object(Sql.Sql)|zero db_conn, array argspec,
                             mapping(string:mixed) bindings)
 //! Helper function for use with array style arguments.
 //!
@@ -333,9 +333,11 @@ local string handle_argspec(Sql.Sql db_conn, array argspec,
       bindings[var] = val;
     return argspec[0];
   }
-  else
+  else {
+    if (!db_conn) db_conn = get_db();
     return db_conn->handle_extraargs(argspec[0],
                                      argspec[1..] + ({ bindings }))[0];
+  }
 }
 
 // Implicit connection handling.
