@@ -13890,6 +13890,7 @@ static void push_apply_bindings_recur(struct pike_type *t,
     case PIKE_T_TUPLE:
     case T_MAPPING:
     case T_OR:
+    case T_AND:
     case T_ARRAY:
     case T_STRING:
     case PIKE_T_TRANSITIVE:
