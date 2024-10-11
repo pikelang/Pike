@@ -12,7 +12,7 @@
 //!
 //! @url{http://www.iptc.org/IIM/@}
 
-mapping(int:mapping(int:string)) fields =
+mapping(int:mapping(int:string(7bit))) fields =
   ([
     1: ([   // ENVELOPE RECORD
       0:   "model version",
@@ -122,27 +122,28 @@ protected int short_value(string str)
   //return (str[1]<<8)|str[0];
 }
 
-protected mapping(string:array(string)) decode_photoshop_data(string data)
+protected mapping(string(7bit):array(string(8bit)))
+  decode_photoshop_data(string(8bit) data)
 {
-  mapping(string:array(string)) res = ([]);
+  mapping(string(7bit):array(string(8bit))) res = ([]);
 
   // 0x0404 is IPTC IIM
-  array(string) blocks = (data / "8BIM\4\4")[1..];
+  array(string(8bit)) blocks = (data / "8BIM\4\4")[1..];
   if (!sizeof(blocks)) {
     werror("No 8BIM/IPTC IIM markers found in data\n");
     return res;
   }
   //werror("blocks: %O\n", blocks);
-  foreach(blocks, string block) {
+  foreach(blocks, string(8bit) block) {
     //werror("block: %x\n", block);
     if (sizeof(block) < 6) {
       werror("Malformed 8BIM block\n");
       continue;
     }
 
-    string block_type_2 = "";
+    string(8bit) block_type_2 = "";
     int block_length;
-    string info = "";
+    string(8bit) info = "";
 
     if (block[0]) {
       // Photoshop 6.0 format with header description text of variable length.
@@ -183,7 +184,7 @@ protected mapping(string:array(string)) decode_photoshop_data(string data)
       int record_set = info[1];
       int id = info[2];
       int size = short_value(info[3..4]);
-      string data = info[5..size+5-1];
+      string(8bit) data = info[5..size+5-1];
       info = info[size+5..];
 
       if (segment_marker != '\x1c') {
@@ -212,12 +213,12 @@ protected mapping(string:array(string)) decode_photoshop_data(string data)
       //werror("%3d: ", id);
       //werror("%O\n", data);
       //werror("info: %x\n", info);
-      string label =
+      string(7bit) label =
 	fields[record_set][id] ||
-	(string)record_set + ":" + (string)id;
+        (string(7bit))record_set + ":" + (string(7bit))id;
 
       if (label == "coded character set") {
-	string|zero charset = ([
+        string(7bit)|zero charset = ([
 	  "\e%/@": "UTF-16",	// ISO-IR 162 (NB: Actually UCS-2 level 1)
 	  "\e%/A": "UTF-32",	// ISO-IR 163 (NB: Actually UCS-4 level 1)
 	  "\e%/B": "ISO-8859-1",// ISO-IR 125 (NB: Actually binary)
@@ -247,13 +248,14 @@ protected mapping(string:array(string)) decode_photoshop_data(string data)
 	}
       }
 
-      if (label == "special instructions" && lower_case(data) == "nyhedstjeneste")
+      if (label == "special instructions" &&
+          lower_case(data) == "nyhedstjeneste")
 	res->charset = (res->charset || ({})) + ({ "iso-8859-1" });
 
       if ((binary_fields[record_set] && binary_fields[record_set][id]) ||
 	  (<3, 7>)[record_set]) {
 	// Decode binary fields.
-	data = (string)Gmp.mpz(data, 256);
+        data = (string(8bit))Gmp.mpz(data, 256);
       }
 
       // werror("RAW: %O:%O\n", label, data);
@@ -282,14 +284,14 @@ protected mapping(string:array(string)) decode_photoshop_data(string data)
 //!
 //! @returns
 //!   Returns a mapping containing any found IPTC IIM data.
-mapping(string:array(string)) get_information(Stdio.InputStream fd)
+mapping(string(7bit):array(string)) get_information(Stdio.InputStream fd)
 {
-  string|zero marker = fd->read(2);
-  string photoshop_data = "";
+  string(8bit)|zero marker = fd->read(2);
+  string(8bit) photoshop_data = "";
 
   if (marker == "\xc5\xd0") {
     // Probably a DOS EPS Binary Header.
-    string|zero tmp = fd->read(28);
+    string(8bit)|zero tmp = fd->read(28);
     if (!has_prefix(tmp, "\xd3\xc6")) return ([]);
     int offset;
     sscanf(tmp, "%*2c%-4c", offset);
@@ -303,22 +305,23 @@ mapping(string:array(string)) get_information(Stdio.InputStream fd)
     // Note: We use the split iterator by hand to make sure '\r' is
     //       valid as a line terminator.
     foreach(String.SplitIterator(marker, (<'\r','\n'>), 1,
-				 fd->read_function(8192)); ; string line) {
+                                 fd->read_function(8192)); ;
+            string(8bit) line) {
       if (line[0] != '%') continue;
       if (bytes < 0) sscanf(line, "%%BeginPhotoshop:%*[ ]%d", bytes);
       else if (has_prefix(line, "%EndPhotoshop")) {
         break;
       }
-      // Let hex2string swollow "%" and possible " ".
+      // Let hex2string swallow "%" and possible " ".
       photoshop_data += String.hex2string(line);
       if (sizeof(photoshop_data) >= bytes) break;
     }
   } else if (marker == "\xff\xd8") {
     do {
-      string app = fd->read(2) || "";
+      string(8bit) app = fd->read(2) || "";
       if (sizeof(app) != 2)
 	break;
-      string length_s = fd->read(2) || "";
+      string(8bit) length_s = fd->read(2) || "";
       int length;
       if (sizeof(length_s) == 2)
 	length = short_value(length_s);
@@ -326,7 +329,7 @@ mapping(string:array(string)) get_information(Stdio.InputStream fd)
 	break;
       //werror ("length: %O\n", short_value(length_s));
 
-      string data = fd->read((length-2) & 0xffff) || "";
+      string(8bit) data = fd->read((length-2) & 0xffff) || "";
       if ((app == "\xff\xed") && // APP14 Photoshop
           (sizeof(data) == ((length-2) & 0xffff)))
       {
@@ -337,7 +340,7 @@ mapping(string:array(string)) get_information(Stdio.InputStream fd)
     } while (1);
   } else if (marker == "8B") {
     //  May be a native PSD file. It should start with "8BPS\0\1" to be valid.
-    string|zero marker2 = fd->read(4);
+    string(8bit)|zero marker2 = fd->read(4);
     if (marker2 == "PS\0\1") {
       photoshop_data = "8BPS\0\1" + fd->read();
     }
@@ -348,7 +351,8 @@ mapping(string:array(string)) get_information(Stdio.InputStream fd)
 
   if (!sizeof(photoshop_data)) return ([]);
 
-  mapping(string:array(string)) res = decode_photoshop_data(photoshop_data);
+  mapping(string(7bit):array(string)) res =
+    decode_photoshop_data(photoshop_data);
 
   if (sizeof(res)) {
     // IIMV 4.1 Chapter 3 Section 1.6 (a):
@@ -391,7 +395,7 @@ mapping(string:array(string)) get_information(Stdio.InputStream fd)
     //
     // We attempt some DWIM...
 
-    string charset = "";
+    string(8bit) charset = "";
     if (!res->charset) {
       charset = "macintosh";
     } else {
@@ -407,7 +411,7 @@ mapping(string:array(string)) get_information(Stdio.InputStream fd)
     //werror("Charset: %O\n", charset);
     res->charset = ({ charset });
     Charset.Decoder decoder = Charset.decoder(charset);
-    foreach(res; string key; array(string) vals) {
+    foreach(res; string(7bit) key; array(string) vals) {
       res[key] = map(vals,
 		     lambda(string val, Charset.Decoder decoder) {
 		       return decoder->feed(val)->drain();
