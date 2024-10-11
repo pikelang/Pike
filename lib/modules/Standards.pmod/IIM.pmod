@@ -399,7 +399,7 @@ mapping(string(7bit):array(string)) get_information(Stdio.InputStream fd)
     if (!res->charset) {
       charset = "macintosh";
     } else {
-      charset = lower_case(res->charset[0]);
+      charset = lower_case([string(8bit)]res->charset[0]);
 
       // Remap to standard names:
       charset = ([
