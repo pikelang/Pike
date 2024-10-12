@@ -1,6 +1,8 @@
 #pike 9.0
 
-//! Pike 8.0 API compatibility for Mysql.SqlTable.
+#require constant(Mysql.SqlTable)
+
+//! Pike 8.0 API compatibility for @[Mysql.SqlTable].
 
 //!
 inherit Mysql.SqlTable;
