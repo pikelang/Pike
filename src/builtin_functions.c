@@ -9253,58 +9253,60 @@ PMOD_EXPORT void f_transpose(INT32 args)
  *!
  *!   Applies @[fun] to the elements in @[arr] and collects the results.
  *!
+ *! @param arr
  *!   @[arr] is treated as a set of elements, as follows:
  *!
- *!   @dl
- *!     @item array
- *!     @item multiset
- *!     @item string
+ *!   @mixed
+ *!     @type array
+ *!     @type multiset
+ *!     @type string
  *!       @[fun] is applied in order to each element. The results are
  *!       collected, also in order, to a value of the same type as
  *!       @[arr], which is returned.
  *!
- *!     @item mapping
+ *!     @type mapping
  *!       @[fun] is applied to the values, and each result is assigned
  *!       to the same index in a new mapping, which is returned.
  *!
- *!     @item program
+ *!     @type program
  *!       The program is treated as a mapping containing the
  *!       identifiers that are indexable from it and their values.
  *!
- *!     @item object
+ *!     @type object
  *!       If there is a @[lfun::cast] method in the object, it's
  *!       called to try to cast the object to an array, a mapping, or
  *!       a multiset, in that order, which is then handled as
  *!       described above.
- *!   @enddl
+ *!   @endmixed
  *!
+ *! @param fun
  *!   @[fun] is applied in different ways depending on its type:
  *!
- *!   @dl
- *!     @item function
+ *!   @mixed
+ *!     @type function
  *!       @[fun] is called for each element. It gets the current
  *!       element as the first argument and @[extra] as the rest. The
  *!       result of the call is collected.
  *!
- *!     @item object
+ *!     @type object
  *!       @[fun] is used as a function like above, i.e. the
  *!       @[lfun::`()] method in it is called.
  *!
- *!     @item array
+ *!     @type array
  *!       Each element of the @[fun] array will be called for each
  *!       element of @[arr].
  *!
- *!     @item multiset
- *!     @item mapping
+ *!     @type multiset
+ *!     @type mapping
  *!       @[fun] is indexed with each element. The result of that is
  *!       collected.
  *!
- *!     @item "zero or left out"
+ *!     @type zero|void
  *!       Each element that is callable is called with @[extra] as
  *!       arguments. The result of the calls are collected. Elements
  *!       that aren't callable gets zero as result.
  *!
- *!     @item string
+ *!     @type string
  *!       Each element is indexed with the given string. If the result
  *!       of that is zero then a zero is collected, otherwise it's
  *!       called with @[extra] as arguments and the result of that
@@ -9312,7 +9314,7 @@ PMOD_EXPORT void f_transpose(INT32 args)
  *!
  *!       This is typically used when @[arr] is a collection of
  *!       objects, and @[fun] is the name of some function in them.
- *!   @enddl
+ *!   @endmixed
  *!
  *! @note
  *!   The function is never destructive on @[arr].
@@ -9590,64 +9592,66 @@ PMOD_EXPORT void f_map(INT32 args)
  *!
  *!   Filters the elements in @[arr] through @[fun].
  *!
+ *! @param arr
  *!   @[arr] is treated as a set of elements to be filtered, as
  *!   follows:
  *!
- *!   @dl
- *!     @item array
- *!     @item multiset
- *!     @item string
+ *!   @mixed
+ *!     @type array
+ *!     @type multiset
+ *!     @type string
  *!       Each element is filtered with @[fun]. The return value is of
  *!       the same type as @[arr] and it contains the elements that
  *!       @[fun] accepted. @[fun] is applied in order to each element,
  *!       and that order is retained between the kept elements.
  *!
- *!       If @[fun] is an array, it should have the same length as
- *!       @[arr]. In this case, the elements in @[arr] are kept where
- *!       the corresponding positions in @[fun] are nonzero. Otherwise
- *!       @[fun] is used as described below.
- *!
- *!     @item mapping
+ *!     @type mapping
  *!       The values are filtered with @[fun], and the index/value
  *!       pairs it accepts are kept in the returned mapping.
  *!
- *!     @item program
+ *!     @type program
  *!       The program is treated as a mapping containing the
  *!       identifiers that are indexable from it and their values.
  *!
- *!     @item object
+ *!     @type object
  *!       If there is a @[lfun::cast] method in the object, it's called
  *!       to try to cast the object to an array, a mapping, or a
  *!       multiset, in that order, which is then filtered as described
  *!       above.
- *!   @enddl
+ *!   @endmixed
  *!
+ *! @param fun
  *!   Unless something else is mentioned above, @[fun] is used as
  *!   filter like this:
  *!
- *!   @dl
- *!     @item function
+ *!   @mixed
+ *!     @type array
+ *!       When both @[arr] and @[fun] are arrays, they should have the
+ *!       same lengths. In this case, the elements in @[arr] are kept
+ *!       where the corresponding positions in @[fun] are nonzero.
+ *!
+ *!     @type function
  *!       @[fun] is called for each element. It gets the current
  *!       element as the first argument and @[extra] as the rest. The
- *!       element is kept if it returns true, otherwise it's filtered
+ *!       element is kept if @[fun] returns true, otherwise it's filtered
  *!       out.
  *!
- *!     @item object
- *!       The object is used as a function like above, i.e. the
+ *!     @type object
+ *!       The object is used as a @expr{function@} like above, i.e. the
  *!       @[lfun::`()] method in it is called.
  *!
- *!     @item multiset
- *!     @item mapping
+ *!     @type multiset
+ *!     @type mapping
  *!       @[fun] is indexed with each element. The element is kept if
  *!       the result is nonzero, otherwise it's filtered out.
  *!
- *!     @item "zero or left out"
+ *!     @type zero|void
  *!       Each element that is callable is called with @[extra] as
  *!       arguments. The element is kept if the result of the call is
  *!       nonzero, otherwise it's filtered out. Elements that aren't
  *!       callable are also filtered out.
  *!
- *!     @item string
+ *!     @type string
  *!       Each element is indexed with the given string. If the result
  *!       of that is zero then the element is filtered out, otherwise
  *!       the result is called with @[extra] as arguments. The element
@@ -9657,7 +9661,7 @@ PMOD_EXPORT void f_map(INT32 args)
  *!       This is typically used when @[arr] is a collection of
  *!       objects, and @[fun] is the name of some predicate function
  *!       in them.
- *!   @enddl
+ *!   @endmixed
  *!
  *! @note
  *!   The function is never destructive on @[arr].
