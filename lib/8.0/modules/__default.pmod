@@ -125,7 +125,7 @@ class Iterator
   //!
   //! @seealso
   //!   @[next], @[`+], @[`-]
-  optional protected int(0..1) `+=(steps)
+  optional protected int(0..1) `+=(int steps)
   {
     if (steps < 0) error("Stepping backwards not supported.\n");
     if (!steps) return !undefinedp(index_value);
