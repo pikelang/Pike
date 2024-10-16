@@ -86,6 +86,7 @@
 #define     PROG_PROCESS_ID					    036
 #define tObjImpl_PROCESS                      "\003\000\000\000\000\036"
 #define   tObjIs_PROCESS                      "\003\001\000\000\000\036"
+#define RESERVED_FUNCTION_ITERATOR                                  037
 
 #define     PROG_GMP_MPZ_ID                                         040
 #define tObjImpl_GMP_MPZ                      "\003\000\000\000\000\040"
@@ -228,6 +229,11 @@
 #define tObjImpl_STRING_SPLIT_ITERATOR     "\003\000\000\000\200\024"
 #define tStringSplitIterValueType	tGeneric(tObjImpl_STRING_SPLIT_ITERATOR, 0)
 #define tStringSplitIter(X)		tBind(tAssign(tStringSplitIterValueType, X), tObjImpl_STRING_SPLIT_ITERATOR)
+
+#define     PROG_FUNCTION_ITERATOR_ID				0x801f
+#define tObjImpl_FUNCTION_ITERATOR         "\003\000\000\000\200\037"
+#define tFunctionIterValueType	tGeneric(tObjImpl_FUNCTION_ITERATOR, 0)
+#define tFunctionIter(X)		tBind(tAssign(tFunctionIterValueType, X), tObjImpl_FUNCTION_ITERATOR)
 
 /* Start for dynamically allocated program ids. */
 #define PROG_DYNAMIC_ID_START		0x10000
