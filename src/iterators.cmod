@@ -417,6 +417,54 @@ static unsigned INT_TYPE call_random(unsigned INT_TYPE limit)
 /*! @endclass
  */
 
+/*! @module Function
+ */
+/*! @class Iterator
+ *! @inherit predef::Iterator
+ *!
+ *!   An object of this class is returned by @[get_iterator()] when
+ *!   called with a function.
+ *!
+ *! @seealso
+ *!   @[get_iterator()]
+ */
+PIKECLASS function_iterator
+  num_generics 1;
+{
+  /*! @decl __generic__ ValueType;
+   */
+
+  PIKEVAR function(:mixed) fun
+    flags ID_PRIVATE;
+
+  /*! @decl protected void create(function(:ValueType) fun)
+   *!
+   *!   Create an iterator that calls @[fun()] until
+   *!   it returns @[UNDEFINED].
+   */
+  PIKEFUN void create(function(:mixed) fun)
+    flags ID_PROTECTED;
+    rawtype tFunc(tFunc(tNone, tFunctionIterValueType), tVoid);
+  {
+    assign_svalue(&THIS->fun, fun);
+  }
+
+  /*! @decl protected ValueType _iterator_next()
+   *!
+   *!   Call the wrapped function and return its result.
+   */
+  PIKEFUN mixed _iterator_next()
+    flags ID_PROTECTED;
+    rawtype tFunc(tNone, tFunctionIterValueType);
+  {
+    apply_svalue(&THIS->fun, 0);
+  }
+}
+/*! @endclass
+ */
+/*! @endmodule
+ */
+
 /*! @module Mapping
  */
 /*! @class Iterator
@@ -2004,7 +2052,7 @@ PIKECLASS string_split_iterator
 /*! @endmodule
  */
 
-/*! @decl Iterator get_iterator (object|array|mapping|multiset|string data, @
+/*! @decl Iterator get_iterator (function|object|array|mapping|multiset|string data, @
  *!                              mixed ... args)
  *!
  *! Creates and returns a canonical iterator for @[data].
@@ -2025,6 +2073,9 @@ PIKECLASS string_split_iterator
  *!     @type array
  *!       If @[data] is an array, an @[Array.Iterator] object will be
  *!       returned.
+ *!     @type function
+ *!       If @[data] is a function, a @[Function.Iterator] object will be
+ *!       returned.
  *!     @type mapping
  *!       If @[data] is a mapping, a @[Mapping.Iterator] object will be
  *!       returned
@@ -2043,7 +2094,7 @@ PIKECLASS string_split_iterator
  *! @seealso
  *!   @[Iterator], @[lfun::_get_iterator]
  */
-PIKEFUN object(Iterator) get_iterator(object|array|mapping|multiset|string data,
+PIKEFUN object(Iterator) get_iterator(function|object|array|mapping|multiset|string data,
 				      mixed ... extra)
   efun;
 {
@@ -2052,22 +2103,30 @@ PIKEFUN object(Iterator) get_iterator(object|array|mapping|multiset|string data,
   }
   switch(TYPEOF(*data))
   {
+    case PIKE_T_FUNCTION:
+      pop_n_elems(args - 1);
+      push_object(clone_object(function_iterator_program, 1));
+      return;
+
     case PIKE_T_STRING:
+      pop_n_elems(args - 1);
       push_object(clone_object(string_iterator_program, 1));
       return;
 
     case PIKE_T_MAPPING:
+      pop_n_elems(args - 1);
       push_object(clone_object(mapping_iterator_program,1));
       return;
 
     case PIKE_T_MULTISET:
+      pop_n_elems(args - 1);
       push_object(clone_object(multiset_iterator_program, 1));
       return;
 
     case PIKE_T_ARRAY:
+      pop_n_elems(args - 1);
       push_object(clone_object(array_iterator_program, 1));
       return;
-
 
     case PIKE_T_OBJECT: {
       int fun;
@@ -2118,7 +2177,8 @@ PIKEFUN object(Iterator) get_iterator(object|array|mapping|multiset|string data,
     }
 
     default:
-      SIMPLE_ARG_TYPE_ERROR("get_iterator", 1, "multiset|array|string|mapping|object");
+      SIMPLE_ARG_TYPE_ERROR("get_iterator", 1,
+                            "function|multiset|array|string|mapping|object");
   }
 }
 
@@ -2134,17 +2194,42 @@ int foreach_iterate(struct object *o)
   if(!prog)
     Pike_error("foreach on destructed iterator.\n");
 
-  /* FIXME: This could be simplified by letting the iterators
-   *        start at one position before the first element, and
-   *        then use next() to both advance and check if we are
-   *        at the end of the iterator. The do_step flag would
-   *        then not be needed. This would also have the benefit
-   *        of not needing `!() to be implemented.
-   */
-
   if(prog->flags & PROGRAM_HAS_C_METHODS)
   {
-    if(prog == mapping_iterator_program)
+    if(prog == function_iterator_program) {
+      struct function_iterator_struct *i = OBJ2_FUNCTION_ITERATOR(o);
+
+      if (IS_UNDEFINED(&(i->fun))) {
+        return 0;
+      }
+
+      apply_svalue(&(i->fun), 0);
+
+      pike_fprintf(stderr, "ret: %pO\n", Pike_sp-1);
+
+      if (IS_UNDEFINED(Pike_sp-1)) {
+        /* Terminate. */
+        free_svalue(&(i->fun));
+        SET_SVAL(i->fun, PIKE_T_INT, NUMBER_UNDEFINED, integer, 0);
+        pop_stack();
+        return 0;
+      }
+
+      if(TYPEOF(Pike_sp[-5]) != T_INT) {
+        /* Index. */
+        assign_lvalue(Pike_sp-5, Pike_sp-1);
+      }
+
+      if(TYPEOF(Pike_sp[-3]) != T_INT) {
+        /* Value. */
+        assign_lvalue(Pike_sp-3, Pike_sp-1);
+      }
+
+      pop_stack();
+      return 1;
+    }
+
+    else if(prog == mapping_iterator_program)
     {
       struct mapping_iterator_struct *i=OBJ2_MAPPING_ITERATOR(o);
 

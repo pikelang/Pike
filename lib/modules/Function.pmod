@@ -2,6 +2,10 @@
 
 constant defined = __builtin.function_defined;
 
+#if constant(__builtin.function_iterator)
+constant Iterator = __builtin.function_iterator;
+#endif
+
 //! Calls the given function with the @[args] array plus the optional
 //! extra arguments as its arguments and returns the result.
 //!

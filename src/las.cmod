@@ -3504,11 +3504,13 @@ static void fix_foreach_type(node *val_lval)
   if(CDR(val_lval) && (CDR(val_lval)->token == ':')) {
     /* Check the iterator type */
     MAKE_CONSTANT_TYPE(fun,
-                       tOr5(tFunc(tLArr(tSetvar(0, tIntPos),
+                       tOr6(tFunc(tLArr(tSetvar(0, tIntPos),
                                         tSetvar(1, tMix))
                                   tRangeInt(tInt0,tSubInt(tVar(0),tInt1))
                                   tVar(1),
                                   tVoid),
+                            tFunc(tFunc(tNone, tSetvar(0, tMix))
+                                  tVar(0) tVar(0), tVoid),
                             tFunc(tLStr(tSetvar(0, tIntPos),
                                         tSetvar(1, tInt))
                                   tRangeInt(tInt0,tSubInt(tVar(0),tInt1))
