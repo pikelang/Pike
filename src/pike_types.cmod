@@ -11595,20 +11595,23 @@ static int match_type_svalue(struct pike_type *type,
         {
           if( string_min < min )
           {
-            if( s->size_shift )
-              check_string_range( s, 0, &string_min, &string_max );
+            /* Perform an exact check. */
+            check_string_range( s, 0, &string_min, &string_max );
+            checked = 1;
+
             if( string_min < min )
               goto do_return;
-            checked = 1;
           }
         }
 
-        if( max != MIN_INT32 )
+        if( max != MAX_INT32 )
         {
           if( string_max > max )
           {
-            if( s->size_shift && !checked )
+            if(!checked) {
+              /* Perform an exact check. */
               check_string_range( s, 0, NULL, &string_max );
+            }
 
             if( string_max > max )
               goto do_return;
