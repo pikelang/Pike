@@ -9283,7 +9283,7 @@ PMOD_EXPORT void f_transpose(INT32 args)
  *!   @[fun] is applied in different ways depending on its type:
  *!
  *!   @mixed
- *!     @type function
+ *!     @type function(mixed...:mixed)
  *!       @[fun] is called for each element. It gets the current
  *!       element as the first argument and @[extra] as the rest. The
  *!       result of the call is collected.
@@ -9630,7 +9630,7 @@ PMOD_EXPORT void f_map(INT32 args)
  *!       same lengths. In this case, the elements in @[arr] are kept
  *!       where the corresponding positions in @[fun] are nonzero.
  *!
- *!     @type function
+ *!     @type function(mixed...:mixed)
  *!       @[fun] is called for each element. It gets the current
  *!       element as the first argument and @[extra] as the rest. The
  *!       element is kept if @[fun] returns true, otherwise it's filtered
