@@ -85,6 +85,11 @@ array(string|mapping(string|int:mixed))
   array(mixed) args=allocate(sizeof(extraargs));
   if (!bindings) bindings = ([]);
 
+  if (sizeof(extraargs) && mappingp(extraargs[-1])) {
+    bindings += extraargs[-1];
+    extraargs = extraargs[..<1];
+  }
+
   // NB: Protect against successive calls of handle_extraargs() with
   //     the same bindings mapping having conflicting entries.
   int a = sizeof(bindings);
