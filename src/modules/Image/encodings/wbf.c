@@ -186,7 +186,7 @@ static void low_image_f_wbf_decode_type0( struct wbf_header *wh,
   {
     unsigned char q = 0; /* avoid warning */
     unsigned char *data = buff->str + y * rowsize;
-    if( buff->len < (rowsize+1)*y )
+    if( buff->len < rowsize * (y + 1) )
       break;
     for( x = 0; x<wh->width; x++ )
     {
@@ -209,7 +209,7 @@ static void low_image_f_wbf_decode( int args, int mode )
   int map_num_elems = 0;
   struct buffer buff;
 
-  get_all_args( NULL, args, "%S", &s );
+  get_all_args( NULL, args, "%n", &s );
 
   buff.len = s->len;
   buff.str = (unsigned char *)s->str;

@@ -87,7 +87,7 @@ class Guide
   int vertical;
 //!
 
-  void create(string data)
+  protected void create(string data)
   {
     sscanf(data, "%4c%c", pos,vertical);vertical--;
     SIGNED(pos);
@@ -207,7 +207,7 @@ class Channel
   }
 
 
-  void create( mapping d, object p )
+  protected void create( mapping d, object p )
   {
 
     parent = p;
@@ -297,7 +297,7 @@ class Layer
     }
   }
 
-  void create( mapping data, object pa )
+  protected void create( mapping data, object pa )
   {
     parent = pa;
     name = (string)data->name;
@@ -474,7 +474,7 @@ class GimpImage
     }
   }
 
-  void create( mapping data )
+  protected void create( mapping data )
   {
     type = data->type;
     decode_properties( data->properties );
@@ -695,11 +695,12 @@ mapping(string:string|Image.Image) _decode( string|mapping|GimpImage what, mappi
     data = what;
   else
     data = __decode( what );
-  what = 0;
+  what = "";
 
   int shrink = (opts->shrink_fact||1);
-  Image.Layer res = Image.lay(decode_layers( data, opts, 1 ),
-                              0,0,data->width/shrink,data->height/shrink );
+  object(Image.Layer)|zero res;
+  res = Image.lay(decode_layers( data, opts, 1 ),
+                  0,0,data->width/shrink,data->height/shrink );
   Image.Image img = res->image();
   Image.Image alpha = res->alpha();
   res = 0;
@@ -912,7 +913,7 @@ string encode(Image.Image img) {
   buf->add("gimp xcf file\0");
 
   // width, height, type
-  buf->add( sprintf("%4c%4c%4c", img->xsize(), img->ysize(), 0) );
+  buf->sprintf("%4c%4c%4c", img->xsize(), img->ysize(), 0);
 
   // Properties
 

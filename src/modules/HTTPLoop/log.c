@@ -57,7 +57,7 @@ static void push_log_entry(struct log_entry *le)
 {
   struct object *o = clone_object( aap_log_object_program, 0 );
   struct log_object *lo = (struct log_object*)o->storage;
-  lo->time = le->t;
+  lo->time = le->t; /* FIXME: 32-bit truncation on 32-bit platforms. */
   lo->sent_bytes = le->sent_bytes;
   lo->reply = le->reply;
   lo->received_bytes = le->received_bytes;
@@ -110,10 +110,16 @@ void f_aap_log_as_array(INT32 args)
 
 void f_aap_log_exists(INT32 UNUSED(args))
 {
-  if(LTHIS->log->log_head)
-    push_int(1);
-  else
-    push_int(0);
+  struct log *l = LTHIS->log;
+  struct log_entry *le;
+
+  THREADS_ALLOW();
+  mt_lock( &l->log_lock );
+  le = l->log_head;
+  mt_unlock( &l->log_lock );
+  THREADS_DISALLOW();
+
+  push_int(!!le);
 }
 
 void f_aap_log_size(INT32 UNUSED(args))
@@ -140,7 +146,8 @@ void f_aap_log_as_commonlog_to_file(INT32 args)
   struct log_entry *le;
   struct log *l = LTHIS->log;
   int n = 0;
-  int mfd, ot = INT_MIN;
+  int mfd;
+  time_t ot = INT_MIN;
   struct object *f;
   struct tm tm;
   FILE *foo;

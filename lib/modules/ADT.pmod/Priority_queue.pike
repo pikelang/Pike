@@ -1,6 +1,9 @@
 #pike __REAL_VERSION__
 
-inherit .Heap;
+//! Type for the individual elements in the queue.
+__generic__ ValueType;
+
+inherit .Heap(<ValueType>);
 
 //! This class implements a priority queue. Each element in the priority
 //! queue is assigned a priority value, and the priority queue always
@@ -8,12 +11,12 @@ inherit .Heap;
 //! the priority queue always holds the element with the smallest priority.
 //! The priority queue is realized as a (min-)heap.
 
-class elem {
-  inherit Element;
+class elem (<ValueType = ValueType>) {
+  inherit Element(<ValueType>);
 
   int|float pri;
 
-  void create(int|float a, mixed b) { pri=a; ::create(b); }
+  protected void create(int|float a, ValueType b) { pri=a; ::create(b); }
 
   void set_pri(int|float p)
     {
@@ -23,14 +26,14 @@ class elem {
 
   int|float get_pri() { return pri; }
 
-  int `<(object o) { return pri<o->pri; }
-  int `>(object o) { return pri>o->pri; }
+  protected int `<(object o) { return pri<o->pri; }
+  protected int `>(object o) { return pri>o->pri; }
 };
 
 //! Push an element @[val] into the priority queue and assign a priority value
 //! @[pri] to it. The priority queue will automatically sort itself so that
 //! the element with the smallest priority will be at the top.
-elem push(int|float pri, mixed val)
+elem push(int|float pri, ValueType val)
 {
   elem handle;
 
@@ -42,15 +45,15 @@ elem push(int|float pri, mixed val)
 //! Adjust the priority value @[new_pri] of an element @[handle] in the
 //! priority queue. The priority queue will automatically sort itself so
 //! that the element with the smallest priority value will be at the top.
-void adjust_pri(mixed handle, int|float new_pri)
+void adjust_pri(elem handle, int|float new_pri)
 {
   handle->set_pri(new_pri);
 }
 
 //! Removes and returns the item on top of the heap,
 //! which also is the smallest value in the heap.
-mixed pop() { return ::pop(); }
+ValueType pop() { return ::pop(); }
 
 //! Returns the item on top of the priority queue (which is also the element
 //! with the smallest priority value) without removing it.
-mixed peek() { return ::peek(); }
+ValueType peek() { return ::peek(); }

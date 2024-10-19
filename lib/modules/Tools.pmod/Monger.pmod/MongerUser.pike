@@ -294,7 +294,7 @@ string get_pike_version()
       (int)__REAL_MINOR__, (int)__REAL_BUILD__);
 }
 
-mapping get_module_info(string name)
+mapping|zero get_module_info(string name)
 {
   int module_id;
   mixed err;
@@ -354,7 +354,7 @@ mapping get_module_version_info(int|string module, string version)
 }
 
 //
-mapping get_module_action_data(string name, string|void version)
+mapping|zero get_module_action_data(string name, string|void version)
 {
   string dv;
   mixed err;
@@ -410,7 +410,8 @@ mapping get_module_action_data(string name, string|void version)
   return vi + info;
 }
 
-string get_file(mapping version_info, string|void path, int|void from_source)
+string|zero get_file(mapping version_info, string|void path,
+                     int|void from_source)
 {
   array rq;
   int have_path;
@@ -641,7 +642,7 @@ void do_install(string name, string|void version)
       if(!Process.search_path("gzip"))
         exit(1, "install error: no gzip found in PATH.\n");
       else
-        res = Process.system("gzip -f -d " + fn);
+        res = Process.Process(({"gzip", "-f", "-d", fn}))->wait();
 
       if(res)
         exit(1, "install error: uncompress failed.\n");
@@ -672,7 +673,7 @@ void do_install(string name, string|void version)
     if(!Process.search_path("tar"))
       exit(1, "install error: no tar found in PATH.\n");
     else
-      res = Process.system("tar xvf " + fn);
+      res = Process.Process(({"tar", "xvf", fn}))->wait();
 
     if(res)
       exit(1, "install error: untar failed.\n");
@@ -865,14 +866,14 @@ class xmlrpc_handler
 {
   Protocols.XMLRPC.Client x;
 
-  void create(string loc)
+  protected void create(string loc)
   {
     x = Protocols.XMLRPC.Client(loc);
   }
 
   protected class _caller (string n){
 
-    mixed `()(mixed ... args)
+    protected mixed `()(mixed ... args)
     {
       array|Protocols.XMLRPC.Fault r;
       if(args)
@@ -885,7 +886,7 @@ class xmlrpc_handler
     }
   }
 
-  function `->(string n, mixed ... args)
+  protected function `->(string n, mixed ... args)
   {
     return _caller(n);
   }

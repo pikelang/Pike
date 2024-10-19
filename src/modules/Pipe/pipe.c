@@ -42,6 +42,14 @@
 
 #include <fcntl.h>
 
+#ifndef HAVE_POSIX_MADVISE
+#if defined(HAVE_MADVISE) && !HAVE_DECL_MADVISE
+/* Solaris 10 hides the prototype for madvise(3C) when compiling for
+ * XPG4_2 or later, but lacks posix_madvise(3C) from XPG6.
+ */
+extern int madvise(void *, size_t, int);
+#endif
+#endif
 
 #ifndef S_ISREG
 #ifdef S_IFREG
@@ -400,7 +408,7 @@ static int read_some_data(void)
 
   if (!i || i->type != I_BLOCKING_OBJ) {
     Pike_fatal("PIPE: read_some_data(): Bad input type!\n");
-    UNREACHABLE(return -1);
+    UNREACHABLE();
   }
   push_int(8192);
   push_int(1);    /* We don't care if we don't get all 8192 bytes. */
@@ -749,16 +757,19 @@ static void pipe_input(INT32 args)
        size_t len = s.st_size - filep;
        if(S_ISREG(s.st_mode)	/* regular file */
 	  && (filep >= 0)	/* lseek() succeeded. */
-	  && ((m=(char *)mmap(0, len, PROT_READ,
-			      MAP_FILE|MAP_SHARED,fd,filep))+1))
+	  && ((m = mmap(0, len, PROT_READ,
+			MAP_FILE|MAP_SHARED, fd, filep)) != MAP_FAILED))
        {
 	 mmapped += len;
 
 	 i->type=I_MMAP;
 	 i->len = len;
 	 i->u.mmap=m;
-#if defined(HAVE_MADVISE) && defined(MADV_SEQUENTIAL)
+
 	 /* Mark the pages as sequential read only access... */
+#if defined(HAVE_POSIX_MADVISE) && defined(POSIX_MADV_SEQUENTIAL)
+         posix_madvise(m, len, POSIX_MADV_SEQUENTIAL);
+#elif defined(HAVE_MADVISE) && defined(MADV_SEQUENTIAL)
 	 madvise(m, len, MADV_SEQUENTIAL);
 #endif
          return;

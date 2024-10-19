@@ -12,7 +12,7 @@ inherit Filesystem.Base;
 //    It's possible to change the root from /foo/bar to d:/foo/bar/something,
 //    but it's not possible to change from c:/foo/bar to d:/foo/bar
 //
-//  Generally speaing, paths will almost always follow the second
+//  Generally speaking, paths will almost always follow the second
 //  pattern, since getcwd() is used to get the initial value of the
 //  'wd' variable unless a different path is specified.
 //
@@ -93,7 +93,7 @@ protected string _sprintf(int t)
   return t=='O' && sprintf("%O(/* root=%O, wd=%O */)", this_program, root, wd);
 }
 
-Filesystem.Base cd(string directory)
+object(Filesystem.Base)|zero cd(string directory)
 {
   Filesystem.Stat st = stat(directory);
 #ifdef __NT__
@@ -116,7 +116,7 @@ string cwd()
   return wd;
 }
 
-Filesystem.Base chroot(void|string directory)
+object(Filesystem.Base)|zero chroot(void|string directory)
 {
   if(directory)
   {
@@ -127,7 +127,7 @@ Filesystem.Base chroot(void|string directory)
   return this_program("", combine_path("/",root,wd), 1, parent);
 }
 
-Filesystem.Stat stat(string file, int|void lstat)
+object(Filesystem.Stat)|zero stat(string file, int|void lstat)
 {
    Stdio.Stat a;
 #ifdef __NT__
@@ -181,8 +181,8 @@ array(string) get_dir(void|string directory, void|string|array(string) globs)
   }
 }
 
-array(Filesystem.Stat) get_stats(void|string directory,
-				 void|string|array(string) globs)
+array(Filesystem.Stat)|zero get_stats(void|string directory,
+                                      void|string|array(string) globs)
 {
   Filesystem.Base z = this;
 #ifdef __NT__
@@ -241,7 +241,7 @@ void chmod(string filename, int|string mode)
   if(stringp(mode))
   {
     Filesystem.Stat st = stat(filename); // call to self
-    if(!st) return 0;
+    if(!st) return;
     mode = Filesystem.parse_mode(st->mode, mode);
   }
   predef::chmod(combine_path("/",root,filename), mode);
@@ -265,12 +265,12 @@ void chown(string filename, int|object owner, int|object group)
 #endif
 }
 
-array find(void|function(Filesystem.Stat, mixed|void...:int) mask,
-	   mixed|void ... extra)
+array find(void|function(Filesystem.Stat, __unknown__...:int) mask,
+	   mixed ... extra)
 {
   array(Filesystem.Stat) res = ({});
   array(Filesystem.Stat) d = get_stats() || ({});
-  array(Filesystem.Stat) r = filter(d, "isdir");
+  array(Filesystem.Stat) r = filter(d, d->isdir);
 
   if(mask)
     res += filter(d-r, mask, @extra);

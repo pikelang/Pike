@@ -1,4 +1,4 @@
-/*
+/* -*- mode: C; c-basic-offset: 3; -*-
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
@@ -732,6 +732,17 @@ void i_img_bmp__decode(INT32 args,int header_only)
 
    if (bpp!=24 && bpp!=16) /* get palette */
    {
+      switch (bpp)
+      {
+         case 8:
+	 case 4:
+	 case 1:
+	    break;
+	 default:
+            Pike_error("Image.BMP.decode: Unexpected bits per pixel value (%d) in image with palette.\n", bpp);
+
+      }
+
       push_static_text("colortable");
 
       if (windows)
@@ -768,6 +779,10 @@ void i_img_bmp__decode(INT32 args,int header_only)
 
    push_int(xsize);
    push_int(abs(ysize));
+
+   if (!(xsize && ysize))
+      Pike_error("Image.BMP.decode: Cannot decode image with less than two dimensions.\n");
+
    push_object(o=clone_object(image_program,2));
    img=get_storage(o,image_program);
    n++;
@@ -777,8 +792,10 @@ void i_img_bmp__decode(INT32 args,int header_only)
    if (j < 0 || j > olen)
        Pike_error("Image.BMP.decode: unexpected EOF\n");
 
-   s=os+j;
-   len=olen-j;
+   if (j) {
+     s = os + j;
+     len = olen - j;
+   }
 
    if (len>0) switch (bpp)
    {

@@ -10,6 +10,7 @@
 #include "object.h"
 #include "lex.h"
 #include "pike_types.h"
+#include "threads.h"
 #include "builtin_functions.h"
 #include "array.h"
 #include "stralloc.h"
@@ -18,7 +19,6 @@
 #include "pike_macros.h"
 #include "callback.h"
 #include "signal_handler.h"
-#include "threads.h"
 #include "dynamic_load.h"
 #include "gc.h"
 #include "multiset.h"
@@ -85,7 +85,7 @@
 #define MAXPATHLEN 32768
 #endif
 
-static const char _master_location[MAXPATHLEN+CONSTANT_STRLEN(MASTER_COOKIE)] = MASTER_COOKIE;
+static const char _master_location[MAXPATHLEN+CONSTANT_STRLEN(MASTER_COOKIE)] = MASTER_COOKIE "\0";
 static const char *master_file_location = _master_location + CONSTANT_STRLEN(MASTER_COOKIE);
 
 static void set_master(const char *file)
@@ -159,6 +159,8 @@ static void set_default_master(const char *bin_name)
 #ifdef __NT__
   if (!(*mp == '/' || *mp == '\\' || (isalpha (*mp) && mp[1] == ':'))) {
     char exepath[MAXPATHLEN];
+    if (!*mp) set_master("master.pike");
+
     if (!GetModuleFileName (NULL, exepath, _MAX_PATH))
       fprintf (stderr, "Failed to get path to exe file: %d\n",
 	       GetLastError());
@@ -289,6 +291,14 @@ static void find_lib_dir(int argc, char **argv)
   }
 #endif /* LIBPIKE */
 }
+
+#ifdef __amigaos__
+static const char version_tag[] __attribute__((used)) =
+  "\0$VER: pike " DEFINETOSTR(PIKE_MAJOR_VERSION)
+     "." DEFINETOSTR(PIKE_MINOR_VERSION)
+     " (" DEFINETOSTR(PIKE_BUILD_DATE)
+     ") build " DEFINETOSTR(PIKE_BUILD_VERSION) "\0";
+#endif
 
 int main(int argc, char **argv)
 {

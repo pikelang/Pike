@@ -71,6 +71,15 @@ struct pike_frame
   struct pike_frame *scope;     /** scope */
   struct svalue **save_mark_sp; /** saved mark sp level */
 
+  /**
+   * This is an address on the stack denoting the place where the return value
+   * should go.
+   *
+   * Most often it it equal to locals, but it may be further up on the stack,
+   * in case of call_svalue() or recursion.
+   */
+  struct svalue *save_sp;
+
   PIKE_OPCODE_T *pc;		/** Address of current opcode. */
   struct svalue *locals;	/** Start of local variables. */
   char *current_storage;        /** == current_object->storage + context->storage_offset */
@@ -102,16 +111,6 @@ struct pike_frame
 
   unsigned INT16 flags;		/** PIKE_FRAME_* */
 
-  /**
-   * This is an offset from locals and denotes the place where the return value
-   * should go.
-   *
-   * It can be -1 if the function to be called is on the stack.
-   * It can be even more negative in case of recursion when the return value location
-   * get replaced by that of the previous frame.
-   */
-  INT16 save_sp_offset;
-
 #ifdef PROFILING
   cpu_time_t children_base;	/** Accounted time when the frame started. */
   cpu_time_t start_time;	/** Adjusted time when thr frame started. */
@@ -119,16 +118,11 @@ struct pike_frame
 };
 
 static inline struct svalue *frame_get_save_sp(const struct pike_frame *frame) {
-    return frame->locals + frame->save_sp_offset;
+    return frame->save_sp;
 }
 
 static inline void frame_set_save_sp(struct pike_frame *frame, struct svalue *sv) {
-    ptrdiff_t n = sv - frame->locals;
-#ifdef PIKE_DEBUG
-    if (n < MIN_INT16 || n > MAX_INT16)
-        Pike_error("Save SP offset too large.\n");
-#endif
-    frame->save_sp_offset = n;
+    frame->save_sp = sv;
 }
 
 #define PIKE_FRAME_RETURN_INTERNAL 1
@@ -245,11 +239,10 @@ PMOD_EXPORT extern const char msg_pop_neg[];
  do {									\
    ptrdiff_t x_=(X);							\
    if(x_) {								\
-     struct svalue *_sp_;						\
      check__positive(x_, (msg_pop_neg, x_));				\
-     _sp_ = Pike_sp = Pike_sp - x_;					\
+     if (x_ > 131072) Pike_fatal("Popping too much!\n");		\
+     while (x_--) pop_stack();						\
      debug_check_stack();						\
-     free_mixed_svalues(_sp_, x_);					\
    }									\
  } while (0)
 
@@ -364,9 +357,13 @@ PMOD_EXPORT void push_random_string(unsigned len);
 #define push_type_value(S) do{						\
     struct pike_type *_=(S);						\
     struct svalue *_sp_ = Pike_sp++;					\
-    debug_malloc_touch(_);						\
-    SET_SVAL_TYPE_CHECKER(*_sp_, PIKE_T_TYPE);				\
-    _sp_->u.type=_;							\
+    if (_) {								\
+      debug_malloc_touch(_);						\
+      SET_SVAL_TYPE_CHECKER(*_sp_, PIKE_T_TYPE);			\
+      _sp_->u.type=_;							\
+    } else {								\
+      SET_SVAL(*_sp_, PIKE_T_INT, NUMBER_UNDEFINED, integer, 0);	\
+    }									\
   }while(0)
 
 #define push_object(O) push_object_inherit(O,0)
@@ -389,6 +386,7 @@ PMOD_EXPORT void push_random_string(unsigned len);
 
 PMOD_EXPORT extern void push_text( const char *x );
 PMOD_EXPORT extern void push_static_text( const char *x );
+PMOD_EXPORT extern void push_utf16_text(const p_wchar1 *x);
 
 #define push_constant_text(T) do{					\
     struct svalue *_sp_ = Pike_sp;					\
@@ -459,9 +457,13 @@ PMOD_EXPORT extern void push_static_text( const char *x );
 #define ref_push_type_value(S) do{					\
     struct pike_type *_=(S);						\
     struct svalue *_sp_ = Pike_sp++;					\
-    add_ref(_);								\
-    SET_SVAL_TYPE_SUBTYPE(*_sp_, PIKE_T_TYPE,0);			\
-    _sp_->u.type=_;							\
+    if (_) {								\
+      add_ref(_);							\
+      SET_SVAL_TYPE_SUBTYPE(*_sp_, PIKE_T_TYPE,0);			\
+      _sp_->u.type=_;							\
+    } else {								\
+      SET_SVAL(*_sp_, PIKE_T_INT, NUMBER_UNDEFINED, integer, 0);	\
+    }									\
   }while(0)
 
 #define ref_push_object(O) ref_push_object_inherit(O,0)
@@ -554,7 +556,7 @@ PMOD_EXPORT extern void push_static_text( const char *x );
 		   inh__, Pike_fp->context->prog->num_inherits-1);	\
       if (prog__ && (Pike_fp->context[inh__].prog != prog__))		\
 	Pike_fatal("Inherit #%d has wrong program %p != %p.\n",		\
-		   Pike_fp->context[inh__].prog, prog__);		\
+                   inh__, Pike_fp->context[inh__].prog, prog__);        \
     );									\
     VAR = ((TYPE *)(Pike_fp->current_object->storage +			\
 		    Pike_fp->context[inh__].storage_offset));		\
@@ -617,7 +619,7 @@ PMOD_EXPORT extern unsigned long evaluator_callback_calls;
     low_check_threads_etc();						\
   } while (0)
 
-extern int fast_check_threads_counter;
+PMOD_EXPORT extern int fast_check_threads_counter;
 
 #define fast_check_threads_etc(X) do {					\
     DO_IF_DEBUG (if (Pike_interpreter.trace_level > 2)			\
@@ -660,6 +662,8 @@ void gc_mark_stack_external (struct pike_frame *frame,
 PMOD_EXPORT int low_init_interpreter(struct Pike_interpreter_struct *interpreter);
 PMOD_EXPORT void init_interpreter(void);
 int lvalue_to_svalue_no_free(struct svalue *to, struct svalue *lval);
+PMOD_EXPORT void atomic_get_set_lvalue(struct svalue *lval,
+				       struct svalue *from_to);
 PMOD_EXPORT void assign_lvalue(struct svalue *lval,struct svalue *from);
 PMOD_EXPORT union anything *get_pointer_if_this_type(struct svalue *lval, TYPE_T t);
 void print_return_value(void);
@@ -685,9 +689,11 @@ void branch_check_threads_etc(void);
 #endif
 #ifdef OPCODE_INLINE_RETURN
 PIKE_OPCODE_T *inter_return_opcode_F_CATCH(PIKE_OPCODE_T *addr);
+PIKE_OPCODE_T *inter_return_opcode_F_CATCH_AT(PIKE_OPCODE_T *addr);
 #endif
 #ifdef OPCODE_INLINE_CATCH
 PIKE_OPCODE_T *setup_catch_context(PIKE_OPCODE_T *addr);
+PIKE_OPCODE_T *setup_catch_at_context(PIKE_OPCODE_T *addr);
 PIKE_OPCODE_T *handle_caught_exception(void);
 #endif
 #ifdef PIKE_DEBUG
@@ -700,6 +706,7 @@ void simple_debug_instr_prologue_2 (PIKE_INSTR_T instr, INT32 arg1, INT32 arg2);
 PMOD_EXPORT void find_external_context(struct external_variable_context *loc,
 				       int arg2);
 struct pike_frame *alloc_pike_frame(void);
+void save_locals(struct pike_frame *frame);
 void LOW_POP_PIKE_FRAME_slow_path(struct pike_frame *frame);
 void really_free_pike_scope(struct pike_frame *scope);
 void *lower_mega_apply( INT32 args, struct object *o, ptrdiff_t fun );
@@ -740,6 +747,7 @@ PMOD_EXPORT void apply_svalue(struct svalue *s, INT32 args);
 PMOD_EXPORT void safe_apply_svalue (struct svalue *s, INT32 args, int handle_errors);
 PMOD_EXPORT void apply_external(int depth, int fun, INT32 args);
 void slow_check_stack(void);
+void gdb_backtraces();
 PMOD_EXPORT void custom_check_stack(ptrdiff_t amount, const char *fmt, ...)
   ATTRIBUTE((format (printf, 2, 3)));
 PMOD_EXPORT void cleanup_interpret(void);
@@ -846,7 +854,7 @@ static inline void POP_PIKE_FRAME(void) {
   struct identifier *function;
   W_PROFILING_DEBUG("%p}: Pop got %" PRINT_CPU_TIME
                     " (%" PRINT_CPU_TIME ")"
-                    " %" PRINT_CPU_TIME " (%" PRINT_CPU_TIME ")n",
+                    " %" PRINT_CPU_TIME " (%" PRINT_CPU_TIME ")\n",
                     Pike_interpreter.thread_state, time_passed,
                     frame->start_time,
                     Pike_interpreter.accounted_time,
@@ -858,7 +866,7 @@ static inline void POP_PIKE_FRAME(void) {
                " now: %" PRINT_CPU_TIME
                " unlocked_time: %" PRINT_CPU_TIME
                " start_time: %" PRINT_CPU_TIME
-               "n", time_passed, get_cpu_time(),
+               "\n", time_passed, get_cpu_time(),
                Pike_interpreter.unlocked_time,
                frame->start_time);
   }
@@ -866,11 +874,10 @@ static inline void POP_PIKE_FRAME(void) {
   time_in_children = Pike_interpreter.accounted_time - frame->children_base;
 # ifdef PIKE_DEBUG
   if (time_in_children < 0) {
-    Pike_fatal("Negative time_in_children: %"
-               PRINT_CPU_TIME
+    Pike_fatal("Negative time_in_children: %" PRINT_CPU_TIME
                " accounted_time: %" PRINT_CPU_TIME
                " children_base: %" PRINT_CPU_TIME
-               "n", time_in_children,
+               "\n", time_in_children,
                Pike_interpreter.accounted_time,
                frame->children_base);
   }
@@ -881,19 +888,33 @@ static inline void POP_PIKE_FRAME(void) {
     Pike_fatal("Negative self_time: %" PRINT_CPU_TIME
                " time_passed: %" PRINT_CPU_TIME
                " time_in_children: %" PRINT_CPU_TIME
-               "n", self_time, time_passed,
+               "\n", self_time, time_passed,
                time_in_children);
   }
 # endif /* PIKE_DEBUG */
   Pike_interpreter.accounted_time += self_time;
-  /* FIXME: Can context->prog be NULL? */
-  function = frame->context->prog->identifiers + frame->ident;
-  if (!--function->recur_depth)
-    function->total_time += time_passed;
-  function->self_time += self_time;
+
+  if (frame->context && frame->fun != FUNCTION_BUILTIN) {
+# ifdef PIKE_DEBUG
+    if (frame->ident >= frame->context->prog->num_identifiers)
+      Pike_fatal("Profiling inexistant ident %d / %d\n", (int)frame->ident,
+                 (int)frame->context->prog->num_identifiers);
+# endif /* PIKE_DEBUG */
+    function = frame->context->prog->identifiers + frame->ident;
+    if (!--function->recur_depth)
+      function->total_time += time_passed;
+    function->self_time += self_time;
+  }
 #endif /* PROFILING */
 
   LOW_POP_PIKE_FRAME (frame);
 }
+
+#ifdef DYNAMIC_MODULE
+/* Protect against strings keeping references to data in unloaded
+ * dynamic modules.
+ */
+#define push_static_text	push_text
+#endif
 
 #endif

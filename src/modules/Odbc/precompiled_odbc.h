@@ -54,6 +54,12 @@
 #endif /* HAVE_SQLEXT_H */
 #endif /* HAVE_ISQLEXT_H */
 
+#if SIZEOF_SQLWCHAR == 2
+#define PRINTSQLWCHAR	"w"
+#elif SIZEOF_SQLWCHAR == 4
+#define PRINTSQLWCHAR	"ll"
+#endif
+
 /*
  * Globals
  */

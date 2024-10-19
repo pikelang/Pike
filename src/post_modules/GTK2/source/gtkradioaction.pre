@@ -25,7 +25,7 @@ void create(string|mapping(string:mixed) name_or_props, ?string label,
     gchar *label2=NULL, *tooltip2=NULL;
     INT_TYPE val;
     GtkRadioAction *gr;
-    get_all_args(NULL,args,"%s%t%t%s%i",&name,&label,&tooltip,&stock_id,&val);
+    get_all_args(NULL,args,"%c%t%t%c%i",&name,&label,&tooltip,&stock_id,&val);
     if(label) {
       ref_push_string(label);
       f_string_to_utf8(1);

@@ -100,16 +100,18 @@ define(test_ssl, [[
     int trigged = 10;
 
     string server_buf = "";
+    int server_received;
     void server_send_data()
     {
       trigged = 2;
-      int bytes = server->write(server_buf);
-      server_buf = server_buf[bytes..];
-      if (!sizeof(server_buf)) {
+      if (sizeof(server_buf)) {
+        int bytes = server->write (server_buf);
+        server_buf = server_buf[bytes..];
+      } else {
         server->set_write_callback(UNDEFINED);
-        if (state) {
+        if ((state & 1) && (server_received == sizeof(client_msg))) {
+          state |= 2;
           server->close();
-          state = 2;
         }
       }
     };
@@ -117,13 +119,14 @@ define(test_ssl, [[
     {
       trigged = 2;
       if (!sizeof(server_buf)) server->set_write_callback(server_send_data);
+      server_received += sizeof(data);
       server_buf += data;
     };
     void server_got_close()
     {
       trigged = 2;
     };
-    void server_alert()
+    void server_alert(mixed ... ignored)
     {
       trigged = 0;
       // server->close();
@@ -143,16 +146,16 @@ define(test_ssl, [[
       client_send_buf = client_send_buf[bytes..];
       if (!sizeof(client_send_buf)) {
         client->set_write_callback(UNDEFINED);
-        state = 1;
+        state |= 1;
       }
     };
     void client_got_close()
     {
       trigged = 2;
-      if (state == 2) state = 3;
+      state |= 4;
       client->close();
     };
-    void client_alert()
+    void client_alert(mixed ... ignored)
     {
       trigged = 0;
       // client->close();
@@ -169,19 +172,20 @@ define(test_ssl, [[
       Pike.DefaultBackend(0.1);
     }
 
-    return (state == 3) ? client_recv_buf : state;
+    return (state == 7) ? client_recv_buf : state;
   ]], $5)
 ]])
-
+]])
+cond_resolv(Crypto.Hash, [[
   test_ssl(0,0,0,0,client_msg)
   test_ssl(0,1,0,0,client_msg)
-  test_ssl(1,1,0,0,0)
+  test_ssl(1,1,0,0,4)
   test_ssl(0,2,0,0,client_msg)
-  test_ssl(1,2,0,0,0)
-  test_ssl(2,2,0,0,0)
+  test_ssl(1,2,0,0,4)
+  test_ssl(2,2,0,0,4)
 
   test_ssl(0,0,0,1,client_msg)
-  test_ssl(0,0,1,1,0)
+  test_ssl(0,0,1,1,4)
   test_ssl(0,1,0,1,client_msg)
   test_ssl(0,1,1,1,client_msg)
   test_ssl(1,1,0,1,client_msg)
@@ -190,18 +194,18 @@ define(test_ssl, [[
   test_ssl(0,2,1,1,client_msg)
   test_ssl(1,2,0,1,client_msg)
   test_ssl(1,2,1,1,client_msg)
-  test_ssl(2,2,0,1,0)
-  test_ssl(2,2,1,1,0)
+  test_ssl(2,2,0,1,4)
+  test_ssl(2,2,1,1,4)
 
   test_ssl(0,0,0,2,client_msg)
-  test_ssl(0,0,1,2,0)
-  test_ssl(0,0,2,2,0)
+  test_ssl(0,0,1,2,4)
+  test_ssl(0,0,2,2,4)
   test_ssl(0,1,0,2,client_msg)
   test_ssl(0,1,1,2,client_msg)
-  test_ssl(0,1,2,2,0)
+  test_ssl(0,1,2,2,4)
   test_ssl(1,1,0,2,client_msg)
   test_ssl(1,1,1,2,client_msg)
-  test_ssl(1,1,2,2,0)
+  test_ssl(1,1,2,2,4)
   test_ssl(0,2,0,2,client_msg)
   test_ssl(0,2,1,2,client_msg)
   test_ssl(0,2,2,2,client_msg)

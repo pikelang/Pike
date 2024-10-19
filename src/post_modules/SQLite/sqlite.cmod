@@ -31,6 +31,9 @@
 
 DECLARATIONS
 
+/*! @module SQLite
+ */
+
 /* NB: On Solaris 11 with __EXTENSIONS__ defined <stdlib.h> et el indirectly
  *     include <sys/regset.h> which has a conflicting definition of ERR...
  */
@@ -45,7 +48,7 @@ static void SQLite_handle_error(sqlite3 *db)
   if (db) {
     push_text(sqlite3_errmsg(db));
     f_utf8_to_string(1);
-    Pike_error("Sql.SQLite: %S\n", Pike_sp[-1].u.string);
+    Pike_error("Sql.SQLite: %pS\n", Pike_sp[-1].u.string);
   } else {
     Pike_error("Sql.SQLite: Internal module error\n");
   }
@@ -97,7 +100,7 @@ static void bind_arguments(sqlite3 *db,
       idx = sqlite3_bind_parameter_index(stmt, Pike_sp[-1].u.string->str);
       pop_stack();
       if(!idx)
-	Pike_error("Unknown bind index \"%S\".\n", k->ind.u.string);
+        Pike_error("Unknown bind index \"%pS\".\n", k->ind.u.string);
       break;
     default:
       Pike_error("Bind index is not int|string.\n");
@@ -292,6 +295,21 @@ PIKECLASS TypedResult
    */
   PIKEFUN array(mapping(string:mixed)) fetch_fields() {
     int i,t;
+    if (!THIS->stmt || !sqlite3_column_name(THIS->stmt, 0)) {
+      /* Documented to happen on malloc() failure,
+       * but can apparently happen in other cases too.
+       * The common case seems to be when called after
+       * the last row has been fetched, which in turn
+       * usually was due to THIS->stmt being NULL.
+       * Cf #10035.
+       *
+       * Note that some versions of sqlite3_column_name()
+       * do not survive THIS->stmt being NULL.
+       * Cf #10160.
+       */
+      push_int(0);
+      return;
+    }
     for(i=0; i<THIS->columns; i++) {
       push_constant_text("name");
       push_text(sqlite3_column_name(THIS->stmt, i));
@@ -355,8 +373,6 @@ PIKECLASS TypedResult
     switch( step(stmt) ) {
     case SQLITE_DONE:
       THIS->eof = 1;
-      sqlite3_finalize(stmt);
-      THIS->stmt = 0;
       push_int(0);
       return;
     case SQLITE_ROW:
@@ -428,8 +444,6 @@ PIKECLASS Result
     switch( step(stmt) ) {
     case SQLITE_DONE:
       THIS->eof = 1;
-      sqlite3_finalize(stmt);
-      THIS->stmt = 0;
       push_int(0);
       return;
     case SQLITE_ROW:
@@ -900,12 +914,28 @@ PIKECLASS Result
 
 }
 
+/*! @endclass
+ */
+
+/*! @decl string library_version()
+ *!
+ *! Returns the version of the sqlite library used.
+ */
 PIKEFUN string library_version()
 {
     push_text(sqlite3_libversion());
 }
 
-/*! @endclass
+/*! @decl int(0..) library_version_number()
+ *!
+ *! Returns the version of the sqlite library used as an integer.
+ */
+PIKEFUN int(0..) library_version_number()
+{
+    push_int(sqlite3_libversion_number());
+}
+
+/*! @endmodule
  */
 
 #endif /* HAVE_SQLITE3_H && HAVE_LIBSQLITE3 */

@@ -83,14 +83,19 @@ private int portalbuffersize = PORTALBUFFERSIZE;
 private int timeout = QUERYTIMEOUT;
 private array connparmcache;
 private int reconnected;
+private int lastping = time(1);
+private Thread.Condition resynced;
+private Thread.Mutex resyncmux;
 
 protected string _sprintf(int type) {
   string res;
+  if (!this)					// Not in destructed objects
+    return "(destructed)";
   switch(type) {
     case 'O':
       res = sprintf(DRIVERNAME"(%s@%s:%d/%s,%d,%d)",
        proxy.user, proxy.host, proxy.port, proxy.database,
-       proxy.c?->socket && proxy.c->socket->query_fd(), proxy.backendpid);
+       proxy.c->?socket && proxy.c->socket->query_fd(), proxy.backendpid);
       break;
   }
   return res;
@@ -145,10 +150,12 @@ protected string _sprintf(int type) {
 //!     statement),
 //!     but it can speed up parsing due to increased parallelism.
 //!   @member int "cache_autoprepared_statements"
-//!	If set to zero, it disables the automatic statement prepare and
+//!	If set to one, it enables the automatic statement prepare and
 //!	cache logic; caching prepared statements can be problematic
 //!	when stored procedures and tables are redefined which leave stale
 //!	references in the already cached prepared statements.
+//!     The default is off, because PostgreSQL 10.1 (at least)
+//!     has a bug that makes it spike to 100% CPU sometimes when this is on.
 //!   @member string "client_encoding"
 //!	Character encoding for the client side, it defaults to using
 //!	the default encoding specified by the database, e.g.
@@ -213,7 +220,9 @@ protected void create(void|string host, void|string database,
 //! @seealso
 //!   @[big_query()]
 /*semi*/final string error(void|int clear) {
-  throwdelayederror(proxy);
+  mixed err = catch(throwdelayederror(proxy));
+  if (!clear && err)
+    throw(err);
   return proxy.geterror(clear);
 }
 
@@ -256,9 +265,16 @@ protected void create(void|string host, void|string database,
 //! @seealso
 //!   @[is_open()]
 /*semi*/final int ping() {
+  int t, ret;
   waitauthready();
-  return is_open()
-   && !catch(proxy.c->start()->sendcmd(FLUSHSEND)) ? !!reconnected : -1;
+  if ((ret = is_open())
+     // Pinging more frequently than MINPINGINTERVAL seconds
+     // is suppressed to avoid artificial TCP-ACK latency
+   && (t = time(1)) - lastping > MINPINGINTERVAL
+   && (ret = !catch(proxy.c->start()->sendcmd(FLUSHSEND))))
+    lastping = t;
+  // After catch(start()) we might have been destructed
+  return this && ret ? !!reconnected : -1;
 }
 
 //! Cancels all currently running queries in this session.
@@ -283,7 +299,7 @@ protected void create(void|string host, void|string database,
 //!   @url{https://www.postgresql.org/docs/current/static/multibyte.html@}
 /*semi*/final void set_charset(string charset) {
   if(charset)
-    big_query(sprintf("SET CLIENT_ENCODING TO '%s'", quote(charset)));
+    textquery(sprintf("SET CLIENT_ENCODING TO '%s'", quote(charset)));
 }
 
 //! @returns
@@ -462,11 +478,11 @@ private string glob2reg(string glob) {
 private void waitauthready() {
   if (proxy.waitforauthready) {
     PD("%d Wait for auth ready %O\n",
-     proxy.c?->socket && proxy.c->socket->query_fd(), backtrace()[-2]);
+     proxy.c->?socket && proxy.c->socket->query_fd(), backtrace()[-2]);
     Thread.MutexKey lock = proxy.shortmux->lock();
     catch(PT(proxy.waitforauthready->wait(lock)));
     PD("%d Wait for auth ready released.\n",
-     proxy.c?->socket && proxy.c->socket->query_fd());
+     proxy.c->?socket && proxy.c->socket->query_fd());
   }
 }
 
@@ -480,7 +496,10 @@ private void waitauthready() {
 }
 
 protected void _destruct() {
-  destruct(proxy);
+  if (proxy) {
+    proxy.unnamedstatement = 0;		// Forget about pending statements
+    destruct(proxy);
+  }
 }
 
 //! For PostgreSQL this function performs the same function as @[resync()].
@@ -491,23 +510,38 @@ protected void _destruct() {
   resync();
 }
 
+private .pgsql_util.Result textquery(string q) {
+  return big_query(q, (["_text":1]));
+}
+
+private void resyncdone() {
+  Thread.MutexKey lock = resyncmux->lock();
+  resynced.signal();			// Allow resync() to continue
+}
+
 private void reset_dbsession() {
-  proxy.statementsinflight->wait_till_drained();
-  proxy.delayederror = 0;
-  error(1);
-  big_query("ROLLBACK");
-  big_query("RESET ALL");
-  big_query("CLOSE ALL");
-  big_query("DISCARD TEMP");
+  mixed err = catch {
+    proxy.statementsinflight->wait_till_drained();
+    error(1);
+    .pgsql_util.Result res
+     = textquery("ROLLBACK;RESET ALL;CLOSE ALL;DISCARD TEMP");
+    while (res->fetch_row());
+  };
+  if (err && !proxy.delayederror)
+    proxy.delayederror = err;
+  resyncdone();
 }
 
 private void resync_cb() {
   switch (proxy.backendstatus) {
+    default:
+      resyncdone();
+      break;
     case 'T':case 'E':
       foreach (proxy.prepareds; ; mapping tp) {
-        m_delete(tp,"datatypeoid");
-        m_delete(tp,"datarowdesc");
-        m_delete(tp,"datarowtypes");
+        m_delete(tp, "datatypeoid");
+        m_delete(tp, "datarowdesc");
+        m_delete(tp, "datarowtypes");
       }
       Thread.Thread(reset_dbsession);	  // Urgently and deadlockfree
   }
@@ -539,14 +573,20 @@ private void resync_cb() {
       PD("Statementsinflight: %d  Portalsinflight: %d\n",
        proxy.statementsinflight, proxy.portalsinflight);
       if(!proxy.waitforauthready) {
+        if (!resynced) {
+          resynced = Thread.Condition();
+          resyncmux = Thread.Mutex();
+        }
+        Thread.MutexKey lock = resyncmux->lock();
         proxy.readyforquery_cb = resync_cb;
         proxy.sendsync();
+        resynced.wait(lock);	      // Wait for the db to finish
       }
       return;
     };
     PD("%O\n", err);
   }
-  if (sizeof(proxy.lastmessage))
+  if (proxy && proxy.lastmessage && sizeof(proxy.lastmessage))
     ERROR(proxy.a2nls(proxy.lastmessage));
 }
 
@@ -658,7 +698,7 @@ private void resync_cb() {
 //! @seealso
 //!   @[drop_db()]
 /*semi*/final void create_db(string db) {
-  big_query(sprintf("CREATE DATABASE %s", db));
+  textquery(sprintf("CREATE DATABASE %s", db));
 }
 
 //! This function destroys a database and all the data it contains (assuming
@@ -672,7 +712,7 @@ private void resync_cb() {
 //! @seealso
 //!   @[create_db()]
 /*semi*/final void drop_db(string db) {
-  big_query(sprintf("DROP DATABASE %s", db));
+  textquery(sprintf("DROP DATABASE %s", db));
 }
 
 //! @returns
@@ -694,7 +734,7 @@ private void resync_cb() {
 //! @param glob
 //! If specified, list only those databases matching it.
 /*semi*/final array(string) list_dbs (void|string glob) {
-  array row, ret = .pgsql_util.emptyarray;
+  array row, ret = ({});
   .pgsql_util.Result res=big_query("SELECT d.datname "
                                          "FROM pg_database d "
                                          "WHERE d.datname ILIKE :glob "
@@ -712,7 +752,7 @@ private void resync_cb() {
 //! @param glob
 //! If specified, list only the tables with matching names.
 /*semi*/final array(string) list_tables (void|string glob) {
-  array row, ret = .pgsql_util.emptyarray;
+  array row, ret = ({});
   .pgsql_util.Result res = big_query(     // due to missing schemasupport
    // This query might not work on PostgreSQL 7.4
    "SELECT CASE WHEN 'public'=n.nspname THEN '' ELSE n.nspname||'.' END "
@@ -771,7 +811,7 @@ private void resync_cb() {
 //! Setting it to @expr{*@} will include system columns in the list.
 /*semi*/final array(mapping(string:mixed)) list_fields(void|string table,
  void|string glob) {
-  array row, ret = .pgsql_util.emptyarray;
+  array row, ret = ({});
   string schema;
 
   sscanf(table||"*", "%s.%s", schema, table);
@@ -924,7 +964,10 @@ private void startquery(int forcetext, .pgsql_util.Result portal, string q,
     if (!sizeof(preparedname) || !tp || !tp.preparedname) {
       if (!sizeof(preparedname))
         preparedname =
-          (portal._unnamedstatementkey = proxy.unnamedstatement->trylock(1))
+          (portal._unnamedstatementkey =
+            (proxy.options.cache_autoprepared_statements
+             ? proxy.unnamedstatement->trylock
+             : proxy.unnamedstatement->lock)(1))
            ? "" : PTSTMTPREFIX + int2hex(ptstmtcount++);
       PD("Parse statement %O=%O\n", preparedname, q);
       plugbuffer = c->start();
@@ -961,9 +1004,12 @@ private void startquery(int forcetext, .pgsql_util.Result portal, string q,
     }
     if ((portal._tprepared=tp) && tp.datatypeoid) {
       mixed e = catch(portal->_preparebind(tp.datatypeoid));
-      if (e && !portal.delayederror) {
-        portal._unnamedstatementkey = 0;	// Release early, release often
+      if (!this)				// Already destructed?
         throw(e);
+      if (e) {
+        portal->_purgeportal();
+        if (!portal.delayederror)
+          throw(e);
       }
     }
     if (!proxy.unnamedstatement)
@@ -992,6 +1038,8 @@ private void startquery(int forcetext, .pgsql_util.Result portal, string q,
 //!   (e.g. references to temporary tables created in the preceding
 //!   statement),
 //!   but it can speed up parsing due to increased parallelism.
+//!  @member int ":_debug"
+//!   Sets the debuglevel for query tracing.
 //! @endmapping
 //!
 //! @note
@@ -1033,13 +1081,13 @@ private void startquery(int forcetext, .pgsql_util.Result portal, string q,
 /*semi*/final variant .pgsql_util.Result big_query(string q,
                                    void|mapping(string|int:mixed) bindings,
                                    void|int _alltyped) {
-  throwdelayederror(proxy);
   string preparedname = "";
   mapping(string:mixed) options = proxy.options;
   .pgsql_util.conxion c = proxy.c;
   int forcecache = -1, forcetext = options.text_query;
   int syncparse = zero_type(options.sync_parse)
                    ? -1 : options.sync_parse;
+  int debuglevel;
   if (proxy.waitforauthready)
     waitauthready();
   string cenc = proxy.runtimeparameter[CLIENT_ENCODING];
@@ -1055,14 +1103,14 @@ private void startquery(int forcetext, .pgsql_util.Result portal, string q,
   array from;
   if (bindings) {
     if (forcetext)
-      q = .sql_util.emulate_bindings(q, bindings, this),
-      paramValues = .pgsql_util.emptyarray;
+      q = emulate_bindings(q, bindings),
+      paramValues = ({});
     else {
       int pi = 0;
       paramValues = allocate(sizeof(bindings));
       from = allocate(sizeof(bindings));
       array(string) litfrom, litto, to = allocate(sizeof(bindings));
-      litfrom = litto = .pgsql_util.emptyarray;
+      litfrom = ({}); litto = ({});
       foreach (bindings; mixed name; mixed value) {
         if (stringp(name)) {	       // Throws if mapping key is empty string
           if (name[0] != ':')
@@ -1077,6 +1125,9 @@ private void startquery(int forcetext, .pgsql_util.Result portal, string q,
                 break;
               case ":_sync":
                 syncparse = (int)value;
+                break;
+              case ":_debug":
+                debuglevel = (int)value;
                 break;
             }
             continue;
@@ -1097,14 +1148,14 @@ private void startquery(int forcetext, .pgsql_util.Result portal, string q,
         paramValues = paramValues[.. pi];
         q = replace(q, litfrom += from = from[.. pi], litto += to = to[.. pi]);
       } else {
-        paramValues = .pgsql_util.emptyarray;
+        paramValues = ({});
         if (sizeof(litfrom))
           q = replace(q, litfrom, litto);
       }
       from = ({from, to, paramValues});
     }
   } else
-    paramValues = .pgsql_util.emptyarray;
+    paramValues = ({});
   if (String.width(q) > 8)
     ERROR("Wide string literals in %O not supported\n", q);
   if (has_value(q, "\0"))
@@ -1118,7 +1169,16 @@ private void startquery(int forcetext, .pgsql_util.Result portal, string q,
    */
   int transtype = .pgsql_util.transendprefix->match(q) ? TRANSEND
    : .pgsql_util.transbeginprefix->match(q) ? TRANSBEGIN : NOTRANS;
-  if (transtype != NOTRANS)
+  {
+    int inerror = proxy.backendstatus == 'E';
+    if (inerror && transtype == TRANSEND)
+      proxy.sendsync();
+    throwdelayederror(proxy);
+    if (inerror && transtype != TRANSEND)
+      ERROR("Current transaction is aborted, "
+       "commands ignored until end of transaction");
+  }
+  if (transtype != NOTRANS || .pgsql_util.nodataresprefix->match(q))
     tp = .pgsql_util.describenodata;		// Description already known
   else if (!forcetext && forcecache == 1
         || forcecache && sizeof(q) >= MINPREPARELENGTH) {
@@ -1130,8 +1190,7 @@ private void startquery(int forcetext, .pgsql_util.Result portal, string q,
 #endif
         preparedname = tp.preparedname;
       } else if(tp.trun && tp.tparse*FACTORPLAN >= tp.trun
-              && (undefinedp(options.cache_autoprepared_statements)
-             || options.cache_autoprepared_statements))
+              && options.cache_autoprepared_statements)
         preparedname = PREPSTMTPREFIX + int2hex(pstmtcount++);
     } else {
       if (proxy.totalhits >= cachedepth)
@@ -1167,6 +1226,8 @@ private void startquery(int forcetext, .pgsql_util.Result portal, string q,
   .pgsql_util.Result portal;
   portal = .pgsql_util.Result(proxy, c, q, portalbuffersize, _alltyped,
    from, forcetext, timeout, syncparse, transtype);
+  if (debuglevel)
+    werror("{{\n%s\n}}\n%s\n", q, portal->_showbindings() * "\n");
   portal._tprepared = tp;
 #ifdef PG_STATS
   portalsopened++;
@@ -1177,7 +1238,8 @@ private void startquery(int forcetext, .pgsql_util.Result portal, string q,
     Thread.Thread(startquery, forcetext, portal, q, tp, preparedname);
   else
     startquery(forcetext, portal, q, tp, preparedname);
-  throwdelayederror(portal);
+  if (portal)			  // Catches race where portal already imploded
+    throwdelayederror(portal);
   return portal;
 }
 

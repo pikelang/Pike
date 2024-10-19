@@ -75,6 +75,16 @@ static void f_hp_exit( struct object *UNUSED(o) )
 static void f_hp_feed( INT32 args )
 /*! @decl array(string|mapping) feed(string data, void|int(0..1) keep_case)
  *!
+ *! Feeds data into the parser. Once enough data has been fed the
+ *! result array is returned. Feeding data after that destroys the
+ *! state of the parser. For typical use, once the result array is
+ *! returned, extract the trailing data, check it against expected
+ *! payload (e.g. as defined by the Content-Length header or chunked
+ *! transfer encoding), and add incoming data to that until enough is
+ *! received. If the connection is pipe-lining, send excess data to a
+ *! new header parser object. Note that the trailing data from the
+ *! first parse object could contain the start of the next response.
+ *!
  *! @param data
  *!   Fragment of data to parse.
  *!
@@ -83,6 +93,8 @@ static void f_hp_feed( INT32 args )
  *!   mapping. If this parameter is @expr{1@} the header names are kept as is.
  *!
  *! @returns
+ *!   Returns @expr{0@} (zero) if more data is needed, and otherwise an
+ *!   array with the following content:
  *!   @array
  *!     @elem string 0
  *!       Trailing data.
@@ -737,7 +749,8 @@ PIKE_MODULE_INIT
   ADD_FUNCTION("html_encode_string", f_html_encode_string,
 	       tFunc(tMix,tStr), 0 );
 
-  ADD_FUNCTION("websocket_mask", f_websocket_mask, tFunc(tStr0 tStr0, tStr0), 0);
+  ADD_FUNCTION("websocket_mask", f_websocket_mask,
+	       tFunc(tStr8 tStr8, tStr8), 0);
 
   start_new_program();
   ADD_STORAGE( struct header_buf  );

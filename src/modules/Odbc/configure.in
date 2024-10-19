@@ -91,8 +91,6 @@ EOF
       done
     fi
 
-    AC_MSG_CHECKING(for ODBC library-directory)
-
     AC_CACHE_VAL(pike_cv_odbc_lib_dir, [
 
       pike_cv_odbc_lib_dir=''
@@ -113,17 +111,22 @@ EOF
 	  $with_root/usr/odbc/lib $with_root/usr/lib/odbc $with_root/usr/lib \
 	  $with_root/lib/odbc $with_root/lib; do
   	if test -d $bardir/.; then
-  	  if ls $bardir/*odbc* >/dev/null 2>&1 ; then
-  	    pike_cv_odbc_lib_dir="$bardir $pike_cv_odbc_lib_dir"
-  	  else
-  	    :
-  	  fi
+          for suff in $pike_cv_abi_suffixes; do
+            PIKE_CHECK_ABI_DIR($bardir$suff, [
+                if ls $bardir$suff/*odbc* >/dev/null 2>&1 ; then
+                  pike_cv_odbc_lib_dir="$bardir$suff $pike_cv_odbc_lib_dir"
+                else
+                  :
+                fi
+              ])
+          done
   	else
   	  :
   	fi
       done
     ])
 
+    AC_MSG_CHECKING(for ODBC library-directory)
     AC_MSG_RESULT($pike_cv_odbc_lib_dir)
 
     if test "x$pike_cv_odbc_lib_dir" = x; then :; else
@@ -167,7 +170,11 @@ EOF
   	else
   	  AC_CHECK_LIB(socket, socket, [
   	    LIBS="-lsocket $LIBS"
-  	  ], [])
+          ], [
+            AC_CHECK_LIB(network, socket, [
+              LIBS="-lnetwork $LIBS"
+            ], [])
+          ])
   	fi
   	if echo $LIBS|grep -- -lnsl >&5 2>&5; then
   	  :
@@ -277,6 +284,39 @@ EOF
     PIKE_CHECK_ODBC_TYPEDEF(SQLHENV)
     PIKE_CHECK_ODBC_TYPEDEF(SQLHDBC)
     PIKE_CHECK_ODBC_TYPEDEF(SQLHSTMT)
+
+    AC_CHECK_SIZEOF(SQLWCHAR, 2, [
+#ifdef HAVE_ISQL_H
+
+#include <isql.h>
+
+#else /* !HAVE_ISQL_H */
+
+#ifdef HAVE_WINDOWS_H
+#include <windows.h>
+#else /* !HAVE_WINDOWS_H */
+#ifdef HAVE_QEODBC_H
+#include <qeodbc.h>
+#endif /* HAVE_QEODBC_H */
+#endif /* HAVE_WINDOWS_H */
+
+#ifdef HAVE_SQL_H
+#include <sql.h>
+#endif /* HAVE_SQL_H */
+
+#endif /* HAVE_ISQL_H */
+
+#ifdef HAVE_ISQLEXT_H
+#include <isqlext.h>
+
+#else /* !HAVE_ISQLEXT_H */
+
+#ifdef HAVE_SQLEXT_H
+#include <sqlext.h>
+#endif /* HAVE_SQLEXT_H */
+
+#endif /* HAVE_ISQLEXT_H */
+                    ])
   else :; fi
 else
   :

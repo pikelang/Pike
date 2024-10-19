@@ -2,13 +2,7 @@
  *
  */
 
-#if constant(Crypto.Hash)
-#define HASH Crypto.Hash
-#else
-#define HASH object
-#endif
-
-#pike __REAL_VERSION__
+#pike 7.9
 
 import Standards.ASN1.Types;
 
@@ -20,7 +14,7 @@ import Standards.ASN1.Types;
 //!   crypto hash object such as @[Crypto.SHA1] or @[Crypto.MD5]
 //! @seealso
 //!   @[Crypto.RSA()->sign]
-string build_digestinfo(string msg, HASH hash)
+string build_digestinfo(string msg, Crypto.Hash hash)
 {
   if(!hash->asn1_id) error("Unknown ASN.1 id for hash.\n");
 

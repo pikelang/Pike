@@ -219,6 +219,11 @@ static void decode_layers_and_masks( struct psd_image *dst,
     layer->num_channels = psd_read_ushort( src );
     if (layer->num_channels * 6 > src->len)
       Pike_error("Too many channels.\n");
+
+    if (layer->num_channels > 24)
+      Pike_error("Cannot process PSDs with more than 24 layers (PSD claims to have: %d).\n",
+		 layer->num_channels);
+
     for(cnt=0; cnt<layer->num_channels; cnt++)
     {
       layer->channel_info[cnt].id = psd_read_ushort(src);
@@ -333,6 +338,9 @@ static void f_decode_packbits_encoded(INT32 args)
 	       &src, &nelems, &width,
 	       &multiplier, &compression);
 
+  if (nelems <= 0 || width <= 0 || multiplier <= 0)
+    Pike_error("Malformed Photoshop PSD file.\n");
+
   nelems *= multiplier;
   b.str = (unsigned char *)src->str;
   b.len = src->len;
@@ -377,7 +385,7 @@ static void f_decode_image_channel( INT32 args )
   struct object *io;
   unsigned char *source;
   rgb_group *dst;
-  get_all_args( NULL, args, "%i%i%S", &w,&h,&s);
+  get_all_args( NULL, args, "%i%i%n", &w,&h,&s);
 
   ref_push_string( s );
   push_int( h );
@@ -411,7 +419,7 @@ static void f_decode_image_data( INT32 args )
   struct object *io;
   unsigned char *source, *source2, *source3, *source4;
   rgb_group *dst;
-  get_all_args( NULL, args, "%i%i%i%i%i%S%S",
+  get_all_args( NULL, args, "%i%i%i%i%i%n%n",
                 &w,&h,&d,&m,&c,&s,&ct);
 
   if(!ct->len) ct = NULL;
@@ -427,6 +435,8 @@ static void f_decode_image_data( INT32 args )
   pop_stack();
   if(s->len < w*h*d)
     Pike_error("Not enough data in string for this channel\n");
+  if (ct && (d == 1 || d == 2) && w && h && ct->len < 256 * 3)
+    Pike_error("Not enough data in color table.\n");
   source = (unsigned char *)s->str;
   source2 = source+w*h;
   source3 = source+w*h*2;
@@ -741,7 +751,7 @@ static void image_f_psd___decode( INT32 args )
 {
   struct pike_string *s;
   struct buffer b;
-  get_all_args( NULL, args, "%S", &s );
+  get_all_args( NULL, args, "%n", &s );
   if(args > 1)
     pop_n_elems( args-1 );
   if(s->len < 26+4+4+4 ) /* header+color mode+image res+layers */
@@ -773,7 +783,7 @@ static void f_apply_cmap( INT32 args )
   rgb_group *d;
   struct pike_string *cmap;
   int n;
-  get_all_args( NULL, args, "%o%S", &io, &cmap );
+  get_all_args( NULL, args, "%o%n", &io, &cmap );
   if(cmap->len < 256*3)
     Pike_error("Invalid colormap resource\n");
   if(!(i = get_storage( io, image_program )))

@@ -10,6 +10,8 @@
 
 #include "stralloc.h"
 
+#include "time_stuff.h"
+
 struct string_builder
 {
   struct pike_string *s;
@@ -90,14 +92,55 @@ PMOD_EXPORT void string_builder_append_integer(struct string_builder *s,
 					       int flags,
 					       size_t min_width,
 					       size_t precision);
+PMOD_EXPORT void string_builder_append_json_double(struct string_builder *s,
+                                                   double d);
+PMOD_EXPORT void string_builder_append_json_float_type(struct string_builder *s,
+                                                       FLOAT_TYPE d);
 PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 					 const char *fmt,
 					 va_list args);
 PMOD_EXPORT void string_builder_sprintf(struct string_builder *s,
-					const char *fmt, ...);
+					const char *fmt, ...)
+  ATTRIBUTE((format (printf, 2, 3)));
+PMOD_EXPORT void string_builder_strftime(struct string_builder *s,
+                                         const char *fmt,
+                                         struct tm *tm);
+PMOD_EXPORT const char *pike_strptime(const char *s,
+                                      const char *fmt,
+                                      struct tm *tm);
+PMOD_EXPORT void string_builder_append_disassembly(struct string_builder *s,
+						   size_t address,
+						   const void *start,
+						   const void *end,
+						   const char *opcode,
+						   const char **params,
+						   const char *comment);
+PMOD_EXPORT void string_builder_vsprintf_disassembly(struct string_builder *s,
+						     size_t address,
+						     const void *start,
+						     const void *end,
+						     const char *comment,
+						     const char *fmt,
+						     va_list args);
+PMOD_EXPORT void string_builder_sprintf_disassembly(struct string_builder *s,
+						    size_t address,
+						    const void *start,
+						    const void *end,
+						    const char *comment,
+						    const char *fmt, ...)
+  ATTRIBUTE((format (printf, 6, 7)));
+PMOD_EXPORT void string_builder_append_disassembly_data(struct string_builder *s,
+							size_t address,
+							const void *start,
+							const void *end,
+							const char *comment);
 PMOD_EXPORT void reset_string_builder(struct string_builder *s);
 PMOD_EXPORT void free_string_builder(struct string_builder *s);
 PMOD_EXPORT struct pike_string *finish_string_builder(struct string_builder *s);
+PMOD_EXPORT ptrdiff_t write_and_reset_string_builder(int fd,
+						     struct string_builder *s);
+PMOD_EXPORT struct string_builder *
+  string_builder_from_string_buffer(struct object *o);
 void init_string_buffer(void);
 void exit_string_buffer(void);
 /* Prototypes end here */

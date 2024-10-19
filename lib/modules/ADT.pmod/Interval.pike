@@ -1,116 +1,150 @@
+// -*- mode: Pike; c-basic-offset: 4; -*-
+
 #pike __REAL_VERSION__
 
-class Boundary(mixed x) {
-    int (0..1) `<(object b) {
+//! Type for the limits of the interval.
+__generic__ mixed RangeType;
+
+//!
+class Boundary (< RangeType = RangeType >) (RangeType x) {
+    //!
+    protected int (0..1) `<(RangeType|Boundary(<RangeType>) b) {
 	if (!objectp(b) || !Program.inherits(object_program(b), Boundary)) {
 	    return x < b;
 	}
 	return x < b->x;
     }
 
-    int (0..1) `>(object b) {
+    //!
+    protected int (0..1) `>(RangeType|Boundary(<RangeType>) b) {
 	if (!objectp(b) || !Program.inherits(object_program(b), Boundary)) {
 	    return x > b;
 	}
 	return x > b->x;
     }
 
-    string _sprintf(int type) {
+    //!
+    protected string _sprintf(int type) {
 	return sprintf("%O", x);
     }
 
+    //!
     int unix_time() {
-	return x->unix_time();
+        return ([object](mixed)x)->unix_time();
     }
 
+    //!
     int `ux() {
 	return unix_time();
     }
 
-    mixed `-(object b) {
+    //!
+    protected RangeType `-(RangeType|Boundary(<RangeType>) b) {
 	if (intp(x) || floatp(x)) {
-	    return x - b->x;
+            return [object(RangeType)](mixed)
+                (([int|float](mixed)x) - ([int|float](mixed)b->x));
 	} else if (stringp(x)) {
 	    error("lets see how we do this ;) \n");
 	}
     }
+
+    //!
+    protected Boundary (< RangeType >) `~();
 }
 
-class Open {
-    inherit Boundary;
+//!
+class Open (< RangeType = RangeType >) {
+    //!
+    inherit Boundary (< RangeType >);
 
-    int (0..1) `==(object b) {
+    //!
+    protected int (0..1) `==(RangeType|Boundary(<RangeType>) b) {
 	return objectp(b) && Program.inherits(object_program(b), Open)
 		&& b->x == x;
     }
 
-    int (0..1) `<(mixed b) {
+    //!
+    protected int (0..1) `<(RangeType|Boundary(<RangeType>) b) {
 	if (!objectp(b) || !Program.inherits(object_program(b), Boundary)) {
 	    return x <= b;
 	}
 	return ::`<(b);
     }
 
-    int (0..1) `>(mixed b) {
+    //!
+    protected int (0..1) `>(RangeType|Boundary(<RangeType>) b) {
 	if (!objectp(b) || !Program.inherits(object_program(b), Boundary)) {
 	    return x >= b;
 	}
 	return ::`>(b);
     }
 
-    int(0..1) overlaps(object b) {
+    //!
+    int(0..1) overlaps(RangeType|Boundary(<RangeType>) b) {
 	if (this > b) return 1;
 	return 0;
     }
 
-    int(0..1) touches(object b) {
+    //!
+    int(0..1) touches(Boundary(<RangeType>) b) {
 	werror("%O touches %-O == %d\n", this, b, overlaps(b) || (this->x == b->x && Program.inherits(object_program(b), Closed)));
 	return overlaps(b) || (this->x == b->x && Program.inherits(object_program(b), Closed));
     }
 
-    string _sprintf(int type, mapping info) {
+    //!
+    protected string _sprintf(int type, mapping info) {
 	if (info->flag_left) {
 	    return sprintf("(%O", x);
 	}
 	return sprintf("%O)", x);
     }
 
-    Boundary `~() {
+    //!
+    protected Boundary `~() {
 	return Closed(x);
     }
 }
 
-class Closed {
-    inherit Boundary;
+//!
+class Closed (< RangeType = RangeType >) {
+    //!
+    inherit Boundary (< RangeType >);
 
-    int (0..1) `==(object b) {
+    //!
+    protected int (0..1) `==(RangeType|Boundary(<RangeType>) b) {
 	return objectp(b) && Program.inherits(object_program(b), Closed)
 		&& b->x == x;
     }
 
-    int(0..1) overlaps(object b) {
+    //!
+    int(0..1) overlaps(RangeType|Boundary(<RangeType>) b) {
 	if (this > b || (Program.inherits(object_program(b), Closed) && b == this)) return 1;
 	return 0;
     }
 
-    int(0..1) touches(object b) {
+    //!
+    int(0..1) touches(RangeType|Boundary(<RangeType>) b) {
 	werror("%O touches %-O == %d\n", this, b, this > b);
 	if (this < b) return 0;
 	return 1;
     }
-    string _sprintf(int type, mapping info) {
+
+    //!
+    protected string _sprintf(int type, mapping info) {
 	if (info->flag_left) {
 	    return sprintf("[%O", x);
 	}
 	return sprintf("%O]", x);
     }
 
-    Boundary `~() {
+    //!
+    protected Boundary (< RangeType >) `~() {
 	return Open(x);
     }
 }
 
-Boundary min(Boundary a, Boundary b) {
+//!
+Boundary(<RangeType>) min(Boundary(<RangeType>) a, Boundary(<RangeType>) b) {
     if (a < b) return a;
     if (b < a) return b;
 
@@ -119,30 +153,41 @@ Boundary min(Boundary a, Boundary b) {
     return a;
 }
 
-Boundary max(Boundary a, Boundary b) {
+//!
+Boundary(<RangeType>) max(Boundary(<RangeType>) a, Boundary(<RangeType>) b) {
     if (a == min(a,b)) return b;
     else return a;
 }
 
-Boundary a, b;
+//!
+Boundary(<RangeType>) a, b;
 
-mixed `->start() { return a->x; }
-mixed `->stop() { return b->x; }
+//!
+RangeType `->start() { return a->x; }
 
-mixed `->start=(mixed v) {
+//!
+RangeType `->stop() { return b->x; }
+
+//!
+RangeType `->start=(RangeType v) {
     a = Closed(v);
     return v;
 }
-mixed `->stop=(mixed v) {
+
+//!
+RangeType `->stop=(RangeType v) {
     b = Closed(v);
     return v;
 }
 
-string _sprintf(int type) {
+//!
+protected string _sprintf(int type) {
     return sprintf("%-O..%O", a, b);
 }
 
-void create(mixed a, mixed b) {
+//!
+protected void create(RangeType|Boundary(<RangeType>) a,
+                      RangeType|Boundary(<RangeType>) b) {
     if (!objectp(a) || !Program.inherits(object_program(a), Boundary)) {
 	a = Closed(a);
     }
@@ -154,7 +199,8 @@ void create(mixed a, mixed b) {
     this::b = b;
 }
 
-int(0..1) `==(mixed i) {
+//!
+protected int(0..1) `==(mixed i) {
     return objectp(i) && Program.inherits(object_program(i), this_program) && a == i->a && b == i->b;
 }
 
@@ -164,8 +210,9 @@ int(0..1) `==(mixed i) {
 //  3	[..(..]..)
 //  4	[..]..(..)
 
-this_program `&(this_program i) {
-    Boundary l, r;
+//!
+protected this_program(<RangeType>)|zero `&(this_program(<RangeType>) i) {
+    Boundary(<RangeType>) l, r;
 
     l = max(a, i->a);
     r = min(b, i->b);
@@ -175,8 +222,9 @@ this_program `&(this_program i) {
     return 0;
 }
 
-int(0..1) overlaps(this_program i) {
-    Boundary l, r;
+//!
+int(0..1) overlaps(this_program(<RangeType>) i) {
+    Boundary(<RangeType>) l, r;
 
     l = max(a, i->a);
     r = min(b, i->b);
@@ -184,8 +232,9 @@ int(0..1) overlaps(this_program i) {
     return r->overlaps(l);
 }
 
-int(0..1) touches(this_program i) {
-    Boundary l, r;
+//!
+int(0..1) touches(this_program(<RangeType>) i) {
+    Boundary(<RangeType>) l, r;
 
     l = max(a, i->a);
     r = min(b, i->b);
@@ -193,12 +242,14 @@ int(0..1) touches(this_program i) {
     return r->touches(l);
 }
 
-this_program clone(mixed ... args) {
-    return this_program(@args);
+//!
+this_program(<RangeType>) clone(mixed ... args) {
+    return this_program(<RangeType>)(@args);
 }
 
 
-this_program `|(this_program i) {
+//!
+protected this_program(<RangeType>) `|(this_program(<RangeType>) i) {
     if ((this & i)
     || (b->x <= i->a->x && b->touches(i->a))
     || (i->b->x <= a->x && i->b->touches(a))) {
@@ -208,12 +259,14 @@ this_program `|(this_program i) {
     error("%O and %O need to touch.\n", this, i);
 }
 
-this_program `+(this_program i) {
+//!
+protected this_program(<RangeType>) `+(this_program(<RangeType>) i) {
     return this | i;
 }
 
-this_program `-(this_program interval) {
-    this_program i = interval & this;
+//!
+protected this_program(<RangeType>)|zero `-(this_program(<RangeType>) interval) {
+    this_program(<RangeType>) i = interval & this;
     if (i) {
 	if (i == this) return 0;
 
@@ -228,11 +281,13 @@ this_program `-(this_program interval) {
     return this;
 }
 
-int|float _sizeof() {
+//!
+protected int|float _sizeof() {
     return b-a;
 }
 
-int(0..1) contains(mixed x) {
+//!
+int(0..1) contains(RangeType|this_program(<RangeType>) x) {
     if (!objectp(x) || !Program.inherits(object_program(x), ADT.Interval)) {
 	x = this_program(Closed(x), Closed(x));
     }
@@ -243,8 +298,11 @@ int(0..1) contains(mixed x) {
  * implement or remap the api offered by the timerange thing.
  */
 
-mixed beginning() { return start; }
-mixed end() { return stop; }
+//!
+RangeType beginning() { return start; }
+
+//!
+RangeType end() { return stop; }
 
 protected mixed cast(string type) {
   if( type=="array" )

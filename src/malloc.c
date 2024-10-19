@@ -2,7 +2,9 @@
 /* This is only used when --enable-dlmalloc is specified (default on
  * Windows). */
 #include "global.h"
+#ifdef PIKE_THREADS
 #define USE_LOCKS 1
+#endif
 #define USE_DL_PREFIX 1
 /* Further pike changes below: PMOD_EXPORTs and lines marked "PIKE". */
 /* End pike preamble */
@@ -1161,11 +1163,17 @@ int mspace_mallopt(int, int);
 #endif /* LACKS_STDLIB_H */
 #ifdef DEBUG
 #if ABORT_ON_ASSERT_FAILURE
+#ifdef assert /* PIKE change */
+#undef assert /* PIKE change */
+#endif        /* PIKE change */
 #define assert(x) if(!(x)) ABORT
 #else /* ABORT_ON_ASSERT_FAILURE */
 #include <assert.h>
 #endif /* ABORT_ON_ASSERT_FAILURE */
 #else  /* DEBUG */
+#ifdef assert /* PIKE change */
+#undef assert /* PIKE change */
+#endif        /* PIKE change */
 #define assert(x)
 #endif /* DEBUG */
 #ifndef LACKS_STRING_H

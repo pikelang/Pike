@@ -8,7 +8,7 @@ inherit .RDF;
 //! The RDF Schema XML-namespace.
 constant rdfs_ns = "http://www.w3.org/2000/01/rdf-schema#";
 
-void create() {
+protected void create() {
   namespaces[rdfs_ns] = "rdfs";
 }
 
@@ -16,7 +16,7 @@ void create() {
 class RDFSResource {
   inherit URIResource;
 
-  void create(string id) {
+  protected void create(string id) {
     ::create(rdfs_ns+id);
   }
 }

@@ -18,6 +18,7 @@
 #include "builtin_functions.h"
 #include "module_support.h"
 #include "pike_types.h"
+#include "bignum.h"
 
 
 #include "image.h"
@@ -69,8 +70,8 @@ extern struct program *image_program;
 
 
 static void tim_decode_rect(INT32 attr, unsigned char *src, rgb_group *dst,
-			    unsigned char *clut, unsigned int h,
-			    unsigned int w)
+			    unsigned char *clut, int clutlength,
+                            unsigned int h, unsigned int w)
 {
   INT32 cnt = h * w;
   switch(attr&7) {
@@ -90,9 +91,13 @@ static void tim_decode_rect(INT32 attr, unsigned char *src, rgb_group *dst,
        int i, cluti = (src[0]&0xf)*2;
        unsigned int p;
 
+       if (clutlength <= cluti + 1)
+         Pike_error("Malformed TIM image.\n");
+
+       p = clut[cluti]|(clut[cluti+1]<<8);
+
        for(i=0; i<2; i++)
        {
-	 p = clut[cluti]|(clut[cluti+1]<<8);
          dst->b = ((p&0x7c00)>>7)|((p&0x7000)>>12);
          dst->g = ((p&0x03e0)>>2)|((p&0x0380)>>7);
          dst->r = ((p&0x001f)<<3)|((p&0x001c)>>2);
@@ -105,7 +110,12 @@ static void tim_decode_rect(INT32 attr, unsigned char *src, rgb_group *dst,
    case MODE_CLUT8:
      while(cnt--) {
        int cluti = (src[0])*2;
-       unsigned int p = clut[cluti]|(clut[cluti+1]<<8);
+       unsigned int p;
+
+       if (clutlength <= cluti + 1)
+         Pike_error("Malformed TIM image.\n");
+
+       p = clut[cluti]|(clut[cluti+1]<<8);
 
        dst->b = ((p&0x7c00)>>7)|((p&0x7000)>>12);
        dst->g = ((p&0x03e0)>>2)|((p&0x0380)>>7);
@@ -174,7 +184,7 @@ void img_tim_decode(INT32 args, int header_only)
   INT32 attr;
   unsigned int h=0, w=0;
 
-  get_all_args(NULL, args, "%S", &str);
+  get_all_args(NULL, args, "%n", &str);
   clut=s=(unsigned char *)str->str;
   clut+=20;
   len = str->len;
@@ -203,6 +213,8 @@ void img_tim_decode(INT32 args, int header_only)
 
   if(attr&FLAG_CLUT) {
     bsize = s[0]|(s[1]<<8)|(s[2]<<16)|(s[3]<<24);
+    if (bsize > len || bsize < 0)
+      Pike_error("Malformed TIM.\n");
 #ifdef TIM_DEBUG
     printf("bsize: %d\n", bsize);
 #endif
@@ -211,6 +223,9 @@ void img_tim_decode(INT32 args, int header_only)
 
   /* FIXME: Unknown what this comes from */
   s += 4; len -= 4;
+
+  if (len < 8)
+    Pike_error("Malformed TIM.\n");
 
   switch(attr&7) {
    case MODE_DC15:
@@ -236,6 +251,9 @@ void img_tim_decode(INT32 args, int header_only)
      printf("CLUT4\n");
      printf("dx: %d, dy: %d\n", s[0]|(s[1]<<8), s[2]|(s[3]<<8));
 #endif
+     if (!(attr&FLAG_CLUT))
+       Pike_error("Malformed TIM image (CLUT mode but no CLUT bit)\n");
+
      s += 4; len -= 4;
      w = (s[0]|(s[1]<<8))*4;
      h = s[2]|(s[3]<<8);
@@ -249,6 +267,8 @@ void img_tim_decode(INT32 args, int header_only)
      printf("CLUT8\n");
      printf("dx: %d, dy: %d\n", s[0]|(s[1]<<8), s[2]|(s[3]<<8));
 #endif
+     if (!(attr&FLAG_CLUT))
+       Pike_error("Malformed TIM image (CLUT mode but no CLUT bit)\n");
      s += 4; len -= 4;
      w = (s[0]|(s[1]<<8))*2;
      h = s[2]|(s[3]<<8);
@@ -279,8 +299,16 @@ void img_tim_decode(INT32 args, int header_only)
   if(!header_only) {
     struct object *o;
     struct image *img;
+    INT32 bytes_needed;
 
-    if(len < (INT32)(bitpp*(h*w)/8))
+    if ((INT32)h < 0 || (INT32)w < 0
+        || DO_INT32_MUL_OVERFLOW(h, w, &bytes_needed)
+        || DO_INT32_MUL_OVERFLOW(bytes_needed, bitpp, &bytes_needed))
+    {
+      Pike_error("TIM Image too large.\n");
+    }
+
+    if(len < bytes_needed)
       Pike_error("short pixel data\n");
 
     push_static_text("image");
@@ -291,7 +319,7 @@ void img_tim_decode(INT32 args, int header_only)
     push_object(o);
     n++;
 
-    tim_decode_rect(attr, s, img->img, clut, h, w);
+    tim_decode_rect(attr, s, img->img, clut, bsize, h, w);
 
     if(hasalpha) {
       push_static_text("alpha");

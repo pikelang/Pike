@@ -61,6 +61,7 @@
 #include "interpret.h"
 #include "operators.h"
 #include "fdlib.h"
+#include "bignum.h"
 
 #define sp Pike_sp
 
@@ -181,12 +182,15 @@ static void f_cp(INT32 args)
 {
   char *from, *to;
   int ret;
-  get_all_args(NULL, args, "%s%s", &from, &to);
+  get_all_args(NULL, args, "%c%c", &from, &to);
   ret=CopyFile(from, to, 0);
   if(!ret) set_errno_from_win32_error (GetLastError());
   pop_n_elems(args);
   push_int(ret);
 }
+
+/*! @module System
+ */
 
 static void push_tchar(const TCHAR *buf, DWORD len)
 {
@@ -194,8 +198,9 @@ static void push_tchar(const TCHAR *buf, DWORD len)
     MKPCHARP(buf,my_log2(sizeof(TCHAR))),len));
 }
 
-static void push_regvalue(DWORD type, char* buffer, DWORD len)
+static void push_regvalue(DWORD type, char* buffer, DWORD len, int no_expand)
 {
+  struct pike_string *str;
   switch(type)
   {
     case REG_RESOURCE_LIST:
@@ -209,43 +214,79 @@ static void push_regvalue(DWORD type, char* buffer, DWORD len)
       if (!len) {
 	push_empty_string();
       } else {
-	push_string(make_shared_binary_string(buffer,len-1));
+      push_reg_sz:
+        str = begin_wide_shared_string((len>>1) - 1, sixteenbit);
+        str->flags |= STRING_CONVERT_SURROGATES;
+        memcpy(str->str, buffer, len);
+        push_string(end_shared_string(str));
       }
       break;
 
     case REG_EXPAND_SZ:
-      type =
-	ExpandEnvironmentStrings((LPCTSTR)buffer,
-				 buffer+len,
-                                 (DWORD)(sizeof(buffer)-len-1));
-      if(type>sizeof(buffer)-len-1 || !type)
-        Pike_error("Failed to expand data.\n");
-      push_text(buffer+len);
+      if (!len) {
+        push_empty_string();
+      } else {
+        if (no_expand) {
+          goto push_reg_sz;
+        }
+        str = begin_wide_shared_string(1024, sixteenbit);
+        str->flags |= STRING_CONVERT_SURROGATES;
+        len =
+          ExpandEnvironmentStringsW((p_wchar1 *)buffer, STR1(str), str->len);
+        /* NB: len includes the terminating NUL. */
+        if ((len >= (DWORD)str->len) || !len) {
+          free_string(str);
+          Pike_error("Failed to expand data.\n");
+        }
+        push_string(end_and_resize_shared_string(str, len-1));
+      }
       break;
 
     case REG_MULTI_SZ:
       if (!len) {
         push_empty_array();
       } else {
-	push_string(make_shared_binary_string(buffer,len-1));
+        str = begin_wide_shared_string((len>>1) - 1, sixteenbit);
+        str->flags |= STRING_CONVERT_SURROGATES;
+        memcpy(str->str, buffer, len);
+        push_string(end_shared_string(str));
 	push_string(make_shared_binary_string("\000",1));
 	f_divide(2);
       }
       break;
 
+#if PIKE_BYTEORDER == 1234
     case REG_DWORD_LITTLE_ENDIAN:
-      push_int(EXTRACT_UCHAR(buffer)+
-	       (EXTRACT_UCHAR(buffer+1)<<1)+
-	       (EXTRACT_UCHAR(buffer+2)<<2)+
-	       (EXTRACT_UCHAR(buffer+3)<<3));
+#else
+    case REG_DWORD_BIG_ENDIAN:
+#endif
+      push_int(*((INT32 *)buffer));
       break;
 
+#if PIKE_BYTEORDER == 1234
     case REG_DWORD_BIG_ENDIAN:
-      push_int(EXTRACT_UCHAR(buffer+3)+
-	       (EXTRACT_UCHAR(buffer+2)<<1)+
-	       (EXTRACT_UCHAR(buffer+1)<<2)+
-	       (EXTRACT_UCHAR(buffer)<<3));
+#else
+    case REG_DWORD_LITTLE_ENDIAN:
+#endif
+      {
+        char buf2[4] = { buffer[3], buffer[2], buffer[1], buffer[0] };
+        push_int(*((INT32 *)buf2));
+      }
       break;
+
+#ifdef REG_QWORD_LITTLE_ENDIAN
+    case REG_QWORD_LITTLE_ENDIAN:
+#if PIKE_BYTEORDER == 1234
+      push_int64(*((INT64 *)buffer));
+#else
+      {
+        char buf2[8] = { buffer[7], buffer[6], buffer[5], buffer[4],
+                         buffer[3], buffer[2], buffer[1], buffer[0] };
+        push_int(*((INT64 *)buf2));
+      }
+#endif
+      break;
+#endif
 
     default:
       Pike_error("Cannot handle this data type.\n");
@@ -281,8 +322,14 @@ static const HKEY hkeys[] = {
  *!   @[RegGetValue()], @[RegGetValues()], @[RegGetKeyNames()]
  */
 
+static void do_regclosekey(HKEY key)
+{
+  RegCloseKey(key);
+}
+
 /*! @decl string|int|array(string) RegGetValue(int hkey, string key, @
- *!                                            string index)
+ *!                                            string index, @
+ *!                                            int(0..1)|void no_expand)
  *!
  *!   Get a single value from the register.
  *!
@@ -301,6 +348,10 @@ static const HKEY hkeys[] = {
  *! @param index
  *!   Value name.
  *!
+ *! @param no_expand
+ *!   Set this to @expr{1@} to not expand variables in
+ *!   @expr{REG_EXPAND_SZ@}-values.
+ *!
  *! @returns
  *!   Returns the value stored at the specified location in the register
  *!   if any. Returns @expr{UNDEFINED@} on missing keys, throws errors
@@ -309,25 +360,34 @@ static const HKEY hkeys[] = {
  *! @note
  *!   This function is only available on Win32 systems.
  *!
+ *! @note
+ *!   Prior to Pike 9.0 @expr{REG_EXPAND_SZ@}-values were always expanded.
+ *!
  *! @seealso
  *!   @[RegGetValues()], @[RegGetKeyNames()]
  */
 void f_RegGetValue(INT32 args)
 {
   long ret;
-  INT_TYPE hkey_num;
+  INT_TYPE hkey_num, no_expand = 0;
   HKEY new_key;
-  char *key, *ind;
+  struct pike_string *key, *ind;
+  ONERROR tmp;
+  p_wchar1 *utf16;
   DWORD len,type;
   char buffer[8192];
   len=sizeof(buffer)-1;
-  get_all_args(NULL, args, "%i%s%s", &hkey_num, &key, &ind);
+
+  get_all_args(NULL, args, "%i%t%t.%i", &hkey_num, &key, &ind, &no_expand);
 
   if ((hkey_num < 0) || ((unsigned int)hkey_num >= NELEM(hkeys))) {
     Pike_error("Unknown hkey: %d.\n", hkey_num);
   }
 
-  ret = RegOpenKeyEx(hkeys[hkey_num], (LPCTSTR)key, 0, KEY_READ,  &new_key);
+  utf16 = pike_string_to_utf16(key, 1);
+  ret = RegOpenKeyExW(hkeys[hkey_num], utf16, 0, KEY_READ, &new_key);
+  free(utf16);
+
   if ((ret == ERROR_FILE_NOT_FOUND) ||
       (ret == ERROR_PATH_NOT_FOUND)) {
     pop_n_elems(args);
@@ -337,24 +397,24 @@ void f_RegGetValue(INT32 args)
   if(ret != ERROR_SUCCESS)
     throw_nt_error(ret);
 
-  ret=RegQueryValueEx(new_key,ind, 0, &type, buffer, &len);
-  RegCloseKey(new_key);
+  SET_ONERROR(tmp, do_regclosekey, new_key);
+
+  utf16 = pike_string_to_utf16(ind, 1);
+  ret = RegQueryValueExW(new_key, utf16, 0, &type, buffer, &len);
+  free(utf16);
+
+  CALL_AND_UNSET_ONERROR(tmp);
 
   if(ret==ERROR_SUCCESS)
   {
     pop_n_elems(args);
-    push_regvalue(type, buffer, len);
+    push_regvalue(type, buffer, len, no_expand);
   } else if (ret == ERROR_FILE_NOT_FOUND) {
     pop_n_elems(args);
     push_undefined();
   }else{
     throw_nt_error(ret);
   }
-}
-
-static void do_regclosekey(HKEY key)
-{
-  RegCloseKey(key);
 }
 
 /*! @decl array(string) RegGetKeyNames(int hkey, string key)
@@ -396,17 +456,21 @@ static void do_regclosekey(HKEY key)
 void f_RegGetKeyNames(INT32 args)
 {
   INT_TYPE hkey_num;
-  char *key;
+  struct pike_string *key;
+  p_wchar1 *key_utf16;
   int i,ret;
   HKEY new_key;
   ONERROR tmp;
-  get_all_args(NULL, args, "%i%s", &hkey_num, &key);
+  get_all_args(NULL, args, "%i%t", &hkey_num, &key);
 
   if ((hkey_num < 0) || ((unsigned int)hkey_num >= NELEM(hkeys))) {
     Pike_error("Unknown hkey: %d.\n", hkey_num);
   }
 
-  ret = RegOpenKeyEx(hkeys[hkey_num], (LPCTSTR)key, 0, KEY_READ,  &new_key);
+  key_utf16 = pike_string_to_utf16(key, 1);
+  ret = RegOpenKeyExW(hkeys[hkey_num], key_utf16, 0, KEY_READ, &new_key);
+  free(key_utf16);
+
   if ((ret == ERROR_FILE_NOT_FOUND) ||
       (ret == ERROR_PATH_NOT_FOUND)) {
     pop_n_elems(args);
@@ -422,25 +486,30 @@ void f_RegGetKeyNames(INT32 args)
 
   for(i=0;;i++)
   {
-    TCHAR buf[1024];
-    DWORD len=sizeof(buf)-1;
+    struct pike_string *buf = begin_wide_shared_string(1024, sixteenbit);
+    DWORD len = buf->len;
     FILETIME tmp2;
+
+    buf->flags |= STRING_CONVERT_SURROGATES;
+
     THREADS_ALLOW();
-    ret=RegEnumKeyEx(new_key, i, buf, &len, 0,0,0, &tmp2);
+    ret = RegEnumKeyExW(new_key, i, STR1(buf), &len, 0, 0, 0, &tmp2);
     THREADS_DISALLOW();
     switch(ret)
     {
       case ERROR_SUCCESS:
 	check_stack(1);
-	push_tchar(buf,len);
+        push_string(end_and_resize_shared_string(buf, len));
 	continue;
 
       case ERROR_NO_MORE_ITEMS:
 	break;
 
       default:
+        free_string(buf);
         throw_nt_error(ret);
     }
+    free_string(buf);
     break;
   }
   CALL_AND_UNSET_ONERROR(tmp);
@@ -448,7 +517,8 @@ void f_RegGetKeyNames(INT32 args)
 }
 
 /*! @decl mapping(string:string|int|array(string)) RegGetValues(int hkey, @
- *!                                                             string key)
+ *!                                                             string key, @
+ *!                                                 int(0..1)|void no_expand)
  *!
  *!   Get multiple values from the register.
  *!
@@ -463,6 +533,10 @@ void f_RegGetKeyNames(INT32 args)
  *!
  *! @param key
  *!   Registry key.
+ *!
+ *! @param no_expand
+ *!   Set this to @expr{1@} to not expand variables in
+ *!   @expr{REG_EXPAND_SZ@}-values.
  *!
  *! @returns
  *!   Returns a mapping with all the values stored at the specified location
@@ -479,24 +553,30 @@ void f_RegGetKeyNames(INT32 args)
  *! @note
  *!   This function is only available on Win32 systems.
  *!
+ *! @note
+ *!   Prior to Pike 9.0 @expr{REG_EXPAND_SZ@}-values were always expanded.
+ *!
  *! @seealso
  *!   @[RegGetValue()], @[RegGetKeyNames()]
  */
 void f_RegGetValues(INT32 args)
 {
-  INT_TYPE hkey_num;
-  char *key;
+  INT_TYPE hkey_num, no_expand = 0;
+  struct pike_string *key;
+  p_wchar1 *key_utf16;
   int i,ret;
   HKEY new_key;
   ONERROR tmp;
 
-  get_all_args(NULL, args, "%i%s", &hkey_num, &key);
+  get_all_args(NULL, args, "%i%t.%i", &hkey_num, &key, &no_expand);
 
   if ((hkey_num < 0) || ((unsigned int)hkey_num >= NELEM(hkeys))) {
     Pike_error("Unknown hkey: %d.\n", hkey_num);
   }
 
-  ret = RegOpenKeyEx(hkeys[hkey_num], (LPCTSTR)key, 0, KEY_READ,  &new_key);
+  key_utf16 = pike_string_to_utf16(key, 1);
+  ret = RegOpenKeyExW(hkeys[hkey_num], key_utf16, 0, KEY_READ, &new_key);
+  free(key_utf16);
 
   if ((ret == ERROR_FILE_NOT_FOUND) ||
       (ret == ERROR_PATH_NOT_FOUND)) {
@@ -512,38 +592,39 @@ void f_RegGetValues(INT32 args)
 
   for(i=0;;i++)
   {
-    TCHAR buf[1024];
+    struct pike_string *buf = begin_wide_shared_string(1024, sixteenbit);
     char buffer[8192];
-    DWORD len=sizeof(buf)-1;
+    DWORD len = buf->len;
     DWORD buflen=sizeof(buffer)-1;
     DWORD type;
 
+    buf->flags |= STRING_CONVERT_SURROGATES;
+
     THREADS_ALLOW();
-    ret=RegEnumValue(new_key, i, buf, &len, 0,&type, buffer, &buflen);
+    ret = RegEnumValueW(new_key, i, STR1(buf), &len, 0, &type, buffer, &buflen);
     THREADS_DISALLOW();
     switch(ret)
     {
       case ERROR_SUCCESS:
 	check_stack(2);
-	push_tchar(buf,len);
-	push_regvalue(type,buffer,buflen);
+        push_string(end_and_resize_shared_string(buf, len));
+        push_regvalue(type, buffer, buflen, no_expand);
 	continue;
 
       case ERROR_NO_MORE_ITEMS:
 	break;
 
       default:
+        free_string(buf);
 	RegCloseKey(new_key);
         throw_nt_error(ret);
     }
+    free_string(buf);
     break;
   }
   CALL_AND_UNSET_ONERROR(tmp);
   f_aggregate_mapping(i*2);
 }
-
-/*! @module System
- */
 
 /*! @decl int FreeConsole()
  *!
@@ -617,12 +698,12 @@ void f_attachconsole(INT32 args)
 }
 #endif /* HAVE_ATTACHCONSOLE */
 
-
 static struct program *token_program;
 
 #define THIS_TOKEN (*(HANDLE *)CURRENT_STORAGE)
 
-typedef BOOL (WINAPI *logonusertype)(LPSTR,LPSTR,LPSTR,DWORD,DWORD,PHANDLE);
+typedef BOOL (WINAPI *logonusertype)(LPCWSTR, LPCWSTR, LPCWSTR,
+                                     DWORD, DWORD, PHANDLE);
 typedef DWORD (WINAPI *getlengthsidtype)(PSID);
 
 static logonusertype logonuser;
@@ -634,13 +715,13 @@ static getlengthsidtype getlengthsid;
 
 LINKFUNC(BOOL,equalsid, (PSID,PSID) );
 LINKFUNC(BOOL,lookupaccountname,
-         (LPCTSTR,LPCTSTR,PSID,LPDWORD,LPTSTR,LPDWORD,PSID_NAME_USE) );
+         (LPCWSTR,LPCWSTR,PSID,LPDWORD,LPWSTR,LPDWORD,PSID_NAME_USE) );
 LINKFUNC(BOOL,lookupaccountsid,
-         (LPCTSTR,PSID,LPTSTR,LPDWORD,LPTSTR,LPDWORD,PSID_NAME_USE) );
+         (LPCWSTR,PSID,LPWSTR,LPDWORD,LPWSTR,LPDWORD,PSID_NAME_USE) );
 LINKFUNC(BOOL,setnamedsecurityinfo,
-         (LPTSTR,SE_OBJECT_TYPE,SECURITY_INFORMATION,PSID,PSID,PACL,PACL) );
+         (LPWSTR,SE_OBJECT_TYPE,SECURITY_INFORMATION,PSID,PSID,PACL,PACL) );
 LINKFUNC(DWORD,getnamedsecurityinfo,
-         (LPTSTR,SE_OBJECT_TYPE,SECURITY_INFORMATION,PSID*,PSID*,PACL*,PACL*,PSECURITY_DESCRIPTOR*) );
+         (LPWSTR,SE_OBJECT_TYPE,SECURITY_INFORMATION,PSID*,PSID*,PACL*,PACL*,PSECURITY_DESCRIPTOR*) );
 
 LINKFUNC(BOOL,initializeacl, (PACL,DWORD,DWORD) );
 LINKFUNC(BOOL,addaccessallowedace, (PACL,DWORD,DWORD,PSID) );
@@ -649,6 +730,15 @@ LINKFUNC(BOOL,addauditaccessace, (PACL,DWORD,DWORD,PSID,BOOL,BOOL) );
 
 HINSTANCE advapilib;
 
+/*! @class SID
+ *!
+ *! Security Identifier.
+ *!
+ *! Objects of this class are returned by @[LookupAccountName()].
+ *!
+ *! @seealso
+ *!   @[LookupAccountName()]
+ */
 #define THIS_PSID (*(PSID *)CURRENT_STORAGE)
 static struct program *sid_program;
 static void init_sid(struct object *o)
@@ -665,6 +755,8 @@ static void exit_sid(struct object *o)
   }
 }
 
+/*! @decl protected int(0..1) `==(mixed x)
+ */
 static void f_sid_eq(INT32 args)
 {
   if(args && TYPEOF(sp[-1]) == T_OBJECT)
@@ -685,16 +777,38 @@ static void f_sid_eq(INT32 args)
   push_int(0);
 }
 
+/*! @decl array(string|int) account(string|void sys)
+ *!
+ *! @returns
+ *!   Returns an array with the following content:
+ *!   @array
+ *!     @elem string 0
+ *!       Account name.
+ *!     @elem string 1
+ *!       Domain name.
+ *!     @elem int(0..) 2
+ *!       Account type.
+ *!   @endarray
+ *!
+ *! @note
+ *!   This function is only available on some Win32 systems.
+ */
 static void f_sid_account(INT32 args)
 {
-  char foo[1];
+  p_wchar1 foo[1];
   DWORD namelen=0;
   DWORD domainlen=0;
-  char *sys=0;
+  p_wchar1 *sys = 0;
   SID_NAME_USE type;
 
   check_all_args(NULL, args, BIT_STRING|BIT_VOID, 0);
-  if(args) sys=sp[-1].u.string->str;
+  if(args && (TYPEOF(sp[-args]) == T_STRING)) {
+    ref_push_string(sp[-args].u.string);
+    push_int(2);
+    f_string_to_unicode(2);
+    args++;
+    sys = (p_wchar1 *)STR0(sp[-1].u.string);
+  }
 
   if(!THIS_PSID) Pike_error("SID->account on uninitialized SID.\n");
   lookupaccountsid(sys,
@@ -705,17 +819,18 @@ static void f_sid_account(INT32 args)
 		   &domainlen,
 		   &type);
 
-
   if(namelen && domainlen)
   {
-    struct pike_string *dom=begin_shared_string(domainlen-1);
-    struct pike_string *name=begin_shared_string(namelen-1);
+    struct pike_string *dom = begin_wide_shared_string(domainlen-1, sixteenbit);
+    struct pike_string *name = begin_wide_shared_string(namelen-1, sixteenbit);
+    dom->flags |= STRING_CONVERT_SURROGATES;
+    name->flags |= STRING_CONVERT_SURROGATES;
 
-    if(lookupaccountsid(sys,
+    if (lookupaccountsid(sys,
 			 THIS_PSID,
-			 STR0(name),
+                         STR1(name),
 			 &namelen,
-			 STR0(dom),
+                         STR1(dom),
 			 &domainlen,
 			 &type))
     {
@@ -734,9 +849,18 @@ static void f_sid_account(INT32 args)
 
 }
 
-/*! @decl object LogonUser(string username, string|int(0..0) domain, @
- *!                        string password, int|void logon_type, @
- *!                        int|void logon_provider)
+/*! @endclass
+ */
+
+/*! @class UserToken
+ */
+
+/*! @endclass
+ */
+
+/*! @decl UserToken LogonUser(string username, string|zero domain, @
+ *!                           string password, int|void logon_type, @
+ *!                           int|void logon_provider)
  *!
  *!   Logon a user.
  *!
@@ -768,43 +892,43 @@ static void f_sid_account(INT32 args)
  *!   @endint
  *!
  *! @returns
- *!   Returns a login token object on success, and zero on failure.
+ *!   Returns a login @[UserToken] object on success, and zero on failure.
  *!
  *! @note
  *!   This function is only available on some Win32 systems.
  */
 void f_LogonUser(INT32 args)
 {
-  LPTSTR username, domain, pw;
-  DWORD logontype, logonprovider;
+  struct pike_string *username_str = NULL, *domain_str = NULL, *pw_str = NULL;
+  LPCWSTR username, domain = NULL, pw;
+  int logontype = LOGON32_LOGON_NETWORK;
+  int logonprovider = LOGON32_PROVIDER_DEFAULT;
   HANDLE x;
   BOOL ret;
 
-  check_all_args(NULL, args,
-		 BIT_STRING, BIT_INT | BIT_STRING, BIT_STRING,
-		 BIT_INT | BIT_VOID, BIT_INT | BIT_VOID,0);
+  get_all_args(NULL, args, "%t%T%t.%d%d",
+               &username_str, &domain_str, &pw_str,
+               &logontype, &logonprovider);
 
-  username=(LPTSTR)sp[-args].u.string->str;
+  ref_push_string(username_str);
+  push_int(2);
+  f_string_to_unicode(2);
+  username = (LPCWSTR)STR0(sp[-1].u.string);
+  args++;
 
-  if(TYPEOF(sp[1-args]) == T_STRING)
-    domain=(LPTSTR)sp[1-args].u.string->str;
-  else
-    domain=0;
-
-  pw=(LPTSTR)sp[2-args].u.string->str;
-
-  logonprovider=LOGON32_PROVIDER_DEFAULT;
-  logontype=LOGON32_LOGON_NETWORK;
-
-  switch(args)
-  {
-    default: logonprovider=sp[4-args].u.integer;
-    case 4:  logontype=sp[3-args].u.integer;
-    case 3:
-    case 2:
-    case 1:
-    case 0: break;
+  if (domain_str) {
+    ref_push_string(domain_str);
+    push_int(2);
+    f_string_to_unicode(2);
+    domain = (LPCWSTR)STR0(sp[-1].u.string);
+    args++;
   }
+
+  ref_push_string(pw_str);
+  push_int(2);
+  f_string_to_unicode(2);
+  pw = (LPCWSTR)STR0(sp[-1].u.string);
+  args++;
 
   THREADS_ALLOW();
   ret=logonuser(username, domain, pw, logontype, logonprovider, &x);
@@ -2259,7 +2383,7 @@ static LPWSTR get_wstring(struct svalue *s)
       /* we never get here, but the "return (LPWSTR)0" makes the compiler
        * stop complaining about our not returning a value here.
        */
-      UNREACHABLE(return (LPWSTR)0);
+      UNREACHABLE();
   }
 }
 
@@ -2577,12 +2701,15 @@ static void f_NetWkstaUserEnum(INT32 args)
   }
 }
 
-/*! @decl string(8bit) normalize_path(string(8bit) path)
+/*! @decl utf8_string normalize_path(string(8bit) path)
  *!
  *!   Normalize an existing Windows file system path.
  *!
  *!   The following transformations are currently done:
  *!   @ul
+ *!     @item
+ *!       If the @[path] is not valid UTF-8, it will be converted
+ *!       into UTF-8.
  *!     @item
  *!       Forward slashes (@expr{'/'@}) are converted to backward
  *!       slashes (@expr{'\'@}).
@@ -2630,7 +2757,7 @@ static void f_normalize_path(INT32 args)
 {
   char *path = NULL;
 
-  get_all_args("normalize_path", args, "%s", &path);
+  get_all_args("normalize_path", args, "%c", &path);
 
   path = fd_normalize_path(path);
   if (!path) {
@@ -2641,7 +2768,7 @@ static void f_normalize_path(INT32 args)
   free(path);
 }
 
-/*! @decl int GetFileAttributes(string filename)
+/*! @decl int GetFileAttributes(string(8bit) filename)
  *!
  *!   Get the file attributes for the specified file.
  *!
@@ -2654,15 +2781,18 @@ static void f_normalize_path(INT32 args)
 static void f_GetFileAttributes(INT32 args)
 {
   char *file;
+  p_wchar1 *file_utf16;
   DWORD ret;
-  get_all_args(NULL, args, "%s", &file);
-  ret=GetFileAttributes( (LPCTSTR) file);
+  get_all_args(NULL, args, "%c", &file);
+  file_utf16 = pike_dwim_utf8_to_utf16(file);
+  ret = GetFileAttributesW(file_utf16);
+  free(file_utf16);
   pop_stack();
   errno=GetLastError();
   push_int(ret);
 }
 
-/*! @decl int SetFileAttributes(string filename)
+/*! @decl int SetFileAttributes(string(8bit) filename)
  *!
  *!   Set the file attributes for the specified file.
  *!
@@ -2675,11 +2805,14 @@ static void f_GetFileAttributes(INT32 args)
 static void f_SetFileAttributes(INT32 args)
 {
   char *file;
+  p_wchar1 *file_utf16;
   INT_TYPE attr, ret;
   DWORD tmp;
-  get_all_args(NULL, args, "%s%i", &file, &attr);
+  get_all_args(NULL, args, "%c%i", &file, &attr);
+  file_utf16 = pike_dwim_utf8_to_utf16(file);
   tmp=attr;
-  ret=SetFileAttributes( (LPCTSTR) file, tmp);
+  ret = SetFileAttributesW(file_utf16, tmp);
+  free(file_utf16);
   pop_stack();
   errno=GetLastError();
   push_int(ret);
@@ -2687,29 +2820,45 @@ static void f_SetFileAttributes(INT32 args)
 
 /*! @decl array(mixed) LookupAccountName(string|int(0..0) sys, string account)
  *!
+ *! @returns
+ *!   Returns @expr{0@} (zero) if the @[account] was not found,
+ *!   and an array containing the following on success:
+ *!
+ *!   @array
+ *!     @elem SID 0
+ *!       @[SID] object representing the @[account].
+ *!     @elem string 1
+ *!       Domain name.
+ *!     @elem int 2
+ *!       Account type.
+ *!   @endarray
+ *!
  *! @note
  *!   This function is only available on some Win32 systems.
  *!
  */
 static void f_LookupAccountName(INT32 args)
 {
-  LPCTSTR sys=0;
-  LPCTSTR acc;
+  LPCWSTR sys=0;
+  LPCWSTR acc;
   DWORD sidlen, domainlen;
   SID_NAME_USE tmp;
-  char buffer[1];
+  p_wchar1 buffer[1];
 
   check_all_args(NULL,args,BIT_INT|BIT_STRING, BIT_STRING,0);
   if(TYPEOF(sp[-args]) == T_STRING)
   {
-    if(sp[-args].u.string->size_shift != 0)
-       Pike_error("System name is wide string.\n");
-    sys=STR0(sp[-args].u.string);
+    ref_push_string(sp[-args].u.string);
+    push_int(2);
+    f_string_to_unicode(2);
+    args++;
+    sys = (p_wchar1 *)STR0(sp[-1].u.string);
   }
-  if(sp[1-args].u.string->size_shift != 0)
-    Pike_error("Account name is wide string.\n");
-
-  acc=STR0(sp[1-args].u.string);
+  ref_push_string(sp[1-args].u.string);
+  push_int(2);
+  f_string_to_unicode(2);
+  args++;
+  acc = (p_wchar1 *)STR0(sp[-1].u.string);
 
   sidlen=0;
   domainlen=0;
@@ -2719,20 +2868,21 @@ static void f_LookupAccountName(INT32 args)
 		    acc,
 		    (PSID)buffer,
 		    &sidlen,
-		    (LPTSTR)buffer,
+                    (LPWSTR)buffer,
 		    &domainlen,
 		    &tmp);
 
   if(sidlen && domainlen)
   {
     PSID sid=xalloc(sidlen);
-    struct pike_string *dom=begin_shared_string(domainlen-1);
+    struct pike_string *dom = begin_wide_shared_string(domainlen-1, sixteenbit);
+    dom->flags |= STRING_CONVERT_SURROGATES;
 
     if(lookupaccountname(sys,
 			 acc,
 			 sid,
 			 &sidlen,
-			 (LPTSTR)(STR0(dom)),
+                         (LPWSTR)(STR1(dom)),
 			 &domainlen,
 			 &tmp))
     {
@@ -2890,8 +3040,7 @@ static PACL decode_acl(struct array *arr)
  * Note, this function does not use errno!!
  * (Time to learn how to autodoc... /Hubbe)
  */
-/*! @decl array(mixed) SetNamedSecurityInfo(string name, @
- *!                                         mapping(string:mixed) options)
+/*! @decl int SetNamedSecurityInfo(string name, mapping(string:mixed) options)
  *!
  *! @note
  *!   This function is only available on some Win32 systems.
@@ -2902,7 +3051,7 @@ static PACL decode_acl(struct array *arr)
 static void f_SetNamedSecurityInfo(INT32 args)
 {
   struct svalue *sval;
-  char *name;
+  struct pike_string *name;
   struct mapping *m;
   SECURITY_INFORMATION flags=0;
   PSID owner=0;
@@ -2912,7 +3061,7 @@ static void f_SetNamedSecurityInfo(INT32 args)
   DWORD ret;
   SE_OBJECT_TYPE type=SE_FILE_OBJECT;
 
-  get_all_args(NULL, args, "%s%m", &name, &m);
+  get_all_args(NULL, args, "%t%m", &name, &m);
 
   if((sval=low_mapping_string_lookup(m, literal_type_string)))
   {
@@ -2955,9 +3104,15 @@ static void f_SetNamedSecurityInfo(INT32 args)
     flags |= SACL_SECURITY_INFORMATION;
   }
 
+  ref_push_string(name);
+  push_int(2);
+  f_string_to_unicode(2);
+  args++;
+  name = Pike_sp[-1].u.string;
+
   /* FIXME, add dacl and sacl!!!! */
 
-  ret=setnamedsecurityinfo(name,
+  ret = setnamedsecurityinfo((p_wchar1 *)STR0(name),
 			   type,
 			   flags,
 			   owner,
@@ -2980,6 +3135,7 @@ static void f_SetNamedSecurityInfo(INT32 args)
  */
 static void f_GetNamedSecurityInfo(INT32 args)
 {
+  struct pike_string *name;
   PSID owner=0, group=0;
   PACL dacl=0, sacl=0;
   PSECURITY_DESCRIPTOR desc=0;
@@ -2999,7 +3155,14 @@ static void f_GetNamedSecurityInfo(INT32 args)
     case 1: break;
   }
 
-  if(!(ret=getnamedsecurityinfo(sp[-args].u.string->str,
+  name = sp[-args].u.string;
+  ref_push_string(name);
+  push_int(2);
+  f_string_to_unicode(2);
+  args++;
+  name = sp[-1].u.string;
+
+  if(!(ret=getnamedsecurityinfo((p_wchar1 *)STR0(name),
 				type,
 				flags,
 				&owner,
@@ -3247,19 +3410,17 @@ static void f_nt_uname(INT32 args)
   f_aggregate_mapping(n);
 }
 
-
 /**************************/
 /* start Security context */
 
-typedef SECURITY_STATUS (WINAPI *querysecuritypackageinfotype)(SEC_CHAR*,PSecPkgInfo*);
-typedef SECURITY_STATUS (WINAPI *acquirecredentialshandletype)(SEC_CHAR*,SEC_CHAR*,ULONG,PLUID,PVOID,SEC_GET_KEY_FN,PVOID,PCredHandle,PTimeStamp);
+typedef SECURITY_STATUS (WINAPI *querysecuritypackageinfotype)(SEC_WCHAR*,PSecPkgInfo*);
+typedef SECURITY_STATUS (WINAPI *acquirecredentialshandletype)(SEC_WCHAR*,SEC_WCHAR*,ULONG,PLUID,PVOID,SEC_GET_KEY_FN,PVOID,PCredHandle,PTimeStamp);
 typedef SECURITY_STATUS (WINAPI *freecredentialshandletype)(PCredHandle);
 typedef SECURITY_STATUS (WINAPI *acceptsecuritycontexttype)(PCredHandle,PCtxtHandle,PSecBufferDesc,ULONG,ULONG,PCtxtHandle,PSecBufferDesc,PULONG,PTimeStamp);
 typedef SECURITY_STATUS (WINAPI *completeauthtokentype)(PCtxtHandle,PSecBufferDesc);
 typedef SECURITY_STATUS (WINAPI *deletesecuritycontexttype)(PCtxtHandle);
 typedef SECURITY_STATUS (WINAPI *freecontextbuffertype)(PVOID);
 typedef SECURITY_STATUS (WINAPI *querycontextattributestype)(PCtxtHandle,ULONG,PVOID);
-
 
 static querysecuritypackageinfotype querysecuritypackageinfo;
 static acquirecredentialshandletype acquirecredentialshandle;
@@ -3277,7 +3438,7 @@ struct sctx_storage {
   int        hcred_alloced;
   CtxtHandle hctxt;
   int        hctxt_alloced;
-  TCHAR      lpPackageName[1024];
+  p_wchar1   *PackageNameUTF16;
   DWORD      cbMaxMessage;
   BYTE *     buf;
   DWORD      cBuf;
@@ -3298,6 +3459,10 @@ static void exit_sctx(struct object *o)
 {
   struct sctx_storage *sctx = THIS_SCTX;
 
+  if (sctx->PackageNameUTF16) {
+    free(sctx->PackageNameUTF16);
+    sctx->PackageNameUTF16 = NULL;
+  }
   if (sctx->hctxt_alloced) {
     deletesecuritycontext (&sctx->hctxt);
     sctx->hctxt_alloced = 0;
@@ -3319,17 +3484,22 @@ static void f_sctx_create(INT32 args)
   SECURITY_STATUS ss;
   PSecPkgInfo     pkgInfo;
   TimeStamp       Lifetime;
-  char *          pkgName;
+  struct pike_string *pkgName;
 
-  get_all_args(NULL, args, "%s", &pkgName);
+  get_all_args(NULL, args, "%t", &pkgName);
 
-  lstrcpy(sctx->lpPackageName, pkgName);
-  ss = querysecuritypackageinfo ( sctx->lpPackageName, &pkgInfo);
+  if (sctx->PackageNameUTF16) {
+    free(sctx->PackageNameUTF16);
+    sctx->PackageNameUTF16 = NULL;
+  }
+  sctx->PackageNameUTF16 = pike_string_to_utf16(pkgName, 1);
+
+  ss = querysecuritypackageinfo(sctx->PackageNameUTF16, &pkgInfo);
 
   if (!SEC_SUCCESS(ss))
   {
-    Pike_error("Could not query package info for %s, error 0x%08x.\n",
-               sctx->lpPackageName, ss);
+    Pike_error("Could not query package info for %pS, error 0x%08x.\n",
+               pkgName, ss);
   }
 
   sctx->cbMaxMessage = pkgInfo->cbMaxToken;
@@ -3343,7 +3513,7 @@ static void f_sctx_create(INT32 args)
     freecredentialshandle (&sctx->hcred);
   ss = acquirecredentialshandle (
                                  NULL,
-                                 sctx->lpPackageName,
+                                 sctx->PackageNameUTF16,
                                  SECPKG_CRED_INBOUND,
                                  NULL,
                                  NULL,
@@ -3497,7 +3667,7 @@ static void f_sctx_type(INT32 args)
 {
   struct sctx_storage *sctx = THIS_SCTX;
   pop_n_elems(args);
-  push_string(make_shared_string(sctx->lpPackageName));
+  push_utf16_text(sctx->PackageNameUTF16);
 }
 
 
@@ -3505,7 +3675,7 @@ static void f_sctx_getusername(INT32 args)
 {
   struct sctx_storage *sctx = THIS_SCTX;
   SECURITY_STATUS   ss;
-  SecPkgContext_Names name;
+  SecPkgContext_NamesW name;
 
   pop_n_elems(args);
 
@@ -3522,7 +3692,7 @@ static void f_sctx_getusername(INT32 args)
     return;
   }
 
-  push_text(name.sUserName);
+  push_utf16_text(name.sUserName);
 
   freecontextbuffer(name.sUserName);
 }
@@ -3611,8 +3781,10 @@ void init_nt_system_calls(void)
 {
   /* function(string,string:int) */
 
-  ADD_FUNCTION("GetFileAttributes",f_GetFileAttributes,tFunc(tStr,tInt),0);
-  ADD_FUNCTION("SetFileAttributes",f_SetFileAttributes,tFunc(tStr tInt,tInt),0);
+  ADD_FUNCTION("GetFileAttributes", f_GetFileAttributes,
+               tFunc(tStr8, tInt), 0);
+  ADD_FUNCTION("SetFileAttributes", f_SetFileAttributes,
+               tFunc(tStr8 tInt, tInt), 0);
 
   SIMPCONST(FILE_ATTRIBUTE_ARCHIVE);
   SIMPCONST(FILE_ATTRIBUTE_HIDDEN);
@@ -3645,11 +3817,13 @@ void init_nt_system_calls(void)
 
 /* function(int,string,string:string|int|string*) */
   ADD_FUNCTION("RegGetValue", f_RegGetValue,
-               tFunc(tInt tStr tStr, tOr3(tStr, tInt, tArr(tStr))),
+               tFunc(tInt tStr tStr tOr(tVoid, tInt01),
+                     tOr3(tStr, tInt, tArr(tStr))),
                OPT_EXTERNAL_DEPEND);
 
   ADD_FUNCTION("RegGetValues", f_RegGetValues,
-               tFunc(tInt tStr, tMap(tStr, tOr3(tStr, tInt, tArr(tStr)))),
+               tFunc(tInt tStr tOr(tVoid, tInt01),
+                     tMap(tStr, tOr3(tStr, tInt, tArr(tStr)))),
                OPT_EXTERNAL_DEPEND);
 
   ADD_FUNCTION("RegGetKeyNames", f_RegGetKeyNames,
@@ -3673,18 +3847,20 @@ void init_nt_system_calls(void)
   ADD_EFUN("uname", f_nt_uname,tFunc(tNone,tMapping), OPT_TRY_OPTIMIZE);
   ADD_FUNCTION2("uname", f_nt_uname,tFunc(tNone,tMapping), 0, OPT_TRY_OPTIMIZE);
 
-  ADD_FUNCTION("normalize_path", f_normalize_path, tFunc(tStr, tStr), 0);
+  ADD_FUNCTION("normalize_path", f_normalize_path, tFunc(tStr8, tUtf8Str), 0);
 
   /* LogonUser only exists on NT, link it dynamically */
   if( (advapilib=LoadLibrary("advapi32")) )
   {
     FARPROC proc;
-    if( (proc=GetProcAddress(advapilib, "LogonUserA")) )
+    if( (proc=GetProcAddress(advapilib, "LogonUserW")) )
     {
       logonuser=(logonusertype)proc;
 
       /* function(string,string,string,int|void,void|int:object) */
-  ADD_FUNCTION("LogonUser",f_LogonUser,tFunc(tStr tStr tStr tOr(tInt,tVoid) tOr(tVoid,tInt),tObj),0);
+      ADD_FUNCTION("LogonUser", f_LogonUser,
+                   tFunc(tStr tOr(tStr, tZero) tStr tOr(tInt, tVoid)
+                         tOr(tVoid, tInt), tObj), 0);
 
       SIMPCONST(LOGON32_LOGON_BATCH);
       SIMPCONST(LOGON32_LOGON_INTERACTIVE);
@@ -3701,16 +3877,16 @@ void init_nt_system_calls(void)
       token_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;
     }
 
-    if( (proc=GetProcAddress(advapilib, "LookupAccountNameA")) )
+    if( (proc=GetProcAddress(advapilib, "LookupAccountNameW")) )
       lookupaccountname=(lookupaccountnametype)proc;
 
-    if( (proc=GetProcAddress(advapilib, "LookupAccountSidA")) )
+    if( (proc=GetProcAddress(advapilib, "LookupAccountSidW")) )
       lookupaccountsid=(lookupaccountsidtype)proc;
 
-    if( (proc=GetProcAddress(advapilib, "SetNamedSecurityInfoA")) )
+    if( (proc=GetProcAddress(advapilib, "SetNamedSecurityInfoW")) )
       setnamedsecurityinfo=(setnamedsecurityinfotype)proc;
 
-    if( (proc=GetProcAddress(advapilib, "GetNamedSecurityInfoA")) )
+    if( (proc=GetProcAddress(advapilib, "GetNamedSecurityInfoW")) )
       getnamedsecurityinfo=(getnamedsecurityinfotype)proc;
 
     if( (proc=GetProcAddress(advapilib, "EqualSid")) )
@@ -3739,16 +3915,16 @@ void init_nt_system_calls(void)
       set_init_callback(init_sid);
       set_exit_callback(exit_sid);
       ADD_STORAGE(PSID);
-      ADD_FUNCTION("`==",f_sid_eq,tFunc(tMix,tInt),0);
+      ADD_FUNCTION("`==", f_sid_eq, tFunc(tMix, tInt01), ID_PROTECTED);
       ADD_FUNCTION("account",f_sid_account,
-		   tFunc(tNone,tArr(tOr(tStr,tInt))),0);
+                   tFunc(tOr(tStr, tVoid), tArr(tOr(tStr, tInt))), 0);
       add_program_constant("SID",sid_program=end_program(),0);
 
       ADD_FUNCTION("LookupAccountName",f_LookupAccountName,
-		   tFunc(tStr tStr,tArray),0);
+                   tFunc(tOr(tStr, tZero) tStr,tArray),0);
 
       ADD_FUNCTION("SetNamedSecurityInfo",f_SetNamedSecurityInfo,
-		   tFunc(tStr tMap(tStr,tMix),tArray),0);
+                   tFunc(tStr tMap(tStr,tMix), tInt),0);
       ADD_FUNCTION("GetNamedSecurityInfo",f_GetNamedSecurityInfo,
 		   tFunc(tStr tOr(tVoid,tInt),tMapping),0);
 
@@ -3771,7 +3947,7 @@ void init_nt_system_calls(void)
 
 	/* function(string,string,int|void:string|array(string|int)) */
 	ADD_FUNCTION("NetUserGetInfo",f_NetUserGetInfo,
-		     tFunc(tStr tStr tOr(tInt,tVoid),
+                     tFunc(tStr tOr(tStr, tZero) tOr(tInt, tVoid),
 			   tOr(tStr,tArr(tOr(tStr,tInt)))),0);
 
 	SIMPCONST(USER_PRIV_GUEST);
@@ -3804,7 +3980,10 @@ void init_nt_system_calls(void)
 
 	/* function(string|int|void,int|void,int|void:array(string|array(string|int))) */
 	ADD_FUNCTION("NetUserEnum",f_NetUserEnum,
-		     tFunc(tOr3(tStr,tInt,tVoid) tOr(tInt,tVoid) tOr(tInt,tVoid),tArr(tOr(tStr,tArr(tOr(tStr,tInt))))),0);
+                     tFunc(tOr3(tStr, tZero, tVoid)
+                           tOr(tInt, tVoid)
+                           tOr(tInt, tVoid),
+                           tArr(tOr(tStr, tArr(tOr(tStr, tInt))))),0);
 
 	SIMPCONST(FILTER_TEMP_DUPLICATE_ACCOUNT);
 	SIMPCONST(FILTER_NORMAL_ACCOUNT);
@@ -3819,7 +3998,7 @@ void init_nt_system_calls(void)
 
 	/* function(string|int|void,int|void:array(string|array(string|int))) */
   	ADD_FUNCTION("NetGroupEnum",f_NetGroupEnum,
-		     tFunc(tOr3(tStr,tInt,tVoid) tOr(tInt,tVoid),
+                     tFunc(tOr3(tStr, tZero, tVoid) tOr(tInt, tVoid),
 			   tArr(tOr(tStr,tArr(tOr(tStr,tInt))))), 0);
 
 	SIMPCONST(SE_GROUP_ENABLED_BY_DEFAULT);
@@ -3833,7 +4012,7 @@ void init_nt_system_calls(void)
 
 	/* function(string|int|void,int|void:array(array(string|int))) */
   	ADD_FUNCTION("NetLocalGroupEnum",f_NetLocalGroupEnum,
-		     tFunc(tOr3(tStr,tInt,tVoid) tOr(tInt,tVoid),
+                     tFunc(tOr3(tStr, tZero, tVoid) tOr(tInt, tVoid),
 			   tArr(tArr(tOr(tStr,tInt)))), 0);
       }
 
@@ -3843,7 +4022,7 @@ void init_nt_system_calls(void)
 
 	/* function(string|int,string,int|void:array(string|array(int|string))) */
  	ADD_FUNCTION("NetUserGetGroups",f_NetUserGetGroups,
-		     tFunc(tOr(tStr,tInt) tStr tOr(tInt,tVoid),
+                     tFunc(tOr(tStr, tZero) tStr tOr(tInt, tVoid),
 			   tArr(tOr(tStr,tArr(tOr(tInt,tStr))))), 0);
       }
 
@@ -3853,8 +4032,8 @@ void init_nt_system_calls(void)
 
 	/* function(string|int,string,int|void,int|void:array(string)) */
  	ADD_FUNCTION("NetUserGetLocalGroups",f_NetUserGetLocalGroups,
-		     tFunc(tOr(tStr,tInt) tStr tOr(tInt,tVoid) tOr(tInt,tVoid),
-			   tArr(tStr)), 0);
+                     tFunc(tOr(tStr, tZero) tStr tOr(tInt, tVoid)
+                           tOr(tInt, tVoid), tArr(tStr)), 0);
 
 	SIMPCONST(LG_INCLUDE_INDIRECT);
       }
@@ -3865,7 +4044,7 @@ void init_nt_system_calls(void)
 
 	/* function(string|int,string,int|void:array(string|array(int|string))) */
  	ADD_FUNCTION("NetGroupGetUsers",f_NetGroupGetUsers,
-		     tFunc(tOr(tStr,tInt) tStr tOr(tInt,tVoid),
+                     tFunc(tOr(tStr, tZero) tStr tOr(tInt, tVoid),
 			   tArr(tOr(tStr,tArr(tOr(tInt,tStr))))), 0);
       }
 
@@ -3875,7 +4054,7 @@ void init_nt_system_calls(void)
 
 	/* function(string|int,string,int|void:array(string|array(int|string))) */
  	ADD_FUNCTION("NetLocalGroupGetMembers",f_NetLocalGroupGetMembers,
-		     tFunc(tOr(tStr,tInt) tStr tOr(tInt,tVoid),
+                     tFunc(tOr(tStr, tZero) tStr tOr(tInt, tVoid),
 			   tArr(tOr(tStr,tArr(tOr(tInt,tStr))))), 0);
 
 	SIMPCONST(SidTypeUser);
@@ -3894,7 +4073,7 @@ void init_nt_system_calls(void)
 
 	/* function(string|int,string:string) */
  	ADD_FUNCTION("NetGetDCName",f_NetGetDCName,
-		     tFunc(tOr(tStr,tInt) tStr,tStr), 0);
+                     tFunc(tOr(tStr, tZero) tStr, tStr), 0);
       }
 
       if( (proc=GetProcAddress(netapilib, "NetGetAnyDCName")) )
@@ -3903,7 +4082,7 @@ void init_nt_system_calls(void)
 
 	/* function(string|int,string:string) */
  	ADD_FUNCTION("NetGetAnyDCName",f_NetGetAnyDCName,
-		     tFunc(tOr(tStr,tInt) tStr,tStr), 0);
+                     tFunc(tOr(tStr, tZero) tStr, tStr), 0);
       }
 
       /* FIXME: On windows 9x, netsessionenum is located in svrapi.lib */
@@ -3913,7 +4092,8 @@ void init_nt_system_calls(void)
 
 	/* function(string,string,string,int:array(int|string)) */
  	ADD_FUNCTION("NetSessionEnum",f_NetSessionEnum,
-		     tFunc(tStr tStr tStr tInt,tArr(tOr(tInt,tStr))), 0);
+                     tFunc(tOr(tStr, tZero) tOr(tStr, tZero)
+                           tOr(tStr, tZero) tInt, tArr(tOr(tInt, tStr))), 0);
 
         SIMPCONST(SESS_GUEST);
         SIMPCONST(SESS_NOENCRYPTION);
@@ -3925,7 +4105,7 @@ void init_nt_system_calls(void)
 
 	/* function(string,int:array(mixed)) */
  	ADD_FUNCTION("NetWkstaUserEnum",f_NetWkstaUserEnum,
-		     tFunc(tStr tInt,tArray), 0);
+                     tFunc(tOr(tStr, tZero) tInt, tArray), 0);
       }
     }
   }
@@ -3944,14 +4124,14 @@ void init_nt_system_calls(void)
                                       VAR=(PIKE_CONCAT(VAR,type))proc; \
                                } while(0)
 
-    LOAD_SECUR_FN(querysecuritypackageinfo, QuerySecurityPackageInfoA);
-    LOAD_SECUR_FN(acquirecredentialshandle, AcquireCredentialsHandleA);
+    LOAD_SECUR_FN(querysecuritypackageinfo, QuerySecurityPackageInfoW);
+    LOAD_SECUR_FN(acquirecredentialshandle, AcquireCredentialsHandleW);
     LOAD_SECUR_FN(freecredentialshandle, FreeCredentialsHandle);
     LOAD_SECUR_FN(acceptsecuritycontext, AcceptSecurityContext);
     LOAD_SECUR_FN(completeauthtoken, CompleteAuthToken);
     LOAD_SECUR_FN(deletesecuritycontext, DeleteSecurityContext);
     LOAD_SECUR_FN(freecontextbuffer, FreeContextBuffer);
-    LOAD_SECUR_FN(querycontextattributes, QueryContextAttributesA);
+    LOAD_SECUR_FN(querycontextattributes, QueryContextAttributesW);
 
     if( querysecuritypackageinfo && acquirecredentialshandle &&
         freecredentialshandle && acceptsecuritycontext &&

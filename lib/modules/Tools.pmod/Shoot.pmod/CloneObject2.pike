@@ -6,7 +6,7 @@ constant name="Clone object";
 class Target
 {
   int flag;
-  void create( int i ) { flag = i; }
+  protected void create( int i ) { flag = i; }
   int swap(){ flag = !flag; }
 }
 

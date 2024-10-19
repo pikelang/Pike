@@ -1,3 +1,5 @@
+/* -*- mode: Pike; c-basic-offset: 3; -*- */
+
 #pike __REAL_VERSION__
 
 class StdErr
@@ -8,7 +10,7 @@ class StdErr
    string name;
    array(mixed) __backtrace;
 
-   void create(string _name)
+   protected void create(string _name)
    {
       name=_name;
       __backtrace=backtrace();
@@ -18,7 +20,7 @@ class StdErr
 	 __backtrace=__backtrace[..<1];
    }
 
-   mixed `[](mixed z)
+   protected mixed `[](mixed z)
    {
       switch (z)
       {
@@ -37,7 +39,7 @@ class Connection
 
    int errno;
 
-   void create(string desc,int _errno)
+   protected void create(string desc,int _errno)
    {
       ::create(desc+" ("+strerror(errno=_errno)+")");
    }

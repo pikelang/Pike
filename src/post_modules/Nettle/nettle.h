@@ -56,6 +56,7 @@ typedef unsigned	pike_nettle_size_t;
 #ifdef HAVE_NETTLE_CRYPT_FUNC_IS_POINTER
 /* Nettle 1.x */
 typedef nettle_crypt_func		pike_nettle_crypt_func;
+typedef nettle_crypt_func		pike_nettle_cipher_func;
 typedef nettle_hash_digest_func		pike_nettle_hash_digest_func;
 typedef nettle_hash_update_func		pike_nettle_hash_update_func;
 #else
@@ -63,9 +64,11 @@ typedef nettle_hash_update_func		pike_nettle_hash_update_func;
 
 #ifdef dsa_params_init
 /* Nettle 3.0 */
-typedef nettle_cipher_func              *pike_nettle_crypt_func;
+typedef nettle_crypt_func               *pike_nettle_crypt_func;
+typedef nettle_cipher_func              *pike_nettle_cipher_func;
 #else
 typedef nettle_crypt_func		*pike_nettle_crypt_func;
+typedef nettle_crypt_func		*pike_nettle_cipher_func;
 #endif
 
 typedef nettle_hash_digest_func		*pike_nettle_hash_digest_func;

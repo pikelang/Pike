@@ -47,9 +47,9 @@ protected class _CTR
   {
     inherit ::this_program;
 
-    protected global::State obj;
-    protected Gmp.mpz iv;
-    protected int(1..) _block_size;
+    protected zero|global::State obj;
+    protected zero|Gmp.mpz iv;
+    protected int(0..) _block_size;
 
     protected void create()
     {
@@ -65,12 +65,12 @@ protected class _CTR
 
     int(1..) block_size()
     {
-      return _block_size;
+      return [int(1..)]_block_size;
     }
 
     int(1..) iv_size()
     {
-      return _block_size;
+      return [int(1..)]_block_size;
     }
 
     int(0..) key_size()
@@ -106,7 +106,7 @@ protected class _CTR
 	string(8bit) chunk = iv->digits(256);
 	iv++;
 	if (sizeof(chunk) < _block_size) {
-	  chunk = "\0"*(_block_size - sizeof(chunk)) + chunk;
+	  chunk = "\0" * [int(1..)](_block_size - sizeof(chunk)) + chunk;
 	}
 	chunk = obj->crypt(chunk);
 	buf->add(chunk[..len-1]);
@@ -116,7 +116,7 @@ protected class _CTR
     }
   }
 
-  State `()()
+  protected State `()()
   {
     return State();
   }

@@ -658,7 +658,7 @@ constant syntax_decode_fns = ([
 //! These decoders are used on all attribute values returned by
 //! @[Protocols.LDAP.client.result] functions.
 
-constant syntax_encode_fns = ([]); // Filled in from syntax_decode_fns by create().
+mapping(string:function(string:string)|zero) syntax_encode_fns = ([]); // Filled in from syntax_decode_fns by create().
 
 //! @decl constant mapping(string:function(string:string)) syntax_encode_fns;
 //!
@@ -1159,7 +1159,8 @@ constant ATD_supportedFeatures = ([ // RFC 3674, 2
   "USAGE": "dSAOperation",
 ]);
 
-constant _standard_attr_type_descrs = ([]); // Filled in by create().
+// Filled in by create(). Used by client.pike.
+mapping(string:mixed) _standard_attr_type_descrs = ([]);
 
 //! Constants for Microsoft AD Well-Known Object GUIDs. These are e.g.
 //! used in LDAP URLs:
@@ -1214,7 +1215,7 @@ protected void create()
   // syntax_encode_fns
 
   foreach (indices (syntax_decode_fns), string syntax) {
-    function(string:string) encoder = ([
+    function(string:string)|zero encoder = ([
       utf8_to_string: string_to_utf8,
     ])[syntax_decode_fns[syntax]];
     if (!encoder)
@@ -1246,7 +1247,8 @@ protected void create()
 
   void complete (mapping(string:mixed) descr) {
     mapping(string:mixed) sup_descr =
-      _standard_attr_type_descrs[lower_case (descr->SUP)];
+      ([mapping(mixed:mapping(string:mixed))](mixed)_standard_attr_type_descrs)
+      [lower_case (descr->SUP)];
     if (!sup_descr)
       error ("Got SUP reference to unknown attribute %O: %O\n",
 	     descr->SUP, descr);
@@ -1355,7 +1357,9 @@ class FilterError
   constant is_generic_error = 1;
   string error_message;
   array error_backtrace;
-  string|array `[] (int i) {return i ? error_backtrace : error_message;}
+  protected string|array `[] (int i) {
+    return i ? error_backtrace : error_message;
+  }
   protected void create (string msg, mixed... args)
   {
     if (sizeof (args)) msg = sprintf (msg, @args);
@@ -1725,7 +1729,7 @@ object/*(client)*/ get_connection (string ldap_url, void|string binddn,
   // worth the bother.
 
   if (idle_conns[ldap_url]) {
-    Thread.MutexKey lock = idle_conns_mutex->lock();
+    object(Thread.MutexKey)|zero lock = idle_conns_mutex->lock();
     if (array(object/*(client)*/) conns = idle_conns[ldap_url]) {
     find_connection: {
 	int now = time();

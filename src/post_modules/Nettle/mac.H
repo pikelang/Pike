@@ -7,6 +7,11 @@ DOCSTART() @class PIKE_NAME
  *!
  *! Implementation of the PIKE_NAME MAC algorithm.
  *!
+#cmod_ifdef NETTLE_MIN_VERSION
+ *! @note
+ *!   Requires Nettle NETTLE_MIN_VERSION or later.
+#cmod_undef NETTLE_MIN_VERSION
+#cmod_endif
 DOCEND()
 PIKECLASS PIKE_NAME
 {
@@ -56,7 +61,7 @@ PIKECLASS PIKE_NAME
 						      0, parent_State_fun_num);
 	  low_inherit(parent_State_prog, 0,
 		      parent_State_fun_num,
-		      1 + 42, 0, NULL);
+                      1 + 42, 0, NULL, NULL);
 	}
       }
     }

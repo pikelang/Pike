@@ -1,7 +1,7 @@
-#require constant(System.RegGetValue)
 #pike 8.1
+#require constant(System.RegGetValue)
 
-/*!   Get a single value from the register (COMPAT).
+/*!   Get a single value from the registry (COMPAT).
  *!
  *!   Pike 7.6 compatibility implementation of @[System.RegGetValue()].
  *!   The difference being that this function throws errors when
@@ -21,7 +21,7 @@ string|int|array(string) RegGetValue_76(int hkey, string key,
   return ret;
 }
 
-/*!   Get a list of value key names from the register (COMPAT).
+/*!   Get a list of value key names from the registry (COMPAT).
  *!
  *!   Pike 7.6 compatibility implementation of @[System.RegGetKeyNames()].
  *!   The difference being that this function throws errors when
@@ -40,7 +40,7 @@ array(string) RegGetKeyNames_76(int hkey, string key)
   return ret;
 }
 
-/*!   Get multiple values from the register (COMPAT).
+/*!   Get multiple values from the registry (COMPAT).
  *!
  *!   Pike 7.6 compatibility implementation of @[System.RegGetValues()].
  *!   The difference being that this function throws errors when

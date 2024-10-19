@@ -90,7 +90,7 @@ private array(TextNode) mergeTextNodes(array(TextNode) a, string op) {
   // Only merge nodes in the same field
   foreach (indices(fields), string field) {
     array(TextNode) unMerged = ({});
-    TextNode merged = 0;
+    object(TextNode)|zero merged = 0;
     foreach (fields[field], TextNode t) {
       int canMerge = 0;
       if (op == "and")
@@ -122,11 +122,11 @@ private array(TextNode) mergeTextNodes(array(TextNode) a, string op) {
 }
 
 //!
-ParseNode optimize(ParseNode node, string|void parentOp) {
+object(ParseNode)|zero optimize(ParseNode node, string|void parentOp) {
   if (!node)
     return 0;
   node->children = map(node->children, optimize, node->op) - ({0});
-  array(ParseNode) newChildren = 0;
+  array(ParseNode)|zero newChildren = 0;
 
   switch (node->op) {
     case "and":
@@ -210,7 +210,7 @@ ParseNode optimize(ParseNode node, string|void parentOp) {
   return node;
 }
 
-private void _validate(ParseNode node, ParseNode parent) {
+private void _validate(ParseNode node, object(ParseNode)|zero parent) {
   map(node->children, _validate, node);
   switch (node->op) {
     case "date":
@@ -234,7 +234,7 @@ private void _validate(ParseNode node, ParseNode parent) {
 }
 
 // Returns 0 if OK, a string with error message if error
-string validate(ParseNode node) {
+string|zero validate(ParseNode node) {
   if (!node)  // A null query is also valid.
     return 0;
   mixed err = catch (_validate(node, 0));

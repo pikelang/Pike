@@ -30,12 +30,12 @@ protected void create(program|object|array(program|mixed) ... c) {
       ciphers += ({ [object(.CipherState)]cc });
     }
     else if(programp(cc))
-      ciphers += ({ cc() });
+      ciphers += ({ ([program(.CipherState)]cc)() });
     else if(arrayp(cc)) {
       array acc = [array]cc;
       if(!sizeof(acc)) error("Empty array as argument.\n");
       if(!programp(acc[0])) error("First array element not program.\n");
-      ciphers += ({ ([program]acc[0])(@acc[1..]) });
+      ciphers += ({ ([program(.CipherState)]acc[0])(@acc[1..]) });
     }
     else
       error("Wrong type in argument.\n");

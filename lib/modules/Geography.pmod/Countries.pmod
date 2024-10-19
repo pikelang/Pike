@@ -1,3 +1,5 @@
+/* -*- mode: Pike; c-basic-offset: 3; -*- */
+
 #pike __REAL_VERSION__
 
 mapping _continents=
@@ -8,7 +10,7 @@ mapping _continents=
       "GI","GR","HR","HU","IE","IM","IS","IT","JE","LI",
       "LT","LU","LV","MC","MD","ME","MK","MT","NL","NO",
       "PL","PT","RO","RS","RU","SE","SI","SJ","SK","SM",
-      "TM","UA","VA"
+      "TM","UA","VA","EU"
    }),
 
    "Africa":
@@ -68,10 +70,14 @@ array(Country) countries=
    Country("AO","Angola","AO"),
    // AP NOT USED
    Country("AQ","Antarctica","AY"),
+   Country(0,"Bouvet Island","BV",
+           (["_continent":"Antarctica"])),
    Country("AR","Argentina","AR"),
    Country("AS","American Samoa","AQ"),
    Country("AT","Austria","AU"),
    Country("AU","Australia","AS"),
+   Country(0,"Ashmore and Cartier Islands","AT",
+           (["_continent":"Australia"])),
    Country("AW","Aruba","AA"),
    Country("AX","Aland Islands",0),
    Country("AZ","Azerbaijan","AJ"),
@@ -88,7 +94,7 @@ array(Country) countries=
    Country("BN","Brunei Darussalam","BX",
 	   (["aka":({"Brunei"})])),
    Country("BO","Bolivia","BL",(["aka":({"Plurinational State of Bolivia"})])),
-   Country("BQ","Bonaire","??",
+   Country("BQ","Bonaire",0,
            (["aka":({"Bonaire, Sint Eustatius and Saba"})])),
    Country("BR","Brazil","BR"),
    Country("BS","Bahamas","BF",(["aka":({"The Bahamas"})])),
@@ -122,9 +128,11 @@ array(Country) countries=
            (["former":1, "_continent":"Europe"])),
    Country("CU","Cuba","CU"),
    Country("CV","Cape Verde","CV"),
-   Country("CW","Curacao",0),
+   Country("CW","Curacao","UC"),
    Country("CX","Christmas Island","KT"),
    Country("CY","Cyprus","CY"),
+   Country(0,"Akrotiri","AX",(["_continent":"Europe"])),
+   Country(0,"Dhekelia","DX",(["_continent":"Europe"])),
    Country("CZ","Czech Republic","EZ"),
    Country("DE","Germany","GM"),
    // DG EXCEPTIONALLY RESERVED
@@ -145,7 +153,7 @@ array(Country) countries=
    // EP NOT USED
    Country("ES","Spain","SP"),
    Country("ET","Ethiopia","ET"),
-   // EU EXCEPTIONALLY RESERVED
+   Country("EU","European Union",0),
    // EV NOT USED
    // EW INDETERMINATELY RESERVED
    // EZ EXCEPTIONALLY RESERVED
@@ -238,7 +246,7 @@ array(Country) countries=
    Country("MC","Monaco","MN"),
    Country("MD","Moldova","MD",(["aka":({"Republic of Moldova"})])),
    Country("ME","Montenegro","MW"),
-   Country("MF","Saint Martin","??",(["aka":({"French Saint Martin"})])),
+   Country("MF","Saint Martin","RN",(["aka":({"French Saint Martin"})])),
    Country("MG","Madagascar","MA"),
    Country("MH","Marshall Islands","RM"),
    Country("MK","Macedonia","MK",
@@ -270,7 +278,7 @@ array(Country) countries=
    Country("NO","Norway","NO"),
    Country("NP","Nepal","NP"),
    Country("NR","Nauru","NR"),
-   Country("NT","Neutral Zone","??", // TRANSITIONALLY RESERVED
+   Country("NT","Neutral Zone",0, // TRANSITIONALLY RESERVED
            (["_continent":"N/A"])),
    Country("NU","Niue","NE"),
    Country("NZ","New Zealand (Aotearoa)","NZ",
@@ -289,7 +297,7 @@ array(Country) countries=
    Country("PN","Pitcairn","PC",
 	   (["aka":({"Pitcairn Islands"})])),
    Country("PR","Puerto Rico","RQ"),
-   Country("PS","Palestine","??",(["aka":({"State of Palestine"})])),
+   Country("PS","Palestine",0,(["aka":({"State of Palestine"})])),
    Country("PT","Portugal","PO"),
    Country("PW","Palau","PS"),
    Country("PY","Paraguay","PA"),
@@ -318,10 +326,10 @@ array(Country) countries=
            (["aka":({"Saint Helena",
                      "Sait Helena, Ascension and Tristan da Cunha" })])),
    Country("SI","Slovenia","SI"),
-   Country("SJ","Svalbard and Jan Mayen Islands","??"),
-   Country("??","Svalbard","SV",
+   Country("SJ","Svalbard and Jan Mayen Islands",0),
+   Country(0,"Svalbard","SV",
            (["_continent":"Europe"])),
-   Country("??","Jan Mayen","JN",
+   Country(0,"Jan Mayen","JN",
            (["_continent":"Europe"])),
    Country("SK","Slovak Republic","LO",
 	   (["aka":({"Slovakia"})])),
@@ -332,25 +340,26 @@ array(Country) countries=
    Country("SR","Suriname","NS"),
    Country("SS","South Sudan",0),
    Country("ST","Sao Tome and Principe","TP"),
-   Country("SU","USSR","??",(["former":1, // EXCEPTIONALLY RESERVED
-			      "_continent":"Asia"])),
+   Country("SU","USSR",0,(["former":1, // EXCEPTIONALLY RESERVED
+                           "_continent":"Asia"])),
    Country("SV","El Salvador","ES"),
-   Country("SX","Sint Maarten","??",(["aka":({"Dutch Sint Maarten"})])),
+   Country("SX","Sint Maarten","NN",(["aka":({"Dutch Sint Maarten"})])),
    Country("SY","Syria","SY"),
    Country("SZ","Swaziland","WZ"),
    // TA EXCEPTIONALLY RESERVED
-   Country("TC","Turks and Caicos Islands","??"),
+   Country("TC","Turks and Caicos Islands","TK"),
    Country("TD","Chad","CD"),
-   Country("TF","French Southern Territories","??"),
+   Country("TF","French Southern Territories","FS",
+           (["aka":({ "French Southern and Antarctic Lands" })])),
    Country("TG","Togo","TO"),
    Country("TH","Thailand","TH"),
    Country("TJ","Tajikistan","TI"),
    Country("TK","Tokelau","TL"),
-   Country("TL","Timor-Leste",0,(["aka":({"East Timor"})])),
+   Country("TL","Timor-Leste","TT",(["aka":({"East Timor"})])),
    Country("TM","Turkmenistan","TX"),
    Country("TN","Tunisia","TS"),
    Country("TO","Tonga","TN"),
-   Country("TP","East Timor","??", // TRANSITIONALLY RESERVED
+   Country("TP","East Timor",0, // TRANSITIONALLY RESERVED
            (["former":1,"_continent":"Oceania"])),
    Country("TR","Turkey","TU"),
    Country("TT","Trinidad and Tobago","TD"),
@@ -385,12 +394,12 @@ array(Country) countries=
    // XA-XZ USER ASSIGNED
    Country("YE","Yemen","YM"),
    Country("YT","Mayotte","MF"),
-   Country("YU","Yugoslavia","??", // TRANSITIONALLY RESERVED
+   Country("YU","Yugoslavia",0, // TRANSITIONALLY RESERVED
            (["former":1, "_continent":"Europe"])),
    // YV INDETERMINATELY RESERVED
    Country("ZA","South Africa","SF"),
    Country("ZM","Zambia","ZA"),
-   Country("ZR","Zaire","??", // TRANSITIONALLY RESERVED
+   Country("ZR","Zaire",0, // TRANSITIONALLY RESERVED
            (["former":1,"_continent":"Africa"])),
    Country("ZW","Zimbabwe","ZI"),
    // ZZ USER ASSIGNED
@@ -399,17 +408,29 @@ array(Country) countries=
 //! Country
 class Country
 {
-   string iso2; // iso-2-character-code aka domain name
-   //!    ISO 2-character code aka domain name
+   string|zero iso2;
+   //!    ISO-3166-1 2-character code aka domain name.
+   //!
+   //! @note
+   //!    May be zero in some obscure cases where the
+   //!    ISO-3166-1 grouping differs from the FIPS-10
+   //!    grouping.
 
-   string fips10; // iso-2-character-code aka domain name
+   string|zero fips10;
    //!    FIPS 10-character code;
-   //!    "Federal Information Processing Standards 10-3" etc,
-   //!    used by some goverments in the US.
+   //!    "Federal Information Processing Standards 10-4" etc,
+   //!    previously used by some goverments in the US.
+   //!
+   //! @note
+   //!    This character code is slightly different from @[iso2],
+   //!    and should only be used for compatibility with old code.
+   //!
+   //! @deprecated iso2
+   //!    FIPS 10-4 was withdrawn by NIST 2008-09-02.
 
    string name;
    array(string) aka=({});
-   //!    Country name and as-known-as, if any
+   //!    Country name and also-known-as, if any
 
    int former=0;
    //!    Flag that is set if this country doesn't exist anymore.
@@ -431,8 +452,8 @@ class Country
       return _continent;
    }
 
-   void create(string _iso2,string _name,string _fips10,
-	       mapping|void opts)
+   protected void create(string|zero _iso2,string _name,string|zero _fips10,
+			 mapping|void opts)
    {
       iso2=_iso2;
       name=_name;
@@ -454,7 +475,7 @@ class Country
       return UNDEFINED;
    }
 
-   string _sprintf(int t)
+   protected string _sprintf(int t)
    {
      return t=='O' && sprintf("%O(%s)", this_program, name);
    }
@@ -607,7 +628,7 @@ mapping(string:array(Country)) continents()
 //! Result: "WF"
 //! @endcode
 
-Country|function(string:Country)|array(Country)|program
+protected Country|function(string:Country)|array(Country)|program
    `->(string what)
 {
    return

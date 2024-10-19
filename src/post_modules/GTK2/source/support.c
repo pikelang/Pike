@@ -735,7 +735,8 @@ void push_gvalue_r(const GValue *param, GType t) {
 	    if (!s)
 		s="unknown type";
 	}
-	Pike_error("No push callback for type %d (%s%s)\n",t,a,s);
+        Pike_error("No push callback for type %lu (%s%s)\n",
+                   (unsigned long)t, a, s);
     }
   }
   return;
@@ -1125,9 +1126,10 @@ void pgtk2__low_get_property(GObject *g, char *prop) {
       {
 	if (gps->value_type==g_type_from_name("GdkColor")) {
 	  GdkColor *gc;
+          int args = -1;
 	  gc=g_malloc(sizeof(GdkColor));
 	  if (gc==NULL)
-	    Pike_error("Out of memory allocating %d bytes\n",sizeof(GdkColor));
+            SIMPLE_OUT_OF_MEMORY_ERROR(NULL, sizeof(GdkColor));
 	  g_object_get(g,prop,gc,NULL);
 	  push_gdkobject(gc,color,1);
 	} else {
@@ -1253,7 +1255,9 @@ void pgtk2_set_gvalue(GValue *gv, GType gt, struct svalue *sv) {
       case 0: // void
           break;
     default:
-        Pike_error("Unable to handle type %d - %s.\n",gt,g_type_name(gt) ?g_type_name(gt): "unnamed" );
+        Pike_error("Unable to handle type %lu - %s.\n",
+                   (unsigned long)gt,
+                   g_type_name(gt) ?g_type_name(gt): "unnamed" );
   }
 }
 

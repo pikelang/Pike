@@ -4,7 +4,7 @@
 || for more information.
 */
 
-#define CB_FUNC tFunc(tNone,tOr(tVoid,tMixed))
+#define CB_FUNC tOr(tFunc(tNone,tOr(tVoid,tMixed)), tZero)
 
 /* function(string,string,void|int:int) */
 FILE_FUNC("open",file_open, tFunc(tStr tStr tOr(tVoid,tInt),tInt))
@@ -14,15 +14,12 @@ FILE_FUNC("openat",file_openat, tFunc(tStr tStr tOr(tVoid,tInt),tObjImpl_STDIO_F
 #endif
 /* function(string|void:int) */
 FILE_FUNC("close",file_close, tFunc(tOr(tStr,tVoid),tInt))
-/* function(int|void,int|void:string) */
-FILE_FUNC("read",file_read, tFunc(tOr(tInt,tVoid) tOr(tInt01,tVoid),tStr8))
-/* function(float|int|void:int) */
-FILE_FUNC("peek",file_peek, tFunc(tOr3(tFlt,tInt,tVoid) tOr(tInt,tVoid), tInt))
 /* function(string|array(string),mixed...:int) */
 FILE_FUNC("write",file_write,
-	  tOr3(tFunc(tStr, tInt),
-	       tFuncV(tArr(tStr), tMixed, tInt),
-	       tFuncV(tAttr("sprintf_format", tStr),
+          tOr4(tFunc(tStr8, tInt),
+               tFuncV(tObj, tOr(tInt, tVoid), tInt),
+               tFuncV(tArr(tStr8), tMixed, tInt),
+               tFuncV(tAttr("sprintf_format", tStr8),
 		      tAttr("sprintf_args", tMixed),tInt)))
 /* function(int|void,int|void:string) */
 FILE_FUNC("read_oob",file_read_oob, tFunc(tOr(tInt,tVoid) tOr(tInt,tVoid),tStr8))
@@ -38,17 +35,13 @@ FILE_FUNC("write_oob",file_write_oob,
 FILE_FUNC("send_fd", file_send_fd, tFunc(tObjIs_STDIO_FD, tVoid))
 #endif
 
-#ifdef SO_LINGER
 /* function(int(-1..65535)|void:int(0..1)) */
 FILE_FUNC("linger", file_linger,
 	  tFunc(tOr3(tInt_10, tWord, tVoid), tInt01))
-#endif
 
-#ifdef TCP_NODELAY
 /* function(int(0..1)|void:int(0..1)) */
-FILE_FUNC("nodelay", file_nodelay,
+FILE_FUNC("set_nodelay", file_nodelay,
 	  tFunc(tOr(tInt01, tVoid), tInt01))
-#endif
 
 #ifdef HAVE_FSYNC
 /*  function(:int) */
@@ -99,8 +92,10 @@ FILE_FUNC("set_write_callback",file_set_write_callback, tFunc(CB_FUNC,tVoid))
 FILE_FUNC("set_read_oob_callback",file_set_read_oob_callback, tFunc(CB_FUNC,tVoid))
 /* function(mixed:void) */
 FILE_FUNC("set_write_oob_callback",file_set_write_oob_callback, tFunc(CB_FUNC,tVoid))
+/* function(mixed:void) */
+FILE_FUNC("set_error_callback", file_set_error_callback, tFunc(CB_FUNC,tVoid))
 /* function(mixed,int:void) */
-FILE_FUNC("set_fs_event_callback",file_set_fs_event_callback, tFunc(tFunc(tInt,tOr(tVoid,tMixed)) tInt,tVoid))
+FILE_FUNC("set_fs_event_callback",file_set_fs_event_callback, tFunc(tOr(tFunc(tInt,tOr(tVoid,tMixed)), tZero) tInt,tVoid))
 
 FILE_FUNC("query_fs_event_flags",file_query_fs_event_flags, tFunc(tVoid,tInt))
 
@@ -145,6 +140,10 @@ FILE_FUNC("connect_unix",file_connect_unix, tFunc(tStr,tInt))
 #endif /* HAVE_SYS_UN_H */
 /* function(int|void:string) */
 FILE_FUNC("query_address",file_query_address, tFunc(tOr(tInt01,tVoid),tStr))
+#ifdef IP_MTU
+/* function(:int) */
+FILE_FUNC("query_mtu", file_query_mtu, tFunc(tNone, tInt))
+#endif
 /* function(void|string,void|string:void) */
 FILE_FUNC("create",file_create, tFunc(tOr3(tVoid,tInt,tStr) tOr(tVoid,tStr) tOr(tVoid,tInt),tVoid))
 
@@ -170,19 +169,26 @@ FILE_FUNC("openpt",file_openpt, tFunc(tStr,tInt))
 FILE_FUNC("grantpt",file_grantpt, tFunc(tNone,tStr))
 #endif
 
-#if defined(HAVE_TERMIOS_H)
+/* From termios.c */
+#if defined(HAVE_TERMIOS_H) || defined(HAVE_SYS_TERMIOS_H) || defined(__NT__)
 /* function(void:mapping) */
-FILE_FUNC("tcgetattr",file_tcgetattr, tFunc(tNone,tMapping))
-/* function(mapping,void|string:int) */
-FILE_FUNC("tcsetattr",file_tcsetattr, tFunc(tMapping tOr(tVoid,tStr),tInt))
-/* function(int:int) */
-FILE_FUNC("tcsendbreak",file_tcsendbreak, tFunc(tInt,tInt))
-/* function(void:string) */
-FILE_FUNC("tcflush",file_tcflush, tFunc(tNone,tStr))
-/*    FILE_FUNC("tcdrain",file_tcdrain,"function(void:int)"); */
+FILE_FUNC("tcgetattr",file_tcgetattr, tFunc(tNone, tMap(tStr7, tInt)))
+#ifdef HAVE_TCGETATTR
+/* function(mapping, void|string: int(0..1)) */
+FILE_FUNC("tcsetattr", file_tcsetattr,
+          tFunc(tMap(tStr7, tInt) tOr(tVoid, tStr7), tInt01))
+/* function(int: int(0..1)) */
+FILE_FUNC("tcsendbreak", file_tcsendbreak, tFunc(tInt, tInt01))
+/* function(void|string: int(0..1)) */
+FILE_FUNC("tcflush", file_tcflush, tFunc(tOr(tVoid, tStr7), tInt01))
+FILE_FUNC("tcdrain", file_tcdrain, tFunc(tNone, tInt01))
 /*    FILE_FUNC("tcflow",file_tcflow,"function(string:int)"); */
 /*    FILE_FUNC("tcgetpgrp",file_tcgetpgrp,"function(void:int)"); */
 /*    FILE_FUNC("tcsetpgrp",file_tcsetpgrp,"function(int:int)"); */
+#endif
+#ifdef TIOCSWINSZ
+FILE_FUNC("tcsetsize", file_tcsetsize, tFunc(tIntPos tIntPos, tInt01))
+#endif
 #endif
 
 #ifdef SO_KEEPALIVE

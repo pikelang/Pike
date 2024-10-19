@@ -26,6 +26,7 @@
 #include "module_support.h"
 #include "operators.h"
 #include "pike_types.h"
+#include "bignum.h"
 
 #ifdef HAVE_JPEGLIB_H
 
@@ -44,6 +45,13 @@
  */
 #include <wtypes.h>
 #endif
+#endif
+
+/* Some releases of <jconfig.h> contain (re-)definitions
+ * of HAVE_STDLIB_H...
+ */
+#ifdef HAVE_STDLIB_H
+#undef HAVE_STDLIB_H
 #endif
 
 #include <jpeglib.h>
@@ -1199,6 +1207,7 @@ static void img_jpeg_decode(INT32 args,int mode)
    if (mode!=IMG_DECODE_HEADER)
    {
       int bytes_per_pixel;
+      INT32 bytes_needed;
 
       jpeg_start_decompress(&mds.cinfo);
       bytes_per_pixel = mds.cinfo.output_components;
@@ -1206,8 +1215,16 @@ static void img_jpeg_decode(INT32 args,int mode)
       o=clone_object(image_program,0);
       img=get_storage(o,image_program);
       if (!img) Pike_error("image no image? foo?\n"); /* should never happen */
-      img->img=malloc(bytes_per_pixel *
-		      mds.cinfo.output_width*mds.cinfo.output_height);
+      if (DO_INT32_MUL_OVERFLOW(sizeof(*img->img), mds.cinfo.output_width,
+			        &bytes_needed)
+	  || DO_INT32_MUL_OVERFLOW(bytes_needed, mds.cinfo.output_height,
+		                   &bytes_needed))
+      {
+	 jpeg_destroy((struct jpeg_common_struct*)&mds.cinfo);
+	 free_object(o);
+	 Pike_error("Image.JPEG.decode: Image too large (>%d bytes).\n", MAX_INT32);
+      }
+      img->img=malloc(bytes_needed);
       if (!img->img)
       {
 	 jpeg_destroy((struct jpeg_common_struct*)&mds.cinfo);
@@ -1299,14 +1316,14 @@ static void img_jpeg_decode(INT32 args,int mode)
 	 {
 	    int q=mds.cinfo.quant_tbl_ptrs[0]->quantval[4*DCTSIZE+4];
 	    int a=0,b=100,c,w;
-	    while (b>a)
+	    do
 	    {
 	       c=(b+a)/2;
 	       w=reverse_quality[c];
 	       if (w==q) break;
 	       else if (w>q) a=++c;
 	       else b=c;
-	    }
+	    } while (b>a);
 	    push_static_text("quality");
 	    push_int(c);
 	    n++;

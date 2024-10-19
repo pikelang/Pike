@@ -141,11 +141,11 @@ test_any([[
 cond_end // Stdio.File()->proxy
 
 
-test_any([[object o,o2=Stdio.File(); o=o2->pipe(); destruct(o2); return o->read()]],"")
-test_any([[object o,o2=Stdio.File(); o=o2->pipe(); o2=0; return o->read()]],"")
+test_any([[object|zero o,o2=Stdio.File(); o=o2->pipe(); destruct(o2); return o->read()]],"")
+test_any([[object|zero o,o2=Stdio.File(); o=o2->pipe(); o2=0; return o->read()]],"")
 
 test_any([[object o,o2=Stdio.File(); o=o2->pipe(Stdio.PROP_IPC); destruct(o); return o2->read() || ("error:"+o2->errno())]],"")
-test_any([[object o,o2=Stdio.File(); o=o2->pipe(Stdio.PROP_IPC); o=0; return o2->read() || ("error:"+o2->errno())]],"")
+test_any([[object|zero o,o2=Stdio.File(); o=o2->pipe(Stdio.PROP_IPC); o=0; return o2->read() || ("error:"+o2->errno())]],"")
 
 
 dnl - file->seek
@@ -384,10 +384,18 @@ dnl Buffer
 
 test_equal([[Stdio.Buffer("hej")->read(1)]], "h")
 
+test_equal([[Stdio.Buffer("0123456789")[1..2] ]], "0123456789"[1..2])
+test_equal([[Stdio.Buffer("0123456789")[..<2] ]], "0123456789"[..<2])
+test_equal([[Stdio.Buffer("0123456789")[<1..] ]], "0123456789"[<1..])
+test_equal([[Stdio.Buffer("0123456789")[<1..<2] ]], "0123456789"[<1..<2])
+
 dnl sscanf
 
 test_equal([[Stdio.Buffer("hej")->sscanf("%3c")]], ({6841706}))
-test_equal([[Stdio.Buffer("hej")->match("%3c")]], 6841706)
+test_any_equal([[
+#pragma no_deprecation_warnings
+  return Stdio.Buffer("hej")->match("%3c");
+]], 6841706)
 
 test_any([[
   int i;
@@ -426,8 +434,8 @@ test_any([[
      b->add("test");
    if( b->_size_object() != 1024*1024 )
       return -2;
-   if( b->num_malloc ) return -3;
-   if( b->num_move )   return -4;
+   if( !zero_type(b->num_malloc) && b->num_malloc ) return -3;
+   if( !zero_type(b->num_move) && b->num_move )   return -4;
 
    return 1;
 ]], 1 )
@@ -599,11 +607,11 @@ dnl basic zero-copy check
 
 test_any( [[
   Stdio.Buffer i = Stdio.Buffer("zero copy");
-  if( i->num_malloc ) return -1;
+  if( !zero_type(i->num_malloc) && i->num_malloc ) return -1;
   if( i->_size_object() != 0 )  return -2;
 
   i->add(" data goes here");
-  if( i->num_malloc!= 1 ) return -3;
+  if( !zero_type(i->num_malloc) && i->num_malloc!= 1 ) return -3;
   if( i->_size_object() == 0 )  return -4;
 
   i->read();
@@ -617,7 +625,7 @@ test_any( [[
   i->add(" indeed"); /* note: shorter than first string. */
   if( i->_size_object() == 0 )  return -7;
 
-  if( i->num_malloc != 1 ) return -8;
+  if( !zero_type(i->num_malloc) && i->num_malloc != 1 ) return -8;
   /*
   create - no move
   add - realloc + move
@@ -626,7 +634,7 @@ test_any( [[
   add -  move to malloc arena
   add - no move
   */
-  return i->num_move <= 2;
+  return zero_type(i->num_move) || i->num_move <= 2;
 ]], 1)
 
 
@@ -850,7 +858,7 @@ test_any([[
 test_any([[
   class A {
     inherit Stdio.Buffer;
-    mixed cast(string to) {
+    protected mixed cast(string to) {
       if(to=="int") return 7;
       return ::cast(to);
     }
@@ -995,6 +1003,7 @@ test_any([[ return Stdio.Buffer("\1\2\3\4")->read_le_int(4); ]], 0x04030201)
 dnl unread
 
 test_any( [[
+#pragma no_deprecation_warnings
   /* The documentation promises that we can always unread() */
   Stdio.Buffer b = Stdio.Buffer();
   b->add("0" * 90);

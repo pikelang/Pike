@@ -6,6 +6,7 @@
 
 #include "module.h"
 #include "pike_compiler.h"
+#include "threads.h"
 #include "builtin_functions.h"
 #include "operators.h"
 #include "interpret.h"
@@ -326,7 +327,7 @@ program_flags PROGRAM_CLEAR_STORAGE;
 
 #endif /* dsa_params_init */
 
-#if defined(HAVE_NETTLE_ECDSA_H) && (defined(HAVE_CURVE_NETTLE_SECP_192R1) || defined(HAVE_CURVE_NETTLE_SECP_224R1) || defined(HAVE_CURVE_NETTLE_SECP_256R1) || defined(HAVE_CURVE_NETTLE_SECP_384R1) || defined(HAVE_CURVE_NETTLE_SECP_521R1))
+#ifdef HAVE_NETTLE_ECDSA_H
 #include <nettle/ecc-curve.h>
 
 #include <nettle/ecc.h>
@@ -338,6 +339,34 @@ program_flags PROGRAM_CLEAR_STORAGE;
 #define SECP256R1 2
 #define SECP384R1 3
 #define SECP521R1 4
+#define GOST_GC256B 5
+#define GOST_GC512A 6
+
+#ifdef NEED_WRAPPER_FOR_CURVE_NETTLE_SECP_192R1
+static const struct ecc_curve *nettle_get_secp_192r1(void) {
+  return &nettle_secp_192r1;
+}
+#endif /* NEED_WRAPPER_FOR_CURVE_NETTLE_SECP_192R1 */
+#ifdef NEED_WRAPPER_FOR_CURVE_NETTLE_SECP_224R1
+static const struct ecc_curve *nettle_get_secp_224r1(void) {
+  return &nettle_secp_224r1;
+}
+#endif /* NEED_WRAPPER_FOR_CURVE_NETTLE_SECP_224R1 */
+#ifdef NEED_WRAPPER_FOR_CURVE_NETTLE_SECP_256R1
+static const struct ecc_curve *nettle_get_secp_256r1(void) {
+  return &nettle_secp_256r1;
+}
+#endif /* NEED_WRAPPER_FOR_CURVE_NETTLE_SECP_256R1 */
+#ifdef NEED_WRAPPER_FOR_CURVE_NETTLE_SECP_384R1
+static const struct ecc_curve *nettle_get_secp_384r1(void) {
+  return &nettle_secp_384r1;
+}
+#endif /* NEED_WRAPPER_FOR_CURVE_NETTLE_SECP_384R1 */
+#ifdef NEED_WRAPPER_FOR_CURVE_NETTLE_SECP_521R1
+static const struct ecc_curve *nettle_get_secp_521r1(void) {
+  return &nettle_secp_521r1;
+}
+#endif /* NEED_WRAPPER_FOR_CURVE_NETTLE_SECP_521R1 */
 
 #ifndef ecc_point_equal_p
 static int ecc_point_equal_p(const struct ecc_point *a, const struct ecc_point *b)
@@ -382,6 +411,8 @@ PIKECLASS ECC_Curve
    *!   @value Nettle.SECP256R1
    *!   @value Nettle.SECP384R1
    *!   @value Nettle.SECP521R1
+   *!   @value Nettle.GOST_GC256B
+   *!   @value Nettle.GOST_GC512A
    *! @endint
    */
   PIKEFUN void create(int(0..) curve)
@@ -396,20 +427,26 @@ PIKECLASS ECC_Curve
 
     switch(curve) {
 #ifdef HAVE_CURVE_NETTLE_SECP_192R1
-    case SECP192R1: THIS->curve = &nettle_secp_192r1; break;
+    case SECP192R1: THIS->curve = nettle_get_secp_192r1(); break;
 #endif /* HAVE_CURVE_NETTLE_SECP_192R1 */
 #ifdef HAVE_CURVE_NETTLE_SECP_224R1
-    case SECP224R1: THIS->curve = &nettle_secp_224r1; break;
+    case SECP224R1: THIS->curve = nettle_get_secp_224r1(); break;
 #endif /* HAVE_CURVE_NETTLE_SECP_224R1 */
 #ifdef HAVE_CURVE_NETTLE_SECP_256R1
-    case SECP256R1: THIS->curve = &nettle_secp_256r1; break;
+    case SECP256R1: THIS->curve = nettle_get_secp_256r1(); break;
 #endif /* HAVE_CURVE_NETTLE_SECP_256R1 */
 #ifdef HAVE_CURVE_NETTLE_SECP_384R1
-    case SECP384R1: THIS->curve = &nettle_secp_384r1; break;
+    case SECP384R1: THIS->curve = nettle_get_secp_384r1(); break;
 #endif /* HAVE_CURVE_NETTLE_SECP_384R1 */
 #ifdef HAVE_CURVE_NETTLE_SECP_521R1
-    case SECP521R1: THIS->curve = &nettle_secp_521r1; break;
+    case SECP521R1: THIS->curve = nettle_get_secp_521r1(); break;
 #endif /* HAVE_CURVE_NETTLE_SECP_521R1 */
+#ifdef HAVE_CURVE_NETTLE_GOST_GC256B
+    case GOST_GC256B: THIS->curve = nettle_get_gost_gc256b(); break;
+#endif /* HAVE_CURVE_NETTLE_GOST_GC256B */
+#ifdef HAVE_CURVE_NETTLE_GOST_GC512A
+    case GOST_GC512A: THIS->curve = nettle_get_gost_gc512a(); break;
+#endif /* HAVE_CURVE_NETTLE_GOST_GC512A */
     default:
       Pike_error("Invalid curve\n");
       break;
@@ -479,35 +516,47 @@ PIKECLASS ECC_Curve
   PIKEFUN string(7bit) name()
   {
 #ifdef HAVE_CURVE_NETTLE_SECP_192R1
-    if (THIS->curve == &nettle_secp_192r1) {
+    if (THIS->curve == nettle_get_secp_192r1()) {
       ref_push_string(MK_STRING("SECP_192R1"));
       return;
     }
 #endif /* HAVE_CURVE_NETTLE_SECP_192R1 */
 #ifdef HAVE_CURVE_NETTLE_SECP_224R1
-    if (THIS->curve == &nettle_secp_224r1) {
+    if (THIS->curve == nettle_get_secp_224r1()) {
       ref_push_string(MK_STRING("SECP_224R1"));
       return;
     }
 #endif /* HAVE_CURVE_NETTLE_SECP_224R1 */
 #ifdef HAVE_CURVE_NETTLE_SECP_256R1
-    if (THIS->curve == &nettle_secp_256r1) {
+    if (THIS->curve == nettle_get_secp_256r1()) {
       ref_push_string(MK_STRING("SECP_256R1"));
       return;
     }
 #endif /* HAVE_CURVE_NETTLE_SECP_256R1 */
 #ifdef HAVE_CURVE_NETTLE_SECP_384R1
-    if (THIS->curve == &nettle_secp_384r1) {
+    if (THIS->curve == nettle_get_secp_384r1()) {
       ref_push_string(MK_STRING("SECP_384R1"));
       return;
     }
 #endif /* HAVE_CURVE_NETTLE_SECP_384R1 */
 #ifdef HAVE_CURVE_NETTLE_SECP_521R1
-    if (THIS->curve == &nettle_secp_521r1) {
+    if (THIS->curve == nettle_get_secp_521r1()) {
       ref_push_string(MK_STRING("SECP_521R1"));
       return;
     }
 #endif /* HAVE_CURVE_NETTLE_SECP_521R1 */
+#ifdef HAVE_CURVE_NETTLE_GOST_GC256B
+    if (THIS->curve == nettle_get_gost_gc256b()) {
+      ref_push_string(MK_STRING("GOST_GC256B"));
+      return;
+    }
+#endif /* HAVE_CURVE_NETTLE_GOST_GC256B */
+#ifdef HAVE_CURVE_NETTLE_GOST_GC512A
+    if (THIS->curve == nettle_get_gost_gc512a()) {
+      ref_push_string(MK_STRING("GOST_GC512A"));
+      return;
+    }
+#endif /* HAVE_CURVE_NETTLE_GOST_GC512A */
     ref_push_string(MK_STRING("UNKNOWN"));
   }
 
@@ -526,19 +575,19 @@ PIKECLASS ECC_Curve
   PIKEFUN string(7bit) jose_name()
   {
 #ifdef HAVE_CURVE_NETTLE_SECP_256R1
-    if (THIS->curve == &nettle_secp_256r1) {
+    if (THIS->curve == nettle_get_secp_256r1()) {
       ref_push_string(MK_STRING("P-256"));
       return;
     }
 #endif /* HAVE_CURVE_NETTLE_SECP_256R1 */
 #ifdef HAVE_CURVE_NETTLE_SECP_384R1
-    if (THIS->curve == &nettle_secp_384r1) {
+    if (THIS->curve == nettle_get_secp_384r1()) {
       ref_push_string(MK_STRING("P-384"));
       return;
     }
 #endif /* HAVE_CURVE_NETTLE_SECP_384R1 */
 #ifdef HAVE_CURVE_NETTLE_SECP_521R1
-    if (THIS->curve == &nettle_secp_521r1) {
+    if (THIS->curve == nettle_get_secp_521r1()) {
       ref_push_string(MK_STRING("P-521"));
       return;
     }
@@ -558,35 +607,47 @@ PIKECLASS ECC_Curve
 #else
     do {
 #ifdef HAVE_CURVE_NETTLE_SECP_192R1
-      if (THIS->curve == &nettle_secp_192r1) {
+      if (THIS->curve == nettle_get_secp_192r1()) {
 	push_int(192);
 	break;
       }
 #endif /* HAVE_CURVE_NETTLE_SECP_192R1 */
 #ifdef HAVE_CURVE_NETTLE_SECP_224R1
-      if (THIS->curve == &nettle_secp_224r1) {
+      if (THIS->curve == nettle_get_secp_224r1()) {
 	push_int(224);
 	break;
       }
 #endif /* HAVE_CURVE_NETTLE_SECP_224R1 */
 #ifdef HAVE_CURVE_NETTLE_SECP_256R1
-      if (THIS->curve == &nettle_secp_256r1) {
+      if (THIS->curve == nettle_get_secp_256r1()) {
 	push_int(256);
 	break;
       }
 #endif /* HAVE_CURVE_NETTLE_SECP_256R1 */
 #ifdef HAVE_CURVE_NETTLE_SECP_384R1
-      if (THIS->curve == &nettle_secp_384r1) {
+      if (THIS->curve == nettle_get_secp_384r1()) {
 	push_int(384);
 	break;
       }
 #endif /* HAVE_CURVE_NETTLE_SECP_384R1 */
 #ifdef HAVE_CURVE_NETTLE_SECP_521R1
-      if (THIS->curve == &nettle_secp_521r1) {
+      if (THIS->curve == nettle_get_secp_521r1()) {
 	push_int(521);
 	break;
       }
 #endif /* HAVE_CURVE_NETTLE_SECP_521R1 */
+#ifdef HAVE_CURVE_NETTLE_GOST_GC256B
+      if (THIS->curve == nettle_get_gost_gc256b()) {
+        push_int(256);
+        break;
+      }
+#endif /* HAVE_CURVE_NETTLE_GOST_GC256B */
+#ifdef HAVE_CURVE_NETTLE_GOST_GC512A
+      if (THIS->curve == nettle_get_gost_gc512a()) {
+        push_int(512);
+        break;
+      }
+#endif /* HAVE_CURVE_NETTLE_GOST_GC512A */
       push_int(0);
     } while(0);
 #endif /* HAVE_NETTLE_ECC_BIT_SIZE */
@@ -738,7 +799,7 @@ PIKECLASS ECC_Curve
       /* Perform an inherit of the Point class (if any) that our parent
        * may contain via its inherit of __builtin.Nettle.ECC_Curve.
        */
-      lexical_inherit(1, MK_STRING("Point"), 0, REPORT_WARNING);
+      lexical_inherit(1, MK_STRING("Point"), 0, REPORT_WARNING, NULL);
     }
 
     INIT
@@ -945,7 +1006,7 @@ PIKECLASS ECC_Curve
     {
       /* Perform an inherit of the Point class that our parent contains.
        */
-      lexical_inherit(1, MK_STRING("Point"), 0, REPORT_ERROR);
+      lexical_inherit(1, MK_STRING("Point"), 0, REPORT_ERROR, NULL);
     }
 
     /*! @decl inherit __builtin.Nettle.Sign
@@ -1148,7 +1209,6 @@ PIKECLASS ECC_Curve
     PIKEFUN array(object(Gmp.mpz)) raw_sign(string(8bit) digest)
     {
       struct dsa_signature sig;
-      struct object *r, *s;
 
       NO_WIDE_STRING(digest);
 
@@ -1182,12 +1242,104 @@ PIKECLASS ECC_Curve
   }
   /*! @endclass ECDSA
    */
+
+#ifdef HAVE_NETTLE_GOSTDSA_H
+#include <nettle/gostdsa.h>
+
+  PIKECLASS GOSTDSA
+    program_flags PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT|PROGRAM_CLEAR_STORAGE;
+  {
+    /*! @decl inherit ECDSA
+     *!
+     *! This point represents the public key.
+     *!
+     *! @note
+     *!   Requires Nettle 3.6 or later.
+     */
+    EXTRA
+    {
+      /* Perform an inherit of the ECDSA class that our parent contains.
+       */
+      lexical_inherit(1, MK_STRING("ECDSA"), 0, REPORT_ERROR, NULL);
+    }
+
+    /*! @decl int(0..1) raw_verify(string(8bit) digest, @
+     *!                            object(Gmp.mpz) r, @
+     *!                            object(Gmp.mpz) s)
+     *!
+     *! Verify the signature @[r], @[s] against the message digest @[digest].
+     */
+    PIKEFUN int(0..1) raw_verify(string(0..255) digest,
+                                 object(Gmp.mpz)|int r,
+                                 object(Gmp.mpz)|int s)
+    {
+      struct ecc_point *pub;
+      struct dsa_signature sig;
+      int ret;
+
+      NO_WIDE_STRING(digest);
+
+      dsa_signature_init(&sig);
+
+      if (!mpz_from_svalue((MP_INT *)&sig.r, r)) {
+        dsa_signature_clear(&sig);
+        SIMPLE_ARG_TYPE_ERROR("raw_verify", 1, "Gmp.mpz|int");
+      }
+      if (!mpz_from_svalue((MP_INT *)&sig.s, s)) {
+        dsa_signature_clear(&sig);
+        SIMPLE_ARG_TYPE_ERROR("raw_verify", 2, "Gmp.mpz|int");
+      }
+
+      pub = &((struct Nettle_ECC_Curve_Point_struct *)
+              get_inherited_storage(2, Nettle_ECC_Curve_Point_program))->
+        point;
+      ret = gostdsa_verify(pub, digest->len, STR0(digest), &sig);
+      dsa_signature_clear(&sig);
+
+      RETURN ret;
+    }
+
+    /*! @decl array(Gmp.mpz) raw_sign(string(8bit) digest)
+     *!
+     *! Sign the message digest @[digest]. Returns the signature
+     *! as two @[Gmp.mpz] objects.
+     */
+    PIKEFUN array(object(Gmp.mpz)) raw_sign(string(8bit) digest)
+    {
+      struct dsa_signature sig;
+      struct object *r, *s;
+      struct Nettle_ECC_Curve_ECDSA_struct *ecdsa;
+
+      NO_WIDE_STRING(digest);
+
+      ecdsa = (struct Nettle_ECC_Curve_ECDSA_struct *)
+        get_inherited_storage(1, Nettle_ECC_Curve_ECDSA_program);
+
+      dsa_signature_init(&sig);
+
+      gostdsa_sign(&ecdsa->key, &ecdsa->random, random_func_wrapper,
+                   digest->len, STR0(digest), &sig);
+
+      push_bignum((MP_INT *)&sig.r);
+      push_bignum((MP_INT *)&sig.s);
+
+      dsa_signature_clear(&sig);
+
+      f_aggregate(2);
+      stack_pop_n_elems_keep_top(args);
+    }
+  }
+#endif /* HAVE_NETTLE_GOSTDSA_H */
 }
 
 /*! @endclass ECC_Curve
  */
 
 #endif /* HAVE_NETTLE_ECDSA_H */
+
+/* FIXME: Code duplication vis-a-vi Curve25519 and Curve448.
+ *        Consider having a common base class.
+ */
 
 #if defined(HAVE_NETTLE_EDDSA_H) && defined(HAVE_NETTLE_CURVE25519_H) && defined(HAVE_NETTLE_ED25519_SHA512_SIGN)
 #include <nettle/curve25519.h>
@@ -1197,7 +1349,7 @@ PIKECLASS ECC_Curve
 /*! @class Curve25519
  *!
  *! Elliptic Curve Definition for the curve
- *! @expr{y^2 = x^2 + 486662 x^2 + x (mod 2^255 - 19)@}.
+ *! @expr{y^2 = x^3 + 486662 x^2 + x (mod 2^255 - 19)@}.
  *!
  *! This curve is standardized in @rfc{7748@}.
  *!
@@ -1205,8 +1357,11 @@ PIKECLASS ECC_Curve
  *!   The API for this curve differs somewhat from the API
  *!   used by the other @[Curve]s.
  *!
+ *! @note
+ *!   Requires Nettle 3.1 or later.
+ *!
  *! @seealso
- *!   @[Curve], @rfc{7748@}
+ *!   @[Curve], @[Curve448], @rfc{7748@}
  */
 PIKECLASS Curve25519
 {
@@ -1329,7 +1484,7 @@ PIKECLASS Curve25519
       /* Perform an inherit of the Point class (if any) that our parent
        * may contain via its inherit of __builtin.Nettle.ECC_Curve.
        */
-      lexical_inherit(1, MK_STRING("Point"), 0, REPORT_WARNING);
+      lexical_inherit(1, MK_STRING("Point"), 0, REPORT_WARNING, NULL);
     }
 
     PIKEFUN void set(string(8bit) x, string(8bit)|void y)
@@ -1395,6 +1550,11 @@ PIKECLASS Curve25519
 
       apply_external(1, Nettle_Curve25519_Point_program_fun_num, 1);
     }
+
+    PIKEFUN string(8bit) encode()
+    {
+      f_Nettle_Curve25519_Point_get_x(args);
+    }
   }
   /*! @endclass Point
    */
@@ -1402,6 +1562,9 @@ PIKECLASS Curve25519
   /*! @class EdDSA
    *!
    *! Edwards Curve Digital Signing Algorithm
+   *!
+   *! @note
+   *!   Requires Nettle 3.1 or later.
    */
   PIKECLASS EdDSA
     program_flags PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT|PROGRAM_CLEAR_STORAGE;
@@ -1414,7 +1577,7 @@ PIKECLASS Curve25519
     {
       /* Perform an inherit of the Point class that our parent contains.
        */
-      lexical_inherit(1, MK_STRING("Point"), 0, REPORT_ERROR);
+      lexical_inherit(1, MK_STRING("Point"), 0, REPORT_ERROR, NULL);
     }
 
     /*! @decl inherit __builtin.Nettle.Sign
@@ -1619,6 +1782,450 @@ PIKECLASS Curve25519
  */
 #endif /* HAVE_NETTLE_EDDSA_H && HAVE_NETTLE_CURVE25519_H && HAVE_NETTLE_ED25519_SHA512_SIGN */
 
+#if defined(HAVE_NETTLE_EDDSA_H) && defined(HAVE_NETTLE_CURVE448_H) && defined(HAVE_NETTLE_ED448_SHAKE256_SIGN)
+#include <nettle/curve448.h>
+
+/* NB: Typically already included (for Curve25519 above), but... */
+#include <nettle/eddsa.h>
+
+/*! @class Curve448
+ *!
+ *! Elliptic Curve Definition for the curve
+ *! @expr{y^2 = x^3 + 156326 x^2 + x (mod 2^448 - 2^224 - 1)@}.
+ *!
+ *! This curve is standardized in @rfc{7748@}.
+ *!
+ *! @note
+ *!   The API for this curve differs somewhat from the API
+ *!   used by the other @[Curve]s.
+ *!
+ *! @note
+ *!   Requires Nettle 3.6 or later.
+ *!
+ *! @seealso
+ *!   @[Curve], @[Curve25519], @rfc{7748@}
+ */
+PIKECLASS Curve448
+{
+  /*! @decl inherit __builtin.Nettle.ECC_Curve
+   */
+  INHERIT "__builtin.Nettle.ECC_Curve";
+
+  DECLARE_STORAGE;
+
+  /*! @decl string(7bit) name()
+   *!
+   *! Returns the name of the curve.
+   */
+  PIKEFUN string(7bit) name()
+  {
+    ref_push_string(MK_STRING("Curve448"));
+  }
+
+  /*! @decl string(7bit) jose_name()
+   *!
+   *! Returns the name of the curve according to JOSE
+   *! (@rfc{8037:3.1@}).
+   *!
+   *! @returns
+   *!   Returns the string @expr{"X448"@}.
+   *!
+   *! @seealso
+   *!   @[name()]
+   */
+  PIKEFUN string(7bit) jose_name()
+  {
+    ref_push_string(MK_STRING("X448"));
+  }
+
+  /*! @decl int size()
+   *!
+   *! @returns
+   *!   Returns the size in bits for a single coordinate on the curve.
+   */
+  PIKEFUN int size()
+  {
+    push_int(CURVE448_SIZE * 8);
+  }
+
+  /*! @decl Gmp.mpz new_scalar(function(int(0..):string(8bit)) rnd)
+   *!
+   *! @param rnd
+   *!   Randomness function to use as source.
+   *!
+   *! @returns
+   *!   Returns a random scalar suitable to use as an @[ECDSA] private key
+   *!   or as an ECDH exponent.
+   */
+  PIKEFUN string(8bit) new_scalar(function(int(0..):string(8bit)) rnd)
+  {
+    push_int(CURVE448_SIZE);
+    apply_svalue(rnd, 1);
+  }
+
+  /*! @decl Point `*(string(8bit) scalar)
+   *!
+   *! Multiply the curve by a scalar.
+   *!
+   *! This can be used to get the public key from a private key.
+   *!
+   *! @returns
+   *!   Returns a new point on the curve.
+   */
+  PIKEFUN string(8bit) `*(string(8bit) scalar)
+  {
+    struct pike_string *res;
+
+    if (scalar->len != CURVE448_SIZE) Pike_error("Invalid scalar.\n");
+
+    res = begin_shared_string(CURVE448_SIZE);
+
+    curve448_mul_g(STR0(res), STR0(scalar));
+
+    push_string(end_shared_string(res));
+
+    apply_current(Nettle_Curve448_Point_program_fun_num, 1);
+  }
+
+  /*! @decl string(8bit) point_mul(string(8bit) x, string(8bit) scalar)
+   *!
+   *! Multiply a point on the curve by a scalar.
+   *!
+   *! A typical use is for Elliptic Curve Diffie Hellman (ECDH) key exchange.
+   *!
+   *! @returns
+   *!   Returns the new point on the curve.
+   */
+  PIKEFUN string(8bit) point_mul(string(8bit) x, string(8bit) scalar)
+  {
+    struct pike_string *res;
+
+    if (x->len != CURVE448_SIZE) Pike_error("Invalid x.\n");
+    if (scalar->len != CURVE448_SIZE) Pike_error("Invalid scalar.\n");
+
+    res = begin_shared_string(CURVE448_SIZE);
+
+    curve448_mul(STR0(res), STR0(scalar), STR0(x));
+
+    push_string(end_shared_string(res));
+  }
+
+  /*! @class Point
+   *!
+   *! A point on an elliptic curve.
+   */
+  PIKECLASS Point
+    program_flags PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT|PROGRAM_CLEAR_STORAGE;
+  {
+    PIKEVAR string(8bit) point flags ID_PRIVATE|ID_PROTECTED|ID_HIDDEN;
+
+    /*! @decl inherit ECC_Curve::Point
+     */
+    EXTRA
+    {
+      /* Perform an inherit of the Point class (if any) that our parent
+       * may contain via its inherit of __builtin.Nettle.ECC_Curve.
+       */
+      lexical_inherit(1, MK_STRING("Point"), 0, REPORT_WARNING, NULL);
+    }
+
+    PIKEFUN void set(string(8bit) x, string(8bit)|void y)
+      flags ID_VARIANT;
+    {
+      if (x->len != CURVE448_SIZE) {
+        Pike_error("Invalid x.\n");
+      }
+      if (y && y->len) {
+        Pike_error("Invalid y.\n");
+      }
+      if (THIS->point) {
+        free_string(THIS->point);
+      }
+      add_ref(THIS->point = x);
+    }
+
+    /* NB: Little-endian byte-order! */
+    const p_wchar0 curve448_scalar_one[CURVE448_SIZE] = {
+      1, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0,
+    };
+
+    PIKEFUN string(8bit) get_x()
+    {
+      if (!THIS->point) {
+        /* Default to 'g'. */
+        struct pike_string *res;
+        res = begin_shared_string(CURVE448_SIZE);
+        curve448_mul_g(STR0(res), curve448_scalar_one);
+        THIS->point = end_shared_string(res);
+      }
+      ref_push_string(THIS->point);
+    }
+
+    PIKEFUN string(8bit) get_y()
+    {
+      push_text("");
+    }
+
+    PIKEFUN void create(string(8bit)|Stdio_Buffer data)
+      flags ID_PROTECTED|ID_VARIANT;
+    {
+      if (TYPEOF(*data) == PIKE_T_OBJECT) {
+        push_int(CURVE448_SIZE);
+        apply(data->u.object, "read", 1);
+      }
+      apply_current(f_Nettle_Curve448_Point_set_fun_num, 1);
+    }
+
+    PIKEFUN Nettle_Curve448_Point `*(string(8bit) scalar)
+      flags ID_PROTECTED;
+    {
+      struct pike_string *res;
+      if (scalar->len != CURVE448_SIZE) Pike_error("Invalid scalar.\n");
+      res = begin_shared_string(CURVE448_SIZE);
+      if (THIS->point) {
+        curve448_mul(STR0(res), STR0(scalar), STR0(THIS->point));
+      } else {
+        curve448_mul_g(STR0(res), STR0(scalar));
+      }
+      push_string(end_shared_string(res));
+
+      apply_external(1, Nettle_Curve448_Point_program_fun_num, 1);
+    }
+
+    PIKEFUN string(8bit) encode()
+    {
+      f_Nettle_Curve448_Point_get_x(args);
+    }
+  }
+  /*! @endclass Point
+   */
+
+  /*! @class EdDSA
+   *!
+   *! Edwards Curve Digital Signing Algorithm
+   *!
+   *! @note
+   *!   Requires Nettle 3.6 or later.
+   */
+  PIKECLASS EdDSA
+    program_flags PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT|PROGRAM_CLEAR_STORAGE;
+  {
+    /*! @decl inherit Point
+     *!
+     *! This point represents the public key.
+     */
+    EXTRA
+    {
+      /* Perform an inherit of the Point class that our parent contains.
+       */
+      lexical_inherit(1, MK_STRING("Point"), 0, REPORT_ERROR, NULL);
+    }
+
+    /*! @decl inherit __builtin.Nettle.Sign
+     */
+    INHERIT "__builtin.Nettle.Sign";
+
+    PIKEVAR string(8bit) private_key flags ID_PRIVATE|ID_HIDDEN;
+
+    PIKEVAR function(int(0..):string(0..255)) random
+      flags ID_PROTECTED;
+
+    INIT
+    {
+      struct svalue *random =
+        simple_mapping_string_lookup(get_builtin_constants(), "random_string");
+      if(!random || (TYPEOF(*random) != T_FUNCTION))
+        Pike_error("Unable to resolve random function.\n");
+      assign_svalue(&THIS->random, random);
+    }
+
+    /*! @decl string(7bit) name()
+     *!
+     *! Returns the string @expr{"EdDSA"@}.
+     */
+    PIKEFUN string(7bit) name()
+    {
+      ref_push_string(MK_STRING("EdDSA"));
+    }
+
+    /*! @decl string(7bit) jose_name()
+     *!
+     *! Returns the string @expr{"Ed448"@}.
+     */
+    PIKEFUN string(7bit) jose_name()
+    {
+      ref_push_string(MK_STRING("Ed448"));
+    }
+
+    /*! @decl Curve448 get_curve()
+     *!
+     *! Get the elliptic curve that is in use.
+     */
+    PIKEFUN object(Nettle_Curve448) get_curve()
+    {
+      struct external_variable_context loc;
+      loc.o = Pike_fp->current_object;
+      loc.inherit = Pike_fp->context;
+      find_external_context(&loc, 1);
+      ref_push_object_inherit(loc.o, loc.inherit - loc.o->prog->inherits);
+    }
+
+    /*! @decl string(8bit) get_private_key()
+     *!
+     *! Get the private key.
+     */
+    PIKEFUN string(8bit) get_private_key()
+    {
+      if (THIS->private_key) {
+        ref_push_string(THIS->private_key);
+      } else {
+        push_undefined();
+      }
+    }
+
+    /*! @decl void set_private_key(string(8bit) k)
+     *!
+     *! Set the private key (and corresponding public key).
+     *!
+     *! @note
+     *!   Throws errors if the key isn't valid for the curve.
+     */
+    PIKEFUN void set_private_key(string(8bit) k)
+    {
+      struct pike_string *pub;
+      struct Nettle_Curve448_Point_struct *point;
+
+      if (k->len != ED448_KEY_SIZE) Pike_error("Invalid private key.\n");
+
+      if (THIS->private_key) {
+        free_string(THIS->private_key);
+      }
+      copy_shared_string(THIS->private_key, k);
+
+      /* Set the corresponding public key, */
+      pub = begin_shared_string(ED448_KEY_SIZE);
+
+      ed448_shake256_public_key(STR0(pub), STR0(k));
+
+      point = get_inherited_storage(1, Nettle_Curve448_Point_program);
+      if (point->point) {
+        free_string(point->point);
+      }
+      point->point = end_shared_string(pub);
+    }
+
+    /*! @decl string(8bit) get_x()
+     *!
+     *! Get the x coordinate of the public key.
+     */
+    PIKEFUN string(8bit) get_x()
+    {
+      struct Nettle_Curve448_Point_struct *point;
+      point = get_inherited_storage(1, Nettle_Curve448_Point_program);
+      if (point->point) {
+        ref_push_string(point->point);
+      } else {
+        push_undefined();
+      }
+    }
+
+    /*! @decl void set_public_key(string(8bit) x)
+     *!
+     *! Change to the selected point on the curve as public key.
+     *!
+     *! @note
+     *!   Throws errors if the point isn't on the curve.
+     */
+    PIKEFUN void set_public_key(string(8bit) x)
+    {
+      struct Nettle_Curve448_Point_struct *point;
+      point = get_inherited_storage(1, Nettle_Curve448_Point_program);
+      if (point->point == x) return;
+      if (x->len != ED448_KEY_SIZE) Pike_error("Invalid key.\n");
+      if (point->point) {
+        free_string(point->point);
+      }
+      if (THIS->private_key) {
+        free_string(THIS->private_key);
+        THIS->private_key = NULL;
+      }
+      copy_shared_string(point->point, x);
+    }
+
+    /*! @decl void set_random(function(int(0..):string(8bit)) r)
+     *!
+     *! Set the random function, used to generate keys and parameters,
+     *! to the function @[r].
+     */
+    PIKEFUN void set_random(function(int(0..):string(8bit)) r)
+    {
+      assign_svalue(&THIS->random, r);
+    }
+
+    /*! @decl int(0..1) raw_verify(string(8bit) message, string(8bit) signature)
+     *!
+     *! Verify the @[signature] against the @[message].
+     */
+    PIKEFUN int(0..1) raw_verify(string(8bit) message, string(8bit) signature)
+    {
+      struct Nettle_Curve448_Point_struct *point;
+      point = get_inherited_storage(1, Nettle_Curve448_Point_program);
+      if (!point->point) Pike_error("No public key.\n");
+
+      if (signature->len != ED448_SIGNATURE_SIZE) {
+        push_int(0);
+        return;
+      }
+
+      push_int(ed448_shake256_verify(STR0(point->point),
+                                     message->len, STR0(message),
+                                     STR0(signature)));
+    }
+
+    /*! @decl string(8bit) raw_sign(string(8bit) message)
+     *!
+     *! Sign the @[message].
+     */
+    PIKEFUN string(8bit) raw_sign(string(8bit) message)
+    {
+      struct pike_string *res;
+      struct Nettle_Curve448_Point_struct *point;
+      point = get_inherited_storage(1, Nettle_Curve448_Point_program);
+
+      if (!THIS->private_key) Pike_error("No private key.\n");
+      if (!point->point) Pike_error("No public key.\n");
+
+      res = begin_shared_string(ED448_SIGNATURE_SIZE);
+
+      ed448_shake256_sign(STR0(point->point), STR0(THIS->private_key),
+                          message->len, STR0(message),
+                          STR0(res));
+
+      push_string(end_shared_string(res));
+    }
+
+    /*! @decl void generate_key()
+     *!
+     *! Generate a new set of private and public keys on the current curve.
+     */
+    PIKEFUN void generate_key()
+    {
+      push_int(ED448_KEY_SIZE);
+      apply_svalue(&THIS->random, 1);
+      apply_current(f_Nettle_Curve448_EdDSA_set_private_key_fun_num, 1);
+    }
+  }
+  /*! @endclass EdDSA
+   */
+}
+
+/*! @endclass Curve448
+ */
+#endif /* HAVE_NETTLE_EDDSA_H && HAVE_NETTLE_CURVE448_H && HAVE_NETTLE_ED448_SHAKE256_SIGN */
+
 /*! @endmodule Nettle
  */
 
@@ -1643,6 +2250,12 @@ hogweed_init(void)
 #ifdef HAVE_CURVE_NETTLE_SECP_521R1
   ADD_INT_CONSTANT("SECP521R1", SECP521R1, 0);
 #endif /* HAVE_CURVE_NETTLE_SECP_521R1 */
+#ifdef HAVE_CURVE_NETTLE_GOST_GC256B
+  ADD_INT_CONSTANT("GOST_GC256B", GOST_GC256B, 0);
+#endif /* HAVE_CURVE_NETTLE_GOST_GC256B */
+#ifdef HAVE_CURVE_NETTLE_GOST_GC512A
+  ADD_INT_CONSTANT("GOST_GC512A", GOST_GC512A, 0);
+#endif /* HAVE_CURVE_NETTLE_GOST_GC512A */
 #endif /* HAVE_NETTLE_ECDSA_H */
 
 #if defined(HAVE_NETTLE_EDDSA_H) && defined(HAVE_NETTLE_CURVE25519_H) && defined(HAVE_NETTLE_ED25519_SHA512_SIGN)

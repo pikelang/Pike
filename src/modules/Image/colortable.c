@@ -1,4 +1,4 @@
-/*
+/* -*- mode: C; c-basic-offset: 3; -*-
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
@@ -633,6 +633,7 @@ static struct nct_flat _img_reduce_number_of_colors(struct nct_flat flat,
 						    rgbl_group sf)
 {
    ptrdiff_t i,j;
+   size_t realloc_size;
    struct nct_flat_entry *newe;
    rgbd_group pos={0.5,0.5,0.5},space={0.5,0.5,0.5};
 
@@ -651,7 +652,14 @@ static struct nct_flat _img_reduce_number_of_colors(struct nct_flat flat,
 
    free(flat.entries);
 
-   flat.entries=realloc(newe,i*sizeof(struct nct_flat_entry));
+   realloc_size=i*sizeof(struct nct_flat_entry);
+
+   /* realloc() frees if size is 0 */
+   if (realloc_size)
+     flat.entries=realloc(newe, realloc_size);
+   else
+     flat.entries=NULL;
+
    flat.numentries=i;
    if (!flat.entries) {
      free(newe);
@@ -1495,7 +1503,7 @@ static void _img_sub_colortable(struct neo_colortable *rdest,
 {
    struct neo_colortable tmp1,tmp2;
    struct color_hash_entry *hash,*mark;
-   size_t i,j,hashsize,k;
+   size_t i,j,hashsize;
    struct nct_flat_entry *en;
    struct nct_flat flat;
    struct neo_colortable *dest=rdest;
@@ -2098,13 +2106,13 @@ void image_colortable_free_dither(struct nct_dither *dith)
 /*
 **! method void create()
 **! method void create(array(array(int)) colors)
-**! method void create(object(Image.Colortable)) colortable)
+**! method void create(object(Image.Colortable) colortable)
 **! method void create(object(Image.Image) image,int number)
 **! method void create(object(Image.Image) image,int number,array(array(int)) needed)
 **! method void create(int r,int g,int b)
 **! method void create(int r,int g,int b, array(int) from1,array(int) to1,int steps1, ..., array(int) fromn,array(int) ton,int stepsn)
 **! method object add(array(array(int)) colors)
-**! method object add(object(Image.Colortable)) colortable)
+**! method object add(object(Image.Colortable) colortable)
 **! method object add(object(Image.Image) image,int number)
 **! method object add(object(Image.Image) image,int number,array(array(int)) needed)
 **! method object add(int r,int g,int b)
@@ -2516,7 +2524,7 @@ void image_colortable_operator_plus(INT32 args)
       else {
         bad_arg_error("`+",args,0,"",sp-args,
                       "Bad arguments to `+.\n");
-        UNREACHABLE(src = NULL);
+        UNREACHABLE();
       }
 
       _img_add_colortable(dest,src);
@@ -3142,6 +3150,7 @@ static inline void _build_cubicle(struct neo_colortable *nct,
    struct nct_flat_entry *fe=nct->u.flat.entries;
    INT32 n = nct->u.flat.numentries;
 
+   size_t realloc_size;
    int i=0;
    int *p = xalloc(n * sizeof(INT32));
    int *pp; /* write */
@@ -3197,7 +3206,13 @@ static inline void _build_cubicle(struct neo_colortable *nct,
 #endif
 
    cub->n = i;
-   cub->index = realloc(p, i * sizeof(INT32));
+   realloc_size = i * sizeof(INT32);
+
+   /* realloc() would free if size was 0 */
+   if (realloc_size)
+     cub->index = realloc(p, realloc_size);
+   else
+     cub->index = NULL;
 
    if (!cub->index)
       cub->index=p; /* out of memory, or weird */
@@ -4171,7 +4186,7 @@ void image_colortable_ordered(INT32 args)
       {
          bad_arg_error("ordered",args,0,"",sp-args,
                        "Bad arguments to ordered.\n");
-         UNREACHABLE(r=g=b=0);
+         UNREACHABLE();
       }
       else
       {
@@ -4491,8 +4506,13 @@ void init_image_colortable(void)
    /* function(void:void)|"
 		"function(array(array(int)|string|object):void)|"
 		"function(object,void|int,mixed ...:void)|"
-		"function(int,int,int,void|int ...:void) */
-   ADD_FUNCTION("create",image_colortable_create,tOr4(tFunc(tVoid,tVoid),tFunc(tOr(tArr(tColor),tStr),tVoid),tFuncV(tObj tOr(tVoid,tInt),tMix,tVoid),tFuncV(tInt tInt tInt,tOr(tVoid,tInt),tVoid)),0);
+                "function(int,int,int,int ...:void) */
+   ADD_FUNCTION("create",image_colortable_create,
+		tOr4(tFunc(tVoid,tVoid),
+		     tFunc(tOr(tArr(tColor),tStr),tVoid),
+		     tFuncV(tObj tOr(tVoid,tInt),tMix,tVoid),
+		     tFuncV(tInt tInt tInt,tOr(tColor,tInt),tVoid)),
+		0);
 
 
    ADD_FUNCTION("_encode", image_colortable__encode,tFunc(tNone,tStr),0);
@@ -4502,8 +4522,13 @@ void init_image_colortable(void)
    /* function(void:void)|"
 		"function(array(array(int)|string|object):void)|"
 		"function(object,void|int,mixed ...:void)|"
-		"function(int,int,int,void|int ...:void) */
-   ADD_FUNCTION("add",image_colortable_add,tOr4(tFunc(tVoid,tVoid),tFunc(tArr(tColor),tVoid),tFuncV(tObj tOr(tVoid,tInt),tMix,tVoid),tFuncV(tInt tInt tInt,tOr(tVoid,tInt),tVoid)),0);
+                "function(int,int,int,int ...:void) */
+   ADD_FUNCTION("add",image_colortable_add,
+		tOr4(tFunc(tVoid,tVoid),
+		     tFunc(tArr(tColor),tVoid),
+		     tFuncV(tObj tOr(tVoid,tInt),tMix,tVoid),
+		     tFuncV(tInt tInt tInt,tOr(tColor,tInt),tVoid)),
+		0);
 
    /* function(int:object) */
    ADD_FUNCTION("reduce",image_colortable_reduce,tFunc(tInt,tObj),0);

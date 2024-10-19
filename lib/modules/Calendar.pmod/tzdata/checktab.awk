@@ -58,27 +58,32 @@ BEGIN {
 				zone_table, zone_NR >>"/dev/stderr"
 			status = 1
 		}
-		split($1, cca, /,/)
-		cc = cca[1]
+		ccs = input_ccs[zone_NR] = $1
 		coordinates = $2
 		tz = $3
-		comments = $4
-		if (cc < cc0) {
+		comments = input_comments[zone_NR] = $4
+		split(ccs, cca, /,/)
+		cc = cca[1]
+
+		# Don't complain about a special case for Crimea in zone.tab.
+		# FIXME: zone.tab should be removed, since it is obsolete.
+		# Or at least put just "XX" in its country-code column.
+		if (cc < cc0 \
+		    && !(zone_table == "zone.tab" \
+			 && tz0 == "Europe/Simferopol")) {
 			printf "%s:%d: country code '%s' is out of order\n", \
 				zone_table, zone_NR, cc >>"/dev/stderr"
 			status = 1
 		}
 		cc0 = cc
+		tz0 = tz
 		tztab[tz] = 1
-		tz2comments[tz] = comments
 		tz2NR[tz] = zone_NR
 		for (i in cca) {
 		    cc = cca[i]
-		    cctz = cc tz
-		    cctztab[cctz] = 1
 		    if (cc2name[cc]) {
 			cc_used[cc]++
-		    } else {
+		    } else if (! (cc == "XX" && zone_table == "zonenow.tab")) {
 			printf "%s:%d: %s: unknown country code\n", \
 				zone_table, zone_NR, cc >>"/dev/stderr"
 			status = 1
@@ -92,27 +97,28 @@ BEGIN {
 		}
 	}
 
-	for (cctz in cctztab) {
-		cc = substr (cctz, 1, 2)
-		tz = substr (cctz, 3)
-		if (1 < cc_used[cc]) {
-			comments_needed[tz] = cc
-		}
-	}
-	for (cctz in cctztab) {
-	  cc = substr (cctz, 1, 2)
-	  tz = substr (cctz, 3)
-	  if (!comments_needed[tz] && tz2comments[tz]) {
+	for (i = 1; i <= zone_NR; i++) {
+	  ccs = input_ccs[i]
+	  if (!ccs) continue
+	  comments = input_comments[i]
+	  split(ccs, cca, /,/)
+	  used_max = 0
+          for (j in cca) {
+	    cc = cca[j]
+	    if (used_max < cc_used[cc]) {
+	      used_max = cc_used[cc]
+	      used_max_cc = cc
+	    }
+	  }
+	  if (used_max <= 1 && comments && zone_table != "zonenow.tab") {
 	    printf "%s:%d: unnecessary comment '%s'\n", \
-		zone_table, tz2NR[tz], tz2comments[tz] \
-		>>"/dev/stderr"
-	    tz2comments[tz] = 0
-	    status = 1
-	  } else if (comments_needed[tz] && !tz2comments[tz]) {
-	    printf "%s:%d: missing comment for %s\n", \
-	      zone_table, tz2NR[tz], comments_needed[tz] \
+	      zone_table, i, comments \
 	      >>"/dev/stderr"
-	    tz2comments[tz] = 1
+	    status = 1
+	  } else if (1 < used_max && !comments) {
+	    printf "%s:%d: missing comment for %s\n", \
+	      zone_table, i, used_max_cc \
+	      >>"/dev/stderr"
 	    status = 1
 	  }
 	}
@@ -142,8 +148,9 @@ $1 ~ /^#/ { next }
 		ruleUsed[$2] = 1
 		if ($3 ~ /%/) rulePercentUsed[$2] = 1
 	}
-	if (tz && tz ~ /\//) {
-		if (!tztab[tz]) {
+	if (tz && tz ~ /\// && tz !~ /^Etc\//) {
+		if (!tztab[tz] && FILENAME != "backward" \
+		    && zone_table != "zonenow.tab") {
 			printf "%s: no data for '%s'\n", zone_table, tz \
 				>>"/dev/stderr"
 			status = 1
@@ -166,7 +173,7 @@ END {
 		}
 	}
 	for (tz in tztab) {
-		if (!zoneSeen[tz]) {
+		if (!zoneSeen[tz] && tz !~ /^Etc\//) {
 			printf "%s:%d: no Zone table for '%s'\n", \
 				zone_table, tz2NR[tz], tz >>"/dev/stderr"
 			status = 1

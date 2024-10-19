@@ -228,4 +228,17 @@ test_any([[
   return Debug->globals->x;
 ]], 2)
 
+test_any([[
+  // Check foreach iterator stepping behavior.
+  array a = indices (allocate (7));
+  Array.Iterator i = get_iterator (a);
+  foreach (i;; int v)
+    if (v > 3) break;
+  foreach (i;; int v)
+    if (v < 5) break;
+  foreach (i;; int v)
+    return v;
+]], 4)
+test_eq( sizeof(get_iterator(({1,2,3,4}))), 4 )
+
 END_MARKER

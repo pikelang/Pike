@@ -32,9 +32,9 @@ class Watch {
     int mask;
     array extra;
 
-    void create(string name, int mask,
-		function(int, int, string, mixed ...:void) callback,
-		array extra) {
+    protected void create(string name, int mask,
+			  function(int, int, string, mixed ...:void) callback,
+			  array extra) {
 	this::name = name;
 	this::mask = mask;
 	this::callback = callback;
@@ -92,7 +92,7 @@ class Instance {
 	}
     }
 
-    void create() {
+    protected void create() {
 	set_event_callback(event_callback);
 	set_nonblocking();
     }

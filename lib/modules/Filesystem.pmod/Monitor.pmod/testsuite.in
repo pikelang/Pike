@@ -28,6 +28,10 @@ test_do([[
 #else
       int timeout = gethrtime() + 10000000; // 10 secs.
 #endif
+#ifdef __NT__
+      // Add some extra time in case of system clock drift on NT.
+      timeout += 60000000;	// 1 minute.
+#endif
       int got_path;
 
       path = canonic_path(path);
@@ -37,6 +41,11 @@ test_do([[
           got_path = 1;
           break;
         }
+      }
+
+      if (!got_path) {
+        werror("Path %O not notified. Got: %O\n",
+               path, evts);
       }
 
       return got_path;

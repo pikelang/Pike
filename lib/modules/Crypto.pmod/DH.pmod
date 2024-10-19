@@ -30,13 +30,13 @@ class Parameters
   inherit Nettle.DH_Params;
 #else
   //! Prime.
-  Gmp.mpz p;
+  object(Gmp.mpz)|zero p;
 
   //! Generator.
-  Gmp.mpz g;
+  object(Gmp.mpz)|zero g;
 
   //! Subgroup size.
-  Gmp.mpz q;
+  object(Gmp.mpz)|zero q;
 
   // FIXME: generate().
 

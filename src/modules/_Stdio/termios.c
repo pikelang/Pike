@@ -7,17 +7,20 @@
 #include "global.h"
 #include "file_machine.h"
 
-#if defined(HAVE_TERMIOS_H) || defined(HAVE_SYS_TERMIOS_H)
+#if defined(HAVE_TERMIOS_H) || defined(HAVE_SYS_TERMIOS_H) || defined(__NT__)
 
 #ifdef HAVE_TERMIOS_H
 #include <termios.h>
-#else /* HAVE_SYS_TERMIOS_H */
+#elif defined(HAVE_SYS_TERMIOS_H)
 /* NB: Deprecated by <termios.h> above. */
 #include <sys/termios.h>
 #endif
 
 #include <errno.h>
+
+#ifdef HAVE_SYS_IOCTL_H
 #include <sys/ioctl.h>
+#endif
 
 #include "fdlib.h"
 #include "interpret.h"
@@ -40,19 +43,15 @@
 #undef CS6
 #endif
 
-/*! @module Stdio
+/*! @module _Stdio
  */
 
-/* The class below is not accurate, but it's the lowest exposed API
- * interface, which makes the functions appear where users actually
- * look for them. /mast */
-
-/*! @class File
+/*! @class Fd
  */
 
-/*! @decl mapping tcgetattr()
- *! @decl int tcsetattr(mapping attr)
- *! @decl int tcsetattr(mapping attr, string when)
+/*! @decl mapping(string(7bit):int) tcgetattr()
+ *! @decl int tcsetattr(mapping(string(7bit):int) attr)
+ *! @decl int tcsetattr(mapping(string(7bit):int) attr, string(7bit) when)
  *!
  *! Gets/sets term attributes. The returned value/the @[attr] parameter
  *! is a mapping on the form
@@ -114,19 +113,19 @@
  *! @bugs
  *!   Terminal rows and columns setting by @[tcsetattr()] is not
  *!   currently supported.
+ *!
+ *! @seealso
+ *!   @[tcsetsize()]
  */
 
-/*! @endclass
- */
 
-/*! @endmodule
- */
 
 #undef THIS
 #define THIS ((struct my_file *)(Pike_fp->current_storage))
 #define FD (THIS->box.fd)
 #define ERRNO (THIS->my_errno)
 
+#ifdef HAVE_TCGETATTR
 static int termios_bauds( int speed )
 {
     switch (speed)
@@ -159,16 +158,21 @@ static const struct {
 #undef c_oflag
 #undef c_lflag
 
+#endif /* HAVE_TCGETATTR */
+
 void file_tcgetattr(INT32 args)
 {
+#ifdef HAVE_TCGETATTR
    struct termios ti;
-   unsigned int n;
+#endif
+   unsigned int n = 0;
 
    if(FD < 0)
       Pike_error("File not open.\n");
 
    pop_n_elems(args);
 
+#ifdef HAVE_TCGETATTR
    if (tcgetattr(FD,&ti)) /* error */
    {
       ERRNO=errno;
@@ -217,10 +221,12 @@ void file_tcgetattr(INT32 args)
    n++;
 #endif
 
+#endif /* HAVE_TCGETATTR */
+
 #ifdef TIOCGWINSZ
    {
       struct winsize winsize;
-      if (!ioctl(FD,TIOCGWINSZ,&winsize))
+      if (!fd_ioctl(FD, TIOCGWINSZ, &winsize))
       {
 	 push_static_text("rows");
 	 push_int(winsize.ws_row);
@@ -232,11 +238,11 @@ void file_tcgetattr(INT32 args)
    }
 #endif
 
-
    f_aggregate_mapping(n*2);
 }
 
 
+#ifdef HAVE_TCGETATTR
 static int termios_speed( int speed )
 {
     switch (speed)
@@ -375,6 +381,26 @@ void file_tcsetattr(INT32 args)
   push_int(!tcsetattr(FD,optional_actions,&ti));
 }
 
+/*! @decl int(0..1) tcflush(string(7bit)|void flush_direction)
+ *!
+ *! Flush queued terminal control messages.
+ *!
+ *! @param flush_direction
+ *!   @string
+ *!     @value "TCIFLUSH"
+ *!       Flush received but not read.
+ *!     @value "TCOFLUSH"
+ *!       Flush written but not transmitted.
+ *!     @value "TCIOFLUSH"
+ *!       Flush both of the above. Default.
+ *!   @endstring
+ *!
+ *! @returns
+ *!   Returns @expr{1@} on success and @expr{0@} (zero) on failure.
+ *!
+ *! @seealso
+ *!   @[tcdrain()]
+ */
 void file_tcflush(INT32 args)
 {
   int action=TCIOFLUSH;
@@ -385,7 +411,7 @@ void file_tcflush(INT32 args)
       MAKE_CONSTANT_SHARED_STRING( s_tciflush, "TCIFLUSH" );
       MAKE_CONSTANT_SHARED_STRING( s_tcoflush, "TCOFLUSH" );
       MAKE_CONSTANT_SHARED_STRING( s_tcioflush, "TCIOFLUSH" );
-      get_all_args( NULL, args, "%S", &a );
+      get_all_args( NULL, args, "%n", &a );
       if(a == s_tciflush )
 	action=TCIFLUSH;
       else if(a == s_tcoflush )
@@ -403,15 +429,85 @@ void file_tcflush(INT32 args)
   push_int(!tcflush(FD, action));
 }
 
+/*! @decl int(0..1) tcdrain()
+ *!
+ *! Wait for transmission buffers to empty.
+ *!
+ *! @returns
+ *!   Returns @expr{1@} on success and @expr{0@} (zero) on failure.
+ *!
+ *! @seealso
+ *!   @[tcflush()]
+ */
+void file_tcdrain(INT32 PIKE_UNUSED(args))
+{
+  push_int(!tcdrain(FD));
+}
+
+/*! @decl int(0..1) tcsendbreak(int|void duration)
+ *!
+ *! Send a break signal.
+ *!
+ *! @param duration
+ *!   Duration to send the signal for. @expr{0@} (zero) causes
+ *!   a break signal to be sent for between 0.25 and 0.5 seconds.
+ *!   Other values are operating system dependent:
+ *!   @dl
+ *!     @item SunOS
+ *!       The number of joined break signals as above.
+ *!     @item Linux, AIX, Digital Unix, Tru64
+ *!       The time in milliseconds.
+ *!     @item FreeBSD, NetBSD, HP-UX, MacOS
+ *!       The value is ignored.
+ *!     @item Solaris, Unixware
+ *!       The behavior is changed to be similar to @[tcdrain()].
+ *!   @enddl
+ *!
+ *! @returns
+ *!   Returns @expr{1@} on success and @expr{0@} (zero) on failure.
+ */
 void file_tcsendbreak(INT32 args)
 {
   INT_TYPE len=0;
 
-  get_all_args(NULL, args, "%i", &len);
+  get_all_args(NULL, args, ".%i", &len);
   pop_stack();
   push_int(!tcsendbreak(FD, len));
 }
 
+#endif /* HAVE_TCGETATTR */
+
+#ifdef TIOCSWINSZ
+/*! @decl int(0..1) tcsetsize(int rows, int cols)
+ *!
+ *! Set the number of rows and columns for a terminal.
+ *!
+ *! @returns
+ *!   Returns @expr{1@} on success and @expr{0@} (zero) on failure.
+ *!
+ *! @seealso
+ *!   @[tcgetattr()], @[tcsetattr()]
+ */
+void file_tcsetsize(INT32 args)
+{
+  INT_TYPE rows;
+  INT_TYPE cols;
+  struct winsize winsize;
+
+  get_all_args(NULL, args, "%i%i", &rows, &cols);
+
+  winsize.ws_row = rows;
+  winsize.ws_col = cols;
+
+  push_int(!fd_ioctl(FD, TIOCSWINSZ, &winsize));
+}
+#endif
+
+/*! @endclass
+ */
+
+/*! @endmodule
+ */
 
 /* end of termios stuff */
 #endif

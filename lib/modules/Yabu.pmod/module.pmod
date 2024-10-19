@@ -14,6 +14,7 @@
 #define IO_ERR(msg) error( "(Yabu) %s, %s (%d)\n", msg, strerror(errno()), errno() )
 #define WARN(msg) werror(msg)
 #if constant(hash_7_0)
+#pragma no_deprecation_warnings
 #define hash hash_7_0
 #endif
 
@@ -183,14 +184,14 @@ class Chunk {
   //! @endignore
   private inherit FileIO:file;
 
-  private Table parent;
+  private object(Table)|zero parent;
   private int magic, compress, write;
-  private string start_time, filename;
+  private string|zero start_time, filename;
 
   /* Point in file from which new chunks can be allocated. */
   private int eof = 0;
 
-  private mapping frees = ([]), keys = ([]);
+  private mapping|void frees = ([]), keys = ([]);
 
   /* Escape special characters used for synchronizing
    * the contents of Yabu files.
@@ -630,7 +631,7 @@ class Table
   INHERIT_MUTEX;
   //! @endignore
   private Chunk index, db;
-  private ProcessLock lock_file;
+  private ProcessLock|zero lock_file;
 
   private string mode, filename;
   private mapping handles, changes;
@@ -1021,7 +1022,8 @@ class Table
     UNLOCK();
   }
 
-  protected void create(string filename, string mode, ProcessLock lock_file)
+  protected void create(string filename, string mode,
+			ProcessLock|zero lock_file)
   {
     this::filename = filename;
     this::mode = mode;
@@ -1491,7 +1493,7 @@ class LookupDB
   protected void create(string dir, string mode, mapping|void options)
   {
     ::create(dir, (mode-"t"));
-    minx = options?->index_size || 0x7ff;
+    minx = options->?index_size || 0x7ff;
     string file = combine_path(dir, "hs");
     if(!sscanf(Stdio.read_bytes(file)||"", "%4c", minx))
       Stdio.write_file(file, sprintf("%4c", minx));

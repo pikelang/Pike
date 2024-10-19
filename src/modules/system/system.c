@@ -39,6 +39,8 @@
 #include "pike_netlib.h"
 #include "pike_cpulib.h"
 #include "sprintf.h"
+#include "operators.h"
+#include "fdlib.h"
 
 #include <errno.h>
 
@@ -88,20 +90,24 @@
 #include <sys/prctl.h>
 #endif /* HAVE_SYS_PRCTL_H */
 
-#ifdef HAVE_UTIME_H
-#include <utime.h>
-#endif
-
-#ifdef HAVE_SYS_UTIME_H
-#include <sys/utime.h>
-#endif
-
 #ifdef HAVE_NETINFO_NI_H
 #include <netinfo/ni.h>
 #endif
 
 #ifdef HAVE_SYS_LOADAVG_H
 #include <sys/loadavg.h>
+#endif
+
+#ifdef HAVE_SYS_CLONEFILE_H
+#include <sys/clonefile.h>
+#endif
+
+#ifdef HAVE_LINUX_FS_H
+#include <linux/fs.h>
+#endif
+
+#ifdef HAVE_SYS_IOCTL_H
+#include <sys/ioctl.h>
 #endif
 
 #define sp Pike_sp
@@ -131,91 +137,49 @@
 #endif
 
 /*
+ * Globals
+ */
+
+struct mapping *strerror_lookup = NULL;
+
+/*
  * Functions
  */
 
+static struct pike_string *pike_strerror(int e)
+{
+  struct svalue s;
+  struct svalue *val;
+
+#if EINVAL < 0
+  /* Under some circumstances Haiku can apparently return
+   * positive errnos.
+   */
+  if (e > 0) e = -e;
+#endif
+
+  SET_SVAL(s, PIKE_T_INT, NUMBER_NUMBER, integer, e);
+
+  val = strerror_lookup? low_mapping_lookup(strerror_lookup, &s): NULL;
+
+  if (!val) return NULL;
+
+  if (TYPEOF(*val) == PIKE_T_STRING) return val->u.string;
+
+  return NULL;
+}
+
 /* Helper functions */
 
-static void report_error(const char *function_name)
+void report_os_error(const char *function_name)
 {
-  char *error_msg = "Unknown reason";
+  int e = errno;
+  struct pike_string *s = pike_strerror(e);
 
-  switch(errno) {
-  case EACCES:
-    error_msg = "Access denied";
-    break;
-#ifdef EDQUOT
-  case EDQUOT:
-    error_msg = "Out of quota";
-    break;
-#endif /* EDQUOT */
-  case EEXIST:
-    error_msg = "Destination already exists";
-    break;
-  case EFAULT:
-    error_msg = "Internal Pike error: Bad Pike string!";
-    break;
-  case EINVAL:
-    error_msg = "Bad argument";
-    break;
-  case EIO:
-    error_msg = "I/O error";
-    break;
-#ifdef ELOOP
-  case ELOOP:
-    error_msg = "Too deep nesting of symlinks";
-    break;
-#endif /* ELOOP */
-#ifdef EMLINK
-  case EMLINK:
-    error_msg = "Too many hardlinks";
-    break;
-#endif /* EMLINK */
-#ifdef EMULTIHOP
-  case EMULTIHOP:
-    error_msg = "The filesystems do not allow hardlinks between them";
-    break;
-#endif /* EMULTIHOP */
-#ifdef ENAMETOOLONG
-  case ENAMETOOLONG:
-    error_msg = "Filename too long";
-    break;
-#endif /* ENAMETOOLONG */
-  case ENOENT:
-    error_msg = "File not found";
-    break;
-#ifdef ENOLINK
-  case ENOLINK:
-    error_msg = "Link to remote machine no longer active";
-    break;
-#endif /* ENOLINK */
-  case ENOSPC:
-    error_msg = "Filesystem full";
-    break;
-  case ENOTDIR:
-    error_msg = "A path component is not a directory";
-    break;
-  case EPERM:
-    error_msg = "Permission denied";
-    break;
-#ifdef EROFS
-  case EROFS:
-    error_msg = "Read-only filesystem";
-    break;
-#endif /* EROFS */
-  case EXDEV:
-    error_msg = "Different filesystems";
-    break;
-#ifdef ESTALE
-  case ESTALE:
-    error_msg = "Stale NFS file handle";
-    break;
-#endif /* ESTALE */
-  case ESRCH:
-    error_msg = "No such process";
-    break;
+  if (s) {
+    Pike_error("%s(): Failed: %pS\n", function_name, s);
   }
-  Pike_error("%s(): Failed: %s\n", function_name, error_msg);
+  Pike_error("%s(): Failed: errno %d\n", function_name, e);
 }
 
 
@@ -229,7 +193,7 @@ static void report_error(const char *function_name)
  *! available to the Pike programmer.
  */
 
-#ifdef HAVE_LINK
+#if defined(HAVE_LINK) || defined(__NT__)
 /*! @decl void hardlink(string from, string to)
  *!
  *! Create a hardlink named @[to] from the file @[from].
@@ -238,7 +202,7 @@ static void report_error(const char *function_name)
  *!   This function is not available on all platforms.
  *!
  *! @seealso
- *!   @[symlink()], @[mv()], @[rm()]
+ *!   @[symlink()], @[clonefile()], @[mv()], @[rm()]
  */
 void f_hardlink(INT32 args)
 {
@@ -246,24 +210,24 @@ void f_hardlink(INT32 args)
   char *to;
   int err;
 
-  get_all_args("hardlink",args, "%s%s", &from, &to);
+  get_all_args("hardlink",args, "%c%c", &from, &to);
 
   do {
     THREADS_ALLOW_UID();
-    err = link(from, to);
+    err = fd_link(from, to);
     THREADS_DISALLOW_UID();
     if (err >= 0 || errno != EINTR) break;
     check_threads_etc();
   } while (1);
 
   if (err < 0) {
-    report_error("hardlink");
+    report_os_error("hardlink");
   }
   pop_n_elems(args);
 }
-#endif /* HAVE_LINK */
+#endif /* HAVE_LINK || __NT__ */
 
-#ifdef HAVE_SYMLINK
+#if defined(HAVE_SYMLINK) || defined(__NT__)
 /*! @decl void symlink(string from, string to)
  *!
  *! Create a symbolic link named @[to] that points to @[from].
@@ -272,7 +236,7 @@ void f_hardlink(INT32 args)
  *!   This function is not available on all platforms.
  *!
  *! @seealso
- *!   @[hardlink()], @[readlink()], @[mv()], @[rm()]
+ *!   @[hardlink()], @[readlink()], @[clonefile()], @[mv()], @[rm()]
  */
 void f_symlink(INT32 args)
 {
@@ -280,24 +244,24 @@ void f_symlink(INT32 args)
   char *to;
   int err;
 
-  get_all_args("symlink",args, "%s%s", &from, &to);
+  get_all_args("symlink",args, "%c%c", &from, &to);
 
   do {
     THREADS_ALLOW_UID();
-    err = symlink(from, to);
+    err = fd_symlink(from, to);
     THREADS_DISALLOW_UID();
     if (err >= 0 || errno != EINTR) break;
     check_threads_etc();
   } while (1);
 
   if (err < 0) {
-    report_error("symlink");
+    report_os_error("symlink");
   }
   pop_n_elems(args);
 }
-#endif /* HAVE_SYMLINK */
+#endif /* HAVE_SYMLINK || __NT__ */
 
-#ifdef HAVE_READLINK
+#if defined(HAVE_READLINK) || defined(__NT__)
 /*! @decl string readlink(string path)
  *!
  *! Returns what the symbolic link @[path] points to.
@@ -315,7 +279,7 @@ void f_readlink(INT32 args)
   char *buf;
   int err;
 
-  get_all_args("readlink",args, "%s", &path);
+  get_all_args("readlink",args, "%c", &path);
 
   buflen = 100;
 
@@ -327,7 +291,7 @@ void f_readlink(INT32 args)
 
     do {
       THREADS_ALLOW_UID();
-      err = readlink(path, buf, buflen);
+      err = fd_readlink(path, buf, buflen);
       THREADS_DISALLOW_UID();
       if (err >= 0 || errno != EINTR) break;
       check_threads_etc();
@@ -339,12 +303,12 @@ void f_readlink(INT32 args)
 	  (err >= buflen - 1));
 
   if (err < 0) {
-    report_error("readlink");
+    report_os_error("readlink");
   }
   pop_n_elems(args);
   push_string(make_shared_binary_string(buf, err));
 }
-#endif /* HAVE_READLINK */
+#endif /* HAVE_READLINK || __NT__ */
 
 #if !defined(HAVE_RESOLVEPATH) && !defined(HAVE_REALPATH)
 #ifdef HAVE_READLINK
@@ -376,7 +340,7 @@ void f_resolvepath(INT32 args)
   char *buf;
   int len = -1;
 
-  get_all_args("resolvepath", args, "%s", &path);
+  get_all_args("resolvepath", args, "%c", &path);
 
 #ifdef HAVE_RESOLVEPATH
   buflen = 100;
@@ -400,12 +364,19 @@ void f_resolvepath(INT32 args)
 #endif /* ENAMETOOLONG */
 	  (len >= buflen - 1));
 #elif defined(HAVE_REALPATH)
+#ifdef PATH_MAX
   buflen = PATH_MAX+1;
 
   if (!(buf = alloca(buflen))) {
     Pike_error("Out of memory.\n");
   }
-
+#else
+  /* Later revisions of POSIX define realpath() to dynamically
+   * allocate the result if passed NULL.
+   * cf https://www.gnu.org/software/hurd/hurd/porting/guidelines.html
+   */
+  buf = NULL;
+#endif
   if ((buf = realpath(path, buf))) {
     len = strlen(buf);
   }
@@ -414,12 +385,93 @@ void f_resolvepath(INT32 args)
 #endif /* HAVE_RESOLVEPATH */
 
   if (len < 0) {
-    report_error("resolvepath");
+    report_os_error("resolvepath");
   }
   pop_n_elems(args);
   push_string(make_shared_binary_string(buf, len));
+#if !defined(HAVE_RESOLVEPATH) && !defined(PATH_MAX)
+  /* Free the dynamically allocated buf. */
+  free(buf);
+#endif
 }
 #endif /* HAVE_RESOLVEPATH || HAVE_REALPATH */
+
+#if !defined(HAVE_CLONEFILE) && defined(HAVE_COPY_FILE_RANGE)
+int clonefile(const char *from, const char *to, int flags)
+{
+  int ret = -1;
+  int fromfd = -1;
+  int tofd = -1;
+  struct stat stat;
+
+  if (flags) {
+    /* No flags are supported currently. */
+    errno = EINVAL;
+    return -1;
+  }
+
+  fromfd = fd_open(from, fd_RDONLY, 0);
+  if (fromfd < 0) return -1;
+
+  if (fd_fstat(fromfd, &stat) < 0) goto cleanup;
+
+  if ((stat.st_mode & S_IFMT) != S_IFREG) {
+    errno = EINVAL;
+    goto cleanup;
+  }
+
+  tofd = fd_open(to, fd_CREAT|fd_TRUNC|fd_RDWR, stat.st_mode);
+  if (tofd < 0) goto cleanup;
+
+  ret = copy_file_range(fromfd, NULL, tofd, NULL, stat.st_size, 0);
+
+ cleanup:
+  if (tofd >= 0) close(tofd);
+
+  if (fromfd >= 0) close(fromfd);
+
+  return ret;
+}
+
+#define HAVE_CLONEFILE
+#endif
+
+#ifdef HAVE_CLONEFILE
+/*! @decl void clonefile(string from, string to)
+ *!
+ *! Copy a file @[from] with copy-on-write semantics to the destination named
+ *! @[to].
+ *!
+ *! @note
+ *!   This function is currently only available on macOS and Linux, and then
+ *!   only when @[from] and @[to] reference a common file system with
+ *!   copy-on-write support (e.g. an APFS volume).
+ *!
+ *! @seealso
+ *!   @[hardlink()], @[symlink()]
+ */
+void f_clonefile(INT32 args)
+{
+  char *from;
+  char *to;
+  int err;
+
+  get_all_args("clonefile",args, "%s%s", &from, &to);
+
+  do {
+    THREADS_ALLOW_UID();
+    err = clonefile(from, to, 0);
+    THREADS_DISALLOW_UID();
+    if (err >= 0 || errno != EINTR) break;
+    check_threads_etc();
+  } while (1);
+
+  if (err < 0) {
+    report_os_error("clonefile");
+  }
+  pop_n_elems(args);
+}
+#endif /* HAVE_CLONEFILE */
 
 /*! @decl int umask(void|int mask)
  *!
@@ -464,7 +516,7 @@ void f_chmod(INT32 args)
   INT_TYPE mode;
   int err;
 
-  get_all_args("chmod", args, "%s%i", &path, &mode);
+  get_all_args("chmod", args, "%c%i", &path, &mode);
   do {
     THREADS_ALLOW_UID();
     err = chmod(path, mode);
@@ -473,7 +525,7 @@ void f_chmod(INT32 args)
     check_threads_etc();
   } while (1);
   if (err < 0) {
-    report_error("chmod");
+    report_os_error("chmod");
   }
   pop_n_elems(args);
 }
@@ -502,7 +554,7 @@ void f_chown(INT32 args)
   int symlink = 0;
   int err;
 
-  get_all_args("chown", args, "%s%i%i.%d", &path, &uid, &gid, &symlink);
+  get_all_args("chown", args, "%c%i%i.%d", &path, &uid, &gid, &symlink);
 
 #ifndef HAVE_LCHOWN
 #ifdef HAVE_LSTAT
@@ -550,7 +602,7 @@ void f_chown(INT32 args)
 #endif
 
   if (err < 0) {
-    report_error("chown");
+    report_os_error("chown");
   }
   pop_n_elems(args);
 }
@@ -584,7 +636,7 @@ void f_utime(INT32 args)
   int symlink = 0;
   int err;
 
-  get_all_args("utime", args, "%s%i%i.%d", &path, &atime, &mtime, &symlink);
+  get_all_args("utime", args, "%c%i%i.%d", &path, &atime, &mtime, &symlink);
 
   if (symlink) {
 #ifdef HAVE_LUTIMES
@@ -601,7 +653,7 @@ void f_utime(INT32 args)
       check_threads_etc();
     } while (1);
     if (err < 0)
-      report_error("utime");
+      report_os_error("utime");
     pop_n_elems(args);
     return;
 
@@ -631,21 +683,13 @@ void f_utime(INT32 args)
 
   {
     /*&#()&@(*#&$ NT ()*&#)(&*@$#*/
-#ifdef _UTIMBUF_DEFINED
-    struct _utimbuf b;
-#else
-    struct utimbuf b;
-#endif
+    struct fd_utimbuf b;
 
     b.actime=atime;
     b.modtime=mtime;
     do {
       THREADS_ALLOW_UID();
-#ifdef HAVE__UTIME
-      err = _utime (path, &b);
-#else
-      err = utime(path, &b);
-#endif
+      err = fd_utime(path, &b);
       THREADS_DISALLOW_UID();
       if (err >= 0 || errno != EINTR) break;
       check_threads_etc();
@@ -658,7 +702,7 @@ void f_utime(INT32 args)
 #endif
 
   if (err < 0) {
-    report_error("utime");
+    report_os_error("utime");
   }
   pop_n_elems(args);
 }
@@ -683,17 +727,21 @@ static void sync(void)
       HANDLE volfile;
 
       if (QueryDosDeviceA(driveletter, device, MAX_PATH*2)) {
-	volfile = CreateFileA(device, FILE_READ_DATA, FILE_SHARE_READ,
+        volfile = CreateFileA(device, GENERIC_WRITE|GENERIC_READ,
+                              FILE_SHARE_WRITE|FILE_SHARE_READ,
 			      NULL, OPEN_EXISTING, 0, NULL);
 	if (volfile != INVALID_HANDLE_VALUE) {
+          FlushFileBuffers(volfile);
 	  CloseHandle(volfile);
 	}
       }
 
       /* Flush the drive. */
-      volfile = CreateFileA(drive, FILE_READ_DATA, FILE_SHARE_READ,
+      volfile = CreateFileA(drive, GENERIC_WRITE|GENERIC_READ,
+                            FILE_SHARE_WRITE|FILE_SHARE_READ,
 			    NULL, OPEN_EXISTING, 0, NULL);
       if (volfile != INVALID_HANDLE_VALUE) {
+        FlushFileBuffers(volfile);
 	CloseHandle(volfile);
       }
     }
@@ -744,10 +792,10 @@ void f_initgroups(INT32 args)
   int err;
   INT_TYPE group;
 
-  get_all_args("initgroups", args, "%s%i", &user, &group);
+  get_all_args("initgroups", args, "%c%i", &user, &group);
   err = initgroups(user, group);
   if (err < 0) {
-    report_error("initgroups");
+    report_os_error("initgroups");
   }
   pop_n_elems(args);
 }
@@ -774,7 +822,7 @@ void f_cleargroups(INT32 args)
   pop_n_elems(args);
   err = setgroups(0, (gid_t *)gids);
   if (err < 0) {
-    report_error("cleargroups");
+    report_os_error("cleargroups");
   }
 }
 
@@ -819,7 +867,7 @@ void f_setgroups(INT32 args)
 
   err = setgroups(size, gids);
   if (err < 0) {
-    report_error("setgroups");
+    report_os_error("setgroups");
   }
 }
 #endif /* HAVE_SETGROUPS */
@@ -861,7 +909,7 @@ void f_getgroups(INT32 args)
   free(gids);
 
   if (numgrps < 0) {
-    report_error("getgroups");
+    report_os_error("getgroups");
   }
 
   f_aggregate(numgrps);
@@ -1112,7 +1160,7 @@ void f_getpgrp(INT32 args)
   pgid = getpgrp();
 #endif
   if (pgid < 0)
-    report_error("getpgrp");
+    report_os_error("getpgrp");
 
   push_int(pgid);
 }
@@ -1140,7 +1188,7 @@ void f_setpgrp(INT32 args)
 #endif /* HAVE_SETPGRP_BSD */
 #endif /* HAVE_SETPGID */
   if (pid < 0)
-    report_error("setpgrp");
+    report_os_error("setpgrp");
 
   push_int(pid);
 }
@@ -1168,7 +1216,7 @@ void f_getsid(INT32 args)
   pop_n_elems(args);
   pid = getsid(pid);
   if (pid < 0)
-       report_error("getsid");
+    report_os_error("getsid");
   push_int(pid);
 }
 #endif
@@ -1189,7 +1237,7 @@ void f_setsid(INT32 args)
   pop_n_elems(args);
   pid = setsid();
   if (pid < 0)
-       report_error("setsid");
+    report_os_error("setsid");
   push_int(pid);
 }
 #endif
@@ -1861,7 +1909,12 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port,
                   int inet_flags)
 {
 #ifdef HAVE_GETADDRINFO
-  struct addrinfo hints = { 0, PF_UNSPEC, 0, 0, 0, NULL, NULL, NULL, }, *res;
+  struct addrinfo hints = {
+    0, PF_UNSPEC, 0, 0,
+#ifdef STRUCT_ADDRINFO_HAS__AI_PAD
+    0,	/* _ai_pad, only present on Solaris 11 when compiling for SparcV9. */
+#endif
+    0, NULL, NULL, NULL, }, *res;
   char servnum_buf[20];
 #endif /* HAVE_GETADDRINFO */
   int err;
@@ -2071,9 +2124,24 @@ static void describe_hostent(struct hostent *hp)
 
     for (p = hp->h_addr_list; *p != 0; p++) {
 #ifdef fd_inet_ntop
+      /* Max size for IPv4 is 4*3(digits) + 3(separator) + 1(nul) == 16.
+       *    nnn.nnn.nnn.nnn
+       * Max size for IPv6 is 8*4(digits) + 7(separator) + 1(nul) == 40.
+       *    xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx
+       * Max size for mixed mode is 6*4 + 4*3 + 6+3(separator) + 1(nul) == 46.
+       *    xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:nnn.nnn.nnn.nnn
+       *
+       * 64 should be safe for now.
+       */
       char buffer[64];
-
-      push_text(fd_inet_ntop(hp->h_addrtype, *p, buffer, sizeof(buffer)));
+      const char *addr =
+        fd_inet_ntop(hp->h_addrtype, *p, buffer, sizeof(buffer));
+      if (addr) {
+        push_text(addr);
+      } else {
+        /* Very unlikely. */
+        Pike_error("Invalid address.\n");
+      }
 #else
       struct in_addr in;
 
@@ -2132,7 +2200,7 @@ void f_gethostbyaddr(INT32 args)
   char *name;
   GETHOST_DECLARE;
 
-  get_all_args("gethostbyaddr", args, "%s", &name);
+  get_all_args("gethostbyaddr", args, "%c", &name);
 
   if ((int)(addr = inet_addr(name)) == -1) {
     Pike_error("IP-address must be of the form a.b.c.d.\n");
@@ -2178,7 +2246,7 @@ void f_gethostbyname(INT32 args)
   char *name;
   GETHOST_DECLARE;
 
-  get_all_args("gethostbyname", args, "%s", &name);
+  get_all_args("gethostbyname", args, "%c", &name);
 
   CALL_GETHOSTBYNAME(name);
   INVALIDATE_CURRENT_TIME();
@@ -2192,18 +2260,6 @@ void f_gethostbyname(INT32 args)
   describe_hostent(ret);
 }
 #endif /* HAVE_GETHOSTBYNAME */
-
-#if defined(GETHOSTBYNAME_MUTEX_EXISTS) || defined(GETSERVBYNAME_MUTEX_EXISTS)
-static void cleanup_after_fork(struct callback *cb, void *arg0, void *arg1)
-{
-#ifdef GETHOSTBYNAME_MUTEX_EXISTS
-  mt_init(&gethostbyname_mutex);
-#endif
-#ifdef GETSERVBYNAME_MUTEX_EXISTS
-  mt_init(&getservbyname_mutex);
-#endif
-}
-#endif
 
 extern void init_passwd(void);
 extern void init_system_memory(void);
@@ -2487,14 +2543,14 @@ static void f_getrlimit(INT32 args)
    }
    pop_n_elems(args);
 #ifdef RLIM_INFINITY
-   if (rl.rlim_cur==RLIM_INFINITY)
+   if (rl.rlim_cur==(rlim_t)RLIM_INFINITY)
       push_int(-1);
    else
 #endif
       push_int64( (INT_TYPE)rl.rlim_cur );
 
 #ifdef RLIM_INFINITY
-   if (rl.rlim_max==RLIM_INFINITY)
+   if (rl.rlim_max==(rlim_t)RLIM_INFINITY)
       push_int(-1);
    else
 #endif
@@ -2595,7 +2651,7 @@ void f_setproctitle(INT32 args)
   char *title;
 
   if (args > 1) f_sprintf(args);
-  get_all_args(NULL, args, "%s", &title);
+  get_all_args(NULL, args, "%c", &title);
   setproctitle("%s", title);
   pop_stack();
 }
@@ -2755,7 +2811,7 @@ static void f_get_netinfo_property(INT32 args)
   ni_status    res;
   unsigned int i, num_replies;
 
-  get_all_args("get_netinfo_property", args, "%s%s%s",
+  get_all_args("get_netinfo_property", args, "%c%c%c",
 	       &domain_str, &path_str, &prop_str);
 
   /* open domain */
@@ -3145,42 +3201,114 @@ void f_hw_random(INT32 args)
 /*! @endmodule
  */
 
+/*! @decl string strerror(int errno)
+ *!
+ *! This function returns a description of an error code. The error
+ *! code is usually obtained from eg @[Stdio.File->errno()].
+ *!
+ *! @note
+ *!   On some platforms the string returned can be somewhat nondescriptive.
+ */
+void f_strerror(INT32 args)
+{
+  struct pike_string *s;
+  int err;
+
+  if(args!=1)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("strerror", 1);
+  if(TYPEOF(sp[-args]) != T_INT)
+    SIMPLE_ARG_TYPE_ERROR("strerror", 1, "int");
+
+  err = sp[-args].u.integer;
+  pop_n_elems(args);
+
+  s = pike_strerror(err);
+  if (s) {
+    ref_push_string(s);
+    return;
+  }
+
+  /* An errno we do not know about, or the lookup table
+   * has not been initialized yet.
+   */
+
+#ifdef HAVE_STRERROR
+  {
+    char *s = NULL;
+#if EINVAL > 0
+    /* Some implementations of strerror index an array without
+     * range checking...
+     */
+    if(err > 0 && err < 256 ) {
+      s=strerror(err);
+    }
+#else
+    /* Negative errnos are apparently valid on this platform
+     * (eg Haiku or BeOS).
+     */
+    s = strerror(err);
+#endif
+    if(s) push_text(s);
+  }
+#endif
+
+  push_static_text("Error ");
+  push_int(err);
+  f_add(2);
+}
+
 /*
  * Module linkage
  */
 
 PIKE_MODULE_INIT
 {
-#ifdef GETHOSTBYNAME_MUTEX_EXISTS
-  mt_init(&gethostbyname_mutex);
-#endif
+  int sz;
+
   /*
    * From this file:
    */
-#ifdef HAVE_LINK
+#if defined(HAVE_LINK) || defined(__NT__)
 
-/* function(string, string:void) */
-  ADD_EFUN("hardlink", f_hardlink,tFunc(tStr tStr,tVoid), OPT_SIDE_EFFECT);
-  ADD_FUNCTION2("hardlink", f_hardlink,tFunc(tStr tStr,tVoid), 0, OPT_SIDE_EFFECT);
-#endif /* HAVE_LINK */
-#ifdef HAVE_SYMLINK
+#ifdef __NT__
+  if (Pike_NT_CreateHardLinkW) {
+#endif
+    /* function(string, string:void) */
+    ADD_EFUN("hardlink", f_hardlink, tFunc(tStr tStr, tVoid), OPT_SIDE_EFFECT);
+    ADD_FUNCTION2("hardlink", f_hardlink, tFunc(tStr tStr, tVoid), 0, OPT_SIDE_EFFECT);
+#ifdef __NT__
+  }
+#endif
+#endif /* HAVE_LINK || __NT__ */
+#if defined(HAVE_SYMLINK) || defined(__NT__)
 
-/* function(string, string:void) */
-  ADD_EFUN("symlink", f_symlink,tFunc(tStr tStr,tVoid), OPT_SIDE_EFFECT);
-  ADD_FUNCTION2("symlink", f_symlink,tFunc(tStr tStr,tVoid), 0, OPT_SIDE_EFFECT);
-#endif /* HAVE_SYMLINK */
-#ifdef HAVE_READLINK
+#ifdef __NT__
+  if (Pike_NT_CreateSymbolicLinkW) {
+#endif
+    /* function(string, string:void) */
+    ADD_EFUN("symlink", f_symlink, tFunc(tStr tStr, tVoid), OPT_SIDE_EFFECT);
+    ADD_FUNCTION2("symlink", f_symlink, tFunc(tStr tStr, tVoid), 0, OPT_SIDE_EFFECT);
+#ifdef __NT__
+  }
+#endif
+#endif /* HAVE_SYMLINK || __NT__ */
+#if defined(HAVE_READLINK) || defined(__NT__)
 
 /* function(string:string) */
   ADD_EFUN("readlink", f_readlink,tFunc(tStr,tStr), OPT_EXTERNAL_DEPEND);
   ADD_FUNCTION2("readlink", f_readlink,tFunc(tStr,tStr), 0, OPT_EXTERNAL_DEPEND);
-#endif /* HAVE_READLINK */
+#endif /* HAVE_READLINK || __NT__ */
 #if defined(HAVE_RESOLVEPATH) || defined(HAVE_REALPATH)
 
 /* function(string:string) */
   ADD_EFUN("resolvepath", f_resolvepath,tFunc(tStr,tStr), OPT_EXTERNAL_DEPEND);
   ADD_FUNCTION2("resolvepath", f_resolvepath,tFunc(tStr,tStr), 0, OPT_EXTERNAL_DEPEND);
 #endif /* HAVE_RESOLVEPATH || HAVE_REALPATH */
+
+#ifdef HAVE_CLONEFILE
+/* function(string, string:void) */
+  ADD_FUNCTION2("clonefile", f_clonefile,tFunc(tStr tStr,tVoid), 0, OPT_SIDE_EFFECT);
+#endif /* HAVE_CLONEFILE */
 
   /* function(int|void:int) */
   ADD_EFUN("umask", f_umask, tFunc(tOr(tInt,tVoid),tInt), OPT_SIDE_EFFECT);
@@ -3319,7 +3447,7 @@ PIKE_MODULE_INIT
                       OPT_EXTERNAL_DEPEND);
 #endif /* HAVE_GETPGRP */
 
-#ifdef HAVE_SETPGRP
+#if defined(HAVE_SETPGID) || defined(HAVE_SETPGRP)
   ADD_EFUN("setpgrp", f_setpgrp, tFunc(tNone, tInt),
 	   OPT_SIDE_EFFECT);
   ADD_FUNCTION2("setpgrp", f_setpgrp, tFunc(tNone, tInt), 0,
@@ -3489,11 +3617,6 @@ PIKE_MODULE_INIT
   init_passwd();
   init_system_memory();
 
-#if defined(GETHOSTBYNAME_MUTEX_EXISTS) || defined(GETSERVBYNAME_MUTEX_EXISTS)
-  dmalloc_accept_leak(add_to_callback(& fork_child_callback,
-				      cleanup_after_fork, 0, 0));
-#endif
-
 #ifdef HAVE_DAEMON
   ADD_FUNCTION2("daemon", f_daemon, tFunc(tInt tInt, tInt),
                 0, OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND);
@@ -3516,7 +3639,26 @@ PIKE_MODULE_INIT
 #endif
 
   /* errnos */
+  sz = Pike_compiler->new_program->num_identifiers;
+#define ADD_ERRNO(VAL, SYM, DESC) add_integer_constant(SYM, VAL, 0);
 #include "add-errnos.h"
+#undef ADD_ERRNO
+
+  /* strerror lookup */
+  strerror_lookup =
+    allocate_mapping(Pike_compiler->new_program->num_identifiers - sz);
+#define ADD_ERRNO(VAL, SYM, DESC)				\
+  if (DESC[0]) {						\
+    push_int(VAL);						\
+    push_text(DESC);						\
+    mapping_insert(strerror_lookup, Pike_sp-2, Pike_sp-1);	\
+    pop_n_elems(2);						\
+  }
+#include "add-errnos.h"
+#undef ADD_ERRNO
+
+/* function(int:string) */
+  ADD_EFUN("strerror", f_strerror, tFunc(tInt, tStr), 0);
 }
 
 PIKE_MODULE_EXIT
@@ -3527,7 +3669,6 @@ PIKE_MODULE_EXIT
     exit_nt_system_calls();
   }
 #endif
-#ifdef GETHOSTBYNAME_MUTEX_EXISTS
-  mt_destroy(&gethostbyname_mutex);
-#endif
+  free_mapping(strerror_lookup);
+  strerror_lookup = NULL;
 }

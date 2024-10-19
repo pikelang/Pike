@@ -17,6 +17,6 @@ void expire (Cache.Storage.Base storage) {
 }
 
 //!
-void create(Cache.Policy.Base ... policies) {
+protected void create(Cache.Policy.Base ... policies) {
   my_policies=policies;
 }

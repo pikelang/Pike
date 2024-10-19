@@ -27,9 +27,7 @@
 #define     PROG_THREAD_CONDITION_ID                                  5
 #define tObjImpl_THREAD_CONDITION             "\003\000\000\000\000\005"
 #define   tObjIs_THREAD_CONDITION             "\003\001\000\000\000\005"
-#define     PROG_THREAD_LOCAL_ID                                      6
-#define tObjImpl_THREAD_LOCAL                 "\003\000\000\000\000\006"
-#define   tObjIs_THREAD_LOCAL                 "\003\001\000\000\000\006"
+#define OLD_PROG_THREAD_LOCAL_ID                                      6
 #define     PROG_THREAD_DISABLE_THREADS_ID                            7
 #define tObjImpl_THREAD_DISABLE_THREADS       "\003\000\000\000\000\007"
 #define   tObjIs_THREAD_DISABLE_THREADS       "\003\001\000\000\000\007"
@@ -55,7 +53,7 @@
 #define     PROG_MULTISET_ITERATOR_ID				    021
 #define     PROG_STRING_ITERATOR_ID				    022
 #define     PROG_FILE_LINE_ITERATOR_ID				    023
-#define     PROG_STRING_SPLIT_ITERATOR_ID			    024
+#define OLD_PROG_STRING_SPLIT_ITERATOR_ID			    024
 #define     PROG_ITERATOR_ID					    025
 #define tObjImpl_ITERATOR		      "\003\000\000\000\000\025"
 #define   tObjIs_ITERATOR		      "\003\001\000\000\000\025"
@@ -88,6 +86,7 @@
 #define     PROG_PROCESS_ID					    036
 #define tObjImpl_PROCESS                      "\003\000\000\000\000\036"
 #define   tObjIs_PROCESS                      "\003\001\000\000\000\036"
+#define RESERVED_FUNCTION_ITERATOR                                  037
 
 #define     PROG_GMP_MPZ_ID                                         040
 #define tObjImpl_GMP_MPZ                      "\003\000\000\000\000\040"
@@ -110,6 +109,22 @@
 #define tObjImpl_LIST__GET_ITERATOR	      "\003\000\000\000\000\056"
 #define     PROG_STRING_BUFFER_ID				    057
 #define tObjImpl_STRING_BUFFER                "\003\000\000\000\000\057"
+
+/* Classes in cpp.cmod. */
+#define     PROG_STACK_ID					    064
+#define tObjImpl_STACK			      "\003\000\000\000\000\064"
+#define     PROG_DEFINE_ID					    065
+#define tObjImpl_DEFINE			      "\003\000\000\000\000\065"
+#define     PROG_CPP_ID						    066
+#define tObjImpl_CPP			      "\003\000\000\000\000\066"
+
+/* Classes in pike_compiler.cmod. */
+#define     PROG_COMPILERENVIRONMENT_ID					    070
+#define     PROG_COMPILERENVIRONMENT_PIKECOMPILER_ID			    071
+#define tObjImpl_COMPILERENVIRONMENT_PIKECOMPILER     "\003\000\000\000\000\071"
+#define     PROG_COMPILERENVIRONMENT_REPORTER_ID			    072
+#define     PROG_COMPILERENVIRONMENT_PIKECOMPILER_COMPILERSTATE_ID	    073
+#define     PROG_COMPILERENVIRONMENT_LOCK_ID				    074
 
 /* Common modules. */
 #define     PROG_MODULE_MIME_ID					   0100
@@ -188,6 +203,37 @@
 /* 1000 - 1999 reserved for GTK. */
 /* 2000 - 2999 reserved for GTK2. */
 
+/* Reserve 0x8000 and up for programs that use generics.
+ *
+ * This is needed in order to avoid having to load dynamic
+ * modules from mk_type() to determine use of generics.
+ */
+#define PROG_GENERICS_ID_START		0x8000
+
+#define     PROG_FUTURE_ID					0x8000
+#define tObjImpl_FUTURE                    "\003\000\000\000\200\000"
+#define tFutureValueType	tGeneric(tObjImpl_FUTURE, 0)
+#define tFuture(X)		tBind(tAssign(tFutureValueType, X), tObjImpl_FUTURE)
+#define     PROG_PROMISE_ID					0x8001
+#define tObjImpl_PROMISE                   "\003\000\000\000\200\001"
+#define tPromiseValueType	tGeneric(tObjImpl_PROMISE, 0)
+#define tPromise(X)		tBind(tAssign(tPromiseValueType, X), tObjImpl_PROMISE)
+
+#define     PROG_THREAD_LOCAL_ID                                0x8006
+#define tObjImpl_THREAD_LOCAL              "\003\000\000\000\200\006"
+#define   tObjIs_THREAD_LOCAL              "\003\001\000\000\200\006"
+#define tThreadLocalValueType	tGeneric(tObjImpl_THREAD_LOCAL, 0)
+#define tThreadLocal(X)		tBind(tAssign(tThreadLocalValueType, X), tObjImpl_THREAD_LOCAL)
+
+#define     PROG_STRING_SPLIT_ITERATOR_ID			0x8014
+#define tObjImpl_STRING_SPLIT_ITERATOR     "\003\000\000\000\200\024"
+#define tStringSplitIterValueType	tGeneric(tObjImpl_STRING_SPLIT_ITERATOR, 0)
+#define tStringSplitIter(X)		tBind(tAssign(tStringSplitIterValueType, X), tObjImpl_STRING_SPLIT_ITERATOR)
+
+#define     PROG_FUNCTION_ITERATOR_ID				0x801f
+#define tObjImpl_FUNCTION_ITERATOR         "\003\000\000\000\200\037"
+#define tFunctionIterValueType	tGeneric(tObjImpl_FUNCTION_ITERATOR, 0)
+#define tFunctionIter(X)		tBind(tAssign(tFunctionIterValueType, X), tObjImpl_FUNCTION_ITERATOR)
 
 /* Start for dynamically allocated program ids. */
 #define PROG_DYNAMIC_ID_START		0x10000

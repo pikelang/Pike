@@ -304,6 +304,13 @@ array
  
      <array><valuetype><int/></valuetype></array>
 
+   If the length of the array is specified it is given in a <length>
+   child element:
+
+     array(3)
+
+     <array><length>3</length></array>
+
 function
    The types of the arguments and the return type are given (the order 
    of the <argtype> elements is significant, of course):
@@ -401,6 +408,15 @@ image
    An image object. Contains the original file path to the image. Has the
    optional attributes width, height and file, where file is the path to
    the normalized-filename file.
+
+matrix
+   A table of values. May only contain <r>-tags.
+
+r
+   A row of a <matrix>. May only contain <c>-tags.
+
+c
+   A column of a row of a <matrix>.
 
 ======================================================================
 g) XML generated from the doc markup

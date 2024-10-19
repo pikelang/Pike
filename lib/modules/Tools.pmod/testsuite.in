@@ -18,7 +18,7 @@ class TestHilfe {
     return 0;
   }
 
-  void create() {
+  protected void create() {
     write = mywrite;
     ::create();
   }
@@ -77,11 +77,11 @@ test_hilfe("class A{}", "")
 test_hilfe("A();", "HilfeInput()->A()")
 test_hilfe("A a=A();", "")
 test_hilfe("class { int i=4; }()->i;", "4")
-//  test("class A{}();", "object")
+test_hilfe("class (int x){}(5)->x;", "5")
 test_hilfe("indices((<1,2>));","({ /""* 2 elements *""/\n    1,\n    2\n})")
 test_hilfe("void nop(mixed m){};", "")
 test_hilfe("nop(({}));",
-  "Compiler Warning: 1: Returning a void expression. Converted to zero.\n"
+  "Compiler Warning: 1: Returning or yielding a void expression. Converted to zero.\n"
   "0")
 test_hilfe("int a;", "")
 test_hilfe("a++;", "0")
@@ -115,7 +115,7 @@ test_hilfe("int i;", "")
 test_hilfe("i;", "0")
 test_hilfe("void foo() { i++; }", "")
 test_hilfe("foo();",
-  "Compiler Warning: 1: Returning a void expression. Converted to zero.\n"
+  "Compiler Warning: 1: Returning or yielding a void expression. Converted to zero.\n"
   "0")
 test_hilfe("i;", "1")
 test_hilfe("i*2;", "2")
@@ -140,7 +140,7 @@ test_hilfe("i;", "1")
 test_hilfe("mixed x=\"bar\";", "")
 test_hilfe("void foo(mixed x){ x?werror(\"\"):werror(\"\");};","")
 test_hilfe("foo(1);",
-  "Compiler Warning: 1: Returning a void expression. Converted to zero.\n"
+  "Compiler Warning: 1: Returning or yielding a void expression. Converted to zero.\n"
   "0")
 
 test_hilfe("array a = ({1});", "")
@@ -185,7 +185,7 @@ test_hilfe("function f = lambda(int(0..1) a){};", "")
 
 test_hilfe("if(a) a=0; else a=1;", "Ok.\n");
 
-test_hilfe("class B { int i; void create(int x) { i=x; } }", "")
+test_hilfe("class B { int i; protected void create(int x) { i=x; } }", "")
 test_hilfe("object b=B(3);", "")
 test_hilfe("b->i;", "3");
 
@@ -205,6 +205,9 @@ test_hilfe("String.Buffer b = String.Buffer();", "")
 test_hilfe( ({ "#\"", "set fisk\";" }), "\"\\n\"\n\"set fisk\"");
 test_hilfe("set hedda", "");
 test_hilfe("f;", "0.0");
+
+test_hilfe("catch(lambda(){i=5;}());", "0");
+test_hilfe("i;", "5");
 
 test_do( add_constant("testhilfe") )
 
@@ -248,8 +251,8 @@ define(test_md_eq, [[
   test_eq(Tools.Markdown.parse($1, ([ "newline" : false ])), $2)
   ]])
 
-test_md_eq( [[ "# Header 1" ]],   [[ "<h1 id='header-1'>Header 1</h1>" ]] )
-test_md_eq( [[ "## Header 2" ]],  [[ "<h2 id='header-2'>Header 2</h2>" ]] )
+test_md_eq( [[ "# Header 1" ]],   [[ "<h1 id=\"header-1\">Header 1</h1>" ]] )
+test_md_eq( [[ "## Header 2" ]],  [[ "<h2 id=\"header-2\">Header 2</h2>" ]] )
 test_md_eq( [[ "\\# Header 1" ]], [[ "<p># Header 1</p>" ]] )
 
 ]])

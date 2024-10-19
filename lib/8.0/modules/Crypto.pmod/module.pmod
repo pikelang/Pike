@@ -109,7 +109,9 @@ protected class CompatProxy
 
 //! @endignore
 
-protected CompatProxy compat_proxy = CompatProxy();
+// Public to make it easier for the module dumper...
+// Cf #10037.
+/* protected */ CompatProxy compat_proxy = CompatProxy();
 
 program(Crypto.CipherState) CBC = compat_proxy.CBC.State;
 

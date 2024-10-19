@@ -11,8 +11,8 @@ import Constants;
 inherit Connection;
 
 //! A few storage variables for client certificate handling on the client side.
-array(int) client_cert_types;
-array(string(8bit)) client_cert_distinguished_names;
+array(int)|zero client_cert_types;
+array(string(8bit))|zero client_cert_distinguished_names;
 
 protected string _sprintf(int t)
 {
@@ -42,7 +42,7 @@ protected Packet client_hello(string(8bit)|void server_name,
   struct->add(client_random);
   struct->add_hstring(session->identity || "", 1);
 
-  array(int) cipher_suites = context->preferred_suites;
+  array(int) cipher_suites = [array] context->preferred_suites;
   if ((state & CONNECTION_handshaking) && !secure_renegotiation) {
     // Initial handshake.
     // Use the backward-compat way of asking for
@@ -67,7 +67,7 @@ protected Packet client_hello(string(8bit)|void server_name,
                  fmt_cipher_suites(cipher_suites));
   struct->add_int_array(cipher_suites, 2, 2);
 
-  array(int) compression_methods;
+  array(int) compression_methods = ({});
   if (client_version >= PROTOCOL_TLS_1_3) {
     // TLS 1.3 (draft 3) does not allow any compression.
     compression_methods = ({ COMPRESSION_null });
@@ -163,8 +163,8 @@ protected Packet client_hello(string(8bit)|void server_name,
        ( has_value(context->supported_versions, PROTOCOL_TLS_1_0) ||
          has_value(context->supported_versions, PROTOCOL_TLS_1_1) ||
          has_value(context->supported_versions, PROTOCOL_TLS_1_2) )) {
-    // draft-ietf-tls-session-hash
-    // NB: This extension is implicit in TLS 1.3 and N/A in SSL.
+    // RFC 7627
+    // NB: This extension is implicit in TLS 1.3, and invalid in SSL 3.0.
     return Buffer();
   };
 
@@ -187,7 +187,7 @@ protected Packet client_hello(string(8bit)|void server_name,
   {
     Buffer hostname = Buffer();
     hostname->add_int(0, 1); // name_time host_name(0)
-    hostname->add_hstring(server_name, 2); // hostname
+    hostname->add_hstring([string]server_name, 2); // hostname
 
     return Buffer()->add_hstring(hostname, 2);
   };
@@ -222,17 +222,17 @@ protected Packet client_hello(string(8bit)|void server_name,
   int packet_size = sizeof(struct)+sizeof(extensions)+2;
   ext (EXTENSION_padding, packet_size>255 && packet_size<512)
   {
-    int padding = max(0, 512-packet_size-4);
+    int(0..) padding = max(0, 512-packet_size-4);
     SSL3_DEBUG_MSG("SSL.ClientConnection: Adding %d bytes of padding.\n",
                    padding);
     return Buffer()->add("\0"*padding);
   };
 
-  ext(EXTENSION_early_data, early_data && sizeof(early_data)) {
+  ext(EXTENSION_early_data, early_data && sizeof([array]early_data)) {
     SSL3_DEBUG_MSG("SSL.ClientConnection: Adding %d packets of early data.\n",
-		   sizeof(early_data));
+		   sizeof([array]early_data));
     Buffer buf = Buffer();
-    foreach(early_data, Packet p) {
+    foreach([array] early_data, Packet p) {
       p->send(buf);
     }
     return buf;
@@ -282,7 +282,7 @@ protected Packet finished_packet(string(8bit) sender)
   return handshake_packet(HANDSHAKE_finished, client_verify_data);
 }
 
-protected Packet client_key_exchange_packet()
+protected object(Packet)|zero client_key_exchange_packet()
 {
   Stdio.Buffer packet_data = Stdio.Buffer();
   if (!ke) {
@@ -294,7 +294,7 @@ protected Packet client_key_exchange_packet()
       return 0;
     }
   }
-  string(8bit) premaster_secret =
+  string(8bit)|zero premaster_secret =
     ke->client_key_exchange_packet(packet_data, version);
 
   if (!premaster_secret) {
@@ -354,7 +354,7 @@ protected int send_certs()
   /* Send Certificate, ClientKeyExchange, CertificateVerify and
    * ChangeCipherSpec as appropriate, and then Finished.
    */
-  CertificatePair cert;
+  object(CertificatePair)|zero cert;
 
   /* Only send a certificate if it's been requested. */
   if(client_cert_types)
@@ -384,12 +384,12 @@ protected int send_certs()
 
                // Are the individual hash and sign algorithms in the
                // certificate chain supported?
-               foreach(cp->sign_algs, [int cert_hash, int cert_sign])
+               foreach([array] cp->sign_algs, int cert_scheme)
                {
                  int match;
-                 foreach(session->signature_algorithms, [int hash, int sign])
+                 foreach(session->signature_algorithms, int signature_scheme)
                  {
-                   if( hash==cert_hash && sign==cert_sign )
+                   if( cert_scheme == signature_scheme )
                    {
                      match = 1;
                      break;
@@ -417,7 +417,7 @@ protected int send_certs()
   COND_FATAL(!session->has_required_certificates(),
              ALERT_unexpected_message, "Certificate message missing.\n");
 
-  Packet key_exchange = client_key_exchange_packet();
+  object(Packet)|zero key_exchange = client_key_exchange_packet();
 
   if (key_exchange) {
     send_packet(key_exchange);
@@ -484,7 +484,8 @@ protected int(-1..0) got_certificate_request(Buffer input)
                "Odd number of bytes in supported_signature_algorithms.\n");
 
     // Pairs of <hash_alg, signature_alg>.
-    session->signature_algorithms = ((array(int))bytes)/2;
+    session->signature_algorithms =
+      [array(int)]column(map(bytes/2, array_sscanf, "%2c"), 0);
     SSL3_DEBUG_MSG("New signature_algorithms:\n"+
 		   fmt_signature_pairs(session->signature_algorithms));
   }
@@ -507,7 +508,7 @@ protected int(-1..1) got_new_session_ticket(Buffer input)
   COND_FATAL(!tickets_enabled, ALERT_handshake_failure,
 	     "Unexpected session ticket.\n");
   // Make sure that we only get one ticket.
-  tickets_enabled = 3;
+  tickets_enabled = 0;
 
   int lifetime_hint = input->read_int(4);
   string(8bit) ticket = input->read_hstring(2);
@@ -582,14 +583,11 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
     case HANDSHAKE_server_hello:
       SSL3_DEBUG_MSG("SSL.ClientConnection: SERVER_HELLO\n");
 
-      string(8bit) session_id;
-      int cipher_suite, compression_method;
-
       version = [int(0x300..0x300)|ProtocolVersion]input->read_int(2);
       server_random = input->read(32);
-      session_id = input->read_hstring(1);
-      cipher_suite = input->read_int(2);
-      compression_method = input->read_int(1);
+      string(8bit) session_id = input->read_hstring(1);
+      int cipher_suite = input->read_int(2);
+      int compression_method = input->read_int(1);
 
       if( !has_value(context->supported_versions, version) )
       {
@@ -807,13 +805,6 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 	}
       }
 
-      if (session->ticket && !tickets_enabled) {
-	// The server has stopped supporting session tickets?
-	// Make sure not to compare the server-generated
-	// session id with the one that we may have generated.
-	session_id = "";
-      }
-
       // RFC 5746 3.5:
       // When a ServerHello is received, the client MUST verify that the
       // "renegotiation_info" extension is present; if it is not, the
@@ -861,7 +852,9 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
     switch(type)
     {
     default:
-      COND_FATAL(1, ALERT_unexpected_message, "Unexpected server message.\n");
+      COND_FATAL(1, ALERT_unexpected_message,
+		 sprintf("Unexpected server message: %s.\n",
+			 fmt_constant(type, "HANDSHAKE")));
       break;
       /* FIXME: HANDSHAKE_encrypted_extensions */
     case HANDSHAKE_certificate:
@@ -882,7 +875,8 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
     case HANDSHAKE_server_key_exchange:
       {
 	COND_FATAL(version >= PROTOCOL_TLS_1_3, ALERT_unexpected_message,
-		   "Unexpected server message.\n");
+		   sprintf("Unexpected server message: %s.\n",
+			   fmt_constant(type, "HANDSHAKE")));
 
 	if (ke) error("KE!\n");
 	ke = session->cipher_spec->ke_factory(context, session, this,
@@ -902,7 +896,8 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
       SSL3_DEBUG_MSG("SSL.ClientConnection: SERVER_HELLO_DONE\n");
 
       COND_FATAL(version >= PROTOCOL_TLS_1_3, ALERT_unexpected_message,
-		 "Unexpected server message.\n");
+		 sprintf("Unexpected server message: %s.\n",
+			 fmt_constant(type, "HANDSHAKE")));
 
       if (send_certs()) return -1;
 
@@ -924,7 +919,9 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
     }
     switch(type) {
     default:
-      COND_FATAL(1, ALERT_unexpected_message, "Unexpected server message.\n");
+      COND_FATAL(1, ALERT_unexpected_message,
+		 sprintf("Unexpected server message: %s.\n",
+			 fmt_constant(type, "HANDSHAKE")));
       break;
     case HANDSHAKE_certificate_request:
       add_handshake_message(raw);
@@ -933,7 +930,8 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
       SSL3_DEBUG_MSG("SSL.ClientConnection: CERTIFICATE_VERIFY\n");
 
       COND_FATAL(version < PROTOCOL_TLS_1_3, ALERT_unexpected_message,
-                 "Unexpected server message.\n");
+		 sprintf("Unexpected server message: %s.\n",
+			 fmt_constant(type, "HANDSHAKE")));
 
       SSL3_DEBUG_MSG("SERVER: handshake_messages: %d bytes.\n",
 		     sizeof(handshake_messages));
@@ -971,7 +969,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 
       SSL3_DEBUG_MSG("SSL.ClientConnection: FINISHED\n");
 
-      string my_digest;
+      string my_digest = "";
       if (version == PROTOCOL_SSL_3_0) {
         server_verify_data = input->read(36);
         my_digest = hash_messages("SRVR");
@@ -999,7 +997,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
       }
 
       // Handshake hash is calculated for both directions above.
-      handshake_messages = 0;
+      handshake_messages = Buffer();
 
       handshake_state = STATE_handshake_finished;
 

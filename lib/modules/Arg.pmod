@@ -27,9 +27,13 @@
 //! @code
 //! class MyArguments {
 //!    inherit Arg.Options;
+//!    string help_pre = "Usage: somecommand";
 //!    Opt verbose = NoOpt("-v")|NoOpt("--verbose");
+//!    string verbose_help = "Turn on verbose output";
 //!    Opt help = MaybeOpt("--help");
 //!    Opt output = HasOpt("--output")|HasOpt("-o");
+//!    string output_help = "Determine where output goes to";
+//!    string help_post = "Command aborted";
 //! };
 //! @endcode
 //!
@@ -471,7 +475,7 @@ LookupKey PATH = LookupKey("PATH");
 
 //! @decl constant PATH;
 //!
-//! Constant used to represent the full paht of the applicatiojn from
+//! Constant used to represent the full path of the application from
 //! the command line. Can be used when indexing an @[Options] object.
 
 // FIXME: Support for rc files? ( Opt x = Opt("--x")|INIFile(path, name); )
@@ -547,7 +551,7 @@ class LowOptions
 
   }
 
-  protected string index(string i)
+  protected string|zero index(string i)
   {
     string s = ::`[](i, this, 1);
     if( !s ) return 0;

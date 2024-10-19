@@ -16,7 +16,8 @@
 //!     The @[Substitution] program is compatible with @[Cipher.State].
 //!
 //!     Also conforming to the API are several helper modules such as
-//!     @[Buffer], @[predef::Nettle.BlockCipher.CBC],
+//!     @[predef::Nettle.BufferedCipher.Buffer],
+//!     @[predef::Nettle.BlockCipher.CBC],
 //!     @[predef::Nettle.BlockCipher16.GCM] and @[Pipe].
 //!
 //!   @item Message Authentication Code modules (MACs)
@@ -93,15 +94,12 @@ class Sign {
 //! @seealso
 //!   @[verify_crypt_md5]
 string(8bit) make_crypt_md5(string(8bit) password,
-                            void|string(8bit) salt)
+                            string(8bit) salt =
+			    MIME.encode_base64(.Random.random_string(6)))
 {
-  if(salt)
-    sscanf(salt, "%s$", salt);
-  else
-    salt = ([function(string(8bit):string(7bit))]MIME["encode_base64"])
-      (.Random.random_string(6));
+  sscanf(salt, "%s$", salt);
 
-  return "$1$"+salt+"$"+Nettle.crypt_md5(password, salt);
+  return "$1$" + salt + "$" + Nettle.crypt_md5(password, salt);
 }
 
 //! Verifies the @[password] against the crypt_md5 hash.
@@ -111,7 +109,7 @@ string(8bit) make_crypt_md5(string(8bit) password,
 //!   @[make_crypt_md5]
 bool verify_crypt_md5(string(8bit) password, string(7bit) hash)
 {
-  string(7bit) salt;
+  string(7bit) salt = "";
   if( sscanf(hash, "$1$%s$%s", salt, hash)!=2 )
     error("Error in hash.\n");
   return Nettle.crypt_md5(password, salt) == hash;

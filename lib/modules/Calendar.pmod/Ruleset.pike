@@ -1,3 +1,5 @@
+/* -*- mode: Pike; c-basic-offset: 3; -*- */
+
 #pike __REAL_VERSION__
 
 //! This is the container class for rules.
@@ -106,7 +108,7 @@ this_program clone()
 }
 
 //!
-int(0..1) `==(this_program other)
+protected int(0..1) `==(this_program other)
 {
    if (!objectp(other)) return 0;
    return

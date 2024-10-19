@@ -19,3 +19,5 @@
 //! DES also has some weak keys.
 
 inherit Nettle.DES;
+
+@Pike.Annotations.Implements(Crypto.BlockCipher);

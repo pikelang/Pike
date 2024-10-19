@@ -39,7 +39,17 @@ struct array
   struct array *prev;	/**< Another pointer, so we don't have to search
 			 * when freeing arrays */
   struct svalue *item;  /**< the array of svalues */
-  struct svalue real_item[1];
+  union {
+    struct svalue real_item[1];
+#if (SIZEOF_CHAR_P == 8) && (SIZEOF_LONG_DOUBLE == 16)
+    /* Force the real_item array to be 16-byte aligned, so that we can
+     * use single 16-byte operations to access the elements.
+     */
+    long double force_align16;
+#else
+    double force_align8;
+#endif
+  } u;
 };
 
 #define ARRAY_WEAK_FLAG 1
@@ -121,12 +131,14 @@ PMOD_EXPORT void simple_array_index_no_free(struct svalue *s,
 				struct array *a,struct svalue *ind);
 PMOD_EXPORT void array_free_index(struct array *v,INT32 ind);
 PMOD_EXPORT void simple_set_index(struct array *a,struct svalue *ind,struct svalue *s);
+PMOD_EXPORT void array_atomic_get_set(struct array *a, INT32 i,
+				      struct svalue *from_to);
 PMOD_EXPORT struct array *array_insert(struct array *v,struct svalue *s,INT32 ind);
 void o_append_array(INT32 args);
 PMOD_EXPORT struct array *resize_array(struct array *a, INT32 size);
 PMOD_EXPORT struct array *array_shrink(struct array *v, ptrdiff_t size);
 PMOD_EXPORT struct array *array_remove(struct array *v,INT32 ind);
-PMOD_EXPORT ptrdiff_t array_search(struct array *v, struct svalue *s,
+PMOD_EXPORT ptrdiff_t array_search(struct array *v, const struct svalue *s,
 				   ptrdiff_t start);
 PMOD_EXPORT struct array *slice_array(struct array *v, ptrdiff_t start,
 				      ptrdiff_t end);
@@ -145,12 +157,12 @@ PMOD_EXPORT INT32 *get_set_order(struct array *a);
 PMOD_EXPORT INT32 *get_switch_order(struct array *a);
 PMOD_EXPORT INT32 *get_alpha_order(struct array *a);
 INT32 set_lookup(struct array *a, struct svalue *s);
-INT32 switch_lookup(struct array *a, struct svalue *s);
+INT32 switch_lookup(struct svalue *table, struct svalue *s);
 PMOD_EXPORT struct array *order_array(struct array *v, const INT32 *order);
 PMOD_EXPORT struct array *reorder_and_copy_array(const struct array *v, const INT32 *order);
 PMOD_EXPORT TYPE_FIELD array_fix_type_field(struct array *v);
 #ifdef PIKE_DEBUG
-PMOD_EXPORT void array_check_type_field(struct array *v);
+PMOD_EXPORT void array_check_type_field(const struct array *v);
 #endif
 PMOD_EXPORT union anything *low_array_get_item_ptr(struct array *a,
 				       INT32 ind,
@@ -164,6 +176,8 @@ PMOD_EXPORT struct array *add_arrays(struct svalue *argp, INT32 args);
 PMOD_EXPORT int array_equal_p(struct array *a, struct array *b, struct processing *p);
 PMOD_EXPORT struct array *merge_array_with_order(struct array *a,
 						 struct array *b, INT32 op);
+PMOD_EXPORT struct array *subtract_array_svalue(struct array *a,
+						struct svalue *b);
 PMOD_EXPORT struct array *subtract_arrays(struct array *a, struct array *b);
 PMOD_EXPORT struct array *and_arrays(struct array *a, struct array *b);
 int array_is_constant(struct array *a,
@@ -262,7 +276,15 @@ void assign_array_level( struct array *a, struct array *b, int level );
       /* BIT_MIXED|BIT_UNFINISHED from the allocation above. */		\
       memcpy(ITEM(base_sval[-1].u.array) + oldsize__,                   \
 	     base_sval, diff__ * sizeof(struct svalue));                \
+      if (!oldsize__) {							\
+	/* Make sure that BIT_UNFINISHED is set. */			\
+	base_sval[-1].u.array->type_field |=				\
+	  BIT_MIXED | BIT_UNFINISHED;					\
+      }									\
       Pike_sp = base_sval;						\
+      DO_IF_DMALLOC(while(diff__--) {					\
+	  dmalloc_touch_svalue(Pike_sp + diff__);			\
+	});								\
     }									\
   } while (0)
 
@@ -276,11 +298,14 @@ void assign_array_level( struct array *a, struct array *b, int level );
     }									\
     else								\
       AGGR_ARR_CHECK (base_sval, 0);					\
-    if (base_sval[-1].u.array->type_field & BIT_UNFINISHED)		\
-      array_fix_type_field(Pike_sp[-1].u.array);			\
+    DO_IF_DEBUG(if (Pike_sp != base_sval) {				\
+	Pike_fatal("Lost track of stack depth when aggregating.\n");	\
+      });								\
     DO_IF_DEBUG(if (TYPEOF(Pike_sp[-1]) != T_ARRAY) {			\
 	Pike_fatal("Lost track of aggregated array.\n");		\
       });								\
+    if (base_sval[-1].u.array->type_field & BIT_UNFINISHED)		\
+      array_fix_type_field(Pike_sp[-1].u.array);			\
   } while (0)
 
 #define BEGIN_AGGREGATE_ARRAY(estimated_size) do {			\

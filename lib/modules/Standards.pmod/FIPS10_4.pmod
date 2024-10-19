@@ -33,8 +33,8 @@
 
 #pike __REAL_VERSION__
 
-protected mapping(string:string) _region_code_to_name=0;
-protected mapping(string:string) _region_name_to_code=0;
+protected mapping(string:string) _region_code_to_name=([]);
+protected mapping(string:string) _region_name_to_code=([]);
 
 protected void mkregionmappings()
 {
@@ -44,8 +44,8 @@ protected void mkregionmappings()
    _region_name_to_code=mkmapping(b,a);
 }
 
-protected mapping(string:array(string)) _division_code_to_line=0;
-protected mapping(string:array(string)) _division_name_to_line=0;
+protected mapping(string:array(string)) _division_code_to_line=([]);
+protected mapping(string:array(string)) _division_name_to_line=([]);
 
 protected void mkdivisionmappings()
 {
@@ -55,7 +55,7 @@ protected void mkdivisionmappings()
    _division_name_to_line=mkmapping(b,divisions);
 }
 
-protected mapping(string:array(array(string))) _region_to_divisions=0;
+protected mapping(string:array(array(string))) _region_to_divisions=([]);
 
 protected void mkregiondivisionmapping()
 {
@@ -139,7 +139,7 @@ string division_name_to_code(string code)
 // guessing to multiple lines is better
 //
 
-protected mapping(string:array(array(string))) guess_to_lines=0;
+protected mapping(string:array(array(string))) guess_to_lines=([]);
 
 //! Return an array of possible divisions given a division name.
 //! @returns

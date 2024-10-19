@@ -34,7 +34,7 @@ class XResource
   int autofree = 1;
   //!
 
-  void create(object d, int i)
+  protected void create(object d, int i)
   {
     display = d;
     id = i;
@@ -135,7 +135,7 @@ class Visual
   int blueMask;
   //!
 
-  void create(mixed ... args)
+  protected void create(mixed ... args)
   {
     ::create(@args);
     autofree=0;
@@ -174,7 +174,7 @@ class GC
     return values;
   }
 
-  void create(mixed ... args)
+  protected void create(mixed ... args)
   {
     ::create(@args);
     values = mkmapping(._Xlib.gc_attributes,
@@ -192,7 +192,7 @@ class Rectangle
   int width, height;
   //!
 
-  void create(int ... args)
+  protected void create(int ... args)
   {
     switch(sizeof(args))
       {
@@ -222,7 +222,7 @@ class Point
   int x, y;
   //!
 
-  void create(int ... args)
+  protected void create(int ... args)
   {
     switch(sizeof(args))
       {
@@ -291,7 +291,7 @@ class Colormap
   }
 
 
-  void create(object disp, int i, object vis)
+  protected void create(object disp, int i, object|zero vis)
   {
     display = disp;
     id = i;
@@ -503,7 +503,7 @@ class Pixmap
   constant FreeRequest = .Requests.FreePixmap;
 
   // Init function.
-  void create(mixed ... args)
+  protected void create(mixed ... args)
   {
     ::create( @args );
     if(sizeof(args)>2 && objectp(args[2]))  parent = args[2];
@@ -547,7 +547,7 @@ class Window
 
   //!
   object CreateWindow_req(int x, int y, int width, int height,
-			  int border_width, int depth, object visual)
+			  int border_width, int depth, object|zero visual)
   {
     object req = .Requests.CreateWindow();
     req->depth = depth;  /* CopyFromParent */
@@ -781,7 +781,7 @@ class Window
   }
 
   //!
-  array ListProperties()
+  array|zero ListProperties()
   {
     object req = ListProperties_req();
     array a = display->blocking_request(req);
@@ -834,7 +834,7 @@ class Window
   }
 
   //!
-  mapping GetProperty(object property, object|void type)
+  mapping|zero GetProperty(object property, object|void type)
   {
     object req = GetProperty_req(property, type);
     array a = display->blocking_request(req);
@@ -919,7 +919,7 @@ class Window
 
 
   // Init function.
-  void create(mixed ... args)
+  protected void create(mixed ... args)
   {
     ::create( @args );
     if(sizeof(args)>2 && objectp(args[2]))  visual = args[2];
@@ -949,7 +949,7 @@ class RootWindow
   mapping depths;
   //!
 
-  void create(mixed ... args)
+  protected void create(mixed ... args)
   {
     ::create(@args);
     autofree=0;
@@ -962,7 +962,7 @@ class RootWindow
 }
 
 /* Kludge */
-void create()
+protected void create()
 {
   ._Types.set_pixmap_class(Pixmap);
 }

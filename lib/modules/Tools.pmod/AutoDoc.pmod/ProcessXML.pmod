@@ -64,6 +64,7 @@ protected private void processWarning(string message, mixed ... args) {
 // </modifiers>
 //
 // <docgroup>
+//   <generic/>
 //   <method/>
 //   <variable/>
 //   <constant/>
@@ -296,7 +297,7 @@ string moveImages(string docXMLFile,
             if (attr["homogen-name"])
               parents += ({ attr["homogen-name"] });
             else {
-              string name = 0;
+              string|zero name = 0;
               foreach (n->get_children(), SimpleNode c) {
                 if (c->get_node_type() == XML_ELEMENT)
                   if (name = c->get_attributes()["name"])
@@ -328,7 +329,7 @@ string moveImages(string docXMLFile,
             break;
 
           case "image":
-            string imageFilename;
+            string|zero imageFilename;
             array(SimpleNode) children = n->get_children();
             if (sizeof(children || ({})) != 1
                 || children[0]->get_node_type() != XML_TEXT) {
@@ -355,7 +356,7 @@ string moveImages(string docXMLFile,
 		werror("(Could not read %s)\n", imageFilename);
 	    }
 	    else {
-	      Image.Image o = Image.load(imageFilename);
+	      object(Image.Image)|zero o = Image.load(imageFilename);
 	      if(o && o->xsize() && o->ysize()) {
 		args->width = (string)o->xsize();
 		args->height = (string)o->ysize();
@@ -424,7 +425,7 @@ protected int isText(SimpleNode node) { return node->get_node_type() == XML_TEXT
 protected string renderType(SimpleNode node)
 {
   SimpleNode type_node;
-  if ((< "method", "variable", "constant", "directive",
+  if ((< "method", "variable", "constant", "directive", "generic",
 	 "typedef", "inherit", "import" >)[node->get_any_name()]) {
     type_node = node;
   } else {
@@ -433,6 +434,7 @@ protected string renderType(SimpleNode node)
       node->get_first_element("variable") ||
       node->get_first_element("constant") ||
       node->get_first_element("directive") ||
+      node->get_first_element("generic") ||
       node->get_first_element("typedef") ||
       node->get_first_element("inherit") ||
       node->get_first_element("import");
@@ -496,6 +498,7 @@ void mergeTrees(SimpleNode dest, SimpleNode source)
   mapping(string : SimpleNode) dest_children = ([]);
   mapping(string : array(SimpleNode)) dest_groups = ([]);
   SimpleNode dest_has_doc;
+  array(SimpleNode) dest_annotations = ({});
   multiset(string) dest_modifiers = (<>);
   array(SimpleNode) other_children = ({});
 
@@ -559,9 +562,13 @@ void mergeTrees(SimpleNode dest, SimpleNode source)
 	  string name = getName(node);
 
 	  if (!name) {
-	    processError("No name for %s:\n"
-			 "%O\n",
-			 node->get_any_name(), node->render_xml()[..256]);
+            if (node->get_any_name() != "enum") {
+              processError("No name for %s:\n"
+                           "%O\n",
+                           node->get_any_name(), node->render_xml()[..256]);
+            }
+
+            name = "";
 	  }
 
 	  SimpleNode n = dest_children[name];
@@ -609,6 +616,10 @@ void mergeTrees(SimpleNode dest, SimpleNode source)
 
       case "modifiers":
         dest_modifiers |= (multiset)node->get_elements()->get_any_name();
+        break;
+
+      case "annotations":
+        dest_annotations += node->get_elements();
         break;
 
       case "doc":
@@ -664,11 +675,17 @@ void mergeTrees(SimpleNode dest, SimpleNode source)
   // of the dest node.
   children = ({});
 
+  if (sizeof(dest_annotations)) {
+    SimpleElementNode annotations = SimpleElementNode("annotations", ([]));
+    annotations->replace_children(dest_annotations);
+    children = ({ SimpleTextNode("\n"), annotations });
+  }
+
   if (sizeof(dest_modifiers)) {
     SimpleElementNode modifiers = SimpleElementNode("modifiers", ([]));
     modifiers->replace_children(map(indices(dest_modifiers),
 				    SimpleElementNode, ([])));
-    children = ({ SimpleTextNode("\n"), modifiers });
+    children += ({ SimpleTextNode("\n"), modifiers });
   }
 
   if (dest_has_doc) {
@@ -681,6 +698,15 @@ void mergeTrees(SimpleNode dest, SimpleNode source)
     array(SimpleNode) nodes = dest_groups[name];
 
     if (!nodes) continue;
+
+    if (sizeof(nodes) > 1) {
+      array(SimpleNode) filtered =
+        filter(nodes, nodes->get_first_element("doc"));
+      if (sizeof(filtered)) {
+        // Keep only the nodes that have documentation.
+        nodes = filtered;
+      }
+    }
 
     if (sizeof(nodes) > 1)
       sort(map(nodes, renderType), nodes);
@@ -722,7 +748,8 @@ protected void reportError(string filename, mixed ... args) {
 // HANDLING @appears directives
 //========================================================================
 
-protected SimpleNode findNode(SimpleNode root, array(string) ref) {
+protected object(SimpleNode)|zero findNode(SimpleNode root,
+                                           array(string) ref) {
   SimpleNode n = root;
   // top:: is an anchor to the root of the current namespace.
   if (sizeof(ref) && ref[0] == "top::")
@@ -731,11 +758,11 @@ protected SimpleNode findNode(SimpleNode root, array(string) ref) {
     return root;
   while (sizeof(ref)) {
     array(SimpleNode) children = n->get_children();
-    SimpleNode found = 0;
+    object(SimpleNode)|zero found = 0;
     foreach (children, SimpleNode child) {
       string tag = child->get_any_name();
       if (tag == "namespace" || tag == "module" || tag == "class") {
-        string name = child->get_attributes()["name"];
+        string|zero name = child->get_attributes()["name"];
         if (name && name == ref[0]) {
           found = child;
           break;
@@ -893,6 +920,9 @@ protected array(string) splitRef(string ref) {
     // FIXME: What about module.pike/module.pmod?
     return ref/"/";
   }
+  while(has_prefix(ref, "\0")) {
+    ref = ref[1..];
+  }
   array(string) a = Parser.Pike.split(ref);
   string namespace;
   array result = ({});
@@ -960,7 +990,7 @@ protected class Scope(string|void type, string|void name) {
 
   multiset(string) failures = (<>);
 
-  string _sprintf(int t) {
+  protected string _sprintf(int t) {
     return t=='O' && sprintf("%O(%O:%O:%s)", this_program, type, name,
 			     (sort(indices(idents))*",") );
   }
@@ -1089,7 +1119,7 @@ protected class ScopeStack {
 	    matches += ({ res + ref });
 	  }
       }
-      string ns = namespace;
+      string|zero ns = namespace;
       for (multiset(string) extends = namespace_extends[ns];
 	   (ns && extends); extends = namespace_extends[ns]) {
 	ns = 0;
@@ -1199,7 +1229,7 @@ protected void resolveFun(ScopeStack scopes, SimpleNode node) {
 		  }
 	      }
 	    }
-            SimpleNode doc = 0;
+            object(SimpleNode)|zero doc = 0;
 	    foreach(child->get_children(), SimpleNode n) {
 	      if (n->get_any_name() == "doc") {
 		doc = n;
@@ -1266,7 +1296,7 @@ void oldResolveRefs(SimpleNode tree) {
 
 protected class DummyNScope(string name)
 {
-  string lookup(array(string) ref)
+  string|zero lookup(array(string) ref)
   {
     return 0;
   }
@@ -1276,6 +1306,7 @@ protected class DummyNScope(string name)
 class NScope
 {
   string name;
+  string node_name;
   string type;
   string path;
   mapping(string:int(1..1)|NScope) symbols = ([]);
@@ -1290,7 +1321,7 @@ class NScope
       tree = tree->get_first_element();
     }
     type = tree->get_any_name();
-    name = tree->get_attributes()->name;
+    node_name = name = tree->get_attributes()->name;
     if (path) {
       name = path + name;
       path = name + ".";
@@ -1327,7 +1358,7 @@ class NScope
       if (inherits && sizeof(inherits) == 1) {
 	foreach(symbols;;int(1..)|NScope scope) {
 	  if (objectp(scope)) {
-	    scope->addImplicitInherits(values(inherits)[0]);
+	    scope->addImplicitInherits(indices(inherits)[0]);
 	  }
 	}
       }
@@ -1395,7 +1426,7 @@ class NScope
 	    }
 	    break;
 	  default:
-	    // variable, constant, typedef, enum, etc.
+            // variable, constant, typedef, generic, enum, etc.
 	    if (n) {
 	      if (objectp(symbols[n])) {
 		werror("%s is both a %s scope and a %O!\n",
@@ -1457,10 +1488,10 @@ class NScope
 		   type, name, sizeof(symbols), sizeof(inherits||([])));
   }
 
-  string lookup(array(string) path, int(0..1)|void no_imports )
+  string|zero lookup(array(string) path, int(0..1)|void no_imports )
   {
     if( !sizeof(path) )
-        return 0;
+      return name;
 
     int(1..1)|NScope scope =
       symbols[path[0]] || symbols["/precompiled/"+path[0]];
@@ -1487,11 +1518,44 @@ class NScope
       if (objectp(scope)) {
 	return scope->name;
       }
+      if (type == "namespace") {
+        return name + path[0];
+      }
       return name + "." + path[0];
     } else if (!objectp(scope)) {
       return 0;
     }
     return scope->lookup(path[1..], 1);
+  }
+
+  array(string|int)|zero low_resolve_inherit(string inh, array(string) path,
+                                             int|void depth)
+  {
+    if (!inherits || !sizeof(inherits)) return 0;
+    if (inherits[inh]) {
+      string|zero found = inherits[inh]->lookup(path);
+      if (found) return ({ depth, found });
+    }
+    array(string|int)|zero res;
+    foreach(inherits; string i; string|NScope s) {
+      if (stringp(s)) continue;
+      if (!s->low_resolve_inherit) {
+        werror("Unexpected inherited scope: %O\n", s);
+        continue;
+      }
+      array(string|int) sub =
+        s->low_resolve_inherit(inh, path, depth + 1);
+      if (sub && (!res || (res[0] > sub[0]))) {
+        res = sub;
+      }
+    }
+    return res;
+  }
+
+  string|zero resolve_inherit(string inh, array(string) path)
+  {
+    array(string|int)|zero res = low_resolve_inherit(inh, path);
+    return res && [string]res[1];
   }
 }
 
@@ -1594,7 +1658,7 @@ class NScopeStack
     }
   }
 
-  NScope|int(1..1) lookup(string ref)
+  NScope|int(0..1) lookup(string ref)
   {
     array(string) path = splitRef(ref);
     int(1..1)|NScope val = scopes;
@@ -1608,7 +1672,7 @@ class NScopeStack
     return val;
   }
 
-  string resolve(array(string) ref)
+  string|zero resolve(array(string) ref)
   {
     if (!sizeof(ref)) {
       return top->name;
@@ -1675,18 +1739,43 @@ class NScopeStack
 	  "7.9":"8.0",
 	  "8.1":"predef",
 	])[inh] || inh;
-	while(pos) {
-	  string|NScope scope;
-	  if (current->inherits && (scope = current->inherits[inh])) {
-	    if (stringp(scope)) scope = lookup(scope);
-	    if (objectp(scope)) {
-	      string res = scope->lookup(ref[1..]);
-	      if (res) return res;
-	    }
-	  }
-	  pos--;
-	  current = stack[pos];
-	}
+        if (inh == "global") {
+        } else {
+          while(pos) {
+            string|NScope scope;
+            /* 1: Direct inherits. */
+            if (current->inherits && (scope = current->inherits[inh])) {
+              if (stringp(scope)) scope = lookup(scope);
+              if (objectp(scope)) {
+                string res = scope->lookup(ref[1..]);
+                if (res) return res;
+              }
+            }
+            /* 2: Name of current class. */
+            if ((<"namespace", "module", "class">)[current->type] &&
+                ((current->node_name == inh) ||
+                 (current->node_name == inh + "::"))) {
+              string res = current->lookup(ref[1..]);
+              if (res) return res;
+            }
+            /* 3: Recurse surrounding parent classes. */
+            pos--;
+            current = stack[pos];
+          }
+          pos = sizeof(stack);
+          current = top;
+          string res;
+          while(pos) {
+            /* 4: Indirect inherits in the current class. */
+            if (current->inherits) {
+              res = current->resolve_inherit(inh, ref[1..]);
+              if (res) return res;
+            }
+            /* 5: Recurse surrounding parent classes. */
+            pos--;
+            current = stack[pos];
+          }
+        }
 	ref = ({ inh + "::" }) + ref[1..];
 	break;
       }
@@ -1725,7 +1814,8 @@ class NScopeStack
       if (res) return res;
       current = stack[pos];
     }
-    return 0;
+    // Fall back to looking in predef::.
+    return scopes->lookup(({ "predef::" }) + ref);
   }
 
   void resolveInherits()
@@ -1749,7 +1839,7 @@ class NScopeStack
 	  if (path) {
 	    top->inherits[inh] = path;
 	    continue;
-	  } else {
+          } else if (inh[0]) {
 	    warn("Failed to resolve inherit %O.\n"
 		 "  Top: %O\n"
 		 "  Scope: %O\n"
@@ -1795,14 +1885,16 @@ class NScopeStack
 	    top->inherits[inh] = nscope;
 	    continue;
 	  }
-	  warn("Failed to lookup inherit %O (loop).\n"
-	       "  Top: %O\n"
-	       "  Scope: %O\n"
-	       "  Path: %O\n"
-	       "  NewScope: %O\n"
-	       "  Stack: %O\n",
-	       inh, top, scope, path, nscope, stack);
-	} else {
+          if (inh[0]) {
+            warn("Failed to lookup inherit %O (loop).\n"
+                 "  Top: %O\n"
+                 "  Scope: %O\n"
+                 "  Path: %O\n"
+                 "  NewScope: %O\n"
+                 "  Stack: %O\n",
+                 inh, top, scope, path, nscope, stack);
+          }
+        } else if (inh[0]) {
 	  warn("Failed to lookup inherit %O.\n"
 	       "  Top: %O\n"
 	       "  Scope: %O\n"

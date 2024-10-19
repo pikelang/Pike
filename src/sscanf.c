@@ -55,7 +55,13 @@ static p_wchar2 next_char( PCHARP *str, ptrdiff_t *len )
  * cf https://gcc.gnu.org/bugzilla/show_bug.cgi?id=50569
  * Note that the patch for the above bug is in gcc 4.7.4, but isn't sufficient.
  */
-#define NOINLINE_UNALIGNED	ATTRIBUTE((noinline)) DECLSPEC((noinline))
+#define NOINLINE_UNALIGNED	ATTRIBUTE((noinline)) DECLSPEC(noinline)
+#endif
+
+#if SIZEOF_FLOAT_TYPE > SIZEOF_DOUBLE
+#define STRTOFLOAT_PCHARP STRTOLD_PCHARP
+#else
+#define STRTOFLOAT_PCHARP STRTOD_PCHARP
 #endif
 
 static void skip_comment( PCHARP *str, ptrdiff_t *len )
@@ -151,8 +157,8 @@ static int pcharp_to_svalue_rec(PCHARP *str,
 	  read_float:
 	    {
 	      void *integer_parse = str->ptr;
-	      double res;
-	      res = STRTOD_PCHARP(start,str);
+	      FLOAT_TYPE res;
+	      res = STRTOFLOAT_PCHARP(start,str);
 	      if( integer_parse < str->ptr )
 	      {
 		pop_stack();
@@ -534,7 +540,7 @@ MATCH_IS_WIDE(							\
   {								\
     INT32 *order;						\
     set->a=aggregate_array(set_size*2);				\
-    order=get_switch_order(set->a);				\
+    order = get_set_order(set->a);				\
     for(e=0;e<(p_wchar2)set->a->size;e+=2)			\
     {								\
       if(order[e]+1 != order[e+1] &&				\
@@ -746,7 +752,7 @@ static FLOAT_TYPE NOINLINE_UNALIGNED extract_double_le(const char * x) {
     (SVAL).u.float_number = fun(x);                         \
 } while (0)
 
-static struct pike_string * NOINLINE_UNALIGNED
+static NOINLINE_UNALIGNED struct pike_string *
   get_string_slice( void *input, int shift,
 		    ptrdiff_t offset, ptrdiff_t len,
 		    struct pike_string *str )
@@ -760,7 +766,7 @@ static struct pike_string * NOINLINE_UNALIGNED
 /* INT32 very_low_sscanf_{0,1,2}_{0,1,2}(p_wchar *input, ptrdiff_t input_len,
  *					 p_wchar *match, ptrdiff_t match_len,
  *					 ptrdiff_t *chars_matched,
- *					 int *success)
+ *					 int *success, int flags)
  *
  * Perform the actual parsing.
  *
@@ -770,6 +776,7 @@ static struct pike_string * NOINLINE_UNALIGNED
  *   chars_matched		Gets set to the number of characters
  *				in the input that were advanced.
  *   success			Gets set to 1 on success.
+ *   flags			Operating mode.
  *
  * Returns:
  *   Returns the number of %-directives that were successfully matched.
@@ -787,7 +794,8 @@ static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
 			 ptrdiff_t match_len,				 \
 			 ptrdiff_t *chars_matched,			 \
 			 int *success,                                   \
-                         struct pike_string *pstr)                       \
+                         struct pike_string *pstr,			 \
+			 int flags)					 \
 {									 \
   struct svalue sval;							 \
   INT32 matches, arg;							 \
@@ -891,7 +899,7 @@ static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
 	    if(e>=match_len)						 \
 	    {								 \
 	      Pike_error("Missing %%} in format string.\n");		 \
-              UNREACHABLE(break);                                        \
+              UNREACHABLE();                                             \
 	    }								 \
 	    if(match[e]=='%')						 \
 	    {								 \
@@ -916,7 +924,7 @@ static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
 			 match+cnt+1,					 \
 			 e-cnt-2,					 \
 			 &tmp,						 \
-                         &yes,0);                                        \
+                         &yes,0,flags);					 \
 	    if(yes && tmp)						 \
 	    {								 \
               f_aggregate((INT32)(Pike_sp-save_sp));                     \
@@ -1085,6 +1093,7 @@ INPUT_IS_WIDE(								 \
         case 'b':							 \
         case 'o':							 \
         case 'd':							 \
+        case 'u':							 \
         case 'x':							 \
         case 'D':							 \
         case 'i':							 \
@@ -1100,10 +1109,16 @@ INPUT_IS_WIDE(								 \
 									 \
 	  switch(match[cnt])						 \
 	  {								 \
-	  case 'b': base =  2; break;					 \
-	  case 'o': base =  8; break;					 \
+	  case 'b': base = -2; break;					 \
+	  case 'o': base = -8; break;					 \
 	  case 'd': base = 10; break;					 \
-	  case 'x': base = 16; break;					 \
+	  case 'u': base =-10; break;					 \
+	  case 'x': base =-16; break;					 \
+	  }								 \
+									 \
+	  if (flags & SSCANF_FLAG_80_COMPAT) {				 \
+	    /* All integer formats were signed in Pike 8.0 */		 \
+	    if (base < 0) base = -base;					 \
 	  }								 \
 									 \
 	  wide_string_to_svalue_inumber(&sval, input+eye, &t,		 \
@@ -1130,8 +1145,8 @@ INPUT_IS_WIDE(								 \
 	    chars_matched[0]=eye;					 \
 	    return matches;						 \
 	  }								 \
-	  f = (FLOAT_TYPE)STRTOD_PCHARP(MKPCHARP(input+eye,		 \
-						 INPUT_SHIFT),&t2);	 \
+	  f = (FLOAT_TYPE)STRTOFLOAT_PCHARP(MKPCHARP(input+eye,		 \
+						     INPUT_SHIFT),&t2);	 \
 	  t = (PIKE_CONCAT(p_wchar, INPUT_SHIFT) *)(t2.ptr);		 \
 	  if(input + eye == t)						 \
 	  {								 \
@@ -1238,13 +1253,18 @@ INPUT_IS_WIDE(								 \
 									 \
 		case 's':						 \
 		  Pike_error("Illegal to have two adjecent %%s.\n");	 \
-                  UNREACHABLE(return 0);                                 \
+                  UNREACHABLE();                                         \
 									 \
 	  /* sscanf("foo-bar","%s%d",a,b) might not work as expected */	 \
 		case 'd':						 \
 		  memset(set.c, 1, sizeof(set.c));			 \
 		  for(e='0';e<='9';e++) set.c[e]=0;			 \
 		  set.c['-']=0;						 \
+		  goto match_set;					 \
+									 \
+		case 'u':						 \
+		  memset(set.c, 1, sizeof(set.c));			 \
+		  for(e='0';e<='9';e++) set.c[e]=0;			 \
 		  goto match_set;					 \
 									 \
 		case 'o':						 \
@@ -1259,6 +1279,7 @@ INPUT_IS_WIDE(								 \
 		  goto match_set;					 \
 									 \
 		case 'D':						 \
+		case 'i':						 \
 		  memset(set.c, 1, sizeof(set.c));			 \
 		  for(e='0';e<='9';e++) set.c[e]=0;			 \
 		  set.c['-']=0;						 \
@@ -1390,7 +1411,7 @@ INPUT_IS_WIDE(								 \
 		  struct svalue tmp;					 \
 		  SET_SVAL(tmp, T_INT, NUMBER_NUMBER,			 \
 			   integer, input[eye]);			 \
-		  x=switch_lookup(set.a, &tmp);				 \
+                  x = set_lookup(set.a, &tmp);                           \
 		  if( set.neg != (x<0 && (x&1)) ) break;		 \
 	        }else{							 \
 		  if(!set.neg) break;					 \
@@ -1515,7 +1536,8 @@ MK_VERY_LOW_SSCANF(2,2)
 /* */
 INT32 low_sscanf_pcharp(PCHARP input, ptrdiff_t len,
                         PCHARP format, ptrdiff_t format_len,
-                        ptrdiff_t *chars_matched)
+                        ptrdiff_t *chars_matched,
+			int flags)
 {
   int ok;
   check_c_stack(sizeof(struct sscanf_set)*2 + 512);
@@ -1523,37 +1545,38 @@ INT32 low_sscanf_pcharp(PCHARP input, ptrdiff_t len,
   {
     case 0:
       return very_low_sscanf_0_0(input.ptr, len,format.ptr, format_len,
-                                 chars_matched, &ok,0);
+                                 chars_matched, &ok, 0, flags);
     case 1:
       return very_low_sscanf_0_1(input.ptr, len, format.ptr, format_len,
-                                 chars_matched, &ok,0);
+                                 chars_matched, &ok, 0, flags);
     case 2:
       return very_low_sscanf_0_2(input.ptr, len, format.ptr, format_len,
-                                 chars_matched, &ok,0);
+                                 chars_matched, &ok, 0, flags);
     case 3:
       return very_low_sscanf_1_0(input.ptr, len, format.ptr, format_len,
-                                 chars_matched, &ok,0);
+                                 chars_matched, &ok, 0, flags);
     case 4:
       return very_low_sscanf_1_1(input.ptr, len, format.ptr, format_len,
-                                 chars_matched, &ok,0);
+                                 chars_matched, &ok, 0, flags);
     case 5:
       return very_low_sscanf_1_2(input.ptr, len, format.ptr, format_len,
-                                 chars_matched, &ok,0);
+                                 chars_matched, &ok, 0, flags);
     case 6:
       return very_low_sscanf_2_0(input.ptr, len, format.ptr, format_len,
-                                 chars_matched, &ok,0);
+                                 chars_matched, &ok, 0, flags);
     case 7:
       return very_low_sscanf_2_1(input.ptr, len, format.ptr, format_len,
-                                 chars_matched, &ok,0);
+                                 chars_matched, &ok, 0, flags);
     case 8:
       return very_low_sscanf_2_2(input.ptr, len, format.ptr, format_len,
-                                 chars_matched, &ok,0);
+                                 chars_matched, &ok, 0, flags);
   }
   UNREACHABLE();
 }
 
 /* Simplified interface to very_low_sscanf_{0,1,2}_{0,1,2}(). */
-INT32 low_sscanf(struct pike_string *data, struct pike_string *format)
+INT32 low_sscanf(struct pike_string *data, struct pike_string *format,
+		 INT32 flags)
 {
   ptrdiff_t matched_chars;
   int x;
@@ -1566,55 +1589,55 @@ INT32 low_sscanf(struct pike_string *data, struct pike_string *format)
     /*      0      :      0 */
     return very_low_sscanf_0_0(STR0(data), data->len,
                                STR0(format), format->len,
-                               &matched_chars, &x,data);
+                               &matched_chars, &x, data, flags);
     break;
   case 1:
     /*      0      :      1 */
     return very_low_sscanf_0_1(STR0(data), data->len,
                                STR1(format), format->len,
-                               &matched_chars, &x,data);
+                               &matched_chars, &x, data, flags);
     break;
   case 2:
     /*      0      :      2 */
     return very_low_sscanf_0_2(STR0(data), data->len,
                                STR2(format), format->len,
-                               &matched_chars, &x,data);
+                               &matched_chars, &x, data, flags);
     break;
   case 3:
     /*      1      :      0 */
     return very_low_sscanf_1_0(STR1(data), data->len,
                                STR0(format), format->len,
-                               &matched_chars, &x,data);
+                               &matched_chars, &x, data, flags);
     break;
   case 4:
     /*      1      :      1 */
     return very_low_sscanf_1_1(STR1(data), data->len,
                                STR1(format), format->len,
-                               &matched_chars, &x,data);
+                               &matched_chars, &x, data, flags);
     break;
   case 5:
     /*      1      :      2 */
     return very_low_sscanf_1_2(STR1(data), data->len,
                                STR2(format), format->len,
-                               &matched_chars, &x,data);
+                               &matched_chars, &x, data, flags);
     break;
   case 6:
     /*      2      :      0 */
     return very_low_sscanf_2_0(STR2(data), data->len,
                                STR0(format), format->len,
-                               &matched_chars, &x,data);
+                               &matched_chars, &x, data, flags);
     break;
   case 7:
     /*      2      :      1 */
     return very_low_sscanf_2_1(STR2(data), data->len,
                                STR1(format), format->len,
-                               &matched_chars, &x,data);
+                               &matched_chars, &x, data, flags);
     break;
   case 8:
     /*      2      :      2 */
     return very_low_sscanf_2_2(STR2(data), data->len,
                                STR2(format), format->len,
-                               &matched_chars, &x,data);
+                               &matched_chars, &x, data, flags);
     break;
   }
 
@@ -1798,7 +1821,44 @@ void o_sscanf(INT32 args)
   if(TYPEOF(Pike_sp[1-args]) != T_STRING)
     SIMPLE_ARG_TYPE_ERROR("sscanf", 2, "string");
 
-  i = low_sscanf(Pike_sp[-args].u.string, Pike_sp[1-args].u.string);
+  i = low_sscanf(Pike_sp[-args].u.string, Pike_sp[1-args].u.string, 0);
+
+  if(Pike_sp-save_sp > args/2-1)
+    Pike_error("Too few arguments for sscanf format.\n");
+
+  for(x=0;x<Pike_sp-save_sp;x++)
+    assign_lvalue(save_sp-args+2+x*2,save_sp+x);
+  pop_n_elems(Pike_sp-save_sp +args);
+
+#ifdef PIKE_DEBUG
+  if(Pike_interpreter.trace_level >2)
+  {
+    int nonblock;
+    if((nonblock=query_nonblocking(2)))
+      set_nonblocking(2,0);
+
+    fprintf(stderr,"-    Matches: %ld\n",(long)i);
+    if(nonblock)
+      set_nonblocking(2,1);
+  }
+#endif
+  push_int(i);
+}
+
+void o_sscanf_80(INT32 args)
+{
+  INT32 i=0;
+  int x;
+  struct svalue *save_sp=Pike_sp;
+
+  if(TYPEOF(Pike_sp[-args]) != T_STRING)
+    SIMPLE_ARG_TYPE_ERROR("sscanf", 1, "string");
+
+  if(TYPEOF(Pike_sp[1-args]) != T_STRING)
+    SIMPLE_ARG_TYPE_ERROR("sscanf", 2, "string");
+
+  i = low_sscanf(Pike_sp[-args].u.string, Pike_sp[1-args].u.string,
+		 SSCANF_FLAG_80_COMPAT);
 
   if(Pike_sp-save_sp > args/2-1)
     Pike_error("Too few arguments for sscanf format.\n");
@@ -1839,7 +1899,23 @@ PMOD_EXPORT void f_sscanf(INT32 args)
 
   check_all_args("array_sscanf",args,BIT_STRING, BIT_STRING,0);
 
-  i = low_sscanf(Pike_sp[-args].u.string, Pike_sp[1-args].u.string);
+  i = low_sscanf(Pike_sp[-args].u.string, Pike_sp[1-args].u.string, 0);
+
+  a = aggregate_array(Pike_sp - save_sp);
+  pop_n_elems(args);
+  push_array(a);
+}
+
+PMOD_EXPORT void f_sscanf_80(INT32 args)
+{
+  INT32 i;
+  struct svalue *save_sp=Pike_sp;
+  struct array *a;
+
+  check_all_args("array_sscanf",args,BIT_STRING, BIT_STRING,0);
+
+  i = low_sscanf(Pike_sp[-args].u.string, Pike_sp[1-args].u.string,
+		 SSCANF_FLAG_80_COMPAT);
 
   a = aggregate_array(Pike_sp - save_sp);
   pop_n_elems(args);
@@ -1847,7 +1923,8 @@ PMOD_EXPORT void f_sscanf(INT32 args)
 }
 
 static void push_sscanf_argument_types(PCHARP format, ptrdiff_t format_len,
-				       int cnt)
+				       int cnt, struct mapping *state,
+				       int flags)
 {
   for(; cnt < format_len; cnt++)
   {
@@ -1906,7 +1983,7 @@ static void push_sscanf_argument_types(PCHARP format, ptrdiff_t format_len,
 	  }
 	  if (!no_assign) {
 	    type_stack_mark();
-	    push_sscanf_argument_types(format, e, cnt+1);
+	    push_sscanf_argument_types(format, e, cnt+1, state, flags);
 	    if (!(depth = pop_stack_mark())) {
 	      push_type(PIKE_T_ZERO);
 	    } else {
@@ -1916,21 +1993,49 @@ static void push_sscanf_argument_types(PCHARP format, ptrdiff_t format_len,
 		depth--;
 	      }
 	    }
-	    push_type(PIKE_T_ARRAY);
-	    push_type(PIKE_T_ARRAY);
+	    push_unlimited_array_type(PIKE_T_ARRAY);
+	    push_unlimited_array_type(PIKE_T_ARRAY);
 	  }
 	  cnt = e;
 	  break;
 	}
 
-	case 'n':
+	case 'n':	/* FIXME: tIntPos? */
         case 'b':
         case 'o':
-        case 'd':
+        case 'u':
         case 'x':
+	  /* Unsigned integers. */
+	  if (!no_assign) {
+	    if (flags & SSCANF_FLAG_80_COMPAT) {
+	      /* All integer formats were signed in Pike 8.0. */
+	      push_finished_type(int_type_string);
+	    } else {
+	      push_int_type(0, 0x7fffffff);
+	    }
+	  }
+	  break;
+
+	case 'c':
+	  /* FIXME: Also consider the format_len (eg %4c). */
+	  if (!no_assign) {
+	    struct svalue *s =
+	      simple_mapping_string_lookup(state, "sscanf_input_character");
+	    if (s) {
+	      if (TYPEOF(*s) == PIKE_T_TYPE) {
+		/* Use the width of the input string. */
+		push_finished_type(s->u.type);
+	      } else {
+		push_type(PIKE_T_ZERO);
+	      }
+	      break;
+	    }
+	  }
+	  /* FALLTHRU */
+        case 'd':
         case 'D':
         case 'i':
-	case 'c':
+	  /* Signed integers. */
 	  if (!no_assign)
 	    push_finished_type(int_type_string);
 	  break;
@@ -1996,8 +2101,28 @@ static void push_sscanf_argument_types(PCHARP format, ptrdiff_t format_len,
 	  /* FALLTHRU */
       case 's':
       case 'H':
-	if (!no_assign)
-	  push_finished_type(string_type_string);
+	if (!no_assign) {
+	  struct svalue *s =
+	    simple_mapping_string_lookup(state, "sscanf_input_character");
+	  if (s) {
+	    if (TYPEOF(*s) == PIKE_T_TYPE) {
+	      /* Use the width of the input string. */
+	      push_finished_type(s->u.type);
+	      s = simple_mapping_string_lookup(state, "sscanf_input_length");
+	      if (s && (TYPEOF(*s) == PIKE_T_TYPE)) {
+		/* Use the length of the input string. */
+		push_finished_type(s->u.type);
+		push_type(PIKE_T_STRING);
+	      } else {
+		push_unlimited_array_type(PIKE_T_STRING);
+	      }
+	    } else {
+	      push_finished_type(string0_type_string);
+	    }
+	  } else {
+	    push_finished_type(string_type_string);
+	  }
+	}
 	break;
 
 	case 'F':
@@ -2031,47 +2156,94 @@ void f___handle_sscanf_format(INT32 args)
   struct pike_type *tmp;
   struct pike_string *attr;
   struct pike_string *fmt;
+  struct pike_string *sscanf_input_string;
   struct pike_string *sscanf_format_string;
-  struct pike_string *sscanf_76_format_string;
+  struct pike_string *sscanf_80_format_string;
+  struct mapping *state;
+  int flags = 0;
   int found = 0;
   int fmt_count;
 
 #if 0
-  fprintf(stderr, "__handle_sprintf_format()\n");
+  fprintf(stderr, "__handle_sscanf_format()\n");
 #endif /* 0 */
-  if (args != 4)
-    SIMPLE_WRONG_NUM_ARGS_ERROR("__handle_sscanf_format", 4);
-  if (TYPEOF(Pike_sp[-4]) != PIKE_T_STRING)
+  if (args != 5)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("__handle_sscanf_format", 5);
+  if (TYPEOF(Pike_sp[-5]) != PIKE_T_STRING)
     SIMPLE_ARG_TYPE_ERROR("__handle_sscanf_format", 1, "string");
-  if (TYPEOF(Pike_sp[-3]) != PIKE_T_STRING)
-    SIMPLE_ARG_TYPE_ERROR("__handle_sscanf_format", 2, "string");
-  if (TYPEOF(Pike_sp[-2]) != PIKE_T_TYPE)
+  if (TYPEOF(Pike_sp[-3]) != PIKE_T_TYPE)
     SIMPLE_ARG_TYPE_ERROR("__handle_sscanf_format", 3, "type");
-  if (TYPEOF(Pike_sp[-1]) != PIKE_T_TYPE)
+  if (TYPEOF(Pike_sp[-2]) != PIKE_T_TYPE)
     SIMPLE_ARG_TYPE_ERROR("__handle_sscanf_format", 4, "type");
+  if (TYPEOF(Pike_sp[-1]) != PIKE_T_MAPPING)
+    SIMPLE_ARG_TYPE_ERROR("__handle_sscanf_format", 5, "mapping");
 
-  tmp = Pike_sp[-1].u.type;
+  tmp = Pike_sp[-2].u.type;
   if ((tmp->type != PIKE_T_FUNCTION) && (tmp->type != T_MANY)) {
     SIMPLE_ARG_TYPE_ERROR("__handle_sscanf_format", 4, "type(function)");
   }
 
-  MAKE_CONST_STRING(sscanf_format_string, "sscanf_format");
-  MAKE_CONST_STRING(sscanf_76_format_string, "sscanf_76_format");
+  state = Pike_sp[-1].u.mapping;
 
-  if (Pike_sp[-4].u.string != sscanf_format_string) {
-    if (Pike_sp[-4].u.string != sscanf_76_format_string) {
+  MAKE_CONST_STRING(sscanf_input_string, "sscanf_input");
+
+  if (Pike_sp[-5].u.string == sscanf_input_string) {
+    /* Save the type of the input string. */
+    mapping_string_insert(state, sscanf_input_string, Pike_sp-3);
+
+    /* Get the type of the characters of the input string. */
+    push_type_value(index_type(Pike_sp[-3].u.type, int_type_string, NULL));
+    push_constant_text("sscanf_input_character");
+    mapping_insert(state, Pike_sp-1, Pike_sp-2);
+
+    /* Get the range of lengths for substrings of the input string. */
+    type_stack_mark();
+    tmp = key_type(Pike_sp[-5].u.type, NULL);
+    if (tmp) {
+      push_finished_type(tmp);
+      free_type(tmp);
+      push_type(PIKE_T_ZERO);
+      push_type(PIKE_T_INT_OP_RANGE);
+      push_type_value(pop_unfinished_type());
+    } else {
+      push_undefined();
+    }
+    push_constant_text("sscanf_input_length");
+    mapping_insert(state, Pike_sp-1, Pike_sp-2);
+
+    pop_n_elems(args + 4);
+    push_undefined();
+    return;
+  }
+
+  if (TYPEOF(Pike_sp[-4]) != PIKE_T_STRING) {
+    if (TYPEOF(Pike_sp[-4]) == PIKE_T_INT) {
       pop_n_elems(args);
       push_undefined();
       return;
     }
+    SIMPLE_ARG_TYPE_ERROR("__handle_sscanf_format", 2, "string");
   }
 
-  fmt = Pike_sp[-3].u.string;
+  MAKE_CONST_STRING(sscanf_format_string, "sscanf_format");
+  MAKE_CONST_STRING(sscanf_80_format_string, "sscanf_80_format");
+
+  if (Pike_sp[-5].u.string != sscanf_format_string) {
+    if (Pike_sp[-5].u.string != sscanf_80_format_string) {
+      pop_n_elems(args);
+      push_undefined();
+      return;
+    }
+
+    flags |= SSCANF_FLAG_80_COMPAT;
+  }
+
+  fmt = Pike_sp[-4].u.string;
   MAKE_CONST_STRING(attr, "sscanf_args");
 
 #if 0
   fprintf(stderr, "Checking sscanf format: \"%s\": ", fmt->str);
-  simple_describe_type(Pike_sp[-1].u.type);
+  simple_describe_type(Pike_sp[-2].u.type);
   fprintf(stderr, "\n");
 #endif /* 0 */
 
@@ -2091,7 +2263,7 @@ void f___handle_sscanf_format(INT32 args)
 	continue;
       case PIKE_T_ARRAY:
 	array_cnt++;
-	arg = arg->car;
+	arg = arg->cdr;
 	continue;
       default:
 	arg = NULL;
@@ -2102,7 +2274,7 @@ void f___handle_sscanf_format(INT32 args)
     if (arg) {
       type_stack_mark();
       push_sscanf_argument_types(MKPCHARP(fmt->str, fmt->size_shift),
-				 fmt->len, 0);
+				 fmt->len, 0, state, flags);
       if (!array_cnt) {
 	pop_stack_mark();
 	push_type(T_VOID);	/* No more args */
@@ -2136,7 +2308,7 @@ void f___handle_sscanf_format(INT32 args)
 	  }
 	}
 	while (array_cnt--) {
-	  push_type(PIKE_T_ARRAY);
+	  push_unlimited_array_type(PIKE_T_ARRAY);
 	}
 	found = 1;
       }
@@ -2184,7 +2356,7 @@ void f___handle_sscanf_format(INT32 args)
 	continue;
       case PIKE_T_ARRAY:
 	array_cnt++;
-	arg = arg->car;
+	arg = arg->cdr;
 	continue;
       default:
 	arg = NULL;
@@ -2195,7 +2367,7 @@ void f___handle_sscanf_format(INT32 args)
     if (arg) {
       type_stack_mark();
       push_sscanf_argument_types(MKPCHARP(fmt->str, fmt->size_shift),
-				 fmt->len, 0);
+				 fmt->len, 0, state, flags);
       /* Join the argument types. */
       if (!(fmt_count = pop_stack_mark())) {
 	push_type(PIKE_T_ZERO);
@@ -2204,7 +2376,7 @@ void f___handle_sscanf_format(INT32 args)
 	fmt_count--;
       }
       while (array_cnt--) {
-	push_type(PIKE_T_ARRAY);
+	push_unlimited_array_type(PIKE_T_ARRAY);
       }
 
       /* Rebuild the function type backwards. */

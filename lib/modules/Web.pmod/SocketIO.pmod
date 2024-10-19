@@ -133,7 +133,7 @@ final void sendackcb(function(mixed ...:void) fn, mixed arg) {
 
 // Exchanges protocol support information with the client
 private void exchangeoptions(Client client, function(mixed ...:void) ackcb,
- string namespace, string event, mixed coptions) {
+ string namespace, string event, mixed coptions, mixed ... rest) {
   mapping(string:mixed) ret;
   if (mappingp(coptions)) {
     int i;
@@ -246,7 +246,7 @@ class Universe {
      string, mixed ...:void) fn;
     if (!functionp(fn = lookupcb(namespace, data)))
       return fn;
-    fn(id, sendackcb, namespace, @data);
+    ([function]fn)(id, sendackcb, namespace, @data);
     return 0;
   }
 }
@@ -459,7 +459,7 @@ class Client {
           aggtext.putchar(len & 0x7f);
           if (len >>= 7)
             aggtext.putchar(len);
-          aggtext.add(ret[curoffset .. curoffset + tocopy]);
+          aggtext.add(([string]ret)[curoffset .. curoffset + tocopy]);
           if (!finf)
             curoffset += tocopy;
           if (sizeof(aggtext) >= mtu)
@@ -511,7 +511,7 @@ class Client {
   }
 
   private void flushsendq() {
-    Thread.MutexKey lock = flushone.trylock(2);
+    void|Thread.MutexKey lock = flushone.trylock(2);
     if (lock) {		      // There can be only one queue-flusher
       remove_call_out(flushsendq);
       {
@@ -657,7 +657,7 @@ outer:    foreach (qsslots; slot; partqueue sendq)  // Lower slots first
       }
     } else {
       curtype = data[0];
-      data = data[1..];
+      data = ([string]data)[1..];
       switch (curtype) {
         default:	  // Protocol error
           send(ERROR, sprintf("%c,\"Invalid packet type\"", curtype));
@@ -698,7 +698,7 @@ outer:    foreach (qsslots; slot; partqueue sendq)  // Lower slots first
               curackid = (int)s;
           foreach (curevent;; string s)
             i += sizeof(s);
-          curevent = Standards.JSON.decode(data[i..]);
+          curevent = Standards.JSON.decode(([string]data)[i..]);
           curbins = allocate(bins);
           PD("Incoming %c %d %d %O\n", curtype, bins, curackid, curevent);
           switch (curtype) {
@@ -720,7 +720,7 @@ outer:    foreach (qsslots; slot; partqueue sendq)  // Lower slots first
             len = slot >> 5 | data[offset++] << 2;
             if (acc & 0x10)
               len |= data[offset++] << 9;
-            buf->add(data[offset..offset += len]);
+            buf->add(([string]data)[offset..offset += len]);
             switch (acc & 0xc) {
               case 4:				      // finf
                 recv(buf->get());
@@ -759,8 +759,8 @@ outer:    foreach (qsslots; slot; partqueue sendq)  // Lower slots first
     PD("New SocketIO sid: %O\n", sid);
   }
 
-  private string _sprintf(int type, void|mapping flags) {
-    string res=UNDEFINED;
+  protected string _sprintf(int type, void|mapping flags) {
+    void|string res=UNDEFINED;
     switch (type) {
       case 'O':
         res = sprintf(DRIVERNAME"(%s.%d,%d)",

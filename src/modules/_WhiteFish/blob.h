@@ -21,6 +21,7 @@ typedef struct
   unsigned short raw;
   union
   {
+    unsigned short combined:16;
     struct
     {
       unsigned int id:2;

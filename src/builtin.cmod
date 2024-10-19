@@ -34,6 +34,7 @@
 #include "whitespace.h"
 #include "sprintf.h"
 #include "pike_search.h"
+#include "pike_compiler.h"
 
 #include <errno.h>
 #include <math.h>
@@ -67,6 +68,94 @@
 #define SET_ZONE(this, VAL)	((this)->extra.tm_zone = (VAL))
 #endif
 
+static void gc_check_frame(struct pike_frame *f, const char *place)
+{
+  int marker_refs;
+  (void)place;
+  if (!f) return;
+  marker_refs = debug_gc_check(f, place);
+  if (marker_refs) return;
+  if(f->flags & PIKE_FRAME_MALLOCED_LOCALS)
+  {
+    if(f->current_object)
+      debug_gc_check (f->current_object, " as current_object in a frame");
+    if(f->current_program)
+      debug_gc_check (f->current_program, " as current_program in a frame");
+    debug_gc_check_svalues (f->locals - 1, 1, " in malloced locals of a frame");
+    gc_check_frame(f->scope, " as scope frame of a frame");
+  }
+}
+
+static void visit_frame(void *fptr, int action, void *extra)
+{
+  struct pike_frame *f = fptr;
+  visit_enter(fptr, T_PIKE_FRAME, extra);
+  if (f) {
+    switch (action & VISIT_MODE_MASK) {
+#ifdef PIKE_DEBUG
+    default:
+      Pike_fatal ("Unknown visit action %d.\n", action);
+    case VISIT_NORMAL:
+    case VISIT_COMPLEX_ONLY:
+      break;
+#endif
+    case VISIT_COUNT_BYTES:
+      mc_counted_bytes += sizeof(struct pike_frame);
+      /* NB: f->locals is lifting itself, so we do not need to
+       *     account for it here.
+       */
+      break;
+    }
+    /* NB: We could use the gc_recurse_* functions here
+     *     too, but that leads to a bit of overhead when
+     *     the macros are expanded.
+     */
+    if(f->current_object)
+      visit_object_ref(f->current_object, REF_TYPE_NORMAL, extra);
+    if(f->current_program)
+      visit_program_ref(f->current_program, REF_TYPE_NORMAL, extra);
+    if(f->flags & PIKE_FRAME_MALLOCED_LOCALS)
+      visit_svalues(f->locals - 1, 1, REF_TYPE_NORMAL, extra);
+    if (f->scope)
+      visit_ref(f->scope, REF_TYPE_INTERNAL, visit_frame, extra);
+  }
+  visit_leave(fptr, T_PIKE_FRAME, extra);
+}
+
+static void gc_recurse_frame(struct pike_frame *f)
+{
+  if (!f) return;
+  /*
+   * There are several states of the gc when this function
+   * is called. The states are differentiated by Pike_in_gc:
+   *
+   * Pike_in_gc        Action
+   * ----------------------------------
+   * GC_PASS_CYCLE     gc_cycle_check_*
+   * GC_PASS_MARK      gc_mark_*
+   * GC_PASS_ZAP_WEAK  gc_mark_*
+   * All others        visit_*
+   *
+   * As struct pike_frame is reference-counted, it must be visited
+   * via visit_ref() (cf the visit_thing_fn doc in gc.h).
+   */
+  switch (Pike_in_gc) {
+  case GC_PASS_CYCLE:
+  case GC_PASS_MARK:
+  case GC_PASS_ZAP_WEAK:
+    if(f->current_object)
+      gc_recurse_object(f->current_object);
+    if(f->current_program)
+      gc_recurse_program(f->current_program);
+    if(f->flags & PIKE_FRAME_MALLOCED_LOCALS)
+      gc_recurse_svalues(f->locals - 1, 1);
+    gc_recurse_frame(f->scope);
+    break;
+  default:
+    visit_ref(f, REF_TYPE_INTERNAL, visit_frame, NULL);
+  }
+}
+
 DECLARATIONS
 
 /*! @module System
@@ -84,7 +173,7 @@ PIKECLASS TM
     CVAR struct tm_extra extra;
 
 #define strftime_zone strftime
-#define strptime_zone strptime
+#define strptime_zone pike_strptime
 #define localtime_zone(X,Y) localtime(X)
 #ifndef HAVE_EXTERNAL_TIMEZONE
 #undef timezone
@@ -103,17 +192,20 @@ PIKECLASS TM
       if (is_utc_zone)
         this->t.tm_isdst = 0;
       this->unix_time = mktime_zone(&this->t, is_utc_zone, 0);
+      if (is_utc_zone) {
+        SET_ZONE(THIS, "UTC");
+      }
       this->modified = 0;
     }
 
-#ifdef HAVE_STRPTIME
     /*! @decl int(0..1) strptime( string(1..255) format, string(1..255) data )
      *!
      *! @note
-     *!  The @expr{format@} and @expr{data@} are reversed.
+     *!   The order of @[format] and @[data] are reversed
+     *!   compared to @[predef::strptime()].
      *!
      *! @seealso
-     *!   @[strptime]
+     *!   @[strftime()], @[predef::strftime()], @[predef::strptime()]
      */
     PIKEFUN int(0..1) strptime( string(1..255) format, string(1..255) data )
     {
@@ -124,18 +216,26 @@ PIKECLASS TM
             RETURN 0;
         RETURN 1;
     }
-#endif /* HAVE_STRPTIME */
+
     /*! @decl string(1..255) strftime( string(1..255) format )
      *!
+     *! Format the timestamp into a string.
+     *!
+     *! See @[predef::strftime()] for details.
+     *!
      *! @seealso
-     *!  @[strftime], @[Gettext.setlocale]
+     *!  @[strptime()], @[predef::strftime()], @[predef::strptime()],
+     *!  @[Gettext.setlocale()]
      */
     PIKEFUN string(1..255) strftime(string(1..255) format)
     {
-        char buffer[8192];
-        buffer[0] = 0;
-        strftime_zone(buffer, sizeof(buffer), format->str, &THIS->t);
-        push_text(buffer);
+      struct string_builder s;
+
+      init_string_builder(&s, 0);
+
+      string_builder_strftime(&s, format->str, &THIS->t);
+
+      push_string(finish_string_builder(&s));
     }
 
     /*! @decl int(0..60) sec;
@@ -202,21 +302,39 @@ PIKECLASS TM
         RETURN THIS->unix_time;
     }
 
+    static const char *tm_days_of_week[] = {
+      "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat",
+    };
+
+    static const char *tm_months_of_year[] = {
+      "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+    };
+
     /*! @decl string asctime()
      *! Return a string representing the time. Mostly useful for debug
-     *! purposes, the exact format is very locale (see
-     *! @[Gettext.setlocale]) and OS dependent.
+     *! purposes.
+     *!
+     *! @note
+     *!   In versions of Pike prior to Pike 8.0.1866 the exact format
+     *!   was very locale (see @[Gettext.setlocale]) and OS dependent.
      */
     PIKEFUN string asctime()
     {
         FIX_THIS();
         {
-#define STRFTIME_MAXSIZE 26
-          char s[STRFTIME_MAXSIZE];
-          if( !strftime(s, STRFTIME_MAXSIZE, "%c\n", &THIS->t) )
-            push_undefined();
-          else
-            push_text(s);
+          struct tm *tm = &THIS->t;
+
+          push_constant_text("%s %s %2d %02d:%02d:%02d %04d\n");
+          push_text(tm_days_of_week[tm->tm_wday]);
+          push_text(tm_months_of_year[tm->tm_mon]);
+          push_int(tm->tm_mday);
+          push_int(tm->tm_hour);
+          push_int(tm->tm_min);
+          push_int(tm->tm_sec);
+          push_int(1900 + tm->tm_year);
+
+          f_sprintf(8);
         }
     }
 
@@ -246,7 +364,7 @@ PIKECLASS TM
             f_TM_unix_time(0);
             break;
         default:
-            Pike_error("Can not format as %c", flag );
+          Pike_error("Can not format as '%c'", (int)flag );
         }
         if( post_sum )
         {
@@ -279,11 +397,11 @@ PIKECLASS TM
         push_undefined();
     }
 
-    /*! @decl string zone
+    /*! @decl string|zero zone
      *!
      *! The timezone of this structure
      */
-    PIKEFUN string `zone() {
+    PIKEFUN string|zero `zone() {
         FIX_THIS();
         if( GET_ZONE(THIS) )
             push_text( GET_ZONE(THIS) );
@@ -311,7 +429,8 @@ PIKECLASS TM
             RETURN 0;
 
         THIS->t = *res;
-        THIS->modified = 1;
+        THIS->unix_time = t;
+        THIS->modified = 0;
         RETURN 1;
     }
 
@@ -329,8 +448,9 @@ PIKECLASS TM
             RETURN 0;
 
         THIS->t = *res;
+        THIS->unix_time = t;
 	SET_ZONE(THIS, "UTC");	/* Override timezone */
-        THIS->modified = 1;
+        THIS->modified = 0;
         RETURN 1;
     }
 
@@ -354,8 +474,9 @@ PIKECLASS TM
 	RETURN 0;
 
       THIS->t = *res;
+      THIS->unix_time = t;
       SET_ZONE(THIS, "UTC");	/* Override timezone */
-      THIS->modified = 1;
+      THIS->modified = 0;
       RETURN 1;
     }
 
@@ -364,6 +485,7 @@ PIKECLASS TM
      *! The timezone will always be UTC when using this function.
      */
     PIKEFUN void create( int|object(Gmp.mpz)|object(Gmp.bignum) _t )
+      flags ID_PROTECTED;
     {
         f_TM_gmtime( 1 );
         if( Pike_sp[-1].u.integer == 0 )
@@ -375,11 +497,13 @@ PIKECLASS TM
      *! Construct a new TM, all fields will be set to 0.
      */
     PIKEFUN void create( )
+      flags ID_PROTECTED;
     {
         memset( &THIS->t, 0, sizeof( struct tm ) );
         THIS->t.tm_isdst = -1;
         THIS->t.tm_mday = 1;
         THIS->unix_time = 0;
+        SET_ZONE(THIS, "UTC");
         THIS->modified = 1;
     }
 
@@ -392,6 +516,7 @@ PIKECLASS TM
     PIKEFUN void create( int year, int(0..11) mon, int(1..31) mday,
                          int(0..24) hour, int(0..59) min, int(0..59) sec,
                          string|void timezone )
+      flags ID_PROTECTED;
     {
         struct tm *t = &THIS->t;
         int use_utc = 0;
@@ -413,6 +538,7 @@ PIKECLASS TM
         /* Setting it to other timezones than UTC is not supported (yet) */
         if (use_utc)
           SET_ZONE(THIS, "UTC");
+        THIS->modified = 0;
         pop_n_elems(args);
     }
 
@@ -562,6 +688,27 @@ PIKEFUN string basetype(mixed x)
     case T_MULTISET_DATA: push_static_text("multiset_data"); break;
     default: push_static_text("unknown"); break;
   }
+}
+
+/*! @decl int __switch_lookup(array|mapping switch_table, mixed val)
+ *! @appears Pike.switch_lookup
+ *!
+ *! Lookup a @expr{switch@}-case.
+ *!
+ *! @param switch_table
+ *!   Lookup table as generated by the compiler.
+ *!
+ *! @param val
+ *!   Value to lookup.
+ *!
+ *! @returns
+ *!   Returns the entry number (ie @expr{>= 0@}) if @[val] was found
+ *!   in @[switch_table], and the binary inverse of the next entry
+ *!   number (ie @expr{< 0@}) if it was not found.
+ */
+PIKEFUN int __switch_lookup(array|mapping table, mixed s)
+{
+  RETURN switch_lookup(table, s);
 }
 
 /*! @decl int siphash24(string data, void|int key)
@@ -775,45 +922,79 @@ PMOD_EXPORT
 
 extern const unsigned char hexdecode[256];
 
-/*! @decl string(8bit) hex2string(string(8bit) hex)
+/*! @decl string(8bit) hex2string(string(8bit) hex, int(0..2)|void strict_mode)
  *! @appears String.hex2string
  *!
- *! Convert a string of hexadecimal digits to binary
- *! data. Non-hexadecimal characters will be ignored when between
- *! tuples. Eg. "00 00" is ok, but "0 000" isn't.
+ *! Convert a string of hexadecimal digits to binary data.
+ *!
+ *! @param hex
+ *!   String containing hexadecimal characters.
+ *!
+ *! @param strict_mode
+ *!   Level of strictness. Defaults to @expr{0@}:
+ *!   @int
+ *!     @value 0
+ *!       Traditional mode: Non-hexadecimal characters will be ignored
+ *!       when between tuples.
+ *!       Eg. @expr{"Z00 00"@} is ok, but @expr{"0 00Z0"@} isn't.
+ *!     @value 1
+ *!       Lenient mode: Only Control characters and white-space will
+ *!       be ignored when between tuples.
+ *!       Eg. @expr{"00 00"@} is ok, but @expr{"Z00 00"@} and
+ *!       @expr{"0 000"@} are not.
+ *!     @value 2
+ *!       Strict mode: No non-hexadecimal characters are allowed.
+ *!   @endint
+ *!
+ *! @note
+ *!   The @[strict_mode] parameter was added in Pike 9.0.
  *!
  *! @seealso
  *!   @[string2hex()]
  */
 PMOD_EXPORT
-PIKEFUN string(0..255) hex2string(string hex)
+PIKEFUN string(0..255) hex2string(string(8bit) hex, int(0..2)|void strict_mode)
   optflags OPT_TRY_OPTIMIZE;
 {
-  struct pike_string *s;
+  struct pike_string *s = NULL;
   int tmp, i;
   unsigned char *p, *q = (unsigned char *)hex->str;
   int l = i = hex->len;
+  int strict = strict_mode?strict_mode->u.integer:0;
   if(hex->size_shift) Pike_error("Wide strings are not allowed.\n");
+
+  if ((strict >= 2) && (i & 1)) goto bad;
 
   s = begin_shared_string(l>>1);
   p = (unsigned char *)s->str;
   while( l > 1 )
   {
-    tmp = hexdecode[*q++];
-    if( tmp==16 ) { l--; i--; continue; }
+    int c = *q++;
+    tmp = hexdecode[c];
+    if( tmp==16 ) {
+      if ((strict >= 2) || ((strict == 1) && (c > ' '))) goto bad;
+      l--; i--;
+      continue;
+    }
     *p = tmp<<4;
     tmp = hexdecode[*q++];
-    if( tmp==16 ) Pike_error("Illegal hex format.\n");
+    if (tmp == 16) goto bad;
     *p++ |= tmp;
     l -= 2;
   }
-  if( l && hexdecode[*q]!=16 )
-    Pike_error("Illegal hex format.\n");
+  if (l) {
+    int c = *q;
+    if ((hexdecode[c] != 16) || ((strict >= 1) && (c > ' '))) goto bad;
+  }
 
   if( hex->len>>1 == i>>1 )
     RETURN end_shared_string(s);
   else
     RETURN end_and_resize_shared_string(s, i>>1);
+
+ bad:
+  if (s) free_string(s);
+  Pike_error("Illegal hex format.\n");
 }
 
 /*! @decl array(int) range(string s)
@@ -871,7 +1052,7 @@ PIKEFUN array column(array data, mixed index)
 PMOD_EXPORT
 PIKEFUN multiset(1) mkmultiset(array(1=mixed) a)
   efun;
-  optflags OPT_TRY_OPTIMIZE|OPT_EXTERNAL_DEPEND;
+  optflags OPT_TRY_OPTIMIZE;
 {
   RETURN mkmultiset(a);
 }
@@ -1181,7 +1362,7 @@ PIKEFUN string ctime(longest timestamp)
 PMOD_EXPORT
 PIKEFUN mapping(1:2) mkmapping(array(1=mixed) ind, array(2=mixed) val)
   efun;
-  optflags OPT_TRY_OPTIMIZE|OPT_EXTERNAL_DEPEND;
+  optflags OPT_TRY_OPTIMIZE;
 {
   if(ind->size != val->size)
     bad_arg_error("mkmapping", args, 2, "array", Pike_sp+1-args,
@@ -1280,6 +1461,7 @@ PMOD_EXPORT
 PIKEFUN string string_trim_whites (string s)
   errname trim_whites;
   optflags OPT_TRY_OPTIMIZE;
+rawtype tFunc(tNStr(tSetvar(0, tInt)),tNStr(tVar(0)))
 {
   ptrdiff_t start = 0, end = s->len;
   int chr;
@@ -1330,6 +1512,7 @@ PMOD_EXPORT
 PIKEFUN string string_normalize_space (string s, string|void whitespace)
   errname normalize_space;
   optflags OPT_TRY_OPTIMIZE;
+rawtype tFunc(tNStr(tSetvar(0, tInt)) tOr(tStr,tVoid),tNStr(tVar(0)))
 {
   size_t len = s->len, wlen;
   const void *src = s->str;
@@ -1461,6 +1644,7 @@ PMOD_EXPORT
 PIKEFUN string string_trim (string s)
   errname trim;
   optflags OPT_TRY_OPTIMIZE;
+rawtype tFunc(tNStr(tSetvar(0, tInt)),tNStr(tVar(0)))
 {
   ptrdiff_t start = 0, end = s->len;
   int chr;
@@ -1558,7 +1742,7 @@ PIKEFUN int program_inherits(program|object child, program parent)
  *! (zero) will be returned.
  */
 PMOD_EXPORT
-PIKEFUN string program_defined(program p)
+PIKEFUN string|zero program_defined(program p)
   errname defined;
   optflags OPT_TRY_OPTIMIZE;
 {
@@ -1578,6 +1762,523 @@ PIKEFUN string program_defined(program p)
   }
   else
     push_int(0);
+}
+
+/*! @decl object clone_to(object placeholder, program p, @
+ *!                       mixed ... p_args)
+ *!
+ *! Coerce a placeholder object into a clone of a program.
+ *!
+ *! @param placeholder
+ *!   Clone of @[__null_program] to alter.
+ *!
+ *! @param p
+ *!   Program to coerce the object to be a clone of.
+ *!
+ *! @param p_args
+ *!   Arguments to pass to @[lfun::create()] in @[p].
+ *!
+ *! @returns
+ *!   Returns @[placeholder] after successful coercion.
+ *!
+ *! @note
+ *!   @[placeholder] may also already be a clone of [p], in which
+ *!   case this operation is a no-op.
+ *!
+ *! @seealso
+ *!   @[__null_program]
+ */
+PIKEFUN object clone_to(object placeholder, program p, mixed ... p_args)
+  efun;
+{
+  if (placeholder->prog == p) {
+    /* Already done. */
+    RETURN placeholder;
+  }
+
+  if (placeholder->prog != null_program) {
+    Pike_error("Placeholder object is not a null_program clone!\n");
+  }
+
+  free_program(placeholder->prog);
+  add_ref(placeholder->prog = p);
+  if (p->storage_needed) {
+    placeholder->storage = xcalloc(p->storage_needed, 1);
+  }
+  call_c_initializers(placeholder);
+  call_pike_initializers(placeholder, args-2);
+
+  RETURN placeholder;
+}
+
+static void f_proxy_create(INT32 args)
+{
+  struct object *o;
+  struct program *p;
+  struct program *expected;
+  if (!args) {
+    apply_svalue(&Pike_fp->context->prog->constants[1].sval, 0);
+  } else if (args != 1) {
+    wrong_number_of_args_error("create", args, 1);
+  }
+  if (TYPEOF(Pike_sp[-1]) != PIKE_T_OBJECT) {
+    SIMPLE_ARG_TYPE_ERROR("create", 1, "object");
+  }
+  expected = Pike_fp->context->prog->constants[1].sval.u.program;
+  o = Pike_sp[-1].u.object;
+  p = o->prog;
+  if (!p) {
+    Pike_error("Destructed object.\n");
+  }
+  p = p->inherits[SUBTYPEOF(Pike_sp[-1])].prog;
+  if (p != expected) {
+    int e;
+    int found = 0;
+    for (e = 1; e < p->num_inherits; e++) {
+      if (p->inherits[e].prog == expected) {
+	/* Found */
+	if ((found) &&
+	    (p->inherits[found].inherit_level <= p->inherits[e].inherit_level))
+	  continue;
+	found = e;
+      }
+    }
+    if (found) {
+      SET_SVAL_SUBTYPE(Pike_sp[-1], SUBTYPEOF(Pike_sp[-1]) + found);
+    }
+  }
+  object_low_set_index(Pike_fp->current_object,
+		       Pike_fp->context->identifier_level + 0,
+		       Pike_sp-1);
+}
+
+/**
+ * Look up the reference in the wrapped object
+ * corresponding to the current function.
+ */
+static int low_proxy_ref(void)
+{
+  /* Note that we index on the identifier offset,
+   * NOT the reference number, as more references
+   * may get added on demand via eg local::, etc.
+   */
+  struct reference *ref =
+    PTR_FROM_INT(Pike_fp->current_program, Pike_fp->fun);
+  struct array *a = Pike_fp->context->prog->constants[0].sval.u.array;
+  return ITEM(a)[ref->identifier_offset].u.integer;
+}
+
+static void f_proxy_getter(INT32 args)
+{
+  struct program *expected =
+    Pike_fp->context->prog->constants[1].sval.u.program;
+  int proxy_ref = low_proxy_ref();
+  /* NB: We only have a single variable i storage. */
+  struct svalue *storage = (struct svalue *)Pike_fp->current_storage;
+  struct object *obj;
+  struct inherit *inh;
+  struct identifier *id;
+
+  if (args) {
+    wrong_number_of_args_error(NULL, args, 0);
+  }
+
+  if (TYPEOF(*storage) != PIKE_T_OBJECT) {
+    Pike_error("Proxy for %pO not initialized.\n",
+	       Pike_fp->context->prog->constants + 1);
+  }
+
+  obj = storage->u.object;
+  if (!obj->prog) {
+    Pike_error("Proxied object has been destructed.\n");
+  }
+  inh = obj->prog->inherits + SUBTYPEOF(*storage);
+
+  if (inh->prog == expected) {
+    low_object_index_no_free(Pike_sp, obj, inh->identifier_level + proxy_ref);
+    Pike_sp++;
+    return;
+  }
+
+  /* Attempt to index the object anyway. */
+  id = ID_FROM_INT(expected, proxy_ref);
+  ref_push_string(id->name);
+  object_index_no_free(Pike_sp, obj, SUBTYPEOF(*storage), Pike_sp-1);
+  Pike_sp++;
+}
+
+static void f_proxy_setter(INT32 args)
+{
+  struct program *expected =
+    Pike_fp->context->prog->constants[1].sval.u.program;
+  int proxy_ref = low_proxy_ref();
+  /* NB: We only have a single variable i storage. */
+  struct svalue *storage = (struct svalue *)Pike_fp->current_storage;
+  struct object *obj;
+  struct inherit *inh;
+  struct identifier *id;
+
+  if (args != 1) {
+    wrong_number_of_args_error(NULL, args, 1);
+  }
+
+  if (TYPEOF(*storage) != PIKE_T_OBJECT) {
+    Pike_error("Proxy for %pO not initialized.\n",
+	       &Pike_fp->context->prog->constants[1].sval);
+  }
+
+  obj = storage->u.object;
+  if (!obj->prog) {
+    Pike_error("Proxied object has been destructed.\n");
+  }
+  inh = obj->prog->inherits + SUBTYPEOF(*storage);
+
+  if (inh->prog == expected) {
+    object_low_set_index(obj, inh->identifier_level + proxy_ref, Pike_sp-args);
+    return;
+  }
+
+  /* Attempt to set the index in the object anyway. */
+  id = ID_FROM_INT(expected, proxy_ref);
+  ref_push_string(id->name);
+  object_set_index(obj, SUBTYPEOF(*storage), Pike_sp-1, Pike_sp-(args+1));
+}
+
+static void f_proxy_fun(INT32 args)
+{
+  struct program *expected =
+    Pike_fp->context->prog->constants[1].sval.u.program;
+  int proxy_ref = low_proxy_ref();
+  /* NB: We only have a single variable i storage. */
+  struct svalue *storage = (struct svalue *)Pike_fp->current_storage;
+  struct object *obj;
+  struct inherit *inh;
+  struct identifier *id;
+
+  if (TYPEOF(*storage) != PIKE_T_OBJECT) {
+    Pike_error("Proxy for %pO not initialized.\n",
+	       Pike_fp->context->prog->constants + 1);
+  }
+
+  obj = storage->u.object;
+  if (!obj->prog) {
+    Pike_error("Proxied object has been destructed.\n");
+  }
+  inh = obj->prog->inherits + SUBTYPEOF(*storage);
+
+  if (inh->prog == expected) {
+    apply_low(obj, inh->identifier_level + proxy_ref, args);
+    return;
+  }
+
+  /* Attempt to apply the symbol in the object anyway. */
+  /* FIXME: Doesn't care about the object subtype! */
+  id = ID_FROM_INT(expected, proxy_ref);
+  apply_shared(obj, id->name, args);
+}
+
+static void f_proxy__sprintf(INT32 args)
+{
+  struct program *expected =
+    Pike_fp->context->prog->constants[1].sval.u.program;
+  int proxy_ref = low_proxy_ref();
+  /* NB: We only have a single variable in storage. */
+  struct svalue *storage = (struct svalue *)Pike_fp->current_storage;
+  struct object *obj;
+
+  if (TYPEOF(*storage) != PIKE_T_OBJECT) {
+    Pike_error("Proxy for %pO not initialized.\n",
+	       Pike_fp->context->prog->constants + 1);
+  }
+
+  obj = storage->u.object;
+  if (!obj->prog) {
+    Pike_error("Proxied object has been destructed.\n");
+  }
+
+  if (args && (TYPEOF(Pike_sp[-args]) == T_INT) &&
+      (Pike_sp[-args].u.integer == 'O')) {
+    /* Special case for debug mode. */
+    push_constant_text("%O(%O)");
+    ref_push_program(Pike_fp->current_object->prog);
+    push_svalue(storage);
+    f_sprintf(3);
+    return;
+  }
+
+  if (proxy_ref < 0) {
+    push_undefined();
+    return;
+  }
+
+  apply_lfun(obj, LFUN__SPRINTF, args);
+}
+
+static struct mapping *proxy_lookup = NULL;
+/*! @decl program ProxyFactory(program p)
+ *!
+ *! Create a class that acts as a proxy for the specified program.
+ *!
+ *! @param p
+ *!   Program to generate a proxy for.
+ *!
+ *! The generated class will have the same symbols (public and
+ *! private) with the same types as in @[p], where accesses to
+ *! these will proxy the access to the same symbol in the proxied
+ *! (aka wrapped) object. With the following exceptions:
+ *!
+ *! @dl
+ *!   @item @expr{protected void create(object(p) obj)@}
+ *!     Initialize the object to act as a proxy for @expr{obj@}.
+ *!
+ *!   @item @expr{_sprintf(int c, mapping|void params)@}
+ *!     Special case for @expr{c@} == @expr{'O'@}, where
+ *!     it will return @expr{sprintf("%O(%O)", this_program, obj)@},
+ *!     and otherwise proxy the call.
+ *!
+ *!   @item @expr{void _destruct()@}/@expr{void destroy()@}
+ *!     These lfuns will not be present as the act of them
+ *!     being proxied would likely confuse the proxied object.
+ *! @enddl
+ *!
+ *! @note
+ *!   The same proxy class will be returned if this function
+ *!   is called with the same program multiple times.
+ */
+PMOD_EXPORT struct program *proxy_factory(struct program *p,
+					  const char *var_name,
+					  int program_id)
+{
+  struct array *a;
+  int i = 0;
+  struct pike_type *fun_type;
+  union idptr ptr;
+  int j;
+  struct svalue *cached;
+  struct pike_string *var_string = NULL;
+  int var_flags = ID_LOCAL;
+
+  ref_push_program(p);
+  if (proxy_lookup &&
+      (cached = low_mapping_lookup(proxy_lookup, Pike_sp-1))) {
+    /* NB: This cache isn't a 100% sound, as it doesn't
+     *     take into account var_name and program_id.
+     *     On the other hand they are only available by
+     *     calling this function directly, ie by C-code
+     *     that presumably knows what it is doing.
+     */
+    pop_stack();
+    if (TYPEOF(*cached) == PIKE_T_PROGRAM) {
+      add_ref(cached->u.program);
+      return cached->u.program;
+    }
+    return NULL;
+  }
+  /* NB: Keep the program on the stack, we will use it
+   *     later when we update the proxy_lookup cache.
+   */
+
+  enter_compiler(NULL, 0);
+  if (program_id) {
+    START_NEW_PROGRAM_ID (STDIO_FD_REF);
+  } else {
+    start_new_program();
+  }
+
+  /* Constant #0: The mapping from local reference # to external d:o. */
+  /* NB: Over allocation. */
+  /* NB: For the lookup to work as intended all functions that use
+   *     this array *need* to be declared ID_LOCAL to avoid being
+   *     renumbered when overloaded.
+   */
+  push_int((p->num_identifier_references+1) * 3);
+  push_int(-1);
+  f_allocate(2);
+  a = Pike_sp[-1].u.array;
+  store_constant(Pike_sp-1, 0, NULL);
+
+  /* Constant #1: The program that we intend to wrap. */
+  ref_push_program(p);
+  store_constant(Pike_sp-1, 0, NULL);
+
+  /* Reference #0: The variable that we store the proxied object in. */
+  /* NB: Use a name that will not clash. */
+  if (var_name) {
+    push_text(var_name);
+    var_flags = ID_LOCAL;
+  } else {
+    push_string(make_shared_static_string("proxied_obj\0", 12, eightbit));
+    var_flags = ID_LOCAL|ID_PROTECTED|ID_PRIVATE|ID_HIDDEN;
+  }
+  var_string = Pike_sp[-1].u.string;
+  type_stack_mark();
+  push_object_type(0, p->id);
+  fun_type = pop_unfinished_type();
+  define_variable(var_string, fun_type, var_flags);
+  free_type(fun_type);
+  pop_stack();
+
+  /* Add proxy functions for the references. */
+  for (i = 0; i < p->num_identifier_references; i++) {
+    struct reference *ref = PTR_FROM_INT(p, i);
+    struct identifier *id;
+    if (ref->id_flags & ID_HIDDEN) continue;
+    id = ID_FROM_PTR(p, ref);
+    if (id->name == var_string) continue;	/* Reserved. */
+    if (IDENTIFIER_IS_ALIAS(id->identifier_flags)) {
+      /* Handle in second pass. */
+      yyerror("Aliases not supported (yet).");
+    } else if (IDENTIFIER_IS_VARIABLE(id->identifier_flags) ||
+	       IDENTIFIER_IS_CONSTANT(id->identifier_flags)) {
+      /* Getter. */
+      type_stack_mark();
+      push_finished_type(id->type);
+      push_type(T_VOID);
+      push_type(T_MANY);
+      fun_type = pop_unfinished_type();
+      push_static_text("`");
+      ref_push_string(id->name);
+      f_add(2);
+      ptr.c_fun = f_proxy_getter;
+      j = define_function(Pike_sp[-1].u.string, fun_type,
+			  ref->id_flags | ID_LOCAL,
+			  IDENTIFIER_C_FUNCTION, &ptr, OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
+      SET_SVAL(ITEM(a)[PTR_FROM_INT(Pike_compiler->new_program, j)->
+		       identifier_offset], T_INT, NUMBER_NUMBER, integer, i);
+      free_type(fun_type);
+
+      if (IDENTIFIER_IS_VARIABLE(id->identifier_flags)) {
+	/* Setter. */
+	type_stack_mark();
+	push_type(T_VOID);
+	push_type(T_VOID);
+	push_type(T_MANY);
+	push_finished_type(id->type);
+	push_type(T_FUNCTION);
+	fun_type = pop_unfinished_type();
+	push_static_text("=");
+	f_add(2);
+	ptr.c_fun = f_proxy_setter;
+	j = define_function(Pike_sp[-1].u.string, fun_type,
+			    ref->id_flags | ID_LOCAL,
+			    IDENTIFIER_C_FUNCTION, &ptr, OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
+	SET_SVAL(ITEM(a)[PTR_FROM_INT(Pike_compiler->new_program, j)->
+			 identifier_offset], T_INT, NUMBER_NUMBER, integer, i);
+	free_type(fun_type);
+      }
+
+      pop_stack();
+    } else {
+      /* Check if getter or setter and skip, as they are handled above. */
+      if (id->name->len && (index_shared_string(id->name, 0) == '`') &&
+	  !is_lfun_name(id->name)) {
+	/* Name starting with `, but not an lfun.
+	 * This is thus probably a getter or setter.
+	 */
+	continue;
+      }
+      if ((id->name == lfun_strings[LFUN_CREATE]) ||
+	  (id->name == lfun_strings[LFUN__DESTRUCT]) ||
+	  (id->name == lfun_compat_strings[LFUN__DESTRUCT]) ||
+	  (id->name == lfun_strings[LFUN__SPRINTF])) {
+	/* Skip. We add a custom create() and _sprintf() below. */
+	continue;
+      }
+      ptr.c_fun = f_proxy_fun;
+      j = define_function(id->name, id->type, ref->id_flags,
+			  IDENTIFIER_C_FUNCTION | ID_LOCAL, &ptr, id->opt_flags);
+      SET_SVAL(ITEM(a)[PTR_FROM_INT(Pike_compiler->new_program, j)->
+		       identifier_offset], T_INT, NUMBER_NUMBER, integer, i);
+    }
+  }
+
+  /* Add a suitable _sprintf(). */
+  /* FIXME! */
+  {
+    int id_flags = ID_PROTECTED;
+    i = FIND_LFUN(p, LFUN__SPRINTF);
+    if (i >= 0) {
+      struct reference *ref = PTR_FROM_INT(p, i);
+      struct identifier *id = ID_FROM_PTR(p, ref);
+      id_flags = ref->id_flags;
+      fun_type = id->type;
+    } else {
+      type_stack_mark();
+      push_int_type(MIN_INT32, MAX_INT32);
+      push_unlimited_array_type(T_STRING);
+      push_type(PIKE_T_ZERO);
+      push_type(T_OR);
+      push_type(T_VOID);
+      push_type(T_MANY);
+      push_int_type(MIN_INT32, MAX_INT32);
+      push_unlimited_array_type(T_STRING);
+      push_int_type(MIN_INT32, MAX_INT32);
+      push_type(T_MAPPING);
+      push_type(T_VOID);
+      push_type(T_OR);
+      push_type(T_FUNCTION);
+      push_int_type(MIN_INT32, MAX_INT32);
+      push_type(T_FUNCTION);
+      fun_type = pop_unfinished_type();
+      simple_describe_type(fun_type);
+    }
+    ptr.c_fun = f_proxy__sprintf;
+    j = define_function(lfun_strings[LFUN__SPRINTF], fun_type,
+			id_flags | ID_LOCAL,
+			IDENTIFIER_C_FUNCTION, &ptr, OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
+    SET_SVAL(ITEM(a)[PTR_FROM_INT(Pike_compiler->new_program, j)->
+		     identifier_offset], T_INT, NUMBER_NUMBER, integer, i);
+    if (i < 0) {
+      free_type(fun_type);
+    }
+  }
+
+  /* Add a suitable create(). */
+  type_stack_mark();
+  push_type(T_VOID);
+  push_type(T_VOID);
+  push_type(T_MANY);
+  push_type(T_VOID);
+  push_object_type(0, p->id);
+  push_type(T_OR);
+  push_type(T_FUNCTION);
+  fun_type = pop_unfinished_type();
+  ptr.c_fun = f_proxy_create;
+  j = define_function(lfun_strings[LFUN_CREATE], fun_type, ID_PROTECTED,
+		      IDENTIFIER_C_FUNCTION, &ptr, OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
+  free_type(fun_type);
+
+  p = end_program();
+  exit_compiler();
+
+  if (p) {
+    ref_push_program(p);
+
+    if (!proxy_lookup) {
+      proxy_lookup = allocate_mapping(10);
+      mapping_set_flags(proxy_lookup, MAPPING_WEAK_INDICES);
+    }
+
+    mapping_insert(proxy_lookup, Pike_sp-2, Pike_sp-1);
+
+    pop_stack();
+  }
+
+  pop_stack();
+
+  return p;
+}
+PIKEFUN program|zero ProxyFactory(program p)
+  optflags OPT_TRY_OPTIMIZE;
+  rawtype tFunc(tSetvar(0, tPrg(tObj)), tOr(tVar(0), tZero));
+{
+  struct program *res = proxy_factory(p, NULL, 0);
+
+  if (res) {
+    push_program(res);
+  } else {
+    push_undefined();
+  }
 }
 
 /*! @decl int(8..8)|int(16..16)|int(32..32) width(string s)
@@ -1609,18 +2310,20 @@ PIKEFUN int(8 .. 8)|int(16 .. 16)|int(32 .. 32) string_width(string s)
   RETURN 8 * (1 << s->size_shift);
 }
 
-/*! @decl mixed m_delete(object|mapping map, mixed index)
+/*! @decl mixed m_delete(object|mapping|multiset map, mixed index)
  *!
  *! If @[map] is an object that implements @[lfun::_m_delete()],
  *! that function will be called with @[index] as its single argument.
  *!
- *! Otherwise if @[map] is a mapping the entry with index @[index]
- *! will be removed from @[map] destructively.
+ *! Otherwise if @[map] is a mapping or multiset the entry with
+ *! index @[index] will be removed from @[map] destructively.
  *!
- *! If the mapping does not have an entry with index @[index], nothing is done.
+ *! If the mapping or multiset does not have an entry with
+ *! index @[index], nothing is done.
  *!
  *! @returns
- *!   The value that was removed will be returned.
+ *!   The value that was removed will be returned,
+ *!   and @expr{UNDEFINED@} otherwise.
  *!
  *! @note
  *!   Note that @[m_delete()] changes @[map] destructively.
@@ -1629,10 +2332,13 @@ PIKEFUN int(8 .. 8)|int(16 .. 16)|int(32 .. 32) string_width(string s)
  *!   @[mappingp()]
  */
 PMOD_EXPORT
-PIKEFUN mixed m_delete(object|mapping map, mixed index)
+PIKEFUN mixed m_delete(object|mapping|multiset map, mixed index)
   efun;
   optflags OPT_SIDE_EFFECT;
-  rawtype tOr(tFunc(tMap(tSetvar(0,tMix),tSetvar(1,tMix)) tVar(0),tVar(1)),tFunc(tObj tMix,tMix))
+  rawtype tOr3(tFunc(tMap(tSetvar(0,tMix),tSetvar(1,tMix)) tVar(0),
+		     tOr(tVar(1), tZero)),
+	       tFunc(tSet(tSetvar(0,tMix)) tVar(0),tInt01),
+	       tFunc(tObj tMix,tMix));
 {
   struct program *p;
   if( TYPEOF(*map) == T_MAPPING )
@@ -1655,28 +2361,197 @@ PIKEFUN mixed m_delete(object|mapping map, mixed index)
 	      id + p->inherits[SUBTYPEOF(*map)].identifier_level, 1);
     stack_swap();
     pop_stack();
+  } else if (TYPEOF(*map) == T_MULTISET) {
+    struct svalue s;
+    multiset_delete_2(map->u.multiset, index, &s);
+    pop_n_elems(args);
+    *Pike_sp = s;
+    Pike_sp++;
+    dmalloc_touch_svalue(Pike_sp-1);
   } else {
-    SIMPLE_ARG_TYPE_ERROR("m_delete", 1, "object|mapping");
+    SIMPLE_ARG_TYPE_ERROR("m_delete", 1, "object|mapping|multiset");
   }
 }
 
-/*! @decl void m_clear(mapping map)
+/*! @decl void m_clear(mapping|multiset|object map)
  *!
- *!   Clear the contents of a mapping.
+ *!   Clear the contents of a mapping or multiset.
  *!
- *!   This function clears the content of the mapping @[map] so
- *!   that it becomes empty. This is an atomic operation.
+ *!   This function clears the content of the mapping
+ *!   or multiset @[map] so that it becomes empty.
+ *!   This is an atomic operation.
+ *!
+ *!   If @[map] is an object @[lfun::_m_clear()] will be called
+ *!   in it.
  *!
  *! @seealso
  *!   @[m_delete()]
  */
 PMOD_EXPORT
-PIKEFUN void m_clear(mapping map)
-  efun
+PIKEFUN void m_clear(mapping|multiset|object map)
+  efun;
   optflags OPT_SIDE_EFFECT;
 {
-  /* FIXME: Add an LFUN__M_CLEAR analogous with LFUN__M_DELETE? */
-  clear_mapping(map);
+  struct program *p;
+  if (TYPEOF(*map) == PIKE_T_MAPPING) {
+    clear_mapping(map->u.mapping);
+  } else if (TYPEOF(*map) == PIKE_T_MULTISET) {
+    clear_multiset(map->u.multiset);
+  } else if ((TYPEOF(*map) == PIKE_T_OBJECT) && (p = map->u.object->prog)) {
+    int id = FIND_LFUN(p->inherits[SUBTYPEOF(*map)].prog, LFUN__M_CLEAR);
+    if( id == -1 ) {
+      SIMPLE_ARG_TYPE_ERROR("m_clear", 1, "object with lfun::_m_clear()");
+    }
+    apply_low(map->u.object,
+	      id + p->inherits[SUBTYPEOF(*map)].identifier_level, 0);
+    pop_stack();
+  } else {
+    SIMPLE_ARG_TYPE_ERROR("m_clear", 1, "mapping|multiset");
+  }
+  pop_n_elems(args);
+}
+
+/*! @decl mixed atomic_get_set(mapping|object map, mixed key, mixed val)
+ *! @decl mixed atomic_get_set(array arr, int index, mixed val)
+ *!
+ *!   Replace atomically the value for a key in a mapping or array.
+ *!
+ *! @param map
+ *! @param arr
+ *!   Mapping or array to alter.
+ *!
+ *! @param key
+ *! @param index
+ *!   Key or index to change the value for.
+ *!
+ *! @param val
+ *!   Value to change to. If value is @[UNDEFINED] and @[map] is a mapping
+ *!   this function function behaves exactly as @expr{m_delete(map, key)@}.
+ *!
+ *! @returns
+ *!   Returns the previous value for @[key]. If @[map] is a mapping and
+ *!   there was no previous value @[UNDEFINED] is returned.
+ *!
+ *!   If @[map] is an object @[lfun::_m_replace()] will be called
+ *!   in it.
+ *!
+ *! @seealso
+ *!   @[m_delete()]
+ */
+PMOD_EXPORT
+PIKEFUN mixed atomic_get_set(mapping|array|object map, mixed index, mixed value)
+  efun;
+  optflags OPT_SIDE_EFFECT;
+  rawtype tOr3(tFunc(tMap(tSetvar(0, tMix), tSetvar(1, tMix))
+		    tVar(0) tVar(1), tVar(1)),
+	       tFuncArg(tSetvar(2, tObj), tFindLFun(tVar(2), "_atomic_get_set")),
+	       tFunc(tArr(tSetvar(1, tMix)) tInt tVar(1), tVar(1)));
+{
+  struct program *p;
+  if (TYPEOF(*map) == PIKE_T_MAPPING) {
+    map_atomic_get_set(map->u.mapping, index, value);
+    args--;
+  } else if (TYPEOF(*map) == PIKE_T_ARRAY) {
+    if (TYPEOF(*index) == PIKE_T_INT) {
+      array_atomic_get_set(map->u.array, index->u.integer, value);
+      args--;
+    } else {
+      SIMPLE_ARG_TYPE_ERROR("atomic_get_set", 2, "int");
+    }
+  } else if ((TYPEOF(*map) == PIKE_T_OBJECT) && (p = map->u.object->prog)) {
+    int id = FIND_LFUN(p->inherits[SUBTYPEOF(*map)].prog, LFUN__ATOMIC_GET_SET);
+    if( id == -1 ) {
+      SIMPLE_ARG_TYPE_ERROR("atomic_get_set", 1,
+			    "object with lfun::_atomic_get_set()");
+    }
+    apply_low(map->u.object,
+	      id + p->inherits[SUBTYPEOF(*map)].identifier_level, 2);
+    args -= 2;
+  } else {
+    SIMPLE_ARG_TYPE_ERROR("atomic_get_set", 1, "mapping|array");
+  }
+  stack_pop_n_elems_keep_top(args);
+  return;
+}
+
+/*! @decl void m_add(multiset|object l, mixed val)
+ *!
+ *!   Add a member to a multiset.
+ *!
+ *! @seealso
+ *!   @[m_delete()]
+ */
+PMOD_EXPORT
+PIKEFUN void m_add(multiset|object l, mixed val)
+  efun;
+  optflags OPT_SIDE_EFFECT;
+  rawtype tFunc(tSet(tSetvar(0, tMix)) tVar(0), tVoid);
+{
+  struct program *p;
+  if (TYPEOF(*l) == PIKE_T_MULTISET) {
+    multiset_add(l->u.multiset, val);
+  } else if ((TYPEOF(*l) == PIKE_T_OBJECT) && (p = l->u.object->prog)) {
+    int id = FIND_LFUN(p->inherits[SUBTYPEOF(*l)].prog, LFUN__M_ADD);
+    if( id == -1 ) {
+      SIMPLE_ARG_TYPE_ERROR("m_add", 1, "object with lfun::_m_add()");
+    }
+    apply_low(l->u.object,
+	      id + p->inherits[SUBTYPEOF(*l)].identifier_level, 1);
+  } else {
+    SIMPLE_ARG_TYPE_ERROR("m_add", 1, "multiset|object");
+  }
+  pop_n_elems(args);
+}
+
+/*! @decl int(0..1) iterator_next(object iter)
+ *!
+ *! Advance @[iter] one step.
+ *!
+ *! @seealso
+ *!   @[get_iterator()]
+ */
+PIKEFUN int(0..1) iterator_next(object iter)
+  efun;
+  optflags OPT_SIDE_EFFECT;
+  rawtype tFuncArg(tSetvar(0, tObj), tFindLFun(tVar(0), "_iterator_next"));
+{
+  apply_lfun(iter, LFUN__ITERATOR_NEXT_FUN, args - 1);
+  stack_swap();
+  pop_stack();
+}
+
+/*! @decl mixed iterator_value(object iter)
+ *!
+ *! Get the current value for @[iter].
+ *!
+ *! @seealso
+ *!   @[get_iterator()]
+ */
+PIKEFUN mixed iterator_value(object iter)
+  efun;
+  optflags OPT_SIDE_EFFECT;
+  rawtype tFuncArg(tSetvar(0, tObj), tFindLFun(tVar(0), "_iterator_value"));
+{
+  apply_lfun(iter, LFUN__ITERATOR_VALUE_FUN, args - 1);
+  stack_swap();
+  pop_stack();
+}
+
+/*! @decl mixed iterator_index(object iter)
+ *!
+ *! Get the current index for @[iter].
+ *!
+ *! @seealso
+ *!   @[get_iterator()]
+ */
+PIKEFUN mixed iterator_index(object iter)
+  efun;
+  optflags OPT_SIDE_EFFECT;
+  rawtype tFuncArg(tSetvar(0, tObj), tFindLFun(tVar(0), "_iterator_index"));
+{
+  apply_lfun(iter, LFUN__ITERATOR_INDEX_FUN, args - 1);
+  stack_swap();
+  pop_stack();
 }
 
 /*! @decl int get_weak_flag(array|mapping|multiset m)
@@ -1705,6 +2580,20 @@ PIKEFUN int get_weak_flag(multiset m)
 }
 
 /*! @decl program __empty_program(int|void line, string|void file)
+ *!
+ *! @param line
+ *!   Optional line number of @[file] where the program to be compiled
+ *!   definition starts.
+ *!
+ *! @param file
+ *!   Optional file name where the program to be compiled is defined.
+ *!
+ *! @returns
+ *!   Returns a virgin (ie empty) program suitable as the target
+ *!   argument to @[PikeCompiler()].
+ *!
+ *! @seealso
+ *!   @[__null_program], @[PikeCompiler], @[compile_string()]
  */
 PIKEFUN program __empty_program(int|zero|void line, string|void file)
   efun;
@@ -1739,7 +2628,7 @@ static struct pike_string *delambda(struct pike_string *str)
  *! @[function_object()]
  */
 PMOD_EXPORT
-PIKEFUN string function_name(program|function func)
+PIKEFUN string|zero function_name(program|function func)
   efun;
   optflags OPT_TRY_OPTIMIZE;
 {
@@ -1750,7 +2639,7 @@ PIKEFUN string function_name(program|function func)
   {
     default:
       SIMPLE_ARG_TYPE_ERROR("function_name", 1, "function|program");
-      UNREACHABLE(return);
+      UNREACHABLE();
 
     case PIKE_T_PROGRAM:
     {
@@ -1832,10 +2721,10 @@ PIKEFUN string function_name(program|function func)
  *!   @[function_name()], @[function_program()]
  */
 PMOD_EXPORT
-PIKEFUN object function_object(function|program func)
+PIKEFUN object|zero function_object(function|program func)
   efun;
   optflags OPT_TRY_OPTIMIZE;
-  type function(function:object);
+  type function(function:object|zero);
 {
   switch(TYPEOF(*func))
   {
@@ -1875,7 +2764,7 @@ PIKEFUN object function_object(function|program func)
  *!   @[function_name()], @[function_object()]
  */
 PMOD_EXPORT
-PIKEFUN program function_program(program|function func)
+PIKEFUN program|zero function_program(program|function func)
   efun;
   optflags OPT_TRY_OPTIMIZE;
 {
@@ -2085,7 +2974,7 @@ PIKECLASS RandomInterface
           }
       }
 
-    UNREACHABLE(return);
+    UNREACHABLE();
   }
 
   /*! @decl mixed random(object o)
@@ -2104,7 +2993,7 @@ PIKECLASS RandomInterface
     struct object *co;
 
     if (f < 0)
-      Pike_error("Calling undefined lfun::%s.\n", lfun_names[LFUN__RANDOM]);
+      Pike_error("Calling undefined lfun::%pS.\n", lfun_strings[LFUN__RANDOM]);
 
     co = Pike_fp->current_object;
     ref_push_function(co, f_RandomInterface_random_string_fun_num);
@@ -2208,7 +3097,8 @@ PIKECLASS RandomSystem
 	close(random_fd);
 	random_fd = -1;
 
-	Pike_error("Failed to read %d bytes from /dev/urandom.\n", len);
+        Pike_error("Failed to read %"PRINTINT64"d bytes from /dev/urandom.\n",
+                   (INT64)len);
       }
       str += sz;
       len -= sz;
@@ -2235,8 +3125,9 @@ static struct mapping *env_allocs = NULL;
 /* Works exactly like the getenv efun defined in the master, but only
  * accesses the real environment. Everyone should use the caching
  * version in the master instead. */
-PIKEFUN string|mapping _getenv (void|string var)
-  rawtype tOr(tFunc(tStr, tString), tFunc(tVoid, tMap (tStr, tStr)));
+PIKEFUN string|mapping|zero _getenv (void|string var)
+  rawtype tOr(tFunc(tStr, tOr(tString, tZero)),
+	      tFunc(tNone, tMap (tStr, tStr)));
 {
   /* FIXME: Perhaps add the amigaos4 stuff from pike_push_env here too. */
 
@@ -2416,6 +3307,202 @@ PIKEFUN void _putenv (string var, void|string val)
 /*! @module Pike
  */
 
+/*! @class DestructImmediate
+ *!
+ *! An empty class that can be inherited to get the
+ *! @tt{PROGRAM_DESTRUCT_IMMEDIATE@} flag set.
+ *!
+ *! @seealso
+ *!   @[InhibitDestruct]
+ */
+
+PIKECLASS DestructImmediate
+  program_flags PROGRAM_DESTRUCT_IMMEDIATE;
+{
+}
+
+/*! @endclass
+ */
+
+/*! @class InhibitDestruct
+ *!
+ *! This is a class that implements a way to temporarily
+ *! inhibit destruction by explicit calls of @[destruct()].
+ *!
+ *! This is mostly useful as a mix-in for modules
+ *! implemented in C or similar.
+ *!
+ *! All symbols in the class are either @expr{protected@}
+ *! or @expr{private@} in order to affect users minimally.
+ *!
+ *! @seealso
+ *!   @[DestructImmediate]
+ */
+PIKECLASS InhibitDestruct
+{
+  CVAR ptrdiff_t lock_count;
+
+  /*! @decl void inhibit_destruct()
+   *!
+   *! Inhibit explicit destruction of this object.
+   *!
+   *! @seealso
+   *!   @[permit_destruct()], @[_destruct()],
+   *!   @[destruct()], @[lfun::_destruct()]
+   */
+  PIKEFUN void inhibit_destruct()
+    flags ID_PROTECTED|ID_LOCAL;
+  {
+    if (UNLIKELY(THIS->lock_count < 0)) {
+      THIS->lock_count--;
+    } else {
+      THIS->lock_count++;
+    }
+  }
+
+  /**
+   * Inhibit explicit destruction of this object.
+   *
+   * @param inh Inherit level for the inherit of InhibitDestruct
+   *            in the current program.
+   */
+  PMOD_EXPORT void inhibit_destruct(int inh)
+  {
+    apply_current(Pike_fp->current_program->inherits[inh].identifier_level +
+		  f_InhibitDestruct_inhibit_destruct_fun_num, 0);
+    pop_stack();
+  }
+
+  /*! @decl void permit_destruct()
+   *!
+   *! Allow explicit destruction of this object again.
+   *!
+   *! @seealso
+   *!   @[inhibit_destruct()], @[_destruct()],
+   *!   @[destruct()], @[lfun::_destruct()]
+   */
+  PIKEFUN void permit_destruct()
+    flags ID_PROTECTED|ID_LOCAL;
+  {
+    if (!THIS->lock_count) {
+      Pike_error("permit_destruct() without inhibit.\n");
+    }
+    if (UNLIKELY(THIS->lock_count < 0)) {
+      /* destruct() has been called on the object. */
+      if (UNLIKELY(!++THIS->lock_count)) {
+	/* No inhibits remaining.
+	 *
+	 * Time to die.
+	 */
+	destruct(Pike_fp->current_object);
+      }
+    } else {
+      THIS->lock_count--;
+    }
+  }
+
+  /**
+   * Allow explicit destruction of this object again.
+   *
+   * @param inh Inherit level for the inherit of InhibitDestruct
+   *            in the current program.
+   */
+  PMOD_EXPORT void permit_destruct(int inh)
+  {
+    apply_current(Pike_fp->current_program->inherits[inh].identifier_level +
+		  f_InhibitDestruct_permit_destruct_fun_num, 0);
+    pop_stack();
+  }
+
+  /*! @decl int(0..1) _destruct(int|void reason)
+   *!
+   *! Returns @expr{1@} when @[inhibit_destruct()] has been
+   *! called more times than @[permit_destruct()].
+   *!
+   *! @seealso
+   *!   @[inhibit_destruct()], @[permit_destruct()],
+   *!   @[destruct()], @[lfun::_destruct()]
+   */
+  PIKEFUN int(0..1) _destruct(int|void reason)
+    flags ID_PROTECTED|ID_LOCAL;
+  {
+    if (THIS->lock_count > 0) {
+      THIS->lock_count = -THIS->lock_count;
+    }
+    push_int(!!THIS->lock_count);
+  }
+};
+
+/*! @endclass
+ */
+
+/*! @class FakeObject
+ *!
+ *! Used as a place holder in eg backtraces for objects that
+ *! are unsuitable to have references to in backtraces.
+ *!
+ *! Examples of such objects are instances of @[Thread.MutexKey],
+ *! and @[Nettle.Cipher.State].
+ *!
+ *! @seealso
+ *!   @[backtrace()]
+ */
+PIKECLASS FakeObject
+  program_flags PROGRAM_CONSTANT;
+{
+  PIKEVAR program prog flags ID_PRIVATE|ID_PROTECTED|ID_HIDDEN;
+  PIKEVAR string description flags ID_PROTECTED;
+
+  PIKEFUN void create(program|function|void prog,
+		      string|void description)
+    flags ID_PROTECTED;
+  {
+    struct program *p = prog ? program_from_svalue(prog):NULL;
+    do_free_program(THIS->prog);
+    THIS->prog = p;
+    if (p) add_ref(p);
+    if (THIS->description) free_string(THIS->description);
+    if ((THIS->description = description)) {
+      add_ref(THIS->description);
+    }
+  }
+
+  PIKEFUN string _sprintf(int c, mapping|void ignored)
+    flags ID_PROTECTED;
+  {
+    if ((c == 'O') && THIS->description) {
+      ref_push_string(THIS->description);
+      return;
+    }
+    push_text("%O()");
+    if (THIS->prog) {
+      ref_push_program(THIS->prog);
+    } else {
+      ref_push_program(Pike_fp->current_program);
+    }
+    f_sprintf(2);
+  }
+}
+
+/*! @endclass
+ */
+
+static struct object *clone_fake_object(struct object *o)
+{
+  struct program *p = o?o->prog:NULL;
+  if (p) {
+    ref_push_program(p);
+    if (FIND_LFUN(p, LFUN__SPRINTF) != -1) {
+      push_int('O');
+      apply_lfun(o, LFUN__SPRINTF, 1);
+      return clone_object(FakeObject_program, 2);
+    }
+  } else {
+    push_undefined();
+  }
+  return clone_object(FakeObject_program, 1);
+}
+
 /*! @class BacktraceFrame
  */
 
@@ -2436,6 +3523,13 @@ PIKECLASS backtrace_frame
    * fun as long as lineno == 0. */
   CVAR struct pike_string *filename;
   CVAR INT_TYPE lineno;
+
+#ifdef PROFILING
+  PIKEVAR bignum total_time;
+  /* FIXME: self_time */
+#endif
+
+  DECLARE_STORAGE;
 
 #ifdef PIKE_NULL_IS_SPECIAL
   INIT
@@ -2488,46 +3582,73 @@ PIKECLASS backtrace_frame
     RETURN (t == literal_array_string);
   }
 
-  static void fill_in_file_and_line()
+  static void fill_in_file_and_line(struct backtrace_frame_struct *this,
+				    struct local_variable_info *vars)
   {
     struct pike_string *file = NULL;
-    assert (THIS->lineno == 0);
+    assert (this->lineno == 0);
 
-    if (THIS->pc && THIS->prog) {
-      file = low_get_line(THIS->pc, THIS->prog, &THIS->lineno);
-      THIS->pc = NULL;
+    if (vars) vars->num_local = 0;
+    if (this->pc && this->prog) {
+      file = low_get_line(this->pc, this->prog, &this->lineno, vars);
+      this->pc = NULL;
     }
-    else if (TYPEOF(THIS->_fun) == PIKE_T_FUNCTION) {
+    else if (TYPEOF(this->_fun) == PIKE_T_FUNCTION) {
 #ifdef PIKE_DEBUG
-      if (THIS->_fun.u.object->prog &&
-	  THIS->_fun.u.object->prog != THIS->oprog) {
-	struct identifier *id = ID_FROM_INT(THIS->oprog, SUBTYPEOF(THIS->_fun));
+      if (this->_fun.u.object->prog &&
+	  this->_fun.u.object->prog != this->oprog) {
+	struct identifier *id = ID_FROM_INT(this->oprog, SUBTYPEOF(this->_fun));
 	/* FIXME: Dump dmalloc info for the object? */
 	Pike_fatal("Lost track of function pointer! Function name was %s.\n",
 		   id->name?id->name->str:"<no name>");
       }
 #endif
-      file = low_get_function_line (THIS->_fun.u.object, SUBTYPEOF(THIS->_fun),
-                                    &THIS->lineno);
+      file = low_get_function_line (this->_fun.u.object, SUBTYPEOF(this->_fun),
+                                    &this->lineno);
     }
-    else if (THIS->prog) {
-      file = low_get_program_line (THIS->prog, &THIS->lineno);
+    else if (this->prog) {
+      file = low_get_program_line (this->prog, &this->lineno);
     }
 
     if (file) {
-      if (!THIS->filename) THIS->filename = file;
+      if (!this->filename) this->filename = file;
       else free_string (file);
     }
 
-    if (THIS->prog) {
-      free_program(THIS->prog);
-      THIS->prog = NULL;
+    if (this->prog) {
+      free_program(this->prog);
+      this->prog = NULL;
     }
+  }
+
+  PIKEFUN void fill_in_file_and_line()
+    flags ID_PROTECTED;
+  {
+    if (THIS->lineno) return;
+    fill_in_file_and_line(THIS, NULL);
+  }
+
+  PIKEFUN string|zero `filename()
+  {
+    apply_current(f_backtrace_frame_fill_in_file_and_line_fun_num, 0);
+    pop_stack();
+    if (THIS->filename) {
+      ref_push_string(THIS->filename);
+      return;
+    }
+    push_undefined();
+  }
+
+  PIKEFUN int `line()
+  {
+    apply_current(f_backtrace_frame_fill_in_file_and_line_fun_num, 0);
+    pop_stack();
+    push_int(THIS->lineno);
   }
 
   /*! @decl string _sprintf(int c, mapping|void opts)
    */
-  PIKEFUN string _sprintf(int c, mapping|void opts)
+  PIKEFUN string|zero _sprintf(int c, mapping|void opts)
     flags ID_PROTECTED;
   {
     pop_n_elems(args);
@@ -2539,7 +3660,8 @@ PIKECLASS backtrace_frame
 
     push_static_text("backtrace_frame(");
 
-    if (THIS->lineno == 0) fill_in_file_and_line();
+    apply_current(f_backtrace_frame_fill_in_file_and_line_fun_num, 0);
+    pop_stack();
 
     if (THIS->filename) {
       ref_push_string(THIS->filename);
@@ -2639,17 +3761,18 @@ PIKECLASS backtrace_frame
 	end = numargs-1;
     }
 
+    apply_current(f_backtrace_frame_fill_in_file_and_line_fun_num, 0);
+    pop_stack();
+
     for (i = index; i <= end; i++) {
       switch(i) {
       case 0:	/* Filename */
-        if (THIS->lineno == 0) fill_in_file_and_line();
 	if (THIS->filename)
 	  ref_push_string(THIS->filename);
 	else
 	  push_int(0);
 	break;
       case 1:	/* Linenumber */
-        if (THIS->lineno == 0) fill_in_file_and_line();
 	push_int(THIS->lineno);
 	break;
       case 2:	/* Function */
@@ -2667,7 +3790,7 @@ PIKECLASS backtrace_frame
 			"Expected int(0..%d)\n",
 			numargs + 2);
         }
-        UNREACHABLE(break);
+        UNREACHABLE();
       }
     }
     if (end_or_none)
@@ -2696,9 +3819,11 @@ PIKECLASS backtrace_frame
       args = 2;
     }
 
+    apply_current(f_backtrace_frame_fill_in_file_and_line_fun_num, 0);
+    pop_stack();
+
     switch(index) {
     case 0:	/* Filename */
-      if (THIS->lineno == 0) fill_in_file_and_line();
       if (TYPEOF(*value) != PIKE_T_STRING) {
 	if ((TYPEOF(*value) != PIKE_T_INT) ||
 	    (value->u.integer)) {
@@ -2718,14 +3843,12 @@ PIKECLASS backtrace_frame
       break;
 
     case 1:	/* Linenumber */
-      if (THIS->lineno == 0) fill_in_file_and_line();
       if (TYPEOF(*value) != PIKE_T_INT)
 	SIMPLE_ARG_TYPE_ERROR("`[]=", 2, "int(1..)");
       THIS->lineno = value->u.integer;
       break;
 
     case 2:	/* Function */
-      if (THIS->lineno == 0) fill_in_file_and_line();
       assign_svalue(&THIS->_fun, value);
       break;
     default:	/* Arguments */
@@ -2736,6 +3859,414 @@ PIKECLASS backtrace_frame
     pop_stack();
   }
 
+};
+
+/*! @endclass
+ */
+
+/*! @class LiveBacktraceFrame
+ *!
+ *! A @[BacktraceFrame] which retains access to the running code.
+ *!
+ *! This means that unless the corresponding thread running the code
+ *! is halted (or similar), the values in the fields contained in
+ *! this object may change at any time.
+ *!
+ *! On the other hand it allows for inspection and altering of
+ *! the local variables (if any) belonging to the frame. Typical
+ *! use of this would be for debugging.
+ *!
+ *! @seealso
+ *!   @[BacktraceFrame]
+ */
+PIKECLASS LiveBacktraceFrame
+{
+  /*! @decl @Annotations.Implements(BacktraceFrame)
+   */
+  IMPLEMENTS backtrace_frame;
+
+  /* The live frame to inspect. */
+  CVAR struct pike_frame *fp;
+
+#ifdef PIKE_THREADS
+  /* The thread that owns the frame.
+   *
+   * NB: This is required for PROFILING, but may be useful
+   *     in other cases too.
+   */
+  PIKEVAR object thread_obj flags ID_PRIVATE;
+  CVAR struct thread_state *thread_state;
+#endif
+
+  /* fp->pc when low_get_line() was last called. */
+  CVAR PIKE_OPCODE_T *pc;
+
+  /* Cached result of low_get_line(). lineno == 0 indicates
+   * that the values are stale.
+   */
+  CVAR struct pike_string *filename;
+  CVAR INT_TYPE lineno;
+  CVAR struct local_variable_info locals;
+
+  EXIT
+    gc_trivial;
+  {
+    if (THIS->filename) {
+      free_string(THIS->filename);
+      THIS->filename = NULL;
+    }
+    if (THIS->fp) {
+      free_pike_frame(THIS->fp);
+      THIS->fp = NULL;
+    }
+  }
+
+  GC_CHECK
+  {
+    gc_check_frame(THIS->fp, " as live backtrace frame");
+  }
+
+  GC_RECURSE
+  {
+    gc_recurse_frame(THIS->fp);
+  }
+
+  PIKEFUN void fill_in_file_and_line()
+    flags ID_PROTECTED;
+  {
+    if (THIS->lineno) {
+      if (THIS->fp && (THIS->pc == THIS->fp->pc)) return;
+      THIS->lineno = 0;
+    }
+    if (THIS->filename) {
+      free_string(THIS->filename);
+      THIS->filename = NULL;
+    }
+    THIS->locals.num_local = 0;
+    if (!THIS->fp) return;
+
+    THIS->filename =
+      low_get_line((THIS->pc = THIS->fp->pc), THIS->fp->current_program,
+		   &THIS->lineno, &THIS->locals);
+  }
+
+  static void f_LiveBacktraceFrame_get_fun(struct pike_frame *fp)
+  {
+    if (!fp) {
+      push_undefined();
+      return;
+    }
+
+    if (!fp->context) {
+      if (fp->pc == (void *)do_gc) {
+	push_text("gc");
+      } else {
+	push_undefined();
+      }
+      return;
+    }
+
+    if (fp->current_object && fp->current_object->prog) {
+      if (fp->fun == FUNCTION_BUILTIN) {
+	/* Unusual case. The frame is from call_c_initializers(), gc()
+	 * or similar. cf [bug 6156].	/grubba
+	 *
+	 * Masquerade as the program.
+	 *
+	 * FIXME: Ought to keep parent-pointers.
+	 */
+	ref_push_program(fp->current_object->prog);
+      } else {
+	ref_push_function(fp->current_object, fp->fun);
+      }
+      return;
+    }
+
+    push_undefined();
+  }
+
+  PIKEFUN mixed `fun()
+  {
+    f_LiveBacktraceFrame_get_fun(THIS->fp);
+  }
+
+  /*! @decl int(0..1) _is_type(string t)
+   *! This object claims to be an array for backward compatibility.
+   */
+  PIKEFUN int(0..1) _is_type(string t)
+  {
+    RETURN (t == literal_array_string);
+  }
+
+  PIKEFUN array|zero `args()
+  {
+    struct pike_frame *fp = THIS->fp;
+    struct array *res;
+
+    if (!fp) {
+      push_undefined();
+      return;
+    }
+
+    push_array(res = allocate_array_no_init(fp->num_args, 0));
+    res->type_field =
+      assign_svalues_no_free(res->item, fp->locals, fp->num_args, BIT_MIXED);
+
+    if (fp->context && fp->current_object && fp->current_object->prog &&
+	(fp->fun != FUNCTION_BUILTIN)) {
+      struct identifier *func =
+	ID_FROM_INT(fp->current_object->prog, fp->fun);
+      if ((func->identifier_flags & IDENTIFIER_VARARGS) &&
+	  (fp->num_args < fp->num_locals) &&
+	  TYPEOF(fp->locals[fp->num_args]) == T_ARRAY) {
+	ref_push_array(fp->locals[fp->num_args].u.array);
+	f_add(2);
+	res = Pike_sp[-1].u.array;
+      }
+    }
+
+    if (res->type_field & BIT_OBJECT) {
+      ptrdiff_t i;
+      for (i = 0; i < res->size; i++) {
+	struct svalue *s = ITEM(res) + i;
+	if ((TYPEOF(*s) == T_OBJECT) &&
+	    s->u.object->prog &&
+	    (s->u.object->prog->flags &
+	     (PROGRAM_DESTRUCT_IMMEDIATE|PROGRAM_CLEAR_STORAGE))) {
+	  /* It is typically a bad idea to have extra references
+	   * to objects with these flags. The flags are usually
+	   * used by stuff like mutex keys and encryption keys
+	   * respectively.
+	   */
+	  struct object *o = clone_fake_object(s->u.object);
+	  free_object(s->u.object);
+	  SET_SVAL(*s, T_OBJECT, 0, object, o);
+	}
+      }
+    }
+  }
+
+  PIKEFUN string|zero `filename()
+  {
+    apply_current(f_LiveBacktraceFrame_fill_in_file_and_line_fun_num, 0);
+    pop_stack();
+    if (THIS->filename) {
+      ref_push_string(THIS->filename);
+      return;
+    }
+    push_undefined();
+  }
+
+  PIKEFUN int `line()
+  {
+    apply_current(f_LiveBacktraceFrame_fill_in_file_and_line_fun_num, 0);
+    pop_stack();
+    push_int(THIS->lineno);
+  }
+
+  /*! @decl int(3..) _sizeof()
+   */
+  PIKEFUN int(3..) _sizeof()
+    flags ID_PROTECTED;
+  {
+    struct pike_frame *fp = THIS->fp;
+    int sz = 3;
+
+    if (fp) {
+      sz += fp->num_args;
+
+      if (fp->context && fp->current_object && fp->current_object->prog &&
+	  (fp->fun != FUNCTION_BUILTIN)) {
+	struct identifier *func =
+	  ID_FROM_INT(fp->current_object->prog, fp->fun);
+	if ((func->identifier_flags & IDENTIFIER_VARARGS) &&
+	    (fp->num_args < fp->num_locals) &&
+	    TYPEOF(fp->locals[fp->num_args]) == T_ARRAY) {
+	  sz += fp->locals[fp->num_args].u.array->size;
+	}
+      }
+    }
+
+    push_int(sz);
+  }
+
+  /*! @decl mixed `[](int index, int|void end_or_none)
+   *! The BacktraceFrame object can be indexed as an array.
+   */
+  PIKEFUN mixed `[](int index, int|void end_or_none)
+    flags ID_PROTECTED;
+  {
+    INT_TYPE end = index;
+    INT32 numargs = 3;
+    INT32 i;
+    struct pike_frame *fp = THIS->fp;
+    struct array *extra = NULL;
+
+    if (THIS->fp) {
+      numargs += THIS->fp->num_args;
+
+      if (fp->context && fp->current_object && fp->current_object->prog &&
+	  (fp->fun != FUNCTION_BUILTIN)) {
+	struct identifier *func =
+	  ID_FROM_INT(fp->current_object->prog, fp->fun);
+	if ((func->identifier_flags & IDENTIFIER_VARARGS) &&
+	    (fp->num_args < fp->num_locals) &&
+	    TYPEOF(fp->locals[fp->num_args]) == T_ARRAY) {
+	  extra = fp->locals[fp->num_args].u.array;
+	  numargs += extra->size;
+	}
+      }
+    }
+
+    if (!end_or_none) {
+      if (index < 0)
+        index_error("pike_frame->`[]", args, NULL, Pike_sp-args,
+		    "Indexing with negative index (%"PRINTPIKEINT"d)\n", index);
+      else if (index >= numargs)
+        index_error("pike_frame->`[]", args, NULL, Pike_sp-args,
+		    "Indexing with too large index (%"PRINTPIKEINT"d)\n", index);
+    } else
+      end = end_or_none->u.integer;
+
+    pop_n_elems(args);
+
+    if (end_or_none) {
+      if ((end < 0) || (end < index) || (index >= numargs)) {
+	f_aggregate(0);
+	return;
+      }
+
+      if (end >= numargs)
+	end = numargs-1;
+    }
+
+    apply_current(f_LiveBacktraceFrame_fill_in_file_and_line_fun_num, 0);
+    pop_stack();
+
+    for (i = index; i <= end; i++) {
+      switch(i) {
+      case 0:	/* Filename */
+	if (THIS->filename)
+	  ref_push_string(THIS->filename);
+	else
+	  push_int(0);
+	break;
+      case 1:	/* Linenumber */
+	push_int(THIS->lineno);
+	break;
+      case 2:	/* Function */
+	f_LiveBacktraceFrame_get_fun(THIS->fp);
+        break;
+      default:	/* Arguments */
+        {
+	  if (i > 2) {
+	    int j = i - 3;
+	    if (j < fp->num_args) {
+	      push_svalue(fp->locals + j);
+	      break;
+	    }
+	    j -= fp->num_args;
+	    if (extra && (j < extra->size)) {
+	      push_svalue(ITEM(extra) + j);
+	      break;
+	    }
+	  }
+          bad_arg_error("`[]", args, 1,
+			"int(0..)", Pike_sp-args,
+			"Bad argument 1 to backtrace_frame->`[](): "
+			"Expected int(0..%d)\n",
+			numargs + 2);
+        }
+        UNREACHABLE();
+      }
+    }
+    if (end_or_none)
+      f_aggregate(1 + end - index);
+  }
+
+  PIKEFUN int(0..) `num_locals()
+  {
+    struct pike_frame *fp = THIS->fp;
+    if (!fp) {
+      push_undefined();
+    } else {
+      push_int(fp->num_locals);
+    }
+  }
+
+#ifdef PROFILING
+  PIKEFUN int `total_time()
+  {
+    struct pike_frame *fp = THIS->fp;
+    if (!fp) {
+      push_undefined();
+#ifdef PIKE_THREADS
+    } else if (THIS->thread_state) {
+      push_int64(get_cpu_time() -
+		 (THIS->thread_state->state.unlocked_time + fp->start_time));
+#endif
+    } else {
+      push_int64(get_cpu_time() -
+		 (Pike_interpreter.unlocked_time + fp->start_time));
+    }
+  }
+#endif
+
+  PIKEFUN mixed get_local(int(0..) l)
+  {
+    struct pike_frame *fp = THIS->fp;
+    if (!fp || (l >= fp->num_locals)) {
+      Pike_error("No such local: #%ld\n", (long)l);
+    }
+    push_svalue(fp->locals + l);
+  }
+
+  PIKEFUN mixed set_local(int(0..) l, mixed val)
+  {
+    struct pike_frame *fp = THIS->fp;
+    if (!fp || (l >= fp->num_locals)) {
+      Pike_error("No such local: #%ld\n", (long)l);
+    }
+    assign_svalue(fp->locals + l, val);
+  }
+
+  PIKEFUN string|zero get_local_name(int(0..) l)
+  {
+    struct pike_frame *fp = THIS->fp;
+    if (!fp || (l >= fp->num_locals)) {
+      Pike_error("No such local: #%ld\n", (long)l);
+    }
+    apply_current(f_LiveBacktraceFrame_fill_in_file_and_line_fun_num, 0);
+    pop_stack();
+    if ((l < THIS->locals.num_local) && fp->current_object &&
+	fp->current_object->prog) {
+      int strno = THIS->locals.names[l];
+      if (strno < THIS->fp->current_object->prog->num_strings) {
+	ref_push_string(THIS->fp->current_object->prog->strings[strno]);
+	return;
+      }
+    }
+    push_undefined();
+  }
+
+  PIKEFUN type|zero get_local_type(int(0..) l)
+  {
+    struct pike_frame *fp = THIS->fp;
+    if (!fp || (l >= fp->num_locals)) {
+      Pike_error("No such local: #%ld\n", (long)l);
+    }
+    apply_current(f_LiveBacktraceFrame_fill_in_file_and_line_fun_num, 0);
+    pop_stack();
+    if ((l < THIS->locals.num_local) && fp->current_object &&
+	fp->current_object->prog) {
+      int constno = THIS->locals.types[l];
+      if (constno < THIS->fp->current_object->prog->num_constants) {
+	push_svalue(&THIS->fp->current_object->prog->constants[constno].sval);
+	return;
+      }
+    }
+    push_undefined();
+  }
 };
 
 /*! @endclass
@@ -2795,7 +4326,476 @@ PIKEFUN mapping(string:int|string) get_runtime_info()
 /*! @endmodule
  */
 
-void low_backtrace(struct Pike_interpreter_struct *i)
+/*! @module Builtin
+ */
+
+/*! @class Future(<ValueType>)
+ *!
+ *! Prototype class for @[Concurrent.Future].
+ *!
+ *! @seealso
+ *!   @[Concurrent.Future], @[Promise]
+ */
+PIKECLASS Future
+  num_generics 1;
+{
+  /*! @decl void set_backend(Backend backend)
+   */
+  PIKEFUN void set_backend(Backend backend)
+    prototype;
+  {
+  }
+
+  /*! @decl Backend get_backend()
+   */
+  PIKEFUN Backend get_backend()
+    prototype;
+  {
+  }
+
+  /*! @decl Promise promise_factory()
+   */
+  PIKEFUN Promise promise_factory()
+    prototype;
+    rawtype tFunc(tNone, tPromise(tFutureValueType));
+  {
+  }
+
+  /*! @decl Future(<ValueType>) wait()
+   */
+  PIKEFUN Future wait()
+    prototype;
+    rawtype tFunc(tNone, tFuture(tFutureValueType));
+  {
+  }
+
+  /*! @decl ValueType get()
+   */
+  PIKEFUN mixed get()
+    prototype;
+    rawtype tFunc(tNone, tFutureValueType);
+  {
+  }
+
+  /*! @decl zero|ValueType get()
+   */
+  PIKEFUN mixed try_get()
+    prototype;
+    rawtype tFunc(tNone, tOr(tZero, tFutureValueType));
+  {
+  }
+
+  /*! @decl Future(<ValueType>) @
+   *!   on_success(function(ValueType, __unknown__ ...: void) cb, @
+   *!              mixed ... extra)
+   */
+  PIKEFUN Future on_success(function cb, mixed ... extra)
+    prototype;
+    rawtype tFuncV(tFuncV(tFutureValueType, tUnknown, tVoid), tMix,
+                   tFuture(tFutureValueType));
+  {
+  }
+
+  /*! @decl array(function(ValueType, __unknown__ ...: void)) @
+   *!   query_success_callbacks()
+   */
+  PIKEFUN array query_success_callbacks()
+    prototype;
+    rawtype tFunc(tNone, tArr(tFuncV(tFutureValueType, tUnknown, tVoid)));
+  {
+  }
+
+  /*! @decl Future(<ValueType>) @
+   *!   on_failure(function(mixed, __unknown__ ...: void) cb, @
+   *!              mixed ... extra)
+   */
+  PIKEFUN Future on_failure(function cb, mixed ... extra)
+    prototype;
+    rawtype tFuncV(tFuncV(tMix, tUnknown, tVoid), tMix,
+                   tFuture(tFutureValueType));
+  {
+  }
+
+  /*! @decl array(function(mixed, __unknown__ ...: void)) @
+   *!   query_failure_callbacks()
+   */
+  PIKEFUN array query_failure_callbacks()
+    prototype;
+    rawtype tFunc(tNone, tArr(tFuncV(tMix, tUnknown, tVoid)));
+  {
+  }
+
+  /*! @decl Future(<ValueType>) @
+   *!   on_await(function(mixed, @
+   *!                     function(mixed, __unknown__ ...: void)|void: void) @
+   *!            cb)
+   */
+  PIKEFUN Future on_await(function cb)
+    prototype;
+    rawtype tFunc(tFunc(tMix tOr(tFuncV(tMix, tUnknown, tVoid), tVoid), tVoid),
+                  tFuture(tFutureValueType));
+  {
+  }
+
+  /*! @decl Future(<mixed>) @
+   *!   map(function(ValueType, __unknown__ ...: mixed) fun, @
+   *!       mixed ... extra)
+   */
+  PIKEFUN Future map(function fun, mixed ... extra)
+    prototype;
+    rawtype tFuncV(tFuncV(tFutureValueType, tUnknown, tSetvar(0, tMix)),
+                   tMix, tFuture(tVar(0)));
+  {
+  }
+
+  /*! @decl Future(<mixed>) @
+   *!   map_with(function(ValueType, __unknown__ ...: Future(<mixed>)) fun, @
+   *!            mixed ... extra)
+   */
+  PIKEFUN Future map_with(function fun, mixed ... extra)
+    prototype;
+    rawtype tFuncV(tFuncV(tFutureValueType, tUnknown, tFuture(tMix)),
+                   tMix, tFuture(tMix));
+  {
+  }
+
+  /*! @decl Future(<mixed>) @
+   *!   recover(function(mixed, __unknown__ ...: mixed) fun, @
+   *!           mixed ... extra)
+   */
+  PIKEFUN Future recover(function fun, mixed ... extra)
+    prototype;
+    rawtype tFuncV(tFuncV(tMix, tUnknown, tSetvar(0, tMix)),
+                   tMix, tFuture(tOr(tVar(0), tFutureValueType)));
+  {
+  }
+
+  /*! @decl Future(<mixed>) @
+   *!   recover_with(function(mixed, __unknown__ ...: Future(<mixed>)) fun, @
+   *!                mixed ... extra)
+   */
+  PIKEFUN Future recover_with(function fun, mixed ... extra)
+    prototype;
+    rawtype tFuncV(tFuncV(tMix, tUnknown, tFuture(tMix)),
+                   tMix, tFuture(tMix));
+  {
+  }
+
+  /*! @decl Future(<ValueType>) @
+   *!   filter(function(ValueType, __unknown__ ...: int(1bit)) fun, @
+   *!          mixed ... extra)
+   */
+  PIKEFUN Future filter(function fun, mixed ... extra)
+    prototype;
+    rawtype tFuncV(tFuncV(tFutureValueType, tUnknown, tInt01),
+                   tMix, tFuture(tFutureValueType));
+  {
+  }
+
+  /*! @decl Future(<mixed>) @
+   *!   transform(function(ValueType, __unknown__ ...: mixed) fun, @
+   *!             function(mixed, __unknown__ ...: mixed) fun, @
+   *!             mixed ... extra)
+   */
+  PIKEFUN Future transform(function success, function failure, mixed ... extra)
+    prototype;
+    rawtype tFuncV(tFuncV(tFutureValueType, tUnknown, tSetvar(0, tMix))
+                   tOr(tFuncV(tMix, tUnknown, tSetvar(1, tMix)), tVoid),
+                   tMix, tFuture(tOr(tVar(0), tVar(1))));
+  {
+  }
+
+  /*! @decl Future(<mixed>) @
+   *!   transform(function(ValueType, __unknown__ ...: Future(<mixed>)) fun, @
+   *!             function(mixed, __unknown__ ...: Future(<mixed>)) fun, @
+   *!             mixed ... extra)
+   */
+  PIKEFUN Future transform_with(function success, function failure,
+                                mixed ... extra)
+    prototype;
+    rawtype tFuncV(tFuncV(tFutureValueType, tUnknown, tFuture(tMix))
+                   tOr(tFuncV(tMix, tUnknown, tFuture(tMix)), tVoid),
+                   tMix, tFuture(tMix));
+  {
+  }
+
+  /*! @decl array(Future(<mixed>)) zip(array(Future(<mixed>)) others)
+   *! @decl array(Future(<mixed>)) zip(Future(<mixed>) ... others)
+   */
+  PIKEFUN Future zip(array(Future) others)
+    prototype;
+    rawtype tOr(tFunc(tArr(tSetvar(0, tFuture(tMix))),
+                      tArr(tOr(tVar(0), tFuture(tFutureValueType)))),
+                tFuncV(tNone, tSetvar(0, tFuture(tMix)),
+                       tArr(tVar(0))));
+  {
+  }
+
+  /*! @decl Future(<mixed>) @
+   *!   then(function(ValueType, __unknown__ ...: mixed)|void onfullfillment, @
+   *!        function(mixed, __unknown__ ...: mixed)|void onrejected, @
+   *!        mixed ... extra)
+   */
+  PIKEFUN Future then(function|void onfulfillment,
+                      function|void onrejected,
+                      mixed ... extra)
+    prototype;
+    rawtype tFuncV(tOr(tFuncV(tFutureValueType, tUnknown, tMix), tVoid)
+                   tOr(tFuncV(tMix, tUnknown, tMix), tVoid),
+                   tMix, tFuture(tMix));
+  {
+  }
+
+  /*! @decl Future(<mixed>) @
+   *!    thencatch(function(mixed, __unknown__ ...: mixed) onrejected, @
+   *!              mixed ... extra)
+   */
+  PIKEFUN Future thencatch(function onrejected, mixed ... extra)
+    prototype;
+    rawtype tFuncV(tFuncV(tMix, tUnknown, tMix),
+                   tMix, tFuture(tMix));
+  {
+  }
+
+  /*! @decl Future(<ValueType>) delay(int|float seconds)
+   */
+  PIKEFUN Future delay(int|float seconds)
+    prototype;
+    rawtype tFunc(tOr(tInt, tFloat), tFuture(tFutureValueType));
+  {
+  }
+
+  /*! @decl Future(<ValueType>) timeout(int|float seconds)
+   */
+  PIKEFUN Future timeout(int|float seconds)
+    prototype;
+    rawtype tFunc(tOr(tInt, tFloat), tFuture(tFutureValueType));
+  {
+  }
+}
+/*! @endclass
+ */
+
+/*! @class Promise(<ValueType>)
+ *!
+ *! Prototype class for @[Concurrent.Promise].
+ *!
+ *! @seealso
+ *!   @[Concurrent.Promise], @[Future]
+ */
+PIKECLASS Promise
+  num_generics 1;
+{
+  /*! @decl inherit Future(<ValueType>)
+   */
+  INHERIT Future
+    bind_generics tPromiseValueType;
+
+  /*! @decl Future(<ValueType>) future()
+   */
+  PIKEFUN Future future()
+    prototype;
+    rawtype tFunc(tNone, tFuture(tPromiseValueType));
+  {
+  }
+
+  /*! @decl Promise(<ValueType>) success(ValueType value, int|void try)
+   */
+  PIKEFUN Promise success(mixed value, int|void try)
+    prototype;
+    rawtype tFunc(tPromiseValueType tOr(tInt, tVoid),
+                  tPromise(tPromiseValueType));
+  {
+  }
+
+  /*! @decl Promise(<ValueType>) try_success(ValueType value)
+   */
+  PIKEFUN Promise try_success(mixed value)
+    prototype;
+    rawtype tFunc(tOr(tPromiseValueType, tZero),
+                  tPromise(tPromiseValueType));
+  {
+  }
+
+  /*! @decl Promise(<ValueType>) failure(mixed value, int|void try)
+   */
+  PIKEFUN Promise failure(mixed value, int|void try)
+    prototype;
+    rawtype tFunc(tMix tOr(tInt, tVoid),
+                  tPromise(tPromiseValueType));
+  {
+  }
+
+  /*! @decl Promise(<ValueType>) try_failure(mixed value)
+   */
+  PIKEFUN Promise try_failure(mixed value)
+    prototype;
+    rawtype tFunc(tMix, tPromise(tPromiseValueType));
+  {
+  }
+}
+/*! @endclass
+ */
+
+/*! @endmodule
+ */
+
+/*! @decl mixed yield(mixed|void val)
+ *!
+ *! Stop execution of the current restartable function for now,
+ *! and return the value @[val].
+ *!
+ *! @param val
+ *!   Value to be returned from the restartable function.
+ *!
+ *!   May be omitted in functions returning @expr{void@}
+ *!   (including asynchronous functions). For asynchronous
+ *!   functions this means that @[Concurrent.Promise()->success()]
+ *!   in the implicit @[Concurrent.Promise] will not be called.
+ *!
+ *! @returns
+ *!   Evaluates to the first argument passed to the
+ *!   restartable function on restart, or if it has
+ *!   already been called, the value passed at that
+ *!   time.
+ *!
+ *! Calling this special form is similar to the statement:
+ *!
+ *!   @code
+ *!     continue return val;
+ *!   @endcode
+ *!
+ *! This syntax is however an expression and can thus be used
+ *! to pass a value back.
+ *!
+ *! @note
+ *!   Use of this function is only valid in restartable functions.
+ *!
+ *! @throws
+ *!   The second argument to a restartable function may be
+ *!   a function that throws a value. That value will appear
+ *!   to have been thrown via @[yield()].
+ *!
+ *! @seealso
+ *!   @[await()], Restartable functions
+ */
+PIKEFUN mixed yield(mixed|void val)
+  optfunc optimize_yield;
+  prototype;
+  efun;
+{
+}
+
+static node *optimize_yield(node *n)
+{
+  if (n) {
+    node *ret;
+
+    if (Pike_compiler->compiler_frame->generator_local == -1) {
+      yyerror("Attempt to yield from a non-restartable function.");
+      return NULL;
+    }
+
+    ret = mknode(F_RETURN, CDR(n), mkintnode(2));
+    ADD_NODE_REF(CDR(n));
+    return ret;
+  }
+  return NULL;
+}
+
+/*! @decl mixed await(Concurrent.Future future)
+ *!
+ *! Stop execution of the current restartable function for now.
+ *! Resume when the future completes.
+ *!
+ *! @returns
+ *!   Evaluates to the result of the future if it succeeds.
+ *!
+ *! @throws
+ *!   Throws an error if the future failed.
+ *!
+ *! Calling this special form is similar to the expression:
+ *!
+ *!   @code
+ *!     (future->on_await(continue::this_function), yield())
+ *!   @endcode
+ *!
+ *! @note
+ *!   Use of this from a non-restartable functions causes
+ *!   a compilation warning and falls back to calling
+ *!   @expr{future->get()@}. This will thus then perform
+ *!   a wait blocking the current thread.
+ *!
+ *! @note
+ *!   No checks that the @[future] has actually completed are
+ *!   performed. It is assumed that nothing else will call
+ *!   the restartable function during the wait.
+ *!
+ *! @seealso
+ *!   @[Concurrent.Future()->get()], @[yield()],
+ *!   @[continue::this_function], Restartable functions
+ */
+PIKEFUN mixed await(Future future)
+  optfunc optimize_await;
+  prototype;
+  efun;
+{
+}
+
+static node *optimize_await(node *n)
+{
+  if (n) {
+    /* FIXME: If not in a generator or async function: warn and change
+     *        to a call of future->get()?
+     */
+    /*
+     * f->get();
+     *
+     * We use this node to get the type expected from the yield().
+     */
+    node *ret;
+    node *get = mkapplynode(mkarrownode(CDR(n), "get"),
+                            mknode(F_ARG_LIST, NULL, NULL));
+    ADD_NODE_REF(CDR(n));
+    fix_type_field(get);
+
+    if (Pike_compiler->compiler_frame->generator_local == -1) {
+      yywarning("Attempt to await from a non-restartable function.");
+      return get;
+    }
+
+    /*
+     * {
+     *   f->on_await(continue::this_function);
+     *   yield();
+     * }
+     */
+    ret =
+      mknode(F_COMMA_EXPR,
+             mkcastnode(void_type_string,
+                        mkapplynode(mkarrownode(CDR(n), "on_await"),
+                                    mknode(F_ARG_LIST,
+                                           program_magic_identifier(Pike_compiler, 0,
+                                                                    INHERIT_GENERATOR,
+                                                                    this_function_string,
+                                                                    1),
+                                           NULL))),
+             mknode(F_RETURN, NULL, mkintnode(2)));
+    ADD_NODE_REF(CDR(n));
+
+    if (get->type && (CDR(ret)->token == F_RETURN)) {
+      /* Copy the type from get() to yield(). */
+      free_type(CDR(ret)->type);
+      add_ref(CDR(ret)->type = get->type);
+    }
+    free_node(get);
+
+    return ret;
+  }
+  return NULL;
+}
+
+void low_backtrace(struct Pike_interpreter_struct *i, int flags)
 {
   struct svalue *stack_top = i->stack_pointer;
   struct pike_frame *f, *of = 0;
@@ -2810,21 +4810,52 @@ void low_backtrace(struct Pike_interpreter_struct *i)
   push_array(res);
 
   for (f = i->frame_pointer; f && size; f = (of = f)->next) {
-    struct object *o = fast_clone_object(backtrace_frame_program);
+    struct object *o;
     struct backtrace_frame_struct *bf;
     struct identifier *function = NULL;
 
     size--;
 
+    if (flags & 1) {
+      struct LiveBacktraceFrame_struct *bf;
+
+      o = fast_clone_object(LiveBacktraceFrame_program);
+
+      bf = OBJ2_LIVEBACKTRACEFRAME(o);
+
+      SET_SVAL(res->item[size], PIKE_T_OBJECT, 0, object, o);
+
+      add_ref(bf->fp = f);
+
+#ifdef PIKE_THREADS
+      if ((bf->thread_state = i->thread_state)) {
+	add_ref(bf->thread_obj = i->thread_state->thread_obj);
+      }
+#endif
+
+      continue;
+    }
+
+    o = fast_clone_object(backtrace_frame_program);
+
     SET_SVAL(res->item[size], PIKE_T_OBJECT, 0, object, o);
 
     bf = OBJ2_BACKTRACE_FRAME(o);
+
+#ifdef PROFILING
+    push_int64(get_cpu_time() - (i->unlocked_time + f->start_time));
+    bf->total_time = Pike_sp[-1];
+    Pike_sp--;
+#endif
 
     SET_SVAL(bf->_fun, PIKE_T_INT, NUMBER_DESTRUCTED, integer, 0);
 
     if (!f->context) {
       if (f->pc == (void *)do_gc) {
 	SET_SVAL(bf->_fun, PIKE_T_STRING, 0, string, make_shared_string("gc"));
+      } else if (f->pc == (void *)pike_do_exit) {
+	SET_SVAL(bf->_fun, PIKE_T_STRING, 0, string,
+		 make_shared_string("exit"));
       }
       continue;
     }
@@ -2859,26 +4890,30 @@ void low_backtrace(struct Pike_interpreter_struct *i)
     }
 
     if (f->locals) {
-      INT32 numargs = (INT32) MINIMUM(f->num_args,
-                                      stack_top - f->locals);
+      INT32 numargs = f->num_args;
       INT32 varargs = 0;
 
-      if(of && of->locals) {
-	/* f->num_args can be too large, so this is necessary for some
-	 * reason. I don't know why. /mast
-	 *
-	 * possibly because f->num_args was uninitialized for c_initializers
-	 *  /arne
-	 * */
+      if (!(f->flags & PIKE_FRAME_MALLOCED_LOCALS)) {
+	numargs = MINIMUM(numargs, stack_top - f->locals);
 
-        numargs = (INT32)MINIMUM(f->num_args,of->locals - f->locals);
+	if(of && of->locals && !(of->flags & PIKE_FRAME_MALLOCED_LOCALS)) {
+	  /* f->num_args can be too large, so this is necessary for some
+	   * reason. I don't know why. /mast
+	   *
+	   * possibly because f->num_args was uninitialized for c_initializers
+	   *  /arne
+	   * */
+
+	  numargs = (INT32)MINIMUM(numargs, of->locals - f->locals);
+	}
+
+	numargs = MAXIMUM(numargs, 0);
+      } else {
+	numargs = MINIMUM(numargs, f->locals[-1].u.array->size);
       }
-
-      numargs = MAXIMUM(numargs, 0);
 
       /* Handle varargs... */
       if (function && (function->identifier_flags & IDENTIFIER_VARARGS) &&
-	  (f->locals + numargs < stack_top) &&
 	  (TYPEOF(f->locals[numargs]) == T_ARRAY)) {
 	varargs = f->locals[numargs].u.array->size;
       }
@@ -2893,6 +4928,25 @@ void low_backtrace(struct Pike_interpreter_struct *i)
 				   f->locals[numargs].u.array->item,
 				   varargs, BIT_MIXED);
 	}
+	if (bf->args->type_field & BIT_OBJECT) {
+	  ptrdiff_t i;
+	  for (i = 0; i < bf->args->size; i++) {
+	    struct svalue *s = ITEM(bf->args) + i;
+	    if ((TYPEOF(*s) == T_OBJECT) &&
+		s->u.object->prog &&
+		(s->u.object->prog->flags &
+		 (PROGRAM_DESTRUCT_IMMEDIATE|PROGRAM_CLEAR_STORAGE))) {
+	      /* It is typically a bad idea to have extra references
+	       * to objects with these flags. The flags are usually
+	       * used by stuff like mutex keys and encryption keys
+	       * respectively.
+	       */
+	      struct object *o = clone_fake_object(s->u.object);
+	      free_object(s->u.object);
+	      SET_SVAL(*s, T_OBJECT, 0, object, o);
+	    }
+	  }
+	}
       }
     }
   }
@@ -2900,16 +4954,48 @@ void low_backtrace(struct Pike_interpreter_struct *i)
   /* NOTE: res has already been pushed on the stack. */
 }
 
-/*! @decl array(Pike.BacktraceFrame) backtrace()
- *!
- *!   FIXME: This documentation is not up to date!
+/*! @decl array(Pike.BacktraceFrame) backtrace(int|void flags)
  *!
  *!   Get a description of the current call stack.
  *!
+ *! @param flags
+ *!
+ *!   A bit mask of flags affecting generation of the backtrace.
+ *!
+ *!   Currently a single flag is defined:
+ *!   @int
+ *!     @value 1
+ *!       Return @[LiveBacktraceFrame]s. This flag causes the frame
+ *!       objects to track changes (as long as they are in use), and
+ *!       makes eg local variables for functions available for
+ *!       inspection or change.
+ *!
+ *!       Note that since these values are "live", they may change or
+ *!       dissapear at any time unless the corresponding thread has
+ *!       been halted or similar.
+ *!   @endint
+ *!
+ *! @returns
  *!   The description is returned as an array with one entry for each call
  *!   frame on the stack.
  *!
- *!   Each entry has this format:
+ *!   The entries are represented by @[Pike.BacktraceFrame] objects.
+ *!
+ *!   The current call frame will be last in the array.
+ *!
+ *! @note
+ *!   Please note that the frame order may be reversed in a later version
+ *!   of Pike to accommodate for deferred backtraces.
+ *!
+ *! @note
+ *!   Note that the arguments reported in the backtrace are the current
+ *!   values of the variables, and not the ones that were at call-time.
+ *!   This can be used to hide sensitive information from backtraces
+ *!   (eg passwords).
+ *!
+ *! @note
+ *!   In old versions of Pike the entries used to be represented
+ *!   by arrays of the following format:
  *!   @array
  *!     @elem string file
  *!       A string with the filename if known, else zero.
@@ -2920,28 +5006,22 @@ void low_backtrace(struct Pike_interpreter_struct *i)
  *!     @elem mixed|void ... args
  *!       The arguments that the function was called with.
  *!   @endarray
- *!
- *!   The current call frame will be last in the array.
- *!
- *! @note
- *!   Please note that the frame order may be reversed in a later version
- *!   of Pike to accommodate for deferred backtraces.
- *!
- *!   Note that the arguments reported in the backtrace are the current
- *!   values of the variables, and not the ones that were at call-time.
- *!   This can be used to hide sensitive information from backtraces
- *!   (eg passwords).
+ *!   The above format is still supported by eg @[describe_backtrace()].
  *!
  *! @seealso
  *!   @[catch()], @[throw()]
  */
 PMOD_EXPORT
-PIKEFUN array(mixed) backtrace()
+PIKEFUN array(mixed) backtrace(int|void local_vars)
      efun;
      optflags OPT_EXTERNAL_DEPEND;
 {
-  low_backtrace(& Pike_interpreter);
+  low_backtrace(& Pike_interpreter, local_vars?local_vars->u.integer:0);
+  stack_pop_n_elems_keep_top(args);
 }
+
+/*! @module String
+ */
 
 /*! @class Replace
  *!
@@ -3060,7 +5140,7 @@ PIKECLASS multi_string_replace
 
   /*! @decl array(array(string)) _encode()
    */
-  PIKEFUN array(array(string)) _encode()
+  PIKEFUN array(array(string))|zero _encode()
   {
     if (THIS->from) {
       ref_push_array(THIS->from);
@@ -3210,7 +5290,7 @@ PIKECLASS single_string_replace
       case eightbit: f = (replace_searchfunc)THIS->mojt.vtab->func0; break;
       case sixteenbit: f = (replace_searchfunc)THIS->mojt.vtab->func1; break;
       case thirtytwobit: f = (replace_searchfunc)THIS->mojt.vtab->func2; break;
-      default: UNREACHABLE(break);
+      default: UNREACHABLE();
       }
 
       if(del->len == to->len)
@@ -3256,9 +5336,9 @@ PIKECLASS single_string_replace
     RETURN end_shared_string(ret);
   }
 
-  /*! @decl array(string) _encode()
+  /*! @decl array(string)|zero _encode()
    */
-  PIKEFUN array(string) _encode()
+  PIKEFUN array(string)|zero _encode()
   {
     if (THIS->del) {
       ref_push_string(THIS->del);
@@ -3742,7 +5822,7 @@ PIKECLASS automap_marker
       pop_n_elems(2);
     }
 
-  PIKEFUN string _sprintf(int mode, mapping flags)
+  PIKEFUN string|zero _sprintf(int mode, mapping flags)
     {
       pop_n_elems(args);
       if (mode != 'O') {
@@ -3948,7 +6028,7 @@ PMOD_EXPORT struct object *get_setter(struct object *o, int f)
   return res;
 }
 
-/*! @decl function(mixed_void) _get_setter(object o, string varname)
+/*! @decl function(mixed_void)|zero _get_setter(object o, string varname)
  *!
  *! Get a setter for the variable named @[varname] in object @[o].
  *!
@@ -3959,7 +6039,7 @@ PMOD_EXPORT struct object *get_setter(struct object *o, int f)
  *! @seealso
  *!   @[object_variablep()]
  */
-PIKEFUN function(mixed:void) _get_setter(object o, string s)
+PIKEFUN function(mixed:void)|zero _get_setter(object o, string s)
 {
   struct program *p;
   struct inherit *inh;
@@ -3999,29 +6079,30 @@ PIKEFUN function(mixed:void) _get_setter(object o, string s)
  */
 PIKECLASS Null
 {
+  /*! @decl constant is_val_null = 1
+   *!
+   *! Nonzero recognition constant.
+   */
+
+  /*! @decl constant is_sql_null = 1
+   *!
+   *! SQL Null marker.
+   *!
+   *! @deprecated is_val_null
+   */
   EXTRA {
-    /*! @decl constant is_val_null = 1
-     *!
-     *! Nonzero recognition constant.
-     */
     add_integer_constant("is_val_null", 1, 0);
 
-    /*! @decl constant is_sql_null = 1
-     *!
-     *! SQL Null marker.
-     *!
-     *! @deprecated is_val_null
-     */
     add_integer_constant("is_sql_null", 1, 0);
   }
 
-  PIKEFUN int `!()
+  PIKEFUN int(0..1) `!()
     flags ID_PROTECTED;
   {
     RETURN 1;
   }
 
-  PIKEFUN string _sprintf(int fmt, mixed ... extras)
+  PIKEFUN string|zero _sprintf(int fmt, mixed ... extras)
     flags ID_PROTECTED;
   {
     pop_n_elems(args);
@@ -4072,19 +6153,6 @@ PIKECLASS Null
     pop_n_elems(args);
     push_constant_text ("null");
   }
-}
-
-/*! @endclass
- */
-
-/*! @class DestructImmediate
- *! An empty class that can be intherited to get the PROGRAM_DESTRUCT_IMMEDIATE
- *! flag set.
- */
-
-PIKECLASS DestructImmediate
-  program_flags PROGRAM_DESTRUCT_IMMEDIATE;
-{
 }
 
 /*! @endclass
@@ -4649,6 +6717,10 @@ PIKECLASS List
 
 #define HEAD_SENTINEL(this)	((struct pike_list_node *)(&this->head))
 #define TAIL_SENTINEL(this)	((struct pike_list_node *)(&this->tail))
+#define HEAD_TO_LIST(headptr)	((struct List_struct *)headptr)
+#define TAIL_TO_LIST(tailptr)	((struct List_struct *)			\
+				 (((char *)tailptr) -			\
+				  OFFSETOF(List_struct, tail)))
 
   /* Sentinel overlap description:
    *
@@ -4667,10 +6739,10 @@ PIKECLASS List
    *   o Copy segment
    *   o Detach segment (requires new iterator implementation)
    *   o Iterator copy
-   *   o _equal() for iterators and lists.
-   *   o _values(), _search(), cast()
-   *   o _sizeof()?, _indices()??
-   *   o Support for reverse(), filter() and map().
+   *   o _equal() for iterators.
+   *   o _search(), cast()
+   *   o _indices()??
+   *   o Support for filter() and map().
    *   o Initialization from array.
    *   o Support for Pike.count_memory.
    */
@@ -4717,38 +6789,16 @@ PIKECLASS List
     }
   }
 
-  /* These two functions perform the same thing,
-   * but are optimized to minimize recursion.
-   */
-  static void gc_check_list_node_backward(struct pike_list_node *node,
-					  const char *msg);
-  static void gc_check_list_node_forward(struct pike_list_node *node,
-					 const char *msg)
-  {
-    while (node && !debug_gc_check(&node->refs, msg)) {
-      if (node->next)
-	debug_gc_check_svalues(&node->val, 1,  " as a list node value");
-      gc_check_list_node_backward(node->prev, msg);
-      node = node->next;
-    }
-  }
-
-  static void gc_check_list_node_backward(struct pike_list_node *node,
-					  const char *msg)
-  {
-    while (node && !debug_gc_check(&node->refs, msg)) {
-      if (node->prev)
-	debug_gc_check_svalues(&node->val, 1, " as a list node value");
-      gc_check_list_node_forward(node->next, msg);
-      node = node->prev;
-    }
-  }
-
   /* Called at gc_check time. */
   GC_CHECK
   {
-    gc_check_list_node_backward(HEAD_SENTINEL(THIS), " as a list node");
-    gc_check_list_node_forward(TAIL_SENTINEL(THIS), " as a list node");
+    struct pike_list_node *node = THIS->head;
+    struct pike_list_node *next;
+
+    while ((next = node->next)) {
+      debug_gc_check_svalues(&node->val, 1, "as a list node value");
+      node = next;
+    }
   }
 
   /* Called at gc_mark time */
@@ -4829,6 +6879,33 @@ PIKECLASS List
       }
     }
     stack_pop_n_elems_keep_top(args);
+  }
+
+  /*! @decl protected List _reverse()
+   *!
+   *!   Reverse the list.
+   *!
+   *! @seealso
+   *!   @[reverse()]
+   */
+  PIKEFUN List _reverse()
+    flags ID_PROTECTED;
+  {
+    struct object *res = clone_object(List_program, 0);
+    struct List_struct *other_list = get_storage(res, List_program);
+    struct pike_list_node *n;
+    struct pike_list_node *other_n;
+    push_object(res);
+#ifdef PIKE_DEBUG
+    if (!other_list) Pike_fatal("Internal error in List::_reverse()\n");
+#endif
+    for (n = THIS->head; n->next; n = n->next) {
+      other_n = alloc_pike_list_node();
+      assign_svalue_no_free(&other_n->val, &n->val);
+      prepend_list_node(other_list->head, other_n);
+      other_list->num_elems++;
+      free_list_node(other_n);
+    }
   }
 
   /*! @decl mixed head()
@@ -4926,11 +7003,9 @@ PIKECLASS List
   PIKEFUN array _values()
     flags ID_PROTECTED;
   {
-      struct array * a;
-      push_int(THIS->num_elems);
-      f_allocate(1);
+      struct array *a = allocate_array(THIS->num_elems);
+      push_array(a);
 
-      a = Pike_sp[-1].u.array;
       if (THIS->num_elems) {
 	struct pike_list_node *node = THIS->head;
 	int i;
@@ -4939,14 +7014,16 @@ PIKECLASS List
 	  node = node->next;
 	}
       }
-    }
 
-  /*! @decl array cast(string type)
+      array_fix_type_field(a);
+  }
+
+  /*! @decl array|zero cast(string type)
    *!
    *! 	Cast the lists. @expr{array@} is the only
    *! 	supported type.
    */
-  PIKEFUN array cast(string type)
+  PIKEFUN array|zero cast(string type)
     flags ID_PROTECTED;
   {
     pop_stack(); /* type as at least one more reference. */
@@ -5068,7 +7145,7 @@ PIKECLASS List
      *       cur may however refer to a detached node, or to sentinels.
      */
 
-    static struct List_struct *List__get_iterator_find_parent()
+    static struct List_struct *List__get_iterator_find_parent(void)
     {
       struct external_variable_context loc;
 
@@ -5082,8 +7159,8 @@ PIKECLASS List
 
     INIT
     {
-      add_ref(THIS->cur = List__get_iterator_find_parent()->head);
-      THIS->ind = 0;
+      add_ref(THIS->cur = HEAD_SENTINEL(List__get_iterator_find_parent()));
+      THIS->ind = -1;
     }
 
     EXIT
@@ -5095,10 +7172,31 @@ PIKECLASS List
       }
     }
 
-    /* Called at gc_check time. */
-    GC_CHECK
+    /*! @decl object(_get_iterator) copy_iterator()
+     *!
+     *! @returns
+     *!   Returns a copy of the iterator at its current position.
+     */
+    PIKEFUN object copy_iterator()
     {
-      gc_check_list_node_forward(THIS->cur, " held by an iterator");
+      struct object *ret;
+
+      if (Pike_fp->current_object->prog != List_cq__get_iterator_program)
+        Pike_error("Cannot copy overloaded iterators.\n");
+
+      ret = low_clone(List_cq__get_iterator_program);
+
+      pop_n_elems(args);
+
+      add_ref(PARENT_INFO(ret)->parent =
+              PARENT_INFO(Pike_fp->current_object)->parent);
+      PARENT_INFO(ret)->parent_identifier =
+          PARENT_INFO(Pike_fp->current_object)->parent_identifier;
+
+      add_ref(OBJ2_LIST_CQ__GET_ITERATOR(ret)->cur = THIS->cur);
+      OBJ2_LIST_CQ__GET_ITERATOR(ret)->ind = THIS->ind;
+
+      push_object(ret);
     }
 
     /* These two functions perform the same thing,
@@ -5217,11 +7315,38 @@ PIKECLASS List
       RETURN (!THIS->cur->next || !THIS->cur->prev);
     }
 
-    PIKEFUN int(0..) index()
+    PIKEFUN int(0..) _iterator_index()
+      flags ID_PROTECTED
     {
       pop_n_elems(args);
       if (THIS->cur->next && THIS->cur->prev) {
 	push_int(THIS->ind);
+      } else {
+	push_undefined();
+      }
+    }
+
+    PIKEFUN int(0..) index()		/* Compat. */
+    {
+      pop_n_elems(args);
+      if (THIS->cur->next && THIS->cur->prev) {
+	push_int(THIS->ind);
+      } else {
+	push_undefined();
+      }
+    }
+
+    /*! @decl protected mixed _iterator_value()
+     *!
+     *! @returns
+     *!   Returns the value at the current position.
+     */
+    PIKEFUN mixed _iterator_value()
+      flags ID_PROTECTED;
+    {
+      pop_n_elems(args);
+      if (THIS->cur->next && THIS->cur->prev) {
+	push_svalue(&THIS->cur->val);
       } else {
 	push_undefined();
       }
@@ -5232,7 +7357,7 @@ PIKECLASS List
      *! @returns
      *!   Returns the value at the current position.
      */
-    PIKEFUN mixed value()
+    PIKEFUN mixed value()		/* Compat. */
     {
       pop_n_elems(args);
       if (THIS->cur->next && THIS->cur->prev) {
@@ -5265,11 +7390,47 @@ PIKECLASS List
       parent = (struct List_struct *)(loc.o->storage +
 				      loc.inherit->storage_offset);
       free_list_node(THIS->cur);
-      add_ref(THIS->cur = parent->head);
-      THIS->ind = 0;
+      add_ref(THIS->cur = HEAD_SENTINEL(parent));
+      THIS->ind = -1;
       pop_n_elems(args);
-      if (THIS->cur->next) {
+      if (parent->head->next) {
 	push_int(1);
+      } else {
+	push_undefined();
+      }
+    }
+
+    /*! @decl protected mixed _iterator_next()
+     *!
+     *!   Advance to the next element in the list.
+     *!
+     *! @returns
+     *!   Returns the new element on success, and @[UNDEFINED]
+     *!   at the end of the list.
+     *!
+     *! @seealso
+     *!   @[prev()]
+     */
+    PIKEFUN mixed _iterator_next()
+      flags ID_PROTECTED;
+    {
+      struct pike_list_node *next;
+      if (!THIS->cur) {
+	add_ref(THIS->cur = next = List__get_iterator_find_parent()->head);
+	THIS->ind = 0;
+      } else if ((next = THIS->cur->next)) {
+	free_list_node(THIS->cur);
+	add_ref(THIS->cur = next);
+	THIS->ind++;
+      } else {
+	/* We are at the tail sentinel. */
+	next = TAIL_TO_LIST(THIS->cur)->head;
+	free_list_node(THIS->cur);
+	add_ref(THIS->cur = next);
+	THIS->ind = 0;
+      }
+      if (next->next) {
+	push_svalue(&next->val);
       } else {
 	push_undefined();
       }
@@ -5286,16 +7447,24 @@ PIKECLASS List
      *! @seealso
      *!   @[prev()]
      */
-    PIKEFUN int(0..1) next()
+    PIKEFUN int(0..1) next()		/* Compat. */
     {
       struct pike_list_node *next;
-      if ((next = THIS->cur->next)) {
+      if (!THIS->cur) {
+	add_ref(THIS->cur = next = List__get_iterator_find_parent()->head);
+	THIS->ind = 0;
+      } else if ((next = THIS->cur->next)) {
 	free_list_node(THIS->cur);
 	add_ref(THIS->cur = next);
 	THIS->ind++;
-        if (next->next)
-          RETURN 1;
       }
+      if (THIS->cur->next) {
+	RETURN 1;
+      }
+      /* End sentinel. */
+      free_list_node(THIS->cur);
+      THIS->cur = NULL;
+      THIS->ind = -1;
       RETURN 0;
     }
 
@@ -5437,6 +7606,29 @@ PIKECLASS List
   }
   /*! @endclass
    */
+
+  PIKEFUN int(1bit) _equal(mixed other)
+  {
+    struct List_struct *other_list;
+    struct pike_list_node *n1, *n2;
+    if ((TYPEOF(*other) != PIKE_T_OBJECT) ||
+	!(other_list = get_storage(other->u.object, List_program)) ||
+	(THIS->num_elems != other_list->num_elems)) {
+      push_int(0);
+      return;
+    }
+    n1 = THIS->head;
+    n2 = other_list->head;
+    while (n1->next && n2->next) {
+      if (!is_equal(&n1->val, &n2->val)) {
+	push_int(0);
+	return;
+      }
+      n1 = n1->next;
+      n2 = n2->next;
+    }
+    push_int(1);
+  }
 }
 /*! @endclass
  */
@@ -5496,6 +7688,9 @@ PIKECLASS Stack
    *! from the top. If no value is given the top element is
    *! popped and returned. All popped entries are freed from
    *! the stack.
+   *!
+   *! @seealso
+   *!   @[quick_pop()], @[pop_to()]
    */
   PIKEFUN mixed pop(void|int val)
   {
@@ -5516,6 +7711,7 @@ PIKECLASS Stack
       THIS->arr->size = new_size;
       Pike_sp++;
 
+      /* NB: +1 to skip freeing the returned element. */
       free_svalues(ITEM(THIS->arr) + new_size + 1, old_size - (new_size + 1),
 		   THIS->arr->type_field);
     } else {
@@ -5530,11 +7726,55 @@ PIKECLASS Stack
    *! Pops @[val] entries from the stack, or one entry
    *! if no value is given. The popped entries are not
    *! returned.
+   *!
+   *! @seealso
+   *!   @[pop()], @[pop_to()]
    */
   PIKEFUN void quick_pop(void|int val)
   {
     apply_current(f_Stack_pop_fun_num, args);
     push_int(0);
+  }
+
+  /*! @decl void pop_to(int depth)
+   *!
+   *! Pops entries from the stack until it reaches the specified depth.
+   *!
+   *! The popped entries are not returned.
+   *!
+   *! @throws
+   *!   Throws an error if there are fewer than @[depth] elements
+   *!   on the stack.
+   *!
+   *! @seealso
+   *!   @[pop()], @[quick_pop()]
+   */
+  PIKEFUN void pop_to(int depth)
+  {
+    ptrdiff_t old_size;
+
+    if (!THIS->arr) {
+      if (!depth) return;
+      Pike_error("Stack underflow.\n");
+    }
+
+    if ((depth < 0) || (THIS->arr->size < depth)) {
+      Pike_error("Stack underflow.\n");
+    }
+
+    old_size = THIS->arr->size;
+    if (old_size == depth) return;	/* NOOP */
+
+    if (!depth) {			/* Pop all. */
+      free_array(THIS->arr);
+      THIS->arr = NULL;
+      return;
+    }
+
+    THIS->arr->size = depth;
+
+    free_svalues(ITEM(THIS->arr) + depth, old_size - depth,
+		 THIS->arr->type_field);
   }
 
   /*! @decl void reset(int|void initial_size)
@@ -5677,7 +7917,7 @@ PIKECLASS Stack
     }
   }
 
-  PIKEFUN string _sprintf(int t)
+  PIKEFUN string|zero _sprintf(int t)
     flags ID_PROTECTED;
   {
     if (t != '0') {
@@ -5779,7 +8019,9 @@ static void get_val_module(void)
     return res.u.object;						\
   }
 
+#undef true
 GET_VAL (true)
+#undef false
 GET_VAL (false)
 GET_VAL (null)
 
@@ -5822,39 +8064,14 @@ PIKECLASS pike_trampoline
     }
   }
 
-  static void gc_check_frame(struct pike_frame *f)
-  {
-    if(f->flags & PIKE_FRAME_MALLOCED_LOCALS)
-    {
-      if(f->current_object)
-	debug_gc_check (f->current_object, " as current_object in trampoline frame");
-      if(f->current_program)
-	debug_gc_check (f->current_program, " as current_program in trampoline frame");
-      debug_gc_check_svalues (f->locals, f->num_locals, " in locals of trampoline frame");
-      if(f->scope && !debug_gc_check (f->scope, " as scope frame of trampoline frame"))
-	gc_check_frame(f->scope);
-    }
-  }
-
   GC_CHECK
   {
-    if (THIS->trampoline.frame &&
-	!debug_gc_check(THIS->trampoline.frame, " as trampoline frame"))
-      gc_check_frame(THIS->trampoline.frame);
-  }
-
-  static void gc_recurse_frame(struct pike_frame *f)
-  {
-    if(f->current_object) gc_recurse_object(f->current_object);
-    if(f->current_program) gc_recurse_program(f->current_program);
-    if(f->flags & PIKE_FRAME_MALLOCED_LOCALS)
-      gc_recurse_svalues(f->locals,f->num_locals);
-    if(f->scope)          gc_recurse_frame(f->scope);
+    gc_check_frame(THIS->trampoline.frame, " as trampoline frame");
   }
 
   GC_RECURSE
   {
-    if (THIS->trampoline.frame) gc_recurse_frame(THIS->trampoline.frame);
+    gc_recurse_frame(THIS->trampoline.frame);
   }
 
   PIKEFUN void `()(mixed ... ignored)
@@ -5872,7 +8089,7 @@ PIKECLASS pike_trampoline
     }
   }
 
-  PIKEFUN string _sprintf(int c, mapping|void opts)
+  PIKEFUN string|zero _sprintf(int c, mapping|void opts)
   {
     struct byte_buffer buf = BUFFER_INIT();
 
@@ -5905,6 +8122,7 @@ void init_builtin(void)
 void exit_builtin(void)
 {
   struct svalue zero;
+  if (proxy_lookup) free_mapping(proxy_lookup);
   if (val_module) free_object (val_module);
   EXIT;
   SET_SVAL(zero, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
@@ -5923,7 +8141,7 @@ void exit_builtin(void)
   if (env_allocs) free_mapping (env_allocs);
 #endif
 #ifdef __NT__
-  if (crypto_handle) CloseHandle(crypto_handle);
+  if (crypto_handle) CryptReleaseContext(crypto_handle, 0);
 #else
   if (random_fd!=-1) close(random_fd);
 #endif

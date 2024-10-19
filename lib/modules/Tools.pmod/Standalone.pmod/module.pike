@@ -358,7 +358,7 @@ int main(int argc, array(string) argv)
 	    rm(fix("$src/aclocal.m4"));
 	  }
 	  write("** Running autoconf (with extra compat macros)\n");
-	  string data = Process.popen("autoconf --version");
+	  string data = Process.run(({"autoconf", "--version"}))->stdout;
 	  data = (data/"\n")[0];
 	  float v;
 	  sscanf(data, "%*s%f", v);

@@ -46,12 +46,15 @@ struct replace_many_context
   int flags;
 };
 
+struct Pike_interpreter_struct;
+
 PMOD_EXPORT struct object *get_val_true(void);
 PMOD_EXPORT struct object *get_val_false(void);
 PMOD_EXPORT struct object *get_val_null(void);
 PMOD_EXPORT struct program *get_sql_null_prog(void);
 
 PMOD_EXPORT void f_equal(INT32 args);
+PMOD_EXPORT void f_hash( INT32 args );
 PMOD_EXPORT void f_copy_value(INT32 args);
 PMOD_EXPORT void f_lower_case(INT32 args);
 PMOD_EXPORT void f_upper_case(INT32 args);
@@ -69,6 +72,7 @@ PMOD_EXPORT void f_string_to_unicode(INT32 args);
 PMOD_EXPORT void f_unicode_to_string(INT32 args);
 PMOD_EXPORT void f_string_to_utf8(INT32 args);
 PMOD_EXPORT void f_utf8_to_string(INT32 args);
+PMOD_EXPORT void f_validate_utf8(INT32 args);
 void f___get_first_arg_type(INT32 args);
 PMOD_EXPORT void f_all_constants(INT32 args);
 PMOD_EXPORT void f_allocate(INT32 args);
@@ -141,6 +145,11 @@ PMOD_EXPORT void f__memory_usage(INT32 args);
 PMOD_EXPORT void f__typeof(INT32 args);
 PMOD_EXPORT void f_replace_master(INT32 args);
 PMOD_EXPORT void f_master(INT32 args);
+#ifdef CPU_TIME_MIGHT_BE_THREAD_LOCAL
+extern void thread_gethrvtime(struct thread_state * ts, INT32 args);
+#else
+extern void thread_gethrvtime(INT32 args);
+#endif
 PMOD_EXPORT void f_gethrvtime(INT32 args);
 PMOD_EXPORT void f_gethrtime(INT32 args);
 PMOD_EXPORT void f_object_variablep(INT32 args);
@@ -165,9 +174,12 @@ unsigned int rec_size_svalue( struct svalue *s, struct mapping **m );
 
 /* From iterators.cmod. */
 PMOD_EXPORT void f_get_iterator(INT32 args);
-int foreach_iterate(struct object *o, int do_step);
+int foreach_iterate(struct object *o);
 
 /* From builtin.cmod. */
+extern struct program *Future_program;
+extern struct program *Promise_program;
+
 PMOD_EXPORT void f_cq__describe_program(INT32 args);
 PMOD_EXPORT void f_basetype(INT32 args);
 PMOD_EXPORT void f_int2char(INT32 args);
@@ -187,12 +199,18 @@ PMOD_EXPORT void f_string_trim(INT32 args);
 PMOD_EXPORT void f_program_implements(INT32 args);
 PMOD_EXPORT void f_program_inherits(INT32 args);
 PMOD_EXPORT void f_program_defined(INT32 args);
+PMOD_EXPORT struct program *proxy_factory(struct program *p,
+					  const char *var_name,
+					  int program_id);
 PMOD_EXPORT void f_string_width(INT32 args);
 PMOD_EXPORT void f_m_delete(INT32 args);
 PMOD_EXPORT void f_get_weak_flag(INT32 args);
 PMOD_EXPORT void f_function_name(INT32 args);
 PMOD_EXPORT void f_function_object(INT32 args);
 PMOD_EXPORT void f_function_program(INT32 args);
+PMOD_EXPORT void inhibit_destruct(int inh);
+PMOD_EXPORT void permit_destruct(int inh);
+void low_backtrace(struct Pike_interpreter_struct *, int flags);
 PMOD_EXPORT void f_backtrace(INT32 args);
 
 struct pike_list_node

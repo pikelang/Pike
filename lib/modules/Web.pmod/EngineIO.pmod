@@ -151,7 +151,8 @@ private Regexp xxsua = Regexp(";MSIE|Trident/");
 //!
 //! @seealso
 //!  @[Socket.create()]
-final Socket farm(object createtype, Protocols.WebSocket.Request req,
+final object(Socket)|zero farm(program(Socket) createtype,
+                               Protocols.WebSocket.Request req,
  void|mapping(string:mixed) options) {
   string sid;
   PD("Request %O\n", req.query);
@@ -900,8 +901,8 @@ class Socket {
     }
   }
 
-  private string _sprintf(int type, void|mapping flags) {
-    string res=UNDEFINED;
+  protected string _sprintf(int type, void|mapping flags) {
+    void|string res=UNDEFINED;
     switch (type) {
       case 'O':
         res = sprintf(DRIVERNAME"(%s.%d,%s,%d,%d,%d)",

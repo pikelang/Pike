@@ -14,8 +14,6 @@ int quiet=1, report_failed=0, recursive=0, update=0, nt_install=0;
 string target_dir = 0;
 string update_stamp = 0;
 
-program p; /* program being dumped */
-
 #ifdef PIKE_FAKEROOT
 string fakeroot(string s)
 {
@@ -25,7 +23,7 @@ string fakeroot(string s)
 #define fakeroot(X) X
 #endif
 
-object progress_bar;
+object|zero progress_bar;
 
 array(int) debug_level = ({});
 
@@ -48,7 +46,7 @@ class GTKProgress {
   GTK.Window win;
   GTK.Frame frame;
 
-  void create() {
+  protected void create() {
     GTK.setup_gtk();
     win = GTK.Window(GTK.WINDOW_TOPLEVEL);
     win->set_title(version() + " Module Dumping")
@@ -60,10 +58,10 @@ class GTKProgress {
 #endif
 }
 
-Stdio.File logfile = Stdio.stderr;
+object(Stdio.File)|zero logfile = Stdio.stderr;
 
 int padline = 0;
-string next_file = 0;
+string|zero next_file = 0;
 
 void logstart (int one_line)
 {
@@ -203,6 +201,7 @@ do_dump: {
       break do_dump;
     }
 
+    program p; /* program being dumped */
     mixed err;
     if(!(err = catch {
 	// Kludge: Resolve the module through master()->resolv since

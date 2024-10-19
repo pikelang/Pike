@@ -7,3 +7,5 @@
 //! 448 bits. It has some weak keys.
 
 inherit Nettle.BLOWFISH;
+
+@Pike.Annotations.Implements(Crypto.BlockCipher);

@@ -70,6 +70,7 @@ struct substring_pike_string {
 #define STRING_IS_UPPERCASE        32
 
 #define STRING_IS_LOCKED	   64	/* The str field MUST NOT be reallocated. */
+#define STRING_CONVERT_SURROGATES 128	/* Convert surrogates when done. */
 
 #define STRING_CHECKED_MASK (STRING_IS_UPPERCASE|STRING_IS_LOWERCASE|STRING_CONTENT_CHECKED)
 
@@ -303,6 +304,8 @@ PMOD_EXPORT struct pike_string * debug_make_shared_pcharp(const PCHARP str);
 PMOD_EXPORT struct pike_string * debug_make_shared_binary_string0(const p_wchar0 *str,size_t len);
 PMOD_EXPORT struct pike_string * debug_make_shared_binary_string1(const p_wchar1 *str,size_t len);
 PMOD_EXPORT struct pike_string * debug_make_shared_binary_string2(const p_wchar2 *str,size_t len);
+PMOD_EXPORT struct pike_string * make_shared_wide_string(const void *str, size_t len,
+                                                         enum size_shift shift);
 PMOD_EXPORT struct pike_string * make_shared_static_string(const char *str, size_t len, enum size_shift);
 PMOD_EXPORT struct pike_string * make_shared_malloc_string(char *str, size_t len, enum size_shift);
 PMOD_EXPORT struct pike_string *debug_make_shared_string(const char *str);
@@ -350,6 +353,10 @@ struct pike_string *new_realloc_shared_string(struct pike_string *a, INT32 size,
 struct pike_string *modify_shared_string(struct pike_string *a,
                                          INT32 position,
                                          INT32 c);
+#ifdef __NT__
+PMOD_EXPORT p_wchar1 *pike_string_to_utf16(struct pike_string *s,
+                                           unsigned int flags);
+#endif
 void update_flags_for_add( struct pike_string *a, const struct pike_string *b);
 PMOD_EXPORT struct pike_string *add_shared_strings(const struct pike_string *a,
                                                    const struct pike_string *b);
@@ -373,6 +380,7 @@ PMOD_EXPORT void visit_string (struct pike_string *s, int action, void *extra);
 void gc_mark_string_as_referenced (struct pike_string *s);
 unsigned gc_touch_all_strings(void);
 void gc_mark_all_strings(void);
+PMOD_EXPORT struct pike_string *first_pike_string ();
 PMOD_EXPORT struct pike_string *next_pike_string (const struct pike_string *s);
 PMOD_EXPORT PCHARP MEMCHR_PCHARP(const PCHARP ptr, int chr, ptrdiff_t len);
 PMOD_EXPORT long STRTOL_PCHARP(PCHARP str, PCHARP *ptr, int base);
@@ -395,6 +403,9 @@ PMOD_EXPORT int pcharp_to_svalue_inumber(struct svalue *r,
 					 ptrdiff_t maxlength);
 PMOD_EXPORT int convert_stack_top_string_to_inumber(int base);
 PMOD_EXPORT double STRTOD_PCHARP(const PCHARP nptr, PCHARP *endptr);
+#if SIZEOF_FLOAT_TYPE > SIZEOF_DOUBLE
+PMOD_EXPORT long double STRTOLD_PCHARP(const PCHARP nptr, PCHARP *endptr);
+#endif
 PMOD_EXPORT p_wchar0 *require_wstring0(const struct pike_string *s,
                                        char **to_free);
 PMOD_EXPORT p_wchar1 *require_wstring1(const struct pike_string *s,
@@ -546,5 +557,12 @@ static inline enum size_shift PIKE_UNUSED_ATTRIBUTE min_magnitude(const unsigned
 #define WIDE_ISIDCHAR(C) wide_isidchar(C)
 #define WIDE_ISALNUM(C)	(((C) < 256)?isidchar(C):0)
 #define WIDE_ISDIGIT(C)	((C)>='0' && (C)<='9')
+
+#ifdef DYNAMIC_MODULE
+/* Protect against strings keeping references to data in unloaded
+ * dynamic modules.
+ */
+#define make_shared_static_string	make_shared_wide_string
+#endif
 
 #endif /* STRALLOC_H */

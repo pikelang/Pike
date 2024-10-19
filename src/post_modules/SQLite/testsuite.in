@@ -5,11 +5,11 @@ cond_resolv( SQLite.SQLite, [[
   test_do( rm("testdb"); )
   test_do( add_constant("db", Sql.sqlite("testdb")); )
 
-  test_eq( db->master_sql->changes(), 0 )
-  test_eq( db->master_sql->total_changes(), 0 )
-  test_do( db->master_sql->interrupt() )
   test_true( stringp(db->server_info()); )
-  test_eq( db->master_sql->insert_id(), 0 )
+  test_eq( db->changes(), 0 )
+  test_eq( db->total_changes(), 0 )
+  test_do( db->interrupt() )
+  test_eq( db->insert_id(), 0 )
   test_eq( db->error(), "not an error" )
   test_eval_error( db->select_db() )
   test_eval_error( db->create_db() )
@@ -71,6 +71,47 @@ cond_resolv( SQLite.SQLite, [[
     return db->big_query("INSERT INTO test (aa,dd) VALUES (:1,:2)", ([ 1:16, 2:(<"cd\0e">) ]))->fetch_row();
   ]], 0)
   test_equal( db->big_query("SELECT dd FROM test WHERE aa=16")->fetch_row(), ({ "cd\0e" }))
+
+  dnl Bug #10160
+  dnl NB: Support for the syntax was added in sqlite 3.3.0 alpha.
+  dnl     cf https://www.sqlite.org/draft/changes.html 2006-01-11:2
+  test_eq( db->big_query("CREATE TABLE " +
+    ((SQLite.library_version_number() >= 3003000)?"IF NOT EXISTS":"") +
+   #" files (
+      FileID INTEGER PRIMARY KEY,
+      FileName TEXT
+    )")->fetch_row();, 0 )
+  test_any([[
+    return db->big_query("INSERT INTO files (FileName) VALUES('backup3')")->fetch_row();
+  ]], 0)
+  test_any([[
+    return db->big_query("INSERT INTO files (FileName) VALUES(:fn)", ([":fn":"backup2"]))->fetch_row();
+  ]], 0)
+  test_any([[
+    return db->big_query("INSERT INTO files (FileName) VALUES(%s)", "backup1")->fetch_row();
+  ]], 0)
+  test_any([[
+    return db->big_typed_query("INSERT INTO files (FileName) VALUES('backup6')")->fetch_row();
+  ]], 0)
+  test_any([[
+    return db->big_typed_query("INSERT INTO files (FileName) VALUES(:fn)", ([":fn":"backup5"]))->fetch_row();
+  ]], 0)
+  test_any([[
+    return db->big_typed_query("INSERT INTO files (FileName) VALUES(%s)", "backup4")->fetch_row();
+  ]], 0)
+  test_any([[
+    return db->query("INSERT INTO files (FileName) VALUES('backup9')");
+  ]], 0)
+  test_any([[
+    return db->query("INSERT INTO files (FileName) VALUES(:fn)", ([":fn":"backup8"]));
+  ]], 0)
+  test_any_equal([[
+    return db->query("INSERT INTO files (FileName) VALUES(%s)", "backup7");
+  ]], 0)
+  test_equal(db->query("SELECT FileName FROM files ORDER BY FileName ASC")->FileName,
+             ({ "backup1", "backup2", "backup3",
+                "backup4", "backup5", "backup6",
+                "backup7", "backup8", "backup9" }))
 
   test_do( add_constant("db"); )
   test_do( rm("testdb"); )

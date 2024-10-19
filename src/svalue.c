@@ -493,12 +493,18 @@ PMOD_EXPORT size_t hash_svalue(const struct svalue *s)
             UINT64 i;
 #elif SIZEOF_FLOAT_TYPE == 4
 	    unsigned INT32 i;
+#elif SIZEOF_FLOAT_TYPE == 16
+            UINT64 i[2];
 #else
 #error Size of FLOAT_TYPE not supported.
 #endif
 	} ufloat;
 	ufloat.f = s->u.float_number;
+#if SIZEOF_FLOAT_TYPE == 16
+	q = (size_t)(ufloat.i[0] ^ ufloat.i[1]);
+#else
 	q = (size_t)ufloat.i;
+#endif
 	break;
     }
 #endif
@@ -684,7 +690,8 @@ PMOD_EXPORT int is_identical(const struct svalue *a, const struct svalue *b)
 
   default:
     Pike_fatal("Unknown type %x\n", TYPEOF(*a));
-    UNREACHABLE(return 0);
+    UNREACHABLE();
+    break;
   }
 
 }
@@ -843,7 +850,8 @@ PMOD_EXPORT int is_eq(const struct svalue *a, const struct svalue *b)
 #ifdef PIKE_DEBUG
     Pike_fatal("Unknown type %x\n", TYPEOF(*a));
 #endif
-    UNREACHABLE(return 0);
+    UNREACHABLE();
+    break;
   }
 }
 
@@ -911,6 +919,7 @@ PMOD_EXPORT int low_is_equal(const struct svalue *a,
    * program_from_svalue() supports are fine.
    */
   if ((TYPEOF(*a) != T_OBJECT) && (TYPEOF(*b) != T_OBJECT) &&
+      (TYPEOF(*a) != T_ARRAY) && (TYPEOF(*b) != T_ARRAY) &&
       (p = program_from_svalue(a)) && (p == program_from_svalue(b))) {
     return 1;
   }
@@ -932,7 +941,6 @@ PMOD_EXPORT int low_is_equal(const struct svalue *a,
 	 */
 	struct object *a_obj = NULL, *b_obj = NULL;
 	int a_fun = SUBTYPEOF(*a), b_fun = SUBTYPEOF(*b);
-	struct identifier *a_id, *b_id;
 	if ((a_fun == FUNCTION_BUILTIN) || (b_fun == FUNCTION_BUILTIN)) {
 	  /* NB: Handled by is_eq() above. */
 	  return 0;
@@ -962,8 +970,8 @@ PMOD_EXPORT int low_is_equal(const struct svalue *a,
       }
 
     case T_TYPE:
-      return pike_types_le(a->u.type, b->u.type) &&
-	pike_types_le(b->u.type, a->u.type);
+      return pike_types_le(a->u.type, b->u.type, 0, 0) &&
+	pike_types_le(b->u.type, a->u.type, 0, 0);
 
     case T_OBJECT:
       return object_equal_p(a->u.object, b->u.object, proc);
@@ -1215,8 +1223,8 @@ static int complex_is_lt( const struct svalue *a, const struct svalue *b )
     /* fall through */
 
     case T_TYPE:
-      return pike_types_le(a->u.type, b->u.type) &&
-	!pike_types_le(b->u.type, a->u.type);
+      return pike_types_le(a->u.type, b->u.type, 0, 0) &&
+	!pike_types_le(b->u.type, a->u.type, 0, 0);
   }
 }
 
@@ -1266,7 +1274,7 @@ PMOD_EXPORT int is_le(const struct svalue *a, const struct svalue *b)
       }
     }
 
-    res = pike_types_le(a_type, b_type);
+    res = pike_types_le(a_type, b_type, 0, 0);
     free_type(a_type);
     free_type(b_type);
     return res;
@@ -1340,6 +1348,11 @@ PMOD_EXPORT void describe_svalue(struct byte_buffer *buf, const struct svalue *s
    * the raw error can be printed in exit_on_error. */
   check_c_stack(250);
 
+  if (!s) {
+    buffer_add_str(buf, "NULL");
+    return;
+  }
+
   check_svalue_type (s);
   check_refs(s);
 
@@ -1371,10 +1384,12 @@ PMOD_EXPORT void describe_svalue(struct byte_buffer *buf, const struct svalue *s
 	for(i=0; i < len; i++)
         {
 	  p_wchar2 j;
-          /* the longest possible escape sequence are unicode escapes, which are
-           * 8 byte hex plus \U
+          /* The longest possible escape sequences are unicode escapes,
+	   * which are \U plus 8 byte hex.
+	   * Note that due to the use of sprintf(3C) we also need
+	   * space for the terminating NUL.
            */
-          buffer_ensure_space(buf, 10);
+          buffer_ensure_space(buf, 11);
 	  switch(j = index_shared_string(str,i))
           {
 	  case '\n':
@@ -1815,6 +1830,26 @@ PMOD_EXPORT void describe_svalue(struct byte_buffer *buf, const struct svalue *s
       describe_mapping(buf, s->u.mapping, p, indent);
       break;
 
+    case T_VOID:
+      buffer_add_str(buf, "<void>");
+      break;
+
+    case PIKE_T_FREE:
+      buffer_add_str(buf, "<free>");
+      break;
+
+    case PIKE_T_UNKNOWN:
+      buffer_add_str(buf, "<unknown>");
+      break;
+
+    case T_SVALUE_PTR:
+      buffer_advance(buf, sprintf(buffer_ensure_space(buf, 50), "<Svalue %p>", s->u.lval));
+      break;
+
+    case PIKE_T_ARRAY_LVALUE:
+      buffer_add_str(buf, "<Array lvalue>");
+      break;
+
     default:
       buffer_advance(buf, sprintf(buffer_ensure_space(buf, 50), "<Unknown %d>", TYPEOF(*s)));
       break;
@@ -1925,6 +1960,24 @@ PMOD_EXPORT void safe_print_short_svalue_compact (FILE *out, const union anythin
   no_pike_calls--;
 }
 
+PMOD_EXPORT void pike_vfprintf (FILE *out, const char *fmt, va_list args)
+{
+  struct string_builder s;
+  init_string_builder (&s, 0);
+  string_builder_vsprintf (&s, fmt, args);
+  /* FIXME: Handle wide strings. */
+  fwrite(s.s->str, s.s->len, 1, out);
+  free_string_builder (&s);
+}
+
+PMOD_EXPORT void pike_fprintf (FILE *out, const char *fmt, ...)
+{
+  va_list args;
+  va_start (args, fmt);
+  pike_vfprintf (out, fmt, args);
+  va_end (args);
+}
+
 #ifdef PIKE_DEBUG
 /* These are only defined in debug mode since no_pike_calls ought to
  * be controlled with a flag per format spec instead. When that's
@@ -1932,14 +1985,9 @@ PMOD_EXPORT void safe_print_short_svalue_compact (FILE *out, const union anythin
 
 PMOD_EXPORT void safe_pike_vfprintf (FILE *out, const char *fmt, va_list args)
 {
-  struct string_builder s;
-  init_string_builder (&s, 0);
   no_pike_calls++;
-  string_builder_vsprintf (&s, fmt, args);
+  pike_vfprintf(out, fmt, args);
   no_pike_calls--;
-  low_set_index (s.s, s.s->len, 0);
-  fputs (s.s->str, out);
-  free_string_builder (&s);
 }
 
 PMOD_EXPORT void safe_pike_fprintf (FILE *out, const char *fmt, ...)
@@ -2409,6 +2457,11 @@ PMOD_EXPORT TYPE_FIELD real_gc_mark_svalues(struct svalue *s, size_t num)
 		      DO_MARK_FUNC_SVALUE, GC_DO_MARK,
 		      DO_MARK_STRING, GC_DO_MARK, continue);
     t |= BITOF(*s);
+    if (!(t & BIT_INT) && (TYPEOF(*s) == PIKE_T_OBJECT) &&
+	(s->u.object->prog == bignum_program)) {
+      /* Lie, and claim that the array contains integers too. */
+      t |= BIT_INT;
+    }
   }
   return freed ? t : 0;
 }
@@ -2426,6 +2479,11 @@ TYPE_FIELD gc_mark_weak_svalues(struct svalue *s, size_t num)
 		      DO_MARK_FUNC_SVALUE, DO_MARK_OBJ_WEAK,
 		      DO_MARK_STRING, GC_DO_MARK, continue);
     t |= BITOF(*s);
+    if (!(t & BIT_INT) && (TYPEOF(*s) == PIKE_T_OBJECT) &&
+	(s->u.object->prog == bignum_program)) {
+      /* Lie, and claim that the array contains integers too. */
+      t |= BIT_INT;
+    }
   }
   return freed ? t : 0;
 }
@@ -2505,6 +2563,11 @@ PMOD_EXPORT TYPE_FIELD real_gc_cycle_check_svalues(struct svalue *s, size_t num)
 		      DO_CYCLE_CHECK_FUNC_SVALUE, DO_CYCLE_CHECK,
 		      DONT_CYCLE_CHECK_STRING, DONT_CYCLE_CHECK, continue);
     t |= BITOF(*s);
+    if (!(t & BIT_INT) && (TYPEOF(*s) == PIKE_T_OBJECT) &&
+	(s->u.object->prog == bignum_program)) {
+      /* Lie, and claim that the array contains integers too. */
+      t |= BIT_INT;
+    }
   }
   return freed ? t : 0;
 }
@@ -2522,6 +2585,11 @@ TYPE_FIELD gc_cycle_check_weak_svalues(struct svalue *s, size_t num)
 		      DO_CYCLE_CHECK_FUNC_SVALUE, DO_CYCLE_CHECK_WEAK,
 		      DONT_CYCLE_CHECK_STRING, DONT_CYCLE_CHECK, continue);
     t |= BITOF(*s);
+    if (!(t & BIT_INT) && (TYPEOF(*s) == PIKE_T_OBJECT) &&
+	(s->u.object->prog == bignum_program)) {
+      /* Lie, and claim that the array contains integers too. */
+      t |= BIT_INT;
+    }
   }
   return freed ? t : 0;
 }

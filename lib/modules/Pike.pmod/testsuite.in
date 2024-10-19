@@ -5,7 +5,26 @@ dnl test_any(return __get_return_type(__low_check_call(typeof(`+), typeof((["":1
 dnl `+((["":14]), "") is invalid ==> 0.
 dnl test_false(__get_return_type(__low_check_call(__low_check_call(typeof(`+), typeof((["":14]))), typeof(""))))
 // typeof(`+((["":14]), "", master())) == mixed.
-test_any(return __get_return_type(__low_check_call(__low_check_call(__low_check_call(typeof(`+), typeof((["":14]))), typeof("")), typeof(master()))),
-	 __get_first_arg_type(typeof(predef::intp)))
+test_any_equal([[
+    mixed funt = typeof(`+);
+    int argno;
+    foreach(({ typeof((["":14])), typeof(master()), typeof("")}), mixed argt) {
+      argno++;
+      mixed stept = __low_check_call(funt, argt);
+      if (!stept) {
+	werror("Invalid argument %d.\n"
+               "Function type: %O\n"
+	       "Argument type: %O\n",
+	       argno, funt, argt);
+	return UNDEFINED;
+      }
+      funt = stept;
+    }
+
+    return __get_return_type(funt);
+  ]],
+  typeof((mixed|void)0))
+test_equal(__get_first_arg_type(typeof(predef::intp)),
+	   typeof((mixed)0))
 
 END_MARKER

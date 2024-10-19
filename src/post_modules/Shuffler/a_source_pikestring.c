@@ -20,77 +20,63 @@ struct ps_source
 {
   struct source s;
 
-  struct pike_string *str;
-  int offset, len;
+  struct pike_string*str;
+  char *data;
+  size_t len;
 };
 
-static struct data get_data( struct source *src, off_t len )
+static struct data get_data( struct source *src, off_t PIKE_UNUSED(len) )
 {
   struct ps_source *s = (struct ps_source *)src;
   struct data res;
 
-  res.do_free = 0;
-  res.off = 0;
-  res.data = s->str->str + s->offset;
-
-  if( len > s->len )
-  {
-    len = s->len;
-    s->s.eof = 1; /* next read will be done from the next source */
-  }
-
-  res.len = len;
-
-  s->len -= len;
-  s->offset += len;
+  s->s.eof = 1; /* next read will be done from the next source */
+  res.data = s->data;
+  res.len = s->len; /* ignore len parameter and deliver what we have */
 
   return res;
 }
 
 static void free_source( struct source *src )
 {
-  free_string(((struct ps_source *)src)->str);
+  struct ps_source *s = (struct ps_source *)src;
+  if (s->str)
+    free_string(s->str);
+  debug_malloc_touch(s);
+  free(s);
 }
 
 struct source *source_pikestring_make( struct svalue *s,
 				       INT64 start, INT64 len )
 {
   struct ps_source *res;
+  INT64 slen;
 
-  if( TYPEOF(*s) != PIKE_T_STRING )   return 0;
-  if( s->u.string->size_shift )    return 0;
+  if (TYPEOF(*s) != PIKE_T_STRING
+   || s->u.string->size_shift)
+    return 0;
 
-  res = calloc( 1, sizeof( struct ps_source ) );
-  if( !res ) return NULL;
-  debug_malloc_touch( res );
-  debug_malloc_touch( s );
+  if (!(res = calloc(1, sizeof(struct ps_source))))
+    return 0;
+
+  debug_malloc_touch(res);
 
   res->s.free_source = free_source;
   res->s.get_data = get_data;
 
   copy_shared_string(res->str, s->u.string);
-  res->offset = start;
+  slen = res->str->len;
+  if (start > slen)
+    start = slen;
+  res->data = res->str->str + start;
+  slen -= start;
 
-  if( len != -1 )
-  {
-    if( len > res->str->len-start )
-    {
-      sub_ref(res->str);
-      free(res);
-      return 0;
-    }
-    else
-      res->len = len;
-  }
-  else
-    res->len = res->str->len-start;
+  if (len < 0)
+    len = slen;
+  if (len > slen)
+    len = slen;
 
-  if( res->len <= 0 )
-  {
-    sub_ref(res->str);
-    free(res);
-    return 0;
-  }
+  res->len = len;
   return (struct source *)res;
 }
 

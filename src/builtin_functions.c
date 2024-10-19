@@ -49,11 +49,9 @@
 #ifdef HAVE_POLL
 #ifdef HAVE_POLL_H
 #include <poll.h>
-#endif /* HAVE_POLL_H */
-
-#ifdef HAVE_SYS_POLL_H
+#elif defined(HAVE_SYS_POLL_H)
 #include <sys/poll.h>
-#endif /* HAVE_SYS_POLL_H */
+#endif /* HAVE_POLL_H || HAVE_SYS_POLL_H */
 #endif /* HAVE_POLL */
 
 #ifdef HAVE_CRYPT_H
@@ -562,10 +560,10 @@ static const struct case_info case_info[] = {
   { 0x7fffffff, CIM_NONE, 0x0000, },	/* End sentinel. */
 };
 
-static struct case_info *find_ci(INT32 c)
+static const struct case_info *find_ci(INT32 c)
 {
-  static struct case_info *cache = NULL;
-  struct case_info *ci = cache;
+  static const struct case_info *cache = NULL;
+  const struct case_info *ci = cache;
   int lo = 0;
   int hi = NELEM(case_info);
 
@@ -589,13 +587,13 @@ static struct case_info *find_ci(INT32 c)
       hi = mid;
     }
   }
-  return(cache = (struct case_info *)case_info + lo);
+  return(cache = (const struct case_info *)case_info + lo);
 }
 
-static struct case_info *find_ci_shift0(INT32 c)
+static const struct case_info *find_ci_shift0(INT32 c)
 {
-  static struct case_info *cache = NULL;
-  struct case_info *ci = cache;
+  static const struct case_info *cache = NULL;
+  const struct case_info *ci = cache;
   int lo = 0;
   int hi = CASE_INFO_SHIFT0_HIGH;
 
@@ -619,14 +617,14 @@ static struct case_info *find_ci_shift0(INT32 c)
       hi = mid;
     }
   }
-  return(cache = (struct case_info *)case_info + lo);
+  return(cache = (const struct case_info *)case_info + lo);
 }
 
 #define DO_LOWER_CASE(C) do {\
     INT32 c = C; \
     if(c<0xb5){if(c >= 'A' && c <= 'Z' ) C=c+0x20; } \
     /*else if(c==0xa77d) C=0x1d79;*/ else { \
-    struct case_info *ci = find_ci(c); \
+    const struct case_info *ci = find_ci(c); \
     if (ci) { \
       switch(ci->mode) { \
       case CIM_NONE: case CIM_LOWERDELTA: case CIM_LONGLOWERDELTA: break; \
@@ -643,7 +641,7 @@ static struct case_info *find_ci_shift0(INT32 c)
 #define DO_LOWER_CASE_SHIFT0(C) do {\
     INT32 c = C; \
     if(c<0xb5){if(c >= 'A' && c <= 'Z' ) C=c+0x20;}else {\
-    struct case_info *ci = find_ci_shift0(c); \
+    const struct case_info *ci = find_ci_shift0(c); \
     if (ci) { \
       switch(ci->mode) { \
       case CIM_NONE: case CIM_LOWERDELTA: break; \
@@ -659,7 +657,7 @@ static struct case_info *find_ci_shift0(INT32 c)
     INT32 c = C; \
     if(c<0xb5){if(c >= 'a' && c <= 'z' ) C=c-0x20; } \
     /*else if(c==0x1d79) C=0xa77d;*/ else {\
-    struct case_info *ci = find_ci(c); \
+    const struct case_info *ci = find_ci(c); \
     if (ci) { \
       switch(ci->mode) { \
       case CIM_NONE: case CIM_UPPERDELTA: case CIM_LONGUPPERDELTA: break; \
@@ -676,7 +674,7 @@ static struct case_info *find_ci_shift0(INT32 c)
 #define DO_UPPER_CASE_SHIFT0(C) do {\
     INT32 c = C; \
     if(c<0xb5){if(c >= 'a' && c <= 'z' ) C=c-0x20;}else {\
-    struct case_info *ci = find_ci_shift0(c); \
+    const struct case_info *ci = find_ci_shift0(c); \
     if (ci) { \
       switch(ci->mode) { \
       case CIM_NONE: case CIM_UPPERDELTA: break; \
@@ -883,7 +881,6 @@ PMOD_EXPORT void f_upper_case(INT32 args)
  */
 static void f_random_seed(INT32 args)
 {
-  INT_TYPE i;
   pop_n_elems(args);
 }
 
@@ -1183,7 +1180,7 @@ PMOD_EXPORT void f_search(INT32 args)
 	  if (args > 2) {
 	    int fun = find_identifier("set_index", p);
 	    if (fun < 0)
-	      Pike_error ("Cannot call unknown function \"%s\".\n", fun);
+              Pike_error ("Cannot call unknown function \"set_index\".\n");
 	    apply_low(o, fun + id_level, args-2);
 	    pop_stack();
 	  }
@@ -1647,6 +1644,109 @@ PMOD_EXPORT void f_add_constant(INT32 args)
 #define AMIGAOS_COMBINE_PATH
 #include "combine_path.h"
 
+static ptrdiff_t find_last_path_separator(struct pike_string *path,
+					  p_wchar2 sep,
+					  ptrdiff_t pos)
+{
+  switch(path->size_shift) {
+  case eightbit:
+    {
+      p_wchar0 *str = STR0(path);
+      while (pos--) {
+	if (str[pos] == sep) return pos;
+      }
+    }
+    break;
+  case sixteenbit:
+    {
+      p_wchar1 *str = STR1(path);
+      while (pos--) {
+	if (str[pos] == sep) return pos;
+      }
+    }
+    break;
+  case thirtytwobit:
+    {
+      p_wchar2 *str = STR2(path);
+      while (pos--) {
+	if (str[pos] == sep) return pos;
+      }
+    }
+    break;
+  default:
+    Pike_fatal("Unsupported string width.\n");
+    break;
+  }
+  return -1;
+}
+
+/*! @decl string dirname(string path)
+ *!
+ *! Returns all but the last segment of a path. Some example inputs and
+ *! outputs:
+ *!
+ *! @xml{<matrix>
+ *! <r><c><b>Expression</b></c><c><b>Value</b></c></r>
+ *! <r><c>dirname("/a/b")</c><c>"/a"</c></r>
+ *! <r><c>dirname("/a/")</c><c>"/a"</c></r>
+ *! <r><c>dirname("/a")</c><c>"/"</c></r>
+ *! <r><c>dirname("/")</c><c>"/"</c></r>
+ *! <r><c>dirname("")</c><c>""</c></r>
+ *! </matrix>@}
+ *!
+ *! @seealso
+ *! @[basename()], @[explode_path()]
+ */
+PMOD_EXPORT void f_dirname(INT32 args)
+{
+  struct pike_string *s = NULL;
+  ptrdiff_t pos, pos2 = -1;
+
+#ifdef __NT__
+  check_all_args("dirname", args, BIT_STRING, 0);
+  push_text("\\");
+  push_text("/");
+  f_replace(3);
+#endif
+
+  get_all_args("dirname", args, "%t", &s);
+
+  pos = find_last_path_separator(s, '/', s->len);
+  if (pos < 0) {
+    ref_push_string(empty_pike_string);
+  } else if (pos) {
+    push_string(string_slice(s, 0, pos));
+  } else {
+    push_text("/");
+  }
+  stack_pop_n_elems_keep_top(args);
+}
+
+/*! @decl string basename(string path)
+ *!
+ *! Returns the last segment of a path.
+ *!
+ *! @seealso
+ *! @[dirname()], @[explode_path()]
+ */
+PMOD_EXPORT void f_basename(INT32 args)
+{
+  struct pike_string *s = NULL;
+  ptrdiff_t pos, pos2 = -1;
+
+  get_all_args("basename", args, "%t", &s);
+
+  pos = find_last_path_separator(s, '/', s->len);
+#ifdef __NT__
+  pos2 = find_last_path_separator(s, '\\', s->len);
+  if (pos2 > pos) pos = pos2;
+#endif /* __NT__ */
+  if (pos < 0) {
+    return;
+  }
+  push_string(string_slice(s, pos+1, s->len - (pos+1)));
+  stack_pop_n_elems_keep_top(args);
+}
 
 
 /*! @decl int zero_type(mixed a)
@@ -1773,7 +1873,7 @@ PMOD_EXPORT void f_string_to_unicode(INT32 args)
   ptrdiff_t i;
   unsigned INT_TYPE byteorder = 0;
 
-  get_all_args("string_to_unicode", args, "%W.%i", &in, &byteorder);
+  get_all_args("string_to_unicode", args, "%t.%i", &in, &byteorder);
 
   if (byteorder >= 2) {
     if (byteorder == 2) {
@@ -1924,7 +2024,7 @@ PMOD_EXPORT void f_unicode_to_string(INT32 args)
   int swab=0;
   p_wchar1 surr1, surr2, surrmask, *str0;
 
-  get_all_args("unicode_to_string", args, "%S.%i", &in, &byteorder);
+  get_all_args("unicode_to_string", args, "%n.%i", &in, &byteorder);
 
   if (in->len & 1) {
     bad_arg_error("unicode_to_string", args, 1, "string", Pike_sp-args,
@@ -2107,7 +2207,7 @@ static void f_string_filter_non_unicode( INT32 args )
   static const p_wchar1 replace = 0xfffd;
   static const PCHARP repl_char = {(void*)&replace,1};
 
-  get_all_args("filter_non_unicode", args, "%W", &in);
+  get_all_args("filter_non_unicode", args, "%t", &in);
   check_string_range( in, 1, &min, &max );
 
   if( !in->len || (min >= 0 && max < 0xd800) )
@@ -2184,7 +2284,7 @@ PMOD_EXPORT void f_string_to_utf8(INT32 args)
   INT32 min, max;
   unsigned char * dst;
 
-  get_all_args("string_to_utf8", args, "%W.%i", &in, &extended);
+  get_all_args("string_to_utf8", args, "%t.%i", &in, &extended);
 
   len = in->len;
 
@@ -2360,7 +2460,7 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
   INT_TYPE extended = 0;
   INT32 min, max;
 
-  get_all_args("utf8_to_string", args, "%S.%i", &in, &extended);
+  get_all_args("utf8_to_string", args, "%n.%i", &in, &extended);
 
   check_string_range(in, 1, &min, &max);
 
@@ -2412,7 +2512,7 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
 	if ((c & 0xc0) != 0x80)						\
           bad_arg_error ("utf8_to_string", args, 1,                     \
 			 NULL, Pike_sp - args,				\
-			 "Expected continuation character at index %d, " \
+                         "Expected continuation character at index %td, " \
 			 "got 0x%02x.\n",				\
 			 i, c);						\
       } while (0)
@@ -2421,7 +2521,7 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
         bad_arg_error ("utf8_to_string", args, 1,                       \
 		       NULL, Pike_sp - args,				\
 		       "UTF-8 sequence beginning with %s0x%02x "	\
-		       "at index %"PRINTPTRDIFFT"d %s.\n",		\
+                       "at index %td %s.\n",				\
 		       prefix, c, i, problem);				\
       } while (0)
 
@@ -2674,8 +2774,8 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
   push_string(out);
 }
 
-/*! @decl string validate_utf8(utf8_string s)
- *! @decl string validate_utf8(utf8_string s, int extended)
+/*! @decl int(0..1) validate_utf8(utf8_string s)
+ *! @decl int(0..1) validate_utf8(utf8_string s, int extended)
  *!
  *!   Checks whether a string is a valid UTF-8 byte-stream.
  *!
@@ -2830,6 +2930,63 @@ PMOD_EXPORT void f_validate_utf8(INT32 args)
   push_int(ret);
 }
 
+/*! @decl int(0..1) deprecated_typep(type t)
+ *!
+ *!   Checks if the supplied type has the "deprecated" attribute. This would
+ *!   generally only be true in static types of identifiers that have been
+ *!   marked as __deprecated__.
+ *!
+ *! @returns
+ *!   @expr{1@} if the type has the "deprecated" attribute,
+ *!   @expr{0@} otherwise.
+ */
+PMOD_EXPORT void f_deprecated_typep(INT32 args)
+{
+  int ret;
+
+  if (!args || TYPEOF(Pike_sp[-1]) != PIKE_T_TYPE)
+    SIMPLE_ARG_TYPE_ERROR("deprecated_typep", 1, "type");
+
+  ret = deprecated_typep(Pike_sp[-1].u.type);
+  pop_n_elems(args);
+  push_int(ret);
+}
+
+/*! @decl type|zero typeof_identifier(program p, string identifier)
+ *!
+ *!   Allows access to the static type of an identifier ("member") in a
+ *!   program.
+ *!
+ *! @returns
+ *!   The static type of @expr{p->identifier@}, or @expr{UNDEFINED@}
+ *!   if it can not be determined, be it because @expr{identifier@} does not
+ *!   exist in @expr{p@} or for other reasons.
+ */
+PMOD_EXPORT void f_typeof_identifier(INT32 args)
+{
+    struct program *prog;
+    struct pike_string *identifier;
+    int identifier_int;
+
+    get_all_args("typeof_identifier", args, "%p%t", &prog, &identifier);
+
+    identifier_int = find_shared_string_identifier(identifier, prog);
+
+    if (identifier_int != -1)
+    {
+      struct pike_type *ret;
+
+      copy_pike_type(ret, ID_FROM_INT(prog, identifier_int)->type);
+      pop_n_elems(args);
+      push_type_value(ret);
+    }
+    else
+    {
+      pop_n_elems(args);
+      push_undefined();
+    }
+}
+
 /*! @decl string(0..255) __parse_pike_type(string(0..255) t)
  */
 static void f_parse_pike_type( INT32 args )
@@ -2849,9 +3006,16 @@ static void f_parse_pike_type( INT32 args )
 /*! @module Pike
  */
 
-/*! @decl type soft_cast(type to, type from)
+/*! @decl type|zero soft_cast(type to, type from)
  *!
  *!   Return the resulting type from a soft cast of @[from] to @[to].
+ *!
+ *! @returns
+ *!   Returns @expr{UNDEFINED@} if the cast is invalid.
+ *!
+ *! @note
+ *!   The return value for the invalid case may in the future
+ *!   change to @expr{__unknown__@}.
  */
 static void f___soft_cast(INT32 args)
 {
@@ -2873,8 +3037,12 @@ static void f___soft_cast(INT32 args)
   }
 }
 
-/*! @decl type low_check_call(type fun_type, type arg_type)
- *! @decl type low_check_call(type fun_type, type arg_type, int flags)
+/*! @decl type|zero low_check_call(type fun_type, type arg_type)
+ *! @decl type|zero low_check_call(type fun_type, type arg_type, int flags)
+ *! @decl type|zero low_check_call(type fun_type, type arg_type, int flags, @
+ *!                                mapping state)
+ *! @decl type|zero low_check_call(type fun_type, type arg_type, int flags, @
+ *!                                mapping state, mixed val)
  *!
  *!   Check whether a function of type @[fun_type] may be called
  *!   with a first argument of type @[arg_type].
@@ -2891,6 +3059,14 @@ static void f___soft_cast(INT32 args)
  *!       Both strict types and last argument as above.
  *!   @endint
  *!
+ *! @param state
+ *!   State mapping. This mapping may be used by attribute handlers
+ *!   to store state between different arguments. Note that attribute
+ *!   handlers may alter the contents of the mapping.
+ *!
+ *! @param val
+ *!   Value of the argument if known.
+ *!
  *! @returns
  *!   Returns a continuation type on success.
  *!
@@ -2900,7 +3076,9 @@ static void f___low_check_call(INT32 args)
 {
   struct pike_type *res;
   INT32 flags = CALL_NOT_LAST_ARG;
+  struct call_state cs;
   struct svalue *sval = NULL;
+  struct mapping *state = NULL;
   if (args < 2) Pike_error("Bad number of arguments to __low_check_call().\n");
   if (TYPEOF(Pike_sp[-args]) != PIKE_T_TYPE) {
     Pike_error("Bad argument 1 to __low_check_call() expected type.\n");
@@ -2914,21 +3092,40 @@ static void f___low_check_call(INT32 args)
     }
     flags = Pike_sp[2-args].u.integer ^ CALL_NOT_LAST_ARG;
   }
-  if (args > 3) sval = Pike_sp + 3 - args;
-  if (!(res = low_new_check_call(Pike_sp[-args].u.type,
-				 Pike_sp[1-args].u.type, flags, sval))) {
-    pop_n_elems(args);
-    push_undefined();
-  } else {
-    pop_n_elems(args);
-    push_type_value(res);
+  if (args > 3) {
+    switch(TYPEOF(Pike_sp[3-args])) {
+    case T_MAPPING:
+      state = Pike_sp[3-args].u.mapping;
+      break;
+    case T_INT:
+      if (!Pike_sp[3-args].u.integer) break;
+      /* FALLTHRU */
+    default:
+      Pike_error("Bad argument 4 to __low_check_call() expected mapping.\n");
+    }
   }
+  if (args > 4) sval = Pike_sp + 4 - args;
+
+  LOW_INIT_CALL_STATE(cs, NULL, 1, state);
+  res = low_new_check_call(Pike_sp[-args].u.type,
+			   Pike_sp[1-args].u.type,
+			   flags, &cs, sval);
+  FREE_CALL_STATE(cs);
+
+  pop_n_elems(args);
+  push_type_value(res);
 }
 
-/*! @decl type get_return_type(type fun_type)
+/*! @decl type|zero get_return_type(type fun_type)
+ *! @decl type|zero get_return_type(type fun_type, mapping state)
  *!
  *!   Check what a function of the type @[fun_type] will
- *!   return if called with no arguments.
+ *!   return if called with no further arguments.
+ *!
+ *! @param state
+ *!   State mapping. This mapping may be used by attribute handlers
+ *!   to store state between different arguments. Note that attribute
+ *!   handlers may alter the contents of the mapping.
  *!
  *! @returns
  *!   Returns the type of the returned value on success
@@ -2937,23 +3134,37 @@ static void f___low_check_call(INT32 args)
  */
 static void f___get_return_type(INT32 args)
 {
+  struct call_state cs;
   struct pike_type *res;
-  if (args != 1) {
+  struct mapping *state = NULL;
+  if (args < 1) {
     Pike_error("Bad number of arguments to __get_return_type().\n");
   }
-  if (TYPEOF(Pike_sp[-1]) != PIKE_T_TYPE) {
+  if (TYPEOF(Pike_sp[-args]) != PIKE_T_TYPE) {
     Pike_error("Bad argument 1 to __get_return_type() expected type.\n");
   }
-  if (!(res = new_get_return_type(Pike_sp[-1].u.type, 0))) {
-    pop_n_elems(args);
-    push_undefined();
-  } else {
-    pop_n_elems(args);
-    push_type_value(res);
+  if (args > 1) {
+    switch(TYPEOF(Pike_sp[1-args])) {
+    case T_MAPPING:
+      state = Pike_sp[1-args].u.mapping;
+      break;
+    case T_INT:
+      if (!Pike_sp[1-args].u.integer) break;
+      /* FALLTHRU */
+    default:
+      Pike_error("Bad argument 2 to __get_return_type() expected mapping.\n");
+    }
   }
+
+  LOW_INIT_CALL_STATE(cs, NULL, 1, state);
+  res = new_get_return_type(Pike_sp[-args].u.type, &cs, 0);
+  FREE_CALL_STATE(cs);
+
+  pop_n_elems(args);
+  push_type_value(res);
 }
 
-/*! @decl type get_first_arg_type(type fun_type)
+/*! @decl type|zero get_first_arg_type(type fun_type)
  *!
  *!   Check if a function of the type @[fun_type] may be called
  *!   with an argument, and return the type of that argument.
@@ -3034,7 +3245,7 @@ PMOD_EXPORT void f_all_constants(INT32 args)
   ref_push_mapping(get_builtin_constants());
 }
 
-/*! @decl CompilerEnvironment.PikeCompiler get_active_compiler()
+/*! @decl CompilerEnvironment.PikeCompiler|zero get_active_compiler()
  *!
  *!   Returns the most recent of the currently active pike compilers,
  *!   or @[UNDEFINED] if none is active.
@@ -3068,80 +3279,6 @@ PMOD_EXPORT void f_get_active_compiler(INT32 args)
   }
 
   push_undefined();
-}
-
-/*! @decl CompilationHandler get_active_compilation_handler()
- *!
- *!   Returns the currently active compilation compatibility handler, or
- *!   @tt{0@} (zero) if none is active.
- *!
- *! @note
- *!   This function should only be used during a call of @[compile()].
- *!
- *! @seealso
- *!   @[get_active_error_handler()], @[compile()],
- *!   @[master()->get_compilation_handler()], @[CompilationHandler]
- */
-PMOD_EXPORT void f_get_active_compilation_handler(INT32 args)
-{
-  struct compilation *c = NULL;
-
-  if (compilation_program) {
-    struct pike_frame *compiler_frame = Pike_fp;
-
-    while (compiler_frame &&
-	   (compiler_frame->context->prog != compilation_program)) {
-      compiler_frame = compiler_frame->next;
-    }
-
-    if (compiler_frame) {
-      c = (struct compilation *)compiler_frame->current_storage;
-    }
-  }
-
-  pop_n_elems(args);
-  if (c && c->compat_handler) {
-    ref_push_object(c->compat_handler);
-  } else {
-    push_int(0);
-  }
-}
-
-/*! @decl CompilationHandler get_active_error_handler()
- *!
- *!   Returns the currently active compilation error handler
- *!   (second argument to @[compile()]), or @tt{0@} (zero) if none
- *!   is active.
- *!
- *! @note
- *!   This function should only be used during a call of @[compile()].
- *!
- *! @seealso
- *!   @[get_active_compilation_handler()], @[compile()], @[CompilationHandler]
- */
-PMOD_EXPORT void f_get_active_error_handler(INT32 args)
-{
-  struct compilation *c = NULL;
-
-  if (compilation_program) {
-    struct pike_frame *compiler_frame = Pike_fp;
-
-    while (compiler_frame &&
-	   (compiler_frame->context->prog != compilation_program)) {
-      compiler_frame = compiler_frame->next;
-    }
-
-    if (compiler_frame) {
-      c = (struct compilation *)compiler_frame->current_storage;
-    }
-  }
-
-  pop_n_elems(args);
-  if (c && c->handler) {
-    ref_push_object(c->handler);
-  } else {
-    push_int(0);
-  }
 }
 
 /*! @decl array allocate(int size)
@@ -3496,12 +3633,16 @@ PMOD_EXPORT void f_time(INT32 args)
  */
 PMOD_EXPORT void f_crypt(INT32 args)
 {
-  char salt[2];
+  char salt[3];
   char *ret, *pwd = NULL, *saltp = NULL;
   char *alphabet =
     "./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+#ifdef HAVE_CRYPT_R
+  struct crypt_data crypt_data;
+  crypt_data.initialized = 0;
+#endif
 
-  get_all_args("crypt", args, ".%s%s", &pwd, &saltp);
+  get_all_args("crypt", args, ".%c%c", &pwd, &saltp);
 
   if( !pwd )
   {
@@ -3534,6 +3675,7 @@ PMOD_EXPORT void f_crypt(INT32 args)
 
     salt[0] = alphabet[ Pike_sp[-1].u.integer & 0x3f ];
     salt[1] = alphabet[ (Pike_sp[-1].u.integer>>6) & 0x3f ];
+    salt[2] = 0;
     pop_stack();
 
     saltp=salt;
@@ -3542,45 +3684,69 @@ PMOD_EXPORT void f_crypt(INT32 args)
       args = 1;
     }
   }
-#ifdef HAVE_CRYPT
+
+  /* NB: crypt(3C) with modern algorithms may be quite slow,
+   *     so release the interpreter lock if possible.
+   */
+#ifdef HAVE_CRYPT_R
+  /* Glibc reentrant version of crypt(3C). */
+  THREADS_ALLOW();
+  {
+    ret = crypt_r(pwd, saltp, &crypt_data);
+  }
+  THREADS_DISALLOW();
+#elif defined(HAVE_CRYPT)
+#ifdef SOLARIS
+  /* NB: crypt(3C) on Solaris (since at least Solaris 8) is
+   *     documented to be thread-safe (due to returning a
+   *     thread-local buffer).
+   *
+   *     On Linux (glibc 2.27) and MacOS X (Darwin 13.4.0) it
+   *     is documented NOT to be thread-safe.
+   */
+  THREADS_ALLOW();
+#endif
   ret = (char *)crypt(pwd, saltp);
-#else
-#ifdef HAVE__CRYPT
+#ifdef SOLARIS
+  THREADS_DISALLOW();
+#endif
+#elif defined(HAVE__CRYPT)
   ret = (char *)_crypt(pwd, saltp);
 #else
 #error No crypt function found and fallback failed.
 #endif
-#endif
-  if (!ret) {
-    switch(errno) {
-#ifdef ELIBACC
-    case ELIBACC:
-      Pike_error("Failed to load a required shared library. "
-		 "Unsupported salt.\n");
-      break;
-#endif
-    case ENOMEM:
-      Pike_error("Out of memory.\n");
-      break;
-    case EINVAL:
-    default:
-      Pike_error("Unsupported salt (%d).\n", errno);
-      break;
-    }
-  }
+
   if(args < 2)
   {
+    if (!ret) {
+      switch(errno) {
+#ifdef ELIBACC
+      case ELIBACC:
+	Pike_error("Failed to load a required shared library. "
+		   "Unsupported salt.\n");
+	break;
+#endif
+      case ENOMEM:
+	Pike_error("Out of memory.\n");
+	break;
+      case EINVAL:
+      default:
+	Pike_error("Unsupported salt (%d).\n", errno);
+	break;
+      }
+    }
+
     pop_n_elems(args);
     push_text(ret);
   }else{
     int i;
-    i=!strcmp(ret,saltp);
+    i = ret && !strcmp(ret,saltp);
     pop_n_elems(args);
     push_int(i);
   }
 }
 
-/*! @decl void destruct(void|object o)
+/*! @decl int(1bit) destruct(void|object o)
  *!
  *!   Mark an object as destructed.
  *!
@@ -3589,16 +3755,21 @@ PMOD_EXPORT void f_crypt(INT32 args)
  *!
  *!   All pointers and function pointers to this object will become zero.
  *!   The destructed object will be freed from memory as soon as possible.
+ *!
+ *! @returns
+ *!   Returns @expr{1@} if @[o] has an @[lfun::_destruct()] that
+ *!   returned @expr{1@} and inhibited destruction.
  */
 PMOD_EXPORT void f_destruct(INT32 args)
 {
   struct object *o;
+  int ret;
   if(args)
   {
     if(TYPEOF(Pike_sp[-args]) != T_OBJECT) {
       if ((TYPEOF(Pike_sp[-args]) == T_INT) &&
 	  (!Pike_sp[-args].u.integer)) {
-	pop_n_elems(args);
+	pop_n_elems(args-1);
 	return;
       }
       SIMPLE_ARG_TYPE_ERROR("destruct", 1, "object");
@@ -3616,9 +3787,19 @@ PMOD_EXPORT void f_destruct(INT32 args)
   if (o->prog && o->prog->flags & PROGRAM_NO_EXPLICIT_DESTRUCT)
     PIKE_ERROR("destruct", "Object can't be destructed explicitly.\n",
 	       Pike_sp, args);
+  if (o->inhibit_destruct) {
+    /* Destruct the object as soon as the inhibit_destruct
+     * counter is back down to zero.
+     */
+    o->flags |= OBJECT_PENDING_DESTRUCT;
+    pop_n_elems(args);
+    push_int(1);
+    return;
+  }
   debug_malloc_touch(o);
-  destruct_object (o, DESTRUCT_EXPLICIT);
+  ret = destruct_object (o, DESTRUCT_EXPLICIT);
   pop_n_elems(args);
+  push_int(ret);
   destruct_objects_to_destruct();
 }
 
@@ -3708,218 +3889,6 @@ PMOD_EXPORT void f_indices(INT32 args)
   }
   pop_n_elems(args);
   push_array(a);
-}
-
-/* this should probably be moved to pike_types.c or something */
-#define FIX_OVERLOADED_TYPE(n, lf, X) fix_overloaded_type(n,lf,X,CONSTANT_STRLEN(X))
-/* FIXME: This function messes around with the implementation of pike_type,
- * and should probably be in pike_types.h instead.
- */
-static node *fix_overloaded_type(node *n, int lfun, const char *deftype, int UNUSED(deftypelen))
-{
-  node **first_arg;
-  struct pike_type *t, *t2;
-  first_arg=my_get_arg(&_CDR(n), 0);
-  if(!first_arg) return 0;
-  t=first_arg[0]->type;
-  if(!t || match_types(t, object_type_string))
-  {
-    /* Skip any name-nodes. */
-    while(t && t->type == PIKE_T_NAME) {
-      t = t->cdr;
-    }
-
-    /* FIXME: Ought to handle or-nodes here. */
-    if(t && (t->type == T_OBJECT))
-    {
-      struct program *p = id_to_program(CDR_TO_INT(t));
-      if(p)
-      {
-	int fun=FIND_LFUN(p, lfun);
-
-	/* FIXME: function type string should really be compiled from
-	 * the arguments so that or:ed types are handled correctly
-	 */
-	if(fun!=-1 &&
-	   (t2 = check_call(function_type_string, ID_FROM_INT(p, fun)->type,
-			    0)))
-	{
-	  free_type(n->type);
-	  n->type = t2;
-	  return 0;
-	}
-      }
-    }
-
-    /* If it is an object, it *may* be overloaded, we or with
-     * the deftype....
-     */
-#if 1
-    if(deftype)
-    {
-      t2 = make_pike_type(deftype);
-      t = n->type;
-      n->type = or_pike_types(t,t2,0);
-      free_type(t);
-      free_type(t2);
-    }
-#endif
-  }
-
-  return 0; /* continue optimization */
-}
-
-static node *fix_indices_type(node *n)
-{
-  return FIX_OVERLOADED_TYPE(n, LFUN__INDICES, tArray);
-}
-
-static node *fix_values_type(node *n)
-{
-  return FIX_OVERLOADED_TYPE(n, LFUN__VALUES, tArray);
-}
-
-static node *fix_aggregate_mapping_type(node *n)
-{
-  struct pike_type *types[2] = { NULL, NULL };
-  node *args = CDR(n);
-  struct pike_type *new_type = NULL;
-
-#ifdef PIKE_DEBUG
-  if (l_flag > 2) {
-    fprintf(stderr, "Fixing type for aggregate_mapping():\n");
-    print_tree(n);
-
-    fprintf(stderr, "Original type:");
-    simple_describe_type(n->type);
-  }
-#endif /* PIKE_DEBUG */
-
-  if (args) {
-    node *arg = args;
-    int argno = 0;
-
-    /* Make it easier to find... */
-    args->parent = 0;
-
-    while(arg) {
-#ifdef PIKE_DEBUG
-      if (l_flag > 4) {
-	fprintf(stderr, "Searching for arg #%d...\n", argno);
-      }
-#endif /* PIKE_DEBUG */
-      if (arg->token == F_ARG_LIST) {
-	if (CAR(arg)) {
-	  CAR(arg)->parent = arg;
-	  arg = CAR(arg);
-	  continue;
-	}
-	if (CDR(arg)) {
-	  CDR(arg)->parent = arg;
-	  arg = CDR(arg);
-	  continue;
-	}
-	/* Retrace */
-      retrace:
-#ifdef PIKE_DEBUG
-	if (l_flag > 4) {
-	  fprintf(stderr, "Retracing in search for arg %d...\n", argno);
-	}
-#endif /* PIKE_DEBUG */
-	while (arg->parent &&
-	       (!CDR(arg->parent) || (CDR(arg->parent) == arg))) {
-	  arg = arg->parent;
-	}
-	if (!arg->parent) {
-	  /* No more args. */
-	  break;
-	}
-	arg = arg->parent;
-	CDR(arg)->parent = arg;
-	arg = CDR(arg);
-	continue;
-      }
-      if (arg->token == F_PUSH_ARRAY) {
-	/* FIXME: Should get the type from the pushed array. */
-	/* FIXME: Should probably be fixed in las.c:fix_type_field() */
-	/* FIXME: */
-	MAKE_CONSTANT_TYPE(new_type, tMap(tMixed, tMixed));
-	goto set_type;
-      }
-#ifdef PIKE_DEBUG
-      if (l_flag > 4) {
-	fprintf(stderr, "Found arg #%d:\n", argno);
-	print_tree(arg);
-	simple_describe_type(arg->type);
-      }
-#endif /* PIKE_DEBUG */
-      do {
-	if (types[argno]) {
-	  struct pike_type *t = or_pike_types(types[argno], arg->type, 0);
-	  free_type(types[argno]);
-	  types[argno] = t;
-#ifdef PIKE_DEBUG
-	  if (l_flag > 4) {
-	    fprintf(stderr, "Resulting type for arg #%d:\n", argno);
-	    simple_describe_type(types[argno]);
-	  }
-#endif /* PIKE_DEBUG */
-	} else {
-	  copy_pike_type(types[argno], arg->type);
-	}
-	argno = !argno;
-	/* Handle the special case where CAR & CDR are the same.  */
-      } while (argno && arg->parent && CAR(arg->parent) == CDR(arg->parent));
-      goto retrace;
-    }
-
-    if (argno) {
-      yyerror("Odd number of arguments to aggregate_mapping().");
-      goto done;
-    }
-
-    if (!types[0]) {
-      MAKE_CONSTANT_TYPE(new_type, tMap(tZero, tZero));
-      goto set_type;
-    }
-
-    type_stack_mark();
-    push_finished_type(types[1]);
-    push_finished_type(types[0]);
-    push_type(T_MAPPING);
-    new_type = pop_unfinished_type();
-  } else {
-    MAKE_CONSTANT_TYPE(new_type, tMap(tZero, tZero));
-    goto set_type;
-  }
-  if (new_type) {
-  set_type:
-    free_type(n->type);
-    n->type = new_type;
-
-#ifdef PIKE_DEBUG
-    if (l_flag > 2) {
-      fprintf(stderr, "Result type: ");
-      simple_describe_type(new_type);
-    }
-#endif /* PIKE_DEBUG */
-
-    if (n->parent) {
-      n->parent->node_info |= OPT_TYPE_NOT_FIXED;
-    }
-  }
- done:
-  if (args) {
-    /* Not really needed, but... */
-    args->parent = n;
-  }
-  if (types[1]) {
-    free_type(types[1]);
-  }
-  if (types[0]) {
-    free_type(types[0]);
-  }
-  return NULL;
 }
 
 /*! @decl array values(string|array|mapping|multiset|object x)
@@ -4013,7 +3982,7 @@ PMOD_EXPORT void f_values(INT32 args)
   push_array(a);
 }
 
-/*! @decl array(type(mixed)) types(string|array|mapping|multiset|object x)
+/*! @decl array(type(mixed)) types(string|array|mapping|multiset|object|program x)
  *!
  *!   Return an array with the types of all valid indices for the value @[x].
  *!
@@ -4109,6 +4078,149 @@ PMOD_EXPORT void f_types(INT32 args)
   push_array(a);
 }
 
+/*! @decl array(multiset(Pike.Annotation)) annotations(object|program|function x, @
+ *!                                                    int(0..1)|void recurse)
+ *!
+ *!   Return an array with the annotations for all symbols in @[x].
+ *!
+ *! @param x
+ *!   @mixed
+ *!     @type object
+ *!       For objects which define @[lfun::_annotations()] that return value
+ *!       is used.
+ *!
+ *!       For other objects an array with annotations for all non-protected
+ *!       symbols is returned.
+ *!     @type program
+ *!       Returns an array with annotations for all non-protected
+ *!       constant symbols.
+ *!   @endmixed
+ *!
+ *! @param recurse
+ *!   Include annotations recursively added via inherits.
+ *!
+ *! @returns
+ *!   The order of the resulting array is the same as that of @[indices()]
+ *!   for the same @[x].
+ *!
+ *! @note
+ *!   This function was added in Pike 8.1.
+ *!
+ *! @seealso
+ *!   @[indices()], @[values()], @[types()], @[lfun::_annotations()],
+ *!   @[::_annotations()], @[Program.annotations]
+ */
+PMOD_EXPORT void f_annotations(INT32 args)
+{
+  struct array *a = NULL;
+  struct pike_type *default_type = mixed_type_string;
+  struct svalue *arg = NULL;
+  ptrdiff_t flags = 0;
+
+  get_all_args("annotations", args, "%*.%i", &arg, &flags);
+
+  if (flags & ~(ptrdiff_t)1) {
+    SIMPLE_ARG_TYPE_ERROR("annotations", 2, "int(0..1)|void");
+  }
+
+  switch(TYPEOF(*arg))
+  {
+  case T_OBJECT:
+    a = object_annotations(arg->u.object, SUBTYPEOF(Pike_sp[-args]), flags);
+    break;
+
+  case T_PROGRAM:
+    a = program_annotations(arg->u.program, flags);
+    break;
+
+  case T_FUNCTION:
+    {
+      struct program *p = program_from_svalue(arg);
+      if (p) {
+	a = program_annotations(p, flags);
+	break;
+      }
+    }
+    /* FALLTHRU */
+
+  default:
+    SIMPLE_ARG_TYPE_ERROR("annotations", 1, "object|program|function");
+  }
+  pop_n_elems(args);
+  push_array(a);
+}
+
+
+/*! @decl multiset(Pike.Annotation) annotations(program x, @
+ *!                                                    int(0..1)|void no_recurse)
+ *! @appears Program.annotations
+ *!
+ *!   Return a multiset with the annotations for all symbols in @[x] attached
+ *!   to this program.
+ *!
+ *! @param x
+ *!   Program whose identifiers should be returned.
+ *!
+ *! @param no_recurse
+ *!   Do not include annotations recursively added via inherits.
+ *!
+ *! @returns
+ *!       Returns an multiset with annotations added directly to this program.
+ *!   
+ *!
+ *! @note
+ *!   This function was added in Pike 8.1.
+ *!
+ *! @seealso
+ *!   @[indices()], @[values()], @[types()], @[lfun::_annotations()],
+ *!   @[::_annotations()]
+ */
+PMOD_EXPORT void f_direct_program_annotations(INT32 args)
+{
+  struct array *m = NULL;
+  struct pike_type *default_type = mixed_type_string;
+  struct svalue *arg = NULL;
+  int flag;
+  int found = 0;
+  
+  get_all_args("direct_program_annotations", args, "%*.%i", &arg, &flag);
+
+  switch(TYPEOF(*arg))
+  {
+  case T_PROGRAM:
+    m = program_inherit_annotations(arg->u.program);
+    break;
+
+    /* FALLTHRU */
+
+  default:
+    SIMPLE_ARG_TYPE_ERROR("direct_program_annotations", 1, "program");
+  }  
+  
+   pop_n_elems(args);
+ 
+   if(m != NULL && m->size > 0)
+   {
+     struct multiset * set;
+	 if(!(flag & 1) && TYPEOF(ITEM(m)[(m->size -1)]) == PIKE_T_MULTISET) {
+	  found = 1;
+	  set = ITEM(m)[(m->size -1)].u.multiset;
+     ref_push_multiset(set);
+ 	}
+    else if((flag & 1) && TYPEOF(ITEM(m)[0]) == PIKE_T_MULTISET) {
+  	  found = 1;
+  	  set = ITEM(m)[0].u.multiset;
+       ref_push_multiset(set);    	
+    }
+
+   }
+   if(!found){
+    push_int(0);
+  }
+}
+
+
+
 /*! @decl program|function object_program(mixed o)
  *!
  *!   Return the program from which @[o] was instantiated. If the
@@ -4194,6 +4306,7 @@ node *fix_object_program_type(node *n)
 /*! @decl string reverse(string s, int|void start, int|void end)
  *! @decl array reverse(array a, int|void start, int|void end)
  *! @decl int reverse(int i, int|void start, int|void end)
+ *! @decl mixed reverse(object o, mixed... options)
  *!
  *!   Reverses a string, array or int.
  *!
@@ -4203,6 +4316,8 @@ node *fix_object_program_type(node *n)
  *!     Array to reverse.
  *!   @param i
  *!     Integer to reverse.
+ *!   @param o
+ *!     Object to reverse.
  *!   @param start
  *!     Optional start index of the range to reverse.
  *!     Default: @expr{0@} (zero).
@@ -4211,10 +4326,13 @@ node *fix_object_program_type(node *n)
  *!     Default for strings: @expr{sizeof(s)-1@}.
  *!     Default for arrays: @expr{sizeof(a)-1@}.
  *!     Default for integers: @expr{Pike.get_runtime_info()->int_size - 1@}.
+ *!   @param options
+ *!     Optional arguments that are to be passed to @[lfun::_reverse()].
  *!
  *!   This function reverses a string, char by char, an array, value
  *!   by value or an int, bit by bit and returns the result. It's not
- *!   destructive on the input value.
+ *!   destructive on the input value. For objects it simply calls
+ *!   @[lfun::_reverse()] in the object, and returns the result.
  *!
  *!   Reversing strings can be particularly useful for parsing difficult
  *!   syntaxes which require scanning backwards.
@@ -4262,7 +4380,7 @@ PMOD_EXPORT void f_reverse(INT32 args)
 	for(e=0;e<start;e++)
 	  STR0(s)[e]=STR0(orig)[e];
 	for(;e<end;e++)
-	  STR0(s)[e]=STR0(orig)[end-1-e-start];
+	  STR0(s)[e]=STR0(orig)[end-1-e+start];
 	for(;e<orig->len;e++)
 	  STR0(s)[e]=STR0(orig)[e];
 	break;
@@ -4271,7 +4389,7 @@ PMOD_EXPORT void f_reverse(INT32 args)
 	for(e=0;e<start;e++)
 	  STR1(s)[e]=STR1(orig)[e];
 	for(;e<end;e++)
-	  STR1(s)[e]=STR1(orig)[end-1-e-start];
+	  STR1(s)[e]=STR1(orig)[end-1-e+start];
 	for(;e<orig->len;e++)
 	  STR1(s)[e]=STR1(orig)[e];
 	break;
@@ -4280,7 +4398,7 @@ PMOD_EXPORT void f_reverse(INT32 args)
 	for(e=0;e<start;e++)
 	  STR2(s)[e]=STR2(orig)[e];
 	for(;e<end;e++)
-	  STR2(s)[e]=STR2(orig)[end-1-e-start];
+	  STR2(s)[e]=STR2(orig)[end-1-e+start];
 	for(;e<orig->len;e++)
 	  STR2(s)[e]=STR2(orig)[e];
 	break;
@@ -4293,7 +4411,7 @@ PMOD_EXPORT void f_reverse(INT32 args)
 	for(e=0;e<start;e++)
 	  STR0(s)[e]=STR0(orig)[e];
 	for(;e<end;e++)
-	  STR0(s)[e]=STR0(orig)[end-1-e-start];
+	  STR0(s)[e]=STR0(orig)[end-1-e+start];
 	for(;e<orig->len;e++)
 	  STR0(s)[e]=STR0(orig)[e];
 	break;
@@ -4302,7 +4420,7 @@ PMOD_EXPORT void f_reverse(INT32 args)
 	for(e=0;e<start;e++)
 	  STR1(s)[e]=STR1(orig)[e];
 	for(;e<end;e++)
-	  STR1(s)[e]=STR1(orig)[end-1-e-start];
+	  STR1(s)[e]=STR1(orig)[end-1-e+start];
 	for(;e<orig->len;e++)
 	  STR1(s)[e]=STR1(orig)[e];
 	break;
@@ -4311,7 +4429,7 @@ PMOD_EXPORT void f_reverse(INT32 args)
 	for(e=0;e<start;e++)
 	  STR2(s)[e]=STR2(orig)[e];
 	for(;e<end;e++)
-	  STR2(s)[e]=STR2(orig)[end-1-e-start];
+	  STR2(s)[e]=STR2(orig)[end-1-e+start];
 	for(;e<orig->len;e++)
 	  STR2(s)[e]=STR2(orig)[e];
 	break;
@@ -4348,6 +4466,14 @@ PMOD_EXPORT void f_reverse(INT32 args)
     push_array(a);
     break;
   }
+
+  case T_OBJECT:
+    {
+      apply_lfun(sv->u.object, LFUN__REVERSE, args - 1);
+      stack_swap();
+      pop_stack();
+      break;
+    }
 
   default:
     SIMPLE_ARG_TYPE_ERROR("reverse", 1, "string|int|array");
@@ -4553,7 +4679,7 @@ void compile_replace_many(struct replace_many_context *ctx,
 				     ctx->v[prefix].ind->size_shift);
 	if (!tmp) {
 	  /* ctx->v[prefix] is a valid prefix to ctx->v[e]. */
-	} if (tmp == 1) {
+        } if (tmp == 1) {
 	  /* Optimization. */
 	  prefix = -1;
 	} else {
@@ -4841,8 +4967,8 @@ node *optimize_replace(node *n)
   MAKE_CONSTANT_TYPE(array_zero, tArr(tZero));
   MAKE_CONSTANT_TYPE(mapping_zero, tMap(tZero, tZero));
 
-  if ((pike_types_le(array_zero, (*arg0)->type) ||
-       pike_types_le(mapping_zero, (*arg0)->type))) {
+  if ((pike_types_le(array_zero, (*arg0)->type, 0, 0) ||
+       pike_types_le(mapping_zero, (*arg0)->type, 0, 0))) {
     /* First argument might be an array or a mapping.
      *
      * replace() is destructive on arrays and mappings.
@@ -4862,11 +4988,11 @@ node *optimize_replace(node *n)
      */
     struct program * volatile replace_compiler = NULL;
 
-    if (arg1 && ((pike_types_le((*arg1)->type, array_type_string) &&
+    if (arg1 && ((pike_types_le((*arg1)->type, array_type_string, 0, 0) &&
 		  arg2 &&
-		  (pike_types_le((*arg2)->type, array_type_string) ||
-		   pike_types_le((*arg2)->type, string_type_string))) ||
-		 (pike_types_le((*arg1)->type, mapping_type_string)))) {
+		  (pike_types_le((*arg2)->type, array_type_string, 0, 0) ||
+		   pike_types_le((*arg2)->type, string_type_string, 0, 0))) ||
+		 (pike_types_le((*arg1)->type, mapping_type_string, 0, 0)))) {
       /* Handle the cases:
        *
        *   replace(string, array, array)
@@ -4875,8 +5001,8 @@ node *optimize_replace(node *n)
        */
       extern struct program *multi_string_replace_program;
       replace_compiler = multi_string_replace_program;
-    } else if (arg1 && pike_types_le((*arg1)->type, string_type_string) &&
-	       arg2 && pike_types_le((*arg2)->type, string_type_string)) {
+    } else if (arg1 && pike_types_le((*arg1)->type, string_type_string, 0, 0) &&
+	       arg2 && pike_types_le((*arg2)->type, string_type_string, 0, 0)) {
       extern struct program *single_string_replace_program;
       replace_compiler = single_string_replace_program;
     }
@@ -4894,7 +5020,7 @@ node *optimize_replace(node *n)
 	yywarning("Optimizer failure in replace().");
 	s = format_exception_for_error_msg (&thrown);
 	if (s) {
-	  yywarning ("%S", s);
+          yywarning ("%pS", s);
 	  free_string (s);
 	}
 	free_svalue(&thrown);
@@ -5124,7 +5250,7 @@ PMOD_EXPORT int callablep(struct svalue *s)
 	int i;
 	ret = 1;
 	for(i=0; i<a->size; i++)
-          if( TYPEOF(ITEM(a)[i])!=T_INT && !callablep(&ITEM(a)[i]) )
+	  if(!IS_UNDEFINED(ITEM(a) + i) && !callablep(&ITEM(a)[i]))
           {
             ret = 0;
             break;
@@ -5277,6 +5403,34 @@ PMOD_EXPORT void f_sleep(INT32 args)
    pop_n_elems(args);
 
    delaysleep(delay, do_abort_on_signal, 0);
+   low_check_threads_etc();
+}
+
+static node *optimize_sleep(node *apply)
+{
+  if (apply && Pike_compiler->compiler_frame->generator_is_async) {
+    /*
+     * {
+     *   call_out(continue::this_function, X);
+     *   continue return;
+     * }
+     */
+    node *ret =
+      mknode(F_COMMA_EXPR,
+             mkcastnode(void_type_string,
+                        mkefuncallnode("call_out",
+                                       mknode(F_ARG_LIST,
+                                              program_magic_identifier(Pike_compiler, 0,
+                                                                       INHERIT_GENERATOR,
+                                                                       this_function_string,
+                                                                       1),
+                                              CDR(apply)))),
+             mknode(F_RETURN, NULL, mkintnode(1)));
+    ADD_NODE_REF(CDR(apply));
+    return ret;
+  }
+
+  return NULL;
 }
 
 #undef FIX_LEFT
@@ -5362,7 +5516,7 @@ void f_gc(INT32 args)
     break;
   default:
     pop_n_elems(args);
-    res = do_gc(NULL, 1);
+    res = do_gc(1);
     break;
   }
   push_int(res);
@@ -5700,7 +5854,7 @@ PMOD_EXPORT void f__verify_internals(INT32 args)
 #ifdef PIKE_DEBUG
   do_debug();			/* Calls do_gc() since d_flag > 3. */
 #else
-  do_gc(NULL, 1);
+  do_gc(1);
 #endif
   d_flag=tmp;
   pop_n_elems(args);
@@ -5759,6 +5913,10 @@ static void encode_tm_tz(const struct tm*tm)
  *!   This function works like @[localtime()] but the result is
  *!   not adjusted for the local time zone.
  *!
+ *! @note
+ *!   Timestamps prior to 1970-01-01T00:00:00 (ie negative timestamps)
+ *!   were not supported on NT and AIX prior to Pike 9.0.
+ *!
  *! @seealso
  *!   @[localtime()], @[time()], @[ctime()], @[mktime()],
  *!   @[strptime()]
@@ -5771,12 +5929,70 @@ PMOD_EXPORT void f_gmtime(INT32 args)
   struct tm *tm;
   INT64 tt;
   time_t t;
+#if defined(__NT__) || defined(_AIX)
+  int ydelta = 0;
+#endif
 
   get_all_args("gmtime", args, "%l", &tt);
 
 #if SIZEOF_TIME_T < SIZEOF_INT64
   if (tt > MAX_TIME_T || tt < MIN_TIME_T)
     SIMPLE_ARG_ERROR ("gmtime", 1, "Timestamp outside valid range.");
+#endif
+#if defined(__NT__) || defined(_AIX)
+  if (tt < 0) {
+    int wdays = 0;
+    while (tt <-11644473600LL) {	/* 1601-01-01T00:00:00 UTC */
+      ydelta -= 400;
+      tt += 12622780800LL;		/* 400 years in seconds. */
+      /* NB: Even number of weeks! */
+    }
+    while (tt < -3155673600LL) {	/* 1870-01-01T00:00:00 UTC */
+      ydelta -= 100;
+      tt += 3155673600LL;		/* 100 years in seconds. */
+      wdays += 5;			/* (3155673600/3600/24) % 7 */
+    }
+    if (tt < -2177452800LL) {		/* 1901-01-01T00:00:00 UTC */
+      if (tt >= -2208988800LL) {	/* 1900-01-01T00:00:00 UTC */
+        ydelta -= 6;
+        tt += 189302400;		/* 6 years in seconds. */
+      } else {
+        tt -= 3600 * 24;		/* Add a fake leap-day for 1900. */
+        wdays += 6;
+      }
+    }
+    switch(wdays % 7) {
+    case 0: break;
+    case 1:
+      ydelta += 12;
+      tt -= 378691200;			/* 12 years in seconds. */
+      break;
+    case 2:
+      ydelta += 24;
+      tt -= 757382400;			/* 24 years in seconds. */
+      break;
+    case 3:
+      ydelta += 8;
+      tt -= 252460800;			/* 8 years in seconds. */
+      break;
+    case 4:
+      ydelta += 20;
+      tt -= 631152000;			/* 20 years in seconds. */
+      break;
+    case 5:
+      ydelta += 4;
+      tt -= 126230400;			/* 4 years in seconds. */
+      break;
+    case 6:
+      ydelta += 16;
+      tt -= 504921600;			/* 16 years in seconds. */
+      break;
+    }
+    while (tt < 0) {			/* 1970-01-01T00:00:00 UTC */
+      ydelta -= 28;
+      tt += 883612800;			/* 28 years in seconds. */
+    }
+  }
 #endif
   t = (time_t) tt;
 
@@ -5789,6 +6005,9 @@ PMOD_EXPORT void f_gmtime(INT32 args)
 #endif
   if (!tm) Pike_error ("gmtime() on this system cannot handle "
                        "the timestamp %"PRINTINT64"d.\n", (INT64) t);
+#if defined(__NT__) || defined(_AIX)
+  tm->tm_year += ydelta;
+#endif
   pop_n_elems(args);
   encode_struct_tm(tm, 0);
 }
@@ -5830,6 +6049,11 @@ PMOD_EXPORT void f_gmtime(INT32 args)
  *!   Prior to Pike 7.5 the field @expr{"timezone"@} was sometimes not
  *!   present, and was sometimes not adjusted for daylight-saving time.
  *!
+ *! @note
+ *!   Timestamps prior to 1970-01-01T00:00:00 (ie negative timestamps)
+ *!   were not supported on NT and AIX prior to Pike 9.0. Note also
+ *!   that dst-handling may be incorrect for such timestamps.
+ *!
  *! @seealso
  *!   @[Calendar], @[gmtime()], @[time()], @[ctime()], @[mktime()],
  *!   @[strptime()]
@@ -5839,6 +6063,9 @@ PMOD_EXPORT void f_localtime(INT32 args)
   struct tm *tm;
   INT64 tt;
   time_t t;
+#if defined(__NT__) || defined(_AIX)
+  int ydelta = 0;
+#endif
 
   get_all_args("localtime", args, "%l", &tt);
 
@@ -5846,24 +6073,151 @@ PMOD_EXPORT void f_localtime(INT32 args)
   if (tt > MAX_TIME_T || tt < MIN_TIME_T)
     SIMPLE_ARG_ERROR ("localtime", 1, "Timestamp outside valid range.");
 #endif
+#if defined(__NT__) || defined(_AIX)
+  if (tt < 0) {
+    /* FIXME: Best effort; the cutoff times should be timezone-dependent. */
+    int wdays = 0;
+    while (tt <-11644473600LL) {	/* 1601-01-01T00:00:00 UTC */
+      ydelta -= 400;
+      tt += 12622780800LL;		/* 400 years in seconds. */
+      /* NB: Even number of weeks! */
+    }
+    while (tt < -3155673600LL) {	/* 1870-01-01T00:00:00 UTC */
+      ydelta -= 100;
+      tt += 3155673600LL;		/* 100 years in seconds. */
+      wdays += 5;			/* (3155673600/3600/24) % 7 */
+    }
+    if (tt < -2177452800LL) {		/* 1901-01-01T00:00:00 UTC */
+      if (tt >= -2208988800LL) {	/* 1900-01-01T00:00:00 UTC */
+        ydelta -= 6;
+        tt += 189302400;		/* 6 years in seconds. */
+      } else {
+        tt -= 3600 * 24;		/* Add a fake leap-day for 1900. */
+        wdays += 6;
+      }
+    }
+    switch(wdays % 7) {
+    case 0: break;
+    case 1:
+      ydelta += 12;
+      tt -= 378691200;			/* 12 years in seconds. */
+      break;
+    case 2:
+      ydelta += 24;
+      tt -= 757382400;			/* 24 years in seconds. */
+      break;
+    case 3:
+      ydelta += 8;
+      tt -= 252460800;			/* 8 years in seconds. */
+      break;
+    case 4:
+      ydelta += 20;
+      tt -= 631152000;			/* 20 years in seconds. */
+      break;
+    case 5:
+      ydelta += 4;
+      tt -= 126230400;			/* 4 years in seconds. */
+      break;
+    case 6:
+      ydelta += 16;
+      tt -= 504921600;			/* 16 years in seconds. */
+      break;
+    }
+    while (tt < 0) {			/* 1970-01-01T00:00:00 UTC */
+      ydelta -= 28;
+      tt += 883612800;			/* 28 years in seconds. */
+    }
+  }
+#endif
   t = (time_t) tt;
 
   tm = localtime(&t);
   if (!tm) Pike_error ("localtime() on this system cannot handle "
-		       "the timestamp %ld.\n", (long) t);
+                       "the timestamp %"PRINTINT64"d.\n", (INT64) t);
+#if defined(__NT__) || defined(_AIX)
+  tm->tm_year += ydelta;
+#endif
   pop_n_elems(args);
   encode_tm_tz(tm);
 }
 
+static void set_tz(char *tz)
+{
+  putenv(tz);
+  tzset();
+}
+
 time_t mktime_zone(struct tm *date, int other_timezone, int tz)
 {
-  time_t retval;
+  INT64 retval = 0;
+  INT64 ret;
   int normalised_time;
+#if defined(__NT__) || defined(_AIX) || defined(__APPLE__)
+  INT64 ydelta = 0;	/* Number of years. */
+#endif
 
   if (tz <= -3600*100 || tz >= 3600*100)
     Pike_error("Invalid timezone specified.\n");
 
   date->tm_wday = -1;		/* flag to determine failure */
+
+#if defined(__NT__) || defined(_AIX) || defined(__APPLE__)
+  /* mktime() on NT and AIX do not support years before 1970.
+   * mktime() on macOS does not support years before 1900.
+   *
+   * The calendar repeats every 28 years, so offset it appropriately.
+   * Offset years before 1971 in order to avoid issues near 1970-01-01.
+   */
+  if (date->tm_year <= -300) {
+    int y = (100 - date->tm_year)/400;
+    date->tm_year += y * 400;
+    ydelta += y * 400;
+    retval -= y * 12622780800LL;	/* 400 years in seconds. */
+  }
+#ifndef __APPLE__
+  else if (date->tm_year > 130) {
+    /* NB: Duplicate of the above due to rounding to zero. */
+    int y = (date->tm_year + 300)/400;
+    date->tm_year -= y * 400;
+    ydelta -= y * 400;
+    retval += y * 12622780800LL;	/* 400 years in seconds. */
+  }
+#endif
+  if (date->tm_year <= -30) {		/* Before 1870. */
+    int y = -date->tm_year/100;
+    date->tm_year += y * 100;
+    ydelta += y * 100;
+    retval -= y * 3155673600LL;		/* 100 years in seconds. */
+  }
+  if (date->tm_year < 0) {
+    retval += 3600 * 24;		/* Fake a leap day for 1900. */
+  } else if (!date->tm_year) {		/* 1900 is not a leap-year. */
+    date->tm_year += 6;
+    ydelta += 6;
+    retval -= 189302400;		/* 6 years in seconds. */
+  }
+  if (
+#ifdef __APPLE__
+      date->tm_year < 0
+#else
+      (date->tm_year < 71) || (date->tm_year > 130)
+#endif
+      ) {
+    int y = ((71 + 27 - date->tm_year)/28);
+    date->tm_year += y * 28;
+    ydelta += y * 28;
+    retval -= 883612800LL * y;		/* 28 years in seconds. */
+  }
+#elif defined(__HAIKU__)
+  /* mktime() on Haiku appears to attempt to support years before 1970
+   * albeit it is off by one second. We compensate before calling
+   * mktime() in order to be able to handle 1969-12-31T23:59:59 (which
+   * is indistinguishable from 1970-01-01T00:00:00 after the call).
+   */
+  if ((date->tm_year < 70) && !other_timezone) {
+    retval = -1;
+  }
+#endif
 
   {
     int sec, min, hour;
@@ -5882,7 +6236,8 @@ time_t mktime_zone(struct tm *date, int other_timezone, int tz)
     normalised_time = ((hour * 60) + min) * 60 + sec;
   }
 
-  retval = mktime(date);
+  ret = mktime(date);
+
   if (date->tm_wday < 0) {
     if (other_timezone) {
       /* NB: This happens for times near {MIN,MAX}_TIME_T. */
@@ -5896,19 +6251,32 @@ time_t mktime_zone(struct tm *date, int other_timezone, int tz)
 	      tz/3600,
 	      (tz/60)%60,
 	      tz % 60);
-      putenv(tzbuf);
-      if (!orig_tz) {
+      if (orig_tz) {
+        /* NB: orig_tz may point into the buffer that putenv()
+         *     writes to, so we need to make a copy here.
+         */
+        push_text(orig_tz);
+      } else {
 #ifdef PUTENV_ALWAYS_REQUIRES_EQUAL
-	orig_tz = "TZ=";
+        push_text("TZ=");
 #else
-	orig_tz = "TZ";
+        push_text("TZ");
 #endif
       }
-      SET_ONERROR(uwp, putenv, orig_tz);
+      orig_tz = Pike_sp[-1].u.string->str;
+      set_tz(tzbuf);
+      SET_ONERROR(uwp, set_tz, orig_tz);
       /* NB: No need to call tzset(); mktime() will call it. */
-      retval = mktime_zone(date, 0, 0);
+      ret = mktime_zone(date, 0, 0);
       CALL_AND_UNSET_ONERROR(uwp);
-      return retval;
+      pop_stack();
+
+#if defined(__NT__) || defined(_AIX) || defined(__APPLE__)
+      /* Restore tm_year. */
+      date->tm_year -= ydelta;
+#endif
+
+      return retval + ret;
     }
     Pike_error("Time conversion unsuccessful.\n");
   }
@@ -5938,18 +6306,39 @@ time_t mktime_zone(struct tm *date, int other_timezone, int tz)
        *     adjust it and tm_hour if the local time zone is in dst.
        *     This causes an error of typically one hour in dst when
        *     used without preadjustment.
+       *
+       * FIXME: Handle retval outside range of 32-bit time_t.
        */
-      struct tm gmt_tm = *gmtime(&retval);
+      time_t t = ret;
+      struct tm gmt_tm = *gmtime(&t);
       gmt_tm.tm_isdst = date->tm_isdst;
-      normalised_time += retval - mktime(&gmt_tm);
+      normalised_time += ret - mktime(&gmt_tm);
     }
 #endif
-    retval += normalised_time + tz;
+    ret += normalised_time + tz;
   }
+
+#if defined(__NT__) || defined(_AIX) || defined(__APPLE__)
+  /* Restore tm_year. */
+  date->tm_year -= ydelta;
+#endif
+
+  retval += ret;
+
+  if ((retval < MIN_TIME_T) || (retval > MAX_TIME_T)) {
+#ifdef EOVERFLOW
+    errno = EOVERFLOW;
+#else
+    /* NT does not have EOVERFLOW. */
+    errno = ERANGE;
+#endif
+    retval = -1;
+  }
+
   return retval;
 }
 
-static void unwind_tm()
+static int unwind_tm()
 {
   push_static_text("sec");
   push_static_text("min");
@@ -5964,6 +6353,8 @@ static void unwind_tm()
   Pike_sp--;
   dmalloc_touch_svalue(Pike_sp);
   push_array_items(Pike_sp->u.array);
+
+  return 8;
 }
 
 static int get_tm(const char *fname, int args, struct tm *date)
@@ -6027,7 +6418,7 @@ static int get_tm(const char *fname, int args, struct tm *date)
  *!
  *! @note
  *!   On some operating systems (notably AIX and Win32), dates before
- *!   00:00:00 UTC, Jan 1, 1970 are not supported.
+ *!   00:00:00 UTC, Jan 1, 1970 were not supported prior to Pike 9.0.
  *!
  *!   On most 32-bit systems, the supported range of dates is from Dec 13, 1901
  *!   20:45:52 UTC through to Jan 19, 2038 03:14:07 UTC (inclusive).
@@ -6044,15 +6435,14 @@ PMOD_EXPORT void f_mktime (INT32 args)
 {
   struct tm date;
   time_t retval;
-  int normalised_time, tz;
+  int tz;
 
   if (args<1)
     SIMPLE_WRONG_NUM_ARGS_ERROR("mktime", 1);
 
   if(args == 1)
   {
-    unwind_tm();
-    args += 7;
+    args += unwind_tm() - 1;
   }
 
   tz = get_tm("mktime", args, &date);
@@ -6069,7 +6459,6 @@ PMOD_EXPORT void f_mktime (INT32 args)
 #endif
 }
 
-#ifdef HAVE_STRPTIME
 /*! @decl mapping(string:int) strptime(string(1..255) data, string(1..255) format)
  *!
  *! Parse the given @[data] using the format in @[format] as a date.
@@ -6167,14 +6556,16 @@ PMOD_EXPORT void f_strptime (INT32 args)
     if (Pike_sp[-1].u.string->size_shift || Pike_sp[-2].u.string->size_shift)
       Pike_error("Only 8bit strings are supported\n");
     memset(&tm, 0, sizeof(tm));
-    ret = strptime(Pike_sp[-2].u.string->str, Pike_sp[-1].u.string->str, &tm);
+    ret = pike_strptime(Pike_sp[-2].u.string->str,
+                        Pike_sp[-1].u.string->str,
+                        &tm);
     pop_n_elems(args);
     if (ret)
       encode_tm_tz(&tm);
     else
       push_int(0);
 }
-#endif /* HAVE_STRPTIME */
+
 /*! @decl string(1..255) strftime( string(1..255) format, mapping(string:int) tm)
  *!
  *! Convert the structure to a string.
@@ -6239,14 +6630,6 @@ PMOD_EXPORT void f_strptime (INT32 args)
  *!
  *!   @item %j
  *!     The day of the year as a decimal number (range 001 to 366).
- *!
- *!   @item %k
- *!     The hour (24-hour clock) as a decimal number (range 0 to 23);
- *!     single digits are preceded by a blank.  (See also @expr{%H@}.)
- *!
- *!   @item %l
- *!     The hour (12-hour clock) as a decimal number (range 1 to 12);
- *!     single digits are preceded by a blank.  (See also @expr{%I@}.)
  *!
  *!   @item %m
  *!     The month as a decimal number (range 01 to 12).
@@ -6315,20 +6698,24 @@ PMOD_EXPORT void f_strptime (INT32 args)
  */
 PMOD_EXPORT void f_strftime (INT32 args)
 {
-    char buffer[8192];
+    struct string_builder s;
     struct tm date;
-    buffer[0] = 0;
 
-    unwind_tm();
-    get_tm("strftime", 8, &date);
-    pop_n_elems(8);
-    if (Pike_sp[-1].u.string->size_shift)
-      Pike_error("Only 8bit strings are supported\n");
+    check_all_args("strftime", args, BIT_STRING, BIT_MAPPING, 0);
 
-    strftime(buffer, sizeof(buffer), Pike_sp[-1].u.string->str, &date);
+    get_tm("strftime", args = unwind_tm(), &date);
+    pop_n_elems(args);
+    if ((TYPEOF(Pike_sp[-1]) != PIKE_T_STRING) ||
+        Pike_sp[-1].u.string->size_shift) {
+      Pike_error("Only 8bit strings are supported.\n");
+    }
+
+    init_string_builder(&s, 0);
+
+    string_builder_strftime(&s, Pike_sp[-1].u.string->str, &date);
 
     pop_stack();
-    push_text( buffer );
+    push_string(finish_string_builder(&s));
 }
 
 #define DOES_MATCH_CLASS(EXTRACT_M,EXTRACT_S,ML)                      \
@@ -6607,7 +6994,6 @@ PMOD_EXPORT void f_glob(INT32 args)
     break;
 
   case T_ARRAY: {
-    INT32 j;
     unsigned matches = 0;
     struct svalue *res;
     a=Pike_sp[1-args].u.array;
@@ -7647,7 +8033,6 @@ PMOD_EXPORT void f_diff(INT32 args)
 {
    struct array *seq;
    struct array *cmptbl;
-   struct array *diff;
    struct array *a, *b;
    int uniq;
 
@@ -7817,6 +8202,8 @@ PMOD_EXPORT void f__memory_usage(INT32 args)
   struct svalue *ss;
 #ifdef USE_DL_MALLOC
   struct mallinfo mi = dlmallinfo();
+#elif HAVE_MALLINFO2
+  struct mallinfo2 mi = mallinfo2();
 #elif HAVE_MALLINFO
   struct mallinfo mi = mallinfo();
 #endif
@@ -7828,11 +8215,14 @@ PMOD_EXPORT void f__memory_usage(INT32 args)
    * statistics from our bundled Doug Lea malloc, and not the
    * underlying system malloc. Ideally we should include both. */
 
-#if defined(HAVE_MALLINFO) || defined(USE_DL_MALLOC)
+#if defined(HAVE_MALLINFO2) || defined(HAVE_MALLINFO) || defined(USE_DL_MALLOC)
 
   push_static_text("num_malloc_blocks");
   push_ulongest(1 + mi.hblks);	/* 1 for the arena. */
   push_static_text("malloc_block_bytes");
+#ifdef HAVE_MALLINFO2
+  size = mi.arena + mi.hblkhd;
+#else
   if (mi.arena < 0) {
     /* Kludge for broken Linux libc, where the fields are ints.
      *
@@ -7857,11 +8247,15 @@ PMOD_EXPORT void f__memory_usage(INT32 args)
   } else {
     size += mi.hblkhd;
   }
+#endif
   push_ulongest(size);
 
   push_static_text("num_malloc");
   push_ulongest(mi.ordblks + mi.smblks);
   push_static_text("malloc_bytes");
+#ifdef HAVE_MALLINFO2
+  size = mi.uordblks + mi.usmblks;
+#else
   if (mi.uordblks < 0) {
     size = (unsigned int)mi.uordblks;
   } else {
@@ -7875,11 +8269,15 @@ PMOD_EXPORT void f__memory_usage(INT32 args)
       size += mi.usmblks;
     }
   }
+#endif
   push_ulongest(size);
 
   push_static_text("num_free_blocks");
   push_int(1);
   push_static_text("free_block_bytes");
+#ifdef HAVE_MALLINFO2
+  size = mi.fsmblks + mi.fordblks;
+#else
   if (mi.fsmblks < 0) {
     size = (unsigned int)mi.fsmblks;
   } else {
@@ -7890,6 +8288,7 @@ PMOD_EXPORT void f__memory_usage(INT32 args)
   } else {
     size += mi.fordblks;
   }
+#endif
   push_ulongest(size);
 
   count_string_types();
@@ -8139,6 +8538,20 @@ PMOD_EXPORT void f__typeof(INT32 args)
 
   t = get_type_of_svalue(Pike_sp-args);
 
+  if (t && (t->flags & PT_FLAG_MASK_GENERICS) &&
+      (TYPEOF(Pike_sp[-args]) == PIKE_T_PROGRAM)) {
+    /* NB: Binding of generics is not done by get_type_of_svalue()
+     *     for programs.
+     */
+    struct mapping *bind =
+      mkbindings(Pike_sp[-args].u.program, NULL, 1);
+    struct pike_type *t2 =
+      compiler_apply_bindings(t, bind);
+    do_free_mapping(bind);
+    free_type(t);
+    t = t2;
+  }
+
   pop_n_elems(args);
   push_type_value(t);
 }
@@ -8176,7 +8589,7 @@ PMOD_EXPORT void f_replace_master(INT32 args)
 
   push_static_text ("is_pike_master");
   args++;
-  object_set_index (new_master, 0, Pike_sp - 1, (struct svalue *) &svalue_int_one);
+  object_set_index (new_master, 0, Pike_sp - 1, (const struct svalue *) &svalue_int_one);
 
   free_object(master_object);
   master_object=new_master;
@@ -8211,6 +8624,54 @@ PMOD_EXPORT void f_master(INT32 args)
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
+
+#ifdef CPU_TIME_MIGHT_BE_THREAD_LOCAL
+void thread_gethrvtime(struct thread_state * ts, INT32 args)
+#else
+void thread_gethrvtime(INT32 args)
+#endif
+{
+  int nsec = 0;
+  cpu_time_t time = get_cpu_time();
+
+  if (time == (cpu_time_t) -1) {
+    pop_n_elems (args);
+    push_int (-1);
+    return;
+  }
+
+#ifdef CPU_TIME_MIGHT_BE_THREAD_LOCAL
+  if (cpu_time_is_thread_local)
+    time -= ts->auto_gc_time;
+  else
+#endif
+  {
+#ifdef CPU_TIME_MIGHT_NOT_BE_THREAD_LOCAL
+    time -= auto_gc_time;
+#endif
+  }
+
+  nsec = args && !UNSAFE_IS_ZERO(Pike_sp-args);
+
+  pop_n_elems(args);
+
+  if (nsec) {
+    push_int64(time);
+#ifndef LONG_CPU_TIME
+    push_int (1000000000 / CPU_TIME_TICKS);
+    o_multiply();
+#endif
+  }
+  else {
+#if CPU_TIME_TICKS_LOW > 1000000
+    push_int64(time / (CPU_TIME_TICKS / 1000000));
+#else
+    push_int64 (time);
+    push_int (1000000 / CPU_TIME_TICKS);
+    o_multiply();
+#endif
+  }
+}
 
 /*! @decl int gethrvtime (void|int nsec)
  *!
@@ -8248,46 +8709,11 @@ PMOD_EXPORT void f_master(INT32 args)
  */
 PMOD_EXPORT void f_gethrvtime(INT32 args)
 {
-  int nsec = 0;
-  cpu_time_t time = get_cpu_time();
-
-  if (time == (cpu_time_t) -1) {
-    pop_n_elems (args);
-    push_int (-1);
-    return;
-  }
-
 #ifdef CPU_TIME_MIGHT_BE_THREAD_LOCAL
-  if (cpu_time_is_thread_local)
-    time -= Pike_interpreter.thread_state->auto_gc_time;
-  else
-#endif
-  {
-#ifdef CPU_TIME_MIGHT_NOT_BE_THREAD_LOCAL
-    time -= auto_gc_time;
-#endif
-  }
-
-  nsec = args && !UNSAFE_IS_ZERO(Pike_sp-args);
-
-  pop_n_elems(args);
-
-  if (nsec) {
-    push_int64(time);
-#ifndef LONG_CPU_TIME
-    push_int (1000000000 / CPU_TIME_TICKS);
-    o_multiply();
-#endif
-  }
-  else {
-#if CPU_TIME_TICKS_LOW > 1000000
-    push_int64(time / (CPU_TIME_TICKS / 1000000));
+  thread_gethrvtime(Pike_interpreter.thread_state, args);
 #else
-    push_int64 (time);
-    push_int (1000000 / CPU_TIME_TICKS);
-    o_multiply();
+  thread_gethrvtime(args);
 #endif
-  }
 }
 
 /*! @decl int gethrtime (void|int nsec)
@@ -8484,7 +8910,7 @@ PMOD_EXPORT void f_object_variablep(INT32 args)
   struct pike_string *s;
   int ret;
 
-  get_all_args("variablep",args,"%o%S",&o, &s);
+  get_all_args("variablep",args,"%o%n",&o, &s);
 
   if(!o->prog)
     bad_arg_error("variablep", args, 1, "object", Pike_sp-args,
@@ -9156,6 +9582,7 @@ PMOD_EXPORT void f_filter(INT32 args)
 	   pop_n_elems(args-2);
 	 }
 	 else {
+           /* filter(X, mixed ... extra) ==> filter(X, map(X, @extra)) */
 	   memmove(Pike_sp-args+1,Pike_sp-args,args*sizeof(*Pike_sp));
 	   dmalloc_touch_svalue(Pike_sp);
 	   Pike_sp++;
@@ -9166,6 +9593,7 @@ PMOD_EXPORT void f_filter(INT32 args)
 	 f=Pike_sp[-1].u.array;
 	 a=Pike_sp[-2].u.array;
 	 n=a->size;
+         /* FIXME: Ought to use BEGIN_AGGREGATE_ARRAY() et al. */
 	 for (k=m=i=0; i<n; i++)
 	    if (!UNSAFE_IS_ZERO(f->item+i))
 	    {
@@ -9323,13 +9751,17 @@ PMOD_EXPORT void f_filter(INT32 args)
  */
 static node *fix_map_node_info(node *n)
 {
-  int argno;
+  int argno = 1; /* Note: argument 2 has argno 1. */
   node **cb_;
   /* Assume worst case. */
   int node_info = OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND;
 
-  /* Note: argument 2 has argno 1. */
-  for (argno = 1; (cb_ = my_get_arg(&_CDR(n), argno)); argno++) {
+  if (count_args(CDR(n)) == 1) {
+    /* Special case for the single argument case. */
+    argno = 0;
+  }
+
+  for (argno; (cb_ = my_get_arg(&_CDR(n), argno)); argno++) {
     node *cb = *cb_;
 
     if ((cb->token == F_CONSTANT) &&
@@ -9499,15 +9931,15 @@ slow_path:
  */
 
 
-/*! @decl string defined(program x, string identifier)
+/*! @decl string|zero defined(program x, string identifier)
  *!
- *!   Returns a string with filename and linenumber where @[idenfifier]
+ *!   Returns a string with filename and linenumber where @[identifier]
  *!   in @[x] was defined.
  *!
  *!   Returns @expr{0@} (zero) when no line can be found, e.g. for
  *!   builtin functions.
  *!
- *!   If @[idenfier] can not be found in @[x] this function returns
+ *!   If @[identifier] can not be found in @[x] this function returns
  *!   where the program is defined.
  */
 PMOD_EXPORT void f_program_identifier_defined(INT32 args)
@@ -9553,7 +9985,8 @@ PMOD_EXPORT void f_program_identifier_defined(INT32 args)
 
   if(IDENTIFIER_IS_PIKE_FUNCTION( id->identifier_flags ) &&
      id->func.offset != -1)
-      file = low_get_line(id_prog->program + id->func.offset, id_prog, &line);
+    file = low_get_line(id_prog->program + id->func.offset, id_prog,
+			&line, NULL);
   else if (IDENTIFIER_IS_CONSTANT (id->identifier_flags) &&
            id->func.const_info.offset >= 0 &&
            (p2 = program_from_svalue (&id_prog->constants[id->func.const_info.offset].sval)))
@@ -9699,8 +10132,9 @@ PMOD_EXPORT void f_function_defined(INT32 args)
     id_prog = PROG_FROM_INT (p, func);
 
     if(IDENTIFIER_IS_PIKE_FUNCTION( id->identifier_flags ) &&
-      id->func.offset != -1)
-      file = low_get_line(id_prog->program + id->func.offset, id_prog, &line);
+       id->func.offset != -1)
+      file = low_get_line(id_prog->program + id->func.offset, id_prog,
+			  &line, NULL);
     else if (IDENTIFIER_IS_CONSTANT (id->identifier_flags) &&
 	     id->func.const_info.offset >= 0 &&
 	     (p2 = program_from_svalue (&id_prog->constants[id->func.const_info.offset].sval)))
@@ -9749,32 +10183,53 @@ void init_builtin_efuns(void)
 
   ADD_EFUN("_typeof", f__typeof, tFunc(tSetvar(0, tMix), tType(tVar(0))), 0);
 
-  /* class __master
-   * Used to prototype the master object.
+  /*! @module Builtin
+   */
+
+  /*! @class __master
+   *!
+   *! Used to prototype the master object.
    */
   start_new_program();
+  /*! @decl void _main(array(string) argv, array(string) env) */
   ADD_PROTOTYPE("_main", tFunc(tArr(tStr) tArr(tStr),tVoid), 0);
-
+  /*! @decl object cast_to_object(string oname, string current_file) */
   ADD_PROTOTYPE("cast_to_object", tFunc(tStr tStr tOr(tVoid, tObj), tObj), 0);
+  /*! @decl program cast_to_program(string pname, string current_file, object|void handler) */
   ADD_PROTOTYPE("cast_to_program", tFunc(tStr tStr tOr(tVoid, tObj), tPrg(tObj)), 0);
+  /*! @decl void compile_error(string file, int line, string err) */
   ADD_PROTOTYPE("compile_error", tFunc(tStr tInt tStr, tVoid), 0);
+  /*! @decl void compile_warning(string file, int line, string warn) */
   ADD_PROTOTYPE("compile_warning", tFunc(tStr tInt tStr, tVoid), 0);
+  /*! @decl string decode_charset(string data, string charset) */
   ADD_PROTOTYPE("decode_charset", tFunc(tStr tStr, tStr), 0);
+  /*! @decl string describe_backtrace(object|array trace, int|void line_width) */
   ADD_PROTOTYPE("describe_backtrace", tFunc(tOr(tObj, tArr(tMix)) tOr(tVoid, tInt), tStr), 0);
+  /*! @decl void handle_error(array|object trace) */
   ADD_PROTOTYPE("handle_error", tFunc(tOr(tArr(tMix),tObj), tVoid), 0);
+  /*! @decl mixed handle_import(string what, string|void current_file, object|void handler) */
   ADD_PROTOTYPE("handle_import",
 		tFunc(tStr tOr(tStr, tVoid) tOr(tObj, tVoid), tMix), 0);
-  ADD_PROTOTYPE("handle_include", tFunc(tStr tStr tInt, tStr), 0);
+  /*! @decl string handle_include(string f, string current_file, int(0..1) local_include) */
+  ADD_PROTOTYPE("handle_include", tFunc(tStr tStr tInt01, tStr), 0);
+  /*! @decl program handle_inherit(string pname, string current_file, object|void handler) */
   ADD_PROTOTYPE("handle_inherit", tFunc(tStr tStr tOr(tObj, tVoid), tPrg(tObj)), 0);
-  ADD_PROTOTYPE("write", tFunc(tStr tOr(tVoid,tMix), tVoid), OPT_SIDE_EFFECT);
-  ADD_PROTOTYPE("werror", tFunc(tStr tOr(tVoid,tMix), tVoid), OPT_SIDE_EFFECT);
-
+  /*! @decl void write(string fmt, mixed ... args) */
+  ADD_PROTOTYPE("write", tFuncV(tStr, tOr(tVoid,tMix), tInt), OPT_SIDE_EFFECT);
+  /*! @decl void werror(string fmt, mixed ... args) */
+  ADD_PROTOTYPE("werror", tFuncV(tStr, tOr(tVoid,tMix), tInt), OPT_SIDE_EFFECT);
+  /*! @decl string read_include(string path) */
   ADD_PROTOTYPE("read_include", tFunc(tStr, tStr), 0);
+  /*! @decl mixed resolv(string identifier, string|void current_file, object|void handler) */
   ADD_PROTOTYPE("resolv",
 		tFunc(tStr tOr(tStr,tVoid) tOr(tObj,tVoid), tMix), 0);
 
   pike___master_program = end_program();
   add_program_constant("__master", pike___master_program, 0);
+  /*! @endclass
+   */
+  /*! @endmodule Builtin
+   */
 
   /* FIXME: */
   ADD_EFUN("replace_master", f_replace_master,
@@ -9791,7 +10246,9 @@ void init_builtin_efuns(void)
 
   /* function(0=mixed ...:array(0)) */
   ADD_EFUN2("aggregate",debug_f_aggregate,
-	    tFuncV(tNone,tSetvar(0,tMix),tArr(tVar(0))),
+	    tOr(tAnd(tFuncV(tMix, tMix, tArr(tMix)),
+		     tFuncV(tNone,tSetvar(0,tMix),tArr(tVar(0)))),
+		tFunc(tNone, tLArr(tZero, tUnknown))),
 	    OPT_TRY_OPTIMIZE, optimize_f_aggregate, 0);
 
   /* function(0=mixed ...:multiset(0)) */
@@ -9800,8 +10257,14 @@ void init_builtin_efuns(void)
 
   /* function(0=mixed ...:mapping(0:0)) */
   ADD_EFUN2("aggregate_mapping",f_aggregate_mapping,
-	    tFuncV(tNone,tSetvar(0,tMix),tMap(tVar(0),tVar(0))),
-	    OPT_TRY_OPTIMIZE, fix_aggregate_mapping_type, 0);
+	    tOr(tFunc(tNone, tMap(tUnknown, tUnknown)),
+		tTransitive(tFunc(tSetvar(0, tMix) tSetvar(1, tMix),
+				  tMap(tVar(0), tVar(1))),
+			    tFunc(tMap(tSetvar(2, tMix), tSetvar(3, tMix))
+				  tSetvar(0, tMix) tSetvar(1, tMix),
+				  tMap(tOr(tVar(2), tVar(0)),
+				       tOr(tVar(3), tVar(1)))))),
+	    OPT_TRY_OPTIMIZE, NULL, 0);
 
   /* function(:mapping(string:mixed)) */
   ADD_EFUN("all_constants",f_all_constants,
@@ -9809,37 +10272,45 @@ void init_builtin_efuns(void)
 
   /* function(:object) */
   ADD_EFUN("get_active_compiler", f_get_active_compiler,
-	   tFunc(tNone, tObj), OPT_EXTERNAL_DEPEND);
-
-  /* function(:object) */
-  ADD_EFUN("get_active_compilation_handler",
-	   f_get_active_compilation_handler,
-	   tFunc(tNone, tObj), OPT_EXTERNAL_DEPEND);
-
-  /* function(:object) */
-  ADD_EFUN("get_active_error_handler",
-	   f_get_active_error_handler,
-	   tFunc(tNone, tObj), OPT_EXTERNAL_DEPEND);
+	   tFunc(tNone, tOr(tObj, tZero)), OPT_EXTERNAL_DEPEND);
 
   /* function(int,void|0=mixed:array(0)) */
   ADD_EFUN("allocate", f_allocate,
-	   tFunc(tInt tOr(tVoid,tSetvar(0,tMix)),tArr(tVar(0))), 0);
+	   tFuncArg(tSetvar(0, tIntPos),
+		    tOr(tFunc(tNone, tLArr(tVar(0), tZero)),
+			tFunc(tSetvar(1,tMix),tLArr(tVar(0), tVar(1))))), 0);
 
   /* function(mixed:int) */
   ADD_EFUN("arrayp", f_arrayp,tFunc(tMix,tInt01),0);
 
+  ADD_EFUN("basename", f_basename,
+	   tFunc(tNStr(tSetvar(0, tInt)), tNStr(tVar(0))), 0);
+
   /* function(string...:string) */
-  ADD_EFUN("combine_path_nt",f_combine_path_nt,tFuncV(tNone,tStr,tStr),0);
-  ADD_EFUN("combine_path_unix",f_combine_path_unix,tFuncV(tNone,tStr,tStr),0);
-  ADD_EFUN("combine_path_amigaos",f_combine_path_amigaos,tFuncV(tNone,tStr,tStr),0);
-#if defined(__NT__)
-  ADD_EFUN("combine_path",f_combine_path_nt,tFuncV(tNone,tStr,tStr),0);
+  ADD_EFUN("combine_path_nt", f_combine_path_nt,
+	   tFuncV(tNone, tNStr(tSetvar(0, tInt)),
+		  tNStr(tOr(tVar(0), tIntSlash))), 0);
+  ADD_EFUN("combine_path_unix", f_combine_path_unix,
+	   tFuncV(tNone, tNStr(tSetvar(0, tInt)),
+		  tNStr(tOr(tVar(0), tIntSlash))), 0);
+  ADD_EFUN("combine_path_amigaos", f_combine_path_amigaos,
+	   tFuncV(tNone, tNStr(tSetvar(0, tInt)),
+		  tNStr(tOr(tVar(0), tIntSlash))), 0);
+#ifdef __NT__
+  /* NB: cl does not like preprocessor directives in macro arguments. */
+  ADD_EFUN("combine_path",
+	   f_combine_path_nt,
+           tFuncV(tNone, tNStr(tSetvar(0, tInt)),
+                  tNStr(tOr(tVar(0), tIntSlash))), 0);
+#else /* !NT */
+  ADD_EFUN("combine_path",
+#if defined(__amigaos__)
+	   f_combine_path_amigaos,
 #else
-#ifdef __amigaos__
-  ADD_EFUN("combine_path",f_combine_path_amigaos,tFuncV(tNone,tStr,tStr),0);
-#else
-  ADD_EFUN("combine_path",f_combine_path_unix,tFuncV(tNone,tStr,tStr),0);
+	   f_combine_path_unix,
 #endif
+	   tFuncV(tNone, tNStr(tSetvar(0, tInt)),
+		  tNStr(tOr(tVar(0), tIntSlash))), 0);
 #endif
 
   ADD_EFUN("compile", f_compile,
@@ -9853,8 +10324,11 @@ void init_builtin_efuns(void)
   ADD_EFUN("crypt",f_crypt,
            tOr(tFunc(tOr(tStr,tVoid),tStr7),tFunc(tStr tStr,tInt01)),OPT_EXTERNAL_DEPEND);
 
-  /* function(object|void:void) */
-  ADD_EFUN("destruct",f_destruct,tFunc(tOr(tObj,tVoid),tVoid),OPT_SIDE_EFFECT);
+  /* function(object|void:int(0..1)) */
+  ADD_EFUN("destruct",f_destruct,tFunc(tOr(tObj,tVoid),tInt01),OPT_SIDE_EFFECT);
+
+  ADD_EFUN("dirname", f_dirname,
+	   tFunc(tNStr(tSetvar(0, tInt)), tNStr(tVar(0))), 0);
 
   /* function(mixed,mixed:int) */
   ADD_EFUN("equal",f_equal,tFunc(tMix tMix,tInt01),OPT_TRY_OPTIMIZE);
@@ -9883,7 +10357,7 @@ void init_builtin_efuns(void)
   /* function(string,string:int(0..1))|function(string,string*:array(string)) */
   ADD_EFUN("glob",f_glob,
            tOr3(tFunc(tStr tStr,tInt01),
-                tFunc(tArr(tStr) tStr,tStr),
+                tFunc(tArr(tSetvar(0, tStr)) tStr, tOr(tVar(0), tZero)),
                 tFunc(tOr(tStr,tArr(tStr)) tSetvar(1,tArr(tStr)),tVar(1))),
 	   OPT_TRY_OPTIMIZE);
 
@@ -9905,14 +10379,19 @@ void init_builtin_efuns(void)
 
   ADD_EFUN("hash_value",f_hash_value,tFunc(tMix,tIntPos),OPT_TRY_OPTIMIZE);
 
-  ADD_EFUN2("indices",f_indices,
-	    tOr3(tFunc(tArray,tArr(tIntPos)),
-		 tFunc(tOr3(tMap(tSetvar(1,tMix),tMix),
-			    tSet(tSetvar(1,tMix)),
-			    tNStr(tSetvar(1,tInt))),
-		       tArr(tVar(1))),
-		 tFunc(tOr(tObj,tPrg(tObj)),tArr(tStr))),
-	    OPT_TRY_OPTIMIZE,fix_indices_type,0);
+  ADD_EFUN("indices",f_indices,
+           tOr6(tFunc(tLArr(tSetvar(1, tIntPos), tMix),
+                      tLArr(tVar(1), tRangeInt(tZero, tDecInt(tVar(1))))),
+		tFunc(tMap(tSetvar(1, tMix), tMix), tArr(tVar(1))),
+		tFunc(tSet(tSetvar(1, tMix)), tArr(tVar(1))),
+                tFunc(tLStr(tSetvar(1, tIntPos), tInt),
+                      tLArr(tVar(1), tRangeInt(tZero, tDecInt(tVar(1))))),
+		tFunc(tPrg(tObj), tArr(tStr)),
+		tFuncArg(tSetvar(2, tObj),
+			 tOr(tFindLFun(tVar(2), "_indices"),
+			     tIfnot(tThreshold(tFindLFun(tVar(2), "_indices")),
+				    tFunc(tNone, tArr(tStr)))))),
+	   OPT_TRY_OPTIMIZE);
 
   ADD_EFUN2("undefinedp", f_undefinedp, tFunc(tMix,tInt01), OPT_TRY_OPTIMIZE,
             0, generate_undefinedp);
@@ -9927,7 +10406,29 @@ void init_builtin_efuns(void)
 
   /* function(string:string)|function(int:int) */
   ADD_EFUN("lower_case",f_lower_case,
-	   tOr(tFunc(tStr,tStr), tFunc(tInt,tInt)),OPT_TRY_OPTIMIZE);
+           tOr(tAnd(tOr5(tFunc(tStr7, tStr7),
+                         tFunc(tNStr(tOr(tRangeInt(tInt128, tInt8bit),
+                                         tInt376)),
+                               tStr8),
+                         tFunc(tNStr(tOr(tRangeInt(tInt256, tDecInt(tInt376)),
+                                         tRangeInt(tIncInt(tInt376),
+                                                   tInt16bit))),
+                               tStr16),
+                         tFunc(tNStr(tRangeInt(tInt65536, tInt)),
+                               tNStr(tRangeInt(tInt65536, tInt))),
+                         tFunc(tNStr(tIntMinus), tNStr(tIntMinus))),
+                    tFunc(tLStr(tSetvar(0, tIntPos), tInt),
+                          tLStr(tVar(0), tInt))),
+               tOr5(tFunc(tInt7bit, tInt7bit),
+                    tFunc(tOr(tRangeInt(tInt128, tInt8bit), tInt376),
+                          tInt8bit),
+                    tFunc(tOr(tRangeInt(tInt256, tDecInt(tInt376)),
+                                    tRangeInt(tIncInt(tInt376), tInt16bit)),
+                          tInt16bit),
+                    tFunc(tRangeInt(tInt65536, tInt),
+                          tRangeInt(tInt65536, tInt)),
+                    tFunc(tIntMinus, tIntMinus))),
+           OPT_TRY_OPTIMIZE);
 
   /* function(mixed:int) */
   ADD_EFUN("mappingp",f_mappingp,tFunc(tMix,tInt01),OPT_TRY_OPTIMIZE);
@@ -9941,7 +10442,8 @@ void init_builtin_efuns(void)
 
   /* function(mixed:program|function) */
   ADD_EFUN2("object_program", f_object_program,
-	    tFunc(tMix, tOr(tPrg(tObj),tFunction)),
+	    tOr(tFunc(tSetvar(0, tObj), tPrg(tVar(0))),
+		tFunc(tNot(tObj), tZero)),
 	    OPT_TRY_OPTIMIZE, fix_object_program_type, 0);
 
   /* function(mixed:int) */
@@ -9967,15 +10469,17 @@ void init_builtin_efuns(void)
 	    OPT_TRY_OPTIMIZE, optimize_replace, 0);
 
   ADD_EFUN("reverse",f_reverse,
-	   tOr3(tFunc(tInt tOr(tVoid, tInt) tOr(tVoid, tInt), tInt),
-		tFunc(tStr tOr(tVoid, tInt) tOr(tVoid, tInt), tStr),
+	   tOr4(tFunc(tInt tOr(tVoid, tInt) tOr(tVoid, tInt), tInt),
+		tFunc(tSetvar(0, tStr) tOr(tVoid, tInt) tOr(tVoid, tInt),
+		      tVar(0)),
 		tFunc(tSetvar(0, tArray) tOr(tVoid, tInt) tOr(tVoid, tInt),
-		      tVar(0))),0);
+		      tVar(0)),
+		tFuncArg(tSetvar(0, tObj), tFindLFun(tVar(0), "_reverse"))), 0);
 
   /* function(mixed,array:array) */
   ADD_EFUN("rows",f_rows,
 	   tOr6(tFunc(tMap(tSetvar(0,tMix),tSetvar(1,tMix)) tArr(tVar(0)),
-		      tArr(tVar(1))),
+		      tArr(tOr(tVar(1), tZero))),
 		tFunc(tSet(tSetvar(0,tMix)) tArr(tVar(0)), tArr(tInt01)),
 		tFunc(tString tArr(tInt), tArr(tInt)),
 		tFunc(tArr(tSetvar(0,tMix)) tArr(tInt), tArr(tVar(1))),
@@ -9983,6 +10487,7 @@ void init_builtin_efuns(void)
 		tFunc(tOr4(tObj,tFunction,tPrg(tObj),tInt) tArray, tArray)), 0);
 
   /* FIXME: Is the third arg a good idea when the first is a mapping? */
+  /* FIXME: Improve type for the fallback to iterator object case. */
   ADD_EFUN("search",f_search,
 	   tOr4(tFunc(tStr tOr(tStr,tInt) tOr(tVoid,tInt) tOr(tVoid,tInt),
 		      tInt),
@@ -9990,7 +10495,10 @@ void init_builtin_efuns(void)
 		      tInt),
 		tFunc(tMap(tSetvar(1,tMix),tSetvar(2,tMix)) tVar(2)
                       tOr(tVoid,tVar(1)), tVar(1)),
-		tFuncV(tObj tMix tOr(tVoid, tSetvar(3, tMix)), tMix, tVar(3))),
+		tFuncArg(tSetvar(3, tObj),
+			 tOr(tFindLFun(tVar(3), "_search"),
+			     tIfnot(tFindLFun(tVar(3), "_search"),
+				    tFuncV(tMix, tMix, tMix))))),
 	   0);
 
   ADD_EFUN2("has_prefix", f_has_prefix, tFunc(tOr(tStr,tObj) tStr,tInt01),
@@ -10016,8 +10524,9 @@ void init_builtin_efuns(void)
 	   OPT_TRY_OPTIMIZE);
 
   /* function(float|int,int|void:void) */
-  ADD_EFUN("sleep", f_sleep,
-	   tFunc(tOr(tFlt,tInt) tOr(tInt,tVoid),tVoid),OPT_SIDE_EFFECT);
+  ADD_EFUN2("sleep", f_sleep,
+            tFunc(tOr(tFlt,tInt) tOr(tInt,tVoid),tVoid),
+            OPT_SIDE_EFFECT | OPT_TRY_OPTIMIZE, optimize_sleep, 0);
   ADD_EFUN("delay", f_delay,
 	   tFunc(tOr(tFlt,tInt) tOr(tInt,tVoid),tVoid),OPT_SIDE_EFFECT);
 
@@ -10058,17 +10567,42 @@ void init_builtin_efuns(void)
 
   /* function(string:string)|function(int:int) */
   ADD_EFUN("upper_case",f_upper_case,
-	   tOr(tFunc(tStr,tStr),tFunc(tInt,tInt)),OPT_TRY_OPTIMIZE);
+           tOr(tAnd(tOr6(tFunc(tStr7, tStr7),
+                         tFunc(tNStr(tRangeInt(tInt128, tInt254)),
+                               tNStr(tRangeInt(tInt128, tInt254))),
+                         tFunc(tNStr(tInt255), tNStr(tInt376)),
+                         tFunc(tNStr(tRangeInt(tInt256, tInt16bit)),
+                               tNStr(tRangeInt(tInt256, tInt16bit))),
+                         tFunc(tNStr(tRangeInt(tInt65536, tInt)),
+                               tNStr(tRangeInt(tInt65536, tInt))),
+                         tFunc(tNStr(tIntMinus), tNStr(tIntMinus))),
+                    tFunc(tLStr(tSetvar(0, tIntPos), tInt),
+                          tLStr(tVar(0), tInt))),
+               tOr6(tFunc(tInt7bit, tInt7bit),
+                    tFunc(tRangeInt(tInt128, tInt254),
+                          tRangeInt(tInt128, tInt254)),
+                    tFunc(tInt255, tInt376),
+                    tFunc(tRangeInt(tInt256, tInt16bit),
+                          tRangeInt(tInt256, tInt16bit)),
+                    tFunc(tRangeInt(tInt65536, tInt),
+                          tRangeInt(tInt65536, tInt)),
+                    tFunc(tIntMinus, tIntMinus))),
+           OPT_TRY_OPTIMIZE);
 
   /* function(string|multiset:array(int))|function(array(0=mixed)|mapping(mixed:0=mixed)|object|program:array(0)) */
-  ADD_EFUN2("values",f_values,
-	   tOr(tFunc(tOr(tStr,tMultiset),tArr(tInt)),
-	       tFunc(tOr4(tArr(tSetvar(0,tMix)),
-			  tMap(tMix,tSetvar(0,tMix)),
-			  tObj,tPrg(tObj)),
-		     tArr(tVar(0)))),0,fix_values_type,0);
+  ADD_EFUN("values",f_values,
+	   tOr6(tFunc(tMultiset, tArr(tInt01)),
+	        tFunc(tNStr(tSetvar(0, tInt)), tArr(tVar(0))),
+	        tFunc(tSetvar(1, tArray), tVar(1)),
+	        tFunc(tMap(tMix, tSetvar(0, tMix)), tArr(tVar(0))),
+	        tFunc(tPrg(tObj), tArr(tMix)),
+	        tFuncArg(tSetvar(2, tObj),
+			 tOr(tFindLFun(tVar(2), "_values"),
+			     tIfnot(tThreshold(tFindLFun(tVar(2), "_values")),
+				    tFunc(tNone, tArr(tMix)))))),
+	   0);
 
-  /* function(string|multiset:array(int))|function(array(0=mixed)|mapping(mixed:0=mixed)|object|program:array(0)) */
+  /* function(string|multiset(array(int))|function(array(0=mixed)|mapping(mixed:0=mixed)|object|program:array(0)) */
   ADD_EFUN2("types", f_types,
 	    tOr3(tFunc(tOr3(tNStr(tSetvar(0,tInt)),
 			    tArr(tSetvar(0,tMix)),
@@ -10077,16 +10611,28 @@ void init_builtin_efuns(void)
 		 tFunc(tMultiset, tArr(tType(tInt1))),
 		 tFunc(tOr(tObj,tPrg(tObj)), tArr(tType(tMix)))),0,NULL,0);
 
+  /* function(object|program, int(0..1)|void:array(multiset)) */
+  ADD_EFUN2("annotations", f_annotations,
+	    tFunc(tOr(tObj,tPrg(tObj) tOr(tInt01,tVoid)), tArr(tSet(tMix))),0,NULL,0);
+		
+  ADD_FUNCTION2("direct_program_annotations", f_direct_program_annotations,
+	    tFunc(tOr(tObj,tPrg(tObj) tOr(tInt01,tVoid)), tSet(tMix)),0,OPT_TRY_OPTIMIZE);
   /* function(mixed:int) */
   ADD_EFUN2("zero_type",f_zero_type,tFunc(tMix,tInt01),0,0,generate_zero_type);
 
   /* function(string,string:array) */
   ADD_EFUN("array_sscanf", f_sscanf,
-	   tFunc(tStr tAttr("sscanf_format", tStr),
+	   tFunc(tAttr("sscanf_input", tSetvar(0, tStr))
+		 tAttr("sscanf_format", tStr),
+		 tArr(tAttr("sscanf_args", tMix))), OPT_TRY_OPTIMIZE);
+
+  ADD_EFUN("array_sscanf_80", f_sscanf_80,
+	   tFunc(tAttr("sscanf_input", tSetvar(0, tStr))
+		 tAttr("sscanf_80_format", tStr),
 		 tArr(tAttr("sscanf_args", tMix))), OPT_TRY_OPTIMIZE);
 
   ADD_EFUN("__handle_sscanf_format", f___handle_sscanf_format,
-	   tFunc(tStr tStr tType(tMix) tType(tMix), tType(tMix)),
+	   tFunc(tStr tOr(tStr, tZero) tType(tMix) tType(tMix), tType(tMix)),
 	   0);
 
   /* Some Wide-string stuff */
@@ -10118,24 +10664,32 @@ void init_builtin_efuns(void)
   ADD_EFUN("__parse_pike_type", f_parse_pike_type,
 	   tFunc(tStr8,tStr8),OPT_TRY_OPTIMIZE);
 
+  ADD_EFUN("deprecated_typep", f_deprecated_typep,
+           tFunc(tType(tMix),tInt), OPT_TRY_OPTIMIZE);
+
+  ADD_EFUN("typeof_identifier", f_typeof_identifier,
+           tFunc(tPrg(tObj) tStr, tOr(tType(tMix), tZero)), OPT_TRY_OPTIMIZE);
+
   ADD_EFUN("__soft_cast", f___soft_cast,
 	   tFunc(tSetvar(0, tType(tMix)) tSetvar(1, tType(tMix)),
-		 tAnd(tVar(0), tVar(1))),
+		 tOr(tAnd(tVar(0), tVar(1)), tZero)),
 	   OPT_TRY_OPTIMIZE);
 
   ADD_EFUN("__low_check_call", f___low_check_call,
-	   tFunc(tType(tCallable) tType(tMix) tOr(tInt,tVoid) tOr(tMix,tVoid),
-		 tType(tCallable)),
+	   tFunc(tType(tCallable) tType(tMix) tOr(tInt, tVoid)
+		 tOr(tMapping, tVoid) tOr(tMix, tVoid),
+		 tOr(tType(tCallable), tZero)),
 	   OPT_TRY_OPTIMIZE);
 
   /* FIXME: Could have a stricter type. */
   ADD_EFUN("__get_return_type", f___get_return_type,
-	   tFunc(tType(tCallable), tType(tMix)),
+	   tFunc(tType(tCallable) tOr(tMapping, tVoid),
+		 tOr(tType(tMix), tZero)),
 	   OPT_TRY_OPTIMIZE);
 
   /* FIXME: Could have a stricter type. */
   ADD_EFUN("__get_first_arg_type", f___get_first_arg_type,
-	   tFunc(tType(tCallable), tType(tMix)),
+	   tFunc(tType(tCallable), tOr(tType(tMix), tZero)),
 	   OPT_TRY_OPTIMIZE);
 
   ADD_EFUN("__get_type_attributes", f___get_type_attributes,
@@ -10155,11 +10709,9 @@ void init_builtin_efuns(void)
 		     tOr(tVoid,tInt) tOr(tVoid,tInt),tInt),
 	       tFunc(tOr(tObj, tMap(tStr, tInt)),tInt)),OPT_TRY_OPTIMIZE);
 
-#ifdef HAVE_STRPTIME
   /* function(string, string:mapping(string:int)) */
   ADD_EFUN("strptime", f_strptime,
            tFunc(tStr tStr, tMap(tStr, tInt)), OPT_TRY_OPTIMIZE);
-#endif
 
   /* function(string,mapping(string:int):string) */
   ADD_EFUN("strftime", f_strftime,
@@ -10187,17 +10739,20 @@ void init_builtin_efuns(void)
    * intentionally not part of the prototype, to keep it free for
    * other uses in the future. */
 
-  /* function(mixed,void|object:string) */
+  /* function(mixed,void|object,void|object|int:string) */
   ADD_EFUN("encode_value", f_encode_value,
-	   tFunc(tMix tOr(tVoid,tObj),tStr8), OPT_TRY_OPTIMIZE);
+	   tFunc(tMix tOr(tVoid,tObj) tOr3(tVoid, tIntPos, tObj),tStr8),
+	   OPT_TRY_OPTIMIZE);
 
-  /* function(mixed,void|object:string) */
+  /* function(mixed,void|object,void|object|int:string) */
   ADD_EFUN("encode_value_canonic", f_encode_value_canonic,
-	   tFunc(tMix tOr(tVoid,tObj),tStr8), OPT_TRY_OPTIMIZE);
+	   tFunc(tMix tOr(tVoid,tObj) tOr3(tVoid, tIntPos, tObj),tStr8),
+	   OPT_TRY_OPTIMIZE);
 
-  /* function(string,void|object:mixed) */
+  /* function(string,void|object,void|object|int:mixed) */
   ADD_EFUN("decode_value", f_decode_value,
-	   tFunc(tStr tOr(tVoid,tObj),tMix), OPT_TRY_OPTIMIZE);
+           tFunc(tStr8 tOr3(tVoid,tObj,tInt_10) tOr3(tVoid,tIntPos,tObj),tMix),
+	   OPT_TRY_OPTIMIZE);
 
   /* function(object,string:int) */
   ADD_EFUN("object_variablep", f_object_variablep,
@@ -10233,31 +10788,40 @@ void init_builtin_efuns(void)
   ADD_FUNCTION2("longest_ordered_sequence", f_longest_ordered_sequence,
 		tFunc(tArray,tArr(tInt)), 0, OPT_TRY_OPTIMIZE);
 
-#define tMapStuff(IN,SUB,OUTFUN,OUTSET,OUTPROG,OUTMIX,OUTARR,OUTMAP) \
-  tOr6( tFuncV(IN tFuncV(SUB,tSetvar(0,tAnd(tMix,tZero)),	     \
-			 tSetvar(2,tAny)),tVar(0),		     \
-	       OUTFUN),						     \
-	tFuncV(IN tSet(tMix),tMix,OUTSET), \
+  /* Type variable use in map():
+   *
+   * 0: Accumulated argument types for callback function.
+   * 1: Iterator value type (aka indices). First arg to callback function.
+   * 2: Result value type. Return type for callback function.
+   * 3: Mapping index type when looping over mapping.
+   * 4: Callback function continuation type for optional arguments and result.
+   */
+#define tMapStuffLow(IN,SUB,OUTSET,OUTPROG,OUTARR,OUTMAP) \
+  tOr3( tFuncV(IN tSet(tMix),tMix,OUTSET), \
 	tFuncV(IN tMap(tMix, tSetvar(2,tMix)), tMix, OUTMAP), \
-        tFuncV(IN tArray, tMix, OUTARR), \
-	tIfnot(tFuncV(IN, tNot(tMix), tMix), \
-	       tFuncV(IN, tMix, OUTMIX)), \
-	tFuncV(IN, tVoid, OUTMIX) )
+        tFuncV(IN tArray, tMix, OUTARR) )
+
+#define tMapStuff(IN,SUB,OUTFUN,OUTSET,OUTPROG,OUTARR,OUTMAP) \
+  tOr( tFuncV(IN tFuncV(SUB, tSetvar(0, tAny), tSetvar(2,tAny)),     \
+	      tVar(0), OUTFUN),					     \
+       tMapStuffLow(IN,SUB,OUTSET,OUTPROG,OUTARR,OUTMAP))
 
   ADD_EFUN2("map", f_map,
-	    tOr7(tMapStuff(tArr(tSetvar(1,tMix)),tVar(1),
-			   tArr(tVar(2)),
-			   tArr(tInt01),
-			   tArr(tObj),
-			   tArr(tMix),
-			   tArr(tArr(tMix)),
-			   tArr(tOr(tInt0,tVar(2)))),
+	    tOr9(tFuncArg(tArr(tSetvar(1,tMix)),
+			  tFuncArg(tFuncArg(tVar(1),
+					    tSetvar(4,
+						    tFuncV(tNone, tUnknown, tMix))),
+				   tArr(tVar(4)))),
+		 tMapStuffLow(tArr(tSetvar(1,tMix)),tVar(1),
+			      tArr(tInt01),
+			      tArr(tObj),
+			      tArr(tArr(tMix)),
+			      tArr(tOr(tInt0,tVar(2)))),
 
 		 tMapStuff(tMap(tSetvar(3,tMix),tSetvar(1,tMix)),tVar(1),
 			   tMap(tVar(3),tVar(2)),
 			   tMap(tVar(3),tInt01),
 			   tMap(tVar(3),tObj),
-			   tMap(tVar(3),tMix),
 			   tMap(tVar(3),tArr(tMix)),
 			   tMap(tVar(3),tOr(tInt0,tVar(2)))),
 
@@ -10265,7 +10829,6 @@ void init_builtin_efuns(void)
 			   tSet(tVar(2)),
 			   tSet(tInt01),
 			   tSet(tObj),
-			   tSet(tMix),
 			   tSet(tArr(tMix)),
 			   tSet(tOr(tInt0,tVar(2)))),
 
@@ -10273,12 +10836,12 @@ void init_builtin_efuns(void)
 			   tMap(tStr,tVar(2)),
 			   tMap(tStr,tInt01),
 			   tMap(tStr,tObj),
-			   tMap(tStr,tMix),
 			   tMap(tStr,tArr(tMix)),
 			   tMap(tStr,tOr(tInt0,tVar(2)))),
 
-		 tOr4( tFuncV(tString tFuncV(tInt,tMix,tInt),tMix,tString),
-		       tFuncV(tString tFuncV(tInt,tMix,tInt),tMix,tString),
+		 tOr3( tFuncV(tNStr(tSetvar(0, tInt))
+			      tFuncV(tVar(0), tUnknown, tSetvar(1, tInt)),
+			      tMix, tNStr(tVar(1))),
 		       tFuncV(tString tSet(tMix),tMix,tString),
 		       tFuncV(tString tMap(tMix,tInt), tMix, tString) ),
 
@@ -10288,14 +10851,20 @@ void init_builtin_efuns(void)
 		       tFuncV(tSet(tStringIndicable) tString,tMix,tSet(tMix)),
 		       tFuncV(tOr(tPrg(tObj),tFunction) tString,tMix,tMapping)),
 
+		 tFunc(tSetvar(0, tOr4(tArray, tString,
+				       tMap(tMix, tMix), tSet(tMix))),
+		       tVar(0)),
+
 		 tFuncV(tObj,tMix,tMix) ),
 	    OPT_TRY_OPTIMIZE, fix_map_node_info, 0);
 
 #if 1
   ADD_EFUN2("filter", f_filter,
-	    tOr3(tFuncV(tSetvar(1,tOr4(tArray,tMapping,tMultiset,tString)),
+	    tOr5(tFuncV(tSetvar(1,tOr(tMapping,tMultiset)),
 			tMixed,
 			tVar(1)),
+		 tFuncV(tNStr(tSetvar(0,tInt)), tMixed, tNStr(tVar(0))),
+		 tFuncV(tArr(tSetvar(0,tMixed)), tMixed, tArr(tVar(0))),
 		 tFuncV(tOr(tPrg(tObj),tFunction),tMixed,tMap(tString,tMix)),
 		 tFuncV(tObj,tMix,tMix) ) ,
 	    OPT_TRY_OPTIMIZE, fix_map_node_info, 0);
@@ -10327,7 +10896,7 @@ void init_builtin_efuns(void)
                 OPT_TRY_OPTIMIZE);
 
   ADD_FUNCTION2("program_identifier_defined", f_program_identifier_defined,
-               tFunc(tOr(tObj,tPrg(tObj)) tString,tString), 0,
+		tFunc(tOr(tObj,tPrg(tObj)) tString, tOr(tString, tZero)), 0,
                 OPT_TRY_OPTIMIZE);
 
   ADD_FUNCTION2("function_defined", f_function_defined,
@@ -10344,11 +10913,7 @@ void init_builtin_efuns(void)
 		tFunc(tOr(tInt,tVoid),tInt), OPT_EXTERNAL_DEPEND);
 
   ADD_FUNCTION ("count_memory", f_count_memory,
-		tFuncV(tOr(tInt,tMap(tString,tInt)),
-		       tOr8(tArray,tMultiset,tMapping,tObj,tPrg(tObj),
-			    tString,tType(tMix),tInt),
-		       tInt), 0);
-
+		tFuncV(tOr(tInt,tMap(tString,tInt)), tMixed, tInt), 0);
   ADD_FUNCTION("identify_cycle", f_identify_cycle,
 	       tFunc(tOr7(tArray,tMultiset,tMapping,tObj,tPrg(tObj),
 			  tString,tType(tMix)),

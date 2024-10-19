@@ -10,3 +10,5 @@
 //! use.
 
 inherit Nettle.IDEA;
+
+@Pike.Annotations.Implements(Crypto.BlockCipher);

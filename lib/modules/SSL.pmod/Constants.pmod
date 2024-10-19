@@ -1,6 +1,10 @@
 
 #pike __REAL_VERSION__
 
+// Enable SSL3_EXPERIMENTAL to get cipher suites that have not been
+// validated against other implementations.
+//#define SSL3_EXPERIMENTAL
+
 //! Protocol constants
 
 //! Constants for specifying the versions of SSL/TLS to use.
@@ -12,8 +16,7 @@ enum ProtocolVersion {
   PROTOCOL_TLS_1_0	= 0x301, //! TLS 1.0 - The @rfc{2246@} version of TLS.
   PROTOCOL_TLS_1_1	= 0x302, //! TLS 1.1 - The @rfc{4346@} version of TLS.
   PROTOCOL_TLS_1_2	= 0x303, //! TLS 1.2 - The @rfc{5246@} version of TLS.
-  PROTOCOL_TLS_1_3      = 0x304, //! TLS 1.3 - draft
-  PROTOCOL_TLS_1_3_DRAFT= 0x7f16, //! TLS 1.3 draft 22
+  PROTOCOL_TLS_1_3      = 0x304, //! TLS 1.3 - The @rfc{8446@} version of TLS.
 
   PROTOCOL_DTLS_1_0	= 0xfeff, //! DTLS 1.0 - The @rfc{4347@}
 				  //! version of DTLS.  This is
@@ -125,13 +128,16 @@ constant CIPHER_effective_keylengths = ([
 
 //! Hash algorithms as per @rfc{5246:7.4.1.4.1@}.
 enum HashAlgorithm {
-  HASH_none	= 0,
-  HASH_md5	= 1,
-  HASH_sha1	= 2,
-  HASH_sha224	= 3,
-  HASH_sha256	= 4,
-  HASH_sha384	= 5,
-  HASH_sha512	= 6,
+  HASH_none	= 0x0000,
+  HASH_md5	= 0x0100,
+  HASH_sha1	= 0x0200,
+  HASH_sha224	= 0x0300,
+  HASH_sha256	= 0x0400,
+  HASH_sha384	= 0x0500,
+  HASH_sha512	= 0x0600,
+  HASH_intrinsic= 0x0800,
+
+  HASH_MASK	= 0xff00,
 }
 
 // Compatibility with Pike 8.0
@@ -168,6 +174,15 @@ enum SignatureAlgorithm {
   SIGNATURE_rsa		= 1,	//! RSASSA PKCS1 v1.5 signature.
   SIGNATURE_dsa		= 2,	//! DSS signature.
   SIGNATURE_ecdsa	= 3,	//! ECDSA signature.
+
+  SIGNATURE_rsa_pss_256	= 4,	//! RSA PSS signature with 256 bit hash.
+  SIGNATURE_rsa_pss_384	= 5,	//! RSA PSS signature with 384 bit hash.
+  SIGNATURE_rsa_pss_512	= 6,	//! RSA PSS signature with 512 bit hash.
+
+  SIGNATURE_ed25519	= 7,	//! EdDSA 25519 signature.
+  SIGNATURE_ed448	= 8,	//! EdDSA 448 signature.
+
+  SIGNATURE_MASK	= 0x00ff,
 }
 
 //! Signature algorithms from TLS 1.3
@@ -188,8 +203,8 @@ enum SignatureScheme {
   SIGNATURE_rsa_pss_sha512 = 0x0806,
 
   // EdDSA algorithms
-  SIGNATURE_ed25519 = 0x0807,
-  SIGNATURE_ed448 = 0x0808,
+  SIGNATURE_ed25519_intrinsic = 0x0807,
+  SIGNATURE_ed448_intrinsic = 0x0808,
 
   // Legacy algorithms
   SIGNATURE_rsa_pkcs1_sha1 = 0x0201,
@@ -343,6 +358,7 @@ constant CONNECTION_client_auth = 2;
 
 /* Cipher suites */
 enum CipherSuite {
+  SSL_invalid_suite				= -1,
   SSL_null_with_null_null 			= 0x0000,	// SSL 3.0
   SSL_rsa_with_null_md5				= 0x0001,	// SSL 3.0
   SSL_rsa_with_null_sha				= 0x0002,	// SSL 3.0
@@ -513,10 +529,34 @@ enum CipherSuite {
   TLS_dhe_dss_with_camellia_256_cbc_sha256	= 0x00c3,	// RFC 5932
   TLS_dhe_rsa_with_camellia_256_cbc_sha256	= 0x00c4,	// RFC 5932
   TLS_dh_anon_with_camellia_256_cbc_sha256	= 0x00c5,	// RFC 5932
+  TLS_sm4_gcm_sm3                               = 0x00c6,       // RFC 8998
+  TLS_sm4_ccm_sm3                               = 0x00c7,       // RFC 8998
 
   TLS_empty_renegotiation_info_scsv		= 0x00ff,	// RFC 5746
 
+  // 0x0a0a Reserved in RFC 8701
+
+  // These are TLS 1.3 only.
+  TLS_aes_128_gcm_sha256                        = 0x1301,       // RFC 8446
+  TLS_aes_256_gcm_sha384                        = 0x1302,       // RFC 8446
+  TLS_chacha20_poly1305_sha256                  = 0x1303,       // RFC 8446
+  TLS_aes_128_ccm_sha256                        = 0x1304,       // RFC 8446
+  TLS_aes_128_ccm_8_sha256                      = 0x1305,       // RFC 8446
+
+  // 0x1a1a Reserved in RFC 8701
+  // 0x2a2a Reserved in RFC 8701
+  // 0x3a3a Reserved in RFC 8701
+  // 0x4a4a Reserved in RFC 8701
+
   TLS_fallback_scsv				= 0x5600,	// RFC 7507
+
+  // 0x5a5a Reserved in RFC 8701
+  // 0x6a6a Reserved in RFC 8701
+  // 0x7a7a Reserved in RFC 8701
+  // 0x8a8a Reserved in RFC 8701
+  // 0x9a9a Reserved in RFC 8701
+  // 0xaaaa Reserved in RFC 8701
+  // 0xbaba Reserved in RFC 8701
 
   TLS_ecdh_ecdsa_with_null_sha			= 0xc001,	// RFC 4492
   TLS_ecdh_ecdsa_with_rc4_128_sha		= 0xc002,	// RFC 4492
@@ -693,8 +733,24 @@ enum CipherSuite {
   TLS_ecdhe_ecdsa_with_aes_256_ccm		= 0xc0ad,	// RFC 7251
   TLS_ecdhe_ecdsa_with_aes_128_ccm_8		= 0xc0ae,	// RFC 7251
   TLS_ecdhe_ecdsa_with_aes_256_ccm_8		= 0xc0af,	// RFC 7251
+  TLS_eccpwd_with_aes_128_gcm_sha256            = 0xc0b0,       // RFC 8492
+  TLS_eccpwd_with_aes_256_gcm_sha384            = 0xc0b1,       // RFC 8492
+  TLS_eccpwd_with_aes_128_ccm_sha256            = 0xc0b2,       // RFC 8492
+  TLS_eccpwd_with_aes_256_ccm_sha384            = 0xc0b3,       // RFC 8492
+  // TLS_sha256_sha256  camwinget-tls-ts13-macciphersuites-12
+  // TLS_sha384_sha384  camwinget-tls-ts13-macciphersuites-12
 
-  TLS_ecdhe_psk_with_aes_128_gcm_sha256		= 0xcafe,	// BoringSSL
+  // TLS_gostr341112_256_with_kuznyechik_ctr_omac
+  // TLS_gostr341112_256_with_magma_ctr_omac
+  // TLS_gostr341112_256_with_28147_cnr_imit
+  // TLS_gostr341112_256_with_kuznyechik_mgm_l
+  // TLS_gostr341112_256_with_magma_mgm_l
+  // TLS_gostr341112_256_with_kuznyechik_mgm_s
+  // TLS_gostr341112_256_with_magma_mgm_s
+
+  // TLS_ecdhe_psk_with_aes_128_gcm_sha256	= 0xcafe,	// BoringSSL
+
+  // 0xcaca Reserved in RFC 8701
 
   TLS_ecdhe_rsa_with_oldchacha20_poly1305_sha256 = 0xcc13,  // draft-agl-tls-chacha20poly1305-02
   TLS_ecdhe_ecdsa_with_oldchacha20_poly1305_sha256 = 0xcc14,// draft-agl-tls-chacha20poly1305-02
@@ -707,6 +763,16 @@ enum CipherSuite {
   TLS_ecdhe_psk_with_chacha20_poly1305_sha256	= 0xccac,	// RFC 7905
   TLS_dhe_psk_with_chacha20_poly1305_sha256	= 0xccad,	// RFC 7905
   TLS_rsa_psk_with_chacha20_poly1305_sha256	= 0xccae,	// RFC 7905
+
+  TLS_ecdhe_psk_with_aes_128_gcm_sha256         = 0xd001,       // RFC 8442
+  TLS_ecdhe_psk_with_aes_256_gcm_sha384         = 0xd002,       // RFC 8442
+  TLS_ecdhe_psk_with_aes_128_ccm_8_sha256       = 0xd003,       // RFC 8442
+
+  TLS_ecdhe_psk_with_aes_128_ccm_sha256         = 0xd005,       // RFC 8442
+
+  // 0xdada Reserved in RFC 8701
+  // 0xeaea Reserved in RFC 8701
+  // 0xfafa Reserved in RFC 8701
 
 // These were introduced by Netscape while developing SSL 3.1 after
 // feedback from NIST. Eventually the feedback led to TLS 1.0.
@@ -783,17 +849,17 @@ string fmt_cipher_suites(array(int) s)
   return (string)b;
 }
 
-//! Pretty-print an array of signature pairs.
+//! Pretty-print an array of @[SignatureScheme]s.
 //!
 //! @param pairs
 //!   Array of signature pairs to format.
-string fmt_signature_pairs(array(array(int)) pairs)
+string fmt_signature_pairs(array(int) pairs)
 {
   String.Buffer b = String.Buffer();
-  foreach(pairs, [int hash, int signature])
+  foreach(pairs, int signature_scheme)
     b->sprintf("  <%s, %s>\n",
-	       fmt_constant(hash, "HASH"),
-	       fmt_constant(signature, "SIGNATURE"));
+	       fmt_constant(signature_scheme & HASH_MASK, "HASH"),
+	       fmt_constant(signature_scheme & SIGNATURE_MASK, "SIGNATURE"));
   return (string)b;
 }
 
@@ -832,6 +898,8 @@ string fmt_version(ProtocolVersion version)
 constant CIPHER_SUITES =
 ([
    // The following cipher suites are only intended for testing.
+   // NB: TLS_rsa_with_null_sha256 has an explicit MODE_cbc in
+   //     order to make it invalid for TLS 1.1 and earlier.
    SSL_null_with_null_null :    	({ 0, 0, 0 }),
    SSL_rsa_with_null_md5 :      	({ KE_rsa_export, 0, HASH_md5 }),
    SSL_rsa_with_null_sha :      	({ KE_rsa_export, 0, HASH_sha1 }),
@@ -1257,8 +1325,13 @@ TLS_ecdhe_ecdsa_with_aes_256_ccm_8 :	({ KE_ecdhe_ecdsa, CIPHER_aes256, HASH_sha2
    TLS_ecdhe_psk_with_camellia_256_cbc_sha384 : ({ KE_ecdhe_psk, CIPHER_camellia256, HASH_sha384, MODE_cbc }),
 #endif /* Crypto.SHA384 */
 #endif /* Crypto.Camellia */
+   TLS_ecdhe_psk_with_aes_128_ccm_sha256 : ({ KE_ecdhe_psk, CIPHER_aes, HASH_sha256, MODE_ccm }),
+   TLS_ecdhe_psk_with_aes_128_ccm_8_sha256 : ({ KE_ecdhe_psk, CIPHER_aes, HASH_sha256, MODE_ccm_8 }),
 #if constant(Crypto.AES.GCM)
    TLS_ecdhe_psk_with_aes_128_gcm_sha256 : ({ KE_ecdhe_psk, CIPHER_aes, HASH_sha256, MODE_gcm }),
+#if constant(Crypto.SHA384)
+   TLS_ecdhe_psk_with_aes_256_gcm_sha384 : ({ KE_ecdhe_psk, CIPHER_aes256, HASH_sha384, MODE_gcm }),
+#endif /* Crypto.SHA384 */
 #endif /* Crypto.AES.GCM */
 #endif /* Crypto.ECC.Curve */
 ]);
@@ -1310,14 +1383,14 @@ constant AUTH_dss_ephemeral_dh	= 6;	// SSL 3.0
 constant AUTH_fortezza_kea	= 20;	// SSL 3.0
 constant AUTH_fortezza_dms	= 20;
 constant AUTH_ecdsa_sign        = 64;	// RFC 4492
-constant AUTH_rsa_fixed_ecdh    = 65;	// RFC 4492
-constant AUTH_ecdsa_fixed_ecdh  = 66;	// RFC 4492
+constant AUTH_rsa_fixed_ecdh    = 65;	// RFC 4492. Deprecated RFC8422:5.5
+constant AUTH_ecdsa_fixed_ecdh  = 66;	// RFC 4492. Deprecated RFC8422:5.5
 
-/* ECC curve types from RFC 4492 5.4 (ECCurveType). */
+//! ECC curve types from @rfc{4492:5.4@} (ECCurveType).
 enum CurveType {
-  CURVETYPE_explicit_prime	= 1,
-  CURVETYPE_explicit_char2	= 2,
-  CURVETYPE_named_curve		= 3,
+  CURVETYPE_explicit_prime	= 1,	//! Deprecated @rfc{8422:5.4@}
+  CURVETYPE_explicit_char2	= 2,	//! Deprecated @rfc{8422:5.4@}
+  CURVETYPE_named_curve		= 3,	//! Curve or group from @[NamedGroup].
 }
 
 /* ECBasis types from RFC 4492 5.4 errata. */
@@ -1326,55 +1399,57 @@ enum ECBasisType {
   ECBASIS_pentanomial = 2,
 }
 
-/* Groups used for elliptic curves DHE (ECDHE) and finite field DH
-   (FFDHE). RFC 4492 5.1.1 (NamedCurve) / TLS 1.3 7.4.2.5.2. */
+//! Groups used for elliptic curves DHE (ECDHE) and finite field DH (FFDHE).
+//!
+//! @seealso
+//!   @rfc{4492:5.1.1@} (NamedCurve) / TLS 1.3 7.4.2.5.2. */
 enum NamedGroup {
-  GROUP_sect163k1			= 1,	// RFC 4492
-  GROUP_sect163r1			= 2,	// RFC 4492
-  GROUP_sect163r2			= 3,	// RFC 4492
-  GROUP_sect193r1			= 4,	// RFC 4492
-  GROUP_sect193r2			= 5,	// RFC 4492
-  GROUP_sect233k1			= 6,	// RFC 4492
-  GROUP_sect233r1			= 7,	// RFC 4492
-  GROUP_sect239k1			= 8,	// RFC 4492
-  GROUP_sect283k1			= 9,	// RFC 4492
-  GROUP_sect283r1			= 10,	// RFC 4492
-  GROUP_sect409k1			= 11,	// RFC 4492
-  GROUP_sect409r1			= 12,	// RFC 4492
-  GROUP_sect571k1			= 13,	// RFC 4492
-  GROUP_sect571r1			= 14,	// RFC 4492
-  GROUP_secp160k1			= 15,	// RFC 4492
-  GROUP_secp160r1			= 16,	// RFC 4492
-  GROUP_secp160r2			= 17,	// RFC 4492
-  GROUP_secp192k1			= 18,	// RFC 4492
-  GROUP_secp192r1			= 19,	// RFC 4492
-  GROUP_secp224k1			= 20,	// RFC 4492
-  GROUP_secp224r1			= 21,	// RFC 4492
-  GROUP_secp256k1			= 22,	// RFC 4492
-  GROUP_secp256r1			= 23,	// RFC 4492
-  GROUP_secp384r1			= 24,	// RFC 4492
-  GROUP_secp521r1			= 25,	// RFC 4492
+  GROUP_sect163k1			= 1,	//! @rfc{4492@}
+  GROUP_sect163r1			= 2,	//! @rfc{4492@}
+  GROUP_sect163r2			= 3,	//! @rfc{4492@}
+  GROUP_sect193r1			= 4,	//! @rfc{4492@}
+  GROUP_sect193r2			= 5,	//! @rfc{4492@}
+  GROUP_sect233k1			= 6,	//! @rfc{4492@}
+  GROUP_sect233r1			= 7,	//! @rfc{4492@}
+  GROUP_sect239k1			= 8,	//! @rfc{4492@}
+  GROUP_sect283k1			= 9,	//! @rfc{4492@}
+  GROUP_sect283r1			= 10,	//! @rfc{4492@}
+  GROUP_sect409k1			= 11,	//! @rfc{4492@}
+  GROUP_sect409r1			= 12,	//! @rfc{4492@}
+  GROUP_sect571k1			= 13,	//! @rfc{4492@}
+  GROUP_sect571r1			= 14,	//! @rfc{4492@}
+  GROUP_secp160k1			= 15,	//! @rfc{4492@}
+  GROUP_secp160r1			= 16,	//! @rfc{4492@}
+  GROUP_secp160r2			= 17,	//! @rfc{4492@}
+  GROUP_secp192k1			= 18,	//! @rfc{4492@}
+  GROUP_secp192r1			= 19,	//! @rfc{4492@}
+  GROUP_secp224k1			= 20,	//! @rfc{4492@}
+  GROUP_secp224r1			= 21,	//! @rfc{4492@}
+  GROUP_secp256k1			= 22,	//! @rfc{4492@}
+  GROUP_secp256r1			= 23,	//! @rfc{4492@}
+  GROUP_secp384r1			= 24,	//! @rfc{4492@}
+  GROUP_secp521r1			= 25,	//! @rfc{4492@}
 
-  GROUP_brainpoolP256r1			= 26,	// RFC 7027
-  GROUP_brainpoolP384r1			= 27,	// RFC 7027
-  GROUP_brainpoolP512r1			= 28,	// RFC 7027
+  GROUP_brainpoolP256r1			= 26,	//! @rfc{7027@}
+  GROUP_brainpoolP384r1			= 27,	//! @rfc{7027@}
+  GROUP_brainpoolP512r1			= 28,	//! @rfc{7027@}
 
-  GROUP_ecdh_x25519			= 29,	// Early assignment.
-  GROUP_ecdh_x448			= 30,	// Early assignment.
+  GROUP_x25519				= 29,	//! @rfc{8422@}
+  GROUP_x448				= 30,	//! @rfc{8422@}
 
-  GROUP_ffdhe2048			= 256,	// RFC 7919
-  GROUP_ffdhe3072			= 257,	// RFC 7919
-  GROUP_ffdhe4096			= 258,	// RFC 7919
-  GROUP_ffdhe6144			= 259,	// RFC 7919
-  GROUP_ffdhe8192			= 260,	// RFC 7919
+  GROUP_ffdhe2048			= 256,	//! @rfc{7919@}
+  GROUP_ffdhe3072			= 257,	//! @rfc{7919@}
+  GROUP_ffdhe4096			= 258,	//! @rfc{7919@}
+  GROUP_ffdhe6144			= 259,	//! @rfc{7919@}
+  GROUP_ffdhe8192			= 260,	//! @rfc{7919@}
 
-  GROUP_ffdhe_private0			= 508,	// RFC 7919
-  GROUP_ffdhe_private1			= 509,	// RFC 7919
-  GROUP_ffdhe_private2			= 510,	// RFC 7919
-  GROUP_ffdhe_private3			= 511,	// RFC 7919
+  GROUP_ffdhe_private0			= 508,	//! @rfc{7919@}
+  GROUP_ffdhe_private1			= 509,	//! @rfc{7919@}
+  GROUP_ffdhe_private2			= 510,	//! @rfc{7919@}
+  GROUP_ffdhe_private3			= 511,	//! @rfc{7919@}
 
-  GROUP_arbitrary_explicit_prime_curves	= 0xFF01,
-  GROUP_arbitrary_explicit_char2_curves	= 0xFF02,
+  GROUP_arbitrary_explicit_prime_curves	= 0xFF01,	//! Deprecated @rfc{8422:5.1.1@}
+  GROUP_arbitrary_explicit_char2_curves	= 0xFF02,	//! Deprecated @rfc{8422:5.1.1@}
 }
 
 //! Lookup for Pike ECC name to @[NamedGroup].
@@ -1384,7 +1459,8 @@ constant ECC_NAME_TO_CURVE = ([
   "SECP_256R1": GROUP_secp256r1,
   "SECP_384R1": GROUP_secp384r1,
   "SECP_521R1": GROUP_secp521r1,
-  "Curve25519": GROUP_ecdh_x25519,
+  "Curve25519": GROUP_x25519,
+  "Curve448": GROUP_x448,
 ]);
 
 /* ECC point formats from RFC 4492 5.1.2 (ECPointFormat). */
@@ -1483,7 +1559,10 @@ constant ECC_CURVES = ([
   GROUP_secp521r1: Crypto.ECC.SECP_521R1,
 #endif
 #if constant(Crypto.ECC.Curve25519)
-  GROUP_ecdh_x25519: Crypto.ECC.Curve25519,
+  GROUP_x25519: Crypto.ECC.Curve25519,
+#endif
+#if constant(Crypto.ECC.Curve448) && defined(SSL3_EXPERIMENTAL)
+  GROUP_x448: Crypto.ECC.Curve448,
 #endif
 ]);
 
@@ -1508,7 +1587,7 @@ constant MODP_GROUPS = ([
 enum HeartBeatModeType {
   HEARTBEAT_MODE_disabled = 0,
   HEARTBEAT_MODE_peer_allowed_to_send = 1,
-  HEARTBEAT_MODE_peer_not_allowed_to_send = 1,
+  HEARTBEAT_MODE_peer_not_allowed_to_send = 2,
 };
 
 enum HeartBeatMessageType {
@@ -1540,39 +1619,45 @@ enum AuthzDataFormat {
   ADF_saml_assertion_url = 3,
 };
 
-mapping(string(8bit):array(HashAlgorithm|SignatureAlgorithm))
+mapping(string(8bit):SignatureScheme)
   pkcs_der_to_sign_alg = ([
   // RSA
   Standards.PKCS.Identifiers.rsa_md5_id->get_der():
-  ({ HASH_md5, SIGNATURE_rsa }),
+  HASH_md5 | SIGNATURE_rsa,
   Standards.PKCS.Identifiers.rsa_sha1_id->get_der():
-  ({ HASH_sha1, SIGNATURE_rsa }),
+  SIGNATURE_rsa_pkcs1_sha1,
   Standards.PKCS.Identifiers.rsa_sha256_id->get_der():
-  ({ HASH_sha256, SIGNATURE_rsa }),
+  SIGNATURE_rsa_pkcs1_sha256,
   Standards.PKCS.Identifiers.rsa_sha384_id->get_der():
-  ({ HASH_sha384, SIGNATURE_rsa }),
+  SIGNATURE_rsa_pkcs1_sha384,
   Standards.PKCS.Identifiers.rsa_sha512_id->get_der():
-  ({ HASH_sha512, SIGNATURE_rsa }),
+  SIGNATURE_rsa_pkcs1_sha256,
 
   // DSA
   Standards.PKCS.Identifiers.dsa_sha_id->get_der():
-  ({ HASH_sha1, SIGNATURE_dsa }),
+  HASH_sha1 | SIGNATURE_dsa,
   Standards.PKCS.Identifiers.dsa_sha224_id->get_der():
-  ({ HASH_sha224, SIGNATURE_dsa }),
+  HASH_sha224 | SIGNATURE_dsa,
   Standards.PKCS.Identifiers.dsa_sha256_id->get_der():
-  ({ HASH_sha256, SIGNATURE_dsa }),
+  HASH_sha256 | SIGNATURE_dsa,
 
   // ECDSA
   Standards.PKCS.Identifiers.ecdsa_sha1_id->get_der():
-  ({ HASH_sha1, SIGNATURE_ecdsa }),
+  SIGNATURE_ecdsa_sha1,
   Standards.PKCS.Identifiers.ecdsa_sha224_id->get_der():
-  ({ HASH_sha224, SIGNATURE_ecdsa }),
+  HASH_sha224 | SIGNATURE_ecdsa,
   Standards.PKCS.Identifiers.ecdsa_sha256_id->get_der():
-  ({ HASH_sha256, SIGNATURE_ecdsa }),
+  SIGNATURE_ecdsa_secp256r1_sha256,
   Standards.PKCS.Identifiers.ecdsa_sha384_id->get_der():
-  ({ HASH_sha384, SIGNATURE_ecdsa }),
+  SIGNATURE_ecdsa_secp384r1_sha384,
   Standards.PKCS.Identifiers.ecdsa_sha512_id->get_der():
-  ({ HASH_sha512, SIGNATURE_ecdsa }),
+  SIGNATURE_ecdsa_secp521r1_sha512,
+
+  // EdDSA
+  Standards.PKCS.Identifiers.eddsa25519_id->get_der():
+  SIGNATURE_ed25519_intrinsic,
+  Standards.PKCS.Identifiers.eddsa448_id->get_der():
+  SIGNATURE_ed448_intrinsic,
 ]);
 
 //! A chain of X509 certificates with corresponding private key.
@@ -1598,7 +1683,7 @@ class CertificatePair
   array(string(8bit)) globs;
 
   //! TLS 1.2-style hash and signature pairs matching the @[certs].
-  array(array(HashAlgorithm|SignatureAlgorithm)) sign_algs;
+  array(SignatureScheme) sign_algs;
 
   //! Bitmask of the key exchange algorithms supported by the main certificate.
   //! This is used for TLS 1.1 and earlier.
@@ -1645,7 +1730,8 @@ class CertificatePair
     if(!objectp(o)) return this < o;
     if( !o->key || !o->sign_algs ) return this < o;
 
-    int s = sign_algs[0][1], os = o->sign_algs[0][1];
+    int s = sign_algs[0] & SIGNATURE_MASK;
+    int os = o->sign_algs[0] & SIGNATURE_MASK;
 
     // FIXME: Let hash bits influence strength. The signature bits
     // doesn't overshadow hash completely.
@@ -1660,7 +1746,8 @@ class CertificatePair
     if( bs < obs ) return 0;
     if( bs > obs ) return 1;
 
-    int h = sign_algs[0][0], oh = o->sign_algs[0][0];
+    int h = sign_algs[0] & HASH_MASK;
+    int oh = o->sign_algs[0] & HASH_MASK;
     if( h < oh ) return 0;
     if( h > oh ) return 1;
 
@@ -1707,7 +1794,7 @@ class CertificatePair
       error("Empty list of certificates.\n");
     }
 
-    array(Standards.X509.TBSCertificate) tbss =
+    array(Standards.X509.TBSCertificate|zero) tbss =
       map(certs, Standards.X509.decode_certificate);
 
     if (has_value(tbss, 0)) error("Invalid cert\n");
@@ -1733,69 +1820,99 @@ class CertificatePair
 
     if (has_value(sign_algs, 0)) error("Unknown signature algorithm.\n");
 
-    // FIXME: This probably needs to look at the leaf cert extensions!
-    this::cert_type = ([
-      SIGNATURE_rsa: AUTH_rsa_sign,
-      SIGNATURE_dsa: AUTH_dss_sign,
-      SIGNATURE_ecdsa: AUTH_ecdsa_sign,
-    ])[sign_algs[0][1]];
-
     set_globs(tbss[0], extra_name_globs);
 
     // FIXME: Ought to check certificate extensions.
     //        cf RFC 5246 7.4.2.
     ke_mask = 0;
     ke_mask_invariant = 0;
-    switch(sign_algs[0][1]) {
-    case SIGNATURE_rsa:
-      foreach(({ KE_rsa, KE_rsa_fips, KE_dhe_rsa, KE_ecdhe_rsa, KE_rsa_psk,
-		 KE_rsa_export,
-	      }),
-	      KeyExchangeType ke) {
-	ke_mask |= 1<<ke;
+    if ((sign_algs[0] & HASH_MASK) == HASH_intrinsic) {
+      this::cert_type = ([
+	SIGNATURE_ed25519_intrinsic: AUTH_ecdsa_sign,
+	SIGNATURE_ed448_intrinsic: AUTH_ecdsa_sign,
+      ])[sign_algs[0]];
+      if (this::cert_type) {
+	ke_mask |= 1<<KE_ecdhe_ecdsa;
+	if ((sizeof(sign_algs) == 1) ||
+	    ((sign_algs[1] & SIGNATURE_MASK) == SIGNATURE_ecdsa) ||
+	    (< SIGNATURE_ed25519_intrinsic,
+	       SIGNATURE_ed448_intrinsic >)[sign_algs[1]]) {
+	  // RFC 4492 2.1: ECDH_ECDSA
+	  // In ECDH_ECDSA, the server's certificate MUST contain
+	  // an ECDH-capable public key and be signed with ECDSA.
+	  ke_mask |= 1<<KE_ecdh_ecdsa;
+	} else if ((sign_algs[1] & SIGNATURE_MASK) == SIGNATURE_rsa) {
+	  // RFC 4492 2.3: ECDH_RSA
+	  // This key exchange algorithm is the same as ECDH_ECDSA
+	  // except that the server's certificate MUST be signed
+	  // with RSA rather than ECDSA.
+	  ke_mask |= 1<<KE_ecdh_rsa;
+	}
+	ke_mask_invariant = ke_mask | ((1<<KE_ecdh_ecdsa) | (1<<KE_ecdh_rsa));
       }
-      ke_mask_invariant = ke_mask;
-      break;
-    case SIGNATURE_dsa:
-      ke_mask |= 1<<KE_dhe_dss;
-      if ((sizeof(sign_algs) == 1) || (sign_algs[1][1] == SIGNATURE_dsa)) {
-	// RFC 4346 7.4.2: DH_DSS
-	// Diffie-Hellman key. The algorithm used
-	// to sign the certificate MUST be DSS.
-	ke_mask |= 1<<KE_dh_dss;
-      } else if (sign_algs[1][1] == SIGNATURE_rsa) {
-	// RFC 4346 7.4.2: DH_RSA
-	// Diffie-Hellman key. The algorithm used
-	// to sign the certificate MUST be RSA.
-	ke_mask |= 1<<KE_dh_rsa;
+    } else {
+      // FIXME: This probably needs to look at the leaf cert extensions!
+      this::cert_type = ([
+	SIGNATURE_rsa: AUTH_rsa_sign,
+	SIGNATURE_dsa: AUTH_dss_sign,
+	SIGNATURE_ecdsa: AUTH_ecdsa_sign,
+      ])[sign_algs[0] & SIGNATURE_MASK];
+
+      switch(sign_algs[0] & SIGNATURE_MASK) {
+      case SIGNATURE_rsa:
+	foreach(({ KE_rsa, KE_rsa_fips, KE_dhe_rsa, KE_ecdhe_rsa, KE_rsa_psk,
+		   KE_rsa_export,
+		}),
+		KeyExchangeType ke) {
+	  ke_mask |= 1<<ke;
+	}
+	ke_mask_invariant = ke_mask;
+	break;
+      case SIGNATURE_dsa:
+	ke_mask |= 1<<KE_dhe_dss;
+	if ((sizeof(sign_algs) == 1) ||
+	    ((sign_algs[1] & SIGNATURE_MASK) == SIGNATURE_dsa)) {
+	  // RFC 4346 7.4.2: DH_DSS
+	  // Diffie-Hellman key. The algorithm used
+	  // to sign the certificate MUST be DSS.
+	  ke_mask |= 1<<KE_dh_dss;
+	} else if ((sign_algs[1] & SIGNATURE_MASK) == SIGNATURE_rsa) {
+	  // RFC 4346 7.4.2: DH_RSA
+	  // Diffie-Hellman key. The algorithm used
+	  // to sign the certificate MUST be RSA.
+	  ke_mask |= 1<<KE_dh_rsa;
+	}
+	ke_mask_invariant = ke_mask | ((1<<KE_dh_dss) | (1<<KE_dh_rsa));
+	break;
+      case SIGNATURE_ecdsa:
+	ke_mask |= 1<<KE_ecdhe_ecdsa;
+	if ((sizeof(sign_algs) == 1) ||
+	    ((sign_algs[1] & SIGNATURE_MASK) == SIGNATURE_ecdsa)) {
+	  // RFC 4492 2.1: ECDH_ECDSA
+	  // In ECDH_ECDSA, the server's certificate MUST contain
+	  // an ECDH-capable public key and be signed with ECDSA.
+	  ke_mask |= 1<<KE_ecdh_ecdsa;
+	} else if ((sign_algs[1] & SIGNATURE_MASK) == SIGNATURE_rsa) {
+	  // RFC 4492 2.3: ECDH_RSA
+	  // This key exchange algorithm is the same as ECDH_ECDSA
+	  // except that the server's certificate MUST be signed
+	  // with RSA rather than ECDSA.
+	  ke_mask |= 1<<KE_ecdh_rsa;
+	}
+	ke_mask_invariant = ke_mask | ((1<<KE_ecdh_ecdsa) | (1<<KE_ecdh_rsa));
+	break;
       }
-      ke_mask_invariant = ke_mask | ((1<<KE_dh_dss) | (1<<KE_dh_rsa));
-      break;
-    case SIGNATURE_ecdsa:
-      ke_mask |= 1<<KE_ecdhe_ecdsa;
-      if ((sizeof(sign_algs) == 1) || (sign_algs[1][1] == SIGNATURE_ecdsa)) {
-	// RFC 4492 2.1: ECDH_ECDSA
-	// In ECDH_ECDSA, the server's certificate MUST contain
-	// an ECDH-capable public key and be signed with ECDSA.
-	ke_mask |= 1<<KE_ecdh_ecdsa;
-      } else if (sign_algs[1][1] == SIGNATURE_rsa) {
-	// RFC 4492 2.3: ECDH_RSA
-	// This key exchange algorithm is the same as ECDH_ECDSA
-	// except that the server's certificate MUST be signed
-	// with RSA rather than ECDSA.
-	ke_mask |= 1<<KE_ecdh_rsa;
-      }
-      ke_mask_invariant = ke_mask | ((1<<KE_ecdh_ecdsa) | (1<<KE_ecdh_rsa));
-      break;
     }
-    if (!ke_mask) error("Certificate not useful for TLS!\n");
+
+    if (!ke_mask) error("Certificate not useful for TLS!\n"
+			"sign_algs: %O\n", sign_algs);
   }
 
   protected string _sprintf(int c)
   {
     string k = sprintf("%O", key);
     sscanf(k, "Crypto.%s", k);
-    string h = fmt_constant(sign_algs[0][0], "HASH");
+    string h = fmt_constant(sign_algs[0] & HASH_MASK, "HASH");
     sscanf(h, "HASH_%s", h);
     return sprintf("CertificatePair(%s, %s, ({%{%O, %}}))", k, h, globs);
   }

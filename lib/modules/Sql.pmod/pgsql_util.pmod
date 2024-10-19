@@ -82,16 +82,15 @@ private class MUTEX {
 //! The instance of the pgsql dedicated backend.
 final Pike.Backend local_backend;
 
+private Shuffler.Shuffler shuffler = Shuffler.Shuffler();
 private Pike.Backend cb_backend;
 private Result qalreadyprinted;
 private Thread.Mutex backendmux = Thread.Mutex();
-private Thread.ResourceCount clientsregistered = Thread.ResourceCount();
+final multiset(proxy) clients = set_weak_flag((<>), Pike.WEAK);
 
-constant emptyarray = ({});
-constant describenodata
- = (["datarowdesc":emptyarray, "datarowtypes":emptyarray,
-     "datatypeoid":emptyarray]);
-private constant censoroptions = (<"use_ssl", "force_ssl",
+mapping describenodata
+ = (["datarowdesc":({}), "datarowtypes":({}), "datatypeoid":({})]);
+private multiset censoroptions = (<"use_ssl", "force_ssl",
  "cache_autoprepared_statements", "reconnect", "text_query", "is_superuser",
  "server_encoding", "server_version", "integer_datetimes",
  "session_authorization">);
@@ -112,7 +111,7 @@ private Regexp dontcacheprefix = iregexp("^\a*(FETCH|COPY)\a");
 private Regexp paralleliseprefix
  = iregexp("^\a*((SELEC|INSER)T|(UPDA|DELE)TE|(FETC|WIT)H)\a");
 
- /* Statements matching transbeginprefix will cause the driver
+ /* Statements matching transbeginprefix will cause the driver to
   * insert a sync after the statement.
   * Failure to do so, will result in portal synchronisation errors
   * in the event of an ErrorResponse.
@@ -120,13 +119,20 @@ private Regexp paralleliseprefix
 final Regexp transbeginprefix
  = iregexp("^\a*(BEGIN|START)([; \t\f\r\n]|$)");
 
- /* Statements matching transendprefix will cause the driver
+ /* Statements matching transendprefix will cause the driver to
   * insert a sync after the statement.
   * Failure to do so, will result in portal synchronisation errors
   * in the event of an ErrorResponse.
   */
 final Regexp transendprefix
  = iregexp("^\a*(COMMIT|ROLLBACK|END)([; \t\f\r\n]|$)");
+
+ /* Statements matching nodataresprefix will cause the driver
+  * to skip asking for a query description and query results, since there
+  * are no arguments or results to begin with.
+  */
+final Regexp nodataresprefix
+ = iregexp("^\a*(RESET|CLOSE|DISCARD)\a");
 
  /* For statements matching execfetchlimit the resultrows will not be
   * fetched in pieces.  This heuristic will be sub-optimal whenever
@@ -141,16 +147,23 @@ final Regexp transendprefix
   * tradeoff.
   */
 private Regexp execfetchlimit
- = iregexp("^\a*((UPDA|DELE)TE|INSERT)\a|\aLIMIT\a+[1-9][; \t\f\r\n]*$");
+ = iregexp("^\a*((UPDA|DELE)TE|INSERT|CREATE|DROP|CALL"
+           "|RESET|CLOSE|DISCARD)\a|\aLIMIT\a+[1-9][; \t\f\r\n]*$");
 
 private void default_backend_runs() {		// Runs as soon as the
   cb_backend = Pike.DefaultBackend;		// DefaultBackend has started
 }
 
-private void create() {
+protected void create() {
+  atexit(_destruct);
   // Run callbacks from our local_backend until DefaultBackend has started
-  cb_backend = local_backend = Pike.SmallBackend();
+  shuffler->set_backend(cb_backend = local_backend = Pike.Backend());
   call_out(default_backend_runs, 0);
+}
+
+protected void _destruct() {
+  foreach (clients; proxy client; )
+    destruct(client);
 }
 
 private Regexp iregexp(string expr) {
@@ -179,7 +192,7 @@ private void run_local_backend() {
     looponce = 0;
     if (lock = backendmux->trylock()) {
       PD("Starting local backend\n");
-      while (!clientsregistered->drained()	// Autoterminate when not needed
+      while (sizeof(clients)    		// Autoterminate when not needed
        || sizeof(local_backend->call_out_info())) {
         mixed err;
         if (err = catch(local_backend(4096.0)))
@@ -187,19 +200,18 @@ private void run_local_backend() {
       }
       PD("Terminating local backend\n");
       lock = 0;
-      looponce = !clientsregistered->drained();
+      looponce = sizeof(clients);
     }
   } while (looponce);
 }
 
 //! Registers yourself as a user of this backend.  If the backend
 //! has not been started yet, it will be spawned automatically.
-final Thread.ResourceCountKey register_backend() {
-  int startbackend = clientsregistered->drained();
-  Thread.ResourceCountKey key = clientsregistered->acquire();
+final void register_backend(proxy client) {
+  int startbackend = !sizeof(clients);
+  clients[client] = 1;
   if (startbackend)
     Thread.Thread(run_local_backend);
-  return key;
 }
 
 final void throwdelayederror(Result|proxy parent) {
@@ -207,8 +219,8 @@ final void throwdelayederror(Result|proxy parent) {
     if (!objectp(parent->pgsqlsess))
       parent->untolderror = 0;
     else if (parent->pgsqlsess)
-      parent->pgsqlsess->untolderror = 0;
-    parent.delayederror = 0;
+      parent->pgsqlsess->untolderror = parent->pgsqlsess->delayederror = 0;
+    parent->delayederror = 0;
     if (stringp(err))
       err = ({err, backtrace()[..<2]});
     throw(err);
@@ -337,7 +349,7 @@ class bufcon {
 
   private conxion realbuffer;
 
-  private void create(conxion _realbuffer) {
+  protected void create(conxion _realbuffer) {
     realbuffer = _realbuffer;
   }
 
@@ -345,8 +357,12 @@ class bufcon {
     return realbuffer->stashcount;
   }
 
-  final bufcon start(void|int waitforreal) {
-    dirty = realbuffer->stashcount->acquire();
+  final MUTEX `shortmux() {
+    return realbuffer->shortmux;
+  }
+
+  final bufcon start(void|int|array(Thread.MutexKey) waitforreal) {
+    dirty = stashcount->acquire();
 #ifdef PG_DEBUG
     if (waitforreal)
       error("pgsql.bufcon not allowed here\n");
@@ -355,7 +371,7 @@ class bufcon {
   }
 
   final void sendcmd(int mode, void|Result portal) {
-    Thread.MutexKey lock = realbuffer->shortmux->lock();
+    void|Thread.MutexKey lock = shortmux->lock();
     if (portal)
       realbuffer->stashqueue->write(portal);
     if (mode == SYNCSEND) {
@@ -368,8 +384,8 @@ class bufcon {
      realbuffer->socket->query_fd(), mode, realbuffer->stashflushmode);
     if (mode > realbuffer->stashflushmode)
       realbuffer->stashflushmode = mode;
+    dirty = 0;		    // Countdown before releasing the lock
     lock = 0;
-    dirty = 0;
     this->clear();
     if (lock = realbuffer->nostash->trylock(1)) {
 #ifdef PG_DEBUGRACE
@@ -435,7 +451,7 @@ class conxiin {
       [..255]
 #endif
      );
-    Thread.MutexKey lock = fillreadmux->lock();
+    void|Thread.MutexKey lock = fillreadmux->lock();
     if (procmsg && id)
       procmsg = 0, lock = 0, Thread.Thread(id);
     else if (fillread)
@@ -443,7 +459,7 @@ class conxiin {
     return 0;
   }
 
-  private void create() {
+  protected void create() {
     i::create();
     fillreadmux = MUTEX();
     fillread = Thread.Condition();
@@ -461,7 +477,7 @@ class conxion {
   inherit Stdio.Buffer:o;
   final conxiin i;
 
-  private Thread.Queue qportals;
+  private zero|Thread.Queue qportals;
   final MUTEX shortmux;
   private int closenext;
 
@@ -470,13 +486,12 @@ class conxion {
              |SSL.File
 #endif
                        socket;
-  private int towrite;
+  final Shuffler.Shuffle shuffle;
   final multiset(Result) runningportals = (<>);
 
   final MUTEX nostash;
   final Thread.MutexKey started;
   final Thread.Queue stashqueue;
-  final Thread.Condition stashavail;
   final Stdio.Buffer stash;
   //! @ignore
   final int(KEEP..SYNCSEND) stashflushmode;
@@ -491,38 +506,33 @@ class conxion {
   final int queueinidx = -1;
 #endif
 
-#if PG_DEBUGHISTORY > 0
-  final int(-1..) output_to(Stdio.Stream stm, void|int(0..) nbytes) {
-    Stdio.Buffer tb = Stdio.Buffer(this);
-    int ret = o::output_to(stm, nbytes);
-    if (ret) {
-      i->history += ({">>" + tb->read(ret)});
-      i->history = i->history[<PG_DEBUGHISTORY - 1 ..];
-    }
-    return ret;
-  }
-#endif
-
   private inline void queueup(Result portal) {
     qportals->write(portal); portal->_synctransact = synctransact;
     PD("%d>%O %d %d Queue portal %d bytes\n", socket->query_fd(),
      portal._portalname, ++queueoutidx, synctransact, sizeof(this));
   }
 
-  final bufcon|conxsess start(void|int waitforreal) {
+  final bufcon|conxsess|zero start(void|int|array(Thread.MutexKey) waitforreal)
+  {
     Thread.MutexKey lock;
 #ifdef PG_DEBUGRACE
     if (nostash->current_locking_thread())
       PD("Nostash locked by %s\n",
        describe_backtrace(nostash->current_locking_thread()->backtrace()));
 #endif
-    while (lock = (waitforreal ? nostash->lock : nostash->trylock)(1)) {
+    while (lock = nostash
+               && ((intp(waitforreal) && waitforreal > 0
+                   ? nostash->lock : nostash->trylock)(1))) {
       int mode;
       if (sizeof(stash) && (mode = getstash(KEEP)) > KEEP)
         sendcmd(mode);		// Force out stash to the server
       if (!stashcount->drained()) {
         lock = 0;				// Unlock while we wait
+        if (arrayp(waitforreal))
+          waitforreal[0] = 0;
         stashcount->wait_till_drained();
+        if (arrayp(waitforreal))
+          return 0;
         continue;				// Try again
       }
 #ifdef PG_DEBUGRACE
@@ -535,18 +545,14 @@ class conxion {
       return this;
 #endif
     }
-    return bufcon(this)->start();
+    if (arrayp(waitforreal))
+      waitforreal[0] = 0;
+    return !waitforreal && bufcon(this)->start();
   }
 
-  private int write_cb() {
-    Thread.MutexKey lock = shortmux->lock();
-    if (this) {				// Guard against async destructs
-      towrite -= output_to(socket, towrite);
-      lock = 0;
-      if (!i->fillread && !sizeof(this))
-        close();
-    }
-    return 0;
+  private void done_cb(object obj, int reason) {
+    if (!i->fillread)
+      close();
   }
 
   private int getstash(int mode) {
@@ -580,8 +586,8 @@ unfinalised:
           mode = SENDOUT;
           break;
         case FLUSHLOGSEND:
-          PD("%d>%O %d Queue simplequery %d bytes\n", socket->query_fd(),
-           portal._portalname, ++queueoutidx, sizeof(this));
+          PD("%d>%d Queue simplequery %d bytes\n",
+           socket->query_fd(), ++queueoutidx, sizeof(this));
           mode = FLUSHSEND;
       }
       qportals->write(synctransact++);
@@ -608,10 +614,14 @@ outer:
               add(PGFLUSH);
             case SENDOUT:;
           }
-          if (towrite = sizeof(this)) {
-            PD("%d>Sendcmd %O\n",
-             socket->query_fd(), ((string)this)[..towrite-1]);
-            towrite -= output_to(socket, towrite);
+          if (sizeof(this)) {
+            PD("%d>Sendcmd %O\n", socket->query_fd(), (string)this);
+#if PG_DEBUGHISTORY > 0
+            i->history += ({">>" + (string)this});
+            i->history = i->history[<PG_DEBUGHISTORY - 1 ..];
+#endif
+            shuffle->add_source(this);
+            shuffle->start(1, 1);
           }
         } while (0);
         started = 0;
@@ -639,6 +649,7 @@ outer:
       {
         Thread.MutexKey lock = i->fillreadmux->lock();
         if (i->fillread) {  // Delayed close() after flushing the output buffer
+          shuffle->set_done_callback(done_cb);
           i->fillread.signal();
           i->fillread = 0;
         }
@@ -664,7 +675,7 @@ outer:
           catch {
             foreach (runningportals; Result result; )
               if (!result.datarowtypes) {
-                result.datarowtypes = emptyarray;
+                result.datarowtypes = ({});
                 if (result._state != PURGED && !result.delayederror)
                   result.delayederror = LOSTERROR;
                 result._ddescribe->broadcast();
@@ -673,15 +684,17 @@ outer:
                 destruct(result);
           };
         destruct(nostash);
-        socket->set_non_blocking();			// Drop all callbacks
+        if (socket->set_non_blocking)
+          socket->set_non_blocking();			// Drop all callbacks
         PD("%d>Close socket\n", socket->query_fd());
+        shuffle->stop();
         socket->close();		// This will be an asynchronous close
       }
       destruct(this);
     }
   }
 
-  private void _destruct() {
+  protected void _destruct() {
     PD("%d>Close conxion %d\n", socket ? socket->query_fd() : -1, !!nostash);
     catch(purge());
   }
@@ -693,6 +706,7 @@ outer:
     catch {
       for (; ; clear()) {
         socket->connect(pgsqlsess. host, pgsqlsess. port);
+        socket->set_nodelay(1);
 #if constant(SSL.File)
         if (!nossl && !pgsqlsess->nossl
          && (pgsqlsess.options.use_ssl || pgsqlsess.options.force_ssl)) {
@@ -731,23 +745,29 @@ outer:
         error(strerror(socket->errno()) + ".\n");
       socket->set_backend(local_backend);
       socket->set_buffer_mode(i, 0);
-      socket->set_nonblocking(i->read_cb, write_cb, close);
+      socket->set_nonblocking(i->read_cb, 0, close);
+      shuffle = shuffler->shuffle(socket);
       if (nossl != 2)
         Thread.Thread(pgsqlsess->processloop, this);
       return;
     };
     PD("Connect error %s\n", describe_backtrace(err));
     catch(destruct(pgsqlsess->waitforauthready));
-    destruct(this);
+    if (this)
+      destruct(this);
   }
 
-  private string _sprintf(int type) {
+  protected string _sprintf(int type) {
     string res;
+    if (!this)					// Not in destructed objects
+      return "(destructed)";
     switch (type) {
       case 'O':
         int fd = -1;
         if (socket)
           catch(fd = socket->query_fd());
+        if (!this || !i)			// Not in destructed objects
+          return "(destructed)";
         res = predef::sprintf("conxion  fd: %d input queue: %d/%d "
                     "queued portals: %d  output queue: %d/%d\n"
                     "started: %d\n",
@@ -759,7 +779,7 @@ outer:
     return res;
   }
 
-  private void create(proxy pgsqlsess, Thread.Queue _qportals, int nossl) {
+  protected void create(proxy pgsqlsess, zero|Thread.Queue _qportals, int nossl) {
     o::create();
     qportals = _qportals;
     synctransact = 1;
@@ -768,7 +788,6 @@ outer:
     shortmux = MUTEX();
     nostash = MUTEX();
     closenext = 0;
-    stashavail = Thread.Condition();
     stashqueue = Thread.Queue();
     stash = Stdio.Buffer();
     stashcount = Thread.ResourceCount();
@@ -780,7 +799,7 @@ outer:
 class conxsess {
   final conxion chain;
 
-  private void create(conxion parent) {
+  protected void create(conxion parent) {
     if (parent->started)
       werror("Overwriting conxsess %s %s\n",
         describe_backtrace(({"new ", backtrace()[..<1]})),
@@ -794,7 +813,7 @@ class conxsess {
     chain = 0;
   }
 
-  private void _destruct() {
+  protected void _destruct() {
     if (chain)
       werror("Untransmitted conxsess %s\n",
        describe_backtrace(({"", backtrace()[..<1]})));
@@ -850,11 +869,15 @@ class Result {
 
   protected string _sprintf(int type) {
     string res;
+    if (!this)					// Not in destructed objects
+      return "(destructed)";
     switch (type) {
       case 'O':
         int fd = -1;
         if (c && c->socket)
           catch(fd = c->socket->query_fd());
+        if (!this)				// Not in destructed objects
+          return "";
         res = sprintf(
                       "Result state: %d numrows: %d eof: %d inflight: %d\n"
                       "fd: %O portalname: %O  coltypes: %d"
@@ -890,7 +913,7 @@ class Result {
     if (c = _c)
       cr = c->i;
     else
-      losterror();
+      losterror(LOSTERROR);
     _query = query;
     datarows = Thread.Queue();
     _ddescribe = Thread.Condition();
@@ -909,7 +932,7 @@ class Result {
   }
 
   final array(string) _showbindings() {
-    array(string) msgs = emptyarray;
+    array(string) msgs = ({});
     if (_params) {
       array from, to, paramValues;
       [from, to, paramValues] = _params;
@@ -932,13 +955,21 @@ class Result {
       if (!datarowtypes)
         waitfordescribe();
       {
-        Thread.MutexKey lock = closemux->lock();
+        void|Thread.MutexKey lock = closemux->lock();
         if (_fetchlimit) {
-          array reflock = ({ lock });
-          lock = 0;
-          _sendexecute(_fetchlimit = 0, reflock);
-        } else
-          lock = 0;			// Force release before acquiring next
+          array(Thread.MutexKey) reflock = ({ _fetchlimit = 0 });
+          for (;;) {
+            reflock[0] = lock;
+            lock = 0;
+            if (!_sendexecute(0, reflock)) {
+              PD("Status_command_complete retry closemux %O\n", _portalname);
+              lock = closemux->lock();
+              continue;
+            }
+            break;
+          }
+        }
+        lock = 0;			// Force release before acquiring next
         lock = _ddescribemux->lock();
         if (!statuscmdcomplete)
           PT(_ddescribe->wait(lock));
@@ -1002,11 +1033,11 @@ class Result {
     return index;
   }
 
-  private void losterror() {
-    string err;
+  private void losterror(void|string err) {
     if (pgsqlsess)
-      err = pgsqlsess->geterror(1);
-    error("%s\n", err || LOSTERROR);
+      err = pgsqlsess->geterror(1) || err;
+    if (err)
+      error("%s\n", err);
   }
 
   private void trydelayederror() {
@@ -1030,7 +1061,7 @@ class Result {
       waitfordescribe();
     if (!datarowdesc)
       error(LOSTERROR);
-    return datarowdesc + emptyarray;
+    return datarowdesc + ({});
   }
 
 #ifdef PG_DEBUG
@@ -1212,14 +1243,7 @@ class Result {
               if (!alltext)
                 value = (int)value;
             } else {
-              switch (typ) {
-                case INT8OID:value = cr->read_sint(8);
-                  break;
-                case INT2OID:value = cr->read_sint(2);
-                  break;
-                case OIDOID:
-                case INT4OID:value = cr->read_sint(4);
-              }
+              value = cr->read_sint(collen);
               if (alltext)
                 value = (string)value;
             }
@@ -1245,11 +1269,12 @@ class Result {
   }
 
   final void _preparebind(array dtoid) {
-    array(string|int) paramValues = _params ? _params[2] : emptyarray;
+    array(string|int) paramValues = _params ? _params[2] : ({});
     if (sizeof(dtoid) != sizeof(paramValues))
       SUSERERROR("Invalid number of bindings, expected %d, got %d\n",
                  sizeof(dtoid), sizeof(paramValues));
-    Thread.MutexKey lock = _ddescribemux->lock();
+    PD("PrepareBind\n");
+    void|Thread.MutexKey lock = _ddescribemux->lock();
     if (!_portalname) {
       _portalname
        = (_unnamedportalkey = pgsqlsess.unnamedportalmux->trylock(1))
@@ -1280,6 +1305,7 @@ class Result {
             case BYTEAOID:
             case TEXTOID:
             case XMLOID:
+            case UUIDOID:
             case BPCHAROID:
             case VARCHAROID:;
           }
@@ -1296,7 +1322,11 @@ class Result {
               value = (string)value;
               switch (cenc) {
                 case UTF8CHARSET:
-                  value = string_to_utf8(value);
+                  if (has_value(value, 0))
+                    SUSERERROR("NUL characters not allowed in PG-UTF-8: %O\n",
+                     value);
+                  else
+                    value = string_to_utf8(value);
                   break;
                 default:
                   if (String.width(value)>8) {
@@ -1313,7 +1343,7 @@ class Result {
                 plugbuffer->add_int32(-1);
                 break;
               }
-              if (!objectp(value) || typeof(value) != typeof(Stdio.Buffer()));
+              if (!objectp(value) || typeof(value) != typeof(Stdio.Buffer()))
                 /*
                  *  Like Oracle and SQLite, we accept literal binary values
                  *  from single-valued multisets.
@@ -1322,20 +1352,21 @@ class Result {
                   value = indices(value)[0];
                 else {
                   value = (string)value;
-                  if (String.width(value) > 8)
-                    if (dtoid[i] == BYTEAOID)
+                  if (cenc == UTF8CHARSET
+                    && (dtoid[i] != BYTEAOID && dtoid[i] != UUIDOID
+                     || String.width(value) > 8))
                       /*
-                       *  FIXME We should throw an error here, it would
-                       *  have been correct, but for historical reasons and
-                       *  as a DWIM convenience we autoconvert to UTF8 here.
+                       *  FIXME For BYTEAOID and wide strings we should
+                       *  throw an error here, but for historical reasons and
+                       *  as a DWIM convenience we autoconvert to UTF8 anyway.
                        */
-                      value = string_to_utf8(value);
-                    else {
-                      SUSERERROR(
-                        "Wide string %O not supported for type OID %d\n",
-                        value, dtoid[i]);
-                      value = "";
-                    }
+                    value = string_to_utf8(value);
+                  else if (String.width(value) > 8) {
+                    SUSERERROR(
+                      "Wide string %O not supported for type OID %d\n",
+                      value, dtoid[i]);
+                    value = "";
+                  }
                 }
               plugbuffer->add_hstring(value, 4);
               break;
@@ -1498,7 +1529,7 @@ class Result {
               else {
                 int w = dtoid[i] == FLOAT4OID ? 4 : 8;
                 plugbuffer->add_int32(w)
-                 ->sprintf(w == 4 ? "%4F" : "%8F", value);
+                 ->sprintf(w == 4 ? "%4F" : "%8F", (float)value);
               }
               break;
             case INT8OID:
@@ -1516,8 +1547,10 @@ class Result {
       if (!datarowtypes) {
         if (_tprepared && dontcacheprefix->match(_query))
           m_delete(pgsqlsess->prepareds, _query), _tprepared = 0;
+        PD("WaitForDescribe\n");
         waitfordescribe();
       }
+      PD("About to bind %d\n", _state);
       if (_state >= CLOSING)
         lock = _unnamedstatementkey = 0;
       else {
@@ -1527,7 +1560,7 @@ class Result {
           lock = 0;
         } else if (syncparse < 0 && !pgsqlsess->wasparallelisable
          && !pgsqlsess->statementsinflight->drained(1)) {
-          lock = 0;
+          lock = 0;				// Unlock while we wait
           PD("Commit waiting for statements to finish\n");
           catch(PT(pgsqlsess->statementsinflight->wait_till_drained(1)));
         }
@@ -1535,7 +1568,6 @@ class Result {
         _fetchlimit = pgsqlsess->_fetchlimit;
         _bindportal();
         conxsess bindbuffer = c->start();
-        _unnamedstatementkey = 0;
         stmtifkey = 0;
         CHAIN(bindbuffer)->add_int8('B')->add_hstring(plugbuffer, 4, 4);
         if (!_tprepared && sizeof(_preparedname))
@@ -1545,6 +1577,7 @@ class Result {
                                   || sizeof(_query) >= MINPREPARELENGTH &&
                                   execfetchlimit->match(_query))
                              && _fetchlimit, bindbuffer);
+        _unnamedstatementkey = 0;
       }
     }
   }
@@ -1559,14 +1592,20 @@ class Result {
   }
 
   final void _parseportal() {
-    {
-      Thread.MutexKey lock = closemux->lock();
-      _state = PARSING;
-      if (syncparse || syncparse < 0 && pgsqlsess->wasparallelisable) {
-        PD("Commit waiting for statements to finish\n");
+    for (;;) {
+      void|Thread.MutexKey lock = closemux->lock();
+      if ((syncparse || syncparse < 0 && pgsqlsess->wasparallelisable)
+         && !pgsqlsess->statementsinflight->drained()) {
+        lock = 0;				// Unlock while we wait
+        PD("Commit waiting for statements to finish %d\n",
+         pgsqlsess->statementsinflight->_count);
         catch(PT(pgsqlsess->statementsinflight->wait_till_drained()));
+        PD("Parseportal retry closemux %O\n", _portalname);
+        continue;
       }
+      _state = PARSING;
       stmtifkey = pgsqlsess->statementsinflight->acquire();
+      break;
     }
     statuscmdcomplete = 0;
     pgsqlsess->wasparallelisable = paralleliseprefix->match(_query);
@@ -1627,13 +1666,15 @@ class Result {
           _unnamedportalkey = 0;
         portalsifkey = 0;
         if (pgsqlsess->portalsinflight->drained()) {
-          if (plugbuffer->stashcount->drained() && transtype != TRANSBEGIN)
+          if (plugbuffer->stashcount->drained() && transtype != TRANSBEGIN) {
            /*
             * stashcount will be non-zero if a parse request has been queued
             * before the close was initiated.
-            * It's a bit of a tricky race, but this check should be sufficient.
             */
-            pgsqlsess->readyforquerycount++, retval = SYNCSEND;
+            Thread.MutexKey lock = plugbuffer->shortmux->lock();
+            if (plugbuffer->stashcount->drained())
+              pgsqlsess->readyforquerycount++, retval = SYNCSEND;
+          }
           pgsqlsess->pportalcount = 0;
         }
     }
@@ -1643,20 +1684,27 @@ class Result {
   private void replenishrows() {
    if (_fetchlimit && datarows->size() <= _fetchlimit >> 1
     && _state >= COMMITTED) {
-      Thread.MutexKey lock = closemux->lock();
-      if (_fetchlimit) {
-        _fetchlimit = pgsqlsess._fetchlimit;
-        if (bytesreceived)
-          _fetchlimit =
-           min((portalbuffersize >> 1) * index / bytesreceived || 1, _fetchlimit);
-        if (_fetchlimit)
-          if (inflight <= (_fetchlimit - 1) >> 1) {
-            array reflock = ({ lock });
-            lock = 0;
-            _sendexecute(_fetchlimit, reflock);
-          } else
-            PD("<%O _fetchlimit %d, inflight %d, skip execute\n",
-             _portalname, _fetchlimit, inflight);
+      Thread.MutexKey lock;
+      for (;;) {
+        lock = closemux->lock();
+        if (_fetchlimit) {
+          _fetchlimit = pgsqlsess._fetchlimit;
+          if (bytesreceived)
+            _fetchlimit = min((portalbuffersize >> 1)
+             * index / bytesreceived || 1, _fetchlimit);
+          if (_fetchlimit)
+            if (inflight <= (_fetchlimit - 1) >> 1) {
+              array(Thread.MutexKey) reflock = ({ lock });
+              lock = 0;
+              if (!_sendexecute(_fetchlimit, reflock)) {
+                PD("Replenishrows retry closemux %O\n", _portalname);
+                continue;
+              }
+            } else
+              PD("<%O _fetchlimit %d, inflight %d, skip execute\n",
+               _portalname, _fetchlimit, inflight);
+        }
+        break;
       }
     }
   }
@@ -1673,20 +1721,21 @@ class Result {
     replenishrows();
   }
 
-  private void releaseconditions() {
+  private void releaseconditions(void|int aborted) {
     _unnamedportalkey = _unnamedstatementkey = 0;
     if (!datarowtypes) {
       if (_state != PURGED && !delayederror)
         delayederror = LOSTERROR;
-      datarowtypes = emptyarray;
+      datarowtypes = ({});
       _ddescribe->broadcast();
     }
-    if (delayederror && !pgsqlsess.delayederror)
+    if (aborted && delayederror && pgsqlsess && !pgsqlsess.delayederror)
       pgsqlsess.delayederror = delayederror;	// Preserve error upstream
-    pgsqlsess = 0;
+    pgsqlsess = 0;				// Sever connection to upstream
   }
 
   final void _releasesession(void|string statusccomplete) {
+    int aborted = statusccomplete == "ABORT" ? 2 : 0;
     c->runningportals[this] = 0;
     if (statusccomplete && !statuscmdcomplete) {
       Thread.MutexKey lock = _ddescribemux->lock();
@@ -1695,25 +1744,38 @@ class Result {
     }
     inflight = 0;
     conxsess plugbuffer;
-    array(Thread.MutexKey) reflock = ({closemux->lock()});
-    if (!catch(plugbuffer = c->start()))
-      plugbuffer->sendcmd(_closeportal(plugbuffer, reflock));
-    reflock = 0;
+    array(Thread.MutexKey) reflock = ({ 0 });
+    for (;;) {
+      reflock[0] = closemux->lock(aborted);
+      if (!catch(plugbuffer = c->start(reflock))) {
+        if (!this)				// If dead
+          return;
+        if (plugbuffer)
+          plugbuffer->sendcmd(_closeportal(plugbuffer, reflock));
+        else {
+          PD("Releasesession retry closemux %O\n", _portalname);
+          continue;
+        }
+      }
+      break;
+    }
+    reflock[0] = 0;
     if (_state < CLOSED) {
       stmtifkey = 0;
       _state = CLOSED;
     }
     datarows->write(1);				// Signal EOF
-    releaseconditions();
+    releaseconditions(aborted);
   }
 
   protected void _destruct() {
-    catch {			   // inside destructors, exceptions don't work
-      _releasesession();
-    };
+    if (_state < CLOSED)
+      catch {                     // inside destructors, exceptions don't work
+        _releasesession("ABORT");
+      };
   }
 
-  final void _sendexecute(int fetchlimit,
+  final int _sendexecute(int fetchlimit,
    void|array(Thread.MutexKey)|bufcon|conxsess plugbuffer) {
     int flushmode;
     array(Thread.MutexKey) reflock;
@@ -1721,7 +1783,8 @@ class Result {
      fetchlimit, transtype);
     if (arrayp(plugbuffer)) {
       reflock = plugbuffer;
-      plugbuffer = c->start(1);
+      if (!(plugbuffer = c->start(reflock)))
+        return 0;	// Found potential deadlock, release and try again
     }
     CHAIN(plugbuffer)->add_int8('E')->add_hstring(({_portalname, 0}), 4, 8)
      ->add_int32(fetchlimit);
@@ -1733,6 +1796,9 @@ class Result {
     } else
       inflight += fetchlimit, flushmode = FLUSHSEND;
     plugbuffer->sendcmd(flushmode, this);
+    if (reflock)
+      reflock[0] = 0;
+    return 1;
   }
 
   inline private array setuptimeout() {
@@ -1752,8 +1818,10 @@ class Result {
   //!
   //! @seealso
   //!  @[eof()], @[send_row()]
-  /*semi*/final array(mixed) fetch_row() {
+  /*semi*/final array(mixed)|zero fetch_row() {
     int|array datarow;
+    if (!this)			// If object already destructed, return fast
+      return 0;
     replenishrows();
     if (arrayp(datarow = datarows->try_read()))
       return datarow;
@@ -1783,7 +1851,7 @@ class Result {
   //!
   //! @seealso
   //!  @[eof()], @[fetch_row()]
-  /*semi*/final array(array(mixed)) fetch_row_array() {
+  /*semi*/final array(array(mixed))|zero fetch_row_array() {
     if (eoffound)
       return 0;
     replenishrows();
@@ -1837,7 +1905,7 @@ class Result {
       array cid = setuptimeout();
       PT(datarow = datarows->read());
       if (!this)		// If object already destructed, return fast
-        return 0;
+        return;
       scuttletimeout(cid);
       if (!arrayp(datarow))
         break;
@@ -1868,7 +1936,7 @@ class Result {
       array cid = setuptimeout();
       PT(datarow = datarows->read_array());
       if (!this)		// If object already destructed, return fast
-        return 0;
+        return;
       scuttletimeout(cid);
       if (!datarow || !arrayp(datarow[-1]))
         break;
@@ -1899,8 +1967,7 @@ class proxy {
   final int _fetchlimit = FETCHLIMIT;
   final MUTEX unnamedportalmux;
   final MUTEX unnamedstatement;
-  private Thread.MutexKey termlock;
-  private Thread.ResourceCountKey backendreg;
+  private Thread.MutexKey|int termlock;
   final Thread.ResourceCount portalsinflight, statementsinflight;
   final int(0..1) wasparallelisable;
   final int(0..1) intransaction;
@@ -1910,9 +1977,10 @@ class proxy {
   private int backendpid;
   final int(-128..127) backendstatus;
   final mapping(string:mixed) options;
-  private array(string) lastmessage = emptyarray;
+  private array(string) lastmessage = ({});
   final int(0..1) clearmessage;
   final int(0..1) untolderror;
+  final mixed delayederror;
   private mapping(string:array(mixed)) notifylist = ([]);
   final mapping(string:string) runtimeparameter;
   final mapping(string:mapping(string:mixed)) prepareds = ([]);
@@ -1924,7 +1992,6 @@ class proxy {
   private int warningscollected;
   final int(0..1) invalidatecache;
   private Thread.Queue qportals;
-  final mixed delayederror;
   final function (:void) readyforquery_cb;
 
   final string host;
@@ -1935,8 +2002,10 @@ class proxy {
   final MUTEX shortmux;
   final int readyforquerycount;
 
-  private string _sprintf(int type) {
+  protected string _sprintf(int type) {
     string res;
+    if (!this)					// Not in destructed objects
+      return "(destructed)";
     switch (type) {
       case 'O':
         res = sprintf(DRIVERNAME".proxy(%s@%s:%d/%s,%d,%d)",
@@ -1947,7 +2016,7 @@ class proxy {
     return res;
   }
 
-  private void create(void|string host, void|string database,
+  protected void create(void|string host, void|string database,
                         void|string user, void|string pass,
                         void|mapping(string:mixed) options) {
     if (this::pass = pass) {
@@ -1965,7 +2034,7 @@ class proxy {
 
     if (!port)
       port = PGSQL_DEFAULT_PORT;
-    backendreg = register_backend();
+    register_backend(this);
     shortmux = MUTEX();
     PD("Connect\n");
     waitforauthready = Thread.Condition();
@@ -1991,7 +2060,7 @@ class proxy {
     untolderror = 0;
     string s = lastmessage * "\n";
     if (clear)
-      lastmessage = emptyarray;
+      lastmessage = ({});
     warningscollected = 0;
     return sizeof(s) && s;
   }
@@ -2012,7 +2081,7 @@ class proxy {
         ->add_int32(backendpid)->add(cancelsecret)->sendcmd(FLUSHSEND));
 #ifdef PG_DEBUG
       if (err)
-        PD("CancelRequest failed to connect %O\n", describe_backtrace(err));
+        PD("CancelRequest failed to connect %s\n", describe_backtrace(err));
 #endif
       destruct(lcon);		// Destruct explicitly to avoid delayed close
 #ifdef PG_DEBUGMORE
@@ -2041,7 +2110,7 @@ class proxy {
   }
 
   private array(string) showbindings(Result portal) {
-    return portal ? portal._showbindings() : emptyarray;
+    return portal ? portal._showbindings() : ({});
   }
 
   private void preplastmessage(mapping(string:string) msgresponse) {
@@ -2059,31 +2128,56 @@ class proxy {
 #endif
 
   final void processloop(conxion ci) {
-    (c = ci)->socket->set_id(procmessage);
-    cancelsecret = 0;
-    portal = 0;
-    {
-      Stdio.Buffer plugbuffer = Stdio.Buffer()->add_int32(PG_PROTOCOL(3, 0));
-      if (user)
-        plugbuffer->add("user\0", user, 0);
-      if (database)
-        plugbuffer->add("database\0", database, 0);
-      foreach (options - censoroptions; string name; mixed value)
-        plugbuffer->add(name, 0, (string)value, 0);
-      plugbuffer->add_int8(0);
-      PD("%O\n", (string)plugbuffer);
-      void|bufcon|conxsess cs;
-      if (catch(cs = ci->start())) {
-        destruct(waitforauthready);
-        unnamedstatement = 0;
-        termlock = 0;
-        return;
-      } else {
-        CHAIN(cs)->add_hstring(plugbuffer, 4, 4);
-        cs->sendcmd(SENDOUT);
-      }
-    }		      // Do not flush at this point, PostgreSQL 9.4 disapproves
-    procmessage();
+    mixed err = catch {
+      (c = ci)->socket->set_id(procmessage);
+      cancelsecret = 0;
+      portal = 0;
+      {
+        Stdio.Buffer plugbuffer = Stdio.Buffer()->add_int32(PG_PROTOCOL(3, 0));
+        if (user)
+          plugbuffer->add("user\0", user, 0);
+        if (database)
+          plugbuffer->add("database\0", database, 0);
+        foreach (options - censoroptions; string name; mixed value)
+          plugbuffer->add(name, 0, (string)value, 0);
+        plugbuffer->add_int8(0);
+        PD("%O\n", (string)plugbuffer);
+        void|bufcon|conxsess cs;
+        if (catch(cs = ci->start())) {
+          if (this) {				// Only if still alive
+            destruct(waitforauthready);
+            unnamedstatement = 0;
+            termlock = 1;
+          }
+          return;
+        } else {
+          CHAIN(cs)->add_hstring(plugbuffer, 4, 4);
+          cs->sendcmd(SENDOUT);
+        }
+      }		      // Do not flush at this point, PostgreSQL 9.4 disapproves
+    };
+    if (!err)
+      procmessage();
+  }
+
+  private void stasherror(int|object portal, mixed err) {
+    if (stringp(err)) {
+      if (!objectp(portal))
+        portal = this;
+      if (!portal->delayederror)
+        portal->delayederror = err;
+    }
+    if (objectp(portal) && portal->_purgeportal)
+      portal->_purgeportal();
+  }
+
+  private void tryprepbind(Result portal, array dtoid) {
+    mixed err = catch(portal->_preparebind(dtoid));
+    if (err) {
+      stasherror(portal, err);
+      if (!stringp(err))
+        throw(err);
+    }
   }
 
   private void procmessage() {
@@ -2132,7 +2226,7 @@ class proxy {
         showportalstack("LOOPTOP");
 #endif
         if (!sizeof(cr)) {			// Preliminary check, fast path
-          Thread.MutexKey lock = cr->fillreadmux->lock();
+          void|Thread.MutexKey lock = cr->fillreadmux->lock();
           if (!sizeof(cr)) {			// Check for real
             if (!cr->fillread) {
               lock = 0;
@@ -2173,7 +2267,7 @@ class proxy {
             if (msglen < 1)
               errtype = PROTOCOLERROR;
 #endif
-            array ret = emptyarray, aw = ({0});
+            array ret = ({}), aw = ({0});
             do {
               string w = cr->read_cstring();
               msglen -= sizeof(w) + 1; aw[0] = w; ret += aw;
@@ -2388,9 +2482,10 @@ class proxy {
             showportalstack("AFTER READYFORQUERY");
 #endif
             readyforquerycount--;
-            if (readyforquery_cb)
-              readyforquery_cb(), readyforquery_cb = 0;
+            function (:void) cb;
             destruct(waitforauthready);
+            if (cb = readyforquery_cb)
+              readyforquery_cb = 0, cb();
             break;
           }
           case '1':
@@ -2414,7 +2509,7 @@ class proxy {
 #endif
             if (portal._tprepared)
               portal._tprepared.datatypeoid = a;
-            Thread.Thread(portal->_preparebind, a);
+            Thread.Thread(tryprepbind, portal, a);
             break;
           }
           case 'T': {
@@ -2470,7 +2565,7 @@ class proxy {
             PD("NoData %O\n", portal._query);
 #endif
             portal._fetchlimit = 0;		// disables subsequent Executes
-            portal->_processrowdesc(emptyarray, emptyarray);
+            portal->_processrowdesc(({}), ({}));
             portal = 0;
             break;
           }
@@ -2537,8 +2632,8 @@ class proxy {
               errtype = PROTOCOLERROR;
 #endif
             string s = cr->read(msglen - 1);
-            portal->_storetiming();
-            PD("%O CommandComplete %O\n", portal._portalname, s);
+            PD("%O CommandComplete %O\n",
+             objectp(portal) && portal._portalname, s);
 #ifdef PG_DEBUG
             if (cr->read_int8())
               errtype = PROTOCOLERROR;
@@ -2549,8 +2644,11 @@ class proxy {
 #ifdef PG_DEBUGMORE
             showportalstack("COMMANDCOMPLETE");
 #endif
-            portal->_releasesession(s);
-            portal = 0;
+            if (!portal._forcetext) {
+              portal->_storetiming();
+              portal->_releasesession(s);
+              portal = 0;
+            }
             break;
           }
           case 'I':
@@ -2561,8 +2659,10 @@ class proxy {
 #ifdef PG_DEBUGMORE
             showportalstack("EMPTYQUERYRESPONSE");
 #endif
-            portal->_releasesession();
-            portal = 0;
+            if (!portal._forcetext) {
+              portal->_releasesession();
+              portal = 0;
+            }
             break;
           case 'd':
             PD("%O CopyData\n", portal._portalname);
@@ -2588,7 +2688,8 @@ class proxy {
             PD("%O CopyDone\n", portal._portalname);
             msglen -= 4;
 #endif
-            portal = 0;
+            if (!portal._forcetext)
+              portal = 0;
             break;
           case 'E': {
 #ifdef PG_DEBUGMORE
@@ -2613,9 +2714,10 @@ class proxy {
                                +showbindings(portal)));
               case "53000":case "53100":case "53200":case "53300":case "53400":
               case "57P01":case "57P02":case "57P03":case "57P04":case "3D000":
+              case "34000":case "08P01":
                 preplastmessage(msgresponse);
                 PD(a2nls(lastmessage)); throw(msgisfatal(msgresponse));
-              case "08P01":case "42P05":
+              case "42P05":
                 errtype = PROTOCOLERROR;
               case "XX000":case "42883":case "42P01":
                 invalidatecache = 1;
@@ -2635,7 +2737,7 @@ class proxy {
                 switch (msgresponse.S) {
                   case "PANIC":werror(a2nls(lastmessage));
                 }
-              case "25P02":		        // Preserve last error message
+              case "25P02":			 // Preserve last error message
                 USERERROR(a2nls(lastmessage));	// Implicitly closed portal
             }
             break;
@@ -2643,18 +2745,23 @@ class proxy {
           case 'N': {
             PD("NoticeResponse\n");
             mapping(string:string) msgresponse = getresponse();
-            if (clearmessage) {
-              warningsdropcount += warningscollected;
-              clearmessage = warningscollected = 0;
-              lastmessage = emptyarray;
-            }
-            warningscollected++;
-            lastmessage = ({sprintf("%s %s: %s",
-                             msgresponse.S, msgresponse.C, msgresponse.M)});
-            int val;
-            if (val = msgisfatal(msgresponse)) {  // Some warnings are fatal
-              preplastmessage(msgresponse);
-              PD(a2nls(lastmessage)); throw(val);
+            switch (msgresponse.C) {
+              default:
+                if (clearmessage) {
+                  warningsdropcount += warningscollected;
+                  clearmessage = warningscollected = 0;
+                  lastmessage = ({});
+                }
+                warningscollected++;
+                lastmessage = ({sprintf("%s %s: %s",
+                                 msgresponse.S, msgresponse.C, msgresponse.M)});
+                int val;
+                if (val = msgisfatal(msgresponse)) {  // Some warnings are fatal
+                  preplastmessage(msgresponse);
+                  PD(a2nls(lastmessage)); throw(val);
+                }
+              case "25P01":		    // Suppress some warnings
+                break;
             }
             break;
           }
@@ -2726,22 +2833,16 @@ class proxy {
       if (err == MAGICTERMINATE) { // Announce connection termination to server
         catch {
           void|bufcon|conxsess cs = ci->start();
-          CHAIN(cs)->add("X\0\0\0\4");
+          CHAIN(cs)->add(PGSYNC)->add("X\0\0\0\4");
           cs->sendcmd(SENDOUT);
         };
         terminating = 1;
         err = 0;
       } else if (stringp(err)) {
-        Result or;
-        if (!objectp(or = portal))
-          or = this;
-        if (!or.delayederror)
-          or.delayederror = err;
 #ifdef PG_DEBUGMORE
         showportalstack("THROWN");
 #endif
-        if (objectp(portal))
-          portal->_releasesession();
+        stasherror(portal, err);
         portal = 0;
         if (!waitforauthready)
           continue;		// Only continue if authentication did not fail
@@ -2757,13 +2858,13 @@ class proxy {
       portal->_purgeportal();
     }
     destruct(waitforauthready);
-    termlock = 0;
+    termlock = 1;
     if (err && !stringp(err))
       throw(err);
     };
     catch {
-     unnamedstatement = 0;
-     termlock = 0;
+      unnamedstatement = 0;
+      termlock = 1;
       if (err) {
         PD("Terminating processloop due to %s\n", describe_backtrace(err));
         delayederror = err;
@@ -2777,10 +2878,11 @@ class proxy {
     throwdelayederror(this);
     {
       Thread.MutexKey lock;
-      if (unnamedstatement)
+      if (unnamedstatement && !termlock)
         termlock = unnamedstatement->lock(1);
       foreach (c->runningportals; Result result; )
-        catch(result->status_command_complete());
+        if (result->_state < CLOSED)
+          catch(result->status_command_complete());
       if (c)				// Prevent trivial backtraces
         c->close();
       if (unnamedstatement)
@@ -2791,22 +2893,24 @@ class proxy {
     destruct(waitforauthready);
   }
 
-  private void _destruct() {
+  protected void _destruct() {
     string errstring;
     mixed err = catch(close());
-    backendreg = 0;
+    clients[this] = 0;
     if (untolderror) {
       /*
        * Flush out any asynchronously reported errors to stderr; because we are
        * inside a destructor, throwing an error will not work anymore.
        * Warnings will be silently discarded at this point.
        */
-      lastmessage = filter(lastmessage, lambda(string val) {
-        return has_prefix(val, "ERROR ") || has_prefix(val, "FATAL "); });
-      if (err || (err = catch(errstring = geterror(1))))
-        werror(describe_backtrace(err));
-      else if (errstring && sizeof(errstring))
-        werror("%s\n", errstring);	// Add missing terminating newline
+      catch {	// Use yet another catch for exceptions in backtraces
+        lastmessage = filter(lastmessage, lambda(string val) {
+          return has_prefix(val, "ERROR ") || has_prefix(val, "FATAL "); });
+        if (err || (err = catch(errstring = geterror(1))))
+          werror(describe_backtrace(err));
+        else if (errstring && sizeof(errstring))
+          werror("%s\n", errstring);	// Add missing terminating newline
+      };
     }
   }
 

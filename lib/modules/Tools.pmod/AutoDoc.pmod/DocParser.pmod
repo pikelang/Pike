@@ -200,7 +200,7 @@ protected int isKeywordChar(int char) {
   return char >= 'a' && char <= 'z';
 }
 
-protected array(string) extractKeyword(string line) {
+protected array(string)|zero extractKeyword(string line) {
   line += "\0";
   int i = 0;
   while (i < sizeof(line) && isSpaceChar(line[i]))
@@ -226,12 +226,12 @@ protected int allSpaces(string s) {
 
 protected private class Token (
   int type,
-  string keyword,
-  string arg,   // the rest of the line, after the keyword
-  string text,
-  SourcePosition position,
+  string|zero keyword,
+  string|zero arg,   // the rest of the line, after the keyword
+  string|zero text,
+  object(SourcePosition)|zero position,
 ) {
-  string _sprintf(int t) {
+  protected string _sprintf(int t) {
     return t=='O' && sprintf("%O(%d, %O, %O, %O, %O)", this_program, type,
 			     keyword, arg, text, position);
   }
@@ -252,7 +252,7 @@ protected array(Token) split(string s, SourcePosition pos) {
   array(Token) res = ({ });
 
   string filename = pos->filename;
-  string text = 0;
+  string|zero text = 0;
   int textFirstLine;
   int textLastLine;
 
@@ -384,7 +384,7 @@ protected class DocParserClass {
       parser->eat("...");
     }
     string s = parser->parseLiteral() || parser->parseIdents();
-    string s2 = 0;
+    string|zero s2 = 0;
     int dots = 0;
     if (parser->peekToken() == "..") {
       dots = 1;
@@ -459,30 +459,35 @@ protected class DocParserClass {
     return t->xml();
   }
 
-  protected string valueArgHandler(string keyword, string arg) {
+  protected string valueArgHandler(string keyword, string arg)
+  {
     //  werror("This is the @value arg handler ");
-    .PikeParser parser = .PikeParser(arg, currentPosition);
-    //  werror("&&& %O\n", arg);
-    string s = parser->parseLiteral() || parser->parseIdents();
-    string s2 = 0;
-    int dots = 0;
-    if (parser->peekToken() == "..") {
-      dots = 1;
-      parser->readToken();
-      s2 = parser->parseLiteral() || parser->parseIdents();
-    }
-    parser->eat(EOF);
-    if (s)
-      if (s2)
-        return xmltag("minvalue", xmlquote(s))
-          + xmltag("maxvalue", xmlquote(s2));
+    catch {
+      // NB: Throws errors on some syntax errors.
+      .PikeParser parser = .PikeParser(arg, currentPosition);
+
+      //  werror("&&& %O\n", arg);
+      string s = parser->parseLiteral() || parser->parseIdents();
+      string|zero s2 = 0;
+      int dots = 0;
+      if (parser->peekToken() == "..") {
+        dots = 1;
+        parser->readToken();
+        s2 = parser->parseLiteral() || parser->parseIdents();
+      }
+      parser->eat(EOF);
+      if (s)
+        if (s2)
+          return xmltag("minvalue", xmlquote(s))
+            + xmltag("maxvalue", xmlquote(s2));
+        else
+          return dots ? xmltag("minvalue", xmlquote(s)) : xmlquote(s);
       else
-        return dots ? xmltag("minvalue", xmlquote(s)) : xmlquote(s);
-    else
-      if (s2)
-        return xmltag("maxvalue", xmlquote(s2));
-      else
-        parseError("@value: expected identifier or literal constant, got %O", arg);
+        if (s2)
+          return xmltag("maxvalue", xmlquote(s2));
+    };
+
+    parseError("@value: expected identifier or literal constant, got %O", arg);
     return "";
   }
 
@@ -771,7 +776,7 @@ protected class DocParserClass {
       if (! (<SINGLEKEYWORD, DELIMITERKEYWORD>) [token->type] )
         return res;
 
-      string single = 0;
+      string|zero single = 0;
       array(string) keywords = ({});
       res += opentag("group");
     group:
@@ -866,12 +871,12 @@ protected class DocParserClass {
   //!   Returns the @[MetaData] for the documentation string.
   MetaData getMetaData() {
     MetaData meta = MetaData();
-    string scopeModule = 0;
+    string|zero scopeModule = 0;
     while(peekToken()->type == METAKEYWORD) {
       Token token = readToken();
       string keyword = token->keyword;
       string arg = token->arg;
-      string endkeyword = 0;
+      string|zero endkeyword = 0;
       switch (keyword) {
       case "namespace":
       case "enum":
@@ -907,8 +912,17 @@ protected class DocParserClass {
               parseError("@%s: '%s::' only allowed as @namespace name",
 			 keyword, s);
 	  }
-          if (nameparser->peekToken() != EOF)
-            parseError("@%s: expected %s name, got %O", keyword, keyword, arg);
+          if (keyword == "class") {
+            foreach(nameparser->parseGenericsDecl() || ({});
+                    int i; array(string|Type) generic) {
+              meta->decls += ({ DocGroup(({ Generic(i, @generic) })) });
+            }
+          }
+          if (nameparser->peekToken() != EOF) {
+            // werror("Tokens: %O\n", nameparser->tokens);
+            parseError("@%s: expected %s name, got %O (next: %O)",
+                       keyword, keyword, arg, nameparser->peekToken());
+          }
           meta->name = s;
 	}
 	break;
@@ -942,23 +956,26 @@ protected class DocParserClass {
             parseError("@belongs before @decl");
           meta->type = "decl";
           .PikeParser declparser = .PikeParser(arg, currentPosition);
-          PikeObject p = declparser->parseDecl(
+          array(PikeObject)|PikeObject pp = declparser->parseDecl(
             ([ "allowArgListLiterals" : 1,
                "allowScopePrefix" : 1 ]) ); // constants/literals + scope::
           string s = declparser->peekToken();
           if (s != ";" && s != EOF)
             parseError("@decl: expected end of line, got %O", s);
-          int i = search(p->name||"", "::");
-          if (i >= 0) {
-            string scope = p->name[0 .. i + 1];
-            p->name = p->name[i + 2 ..];
-            if (!first && scopeModule != scope)
+          foreach(arrayp(pp)?pp:({pp}), PikeObject p) {
+            int i = search(p->name||"", "::");
+            if (i >= 0) {
+              string scope = p->name[0 .. i + 1];
+              p->name = p->name[i + 2 ..];
+              if (!first && scopeModule != scope)
+                parseError("@decl's must have identical 'scope::' prefix");
+              scopeModule = scope;
+            }
+            else if (!first && scopeModule)
               parseError("@decl's must have identical 'scope::' prefix");
-            scopeModule = scope;
+
+            meta->decls += ({ p });
           }
-          else if (!first && scopeModule)
-            parseError("@decl's must have identical 'scope::' prefix");
-          meta->decls += ({ p });
 	}
 	break;
 
@@ -1128,8 +1145,8 @@ class Parse {
   protected string mContext = 0;
 
   //! Parse a documentation string @[s].
-  void create(string | array(Token) s, SourcePosition|void sp,
-	      .Flags|void flags) {
+  protected void create(string | array(Token) s, SourcePosition|void sp,
+			.Flags|void flags) {
     ::create(s, sp, flags);
     state = 0;
   }
@@ -1150,7 +1167,7 @@ class Parse {
   //!
   //! @note
   //!   @[metadata()] must be called before this function.
-  string doc(string context) {
+  string|zero doc(string context) {
     if (state == 1) {
       ++state;
       mContext == context;

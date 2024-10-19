@@ -394,10 +394,108 @@ test_compile_any([[
   mixed foo()
   {
     array a;
-    array b = a->f("b")?->b;
+    array b = a->f("b")->?b;
     return b;
   }
 ]])
+
+test_eq((["answer":42])->?answer, 42)
+
+test_do([[
+  add_constant("FOO",
+               ([ "a": ([ "x" : ([ "i": ([]), "j": 0 ]), "y": 0 ]), "b": 0,
+                  "d": lambda(){},
+               ]));
+]])
+
+define(test_chain_op, [[
+  test_any_equal([[
+    return describe_error(catch {
+      // Make FOO not a constant...
+      mapping FOO = predef::FOO;
+      mixed x = $1;
+      if (undefinedp(x)) return "UNDEFINED";
+      return x;
+    });
+  ]], $2)
+]])
+
+define(test_chain_op2, [[
+  text_chain_op([[$1]], [[$2]])
+  test_any_equal([[
+    return describe_error(catch {
+      // Test the constant case.
+      mixed x = $1;
+      if (undefinedp(x)) return "UNDEFINED";
+      return x;
+    });
+  ]], $2)
+]])
+
+test_chain_op2(FOO->a->x->i, ([]))
+test_chain_op2(FOO->?a->x->i, ([]))
+test_chain_op2(FOO->a->?x->i, ([]))
+test_chain_op2(FOO->?a->?x->i, ([]))
+test_chain_op2(FOO->a->x->?i, ([]))
+test_chain_op2(FOO->?a->x->?i, ([]))
+test_chain_op2(FOO->a->?x->?i, ([]))
+test_chain_op2(FOO->?a->?x->?i, ([]))
+test_chain_op2(FOO->a->x->j, 0)
+test_chain_op2(FOO->a->x->k, "UNDEFINED")
+test_chain_op2(FOO->a->y->i, "Indexing the NULL value with \"i\".\n")
+test_chain_op2(FOO->a->y->?i, 0)
+test_chain_op2(FOO->a->z->i, "Indexing the NULL value with \"i\".\n")
+test_chain_op2(FOO->a->z->?i, "UNDEFINED")
+test_chain_op2(FOO->b->x->i, "Indexing the NULL value with \"x\".\n")
+test_chain_op2(FOO->b->?x->i, 0)
+test_chain_op2(FOO->b->?x->?i, 0)
+test_chain_op2(FOO->c->x->i, "Indexing the NULL value with \"x\".\n")
+test_chain_op2(FOO->c->?x->i, "UNDEFINED")
+test_chain_op2(FOO->c->?x->?i, "UNDEFINED")
+
+test_chain_op2(FOO["a"]["x"]["i"], ([]))
+test_chain_op2(FOO[?"a"]["x"]["i"], ([]))
+test_chain_op2(FOO["a"][?"x"]["i"], ([]))
+test_chain_op2(FOO[?"a"][?"x"]["i"], ([]))
+test_chain_op2(FOO["a"]["x"][?"i"], ([]))
+test_chain_op2(FOO[?"a"]["x"][?"i"], ([]))
+test_chain_op2(FOO["a"][?"x"][?"i"], ([]))
+test_chain_op2(FOO[?"a"][?"x"][?"i"], ([]))
+test_chain_op2(FOO["a"]["x"]["j"], 0)
+test_chain_op2(FOO["a"]["x"]["k"], "UNDEFINED")
+test_chain_op2(FOO["a"]["y"]["i"], "Indexing the NULL value with \"i\".\n")
+test_chain_op2(FOO["a"]["y"][?"i"], 0)
+test_chain_op2(FOO["a"]["z"]["i"], "Indexing the NULL value with \"i\".\n")
+test_chain_op2(FOO["a"]["z"][?"i"], "UNDEFINED")
+test_chain_op2(FOO["b"]["x"]["i"], "Indexing the NULL value with \"x\".\n")
+test_chain_op2(FOO["b"][?"x"]["i"], 0)
+test_chain_op2(FOO["b"][?"x"][?"i"], 0)
+test_chain_op2(FOO["c"]["x"]["i"], "Indexing the NULL value with \"x\".\n")
+test_chain_op2(FOO["c"][?"x"]["i"], "UNDEFINED")
+test_chain_op2(FOO["c"][?"x"][?"i"], "UNDEFINED")
+
+// NB: Constant-folding will cause compilation errors due to detecting
+//     the zeroes in the constant case.
+test_chain_op(FOO->a->x->j(), "Attempt to call the NULL-value.\n")
+test_chain_op2(FOO->a->x->j(?), 0)
+test_chain_op(FOO->a->x->k(), "Attempt to call the NULL-value.\n")
+test_chain_op2(FOO->a->x->k(?), "UNDEFINED")
+test_chain_op(FOO->a->y()->i, "Attempt to call the NULL-value.\n")
+test_chain_op2(FOO->a->y(?)->i, 0)
+test_chain_op(FOO->a->z()->i, "Attempt to call the NULL-value.\n")
+test_chain_op2(FOO->a->z(?)->i, "UNDEFINED")
+test_chain_op(FOO->b()->x->i, "Attempt to call the NULL-value.\n")
+test_chain_op2(FOO->b(?)->x->i, 0)
+test_chain_op2(FOO->b(?)->x(?)->i, 0)
+test_chain_op(FOO->c()->x->i, "Attempt to call the NULL-value.\n")
+test_chain_op2(FOO->c(?)->x->i, "UNDEFINED")
+test_chain_op2(FOO->c(?)->x(?)->i, "UNDEFINED")
+test_chain_op2(FOO->c(?)()->x->i, "UNDEFINED")
+test_chain_op2(FOO->c(?)()->x(?)->i, "UNDEFINED")
+test_chain_op(FOO->d()()->x->i, "Attempt to call the NULL-value.\n")
+test_chain_op2(FOO->d()(?)->x->i, 0)
+
+test_do(add_constant("FOO");)
 
 define(test_string_range,[[
     test_any([[
@@ -466,6 +564,8 @@ test_scopes(256, 1, 1)
 test_scopes(16, 17, 0)
 test_scopes(17, 16, 0)
 
+dnl sscanf("", ...) triggers this warning.
+ignore_warning("Indexing the empty string.", [[
 test_any([[
   // LysLysKOM 14180500
   if (1) {
@@ -485,6 +585,7 @@ test_any([[
   }
   return 0;
 ]], 0)
+]])
 
 dnl FIXME: Add test that local and local:: in combination
 dnl        with recursion works correctly.
@@ -607,8 +708,665 @@ test_any_equal([[
   return values(B());
 ]], ({ 2 }))
 
-dnl bug in for loop optimization in combination with +=
+test_any_equal([[
+  // Test constant expression in inherit.
+  class A { constant sym = 1; }
+  class B { constant sym = 2; }
+  class C { inherit ([ "A":A, "B":B ])["A"]; }
+  class D { inherit ([ "A":A, "B":B ])["B"]; }
+  return ({ A, B, C, D })->sym;
+]], ({ 1, 2, 1, 2 }))
 
+dnl Tests of generic types.
+
+test_compile_any([[
+// Bug #10151
+//   Bad argument 1 to create.
+//   Expected: { T = { T = (<object(implements G):$0>) } }.
+//   Got     : object(implements program(B)).
+class G (<T>) {
+  class GG (<T = T>) (T t) {}
+}
+class B {
+  inherit G.GG;
+  protected void create()
+  {
+    GG::create(this);	// Bang!
+  }
+}
+]])
+
+dnl Generator function tests.
+
+dnl Trivial generator function.
+test_any_equal([[
+  class Foo {
+    __generator__ int foo(int start, int end)
+    {
+      while (start < end)
+	continue return start++;
+      return start;
+    }
+  }
+
+  function(:int) f = Foo()->foo(4,8);
+
+  array(int) ret = ({});
+  int i;
+  while (!zero_type(i = f())) {
+    ret += ({ i });
+  }
+  return ret;
+]], ({ 4, 5, 6, 7, 8 }))
+
+dnl Generator function with stack.
+test_any_equal([[
+  class Foo {
+    __generator__ int|float foo(int end)
+    {
+      return 1000.0 + gauge {
+	  int i = 0;
+	  for (i = 0; i < end; i++) {
+	    continue return i;
+	  }
+	};
+    }
+  }
+
+  function(:int|float) f = Foo()->foo(4);
+
+  array(int) ret = ({});
+  int i;
+  while (!zero_type(i = f())) {
+    ret += ({ (int)i });
+  }
+  return ret;
+  // NB: We assume that the loop executes in under a second.
+]], ({ 0, 1, 2, 3, 1000 }))
+
+dnl Generator function with catch.
+test_any_equal([[
+  class Foo {
+    __generator__ int|string foo(int end)
+    {
+      return describe_error(catch {
+	  int i = 0;
+	  for (i = 0; i < end; i++) {
+	    continue return i;
+	  }
+	  error("End of stream.\n");
+	});
+    }
+  }
+
+  function(:int|string) f = Foo()->foo(4);
+
+  array(int|string) ret = ({});
+  int|string i;
+  while (!zero_type(i = f())) {
+    ret += ({ i });
+  }
+  return ret;
+]], ({ 0, 1, 2, 3, "End of stream.\n" }))
+
+dnl Generator function with catch and global variable.
+test_any_equal([[
+  class Foo {
+    int start = 1;
+    __generator__ int|string foo(int end)
+    {
+      return describe_error(catch {
+	  int i;
+	  for (i = start; i < end; i++) {
+	    continue return i;
+	  }
+	  error("End of stream.\n");
+	});
+    }
+  }
+
+  function(:int|string) f = Foo()->foo(4);
+
+  array(int|string) ret = ({});
+  int|string i;
+  while (!zero_type(i = f())) {
+    ret += ({ i });
+  }
+  return ret;
+]], ({ 1, 2, 3, "End of stream.\n" }))
+
+dnl Trivial local generator function.
+test_any_equal([[
+  __generator__ int foo(int start, int end)
+  {
+    while (start < end)
+      continue return start++;
+    return start;
+  }
+
+  function(:int) f = foo(4,8);
+
+  array(int) ret = ({});
+  int i;
+  while (!zero_type(i = f())) {
+    ret += ({ i });
+  }
+  return ret;
+]], ({ 4, 5, 6, 7, 8 }))
+
+dnl Local generator function with stack.
+test_any_equal([[
+  __generator__ int|float foo(int end)
+  {
+    return 1000.0 + gauge {
+	int i = 0;
+	for (i = 0; i < end; i++) {
+	  continue return i;
+	}
+      };
+  }
+
+  function(:int|float) f = foo(4);
+
+  array(int) ret = ({});
+  int i;
+  while (!zero_type(i = f())) {
+    ret += ({ (int)i });
+  }
+  return ret;
+  // NB: We assume that the loop executes in under a second.
+]], ({ 0, 1, 2, 3, 1000 }))
+
+dnl Local generator function with catch.
+test_any_equal([[
+  __generator__ int|string foo(int end)
+  {
+    return describe_error(catch {
+	int i = 0;
+	for (i = 0; i < end; i++) {
+	  continue return i;
+	}
+	error("End of stream.\n");
+      });
+  }
+
+  function(:int|string) f = foo(4);
+
+  array(int|string) ret = ({});
+  int|string i;
+  while (!zero_type(i = f())) {
+    ret += ({ i });
+  }
+  return ret;
+]], ({ 0, 1, 2, 3, "End of stream.\n" }))
+
+dnl Local generator function with catch and external variable.
+test_any_equal([[
+  int start = 1;
+  __generator__ int|string foo(int end)
+  {
+    return describe_error(catch {
+	int i;
+	for (i = start; i < end; i++) {
+	  continue return i;
+	}
+	error("End of stream.\n");
+      });
+  }
+
+  function(:int|string) f = foo(4);
+
+  array(int|string) ret = ({});
+  int|string i;
+  while (!zero_type(i = f())) {
+    ret += ({ i });
+  }
+  return ret;
+]], ({ 1, 2, 3, "End of stream.\n" }))
+
+dnl Trivial generator lambda.
+test_any_equal([[
+  function(:int) f = __generator__ lambda(int start, int end)
+  {
+    while (start < end)
+      continue return start++;
+    return start;
+  }(4,8);
+
+  array(int) ret = ({});
+  int i;
+  while (!zero_type(i = f())) {
+    ret += ({ i });
+  }
+  return ret;
+]], ({ 4, 5, 6, 7, 8 }))
+
+dnl Generator lambda with stack.
+test_any_equal([[
+  function(:int|float) f = __generator__ lambda(int end)
+  {
+    return 1000.0 + gauge {
+        int i = 0;
+        for (i = 0; i < end; i++) {
+          continue return i;
+        }
+      };
+  }(4);
+
+  array(int) ret = ({});
+  int i;
+  while (!zero_type(i = f())) {
+    ret += ({ (int)i });
+  }
+  return ret;
+  // NB: We assume that the loop executes in under a second.
+]], ({ 0, 1, 2, 3, 1000 }))
+
+dnl Generator lambda with catch.
+test_any_equal([[
+  function(:int|string) f = __generator__ lambda(int end)
+  {
+    return describe_error(catch {
+        int i = 0;
+        for (i = 0; i < end; i++) {
+          continue return i;
+        }
+        error("End of stream.\n");
+      });
+  }(4);
+
+  array(int|string) ret = ({});
+  int|string i;
+  while (!zero_type(i = f())) {
+    ret += ({ i });
+  }
+  return ret;
+]], ({ 0, 1, 2, 3, "End of stream.\n" }))
+
+dnl Generator lambda with catch and external variable.
+test_any_equal([[
+  int start = 1;
+  function(:int|string) f = __generator__ lambda(int end)
+  {
+    return describe_error(catch {
+        int i;
+        for (i = start; i < end; i++) {
+          continue return i;
+        }
+        error("End of stream.\n");
+      });
+  }(4);
+
+  array(int|string) ret = ({});
+  int|string i;
+  while (!zero_type(i = f())) {
+    ret += ({ i });
+  }
+  return ret;
+]], ({ 1, 2, 3, "End of stream.\n" }))
+
+dnl Asynchronous function tests.
+
+dnl Trivial async function awaiting success.
+test_any_equal([[
+  class Foo {
+    __async__ int foo(Concurrent.Future f)
+    {
+      return await(f) + 10;
+    }
+  }
+
+  Concurrent.Promise p = Concurrent.Promise();
+  Concurrent.Future res = Foo()->foo(p->future());
+
+  int done;
+  int ret = -1;
+  res->on_success(lambda(int val) {
+    ret = val;
+    done = 1;
+  });
+  res->on_failure(lambda(mixed err) {
+    master()->handle_error(err);
+    done = 1;
+  });
+
+  p->success(1);
+
+  for (int i = 0; !done && i < 10; i++) {
+    if (!Pike.DefaultBackend(0.1)) break;
+  }
+
+  return ret;
+]], 11)
+
+dnl Trivial async function awaiting failure.
+test_any_equal([[
+  class Foo {
+    __async__ int foo(Concurrent.Future f)
+    {
+      int val = catch {
+        int val = await(f);
+
+        error("await() succeeded (val: %O)!\n", val);
+      };
+      return val + 10;
+    }
+  }
+
+  Concurrent.Promise p = Concurrent.Promise();
+  Concurrent.Future res = Foo()->foo(p->future());
+
+  int done;
+  int ret = -1;
+  res->on_success(lambda(int val) {
+    ret = val;
+    done = 1;
+  });
+  res->on_failure(lambda(mixed err) {
+    master()->handle_error(err);
+    done = 1;
+  });
+
+  p->failure(1);
+
+  for (int i = 0; !done && i < 10; i++) {
+    if (!Pike.DefaultBackend(0.1)) break;
+  }
+
+  return ret;
+]], 11)
+
+dnl Trivial async function awaiting and passing failure.
+test_any_equal([[
+  class Foo {
+    __async__ int foo(Concurrent.Future f)
+    {
+      return await(f) + 10;
+    }
+  }
+
+  Concurrent.Promise p = Concurrent.Promise();
+  Concurrent.Future res = Foo()->foo(p->future());
+
+  int done;
+  int ret = -1;
+  res->on_success(lambda(int val) {
+    werror("await() failure did not propagate!\n");
+    done = 1;
+  });
+  res->on_failure(lambda(mixed err) {
+    ret = 11;
+    done = 1;
+  });
+
+  p->failure(1);
+
+  for (int i = 0; !done && i < 10; i++) {
+    if (!Pike.DefaultBackend(0.1)) break;
+  }
+
+  return ret;
+]], 11)
+
+dnl Trivial local async function.
+test_any_equal([[
+  __async__ int foo(Concurrent.Future f)
+  {
+    return await(f) + 10;
+  }
+
+  Concurrent.Promise p = Concurrent.Promise();
+  Concurrent.Future res = foo(p->future());
+
+  int done;
+  int ret = -1;
+  res->on_success(lambda(int val) {
+    ret = val;
+    done = 1;
+  });
+  res->on_failure(lambda(mixed err) {
+    master()->handle_error(err);
+    done = 1;
+  });
+
+  p->success(1);
+
+  for (int i = 0; !done && i < 10; i++) {
+    if (!Pike.DefaultBackend(0.1)) break;
+  }
+
+  return ret;
+]], 11)
+
+dnl Trivial async lambda.
+test_any_equal([[
+  Concurrent.Promise p = Concurrent.Promise();
+  Concurrent.Future res = __async__ lambda(Concurrent.Future f)
+  {
+    return await(f) + 10;
+  }(p->future());
+
+  int done;
+  int ret = -1;
+  res->on_success(lambda(int val) {
+    ret = val;
+    done = 1;
+  });
+  res->on_failure(lambda(mixed err) {
+    master()->handle_error(err);
+    done = 1;
+  });
+
+  p->success(1);
+
+  for (int i = 0; !done && i < 10; i++) {
+    if (!Pike.DefaultBackend(0.1)) break;
+  }
+
+  return ret;
+]], 11)
+
+dnl Async with multiple inherit.
+dnl cf https://git.lysator.liu.se/pikelang/pike/-/issues/10144#note_11251
+test_do([[
+  class http_endpoint {
+    void dummy_function() { }
+  }
+
+  class websocket_handler {
+    __async__ mapping get_state(int group) {
+      return ([]);
+    }
+
+    __async__ void _send_updates(array(object) socks, int group,
+                                 mapping|void data) {
+      Concurrent.Future f = get_state(group);
+      if (!data) data = await(f);
+    }
+
+    protected void create(string name) { }
+  }
+
+  class http_websocket {
+    inherit http_endpoint;
+    inherit websocket_handler;
+
+    __async__ mapping get_state(int group) {
+      return ([ "group": group ]);
+    }
+  }
+
+  add_constant("testsuite_http_websocket", http_websocket);
+]])
+test_do([[
+  class Boom {
+    inherit testsuite_http_websocket;
+    protected void create() {
+      _send_updates(({ }), 42);
+    }
+  }
+
+  return Boom();
+]])
+test_do([[
+  add_constant("testsuite_http_websocket");
+]])
+
+dnl Async in nested inherit.
+dnl cf https://git.lysator.liu.se/pikelang/pike/-/issues/10144#note_11254
+test_do([[
+  class EventSub {
+    protected void create() {
+      build_signer();
+    }
+    __async__ void build_signer() { }
+  }
+  add_constant("testsuite_EventSub", EventSub);
+]])
+test_do([[
+  class EventSubSpecial() {
+    inherit testsuite_EventSub;
+    protected void create() {
+      ::create();
+    }
+  }
+
+  return EventSubSpecial();
+]])
+test_do([[
+  add_constant("testsuite_EventSub");
+]])
+
+dnl Function with default value.
+test_any_equal([[
+  class A {
+    string foo(string bar = "foo") { return bar; }
+  }
+
+  A o = A();
+  return ({ o->foo(), o->foo(UNDEFINED), o->foo(0), o->foo("bar") });
+]], ({ "foo", "foo", "foo", "bar" }))
+test_any_equal([[
+  class A {
+    int foo(int bar = 17) { return bar; }
+  }
+
+  A o = A();
+  return ({ o->foo(), o->foo(UNDEFINED), o->foo(0), o->foo(18) });
+]], ({ 17, 17, 0, 18 }))
+
+dnl Generator with default value.
+
+dnl Lambda with default value.
+test_any_equal([[
+  function(string|void:string) f = lambda(string bar = "foo") { return bar; };
+  return ({ f(), f(UNDEFINED), f(0), f("bar") });
+]], ({ "foo", "foo", "foo", "bar" }))
+test_any_equal([[
+  function(int|void:int) f = lambda(int bar = 17) { return bar; };
+  return ({ f(), f(UNDEFINED), f(0), f(18) });
+]], ({ 17, 17, 0, 18 }))
+
+dnl Local function with default value.
+test_any_equal([[
+  string f(string bar = "foo") { return bar; };
+  return ({ f(), f(UNDEFINED), f(0), f("bar") });
+]], ({ "foo", "foo", "foo", "bar" }))
+test_any_equal([[
+  int f(int bar = 17) { return bar; };
+  return ({ f(), f(UNDEFINED), f(0), f(18) });
+]], ({ 17, 17, 0, 18 }))
+
+dnl Local generator with default value.
+
+dnl Named class with implicit create with default value.
+test_any_equal([[
+  class foo(string bar = "foo") {
+    protected void create(string blag = bar) { bar += blag; }
+  }
+
+  return ({ foo(), foo(UNDEFINED), foo(0), foo("bar"), foo("bar", UNDEFINED),
+	    foo("bar", 0), foo(0, "bar"), foo(UNDEFINED, UNDEFINED), foo(0, 0),
+            foo("bar", "baz"), foo(UNDEFINED, "bar") })->bar;
+]], ({ "foofoo", "foofoo", "foofoo", "barbar", "barbar",
+       "barbar", "foobar", "foofoo", "foofoo",
+       "barbaz", "foobar" }))
+test_any_equal([[
+  class foo(int bar = 17) {
+    protected void create(int blag = bar) { bar += blag; }
+  }
+
+  return ({ foo(), foo(UNDEFINED), foo(0), foo(18), foo(18, UNDEFINED),
+	    foo(18, 0), foo(0, 18), foo(UNDEFINED, UNDEFINED), foo(0, 0),
+            foo(18, 19), foo(UNDEFINED, 18) })->bar;
+]], ({ 34, 34, 0, 36, 36,
+       18, 18, 34, 0,
+       37, 35 }))
+
+dnl Anonymous class with implicit create with default value.
+test_any_equal([[
+  program foo = class(string bar = "foo") {
+      protected void create(string blag = bar) { bar += blag; }
+    };
+
+  return ({ foo(), foo(UNDEFINED), foo(0), foo("bar"), foo("bar", UNDEFINED),
+	    foo("bar", 0), foo(0, "bar"), foo(UNDEFINED, UNDEFINED), foo(0, 0),
+            foo("bar", "baz"), foo(UNDEFINED, "bar") })->bar;
+]], ({ "foofoo", "foofoo", "foofoo", "barbar", "barbar",
+       "barbar", "foobar", "foofoo", "foofoo",
+       "barbaz", "foobar" }))
+test_any_equal([[
+  program foo = class(int bar = 17) {
+      protected void create(int blag = bar) { bar += blag; }
+    };
+
+  return ({ foo(), foo(UNDEFINED), foo(0), foo(18), foo(18, UNDEFINED),
+	    foo(18, 0), foo(0, 18), foo(UNDEFINED, UNDEFINED), foo(0, 0),
+            foo(18, 19), foo(UNDEFINED, 18) })->bar;
+]], ({ 34, 34, 0, 36, 36,
+       18, 18, 34, 0,
+       37, 35 }))
+
+dnl Multi-assign in function calls.
+test_any([[
+  class Foo {
+    // Lifted from issue #10098.
+    int add([int a, int b], int c) { return a + b + c; }
+  }
+  return Foo()->add(({ 1, 2 }), 3);
+]], 6)
+test_any([[
+  // Lifted from issue #10098.
+  int add([int a, int b], int c) { return a + b + c; }
+  return add(({ 1, 2 }), 3);
+]], 6)
+test_equal([[
+  lambda(int a, [int b, int c, [int e, int f] ], int d){
+    return ({ a, b, c, d, e, f });
+  }(1, ({ 3, 4, ({ 5, 6 }) }), 7);
+]], ({ 1, 3, 4, 7, 5, 6 }))
+test_equal([[
+  lambda(int a, [int b, int c], int d){
+    return ({ a, b, c, d });
+  }(1, ({ 2, 3 }), 4);
+]], ({ 1, 2, 3, 4 }))
+test_equal([[
+  lambda(int a, [int b, int c] = ({ 5, 6 }), int d = 10){
+    return ({ a, b, c, d });
+  }(1, ({ 2, 3 }), 4);
+]], ({ 1, 2, 3, 4 }))
+test_equal([[
+  lambda(int a, [int b, int c] = ({ 5, 6 }), int d = 10){
+    return ({ a, b, c, d });
+  }(1, ({ 2, 3 }));
+]], ({ 1, 2, 3, 10 }))
+test_equal([[
+  lambda(int a, [int b, int c] = ({ 5, 6 }), int d = 10){
+    return ({ a, b, c, d });
+  }(1);
+]], ({ 1, 5, 6, 10 }))
+
+dnl bug in for loop optimization in combination with +=
 test_any([[
 array v=({1,2,3});
   for (int i=0; i<sizeof(v); i++)
@@ -647,45 +1405,50 @@ test_any([[ int a=0xffffffff; return a>>17 ]],
 	 [[ (0xffffffff == -1)?-1:0x7fff ]]);
 
 dnl Check the derived return type of sprintf().
-test_any([[return sprintf("%O", typeof(sprintf("%1H", "foo"))); ]],
-	 "string(8bit)");
-test_any([[return sprintf("%O", typeof(sprintf("foo"))); ]],
-	 "string(102..111)");
-test_any([[return sprintf("%O", typeof(sprintf("foo%c", 17))); ]],
-	 "string(17..17 | 102..111)");
-test_any([[return sprintf("%O", typeof(sprintf("%2c\n", 'a'))); ]],
-	 "string(8bit)");
+test_equal([[ typeof(sprintf("%1H", "foo")); ]],
+	   [[ typeof([string(8bit)](mixed)""); ]]);
+test_equal([[ typeof(sprintf("foo")); ]],
+	   [[ typeof([string(102..111)](mixed)""); ]]);
+test_equal([[ typeof(sprintf("foo%c", 17)); ]],
+	   [[ typeof([string(17 | 102..111)](mixed)""); ]]);
+test_equal([[ typeof(sprintf("%2c\n", 'a')); ]],
+	   [[ typeof([string(8bit)](mixed)""); ]]);
 dnl Note the following tests the return type of int2char().
-test_any([[return sprintf("%O", typeof(sprintf("%c",  1023))); ]],
-	 "string(1023..1023)");
-test_any([[return sprintf("%O", typeof(sprintf("%c\n",  1023))); ]],
-	 "string(10..10 | 1023..1023)");
+test_equal([[ typeof(sprintf("%c",  1023)); ]],
+	   [[ typeof([string(1023)](mixed)""); ]]);
+test_equal([[ typeof(sprintf("%c\n",  1023)); ]],
+	   [[ typeof([string(10 | 1023)](mixed)""); ]]);
 dnl The following is due to (string & sprintf_result) == sprintf_result.
-test_any([[return sprintf("%O", typeof(sprintf("%c\n",  Stdio))); ]],
-	 sprintf("%O", sprintf_result));
-test_any([[return sprintf("%O", typeof(sprintf("%4[1]c", 17))); ]],
-	 "string(8bit)");
-test_any([[return sprintf("%O", typeof(sprintf("%[1]n", 17))); ]],
-	 "string(zero)");
+test_equal([[ typeof(sprintf("%c\n",  Stdio)); ]],
+	   [[ sprintf_result; ]]);
+test_equal([[ typeof(sprintf("%4[0]c", 17)); ]],
+	   [[ typeof([string(8bit)](mixed)"") ]]);
+test_equal([[ typeof(sprintf("%[0]n", 17)); ]],
+	   [[ typeof("") ]]);
+test_equal([[ typeof(sprintf("%4[1]c", 0, 17)); ]],
+	   [[ typeof([string(8bit)](mixed)"") ]]);
+test_equal([[ typeof(sprintf("%[1]n", 0, 17)); ]],
+	   [[ typeof("") ]]);
 
-test_any([[return sprintf("%O", typeof(aggregate("foo")));]], "array(string(102..111))");
+test_equal([[ typeof(aggregate("foo"));]],
+	   [[ typeof([array(string(3: 102..111))](mixed)({})) ]]);
 test_any([[int a; return sprintf("%O", typeof(aggregate(a)));]], "array(int)");
 test_any([[int|string a;
 	   string s = sprintf("%O", typeof(aggregate(a)));
 	   return (< "array(string) | array(int)", "array(string | int)", "array(int | string)" >)[s];]], 1);
-test_any([[return sprintf("%O", typeof(aggregate()));]], "array(zero)");
-test_any([[int i; return (< "int", "int | zero", "zero | int" >)
+test_any([[return sprintf("%O", typeof(aggregate()));]], "array(zero:)");
+test_any([[int i; return (< "int", "int | zero", "zero | int", "int(0..)" >)
                           [sprintf("%O", typeof(max(i,0)))];]], 1)
 
 test_any([[array(string) a; return sprintf("%O", typeof(a[0])); ]], "string")
 
 test_any([[class foo { string a; };
 	   object(foo) bar;
-	   return sprintf("%O", typeof(bar->a));]], "string");
+           return sprintf("%O", typeof(bar->a));]], "zero | string");
 
 test_any([[class foo { string a; };
 	   array(object(foo)) bar;
-	   return sprintf("%O", typeof(bar[0]->a));]], "string");
+           return sprintf("%O", typeof(bar[0]->a));]], "zero | string");
 
 test_any([[function(:string)|function(int:int) f;
 	   return sprintf("%O", typeof(f())); ]],
@@ -704,31 +1467,31 @@ test_any([[function(:string)|function(mixed, mixed ...:int) f;
 	 "int")
 
 test_any([[mapping(object:string)|mapping(string:int) f;
-	  return sprintf("%O", typeof(f[class{}()])); ]],
-	 "string")
+          return sprintf("%O", typeof(f[class{}()])); ]],
+         "zero | string")
 
 test_any([[mapping(object:string)|mapping(string:int) f;
 	  return sprintf("%O", typeof(f[""])); ]],
 	 "int")
 
 test_any([[mapping(object:string)|mapping(string:int) f;
-	  return sort((sprintf("%O", typeof(f[0])) - " ")/"|")*"|"; ]],
+          return sort((sprintf("%O", typeof(f[(mixed)0])) - " ")/"|")*"|"; ]],
 	 "int|string")
 
-test_any([[class Foo { string `[](mixed y) {return "";} };
+test_any([[class Foo { protected string `[](mixed y) {return "";} };
 	  object(Foo) foo;
-	  return sprintf("%O", typeof(foo[0])); ]],
-	 "string")
+          return sprintf("%O", typeof(foo[0])); ]],
+         "string")
 
-test_any([[class Foo { array(int) _indices() {return ({0});} };
+test_any([[class Foo { protected array(int) _indices() {return ({0});} };
 	  object(Foo) foo;
-	  return sprintf("%O", typeof(indices(foo))); ]],
-	 "array(int)")
+          return sprintf("%O", typeof(indices(foo))); ]],
+         "array(int)")
 
-test_any([[class Foo { array(string) _values() {return ({""});} };
+test_any([[class Foo { protected array(string) _values() {return ({""});} };
 	  object(Foo) foo;
-	  return sprintf("%O", typeof(values(foo))); ]],
-	 "array(string)")
+          return sprintf("%O", typeof(values(foo))); ]],
+         "array(string)")
 
 test_any([[mapping(string:int) foo;
 	  array(string) bar;
@@ -747,7 +1510,7 @@ test_any([[
   };
 };
   return Toplevel()->test();
-]], "aint(10..10)btype(int(10..10))");
+]], "aint(10)btype(int(10))");
 
 test_any([[{
   class Toplevel {
@@ -759,7 +1522,7 @@ test_any([[{
     }
   };
   return Toplevel()->test()-" ";
-}]], "function(:int(10..10)|int(20..20)|int(30..30))");
+}]], "function(:int(10)|int(20)|int(30))");
 
 test_any([[{
   class Foo
@@ -779,7 +1542,7 @@ test_any([[{
   Bar d;
   return sprintf("%O$%O$%O$%O",
                  Bar()->f(), typeof(c->m), typeof(d->m), typeof(d->b->m));
-}]], "mixed$mixed$string$mixed")
+}]], "mixed$mixed$zero | string$mixed")
 
 // las.c:find_return_type() checks.
 test_eq([[
@@ -799,6 +1562,21 @@ test_equal([[
   lambda(array a, function f) { return f(@a); }
 	(({ 0, 1, 2, 3 })){ return __ARGS__; }
 ]], ({ 0, 1, 2, 3}))
+
+// Issue #10133 (aka LysLysKOM 26044077).
+test_any_equal([[
+  array call(function cb) { return cb(42); }
+  array f() {
+    return call() {
+      array ret = __ARGS__;
+      mixed value = 1234;	// NB: Scoped variable.
+      function ff = lambda() { return value; };
+      return ret;
+    };
+  }
+
+  return f();
+]], ({ 42 }))
 
 // Argument checking
 
@@ -909,7 +1687,7 @@ test_any_equal([[
 ]], typeof(indices((mixed)0)))
 
 // Check that complex function types survive soft casting to function.
-ignore_warning("Soft cast of scope(0,function(*)) to function is a noop.", [[
+ignore_warning("Soft cast of scope(0,*) to function* is a noop.", [[
   test_eq(typeof([function]`+), typeof(`+))
 ]])
 
@@ -941,7 +1719,7 @@ test_compile_error([[ string a="abcb"; string b="b"; a=a/b; ]])
 test_compile_error([[ string a="abcb"; string b="b"; a/=b; ]])
 test_compile_error([[ string a="x"; int b; b="x"*17; ]])
 test_compile_error([[ string a="x"; array b; b="x"*17; ]])
-test_compile_error([[ int b=17; string a; a=b*42; ]])
+test_compile_error([[ int b=17; string a = ""; a=b*42; ]])
 test_compile_error([[ int b=17; float c=42.0; b=b/c; ]])
 test_compile_error([[ int b=17; float c=42.0; b/=c; ]])
 test_compile_error([[ int b=17; float c=42.0; b=b*c; ]])
@@ -971,7 +1749,7 @@ test_any([[
 
 // Warnings
 
-test_compile_warning([[ [mixed]1 ]])
+dnl test_compile_warning([[ [mixed]1 ]])
 test_compile_warning([[
  class A { int a = 6; };
  class B {
@@ -1016,6 +1794,38 @@ test_compile_any([[
     protected void _destruct() {}
   }
 ]])
+
+test_any([[
+  // Test Pike.InhibitDestruct.
+  class Foo {
+    inherit Pike.InhibitDestruct;
+    /* Make the symbols visible outside. */
+    void inhibit_destruct() { ::inhibit_destruct(); }
+    void permit_destruct() { ::permit_destruct(); }
+  }
+  object o = Foo();
+  destruct(o);
+  if (o) return 1;
+
+  o = Foo();
+  o->inhibit_destruct();
+  o->permit_destruct();
+  if (!o) return 2;
+  destruct(o);
+  if (o) return 3;
+
+  o = Foo();
+  o->inhibit_destruct();
+  destruct(o);
+  if (!o) return 4;
+  o->inhibit_destruct();
+  if (!o) return 5;
+  o->permit_destruct();
+  if (!o) return 6;
+  o->permit_destruct();
+  if (o) return 7;
+  return 0;
+]], 0)
 
 test_any([[
   class Foo {
@@ -1217,6 +2027,25 @@ test_any([[
   return catch { Builtin.__Backtrace_Tester__(); }[1][-1][2];
 ]], Builtin.__Backtrace_Tester__)
 
+test_any_equal([[
+  // Test that filename and line numbers in backtraces are correct.
+  // This specific test used to trigger two different bugs.
+  // cf [LysLysKOM 22997909].
+  int whee(string w)
+  {
+#line 8 "whee-before"
+    int x = 0;
+    error("whee!\n");
+#line 11 "whee-after"
+    string q = "wq";
+    q += "21";
+    return sizeof(q + w);
+  };
+#line 16 "test"
+  mixed err = catch { whee("foo"); };
+  return ({ err[1][-1][0], err[1][-1][1] });
+]], ({ "whee-before", 9 }))
+
 test_compile_warning([[
   class A { static int foo = 1; int bar() { return foo; } }
 ]])
@@ -1276,7 +2105,7 @@ test_compile_any([[
 
   class B
   {
-     void create(int y)
+     protected void create(int y)
      {
      }
   }
@@ -1344,7 +2173,7 @@ class Foo
 {
   inherit Stdio.File;
 
-  void create() {  }
+  protected void create() {  }
 };
 
 class Bar
@@ -1357,13 +2186,13 @@ class Bar
     inherit Foo;
 
 
-    void create(Stdio.File f)
+    protected void create(Stdio.File f)
       {
 	assign(f);
       }
   }
 
-  void create()
+  protected void create()
     {
       Gazonk(Stdio.stdin);
     }
@@ -1528,20 +2357,20 @@ test_do([[
     class Foo
     {
       int c;
-      object foo;
-      protected void create(object o)
+      object|zero foo;
+      protected void create(object|zero o)
       {
 	foo = o;
 	c = count++;
       }
 
-      void _destruct()
+      protected void _destruct()
       {
 	count--;
 	if (count != c)
 	  error ("Destruct out of sequence, "
 		 "%d destructed when %d should be.\n", c, count);
-	object x = foo && Foo(0);
+	object|zero x = foo && Foo(0);
 	x = 0;
 	// Cause call to destruct_objects_to_destruct.
 	for (int j = 0; j < 10; j++) write ("");
@@ -1650,7 +2479,7 @@ test_program([[
 ]]);
 test_program([[
   inherit Thread.Mutex : monitor;
-  mixed `-> (string what) {return this[what];}
+  protected mixed `-> (string what) {return this[what];}
   int dummy;
   int f (int x)
   {
@@ -1685,7 +2514,7 @@ test_program([[
 ]]);
 test_program([[
   inherit Thread.Mutex : monitor;
-  mixed `-> (string what) {return this[what];}
+  protected mixed `-> (string what) {return this[what];}
   int res = 0;
   void f (int x)
   {
@@ -1717,7 +2546,7 @@ test_program([[
 ]]);
 test_program([[
   inherit Thread.Mutex : monitor;
-  mixed `-> (string what) {return this[what];}
+  protected mixed `-> (string what) {return this[what];}
   int f (int x)
   {
     if(monitor::trylock(1))
@@ -1883,7 +2712,7 @@ test_program([[
 ]]);
 test_program([[
   inherit Thread.Mutex : monitor;
-  mixed `-> (string what) {return this[what];}
+  protected mixed `-> (string what) {return this[what];}
   int dummy;
   int f (int x)
   {
@@ -1921,7 +2750,7 @@ test_program([[
 ]]);
 test_program([[
   inherit Thread.Mutex : monitor;
-  mixed `-> (string what) {return this[what];}
+  protected mixed `-> (string what) {return this[what];}
   int res = 0;
   void f (int x)
   {
@@ -1954,7 +2783,7 @@ test_program([[
 ]]);
 test_program([[
   inherit Thread.Mutex : monitor;
-  mixed `-> (string what) {return this[what];}
+  protected mixed `-> (string what) {return this[what];}
   int f (int x)
   {
     if(monitor::trylock(1))
@@ -2111,7 +2940,7 @@ test_program([[
   }
 ]]);
 test_program([[
-  mixed `-> (string what) {return this[what];}
+  protected mixed `-> (string what) {return this[what];}
   int dummy;
   int f (int x)
   {
@@ -2139,7 +2968,7 @@ test_program([[
   }
 ]]);
 test_program([[
-  mixed `-> (string what) {return this[what];}
+  protected mixed `-> (string what) {return this[what];}
   int res = 0;
   void f (int x)
   {
@@ -2164,7 +2993,7 @@ test_program([[
   }
 ]]);
 test_program([[
-  mixed `-> (string what) {return this[what];}
+  protected mixed `-> (string what) {return this[what];}
   int f (int x)
   {
     return x;
@@ -2351,13 +3180,13 @@ test_program([[
 test_program([[
   int i = 17, v;
   this_program clone() {return this_program (i);}
-  void create (int v_) {v = v_;}
+  protected void create (int v_) {v = v_;}
   int a() {return clone()->v == 17;}
 ]])
 test_program([[
   this_program clone() {return this_program (i);}
   int i = 17, v;
-  void create (int v_) {v = v_;}
+  protected void create (int v_) {v = v_;}
   int a() {return clone()->v == 17;}
 ]])
 test_program([[
@@ -2477,9 +3306,9 @@ test_compile_error(1())
 test_compile_error(""())
 test_compile_error(([])())
 test_compile_error(([])())
-test_any([[ class X { int y; class Z { void _destruct() { y++; } } }; X x=X(); destruct(x->Z()); return x->y;]],1)
+test_any([[ class X { int y; class Z { protected void _destruct() { y++; } } }; X x=X(); destruct(x->Z()); return x->y;]],1)
 
-test_eval_error([[ class Z { int _destruct() { return 1/y; } }(); ]])
+test_eval_error([[ class Z { protected int _destruct() { return 1/y; } }(); ]])
 
 test_any([[ class X { int y; class Z { protected void _destruct() { y++; } } }; X x=X(); destruct(x->Z()); return x->y;]],1)
 test_any([[ class X { int y; class Z { protected void create() { y++; } } }; X x=X(); destruct(x->Z()); return x->y;]],1)
@@ -2574,7 +3403,7 @@ test_program([[// [bug 3060]
 
   class X
   {
-    void create() {error ("foo\n");} // Line 8
+    protected void create() {error ("foo\n");} // Line 8
   }
 
   object rx = class {}();
@@ -2615,7 +3444,7 @@ test_program([[
 dnl This test used to get the last line of the else block
 test_any([[
   int expected_line;
-  void foo(object o)
+  void foo(object|zero o)
   {
     expected_line = __LINE__ + 1;
     if (o->a && b) {
@@ -2731,7 +3560,7 @@ test_any([[
 
 test_do([[
   // Save our constants for future use...
-  add_constant("__saved_constants__", ([]) + all_constants());
+  add_constant("__saved_constants", ([]) + all_constants());
 ]])
 
 test_any([[
@@ -2740,6 +3569,11 @@ test_any([[
 // this crashes Pike /Mirar 2001-05-19
 // I haven't been able to minimize it futher,
 // and it needs to be in a separate module.
+//
+// This triggers a placeholder object needing to
+// be destructed in compiler pass 2 due to the
+// type checking error. The original issue was
+// likely fixed 2001-05-23. /grubba 2024-03-11
 
 mapping es=0;
 
@@ -2783,6 +3617,32 @@ string efoo(string e)
 		  "testsuite_test", handler());
  };
  replace_master(orig_master);
+ return 0;
+]],0);
+
+test_any([[
+ Stdio.write_file("testsuite_test.pmod",
+#"
+// Bug 10130 and 10131.
+// This crashed pike due to broken error recovery.
+
+class Bang(pang) {
+  void bang() {}
+}
+");
+
+ // Compilation handler that hides compilation errors.
+ class handler
+ {
+   void compile_error(string file, int line, string err)
+   {
+     // log_msg("file: %O, line: %O, err: %O\n", file, line, err);
+   }
+ };
+
+ catch {
+   compile_string(".testsuite_test.Bang bang;\n", "testsuite_test", handler());
+ };
  return 0;
 ]],0);
 
@@ -3096,10 +3956,10 @@ test_do([[
 
 test_do([[
   // Restore constants that were zapped by the various masters used above.
-  foreach(__saved_constants__; string const_name; mixed val) {
+  foreach(__saved_constants; string const_name; mixed val) {
     add_constant(const_name, val);
   }
-  add_constant("__saved_constants__");
+  add_constant("__saved_constants");
 ]])
 
 test_compile_any([[int log() { return 17; } class Greta { int hanna() { return log(); } }]])
@@ -3119,7 +3979,7 @@ test_compile_any([[void foo(array(Stdio.FILE) f) {}]])
 test_compile_any([[Stdio.File foo(array(Stdio.FILE) f) { return f[0]; }]])
 test_compile_any([[
 class a {
-  int `== (mixed x) {
+  protected int `== (mixed x) {
     return 0;
   }
 }
@@ -3302,6 +4162,16 @@ test_any([[
   return 0;
 ]], 0)
 
+test_any_equal([[
+  // Test automap combined with splice. [LysLysKOM 23258037]
+  array ret = ({});
+  for (int x = 0; x < 10; x++) {
+    array a = ({ x, });
+    ret += `+(a[*], @a);
+  }
+  return ret;
+]], ({ 0, 2, 4, 6, 8, 10, 12, 14, 16, 18 }))
+
 test_any([[
   // Test eval_low() on seemingly constant expressions, that
   // attempt to access variables in the fake object. [Bug 5273]
@@ -3313,7 +4183,7 @@ test_any([[
   {
     protected object foo;
 
-    mixed `-> (mixed what)
+    protected mixed `-> (mixed what)
     {
       return foo;
     }
@@ -3411,12 +4281,12 @@ test_compile([[float x=(gauge { return; },1.0);]])
 test_compile_error([[object x = Gmp.mpz(17); constant y = x;]])
 test_any([[object(Stdio.File) f; f=Stdio.File(); return 1]],1)
 test_compile([[float t=gauge { string foo; foo; };]])
-test_compile_any([[class Foo { object(Stdio.FILE) f; void create() { f=Stdio.FILE(); }}]])
+test_compile_any([[class Foo { object(Stdio.FILE) f; protected void create() { f=Stdio.FILE(); }}]])
 test_eq([[compile_string("#define A(X) (X)\nint x() { return A \n\t(1); }")()->x()]],1)
 
 test_any([[class G { mapping t=([]);
  class tO { void init(string name) { t[name]=this; }}
- class W { inherit tO; void create() { init("foo"); }}
+ class W { inherit tO; protected void create() { init("foo"); }}
 }; object x=G(); x->W(); return objectp(x->t->foo)]],1)
 
 test_program([[class foo { program x() { return class {}; }}; class bar { inherit foo; program x() { return class {}; }} int a() { return foo()->x != bar()->x(); }]])
@@ -3431,7 +4301,7 @@ test_any([[
     constant gurka = 1;
     int bar;
 
-    void create() { bar = foo; }
+    protected void create() { bar = foo; }
   };
   return B()->bar;
 ]], 1)
@@ -3447,7 +4317,7 @@ test_any([[
     int bar;
     int baz = 3;
 
-    void create() { bar = baz + foo; }
+    protected void create() { bar = baz + foo; }
   };
   return B()->bar;
 ]], 4)
@@ -3469,7 +4339,7 @@ test_any([[
     int bar;
     int baz = 5;
 
-    void create() { bar = baz + A::foo + B::foo; }
+    protected void create() { bar = baz + A::foo + B::foo; }
   };
   return C()->bar;
 ]], 12)
@@ -3843,10 +4713,10 @@ array(int) a()
 
 
 
-test_true([[Program.implements( class { int x; string y; void foo(int x) {} },
+test_true([[Program.implements( class { int x; string y = ""; void foo(int x) {} },
 	class { void foo(mixed z) {} int x; })]])
-test_false([[Program.implements( class { int x; string y; void foo(int x) {} },
-	class { void foo(mixed z) {} string x; })]])
+test_false([[Program.implements( class { int x; string y = ""; void foo(int x) {} },
+	class { void foo(mixed z) {} string x = ""; })]])
 
 test_eq([[object_program(master())]],[[(program)"/master"]])
 test_compile([[object("master") m = master();]])
@@ -3865,26 +4735,26 @@ return class { int i=17; }()["i"]
 ]],17)
 
 test_any([[
-return class { int i=17; mixed `[](string foo) { return i; }}()[""]
+return class { int i=17; protected mixed `[](string foo) { return i; }}()[""]
 ]],17)
 
 test_any([[
-return class { int i=17; mixed `[](string foo) { return ::`[]("i"); }}()[""]
+return class { int i=17; protected mixed `[](string foo) { return ::`[]("i"); }}()[""]
 ]],17)
 
 test_any([[
-return class { int i=17; mixed `[](string foo) { return ::`[]; }}()[""]("i")
+return class { int i=17; protected mixed `[](string foo) { return ::`[]; }}()[""]("i")
 ]],17)
 
 test_any([[
-return class { int i=17; mixed `[](string foo) { return ::`[]; }}()[""]("y")
+return class { int i=17; protected mixed `[](string foo) { return ::`[]; }}()[""]("y")
 ]],0)
 
 test_any([[
 object o=class {
   int i=17;
-  mixed `[](string foo) { return ::`[]=; }
-  mixed `[]=(string ind, mixed foo) {}
+  protected mixed `[](string foo) { return ::`[]=; }
+  protected mixed `[]=(string ind, mixed foo) {}
 }();
 
 o[""]("i",99);
@@ -3897,8 +4767,8 @@ object o=class {
   int bar=11;
   int i=17;
   int gazonk=12;
-  mixed `[](string foo) { return ::`[]=; }
-  mixed `[]=(string ind, mixed foo) {}
+  protected mixed `[](string foo) { return ::`[]=; }
+  protected mixed `[]=(string ind, mixed foo) {}
 }();
 
 o[""]("i",99);
@@ -3916,8 +4786,8 @@ class Fonk {
 object o=class
 {
   inherit Fonk;
-  mixed `[](string foo) { return ::`[]=; }
-  mixed `[]=(string ind, mixed foo) {}
+  protected mixed `[](string foo) { return ::`[]=; }
+  protected mixed `[]=(string ind, mixed foo) {}
 }();
 
 o[""]("i",99);
@@ -3935,8 +4805,8 @@ class Fonk {
 object o=class
 {
   inherit Fonk : zonk;
-  mixed `[](string foo) { return zonk::`[]=; }
-  mixed `[]=(string ind, mixed foo) {}
+  protected mixed `[](string foo) { return zonk::`[]=; }
+  protected mixed `[]=(string ind, mixed foo) {}
 }();
 
 o[""]("i",99);
@@ -4363,6 +5233,37 @@ test_any([[
   return Y(5)->x;
 ]], 7)
 
+dnl Issue #10154
+test_any([[
+  // Triggered infinite recursion.
+  class A {
+    string `prop() { return "A"; }
+  }
+
+  class B {
+    inherit A;
+    string `prop() { return ::prop + "B"; }
+  }
+
+  return B()->prop;
+]], "AB")
+
+dnl Issue #10154 fall-out
+test_any([[
+  // Overloading failed.
+  class A {
+    string `prop() { return "bad"; }
+    string get_prop() { return prop; }
+  }
+
+  class B {
+    inherit A;
+    string `prop() { return "good"; }
+  }
+
+  return B()->get_prop();
+]], "good")
+
 test_any([[
   // Since the addition of F_APPEND_MAPPING in set_bar below
   // the setter is not being called anymore. Instead, the mapping
@@ -4397,7 +5298,7 @@ test_any([[
   class A(mapping foo) {
     mapping _modified = ([]);
 
-    mixed `->=(string sym, mixed v) {
+    protected mixed `->=(string sym, mixed v) {
       return _modified[sym] = v;
     }
 
@@ -4444,7 +5345,7 @@ test_any([[
   class A(array foo) {
     int counter;
 
-    void `->=(string sym, mixed v) {
+    protected void `->=(string sym, mixed v) {
       counter += !!v;
       ::`->=(sym, v);
     }
@@ -4533,6 +5434,29 @@ test_compile_warning([[
   };
 ]])
 
+test_compile_warning([[
+  class Test {
+    private string `private_getter() {
+      return "private";
+    }
+  };
+]]);
+
+test_any([[
+  // Bug #10136.
+  class Test {
+    private string `private_getter() {
+      return "private";
+    }
+
+    string get() {
+      return private_getter;
+    }
+  }
+
+  return Test()->get();
+]], "private");
+
 test_do([[
   // bug 3006
   class X {
@@ -4582,9 +5506,9 @@ cond(0,[[
 test_any([[
 class X {
  protected string f() { return "p"; }
- protected class gazonk { void create() { f(); }};
-  protected class g { object e() { return gazonk(); }};
- void create() { g()->e(); }}; return objectp(X()); ]],1)
+ protected class gazonk { protected void create() { f(); }};
+ protected class g { object e() { return gazonk(); }};
+ protected void create() { g()->e(); }}; return objectp(X()); ]],1)
 test_any([[class A { int x=1; }; class B { protected inherit A; int foo() { return A::x; }}; return A()->x && !B()->x && B()->foo()==A()->x;]],1)
 test_any([[class C { int q() { return p(); } int p() { return 17; }}; return C()->q();]],17)
 test_any([[class C1 {
@@ -4592,12 +5516,12 @@ test_any([[class C1 {
  class Y { program YinD() { return D; }} };
  class C2 { inherit C1; class D { string id() { return "bar"; } } };
  return C2()->Y()->YinD()()->id()]],"bar")
-test_any([[object o=class {int c;class bar{void create(){c++;};}}(); o->bar(); return o->c;]],1)
-test_do([[add_constant("GURKA2",class { int c; class bar{void create() {c+=17;}}}()); ]])
+test_any([[object o=class {int c;class bar{protected void create(){c++;};}}(); o->bar(); return o->c;]],1)
+test_do([[add_constant("GURKA2",class { int c; class bar{protected void create() {c+=17;}}}()); ]])
 test_any([[class { inherit GURKA2.bar; }(); return GURKA2->c;]],17)
 test_any([[class { inherit GURKA2.bar; }(); return GURKA2->c;]],34)
 
-test_do([[add_constant("GURKA2",class { int c; class bar{void create() { class { void create() {c+=17;}}(); }}}()); ]])
+test_do([[add_constant("GURKA2",class { int c; class bar{protected void create() { class { protected void create() {c+=17;}}(); }}}()); ]])
 test_any([[class { inherit GURKA2.bar; }(); return GURKA2->c;]],17)
 test_any([[class { inherit GURKA2.bar; }(); return GURKA2->c;]],34)
 test_do([[add_constant("GURKA2");]]);
@@ -4800,7 +5724,7 @@ test_any([[
   return my_lambda(); really_magic_var;
 ]],"foo")
 
-test_eq([[class { int `()(){ return 4711; } }()(); ]],4711)
+test_eq([[class { protected int `()(){ return 4711; } }()(); ]],4711)
 teste_eval_error(mixed foo=({}); sort(@foo); )
 test_compile_error([[int foo() { return 1} ; constant foo=(["foo":foo]); return foo->foo();]])
 test_compile_error([[class T{void p(object e,object f){lambda::create(f);}}]])
@@ -4842,6 +5766,9 @@ test_encode(({"s",1,0,-3.40625}))
 test_encode((<"s",1,0,-3.40625>))
 test_encode((["s":1,1:2,0:3,-3.40625:4]))
 test_encode((<1, 2, 2, 3, 3, 3>))
+test_encode(({ 1<<20, "foo", "foo" }))
+test_encode(({ 1<<40, "foo", "foo" }))
+test_encode(({ 1<<70, "foo", "foo" }))
 test_eq(decode_value("\210\201"),1)
 test_eq(decode_value("\210\011\001"),-1)
 test_eq(decode_value("\206\200"),""))
@@ -4882,7 +5809,7 @@ class Test
 {
     class Resolver (array c)
     {
-      mixed resolv (string id)
+      mixed resolv (string id, string path, object|void handler)
       {
 	if (id == "c") return c;
       }
@@ -4898,7 +5825,7 @@ class Test
       string nameof (mixed what)
       {
 	if (string name = search (all_constants(), what)) return name;
-	return ([])[0];
+	return UNDEFINED;
       }
 
       mixed encode_object (object o) {}
@@ -4935,7 +5862,7 @@ class Test
     {
       mixed nameof (mixed what)
       {
-	return ([])[0];
+	return UNDEFINED;
       }
       mixed encode_object (object o) {}
       void decode_object (object o, mixed d) {}
@@ -4979,12 +5906,12 @@ test_any_equal([[
 
 test_compile_error(int foo() { LJjjjjJJJ ; })
 test_true(class { constant i=1; }()->i)
-test_true(class { constant i=0; mixed `->(string s) { if(s=="i") return 1; }}()->i)
-test_true(class { constant i=1; mixed `->(string s) { return 0; }}()["i"])
-test_true(class { constant i=0; mixed `[](string s) { if(s=="i") return 1; }}()["i"])
-test_true(class { optional constant i=0; mixed `[](string s) { if(s=="i") return 1; }}()["i"])
-test_true(class { mixed `[]=(mixed a, mixed b) { if(a!=b) throw(1); }}()[1]=1)
-test_true(class { mixed `->=(mixed a, mixed b) { if(a!=b) throw(1); }}()->i="i")
+test_true(class { constant i=0; protected mixed `->(string s) { if(s=="i") return 1; }}()->i)
+test_true(class { constant i=1; protected mixed `->(string s) { return 0; }}()["i"])
+test_true(class { constant i=0; protected mixed `[](string s) { if(s=="i") return 1; }}()["i"])
+test_true(class { optional constant i=0; protected mixed `[](string s) { if(s=="i") return 1; }}()["i"])
+test_true(class { protected mixed `[]=(mixed a, mixed b) { if(a!=b) throw(1); }}()[1]=1)
+test_true(class { protected mixed `->=(mixed a, mixed b) { if(a!=b) throw(1); }}()->i="i")
 
 test_do([[
 #pragma strict_types
@@ -5108,6 +6035,7 @@ test_equal([[ ({ ({1,2}), ({3,4}), ({5,6}) })[*][ ({0,1,1})[*] ] ]],
 test_eq(map("abc", `+, 1), "bcd")
 test_equal(map((["a":1,"b":2]), `+, 1), (["a":2,"b":3]))
 test_equal(map((<1,2,3>), `+, 1), (<2,3,4>))
+test_equal(map(({ lambda(){ return 1; }, lambda(){ return 0; }})), ({ 1, 0 }))
 test_any_equal(class A { constant a=1; constant b=2; }; return map(A, `+ ,1);, (["a":2,"b":3]))
 test_any_equal(class A { protected mixed cast(string t) { if(t=="mapping") return (["a":1,"b":2]);}}; return map(A(), `+, 1);, (["a":2,"b":3]))
 test_any_equal(class A { protected mixed cast(string t) { if(t=="array") return ({1,2,3});}}; return map(A(), `+, 1);, ({2,3,4}))
@@ -5177,11 +6105,11 @@ test_any_equal([[
      a coredump in a later test. */
   class A {
     array a = ({1});
-    void `->= (string var, mixed val) {::`->= (var, val);}
+    protected void `->= (string var, mixed val) {::`->= (var, val);}
   };
   class B {
     inherit A;
-    void `->= (string var, mixed val) {if (var) ::`->= (var, val);}
+    protected void `->= (string var, mixed val) {if (var) ::`->= (var, val);}
   };
   object o = B();
   o->a += ({2});
@@ -5191,7 +6119,7 @@ test_any_equal([[
 test_any_equal([[
   class A {
     array a = ({1});
-    void `->= (string var, mixed val) {::`->= (var, val);}
+    protected void `->= (string var, mixed val) {::`->= (var, val);}
   };
   class B {
     inherit A;
@@ -5204,12 +6132,12 @@ test_any_equal([[
 test_any_equal([[
   class A {
     array a = ({1});
-//    void `->= (string var, mixed val) {::`->= (var, val);}
+//    protected void `->= (string var, mixed val) {::`->= (var, val);}
   };
   class B {
     int z;
     inherit A;
-    void `->= (string var, mixed val) { A::`->= (var, val);}
+    protected void `->= (string var, mixed val) { A::`->= (var, val);}
   };
   object o = B();
   o->a += ({2});
@@ -5228,7 +6156,7 @@ test_any_equal([[
     inherit FOO;
     int b,c,d,e,f,g;
     inherit A;
-    void `->= (string var, mixed val) { A::`->= (var, val);}
+    protected void `->= (string var, mixed val) { A::`->= (var, val);}
   };
   object o = B();
   o->a += ({2});
@@ -5246,11 +6174,11 @@ test_any_equal([[
 
     class Q
     {
-	mixed `-> (string var)
+	protected mixed `-> (string var)
 	{
 	  return FNORD::`-> (var);
 	}
-      void `->= (string var, mixed val)
+        protected void `->= (string var, mixed val)
 	{
 	  FNORD::`->= (var, val);
 	}
@@ -5382,10 +6310,14 @@ test_do(class { Stdio.File foo; object bar=foo; })
 test_any(if(int i=1) return i; return 0;,1)
 test_compile(for(int i=0;i<100;i++) return 0;)
 test_compile(foreach(({}),mixed i){i;})
+
+dnl sscanf("", ...) triggers this warning.
+ignore_warning("Indexing the empty string.", [[
 test_compile(sscanf("","%O",mixed foo);foo;)
 test_compile_error(sscanf("","",mixed foo);)
 test_compile_error(sscanf("","%f",float))
 test_compile_error(sscanf("",float))
+]])
 
 // ++
 test_any([[int e; e++; return e;]],1)
@@ -5597,7 +6529,7 @@ cond(0, [[
 cond_begin([[all_constants()->thread_create]])
 
   // _disable_threads
-  test_any([[
+  test_any_deprecated([[ // FIXME: Uses deprecated function Process.system
 #ifndef __NT__
 // Using a named pipe here to make open() block. That doesn't exist on NT.
 
@@ -5620,13 +6552,13 @@ int started;
 Thread.Mutex start_lock = Thread.Mutex();
 Thread.Mutex locker_lock = Thread.Mutex();
 Thread.Mutex locked_mutex = Thread.Mutex();
-Thread.MutexKey locked_mutex_key;
+object(Thread.MutexKey)|zero locked_mutex_key;
 
 void mutex_locker()
 {
   log (mutex_locker, "locker started\n");
   started++;
-  Thread.MutexKey k = start_lock->lock();
+  object(Thread.MutexKey)|zero k = start_lock->lock();
   k = 0;
 
   k = locker_lock->lock();
@@ -5641,10 +6573,10 @@ void mutex_locker()
 void thread_disabler()
 {
   log (thread_disabler, "disabler started\n");
-  Thread.MutexKey locker_key = locker_lock->lock();
+  object(Thread.MutexKey)|zero locker_key = locker_lock->lock();
 
   started++;
-  Thread.MutexKey k = start_lock->lock();
+  object(Thread.MutexKey)|zero k = start_lock->lock();
   k = 0;
 
   sleep (0.1);
@@ -5652,7 +6584,7 @@ void thread_disabler()
   locker_key = 0;
   // Race: Don't want mutex_locker to get the lock on locker_lock
   // until we're in _disable_threads.
-  object disable = _disable_threads();
+  object|zero disable = _disable_threads();
   log (thread_disabler, "disabled\n");
   sleep (0.1);
   disable = 0;
@@ -5664,7 +6596,7 @@ void test()
   locked_mutex_key = locked_mutex->lock();
   started = 0;
 
-  Thread.MutexKey start_key = start_lock->lock();
+  object(Thread.MutexKey)|zero start_key = start_lock->lock();
   object disabler = thread_create (thread_disabler);
   object locker = thread_create (mutex_locker);
   while (started < 2) sleep (0.1);
@@ -5736,7 +6668,7 @@ void test()
     void threads_disabler (string id)
     {
       while (run) {
-	object l = _disable_threads();
+	object|zero l = _disable_threads();
 	rounds[id]++;
 	//werror (id);
 	l = 0;
@@ -5758,7 +6690,7 @@ void test()
     return 1;
   ]], 1)
 
-  test_any([[
+  test_any_deprecated([[ // FIXME: Uses deprecated function Process.system
     Stdio.write_file ("testsuite_test.pike", #"\
       int main()
       {
@@ -5876,6 +6808,35 @@ test_any([[multiset m=(<>);int e;
   for(e=0;e<1000;e++) if(m[reverse(e)]!=1) return e;
   return -1;
 ]],-1)
+
+
+test_any([[multiset m = (<>); int e; int f;
+  for (e = 0; e < 100;e++) {
+    for (f = e; f < 100; f++) {
+      m_add(m, f);
+    }
+  }
+  for (e = 0; e < 100; e++) {
+    f = -1;
+    while (m_delete(m, e)) f++;
+    if (f != e) return e;
+  }
+  return -1;
+]], -1)
+
+test_any([[multiset m = (<>); int e; int f;
+  for (e = 0; e < 100;e++) {
+    for (f = e; f < 100; f++) {
+      m_add(m, e);
+    }
+  }
+  for (e = 0; e < 100; e++) {
+    f = e;
+    while (m_delete(m, e)) f++;
+    if (f != 100) return e;
+  }
+  return -1;
+]], -1)
 
 
 test_any([[multiset m=(<>);int e;
@@ -6032,8 +6993,8 @@ test_any_equal([[
 
 test_any([[
   class X (int i) {
-    int `< (mixed o) {return 0;}
-    int `== (mixed o) {return 0;}
+    protected int `< (mixed o) {return 0;}
+    protected int `== (mixed o) {return 0;}
   };
   multiset m = (<X(2)>);
   m[X(4)] = 1;
@@ -6191,14 +7152,14 @@ mapping gurka;
 
 class Tomat
 {
-  int `==(mixed x)
+  protected int `==(mixed x)
     {
       /* make hash bigger */
       for(int e=sizeof(gurka);e<1000;e++) gurka[e]=e;
       return 0;
     }
 
-  int __hash()
+  protected int __hash()
     {
       return 99999;
     }
@@ -6206,13 +7167,13 @@ class Tomat
 
 class Sallad
 {
-  int __hash()
+  protected int __hash()
     {
       return 99999;
     }
 };
 
-void create()
+protected void create()
 {
   for(int x=1;x<255;x++)
   {
@@ -6230,8 +7191,8 @@ void create()
 test_any([[
     mapping m = ([ "foo" : 1 ]);
     class A {
-	int __hash() { return hash_value("foo"); }
-	int `==(mixed o) { return o == "foo"; }
+	protected int __hash() { return hash_value("foo"); }
+	protected int `==(mixed o) { return o == "foo"; }
     };
     if( !m[A()] )
       return (string)hash_value("foo");
@@ -6241,8 +7202,8 @@ test_any([[
 test_any([[
     mapping m = ([ "foo" : 1 ]);
     class A {
-	int __hash() { return hash_value("foo"); }
-	int `==(mixed o) { return o == "foo"; }
+	protected int __hash() { return hash_value("foo"); }
+	protected int `==(mixed o) { return o == "foo"; }
     };
     if( sizeof(m - ([ A() : 1 ])) )
       return (string)hash_value("foo");
@@ -6304,9 +7265,9 @@ test_any([[{
 
   test_true(intp(gc()));
   test_true(mappingp (((function) Debug.gc_status)()))
-  test_any([[ array a=({0}); a[0]=a; gc(); a=0; return gc() > 0; ]],1);
-  test_any([[mapping m=([]); m[m]=m; gc(); m=0; return gc() > 0; ]],1);
-  test_any([[multiset m=(<>); m[m]=1; gc(); m=0; return gc() > 0; ]],1);
+  test_any([[ array|zero a=({0}); a[0]=a; gc(); a=0; return gc() > 0; ]],1);
+  test_any([[mapping|zero m=([]); m[m]=m; gc(); m=0; return gc() > 0; ]],1);
+  test_any([[multiset|zero m=(<>); m[m]=1; gc(); m=0; return gc() > 0; ]],1);
   test_any([[{
 #if !constant (_debug)
     int _debug (int d) {return 0;};
@@ -6314,8 +7275,8 @@ test_any([[{
     // Must turn off debug in this test or else we'll get extra
     // references to p in the backlog.
     int dlevel = _debug (0);
-    program p=compile_string("constant a=({0});");
-    object o=p();
+    program|zero p=compile_string("constant a=({0});");
+    object|zero o=p();
     o->a[0]=p;
     gc();
     p=o=0;
@@ -6324,14 +7285,14 @@ test_any([[{
   }]], 1);
 
 test_any([[
-  object o = class {function f; void foo() {}}();
+  object|zero o = class {function f; void foo() {}}();
   o->f = o->foo;
   gc();
   o = 0;
   return gc();
 ]], 0)
 test_any([[
-  object o = class {object o;}();
+  object|zero o = class {object o;}();
   o->o = o;
   gc();
   o = 0;
@@ -6339,7 +7300,7 @@ test_any([[
 ]], 0)
 test_any([[
   class X {function f; void foo() {}};
-  object o1 = X(), o2 = X();
+  object|zero o1 = X(), o2 = X();
   o1->f = o2->foo;
   o2->f = o1->foo;
   gc();
@@ -6348,7 +7309,7 @@ test_any([[
 ]], 2)
 test_any([[
   class X {object o;};
-  object o1 = X(), o2 = X();
+  object|zero o1 = X(), o2 = X();
   o1->o = o2;
   o2->o = o1;
   gc();
@@ -6418,7 +7379,7 @@ test_any([[
   ]])
 
   test_any([[
-    mapping m=([]);
+    mapping|zero m=([]);
     m->self=m;
 
     mapping q=(["foo":"bar","gazonk":1]);
@@ -6453,8 +7414,8 @@ test_any([[
     mapping m = ([]);
     class Refcounter()
     { mapping state;
-      void create(mapping m) { state = m; state->refs++;}
-      void _destruct() {state->refs--;}
+      protected void create(mapping m) { state = m; state->refs++;}
+      protected void _destruct() {state->refs--;}
     };
     int final_res;
     function foo()
@@ -6468,7 +7429,7 @@ test_any([[
       };
       return bar;
     };
-    function bar = foo();
+    function|zero bar = foo();
     final_res += m->refs; // Should add 0 here.
     bar();
     bar = 0;
@@ -6482,10 +7443,10 @@ test_any([[
     {
       object c;
       class A {object b;}
-      class B {object a; void _destruct() {c = class{}();}}
+      class B {object a; protected void _destruct() {c = class{}();}}
       mixed test()
       {
-	object a = A(), b = B();
+	object|zero a = A(), b = B();
 	a->b = b;
 	b->a = a;
 	a = b = 0;
@@ -6496,7 +7457,7 @@ test_any([[
   ]])
 
   test_any([[{
-    array a = ({({0})}); a[0][0] = a;
+    array|zero a = ({({0})}); a[0][0] = a;
     gc(); a = 0; return gc() > 0;
   }]], 1)
 
@@ -6508,47 +7469,47 @@ test_any([[
 
   test_any([[{
     class Dead {object o;};
-    object o = Dead(); o->o = Dead(); o->o->o = o;
+    object|zero o = Dead(); o->o = Dead(); o->o->o = o;
     gc(); o = 0; return gc() > 0;
   }]], 1)
   test_any([[{
-    class Live {object o; void _destruct() {}};
-    object o = Live(); o->o = Live(); o->o->o = o;
-    gc(); o = 0; return gc() > 0;
-  }]], 1)
-  test_any([[{
-    class Dead {object o;};
-    class Live {object o; void _destruct() {}};
-    object o = Dead(); o->o = Live(); o->o->o = o;
+    class Live {object o; protected void _destruct() {}};
+    object|zero o = Live(); o->o = Live(); o->o->o = o;
     gc(); o = 0; return gc() > 0;
   }]], 1)
   test_any([[{
     class Dead {object o;};
-    class Live {object o; void _destruct() {}};
-    object o = Live(); o->o = Dead(); o->o->o = o;
+    class Live {object o; protected void _destruct() {}};
+    object|zero o = Dead(); o->o = Live(); o->o->o = o;
+    gc(); o = 0; return gc() > 0;
+  }]], 1)
+  test_any([[{
+    class Dead {object o;};
+    class Live {object o; protected void _destruct() {}};
+    object|zero o = Live(); o->o = Dead(); o->o->o = o;
     gc(); o = 0; return gc() > 0;
   }]], 1)
 
   test_any_equal([[{
-    class Live {object o; void _destruct() {}};
+    class Live {object o; protected void _destruct() {}};
     array a = set_weak_flag(({Live()}), 1);
     gc();
     return set_weak_flag(a, 0);
   }]], ({0}))
   test_any_equal([[{
-    class Live {object o; void _destruct() {}};
+    class Live {object o; protected void _destruct() {}};
     multiset l = set_weak_flag((<Live()>), 1);
     gc();
     return set_weak_flag(l, 0);
   }]], (<>))
   test_any_equal([[{
-    class Live {object o; void _destruct() {}};
+    class Live {object o; protected void _destruct() {}};
     mapping m = set_weak_flag(([0: Live()]), 1);
     gc();
     return set_weak_flag(m, 0);
   }]], ([]))
   test_any_equal([[{
-    class Live {object o; void _destruct() {}};
+    class Live {object o; protected void _destruct() {}};
     mapping m = set_weak_flag(([Live(): 0]), 1);
     gc();
     return set_weak_flag(m, 0);
@@ -6560,22 +7521,22 @@ test_any([[
   }]], ({4711, 0x54325827a124*0x12348795482485425}))
 
   test_any_equal([[{
-    object o = class {
+    object|zero o = class {
       array g;
       array a = ({17});
-      void create() {g = ({this});}
-      void _destruct() {all_constants()->kablutt = a;}
+      protected void create() {g = ({this});}
+      protected void _destruct() {all_constants()->kablutt = a;}
     }();
     o = 0;
     gc();
     return all_constants()->kablutt;
   }]], ({17}));
   test_any([[{
-    object o = class {
+    object|zero o = class {
       array g;
       array a = set_weak_flag (({({17})}), 1);
-      void create() {g = ({this});}
-      void _destruct() {
+      protected void create() {g = ({this});}
+      protected void _destruct() {
 	if (!equal (a, ({({17})})))
 	  error ("Contents in weak array zapped: %O.\n", a);
       }
@@ -6584,11 +7545,11 @@ test_any([[
     return gc() >= 3;
   }]], 1);
   test_any_equal([[{
-    object o = class {
+    object|zero o = class {
       array g;
       array a = set_weak_flag (({({17})}), 1);
-      void create() {g = ({this});}
-      void _destruct() {all_constants()->blatinka = a;}
+      protected void create() {g = ({this});}
+      protected void _destruct() {all_constants()->blatinka = a;}
     }();
     o = 0;
     gc();
@@ -6608,9 +7569,11 @@ test_do(add_constant("blatinka");)
     // the intepreter backlog.
     int old_debug = _debug (0);
 #endif
-    object o = class {program p; object o;}();
-    class Resolver (mixed x) {mixed resolv (string id) {return x;}};
-    program p = compile ("constant o = foo;", Resolver (o));
+    object|zero o = class {program p; object o;}();
+    class Resolver(mixed x) {
+      mixed resolv(string id, string filename, object handler) {return x;}
+    };
+    program|zero p = compile ("constant o = foo;", Resolver (o));
     o->p = p;
     o->o = p();
     gc();
@@ -6623,21 +7586,21 @@ test_do(add_constant("blatinka");)
 
   test_any([[{
     class Dead {object o;};
-    object o = Dead(); o->o = Dead();
+    object|zero o = Dead(); o->o = Dead();
     array a = set_weak_flag(({o}), 1);
     gc(); o = 0; return gc() > 0;
   }]], 1)
   test_any([[{
     class Dead {object o;};
-    class Live {object o; void _destruct() {}};
-    object o = Live(); o->o = Dead();
+    class Live {object o; protected void _destruct() {}};
+    object|zero o = Live(); o->o = Dead();
     array a = set_weak_flag(({o}), 1);
     gc(); o = 0; return gc() > 0;
   }]], 1)
   test_any([[{
     class Dead {object o;};
-    class Live {object o; void _destruct() {}};
-    object o = Dead(); o->o = Live();
+    class Live {object o; protected void _destruct() {}};
+    object|zero o = Dead(); o->o = Live();
     array a = set_weak_flag(({o}), 1);
     gc(); o = 0; return gc() > 0;
   }]], 1)
@@ -6650,7 +7613,7 @@ test_do(add_constant("blatinka");)
   }]]);
 
   test_any([[{
-    array a = ({0}), b = ({a, set_weak_flag (({a}), 1)});
+    array|zero a = ({0}), b = ({a, set_weak_flag (({a}), 1)});
     array x = set_weak_flag (({a}), 1);
     a[0] = b;
     a = b = 0;
@@ -6658,7 +7621,7 @@ test_do(add_constant("blatinka");)
     return !x[0];
   }]], 1);
   test_any([[{
-    mapping a = ([]), b = ([a:set_weak_flag (([a:a]), 1)]);
+    mapping|zero a = ([]), b = ([a:set_weak_flag (([a:a]), 1)]);
     mapping x = set_weak_flag (([a:2]), 1);
     a[b] = b;
     a = b = 0;
@@ -6666,7 +7629,7 @@ test_do(add_constant("blatinka");)
     return !sizeof (x);
   }]], 1);
   test_any([[{
-    multiset a = (<>), b = (<a, set_weak_flag ((<a>), 1)>);
+    multiset|zero a = (<>), b = (<a, set_weak_flag ((<a>), 1)>);
     multiset x = set_weak_flag ((<a>), 1);
     a[b] = 1;
     a = b = 0;
@@ -6687,7 +7650,7 @@ test_do(add_constant("blatinka");)
     class Foo {
       array(Foo) f = ({this});
       multiset(Foo) g = set_weak_flag((<this>), 1);
-      void _destruct() {add_constant("beltbent_oblivion", 1);}
+      protected void _destruct() {add_constant("beltbent_oblivion", 1);}
     };
     multiset(Foo) x = set_weak_flag ((<Foo()>), 1);
     gc();
@@ -6698,7 +7661,7 @@ test_do(add_constant("blatinka");)
 
   test_any([[{
     gc();
-    array x = set_weak_flag (({0}), 1);
+    array|zero x = set_weak_flag (({0}), 1);
     x[0] = x;
     multiset b = set_weak_flag ((<x>), 1);
     array a = ({17});
@@ -6709,7 +7672,7 @@ test_do(add_constant("blatinka");)
 
   test_any([[{
     gc();
-    array a = set_weak_flag (({0, this}), 1);
+    array|zero a = set_weak_flag (({0, this}), 1);
     a[0] = a;
     a = 0;
     return gc() >= 1;
@@ -6717,7 +7680,7 @@ test_do(add_constant("blatinka");)
 
   test_any([[{
     gc();
-    array y = set_weak_flag (({0}), 1), z = set_weak_flag (({y}), 1);
+    array|zero y = set_weak_flag (({0}), 1), z = set_weak_flag (({y}), 1);
     y[0] = z;
     y = z = 0;
     return gc() >= 2;
@@ -6727,20 +7690,20 @@ test_do(add_constant("blatinka");)
     class Live {
       array a;
       array g = ({this});
-      void create()
+      protected void create()
       {
 	a = set_weak_flag (({0}), 1);
 	array b = set_weak_flag (({a}), 1);
 	a[0] = b;
       }
-      void _destruct()
+      protected void _destruct()
       {
 	if (!arrayp(a) || !arrayp(a[0]) || a[0][0] != a)
 	  add_constant ("my_little_error", "GC garbed weak things too early.\n");
       }
     };
     gc();
-    object o = Live();
+    object|zero o = Live();
     o = 0;
     int res = gc() >= 3;
     if (all_constants()->my_little_error)
@@ -6752,7 +7715,7 @@ test_do(add_constant("blatinka");)
     class Live
     {
       Foo f;
-      void _destruct()
+      protected void _destruct()
       {
 	if (!f->l || !f->a || !f->a[0] || !f->a[1])
 	  add_constant ("my_little_error", "GC garbed live things.\n");
@@ -6767,14 +7730,14 @@ test_do(add_constant("blatinka");)
 	array a = ({j});
       }
       Live l;
-      void create (Live _l)
+      protected void create (Live _l)
       {
 	l = _l;
 	l->f = this;
       }
       array a = allocate (2, Bar)();
     };
-    object o = Foo(Live());
+    object|zero o = Foo(Live());
     o = 0;
     gc(), gc();
     if (all_constants()->my_little_error)
@@ -6782,7 +7745,7 @@ test_do(add_constant("blatinka");)
   }]]);
 
   test_do([[{
-  object o = compile_string(#"
+  object|zero o = compile_string(#"
       class Foo
       {
 	int i;
@@ -6867,7 +7830,7 @@ test_do(add_constant("blatinka");)
     return sizeof (a);
   }]], 1);
   test_any([[{
-    object o = class{}();
+    object|zero o = class{}();
     mapping a = set_weak_flag (([o: o]), 1);
     o = 0;
     return gc() >= 1 && !sizeof (a);
@@ -6952,45 +7915,45 @@ test_do(add_constant("blatinka");)
   }]], ([1: 1, "foo": "foo", 3.14: 3.14]));
 
   test_do([[{
-    object f = class
+    object|zero f = class
     {
       object o = class {}();
       array a = set_weak_flag (({o}), 1);
       object this = this;
-      void create() {destruct (o);}
+      protected void create() {destruct (o);}
     }();
     f = 0;
     gc();
   }]]);
   test_do([[{
-    object f = class
+    object|zero f = class
     {
       object o = class {}();
       mapping m = set_weak_flag (([1:o]), 1);
       object this = this;
-      void create() {destruct (o);}
+      protected void create() {destruct (o);}
     }();
     f = 0;
     gc();
   }]]);
   test_do([[{
-    object f = class
+    object|zero f = class
     {
       object o = class {}();
       mapping m = set_weak_flag (([o:1]), 1);
       object this = this;
-      void create() {destruct (o);}
+      protected void create() {destruct (o);}
     }();
     f = 0;
     gc();
   }]]);
   test_do([[{
-    object f = class
+    object|zero f = class
     {
       object o = class {}();
       multiset m = set_weak_flag ((<o>), 1);
       object this = this;
-      void create() {destruct (o);}
+      protected void create() {destruct (o);}
     }();
     f = 0;
     gc();
@@ -7000,8 +7963,8 @@ test_do(add_constant("blatinka");)
 
   test_any([[mapping q=([ "t":class {} ()]); gc(); if(!objectp(q->t)) return -1; set_weak_flag(q,1); gc(); if(objectp(q->t)) return -2; return 0;]],0);
 
-  test_do([[class bar { object foo; void create(void|object tmp) { foo=tmp; } };
-             object o=bar(),o2=o;
+  test_do([[class bar { object foo; protected void create(void|object tmp) { foo=tmp; } };
+             object|zero o=bar(),o2=o;
              for(int e=0;e<10000;e++) o=bar(o);
              o2->foo=o;
              o=o2=0;
@@ -7053,28 +8016,28 @@ test_do(add_constant("blatinka");)
     return sizeof (m);
   ]], 0)
   test_any([[
-    object o = class{}();
+    object|zero o = class{}();
     mapping m = set_weak_flag (([o: o]), Pike.WEAK_INDICES);
     o = 0;
     gc();
     return sizeof (m);
   ]], 1)
   test_any([[
-    object o = class{}();
+    object|zero o = class{}();
     mapping m = set_weak_flag (([o: o]), Pike.WEAK_VALUES);
     o = 0;
     gc();
     return sizeof (m);
   ]], 1)
   test_any([[
-    object o = class{}();
+    object|zero o = class{}();
     mapping m = set_weak_flag (([o: o]), Pike.WEAK);
     o = 0;
     gc();
     return sizeof (m);
   ]], 0)
   test_any([[
-    object o = class{}();
+    object|zero o = class{}();
     mapping m = set_weak_flag (([o: "x"]), Pike.WEAK_INDICES);
     destruct (o);
     gc();
@@ -7118,7 +8081,7 @@ test_do(add_constant("blatinka");)
 
   test_do([[
     mapping m = set_weak_flag (([]), Pike.WEAK_INDICES);
-    object o = class {object o;}();
+    object|zero o = class {object o;}();
     m[o] = ({1});
     o->o = o;
     o = 0;
@@ -7127,7 +8090,7 @@ test_do(add_constant("blatinka");)
 
   test_do([[
     mapping m = set_weak_flag (([]), Pike.WEAK_INDICES);
-    object o = class {object o;}();
+    object|zero o = class {object o;}();
     m[o] = ({1});
     array a = set_weak_flag (({class (object o) {} (o)}), 1);
     o = 0;
@@ -7139,9 +8102,9 @@ test_do(add_constant("blatinka");)
       mapping x;
       int test()
       {
-	object o = class {
+	object|zero o = class {
 	    mapping a = ([1: this]);
-	    void _destruct() {x = a;}
+	    protected void _destruct() {x = a;}
 	  }();
 	o = 0;
 	gc();
@@ -7154,9 +8117,9 @@ test_do(add_constant("blatinka");)
       multiset x;
       int test()
       {
-	object o = class {
+	object|zero o = class {
 	    multiset a = (<this>);
-	    void _destruct() {x = a;}
+	    protected void _destruct() {x = a;}
 	  }();
 	o = 0;
 	gc();
@@ -7169,9 +8132,9 @@ test_do(add_constant("blatinka");)
       array x;
       int test()
       {
-	object o = class {
+	object|zero o = class {
 	    array a = ({this});
-	    void _destruct() {x = a;}
+	    protected void _destruct() {x = a;}
 	  }();
 	o = 0;
 	gc();
@@ -7181,13 +8144,13 @@ test_do(add_constant("blatinka");)
   ]], 1)
   test_any([[
     return class {
-      class Obj (object o) {void _destruct() {}}
+      class Obj (object o) {protected void _destruct() {}}
       Obj x;
       int test()
       {
-	object o = class {
+	object|zero o = class {
 	    Obj a = Obj (this);
-	    void _destruct() {x = a;}
+	    protected void _destruct() {x = a;}
 	  }();
 	o = 0;
 	gc();
@@ -7201,9 +8164,9 @@ test_do(add_constant("blatinka");)
       Obj x;
       int test()
       {
-	object o = class {
+	object|zero o = class {
 	    Obj a = Obj (this);
-	    void _destruct() {x = a;}
+	    protected void _destruct() {x = a;}
 	  }();
 	o = 0;
 	gc();
@@ -7468,7 +8431,7 @@ test_any([[
   class X (void|object a, void|object b) {};
   X o = X (X (X()));
   o->a->a->a = o->a;
-  X o2 = X();
+  object(X)|zero o2 = X();
   o->b = o2;
   o2->a = o->a->a;
   o2 = 0;
@@ -7499,7 +8462,7 @@ test_any([[
   X o = X (X(), X());
   o->a->b = o->b;
   o->b->a = o->a;
-  X o2 = X (X(), X());
+  object(X)|zero o2 = X (X(), X());
   o2->a->b = o2->b;
   o2->b->a = o2->a;
   o2->a->a = o2->b->b = X();
@@ -7561,7 +8524,7 @@ test_any([[
   /* don't save parent */
   class X (void|array|object a, void|array|object b) {};
   array a = ({X (X())});
-  object o = a[0];
+  object|zero o = a[0];
   o->a->a = o; o->b = ({X (X())}); o = o->b[0];
   o->a->a = o; o->b = ({X (X())}); o = o->b[0];
   o->a->a = o; o->b = ({X (X())}); o = o->b[0];
@@ -7573,7 +8536,7 @@ test_any([[
   /* don't save parent */
   class X (void|array|object a, void|array|object b) {};
   array a = ({X (X())});
-  object o = a[0];
+  object|zero o = a[0];
   o->a->a = o; o->a->b = ({X (X())}); o = o->a->b[0];
   o->a->a = o; o->a->b = ({X (X())}); o = o->a->b[0];
   o->a->a = o; o->a->b = ({X (X())}); o = o->a->b[0];
@@ -7589,7 +8552,7 @@ test_any([[
 		"collect_stats": 1]);
   Pike.count_memory (m, master());
   return m->rounds;
-]], 2)
+]], 1)
 test_true([[Pike.count_memory (-1, Int.NATIVE_MAX + 1) >
 	    Pike.count_memory (-1, 17)]])
 test_true([[Pike.count_memory (-1, Int.NATIVE_MAX << 100) >
@@ -7607,7 +8570,7 @@ test_program([[
 
   int a()
   {
-    function f = ff();
+    function|zero f = ff();
     int s = Pike.count_memory (0, f());
     f = 0;
     gc();
@@ -7629,8 +8592,8 @@ test_any([[
   // PIKE-106: Mutex not unlocked properly on error in identify_cycle().
   class Foo {
     int cnt;
-    int __hash() { return 0; }
-    int `==(mixed x) { if (!cnt++) error("Comparison failure.\n"); }
+    protected int __hash() { return 0; }
+    protected int `==(mixed x) { if (!cnt++) error("Comparison failure.\n"); }
   };
   catch {
     // This triggered an error.
@@ -7821,6 +8784,14 @@ test_false([[ objectp((int)"2147483648" / 2) ]])
 test_eq("13934998268672547360069539025",
         [[ (string)(48324683476346278246238462784624627348 / 3467864333) ]])
 
+// Power.
+test_eq("262144", [[ (string)(4**3**2) ]])
+test_eq("-9", [[ (string)(-3**2) ]])
+test_eq("16", [[ (string)lambda(){int a=3; return ++a**2;}() ]])
+test_eq("9", [[ (string)lambda(){int a=3; return a++**2;}() ]])
+test_eq("625", [[ (string)lambda(){int a=3; return 5**++a;}() ]])
+test_eq("125", [[ (string)lambda(){int a=3; return 5**a++;}() ]])
+
 // - sscanf.
 test_eq("12345678901234567890",
 	   [[ (string)array_sscanf("12345678901234567890", "%d")[0] ]])
@@ -7846,15 +8817,21 @@ test_eq("1125968643114208", [[ (string)array_sscanf("0b1000000000000010000000000
 test_eq("-12345678901234567890",
 	   [[ (string)array_sscanf("-12345678901234567890", "%d")[0] ]])
 test_eq("-1375488932614371410344080",
-	   [[ (string)array_sscanf("-123456789F01234567890", "%x")[0] ]])
+	   [[ (string)8.0::array_sscanf("-123456789F01234567890", "%x")[0] ]])
+test_eq(({}),
+	   [[ array_sscanf("-123456789F01234567890", "%x") ]])
 test_eq("-1375488932614371410344080",
 	   [[ (string)array_sscanf("-0x123456789F01234567890","%i")[0] ]])
 test_eq("-45954944846776",
-	   [[ (string)array_sscanf("-1234567012345670", "%o")[0] ]])
+	   [[ (string)8.0::array_sscanf("-1234567012345670", "%o")[0] ]])
+test_eq(({}),
+	   [[ array_sscanf("-1234567012345670", "%o") ]])
 test_eq("-45954944846776",
 	   [[ (string)array_sscanf("-01234567012345670", "%i")[0] ]])
-test_eq("-11", [[ (string)array_sscanf("-1011", "%b")[0] ]])
-test_eq("-1125968643114208", [[ (string)array_sscanf("-100000000000001000000000001000000000100010011100000", "%b")[0] ]])
+test_eq("-11", [[ (string)8.0::array_sscanf("-1011", "%b")[0] ]])
+test_eq(({}), [[ array_sscanf("-1011", "%b") ]])
+test_eq("-1125968643114208",
+	   [[ (string)8.0::array_sscanf("-100000000000001000000000001000000000100010011100000", "%b")[0] ]])
 test_eq("-11", [[ (string)array_sscanf("-0b1011", "%i")[0] ]])
 test_eq("-1125968643114208", [[ (string)array_sscanf("-0b100000000000001000000000001000000000100010011100000", "%i")[0] ]])
 
@@ -7875,7 +8852,18 @@ test_equal([[ ({ 557239244978618154304871 }) ]],
            [[ array_sscanf("0x76000000000001234567", "%x") ]])
 
 test_equal([[array_sscanf("foo \12345 bar <fie>","%[^<]")]],
-	     [[ ({"foo \12345 bar " }) ]])
+            [[ ({"foo \12345 bar " }) ]])
+
+test_eval_error([[
+ // Test that the runtime survives svalues of type T_VOID (16)
+ // on the stack.
+ object p = Parser.HTML();
+ p->add_tag("x", lambda(object p, mapping m, string h)
+   {
+     sscanf(h, "%s.js", h);
+   });
+ p->finish("<x/>");
+]])
 
 test_equal(471100000000000000000000000000000000000000000000042,
            (int)(mixed)471100000000000000000000000000000000000000000000042)
@@ -8069,7 +9057,7 @@ test_any([[int k=10->pow(30);
 	    array a=({k+17,k+16,k+13,k+14,k+12,k,k+9});
           return sort(a)[0]==k && sort(a)[-1]==k+17]],1)
 
-test_do([[
+test_any_deprecated([[ // FIXME: Uses deprecated function Process.system
    // This is a memleak test
    rm("testsuite_test.pike");
    Stdio.write_file("testsuite_test.pike",
@@ -8077,7 +9065,8 @@ test_do([[
 	"int main() {}\n");
    Process.system(RUNPIKE +" testsuite_test.pike");
    rm("testsuite_test.pike");
-]])
+   return 0;
+]],0)
 
 // test the corresponding integer operations first
 test_any([[int k=100; int j=k+1;
@@ -8133,18 +9122,23 @@ cond([[all_constants()->kill && (cpp("__NT__")/"\n")[-1]=="__NT__" ]],
 ]])
 
 // typeof
-test_eq(sprintf("%O", typeof(1)),"int(1..1)")
-test_eq(sprintf("%O", typeof("")),"string(zero)")
+test_eq(sprintf("%O", typeof(1)),"int(1)")
+test_eq(sprintf("%O", typeof("")),"string(zero:)")
 ignore_warning("Indexing the empty string.", [[
   test_aq([[ sprintf("%O", typeof(""[0])) ]], "zero")
 ]])
 test_eq(sprintf("%O", typeof(0.0)),"float")
 test_eq(sprintf("%O", typeof(all_constants()["all_constants"])),"mixed")
+dnl The following does test not currently work as typeof("hej3") includes
+dnl character values between '4' and 'd'. Test the parts instead.
+dnl test_true(typeof("hej"+3) >= typeof("hej3"))
+test_true(typeof("hej"+3) >= typeof("hej"))
+test_true(typeof("hej"+3) >= typeof("3"))
 
 // _typeof
-test_eq(sprintf("%O", _typeof(1)),"int(1..1)")
-test_eq(sprintf("%O", _typeof("")),"string(zero)")
-test_eq(sprintf("%O", _typeof("x"[0])),"int(120..120)")
+test_eq(sprintf("%O", _typeof(1)),"int(1)")
+test_eq(sprintf("%O", _typeof("")),"string(zero:)")
+test_eq(sprintf("%O", _typeof("x"[0])),"int(120)")
 test_eq(sprintf("%O", _typeof(0.0)),"float")
 test_eq([[sscanf(sprintf("%Ox", _typeof(this_object))-" ",
 		 "function(void|int(0..%*[0-9]):object)%*c")]], 2)
@@ -8176,11 +9170,11 @@ test_do([[
 // type checks
 test_compile_error([[} int foo() { return]]);
 test_compile_error([[} void foo() { return 1]]);
-test_compile([[mapping a; int b; a = b = 0;]]);
-test_compile_error([[mapping a; int b; a = b = 1;]]);
+test_compile([[mapping|zero a; int b; a = b = 0;]]);
+test_compile_error([[mapping|zero a; int b; a = b = 1;]]);
 test_compile_any([[void a(int q){} void b(function(int:void) f){} void c(){b(a);}]]);
 test_compile_error_any([[void a(int i){} void b(function(:void) f){} void c(){b(a);}]]);
-test_compile_any([[void a(){} function(int:void) b = a;]]);
+test_compile_any([[void a(int i){} function(int:void) b = a;]]);
 test_compile_error_any([[void a(int i){} function(:void) b = a;]]);
 
 // Duplicate local variable
@@ -8405,6 +9399,8 @@ test_equal( array_sscanf("xfo\200000x", "%sfoo%s"), ({}) )
 test_equal( array_sscanf("xfo\200000x", "%sfo\400%s"), ({}) )
 test_equal( array_sscanf("xfo\200000x", "%sfo\200000%s"), ({ "x", "x" }) )
 
+dnl sscanf("", ...) triggers this warning.
+ignore_warning("Indexing the empty string.", [[
 test_any([[mixed a; sscanf("","%H",a); return a]],0)
 test_any([[mixed a; sscanf("\0","%H",a); return a]],"")
 test_any([[mixed a; sscanf("\4","%H",a); return a]],0)
@@ -8431,6 +9427,7 @@ test_any([[mixed a; sscanf("\0\0","%-2H",a); return a]],"")
 test_any([[mixed a; sscanf("\4","%-2H",a); return a]],0)
 test_any([[mixed a; sscanf("\4\0","%-2H",a); return a]],0)
 test_any([[mixed a; sscanf("\4\0hello","%-2H",a); return a]],"hell")
+]])
 
 test_any([[
 class Bar {
@@ -8821,7 +9818,7 @@ test_equal( ({1,2,3,4,4}) | ({3,5,6}), ({1,2,3,4,4,5,6}))
 test_equal( (<4,5,6>) | (<5,5,5>), (<4,5,5,5,6>) )
 test_equal( ([-4:8,8:7]) | ([3:3,8:3]), ([-4:8,8:3,3:3]) )
 test_any([[
-  class Foo {int `< (object o) {return 0;}};
+  class Foo {protected int `< (object o) {return 0;}};
   return sizeof (({Foo()}) | ({Foo()}));
 ]], 2)
 
@@ -8852,6 +9849,12 @@ test_equal( (<4,5,6>) ^ (<5,5,5>), (<4,5,5,6>) )
 test_equal( ([-4:8,8:7]) ^ ([3:3,8:3]), ([-4:8,3:3]) )
 test_equal(({1,3,3,3,4}) ^ ({2,3,3,5}), ({1,3,4,2,5}))
 test_equal(({1,3,3,4}) ^ ({2,3,3,3,5}), ({1,4,2,3,5}))
+test_any([[
+  string(7bit) cyrillic_to_7bit(string(0x401..0x45f) text) {
+    return text ^ "\u0400"*sizeof(text);
+  }
+  return cyrillic_to_7bit("\u041d\u0435\u0442");
+]], "\35""5B")
 
 // testing <<
 test_eq(1<<0,1)
@@ -8928,7 +9931,7 @@ test_eq((<'f','o','o'>)['f'],1)
 test_eq((<'f','o','o'>)[random(0)+'b'],0)
 test_eq((<'f','o','o'>)[ [int](mixed)-1],0)
 
-test_eq([[class { mixed `->(mixed x) { return this[x]; } int foo() { return 1; }}()->foo()]],1)
+test_eq([[class { protected mixed `->(mixed x) { return this[x]; } int foo() { return 1; }}()->foo()]],1)
 
 // Test some indexing opcodes.
 test_eval_error([[return ({1})[1];]])
@@ -9045,7 +10048,7 @@ test_equal(`[..] ("abcdef"/"", 1, Pike.OPEN_BOUND, 3, Pike.OPEN_BOUND),         
 define(test_new_style, [[
   test_any_equal([[
     object new_style = class {
-        array(int) `[..] (int... args) {return args;}
+        protected array(int) `[..] (int... args) {return args;}
       }();
     return new_style $1;
   ]], $2)
@@ -9064,8 +10067,8 @@ undefine([[test_new_style]])
 define(test_old_style, [[
   test_any_equal([[
     object old_style = class {
-        int _sizeof() {return 6;}
-        array(int) `[] (int... args) {return args;}
+        protected int _sizeof() {return 6;}
+        protected array(int) `[] (int... args) {return args;}
       }();
     return old_style $1;
   ]], $2)
@@ -9091,12 +10094,12 @@ test_eq([[(int)"-1"]],[[-1]])
 test_eq([[(int)"0x1"]],[[0]])
 test_eq([[(int)"010"]],[[10]])
 test_eq((int)Gmp.mpz(5), 5)
-test_eq((int)class { mixed cast(string x) { return x=="int" && 7; } }(), 7)
-test_eval_error([[ return (int)class { mixed cast(string x) {
+test_eq((int)class { protected mixed cast(string x) { return x=="int" && 7; } }(), 7)
+test_eval_error([[ return (int)class { protected mixed cast(string x) {
   return 1.0; } }(); ]]);
-test_eval_error([[ return (int)class { mixed cast(string x) {
+test_eval_error([[ return (int)class { protected mixed cast(string x) {
   return ADT.Heap(); } }(); ]]);
-test_any([[ return (int)class { mixed cast(string x) {
+test_any([[ return (int)class { protected mixed cast(string x) {
   return Gmp.mpz(7); } }(); ]], Gmp.mpz(7));
 test_eq([[(float)"1"]],[[1.0]])
 test_eq([[(float)"-1"]],[[-1.0]])
@@ -9111,14 +10114,14 @@ test_eq([[(string)-1]],[["-1"]])
 test_eq([[(string)1.0]],[["1.0"]])
 test_eq([[(string)-1.0]],[["-1.0"]])
 test_eq((string)Gmp.mpz(5), "5")
-test_eq((string)class { mixed cast(string x) {
+test_eq((string)class { protected mixed cast(string x) {
   return x=="string" && "7"; } }(), "7")
-test_eval_error((string)class { mixed cast(string x) { return 1.0; }}();)
-test_eval_error((string)class { mixed cast(string x) {
+test_eval_error((string)class { protected mixed cast(string x) { return 1.0; }}();)
+test_eval_error((string)class { protected mixed cast(string x) {
   return ADT.Heap(); }}();)
 test_any([[
-  class A { int q=9; int _is_type(string x) { return x=="string"; } };
-  mixed o = (string)class { mixed cast(string x) { return A(); } }();
+  class A { int q=9; protected int _is_type(string x) { return x=="string"; } };
+  mixed o = (string)class { protected mixed cast(string x) { return A(); } }();
   return o->q;]], 9)
 // Note: 32-bit floats overflow at ~3.4e38.
 test_true([[has_value ((string)1e38, ".") ||
@@ -9147,14 +10150,16 @@ test_eq([[(string) 0.8]], [["0.8"]])
 cond([[Float.DIGITS_10 >= 6]], [[  // Usual size with 32 bit IEEE floats.
   test_eq([[(string) 0.811113]], [["0.811113"]])
   test_eq([[(string) 0.811114]], [["0.811114"]])
-  test_true([[Regexp ("^8\\.11113e\\+0*19$")->match ((string) 0.811113e20)]])
-  test_true([[Regexp ("^8\\.11114e\\+0*19$")->match ((string) 0.811114e20)]])
+  test_eq([[Regexp ("^8\\.11113e\\+0*34$")->match ((string) 0.811113e35) ||
+            (string) 0.811113e35]], 1)
+  test_eq([[Regexp ("^8\\.11114e\\+0*34$")->match ((string) 0.811114e35) ||
+            (string) 0.811114e35]], 1)
 ]])
 cond([[Float.DIGITS_10 >= 15]], [[  // Usual size with 64 bit IEEE floats.
   test_eq([[(string) 0.811111111111113]], [["0.811111111111113"]])
   test_eq([[(string) 0.811111111111114]], [["0.811111111111114"]])
-  test_true([[Regexp ("^8\\.11111111111113e\\+0*19$")->match ((string) 0.811111111111113e20)]])
-  test_true([[Regexp ("^8\\.11111111111114e\\+0*19$")->match ((string) 0.811111111111114e20)]])
+  test_eq([[Regexp ("^8\\.11111111111113e\\+0*34$")->match ((string) 0.811111111111113e35) || (string) 0.811111111111113e35]], 1)
+  test_eq([[Regexp ("^8\\.11111111111114e\\+0*34$")->match ((string) 0.811111111111114e35) || (string) 0.811111111111114e35]], 1)
 ]])
 test_do(return (string)1e308)
 test_do(return (string)1e200)
@@ -9197,7 +10202,7 @@ test_equal([[ (mapping(string:string))class{int i=3;}() ]],[[ (["i":"3"]) ]])
 
 test_any([[
   object x = class {
-      mixed cast (string t) {return t == "string" && "foo";}
+      protected mixed cast (string t) {return t == "string" && "foo";}
     }();
   destruct (x);
   return (string) x;
@@ -9213,9 +10218,11 @@ test_eq([[(string) ({'z', 0x7fffffff, '.'})]], "z\x7fffffff.")
 test_eval_error([[(string) ({0x80000000})]])
 test_eq([[(string) ({'z', -0x80000000, '.'})]], "z\x80000000.")
 test_eval_error([[(string) ({-0x80000001})]])
-test_eval_error([[(int)class { mixed cast() { return UNDEFINED; } }();]])
-test_eval_error([[(string)class { mixed cast() { return UNDEFINED; } }();]])
-test_eval_error([[(mapping)class { mixed cast() { return UNDEFINED; } }();]])
+test_eval_error([[(int)class { protected mixed cast() { return UNDEFINED; } }();]])
+test_eval_error([[(string)class { protected mixed cast() { return UNDEFINED; } }();]])
+dnl There is a default rule for casting objects to mapping.
+test_equal([[(mapping)class { protected mixed cast() { return UNDEFINED; } }();]], ([]))
+test_eval_error([[(mapping)class { protected mixed cast() { error("Cast\n"); } }();]])
 
 test_any([[
   // Cast to subtyped object.
@@ -9929,6 +10936,30 @@ test_do([[cpp(#"
 FOO(// Pike 7.6 and earlier don't seem to like single
     /* quotes (') in comments in macro arguments. */
 arg)")]])
+test_equal([[cpp(#"
+FOO(foo)", ([
+  "predefines": ([
+    "FOO(X)":"X Y X",
+  ]),
+]))]], "\n foo  Y  foo ")
+test_any_equal([[
+  // Bug #10135
+#define ENTRY(A, B, C, ARGS ...) ({ ({ C, ARGS }), ({ A, B }) })
+  return ({ ENTRY(1, 1, "%s", "one"),
+            ENTRY(1, 1, "%s %s", "one", "two"),
+            ENTRY(1, 1, "%s %s %s", "one", "two", "three"),
+            ENTRY(1, 1, "%s %d", "one", 2),
+            ENTRY(1, 1, "%s %d %d", "one", 2, 3),
+            ENTRY(1, 1, "%s %d %s", "one", 2, "three"),
+  });
+]],[[ ({
+    ({ ({ "%s", "one" }), ({ 1, 1 }) }),
+    ({ ({ "%s %s", "one", "two" }), ({ 1, 1 }) }),
+    ({ ({ "%s %s %s", "one", "two", "three" }), ({ 1, 1 }) }),
+    ({ ({ "%s %d", "one", 2 }), ({ 1, 1 }) }),
+    ({ ({ "%s %d %d", "one", 2, 3 }), ({ 1, 1 }) }),
+    ({ ({ "%s %d %s", "one", 2, "three" }), ({ 1, 1 }) }),
+  }) ]])
 
 // The following three tests are in triplicate to force testing in all shifts.
 test_do([[
@@ -10145,7 +11176,7 @@ test_true( rm("conftest.h") )
 
 test_true(intp(__LINE__))
 test_true(stringp(__FILE__))
-test_eq(dirname(__FILE__),__DIR__)
+test_eq(sizeof(dirname(__FILE__))?dirname(__FILE__):".",__DIR__)
 test_true(stringp(__DATE__))
 test_true([[ sscanf(__DATE__, "%3s %d %d", string m, int d, int y) == 3 &&
 	     search(({"Jan", "Feb", "Mar", "Apr", "May", "Jun",
@@ -10660,6 +11691,7 @@ return 0;
 #elif 1
 return 1;
 #else
+FEL
 return 0;
 #endif
 ]],1)
@@ -10668,8 +11700,10 @@ test_any([[
 #if 1
 return 1;
 #elif 1
+FEL
 return 0;
 #else
+FEL
 return 0;
 #endif
 ]],1)
@@ -10693,8 +11727,10 @@ return 0;
 #elseif 1
 return 1;
 #elseif 0
+FEL
 return 0;
 #elseif 0
+FEL
 return 0;
 #else
 FEL
@@ -10707,6 +11743,7 @@ return 0;
 #elseif 1
 return 1;
 #else
+FEL
 return 0;
 #endif
 ]],1)
@@ -10715,11 +11752,85 @@ test_any([[
 #if 1
 return 1;
 #elseif 1
+FEL
 return 0;
 #else
+FEL
 return 0;
 #endif
 ]],1)
+
+// #elifdef
+test_any([[
+#if 0
+return 0;
+#elifdef FOOl
+return 0;
+#else
+return 1;
+#endif
+]],1)
+
+test_any([[
+#define FOOm
+#if 0
+return 0;
+#elifdef FOOm
+return 1;
+#else
+FEL
+return 0;
+#endif
+]],1)
+
+test_any([[
+#define FOOm
+#if 1
+return 1;
+#elifdef FOOm
+FEL
+return 0;
+#else
+FEL
+return 0;
+#endif
+]],1)
+
+// #elifndef
+test_any([[
+#define FOOo
+#if 0
+return 0;
+#elifndef FOOo
+return 0;
+#else
+return 1;
+#endif
+]],1)
+
+test_any([[
+#if 0
+return 0;
+#elifndef FOOp
+return 1;
+#else
+FEL
+return 0;
+#endif
+]],1)
+
+test_any([[
+#if 1
+return 1;
+#elifndef FOOp
+FEL
+return 0;
+#else
+FEL
+return 0;
+#endif
+]],1)
+
 
 // #pragma
 // FIXME: add tests for real pragmas
@@ -10807,6 +11918,234 @@ constant cif_defines = #"
 </define>";
 ]])
 
+// ####  Test annotations.
+
+test_compile_any([[
+  @constant;
+]])
+test_compile_any([[
+  @Pike.Annotations.Implements(Builtin.null);
+]])
+test_compile_any([[
+  import Pike.Annotations;
+  @Implements(Builtin.null);
+]])
+test_compile_any([[
+  import Pike.Annotations;
+  class A {
+    @Implements(A);
+    int foo() {}
+  }
+]])
+dnl test_compile_warning([[
+dnl   import Pike.Annotations;
+dnl   class A {
+dnl     @Implements(A);
+dnl     int foo();	// Just a prototype.
+dnl   }
+dnl ]])
+test_compile_warning([[
+  import Pike.Annotations;
+  class A {
+    int foo() {}
+  }
+  class B {
+    @Implements(A);
+  }
+]])
+dnl test_compile_warning([[
+dnl   import Pike.Annotations;
+dnl   class A {
+dnl     int foo() {}
+dnl   }
+dnl   class B {
+dnl     @Implements(A);
+dnl     int foo();	// Just a prototype.
+dnl   }
+dnl ]])
+test_compile_any([[
+  import Pike.Annotations;
+  class A {
+    @Implements(A);
+    int foo() {}
+  }
+  class B {
+    // NB: The @Implements(A) annotation is NOT inherited from A.
+    inherit A;
+    float foo() { return 1.0; }
+  }
+]])
+test_compile_any([[
+  local class InheritedImplements {
+    inherit Pike.Annotations.Implements;
+    @constant;
+    @Pike.Annotations.Inherited;
+  }
+  class A {
+    // Everything that inherits A must implement A.
+    @InheritedImplements(A);
+    int foo() {}
+  }
+  class B {
+    inherit A;
+    int foo() { return 1; }
+  }
+]])
+test_compile_error([[
+  local class InheritedImplements {
+    inherit Pike.Annotations.Implements;
+    @constant;
+    @Pike.Annotations.Inherited;
+  }
+  class A {
+    // Everything that inherits A must implement A.
+    @InheritedImplements(A);
+    int foo() {}
+  }
+  class B {
+    inherit A;
+    // This fails due to bad return type compared with A::foo().
+    float foo() { return 1.0; }
+  }
+]])
+
+test_compile_any([[
+  class A {
+    int a;
+  }
+  class B {
+    inherit A;
+    @Pike.Annotations.Override: int a;
+  }
+]])
+test_compile_error([[
+  class A {
+    int a;
+  }
+  class B {
+    inherit A;
+
+    // This fails due to b not being present in A.
+    @Pike.Annotations.Override: int b;
+  }
+]])
+test_compile_any([[
+  class A {
+    int a;
+  }
+  class B {
+    private inherit A;
+
+    @Pike.Annotations.Override: int a;
+  }
+]])
+test_compile_any([[
+  class A {
+    int a;
+  }
+  class B {
+    int b;
+  }
+  class C {
+    inherit A;
+    inherit B;
+
+    @Pike.Annotations.Override: int a;
+    @Pike.Annotations.Override: int b;
+  }
+]])
+test_compile_error([[
+  class A {
+    int a;
+  }
+  class B {
+    private inherit A;
+  }
+  class C {
+    inherit B;
+
+    // This fails due to a being hidden by B.
+    @Pike.Annotations.Override: int a;
+  }
+]])
+
+test_any_equal([[
+  class A {
+    @"class_A";
+    @"constant_foo":constant foo = 0;
+    @"function_bar":void bar() {}
+    @"variable_baz":mixed baz;
+    mixed a_none;
+    @"variable_b_none":mixed b_none;
+  }
+  class B {
+    @"class_B";
+    @"inherit_A":inherit A;
+    @"variable_buz":mixed buz;
+    @"variable_a_none":mixed a_none;
+    mixed b_none;
+  }
+  A a = A();
+  B b = B();
+  return ({
+    mkmapping(indices(A), annotations(A)),
+    mkmapping(indices(A), annotations(A, 1)),
+    mkmapping(indices(a), annotations(a)),
+    mkmapping(indices(a), annotations(a, 1)),
+    mkmapping(indices(B), annotations(B)),
+    mkmapping(indices(B), annotations(B, 1)),
+    mkmapping(indices(b), annotations(b)),
+    mkmapping(indices(b), annotations(b, 1)),
+  });
+]], [[
+  ({
+    ([ "foo": (< "constant_foo" >), ]),
+    ([ "foo": (< "class_A", "constant_foo" >), ]),
+    ([ "foo": (< "constant_foo" >),
+       "bar": (< "function_bar" >),
+       "baz": (< "variable_baz" >),
+       "a_none": 0,
+       "b_none": (< "variable_b_none" >),
+    ]),
+    ([ "foo": (< "class_A", "constant_foo" >),
+       "bar": (< "class_A", "function_bar" >),
+       "baz": (< "class_A", "variable_baz" >),
+       "a_none": (< "class_A" >),
+       "b_none": (< "class_A", "variable_b_none" >),
+    ]),
+    ([ "foo": (< "constant_foo" >), ]),
+    ([ "foo": (< "class_B", "class_A", "inherit_A", "constant_foo" >), ]),
+    ([ "foo": (< "constant_foo" >),
+       "bar": (< "function_bar" >),
+       "baz": (< "variable_baz" >),
+       "buz": (< "variable_buz" >),
+       "a_none": (< "variable_a_none" >),
+       "b_none": 0,
+    ]),
+    ([ "foo": (< "class_B", "class_A", "inherit_A", "constant_foo" >),
+       "bar": (< "class_B", "class_A", "inherit_A", "function_bar" >),
+       "baz": (< "class_B", "class_A", "inherit_A", "variable_baz" >),
+       "buz": (< "class_B", "variable_buz" >),
+       "a_none": (< "class_B", "variable_a_none" >),
+       "b_none": (< "class_B" >),
+    ]),
+  })
+]])
+test_any_equal([[
+  // Issue #10147
+  class A {
+    @"sync": void syncfunc() { }
+    @"async": __async__ void asyncfunc() { }
+    @"gen": __generator__ void genfunc() { }
+    @"asyncgen": __async__ __generator__ void asyncgenfunc() { }
+  }
+  A a = A();
+  return mkmapping(indices(a), annotations(a));
+]], [[
+  ([ "syncfunc":(< "sync" >), "asyncfunc": (< "async" >),
+     "genfunc":(< "gen" >), "asyncgenfunc": (< "asyncgen" >) ])
+]])
+
 // foop
 define(do_test_foop,[[
 test_eq($1 (17), !($2))
@@ -10877,7 +12216,7 @@ ifefun(_verify_internals,
 // - `%
 
 test_do([[
-   class A (int x) { mixed `%(mixed y) { return this_program(x % (objectp(y)?y->x:y)); } };
+   class A (int x) { protected mixed `%(mixed y) { return this_program(x % (objectp(y)?y->x:y)); } };
    add_constant("A",A);
 ]])
 test_eq(`%(A(13),A(5))->x, 3)
@@ -10888,7 +12227,7 @@ test_eval_error([[
 test_do(add_constant("A"));
 
 test_do([[
-   class A (int x) { mixed ``%(mixed y) { return this_program((objectp(y)?y->x:y) % x); } };
+   class A (int x) { protected mixed ``%(mixed y) { return this_program((objectp(y)?y->x:y) % x); } };
    add_constant("A",A);
 ]])
 test_eq(`%(A(13),A(5))->x, 3)
@@ -10902,7 +12241,7 @@ test_eq(`%(4.5, Gmp.mpz(2)), Gmp.mpz(0))
 // - `&
 
 test_do([[
-   class A (int x) { mixed `&(mixed y) { return this_program(x & (objectp(y)?y->x:y)); } };
+   class A (int x) { protected mixed `&(mixed y) { return this_program(x & (objectp(y)?y->x:y)); } };
    add_constant("A",A);
 ]])
 test_eq(`&(A(7),A(5))->x, 5)
@@ -10916,7 +12255,7 @@ test_eval_error([[
 test_do(add_constant("A"));
 
 test_do([[
-   class A (int x) { mixed ``&(mixed y) { return this_program(x & (objectp(y)?y->x:y)); } };
+   class A (int x) { protected mixed ``&(mixed y) { return this_program(x & (objectp(y)?y->x:y)); } };
    add_constant("A",A);
 ]])
 test_eq(`&(A(7),A(5))->x, 5)
@@ -10934,7 +12273,7 @@ test_eq(1,`()(intp,1))
 // - `*
 
 test_do([[
-   class A (int x) { mixed `*(mixed y) { return this_program(x * (objectp(y)?y->x:y)); } };
+   class A (int x) { protected mixed `*(mixed y) { return this_program(x * (objectp(y)?y->x:y)); } };
    add_constant("A",A);
 ]])
 test_eq(`*(A(3),A(2))->x, 6)
@@ -10948,7 +12287,7 @@ test_eval_error([[
 test_do(add_constant("A"));
 
 test_do([[
-   class A (int x) { mixed ``*(mixed y) { return this_program(x * (objectp(y)?y->x:y)); } };
+   class A (int x) { protected mixed ``*(mixed y) { return this_program(x * (objectp(y)?y->x:y)); } };
    add_constant("A",A);
 ]])
 test_eq(`*(A(3),A(2))->x, 6)
@@ -10993,14 +12332,18 @@ test_equal(`+(([0:1,3:6]),([5:2,3:6])),([0:1,3:6,3:6,5:2]))
 test_equal(`+(UNDEFINED,([1:2]),([3:4])), ([1:2,3:4]))
 test_equal(`+(([1:2]),UNDEFINED,([3:4])), ([1:2,3:4]))
 
-test_equal(17+class{mixed ``+(mixed n){return (<n>);}}(),(<17>))
-test_equal(1700000000000000000000+class{mixed ``+(mixed n){return (<n>);}}(),(<1700000000000000000000>))
+test_equal(17+class{protected mixed ``+(mixed n){return (<n>);}}(),(<17>))
+test_equal(1700000000000000000000+class{protected mixed ``+(mixed n){return (<n>);}}(),(<1700000000000000000000>))
 
-test_eval_error(Gmp.mpz(1700000000000000000000)+class{mixed ``+(mixed n){return (<n>);}}())
+test_eval_error(Gmp.mpz(1700000000000000000000)+class{protected mixed ``+(mixed n){return (<n>);}}())
 
 test_do([[
-   class A (int x) { mixed `+(mixed y) { return this_program(x + (objectp(y)?y->x:y)); } };
-   add_constant("A",A);
+  class A (int x) {
+    protected this_program `+(mixed y) {
+      return this_program(x + (objectp(y)?y->x:y));
+    }
+  };
+  add_constant("A",A);
 ]])
 test_eq(`+(A(3),A(2))->x, 5)
 test_eq(`+(A(3),2)->x, 5)
@@ -11012,8 +12355,12 @@ test_eval_error([[
 test_do(add_constant("A"));
 
 test_do([[
-   class A (int x) { mixed ``+(mixed y) { return this_program(x + (objectp(y)?y->x:y)); } };
-   add_constant("A",A);
+  class A (int x) {
+    protected this_program ``+(mixed y) {
+      return this_program(x + (objectp(y)?y->x:y));
+    }
+  };
+  add_constant("A",A);
 ]])
 test_eq(`+(A(3),A(2))->x, 5)
 test_eq(`+(3,A(2))->x, 5)
@@ -11026,9 +12373,9 @@ test_eq(`+(1,2.0,3), 6.0)
 
 test_do([[
   class A {
-    mixed `+(string s) { return "`+"+s; }
-    mixed ``+(string s) { return s+"``+"; }
-    mixed `+=(string s) { return "`+="+s; }
+    protected string `+(mixed s) { return "`+"+s; }
+    protected string ``+(mixed s) { return s+"``+"; }
+    protected string `+=(mixed s) { return "`+="+s; }
   };
   add_constant("A",A);
 ]])
@@ -11054,7 +12401,7 @@ test_eq(`+("a","b",A()), "ab``+")
 test_do(add_constant("A"))
 
 test_do([[
-  class A { mixed ``+(mixed x) { return sprintf("%O",x)-" "-"\n"; } };
+  class A { protected mixed ``+(mixed x) { return sprintf("%O",x)-" "-"\n"; } };
   add_constant("A",A);
 ]])
 test_eq(`+(({1}),({2}),A()), "({/*2elements*/1,2})")
@@ -11064,8 +12411,8 @@ test_do(add_constant("A"))
 
 test_do([[
   class A {
-    mixed `+(mixed x) { return UNDEFINED; }
-    mixed ``+(mixed x) { return UNDEFINED; }
+    protected mixed `+(mixed x) { return UNDEFINED; }
+    protected mixed ``+(mixed x) { return UNDEFINED; }
   };
   add_constant("A",A);
 ]])
@@ -11077,9 +12424,9 @@ test_do(add_constant("A"))
 
 test_do([[
    class A (int x) {
-     mixed `-(mixed y) { return this_program(x - (objectp(y)?y->x:y)); }
+     protected mixed `-(mixed y) { return this_program(x - (objectp(y)?y->x:y)); }
      // Optimizer will modify the code which requires `+.
-     mixed `+(int y) { return this_program(x+y); }
+     protected mixed `+(int y) { return this_program(x+y); }
    };
    add_constant("A",A);
 ]])
@@ -11095,7 +12442,7 @@ test_do(add_constant("A"));
 
 test_do([[
    class A (int x) {
-     mixed ``-(mixed y) { return this_program((objectp(y)?y->x:y) - x); }
+     protected mixed ``-(mixed y) { return this_program((objectp(y)?y->x:y) - x); }
      // Optimizer will modify the code which requires `+.
      //mixed `+(int y) { return this_program(x+y); }
    };
@@ -11108,8 +12455,12 @@ test_eq(`-(5,A(2),A(1))->x, 2)
 test_do(add_constant("A"));
 
 test_do([[
-   class A (int x) { mixed `-(mixed y) { return this_program(-x); } };
-   add_constant("A",A);
+  class A (int x) {
+    protected this_program `-(mixed|void y) {
+      return this_program(-x);
+    }
+  };
+  add_constant("A",A);
 ]])
 test_eq(`-(A(5))->x, -5)
 test_eval_error([[
@@ -11126,8 +12477,12 @@ test_eq(`-(Gmp.mpz(1), 4.5), Gmp.mpz(-3))
 // - `/
 
 test_do([[
-   class A (int x) { mixed `/(mixed y) { return this_program(x / (objectp(y)?y->x:y)); } };
-   add_constant("A",A);
+  class A (int x) {
+    protected this_program `/(mixed y) {
+      return this_program(x / (objectp(y)?y->x:y));
+    }
+  };
+  add_constant("A",A);
 ]])
 test_eq(`/(A(8),A(2))->x, 4)
 test_eq(`/(A(8),2)->x, 4)
@@ -11140,8 +12495,12 @@ test_eval_error([[
 test_do(add_constant("A"));
 
 test_do([[
-   class A (int x) { mixed ``/(mixed y) { return this_program((objectp(y)?y->x:y) / x); } };
-   add_constant("A",A);
+  class A (int x) {
+    protected this_program ``/(mixed y) {
+      return this_program((objectp(y)?y->x:y) / x);
+    }
+  };
+  add_constant("A",A);
 ]])
 test_eq(`/(A(8),A(2))->x, 4)
 test_eq(`/(8,A(2))->x, 4)
@@ -11164,7 +12523,7 @@ test_eq(`/(Gmp.mpz(2), 4.0), 0.5))
 // - `^
 
 test_do([[
-   class A (int x) { mixed `^(mixed y) { return this_program(x ^ (objectp(y)?y->x:y)); } };
+   class A (int x) { protected mixed `^(mixed y) { return this_program(x ^ (objectp(y)?y->x:y)); } };
    add_constant("A",A);
 ]])
 test_eq(`^(A(7),A(1))->x, 6)
@@ -11178,7 +12537,7 @@ test_eval_error([[
 test_do(add_constant("A"));
 
 test_do([[
-   class A (int x) { mixed ``^(mixed y) { return this_program(x ^ (objectp(y)?y->x:y)); } };
+   class A (int x) { protected mixed ``^(mixed y) { return this_program(x ^ (objectp(y)?y->x:y)); } };
    add_constant("A",A);
 ]])
 test_eq(`^(A(7),A(1))->x, 6)
@@ -11190,7 +12549,7 @@ test_do(add_constant("A"));
 // - `|
 
 test_do([[
-   class A (int x) { mixed `|(mixed y) { return this_program(x | (objectp(y)?y->x:y)); } };
+   class A (int x) { protected mixed `|(mixed y) { return this_program(x | (objectp(y)?y->x:y)); } };
    add_constant("A",A);
 ]])
 test_eq(`|(A(3),A(6))->x, 7)
@@ -11204,7 +12563,7 @@ test_eval_error([[
 test_do(add_constant("A"));
 
 test_do([[
-   class A (int x) { mixed ``|(mixed y) { return this_program(x | (objectp(y)?y->x:y)); } };
+   class A (int x) { protected mixed ``|(mixed y) { return this_program(x | (objectp(y)?y->x:y)); } };
    add_constant("A",A);
 ]])
 test_eq(`|(A(3),A(6))->x, 7)
@@ -11216,7 +12575,7 @@ test_do(add_constant("A"));
 // - `~
 
 test_do([[
-   class A (int x) { mixed `~() { return this_program(~x); } };
+   class A (int x) { protected mixed `~() { return this_program(~x); } };
    add_constant("A",A);
 ]])
 test_eq(`~(A(5))->x, -6)
@@ -11336,29 +12695,33 @@ define(test_callablep,[[
 
 test_callablep(time, 1)
 test_callablep(String.Buffer, 1)
-test_callablep( class { void `()() { } }(), 1)
+test_callablep( class { protected void `()() { } }(), 1)
 test_callablep(String.Buffer(), 0)
 test_callablep( ({}), 1 )
-test_callablep( ({ 0,0 }), 1 )
-test_callablep( ({ 0,1 }), 1 )
+test_callablep( ({ 0,0 }), 0 )
+test_callablep( ({ 0,1 }), 0 )
+test_callablep( ({ UNDEFINED, UNDEFINED }), 1 )
+test_callablep( ({ UNDEFINED,1 }), 0 )
 test_callablep( ({ time }), 1 )
-test_callablep( ({ time, 0 }), 1 )
+test_callablep( ({ time, UNDEFINED }), 1 )
 test_callablep( ({ "a", time }), 0 )
 test_callablep( ({ "" }), 0 )
 test_callablep( "", 0 )
 test_callablep( 3.14, 0 )
 test_callablep( (< time >), 0 )
 test_callablep( 0, 0 )
+test_callablep( UNDEFINED, 0 )
 test_callablep( 7, 0 )
-test_callablep( ({ ({ 0, 1, time }) }), 1 )
+test_callablep( ({ ({ 0, 1, time }) }), 0 )
+test_callablep( ({ ({ UNDEFINED, time }) }), 1 )
 test_callablep( ({ ({ 0, "" }) }), 0 )
 test_any([[
-  array a = ({ 0, 0 });
+  array a = ({ UNDEFINED, UNDEFINED });
   a[1] = a;
   return callablep(a);
 ]], 1)
 test_any([[
-  array a = ({ 0, 0 });
+  array a = ({ UNDEFINED, UNDEFINED });
   a[1] = a;
   return equal(a(), a);
 ]], 1)
@@ -11560,7 +12923,7 @@ test_any([[
 ]], 1)
 
 test_any([[
-  class X {int __hash() {return 17;}};
+  class X {protected int __hash() {return 17;}};
   mixed c = copy_value (X());
   return objectp (c) && object_program (c) == X;
 ]], 1)
@@ -11623,11 +12986,11 @@ test_do(add_constant("PROG"))
 // equal is already tested a lot in this script
 
 test_any([[
-  class X (string s) {};
+  class X (string|zero s) {};
   return equal (({X ("foo")}), ({X (0)}));
 ]], 0)
 test_any([[
-  class X (string s) {};
+  class X (string|zero s) {};
   return equal (({X (0)}), ({X ("foo")}));
 ]], 0)
 test_any([[
@@ -11739,16 +13102,67 @@ test_true(sizeof(getcwd()))
 test_do(Stdio.recursive_rm("getcwd_test"))
 test_do(mkdir("getcwd_test"))
 test_any([[
+  // NB: getcwd() may return $PWD if it matches the current directory.
+  //     We do not want this as it may differ from the canonic path
+  //     due to symlinks, etc in the path in $PWD, so invalidate $PWD.
+  putenv("PWD");
+  cd(".");	// Flush the cached value (if any).
   string a = getcwd();
   cd("getcwd_test");
   string b = getcwd();
   cd("..");
 #ifdef __NT__
-  return a==getcwd() && b==a+"\\getcwd_test";
+  return (a==getcwd() && b==a+"\\getcwd_test") || \
+    ({ a, b, getcwd() });
 #else
-  return a==getcwd() && b==a+"/getcwd_test";
+  return (a==getcwd() && b==a+"/getcwd_test") || \
+    ({ a, b, getcwd() });
 #endif
 ]], 1)
+cond(Stdio.stdout["cd"], [[
+  test_any([[
+    string a = getcwd();
+    Stdio.File f = Stdio.File(".", "r");
+    f->cd("getcwd_test");
+    string b = getcwd();
+    cd("..");
+  #ifdef __NT__
+    return (a==getcwd() && b==a+"\\getcwd_test") || \
+      ({ a, b, getcwd() });
+  #else
+    return (a==getcwd() && b==a+"/getcwd_test") || \
+      ({ a, b, getcwd() });
+  #endif
+  ]], 1)
+  test_any([[
+    string a = getcwd();
+    Stdio.File f = Stdio.File("getcwd_test", "r");
+    f->cd();
+    string b = getcwd();
+    cd("..");
+  #ifdef __NT__
+    return (a==getcwd() && b==a+"\\getcwd_test") || \
+      ({ a, b, getcwd() });
+  #else
+    return (a==getcwd() && b==a+"/getcwd_test") || \
+      ({ a, b, getcwd() });
+  #endif
+  ]], 1)
+  test_any([[
+    string a = getcwd();
+    Stdio.File f = Stdio.File("getcwd_test", "r");
+    f->cd(".");
+    string b = getcwd();
+    cd("..");
+  #ifdef __NT__
+    return (a==getcwd() && b==a+"\\getcwd_test") || \
+      ({ a, b, getcwd() });
+  #else
+    return (a==getcwd() && b==a+"/getcwd_test") || \
+      ({ a, b, getcwd() });
+  #endif
+  ]], 1)
+]])
 test_do(Stdio.recursive_rm("getcwd_test"))
 
 // - getegid
@@ -11880,7 +13294,7 @@ test_has_index([[ (< "a" >) ]],"A",0)
 test_has_index([[ (< "a", "b", "c" >) ]],"b",1)
 test_has_index([[ (< "a", "b", "c" >) ]],"B",0)
 test_has_index([[ class {}() ]],"foo",0)
-test_has_index([[ (class{array _indices(){return({"a","b"});}})() ]],"b",1)
+test_has_index([[ (class{protected array _indices(){return({"a","b"});}})() ]],"b",1)
 
 // - has_prefix
 test_true(has_prefix("abc","a"))
@@ -11912,7 +13326,7 @@ test_has_value([[ ([ "a":"A" ]) ]],"A",1)
 test_has_value([[ ([ "a":"A", "b":"B", "c":"C" ]) ]],"B",1)
 test_has_value([[ ([ "a":"A", "b":"B", "c":"C" ]) ]],"b",0)
 test_has_value([[ class {}() ]],"foo",0)
-test_has_value([[ (class{array _values(){return({"a","b"});}})() ]],"b",1)
+test_has_value([[ (class{protected array _values(){return({"a","b"});}})() ]],"b",1)
 
 // - hash
 test_eq(hash("foo"),246314004)
@@ -12113,7 +13527,7 @@ test_equal(lower_case((string) ({
 0x025a, 0x025b, 0x025c, 0x025d, 0x0260, 0x0261, 0x0262, 0x0263,
 0x0264, 0x0265, 0x0266, 0x0267, 0x0268, 0x0269, 0x026a, 0x026b,
 0x026c, 0x026d, 0x026f, 0x0270, 0x0271, 0x0272, 0x0273, 0x0275,
-0x0276, 0x027d, 0x027e, 0x0280, 0x0281, 0x0283, 0x0284, 0x0287,
+0x0276, 0x027d, 0x027e, 0x0280, 0x0281, 0x0282, 0x0283, 0x0284, 0x0287,
 0x0288, 0x0289, 0x028a, 0x028c, 0x028d, 0x0292, 0x0293, 0x029d,
 0x029e, 0x029f, 0x0345, 0x0346, 0x0370, 0x0374, 0x0376, 0x0378,
 0x037b, 0x037e, 0x037f, 0x0380, 0x0386, 0x0387, 0x0388, 0x038b,
@@ -12140,7 +13554,7 @@ test_equal(lower_case((string) ({
 0x025a, 0x025b, 0x025c, 0x025d, 0x0260, 0x0261, 0x0262, 0x0263,
 0x0264, 0x0265, 0x0266, 0x0267, 0x0268, 0x0269, 0x026a, 0x026b,
 0x026c, 0x026d, 0x026f, 0x0270, 0x0271, 0x0272, 0x0273, 0x0275,
-0x0276, 0x027d, 0x027e, 0x0280, 0x0281, 0x0283, 0x0284, 0x0287,
+0x0276, 0x027d, 0x027e, 0x0280, 0x0281, 0x0282, 0x0283, 0x0284, 0x0287,
 0x0288, 0x0289, 0x028a, 0x028c, 0x028d, 0x0292, 0x0293, 0x029d,
 0x029e, 0x029f, 0x0345, 0x0346, 0x0371, 0x0374, 0x0377, 0x0378,
 0x037b, 0x037e, 0x03f3, 0x0380, 0x03ac, 0x0387, 0x03ad, 0x038b,
@@ -12156,9 +13570,9 @@ test_equal(lower_case((string) ({
 // Please update this and the corresponding upper_case table
 // when UnicodeData.txt is changed.
 // Part 2: 0x1000 -
-0x10a0, 0x10c6, 0x10c7, 0x10c8, 0x10cd, 0x10ce, 0x13a0, 0x13f0,
-0x13f6, 0x13f8, 0x13fe, 0x1c80, 0x1c81, 0x1c82, 0x1c83, 0x1c85,
-0x1c86, 0x1c87, 0x1c88, 0x1c89, 0x1d79, 0x1d7a, 0x1d7d, 0x1d7e,
+0x10a0, 0x10c6, 0x10c7, 0x10c8, 0x10cd, 0x13a0, 0x13f0, 0x13f6,
+0x13f8, 0x13fe, 0x1c80, 0x1c81, 0x1c82, 0x1c83, 0x1c85, 0x1c86,
+0x1c87, 0x1c88, 0x1c89, 0x1d79, 0x1d7a, 0x1d7d, 0x1d7e, 0x1d8e,
 0x1e00, 0x1e96, 0x1e9b, 0x1e9c, 0x1e9e, 0x1e9f, 0x1ea0, 0x1f00,
 0x1f08, 0x1f10, 0x1f16, 0x1f18, 0x1f1e, 0x1f20, 0x1f28, 0x1f30,
 0x1f38, 0x1f40, 0x1f46, 0x1f48, 0x1f4e, 0x1f51, 0x1f52, 0x1f53,
@@ -12179,13 +13593,15 @@ test_equal(lower_case((string) ({
 0xa680, 0xa69c, 0xa722, 0xa730, 0xa732, 0xa770, 0xa779, 0xa77d,
 0xa77e, 0xa788, 0xa78b, 0xa78d, 0xa78e, 0xa790, 0xa794, 0xa796,
 0xa7aa, 0xa7ab, 0xa7ac, 0xa7ad, 0xa7ae, 0xa7af, 0xa7b0, 0xa7b1,
-0xa7b2, 0xa7b3, 0xa7b4, 0xa7b8, 0xab53, 0xab54, 0xab70, 0xabc0,
+0xa7b2, 0xa7b3, 0xa7b4, 0xa7b8, 0xa7b9, 0xa7c3, 0xa7c4, 0xa7c5,
+0xa7c6, 0xa7c7, 0xa7c8, 0xa7c9, 0xa7ca, 0xa7d0, 0xa7d1, 0xa7d5,
+0xa7d6, 0xa7d7, 0xa7f5, 0xa7f6, 0xab53, 0xab54, 0xab70, 0xabc0,
 0xff21, 0xff3b, 0xff41, 0xff5b, 0x10400, 0x10428, 0x10450, 0x104b0,
 0x104d4, 0x104d8, 0x104fc, 0x10c80, 0x10cb3, 0x10cc0, 0x10cf3, 0x118a0,
 0x118e0, 0x1e900, 0x1e922, 0x1e944, })), (string) ({
-0x2d00, 0x10c6, 0x2d27, 0x10c8, 0x2d2d, 0x10ce, 0xab70, 0x13f8,
-0x13f6, 0x13f8, 0x13fe, 0x1c80, 0x1c81, 0x1c82, 0x1c83, 0x1c85,
-0x1c86, 0x1c87, 0x1c88, 0x1c89, 0x1d79, 0x1d7a, 0x1d7d, 0x1d7e,
+0x2d00, 0x10c6, 0x2d27, 0x10c8, 0x2d2d, 0xab70, 0x13f8, 0x13f6,
+0x13f8, 0x13fe, 0x1c80, 0x1c81, 0x1c82, 0x1c83, 0x1c85, 0x1c86,
+0x1c87, 0x1c88, 0x1c89, 0x1d79, 0x1d7a, 0x1d7d, 0x1d7e, 0x1d8e,
 0x1e01, 0x1e96, 0x1e9b, 0x1e9c, 0x00df, 0x1e9f, 0x1ea1, 0x1f00,
 0x1f00, 0x1f10, 0x1f16, 0x1f10, 0x1f1e, 0x1f20, 0x1f20, 0x1f30,
 0x1f30, 0x1f40, 0x1f46, 0x1f40, 0x1f4e, 0x1f51, 0x1f52, 0x1f53,
@@ -12198,7 +13614,7 @@ test_equal(lower_case((string) ({
 0x1fe2, 0x1fe5, 0x1fe6, 0x1fe0, 0x1f7a, 0x1fe5, 0x1fed, 0x1ff3,
 0x1ff4, 0x1f78, 0x1f7c, 0x1ff3, 0x1ffd, 0x03c9, 0x2127, 0x006b,
 0x00e5, 0x212c, 0x214e, 0x2133, 0x214e, 0x214f, 0x2170, 0x2180,
-0x2184, 0x2185, 0x24d0, 0x24d0, 0x24ea, 0x2c30, 0x2c2f, 0x2c30,
+0x2184, 0x2185, 0x24d0, 0x24d0, 0x24ea, 0x2c30, 0x2c5f, 0x2c30,
 0x2c5f, 0x2c61, 0x026b, 0x1d7d, 0x027d, 0x2c65, 0x2c66, 0x2c68,
 0x0251, 0x0271, 0x0250, 0x0252, 0x2c71, 0x2c73, 0x2c74, 0x2c76,
 0x2c77, 0x023f, 0x2c81, 0x2ce4, 0x2cec, 0x2cef, 0x2cf3, 0x2cf4,
@@ -12206,7 +13622,9 @@ test_equal(lower_case((string) ({
 0xa681, 0xa69c, 0xa723, 0xa730, 0xa733, 0xa770, 0xa77a, 0x1d79,
 0xa77f, 0xa788, 0xa78c, 0x0265, 0xa78e, 0xa791, 0xa794, 0xa797,
 0x0266, 0x025c, 0x0261, 0x026c, 0x026a, 0xa7af, 0x029e, 0x0287,
-0x029d, 0xab53, 0xa7b5, 0xa7b8, 0xab53, 0xab54, 0xab70, 0xabc0,
+0x029d, 0xab53, 0xa7b5, 0xa7b9, 0xa7b9, 0xa7c3, 0xa794, 0x0282,
+0x1d8e, 0xa7c8, 0xa7c8, 0xa7ca, 0xa7ca, 0xa7d1, 0xa7d1, 0xa7d5,
+0xa7d7, 0xa7d7, 0xa7f6, 0xa7f6, 0xab53, 0xab54, 0xab70, 0xabc0,
 0xff41, 0xff3b, 0xff41, 0xff5b, 0x10428, 0x10428, 0x10450, 0x104d8,
 0x104d4, 0x104d8, 0x104fc, 0x10cc0, 0x10cb3, 0x10cc0, 0x10cf3, 0x118c0,
 0x118e0, 0x1e922, 0x1e922, 0x1e944, }))
@@ -12262,11 +13680,17 @@ ifefun(mktime,
   "timezone":0,
 ]) ) ]])
 
+  // Check for mktime() in default timezone having a second count
+  // that is off (observed on Haiku).
+  test_eq([[localtime(mktime(0,0,0,1,0,70))->sec]], 0)
+  test_eq([[localtime(mktime(59,59,23,31,11,69))->sec]], 59)
+
   test_any([[foreach(({1075550400,94691300,220921700,347152100,473382500,
 		       599612900,725843300,852073700,978304100,1104534500,
 		       1230764900,1356995300,1483225700,1609456100,1735686500,
                        1861916900,1988147300,2114377700,1500033813,
                        0,1,2,(1<<31)-1,
+                       -0x67748580, -0x67748581,
                        -1<<31,(-1<<31)+1,-2,-1,
 		      }),int t) {
 	       if (mixed err = catch {
@@ -12285,8 +13709,14 @@ cond([[all_constants()->mktime && (Pike.get_runtime_info()->time_size > 32)]],
   test_any([[foreach(({-1<<33,-1<<32,
                        1<<31,(1<<31)+1,1<<32,1<<33,(-1<<31)-1,
 		      }),int t) {
-	       int res = mktime (gmtime (t));
-	       if(res!=t) return ({t, res});
+	       if (mixed err = catch {
+		   int res = mktime (gmtime (t));
+		   if(res!=t) return ({t, res});
+		 }) {
+		 log_msg("Failure for %d (0x%016x).\n",
+			 t, t & 0xffffffffffffffff);
+		 throw(err);
+	       }
 	     }
 	     return 0;]], 0)
 ]])
@@ -12318,6 +13748,13 @@ ifefun(mktime,
   // Tue, 15 Oct 2002 09:38:32 GMT
   return mktime(32, 38, 9, 15, 9, 102, 0, 0);
   ]], 1034674712)
+]])
+cond([[all_constants()->mktime && (Pike.get_runtime_info()->time_size > 32)]],
+[[
+  test_any( [[
+  // Mon, 26 Dec 1791, Charles Babbage's birthday
+  return mktime((["year":-109,"mon":11,"mday":26,"timezone":0]));
+  ]], -5617641600)
 ]])
 
 // - multisetp
@@ -12493,6 +13930,7 @@ test_eval_error([[
 
 // - reverse
 test_eq(reverse("reverse"),"esrever")
+test_eq(reverse("foobar", 2, 4), "foabor")
 test_eq(reverse("r\777v\777rs\777"),"\777sr\777v\777r")
 test_eq(reverse("r\7777777v\7777777rs\7777777"),"\7777777sr\7777777v\7777777r")
 test_eq(reverse(""),"")
@@ -12580,14 +14018,14 @@ test_do([[
   {
     mapping m;
 
-    int `==()
+    protected int `==()
     {
       foreach(indices(m), mixed x)
   	m_delete(m, x);
       return 0;
     }
 
-    void create(mapping _m)
+    protected void create(mapping _m)
     {
       m = _m;
     }
@@ -12657,6 +14095,8 @@ test_search4("\345677777-------------------")
 test_search4("kapit\3333l>")
 test_search4("kapit\3333333l>")
 
+test_eq(search((string)({123456})*390, " "*199), -1);
+
 // - set_priority
 // - set_weak_flag
 // - setegid
@@ -12686,7 +14126,7 @@ test_eq(sizeof("felbar"),6)
 test_eq(sizeof(({"fulbar","gazonk",7})),3)
 test_eq(sizeof(([8:3,6:6,7:0])),3)
 test_eq(sizeof((<8,7,6,5,4,7>)),6)
-test_eq([[ sizeof( class { int _sizeof() { return 17; } }() ) ]], 17)
+test_eq([[ sizeof( class { protected int _sizeof() { return 17; } }() ) ]], 17)
 
 // - sleep
 test_do(sleep(1))
@@ -12712,7 +14152,7 @@ test_equal(sort(({})),({}))
 test_equal(sort(({1.0,2.0,4.0,3.0})),({1.0,2.0,3.0,4.0}))
 test_any_equal([[
   // sort() on one arg should be stable.
-  class C (int id) {int `< (mixed x) {return 0;}};
+  class C (int id) {protected int `< (mixed x) {return 0;}};
   return sort (({C(2), C(6), C(1), C(4), C(3), C(5)}))->id;
 ]], ({2, 6, 1, 4, 3, 5}))
 test_any_equal([[
@@ -12730,7 +14170,7 @@ test_any_equal([[
 test_any([[
   class foo {
     int x=random(100);
-    int `<(object o) {return x < o->x;}
+    protected int `<(object o) {return x < o->x;}
   };
   array(object) o=allocate(100,foo)();
   sort(o);
@@ -12989,11 +14429,11 @@ test_true([[typeof(this_program) == typeof(object_program(this_object()))]])
 test_true([[typeof(this_program) == typeof(object_program(global::this))]])
 
 test_program_eq([[
-  string _sprintf() {return "g";}
+  protected string _sprintf() {return "g";}
   class A {
-    string _sprintf() {return "A";}
+    protected string _sprintf() {return "A";}
     class B {
-      string _sprintf() {return "B";}
+      protected string _sprintf() {return "B";}
       mixed f() {
 	return sprintf ("%O%O%O%O%O%O",
 			global::this, A::this, B::this, this_program::this, this::this, this);
@@ -13004,11 +14444,11 @@ test_program_eq([[
 ]], "gABBBB")
 
 test_program_eq([[
-  string _sprintf() {return "g";}
+  protected string _sprintf() {return "g";}
   class A {
-    string _sprintf() {return "A";}
+    protected string _sprintf() {return "A";}
     class B {
-      string _sprintf() {return "B";}
+      protected string _sprintf() {return "B";}
       mixed f() {
 	return sprintf ("%O%O%O%O%O",
 			this_object (2), this_object (1), this_object (0), this_object(), this);
@@ -13019,11 +14459,11 @@ test_program_eq([[
 ]], "gABBB")
 
 test_program_eq([[
-  string _sprintf() {return "g";}
+  protected string _sprintf() {return "g";}
   class A {
-    string _sprintf() {return "A";}
+    protected string _sprintf() {return "A";}
     class B {
-      string _sprintf() {return "B";}
+      protected string _sprintf() {return "B";}
       mixed f() {
 	return map (({2, 1, 0}), lambda (int l) {
 				   return sprintf ("%O", this_object (l));
@@ -13035,11 +14475,11 @@ test_program_eq([[
 ]], "gAB")
 
 test_program_eq([[
-  string _sprintf() {return "g";}
+  protected string _sprintf() {return "g";}
   class A {
-    string _sprintf() {return "A";}
+    protected string _sprintf() {return "A";}
     class B {
-      string _sprintf() {return "B";}
+      protected string _sprintf() {return "B";}
       mixed f() {
 	return sprintf ("%O%O%O%O%O%O",
 			global::this, A::this, B::this, this_program::this, this::this, this);
@@ -13089,18 +14529,18 @@ test_eval_error([[
 ]], 2)
 
 test_program_eq([[
-  string _sprintf() {return "g";}
+  protected string _sprintf() {return "g";}
   class A {
-    string _sprintf() {return "A";}
+    protected string _sprintf() {return "A";}
     mixed f() {
       return sprintf ("%O%O", global::this, A::this);
     }
   }
   class B {
-    string _sprintf() {return "B";}
+    protected string _sprintf() {return "B";}
     class C {
       inherit A;
-      string _sprintf() {return "C";}
+      protected string _sprintf() {return "C";}
       mixed f() {
 	return A::f() + sprintf ("%O%O%O%O",
 				 global::this, B::this, this_program::this, this);
@@ -13111,19 +14551,19 @@ test_program_eq([[
 ]], "gCgBCC")
 
 test_program_eq([[
-  string _sprintf() {return "g";}
+  protected string _sprintf() {return "g";}
   class A {
-    string _sprintf() {return "A";}
+    protected string _sprintf() {return "A";}
     mixed f() {
       return sprintf ("%O%O%O%O",
 		      global::this, A::this, this_program::this, this);
     }
   }
   class B {
-    string _sprintf() {return "B";}
+    protected string _sprintf() {return "B";}
     class C {
       inherit A;
-      string _sprintf() {return "C";}
+      protected string _sprintf() {return "C";}
       mixed f() {
 	return A::f() + "|" +
 	  sprintf ("%O%O%O%O%O",
@@ -13303,7 +14743,7 @@ test_program_eq([[
 	  return ::foo() + \"|\" +
 	    this->id() + id() + B::id() + global::this->id() + global::id();
 	}
-      }", 0, Handler())();
+      }", UNDEFINED, Handler())();
 
     return c->D()->foo();
   }
@@ -13326,7 +14766,7 @@ test_program_eq([[
 
   object a()
   {
-    object o = compile_string ("inherit X;", 0, Handler())();
+    object o = compile_string ("inherit X;", UNDEFINED, Handler())();
     return o->parent();
   }
 ]], this)
@@ -13363,10 +14803,10 @@ test_any([[
    float f=t2-t1;
 
    array r=({});
-   if (e<tts-0.1 || e>tts+0.1)
+   if (e<tts-0.1 || e>tts+0.2)
       r+=({sprintf("hrtime %.6f, %+.6f",e,e-tts)});
 
-   if (f<tts-0.1 || f>tts+0.1)
+   if (f<tts-0.1 || f>tts+0.2)
       r+=({sprintf("timeofday %.6f, %+.6f",f,f-tts)});
 
    if (sizeof(r)) return r*" / ";
@@ -13422,7 +14862,7 @@ test_equal(upper_case((string) ({
 0x025a, 0x025b, 0x025c, 0x025d, 0x0260, 0x0261, 0x0262, 0x0263,
 0x0264, 0x0265, 0x0266, 0x0267, 0x0268, 0x0269, 0xa7ae, 0x026b,
 0x026c, 0x026d, 0x026f, 0x0270, 0x0271, 0x0272, 0x0273, 0x0275,
-0x0276, 0x027d, 0x027e, 0x0280, 0x0281, 0x0283, 0x0284, 0x0287,
+0x0276, 0x027d, 0x027e, 0x0280, 0x0281, 0x0282, 0x0283, 0x0284, 0x0287,
 0x0288, 0x0289, 0x028a, 0x028c, 0x028d, 0x0292, 0x0293, 0x029d,
 0x029e, 0x029f, 0x0345, 0x0346, 0x0370, 0x0374, 0x0376, 0x0378,
 0x037b, 0x037e, 0x037f, 0x0380, 0x0386, 0x0387, 0x0388, 0x038b,
@@ -13449,7 +14889,7 @@ test_equal(upper_case((string) ({
 0x025a, 0x0190, 0xa7ab, 0x025d, 0x0193, 0xa7ac, 0x0262, 0x0194,
 0x0264, 0xa78d, 0xa7aa, 0x0267, 0x0197, 0x0196, 0xa7ae, 0x2c62,
 0xa7ad, 0x026d, 0x019c, 0x0270, 0x2c6e, 0x019d, 0x0273, 0x019f,
-0x0276, 0x2c64, 0x027e, 0x01a6, 0x0281, 0x01a9, 0x0284, 0xa7b1,
+0x0276, 0x2c64, 0x027e, 0x01a6, 0x0281, 0xa7c5, 0x01a9, 0x0284, 0xa7b1,
 0x01ae, 0x0244, 0x01b1, 0x0245, 0x028d, 0x01b7, 0x0293, 0xa7b2,
 0xa7b0, 0x029f, 0x0399, 0x0346, 0x0370, 0x0374, 0x0376, 0x0378,
 0x03fd, 0x037e, 0x037f, 0x0380, 0x0386, 0x0387, 0x0388, 0x038b,
@@ -13465,9 +14905,9 @@ test_equal(upper_case((string) ({
 // Please update this and the corresponding lower_case table
 // when UnicodeData.txt is changed.
 // Part 2: 0x1000 -
-0x10a0, 0x10c6, 0x10c7, 0x10c8, 0x10cd, 0x10ce, 0x13a0, 0x13f0,
-0x13f6, 0x13f8, 0x13fe, 0x1c80, 0x1c81, 0x1c82, 0x1c83, 0x1c85,
-0x1c86, 0x1c87, 0x1c88, 0x1c89, 0x1d79, 0x1d7a, 0x1d7d, 0x1d7e,
+0x10a0, 0x10c6, 0x10c7, 0x10c8, 0x10cd, 0x13a0, 0x13f0, 0x13f6,
+0x13f8, 0x13fe, 0x1c80, 0x1c81, 0x1c82, 0x1c83, 0x1c85, 0x1c86,
+0x1c87, 0x1c88, 0x1c89, 0x1d79, 0x1d7a, 0x1d7d, 0x1d7e, 0x1d8e,
 0x1e00, 0x1e96, 0x1e9b, 0x1e9c, 0x1e9e, 0x1e9f, 0x1ea0, 0x1f00,
 0x1f08, 0x1f10, 0x1f16, 0x1f18, 0x1f1e, 0x1f20, 0x1f28, 0x1f30,
 0x1f38, 0x1f40, 0x1f46, 0x1f48, 0x1f4e, 0x1f51, 0x1f52, 0x1f53,
@@ -13488,13 +14928,15 @@ test_equal(upper_case((string) ({
 0xa680, 0xa69c, 0xa722, 0xa730, 0xa732, 0xa770, 0xa779, 0xa77d,
 0xa77e, 0xa788, 0xa78b, 0xa78d, 0xa78e, 0xa790, 0xa794, 0xa796,
 0xa7aa, 0xa7ab, 0xa7ac, 0xa7ad, 0xa7ae, 0xa7af, 0xa7b0, 0xa7b1,
-0xa7b2, 0xa7b3, 0xa7b4, 0xa7b8, 0xab53, 0xab54, 0xab70, 0xabc0,
+0xa7b2, 0xa7b3, 0xa7b4, 0xa7b8, 0xa7b9, 0xa7c3, 0xa7c4, 0xa7c5,
+0xa7c6, 0xa7c7, 0xa7c8, 0xa7c9, 0xa7ca, 0xa7d0, 0xa7d1, 0xa7d5,
+0xa7d6, 0xa7d7, 0xa7f5, 0xa7f6, 0xab53, 0xab54, 0xab70, 0xabc0,
 0xff21, 0xff3b, 0xff41, 0xff5b, 0x10400, 0x10428, 0x10450, 0x104b0,
 0x104d4, 0x104d8, 0x104fc, 0x10c80, 0x10cb3, 0x10cc0, 0x10cf3, 0x118a0,
 0x118e0, 0x1e900, 0x1e922, 0x1e944, })), (string) ({
-0x10a0, 0x10c6, 0x10c7, 0x10c8, 0x10cd, 0x10ce, 0x13a0, 0x13f0,
-0x13f6, 0x13f0, 0x13fe, 0x0412, 0x0414, 0x041e, 0x0421, 0x0422,
-0x042a, 0x0462, 0xa64a, 0x1c89, 0xa77d, 0x1d7a, 0x2c63, 0x1d7e,
+0x10a0, 0x10c6, 0x10c7, 0x10c8, 0x10cd, 0x13a0, 0x13f0, 0x13f6,
+0x13f0, 0x13fe, 0x0412, 0x0414, 0x041e, 0x0421, 0x0422, 0x042a,
+0x0462, 0xa64a, 0x1c89, 0xa77d, 0x1d7a, 0x2c63, 0x1d7e, 0xa7c6,
 0x1e00, 0x1e96, 0x1e60, 0x1e9c, 0x1e9e, 0x1e9f, 0x1ea0, 0x1f08,
 0x1f08, 0x1f18, 0x1f16, 0x1f18, 0x1f1e, 0x1f28, 0x1f28, 0x1f38,
 0x1f38, 0x1f48, 0x1f46, 0x1f48, 0x1f4e, 0x1f59, 0x1f52, 0x1f5b,
@@ -13508,14 +14950,16 @@ test_equal(upper_case((string) ({
 0x1ff4, 0x1ff8, 0x1ffa, 0x1ffc, 0x1ffd, 0x2126, 0x2127, 0x212a,
 0x212b, 0x212c, 0x2132, 0x2133, 0x2132, 0x214f, 0x2160, 0x2180,
 0x2183, 0x2185, 0x24b6, 0x24b6, 0x24ea, 0x2c00, 0x2c2f, 0x2c00,
-0x2c5f, 0x2c60, 0x2c62, 0x2c63, 0x2c64, 0x023a, 0x023e, 0x2c67,
+0x2c2f, 0x2c60, 0x2c62, 0x2c63, 0x2c64, 0x023a, 0x023e, 0x2c67,
 0x2c6d, 0x2c6e, 0x2c6f, 0x2c70, 0x2c71, 0x2c72, 0x2c74, 0x2c75,
 0x2c77, 0x2c7e, 0x2c80, 0x2ce4, 0x2ceb, 0x2cef, 0x2cf2, 0x2cf4,
 0x10a0, 0x2d26, 0x10c7, 0x2d28, 0x10cd, 0x2d2e, 0xa640, 0xa66e,
 0xa680, 0xa69c, 0xa722, 0xa730, 0xa732, 0xa770, 0xa779, 0xa77d,
-0xa77e, 0xa788, 0xa78b, 0xa78d, 0xa78e, 0xa790, 0xa794, 0xa796,
+0xa77e, 0xa788, 0xa78b, 0xa78d, 0xa78e, 0xa790, 0xa7c4, 0xa796,
 0xa7aa, 0xa7ab, 0xa7ac, 0xa7ad, 0xa7ae, 0xa7af, 0xa7b0, 0xa7b1,
-0xa7b2, 0xa7b3, 0xa7b4, 0xa7b8, 0xa7b3, 0xab54, 0x13a0, 0xabc0,
+0xa7b2, 0xa7b3, 0xa7b4, 0xa7b8, 0xa7b8, 0xa7c2, 0xa7c4, 0xa7c5,
+0xa7c6, 0xa7c7, 0xa7c7, 0xa7c9, 0xa7c9, 0xa7d0, 0xa7d0, 0xa7d5,
+0xa7d6, 0xa7d6, 0xa7f5, 0xa7f5, 0xa7b3, 0xab54, 0x13a0, 0xabc0,
 0xff21, 0xff3b, 0xff21, 0xff5b, 0x10400, 0x10400, 0x10450, 0x104b0,
 0x104d4, 0x104b0, 0x104fc, 0x10c80, 0x10cb3, 0x10c80, 0x10cf3, 0x118a0,
 0x118e0, 0x1e900, 0x1e900, 0x1e944, }))
@@ -13541,7 +14985,7 @@ test_equal(version(), "Pike v"+__REAL_MAJOR__+"."+__REAL_MINOR__+" release "+__R
 
 // - zero_type
 test_eq(zero_type(0),0)
-test_eq(zero_type(([])[7]),1)
+test_eq(lambda(mapping (int:mixed) m) {return zero_type(m[7]);} (([])),1)
 test_eq(zero_type(([7: 0])[7]),0)
 test_eq(zero_type(([7: UNDEFINED])[7]),0)
 test_eq(zero_type(UNDEFINED), 1)
@@ -13552,9 +14996,9 @@ test_eq(zero_type (allocate (5, 0)[2]), 0);
 test_eq(zero_type (allocate (5)[2]), 0);
 
 test_true([[lambda (int|void a) { return zero_type(a); }()]])
-test_true([[lambda () {mixed a; return zero_type(a = ([])[0]);}()]])
-test_true([[lambda () {mapping a=([]); return zero_type(a[0] = ([])[0]);}()]])
-test_true([[zero_type (lambda () {return ([])[0];}())]])
+test_true([[lambda () {mixed a; return zero_type(a = UNDEFINED);}()]])
+test_true([[lambda () {mapping a=([]); return zero_type(a[0] = UNDEFINED);}()]])
+test_true([[zero_type (lambda () {return UNDEFINED;}())]])
 
 test_any([[
   class A {
@@ -13640,7 +15084,7 @@ test_compile_error(return class c{int i;void foo(){ destruct(this_object());i=0;
 test_eq(a,this_object()->a)
 
 // - catch
-test_false([[class { string test(string foo) { catch { return lower_case(foo); }; return foo; }}()->test(0); ]])
+test_false([[class { string test(string|zero foo) { catch { return lower_case(foo); }; return foo; }}()->test(0); ]])
 test_true([[catch (1.0 / 0.0)]])
 test_true([[catch {float f = 1.0 / 0.0;}]])
 
@@ -13682,6 +15126,16 @@ array a()
 
 test_compile_error_any([[enum X {A, B}; enum(X) x;]])
 test_compile_error_any([[enum {intern : extern};]])
+
+test_compile_any([[
+  // GitHub pikelang/Pike #25.
+  typedef typeof(Val.true)|typeof(Val.false) bool;
+
+  int main (int argc, array(string) argv) {
+    bool a = Val.true;
+    return 0;
+  }
+]])
 
 // - modifiers, compile time type checks
 
@@ -13840,6 +15294,30 @@ test_compile_warning(
 test_compile_any(
   class A { int foo(__deprecated__(int)|void x) { return (int)x; } };
   mixed bar = A()->foo();
+)
+test_compile_any([[
+  class A {
+    inherit Stdio.File;
+
+    // NB: Stdio.File()->seek() has a deprecated variant, which this
+    //     should NOT match.
+    int seek(int pos) {}
+
+    int close()
+    {
+      // In the broken case this complains:
+      //   Warning: Using deprecated function(int, int, void | int : int) value.
+      object(this_program) f = Stdio.File();
+    }
+  };
+]])
+test_compile_warning(
+  class A {
+    __deprecated__ mapping m;
+    void foo() {
+      m["foo"] = "bar";
+    }
+  };
 )
 
 // - modifiers, compile time access properties
@@ -14060,13 +15538,13 @@ test_any(class A {inline int f(){return 1;} int t(){return f();}}; class B {inhe
 test_any(class A {int v=1; int t(){return v;}}; class B {inherit A; int v=2; int t(){return A::t();}}; return B()->t(), 2)
 test_any(class A {int v=1; int t(){return v;}}; class B {public inherit A; int v=2; int t(){return A::t();}}; return B()->t(), 2)
 test_any(class A {int v=1; int t(){return v;}}; class B {protected inherit A; int v=2; int t(){return A::t();}}; return B()->t(), 2)
-test_any(class A {int v=1; int t(){return v;}}; class B {private inherit A; int v=2; int t(){return A::t();}}; return B()->t(), 2)
+test_any(class A {int v=1; int t(){return v;}}; class B {private inherit A; int v=2; int t(){return A::t();}}; return B()->t(), 1)
 test_any(class A {int v=1; int t(){return v;}}; class B {local inherit A; int v=2; int t(){return A::t();}}; return B()->t(), 1)
 test_any(class A {int v=1; int t(){return v;}}; class B {inline inherit A; int v=2; int t(){return A::t();}}; return B()->t(), 1)
 test_any(class A {int f(){return 1;} int t(){return f();}}; class B {inherit A; int f(){return 2;} int t(){return A::t();}}; return B()->t(), 2)
 test_any(class A {int f(){return 1;} int t(){return f();}}; class B {public inherit A; int f(){return 2;} int t(){return A::t();}}; return B()->t(), 2)
 test_any(class A {int f(){return 1;} int t(){return f();}}; class B {protected inherit A; int f(){return 2;} int t(){return A::t();}}; return B()->t(), 2)
-test_any(class A {int f(){return 1;} int t(){return f();}}; class B {private inherit A; int f(){return 2;} int t(){return A::t();}}; return B()->t(), 2)
+test_any(class A {int f(){return 1;} int t(){return f();}}; class B {private inherit A; int f(){return 2;} int t(){return A::t();}}; return B()->t(), 1)
 test_any(class A {int f(){return 1;} int t(){return f();}}; class B {local inherit A; int f(){return 2;} int t(){return A::t();}}; return B()->t(), 1)
 test_any(class A {int f(){return 1;} int t(){return f();}}; class B {inline inherit A; int f(){return 2;} int t(){return A::t();}}; return B()->t(), 1)
 
@@ -14483,7 +15961,7 @@ test_eq(sprintf("%t",this_object()),"object")
 test_eq(sprintf("%t", ({"a"})), "array")
 test_any([[array(string) a = ({"a"}); return sprintf("%t", a);]], "array")
 test_eq(sprintf("%t", 0), "int")
-test_any([[array(string) a = 0; return sprintf("%t", a);]], "int")
+test_any([[array(string)|zero a = 0; return sprintf("%t", a);]], "int")
 test_eq(sprintf("%t", (<>)), "multiset")
 test_eq(sprintf("%t", ([])), "mapping")
 test_eq(sprintf("%t", sin), "function")
@@ -14569,7 +16047,7 @@ cond([[pow(2.0,1024.0)!=0.0]],
 
 dnl Make sure that _sprintf is called and that the argument list isn't screwed.
 test_eq(sprintf("%d%c%s%t%o%d%u%x%X%e%f%g%E%G%O%d", 4711,
-        @allocate(14, (class { string _sprintf(int t)
+        @allocate(14, (class { protected string _sprintf(int t)
                                 { mixed x = "not a number";
                                   string s;
                                   catch {
@@ -14623,7 +16101,7 @@ define(test_object_sprintf, [[
        test_eq(sprintf("%"+$1+"%<"+$1, OBJ), $1 + $1);
        test_eq(sprintf("%[1]"+$1+"%[0]"+$1, OBJ, OBJ), $1 + $1);
    ]]);
-test_do(add_constant("OBJ",class { string _sprintf(int t) { return sprintf("%c",t); } }() ))
+test_do(add_constant("OBJ",class { protected string _sprintf(int t) { return sprintf("%c",t); } }() ))
 test_object_sprintf("t")
 test_object_sprintf("c")
 test_object_sprintf("H")
@@ -14647,7 +16125,7 @@ test_do(add_constant("OBJ"))
 test_any_equal([[
   class A {
     mapping m;
-    string _sprintf(int t, mapping args)
+    protected string _sprintf(int t, mapping args)
     {
       m = args;
       return "";
@@ -14677,7 +16155,7 @@ dnl This syntax error generates a Fatal with PIKE_DEBUG
 test_compile_error(object(foo bar) o;)
 
 test_do([[
-    class A(object ctx) {
+    class A(object|zero ctx) {
         this_program get(void|int level) {
             this_program ret = this;
 
@@ -14720,19 +16198,6 @@ test_tests([[
       Stdio.read_bytes(combine_path(srcdir, dir, "Makefile.in"));
     report_test(res, !makefile_in,
 		"Makefile.in missing in directory %O.\n", dir);
-
-    if (sscanf(configure_script, "%*sAC_CONFIG_HEADER(%s)", string config_h)) {
-      // acconfig.h should exist.
-      report_test(res, !Stdio.is_file(combine_path(srcdir, dir, "acconfig.h")),
-		  "acconfig.h missing in directory %s.\n", dir);
-      // config_h + ".in" should exist.
-      report_test(res, !Stdio.is_file(combine_path(srcdir, dir, config_h + ".in")),
-		  "%s missing in directory %s.\n", config_h + ".in", dir);
-      // The Makefile should regenerate config_h et al.
-      report_test(res,
-		  !has_value(makefile_in||"", "CONFIG_HEADERS=@CONFIG_HEADERS@"),
-		  "Makefile.in in directory %s is missing CONFIG_HEADERS.\n", dir);
-    }
 
     foreach(get_dir(combine_path(srcdir, dir)), string f) {
       if (has_prefix(f, ".#")) continue;	// Auto-save file.
@@ -14777,5 +16242,127 @@ test_tests([[
     return recur_test_dir(".");
   }
 ]])
+
+
+dnl Dumping test
+
+test_do(Stdio.recursive_rm("recursive_module_dump_test"))
+test_do(mkdir("recursive_module_dump_test"))
+test_do(mkdir("recursive_module_dump_test/TestModule.pmod"))
+test_do([[Stdio.write_file("recursive_module_dump_test/TestModule.pmod/module.pmod", #"
+class B
+{
+  void foo()
+  {
+    .A.bar(C());
+  }
+}
+
+class C
+{
+}
+")]])
+test_do([[Stdio.write_file("recursive_module_dump_test/TestModule.pmod/A.pmod", #"
+import \".\";
+
+void bar(C c)
+{
+}
+")]])
+test_do([[Stdio.write_file("recursive_module_dump_test/Xyzzy.pike", #"
+void foo()
+{
+}
+")]])
+test_do([[Stdio.write_file("recursive_module_dump_test/Quux.pmod", #"
+inherit Xyzzy;
+
+void bar()
+{
+  Quux.foo();
+}
+")]])
+define(dump_test_module, [[test_tests([[ array a() {
+  Tools.Testsuite.log_status("Dumping ]]$1[[, case=$2");
+  return Tools.Testsuite.run_script(({"-M", "recursive_module_dump_test", "-x", "dump", "recursive_module_dump_test/]]$1[["}));
+}]])]])
+define(try_load_test_module, [[test_tests([[ array a() {
+  Tools.Testsuite.log_status("Instantiating TestModule.A, case=$1");
+  return Tools.Testsuite.run_script(({"-M", "recursive_module_dump_test", "-e", "TestModule.A"}));
+}]])
+test_tests([[ array a() {
+  Tools.Testsuite.log_status("Calling Quux.bar(), case=$1");
+  return Tools.Testsuite.run_script(({"-M", "recursive_module_dump_test", "-e", "Quux.bar()"}));
+}]])]])
+
+dnl - First, try without dumping
+try_load_test_module(1)
+
+dnl - Next, dump only A.pmod / Xyzzy.pike
+dump_test_module(TestModule.pmod/A.pmod, 2)
+dump_test_module(Xyzzy.pike, 2)
+try_load_test_module(2)
+
+dnl - Now, only module.pmod / Quux.pmod
+test_do(rm("recursive_module_dump_test/TestModule.pmod/A.pmod.o"))
+test_do(rm("recursive_module_dump_test/Xyzzy.pike.o"))
+dump_test_module(TestModule.pmod/module.pmod, 3)
+dump_test_module(Quux.pmod, 3)
+try_load_test_module(3)
+
+dnl - A.pmod before module.pmod, Xyzzy before Quux
+test_do(rm("recursive_module_dump_test/TestModule.pmod/module.pmod.o"))
+test_do(rm("recursive_module_dump_test/Quux.pmod.o"))
+dump_test_module(TestModule.pmod/A.pmod, 4)
+dump_test_module(TestModule.pmod/module.pmod, 4)
+dump_test_module(Xyzzy.pike, 4)
+dump_test_module(Quux.pmod, 4)
+try_load_test_module(4)
+
+dnl - module.pmod before A.pmod, Quux before Xyzzy
+test_do(rm("recursive_module_dump_test/TestModule.pmod/A.pmod.o"))
+test_do(rm("recursive_module_dump_test/TestModule.pmod/module.pmod.o"))
+test_do(rm("recursive_module_dump_test/Xyzzy.pike.o"))
+test_do(rm("recursive_module_dump_test/Quux.pmod.o"))
+dump_test_module(TestModule.pmod/module.pmod, 5)
+dump_test_module(TestModule.pmod/A.pmod, 5)
+dump_test_module(Quux.pmod, 5)
+dump_test_module(Xyzzy.pike, 5)
+try_load_test_module(5)
+
+test_do(Stdio.recursive_rm("recursive_module_dump_test"))
+
+
+dnl Another dumping test
+test_do(Stdio.recursive_rm("cmod_dependency_dump_test"))
+test_do(mkdir("cmod_dependency_dump_test"))
+test_do(mkdir("cmod_dependency_dump_test/TestModule.pmod"))
+test_do([[Stdio.write_file("cmod_dependency_dump_test/TestModule.pmod/module.pmod", #"
+inherit Parser._parser.XML;
+.Foo.Bar x;
+")]])
+test_do([[Stdio.write_file("cmod_dependency_dump_test/TestModule.pmod/Foo.pmod", #"
+class Bar { inherit .Simple; }
+")]])
+
+test_tests([[ array a() {
+  Tools.Testsuite.log_status("Accessing TestModule.Foo before dump");
+  return Tools.Testsuite.run_script(({"-M", "cmod_dependency_dump_test", "-e", "TestModule.Foo"}));
+}]])
+test_tests([[ array a() {
+  Tools.Testsuite.log_status("Dumping module.pmod");
+  return Tools.Testsuite.run_script(({"-M", "cmod_dependency_dump_test", "-x", "dump", "cmod_dependency_dump_test/TestModule.pmod/module.pmod"}));
+}]])
+test_tests([[ array a() {
+  Tools.Testsuite.log_status("Accessing TestModule.Foo after dump");
+  return Tools.Testsuite.run_script(({"-M", "cmod_dependency_dump_test", "-e", "TestModule.Foo"}));
+}]])
+
+test_do(Stdio.recursive_rm("cmod_dependency_dump_test"))
+
+
+dnl - Deprecated safe indexing
+test_compile_warning( mapping foo; foo?->bar; )
+
 
 END_MARKER

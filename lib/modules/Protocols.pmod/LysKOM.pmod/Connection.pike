@@ -1,4 +1,6 @@
-//!	This class contains nice abstraction for calls into the
+/* -*- mode: Pike; c-basic-offset: 3; -*- */
+
+//!	This class contains nice abstractions for calls into the
 //!	server. They are named "@tt{@i{call@}@}",
 //!	"@tt{async_@i{call@}@}" or
 //!	"@tt{async_cb_@i{call@}@}", depending on
@@ -7,18 +9,18 @@
 //! @decl mixed XXX(mixed ...args)
 //! @decl object async_XXX(mixed ...args)
 //! @decl object async_cb_XXX(function callback,mixed ...args)
-//!	Do a call to the server. This really
+//!	Perform a call to the server. This actually
 //!	clones a @[Protocols.LysKOM.Request] object,
-//!	and initialises it. @tt{XXX@} is to be read as
+//!	and initializes it. @tt{XXX@} is to be read as
 //!	one of the calls in the lyskom protocol. ('-' is replaced
 //!	with '_'.) (ie, logout, async_login or async_cb_get_conf_stat.)
 //!
-//!	The first method is a synchronous call. This will
+//!	The first variant is a synchronous call. This will
 //!	send the command, wait for the server to execute it,
 //!	and then return the result.
 //!
 //!	The last two are asynchronous calls, returning an
-//!	initialised @[Protocols.LysKOM.Request] object.
+//!	initialized @[Protocols.LysKOM.Request] object.
 //!
 
 #pike __REAL_VERSION__
@@ -48,9 +50,8 @@ string software_version;
 //!   @member string "whoami"
 //!	present as this user (default is from uid/getpwent and hostname).
 //! @endmapping
-void create(string server,void|mapping options)
+protected void create(string server, mapping options = ([]))
 {
-   if (!options) options=([]);
    con=Raw(server,options->port,options->whoami);
    if (!con->con)
    {
@@ -97,13 +98,13 @@ class SyncRequest
    program prog;
    object ret;
 
-   void create(program p,object _ret)
+   protected void create(program p,object _ret)
    {
       prog=p;
       ret=_ret;
    }
 
-   mixed `()(mixed ...args)
+   protected mixed `()(mixed ...args)
    {
       mixed m;
       object req=prog(con);
@@ -126,12 +127,12 @@ class AsyncRequest
 {
    program prog;
 
-   void create(program p)
+   protected void create(program p)
    {
       prog=p;
    }
 
-   mixed `()(mixed ...args)
+   protected mixed `()(mixed ...args)
    {
       object req=prog(con);
       req->async(@args);
@@ -143,12 +144,12 @@ class AsyncCBRequest
 {
    program prog;
 
-   void create(program p)
+   protected void create(program p)
    {
       prog=p;
    }
 
-   mixed `()(function callback,mixed ...args)
+   protected mixed `()(function callback,mixed ...args)
    {
       object req=prog(con);
       req->callback=callback;
@@ -157,7 +158,7 @@ class AsyncCBRequest
    }
 }
 
-mixed `->(string request)
+protected mixed `->(string request)
 {
    program p;
    if ( (p=Request[String.capitalize(request)]) )
@@ -172,4 +173,4 @@ mixed `->(string request)
       return ::`[](request);
 }
 
-mixed `[](string request) { return `->(request); }
+protected mixed `[](string request) { return `->(request); }

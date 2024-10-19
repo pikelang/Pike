@@ -47,6 +47,13 @@ time_t time (time_t *);
 #ifdef HAVE_GETSYSTEMTIMEASFILETIME
 #include <winbase.h>
 
+#include "fdlib.h"
+
+#ifdef CONFIGURE_TEST
+Pike_NT_GetSystemTimePreciseAsFileTime_type
+  Pike_NT_GetSystemTimePreciseAsFileTime = NULL;
+#endif
+
 PMOD_EXPORT void GETTIMEOFDAY(struct timeval *t)
 {
   union {
@@ -54,7 +61,30 @@ PMOD_EXPORT void GETTIMEOFDAY(struct timeval *t)
     FILETIME ft_struct;
   } ft;
 
-  GetSystemTimeAsFileTime(&ft.ft_struct);
+  if (Pike_NT_GetSystemTimePreciseAsFileTime) {
+    /* We assume that this call actually has some precision.
+     * Available on Windows 8/Windows Server 2012 and later.
+     */
+    Pike_NT_GetSystemTimePreciseAsFileTime(&ft.ft_struct);
+  } else {
+    static unsigned __int64 prev_scalar;
+    static unsigned __int64 now;
+
+    /* NB: This typically has a precision of 1/64 seconds
+     *     (ie 15625 usec).
+     */
+    GetSystemTimeAsFileTime(&ft.ft_struct);
+
+    if (prev_scalar != ft.ft_scalar) {
+      if ((now < ft.ft_scalar) || (prev_scalar > ft.ft_scalar)) {
+        /* The typical case, or the system clock has been back-dated. */
+        now = ft.ft_scalar - 10;	/* Compensate for the 1 usec below. */
+      }
+      prev_scalar = ft.ft_scalar;
+    }
+    now += 10;	/* 1 usec */
+    ft.ft_scalar = now;
+  }
 
   ft.ft_scalar /= 10;
 #ifndef __GNUC__
@@ -430,3 +460,10 @@ char *strdup(const char *str)
   return(res);
 }
 #endif /* !HAVE_STRDUP */
+
+#ifndef HAVE_LOG2
+double log2(double val)
+{
+  return log(val)/log(2);
+}
+#endif

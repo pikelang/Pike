@@ -4,14 +4,14 @@
 || for more information.
 */
 
-#include <math.h>
-
 #include "module.h"
 #include "pike_macros.h"
 #include "interpret.h"
 #include "module_support.h"
 
 #include "config.h"
+
+#include <math.h>
 
 #include "whitefish.h"
 #include "resultset.h"
@@ -62,8 +62,8 @@ static void handle_hit( Blob **blobs,
 			int nblobs,
 			struct object *res,
 			int docid,
-			double *field_c[65],
-			double *prox_c[8],
+			double field_c[65],
+			double prox_c[8],
 			double mc, double mp,
 			int cutoff )
 {
@@ -109,9 +109,9 @@ static void handle_hit( Blob **blobs,
     double accum = 0.0, fc, pc;
     int accum_i;
     for( i = 0; i<65; i++ )
-      if( (fc = (*field_c)[i]) != 0.0 )
+      if( (fc = field_c[i]) != 0.0 )
 	for( j = 0; j<8; j++ )
-	  if( (pc = (*prox_c)[j]) != 0.0 )
+	  if( (pc = prox_c[j]) != 0.0 )
 	    accum += (MINIMUM(matrix[i][j],cutoff)*fc*pc) / (mc*mp);
 
     /* Limit */
@@ -174,7 +174,7 @@ static struct object *low_do_query_or( Blob **blobs,
 	if( blobs[i]->docid == min && !blobs[i]->eof )
 	  tmp[j++] = blobs[i];
 
-      handle_hit( tmp, j, res, min, &field_c, &prox_c, max_c, max_p, cutoff );
+      handle_hit( tmp, j, res, min, field_c, prox_c, max_c, max_p, cutoff );
 
       for( i = 0; i<j; i++ )
 	wf_blob_next( tmp[i] );
@@ -192,7 +192,7 @@ static void handle_phrase_hit( Blob **blobs,
 			       int nblobs,
 			       struct object *res,
 			       int docid,
-			       double *field_c[65],
+			       double field_c[65],
 			       double mc )
 {
   int i, j, k;
@@ -217,7 +217,7 @@ static void handle_phrase_hit( Blob **blobs,
     int hit = 1;
     Hit m = wf_blob_hit( blobs[0], i );
     int h = m.raw;
-    if( (add = (*field_c)[ MOFF(m) ]) == 0.0 )
+    if( (add = field_c[ MOFF(m) ]) == 0.0 )
       continue;
 
     for( j = 1; j<nblobs; j++)
@@ -286,7 +286,7 @@ static struct object *low_do_query_phrase( Blob **blobs, int nblobs,
 	if( blobs[i]->docid != min )
 	  goto next;
 
-      handle_phrase_hit( blobs, nblobs, res, min, &field_c, max_c );
+      handle_phrase_hit( blobs, nblobs, res, min, field_c, max_c );
 
     next:
       for( i = 0; i<nblobs; i++ )
@@ -352,7 +352,7 @@ static struct object *low_do_query_and( Blob **blobs, int nblobs,
 	if( blobs[i]->docid != min )
 	  goto next;
 
-      handle_hit( blobs, nblobs, res, min, &field_c,&prox_c, max_c,max_p,
+      handle_hit( blobs, nblobs, res, min, field_c,prox_c, max_c,max_p,
 		  cutoff );
 
     next:
@@ -400,7 +400,6 @@ static void f_do_query_phrase( INT32 args )
  *! certain word. Call repeatedly until it returns @expr{0@}.
  */
 {
-  double proximity_coefficients[8];
   double field_coefficients[65];
   int numblobs, i;
   Blob **blobs;

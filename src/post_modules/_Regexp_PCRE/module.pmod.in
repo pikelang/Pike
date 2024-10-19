@@ -2,6 +2,7 @@
 // original author: mirar
 //! @appears Regexp.PCRE
 
+#charset iso-8859-1
 #pike __REAL_VERSION__
 
 inherit @module@; // C-module
@@ -138,7 +139,7 @@ class Plain
 //!    );
 //! (4) Result: "foo from bar dot org"
 //! @endcode
-   string replace(string subject,string|function with, mixed|void ... args)
+   string replace(string subject,string|function with, mixed ... args)
    {
     int i=0;
     String.Buffer res = String.Buffer();
@@ -167,7 +168,7 @@ class Plain
           while(c<= (sizeof(v)-2));
         }
 
-        res += with(subject[v[0]..v[1]-1], @substrings, @args);
+        res += ([function]with)(subject[v[0]..v[1]-1], @substrings, @args);
       }
       if (i!=v[1]) i=v[1]; else res->add(subject[i..i++]);
     }
@@ -193,7 +194,7 @@ class Plain
       if (v[0]>0) res->add(subject[0..v[0]-1]);
 
       if (stringp(with)) res->add(with);
-      else res->add(with(subject[v[0]..v[1]-1]));
+      else res->add(([function]with)(subject[v[0]..v[1]-1]));
 
       res->add(subject[v[1]..]);
 
@@ -272,7 +273,7 @@ class Plain
     return sprintf(subst, m, @comp);
   }
 
-  string _replace_positional(string subject,string|function with, mixed|void ... args)
+  string _replace_positional(string subject,string|function with, mixed ... args)
    {
       int i=0;
       String.Buffer buf = String.Buffer();
@@ -302,7 +303,8 @@ class Plain
          if (stringp(with))
            buf->add(with);
          else {
-           string o = with(subject[v[0]..v[1]-1], substrings, @args);
+           string o =
+             ([function]with)(subject[v[0]..v[1]-1], substrings, @args);
            buf->add(o);
          }
 
@@ -336,13 +338,13 @@ class Studied
 {
    inherit Plain;
 
-   void create(string pattern,void|int options,void|object table)
+   protected void create(string pattern,void|int options,void|object table)
    {
       ::create(pattern,options,table);
       study();
    }
 
-   string _sprintf(int t,mapping fum)
+   protected string _sprintf(int t,mapping fum)
    {
       if (t=='t') return "Regexp.PCRE.Studied";
       return ::_sprintf(t,fum);
@@ -360,12 +362,12 @@ class Widestring
 {
    inherit Plain;
 
-   void create(string pattern,void|int options,void|object table)
+   protected void create(string pattern,void|int options,void|object table)
    {
       ::create(string_to_utf8(pattern),options|OPTION.UTF8,table);
    }
 
-   string _sprintf(int t,mapping fum)
+   protected string _sprintf(int t,mapping fum)
    {
       if (t=='t') return "Regexp.PCRE.Widestring";
       return ::_sprintf(t,fum);
@@ -432,13 +434,13 @@ class StudiedWidestring
 {
    inherit Widestring;
 
-   void create(string pattern,void|int options,void|object table)
+   protected void create(string pattern,void|int options,void|object table)
    {
       ::create(pattern,options,table);
       study();
    }
 
-   string _sprintf(int t,mapping fum)
+   protected string _sprintf(int t,mapping fum)
    {
       if (t=='t') return "Regexp.PCRE.StudiedWidestring";
       return ::_sprintf(t,fum);

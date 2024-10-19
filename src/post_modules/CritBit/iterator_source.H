@@ -1,3 +1,4 @@
+/* -*- mode: C; c-basic-offset: 4; -*- */
     DOCSTART() @class _get_iterator
      *! Iterator class for tree_class trees. Supports iterating over ranges
      *! with arbitrary stepping and direction.
@@ -11,12 +12,14 @@
     DOCEND()
     PIKECLASS _get_iterator
 	program_flags PROGRAM_USES_PARENT;
+	flags ID_PROTECTED;
     {
 	CVAR cb_node_t lastnode, tree;
 	CVAR cb_key lastkey;
 	CVAR cb_value lastval;
 	CVAR size_t * revv, lastrev;
 	CVAR INT_TYPE step;
+	CVAR cb_key start;
 	CVAR cb_key stop;
 
 
@@ -35,12 +38,20 @@
 	    SET_SVAL_TYPE(THIS->lastval, T_VOID);
 	    THIS->lastnode = NULL;
 	    THIS->step = 1;
+	    THIS->start.len.chars = 0;
+	    THIS->start.len.bits = 0;
+	    THIS->start.str = (cb_string)0;
 	    THIS->stop.len.chars = 0;
 	    THIS->stop.len.bits = 0;
 	    THIS->stop.str = (cb_string)0;
 	}
 
 	EXIT {
+	    if (THIS->start.len.chars || THIS->start.len.bits ||
+		THIS->start.str) {
+		CB_FREE_KEY(THIS->start);
+	    }
+
 	    if (THIS->stop.len.chars || THIS->stop.len.bits || THIS->stop.str) {
 		CB_FREE_KEY(THIS->stop);
 	    }
@@ -143,7 +154,9 @@
 	 *! @expr{tree->last()@}, respectively.
 	DOCEND()
 	PIKEFUN void create(void|int step, void|mixed start,
-			    void|mixed stop) {
+			    void|mixed stop)
+	  flags ID_PROTECTED;
+	{
 	    cb_node_t t = NULL;
 	    struct object * tree = TREE_CLASSIFY(_get_iterator_find_parent)();
             TREE_T *T = GET_TREE_STORAGE(tree);
@@ -151,8 +164,13 @@
 	    THIS->revv = &(T->rev);
 	    THIS->tree = T->tree.root;
 
+	    THIS->start.len.chars = 0;
+	    THIS->start.len.bits = 0;
+	    THIS->start.str = 0;
+
 	    THIS->stop.len.chars = 0;
 	    THIS->stop.len.bits = 0;
+	    THIS->stop.str = 0;
 
 	    encode_fun = T->encode_fun;
 
@@ -166,77 +184,111 @@
 		}
 
                 if (stop) {
-                  if (encode_fun >= 0) {
-                    push_svalue(stop);
-                    apply_low(tree, encode_fun, 1);
-                    assign_svalue(stop, Pike_sp-1);
-                    pop_stack();
-                    if (!((1<<TYPEOF(*stop)) & T_KEY))
-                      SIMPLE_ARG_TYPE_ERROR("create", 3, cmod_STRFY_EVAL(key_ptype));
-                  }
-                  THIS->stop = CB_LOW_KEY_FROM_SVALUE(stop);
-                  CB_ADD_KEY_REF(THIS->stop);
+		    if (encode_fun >= 0) {
+			push_svalue(stop);
+			apply_low(tree, encode_fun, 1);
+			assign_svalue(stop, Pike_sp-1);
+			pop_stack();
+		    }
+#ifdef CB_FIX_SVALUE
+		    CB_FIX_SVALUE(stop);
+#endif
+		    if (!((1<<TYPEOF(*stop)) & T_KEY))
+			SIMPLE_ARG_TYPE_ERROR("create", 3, cmod_STRFY_EVAL(key_ptype));
+		    THIS->stop = CB_LOW_KEY_FROM_SVALUE(stop);
+		    CB_ADD_KEY_REF(THIS->stop);
                 }
 
                 if (start) {
-                  cb_key s;
-                  if (encode_fun >= 0) {
-                    push_svalue(start);
-                    apply_low(tree, encode_fun, 1);
-                    assign_svalue(start, Pike_sp-1);
-                    pop_stack();
-                    if (!((1<<TYPEOF(*start)) & T_KEY))
-                      SIMPLE_ARG_TYPE_ERROR("create", 2, cmod_STRFY_EVAL(key_ptype));
-                  }
-                  s = CB_LOW_KEY_FROM_SVALUE(start);
-
-                  t = cb_index(THIS->tree, s);
-
-                  if (!t) {
-                    t = (THIS->step < 0)
-                      ? cb_find_previous(THIS->tree, s)
-                      : cb_find_next(THIS->tree, s);
-                    if (t && (THIS->stop.len.chars || THIS->stop.len.bits)) {
-                      /* check if we ran over stop */
-                      if (THIS->step < 0) {
-                        if (CB_KEY_LT(t->key, THIS->stop))
-                          t = NULL;
-                      } else {
-                        if (CB_KEY_LT(THIS->stop, t->key))
-                          t = NULL;
-                      }
-                    }
-                  }
+		    if (encode_fun >= 0) {
+			push_svalue(start);
+			apply_low(tree, encode_fun, 1);
+			assign_svalue(start, Pike_sp-1);
+			pop_stack();
+		    }
+#ifdef CB_FIX_SVALUE
+		    CB_FIX_SVALUE(start);
+#endif
+		    if (!((1<<TYPEOF(*start)) & T_KEY))
+			SIMPLE_ARG_TYPE_ERROR("create", 2, cmod_STRFY_EVAL(key_ptype));
+		    THIS->start = CB_LOW_KEY_FROM_SVALUE(start);
+		    CB_ADD_KEY_REF(THIS->start);
                 }
 
-                if (!t) t = (THIS->step < 0)
-                          ? cb_find_last(THIS->tree)
-                          : cb_find_first(THIS->tree);
-
-		if (t) {
-		    CB_GET_VALUE(t, &THIS->lastval);
-		    THIS->lastkey = t->key;
-		    CB_ADD_KEY_REF(THIS->lastkey);
-		}
-		THIS->lastnode = t;
+		THIS->lastnode = NULL;
             }
             pop_n_elems(args);
         }
 
-	PIKEFUN object _get_iterator() {
+	PIKEFUN object _get_iterator()
+	  flags ID_PROTECTED;
+	{
 	    ref_push_object(Pike_fp->current_object);
 	}
 
-	PIKEFUN int next() {
-	    if(cmod_CONCAT_EVAL(tree_class,_,iterator_class,_step)()) {
-		push_int(1);
+	PIKEFUN mixed _iterator_next()
+	  flags ID_PROTECTED;
+	{
+	    struct object *tree = TREE_CLASSIFY(_get_iterator_find_parent)();
+	    TREE_T *T = GET_TREE_STORAGE(tree);
+
+	    if (!THIS->lastnode) {
+		cb_node_t t = NULL;
+
+		if (THIS->start.len.chars || THIS->start.len.bits || THIS->start.str) {
+		    t = cb_index(THIS->tree, THIS->start);
+
+		    if (!t) {
+			if (THIS->step < 0) {
+			    t = cb_find_previous(THIS->tree, THIS->start);
+			} else {
+			    t = cb_find_next(THIS->tree, THIS->start);
+			}
+		    }
+		} else {
+		    if (THIS->step < 0) {
+			t = cb_find_last(THIS->tree);
+		    } else {
+			t = cb_find_first(THIS->tree);
+		    }
+		}
+
+		if (t && (THIS->stop.len.chars || THIS->stop.len.bits || THIS->stop.str)) {
+		    if (THIS->step < 0) {
+			if (CB_KEY_LT(t->key, THIS->stop)) {
+			    t = NULL;
+			}
+		    } else {
+			if (CB_KEY_LT(THIS->stop, t->key)) {
+			    t = NULL;
+			}
+		    }
+		}
+
+		if (!t) {
+		    push_undefined();
+		    return;
+		}
+
+		CB_GET_VALUE(t, &THIS->lastval);
+		THIS->lastkey = t->key;
+		CB_ADD_KEY_REF(THIS->lastkey);
+		THIS->lastnode = t;
+	    } else if (!cmod_CONCAT_EVAL(tree_class,_,iterator_class,_step)()) {
+		push_undefined();
 		return;
 	    }
-	    push_undefined();
+
+	    CB_PUSH_KEY(THIS->lastkey);
+	    if (T->decode_fun >= 0) {
+		apply_low(tree, T->decode_fun, 1);
+	    }
 	    return;
 	}
 
-	PIKEFUN key_ptype index() {
+	PIKEFUN key_ptype _iterator_index()
+	  flags ID_PROTECTED;
+	{
 	    if (THIS->lastnode) {
 		struct object * tree = TREE_CLASSIFY(_get_iterator_find_parent)();
                 TREE_T *T = GET_TREE_STORAGE(tree);
@@ -247,16 +299,14 @@
 	    } else push_undefined();
 	}
 
-	PIKEFUN mixed value() {
+	PIKEFUN mixed _iterator_value()
+	  flags ID_PROTECTED;
+	{
 	    if (THIS->lastnode) {
 		CB_PUSH_VALUE(THIS->lastval);
 		return;
 	    }
 	    push_undefined();
 	}
-
-	PIKEFUN int `!() {
-	    push_int(!THIS->lastnode);
-	}
     }
-    /*! @endclass */
+    DOCSTART() @endclass DOCEND()

@@ -69,8 +69,9 @@ Makefile: $(SRCDIR)/Makefile.in $(SRCDIR)/dependencies ./config.status make_vari
 	@echo "Run make again" >&2
 	@exit 1
 
-$(SRCDIR)/configure: $(SRCDIR)/configure.in $(PIKE_SRC_DIR)/aclocal.m4
+$(SRCDIR)/configure $(SRCDIR)/stamp-h.in: $(SRCDIR)/configure.in $(PIKE_SRC_DIR)/aclocal.m4
 	cd $(SRCDIR) && $(PIKE_SRC_DIR)/run_autoconfig --no-recursion .
+	echo foo > $(SRCDIR)/stamp-h.in
 
 config.status: $(SRCDIR)/configure propagated_variables
 	./config.status --recheck

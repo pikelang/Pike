@@ -427,9 +427,10 @@ class protocol
 	to_send = C2(IAC,NOP) + to_send;
       }
 
-      int n = fd->write(to_send);
-
-      to_send = to_send[n..];
+      if (fd) {
+        int n = fd->write(to_send);
+        to_send = to_send[n..];
+      }
     } else if(done) {
       DWRITE("Closing fd!\n");
       fd->close();
@@ -1126,7 +1127,7 @@ protected class Low_Readline
 
   protected void readline_callback(string data)
   {
-    read_cb2(id,data+"\n");
+    read_cb2(id, data && (data + "\n"));
   }
 
   protected void readline_write_callback()

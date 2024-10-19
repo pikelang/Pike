@@ -19,6 +19,9 @@
 /* Define this if you want some extra (possibly verbose) run time self tests */
 #undef PIKE_EXTRA_DEBUG
 
+/* Define this to enable some experimental code. */
+#undef PIKE_EXPERIMENTAL
+
 /* Define to make Pike do a full cleanup at exit to detect leaks. */
 #undef DO_PIKE_CLEANUP
 
@@ -205,12 +208,6 @@
 
 /* If so, is it restricted to user and system time? */
 #undef GETRUSAGE_RESTRICTED
-
-/* Solaris has rusage as an ioctl on procfs */
-#undef GETRUSAGE_THROUGH_PROCFS
-
-/* So has True64, but no useful information in prstatus_t */
-#undef GETRUSAGE_THROUGH_PROCFS_PRS
 
 /* Define if you have _isnan */
 #undef HAVE__ISNAN
@@ -473,6 +470,9 @@
 /* Define to the poll device (eg "/dev/poll") */
 #undef PIKE_POLL_DEVICE
 
+/* Define this if your struct dvpoll has a dp_setp */
+#undef STRUCT_DVPOLL_HAS_DP_SETP
+
 /* This works on Solaris or any UNIX where
  * waitpid can report ECHILD when running more than one at once
  * (or any UNIX where waitpid actually works)
@@ -565,6 +565,15 @@
  */
 #define PIKE_OOB_WORKS -1
 
+#ifdef USE_DL_MALLOC
+/* Increase alignment to 128 bits on platforms with such datatypes. */
+#if defined(SIZEOF_UNSIGNED___INT128) || defined(SIZEOF_UNSIGNED___INT128_T)
+#define MALLOC_ALIGNMENT	(size_t)16
+#elif defined(SIZEOF_LONG_DOUBLE) && (SIZEOF_LONG_DOUBLE > 8)
+#define MALLOC_ALIGNMENT	(size_t)16
+#endif
+#endif
+
 /* dlmalloc has mallinfo. */
 #if defined(USE_DL_MALLOC) && !defined(HAVE_MALLINFO)
 #define HAVE_MALLINFO
@@ -596,6 +605,18 @@ struct mallinfo {
 
 #endif /* HAVE_USR_INCLUDE_MALLOC_H */
 
+#endif
+
+#ifdef PIKE_DEBUG
+#ifndef YYDEBUG
+/* May also be set above. */
+#define YYDEBUG 1
+#endif /* YYDEBUG */
+#endif
+
+#ifdef PIKE_EXPERIMENTAL
+#define MACHINE_CODE_STACK_FRAMES
+#define PIKE_AMD64_VALIDATE_RSP
 #endif
 
 #endif /* MACHINE_H */

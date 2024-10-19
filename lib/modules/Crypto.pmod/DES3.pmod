@@ -32,3 +32,5 @@
 //! brute force.
 
 inherit Nettle.DES3;
+
+@Pike.Annotations.Implements(Crypto.BlockCipher);

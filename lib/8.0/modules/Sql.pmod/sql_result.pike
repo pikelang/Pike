@@ -6,6 +6,8 @@
 
 #pike 8.1
 
+#pragma no_deprecation_warnings
+
 //! Implements the generic result base class of the SQL-interface.
 //! Used for return results from SQL.sql->big_query().
 //!

@@ -34,6 +34,14 @@
 #include <socket.h>
 #endif /* HAVE_SOCKET_H */
 
+#ifdef HAVE_UTIME_H
+#include <utime.h>
+#endif
+
+#ifdef HAVE_SYS_UTIME_H
+#include <sys/utime.h>
+#endif
+
 #include "pike_netlib.h"
 
 #define fd_INTERPROCESSABLE   1
@@ -43,6 +51,7 @@
 #define fd_BIDIRECTIONAL     16
 #define fd_REVERSE	     32
 #define fd_SEND_FD           64
+#define fd_TTY		    128
 
 
 #ifdef HAVE_WINSOCK_H
@@ -53,8 +62,10 @@
 #define FILE_CAPABILITIES (fd_INTERPROCESSABLE)
 #define PIPE_CAPABILITIES (fd_INTERPROCESSABLE | fd_BUFFERED)
 #define SOCKET_CAPABILITIES (fd_BIDIRECTIONAL | fd_CAN_NONBLOCK | fd_CAN_SHUTDOWN)
+#define TTY_CAPABILITIES (fd_TTY | fd_INTERPROCESSABLE | fd_BIDIRECTIONAL | fd_CAN_NONBLOCK)
 
 #include <winbase.h>
+#include <winioctl.h>
 
 typedef int FD;
 
@@ -68,6 +79,61 @@ typedef off_t PIKE_OFF_T;
 #define PRINTPIKEOFFT PRINTOFFT
 #endif /* _INTEGRAL_MAX_BITS >= 64 */
 
+/*
+ * Some macros, structures and typedefs that are needed for ConPTY.
+ */
+#ifndef HAVE_HPCON
+typedef VOID* HPCON;
+#endif
+#ifndef EXTENDED_STARTUPINFO_PRESENT
+#define EXTENDED_STARTUPINFO_PRESENT 0x00080000
+#endif
+#ifndef PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE
+#define PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE 0x00020016
+#endif
+#ifndef HAVE_LPPROC_THREAD_ATTRIBUTE_LIST
+typedef struct _PROC_THREAD_ATTRIBUTE_ENTRY
+{
+  DWORD_PTR	Attribute;
+  SIZE_T	cbSize;
+  PVOID		lpValue;
+} PROC_THREAD_ATTRIBUTE_ENTRY, *LPPROC_THREAD_ATTRIBUTE_ENTRY;
+typedef struct _PROC_THREAD_ATTRIBUTE_LIST
+{
+  DWORD			dwFlags;
+  ULONG			Size;
+  ULONG			Count;
+  ULONG			Reserved;
+  PULONG		Unknown;
+  PROC_THREAD_ATTRIBUTE_ENTRY	Entries[ANYSIZE_ARRAY];
+} PROC_THREAD_ATTRIBUTE_LIST, *LPPROC_THREAD_ATTRIBUTE_LIST;
+#endif
+#ifndef HAVE_LPSTARTUPINFOEXW
+typedef struct _STARTUPINFOEXW
+{
+  STARTUPINFOW StartupInfo;
+  LPPROC_THREAD_ATTRIBUTE_LIST lpAttributeList;
+} STARTUPINFOEXW, *LPSTARTUPINFOEXW;
+#endif
+
+#ifndef HAVE_STRUCT_WINSIZE
+/* Typically found in <termios.h>. */
+struct winsize {
+  unsigned short ws_row, ws_col, ws_xpixel, ws_ypixel;
+};
+#endif
+
+#ifndef TIOCGWINSZ
+#define TIOCGWINSZ	_IOR('T', 0x13, struct winsize)
+#define TIOCSWINSZ	_IOW('T', 0x14, struct winsize)
+#endif
+
+#ifdef HAVE__WUTIME64
+#define fd_utimbuf	__utimbuf64
+#else
+#define fd_utimbuf	_utimbuf
+#endif
+
 #define SOCKFUN1(NAME,T1) PMOD_EXPORT int PIKE_CONCAT(debug_fd_,NAME) (FD,T1);
 #define SOCKFUN2(NAME,T1,T2) PMOD_EXPORT int PIKE_CONCAT(debug_fd_,NAME) (FD,T1,T2);
 #define SOCKFUN3(NAME,T1,T2,T3) PMOD_EXPORT int PIKE_CONCAT(debug_fd_,NAME) (FD,T1,T2,T3);
@@ -76,11 +142,16 @@ typedef off_t PIKE_OFF_T;
 
 
 #define fd_info(fd) debug_fd_info(dmalloc_touch_fd(fd))
+#define fd_isatty(fd) debug_fd_isatty(dmalloc_touch_fd(fd))
 #define fd_query_properties(fd,Y) \
         debug_fd_query_properties(dmalloc_touch_fd(fd),(Y))
 #define fd_stat(F,BUF) debug_fd_stat(F,BUF)
 #define fd_lstat(F,BUF) debug_fd_stat(F,BUF)
+#define fd_utime(F, BUF)	debug_fd_utime(F, BUF)
 #define fd_truncate(F,LEN)	debug_fd_truncate(F,LEN)
+#define fd_link(OLD,NEW)	debug_fd_link(OLD,NEW)
+#define fd_symlink(F,PATH)	debug_fd_symlink(F,PATH)
+#define fd_readlink(F,B,SZ)	debug_fd_readlink(F,B,SZ)
 #define fd_rmdir(DIR)	debug_fd_rmdir(DIR)
 #define fd_unlink(FILE)	debug_fd_unlink(FILE)
 #define fd_mkdir(DIR,MODE)	debug_fd_mkdir(DIR,MODE)
@@ -107,6 +178,7 @@ typedef off_t PIKE_OFF_T;
 #define fd_listen(fd,X) debug_fd_listen(dmalloc_touch_fd(fd), (X))
 #define fd_close(fd) debug_fd_close(dmalloc_close_fd(fd))
 #define fd_write(fd,X,Y) debug_fd_write(dmalloc_touch_fd(fd),(X),(Y))
+#define fd_writev(fd,X,Y) debug_fd_writev(dmalloc_touch_fd(fd),(X),(Y))
 #define fd_read(fd,X,Y) debug_fd_read(dmalloc_touch_fd(fd),(X),(Y))
 #define fd_lseek(fd,X,Y) debug_fd_lseek(dmalloc_touch_fd(fd),(X),(Y))
 #define fd_ftruncate(fd,X) debug_fd_ftruncate(dmalloc_touch_fd(fd),(X))
@@ -118,20 +190,29 @@ typedef off_t PIKE_OFF_T;
 #define fd_dup2(fd,to) dmalloc_register_fd(debug_fd_dup2(dmalloc_touch_fd(fd),dmalloc_close_fd(to)))
 #define fd_connect(fd,X,Z) debug_fd_connect(dmalloc_touch_fd(fd),(X),(Z))
 #define fd_inet_ntop(af,addr,cp,sz) debug_fd_inet_ntop(af,addr,cp,sz)
+#define fd_openpty(m,s,name,term,win) debug_fd_openpty(m,s,name,term,win)
 
 
 /* Prototypes begin here */
 PMOD_EXPORT void set_errno_from_win32_error (unsigned long err);
-int fd_to_handle(int fd, int *type, HANDLE *handle);
+void free_pty(struct my_pty *pty);
+int fd_to_handle(int fd, int *type, HANDLE *handle, int exclusive);
 void release_fd(int fd);
 PMOD_EXPORT char *debug_fd_info(int fd);
+PMOD_EXPORT int debug_fd_isatty(int fd);
 PMOD_EXPORT int debug_fd_query_properties(int fd, int guess);
 void fd_init(void);
 void fd_exit(void);
+p_wchar1 *low_dwim_utf8_to_utf16(const p_wchar0 *str, size_t len);
 PMOD_EXPORT p_wchar1 *pike_dwim_utf8_to_utf16(const p_wchar0 *str);
 PMOD_EXPORT p_wchar0 *pike_utf16_to_utf8(const p_wchar1 *str);
 PMOD_EXPORT int debug_fd_stat(const char *file, PIKE_STAT_T *buf);
+PMOD_EXPORT int debug_fd_utime(const char *file, struct fd_utimbuf *buf);
 PMOD_EXPORT int debug_fd_truncate(const char *file, INT64 len);
+PMOD_EXPORT int debug_fd_link(const char *oldpath, const char *newpath);
+PMOD_EXPORT int debug_fd_symlink(const char *target, const char *linkpath);
+PMOD_EXPORT ptrdiff_t debug_fd_readlink(const char *file,
+                                        char *buf, size_t bufsiz);
 PMOD_EXPORT int debug_fd_rmdir(const char *dir);
 PMOD_EXPORT int debug_fd_unlink(const char *file);
 PMOD_EXPORT int debug_fd_mkdir(const char *dir, int mode);
@@ -157,7 +238,8 @@ SOCKFUN1(shutdown, int)
 SOCKFUN1(listen, int)
 PMOD_EXPORT int debug_fd_close(FD fd);
 PMOD_EXPORT ptrdiff_t debug_fd_write(FD fd, void *buf, ptrdiff_t len);
-PMOD_EXPORT ptrdiff_t debug_fd_read(FD fd, void *to, ptrdiff_t len);
+PMOD_EXPORT ptrdiff_t debug_fd_writev(FD fd, struct iovec *iov, ptrdiff_t n);
+PMOD_EXPORT ptrdiff_t debug_fd_read(FD fd, void *to, size_t len);
 PMOD_EXPORT PIKE_OFF_T debug_fd_lseek(FD fd, PIKE_OFF_T pos, int where);
 PMOD_EXPORT int debug_fd_ftruncate(FD fd, PIKE_OFF_T len);
 PMOD_EXPORT int debug_fd_flock(FD fd, int oper);
@@ -168,6 +250,10 @@ PMOD_EXPORT FD debug_fd_dup(FD from);
 PMOD_EXPORT FD debug_fd_dup2(FD from, FD to);
 PMOD_EXPORT const char *debug_fd_inet_ntop(int af, const void *addr,
 					   char *cp, size_t sz);
+PMOD_EXPORT int debug_fd_openpty(int *master, int *slave,
+				 char *ignored_name,
+				 void *ignored_term,
+				 struct winsize *winp);
 /* Prototypes end here */
 
 #undef SOCKFUN1
@@ -203,6 +289,7 @@ PMOD_EXPORT const char *debug_fd_inet_ntop(int af, const void *addr,
 #define fd_shutdown_write SD_SEND
 #define fd_shutdown_both SD_BOTH
 
+#define FD_PTY -6
 #define FD_PIPE -5
 #define FD_SOCKET -4
 #define FD_CONSOLE -3
@@ -214,6 +301,18 @@ PMOD_EXPORT const char *debug_fd_inet_ntop(int af, const void *addr,
 #define fd_LOCK_EX 2
 #define fd_LOCK_UN 4
 #define fd_LOCK_NB 8
+
+struct my_pty
+{
+  INT32 refs;		/* Total number of references. */
+  INT32 fd_refs;	/* Number of references from da_handle[]. */
+  HPCON conpty;		/* Only valid for master side. */
+  struct my_pty *other;	/* Other end (if any), NULL otherwise. */
+  struct pid_status *clients; /* List of client processes. */
+  HANDLE read_pipe;	/* Pipe that supports read(). */
+  HANDLE write_pipe;	/* Pipe that supports write(). */
+  COORD winsize;	/* There's no API to fetch the window size. */
+};
 
 #ifdef PIKE_DEBUG
 #define fd_check_fd(X) do { if(fd_type[X]>=0) Pike_fatal("FD_SET on closed fd %d (%d) %s:%d.\n",X,da_handle[X],__FILE__,__LINE__); }while(0)
@@ -237,6 +336,17 @@ extern int fd_type[FD_SETSIZE];
 #ifndef S_IFIFO
 #define S_IFIFO 0010000
 #endif
+
+/* Make dynamically loaded functions available to the rest of pike. */
+#undef NTLIB
+#define NTLIB(LIB)
+
+#undef NTLIBFUNC
+#define NTLIBFUNC(LIB, RET, NAME, ARGLIST)				\
+  typedef RET (WINAPI * PIKE_CONCAT3(Pike_NT_, NAME, _type)) ARGLIST;	\
+  extern PIKE_CONCAT3(Pike_NT_, NAME, _type) PIKE_CONCAT(Pike_NT_, NAME)
+
+#include "ntlibfuncs.h"
 
 
 /* This may be inaccurate! /Hubbe */
@@ -318,15 +428,22 @@ typedef off_t PIKE_OFF_T;
 #define fd_LARGEFILE 0
 #endif /* O_LARGEFILE */
 
+#define fd_utimbuf	utimbuf
+
+#define fd_isatty(F) isatty(F)
 #define fd_query_properties(X,Y) ( fd_INTERPROCESSABLE | (Y))
 
 #define fd_stat(F,BUF) stat(F,BUF)
 #define fd_lstat(F,BUF) lstat(F,BUF)
+#define fd_utime(F, BUF)	utime(F, BUF)
 #ifdef HAVE_TRUNCATE64
 #define fd_truncate(F,LEN)	truncate64(F,LEN)
 #else
 #define fd_truncate(F,LEN)	truncate(F,LEN)
 #endif
+#define fd_link(OLD,NEW)	link(OLD,NEW)
+#define fd_symlink(F,PATH)	symlink(F,PATH)
+#define fd_readlink(F,B,SZ)	readlink(F,B,SZ)
 #define fd_rmdir(DIR)	rmdir(DIR)
 #define fd_unlink(FILE)	unlink(FILE)
 #if MKDIR_ARGS == 2
@@ -350,10 +467,10 @@ static int PIKE_UNUSED_ATTRIBUTE debug_fd_mkdir(const char *dir, int mode)
 #endif
 #define fd_rename(O,N)	rename(O,N)
 #define fd_chdir(DIR)	chdir(DIR)
-#ifdef HAVE_GET_CURRENT_DIR_NAME
+#if defined(HAVE_GET_CURRENT_DIR_NAME) && !defined(USE_DL_MALLOC)
 /* Glibc extension... */
 #define fd_get_current_dir_name()	get_current_dir_name()
-#elif defined(HAVE_WORKING_GETCWD)
+#elif defined(HAVE_WORKING_GETCWD) && !defined(USE_DL_MALLOC)
 #if HAVE_WORKING_GETCWD
 /* Glibc and win32 (HAVE_WORKING_GETCWD == 1).
  *
@@ -431,6 +548,7 @@ static char PIKE_UNUSED_ATTRIBUTE *debug_get_current_dir_name(void)
 #endif /* HAVE_BROKEN_F_SETFD */
 
 #define fd_write(fd,X,Y) write(dmalloc_touch_fd(fd),(X),(Y))
+#define fd_writev(fd,X,Y) writev(dmalloc_touch_fd(fd),(X),(Y))
 #define fd_read(fd,X,Y) read(dmalloc_touch_fd(fd),(X),(Y))
 #define fd_lseek(fd,X,Y) lseek(dmalloc_touch_fd(fd),(X),(Y))
 #ifdef HAVE_FTRUNCATE64
@@ -485,9 +603,19 @@ static char PIKE_UNUSED_ATTRIBUTE *debug_get_current_dir_name(void)
 #define fd_shutdown_both 2
 
 #define FILE_CAPABILITIES (fd_INTERPROCESSABLE | fd_CAN_NONBLOCK)
+#ifndef __amigaos__
 #define PIPE_CAPABILITIES (fd_INTERPROCESSABLE | fd_BUFFERED | fd_CAN_NONBLOCK)
+#endif
 #define UNIX_SOCKET_CAPABILITIES (fd_INTERPROCESSABLE | fd_BIDIRECTIONAL | fd_CAN_NONBLOCK | fd_SEND_FD)
 #define SOCKET_CAPABILITIES (fd_INTERPROCESSABLE | fd_BIDIRECTIONAL | fd_CAN_NONBLOCK | fd_CAN_SHUTDOWN)
+#define TTY_CAPABILITIES (fd_TTY | fd_INTERPROCESSABLE | fd_BIDIRECTIONAL | fd_CAN_NONBLOCK)
+
+#ifdef HAVE_OPENPTY
+#ifdef HAVE_UTIL_H
+#include <util.h>
+#endif
+#define fd_openpty	openpty	/* FIXME */
+#endif
 
 #endif /* Don't HAVE_WINSOCK_H */
 

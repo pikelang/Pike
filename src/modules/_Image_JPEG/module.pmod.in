@@ -56,9 +56,9 @@ protected Image.Image exif_flip_jpeg(Image.Image img, mapping exif)
 //! @expr{"exif"@}. If an error is encountered during the processing
 //! of EXIF information, the backtrace will be returned under the key
 //! @expr{"error"@}.
-mapping exif_decode(string data, mapping|void options)
+mapping exif_decode(string data, mapping options = ([]))
 {
-    mapping m = ::_decode(data, options || ([ ]) );
+    mapping m = ::_decode(data, options);
 
     if (!m) // early exit if error
 	return m;
@@ -75,8 +75,8 @@ mapping exif_decode(string data, mapping|void options)
           /* If the image was flipped 90 or 270 degrees, we need to
            * exchange the x/y metadata information.
            */
-          m->xsize = m->image->xsize;
-          m->ysize = m->image->ysize;
+          m->xsize = m->image->xsize();
+          m->ysize = m->image->ysize();
           int tmp = m->x_density;
           m->x_density = m->y_density;
           m->y_density = tmp;

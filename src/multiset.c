@@ -155,7 +155,7 @@ union nodeptr {
 
 #define NODE_AT(MSD, TYPE, POS) ((struct TYPE *)((char*)(MSD) + OFFSETOF(multiset_data, nodes)) + (POS))
 #define NODE_OFFSET(TYPE, POS)						\
-  PTR_TO_INT (NODE_AT ((struct multiset_data *) NULL, TYPE, POS))
+  (OFFSETOF(multiset_data, nodes) + (POS)*sizeof(struct TYPE))
 
 #define SHIFT_PTR(PTR, FROM, TO) ((char *) (PTR) - (char *) (FROM) + (char *) (TO))
 #define SHIFT_NODEPTR(NODEPTR, FROM_MSD, TO_MSD)			\
@@ -201,6 +201,16 @@ static struct multiset_data empty_ind_msd = {
   0, 0, 0,
   BIT_INT,
   0,
+  {{{NULL, NULL, SVALUE_INIT_INT (0)}}}
+};
+
+static struct multiset_data empty_weak_ind_msd = {
+  GC_HEADER_INIT(1), 0,
+  NULL, NULL,
+  SVALUE_INIT_INT (0),
+  0, 0, 0,
+  BIT_INT,
+  MULTISET_WEAK_INDICES,
   {{{NULL, NULL, SVALUE_INIT_INT (0)}}}
 };
 
@@ -492,12 +502,12 @@ static struct multiset_data *resize_multiset_data (struct multiset_data *old,
     Pike_fatal ("Attempt to resize multiset_data with several refs.\n");
   if (verbatim) {
     if (newsize < old->allocsize)
-      Pike_fatal ("Cannot shrink multiset_data (from %d to %d) in verbatim mode.\n",
+      Pike_fatal ("Cannot shrink multiset_data (from %d to %"PRINTINT64"d) in verbatim mode.\n",
 	     old->allocsize, newsize);
   }
   else
     if (newsize < old->size)
-      Pike_fatal ("Cannot resize multiset_data with %d elements to %d.\n",
+      Pike_fatal ("Cannot resize multiset_data with %d elements to %"PRINTINT64"d.\n",
 	     old->size, newsize);
   if (newsize == old->allocsize)
     Pike_fatal ("Unnecessary resize of multiset_data to same size.\n");
@@ -858,6 +868,22 @@ PMOD_EXPORT void do_sub_msnode_ref (struct multiset *l)
   }
 }
 
+PMOD_EXPORT void clear_multiset(struct multiset *l)
+{
+  if (l) {
+    struct multiset_data *msd = l->msd;
+    debug_malloc_touch(l);
+    debug_malloc_touch(l->msd);
+    if (msd->flags & MULTISET_WEAK_INDICES) {
+      l->msd = &empty_weak_ind_msd;
+    } else {
+      l->msd = &empty_ind_msd;
+    }
+    add_ref(l->msd);
+    if (!sub_ref(msd)) free_multiset_data(msd);
+  }
+}
+
 enum find_types {
   FIND_EQUAL,
   /* FIND_NOEQUAL, */
@@ -881,7 +907,7 @@ static void midflight_remove_node_fast (struct multiset *l,
    * copy-on-write here and remove it in all copies, but then we'd
    * have to find another way than (l->msd != msd) to signal the tree
    * change to the calling code. */
-  struct svalue ind, val;
+  struct svalue ind;
   union msnode *node = RBNODE (RBSTACK_PEEK (*track));
 
   /* Postpone free since the msd might be copied in unlink_node. */
@@ -1911,6 +1937,106 @@ PMOD_EXPORT void multiset_insert (struct multiset *l,
   multiset_insert_2 (l, ind);
 }
 
+/**
+ * Add an entry to a multiset.
+ * Nothing is done if ind is destructed.
+ *
+ * Returns -1 if ind is destructed.
+ * Otherwise returns the node offset in the multiset for the
+ * new node.
+ */
+PMOD_EXPORT ptrdiff_t multiset_add (struct multiset *l, struct svalue *ind)
+{
+  struct multiset_data *msd = l->msd;
+  union msnode *new;
+  enum find_types find_type;
+  ONERROR uwp;
+  RBSTACK_INIT (rbstack);
+
+  /* Note: Similar code in multiset_insert_2, multiset_add_after,
+   * multiset_delete_2 and multiset_delete_node. */
+
+#ifdef PIKE_DEBUG
+  debug_malloc_touch (l);
+  debug_malloc_touch (msd);
+  check_svalue (ind);
+#endif
+
+  SET_ONERROR (uwp, free_indirect_multiset_data, &msd);
+
+  while (1) {
+    if (!msd->root) {
+      if (IS_DESTRUCTED (ind)) {
+	UNSET_ONERROR (uwp);
+	return -1;
+      }
+      if (prepare_for_add (l, l->node_refs)) msd = l->msd;
+      ALLOC_MSNODE (msd, l->node_refs, new);
+      find_type = FIND_NOROOT;
+      goto add;
+    }
+
+    if (!msd->free_list && !l->node_refs) {
+      /* Enlarge now if possible. Otherwise we either have to redo the
+       * search or don't use a rebalancing resize. */
+      if (msd->refs > 1) {
+	l->msd = copy_multiset_data (msd);
+	MOVE_MSD_REF (l, msd);
+      }
+#ifdef PIKE_DEBUG
+      if (d_flag > 1) check_multiset (l, 1);
+#endif
+      l->msd = resize_multiset_data (msd, ENLARGE_SIZE (msd->allocsize), 0);
+      msd = l->msd;
+    }
+#if 0
+    else
+      if (msd->size == msd->allocsize)
+	fputs ("Can't rebalance multiset tree in multiset_add\n", stderr);
+#endif
+
+    add_ref (msd);
+    find_type = low_multiset_track_le_gt (msd, ind, &rbstack);
+
+    if (l->msd != msd) {
+      RBSTACK_FREE (rbstack);
+      if (!sub_ref (msd)) free_multiset_data (msd);
+      msd = l->msd;
+    }
+
+    else
+      switch (find_type) {
+	case FIND_LESS:
+	case FIND_GREATER:
+	  sub_extra_ref (msd);
+	  if (prepare_for_add (l, 1)) {
+	    rbstack_shift (rbstack, HDR (msd->nodes), HDR (l->msd->nodes));
+            msd = l->msd;
+	  }
+	  ALLOC_MSNODE (msd, l->node_refs, new);
+	  goto add;
+
+	case FIND_DESTRUCTED:
+	  sub_extra_ref (msd);
+	  midflight_remove_node_fast (l, &rbstack, 0);
+	  msd = l->msd;
+	  break;
+
+	case FIND_KEY_DESTRUCTED:
+	  sub_extra_ref (msd);
+	  UNSET_ONERROR (uwp);
+	  return -1;
+
+	default: DO_IF_DEBUG (Pike_fatal ("Invalid find_type.\n"));
+      }
+  }
+
+add:
+  UNSET_ONERROR (uwp);
+  ADD_NODE (msd, rbstack, new, ind, find_type);
+  return MSNODE2OFF (msd, new);
+}
+
 #define TEST_LESS(MSD, A, B, CMP_RES) do {				\
     if (TYPEOF(MSD->cmp_less) == T_INT)					\
       INTERNAL_CMP (A, B, CMP_RES);					\
@@ -1976,7 +2102,7 @@ PMOD_EXPORT int multiset_delete_2 (struct multiset *l,
 	  goto not_found;
 
 	case FIND_EQUAL: {
-	  struct svalue ind, val;
+          struct svalue ind;
 	  struct rb_node_hdr *node = RBSTACK_PEEK (rbstack);
 
 	  UNSET_ONERROR (uwp);
@@ -2057,7 +2183,6 @@ static void multiset_delete_node (struct multiset *l,
     }
 
     else {
-      struct svalue val;
       struct rb_node_hdr *node = RBSTACK_PEEK (rbstack);
 
       /* Step backwards until the existing node is found. */
@@ -2844,6 +2969,7 @@ PMOD_EXPORT int multiset_equal_p (struct multiset *a, struct multiset *b,
   debug_malloc_touch (a->msd);
 
   if (a == b) return 1;
+  if (!a || !b) return 0;
 
   debug_malloc_touch (b);
   debug_malloc_touch (b->msd);
@@ -3059,13 +3185,13 @@ PMOD_EXPORT void f_aggregate_multiset (INT32 args)
 struct multiset *copy_multiset_recursively (struct multiset *l,
 					    struct mapping *p)
 {
-  int not_complex;
+  int not_complex = 0;
   struct tree_build_data new;
   struct multiset_data *msd = l->msd;
   union msnode *node;
   int pos;
   struct svalue ind;
-  TYPE_FIELD ind_types, val_types;
+  TYPE_FIELD ind_types = 0, val_types = BIT_INT;
   ONERROR uwp;
 
   debug_malloc_touch (l);
@@ -3076,8 +3202,6 @@ struct multiset *copy_multiset_recursively (struct multiset *l,
 #endif
 
   if (msd->root && ((msd->ind_types | msd->val_types) & BIT_COMPLEX)) {
-    not_complex = 0;
-
     /* Use a dummy empty msd temporarily in the new multiset, since the
      * real one is not suitable for general consumption while it's being
      * built below. This will have the effect that any changes in the
@@ -3086,8 +3210,6 @@ struct multiset *copy_multiset_recursively (struct multiset *l,
     new.l = allocate_multiset (0, msd->flags, &msd->cmp_less);
     new.msd = low_alloc_multiset_data (multiset_sizeof (l), msd->flags);
     assign_svalue_no_free (&new.msd->cmp_less, &msd->cmp_less);
-    ind_types = 0;
-    val_types = BIT_INT;
     add_ref (new.msd2 = msd);
     SET_ONERROR (uwp, free_tree_build_data, &new);
   }
@@ -3692,6 +3814,9 @@ void init_multiset()
   dmalloc_register (&empty_ind_msd, sizeof (empty_ind_msd),
 		    DMALLOC_LOCATION());
   dmalloc_accept_leak (&empty_ind_msd);
+  dmalloc_register (&empty_weak_ind_msd, sizeof (empty_weak_ind_msd),
+		    DMALLOC_LOCATION());
+  dmalloc_accept_leak (&empty_weak_ind_msd);
 #endif
 
 }
@@ -4050,7 +4175,11 @@ void debug_dump_multiset (struct multiset *l)
     fprintf (stderr, ", refs=%d, noval_refs=%d, flags=0x%x, size=%d, allocsize=%d\n",
 	     msd->refs, msd->noval_refs, msd->flags, msd->size, msd->allocsize);
 
-    if (msd == &empty_ind_msd) fputs ("msd is empty_ind_msd\n", stderr);
+    if (msd == &empty_ind_msd) {
+      fputs ("msd is empty_ind_msd\n", stderr);
+    } else if (msd == &empty_weak_ind_msd) {
+      fputs ("msd is empty_weak_ind_msd\n", stderr);
+    }
 
 #ifdef PIKE_DEBUG
     fputs ("Indices type field =", stderr);

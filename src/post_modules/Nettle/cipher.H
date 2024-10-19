@@ -14,18 +14,24 @@
 #cmod_define BASE_CIPHER	Cipher
 /* Number of inherits to get to the Nettle_Cipher inherit. */
 #cmod_define INHERIT_DEPTH	1
+/* Cipher::State */
+#cmod_define STATE_INHERIT_DEPTH 1
 
 #cmod_elif (CIPHER_MODE == BLOCK16_MODE)
 /* Block cipher with a 16 byte block size. */
 
 #cmod_define BASE_CIPHER	BlockCipher16
 #cmod_define INHERIT_DEPTH	(BLOCKCIPHER16_CIPHER_INHERIT + 1)
+/* BlockCipher16::State::State */
+#cmod_define STATE_INHERIT_DEPTH (1 + 1)
 
 #cmod_else
 /* Block cipher with a block size other than 16 bytes. */
 
 #cmod_define BASE_CIPHER	BlockCipher
 #cmod_define INHERIT_DEPTH	(BLOCKCIPHER_CIPHER_INHERIT + 1)
+/* BlockCipher::State */
+#cmod_define STATE_INHERIT_DEPTH 1
 
 #cmod_endif
 
@@ -33,6 +39,11 @@ DOCSTART() @class PIKE_NAME
  *!
  *! Implementation of the PIKE_NAME cipher.
  *!
+#cmod_ifdef NETTLE_MIN_VERSION
+ *! @note
+ *!   Requires Nettle NETTLE_MIN_VERSION or later.
+#cmod_undef NETTLE_MIN_VERSION
+#cmod_endif
 DOCEND()
 PIKECLASS PIKE_NAME
 {
@@ -81,7 +92,7 @@ PIKECLASS PIKE_NAME
 	    really_low_reference_inherited_identifier(Pike_compiler->previous,
 						      0, parent_State_fun_num);
 	  low_inherit(parent_State_prog, 0, parent_State_fun_num,
-		      1 + 42, 0, NULL);
+                      1 + 42, 0, NULL, NULL);
 	}
       }
     }
@@ -91,8 +102,8 @@ PIKECLASS PIKE_NAME
     INIT
     {
       struct Nettle_Cipher_State_struct *state;
-      ASSIGN_CURRENT_STORAGE(state, struct Nettle_Cipher_State_struct, 1,
-			     Nettle_Cipher_State_program);
+      ASSIGN_CURRENT_STORAGE(state, struct Nettle_Cipher_State_struct,
+                             STATE_INHERIT_DEPTH, Nettle_Cipher_State_program);
       state->ctx = &THIS->NETTLE_NAME;
     }
   }
@@ -107,3 +118,4 @@ DOCEND()
 #cmod_undef CIPHER_MODE
 #cmod_undef BASE_CIPHER
 #cmod_undef INHERIT_DEPTH
+#cmod_undef STATE_INHERIT_DEPTH

@@ -1,14 +1,17 @@
 
 //! HMAC, defined by @rfc{2104@}.
+//!
+//! Backward-compatibility implementation. New code should
+//! use @[Crypto.Hash.HMAC].
 
 #pike __REAL_VERSION__
 #pragma strict_types
 #require constant(Crypto.Hash)
 
-protected .Hash H;  // hash object
+protected object(.Hash)|zero H;  // hash object
 
 // B is the size of one compression block, in octets.
-protected int B;
+protected int(1..) B = 1;
 
 //! @param h
 //!   The hash object on which the HMAC object should base its
@@ -16,10 +19,10 @@ protected int B;
 //! @param b
 //!   The block size of one compression block, in octets. Defaults to
 //!   block_size() of @[h].
-protected void create(.Hash h, int|void b)
+protected void create(.Hash h, int(1..) b = h->block_size())
 {
   H = h;
-  B = b || H->block_size();
+  B = b;
 
   if(H->digest_size()>B)
     error("Block size is less than hash digest size.\n");
@@ -44,7 +47,7 @@ string(8bit) pkcs_digest(string(8bit) s)
 //! can perform the actual HMAC hashing. E.g. doing a HMAC hash with
 //! MD5 and the password @expr{"bar"@} of the string @expr{"foo"@}
 //! would require the code @expr{Crypto.HMAC(Crypto.MD5)("bar")("foo")@}.
-Crypto.MAC.State `()(string(8bit) passwd)
+protected Crypto.MAC.State `()(string(8bit) passwd)
 {
   return H->HMAC(passwd, B);
 }

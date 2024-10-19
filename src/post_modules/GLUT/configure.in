@@ -17,7 +17,6 @@ else
     # NOTE: These tests may need to move to the main configure script.
     #       cf comments in the Darwin section of the main configure script.
     AC_SYS_COMPILER_FLAG(-framework GLUT, framework_GLUT, LDFLAGS)
-    AC_SYS_COMPILER_FLAG(-framework GLUT, framework_GLUT, CPPFLAGS)
   ])
   AC_CHECK_HEADERS(GLUT/glut.h)
 
@@ -68,6 +67,9 @@ else
 
   AC_CHECK_HEADERS(GL/glut.h)
 
+  old_CPPFLAGS="$CPPFLAGS"
+  old_LIBS="$LIBS"
+  old_LDFLAGS="$LDFLAGS"
   CPPFLAGS="$CPPFLAGS $X_CFLAGS"
   LIBS="$X_EXTRA_LIBS $LIBS"
   LDFLAGS="$LDFLAGS $X_LIBS $X_PRE_LIBS"
@@ -107,6 +109,9 @@ else
   else
     AUTO=""
     PIKE_FEATURE_NODEP(GLUT)
+    CPPFLAGS="$old_CPPFLAGS"
+    LIBS="$old_LIBS"
+    LDFLAGS="$old_LDFLAGS"
   fi
 
 fi

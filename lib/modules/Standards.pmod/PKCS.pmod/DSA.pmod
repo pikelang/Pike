@@ -50,7 +50,8 @@ string private_key(Crypto.DSA dsa)
 //!   Public parameter g, usually transmitted in the algoritm identifier.
 //! @returns
 //!   @[Crypto.DSA] object
-Crypto.DSA parse_public_key(string key, Gmp.mpz p, Gmp.mpz q, Gmp.mpz g)
+object(Crypto.DSA)|zero parse_public_key(string key,
+                                         Gmp.mpz p, Gmp.mpz q, Gmp.mpz g)
 {
   Object a = Standards.ASN1.Decode.simple_der_decode(key);
   if(!a || a->type_name!="INTEGER" ) return 0;
@@ -108,7 +109,7 @@ Sequence build_private_key(Crypto.DSA dsa)
 
 //! Returns the PKCS-1 algorithm identifier for DSA and the provided
 //! hash algorithm. One of @[SHA1], @[SHA224] or @[SHA256].
-Sequence signature_algorithm_id(Crypto.Hash hash)
+object(Sequence)|zero signature_algorithm_id(Crypto.Hash hash)
 {
   switch(hash->name())
   {

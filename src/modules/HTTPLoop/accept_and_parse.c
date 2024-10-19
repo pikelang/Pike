@@ -509,17 +509,18 @@ static void low_accept_loop(struct args *arg)
 
 static void finished_p(struct callback *UNUSED(foo), void *UNUSED(b), void *UNUSED(c))
 {
+  struct args *arg;
+
   aap_clean_cache();
 
-  while(request)
+  mt_lock(&queue_mutex);
+  while((arg = request))
   {
-    struct args *arg;
     struct object *o;
     struct c_request_object *obj;
 
-    mt_lock(&queue_mutex);
-    arg = request;
     request = arg->next;
+
     mt_unlock(&queue_mutex);
 
     o = clone_object( request_program, 0 ); /* see requestobject.c */
@@ -536,7 +537,10 @@ static void finished_p(struct callback *UNUSED(foo), void *UNUSED(b), void *UNUS
 
     apply_svalue(&arg->cb, 2);
     pop_stack();
+
+    mt_lock(&queue_mutex);
   }
+  mt_unlock(&queue_mutex);
 }
 
 /*! @decl void create( Stdio.Port port, RequestProgram program, @

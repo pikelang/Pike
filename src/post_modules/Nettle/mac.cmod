@@ -169,7 +169,7 @@ PIKECLASS MAC
       /* Perform an inherit of the State class (if any) that our parent
        * may contain via its inherit of __builtin.Nettle.MAC.
        */
-      lexical_inherit(1, MK_STRING("State"), 0, REPORT_WARNING);
+      lexical_inherit(1, MK_STRING("State"), 0, REPORT_WARNING, NULL);
     }
 
 #define GET_META(o)						\
@@ -192,6 +192,9 @@ PIKECLASS MAC
 
       key->flags |= STRING_CLEAR_ON_EXIT;
       NO_WIDE_STRING(key);
+
+      if (!meta)
+	Pike_error("MAC not properly initialized.\n");
 
       meta->set_key(ctx, key->len, STR0(key));
       pop_stack();
@@ -314,6 +317,7 @@ PIKECLASS MAC
      *!   Also updates the iv/nonce (if any).
      */
     PIKEFUN string(8bit) `()(string(8bit) data)
+      flags ID_PROTECTED;
     {
       const struct pike_mac *meta;
       struct pike_string *digest;
@@ -388,6 +392,7 @@ static void pike_poly1305_aes_set_iv(void *ctx, pike_nettle_size_t len,
 
 #cmod_define PIKE_NAME POLY1305_AES
 #cmod_define NETTLE_NAME poly1305_aes
+#cmod_define NETTLE_MIN_VERSION 3.0
 #cmod_include "mac.H"
 #cmod_undef PIKE_NAME
 #cmod_undef NETTLE_NAME
@@ -448,6 +453,7 @@ static void pike_umac64_set_key(void *ctx, pike_nettle_size_t len,
 
 #cmod_define PIKE_NAME UMAC64_AES
 #cmod_define NETTLE_NAME umac64
+#cmod_define NETTLE_MIN_VERSION 2.7
 #cmod_include "mac.H"
 #cmod_undef PIKE_NAME
 #cmod_undef NETTLE_NAME
@@ -469,6 +475,7 @@ static void pike_umac96_set_key(void *ctx, pike_nettle_size_t len,
 
 #cmod_define PIKE_NAME UMAC96_AES
 #cmod_define NETTLE_NAME umac96
+#cmod_define NETTLE_MIN_VERSION 2.7
 #cmod_include "mac.H"
 #cmod_undef PIKE_NAME
 #cmod_undef NETTLE_NAME
@@ -490,6 +497,7 @@ static void pike_umac128_set_key(void *ctx, pike_nettle_size_t len,
 
 #cmod_define PIKE_NAME UMAC128_AES
 #cmod_define NETTLE_NAME umac128
+#cmod_define NETTLE_MIN_VERSION 2.7
 #cmod_include "mac.H"
 #cmod_undef PIKE_NAME
 #cmod_undef NETTLE_NAME

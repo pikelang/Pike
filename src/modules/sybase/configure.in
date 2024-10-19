@@ -101,7 +101,6 @@ else
 fi
 
 if test "$pike_cv_framework_sybaseopenclient" = "no"; then
-AC_MSG_CHECKING(for library files location)
 if test x$pike_sybase_lib_dir != x; then
     AC_MSG_RESULT(user-provided: $pike_sybase_lib_dir)
     pike_cv_sybase_lib_dir=$pike_sybase_lib_dir
@@ -117,19 +116,25 @@ else
             for sybpath in $pike_sybase_reasonable_paths
             do
 dnl                AC_MSG_CHECKING(in $sybroot/$sybprefix/$sybpath)
-                for syblib in $pike_sybase_reasonable_libs_tosearch
-                do
-                    if test -f $sybroot/$sybprefix/$sybpath/$syblib; then
-                        pike_cv_sybase_lib_dir="$sybroot/$sybprefix/$sybpath"
-dnl                        AC_MSG_RESULT(found)
-                        break 4;
-                    fi
+                for suff in $pike_cv_abi_suffixes; do
+                    PIKE_CHECK_ABI_DIR($sybroot/$sybprefix/$sybpath$suff, [
+                        for syblib in $pike_sybase_reasonable_libs_tosearch
+                        do
+                            if test -f $sybroot/$sybprefix/$sybpath$suff/$syblib; then
+                                pike_cv_sybase_lib_dir="$sybroot/$sybprefix/$sybpath$suff"
+        dnl                        AC_MSG_RESULT(found)
+                                break 5;
+                            fi
+                        done
+                    ])
                 done
 dnl            AC_MSG_RESULT(not found)
             done
         done
     done
     ])
+
+  AC_MSG_CHECKING(for library files location)
 
   if test x$pike_cv_sybase_lib_dir != x; then
     AC_MSG_RESULT(found: $pike_cv_sybase_lib_dir)

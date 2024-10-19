@@ -121,6 +121,8 @@ private string gets(int n)
 
 class _checkpoint
 {
+  inherit Pike.DestructImmediate;
+
   private string oldalread;
 
   protected void create()
@@ -471,7 +473,7 @@ int skipemptylines()
 //!
 //! @seealso
 //!  @[compile()], @[create()], @[setformat()], @[skipemptylines()]
-mapping fetch(void|array|mapping format)
+mapping|zero fetch(void|array|mapping format)
 {
   mapping ret=([]);
   int skipempty=0;

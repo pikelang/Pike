@@ -551,10 +551,10 @@ static void ora_error_handler(OCIError *err, sword rc, char *func)
    * and is prefixed with sprintf("ORA-%05d: ", errcode).
    */
   if(func)
-    Pike_error("%s:code=%d:%S",
+    Pike_error("%s:code=%d:%pS",
 	       func, rc, Pike_sp[-1].u.string);
   else
-    Pike_error("Oracle:code=%d:%S",
+    Pike_error("Oracle:code=%d:%pS",
 	       rc, Pike_sp[-1].u.string);
 }
 
@@ -690,13 +690,14 @@ OCIError *get_global_error_handle(void)
     }
 
     PIKEFUN mixed cast(string s)
+      flags ID_PROTECTED;
     {
       if(s == literal_string_string) {
 	apply_current(f_Oracle_oracle_LOB_read_fun_num, 0);
 	return;
       }
 
-      Pike_error("Cannot cast Oracle.LOB to %S\n", s);
+      Pike_error("Cannot cast Oracle.LOB to %pS\n", s);
     }
 
     PIKEFUN int write(string(8bit) data)
@@ -909,7 +910,7 @@ OCIError *get_global_error_handle(void)
     EXTRA
     {
       struct pike_string *null_string = make_shared_string("Null");
-      low_inherit(get_sql_null_prog(), NULL, -1, 0, 0, null_string);
+      low_inherit(get_sql_null_prog(), NULL, -1, 0, 0, null_string, NULL);
       free_string(null_string);
       add_integer_constant("is_oracle_null", 1, 0);
     }

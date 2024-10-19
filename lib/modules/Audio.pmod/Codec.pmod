@@ -88,7 +88,7 @@ class decoder {
   //!
   //! @param file
   //!   The object @[Audio.Format.ANY].
-  this_program from_file(Audio.Format.ANY file) {
+  this_program|zero from_file(Audio.Format.ANY file) {
     string ctype;
 
     if(objectp(file) && file->get_map)

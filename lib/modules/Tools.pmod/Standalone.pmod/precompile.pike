@@ -16,6 +16,11 @@ constant precompile_api_version = "6";
 constant precompile_api_version = "3";
 #endif
 
+#if !constant(zero)
+/* Compat with Pike 8.0 and earlier. */
+typedef int(0..0) zero;
+#endif
+
 constant want_args = 1;
 
 //! Convert .cmod-files to .c files.
@@ -56,6 +61,10 @@ string usage = #"[options] <from> > <to>
 
    INHERIT \"__builtin.foo\"
      attributes;
+
+   IMPLEMENTS bar;
+
+   IMPLEMENTS \"__builtin.foo\";
 
    CVAR int foo;
    PIKEVAR mapping m
@@ -159,6 +168,15 @@ string usage = #"[options] <from> > <to>
    c_name;        The name to use for a PIKEVAR in a C struct.
    prototype;     Ignore the function body, just add a prototype entry.
    program_flags; PROGRAM_USES_PARENT | PROGRAM_DESTRUCT_IMMEDIATE etc.
+   program_id;    Set the program_id for the PIKECLASS. Note that this
+                  is only needed for program id constants that do not
+                  match the automatically generated PROG_*_ID pattern.
+                  Note that the symbol specified here will be prefixed
+                  and suffixed by PROG_/_ID when used as it is used as
+                  argument to START_NEW_PROGRAM_ID().
+   num_generics;  The number of generics for this PIKECLASS (if any).
+   bind_generics; The types to bind the generic types in the INHERITed
+                  program to.
    gc_trivial;    Only valid for EXIT functions. This instructs the gc that
                   the EXIT function is trivial and that it's ok to destruct
                   objects of this program in any order. In general, if there
@@ -179,6 +197,19 @@ string usage = #"[options] <from> > <to>
    a struct pike_string with the content \"my string\", or the
    syntax MK_STRING_SVALUE(\"my string\") for the same, but a
    full svalue. Note that this syntax can not be used in macros.
+
+ AUTOMATIC SYMBOLS
+   args                      The number of arguments a PIKEFUN has received.
+   f_symbol                  The C-level implementation of a PIKEFUN.
+   f_symbol_fun_num          The reference number in a PIKECLASS for a PIKEFUN.
+                             Not applicable to efuns.
+   symbol_fun_num            The reference number to a nested PIKECLASS in
+                             the surrounding PIKECLASS.
+   symbol_inh_num            The inherit number for an INHERIT.
+   symbol_inh_offset         The offset to the start of references for
+                             an INHERIT in the current PIKECLASS.
+   symbol_inh_storage_offset The storage offset for an INHERIT in
+                             the storage for the current PIKECLASS.
 
  BUGS/LIMITATIONS
   o Parenthesis must match, even within #if 0
@@ -360,6 +391,7 @@ int parse_type(array t, int p)
 	  case "!":
 	    continue;
 
+	  case "__deprecated__":
 	  case "object":
 	  case "program":
 	  case "function":
@@ -376,6 +408,7 @@ int parse_type(array t, int p)
 	  case "bignum":
 	  case "longest":
 	  case "float":
+	  case "zero":
 	    break;
 	}
       }
@@ -523,7 +556,7 @@ class PikeType
       }
     }
 
-  protected array(PikeType) strip_zero_alt()
+  protected array(PikeType)|zero strip_zero_alt()
   /* Assumes this is an '|' node. Returns args without any 'zero'
    * alternatives. */
   {
@@ -585,6 +618,7 @@ class PikeType
 	  else return "void";
 	}
 
+        case "__deprecated__":
 	case "=":
 	case "&":
 	  return args[-1]->basetype();
@@ -625,6 +659,10 @@ class PikeType
       case "zero":
 	return ret;
 
+      case "unknown":
+      case "__unknown__":
+	return "__unknown__";
+
       case "utf8_string":
       case "sprintf_format":
 	return "string";
@@ -660,6 +698,7 @@ class PikeType
 	case "|":
 	  return `|(@args->basetypes());
 
+        case "__deprecated__":
 	case "=":
 	case "&":
 	  return args[-1]->basetypes();
@@ -710,6 +749,10 @@ class PikeType
       case "void":
       case "zero":
 	return ({ ret });
+
+      case "unknown":
+      case "__unknown__":
+	return ({ "__unknown__" });
 
       case "utf8_string":
       case "sprintf_format":
@@ -766,6 +809,7 @@ class PikeType
       string btype = realtype();
       switch (btype)
       {
+        case "unknown": case "__unknown__":
 	case "void": return "void";
 	case "zero":
 	  return may_be_void()?"struct svalue *":"INT_TYPE";
@@ -822,7 +866,7 @@ class PikeType
 	  return fiddle("tAnd",args->output_c_type());
 
 	case "|":
-	  array(PikeType) a = strip_zero_alt();
+	  array(PikeType) a = args; // strip_zero_alt();
 	  if (sizeof (a) == 1) return a[0]->output_c_type();
 	  return fiddle("tOr",a->output_c_type());
 
@@ -843,6 +887,9 @@ class PikeType
 	  ret=sprintf("tArr(%s)",args[0]->output_c_type());
 	  if(ret=="tArr(tMix)") return "tArray";
 	  return ret;
+
+        case "__deprecated__":
+	  return sprintf("tDeprecated(%s)", args[0]->output_c_type());
 
         case "type":
 	  return sprintf("tType(%s)", args[0]->output_c_type());
@@ -910,6 +957,8 @@ class PikeType
         case "sprintf_args": return "tAttr(\"sprintf_args\", tMix)";
 	case "program": return "tPrg(tObj)";
 	case "any":     return "tAny";
+	case "unknown": return "tUnknown";
+	case "__unknown__": return "tUnknown";
 	case "mixed":   return "tMix";
 	case "int":
 	  // Clamp the integer range to 32 bit signed.
@@ -974,6 +1023,9 @@ class PikeType
 	  return sprintf("%s(%s)",ret,tmp);
 	}
 
+	case "__deprecated__":
+	  return sprintf("%s(%s)", ret, args[0]->output_pike_type(0));
+
 	case "function":
 	  array(string) tmp=args->output_pike_type(0);
 	  ret=sprintf("function(%s:%s)",
@@ -998,6 +1050,8 @@ class PikeType
 	    if (!high) {
 	      if (ret == "int") return "zero";
 	      return sprintf("%s(zero)", ret);
+            } else if (ret == "int" && high == 0x7fffffff) {
+              return "int(0..)";
 	    }
 
 	    int i;
@@ -1053,7 +1107,7 @@ class PikeType
       return PikeType(t, a && a->copy_and_strip_type_assignments (0));
     }
 
-  string _sprintf(int how)
+  protected string _sprintf(int how)
     {
       switch(how)
       {
@@ -1079,8 +1133,8 @@ class PikeType
    * And this way is for internal use only:
    * PikeType( PC.Token("array"), ({ PikeType("int") }) )
    */
-  void create(string|array(PC.Token)|PC.Token|array(array) tok,
-	      void|array(PikeType)|mapping(string:string) a)
+  protected void create(string|array(PC.Token)|PC.Token|array(array) tok,
+			void|array(PikeType)|mapping(string:string) a)
     {
       switch(sprintf("%t",tok))
       {
@@ -1093,6 +1147,7 @@ class PikeType
 	  tok=convert_comments(PC.tokenize(split(tok),"piketype"));
 	  tok=PC.group(PC.hide_whitespaces(tok));
 
+	  // FALLTHRU
 	case "array":
 	  /* strip parenthesis */
 	  while(sizeof(tok) == 1 && arrayp(tok[0]))
@@ -1102,7 +1157,7 @@ class PikeType
 	    replace_names(tok, a);
 
 	  array(array(PC.Token|array(PC.Token|array))) tmp;
-	  tmp=tok/({"|"});
+	  tmp = ([array]tok)/({"|"});
 
 	  if(sizeof(tmp) >1)
 	  {
@@ -1111,7 +1166,7 @@ class PikeType
 	    return;
 	  }
 
-	  tmp=tok/({"&"});
+	  tmp = ([array]tok)/({"&"});
 	  if(sizeof(tmp) >1)
 	  {
 	    t=PC.Token("&");
@@ -1119,7 +1174,7 @@ class PikeType
 	    return;
 	  }
 
-	  tmp=tok/({"="});
+	  tmp = ([array]tok)/({"="});
 	  if(sizeof(tmp) >1)
 	  {
 	    t=PC.Token("=");
@@ -1153,7 +1208,7 @@ class PikeType
 		break;
 
 	      case "function":
-		args=({ PikeType("mixed"), PikeType("any") });
+		args=({ PikeType("unknown"), PikeType("any") });
 		break;
 
 	      case "type":
@@ -1168,6 +1223,7 @@ class PikeType
 		args=({ PikeType(tok[1..]) });
 		break;
 
+	      case "__deprecated__":
 	      case "array":
 	      case "multiset":
 		args=({ PikeType(tok[1..]) });
@@ -1213,7 +1269,7 @@ class PikeType
 		  args=map(argstmp[..end]-({({})}),PikeType)+
 		    ({repeater, PikeType(rettmp) });
 		}else{
-		  args=({PikeType("mixed"),PikeType("any")});
+		  args=({PikeType("unknown"),PikeType("any")});
 		}
 		return;
 
@@ -1280,7 +1336,7 @@ class CType {
   string ctype;
 
   string output_c_type() { return ctype; }
-  void create(string _ctype) {
+  protected void create(string _ctype) {
     ctype = _ctype;
   }
 }
@@ -1292,9 +1348,9 @@ array(int) clamp_int_range(PikeType complex_type, string ranged_type)
   switch((string)complex_type->t) {
   case "|":
     {
-      array(int) res = UNDEFINED;
+      array(int)|zero res = UNDEFINED;
       foreach(complex_type->args, PikeType arg) {
-	array(int) sub_res = clamp_int_range(arg, ranged_type);
+	array(int)|zero sub_res = clamp_int_range(arg, ranged_type);
 	if (!sub_res) continue;
 	if (!res) {
 	  res = sub_res;
@@ -1309,7 +1365,7 @@ array(int) clamp_int_range(PikeType complex_type, string ranged_type)
     {
       array(int) res = ({ -0x80000000, 0x7fffffff });
       foreach(complex_type->args, PikeType arg) {
-	array(int) sub_res = clamp_int_range(arg, ranged_type);
+	array(int)|zero sub_res = clamp_int_range(arg, ranged_type);
 	if (!sub_res) return UNDEFINED;
 	if (res[0] < sub_res[0]) res[0] = sub_res[0];
 	if (res[1] > sub_res[1]) res[1] = sub_res[1];
@@ -1396,7 +1452,7 @@ class Argument
 	type()->copy_and_strip_type_assignments (1)->output_pike_type(0);
     }
 
-  void create(array x, void|mapping(string:string) names)
+  protected void create(array x, void|mapping(string:string) names)
     {
       PC.Token t;
       if( arrayp(x[-1]) )
@@ -1414,7 +1470,7 @@ class Argument
       _type=PikeType(x[..sizeof(x)-2], names);
     }
 
-  string _sprintf(int how)
+  protected string _sprintf(int how)
     {
       return type()->output_pike_type(0)+" "+name();
     }
@@ -1529,6 +1585,9 @@ constant valid_attributes = (<
   "c_name",		/* Override of generated C-symbol */
   "prototype",
   "program_flags",
+  "program_id",
+  "num_generics",	/* PIKECLASS only. */
+  "bind_generics",	/* INHERIT only. */
 >);
 
 /*
@@ -1591,7 +1650,7 @@ mapping parse_attributes(array attr, void|string location,
  * Generate an #ifdef/#else/#endif
  */
 array IFDEF(string|array(string) define,
-	    array yes,
+	    array|zero yes,
 	    void|array no)
 {
   array ret=({});
@@ -1616,7 +1675,6 @@ array IFDEF(string|array(string) define,
     if(no && sizeof(no))
     {
       ret+=({sprintf("\n#else /* %s */\n",define*", ")});
-      ret+=no;
     }
   }
   ret+=no || ({});
@@ -1649,12 +1707,12 @@ class FuncData
   int min_args;
   array(Argument) args;
 
-  string _sprintf(int c)
+  protected string _sprintf(int c)
     {
       return sprintf("FuncData(%s)",define);
     }
 
-  int `==(mixed q)
+  protected int `==(mixed q)
     {
       return objectp(q) && q->name == name;
 //      return 0;
@@ -1906,8 +1964,8 @@ class ParseBlock
   array declarations=({});
   int local_id = ++gid;
 
-  void create(array(array|PC.Token) x, string base, string class_name,
-	      mapping(string:string) names)
+  protected void create(array(array|PC.Token) x, string base, string class_name,
+			mapping(string:string) names)
     {
       array(array|PC.Token) ret=({});
       array thestruct=({});
@@ -1956,6 +2014,8 @@ class ParseBlock
 	    string define=make_unique_name("inherit",name,base,"defined");
 	    string inh_num = make_unique_name(base, name, "inh_num");
 	    string inh_offset = make_unique_name(base, name, "inh_offset");
+	    string inh_storage = make_unique_name(base, name, "inh_storage_offset");
+            string inh_name;
 	    if ((string)name == "::") {
 	      e++;
 	      name = x[e+1];
@@ -1964,7 +2024,9 @@ class ParseBlock
 		define=make_unique_name("inherit",name,base,"defined");
 		inh_num = make_unique_name(base, name, "inh_num");
 		inh_offset = make_unique_name(base, name, "inh_offset");
+		inh_storage = make_unique_name(base, name, "inh_storage_offset");
 		name = UNDEFINED;
+                inh_name = sprintf("%q", class_name);
 		pre = ({
 		  PC.Token(
 sprintf("  do {\n"
@@ -2007,6 +2069,11 @@ sprintf("        } else {\n"
 	      }
 	    }
 
+            if (x[e+2] == ":") {
+              inh_name = sprintf("%q", (string)x[e+3]);
+              e += 2;
+            }
+
 	    mapping attributes = parse_attributes(x[e+2..pos]);
 	    if (((string)name)[0] == '\"') {
 	      pre = ({
@@ -2033,7 +2100,30 @@ sprintf("        } else {\n"
 	      }
 	    } else if (name) {
 	      p = mkname(names[(string)name]||(string)name, "program");
+              inh_name = inh_name || sprintf("%q", (string)name);
 	    }
+	    check_used[inh_offset] = 1;
+	    check_used[inh_storage] = 1;
+
+            if (attributes->bind_generics) {
+              array(string) binding_types =
+                map(attributes->bind_generics/",", String.trim_all_whites) -
+                ({ "" });
+              foreach(binding_types, string rawtype) {
+                pre += ({
+                  PC.Token(indent + "push_type_value(make_pike_type(" + rawtype + "));\n"),
+                });
+              }
+              pre += ({
+                PC.Token(indent + sprintf("f_aggregate(%d);\n",
+                                          sizeof(binding_types))),
+              });
+
+              post = ({
+                PC.Token(indent + "pop_stack();\n"),
+              });
+            }
+
 	    addfuncs +=
 	      IFDEF(define,
 		    ({
@@ -2043,22 +2133,176 @@ sprintf("        } else {\n"
 				       inh_num),
 			       x[e]->line),
 		    }) + pre + ({
-		      PC.Token(sprintf("%slow_inherit(%s, NULL, %s, "
-				       "%s, %s, NULL);\n",
-				       indent, p, numid, offset,
-				       attributes->flags || "0"),
-			       x[e]->line),
-		      PC.Token(sprintf("%s%s = Pike_compiler->new_program->"
-				       "inherits[%s].identifier_level;\n",
-				       indent, inh_offset, inh_num),
-			       x[e]->line),
+                      IFDEF("module_strings_declared",
+                            ({
+                              PC.Token(sprintf("%slow_inherit(%s, NULL, %s, "
+                                               "%s, %s, %s\n"
+                                               "#ifdef tGeneric\n"
+                                               ", %s\n"
+                                               "#endif\n"
+                                               ");\n",
+                                               indent, p, numid, offset,
+                                               attributes->flags || "0",
+                                               inh_name?allocate_string(inh_name):"NULL",
+                                               attributes->bind_generics?
+                                               "Pike_sp[-1].u.array":"NULL"),
+                                       x[e]->line),
+                            }),
+                            ({
+                              PC.Token(sprintf("%slow_inherit(%s, NULL, %s, "
+                                               "%s, %s, NULL\n"
+                                               "#ifdef tGeneric\n"
+                                               ", %s\n"
+                                               "#endif\n"
+                                               ");\n",
+                                               indent, p, numid, offset,
+                                               attributes->flags || "0",
+                                               attributes->bind_generics?
+                                               "Pike_sp[-1].u.array":"NULL"),
+                                       x[e]->line),
+                            })),
+		      IFDEF(inh_offset + "_used",
+			    ({
+			      PC.Token(sprintf("%s%s = Pike_compiler->new_program->"
+					       "inherits[%s].identifier_level;\n",
+					       indent, inh_offset, inh_num),
+				       x[e]->line),
+			    })),
+		      IFDEF(inh_storage + "_used",
+			    ({
+			      PC.Token(sprintf("%s%s = Pike_compiler->new_program->"
+					       "inherits[%s].storage_offset;\n",
+					       indent, inh_storage, inh_num),
+				       x[e]->line),
+			    })),
 		    }) + post);
 	    ret += DEFINE(define) + ({
 	      PC.Token(sprintf("static int %s = -1;\n", inh_num),
 		       x[e]->line),
-	      PC.Token(sprintf("static int %s = -1;\n", inh_offset),
-		       x[e]->line),
+	      IFDEF(inh_offset + "_used",
+		    ({
+		      PC.Token(sprintf("static int %s = -1;\n", inh_offset),
+			       x[e]->line),
+		    })),
+	      IFDEF(inh_storage + "_used",
+		    ({
+		      PC.Token(sprintf("static int %s = -1;\n", inh_storage),
+			       x[e]->line),
+		    })),
 	    });
+	    e = pos;
+	    break;
+	  }
+	case "IMPLEMENTS":
+	  {
+	    int pos=search(x,PC.Token(";",0),e);
+
+	    string p;
+	    string numid = "-1";
+	    string offset = "0";
+	    string indent = "  ";
+	    array pre = ({});
+	    array post = ({});
+
+	    mixed name=x[e+1];
+	    string define = make_unique_name("implements",name,base,"defined");
+	    if ((string)name == "::") {
+#if 0
+	      e++;
+	      name = x[e+1];
+	      if ((name == "this_program") &&
+		  has_suffix(base, "_" + class_name)) {
+		define = make_unique_name("implements",name,base,"defined");
+		name = UNDEFINED;
+		// FIXME: The following is broken!
+		pre = ({
+		  PC.Token(
+sprintf("  do {\n"
+	"    int i__ =\n"
+	"      reference_inherited_identifier(Pike_compiler->previous, NULL,\n"
+	"                                     %s);\n"
+	"    if (i__ != -1) {\n"
+	"      struct program *p = Pike_compiler->previous->new_program;\n"
+	"      struct identifier *id__ = ID_FROM_INT(p, i__);\n"
+	"      if (IDENTIFIER_IS_CONSTANT(id__->identifier_flags) &&\n"
+	"          (id__->func.const_info.offset != -1)) {\n"
+	"        struct svalue *s = &PROG_FROM_INT(p, i__)->\n"
+	"          constants[id__->func.const_info.offset].sval;\n"
+	"        if (TYPEOF(*s) == T_PROGRAM) {\n"
+	"          p = s->u.program;\n",
+	allocate_string(sprintf("%q", class_name))),
+			   x[e]->line),
+		});
+		indent = "          ";
+		p = "p";
+		numid = "i__";
+		offset = "1 + 42";
+		post = ({
+		  PC.Token(
+sprintf("        } else {\n"
+	"          yyerror(\"Previous definition of %s is not a program.\");\n"
+	"        }\n"
+	"      } else {\n"
+	"        yyerror(\"Previous definition of %s is not constant.\");\n"
+	"      }\n"
+	"    } else {\n"
+	"      yyerror(\"Failed to find previous definition of %s.\");\n"
+	"    }\n"
+	"  } while(0);\n",
+	class_name, class_name, class_name),
+			   x[e]->line),
+		});
+	      } else {
+		error("Unsupported IMPLEMENTS syntax.\n");
+	      }
+#else
+	      error("Unsupported IMPLEMENTS syntax.\n");
+#endif
+	    }
+
+	    mapping attributes = parse_attributes(x[e+2..pos]);
+	    if (((string)name)[0] == '\"') {
+	      pre = ({
+		PC.Token("  do {\n"),
+		PC.Token("    struct program *p = resolve_program(" +
+			 allocate_string((string)name) +
+			 ");\n",
+			 name->line),
+		PC.Token("    if (p) {\n"),
+	      });
+	      indent = "      ";
+	      p = "p";
+	      post = ({
+		PC.Token("      free_program(p);\n"
+			 "    } else {\n", name->line),
+		PC.Token("      yyerror(\"Implements failed.\");\n"
+			 "    }\n"
+			 "  } while(0);", x[e]->line),
+	      });
+	      if (api < 5) {
+		warn("%s:%d: API level 5 (or higher) is required "
+		     "for implements of strings.\n",
+		     name->file, name->line);
+	      }
+	    } else if (name) {
+	      p = mkname(names[(string)name]||(string)name, "program");
+	    }
+	    addfuncs +=
+	      IFDEF(define,
+		    pre + ({
+		      PC.Token(sprintf("%sref_push_program(%s);\n",
+				       indent, p),
+			       x[e]->line),
+		      PC.Token(sprintf("%spush_object(clone_object("
+				       "Implements_program, 1));\n",
+				       indent),
+			       x[e]->line),
+		      PC.Token(sprintf("%sadd_program_annotation(0, Pike_sp-1);\n",
+				       indent),
+			       x[e]->line),
+		      PC.Token(sprintf("%spop_stack();\n", indent), x[e]->line),
+		    }) + post);
+	    ret += DEFINE(define);
 	    e = pos;
 	    break;
 	  }
@@ -2083,6 +2327,7 @@ sprintf("        } else {\n"
 	    string name=(string)proto[0];
 	    string lname = mkname(base, name);
 	    mapping attributes=parse_attributes(proto[1..]);
+            int num_generics = (int)attributes->num_generics;
 	    names[name] = lname;
 	    ParseBlock subclass = ParseBlock(body[1..sizeof(body)-2],
 					     mkname(base, name), name,
@@ -2119,6 +2364,10 @@ sprintf("        } else {\n"
 					       upper_case(lname)),
 				       proto[0]->line),
 			      "#else\n",
+			      attributes->program_id?
+			      PC.Token(sprintf("  START_NEW_PROGRAM_ID(%s);\n",
+					       attributes->program_id),
+				       proto[0]->line):
 			      PC.Token("  start_new_program();\n",
 				       proto[0]->line),
 			    })),
@@ -2134,6 +2383,14 @@ sprintf("        } else {\n"
                                    sprintf("%O", sprintf("\3\0\x7f%3c",
                                                          subclass->local_id)))),
 		    })+
+                    (num_generics ? ({
+                      PC.Token(sprintf("  %s->num_generics = %d;\n",
+                                       program_var, num_generics),
+                               proto[0]->line),
+                      PC.Token(sprintf("  Pike_compiler->num_generics = %d;\n",
+                                       num_generics),
+                               proto[0]->line),
+                    }):({})) +
 		    subclass->addfuncs+
 		    ({
 		      attributes->program_flags?
@@ -2329,6 +2586,7 @@ sprintf("        } else {\n"
 	 */
 	string structname = base+"_struct";
 	string this = sprintf("((struct %s *)(Pike_interpreter.frame_pointer->current_storage + %s_storage_offset))", structname, base);
+        string program_var = mkname(base, "program");
 
 	/* FIXME:
 	 * Add runtime debug to these defines...
@@ -2338,11 +2596,13 @@ sprintf("        } else {\n"
 	  	  DEFINE("THIS",this)+   // FIXME: we should 'pop' this define later
 	  DEFINE("THIS_"+upper_case(base),this)+
 	  DEFINE("OBJ2_"+upper_case(base)+"(o)",
-		 sprintf("((struct %s *)(o->storage+%s_storage_offset))",
-			 structname, base))+
+		 sprintf("((struct %s *)(o->storage+%s_storage_offset"
+                         "+%s->inherits[0].storage_offset))",
+			 structname, base, program_var))+
 	  DEFINE("GET_"+upper_case(base)+"_STORAGE(o)",
-		 sprintf("((struct %s *)(o->storage+%s_storage_offset)",
-			 structname, base))+
+		 sprintf("((struct %s *)(o->storage+%s_storage_offset"
+                         "+%s->inherits[0].storage_offset))",
+			 structname, base, program_var))+
 	    ({
 	      sprintf("static ptrdiff_t %s_storage_offset;\n",base),
 		sprintf("struct %s {\n",structname),
@@ -2515,7 +2775,7 @@ static struct %s *%s_gdb_dummy_ptr;
 	  {
 	    warn("%s must take one argument.\n");
 	  }
-	  if(sprintf("%s",args[0]->type()) != "mixed")
+	  if(sprintf("%s", [string](mixed)args[0]->type()) != "mixed")
 	  {
 	    warn("%s:%s must take a mixed argument (was declared as %s)\n",
 		 location, name, args[0]->type());
@@ -2630,7 +2890,16 @@ static struct %s *%s_gdb_dummy_ptr;
 				 name,
 				 min_args), proto[0]->line)
 	      });
-	    }
+	    } else {
+	      ret+=({
+                "#ifdef PIKE_DEBUG\n",
+		PC.Token(sprintf("if(args < 0) Pike_fatal(%O);\n",
+                                 "CMOD function argument negative.\n")),
+                "#else\n",
+		PC.Token("STATIC_ASSUME(args >= 0);\n"),
+                "#endif\n"
+	      });
+            }
 
 	    if(max_args != 0x7fffffff && max_args != -1) {
 	      ret+=({
@@ -2722,6 +2991,54 @@ static struct %s *%s_gdb_dummy_ptr;
 
 	      switch(arg->realtype())
 	      {
+	      case "int":
+		{
+		  // Clamp the integer range to 32 bit signed.
+		  [int low, int high] = clamp_int_range(arg->type(), "int");
+
+		  ret += ({
+		    PC.Token(sprintf("if((TYPEOF(Pike_sp[%d%s]) != PIKE_T_%s)",
+				     argnum,check_argbase,
+				     upper_case(arg->basetype())),
+			     arg->line()),
+		  });
+		  do {
+		    if (low == high) {
+		      ret += ({
+			PC.Token(sprintf(" || (Pike_sp[%d%s].u.integer != %d)",
+					 argnum, check_argbase, high),
+				 arg->line()),
+			});
+		      continue;
+		    }
+		    if (!low && !(high & (high + 1)) && (high < 0x7fffffff)) {
+		      ret += ({
+			PC.Token(sprintf(" || (Pike_sp[%d%s].u.integer & ~0x%x) ",
+					 argnum, check_argbase, high),
+				 arg->line()),
+		      });
+		      continue;
+		    }
+		    if (low > -0x80000000) {
+		      ret += ({
+			PC.Token(sprintf(" || (Pike_sp[%d%s].u.integer < %d)",
+					 argnum, check_argbase, low),
+				 arg->line()),
+		      });
+		    }
+		    if (high < -0x7fffffff) {
+		      ret += ({
+			PC.Token(sprintf(" || (Pike_sp[%d%s].u.integer > %d)",
+					 argnum, check_argbase, high),
+				 arg->line()),
+		      });
+		    }
+		  } while(0);
+		  ret += ({
+		    PC.Token(")", arg->line()),
+		  });
+		}
+		break;
 	      case "string":
 		// Clamp the integer range to 32 bit signed.
 		[int low, int high] = clamp_int_range(arg->type(), "string");
@@ -3099,7 +3416,7 @@ class Handler {
 					current_handler);
     }
 
-    void create(mapping|void predefines) {
+    protected void create(mapping|void predefines) {
 	::create();
 	if (predefines) this_program::predefines = predefines;
     }
@@ -3256,7 +3573,6 @@ int main(int argc, array(string) argv)
   string file = argv[1];
 
   x=Stdio.read_file(file)-"\r";
-
 #if constant(Pike.__HAVE_CPP_PREFIX_SUPPORT__)
   // Make sure that the user specifies the correct
   // minimum API level for build-script compatibility.
@@ -3269,7 +3585,10 @@ int main(int argc, array(string) argv)
 		      "#cmod_define cmod_STRFY_EVAL(x...)\tcmod_STRFY( x )\n"
 		      "#cmod_define cmod_REDEFINE(x)\tcmod_DEFINE(##x, x)\n"
 		      "#cmod_define cmod_COMMA ,\n"
-		      "#cmod_line 1 %O\n%s", file, x));
+                      "#cmod_define cmod_DIRECTIVE_EVAL(x...)"
+                      "\tcmod_DIRECTIVE(x)\n"
+                      "#cmod_line 1 %q\n"
+                      "%s", file, x));
     x=cpp(x, ([
 	    "current_file" : file,
 	    "prefix" : "cmod",
@@ -3290,6 +3609,10 @@ int main(int argc, array(string) argv)
 				  "cmod_CONCAT()" :
 				  lambda(string ... s) { return s*""; },
 				  "cmod___CMOD__" : "1",
+                                  "cmod_DIRECTIVE()" :
+                                  lambda(string ... s) {
+                                    return sprintf("#%{%s\t%}", s);
+                                  },
 				]))
 	  ]));
   } else

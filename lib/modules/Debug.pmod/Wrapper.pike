@@ -17,7 +17,7 @@ protected object wrappee;
 protected object compile_handler;
 
 //!
-void create(object x) {
+protected void create(object x) {
   werror("Debug.Wrapper is proxying %O\n", x);
   wrappee = x;
 
@@ -29,14 +29,14 @@ void create(object x) {
 }
 
 //!
-int(0..1) `!()
+protected int(0..1) `!()
 {
   werror("!%O\n", wrappee);
   return !wrappee;
 }
 
 //!
-mixed `[](mixed x, void|mixed y) {
+protected mixed `[](mixed x, void|mixed y) {
   if(undefinedp(y)) {
     werror("%O[%O]\n", wrappee, x);
     return wrappee[x];
@@ -48,7 +48,7 @@ mixed `[](mixed x, void|mixed y) {
 }
 
 //!
-mixed `->(mixed x) {
+protected mixed `->(mixed x) {
   if(stringp(x))
     werror("%O->%s\n", wrappee, x);
   else
@@ -58,25 +58,25 @@ mixed `->(mixed x) {
 }
 
 //!
-array _indices() {
+protected array _indices() {
   werror("indices(%O)\n", wrappee);
   return indices(wrappee);
 }
 
 //!
-array _values() {
+protected array _values() {
   werror("values(%O)\n", wrappee);
   return values(wrappee);
 }
 
 //!
-int _sizeof() {
+protected int _sizeof() {
   werror("sizeof(%O)\n", wrappee);
   return sizeof(wrappee);
 }
 
 //!
-string _sprintf(int c, mapping(string:mixed)|void attrs)
+protected string _sprintf(int c, mapping(string:mixed)|void attrs)
 {
   if (wrappee->_sprintf)
     return sprintf("Debug.Wrapper(%s)", wrappee->_sprintf(c, attrs));

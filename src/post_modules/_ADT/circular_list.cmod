@@ -34,7 +34,7 @@ DECLARATIONS
 /*! @class CircularList
  *! This is an circular list implemented by an array. It has a constant time
  *! complexity for pop and push. It has a limited max size but it can be
- *! increased with the method allocate.
+ *! increased with the methods @[allocate()] or [set_max_size()].
  *!
  */
 
@@ -45,6 +45,11 @@ PIKECLASS CircularList
   CVAR struct array *a;
   CVAR int size;
 
+#define ASSERT_INITIALIZED()	do {                 \
+    if (!THIS->a) {                                  \
+      Pike_error("CircularList not initialized.\n"); \
+    }                                                \
+  } while(0)
 
   //if there is more than one reference to this array copy it.
 
@@ -52,8 +57,9 @@ PIKECLASS CircularList
   {
     if (THIS->a->refs > 1)
     {
-      free_array(THIS->a);
-      THIS->a = copy_array(THIS->a);
+      struct array *a = THIS->a;
+      THIS->a = copy_array(a);
+      free_array(a);
     }
   }
 
@@ -77,7 +83,7 @@ PIKECLASS CircularList
  *! Index operator
  *!
  *! @param index
- *!   The index to get the value for, could be negative to index from the end.
+ *!   The index to get the value for, may be negative to index from the end.
  *!
  *! @returns
  *!   The value at the index @[index]
@@ -86,8 +92,11 @@ PIKECLASS CircularList
  *!   An error if the index is out of range.
  */
 
-  PIKEFUN mixed `[](int index) {
+  PIKEFUN mixed `[](int index)
+    flags ID_PROTECTED;
+  {
     struct svalue ind;
+    ASSERT_INITIALIZED();
     FIX_AND_CHECK_INDEX(index, THIS->size, 0);
     SET_SVAL(ind, T_INT, NUMBER_NUMBER, integer, circ2array(index));
     simple_array_index_no_free(Pike_sp, THIS->a, &ind);
@@ -112,8 +121,12 @@ PIKECLASS CircularList
  *!   An error if the index is out of range.
  */
 
-  PIKEFUN mixed `[]=(int index, mixed value) {
+  PIKEFUN mixed `[]=(int index, mixed value, mixed|void context,
+                     int|void access)
+    flags ID_PROTECTED;
+  {
     struct svalue ind;
+    ASSERT_INITIALIZED();
     FIX_AND_CHECK_INDEX(index, THIS->size, 0);
     SET_SVAL(ind, T_INT, NUMBER_NUMBER, integer, circ2array(index));
     should_copy();
@@ -137,12 +150,15 @@ PIKECLASS CircularList
 
 
   PIKEFUN object `+(object ... coll)
+    flags ID_PROTECTED;
   {
     struct array *a;
     struct CircularList_struct *tmpList;
     int start=0;
     int i;
     ptrdiff_t sz = THIS->size;
+
+    ASSERT_INITIALIZED();
 
     for (i=0; i < args; i++) {
       // FIXME: Ought to work on collection classes too
@@ -213,6 +229,7 @@ PIKECLASS CircularList
 
 
   PIKEFUN int(0..1) _equal(mixed coll)
+    flags ID_PROTECTED;
   {
     if (TYPEOF(*coll) == T_OBJECT &&
 	coll->u.object->prog == CircularList_program)
@@ -277,6 +294,7 @@ PIKECLASS CircularList
    */
 
   PIKEFUN array _indices()
+    flags ID_PROTECTED;
   {
     ptrdiff_t size = THIS->size;
     struct array *a;
@@ -304,16 +322,25 @@ PIKECLASS CircularList
  *! @throws
  *!   An error if the index is out of range.
  *!
+ *! @note
+ *!  The @[max_size] is increased by one.
+ *!
+ *! @seealso
+ *!   @[_remove_element()]
  */
 
   PIKEFUN void _insert_element(int index, mixed value)
   {
-    FIX_AND_CHECK_INDEX(index, THIS->size, 0);
+    int ind;
+    ASSERT_INITIALIZED();
+    FIX_AND_CHECK_INDEX(index, THIS->size, 1);
     should_copy();
-    index = circ2array(index);
-    THIS->a = array_insert(THIS->a, value, index);
+    ind = circ2array(index);
+    THIS->a = array_insert(THIS->a, value, ind);
     THIS->size++;
-
+    if (index && (ind <= THIS->pos)) {
+      THIS->pos++;
+    }
   }
 
 /*! @decl mixed _remove_element(int index)
@@ -327,20 +354,27 @@ PIKECLASS CircularList
  *!
  *! @throws
  *!   An error if the index is out of range.
+ *!
+ *! @note
+ *!  The @[max_size] is decreased by one.
+ *!
+ *! @seealso
+ *!   @[_insert_element()]
  */
 
   PIKEFUN mixed _remove_element(int index)
   {
-    struct svalue s;
-
+    ASSERT_INITIALIZED();
     FIX_AND_CHECK_INDEX(index, THIS->size, 0);
 
     index = circ2array(index);
-    s = *(THIS->a->item + index);
+    push_svalue(THIS->a->item + index);
     should_copy();
     THIS->a = array_remove(THIS->a, index);
     THIS->size--;
-    push_svalue(&s);
+    if (index < THIS->pos) {
+      THIS->pos--;
+    }
   }
 
 
@@ -357,16 +391,18 @@ PIKECLASS CircularList
  *!   @[start].
  *!
  *! @returns
- *!   Returns the index of the found value or @expr{UNDEFINED@}.
+ *!   Returns the index of the found value or @expr{-1@}.
  *!
  *! @throws
  *!   An error if the start is out of range.
  */
 
   PIKEFUN int _search(mixed value, void|int start)
+    flags ID_PROTECTED;
   {
     int s;
     int retval;
+    if (!THIS->a) RETURN -1;
     if(start)
     {
       if (TYPEOF(*start) != PIKE_T_INT)
@@ -405,6 +441,7 @@ PIKECLASS CircularList
  */
 
   PIKEFUN int _sizeof()
+    flags ID_PROTECTED;
   {
     RETURN THIS->size;
   }
@@ -416,53 +453,75 @@ PIKECLASS CircularList
    */
 
   PIKEFUN array _values()
+    flags ID_PROTECTED;
   {
     struct array *a;
     int end;
     int tmp;
 
     a=allocate_array_no_init(THIS->size, 0);
-    a->type_field = THIS->a->type_field;
-    end = circ2array(THIS->size);
+    if (THIS->size) {
+      a->type_field = THIS->a->type_field;
+      end = circ2array(THIS->size);
 
-    if (end <= THIS->pos && THIS->size > 0)
-    {
-      //if the list pass the end of the array do it in two parts
-      tmp = THIS->a->size - THIS->pos;
+      if (end <= THIS->pos && THIS->size > 0)
+      {
+        //if the list pass the end of the array do it in two parts
+        tmp = THIS->a->size - THIS->pos;
 
-      assign_svalues_no_free(ITEM(a), ITEM(THIS->a) + THIS->pos,
-			     tmp, THIS->a->type_field);
+        assign_svalues_no_free(ITEM(a), ITEM(THIS->a) + THIS->pos,
+                               tmp, THIS->a->type_field);
 
-      assign_svalues_no_free(ITEM(a)+tmp, ITEM(THIS->a),
-			     THIS->size-tmp, THIS->a->type_field);
-    }
-    else
-    {
-      //just do it direct
+        assign_svalues_no_free(ITEM(a)+tmp, ITEM(THIS->a),
+                               THIS->size-tmp, THIS->a->type_field);
+      }
+      else
+      {
+        //just do it direct
 
-      assign_svalues_no_free(ITEM(a), ITEM(THIS->a) + THIS->pos,
-			     THIS->size, THIS->a->type_field);
+        assign_svalues_no_free(ITEM(a), ITEM(THIS->a) + THIS->pos,
+                               THIS->size, THIS->a->type_field);
+      }
     }
     RETURN a;
   }
 
 
-/*! @decl void add(mixed value)
- *!   Add a value at the front of the list
- *!
- *! @param value
- *!   The value to add.
- *!
- *! @throws
- *!   An error if the list is full.
- */
+  /*! @decl void add(mixed value, int(0..1)|void force)
+   *!   Add a value at the front of the list
+   *!
+   *! @param value
+   *!   The value to add.
+   *!
+   *! @param force
+   *!   Add the value even if the list is full, in which case
+   *!   the element at the back of the list will be removed.
+   *!
+   *! @throws
+   *!   An error if the list is full and @[force] is false.
+   *!
+   *! @note
+   *!   @[force] was not supported in Pike 8.0.1800 and earlier.
+   *!
+   *! @note
+   *!   This is the same operation as @[push_front()].
+   *!
+   *! @seealso
+   *!   @[push_back()], @[push_front()]
+   */
 
-  PIKEFUN void add(mixed value)
+  PIKEFUN void add(mixed value, int(0..1)|void force)
   {
     struct svalue ind;
+    ASSERT_INITIALIZED();
     if (THIS->size == THIS->a->size)
     {
-      Pike_error("The list is full, could not add value, please allocate more space.\n");
+      if (!force || !force->u.integer) {
+        Pike_error("The list is full, could not add value, "
+                   "please allocate more space or use force.\n");
+      }
+      if (!THIS->a->size) return;
+      THIS->size--;
     }
     should_copy();
     THIS->pos--;
@@ -480,19 +539,37 @@ PIKECLASS CircularList
    *!
    *! @param elements
    *!       Add this number of new elements to the list.
+   *!
+   *! @seealso
+   *!   @[set_max_size()]
    */
 
-  PIKEFUN void allocate(int elements)
+  PIKEFUN void allocate(int(0..) elements)
   {
     INT32 size = THIS->a->size+elements;
     INT32 endpos = THIS->a->size - THIS->pos; //distanse of pos from the end
-    if (elements <= 0)
+    ASSERT_INITIALIZED();
+    if (elements < 0)
     {
       Pike_error("Allocate expects a value larger than zero.\n");
     }
+    if (!elements) return;
     if(THIS->a->refs <= 1 && THIS->a->malloced_size >= size)
     {
+      /*       +------------+------------+------------+------------+
+       * Orig: |############|............|############| over-alloc |
+       *       +------------+------------+------------+------------+
+       *                    ^            ^            ^            ^
+       *         (pos+nelem)%a->size    pos        a->size   malloced_size
+       *
+       *       +------------+------------+------------+------------+
+       * New:  |############|............|000000000000|############|
+       *       +------------+------------+------------+------------+
+       *                    ^            ^            ^            ^
+       *         (pos+nelem)%a->size pos-elems       pos        a->size
+       */
       THIS->a->size = size;
+      THIS->a->type_field |= BIT_INT;
       if (THIS->size > 0)
       {
 	memmove(ITEM(THIS->a)+(size-endpos),
@@ -505,25 +582,43 @@ PIKECLASS CircularList
 		 integer, 0);
 	elements--;
       }
-      THIS->a->type_field |= BIT_INT;
     }
     else
     {
+      /*       +------------+------------+------------+
+       * Orig: |############|............|############|
+       *       +------------+------------+------------+
+       *                    ^            ^            ^
+       *          (pos+nelem)%a->size   pos        a->size
+       *
+       *       +------------+------------+------------+------------+
+       * New:  |############|############|............|000000000000|
+       *       +------------+------------+------------+------------+
+       *       ^                         ^                         ^
+       *      pos                   (pos+nelem)                 a->size
+       */
       struct array *a;
       a=allocate_array_no_init(size,  (THIS->a->size >> 1) + 4);
-      a->type_field = THIS->a->type_field;
+      a->type_field = THIS->a->type_field | BIT_INT;
       if (THIS->size >0)
       {
-	//copy from pos to end
+        // Copy from pos to orig_size.
 	assign_svalues_no_free(ITEM(a),
 			       ITEM(THIS->a)+(THIS->pos),
 			       endpos,
 			       THIS->a->type_field);
-	//copy from start to size
+        // Copy from start to pos.
 	assign_svalues_no_free(ITEM(a)+endpos,
 			       ITEM(THIS->a),
-			       THIS->size-endpos,
+                               THIS->pos,
 			       THIS->a->type_field);
+        endpos = THIS->a->size;
+      } else {
+        endpos = 0;
+      }
+      while (endpos < size) {
+        SET_SVAL(ITEM(a)[endpos], T_INT, NUMBER_NUMBER, integer, 0);
+        endpos++;
       }
       free_array(THIS->a);
       THIS->a=a;
@@ -550,6 +645,7 @@ PIKECLASS CircularList
   PIKEFUN array cast(string type)
     flags ID_PROTECTED;
   {
+    ASSERT_INITIALIZED();
     pop_n_elems(args); /* type as at least one more reference. */
     if (type == literal_array_string)
     {
@@ -589,15 +685,39 @@ PIKECLASS CircularList
   /*! @decl void clear()
    *!   Clear the contents of the list.
    *!
+   *! @deprecated _m_clear
    */
 
   PIKEFUN void clear()
   {
-    int oldsize;
-    should_copy();
-    oldsize = THIS->a->size;
-    THIS->a = resize_array(THIS->a, 0);
-    THIS->a = resize_array(THIS->a, oldsize);
+    if (THIS->a) {
+      int oldsize;
+      should_copy();
+      oldsize = THIS->a->size;
+      THIS->a = resize_array(THIS->a, 0);
+      THIS->a = resize_array(THIS->a, oldsize);
+    }
+    THIS->size =0;
+    THIS->pos  =0;
+  }
+
+  /*! @decl void _m_clear()
+   *!   Clear the contents of the list.
+   *!
+   *! @seealso
+   *!   @[clear()]
+   */
+
+  PIKEFUN void _m_clear()
+    flags ID_PROTECTED;
+  {
+    if (THIS->a) {
+      int oldsize;
+      should_copy();
+      oldsize = THIS->a->size;
+      THIS->a = resize_array(THIS->a, 0);
+      THIS->a = resize_array(THIS->a, oldsize);
+    }
     THIS->size =0;
     THIS->pos  =0;
   }
@@ -615,19 +735,18 @@ PIKECLASS CircularList
 
   PIKEFUN int delete_value(mixed value)
   {
-    INT32 index = array_search(THIS->a, value, THIS->pos);
-    INT32 pos = array2circ(index);
-    if (pos < THIS->size && index > -1)
-    {
-      should_copy();
-      THIS->a = array_remove(THIS->a, index);
-      THIS->size--;
-      RETURN pos;
+    if (THIS->a) {
+      INT32 index = array_search(THIS->a, value, THIS->pos);
+      INT32 pos = array2circ(index);
+      if (pos < THIS->size && index > -1)
+      {
+        should_copy();
+        THIS->a = array_remove(THIS->a, index);
+        THIS->size--;
+        RETURN pos;
+      }
     }
-    else
-    {
-      RETURN -1;
-    }
+    RETURN -1;
   }
 
   /*! @decl int(0..1) is_empty()
@@ -645,11 +764,90 @@ PIKECLASS CircularList
    *!
    *! @returns
    *!   Returns the maximal size of this list.
+   *!
+   *! @seealso
+   *!   @[set_max_size()]
    */
 
   PIKEFUN int max_size()
   {
+    if (!THIS->a) RETURN 0;
     RETURN THIS->a->size;
+  }
+
+  /*! @decl int set_max_size(int(0..) new_size)
+   *!
+   *! @param new_size
+   *!   The new size of the list.
+   *!
+   *! @returns
+   *!   Returns the old maximal size of the list.
+   *!
+   *! @note
+   *!   When reducing in size, elements that no
+   *!   longer fit are dropped from the back.
+   *!
+   *! @seealso
+   *!   @[allocate()], @[max_size()]
+   */
+  PIKEFUN int set_max_size(int(0..) new_size)
+  {
+    struct array *new_a;
+    struct array *old_a = THIS->a;
+
+    ASSERT_INITIALIZED();
+
+    push_int(THIS->a->size);
+
+    if (new_size == THIS->a->size) return;
+
+    new_a = allocate_array_no_init(new_size, 0);
+    if (!new_size) {
+      /* Empty! */
+      THIS->size = 0;
+    } else if (!THIS->size) {
+      /* Empty! */
+      new_a->type_field = BIT_INT;
+    } else {
+      int end = THIS->size;
+      int end_pos;
+      if (new_size < old_a->size) {
+        new_a->type_field = old_a->type_field;
+        if (new_size < end) end = new_size;
+      } else {
+        new_a->type_field = old_a->type_field | BIT_INT;
+      }
+
+      /* Move the old contents to the new array.
+       *
+       * NB: We cheat by knowing that T_INT is 0,
+       *     due to this we do not need to care
+       *     about reference counting.
+       */
+
+      should_copy();
+
+      end_pos = circ2array(end);
+      if (end_pos <= THIS->pos) {
+        /* Wrap-around. */
+        memcpy(ITEM(new_a), ITEM(old_a) + THIS->pos,
+               (old_a->size - THIS->pos) * sizeof(struct svalue));
+        memset(ITEM(old_a) + THIS->pos, 0,
+               (old_a->size - THIS->pos) * sizeof(struct svalue));
+        memcpy(ITEM(new_a) + (old_a->size - THIS->pos), ITEM(old_a),
+               end_pos * sizeof(struct svalue));
+        memset(ITEM(old_a), 0, end_pos * sizeof(struct svalue));
+      } else {
+        memcpy(ITEM(new_a), ITEM(old_a) + THIS->pos,
+               end * sizeof(struct svalue));
+        memset(ITEM(old_a) + THIS->pos, 0, end * sizeof(struct svalue));
+      }
+      THIS->size = end;
+    }
+    THIS->pos = 0;
+
+    free_array(THIS->a);
+    THIS->a = new_a;
   }
 
   /*! @decl mixed peek_back()
@@ -746,22 +944,44 @@ PIKECLASS CircularList
   }
 
 
-  /*! @decl void push_back(mixed value)
+  /*! @decl void push_back(mixed value, int(0..1)|void force)
    *!
    *! Add a new value at the end of the list.
    *!
    *! @param value
    *!    The value to add.
+   *!
+   *! @param force
+   *!   Add the value even if the list is full, in which case
+   *!   the element at the front of the list will be removed.
+   *!
+   *! @throws
+   *!   An error if the list is full and @[force] is false.
+   *!
+   *! @note
+   *!   @[force] was not supported in Pike 8.0.1800 and earlier.
+   *!
+   *! @seealso
+   *!   @[add()], @[push_front()]
    */
 
-  PIKEFUN void push_back(mixed value)
+  PIKEFUN void push_back(mixed value, int(0..1)|void force)
   {
     struct svalue ind;
-    should_copy();
+    ASSERT_INITIALIZED();
     if (THIS->size == THIS->a->size)
     {
-      Pike_error("The list is full, could not add value, please allocate more memory.\n");
+      if (!force || !force->u.integer) {
+        Pike_error("The list is full, could not add value, "
+                   "please allocate more memory or use force.\n");
+      }
+      if (!THIS->a->size) return;
+      if (++THIS->pos >= THIS->a->size) {
+        THIS->pos -= THIS->a->size;
+      }
+      THIS->size--;
     }
+    should_copy();
 
     SET_SVAL(ind, T_INT, NUMBER_NUMBER, integer, circ2array(THIS->size));
     THIS->size++;
@@ -769,20 +989,43 @@ PIKECLASS CircularList
   }
 
 
-  /*! @decl void push_front(mixed value)
+  /*! @decl void push_front(mixed value, int(0..1)|void force)
    *!
    *! Add a new value at the front of the list.
    *!
    *! @param value
    *!    The value to add.
+   *!
+   *! @param force
+   *!   Add the value even if the list is full, in which case
+   *!   the element at the back of the list will be removed.
+   *!
+   *! @throws
+   *!   An error if the list is full and @[force] is false.
+   *!
+   *! @note
+   *!   @[force] was not supported in Pike 8.0.1800 and earlier.
+   *!
+   *! @note
+   *!   This is the same operation as @[add()].
+   *!
+   *! @seealso
+   *!   @[add()], @[push_back()]
    */
 
-  PIKEFUN void push_front(mixed value)
+  PIKEFUN void push_front(mixed value, int(0..1)|void force)
   {
     struct svalue ind;
+    ASSERT_INITIALIZED();
     if (THIS->size == THIS->a->size)
     {
-      Pike_error("The list is full, could not add value, please allocate more space.\n");
+      if (!force || !force->u.integer) {
+        Pike_error("The list is full, could not add value, "
+                   "please allocate more space or use force.\n");
+      }
+      if (!THIS->a->size) return;
+
+      THIS->size--;
     }
     should_copy();
     THIS->pos--;
@@ -801,51 +1044,29 @@ PIKECLASS CircularList
    *!   @[CircularList] with the maximum size of arg.
    */
 
-  PIKEFUN void create(array|int arg)
+  PIKEFUN void create(array|int(0..) arg)
   {
+    struct array *old_a = THIS->a;
     if (TYPEOF(*arg) == T_INT)
     {
+      if (arg->u.integer < 0) {
+        SIMPLE_ARG_TYPE_ERROR("create", 1, "int(0..)");
+      }
       THIS->a =allocate_array_no_init(arg->u.integer, 0);
-      THIS->a->type_field = BIT_INT;
+      if (arg->u.integer) {
+        THIS->a->type_field = BIT_INT;
+      }
     }
     else if (TYPEOF(*arg) == T_ARRAY)
     {
       add_ref(THIS->a=arg->u.array);
       THIS->size=THIS->a->size;
     }
+    if (old_a) {
+      free_array(old_a);
+    }
     pop_stack();
   }
-
-  /*! @decl CircularListIterator _get_iterator(void|int ind)
-   *!   Create and initiate a new CircularListIterator that could be used
-   *!   to iterate over this list.
-   *!
-   *! @param ind
-   *!   If an @[ind] value is supplied the iterator will be positioned at
-   *!   that index.
-   *!
-   *! @returns
-   *!   An iterator.
-   */
-
-
-
-  /*! @decl CircularListIterator first()
-   *!   Create and initiate a new CircularListIterator that could be used
-   *!   to iterate over this list.
-   *!
-   *! @returns
-   *!   An iterator positioned at the first element in the list.
-   */
-
-
-  /*! @decl CircularListIterator last()
-   *!   Create and initiate a new CircularListIterator that could be used
-   *!   to iterate over this list.
-   *!
-   *! @returns
-   *!   An iterator positioned after the last element in the list.
-   */
 
 
 #ifdef PIKE_NULL_IS_SPECIAL
@@ -897,35 +1118,37 @@ PIKECLASS CircularList
 	add_ref(THIS->obj = list);
 	if (start) // if there was an start index supplied
 	{
-	  THIS->pos=start->u.integer;
-	  if (THIS->list->a && ((THIS->pos > THIS->list->size)
-				   || (THIS->pos < 0)))
+	  THIS->pos = start->u.integer - 1;
+	  if (THIS->list->a && ((THIS->pos >= THIS->list->size)
+				   || (THIS->pos < -1)))
 	  {
 	      Pike_error("Index %d is out of array range 0 - %d.\n",
-			 THIS->pos,
+			 THIS->pos + 1,
 			 THIS->list->size);
           }
           pop_n_elems(2);
 	}
 	else
 	{
-          THIS->pos = 0;
+          THIS->pos = -1;
           pop_stack();
 	}
       }
     }
 
-    /*! @decl int index()
+    /*! @decl int _iterator_index()
      *!
      *! @returns
      *!    The index at the current position.
      */
 
-    PIKEFUN int index()
+    PIKEFUN int _iterator_index()
+      flags ID_PROTECTED;
     {
       if(!THIS->list ||
 	 !THIS->list->a ||
-	 THIS->pos >= THIS->list->size)
+	 (THIS->pos < 0) ||
+	 (THIS->pos >= THIS->list->size))
       {
 	push_undefined();
       }
@@ -936,17 +1159,19 @@ PIKECLASS CircularList
     }
 
 
-    /*! @decl mixed value()
+    /*! @decl mixed _iterator_value()
      *!
      *! @returns
      *!    The value at the current position.
      */
 
-    PIKEFUN mixed value()
+    PIKEFUN mixed _iterator_value()
+      flags ID_PROTECTED;
     {
       if(!THIS->list ||
 	 !THIS->list->a ||
-	 THIS->pos >= THIS->list->size)
+	 (THIS->pos < 0) ||
+	 (THIS->pos >= THIS->list->size))
       {
 	push_undefined();
       }
@@ -957,6 +1182,21 @@ PIKECLASS CircularList
       }
     }
 
+    PIKEFUN int _iterator_next()
+      flags ID_PROTECTED;
+    {
+      if (!THIS->list || !THIS->list->a) {
+	push_undefined();
+	return;
+      }
+      THIS->pos++;
+      if (THIS->pos >= THIS->list->size) {
+	THIS->pos = -1;
+	push_undefined();
+      } else {
+	push_int(THIS->pos);
+      }
+    }
 
     /*! @decl CircularListIterator `+(int steps)
      *!   Move the iterator @[steps] steps forward (negative value on @[steps]
@@ -973,14 +1213,17 @@ PIKECLASS CircularList
       new = OBJ2_CIRCULARLIST_CIRCULARLISTITERATOR(o);
       new[0]=*THIS;
       add_ref(THIS->obj);
+      if ((steps < 0) && (new->pos < 0)) {
+	new->pos = new->list->size;
+      }
       new->pos+=steps;
       if (new->pos < 0)
       {
-	new->pos = 0;
+	new->pos = -1;
       }
-      else if (new->pos > new->list->size)
+      else if (new->pos >= new->list->size)
       {
-	new->pos = new->list->size;
+	new->pos = -1;
       }
       RETURN o;
     }
@@ -996,14 +1239,19 @@ PIKECLASS CircularList
 
     PIKEFUN object `+=(int steps)
     {
+      if (steps < 0) {
+	if (THIS->pos < 0) {
+	  THIS->pos = THIS->list->size;
+	}
+      }
       THIS->pos+=steps;
       if (THIS->pos < 0)
       {
-	THIS->pos = 0;
+	THIS->pos = -1;
       }
-      else if (THIS->pos > THIS->list->size)
+      else if (THIS->pos >= THIS->list->size)
       {
-	THIS->pos = THIS->list->size;
+	THIS->pos = -1;
       }
 
       REF_RETURN Pike_fp->current_object;
@@ -1026,14 +1274,17 @@ PIKECLASS CircularList
       new = OBJ2_CIRCULARLIST_CIRCULARLISTITERATOR(o);
       new[0]=*THIS;
       add_ref(THIS->obj);
+      if ((steps > 0) && (new->pos < 0)) {
+	new->pos = new->list->size;
+      }
       new->pos-=steps;
       if (new->pos < 0)
       {
-	new->pos = 0;
+	new->pos = -1;
       }
-      else if (new->pos > new->list->size)
+      else if (new->pos >= new->list->size)
       {
-	new->pos = new->list->size;
+	new->pos = -1;
       }
       RETURN o;
     }
@@ -1048,16 +1299,17 @@ PIKECLASS CircularList
 
     PIKEFUN int(0..1) has_next(void|int steps)
     {
-      if (!steps)
-      {
-	RETURN (THIS->list &&
-		(THIS->pos + 1) <= THIS->list->size);
+      int pos = THIS->pos;
+      if (!THIS->list || !THIS->list->size) {
+	RETURN 0;
       }
-      else
-      {
-	RETURN (THIS->list &&
-		(THIS->pos + steps->u.integer) >= 0 &&
-		(THIS->pos + steps->u.integer) <= THIS->list->size);
+      if (!steps) {
+	RETURN ((pos + 1) < THIS->list->size);
+      } else if (steps->u.integer < 0) {
+	if (pos < 0) pos = THIS->list->size;
+	RETURN ((pos + steps->u.integer) >= 0);
+      } else {
+	RETURN ((pos + steps->u.integer) < THIS->list->size);
       }
     }
 
@@ -1071,29 +1323,18 @@ PIKECLASS CircularList
 
     PIKEFUN int(0..1) has_previous(void|int steps)
     {
-      if (!steps)
-      {
-	RETURN (THIS->list &&
-		(THIS->pos) > 0);
+      int pos = THIS->pos;
+      if (!THIS->list || !THIS->list->size) {
+	RETURN 0;
       }
-      else
-      {
-	RETURN (THIS->list &&
-		(THIS->pos - steps->u.integer) >= 0 &&
-		(THIS->pos - steps->u.integer) <= THIS->list->size);
+      if (!steps) {
+	RETURN !!pos;
+      } else if (steps->u.integer < 0) {
+	RETURN ((pos - steps->u.integer) < THIS->list->size);
+      } else {
+	if (pos < 0) pos = THIS->list->size;
+	RETURN ((pos - steps->u.integer) >= 0);
       }
-    }
-
-
-    /*! @decl int(0..1) `!()
-     *! @returns
-     *!    Returns @tt{false@} if the iterator has reached the end.
-     */
-
-    PIKEFUN int(0..1) `!()
-    {
-      RETURN (THIS->list &&
-	      THIS->pos  == THIS->list->size);
     }
 
 
@@ -1179,15 +1420,18 @@ PIKECLASS CircularList
      *!    Returns distance between this iterator and @[iter].
      *! @throws
      *!    An error if the two iterator could not be compared.
+     *!
+     *! @note
+     *!    This operation is only valid if both iterators are
+     *!    for the same @[CircularList] object.
      */
 
     PIKEFUN int distance(object iter)
     {
-      if (iter->prog == CircularList_CircularListIterator_program)
-      {
-
-	struct CircularList_CircularListIterator_struct *i =
-	  OBJ2_CIRCULARLIST_CIRCULARLISTITERATOR(iter);
+      struct CircularList_CircularListIterator_struct *i = NULL;
+      if ((iter->prog == CircularList_CircularListIterator_program) &&
+	  (i = OBJ2_CIRCULARLIST_CIRCULARLISTITERATOR(iter)) &&
+	  (i->list == THIS->list)) {
 	RETURN (i->pos - THIS->pos);
       }
       else
@@ -1222,7 +1466,8 @@ PIKECLASS CircularList
     PIKEFUN mixed set_value(mixed val)
     {
       if (THIS->list &&
-	  THIS->pos < THIS->list->size)
+	  (THIS->pos >= 0) &&
+	  (THIS->pos < THIS->list->size))
       {
 	struct svalue ind;
 	struct svalue retval;
@@ -1247,14 +1492,14 @@ PIKECLASS CircularList
       }
     }
 
-#ifdef PIKE_NULL_IS_SPECIAL
     INIT
     {
-      THIS->list=0;
-      THIS->pos=0;
+      THIS->pos = -1;
+#ifdef PIKE_NULL_IS_SPECIAL
+      THIS->list = NULL;
       THIS->obj = NULL;
-    }
 #endif
+    }
 
     EXIT
       gc_trivial;
@@ -1269,6 +1514,18 @@ PIKECLASS CircularList
   /*! @endclass
   */
 
+  /*! @decl CircularListIterator _get_iterator(void|int ind)
+   *!   Create and initiate a new CircularListIterator that could be used
+   *!   to iterate over this list.
+   *!
+   *! @param ind
+   *!   If an @[ind] value is supplied the iterator will be positioned at
+   *!   that index.
+   *!
+   *! @returns
+   *!   An iterator.
+   */
+
   PIKEFUN object _get_iterator(void|int ind)
   {
     ref_push_object(Pike_fp->current_object);
@@ -1281,22 +1538,49 @@ PIKECLASS CircularList
   }
 
 
+  /*! @decl __deprecated__ CircularListIterator first()
+   *!   Create and initiate a new CircularListIterator that could be used
+   *!   to iterate over this list.
+   *!
+   *! @returns
+   *!   An iterator positioned before the first element of the list.
+   *!
+   *! @deprecated _get_iterator
+   *!   With the Pike 8.1 and later iterator API this is identical
+   *!   to @[last()] and @[_get_iterator()].
+   *!
+   *! @seealso
+   *!   @[_get_iterator()], @[last()]
+   */
 
   PIKEFUN object first()
+    rawtype tDeprecated(tFunc(tNone, tObj));
   {
     ref_push_object(Pike_fp->current_object);
     push_object(clone_object(CircularList_CircularListIterator_program, 1));
   }
 
 
+  /*! @decl __deprecated__ CircularListIterator last()
+   *!   Create and initiate a new CircularListIterator that could be used
+   *!   to iterate over this list.
+   *!
+   *! @returns
+   *!   An iterator positioned after the last element of the list.
+   *!
+   *! @deprecated _get_iterator
+   *!   With the Pike 8.1 and later iterator API this is identical
+   *!   to @[first()] and @[_get_iterator()].
+   *!
+   *! @seealso
+   *!   @[_get_iterator()], @[first()]
+   */
 
   PIKEFUN object last()
+    rawtype tDeprecated(tFunc(tNone, tObj));
   {
-    struct svalue ind;
-    SET_SVAL(ind, T_INT, NUMBER_NUMBER, integer, THIS_CIRCULARLIST->size);
     ref_push_object(Pike_fp->current_object);
-    push_svalue(&ind);
-    push_object(clone_object(CircularList_CircularListIterator_program, 2));
+    push_object(clone_object(CircularList_CircularListIterator_program, 1));
   }
 
 

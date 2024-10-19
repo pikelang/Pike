@@ -49,15 +49,14 @@ string(0..127) string2hex(string(0..255) s)
 //! @seealso
 //! @[`*()]
 //!
-string implode_nicely(array(string|int|float) foo, string|void separator)
+string implode_nicely(array(string|int|float) foo, string separator="and")
 {
-  if(!separator) separator="and";
-  foo=(array(string))foo;
+  array(string) bar = (array(string))foo;
   switch(sizeof(foo))
   {
   case 0: return "";
-  case 1: return ([array(string)]foo)[0];
-  default: return foo[..<1]*", "+" "+separator+" "+foo[-1];
+  case 1: return bar[0];
+  default: return bar[..<1] * ", " + " " + [string]separator + " " + bar[-1];
   }
 }
 
@@ -105,40 +104,42 @@ string common_prefix(array(string) strs)
   if(!sizeof(strs))
     return "";
 
-  strs = Array.uniq(strs);
+  strs = Array.uniq(sort(strs));
 
   if (sizeof(strs) == 1)
     return strs[0];
 
   string strs0 = strs[0];
-  int n, i;
+  string strsn = strs[-1];
 
-  int sz = min(@map(strs, sizeof));
+  int n;
+
+  int sz = min(sizeof(strs0), sizeof(strsn));
 
   for(n = 0; n < sz; n++)
-    for(i = 1; i < sizeof(strs); i++)
-      if(strs[i][n] != strs0[n])
-	return strs0[0..n-1];
+    if(strs0[n] != strsn[n])
+      return strs0[0..n-1];
 
-  return strs0[..sz-1];
+  // NB: strs0 MUST be the short string (aka prefix) in this case.
+  return strs0;
 }
 
 // Do a fuzzy matching between two different strings and return a
 // "similarity index". The higher, the closer the strings match.
 protected int low_fuzzymatch(string str1, string str2)
 {
-  string tmp1, tmp2;
-  int offset, length;
   int fuzz;
   fuzz = 0;
   while(sizeof(str1) && sizeof(str2))
   {
-    /* Now we will look for the first character of tmp1 in tmp2 */
+    int offset, length;
+
+    /* Now we will look for the first character of str1 in str2 */
     if((offset = search(str2, str1[0..0])) != -1)
     {
-      tmp2 = str2[offset..];
+      string tmp2 = str2[offset..];
       /* Ok, so we have found one character, let's check how many more */
-      tmp1 = str1;
+      string tmp1 = str1;
       length = 1;
       while(1)
       {
@@ -179,7 +180,7 @@ int(0..100) fuzzymatch(string a, string b)
 
   fuzz = low_fuzzymatch(a, b);
   fuzz += low_fuzzymatch(b, a);
-  fuzz = fuzz*100/(sizeof(a)+sizeof(b));
+  fuzz = fuzz*100/[int(1..)](sizeof(a)+sizeof(b));
 
   return [int(0..100)]fuzz;
 }
@@ -351,32 +352,30 @@ string int2size( int size )
 
 //! Expands tabs in a string to ordinary spaces, according to common
 //! tabulation rules.
-string expand_tabs(string s, int|void tab_width,
-		   string|void substitute_tab,
-		   string|void substitute_space,
-		   string|void substitute_newline)
+string expand_tabs(string s, int(1..) tab_width = 8,
+		   string tab = " ",
+		   string space = " ",
+		   string newline = "\n")
 {
-  string tab = substitute_tab || " ",
-	 space = substitute_space || " ",
-	 newline = substitute_newline || "\n";
-  return map(s/"\n", line_expand_tab, tab_width||8, space, tab) * newline;
+  return map(s/"\n", line_expand_tab, tab_width, space, tab) * newline;
 }
 
 // the \n splitting is done in our caller for speed improvement
-protected string line_expand_tab(string line, int tab_width,
-			      string space, string tab)
+protected string line_expand_tab(string line, int(1..) tab_width,
+				 string space, string tab)
 {
-  string ws, chunk, result = "";
-  int col, next_tab_stop, i;
+  string result = "";
+  int(0..) col, next_tab_stop;
   while(sizeof(line))
   {
-    sscanf(line, "%[ \t\n]%[^ \t\n]%s", ws, chunk, line);
-    for(i=0; i<sizeof(ws); i++)
-      switch(ws[i])
+    sscanf(line, "%[ \t\n]%[^ \t\n]%s", string ws, string chunk, line);
+    foreach(ws; ; int ch)
+      switch(ch)
       {
 	case '\t':
-	  next_tab_stop = col + tab_width - (col % tab_width);
-	  result += tab * (next_tab_stop - col);
+	  int(0..) num_spaces = [int(0..)](tab_width - (col % tab_width));
+	  next_tab_stop = col + num_spaces;
+	  result += tab * num_spaces;
 	  col = next_tab_stop;
 	  break;
 
@@ -389,4 +388,14 @@ protected string line_expand_tab(string line, int tab_width,
     col += sizeof(chunk);
   }
   return result;
+}
+
+//! Gives the actual number of bits needed to represent every
+//! character in the string. Unlike @[width] that only looks at the
+//! allocated string width, @[bits] actually looks at the maximum used
+//! character and delivers a more precise answer than just 8, 16, or
+//! 32 bits. The empty string results in 0.
+int(0..) bits(string data) {
+  if(data=="") return 0;
+  return Gmp.mpz(String.range(data)[1])->size();
 }

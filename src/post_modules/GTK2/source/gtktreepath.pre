@@ -10,7 +10,7 @@ void create(?string path)
   pgtk2_verify_setup();
   if (args) {
     char *s;
-    get_all_args(NULL,args,"%s",&s);
+    get_all_args(NULL,args,"%c",&s);
     if (s) {
       THIS->obj=(void *)gtk_tree_path_new_from_string(s);
       THIS->owned=1;

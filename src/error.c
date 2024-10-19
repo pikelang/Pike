@@ -23,6 +23,7 @@
 #include "pike_types.h"
 #include "sprintf.h"
 #include "pikecode.h"
+#include "pike_compiler.h"
 
 /* __attribute__ only applies to function declarations, not
    definitions, so we disable them here. */
@@ -117,6 +118,15 @@ PMOD_EXPORT JMP_BUF *init_recovery(JMP_BUF *r, size_t stack_pop_levels DEBUG_INI
 /* coverity[+kill] */
 PMOD_EXPORT DECLSPEC(noreturn) void pike_throw(void) ATTRIBUTE((noreturn))
 {
+  struct svalue save_throw_value;
+
+  /* Save the value to be thrown in case error handlers etc below
+   * call eg safe_apply() et al, or cause a thread switch to
+   * code that does.
+   */
+  move_svalue(&save_throw_value, &throw_value);
+  mark_free_svalue(&throw_value);
+
 #ifdef TRACE_UNFINISHED_TYPE_FIELDS
   accept_unfinished_type_fields++;
 #endif
@@ -189,8 +199,22 @@ PMOD_EXPORT DECLSPEC(noreturn) void pike_throw(void) ATTRIBUTE((noreturn))
     Pike_fatal("Stack error in error.\n");
 #endif
 
-  pop_n_elems(Pike_sp - Pike_interpreter.evaluator_stack - Pike_interpreter.recoveries->stack_pointer);
+  /* Note: The pop_stack() below may trigger destruct callbacks being called
+   *       for objects having PROGRAM_DESTRUCT_IMMEDIATE. These may
+   *       in turn throw (caught) errors and zap throw_value.
+   *
+   * Note: We can not use pop_n_elems() here as a nested error in an
+   *       immediate destruct callback may zap the stack for us during
+   *       our popping.
+   */
+  while (Pike_sp > Pike_interpreter.evaluator_stack + Pike_interpreter.recoveries->stack_pointer) {
+    pop_stack();
+  }
   Pike_mark_sp = Pike_interpreter.mark_stack + Pike_interpreter.recoveries->mark_sp;
+
+  /* Move the value to be thrown back so that it can be caught. */
+  free_svalue(&throw_value);
+  move_svalue(&throw_value, &save_throw_value);
 
 #if defined(DEBUG_MALLOC) && defined(PIKE_DEBUG)
   /* This will tell us where the value was caught (I hope) */
@@ -401,23 +425,22 @@ PMOD_EXPORT void exit_on_error(const void *msg)
   Pike_interpreter.trace_level = 0;
 
   if (inhibit_errors)
-    fprintf (stderr, "Got recursive error in exit_on_error: %s\n", (char *) msg);
+    fprintf (stderr, "Got recursive error in exit_on_error: %s\n", (const char *) msg);
 
   else {
     struct byte_buffer buf = BUFFER_INIT();
-    char *s;
     struct svalue thrown;
 
     inhibit_errors = 1;
 
 #ifdef PIKE_DEBUG
     if (d_flag) {
-      fprintf(stderr,"%s\n",(char *)msg);
+      fprintf(stderr,"%s\n",(const char *)msg);
       dump_backlog();
     }
 #endif
 
-    fprintf(stderr,"%s\n",(char *)msg);
+    fprintf(stderr,"%s\n",(const char *)msg);
 
     /* We've reserved LOW_SVALUE_STACK_MARGIN and LOW_C_STACK_MARGIN
      * for this. */
@@ -458,11 +481,11 @@ PMOD_EXPORT void fatal_on_error(const void *msg)
 
 #ifdef PIKE_DEBUG
   if (d_flag) {
-    fprintf(stderr,"%s\n",(char *)msg);
+    fprintf(stderr,"%s\n",(const char *)msg);
     dump_backlog();
   }
 #endif
-  fprintf(stderr,"%s\n",(char *)msg);
+  fprintf(stderr,"%s\n",(const char *)msg);
 
   if (SETJMP(tmp)) {
     fprintf(stderr, "Error in handle_error().\n");
@@ -474,10 +497,37 @@ PMOD_EXPORT void fatal_on_error(const void *msg)
   do_abort();
 }
 
+#define MAX_ATFATAL	16
+static void (*atfatals[MAX_ATFATAL])(void);
+static size_t num_atfatals = 0;
+
+/**
+ * Register a function to be called when a fatal error is triggered.
+ *
+ * Registered functions will be called in the reverse order of
+ * their registration.
+ */
+PMOD_EXPORT void pike_atfatal(void (*fun)(void))
+{
+  if (!fun) return;
+  if (num_atfatals >= MAX_ATFATAL) {
+    Pike_fatal("Too many atfatals()!\n");
+  }
+  atfatals[num_atfatals++] = fun;
+}
+
+static void call_atfatals(void)
+{
+  while (num_atfatals) {
+    atfatals[--num_atfatals]();
+  }
+}
+
 /* coverity[+kill] */
 PMOD_EXPORT DECLSPEC(noreturn) void debug_va_fatal(const char *fmt, va_list args) ATTRIBUTE((noreturn))
 {
   static int in_fatal = 0;
+  struct compilation *c = MAYBE_THIS_COMPILATION;
 
   /* fprintf(stderr, "Raw error: %s\n", fmt); */
 
@@ -485,6 +535,11 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_va_fatal(const char *fmt, va_list args
   if (in_fatal)
   {
     if (fmt) (void)vfprintf(stderr, fmt, args);
+    /* Prevent triple fatal. */
+    if (in_fatal == 1) {
+      in_fatal = 2;
+      gdb_backtraces();
+    }
     do_abort();
   }
 
@@ -509,7 +564,16 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_va_fatal(const char *fmt, va_list args
     fprintf(stderr,"Pike was in GC stage %d when this fatal occurred.\n",Pike_in_gc);
   Pike_in_gc = GC_PASS_DISABLED;
 
+  if (c) {
+    fprintf(stderr, "Compiler was compiling %s line %ld when "
+	    "this fatal occurred.\n",
+	    c->lex.current_file ? c->lex.current_file->str : "-",
+	    (long)c->lex.current_line);
+  }
+
   d_flag=Pike_interpreter.trace_level=0;
+
+  call_atfatals();
 
   if(Pike_sp && Pike_interpreter.evaluator_stack &&
      master_object && master_object->prog)
@@ -521,12 +585,18 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_va_fatal(const char *fmt, va_list args
      * below. Doing it the naughty way without going through
      * init_threads_disable etc to avoid hanging on runaway locks. */
 #ifdef PIKE_THREADS
+#ifdef PIKE_DEBUG
+    THREAD_T save_threads_disabled_thread = threads_disabled_thread;
+    threads_disabled_thread = th_self();
+#endif
     threads_disabled++;
 #endif
     memset (&evaluator_callbacks, 0, sizeof (evaluator_callbacks));
-    if (SETJMP (jmp))
+    if (SETJMP (jmp)) {
       fprintf(stderr,"Got exception when trying to describe backtrace.\n");
-    else {
+      in_fatal = 2;
+      gdb_backtraces();
+    } else {
       jmp.severity = THROW_EXIT; /* Don't want normal exit code to run here. */
       push_error("Backtrace at time of fatal:\n");
       APPLY_MASTER("describe_backtrace",1);
@@ -536,10 +606,15 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_va_fatal(const char *fmt, va_list args
     UNSETJMP (jmp);
 #ifdef PIKE_THREADS
     threads_disabled--;
+#ifdef PIKE_DEBUG
+    threads_disabled_thread = save_threads_disabled_thread;
+#endif
 #endif
     evaluator_callbacks = saved_eval_cbs;
   }else{
-    fprintf(stderr,"No stack - no backtrace.\n");
+    fprintf(stderr,"No master.\n");
+    in_fatal = 2;
+    gdb_backtraces();
   }
   fflush(stderr);
   do_abort();
@@ -821,7 +896,7 @@ static void f_error_create(INT32 args)
   struct pike_string *msg;
   struct array *bt = NULL;
 
-  get_all_args(NULL, args, "%W.%A", &msg, &bt);
+  get_all_args(NULL, args, "%t.%A", &msg, &bt);
 
   do_free_string(GENERIC_ERROR_THIS->error_message);
   copy_shared_string(GENERIC_ERROR_THIS->error_message, msg);
@@ -981,6 +1056,19 @@ PMOD_EXPORT DECLSPEC(noreturn) void throw_error_object(
 }
 
 /* coverity[+kill] */
+static DECLSPEC(noreturn) void low_throw_error_object(
+  struct object *o,
+  const char *func, const struct svalue *base_sp, int args,
+  const char *desc, ...) ATTRIBUTE((noreturn))
+{
+  va_list foo;
+  va_start(foo,desc);
+  ASSERT_THREAD_SWAPPED_IN();
+  DWERROR("%s(): Throwing an error object\n", func);
+  ERROR_DONE();
+}
+
+/* coverity[+kill] */
 PMOD_EXPORT DECLSPEC(noreturn) void generic_error(
   const char *func,
   const struct svalue *base_sp,  int args,
@@ -1001,7 +1089,59 @@ PMOD_EXPORT DECLSPEC(noreturn) void index_error(
   INIT_ERROR(index);
   ERROR_COPY_SVALUE(index, value);
   ERROR_COPY_SVALUE(index, index);
-  ERROR_DONE();
+  if (!desc) {
+    /* Some default error messages for bad indexing. */
+    push_type_value(get_type_of_svalue(value));
+    push_type_value(get_type_of_svalue(index));
+    if (SAFE_IS_ZERO(value)) {
+      switch(TYPEOF(*index)) {
+      case T_FLOAT:
+        low_throw_error_object(o, func, base_sp, args,
+                               "Indexing the NULL value "
+                               "with %e.\n",
+                               index->u.float_number);
+        break;
+      case T_STRING:
+        low_throw_error_object(o, func, base_sp, args,
+                               "Indexing the NULL value "
+                               "with %q.\n",
+                               index->u.string);
+        break;
+      default:
+        low_throw_error_object(o, func, base_sp, args,
+                               "Indexing the NULL value "
+                               "with a value of type %T.\n",
+                               Pike_sp[-1].u.type);
+        break;
+      }
+    } else {
+      switch(TYPEOF(*index)) {
+      case T_FLOAT:
+        low_throw_error_object(o, func, base_sp, args,
+                               "Indexing a value of type %T "
+                               "with %e.\n",
+                               Pike_sp[-2].u.type, index->u.float_number);
+        break;
+      case T_STRING:
+        low_throw_error_object(o, func, base_sp, args,
+                               "Indexing a value of type %T "
+                               "with %q.\n",
+                               Pike_sp[-2].u.type, index->u.string);
+        break;
+      default:
+        low_throw_error_object(o, func, base_sp, args,
+                               "Indexing a value of type %T "
+                               "with a value of type %T.\n",
+                               Pike_sp[-2].u.type, Pike_sp[-1].u.type);
+        break;
+      }
+    }
+    va_end(foo);
+
+    UNREACHABLE();
+  } else {
+    ERROR_DONE();
+  }
 }
 
 /* coverity[+kill] */
@@ -1033,8 +1173,8 @@ PMOD_EXPORT DECLSPEC(noreturn) void math_error(
   struct svalue *number,
   const char *desc, ...) ATTRIBUTE((noreturn))
 {
-  INIT_ERROR(math);
   const struct svalue *base_sp = Pike_sp - args;
+  INIT_ERROR(math);
   if(number)
   {
     ERROR_COPY_SVALUE(math, number);

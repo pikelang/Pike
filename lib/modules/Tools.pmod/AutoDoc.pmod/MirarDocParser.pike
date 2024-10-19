@@ -1,3 +1,4 @@
+#charset iso-8859-1
 
 #pike __REAL_VERSION__
 
@@ -11,11 +12,12 @@ constant makepic = ({
   // Pike 0.7.11 and later:
   #"// Illustration.
 #pike __REAL_VERSION__
+#line " + sprintf("%d %q", __LINE__ + 1,  __FILE__) + #"
   string fn;
 
   int verbosity;
 
-  void create(string _fn, int|void _verbosity, void|string type) {
+  protected void create(string _fn, int|void _verbosity, void|string type) {
     fn = _fn;
     verbosity = _verbosity;
     string ext;
@@ -71,6 +73,7 @@ constant makepic = ({
   // that later were removed.
   #"// Pike 7.3 illustration, implicit imports.
 #pike 7.3
+#line " + sprintf("%d %q", __LINE__ + 1, __FILE__) + #"
 
   import Image;
   import Stdio;
@@ -78,7 +81,7 @@ constant makepic = ({
 
   int verbosity;
 
-  void create(string _fn, int|void _verbosity, void|string type) {
+  protected void create(string _fn, int|void _verbosity, void|string type) {
     fn = _fn;
     verbosity = _verbosity;
     string ext;
@@ -130,6 +133,7 @@ constant makepic = ({
   // Prior to 0.7.3 the Image module classes were all lower-case.
   #"// Pike 0.6 illustration, implicit imports, only Image.image.
 #pike 0.6
+#line " + sprintf("%d %q", __LINE__ + 1, __FILE__) + #"
 
   import 0.6::Image;
   import 0.6::Stdio;
@@ -139,7 +143,7 @@ constant makepic = ({
 
   int verbosity;
 
-  void create(string _fn, int|void _verbosity, void|string type) {
+  protected void create(string _fn, int|void _verbosity, void|string type) {
     fn = _fn;
     verbosity = _verbosity;
     string ext;
@@ -461,10 +465,10 @@ constant self_terminating = (< "br", "hr", "wbr" >);
 
 ADT.Stack nesting;
 
-array(string) pop_to_tag(string tag)
+array(string) pop_to_tag(string|zero tag)
 {
   array(string) res = ({});
-  string top;
+  string|zero top;
   while ((top = nesting->top()) && (top != tag)) {
     res += ({ "</" + top + ">" });
     nesting->pop();
@@ -644,7 +648,8 @@ string doctype(string type,void|string indent)
    if (type[..2]=="...")
       return nindent+"<varargs>"+doctype(type[3..])+"</varargs>";
 
-   string a=type,b=0,c,o=0;
+   string a=type;
+   string|zero b=0,c,o=0;
    sscanf(type,"%s(%s",a,b);
    if (b) [b,c]=endparan(b);
 
@@ -658,6 +663,7 @@ string doctype(string type,void|string indent)
       return nindent+combine_or(doctype(a+"("+b+")"+d,nindent),
 			       doctype(e,nindent));
 
+   a = String.trim_all_whites(a);
    switch (a)
    {
       case "int":
@@ -734,7 +740,7 @@ constant convname=
 
 array(string) parse_decl(string raw_decl)
 {
-   string rv,name,params=0;
+   string|zero rv,name,params=0;
    array tokens =
       Parser.Pike.split(replace(raw_decl, ({ "&lt;", "&gt;" }), ({ "<", ">"})));
    tokens = Parser.Pike.tokenize(tokens);
@@ -765,7 +771,7 @@ void docdecl(string enttype,
 	     array(string) decl,
 	     object f)
 {
-   string rv,name,params=0;
+   string|zero rv,name,params=0;
    rv = decl[0];
    name = decl[1];
    if (sizeof(decl) == 3) params = decl[2][1..];
@@ -1328,7 +1334,7 @@ array(string) make_illustration(array(string) templates,
   throw(err);
 }
 
-void create(string image_dir, void|.Flags flags)
+protected void create(string image_dir, void|.Flags flags)
 {
   verbosity = (flags & .FLAG_VERB_MASK);
   this::flags = flags;
@@ -1527,10 +1533,11 @@ void create(string image_dir, void|.Flags flags)
   else if (IMAGE_DIR[-1] != '/') IMAGE_DIR += "/";
 
   execute = #"
+#line " + sprintf("%d %q", __LINE__ + 1, __FILE__) + #"
   class Interceptor {
     string buffer = \"\";
 
-    void `()(string in) {
+    protected void `()(string in) {
       buffer += in;
     }
 
@@ -1543,7 +1550,7 @@ void create(string image_dir, void|.Flags flags)
 
   int img_counter;
   string prefix;
-  void create(int _img_counter, string _prefix) {
+  protected void create(int _img_counter, string _prefix) {
     img_counter = _img_counter;
     prefix = _prefix;
   }

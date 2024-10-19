@@ -9,7 +9,7 @@ int portno;
 .Torrent parent;
 
 //! Bind a port for this Torrent.
-void create(.Torrent _parent)
+protected void create(.Torrent _parent)
 {
    parent=_parent;
    int portno=parent->my_port;

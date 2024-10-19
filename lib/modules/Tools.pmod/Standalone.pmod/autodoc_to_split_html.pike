@@ -77,7 +77,7 @@ array(string) split_reference(string what) {
 }
 
 string create_reference(string from, string to, string text,
-                        string|void xlink_namespace_prefix) {
+                        string xlink_namespace_prefix = "") {
   array a = (to/"::");
   switch(sizeof(a)) {
   case 2:
@@ -96,11 +96,23 @@ string create_reference(string from, string to, string text,
   default:
     error("Bad reference: %O\n", to);
   }
-  if (!xlink_namespace_prefix) xlink_namespace_prefix = "";
+  Node n = refs[to];
+  string name;
+  if (!n) {
+    werror("Referenced node not found for reference from %O to %O\n",
+           from, to);
+  } else {
+    name = n->name;
+    if ((< "variable", "constant", "typedef" >)[n->type]) {
+      a = a[..sizeof(a)-2];
+    }
+  }
   return "<a class='ms reference' " +
     xlink_namespace_prefix +
     "href='" +
-    "../"*max(sizeof(from/"/") - 2, 0) + map(a, cquote)*"/" + ".html'>" +
+    "../"*max(sizeof(from/"/") - 2, 0) + map(a, cquote)*"/" + ".html" +
+    (name?"#" + cquote(name):"") +
+    "'>" +
     String.trim(text) + "</a>";
 }
 
@@ -126,16 +138,17 @@ class Node
 
   Node parent;
 
-  string _sprintf() {
+  protected string _sprintf(int t) {
     return sprintf("Node(%O,%O,%d)", type, name, data?sizeof(data):0);
   }
 
-  void create(string _type, string _name, string _data, void|Node _parent)
+  protected void create(string _type, string _name, string _data,
+			void|Node _parent)
   {
     //if (_type == "class" && search(_data, "<modifiers>") > -1) {
     //  werror("\n\n\n----\n%s\n-------\n\n\n", _data);
     //}
-    if ((< "method", "enum", "variable", "constant" >)[_type]  &&
+    if ((< "method", "enum", "variable", "constant", "typedef" >)[_type]  &&
         search(_data, "<modifiers>") > -1)
     {
       //werror("%s:%s: %s\n", _type, _name, _data);
@@ -169,12 +182,12 @@ class Node
     string path = raw_class_path();
     refs[path] = this;
 
-    sort(class_children->name, class_children);
-    sort(module_children->name, module_children);
-    sort(enum_children->name, enum_children);
-    sort(directive_children->name, directive_children);
-    sort(method_children->name, method_children);
-    sort(member_children->name, member_children);
+    sort(map(class_children->name, lower_case), class_children);
+    sort(map(module_children->name, lower_case), module_children);
+    sort(map(enum_children->name, lower_case), enum_children);
+    sort(map(directive_children->name, lower_case), directive_children);
+    sort(map(method_children->name, lower_case), method_children);
+    sort(map(member_children->name, lower_case), member_children);
 
     method_children = check_uniq(method_children);
 
@@ -204,7 +217,7 @@ class Node
     array names = children->name;
     foreach(Array.uniq(names), string n)
       if(sizeof(filter(names, lambda(string in) { return in==n; }))!=1) {
-        string d="";
+        string|zero d="";
         Parser.HTML parser = Parser.HTML();
         parser->case_insensitive_tag(1);
         parser->xml_tag_syntax(3);
@@ -240,7 +253,7 @@ class Node
     return "";
   }
 
-  protected void add_ref(string path, string type, string name,
+  protected Node add_ref(string path, string type, string name,
                          string data, Node n, string c)
   {
     refs[path + name] = Node(type, name, data, n);
@@ -266,9 +279,10 @@ class Node
                           },
                        ]) )->finish(c);
     }
+    return refs[path + name];
   }
 
-  array(string) my_parse_docgroup(Parser.HTML p, mapping m, string c)
+  array(string)|zero my_parse_docgroup(Parser.HTML p, mapping m, string c)
   {
     foreach(({"homogen-name", "belongs"}), string attr) {
       if (m[attr]) m[attr] = Parser.parse_html_entities(m[attr]);
@@ -334,6 +348,7 @@ class Node
 
       case "constant":
       case "variable":
+      case "typedef":
       case "inherit":
         string path = raw_class_path();
         if(sizeof(path) && (path[-1] != ':')) path += ".";
@@ -343,12 +358,20 @@ class Node
             ( ([ "constant":
                  lambda(Parser.HTML p, mapping m, string c) {
                    string name = Parser.parse_html_entities(m->name);
-                   add_ref(path, "constant", name, "", this, c);
+                   member_children +=
+                     ({ add_ref(path, "constant", name, "", this, c) });
                  },
                  "variable":
                  lambda(Parser.HTML p, mapping m, string c) {
                    string name = Parser.parse_html_entities(m->name);
-                   add_ref(path, "variable", name, "", this, c);
+                   member_children +=
+                     ({ add_ref(path, "variable", name, c || "", this, "") });
+                 },
+                 "typedef":
+                 lambda(Parser.HTML p, mapping m, string c) {
+                   string name = Parser.parse_html_entities(m->name);
+                   member_children +=
+                     ({ add_ref(path, "typedef", name, c || "", this, "") });
                  },
                  "inherit":
                  lambda(Parser.HTML p, mapping m, string c) {
@@ -359,9 +382,16 @@ class Node
                  }
             ]) )->finish(c);
         }
-        else
-          add_ref(path, m["homogen-type"], m["homogen-name"],
-                  "", this, c);
+        else {
+          if (m["homogen-type"] == "inherit") {
+            add_ref(path, m["homogen-type"], m["homogen-name"],
+                    "", this, c);
+          } else {
+            member_children +=
+              ({ add_ref(path, m["homogen-type"], m["homogen-name"],
+                         "", this, c || "") });
+          }
+        }
         break;
 
       }
@@ -448,13 +478,18 @@ class Node
   string low_make_link(string to, int|void extra_levels)
   {
     // FIXME: Optimize the length of relative links
+    if (extra_levels < 0) return to;
     int num_segments = sizeof(make_filename()/"/") + extra_levels - 1;
     return ("../"*num_segments)+to;
   }
 
   string make_link(Node to, int|void extra_levels)
   {
-    return low_make_link(to->make_filename(), extra_levels);
+    string fn = to->make_filename() + "#" + cquote(to->name);
+    if ((< "variable", "constant", "typedef" >)[to->type]) {
+      fn = to->parent->make_filename() + "#" + cquote(to->name);
+    }
+    return low_make_link(fn, extra_levels);
   }
 
   array(Node) get_ancestors()
@@ -479,15 +514,6 @@ class Node
         Node res_obj;
 
         if(res_obj = refs[resolution]) {
-          while(res_obj && (<"constant","variable">)[res_obj->type]) {
-            res_obj = res_obj->parent;
-          }
-          if (!res_obj && verbosity) {
-            werror("Found no page to link to for reference %O (%O)\n",
-                   _reference, resolution);
-            return "<code class='reference nolink'>" + _reference +
-                   "</code>";
-          }
           // FIXME: Assert that the reference is correct?
           return create_reference(make_filename(),
                                   res_obj->raw_class_path(),
@@ -694,7 +720,7 @@ class Node
             return ([ "name":n->name,
                       "link":n->make_filename() ]);
           });
-    sort(a->name, a);
+    sort(map(a->name, lower_case), a);
     return sprintf("add_%s(%s);\n", name, encode_json(a));
   }
 
@@ -705,10 +731,10 @@ class Node
       map(nodes,
           lambda(Node n) {
             return ([ "name":n->name,
-                      "link":n->make_filename(),
+                      "link":make_link(n, -1),
                       "modifiers":sizeof(n->modifiers) && n->modifiers || Val.null ]);
           });
-    sort(a->name, a);
+    sort(map(a->name, lower_case), a);
     return sprintf(".addChildren('%s', %s)\n", name, encode_json(a));
   }
 
@@ -721,7 +747,7 @@ class Node
 
     res += "PikeDoc.registerSymbol('" + cp + "', PikeDoc.isInline)\n";
 
-    #define LOW_MAKE_INDEX_JS(CHILDREN) do { \
+#define LOW_MAKE_INDEX_JS(CHILDREN) do {                         \
       res += low_make_index_js2(((#CHILDREN)/"_")[0], CHILDREN); \
     } while (0)
 
@@ -732,6 +758,8 @@ class Node
     LOW_MAKE_INDEX_JS(method_children);
     LOW_MAKE_INDEX_JS(operator_children);
     LOW_MAKE_INDEX_JS(member_children);
+
+#undef LOW_MAKE_INDEX_JS
 
     res += ".finish();\n";
 
@@ -751,6 +779,8 @@ class Node
     LOW_MAKE_INDEX_JS(method_children);
     LOW_MAKE_INDEX_JS(operator_children);
     LOW_MAKE_INDEX_JS(member_children);
+
+#undef LOW_MAKE_INDEX_JS
 
     return res +
       "children = module_children.concat(class_children,\n"
@@ -884,6 +914,7 @@ class Node
       if (!ref) ref = text;
       if (!names[ref]) names[ref] = text;
       if (closure[ref] >= weight) continue; // Already handled.
+
       closure[ref] = weight;
       Node n = refs[ref];
       if (!n) {
@@ -894,12 +925,13 @@ class Node
       multiset(string) inhs = (<>);
       if (sizeof(n->inherits)) {
         foreach(n->inherits, array(string) entry) {
-          if (entry[2] == ref) {
+          if ((entry[2] || entry[1]) == ref) {
             if (verbosity && (ref == this_ref)) {
-              werror("Circular inherit in %s.\n", this_ref);
+              werror("Circular inherit in %s.\n", ref);
             }
             continue;   // Infinite loop averted.
           }
+
           q->put(({ weight + 1 }) + entry);
           inhs[entry[2]||entry[1]] = 1;
         }
@@ -956,7 +988,7 @@ class Node
     array(string) references = indices(closure);
     array(int) weights = values(closure);
     // Secondary sorting order is according to the reference string.
-    sort(references, weights);
+    sort(map(references, lower_case), references, weights);
     // Primary sorting order is according to the weights.
     sort(weights, references);
 
@@ -1117,17 +1149,8 @@ class Node
 #endif
   }
 
-  protected string make_content()
+  protected string make_content(Parser.XML.Tree.Node n)
   {
-    PROFILE();
-    string err;
-    Parser.XML.Tree.Node n;
-    if(err = catch( n = Parser.XML.Tree.parse_input(data)[0] )) {
-      werror(err + "\n" + data);
-      exit(1);
-    }
-    ENDPROFILE("XML.Tree");
-
     resolve_reference = my_resolve_reference;
 
     if(type=="appendix")
@@ -1150,13 +1173,21 @@ class Node
     return (string)contents;
   }
 
+  string node_type_suffix(Node node)
+  {
+    return ([
+      "method":"()",
+    ])[node->type] || "";
+  }
+
   string make_link_list(array(Node) children, int|void extra_levels)
   {
     String.Buffer res = String.Buffer(3500);
     foreach(children, Node node)
       res->add("<li><a href='", make_link(node, extra_levels), "'>",
                Parser.encode_html_entities(node->name),
-               "()</a></li>\n");
+               node_type_suffix(node),
+               "</a></li>\n");
     return (string)res;
   }
 
@@ -1164,20 +1195,12 @@ class Node
   {
     resolve_reference = my_resolve_reference;
 
-    string contents = "";
+    array(Node) children = member_children + enum_children +
+      directive_children + method_children + operator_children;
 
-    foreach(({ enum_children, directive_children, method_children }),
-            array(Node) children)
-    {
+    sort(map(children->name, lower_case), children);
 
-      if (children && sizeof(children)) {
-        foreach(children/( sizeof(children)/4.0 ), array(Node) children) {
-          contents += make_link_list(children, extra_levels);
-        }
-      }
-    }
-
-    return contents;
+    return make_link_list(children, extra_levels);
   }
 
   string make_index_page(int|void extra_levels)
@@ -1298,16 +1321,44 @@ class Node
               "</script>",
               low_make_link(make_load_index_filename()));
 
+    PROFILE();
+    string err;
+    Parser.XML.Tree.Node n;
+    if(err = catch( n = Parser.XML.Tree.parse_input(data)[0] )) {
+      werror(err + "\n" + data);
+      exit(1);
+    }
+    ENDPROFILE("XML.Tree");
+
+    string title_suffix = "";
+    if (type == "class") {
+      Parser.XML.Tree.Node nn = n;
+      while (nn && (< "autodoc", "namespace", "module" >)[nn->get_any_name()]) {
+        nn = nn->get_first_element();
+      }
+      if (nn) {
+        array(Parser.XML.Tree.Node) generics =
+          nn->get_elements("docgroup")->get_first_element("generic") -
+          ({ 0 });
+        string generics_decl = "";
+        if (sizeof(generics)) {
+          array(mapping(string:string)) attrs = generics->get_attributes();
+          sort((array(int))attrs->index, attrs);
+          title_suffix =
+            _Roxen.html_encode_string(" (< " + attrs->name * ", " + " >)");
+        }
+      }
+    }
 
     string res = replace(template,
       (["$navbar$": make_navbar(),
-        "$contents$": make_content(),
+        "$contents$": make_content(n),
         "$prev_url$": prev_url,
         "$prev_title$": _Roxen.html_encode_string(prev_title),
         "$next_url$": next_url,
         "$next_title$": _Roxen.html_encode_string(next_title),
         "$type$": String.capitalize(type),
-        "$title$": _Roxen.html_encode_string(make_class_path(1)),
+        "$title$": _Roxen.html_encode_string(make_class_path(1)) + title_suffix,
         "$style$": style,
         "$script$": script,
         "$dotdot$": extra_prefix,
@@ -1342,19 +1393,21 @@ class TopNode {
     string res = ::make_index_js();
     res -= "\n.finish();";
 
-#define LOW_MAKE_INDEX_JS(CHILDREN) do {                                \
+#define LOW_MAKE_INDEX_JS(CHILDREN) do {                         \
       res += low_make_index_js2(((#CHILDREN)/"_")[0], CHILDREN); \
     } while (0)
 
     LOW_MAKE_INDEX_JS(namespace_children);
     LOW_MAKE_INDEX_JS(appendix_children);
 
+#undef LOW_MAKE_INDEX_JS
+
     res += ".finish();";
 
     return res;
   }
 
-  void create(string _data) {
+  protected void create(string _data) {
     PROFILE();
     mapping m = localtime(time());
     timestamp = sprintf("%4d-%02d-%02d", m->year+1900, m->mon+1, m->mday);
@@ -1377,9 +1430,13 @@ class TopNode {
                           });
 
     _data = parser->finish(_data)->read();
+    if (has_prefix(_data, "<?xml")) {
+      // Strip <?xml?>-header.
+      _data = (_data/"?>")[1..] * "?>";
+    }
     ::create("autodoc", "", _data);
-    sort(namespace_children->name, namespace_children);
-    sort(appendix_children->name, appendix_children);
+    sort(map(namespace_children->name, lower_case), namespace_children);
+    sort(map(appendix_children->name, lower_case), appendix_children);
     foreach(namespace_children, Node x)
       if(x->type=="namespace" && x->name==default_namespace) {
         //      namespace_children -= ({ x });
@@ -1461,7 +1518,7 @@ class TopNode {
     return contents + doc;
   }
 
-  string make_content() {
+  string make_content(Parser.XML.Tree.Node n) {
     resolve_reference = my_resolve_reference;
 
     return make_index_page();

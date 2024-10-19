@@ -1,4 +1,4 @@
-#pike __REAL_VERSION__
+#pike 8.1
 #pragma no_deprecation_warnings
 
 //! Support for parsing PEM-style messages.
@@ -155,7 +155,7 @@ class RFC934 {
 
     int i = 0;
     string current = "";
-    string boundary = 0;
+    string|zero boundary = 0;
 
     encapsulated = ({ });
 

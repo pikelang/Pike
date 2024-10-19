@@ -16,15 +16,15 @@
 //! Combines tag and class to a single integer, for internal uses.
 //!
 //! @param cls
-//!   ASN1 type class (0..3).
+//!   ASN1 type class.
 //! @param tag
-//!   ASN1 type tag (1..).
+//!   ASN1 type tag.
 //! @returns
 //!   The combined tag.
 //! @seealso
 //!  @[extract_tag], @[extract_cls]
-int(4..) make_combined_tag(int(0..3) cls, int(1..) tag)
-{ return [int(4..)](tag << 2 | cls); }
+int(0..) make_combined_tag(int(0..3) cls, int(0..) tag)
+{ return (tag << 2 | cls); }
 
 //! Extract ASN1 type tag from a combined tag.
 //! @seealso
@@ -46,11 +46,18 @@ int(0..3) extract_cls(int(0..) i) { return [int(0..3)](i & 3); }
 //! Generic, abstract base class for ASN1 data types.
 class Object
 {
+  //! ASN1 type class.
   int(0..3) cls = 0;
-  int(1..) tag = 0;
-  constant constructed = 0;
 
-  constant type_name = "";
+  //! ASN1 type tag.
+  int(0..) tag = 0;
+
+  //! Flag indicating whether this type is
+  //! a constructed (aka @[Compound]) type or not.
+  constant int(0..1) constructed = 0;
+
+  //! ASN1 type name.
+  constant string(7bit) type_name = "";
 
   protected string(8bit) get_der_content()
   {
@@ -67,32 +74,33 @@ class Object
   //!
   //! @returns
   //!   The tag for this object.
-  int(1..) get_tag() { return tag; }
+  int(0..) get_tag() { return tag; }
 
   //! Get the combined tag (tag + class) for this object.
   //!
   //! @returns
   //!   the combined tag header
-  int(1..) get_combined_tag() {
+  int(0..) get_combined_tag() {
     return make_combined_tag(get_cls(), get_tag());
   }
 
-  protected string(0..255) der;
+  protected string(0..255)|zero der;
 
   // Should be overridden by subclasses
-  this_program decode_primitive(string contents,
-				function(Stdio.Buffer,
-					 mapping(int:program(Object)):
-					 Object) decoder,
-				mapping(int:program(Object)) types);
-  void begin_decode_constructed(string raw);
-  void decode_constructed_element(int i, object e);
+  this_program|zero decode_primitive(string(8bit) contents,
+                                     function(Stdio.Buffer,
+                                              mapping(int:program(Object)):
+                                              Object) decoder,
+                                     mapping(int:program(Object)) types,
+                                     void|int(0..1) secure);
+  void begin_decode_constructed(string(8bit) raw);
+  void decode_constructed_element(int i, Object e);
 
   mapping(int:program(Object)) element_types(int i,
       mapping(int:program(Object)) types) {
     return types; i;
   }
-  this_program init(mixed ... args) { return this; args; }
+  this_program init(__unknown__ ... args) { return this; }
 
   protected string(0..255) to_base_128(int n)
   {
@@ -109,7 +117,7 @@ class Object
   protected string(0..255) encode_tag()
   {
     int(0..3) cls = get_cls();
-    int(1..) tag = get_tag();
+    int(0..) tag = get_tag();
     if (tag < 31)
       return [string(0..255)]sprintf("%c",
 				     (cls << 6) | (constructed << 5) | tag);
@@ -157,7 +165,11 @@ class Compound
 {
   inherit Object;
 
-  constant constructed = 1;
+  //!
+  @Pike.Annotations.Implements(Object);
+
+  //!
+  constant int(0..1) constructed = 1;
 
   //! Contents of compound object.
   array(Object) elements = ({ });
@@ -176,7 +188,7 @@ class Compound
     WERROR("asn1_compound[%s]->begin_decode_constructed\n", type_name);
   }
 
-  void decode_constructed_element(int i, object e) {
+  void decode_constructed_element(int i, Object e) {
     WERROR("asn1_compound[%s]->decode_constructed_element(%O)\n",
 	   type_name, e);
     if (i != sizeof(elements))
@@ -219,8 +231,11 @@ class String
 {
   inherit Object;
 
+  //!
+  @Pike.Annotations.Implements(Object);
+
   //! value of object
-  string value;
+  string value = "";
 
   //! @ignore
   CODEC(string);
@@ -239,7 +254,8 @@ class String
 				function(Stdio.Buffer,
 					 mapping(int:program(Object)):
 					 Object)|void decoder,
-				mapping(int:program(Object))|void types) {
+                                mapping(int:program(Object))|void types,
+                                void|int(0..1) secure) {
     value = contents;
     return this;
   }
@@ -249,8 +265,9 @@ class String
     value = "";
   }
 
-  void decode_constructed_element(int i, object(this_program) e)
+  void decode_constructed_element(int i, Object ee)
   {
+    object(this_program) e = [object(this_program)]ee;
     value += e->value;
   }
 
@@ -264,8 +281,11 @@ class Boolean
 {
   inherit Object;
 
-  int(1..) tag = 1;
-  constant type_name = "BOOLEAN";
+  //!
+  @Pike.Annotations.Implements(Object);
+
+  int(0..) tag = 1;
+  constant string(7bit) type_name = "BOOLEAN";
 
   //! value of object
   int value;
@@ -289,9 +309,16 @@ class Boolean
 				function(Stdio.Buffer,
 					 mapping(int:program(Object)):
 					 Object)|void decoder,
-				mapping(int:program(Object))|void types) {
+                                mapping(int:program(Object))|void types,
+                                void|int(0..1) secure) {
     if( contents=="" ) error("Illegal boolean value.\n");
-    value = (contents != "\0");
+    value = ([ "\0": 0, "\377": 1 ])[contents];
+    if (undefinedp(value)) {
+      value = 1;
+      if (secure) {
+        error("Non-canonical boolean value.\n");
+      }
+    }
     return this;
   }
 
@@ -306,17 +333,20 @@ class Integer
 {
   inherit Object;
 
-  int(1..) tag = 2;
-  constant type_name = "INTEGER";
+  //!
+  @Pike.Annotations.Implements(Object);
+
+  int(0..) tag = 2;
+  constant string(7bit) type_name = "INTEGER";
 
   //! value of object
-  Gmp.mpz value;
+  Gmp.mpz value = Gmp.mpz(0);
 
   //! @ignore
   CODEC(Gmp.mpz);
   //! @endignore
 
-  this_object init(int|object n) {
+  this_program init(int|object n) {
     value = Gmp.mpz(n);
     WERROR("i = %s\n", value->digits());
     return this;
@@ -324,7 +354,7 @@ class Integer
 
   string(0..255) get_der_content()
   {
-    string(0..255) s;
+    string(0..255) s = "";
 
     if (value < 0)
     {
@@ -343,11 +373,18 @@ class Integer
     return s;
   }
 
-  this_object decode_primitive(string(0..255) contents,
-				function(Stdio.Buffer,
-					 mapping(int:program(Object)):
-					 Object)|void decoder,
-				mapping(int:program(Object))|void types) {
+  this_program decode_primitive(string(0..255) contents,
+                                function(Stdio.Buffer,
+                                         mapping(int:program(Object)):
+                                         Object)|void decoder,
+                                mapping(int:program(Object))|void types,
+                                void|int(0..1) secure) {
+    if ( (secure && (sizeof(contents)>1)) &&
+	 (((contents[0]==0) && !(contents[1] & 0x80)) ||
+	  ((contents[0] == 255) && (contents[1] & 0x80))) ) {
+      // werror("Contents: %O\n", contents);
+      error("Leading zero in integer encoding.\n");
+    }
     value = Gmp.mpz(contents, 256);
     if (contents[0] & 0x80)  /* Negative */
       value -= pow(256, sizeof(contents));
@@ -366,18 +403,25 @@ class Integer
 class Enumerated
 {
   inherit Integer;
-  int(1..) tag = 10;
-  constant type_name = "ENUMERATED";
+
+  //!
+  @Pike.Annotations.Implements(Object);
+
+  int(0..) tag = 10;
+  constant string(7bit) type_name = "ENUMERATED";
 }
 
 class Real
 {
   inherit Object;
 
-  int(1..) tag = 9;
-  constant type_name = "REAL";
+  //!
+  @Pike.Annotations.Implements(Object);
 
-  float value;
+  int(0..) tag = 9;
+  constant string(7bit) type_name = "REAL";
+
+  float value = 0.0;
 
   //! @ignore
   CODEC(float);
@@ -401,12 +445,16 @@ class Real
     error("Encoding Real values not supported.\n");
   }
 
-  this_object decode_primitive(string(0..255) contents,
-                               function(Stdio.Buffer,
-                                        mapping(int:program(Object)):
-                                        Object) decoder,
-                               mapping(int:program(Object))|void types) {
-    if( contents=="" ) { value = 0.0; return this; }
+  this_program decode_primitive(string(0..255) contents,
+                                function(Stdio.Buffer,
+                                         mapping(int:program(Object)):
+                                         Object) decoder,
+                                mapping(int:program(Object))|void types,
+                                void|int(0..1) secure) {
+    if( contents=="" ) {
+      value = 0.0;
+      return this;
+    }
     int(0..255) first = contents[0];
     switch( first )
     {
@@ -478,11 +526,15 @@ class Real
 class BitString
 {
   inherit Object;
-  int(1..) tag = 3;
-  constant type_name = "BIT STRING";
+
+  //!
+  @Pike.Annotations.Implements(Object);
+
+  int(0..) tag = 3;
+  constant string(7bit) type_name = "BIT STRING";
 
   //! value of object
-  string(0..255) value;
+  string(0..255) value = "";
 
   int(0..7) unused = 0;
 
@@ -515,7 +567,7 @@ class BitString
     {
       value = value[..(len + 7)/8];
       unused = [int(0..7)]((- len) % 8);
-      value[-1] &= 256-(1<<unused);
+      value[-1] &= [int(8bit)](256-(1<<unused));
     } else {
       unused = 0;
       value = "";
@@ -523,11 +575,12 @@ class BitString
     return this;
   }
 
-  this_program decode_primitive(string(0..255) contents,
-				function(Stdio.Buffer,
-					 mapping(int:program(Object)):
-					 Object)|void decoder,
-				mapping(int:program(Object))|void types) {
+  this_program|zero decode_primitive(string(0..255) contents,
+                                     function(Stdio.Buffer,
+                                              mapping(int:program(Object)):
+                                              Object)|void decoder,
+                                     mapping(int:program(Object))|void types,
+                                     void|int(0..1) secure) {
     if (!sizeof(contents))
       return 0;
 
@@ -551,8 +604,9 @@ class BitString
     value = "";
   }
 
-  void decode_constructed_element(int i, object(this_program) e)
+  void decode_constructed_element(int i, Object ee)
   {
+    object(this_program) e = [object(this_program)]ee;
     if( unused ) error("Adding to a non-aligned bit stream.\n");
     value += e->value;
     unused = e->unused;
@@ -591,22 +645,31 @@ class BitString
 class OctetString
 {
   inherit String;
-  int(1..) tag = 4;
-  constant type_name = "OCTET STRING";
+
+  //!
+  @Pike.Annotations.Implements(Object);
+
+  int(0..) tag = 4;
+  constant string(7bit) type_name = "OCTET STRING";
 }
 
 //! Null object
 class Null
 {
   inherit Object;
-  int(1..) tag = 5;
-  constant type_name = "NULL";
+
+  //!
+  @Pike.Annotations.Implements(Object);
+
+  int(0..) tag = 5;
+  constant string(7bit) type_name = "NULL";
 
   this_program decode_primitive(string(0..255) contents,
 				function(Stdio.Buffer,
 					 mapping(int:program(Object)):
 					 Object)|void decoder,
-				mapping(int:program(Object))|void types) {
+                                mapping(int:program(Object))|void types,
+                                void|int(0..1) secure) {
     return !sizeof(contents) && this;
   }
 
@@ -626,11 +689,15 @@ class Null
 class Identifier
 {
   inherit Object;
-  int(1..) tag = 6;
-  constant type_name = "OBJECT IDENTIFIER";
+
+  //!
+  @Pike.Annotations.Implements(Object);
+
+  int(0..) tag = 6;
+  constant string(7bit) type_name = "OBJECT IDENTIFIER";
 
   //! value of object
-  array(int) id;
+  array(int) id = ({});
 
   this_program init(int ... args) {
     if ( (sizeof(args) < 2)
@@ -658,7 +725,11 @@ class Identifier
 				function(Stdio.Buffer,
 					 mapping(int:program(Object)):
 					 Object)|void decoder,
-				mapping(int:program(Object))|void types) {
+                                mapping(int:program(Object))|void types,
+                                void|int(0..1) secure) {
+    // Max size of OID according to RFC 2578
+    if (sizeof(contents) > 586)
+      error("Illegal object identifier.\n");
     if (contents[0] < 120)
       id = ({ contents[0] / 40, contents[0] % 40 });
     else
@@ -723,7 +794,7 @@ class Identifier
     if( !objectp(other) ||
         (this_program != object_program(other)) )
       return 0;
-    array oid = ([object(Identifier)]other)->id;
+    array(int) oid = ([object(Identifier)]other)->id;
     for( int i; i<min(sizeof(id),sizeof(oid)); i++ )
     {
       if( id[i] < oid[i] ) return 1;
@@ -748,19 +819,24 @@ int(1..1) asn1_utf8_valid (string s)
 class UTF8String
 {
   inherit String;
-  int(1..) tag = 12;
-  constant type_name = "UTF8String";
+
+  //!
+  @Pike.Annotations.Implements(Object);
+
+  int(0..) tag = 12;
+  constant string(7bit) type_name = "UTF8String";
 
   string(0..255) get_der_content()
   {
     return string_to_utf8(value);
   }
 
-  this_program decode_primitive(string(0..255) contents,
-				function(Stdio.Buffer,
-					 mapping(int:program(Object)):
-					 Object)|void decoder,
-				mapping(int:program(Object))|void types) {
+  this_program|zero decode_primitive(string(0..255) contents,
+                                     function(Stdio.Buffer,
+                                              mapping(int:program(Object)):
+                                              Object)|void decoder,
+                                     mapping(int:program(Object))|void types,
+                                     void|int(0..1) secure) {
     der = contents;
     if (catch {
       value = utf8_to_string(contents);
@@ -775,8 +851,12 @@ class UTF8String
 class Sequence
 {
   inherit Compound;
-  int(1..) tag = 16;
-  constant type_name = "SEQUENCE";
+
+  //!
+  @Pike.Annotations.Implements(Object);
+
+  int(0..) tag = 16;
+  constant string(7bit) type_name = "SEQUENCE";
 
   string(0..255) get_der_content()
   {
@@ -790,7 +870,8 @@ class Sequence
 				function(Stdio.Buffer,
 					 mapping(int:program(Object)):
 					 Object) decoder,
-				mapping(int:program(Object)) types) {
+                                mapping(int:program(Object)) types,
+                                void|int(0..1) secure) {
     der = contents;
     elements = ({});
     Stdio.Buffer data = Stdio.Buffer(contents);
@@ -805,8 +886,12 @@ class Sequence
 class Set
 {
   inherit Compound;
-  int(1..) tag = 17;
-  constant type_name = "SET";
+
+  //!
+  @Pike.Annotations.Implements(Object);
+
+  int(0..) tag = 17;
+  constant string(7bit) type_name = "SET";
 
   int(-1..1) compare_octet_strings(string r, string s)
   {
@@ -846,8 +931,12 @@ int(0..1) asn1_printable_valid (string s) {
 class PrintableString
 {
   inherit String;
-  int(1..) tag = 19;
-  constant type_name = "PrintableString";
+
+  //!
+  @Pike.Annotations.Implements(Object);
+
+  int(0..) tag = 19;
+  constant string(7bit) type_name = "PrintableString";
 }
 
 //!
@@ -863,8 +952,12 @@ int(0..1) asn1_broken_teletex_valid (string s)
 class BrokenTeletexString
 {
   inherit String;
+
+  //!
+  @Pike.Annotations.Implements(Object);
+
   int(0..) tag = 20;
-  constant type_name = "TeletexString";	// Alias: T61String
+  constant string(7bit) type_name = "TeletexString";	// Alias: T61String
 }
 
 protected Regexp asn1_IA5_invalid_chars = Regexp ("([\200-\377])");
@@ -883,15 +976,23 @@ int(0..1) asn1_IA5_valid (string s)
 class IA5String
 {
   inherit String;
-  int(1..) tag = 22;
-  constant type_name = "IA5STRING";
+
+  //!
+  @Pike.Annotations.Implements(Object);
+
+  int(0..) tag = 22;
+  constant string(7bit) type_name = "IA5STRING";
 }
 
 //!
 class VisibleString {
   inherit String;
-  int(1..) tag = 26;
-  constant type_name = "VisibleString";
+
+  //!
+  @Pike.Annotations.Implements(Object);
+
+  int(0..) tag = 26;
+  constant string(7bit) type_name = "VisibleString";
 }
 
 //! UTCTime
@@ -900,8 +1001,12 @@ class VisibleString {
 class UTC
 {
   inherit String;
-  int(1..) tag = 23;
-  constant type_name = "UTCTime";
+
+  //!
+  @Pike.Annotations.Implements(Object);
+
+  int(0..) tag = 23;
+  constant string(7bit) type_name = "UTCTime";
 
   this_program init(int|string|Calendar.ISO_UTC.Second t)
   {
@@ -934,7 +1039,7 @@ class UTC
       error( "Times earlier than 1950 not supported.\n" );
 
     value = sprintf("%02d%02d%02d%02d%02d%02dZ",
-                    [int]second->year_no() % 100,
+                    [int](second->year_no() % 100),
                     [int]second->month_no(),
                     [int]second->month_day(),
                     [int]second->hour_no(),
@@ -948,7 +1053,7 @@ class UTC
   {
     if( !value || sizeof(value)!=13 ) error("Data not UTC date string.\n");
 
-    array t = (array(int))(value[..<1]/2);
+    array(int) t = (array(int))(value[..<1]/2);
     if(t[0]>49)
       t[0]+=1900;
     else
@@ -961,8 +1066,12 @@ class UTC
 class GeneralizedTime
 {
   inherit UTC;
-  int(1..) tag = 24;
-  constant type_name = "GeneralizedTime";
+
+  //!
+  @Pike.Annotations.Implements(UTC);
+
+  int(0..) tag = 24;
+  constant string(7bit) type_name = "GeneralizedTime";
 
   // We are currently not doing any management of fractions. X690
   // states that fractions shouldn't have trailing zeroes, and should
@@ -1012,18 +1121,23 @@ int(0..0) asn1_universal_valid (string s)
 class UniversalString
 {
   inherit OctetString;
-  int(1..) tag = 28;
-  constant type_name = "UniversalString";
+
+  //!
+  @Pike.Annotations.Implements(Object);
+
+  int(0..) tag = 28;
+  constant string(7bit) type_name = "UniversalString";
 
   string get_der_content() {
     error( "Encoding not implemented\n" );
   }
 
   this_program decode_primitive (string contents,
-				function(Stdio.Buffer,
-					 mapping(int:program(Object)):
-					 Object)|void decoder,
-				mapping(int:program(Object))|void types) {
+                                 function(Stdio.Buffer,
+                                          mapping(int:program(Object)):
+                                          Object)|void decoder,
+                                 mapping(int:program(Object))|void types,
+                                 void|int(0..1) secure) {
     error( "Decoding not implemented\n" ); contents;
   }
 }
@@ -1043,18 +1157,23 @@ int(0..1) asn1_bmp_valid (string s)
 class BMPString
 {
   inherit OctetString;
-  int(1..) tag = 30;
-  constant type_name = "BMPString";
+
+  //!
+  @Pike.Annotations.Implements(Object);
+
+  int(0..) tag = 30;
+  constant string(7bit) type_name = "BMPString";
 
   string get_der_content() {
     return string_to_unicode (value);
   }
 
   this_program decode_primitive (string(0..255) contents,
-				function(Stdio.Buffer,
-					 mapping(int:program(Object)):
-					 Object)|void decoder,
-				mapping(int:program(Object))|void types) {
+                                 function(Stdio.Buffer,
+                                          mapping(int:program(Object)):
+                                          Object)|void decoder,
+                                 mapping(int:program(Object))|void types,
+                                 void|int(0..1) secure) {
     der = contents;
     value = unicode_to_string (contents);
     return this;
@@ -1071,19 +1190,22 @@ class BMPString
 class MetaExplicit
 {
   int(0..3) real_cls;
-  int(1..) real_tag;
+  int(0..) real_tag = 1;
 
-  mapping(int:program(Object)) valid_types;
+  mapping(int:program(Object)) valid_types = ([]);
 
   class `() {
+    //!
+    @Pike.Annotations.Implements(Object);
+
     inherit Compound;
-    constant type_name = "EXPLICIT";
-    constant constructed = 1;
+    constant string(7bit) type_name = "EXPLICIT";
+    constant int(0..1) constructed = 1;
 
     int(0..3) get_cls() { return real_cls; }
-    int(1..) get_tag() { return real_tag; }
+    int(0..) get_tag() { return real_tag; }
 
-    Object contents;
+    Object|int(0..0) contents;
 
     array(Object) `elements() { return contents ? ({ contents }) : ({}); }
     void `elements=(array(Object) args)
@@ -1106,11 +1228,10 @@ class MetaExplicit
       return contents->get_der();
     }
 
-    this_program decode_constructed_element(int i, Object e) {
+    void decode_constructed_element(int i, Object e) {
       if (i)
 	error("Unexpected index!\n");
       contents = e;
-      return this;
     }
 
     mapping(int:program(Object)) element_types(int i,
@@ -1145,11 +1266,11 @@ class MetaExplicit
   }
 
   //!
-  protected void create(int(0..3) cls, int(1..) tag,
+  protected void create(int(0..3) cls, int(0..) tag,
 			mapping(int:program(Object))|void types) {
     real_cls = cls;
     real_tag = tag;
-    valid_types = types;
+    valid_types = types || ([]);
   }
 
   array _encode()

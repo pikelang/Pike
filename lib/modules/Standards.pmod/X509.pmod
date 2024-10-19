@@ -17,7 +17,7 @@ import Standards.ASN1.Types;
 #endif
 
 #ifdef X509_VALIDATION_DEBUG
-#define NULL(X ...) werror(X) && 0
+#define NULL(X ...) (werror(X), 0)
 #else
 #define NULL(X ...) 0
 #endif
@@ -46,7 +46,7 @@ enum CertFailure
   //! another certificate.
   CERT_UNAUTHORIZED_CA = 1<<6,
 
-  //! The certificate is not allowed by it's key usage to sign data.
+  //! The certificate is not allowed by its key usage to sign data.
   CERT_UNAUTHORIZED_SIGNING = 1<<7,
 
   //! The certificate chain is longer than allowed by a certificate in
@@ -95,6 +95,7 @@ protected BitString build_keyUsage(keyUsage i)
   return b;
 }
 
+#pragma strict_types
 
 //! Unique identifier for the certificate issuer.
 //!
@@ -113,6 +114,8 @@ class SubjectId {
   int(0..3) cls = 2;
   int(1..) tag = 2;
 }
+
+#pragma no_strict_types
 
 protected {
   MetaExplicit extension_sequence = MetaExplicit(2, 3);
@@ -152,23 +155,37 @@ protected {
   ]);
 }
 
+//! Returns the mapping of signature algorithm to hash algorithm
+//! supported by @[Verifier] and thus @[verify_ca_certificate()],
+//! @[verify_certificate()], and @[verify_certificate_chain()].
+mapping(Identifier:Crypto.Hash) get_algorithms()
+{
+  return algorithms + ([ ]);
+}
+
 class Verifier {
-  constant type = "none";
+  constant type = [string(7bit)](mixed)"none";
   Crypto.Sign.State pkc;
 
   //! Verifies the @[signature] of the certificate @[msg] using the
-  //! indicated hash @[algorithm].
-  int(0..1) verify(Sequence algorithm, string(8bit) msg, string(8bit) signature)
+  //! indicated hash @[algorithm], choosing from @[verifier_algorithms].
+  //!
+  //! @seealso
+  //!    @[get_algorithms()]
+  int(0..1) verify(Sequence algorithm, string(8bit) msg,
+                   string(8bit) signature,
+                   mapping(Identifier:Crypto.Hash) verifier_algorithms =
+		   algorithms)
   {
     DBG("Verify hash %O\n", algorithm[0]);
-    Crypto.Hash hash = algorithms[algorithm[0]];
+    Crypto.Hash hash = verifier_algorithms[algorithm[0]];
     if (!hash) return 0;
     return pkc && pkc->pkcs_verify(msg, hash, signature);
   }
 
   protected int(0..1) `==(mixed o)
   {
-    return objectp(o) && o->pkc?->name && pkc->name()==o->pkc->name() &&
+    return objectp(o) && o->pkc->?name && pkc->name()==o->pkc->name() &&
       pkc->public_key_equal(o->pkc);
   }
 
@@ -181,6 +198,9 @@ class Verifier {
 protected class RSAVerifier
 {
   inherit Verifier;
+
+  @Pike.Annotations.Implements(Verifier);
+
   constant type = "rsa";
 
   protected void create(string key) {
@@ -191,6 +211,9 @@ protected class RSAVerifier
 protected class DSAVerifier
 {
   inherit Verifier;
+
+  @Pike.Annotations.Implements(Verifier);
+
   constant type = "dsa";
 
   protected void create(string key, Gmp.mpz p, Gmp.mpz q, Gmp.mpz g)
@@ -218,6 +241,28 @@ protected class ECDSAVerifier
     if(!curve) return;
     DBG("ECC Curve: %O (%O)\n", curve, curve_id);
     pkc = curve->ECDSA()->set_public_key(key);
+  }
+}
+#endif
+
+#if constant(Crypto.ECC.Curve25519)
+protected class EdDSAVerifier
+{
+  inherit Verifier;
+  constant type = "eddsa";
+
+  protected void create(string(8bit) key, Identifier curve_id)
+  {
+    Crypto.ECC.Curve curve;
+    foreach(values(Crypto.ECC), mixed c) {
+      if (objectp(c) && c->pkcs_eddsa_id && (c->pkcs_eddsa_id() == curve_id)) {
+	curve = [object(Crypto.ECC.Curve)]c;
+	break;
+      }
+    }
+    if(!curve) return;
+    DBG("ECC Edwards Curve: %O (%O)\n", curve, curve_id);
+    pkc = curve->EdDSA()->set_public_key(key);
   }
 }
 #endif
@@ -275,6 +320,19 @@ protected Verifier make_verifier(Object _keyinfo)
     Verifier ver = ECDSAVerifier(str->value, params);
     if(ver->pkc) return ver;
     return NULL("make_verifier: Unsupported ECDSA curve.\n");
+  }
+#endif
+
+#if constant(Crypto.ECC.Curve25519)
+  if((< .PKCS.Identifiers.eddsa25519_id->get_der(),
+	.PKCS.Identifiers.eddsa448_id->get_der() >)[seq[0]->get_der()])
+  {
+    if( sizeof(seq)!=1 )
+      return NULL("Illegal EdDSA ASN.1\n");
+
+    Verifier ver = EdDSAVerifier(str->value, seq[0]);
+    if(ver->pkc) return ver;
+    return NULL("make_verifier: Unsupported EdDSA curve.\n");
   }
 #endif
 
@@ -418,6 +476,13 @@ class TBSCertificate
     return low_get_sequence(2);
   }
 
+  //! Return the issuer of the certificate as a human readable string.
+  //! Mainly useful for debug.
+  string issuer_str()
+  {
+    return dn_str(issuer);
+  }
+
   //!
   void `validity=(Sequence v)
   {
@@ -478,12 +543,20 @@ class TBSCertificate
     return low_get_sequence(4);
   }
 
-  // Attempt to create a presentable string from the subject DER.
+  //! Attempt to create a presentable string from the subject DER.
   string subject_str()
   {
-    Sequence subj = low_get_sequence(4);
+    return dn_str(subject);
+  }
+
+  //! Try to extract a readable name from @[dn].  This is one of
+  //! commonName, organizationName or organizationUnitName.  The first
+  //! that is found is returned. Suitable for subjects and issuer
+  //! sequences.
+  string dn_str(Sequence dn)
+  {
     mapping ids = ([]);
-    foreach(subj->elements, Compound pair)
+    foreach(dn->elements, Compound pair)
     {
       if(pair->type_name!="SET" || !sizeof(pair)) continue;
       pair = pair[0];
@@ -751,7 +824,7 @@ class TBSCertificate
   protected array fmt_asn1(object asn)
   {
     array i = ({});
-    mapping m = ([]);
+    mapping|zero m = ([]);
 
     foreach(asn->elements;; object o)
     {
@@ -1090,7 +1163,7 @@ class TBSCertificate
     foreach(s->elements, Object o)
     {
       if( o->cls!=2 ) continue;
-#define CASE(X) do { if(!ext_subjectAltName_##X) ext_subjectAltName_##X=0; \
+#define CASE(X) do { if(!ext_subjectAltName_##X) ext_subjectAltName_##X=({}); \
         ext_subjectAltName_##X += ({ o->value }); } while(0)
 
       switch(o->tag)
@@ -1182,7 +1255,7 @@ variant TBSCertificate make_tbs(Sequence issuer, Sequence algorithm,
 Sequence sign_tbs(TBSCertificate tbs,
 		  Crypto.Sign.State sign, Crypto.Hash hash)
 {
-  return Sequence(({ [object(Sequence)]tbs,
+  return Sequence(({ tbs,
 		     sign->pkcs_signature_algorithm_id(hash),
 		     BitString(sign->pkcs_sign(tbs->get_der(), hash)),
 		  }));
@@ -1316,12 +1389,14 @@ protected int make_key_usage_flags(Crypto.Sign.State c)
 //!   @[sign_key()], @[sign_tbs()]
 string make_selfsigned_certificate(Crypto.Sign.State c, int ttl,
                                    mapping|array name,
-                                   mapping(Identifier:Sequence)|void extensions,
-                                   void|Crypto.Hash h, void|int serial)
+                                   mapping(Identifier:Sequence) extensions =
+				   ([]),
+                                   Crypto.Hash h = Crypto.SHA256,
+				   int serial =
+				   (int)Gmp.mpz(Standards.UUID.
+						make_version1(-1)->encode(),
+						256))
 {
-  if(!serial)
-    serial = (int)Gmp.mpz(Standards.UUID.make_version1(-1)->encode(), 256);
-
   Sequence dn = .PKCS.Certificate.build_distinguished_name(name);
 
   void add(string name, Object data, void|int critical)
@@ -1330,8 +1405,6 @@ string make_selfsigned_certificate(Crypto.Sign.State c, int ttl,
     if(!extensions[id])
       extensions[id] = make_extension(id, data, critical);
   };
-
-  if(!extensions) extensions = ([]);
 
   // While RFC 3280 section 4.2.1.2 suggest to only hash the BIT
   // STRING part of the subjectPublicKey, it is only a suggestion.
@@ -1342,17 +1415,17 @@ string make_selfsigned_certificate(Crypto.Sign.State c, int ttl,
 
   add("basicConstraints", Sequence(({})), 1);
 
-  return sign_key(dn, c, c, h||Crypto.SHA256, dn, serial, ttl, extensions);
+  return sign_key(dn, c, c, h, dn, serial, ttl, extensions);
 }
 
 string make_site_certificate(TBSCertificate ca, Crypto.Sign.State ca_key,
                              Crypto.Sign.State c, int ttl, mapping|array name,
-                             mapping|void extensions,
-                             void|Crypto.Hash h, void|int serial)
+                             mapping extensions = ([]),
+                             Crypto.Hash h = Crypto.SHA256,
+			     int serial =
+			     (int)Gmp.mpz(Standards.UUID.
+					  make_version1(-1)->encode(), 256))
 {
-  if(!serial)
-    serial = (int)Gmp.mpz(Standards.UUID.make_version1(-1)->encode(), 256);
-
   Sequence dn = .PKCS.Certificate.build_distinguished_name(name);
 
   void add(string name, Object data, void|int critical)
@@ -1362,21 +1435,20 @@ string make_site_certificate(TBSCertificate ca, Crypto.Sign.State ca_key,
       extensions[id] = make_extension(id, data, critical);
   };
 
-  if(!extensions) extensions = ([]);
   // FIXME: authorityKeyIdentifier
   add("keyUsage", build_keyUsage(make_key_usage_flags(c)), 1);
 
   add("basicConstraints", Sequence(({})), 1);
-  return sign_key(ca->subject, c, ca_key, h||Crypto.SHA256, dn, serial, ttl, extensions);
+  return sign_key(ca->subject, c, ca_key, h, dn, serial, ttl, extensions);
 }
 
 string make_root_certificate(Crypto.Sign.State c, int ttl, mapping|array name,
-			     mapping(Identifier:Sequence)|void extensions,
-			     void|Crypto.Hash h, void|int serial)
+			     mapping(Identifier:Sequence) extensions = ([]),
+			     Crypto.Hash h = Crypto.SHA256,
+			     int serial =
+			     (int)Gmp.mpz(Standards.UUID.
+					  make_version1(-1)->encode(), 256))
 {
-  if(!serial)
-    serial = (int)Gmp.mpz(Standards.UUID.make_version1(-1)->encode(), 256);
-
   Sequence dn = .PKCS.Certificate.build_distinguished_name(name);
 
   void add(string name, Object data, void|int critical)
@@ -1385,8 +1457,6 @@ string make_root_certificate(Crypto.Sign.State c, int ttl, mapping|array name,
     if(!extensions[id])
       extensions[id] = make_extension(id, data, critical);
   };
-
-  if(!extensions) extensions = ([]);
 
   // While RFC 3280 section 4.2.1.2 suggest to only hash the BIT
   // STRING part of the subjectPublicKey, it is only a suggestion.
@@ -1396,12 +1466,12 @@ string make_root_certificate(Crypto.Sign.State c, int ttl, mapping|array name,
   add("keyUsage", build_keyUsage(KU_keyCertSign|KU_cRLSign), 1);
   add("basicConstraints", Sequence(({Boolean(1)})), 1);
 
-  return sign_key(dn, c, c, h||Crypto.SHA256, dn, serial, ttl, extensions);
+  return sign_key(dn, c, c, h, dn, serial, ttl, extensions);
 }
 
 //! Decodes a certificate and verifies that it is structually sound.
 //! Returns a @[TBSCertificate] object if ok, otherwise @expr{0@}.
-TBSCertificate decode_certificate(string|.PKCS.Signature.Signed cert)
+TBSCertificate|zero decode_certificate(string|.PKCS.Signature.Signed cert)
 {
   if (stringp (cert))
   {
@@ -1414,16 +1484,25 @@ TBSCertificate decode_certificate(string|.PKCS.Signature.Signed cert)
 }
 
 //! Decodes a certificate, checks the signature. Returns the
-//! TBSCertificate structure, or 0 if decoding or verification failes.
+//! TBSCertificate structure, or 0 if decoding or verification fails.
 //! The valid time range for the certificate is not checked.
 //!
-//! Authorities is a mapping from (DER-encoded) names to a verifiers.
+//! @param authorities
+//!   A mapping from (DER-encoded) names to a verifiers.
+//!
+//! @param options
+//!   @mapping
+//!     @member mapping(Standards.ASN1.Types.Identifier:Crypto.Hash) "verifier_algorithms"
+//!       A mapping of verifier algorithm identifier to hash algorithm
+//!       implementation.
+//!   @endmapping
 //!
 //! @note
 //!   This function allows self-signed certificates, and it doesn't
 //!   check that names or extensions make sense.
-TBSCertificate verify_certificate(string s,
-				  mapping(string:Verifier|array(Verifier)) authorities)
+object(TBSCertificate)|zero verify_certificate(string s,
+				  mapping(string:Verifier|array(Verifier)) authorities,
+				  mapping(Standards.ASN1.Types.Identifier:Crypto.Hash)|void options)
 {
   .PKCS.Signature.Signed cert = .PKCS.Signature.decode_signed(s, x509_types);
 
@@ -1446,7 +1525,8 @@ TBSCertificate verify_certificate(string s,
   }
 
   foreach(verifiers || ({}), Verifier v) {
-    if (v->verify(cert[1], cert[0]->get_der(), cert[2]->value))
+    if (v->verify(cert[1], cert[0]->get_der(), cert[2]->value,
+                  options->?verifier_algorithms))
       return tbs;
   }
   return 0;
@@ -1454,7 +1534,7 @@ TBSCertificate verify_certificate(string s,
 
 //! Verifies that all extensions mandated for certificate signing
 //! certificates are present and valid.
-TBSCertificate verify_ca_certificate(string|TBSCertificate tbs)
+object(TBSCertificate)|zero verify_ca_certificate(string|TBSCertificate tbs)
 {
   if(stringp(tbs)) tbs = decode_certificate(tbs);
   if(!tbs) return 0;
@@ -1548,7 +1628,8 @@ mapping(string:array(Verifier))
     key = root_cert_dirs;
   else if(arrayp(root_cert_dirs))
     key = root_cert_dirs*":";
-  if( cache && authorities_cache_expire[key] > time() )
+  if( cache && sizeof(authorities_cache) &&
+      authorities_cache_expire[key] > time() )
     return authorities_cache[key];
 
   root_cert_dirs = root_cert_dirs || ({
@@ -1663,7 +1744,8 @@ mapping(string:array(Verifier))
     // Try the merged certificate files first.
     foreach(({ "ca-certificates.crt", "ca-bundle.crt", "ca-bundle.trust.crt" }),
 	    string fname) {
-      string(8bit) pem = Stdio.read_bytes(combine_path(dir, fname));
+      string(8bit) pem;
+      catch { pem = Stdio.read_bytes(combine_path(dir, fname)); };
       if (pem) {
 	found |= add_pem(pem);
       }
@@ -1685,7 +1767,8 @@ mapping(string:array(Verifier))
 	      // Old name for SystemCACertificates.keychain.
 	      "X509Certificates",
 	    }), string fname) {
-      string keychain = Stdio.read_bytes(combine_path(dir, fname));
+      string keychain;
+      catch { keychain = Stdio.read_bytes(combine_path(dir, fname)); };
       if (keychain) {
 	Apple.Keychain chain = Apple.Keychain(keychain);
 	foreach(chain->certs, TBSCertificate tbs) {
@@ -1703,7 +1786,8 @@ mapping(string:array(Verifier))
       }
       fname = combine_path(dir, fname);
       if (!Stdio.is_file(fname)) continue;
-      string(8bit) pem = Stdio.read_bytes(fname);
+      string(8bit) pem;
+      catch { pem = Stdio.read_bytes(fname); };
       if (!pem) continue;
       add_pem(pem);
     }
@@ -1717,10 +1801,51 @@ mapping(string:array(Verifier))
   return res;
 }
 
+//! Read and decode certificate chain for the given @[host] from the
+//! letsencrypt directory (/etc/letsencrypt/live/{host}/). Note that
+//! the process has to have read privileges for the directory.
+//!
+//! The resulting array can be used directly as input to the
+//! @[SSL.Context()->add_cert()] method.
+//!
+//! @returns
+//!   @array
+//!     @elem Crypto.Sign.State 0
+//!       A signing object using the private key.
+//!     @elem array(string) 1
+//!       An array of DER encoded certificates representing the
+//!       certificate chain.
+//!   @endarray
+//!
+array get_letsencrypt_cert(string host)
+{
+  if( has_value(host, "/") ) {
+    error("Host %O contains '/'.", host);
+  }
+
+  string cert, der;
+  cert = Stdio.read_file("/etc/letsencrypt/live/"+host+"/fullchain.pem");
+  der = Stdio.read_file("/etc/letsencrypt/live/"+host+"/privkey.pem");
+
+  if( !cert ) {
+    error("Could not load certificate chain file.\n");
+  }
+  if( !der ) {
+    error("Could not load private key file.\n");
+  }
+
+  object certs = Standards.PEM.Messages(cert);
+  der = Standards.PEM.simple_decode(der);
+  object asn = Standards.ASN1.Decode.simple_der_decode(der);
+  Crypto.RSA rsa = Standards.PKCS.parse_private_key(asn);
+  return ({ rsa, certs->get_certificates() });
+}
+
+
 //! Decodes a certificate chain, ordered from leaf to root, and
 //! checks the signatures. Verifies that the chain can be decoded
 //! correctly, is unbroken, and that all certificates are in effect
-//! (time-wise.) and allowed to sign it's child certificate.
+//! (time-wise.) and allowed to sign its child certificate.
 //!
 //! No verifications are done on the leaf certificate to determine
 //! what it can and can not be used for.
@@ -1759,14 +1884,38 @@ mapping(string:array(Verifier))
 //! @param require_trust
 //!   Require that the certificate be traced to an authority, even if
 //!   it is self signed.
+//! @param strict
+//!   By default this function only requires that the certificates are
+//!   in order, it ignores extra certificates we didn't need to verify
+//!   the leaf certificate.
+//!
+//!   If you specify @[strict], this will change, each certificate has
+//!   to be signed by the next in the chain.
+//!
+//!   Some https-servers send extraneous intermediate certificates
+//!   that aren't used to validate the leaf certificate. So strict
+//!   mode will be incompatible with such srevers.
+//! @param options
+//!   @mapping
+//!     @member mapping(Standards.ASN1.Types.Identifier:Crypto.Hash) "verifier_algorithms"
+//!       A mapping of verifier algorithm identifier to hash algorithm
+//!       implementation.
+//!     @member int "strict"
+//!       See @[strict] above.
+//!   @endmapping
+//!
+//! @seealso
+//!   @[get_algorithms()]
 //!
 //! See @[Standards.PKCS.Certificate.get_dn_string] for converting the
 //! RDN to an X500 style string.
 mapping verify_certificate_chain(array(string|.PKCS.Signature.Signed) cert_chain,
 				 mapping(string:Verifier|array(Verifier)) authorities,
-                                 int|void require_trust)
+                                 int|void require_trust,
+                                 mapping(string:mixed)|bool|void options)
 {
   mapping m = ([ ]);
+  int strict = mappingp(options) ? options->strict : options;
 
 #define ERROR(X) do {                                     \
     DBG("Error " #X "\n");                                \
@@ -1778,22 +1927,43 @@ mapping verify_certificate_chain(array(string|.PKCS.Signature.Signed) cert_chain
   // last.
 
   int len = sizeof(cert_chain);
-  array chain_obj = allocate(len);
-  array chain_cert = allocate(len);
+  array chain_obj = ({});
+  array chain_cert = ({});
 
+  string last_issuer;
   foreach(cert_chain; int idx; string|.PKCS.Signature.Signed c)
   {
-    .PKCS.Signature.Signed cert;
-    if( stringp(c) )
-      cert = .PKCS.Signature.decode_signed(c);
-    TBSCertificate tbs = decode_certificate(c);
-    if(!tbs)
-      FATAL(CERT_INVALID);
+     .PKCS.Signature.Signed cert;
+     cert = .PKCS.Signature.decode_signed(c, x509_types);
+     TBSCertificate tbs = decode_certificate(cert);
+     if(!tbs)
+        FATAL(CERT_INVALID);
 
-    int idx = len-idx-1;
-    chain_cert[idx] = cert;
-    chain_obj[idx] = tbs;
+     string subject = tbs->subject->get_der();
+     if (!strict && last_issuer && subject != last_issuer)
+     {
+        // This doesn't look relevant for validating the previous (closer to
+        // the leaf) certificate.
+        DBG("Skipping %q\n", tbs->subject_str());
+        continue;
+     }
+     DBG("Adding %q to chain\n", tbs->subject_str());
+
+     // This is the leaf or is needed to validate the previous certificate.
+     last_issuer = tbs->issuer->get_der();
+     chain_cert = ({ cert }) + chain_cert;
+     chain_obj = ({ tbs }) + chain_obj;
+
+     if (!strict && has_index(authorities, last_issuer))
+     {
+        // We've reached a certificate signed by a root we trust, end here.
+        DBG("Ending at %q - signed by root %q\n", tbs->subject_str(), tbs->issuer_str());
+        break;
+     }
   }
+
+  // Update length since we've filtered the certificate chain a bit.
+  len = sizeof(chain_obj);
   m->certificates = chain_obj;
 
   // Chain is now reversed so root is first and leaf is last.
@@ -1880,7 +2050,8 @@ mapping verify_certificate_chain(array(string|.PKCS.Signature.Signed) cert_chain
     foreach(verifiers || ({}), Verifier v) {
       if( v->verify(chain_cert[idx][1],
                     chain_cert[idx][0]->get_der(),
-                    chain_cert[idx][2]->value)
+                    chain_cert[idx][2]->value,
+                    mappingp(options) && options->verifier_algorithms)
           && tbs)
       {
         DBG("signature is verified..\n");
@@ -1923,7 +2094,7 @@ Crypto.Sign.State parse_private_key(Sequence seq)
   case 3:
   case 4:
     // Either PKCS#8 or ECDSA.
-    Crypto.Sign res = Standards.PKCS.parse_private_key(seq);
+    Crypto.Sign.State res = Standards.PKCS.parse_private_key(seq);
     if (res) return res;
 #if constant(Nettle.ECC_Curve)
     // EDCSA
@@ -1934,7 +2105,7 @@ Crypto.Sign.State parse_private_key(Sequence seq)
 }
 
 //! DWIM-parse the DER-sequence for a private key.
-variant Crypto.Sign.State parse_private_key(string private_key)
+variant Crypto.Sign.State parse_private_key(string(8bit) private_key)
 {
   Object seq = Standards.ASN1.Decode.secure_der_decode(private_key);
   if (!seq || (seq->type_name != "SEQUENCE")) return UNDEFINED;

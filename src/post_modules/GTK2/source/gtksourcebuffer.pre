@@ -281,9 +281,9 @@ GTK2.SourceMarker create_marker(string name, string type, GTK2.TextIter where)
     GtkSourceMarker *gm;
     INT_TYPE g;
     if (TYPEOF(Pike_sp[-args]) == PIKE_T_INT)
-      get_all_args(NULL,args,"%i%s%o",&g,&type,&o1);
+      get_all_args(NULL,args,"%i%c%o",&g,&type,&o1);
     else
-      get_all_args(NULL,args,"%s%s%o",&name,&type,&o1);
+      get_all_args(NULL,args,"%c%c%o",&name,&type,&o1);
     gm=gtk_source_buffer_create_marker(GTK_SOURCE_BUFFER(THIS->obj),
 			name,type,
 			(GtkTextIter *)get_pg2object(o1,pgtk2_text_iter_program));
@@ -327,7 +327,7 @@ GTK2.SourceMarker get_marker(string name)
   {
     char *name;
     GtkSourceMarker *gm;
-    get_all_args(NULL,args,"%s",&name);
+    get_all_args(NULL,args,"%c",&name);
     gm=gtk_source_buffer_get_marker(GTK_SOURCE_BUFFER(THIS->obj),name);
     pgtk2_pop_n_elems(args);
     if (gm)

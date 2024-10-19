@@ -36,9 +36,17 @@ void arm64_ins_entry(void);
 void arm64_update_pc(void);
 #define UPDATE_PC()	arm64_update_pc()
 
+#ifdef HAVE_PTHREAD_JIT_WRITE_PROTECT_NP
+#define BEFORE_CODE_WRITE() pthread_jit_write_protect_np(0)
+#define AFTER_CODE_WRITE() pthread_jit_write_protect_np(1)
+#else
+#define BEFORE_CODE_WRITE() do{}while(0)
+#define AFTER_CODE_WRITE() do{}while(0)
+#endif
+
 #define ins_pointer(PTR)  add_to_program((INT32)(PTR))
 #define read_pointer(OFF) (Pike_compiler->new_program->program[(INT32)(OFF)])
-#define upd_pointer(OFF,PTR) (Pike_compiler->new_program->program[(INT32)(OFF)] = (INT32)(PTR))
+#define upd_pointer(OFF,PTR) do{BEFORE_CODE_WRITE();(Pike_compiler->new_program->program[(INT32)(OFF)] = (INT32)(PTR));AFTER_CODE_WRITE();}while(0)
 
 #define ins_align(ALIGN)
 #define ins_byte(VAL)	  add_to_program((INT32)(VAL))

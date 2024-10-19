@@ -174,7 +174,7 @@ private class Extractor {
   protected void parseEnumBody(Enum parent) {
     for (;;) {
       parser->skipNewlines();
-      Documentation doc = 0;
+      object(Documentation)|zero doc = 0;
       array(EnumConstant) consts = ({});
       int got_nl;
       if (isIdent(parser->peekToken())) {
@@ -243,7 +243,11 @@ private class Extractor {
       parser->skipNewlines();
       SourcePosition pos = parser->currentPosition->copy();
 
-      object(PikeObject)|array(PikeObject) p = parser->parseDecl();
+      object(PikeObject)|array(PikeObject)|Annotation p = parser->parseDecl();
+
+      if (objectp(p) && p->is_annotation) {
+	return ({ ({ p }), 0 });
+      }
 
       multiset(string) allowSqueeze = (<
         "method",
@@ -259,15 +263,16 @@ private class Extractor {
         p->squeezedInDoc = doc;
       }
       if (objectp(p) && p->objtype == "class") {
+        ([object(Class)]p)->generics = parser->parseGenericsDecl();
 	if (parser->peekToken() == "(") {
 	  parser->eat("(");
 	  parseCreateArgList([object(Class)] p);
 	  parser->eat(")");
-	  if (isDocComment(parser->peekToken())) {
-	    Documentation doc = readAdjacentDocLines();
-	    p->squeezedInDoc = doc;
-	  }
 	}
+        if (isDocComment(parser->peekToken())) {
+          Documentation doc = readAdjacentDocLines();
+          p->squeezedInDoc = doc;
+        }
 	if (parser->peekToken() == "{") {
 	  parser->eat("{");
 	  parseClassBody(root, [object(Class)] p, 0);
@@ -322,15 +327,29 @@ private class Extractor {
   // If 'filename' is supplied, it will look for standalone doc comments
   // at the beginning of the file, and then the return value is that
   // Documentation for the file.
-  Documentation parseClassBody(AutoDoc root, Class|Module c,
-                               array(string) defModifiers,
-                               void|string filename,
-			       void|string inAt)
+  object(Documentation)|zero
+    parseClassBody(AutoDoc root, Class|Module c,
+                   array(string)|zero defModifiers,
+                   void|string filename,
+                   void|string inAt)
   {
-    Documentation filedoc = 0;
+    object(Documentation)|zero filedoc = 0;
+
+    object(Method)|zero implicit_create;
+    foreach(c->docGroups, DocGroup dg) {
+      foreach(dg->objects, PikeObject po) {
+        if ((po->objtype == "method") && (po->name == "__create__")) {
+          // Found.
+          implicit_create = po;
+          break;
+        }
+      }
+    }
+    int(0..1) explicit_create;
+
   mainloop:
     for (;;) {
-      Documentation doc = 0;
+      object(Documentation)|zero doc = 0;
       array(PikeObject) decls = ({ });
       int(0..1) got_nl;
 
@@ -344,7 +363,7 @@ private class Extractor {
       }
 
       if (s == EOF || s == "}")         // end of class body reached
-        return filedoc;
+        break mainloop;
       if (isDocComment(s)) {
         doc = readAdjacentDocLines();    // read the doc comment lines
         s = parser->peekToken(WITH_NL);
@@ -367,7 +386,7 @@ private class Extractor {
 	}
       }
 
-      foreach (decls, PikeObject obj)
+      foreach (decls, object(PikeObject)|Annotation obj)
         if (obj->squeezedInDoc) {
           if (sizeof(decls) > 1)
             extractorError(
@@ -377,10 +396,10 @@ private class Extractor {
             extractorError("duplicate documentation");
           doc = obj->squeezedInDoc;
         }
-      array(PikeObject) docDecls = ({ });
+      array(PikeObject|Annotation) docDecls = ({ });
 
       if (!doc) {
-        foreach (decls, PikeObject obj)
+        foreach (decls, object(PikeObject)|Annotation obj)
           if ((< "class", "enum" >)[obj->objtype] && obj->containsDoc()) {
 	    extractorWarning("undocumented %s %O contains doc comments",
 			     obj->objtype, obj->name);
@@ -389,9 +408,9 @@ private class Extractor {
       }
 
 
-      object(.DocParser.Parse) parse = 0;
-      string appears = 0;
-      string belongs = 0;
+      object(.DocParser.Parse)|zero parse = 0;
+      string|zero appears = 0;
+      string|zero belongs = 0;
       if (doc) {
         parse = .DocParser.Parse(doc->text, doc->position, flags);
         MetaData meta = parse->metadata();
@@ -451,7 +470,8 @@ private class Extractor {
               if (meta->name && meta->name != c->name)
                 extractorError("'@%s %s' doesn't match '@%s %s'",
                                meta->type, meta->name, c->objtype, c->name || "");
-              return 0;  // no filedoc possible
+              filedoc = 0;  // no filedoc possible
+              break mainloop;
 
             default:
               extractorError("@%s is not allowed in Pike files", meta->type);
@@ -466,12 +486,12 @@ private class Extractor {
         if (sizeof(decls)) {
           if (sizeof(decls) != 1)
             extractorError("only one pike declaration can be combined with @decl %O", decls->position);
-          foreach(docDecls, PikeObject d)
+          foreach(docDecls, object(PikeObject)|Annotation d)
             if (decls[0]->objtype != d->objtype)
               extractorError("@decl of %s mismatches %s in pike code",
                             d->objtype, decls[0]->objtype);
-          foreach(docDecls, PikeObject d)
-            if (decls[0]->name != d->name)
+          foreach(docDecls, object(PikeObject)|Annotation d)
+            if ((d->objtype != "annotation") && (decls[0]->name != d->name))
               extractorError("@decl'd %s %s mismatches %s %s in pike code",
                              d->objtype, d->name, d->objtype, decls[0]->name);
         }
@@ -483,27 +503,30 @@ private class Extractor {
       foreach (decls, PikeObject obj)
         if (nonGroupable[obj->objtype]) {
           wasNonGroupable = 1;
-          if (sizeof(decls) > 1 && doc)
+          if (sizeof(decls) > 1 && doc && (doc != EmptyDoc)) {
             extractorError("%s are not groupable",
                            String.implode_nicely(indices(nonGroupable)));
+          }
         }
 
-      if (doc && !sizeof(decls))
-        if (!filename || filedoc)
-          extractorError("documentation comment without destination");
-        else {
-          // the first stand-alone comment is allowed and is interpreted
-          // as documentation for the class or module (foo.pike or bar.pmod)
-	  // _itself_.
-          doc->xml = parse->doc((["class" : "_class",
-                                  "module" : "_module",
-				  "namespace" : "_namespace"])[c->objtype]);
-          filedoc = doc;
-          // The @appears and @belongs directives regarded _this_file_
-          c->appears = appears;
-          c->belongs = belongs;
-          doc = 0;
-        }
+      if (doc && !sizeof(decls)) {
+	// the first stand-alone comment is allowed and is interpreted
+	// as documentation for the class or module (foo.pike or bar.pmod)
+	// _itself_.
+	doc->xml = parse->doc((["class" : "_class",
+				"module" : "_module",
+				"namespace" : "_namespace"])[c->objtype]);
+
+        if (filedoc) {
+	  extractorError("documentation comment without destination");
+	}
+
+	filedoc = doc;
+	// The @appears and @belongs directives regarded _this_file_
+	c->appears = appears;
+	c->belongs = belongs;
+	doc = 0;
+      }
 
       if (defModifiers && sizeof(defModifiers))
         foreach(decls, PikeObject obj)
@@ -511,8 +534,19 @@ private class Extractor {
 
       mapping(string:int) contexts = ([]);
 
-      foreach(decls, PikeObject obj)
+      foreach(decls, object(PikeObject)|Annotation obj) {
+        if (implicit_create && (obj->objtype == "method") &&
+            (obj->name == "create")) {
+          // Prepend the arguments for __create__() to create().
+          obj->argnames = implicit_create->argnames + obj->argnames;
+          obj->argtypes = implicit_create->argtypes + obj->argtypes;
+          explicit_create = 1;
+        }
+	if (obj->objtype == "annotation") {
+	  c->annotations += ({ obj });
+	}
 	contexts[obj->objtype] = 1;
+      }
 
       if (doc) {
         if (wasNonGroupable) {
@@ -548,21 +582,41 @@ private class Extractor {
           context = "_general";
         doc->xml = parse->doc(context);
       } else {
-	// Make sure that all inherits and imports are added:
+        // Make sure that all generics, inherits and imports are added:
 	foreach(decls, PikeObject obj) {
 	  if ((obj->objtype == "inherit") ||
 	      (obj->objtype == "import")) {
 	    c->addInherit(obj);
+          } else if (obj->objtype == "generic") {
+            DocGroup d = DocGroup(({ obj }), EmptyDoc);
+            d->appears = appears;
+            d->belongs = belongs;
+            c->addGroup(d);
 	  }
 	}
       }
     } // for (;;)
+
+    if (implicit_create && !explicit_create) {
+      // Add create() that is a copy of __create__().
+      Method create_method = Method();
+      create_method->name = "create";
+      foreach(({ "modifiers", "returntype", "argnames", "argtypes" }),
+              string field) {
+        create_method[field] = implicit_create[field];
+      }
+      c->docGroups += ({
+        DocGroup(({ create_method }), EmptyDoc),
+      });
+    }
+
+    return filedoc;
   }
 
   void parseCreateArgList(Class c) {
     Method createMethod = Method();
-    createMethod->name = "create";
-    createMethod->modifiers = ({ "protected" });
+    createMethod->name = "__create__";
+    createMethod->modifiers = ({ "protected", "local" });
     createMethod->returntype = VoidType();
     createMethod->argnames = ({});
     createMethod->argtypes = ({});
@@ -610,6 +664,14 @@ private class Extractor {
 	c->docGroups += ({ DocGroup(({ var }), doc) });
       } else {
 	createVars += ({ var });
+      }
+      if (parser->peekToken() == "=") {
+        // Default value.
+        Type ot = OrType();
+        ot->types = ({ createMethod->argtypes[-1], VoidType() });
+        createMethod->argtypes[-1] = ot;
+        parser->eat("=");
+        parser->skipUntil((< ",", ")", ";", EOF >));
       }
       if (parser->peekToken() != ",") break;
       parser->eat(",");

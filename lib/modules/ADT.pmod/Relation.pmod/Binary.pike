@@ -1,11 +1,15 @@
-// An abstract data type for binary relations.
+//! An abstract data type for binary relations.
+//!
+//! This datatype implements something similar to
+//! a set of tuples <@tt{left@}, @tt{right@}>, or
+//! a multi-valued mapping.
 
 #pike __REAL_VERSION__
 
-private mapping val   = ([]);
-private mixed   id;
-private int     items = 0;
-private int     need_recount = 0;
+private mapping(mixed:multiset) val          = ([]);
+private mixed                   id;
+private int                     items        = 0;
+private int                     need_recount = 0;
 
 constant is_binary_relation = 1;
 
@@ -17,7 +21,7 @@ mixed contains(mixed left, mixed right)
 
 //! Does the same as the @[contains] function: returns true if the
 //! relation "@[left] R @[right]" exists, and otherwise false.
-mixed `()(mixed left, mixed right)
+protected mixed `()(mixed left, mixed right)
 {
   return contains(left, right);
 }
@@ -96,7 +100,7 @@ this_program filter_destructively(function f)
 
 //! Returns the number of relation entries in the relation. (Or with
 //! other words: the number of relations in the relation set.)
-mixed _sizeof()
+protected mixed _sizeof()
 {
   if (need_recount)
   {
@@ -109,7 +113,7 @@ mixed _sizeof()
   return items;
 }
 
-int(0..1) `==(mixed rel)
+protected int(0..1) `==(mixed rel)
 {
   if (!objectp(rel) || !rel->is_binary_relation)
     return 0; // different because of having different types
@@ -117,12 +121,12 @@ int(0..1) `==(mixed rel)
   return this <= rel && rel <= this;
 }
 
-int(0..1) `>=(object rel)
+protected int(0..1) `>=(object rel)
 {
   return rel <= this;
 }
 
-int(0..1) `!=(mixed rel)
+protected int(0..1) `!=(mixed rel)
 {
   return !(this == rel);
 }
@@ -130,7 +134,7 @@ int(0..1) `!=(mixed rel)
 //! The expression `rel1 & rel2' returns a new relation which has
 //! those and only those relation entries that are present in both
 //! rel1 and rel2.
-mixed `&(mixed rel)
+protected mixed `&(mixed rel)
 {
   return filter(lambda (mixed left, mixed right)
                        { return rel->contains(left, right);});
@@ -142,7 +146,7 @@ mixed `&(mixed rel)
 //! relation which has all the relation entries present in rel1,
 //! or rel2, or both.
 
-mixed `|(mixed rel)
+protected mixed `|(mixed rel)
 {
   ADT.Relation.Binary res = ADT.Relation.Binary(id, rel);
   foreach(indices(val), mixed left)
@@ -151,12 +155,12 @@ mixed `|(mixed rel)
   return res;
 }
 
-mixed `+ = `|;
+protected mixed `+ = `|;
 
 //! The expression `rel1 - rel2' returns a new relation which has
 //! those and only those relation entries that are present in rel1
 //! and not present in rel2.
-mixed `-(mixed rel)
+protected mixed `-(mixed rel)
 {
   return filter(lambda (mixed left, mixed right)
                        { return !rel->contains(left, right);});
@@ -187,7 +191,7 @@ this_program make_symmetric()
 //!
 //! The argument @[avoiding] is either 0 (or omitted), or a multiset of
 //! nodes that must not be part of the path.
-array find_shortest_path(mixed from, mixed to, void|multiset avoiding)
+array|zero find_shortest_path(mixed from, mixed to, void|multiset avoiding)
 {
   if (from == to)
      return ({ from });
@@ -204,7 +208,7 @@ array find_shortest_path(mixed from, mixed to, void|multiset avoiding)
   // But those algorithms typically have worse space complexity, so
   // this will do for now.
 
-  array subpath, found = 0;
+  array|zero subpath, found = 0;
   avoiding = avoiding ? avoiding + (< from >) : (< from >);
   foreach(indices(val[from]), mixed right)
     if (!avoiding[right])
@@ -222,7 +226,7 @@ array find_shortest_path(mixed from, mixed to, void|multiset avoiding)
   return found;
 }
 
-string _sprintf(int mode)
+protected string _sprintf(int mode)
 {
   return mode=='O' && sprintf("%O(%O %O)", this_program, id, _sizeof());
 }
@@ -233,7 +237,7 @@ mixed get_id()
   return id;
 }
 
-void create(void|mixed _id, void|mapping|object _initial)
+protected void create(void|mixed _id, void|mapping|object _initial)
 {
   id = _id;
   if (objectp(_initial) && _initial->is_binary_relation)
@@ -249,67 +253,62 @@ void create(void|mixed _id, void|mapping|object _initial)
 //! available as index/value pairs.
 protected class _get_iterator {
 
-  protected int(0..) ipos;
-  protected int(0..) vpos;
-  protected int(0..1) finished = 1;
+  protected int(-1..) ipos = -1;
+  protected int(-1..) vpos = -1;
 
-  protected array lefts;
-  protected array rights;
+  protected array lefts = indices(val);
+  protected array rights = ({});
 
-  void create() {
-    first();
+  protected mixed _iterator_index() {
+    if (ipos < 0) return UNDEFINED;
+    return lefts[ipos];
   }
 
-  mixed index() {
-    return finished ? UNDEFINED : lefts[ipos];
+  protected mixed _iterator_value() {
+    if (ipos < 0) return UNDEFINED;
+    return rights[vpos];
   }
 
-  mixed value() {
-    return finished ? UNDEFINED : rights[vpos];
-  }
-
-  int(0..1) `!() {
-    return finished;
-  }
-
-  int(0..1) next() {
-
-    if(finished || (ipos==sizeof(lefts)-1 &&
-		    vpos==sizeof(rights)-1)) {
-      finished = 1;
-      return 0;
-    }
-
+  protected int(0..) _iterator_next()
+  {
     vpos++;
-    if(vpos>sizeof(rights)-1 && !finished) {
+    if (vpos >= sizeof(rights)) {
       ipos++;
-      rights = indices(val[lefts[ipos]]);
       vpos = 0;
+      if (ipos >= sizeof(lefts)) {
+	ipos = -1;
+	vpos = -1;
+	return UNDEFINED;
+      }
+      rights = indices(val[lefts[ipos]]);
+      // NB: We assume that rights is not empty.
     }
 
-    return 1;
+    return ipos;
   }
 
-  this_program `+=(int steps) {
+  protected this_program `+=(int steps) {
     if (steps < 0) error ("Cannot step backwards.\n");
-    while(steps--)
-      next();
+    while(steps--) {
+      if (zero_type(_iterator_next())) {
+	// Stop at the last element.
+	ipos = sizeof(lefts) - 1;
+	vpos = sizeof(rights) - 1;
+	break;
+      }
+    }
     return this;
   }
 
-  int(0..1) first() {
-    lefts = indices(val);
-    if(sizeof(lefts)) {
-      rights = indices(val[lefts[0]]);
-      finished = 0;
-    }
-    else
-      finished = 1;
-    return !finished;
+  int(0..1) first()
+  {
+    ipos = -1;
+    vpos = -1;
+    return !!sizeof(lefts);
   }
 }
 
-mixed cast(string to)
+protected mixed cast(string to)
 {
   if( to=="mapping" )
     return copy_value(val);

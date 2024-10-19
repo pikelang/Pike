@@ -77,4 +77,52 @@ might expect. If you want to know the type after evaluation, use
 <expr>sprintf("%t", expr)</expr>.</p>
 </section>
 
+<section title="yield">
+
+  <p>This function is only valid in restartable functions, and causes
+  the current function to return the value specified, with a restart-
+  point at the call, causing <tt>yield</tt> to return the first argument
+  given to the function when it is restarted.</p>
+
+  <example>
+    __generator__ int foo(int bar)
+    {
+      return yield(bar + 10) + 5;
+    }
+
+    // function(int:int) foobar = foo(100);
+    // foobar() ==&gt; 110;           // ie bar + 10.
+    // foobar(10) ==&gt; 15;          // ie 10 + 5.
+    // foobar(100) ==&gt; UNDEFINED;  // End of restartable function reached.
+  </example>
+
+</section>
+
+<section title="await">
+
+  <p>This function is similar to <tt>yield</tt> in that it is only
+  valid in restartable function and causes the current function to
+  return, with a restart-point at the call, but instead of returning
+  its argument, which must be an object API-compatible with
+  <ref>Concurrent.Future</ref>, it calls
+  <ref>Concurrent.Future()->on_await()</ref> in the object with
+  <ref>continue::this_function</ref> as the argumnet and returns
+  <tt>UNDEFINED</tt> from the current function. This causes it to
+  resume with the success value of the promise or throw the failure
+  value.</p>
+
+  <example>
+    __async__ int foo(Concurrent.Future f)
+    {
+      return await(f) + 5;
+    }
+
+    // Concurrent.Promise p = Concurrent.Promise();
+    // Concurrent.Future f = foo(p->future());
+    // p->success(10);
+    // f->get() ==&gt; 15;
+  </example>
+
+</section>
+
 </chapter>

@@ -6,7 +6,5 @@ MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 DUMMY=dummy.o
 LINKER_OPTIONS=modules/_Image_TIFF/dummy.o
 
-CONFIG_HEADERS=@CONFIG_HEADERS@
-
 @dynamic_module_makefile@
 @dependencies@

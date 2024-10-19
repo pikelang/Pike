@@ -65,7 +65,7 @@ array(ProtocolVersion) get_versions(ProtocolVersion client)
 
   // Client is TLS 1.2 and we have something later supported? Then we
   // expect supported_versions extension.
-  int high = max(@supported_versions);
+  ProtocolVersion high = max(@supported_versions);
   if( client==PROTOCOL_TLS_1_2 && high > PROTOCOL_TLS_1_2 )
     return ({ PROTOCOL_IN_EXTENSION });
 
@@ -78,7 +78,23 @@ array(ProtocolVersion) get_versions(ProtocolVersion client)
 
 //! List of advertised protocols using using TLS application level
 //! protocol negotiation.
-array(string(8bit)) advertised_protocols;
+array(string(8bit))|zero advertised_protocols;
+
+//! Mapping of supported verifier algorithms to hash implementation.
+//!
+//! @seealso
+//!   @[Standards.X509.get_algorithms()]
+mapping(Standards.ASN1.Types.Identifier:Crypto.Hash) verifier_algorithms
+= filter(Standards.X509.get_algorithms(),
+                                     lambda(object o) {
+    return !(<
+#if constant(Crypto.MD2)
+        Crypto.MD2,
+#endif
+        Crypto.MD5,
+        Crypto.SHA1
+    >)[o];
+});
 
 //! The maximum amount of data that is sent in each SSL packet by
 //! @[File]. A value between 1 and @[Constants.PACKET_MAX_SIZE].
@@ -227,7 +243,7 @@ function(int(0..):string(8bit)) random = random_string;
 //! first. By default set to all suites with at least 128 bits cipher
 //! key length, excluding RC4, and ephemeral and non-ephemeral
 //! certificate based key exchange.
-array(int) preferred_suites;
+array(int)|zero preferred_suites;
 
 //! Supported elliptical curve cipher curves in order of
 //! preference. Defaults to all supported curves, ordered with the
@@ -269,65 +285,80 @@ mapping(int(508..511):Crypto.DH.Parameters) private_ffdhe_groups = ([]);
 //! to get rid of combinations not supported by the runtime.
 //!
 //! @note
-//!   According to @rfc{5246:7.4.2@} all certificates needs to be
+//!   According to @rfc{5246:7.4.2@} all certificates need to be
 //!   signed by any of the supported signature algorithms. To be
 //!   forward compatible this list needs to be limited to the
 //!   combinations that have existing PKCS identifiers.
 //!
 //! @seealso
 //!   @[get_signature_algorithms()]
-array(array(int)) signature_algorithms = ({
+array(int) signature_algorithms = ({
 #if constant(Crypto.SHA512)
 #if constant(Crypto.ECC.Curve)
-  ({ HASH_sha512, SIGNATURE_ecdsa }),
+  SIGNATURE_ecdsa_secp521r1_sha512,
 #endif
-  ({ HASH_sha512, SIGNATURE_rsa }),
+  SIGNATURE_rsa_pkcs1_sha512,
+#endif
+#if constant(Crypto.ECC.Curve488)
+  SIGNATURE_ed488_intrinsic,
 #endif
 #if constant(Crypto.SHA384)
 #if constant(Crypto.ECC.Curve)
-  ({ HASH_sha384, SIGNATURE_ecdsa }),
+  SIGNATURE_ecdsa_secp384r1_sha384,
 #endif
-  ({ HASH_sha384, SIGNATURE_rsa }),
+  SIGNATURE_rsa_pkcs1_sha384,
+#endif
+#if constant(Crypto.ECC.Curve25519)
+  SIGNATURE_ed25519_intrinsic,
 #endif
 #if constant(Crypto.ECC.Curve)
-  ({ HASH_sha256, SIGNATURE_ecdsa }),
+  SIGNATURE_ecdsa_secp256r1_sha256,
 #endif
-  ({ HASH_sha256, SIGNATURE_dsa }),
-  ({ HASH_sha256, SIGNATURE_rsa }),
+  HASH_sha256 | SIGNATURE_dsa,
+  SIGNATURE_rsa_pkcs1_sha256,
 #if constant(Crypto.SHA224)
 #if constant(Crypto.ECC.Curve)
-  ({ HASH_sha224, SIGNATURE_ecdsa }),
+  HASH_sha224 | SIGNATURE_ecdsa,
 #endif
-  ({ HASH_sha224, SIGNATURE_dsa }),
+  HASH_sha224 | SIGNATURE_dsa,
 #endif
 #if constant(Crypto.ECC.Curve)
-  ({ HASH_sha1, SIGNATURE_ecdsa }),
+  HASH_sha1 | SIGNATURE_ecdsa,
 #endif
-  ({ HASH_sha1, SIGNATURE_dsa }),
-  ({ HASH_sha1, SIGNATURE_rsa }),
+  HASH_sha1 | SIGNATURE_dsa,
+  SIGNATURE_rsa_pkcs1_sha1,
 });
 
 //! Get the (filtered) set of locally supported signature algorithms.
 //!
 //! @seealso
 //!   @[signature_algorithms]
-array(array(int)) get_signature_algorithms(array(array(int))|void signature_algorithms)
+array(int) get_signature_algorithms(array(int)|void signature_algorithms)
 {
   if (!signature_algorithms) {
     signature_algorithms = this_program::signature_algorithms;
   }
 
 #if constant(Crypto.ECC.Curve) && constant(Crypto.SHA512) && \
-  constant(Crypto.SHA384) && constant(Crypto.SHA224)
-  return signature_algorithms;
+  constant(Crypto.SHA384) && constant(Crypto.SHA224) && \
+  constant(Crypto.ECC.Curve25519) && \
+  constant(Crypto.ECC.Curve448)
+  return [array(int)]signature_algorithms;
 #else
-  return [array(array(int))]
-    filter(signature_algorithms,
-		lambda(array(int) pair) {
-		  [int hash, int sign] = pair;
+  return [array(int)]
+    filter([array(int)]signature_algorithms,
+		lambda(SignatureScheme scheme) {
 #if !constant(Crypto.ECC.Curve)
-		  if (sign == SIGNATURE_ecdsa) return 0;
+		  if ((scheme & SIGNATURE_MASK) == SIGNATURE_ecdsa) return 0;
 #endif
+		  if ((<
+#if constant(Crypto.ECC.Curve25519)
+			SIGNATURE_ed25519_intrinsic,
+#endif
+#if constant(Crypto.ECC.Curve448)
+			SIGNATURE_ed448_intrinsic,
+#endif
+		      >)[scheme]) return 1;
 		  if ((<
 #if !constant(Crypto.SHA512)
 			HASH_sha512,
@@ -338,7 +369,8 @@ array(array(int)) get_signature_algorithms(array(array(int))|void signature_algo
 #if !constant(Crypto.SHA224)
 			HASH_sha224,
 #endif
-		      >)[hash]) return 0;
+			HASH_intrinsic,
+		      >)[scheme & HASH_MASK]) return 0;
 		  return 1;
 		});
 #endif
@@ -354,7 +386,8 @@ protected int cipher_suite_sort_key(int suite)
   int keylength = CIPHER_effective_keylengths[info[1]];
 
   // NB: Currently the hash algorithms are allocated in a suitable order.
-  int hash = info[2];
+  // NB: The hash values are shifted 8 bits.
+  int hash = info[2] >> 8;
 
   // Adjust for the cipher mode.
   if (sizeof(info) > 3) {
@@ -528,7 +561,7 @@ array(int) get_suites(int(-1..)|void min_keylength,
 #endif
 
   if (blacklisted_kes) {
-    kes -= blacklisted_kes;
+    kes -= [multiset]blacklisted_kes;
   }
 
   // Filter unsupported key exchange methods.
@@ -559,7 +592,7 @@ array(int) get_suites(int(-1..)|void min_keylength,
     blacklisted_ciphers |= (< CIPHER_rc4, CIPHER_des, CIPHER_rc4_40,
 			      CIPHER_rc2_40, CIPHER_des40 >);
   }
-  if( sizeof(blacklisted_ciphers) )
+  if( sizeof([multiset]blacklisted_ciphers) )
       res = filter(res,
                    lambda(int suite, multiset(int) blacklisted_hashes) {
                      return !blacklisted_hashes[CIPHER_SUITES[suite][1]];
@@ -903,7 +936,7 @@ protected mapping(string(8bit):array(CertificatePair)) cert_chains_domain = ([])
 //! Look up a suitable set of certificates for the specified issuer.
 //! @[UNDEFIEND] if no certificate was found. Called only by the
 //! ClientConnection as a response to a certificate request.
-array(CertificatePair) find_cert_issuer(array(string) ders)
+array(CertificatePair)|zero find_cert_issuer(array(string) ders)
 {
   // Return the first matching issuer. FIXME: Should we merge if
   // several matching issuers are found?
@@ -919,7 +952,7 @@ array(CertificatePair) find_cert_issuer(array(string) ders)
 //! Look up a suitable set of certificates for the specified domain.
 //! @[UNDEFINED] if no certificate was found. Called only by the
 //! Server.
-array(CertificatePair) find_cert_domain(string(8bit) domain)
+array(CertificatePair)|zero find_cert_domain(string(8bit) domain)
 {
   if( domain )
   {
@@ -1000,13 +1033,18 @@ void add_cert(Crypto.Sign.State key, array(string(8bit)) certs,
 variant void add_cert(string(8bit) key, array(string(8bit)) certs,
                       array(string(8bit))|void extra_name_globs)
 {
-  Crypto.Sign.State _key = Standards.PKCS.RSA.parse_private_key(key) ||
+  object(Crypto.Sign.State)|zero _key =
+    Standards.PKCS.RSA.parse_private_key(key) ||
     Standards.PKCS.DSA.parse_private_key(key) ||
 #if constant(Crypto.ECC.Curve)
     Standards.PKCS.ECDSA.parse_private_key(key) ||
 #endif
     0;
-  add_cert(_key, certs, extra_name_globs);
+  if (!_key) {
+    key = "CENSORED";
+    error("Failed to parse private key.\n");
+  }
+  add_cert([object]_key, certs, extra_name_globs);
 }
 variant void add_cert(CertificatePair cp)
 {
@@ -1023,7 +1061,7 @@ variant void add_cert(CertificatePair cp)
 
   // Insert cp in cert_chains both under all DN/SNI names/globs and
   // under issuer DER. Keep lists sorted by strength.
-  foreach( cp->globs, string id )
+  foreach( [array(string(8bit))] cp->globs, string(8bit) id )
     add(id, cert_chains_domain);
 
   add(cp->issuers[0], cert_chains_issuer);
@@ -1036,19 +1074,22 @@ private void update_authorities()
   mapping(int:int) cert_types = ([]);
   foreach(authorities, string a)
   {
-    Standards.X509.TBSCertificate tbs = Standards.X509.decode_certificate(a);
-    Standards.ASN1.Types.Identifier id = [object(Standards.ASN1.Types.Identifier)]tbs->algorithm[0];
+    Standards.X509.TBSCertificate tbs = [object(Standards.X509.TBSCertificate)]
+                                        Standards.X509.decode_certificate(a);
+    Standards.ASN1.Types.Identifier id
+                                    = [object(Standards.ASN1.Types.Identifier)]
+                                      tbs->algorithm[0];
 
     // --- START Duplicated code from CertificatePair
-    array(HashAlgorithm|SignatureAlgorithm) sign_alg;
-    sign_alg = [array(HashAlgorithm|SignatureAlgorithm)]pkcs_der_to_sign_alg[id->get_der()];
+    SignatureScheme sign_alg =
+      [object(SignatureScheme)]pkcs_der_to_sign_alg[id->get_der()];
     if (!sign_alg) error("Unknown signature algorithm.\n");
 
     int cert_type = ([
       SIGNATURE_rsa: AUTH_rsa_sign,
       SIGNATURE_dsa: AUTH_dss_sign,
       SIGNATURE_ecdsa: AUTH_ecdsa_sign,
-    ])[sign_alg[1]];
+    ])[sign_alg & SIGNATURE_MASK];
     // --- END Duplicated code from CertificatePair
 
     cert_types[cert_type]++;
@@ -1064,7 +1105,8 @@ private void update_trusted_issuers()
   foreach(trusted_issuers, array(string) i)
   {
     // make sure the chain is valid and intact.
-    mapping result = Standards.X509.verify_certificate_chain(i, ([]), 0);
+    mapping result
+     = [mapping] Standards.X509.verify_certificate_chain(i, ([]), 0);
 
     if(!result->verified)
       error("Broken trusted issuer chain!\n");
@@ -1111,8 +1153,8 @@ void forget_old_sessions()
     if(session->last_activity < t)
     {
       SSL3_DEBUG_MSG("SSL.Context->forget_old_sessions: "
-                     "garbing session %O due to session_lifetime limit\n",
-                     id);
+                     "garbing session %s due to session_lifetime limit\n",
+                     String.string2hex(id));
       m_delete (session_cache, id);
     }
   }
@@ -1121,12 +1163,17 @@ void forget_old_sessions()
 //! Lookup a session identifier in the cache. Returns the
 //! corresponding session, or zero if it is not found or caching is
 //! disabled.
-Session lookup_session(string id)
+object(Session)|zero lookup_session(string id)
 {
-  if (use_cache)
-    return session_cache[id];
-  else
-    return 0;
+  object(Session)|zero res = use_cache && session_cache[id];
+  if (!res && use_cache) {
+    SSL3_DEBUG_MSG("%O: Failed to lookup session %s.\n"
+                   "%O: Sessions in cache: %O\n",
+                   this_function, String.string2hex(id),
+                   this_function,
+                   map(indices(session_cache), String.string2hex));
+  }
+  return res;
 }
 
 //! Decode a session ticket and return the corresponding session
@@ -1140,7 +1187,7 @@ Session lookup_session(string id)
 //!
 //! @seealso
 //!   @[encode_ticket()], @[lookup_session()]
-Session decode_ticket(string(8bit) ticket)
+object(Session)|zero decode_ticket(string(8bit) ticket)
 {
   return lookup_session(ticket);
 }
@@ -1155,8 +1202,6 @@ Session decode_ticket(string(8bit) ticket)
 //!   server-side state-less session resumption.
 //!
 //! @returns
-//!   Returns @expr{0@} (zero) on failure (ie cache disabled), and
-//!   an array on success:
 //!   @array
 //!     @elem string(8bit) 0
 //!       Non-empty string with the ticket.
@@ -1164,12 +1209,20 @@ Session decode_ticket(string(8bit) ticket)
 //!       Lifetime hint for the ticket.
 //!   @endarray
 //!
+//! @note
+//!   If the context signals that it does offer tickets via
+//!   @[offers_tickets()], this function @b{must@} offer an encoded ticket
+//!   for the session as the connection may have signalled to the client
+//!   that a ticket @b{will be@} offered. However, tickets are not guaranteed
+//!   to be actually usable, so if you cannot offer a ticket when you must,
+//!   @expr{"INVALID"@} might be an option...
+//!
 //! @seealso
 //!   @[decode_ticket()], @[record_session()], @rfc{4507:3.3@}
-array(string(8bit)|int) encode_ticket(Session session)
+array(string(8bit)|int)|zero encode_ticket(Session session)
 {
   if (!use_cache) return 0;
-  string(8bit) ticket = session->ticket;
+  string(8bit) ticket = [string(8bit)] session->ticket;
   if (!sizeof(ticket||"")) {
     do {
       ticket = random(32);
@@ -1179,12 +1232,19 @@ array(string(8bit)|int) encode_ticket(Session session)
     session->ticket = ticket;
     session->ticket_expiry_time = time(1) + 3600;
   }
-  string(8bit) orig_id = session->identity;
+  string(8bit)|zero orig_id = session->identity;
   session->identity = ticket;
   record_session(session);
   session->identity = orig_id;
   // FIXME: Calculate the lifetime from the ticket_expiry_time field?
   return ({ ticket, 3600 });
+}
+
+//! Signals if the context @b{will@} offer a session ticket via
+//! @[encode_ticket()].
+int(0..1) offers_tickets()
+{
+    return !!use_cache;
 }
 
 //! Create a new session.
@@ -1216,12 +1276,13 @@ void record_session(Session s)
         // Randomly delete sessions to keep within the limit.
         if( to_delete-- < 0 ) break;
         SSL3_DEBUG_MSG("SSL.Context->record_session: "
-                       "garbing session %O due to max_sessions limit\n", id);
+                       "garbing session %O due to max_sessions limit\n",
+                       String.string2hex(id));
         m_delete (session_cache, id);
       }
     }
     SSL3_DEBUG_MSG("SSL.Context->record_session: caching session %O\n",
-                   s->identity);
+                   String.string2hex(s->identity));
     session_cache[s->identity] = s;
   }
 }
@@ -1229,7 +1290,8 @@ void record_session(Session s)
 //! Invalidate a session for resumption and remove it from the cache.
 void purge_session(Session s)
 {
-  SSL3_DEBUG_MSG("SSL.Context->purge_session: %O\n", s->identity || "");
+  SSL3_DEBUG_MSG("SSL.Context->purge_session: %O\n",
+                 String.string2hex(s->identity || ""));
   if (s->identity)
     m_delete (session_cache, s->identity);
   /* RFC 4346 7.2:

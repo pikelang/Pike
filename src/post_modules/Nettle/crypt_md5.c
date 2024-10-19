@@ -22,6 +22,8 @@
 
 #ifdef HAVE_LIBNETTLE
 
+#include "global.h"
+
 #include <string.h>
 #include <nettle/md5.h>
 

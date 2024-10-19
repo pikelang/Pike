@@ -83,12 +83,12 @@ protected class Element {
   array(function) content_matcher;
   mapping(string:array) attributes;
 
-  string _sprintf(int mode)
+  protected string _sprintf(int mode)
   {
     return mode=='O' && sprintf("%O(%O)", this_program, name);
   }
 
-  int accept_element(string name)
+  int accept_element(string|zero name)
   {
     array(function) step = (content_matcher(name)-({0}))*({});
     if (!sizeof(step)) {
@@ -99,7 +99,7 @@ protected class Element {
   }
 
   void check_attributes(mapping(string:string) c_attrs,
-			function(string, string, mixed ...:mixed) xmlerror)
+			function(string|zero, string, __unknown__ ...:mixed) xmlerror)
   {
     foreach(indices(c_attrs), string name) {
       array spec = attributes[name];
@@ -165,7 +165,7 @@ protected class Element {
     };
   }
 
-  void create(string _name)
+  protected void create(string _name)
   {
     content_matcher = __element_content[name = _name];
     attributes = __element_attrs[name] || ([]);
@@ -208,20 +208,20 @@ protected private string __root_element_name;
 //!
 //! @seealso
 //!   @[parse()], @[parse_dtd()]
-string get_external_entity(string sysid, string|void pubid,
-			   mapping|void info,
-			   mixed ... extra)
+string|zero get_external_entity(string sysid, string|void pubid,
+                                mapping|void info,
+                                mixed ... extra)
 {
   // Override this function
   return 0;
 }
 
-protected private array(function) accept_terminate(string x)
+protected private array(function) accept_terminate(string|zero x)
 {
   return !x && ({ accept_terminate });
 }
 
-protected private array(function) accept_any(string x)
+protected private array(function) accept_any(string|zero x)
 {
   return ({ accept_any });
 }
@@ -230,7 +230,7 @@ protected private array(function) compile_language(string|array l,
 						array(function) c)
 {
   if(stringp(l))
-    return ({ lambda(string name) { return name == l && c; } });
+    return ({ lambda(string|zero name) { return name == l && c; } });
   else switch(l[0]) {
    case "|":
      return map(l[1..], compile_language, c)*({});
@@ -241,7 +241,7 @@ protected private array(function) compile_language(string|array l,
    case "*":
    case "+":
      array(function) body;
-     body = compile_language(l[1], ({lambda(string x) {
+     body = compile_language(l[1], ({lambda(string|zero x) {
 				       return (body(x)+c(x)-({0}))*({});
 				     }}));
      return (l[0]=="*"? body+c : body);
@@ -281,14 +281,14 @@ protected private string normalize_uri(string uri, mapping info)
 protected private mixed validate(string kind, string name, mapping attributes,
 				 array|string contents,
 				 mapping(string:mixed) info,
-				 function(string,string,mapping,array|string,
+				 function(string,string|zero,mapping|zero,array|string,
 					  mapping(string:mixed),
-					  mixed ...:mixed) callback,
+					  __unknown__ ...:mixed) callback,
 				 array(mixed) extra)
 {
   // Helper...
-  function(string, string, mixed ...:mixed) xmlerror =
-    lambda(string tag, string msg, mixed ... args) {
+  function(string|zero, string, __unknown__ ...:mixed) xmlerror =
+    lambda(string|zero tag, string msg, mixed ... args) {
       return callback("error", tag, 0, sprintf(msg, @args), info, @extra);
     };
   switch(kind) {
@@ -469,10 +469,10 @@ protected private mixed validate(string kind, string name, mapping attributes,
   return callback(kind, name, attributes, contents, info, @extra);
 }
 
-protected private mixed cleanup_parse(function(string,string,mapping
+protected private mixed cleanup_parse(function(string,string|zero,mapping|zero
 					    ,array|string,
 					    mapping(string:mixed),
-					    mixed ...:mixed) callback,
+					    __unknown__ ...:mixed) callback,
 				   array(mixed) extra)
 {
   if(sizeof(__idrefs_used - __ids_used)>0)
@@ -494,7 +494,7 @@ protected private mixed cleanup_parse(function(string,string,mapping
 //!   Document this function
 array parse(string data,
 	    string|function(string, string, mapping, array|string,
-			    mapping(string:mixed), mixed ...:mixed) callback,
+			    mapping(string:mixed), __unknown__ ...:mixed) callback,
 	    mixed ... extra)
 {
   // Note: No need for advanced argument checks here;
@@ -515,7 +515,7 @@ array parse(string data,
 //!   Document this function
 array parse_dtd(string data,
 		string|function(string,string,mapping,array|string,
-				mapping(string:mixed),mixed ...:mixed) callback,
+				mapping(string:mixed), __unknown__ ...:mixed) callback,
 		mixed ... extra)
 {
   // Note: No need for advanced argument checks here;

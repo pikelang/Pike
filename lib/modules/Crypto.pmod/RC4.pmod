@@ -17,6 +17,8 @@
 
 inherit Nettle.ARCFOUR : pre;
 
+@Pike.Annotations.Implements(Crypto.Cipher);
+
 string(7bit) name() { return "RC4"; }
 
 class State

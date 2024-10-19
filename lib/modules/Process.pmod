@@ -160,7 +160,7 @@ class Process
   //!   @[split_quoted_string()], @[Tools.Standalone.forkd],
   //!   @[set_forkd_default()], @[get_forkd_default()]
   protected void create( string|array(string) command_args,
-			 void|mapping(string:mixed) modifiers )
+			 mapping(string:mixed) modifiers = ([]) )
   {
     if( stringp( command_args ) ) {
       command_args = split_quoted_string( [string]command_args
@@ -170,7 +170,7 @@ class Process
 				  );
     }
 
-    mapping(string:mixed) new_modifiers = (modifiers || ([])) + ([]);
+    mapping(string:mixed) new_modifiers = modifiers + ([]);
 
     if (new_modifiers->keep_signals) {
       // This option is currently not supported with forkd.
@@ -417,7 +417,7 @@ class Process
 }
 
 // FIXME: Should probably be located elsewhere.
-string locate_binary(array(string) path, string name)
+string|zero locate_binary(array(string) path, string name)
 {
 #ifdef __NT__
   if( !has_suffix(lower_case(name), ".exe") )
@@ -458,7 +458,7 @@ protected array(string) runpike;
 //! @seealso
 //!   @[Process.Process]
 Process spawn_pike(array(string) argv, void|mapping(string:mixed) options,
-		   array(string)|void launcher)
+                   array(string) launcher = ({}))
 {
   if (!runpike) {
     array(string) res = ({
@@ -495,7 +495,6 @@ Process spawn_pike(array(string) argv, void|mapping(string:mixed) options,
       res[0] = search_path(res[0]);
     runpike = res;
   }
-  if (!launcher) launcher = ({});
   return Process(launcher + runpike + argv, options);
 }
 
@@ -545,24 +544,25 @@ Process spawn_pike(array(string) argv, void|mapping(string:mixed) options,
 //!   Process.run( ({ "ls", "-l" }), ([ "cwd":"/etc" ]) );
 //!   Process.run( "ls -l" );
 //!   Process.run( "awk -F: '{print $2}'", ([ "stdin":"foo:2\nbar:17\n" ]) );
-mapping run(string|array(string) cmd, void|mapping modifiers)
+//!   Process.run( ({ "echo Output will be immediately written to stdout" }),
+//!                ([ "stdout": lambda(string s) { write(s); },
+//!                   "stderr": lambda(string e) { werror(e); } ]) );
+//!
+mapping run(string|array(string) cmd, mapping modifiers = ([]))
 {
   string gotstdout="", gotstderr="", stdin_str;
   int exitcode;
-
-  if(!modifiers)
-    modifiers = ([]);
 
   if((modifiers->stdout && !callablep(modifiers->stdout))
     || (modifiers->stderr && !callablep(modifiers->stderr)))
     throw( ({ "Can not redirect stdout or stderr in Process.run, "
               "please use Process.Process instead.", backtrace() }) );
 
-  Stdio.File mystdout = Stdio.File();
-  Stdio.File mystderr = Stdio.File();
-  Stdio.File mystdin;
+  object(Stdio.File)|zero mystdout = Stdio.File();
+  object(Stdio.File)|zero mystderr = Stdio.File();
+  object(Stdio.File)|zero mystdin;
 
-  object p;
+  object|zero p;
   if(stringp(modifiers->stdin))
   {
     mystdin = Stdio.File();
@@ -623,15 +623,20 @@ mapping run(string|array(string) cmd, void|mapping modifiers)
 
 #if constant(Shuffler)
   if (mystdin) {
-    Shuffler.Shuffler sfr = Shuffler.Shuffler();
-    sfr->set_backend (backend);
-    Shuffler.Shuffle sf = sfr->shuffle( mystdin );
-    sf->add_source(stdin_str);
-    sf->set_done_callback (lambda () {
-			     catch { mystdin->close(); };
-			     mystdin = 0;
-			   });
-    sf->start();
+    if (stdin_str != "") {
+      Shuffler.Shuffler sfr = Shuffler.Shuffler();
+      sfr->set_backend (backend);
+      Shuffler.Shuffle sf = sfr->shuffle( mystdin );
+      sf->add_source(stdin_str);
+      sf->set_done_callback (lambda (mixed ...) {
+                               catch { mystdin->close(); };
+                               mystdin = 0;
+                             });
+      sf->start();
+    } else {
+      catch { mystdin->close(); };
+      mystdin = 0;
+    }
   }
 #endif
 
@@ -889,11 +894,14 @@ piece_loop:
   return ret;
 }
 
-Process spawn(string command, void|Stdio.Stream stdin,
-	      void|Stdio.Stream stdout, void|Stdio.Stream stderr,
-	      // These aren't used. Seems to be part of something unfinished. /mast
-	      //function|void cleanup, mixed ... args
-	     )
+__deprecated__ Process spawn(string command,
+			     void|Stdio.Stream stdin,
+			     void|Stdio.Stream stdout,
+			     void|Stdio.Stream stderr,
+			     // These aren't used.
+			     // Seems to be part of something unfinished. /mast
+			     //function|void cleanup, mixed ... args
+			     )
 //! Spawns a process that executes @[command] as a command shell
 //! statement ("@expr{/bin/sh -c @[command]@}" for Unix, "@expr{cmd /c
 //! @[command]@}" for Windows).
@@ -911,6 +919,8 @@ Process spawn(string command, void|Stdio.Stream stdin,
 //!
 //! @seealso
 //!   @[system], @[popen]
+//!
+//! @deprecated Process.Process
 {
   mapping(string:mixed) data=(["env":getenv()]);
   if(stdin) data->stdin=stdin;
@@ -928,6 +938,8 @@ Process spawn(string command, void|Stdio.Stream stdin,
 #endif /* __NT__ */
 }
 
+#pragma no_deprecation_warnings
+
 //! @decl string popen(string command)
 //! Executes @[command] as a shell statement ("@expr{/bin/sh -c
 //! @[command]@}" for Unix, "@expr{cmd /c @[command]@}" for Windows),
@@ -935,6 +947,8 @@ Process spawn(string command, void|Stdio.Stream stdin,
 //!
 //! @seealso
 //!   @[system], @[spawn]
+//!
+//! @deprecated Process.Process
 
 //! @decl Stdio.FILE popen(string command, string mode)
 //! Open a "process" for reading or writing.  The @[command] is executed
@@ -952,16 +966,18 @@ Process spawn(string command, void|Stdio.Stream stdin,
 //!
 //! @seealso
 //!   @[system], @[spawn]
+//!
+//! @deprecated Process.Process
 
-variant string popen(string s) {
+variant __deprecated__ string popen(string s) {
    return fpopen(s)->read();
 }
 
-variant Stdio.FILE popen(string s, string mode) {
+variant __deprecated__ Stdio.FILE popen(string s, string mode) {
   return fpopen(s,mode);
 }
 
-protected Stdio.FILE fpopen(string s, string|void mode)
+protected __deprecated__ Stdio.FILE fpopen(string s, string|void mode)
 {
   Stdio.FILE f = Stdio.FILE();
   if (!f) error("Popen failed. (couldn't create file)\n");
@@ -979,8 +995,8 @@ protected Stdio.FILE fpopen(string s, string|void mode)
   return f;
 }
 
-int system(string command, void|Stdio.Stream stdin,
-	   void|Stdio.Stream stdout, void|Stdio.Stream stderr)
+__deprecated__ int system(string command, void|Stdio.Stream stdin,
+			  void|Stdio.Stream stdout, void|Stdio.Stream stderr)
 //! Executes @[command] as a shell statement ("@expr{/bin/sh -c
 //! @[command]@}" for Unix, "@expr{cmd /c @[command]@}" for Windows),
 //! waits until it has finished and returns its return value.
@@ -993,11 +1009,27 @@ int system(string command, void|Stdio.Stream stdin,
 //!   corresponding streams for this process are used for those that
 //!   are left out.
 //!
+//! @returns
+//!   Returns the exit code for the subprocess on normal completion.
+//!   Returns the negation of the last signal code if it terminated
+//!   due to a signal.
+//!
+//! @note
+//!   In Pike 8.0 and earlier this function returned the result
+//!   straight from @[Process.Process()->wait()].
+//!
+//! @deprecated Process.Process
+//!
 //! @seealso
 //!   @[spawn], @[popen]
 {
-  return spawn(command, stdin, stdout, stderr)->wait();
+  Process p = spawn(command, stdin, stdout, stderr);
+  int ret = p->wait();
+  if (ret < 0) ret = -p->last_signal();
+  return ret;
 }
+
+#pragma deprecation_warnings
 
 #ifndef __NT__
 #if constant(fork)
@@ -1022,7 +1054,7 @@ class Spawn
 
    private object low_spawn(array(Stdio.File) fdp,
 			    array(Stdio.File) fd_to_close,
-			    string cmd, void|array(string) args,
+                            string cmd, array(string) args=({}),
 			    void|mapping(string:string) env,
 			    string|void cwd)
    {
@@ -1054,9 +1086,9 @@ class Spawn
 	    pied->set_close_on_exec(1);
 
 	    if (env)
-	       exece(cmd,args||({}),env);
+               exece(cmd,args,env);
 	    else
-	       exece(cmd,args||({}));
+               exece(cmd,args);
 
             error( "pike: failed to exece %O: %s.\n", cmd,
                    strerror(errno()) );
@@ -1081,12 +1113,12 @@ class Spawn
    }
 
   //!
-   void create(string cmd,
-	       void|array(string) args,
-	       void|mapping(string:string) env,
-	       string|void cwd,
-	       void|array(object(Stdio.File)|void) ownpipes,
-	       void|array(object(Stdio.File)|void) fds_to_close)
+   protected void create(string cmd,
+			 void|array(string) args,
+			 void|mapping(string:string) env,
+			 string|void cwd,
+			 void|array(object(Stdio.File)|void) ownpipes,
+			 void|array(object(Stdio.File)|void) fds_to_close)
    {
       if (!ownpipes)
       {
@@ -1204,7 +1236,7 @@ void daemon(int nochdir, int noclose,
 //!   Process.daemon(1, 0, ([ "stdout": "access.log", "stderr": "error.log" ]) );
 {
     array(Stdio.File) opened = ({});
-    Stdio.File getfd(string|object f)
+    object(Stdio.File)|zero getfd(string|object f)
     {
         if (stringp(f))
         {
@@ -1217,6 +1249,10 @@ void daemon(int nochdir, int noclose,
 	else
 	  return 0;
     };
+    void dup2(string index, Stdio.File f) {
+      Stdio.File fd = getfd(modifiers[index]);
+      if( fd ) fd->dup2(f);
+    }
 
     if (low_daemon(nochdir, noclose) == -1)
       error("Failed to daemonize: %s.\n", strerror(errno()));
@@ -1227,13 +1263,13 @@ void daemon(int nochdir, int noclose,
         cd(modifiers["cwd"]);
 
     if (modifiers["stdin"])
-        getfd(modifiers["stdin"])->dup2(Stdio.stdin);
+        dup2("stdin", Stdio.stdin);
 
     if (modifiers["stdout"])
-        getfd(modifiers["stdout"])->dup2(Stdio.stdout);
+        dup2("stdout", Stdio.stdout);
 
     if (modifiers["stderr"])
-        getfd(modifiers["stderr"])->dup2(Stdio.stderr);
+        dup2("stderr", Stdio.stderr);
 
     opened->close();
 }

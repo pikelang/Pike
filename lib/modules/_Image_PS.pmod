@@ -132,8 +132,8 @@ object decode( string data, mapping|void options )
   Stdio.File fd3 = Stdio.File();
   object fd4 = fd3->pipe();
 
-  array command = ({
-    options->binary||find_in_path("gs")||("/bin/sh -c gs "),
+  string binary = options->binary || find_in_path("gs");
+  array command = (binary ? ({ binary }) : ({ "/bin/sh", "-c", "gs" })) + ({
     "-quiet",
     "-sDEVICE="+(options->device||"ppmraw"),
     "-r"+(options->dpi||100),
@@ -205,7 +205,8 @@ object decode( string data, mapping|void options )
   be->remove_call_out(co);
   int ret_code = pid->wait();
   if(ret_code)
-    error("Ghostscript failed with exit code: %O:\n%s\n", ret_code, output);
+    error("Ghostscript failed with exit code: %O:\n%O\n%s\n",
+          ret_code, command, output);
   object i= Image.PNM.decode( output );
 
   if (data) {
@@ -252,7 +253,7 @@ string encode(  object img, mapping|void options )
   int w = img->xsize(), h = img->ysize();
   string i = (string)img;
   float scl = 72.0 / ((options&&options->dpi)||100);
-  img = 0;
+  img = this;
   string res;
   res =("%!PS-Adobe-3.0\n"
         "%%DocumentData: Clean8Bit\n"
@@ -291,7 +292,7 @@ function _encode = encode;
 //!     Color space of image. "GRAYSCALE", "LAB", RGB", "CMYK" or "UNKNOWN"
 //!  @endmapping
 //!
-public mapping decode_header(string data) {
+public mapping|zero decode_header(string data) {
   if(has_prefix(data, "\xc5\xd0\xd3\xc6")) {
     // DOS EPS Binary Header.
     int ps_start, ps_len, meta_start, meta_len, tiff_start, tiff_len, sum;

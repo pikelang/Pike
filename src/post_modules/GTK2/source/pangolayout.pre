@@ -96,7 +96,7 @@ void set_markup_with_accel(string markup, int length, ?int accel_marker)
     const char *markup;
     INT_TYPE len, accel_marker=0;
     gunichar accel_char;
-    get_all_args(NULL,args,"%s%i.%i",&markup,&len,
+    get_all_args(NULL,args,"%c%i.%i",&markup,&len,
 				&accel_marker);
     pango_layout_set_markup_with_accel(PANGO_LAYOUT(THIS->obj),
 		markup,len,accel_marker,&accel_char);

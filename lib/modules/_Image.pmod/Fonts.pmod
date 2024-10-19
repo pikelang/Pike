@@ -150,7 +150,7 @@ class FTFont
     return rr;
   }
 
-  void create( Image.FreeType.Face _f, int _s, string fn )
+  protected void create( Image.FreeType.Face _f, int _s, string fn )
   {
     string fn2;
     face = _f;
@@ -233,7 +233,7 @@ class TTFont
     return rr;
   }
 
-  void create( object _r, int _s )
+  protected void create( object _r, int _s )
   {
     real = _r;
     size = _s;
@@ -256,7 +256,7 @@ class Font( protected string file,
   protected int fake_bold;
   protected int fake_italic;
 
-  string _sprintf(int t)
+  protected string _sprintf(int t)
   {
     return t=='O' && sprintf("%O(%O, %d)", this_program, file, size);
   }

@@ -386,7 +386,7 @@ static void image_gif__gce_block(INT32 args)
 
 
 /*
-**! method string _render_block(int x,int y,int xsize,int ysize,int bpp,string indices,0|string colortable,int interlace);
+**! method string _render_block(int x,int y,int xsize,int ysize,int bpp,string indices,zero|string colortable,int interlace);
 **!	Advanced (!) method for writing renderblocks for placement
 **!	in a GIF file. This method only applies LZW encoding on the
 **!	indices and makes the correct headers.
@@ -1037,7 +1037,8 @@ void _image_gif_encode(INT32 args,int fs)
 	 if (args!=4)
 	 {
 	    n=sp[1-args].u.integer;
-	    if (n>256) n=256; if (n<2) n=2;
+	    if (n>256) n=256;
+	    if (n<2) n=2;
 
 	    ref_push_object(imgobj);
 	    push_int(n);
@@ -1290,10 +1291,8 @@ static void _decode_get_extension(unsigned char **s,
 				  size_t *len)
 {
    int ext;
-   size_t n,sz;
 
    if (*len<3) { (*s)+=*len; (*len)=0; return; }
-   n=0;
 
    ext=(*s)[1];
 
@@ -1304,22 +1303,31 @@ static void _decode_get_extension(unsigned char **s,
 
    push_int(ext);
 
-   while (*len && (sz=**s))
-   {
-      if ((*len)-1<sz) sz=(*len)-1;
+   if (*len && **s) {
+      struct string_builder data;
+      ONERROR uwp;
+      size_t sz;
 
-      push_string(make_shared_binary_string((char *)(*s)+1,sz));
-      n++;
+      init_string_builder_alloc(&data, **s, 0);
+      SET_ONERROR(uwp, free_string_builder, &data);
 
-      (*len)-=(sz+1);
-      (*s)+=(sz+1);
-   }
-   if (*len) { (*len)-=1; (*s)+=1; }
+      while (*len && (sz=**s))
+      {
+	 if ((*len)-1<sz) sz=(*len)-1;
 
-   if (!n)
+	 string_builder_binary_strcat0(&data, (*s)+1, sz);
+
+	 (*len)-=(sz+1);
+	 (*s)+=(sz+1);
+      }
+
+      push_string(finish_string_builder(&data));
+      UNSET_ONERROR(uwp);
+   } else {
       push_empty_string();
-   else
-      f_add(n);
+   }
+
+   if (*len) { (*len)-=1; (*s)+=1; }
 
    f_aggregate(3);
 }
@@ -1327,8 +1335,7 @@ static void _decode_get_extension(unsigned char **s,
 static void _decode_get_render(unsigned char **s,
 			       size_t *len)
 {
-   int n=0,bpp;
-   size_t sz;
+   int bpp;
 
 /* byte ...
    0  0x2c (render block init)
@@ -1390,22 +1397,31 @@ static void _decode_get_render(unsigned char **s,
 
    if (*len) { push_int(**s); (*s)++; (*len)--; } else push_int(0);
 
-   while (*len && (sz=**s))
-   {
-      if ((*len)-1<sz) sz=(*len)-1;
+   if (*len && **s) {
+      struct string_builder data;
+      ONERROR uwp;
+      size_t sz;
 
-      push_string(make_shared_binary_string((char *)(*s)+1,sz));
-      n++;
+      init_string_builder_alloc(&data, **s, 0);
+      SET_ONERROR(uwp, free_string_builder, &data);
 
-      (*len)-=(sz+1);
-      (*s)+=(sz+1);
-   }
-   if (*len) { (*len)-=1; (*s)+=1; }
+      while (*len && (sz=**s))
+      {
+	 if ((*len)-1<sz) sz=(*len)-1;
 
-   if (!n)
+	 string_builder_binary_strcat0(&data, (*s)+1, sz);
+
+	 (*len)-=(sz+1);
+	 (*s)+=(sz+1);
+      }
+
+      push_string(finish_string_builder(&data));
+      UNSET_ONERROR(uwp);
+   } else {
       push_empty_string();
-   else
-      f_add(n);
+   }
+
+   if (*len) { (*len)-=1; (*s)+=1; }
 
    f_aggregate(9);
 }
@@ -1691,7 +1707,7 @@ fprintf(stderr,"_gif_decode_lzw(%lx,%lu,%d,%lx,%lx,%lx,%lu,%d)\n",
       if (debug) fprintf(stderr,"code=%d 0x%02x bits=%d\n",n,n,bits);
 #endif
 
-      if (n==m && last!=n)
+      if (n==m && last!=n && last!=clearcode)
       {
 	// Copy the last color from the previous sequence
 	 c[n].prev=last;
@@ -1899,6 +1915,12 @@ void image_gif__decode(INT32 args)
 		  Pike_error("Image.GIF._decode: given (__decode'd) "
 			"array has illegal contents "
 			"(illegal type(s) in block array in position %d)\n",i);
+
+               if (b->item[7].u.integer > 12 || b->item[7].u.integer < 2)
+                  Pike_error("Image.GIF._decode: given (__decode'd) "
+                             "array has illegal contents "
+                             "(illegal bit count in block array in position %d)\n",
+                             i);
 
 	       push_int(GIF_RENDER);
 
@@ -2124,8 +2146,8 @@ void image_gif_decode(INT32 args)
 }
 
 /*
-**! method object decode_layers(string data)
-**! method object decode_layers(array _decoded)
+**! method array(object) decode_layers(string data)
+**! method array(object) decode_layers(array _decoded)
 **! method object decode_layer(string data)
 **! method object decode_layer(array _decoded)
 **!	Decodes GIF data and creates an array of layers
@@ -2770,7 +2792,7 @@ PIKE_MODULE_INIT
   ADD_FUNCTION("_gce_block", image_gif__gce_block,
 	       tFunc(tInt tInt tInt tInt tInt, tStr), 0);
   ADD_FUNCTION("_render_block", image_gif__render_block,
-	       tFunc(tInt tInt tInt tInt tInt tStr tStr tInt, tStr), 0);
+	       tFunc(tInt tInt tInt tInt tInt tStr tOr(tStr, tZero) tInt, tStr), 0);
 
   ADD_FUNCTION("header_block", image_gif_header_block,
 	       tFunc(tInt tInt tOr(tInt,tObj)

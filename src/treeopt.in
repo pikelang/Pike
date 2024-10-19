@@ -36,11 +36,6 @@
 F_APPLY(-, 0 = *):
   F_COMMA_EXPR(F_POP_VALUE($0, -), 0);
 
-// Attempt to return a void expression.
-// The compiler has already complained about it, so just make a valid node.
-F_RETURN(-, *):
-  F_RETURN(0, -);
-
 // @({ a, b, c })  =>  a, b, c
 // Nonconstant array
 F_PUSH_ARRAY(F_APPLY(F_CONSTANT
@@ -81,7 +76,7 @@ F_APPLY(0 = F_CONSTANT
 		[TYPEOF($$->u.sval) == T_FUNCTION]
 		[SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN]
 		[$$->u.sval.u.efun->function == f_multiply],
-		F_ARG_LIST(2 = +[pike_types_le($$->type, int_type_string)],
+		F_ARG_LIST(2 = +[pike_types_le($$->type, int_type_string, 0, 0)],
 			   3 = +[!match_types(object_type_string, $$->type)]))):
   F_APPLY($1, F_ARG_LIST($2, F_APPLY($0, $3)));
 
@@ -95,7 +90,7 @@ F_APPLY(0 = F_CONSTANT
 		[SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN]
 		[$$->u.sval.u.efun->function == f_multiply],
 		F_ARG_LIST(2 = +[!match_types(object_type_string, $$->type)],
-			   3 = +[pike_types_le($$->type, int_type_string)]))):
+			   3 = +[pike_types_le($$->type, int_type_string, 0, 0)]))):
   F_APPLY($1, F_ARG_LIST(F_APPLY($0, $2), $3));
 
 // search(indices(map), key) < 0)  =>  zero_type(map[key]) if typeof(map) <= mapping
@@ -107,7 +102,7 @@ F_LT(F_APPLY(F_CONSTANT
 				[TYPEOF($$->u.sval) == T_FUNCTION]
 				[SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN]
 				[$$->u.sval.u.efun->function == f_indices],
-				0 = +[pike_types_le($$->type, mapping_type_string)]),
+				0 = +[pike_types_le($$->type, mapping_type_string, 0, 0)]),
 			1)),
      F_CONSTANT
      [TYPEOF($$->u.sval) == T_INT]
@@ -125,7 +120,7 @@ F_EQ(F_APPLY(F_CONSTANT
 				[TYPEOF($$->u.sval) == T_FUNCTION]
 				[SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN]
 				[$$->u.sval.u.efun->function == f_indices],
-				0 = +[pike_types_le($$->type, mapping_type_string)]),
+				0 = +[pike_types_le($$->type, mapping_type_string, 0, 0)]),
 			1)),
      F_CONSTANT
      [TYPEOF($$->u.sval) == T_INT]
@@ -143,7 +138,7 @@ F_GE(F_APPLY(F_CONSTANT
 				[TYPEOF($$->u.sval) == T_FUNCTION]
 				[SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN]
 				[$$->u.sval.u.efun->function == f_indices],
-				0 = +[pike_types_le($$->type, mapping_type_string)]),
+				0 = +[pike_types_le($$->type, mapping_type_string, 0, 0)]),
 			1)),
      F_CONSTANT
      [TYPEOF($$->u.sval) == T_INT]
@@ -161,7 +156,7 @@ F_GE(F_APPLY(F_CONSTANT
 				[TYPEOF($$->u.sval) == T_FUNCTION]
 				[SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN]
 				[$$->u.sval.u.efun->function == f_indices],
-				0 = +[pike_types_le($$->type, mapping_type_string)]),
+				0 = +[pike_types_le($$->type, mapping_type_string, 0, 0)]),
 			1)),
      F_CONSTANT
      [TYPEOF($$->u.sval) == T_INT]
@@ -176,9 +171,9 @@ F_GE(F_APPLY(F_CONSTANT
 //
 // (sscanf(s, "%*!" + A + "s" + "xxxx", ...) || 1) - 1
 F_SSCANF(F_ARG_LIST(F_RANGE(0 = +[ pike_types_le($$->type,
-                                                 string_type_string)],
+                                                 string_type_string, 0, 0)],
                             ':'(F_RANGE_FROM_BEG(1 = +[ pike_types_le($$->type,
-                                                                      int_type_string)], -),
+                                                                      int_type_string, 0, 0)], -),
                                 F_RANGE_OPEN)),
                     2 = +), 3):
 {
@@ -189,6 +184,33 @@ F_SSCANF(F_ARG_LIST(F_RANGE(0 = +[ pike_types_le($$->type,
   $$ = mkopernode("`-",
 		  mknode(F_LOR,
 			 mknode(F_SSCANF,
+				mknode(F_ARG_LIST, $0,
+				       mkopernode("`+",
+						  mknode(F_ARG_LIST,
+							 mkstrnode(percent_star_string),
+							 $1),
+						  mknode(F_ARG_LIST,
+							 mkstrnode(s_string),
+							 $2))),
+				$3),
+			 mkintnode(1)),
+		  mkintnode(1));
+}
+;
+F_SSCANF_80(F_ARG_LIST(F_RANGE(0 = +[ pike_types_le($$->type,
+						    string_type_string, 0, 0)],
+			       ':'(F_RANGE_FROM_BEG(1 = +[ pike_types_le($$->type,
+									 int_type_string, 0, 0)], -),
+				   F_RANGE_OPEN)),
+		       2 = +), 3):
+{
+  struct pike_string *percent_star_string;
+  struct pike_string *s_string;
+  MAKE_CONST_STRING(percent_star_string, "%*!");
+  MAKE_CONST_STRING(s_string, "s");
+  $$ = mkopernode("`-",
+		  mknode(F_LOR,
+			 mknode(F_SSCANF_80,
 				mknode(F_ARG_LIST, $0,
 				       mkopernode("`+",
 						  mknode(F_ARG_LIST,
@@ -341,7 +363,10 @@ F_POP_VALUE(F_GET_SET, *):
 // Popping of zero elements.
 // This set of rules also protects the rule
 //   F_COMMA(F_POP(0), F_POP(1)) => F_POP(F_COMMA(0, 1))
-F_POP_VALUE(0 = F_RETURN, *):
+F_POP_VALUE(0 = F_RETURN(*, -), *):
+  $0;
+
+F_POP_VALUE(0 = F_RETURN(*, F_CONSTANT [TYPEOF($$->u.sval) == T_INT] [!$$->u.sval.u.integer]), *):
   $0;
 
 F_POP_VALUE(0 = F_CONTINUE, *):
@@ -481,7 +506,7 @@ F_RANGE(0, ':'(F_RANGE_FROM_BEG(1 = F_CONSTANT[TYPEOF($$->u.sval) == T_INT], *),
   /* Objects may want to use the range for obscure purposes. */
   if (!match_types(object_type_string, $0->type)) {
     yywarning("Range is always empty.");
-    if (pike_types_le($0->type, string_type_string)) {
+    if (pike_types_le($0->type, string_type_string, 0, 0)) {
       $$ = mkstrnode(empty_pike_string);
     }
   }
@@ -497,13 +522,26 @@ F_COMMA_EXPR(0, -):
 F_COMMA_EXPR(F_CONSTANT, 0 = +):
   $0;
 
-F_COMMA_EXPR(+[node_is_tossable($$)], 0 = +):
+// A, B ==> B
+// If A is tossable and either
+//   A is a void expression, or
+//   B is not a void expression.
+F_COMMA_EXPR(1 = +[node_is_tossable($$)],
+             0 = +[($$->type != void_type_string) ||
+                   ($1->type == void_type_string)]):
   $0;
 
-F_COMMA_EXPR(F_COMMA_EXPR(0, F_CONSTANT), 1 = +):
+F_COMMA_EXPR(F_COMMA_EXPR(0, F_CONSTANT),
+             1 = +[$$->type != void_type_string]):
   F_COMMA_EXPR($0, $1);
 
-F_COMMA_EXPR(F_COMMA_EXPR(0, +[node_is_tossable($$)]), 1 = +):
+// A, B, C ==> A, C
+// If B is tossable and either
+//   B is a void expression, or
+//   C is not a void expression.
+F_COMMA_EXPR(F_COMMA_EXPR(0, 2 = +[node_is_tossable($$)]),
+             1 = +[($$->type != void_type_string) ||
+                   ($2->type == void_type_string)]):
   F_COMMA_EXPR($0, $1);
 
 // Join adjacent F_POP_VALUE's, but not if it would cause the stack to
@@ -553,42 +591,32 @@ F_COMMA_EXPR(F_ARG_LIST(0, 1), 2):
 F_COMMA_EXPR(0, F_COMMA_EXPR(1, 2)):
   F_COMMA_EXPR(F_COMMA_EXPR($0, $1), $2);
 
-// Dead-code elimination.
-// FIXME: Should it be a warning here?
-// Is really the OPT_CASE needed for the following three?
-F_COMMA_EXPR(0 = F_RETURN, +[!($$->tree_info & OPT_CASE)]):
-  $0;
-
-F_COMMA_EXPR(0 = F_CONTINUE, +[!($$->tree_info & OPT_CASE)]):
-  $0;
-
-F_COMMA_EXPR(0 = F_BREAK, +[!($$->tree_info & OPT_CASE)]):
-  $0;
-
-F_COMMA_EXPR(0 = F_COMMA_EXPR(*, F_RETURN), +[!($$->tree_info & OPT_CASE)]):
-  $0;
-
-F_COMMA_EXPR(0 = F_COMMA_EXPR(*, F_CONTINUE), +[!($$->tree_info & OPT_CASE)]):
-  $0;
-
-F_COMMA_EXPR(0 = F_COMMA_EXPR(*, F_BREAK), +[!($$->tree_info & OPT_CASE)]):
-  $0;
+// Simplify code below by converting F_INITIALIZE to F_ASSIGN
+// in this case.
+F_COMMA_EXPR(F_INITIALIZE(0, 1), 2):
+  F_COMMA_EXPR(F_ASSIGN($0, $1), $2);
 
 // x = expr; --x;  ==>  x = expr-1;
-F_COMMA_EXPR(F_ASSIGN(1 = +[!depend_p($$, $$)], 0), F_DEC($1, -)):
+F_COMMA_EXPR(F_ASSIGN(1 = +[!depend_p($$, $$)], 0), F_DEC($1, *)):
   {
+    struct pike_type *t = $1->type;
     $$ = mknode(F_ASSIGN, $1,
 		mkefuncallnode("`-",
-			       mknode(F_ARG_LIST, $0, mkintnode(1))));
+			       mknode(F_ARG_LIST,
+				      mksoftcastnode(t, $0),
+				      mkintnode(1))));
   }
   ;
 
 // x = expr; ++x;  ==>  x = expr+1;
-F_COMMA_EXPR(F_ASSIGN(1 = +[!depend_p($$, $$)], 0), F_INC($1, -)):
+F_COMMA_EXPR(F_ASSIGN(1 = +[!depend_p($$, $$)], 0), F_INC($1, *)):
   {
+    struct pike_type *t = $1->type;
     $$ = mknode(F_ASSIGN, $1,
 		mkefuncallnode("`+",
-			       mknode(F_ARG_LIST, $0, mkintnode(1))));
+			       mknode(F_ARG_LIST,
+				      mksoftcastnode(t, $0),
+				      mkintnode(1))));
   }
   ;
 
@@ -596,22 +624,28 @@ F_COMMA_EXPR(F_ASSIGN(1 = +[!depend_p($$, $$)], 0), F_INC($1, -)):
 F_COMMA_EXPR(F_ASSIGN(1 = +[!depend_p($$, $$)], 0),
 	     F_COMMA_EXPR(F_DEC($1, -), 2)):
   {
+    struct pike_type *t = $1->type;
     $$ = mknode(F_COMMA_EXPR,
 		mknode(F_ASSIGN, $1,
 		       mkefuncallnode("`-",
-				      mknode(F_ARG_LIST, $0, mkintnode(1)))),
+				      mknode(F_ARG_LIST,
+					     mksoftcastnode(t, $0),
+					     mkintnode(1)))),
 		$2);
   }
   ;
 
 // x = expr; ++x;  ==>  x = expr+1;
 F_COMMA_EXPR(F_ASSIGN(1 = +[!depend_p($$, $$)], 0),
-	     F_COMMA_EXPR(F_INC($1, -), 2)):
+	     F_COMMA_EXPR(F_INC($1, *), 2)):
   {
+    struct pike_type *t = $1->type;
     $$ = mknode(F_COMMA_EXPR,
 		mknode(F_ASSIGN, $1,
 		       mkefuncallnode("`+",
-				      mknode(F_ARG_LIST, $0, mkintnode(1)))),
+				      mknode(F_ARG_LIST,
+					     mksoftcastnode(t, $0),
+					     mkintnode(1)))),
 		$2);
   }
   ;
@@ -624,9 +658,12 @@ F_COMMA_EXPR(F_ASSIGN(1 = F_LOCAL, 0),
 		   [ $1->u.integer.a == $$->u.integer.a ]
 		   [ $1->u.integer.b == $$->u.integer.b ], -)):
   {
+    struct pike_type *t = $1->type;
     $$ = mknode(F_ASSIGN, $1,
 		mkefuncallnode("`-",
-			       mknode(F_ARG_LIST, $0, mkintnode(1))));
+			       mknode(F_ARG_LIST,
+				      mksoftcastnode(t, $0),
+				      mkintnode(1))));
   }
   ;
 
@@ -634,11 +671,14 @@ F_COMMA_EXPR(F_ASSIGN(1 = F_LOCAL, 0),
 F_COMMA_EXPR(F_ASSIGN(1 = F_LOCAL, 0),
 	     F_INC(F_LOCAL
 		   [ $1->u.integer.a == $$->u.integer.a ]
-		   [ $1->u.integer.b == $$->u.integer.b ], -)):
+		   [ $1->u.integer.b == $$->u.integer.b ], *)):
   {
+    struct pike_type *t = $1->type;
     $$ = mknode(F_ASSIGN, $1,
 		mkefuncallnode("`+",
-			       mknode(F_ARG_LIST, $0, mkintnode(1))));
+			       mknode(F_ARG_LIST,
+				      mksoftcastnode(t, $0),
+				      mkintnode(1))));
   }
   ;
 
@@ -648,10 +688,13 @@ F_COMMA_EXPR(F_ASSIGN(1 = F_LOCAL, 0),
 				[$1->u.integer.a == $$->u.integer.a]
 				[$1->u.integer.b == $$->u.integer.b], -), 2)):
   {
+    struct pike_type *t = $1->type;
     $$ = mknode(F_COMMA_EXPR,
 		mknode(F_ASSIGN, $1,
 		       mkefuncallnode("`-",
-				      mknode(F_ARG_LIST, $0, mkintnode(1)))),
+				      mknode(F_ARG_LIST,
+					     mksoftcastnode(t, $0),
+					     mkintnode(1)))),
 		$2);
   }
   ;
@@ -660,12 +703,15 @@ F_COMMA_EXPR(F_ASSIGN(1 = F_LOCAL, 0),
 F_COMMA_EXPR(F_ASSIGN(1 = F_LOCAL, 0),
 	     F_COMMA_EXPR(F_INC(F_LOCAL
 				[$1->u.integer.a == $$->u.integer.a]
-				[$1->u.integer.b == $$->u.integer.b], -), 2)):
+				[$1->u.integer.b == $$->u.integer.b], *), 2)):
   {
+    struct pike_type *t = $1->type;
     $$ = mknode(F_COMMA_EXPR,
 		mknode(F_ASSIGN, $1,
 		       mkefuncallnode("`+",
-				      mknode(F_ARG_LIST, $0, mkintnode(1)))),
+				      mknode(F_ARG_LIST,
+					     mksoftcastnode(t, $0),
+					     mkintnode(1)))),
 		$2);
   }
   ;
@@ -731,7 +777,10 @@ F_ARG_LIST(0, F_ARG_LIST(1, 2)):
 // FIXME: Should it be a warning here?
 // Do people even write code where this is trigged? return in an srgument-list?
 // Is really the OPT_CASE needed for the following three?
-F_ARG_LIST(0 = F_RETURN, +[!($$->tree_info & OPT_CASE)]):
+F_ARG_LIST(0 = F_RETURN(*, -), +[!($$->tree_info & OPT_CASE)]):
+  $0;
+
+F_ARG_LIST(0 = F_RETURN(*, F_CONSTANT [TYPEOF($$->u.sval) == T_INT] [!$$->u.sval.u.integer]), +[!($$->tree_info & OPT_CASE)]):
   $0;
 
 F_ARG_LIST(0 = F_CONTINUE, +[!($$->tree_info & OPT_CASE)]):
@@ -740,7 +789,10 @@ F_ARG_LIST(0 = F_CONTINUE, +[!($$->tree_info & OPT_CASE)]):
 F_ARG_LIST(0 = F_BREAK, +[!($$->tree_info & OPT_CASE)]):
   $0;
 
-F_ARG_LIST(0 = F_COMMA_EXPR(*, F_RETURN), +[!($$->tree_info & OPT_CASE)]):
+F_ARG_LIST(0 = F_COMMA_EXPR(*, F_RETURN(*, -)), +[!($$->tree_info & OPT_CASE)]):
+  $0;
+
+F_ARG_LIST(0 = F_COMMA_EXPR(*, F_RETURN(*, F_CONSTANT [TYPEOF($$->u.sval) == T_INT] [!$$->u.sval.u.integer])), +[!($$->tree_info & OPT_CASE)]):
   $0;
 
 F_ARG_LIST(0 = F_COMMA_EXPR(*, F_CONTINUE), +[!($$->tree_info & OPT_CASE)]):
@@ -753,8 +805,9 @@ F_ARG_LIST(0 = F_COMMA_EXPR(*, F_BREAK), +[!($$->tree_info & OPT_CASE)]):
 F_LVALUE_LIST(-, 0):
   $0;
 
-F_LVALUE_LIST(0, -):
-  $0;
+// Breaks sscanf lvalue detection.
+// F_LVALUE_LIST(0, -):
+//  $0;
 
 // Dead-code elimination.
 // FIXME: Should it be a warning here?
@@ -800,12 +853,18 @@ F_LOR(0, F_LOR(1, 2)):
   F_LOR(F_LOR($0, $1), $2);
 
 F_LOR(0 = F_ASSIGN(*, +[node_is_false($$)]), 2):
+  F_COMMA_EXPR(F_POP_VALUE($0, -), $2);
+
+F_LOR(0 = F_INITIALIZE(*, +[node_is_false($$)]), 2):
   F_COMMA_EXPR($0, $2);
 
 F_LOR(F_COMMA_EXPR(0, 1[$$->token != F_POP_VALUE]), 2):
   F_COMMA_EXPR($0, F_LOR($1, $2));
 
 F_LOR(0 = F_ASSIGN(*, +[node_is_true($$)]), *):
+  $0;
+
+F_LOR(0 = F_INITIALIZE(*, +[node_is_true($$)]), *):
   $0;
 
 // Note: This rule is not sound. Consider the cases
@@ -847,9 +906,15 @@ F_LAND(0, F_LAND(1, 2)):
   F_LAND(F_LAND($0, $1), $2);
 
 F_LAND(0 = F_ASSIGN(*, +[node_is_true($$)]), 2):
+  F_COMMA_EXPR(F_POP_VALUE($0, -), $2);
+
+F_LAND(0 = F_INITIALIZE(*, +[node_is_true($$)]), 2):
   F_COMMA_EXPR($0, $2);
 
 F_LAND(0 = F_ASSIGN(*, +[node_is_false($$)]), *):
+  $0;
+
+F_LAND(0 = F_INITIALIZE(*, +[node_is_false($$)]), *):
   $0;
 
 F_LAND(F_COMMA_EXPR(0, 1[$$->token != F_POP_VALUE]), 2):
@@ -869,6 +934,13 @@ F_LAND(0 = F_LAND(*, +[node_is_false($$)]), *):
 // F_LAND(+[!($$->node_info & OPT_SIDE_EFFECT)],
 //        0 = +[node_is_false($$)]):
 //   $0;
+
+// Using F_LAND or F_LOR in place of '?'.
+F_POP_VALUE(F_LAND(F_NOT(0, *), 1), *):
+  F_POP_VALUE(F_LOR($0, $1), -);
+
+F_POP_VALUE(F_LOR(F_NOT(0, *), 1), *):
+  F_POP_VALUE(F_LAND($0, $1), -);
 
 // Optimizations of if statements.
 '?'(-, -):
@@ -913,10 +985,13 @@ F_LAND(0 = F_LAND(*, +[node_is_false($$)]), *):
 '?'(0, ':'(F_COMMA_EXPR(1, 2), F_COMMA_EXPR(3, $2))):
   F_COMMA_EXPR('?'($0, ':'($1, $3)), $2);
 
-'?'(*, ':'(0=+, +[(pike_types_le($0->type, void_type_string) !=
-		   pike_types_le($$->type, void_type_string))])):
+'?'(*, ':'(0=+, 1=+[(pike_types_le($0->type, void_type_string, 0, 0) !=
+		     pike_types_le($$->type, void_type_string, 0, 0))])):
 {
-  yyerror("The arguments to ?: may not be void.");
+  yytype_report(REPORT_ERROR,
+		$0->current_file, $0->line_number, $0->type,
+		$1->current_file, $1->line_number, $1->type,
+		0, "The arguments to ?: may not be void.");
 }
 ;
 
@@ -926,20 +1001,20 @@ F_NOT(-, *):
 
 // The following only work on total orders. We can't assume that,
 // since it's not true for floats, and might not be true for objects.
-F_NOT(F_LT(0 [pike_types_le($$->type, int_type_string)],
-	   1 [pike_types_le($$->type, int_type_string)]), *):
+F_NOT(F_LT(0 [pike_types_le($$->type, int_type_string, 0, 0)],
+	   1 [pike_types_le($$->type, int_type_string, 0, 0)]), *):
   F_GE($0, $1);
 
-F_NOT(F_GT(0 [pike_types_le($$->type, int_type_string)],
-	   1 [pike_types_le($$->type, int_type_string)]), *):
+F_NOT(F_GT(0 [pike_types_le($$->type, int_type_string, 0, 0)],
+	   1 [pike_types_le($$->type, int_type_string, 0, 0)]), *):
   F_LE($0, $1);
 
-F_NOT(F_LE(0 [pike_types_le($$->type, int_type_string)],
-	   1 [pike_types_le($$->type, int_type_string)]), *):
+F_NOT(F_LE(0 [pike_types_le($$->type, int_type_string, 0, 0)],
+	   1 [pike_types_le($$->type, int_type_string, 0, 0)]), *):
   F_GT($0, $1);
 
-F_NOT(F_GE(0 [pike_types_le($$->type, int_type_string)],
-	   1 [pike_types_le($$->type, int_type_string)]), *):
+F_NOT(F_GE(0 [pike_types_le($$->type, int_type_string, 0, 0)],
+	   1 [pike_types_le($$->type, int_type_string, 0, 0)]), *):
   F_LT($0, $1);
 
 F_NOT(F_EQ(0, 1), *):
@@ -958,12 +1033,12 @@ F_ADD_EQ(0 [ $$->token != F_AUTO_MAP_MARKER ],
 // a += 1  ->  ++a
 F_ADD_EQ(0, 1 = F_CONSTANT[TYPEOF($$->u.sval) == T_INT]
 	 [($$->u.sval.u.integer) == 1]):
-  F_INC($0, -);
+  F_INC($0, 1);
 
 // a += -1  ->  --a
 F_ADD_EQ(0, 1 = F_CONSTANT[TYPEOF($$->u.sval) == T_INT]
 	 [($$->u.sval.u.integer) == -1]):
-  F_DEC($0, -);
+  F_DEC($0, 1);
 
 
 // a -= 0  ->  a
@@ -975,12 +1050,12 @@ F_SUB_EQ(0 [ $$->token != F_AUTO_MAP_MARKER ],
 // a -= 1  ->  --a
 F_SUB_EQ(0, 1 = F_CONSTANT[TYPEOF($$->u.sval) == T_INT]
 	 [($$->u.sval.u.integer) == 1]):
-  F_DEC($0, -);
+  F_DEC($0, 1);
 
 // a -= -1  ->  ++a
 F_SUB_EQ(0, 1 = F_CONSTANT[TYPEOF($$->u.sval) == T_INT]
 	 [($$->u.sval.u.integer) == -1]):
-  F_INC($0, -);
+  F_INC($0, 1);
 
 // a += ({ args... })  ->  F_APPEND_ARRAY(a, args...)
 F_ADD_EQ(0, F_APPLY(F_CONSTANT
@@ -1044,16 +1119,16 @@ F_ARROW(0 = F_CONSTANT[TYPEOF($$->u.sval) == T_OBJECT]
 
 
 // do-while optimizations.
-F_DO(0[!($$->tree_info & (OPT_BREAK|OPT_CONTINUE))], -):
+F_DO(-, 0[!($$->tree_info & (OPT_BREAK|OPT_CONTINUE))]):
   $0;
 
-F_DO(0[!($$->tree_info & (OPT_BREAK|OPT_CONTINUE))], +[node_is_false($$)]):
+F_DO(+[node_is_false($$)], 0[!($$->tree_info & (OPT_BREAK|OPT_CONTINUE))]):
   $0;
 
-F_DO(-, 0 = +[node_is_true($$)]):
+F_DO(0 = +[node_is_true($$)], -):
 {
   /* Infinite loop */
-  $$ = mknode(F_DO, mkefuncallnode("sleep", mkintnode(255)), $0);
+  $$ = mknode(F_DO, $0, mkefuncallnode("sleep", mkintnode(255)));
 }
 ;
 
@@ -1078,7 +1153,7 @@ F_LOOP(0, -):
   F_POP_VALUE($0, -);
 
 // foreach(arr ; ; val) body; -> foreach(arr, val) body;
-F_FOREACH(F_FOREACH_VAL_LVAL(0[ pike_types_le($$->type, array_type_string) ],
+F_FOREACH(F_FOREACH_VAL_LVAL(0[ pike_types_le($$->type, array_type_string, 0, 0) ],
 		     ':'(-, 1) ), 2):
   F_FOREACH(F_FOREACH_VAL_LVAL($0, $1), $2);
 
@@ -1098,12 +1173,14 @@ F_FOREACH(F_FOREACH_VAL_LVAL(0, -), 1):
 //   }
 //   ;
 
-// foreach(str/"x", ...)  ==>  foreach(String.SplitIterator(str, 'x'), ...)
+// foreach(str/"x", ...)
+//   ==>
+// foreach(String.SplitIterator(<typeof(str)>)(str, 'x'), ...)
 F_FOREACH(F_FOREACH_VAL_LVAL(F_APPLY(F_CONSTANT
 			     [TYPEOF($$->u.sval) == T_FUNCTION]
 			     [SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN]
 			     [$$->u.sval.u.efun->function == f_divide],
-			     F_ARG_LIST(0[pike_types_le($$->type, string_type_string)],
+			     F_ARG_LIST(0[pike_types_le($$->type, string_type_string, 0, 0)],
 					1 = F_CONSTANT
 					[TYPEOF($$->u.sval) == T_STRING]
 					[$$->u.sval.u.string->len == 1])),
@@ -1112,6 +1189,7 @@ F_FOREACH(F_FOREACH_VAL_LVAL(F_APPLY(F_CONSTANT
   extern struct program *string_split_iterator_program;
   node *vars;
   p_wchar2 split = index_shared_string($1->u.sval.u.string, 0);
+  struct pike_type *t = $0->type;
 
   ADD_NODE_REF2($2,
     if ($2->token == ':') {
@@ -1124,7 +1202,8 @@ F_FOREACH(F_FOREACH_VAL_LVAL(F_APPLY(F_CONSTANT
 
   $$ = mknode(F_FOREACH,
 	      mknode(F_FOREACH_VAL_LVAL,
-		     mkapplynode(mkprgnode(string_split_iterator_program),
+                     mkapplynode(mkbindnode(
+                                   mkprgnode(string_split_iterator_program), t),
 				 mknode(F_ARG_LIST, $0,
 					mkintnode(split))),
 		     vars),
@@ -1144,7 +1223,7 @@ F_FOREACH(F_FOREACH_VAL_LVAL(F_APPLY(F_CONSTANT
 			     [TYPEOF($$->u.sval) == T_FUNCTION]
 			     [SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN]
 			     [$$->u.sval.u.efun->function == f_divide],
-			     F_ARG_LIST(0[pike_types_le($$->type, string_type_string)],
+			     F_ARG_LIST(0[pike_types_le($$->type, string_type_string, 0, 0)],
 					1 = F_CONSTANT
 					[TYPEOF($$->u.sval) == T_STRING]
 					[$$->u.sval.u.string->len == 1])),
@@ -1158,6 +1237,7 @@ F_FOREACH(F_FOREACH_VAL_LVAL(F_APPLY(F_CONSTANT
   extern struct program *string_split_iterator_program;
   node *vars;
   p_wchar2 split = index_shared_string($1->u.sval.u.string, 0);
+  struct pike_type *t = $0->type;
 
   ADD_NODE_REF2($2,
     if ($2->token == ':') {
@@ -1170,11 +1250,13 @@ F_FOREACH(F_FOREACH_VAL_LVAL(F_APPLY(F_CONSTANT
 
   $$ = mknode(F_FOREACH,
 	      mknode(F_FOREACH_VAL_LVAL,
-		     mkapplynode(mkprgnode(string_split_iterator_program),
-				 mknode(F_ARG_LIST, $0,
-					mknode(F_ARG_LIST,
+                     mkapplynode(mkbindnode(
+                                   mkprgnode(string_split_iterator_program), t),
+				 mknestednodes(F_ARG_LIST,
+					       $0,
 					       mkintnode(split),
-					       mkintnode(1)))),
+					       mkintnode(1),
+					       NULL)),
 		     vars),
 	      $3);
 }
@@ -1189,7 +1271,7 @@ F_FOREACH(F_FOREACH_VAL_LVAL(F_APPLY(F_CONSTANT
 			     [TYPEOF($$->u.sval) == T_FUNCTION]
 			     [SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN]
 			     [$$->u.sval.u.efun->function == f_divide],
-			     F_ARG_LIST(0[pike_types_le($$->type, string_type_string)],
+			     F_ARG_LIST(0[pike_types_le($$->type, string_type_string, 0, 0)],
 					1 = F_CONSTANT
 					[TYPEOF($$->u.sval) == T_STRING]
 					[$$->u.sval.u.string->len == 1])),
@@ -1208,6 +1290,7 @@ F_FOREACH(F_FOREACH_VAL_LVAL(F_APPLY(F_CONSTANT
   extern struct program *string_split_iterator_program;
   node *vars;
   p_wchar2 split = index_shared_string($1->u.sval.u.string, 0);
+  struct pike_type *t = $0->type;
 
   ADD_NODE_REF2($2,
     if ($2->token == ':') {
@@ -1220,19 +1303,14 @@ F_FOREACH(F_FOREACH_VAL_LVAL(F_APPLY(F_CONSTANT
 
   $$ = mknode(F_FOREACH,
 	      mknode(F_FOREACH_VAL_LVAL,
-		     mkapplynode(mkprgnode(string_split_iterator_program),
-				 mknode(F_ARG_LIST, $0,
-					mknode(F_ARG_LIST,
+                     mkapplynode(mkbindnode(
+                                   mkprgnode(string_split_iterator_program), t),
+				 mknestednodes(F_ARG_LIST, $0,
 					       mkintnode(split),
-					       mkintnode(1)))),
+					       mkintnode(1),
+					       NULL)),
 		     vars),
 	      $3);
-}
-;
-
-0 = F_FOREACH_VAL_LVAL:
-{
-  fix_foreach_type($0);
 }
 ;
 
@@ -1469,7 +1547,8 @@ F_FOR(0 = F_APPLY(1 = F_CONSTANT
     ));
 
     tmp1 = mknode(F_COMMA_EXPR, mkcastnode(void_type_string,
-					   mknode(inc ? F_DEC : F_INC, tmp1, 0)), tmp2);
+					   mknode(inc ? F_DEC : F_INC, tmp1,
+						  mkintnode(1))), tmp2);
     goto use_tmp1;
   }
  next_for_opt:
@@ -1507,7 +1586,7 @@ F_INC_LOOP(F_VAL_LVAL(0 = +[ !($$->tree_info & (OPT_SIDE_EFFECT|OPT_ASSIGNMENT|
 						OPT_CASE|OPT_CONTINUE|
 						OPT_BREAK|OPT_RETURN)) ]),
 	   -):
-  F_POP_VALUE('?'(F_LT(F_INC($1, -), $0), ':'(F_ASSIGN($1, $0), -)), -);
+  F_POP_VALUE('?'(F_LT(F_INC($1, 1), $0), ':'(F_ASSIGN($1, $0), -)), -);
 
 // Decremental loop with empty body ==> assignment.
 F_DEC_LOOP(F_VAL_LVAL(0 = +[ !($$->tree_info & (OPT_SIDE_EFFECT|OPT_ASSIGNMENT|
@@ -1517,7 +1596,7 @@ F_DEC_LOOP(F_VAL_LVAL(0 = +[ !($$->tree_info & (OPT_SIDE_EFFECT|OPT_ASSIGNMENT|
 						OPT_CASE|OPT_CONTINUE|
 						OPT_BREAK|OPT_RETURN)) ]),
 	   -):
-  F_POP_VALUE('?'(F_GT(F_DEC($1, -), $0), ':'(F_ASSIGN($1, $0), -)), -);
+  F_POP_VALUE('?'(F_GT(F_DEC($1, 1), $0), ':'(F_ASSIGN($1, $0), -)), -);
 
 // // If the loop variable is unused, we can throw it away.
 // F_DEC_LOOP(F_VAL_LVAL(0,
@@ -1544,26 +1623,26 @@ F_LOOP(0, F_POP_VALUE(1, -)):
 
 // loop(n) ++x;  ==>  x+=n;
 F_LOOP(0 = +[ !depend_p($$, $$) ],
-       F_INC [ pike_types_le($$->type, int_type_string) ]
-       (1 = +[ !depend_p($$, $$) ], -)):
+       F_INC [ pike_types_le($$->type, int_type_string, 0, 0) ]
+       (1 = +[ !depend_p($$, $$) ], *)):
   F_POP_VALUE(F_ADD_EQ($1, $0), -);
 
 // loop(n) x++;  ==>  x+=n;
 F_LOOP(0 = +[ !depend_p($$, $$) ],
-       F_POST_INC [ pike_types_le($$->type, int_type_string) ]
-       (1 = +[ !depend_p($$, $$) ], -)):
+       F_POST_INC [ pike_types_le($$->type, int_type_string, 0, 0) ]
+       (1 = +[ !depend_p($$, $$) ], *)):
   F_POP_VALUE(F_ADD_EQ($1, $0), -);
 
 // loop(n) --x;  ==>  x-=n;
 F_LOOP(0 = +[ !depend_p($$, $$) ],
-       F_DEC [ pike_types_le($$->type, int_type_string) ]
-       (1 = +[ !depend_p($$, $$) ], -)):
+       F_DEC [ pike_types_le($$->type, int_type_string, 0, 0) ]
+       (1 = +[ !depend_p($$, $$) ], *)):
   F_POP_VALUE(F_SUB_EQ($1, $0), -);
 
 // loop(n) x--;  ==>  x-=n;
 F_LOOP(0 = +[ !depend_p($$, $$) ],
-       F_POST_DEC [ pike_types_le($$->type, int_type_string) ]
-       (1 = +[ !depend_p($$, $$) ], -)):
+       F_POST_DEC [ pike_types_le($$->type, int_type_string, 0, 0) ]
+       (1 = +[ !depend_p($$, $$) ], *)):
   F_POP_VALUE(F_SUB_EQ($1, $0), -);
 
 // loop(n) x+=k;  ==> if (n > 0) x += k*n;
@@ -1576,7 +1655,7 @@ F_LOOP(0 = +[ !depend_p($$, $$)]
 		[ !($$->tree_info & OPT_SIDE_EFFECT) ]
 		[ ((($$->type == int_type_string) &&
 		    ($1->type == int_type_string)) ||
-		   pike_types_le($$->type, string_type_string)) ])):
+		   pike_types_le($$->type, string_type_string, 0, 0)) ])):
   {
     $$ = mknode(F_POP_VALUE,
 		mknode('?',
@@ -1600,28 +1679,8 @@ F_LOOP(0 = +[ !depend_p($$, $$)]
 //
 // FIXME: Currently broken for many cases, since the SHARED_NODES
 //        mode is gone.
-'?'(0 = +[ node_is_tossable($$) ], ':'( F_RETURN($0, *), 1)) :
-{
-  struct pike_type *type = $0->type;
-  struct pike_string *tmpname;
-  int tmpvar;
-
-  MAKE_CONST_STRING(tmpname, " ");
-  tmpvar = islocal(tmpname);
-  if(tmpvar == -1)
-  {
-    add_ref(mixed_type_string);
-    tmpvar = add_local_name(tmpname, mixed_type_string, 0);
-  }
-  if (tmpvar >= 0) {
-    $$ = mknode('?', mknode(F_ASSIGN, mklocalnode(tmpvar, 0), $0),
-		mknode(':',mknode(F_RETURN,
-				  mksoftcastnode(type, mklocalnode(tmpvar,0)),
-				  0),
-		       $1));
-  }
-}
-;
+'?'(0 = +[ node_is_tossable($$) ], ':'( F_RETURN($0, 2), 1)) :
+  F_COMMA_EXPR(F_RETURN_IF_TRUE($0, $2), $1);
 
 // convert all X_EQ(1,2) to $1 = $1 X $2
 // These are all identical except for the chosen operanodetype.

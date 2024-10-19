@@ -354,12 +354,12 @@ Layer decode_layer(mapping layer, mapping i)
 //! @endmapping
 mapping __decode( mapping|string what, mapping|void options )
 {
-  mapping data;
+  mapping data = ([]);
   if(mappingp(what))
     data = what;
   else
     data = ___decode( what );
-  what=0;
+  what = "";
   array rl = ({});
   foreach( data->layers, mapping l )
     rl += ({ decode_layer( l, data ) });
@@ -382,7 +382,7 @@ array(object) decode_background( mapping data )
 }
 
 //! Convert a photoshop mode name to pike @[Image.lay] mode names
-string translate_mode( string mode )
+string|zero translate_mode( string mode )
 {
   switch( mode )
   {
@@ -595,7 +595,7 @@ mapping _decode( string|mapping what, mapping|void opts )
     data = what;
   else
     data = __decode( what );
-  what=0;
+  what="";
 
   Image.Layer res = Image.lay(decode_layers( data, opts ),
                               0,0,data->width,data->height );
@@ -624,7 +624,7 @@ Image.Image decode( string|mapping what, mapping|void opts )
     data = what;
   else
     data = __decode( what );
-  what=0;
+  what="";
 
   Image.Layer res = Image.lay(decode_layers( data, opts ),
                               0,0,data->width,data->height );

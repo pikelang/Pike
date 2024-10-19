@@ -141,50 +141,36 @@ string describe_opcode(FRAME op) {
 
 mapping(string:mapping) parse_websocket_extensions(string header) {
   mapping(string:mapping) retval = ([]);
-  if (!header) return retval;
-  // Parses extensions conforming RFCs, supports quoted values.
-  // FIXME Violates the RFC when commas or semicolons are quoted.
-  array tmp = array_sscanf(header,
-   "%*[ \t\r\n]%{%{%[^ \t\r\n=;,]%*[= \t\r\n]%[^;,]%*[ \t\r\n;]%}"
-   "%*[ \t\r\n,]%}")[0];
-  foreach (tmp; int i; array v) {
-    mapping m = ([]);
-    array d;
-    v = v[0];
-    retval[v[0][0]] = m;
-    v = v[1..];
-    foreach (v;; d) {
-      string sv = String.trim_whites(d[1]);
-      if (sizeof(sv) && sv[0] == '"')
-        sv = sv[1..<1];	    // Strip doublequotes
-      int|float|string tv;	    // Store numeric values natively
-      if ((string)(tv=(int)sv)!=sv && (string)(tv=(float)sv)!=sv)
-        tv = sv;
-      m[d[0]] = tv;
-    }
+  if (!header)
+    return retval;
+  foreach (MIME.decode_headerfield_params(header); ;
+           ADT.OrderedMapping m) {
+    string mainopt;
+    mapping subopt = ([]);
+    foreach (m; string key; string sv)
+      if (!mainopt)
+        mainopt = key;
+      else {
+        int|float|string tv;	    // Store numeric values natively
+        if ((string)(tv=(int)sv)!=sv && (string)(tv=(float)sv)!=sv)
+          tv = sv;
+        subopt[key] = tv;
+      }
+    retval[mainopt] = subopt;
   }
   return retval;
 }
 
 string encode_websocket_extensions(mapping(string:mapping) ext) {
-    array ev = ({});
-    foreach (ext; string name; mapping ext) {
-        array res = ({name});
-        foreach (ext; string pname; int|float|string pval) {
-            // FIXME We only look for embedded spaces to decide if
-            // we need to quote the parametervalue.  If you want to
-            // embed tabs or other whitespace, this needs to be
-            // amended.
-            if (stringp(pval) && has_value(pval, " "))
-                pval = "\"" + pval + "\"";
-            pval = (string)pval;
-            if (sizeof(pval))
-                pval = "="+pval;
-            res += ({pname+pval});
-        }
-        ev += ({res * ";"});
-    }
-    return ev * ",";
+  String.Buffer res = String.Buffer();
+  string name, sep = "";
+  foreach (ext; name; mapping args) {
+    res->add(sep, name);
+    if (sizeof(args))
+      res->add(";", MIME.encode_headerfield_params(({ args })));
+    sep = ",";
+  }
+  return res->get();
 }
 
 //! Parses one WebSocket frame. Throws an error if there isn't enough data in the buffer.
@@ -256,9 +242,9 @@ class Frame {
     int rsv;
 
     //! Generic options for this frame.
-    mapping(string:mixed) options;
+    mapping(string:mixed)|zero options;
 
-    string mask;
+    string|zero mask;
 
     //! Data part of the frame. Valid for frames of type @[FRAME_BINARY],
     //! @[FRAME_PING] and @[FRAME_PONG].
@@ -355,7 +341,7 @@ class Frame {
 
     //! @decl string close_reason
 
-    string `close_reason() {
+    string|zero `close_reason() {
         if (opcode != FRAME_CLOSE)
             error("This is not a close frame.\n");
         if (sizeof(data) <= 2) return 0;
@@ -446,6 +432,12 @@ class Connection {
     //! callbacks.
     void set_id(mixed id) {
         this::id = id;
+    }
+
+    //! Return the @expr{id@} as is passed as last argument to all
+    //! callbacks.
+    mixed query_id() {
+        return id;
     }
 
     //! Constructor for server mode
@@ -571,14 +563,13 @@ class Connection {
 
         stream->set_nonblocking(curry_back(http_read, _Roxen.HeaderParser(), extensions, rext),
                                 websocket_write, websocket_closed);
-
-
         // We use our output buffer to generate the request.
         send_raw("GET ", endpoint->get_http_path_query(), " HTTP/1.1\r\n");
         foreach(headers; string h; string v) {
             send_raw(h, ": ", v, "\r\n");
         }
         send_raw("\r\n");
+        send_flush();
         return res;
     }
 
@@ -606,6 +597,12 @@ class Connection {
     void send_raw(string(8bit) ... s) {
         WS_WERR(3, "out:\n----\n%s\n----\n", s*"\n----\n");
         out->add(@s);
+    }
+
+    void send_flush() {
+        function fn;
+        if (fn = stream->set_nodelay)
+            fn();
         stream->write("");
     }
 
@@ -613,8 +610,9 @@ class Connection {
 
     //! Read HTTP response from remote endpoint and handle connection
     //! upgrade.
-    protected void http_read(mixed _id, string data,
-                             object hp, array(extension_factory) extensions, mapping rext) {
+    protected void http_read(mixed _id, string data, object hp,
+			     array(object|extension_factory) extensions,
+			     mapping rext) {
 
         if (state != CONNECTING) {
           websocket_closed();
@@ -709,7 +707,6 @@ class Connection {
 
             if (arrayp(extensions)) {
                 mapping ext = parse_websocket_extensions(headers["sec-websocket-extensions"]);
-                array tmp = ({ });
 
                 /* we finish the extension negotiation */
                 foreach (extensions; int i; object|extension_factory f) {
@@ -874,7 +871,6 @@ class Connection {
         if (opcode == FRAME_CLOSE) {
             state = CLOSING;
             close_reason = frame->reason;
-            stream->close("w");
         }
     }
 
@@ -1021,7 +1017,7 @@ class Request(function(array(string), Request:void) cb) {
     //! argument.
     //!
     //! The returned connection object is in state @[Connection.OPEN].
-    Connection websocket_accept(string protocol, void|array(extension_factory) extensions,
+    Connection websocket_accept(void|string protocol, void|array(extension_factory) extensions,
                                 void|mapping extra_headers) {
         [mapping heads, array _extensions] =
 	    low_websocket_accept(protocol, extensions, extra_headers);
@@ -1032,11 +1028,11 @@ class Request(function(array(string), Request:void) cb) {
 
         ws->send_raw("HTTP/1.1 101 SwitchingProtocols\r\n");
 
-        foreach (heads; string k; string v) {
-          ws->send_raw(sprintf("%s: %s\r\n", k, v));
-        }
+        foreach (heads; string k; string v)
+          ws->send_raw(k, ": ", v, "\r\n");
 
         ws->send_raw("\r\n");
+        ws->send_flush();
 
         finish(0);
 
@@ -1106,7 +1102,7 @@ class defragment {
 
     private Frame fragment;
 
-    Frame receive(Frame frame, Connection con) {
+    object(Frame)|zero receive(Frame frame, Connection con) {
         int opcode = frame->opcode;
         int(0..1) fin = frame->fin;
 
@@ -1155,7 +1151,7 @@ class _permessagedeflate {
 
     mapping options;
 
-    void create(mapping options) {
+    protected void create(mapping options) {
         this_program::options = options;
     }
 
@@ -1225,7 +1221,7 @@ class _permessagedeflate {
         return frame;
     }
 
-    Frame receive(Frame frame, Connection con) {
+    object(Frame)|zero receive(Frame frame, Connection con) {
         frame = ::receive(frame, con);
 
         if (!frame) return 0;
@@ -1283,11 +1279,11 @@ constant deflate_default_options = ([
 //! @note
 //!     If the @expr{permessage-deflate@} extension is not being used, it falls back to use
 //!     @[defragment].
-object permessagedeflate(void|mapping default_options) {
+extension_factory permessagedeflate(void|mapping default_options) {
 #if constant(Gz.deflate)
   default_options = deflate_default_options + (default_options||([]));
 
-  object factory(int(0..1) client_mode, mapping ext, mapping rext) {
+  object|zero factory(int(0..1) client_mode, mapping ext, mapping rext) {
 
     if (client_mode && !ext) {
         /* this is the first step, we just offer the extension without any
@@ -1342,7 +1338,7 @@ object permessagedeflate(void|mapping default_options) {
     return _permessagedeflate(options);
   };
 #else
-  object factory() {
+  object factory(mixed ...) {
     return defragment();
   }
 #endif
@@ -1355,7 +1351,7 @@ object permessagedeflate(void|mapping default_options) {
 class conformance_check {
     inherit Extension;
 
-    Frame receive(Frame frame, Connection con) {
+    object(Frame)|zero receive(Frame frame, Connection con) {
         int opcode = frame->opcode;
 
         if (opcode == FRAME_TEXT && catch(frame->text)) {

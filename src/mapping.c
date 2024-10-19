@@ -22,6 +22,7 @@
 #include "block_allocator.h"
 #include "opcodes.h"
 #include "pike_cpulib.h"
+#include "bignum.h"
 
 /* Average number of keypairs per slot when allocating. */
 #define AVG_LINK_LENGTH 4
@@ -152,10 +153,20 @@ static void check_mapping_type_fields(const struct mapping *m)
 	Pike_fatal("Invalid mapping keypair value type: %s\n",
 		   get_name_of_type(TYPEOF(k->val)));
       val_types |= 1 << TYPEOF(k->val);
+      if (!(val_types & BIT_INT) && (TYPEOF(k->val) == PIKE_T_OBJECT)) {
+        if (is_bignum_object(k->val.u.object)) {
+          val_types |= BIT_INT;
+        }
+      }
       if (TYPEOF(k->ind) > MAX_TYPE)
 	Pike_fatal("Invalid maping keypair index type: %s\n",
 		   get_name_of_type(TYPEOF(k->ind)));
       ind_types |= 1 << TYPEOF(k->ind);
+      if (!(ind_types & BIT_INT) && (TYPEOF(k->ind) == PIKE_T_OBJECT)) {
+        if (is_bignum_object(k->ind.u.object)) {
+          ind_types |= BIT_INT;
+        }
+      }
     }
 
   if(val_types & ~(m->data->val_types))
@@ -421,7 +432,17 @@ static void mapping_rehash_backwards_evil(struct mapping_data *md,
 
     /* update */
     md->ind_types |= 1<< (TYPEOF(k->ind));
+    if (!(md->ind_types & BIT_INT) && (TYPEOF(k->ind) == PIKE_T_OBJECT)) {
+      if (is_bignum_object(k->ind.u.object)) {
+        md->ind_types |= BIT_INT;
+      }
+    }
     md->val_types |= 1<< (TYPEOF(k->val));
+    if (!(md->val_types & BIT_INT) && (TYPEOF(k->val) == PIKE_T_OBJECT)) {
+      if (is_bignum_object(k->val.u.object)) {
+        md->val_types |= BIT_INT;
+      }
+    }
     md->size++;
   }
 }
@@ -518,7 +539,17 @@ static void mapping_rehash_backwards_good(struct mapping_data *md,
 
     /* update */
     md->ind_types |= 1<< (TYPEOF(k->ind));
+    if (!(md->ind_types & BIT_INT) && (TYPEOF(k->ind) == PIKE_T_OBJECT)) {
+      if (is_bignum_object(k->ind.u.object)) {
+        md->ind_types |= BIT_INT;
+      }
+    }
     md->val_types |= 1<< (TYPEOF(k->val));
+    if (!(md->val_types & BIT_INT) && (TYPEOF(k->val) == PIKE_T_OBJECT)) {
+      if (is_bignum_object(k->val.u.object)) {
+        md->val_types |= BIT_INT;
+      }
+    }
     md->size++;
   }
 }
@@ -899,7 +930,17 @@ PMOD_EXPORT void mapping_fix_type_field(struct mapping *m)
   NEW_MAPPING_LOOP(m->data)
     {
       val_types |= 1 << TYPEOF(k->val);
+      if (!(val_types & BIT_INT) && (TYPEOF(k->val) == PIKE_T_OBJECT)) {
+        if (is_bignum_object(k->val.u.object)) {
+          val_types |= BIT_INT;
+        }
+      }
       ind_types |= 1 << TYPEOF(k->ind);
+      if (!(ind_types & BIT_INT) && (TYPEOF(k->ind) == PIKE_T_OBJECT)) {
+        if (is_bignum_object(k->ind.u.object)) {
+          ind_types |= BIT_INT;
+        }
+      }
     }
 
 #ifdef PIKE_DEBUG
@@ -960,24 +1001,33 @@ PMOD_EXPORT void low_mapping_insert(struct mapping *m,
 #endif
 
   LOW_FIND(is_eq, key,
+	   /* Key found. */
 	   struct svalue *tmp=&k->ind;
 	   SAME_DATA(goto mi_set_value,
+		     /* Mapping data has changed. */
 		     omd=md;
 		     LOW_FIND(is_identical, tmp,
+			      /* The key is still unmodified in the mapping. */
 			      free_mapping_data(omd);
 			      goto mi_set_value,
+			      /* The key has changed??? */
 			      free_mapping_data(omd);
 			      goto mi_do_nothing)),
+	   /* Key not found. */
 	   Z:
 	   SAME_DATA(goto mi_insert,
+		     /* Mapping data has changed. */
 		     omd=md;
 		     LOW_FIND2(is_eq, key,
+			       /* The key has appeared in the mapping??? */
 			       free_mapping_data(omd);
 			       goto mi_do_nothing,
+			       /* The key is still not in the mapping. */
 			       free_mapping_data(omd);
 			       goto Z)));
 
  mi_do_nothing:
+  /* Don't do anything??? */
   free_mapping_data(md);
   return;
 
@@ -1049,7 +1099,17 @@ PMOD_EXPORT void low_mapping_insert(struct mapping *m,
   k->next=md->hash[h];
   md->hash[h]=k;
   md->ind_types |= 1 << TYPEOF(*key);
+  if (!(md->ind_types & BIT_INT) && (TYPEOF(*key) == PIKE_T_OBJECT)) {
+    if (is_bignum_object(key->u.object)) {
+      md->ind_types |= BIT_INT;
+    }
+  }
   md->val_types |= 1 << TYPEOF(*val);
+  if (!(md->val_types & BIT_INT) && (TYPEOF(*val) == PIKE_T_OBJECT)) {
+    if (is_bignum_object(val->u.object)) {
+      md->val_types |= BIT_INT;
+    }
+  }
   assign_svalue_no_free(& k->ind, key);
   assign_svalue_no_free(& k->val, val);
   k->hval = h2;
@@ -1189,6 +1249,11 @@ PMOD_EXPORT union anything *mapping_get_item_ptr(struct mapping *m,
   SET_SVAL(k->val, T_INT, NUMBER_NUMBER, integer, 0);
   k->hval = h2;
   md->ind_types |= 1 << TYPEOF(*key);
+  if (!(md->ind_types & BIT_INT) && (TYPEOF(*key) == PIKE_T_OBJECT)) {
+    if (is_bignum_object(key->u.object)) {
+      md->ind_types |= BIT_INT;
+    }
+  }
   md->val_types |= BIT_INT;
   md->size++;
 #ifdef MAPPING_SIZE_DEBUG
@@ -1289,6 +1354,165 @@ PMOD_EXPORT void map_delete_no_free(struct mapping *m,
   return;
 }
 
+
+PMOD_EXPORT void map_atomic_get_set(struct mapping *m,
+				    const struct svalue *key,
+				    struct svalue *from_to)
+{
+  size_t h,h2;
+  struct keypair *k, **prev;
+  struct mapping_data *md,*omd;
+  struct svalue tmp;
+  int grow_md;
+  int refs;
+
+  if (IS_UNDEFINED(from_to)) {
+    /* NB: Overwrites the UNDEFINED without looking,
+     *     but that is fine.
+     */
+    map_delete_no_free(m, key, from_to);
+    return;
+  }
+
+#ifdef PIKE_DEBUG
+  if(m->data->refs <=0)
+    Pike_fatal("Zero refs in mapping->data\n");
+#endif
+
+  h2=hash_svalue(key);
+
+#ifdef PIKE_DEBUG
+  if(d_flag>1)  check_mapping(m);
+#endif
+
+  LOW_FIND(is_eq, key,
+	   /* Key found. */
+	   struct svalue *tmp=&k->ind;
+	   SAME_DATA(goto mr_replace,
+		     /* Mapping data has changed. */
+		     omd=md;
+		     LOW_FIND(is_identical, tmp,
+			      /* The key is still unmodified in the mapping. */
+			      free_mapping_data(omd);
+			      goto mr_replace,
+			      /* The key has changed??? */
+			      free_mapping_data(omd);
+			      goto mr_do_nothing)),
+	   /* Key not found. */
+	   Z:
+	   SAME_DATA(goto mr_insert,
+		     /* Mapping data has changed. */
+		     omd=md;
+		     LOW_FIND2(is_eq, key,
+			       /* The key has appeared in the mapping??? */
+			       free_mapping_data(omd);
+			       goto mr_do_nothing,
+			       /* The key is still not in the mapping. */
+			       free_mapping_data(omd);
+			       goto Z)));
+
+ mr_do_nothing:
+  /* Don't do anything??? */
+  free_mapping_data(md);
+  return;
+
+ mr_replace:
+#ifdef PIKE_DEBUG
+  if(m->data != md)
+    Pike_fatal("Wrong dataset in mapping_insert!\n");
+  if(d_flag>1)  check_mapping(m);
+#endif
+  /* NB: We know that md has a reference from the mapping
+   *     in addition to our reference.
+   *
+   * The use of sub_ref() silences warnings from Coverity, as well as
+   * on the off chance of a reference counting error avoids accessing
+   * freed memory.
+   */
+  refs = sub_ref(md);	/* free_mapping_data(md); */
+  assert(refs);
+
+  PREPARE_FOR_DATA_CHANGE2();
+  PROPAGATE(); /* propagate after preparing */
+  md->val_types |= 1 << TYPEOF(*from_to);
+#if 0
+  if (overwrite == 2 && TYPEOF(*key) == T_OBJECT)
+    /* Should replace the index too. It's only for objects that it's
+     * possible to tell the difference. */
+    assign_svalue (&k->ind, key);
+#endif
+  tmp = k->val;
+  k->val = *from_to;
+  *from_to = tmp;
+#ifdef PIKE_DEBUG
+  if(d_flag>1)  check_mapping(m);
+#endif
+  return;
+
+ mr_insert:
+#ifdef PIKE_DEBUG
+  if(m->data != md)
+    Pike_fatal("Wrong dataset in mapping_insert!\n");
+  if(d_flag>1)  check_mapping(m);
+#endif
+  /* NB: We know that md has a reference from the mapping
+   *     in addition to our reference.
+   *
+   * The use of sub_ref() silences warnings from Coverity, as well as
+   * on the off chance of a reference counting error avoids accessing
+   * freed memory.
+   */
+  refs = sub_ref(md);	/* free_mapping_data(md); */
+  assert(refs);
+
+  grow_md = MD_FULLP(md);
+
+  /* We do a re-hash here instead of copying the mapping. */
+  if(grow_md || md->refs>1)
+  {
+    debug_malloc_touch(m);
+    rehash(m, md->hashsize ? md->hashsize << grow_md : AVG_LINK_LENGTH);
+    md=m->data;
+  }
+  h=h2 & ( md->hashsize - 1);
+
+  /* no need to lock here since we are not calling is_eq - Hubbe */
+
+  k=md->free_list;
+#ifndef PIKE_MAPPING_KEYPAIR_LOOP
+  md->free_list=k->next;
+#else /* PIKE_MAPPING_KEYPAIR_LOOP */
+  md->free_list++;
+#endif /* !PIKE_MAPPING_KEYPAIR_LOOP */
+  k->next=md->hash[h];
+  md->hash[h]=k;
+  md->ind_types |= 1 << TYPEOF(*key);
+  if (!(md->ind_types & BIT_INT) && (TYPEOF(*key) == PIKE_T_OBJECT)) {
+    if (is_bignum_object(key->u.object)) {
+      md->ind_types |= BIT_INT;
+    }
+  }
+  md->val_types |= 1 << TYPEOF(*from_to);
+  if (!(md->val_types & BIT_INT) && (TYPEOF(*from_to) == PIKE_T_OBJECT)) {
+    if (is_bignum_object(from_to->u.object)) {
+      md->val_types |= BIT_INT;
+    }
+  }
+  assign_svalue_no_free(& k->ind, key);
+  k->val = *from_to;
+  k->hval = h2;
+  md->size++;
+#ifdef MAPPING_SIZE_DEBUG
+  if(m->data ==md)
+    m->debug_size++;
+#endif
+  SET_SVAL(*from_to, T_INT, NUMBER_UNDEFINED, integer, 0);
+
+#ifdef PIKE_DEBUG
+  if(d_flag>1)  check_mapping(m);
+#endif
+}
+
 PMOD_EXPORT void check_mapping_for_destruct(struct mapping *m)
 {
   INT32 e;
@@ -1343,7 +1567,17 @@ PMOD_EXPORT void check_mapping_for_destruct(struct mapping *m)
 	  debug_malloc_touch(md);
 	}else{
 	  val_types |= 1 << TYPEOF(k->val);
+          if (!(val_types & BIT_INT) && (TYPEOF(k->val) == PIKE_T_OBJECT)) {
+            if (is_bignum_object(k->val.u.object)) {
+              val_types |= BIT_INT;
+            }
+          }
 	  ind_types |= 1 << TYPEOF(k->ind);
+          if (!(ind_types & BIT_INT) && (TYPEOF(k->ind) == PIKE_T_OBJECT)) {
+            if (is_bignum_object(k->ind.u.object)) {
+              ind_types |= BIT_INT;
+            }
+          }
 	  prev=&k->next;
 	}
       }
@@ -1648,9 +1882,12 @@ PMOD_EXPORT struct mapping *mkmapping(struct array *ind, struct array *val)
 
 PMOD_EXPORT void clear_mapping(struct mapping *m)
 {
-  struct mapping_data *md = m->data;
-  int flags = md->flags;
+  struct mapping_data *md;
+  int flags;
 
+  if (!m) return;
+  md = m->data;
+  flags = md->flags;
   if (!md->size) return;
   unlink_mapping_data(md);
 
@@ -1678,6 +1915,8 @@ PMOD_EXPORT struct mapping *copy_mapping(struct mapping *m)
 {
   struct mapping *n;
 
+  if (!m) return NULL;
+
 #ifdef PIKE_DEBUG
   if(m->data->refs <=0)
     Pike_fatal("Zero refs in mapping->data\n");
@@ -1702,6 +1941,8 @@ PMOD_EXPORT struct mapping *copy_mapping(struct mapping *m)
  */
 static struct mapping *destructive_copy_mapping(struct mapping *m)
 {
+  if (!m) return NULL;
+
   if ((m->refs == 1) && !m->data->hardlinks &&
       !(m->data->flags & MAPPING_WEAK)) {
     /* We may perform destructive operations on the mapping. */
@@ -1775,24 +2016,45 @@ static struct mapping *and_mappings(struct mapping *a, struct mapping *b)
   if (!a_md->size || !b_md->size) return allocate_mapping(0);
   if (a_md == b_md) return destructive_copy_mapping(a);
 
-  /* Copy the second mapping. */
-  res = copy_mapping(b);
-  SET_ONERROR(err, do_free_mapping, res);
+  if (a_md->size >= b_md->size / 2) {
+    /* Copy the second mapping. */
+    res = copy_mapping(b);
+    SET_ONERROR(err, do_free_mapping, res);
 
-  /* Remove elements in res that aren't in a. */
-  NEW_MAPPING_LOOP(b_md) {
-    size_t h = k->hval & ( a_md->hashsize - 1);
-    struct keypair *k2;
-    for (k2 = a_md->hash[h]; k2; k2 = k2->next) {
-      if ((k2->hval == k->hval) && is_eq(&k2->ind, &k->ind)) {
-	break;
+    /* Remove elements in res that aren't in a. */
+    NEW_MAPPING_LOOP(b_md) {
+      size_t h = k->hval & ( a_md->hashsize - 1);
+      struct keypair *k2;
+      for (k2 = a_md->hash[h]; k2; k2 = k2->next) {
+        if ((k2->hval == k->hval) && is_eq(&k2->ind, &k->ind)) {
+          break;
+        }
+      }
+      if (!k2) {
+        map_delete(res, &k->ind);
       }
     }
-    if (!k2) {
-      map_delete(res, &k->ind);
+    UNSET_ONERROR(err);
+  } else {
+    /* Loop over second mapping, insert into new one */
+    res = allocate_mapping(0);
+    SET_ONERROR(err, do_free_mapping, res);
+
+    /* Remove elements in res that aren't in b, copy values for those that
+     * are. */
+    NEW_MAPPING_LOOP(a_md) {
+      size_t h = k->hval & ( b_md->hashsize - 1);
+      struct keypair *k2;
+      for (k2 = b_md->hash[h]; k2; k2 = k2->next) {
+        if ((k2->hval == k->hval) && is_eq(&k2->ind, &k->ind)) {
+          mapping_insert(res, &k2->ind, &k2->val);
+          break;
+        }
+      }
     }
+
+    UNSET_ONERROR(err);
   }
-  UNSET_ONERROR(err);
   return res;
 }
 
@@ -2169,14 +2431,15 @@ PMOD_EXPORT int mapping_equal_p(struct mapping *a, struct mapping *b, struct pro
   struct mapping_data *md;
   INT32 e,eq=1;
 
+  if (a == b) return 1;
+  if (!a || !b) return 0;
+
 #ifdef PIKE_DEBUG
   if(a->data->refs <=0)
     Pike_fatal("Zero refs in mapping->data\n");
   if(b->data->refs <=0)
     Pike_fatal("Zero refs in mapping->data\n");
 #endif
-
-  if(a==b) return 1;
 
   if (a->data == b->data) return 1;
 
@@ -2260,6 +2523,11 @@ void describe_mapping(struct byte_buffer *b, struct mapping *m,struct processing
   ONERROR err;
   INT32 e,d;
   char buf[40];
+
+  if (!m) {
+    buffer_add_str(b, "NULL-mapping");
+    return;
+  }
 
 #ifdef PIKE_DEBUG
   if(m->data->refs <=0)
@@ -2816,7 +3084,19 @@ PMOD_EXPORT void visit_mapping (struct mapping *m, int action, void *extra)
 	);								\
       } else {								\
 	VAL_TYPES |= 1 << TYPEOF(k->val);				\
+        if (!(VAL_TYPES & BIT_INT) &&                                   \
+            (TYPEOF(k->val) == PIKE_T_OBJECT)) {                        \
+          if (is_bignum_object(k->val.u.object)) {                      \
+            VAL_TYPES |= BIT_INT;                                       \
+          }                                                             \
+        }                                                               \
 	IND_TYPES |= 1 << TYPEOF(k->ind);				\
+        if (!(IND_TYPES & BIT_INT) &&                                   \
+            (TYPEOF(k->ind) == PIKE_T_OBJECT)) {                        \
+          if (is_bignum_object(k->ind.u.object)) {                      \
+            IND_TYPES |= BIT_INT;                                       \
+          }                                                             \
+        }                                                               \
 	k++;								\
       }									\
     }									\
@@ -2849,7 +3129,19 @@ PMOD_EXPORT void visit_mapping (struct mapping *m, int action, void *extra)
 	);								\
       }else{								\
 	VAL_TYPES |= 1 << TYPEOF(k->val);				\
+        if (!(VAL_TYPES & BIT_INT) &&                                   \
+            (TYPEOF(k->val) == PIKE_T_OBJECT)) {                        \
+          if (is_bignum_object(k->val.u.object)) {                      \
+            VAL_TYPES |= BIT_INT;                                       \
+          }                                                             \
+        }                                                               \
 	IND_TYPES |= 1 << TYPEOF(k->ind);				\
+        if (!(IND_TYPES & BIT_INT) &&                                   \
+            (TYPEOF(k->ind) == PIKE_T_OBJECT)) {                        \
+          if (is_bignum_object(k->ind.u.object)) {                      \
+            IND_TYPES |= BIT_INT;                                       \
+          }                                                             \
+        }                                                               \
 	prev=&k->next;							\
       }									\
     }									\
@@ -3169,16 +3461,20 @@ size_t gc_free_all_unreferenced_mappings(void)
   return unreferenced;
 }
 
-#ifdef PIKE_DEBUG
-
 void simple_describe_mapping(struct mapping *m)
 {
-  struct byte_buffer buf = BUFFER_INIT();
-  describe_mapping(&buf,m,0,2);
-  buffer_add_str(&buf, "\n");
-  fputs(buffer_get_string(&buf), stderr);
-  buffer_free(&buf);
+  if (m) {
+    struct byte_buffer buf = BUFFER_INIT();
+    describe_mapping(&buf,m,0,2);
+    buffer_add_str(&buf, "\n");
+    fputs(buffer_get_string(&buf), stderr);
+    buffer_free(&buf);
+  } else {
+    fputs("(NULL mapping)",stderr);
+  }
 }
+
+#ifdef PIKE_DEBUG
 
 
 void debug_dump_mapping(struct mapping *m)

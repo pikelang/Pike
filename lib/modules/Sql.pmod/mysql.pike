@@ -425,7 +425,7 @@ string latin1_to_utf8 (string s, int extended)
 }
 
 string utf8_encode_query (string q,
-			  function(string, mixed|void...:string) encode_fn,
+                          function(string, __unknown__...:string) encode_fn,
 			  mixed ... extras)
 //! Encodes the appropriate sections of the query with @[encode_fn].
 //! Everything except strings prefixed by an introducer (i.e.
@@ -580,68 +580,106 @@ string encode_datetime (int time)
 #define HAVE_MYSQL_FIELD_CHARSETNR_IFELSE(TRUE, FALSE) FALSE
 #endif
 
+protected array(string(8bit)|zero) fix_query_charset(string query,
+						     string|void charset)
+{
+  if (charset) {
+    string current_charset = send_charset || get_charset();
+    if (charset != current_charset) {
+      CH_DEBUG ("Switching charset from %O to %O (due to charset arg).\n",
+		current_charset, charset);
+      ::big_query ("SET character_set_client=" + charset);
+      /* Can't be changed automatically - has side effects. /mast */
+      /* ::big_query("SET character_set_connection=" + charset); */
+      return ({ query, current_charset });
+    }
+    return ({ query, 0 });
+  }
+  if (!send_charset) return ({ query, 0 });
+
+  string new_send_charset = send_charset;
+
+  if (utf8_mode & LATIN1_UNICODE_ENCODE_MODE) {
+    if (String.width (query) == 8)
+      new_send_charset = "latin1";
+    else {
+      CH_DEBUG ("Converting (mysql-)latin1 query to utf8.\n");
+      query = utf8_encode_query (query, latin1_to_utf8, 2);
+      new_send_charset = "utf8";
+    }
+  }
+  else {  /* utf8_mode & UTF8_UNICODE_ENCODE_MODE */
+    /* NB: The send_charset may only be upgraded from
+     * "latin1" to "utf8", not the other way around.
+     * This is to avoid extraneous charset changes
+     * where the charset is changed from query to query.
+     */
+    if ((send_charset == "utf8") || !_can_send_as_latin1(query)) {
+      CH_DEBUG ("Converting query to utf8.\n");
+      query = utf8_encode_query (query, string_to_utf8, 2);
+      new_send_charset = "utf8";
+    }
+  }
+
+  if (new_send_charset != send_charset) {
+    CH_DEBUG ("Switching charset from %O to %O.\n",
+	      send_charset, new_send_charset);
+    if (mixed err = catch {
+	::big_query ("SET character_set_client=" + new_send_charset);
+	/* Can't be changed automatically - has side effects. /mast */
+	/* ::big_query("SET character_set_connection=" +
+	   new_send_charset); */
+      }) {
+      if (new_send_charset == "utf8")
+	predef::error ("The query is a wide string "
+		       "and the MySQL server doesn't support UTF-8: %s\n",
+		       describe_error (err));
+      else
+	throw (err);
+    }
+    send_charset = new_send_charset;
+  }
+
+  return ({ query, 0 });
+}
+
+protected array|object|mapping|string|int fix_result_charset(array|object|mapping|string|int res)
+{
+  if (!res) return UNDEFINED;
+
+  if (!(utf8_mode & UNICODE_DECODE_MODE)) return res;
+
+  if (objectp(res)) {
+    CH_DEBUG ("Using unicode wrapper for result.\n");
+    return
+      HAVE_MYSQL_FIELD_CHARSETNR_IFELSE (
+	.sql_util.MySQLUnicodeWrapper(res),
+	.sql_util.MySQLBrokenUnicodeWrapper(res));
+  }
+
+  if (arrayp(res)) {
+    return map(res, fix_result_charset);
+  }
+
+  if (mappingp(res)) {
+    return mkmapping(fix_result_charset(indices(res)),
+		     fix_result_charset(values(res)));
+  }
+
+  if (stringp(res)) {
+    return utf8_to_string(res);
+  }
+
+  return res;
+}
+
 #define QUERY_BODY(do_query)						\
-  if (bindings)								\
-    query = .sql_util.emulate_bindings(query,bindings,this);		\
+  if (bindings) {                                                       \
+    query = emulate_bindings(query, bindings);                          \
+    charset = charset || bindings[.QUERY_OPTION_CHARSET];               \
+  }                                                                     \
 									\
-  string restore_charset;						\
-  if (charset) {							\
-    restore_charset = send_charset || get_charset();			\
-    if (charset != restore_charset) {					\
-      CH_DEBUG ("Switching charset from %O to %O (due to charset arg).\n", \
-		restore_charset, charset);				\
-      ::big_query ("SET character_set_client=" + charset);		\
-      /* Can't be changed automatically - has side effects. /mast */	\
-      /* ::big_query("SET character_set_connection=" + charset); */	\
-    } else								\
-      restore_charset = 0;						\
-  }									\
-									\
-  else if (send_charset) {						\
-    string new_send_charset = send_charset;				\
-									\
-    if (utf8_mode & LATIN1_UNICODE_ENCODE_MODE) {			\
-      if (String.width (query) == 8)					\
-	new_send_charset = "latin1";					\
-      else {								\
-	CH_DEBUG ("Converting (mysql-)latin1 query to utf8.\n");	\
-	query = utf8_encode_query (query, latin1_to_utf8, 2);		\
-	new_send_charset = "utf8";					\
-      }									\
-    }									\
-									\
-    else {  /* utf8_mode & UTF8_UNICODE_ENCODE_MODE */			\
-      /* NB: The send_charset may only be upgraded from			\
-       * "latin1" to "utf8", not the other way around.			\
-       * This is to avoid extraneous charset changes			\
-       * where the charset is changed from query to query.		\
-       */								\
-      if ((send_charset == "utf8") || !_can_send_as_latin1(query)) {	\
-	CH_DEBUG ("Converting query to utf8.\n");			\
-	query = utf8_encode_query (query, string_to_utf8, 2);		\
-	new_send_charset = "utf8";					\
-      }									\
-    }									\
-									\
-    if (new_send_charset != send_charset) {				\
-      CH_DEBUG ("Switching charset from %O to %O.\n",			\
-		send_charset, new_send_charset);			\
-      if (mixed err = catch {						\
-	  ::big_query ("SET character_set_client=" + new_send_charset);	\
-	  /* Can't be changed automatically - has side effects. /mast */ \
-	  /* ::big_query("SET character_set_connection=" +		\
-	     new_send_charset); */					\
-	  }) {								\
-	if (new_send_charset == "utf8")					\
-	  predef::error ("The query is a wide string "			\
-			 "and the MySQL server doesn't support UTF-8: %s\n", \
-			 describe_error (err));				\
-	else								\
-	  throw (err);							\
-      }									\
-      send_charset = new_send_charset;					\
-    }									\
-  }									\
+  [query, string restore_charset] = fix_query_charset(query, charset);	\
 									\
   CH_DEBUG ("Sending query with charset %O: %s.\n",			\
 	    charset || send_charset,					\
@@ -649,7 +687,7 @@ string encode_datetime (int time)
 	     sprintf ("%O...", query[..200]) :				\
 	     sprintf ("%O", query)));					\
 									\
-  int|object res = ::do_query(query);					\
+  int|object res = fix_result_charset(::do_query(query));		\
 									\
   if (restore_charset) {						\
     if (send_charset && (<"latin1", "utf8">)[charset])			\
@@ -662,20 +700,14 @@ string encode_datetime (int time)
     }									\
   }									\
 									\
-  if (!objectp(res)) return res;					\
-									\
-  if (utf8_mode & UNICODE_DECODE_MODE) {				\
-    CH_DEBUG ("Using unicode wrapper for result.\n");			\
-    return								\
-      HAVE_MYSQL_FIELD_CHARSETNR_IFELSE (				\
-	.sql_util.MySQLUnicodeWrapper(res),				\
-	.sql_util.MySQLBrokenUnicodeWrapper (res));			\
-  }									\
   return res;
+
+// Do not warn about the charset argument below.
+#pragma no_deprecation_warnings
 
 variant Result big_query (string query,
 			  mapping(string|int:mixed)|void bindings,
-			  void|string charset)
+                          void|__deprecated__(string) charset)
 //! Sends a query to the server.
 //!
 //! @param query
@@ -683,11 +715,12 @@ variant Result big_query (string query,
 //!
 //! @param bindings
 //!   An optional bindings mapping. See @[Sql.query] for details about
-//!   this.
+//!   this. The mapping may contain a @[QUERY_OPTION_CHARSET] entry with
+//!   the same semantics as the deprecated @[charset] parameter below.
 //!
 //! @param charset
-//!   An optional charset that will be used temporarily while sending
-//!   @[query] to the server. If necessary, a query
+//!   @b{DEPRECATED@} An optional charset that will be used temporarily
+//!   while sending @[query] to the server. If necessary, a query
 //!   @code
 //!     SET character_set_client=@[charset]
 //!   @endcode
@@ -698,6 +731,8 @@ variant Result big_query (string query,
 //!   unicode encode mode (see @[set_unicode_encode_mode]) is enabled
 //!   (the default) and you have some large queries (typically blob
 //!   inserts) where you want to avoid the query parsing overhead.
+//!
+//!   Deprecated; use the entry @[QUERY_OPTION_CHARSET] in @[bindings] instead.
 //!
 //! @returns
 //!   A @[Result] object is returned if the query is of a
@@ -714,7 +749,7 @@ variant Result big_query (string query,
 
 variant Result streaming_query (string query,
 				mapping(string|int:mixed)|void bindings,
-				void|string charset)
+                                void|__deprecated__(string) charset)
 //! Makes a streaming SQL query.
 //!
 //! This function sends the SQL query @[query] to the Mysql-server.
@@ -732,7 +767,7 @@ variant Result streaming_query (string query,
 
 variant Result big_typed_query (string query,
 				mapping(string|int:mixed)|void bindings,
-				void|string charset)
+                                void|__deprecated__(string) charset)
 //! Makes a typed SQL query.
 //!
 //! This function sends the SQL query @[query] to the MySQL server and
@@ -750,7 +785,7 @@ variant Result big_typed_query (string query,
 
 variant Result streaming_typed_query (string query,
 				      mapping(string|int:mixed)|void bindings,
-				      void|string charset)
+                                      void|__deprecated__(string) charset)
 //! Makes a streaming typed SQL query.
 //!
 //! This function acts as the combination of @[streaming_query()]
@@ -762,9 +797,12 @@ variant Result streaming_typed_query (string query,
   QUERY_BODY (streaming_typed_query);
 }
 
+#pragma deprecation_warnings
+
 array(string) list_dbs(string|void wild)
 {
-  Result res = ::list_dbs(wild);
+  Result res =
+    fix_result_charset(::list_dbs(wild && fix_query_charset(wild)[0]));
   array(string) ret = ({});
   array(string) row;
   while((row = res->fetch_row()) && sizeof(row)) {
@@ -775,13 +813,42 @@ array(string) list_dbs(string|void wild)
 
 array(string) list_tables(string|void wild)
 {
-  Result res = ::list_tables(wild);
+  Result res =
+    fix_result_charset(::list_tables(wild && fix_query_charset(wild)[0]));
   array(string) ret = ({});
   array(string) row;
   while((row = res->fetch_row()) && sizeof(row)) {
     ret += ({ row[0] });
   }
   return ret;
+}
+
+array(mapping(string:mixed)) list_fields(string table, string|void wild)
+{
+  if (!wild) {
+    // Very common case.
+    return fix_result_charset(::list_fields(fix_query_charset(table)[0]));
+  }
+
+  string table_and_wild = table + "\0\0PIKE\0\0" + wild;
+  table_and_wild = fix_query_charset(table_and_wild)[0];
+  array(string) a = table_and_wild / "\0\0PIKE\0\0";
+  if (sizeof(a) == 2) {
+    // Common case.
+    return fix_result_charset(::list_fields(@a));
+  }
+
+  // Very uncommon cases, but...
+
+  if (sizeof(a) == 1) {
+    // The split marker has been recoded.
+    // Assume that fix_query_charset() is stable.
+    return fix_result_charset(::list_fields(fix_query_charset(table)[0],
+					    fix_query_charset(wild)[0]));
+  }
+
+  // Assume that the table name can not contain NUL characters.
+  return fix_result_charset(::list_fields(a[0], a[1..] * "\0\0PIKE\0\0"));
 }
 
 int(0..1) is_keyword( string name )

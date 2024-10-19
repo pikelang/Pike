@@ -1,3 +1,5 @@
+/* -*- mode: Pike; c-basic-offset: 3; -*- */
+
 // this is a script to generate rules
 // from timezone data files;
 // ftp://elsie.nci.nih.gov/pub/
@@ -11,7 +13,12 @@
 
 // pike mkrules.pike ../data/{africa,antarctica,asia,australasia,backward,etcetera,europe,northamerica,pacificnew,southamerica,systemv}
 
+#charset iso-8859-1
 #pike __REAL_VERSION__
+
+#if !constant(zero)
+typedef int(0..0) zero;
+#endif
 
 object cal=Calendar.ISO->set_timezone("UTC");
 function Year=cal->Year;
@@ -65,7 +72,7 @@ int parse_offset(string t)
    complain("failed to parse offset %O\n",t);
 }
 
-array parse_tod(string t)
+array|zero parse_tod(string t)
 {
    int h,m,s;
    string res;
@@ -92,7 +99,7 @@ class Shift
    string s;
    string comment;
 
-   void create(array a)
+   protected void create(array a)
    {
       switch (sizeof(a))
       {
@@ -126,7 +133,7 @@ class Shift
 		 dayrule,time,timetype,offset,s);
    }
 
-   int `==(Shift other)
+   protected int `==(Shift other)
    {
       return ( dayrule==other->dayrule &&
 	       time==other->time &&
@@ -197,7 +204,7 @@ class Shift
 	 complain("unknown rule method %O\n",rule);
    }
 
-   Shift|array ``+(array|Shift s)
+   protected Shift|array ``+(array|Shift s)
    {
       if (!s) return this;
       if (!arrayp(s)) s=({s});
@@ -221,7 +228,7 @@ class Shift
       return d1==d2;
    }
 
-   Shift try_promote(Shift t,int y0,int y1)
+   object(Shift)|zero try_promote(Shift t,int y0,int y1)
    {
 // this is year y0
 // t is year y1
@@ -298,7 +305,7 @@ class MyRule (string id)
 
 // ---
 
-#define INF_YEAR 2050
+#define INF_YEAR 2150
 #define NUL_YEAR 1850
 
       int y1=(int)a[0] || NUL_YEAR;
@@ -388,7 +395,7 @@ class MyRule (string id)
 		  }
 		  else if (y0==y1)
 		     t+="         case "+y0+":\n";
-		  else if (y1==2050)
+		  else if (y1 == INF_YEAR)
 		     {
 			if (!my[NUL_YEAR]) t+="         case "+y0+"..:\n";
 			else t=replace(t,"½½½",(string)y0);
@@ -523,7 +530,7 @@ class Zone (string id)
 	    -(roff+a[0]),a[2]);
    }
 
-   string rule_shift(array a)
+   string|zero rule_shift(array a)
    {
       if (a[3]=="" || a[3][0]=='#') return "forever";
 
@@ -765,7 +772,9 @@ int main(int ac,array(string) am)
    Stdio.File("TZrules.pmod","wtc")->write(t);
    werror("\n");
 
-   t= "#charset utf-8\n"
+   t= "/* -*- mode: Pike; c-basic-offset: 3; -*- */\n"
+      "\n"
+      "#charset utf-8\n"
       "#pike __REAL_VERSION__\n"
       "// ----------------------------------------------------------------\n"
       "// Timezones\n"

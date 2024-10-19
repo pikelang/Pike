@@ -99,6 +99,10 @@ string quote(string s)
   return replace(s, "\'", "\'\'");
 }
 
+// The following time conversion functions assume the SQL server
+// handles time in the local timezone. They map the special zero
+// time/date spec to 0.
+
 private int timezone = localtime (0)->timezone;
 
 //! Converts a system time value to an appropriately formatted time
@@ -277,6 +281,9 @@ protected void create(string host, void|string|mapping(string:int|string) db,
 		      void|string user, void|string _password,
 		      void|mapping(string:int|string) options);
 
+//! Reset connection state.
+void reset();
+
 //! Returns true if the connection seems to be open.
 //!
 //! @note
@@ -387,14 +394,20 @@ array(mapping(string:mixed))
     if (arrayp(res_obj))
       rows = res_obj;
     else {
-      fields = 0;
+      fields = res_obj->fetch_fields();
       rows = ({});
-      while (row = res_obj->fetch_row_array())
-        rows += row;
+      while (row = res_obj->fetch_row()) {
+        rows += ({ row });
+	if (!fields)
+	  fields = res_obj->fetch_fields();
+      }
     }
 
-    if (!fields)
+    if (!fields) {
       fields = res_obj->fetch_fields();
+
+      if (!fields && !sizeof(res)) return 0;
+    }
     if(!sizeof(fields)) return res;
 
     int has_table = fields[0]->table && fields[0]->table!="";
@@ -450,7 +463,19 @@ string sqlstate()
 }
 
 //! Select database to access.
+//!
+//! @seealso
+//!   @[query_db()]
 void select_db(string db);
+
+//! Query current database.
+//!
+//! @returns
+//!   Returns the currently selected database.
+//!
+//! @seealso
+//!   @[select_db()]
+string|zero query_db();
 
 //! Compiles the query (if possible). Otherwise returns it as is.
 //! The resulting object can be used multiple times to the query
@@ -470,12 +495,14 @@ string|object compile_query(string q)
   return q;
 }
 
+// Do not warn about the charset argument below.
+#pragma no_deprecation_warnings
 //! Build a raw SQL query, given the cooked query and the variable bindings
-//! It's meant to be used as an emulation engine for those drivers not
-//! providing such a behaviour directly (i.e. Oracle).
+//! It's meant to be used as an emulation engine for those drivers that do
+//! not provide such behaviour directly (like eg @[Oracle]).
 //! The raw query can contain some variables (identified by prefixing
-//! a colon to a name or a number (i.e. ":var" or  ":2"). They will be
-//! replaced by the corresponding value in the mapping.
+//! a colon to a name or a number (eg @expr{":var"@} or @expr{":2"@})).
+//! They will be replaced by the corresponding value in the mapping.
 //!
 //! @param query
 //!   The query.
@@ -484,11 +511,31 @@ string|object compile_query(string q)
 //!   Mapping containing the variable bindings. Make sure that
 //!   no confusion is possible in the query. If necessary, change the
 //!   variables' names.
+//!
+//! @param charset
+//!   Query charset. Compatibility with Pike 8.0 Mysql API.
+//!   Use the @[QUERY_OPTION_CHARSET] entry in @[bindings] instead.
 protected string emulate_bindings(string query,
-				  mapping(string|int:mixed) bindings)
+                                  mapping(string|int:mixed) bindings,
+                                  __deprecated__(string)|void charset)
 {
-  array(string)k, v;
-  v = map(values(bindings),
+  array(string|int) k;
+  array(string) v;
+
+  if (charset) {
+    bindings[.QUERY_OPTION_CHARSET] = charset;
+  }
+
+  // Reserve binding entries starting with '*' for options.
+  k = filter(indices(bindings),
+             lambda(string|int i) {
+               if (intp(i)) return 1;
+               if (!stringp(i)) return 0;
+               if (has_prefix(i, "*")) return 0;
+               return 1;
+             });
+
+  v = map(map(k, bindings),
 	  lambda(mixed m) {
 	    if(undefinedp(m))
 	      return "NULL";
@@ -502,13 +549,18 @@ protected string emulate_bindings(string query,
 	      return sizeof(m) ? indices(m)[0] : "";
 	    return "'"+(intp(m)?(string)m:quote((string)m))+"'";
 	  });
-  // Throws if mapping key is empty string.
-  k = map(indices(bindings),lambda(string s){
-			      return ( (stringp(s)&&s[0]==':') ?
-				       s : ":"+s);
-			    });
+
+  k = map(k,
+          lambda(string|int s) {
+            if (stringp(s)) {
+              if (has_prefix(s, ":")) return s;
+            }
+            return ":" + s;
+          });
+
   return replace(query,k,v);
 }
+#pragma deprecation_warnings
 
 //! Handle @[sprintf]-based quoted arguments
 //!
@@ -516,23 +568,34 @@ protected string emulate_bindings(string query,
 //!   The query as sent to one of the query functions.
 //!
 //! @param extraargs
-//!   The arguments following the query.
+//!   The arguments following the query. The last element of
+//!   the array may be a bindings mapping.
 //!
 //! @returns
-//!   Returns an array with two elements:
+//!   Returns an array with up to two elements:
 //!   @array
 //!     @elem string 0
 //!       The query altered to use bindings-syntax.
 //!     @elem mapping(string|int:mixed) 1
 //!       A bindings mapping. Not present if no bindings were added.
 //!   @endarray
-protected array(string|mapping(string|int:mixed))
+//!
+//! @note
+//!   Support for specifying an initial options mapping was
+//!   added in Pike 9.0.
+array(string|mapping(string|int:mixed))
   handle_extraargs(string query, array(mixed) extraargs)
 {
-  array(mixed) args = allocate(sizeof(extraargs));
   mapping(string:mixed) bindings = ([]);
+  if (sizeof(extraargs) && mappingp(extraargs[-1])) {
+    bindings = extraargs[-1];
+    extraargs = extraargs[..<1];
+  }
+  array(mixed) args = allocate(sizeof(extraargs));
 
-  int a;
+  // NB: Protect against successive calls of handle_extraargs() with
+  //     the same bindings mapping having conflicting entries.
+  int a = sizeof(bindings);
   foreach(extraargs; int j; mixed s) {
     if (stringp(s) || multisetp(s)) {
       string bind_name = ":arg"+(a++);
@@ -541,7 +604,7 @@ protected array(string|mapping(string|int:mixed))
       continue;
     }
     if (intp(s) || floatp(s)) {
-      args[j] = s || .zero;
+      args[j] = s || .zero_arg;
       continue;
     }
     if (objectp(s) && s->is_val_null) {
@@ -555,6 +618,9 @@ protected array(string|mapping(string|int:mixed))
   if (sizeof(bindings)) return ({ query, bindings });
   return ({ query });
 }
+
+// Hide warnings about the deprecated charset argument.
+#pragma no_deprecation_warnings
 
 //! Send an SQL query synchronously to the SQL-server and return
 //! the results in untyped mode.
@@ -595,17 +661,20 @@ variant .Result big_query(object|string q);
 //!
 //! @param bindings
 //!   A mapping containing bindings of variables used in the query.
-//!   A variable is identified by a colon (:) followed by a name or number.
-//!   Each index in the mapping corresponds to one such variable, and the
-//!   value for that index is substituted (quoted) into the query wherever
-//!   the variable is used.
+//!   A variable is identified by a colon (@expr{':'@}) followed by a name
+//!   or number. Each index in the mapping corresponds to one such variable,
+//!   and the value for that index is substituted (quoted) into the query
+//!   wherever the variable is used.
 //!
 //! @code
-//! res = query("SELECT foo FROM bar WHERE gazonk=:baz",
-//!             ([":baz":"value"]));
+//! res = big_query("SELECT foo FROM bar WHERE gazonk=:baz",
+//!                 ([":baz":"value"]));
 //! @endcode
 //!
 //!   Binary values (BLOBs) may need to be placed in multisets.
+//!
+//!   Mapping entries prefixed with an asterisk (@expr{'*'@}) are reserved
+//!   for for database-specific query options (like eg @[QUERY_OPTION_CHARSET]).
 //!
 //! @returns
 //!   An @[Sql.Result] object in untyped
@@ -629,13 +698,17 @@ variant .Result big_query(object|string q);
 //! queries. It typically has less overhead than @[query] also for
 //! ones that return only a few rows.
 //!
+//! @note
+//!   Support for database-specific query options was added in Pike 9.0.
+//!
 //! @seealso
 //!   @[query], @[emulate_bindings], @[streaming_query], @[big_typed_query],
 //!   @[streaming_typed_query]
 variant .Result big_query(object|string q,
-			      mapping(string|int:mixed) bindings)
+                          mapping(string|int:mixed) bindings,
+                          void|__deprecated__(string) charset)
 {
-  return big_query(emulate_bindings(q, bindings));
+  return big_query(emulate_bindings(q, bindings, charset));
 }
 
 //! Send an SQL query synchronously to the SQL-server and return
@@ -647,8 +720,9 @@ variant .Result big_query(object|string q,
 //!
 //! @param extraarg
 //! @param extraargs
-//!   Arguments as you would use in sprintf. They are automatically
-//!   quoted.
+//!   Arguments as you would use in @[sprintf]. They are automatically
+//!   quoted. After the @[sprintf]-style options a mapping with options
+//!   may be specified.
 //!
 //! @code
 //! res = query("select foo from bar where gazonk=%s","value");
@@ -669,11 +743,14 @@ variant .Result big_query(object|string q,
 //! queries. It typically has less overhead than @[query] also for
 //! ones that return only a few rows.
 //!
+//! @note
+//!   Support for specifying an options mapping was added in Pike 9.0.
+//!
 //! @seealso
 //!   @[query], @[handle_extraargs], @[streaming_query]
 variant .Result big_query(object|string q,
-			      string|multiset|int|float|object extraarg,
-			      string|multiset|int|float|object ... extraargs)
+                          string|multiset|int|float|object extraarg,
+                          string|multiset|int|float|object|mapping ... extraargs)
 {
   return big_query(@handle_extraargs(q, ({ extraarg }) + extraargs));
 }
@@ -704,7 +781,7 @@ variant .Result big_query(object|string q,
 //!
 //! @seealso
 //!   @[typed_query], @[big_query], @[streaming_query]
-array(mapping(string:string)) query(object|string q,
+array(mapping(string:string|zero)) query(object|string q,
 				    mixed ... extraargs)
 {
   return res_obj_to_array(big_query(q, @extraargs));  
@@ -766,9 +843,10 @@ variant .Result big_typed_query(object|string q)
 //! @seealso
 //!   @[query], @[typed_query], @[big_query], @[streaming_query]
 variant .Result big_typed_query(object|string q,
-				    mapping(string|int:mixed) bindings)
+                                mapping(string|int:mixed) bindings,
+                                void|__deprecated__(string) charset)
 {
-  return big_typed_query(emulate_bindings(q, bindings));
+  return big_typed_query(emulate_bindings(q, bindings, charset));
 }
 
 //! Send an SQL query synchronously to the SQL-server and return
@@ -794,8 +872,8 @@ variant .Result big_typed_query(object|string q,
 //! @seealso
 //!   @[query], @[typed_query], @[big_query], @[streaming_query]
 variant .Result big_typed_query(object|string q,
-				    string|multiset|int|float|object extraarg,
-				    string|multiset|int|float|object ... extraargs)
+                                string|multiset|int|float|object extraarg,
+                                string|multiset|int|float|object|mapping ... extraargs)
 {
   return big_typed_query(@handle_extraargs(q, ({ extraarg }) + extraargs));
 }
@@ -831,7 +909,7 @@ variant .Result big_typed_query(object|string q,
 //!   @[query], @[big_typed_query]
 array(mapping(string:mixed)) typed_query(object|string q, mixed ... extraargs)
 {
-  return res_obj_to_array(big_typed_query(q, @extraargs));  
+  return res_obj_to_array(big_typed_query(q, @extraargs));
 }
 
 //! Send an SQL query synchronously to the SQL-server and return
@@ -873,9 +951,10 @@ variant .Result streaming_query(object|string q)
 //! @seealso
 //!   @[big_query], @[streaming_typed_query]
 variant .Result streaming_query(object|string q,
-				    mapping(string:mixed) bindings)
+                                mapping(string:mixed) bindings,
+                                void|__deprecated__(string) charset)
 {
-  return streaming_query(emulate_bindings(q, bindings));
+  return streaming_query(emulate_bindings(q, bindings, charset));
 }
 
 //! Send an SQL query synchronously to the SQL-server and return
@@ -891,8 +970,8 @@ variant .Result streaming_query(object|string q,
 //! @seealso
 //!   @[big_query], @[streaming_typed_query]
 variant .Result streaming_query(object|string q,
-				    string|multiset|int|float|object extraarg,
-				    string|multiset|int|float|object ... extraargs)
+                                string|multiset|int|float|object extraarg,
+                                string|multiset|int|float|object|mapping ... extraargs)
 {
   return streaming_query(@handle_extraargs(q, ({ extraarg }) + extraargs));
 }
@@ -931,9 +1010,10 @@ variant .Result streaming_typed_query(object|string q)
 //! @seealso
 //!   @[big_query], @[streaming_query], @[big_typed_query]
 variant .Result streaming_typed_query(object|string q,
-					  mapping(string|int:mixed) bindings)
+                                      mapping(string|int:mixed) bindings,
+                                      void|__deprecated__(string) charset)
 {
-  return streaming_typed_query(emulate_bindings(q, bindings));
+  return streaming_typed_query(emulate_bindings(q, bindings, charset));
 }
 
 //! Send an SQL query synchronously to the SQL-server and return
@@ -949,11 +1029,13 @@ variant .Result streaming_typed_query(object|string q,
 //! @seealso
 //!   @[big_query], @[streaming_query], @[big_typed_query]
 variant .Result streaming_typed_query(object|string q,
-					  string|multiset|int|float|object extraarg,
-					  string|multiset|int|float|object ... extraargs)
+                                      string|multiset|int|float|object extraarg,
+                                      string|multiset|int|float|object|mapping ... extraargs)
 {
   return streaming_typed_query(@handle_extraargs(q, ({ extraarg }) + extraargs));
 }
+
+#pragma deprecation_warnings
 
 //! Create a new database.
 //!
@@ -1008,7 +1090,7 @@ string host_info()
 //!
 //! @seealso
 //!   @[list_dbs()]
-protected array(string) low_list_dbs()
+protected array(string)|zero low_list_dbs()
 {
   catch {
     array(mapping) res = query("SHOW DATABASES");
@@ -1038,8 +1120,7 @@ array(string) list_dbs(string|void wild)
   array(string) res = list_dbs();
 
   if (res && wild) {
-    res = filter(res,
-		 Regexp(replace(wild, ({"%", "_"}), ({".*", "."})))->match);
+    res = glob(.wild_to_glob(wild), res);
   }
   return res;
 }
@@ -1055,7 +1136,7 @@ array(string) list_dbs(string|void wild)
 //!
 //! @seealso
 //!   @[list_tables()]
-protected array(string) low_list_tables()
+protected array(string)|zero low_list_tables()
 {
   array(string)|array(mapping(string:mixed))|object res;
 
@@ -1090,8 +1171,7 @@ array(string) list_tables(string|void wild)
   array(string) res = low_list_tables();
 
   if (res && wild) {
-    res = filter(res,
-		 Regexp(replace(wild, ({"%", "_"}), ({".*", "."})))->match);
+    res = glob(.wild_to_glob(wild), res);
   }
   return res;
 }
@@ -1123,7 +1203,7 @@ array(string) list_tables(string|void wild)
 //!
 //! @seealso
 //!   @[list_fields()]
-protected array(mapping(string:mixed)) low_list_fields(string table)
+protected array(mapping(string:mixed))|zero low_list_fields(string table)
 {
 
   catch {
@@ -1169,8 +1249,11 @@ array(mapping(string:mixed)) list_fields(string table, string|void wild)
   if (res && wild) {
     res =
       filter(res,
-	     map(res->name,
-		 Regexp(replace(wild, ({"%", "_"}), ({".*", "."})))->match));
+             map(res->name,
+                 lambda(string s, string g) {
+                   return glob(g, s);
+                 },
+                 .wild_to_glob(wild)));
   }
 
   return res;
@@ -1226,12 +1309,16 @@ array(mapping(string:mixed)) list_fields(string table, string|void wild)
 //!    resp->status_command_complete);
 //! });
 //! @endcode
-public variant .Promise promise_query(string q,
+//!
+//! @note
+//!   This is an experimental API, and is likely to be changed to
+//!   return other objects in future releases of Pike.
+public variant __experimental__ Concurrent.Future promise_query(string q,
                      void|mapping(string|int:mixed) bindings,
                      void|function(array, .Result, array :array) map_cb) {
-  return __builtin.Sql.Promise(this, q, bindings, map_cb);
+  return __builtin.Sql.Promise(this, q, bindings, map_cb)->future();
 }
-public variant .Promise promise_query(string q,
-                          function(array, .Result, array :array) map_cb) {
-  return __builtin.Sql.Promise(this, q, 0, map_cb);
+public variant __experimental__ Concurrent.Future promise_query(string q,
+                     function(array, .Result, array :array) map_cb) {
+  return __builtin.Sql.Promise(this, q, 0, map_cb)->future();
 }

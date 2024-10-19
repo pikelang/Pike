@@ -5,7 +5,7 @@ inherit __builtin.Sql.Result;
 
 array _values;
 
-void create(array res) {
+protected void create(array res) {
   if(!res || !arrayp(res))
     error("Bad argument.\n");
   _values = res;
@@ -50,7 +50,7 @@ int|array(string|int) fetch_row() {
   return res;
 }
 
-this_program next_result()
+this_program|zero next_result()
 {
   return 0;
 }

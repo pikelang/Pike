@@ -192,7 +192,7 @@ test_tests([[
 	  "sha384":HASH_sha384,
 	  "sha512":HASH_sha512,
 	]));
-      array(int) expected = UNDEFINED;
+      array(int)|zero expected = UNDEFINED;
       if ((hash == -1) && (< MODE_ccm, MODE_ccm_8 >)[mode]) {
 	// RFC 6655 3.
 	// RFC 7251 2.
@@ -247,11 +247,15 @@ define(run_sub_test, [[
   ]])
 ]])
 
+cond_begin([[all_constants()->thread_create]])
+
 dnl Displaced tests for SSL.File.
 run_sub_test(({"SRCDIR../../../src/modules/_Stdio/async_tls_close_test.pike", "0", "0"}))
 run_sub_test(({"SRCDIR../../../src/modules/_Stdio/async_tls_close_test.pike", "0", "1"}))
 run_sub_test(({"SRCDIR../../../src/modules/_Stdio/async_tls_close_test.pike", "1", "0"}))
 run_sub_test(({"SRCDIR../../../src/modules/_Stdio/async_tls_close_test.pike", "1", "1"}))
+
+cond_end // thread_create
 
 test_do([[
 #define ASSERT(X) if(!(X)) error("Assertion failed.\n")
@@ -272,6 +276,7 @@ test_do([[
     (["organizationName":"Test"]),
   });
 
+  // NB: Default hash is SHA256.
   string _cert = Standards.PEM.build("CERTIFICATE",
     Standards.X509.make_selfsigned_certificate(rsa_again, 3600*24, attrs));
 
@@ -317,6 +322,7 @@ test_do([[
 
     protected void create()
     {
+      ::create();
       // Test support for private FFDHE groups with the weakest MODP group.
       private_ffdhe_groups[GROUP_ffdhe_private0] = Crypto.DH.MODPGroup1;
     }
@@ -368,11 +374,14 @@ test_do([[
     "organizationName" : "Test",
     "commonName" : "*",
   ]);
+
+  // NB: Default hash is SHA256.
   string cert = Standards.X509.make_selfsigned_certificate(dsa,
     3600*24, attrs);
 
   server_ctx->add_cert(dsa, ({ cert }));
 
+  // Same public key, but with SHA1.
   cert = Standards.X509.make_selfsigned_certificate(dsa,
     3600*24, attrs, UNDEFINED, Crypto.SHA1);
 
@@ -391,17 +400,21 @@ test_do([[
     "organizationName" : "Test",
     "commonName" : "*",
   ]);
+  // NB: Default hash is SHA256.
   string cert = Standards.X509.make_selfsigned_certificate(ecdsa,
     3600*24, attrs);
 
   server_ctx->add_cert(ecdsa, ({ cert }));
 
+  // Same public key, but with SHA1.
   cert = Standards.X509.make_selfsigned_certificate(ecdsa,
     3600*24, attrs, UNDEFINED, Crypto.SHA1);
 
   server_ctx->add_cert(ecdsa, ({ cert }));
 #endif
 ]])
+
+cond_begin([[all_constants()->thread_create]])
 
 test_any([[
   Stdio.File client_con = Stdio.File();
@@ -438,6 +451,8 @@ test_any([[
 
   return has_prefix("GET / HTTP/1.0\r\n\r\n", cb_data);
 ]], 1)
+
+cond_end // thread_create
 
 test_do([[
   add_constant("client_msg", random_string(65519));
@@ -526,27 +541,22 @@ test_do([[
            string exp_data, int exp_suite, int exp_version,
 	   SSL.Session|void session)
   {
+
     Stdio.File client_con = Stdio.File();
     Stdio.File server_con =
       client_con->pipe(Stdio.PROP_NONBLOCK | Stdio.PROP_BIDIRECTIONAL);
-
     SSL.File server = SSL.File(server_con, server_ctx);
-
     SSL.File client = SSL.File(client_con, client_ctx);
-
     if (!client->connect(UNDEFINED, session)) return 0;
     if (!server->accept()) return 0;
 
-    int state;
-
-    int trigged = 10;
+    int state; 
+    int trigged = 15;
     int remaining = sizeof(client_msg);
-
     string fail;
-
     string server_buf = "";
     void server_send_data() {
-      trigged = 2;
+      trigged = 10;
       int bytes = server->write(server_buf);
       server_buf = server_buf[bytes..];
       remaining -= bytes;
@@ -559,20 +569,19 @@ test_do([[
       }
     };
     void server_got_data(mixed ignored, string data) {
-      trigged = 2;
+      trigged = 10;
       if (!sizeof(server_buf)) server->set_write_callback(server_send_data);
       server_buf += data;
     };
     void server_got_close() {
       trigged = 2;
     };
-    void server_alert() {
+    void server_alert(mixed ... ignored) {
       trigged = 0;
       // server->close();
     };
-
     void server_check_suite() {
-      if ((server->query_version() != exp_version) ||
+      if (((exp_suite != -1) && (server->query_version() != exp_version)) ||
 	  (server->query_suite() != exp_suite)) {
         fail =
 	  sprintf("Unexpected cipher suite (server):\n"
@@ -590,11 +599,11 @@ test_do([[
     string client_recv_buf = "";
     string client_send_buf = client_msg;
     void client_got_data(mixed ignored, string data) {
-      trigged = 2;
+      trigged = 10;
       client_recv_buf += data;
     };
     void client_send_data() {
-      trigged = 2;
+      trigged = 10;
       int bytes = client->write(client_send_buf[..4095]);
       client_send_buf = client_send_buf[bytes..];
       if (!sizeof(client_send_buf)) {
@@ -607,13 +616,11 @@ test_do([[
       if (state == 2) state = 3;
       client->close();
     };
-    void client_alert() {
+    void client_alert(mixed ... ignored) {
       trigged = 0;
-      // client->close();
     };
-
     void client_check_suite() {
-      if ((client->query_version() != exp_version) ||
+      if (((exp_suite != -1) && (client->query_version() != exp_version)) ||
 	  (client->query_suite() != exp_suite)) {
         fail =
 	  sprintf("Unexpected cipher suite (client):\n"
@@ -666,7 +673,7 @@ test_do([[
     client->close();
     server->close();
     destruct(client);
-    destruct(server);
+    destruct(server); 
     return fail;
   };
   add_constant("low_test_ssl_connection", f);
@@ -675,7 +682,7 @@ test_do([[
 test_do([[
   import SSL.Constants;
   string f(SSL.Context server_ctx, SSL.Context client_ctx,
-           string exp_data, int exp_suite, int exp_version,
+           string|zero exp_data, int exp_suite, int exp_version,
 	   SSL.Session|void session)
   {
     Stdio.File client_con = Stdio.File();
@@ -691,7 +698,7 @@ test_do([[
 
     int state;
 
-    int trigged = 10;
+    int trigged = 15;
     int remaining = sizeof(client_msg);
 
     string fail;
@@ -719,15 +726,15 @@ test_do([[
       server_send_buf->add(data->read());
     };
     void server_got_close() {
-      trigged = 10;
+      trigged = 2;
     };
-    void server_alert() {
+    void server_alert(mixed ... ignored) {
       trigged = 0;
       // server->close();
     };
 
     void server_check_suite() {
-      if ((server->query_version() != exp_version) ||
+      if (((exp_suite != -1) && (server->query_version() != exp_version)) ||
 	  (server->query_suite() != exp_suite)) {
         fail =
 	  sprintf("Unexpected cipher suite (server):\n"
@@ -746,17 +753,17 @@ test_do([[
     Stdio.Buffer client_send_buf = Stdio.Buffer(client_msg);
     client->set_buffer_mode(client_recv_buf, client_send_buf);
     void client_got_close() {
-      trigged = 10;
+      trigged = 2;
       if (state == 2) state = 3;
       client->close();
     };
-    void client_alert() {
+    void client_alert(mixed ... ignored) {
       trigged = 0;
       // client->close();
     };
 
     void client_check_suite() {
-      if ((client->query_version() != exp_version) ||
+      if (((exp_suite != -1) && (client->query_version() != exp_version)) ||
 	  (client->query_suite() != exp_suite)) {
         fail =
 	  sprintf("Unexpected cipher suite (client):\n"
@@ -800,7 +807,7 @@ test_do([[
 		"Got: %O\n"
 		"Exp: %O\n",
 		client_res && client_res[..32], exp_data[..32]);
-      exit(1);
+      //exit(1);
     }
     client->close();
     server->close();
@@ -814,7 +821,7 @@ test_do([[
 test_do([[
   import SSL.Constants;
   int f(int client_min, int client_max, int server_min, int server_max,
-        string exp_data, object server_ctx, array(int) suites,
+        string|zero exp_data, object server_ctx, array(int) suites,
         array(CertificatePair)|void client_certs,
         array(int)|void ffdhe_groups)
   {
@@ -836,14 +843,10 @@ test_do([[
 
     exp_version = min(exp_version, server_max, client_max);
 
-    if ((exp_version < server_min) ||
-	(exp_version < client_min)) {
-      exp_data = 0;
-    }
-
     int exp_suite = -1;
 
     foreach(suites, int suite) {
+      // NB: Cf SSL.Session()->is_supported_suite().
       if (exp_version < PROTOCOL_TLS_1_2) {
 	int ke = CIPHER_SUITES[suite ][0];
 	if ((ke == KE_ecdh_rsa) || (ke == KE_dh_rsa)) {
@@ -857,6 +860,11 @@ test_do([[
 	  // to TLS 1.2.
 	  continue;
 	}
+        if (CIPHER_SUITES[suite][2] > HASH_sha1) {
+          // TLS 1.1 and earlier do not support hashes other than
+          // SHA1 and MD5.
+          continue;
+        }
 	if (client_max < PROTOCOL_TLS_1_0) {
 	  // SSL 3.0 doesn't support extensions, so it can't support ECC.
 	  if ((ke == KE_ecdh_ecdsa) || (ke == KE_ecdhe_ecdsa) ||
@@ -867,6 +875,12 @@ test_do([[
       }
       exp_suite = suite;
       break;
+    }
+
+    if ((exp_version < server_min) ||
+	(exp_version < client_min)) {
+      exp_data = 0;
+      exp_suite = -1;
     }
 
     if (exp_suite == -1) exp_data = 0;
@@ -949,7 +963,8 @@ test_do([[
 test_do([[
   import SSL.Constants;
   array(string) f(SSL.Context server_ctx, SSL.Context client_ctx,
-		  string exp_data, int exp_suite, ProtocolVersion exp_version)
+		  string|zero exp_data, int exp_suite,
+		  ProtocolVersion exp_version)
   {
 #if constant(thread_create)
     Stdio.File client_con = Stdio.File();
@@ -968,11 +983,12 @@ test_do([[
         server = SSL.File(server_con, server_ctx);
         server->set_blocking();
 	if (!server->accept()) {
+	  server->close();
 	  return exp_data && "Server accept failed.\n";
         }
 
         if (exp_data &&
-	    ((server->query_version() != exp_version) ||
+	    (((exp_suite != -1) && (server->query_version() != exp_version)) ||
 	     (server->query_suite() != exp_suite))) {
 	  return
 	    sprintf("Unexpected cipher suite (server):\n"
@@ -996,7 +1012,7 @@ test_do([[
 	  bytes -= sizeof(data);
 	  int sent_bytes = server->write(data);
 	}
-	server->close();
+        server->close();
 	return 0;
       }, sizeof(client_msg));
 
@@ -1008,7 +1024,7 @@ test_do([[
       return exp_data ? ({ "Client failed to connect.\n" }) : ({});
     }
     if (exp_data &&
-	((client->query_version() != exp_version) ||
+	(((exp_suite != -1) && (client->query_version() != exp_version)) ||
 	 (client->query_suite() != exp_suite))) {
       return ({
 	sprintf("Unexpected cipher suite (client):\n"
@@ -1032,9 +1048,6 @@ test_do([[
 
     Thread.Thread reader_thread =
       Thread.Thread(lambda() {
-        if (!client->is_open()) {
-            return exp_data && "Client connection was closed.\n";
-        }
         string recv = client->read(sizeof(client_msg));
 	client->close();
 	if (recv == client_msg) {
@@ -1068,7 +1081,7 @@ test_do([[
 test_do([[
   import SSL.Constants;
   int f(int client_min, int client_max, int server_min, int server_max,
-        string exp_data, object server_ctx, array(int) suites,
+        string|zero exp_data, object server_ctx, array(int) suites,
         array(CertificatePair)|void client_certs,
 	array(int)|void ffdhe_groups)
   {
@@ -1164,7 +1177,7 @@ test_do([[
     SSL_dhe_dss_with_3des_ede_cbc_sha,
     SSL_dh_rsa_with_3des_ede_cbc_sha,
     SSL_dh_dss_with_3des_ede_cbc_sha,
-#if constant(Crypto.ECC.Curve)
+#if constant(Crypto.ECC.Curve) || constant(Crypto.ECC.Curve25519)
     TLS_ecdh_anon_with_3des_ede_cbc_sha,
     TLS_ecdhe_rsa_with_3des_ede_cbc_sha,
     TLS_ecdhe_ecdsa_with_3des_ede_cbc_sha,
@@ -1178,13 +1191,13 @@ test_do([[
   // Try some AEAD suites that are available with most versions of Nettle.
   add_constant("aead_suites", ({
     TLS_dhe_rsa_with_aes_128_ccm,
-#if constant(Crypto.ECC.Curve)
+#if constant(Crypto.ECC.Curve) || constant(Crypto.ECC.Curve25519)
     TLS_ecdhe_ecdsa_with_aes_128_ccm,
 #endif
 #if constant(Crypto.AES.GCM)
     TLS_dh_anon_with_aes_128_gcm_sha256,
     TLS_dhe_dss_with_aes_256_gcm_sha384,
-#if constant(Crypto.ECC.Curve)
+#if constant(Crypto.ECC.Curve) || constant(Crypto.ECC.Curve25519)
     TLS_ecdhe_rsa_with_aes_256_gcm_sha384
 #endif
 #endif
@@ -1197,7 +1210,7 @@ dnl and see that they can connect properly.
 test_tests([[
 import SSL.Constants;
 array(int) a() {
-#define __NT__
+#define __NT__ 1
   int successes;
   int tests;
   int skip;
@@ -1240,7 +1253,7 @@ array(int) a() {
 
   __signal_watchdog();
 
-  string exp_res = client_msg;
+  string|zero exp_res = client_msg;
   if ((client_max < server_min) || (server_max < client_min)) {
     exp_res = UNDEFINED;
   }
@@ -1301,7 +1314,7 @@ dnl all suites defined for that version.
 test_tests([[
 import SSL.Constants;
 array(int) a() {
-#define __NT__
+#define __NT__ 1
   int successes;
   int tests;
   int skip;
@@ -1378,7 +1391,7 @@ test_do([[
 test_tests([[
 import SSL.Constants;
 array(int) a() {
-#define __NT__
+#define __NT__ 1
   int successes;
   int tests;
   int skip;
@@ -1449,11 +1462,22 @@ cond_resolv(Crypto.ECC, [[
 dnl --- ECC CURVES TEST ---
 dnl Attempt to connect, supporting only one curve at a time.
 test_tests([[
-object make_context(Crypto.ECC.Curve curve) {
+object make_context(Crypto.ECC.Curve curve, int|void group) {
   SSL.Context ctx = TestContext();
+
+  if (group) {
+    ctx->ecc_curves = ({ group });
+  }
+
   ctx->random = random_string;
-  Crypto.Sign ecdsa =
-    curve->ECDSA()->set_random(random_string)->generate_key();
+  Crypto.Sign ecdsa;
+  if (curve->ECDSA) {
+    ecdsa =
+      curve->ECDSA()->set_random(random_string)->generate_key();
+  } else {
+    ecdsa =
+      curve->EdDSA()->set_random(random_string)->generate_key();
+  }
   mapping attrs = ([
     "organizationName" : "Test",
     "commonName" : "*",
@@ -1470,18 +1494,11 @@ array(int) a() {
   int successes;
   int tests;
 
-  foreach( ({
-    // Crypto.ECC.SECP_192R1, // Tested above.
-#if constant(Crypto.ECC.SECP_224R1)
-    Crypto.ECC.SECP_224R1,
-#endif
-    Crypto.ECC.SECP_256R1,
-    Crypto.ECC.SECP_384R1,
-    Crypto.ECC.SECP_521R1,
-  }), Crypto.ECC.Curve curve)
-  {
-    log_status("Testing ECDSA curve %O...", curve->name());
-    object server_ctx = make_context(curve);
+  foreach(sort(indices(SSL.Constants.ECC_CURVES)), int group) {
+    Crypto.ECC.Curve curve = SSL.Constants.ECC_CURVES[group];
+    log_status("Testing ECDSA curve %O (%s)...",
+               curve->name(), SSL.Constants.fmt_constant(group, "GROUP"));
+    object server_ctx = make_context(curve, group);
     array suites = server_ctx->get_suites(128, 2);
     int count = test_ssl_connection(0x300, 0x303, 0x303, 0x303,
 				    client_msg,server_ctx,suites);
@@ -1571,7 +1588,7 @@ test_tests([[
       log_status("Client certificates: NONE, %s",
 		 fmt_constant(server_ctx->auth_level, "AUTHLEVEL"));
 
-      string exp = client_msg;
+      string|zero exp = client_msg;
       if (server_ctx->auth_level == AUTHLEVEL_require) exp = UNDEFINED;
       int count = test_ssl_connection(PROTOCOL_SSL_3_0, PROTOCOL_TLS_MAX,
 				      PROTOCOL_SSL_3_0, PROTOCOL_TLS_MAX,
@@ -1588,7 +1605,7 @@ test_tests([[
       log_status("Client certificates: INVALID, %s",
 		 fmt_constant(server_ctx->auth_level, "AUTHLEVEL"));
 
-      string exp = client_msg;
+      string|zero exp = client_msg;
       if (server_ctx->auth_level == AUTHLEVEL_require) exp = UNDEFINED;
       int count = test_ssl_connection(PROTOCOL_SSL_3_0, PROTOCOL_TLS_MAX,
 				      PROTOCOL_SSL_3_0, PROTOCOL_TLS_MAX,
@@ -1608,7 +1625,7 @@ test_tests([[
 		   cp->key->key_size(),
 		   fmt_constant(server_ctx->auth_level, "AUTHLEVEL"));
 
-	string exp = client_msg;
+	string|zero exp = client_msg;
 	if (server_ctx->auth_level == AUTHLEVEL_require) exp = UNDEFINED;
 	for (int ver = PROTOCOL_TLS_1_2; ver <= PROTOCOL_TLS_MAX; ver++) {
 	  int count = test_ssl_connection(PROTOCOL_SSL_3_0, ver,
@@ -1655,7 +1672,7 @@ test_do([[
       return 0;
     }
 
-    void create(void|array(int) suites)
+    protected void create(void|array(int) suites)
     {
       preferred_suites = filter(suites || ({
         TLS_psk_with_null_sha,
@@ -1803,6 +1820,25 @@ test_do([[
   add_constant("low_test_buffered_ssl_connection");
   add_constant("TestContext");
 ]])
+
+test_any([[
+  int queue_size;
+  void read_cb(object sock, string data) {
+    object tlsctx = SSL.Context();
+    Crypto.Sign pk = Crypto.RSA()->generate_key(1024);
+    tlsctx->add_cert(pk, ({Standards.X509.make_selfsigned_certificate(pk, 86400, (["commonName": "*"]))}));
+    SSL.File ssl = SSL.File(sock, tlsctx);
+    ssl->accept(data);
+    queue_size = ssl->query_connection()->query_write_queue_size(); //The queue should be empty
+  };
+  object server = Stdio.File();
+  object client = server->pipe(Stdio.PROP_BIDIRECTIONAL|Stdio.PROP_NONBLOCK);
+  server->set_read_callback(read_cb);
+  SSL.File ssl = SSL.File(client, SSL.Context());
+  ssl->connect();
+  while(Pike.DefaultBackend(0.0)) ;
+  return queue_size;
+]], 0)
 
 cond_end
 

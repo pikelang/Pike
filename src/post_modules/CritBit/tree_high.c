@@ -1,3 +1,4 @@
+/* -*- mode: C; c-basic-offset: 4; -*- */
 static inline void cb_print_key(struct string_builder *, const cb_key);
 static inline size_t _low_cb_check_node(cb_node_t node, const char *, int);
 
@@ -25,7 +26,7 @@ static inline void cb_debug_print_key(struct string_builder * buf, cb_key key) {
 #ifdef CB_PRINT_CHAR
 	CB_PRINT_CHAR(buf, key.str, i.chars);
 #else
-	string_builder_sprintf(buf, "(%d, %d) b: ", i.chars, CB_WIDTH(key.str));
+	string_builder_sprintf(buf, "(%td, %zd) b: ", i.chars, CB_WIDTH(key.str));
 
 	for (i.bits = 0; i.bits < CB_WIDTH(key.str); i.bits++) {
 	    string_builder_sprintf(buf, "%d", CB_GET_BIT(key.str, i));
@@ -40,7 +41,7 @@ static inline void cb_debug_print_key(struct string_builder * buf, cb_key key) {
 	i.chars = key.len.chars;
 	i.bits = 0;
 
-	string_builder_sprintf(buf, "(%d, %d) b: ", key.len.chars, key.len.bits);
+	string_builder_sprintf(buf, "(%td, %zd) b: ", key.len.chars, key.len.bits);
 
 	for (; CB_LT(i, key.len); CB_INC(i, 0, 1)) {
 	    string_builder_sprintf(buf, "%d", CB_GET_BIT(key.str, i));
@@ -73,7 +74,7 @@ static inline void cb_print_key(struct string_builder * buf, const cb_key key) {
 static inline void cb_print_node(struct string_builder * buf,
 				 cb_node_t node, int depth) {
     string_builder_putchars(buf, ' ', depth);
-    string_builder_sprintf(buf, "%x #%lu (%d) --> ", node,
+    string_builder_sprintf(buf, "%p #%zu (%d) --> ", node,
 			   node->size, TYPEOF(node->value));
     string_builder_putchars(buf, ' ', MAXIMUM(0, 15-depth));
     cb_debug_print_key(buf, node->key);
@@ -222,8 +223,8 @@ static inline size_t _low_cb_check_node(cb_node_t node,
 
     if (len + CB_HAS_VALUE(node) != node->size) {
 	/* Pike_error("Found node with wrong size. is: %p\n", node); */
-	Pike_error("%s:%d Found node with wrong size. is: 0x%08X\n",
-		   file, line, node);
+        Pike_error("%s:%d Found node with wrong size. is: 0x%08lX\n",
+                   file, line, (unsigned long)(size_t)node);
     }
 
     return node->size;

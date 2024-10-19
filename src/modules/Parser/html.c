@@ -2069,7 +2069,13 @@ in_quote_cont:
       while (1) {
 	res=scan_forward(feed=*destp,c=d_p[0]+1,destp,d_p,
 			 LOOK_FOR_END (this)[i], NUM_LOOK_FOR_END (this)[i]);
-	if (what == SCAN_ARG_PUSH) n += low_push_feed_range(feed,c,*destp,*d_p);
+	if (what == SCAN_ARG_PUSH) {
+          n += low_push_feed_range(feed,c,*destp,*d_p);
+          if (n > 20) {
+            f_add(n);
+            n = 1;
+          }
+        }
 
 	if (!res) {
 	  if (!finished)
@@ -2535,7 +2541,7 @@ static newstate handle_result(struct parser_html_storage *this,
 	 Pike_error("Parser.HTML: illegal result from callback: "
 		    "not 0, string or array\n");
    }
-   UNREACHABLE(return STATE_DONE);
+   UNREACHABLE();
 }
 
 static void clear_start(struct parser_html_storage *this)
@@ -4193,7 +4199,7 @@ static void html_current(INT32 args)
       push_int(0);
 }
 
-/*! @decl string tag_name()
+/*! @decl string|zero tag_name()
  *!
  *! Gives the name of the current tag, or zero. If used from an entity
  *! callback, it gives the string inside the entity.
@@ -5349,11 +5355,11 @@ static void html_quote_stapling(INT32 args)
 /****** module init *********************************/
 
 #define tCbret tOr4(tZero,tInt1,tStr,tArr(tMixed))
-#define tCbfunc(X) tOr(tFunc(tNone,tCbret),tFunc(tObjImpl_PARSER_HTML X,tCbret))
+#define tCbfunc(X) tOr(tFunc(tNone,tCbret),tFuncV(tObjImpl_PARSER_HTML X,tUnknown,tCbret))
 #define tTodo(X) tOr4(tZero,tStr,tCbfunc(X),tArray)
 #define tTagargs tMap(tStr,tStr)
 
-#define t_Todo tOr3(tStr,tArr(tMixed),tFuncV(tObjImpl_PARSER_HTML tStr,tMix,tCbret))
+#define t_Todo tOr3(tStr,tArr(tMixed),tFuncV(tObjImpl_PARSER_HTML tStr,tUnknown,tCbret))
 
 void init_parser_html(void)
 {
@@ -5419,7 +5425,7 @@ void init_parser_html(void)
    ADD_FUNCTION("at_char",html_at_char,tFunc(tNone,tInt),0);
    ADD_FUNCTION("at_column",html_at_column,tFunc(tNone,tInt),0);
 
-   ADD_FUNCTION("tag_name",html_tag_name,tFunc(tNone,tStr),0);
+   ADD_FUNCTION("tag_name",html_tag_name,tFunc(tNone,tOr(tStr,tZero)),0);
    ADD_FUNCTION("tag_args",html_tag_args,
 		tFunc(tOr(tVoid,tSetvar(1,tMixed)),
 		      tMap(tStr,tOr(tStr,tVar(1)))),0);

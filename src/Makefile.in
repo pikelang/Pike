@@ -49,6 +49,7 @@ prefix = @prefix@
 exec_prefix = @exec_prefix@
 bindir = @bindir@
 lib_prefix = @libdir@/pike
+datarootdir = @datarootdir@
 data_prefix = @datadir@
 share_prefix = $(data_prefix)/pike
 man_prefix = @mandir@
@@ -67,6 +68,8 @@ INSTALLARGS = --new-style
 YACC=@YACC@
 YFLAGS=-d -v
 
+EGREP=@EGREP@
+
 #
 # This may be -pg
 #
@@ -83,14 +86,10 @@ OSFLAGS=@OSFLAGS@
 WARN=@WARN@
 
 #add extra defines here
-DEFINES=@CPPFLAGS@ -DPIKE_CORE
+DEFINES=@CPPFLAGS@ -DPIKE_CORE -DPIKE_BUILD_DATE=@BUILD_DATE@
 
 # -O should work with all compilers
 OPTIMIZE=@OPTIMIZE@
-
-# Set to a flag for parallelizing make, e.g. -j2. It's given to make
-# at the level where it's most effective.
-MAKE_PARALLEL=
 
 # Preprocessor flags.
 PREFLAGS=-DPIKE_SRC_ROOT="$(BASEDIR)" -I. -I$(SRCDIR) $(DEFINES)
@@ -116,6 +115,9 @@ RCEXE=@RCEXE@
 
 FALLBACK_CC=@FALLBACK_CC@
 
+PAXCTL=@PAXCTL@
+PAXCTL_ALLOW_MPROTECT=@PAXCTL_ALLOW_MPROTECT@
+
 AR=@AR@
 
 LD=@LD@
@@ -139,60 +141,62 @@ MAKE_FLAGS=
 # Add alloca.o if you don't have alloca() on your machine.
 #
 CORE_OBJ= \
- language.o \
- bignum.o \
- pike_cpulib.o \
- interpret.o \
- constants.o \
- cpp.o \
- fdlib.o \
- cyclic.o \
  array.o \
  backend.o \
+ bignum.o \
+ block_allocator.o \
+ buffer.o \
+ builtin.o \
+ builtin_functions.o \
  callback.o \
- encode.o \
+ constants.o \
+ cpp.o \
+ cyclic.o \
  docode.o \
  dynamic_load.o \
+ encode.o \
  error.o \
  fd_control.o \
+ fdlib.o \
  fsort.o \
  gc.o \
+ interpret.o \
+ iterators.o \
+ language.o \
+ las.o \
  lex.o \
- multiset.o \
- signal_handler.o \
- pike_search.o \
- pike_types.o \
- pike_embed.o \
  mapping.o \
- block_allocator.o \
- pike_memory.o \
  module_support.o \
- pikecode.o \
+ multiset.o \
  object.o \
- stack_allocator.o \
  opcodes.o \
  operators.o \
+ peep.o \
  pike_compiler.o \
+ pike_cpulib.o \
+ pike_dtoa.o \
+ pike_embed.o \
  pike_float.o \
+ pike_memory.o \
+ pike_search.o \
+ pike_types.o \
+ pikecode.o \
  port.o \
  program.o \
+ queue.o \
  rbtree.o \
  rusage.o \
+ signal_handler.o \
+ siphash24.o \
  sprintf.o \
  sscanf.o \
+ stack_allocator.o \
  stralloc.o \
  string_builder.o \
+ svalue.o \
  threads.o \
  version.o \
- queue.o \
- builtin.o \
- iterators.o \
- svalue.o \
- las.o \
- builtin_functions.o \
- siphash24.o \
- buffer.o \
- peep.o @EXTRA_OBJS@
+ @EXTRA_OBJS@
 
 OBJ=$(CORE_OBJ) @MODULE_O@
 
@@ -228,7 +232,8 @@ SRC_TARGETS= \
 #
 
 # Update the dumped modules, but only if dump_modules has been used earlier.
-all: module_objects post_module_objects pike-complete-stamp
+all: module_objects
+	@$(MAKE) $(MAKE_FLAGS) pike-complete-stamp
 	@if [ -f dumpversion ]; then \
 	  echo "$(MAKE) $(MAKE_FLAGS) dump_modules"; \
 	  $(MAKE) $(MAKE_FLAGS) dump_modules; \
@@ -352,11 +357,13 @@ tpike-real: main.o $(CORE_OBJ) tmodule.o modules/linker_options
 	$(LD) $(LDFLAGS) main.o $(CORE_OBJ) tmodule.o \
 	  `cat modules/linker_options` \
 	  $(LIBS) -o tpike@EXEEXT@
+# Turn off PaX mprotect inhibition on NetBSD and others.
+	@$(PAXCTL_ALLOW_MPROTECT) tpike
 
 # Only want tpike to exist for use with $(RUNPIKE) in the modules. We
 # don't want to require it actually being up-to-date.
 tpike@EXEEXT@: master-stamp
-	$(MAKE) $(MAKE_FLAGS) $(MAKE_PARALLEL) tpike-real
+	$(MAKE) $(MAKE_FLAGS) tpike-real
 
 # If we build without dynamic modules then tpike is built first with
 # all modules under modules/ linked into it, then tpike is used for
@@ -383,6 +390,8 @@ pike@EXEEXT@ pike.lib: main.o $(OBJ) master-stamp pike.syms modules/linker_optio
 	  `cat modules/linker_options @STATIC_POST_MODULES_LINKOPTS@` \
 	  $(LIBS) @PIKE_ICON_RES@ -o pike
 	@MT_FIX_PIKE_EXE@
+# Turn off PaX mprotect inhibition on NetBSD and others.
+	@$(PAXCTL_ALLOW_MPROTECT) pike
 # The dumped modules are removed whenever Pike is relinked since some
 # of the bytecode methods (e.g. ia32) store absolute addresses to
 # global structs. That should probably be fixed in them so that dumped
@@ -412,8 +421,8 @@ gcov:
 	  grep -v fatal | \
 	  grep -v -i inline | \
 	  grep -v PIKE_MODULE_EXIT | \
-	  egrep -v '######[ 	]*{$$' | \
-	  egrep -v '######[ 	]*}$$' | \
+	  $(EGREP) -v '######[ 	]*{$$' | \
+	  $(EGREP) -v '######[ 	]*}$$' | \
 	  wc -l | sed -e "s|^|$$f:|" -e 's/:[   ]*/:/' | \
 	  grep -v ':0'; \
 	done | sort -n -t: -k2
@@ -466,13 +475,13 @@ undump_modules: delete_dumped_modules
 	-rm dumpversion 2>/dev/null
 
 .SUFFIXES:
-.SUFFIXES: .c .h .S .o .m .mmod .cmod .symlist .pp .pph .protos .h_src .wxs .wixobj .msi .msm
+.SUFFIXES: .c .h .S .o .m .mmod .cmod .pp .pph .h_src .wxs .wixobj .msi .msm
 
 .c.pp:
 	$(CPP) $(PREFLAGS) -DPMOD_EXPORT=PMOD_EXPORT \
 	  -DPMOD_PROTO=PMOD_PROTO "$<" >"$@"
 
-.c.protos: precompile.sh-stamp
+%.protos: %.c precompile.sh-stamp
 	./precompile.sh --cache fake_dynamic_load.pike >"$@" --cpp --protos \
 	  $(CPP) $(PREFLAGS) -DPMOD_EXPORT=PMOD_EXPORT \
 	    -DPMOD_PROTO=PMOD_PROTO -DPIKE_PRECOMPILER=1 "$<" || \
@@ -538,7 +547,7 @@ $(PMOD_TARGETS): precompile.sh-stamp $(TMP_BINDIR)/precompile.pike $(PIKE_SRC_DI
 	./precompile.sh --cache precompile.pike $(PRECOMPILER_ARGS) >"$@" "$<" || { rm "$@"; exit 1; }
 
 # The same applies to this.
-.symlist.c: precompile.sh-stamp $(SRCDIR)/mklibpike.pike
+%.c: %.symlist precompile.sh-stamp $(SRCDIR)/mklibpike.pike
 	./precompile.sh --cache $(SRCDIR)/mklibpike.pike -I. -I "$(SRCDIR)" -S "$<" -o "$@" || { rm "$@"; exit 1; }
 
 # This rule is used for some header files that are generated from the
@@ -635,6 +644,17 @@ wix_export: Pike.msi
 	cp Pike.msi $(BASEDIR)/Pike-v$(VER)-win32.msi ;\
 	cp config.info $(BASEDIR)/Pike-v$(VER)-win32.info
 
+amigaos_export:
+	@$(RUNPIKE) $(TMP_BINDIR)/install.pike --export-amigaos \
+	  `test -f autodoc.xml || echo --no-autodoc` \
+	  lib_prefix="$(lib_prefix)" \
+	  TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" \
+	  SRCDIR="$(SRCDIR)" DOCDIR_SRC="$(DOCDIR_SRC)" \
+	  MANDIR_SRC="$(MANDIR_SRC)" \
+	  man_prefix="$(man_prefix)" fakeroot="$(buildroot)" \
+	  PIKE_MODULE_RELOC="$(PIKE_MODULE_RELOC)" \
+	  cflags="@DYNAMIC_MODULE_FLAGS@" ldflags=""
+
 force :
 	@:
 
@@ -679,8 +699,8 @@ tidy:
 
 # make clean
 clean_here: tidy doc_clean
-	-( cd tlib; find . -name testsuite | xargs rm )
-	-( cd extra_tests; find . -name testsuite | xargs rm )
+	-find tlib -name testsuite | xargs rm
+	-find extra_tests -name testsuite | xargs rm
 	-rm -f confdefs.h
 	-rm -rf test-install test-pike tpike tpike.* *.pdb
 	-rm -f TAGS tags yacc.acts yacc.debug yacc.tmp *.debug.log a.out pike.tmp
@@ -821,9 +841,9 @@ bench: tinstall
 	else \
 	  if test -f some-sprsh-test ; then \
 	    sprsh `pwd`/test-install/pike/*/bin/pike.exe -DNOT_INSTALLED $(PIKEOPTS) -x benchmark ; \
-          else \
-            `pwd`/test-install/pike/*/bin/pike.exe -DNOT_INSTALLED $(PIKEOPTS) -x benchmark ; \
-          fi \
+	  else \
+	    `pwd`/test-install/pike/*/bin/pike.exe -DNOT_INSTALLED $(PIKEOPTS) -x benchmark ; \
+	  fi \
 	fi
 
 verify_installed: testsuites master-stamp
@@ -846,11 +866,13 @@ gdb_verify: testsuites master-stamp
 	@echo >>.gdbinit handle SIGUSR1 nostop noprint pass
 	@echo >>.gdbinit handle SIGUSR2 nostop noprint pass
 	@echo >>.gdbinit handle SIGLWP nostop noprint pass
+	@echo >>.gdbinit handle SIGPIPE nostop noprint pass
 	@if kill -l | grep SIGRTMIN >/dev/null ; then \
 	  echo >>.gdbinit handle SIG32 nostop noprint pass ;\
 	else :; fi
 	@echo >>.gdbinit break debug_fatal
 	@echo >>.gdbinit break pike_gdb_breakpoint
+	@echo >>.gdbinit break abort
 	@if test "$(TESTARGS)" = "" ; then args="$(TESTARGS_NOFORK) -v" ; else \
 	  args="$(TESTARGS)" ; fi;  \
 	echo >>.gdbinit set args \
@@ -864,11 +886,13 @@ gdb_hilfe: master.pike
 	@echo >>.gdbinit handle SIGUSR1 nostop noprint pass
 	@echo >>.gdbinit handle SIGUSR2 nostop noprint pass
 	@echo >>.gdbinit handle SIGLWP nostop noprint pass
+	@echo >>.gdbinit handle SIGPIPE nostop noprint pass
 	@if kill -l | grep SIGRTMIN >/dev/null ; then \
 	  echo >>.gdbinit handle SIG32 nostop noprint pass ;\
 	else :; fi
 	@echo >>.gdbinit break debug_fatal
 	@echo >>.gdbinit break pike_gdb_breakpoint
+	@echo >>.gdbinit break abort
 	@echo >>.gdbinit set args -m$(TMP_BUILDDIR)/master.pike $$ARGS
 	$(GDB) $(TMP_BUILDDIR)/pike
 	@rm .gdbinit
@@ -915,9 +939,9 @@ type_checker-stamp: $(SRCDIR)/type_checker.in $(SRCDIR)/make_type_checker.pike
 
 master.pike: $(LIBDIR_SRC)/master.pike.in Makefile
 	@if test "x$(PIKE_MODULE_RELOC)" = "x"; \
-          then u=s,x,x,; \
-          else u='s/^#undef PIKE_MODULE_RELOC/#define PIKE_MODULE_RELOC 1/'; \
-        fi; \
+	  then u=s,x,x,; \
+	  else u='s/^#undef PIKE_MODULE_RELOC/#define PIKE_MODULE_RELOC 1/'; \
+	fi; \
 	LC_ALL=C; export LC_ALL; \
 	cmd="sed -e 's!#lib_prefix#!`echo '$(TMP_LIBDIR)' | ./posix_to_native.sh`!' \
 	  -e 's!#share_prefix#!`echo '$(LIBDIR_SRC)' | ./posix_to_native.sh`!' \
@@ -1000,7 +1024,7 @@ doc_clean:
 
 
 pike.syms: $(SRCDIR)/interpret.c $(SRCDIR)/interpreter.h $(SRCDIR)/program.c $(SRCDIR)/builtin_functions.c
-	( cat $(SRCDIR)/*.h *.h | egrep  '^[  ]*#[     ]*define[      ][       ]*[a-zA-Z_0-9]*[       ][      ]*[0-9][xabcdefABCDEF0-9]*[  ]*' ; \
+	( cat $(SRCDIR)/*.h *.h | $(EGREP)  '^[ 	]*#[ 	]*define[ 	][ 	]*[a-zA-Z_0-9]*[ 	][ 	]*[0-9][xabcdefABCDEF0-9]*[ 	]*' ; \
 	echo "#define" `$(CPP) $(PREFLAGS) -DSTEP_BREAK_LINE='STEP_BREAK_LINE __LINE__' $(SRCDIR)/interpreter.h | grep STEP_BREAK_LINE` ) >pike.syms
 
 # We touch the files that depend on language.h_src and
@@ -1119,7 +1143,7 @@ post_modules_depend:
 	  :; \
 	else \
 	  if [ -x $(TMP_BUILDDIR)/pike ]; then :; \
-	  else $(MAKE) $(MAKE_FLAGS) $(MAKE_PARALLEL) pike@EXEEXT@; \
+	  else $(MAKE) $(MAKE_FLAGS) pike@EXEEXT@; \
 	  fi; \
 	  ( cd post_modules && { \
 	    rm -f remake; \
@@ -1134,39 +1158,21 @@ post_modules_depend:
 
 # touch static-modules-stamp here to avoid doing this work again if
 # that target is checked later.
-static_module_objects: $(MODULE_REQUIREMENTS)
+static_module_objects static-modules-stamp: $(MODULE_REQUIREMENTS)
 	@MODULE_BUILD_TYPE=static; \
 	export MODULE_BUILD_TYPE; \
 	( cd modules && ( rm remake >/dev/null 2>&1 || : ) && \
-	  ( $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) || \
-	    ( test -f remake && $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) ) ) \
+	  ( $(MAKE) $(MAKE_FLAGS) || \
+	    ( test -f remake && $(MAKE) $(MAKE_FLAGS) ) ) \
 	) || exit $$?
 	@touch static-modules-stamp
 
-static-modules-stamp: $(MODULE_REQUIREMENTS)
-	@MODULE_BUILD_TYPE=static; \
-	export MODULE_BUILD_TYPE; \
-	( cd modules && ( rm remake >/dev/null 2>&1 || : ) && \
-	  ( $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) || \
-	    ( test -f remake && $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) ) ) \
-	) || exit $$?
-	@touch static-modules-stamp
-
-dynamic_module_objects: $(MODULE_REQUIREMENTS) @LDSHARED_BASE_REQS@
+dynamic_module_objects dynamic-modules-stamp: $(MODULE_REQUIREMENTS) @LDSHARED_BASE_REQS@
 	@MODULE_BUILD_TYPE=dynamic; \
 	export MODULE_BUILD_TYPE; \
 	( cd modules && ( rm remake >/dev/null 2>&1 || : ) && \
-	  ( $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) || \
-	    ( test -f remake && $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) ) ) \
-	) || exit $$?
-	@touch dynamic-modules-stamp
-
-dynamic-modules-stamp: $(MODULE_REQUIREMENTS) @LDSHARED_BASE_REQS@
-	@MODULE_BUILD_TYPE=dynamic; \
-	export MODULE_BUILD_TYPE; \
-	( cd modules && ( rm remake >/dev/null 2>&1 || : ) && \
-	  ( $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) || \
-	    ( test -f remake && $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) ) ) \
+	  ( $(MAKE) $(MAKE_FLAGS) || \
+	    ( test -f remake && $(MAKE) $(MAKE_FLAGS) ) ) \
 	) || exit $$?
 	@touch dynamic-modules-stamp
 
@@ -1192,21 +1198,12 @@ tmodule.o:  modules/modlist_headers.h modules/modlist.h
 # Backward compat.
 post_modules: post_module_objects
 
-post_module_objects: pike@EXEEXT@ $(MODULE_REQUIREMENTS) post-module-pike-stamp @LDSHARED_BASE_REQS@
+post_module_objects post-modules-stamp: pike@EXEEXT@ $(MODULE_REQUIREMENTS) post-module-pike-stamp @LDSHARED_BASE_REQS@
 	@MODULE_BUILD_TYPE=@POST_MODULE_BUILD_TYPE@; \
 	export MODULE_BUILD_TYPE; \
 	( cd post_modules && ( rm remake >/dev/null 2>&1 || : ) && \
-	  ( $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) || \
-	    ( test -f remake && $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) ) ) \
-	) || exit $$?
-	@touch post-modules-stamp
-
-post-modules-stamp: pike@EXEEXT@ $(MODULE_REQUIREMENTS) post-module-pike-stamp @LDSHARED_BASE_REQS@
-	@MODULE_BUILD_TYPE=@POST_MODULE_BUILD_TYPE@; \
-	export MODULE_BUILD_TYPE; \
-	( cd post_modules && ( rm remake >/dev/null 2>&1 || : ) && \
-	  ( $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) || \
-	    ( test -f remake && $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) ) ) \
+	  ( $(MAKE) $(MAKE_FLAGS) || \
+	    ( test -f remake && $(MAKE) $(MAKE_FLAGS) ) ) \
 	) || exit $$?
 	@touch post-modules-stamp
 
@@ -1216,7 +1213,7 @@ post_modules/modlist.h: post-modules-stamp
 
 post_modules/linker_options: post-modules-stamp
 
-pike-complete-stamp: pike post-modules-stamp
+pike-complete-stamp: pike@EXEEXT@ post-modules-stamp
 	@touch pike-complete-stamp
 
 $(SRCDIR)/interpret_protos.h_src: $(SRCDIR)/interpret_functions.h $(SRCDIR)/strip_opcodes
@@ -1230,11 +1227,18 @@ lex_t.o: $(SRCDIR)/lex_t.c $(SRCDIR)/interpret_protos.h
 
 language.o: $(SRCDIR)/language.c $(SRCDIR)/object.h $(SRCDIR)/interpret.h $(SRCDIR)/program.h
 
-$(SRCDIR)/language.c_src $(SRCDIR)/language.h_src: $(SRCDIR)/language.yacc
-	@echo "Expect 1 shift/reduce conflict."
+$(SRCDIR)/language.c_src: $(SRCDIR)/language.yacc
+	-@awk 'BEGIN { COUNT=1; } \
+	       /%expect/ { COUNT=$$2; } \
+	       END { print "Expect " COUNT " shift/reduce conflict(s)."; }' \
+	    <$(SRCDIR)/language.yacc 2>/dev/null
 	cd $(SRCDIR) && $(YACC) $(YFLAGS) language.yacc
-	mv $(SRCDIR)/y.tab.c $(SRCDIR)/language.c_src
-	mv $(SRCDIR)/y.tab.h $(SRCDIR)/language.h_src
+	@mv $(SRCDIR)/y.tab.c $(SRCDIR)/language.c_src
+	@mv $(SRCDIR)/y.tab.h $(SRCDIR)/language.h_src
+	@touch $(SRCDIR)/language.h_src
+
+$(SRCDIR)/language.h_src: $(SRCDIR)/language.c_src
+	@
 
 $(SRCDIR)/language.c: $(SRCDIR)/language.c_src
 	@sed -e 's/YY_COUNT_TYPE/@YY_COUNT_TYPE@/' \
@@ -1255,9 +1259,13 @@ iterators.o: $(SRCDIR)/iterators.c
 
 backend.o: $(SRCDIR)/backend.c
 
+las.o: $(SRCDIR)/las.c
+
 libpike.o: $(SRCDIR)/libpike.c
 
 pike_compiler.o: $(SRCDIR)/pike_compiler.c
+
+pike_types.o: $(SRCDIR)/pike_types.c
 
 string_builder.o: $(SRCDIR)/string_builder.c
 
@@ -1381,47 +1389,46 @@ uncompress_header: $(SRCDIR)/uncompressor.c header_uncompress
 	test "`wc -c header_uncompress|sed 's/[^0-9]//g'`" = "`wc -c uncompress_header|sed 's/[^0-9]//g'`"
 
 HFILES=						\
-  operators.protos					\
+  operators.protos				\
   array.protos					\
-  fd_control.protos					\
-  backend.protos					\
+  fd_control.protos				\
+  backend.protos				\
   fdlib.protos					\
   bignum.protos					\
   fsort.protos					\
-  pike_memory.protos					\
-  pike_types.protos					\
-  gc.protos						\
+  pike_memory.protos				\
+  pike_types.protos				\
+  gc.protos					\
   port.protos					\
-  callback.protos					\
-  program.protos					\
-  interpret.protos					\
-  constants.protos					\
-  language.protos					\
+  callback.protos				\
+  program.protos				\
+  interpret.protos				\
+  constants.protos				\
+  language.protos				\
   queue.protos					\
-  cpp.protos						\
+  cpp.protos					\
   rusage.protos					\
   cyclic.protos					\
-  lex.protos						\
+  lex.protos					\
   signal_handler.protos				\
   pike_search.protos				\
   docode.protos					\
   main.protos					\
-  stralloc.protos					\
-  mapping.protos					\
-  block_allocator.protos					\
-  dynamic_buffer.protos				\
-  buffer.protos				\
+  stralloc.protos				\
+  mapping.protos				\
+  block_allocator.protos			\
+  buffer.protos					\
   svalue.protos					\
   dynamic_load.protos				\
   module_support.protos				\
-  threads.protos					\
-  multiset.protos					\
+  threads.protos				\
+  multiset.protos				\
   encode.protos					\
   object.protos					\
   error.protos					\
-  opcodes.protos					\
-  version.protos                                    \
-  builtin.protos					\
+  opcodes.protos				\
+  version.protos				\
+  builtin.protos				\
   iterators.protos				\
   rbtree.protos
 

@@ -4,7 +4,7 @@
 
 //! The functions and classes in the top level of the Locale
 //! module implements a dynamic localization system, suitable
-//! for programs that needs to change locale often. It is
+//! for programs that need to change locale often. It is
 //! even possible for different threads to use different locales
 //! at the same time.
 //!
@@ -18,6 +18,7 @@
 //! the currently selected locale.
 //!
 //! @example
+//! @code
 //!  // The following line tells the locale extractor what to
 //!  // look for.
 //!  // <locale-token project="my_project">LOCALE</locale-token>
@@ -33,6 +34,7 @@
 //!    write(LOCALE(0, "This is another one.\n");
 //!    return 0;
 //!  }
+//! @endcode
 //!
 //! @note
 //!   In order to update your code to actually use the locale strings
@@ -195,7 +197,7 @@ class LocaleObject
     return functionp(functions[f]) ? functions[f] : 0;
   }
 
-  mixed `() (string f, mixed ... args)
+  protected mixed `() (string f, mixed ... args)
   {
     if(functionp(functions[f]))
       return functions[f](@args);
@@ -225,7 +227,7 @@ class LocaleObject
   }
 }
 
-object get_object(string project, string lang) {
+object|zero get_object(string project, string lang) {
 
   // Is there such a project?
   int guess_project;
@@ -273,7 +275,7 @@ object get_object(string project, string lang) {
   // Check encoding
   sscanf(line, "%*sencoding=\"%s\"", string encoding);
   if(encoding && encoding!="") {
-    function(string:string) decode = 0;
+    function(string:string)|zero decode = 0;
     switch(lower_case(encoding))
       {
       case "iso-8859-1":
@@ -297,7 +299,7 @@ object get_object(string project, string lang) {
 
       default:
 	object dec;
-	if(catch(dec = Charset.decoder(encoding))) {
+	if(catch(dec = global.Charset.decoder(encoding))) {
 	  werror("\n* Warning: unknown encoding %O in %O\n",
 		 encoding, filename);
 	  break;
@@ -317,7 +319,7 @@ object get_object(string project, string lang) {
     data = line+data;
 
   string|int id;
-  string str_tag(string t, mapping m, string c) {
+  string|zero str_tag(Parser.HTML parser, mapping m, string c) {
     id = 0;
     if(m->id && m->id!="" && c!="") {
       if((int)m->id) m->id = (int)m->id;
@@ -326,7 +328,7 @@ object get_object(string project, string lang) {
     }
     return 0;
   };
-  string t_tag(string t, mapping m, string c) {
+  string|zero t_tag(Parser.HTML parser, mapping m, string c) {
     if(!id) {
       if(!m->id)
 	return 0;
@@ -345,7 +347,7 @@ object get_object(string project, string lang) {
     bindings[id]=c;
     return 0;
   };
-  string pike_tag(string t, mapping m, string c) {
+  string|zero pike_tag(Parser.HTML parser, mapping m, string c) {
     // Replace encoded entities
     c = replace(c, ({"&lt;","&gt;","&amp;"}),
 		({ "<",   ">",    "&"  }));
@@ -364,7 +366,7 @@ object get_object(string project, string lang) {
     return 0;
   };
 
-  Parser.HTML xml_parser = Parser.HTML();
+  object(Parser.HTML)|void xml_parser = Parser.HTML();
   xml_parser->case_insensitive_tag(1);
   xml_parser->
     add_containers( ([ "str"       : str_tag,
@@ -385,7 +387,7 @@ object get_object(string project, string lang) {
   return locale_object;
 }
 
-mapping(string:object) get_objects(string lang)
+mapping(string:object)|zero get_objects(string lang)
   //! Reads in and returns a mapping with all the registred projects'
   //! LocaleObjects in the language 'lang'
 {
@@ -416,7 +418,7 @@ string translate(string project, string lang, string|int id, string fallback)
   return fallback;
 }
 
-function call(string project, string lang, string name,
+function|zero call(string project, string lang, string name,
 	   void|function|string fb)
   //! Returns a localized function
   //! If function not found, tries fallback function fb,
@@ -589,3 +591,17 @@ class DeferredLocale( protected string project,
     return type=="string";
   }
 }
+
+//! @module Charset
+//!
+//!   This is the old location for the @[predef::Charset] module.
+//!
+//! @deprecated predef::Charset
+
+//! @decl inherit predef::Charset
+
+#pragma no_deprecation_warnings
+__deprecated__ object Charset = [__deprecated__(object)]global.Charset;
+#pragma deprecation_warnings
+
+//! @endmodule

@@ -1,4 +1,4 @@
-/* -*- c -*-
+/* -*- mode: C; c-basic-offset: 4; -*-
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
@@ -16,7 +16,7 @@ static inline void CB_PRINT_KEY(struct string_builder *buf, cb_key key) {
     struct svalue s;
 
     SET_SVAL(s, PIKE_T_OBJECT, 0, object, key.str);
-    string_builder_sprintf(buf, "%O", &s);
+    string_builder_sprintf(buf, "%pO", &s);
 }
 
 #define CB_LOW_ASSIGN_SVALUE_KEY(key, s)	do {			\
@@ -26,6 +26,12 @@ static inline void CB_PRINT_KEY(struct string_builder *buf, cb_key key) {
 } while(0)
 #define CB_PUSH_KEY(key)	ref_push_object((key).str);
 #define CB_STRING_FROM_SVALUE(v)	((v)->u.object)
+#define CB_FIX_SVALUE(v) do {						\
+    push_svalue(v);							\
+    convert_stack_top_to_bignum();					\
+    assign_svalue(v, Pike_sp-1);					\
+    pop_stack();							\
+  } while(0)
 #define CB_LOW_KEY_FROM_SVALUE(x) CB_KEY_FROM_STRING(CB_STRING_FROM_SVALUE(x))
 #include "tree_high.c"
 
@@ -33,6 +39,8 @@ static inline void CB_PRINT_KEY(struct string_builder *buf, cb_key key) {
 
 DECLARATIONS
 
+// BigNumTree should not be documented, as it is (only) supposed to be used
+// through the IntTree, so we disarm DOCSTART().
 #cmod_undef DOCSTART
 #cmod_define DOCSTART() cmod___SLASH__*
 

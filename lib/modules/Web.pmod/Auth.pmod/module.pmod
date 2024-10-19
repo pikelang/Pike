@@ -188,10 +188,10 @@ class Params
   //!
   //! @returns
   //!  A new @[Params] object
-  protected this_program `+(Param|this_program p)
+  protected this_program `+(mapping(string:string)|Param|this_program p)
   {
     if (mappingp(p)) {
-      foreach (p; string k; string v) {
+      foreach ([mapping]p; string k; string v) {
         params += ({ Param(k, v) });
       }
 
@@ -226,7 +226,7 @@ class Params
   //!
   //! @param key
   //! The name of a @[Param]erter to find.
-  protected Param `[](string key)
+  protected object(Param)|zero `[](string key)
   {
     foreach (params, Param p)
       if (p->get_name() == key)

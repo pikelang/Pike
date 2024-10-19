@@ -2,6 +2,8 @@
 /config.log
 /config.status
 /configure
+/critbit_machine.h
+/critbit_machine.h.in
 /dependencies
 /floattree.c
 /inttree.c

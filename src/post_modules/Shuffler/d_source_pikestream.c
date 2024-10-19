@@ -20,184 +20,187 @@
  * Argument: Stdio.File lookalike with read
  *           callback support (set_read_callback)
  */
-static struct program *callback_program;
+static struct program *source_program;
+
+#ifdef THIS
+#undef THIS
+#endif
+
+#define THIS ((struct pf_source *)(Pike_fp->current_storage))
 
 struct pf_source
 {
   struct source s;
 
+  struct object *self;
   struct object *obj;
-  struct object *cb_obj;
   struct pike_string *str;
+  char *data;
+  size_t available;
+  int eof;
 
   void (*when_data_cb)( void *a );
-  void *when_data_cb_arg;
+  struct object *when_data_cb_arg;
   size_t len, skip;
-};
-
-
-struct callback_prog
-{
-  struct pf_source *s;
 };
 
 static void setup_callbacks( struct source *src )
 {
   struct pf_source *s = (struct pf_source *)src;
-  if( !s->str )
-  {
-    ref_push_object( s->cb_obj );
-    apply( s->obj, "set_read_callback", 1 );
-    pop_stack();
-    ref_push_object( s->cb_obj );
-    apply( s->obj, "set_close_callback", 1 );
-    pop_stack();
-  }
+  ref_push_object(s->self);
+  apply(s->obj, "set_close_callback", 1);	/* Set this first */
+  pop_stack();
+  ref_push_object(s->self);
+  apply(s->obj, "set_read_callback", 1);	/* Set this second */
+  pop_stack();					/* Ordering is significant */
 }
 
 static void remove_callbacks( struct source *src )
 {
   struct pf_source *s = (struct pf_source *)src;
-  push_int(0);
-  apply( s->obj, "set_read_callback", 1 );
-  pop_stack();
-  push_int(0);
-  apply( s->obj, "set_close_callback", 1 );
-  pop_stack();
+  if (s->obj && s->obj->prog) {
+    push_int(0);
+    apply(s->obj, "set_close_callback", 1);
+    pop_stack();
+    push_int(0);
+    apply(s->obj, "set_read_callback", 1);
+    pop_stack();
+  }
 }
 
+static void frees(struct pf_source*s) {
+  if (s->str) {
+    free_string(s->str);
+    s->str = 0;
+  }
+}
 
-static struct data get_data( struct source *src, off_t len )
+static struct data get_data( struct source *src, off_t PIKE_UNUSED(len) )
 {
   struct pf_source *s = (struct pf_source *)src;
-  struct data res = { 0, 0, 0, NULL };
-  char *buffer = NULL;
+  struct data res;
 
-  if( s->str )
-  {
-    len = s->str->len;
-    if( s->skip )
-    {
-      if( s->skip >= (size_t)s->str->len )
-      {
-	s->skip -= (size_t)s->str->len;
-	res.len = -2;
-	return res;
-      }
-      len -= s->skip;
-      buffer = malloc( len );
-      memcpy( buffer, s->str->str+s->skip, len);
-    }
-    else
-    {
-      if( s->len > 0 )
-      {
-	if( s->len < (size_t)len )
-	  len = s->len;
-	s->len -= len;
-	if( !s->len )
-	  s->s.eof = 1;
-      }
-      buffer = malloc( len );
-      memcpy( buffer, s->str->str, len );
-    }
-    res.data = buffer;
-    res.len = len;
-    res.do_free = 1;
-    free_string( s->str );
-    s->str = 0;
-    setup_callbacks( src );
-  }
-  else if( !s->len )
+  res.data = NULL;
+  res.len = s->available;
+  if (s->eof)
     s->s.eof = 1;
-  else
+  if (s->available) {
+    res.data = s->data;
+    s->available = 0;
+  } else if (!s->obj->prog) {	/* Object imploded before we were done */
+    s->s.eof = 1;	       /* FIXME should we throw an error here? */
+  } else {
   /* No data available, but there should be in the future (no EOF, nor
    * out of the range of data to send as specified by the arguments to
    * source_stream_make)
    */
     res.len = -2;
-
+    setup_callbacks(src);
+  }
   return res;
-}
-
-static void free_source( struct source *src )
-{
-  remove_callbacks( src );
-  free_object(((struct pf_source *)src)->cb_obj);
-  free_object(((struct pf_source *)src)->obj);
 }
 
 static void f_got_data( INT32 args )
 {
-  struct pf_source *s =
-    ((struct callback_prog *)Pike_fp->current_object->storage)->s;
+  struct pf_source *s = (struct pf_source*)Pike_fp->current_object->storage;
+
+  if (!s->obj)	   /* Already finished */
+    return;	  /* FIXME Should we throw an error here? */
 
   remove_callbacks( (struct source *)s );
 
-  if( s->str ||
-      TYPEOF(Pike_sp[-1]) != PIKE_T_STRING ||
-      Pike_sp[-1].u.string->size_shift ||
-      Pike_sp[-1].u.string->len == 0)
-  {
-    s->s.eof = 1;
+  if (args < 2
+   || TYPEOF(Pike_sp[-1]) != PIKE_T_STRING) {	/* Called as close_cb? */
+    s->eof = 1;		    /* signal EOF */
     pop_n_elems(args);
-    push_int(0);
-    return;
+    if (!s->available)
+      goto cb;
+  } else {					/* Called as read_cb */
+    size_t slen;
+    frees(s);
+    s->str = Pike_sp[-1].u.string;
+    slen = s->str->len;
+    if (!slen)
+      Pike_error("Shuffler: Read callback passing a zero size string\n");
+    if (s->str->size_shift)
+      Pike_error("Shuffler: Wide strings are not supported\n");
+    if (slen > s->skip) {
+      s->available = slen -= s->skip;
+      s->data = s->str->str + s->skip;
+      s->skip = 0;
+      Pike_sp--;
+      args--;
+    } else {
+      s->skip -= slen;
+      s->str = 0;
+    }
+    pop_n_elems(args);
+cb: if (s->when_data_cb)
+      s->when_data_cb(s->when_data_cb_arg);
   }
-  s->str = Pike_sp[-1].u.string;
-  Pike_sp--;
-  pop_n_elems(args-1);
-  push_int(0);
 
-  if( s->when_data_cb )
-    s->when_data_cb( s->when_data_cb_arg );
+  push_int(0);
 }
 
-static void set_callback( struct source *src, void (*cb)( void *a ), void *a )
-{
+static void
+ set_callback(struct source *src, void (*cb)( void *a ), struct object *a) {
   struct pf_source *s = (struct pf_source *)src;
   s->when_data_cb = cb;
-  s->when_data_cb_arg = a;
+  if (!s->when_data_cb_arg)
+    add_ref(s->when_data_cb_arg = a);
 }
 
-struct source *source_pikestream_make( struct svalue *s,
-				       INT64 start, INT64 len )
-{
-  struct pf_source *res;
+static void free_source( struct source *src ) {
+  struct pf_source *s = (struct pf_source *)src;
+  remove_callbacks(src);
+  frees(s);
+  if (s->when_data_cb_arg)
+    free_object(s->when_data_cb_arg);
+  if (s->obj) {
+    free_object(s->obj);
+    s->obj = 0;
+  }
+  if (s->self)
+    free_object(s->self);
+}
 
-  if( (TYPEOF(*s) != PIKE_T_OBJECT) ||
-      (find_identifier("set_read_callback",s->u.object->prog)==-1) )
+struct source *source_pikestream_make(struct svalue *sv,
+				      INT64 start, INT64 len) {
+  struct pf_source *s;
+
+  if (TYPEOF(*sv) != PIKE_T_OBJECT
+   || find_identifier("set_read_callback", sv->u.object->prog) < 0)
     return 0;
 
-  res = calloc( 1, sizeof( struct pf_source ) );
-  if( !res ) return NULL;
+  {
+    struct object *p;
+    if (!(p = clone_object(source_program, 0)))
+      return 0;
 
-  res->len = len;
-  res->skip = start;
+    s = (struct pf_source*)p->storage;
+    s->self = p;
+  }
 
-  res->s.get_data = get_data;
-  res->s.free_source = free_source;
-  res->s.set_callback = set_callback;
-  res->s.setup_callbacks = setup_callbacks;
-  res->s.remove_callbacks = remove_callbacks;
-  res->obj = s->u.object;
-  add_ref(res->obj);
+  add_ref(s->obj = sv->u.object);
 
-  res->cb_obj = clone_object( callback_program, 0 );
-  ((struct callback_prog *)res->cb_obj->storage)->s = res;
+  s->len = len;
+  s->skip = start;
+  s->s.get_data = get_data;
+  s->s.free_source = free_source;
+  s->s.set_callback = set_callback;
+  s->s.setup_callbacks = setup_callbacks;
+  s->s.remove_callbacks = remove_callbacks;
 
-  return (struct source *)res;
+  return (struct source *)s;
 }
 
-void source_pikestream_exit( )
-{
-  free_program( callback_program );
+void source_pikestream_exit() {
+  free_program(source_program);
 }
 
-void source_pikestream_init( )
-{
+void source_pikestream_init() {
   start_new_program();
-  ADD_STORAGE( struct callback_prog );
+  ADD_STORAGE(struct pf_source);
   ADD_FUNCTION("`()", f_got_data, tFunc(tInt tStr,tVoid),0);
-  callback_program = end_program();
+  source_program = end_program();
 }

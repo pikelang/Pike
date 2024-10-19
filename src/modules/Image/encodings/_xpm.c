@@ -1,4 +1,4 @@
-/*
+/* -*- mode: C; c-basic-offset: 3; -*-
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
@@ -126,6 +126,8 @@ static rgba_group parse_color_line( struct pike_string *cn, int sl )
   struct buffer s;
   rgba_group res;
   int i;
+
+  s.str = cn->str;
   for(i=sl; i<cn->len; i++)
   {
     switch(cn->str[i])

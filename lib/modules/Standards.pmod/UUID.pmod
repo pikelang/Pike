@@ -204,7 +204,7 @@ class UUID {
   }
 
   //! Optionally created with a string or binary representation of a UUID.
-  void create(void|string in) {
+  protected void create(void|string in) {
     if(!in) return;
     sscanf(in, "urn:%s", in);
     sscanf(in, "uuid:%s", in);
@@ -214,7 +214,7 @@ class UUID {
       if(sizeof(in)!=32) error("Illegal UUID.\n");
       // fallthrough
     case 32:
-      in = String.hex2string(in);
+      in = String.hex2string(in, 2);
       // fallthrough
     case 16:
       int time_low, time_mid, time_hi_and_version;
@@ -350,7 +350,7 @@ UUID make_version3(string name, string|UUID namespace) {
 #endif
 
   // step 3
-  string ret = Crypto.MD5.hash(namespace+name);
+  string ret = Crypto.MD5.hash(([string(8bit)]namespace)+name);
 
 #if 0
   ret = reverse(ret[0..3]) + reverse(ret[4..5]) +
@@ -396,7 +396,7 @@ UUID make_version5(string name, string|UUID namespace) {
     namespace = UUID(namespace);
   namespace = namespace->encode();
 
-  string ret = Crypto.SHA1.hash(namespace+name)[..15];
+  string ret = Crypto.SHA1.hash(([string(8bit)]namespace)+name)[..15];
 
   ret &=
     "\xff\xff\xff\xff"		// time_low

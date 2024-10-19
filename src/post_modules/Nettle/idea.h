@@ -15,7 +15,7 @@ struct idea_ctx
   unsigned INT16 *ctx[IDEA_KEYLEN];
 };
 
-void idea_crypt_blocks(struct idea_ctx *ctx, int len,
+void idea_crypt_blocks(struct idea_ctx *ctx, size_t len,
 		       unsigned char *to, unsigned char *from);
 
 void idea_expand(unsigned INT16 *ctx,

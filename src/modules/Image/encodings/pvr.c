@@ -1036,7 +1036,7 @@ void img_pvr_decode(INT32 args,int header_only)
    INT32 attr;
    unsigned int h, w, x;
 
-   get_all_args(NULL, args, "%S", &str);
+   get_all_args(NULL, args, "%n", &str);
    s = (unsigned char *)str->str;
    len = str->len;
    pop_n_elems(args-1);

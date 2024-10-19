@@ -1,10 +1,137 @@
 START_MARKER
 
+dnl - Parser.C
+
+test_any_equal([[
+string data = #"int i;
+for(i=0; i<7; i++)
+\tprintf(\"%d //\");";
+array a = Parser.C.split(data);
+add_constant("split_data", a);
+return a;
+]], ({ "int", " ", "i", ";", "\n", "for", "(", "i", "=", "0", ";",
+" ", "i", "<", "7", ";", " ", "i", "++", ")", "\n\t", "printf",
+"(", "\"%d //\"", ")", ";", "\n" }))
+
+test_any_equal([[
+return Parser.C.tokenize(split_data)->text;
+]], ({ "int", " ", "i", ";", "\n", "for", "(", "i", "=", "0", ";",
+" ", "i", "<", "7", ";", " ", "i", "++", ")", "\n\t", "printf",
+"(", "\"%d //\"", ")", ";", "\n" }))
+
+test_any_equal([[
+return Parser.C.tokenize(split_data)->line;
+]], ({1})*5 + ({2})*16 + ({3})*6))
+
+test_any_equal([[
+return Parser.C.tokenize(split_data,"a")->file;
+]], "a"*27/1)
+
+test_any_equal([[
+return Parser.C.hide_whitespaces(Parser.C.tokenize(split_data))->text;
+]], ({ "int", "i", ";", "for", "(", "i", "=", "0", ";",
+"i", "<", "7", ";", "i", "++", ")", "printf",
+"(", "\"%d //\"", ")", ";" }))
+
+test_any_equal([[
+return Parser.C.hide_whitespaces(Parser.C.tokenize(Parser.C.split("a \r\n\t\x2000\x2001 b")))->text;
+]], "ab"/1)
+
+test_any_equal([[
+return Parser.C.simple_reconstitute(Parser.C.hide_whitespaces(Parser.C.tokenize(split_data)));
+]],#"int i;
+for(i=0; i<7; i++)
+\tprintf(\"%d //\");\n")
+
+test_any_equal([[
+return Parser.C.reconstitute_with_line_numbers(Parser.C.hide_whitespaces(Parser.C.tokenize(split_data)));
+]],#"int i;
+for(i=0; i<7; i++)
+\tprintf(\"%d //\");\n")
+
+test_any_equal([[
+return Parser.C.reconstitute_with_line_numbers(Parser.C.hide_whitespaces(Parser.C.tokenize(split_data, "a")));
+]],#"#line 1 \"a\"
+int i;
+for(i=0; i<7; i++)
+\tprintf(\"%d //\");\n")
+
+test_do(add_constant("split_data"))
+
+dnl - Parser.CSV
+
+dnl - Parser.ECMAScript
+
+define(test_js_token,[[
+test_equal(Parser.ECMAScript.split($1),({$1}))
+]])
+
+test_js_token("''")
+test_js_token("\"\"")
+test_js_token("'\"'")
+test_js_token("\"'\"")
+test_js_token(".")
+test_js_token(".1")
+test_js_token(".1e4")
+test_js_token("0x1ff")
+test_js_token("0o10")
+test_js_token("0b10")
+test_js_token("010")
+test_js_token("/\x5b\x5b\x5d/gimuy")
+test_js_token("/\x5b\x5d\x5d/g")
+test_js_token("/\x5b/\x5b\x5d/g")
+test_js_token("/\\//g")
+test_js_token("<")
+test_js_token("<=")
+test_js_token("<<=")
+test_js_token(">>>")
+test_js_token(">>>=")
+test_js_token("*")
+test_js_token("**")
+test_js_token("=")
+test_js_token("=>")
+test_js_token("==")
+test_js_token("??=")
+test_js_token("?.")
+test_js_token("/=")
+test_js_token("//")
+test_js_token("...")
+test_js_token("`a\n${b}\\`c`")
+test_js_token("/\x5b\\w&&\x5b\0133A-z\x5d--_\x5d\x5d/v")
+
+dnl - Parser.HTML
+dnl Tested in src dir.
+
+dnl - Parser.Markdown
+
+cond_begin([[Parser["Markdown"] ]])
+
+dnl Bug #10107 (aka https://github.com/pikelang/Pike/issues/40)
+test_eq(Parser.Markdown.parse(#"
+## Some Stuff
+
+```html
+
+<head></head>
+
+```
+
+Some text post code fence
+"), #"<h2 id=\"some-stuff\">Some Stuff</h2>
+<pre><code class='lang-html'>
+&lt;head&gt;&lt;/head&gt;
+</code></pre><p>Some text post code fence</p>
+")
+
+cond_end // Parser.Markdown
+
+dnl - Parser.Pike
+
 define(test_pike_token,[[
 test_equal(Parser.Pike.low_split($1),({$1}))
 ]])
 define(not_pike_token,[[
-test_equal(Parser.Pike.low_split($1),({}))
+test_equal(Parser.Pike.low_split($1,([])),({}))
 ]])
 
 test_equal(Parser.Pike.low_split(""),({}))
@@ -162,63 +289,6 @@ test_pike_token("`FOO1_2")
 
 test_equal( Parser.Pike.split("\n// x\n"), ({ "\n", "// x", "\n\n" }) )
 test_equal( Parser.Pike.split("\n// x"), ({ "\n", "// x", "\n" }) )
-
-test_any_equal([[
-string data = #"int i;
-for(i=0; i<7; i++)
-\tprintf(\"%d //\");";
-array a = Parser.C.split(data);
-add_constant("split_data", a);
-return a;
-]], ({ "int", " ", "i", ";", "\n", "for", "(", "i", "=", "0", ";",
-" ", "i", "<", "7", ";", " ", "i", "++", ")", "\n\t", "printf",
-"(", "\"%d //\"", ")", ";", "\n" }))
-
-test_any_equal([[
-return Parser.C.tokenize(split_data)->text;
-]], ({ "int", " ", "i", ";", "\n", "for", "(", "i", "=", "0", ";",
-" ", "i", "<", "7", ";", " ", "i", "++", ")", "\n\t", "printf",
-"(", "\"%d //\"", ")", ";", "\n" }))
-
-test_any_equal([[
-return Parser.C.tokenize(split_data)->line;
-]], ({1})*5 + ({2})*16 + ({3})*6))
-
-test_any_equal([[
-return Parser.C.tokenize(split_data,"a")->file;
-]], "a"*27/1)
-
-test_any_equal([[
-return Parser.C.hide_whitespaces(Parser.C.tokenize(split_data))->text;
-]], ({ "int", "i", ";", "for", "(", "i", "=", "0", ";",
-"i", "<", "7", ";", "i", "++", ")", "printf",
-"(", "\"%d //\"", ")", ";" }))
-
-test_any_equal([[
-return Parser.C.hide_whitespaces(Parser.C.tokenize(Parser.C.split("a \r\n\t\x2000\x2001 b")))->text;
-]], "ab"/1)
-
-test_any_equal([[
-return Parser.C.simple_reconstitute(Parser.C.hide_whitespaces(Parser.C.tokenize(split_data)));
-]],#"int i;
-for(i=0; i<7; i++)
-\tprintf(\"%d //\");\n")
-
-test_any_equal([[
-return Parser.C.reconstitute_with_line_numbers(Parser.C.hide_whitespaces(Parser.C.tokenize(split_data)));
-]],#"int i;
-for(i=0; i<7; i++)
-\tprintf(\"%d //\");\n")
-
-test_any_equal([[
-return Parser.C.reconstitute_with_line_numbers(Parser.C.hide_whitespaces(Parser.C.tokenize(split_data, "a")));
-]],#"#line 1 \"a\"
-int i;
-for(i=0; i<7; i++)
-\tprintf(\"%d //\");\n")
-
-test_do(add_constant("split_data"))
-
 test_equal([[
   Parser.Tabular(#"\
 1234563,\"20081128\",\"IC\",00000,8689839,\"KN: ARNL-1034758710-\",\"\",19.90,\"A\",\"M\",\"BETREFT:25399280                ACCESS INTERNET BV\",\"EUR\"
@@ -288,6 +358,15 @@ csv
   ]),
 ])
 ]])
+
+dnl - Parser.Python
+
+dnl - Parser.RCS
+dnl Tested in src dir.
+
+dnl - Parser.SGML
+
+dnl - Parser.Tabular
 
 test_equal([[
   Parser.Tabular(#"\

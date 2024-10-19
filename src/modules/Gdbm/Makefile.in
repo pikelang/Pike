@@ -3,7 +3,5 @@ VPATH=@srcdir@
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 OBJS=gdbmmod.o
 
-CONFIG_HEADERS=@CONFIG_HEADERS@
-
 @dynamic_module_makefile@
 @dependencies@

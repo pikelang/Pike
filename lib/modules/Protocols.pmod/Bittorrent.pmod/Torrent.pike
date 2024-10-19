@@ -124,7 +124,7 @@ function peer_update_status=0;
 function download_completed_callback=0;
 
 //! Called if there is a protocol error.
-function(string,mixed...:void|mixed) warning=lambda() {};
+function(string, __unknown__ ...: void|mixed) warning = lambda(string w) {};
 
 
 Protocols.DNS.async_client dns_async=Protocols.DNS.async_client();
@@ -288,7 +288,7 @@ class Target(string base,int length,int offset,void|array path)
 	       filename,strerror(fd->errno()));
    }
 
-   string _sprintf(int t)
+   protected string _sprintf(int t)
    {
       if (t=='O') return sprintf("Torrent.Target(%O, %d bytes at +%d)",
 				 filename,length,offset);
@@ -715,7 +715,7 @@ void contact_peers(void|int n)
    v->connect();
 }
 
-string _file_got_bitfield=0;
+string|zero _file_got_bitfield=0;
 
 // usually called from peers
 //! Returns the file got field as a string bitfield (cached).
@@ -963,7 +963,7 @@ class PieceDownload
 
    int handed_over=0;
 
-   void create(.Peer _peer,int n)
+   protected void create(.Peer _peer,int n)
    {
       peer=_peer;
       piece=n;
@@ -1190,7 +1190,7 @@ class PieceDownload
       destruct(this);
    }
 
-   string _sprintf(int t)
+   protected string|zero _sprintf(int t)
    {
       if (t=='O')
 	 return sprintf(

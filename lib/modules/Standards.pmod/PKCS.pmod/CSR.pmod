@@ -17,7 +17,7 @@ class CRIAttributes
 {
   inherit .Certificate.Attributes;
   int(0..3) cls = 2;
-  int(1..) tag = 0;
+  int(0..) tag = 0;
 }
 
 // FIXME: Mark as deprecated!

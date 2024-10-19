@@ -1,3 +1,4 @@
+/* -*- mode: C; c-basic-offset: 4; -*- */
 #ifndef _TREE_LOW_H_
 #define _TREE_LOW_H_
 

@@ -26,7 +26,7 @@ class Connection {
     if(sizeof(content) > cfg->maxsize)
     {
       outcode(552);
-      return 0;
+      return;
     }
     // LMTP as well as SMTP encode '.' by another '.' when it is the first
     // character of a line so we have to decode it
@@ -143,7 +143,9 @@ class Server {
    //!      cb_mailfrom, cb_rcptto, cb_data);
    //!   return -1;
    //! }
-   void create(array(string) _domains, void|int port, void|string ip, function _cb_mailfrom, function _cb_rcptto, function _cb_data)
+   protected void create(array(string) _domains, void|int port,
+			 void|string ip, function _cb_mailfrom,
+			 function _cb_rcptto, function _cb_data)
    {
      config = Configuration(_domains, _cb_mailfrom, _cb_rcptto, _cb_data);
      if(!port)

@@ -1,0 +1,35 @@
+
+START_MARKER
+
+dnl - System.TM
+
+// Issue #10129/LysLysKOM 26017901
+test_any_equal([[
+  array(string) ret = ({});
+  System.TM tm = System.TM();
+  if (Pike.get_runtime_info()->time_size > 32) {
+    ret += ({ tm->asctime(), tm->zone || "UTC" });
+  } else {
+    ret += ({ "Mon Jan  1 00:00:00 1900\n", "UTC" });
+  }
+  tm = System.TM(0);
+  ret += ({ tm->asctime(), tm->zone || "UTC" });
+  tm = System.TM(1697121800);
+  ret += ({ tm->asctime(), tm->zone || "UTC" });
+  tm->gmtime(0);
+  ret += ({ tm->asctime(), tm->zone || "UTC" });
+  tm->gmtime(1697121800);
+  ret += ({ tm->asctime(), tm->zone || "UTC" });
+  // tm->localtime(1697121800);		// Assumes CET/CEST
+  // ret += ({ tm->asctime(), tm->zone || "CEST" });
+  return ret;
+]], [[({
+  "Mon Jan  1 00:00:00 1900\n", "UTC",
+  "Thu Jan  1 00:00:00 1970\n", "UTC",
+  "Thu Oct 12 14:43:20 2023\n", "UTC",
+  "Thu Jan  1 00:00:00 1970\n", "UTC",
+  "Thu Oct 12 14:43:20 2023\n", "UTC",
+  // "Thu Oct 12 16:43:20 2023\n", "CEST",
+})]])
+
+END_MARKER

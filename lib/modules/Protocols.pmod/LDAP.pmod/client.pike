@@ -113,12 +113,13 @@ import Standards.ASN1.Types;
   }
 
 //! @ignore
-protected function(string:string) get_attr_decoder (string attr,
-						 DO_IF_DEBUG (void|int nowarn))
+protected function(string:string)|zero
+  get_attr_decoder (string attr,
+                    DO_IF_DEBUG (void|int nowarn))
 {
   if (mapping(string:mixed) attr_descr = get_attr_type_descr (attr)) {
-    if (function(string:string) decoder =
-	syntax_decode_fns[attr_descr->syntax_oid])
+    if (function(string:string)|zero decoder =
+	[function(string:string)|zero]syntax_decode_fns[attr_descr->syntax_oid])
       return decoder;
 #ifdef LDAP_DEBUG
     else if (!get_constant_name (attr_descr->syntax_oid))
@@ -135,11 +136,11 @@ protected function(string:string) get_attr_decoder (string attr,
 }
 //! @endignore
 
-protected function(string:string) get_attr_encoder (string attr)
+protected function(string:string)|zero get_attr_encoder (string attr)
 {
   if (mapping(string:mixed) attr_descr = get_attr_type_descr (attr)) {
-    if (function(string:string) encoder =
-	syntax_encode_fns[attr_descr->syntax_oid])
+    if (function(string:string)|zero encoder =
+	[function(string:string)|zero]syntax_encode_fns[attr_descr->syntax_oid])
       return encoder;
 #ifdef LDAP_DEBUG
     else if (!get_constant_name (attr_descr->syntax_oid))
@@ -266,9 +267,9 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
 	  string errmsg = describe_error (err) +			\
 	    "The string is the DN of an entry.\n";			\
 	  if (flags & SEARCH_RETURN_DECODE_ERRORS)			\
-	    DN = Charset.DecodeError (DN, -1, 0, errmsg);               \
+	    DN = Charset.DecodeError (DN, -1, "", errmsg);               \
 	  else								\
-	    throw (Charset.DecodeError (DN, -1, 0, errmsg));            \
+	    throw (Charset.DecodeError (DN, -1, "", errmsg));            \
 	}								\
       } while (0)
 
@@ -294,9 +295,9 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
 		     describe_error (err), ATTR, stringp (dn) ? dn : dn[0], \
 		     decoder, descr1, descr2);				\
 	  if (flags & SEARCH_RETURN_DECODE_ERRORS)			\
-	    VALUE = Charset.DecodeError (VALUE, -1, 0, errmsg);         \
+	    VALUE = Charset.DecodeError (VALUE, -1, "", errmsg);	\
 	  else								\
-	    throw (Charset.DecodeError (VALUE, -1, 0, errmsg));         \
+	    throw (Charset.DecodeError (VALUE, -1, "", errmsg));	\
 	}								\
       } while (0)
 
@@ -310,9 +311,9 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
 		     "in entry with DN %O.\n",				\
 		     describe_error (err), ATTR, stringp (dn) ? dn : dn[0]); \
 	  if (flags & SEARCH_RETURN_DECODE_ERRORS)			\
-	    VALUE = Charset.DecodeError (VALUE, -1, 0, errmsg);         \
+	    VALUE = Charset.DecodeError (VALUE, -1, "", errmsg);	\
 	  else								\
-	    throw (Charset.DecodeError (VALUE, -1, 0, errmsg));         \
+	    throw (Charset.DecodeError (VALUE, -1, "", errmsg));	\
 	}								\
       } while (0)
 
@@ -342,7 +343,7 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
     //!
     //! You can't create instances of this object yourself.
     //! The only way to create it is via a search of a LDAP server.
-    object|int create(array(object) entries, int stuff, int flags) {
+    protected object|int create(array(object) entries, int stuff, int flags) {
     // entries: array of der decoded entries, but WITHOUT LDAP PDU !!!
     // stuff: 1=bind result; ...
 
@@ -423,7 +424,7 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
     //!
     //! @seealso
     //!  @[error_string], @[error_number]
-    string server_error_string() {return resultstring;}
+    string|zero server_error_string() {return resultstring;}
 
     //!
     //! Returns the number of entries.
@@ -491,7 +492,7 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
     //!
     //! @seealso
     //!   @[fetch_all]
-    ResultEntry fetch(int|void idx)
+    object(ResultEntry)|zero fetch(int|void idx)
     {
       if (!undefinedp (idx)) actnum = idx;
       if (actnum >= num_entries() || actnum < 0) return 0;
@@ -653,7 +654,8 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
   //!
   //! @seealso
   //!  @[LDAP.client.bind], @[LDAP.client.search]
-  void create(string|mapping(string:mixed)|void url, object|void context)
+  protected void create(string|mapping(string:mixed)|void url,
+			object|void context)
   {
 
     info = ([ "code_revision" :
@@ -705,6 +707,7 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
     if(lauth->scheme == "ldaps") {
       SSL.File ssl_fd = SSL.File(low_fd, context);
       ssl_fd->set_blocking();	// NB: SSL.File defaults to non-blocking mode.
+      ssl_fd->set_timeout(10.0);
       if (!ssl_fd->connect()) {
 	ERROR("Failed to connect to LDAPS server.\n");
       }
@@ -1118,9 +1121,10 @@ void reset_options()
 
   } // add
 
-protected mapping(string:array(string)) simple_read (string object_name,
-						  object filter,
-						  array attrs)
+protected mapping(string:array(string))|zero
+  simple_read (string object_name,
+               object filter,
+               array attrs)
 // Makes a base object search for object_name. The result is returned
 // as a mapping where the attribute types have been lowercased and the
 // string values are unprocessed.
@@ -1286,7 +1290,7 @@ object get_cached_filter (string filter)
   return Protocols.LDAP.get_cached_filter (filter, ldap_version);
 }
 
-object get_default_filter()
+object|zero get_default_filter()
 //! Returns the ASN1 object parsed from the filter specified in the
 //! LDAP URL, or zero if the URL doesn't specify any filter.
 //!
@@ -1454,7 +1458,7 @@ object get_default_filter()
     get_supported_controls();
 #endif
 
-    object cookie = OctetString("");
+    object|zero cookie = OctetString("");
     do {
       PROFILE("send_search_op", {
 	  array ctrls = common_controls;
@@ -1562,7 +1566,7 @@ object get_default_filter()
 
   } // search
 
-mapping(string:string|array(string)) read (
+mapping(string:string|array(string))|zero read (
   string object_name,
   void|string filter,
   void|array(string) attrs,
@@ -1649,10 +1653,11 @@ mapping(string:string|array(string)) read (
   return last_rv->fetch();
 }
 
-string|array(string) read_attr (string object_name,
-				string attr,
-				void|string filter,
-				void|mapping(string:array(int|string)) controls)
+string|array(string)|zero
+  read_attr (string object_name,
+             string attr,
+             void|string filter,
+             void|mapping(string:array(int|string)) controls)
 //! Reads a specified attribute of a specified object in the LDAP
 //! server. @[object_name] is the distinguished name of the object and
 //! @[attr] is the attribute. The rest of the arguments are the same
@@ -1717,7 +1722,7 @@ string get_bound_dn() {return bound_dn;}
 //! or zero if the connection isn't bound. If no password was given to
 //! @[bind] then an empty string was sent as password, and the MD5
 //! hash of that is therefore returned.
-string get_bind_password_hash() {return md5_password;}
+string|zero get_bind_password_hash() {return md5_password;}
 
   //!
   //! Sets value of scope for search operation.
@@ -2007,8 +2012,9 @@ mapping(string:mixed) get_parsed_url() {return lauth;}
 
 // Schema handling.
 
-protected mapping(string:array(string)) query_subschema (string dn,
-							 array(string) attrs)
+protected mapping(string:array(string))|zero
+  query_subschema (string dn,
+                   array(string) attrs)
 // Queries the server for the specified attributes in the subschema
 // applicable for the specified object. The return value is on the
 // same form as from simple_read (specifically there's no UTF-8
@@ -2309,7 +2315,8 @@ protected constant attr_type_term_syntax = ([
 
 protected mapping(string:mapping(string:mixed)) attr_type_descrs;
 
-mapping(string:mixed) get_attr_type_descr (string attr, void|int standard_attrs)
+mapping(string:mixed)|zero
+  get_attr_type_descr (string attr, void|int standard_attrs)
 //! Returns the attribute type description for the given attribute,
 //! which includes the name, object identifier, syntax, etc (see
 //! @rfc{2252:4.2@} for details).

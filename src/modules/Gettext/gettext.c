@@ -70,6 +70,10 @@ void f_gettext(INT32 args)
 
   get_all_args(NULL, args, "%c.%C%D", &msg, &domain, &cat);
 
+  if ((cat == LC_ALL) && (args > 2)) {
+    SIMPLE_ARG_ERROR("gettext", 3, "The category must not be LC_ALL.\n");
+  }
+
   if (domain) {
     if (args > 2 && SUBTYPEOF(Pike_sp[2-args]) == NUMBER_NUMBER)
       push_text(dcgettext(domain, msg, cat));
@@ -88,7 +92,7 @@ void f_gettext(INT32 args)
  *! of the specified @[domain] and current locale. If there is
  *! no translation available, @[msg] is returned.
  *!
- *! @note
+ *! @deprecated gettext
  *!   Obsoleted by @[gettext()] in Pike 7.3.
  *!
  *! @seealso
@@ -113,7 +117,7 @@ void f_dgettext(INT32 args)
  *!
  *! If there is no translation available, @[msg] is returned.
  *!
- *! @note
+ *! @deprecated gettext
  *!   Obsoleted by @[gettext()] in Pike 7.3.
  *!
  *! @seealso
@@ -126,6 +130,10 @@ void f_dcgettext(INT32 args)
 
   get_all_args(NULL, args, "%c%c%d", &domain, &msg, &category);
 
+  if ((category == LC_ALL) && (args > 2)) {
+    SIMPLE_ARG_ERROR("dcgettext", 3, "The category must not be LC_ALL.\n");
+  }
+
   push_text(dcgettext(domain, msg, category));
 
   stack_pop_n_elems_keep_top(args);
@@ -136,7 +144,7 @@ void f_dcgettext(INT32 args)
  *! The textdomain() function sets or queries the name of the
  *! current domain of the active @[LC_MESSAGES] locale category. The
  *! @[domain] argument is a string that can contain only the
- *! characters allowed in legal filenames.
+ *! characters allowed in legal filenames.  It must be non-empty.
  *!
  *! The domain argument is the unique name of a domain on the
  *! system. If there are multiple versions of the same domain on
@@ -162,6 +170,8 @@ void f_textdomain(INT32 args)
   const char *domain = NULL;
   char *returnstring;
   get_all_args (NULL, args, ".%C", &domain);
+  if (domain != NULL && !*domain)
+    Pike_error ("String argument to textdomain must be non-empty.\n");
   returnstring = textdomain(domain);
   pop_n_elems(args);
   push_text(returnstring);
@@ -411,6 +421,8 @@ void f_localeconv(INT32 args)
 /*! @decl constant LC_ALL
  *!
  *! Locale category for all of the locale.
+ *!
+ *! Only supported as an argument to @[setlocale()].
  */
 
 /*! @decl constant LC_COLLATE
@@ -429,8 +441,6 @@ void f_localeconv(INT32 args)
  *!
  *! @fixme
  *!   Document this constant.
- *! @note
- *!   This category isn't available on all platforms.
  */
 
 /*! @decl constant LC_MONETARY
@@ -480,9 +490,7 @@ PIKE_MODULE_INIT
   add_integer_constant("LC_ALL", LC_ALL, 0);
   add_integer_constant("LC_COLLATE", LC_COLLATE, 0);
   add_integer_constant("LC_CTYPE", LC_CTYPE, 0);
-#ifdef LC_MESSAGES
   add_integer_constant("LC_MESSAGES", LC_MESSAGES, 0);
-#endif
   add_integer_constant("LC_MONETARY", LC_MONETARY, 0);
   add_integer_constant("LC_NUMERIC", LC_NUMERIC, 0);
   add_integer_constant("LC_TIME", LC_TIME, 0);

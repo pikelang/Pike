@@ -17,7 +17,7 @@ void set_name(string name)
   {
     gchar *name;
     GtkRcStyle *style;
-    get_all_args(NULL,args,"%s",&name);
+    get_all_args(NULL,args,"%c",&name);
     style=GTK_RC_STYLE(THIS->obj);
     style->name=g_strdup(name);
   }
@@ -36,7 +36,7 @@ void set_bg_pixmap_name(array(string) names)
     style=GTK_RC_STYLE(THIS->obj);
     get_all_args(NULL,args,"%a",&a);
     for (i=0; i<(a->size>5?5:a->size); i++) {
-      style->bg_pixmap_name[i]=g_strdup(PGTK_GETSTR(ITEM(a)+i));
+      style->bg_pixmap_name[i] = PGTK_GETSTR(ITEM(a) + i);
     }
   }
   RETURN_THIS();

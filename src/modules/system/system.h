@@ -24,6 +24,12 @@
  */
 
 /*
+ * system.c
+ */
+void report_os_error(const char *function_name);
+void f_strerror(INT32 args);
+
+/*
  * passwords.c
  */
 void f_getgrnam(INT32 args);
@@ -40,6 +46,7 @@ void f_getgrent(INT32 args);
 /*
  * syslog.c
  */
+extern struct svalue log_ident;
 void f_openlog(INT32 args);
 void f_syslog(INT32 args);
 void f_closelog(INT32 args);

@@ -47,10 +47,10 @@ int(0..1) pkcs_verify(string(8bit) message, .Hash h, string(8bit) sign);
 
 //! Returns the PKCS-1 algorithm identifier for the signing algorithm with
 //! the provided hash algorithm.
-Sequence pkcs_signature_algorithm_id(.Hash hash);
+object(Sequence)|zero pkcs_signature_algorithm_id(.Hash hash);
 
 //! Returns the PKCS-1 AlgorithmIdentifier.
-Sequence pkcs_algorithm_identifier();
+object(Sequence)|zero pkcs_algorithm_identifier();
 
 //! Creates a SubjectPublicKeyInfo ASN.1 sequence for the object.
 //! See @rfc{5280:4.1.2.7@}.
@@ -71,7 +71,7 @@ Sequence pkcs_public_key();
 //!
 //! @seealso
 //!   @[Web.encode_jwk()], @[Web.decode_jwk()], @rfc{7517:4@}
-mapping(string(7bit):string(7bit)) jwk(int(0..1)|void private_key)
+mapping(string(7bit):string(7bit))|zero jwk(int(0..1)|void private_key)
 {
   return 0;
 }
@@ -91,14 +91,14 @@ mapping(string(7bit):string(7bit)) jwk(int(0..1)|void private_key)
 //!
 //! @seealso
 //!   @[jwk()], @rfc{7638@}
-string(8bit) jwk_thumbprint(.Hash h)
+string(8bit)|zero jwk_thumbprint(.Hash h)
 {
-  mapping(string(7bit):string(7bit)) public_jwk = jwk();
+  mapping(string(7bit):string(7bit))|zero public_jwk = jwk();
   if (!public_jwk) return 0;
   // NB: For the fields used in JWK, the Standards.JSON.PIKE_CANONICAL
   //     behavior is the same as the one specified in RFC 7638 3.3.
-  return h->hash(Standards.JSON.encode(public_jwk,
-				       Standards.JSON.PIKE_CANONICAL));
+  return h->hash([string(7bit)]Standards.JSON.encode([mapping]public_jwk,
+						     Standards.JSON.PIKE_CANONICAL));
 }
 
 //! Signs the @[message] with a JOSE JWS signature using hash
@@ -127,9 +127,10 @@ string(8bit) jwk_thumbprint(.Hash h)
 //!
 //! @seealso
 //!   @[jose_decode()], @[pkcs_sign()], @rfc{7515@}
-string(7bit) jose_sign(string(8bit) message,
-		       mapping(string(7bit):string(7bit)|int)|void headers,
-		       .Hash|void h)
+string(7bit)|zero
+  jose_sign(string(8bit) message,
+            mapping(string(7bit):string(7bit)|int)|void headers,
+            .Hash|void h)
 {
   return 0;
 }
@@ -155,8 +156,8 @@ string(7bit) jose_sign(string(8bit) message,
 //!
 //! @seealso
 //!   @[jose_sign()], @[pkcs_verify()], @rfc{7515@}
-array(mapping(string(7bit):string(7bit)|int)|
-      string(8bit)) jose_decode(string(7bit) jws)
+array(mapping(string(7bit):string(7bit)|int)|string(8bit))|zero
+  jose_decode(string(7bit) jws)
 {
   return 0;
 }

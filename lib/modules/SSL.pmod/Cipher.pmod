@@ -106,13 +106,11 @@ class MACAlgorithm {
   //! @[packet].
   //! @param packet
   //!   @[Packet] to generate a MAC hash for.
-  //! @param seq_num
-  //!   Sequence number for the packet in the stream.
   //! @param adjust_len
   //!   Added to @tt{sizeof(packet)@} to get the packet length.
   //! @returns
   //!   Returns the MAC hash for the @[packet].
-  string hash_packet(object packet, int seq_num, int|void adjust_len);
+  string hash_packet(object packet, int|void adjust_len);
 
   //! Creates a HMAC hash of the @[data] with the underlying hash
   //! algorithm.
@@ -209,8 +207,7 @@ class CipherSpec {
     {
       string sign =
         session->private_key->pkcs_sign(data, HASH_lookup[signature_hash]);
-      struct->add_int(signature_hash, 1);
-      struct->add_int(signature_alg, 1);
+      struct->add_int(signature_hash|signature_alg, 2);
       struct->add_hstring(sign, 2);
       return struct;
     }
@@ -229,6 +226,11 @@ class CipherSpec {
     case SIGNATURE_ecdsa:
       {
         string sign = session->private_key->pkcs_sign(data, Crypto.SHA1);
+	SSL3_DEBUG_MSG("Signing...\n"
+		       "data: %s\n"
+		       "Signature: %s\n",
+		       String.string2hex(data),
+		       String.string2hex(sign));
         struct->add_hstring(sign, 2);
         return struct;
       }
@@ -249,8 +251,9 @@ class CipherSpec {
     // RFC 5246 4.7
     if( session->version >= PROTOCOL_TLS_1_2 )
     {
-      int hash_id = input->read_int(1);
-      int sign_id = input->read_int(1);
+      int signature_scheme = input->read_int(2);
+      int hash_id = signature_scheme & HASH_MASK;
+      int sign_id = signature_scheme & SIGNATURE_MASK;
       string sign = input->read_hstring(2);
 
       if( sign_id != signature_alg )
@@ -283,7 +286,13 @@ class CipherSpec {
     case SIGNATURE_dsa:
     case SIGNATURE_ecdsa:
       {
-        return pkc->pkcs_verify(data, Crypto.SHA1, input->read_hstring(2));
+	string(8bit) sign = input->read_hstring(2);
+	SSL3_DEBUG_MSG("Verifying signature...\n"
+		       "Data: %s\n"
+		       "Signature: %s\n",
+		       String.string2hex(data),
+		       String.string2hex(sign));
+        return pkc->pkcs_verify(data, Crypto.SHA1, sign);
       }
     }
 
@@ -291,7 +300,7 @@ class CipherSpec {
   }
 
   void set_hash(int max_hash_size,
-                array(array(int)) signature_algorithms)
+                array(int)|zero signature_algorithms)
   {
     // Stay with SHA1 for requests without signature algorithms
     // extensions (RFC 5246 7.4.1.4.1) and anonymous requests.
@@ -301,14 +310,15 @@ class CipherSpec {
     int hash_id = -1;
     SSL3_DEBUG_MSG("Signature algorithms (max hash size %d):\n%s",
                    max_hash_size, fmt_signature_pairs(signature_algorithms));
-    foreach(signature_algorithms, array(int) pair) {
-      if ((pair[1] == signature_alg) && HASH_lookup[pair[0]]) {
-        if (max_hash_size < HASH_lookup[pair[0]]->digest_size()) {
+    foreach(signature_algorithms, int pair) {
+      if (((pair & SIGNATURE_MASK) == signature_alg) &&
+	  HASH_lookup[pair & HASH_MASK]) {
+        if (max_hash_size < HASH_lookup[pair & HASH_MASK]->digest_size()) {
           // Eg RSA has a maximum block size and the digest is too large.
           continue;
         }
-        if (pair[0] > hash_id) {
-          hash_id = pair[0];
+        if ((pair & HASH_MASK) > hash_id) {
+          hash_id = pair & HASH_MASK;
         }
       }
     }
@@ -393,8 +403,8 @@ class KeyExchange(object context, object session, object connection,
   //!
   //! @returns
   //!   Returns the signed payload for a @[HANDSHAKE_server_key_exchange].
-  string(8bit) server_key_exchange_packet(string client_random,
-                                          string server_random)
+  string(8bit)|zero server_key_exchange_packet(string client_random,
+                                               string server_random)
   {
     Stdio.Buffer struct = server_key_params();
     if (!struct) return 0;
@@ -535,8 +545,8 @@ class KeyExchangePSK
     return ret;
   }
 
-  string(8bit) client_key_exchange_packet(Stdio.Buffer packet_data,
-                                          ProtocolVersion version)
+  string(8bit)|zero client_key_exchange_packet(Stdio.Buffer packet_data,
+                                               ProtocolVersion version)
   {
     anonymous = 1;
 
@@ -590,7 +600,7 @@ class KeyExchangeRSA
   int(0..1) init_client()
   {
     rsa = session->peer_public_key;
-    return 1;
+    return session->validate_rsa_key(rsa);
   }
 
   int(0..1) init_server()
@@ -599,7 +609,7 @@ class KeyExchangeRSA
     return 1;
   }
 
-  Stdio.Buffer server_key_params()
+  object(Stdio.Buffer)|zero server_key_params()
   {
     SSL3_DEBUG_MSG("KE_RSA\n");
     return 0;
@@ -651,16 +661,29 @@ class KeyExchangeRSA
       data = input->read();
 
     // Decrypt, even when we know data is incorrect, for time invariance.
-    premaster_secret = rsa->decrypt(data) || "xx";
+    premaster_secret = rsa->decrypt(data);
 
     SSL3_DEBUG_MSG("premaster_secret: %O\n", premaster_secret);
 
     // We want both branches to execute in equal time (ignoring
     // SSL3_DEBUG in the hope it is never on in production).
     // Workaround documented in RFC 2246.
-    if ( `+( (sizeof(premaster_secret) != 48),
-             (premaster_secret[0] != 3),
-             (premaster_secret[1] != (client_version & 0xff)) ))
+    string invalid_premaster_secret = "xx" + context->random(46);
+    string tmp;
+    if (premaster_secret) {
+      tmp = premaster_secret;
+    } else {
+      tmp = invalid_premaster_secret;
+    }
+    string tmp2;
+    if (sizeof(tmp) < 2) {
+      tmp2 = invalid_premaster_secret;
+    } else {
+      tmp2 = tmp;
+    }
+    if ( `+( (sizeof(tmp2) != 48),
+             (tmp2[0] != 3),
+             (tmp2[1] != (client_version & 0xff)) ))
     {
       /* To avoid the chosen ciphertext attack discovered by Daniel
        * Bleichenbacher, it is essential not to send any error
@@ -681,15 +704,13 @@ class KeyExchangeRSA
       }
 #endif
 
-      premaster_secret = context->random(48);
+      premaster_secret = invalid_premaster_secret;
       message_was_bad = 1;
-      connection->ke = UNDEFINED;
-
     } else {
-      string timing_attack_mitigation = context->random(48);
+      tmp = invalid_premaster_secret;
       message_was_bad = 0;
-      connection->ke = this;
     }
+    connection->ke = this;
 
     return premaster_secret;
   }
@@ -738,8 +759,8 @@ class KeyExchangeRSAPSK
 {
   inherit KeyExchangePSK;
 
-  string(8bit) client_key_exchange_packet(Stdio.Buffer packet_data,
-                                          ProtocolVersion version)
+  string(8bit)|zero client_key_exchange_packet(Stdio.Buffer packet_data,
+                                               ProtocolVersion version)
   {
     string id = context->get_psk_id(hint);
     if( !id ) return 0;
@@ -889,8 +910,8 @@ class KeyExchangeDHE
     return output;
   }
 
-  string(8bit) client_key_exchange_packet(Stdio.Buffer packet_data,
-                                          ProtocolVersion version)
+  string(8bit)|zero client_key_exchange_packet(Stdio.Buffer packet_data,
+                                               ProtocolVersion version)
   {
     SSL3_DEBUG_MSG("client_key_exchange_packet(%O, %d.%d)\n",
 		   packet_data, version>>8, version & 0xff);
@@ -950,7 +971,7 @@ class KeyExchangeDHE
     return premaster_secret;
   }
 
-  Stdio.Buffer parse_server_key_exchange(Stdio.Buffer input)
+  object(Stdio.Buffer)|zero parse_server_key_exchange(Stdio.Buffer input)
   {
     SSL3_DEBUG_MSG("KE_DHE\n");
     string p = input->read_hstring(2);
@@ -1002,8 +1023,8 @@ class KeyExchangeDHEPSK
     return psk->add(dhe);
   }
 
-  string(8bit) client_key_exchange_packet(Stdio.Buffer packet_data,
-                                          ProtocolVersion version)
+  string(8bit)|zero client_key_exchange_packet(Stdio.Buffer packet_data,
+                                               ProtocolVersion version)
   {
     string(8bit) id = context->get_psk_id(hint);
     if( !id ) return 0;
@@ -1071,7 +1092,7 @@ class KeyExchangeDH
     return ::init_client();
   }
 
-  Stdio.Buffer server_key_params()
+  object(Stdio.Buffer)|zero server_key_params()
   {
     SSL3_DEBUG_MSG("KE_DH\n");
     // RFC 4346 7.4.3:
@@ -1131,10 +1152,10 @@ class KeyShareDHE
 }
 
 #if constant(Crypto.ECC.Curve)
-//! KeyExchange for @[KE_ecdhe_rsa] and @[KE_ecdhe_ecdsa].
+//! KeyExchange for @[KE_ecdhe_rsa], @[KE_ecdhe_ecdsa] and @[KE_ecdh_anon].
 //!
-//! KeyExchange that uses Elliptic Curve Diffie-Hellman to
-//! generate an Ephemeral key.
+//! KeyExchange that uses Elliptic Curve Diffie-Hellman or
+//! Edwards Curve Diffie-Hellman to generate an Ephemeral key.
 class KeyExchangeECDHE
 {
   inherit KeyExchange;
@@ -1165,9 +1186,22 @@ class KeyExchangeECDHE
     case 129..256:
       // Suite B requires SECP384r1
       c = GROUP_secp384r1;
+#if constant(Crypto.ECC.Curve448)
+      if ((session->cipher_spec->key_bits <= 224) &&
+	  has_value(session->ecc_curves, GROUP_x448)) {
+	// RFC 7748 ~224bit strength.
+	c = GROUP_x448;
+      }
+#endif
       break;
     case ..128:
       c = GROUP_secp256r1;
+#if constant(Crypto.ECC.Curve25519)
+      if (has_value(session->ecc_curves, GROUP_x25519)) {
+	// RFC 7748 ~128bit strength.
+	c = GROUP_x25519;
+      }
+#endif
       break;
     }
 
@@ -1185,6 +1219,7 @@ class KeyExchangeECDHE
     SSL3_DEBUG_MSG("secret: %O\n", secret);
     SSL3_DEBUG_MSG("x: %O\n", p->get_x());
     SSL3_DEBUG_MSG("y: %O\n", p->get_y());
+    SSL3_DEBUG_MSG("p: %O\n", p);
 
     Stdio.Buffer struct = Stdio.Buffer();
     struct->add_int(CURVETYPE_named_curve, 1);
@@ -1204,6 +1239,10 @@ class KeyExchangeECDHE
       session->curve->new_scalar(context->random);
     Crypto.ECC.Curve.Point p = session->curve * secret;
 
+    SSL3_DEBUG_MSG("Client point: %O\n"
+		   "encoded, hex: %s (%d bytes)\n",
+		   p, String.string2hex(p->encode()), sizeof(p->encode()));
+
     // RFC 4492 5.10:
     // Note that this octet string (Z in IEEE 1363 terminology) as
     // output by FE2OSP, the Field Element to Octet String
@@ -1211,7 +1250,7 @@ class KeyExchangeECDHE
     // field; leading zeros found in this octet string MUST NOT be
     // truncated.
     string premaster_secret = (point*secret)->get_x_str();
-    secret = 0;
+    secret = "";
 
     packet_data->add_hstring(p->encode(), 1);
     return premaster_secret;
@@ -1258,9 +1297,13 @@ class KeyExchangeECDHE
     return premaster_secret;
   }
 
-  Stdio.Buffer parse_server_key_exchange(Stdio.Buffer input)
+  object(Stdio.Buffer)|zero parse_server_key_exchange(Stdio.Buffer input)
   {
     SSL3_DEBUG_MSG("KE_ECDHE\n");
+
+    SSL3_DEBUG_MSG("input: %O\n"
+		   "data: %s\n",
+		   input, String.string2hex(sprintf("%s", input)));
 
     Stdio.Buffer.RewindKey key = input->rewind_key();
     int len = sizeof(input);
@@ -1288,14 +1331,25 @@ class KeyExchangeECDHE
 
     // Then the point.
     catch {
-      point = session->curve->Point(input->read_hbuffer(1));
+      Stdio.Buffer sub = input->read_hbuffer(1);
+      SSL3_DEBUG_MSG("Raw point: %O\n", sub);
+      point = session->curve->Point(sub);
+      SSL3_DEBUG_MSG("Point: %O\n", point);
     };
     if (!point)
       return 0;
 
+    SSL3_DEBUG_MSG("input: %O\n", input);
     len = len - sizeof(input);
     key->rewind();
-    return input->read_buffer(len);
+    SSL3_DEBUG_MSG("len: %d\n", len);
+    SSL3_DEBUG_MSG("input (rewound): %O\n"
+		   "data: %s\n",
+		   input, String.string2hex(sprintf("%s", input)[..len-1]));
+    Stdio.Buffer res = input->read_buffer(len);
+    SSL3_DEBUG_MSG("Result: %O %s (%d bytes)\n",
+		   res, String.string2hex(sprintf("%s", res)), len);
+    return res;
   }
 }
 
@@ -1321,8 +1375,8 @@ class KeyExchangeECDHEPSK
     return psk->add(ecdhe);
   }
 
-  string(8bit) client_key_exchange_packet(Stdio.Buffer packet_data,
-                                          ProtocolVersion version)
+  string(8bit)|zero client_key_exchange_packet(Stdio.Buffer packet_data,
+                                               ProtocolVersion version)
   {
     string(8bit) id = context->get_psk_id(hint);
     if( !id ) return 0;
@@ -1366,6 +1420,9 @@ class KeyExchangeECDHEPSK
 //! This KeyExchange uses the Elliptic Curve parameters from
 //! the ECDSA certificate on the server side, and ephemeral
 //! parameters on the client side.
+//!
+//! @note
+//!   Deprecated in @rfc{8422:5.5@}.
 class KeyExchangeECDH
 {
   inherit KeyExchangeECDHE;
@@ -1382,7 +1439,7 @@ class KeyExchangeECDH
     return ::init_client();
   }
 
-  Stdio.Buffer server_key_params()
+  object(Stdio.Buffer)|zero server_key_params()
   {
     SSL3_DEBUG_MSG("KE_ECDH\n");
     // RFC 4492 2.1:
@@ -1422,7 +1479,7 @@ class KeyShareECDHE
     offer->add_hstring(p->encode(), 2);
   }
 
-  string(8bit) receive_key_share_offer(string(8bit) offer)
+  string(8bit)|zero receive_key_share_offer(string(8bit) offer)
   {
     catch {
       point = curve->Point(Stdio.Buffer(offer));
@@ -1465,7 +1522,7 @@ class KeyExchangeKRB
 
   GSSAPI.Context gss_context;
 
-  Stdio.Buffer server_key_params()
+  object(Stdio.Buffer)|zero server_key_params()
   {
     SSL3_DEBUG_MSG("KE_KRB\n");
 
@@ -1606,9 +1663,13 @@ class MACsha
     return algorithm->hash(data);
   }
 
-  string(8bit) hash_packet(object packet, int seq_num, int|void adjust_len)
+  string(8bit) hash_packet(object packet, int|void adjust_len)
   {
-    string s = sprintf("%8c%c%2c", seq_num,
+    if (undefinedp(packet->seq_num)) {
+      error("Packet %O has uninitialized sequence number.\n", packet);
+    }
+    string s = sprintf("%8c%c%2c",
+		       packet->seq_num,
 		       packet->content_type,
 		       sizeof(packet->fragment) + adjust_len);
     Crypto.Hash.State h = algorithm();
@@ -1670,15 +1731,19 @@ class MAChmac_sha {
     return hmac(data);
   }
 
-  string hash_packet(object packet, int seq_num, int|void adjust_len)
+  string hash_packet(object packet, int|void adjust_len)
   {
+    if (undefinedp(packet->seq_num)) {
+      error("Packet %O has uninitialized sequence number.\n", packet);
+    }
     SSL3_DEBUG_CRYPT_MSG("HMAC header: %x\n",
-                         sprintf("%8c%c%2c%2c", seq_num,
+                         sprintf("%8c%c%2c%2c",
+				 packet->seq_num,
                                  packet->content_type,
                                  packet->protocol_version,
-                                 sizeof(packet->fragment) +
-                                 adjust_len));
-    hmac->update( sprintf("%8c%c%2c%2c", seq_num,
+                                 sizeof(packet->fragment) + adjust_len));
+    hmac->update( sprintf("%8c%c%2c%2c",
+			  packet->seq_num,
                           packet->content_type,
                           packet->protocol_version,
                           sizeof(packet->fragment) + adjust_len));
@@ -1883,7 +1948,7 @@ class RC2
 //!   Version of the SSL/TLS protocol to support.
 //!
 //! @param signature_algorithms
-//!   The set of <hash, signature> combinations that
+//!   The set of @[SignatureScheme] values that
 //!   are supported by the other end.
 //!
 //! @param max_hash_size
@@ -1892,9 +1957,9 @@ class RC2
 //! @returns
 //!   Returns @expr{0@} (zero) for unsupported combinations, otherwise
 //!   returns an initialized @[CipherSpec] for the @[suite].
-CipherSpec lookup(int suite, ProtocolVersion|int version,
-                  array(array(int)) signature_algorithms,
-                  int max_hash_size)
+object(CipherSpec)|zero lookup(int suite, ProtocolVersion|int version,
+                               array(int)|zero signature_algorithms,
+                               int max_hash_size)
 {
   CipherSpec res = CipherSpec();
 

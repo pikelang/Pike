@@ -19,8 +19,6 @@
 #include "buffer.h"
 #include "blobs.h"
 
-static void exit_blobs_struct( );
-
 #define HSIZE 10007
 
 #define THIS ((struct blobs *)Pike_fp->current_storage)

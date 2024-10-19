@@ -35,17 +35,42 @@ constant OPEN_BOUND = __builtin.OPEN_BOUND;
 //!     irrelevant in this case.
 //! @enddl
 
+#if constant(__builtin.DestructImmediate)
+constant DestructImmediate = __builtin.DestructImmediate;
+#endif
+
+#if constant(__builtin.InhibitDestruct)
+constant InhibitDestruct = __builtin.InhibitDestruct;
+#endif
+
 constant BacktraceFrame = __builtin.backtrace_frame;
+
+#if constant(__builtin.LiveBacktraceFrame)
+constant LiveBacktraceFrame = __builtin.LiveBacktraceFrame;
+#endif
+
+#if constant(__builtin.FakeObject)
+constant FakeObject = __builtin.FakeObject;
+#endif
 
 constant __Backend = __builtin.Backend;
 
+//! @class Backend
+//!
 //! The class of the @[DefaultBackend].
 //!
 //! Typically something that has inherited @[__Backend].
 //!
 //! @seealso
 //!   @[__Backend], @[DefaultBackend]
+
+//! @decl inherit Pike.__Backend
+
+//! @decl @@Pike.Annotations.Implements(Pike.__Backend)
+
 constant Backend = __builtin.DefaultBackendClass;
+
+//! @endclass
 
 #if constant(__builtin.PollDeviceBackend)
 constant PollDeviceBackend = __builtin.PollDeviceBackend;
@@ -55,6 +80,15 @@ constant PollDeviceBackend = __builtin.PollDeviceBackend;
 constant PollBackend = __builtin.PollBackend;
 #endif
 
+//! @class SmallBackend
+//!
+//! This is the most suitable backend implementation if you only want
+//! to monitor a small number of @[Stdio.File] objects.
+
+//! @decl inherit Pike.__Backend
+
+//! @decl @@Pike.Annotations.Implements(Pike.__Backend)
+
 #if constant(__builtin.PollBackend)
 constant SmallBackend = __builtin.PollBackend;
 #elif constant(__builtin.PollDeviceBackend)
@@ -63,16 +97,17 @@ constant SmallBackend = __builtin.PollDeviceBackend;
 constant SmallBackend = __builtin.SelectBackend;
 #endif
 
-//! @decl program(Pike.Backend) SmallBackend
-//!
-//! This is the most suitable backend implementation if you only want
-//! to monitor a small number of @[Stdio.File] objects.
+//! @endclass
 
 #if constant(__builtin.SelectBackend)
 constant SelectBackend = __builtin.SelectBackend;
 #endif
 
 constant DefaultBackend = __builtin.__backend;
+
+#if constant(predef::yield)
+constant yield = predef::yield;
+#endif
 
 constant gc_parameters = __builtin.gc_parameters;
 constant implicit_gc_real_time = __builtin.implicit_gc_real_time;
@@ -88,6 +123,10 @@ constant get_return_type = predef::__get_return_type;
 constant get_first_arg_type = predef::__get_first_arg_type;
 constant get_type_attributes = predef::__get_type_attributes;
 
+#if constant(__builtin.__switch_lookup)
+constant switch_lookup = __builtin.__switch_lookup;
+#endif
+
 // precompile.pike checks for this
 #if constant(__builtin.__HAVE_CPP_PREFIX_SUPPORT__)
 //! This constant exists and has the value 1 if cpp supports
@@ -100,6 +139,14 @@ constant __HAVE_CPP_PREFIX_SUPPORT__ = __builtin.__HAVE_CPP_PREFIX_SUPPORT__;
 program Encoder = [program] master()->Encoder;
 program Decoder = [program] master()->Decoder;
 program Codec = [program] master()->Codec;
+
+#if constant(__builtin.Annotation)
+program Annotation = __builtin.Annotation;
+#endif
+
+#if constant(__builtin.ProxyFactory)
+constant ProxyFactory = __builtin.ProxyFactory;
+#endif
 
 #if 0
 protected constant TYPE = typeof(typeof([mixed]0));

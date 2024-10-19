@@ -50,7 +50,12 @@ else
   else
       MY_AC_PATH_PROGS(MARIADB_CONFIG, ${pike_cv_tool_prefix}mariadb_config ${ac_tool_prefix}mariadb_config, no)
   fi
-  if test "x${MARIADB_CONFIG}" = "xno"; then
+  if test "x$with_mysql" = "xyes"; then
+      MY_AC_PATH_PROGS(MYSQL_CONFIG, ${pike_cv_tool_prefix}mysql_config ${ac_tool_prefix}mysql_config, no)
+  else
+      MYSQL_CONFIG=no
+  fi
+  if test "x${MARIADB_CONFIG}${MYSQL_CONFIG}" = "xnono"; then
 
   AC_MSG_CHECKING(for Mysql directory prefix)
   AC_CACHE_VAL(pike_cv_mysql_lib_dir_prefix, [
@@ -104,7 +109,7 @@ else
     AC_MSG_RESULT($pike_cv_mysql_lib_dir)
     if test "x$pike_cv_mysql_lib_dir" = "xno"; then :; else
       echo Adding $pike_cv_mysql_lib_dir to the library search path.
-      LDFLAGS="${LDFLAGS} -R$pike_cv_mysql_lib_dir -L$pike_cv_mysql_lib_dir"
+      LDFLAGS="-R$pike_cv_mysql_lib_dir -L$pike_cv_mysql_lib_dir ${LDFLAGS}"
     fi
 
     AC_MSG_CHECKING(for Mysql include-directory)
@@ -125,21 +130,32 @@ else
     fi
   fi
   else
-      echo "MariaDB found. Attempting to use."
+      if test "x${MARIADB_CONFIG}" = "xno"; then
+        MARIADB_CONFIG="${MYSQL_CONFIG}"
+      else
+        echo "MariaDB found. Attempting to use."
+      fi
       # MariaDB
       # NB: mariadb_config doens't distinguish between
       #     LDFLAGS and LIBS
       MARIADB_LIBS=""
-      set ignored `${MARIADB_CONFIG} --libs_r`
+      MARIADB_LDFLAGS=""
+      if ${MARIADB_CONFIG} --libs_r >/dev/null 2>&1; then
+          set ignored `${MARIADB_CONFIG} --libs_r`
+      else
+          # Some OLD versions of mysql_config do not understand --libs_r.
+          # Seen with MySQL 3.23.49.
+          set ignored `${MARIADB_CONFIG} --libs`
+      fi
       while test "$#" -gt 1; do
         case "$2" in
           -L*)
 	    echo "Adding `echo $2 | sed -e 's/^-L//'` to the library search path."
-	    LDFLAGS="${LDFLAGS} $2 `echo $2 | sed -e 's/^-L/-R/'`"
+	    MARIADB_LDFLAGS="${MARIADB_LDFLAGS} $2 `echo $2 | sed -e 's/^-L/-R/'`"
 	    ;;
           -R*)
 	    echo "Adding `echo $2 | sed -e 's/^-R//'` to the library runtime search path."
-	    LDFLAGS="${LDFLAGS} $2"
+	    MARIADB_LDFLAGS="${MARIADB_LDFLAGS} $2"
 	    ;;
 	  -lmaria*)
 	    # We handle the client library itself later.
@@ -156,6 +172,8 @@ else
 	shift
       done
 
+      LDFLAGS="${MARIADB_LDFLAGS} ${LDFLAGS}"
+
       if echo " $MARIADB_LIBS" | grep -i iconv >/dev/null; then :; else
 	# NB: Sometimes iconv doesn't get listed by mariadb_config.
 	AC_CHECK_LIB(iconv, iconv_open, [
@@ -167,8 +185,15 @@ else
 	])
       fi
 
-      echo "Adding `${MARIADB_CONFIG} --include` to CPPFLAGS."
-      CPPFLAGS="`${MARIADB_CONFIG} --include` ${CPPFLAGS}"
+      if ${MARIADB_CONFIG} --include >/dev/null 2>&1; then
+          echo "Adding `${MARIADB_CONFIG} --include` to CPPFLAGS."
+          CPPFLAGS="`${MARIADB_CONFIG} --include` ${CPPFLAGS}"
+      else
+          # Some OLD versions of mysql_config do not understand --include.
+          # Seen with MySQL 3.23.49.
+          echo "Adding `${MARIADB_CONFIG} --cflags` to CPPFLAGS."
+          CPPFLAGS="`${MARIADB_CONFIG} --cflags` ${CPPFLAGS}"
+      fi
   fi
 
 
@@ -263,7 +288,7 @@ dnl   fi
 
   # System libs which might be needed
 
-  AC_SEARCH_LIBS(socket, socket)
+  AC_SEARCH_LIBS(socket, socket network)
   AC_SEARCH_LIBS(gethostbyname, nsl)
   AC_SEARCH_LIBS(floor, m)
 
@@ -286,7 +311,11 @@ dnl   fi
   if test "x${MARIADB_CONFIG}" = "xno"; then :; else
       # Needed for libmariadbclient.a 1.0.0.
       AC_SEARCH_LIBS(OPENSSL_config, crypto)
-      AC_SEARCH_LIBS(SSL_library_init, ssl)
+      AC_SEARCH_LIBS(OPENSSL_init_ssl, ssl, [], [
+	# In OpenSSL 1.0.x and earlier the function was called
+	# SSL_library_init().
+	AC_SEARCH_LIBS(SSL_library_init, ssl)
+      ])
   fi
 
   AC_SEARCH_LIBS(_db_doprnt_, dbug)
@@ -448,13 +477,37 @@ fi
 #endif
 #endif
 #include <stdio.h>
+#include <stdlib.h>
 int main(int argc, char *argv[])
 {
-#ifdef MYSQL_VERSION_ID
+#if defined(MYSQL_VERSION_ID) || defined(LIBMYSQL_VERSION_ID)
   unsigned long ver = mysql_get_client_version();
-  if((ver/100) != (MYSQL_VERSION_ID/100)) {
+  unsigned long expected_ver =
+#ifdef LIBMYSQL_VERSION_ID
+    /* This symbol is used by libmysqlclient 6.1.6
+     * on Haiku (and probably others). It still has
+     * MYSQL_VERSION_ID, but it indicates version 5.7.6.
+     */
+    LIBMYSQL_VERSION_ID
+#else
+    MYSQL_VERSION_ID
+#endif
+    ;
+#if defined(MARIADB_PACKAGE_VERSION_ID) && (MARIADB_PACKAGE_VERSION_ID >= 30201)
+  /* From MariaDB/mysql_get_client_version(3) (CONC-509/CONC-554):
+   *
+   *   Note: Since MariaDB Server 10.2.6 and MariaDB Connector/C 3.0.1 the
+   *   client library is bundled with server package and returns the server
+   *   package version.
+   *
+   * The above however does not seem to be true, and the change instead
+   * happened a few commits before the bump to MariaDB Connector/C 3.2.1.
+   */
+  expected_ver = MARIADB_PACKAGE_VERSION_ID;
+#endif
+  if((ver/100) != (expected_ver/100)) {
     fprintf(stderr, "Version mismatch: compile=%lu, run=%lu\n",
-            (unsigned long)MYSQL_VERSION_ID, ver);
+            (unsigned long)expected_ver, ver);
     exit(1);
   }
 #endif
@@ -639,6 +692,25 @@ $ret_type * STDCALL mysql_fetch_lengths(MYSQL_RES *mysql)
       AC_DEFINE(HAVE_MYSQL_FIELD_NET_VIO)
     fi
     AC_MSG_RESULT($pike_cv_have_mysql_field_net_vio)
+
+    # my_bool was removed in MySQL 8
+    AC_CHECK_TYPES([my_bool], [], [], [
+#ifdef HAVE_WINSOCK2_H
+#include <winsock2.h>
+#elif defined(HAVE_WINSOCK_H)
+#include <winsock.h>
+#endif
+
+#ifdef HAVE_MYSQL_H
+#include <mysql.h>
+#else
+#ifdef HAVE_MYSQL_MYSQL_H
+#include <mysql/mysql.h>
+#else
+#error Need mysql.h headerfile!
+#endif
+#endif
+    ])
 
   fi
 fi

@@ -31,7 +31,7 @@ void parse_77(string line, object tree) {
 class IP {
     object tree;
 
-    void parse(string file_name, function(string,object:array) parse_line) {
+    void parse(string file_name, function(string,object:void) parse_line) {
 	Stdio.FILE f = Stdio.FILE(file_name, "r");
 
 	while (string line = f->gets()) {
@@ -68,7 +68,8 @@ class IPv4 {
     //! Alternatively, an instance of @[ADT.CritBit.IPv4Tree] can be passed.
     //! @expr{tree@} is expected to map the first address of each range to
     //! its geographical location.
-    void create(string|object file_name, void|function(string,object:void) parse_line) {
+    protected void create(string|object file_name,
+			  void|function(string,object:void) parse_line) {
 	if (objectp(file_name)) {
 	    tree = file_name;
 	    return;

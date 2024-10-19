@@ -287,10 +287,10 @@ protected function|mixed `->(string cmd)
     };
 }
 
-void create(string|void host, string|void db, string|void user,
-	    string|void _pw, mapping|void options)
+protected void create(string|void host, string|void db, string|void user,
+		      string|void _pw, mapping|void options)
 {
-  string pw = _pw;
+  string|zero pw = _pw;
   _pw = "CENSORED";
 
   // Reconstruct the original URL (minus rsql://)

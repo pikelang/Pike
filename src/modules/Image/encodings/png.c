@@ -1,4 +1,4 @@
-/*
+/* -*- mode: C; c-basic-offset: 3; -*-
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
@@ -26,7 +26,7 @@
 #include "bignum.h"
 #include "bitvector.h"
 
-#ifdef __MINGW32__
+#if defined(__MINGW32__) || defined(__amigaos__)
 /* encodings.a will never contain a crc32 symbol. */
 #define DYNAMIC_MODULE
 #endif
@@ -214,7 +214,6 @@ static void image_png___decode(INT32 args)
 {
    int nocrc=0;
    unsigned char *data;
-   struct array *res;
    size_t len;
    struct pike_string *str;
    ONERROR uwp;
@@ -578,8 +577,9 @@ static void _png_write_rgb(rgb_group *w1,
 	 {
 	    case 1:
 	       x=width;
-	       while (len--)
+	       while (len-- && n >= (x > 8 ? 8 : x))
 	       {
+                  n -= x > 8 ? 8 : x;
 		  if (x) x--,*(d1++)=((*s)&128)?white:black;
 		  if (x) x--,*(d1++)=((*s)&64)?white:black;
 		  if (x) x--,*(d1++)=((*s)&32)?white:black;
@@ -594,9 +594,9 @@ static void _png_write_rgb(rgb_group *w1,
 	       break;
 	    case 2:
 	       x=width;
-	       if(len>(n/4)) len=n/4;
-	       while (len--)
+	       while (len-- && n >= (x > 4 ? 4 : x))
 	       {
+                  n -= x > 4 ? 4 : x;
 		  if (x) x--,*(d1++)=grey4[((*s)>>6)&3];
 		  if (x) x--,*(d1++)=grey4[((*s)>>4)&3];
 		  if (x) x--,*(d1++)=grey4[((*s)>>2)&3];
@@ -1800,7 +1800,7 @@ static void image_png_encode(INT32 args)
 #ifdef PIKE_DEBUG
 	 if (d != (unsigned char *)(ps->str + ps->len)) {
 	   Pike_fatal("PNG data doesn't align properly "
-		      "%d x %d (%d bpp) len: %ld, got: %ld.\n",
+		      "%"PRINTPIKEINT"d x %"PRINTPIKEINT"d (%d bpp) len: %ld, got: %ld.\n",
 		      img->xsize, img->ysize, bpp,
 		      (long)ps->len, (long)(d - (unsigned char *)ps->str));
 	 }
@@ -1951,9 +1951,9 @@ void init_image_png(void)
 {
   int gz = 0;
 #ifdef DYNAMIC_MODULE
-   crc32 = PIKE_MODULE_IMPORT(Gz, crc32);
-   zlibmod_pack = PIKE_MODULE_IMPORT(Gz, zlibmod_pack);
-   zlibmod_unpack = PIKE_MODULE_IMPORT(Gz, zlibmod_unpack);
+   crc32 = PIKE_MODULE_IMPORT(_Gz, crc32);
+   zlibmod_pack = PIKE_MODULE_IMPORT(_Gz, zlibmod_pack);
+   zlibmod_unpack = PIKE_MODULE_IMPORT(_Gz, zlibmod_unpack);
    if(crc32 && zlibmod_pack && zlibmod_unpack)
      gz = 1;
 #else

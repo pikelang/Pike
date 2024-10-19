@@ -19,6 +19,7 @@
 #include "pike_float.h"
 #include "pike_types.h"
 #include "module_support.h"
+#include "builtin_functions.h"
 
 #define DEFAULT_CMOD_STORAGE static
 
@@ -31,6 +32,7 @@ DECLARATIONS
 #define JSON_ASCII_ONLY     (1<<0)
 #define JSON_HUMAN_READABLE (1<<1)
 #define JSON_PIKE_CANONICAL (1<<2)
+#define JSON_CANONICAL      (1<<3)
 
 #define JSON_UTF8	    (1<<3)
 #define JSON_ERROR	    (1<<4)
@@ -68,6 +70,10 @@ static char *err_msg;
     c++;								\
 } while(0)
 
+/* NB: <WinNls.h> defines IS_{HIGH,LOW}_SURROGATE(). */
+#undef IS_HIGH_SURROGATE
+#undef IS_LOW_SURROGATE
+
 #define IS_SURROGATE(x) ((x) >= 0xd800 && (x) < 0xe000)
 #define IS_HIGH_SURROGATE(x) ((x) >= 0xd800 && (x) < 0xdc00)
 #define IS_LOW_SURROGATE(x) ((x) >= 0xdc00 && (x) < 0xe000)
@@ -84,12 +90,24 @@ static void json_escape_string (struct string_builder *buf, int flags,
     if (c < 0 || c > 0x10ffff)
       Pike_error ("Cannot json encode non-unicode char "
 		  "0x%"PRINTPIKEINT"x.\n", (INT_TYPE) c);
+    if (((0xd800 < c) && (c < 0xe000)) && (flags & JSON_CANONICAL)) {
+      /* RFC 8785 3.2.2.2:
+       *
+       * Note: Since invalid Unicode data like "lone surrogates"
+       * (e.g., U+DEAD) may lead to interoperability issues including
+       * broken signatures, occurrences of such data MUST cause a
+       * compliant JCS implementation to terminate with an appropriate
+       * error.
+       */
+      Pike_error("Unicode surrogates in input string.\n");
+    }
     if (c == '"' || c == '\\' || c <= 0x1f ||
-        (c >= 0x7f && flags & JSON_ASCII_ONLY) ||
+        ((c >= 0x7f) && (c < 0xa0) && (flags & JSON_CANONICAL)) ||
+        (c >= 0x7f && (flags & JSON_ASCII_ONLY)) ||
 	/* Let's escape U+2028 and U+2029 as well for compat with
 	 * parsers built in javascript - see
 	 * http://timelessrepo.com/json-isnt-a-javascript-subset. */
-	c == 0x2028 || c == 0x2029) {
+	((c == 0x2028 || c == 0x2029) && !(flags & JSON_CANONICAL))) {
       if (s < i) {
 	PCHARP piece = ADD_PCHARP (str, s);
 	string_builder_append (buf, piece, i - s);
@@ -169,7 +187,7 @@ static void encode_mapcont (struct encode_context *ctx, struct mapping *m)
     }
 
     if (TYPEOF(k->ind) != T_STRING)
-      Pike_error ("Cannot json encode mapping with non-string index %O.\n",
+      Pike_error ("Cannot json encode mapping with non-string index %pO.\n",
 		  &k->ind);
     json_encode_recur (ctx, &k->ind);
 
@@ -189,9 +207,29 @@ static void encode_mapcont_canon (struct encode_context *ctx, struct mapping *m)
   ONERROR uwp;
   SET_ONERROR (uwp, do_free_array, inds);
 
-  /* encode_value_canonic uses get_switch_order, but this sort is good
-   * enough considering we only have to deal (correctly) with strings. */
-  sort_array_destructively (inds);
+  if (ctx->flags & JSON_CANONICAL) {
+    /* RFC 8785 3.2.3:
+     *
+     * Property name strings to be sorted are formatted as arrays of
+     * UTF-16 [UNICODE] code units. The sorting is based on pure value
+     * comparisons, where code units are treated as unsigned integers,
+     * independent of locale settings.
+     */
+    BEGIN_AGGREGATE_ARRAY(inds->size) {
+      for (i = 0; i < inds->size; i++) {
+        push_svalue(ITEM(inds) + i);
+        f_string_to_unicode(1);
+        DO_AGGREGATE_ARRAY(100);
+      }
+    } END_AGGREGATE_ARRAY;
+    ref_push_array(inds);
+    f_sort(2);
+    pop_stack();
+  } else {
+    /* encode_value_canonic uses get_switch_order, but this sort is good
+     * enough considering we only have to deal (correctly) with strings. */
+    sort_array_destructively (inds);
+  }
 
   for (i = 0; i < size; i++) {
     struct svalue *ind = ITEM (inds) + i;
@@ -211,6 +249,7 @@ static void encode_mapcont_canon (struct encode_context *ctx, struct mapping *m)
 
     if (notfirst) {
       int indent = ctx->indent;
+      fast_check_threads_etc(8);
       string_builder_putchar (buf, ',');
       if (indent >= 0) {
 	string_builder_putchar (buf, '\n');
@@ -228,7 +267,7 @@ static void encode_mapcont_canon (struct encode_context *ctx, struct mapping *m)
     }
 
     if (TYPEOF(*ind) != T_STRING)
-      Pike_error ("Cannot json encode mapping with non-string index %O.\n",
+      Pike_error ("Cannot json encode mapping with non-string index %pO.\n",
 		  ind);
     json_encode_recur (ctx, ind);
 
@@ -245,14 +284,15 @@ static void encode_mapcont_canon (struct encode_context *ctx, struct mapping *m)
 
 static void json_encode_recur (struct encode_context *ctx, struct svalue *val)
 {
+  const enum PIKE_TYPE type = PIKE_TYPEOF(*val);
   DECLARE_CYCLIC();
 
   check_c_stack (1024);
 
-  if (TYPEOF(*val) <= MAX_COMPLEX && BEGIN_CYCLIC (val->u.ptr, 0))
-    Pike_error ("Cyclic data structure - already visited %O.\n", val);
+  if (IS_COMPLEX_TYPE(type) && BEGIN_CYCLIC (val->u.ptr, 0))
+    Pike_error ("Cyclic data structure - already visited %pO.\n", val);
 
-  switch (TYPEOF(*val)) {
+  switch (type) {
     case PIKE_T_STRING: {
       struct string_builder *buf = &ctx->buf;
       string_builder_putchar (buf, '"');
@@ -271,14 +311,28 @@ static void json_encode_recur (struct encode_context *ctx, struct svalue *val)
 
     case PIKE_T_FLOAT: {
       FLOAT_TYPE f = val->u.float_number;
-      char b[MAX_FLOAT_SPRINTF_LEN];
       if (PIKE_ISNAN (f) || PIKE_ISINF (f))
       {
+        if (ctx->flags & JSON_CANONICAL) {
+          /* RFC 8785 3.2.2.3:
+           *
+           * Note: Since Not a Number (NaN) and Infinity are not
+           * permitted in JSON, occurrences of NaN or Infinity MUST
+           * cause a compliant JCS implementation to terminate with an
+           * appropriate error.
+           */
+          Pike_error("Value %g is not valid in canonical JSON.\n", f);
+        }
         string_builder_strcat(&ctx->buf, "null");
         break;
       }
-      format_pike_float (b, f);
-      string_builder_strcat (&ctx->buf, b);
+      if (ctx->flags & JSON_CANONICAL) {
+        string_builder_append_json_float_type(&ctx->buf, f);
+      } else {
+        char b[MAX_FLOAT_SPRINTF_LEN];
+        format_pike_float (b, f);
+        string_builder_strcat (&ctx->buf, b);
+      }
       break;
     }
 
@@ -290,13 +344,14 @@ static void json_encode_recur (struct encode_context *ctx, struct svalue *val)
 	int size = a->size;
 	if (size) {
 	  int i;
-	  if (ctx->indent >= 0 && size > 1) {
+	  if ((ctx->indent >= 0) && (size > 1)) {
 	    int indent = ctx->indent = ctx->indent + 2;
 	    string_builder_putchar (buf, '\n');
 	    string_builder_putchars (buf, ' ', indent);
 	  }
 	  json_encode_recur (ctx, ITEM (a));
 	  for (i = 1; i < size; i++) {
+	    fast_check_threads_etc(8);
 	    string_builder_putchar (buf, ',');
 	    if (ctx->indent >= 0) {
 	      int indent = ctx->indent;
@@ -320,7 +375,7 @@ static void json_encode_recur (struct encode_context *ctx, struct svalue *val)
       string_builder_putchar (&ctx->buf, '{');
       check_mapping_for_destruct (val->u.mapping);
       if (m_sizeof (val->u.mapping)) {
-        if (ctx->flags & JSON_PIKE_CANONICAL)
+        if (ctx->flags & (JSON_PIKE_CANONICAL|JSON_CANONICAL))
 	  encode_mapcont_canon (ctx, val->u.mapping);
 	else
 	  encode_mapcont (ctx, val->u.mapping);
@@ -341,7 +396,7 @@ static void json_encode_recur (struct encode_context *ctx, struct svalue *val)
 	if (fun < 0) {
 	  int args = 2;
 	  if (!ctx->callback)
-	    Pike_error ("Cannot json encode object %O "
+            Pike_error ("Cannot json encode object %pO "
 			"without encode_json function.\n", val);
 	  if (TYPEOF(*ctx->callback) == PIKE_T_STRING) {
 	    string_builder_shared_strcat (&ctx->buf, ctx->callback->u.string);
@@ -364,7 +419,7 @@ static void json_encode_recur (struct encode_context *ctx, struct svalue *val)
 	  apply_low (o, fun, args);
 	}
 	if (TYPEOF(Pike_sp[-1]) != PIKE_T_STRING)
-	  Pike_error ("Expected string from %O->encode_json(), got %s.\n",
+          Pike_error ("Expected string from %pO->encode_json(), got %s.\n",
 		      val, get_name_of_type (TYPEOF(Pike_sp[-1])));
 	string_builder_shared_strcat (&ctx->buf, Pike_sp[-1].u.string);
 	free_string ((--Pike_sp)->u.string);
@@ -377,13 +432,14 @@ static void json_encode_recur (struct encode_context *ctx, struct svalue *val)
       Pike_error ("Cannot json encode %s.\n", get_name_of_type (TYPEOF(*val)));
   }
 
-  if (TYPEOF(*val) <= MAX_COMPLEX)
+  if (IS_COMPLEX_TYPE(type))
     END_CYCLIC();
 }
 
 /*! @decl constant ASCII_ONLY
  *! @decl constant HUMAN_READABLE
  *! @decl constant PIKE_CANONICAL
+ *! @decl constant CANONICAL
  *!
  *! Bit field flags for use with @[encode]:
  *!
@@ -415,7 +471,18 @@ static void json_encode_recur (struct encode_context *ctx, struct svalue *val)
  *!   there may be a standardized canonical form which quite likely
  *!   will be different from this one. In that case a separate flag
  *!   has to be added so this one doesn't change - hence the name
- *!   @[PIKE_CANONICAL].
+ *!   @[PIKE_CANONICAL]. See also @[CANONICAL] below.
+ *!
+ *! @item Standards.JSON.CANONICAL
+ *!   Make the output canonical as per @rfc{8785@}, so that the same
+ *!   value always generates the same char-by-char equal string.
+ *!   The flag value is 8.
+ *!
+ *!   Note that @rfc{8785@}-compliant output will only be generated
+ *!   if this is the only flag that has been set and no indentation
+ *!   has been requested, and @expr{Pike.get_runtime_info()->float_size
+ *!   == 64@}. In other cases a best effort attempt to comply with
+ *!   @rfc{8785@} will be performed, but deviations may occur.
  *! @enddl
  */
 
@@ -473,7 +540,8 @@ PIKEFUN string encode (int|float|string|array|mapping|object val,
   struct encode_context ctx;
   ONERROR uwp;
   ctx.flags = (flags ? flags->u.integer : 0);
-  ctx.indent = (ctx.flags & JSON_HUMAN_READABLE ? base_indent ? base_indent->u.integer : 0 : -1);
+  ctx.indent = (ctx.flags & JSON_HUMAN_READABLE ? base_indent ?
+                base_indent->u.integer : 0 : -1);
   ctx.callback = callback;
   init_string_builder (&ctx.buf, 0);
   SET_ONERROR (uwp, free_string_builder, &ctx.buf);
@@ -525,7 +593,7 @@ PIKEFUN string escape_string (string str, void|int flags)
 
 #include "json_parser.c"
 
-void low_validate(struct pike_string *data, int flags) {
+static void low_validate(struct pike_string *data, int flags) {
     ptrdiff_t stop;
     struct parser_state state;
 
@@ -543,7 +611,7 @@ void low_validate(struct pike_string *data, int flags) {
     return;
 }
 
-ptrdiff_t parse_json_pcharp( PCHARP data, size_t len, int flags, char **err_out )
+static ptrdiff_t parse_json_pcharp( PCHARP data, size_t len, int flags, char **err_out )
 {
     ptrdiff_t stop;
     struct parser_state state;
@@ -561,7 +629,7 @@ ptrdiff_t parse_json_pcharp( PCHARP data, size_t len, int flags, char **err_out 
     return stop;
 }
 
-void low_decode(struct pike_string *data, int flags) {
+static void low_decode(struct pike_string *data, int flags) {
     ptrdiff_t stop;
     struct parser_state state;
 
@@ -669,6 +737,7 @@ PIKE_MODULE_INIT
   add_integer_constant ("ASCII_ONLY", JSON_ASCII_ONLY, 0);
   add_integer_constant ("HUMAN_READABLE", JSON_HUMAN_READABLE, 0);
   add_integer_constant ("PIKE_CANONICAL", JSON_PIKE_CANONICAL, 0);
+  add_integer_constant ("CANONICAL", JSON_CANONICAL, 0);
   add_integer_constant ("NO_OBJECTS", JSON_NO_OBJ, 0);
 
   INIT;

@@ -8,7 +8,7 @@ inherit .RDFS; // RDFS in turn inherits RDF
 
 constant owl_ns = "http://www.w3.org/2002/07/owl#";
 
-void create()
+protected void create()
 {
   namespaces[owl_ns] = "owl";
   ::create();
@@ -18,7 +18,7 @@ class OWLResource
 {
   inherit URIResource;
 
-  void create(string id)
+  protected void create(string id)
   {
     ::create(owl_ns+id);
   }

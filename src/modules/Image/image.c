@@ -1,4 +1,4 @@
-/*
+/* -*- mode: C; c-basic-offset: 3; -*-
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
@@ -111,6 +111,7 @@
 #include "pike_macros.h"
 #include "object.h"
 #include "interpret.h"
+#include "gc.h"
 #include "svalue.h"
 #include "threads.h"
 #include "array.h"
@@ -202,6 +203,14 @@ static void exit_image_struct(struct object *UNUSED(obj))
             memset( THIS->img, 0, sizeof(rgb_group)*THIS->xsize*(long)THIS->ysize );
         free(THIS->img);
     }
+}
+
+static void gc_recurse_image_struct(struct object *UNUSED(obj))
+{
+  if (mc_count_bytes(Pike_fp->current_object) && THIS->img) {
+    mc_counted_bytes += sizeof(rgb_group)*THIS->xsize*(long)THIS->ysize +
+      RGB_VEC_PAD;
+  }
 }
 
 /***************** internals ***********************************/
@@ -2890,8 +2899,6 @@ void image_yuv_to_rgb(INT32 args)
      d->b = CLAMP(b, 0, 255);
      s++; d++;
    }
-exit_loop:
-   ;	/* Needed to keep some compilers happy. */
    THREADS_DISALLOW();
 
    pop_n_elems(args);
@@ -4820,7 +4827,8 @@ void init_image_image(void)
    ADD_FUNCTION("create",image_create,
 		tOr3(tFunc(tOr(tInt,tVoid) tOr(tInt,tVoid) tRGB,tVoid),
 		     tFunc(tObj, tVoid),
-		     tFuncV(tInt tInt tString,tMixed,tVoid)),0);
+		     tFuncV(tInt tInt tString,tMixed,tVoid)),
+		ID_PROTECTED);
    ADD_FUNCTION("clone",image_clone,
 		tOr3(tFunc(tInt tInt tInt tInt tRGB,tObj),
                      tFunc(tRGB,tObj),
@@ -4989,9 +4997,9 @@ void init_image_image(void)
    ADD_FUNCTION("`+",image_operator_plus,
 		tFunc(tOr3(tObj,tArr(tInt),tInt),tObj),0);
    ADD_FUNCTION("`*",image_operator_multiply,
-		tFunc(tOr3(tObj,tArr(tInt),tInt),tObj),0);
+		tFunc(tOr4(tObj, tArr(tInt), tInt, tFloat), tObj), 0);
    ADD_FUNCTION("`/",image_operator_divide,
-		tFunc(tOr3(tObj,tArr(tInt),tInt),tObj),0);
+		tFunc(tOr4(tObj, tArr(tInt), tInt, tFloat), tObj), 0);
    ADD_FUNCTION("`%",image_operator_rest,
 		tFunc(tOr3(tObj,tArr(tInt),tInt),tObj),0);
    ADD_FUNCTION("`&",image_operator_minimum,
@@ -5081,6 +5089,8 @@ void init_image_image(void)
    set_init_callback(init_image_struct);
 #endif
    set_exit_callback(exit_image_struct);
+
+   set_gc_recurse_callback(gc_recurse_image_struct);
 
 
 #ifndef FAKE_DYNAMIC_LOAD

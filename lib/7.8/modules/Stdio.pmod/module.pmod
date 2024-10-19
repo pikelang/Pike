@@ -1,3 +1,4 @@
+#charset iso-8859-1
 #pike 7.9
 
 //! Pike 7.8 compatibility @[predef::Stdio] implementation.

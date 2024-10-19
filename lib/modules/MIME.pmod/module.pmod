@@ -161,7 +161,7 @@ protected class StringRange
   }
 }
 
-private string boundary_prefix;
+private string|zero boundary_prefix;
 
 //! Set a message boundary prefix. The @[MIME.generate_boundary()] will use this
 //! prefix when creating a boundary string.
@@ -243,7 +243,7 @@ string generate_boundary( )
 //! @seealso
 //! @[MIME.encode()]
 //!
-string|StringRange decode( string|StringRange data, string encoding )
+string|StringRange decode( string|StringRange data, void|string encoding )
 {
   switch (lower_case( encoding || "binary" )) {
   case "base64":
@@ -285,7 +285,7 @@ string|StringRange decode( string|StringRange data, string encoding )
 //! @seealso
 //! @[MIME.decode()]
 //!
-string encode( string data, string encoding, void|string filename,
+string encode( string data, void|string encoding, void|string filename,
 	       void|int no_linebreaks )
 {
   switch (lower_case( encoding || "binary" )) {
@@ -352,7 +352,7 @@ array(string) decode_word( string word )
 //! @seealso
 //! @[MIME.decode_word()]
 //!
-string encode_word( string|array(string) word, string encoding )
+string encode_word( string|array(string|zero) word, string|zero encoding )
 {
   if (stringp(word))
     return word;
@@ -377,7 +377,7 @@ string encode_word( string|array(string) word, string encoding )
   return "=?"+word[1]+"?"+encoding[0..0]+"?"+ enc +"?=";
 }
 
-protected string remap(array(string) item)
+protected string remap(array(string|zero) item)
 {
   if (sizeof(item)>1 && item[1])
     return Charset.decoder(item[1])->feed(item[0])->drain();
@@ -390,7 +390,7 @@ protected array(string) reremap(string word, string|function(string:string) sele
 {
   if(max(@values(word))<128)
     return ({ word,0 });
-  string s = stringp(selector)? selector : selector(word);
+  string s = stringp(selector)? selector : ([function]selector)(word);
   return s?
     ({ Charset.encoder(s,replacement,repcb)->feed(word)->drain(), s }) :
     ({ word,0 });
@@ -548,6 +548,47 @@ decode_words_tokenized_labled_remapped(string phrase, int|void flags)
 		       return item;
 		     }
 		   });
+}
+
+//! Decodes the given string as a key-value parameter cascade
+//! according to e.g. @rfc{7239:4@}.
+//!
+//! @note
+//! This function will decode all conforming inputs, but it will also
+//! be forgiving when presented with non-conforming inputs.
+//!
+//! @seealso
+//! @[encode_headerfield_params]
+array(ADT.OrderedMapping) decode_headerfield_params (string s)
+{
+  array(mapping(string:string)|ADT.OrderedMapping) totres = ({});
+  ADT.OrderedMapping mapres = ADT.OrderedMapping();
+  string key, goteq;
+  int nextset;	   // Fake a terminating ',' to ensure proper post-processing
+  foreach (MIME.tokenize(s) + ({ ',' }); ; int|string token) {
+    switch (token) {
+      case ',':
+        nextset = 1;
+      case ';':
+        token = goteq;
+        goteq = 0;
+        break;
+      case '=':
+        goteq = "";
+        continue;
+      default:
+        if (key)
+          break;
+        key = token; goteq = 0;
+        continue;
+    }
+    if (key)
+      mapres[key] = token, key = 0;
+    if (nextset && sizeof(mapres))
+      totres += ({ mapres }), mapres = ADT.OrderedMapping();
+    nextset = 0;
+  }
+  return totres;
 }
 
 //! The inverse of @[decode_words_text()], this function accepts
@@ -749,6 +790,29 @@ string encode_words_quoted_labled_remapped(array(array(string|int)) phrase,
 				  }));
 }
 
+//! Encodes the given key-value parameters as a string
+//! according to e.g. @rfc{7239:4@}.
+//!
+//! @seealso
+//! @[decode_headerfield_params]
+string encode_headerfield_params(array(mapping|ADT.OrderedMapping) params)
+{
+  array res = ({});
+  int sep;
+  foreach (params; ; mapping(string:string)|ADT.OrderedMapping m) {
+    foreach (m; mixed key; mixed value) {
+      if (sep)
+        res += ({ sep });
+      res += ({ (string)key });
+      if (value)
+        res += ({ '=', (string)value });
+      sep = ';';
+    }
+    sep = ',';
+  }
+  return MIME.quote(res);
+}
+
 //! Provide a reasonable default for the subtype field.
 //!
 //! Some pre-@rfc{1521@} mailers provide only a type and no subtype in the
@@ -766,7 +830,7 @@ string encode_words_quoted_labled_remapped(array(array(string|int)) phrase,
 //!     @expr{"mixed"@}
 //! @endstring
 //!
-string guess_subtype( string type )
+string|zero guess_subtype( string type )
 {
   switch (type) {
   case "text":
@@ -1027,7 +1091,7 @@ class Message {
   //! @seealso
   //! @[MIME.reconstruct_partial()]
   //!
-  array(string|int) is_partial( )
+  array(string|int)|zero is_partial( )
   {
     return (type == "message" && subtype == "partial") &&
       ({ params["id"], (int)params["number"], (int)(params["total"]||"0") });
@@ -1393,10 +1457,10 @@ class Message {
   //!
   //! @seealso
   //! @[cast()]
-  void create(void | string|StringRange message,
-	      void | mapping(string:string|array(string)) hdrs,
-	      void | array(object) parts,
-	      void | int guess)
+  protected void create(void | string|StringRange message,
+			void | mapping(string:string|array(string)) hdrs,
+			void | array(object) parts,
+			void | int guess)
   {
     encoded_data = 0;
     decoded_data = 0;
@@ -1526,7 +1590,7 @@ class Message {
 
 	// Skip past the separator and any white space after it.
 	found += sizeof(separator);
-	string terminator = data[found..found+1];
+	string|zero terminator = data[found..found+1];
 	if (terminator == "--") {
 	  found += 2;
 	} else {

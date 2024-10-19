@@ -21,6 +21,10 @@
 #include "whitespace.h"
 #include "sprintf.h"
 #include "pike_search.h"
+#include "fdlib.h"
+#include "builtin_functions.h"
+#include "multiset.h"
+#include "pike_dtoa.h"
 
 #include <errno.h>
 
@@ -73,6 +77,10 @@ PMOD_EXPORT void string_build_mkspace(struct string_builder *s,
 				      ptrdiff_t chars, int mag)
 /* Doesn't touch or sanity check s->known_shift. */
 {
+  if (!s->s) {
+    init_string_builder_alloc(s, chars, mag);
+    return;
+  }
   if(mag > s->s->size_shift)
   {
     struct pike_string *n;
@@ -126,7 +134,7 @@ PMOD_EXPORT void string_builder_putchar(struct string_builder *s, int ch)
 PMOD_EXPORT void string_builder_putchars(struct string_builder *s, int ch,
 					 ptrdiff_t count)
 {
-  ptrdiff_t len = s->s->len;
+  ptrdiff_t len = s->s?s->s->len:0;
   enum size_shift mag = min_magnitude(ch);
 
   /* This is not really expected to happen. But since we are doing
@@ -178,7 +186,7 @@ PMOD_EXPORT void string_builder_binary_strcat0(struct string_builder *s,
 PMOD_EXPORT void string_builder_binary_strcat1(struct string_builder *s,
 					       const p_wchar1 *str, ptrdiff_t len)
 {
-  if (s->s->size_shift == 0) {
+  if (!s->s || !s->s->size_shift) {
     if (find_magnitude1 (str, len) == 0) {
       string_build_mkspace (s, len, 0);
       convert_1_to_0 (STR0(s->s) + s->s->len, str, len);
@@ -205,7 +213,7 @@ PMOD_EXPORT void string_builder_binary_strcat1(struct string_builder *s,
 PMOD_EXPORT void string_builder_binary_strcat2(struct string_builder *s,
 					       const p_wchar2 *str, ptrdiff_t len)
 {
-  if (s->s->size_shift < 2) {
+  if (s->s && (s->s->size_shift < 2)) {
     enum size_shift shift = find_magnitude2 (str, len);
 
     if (shift > s->s->size_shift) {
@@ -248,7 +256,7 @@ PMOD_EXPORT void string_builder_append(struct string_builder *s,
 				       ptrdiff_t len)
 {
   enum size_shift shift = from.shift;
-  if (shift > s->s->size_shift) {
+  if (s->s && (shift > s->s->size_shift)) {
     if (shift == 1) {
       shift = find_magnitude1((p_wchar1 *)from.ptr, len);
     } else {
@@ -277,7 +285,7 @@ PMOD_EXPORT void string_builder_fill(struct string_builder *s,
 #endif
   if(howmany<=0) return;
 
-  if(!s->s->size_shift &&
+  if((!s->s || !s->s->size_shift) &&
      len == 1 &&
      (!from.shift || !min_magnitude(EXTRACT_PCHARP(from))))
   {
@@ -287,7 +295,8 @@ PMOD_EXPORT void string_builder_fill(struct string_builder *s,
     return;
   }
 
-  if ((shift = from.shift) > s->s->size_shift) {
+  shift = from.shift;
+  if (shift > (s->s ? (enum size_shift)s->s->size_shift : eightbit)) {
     /* Check if we really need the extra magnitude. */
     /* FIXME: What about offset? */
     if (shift == 1) {
@@ -370,19 +379,60 @@ PMOD_EXPORT void string_builder_shared_strcat(struct string_builder *s,
   s->s->len+=str->len;
 }
 
+/**
+ * Append a string quoted to Latin-1 (ISO8859-1).
+ *
+ * @param buf
+ *   Buffer to append to.
+ *
+ * @param str
+ *   String to quote.
+ *
+ * @param i
+ *   Starting position of the string.
+ *
+ * @param max_len
+ *   Maximum length of the string. This can be used together with i
+ *   to just output a sub-range of the string.
+ *
+ * @param flags
+ *   Set of option flags:
+ *
+ *   QUOTE_BREAK_AT_DQOUTE
+ *     Terminate after the next unescaped double quote ('\"') character.
+ *   QUOTE_BREAK_AT_SQUOTE
+ *     Terminate after the next unescaped single quote ('\'') character.
+ *   QUOTE_BREAK_AT_LF
+ *     Terminate after the next unescaped line feed ('\n') character.
+ *   QUOTE_NORMALIZE_WS
+ *     Combine unescaped sequences of white space characters into
+ *     a single space (' ') character.
+ *   QUOTE_TOKENIZE
+ *     Parse embedded strings.
+ *   QUOTE_NO_STRING_CONCAT
+ *     Do not insert sequences of two double quotes, and expect them
+ *     to be a no-op.
+ *
+ * CAVEAT EMPTOR:
+ *   In old implementations of this function, max_len was the
+ *   maximum size of the resulting buffer (including any initial
+ *   content).
+ */
 PMOD_EXPORT ptrdiff_t string_builder_quote_string(struct string_builder *buf,
 						  const struct pike_string *str,
 						  ptrdiff_t i,
 						  ptrdiff_t max_len,
 						  int flags)
 {
-  ptrdiff_t old_len = buf->s->len;
-
   // NB: Requires QUOTE_NORMALIZE_WS to be != 1.
   int inhibit_whitespace = (flags & QUOTE_NORMALIZE_WS);
   int escaped = 0;
 
-  for (; i < str->len; i++) {
+  if (str->len < max_len) {
+    max_len = str->len;
+  }
+
+  for (; i < max_len; i++) {
     p_wchar2 ch = index_shared_string(str, i);
     if (ch < 0 || ch > 0xffff) {
       /* Huge character. */
@@ -457,11 +507,6 @@ PMOD_EXPORT ptrdiff_t string_builder_quote_string(struct string_builder *buf,
       if ((ch > 6) && (ch < 14)) {
 	string_builder_putchar(buf, "0123456abtnvfr"[ch]);
 	if ((ch == 10) && (flags & QUOTE_BREAK_AT_LF)) {
-	  if (buf->s->len > max_len) {
-	    /* Too bad; no place for the lf. */
-	    buf->s->len = old_len;
-	    return i;
-	  }
 	  return i+1;
 	}
 	goto next;
@@ -491,12 +536,8 @@ PMOD_EXPORT ptrdiff_t string_builder_quote_string(struct string_builder *buf,
     escaped = 0;
 
   next_ws:
-    if (buf->s->len > max_len) {
-      buf->s->len = old_len;
-      inhibit_whitespace = 0;
-      break;
-    }
-    old_len = buf->s->len;
+    /* A statement is required after a label... */
+    ;
   }
   if (inhibit_whitespace && (inhibit_whitespace != QUOTE_NORMALIZE_WS)) {
     /* Get rid of the SP at the end of the buffer. */
@@ -635,6 +676,300 @@ PMOD_EXPORT void string_builder_append_integer(struct string_builder *s,
   }
 }
 
+void string_builder_append_json_double(struct string_builder *sb, double x)
+{
+  int k, n, sgn;
+  char *digits, *digits_end;
+
+  /* Cf ECMA-262 14th Edition 6.1.6.1.20 Number::toString(x) */
+  /* Notes:
+   *   This is referenced as "Section 7.1.12.1 of [ECMA-262]" in RFC 8785.
+   *
+   *   We only care about radix 10.
+   */
+
+  /* 1. If x is NaN, return "NaN". */
+  if (PIKE_ISNAN(x)) {
+    string_builder_strcat(sb, "NaN");
+    return;
+  }
+
+  /* 2. If x is either +0𝔽 or -0𝔽, return "0". */
+  if (x == 0.0) {
+    string_builder_putchar(sb, '0');
+    return;
+  }
+
+  /* 3. If x < -0𝔽, return the string-concatenation of "-" and
+   *    Number::toString(-x, radix).
+   */
+  if (x < 0.0) {
+    string_builder_putchar(sb, '-');
+  }
+
+  /* 4. If x is +∞𝔽, return "Infinity". */
+  if (PIKE_ISINF(x)) {
+    string_builder_strcat(sb, "Infinity");
+    return;
+  }
+
+  /* 5. Let n, k, and s be integers such that
+   *      k ≥ 1, radix^(k - 1) ≤ s < radix^k,
+   *      𝔽(s × radixn - k) is x,
+   *      and k is as small as possible.
+   *    Note that k is the number of digits in the representation
+   *    of s using radix radix, that s is not divisible by radix,
+   *    and that the least significant digit of s is not necessarily
+   *    uniquely determined by these criteria.
+   */
+  /* Similar to ecvt(3C), but with a dynamically allocated buffer. */
+  digits = pike_dtoa(x, 0, 0, &n, &sgn, &digits_end);
+
+  /* Number of digits in s. */
+  k = (int)(digits_end - digits);
+
+  /* 6. If radix ≠ 10 or n is in the inclusive interval from -5 to 21, then */
+  if ((n >= -5) && (n <= 21)) {
+    /* a. If n ≥ k, then */
+    if (n >= k) {
+      /* i. Return the string-concatenation of:
+       *   * the code units of the k digits of the representation
+       *     of s using radix radix
+       */
+      string_builder_strcat(sb, digits);
+      /*   * n - k occurrences of the code unit 0x0030 (DIGIT ZERO) */
+      string_builder_putchars(sb, '0', n - k);
+    }
+    /* b. Else if n > 0, then */
+    else if (n > 0) {
+      /* i. Return the string-concatenation of:
+       *   * the code units of the most significant n digits of
+       *     the representation of s using radix radix
+       */
+      string_builder_binary_strcat0(sb, (p_wchar0 *)digits, n);
+      /*   * the code unit 0x002E (FULL STOP) */
+      string_builder_putchar(sb, '.');
+      /*   * the code units of the remaining k - n digits of the
+       *     representation of s using radix radix
+       */
+      string_builder_binary_strcat0(sb, (p_wchar0 *)digits + n, k - n);
+    }
+    /* c. Else, */
+    else {
+      /* i. Assert: n ≤ 0. */
+      assert( n <= 0);
+      /* ii. Return the string-concatenation of:
+       *   * the code unit 0x0030 (DIGIT ZERO)
+       */
+      string_builder_putchar(sb, '0');
+      /*   * the code unit 0x002E (FULL STOP) */
+      string_builder_putchar(sb, '.');
+      /*   * -n occurrences of the code unit 0x0030 (DIGIT ZERO) */
+      string_builder_putchars(sb, '0', -n);
+      /*   * the code units of the k digits of the representation
+       *     of s using radix radix
+       */
+      string_builder_strcat(sb, digits);
+    }
+    return;
+  }
+
+  /* 7. NOTE: In this case, the input will be represented using
+   *    scientific E notation, such as 1.2e+3.
+   */
+
+  /* 8. Assert: radix is 10. */
+
+  /* NB: 9, 10, 11 and 12 reshuffled and combined to
+   *     reduce code duplication.
+   */
+
+  /* 11. If k = 1, then
+   *    a. Return the string-concatenation of:
+   *       * the code unit of the single digit of s
+   * 12. Return the string-concatenation of:
+   *    * the code unit of the most significant digit of
+   *      the decimal representation of s
+   */
+  string_builder_putchar(sb, digits[0]);
+
+  if (k > 1) {
+    /*    * the code unit 0x002E (FULL STOP) */
+    string_builder_putchar(sb, '.');
+    /*    * the code units of the remaining k - 1 digits of
+     *      the decimal representation of s
+     */
+    string_builder_strcat(sb, digits+1);
+  }
+
+  /*    * the code unit 0x0065 (LATIN SMALL LETTER E) */
+  string_builder_putchar(sb, 'e');
+
+  /* 9. If n < 0, then
+   *    a. Let exponentSign be the code unit 0x002D (HYPHEN-MINUS).
+   * 10. Else,
+   *    a. Let exponentSign be the code unit 0x002B (PLUS SIGN).
+   *
+   *    * exponentSign
+   *    * the code units of the decimal representation of abs(n - 1)
+   */
+  /* NB: We know than n is not 0, so this is safe. */
+  string_builder_sprintf(sb, "%+d", n - 1);
+
+  pike_freedtoa(digits);
+}
+
+/* Same as the above, but for PIKE_FLOAT. */
+void string_builder_append_json_float_type(struct string_builder *sb,
+                                           FLOAT_TYPE x)
+{
+#if SIZEOF_FLOAT_TYPE >= 8
+  string_builder_append_json_double(sb, x);
+#else
+  int k, n, sgn;
+  char *digits, *digits_end;
+
+  /* Cf ECMA-262 14th Edition 6.1.6.1.20 Number::toString(x) */
+  /* Notes:
+   *   This is referenced as "Section 7.1.12.1 of [ECMA-262]" in RFC 8785.
+   *
+   *   We only care about radix 10.
+   */
+
+  /* 1. If x is NaN, return "NaN". */
+  if (PIKE_ISNAN(x)) {
+    string_builder_strcat(sb, "NaN");
+    return;
+  }
+
+  /* 2. If x is either +0𝔽 or -0𝔽, return "0". */
+  if (x == 0.0) {
+    string_builder_putchar(sb, '0');
+    return;
+  }
+
+  /* 3. If x < -0𝔽, return the string-concatenation of "-" and
+   *    Number::toString(-x, radix).
+   */
+  if (x < 0.0) {
+    string_builder_putchar(sb, '-');
+  }
+
+  /* 4. If x is +∞𝔽, return "Infinity". */
+  if (PIKE_ISINF(x)) {
+    string_builder_strcat(sb, "Infinity");
+    return;
+  }
+
+  /* 5. Let n, k, and s be integers such that
+   *      k ≥ 1, radix^(k - 1) ≤ s < radix^k,
+   *      𝔽(s × radixn - k) is x,
+   *      and k is as small as possible.
+   *    Note that k is the number of digits in the representation
+   *    of s using radix radix, that s is not divisible by radix,
+   *    and that the least significant digit of s is not necessarily
+   *    uniquely determined by these criteria.
+   */
+  /* Similar to ecvt(3C), but with a dynamically allocated buffer. */
+  digits = pike_dtoa(x, 2,
+                     (SIZEOF_FLOAT_TYPE * 8)/4,
+                     &n, &sgn, &digits_end);
+
+  /* Number of digits in s. */
+  k = (int)(digits_end - digits);
+
+  /* 6. If radix ≠ 10 or n is in the inclusive interval from -5 to 21, then */
+  if ((n >= -5) && (n <= 21)) {
+    /* a. If n ≥ k, then */
+    if (n >= k) {
+      /* i. Return the string-concatenation of:
+       *   * the code units of the k digits of the representation
+       *     of s using radix radix
+       */
+      string_builder_strcat(sb, digits);
+      /*   * n - k occurrences of the code unit 0x0030 (DIGIT ZERO) */
+      string_builder_putchars(sb, '0', n - k);
+    }
+    /* b. Else if n > 0, then */
+    else if (n > 0) {
+      /* i. Return the string-concatenation of:
+       *   * the code units of the most significant n digits of
+       *     the representation of s using radix radix
+       */
+      string_builder_binary_strcat0(sb, (p_wchar0 *)digits, n);
+      /*   * the code unit 0x002E (FULL STOP) */
+      string_builder_putchar(sb, '.');
+      /*   * the code units of the remaining k - n digits of the
+       *     representation of s using radix radix
+       */
+      string_builder_binary_strcat0(sb, (p_wchar0 *)digits + n, k - n);
+    }
+    /* c. Else, */
+    else {
+      /* i. Assert: n ≤ 0. */
+      assert( n <= 0);
+      /* ii. Return the string-concatenation of:
+       *   * the code unit 0x0030 (DIGIT ZERO)
+       */
+      string_builder_putchar(sb, '0');
+      /*   * the code unit 0x002E (FULL STOP) */
+      string_builder_putchar(sb, '.');
+      /*   * -n occurrences of the code unit 0x0030 (DIGIT ZERO) */
+      string_builder_putchars(sb, '0', -n);
+      /*   * the code units of the k digits of the representation
+       *     of s using radix radix
+       */
+      string_builder_strcat(sb, digits);
+    }
+    return;
+  }
+
+  /* 7. NOTE: In this case, the input will be represented using
+   *    scientific E notation, such as 1.2e+3.
+   */
+
+  /* 8. Assert: radix is 10. */
+
+  /* NB: 9, 10, 11 and 12 reshuffled and combined to
+   *     reduce code duplication.
+   */
+
+  /* 11. If k = 1, then
+   *    a. Return the string-concatenation of:
+   *       * the code unit of the single digit of s
+   * 12. Return the string-concatenation of:
+   *    * the code unit of the most significant digit of
+   *      the decimal representation of s
+   */
+  string_builder_putchar(sb, digits[0]);
+
+  if (k > 1) {
+    /*    * the code unit 0x002E (FULL STOP) */
+    string_builder_putchar(sb, '.');
+    /*    * the code units of the remaining k - 1 digits of
+     *      the decimal representation of s
+     */
+    string_builder_strcat(sb, digits+1);
+  }
+
+  /*    * the code unit 0x0065 (LATIN SMALL LETTER E) */
+  string_builder_putchar(sb, 'e');
+
+  /* 9. If n < 0, then
+   *    a. Let exponentSign be the code unit 0x002D (HYPHEN-MINUS).
+   * 10. Else,
+   *    a. Let exponentSign be the code unit 0x002B (PLUS SIGN).
+   *
+   *    * exponentSign
+   *    * the code units of the decimal representation of abs(n - 1)
+   */
+  /* NB: We know than n is not 0, so this is safe. */
+  string_builder_sprintf(sb, "%+d", n - 1);
+
+  pike_freedtoa(digits);
+#endif
+}
+
 /* Kludge around brokeness of gcc/x86_64 */
 #ifdef VA_LIST_IS_STATE_PTR
 #define VA_LIST_PTR		va_list
@@ -668,19 +1003,21 @@ static INT64 pike_va_int(VA_LIST_PTR args, int flags)
   }
   Pike_fatal("string_builder_append_integerv(): Unsupported flags: 0x%04x\n",
 	     flags);
-  UNREACHABLE(return 0);
+  UNREACHABLE();
 }
 
 /* Standard formats supported by string_builder_{v,}sprintf():
  *
  *   '%'	Insert %.
  *   'a'	Insert double.
+ *   'b'	Insert binary integer (C23-draft).
  *   'c'	Insert character.
  *   'd'	Insert decimal integer.
  *   'e'	Insert double.
  *   'f'	Insert double.
  *   'g'	Insert double.
  *   'o'	Insert octal integer.
+ *   'p'	Insert pointer / Pike extension-prefix.
  *   's'	Insert string.
  *   'u'	Insert unsigned decimal integer.
  *   'x'	Insert lower-case hexadecimal integer.
@@ -694,19 +1031,31 @@ static INT64 pike_va_int(VA_LIST_PTR args, int flags)
  *   '-'	Align left.
  *   '0'	Zero pad.
  *   '0'..'9'	Field width.
+ *   '*'	Field width parameter taken from argument (int).
  *   '.'	Precision field width follows.
  *   'h'	Half-width input.
  *   'l'	Long(-er) input.
- *   't'	Pointer-width input (ptrdiff_t).
+ *   't'	Pointer-width signed input (ptrdiff_t).
  *   'w'	Wide input (same as 'l', but only for strings).
- *   'z'	Pointer-width input (size_t).
+ *   'z'	Pointer-width unsigned input (size_t).
  *
- * Extended formats supported by string_builder_{v,}sprintf():
+ * Extended formats supported by string_builder_{v,}sprintf()
+ * these accept 'p' as an immediate prefix in order to keep gcc happy:
  *
- *   'b'	Insert binary integer.
- *   'O'	Insert description of svalue.
- *   'S'	Insert pike_string.
- *   'T'	Insert pike_type.
+ *   'A'	Insert description of a struct array *.
+ *   'm'	Insert description of a struct mapping *.
+ *   'M'	Insert description of a struct multiset *.
+ *   'O'	Insert description of a struct svalue *.
+ *   'P'	Insert description of a struct program *.
+ *   'q'	Insert quoted struct pike_string *.
+ *   'S'	Insert struct pike_string *.
+ *   'T'	Insert description of a struct pike_type *.
+ *
+ * In addition, the sequence 'px' can be used to insert a pointer
+ * in the same way as 'p'.  This can be used as an escape when printing
+ * a raw pointer immediately followed by a literal A/m/M/O/P/q/S/T/x.
+ * i.e. '%pxO' prints a raw pointer followed by the letter 'O',
+ * '%pxx' prints a raw pointer followed by the letter 'x'.
  */
 
 /* Values used internally in string_builder_vsprintf() */
@@ -791,6 +1140,33 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 	  low_describe_type(s, va_arg(args, struct pike_type *));
 	  break;
 
+        case 'A':
+          {
+            /* FIXME: Doesn't care about field or integer widths yet. */
+            struct byte_buffer buf = BUFFER_INIT();
+            describe_array(&buf, va_arg(args, struct array *), NULL, 0);
+            string_builder_binary_strcat(s, buffer_ptr(&buf), buffer_content_length(&buf));
+            buffer_free(&buf);
+          }
+          break;
+        case 'm':
+          {
+            /* FIXME: Doesn't care about field or integer widths yet. */
+            struct byte_buffer buf = BUFFER_INIT();
+            describe_mapping(&buf, va_arg(args, struct mapping *), NULL, 0);
+            string_builder_binary_strcat(s, buffer_ptr(&buf), buffer_content_length(&buf));
+            buffer_free(&buf);
+          }
+          break;
+        case 'M':
+          {
+            /* FIXME: Doesn't care about field or integer widths yet. */
+            struct byte_buffer buf = BUFFER_INIT();
+            describe_multiset(&buf, va_arg(args, struct multiset *), NULL, 0);
+            string_builder_binary_strcat(s, buffer_ptr(&buf), buffer_content_length(&buf));
+            buffer_free(&buf);
+          }
+          break;
 	case 'O':
 	  {
 	    /* FIXME: Doesn't care about field or integer widths yet. */
@@ -798,6 +1174,59 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 	    describe_svalue(&buf, va_arg(args, struct svalue *), 0, NULL);
 	    string_builder_binary_strcat(s, buffer_ptr(&buf), buffer_content_length(&buf));
 	    buffer_free(&buf);
+	  }
+	  break;
+        case 'P':
+          {
+            /* FIXME: Doesn't care about field or integer widths yet. */
+            struct byte_buffer buf = BUFFER_INIT();
+            struct svalue sval;
+            SET_SVAL(sval, T_PROGRAM, 0, program,
+                     va_arg(args, struct program *));
+            describe_svalue(&buf, &sval, 0, NULL);
+            string_builder_binary_strcat(s, buffer_ptr(&buf), buffer_content_length(&buf));
+            buffer_free(&buf);
+          }
+          break;
+	case 'q':
+	  {
+	    struct pike_string *str = va_arg(args, struct pike_string *);
+            size_t len = str?str->len:0;
+	    size_t buf_len = s->s->len;
+
+	    if (precision && (precision < len)) len = precision;
+            if (str) {
+              string_builder_putchar(s, '"');
+              string_builder_quote_string(s, str, 0, len,
+                                          QUOTE_NO_STRING_CONCAT);
+              string_builder_putchar(s, '"');
+            } else {
+              string_builder_strcat(s, "(NULL)");
+            }
+
+	    len = s->s->len - buf_len;
+	    if (min_width > len) {
+	      if (!(flags & APPEND_LEFT)) {
+		/* Rewind the buffer so that we can prepend the padding.
+		 *
+		 * NB: We assume that the quoted string will be
+		 *     the same langth the second time too.
+		 */
+		s->s->len = buf_len;
+	      }
+	      string_builder_fill(s, min_width - len, MKPCHARP("    ", 0),
+				  4, 0);
+	      if (!(flags & APPEND_LEFT)) {
+                if (str) {
+                  string_builder_putchar(s, '"');
+                  string_builder_quote_string(s, str, 0, len,
+                                              QUOTE_NO_STRING_CONCAT);
+                  string_builder_putchar(s, '"');
+                } else {
+                  string_builder_strcat(s, "(NULL)");
+                }
+	      }
+	    }
 	  }
 	  break;
 	case 'S':
@@ -824,12 +1253,13 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 	  }
 	  break;
 	case 's':
-	  if (flags & APPEND_WIDTH_LONG) {
+          if (flags & APPEND_WIDTH_MASK) {
 	    /* Wide string: %ws, %ls or %lls
+             * NB: Some platforms use %hs for UTF-16 strings.
 	     */
 	    PCHARP str;
 	    size_t len;
-	    if ((flags & APPEND_WIDTH_LONG)== APPEND_WIDTH_LONG) {
+            if ((flags & APPEND_WIDTH_MASK) != APPEND_WIDTH_LONG_LONG) {
 	      str = MKPCHARP(va_arg(args, p_wchar1 *), 1);
 	    } else {
 	      str = MKPCHARP(va_arg(args, p_wchar2 *), 2);
@@ -878,6 +1308,28 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 	  break;
 	case 'o':
 	  string_builder_append_integer(s, pike_va_int(VA_LIST_ADDR(args), flags), 8,
+					flags, min_width, precision);
+	  break;
+	case 'p':
+          if ((*fmt == 'A') || (*fmt == 'm') || (*fmt == 'M') ||
+              (*fmt == 'O') || (*fmt == 'P') || (*fmt == 'q') ||
+              (*fmt == 'S') || (*fmt == 'T')) {
+            /* Pike sprintf formatting extension. */
+            continue;
+          }
+          if (*fmt == 'x')
+            /* Escape to prevent the following character from being
+               interpreted as an extension */
+            fmt ++;
+	  string_builder_append_integer(s, pike_va_int(VA_LIST_ADDR(args),
+#if SIZEOF_CHAR_P == SIZEOF_LONG
+						       APPEND_WIDTH_LONG
+#elif SIZEOF_CHAR_P == 64
+						       APPEND_WIDTH_LONG_LONG
+#else /* SIZEOF_CHAR_P == 32 */
+						       0
+#endif
+						       ), 16,
 					flags, min_width, precision);
 	  break;
 	case 'x':
@@ -982,6 +1434,1099 @@ PMOD_EXPORT void string_builder_sprintf(struct string_builder *s,
 }
 
 
+/* Standard formats supported by string_builder_strftime():
+ *
+ * Escaped characters:
+ *   '%'	Insert %.
+ *   'n'	Insert newline.
+ *   't'	Insert tab.
+ *
+ * Flags (NB: None of these actually do anything yet):
+ *   '!'	Inhibit numerical padding (Roxen-style).
+ *   '-'	Inhibit numerical padding (glibc-style).
+ *   '#'	Inhibit numerical padding (MSVC-style).
+ *   '^'	Upper-case (glibc-style).
+ *   '~'	Capitalize (Roxen-style).
+ *   'E'	Locale dependent alternative form (glibc-style).
+ *   'O'	Use alternative numeric symbols.
+ *
+ * Formats:
+ *   'a'	Abbreviated weekday name.
+ *   'A'	Weekday name.
+ *   'b'	Abbreviated month name.
+ *   'B'	Month name.
+ *   'c'	Date and time.
+ *   'C'	Century number; 0-prefix.
+ *   'd'	Day of month [1,31]; 0-prefix.
+ *   'D'	Date.
+ *   'e'	Day of month [1,31], space-prefix.
+ *   'F'	ISO 8601 date (C99).
+ *   'g'	Short year for the ISO 8601 week containing the day.
+ *   'G'	Year for the ISO 8601 week containing the day.
+ *   'h'	Abbreviated month name (Single Unix Specification).
+ *   'H'	Hour (24-hour clock) [0,23]; 0-prefix.
+ *   'I'	Hour (12-hour clock) [1,12]; 0-prefix.
+ *   'j'	Day number of year [1,366]; 0-prefix.
+ *   'k'	Hour (24-hour clock); space-prefix.
+ *   'l'	Hour (12-hour clock) [1,12]; space-prefix.
+ *   'm'	Month number [1,12]; 0-prefix.
+ *   'M'	Minute [0,59]; 0-prefix.
+ *   'p'	AM or PM.
+ *   'P'	am or pm
+ *   'q'	Quarter number (Roxen-style).
+ *   'r'	Time in 12-hour clock format with %p.
+ *   'R'	24-hour clock time no seconds.
+ *   's'	Seconds since epoch.
+ *   'S'	Seconds [0,60]; 0-prefix.
+ *   'T'	24-hour clock time including seconds.
+ *   'u'	Weekday as a decimal number [1,7], Monday == 1.
+ *   'U'	Week number of current year [0,53]; 0-prefix,
+ *		Sunday is first day of week.
+ *   'V'	ISO week number of the year as a decimal number [01,53];
+ *		0-prefix.
+ *   'w'	Weekday as a decimal number [0,6], Suday == 0.
+ *   'W'	Week number of year as a decimal number [00,53],
+ *		with Monday as the first day of week 1; 0-prefix.
+ *   'x'	Date in locale preferred format.
+ *   'X'	Time in locale preferred format.
+ *   'y'	Year [00,99]; 0-prefix.
+ *   'Y'	Year [0000,9999]; 0-prefix.
+ *   'z'	Time zone as hour offset from UTC.
+ *   'Z'	Timezone name of abbreviation, or no bytes if
+ *		no timezone information exists.
+ */
+
+/* Compat notes:
+ *
+ * The MSVC implementation of strftime() only supports
+ *
+ *   %a, %A, %b, %B, %c, %d, %H, %I,
+ *   %j, %m, %M, %p, %S, %U, %w, %W,
+ *   %x, %X, %y, %Y, %z, %Z and %%,
+ *
+ * and in debug mode it aborts on any others.
+ */
+
+static const char *internal_strftime_weekdays[7 + 1] =
+  { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", NULL };
+
+static const char *internal_strftime_long_weekdays[7 + 1] =
+  { "Sunday", "Monday", "Tuesday", "Wednesday",
+    "Thursday", "Friday", "Saturday", NULL };
+
+static const char *internal_strftime_months[12 + 1] =
+  { "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", NULL };
+
+static const char *internal_strftime_long_months[12 + 1] =
+  { "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December", NULL };
+
+static const char *internal_strftime_ampm[2 + 1] =
+  { "AM", "PM", NULL };
+
+PMOD_EXPORT void string_builder_strftime(struct string_builder *s,
+                                         const char *fmt,
+                                         struct tm *tm)
+{
+  char buffer[1024];	/* Used when calling strftime(3C). */
+
+  STACK_LEVEL_START(0);
+  while (*fmt) {
+    if (*fmt == '%') {
+      int prefix = 1;
+      int alt_num = 0;
+      int alt_form = 0;
+      int upper_case = 0;
+
+      fmt++;
+      while (1) {
+        switch (*(fmt++)) {
+          /*
+           * Escaped characters.
+           */
+
+        case '%':
+          string_builder_putchar(s, '%');
+          break;
+
+        case 'n': /* Newline. */
+          string_builder_putchar(s, '\n');
+          break;
+
+        case 't': /* Tab. */
+          string_builder_putchar(s, '\t');
+          break;
+
+          /*
+           * Flags
+           */
+        case '!': /* Inhibit numerical padding (Roxen-style). */
+        case '-': /* Inhibit numerical padding (glibc-style). */
+        case '#': /* Inhibit numerical padding (MSVC-style). */
+          prefix = 0;
+          continue;
+
+        case '^': /* Upper-case (glibc-style). */
+          upper_case = 3;
+          continue;
+
+        case '~': /* Capitalize (Roxen-style). */
+          upper_case = 1;
+          continue;
+
+        case 'E': /* Locale dependent alternative form (glibc-style). */
+          alt_form = 1;
+          continue;
+
+        case 'O': /* Use alternative numeric symbols. */
+          alt_num = 1;
+          continue;
+
+          /*
+           * Formats
+           */
+
+        case 'a': /* Abbreviated weekday name. */
+          string_builder_strcat(s, internal_strftime_weekdays[tm->tm_wday]);
+          break;
+
+        case 'A': /* Weekday name. */
+          string_builder_strcat(s, internal_strftime_long_weekdays[tm->tm_wday]);
+          break;
+
+        case 'b': /* Abbreviated month name. */
+        case 'h': /* Abbreviated month name (Single Unix Specification). */
+          string_builder_strcat(s, internal_strftime_months[tm->tm_mon]);
+          break;
+
+        case 'B': /* Month name. */
+          string_builder_strcat(s, internal_strftime_long_months[tm->tm_mon]);
+          break;
+
+        case 'c': /* Date and time. */
+          string_builder_strftime(s, "%a %b %e %H:%M:%S %Y", tm);
+          break;
+
+        case 'C': /* Century number; 0-prefix. */
+          string_builder_sprintf(s, "%02d", 19 + tm->tm_year/100);
+          break;
+
+        case 'd': /* Day of month [1,31]; 0-prefix. */
+          string_builder_sprintf(s, "%02d", tm->tm_mday);
+          break;
+
+        case 'D': /* Date. */
+          string_builder_strftime(s, "%m/%d/%y", tm);
+          break;
+
+        case 'e': /* Day of month [1,31], space-prefix. */
+          string_builder_sprintf(s, "%2d", tm->tm_mday);
+          break;
+
+        case 'F': /* ISO 8601 date. */
+          string_builder_strftime(s, "%Y-%m-%d", tm);
+          break;
+
+        case 'g': /* Short year for the ISO 8601 week containing the day. */
+          {
+            int wday = (tm->tm_wday + 1) % 7;	/* ISO 8601 weekday number. */
+            if ((wday - tm->tm_yday) >= 4) {
+              /* The day belongs to the last week of the previous year. */
+              string_builder_sprintf(s, "%02d", (99 + tm->tm_year) % 100);
+            } else if ((tm->tm_mon == 11) && ((tm->tm_mday - wday) >= 29)) {
+              /* The day belongs to the first week of the next year. */
+              string_builder_sprintf(s, "%02d", (1 + tm->tm_year) % 100);
+            } else {
+              string_builder_sprintf(s, "%02d", tm->tm_year % 100);
+            }
+          }
+          break;
+
+        case 'G': /* Year for the ISO 8601 week containing the day. */
+          {
+            int wday = (tm->tm_wday + 1) % 7;	/* ISO 8601 weekday number. */
+            if ((wday - tm->tm_yday) >= 4) {
+              /* The day belongs to the last week of the previous year. */
+              string_builder_sprintf(s, "%04d", 1899 + tm->tm_year);
+            } else if ((tm->tm_mon == 11) && ((tm->tm_mday - wday) >= 29)) {
+              /* The day belongs to the first week of the next year. */
+              string_builder_sprintf(s, "%04d", 1901 + tm->tm_year);
+            } else {
+              string_builder_sprintf(s, "%04d", 1900 + tm->tm_year);
+            }
+          }
+          break;
+
+        case 'H': /* Hour (24-hour clock) [0,23]; 0-prefix. */
+          string_builder_sprintf(s, "%02d", tm->tm_hour);
+          break;
+
+        case 'I': /* Hour (12-hour clock) [1,12]; 0-prefix. */
+          string_builder_sprintf(s, "%02d", 1 + (tm->tm_hour + 11) % 12);
+          break;
+
+        case 'j': /* Day number of year [1,366]; 0-prefix. */
+          string_builder_sprintf(s, "%03d", tm->tm_yday + 1);
+          break;
+
+        case 'k': /* Hour (24-hour clock); space-prefix. */
+          string_builder_sprintf(s, "%2d", tm->tm_hour);
+          break;
+
+        case 'l': /* Hour (12-hour clock) [1,12]; space-prefix. */
+          string_builder_sprintf(s, "%2d", 1 + (tm->tm_hour + 11) % 12);
+          break;
+
+        case 'm': /* Month number [1,12]; 0-prefix. */
+          string_builder_sprintf(s, "%02d", tm->tm_mon + 1);
+          break;
+
+        case 'M': /* Minute [0,59]; 0-prefix. */
+          string_builder_sprintf(s, "%02d", tm->tm_min);
+          break;
+
+        case 'p': /* AM or PM. */
+          string_builder_strcat(s, tm->tm_hour < 12 ? "AM" : "PM");
+          break;
+
+        case 'P': /* am or pm */
+          string_builder_strcat(s, tm->tm_hour < 12 ? "am" : "pm");
+          break;
+
+        case 'q': /* Quarter number (Roxen-style). */
+          string_builder_sprintf(s, "%d", tm->tm_mon/3 + 1);
+          break;
+
+        case 'r': /* Time in 12-hour clock format with %p. */
+          string_builder_strftime(s, "%I:%M:%S %p", tm);
+          break;
+
+        case 'R': /* 24-hour clock time no seconds. */
+          string_builder_strftime(s, "%H:%M", tm);
+          break;
+
+        case 's': /* Seconds since epoch. */
+          {
+            time_t t = mktime_zone(tm, 0, 0);
+            string_builder_sprintf(s, "%ld", (long)t);
+          }
+          break;
+
+        case 'S': /* Seconds [0,60]; 0-prefix. */
+          string_builder_sprintf(s, "%02d", tm->tm_sec);
+          break;
+
+        case 'T': /* 24-hour clock time including seconds. */
+          string_builder_strftime(s, "%H:%M:%S", tm);
+          break;
+
+        case 'u': /* Weekday as a decimal number [1,7], Monday == 1. */
+          string_builder_sprintf(s, "%d", 1 + ((tm->tm_wday + 6) % 7));
+          break;
+
+        case 'U': /* Week number of current year [0,53]; 0-prefix,
+                   * Sunday is first day of week. */
+          string_builder_sprintf(s, "%02d",
+                                 1 + (tm->tm_yday - tm->tm_wday) / 7);
+          break;
+
+        case 'V': /* ISO week number of the year as a decimal number [01,53];
+                   * 0-prefix. */
+          {
+            int wday = 1 + (tm->tm_wday + 6) % 7;	/* ISO wday. */
+            int weekno = (10 + tm->tm_yday - tm->tm_wday) / 7;
+            if (!weekno || (weekno == 53)) {
+              int y = tm->tm_year + 1900;
+              int p;
+
+              if (!weekno) {
+                /* Last week of previous year. */
+                y--;
+              }
+
+              p = (y + y/4 - y/100 + y/400) % 7;
+              if (p == 4) {
+                weekno = 53;
+              } else {
+                y--;
+                p = (y + y/4 - y/100 + y/400) % 7;
+                if (p == 3) {
+                  weekno = 53;
+                } else if (weekno) {
+                  /* First week of next year. */
+                  weekno = 1;
+                } else {
+                  weekno = 52;
+                }
+              }
+            }
+            string_builder_sprintf(s, "%02d", weekno);
+          }
+          break;
+
+        case 'w': /* Weekday as a decimal number [0,6], Suday == 0. */
+          string_builder_sprintf(s, "%d", tm->tm_wday);
+          break;
+
+        case 'W': /* Week number of year as a decimal number [00,53],
+                   * with Monday as the first day of week 1; 0-prefix. */
+          string_builder_sprintf(s, "%02d",
+                                 ((tm->tm_yday + (5 + tm->tm_wday) % 7) / 7));
+          break;
+
+        case 'x': /* Date in locale preferred format. */
+          buffer[0] = 0;
+          strftime(buffer, sizeof(buffer), "%x", tm);
+          string_builder_strcat(s, buffer);
+          break;
+
+        case 'X': /* Time in locale preferred format. */
+          buffer[0] = 0;
+          strftime(buffer, sizeof(buffer), "%X", tm);
+          string_builder_strcat(s, buffer);
+          break;
+
+        case 'y': /* Year [00,99]; 0-prefix. */
+          string_builder_sprintf(s, "%02d", tm->tm_year % 100);
+          break;
+
+        case 'Y': /* Year [0000,9999]; 0-prefix. */
+          string_builder_sprintf(s, "%04d", 1900 + tm->tm_year);
+          break;
+
+        case 'z': /* Time zone as hour offset from UTC. */
+          {
+            int minutes = (
+#ifdef STRUCT_TM_HAS_GMTOFF
+                           -tm->tm_gmtoff
+#elif defined(STRUCT_TM_HAS___TM_GMTOFF)
+                           -tm->__tm_gmtoff
+#elif defined(HAVE_EXTERNAL_TIMEZONE)
+                           /* Assume dst is one hour. */
+                           timezone - 3600*tm->tm_isdst
+#else
+                           /* Assume dst is one hour. */
+                           -3600*tm->tm_isdst
+#endif
+                           ) / 60;
+            minutes += (minutes/60) * 40;
+            string_builder_sprintf(s, "%+05d", minutes);
+          }
+          break;
+
+        case 'Z': /* Timezone name of abbreviation, or no bytes if
+                   * no timezone information exists. */
+          break;
+
+        default:
+#if 0
+          Pike_fatal("string_builder_vsprintf(): Invalid formatting method: "
+                     "\"%%%c\" 0x%x.\n", (fmt[-1] & 0xff), fmt[-1]);
+#endif
+          string_builder_putchar(s, fmt[-1]);
+          break;
+        }
+        break;
+      }
+    } else {
+      const char *start = fmt;
+      while (*fmt && (*fmt != '%'))
+        fmt++;
+      string_builder_binary_strcat(s, start, fmt-start);
+    }
+  }
+  STACK_LEVEL_DONE(0);
+}
+
+static const char *pike_strptime_read_int(const char *s, int *dest, int digits)
+{
+  int res = 0;
+  int c;
+  int n;
+
+  for (n = 0; (n < digits) && (c = *s); s++, n++) {
+    if (c == ' ') continue;
+    if ((c < '0') || (c > '9')) break;
+    res = res * 10 + c - '0';
+  }
+
+  if (!n) return NULL;
+
+  *dest = res;
+
+  return s;
+}
+
+static const char *pike_strptime_read_str(const char *s,
+                                          int *dest,
+                                          const char **alts)
+{
+  int n;
+  const char *t;
+
+  for (n = 0; (t = alts[n]); n++) {
+    int i;
+    for(i = 0; t[i]; i++) {
+      /* NB: We know that the strings only contain [A-Z][a-z]. */
+      if (!s[i]) break;
+      if ((t[i]|0x20) != (s[i]|0x20)) {
+        break;
+      }
+    }
+    if (!t[i]) {
+      *dest = n;
+      return s;
+    }
+  }
+  return NULL;
+}
+
+const char *low_pike_strptime(const char *s,
+                              const char *fmt,
+                              struct tm *tm,
+                              int *century,
+                              int *ampm)
+{
+  if (!fmt || !tm) return NULL;
+
+  while (*fmt) {
+
+    if (!s) return NULL;
+
+#define STRPTIME_EXPECT(C) do {                 \
+      if (*(s++) != (C)) {                      \
+        return NULL;                            \
+      }                                         \
+    } while(0)
+
+    if (*fmt == '%') {
+      int prefix = 1;
+      int alt_num = 0;
+      int alt_form = 0;
+      int upper_case = 0;
+      int tmp = 0;
+      int sgn = 1;
+
+      fmt++;
+      while (1) {
+        switch (*(fmt++)) {
+          /*
+           * Escaped characters.
+           */
+
+        case '%':
+          STRPTIME_EXPECT('%');
+          break;
+
+        case 'n': /* Newline. */
+          STRPTIME_EXPECT('\n');
+          break;
+
+        case 't': /* Tab. */
+          STRPTIME_EXPECT('\t');
+          break;
+
+          /*
+           * Flags
+           */
+        case '!': /* Inhibit numerical padding (Roxen-style). */
+        case '-': /* Inhibit numerical padding (glibc-style). */
+        case '#': /* Inhibit numerical padding (MSVC-style). */
+          prefix = 0;
+          continue;
+
+        case '^': /* Upper-case (glibc-style). */
+          upper_case = 3;
+          continue;
+
+        case '~': /* Capitalize (Roxen-style). */
+          upper_case = 1;
+          continue;
+
+        case 'E': /* Locale dependent alternative form (glibc-style). */
+          alt_form = 1;
+          continue;
+
+        case 'O': /* Use alternative numeric symbols. */
+          alt_num = 1;
+          continue;
+
+          /*
+           * Formats
+           */
+
+        case 'a': /* Abbreviated weekday name. */
+          s = pike_strptime_read_str(s, &tm->tm_wday,
+                                     internal_strftime_weekdays);
+          break;
+
+        case 'A': /* Weekday name. */
+          s = pike_strptime_read_str(s, &tm->tm_wday,
+                                     internal_strftime_long_weekdays);
+          break;
+
+        case 'b': /* Abbreviated month name. */
+        case 'h': /* Abbreviated month name (Single Unix Specification). */
+          s = pike_strptime_read_str(s, &tm->tm_mon, internal_strftime_months);
+          break;
+
+        case 'B': /* Month name. */
+          s = pike_strptime_read_str(s, &tm->tm_mon,
+                                     internal_strftime_long_months);
+          break;
+
+        case 'c': /* Date and time. */
+          s = low_pike_strptime(s, "%a %b %e %H:%M:%S %Y", tm, century, ampm);
+          break;
+
+        case 'C': /* Century number; 0-prefix. */
+          s = pike_strptime_read_int(s, &tmp, 2);
+          *century = tmp * 100;
+          break;
+
+        case 'd': /* Day of month [1,31]; 0-prefix. */
+          s = pike_strptime_read_int(s, &tm->tm_mday, 2);
+          break;
+
+        case 'D': /* Date. */
+          s = low_pike_strptime(s, "%m/%d/%y", tm, century, ampm);
+          break;
+
+        case 'e': /* Day of month [1,31], space-prefix. */
+          s = pike_strptime_read_int(s, &tm->tm_mday, 2);
+          break;
+
+        case 'F': /* ISO 8601 date. */
+          s = low_pike_strptime(s, "%Y-%m-%d", tm, century, ampm);
+          break;
+
+        case 'g': /* Short year for the ISO 8601 week containing the day. */
+          s = low_pike_strptime(s, "%y", tm, century, ampm);
+          break;
+
+        case 'G': /* Year for the ISO 8601 week containing the day. */
+          s = low_pike_strptime(s, "%Y", tm, century, ampm);
+          break;
+
+        case 'H': /* Hour (24-hour clock) [0,23]; 0-prefix. */
+          s = pike_strptime_read_int(s, &tm->tm_hour, 2);
+          break;
+
+        case 'I': /* Hour (12-hour clock) [1,12]; 0-prefix. */
+          s = pike_strptime_read_int(s, &tm->tm_hour, 2);
+          if (s && (tm->tm_hour == 12)) {
+            tm->tm_hour = 0;
+          }
+          break;
+
+        case 'j': /* Day number of year [1,366]; 0-prefix. */
+          s = pike_strptime_read_int(s, &tm->tm_yday, 3);
+          if (s) {
+            tm->tm_yday--;
+          }
+          break;
+
+        case 'k': /* Hour (24-hour clock); space-prefix. */
+          s = pike_strptime_read_int(s, &tm->tm_hour, 2);
+          break;
+
+        case 'l': /* Hour (12-hour clock) [1,12]; space-prefix. */
+          s = pike_strptime_read_int(s, &tm->tm_hour, 2);
+          if (s && (tm->tm_hour == 12)) {
+            tm->tm_hour = 0;
+          }
+          break;
+
+        case 'm': /* Month number [1,12]; 0-prefix. */
+          s = pike_strptime_read_int(s, &tm->tm_mon, 2);
+          if (s) {
+            tm->tm_mon--;
+          }
+          break;
+
+        case 'M': /* Minute [0,59]; 0-prefix. */
+          s = pike_strptime_read_int(s, &tm->tm_min, 2);
+          break;
+
+        case 'p': /* AM or PM. */
+          s = pike_strptime_read_str(s, ampm, internal_strftime_ampm);
+          break;
+
+        case 'P': /* am or pm */
+          s = pike_strptime_read_str(s, ampm, internal_strftime_ampm);
+          break;
+
+        case 'q': /* Quarter number (Roxen-style). */
+          s = pike_strptime_read_int(s, &tmp, 1);
+          break;
+
+        case 'r': /* Time in 12-hour clock format with %p. */
+          s = low_pike_strptime(s, "%I:%M:%S %p", tm, century, ampm);
+          break;
+
+        case 'R': /* 24-hour clock time no seconds. */
+          s = low_pike_strptime(s, "%H:%M", tm, century, ampm);
+          break;
+
+        case 's': /* Seconds since epoch. */
+          s = pike_strptime_read_int(s, &tmp, 16);
+          if (s) {
+            time_t t = tmp;
+            struct tm *tm_tmp = localtime(&t);
+            if (tm_tmp) {
+              *tm = *tm_tmp;
+            }
+          }
+          break;
+
+        case 'S': /* Seconds [0,60]; 0-prefix. */
+          s = pike_strptime_read_int(s, &tm->tm_sec, 2);
+          break;
+
+        case 'T': /* 24-hour clock time including seconds. */
+          s = low_pike_strptime(s, "%H:%M:%S", tm, century, ampm);
+          break;
+
+        case 'u': /* Weekday as a decimal number [1,7], Monday == 1. */
+          s = pike_strptime_read_int(s, &tm->tm_wday, 1);
+          if (s && (tm->tm_wday == 7)) {
+            tm->tm_wday = 0;
+          }
+          break;
+
+        case 'U': /* Week number of current year [0,53]; 0-prefix,
+                   * Sunday is first day of week. */
+          s = pike_strptime_read_int(s, &tmp, 2);
+          break;
+
+        case 'V': /* ISO week number of the year as a decimal number [01,53];
+                   * 0-prefix. */
+          s = pike_strptime_read_int(s, &tmp, 2);
+          break;
+
+        case 'w': /* Weekday as a decimal number [0,6], Suday == 0. */
+          s = pike_strptime_read_int(s, &tm->tm_wday, 1);
+          break;
+
+        case 'W': /* Week number of year as a decimal number [00,53],
+                   * with Monday as the first day of week 1; 0-prefix. */
+          s = pike_strptime_read_int(s, &tmp, 2);
+          break;
+
+        case 'x': /* Date in locale preferred format. */
+#ifdef HAVE_STRPTIME
+          s = strptime(s, "%x", tm);
+          if (s) {
+            *century = 0;
+          }
+#else
+          s = low_pike_strptime(s, "%F", tm, century, ampm);
+#endif
+          break;
+
+        case 'X': /* Time in locale preferred format. */
+#ifdef HAVE_STRPTIME
+          s = strptime(s, "%X", tm);
+#else
+          s = low_pike_strptime(s, "%T", tm, century, ampm);
+#endif
+          break;
+
+        case 'y': /* Year [00,99]; 0-prefix. */
+          s = pike_strptime_read_int(s, &tmp, 2);
+          if (s && *century) {
+            /* NB: century == 0 ==> full year already parsed. */
+            tm->tm_year = tmp;
+          }
+          break;
+
+        case 'Y': /* Year [0000,9999]; 0-prefix. */
+          s = pike_strptime_read_int(s, &tm->tm_year, 4);
+          if (s) {
+            tm->tm_year -= 1900;
+            *century = 0;
+          }
+          break;
+
+        case 'z': /* Time zone as hour offset from UTC. */
+          sgn = 1;
+          if (*s == '+' || *s == ' ') {
+            s++;
+          } else if (*s == '-') {
+            sgn = -1;
+            s++;
+          }
+          s = pike_strptime_read_int(s, &tmp, 4);
+          if (s) {
+            int h = tmp/100;
+            int m = tmp - h * 100;
+            tmp = sgn * ((h * 60 + m) * 60);
+#ifdef STRUCT_TM_HAS_GMTOFF
+            tm->tm_gmtoff = -tmp;
+#elif defined(STRUCT_TM_HAS___TM_GMTOFF)
+            tm->__tm_gmtoff = -tmp;
+#elif defined(HAVE_EXTERNAL_TIMEZONE)
+            /* FIXME */
+#else
+            /* FIXME */
+#endif
+          }
+          break;
+
+        case 'Z': /* Timezone name of abbreviation, or no bytes if
+                   * no timezone information exists. */
+          /* FIXME! */
+          break;
+
+        default:
+#if 0
+          Pike_fatal("pike_strptime(): Invalid formatting method: "
+                     "\"%%%c\" 0x%x.\n", (fmt[-1] & 0xff), fmt[-1]);
+#endif
+          return NULL;
+          break;
+        }
+        break;
+      }
+    } else {
+      const char *start = fmt;
+      while (*fmt && (*fmt != '%')) {
+        STRPTIME_EXPECT(*fmt);
+        fmt++;
+      }
+    }
+  }
+
+  return s;
+}
+
+/* Reverse of string_builder_strftime() above.
+ *
+ * Behaves as strptime(3C).
+ */
+PMOD_EXPORT const char *pike_strptime(const char *s,
+                                      const char *fmt,
+                                      struct tm *tm)
+{
+  int century = 1950;	/* DWIM marker */
+  int ampm = 0;
+
+  s = low_pike_strptime(s, fmt, tm, &century, &ampm);
+
+  if (ampm && (tm->tm_hour < 12)) {
+    tm->tm_hour += 12;
+  }
+
+  if (century) {
+    if (century == 1950) {
+      /* DWIM: 1950..2049 */
+      if (tm->tm_year < 50) {
+        tm->tm_year += 100;
+      }
+    } else {
+      /* 2-digit century offset * 100. */
+      tm->tm_year += century - 1900;
+    }
+  }
+
+  return s;
+}
+
+/**
+ * Append a disassembly-style entry to a string builder buffer.
+ *
+ * @param s
+ *   string builder buffer.
+ *
+ * @param address
+ *   Start address of memory dump for display.
+ *
+ * @param start
+ *   Actual start address for memory dump (if any).
+ *
+ * @param end
+ *   Actual end address for memory dump (if any). NULL to disable
+ *   memory dump.
+ *
+ * @param opcode
+ *   C-string for opcode field.
+ *
+ * @param params
+ *   NULL-terminated array of C-strings for parameters field. These
+ *   will be comma-separated on output. NULL to disable.
+ *
+ * @param comment
+ *   C-string with comment. NULL to disable. May contain new-lines.
+ *
+ * Note: To output the address without a memory dump, call with start and
+ *       end set to the same non-NULL value.
+ *
+ * The base format is:
+ *
+ *   Start Width Use
+ *   -------------------------------
+ *       0    18 Address
+ *      18     2 Space
+ *      20    11 Memory dump
+ *      31     2 Space
+ *      33     8 Opcode
+ *      41     1 Space
+ *      42    19 Parameters
+ *      61     1 Space
+ *      62     1 Comment marker (#)
+ *      63     1 Space
+ *      64    13 Comment
+ *
+ * The opcode may overflow into the parameters and comment fields.
+ */
+PMOD_EXPORT void string_builder_append_disassembly(struct string_builder *s,
+						   size_t address,
+						   const void *start,
+						   const void *end,
+						   const char *opcode,
+						   const char **params,
+						   const char *comment)
+{
+  const unsigned char *pos = start;
+  const unsigned char *pos_end = end;
+
+  while ((pos < pos_end) || opcode || (params && params[0]) ||
+	 (comment && comment[0])) {
+    size_t i;
+    int skip_params = 0;
+    int skip_comment = 0;
+
+    if (params && !params[0]) params = NULL;
+    if (comment && !comment[0]) comment = NULL;
+
+    if (pos_end) {
+      /* Address */
+      string_builder_sprintf(s, "0x%016zx  ", address);
+
+      if (pos < pos_end) {
+	/* Memory dump */
+	for (i = 0; i < 4; i++) {
+	  if (pos < pos_end) {
+	    string_builder_sprintf(s, "%02x ", *pos);
+	    pos++;
+	    address++;
+	    if (pos >= pos_end) {
+	      pos_end = NULL;
+	    }
+	  } else {
+	    string_builder_sprintf(s, "   ");
+	  }
+	}
+      } else {
+	pos_end = NULL;
+	string_builder_sprintf(s, "%*s", 4*3, "");
+      }
+    } else {
+      string_builder_sprintf(s, "%*s", 18 + 2 + 4*3, "");
+    }
+
+    /* Opcode */
+    if (opcode) {
+      char *opcode_end = strchr(opcode, '\n');
+      size_t opcode_len;
+      if (opcode_end) {
+	opcode_len = opcode_end - opcode;
+	opcode_end++;
+	skip_params = 1;
+      } else {
+	opcode_len = strlen(opcode);
+      }
+      if (!params && !comment) {
+	/* Nothing else on the line. */
+	string_builder_sprintf(s, " %.*s", (int)opcode_len, opcode);
+      } else if (opcode_len < 8) {
+	string_builder_sprintf(s, " %.*s%*s",
+			       (int)opcode_len, opcode, (int)(8 - opcode_len), "");
+      } else if (opcode_len < 29) {
+	string_builder_sprintf(s, " %.*s%*s",
+			       (int)opcode_len, opcode, (int)(28 - opcode_len), "");
+	skip_params = 1;
+      } else {
+	string_builder_sprintf(s, " %.*s", (int)opcode_len, opcode);
+	skip_params = skip_comment = 1;
+      }
+      opcode = opcode_end;
+    } else if (params || comment) {
+      /* No need to pad if there's no argument and no comment. */
+      string_builder_sprintf(s, " %8s ", "");
+    }
+
+    /* Params */
+    if (!skip_params) {
+      ptrdiff_t bytes_left = 20;
+      if (params) {
+	do {
+	  string_builder_sprintf(s, " %s", params[0]);
+	  bytes_left -= strlen(params[0]) + 1;
+	  params++;
+	  if (params[0]) {
+	    string_builder_sprintf(s, ",");
+	    bytes_left--;
+	  }
+	} while (params[0] && (((ptrdiff_t)strlen(params[0])) <= bytes_left));
+      }
+      if (bytes_left < 0) {
+	skip_comment = 1;
+      } else if (comment) {
+	/* No need to pad if there's no comment. */
+	string_builder_sprintf(s, "%*s", (int)bytes_left, "");
+      }
+    }
+
+    /* Comment */
+    if (!skip_comment && comment) {
+      const char *ptr = strchr(comment, '\n');
+      if (ptr) {
+	string_builder_sprintf(s, " # %.*s\n", (int)(ptr - comment), comment);
+	comment = ptr + 1;
+	if (!comment[0]) comment = NULL;
+      } else {
+	string_builder_sprintf(s, " # %s\n", comment);
+	comment = NULL;
+      }
+    } else {
+      string_builder_sprintf(s, "\n");
+    }
+  }
+}
+
+PMOD_EXPORT void string_builder_append_disassembly_data(struct string_builder *s,
+							size_t address,
+							const void *start,
+							const void *end,
+							const char *comment)
+{
+  const unsigned char *pos = start;
+  const unsigned char *pos_end = end;
+
+  while ((pos < pos_end) || (comment && comment[0])) {
+    size_t i;
+    int skip_comment = 0;
+
+    if (comment && !comment[0]) comment = NULL;
+
+    if (pos_end) {
+      /* Address */
+      string_builder_sprintf(s, "0x%016zx  ", address);
+
+      if (pos < pos_end) {
+	struct pike_string tmp;
+	ptrdiff_t buf_len;
+
+	/* Fake a pike_string for use with %q further below. */
+	tmp.refs = 1;
+	tmp.flags = 0;
+	tmp.size_shift = 0;
+	tmp.alloc_type = STRING_ALLOC_STATIC;
+	tmp.struct_type = STRING_STRUCT_SUBSTRING;
+	tmp.min = 0;
+	tmp.max = 255;
+	tmp.len = 0;		/* Will be increased in the loop below. */
+	tmp.hval = 0;
+	tmp.next = NULL;
+	tmp.str = (char *)pos;
+
+	/* Memory dump */
+	for (i = 0; i < 4; i++) {
+	  if (pos < pos_end) {
+	    string_builder_sprintf(s, "%02x ", *pos);
+	    pos++;
+	    tmp.len++;
+	    address++;
+	    if (pos >= pos_end) {
+	      pos_end = NULL;
+	    }
+	  } else {
+	    string_builder_sprintf(s, "   ");
+	  }
+	}
+
+	buf_len = s->s->len;
+	if (comment) {
+	  string_builder_sprintf(s, " .data    %-20pq", &tmp);
+	  if (UNLIKELY(s->s->len > buf_len + 10 + 20)) {
+	    /* Paranoia: This probably can't happen.
+	     *           Max should be with octal or hex quoting:
+	     *             " .data    "   10 +
+	     *             "\""            1 +
+	     *             "\xxx" * 4    4*4 +
+	     *             "\""            1
+	     *           ==> 28.
+	     */
+	    skip_comment = 1;
+	  }
+	} else {
+	  string_builder_sprintf(s, " .data    %pq", &tmp);
+	}
+      } else if (comment) {
+	pos_end = NULL;
+	string_builder_sprintf(s, "%*s", 4*3 + 10 + 20, "");
+      }
+    } else {
+      string_builder_sprintf(s, "%*s", 18 + 2 + 4*3 + 10 + 20, "");
+    }
+
+    /* Comment */
+    if (!skip_comment && (comment && comment[0])) {
+      const char *ptr = strchr(comment, '\n');
+      if (ptr) {
+	string_builder_sprintf(s, " # %.*s\n", (int)(ptr - comment), comment);
+	comment = ptr + 1;
+	if (!comment[0]) comment = NULL;
+      } else {
+	string_builder_sprintf(s, " # %s\n", comment);
+	comment = NULL;
+      }
+    } else {
+      string_builder_sprintf(s, "\n");
+    }
+  }
+}
+
+PMOD_EXPORT void string_builder_vsprintf_disassembly(struct string_builder *s,
+						     size_t address,
+						     const void *start,
+						     const void *end,
+						     const char *comment,
+						     const char *fmt,
+						     va_list args)
+{
+  struct string_builder tmp_buf;
+  init_string_builder(&tmp_buf, 0);
+  string_builder_vsprintf(&tmp_buf, fmt, args);
+  string_builder_putchar(&tmp_buf, 0);
+
+  if (tmp_buf.s->size_shift) {
+    Pike_fatal("Wide characters are not yet supported here.\n");
+  }
+
+  string_builder_append_disassembly(s, address, start, end,
+				    tmp_buf.s->str, NULL, comment);
+
+  free_string_builder(&tmp_buf);
+}
+
+PMOD_EXPORT void string_builder_sprintf_disassembly(struct string_builder *s,
+						    size_t address,
+						    const void *start,
+						    const void *end,
+						    const char *comment,
+						    const char *fmt, ...)
+{
+  va_list args;
+  va_start(args, fmt);
+  string_builder_vsprintf_disassembly(s, address, start, end,
+				      comment, fmt, args);
+  va_end(args);
+}
+
+
 PMOD_EXPORT void reset_string_builder(struct string_builder *s)
 {
   s->known_shift=0;
@@ -992,6 +2537,7 @@ PMOD_EXPORT void free_string_builder(struct string_builder *s)
 {
   s->s->len = s->malloced;
   free_string(s->s);
+  s->s = NULL;
 }
 
 PMOD_EXPORT struct pike_string *finish_string_builder(struct string_builder *s)
@@ -1004,6 +2550,40 @@ PMOD_EXPORT struct pike_string *finish_string_builder(struct string_builder *s)
   if(s->known_shift == s->s->size_shift)
     return low_end_shared_string(s->s);
   return end_shared_string(s->s);
+}
+
+/**
+ * Write the contents of a string_builder buffer to an fd.
+ *
+ * @param fd
+ *   File descriptor to write to.
+ *
+ * @param s
+ *   String builder buffer to write.
+ *
+ * @returns
+ *   Returns the number of bytes written.
+ *
+ * Removes the data that was written from the buffer.
+ */
+PMOD_EXPORT ptrdiff_t write_and_reset_string_builder(int fd,
+						     struct string_builder *s)
+{
+  ptrdiff_t bytes = 0;
+  if (s && s->s && s->s->len) {
+    if (s->s->size_shift) {
+      Pike_fatal("Buffer contains wide characters.\n");
+    }
+    bytes = fd_write(fd, s->s->str, s->s->len);
+    if (bytes <= 0) {
+    } else if (bytes < s->s->len) {
+      s->s->len -= bytes;
+      memmove(s->s->str, s->s->str + bytes, s->s->len);
+    } else {
+      reset_string_builder(s);
+    }
+  }
+  return bytes;
 }
 
 /*! @module String
@@ -1175,6 +2755,21 @@ PIKECLASS Buffer
   {
     f_Buffer_add( 1 );
     REF_RETURN Pike_fp->current_object;
+  }
+
+  /**
+   * Return the string_builder that is embedded in
+   * a String.Buffer.
+   */
+  PMOD_EXPORT struct string_builder *
+    string_builder_from_string_buffer(struct object *o)
+  {
+    if (!o) return NULL;
+
+    if (LIKELY(o->prog == Buffer_program))
+      return &OBJ2_BUFFER(o)->str;
+
+    return &((struct Buffer_struct *)get_storage(o, Buffer_program))->str;
   }
 
   /*! @decl int add(string|String.Buffer ... data)
@@ -1436,7 +3031,6 @@ PIKECLASS Buffer
   {
     PCHARP buf = MKPCHARP_STR(THIS->str.s);
     ptrdiff_t len = THIS->str.s->len;
-    ptrdiff_t i;
     SearchMojt mojt;
     PCHARP res;
 

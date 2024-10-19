@@ -1,3 +1,5 @@
+/* -*- mode: Pike; c-basic-offset: 3; -*- */
+
 /*
  * Compile & Exec
  *
@@ -19,7 +21,7 @@ final constant ops = 2000;
 
 
 string prog="";
-void create()
+protected void create()
 {
     int v=10;
 

@@ -15,6 +15,8 @@
 
 inherit Nettle.AES;
 
+@Pike.Annotations.Implements(Crypto.BlockCipher);
+
 #if constant(Nettle.POLY1305_AES)
 
 //! @module POLY1305
@@ -27,7 +29,7 @@ protected class Poly1305
   inherit Nettle.POLY1305_AES;
 
   //! Get a POLY1305 @[State] object initialized with a password.
-  State `()(string(8bit) password)
+  protected State `()(string(8bit) password)
   {
     return State(password);
   }
@@ -63,7 +65,7 @@ protected class _UMAC32
   inherit Nettle.UMAC32_AES;
 
   //! Get a UMAC32 @[State] object initialized with a password.
-  State `()(string(8bit) password)
+  protected State `()(string(8bit) password)
   {
     return State(password);
   }
@@ -99,7 +101,7 @@ protected class _UMAC64
   inherit Nettle.UMAC64_AES;
 
   //! Get a UMAC64 @[State] object initialized with a password.
-  State `()(string(8bit) password)
+  protected State `()(string(8bit) password)
   {
     return State(password);
   }
@@ -135,7 +137,7 @@ protected class _UMAC96
   inherit Nettle.UMAC96_AES;
 
   //! Get a UMAC96 @[State] object initialized with a password.
-  State `()(string(8bit) password)
+  protected State `()(string(8bit) password)
   {
     return State(password);
   }
@@ -171,7 +173,7 @@ protected class _UMAC128
   inherit Nettle.UMAC128_AES;
 
   //! Get a UMAC128 @[State] object initialized with a password.
-  State `()(string(8bit) password)
+  protected State `()(string(8bit) password)
   {
     return State(password);
   }

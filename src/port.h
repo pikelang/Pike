@@ -107,7 +107,7 @@ PMOD_EXPORT void GETTIMEOFDAY(struct timeval *t);
 #  endif
 #endif
 
-#ifdef HAVE__SNPRINTF
+#if !defined(HAVE_SNPRINTF) && defined(HAVE__SNPRINTF)
 /* In WIN32 snprintf is known as _snprintf... */
 #define snprintf _snprintf
 #endif
@@ -136,7 +136,14 @@ char *strchr(const char *s,int c);
 #undef strdup
 #ifdef HAVE__STRDUP
 #define strdup(X) _strdup(X)
+#else
+char *strdup(const char *str);
 #endif
+#endif
+
+#ifndef HAVE_LOG2
+#undef log2
+double log2(double val);
 #endif
 
 #ifdef EXTRACT_UCHAR_BY_CAST

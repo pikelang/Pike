@@ -287,7 +287,7 @@ class Event
       data = lower_case(data);
   }
 
-  protected string _sprintf( int t )
+  protected string|zero _sprintf( int t )
   {
     if( t!='O' ) return 0;
     if( !key )

@@ -42,6 +42,9 @@ if test x$with_svg = xyes ; then
         AC_DEFINE(HAVE_SVG_2_36_OR_NEWER, 1, [Define if librsvg is version 2.36 or newer])
       fi
       PIKE_FEATURE_OK(Image.SVG)
+
+      AC_CHECK_FUNCS(rsvg_handle_get_intrinsic_size_in_pixels \
+		     rsvg_handle_render_document)
     else
       AC_MSG_RESULT(no)
       SVG_CFLAGS=""

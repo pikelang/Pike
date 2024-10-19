@@ -63,7 +63,7 @@ mixed get_property(string property)
   {
     char *prop;
     char *s;
-    get_all_args(NULL,args,"%s",&prop);
+    get_all_args(NULL,args,"%c",&prop);
     s=g_strdup(prop);
     pgtk2_pop_n_elems(args);
     pgtk2__low_get_property(G_OBJECT(THIS->obj),s);

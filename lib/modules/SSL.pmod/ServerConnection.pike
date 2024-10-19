@@ -22,6 +22,15 @@ protected Packet hello_request()
   return handshake_packet(HANDSHAKE_hello_request, "");
 }
 
+protected Packet hello_verify_request(string(8bit) cookie)
+{
+  // FIXME: Dynamic DTLS version.
+  return handshake_packet(HANDSHAKE_hello_verify_request,
+			  sprintf("%2c%1H",
+				  PROTOCOL_DTLS_1_0,
+				  cookie));
+}
+
 protected Packet finished_packet(string(8bit) sender)
 {
   SSL3_DEBUG_MSG("Sending finished_packet, with sender=\""+sender+"\"\n" );
@@ -43,7 +52,7 @@ protected Packet server_hello_packet()
   struct->add_int(session->compression_algorithm, 1);
 
   Buffer extensions = Buffer();
-  Alert fail;
+  object(Alert)|zero fail;
 
   void ext(int id, int condition, function(void:Buffer) code)
   {
@@ -120,7 +129,7 @@ protected Packet server_hello_packet()
     return Buffer()->add_string_array(({application_protocol}), 1, 2);
   };
 
-  if (fail) return fail;
+  if (fail) return [object]fail;
 
   // NB: Assume that the client understands extensions
   //     if it has sent extensions...
@@ -133,12 +142,12 @@ protected Packet server_hello_packet()
 //! Initialize the KeyExchange @[ke], and generate a
 //! @[HANDSHAKE_server_key_exchange] packet if the
 //! key exchange needs one.
-protected Packet server_key_exchange_packet()
+protected object(Packet)|zero server_key_exchange_packet()
 {
   if (ke) error("KE!\n");
   ke = session->cipher_spec->ke_factory(context, session, this, client_version);
   if (!ke->init_server()) return 0;
-  string(8bit) data =
+  string(8bit)|zero data =
     ke->server_key_exchange_packet(client_random, server_random);
   return data && handshake_packet(HANDSHAKE_server_key_exchange, data);
 }
@@ -199,7 +208,7 @@ protected int(-1..0) reply_new_session(array(int) cipher_suites,
     }
   }
 
-  Packet key_exchange = server_key_exchange_packet();
+  object(Packet)|zero key_exchange = server_key_exchange_packet();
 
   if (key_exchange) {
     SSL3_DEBUG_MSG("Sending ServerKeyExchange.\n");
@@ -262,6 +271,9 @@ void new_cipher_states()
 //! This function returns 0 if handshake is in progress, 1 if handshake
 //! is finished, and -1 if a fatal error occurred. It uses the
 //! send_packet() function to transmit packets.
+//!
+//! @note
+//!   On entry the handshake header has been removed from @[input].
 int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 {
 #ifdef SSL3_PROFILING
@@ -310,12 +322,6 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
       if (type != HANDSHAKE_client_hello)
         COND_FATAL(1, ALERT_unexpected_message, "Expected client_hello.\n");
 
-      string(8bit) session_id;
-      int cipher_len;
-      array(int) cipher_suites;
-      array(int) compression_methods;
-      array(int(16bit)) versions;
-
       SSL3_DEBUG_MSG("SSL.ServerConnection: CLIENT_HELLO\n");
 
       client_version =
@@ -327,7 +333,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
                  sprintf("Unsupported version %s.\n",
                          fmt_version(client_version)));
 
-      versions = context->get_versions(client_version);
+      array(int(16bit)) versions = context->get_versions(client_version);
       COND_FATAL(!sizeof(versions), ALERT_protocol_version,
                  sprintf("Unsupported version %s.\n",
                          fmt_version(client_version)));
@@ -336,15 +342,16 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
                      fmt_version(client_version), fmt_version(version));
 
       client_random = input->read(32);
-      session_id = input->read_hstring(1);
+      string(8bit) session_id = input->read_hstring(1);
 
-      cipher_len = input->read_int(2);
+      int cipher_len = input->read_int(2);
       COND_FATAL(cipher_len & 1, ALERT_unexpected_message,
                  "Invalid client_hello.\n");
 
-      cipher_suites = input->read_ints(cipher_len/2, 2);
+      array(int) cipher_suites = input->read_ints(cipher_len/2, 2);
+      array(int) client_cipher_suites = cipher_suites;
 
-      compression_methods = input->read_int_array(1, 1);
+      array(int) compression_methods = input->read_int_array(1, 1);
       SSL3_DEBUG_MSG("STATE_wait_for_hello: received hello\n"
                      "version = %s\n"
                      "session_id=%O\n"
@@ -354,14 +361,12 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
                      session_id, fmt_cipher_suites(cipher_suites),
                      compression_methods);
 
-      Stdio.Buffer extensions;
-      if (sizeof(input))
-        extensions = input->read_hbuffer(2);
-
       Stdio.Buffer early_data = Stdio.Buffer();
       int missing_secure_renegotiation = secure_renegotiation;
-      if (extensions)
+      if (sizeof(input))
       {
+	Stdio.Buffer extensions = input->read_hbuffer(2);
+
         // FIXME: Control Safari workaround detection from the
         // context.
         int maybe_safari_10_8 = 1;
@@ -424,7 +429,8 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
             COND_FATAL( sizeof(bytes)&1, ALERT_handshake_failure,
                         "Corrupt signature algorithms.\n" );
             // Pairs of <hash_alg, signature_alg>.
-            session->signature_algorithms = ((array(int))bytes)/2;
+	    session->signature_algorithms =
+	      [array(int)]column(map(bytes/2, array_sscanf, "%2c"), 0);
             SSL3_DEBUG_MSG("New signature_algorithms:\n"+
                            fmt_signature_pairs(session->signature_algorithms));
             break;
@@ -555,6 +561,10 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 
 	  case EXTENSION_session_ticket:
 	    SSL3_DEBUG_MSG("SSL.ServerConnection: Got session ticket.\n");
+            if (!context->offers_tickets()) {
+              SSL3_DEBUG_MSG("SSL.ServerConnection: ...but !context->offers_tickets(), thus ignoring.\n");
+              break;
+            }
 	    tickets_enabled = 1;
 	    // NB: RFC 4507 and 5077 differ in encoding here.
 	    //     Apparently no implementations actually followed
@@ -591,7 +601,8 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
               // Although the protocol list is sent in client
               // preference order, it is the server preference that
               // wins.
-              foreach(context->advertised_protocols;; string(8bit) prot)
+              foreach([array(string(8bit))]context->advertised_protocols;;
+                      string(8bit) prot)
                 if( protocols[prot] )
                 {
                   application_protocol = prot;
@@ -749,12 +760,12 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
       SSL3_DEBUG_MSG("ciphers: me:\n%s, client:\n%s",
                      fmt_cipher_suites(context->preferred_suites),
                      fmt_cipher_suites(cipher_suites));
-      cipher_suites = context->preferred_suites & cipher_suites;
+      cipher_suites = [array(int)] context->preferred_suites & cipher_suites;
       SSL3_DEBUG_MSG("intersection:\n%s\n",
                      fmt_cipher_suites((array(int))cipher_suites));
 
       if (sizeof(cipher_suites)) {
-        array(CertificatePair) certs =
+        array(CertificatePair)|zero certs =
           context->find_cert_domain(session->server_name);
 
         ProtocolVersion orig_version = version;
@@ -788,12 +799,18 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
         }
       }
 
-      // No overlapping cipher suites, or obsolete cipher suite
-      // selected, or incompatible certificates.
-      // FIXME: Consider ALERT_insufficient_security
-      //        (cf RFC 7465 section 2).
-      COND_FATAL(!sizeof(cipher_suites),
-                 ALERT_handshake_failure, "No common suites!\n");
+      if (!sizeof(cipher_suites)) {
+	// No overlapping cipher suites, or obsolete cipher suite
+	// selected, or incompatible certificates.
+	// FIXME: Consider ALERT_insufficient_security
+	//        (cf RFC 7465 section 2).
+	COND_FATAL(1, ALERT_handshake_failure,
+		   sprintf("No common suites! %s\n"
+			   "Client suites:\n"
+			   "%s\n",
+			   fmt_version(version),
+			   fmt_cipher_suites(client_cipher_suites)));
+      }
 
       // TLS 1.2 or earlier.
 
@@ -805,7 +822,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 
       session->set_compression_method(compression_methods[0]);
 
-      Session old_session;
+      object(Session)|zero old_session;
       if (tickets_enabled) {
 	SSL3_DEBUG_MSG("SSL.ServerConnection: Decoding ticket: %O...\n",
 		       session->ticket);
@@ -844,11 +861,17 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
         session = old_session;
         send_packet(server_hello_packet());
 
-	if (tickets_enabled) {
-	  SSL3_DEBUG_MSG("SSL.ServerConnection: Resending ticket.\n");
-	  int lifetime_hint = [int](session->ticket_expiration_time - time(1));
-	  string(8bit) ticket = session->ticket;
-	  send_packet(new_session_ticket_packet(lifetime_hint, ticket));
+        if (tickets_enabled) {
+          if( !session->ticket ) {
+            SSL3_DEBUG_MSG("Missing ticket in session.\n");
+          } else if( !session->ticket_expiry_time ) {
+            SSL3_DEBUG_MSG("Missing ticket expiry time in session.\n");
+          } else {
+            SSL3_DEBUG_MSG("SSL.ServerConnection: Resending ticket.\n");
+            int lifetime_hint = [int](session->ticket_expiry_time - time(1));
+            string(8bit) ticket = [string(8bit)]session->ticket;
+            send_packet(new_session_ticket_packet(lifetime_hint, ticket));
+          }
 	}
 
         new_cipher_states();
@@ -886,8 +909,8 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
       if (type != HANDSHAKE_finished)
         COND_FATAL(1, ALERT_unexpected_message, "Expected finished.\n");
 
-      string(8bit) my_digest;
-      string(8bit) digest;
+      string(8bit) my_digest = "";
+      string(8bit) digest = "";
 
       SSL3_DEBUG_MSG("SSL.ServerConnection: FINISHED\n");
 
@@ -918,7 +941,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
       {
 	if (version < PROTOCOL_TLS_1_3) {
 	  if (tickets_enabled) {
-	    array(string(8bit)|int) ticket_info =
+	    array(string(8bit)|int)|zero ticket_info =
 	      context->encode_ticket(session);
 	    if (ticket_info) {
 	      SSL3_DEBUG_MSG("SSL.ServerConnection: Sending ticket %O.\n",
@@ -947,7 +970,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
       }
 
       // Handshake hash is calculated for both directions above.
-      handshake_messages = 0;
+      handshake_messages = Buffer();
 
       handshake_state = STATE_wait_for_hello;
 

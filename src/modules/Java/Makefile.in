@@ -4,8 +4,6 @@ OBJS=jvm.o
 MODULE_LDFLAGS=@LDFLAGS@ @JAVA_LIBS@
 LINKER_OPTIONS=@LINKER_OPTIONS@
 
-CONFIG_HEADERS=@CONFIG_HEADERS@
-
 @dynamic_module_makefile@
 
 @dependencies@

@@ -33,6 +33,8 @@ Options opt;
 mapping headers = ([]);
 NetUtils.IpRangeLookup ip_whitelist;
 
+string cwd;
+
 int main(int argc, array(string) argv)
 {
   opt = Options(argv);
@@ -67,13 +69,14 @@ int main(int argc, array(string) argv)
     ip_whitelist = NetUtils.IpRangeLookup( ([ 1 : opt->allow ]) );
   }
 
+  cwd = getcwd();
   Protocols.HTTP.Server.Port(handle_request, port, NetUtils.ANY);
   write("%s is now accessible on port %d through http, "
         "without password.\n", getcwd(), port);
   return -1;
 }
 
-string dirlist( string dir )
+string dirlist( string dir, string rel_dir )
 {
     string res =
 	"<html><head>\n"
@@ -82,7 +85,7 @@ string dirlist( string dir )
 	".even { background-color:#fefefe; }\n"
         "</style>\n"
 	"</head><body>\n"
-	"<h1>"+Parser.encode_html_entities(dir[2..])+"</h1>"
+	"<h1>"+Parser.encode_html_entities(rel_dir)+"</h1>"
         "<table cellspacing='0' cellpadding='2'>\n"
         "<tr><th align='left'>Filename</th>"
 	"<th align='right'>Type</th>"
@@ -90,6 +93,7 @@ string dirlist( string dir )
 
     foreach( sort( get_dir( dir ) ); int i; string fn )
     {
+        string path = Protocols.HTTP.uri_encode((combine_path(rel_dir, fn)/"/")[*])*"/";
         Stdio.Stat s = file_stat( combine_path(dir, fn) );
         if( !s )
             continue;
@@ -103,7 +107,7 @@ string dirlist( string dir )
 		    "<td align='right'>%s</td>"
 		    "<td align='right'>%s</td></tr>\n",
                     (i&1?"odd":"even"),
-                    Protocols.HTTP.uri_encode(fn), s->isdir?"/":"",
+                    path, s->isdir?"/":"",
 		    Parser.encode_html_entities(fn), t,
                     s->isdir?"":String.int2size(s->size));
     }
@@ -120,8 +124,9 @@ string file_not_found(string fname)
 
 void handle_request(Protocols.HTTP.Server.Request request)
 {
-    string file = "."+combine_path("/",request->not_query);
-    file = Protocols.HTTP.uri_decode(file);
+    string file = Protocols.HTTP.uri_decode(request->not_query);
+    string rel_file = combine_path_unix("/", file)[1..];
+    file = combine_path(cwd, rel_file);
     Stdio.Stat s = file_stat( file );
     int ipblock = ip_whitelist &&
       !ip_whitelist->lookup_range(request->my_fd->query_address());
@@ -167,7 +172,7 @@ void handle_request(Protocols.HTTP.Server.Request request)
                                         "extra_heads" : headers,
                                         "error":404]) );
     else if( s->isdir )
-        request->response_and_finish( ([ "data":dirlist(file),
+        request->response_and_finish( ([ "data":dirlist(file, rel_file),
                                          "extra_heads" : headers,
                                          "type":"text/html" ]) );
     else

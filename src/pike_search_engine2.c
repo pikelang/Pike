@@ -174,7 +174,7 @@ HCHAR *NameNH(hubbe_search)(struct hubbe_searcher *s,
 
   NameH(HUBBE_ALIGN)(q);
 
-  for(;q<=(HCHAR*)(((char *)end)-sizeof(INT32));q+=max)
+  for(;q+4<=end;q+=max)
   {
     h=tmp=NameH(GET_4_ALIGNED_CHARS)(q);
 

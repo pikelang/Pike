@@ -89,7 +89,7 @@ class NodeList
 {
   protected array(Node) nodes;
 
-  protected NodeList `+(NodeList nl) {
+  protected NodeList `+(NodeList|array(Node) nl) {
     return NodeList(values(this)+values(nl));
   }
   protected Node `[](int index) { return item(index); }
@@ -129,7 +129,7 @@ class NamedNodeMap
 
   Node get_named_item(string name) { return map[name]; }
 
-  Node set_named_item(Node arg)
+  object(Node)|zero set_named_item(Node arg)
   {
     if(arg->get_owner_document() != owner_document)
       throw(DOMException(DOMException.WRONG_DOCUMENT_ERR));
@@ -226,7 +226,7 @@ class Node
     return parent_node && parent_node->is_readonly();
   }
 
-  string get_node_value() { return 0; }
+  string|zero get_node_value() { return 0; }
   void set_node_value(string value) { }
 
   string get_node_name();
@@ -248,7 +248,7 @@ class Node
     return child_nodes && sizeof(child_nodes) && child_nodes[-1];
   }
 
-  Node get_previous_sibling(Node|void node) {
+  object(Node)|zero get_previous_sibling(Node|void node) {
     if(!node)
       return parent_node && parent_node->get_previous_sibling(this);
     if(!child_nodes)
@@ -257,7 +257,7 @@ class Node
     return pos > 0 && child_nodes[pos-1];
   }
 
-  Node get_next_sibling(Node|void node) {
+  object(Node)|zero get_next_sibling(Node|void node) {
     if(!node)
       return parent_node && parent_node->get_next_sibling(this);
     if(!child_nodes)
@@ -266,7 +266,7 @@ class Node
     return pos >= 0 && pos < sizeof(child_nodes)-1 && child_nodes[pos+1];
   }
 
-  NamedNodeMap get_attributes() { return 0; }
+  object(NamedNodeMap)|zero get_attributes() { return 0; }
   Document get_owner_document() { return owner_document; }
 
   protected int child_is_allowed(Node child) { return 0; }
@@ -289,7 +289,7 @@ class Node
     parent_node = new_parent;
   }
 
-  Node insert_before(Node new_child, Node ref_child)
+  Node insert_before(Node new_child, object(Node)|zero ref_child)
   {
     int pos = ref_child?
       (child_nodes? child_nodes->search(ref_child) : -1) :
@@ -402,14 +402,16 @@ class Document
   protected program EntityReferenceImpl = EntityReference;
 
   protected DOMImplementation implementation;
+
+  // NB: Stored, but not used.
   protected string namespace_uri, qualified_name;
 
   int get_node_type() { return DOCUMENT_NODE; }
   string get_node_name() { return "#document"; }
-  Document get_owner_document() { return 0; }
+  object(Document)|zero get_owner_document() { return 0; }
   DOMImplementation get_implementation() { return implementation; }
 
-  DocumentType get_doctype()
+  object(DocumentType)|zero get_doctype()
   {
     foreach(values(get_child_nodes()), Node cn)
       if(cn->get_node_type() == DOCUMENT_TYPE_NODE)
@@ -417,7 +419,7 @@ class Document
     return 0;
   }
 
-  Element get_document_element()
+  object(Element)|zero get_document_element()
   {
     foreach(values(get_child_nodes()), Node cn)
       if(cn->get_node_type() == ELEMENT_NODE)
@@ -875,13 +877,14 @@ class Entity
 {
   inherit Node;
 
-  protected string name, public_id, system_id, notation_name;
+  protected string name;
+  protected string|zero public_id, system_id, notation_name;
 
   int get_node_type() { return ENTITY_NODE; }
   string get_node_name() { return name; }
-  string get_public_id() { return public_id; }
-  string get_system_id() { return system_id; }
-  string get_notation_name() { return notation_name; }
+  string|zero get_public_id() { return public_id; }
+  string|zero get_system_id() { return system_id; }
+  string|zero get_notation_name() { return notation_name; }
   protected int is_readonly() { return name != 0; }
 
   protected string cast(string to)
@@ -898,8 +901,9 @@ class Entity
 	     ENTITY_REFERENCE_NODE>)[child->get_node_type()];
   }
 
-  protected void create(Document owner, string _name, string p_id, string s_id,
-		     string n_name, DocumentFragment|void value)
+  protected void create(Document owner, string _name,
+			string|zero p_id, string|zero s_id,
+			string|zero n_name, DocumentFragment|void value)
   {
     owner_document = owner;
     public_id = p_id;
@@ -1100,7 +1104,8 @@ class AbstractDOMParser
 
   protected Document create_document(InputSource s)
   {
-    return get_dom_implementation()->create_document(0, 0, 0);
+    // NB: Argument s ignored.
+    return get_dom_implementation()->create_document("", "", 0);
   }
 
   protected object|void parse_callback(string ty, string name, mapping attributes,

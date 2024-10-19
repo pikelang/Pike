@@ -6,6 +6,8 @@
 
 #pike 8.1
 
+#pragma no_deprecation_warnings
+
 //! This class encapsulates a connection to an SQL server. It is a
 //! generic interface on top of the DB server specific
 //! implementations. That doesn't mean that there aren't plenty of
@@ -241,13 +243,13 @@ protected program find_dbm(string program_name) {
 //! @note
 //!   Support for @[options] was added in Pike 7.3.
 //!
-void create(string|object host, void|string|mapping(string:int|string) db,
+void create(string|object|zero host, void|string|mapping(string:int|string) db,
 	    void|string user, void|string _password,
 	    void|mapping(string:int|string) options)
 {
   // Note: No need to censor host here, since it is rewritten below if
   //       it contains an SQL-URL.
-  string password = _password;
+  string|zero password = _password;
   _password = "CENSORED";
 
   if (objectp(host)) {
@@ -556,6 +558,18 @@ array(string|mapping(string|int:mixed))
 // Compat wrapper.
 {
   return .sql_util.handle_extraargs (query, extraargs);
+}
+
+//!
+int insert_id()
+{
+  return master_sql->insert_id();
+}
+
+//!
+int affected_rows()
+{
+  return master_sql->affected_rows();
 }
 
 //! Sends an SQL query synchronously to the underlying SQL-server and

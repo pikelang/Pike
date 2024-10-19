@@ -76,7 +76,7 @@ void parse_rc(string rc)
 //! Takes a string and reads it as a gtkrc file.
 {
   char *s;
-  get_all_args(NULL,args,"%s",&s);
+  get_all_args(NULL,args,"%c",&s);
   gtk_rc_parse_string(s);
   pgtk2_pop_n_elems(args);
   push_int(0);
@@ -197,6 +197,7 @@ static gchar **get_argv( int *argc_ret, int an )
   struct array *a;
   int argc;
   gchar **data;
+  int args = -1;
   if( TYPEOF(Pike_sp[-an]) != PIKE_T_ARRAY )
     Pike_error("Expected array\n");
   a = Pike_sp[-an].u.array;
@@ -204,7 +205,7 @@ static gchar **get_argv( int *argc_ret, int an )
     Pike_error ("Expected array with at least one element.\n");
   data=g_malloc0(sizeof(char *)*(a->size+1));
   if (data==NULL)
-    Pike_error(msg_out_of_mem);
+    SIMPLE_OUT_OF_MEMORY_ERROR(NULL, sizeof(char *)*(a->size+1));
   for( argc=0; argc<a->size; argc++ )
     if (!PGTK_ISSTR(ITEM(a)+argc))
     {
@@ -277,7 +278,13 @@ void flush()
 //! Flush GDK. Not normally needed, can be useful while doing calculations.
 {
   gdk_flush();
+
+#ifdef HAVE_GTK22
+  while(g_main_context_iteration(NULL,0));
+#else
   while(g_main_iteration( 0 ) );
+#endif
+
   pgtk2_pop_n_elems(args);
   push_int(0);
 }
@@ -334,7 +341,11 @@ int main_iteration_do(int block)
   INT_TYPE n;
   get_all_args( "main_iteration_do", args, "%i", &n );
   pgtk2_pop_n_elems(args);
+#ifdef HAVE_GTK22
+  push_int(g_main_context_iteration(NULL, n));
+#else
   push_int( g_main_iteration( n ) );
+#endif
 }
 
 int true()
@@ -549,7 +560,7 @@ mapping(string:mixed) get_file_info(string filename)
   char *filename;
   int width,height;
 
-  get_all_args(NULL,args,"%s",&filename);
+  get_all_args(NULL,args,"%c",&filename);
   gpf=gdk_pixbuf_get_file_info(filename,&width,&height);
   pgtk2_pop_n_elems(args);
   k=0;
@@ -648,7 +659,7 @@ void set_default_icon_name(string name)
 //! called on them from a themed icon.
 {
   char *s;
-  get_all_args(NULL,args,"%s",&s);
+  get_all_args(NULL,args,"%c",&s);
   gtk_window_set_default_icon_name(s);
   pgtk2_pop_n_elems(args);
 }
@@ -738,7 +749,7 @@ void set_default_icon_from_file(string filename)
   char *filename;
   int res;
 
-  get_all_args(NULL,args,"%s",&filename);
+  get_all_args(NULL,args,"%c",&filename);
   res=gtk_window_set_default_icon_from_file(filename,&err);
   if (!res)
     Pike_error("Unable to set icon from file %s: %s\n",filename,err->message);
@@ -788,7 +799,7 @@ void add_builtin_icon(string name, int size, GDK2.Pixbuf pixbuf)
     char *name;
     INT_TYPE size;
     struct object *o1;
-    get_all_args(NULL,args,"%s%i%o",&name,&size,&o1);
+    get_all_args(NULL,args,"%c%i%o",&name,&size,&o1);
     gtk_icon_theme_add_builtin_icon(name,size,GDK_PIXBUF(get_gobject(o1)));
   }
   pgtk2_pop_n_elems(args);

@@ -47,8 +47,9 @@
 #ifdef SSL3_DEBUG
 protected string stream_descr;
 #define SSL3_DEBUG_MSG(X...)						\
-  werror ("[thr:" + this_thread()->id_number() +			\
-	  "," + (stream ? "" : "ex ") + stream_descr + "] " + X)
+  werror ("[thr:" + sprintf("0x%08x", this_thread()->id_number()) +	\
+	  "," + (stream ? "" : "ex ") + stream_descr + "] " +		\
+	  __func__ + ": " + X)
 #ifdef SSL3_DEBUG_MORE
 #define SSL3_DEBUG_MORE_MSG(X...) SSL3_DEBUG_MSG (X)
 #endif
@@ -73,6 +74,11 @@ protected Stdio.File stream;
 protected int(-1..65535) linger_time = -1;
 // The linger behaviour set by linger().
 
+protected int(0..0)|float timeout = 0;
+// The timeout in seconds for blocking operations.
+// This value is passed unmodified to local_backend->call_out() if not zero,
+// and the integer value 0 thus means no timeout.
+
 protected .Context context;
 // The context to use.
 
@@ -87,10 +93,15 @@ protected Stdio.Buffer user_write_buffer;	// Unencrypted data to write.
 protected int read_buffer_threshold;	// Max number of bytes to read.
 
 protected mixed callback_id;
-protected function(void|object,void|mixed:int) accept_callback;
-protected Stdio.read_callback_t read_callback;
-protected Stdio.write_callback_t write_callback;
-protected function(void|mixed:int) close_callback;
+protected function(void|object,void|mixed:int)|zero accept_callback;
+protected Stdio.read_callback_t|zero read_callback;
+protected Stdio.write_callback_t|zero write_callback;
+protected function(void|mixed:int)|zero close_callback;
+
+// callbacks set during handshake are temporarily deferred and stored here.
+protected Stdio.read_callback_t|zero d_read_callback;
+protected Stdio.write_callback_t|zero d_write_callback;
+protected function(void|mixed:int)|zero d_close_callback;
 
 protected Pike.Backend real_backend;
 // The real backend for the stream.
@@ -154,8 +165,9 @@ protected constant epipe_errnos = (<
   ((read_callback || write_callback || close_callback || accept_callback) && \
    close_state < NORMAL_CLOSE)
 
-#define SSL_HANDSHAKING (!conn || ((conn->state & CONNECTION_handshaking) && \
-				   (close_state != ABRUPT_CLOSE)))
+#define SSL_HANDSHAKING (!conn ||					\
+			 (((conn->state & (CONNECTION_handshaking|CONNECTION_local_fatal)) == CONNECTION_handshaking) && \
+			  (close_state != ABRUPT_CLOSE)))
 #define SSL_CLOSING_OR_CLOSED						\
   (conn->state & CONNECTION_local_closing)
 
@@ -170,7 +182,7 @@ protected constant epipe_errnos = (<
 // Try to write when there's data in the write buffer or when we have
 // a close packet to send. The packet is queued separately by
 // ssl_write_callback in the latter case.
-#define SSL_INTERNAL_WRITING (conn &&					\
+#define SSL_INTERNAL_WRITING (conn && !write_errno &&			\
 			      (sizeof (write_buffer) ||			\
 			       ((conn->state & CONNECTION_local_down) == \
 				CONNECTION_local_closing)))
@@ -277,10 +289,23 @@ protected int(0..0)|float backend_once(int|void nonwaiting_mode)
 		     !!stream->query_write_callback());
       return local_backend(0.0);
     } else {
-      SSL3_DEBUG_MSG("Running local backend [r:%O w:%O], infinite timeout\n",
+      SSL3_DEBUG_MSG("Running local backend [r:%O w:%O], %s timeout\n",
 		     !!stream->query_read_callback(),
-		     !!stream->query_write_callback());
-      return local_backend(0);
+		     !!stream->query_write_callback(),
+		     timeout?(timeout + " seconds"):"infinite");
+      // NB: For robustness, we handle the timeout via a call_out
+      //     rather than calling local_backend() with the timeout.
+      mixed to_handle;
+      if (timeout) {
+        to_handle = local_backend->call_out(ssl_timeout_callback, timeout);
+      }
+      int(0..0)|float ret = local_backend(0);	// NB: Always infinite timeout here.
+      if (to_handle) {
+        // Make sure that the timeout is not triggered the next time
+        // we run the local_backend.
+        local_backend->remove_call_out(to_handle);
+      }
+      return ret;
     }
   }
 }
@@ -290,26 +315,38 @@ protected int(0..0)|float backend_once(int|void nonwaiting_mode)
 #define RUN_MAYBE_BLOCKING(REPEAT_COND, NONWAITING_MODE) do {		\
     while (1) {								\
       float|int(0..0) action;						\
+      int nwmode = NONWAITING_MODE;					\
 									\
       if (!conn || (conn->state & CONNECTION_peer_fatal)) {		\
 	SSL3_DEBUG_MSG ("Backend ended efter peer fatal.\n");		\
 	break;								\
       }									\
 									\
-      action = backend_once(NONWAITING_MODE);				\
+      action = backend_once(nwmode);					\
 									\
-      if (!conn || (NONWAITING_MODE && !action)) {			\
-	SSL3_DEBUG_MSG ("Nonwaiting local backend ended - nothing to do\n"); \
+      if (!conn) {							\
+	SSL3_DEBUG_MSG ("Connection has gone away.\n");			\
 	break;								\
       }									\
 									\
-      if (!action && (conn->state & CONNECTION_local_closing)) {	\
-	SSL3_DEBUG_MSG ("Did not get a remote close - "			\
-			"signalling delayed error from writing close message\n"); \
-	cleanup_on_error();						\
-	close_errno = write_errno = System.EPIPE;			\
-	if (close_state != CLEAN_CLOSE)					\
-	  close_state = ABRUPT_CLOSE;					\
+      if (!action) {							\
+	/* NB: backend_once() may return spurious zeroes		\
+	 *     when multiple threads use the backend			\
+	 *     concurrently.						\
+	 */								\
+	if (nwmode) {							\
+	  SSL3_DEBUG_MSG ("Nonwaiting local backend ended - nothing to do.\n"); \
+	  break;							\
+	}								\
+									\
+	if (conn->state & CONNECTION_local_closing) {			\
+	  SSL3_DEBUG_MSG ("Did not get a remote close - "		\
+			  "signalling delayed error from writing close message\n"); \
+	  cleanup_on_error();						\
+	  close_errno = write_errno = System.EPIPE;			\
+	  if (close_state != CLEAN_CLOSE)				\
+	    close_state = ABRUPT_CLOSE;					\
+	}								\
       }									\
 									\
       if (!stream) {							\
@@ -388,7 +425,8 @@ protected void create (Stdio.File stream, SSL.Context ctx)
 //!
 //! @seealso
 //!   @[accept()]
-SSL.Session connect(string|void dest_addr, SSL.Session|void session)
+object(SSL.Session)|zero connect(string|void dest_addr,
+                                 SSL.Session|void session)
 {
   if (conn) error("A connection is already configured!\n");
 
@@ -470,6 +508,8 @@ int(1bit) accept(string|void pending_data)
 	conn = UNDEFINED;
 	return 0;
       }
+    } else {
+      queue_write();
     }
   } LEAVE;
 
@@ -508,7 +548,7 @@ void set_buffer_mode( Stdio.Buffer|int(0..0) in,Stdio.Buffer|int(0..0) out )
   user_read_buffer = in;
 
   if (user_write_buffer) {
-    user_write_buffer->__fd_set_output( 0 );
+    user_write_buffer->__set_on_write( 0 );
     if (out && sizeof(user_write_buffer)) {
       // Behave as if any data in the new output buffer was
       // appended to the old output buffer.
@@ -516,7 +556,7 @@ void set_buffer_mode( Stdio.Buffer|int(0..0) in,Stdio.Buffer|int(0..0) out )
     }
   }
   if (user_write_buffer = out)
-    user_write_buffer->__fd_set_output(internal_write);
+    user_write_buffer->__set_on_write(buffer_write);
 }
 
 //! Get the active input and output buffers that have been
@@ -586,6 +626,38 @@ int(0..1) linger(int(-1..65535)|void seconds)
   if (stream->linger && !stream->linger(seconds)) return 0;
   linger_time = seconds;
   return 1;
+}
+
+//! Controle Nagle's Algorithm (RFC 896).
+bool set_nodelay(bool|void state)
+{
+  function f = stream && stream->set_nodelay;
+  return f && f(state);
+}
+
+//! Set timeout for blocking operations.
+//!
+//! @param seconds
+//!   Time in seconds allowed for blocking operations
+//!   before triggering a timeout. Set to @expr{0@}
+//!   (zero) to disable.
+//!
+//! By default there is no timeout.
+//!
+//! @seealso
+//!   @[query_timeout()]
+void set_timeout(int(0..0)|float seconds)
+{
+  timeout = seconds;
+}
+
+//! Get the timeout for blocking operations.
+//!
+//! @seealso
+//!   @[set_timeout()]
+int(0..0)|float query_timeout()
+{
+  return timeout;
 }
 
 int close (void|string how, void|int clean_close, void|int dont_throw)
@@ -679,12 +751,12 @@ int close (void|string how, void|int clean_close, void|int dont_throw)
       shutdown();
       local_errno = err;
       if (dont_throw) {
-	local_errno = err;
 	RETURN (0);
       }
-      else if( err != System.EPIPE )
+      else if (!(< 0, System.EPIPE, System.ECONNRESET, >)[err]) {
 	// Errors are normally thrown from close().
         error ("Failed to close SSL connection: %s.\n", strerror (err));
+      }
     }
 
     if (stream && (stream->query_read_callback() || stream->query_write_callback())) {
@@ -873,8 +945,6 @@ string read (void|int length, void|int(0..1) not_all)
   SSL3_DEBUG_MSG ("SSL.File->read (%d, %d)\n", length, not_all);
 
   ENTER (0) {
-    if (close_state > STREAM_OPEN) error ("Not open.\n");
-
     if (read_errno && !sizeof(user_read_buffer)) {
       local_errno = read_errno;
       SSL3_DEBUG_MSG ("SSL.File->read: Propagating old callback error: %s.\n",
@@ -907,6 +977,12 @@ string read (void|int length, void|int(0..1) not_all)
 			      nonblocking_mode);
       }
     }
+
+    // if the stream is closed and the buffer contains no unread data,
+    // throw an exception. this allows data receieved to be retrieved
+    // even if the read happens after the stream is closed.
+    if (close_state > STREAM_OPEN && !sizeof(user_read_buffer)) 
+      error ("Not open.\n");
 
     string res = user_read_buffer->try_read(length);
 
@@ -981,7 +1057,7 @@ int write(string|array(string) data, mixed... args)
   }
 
   if (user_write_buffer) {
-    user_write_buffer->__fd_set_output(0);
+    user_write_buffer->__set_on_write(0);
     if (sizeof(user_write_buffer)) {
       // The write buffer isn't empty, so try to empty it. */
       int bytes = user_write_buffer->output_to(internal_write);
@@ -990,7 +1066,7 @@ int write(string|array(string) data, mixed... args)
 	bytes = 0;
       }
       if (bytes <= 0) {
-	user_write_buffer->__fd_set_output(internal_write);
+	user_write_buffer->__set_on_write(buffer_write);
 	return bytes;
       }
     }
@@ -1007,12 +1083,16 @@ int write(string|array(string) data, mixed... args)
       return actual_bytes;
     }
 
-    user_write_buffer->__fd_set_output(internal_write);
+    user_write_buffer->__set_on_write(buffer_write);
 
     return bytes;
   }
 
   return internal_write(data);
+}
+
+protected void buffer_write() {
+    user_write_buffer->output_to(internal_write);
 }
 
 protected int internal_write(string|array(string) data)
@@ -1238,9 +1318,9 @@ protected void internal_poll()
   //
   // NB: Don't call the close_callback before the user_read_buffer is empty.
   if (!sizeof(user_read_buffer) &&
-      (conn->state &
-       (CONNECTION_peer_closed | CONNECTION_local_closing)) ==
-      CONNECTION_peer_closed) {
+      (((conn->state &
+        (CONNECTION_peer_closed | CONNECTION_local_closing)) ==
+      CONNECTION_peer_closed) || (conn->state & CONNECTION_local_fatal))) {
     // Remote close or failure.
 
     function(void|mixed:int) close_cb;
@@ -1268,25 +1348,26 @@ protected void internal_poll()
   //
   SSL3_DEBUG_MSG("poll: wcb: %O, cs: %d, we: %d\n",
 		 write_callback, close_state, write_errno);
-  if (!sizeof(write_buffer) && write_callback && !SSL_HANDSHAKING
-      && (close_state < NORMAL_CLOSE || write_errno)) {
+  if (write_callback &&
+      ((!sizeof(write_buffer) &&
+	(close_state < NORMAL_CLOSE)) || write_errno) && !SSL_HANDSHAKING) {
     // errno() should return the error in the write callback - need
     // to propagate it here.
     local_errno = write_errno;
     SSL3_DEBUG_MSG("poll: Calling write callback %O "
 		   "(error %s)\n", write_callback, strerror (local_errno));
-    if (user_write_buffer) {
+    if (user_write_buffer && !write_errno) {
       if (sizeof(user_write_buffer)) {
 	user_write_buffer->output_to(internal_write);
       }
       if (!sizeof(user_write_buffer)) {
-	user_write_buffer->__fd_set_output(0);
+	user_write_buffer->__set_on_write(0);
 	write_callback(callback_id || this, user_write_buffer);
 	if (!this) return;
 	if (sizeof(user_write_buffer)) {
-	  user_write_buffer->output_to(internal_write);
+            write_buffer();
 	}
-	user_write_buffer->__fd_set_output(internal_write);
+	user_write_buffer->__set_on_write(buffer_write);
       }
     } else {
       write_callback(callback_id || this);
@@ -1360,7 +1441,7 @@ void set_callbacks(void|Stdio.read_callback_t read,
 //!
 //! @seealso
 //!   @[set_callbacks], @[set_nonblocking]
-array(function(mixed,void|string:int)) query_callbacks()
+array(function(mixed,void|string:int)|zero) query_callbacks()
 {
   return ({
     read_callback,
@@ -1402,14 +1483,21 @@ void set_nonblocking(void|Stdio.read_callback_t read,
     nonblocking_mode = 1;
 
     accept_callback = accept;
-    read_callback = read;
-    write_callback = write;
-    close_callback = close;
+    
+    if(SSL_HANDSHAKING) {
+      d_read_callback = read;
+      d_write_callback = write;
+      d_close_callback = close;
+    } else {
+      read_callback = read;
+      write_callback = write;
+      close_callback = close;
+    }
 
     if (stream) {
       stream->set_backend(real_backend);
 
-      schedule_poll();
+     schedule_poll();
 
       // Has to restore here since a backend waiting in another thread
       // might be woken immediately when callbacks are registered.
@@ -1483,7 +1571,8 @@ void set_blocking()
 
     nonblocking_mode = 0;
     accept_callback = read_callback = write_callback = close_callback = 0;
-
+    d_read_callback = d_write_callback = d_close_callback = 0;
+   
     if (!local_backend) local_backend = Pike.SmallBackend();
 
     if (stream) {
@@ -1532,7 +1621,7 @@ int errno()
   return local_errno ? local_errno : stream && stream->errno();
 }
 
-void set_alert_callback (function(object,int|object,string:void) alert)
+void set_alert_callback (function(object,int|object,string:void)|zero alert)
 //! Install a function that will be called when an alert packet is about
 //! to be sent. It doesn't affect the callback mode - it's called both
 //! from backends and from within normal function calls like @[read]
@@ -1568,7 +1657,7 @@ void set_alert_callback (function(object,int|object,string:void) alert)
     });
 }
 
-function(object,int|object,string:void) query_alert_callback()
+function(object,int|object,string:void)|zero query_alert_callback()
 //! @returns
 //!   Returns the current alert callback.
 //!
@@ -1578,7 +1667,7 @@ function(object,int|object,string:void) query_alert_callback()
   return conn && conn->alert_callback;
 }
 
-void set_accept_callback (function(void|object,void|mixed:int) accept)
+void set_accept_callback (function(void|object,void|mixed:int)|zero accept)
 //! Install a function that will be called when the handshake is
 //! finished and the connection is ready for use.
 //!
@@ -1604,7 +1693,7 @@ void set_accept_callback (function(void|object,void|mixed:int) accept)
   } LEAVE;
 }
 
-function(void|object,void|mixed:int) query_accept_callback()
+function(void|object,void|mixed:int)|zero query_accept_callback()
 //! @returns
 //!   Returns the current accept callback.
 //!
@@ -1614,7 +1703,7 @@ function(void|object,void|mixed:int) query_accept_callback()
   return accept_callback;
 }
 
-void set_read_callback(Stdio.read_callback_t read)
+void set_read_callback(Stdio.read_callback_t|zero read)
 //! Install a function to be called when data is available.
 //!
 //! @seealso
@@ -1631,7 +1720,7 @@ void set_read_callback(Stdio.read_callback_t read)
   } LEAVE;
 }
 
-Stdio.read_callback_t query_read_callback()
+Stdio.read_callback_t|zero query_read_callback()
 //! @returns
 //!   Returns the current read callback.
 //!
@@ -1641,7 +1730,7 @@ Stdio.read_callback_t query_read_callback()
   return read_callback;
 }
 
-void set_write_callback(Stdio.write_callback_t write)
+void set_write_callback(Stdio.write_callback_t|zero write)
 //! Install a function to be called when data can be written.
 //!
 //! @seealso
@@ -1658,7 +1747,7 @@ void set_write_callback(Stdio.write_callback_t write)
   } LEAVE;
 }
 
-Stdio.write_callback_t query_write_callback()
+Stdio.write_callback_t|zero query_write_callback()
 //! @returns
 //!   Returns the current write callback.
 //!
@@ -1668,7 +1757,7 @@ Stdio.write_callback_t query_write_callback()
   return write_callback;
 }
 
-void set_close_callback (function(void|mixed:int) close)
+void set_close_callback (function(void|mixed:int)|zero close)
 //! Install a function to be called when the connection is closed,
 //! either normally or due to an error (use @[errno] to retrieve it).
 //!
@@ -1686,7 +1775,7 @@ void set_close_callback (function(void|mixed:int) close)
   } LEAVE;
 }
 
-function(void|mixed:int) query_close_callback()
+function(void|mixed:int)|zero query_close_callback()
 //! @returns
 //!   Returns the current close callback.
 //!
@@ -1894,6 +1983,9 @@ protected int queue_write()
     case 1:
       SSL3_DEBUG_MSG ("queue_write: Connection closed %s\n",
 		      res == 1 ? "normally" : "abruptly");
+      if (!sizeof(write_buffer)) {
+	write_errno = System.EPIPE;
+      }
       break loop;
     case 0:
       SSL3_DEBUG_MSG ("queue_write: Got nothing to write (%d bytes buffered)\n",
@@ -1921,9 +2013,9 @@ protected int queue_write()
   }
 
   SSL3_DEBUG_MSG ("queue_write: Returning %O (%d bytes buffered)\n",
-		  res, sizeof(write_buffer));
+		  !sizeof(write_buffer) && res, sizeof(write_buffer));
 
-  return res;
+  return !sizeof(write_buffer) && res;
 }
 
 protected int direct_write()
@@ -1955,13 +2047,27 @@ protected int direct_write()
       return 0;
     }
 
-    if (SSL_INTERNAL_WRITING || SSL_INTERNAL_READING)
+    if (SSL_INTERNAL_WRITING || SSL_INTERNAL_READING) {
       RUN_MAYBE_BLOCKING (SSL_INTERNAL_WRITING || SSL_INTERNAL_READING,
 			  nonblocking_mode);
+      if (!conn || (conn->state & CONNECTION_peer_fatal)) {
+	SSL3_DEBUG_MSG ("direct_write: "
+			"Connection aborted - simulating System.EPIPE\n");
+	cleanup_on_error();
+	local_errno = System.EPIPE;
+	return 0;
+      }
+    }
   }
 
   SSL3_DEBUG_MORE_MSG ("direct_write: Ok\n");
   return 1;
+}
+
+protected void ssl_timeout_callback()
+{
+  SSL3_DEBUG_MSG("Timeout waiting on peer - simulating peer fatal.\n");
+  conn && conn->handle_alert(ALERT_fatal, ALERT_internal_error);
 }
 
 protected int ssl_read_callback (int ignored, string input)
@@ -2005,7 +2111,12 @@ protected int ssl_read_callback (int ignored, string input)
 	if (stringp (data)) {
 	  if (!handshake_already_finished &&
 	      !(conn->state & CONNECTION_handshaking)) {
-	    SSL3_DEBUG_MSG ("ssl_read_callback: Handshake finished\n");
+ 	        SSL3_DEBUG_MSG ("ssl_read_callback: Handshake finished\n");
+            // set deferred callbacks set during handshake
+            if(d_read_callback) read_callback = d_read_callback;
+            if(d_write_callback) write_callback = d_write_callback;
+            if(d_close_callback) close_callback = d_close_callback;
+            d_read_callback = d_write_callback = d_close_callback = 0;
 	  }
 
 	  SSL3_DEBUG_MSG ("ssl_read_callback: "
@@ -2044,7 +2155,8 @@ protected int ssl_read_callback (int ignored, string input)
       queue_write();
     }
 
-    if (!conn || (conn->state & CONNECTION_peer_closed)) {
+    if (!conn || (conn->state & (CONNECTION_peer_closed |
+				 CONNECTION_local_fatal))) {
       // Deinstall read side cbs to avoid reading more.
       SSL3_DEBUG_MSG("SSL.File->direct_write: Removing read/close_callback.\n");
       if(stream) {
@@ -2254,7 +2366,6 @@ protected int ssl_close_callback (int ignored)
 	(conn->state | CONNECTION_peer_closed);
       SSL3_DEBUG_MSG ("ssl_close_callback: Abrupt close - "
 		      "simulating System.EPIPE\n");
-      cleanup_on_error();
       close_state = ABRUPT_CLOSE;
       if (!close_errno) {
 	close_errno = System.EPIPE;
@@ -2284,11 +2395,11 @@ string `->application_protocol() {
 //! Return the currently active cipher suite.
 int query_suite()
 {
-  return conn?->session?->cipher_suite;
+  return conn->?session ? conn->session->cipher_suite:SSL_invalid_suite;
 }
 
 //! Return the currently active SSL/TLS version.
 ProtocolVersion query_version()
 {
-  return conn?->version;
+  return conn?conn->version:-1;
 }

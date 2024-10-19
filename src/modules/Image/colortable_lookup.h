@@ -1,4 +1,4 @@
-/*
+/* -*- mode: C; c-basic-offset: 3; -*-
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
@@ -564,7 +564,7 @@ void (*NCTLU_SELECT_FUNCTION(struct neo_colortable *nct))
 	 Pike_fatal("lookup select (%s:%d) couldn't find the lookup mode\n",
 	       __FILE__,__LINE__);
    }
-   UNREACHABLE(return 0);
+   UNREACHABLE();
 }
 
 int NCTLU_EXECUTE_FUNCTION(struct neo_colortable *nct,

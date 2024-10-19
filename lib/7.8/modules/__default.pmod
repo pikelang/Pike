@@ -9,7 +9,7 @@
 
 //! @decl inherit 8.0::
 
-array|mapping|multiset|string map(array|mapping|multiset|string|object|program stuff, function(mixed,mixed...:mixed) f, mixed ... args)
+array|mapping|multiset|string map(array|mapping|multiset|string|object|program stuff, function(__unknown__, __unknown__...:mixed) f, mixed ... args)
 {
   if(objectp(stuff))
   {
@@ -35,14 +35,21 @@ object master()
 protected Mapping.ShadowedMapping compat_all_constants =
   Mapping.ShadowedMapping(predef::all_constants(),
 			  ([
+                            "add_constant" : add_constant,
 			    "all_constants" : all_constants,
                             "map" : map,
 			    "master" : master,
-			  ]), 1);
+                          ]), 2);
 
 mapping(string:mixed) all_constants()
 {
   // Intentional lie in the return type.
   mixed x = compat_all_constants;
   return x;
+}
+
+void add_constant(string sym, mixed|void val)
+{
+  if (undefinedp(val)) m_delete(compat_all_constants, sym);
+  else compat_all_constants[sym] = val;
 }

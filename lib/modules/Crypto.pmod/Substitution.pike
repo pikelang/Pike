@@ -95,8 +95,9 @@ protected mapping(string:string) make_rot_map(int steps, array(string) alphabet)
 //! alphabet is given the key will be case insensitive, e.g. the
 //! key will really be two ROT13 alphabets, one a-z and one A-Z,
 //! used simultaneously.
-this_program set_rot_key(void|int steps, void|array(string) alphabet) {
-  if(!steps) steps=13;
+this_program set_rot_key(int(1..) steps = 13,
+			 void|array(string) alphabet)
+{
   if(alphabet)
     set_key(make_rot_map(steps, alphabet));
   else
@@ -127,8 +128,8 @@ protected array(string) scramble_alpha(string pwd, array(string) alpha, int off)
 //! alphabet is then reduced with the characters in the keyword. It is
 //! also optionally rotated @[offset] number of steps.
 this_program set_ACA_K1_key(string key, void|int offset,
-			    void|array(string) alphabet) {
-  if(!alphabet) alphabet = AZ;
+			    array(string) alphabet = AZ)
+{
   key = reduce_word(key, alphabet);
   set_key( mkmapping(scramble_alpha(key, alphabet, offset), alphabet) );
   return this;
@@ -140,8 +141,8 @@ this_program set_ACA_K1_key(string key, void|int offset,
 //! alphabet is then reduced with the characters in the keyword. It is
 //! als optionally reotated @[offset] number of steps.
 this_program set_ACA_K2_key(string key, void|int offset,
-			    void|array(string) alphabet) {
-  if(!alphabet) alphabet = AZ;
+			    array(string) alphabet = AZ)
+{
   key = reduce_word(key, alphabet);
   set_key( mkmapping(alphabet, scramble_alpha(key, alphabet, offset)) );
   return this;
@@ -152,9 +153,9 @@ this_program set_ACA_K2_key(string key, void|int offset,
 //! which characters are removed from the rest of the alphabet. The
 //! plaintext alphabet is then rotated @[offset] number of steps.
 this_program set_ACA_K3_key(string key, int offset,
-			    void|array(string) alphabet) {
+			    array(string) alphabet = AZ)
+{
   if(!offset) error("Dummy key! Offset must be != 0.\n");
-  if(!alphabet) alphabet = AZ;
   key = reduce_word(key, alphabet);
   set_key( mkmapping(scramble_alpha(key, alphabet, offset),
 		     scramble_alpha(key, alphabet, 0)) );
@@ -166,8 +167,7 @@ this_program set_ACA_K3_key(string key, int offset,
 //! and @[key2]. The plaintext alphabet is then rotated @[offset] number
 //! of steps.
 this_program set_ACA_K4_key(string key1, string key2, void|int offset,
-			    void|array(string) alphabet) {
-  if(!alphabet) alphabet = AZ;
+			    array(string) alphabet = AZ) {
   key1 = reduce_word(key1, alphabet);
   key2 = reduce_word(key2, alphabet);
   set_key( mkmapping(scramble_alpha(key1, alphabet, offset),
@@ -203,8 +203,8 @@ string(0..255) decrypt(string(0..255) c) {
 
 //! Removes characters not in the encryption key or in
 //! the @[save] multiset from the message @[m].
-string filter(string m, void|multiset(int) save) {
-  if(!save) save=(<>);
+string filter(string m, multiset(int) save = (<>))
+{
   save += (multiset)charify(indices(enc_key));
   m = predef::filter(m, lambda(int c) { return save[c]; });
   return m;

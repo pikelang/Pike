@@ -29,6 +29,16 @@ int main (int argc, array(string) argv)
   int port = (int)(addr/" ")[-1];
   addr = (addr/" ")[0];
 
+  if (addr == "0.0.0.0") {
+    // NT does not like connecting to ANY.
+    // connect() fails with EADDRNOTAVAIL.
+    addr = "127.0.0.1";
+  } else if (addr == "::") {
+    // NT does not like connecting to ANY.
+    // connect() fails with EADDRNOTAVAIL.
+    addr = "::1";
+  }
+
   Stdio.File con = Stdio.File();
   SSL.File tlscon;
   con->async_connect (
@@ -69,7 +79,7 @@ int main (int argc, array(string) argv)
 		// Clean close in blocking mode should block in
 		// tlscon->close until the other thread destructs the
 		// server and we get ECONNRESET.
-		successful = equal (res, ({1, 1, 0, 0, System.ECONNRESET}));
+                successful = equal (res, ({1, 0, 0, 0, System.ECONNRESET}));
 	      else
 		// Clean close in nonblocking mode shouldn't really
 		// close the fd, but the later shutdown should, and

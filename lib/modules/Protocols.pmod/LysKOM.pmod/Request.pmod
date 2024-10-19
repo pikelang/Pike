@@ -1,6 +1,8 @@
+/* -*- mode: Pike; c-basic-offset: 3; -*- */
+
 #pike __REAL_VERSION__
 
-//!	This module contains nice abstraction for calls into the
+//!	This module contains nice abstractions for calls into the
 //!	server. They are named "@tt{@i{call@}@}",
 //!	"@tt{async_@i{call@}@}" or
 //!	"@tt{async_cb_@i{call@}@}", depending on
@@ -11,7 +13,7 @@ import .ProtocolTypes;
 
 int _no=1;
 
-//!	This is the main request class. All lyskom request
+//!	This is the base class for lyskom requests. All lyskom request
 //!	classes inherit this class.
 //!
 class _Request
@@ -94,7 +96,7 @@ class _Request
    //!	Wait for the call to finish.
 
 #if constant(thread_create) && !LYSKOM_UNTHREADED
-   mixed `()() // wait
+   protected mixed `()() // wait
    {
       object key = wait_mutex->lock();
       do {
@@ -104,7 +106,7 @@ class _Request
       } while (1);
    }
 #else
-   mixed `()() // wait
+   protected mixed `()() // wait
    {
       if (ok || error) return res;
       mixed tmp=_reply(raw->sync_do(ref));
@@ -122,7 +124,7 @@ class _Request
    //!
    object error;
 
-   void create(Stdio.File _raw)
+   protected void create(Stdio.File _raw)
    {
       raw=_raw;
    }

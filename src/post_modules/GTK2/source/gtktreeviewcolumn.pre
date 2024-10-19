@@ -43,7 +43,7 @@ void create(string|mapping(string:mixed)|void title_or_props,
       GtkTreeViewColumn *gt;
       GtkCellRenderer *rend;
       int i;
-      get_all_args(NULL,args,"%s%o%s%i",&title,&o1,&prop,&col);
+      get_all_args(NULL,args,"%c%o%c%i",&title,&o1,&prop,&col);
       rend = GTK_CELL_RENDERER(get_gobject(o1));
       gt=gtk_tree_view_column_new_with_attributes(
 			title,
@@ -53,7 +53,7 @@ void create(string|mapping(string:mixed)|void title_or_props,
       /* CJA note to self: Is there a better way to do variadic GTK functions? */
       for (i = 4; i < args; i += 2) {
         /* Note that errors from get_all_args here will look a little odd */
-        get_all_args(NULL, args-i, "%s%i", &prop, &col);
+        get_all_args(NULL, args-i, "%c%i", &prop, &col);
         gtk_tree_view_column_add_attribute(gt, rend, prop, col);
       }
       THIS->obj=G_OBJECT(gt);

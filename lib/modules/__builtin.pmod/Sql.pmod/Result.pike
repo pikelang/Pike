@@ -25,9 +25,9 @@ int index;
 //! This is a helper function for implementations to update the @[index].
 //!
 //! It is typically called from @[fetch_row()].
-protected int increment_index(int|void val)
+protected int increment_index(int val = 1)
 {
-  index += val || undefinedp(val);
+  index += val;
   return index;
 }
 
@@ -59,7 +59,7 @@ protected string _sprintf(int type, mapping|void flags)
 //!   existing, and this symbol thus essentially being a noop..
 //!
 //! @deprecated __builtin.Sql.Result.
-__deprecated__ array|this_program `master_res()
+local __deprecated__ array|this_program `master_res()
 {
   return this;
 }
@@ -101,7 +101,14 @@ int num_fields();
 
 //! @returns
 //!  Non-zero if there are no more rows.
-int eof();
+//!
+//! @note
+//!  Not reliable! Some drivers have no support for checking
+//!  whether there are more rows without also fetching them.
+int eof()
+{
+  return 0;
+}
 
 //! @returns
 //!  Information about the available fields.
@@ -159,7 +166,7 @@ array(array(mixed)) fetch_row_array() {
 //! @seealso
 //!  @[fetch_row()], @[set_result_array_callback()]
 void set_result_callback(
- function(this_program, array(mixed), mixed ... :void) callback,
+ function(this_program, array(mixed), __unknown__ ... :void) callback,
  mixed ... args) {
   if (callback) {
     array row;
@@ -177,7 +184,7 @@ void set_result_callback(
 //! @seealso
 //!  @[fetch_row_array()], @[set_result_callback()]
 void set_result_array_callback(
- function(this_program, array(array(mixed)), mixed ... :void) callback,
+ function(this_program, array(array(mixed)), __unknown__ ... :void) callback,
  mixed ... args) {
   if (callback) {
     array rows;
@@ -206,46 +213,35 @@ this_program next_result();
 
 class _get_iterator
 {
-  protected int|array(string|int) row = fetch_row();
-  protected int pos = 0;
+  protected int|array(string|int) row = UNDEFINED;
 
-  int index()
+  protected int _iterator_index()
   {
-    return pos;
+    if (!row) return UNDEFINED;
+    return index;
   }
 
-  int|array(string|int) value()
+  protected int|array(string|int) _iterator_value()
   {
+    if (!row) return UNDEFINED;
     return row;
   }
 
-  int(0..1) next()
+  protected int _iterator_next()
   {
-    pos++;
-    return !!(row = fetch_row());
+    if (row = fetch_row()) {
+      return index;
+    }
+    row = UNDEFINED;
+    return UNDEFINED;
   }
 
-  this_program `+=(int steps)
+  protected this_program `+=(int steps)
   {
     if(!steps) return this;
     if(steps<0) error("Iterator must advance a positive numbe of steps.\n");
-    if(steps>1)
-    {
-      pos += steps-1;
-      seek(steps-1);
-    }
-    next();
+    seek(steps);
     return this;
-  }
-
-  int(0..1) `!()
-  {
-    return eof();
-  }
-
-  int _sizeof()
-  {
-    return num_fields();
   }
 }
 

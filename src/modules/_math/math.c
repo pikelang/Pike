@@ -40,10 +40,29 @@
  */
 FLOAT_TYPE FL(asinh)(FLOAT_TYPE x)
 {
-  if (x < 0) {
-    return -FL(log)(FL(sqrt)(x*x + 1.0) - x);
+  /* Cf https://en.wikipedia.org/wiki/Inverse_hyperbolic_functions */
+  FLOAT_TYPE x2 = x*x;
+  if (x2 < 1.0) {
+    /* Use expansion series when x*x is less than 1.0 in order
+     * to avoid issues with running out of mantissa in the
+     * argument to sqrt().
+     */
+    FLOAT_TYPE res = 0.0;
+    FLOAT_TYPE delta = x;
+    int i = 1;
+
+    while (delta) {
+      res += delta;
+
+      delta *= -i*i * x2;
+      delta /= (i + 1) * (i + 2);
+      i += 2;
+    }
+    return res;
+  } else if (x < 0.0) {
+    return -FL(log)(FL(sqrt)(x2 + 1.0) - x);
   }
-  return FL(log)(FL(sqrt)(x*x + 1.0) + x);
+  return FL(log)(FL(sqrt)(x2 + 1.0) + x);
 }
 FLOAT_TYPE FL(acosh)(FLOAT_TYPE x)
 {
@@ -258,7 +277,7 @@ void f_atanh(INT32 args)
 }
 
 /*! @decl float sqrt(float f)
- *! @decl int sqrt(int i)
+ *! @decl int(0..) sqrt(int(0..) i)
  *! @decl mixed sqrt(object o)
  *!
  *! Returns the square root of @[f], or in the integer case, the square root
@@ -420,7 +439,9 @@ void f_round(INT32 args)
 }
 
 
-/*! @decl int|float|object limit(int|float|object minval, int|float|object x, int|float|object maxval)
+/*! @decl int|float|object limit(int|float|object minval, @
+ *!                              int|float|object x, @
+ *!                              int|float|object maxval)
  *!
  *! Limits the value @[x] so that it's between @[minval] and @[maxval].
  *! If @[x] is an object, it must implement the @[lfun::`<] method.
@@ -539,6 +560,39 @@ void f_abs(INT32 args)
   if(is_lt(sp-1,&zero)) o_negate();
 }
 
+static node *optimize_abs(node *n)
+{
+  struct pike_type *t = n->type;
+  if (t->type == T_INT) {
+    INT32 min = CAR_TO_INT(t);
+    INT32 max = CDR_TO_INT(t);
+    INT32 res_max;
+    INT32 res_min;
+    if (min > 0) {
+      /* Both above zero. */
+      res_max = max;
+      res_min = min;
+    } else if (max < 0) {
+      /* Both below zero. */
+      res_max = (min == MIN_INT32? MAX_INT32 : -min);
+      res_min = (max == MIN_INT32? MAX_INT32 : -max);
+    } else if (min < -max) {
+      /* Zero in interval and more below zero. */
+      res_max = (min == MIN_INT32? MAX_INT32 : -min);
+      res_min = 0;
+    } else {
+      /* Zero in interval and more above zero. */
+      res_max = max;
+      res_min = 0;
+    }
+    type_stack_mark();
+    push_int_type(res_min, res_max);
+    n->type = pop_unfinished_type();
+    free_type(t);
+  }
+  return NULL;
+}
+
 /*! @decl int sgn(mixed value)
  *! @decl int sgn(mixed value, mixed zero)
  *!
@@ -625,7 +679,8 @@ PIKE_MODULE_INIT
 
   /* function(float:float)|function(int:int) */
   ADD_EFUN("sqrt",f_sqrt,tOr3(tFunc(tFlt,tFlt),
-			      tFunc(tInt,tInt),
+			      tFunc(tSetvar(0, tIntPos),
+				    tRangeInt(tZero, tVar(0))),
 			      tFunc(tObj,tMix)),0);
 
   /* function(int|float:float) */
@@ -651,30 +706,60 @@ PIKE_MODULE_INIT
   /* function(int|float:float) */
   ADD_EFUN("round",f_round,tFunc(tNUM,tFlt),0);
 
-#define CMP_TYPE							\
-  tOr4(tIfnot(tFuncV(tNone,tNot(tString),tMix),				\
-	      tFuncV(tString,tString,tString)),				\
-       tFunc(tVoid,tInt0),						\
-       tIfnot(tFuncV(tNone,tNot(tOr(tInt,tFloat)),tMix),		\
-	      tFuncV(tSetvar(0,tOr(tInt,tFloat)),			\
-                     tSetvar(1,tOr(tInt,tFloat)),tOr(tVar(0),tVar(1)))),\
-       tIfnot(tFuncV(tNone,tNot(tOr(tObj,tMix)),tMix),			\
-	      tFuncV(tMix,tMix,tMix)))
+#define MINMAX_TYPE(OP)							\
+  tOr(tFunc(tNone, tInt0),						\
+      tTransitive(tFunc(tSetvar(0, tOr4(tInt, tFloat, tString, tObj)),	\
+			tVar(0)),					\
+		  tOr4(tFunc(tSetvar(0, tInt) tSetvar(1, tInt),		\
+			     OP(tVar(0), tVar(1))),			\
+		       tFunc(tSetvar(0, tOr(tFloat, tObj))		\
+			     tSetvar(1, tOr3(tInt, tFloat, tObj)),	\
+			     tOr(tVar(0), tVar(1))),			\
+		       tFunc(tSetvar(0, tInt)				\
+			     tSetvar(1, tOr(tFloat, tObj)),		\
+			     tOr(tVar(0), tVar(1))),			\
+		       tFunc(tSetvar(0, tString) tSetvar(1, tString),	\
+			     tOr(tVar(0), tVar(1))))))
 
-  ADD_EFUN("max",f_max,CMP_TYPE,0);
-  ADD_EFUN("min",f_min,CMP_TYPE,0);
+  ADD_EFUN("max", f_max, MINMAX_TYPE(tMaxInt), 0);
+  ADD_EFUN("min", f_min, MINMAX_TYPE(tMinInt), 0);
 
   ADD_EFUN("limit",f_limit,
-	   tFunc(tSetvar(0,tOr3(tFlt,tInt,tObj))
-		 tSetvar(1,tOr3(tFlt,tInt,tObj))
-		 tSetvar(2,tOr3(tFlt,tInt,tObj)),
-		 tOr3(tVar(0),tVar(1),tVar(2))),0);
+	   tOr4(tFunc(tSetvar(0, tInt) tSetvar(1, tInt) tSetvar(2, tInt),
+		      tRangeInt(tMinInt(tMaxInt(tVar(0), tVar(1)), tVar(2)),
+				tMaxInt(tVar(0), tMinInt(tVar(1), tVar(2))))),
+		tFunc(tSetvar(0, tOr(tFlt, tObj))
+		      tSetvar(1, tOr3(tFlt, tInt, tObj))
+		      tSetvar(2, tOr3(tFlt, tInt, tObj)),
+		      tOr3(tVar(0),tVar(1), tVar(2))),
+		tFunc(tSetvar(0, tOr3(tFlt, tInt, tObj))
+		      tSetvar(1, tOr(tFlt, tObj))
+		      tSetvar(2, tOr3(tFlt, tInt, tObj)),
+		      tOr3(tVar(0),tVar(1), tVar(2))),
+		tFunc(tSetvar(0, tOr3(tFlt, tInt, tObj))
+		      tSetvar(1, tOr3(tFlt, tInt, tObj))
+		      tSetvar(2, tOr(tFlt, tObj)),
+		      tOr3(tVar(0), tVar(1), tVar(2)))), 0);
 
   /* function(float|int|object:float|int|object) */
-  ADD_EFUN("abs",f_abs,tFunc(tSetvar(0,tOr3(tFlt,tInt,tObj)),tVar(0)),0);
+  ADD_EFUN2("abs", f_abs,
+	    tOr(tFunc(tSetvar(0, tInt),
+		      tMaxInt(tVar(0), tNegateInt(tVar(0)))),
+		tFunc(tSetvar(0, tOr(tFlt, tObj)), tVar(0))),
+	    OPT_TRY_OPTIMIZE, optimize_abs, 0);
 
   /* function(mixed,mixed|void:int) */
-  ADD_EFUN("sgn",f_sgn,tFunc(tMix tOr(tMix,tVoid),tInt_11),0);
+  ADD_EFUN("sgn", f_sgn,
+	   tOr6(tFunc(tInt1Plus, tInt1),
+		tFunc(tZero, tZero),
+		tFunc(tIntMinus, tInt_1),
+		tFunc(tSetvar(0, tInt) tSetvar(1, tInt),
+		      tAnd(tRangeInt(tInt_1,
+				     tMaxInt(tSubInt(tVar(0), tVar(1)), tInt_1)),
+			   tRangeInt(tMinInt(tSubInt(tVar(0), tVar(1)), tInt1),
+				     tInt1))),
+		tFunc(tOr(tFloat, tObj), tInt_11),
+		tFunc(tNot(tInt) tMix, tInt_11)), 0);
 }
 
 PIKE_MODULE_EXIT {}

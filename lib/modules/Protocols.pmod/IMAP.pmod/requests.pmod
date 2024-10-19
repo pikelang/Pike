@@ -16,7 +16,7 @@ class request
 
   function send;
 
-  void create(string t, object line, int s)
+  protected void create(string t, object line, int s)
   {
     tag = t;
     parser = .parser(line);
@@ -521,7 +521,7 @@ class fetch
       message_set = server->uid_to_local(session, message_set);
     }
 
-    array fetch_attrs = 0;
+    array|zero fetch_attrs = 0;
     switch(request->type)
     {
     case "atom":
@@ -627,7 +627,7 @@ class fetch
     return ([ "action" : "finished" ]);
   }
 
-  mapping process_fetch_attr(mapping atom)
+  mapping|zero process_fetch_attr(mapping atom)
   {
     werror("fetch->process_fetch_attr(%O)\n", atom);
 
@@ -786,13 +786,13 @@ class search
     array input;
     int i;
 
-    void create(array a)
+    protected void create(array a)
       {
 	input = a;
 	i = 0;
       }
 
-    mapping make_intersection(array criteria)
+    mapping|zero make_intersection(array criteria)
       {
 	if (!criteria)
 	  return 0;
@@ -810,7 +810,7 @@ class search
 	}
       }
 
-    mapping make_union(array criteria)
+    mapping|zero make_union(array criteria)
       {
 	if (!criteria)
 	  return 0;
@@ -827,7 +827,7 @@ class search
 	}
       }
 
-    mapping make_complement(mapping criteria)
+    mapping|zero make_complement(mapping criteria)
       {
 	if (!criteria)
 	  return 0;
@@ -835,7 +835,7 @@ class search
 	return ([ "type" : "not" , "not" : criteria ]);
       }
 
-    mapping get_token()
+    mapping|zero get_token()
       {
 	if (i == sizeof(input))
 	  return 0;
@@ -843,14 +843,14 @@ class search
 	return input[i++];
       }
 
-    string get_atom()
+    string|zero get_atom()
       {
 	if (i == sizeof(input))
 	  return 0;
 	return input[i++]->atom;
       }
 
-    string get_astring()
+    string|zero get_astring()
       {
 	if (i == sizeof(input))
 	  return 0;
@@ -866,7 +866,7 @@ class search
 	return input[i]->atom ? string_to_number(input[i]->atom) : -1;
       }
 
-    object get_set()
+    object|zero get_set()
     {
       if (i == sizeof(input))
 	return 0;
@@ -874,7 +874,7 @@ class search
       return input[i]->atom && imap_set()->init(input[i]->atom);
     }
 
-    mapping parse_one()
+    mapping|zero parse_one()
       {
 	mapping token = get_token();
 
@@ -983,7 +983,7 @@ class search
 	}
       }
 
-    array parse_all()
+    array|zero parse_all()
       {
 	array res = ({ });
 

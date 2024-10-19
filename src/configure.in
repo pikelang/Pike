@@ -1,9 +1,13 @@
 AC_INIT(interpret.c)
+
+PIKE_PARSE_SITE_PREFIXES
+
 AC_CONFIG_HEADER(machine.h)
 
 AC_SUBST(CONFIG_HEADERS)
 
 rm -f config.warnings 2>/dev/null
+rm -f config.notes 2>/dev/null
 
 if_autoconf(2,50,, [
   PIKE_MSG_WARN([configure script has been generated with autoconf 2.13 or earlier.])
@@ -42,8 +46,8 @@ fi
 if_autoconf(2,50,[
   if test "x$cache_file" = "x/dev/null"; then
     if uname | grep -i windows >/dev/null; then
-      PIKE_MSG_WARN([Windows detected.])
-      PIKE_MSG_WARN([Enabling the configure cache for performance reasons.])
+      PIKE_MSG_NOTE([Windows detected.])
+      PIKE_MSG_NOTE([Enabling the configure cache for performance reasons.])
       cache_file=./config.cache
       if test -r "$cache_file"; then
 	echo "loading cache $cache_file"
@@ -96,7 +100,7 @@ AC_ARG_ENABLE(pikelib, MY_DESCR([--enable-pikelib],
 	     [enable_pikelib=yes], [enable_pikelib=no])
 
 if test "x$enable_pikelib" != "xno"; then
-   PIKE_MSG_WARN([BUILDING PIKE AS A LIBRARY -- HIGHLY EXPERIMENTAL!])
+   PIKE_MSG_NOTE([BUILDING PIKE AS A LIBRARY -- EXPERIMENTAL!])
    AC_DEFINE(LIBPIKE)
 fi
 
@@ -183,7 +187,9 @@ else
   if test ! -z "$pike_cv_prog_CC_save" -a ! -z "$CC" -a "$CC" != "$pike_cv_prog_CC_save"
   then
     PIKE_MSG_WARN([CC is different than last time Pike was compiled,
-It is probably best to delete ./config.cache before proceeding.])
+It is probably best to delete ./config.cache before proceeding.
+Current CC:  $CC
+Previous CC: $pike_cv_prog_CC_save])
   fi
 
   pike_cv_prog_CC_save="$CC"
@@ -261,6 +267,11 @@ fi
 
 #############################################################################
 
+# Define various *_SOURCE macros to enable later POSIX versions, etc.
+# NB: As these affect the visibility/availability of symbols these
+#     must be defined before other probes.
+PIKE_USE_SYSTEM_EXTENSIONS
+
 if test "x$enable_binary" != "xno"; then
   AC_ISC_POSIX
   AC_AIX
@@ -283,26 +294,26 @@ fi
 
 if test "x$GCC" = "xno"; then
 
-  if test "x$ac_cv_prog_cc_cross" = "xyes"; then
+  if test x"PIKE_IS_CROSS_COMPILING" = x"yes"; then
     # The AIX 5L/cc beta can not generate working binaries without a
     # data-segment...
     AC_MSG_CHECKING([if we are really using a cross-compiler])
 
     AC_CACHE_VAL(pike_cv_datasegment_required, [
-      ac_cv_prog_cc_cross=no;
+      PIKE_OVERRIDE_CROSS_COMPILING(no)
       AC_TRY_RUN([int foo;main(){return(0);}], [
         pike_cv_datasegment_required=yes
       ], [
         pike_cv_datasegment_required=no
-	ac_cv_prog_cc_cross=yes
+	PIKE_OVERRIDE_CROSS_COMPILING(yes)
       ], [
         pike_cv_datasegment_required=no
-	ac_cv_prog_cc_cross=yes
+        PIKE_OVERRIDE_CROSS_COMPILING(yes)
       ])
     ])
     if test "x$pike_cv_datasegment_required" = "xyes"; then
       AC_MSG_RESULT([no -- Applying data-segment kludge])
-      ac_cv_prog_cc_cross=no
+      PIKE_OVERRIDE_CROSS_COMPILING(no)
       cat >conftest.c <<EOF
 static int foo;
 EOF
@@ -396,7 +407,7 @@ AC_SUBST(BUILDDIR)
 if test "x$enable_binary" = "xno"; then
   CROSS=yes
 else
-  CROSS="$ac_cv_prog_cc_cross"
+  CROSS="PIKE_IS_CROSS_COMPILING"
 fi
 AC_SUBST(CROSS)
 
@@ -404,7 +415,7 @@ if test "x$enable_binary" = "xno"; then
   CC="$BINDIR/nobinary_dummy cc"
   RUNPIKE="USE_PIKE"
   RUNTPIKE="USE_PIKE"
-elif test "x$cross_compiling" = "xyes"; then
+elif test x"PIKE_IS_CROSS_COMPILING" = x"yes"; then
   RUNPIKE="DEFAULT_RUNPIKE"
   RUNTPIKE="USE_PIKE"
 else
@@ -529,12 +540,7 @@ if test "x$pike_cv_sys_os" = xWindows_NT; then
   PIKE_FUNCS_NEED_DECLS(yes)
 fi
 
-# NB: We need to have gmp.h in the search path for the entirety of Pike,
-#     since gmp.h is included by bignum.h, which in turn is included
-#     by much of Pike.
-PIKE_PKG_CONFIG(libgmp)
-
-AC_CHECK_HEADERS(gmp.h unistd.h sys/stat.h sys/types.h sys/errno.h)
+AC_CHECK_HEADERS(unistd.h sys/stat.h sys/types.h)
 
 if test "$GCC" = "yes"; then :; else
 #
@@ -604,6 +610,11 @@ case "$pike_cv_sys_os" in
 	 export SDL_CONFIG
       fi
    ;;
+  Darwin*)
+   # macOS lacks prototypes for these with _POSIX_C_SOURCE
+   ac_cv_func_getpagesize="no"
+   ac_cv_func_chroot="no"
+   ;;
 esac
 
 # Skip if user does not wish to use smartlink binary.
@@ -643,6 +654,9 @@ AC_CACHE_VAL(pike_cv_ld_so_run_path_method, [
     ;;
     Darwin\ *|NetBSD\ *)
       pike_cv_run_path_method=darwin_rpath
+    ;;
+    Haiku\ *|BeOS\ *)
+      pike_cv_run_path_method=wl
     ;;
     *)
       pike_cv_run_path_method=ld_library_path
@@ -719,13 +733,13 @@ else
   AC_MSG_RESULT(no)
   SMARTBUILDCC="${REALCC-cc}"
 
-  if echo foo "$CC" | egrep 'rntc.|rnt.cl' >/dev/null; then
-    PIKE_MSG_WARN([rntcc/rntcl/rnticl/rntecl detected.])
+  if echo foo "$CC" | $EGREP 'rntc.|rnt.cl' >/dev/null; then
+    echo "NOTE: rntcc/rntcl/rnticl/rntecl detected."
     AC_PATH_PROGS(SMARTBUILDCC,gcc cc egcs,gcc, $PATH:$EXTRA_PATH)
     echo Using $SMARTBUILDCC to compile smartlink.
-  elif test "x$ac_cv_prog_cc_cross" = "xyes"; then
+  elif test x"PIKE_IS_CROSS_COMPILING" = x"yes"; then
     PIKE_MSG_WARN([Crosscompiler detected.])
-    AC_PATH_PROGS(SMARTBUILDCC, gcc cc egcs, gcc, /usr/bin:/bin/:/usr/ccs/bin:/usr/local/bin:/usr/sfw/bin:/opt/sfw/bin:/opt/csw/bin:$PATH:$EXTRA_PATH)
+    AC_PATH_PROGS(SMARTBUILDCC, gcc cc egcs, gcc, /usr/bin:/bin/:/usr/ccs/bin:/usr/local/bin:/usr/pkg/bin:/opt/pkg/bin:/usr/sfw/bin:/opt/sfw/bin:/opt/csw/bin:$PATH:$EXTRA_PATH)
     echo Using $SMARTBUILDCC to compile smartlink.
   fi
 
@@ -843,7 +857,13 @@ else
 fi
 fi
 
-AC_SYS_COMPILER_FLAG([-fvisibility=hidden],[fvisibility_hidden],CFLAGS)
+ORIG_CFLAGS="$CFLAGS"
+CFLAGS="-Werror $CFLAGS"
+AC_SYS_COMPILER_FLAG([-fvisibility=hidden],[fvisibility_hidden],CFLAGS, [
+  AC_DEFINE(DISABLE_ATTRIBUTE_VISIBILITY, 1,
+	    [Disable use of __attribute__((visibility("default"))).])
+])
+CFLAGS="$ORIG_CFLAGS"
 
 AC_SYS_COMPILER_FLAG(+O3,plus_O3,OPTIMIZE, [
   AC_SYS_COMPILER_FLAG(-O3,O3,OPTIMIZE, [
@@ -984,10 +1004,6 @@ AC_ARG_WITH(crt, MY_DESCR([--with-crt=dynamic|static],
 AC_ARG_WITH(debug-crt, MY_DESCR([--with-debug-crt],
 				[compile and link with debug CRT in Visual Studio]),
 	    [], [with_debug_crt=no])
-
-AC_ARG_WITH(site-prefixes,
-	    MY_DESCR([--with-site-prefixes],
-		     [:-separated list of prefixes to search for include, lib and bin dirs.]))
 AC_ARG_WITH(include-path,
 	    MY_DESCR([--with-include-path],
 		     [a list of paths to search for include files.]))
@@ -1026,6 +1042,10 @@ else
   enable_dlmalloc=no
 fi
 
+MY_AC_ARG_WITH(experimental,
+	       MY_DESCR([--with-experimental],
+			[Enable experimental code.]),
+	       [AC_DEFINE(PIKE_EXPERIMENTAL)])
 MY_AC_ARG_WITH(cleanup-on-exit,
 	       MY_DESCR([--with-cleanup-on-exit],
 			[Do full cleanup at exit to detect leaks better.]),
@@ -1147,8 +1167,10 @@ MY_DESCR([],[Specify --without-cleanup-on-exit if you do not want this.]),
   else :; fi
 ], [with_valgrind=no])
 AC_ARG_WITH(dtrace, MY_DESCR([--with-dtrace],[embed DTrace probes]))
-AC_ARG_WITH(checker, MY_DESCR([--with-checker],
-			      [add extra memory checking overhead (Purify)]))
+AC_ARG_WITH(checker,
+            MY_DESCR([--with-checker],
+                     [add extra memory checking overhead (Purify,Valgrind)]),
+            [],[with_checker="$with_valgrind"])
 AC_ARG_WITH(gcov, MY_DESCR([--with-gcov],
 			   [compile with support for gcov (gcc-only)]))
 MY_AC_ARG_WITH(profiling, MY_DESCR([--with-profiling],
@@ -1163,15 +1185,16 @@ MY_AC_ARG_WITH(mc-stack-frames, MY_DESCR([--with-mc-stack-frames],
 MY_AC_ARG_WITH(pg, MY_DESCR([--with-pg],[use the gcc -pg option]),
 	       [PROFIL=-pg])
 AC_ARG_WITH(poll, MY_DESCR([--with-poll], [use poll instead of select]), [], [
-  # Neither --with-poll nor --without-poll was specified
+  # Neither --with-poll nor --without-poll was specified.
+  # Default to --with-poll (ie use it if it exists), except for various BSDs.
+  with_poll=yes
   case "$pike_cv_sys_os" in
-    Solaris|HP-UX|OSF1|Linux|UnixWare|OpenUNIX|AIX)
-#    PIKE_MSG_WARN([Defaulting to --with-poll since the OS is $pike_cv_sys_os.])
-# Nothing to warn about, really...
-# NOTE: Darwin (OSX/iOS) have poll, but it's layered on kqueue, so there's no
-#   real benefit to supporting it separately there.
-      with_poll=yes
-    ;;
+      *BSD*|Darwin|*GNU*|next|SunOS)
+          # NOTE: Several of these (eg Darwin) have poll, but it is
+          #       layered on kqueue or select, so there's no real
+          #       benefit to supporting it separately there.
+          with_poll=no
+          ;;
   esac
 ])
 AC_ARG_WITH(max-fd,
@@ -1231,10 +1254,6 @@ if test "x$with_gmp" = xno; then
   AC_MSG_ERROR([The GMP library is required to compile Pike.])
 fi
 
-if test "x$with_poll" = "xyes"; then
-  AC_DEFINE(HAVE_AND_USE_POLL)
-else :; fi
-
 if test "x$with_valgrind" = "xno"; then
   VALGRIND=""
   VALGRINDARGS=""
@@ -1263,6 +1282,10 @@ if test "x$with_dtrace" = "xyes"; then
       AC_DEFINE(USE_DTRACE)
       DTRACE_REQUIREMENTS="dtrace_probes.h"
    fi
+fi
+
+if test "x$with_checker" = "xno"; then :; else
+  AC_DEFINE(__CHECKER__)
 fi
 
 if test "x$with_relocatable_dumped_modules" = xyes; then
@@ -1365,6 +1388,7 @@ if test "$cflags_is_set" = "no"; then
     AC_SYS_COMPILER_FLAG(-Wpointer-arith,Wpointer_arith,WARN)
     AC_SYS_COMPILER_FLAG(-Wchar-subscripts,Wchar_subscripts,WARN)
     AC_SYS_COMPILER_FLAG(-Wno-long-long,Wno_long_long,WARN)
+    AC_SYS_COMPILER_FLAG(-Wno-unknown-attributes,Wno_unknown_attributes,WARN)
 
     if test "x${with_static_linking-}" = "xyes" ; then
       AC_SYS_COMPILER_FLAG(-static,link_static,CFLAGS)
@@ -1803,8 +1827,40 @@ if test "$cflags_is_set" = "no"; then
   	dynamic_crt_flag=-MD
   	static_crt_flag=-MT
         fi
+
 	# We want the full 32-bit address space (not the default 31-bit).
 	AC_SYS_COMPILER_FLAG(-LARGEADDRESSAWARE,LARGEADDRESSAWARE,LDFLAGS)
+
+        # Inhibit warning:
+        #   LNK4099: PDB 'zlib.pdb' was not found with '...\lib\zlib.lib'
+        #            or at '...\zlib.pdb'; linking object as if no debug info
+        AC_SYS_COMPILER_FLAG(-wd4099,wd4099,WARN)
+
+        # Inhibit warning:
+        #   LNK4221: no public symbols found; archive
+        #            member will be inaccessible
+        # which is generated when linking a *.lib with some empty
+        # object files (like eg modules/system/syslog.o).
+        AC_SYS_COMPILER_FLAG(-wd4221,wd4221,WARN)
+
+        # Inhibit warning:
+        #   C4244: '/=' : conversion from 'double' to 'float',
+        #                 possible loss of data
+        # Note: Unfortunately this also disables the warning about
+        #       eg conversion from 'long' to 'unsigned char'.
+        AC_SYS_COMPILER_FLAG(-wd4244,wd4244,WARN)
+
+        # Inhibit warning:
+        #   C4334: '<<' : result of 32-bit shift implicitly converted
+        #                 to 64 bits (was 64-bit shift intended?)
+        # which is generated in two places in dtoa.c.
+        AC_SYS_COMPILER_FLAG(-wd4334,wd4334,WARN)
+
+        # Inhibit warning:
+        #   C4146: unary minus operator applied to unsigned type,
+        #          result still unsigned
+        # which is generated in two places in dtoa.c.
+        AC_SYS_COMPILER_FLAG(-wd4146,wd4146,WARN)
         ;;
       esac
 
@@ -1895,11 +1951,6 @@ else
   ])
 fi
 
-# Define various *_SOURCE macros to enable later POSIX versions, etc.
-# NB: As these affect the visibility/availability of symbols these
-#     must be defined before other probes.
-PIKE_USE_SYSTEM_EXTENSIONS
-
 AC_MSG_CHECKING([crc32 intrinsics])
 AC_CACHE_VAL(pike_cv_sys_have_crc_intrinsics,[
   AC_TRY_LINK([
@@ -1959,6 +2010,15 @@ return 0;
     fi
 ])
 
+# Check for compiler builtins/intrinsics.
+#
+# ECC:  <emmintrin.h>
+# ICC:  <immintrin.h>
+# IBMC: <builtins.h>
+# MSVC: <intrin.h>
+AC_CHECK_HEADERS(intrin.h emmintrin.h immintrin.h builtins.h \
+                 machine/bswap.h sys/endian.h util.h)
+
 # RDRND hardware random support
 AC_SYS_COMPILER_FLAG(-mrdrnd, opt_rdrnd, OPTIMIZE)
 TEST_BUILTIN(__builtin_ia32_rdrand64_step,[&foo])
@@ -1977,11 +2037,22 @@ TEST_BUILTIN(__builtin_bswap32, 23)
 TEST_BUILTIN(__builtin_bswap64, 23)
 TEST_BUILTIN(__builtin_expect, [foo,0])
 # ICC builtins
-TEST_BUILTIN(_bswap, 23)
-TEST_BUILTIN(_bswap64, 23)
-TEST_BUILTIN(_bit_scan_reverse, 23)
-TEST_BUILTIN(_bit_scan_forward, 23)
+TEST_BUILTIN(_bswap, 23, [
+    #include <immintrin.h>
+])
+TEST_BUILTIN(_bswap64, 23, [
+    #include <immintrin.h>
+])
+TEST_BUILTIN(_bit_scan_reverse, 23, [
+    #include <immintrin.h>
+])
+TEST_BUILTIN(_bit_scan_forward, 23, [
+    #include <immintrin.h>
+])
 # Visual Studio builtins
+TEST_BUILTIN_VOID(__assume, [23], [
+    #include <intrin.h>
+])
 TEST_BUILTIN(_BitScanForward, [&lint, 23], [
     #include <intrin.h>
 ])
@@ -2001,10 +2072,18 @@ TEST_BUILTIN(_byteswap_uint64, 23, [
     #include <stdlib.h>
 ])
 # IBM C builtins
-TEST_BUILTIN(__cntlz4, 23)
-TEST_BUILTIN(__cntlz8, 23)
-TEST_BUILTIN(__cnttz4, 23)
-TEST_BUILTIN(__cnttz8, 23)
+TEST_BUILTIN(__cntlz4, 23, [
+    #include <builtins.h>
+])
+TEST_BUILTIN(__cntlz8, 23, [
+    #include <builtins.h>
+])
+TEST_BUILTIN(__cnttz4, 23, [
+    #include <builtins.h>
+])
+TEST_BUILTIN(__cnttz8, 23, [
+    #include <builtins.h>
+])
 
 
 #############################################################################
@@ -2049,6 +2128,14 @@ esac
 echo "$posix_name" | \
   sed -e "s,^$posix_prefix,$native_prefix," | \
   sed -e 's/\/\//\//g'
+EOF
+  elif test "x$pike_cv_sys_os" = "xAmigaOS"; then
+    # AmigaOS system.
+  cat <<\EOF
+#!/bin/sh
+# Automatically generated.
+# AmigaOS-version. Do NOT edit.
+sed -e 's;//*;/;g' -e 's;\(^\|/\)\(\./\)*\.\($\|/\);\1;g' -e 's;^/\([[^:/]]*\)\($\|/\);\1:;' -e 's;/\.\./;//;g' -e 's;\(^\|:\|/\)\.\.\($\|/\);\1/;g'
 EOF
   else
     # Native POSIX system.
@@ -2152,9 +2239,13 @@ fi
 primary_path=""
 fallback_path=""
 
+case "$pike_cv_sys_os" in
+  Solaris*)   p_site_prefixes_to_add="$p_site_prefixes_to_add:$with_root/opt/local";;
+esac
+
 if test $ldflags_is_set = yes -a $cppflags_is_set = yes ; then :; else
   for dd in \
-    `echo "${with_site_prefixes}"|sed -e 's/:/ /g'` \
+    `echo "${p_site_prefixes_to_add}"|sed -e 's/:/ /g'` \
     `echo $exec_prefix | sed "s@^NONE@$prefix@g" | sed "s@^NONE@$with_root$ac_default_prefix@g"` \
     $with_root/usr \
     $with_root/usr/local $with_root/sw/local $with_root/sw $with_root/opt/local \
@@ -2162,9 +2253,22 @@ if test $ldflags_is_set = yes -a $cppflags_is_set = yes ; then :; else
     $with_root/usr/freeware $with_root/usr/pkg \
     `echo $with_root/opt/gnome* | sort -r` \
     `echo $with_root/usr/X* | sort -r` \
+    $with_root/usr/pkg $with_root/opt/pkg \
     $with_root/usr/sfw $with_root/opt/sfw $with_root/opt/csw \
-    $with_root/usr/ccs
+    $with_root/usr/ccs $with_root/opt/homebrew
   do
+    O_IFS=${IFS}
+    IFS=":"
+    sp_exclude="no"
+    for spx in ${p_site_prefixes_to_remove} ; do
+      if test "x$with_root$spx" = "x$dd" ; then
+        sp_exclude="yes"
+      fi
+    done 
+       
+    IFS="$O_IFS"
+       
+    if test "$sp_exclude" = "yes" ; then continue; fi
     if test "$dd" = "/"; then continue; fi
     #if test "$dd" = "/usr"; then continue; fi
     AC_MSG_CHECKING($dd)
@@ -2355,6 +2459,12 @@ elif test -d `eval echo "$libdir$pike_cv_lib_abi/."` -o \
 fi
 AC_MSG_RESULT($libdir)
 
+# NB: We need to have gmp.h in the search path for the entirety of Pike,
+#     since gmp.h is included by bignum.h, which in turn is included
+#     by much of Pike.
+PIKE_PKG_CONFIG(libgmp)
+AC_CHECK_HEADERS(gmp.h)
+
 #############################################################################
 
 ## At this point we have at last initialized the compiler!
@@ -2438,6 +2548,13 @@ if test "x${AR-}" = x ; then
   export AR
 fi
 AC_SUBST(AR)
+
+# PaX flags control (NetBSD).
+if test "x${PAXCTL-}" = x ; then
+  AC_PATH_PROG(PAXCTL, paxctl, , $PATH:$EXTRA_PATH)
+  export PAXCTL
+fi
+AC_SUBST(PAXCTL)
 
 if test "x${RNTANY-}" = x ; then
   AC_PATH_PROG(RNTANY, rntany, , $PATH:$EXTRA_PATH)
@@ -2535,6 +2652,7 @@ for YACC in pyacc "byacc -s" "bison -y" yacc "None"; do
 cat >conftest.y<<\EOF
 %pure_parser
 %{
+#include <stdlib.h>
 void parse();
 void yyerror(char *);
 %}
@@ -2648,6 +2766,7 @@ void yyerror(char *fel) { errors++; }
 EOF
     if $YACC -d conftest.y 1>&AC_FD_CC 2>&AC_FD_CC; then
       AC_TRY_COMPILE([
+#include <stdlib.h>
 #include "y.tab.c"
 ],[
 yyparse();
@@ -2709,6 +2828,7 @@ EOF
       cat conftest.y 1>&AC_FD_CC
       if $YACC -d conftest.y 1>&AC_FD_CC 2>&AC_FD_CC; then
         AC_TRY_LINK([
+#include <stdlib.h>
 #include "y.tab.c"
         ], [
   yyparse();
@@ -2754,7 +2874,7 @@ if test "$ac_cv_c_const" = "yes"; then
     AC_TRY_COMPILE([
 const int foo(int bar) { return bar; }
     ], [
-      return bar(0);
+      return foo(0);
     ], [
        pike_cv_c_really_const=yes
     ], [
@@ -2813,24 +2933,26 @@ AC_HEADER_STDC
 # conflict. Thus check for winsock2.h before anything else in case
 # winsock.h is included indirectly.
 AC_CHECK_HEADERS(winsock2.h sys/rusage.h sys/time.h \
-		 memory.h strings.h \
+                 memory.h strings.h stdalign.h float.h \
 		 fcntl.h sys/filio.h sys/sockio.h crypt.h \
 		 sys/select.h net/socket.h sys/param.h io.h \
 		 sys/mman.h sys/user.h pthread.h \
 		 sys/id.h mach-o/dyld.h sys/ptrace.h \
 		 thread.h dlfcn.h dld.h dl.h sys/times.h sched.h \
 		 sys/procfs.h sys/socket.h sys/uio.h fcntl.h \
-		 malloc.h netinet/in.h sys/wait.h windows.h grp.h pwd.h \
-		 passwd.h group.h winsock.h sys/file.h poll.h \
+		 malloc.h netinet/in.h arpa/inet.h sys/wait.h windows.h \
+		 grp.h pwd.h passwd.h group.h winsock.h sys/file.h poll.h \
 		 sys/poll.h socket.h ieeefp.h fp_class.h floatingpoint.h \
 		 sys/priocntl.h sys/sched.h winbase.h \
 		 sys/termio.h termios.h sys/termios.h \
+                 utime.h sys/utime.h \
+                 xmath.h ymath.h \
 		 ws2tcpip.h valgrind/memcheck.h memcheck.h valgrind.h \
 		 sys/prctl.h sys/ioctl.h mach/task_info.h mach/task.h \
 		 mach/mach_init.h syscall.h sys/syscall.h devices/timer.h \
 		 direct.h CoreServices/CoreServices.h execinfo.h \
 		 mach/mach.h mach/thread_act.h mach/clock.h \
-		 machine/bswap.h sys/endian.h emmintrin.h,,,[
+                 mach/port.h mach/message.h,,,[
 #if (defined(__WINNT__) || defined(__WIN32__)) && !defined(__NT__)
 #define __NT__
 #endif
@@ -2847,6 +2969,9 @@ AC_CHECK_HEADERS(winsock2.h sys/rusage.h sys/time.h \
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
 #endif /* !_GNU_SOURCE */
+#ifndef _DEFAULT_SOURCE
+#define _DEFAULT_SOURCE
+#endif /* !_DEFAULT_SOURCE */
 #ifdef __NT__
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
@@ -2884,7 +3009,109 @@ AC_CHECK_HEADERS(winsock2.h sys/rusage.h sys/time.h \
 #ifdef HAVE_SYS_PARAM_H
 # include <sys/param.h>
 #endif
+/* Necessary to find struct winsize. */
+#ifdef HAVE_TERMIOS_H
+#include <termios.h>
+#elif defined(HAVE_SYS_TERMIOS_H)
+/* NB: Deprecated by <termios.h> above. */
+#include <sys/termios.h>
+#endif
 ])
+
+AC_CHECK_TYPES([HPCON, LPPROC_THREAD_ATTRIBUTE_LIST, LPSTARTUPINFOEXW,
+                struct winsize],,,[
+#if (defined(__WINNT__) || defined(__WIN32__)) && !defined(__NT__)
+#define __NT__
+#endif
+#ifndef _LARGEFILE_SOURCE
+#  define _FILE_OFFSET_BITS 64
+#  define _LARGEFILE_SOURCE
+#endif
+#ifndef __STDC_EXT__
+#  define __STDC_EXT__
+#endif /* !__STDC_EXT__ */
+#ifndef _PROTOTYPES
+#  define _PROTOTYPES
+#endif /* !_PROTOTYPES */
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif /* !_GNU_SOURCE */
+#ifndef _DEFAULT_SOURCE
+#define _DEFAULT_SOURCE
+#endif /* !_DEFAULT_SOURCE */
+#ifdef __NT__
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef WIN32
+#define WIN32   100     /* WinNT 1.0 */
+#endif
+#if !defined(_WIN32_WINDOWS) || (_WIN32_WINDOWS < 0x500)
+#undef _WIN32_WINDOWS
+#define _WIN32_WINDOWS 0x0500
+#endif
+#if !defined(_WIN32_WINNT) || (_WIN32_WINNT < 0x500)
+#undef _WIN32_WINNT
+#define _WIN32_WINNT 0x0500
+#endif
+#if !defined(NTDDI_VERSION) || (NTDDI_VERSION < 0x05000000)
+#undef NTDDI_VERSION
+#define NTDDI_VERSION 0x05000000
+#endif
+#endif /* __NT__ */
+#ifdef __amigaos__
+#define __USE_NETINET_IN_H
+#endif
+#ifndef __BUILTIN_VA_ARG_INCR
+#define __BUILTIN_VA_ARG_INCR   1
+#endif /* !__BUILTIN_VA_ARG_INCR */
+#ifdef HAVE_WINDOWS_H
+#include <windows.h>
+#undef HAVE_WINDOWS_H
+#endif
+/* Necessary to find sys/socket.h on MacOS X 10.3 */
+#if HAVE_SYS_TYPES_H
+# include <sys/types.h>
+#endif
+/* Necessary to find ws2tcpip.h on WIN32. */
+#ifdef HAVE_WINSOCK2_H
+# include <winsock2.h>
+#endif
+/* Necessary to find sys/user.h on OpenBSD */
+#ifdef HAVE_SYS_PARAM_H
+# include <sys/param.h>
+#endif
+])
+
+if test "x$ac_cv_have_xmath_h:$ac_cv_have_ymath_h" = "xno:no" ; then :; else
+    # Internal header files on NT.
+    #
+    # Some notes:
+    #   <xmath.h> includes <ymath.h>.
+    #   The typedef _Dconst is a union.
+    #   The double field is named _Double in MSVC 9 (2007),
+    #   but just _D in a prerelease dated 2000-06-15.
+    AC_CHECK_MEMBER(_Dconst._Double, [
+      AC_DEFINE(INFINITY, (_Inf._Double),
+                [Expression that evaluates to the double value inf.])
+    ],[
+      AC_CHECK_MEMBER(_Dconst._D, [
+        AC_DEFINE(INFINITY, (_Inf._D))
+      ],[],[
+#ifdef HAVE_XMATH_H
+#include <xmath.h>
+#else
+#include <ymath.h>
+#endif
+      ])
+    ],[
+#ifdef HAVE_XMATH_H
+#include <xmath.h>
+#else
+#include <ymath.h>
+#endif
+    ])
+fi
 
 # Setjmp.
 #
@@ -2894,6 +3121,7 @@ AC_CHECK_HEADERS(winsock2.h sys/rusage.h sys/time.h \
 # SVID explicitly defines setjmp() not to save the signal mask.
 AC_CHECK_FUNCS(sigsetjmp _setjmp siglongjmp _longjmp)
 
+default_backend_method=select
 # Make it possible to disable use of /dev/poll.
 if test "x$with_devpoll" = "xno"; then :; else
   AC_CHECK_HEADERS(sys/devpoll.h sys/event.h sys/epoll.h)
@@ -2913,6 +3141,32 @@ if test "x$with_devpoll" = "xno"; then :; else
   AC_MSG_RESULT($pike_cv_poll_device)
   if test "x$pike_cv_poll_device" = "xno"; then :; else
     AC_DEFINE_UNQUOTED(PIKE_POLL_DEVICE, "$pike_cv_poll_device")
+  fi
+
+  if test "x$ac_cv_header_sys_devpoll_h" = "xno"; then :; else
+      default_backend_method="devpoll ($pike_cv_poll_device)"
+      AC_MSG_CHECKING(whether struct dvpoll has the field dp_setp)
+      AC_CACHE_VAL(pike_cv_struct_dvpoll_has_dp_setp, [
+          AC_TRY_COMPILE([
+/* NB: The extra field also causes <sys/devpoll.h> to require
+ *     <signal.h> to be included before in order to get sigset_t.
+ */
+#include <signal.h>
+#include <sys/devpoll.h>
+          ],[
+            struct dvpoll dp;
+            void *set = dp.dp_setp;
+          ],pike_cv_struct_dvpoll_has_dp_setp=yes,
+            pike_cv_struct_dvpoll_has_dp_setp=no)
+      ])
+      AC_MSG_RESULT($pike_cv_struct_dvpoll_has_dp_setp)
+      if test "x$pike_cv_struct_dvpoll_has_dp_setp" = "xyes"; then
+          AC_DEFINE(STRUCT_DVPOLL_HAS_DP_SETP)
+      fi
+  fi
+
+  if test "x$ac_cv_func_kqueue" = "xyes"; then
+    default_backend_method=kqueue
   fi
 
   if test "x$ac_cv_header_sys_epoll_h" = "xyes"; then
@@ -2970,6 +3224,7 @@ int main(int argc, char **argv)
     ])
     AC_MSG_RESULT($pike_cv_epoll_works)
     if test "x$pike_cv_epoll_works" = "xyes"; then
+      default_backend_method=epoll
       AC_DEFINE(WITH_EPOLL)
     fi
   fi
@@ -3222,6 +3477,13 @@ AC_CHECK_LIB(m, floor)
 
 AC_CHECK_LIB(socket, socket)
 
+# Haiku (and BeOS?) hides socket() et al in -lnetwork.
+AC_CHECK_LIB(network, socket)
+
+AC_CHECK_LIB(util, openpty)
+
+AC_CHECK_LIB(crypt, crypt)
+
 if test x"$pike_cv_sys_os" = xWindows_NT ; then
   AC_MSG_CHECKING(if we should use the 64 bit API)
   AC_CACHE_VAL(pike_cv_sys_win64, [
@@ -3452,7 +3714,8 @@ int main(int argc, char **argv)
   PIKE_AC_DEBUG
 
   AC_CHECK_FUNCS(pthread_init pthread_mutexattr_init pthread_kill \
-                 pthread_cond_reltimedwait_np pthread_mach_thread_np)
+                 pthread_cond_reltimedwait_np pthread_mach_thread_np \
+                 pthread_jit_write_protect_np)
 
   AC_MSG_CHECKING(posix threads)
 
@@ -3462,6 +3725,7 @@ int main(int argc, char **argv)
 #define _THREAD_SAFE
 #define _MIT_POSIX_THREADS 1
 
+#include <stdlib.h>
 #include <pthread.h>
 
 void *foo(void *bar) { pthread_exit(0); return 0; }
@@ -3492,6 +3756,7 @@ int main()
 #define _THREAD_SAFE
 #define _MIT_POSIX_THREADS 1
 
+#include <stdlib.h>
 #include <pthread.h>
 
 void *foo(void *bar) { pthread_exit(0); return 0; }
@@ -3705,7 +3970,11 @@ pthread_t gazonk;
 #define _THREAD_SAFE
 #define _MIT_POSIX_THREADS 1
 
+#include <stdlib.h>
 #include <pthread.h>
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 
 void *foo(void *bar) { return (void *)getpid();  }
 pthread_mutexattr_t attr;
@@ -3781,6 +4050,7 @@ extern pthread_t bar;
 #define _REENTRANT
 #define _THREAD_SAFE
 #define _MIT_POSIX_THREADS 1
+#include <stdlib.h>
 #include <thread.h>
 #ifdef _UNIXWARE_THREADS_
 #include <synch.h>
@@ -3846,59 +4116,57 @@ if test "x$pike_cv_thread_t_type" = "xpointer"; then
   AC_DEFINE(PIKE_THREAD_T_IS_POINTER)
 fi
 
-if test "x$pike_cv_sys_os" = "xWindows_NT" -o "x$pike_cv_sys_os" = "xAmigaOS"; then :; else
+if test "x$pike_cv_sys_os" = "xWindows_NT" -o "x$pike_cv_sys_os" = "xAmigaOS"; then
+    :
+elif test "x$pike_cv_sys_os" = "xHaiku" -o "x$pike_cv_sys_os" = "xBeOS"; then
+    # Haiku throws up an interactive window on core-dump, so hard-code
+    # the value.
+    AC_MSG_CHECKING(initial stack limit)
+    AC_CACHE_VAL(pike_cv_initial_stack_size,[
+                     pike_cv_initial_stack_size=16580608
+                 ])
+    if test x$pike_cv_initial_stack_size = x ; then
+        AC_MSG_RESULT(unlimited)
+    else
+        AC_MSG_RESULT($pike_cv_initial_stack_size)
+        AC_DEFINE_UNQUOTED(Pike_INITIAL_STACK_SIZE,$pike_cv_initial_stack_size)
+    fi
+else
+  # Note: On some platforms (eg Solaris 11) the old test has been
+  #       observed to hang intermittently. Use ulimit -s (kbytes)
+  #       and subtract 64 kbytes for a redzone.
+  #
+  # For reference:
+  #
+  #   Platform                  Old        New     Diff  ulimit -s
+  #   MacOS X 10.5/ppc     67076096   67039232    36864      65532
+  #   MacOS X 14.2/arm64   67043328   67026944    16384      65520
+  #   FreeBSD 13/x86_64   536870912  536805376    65536     524288
+  #   Linux 2.6/x86_64     12517376   10420224  2097152      10240
+  #   Linux 4.9/aarch64     8323072    8323072        0       8192
+  #   Linux 4.9/aarch32(e)  8290304    8257536    32768       8192
+  #   Linux 5.4/ppc64       8323072    8323072        0       8192
+  #   Linux 5.4/ppc32(e)    8290304    8257536    32768       8192
+  #   Linux 6.1/riscv64     8323072    8323072        0       8192
+  #   Linux 6.5/x86_64      8323072    8323072        0       8192
+  #   SunOS 5.8/sun4u       8323072    8323072        0       8192
+  #   SunOS 5.10/x86_64    10485760   10485760        0      10304
+  #   SunOS 5.11/x86_64     8323072    8323072        0       8192
+  #   SunOS 5.11/sun4v      8323072    8323072        0       8192
+  #
+  # NB: The entry for Linux 2.6/x86_64 hints that the granularity
+  #     for the limit on Linux is in 4 MB increments.
   AC_MSG_CHECKING(initial stack limit)
   AC_CACHE_VAL(pike_cv_initial_stack_size,[
-    old_core_limit=`ulimit -c`
-    ulimit -Sc 0
-    rm -f confdefs.out.2 >/dev/null 2>&1 || :
-    AC_TRY_RUN([
-#include <stdio.h>
-
-      static int depth=0;
-      FILE *f;
-
-      void save_depth(void);
-
-      void use_stack(void *page)
-      {
-        void *X[8190];
-        X[0]=page;
-        save_depth();
-        use_stack(&X);
-      }
-
-      void save_depth(void)
-      {
-        depth+=sizeof(void *)*8192;
-        fprintf(f,"%d\n",depth);
-        fflush(f);
-        if(depth>0x80000000) exit(0);
-      }
-
-      int main(int argc)
-      {
-        f=fopen("confdefs.out.2", "w");
-	/* weird filename to circumvent configure weirdness */
-        save_depth();
-        use_stack(0);
-      }
-    ], [pike_cv_initial_stack_size=''], [
-      pike_cv_initial_stack_size=32768
-      while read x; do
-	# Some paranoia in case fprintf outputs junk at and of stack...
-	if test "$pike_cv_initial_stack_size" -lt "$x"; then
-          pike_cv_initial_stack_size="$x";
-	fi
-      done <confdefs.out.2
-      if test "$pike_cv_initial_stack_size" = "32768"; then
-	# Some sort of unsupported failure.
-	pike_cv_initial_stack_size=''
-      fi
-    ], [pike_cv_initial_stack_size=''])
-    ulimit -c $old_core_limit
-    unset old_core_limit
-    rm -f confdefs.out.2 >/dev/null 2>/dev/null || :
+    stack_limit=`ulimit -s 2>/dev/null || echo unlimited`
+    if test "x$stack_limit" = "xunlimited"; then
+      pike_cv_initial_stack_size=''
+    elif test "x$pike_cv_native_abi" = "x$pike_cv_abi"; then
+      pike_cv_initial_stack_size=`awk "BEGIN { print $stack_limit * 1024 - 65536; }" </dev/null`
+    else
+      # Subtract an extra 64 kbytes for non-native emulation stack.
+      pike_cv_initial_stack_size=`awk "BEGIN { print $stack_limit * 1024 - 131072; }" </dev/null`
+    fi
   ])
   if test x$pike_cv_initial_stack_size = x ; then
     AC_MSG_RESULT(unlimited)
@@ -3962,6 +4230,9 @@ if test "x$ac_cv_func_mmap_fixed_mapped" = "xyes"; then
 #if !defined(MAP_ANONYMOUS) && defined(MAP_ANON)
 #define MAP_ANONYMOUS	MAP_ANON
 #endif /* !MAP_ANONYMOUS && MAP_ANON */
+#ifndef MAP_JIT
+#define MAP_JIT 0
+#endif
 
       int main(int argc, char **argv)
       {
@@ -3980,10 +4251,10 @@ if test "x$ac_cv_func_mmap_fixed_mapped" = "xyes"; then
 #define MAP_ANONYMOUS	0
 #endif /* !MAP_ANONYMOUS */
 	if ((ptr = mmap(NULL, 8192, PROT_EXEC|PROT_READ|PROT_WRITE,
-		        MAP_PRIVATE|MAP_ANONYMOUS,
+		        MAP_PRIVATE|MAP_ANONYMOUS|MAP_JIT,
 			dev_zero, 0)) == MAP_FAILED) {
 	  fprintf(stderr, "mmap(NULL, 8192, PROT_EXEC|PROT_READ|PROT_WRITE,\n"
-			  "MAP_PRIVATE|MAP_ANONYMOUS, %d, 0) failed. errno: %d\n",
+			  "MAP_PRIVATE|MAP_ANONYMOUS|MAP_JIT, %d, 0) failed. errno: %d\n",
 		  dev_zero,
 		  errno);
 	  return 2;
@@ -4019,6 +4290,9 @@ if test "x$ac_cv_func_mmap_fixed_mapped" = "xyes"; then
 #if !defined(MAP_ANONYMOUS) && defined(MAP_ANON)
 #define MAP_ANONYMOUS	MAP_ANON
 #endif /* !MAP_ANONYMOUS && MAP_ANON */
+#ifndef MAP_JIT
+#define MAP_JIT 0
+#endif
       ], [
         void *ptr;
 	int dev_zero = -1;
@@ -4031,7 +4305,7 @@ if test "x$ac_cv_func_mmap_fixed_mapped" = "xyes"; then
 #define MAP_ANONYMOUS	0
 #endif /* !MAP_ANONYMOUS */
 	if ((ptr = mmap(NULL, 8192, PROT_EXEC|PROT_READ|PROT_WRITE,
-		        MAP_PRIVATE|MAP_ANONYMOUS,
+		        MAP_PRIVATE|MAP_ANONYMOUS|MAP_JIT,
 			dev_zero, 0)) == MAP_FAILED) {
 	  return 2;
 	}
@@ -4053,8 +4327,11 @@ AC_CHECK_FUNCS( \
  _crypt \
  poll \
  accept4 \
+ chroot \
  closefrom \
  crypt \
+ crypt_r \
+ fchdir \
  fdwalk \
  ftruncate64 \
  gethrtime \
@@ -4068,7 +4345,9 @@ AC_CHECK_FUNCS( \
  gmtime_r \
  gmtime_s \
  strptime \
+ log2 \
  mallinfo \
+ mallinfo2 \
  mallopt \
  ptrace \
  setrlimit \
@@ -4079,10 +4358,12 @@ AC_CHECK_FUNCS( \
  times \
  truncate64 \
  tzset \
+ snprintf \
  _snprintf \
  wait3 \
  wait4 \
  waitpid \
+ _wutime64 \
  munmap \
  shl_load \
  dld_link \
@@ -4102,6 +4383,7 @@ AC_CHECK_FUNCS( \
  setsid \
  initgroups setgroups \
  socketpair \
+ openpty \
  bswap16 \
  __bswap16 \
  bswap32 \
@@ -4111,8 +4393,10 @@ AC_CHECK_FUNCS( \
  fpclass \
  fp_class_d \
  isinf \
+ isnan \
  _isnan \
  iszero \
+ finite \
  _finite \
  signbit \
  nan \
@@ -4138,8 +4422,14 @@ AC_CHECK_FUNCS( \
  SetErrorMode \
  thread_info \
  host_get_clock_service \
- posix_memalign \
 )
+
+if test "x$with_poll:$ac_cv_func_poll" = "xyes:yes"; then
+  AC_DEFINE(HAVE_AND_USE_POLL)
+  if test "x$default_backend_method" = "xselect"; then
+    default_backend_method=poll
+  fi
+else :; fi
 
 # SunOS 4 realloc() returns NULL when reallocing NULL.
 AC_MSG_CHECKING([if realloc(NULL, SZ) works])
@@ -4483,6 +4773,9 @@ AC_TRY_COMPILE([
 #ifdef HAVE_DIRECT_H
 #include <direct.h>
 #endif
+#ifdef HAVE_SYS_STAT_H
+#include <sys/stat.h>
+#endif
 ],[
   mkdir("conftestdir",0666);
 ],pike_cv_func_mkdir_args=2,pike_cv_func_mkdir_args=1)
@@ -4520,6 +4813,7 @@ fi
 # with AC_CHECK_FUNCS().
 MY_CHECK_FUNCTION(isfinite,
 [
+#include <stdlib.h>
 #include <math.h>
 ], [
   int t = isfinite(0.0);
@@ -4539,6 +4833,7 @@ AC_CACHE_VAL(pike_cv_broken_f_setfd, [
 #include <fcntl.h>
 #endif /* HAVE_FCNTL_H */
 #include <stdio.h>
+#include <stdlib.h>
 #ifndef FD_CLOEXEC
 #define FD_CLOEXEC 1
 #endif /* FD_CLOEXEC */
@@ -5058,9 +5353,11 @@ AC_CACHE_VAL(pike_cv_hardware_stack_direction,
 [
   AC_TRY_RUN([
 #include <stdio.h>
+#include <stdlib.h>
+static int (* volatile find_stack_direction_funptr)(void *foo, int cnt);
 static int find_stack_direction(void *foo, int cnt)
 {
-  if (cnt) return 1*find_stack_direction(foo, cnt>>1);
+  if (cnt) return 1*find_stack_direction_funptr(foo, cnt>>1);
   if (((void *)&foo) > foo) {
     return 1;
   } else {
@@ -5068,9 +5365,12 @@ static int find_stack_direction(void *foo, int cnt)
   }
 }
 
-int main() { void *bar; exit( find_stack_direction(&bar, 0x10) > 0); }
-  ], [ pike_cv_hardware_stack_direction=down
+int main() {
+  find_stack_direction_funptr = find_stack_direction;
+  void *bar; exit( find_stack_direction_funptr(&bar, 0x10) < 0);
+}
   ], [ pike_cv_hardware_stack_direction=up
+  ], [ pike_cv_hardware_stack_direction=down
   ], [
     AC_MSG_WARN([Defaulting to down.])
     pike_cv_hardware_stack_direction=down
@@ -5124,10 +5424,42 @@ int main()
 }],
 pike_cv_hardware_byteorder=`cat conftest.out.2`
 ,
-pike_cv_hardware_byteorder=0
-,
-pike_cv_hardware_byteorder=0
-)
+AC_MSG_ERROR([Unable to determine hardware byteorder])
+, [
+echo $ac_n "crosscompiling... $ac_c" 1>&6
+    # Use some magical constants...
+    cat > conftest.$ac_ext <<EOF
+dnl This sometimes fails to find confdefs.h, for some reason.
+dnl [#]line __oline__ "[$]0"
+[#]line __oline__ "configure"
+#include "confdefs.h"
+#include <stdio.h>
+#if SIZEOF_INT == 4
+#define T int
+#else
+#define T long
+#endif
+T int_info[[]] = {
+  0, 0x5f426947L, 0x2d654e64L, 0x49614e5fL, 0
+};
+EOF
+    if AC_TRY_EVAL(ac_compile); then
+      if test -f "conftest.$ac_objext"; then
+        if strings "conftest.$ac_objext" | grep "_BiG-eNdIaN_" >/dev/null; then
+	  pike_cv_hardware_byteorder=4321
+        elif strings "conftest.$ac_objext" | grep "GiB_dNe-_NaI" >/dev/null; then
+	  pike_cv_hardware_byteorder=1234
+	else
+	  AC_MSG_ERROR([Unable to determine hardware byteorder])
+	fi
+      else
+        AC_MSG_ERROR([Unable to determine hardware byteorder])
+      fi
+    else
+      AC_MSG_ERROR([Unable to determine hardware byteorder])
+    fi
+    rm -rf conftest*
+])
 fi
 ])
 
@@ -5329,6 +5661,7 @@ fi
 
 ########################################################################
 
+PAXCTL_ALLOW_MPROTECT=:
 if test yes = "$with_machine_code"; then
   AC_MSG_CHECKING(register name convention)
   AC_CACHE_VAL(pike_cv_cpu_reg_prefix,
@@ -5350,7 +5683,55 @@ if test yes = "$with_machine_code"; then
     *) AC_MSG_RESULT(${pike_cv_cpu_reg_prefix}0)
        AC_DEFINE_UNQUOTED(PIKE_CPU_REG_PREFIX,"$pike_cv_cpu_reg_prefix");;
   esac
-else :; fi
+
+  if test "x$PAXCTL" = "x:"; then :; else
+    AC_MSG_CHECKING(${PAXCTL} syntax to allow mprotect)
+    AC_CACHE_VAL(pike_cv_paxctl_allow_mprotect,
+    [
+      echo "int main(int argc, char **argv) { return 0; }" >conftest.c
+      pike_cv_paxctl_allow_mprotect=no
+      if ${CC} ${CFLAGS} conftest.c -o conftest >&AC_FD_CC 2>&1; then
+	if test -f conftest; then
+	  # Notes about paxctl flags:
+	  #
+	  # Flag	Linux			NetBSD
+	  #     	Usage.			View PaX flags.
+	  #   -v	View PaX flags.		-
+	  #   -m	Allow mprotect.		Remove +m flag.
+	  #   +m	File +m (fail).		Allow mprotect.
+	  #   -M	Disallow mprotect.	Remove +M flag.
+	  #   +M	File +M (fail).		Disallow mprotect.
+	  #   -c	Convert GNU to PaX.	-
+	  #   -C	Create PaX header.	-
+	  #
+	  # Note that Linux paxctl fails if there's no PaX ELF header,
+	  # unless -C or -c have been specified.
+	  # Note that Linux -C fails if there's a PT_GNU_STACK header.
+	  # Note that Linux -c fails if there's no PT_GNU_STACK header.
+	  for pike_cv_paxctl_allow_mprotect in +m -cCm no; do
+	    if test "x$pike_cv_paxctl_allow_mprotect" = "xno"; then
+	      break
+	    fi
+	    echo "${PAXCTL} ${pike_cv_paxctl_allow_mprotect} conftest" \
+		>&AC_FD_CC
+	    if ${PAXCTL} ${pike_cv_paxctl_allow_mprotect} conftest \
+		>&AC_FD_CC 2>&1; then
+	      break
+	    fi
+	  done
+        else
+	  echo "No result from compilation." >&AC_FD_CC
+	fi
+      fi
+    ])
+    AC_MSG_RESULT($pike_cv_paxctl_allow_mprotect)
+    if test "x$pike_cv_paxctl_allow_mprotect" = "xno"; then :; else
+      PAXCTL_ALLOW_MPROTECT="\$(PAXCTL) ${pike_cv_paxctl_allow_mprotect}"
+    fi
+  fi
+fi
+
+AC_SUBST(PAXCTL_ALLOW_MPROTECT)
 
 ########################################################################
 
@@ -5388,6 +5769,7 @@ fi
 ########################################################################
 MY_CHECK_FUNCTION(fork,
 [
+#include <stdlib.h>
 #include <sys/types.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -5399,6 +5781,7 @@ MY_CHECK_FUNCTION(fork,
 ########################################################################
 MY_CHECK_FUNCTION(fpsetmask,
 [
+#include <stdlib.h>
 #include <math.h>
 #ifdef HAVE_FLOATINGPOINT_H
 #include <floatingpoint.h>
@@ -5414,6 +5797,7 @@ MY_CHECK_FUNCTION(fpsetmask,
 ########################################################################
 MY_CHECK_FUNCTION(fpsetround,
 [
+#include <stdlib.h>
 #include <math.h>
 #ifdef HAVE_FLOATINGPOINT_H
 #include <floatingpoint.h>
@@ -5433,6 +5817,7 @@ MY_CHECK_FUNCTION(fpsetround,
 ########################################################################
 MY_CHECK_FUNCTION(isless,
 [
+#include <stdlib.h>
 #include <math.h>
 #ifdef HAVE_FLOATINGPOINT_H
 #include <floatingpoint.h>
@@ -5449,6 +5834,7 @@ MY_CHECK_FUNCTION(isless,
 ########################################################################
 MY_CHECK_FUNCTION(isunordered,
 [
+#include <stdlib.h>
 #include <math.h>
 #ifdef HAVE_FLOATINGPOINT_H
 #include <floatingpoint.h>
@@ -5466,6 +5852,7 @@ MY_CHECK_FUNCTION(isunordered,
 ########################################################################
 MY_CHECK_FUNCTION(dlopen,
 [
+#include <stdlib.h>
 #include <dlfcn.h>
 ], [
   dlopen(0, 0);
@@ -5475,6 +5862,7 @@ MY_CHECK_FUNCTION(dlopen,
 ########################################################################
 MY_CHECK_FUNCTION(rint,
 [
+#include <stdlib.h>
 #include <math.h>
 #ifdef HAVE_FLOATINGPOINT_H
 #include <floatingpoint.h>
@@ -5499,6 +5887,7 @@ MY_CHECK_FUNCTION(rint,
 #############################################################################
 MY_CHECK_FUNCTION(GetSystemTimeAsFileTime,
 [
+#include <stdlib.h>
 #ifdef HAVE_WINDOWS_H
 #include <windows.h>
 #endif
@@ -5513,6 +5902,7 @@ MY_CHECK_FUNCTION(GetSystemTimeAsFileTime,
 #############################################################################
 MY_CHECK_FUNCTION(gethostname,
 [
+#include <stdlib.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -5547,6 +5937,7 @@ fi
 
 AC_MSG_CHECKING([for union wait (old BSD convention)])
 AC_CACHE_VAL(pike_cv_union_wait, [ AC_TRY_COMPILE([
+#include <stdlib.h>
 #ifdef HAVE_SYS_WAIT_H
 #include <sys/wait.h>
 #endif /* HAVE_SYS_WAIT_H */
@@ -5580,6 +5971,7 @@ AC_MSG_CHECKING(how to extract an unsigned char)
 AC_CACHE_VAL(pike_cv_method_extract_uchar,
 [
 AC_TRY_RUN([
+#include <stdlib.h>
 int main()
 {
   char i,*p;
@@ -5605,6 +5997,7 @@ AC_MSG_CHECKING(how to extract a signed char)
 AC_CACHE_VAL(pike_cv_method_extract_char,
 [
 AC_TRY_RUN([
+#include <stdlib.h>
 int main()
 {
   char i,*p;
@@ -5629,6 +6022,7 @@ AC_MSG_CHECKING(if float conversion can cause SIGFPE)
 AC_CACHE_VAL(pike_cv_sys_idiot_sigfpe,
 [
  AC_TRY_RUN([
+#include <stdlib.h>
 #include <math.h>
 
 #ifdef HAVE_FLOATINGPOINT_H
@@ -5677,6 +6071,7 @@ if test $pike_cv_sys_idiot_sigfpe = yes ; then
  OLD_CFLAGS="$CFLAGS"
  CFLAGS="$CFLAGS $OPTIMIZE"
  AC_TRY_RUN([
+#include <stdlib.h>
 #include <math.h>
 
 #ifdef HAVE_FLOATINGPOINT_H
@@ -5723,6 +6118,7 @@ if test $TEST_IGNORE_SIGFPE = yes; then
  OLD_CFLAGS="$CFLAGS"
  CFLAGS="$CFLAGS $OPTIMIZE"
 AC_TRY_RUN([
+#include <stdlib.h>
 #include <signal.h>
 #include <math.h>
 int counter=0;
@@ -5766,6 +6162,7 @@ fi # pike_cv_sys_idiot_sigfpe
 #############################################################################
 
 define(float_check, [[
+#include <stdlib.h>
 #include <math.h>
 #define TY $1
 #define TEST_$1
@@ -5951,6 +6348,11 @@ AC_CACHE_VAL(pike_cv_sys_signal_oneshot,
 #ifdef HAVE_POLL_H
 #include <poll.h>
 #endif
+#include <string.h>
+#include <stdio.h>
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 VOLATILE sig_atomic_t sigrun[2]= { 0, 0 };
 RETSIGTYPE func(int sig)
 {
@@ -6060,80 +6462,6 @@ else
   AC_DEFINE(GETRUSAGE_RESTRICTED)
 fi
 
-########################################################################
-
-if test "$ac_cv_header_sys_procfs_h" = "yes"; then
-  AC_MSG_CHECKING(getrusage() through procfs)
-  AC_CACHE_VAL(pike_cv_getrusage_procfs, [
-    AC_TRY_COMPILE([
-#ifndef _LARGEFILE_SOURCE
-#  define _FILE_OFFSET_BITS 64
-#  define _LARGEFILE_SOURCE
-#  define _LARGEFILE64_SOURCE 1
-#endif
-#include <sys/procfs.h>
-#include <sys/fcntl.h>
-int proc_fd;
-long tmp;
-char proc_name[20];
-prusage_t  pru;
-    ],[
-      sprintf(proc_name, "/proc/%05d", getpid());
-      proc_fd = open(proc_name, O_RDONLY);
-      ioctl(proc_fd, PIOCUSAGE, &pru);
-      tmp=pru.pr_utime.tv_sec;
-    ],
-      pike_cv_getrusage_procfs=yes
-    ,
-      pike_cv_getrusage_procfs=no
-    )
-  ])
-
-  if test "$pike_cv_getrusage_procfs" = yes; then
-    AC_MSG_RESULT(yes)
-    AC_DEFINE(GETRUSAGE_THROUGH_PROCFS)
-  else
-    AC_MSG_RESULT(no)
-  fi
-fi
-
-#############################################################################
-
-if test "$ac_cv_getrusage_procfs" = "yes"; then
-  AC_MSG_CHECKING(prstatus_t contains pr_brksize and pr_stksize)
-  AC_CACHE_VAL(pike_cv_getrusage_procfs_prs, [
-    AC_TRY_COMPILE([
-#ifndef _LARGEFILE_SOURCE
-#  define _FILE_OFFSET_BITS 64
-#  define _LARGEFILE_SOURCE
-#  define _LARGEFILE64_SOURCE 1
-#endif
-#include <sys/procfs.h>
-#include <sys/fcntl.h>
-int proc_fd;
-long tmp;
-char proc_name[20];
-prstatus_t prs;
-    ],[
-      sprintf(proc_name, "/proc/%05d", getpid());
-      proc_fd = open(proc_name, O_RDONLY);
-      ioctl(proc_fd, PIOCSTATUS, &prs);
-      tmp=prs.pr_brksize + prs.pr_stksize;
-    ],
-      pike_cv_getrusage_procfs_prs=yes
-    ,
-      pike_cv_getrusage_procfs_prs=no
-    )
-  ])
-
-  if test "$pike_cv_getrusage_procfs_prs" = yes; then
-    AC_MSG_RESULT(yes)
-    AC_DEFINE(GETRUSAGE_THROUGH_PROCFS_PRS)
-  else
-    AC_MSG_RESULT(no)
-  fi
-fi
-
 #############################################################################
 #
 # __func__ is new in ISO C 9x
@@ -6145,6 +6473,7 @@ AC_MSG_CHECKING(if __func__ exists and works)
 AC_CACHE_VAL(pike_cv_have_working___func__,
 [
   AC_TRY_RUN([
+#include <stdlib.h>
 #include <string.h>
 int main()
 {
@@ -6164,6 +6493,7 @@ AC_MSG_CHECKING(if __FUNCTION__ exists and works)
 AC_CACHE_VAL(pike_cv_have_working___FUNCTION__,
 [
   AC_TRY_RUN([
+#include <stdlib.h>
 #include <string.h>
 int main()
 {
@@ -6194,6 +6524,8 @@ AC_MSG_CHECKING(for lc __declspec)
 AC_CACHE_VAL(pike_cv_lc___declspec,
 [
   AC_TRY_RUN([
+#include <stdlib.h>
+#include <stdio.h>
 #include <stdarg.h>
 __declspec(noreturn) void fatal(char *foo,...);
 
@@ -6211,6 +6543,7 @@ int main() {  exit(0); }
   ], pike_cv_lc___declspec=yes, pike_cv_lc___declspec=no, [
     echo $ac_n "crosscompiling... $ac_c" 1>&6
     AC_TRY_LINK([
+#include <stdlib.h>
 #include <stdarg.h>
 __declspec(noreturn) void fatal(char *foo,...);
 
@@ -6416,7 +6749,7 @@ AC_CACHE_VAL(pike_cv_sys_nonblock,
 
 if test "${pike_cv_sys_nonblock}" = "UNKNOWN"; then
   AC_MSG_RESULT(none found)
-  if test "${pike_cv_sys_os}" = "Windows_NT"; then :; else
+  if test "${pike_cv_sys_os}" = "Windows_NT" -o "${pike_cv_sys_os}" = "AmigaOS"; then :; else
     config_fail="No way to set nonblocking I/O"
   fi
 else
@@ -6445,12 +6778,18 @@ AC_CACHE_VAL(pike_cv_system_oob_working,[
 #ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
+#ifdef HAVE_ARPA_INET_H
+#include <arpa/inet.h>
+#endif
 #ifdef HAVE_SYS_POLL_H
 #include <sys/poll.h>
 #endif
 #include <fcntl.h>
 #ifdef HAVE_SYS_FILE_H
 #include <sys/file.h>
+#endif
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
 #endif
 
 #define SP_DEBUG(X)	fprintf X
@@ -6894,6 +7233,7 @@ AC_MSG_CHECKING(if gettimeofday takes two arguments)
 AC_CACHE_VAL(pike_cv_func_gettimeofday_has_two_args,
 [
   AC_TRY_RUN([
+#include <stdlib.h>
 #if TIME_WITH_SYS_TIME
 # include <sys/time.h>
 # include <time.h>
@@ -6922,6 +7262,7 @@ int main() {
   ], [ pike_cv_func_gettimeofday_has_two_args=no
   ], [
     AC_TRY_LINK([
+#include <stdlib.h>
 #if TIME_WITH_SYS_TIME
 # include <sys/time.h>
 # include <time.h>
@@ -7281,7 +7622,11 @@ if test -z "$LDSHARED" ; then
         # symbol collisions for e.g. libjpeg which is referenced from both
         # _Image_JPEG and _Image_TIFF. It requires MACOSX_DEPLOYMENT_TARGET
         # which is initialized in smartlink to 10.3.
-        LDSHARED="$REALCC $CFLAGS -bundle -bind_at_load -undefined dynamic_lookup"
+        LDSHARED="$REALCC $CFLAGS -bundle -bind_at_load"
+        case "$MACOSX_DEPLOYMENT_TARGET" in
+          13.*) ;; # -undefined dynamic_lookup is deprecated
+          *) LDSHARED="$LDSHARED -undefined dynamic_lookup";;
+        esac
       else
         # Mac OS X prior to 10.3 need -flat_namespace to support dynamic modules
         LDSHARED="$REALCC $CFLAGS -bundle -bind_at_load -flat_namespace -undefined suppress"
@@ -7314,6 +7659,7 @@ if test -z "$LDSHARED" ; then
     FreeBSD*) LDSHARED="$REALCC -Wl,-Bshareable";;
     NetBSD*) LDSHARED="$REALCC -Wl,-Bshareable";;
     OpenBSD*) LDSHARED="$REALCC -Wl,-Bshareable";;
+    Haiku*|BeOS*) LDSHARED="$REALCC -shared";;
     BSD/OS*)
       case "`uname -r`" in
        [4-9].*) LDSHARED="$REALCC -shared";;
@@ -7376,6 +7722,9 @@ AC_CACHE_VAL(pike_cv_sys_ccshared,[
 	Darwin*)
 	  CCSHARED="-fPIC"
 	;;
+        Haiku*|BeOS*)
+          CCSHARED="-fPIC"
+        ;;
 	Solaris*)
 	  # The Image module runs out of symbol reference space unless we
 	  # use the large PIC model:
@@ -7394,6 +7743,9 @@ AC_CACHE_VAL(pike_cv_sys_ccshared,[
 	Darwin*)
 	  CCSHARED="-fPIC"
 	;;
+        Haiku*|BeOS*)
+          CCSHARED="-fPIC"
+        ;;
         hp*|HP*) CCSHARED="+z"; ;;
 	FreeBSD*) CCSHARED="-fpic";;
 	SCO_SV*) CCSHARED="-KPIC -dy -Bdynamic";;
@@ -7413,7 +7765,8 @@ AC_CACHE_VAL(pike_cv_sys_ccshared,[
   fi
   OLD_CFLAGS="$CFLAGS"
   CFLAGS="$CFLAGS $CCSHARED"
-  AC_TRY_COMPILE([], [exit(0);],
+  AC_TRY_COMPILE([#include <stdlib.h>
+    ], [exit(0);],
     pike_cv_sys_ccshared="$CCSHARED", pike_cv_sys_ccshared='')
   CFLAGS="$OLD_CFLAGS"
 ])
@@ -7437,6 +7790,7 @@ then
       Darwin*) LINKFORSHARED="-dynamic";;
       hp*|HP*) LINKFORSHARED="-Wl,-E";;
       Linux*) LINKFORSHARED="-rdynamic";;
+      Haiku*|BeOS*) LINKFORSHARED="-Xlinker -export-dynamic";;
       BSD/OS*)
         case "`uname -r`" in
          4.*) LINKFORSHARED="-rdynamic";;
@@ -7456,7 +7810,8 @@ then
       UnixWare*|OpenUNIX*) LINKFORSHARED="-fpic -Wl,-Bexport";;
 
       FreeBSD*)
-        AC_TRY_RUN([int main(){exit(
+        AC_TRY_RUN([#include <stdlib.h>
+int main(){exit(
 #ifdef __ELF__
     0
 #else
@@ -7479,7 +7834,8 @@ then
       UnixWare*|OpenUNIX*) LINKFORSHARED="-Bdynamic -dy -Wl,-Bexport";;
 
       FreeBSD*)
-        AC_TRY_RUN([int main(){exit(
+        AC_TRY_RUN([#include <stdlib.h>
+int main(){exit(
 #ifdef __ELF__
     0
 #else
@@ -7495,7 +7851,8 @@ fi
 
    OLD_CFLAGS="$CFLAGS"
    CFLAGS="$CFLAGS $LINKFORSHARED"
-   AC_TRY_RUN([int main() { exit(0); }],
+   AC_TRY_RUN([#include <stdlib.h>
+int main() { exit(0); }],
  pike_cv_sys_linkforshared="$LINKFORSHARED", pike_cv_sys_linkforshared='', pike_cv_sys_linkforshared='')
    CFLAGS="$OLD_CFLAGS"
 ])
@@ -7522,6 +7879,7 @@ AC_CACHE_VAL(pike_cv_sys_dynamic_loading,
   cat >conftest.c <<EOF
 #include <stdio.h>
 #include <stdlib.h>
+extern void testfunc2(void);
 #if __GNUC__ >= 4
 __attribute__ ((visibility("default")))
 # endif
@@ -7552,6 +7910,7 @@ EOF
       ;;
     esac
     AC_TRY_RUN([
+#include <stdlib.h>
 #define TESTING
 #include "dynamic_load.c"
 #if __GNUC__ >= 4
@@ -7804,7 +8163,7 @@ done
 
 if test x$with_dynamic_modules = xyes ; then
   dmmsrc="modules/dynamic_module_makefile.in"
-  DYNAMIC_MODULE_FLAGS="-DDYNAMIC_MODULE"
+  DYNAMIC_MODULE_FLAGS=""
   CCSHARED="${CCSHARED} ${DYNAMIC_MODULE_FLAGS}"
   PIKE_LIB="libpike.so"
   MODULE_O=tmodule.o
@@ -7815,7 +8174,7 @@ else
   AC_DEFINE(USE_SEMIDYNAMIC_MODULES)
   dmmsrc="modules/semidynamic_module_makefile.in"
   PIKE_LIB="libpike.a"
-  MODULE_O=module.o
+  MODULE_O=pike_modules.o
   BUILD_PIKE=tpike
   POST_MODULE_BUILD_TYPE=static
   STATIC_POST_MODULES_LINKOPTS=post_modules/linker_options
@@ -7923,10 +8282,15 @@ export BUILD_BASE
 if test "$pike_cv_sys_os" = "Windows_NT"; then
   # If this doesn't begin with '/', it's relative to pike.exe.
   default_master=../lib/master.pike
+elif test "$pike_cv_sys_os" = "AmigaOS"; then
+  default_master=PROGDIR:lib/master.pike
 else
   default_master=$prefix/pike/%d.%d.%d/lib/master.pike
 fi
 AC_DEFINE_UNQUOTED(DEFAULT_MASTER,"$default_master")
+
+BUILD_DATE=`date +%-d.%-m.%Y`
+AC_SUBST(BUILD_DATE)
 
 AC_SUBST(OSFLAGS)
 AC_SUBST(WARN)
@@ -7948,6 +8312,13 @@ if_autoconf(2,50,[
   # Otherwise the sub-configures will attempt to use eg
   # -R with the raw compiler, which only works on Solaris.
   ac_configure_args=`echo " $ac_configure_args " | sed -e "s% 'CC=$REALCC' % 'CC=$CC' %g" -e "s% 'CC=$RAWCC' % 'CC=$CC' %g"`
+
+  if test "x$enable_binary" = "xno"; then
+    # --disable-binary
+    # LIBS contains lots of junk, which is likely to confuse the real
+    # compiler when the sub-configures run AC_PROG_CC.
+    LIBS=""
+  fi
 ])
 
 AC_CONFIG_SUBDIRS(modules post_modules)
@@ -8039,17 +8410,17 @@ cat >>config.info <<EOF
 $PIKE_VERSION_LONG configuration summary
 
 install information:
-prefix........ $prefix
-pike binary... $prefix/bin/pike
-pike library.. $prefix/pike/${PIKE_VERSION}/lib
+PAD_FEATURE([prefix])$prefix
+PAD_FEATURE([pike binary])$prefix/bin/pike
+PAD_FEATURE([pike library])$prefix/pike/${PIKE_VERSION}/lib
 
 system information:
-system.... $UNAME`echo $pike_cv_libgcc_filename | sed -n -e 's+^.*gcc-lib/\([[^/]]*\)/.*$+ (\1)+p'`
+PAD_FEATURE([system])$UNAME`echo $pike_cv_libgcc_filename | sed -n -e 's+^.*gcc-lib/\([[^/]]*\)/.*$+ (\1)+p'`
 EOF
 
-uname -a >/dev/null 2>/dev/null && echo "uname..... `uname -a`" >>config.info
-hostname >/dev/null 2>/dev/null && echo "hostname.. `hostname`" >>config.info
-whoami >/dev/null 2>/dev/null   && echo "user...... `whoami`" >>config.info
+uname -a >/dev/null 2>/dev/null && echo "PAD_FEATURE([uname])`uname -a`" >>config.info
+hostname >/dev/null 2>/dev/null && echo "PAD_FEATURE([hostname])`hostname`" >>config.info
+whoami >/dev/null 2>/dev/null   && echo "PAD_FEATURE([user])`whoami`" >>config.info
 
 # too many dots makes too long lines, keep them as short as possible
 # inside each section
@@ -8057,42 +8428,43 @@ whoami >/dev/null 2>/dev/null   && echo "user...... `whoami`" >>config.info
 cat >>config.info <<EOF
 
 build information:
-source path..... $srcdir
-build path...... $BUILDDIR
-ABI............. $with_abi
-cpp............. $CPP
-cc.............. $CC
-ld.............. $LD
-cc shared....... $CCSHARED
-ld shared....... $LINKFORSHARED
-pike............ $PIKE
-install......... $INSTALL
-shared object... .$SO
-libs............ $LIBS
-cross-compiled.. $cross_compiling
-building lib.... $enable_pikelib
-CPPFLAGS........$CPPFLAGS
-CFLAGS (opt)....$OPTIMIZE$opt_reasons
-CFLAGS (warn)...$WARN
-CFLAGS (misc)...$CFLAGS $OSFLAGS $PROFIL
-LDFLAGS.........$LDFLAGS $LINKFORSHARED $EXTRALDFLAGS
+PAD_FEATURE([source path])$srcdir
+PAD_FEATURE([build path])$BUILDDIR
+PAD_FEATURE([ABI])$with_abi
+PAD_FEATURE([cpp])$CPP
+PAD_FEATURE([cc])$CC
+PAD_FEATURE([ld])$LD
+PAD_FEATURE([cc shared])$CCSHARED
+PAD_FEATURE([ld shared])$LINKFORSHARED
+PAD_FEATURE([pike])$PIKE
+PAD_FEATURE([install])$INSTALL
+PAD_FEATURE([shared object]).$SO
+PAD_FEATURE([libs])$LIBS
+PAD_FEATURE([cross-compiled])PIKE_IS_CROSS_COMPILING
+PAD_FEATURE([building lib])$enable_pikelib
+PAD_FEATURE([CPPFLAGS])$CPPFLAGS
+PAD_FEATURE([CFLAGS (opt)])$OPTIMIZE$opt_reasons
+PAD_FEATURE([CFLAGS (warn)])$WARN
+PAD_FEATURE([CFLAGS (misc)])$CFLAGS $OSFLAGS $PROFIL
+PAD_FEATURE([LDFLAGS])$LDFLAGS $LINKFORSHARED $EXTRALDFLAGS
 EOF
 
 # insert information about debugging tools here, if they are turned on
 if test "x$with_valgrind" != xno ; then
   cat >>config.info <<EOF
-valgrind........ yes, using $VALGRIND $VALGRINDARGS
+PAD_FEATURE([valgrind])yes, using $VALGRIND $VALGRINDARGS
 EOF
 fi
 if test "x$with_dtrace" != xno ; then
   cat >>config.info <<EOF
-dtrace.......... yes
+PAD_FEATURE([dtrace])yes
 EOF
 fi
 
 cat >>config.info <<EOF
 
 features:
+PAD_FEATURE([backend])$default_backend_method
 PAD_FEATURE([dynamic loading])$pike_cv_sys_dynamic_loading
 PAD_FEATURE([threads])$using_threads
 PAD_FEATURE([signal handler])$signal_handler
@@ -8151,6 +8523,14 @@ if test -f config.warnings; then
   echo 'Warnings and notes summary:' >>config.info
   echo >>config.info
   cat config.warnings >>config.info
+elif test -f config.notes; then
+  echo >>config.info
+  echo 'Notes summary:' >>config.info
+  echo >>config.info
+fi
+
+if test -f config.notes; then
+  cat config.notes >>config.info
 fi
 
 echo

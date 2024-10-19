@@ -1,0 +1,356 @@
+head	1.13;
+access;
+symbols
+	v7_7_20:1.13
+	v7_7_18:1.13
+	v7_7_16:1.13
+	v7_7_14:1.13
+	v7_7_12:1.13
+	v7_7_10:1.13
+	v7_7_8:1.13
+	v7_7_6:1.13
+	v7_7_4:1.12
+	v7_7_2:1.12
+	pre75to767split:1.12
+	v7_5_26:1.12
+	v7_5_24:1.12
+	v7_5_22:1.12
+	v7_5_20:1.12
+	v7_5_18:1.12
+	v7_5_16:1.11
+	v7_5_10:1.10
+	v7_5_8:1.9
+	v7_5_4:1.8
+	v7_5_2:1.8
+	pre73to745split:1.8
+	v7_3_61:1.7
+	v7_3_59:1.7
+	v7_3_57:1.7
+	v7_3_54:1.5
+	v7_3_52:1.5
+	v7_3_50:1.5
+	v7_3_48:1.5
+	v7_3_46:1.5
+	v7_3_44:1.4
+	ris_emigration_20020407:1.4
+	v7_3_42:1.4
+	v7_3_38:1.4
+	v7_3_36:1.4
+	v7_3_34:1.4
+	v7_3_32:1.4
+	v7_3_31:1.3
+	v7_3_29:1.3
+	v7_3_27:1.3
+	v7_3_25:1.3
+	v7_3_23:1.3
+	v7_3_21:1.3
+	v7_3_20:1.3
+	v7_3_19:1.3
+	v7_3_17:1.3
+	v7_3_15:1.2
+	v7_3_14:1.2;
+locks; strict;
+comment	@# @;
+
+
+1.13
+date	2004.09.13.22.02.58;	author nilsson;	state Exp;
+branches;
+next	1.12;
+
+1.12
+date	2004.02.04.14.25.09;	author nilsson;	state Exp;
+branches;
+next	1.11;
+
+1.11
+date	2003.11.27.02.33.30;	author nilsson;	state Exp;
+branches;
+next	1.10;
+
+1.10
+date	2003.08.31.21.24.45;	author nilsson;	state Exp;
+branches;
+next	1.9;
+
+1.9
+date	2003.03.27.03.34.19;	author nilsson;	state Exp;
+branches;
+next	1.8;
+
+1.8
+date	2002.11.28.10.13.36;	author jhs;	state Exp;
+branches;
+next	1.7;
+
+1.7
+date	2002.10.10.02.10.17;	author nilsson;	state Exp;
+branches;
+next	1.6;
+
+1.6
+date	2002.10.06.11.42.27;	author norrby;	state Exp;
+branches;
+next	1.5;
+
+1.5
+date	2002.05.31.22.22.33;	author nilsson;	state Exp;
+branches;
+next	1.4;
+
+1.4
+date	2002.04.21.01.27.01;	author nilsson;	state Exp;
+branches;
+next	1.3;
+
+1.3
+date	2002.03.17.23.01.03;	author nilsson;	state Exp;
+branches;
+next	1.2;
+
+1.2
+date	2002.01.16.03.12.10;	author nilsson;	state Exp;
+branches;
+next	1.1;
+
+1.1
+date	2002.01.15.21.35.39;	author nilsson;	state Exp;
+branches;
+next	;
+
+
+desc
+@@
+
+
+1.13
+log
+@Updated
+@
+text
+@Pike is protected by international copyright laws.
+
+Copyright © 1994-1996 Fredrik Hübinette
+Copyright © 1996-1997 Informationsvävarna AB
+Copyright © 1997-2000 Idonex AB
+Copyright © 2000-2002 Roxen Internet Software AB
+Copyright © 2002-2004 Department of Computer and Information Science,
+                      Linköping University
+
+Pike refers to the source code, and any executables
+created from the same source code. Parts of other
+copyrighted works are included in Pike, in accordance
+with their respective conditions for distribution.
+
+Emacs font lock definitions
+Copyright © 2002 Martin Stjernholm
+
+IDEA encryption and decryption code
+Copyright © Xuejia Lai
+
+JPEG transform code
+Copyright © 1991-1998, Thomas G. Lane, Independent JPEG Group
+
+MD5 password hash code
+Copyright © Poul-Henning Kamp
+
+Regular expression matching code
+Copyright © 1986 by University of Toronto.
+
+TrueVision Targa code
+Copyright © 1997 Raphael FRANCOIS and Gordon Matzigkeit
+
+Unicode Character Database
+Copyright © 1991-2004 Unicode, Inc.
+
+Zlib detection and verification code
+Copyright © 1995-1998 Jean-loup Gailly and Mark Adler
+@
+
+
+1.12
+log
+@Update
+@
+text
+@d7 1
+a7 1
+Copyright © 2002-2003 Department of Computer and Information Science,
+d34 1
+a34 1
+Copyright © 1991-2003 Unicode, Inc.
+@
+
+
+1.11
+log
+@Copyright for IDEA and md5_crypt
+@
+text
+@a14 3
+DES encryption and decryption code
+Copyright © 1992 Dana L. How
+
+a28 6
+
+Rijndael encryption and decryption code
+Copyright © 2000 Joan Daemen
+
+Secure Hash Algorithm code
+Copyright © 1995, A.M. Kuchling
+@
+
+
+1.10
+log
+@Updated Unicode copyright
+@
+text
+@d21 3
+d26 3
+@
+
+
+1.9
+log
+@Copyright 2003
+@
+text
+@d37 1
+a37 1
+Copyright © 1991-2002 Unicode, Inc.
+@
+
+
+1.8
+log
+@As of yesterday, Martin Stjernholm holds the copyright for tools/pike.el, so it can be incorporated directly in Emacsen flavours in accordance with FSF rules and similar.
+@
+text
+@d7 2
+a8 2
+Copyright © 2002 Department of Computer and Information Science,
+                 Linköping University
+d18 1
+a18 1
+Emacs font lock definitions for Pike and other LPC files
+@
+
+
+1.7
+log
+@Generated file. (make legal)
+@
+text
+@d18 3
+@
+
+
+1.6
+log
+@Added JPEG library copyright strings
+@
+text
+@d18 2
+a19 2
+The Independent JPEG Group's JPEG software
+Copyright © 1991-1998, Thomas G. Lane
+@
+
+
+1.5
+log
+@Updated copyrights
+@
+text
+@d18 3
+@
+
+
+1.4
+log
+@Updated unicode database copyright.
+@
+text
+@d2 1
+d7 2
+a14 6
+Unicode Character Database
+Copyright © 1991-2002 Unicode, Inc.
+
+TrueVision Targa code
+Copyright © 1997 Raphael FRANCOIS and Gordon Matzigkeit
+
+d18 3
+d27 5
+a31 2
+Regular expression matching code
+Copyright © 1986 by University of Toronto.
+a34 3
+
+The Pike source is distributed under GPL, see the file
+COPYING for more details.
+@
+
+
+1.3
+log
+@Suggestion from Leif Stenssion that I almost forgot about.
+@
+text
+@d13 1
+a13 1
+Copyright © 1991-2001 Unicode, Inc.
+@
+
+
+1.2
+log
+@Updated copyright
+@
+text
+@d12 1
+a12 1
+The Unicode Character Database is
+d15 1
+a15 1
+The TrueVision Targa code is
+d18 1
+a18 1
+DES encryption and decryption code is 
+d21 1
+a21 1
+Rijndael encryption and decryption code is
+d24 1
+a24 1
+Secure Hash Algorithm code is
+d27 1
+a27 1
+Regular expression matching code is
+d30 1
+a30 1
+Zlib detection and verification code is
+a34 1
+
+@
+
+
+1.1
+log
+@Updated copyright message.
+@
+text
+@d2 4
+a5 4
+Copyright (c) 1994-1996 Fredrik Hübinette
+Copyright (c) 1996-1997 Informationsvävarna AB
+Copyright (c) 1997-2000 Idonex AB
+Copyright (c) 2000-2002 Roxen Internet Software AB
+d8 3
+a10 1
+created from the same source code.
+d12 22
+a33 1
+This source is distributed under GPL, see the file
+@
+

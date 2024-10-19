@@ -20,9 +20,9 @@ class Data {
   mixed _data=0;
   multiset(string) _deps;
 
-  void create(void|mixed value, void|int abs_expire_time,
-              void|float preciousness,
-              void|multiset(string) dependants) {
+  protected void create(void|mixed value, void|int abs_expire_time,
+			void|float preciousness,
+			void|multiset(string) dependants) {
     _data=value;
     atime=ctime=time(1);
     if (abs_expire_time) etime=abs_expire_time;
@@ -66,7 +66,7 @@ private mapping(string:mixed) data=([]);
 
 // these are used by the enumerator. While entries might be deleted while
 // enumerating, it won't bite us.
-private array(string) iter=0;
+private array(string)|zero iter=0;
 private int current=0;
 
 int(0..0)|string first() {
@@ -127,5 +127,5 @@ void delete(string key, void|int(0..1) hard) {
       delete(dep,hard);
     }
   }
-  return 0;
+  return;
 }

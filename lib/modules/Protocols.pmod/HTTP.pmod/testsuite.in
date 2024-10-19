@@ -199,8 +199,109 @@ test_eq(H.iri_encode(":+<\00\x80\u0100"), "%3A%2B%3C%00\x80\u0100")
 dnl quoted_string_encode
 dnl quoted_string_decode
 
-
 test_do(add_constant("H"))
 test_do(add_constant("CON"))
+
+test_do(add_constant("A", Protocols.HTTP.Authentication))
+
+test_equal(A.split_header(""), ([]))
+test_equal(A.split_header("a=1,b=,c=\"\",d=\"a\",e=b,f=\",\""),
+  (["a":"1","b":"","c":"","d":"a", "e":"b","f":","]))
+test_equal(A.split_header("realm=\"a@b.com\", qop=\"auth\",nonce=\"123\", algorithm=MD5"), ([ "realm":"a@b.com", "qop":"auth", "nonce":"123", "algorithm":"MD5" ]))
+test_equal(A.split_header("a=1,a=2"), ([ "a":"2" ]))
+
+dnl From RFC 2617 section 2
+test_any([[
+  object c = A.make_authenticator("Basic realm=\"WallyWorld\"", "Aladdin", "open sesame");
+  return c->auth("GET","/");
+]], "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==")
+
+test_any_equal([[
+  object c = A.make_authenticator("Digest realm=\"testrealm@host.com\", nonce=\"dcd98b7102dd2f0e8b11d0f600bfb0c093\"", "Mufasa", "Circle Of Life");
+  string r = c->auth("GET","/dir/index.html","0a4f113b");
+  sscanf(r, "Digest %s", r);
+  return A.split_header(r);
+]], ([ "username":"Mufasa",
+       "algorithm":"MD5",
+       "realm":"testrealm@host.com",
+       "nonce":"dcd98b7102dd2f0e8b11d0f600bfb0c093",
+       "uri":"/dir/index.html",
+       "response":"670fd8c2df070c60b045671b8b24ff02",
+       ]))
+
+dnl From RFC 2617 section 3.5
+test_any_equal([[
+  object c = A.make_authenticator("Digest realm=\"testrealm@host.com\", qop=\"auth\", nonce=\"dcd98b7102dd2f0e8b11d0f600bfb0c093\", opaque=\"5ccc069c403ebaf9f0171e9517f40e41\"", "Mufasa", "Circle Of Life");
+  string r = c->auth("GET","/dir/index.html","0a4f113b");
+  sscanf(r, "Digest %s", r);
+  return A.split_header(r);
+]], ([ "username":"Mufasa",
+       "algorithm":"MD5",
+       "realm":"testrealm@host.com",
+       "nonce":"dcd98b7102dd2f0e8b11d0f600bfb0c093",
+       "uri":"/dir/index.html",
+       "qop":"auth",
+       "nc":"00000001",
+       "cnonce":"0a4f113b",
+       "response":"6629fae49393a05397450978507c4ef1",
+       "opaque":"5ccc069c403ebaf9f0171e9517f40e41"
+       ]))
+
+dnl RFC 7616 section 3.9.1
+test_any_equal([[
+  object c = A.make_authenticator("Digest realm=\"http-auth@example.org\", qop=\"auth\", algorithm=MD5, nonce=\"7ypf/xlj9XXwfDPEoM4URrv/xwf94BcCAzFZH4GiTo0v\", opaque=\"FQhe/qaU925kfnzjCev0ciny7QMkPqMAFRtzCUYo5tdS\"", "Mufasa", "Circle of Life");
+  string r = c->auth("GET","/dir/index.html","f2/wE4q74E6zIJEtWaHKaf5wv/H5QzzpXusqGemxURZJ");
+  sscanf(r, "Digest %s", r);
+  return A.split_header(r);
+]], ([ "username":"Mufasa",
+       "algorithm":"MD5",
+       "realm":"http-auth@example.org",
+       "nonce":"7ypf/xlj9XXwfDPEoM4URrv/xwf94BcCAzFZH4GiTo0v",
+       "uri":"/dir/index.html",
+       "qop":"auth",
+       "nc":"00000001",
+       "cnonce":"f2/wE4q74E6zIJEtWaHKaf5wv/H5QzzpXusqGemxURZJ",
+       "response":"8ca523f5e9506fed4657c9700eebdbec",
+       "opaque":"FQhe/qaU925kfnzjCev0ciny7QMkPqMAFRtzCUYo5tdS"
+       ]))
+
+dnl RFC 7616 section 3.9.1
+test_any_equal([[
+  object c = A.make_authenticator("Digest realm=\"http-auth@example.org\", qop=\"auth\", algorithm=SHA-256, nonce=\"7ypf/xlj9XXwfDPEoM4URrv/xwf94BcCAzFZH4GiTo0v\", opaque=\"FQhe/qaU925kfnzjCev0ciny7QMkPqMAFRtzCUYo5tdS\"", "Mufasa", "Circle of Life");
+  string r = c->auth("GET","/dir/index.html","f2/wE4q74E6zIJEtWaHKaf5wv/H5QzzpXusqGemxURZJ");
+  sscanf(r, "Digest %s", r);
+  return A.split_header(r);
+]], ([ "username":"Mufasa",
+       "algorithm":"SHA-256",
+       "realm":"http-auth@example.org",
+       "nonce":"7ypf/xlj9XXwfDPEoM4URrv/xwf94BcCAzFZH4GiTo0v",
+       "uri":"/dir/index.html",
+       "qop":"auth",
+       "nc":"00000001",
+       "cnonce":"f2/wE4q74E6zIJEtWaHKaf5wv/H5QzzpXusqGemxURZJ",
+       "response":"753927fa0e85d155564e2e272a28d1802ca10daf4496794697cf8db5856cb6c1",
+       "opaque":"FQhe/qaU925kfnzjCev0ciny7QMkPqMAFRtzCUYo5tdS"
+       ]))
+
+test_any_equal([[
+  object c = A.make_authenticator("Digest realm=\"api@example.org\", qop=\"auth\", algorithm=SHA-512-256, nonce=\"5TsQWLVdgBdmrQ0XsxbDODV+57QdFR34I9HAbC/RVvkK\", opaque=\"HRPCssKJSGjCrkzDg8OhwpzCiGPChXYjwrI2QmXDnsOS\", charset=UTF-8, userhash=true", "J\u00e4s\u00f8n Doe", "Secret, or not?");
+  string r = c->auth("GET","/doe.json","NTg6RKcb9boFIAS3KrFK9BGeh+iDa/sm6jUMp2wds69v");
+  sscanf(r, "Digest %s", r);
+  return A.split_header(r);
+]], ([ "username":"488869477bf257147b804c45308cd62ac4e25eb717b12b298c79e62dcea254ec",
+       "algorithm":"SHA-512-256",
+       "realm":"api@example.org",
+       "nonce":"5TsQWLVdgBdmrQ0XsxbDODV+57QdFR34I9HAbC/RVvkK",
+       "uri":"/doe.json",
+       "qop":"auth",
+       "nc":"00000001",
+       "cnonce":"NTg6RKcb9boFIAS3KrFK9BGeh+iDa/sm6jUMp2wds69v",
+       "response":"ae66e67d6b427bd3f120414a82e4acff38e8ecd9101d6c861229025f607a79dd",
+       "opaque":"HRPCssKJSGjCrkzDg8OhwpzCiGPChXYjwrI2QmXDnsOS",
+       "userhash":"true",
+       ]))
+
+
+test_do(add_constant("A"))
 
 END_MARKER

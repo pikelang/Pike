@@ -697,13 +697,13 @@ PIKECLASS Simple
    *   mixed ... xtra
    */
 #define CALLBACKTYPE							\
-  tFuncV(tStr tStr tMapping tOr(tArray,tStr) tMap(tStr,tMix), tMix,	\
+  tFuncV(tStr tStr tMapping tOr(tArray,tStr) tMap(tStr,tMix), tUnknown,	\
 	 tSetvar(0, tMix))
   /*"function(string,string,mapping,array|string,mapping(string:mixed),mixed...:0=mixed)"*/
 
 #define PARSETYPE							\
-  tOr(tFuncV(tStr tStr tOr(CALLBACKTYPE, tVoid), tMix, tArr(tVar(0))),	\
-      tFuncV(tStr tOr(CALLBACKTYPE, tVoid), tMix, tArr(tVar(0))))
+  tOr(tFuncV(tStr tStr tOr(CALLBACKTYPE, tVoid), tUnknown, tArr(tVar(0))),	\
+      tFuncV(tStr tOr(CALLBACKTYPE, tVoid), tUnknown, tArr(tVar(0))))
   /* "function(string," CALLBACKTYPE ",mixed...:array(0))" */
 
   /*! @decl array parse(string xml, string context, @
@@ -1850,10 +1850,8 @@ static void parse_optional_xmldecl(void)
   {
     struct mapping *m;
 
-#if 0
-    if(THIS->input->pos != 5)
+    if(THIS->input->pos!=5 && !(THIS->input->pos==6 && PEEK(-6)==0xfeff) )
       XMLERROR( "XML header must be at the first byte in the document." );
-#endif
 
     push_constant_text("<?xml");
     push_int(0);
@@ -2685,10 +2683,14 @@ static struct pike_string *very_low_parse_xml(struct pike_string *end,
       default:
 	if(toplevel)
 	{
-	  if(!isSpace(PEEK(0)))
-	    XMLERROR("All data must be inside tags");
-	  SKIPSPACE();
-	  break;
+          if( THIS->input->pos==0 && PEEK(0)==0xfeff ) {
+            READ(1);
+            break;
+          }
+          if(!isSpace(PEEK(0)))
+            XMLERROR("All data must be inside tags");
+          SKIPSPACE();
+          break;
 	}
 	POKE(*text, PEEK(0));
 	READ(1);
@@ -2715,6 +2717,12 @@ static struct pike_string *very_low_parse_xml(struct pike_string *end,
 	break;
 
       case '&':
+        if(toplevel)
+        {
+          XMLERROR("All data must be inside tags");
+          SKIPSPACE();
+          break;
+        }
 	READ_REFERENCE(0,*text,very_low_parse_xml(NULL, text, 1));
 	break;
 
@@ -3426,7 +3434,17 @@ PIKEFUN string autoconvert(string s)
     }
   }
   IF_XMLDEBUG(fprintf(stderr,"No encoding detected.\n"));
-  f_utf8_to_string(1);
+
+  /* Check if utf-8. */
+  stack_dup();
+  f_validate_utf8(1);
+  if (!UNSAFE_IS_ZERO(Pike_sp-1)) {
+    pop_stack();
+    f_utf8_to_string(1);
+  } else {
+    /* Use as-is. */
+    pop_stack();
+  }
 }
 
 /*! @endmodule

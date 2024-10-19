@@ -22,7 +22,7 @@ protected string debug_blob(string b)
 
 
 protected function(string,int,int:string) blobfeeder(Search.Database.Base db,
-						  array words)
+                                                     array words)
 {
   //  Create state per word and stream so multiple occurrences of the same
   //  word are kept apart.
@@ -86,8 +86,8 @@ enum search_order
 };
 
 protected Search.ResultSet sort_resultset(Search.ResultSet resultset,
-                                       search_order order,
-                                       Search.Database.Base db)
+                                          search_order order,
+                                          Search.Database.Base db)
 {
 
 }
@@ -118,7 +118,7 @@ array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
                                               string query,
                                               Search.RankingProfile ranking,
                                               void|array(string) stop_words,
-                                              void|search_order order)
+                                              search_order order=RELEVANCE)
 {
   Search.Grammar.ParseNode q = parser->parse(query);
   if (stop_words && sizeof(stop_words))
@@ -457,9 +457,6 @@ array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
   } (db, ranking)->execute(q);
 
   res[0] -= db->get_deleted_documents();
-
-  if(!order)
-    order = RELEVANCE;
 
   if(order!=NONE)
     switch(order)

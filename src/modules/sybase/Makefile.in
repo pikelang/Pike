@@ -6,8 +6,6 @@ VPATH=@srcdir@
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 OBJS=sybase.o
 
-CONFIG_HEADERS=@CONFIG_HEADERS@
-
 @dynamic_module_makefile@
 
 sybase.o: $(SRCDIR)/sybase.c

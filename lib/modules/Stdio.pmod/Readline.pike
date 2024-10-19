@@ -1,5 +1,38 @@
 #pike __REAL_VERSION__
 
+//! Terminal-aware line-based input.
+//!
+//! @example
+//!   // Get a Readline object connected to Stdio.stdin/Stdio.stdout.
+//!   Stdio.Readline readline = Stdio.Readline();
+//!
+//!   // Enable history.
+//!   string|zero history_dump = Stdio.read_file(history_file);
+//!   if (history_dump) {
+//!     readline->enable_history(history_dump/"\n");
+//!   } else {
+//!     readline->enable_history(512);	// 512 lines of history.
+//!   }
+//!
+//!   // Add a completion handler.
+//!   readline->get_input_controller()->bind("\t", handle_completions);
+//!
+//!   // Output some message.
+//!   readline->message("Welcome to some application.\n");
+//!
+//!   // Set a prompt.
+//!   readline->set_prompt("> ");
+//!
+//!   // Read some input.
+//!   string command = readline->read();
+//!
+//!   // Save the history.
+//!   Stdio.write_file(history_file, readline->get_history()->encode());
+//!
+//! @seealso
+//!   @[enable_history()], @[get_history()], @[get_input_controller()],
+//!   @[message()], @[read()], @[set_prompt()]
+
 //!
 //! @fixme
 //!   Ought to have support for charset conversion.
@@ -419,8 +452,8 @@ class OutputController
   }
 
   //!
-  void create(.File|void _outfd,
-	      .Terminfo.Termcap|string|void _term)
+  protected void create(.File|void _outfd,
+			.Terminfo.Termcap|string|void _term)
   {
     outfd = _outfd || Stdio.FILE( "stdout", "w" );
     if( outfd->set_charset )
@@ -439,11 +472,11 @@ class InputController
 {
   private object infd, term;
   private int enabled = -1;
-  private function(:int) close_callback = 0;
+  private function(:int)|zero close_callback = 0;
   private string prefix="";
   private mapping(int:function|mapping(string:function)) bindings=([]);
-  private function grab_binding = 0;
-  private mapping oldattrs = 0;
+  private function|zero grab_binding = 0;
+  private mapping|zero oldattrs = 0;
 
   int dumb=0;
 
@@ -489,7 +522,7 @@ class InputController
 	  b[m](m);
 	}
       } else
-	b(s[i..i]);
+	([function]b)(s[i..i]);
     }
     return "";
   }
@@ -608,9 +641,9 @@ class InputController
   }
 
   //!
-  function bindstr(string str, function f)
+  function bindstr(string str, function|zero f)
   {
-    function oldf = 0;
+    function|zero oldf = 0;
     if (mappingp(f))
       f = 0; // Paranoia
     switch (sizeof(str||""))
@@ -656,7 +689,7 @@ class InputController
   }
 
   //!
-  function getbindingstr(string str)
+  function|zero getbindingstr(string str)
   {
     switch (sizeof(str||""))
     {
@@ -780,7 +813,7 @@ class InputController
   }
 
   //!
-  void create(object|void _infd, object|string|void _term)
+  protected void create(object|void _infd, object|string|void _term)
   {
     infd = _infd;
     if( !_infd )
@@ -1155,7 +1188,7 @@ class DefaultEditKeys
   }
 
   //!
-  void create(object readline)
+  protected void create(object readline)
   {
     _readline = readline;
     set_default_bindings();
@@ -1242,7 +1275,7 @@ class History
   }
 
   //!
-  void create(int maxhist, void|array(string) hist)
+  protected void create(int maxhist, void|array(string) hist)
   {
     historylist = hist || ({ "" });
     minhistory = historynum = 0;
@@ -1254,12 +1287,12 @@ class History
 private OutputController output_controller;
 private InputController input_controller;
 private string prompt="";
-private array(string) prompt_attrs=0;
+private array(string)|zero prompt_attrs=0;
 private string text="", readtext;
-private function(string:void) newline_func;
+private function(string|zero:void) newline_func;
 private int cursorpos = 0;
 private int mark = 0;
-/* private */ History historyobj = 0;
+/* private */ object(History)|zero historyobj = 0;
 private int hide = 0;
 
 private array(string) kill_ring=({});
@@ -1552,7 +1585,10 @@ void eof()
     newline_func(0);
 }
 
-//! Print a message to the output device
+//! Print a message to the output device.
+//!
+//! @seealso
+//!   @[write()]
 void message(string msg)
 {
   int p = cursorpos;
@@ -1566,8 +1602,10 @@ void message(string msg)
   setcursorpos(p);
 }
 
-//! @fixme
-//!   Document this function
+//! Print a message to the output device with optional word wrap.
+//!
+//! @seealso
+//!   @[message()]
 void write(string msg,void|int word_wrap)
 {
   int p = cursorpos;
@@ -1598,9 +1636,16 @@ private void read_newline(string s)
   readtext = s;
 }
 
-//! @fixme
-//!   Document this function
-void set_nonblocking(function f)
+//! Set a function to be called every time a line is completed.
+//!
+//! @param f
+//!   Function to call when a line is completed, or @expr{0@} (zero) to
+//!   disable. It will be called with a string when a line is completed,
+//!   and @expr{0@} (zero) when @[eof()] is called.
+//!
+//! @seealso
+//!   @[set_blocking()], @[read()]
+void set_nonblocking(function(string|zero:void)|zero f)
 {
   int p=cursorpos;
   if (newline_func = f) {
@@ -1622,16 +1667,33 @@ void set_nonblocking(function f)
   }
 }
 
-//! @fixme
-//!   Document this function
+//! Disable nonblocking mode.
+//!
+//! This is equivalent to calling @expr{set_nonblocking(0)@}.
+//!
+//! @seealso
+//!   @[set_nonblocking()]
 void set_blocking()
 {
   set_nonblocking(0);
 }
 
-//! @fixme
-//!   Document this function
-string edit(string data, string|void local_prompt, array(string)|void attrs)
+//! Read a line of data from the input.
+//!
+//! @param data
+//!   Initial/default value that the user may edit.
+//!
+//! @param local_prompt
+//!   Alternative prompt. Defaults to the prompt set by @[set_prompt()].
+//!
+//! @param attrs
+//!   Alternative prompt attributes. Defaults to the attributes set
+//!   by @[set_prompt()].
+//!
+//! @seealso
+//!   @[read()]
+string|zero edit(string data, string|void local_prompt,
+                 array(string)|void attrs)
 {
   if(data && sizeof(data) && input_controller->dumb)
   {
@@ -1673,15 +1735,40 @@ string edit(string data, string|void local_prompt, array(string)|void attrs)
   return (res>=0 || sizeof(readtext)) && readtext;
 }
 
-//! @fixme
-//!   Document this function
+//! Read a line of data from the input.
+//!
+//! @param prompt
+//!   Alternative prompt. Defaults to the prompt set by @[set_prompt()].
+//!
+//! @param attrs
+//!   Alternative prompt attributes. Defaults to the attributes set
+//!   by @[set_prompt()].
+//!
+//! This function is essentially a short hand for
+//! @expr{edit("", prompt, attrs)@}.
+//!
+//! @seealso
+//!   @[edit()]
 string read(string|void prompt, array(string)|void attrs)
 {
   return edit("", prompt, attrs);
 }
 
-//! @fixme
-//!   Document this function
+//! Enable/disable history.
+//!
+//! @param hist
+//!   @mixed
+//!     @type zero
+//!       Disable history.
+//!     @type int(1..)
+//!       Enable history of max @[hist] lines. If history is already enabled
+//!       it is kept and the maximum number of lines adjusted.
+//!     @type array(string)
+//!       Set the history to this array of lines. The maximum number of lines
+//!       is set to 512.
+//!     @type History
+//!       Use this @[History] object.
+//!   @endmixed
 void enable_history(array(string)|History|int hist)
 {
   if (objectp(hist))
@@ -1696,8 +1783,7 @@ void enable_history(array(string)|History|int hist)
     historyobj = History(hist);
 }
 
-//! @fixme
-//!   Document this function
+//! Get the currently active @[History] object (if any).
 History get_history()
 {
   return historyobj;
@@ -1726,8 +1812,8 @@ protected void _destruct()
 //!
 //! @param outterm
 //!   Defaults to @[interm].
-void create(object|void infd, object|string|void interm,
-	    object|void outfd, object|string|void outterm)
+protected void create(object|void infd, object|string|void interm,
+		      object|void outfd, object|string|void outterm)
 {
   atexit(_destruct);
   output_controller = OutputController(outfd || infd, outterm || interm);

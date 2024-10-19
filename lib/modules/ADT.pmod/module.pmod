@@ -1,3 +1,4 @@
+#charset iso-8859-1
 #pike __REAL_VERSION__
 #pragma strict_types
 
@@ -34,7 +35,7 @@ class struct {
   //! value @[s].
   __deprecated__ void create(void|string(0..255) s)
   {
-     if( s && strlen(s) )
+     if( s && strlen([string]s) )
          ::create(s);
      else
          ::create();
@@ -82,9 +83,9 @@ class struct {
   //! Appends a bignum @[i] as a variable string preceded with an
   //! unsigned integer of the size @[len_width] declaring the length
   //! of the string. @[len_width] defaults to 2.
-  this_program put_bignum(Gmp.mpz i, int(0..)|void len_width)
+  this_program put_bignum(Gmp.mpz i, int(1..) len_width = 2)
   {
-    return [object(this_program)]add_hstring(i->digits(256),len_width||2);
+    return [object(this_program)]add_hstring(i->digits(256), len_width);
   }
 
   //! Appends the fix sized string @[s] to the buffer.
@@ -95,7 +96,7 @@ class struct {
 
   //! Appends an array of unsigned integers of width @[item_size]
   //! to the buffer.
-  this_program put_fix_uint_array(array(int) data, int(0..) item_size)
+  this_program put_fix_uint_array(array(int) data, int(8bit) item_size)
   {
     return [object(this_program)]add_ints(data,item_size);
   }
@@ -103,7 +104,7 @@ class struct {
   //! Appends an array of unsigned integers of width @[item_size]
   //! to the buffer, preceded with an unsigned integer @[len] declaring
   //! the size of the array in bytes.
-  this_program put_var_uint_array(array(int) data, int(0..) item_size, int(0..) len)
+  this_program put_var_uint_array(array(int) data, int(8bit) item_size, int(0..) len)
   {
     add_int(sizeof(data)*item_size, len );
     return [object(this_program)]add_ints(data,item_size);
@@ -122,7 +123,7 @@ class struct {
   }
 
   //! Reads an unsigned integer from the buffer.
-  int(0..) get_uint(int len)
+  int(0..) get_uint(int(0..) len)
   {
     return read_int(len);
   }
@@ -134,15 +135,15 @@ class struct {
   }
 
   //! Reads a string written by @[put_var_string] from the buffer.
-  string(0..255) get_var_string(int len)
+  string(0..255) get_var_string(int(0..) len)
   {
      return read_hstring(len);
   }
 
   //! Reads a bignum written by @[put_bignum] from the buffer.
-  Gmp.mpz get_bignum(int|void len)
+  Gmp.mpz get_bignum(int(1..) len = 2)
   {
-      return Gmp.mpz(read_hstring(len||2),256);
+    return Gmp.mpz(read_hstring(len), 256);
   }
 
   //! Get the remaining data from the buffer and clears the buffer.
@@ -153,14 +154,14 @@ class struct {
 
   //! Reads an array of integers as written by @[put_fix_uint_array]
   //! from the buffer.
-  array(int) get_fix_uint_array(int item_size, int size)
+  array(int) get_fix_uint_array(int(8bit) item_size, int size)
   {
     return read_ints(size, item_size);
   }
 
   //! Reads an array of integers as written by @[put_var_uint_array]
   //! from the buffer.
-  array(int) get_var_uint_array(int item_size, int len)
+  array(int) get_var_uint_array(int(8bit) item_size, int(0..) len)
   {
     int size = read_int(len);
     int elems = size/item_size;

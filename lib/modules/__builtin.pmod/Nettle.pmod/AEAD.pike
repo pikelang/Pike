@@ -34,6 +34,6 @@ class State
 }
 
 //! Calling `() will return a @[State] object.
-State `()() {
+protected State `()() {
   return State();
 }

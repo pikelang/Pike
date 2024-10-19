@@ -3,8 +3,6 @@ VPATH=@srcdir@
 OBJS=adt.o sequence.o circular_list.o
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 
-CONFIG_HEADERS=@CONFIG_HEADERS@
-
 # Reset the symbol prefix base to the empty string.
 PRECOMPILER_ARGS="--base="
 

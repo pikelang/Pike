@@ -12,6 +12,7 @@
 #include "builtin_functions.h"
 #include "bignum.h"
 #include "constants.h"
+#include "pike_threadlib.h"
 
 #define MACRO  ATTRIBUTE((unused)) static
 
@@ -668,7 +669,7 @@ OPCODE_FUN gen_logic_reg_imm(enum logic_instr op, enum arm64_register dst,
     return instr;
 }
 
-OPCODE_FUN gen_bitfield_reg_imm(enum logic_instr op, enum arm64_register dst,
+OPCODE_FUN gen_bitfield_reg_imm(enum bitfield_instr op, enum arm64_register dst,
 				enum arm64_register reg, unsigned char immr, unsigned char imms, int sf) {
     unsigned INT32 instr = set_bitfield_src_imm(op, sf, immr, imms);
 
@@ -1205,8 +1206,8 @@ MACRO void arm64_call_if_bit_set(enum arm64_register treg, int bit,
     struct label skip;
     enum arm64_register reg = ra_alloc_any();
 
-    UINT64 v1 = (char*)a - (char*)NULL,
-           v2 = (char*)b - (char*)NULL;
+    UINT64 v1 = (UINT64)a,
+           v2 = (UINT64)b;
 
     label_init(&skip);
     if (v1 < v2) {
@@ -1321,7 +1322,7 @@ MACRO void arm64_epilogue(void) {
 }
 
 MACRO void arm64_call(void *ptr) {
-    UINT64 v = (char*)ptr - (char*)NULL;
+    UINT64 v = (UINT64)ptr;
     enum arm64_register tmp = ra_alloc_any();
 
     /* we convervatively assume that any function could destruct
@@ -1369,7 +1370,7 @@ static void arm64_load_fp_reg(void) {
     }
 }
 
-static void arm64_invalidate_fp_reg(void) {
+MACRO void arm64_invalidate_fp_reg(void) {
     compiler_state.flags &= ~FLAG_FP_LOADED;
 }
 
@@ -1536,7 +1537,7 @@ MACRO void arm64_push_ref_type(unsigned INT32 type, void * ptr) {
                         vreg = ra_alloc_any();
 
     arm64_mov_int(treg, ARM64_TYPE_SUBTYPE_64(type));
-    arm64_mov_int(vreg, (char*)ptr - (char*)NULL);
+    arm64_mov_int(vreg, (UINT64)ptr);
 
     arm64_push_ptr_type(treg, vreg);
 
@@ -1872,6 +1873,8 @@ MACRO void arm64_call_c_opcode(unsigned int opcode) {
 
   if (opcode == F_CATCH)
     addr = inter_return_opcode_F_CATCH;
+  else if (opcode == F_CATCH_AT)
+    addr = inter_return_opcode_F_CATCH_AT;
 
   arm64_call(addr);
 
@@ -1884,12 +1887,10 @@ MACRO void arm64_call_c_opcode(unsigned int opcode) {
   }
 }
 
-MACRO void arm64_free_svalue_off(enum arm64_register src, int off, int guaranteed) {
+MACRO void arm64_free_svalue_off(enum arm64_register src, int off) {
     int no_free = 1;
     struct label done;
     if (src != ARM_REG_ARG1) ra_alloc(ARM_REG_ARG1);
-
-    guaranteed = guaranteed;
 
     off *= sizeof(struct svalue);
 
@@ -1935,8 +1936,8 @@ MACRO void arm64_free_svalue_off(enum arm64_register src, int off, int guarantee
 }
 
 
-static void arm64_free_svalue(enum arm64_register reg, int guaranteed_ref) {
-    arm64_free_svalue_off(reg, 0, guaranteed_ref);
+static void arm64_free_svalue(enum arm64_register reg) {
+    arm64_free_svalue_off(reg, 0);
 }
 
 static void arm64_mark(enum arm64_register base, int offset) {
@@ -2036,7 +2037,7 @@ static void low_ins_f_byte(unsigned int opcode)
   int flags;
   INT32 rel_addr = rel_addr;
 
-  ARM_ASSERT(opcode-F_OFFSET<=255);
+  ARM_ASSERT(opcode-F_OFFSET<=MAX_SUPPORTED_INSTR);
 
   flags = instrs[opcode-F_OFFSET].flags;
 
@@ -2058,6 +2059,7 @@ static void low_ins_f_byte(unsigned int opcode)
       arm64_push_int(0, NUMBER_NUMBER);
       return;
   case F_CATCH:
+  case F_CATCH_AT:
       {
           rel_addr = PIKE_PC;
           adr_imm(ra_alloc(ARM_REG_R0), 0);
@@ -2065,7 +2067,7 @@ static void low_ins_f_byte(unsigned int opcode)
       break;
   case F_POP_VALUE:
       arm64_change_sp(-1);
-      arm64_free_svalue(ARM_REG_PIKE_SP, 0);
+      arm64_free_svalue(ARM_REG_PIKE_SP);
       return;
   case F_POP_TO_MARK: /* this opcode sucks noodles, introduce F_POP_TO_LOCAL(num) */
       {
@@ -2085,7 +2087,7 @@ static void low_ins_f_byte(unsigned int opcode)
           label_generate(&loop);
 
           arm64_sub64_reg_int(ARM_REG_PIKE_SP, ARM_REG_PIKE_SP, 1*sizeof(struct svalue));
-          arm64_free_svalue(ARM_REG_PIKE_SP, 0);
+          arm64_free_svalue(ARM_REG_PIKE_SP);
 
           cmp_reg_reg(ARM_REG_PIKE_SP, reg);
           /* jump if pike_sp > reg */
@@ -2275,8 +2277,8 @@ static void low_ins_f_byte(unsigned int opcode)
           /* COMPLEX POP: */
           label_generate(&real_pop);
 
-          arm64_free_svalue_off(ARM_REG_PIKE_SP, -1, 0);
-          arm64_free_svalue_off(ARM_REG_PIKE_SP, -2, 0);
+          arm64_free_svalue_off(ARM_REG_PIKE_SP, -1);
+          arm64_free_svalue_off(ARM_REG_PIKE_SP, -2);
           /* the order of the free and pop is important, because really_free_svalue should not
            * use that region of the stack we are trying to free */
           arm64_sub64_reg_int(ARM_REG_PIKE_SP, ARM_REG_PIKE_SP, 2*sizeof(struct svalue));
@@ -2396,6 +2398,7 @@ static void low_ins_f_byte(unsigned int opcode)
 
           label_generate(&do_return_if_true);
 	  cbnz64_imm(ARM_REG_RVAL, label_dist(&my_pike_return));
+          ins_f_byte(F_POP_VALUE);
       }
       return;
   case F_RETURN:
@@ -2411,31 +2414,6 @@ static void low_ins_f_byte(unsigned int opcode)
   case F_RETURN_1:
       ins_f_byte(F_CONST1);
       ins_f_byte(F_RETURN);
-      return;
-  case F_DUP:
-      arm64_debug_instr_prologue_0(opcode);
-      arm64_load_sp_reg();
-      arm64_push_svaluep_off(ARM_REG_PIKE_SP, -1);
-      return;
-  case F_SWAP:
-      arm64_debug_instr_prologue_0(opcode);
-      {
-        enum arm64_register tmp1 = ra_alloc_any(),
-                            tmp2 = ra_alloc_any(),
-                            tmp3 = ra_alloc_any(),
-                            tmp4 = ra_alloc_any();
-
-        arm64_load_sp_reg();
-	load64_pair_imm(tmp1, tmp2, ARM_REG_PIKE_SP, -2*(INT32)sizeof(struct svalue));
-	load64_pair_imm(tmp3, tmp4, ARM_REG_PIKE_SP, -1*(INT32)sizeof(struct svalue));
-	store64_pair_imm(tmp1, tmp2, ARM_REG_PIKE_SP, -1*(INT32)sizeof(struct svalue));
-	store64_pair_imm(tmp3, tmp4, ARM_REG_PIKE_SP, -2*(INT32)sizeof(struct svalue));
-
-        ra_free(tmp1);
-        ra_free(tmp2);
-        ra_free(tmp3);
-        ra_free(tmp4);
-      }
       return;
   case F_NOT:
       arm64_debug_instr_prologue_0(opcode);
@@ -2482,7 +2460,7 @@ static void low_ins_f_byte(unsigned int opcode)
 
           label_generate(&check_rval);
 
-          arm64_free_svalue_off(ARM_REG_PIKE_SP, -1, 0);
+          arm64_free_svalue_off(ARM_REG_PIKE_SP, -1);
 
           label_generate(&done);
           /* push integer to stack */
@@ -2503,7 +2481,7 @@ static void low_ins_f_byte(unsigned int opcode)
 
   arm64_call_c_opcode(opcode);
 
-  if (opcode == F_CATCH) ra_free(ARM_REG_R0);
+  if ((opcode == F_CATCH) || (opcode == F_CATCH_AT)) ra_free(ARM_REG_R0);
 
   if (flags & I_RETURN)
     arm64_ins_maybe_exit();
@@ -2512,7 +2490,7 @@ static void low_ins_f_byte(unsigned int opcode)
     /* This is the code that JUMP_EPILOGUE_SIZE compensates for. */
     br_reg(ARM_REG_RVAL);
 
-    if (opcode == F_CATCH) {
+    if ((opcode == F_CATCH) || (opcode == F_CATCH_AT)) {
         arm64_adr_imm_at(rel_addr, ARM_REG_R0, 4*(PIKE_PC - rel_addr));
     }
   }
@@ -2526,6 +2504,35 @@ void ins_f_byte(unsigned int opcode)
 void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
 {
   switch (opcode) {
+  case F_DUP:
+      arm64_debug_instr_prologue_0(opcode);
+      arm64_load_sp_reg();
+      arm64_push_svaluep_off(ARM_REG_PIKE_SP, -(arg1 + 1));
+      return;
+  case F_SWAP:
+      arm64_debug_instr_prologue_0(opcode);
+      {
+        enum arm64_register tmp1 = ra_alloc_any(),
+                            tmp2 = ra_alloc_any(),
+                            tmp3 = ra_alloc_any(),
+                            tmp4 = ra_alloc_any();
+
+        arm64_load_sp_reg();
+        load64_pair_imm(tmp1, tmp2, ARM_REG_PIKE_SP,
+                        -(arg1 + 2)*(INT32)sizeof(struct svalue));
+        load64_pair_imm(tmp3, tmp4, ARM_REG_PIKE_SP,
+                        -1*(INT32)sizeof(struct svalue));
+        store64_pair_imm(tmp1, tmp2, ARM_REG_PIKE_SP,
+                         -1*(INT32)sizeof(struct svalue));
+        store64_pair_imm(tmp3, tmp4, ARM_REG_PIKE_SP,
+                         -(arg1 + 2)*(INT32)sizeof(struct svalue));
+
+        ra_free(tmp1);
+        ra_free(tmp2);
+        ra_free(tmp3);
+        ra_free(tmp4);
+      }
+      return;
   case F_NUMBER:
       arm64_debug_instr_prologue_1(opcode, arg1);
       arm64_push_int(arg1, NUMBER_NUMBER);
@@ -2619,8 +2626,16 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
       return;
   case F_MARK_AT:
       arm64_debug_instr_prologue_1(opcode, arg1);
-      arm64_load_locals_reg();
-      arm64_mark(ARM_REG_PIKE_LOCALS, arg1);
+      if (Pike_compiler->compiler_frame->generator_local != -1) {
+	enum arm64_register tmp = ra_alloc_any();
+	arm64_load_fp_reg();
+        load64_reg_imm(tmp, ARM_REG_PIKE_FP, OFFSETOF(pike_frame, save_sp));
+	arm64_mark(tmp, arg1);
+	ra_free(tmp);
+      } else {
+	arm64_load_locals_reg();
+	arm64_mark(ARM_REG_PIKE_LOCALS, arg1);
+      }
       return;
   case F_STRING:
       arm64_debug_instr_prologue_1(opcode, arg1);
@@ -2667,7 +2682,7 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
           tmp = ra_alloc_persistent();
           arm64_add64_reg_int(tmp, ARM_REG_PIKE_LOCALS, (INT64)(arg1 * sizeof(struct svalue)));
 
-          arm64_free_svalue_off(tmp, 0, 0);
+          arm64_free_svalue_off(tmp, 0);
 
           arm64_load_sp_reg();
           arm64_sub64_reg_int(ARM_REG_PIKE_SP, ARM_REG_PIKE_SP, sizeof(struct svalue));
@@ -2877,7 +2892,7 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
           tmp = ra_alloc_persistent();
 
           arm64_add64_reg_int(tmp, ARM_REG_PIKE_GLOBALS, arg1);
-          arm64_free_svalue_off(tmp, 0, 0);
+          arm64_free_svalue_off(tmp, 0);
           arm64_sub64_reg_int(ARM_REG_PIKE_SP, ARM_REG_PIKE_SP, sizeof(struct svalue));
           if (opcode == F_ASSIGN_PRIVATE_GLOBAL_AND_POP) {
               arm64_move_svaluep_nofree(tmp, ARM_REG_PIKE_SP);

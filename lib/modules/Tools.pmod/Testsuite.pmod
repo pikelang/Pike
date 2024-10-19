@@ -70,8 +70,9 @@ protected void unlocked_log_msg_cont (string msg)
   }
 
   last_log = 0;
-  if( String.width(msg)>8 )
-    msg = string_to_utf8(msg);
+  if( String.width(msg)>8 ) {
+    msg = string_to_utf8(msg, 1);
+  }
   werror (msg);
   twiddler_counter = -abs (twiddler_counter);
   last_line_inplace = 0;
@@ -122,6 +123,9 @@ void log_msg (string msg, mixed... args)
   if (last_line_length) {
     if (last_line_length < 0) werror ("\n"); else write ("\n");
     last_line_length = 0;
+  } else if (last_line_inplace) {
+    write("\n");
+    last_line_inplace = 0;
   }
 
   if (last_log) {
@@ -390,14 +394,16 @@ array(int) low_run_script (array(string) command, mapping opts)
 
   if (!subresult->got_subresult) {
     // The subprocess didn't use report_result, probably.
-    all_constants()->__watchdog_show_last_test();
+    //
+    // Fall back to using the exit code.
+    if (err) {
+      all_constants()->__watchdog_show_last_test();
+    }
     if (err == -1) {
       werror("\nNo result from subprocess (died of signal %s)\n",
 	     signame (pid->last_signal()) || (string) pid->last_signal());
-    } else {
-      werror("\nNo result from subprocess (exited with error code %d).\n", err);
     }
-    return 0;
+    return ({ !err, !!err, 0 });
   }
 
   else if (err == -1) {
@@ -583,11 +589,10 @@ class Test
 class Testsuite
 {
   protected int(0..) _sizeof();
-  protected this_program `+(mixed steps);
-  protected int(0..1) `!();
-  int(0..1) next();
-  int(0..) index();
-  Test value();
+  protected int(0..1) _iterator_next();
+  protected int(0..) _iterator_index();
+  protected Test _iterator_value();
+  this_program skip(int steps);
   optional string name();
 }
 
@@ -669,39 +674,46 @@ class M4Testsuite
 
   // Iterator API
 
-  protected int position;
+  protected int position = -1;
 
-  protected int(0..1) `!()
-  {
-    return position >= sizeof(tests);
-  }
-
-  int(0..) next()
+  protected int(0..) _iterator_next()
   {
     position++;
-    return position < sizeof(tests);
+    if (position >= sizeof(tests)) {
+      position = -1;
+      return UNDEFINED;
+    }
+    return position;
   }
 
-  protected this_program `+(mixed steps)
-  {
-    if(!intp(steps))
-      error("Can only step forward integer number of steps.\n");
-    position += steps;
-    return this;
-  }
-
-  int index()
+  protected int _iterator_index()
   {
     return position;
   }
 
-  Test value()
+  protected Test _iterator_value()
   {
-    if( `!() ) return UNDEFINED;
+    if (position < 0) return UNDEFINED;
     Test ret = M4Test(tests[position]);
     if(compat)
       ret->add_plugin(compat);
     return ret;
+  }
+
+  // Convenience API
+
+  this_program skip(int steps)
+  {
+    if (!intp(steps)) {
+      error("Can only step forward integer number of steps.\n");
+    }
+    position += steps;
+    if (position >= sizeof(tests)) {
+      position = sizeof(tests) - 1;
+    } else if (position <= -1) {
+      position = -1;
+    }
+    return this;
   }
 }
 
@@ -909,7 +921,7 @@ test_equal(max($2,$1,$3), $3)
   {
     int pos;
 
-    array(string) parse_args()
+    array(string)|zero parse_args()
     {
       array args = ({});
       if( data[pos] == '(' )
@@ -1005,19 +1017,19 @@ test_equal(max($2,$1,$3), $3)
         args = parse_args();
         if(sizeof(args)!=2)
           error("Need two arguments for DOTEST. %O\n", sizeof(args));
-        string cond = macros->CONDITION;
+        string|zero cond = macros->CONDITION;
         if(cond)
         {
-          cond = dequote(cond);
-          if( !sscanf(cond, "COND %s", cond) )
+          cond = dequote([string]cond);
+          if( !sscanf([string]cond, "COND %s", cond) )
             cond = "";
-          cond = String.trim(cond);
+          cond = String.trim([string]cond);
           if( cond=="" )
             cond = 0;
         }
         tests += ({ Test(file_name, 0/*FIXME*/, sizeof(tests)+1,
                          dequote(parse(args[0])), dequote(parse(args[1])),
-                         cond && ({ cond })) });
+                         cond && ({ [string]cond })) });
         break;
 
       default:
@@ -1031,9 +1043,9 @@ test_equal(max($2,$1,$3), $3)
     return (string)ret;
   }
 
-  Test value()
+  protected Test _iterator_value()
   {
-    if( `!() ) return UNDEFINED;
+    if (position < 0) return UNDEFINED;
     Test ret = tests[position];
     if(compat)
       ret->add_plugin(compat);
@@ -1066,6 +1078,8 @@ class Plugin
 class CompatPlugin(string pike_compat)
 {
   inherit Plugin;
+
+  @Pike.Annotations.Implements(Plugin);
 
   //! Modifies the name by adding the version and "compat" after the
   //! test name, e.g. "testsuite:1: Test 1 (7.8 compat)".

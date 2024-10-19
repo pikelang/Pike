@@ -7,26 +7,21 @@ PIKE_RETAIN_VARIABLES()
 
 AC_SET_MAKE
 
-dirs=
 module_names=
 MODULE_LINKOBJS=
 MODULE_SEGMENTS=
 
-for a in `(cd $srcdir ; echo *)`
-do
-  if test -d "$srcdir/$a" ; then
-    if test -f "$srcdir/$a/configure.in"; then
-	yesno=`echo $a | tr ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz`
-	yesno=`eval echo \\$with_$yesno`
-	if test "x${yesno-}" != xno ; then
-	  MODULE_LINKOPTS="$MODULE_LINKOPTS $a/linker_options"
-	  MODULE_SEGMENTS="$MODULE_SEGMENTS $a/modlist_segment"
-	  module_names="$module_names $a"
-	  dirs="$dirs $a"
-	fi
-    fi
+PIKE_DYNAMIC_CONFIG_SUBDIRS
+PIKE_FOREACH_CONFIG_SUBDIR([a], [
+  yesno=`echo $a | tr ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz`
+  yesno=`eval echo \\$with_$yesno`
+  if test "x${yesno-}" != xno ; then
+    MODULE_LINKOPTS="$MODULE_LINKOPTS $a/linker_options"
+    MODULE_SEGMENTS="$MODULE_SEGMENTS $a/modlist_segment"
+    module_names="$module_names $a"
+    AC_CONFIG_SUBDIRS($a) dnl Expect warning "you should use literals"
   fi
-done
+])
 
 AC_SUBST(MODULE_LINKOPTS)
 AC_SUBST(MODULE_SEGMENTS)
@@ -34,6 +29,5 @@ AC_SUBST(module_names)
 
 AC_SUBST_FILE(dependencies)
 dependencies=$srcdir/dependencies
-AC_CONFIG_SUBDIRS($dirs)
 
 AC_OUTPUT(Makefile,[:],dirs="$module_names")

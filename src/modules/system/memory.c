@@ -28,9 +28,7 @@
 
 #ifdef HAVE_FCNTL_H
 #include <fcntl.h>
-#endif
-
-#ifdef HAVE_SYS_FCNTL_H
+#elif defined(HAVE_SYS_FCNTL_H)
 #include <sys/fcntl.h>
 #endif
 
@@ -120,7 +118,7 @@ static void MEMORY_FREE( struct memory_storage *storage )
 #endif
 #ifdef HAVE_SYS_SHM_H
   else if( storage->flags & MEM_FREE_SHMDEL )
-    shmdt( storage->p );
+    shmdt( (void *)storage->p );
 #endif
 #ifdef WIN32SHM
   else if( storage->flags & MEM_FREE_SHMDEL )
@@ -334,7 +332,7 @@ static void memory__mmap(INT32 args,int complain,int private)
    else if (TYPEOF(sp[-args]) == T_STRING)
    {
       char *filename;
-      get_all_args(NULL, args, "%s", &filename); /* 8 bit! */
+      get_all_args(NULL, args, "%c", &filename); /* 8 bit! */
 
       THREADS_ALLOW();
       fd = fd_open(filename,fd_RDWR,0);
@@ -555,12 +553,12 @@ static void memory_cast(INT32 args)
     push_undefined();
 }
 
-/*! @decl string pread(int(0..) pos,int(0..) len)
- *! @decl string pread16(int(0..) pos,int(0..) len)
+/*! @decl string(8bit) pread(int(0..) pos,int(0..) len)
+ *! @decl string(16bit) pread16(int(0..) pos,int(0..) len)
  *! @decl string pread32(int(0..) pos,int(0..) len)
- *! @decl string pread16i(int(0..) pos,int(0..) len)
+ *! @decl string(16bit) pread16i(int(0..) pos,int(0..) len)
  *! @decl string pread32i(int(0..) pos,int(0..) len)
- *! @decl string pread16n(int(0..) pos,int(0..) len)
+ *! @decl string(16bit) pread16n(int(0..) pos,int(0..) len)
  *! @decl string pread32n(int(0..) pos,int(0..) len)
  *!
  *!	Read a string from the memory. The 16 and 32 variants reads
@@ -708,7 +706,7 @@ static void pwrite_n(INT32 args, int shift, int reverse)
    struct pike_string *ps;
    unsigned char *d;
 
-   get_all_args(NULL,args,"%+%W",&pos,&ps);
+   get_all_args(NULL,args,"%+%t",&pos,&ps);
    rpos=(size_t)pos;
    rlen=(ps->len<<shift);
 
@@ -843,56 +841,34 @@ static void memory_index(INT32 args)
 }
 
 /*! @decl int `[]=(int pos,int char)
- *! @decl string `[]=(int pos1,int pos2,string str)
  */
 static void memory_index_write(INT32 args)
 {
+   INT_TYPE pos,ch;
+   size_t rpos = 0;
    MEMORY_VALID(THIS);
 
    if (!(THIS->flags&MEM_WRITE))
       Pike_error("Can't write in this memory.\n");
 
-   if (args==2)
-   {
-      INT_TYPE pos,ch;
-      size_t rpos = 0;
-      get_all_args("`[]=",args,"%i%i",&pos,&ch);
-      if (pos<0)
-         if ((off_t)-pos>=(off_t)THIS->size)
-            Pike_error("Index is out of range.\n");
-	 else
-            rpos=(size_t)((off_t)(THIS->size)+(off_t)pos);
+   get_all_args("`[]=",args,"%i%i",&pos,&ch);
+   if (pos<0)
+      if ((off_t)-pos>=(off_t)THIS->size)
+         Pike_error("Index is out of range.\n");
       else
-      {
-	 rpos=(size_t)pos;
-
-	 if (rpos>THIS->size)
-            Pike_error("Index is out of range.\n");
-      }
-      if (ch<0 || ch>255)
-         Pike_error("Can only write bytes (0..255).\n");
-
-      push_int( (((unsigned char*)(THIS->p)))[rpos] = ch );
-   }
+         rpos=(size_t)((off_t)(THIS->size)+(off_t)pos);
    else
    {
-     INT_TYPE pos1, pos2;
-     struct pike_string *ps;
+      rpos=(size_t)pos;
 
-     get_all_args("`[]=", args, "%i%i%S", &pos1, &pos2, &ps);
-
-     if (pos1 < 0) pos1 = 0;
-     if (pos2 < 0) pos2 = 0;
-
-     if ((pos2<pos1) || (ps->len != pos2-pos1+1))
-       Pike_error("Source and destination "
-                  "not equally long (%ld v/s %ld; can't resize memory).\n",
-                  (long)ps->len, (long)pos2-(long)pos1);
-     else
-       memcpy(THIS->p+pos1, ps->str, ps->len);
-
-     ref_push_string(ps);
+      if (rpos>THIS->size)
+         Pike_error("Index is out of range.\n");
    }
+   if (ch<0 || ch>255)
+      Pike_error("Can only write bytes (0..255).\n");
+
+   push_int(((unsigned char*)(THIS->p))[rpos]);
+   (((unsigned char*)(THIS->p)))[rpos] = ch;
    stack_pop_n_elems_keep_top(args);
 }
 
@@ -918,7 +894,8 @@ void init_system_memory(void)
 		tOr3(tFunc(tVoid,tVoid),
 		     tFunc(tOr(tStr,tObj)
 			   tOr(tIntPos,tVoid) tOr(tIntPos,tVoid),tVoid),
-		     tFunc(tIntPos tOr(tByte,tVoid),tVoid)), 0);
+		     tFunc(tIntPos tOr(tByte,tVoid),tVoid)),
+		ID_PROTECTED);
 
 #if defined(HAVE_SYS_SHM_H) || defined(WIN32SHM)
    ADD_FUNCTION("shmat", memory_shm, tFunc(tInt tInt, tInt), 0 );
@@ -944,32 +921,31 @@ void init_system_memory(void)
    ADD_FUNCTION("valid",memory_valid,tFunc(tVoid,tInt01),0);
    ADD_FUNCTION("writeable",memory_writeable,tFunc(tVoid,tInt01),0);
 
-   ADD_FUNCTION("_sizeof",memory__sizeof,tFunc(tVoid,tIntPos),0);
+   ADD_FUNCTION("_sizeof", memory__sizeof, tFunc(tVoid,tIntPos), ID_PROTECTED);
    ADD_FUNCTION("cast",memory_cast,
-		tFunc(tStr,tOr(tArr(tInt),tStr)),ID_PRIVATE);
+		tFunc(tStr,tOr(tArr(tInt),tStr)), ID_PROTECTED);
 
    ADD_FUNCTION("`[]",memory_index,
 		tOr(tFunc(tInt,tInt),
-		    tFunc(tInt tInt,tStr)),0);
+		    tFunc(tInt tInt,tStr)), ID_PROTECTED);
 
    ADD_FUNCTION("`[]=",memory_index_write,
-		tOr(tFunc(tInt tInt,tInt),
-		    tFunc(tInt tInt tStr,tStr)),0);
+		tFunc(tInt tInt,tInt), ID_PROTECTED);
 
-   ADD_FUNCTION("pread",memory_pread,tFunc(tInt tInt,tStr),0);
-   ADD_FUNCTION("pread16",memory_pread16,tFunc(tInt tInt,tStr),0);
+   ADD_FUNCTION("pread",memory_pread,tFunc(tInt tInt,tStr8),0);
+   ADD_FUNCTION("pread16",memory_pread16,tFunc(tInt tInt,tStr16),0);
    ADD_FUNCTION("pread32",memory_pread32,tFunc(tInt tInt,tStr),0);
-   ADD_FUNCTION("pread16i",memory_pread16i,tFunc(tInt tInt,tStr),0);
+   ADD_FUNCTION("pread16i",memory_pread16i,tFunc(tInt tInt,tStr16),0);
    ADD_FUNCTION("pread32i",memory_pread32i,tFunc(tInt tInt,tStr),0);
-   ADD_FUNCTION("pread16n",memory_pread16n,tFunc(tInt tStr,tInt),0);
-   ADD_FUNCTION("pread32n",memory_pread32n,tFunc(tInt tStr,tInt),0);
+   ADD_FUNCTION("pread16n",memory_pread16n,tFunc(tInt tStr,tStr16),0);
+   ADD_FUNCTION("pread32n",memory_pread32n,tFunc(tInt tStr,tStr),0);
 
-   ADD_FUNCTION("pwrite",memory_pwrite,tFunc(tInt tStr,tInt),0);
-   ADD_FUNCTION("pwrite16",memory_pwrite16,tFunc(tInt tStr,tInt),0);
+   ADD_FUNCTION("pwrite",memory_pwrite,tFunc(tInt tStr8,tInt),0);
+   ADD_FUNCTION("pwrite16",memory_pwrite16,tFunc(tInt tStr16,tInt),0);
    ADD_FUNCTION("pwrite32",memory_pwrite32,tFunc(tInt tStr,tInt),0);
-   ADD_FUNCTION("pwrite16i",memory_pwrite16i,tFunc(tInt tStr,tInt),0);
+   ADD_FUNCTION("pwrite16i",memory_pwrite16i,tFunc(tInt tStr16,tInt),0);
    ADD_FUNCTION("pwrite32i",memory_pwrite32i,tFunc(tInt tStr,tInt),0);
-   ADD_FUNCTION("pwrite16n",memory_pwrite16n,tFunc(tInt tStr,tInt),0);
+   ADD_FUNCTION("pwrite16n",memory_pwrite16n,tFunc(tInt tStr16,tInt),0);
    ADD_FUNCTION("pwrite32n",memory_pwrite32n,tFunc(tInt tStr,tInt),0);
 
 #ifdef PIKE_NULL_IS_SPECIAL

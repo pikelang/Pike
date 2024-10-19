@@ -6,7 +6,7 @@
 
 struct data
 {
-  int len, do_free, off;
+  int len;
   char *data;
 };
 
@@ -14,6 +14,10 @@ struct source
 {
   struct source *next;
   int eof;
+  int dataref;	/* points to the last connected iov chunk */
+
+  struct svalue wrap_callback;
+  struct svalue wrap_array;	/* the last return value from wrap_callback */
 
   /* Must be implemented by all sources */
   struct data (*get_data)(struct source *s,off_t len);
@@ -29,7 +33,8 @@ struct source
    * source is defined as a source that returns a data struct from
    * get_data with a 'len' value of -2.
    */
-  void (*set_callback)( struct source *s, void (*cb)( void *a ), void *a );
+  void (*set_callback)( struct source *s, void (*cb)( void *a ),
+    struct object *a );
 };
 
 

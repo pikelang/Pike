@@ -115,16 +115,19 @@ PMOD_EXPORT struct callable *low_make_callable(c_fun fun,
 #ifdef PIKE_DEBUG
   {
     struct pike_type *z = NULL;
+    struct call_state cs;
     add_ref(type);
-    type = check_splice_call(name, type, 1, mixed_type_string, NULL,
+    INIT_CALL_STATE(cs, name);
+    type = check_splice_call(type, &cs, mixed_type_string, NULL,
 			     CALL_INHIBIT_WARNINGS);
     if (type) {
-      z = new_get_return_type(type, CALL_INHIBIT_WARNINGS);
+      z = new_get_return_type(type, &cs, CALL_INHIBIT_WARNINGS);
       free_type(type);
     }
-    f->may_return_void = pike_types_le(z, void_type_string);
+    f->may_return_void = pike_types_le(z, void_type_string, 0, 0);
     if(!z) Pike_fatal("Function has no valid return type.\n");
     free_type(z);
+    FREE_CALL_STATE(cs);
   }
   f->runs=0;
 #endif
@@ -229,7 +232,7 @@ void present_constant_profiling(void)
 
 void init_builtin_constants(void)
 {
-  builtin_constants = allocate_mapping(325);
+  builtin_constants = allocate_mapping(340);
 }
 
 void exit_builtin_constants(void)

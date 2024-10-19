@@ -240,7 +240,7 @@ protected string make_control(int jn)
 //! @param portnum
 //! Contains the port the print host is listening on.
 //! if not provided, defaults to port @i{515@}, the @rfc{1179@} standard.
-  void create(string|void hostname, int|void portnum)
+  protected void create(string|void hostname, int|void portnum)
   {
     host=hostname || "localhost";
     port=portnum || 515;

@@ -41,8 +41,10 @@ enum pike_sock_flags {
 #endif /* !HAVE_ACCEPT4 */
 
 /* Prototypes begin here */
-PMOD_EXPORT int set_nonblocking(int fd,int which);
+PMOD_EXPORT int set_nonblocking(int fd, int which);
 PMOD_EXPORT int query_nonblocking(int fd);
+PMOD_EXPORT int bulkmode_start(int fd);
+PMOD_EXPORT void bulkmode_restore(int fd, int which);
 PMOD_EXPORT int set_close_on_exec(int fd, int which);
 
 #ifdef HAVE_BROKEN_F_SETFD

@@ -35,7 +35,7 @@ test_do([[
 
 define(init_promise, [[
   test_do([[
-    Concurrent.Promise p = Concurrent.Promise();
+    Concurrent.Promise p = Concurrent.$1Promise();
     add_constant("promise", p);
     add_constant("future", p->future());
   ]])
@@ -61,6 +61,30 @@ define(exit_promise, [[
     return AsyncResult->get_result($1);
   ]], $2)
 ]])
+
+dnl - create with executor
+test_any([[
+  void f(function yay, function nay) {
+    yay(1);
+  }
+  Concurrent.Promise p = Concurrent.Promise(f);
+  return p->get();
+]], 1)
+dnl test_any([[
+dnl   void f(function yay, function nay) {
+dnl     nay(2);
+dnl   }
+dnl   Concurrent.Promise p = Concurrent.Promise(f);
+dnl   return catch(p->get());
+dnl ]], 2)
+test_any([[
+  void f(function yay, function nay, string extra, string stuff) {
+    yay(extra+stuff);
+  }
+  Concurrent.Promise p = Concurrent.Promise(f, "extra", "stuff");
+  return p->get();
+]], "extrastuff")
+
 
 dnl - success()
 std_init_promise()
@@ -216,7 +240,7 @@ test_do([[ add_constant("p13"); ]])
 exit_promise(1, ({14, 11, 12, 13}))
 
 dnl - Promise.depend() - true
-init_promise()
+init_promise(Aggregated)
 test_do([[ add_constant("p11", Concurrent.Promise()); ]])
 test_do([[ add_constant("p12", Concurrent.Promise()); ]])
 test_do([[ add_constant("p13", Concurrent.Promise()); ]])
@@ -236,7 +260,7 @@ test_do([[ add_constant("p13"); ]])
 exit_promise(1, ({11, 12, 13, 13, 11, 12, 14, 15}))
 
 dnl - Promise.depend() no backend - true
-init_promise()
+init_promise(Aggregated)
 test_do([[ Concurrent.use_backend(0); ]]);
 test_do([[ add_constant("p11", Concurrent.Promise()); ]])
 test_do([[ add_constant("p12", Concurrent.Promise()); ]])
@@ -258,7 +282,7 @@ exit_promise(1, ({11, 12, 13, 13, 11, 12, 14, 15}))
 test_do([[ Concurrent.use_backend(1); ]]);
 
 dnl - Promise.depend() - false
-init_promise()
+init_promise(Aggregated)
 test_do([[ add_constant("p11", Concurrent.Promise()); ]])
 test_do([[ add_constant("p12", Concurrent.Promise()); ]])
 test_do([[ add_constant("p13", Concurrent.Promise()); ]])
@@ -278,7 +302,7 @@ test_do([[ add_constant("p13"); ]])
 exit_promise(-1, 13)
 
 dnl - Promise.depend() no backend - false
-init_promise()
+init_promise(Aggregated)
 test_do([[ Concurrent.use_backend(0); ]]);
 test_do([[ add_constant("p11", Concurrent.Promise()); ]])
 test_do([[ add_constant("p12", Concurrent.Promise()); ]])
@@ -299,8 +323,166 @@ test_do([[ add_constant("p13"); ]])
 exit_promise(-1, 13)
 test_do([[ Concurrent.use_backend(1); ]]);
 
-dnl - Promise.fold() - true
+dnl - Promise.timeout() - true
+init_promise(Aggregated)
+test_do([[ add_constant("p11", Concurrent.Promise()); ]])
+test_do([[ add_constant("p12", Concurrent.Promise()); ]])
+test_do([[ add_constant("p13", Concurrent.Promise()); ]])
+test_do([[ add_constant("p212", Concurrent.Promise()); ]])
+test_do([[ add_constant("future",
+            promise->depend(({p11->future(),p12->future()}))
+              ->depend(({}))->depend(p13->future())
+              ->depend(({p13->future(), p11->future(),
+             p212->timeout(0.01)
+              ->recover(lambda(mixed p) { return 212;})}))); ]])
+test_do([[ promise->depend()->success(14); ]])
+test_do([[ p13->success(13); ]])
+test_do([[ promise->depend()->success(15); ]])
+init_future()
+test_do([[ p11->success(11); ]])
+test_do([[ p12->success(12); ]])
+test_do([[ sleep(0.1); ]])
+test_do([[ add_constant("p11"); ]])
+test_do([[ add_constant("p12"); ]])
+test_do([[ add_constant("p13"); ]])
+test_do([[ add_constant("p212"); ]])
+exit_promise(1, ({11, 12, 13, 13, 11, 212, 14, 15}))
+
+dnl - Promise.timeout() - false
+init_promise(Aggregated)
+test_do([[ add_constant("p11", Concurrent.Promise()); ]])
+test_do([[ add_constant("p12", Concurrent.Promise()); ]])
+test_do([[ add_constant("p13", Concurrent.Promise()); ]])
+test_do([[ add_constant("p212", Concurrent.Promise()); ]])
+test_do([[ add_constant("future",
+            promise->depend(({p11->future(),p12->future()}))
+              ->depend(({}))->depend(p13->future())
+              ->depend(({p13->future(), p11->future(),
+             p212->timeout(9)
+              ->recover(lambda(mixed p) { return 212;})}))); ]])
+test_do([[ promise->depend()->success(14); ]])
+test_do([[ p13->success(13); ]])
+test_do([[ promise->depend()->success(15); ]])
+init_future()
+test_do([[ p11->success(11); ]])
+test_do([[ p12->success(12); ]])
+test_do([[ sleep(0.1); ]])
+test_do([[ p212->success(312); ]])
+test_do([[ add_constant("p11"); ]])
+test_do([[ add_constant("p12"); ]])
+test_do([[ add_constant("p13"); ]])
+test_do([[ add_constant("p212"); ]])
+exit_promise(1, ({11, 12, 13, 13, 11, 312, 14, 15}))
+
+dnl - Promise.timeout no backend - true
 init_promise()
+test_do([[ Concurrent.use_backend(0); ]])
+test_do([[ add_constant("future",
+            promise->timeout(0.01)
+             ->thencatch(lambda(mixed err)
+             {
+                if (arrayp(err) && sizeof(err) == 2 && err[0] == "Timeout.\n")
+                    throw(600);
+                throw(err);
+             })); ]])
+init_future()
+test_do([[ while (Pike.DefaultBackend(0.0)); ]])
+test_do([[ sleep(0.1); ]])
+test_do([[ while (Pike.DefaultBackend(0.0)); ]])
+test_do([[ promise->success(528); ]])
+exit_promise(-1, 600)
+test_do([[ Concurrent.use_backend(1); ]]);
+
+dnl - Promise.timeout no backend - false w/ success
+init_promise()
+test_do([[ Concurrent.use_backend(0); ]])
+test_do([[ add_constant("future",
+            promise->timeout(9)
+             ->thencatch()
+             {
+                throw(600);
+             }); ]])
+init_future()
+test_do([[ while (Pike.DefaultBackend(0.0)); ]])
+test_do([[ sleep(0.1); ]])
+test_do([[ while (Pike.DefaultBackend(0.0)); ]])
+test_do([[ promise->success(528); ]])
+exit_promise(1, 528)
+test_do([[ Concurrent.use_backend(1); ]]);
+
+dnl - Promise.timeout no backend - false w/ failure
+init_promise()
+test_do([[ Concurrent.use_backend(0); ]])
+test_do([[ add_constant("future",
+            promise->timeout(9)
+             ->thencatch(lambda(mixed err)
+             {
+                if (err == 528)
+                    throw(600);
+                throw(err);
+             })); ]])
+init_future()
+test_do([[ while (Pike.DefaultBackend(0.0)); ]])
+test_do([[ sleep(0.1); ]])
+test_do([[ while (Pike.DefaultBackend(0.0)); ]])
+test_do([[ promise->failure(528); ]])
+exit_promise(-1, 600)
+test_do([[ Concurrent.use_backend(1); ]]);
+
+dnl - Promise.delay() - false
+init_promise(Aggregated)
+test_do([[ add_constant("p11", Concurrent.Promise()); ]])
+test_do([[ add_constant("p12", Concurrent.Promise()); ]])
+test_do([[ add_constant("p13", Concurrent.Promise()); ]])
+test_do([[ add_constant("p212", Concurrent.Promise()); ]])
+test_do([[ add_constant("future",
+            promise->depend(({p11->future(),p12->future()}))
+              ->depend(({}))->depend(p13->future())
+              ->depend(({p13->future(), p11->future(),
+             p212->delay(9)
+              ->recover(lambda(mixed p) { return 212;})}))); ]])
+test_do([[ promise->depend()->success(14); ]])
+test_do([[ p13->success(13); ]])
+test_do([[ promise->depend()->success(15); ]])
+init_future()
+test_do([[ p11->success(11); ]])
+test_do([[ p12->success(12); ]])
+test_do([[ sleep(0.01); ]])
+test_do([[ p212->failure(12); ]])
+test_do([[ add_constant("p11"); ]])
+test_do([[ add_constant("p12"); ]])
+test_do([[ add_constant("p13"); ]])
+test_do([[ add_constant("p212"); ]])
+exit_promise(1, ({11, 12, 13, 13, 11, 212, 14, 15}))
+
+dnl - Promise.delay() - true
+init_promise(Aggregated)
+test_do([[ add_constant("p11", Concurrent.Promise()); ]])
+test_do([[ add_constant("p12", Concurrent.Promise()); ]])
+test_do([[ add_constant("p13", Concurrent.Promise()); ]])
+test_do([[ add_constant("p212", Concurrent.Promise()); ]])
+test_do([[ add_constant("future",
+            promise->depend(({p11->future(),p12->future()}))
+              ->depend(({}))->depend(p13->future())
+              ->depend(({p13->future(), p11->future(),
+             p212->delay(0.1)}))); ]])
+test_do([[ promise->depend()->success(14); ]])
+test_do([[ p13->success(13); ]])
+test_do([[ promise->depend()->success(15); ]])
+init_future()
+test_do([[ p11->success(11); ]])
+test_do([[ p12->success(12); ]])
+test_do([[ sleep(0.01); ]])
+test_do([[ p212->success(212); ]])
+test_do([[ add_constant("p11"); ]])
+test_do([[ add_constant("p12"); ]])
+test_do([[ add_constant("p13"); ]])
+test_do([[ add_constant("p212"); ]])
+test_do([[ sleep(0.1); ]])
+exit_promise(1, ({11, 12, 13, 13, 11, 212, 14, 15}))
+
+dnl - Promise.fold() - true
+init_promise(Aggregated)
 test_do([[ add_constant("p11", Concurrent.Promise()); ]])
 test_do([[ add_constant("p12", Concurrent.Promise()); ]])
 test_do([[ add_constant("p13", Concurrent.Promise()); ]])
@@ -322,7 +504,7 @@ test_do([[ add_constant("p13"); ]])
 exit_promise(1, 10 + 11 + 12 + 13 + 13 + 11 + 12 + 14 + 15)
 
 dnl - Promise.fold() - false
-init_promise()
+init_promise(Aggregated)
 test_do([[ add_constant("p11", Concurrent.Promise()); ]])
 test_do([[ add_constant("p12", Concurrent.Promise()); ]])
 test_do([[ add_constant("p13", Concurrent.Promise()); ]])
@@ -381,6 +563,10 @@ exit_promise(1, ({11, 14, 12, 13}))
 
 dnl - Concurrent.results() - empty
 init_promise()
+test_do([[
+  // Do not drop the promise from init_promise() on the floor.
+  promise->success(UNDEFINED);
+]])
 test_do([[ add_constant("future", Concurrent.results(({}))); ]])
 init_future()
 exit_promise(1, ({}))
@@ -402,6 +588,62 @@ test_do([[ add_constant("p11"); ]])
 test_do([[ add_constant("p12"); ]])
 test_do([[ add_constant("p13"); ]])
 exit_promise(1, ({11+11, 14+14, 12+12, 13+13}))
+init_promise()
+test_do([[ add_constant("p11", Concurrent.Promise()); ]])
+test_do([[ add_constant("p12", Concurrent.Promise()); ]])
+test_do([[ add_constant("p13", Concurrent.Promise()); ]])
+test_do([[ add_constant("future",
+            Concurrent.traverse(({p11, promise, p12, p13})
+             ->future(), lambda(int val) {
+               if (val > 13) throw("Fail.");
+               return val+val;
+             })); ]])
+init_future()
+test_do([[ p12->success(12); ]])
+test_do([[ p13->success(13); ]])
+test_do([[ promise->success(14); ]])
+test_do([[ p11->success(11); ]])
+test_do([[ add_constant("p11"); ]])
+test_do([[ add_constant("p12"); ]])
+test_do([[ add_constant("p13"); ]])
+exit_promise(-1, "Fail.")
+
+dnl - Concurrent.serialize()
+init_promise()
+test_do([[ add_constant("p11", Concurrent.Promise()); ]])
+test_do([[ add_constant("p12", Concurrent.Promise()); ]])
+test_do([[ add_constant("p13", Concurrent.Promise()); ]])
+test_do([[ add_constant("future",
+            Concurrent.serialize(({p11, promise, p12, p13})
+             ->future(), lambda(int val) { return val+val;})); ]])
+init_future()
+test_do([[ p12->success(12); ]])
+test_do([[ p13->success(13); ]])
+test_do([[ promise->success(14); ]])
+test_do([[ p11->success(11); ]])
+test_do([[ add_constant("p11"); ]])
+test_do([[ add_constant("p12"); ]])
+test_do([[ add_constant("p13"); ]])
+exit_promise(1, ({11+11, 14+14, 12+12, 13+13}))
+init_promise()
+test_do([[ add_constant("p11", Concurrent.Promise()); ]])
+test_do([[ add_constant("p12", Concurrent.Promise()); ]])
+test_do([[ add_constant("p13", Concurrent.Promise()); ]])
+test_do([[ add_constant("future",
+            Concurrent.serialize(({p11, promise, p12, p13})
+             ->future(), lambda(int val) {
+               if (val > 13) throw("Fail.");
+               return val+val;
+             })); ]])
+init_future()
+test_do([[ p12->success(12); ]])
+test_do([[ p13->success(13); ]])
+test_do([[ promise->success(14); ]])
+test_do([[ p11->success(11); ]])
+test_do([[ add_constant("p11"); ]])
+test_do([[ add_constant("p12"); ]])
+test_do([[ add_constant("p13"); ]])
+exit_promise(-1, "Fail.")
 
 dnl - Concurrent.fold()
 init_promise()
@@ -1279,10 +1521,10 @@ test_any([[
   foreach (i;; int v)
     if (v > 3) break;
   foreach (i;; int v)
-    if (v < 5) break;
+    if (v < 6) break;
   foreach (i;; int v)
     return v;
-]], 4)
+]], 6)
 test_eq( sizeof(Array.Iterator(({1,2,3,4}))), 4 )
 
 test_do(add_constant("random",Random.Deterministic(17)->random))
@@ -1637,7 +1879,7 @@ test_do([[
   // Test for [bug 5085].
   for (int i=0; i < 100; i++) {
     // The following line trigged the bug 33% of the time.
-    get_iterator(([1:1]))->_random(random_string, random);
+    random(get_iterator(([1:1])));
   }
 ]])
 
@@ -1746,22 +1988,22 @@ test_equal([[Process.split_quoted_string ("\"a\\bc")]],
 test_equal([[Process.split_quoted_string ("'a\\bc")]],
 	   [[({"a\\bc"})]])
 test_equal([[Process.split_quoted_string("pike -m master.pike 'write(\"test\");'")]],[[({"pike","-m","master.pike","write(\"test\");"})]])
-test_false([[
+test_eq_deprecated([[
 #ifdef __NT__
-  Process.system(RUNPIKE +" -e exit(0)")
+  !Process.system(RUNPIKE +" -e exit(0)")
 #else /* !__NT__ */
-  Process.system(RUNPIKE +" -e 'exit(0)'")
+  !Process.system(RUNPIKE +" -e 'exit(0)'")
 #endif /* __NT__ */
-]])
-test_true([[
+]], 1)
+test_eq_deprecated([[
 #ifdef __NT__
-  Process.system(RUNPIKE+" -e exit(1)")
+  !Process.system(RUNPIKE+" -e exit(1)")
 #else /* !__NT__ */
-  Process.system(RUNPIKE+" -e 'exit(1)'")
+  !Process.system(RUNPIKE+" -e 'exit(1)'")
 #endif /* __NT__ */
-]])
+]], 0)
 test_any([[object p=Process.create_process(Process.split_quoted_string(RUNPIKE)+({"-e","exit(2)"})); sleep(2); return p->wait()]],2)
-test_eq([[
+test_eq_deprecated([[
 #ifdef __NT__
   Process.popen(RUNPIKE+" -e \"write(\\\"test\\\");\"")
 #else /* !__NT__ */
@@ -1772,7 +2014,7 @@ test_any([[object o=Stdio.File(); object o2=o->pipe(Stdio.PROP_IPC); object p=Pr
 test_any([[object o=Stdio.File(); object o2=o->pipe(Stdio.PROP_IPC); object p=Process.create_process(Process.split_quoted_string(RUNPIKE)+({"-e","exit(Stdio.stdin->read(1000)==\"hello\")"}),(["stdin":o])); o2->write("hello"); destruct(o); destruct(o2); return p->wait()]],1)
 test_any([[object o=Stdio.Fd();   object o2=o->pipe(Stdio.PROP_IPC); object p=Process.create_process(Process.split_quoted_string(RUNPIKE)+({"-e","exit(Stdio.stdin->read(1000)==\"hello\")"}),(["stdin":o])); o2->write("hello"); destruct(o); destruct(o2); return p->wait()]],1)
 test_any([[object o=Stdio.Fd();   object o2=o->pipe(Stdio.PROP_IPC); object p=Process.create_process(Process.split_quoted_string(RUNPIKE)+({"-e","exit(Stdio.stdin->read(1000)==\"hello\")"}),(["stdin":o])); o2->write("hello"); destruct(o2); return p->wait()]],1)
-test_any([[object o=Stdio.Fd();   object o2=o->pipe(Stdio.PROP_IPC); object p=Process.create_process(Process.split_quoted_string(RUNPIKE)+({"-e","exit(Stdio.stdin->read(1000)==\"hello\")"}),(["stdin":o])); o2->write("hello"); o2=0; return p->wait()]],1)
+test_any([[object o=Stdio.Fd();   object|zero o2=o->pipe(Stdio.PROP_IPC); object p=Process.create_process(Process.split_quoted_string(RUNPIKE)+({"-e","exit(Stdio.stdin->read(1000)==\"hello\")"}),(["stdin":o])); o2->write("hello"); o2=0; return p->wait()]],1)
 
 test_any([[object o=Stdio.Fd();   object o2=o->pipe(); object p=Process.create_process(Process.split_quoted_string(RUNPIKE)+({"-e","exit(Stdio.stdin->read(5)==\"hello\")"}),(["stdin":o])); o2->write("hello"); destruct(o); destruct(o2); return p->wait()]],1)
 test_any([[object o=Stdio.Fd();   object o2=o->pipe(); object p=Process.create_process(Process.split_quoted_string(RUNPIKE)+({"-e","exit(Stdio.stdin->read(1000)==\"hello\")"}),(["stdin":o])); o2->write("hello"); destruct(o); destruct(o2); return p->wait()]],1)
@@ -1911,7 +2153,7 @@ cond([[all_constants()->thread_create]],
     int num_ok = 0;
 
     Thread.Mutex m = Thread.Mutex();
-    Thread.MutexKey l = m->lock();
+    object(Thread.MutexKey)|zero l = m->lock();
 
     void thread_fn()
     {

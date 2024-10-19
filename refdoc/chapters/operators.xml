@@ -42,6 +42,10 @@ you remember from math in school. The arithmetic operators are:</p>
    <c><expr>a % b</expr></c>
    <c><expr>`%</expr></c>
    <c>the remainder of a division between a and b</c></r>
+<r><c>Exponentiation</c>
+   <c><expr>a ** b</expr></c>
+   <c><expr>`**</expr></c>
+   <c>the result of raising a to the b:th power</c></r>
 </matrix>
 
 <p>The third column, "Identifier" is the name of the function that actually
@@ -258,6 +262,13 @@ float % int</code></c>
 
 </matrix>
 
+<insert-move entity="predef::.`+"/>
+<insert-move entity="predef::.`-"/>
+<insert-move entity="predef::.`*"/>
+<insert-move entity="predef::.`/"/>
+<insert-move entity="predef::.`%"/>
+<insert-move entity="predef::.`**"/>
+
 </section>
 
 <section title="Comparison operators">
@@ -316,6 +327,13 @@ to a float before the comparison. When comparing strings, lexical order is
 used and the values of the environment variables <tt>LC_CTYPE</tt> and
 <tt>LC_LANG</tt> are respected.</p>
 
+<insert-move entity="predef::.`=="/>
+<insert-move entity="predef::.`!="/>
+<insert-move entity="predef::.`&gt;"/>
+<insert-move entity="predef::.`&gt;="/>
+<insert-move entity="predef::.`&lt;"/>
+<insert-move entity="predef::.`&lt;="/>
+
 </section>
 
 <section title="Logical operators">
@@ -323,8 +341,9 @@ used and the values of the environment variables <tt>LC_CTYPE</tt> and
 <p>Logical operators are operators that operate with truth values. In Pike any value
 except zero is considered <b>true</b>. Logical operators are a very basic part
 of Pike. They can also decide which arguments to evaluate and which not to
-evaluate. Because of this the logical operators do not have any identifiers and
-can not be called as normal functions. There are four logical operators:</p>
+evaluate. Because of this most of the logical operators do not have any
+identifiers and can not be called as normal functions. There are four
+logical operators:</p>
 
 <matrix>
 
@@ -352,6 +371,8 @@ can not be called as normal functions. There are four logical operators:</p>
    returned and b is not evaluated.</c></r>
 
 </matrix>
+
+<insert-move entity="predef::.`!"/>
 
 </section>
 
@@ -420,6 +441,13 @@ the indices. If a particular index is present in both the right and left
 argument to a set operator, the one from the right side will be used.
 Example: <expr>([1:2]) | ([1:3])</expr> will return <expr>([1:3])</expr>.</p>
 
+<insert-move entity="predef::.`&lt;&lt;"/>
+<insert-move entity="predef::.`&gt;&gt;"/>
+<insert-move entity="predef::.`~"/>
+<insert-move entity="predef::.`&amp;"/>
+<insert-move entity="predef::.`|"/>
+<insert-move entity="predef::.`^"/>
+
 </section>
 
 <section title="Indexing">
@@ -439,10 +467,20 @@ complex data type.</p>
    <c><expr>`[]</expr></c>
    <c>Returns the index b from a.</c></r>
 
+<r><c>Safe Index</c>
+   <c><expr>a [? b ]</expr></c>
+   <c>none</c>
+   <c>Returns the index b from a, returning 0 instead of an error of a is 0</c></r>
+
 <r><c>Lookup</c>
    <c><expr>a -&gt;<i>identifier</i></expr></c>
    <c><expr>`-&gt;</expr></c>
    <c>Looks up the identifier. Same as a["<i>identifier</i>"].</c></r>
+
+<r><c>Safe Lookup</c>
+   <c><expr>a -&gt;?<i>identifier</i></expr></c>
+   <c>none</c>
+   <c>Looks up the identifier. Same as a[? "<i>identifier</i>"].</c></r>
 
 <r><c>Assign index</c>
    <c><expr>a [ b ] = c</expr></c>
@@ -554,9 +592,56 @@ arguments to a suitable range. This means that
 <li> No errors are generated in any of the above cases.</li>
 </ul>
 
+<insert-move entity="predef::.`[]"/>
+<insert-move entity="predef::.`->"/>
+<insert-move entity="predef::.`[]="/>
+<insert-move entity="predef::.`->="/>
+<insert-move entity="predef::.`[--]"/>
+
 </section>
 
 <!-- FIXME: tell more about indexing and ranges -->
+
+<section title="Conditional indexing operators">
+  <p>When indexing data-structures, it is common for some elements
+  to be optional and thus evaluate to <expr>0</expr>. To simplify
+  deep indexing of such stuctures, the conditional (aka "safe")
+  indexing operators exist (<expr>-&gt;?</expr>, <expr>[?]</expr>
+  and <expr>(?)</expr>). They behave like the corresponding "unsafe"
+  operator (ie <expr>-&gt;</expr>, <expr>[]</expr> and <expr>()</expr>),
+  except for short-circuiting the remainder of the expression to
+  <expr>0</expr> when the indexed value is <expr>0</expr>.</p>
+
+  <p>Examples:
+
+  <code>
+    mapping m = ([
+      "a":([
+        "x": ([]),
+      ]),
+      "b":0,
+    ]);
+  </code>
+
+  <matrix>
+    <r><c><b>Expression</b></c><c><b>Result</b></c></r>
+    <r><c><expr>m->a->x->i</expr></c>
+       <c><expr>UNDEFINED</expr></c></r>
+    <r><c><expr>m->a->y->i</expr></c>
+       <c>Indexing the NULL value with "i".</c></r>
+    <r><c><expr>m->a->y->?i</expr></c>
+       <c><expr>UNDEFINED</expr> (<expr>m->a->y</expr>)</c></r>
+    <r><c><expr>m->b->x->i</expr></c>
+       <c>Indexing the NULL value with "x".</c></r>
+    <r><c><expr>m->b->?x->i</expr></c>
+       <c><expr>0</expr> (<expr>m->b</expr>)</c></r>
+    <r><c><expr>m->a->?y->i</expr></c>
+       <c>Indexing the NULL value with "i".</c></r>
+    <r><c><expr>m->a->?y->?i</expr></c>
+       <c><expr>UNDEFINED</expr> (<expr>m->a->y</expr>)</c></r>
+  </matrix>
+  </p>
+</section>
 
 <section title="The assignment operators">
 
@@ -632,6 +717,7 @@ not fit in any particular categories.</p>
 <matrix>
 <r><c><b>Function</b></c>	<c><b>Syntax</b></c>			<c><b>Identifier</b></c><c><b>Returns</b></c></r>
 <r><c>Calling</c><c><tt>a ( <i>args</i> )</tt></c><c><tt>`()</tt></c><c>Calls the function a.</c></r>
+<r><c>Safe Calling</c><c><tt>a (? <i>args</i> )</tt></c><c><tt>`()</tt></c><c>Calls a, unless a is 0.</c></r>
 <r><c>splice</c>	<c><tt>@ <i>a</i></tt></c>	<c>none</c>	<c>Sends each element in the array a as an individual argument to a function call.</c></r>
 <r><c>Increment</c>	<c><tt>++ a</tt></c>		<c>none</c>	<c>Increments a and returns the new value of a.</c></r>
 <r><c>Decrement</c>	<c><tt>-- a</tt></c>		<c>none</c>	<c>Decrements a and returns the new value of a.</c></r>
@@ -643,7 +729,7 @@ not fit in any particular categories.</p>
 
 <p>The most important of these operators is the calling operator. It is used
 to call functions. The operator itself is just a set of parenthesis placed
-after the expression that returns the function. Any arguments to the function
+after the expression that returns the function.  Any arguments to the function
 should be placed between the parenthesis, separated by commas. We have
 already seen many examples of this operator, although you might not have
 realized it was an operator at the time. The function call operator can
@@ -661,6 +747,10 @@ implemented like this:
 <code>
 object clone(mixed p, mixed ... args) { ( (program)p )(@args); }
 </code>
+
+Placing a '?' character immediately after the open parentehsis
+makes the operator return 0 instead of an error if the function
+expression evalutates to 0.
 
 On the subject of function calls, the splice operator should also be mentioned.
 The splice operator is an at sign in front of an expression. The expression
@@ -708,6 +798,8 @@ tell the compiler that the type of that expression is <tt>int</tt>.</p>
 much. In fact, it simply evaluates the two arguments and then returns
 the right hand one. This operator is mostly useful to produce smaller code,
 or to make defines that can be used in expressions.</p>
+
+<insert-move entity="predef::.`()"/>
 
 </section>
 

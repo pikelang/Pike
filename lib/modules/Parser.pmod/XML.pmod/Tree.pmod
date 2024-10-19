@@ -1,3 +1,4 @@
+#charset iso-8859-1
 #pike __REAL_VERSION__
 
 /*
@@ -150,41 +151,25 @@ string roxen_text_quote(string data) {
 //! Quotes the string given in @[data] by escaping &, <, >, ' and ".
 string attribute_quote(string data, void|string ignore)
 {
-  switch(ignore)
-  {
-  case "\"":
-    return replace(data, ([ "'":"&apos;",
-                            "&":"&amp;",
-                            "\n":"&#a;",
-                            "\r":"&#d;",
-                            "<":"&lt;",
-                            ">":"&gt;" ]) );
-  case "'":
-    return replace(data, ([ "\"":"&quot;",
-                            "&":"&amp;",
-                            "\n":"&#a;",
-                            "\r":"&#d;",
-                            "<":"&lt;",
-                            ">":"&gt;" ]) );
-
-  default:
-    return replace(data, ([ "\"":"&quot;",
-                            "'":"&apos;",
-                            "&":"&amp;",
-                            "\n":"&#a;",
-                            "\r":"&#d;",
-                            "<":"&lt;",
-                            ">":"&gt;" ]) );
-  }
+  mapping m = ([ "\"":"&quot;",
+                 "'":"&apos;",
+                 "&":"&amp;",
+                 "\n":"&#10;",
+                 "\r":"&#13;",
+                 "<":"&lt;",
+                 ">":"&gt;" ]);
+  if( ignore ) m_delete(m, ignore);
+  return replace(data, m);
 }
 
 //! Quotes strings just like @[attribute_quote], but entities in the
 //! form @tt{&foo.bar;@} will not be quoted.
-string roxen_attribute_quote(string data)
+string roxen_attribute_quote(string data, void|string ignore)
 {
-  return replace(roxen_text_quote(data),
-		 ([ "\"":"&quot;",
-		    "'":"&apos;" ]));
+  mapping m = ([ "\"":"&quot;",
+                 "'":"&apos;" ]);
+  if( ignore ) m_delete(m, ignore);
+  return replace(roxen_text_quote(data), m);
 }
 
 void throw_error(string str, mixed ... args)
@@ -198,7 +183,7 @@ void throw_error(string str, mixed ... args)
 class XMLNSParser {
   ADT.Stack namespace_stack = ADT.Stack();
 
-  void create()
+  protected void create()
   {
     // Sentinel and default namespaces.
     namespace_stack->push(([
@@ -325,7 +310,7 @@ class AbstractSimpleNode {
   }
 
   //! Returns a clone of the sub-tree rooted in the node.
-  AbstractSimpleNode clone() {
+  optional AbstractSimpleNode clone() {
     AbstractSimpleNode n = low_clone();
     foreach(mChildren, AbstractSimpleNode child)
       n->add_child( child->clone() );
@@ -333,7 +318,7 @@ class AbstractSimpleNode {
   }
 
   //! Returns the last child node or zero.
-  AbstractSimpleNode get_last_child()
+  object(AbstractSimpleNode)|zero get_last_child()
   {
     if (!sizeof(mChildren))
       return 0;
@@ -346,7 +331,7 @@ class AbstractSimpleNode {
   //! @note
   //!   The [] operator will select a node from all the nodes children,
   //!   not just its element children.
-  protected AbstractSimpleNode `[](int pos)
+  protected object(AbstractSimpleNode)|zero `[](int pos)
   {
     //  Treat pos as index into array
     if ((pos < 0) || (pos > sizeof(mChildren) - 1))
@@ -430,8 +415,9 @@ class AbstractSimpleNode {
   //! @returns
   //!   Returns the current node on success, and @expr{0@} (zero)
   //!   if the node @[old] wasn't found.
-  AbstractSimpleNode replace_child(AbstractSimpleNode old,
-                                   AbstractSimpleNode|array(AbstractSimpleNode) new)
+  object(AbstractSimpleNode)|zero
+    replace_child(AbstractSimpleNode old,
+                  AbstractSimpleNode|array(AbstractSimpleNode) new)
   {
     int index = search(mChildren, old);
     if (index < 0)
@@ -621,7 +607,9 @@ class AbstractSimpleNode {
 class AbstractNode {
   inherit AbstractSimpleNode;
   //  Private member variables
-  /* protected */ AbstractNode           mParent = 0;
+  /* protected */ object(AbstractNode)|zero           mParent = 0;
+
+  @Pike.Annotations.Implements(AbstractSimpleNode);
 
   // Instruct Pike.count_memory to search three steps: mChildren (in
   // VirtualNode also mAttrNodes) -> array value -> mParent.
@@ -778,8 +766,9 @@ class AbstractNode {
   //!   The returned value is NOT the current node.
   //! @returns
   //!   Returns the new child node.
-  AbstractNode replace_child(AbstractNode old,
-                             AbstractNode|array(AbstractNode) new)
+  object(AbstractNode)|zero
+    replace_child(AbstractNode old,
+                  AbstractNode|array(AbstractNode) new)
   {
     if (!::replace_child(old, new)) return 0;
     new->mParent = this;
@@ -919,7 +908,7 @@ protected class VirtualNode {
   protected mapping(string:string) mAttributes;		// Resolved attributes
   protected mapping(string:string)	mShortAttributes;	// Shortened attributes
   protected array(Node) mAttrNodes;   //  created on demand
-  protected string         mText;
+  protected string|zero    mText;
   protected int            mDocOrder;
 
   // Functions implemented via multiple inheritance.
@@ -944,7 +933,7 @@ protected class VirtualNode {
   //!
   //! @seealso
   //!   @[replace_attributes()]
-  mapping(string:string) get_attributes()   { return (mAttributes); }
+  mapping(string:string) get_attributes()   { return mAttributes||([]); }
 
   //! Replace the entire set of attributes.
   //!
@@ -974,7 +963,13 @@ protected class VirtualNode {
   int get_node_type()        { return (mNodeType); }
 
   //! Returns text content in node.
-  string get_text()          { return (mText); }
+  string|zero get_text()          { return (mText); }
+
+  //! Change the text content destructively.
+  string set_text(string txt) {
+    if( mNodeType & (XML_TEXT|XML_ATTR|XML_PI|XML_COMMENT|DTD_ENTITY) )
+      mText = txt;
+  }
 
   //!
   int get_doc_order()        { return (mDocOrder); }
@@ -1021,7 +1016,8 @@ protected class VirtualNode {
   }
 
   //!
-  protected void create(int type, string name, mapping attr, string text)
+  protected void create(int type, string|zero name, mapping|zero attr,
+			string|zero text)
   {
     if (name) {
       if (has_value(name, ":") && sscanf (name, "%*[^/:]%*c") == 2) {
@@ -1036,7 +1032,19 @@ protected class VirtualNode {
     }
     mNodeType = type;
     mAttributes = attr;
-    mText = text;
+    if( mNodeType & (XML_TEXT|XML_ATTR|XML_PI|XML_COMMENT|DTD_ENTITY) ) {
+      if (!text) {
+	error("Text missing for node of type %s.\n",
+	      get_type_name(mNodeType));
+      }
+      mText = text;
+    } else {
+      if (text && (text != "")) {
+	error("Nodes of type %s do not support text.\n",
+	      get_type_name(mNodeType));
+      }
+      mText = UNDEFINED;
+    }
     mAttrNodes = 0;
   }
 
@@ -1073,7 +1081,9 @@ protected class VirtualNode {
   //!
   //! @returns
   //!   Returns the first matching node, and 0 if no such node was found.
-  AbstractNode get_first_element(string|void name, int(0..1)|void full) {
+  object(AbstractNode)|zero
+    get_first_element(string|void name, int(0..1)|void full)
+  {
     if (!name) {
       foreach(get_children(), AbstractNode c)
 	if(c->get_node_type()==XML_ELEMENT)
@@ -1147,7 +1157,8 @@ protected class VirtualNode {
   protected void low_render_xml(String.Buffer data, Node n,
 			     function(string:string) textq,
                              function(string,void|string:string) attrq,
-			     void|mapping(string:string) namespace_lookup)
+                             void|mapping(string:string) namespace_lookup,
+                             void|int(0..3) quote_mode)
   {
     string tagname;
     switch(n->get_node_type()) {
@@ -1162,7 +1173,14 @@ protected class VirtualNode {
       data->add("<", tagname);
       if (mapping attr = n->get_short_attributes()) {
         foreach(sort(indices(attr)), string a) {
-          if( has_value(attr[a], "'") )
+          int quote = quote_mode & 1; // 0=', 1="
+          if( !(quote_mode & 2) ) {
+            if( !quote && has_value(attr[a], "\'") )
+              quote = 1;
+            else if( quote && has_value(attr[a], "\"") )
+              quote = 0;
+          }
+          if( quote )
             data->add(" ", a, "=\"", attrq(attr[a], "'"), "\"");
           else
             data->add(" ", a, "='", attrq(attr[a], "\""), "'");
@@ -1253,7 +1271,7 @@ protected class VirtualNode {
 
     array(Node) children = n->get_children();
     foreach(children, Node n) {
-      low_render_xml(data, n, textq, attrq, namespace_lookup);
+      low_render_xml(data, n, textq, attrq, namespace_lookup, quote_mode);
     }
 
     if (n->get_node_type() == XML_ELEMENT) {
@@ -1443,7 +1461,7 @@ protected class VirtualNode {
   {
     return Charset.encoder(encoding)->set_replacement_callback(lambda(string c)
       {
-        return sprintf("&#%x;", c[0]);
+        return sprintf("&#x%x;", c[0]);
       });
   }
 
@@ -1459,9 +1477,23 @@ protected class VirtualNode {
   //!   encoding set in the document XML processing instruction will
   //!   be used, with UTF-8 as a fallback. Setting this value will
   //!   change the XML processing instruction, if present.
+  //!
+  //! @param quote_mode
+  //!   @int
+  //!     @value 0
+  //!       Defaults to single quote, but use double quote if it
+  //!       avoids escaping.
+  //!     @value 1
+  //!       Defaults to double quote, but use single quote if it
+  //!       avoids escaping.
+  //!     @value 2
+  //!       Use only single quote.
+  //!     @value 3
+  //!       Use only double quote.
+  //!   @endint
   string render_xml(void|int(0..1) preserve_roxen_entities,
                     void|mapping(string:string) namespace_lookup,
-                    void|string encoding)
+                    void|string encoding, void|int(0..3) quote_mode)
   {
     String.Buffer data = String.Buffer();
     if( encoding )
@@ -1478,10 +1510,10 @@ protected class VirtualNode {
     if(preserve_roxen_entities)
       low_render_xml(data, this, roxen_text_quote,
 		     roxen_attribute_quote,
-		     namespace_lookup);
+                     namespace_lookup, quote_mode);
     else
       low_render_xml(data, this, text_quote, attribute_quote,
-                     namespace_lookup);
+                     namespace_lookup, quote_mode);
     return get_encoder(encoding)->feed((string)data)->drain();
   }
 
@@ -1510,7 +1542,7 @@ protected class VirtualNode {
     mText += str;
   }
 
-  string _sprintf(int t) {
+  protected string _sprintf(int t) {
     return t=='O' && sprintf("%O(#%d:%s,%O)", this_program, mDocOrder,
 			     get_type_name(get_node_type()), get_full_name());
   }
@@ -1521,6 +1553,9 @@ class SimpleNode
 {
   inherit AbstractSimpleNode;
   inherit VirtualNode;
+
+  @Pike.Annotations.Implements(AbstractSimpleNode);
+  @Pike.Annotations.Implements(VirtualNode);
 
   // Needed for cross-overloading
   optional SimpleNode low_clone()
@@ -1535,6 +1570,9 @@ class Node
 {
   inherit AbstractNode;
   inherit VirtualNode;
+
+  @Pike.Annotations.Implements(AbstractNode);
+  @Pike.Annotations.Implements(VirtualNode);
 
   // Needed for cross-overloading
   optional Node low_clone()
@@ -1764,7 +1802,7 @@ class XMLParser
   //! This function finds a suitable @[node_factory()] given the
   //! current parser context to call with the same arguments.
   protected AbstractSimpleNode node_factory_dispatch(int type, string name,
-						     mapping attr, string text)
+						     mapping|zero attr, string text)
   {
     foreach(reverse(values(container_stack)), AbstractNode n) {
       if (!n || !n->node_factory) continue;
@@ -1774,13 +1812,13 @@ class XMLParser
     return node_factory(type, name, attr, text);
   }
 
-  protected AbstractSimpleNode|int(0..0)
+  protected AbstractSimpleNode|zero
     parse_xml_callback(string type, string name,
                        mapping attr, string|array contents,
                        mixed location, mixed ...extra)
   {
     AbstractSimpleNode node;
-    mapping short_attr = attr;
+    mapping|zero short_attr = attr;
 
     switch (type) {
     case "":
@@ -1832,7 +1870,7 @@ class XMLParser
 	}
       }
       node = node_factory_dispatch(XML_ELEMENT, name, attr, "");
-      if (node && short_attr) node->set_short_attributes(short_attr);
+      if (node && short_attr) node->set_short_attributes([mapping]short_attr);
       return node;
 
     case ">":
@@ -1867,7 +1905,7 @@ class XMLParser
 	Node text_node;
 	int(0..1) modified;
 
-	if (short_attr) node->set_short_attributes(short_attr);
+	if (short_attr) node->set_short_attributes([mapping]short_attr);
 
 	foreach(contents; int i; Node child) {
 	  if (child->get_node_type() == XML_TEXT) {
@@ -2047,6 +2085,9 @@ class SimpleRootNode
   inherit SimpleNode;
   inherit XMLParser;
 
+  @Pike.Annotations.Implements(SimpleNode);
+  // @Pike.Annotations.Implements(XMLParser);
+
   protected mapping(string:SimpleElementNode) node_ids;
 
   //! Find the element with the specified id.
@@ -2134,6 +2175,9 @@ class SimpleRootNode
 class SimpleTextNode
 {
   inherit SimpleNode;
+
+  @Pike.Annotations.Implements(SimpleNode);
+
   protected SimpleNode low_clone()
   {
     return SimpleTextNode(get_text());
@@ -2150,6 +2194,9 @@ class SimpleTextNode
 class SimpleCommentNode
 {
   inherit SimpleNode;
+
+  @Pike.Annotations.Implements(SimpleNode);
+
   protected SimpleNode low_clone()
   {
     return SimpleCommentNode(get_text());
@@ -2166,6 +2213,9 @@ class SimpleCommentNode
 class SimpleHeaderNode
 {
   inherit SimpleNode;
+
+  @Pike.Annotations.Implements(SimpleNode);
+
   protected SimpleNode low_clone()
   {
     return SimpleHeaderNode(get_attributes());
@@ -2182,6 +2232,9 @@ class SimpleHeaderNode
 class SimplePINode
 {
   inherit SimpleNode;
+
+  @Pike.Annotations.Implements(SimpleNode);
+
   protected SimpleNode low_clone()
   {
     return SimplePINode(get_full_name(), get_attributes(), get_text());
@@ -2199,6 +2252,9 @@ class SimplePINode
 class SimpleDoctypeNode
 {
   inherit SimpleNode;
+
+  @Pike.Annotations.Implements(SimpleNode);
+
   protected SimpleNode low_clone()
   {
     return SimpleDoctypeNode(get_full_name(), get_attributes(), 0);
@@ -2206,7 +2262,7 @@ class SimpleDoctypeNode
 
   //!
   protected void create(string name, mapping(string:string) attrs,
-		     array contents)
+		     array|zero contents)
   {
     ::create(XML_DOCTYPE, name, attrs, "");
     if (contents) {
@@ -2219,6 +2275,9 @@ class SimpleDoctypeNode
 class SimpleDTDEntityNode
 {
   inherit SimpleNode;
+
+  @Pike.Annotations.Implements(SimpleNode);
+
   protected SimpleNode low_clone()
   {
     return SimpleDTDEntityNode(get_full_name(), get_attributes(), get_text());
@@ -2238,6 +2297,9 @@ class SimpleDTDElementNode
   inherit SimpleNode;
   inherit DTDElementHelper;
 
+  @Pike.Annotations.Implements(SimpleNode);
+  @Pike.Annotations.Implements(DTDElementHelper);
+
   protected SimpleNode low_clone()
   {
     return SimpleDTDElementNode(get_full_name(), get_expression());
@@ -2255,6 +2317,9 @@ class SimpleDTDElementNode
 class SimpleDTDAttlistNode
 {
   inherit SimpleNode;
+
+  @Pike.Annotations.Implements(SimpleNode);
+
   protected SimpleNode low_clone()
   {
     return SimpleDTDAttlistNode(get_full_name(), get_attributes(), get_text());
@@ -2272,6 +2337,9 @@ class SimpleDTDAttlistNode
 class SimpleDTDNotationNode
 {
   inherit SimpleNode;
+
+  @Pike.Annotations.Implements(SimpleNode);
+
   protected SimpleNode low_clone()
   {
     return SimpleDTDNotationNode(get_full_name(), get_attributes(), get_text());
@@ -2289,6 +2357,9 @@ class SimpleDTDNotationNode
 class SimpleElementNode
 {
   inherit SimpleNode;
+
+  @Pike.Annotations.Implements(SimpleNode);
+
   protected SimpleNode low_clone()
   {
     return SimpleElementNode(get_full_name(), get_attributes());
@@ -2308,6 +2379,9 @@ class RootNode
 {
   inherit Node;
   inherit XMLParser;
+
+  @Pike.Annotations.Implements(Node);
+  // @Pike.Annotations.Implements(XMLParser);
 
   protected mapping(string:ElementNode) node_ids;
 
@@ -2395,6 +2469,9 @@ class RootNode
 class TextNode
 {
   inherit Node;
+
+  @Pike.Annotations.Implements(Node);
+
   protected Node low_clone()
   {
     return TextNode(get_text());
@@ -2411,6 +2488,9 @@ class TextNode
 class CommentNode
 {
   inherit Node;
+
+  @Pike.Annotations.Implements(Node);
+
   protected Node low_clone()
   {
     return CommentNode(get_text());
@@ -2427,6 +2507,9 @@ class CommentNode
 class HeaderNode
 {
   inherit Node;
+
+  @Pike.Annotations.Implements(Node);
+
   protected Node low_clone()
   {
     return HeaderNode(get_attributes());
@@ -2443,6 +2526,9 @@ class HeaderNode
 class PINode
 {
   inherit Node;
+
+  @Pike.Annotations.Implements(Node);
+
   protected Node low_clone()
   {
     return PINode(get_full_name(), get_attributes(), get_text());
@@ -2460,6 +2546,9 @@ class PINode
 class DoctypeNode
 {
   inherit Node;
+
+  @Pike.Annotations.Implements(Node);
+
   protected Node low_clone()
   {
     return DoctypeNode(get_full_name(), get_attributes(), 0);
@@ -2467,7 +2556,7 @@ class DoctypeNode
 
   //!
   protected void create(string name, mapping(string:string) attrs,
-		     array contents)
+		     array|zero contents)
   {
     ::create(XML_DOCTYPE, name, attrs, "");
     if (contents) {
@@ -2480,6 +2569,9 @@ class DoctypeNode
 class DTDEntityNode
 {
   inherit Node;
+
+  @Pike.Annotations.Implements(Node);
+
   protected Node low_clone()
   {
     return DTDEntityNode(get_full_name(), get_attributes(), get_text());
@@ -2499,6 +2591,9 @@ class DTDElementNode
   inherit Node;
   inherit DTDElementHelper;
 
+  @Pike.Annotations.Implements(Node);
+  @Pike.Annotations.Implements(DTDElementHelper);
+
   protected Node low_clone()
   {
     return DTDElementNode(get_full_name(), get_expression());
@@ -2516,6 +2611,9 @@ class DTDElementNode
 class DTDAttlistNode
 {
   inherit Node;
+
+  @Pike.Annotations.Implements(Node);
+
   protected Node low_clone()
   {
     return DTDAttlistNode(get_full_name(), get_attributes(), get_text());
@@ -2533,6 +2631,9 @@ class DTDAttlistNode
 class DTDNotationNode
 {
   inherit Node;
+
+  @Pike.Annotations.Implements(Node);
+
   protected Node low_clone()
   {
     return DTDNotationNode(get_full_name(), get_attributes(), get_text());
@@ -2550,6 +2651,9 @@ class DTDNotationNode
 class ElementNode
 {
   inherit Node;
+
+  @Pike.Annotations.Implements(Node);
+
   protected Node low_clone()
   {
     return ElementNode(get_full_name(), get_attributes());
@@ -2566,6 +2670,9 @@ class ElementNode
 class AttributeNode
 {
   inherit Node;
+
+  @Pike.Annotations.Implements(Node);
+
   protected Node low_clone()
   {
     return AttributeNode(get_full_name(), get_text());

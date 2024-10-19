@@ -76,7 +76,7 @@ protected NullArg null_arg = NullArg();
 //!     @elem string 0
 //!       The query altered to use bindings-syntax.
 //!     @elem mapping(string|int:mixed) 1
-//!       A bindings mapping. Zero if no bindings were added.
+//!       A bindings mapping. Zero if it would be empty.
 //!   @endarray
 array(string|mapping(string|int:mixed))
   handle_extraargs(string query, array(mixed) extraargs,
@@ -85,7 +85,14 @@ array(string|mapping(string|int:mixed))
   array(mixed) args=allocate(sizeof(extraargs));
   if (!bindings) bindings = ([]);
 
-  int a, new_bindings;
+  if (sizeof(extraargs) && mappingp(extraargs[-1])) {
+    bindings += extraargs[-1];
+    extraargs = extraargs[..<1];
+  }
+
+  // NB: Protect against successive calls of handle_extraargs() with
+  //     the same bindings mapping having conflicting entries.
+  int a = sizeof(bindings);
   foreach(extraargs; int j; mixed s) {
     if (stringp(s) || multisetp(s)) {
       string bind_name;
@@ -94,7 +101,6 @@ array(string|mapping(string|int:mixed))
       } while (has_index (bindings, bind_name));
       args[j]=bind_name;
       bindings[bind_name] = s;
-      new_bindings = 1;
       continue;
     }
     if (intp(s) || floatp(s)) {
@@ -108,7 +114,7 @@ array(string|mapping(string|int:mixed))
     error("Wrong type to query argument %d: %O\n", j + 1, s);
   }
 
-  return ({sprintf(query,@args), new_bindings && bindings});
+  return ({sprintf(query,@args), sizeof(bindings) && bindings});
 }
 
 //! Build a raw SQL query, given the cooked query and the variable bindings
@@ -126,13 +132,27 @@ array(string|mapping(string|int:mixed))
 //!   no confusion is possible in the query. If necessary, change the
 //!   variables' names.
 string emulate_bindings(string query, mapping(string|int:mixed)|void bindings,
-                        void|object driver)
+                        void|object driver,
+                        void|string charset)
 {
-  array(string)k, v;
+  array(string|int)k;
+  array(string) v;
   if (!bindings)
     return query;
+
+  if (charset) {
+    bindings[Sql.QUERY_OPTION_CHARSET] = charset;
+  }
+
+  // Reserve binding entries starting with '*' for options.
+  // Throws if mapping key is empty string.
+  k = filter(indices(bindings),
+             lambda(string|int i) {
+               return !stringp(i) || (i[0] != '*');
+             });
+
   function my_quote=(driver&&driver->quote?driver->quote:quote);
-  v=map(values(bindings),
+  v=map(map(k, bindings),
 	lambda(mixed m) {
 	  if(undefinedp(m))
 	    return "NULL";
@@ -146,11 +166,12 @@ string emulate_bindings(string query, mapping(string|int:mixed)|void bindings,
 	    return sizeof(m) ? indices(m)[0] : "";
 	  return "'"+(intp(m)?(string)m:my_quote((string)m))+"'";
 	});
+
   // Throws if mapping key is empty string.
-  k=map(indices(bindings),lambda(string s){
-			    return ( (stringp(s)&&s[0]==':') ?
-				     s : ":"+s);
-			  });
+  k=map(k,
+        lambda(string s){
+          return ( (stringp(s)&&s[0]==':') ? s : ":"+s);
+        });
   return replace(query,k,v);
 }
 

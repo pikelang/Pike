@@ -21,4 +21,71 @@ NTLIBFUNC(kernel32, BOOL, MoveFileExW, (
   DWORD dwFlags                /* move options  */
 ));
 
+NTLIBFUNC(kernel32, BOOL, CreateHardLinkW, (
+  LPCWSTR lpFileName,
+  LPCWSTR lpExistingFileName,
+  LPSECURITY_ATTRIBUTES lpSecurityAttributes
+));
+
+NTLIBFUNC(kernel32, BOOL, CreateSymbolicLinkW, (
+  LPCWSTR lpSymlinkFileName,
+  LPCWSTR lpTargetFileName,
+  DWORD dwFlags
+));
+
+/* The following are needed for pty handling,
+ * and taken from <consoleapi.h> and <processthreadsapi.h>.
+ */
+
+NTLIBFUNC(kernel32, HRESULT, CreatePseudoConsole, (
+  COORD size,
+  HANDLE hInput,
+  HANDLE hOutput,
+  DWORD dwFlags,
+  HPCON *phPC
+));
+
+NTLIBFUNC(kernel32, HRESULT, ResizePseudoConsole, (
+  HPCON hPC,
+  COORD size
+));
+
+NTLIBFUNC(kernel32, VOID, ClosePseudoConsole, (
+  HPCON hPC
+));
+
+NTLIBFUNC(kernel32, BOOL, InitializeProcThreadAttributeList, (
+  LPPROC_THREAD_ATTRIBUTE_LIST lpAttributeList,
+  DWORD dwAttributeCount,
+  DWORD dwFlags,
+  PSIZE_T lpSize
+));
+
+NTLIBFUNC(kernel32, VOID, DeleteProcThreadAttributeList, (
+  LPPROC_THREAD_ATTRIBUTE_LIST lpAttributeList
+));
+
+NTLIBFUNC(kernel32, BOOL, UpdateProcThreadAttribute, (
+  LPPROC_THREAD_ATTRIBUTE_LIST lpAttributeList,
+  DWORD dwFlags,
+  DWORD_PTR Attribute,
+  PVOID lpValue,
+  SIZE_T cbSize,
+  PVOID lpPreviousValue,
+  PSIZE_T lpReturnSize
+));
+
+/* This is needed to implement isatty(2) properly. */
+NTLIBFUNC(kernel32, BOOL, GetConsoleMode, (
+  HANDLE hConsoleHandle,
+  LPDWORD lpMode
+));
+
+/* This has the same API as GetSystemTimeAsFileTime(),
+ * but has better precision than 1/64 seconds.
+ */
+NTLIBFUNC(kernel32, VOID, GetSystemTimePreciseAsFileTime, (
+  LPFILETIME lpSystemTimeAsFileTime
+));
+
 #endif /* __NT__ */

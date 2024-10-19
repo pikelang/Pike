@@ -97,7 +97,7 @@ string quotemeta(string in) {
 }
 
 
-function get_encoder(string encoding) {
+function|zero get_encoder(string encoding) {
   // If needed, returns a function which encodes a string
   if(!encoding || encoding=="")
     return 0;
@@ -127,7 +127,7 @@ function get_encoder(string encoding) {
 }
 
 
-function get_decoder(string encoding) {
+function|zero get_decoder(string encoding) {
   // If needed, returns a function which decodes a string
   if(!encoding || encoding=="")
     return 0;

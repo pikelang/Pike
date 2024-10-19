@@ -1,4 +1,4 @@
-/*
+/* -*- mode: C; c-basic-offset: 3; -*-
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
@@ -165,11 +165,10 @@ LMFUNC(lm_logic_strict_more);
 LMFUNC(lm_logic_strict_less_or_equal);
 LMFUNC(lm_logic_strict_more_or_equal);
 
-static void lm_spec_burn_alpha(struct layer *ly,
-			       rgb_group *l, rgb_group *la,
-			       rgb_group *s, rgb_group *sa,
-			       rgb_group *d, rgb_group *da,
-			       int len);
+static void lm_spec_burn_alpha_row_func(rgb_group *s, rgb_group *l,
+                                        rgb_group *d, rgb_group *sa,
+                                        rgb_group *la, rgb_group *da,
+                                        int len, double alpha);
 
 struct layer_mode_desc
 {
@@ -291,7 +290,7 @@ struct layer_mode_desc
     "1-(1-S)*(1-L) applied with alpha, aD=aS"},
    {"overlay",       lm_overlay,       1, NULL,
     "(1-(1-a)*(1-b)-a*b)*a+a*b applied with alpha, aD=aS"},
-   {"burn_alpha",    (lm_row_func*)lm_spec_burn_alpha, 1, NULL,
+   {"burn_alpha",    (lm_row_func*)lm_spec_burn_alpha_row_func, 1, NULL,
     "aD=aL+aS applied with alpha, D=L+S;"
     " experimental, may change or be removed"},
 
@@ -1096,7 +1095,7 @@ static void image_layer_available_modes(INT32 args)
 }
 
 /*
-**! method array(string) description()
+**! method array(string) descriptions()
 **!     Layer descriptions
 */
 static void image_layer_descriptions(INT32 args)
@@ -1465,13 +1464,13 @@ static void image_layer_cast(INT32 args)
         s->str[i*4+0] = img[i].r;
         s->str[i*4+1] = img[i].g;
         s->str[i*4+2] = img[i].b;
-        s->str[i*4+3] = 255;
+        s->str[i*4+3] = (COLORTYPE)255;
       }
     else if(alp)
       for(i=0; i<size; i++) {
-        s->str[i*4+0] = 255;
-        s->str[i*4+1] = 255;
-        s->str[i*4+2] = 255;
+        s->str[i*4+0] = (COLORTYPE)255;
+        s->str[i*4+1] = (COLORTYPE)255;
+        s->str[i*4+2] = (COLORTYPE)255;
         s->str[i*4+3] = alp[i].r;
       }
     else
@@ -1604,6 +1603,9 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 #undef L_TRUNC
 #undef L_OPER
 
+/* FIXME: This operator looks suspect. It probably should be
+ *        scaled by COLORMAX.
+ */
 #define LM_FUNC lm_divide
 #define L_TRUNC(X) MINIMUM(255,(X))
 #define L_OPER(A,B) MINIMUM( (int)((A)/C2F(1+(int)(B))), COLORMAX)
@@ -1612,10 +1614,12 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 #undef L_TRUNC
 #undef L_OPER
 
+/* FIXME: This operator looks suspect. It probably should be
+ *        scaled by COLORMAX.
+ */
 #define LM_FUNC lm_negdivide
-#define L_TRUNC(X) MINIMUM(255,(X))
+#define L_TRUNC(X) (unsigned char)MINIMUM(255,(X))
 #define L_OPER(A,B) 1.0-MINIMUM( (int)((A)/C2F(1+(int)(B))), COLORMAX)
-
 #include "layer_oper.h"
 #undef LM_FUNC
 #undef L_TRUNC
@@ -2344,6 +2348,20 @@ static void lm_erase(rgb_group *UNUSED(s),rgb_group *UNUSED(l),rgb_group *UNUSED
 	 }
 }
 
+/* This function is just a place holder and should not be called.
+ * Instead, lm_spec_burn_alpha() is called in case row_func points to
+ * this. */
+static void lm_spec_burn_alpha_row_func(rgb_group *UNUSED(s),
+                                        rgb_group *UNUSED(l),
+                                        rgb_group *UNUSED(d),
+                                        rgb_group *UNUSED(sa),
+                                        rgb_group *UNUSED(la),
+                                        rgb_group *UNUSED(da),
+                                        int UNUSED(len), double UNUSED(alpha))
+{
+    Pike_fatal("lm_spec_burn_alpha_row_func() called.\n");
+}
+
 static void lm_spec_burn_alpha(struct layer *ly,
 			       rgb_group *l, rgb_group *la,
 			       rgb_group *s, rgb_group *sa,
@@ -2554,7 +2572,7 @@ static inline void img_lay_stroke(struct layer *ly,
    if (len<0) Pike_error("internal error: stroke len < 0\n");
    if (!ly->row_func) Pike_error("internal error: row_func=NULL\n");
 
-   if (ly->row_func==(lm_row_func*)lm_spec_burn_alpha)
+   if (ly->row_func==(lm_row_func*)lm_spec_burn_alpha_row_func)
    {
       lm_spec_burn_alpha(ly,l,la,s,sa,d,da,len);
       return;
@@ -3258,11 +3276,12 @@ void init_image_layers(void)
 		     tFunc(tObj tOr(tObj,tVoid) tOr(tString,tVoid),tVoid),
 		     tFunc(tLayerMap,tVoid),
 		     tFunc(tInt tInt
-			   tOr(tColor,tVoid) tOr(tColor,tVoid),tVoid)),0);
+			   tOr(tColor,tVoid) tOr(tColor,tVoid),tVoid)),
+		ID_PROTECTED);
 
 
    ADD_FUNCTION("_sprintf",image_layer__sprintf,
-                tFunc(tInt tMapping,tString),0);
+                tFunc(tInt tMapping,tString),ID_PROTECTED);
    ADD_FUNCTION("cast",image_layer_cast,
                 tFunc(tString,tOr(tMapping,tString)),ID_PROTECTED);
 

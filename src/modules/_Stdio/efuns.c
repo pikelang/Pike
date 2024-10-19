@@ -57,6 +57,10 @@ static libzfs_handle_t *libzfs_handle;
 #define RDWERR(...)
 #endif
 
+#ifndef MAXPATHLEN
+#define MAXPATHLEN 32768
+#endif
+
 #ifdef __NT__
 
 #include <winbase.h>
@@ -136,7 +140,7 @@ static void f_listxattr(INT32 args)
   int do_free = 0;
   int nofollow = 0;
   ssize_t res;
-  get_all_args( "listxattr", args, "%s.%d", &name, &nofollow );
+  get_all_args( "listxattr", args, "%c.%d", &name, &nofollow );
 
   THREADS_ALLOW();
   do {
@@ -216,7 +220,7 @@ static void f_getxattr(INT32 args)
   ssize_t res;
   char *name, *file;
   int nofollow=0;
-  get_all_args( "getxattr", args, "%s%s.%d", &file, &name, &nofollow );
+  get_all_args( "getxattr", args, "%c%c.%d", &file, &name, &nofollow );
 
   THREADS_ALLOW();
   do {
@@ -255,6 +259,8 @@ static void f_getxattr(INT32 args)
     } while( (res < 0) && (errno == ERANGE) );
   }
 
+  pop_n_elems(args);
+
   if( res < 0 )
   {
     if( do_free && ptr )
@@ -285,7 +291,7 @@ static void f_removexattr( INT32 args )
   char *name, *file;
   int nofollow=0, rv;
 
-  get_all_args( "removexattr", args, "%s%s.%d", &file, &name, &nofollow );
+  get_all_args( "removexattr", args, "%c%c.%d", &file, &name, &nofollow );
 
   THREADS_ALLOW();
   if (nofollow) {
@@ -341,7 +347,7 @@ static void f_setxattr( INT32 args )
   int flags;
   int rv;
   int nofollow=0;
-  get_all_args( "setxattr", args, "%s%s%S%d.%d", &file, &ind, &val, &flags, &nofollow );
+  get_all_args( "setxattr", args, "%c%c%n%d.%d", &file, &ind, &val, &flags, &nofollow );
 
   THREADS_ALLOW();
   if (nofollow) {
@@ -544,7 +550,7 @@ void f_filesystem_stat( INT32 args )
   unsigned int free_sectors;
   unsigned int total_sectors;
 
-  get_all_args( "filesystem_stat", args, "%s", &path );
+  get_all_args( "filesystem_stat", args, "%c", &path );
 
   root = pike_dwim_utf8_to_utf16(path);
   if (root[0] && root[1] == ':') {
@@ -995,7 +1001,7 @@ void f_get_dir(INT32 args)
   p_wchar1 *pattern;
   size_t plen;
 
-  get_all_args("get_dir", args, ".%S", &str);
+  get_all_args("get_dir", args, ".%n", &str);
 
   /* NB: The empty string is also an alias for the current directory.
    *     This is a convenience eg when recursing with dirname().
@@ -1515,44 +1521,6 @@ void f_mv(INT32 args)
   push_int(!i);
 }
 
-/*! @decl string strerror(int errno)
- *!
- *! This function returns a description of an error code. The error
- *! code is usually obtained from eg @[Stdio.File->errno()].
- *!
- *! @note
- *!   On some platforms the string returned can be somewhat nondescriptive.
- */
-void f_strerror(INT32 args)
-{
-  char *s;
-  int err;
-
-  if(args!=1)
-    SIMPLE_WRONG_NUM_ARGS_ERROR("strerror", 1);
-  if(TYPEOF(sp[-args]) != T_INT)
-    SIMPLE_ARG_TYPE_ERROR("strerror", 1, "int");
-
-  err = sp[-args].u.integer;
-  pop_n_elems(args);
-  if(err < 0 || err > 256 )
-    s=0;
-  else {
-#ifdef HAVE_STRERROR
-    s=strerror(err);
-#else
-    s=0;
-#endif
-  }
-  if(s)
-    push_text(s);
-  else {
-    push_static_text("Error ");
-    push_int(err);
-    f_add(2);
-  }
-}
-
 /*! @decl int errno()
  *!
  *! This function returns the system error from the last file operation.
@@ -1574,7 +1542,7 @@ static void f_errno(INT32 args)
 #define HAVE_ACCESS
 #endif
 
-#ifdef HAVE_ACCESS
+#if defined(HAVE_ACCESS) || defined(__NT__)
 
 #ifndef R_OK
 #define R_OK	4
@@ -1645,11 +1613,12 @@ static void f_access( INT32 args )
 {
     const char *path;
     int flags, res;
+
     if( args == 2 )
     {
         char *how;
         int i;
-        get_all_args( "access", args, "%s%s", &path, &how );
+        get_all_args( "access", args, "%c%c", &path, &how );
         flags = 0;
         for( i=0; how[i]; i++ )
         {
@@ -1665,14 +1634,54 @@ static void f_access( INT32 args )
     }
     else
     {
-        get_all_args( "access", args, "%s", &path );
+        get_all_args( "access", args, "%c", &path );
         flags = F_OK;
     }
 
     THREADS_ALLOW_UID();
+#ifdef __NT__
+    /* access() on NT does not supports X_OK, so implement it by hand. */
+    {
+       DWORD attrs = 0;
+       p_wchar1 *wpath;
+
+       wpath = pike_dwim_utf8_to_utf16(path);
+
+       res = -1;
+       attrs = GetFileAttributesW(wpath);
+
+       if (attrs == 0xffffffff) {
+          /* Path does not exist. */
+          set_errno_from_win32_error(GetLastError());
+       } else {
+          /* Path exists. */
+
+          if (attrs & FILE_ATTRIBUTE_DIRECTORY) {
+             /* All directories on WIN32 are RWX. */
+             res = 0;
+          } else if ((flags & W_OK) && (attrs & FILE_ATTRIBUTE_READONLY)) {
+             /* File is read-only. */
+             errno = EPERM;
+          } else if (flags & X_OK) {
+             DWORD binary_type = 0;
+             res = -!GetBinaryTypeW(wpath, &binary_type);
+
+             if (res < 0) {
+                errno = EACCES;
+             }
+          } else {
+             /* All bits ok. */
+             res = 0;
+          }
+      }
+
+      free(wpath);
+    }
+#else /* !__NT__ */
     do {
-        res = access( path, flags );
-    } while( (res == -1) && (errno == EINTR) )
+       res = access( path, flags );
+    } while( (res == -1) && (errno == EINTR) );
+#endif
     THREADS_DISALLOW_UID();
 
     pop_n_elems(args);
@@ -1760,9 +1769,6 @@ void init_stdio_efuns(void)
 /* function(string,mixed*,void|mapping(string:string):int) */
   ADD_EFUN("exece",f_exece,tFunc(tStr tArr(tMix) tOr(tVoid,tMap(tStr,tStr)),tInt),OPT_SIDE_EFFECT);
 #endif
-
-/* function(int:string) */
-  ADD_EFUN("strerror",f_strerror,tFunc(tInt,tStr),0);
 }
 
 void exit_stdio_efuns(void)

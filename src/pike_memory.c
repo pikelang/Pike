@@ -8,11 +8,13 @@
 #include "pike_memory.h"
 #include "pike_error.h"
 #include "pike_macros.h"
+#include "pike_threadlib.h"
 #include "gc.h"
 #include "fd_control.h"
 #include "block_allocator.h"
 #include "pike_cpulib.h"
 #include "siphash24.h"
+#include "cyclic.h"
 
 #ifdef HAVE_SYS_MMAN_H
 #include <sys/mman.h>
@@ -186,91 +188,79 @@ pointless, since gcc will use other sse4 instructions when suitable.
 */
 ATTRIBUTE((target("sse4")))
 #endif
-ATTRIBUTE((hot))
+PIKE_HOT_ATTRIBUTE
 static inline size_t low_hashmem_ia32_crc32( const void *s, size_t len,
 					     size_t nbytes, UINT64 key )
 {
   unsigned int h = len;
-  const unsigned int *p = s;
+  const unsigned char *c = s;
+  const unsigned int *p;
+  size_t trailer_bytes = 8;
 
   if( key )
       return low_hashmem_siphash24(s,len,nbytes,key);
 
+  if (UNLIKELY(!len)) return h;
+
   if( nbytes >= len )
   {
     /* Hash the whole memory area */
-    const unsigned int *e = p + (len>>2);
-    const unsigned char *c = (const unsigned char*)e;
-
-    /* .. all full integers .. */
-    while( p<e ) {
-      CRC32SI(h, p++ );
-    }
-
-    len &= 3;
-
-    /* any remaining bytes. */
-    while( len-- )
-      CRC32SQ( h, c++ );
-    return h;
+    nbytes = len;
+    trailer_bytes = 0;
   } else if (UNLIKELY(nbytes < 32)) {
-    /* Hash the whole memory area */
-    const unsigned int *e = p + (nbytes>>2);
-    const unsigned char *c = (const unsigned char*)e;
+    /* Hash the whole memory area once */
+    trailer_bytes = 0;
+  }
 
-    /* .. all full integers .. */
-    while( p<e ) {
-      CRC32SI(h, p++ );
-    }
+  /* Hash the initial unaligned bytes (if any). */
+  while (UNLIKELY(((size_t)c) & 0x03) && nbytes) {
+    CRC32SQ(h, c++);
+    nbytes--;
+  }
 
-    nbytes &= 3;
+  /* c is now aligned. */
 
-    /* any remaining bytes. */
-    while( nbytes-- )
-      CRC32SQ( h, c++ );
-    return h;
-  } else {
-    const unsigned int *e = p+(nbytes>>2);
-#ifdef PIKE_DEBUG
-    /*
-      This code makes assumputions that is not true if nbytes & 3 is true.
+  p = (const unsigned int *)c;
 
-      Specifically, it will not read enough (up to 3 bytes too
-      little) in the first loop.
+  /* .. all full integers in blocks of 8 .. */
+  while (nbytes & ~31) {
+    CRC32SI(h, &p[0]);
+    CRC32SI(h, &p[1]);
+    CRC32SI(h, &p[2]);
+    CRC32SI(h, &p[3]);
+    CRC32SI(h, &p[4]);
+    CRC32SI(h, &p[5]);
+    CRC32SI(h, &p[6]);
+    CRC32SI(h, &p[7]);
+    p += 8;
+    nbytes -= 32;
+  }
 
-      Also, if nbytes < 32 the unroll assumptions do not hold
+  /* .. all remaining full integers .. */
+  while (nbytes & ~3) {
+    CRC32SI(h, &p[0]);
+    p++;
+    nbytes -= 4;
+  }
 
-      This could easily be fixed, but all calls to hashmem tend
-      to use either power-of-two values or the length of the
-      whole memory area.
-    */
-    if( nbytes & 3 )
-      Pike_fatal("do_hash_ia32_crc32: nbytes & 3 should be 0.\n");
-    if( nbytes < 32 )
-      Pike_fatal("do_hash_ia32_crc32: nbytes is less than 32.\n");
-#endif
-    while( p+7 < e )
-    {
-      CRC32SI(h,&p[0]);
-      CRC32SI(h,&p[1]);
-      CRC32SI(h,&p[2]);
-      CRC32SI(h,&p[3]);
-      CRC32SI(h,&p[4]);
-      CRC32SI(h,&p[5]);
-      CRC32SI(h,&p[6]);
-      CRC32SI(h,&p[7]);
-      p+=8;
-    }
+  /* any remaining bytes. */
+  c = (const unsigned char *)p;
+  while (nbytes--) {
+    CRC32SQ( h, c++ );
+  }
+
+  if (trailer_bytes) {
     /* include 8 bytes from the end. Note that this might be a
      * duplicate of the previous bytes.
      *
      * Also note that this means we are rather likely to read
      * unaligned memory.  That is OK, however.
      */
-    e = (const unsigned int *)((const unsigned char *)s+len-8);
-    CRC32SI(h,e++);
-    CRC32SI(h,e);
+    p = (const unsigned int *)((const unsigned char *)s+len-8);
+    CRC32SI(h, p++);
+    CRC32SI(h, p);
   }
+
 #if SIZEOF_CHAR_P > 4
     /* FIXME: We could use the long long crc32 instructions that work on 64 bit values.
      * however, those are only available when compiling to amd64.
@@ -296,14 +286,14 @@ static void init_hashmem()
 #else
 static void init_hashmem(){}
 
-ATTRIBUTE((hot))
+PIKE_HOT_ATTRIBUTE
   size_t low_hashmem(const void *a, size_t len_, size_t mlen_, UINT64 key_)
 {
     return low_hashmem_siphash24(a, len_, mlen_, key_);
 }
 #endif
 
-ATTRIBUTE((hot))
+PIKE_HOT_ATTRIBUTE
   size_t hashmem(const void *a, size_t len_, size_t mlen_)
 {
   return low_hashmem(a, len_, mlen_, 0);
@@ -353,24 +343,6 @@ PMOD_EXPORT void *debug_xcalloc(size_t n, size_t s)
   return 0;
 }
 
-PMOD_EXPORT void *xalloc_aligned(size_t size, size_t alignment) {
-    void * ret;
-
-    if (!size) return 0;
-
-#ifdef HAVE_POSIX_MEMALIGN
-    if (posix_memalign(&ret, alignment, size)) {
-	Pike_error(msg_out_of_mem_2, size);
-    }
-#else
-    if ((ret = memalign(alignment, size)) == NULL) {
-	Pike_error(msg_out_of_mem_2, size);
-    }
-#endif
-
-    return ret;
-}
-
 PMOD_EXPORT char *debug_xstrdup(const char *src)
 {
   char *dst = NULL;
@@ -405,10 +377,14 @@ static int dev_zero = -1;
 #define MAP_ANONYMOUS	0
 #endif
 
+#ifndef MAP_JIT
+#define MAP_JIT 0
+#endif
+
 static inline void *mexec_do_alloc (void *start, size_t length)
 {
   void *blk = mmap(start, length, PROT_EXEC|PROT_READ|PROT_WRITE,
-		   MAP_PRIVATE|MAP_ANONYMOUS, dev_zero, 0);
+		   MAP_PRIVATE|MAP_ANONYMOUS|MAP_JIT, dev_zero, 0);
   if (blk == MAP_FAILED) {
     fprintf(stderr, "mmap of %"PRINTSIZET"u bytes failed, errno=%d. "
 	    "(dev_zero=%d)\n", length, errno, dev_zero);
@@ -546,6 +522,9 @@ static struct mexec_hdr *grow_mexec_hdr(struct mexec_hdr *base, size_t sz)
 
   hdr = mexec_do_alloc (wanted, sz);
   if (!hdr) return NULL;
+#ifdef HAVE_PTHREAD_JIT_WRITE_PROTECT_NP
+  pthread_jit_write_protect_np(0);
+#endif
   if (hdr == wanted) {
     /* We succeeded in growing. */
 #ifdef MY_MEXEC_ALLOC_STATS
@@ -553,6 +532,9 @@ static struct mexec_hdr *grow_mexec_hdr(struct mexec_hdr *base, size_t sz)
     total_size += sz;
 #endif
     base->size += sz;
+#ifdef HAVE_PTHREAD_JIT_WRITE_PROTECT_NP
+    pthread_jit_write_protect_np(1);
+#endif
     verify_mexec_hdr(base);
     return base;
   }
@@ -569,6 +551,9 @@ static struct mexec_hdr *grow_mexec_hdr(struct mexec_hdr *base, size_t sz)
 	total_size += sz;
 #endif
 	wanted->next->size += sz;
+#ifdef HAVE_PTHREAD_JIT_WRITE_PROTECT_NP
+        pthread_jit_write_protect_np(1);
+#endif
 	verify_mexec_hdr(wanted->next);
 	return wanted->next;
       }
@@ -586,6 +571,9 @@ static struct mexec_hdr *grow_mexec_hdr(struct mexec_hdr *base, size_t sz)
   hdr->size = sz;
   hdr->free = NULL;
   hdr->bottom = (char *)(hdr+1);
+#ifdef HAVE_PTHREAD_JIT_WRITE_PROTECT_NP
+  pthread_jit_write_protect_np(1);
+#endif
   verify_mexec_hdr(hdr);
   return hdr;
 }
@@ -599,6 +587,9 @@ static struct mexec_block *low_mexec_alloc(struct mexec_hdr *hdr, size_t sz)
   /* fprintf(stderr, "low_mexec_alloc(%p, %p)\n", hdr, (void *)sz); */
   if (!hdr) return NULL;
   verify_mexec_hdr(hdr);
+#ifdef HAVE_PTHREAD_JIT_WRITE_PROTECT_NP
+  pthread_jit_write_protect_np(0);
+#endif
   free = &hdr->free;
   while (*free && ((*free)->size < (ptrdiff_t)sz)) {
     free = &((*free)->next);
@@ -625,6 +616,9 @@ static struct mexec_block *low_mexec_alloc(struct mexec_hdr *hdr, size_t sz)
     }
     hdr->bottom += sz;
   } else {
+#ifdef HAVE_PTHREAD_JIT_WRITE_PROTECT_NP
+    pthread_jit_write_protect_np(1);
+#endif
     return NULL;
   }
   res->size = sz;
@@ -632,6 +626,9 @@ static struct mexec_block *low_mexec_alloc(struct mexec_hdr *hdr, size_t sz)
 #ifdef MEXEC_MAGIC
   res->magic = MEXEC_MAGIC;
 #endif /* MEXEC_MAGIC */
+#ifdef HAVE_PTHREAD_JIT_WRITE_PROTECT_NP
+  pthread_jit_write_protect_np(1);
+#endif
   verify_mexec_hdr(hdr);
   return res;
 }
@@ -663,6 +660,9 @@ PMOD_EXPORT void mexec_free(void *ptr)
   VALGRIND_DISCARD_TRANSLATIONS (mblk, mblk->size);
 #endif
 
+#ifdef HAVE_PTHREAD_JIT_WRITE_PROTECT_NP
+  pthread_jit_write_protect_np(0);
+#endif
   blk = (struct mexec_free_block *)mblk;
 
   next = hdr->free;
@@ -701,6 +701,9 @@ PMOD_EXPORT void mexec_free(void *ptr)
       hdr->free = blk;
     }
   }
+#ifdef HAVE_PTHREAD_JIT_WRITE_PROTECT_NP
+  pthread_jit_write_protect_np(1);
+#endif
   verify_mexec_hdr(hdr);
 }
 
@@ -731,7 +734,7 @@ void *mexec_alloc(size_t sz)
     res = low_mexec_alloc(hdr, sz);
 #ifdef PIKE_DEBUG
     if (!res) {
-      Pike_fatal("mexec_alloc(%d) failed to allocate from grown hdr!\n",
+      Pike_fatal("mexec_alloc(%"PRINTSIZET"u) failed to allocate from grown hdr!\n",
 		 sz);
     }
 #endif /* PIKE_DEBUG */
@@ -785,8 +788,14 @@ void *mexec_realloc(void *ptr, size_t sz)
   if ((((char *)old) + old->size) == hdr->bottom) {
     /* Attempt to grow the block. */
     if ((((char *)old) - ((char *)hdr)) <= (hdr->size - (ptrdiff_t)sz)) {
+#ifdef HAVE_PTHREAD_JIT_WRITE_PROTECT_NP
+      pthread_jit_write_protect_np(0);
+#endif
       old->size = sz;
       hdr->bottom = ((char *)old) + sz;
+#ifdef HAVE_PTHREAD_JIT_WRITE_PROTECT_NP
+      pthread_jit_write_protect_np(1);
+#endif
       /* fprintf(stderr, " ==> %p (succeded in growing)\n", ptr); */
 #ifdef PIKE_DEBUG
       if (old->hdr != hdr) {
@@ -816,8 +825,14 @@ void *mexec_realloc(void *ptr, size_t sz)
       }
       if (hdr == old_hdr) {
 	/* Succeeded in growing our old hdr. */
+#ifdef HAVE_PTHREAD_JIT_WRITE_PROTECT_NP
+        pthread_jit_write_protect_np(0);
+#endif
 	old->size = sz;
 	hdr->bottom = ((char *)old) + sz;
+#ifdef HAVE_PTHREAD_JIT_WRITE_PROTECT_NP
+        pthread_jit_write_protect_np(1);
+#endif
 	/* fprintf(stderr, " ==> %p (succeded in growing hdr)\n", ptr); */
 #ifdef PIKE_DEBUG
 	if (old->hdr != hdr) {
@@ -832,7 +847,7 @@ void *mexec_realloc(void *ptr, size_t sz)
       res = low_mexec_alloc(hdr, sz);
 #ifdef PIKE_DEBUG
       if (!res) {
-	Pike_fatal("mexec_realloc(%p, %d) failed to allocate from grown hdr!\n",
+	Pike_fatal("mexec_realloc(%p, %"PRINTSIZET"u) failed to allocate from grown hdr!\n",
 		   ptr, sz);
       }
 #endif /* PIKE_DEBUG */
@@ -847,7 +862,13 @@ void *mexec_realloc(void *ptr, size_t sz)
 
   /* fprintf(stderr, " ==> %p\n", res + 1); */
 
+#ifdef HAVE_PTHREAD_JIT_WRITE_PROTECT_NP
+  pthread_jit_write_protect_np(0);
+#endif
   memcpy(res+1, old+1, old->size - sizeof(*old));
+#ifdef HAVE_PTHREAD_JIT_WRITE_PROTECT_NP
+  pthread_jit_write_protect_np(1);
+#endif
   mexec_free(ptr);
 
 #ifdef PIKE_DEBUG
@@ -969,8 +990,17 @@ int exit_cleanup_in_progress = 0;
 
 #ifdef _REENTRANT
 static PIKE_MUTEX_T debug_malloc_mutex;
-#endif
 
+static void debug_malloc_atfatal(void)
+{
+  /* Release the debug_malloc_mutex if we already hold it
+   * so that we don't end up in a dead-lock on attempting
+   * to take it again when running Pike-code in Pike_fatal().
+   */
+  mt_trylock(&debug_malloc_mutex);
+  mt_unlock(&debug_malloc_mutex);
+}
+#endif
 
 #undef malloc
 #undef free
@@ -983,7 +1013,7 @@ static PIKE_MUTEX_T debug_malloc_mutex;
 #undef ENCAPSULATE_MALLOC
 #define calloc    dlcalloc
 #define free	  dlfree
-#define malloc	  dlmalloc
+#define malloc(x) dlmalloc(x)
 #define memalign  dlmemalign
 #define realloc	  dlrealloc
 #define valloc	  dlvalloc
@@ -1267,7 +1297,7 @@ void *fake_calloc(size_t x, size_t y)
 #define fake_calloc calloc
 #define fake_realloc realloc
 #else
-#define malloc fake_malloc
+#define malloc(x) fake_malloc(x)
 #define free fake_free
 #define realloc fake_realloc
 #define calloc fake_calloc
@@ -1277,7 +1307,7 @@ void *fake_calloc(size_t x, size_t y)
 /* Don't understand what this is supposed to do, but it won't work
  * with USE_DL_MALLOC. /mast */
 #ifdef WRAP
-#define malloc __real_malloc
+#define malloc(x) __real_malloc(x)
 #define free __real_free
 #define realloc __real_realloc
 #define calloc __real_calloc
@@ -1462,22 +1492,37 @@ void check_pad(struct memhdr *mh, int freeok)
   unsigned long q,e;
   char *mem=mh->data;
   long size=mh->size;
+  DECLARE_CYCLIC();
+
   if(out_biking) return;
 
   if(!(mh->flags & MEM_PADDED)) return;
+
+  /* NB: We need to use the LOW_CYCLIC_* variants here as
+   *     we do not necessarily hold the interpreter lock.
+   */
+  if (LOW_BEGIN_CYCLIC(mh, NULL)) return;
+  SET_CYCLIC_RET(1);
+
   if(size < 0)
   {
     if(!freeok)
     {
       fprintf(stderr,"Access to free block: %p (size %ld)!\n",mem, ~mh->size);
       dump_memhdr_locations(mh, 0, 0);
+      debug_malloc_atfatal();
+      locate_references(mem);
+      describe(mem);
       abort();
     }else{
       size = ~size;
     }
   }
 
-  if (PIKE_MEM_CHECKER()) return;
+  if (PIKE_MEM_CHECKER()) {
+    LOW_END_CYCLIC();
+    return;
+  }
 
 /*  fprintf(stderr,"Checking %p(%d) %ld\n",mem, size, q);  */
 #if 1
@@ -1547,6 +1592,7 @@ void check_pad(struct memhdr *mh, int freeok)
     BLORG(3, (q >> 15) | 1)
   }
 #endif
+  LOW_END_CYCLIC();
 }
 #else
 #define do_pad(X,Y) (X)
@@ -1831,10 +1877,19 @@ PMOD_EXPORT void dmalloc_trace(void *p)
 
 PMOD_EXPORT void dmalloc_register(void *p, int s, LOCATION location)
 {
+  struct memhdr *mh;
   GET_ALLOC_BT (bt);
   mt_lock(&debug_malloc_mutex);
-  low_make_memhdr(p, s, location BT_ARGS (bt));
+  mh = my_find_memhdr(p, 0);
+  if (!mh) {
+    low_make_memhdr(p, s, location BT_ARGS (bt));
+  }
   mt_unlock(&debug_malloc_mutex);
+  if (mh) {
+    dump_memhdr_locations(mh, NULL, 0);
+    Pike_fatal("dmalloc_register(%p, %d, \"%s\"): Already registered\n",
+	       p, s, location);
+  }
 }
 
 PMOD_EXPORT void dmalloc_accept_leak(void *p)
@@ -1901,6 +1956,21 @@ PMOD_EXPORT int dmalloc_unregister(void *p, int already_gone)
   ret=low_dmalloc_unregister(p,already_gone);
   mt_unlock(&debug_malloc_mutex);
   return ret;
+}
+
+static void dmalloc_ba_walk_unregister_cb(struct ba_iterator *it,
+					  void *UNUSED(ignored))
+{
+  do {
+    low_dmalloc_unregister(ba_it_val(it), 0);
+  } while (ba_it_step(it));
+}
+
+PMOD_EXPORT void dmalloc_unregister_all(struct block_allocator *a)
+{
+  mt_lock(&debug_malloc_mutex);
+  ba_walk(a, dmalloc_ba_walk_unregister_cb, NULL);
+  mt_unlock(&debug_malloc_mutex);
 }
 
 static int low_dmalloc_mark_as_free(void *p, int UNUSED(already_gone))
@@ -1974,8 +2044,13 @@ PMOD_EXPORT void *debug_malloc(size_t s, LOCATION location)
 {
   char *m;
 
-  /* Complain on attempts to allocate more than 128MB memory */
-  if (s > (size_t)0x08000000) {
+  /* Complain on attempts to allocate more than 16M svalues
+   * (typically 128MB on ILP32 and 256MB on LP64).
+   *
+   * Note that Tools.Shoot.Foreach3 assumes that it is
+   * possible to allocate an array with 10000000 svalues.
+   */
+  if (s > (size_t)(0x01000000 * sizeof(struct svalue))) {
     Pike_fatal("malloc(0x%08lx) -- Huge malloc!\n", (unsigned long)s);
   }
 
@@ -2688,6 +2763,7 @@ static void initialize_dmalloc(void)
 #else
     mt_init(&debug_malloc_mutex);
 #endif
+    pike_atfatal(debug_malloc_atfatal);
 
     th_atfork(lock_da_lock, unlock_da_lock,  unlock_da_lock);
 #endif

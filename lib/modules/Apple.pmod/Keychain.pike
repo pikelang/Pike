@@ -46,7 +46,7 @@ protected string(8bit) read_string(Stdio.Buffer in, int len)
 
 protected void parse_cert(Stdio.Buffer buf)
 {
-  if (sizeof(buf) < 8) return 0;
+  if (sizeof(buf) < 8) return;
 
   /* Each certificate has a header of 60 bytes:
    *
@@ -172,7 +172,7 @@ protected void parse_cert(Stdio.Buffer buf)
 
 protected void parse_item(Stdio.Buffer buf)
 {
-  if (sizeof(buf) < 8) return 0;
+  if (sizeof(buf) < 8) return;
 
   buf = read_hbuffer(buf);
 

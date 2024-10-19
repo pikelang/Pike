@@ -48,7 +48,7 @@ linker_options: Makefile module.a $(MODULE_ARCHIVES)
 	    esac; \
 	  fi; \
 	done; \
-	linkopts="$$linkopts `echo '$(MODULE_LDFLAGS)' | sed -e 's@$(BASE_LDFLAGS)@@'`"; \
+	linkopts="$$linkopts `echo '$(MODULE_LDFLAGS)' | sed -e 's|$(BASE_LDFLAGS)||'`"; \
 	echo "echo $$linkopts > linker_options"; \
 	echo $$linkopts > linker_options
 

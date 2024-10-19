@@ -9,3 +9,5 @@
 //! just padded to larger ones.
 
 inherit Nettle.SERPENT;
+
+@Pike.Annotations.Implements(Crypto.BlockCipher);

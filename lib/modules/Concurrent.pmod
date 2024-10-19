@@ -1,14 +1,18 @@
 #pike __REAL_VERSION__
 
+// #define CONCURRENT_DEBUG
+
 //! Module for handling multiple concurrent events.
 //!
 //! The @[Future] and @[Promise] API was inspired by
 //! @url{https://github.com/couchdeveloper/FutureLib@}.
 
-protected enum State {
+local protected enum State {
+  STATE_NO_FUTURE = -1,
   STATE_PENDING = 0,
   STATE_FULFILLED,
   STATE_REJECTED,
+  STATE_REJECTION_REPORTED,
 };
 
 protected Thread.Mutex mux = Thread.Mutex();
@@ -21,12 +25,22 @@ void on_failure(function(mixed : void) f)
 {
   global_on_failure = f;
 }
-protected function(mixed : void) global_on_failure;
+protected function(mixed : void) global_on_failure = master()->handle_error;
 
 //! @param enable
-//!   Setting this to @expr{false@} causes all @[Concurrent] callbacks
-//!   (except for timeouts)
-//!   to be called directly, without using a backend.
+//!   @int
+//!     @value 0
+//!       A @expr{false@} value causes all @[Concurrent] callbacks
+//!       (except for timeouts) to default to being called directly,
+//!       without using a backend.
+//!     @value 1
+//!       A @expr{true@} value causes callbacks to default to being
+//!       called via @[Pike.DefaultBackend].
+//!   @endint
+//!
+//! @note
+//!   Be very careful about running in the backend disabled mode,
+//!   as it may cause unlimited recursion and reentrancy issues.
 //!
 //! @note
 //!   As long as the backend hasn't started, it will default to @expr{false@}.
@@ -36,6 +50,9 @@ protected function(mixed : void) global_on_failure;
 //! @note
 //!   (Un)setting this typically alters the order in which some callbacks
 //!   are called (depending on what happens in a callback).
+//!
+//! @seealso
+//!   @[Future()->set_backend()], @[Future()->call_callback()]
 final void use_backend(int enable)
 {
   callout = enable ? call_out : callnow;
@@ -43,7 +60,7 @@ final void use_backend(int enable)
 }
 
 private mixed
- callnow(function(mixed ...:void) f, int|float delay, mixed ... args)
+ callnow(function(__unknown__ ...:void) f, int|float delay, mixed ... args)
 {
   mixed err = catch (f(@args));
   if (err)
@@ -56,52 +73,152 @@ private void auto_use_backend()
   callout = call_out;
 }
 
-protected function(function(mixed ...:void), int|float, mixed ...:mixed)
- callout;
+protected function(function(__unknown__ ...:void), int|float, mixed ...:mixed)
+  callout = ((callout = callnow), call_out(auto_use_backend, 0), callout);
 
-private void create()
-{
-  callout = callnow;
-  call_out(auto_use_backend, 0);
-}
-
-//! Value that will be provided asynchronously
-//! sometime in the future.
+//! Value that will be provided asynchronously sometime in the
+//! future. A Future object is typically produced from a @[Promise]
+//! object by calling its @[future()] method.
 //!
 //! @seealso
 //!   @[Promise]
-class Future
+class Future(<ValueType>)
 {
-  mixed result;
-  State state;
+  //! @decl __generic__ ValueType
+  //!
+  //! This is the type for the value provided by the @[Future].
 
-  protected array(array(function(mixed, mixed ...: void)|mixed))
+  protected ValueType|mixed result;
+  protected State state;
+
+  protected array(array(function(ValueType, __unknown__ ...: void)|mixed))
     success_cbs = ({});
-  protected array(array(function(mixed, mixed ...: void)|mixed))
+  protected array(array(function(mixed, __unknown__ ...: void)|mixed))
     failure_cbs = ({});
+
+  protected Pike.Backend backend;
+
+  //! Set the backend to use for calling any callbacks.
+  //!
+  //! @note
+  //!   This overides the mode set by @[use_backend()].
+  //!
+  //! @seealso
+  //!   @[get_backend()], @[use_backend()]
+  void set_backend(Pike.Backend backend)
+  {
+    this::backend = backend;
+  }
+
+  //! Get the backend (if any) used to call any callbacks.
+  //!
+  //! This returns the value set by @[set_backend()].
+  //!
+  //! @seealso
+  //!   @[set_backend()]
+  Pike.Backend get_backend()
+  {
+    return backend;
+  }
+
+  //! Create a new @[Promise] with the same base settings
+  //! as the current object.
+  //!
+  //! Overload this function if you need to propagate more state
+  //! to new @[Promise] objects.
+  //!
+  //! The default implementation copies the backend
+  //! setting set with @[set_backend()] to the new @[Promise].
+  //!
+  //! @seealso
+  //!   @[Promise], @[set_backend()]
+  Promise(<ValueType>) promise_factory()
+  {
+    Promise(<ValueType>) res = Promise();
+
+    if (backend) {
+      res->set_backend(backend);
+    }
+
+    return res;
+  }
+
+  //! Call a callback function.
+  //!
+  //! @param cb
+  //!   Callback function to call.
+  //!
+  //! @param args
+  //!   Arguments to call @[cb] with.
+  //!
+  //! The default implementation calls @[cb] via the
+  //! backend set via @[set_backend()] (if any), and
+  //! otherwise falls back the the mode set by
+  //! @[use_backend()].
+  //!
+  //! @seealso
+  //!   @[set_backend()], @[use_backend()]
+  protected void call_callback(function cb, mixed ... args)
+  {
+#ifdef CONCURRENT_DEBUG
+    werror("%O->call_callback(%O%{, %O%})\n", this, cb, args/({}));
+#endif
+    (backend ? backend->call_out : callout)(cb, 0, @args);
+  }
+
+  //! Wait for fulfillment.
+  //!
+  //! @seealso
+  //!   @[get()], @[try_get()]
+  this_program(<ValueType>) wait()
+  {
+    if (state <= STATE_PENDING) {
+      Thread.MutexKey key = mux->lock();
+      while (state <= STATE_PENDING) {
+	cond->wait(key);
+      }
+    }
+
+    return this;
+  }
 
   //! Wait for fulfillment and return the value.
   //!
   //! @throws
   //!   Throws on rejection.
-  mixed get()
+  //!
+  //! @seealso
+  //!   @[wait()], @[try_get()]
+  ValueType get()
   {
-    State s = state;
-    mixed res = result;
-    if (!s) {
-      Thread.MutexKey key = mux->lock();
-      while (!state) {
-	cond->wait(key);
-      }
+    wait();
 
-      s = state;
-      res = result;
+    if (state >= STATE_REJECTED) {
+      throw(result);
     }
+    return [object(ValueType)]result;
+  }
 
-    if (s == STATE_REJECTED) {
-      throw(res);
+  //! Return the value if available.
+  //!
+  //! @returns
+  //!   Returns @[UNDEFINED] if the @[Future] is not yet fulfilled.
+  //!
+  //! @throws
+  //!   Throws on rejection.
+  //!
+  //! @seealso
+  //!   @[wait()]
+  ValueType|object(zero) try_get()
+  {
+    switch(state) {
+    case ..STATE_PENDING:
+      return UNDEFINED;
+    case STATE_REJECTED..:
+      throw(result);
+    default:
+      return [object(ValueType)]result;
     }
-    return res;
   }
 
   //! Register a callback that is to be called on fulfillment.
@@ -118,19 +235,38 @@ class Future
   //!   @[cb] will always be called from the main backend.
   //!
   //! @seealso
-  //!   @[on_failure()]
-  this_program on_success(function(mixed, mixed ... : void) cb, mixed ... extra)
+  //!   @[on_failure()], @[query_success_callbacks()]
+  this_program(<ValueType>) on_success(function(ValueType, __unknown__ ... : void) cb,
+                                       mixed ... extra)
   {
+#ifdef CONCURRENT_DEBUG
+    werror("Future: %O(%O, %O)\n", this_function, cb, extra);
+#endif
+    object(Thread.MutexKey)|zero key = mux->lock();
     switch (state) {
       case STATE_FULFILLED:
-        callout(cb, 0, result, @extra);
+	key = 0;
+        call_callback(cb, result, @extra);
         break;
+      case STATE_NO_FUTURE:
       case STATE_PENDING:
         // Rely on interpreter lock to add to success_cbs before state changes
         // again
         success_cbs += ({ ({ cb, @extra }) });
     }
     return this_program::this;
+  }
+
+  //! Query the set of active success callbacks.
+  //!
+  //! @returns
+  //!   Returns an array with callback functions.
+  //!
+  //! @seealso
+  //!   @[on_success()], @[query_failure_callbacks()]
+  array(function(ValueType, __unknown__ ... : void)) query_success_callbacks()
+  {
+    return column(success_cbs, 0);
   }
 
   //! Register a callback that is to be called on failure.
@@ -147,13 +283,23 @@ class Future
   //!   @[cb] will always be called from the main backend.
   //!
   //! @seealso
-  //!   @[on_success()]
-  this_program on_failure(function(mixed, mixed ... : void) cb, mixed ... extra)
+  //!   @[on_success()], @[query_failure_callbacks()]
+  this_program(<ValueType>) on_failure(function(mixed, __unknown__ ... : void) cb,
+			  mixed ... extra)
   {
+#ifdef CONCURRENT_DEBUG
+    werror("Future: %O(%O, %O)\n", this_function, cb, extra);
+#endif
+    object(Thread.MutexKey)|zero key = mux->lock();
     switch (state) {
       case STATE_REJECTED:
-        callout(cb, 0, result, @extra);
+	state = STATE_REJECTION_REPORTED;
+	// FALL_THROUGH
+      case STATE_REJECTION_REPORTED:
+	key = 0;
+        call_callback(cb, result, @extra);
         break;
+      case STATE_NO_FUTURE:
       case STATE_PENDING:
         // Rely on interpreter lock to add to failure_cbs before state changes
         // again
@@ -162,10 +308,42 @@ class Future
     return this_program::this;
   }
 
+  //! Query the set of active failure callbacks.
+  //!
+  //! @returns
+  //!   Returns an array with callback functions.
+  //!
+  //! @seealso
+  //!   @[on_failure()], @[query_success_callbacks()]
+  array(function(mixed, __unknown__ ... : void)) query_failure_callbacks()
+  {
+    return column(failure_cbs, 0);
+  }
+
+  //! Set both success and failure callbacks.
+  //!
+  //! @param cb
+  //!   Callback to call with the success value on success.
+  //!
+  //!   On failure it is called with two arguments; the failure
+  //!   value and @[predef::throw] as the second argument.
+  //!
+  //! @note
+  //!   Used by @[predef::await()], in which case @[cb] will be
+  //!   a generator function.
+  //!
+  //! @seealso
+  //!   @[on_success()], @[on_failure()], @[predef::await()], @[predef::throw()]
+  this_program(<ValueType>) on_await(function(mixed,
+                                              function(mixed, __unknown__ ... : void)|void:void) cb)
+  {
+    return on_success(cb)->on_failure(cb, throw);
+  }
+
   //! Apply @[fun] with @[val] followed by the contents of @[ctx],
   //! and update @[p] with the result.
   protected void apply(mixed val, Promise p,
-		       function(mixed, mixed ... : mixed) fun,
+		       function(mixed, __unknown__ ... : mixed) fun,
 		       array(mixed) ctx)
   {
     mixed f;
@@ -178,7 +356,7 @@ class Future
   //! Apply @[fun] with @[val] followed by the contents of @[ctx],
   //! and update @[p] with the eventual result.
   protected void apply_flat(mixed val, Promise p,
-			    function(mixed, mixed ... : Future) fun,
+			    function(mixed, __unknown__ ... : Future) fun,
 			    array(mixed) ctx)
   {
     Future f;
@@ -196,10 +374,10 @@ class Future
   //! Apply @[fun] with @[val] followed by the contents of @[ctx],
   //! and update @[p] with the eventual result.
   protected void apply_smart(mixed val, Promise p,
-			    function(mixed, mixed ... : mixed|Future) fun,
+			    function(mixed, __unknown__ ... : mixed|Future) fun,
 			    array(mixed) ctx)
   {
-    mixed|Future f;
+    object(Future)|ValueType f;
     {
       if (mixed err = catch (f = fun(val, @ctx))) {
         p->failure(err);
@@ -216,8 +394,8 @@ class Future
   //! Apply @[fun] with @[val] followed by the contents of @[ctx],
   //! and update @[p] with @[val] if @[fun] didn't return false.
   //! If @[fun] returned false, fail @[p] with @expr{0@} as result.
-  protected void apply_filter(mixed val, Promise p,
-			      function(mixed, mixed ... : int(0..1)) fun,
+  protected void apply_filter(ValueType val, Promise p,
+			      function(mixed, __unknown__ ... : int(0..1)) fun,
 			      array(mixed) ctx)
   {
     int bool;
@@ -250,9 +428,10 @@ class Future
   //!
   //! @seealso
   //!  @[map_with()], @[transform()], @[recover()]
-  this_program map(function(mixed, mixed ... : mixed) fun, mixed ... extra)
+  this_program map(function(ValueType, __unknown__ ... : mixed) fun,
+		   mixed ... extra)
   {
-    Promise p = Promise();
+    Promise p = promise_factory();
     on_failure(p->failure);
     on_success(apply, p, fun, extra);
     return p->future();
@@ -280,10 +459,10 @@ class Future
   //!
   //! @seealso
   //!  @[map()], @[transform_with()], @[recover_with()], @[flat_map]
-  this_program map_with(function(mixed, mixed ... : this_program) fun,
+  this_program map_with(function(ValueType, __unknown__ ... : this_program) fun,
 			mixed ... extra)
   {
-    Promise p = Promise();
+    Promise p = promise_factory();
     on_failure(p->failure);
     on_success(apply_flat, p, fun, extra);
     return p->future();
@@ -293,7 +472,7 @@ class Future
   //!
   //! @seealso
   //!   @[map_with()]
-  inline this_program flat_map(function(mixed, mixed ... : this_program) fun,
+  inline this_program flat_map(function(ValueType, __unknown__ ... : this_program) fun,
 			       mixed ... extra)
   {
     return map_with(fun, @extra);
@@ -321,10 +500,10 @@ class Future
   //!
   //! @seealso
   //!   @[recover_with()], @[map()], @[transform()]
-  this_program recover(function(mixed, mixed ... : mixed) fun,
+  this_program recover(function(mixed, __unknown__ ... : mixed) fun,
 		       mixed ... extra)
   {
-    Promise p = Promise();
+    Promise p = promise_factory();
     on_success(p->success);
     on_failure(apply, p, fun, extra);
     return p->future();
@@ -352,10 +531,10 @@ class Future
   //!
   //! @seealso
   //!   @[recover()], @[map_with()], @[transform_with()]
-  this_program recover_with(function(mixed, mixed ... : this_program) fun,
+  this_program recover_with(function(mixed, __unknown__ ... : this_program) fun,
 			    mixed ... extra)
   {
-    Promise p = Promise();
+    Promise p = promise_factory();
     on_success(p->success);
     on_failure(apply_flat, p, fun, extra);
     return p->future();
@@ -382,10 +561,10 @@ class Future
   //!
   //! @seealso
   //!   @[transform()]
-  this_program filter(function(mixed, mixed ... : int(0..1)) fun,
+  this_program filter(function(ValueType, __unknown__ ... : int(0..1)) fun,
 		      mixed ... extra)
   {
-    Promise p = Promise();
+    Promise p = promise_factory();
     on_failure(p->failure);
     on_success(apply_filter, p, fun, extra);
     return p->future();
@@ -419,11 +598,11 @@ class Future
   //!
   //! @seealso
   //!   @[transform_with()], @[map()], @[recover()]
-  this_program transform(function(mixed, mixed ... : mixed) success,
-			 function(mixed, mixed ... : mixed)|void failure,
+  this_program transform(function(ValueType, __unknown__ ... : mixed) success,
+			 function(mixed, __unknown__ ... : mixed)|void failure,
 			 mixed ... extra)
   {
-    Promise p = Promise();
+    Promise p = promise_factory();
     on_success(apply, p, success, extra);
     on_failure(apply, p, failure || success, extra);
     return p->future();
@@ -458,11 +637,11 @@ class Future
   //!
   //! @seealso
   //!   @[transform()], @[map_with()], @[recover_with]
-  this_program transform_with(function(mixed, mixed ... : this_program) success,
-		         function(mixed, mixed ... : this_program)|void failure,
+  this_program transform_with(function(ValueType, __unknown__ ... : this_program) success,
+		         function(mixed, __unknown__ ... : this_program)|void failure,
 			      mixed ... extra)
   {
-    Promise p = Promise();
+    Promise p = promise_factory();
     on_success(apply_flat, p, success, extra);
     on_failure(apply_flat, p, failure || success, extra);
     return p->future();
@@ -517,10 +696,10 @@ class Future
   //!   @[on_success()], @[Promise.success()],
   //!   @[on_failure()], @[Promise.failure()],
   //!   @url{https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/Promise@}
-  this_program then(void|function(mixed, mixed ... : mixed) onfulfilled,
-   void|function(mixed, mixed ... : mixed) onrejected,
-   mixed ... extra) {
-    Promise p = Promise();
+  this_program then(void|function(ValueType, __unknown__ ... : mixed) onfulfilled,
+		    void|function(mixed, __unknown__ ... : mixed) onrejected,
+		    mixed ... extra) {
+    Promise p = promise_factory();
     if (onfulfilled)
       on_success(apply_smart, p, onfulfilled, extra);
     else
@@ -553,149 +732,75 @@ class Future
   //!   @[recover()], @[recover_with()], @[then()], @[on_failure()],
   //!   @[Promise.failure()],
   //!   @url{https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/Promise@}
-  inline this_program thencatch(function(mixed, mixed ... : mixed) onrejected,
-   mixed ... extra) {
+  inline this_program thencatch(function(mixed, __unknown__ ... : mixed) onrejected,
+				mixed ... extra) {
     return then(0, onrejected, @extra);
+  }
+
+  private this_program setup_call_out(int|float seconds)
+  {
+    array call_out_handle;
+    Promise p = promise_factory();
+    void cancelcout(mixed value)
+    {
+      (backend ? backend->remove_call_out : remove_call_out)(call_out_handle);
+      p->try_success(UNDEFINED);
+    }
+    /* NB: try_* variants as the original promise may get fulfilled
+     *     after the timeout has occurred.
+     */
+    on_failure(cancelcout);
+    call_out_handle = (backend ? backend->call_out : call_out)
+      (p->try_success, seconds, 0);
+    return p->future();
+  }
+
+  //! Return a @[Future] that will be fulfilled with the fulfilled
+  //! result of this @[Future], but not until at least @[seconds] have passed.
+  this_program(<ValueType>) delay(int|float seconds)
+  {
+    return results(
+     ({ this_program::this, setup_call_out(seconds) })
+    )->map(`[], 0);
   }
 
   //! Return a @[Future] that will either be fulfilled with the fulfilled
   //! result of this @[Future], or be failed after @[seconds] have expired.
-  this_program timeout(int|float seconds)
+  this_program(<ValueType>) timeout(int|float seconds)
   {
-    Promise p = Promise();
-    on_failure(p->failure);
-    on_success(p->success);
-    call_out(p->try_failure, seconds, ({ "Timeout.\n", backtrace() }));
+    Promise p = promise_factory();
+    array call_out_handle;
+    function backend_remove_call_out;
+
+    call_out_handle = (backend->?call_out || call_out)
+      (p->try_failure, seconds, ({ "Timeout.\n", backtrace() }));
+    backend_remove_call_out = backend->?remove_call_out || remove_call_out;
+
+    on_success(
+      lambda(ValueType res)
+      {
+        backend_remove_call_out(call_out_handle);
+        p->try_success(res);
+      });
+    on_failure(
+      lambda(mixed err)
+      {
+        backend_remove_call_out(call_out_handle);
+        p->try_failure(err);
+      });
+
     return p->future();
   }
 
   protected string _sprintf(int t)
   {
     return t=='O' && sprintf("%O(%s,%O)", this_program,
-                             ([ STATE_PENDING : "pending",
+                             ([ STATE_NO_FUTURE : "no future",
+			        STATE_PENDING : "pending",
                                 STATE_REJECTED : "rejected",
+				STATE_REJECTION_REPORTED : "rejection_reported",
                                 STATE_FULFILLED : "fulfilled" ])[state],
                              result);
-  }
-}
-
-protected class AggregateState
-{
-  private Promise promise;
-  private int(0..) promises;
-  private int(0..) succeeded, failed;
-  final array(mixed) results;
-  final int(0..) min_failures;
-  final int(-1..) max_failures;
-  final mixed accumulator;
-  final function(mixed, mixed, mixed ... : mixed) fold_fun;
-  final array(mixed) extra;
-
-  private void create(Promise p)
-  {
-    if (p->_materialised || p->_materialised++)
-      error("Cannot materialise a Promise more than once.\n");
-    promise = p;
-  }
-
-  final void materialise()
-  {
-    if (promise->_astate)
-    {
-      promise->_astate = 0;
-      if (results)
-      {
-        promises = sizeof(results);
-        array(Future) futures = results;
-        if (fold_fun)
-          results = 0;
-        foreach(futures; int idx; Future f)
-          f->on_failure(cb_failure, idx)->on_success(cb_success, idx);
-      }
-    }
-  }
-
-  private void fold_one(mixed val)
-  {
-    mixed err = catch (accumulator = fold_fun(val, accumulator, @extra));
-    if (err && promise)
-      promise->failure(err);
-  }
-
-  private void fold(function(mixed:void) failsucc)
-  {
-    failsucc(fold_fun ? accumulator : results);
-    results = 0;			// Free memory
-  }
-
-  private void cb_failure(mixed value, int idx)
-  {
-    Promise p;				// Cache it, to cover a failure race
-    if (p = promise)
-    {
-      Thread.MutexKey key = mux->lock();
-      do
-      {
-        if (!p->state)
-        {
-          ++failed;
-          if (max_failures < failed && max_failures >= 0)
-          {
-            key = 0;
-            p->try_failure(value);
-            break;
-          }
-          int success = succeeded + failed == promises;
-          key = 0;
-          if (results)
-            results[idx] = value;
-          else
-            fold_one(value);
-          if (success)
-          {
-            fold(failed >= min_failures ? p->success : p->failure);
-            break;
-          }
-        }
-        return;
-      } while (0);
-      promise = 0;			// Free backreference
-    }
-  }
-
-  private void cb_success(mixed value, int idx)
-  {
-    Promise p;				// Cache it, to cover a failure race
-    if (p = promise)
-    {
-      Thread.MutexKey key = mux->lock();
-      do
-      {
-        if (!p->state)
-        {
-          ++succeeded;
-          if (promises - min_failures < succeeded)
-          {
-            key = 0;
-            p->try_failure(value);
-            break;
-          }
-          int success = succeeded + failed == promises;
-          key = 0;
-          if (results)
-            results[idx] = value;
-          else
-            fold_one(value);
-          if (success)
-          {
-            fold(p->success);
-            break;
-          }
-        }
-        return;
-      } while (0);
-      promise = 0;			// Free backreference
-    }
   }
 }
 
@@ -708,73 +813,101 @@ protected class AggregateState
 //!
 //! @seealso
 //!   @[Future], @[future()]
-class Promise
+class Promise(<ValueType>)
 {
-  inherit Future;
+  //! @decl __generic__ ValueType
+  //!
+  //! This is the type for the value provided by the inherited @[Future].
 
-  final int _materialised;
-  final AggregateState _astate;
+  inherit Future(<ValueType>);
 
   //! Creates a new promise, optionally initialised from a traditional callback
-  //! driven method via @expr{executor(resolve, reject, extra ... )@}.
+  //! driven method via @expr{executor(success, failure, @@extra)@}.
   //!
   //! @seealso
   //!   @url{https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/Promise@}
   protected void create(void|
-   function(function(mixed:void),
-            function(mixed:void), mixed ...:void) executor, mixed ... extra)
+                        function(function(ValueType:void),
+				 function(mixed:void),
+				 __unknown__ ...:void) executor,
+			mixed ... extra)
   {
-    if (executor)
-      executor(success, failure, @extra);
-  }
+    state = STATE_NO_FUTURE;
 
-  Future on_success(function(mixed, mixed ... : void) cb, mixed ... extra)
-  {
-    if (_astate)
-      _astate->materialise();
-    return ::on_success(cb, @extra);
-  }
+    if (executor) {
+      mixed err = catch(executor(success, failure, @extra));
 
-  Future on_failure(function(mixed, mixed ... : void) cb, mixed ... extra)
-  {
-    if (_astate)
-      _astate->materialise();
-    return ::on_failure(cb, @extra);
-  }
+      // This unfortunately does hide the real error in case of
+      // double-finalization, i.e.
+      //   fail("I reject!");
+      //   error("I rejected.\n");
+      // in the executor will leave our caller with an error about the
+      // Promise already having been finalized, not giving anyone too much
+      // information about where the double-finalization occured...
+      if (err) {
+        if (mixed err2 = catch(failure(err))) {
+          string finalisation_error;
 
-  mixed get()
-  {
-    if (_astate)
-      _astate->materialise();
-    return ::get();
+          if (catch(finalisation_error = describe_error(err2)))
+            finalisation_error = sprintf("%O", err2);
+
+          while (has_suffix(finalisation_error, "\n"))
+            finalisation_error = finalisation_error[..<1];
+
+          error("%O->create(): Got error \"%s\" while trying to finalise promise with %O thrown by executor.\n",
+                this, finalisation_error, err);
+        }
+      }
+    }
   }
 
   //! The future value that we promise.
-  Future future()
+  Future(<ValueType>) future()
   {
+#ifdef CONCURRENT_DEBUG
+    werror("Promise: %O\n", this_function);
+#endif
+    if (state == STATE_NO_FUTURE) state = STATE_PENDING;
     return Future::this;
   }
 
-  protected this_program finalise(State newstate, mixed value, int try,
-    array(array(function(mixed, mixed ...: void)|array(mixed))) cbs,
-    void|function(mixed : void) globalfailure)
+  protected this_program finalise(State newstate, mixed value, int try)
   {
-    Thread.MutexKey key = mux->lock();
-    if (!state)
+#ifdef CONCURRENT_DEBUG
+    werror("Promise: %O(%d (%d), %O (%O), %d)\n",
+           this_function, newstate, state, value, result, try);
+#endif
+    object(Thread.MutexKey)|zero key = mux->lock();
+    if (state <= STATE_PENDING)
     {
       state = newstate;
       result = value;
+      array(array(function(mixed, __unknown__ ...: void)|array(mixed))) cbs;
+      if (state == STATE_FULFILLED) {
+	cbs = success_cbs;
+      } else {
+	cbs = failure_cbs;
+      }
       key = 0;
       cond->broadcast();
+#ifdef CONCURRENT_DEBUG
+      werror("Promise: %O: cbs: %O\n", this_function, cbs);
+#endif
       if (sizeof(cbs))
       {
-        foreach(cbs; ; array cb)
+        foreach(cbs; ; array cb) {
+#ifdef CONCURRENT_DEBUG
+          werror("Scheduling callback %O(%O%{, %O%}).\n",
+                 cb[0], value, cb[1..]/({}));
+#endif
           if (cb)
-            callout(cb[0], 0, value, @cb[1..]);
+            call_callback(cb[0], value, @cb[1..]);
+        }
+	if (newstate == STATE_REJECTED) {
+	  state = STATE_REJECTION_REPORTED;
+	}
       }
-      else if (globalfailure)
-        callout(globalfailure, 0, value);
-      failure_cbs = success_cbs = 0;		// Free memory and references
+      failure_cbs = success_cbs = ({});		// Free memory and references
     }
     else
     {
@@ -782,10 +915,13 @@ class Promise
       if (!try)
         error("Promise has already been finalised.\n");
     }
+#ifdef CONCURRENT_DEBUG
+    werror("Promise: %O done.\n", this_function);
+#endif
     return this_program::this;
   }
 
-  //! @decl this_program success(mixed value)
+  //! @decl this_program(<ValueType>) success(ValueType value)
   //!
   //! Fulfill the @[Future].
   //!
@@ -801,9 +937,12 @@ class Promise
   //!
   //! @seealso
   //!   @[try_success()], @[try_failure()], @[failure()], @[on_success()]
-  this_program success(mixed value, void|int try)
+  this_program(<ValueType>) success(ValueType value, void|int try)
   {
-    return finalise(STATE_FULFILLED, value, try, success_cbs);
+#ifdef CONCURRENT_DEBUG
+    werror("Promise: %O\n", this_function);
+#endif
+    return finalise(STATE_FULFILLED, value, try);
   }
 
   //! Fulfill the @[Future] if it hasn't been fulfilled or failed already.
@@ -817,12 +956,15 @@ class Promise
   //!
   //! @seealso
   //!   @[success()], @[try_failure()], @[failure()], @[on_success()]
-  inline this_program try_success(mixed value)
+  inline this_program(<ValueType>) try_success(ValueType|zero value)
   {
-    return state ? this_program::this : success(value, 1);
+#ifdef CONCURRENT_DEBUG
+    werror("Promise: %O\n", this_function);
+#endif
+    return (state > STATE_PENDING) ? this_program::this : success(value, 1);
   }
 
-  //! @decl this_program failure(mixed value)
+  //! @decl this_program(<ValueType>) failure(mixed value)
   //!
   //! Reject the @[Future] value.
   //!
@@ -838,10 +980,13 @@ class Promise
   //!
   //! @seealso
   //!   @[try_failure()], @[success()], @[on_failure()]
-  this_program failure(mixed value, void|int try)
+  this_program(<ValueType>) failure(mixed value, void|int try)
   {
+#ifdef CONCURRENT_DEBUG
+    werror("Promise: %O\n", this_function);
+#endif
     return
-     finalise(STATE_REJECTED, value, try, failure_cbs, global_on_failure);
+     finalise(STATE_REJECTED, value, try);
   }
 
   //! Maybe reject the @[Future] value.
@@ -855,15 +1000,225 @@ class Promise
   //!
   //! @seealso
   //!   @[failure()], @[success()], @[on_failure()]
-  inline this_program try_failure(mixed value)
+  inline this_program(<ValueType>) try_failure(mixed value)
   {
-    return state ? this_program::this : failure(value, 1);
+#ifdef CONCURRENT_DEBUG
+    werror("Promise: %O\n", this_function);
+#endif
+    return (state > STATE_PENDING) ? this_program::this : failure(value, 1);
   }
 
-  inline private void fill_astate()
+  private string orig_backtrace =
+    sprintf("%s\n------\n", describe_backtrace(backtrace()));
+
+  protected void _destruct()
   {
-    if (!_astate)
-      _astate = AggregateState(this);
+    // NB: Don't complain about dropping STATE_NO_FUTURE on the floor.
+    if (state == STATE_PENDING)
+      try_failure(({ sprintf("%O: Promise broken.\n%s",
+			     this, orig_backtrace),
+		     backtrace() }));
+    if ((state == STATE_REJECTED) && global_on_failure)
+      call_callback(global_on_failure, result);
+    result = UNDEFINED;
+  }
+}
+
+//! Promise to provide an aggregated @[Future] value.
+//!
+//! Objects of this class are typically kept internal to the
+//! code that provides the @[Future] value. The only thing
+//! that is directly returned to the user is the return
+//! value from @[future()].
+//!
+//! @note
+//!   It is currently possible to use this class as a normal @[Promise]
+//!   (ie without aggregation), but those functions may get removed
+//!   in a future version of Pike. Functions to avoid include
+//!   @[success()] and @[try_success()]. If you do not need aggregation
+//!   use @[Promise].
+//!
+//! @seealso
+//!   @[Future], @[future()], @[Promise], @[first_completed()],
+//!   @[race()], @[results()], @[all()], @[fold()]
+class AggregatedPromise(<ValueType>)
+{
+  //! @decl __generic__ ValueType
+  //!
+  //! This is the type for the value provided by the individual
+  //! aggregated @[Future]s.
+
+  inherit Promise(<array(ValueType)|ValueType>);
+
+  //! @array
+  //!   @elem mapping(int:mixed) 0
+  //!     Successful results.
+  //!   @elem mapping(int:mixed) 1
+  //!     Failed results.
+  //! @endarray
+  protected array(mapping(int:ValueType)) dependency_results = ({ ([]), ([]) });
+
+  protected int(0..) num_dependencies;
+  protected int(1bit) started;
+  protected int(0..) min_failure_threshold;
+  protected int(-1..) max_failure_threshold;
+  protected function(mixed, ValueType, __unknown__ ... : mixed) fold_fun;
+  protected array(mixed) extra_fold_args;
+
+  //! Callback used to aggregate the results from dependencies.
+  //!
+  //! @param value
+  //!   Value received from the dependency.
+  //!
+  //! @param idx
+  //!   Identification number for the dependency.
+  //!
+  //! @param results
+  //!   Either of the mappings in @[dependency_results] depending on
+  //!   whether this was a success or a failure callback.
+  //!
+  //! @note
+  //!   The function may also be called with all arguments set to
+  //!   @[UNDEFINED] in order to poll the current state. This is
+  //!   typically done via a call to @[start()].
+  //!
+  //! @seealso
+  //!   @[start()]
+  protected void aggregate_cb(mixed value, int idx,
+			      mapping(int:mixed)|zero results)
+  {
+    // Check if aggregation is to be performed.
+    if (!num_dependencies) return;
+
+    Thread.MutexKey key = mux->lock();
+    mixed accumulator;
+    if (state <= STATE_PENDING) {
+      if (results) {
+	results[idx] = value;
+      }
+
+      if (!started) {
+	// Not started yet, so we don't know if all dependencies
+	// have been added yet, or if the limits or fold function
+	// are to be set.
+	//
+	// start() will call us again when it is called.
+	destruct(key);
+	return;
+      }
+
+      [int num_successes, int num_failures] =
+	predef::map(dependency_results, sizeof);
+      accumulator = result;
+      destruct(key);
+
+      // Note: Use try_{failure,success}() from this point forward,
+      //       as we may race with a different thread.
+
+      if (max_failure_threshold >= 0) {
+	if (num_failures > max_failure_threshold) {
+	  // Too many failures.
+	  value = values(dependency_results[1])[0];
+	  try_failure(value);
+	  return;
+	}
+      }
+
+      if ((num_successes + min_failure_threshold) > num_dependencies) {
+	// Too many successes.
+	// NB: num_failures in this case may very well be 0.
+	try_failure(value);
+	return;
+      }
+
+      if ((num_successes + num_failures) < num_dependencies) {
+	// More results needed.
+	return;
+      }
+
+      // All results have been received.
+      if (num_failures < min_failure_threshold) {
+	// Too few failures.
+	// FIXME: Can this actually be reached?
+	// FIXME: What is a suitable failure value?
+	try_failure(value);
+	return;
+      }
+
+      if (fold_fun) {
+        foreach(values(dependency_results[0]), ValueType val) {
+	  // NB: The fold_fun may get called multiple times for
+	  //     the same set of results. This is fine though,
+	  //     as we retrieved the initial value for the
+	  //     accumulator while we still held the lock.
+	  mixed err = catch {
+	      accumulator = fold_fun(accumulator, val, @extra_fold_args);
+	    };
+	  if (err) {
+	    // Broken folding function, or the folding function
+	    // wants to convert the success into a failure.
+	    try_failure(err);
+	    return;
+	  }
+	}
+	try_success(accumulator);
+      } else {
+	// Convert the dependency_results[0] mapping into an array.
+	//
+	// NB: first_completed() (which sets num_dependencies to 1)
+	//     also sets fold_fun, so num_dependencies will be
+	//     correct here.
+	try_success(predef::map(indices(allocate(num_dependencies)),
+				dependency_results[0]));
+      }
+    }
+  }
+
+  //! Start the aggregation of values from dependencies.
+  //!
+  //! @note
+  //!   This function is called from several functions. These
+  //!   include @[on_success()], @[on_failure()], @[wait()],
+  //!   @[get()], @[fold()] and @[first_completed()].
+  //!
+  //! @note
+  //!   After this function has been called, several functions
+  //!   may no longer be called. These include @[depend()],
+  //!   @[fold()], @[first_completed()], @[max_failures()],
+  //!   @[min_failures()], @[any_results()].
+  protected void start()
+  {
+    if (!started) {
+      started = 1;
+
+      // Check if the results are already present (in the
+      // aggregate results case).
+      aggregate_cb(UNDEFINED, UNDEFINED, UNDEFINED);
+    }
+  }
+
+  Future(<array(ValueType)>) on_success(function(mixed, __unknown__ ... : void) cb, mixed ... extra)
+  {
+    start();
+    return ::on_success(cb, @extra);
+  }
+
+  Future(<array(ValueType)>) on_failure(function(mixed, __unknown__ ... : void) cb, mixed ... extra)
+  {
+    start();
+    return ::on_failure(cb, @extra);
+  }
+
+  Future(<array(ValueType)>) wait()
+  {
+    start();
+    return ::wait();
+  }
+
+  array(ValueType) get()
+  {
+    start();
+    return ::get();
   }
 
   //! Add futures to the list of futures which the current object depends upon.
@@ -888,21 +1243,27 @@ class Promise
   //! @seealso
   //!   @[fold()], @[first_completed()], @[max_failures()], @[min_failures()],
   //!   @[any_results()], @[Concurrent.results()], @[Concurrent.all()]
-  this_program depend(array(Future) futures)
+  this_program(<ValueType>) depend(array(Future) futures)
   {
+    if (started) {
+      error("Sequencing error. Not possible to add more dependencies.\n");
+    }
     if (sizeof(futures)) {
-      fill_astate();
-      _astate->results += futures;
+      foreach(futures, Future f) {
+	int idx = num_dependencies++;
+	f->on_failure(aggregate_cb, idx, dependency_results[1])->
+	  on_success(aggregate_cb, idx, dependency_results[0]);
+      }
     }
     return this_program::this;
   }
-  inline variant this_program depend(Future ... futures)
+  inline variant this_program(<ValueType>) depend(Future ... futures)
   {
     return depend(futures);
   }
-  variant this_program depend()
+  variant Promise(<ValueType>) depend()
   {
-    Promise p = Promise();
+    Promise(<ValueType>) p = promise_factory();
     depend(p->future());
     return p;
   }
@@ -933,17 +1294,17 @@ class Promise
   //!
   //! @seealso
   //!   @[depend()], @[Concurrent.fold()]
-  this_program fold(mixed initial,
-	            function(mixed, mixed, mixed ... : mixed) fun,
-	            mixed ... extra)
+  this_program(<ValueType>) fold(mixed initial,
+                                 function(mixed, mixed, __unknown__ ... : mixed) fun,
+                                 mixed ... extra)
   {
-    if (_astate) {
-      _astate->accumulator = initial;
-      _astate->fold_fun = fun;
-      _astate->extra = extra;
-      _astate->materialise();
-    } else
-      success(initial);
+    if (started) {
+      error("Sequencing error. Not possible to add a folding function.\n");
+    }
+    result = initial;
+    extra_fold_args = extra;
+    fold_fun = fun;
+    start();
     return this_program::this;
   }
 
@@ -955,13 +1316,16 @@ class Promise
   //!
   //! @seealso
   //!   @[depend()], @[Concurrent.first_completed()]
-  this_program first_completed()
+  this_program(<ValueType>) first_completed()
   {
-    if (_astate) {
-      _astate->results->on_failure(try_failure)->on_success(try_success);
-      _astate = 0;
-    } else
-      success(0);
+    if (started) {
+      error("Sequencing error. Not possible to switch to first completed.\n");
+    }
+    extra_fold_args = ({});
+    fold_fun = lambda(mixed a, mixed b, mixed ...) { return b; };
+    num_dependencies = 1;
+    start();
+
     return this_program::this;
   }
 
@@ -978,10 +1342,12 @@ class Promise
   //!
   //! @seealso
   //!   @[depend()], @[min_failures()], @[any_results()]
-  this_program max_failures(int(-1..) max)
+  this_program(<ValueType>) max_failures(int(-1..) max)
   {
-    fill_astate();
-    _astate->max_failures = max;
+    if (started) {
+      error("Sequencing error. Not possible to set max failure threshold.\n");
+    }
+    max_failure_threshold  = max;
     return this_program::this;
   }
 
@@ -995,10 +1361,12 @@ class Promise
   //!
   //! @seealso
   //!   @[depend()], @[max_failures()]
-  this_program min_failures(int(0..) min)
+  this_program(<ValueType>) min_failures(int(0..) min)
   {
-    fill_astate();
-    _astate->min_failures = min;
+    if (started) {
+      error("Sequencing error. Not possible to set min failure threshold.\n");
+    }
+    min_failure_threshold = min;
     return this_program::this;
   }
 
@@ -1011,15 +1379,9 @@ class Promise
   //!
   //! @seealso
   //!   @[depend()], @[max_failures()]
-  this_program any_results()
+  this_program(<ValueType>) any_results()
   {
     return max_failures(-1);
-  }
-
-  protected void _destruct()
-  {
-    if (!state)
-      try_failure(({ "Promise broken.\n", backtrace() }));
   }
 }
 
@@ -1027,11 +1389,15 @@ class Promise
 //! A @[Future] that represents the first
 //! of the @expr{futures@} that completes.
 //!
+//! @note
+//!   The returned @[Future] does NOT have any state (eg backend)
+//!   propagated from the @[futures]. This must be done by hand.
+//!
 //! @seealso
 //!   @[race()], @[Promise.first_completed()]
 variant Future first_completed(array(Future) futures)
 {
-  return Promise()->depend(futures)->first_completed()->future();
+  return AggregatedPromise()->depend(futures)->first_completed()->future();
 }
 variant inline Future first_completed(Future ... futures)
 {
@@ -1039,6 +1405,10 @@ variant inline Future first_completed(Future ... futures)
 }
 
 //! JavaScript Promise API equivalent of @[first_completed()].
+//!
+//! @note
+//!   The returned @[Future] does NOT have any state (eg backend)
+//!   propagated from the @[futures]. This must be done by hand.
 //!
 //! @seealso
 //!   @[first_completed()], @[Promise.first_completed()]
@@ -1055,6 +1425,10 @@ variant inline Future race(Future ... futures)
 //! @returns
 //! A @[Future] that represents the array of all the completed @expr{futures@}.
 //!
+//! @note
+//!   The returned @[Future] does NOT have any state (eg backend)
+//!   propagated from the @[futures]. This must be done by hand.
+//!
 //! @seealso
 //!   @[all()], @[Promise.depend()]
 variant Future results(array(Future) futures)
@@ -1062,7 +1436,7 @@ variant Future results(array(Future) futures)
   if(!sizeof(futures))
     return resolve(({}));
 
-  return Promise()->depend(futures)->future();
+  return AggregatedPromise()->depend(futures)->future();
 }
 inline variant Future results(Future ... futures)
 {
@@ -1070,6 +1444,10 @@ inline variant Future results(Future ... futures)
 }
 
 //! JavaScript Promise API equivalent of @[results()].
+//!
+//! @note
+//!   The returned @[Future] does NOT have any state (eg backend)
+//!   propagated from the @[futures]. This must be done by hand.
 //!
 //! @seealso
 //!   @[results()], @[Promise.depend()]
@@ -1085,6 +1463,9 @@ inline variant Future all(Future ... futures)
 
 //! @returns
 //! A new @[Future] that has already failed for the specified @expr{reason@}.
+//!
+//! @note
+//!   The returned @[Future] does NOT have a backend set.
 //!
 //! @seealso
 //!   @[Future.on_failure()], @[Promise.failure()]
@@ -1102,6 +1483,9 @@ Future reject(mixed reason)
 //! @note
 //! This function can be used to ensure values are futures.
 //!
+//! @note
+//!   The returned @[Future] does NOT have a backend set.
+//!
 //! @seealso
 //!   @[Future.on_success()], @[Promise.success()]
 //!   @url{https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/Promise@}
@@ -1114,11 +1498,70 @@ Future resolve(mixed value)
 
 //! Return a @[Future] that represents the array of mapping @[fun]
 //! over the results of the completed @[futures].
+//!
+//! @note
+//!   The returned @[Future] does NOT have any state (eg backend)
+//!   propagated from the @[futures]. This must be done by hand.
+//!
+//! @seealso
+//!   @[serialize()]
 Future traverse(array(Future) futures,
-		function(mixed, mixed ... : mixed) fun,
+		function(mixed, __unknown__ ... : mixed) fun,
 		mixed ... extra)
 {
   return results(futures->map(fun, @extra));
+}
+
+//! Return a @[Future] that represents the array of mapping @[fun]
+//! sequentially over the results of the completed @[futures].
+//!
+//! This function differs from @[traverse()] in that only one call
+//! of @[fun] will be active at a time. This is useful when each
+//! call of @[fun] uses lots of resources, but may increase latency.
+//!
+//! If @[fun()] fails for one of the items, it will not be called
+//! for any others.
+//!
+//! @note
+//!   The returned @[Future] does NOT have any state (eg backend)
+//!   propagated from the @[futures]. This must be done by hand.
+//!
+//! @seealso
+//!   @[traverse()]
+Future serialize(array(Future) futures,
+                 function(mixed, __unknown__ ... : mixed) fun,
+                 mixed ... extra)
+{
+  array(Promise) promises = allocate(sizeof(futures), Promise)();
+
+  if (!sizeof(promises)) {
+    return resolve(({}));
+  }
+
+  void do_one(mixed val, int idx, array(Future) futures,
+              array(Promise) promises,
+              function(mixed, __unknown__ ... : mixed) fun,
+              array(mixed) extra)
+  {
+    if (idx > -1) {
+      promises[idx]->success(val);
+    }
+    idx++;
+    if (idx < sizeof(futures)) {
+      Future f = futures[idx];
+      f = f->map(fun, @extra);
+      f->on_success(do_one, idx, futures, promises, fun, extra);
+      f->on_failure(lambda(mixed err, int idx, array(Promise) promises) {
+                      while(idx < sizeof(promises)) {
+                        promises[idx++]->failure(err);
+                      }
+                    }, idx, promises);
+    }
+  }
+
+  do_one(UNDEFINED, -1, futures, promises, fun, extra);
+
+  return results(promises->future());
 }
 
 //! Return a @[Future] that represents the accumulated results of
@@ -1140,10 +1583,14 @@ Future traverse(array(Future) futures,
 //!   once for every @[Future] in @[futures], unless one of
 //!   calls fails in which case no further calls will be
 //!   performed.
+//!
+//! @note
+//!   The returned @[Future] does NOT have any state (eg backend)
+//!   propagated from the @[futures]. This must be done by hand.
 Future fold(array(Future) futures,
 	    mixed initial,
-	    function(mixed, mixed, mixed ... : mixed) fun,
+	    function(mixed, mixed, __unknown__ ... : mixed) fun,
 	    mixed ... extra)
 {
-  return Promise()->depend(futures)->fold(initial, fun, extra)->future();
+  return AggregatedPromise()->depend(futures)->fold(initial, fun, extra)->future();
 }

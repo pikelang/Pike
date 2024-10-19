@@ -357,8 +357,8 @@ protected int crc24(string data) {
 
 //! Encode PGP data with ASCII armour.
 string encode_radix64(string data, string type,
-		      void|mapping(string:string) extra) {
-  if(!extra) extra = ([]);
+		      mapping(string:string) extra = ([]))
+{
   if(!extra->Version)
     extra->Version = "Pike " + __REAL_MAJOR__ + "." +
       __REAL_MINOR__ + "." + __REAL_BUILD__;

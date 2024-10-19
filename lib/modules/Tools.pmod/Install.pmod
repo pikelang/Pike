@@ -60,9 +60,10 @@ array(string) features()
 #endif
 
   foreach(({ "Nettle", "Crypto.AES.GCM", "Crypto.ECC.Curve", "Dbm", "DVB",
-             "_Ffmpeg", "GL", "GLUT", "Gdbm",
+             "_Ffmpeg", "GL", "GLUT", "Gdbm", "Crypto.ECC.Curve25519",
 	     "Gmp", "Gz", "_Image_FreeType", "_Image_GIF", "_Image_JPEG",
              "_Image_TIFF", "_Image_TTF", "_Image_XFace", "Image.PNG",
+             "_Image_WebP",
 	     "Java.machine", "Mird", "Msql", "Mysql", "Odbc", "Oracle",
 	     "PDF.PDFlib", "Perl",
              "Postgres", "SANE", "SDL", "Ssleay", "Yp", "sybase", "_WhiteFish",
@@ -204,8 +205,8 @@ class ProgressBar
   //! How much progress has been made so far
   //! @param max
   //! The amount of progress signifying 100% done. Must be greater than zero.
-  void create(string _name, int _cur, int _max,
-	      float|void _phase_base, float|void _phase_size)
+  protected void create(string _name, int _cur, int _max,
+			float|void _phase_base, float|void _phase_size)
   {
     name = _name;
     max = _max;
@@ -334,7 +335,7 @@ class Readline
     cwd = _cwd;
   }
 
-  void create(mixed ... args)
+  protected void create(mixed ... args)
   {
     signal(signum("SIGINT"), trap_signal);
     ::create(@args);

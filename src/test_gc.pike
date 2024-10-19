@@ -53,7 +53,7 @@ array(int) a() {
 
   add_constant ("B_live", compile_string ("# " + __LINE__ + #"\n
       inherit B_dead;
-      void _destruct() {
+      protected void _destruct() {
 	destructing (id);
 	//write (\"destruct %s\\n\", id);
 	check_live (([]));

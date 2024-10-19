@@ -12,7 +12,7 @@
 
 #ifdef PIKE_DEBUG
       if (fun < 0)
-	Pike_fatal ("Invalid function offset: %d.\n", fun);
+        Pike_fatal ("Invalid function offset: %td.\n", fun);
 #endif
       check_stack(256);
       check_mark_stack(256);
@@ -41,10 +41,6 @@
       if(!p)
 	PIKE_ERROR("destructed object->function",
 	      "Cannot call functions in destructed objects.\n", Pike_sp, args);
-
-      if(!(p->flags & PROGRAM_PASS_1_DONE) || (p->flags & PROGRAM_AVOID_CHECK))
-	PIKE_ERROR("__empty_program() -> function",
-	      "Cannot call functions in unfinished objects.\n", Pike_sp, args);
 
 #ifdef PIKE_DEBUG
       if(fun>=(int)p->num_identifier_references)
@@ -89,10 +85,19 @@
       new_frame->next = Pike_fp;
       new_frame->current_object = o;
       new_frame->current_program = p;
-      new_frame->context = p->inherits + ref->inherit_offset;
+      new_frame->context = INHERIT_FROM_PTR(p, ref);
 
-      function = new_frame->context->prog->identifiers + ref->identifier_offset;
+      function = ID_FROM_PTR(p, ref);
       new_frame->fun = (unsigned INT16)fun;
+
+      if(!(p->flags & (PROGRAM_PASS_1_DONE|PROGRAM_AVOID_CHECK)) &&
+         ((function->identifier_flags &
+           (IDENTIFIER_TYPE_MASK|IDENTIFIER_ALIAS)) != IDENTIFIER_CONSTANT)) {
+        free_pike_frame(new_frame);
+
+        PIKE_ERROR("__empty_program() -> function",
+                   "Cannot call functions in unfinished objects.\n", Pike_sp, args);
+      }
 
 
 #ifdef PIKE_DEBUG
@@ -123,12 +128,39 @@
       new_frame->args = args;
       new_frame->pc = 0;
       new_frame->scope=scope;
-#ifdef PIKE_DEBUG
-      if(scope && new_frame->fun == scope->fun)
-      {
-	Pike_fatal("Que? A function cannot be parented by itself!\n");
+
+      if(scope && (scope->current_object == o) &&
+         (new_frame->fun == scope->fun)) {
+	/* Continuing a previous function call. */
+
+	/* Generators have two (optional) arguments:
+	 *
+	 *   * A resumption value.
+	 *
+	 *   * A resumption callback function.
+	 */
+	if (args < 2) {
+	  if (!args) push_undefined();
+	  push_undefined();
+        } else if (UNLIKELY(args > 2)) {
+	  pop_n_elems(args-2);
+	}
+
+	/* Switch to the shared locals. */
+	new_frame->locals = scope->locals;
+        if (!(scope->flags & PIKE_FRAME_MALLOCED_LOCALS)) {
+          Pike_fatal("Generator scope not initialized yet.\n");
+        }
+	add_ref(scope->locals[-1].u.array);
+	new_frame->flags |= PIKE_FRAME_MALLOCED_LOCALS;
+	new_frame->args = scope->args;
+        new_frame->num_locals = scope->locals[-1].u.array->size;
+	args = scope->num_args;
+
+	/* Switch to the parent scope. */
+	new_frame->scope = scope->scope;
       }
-#endif
+
       frame_set_save_sp(new_frame, save_sp);
 
       add_ref(new_frame->current_object);
@@ -137,7 +169,9 @@
 #ifdef PIKE_DEBUG
       if (Pike_fp) {
 
-	if (new_frame->locals < Pike_fp->locals) {
+        if (!((new_frame->flags|Pike_fp->flags) &
+              PIKE_FRAME_MALLOCED_LOCALS) &&
+	    new_frame->locals < Pike_fp->locals) {
           Pike_fatal("New locals below old locals: %p < %p\n",
                      new_frame->locals, Pike_fp->locals);
 	}
@@ -145,7 +179,7 @@
 	if (d_flag > 1) {
 	  /* Liberal use of variables for debugger convenience. */
 	  size_t i;
-	  struct svalue *l = Pike_fp->locals;
+	  struct svalue *l = frame_get_save_sp(Pike_fp);
 	  for (i = 0; l + i < Pike_sp; i++)
 	    if (TYPEOF(l[i]) != PIKE_T_FREE)
 	      debug_check_svalue (l + i);
@@ -179,10 +213,18 @@
       function->recur_depth++;
 #endif
 
-      if(function->func.offset == -1) {
+      if(
+#ifdef USE_VALGRIND
+         function->identifier_flags & IDENTIFIER_PIKE_FUNCTION &&
+#endif
+         function->func.offset == -1) {
 	new_frame->num_args = args;
 	generic_error(NULL, Pike_sp, args,
-		      "Calling undefined function.\n");
+                      "Calling undefined function %pS%s%pS().\n",
+		      (ref->inherit_offset && new_frame->context->name)?
+		      new_frame->context->name : empty_pike_string,
+		      ref->inherit_offset? "::" : "",
+		      function->name);
       }
 
       switch(function->identifier_flags & (IDENTIFIER_TYPE_MASK|IDENTIFIER_ALIAS))
@@ -192,7 +234,6 @@
 	Pike_fp->num_args=args;
 	new_frame->current_storage = o->storage+new_frame->context->storage_offset;
 	new_frame->num_locals=args;
-	FAST_CHECK_THREADS_ON_CALL();
 	(*function->func.c_fun)(args);
 	break;
 
@@ -204,7 +245,6 @@
 	if(TYPEOF(*s) == T_PROGRAM)
 	{
 	  struct object *tmp;
-	  FAST_CHECK_THREADS_ON_CALL();
 	  Pike_fp->num_args=args;
 	  tmp=parent_clone_object(s->u.program,
 				  o,
@@ -264,10 +304,7 @@
 
       case IDENTIFIER_PIKE_FUNCTION:
       {
-	int num_args;
-	int num_locals;
 	PIKE_OPCODE_T *pc;
-	FAST_CHECK_THREADS_ON_CALL();
 
 #ifdef PIKE_DEBUG
 	if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_FREE)

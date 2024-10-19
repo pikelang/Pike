@@ -29,6 +29,10 @@ extern "C" {
   void vcdiff_free_encoder (const void* vcencoder);
   void vcdiff_free_decoder (const void* vcdecoder);
 
+  int vcdiff_decoder_set_max_window_size(const void *vcdecoder,
+                                         size_t new_size);
+  int vcdiff_decoder_set_max_file_size(const void *vcdecoder,
+                                       size_t new_size);
 
 #ifdef __cplusplus
 }

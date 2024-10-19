@@ -23,8 +23,9 @@ int cutoff;
 //!   Defaults to @expr{({ 17, 0, 147 }) + allocate(62)@}.
 //! @param db
 //!   Only needed if @[field_ranking] is provided as a mapping.
-void create(void|int _cutoff, void|array(int) _proximity_ranking,
-            void|Search.Database.Base db, void|array(int)|mapping(string:int) _field_ranking)
+protected void create(void|int _cutoff, void|array(int) _proximity_ranking,
+		      void|Search.Database.Base db,
+		      void|array(int)|mapping(string:int) _field_ranking)
 {
   field_ranking=allocate(65);
 

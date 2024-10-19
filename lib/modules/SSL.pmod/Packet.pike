@@ -6,17 +6,16 @@ import .Constants;
 
 int content_type;
 ProtocolVersion protocol_version;
-string(8bit) fragment;  /* At most 2^14 */
+string(8bit) fragment = "";  /* At most 2^14 */
+
+int seq_num = UNDEFINED;
 
 constant HEADER_SIZE = 5;
 
-private string buffer = "";
-private int needed_chars = HEADER_SIZE;
-
-// The fragment max size is 2^14 (RFC 5246 6.2.1). Compressed
-// fragments are however allowed to be 1024 bytes over (6.2.2), and
-// Ciphertexts 2048 bytes (6.2.3). State the additional headroom in
-// this variable.
+//! The fragment max size is 2^14 (RFC 5246 6.2.1). Compressed
+//! fragments are however allowed to be 1024 bytes over (6.2.2), and
+//! Ciphertexts 2048 bytes (6.2.3). State the additional headroom in
+//! this variable.
 protected int marginal_size;
 
 /* Circular dependence */
@@ -45,7 +44,7 @@ protected variant void create(ProtocolVersion version,
   this::fragment = fragment;
 }
 
-protected object check_size(string data, int extra)
+protected object|zero check_size(string data, int extra)
 {
   if (sizeof(data) > (PACKET_MAX_SIZE + extra))
     return Alert(ALERT_fatal, ALERT_record_overflow, version);
@@ -107,8 +106,14 @@ int(-1..1) recv(Stdio.Buffer data)
     return 0;
   }
 
+  seq_num = UNDEFINED;
   fragment = data->read(length);
   return 1;
+}
+
+protected string(8bit) format_payload()
+{
+  return fragment;
 }
 
 //! Serialize the packet for sending.
@@ -122,13 +127,14 @@ void send(Stdio.Buffer output)
 
   output->add_int8(content_type);
   output->add_int16(protocol_version);
-  output->add_hstring(fragment, 2);
+  output->add_hstring(format_payload(), 2);
 }
 
 protected string _sprintf(int t)
 {
   if(t!='O') return UNDEFINED;
-  if(!fragment) return sprintf("SSL.Packet(unfinished)");
+  if(fragment == "") return sprintf("SSL.Packet(empty)");
   string type = fmt_constant(content_type, "PACKET")[7..];
-  return sprintf("SSL.Packet(%s)", type);
+  return sprintf("SSL.Packet(#%d, %s, %d bytes)",
+		 seq_num, type, fragment && sizeof(fragment));
 }

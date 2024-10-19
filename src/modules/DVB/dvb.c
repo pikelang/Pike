@@ -31,7 +31,13 @@
 #include <sys/ioctl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+
+#ifdef HAVE_POLL_H
+#include <poll.h>
+#elif defined(HAVE_SYS_POLL_H)
 #include <sys/poll.h>
+#endif /* HAVE_POLL_H || HAVE_SYS_POLL_H */
+
 #include <fcntl.h>
 #include <time.h>
 #include <unistd.h>
@@ -597,7 +603,7 @@ static void f_zap(INT32 args) {
   close (secfd);
 
   if(!result)
-    Pike_error(dvb->low_errmsg);
+    Pike_error("%s", dvb->low_errmsg);
 
   push_int(result);
 }
@@ -814,7 +820,7 @@ static int read_t(int fd,unsigned char *buffer,int length,int cks)
 static void f_parse_pat(INT32 args) {
 
   unsigned char buffer[4096];
-  int length,index;
+  unsigned int length, index;
   int n;
 
   int fd;
@@ -848,7 +854,8 @@ static void f_parse_pat(INT32 args) {
   }
 
   length = ((buffer[2] & 0x0F) << 8) | buffer[3];
-  for (index=9; index<length-4 && index<184; index +=4)
+  if (length > 188) length = 188;	/* 184 + 4 == 188 */
+  for (index = 9; index + 4 < length; index += 4)
   {
     p = (buffer[index] << 8) | buffer[index+1];
     push_int(p);
@@ -1026,7 +1033,7 @@ static void f_parse_pmt(INT32 args)
   StopFilt(dmx);
   close(dmx);
 
-  if (pnr != program_number)
+  if ((pnr != program_number) || (((int)length) > n) || (length < 13))
   {
 /* fprintf(stderr, "Can't find PMT entry\n"); */
     push_int(0);
@@ -1036,6 +1043,12 @@ static void f_parse_pmt(INT32 args)
   index = 11;
   info_len = ((buffer[index] & 0x0F) << 8) + buffer[index+1];
   index += 2;
+
+  if (index + info_len > length) {
+/* fprintf(stderr, "Invalid PMT info length.\n"); */
+    push_int(0);
+    return;
+  }
 
   while (info_len > 0)
   {
@@ -1223,15 +1236,15 @@ static void f__sprintf(INT32 args) {
  *! Represents an elementary data stream (PES).
  */
 
-/*  @decl int set_buffer(int len)
- *
- *  Sets stream's internal buffer.
- *
- *  @note
- *    The size is 4096 by default.
- *
- *  @seealso
- *    @[read()]
+/*! @decl int set_buffer(int len)
+ *!
+ *! Sets stream's internal buffer.
+ *!
+ *! @note
+ *!   The size is 4096 by default.
+ *!
+ *! @seealso
+ *!   @[read()]
  */
 static void f_stream_set_buffer(INT32 args) {
 
@@ -1503,8 +1516,8 @@ static void f_audio_create(INT32 args) {
  *!
  *! Mute or unmute audio device.
  *!
- *| @seealso
- *|   @[mixer()]
+ *! @seealso
+ *!   @[mixer()]
  */
 static void f_audio_mute(INT32 args) {
 
@@ -1623,8 +1636,8 @@ static void f_audio_ctrl(INT32 args) {
  *!
  *! Sets output level on DVB audio device.
  *!
- *| @seealso
- *|   @[mute()]
+ *! @seealso
+ *!   @[mute()]
  */
 static void f_audio_mixer(INT32 args) {
 

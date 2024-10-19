@@ -11,6 +11,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include "pike_rusage.h"
+#include "pike_threadlib.h"
 
 #ifdef HAVE_SYS_TIMES_H
 #include <sys/times.h>
@@ -45,6 +46,10 @@
 #endif
 
 #include "pike_error.h"
+
+#ifdef __amigaos__
+#undef HAVE_TIMES
+#endif
 
 /*
  * Here comes a long blob with stuff to see how to find out about
@@ -134,96 +139,6 @@ PMOD_EXPORT int pike_get_rusage(pike_rusage_t rusage_values)
 }
 
 #else /* __NT__ */
-#ifdef GETRUSAGE_THROUGH_PROCFS
-#include <sys/procfs.h>
-
-static inline long get_time_int(timestruc_t * val)
-{
-  return val->tv_sec * 1000L + val->tv_nsec / 1000000;
-}
-
-static int proc_fd = -1;
-
-static int open_proc_fd()
-{
-  do {
-    char proc_name[30];
-    sprintf(proc_name, "/proc/%05ld", (long)getpid());
-    proc_fd = open(proc_name, O_RDONLY);
-    if(proc_fd >= 0) break;
-    if(errno != EINTR) return 0;
-  } while(proc_fd < 0);
-
-#ifndef CONFIGURE_TEST
-  set_close_on_exec(proc_fd, 1);
-#endif
-
-  return 1;
-}
-
-PMOD_EXPORT int pike_get_rusage(pike_rusage_t rusage_values)
-{
-  prusage_t  pru;
-#ifdef GETRUSAGE_THROUGH_PROCFS_PRS
-  prstatus_t prs;
-#endif
-  memset(rusage_values, 0, sizeof(pike_rusage_t));
-
-  if (proc_fd < 0 && !open_proc_fd()) return 0;
-  while(ioctl(proc_fd, PIOCUSAGE, &pru) < 0)
-  {
-    if(errno == EINTR)
-      continue;
-
-    return 0;
-  }
-
-#ifdef GETRUSAGE_THROUGH_PROCFS_PRS
-  while(ioctl(proc_fd, PIOCSTATUS, &prs) < 0)
-  {
-    if(errno == EINTR)
-      continue;
-
-    return 0;
-  }
-#endif
-
-  rusage_values[0] = get_time_int(&pru.pr_utime);  /* user time */
-  rusage_values[1] = get_time_int(&pru.pr_stime);  /* system time */
-  rusage_values[2] = 0;                           /* maxrss */
-  rusage_values[3] = 0;                           /* ixrss */
-  rusage_values[4] = 0;                           /* idrss */
-  rusage_values[5] = 0;                           /* isrss */
-  rusage_values[6] = pru.pr_minf;           /* minor pagefaults */
-  rusage_values[7] = pru.pr_majf;           /* major pagefaults */
-  rusage_values[8] = pru.pr_nswap;          /* swaps */
-  rusage_values[9] = pru.pr_inblk;          /* block input op. */
-  rusage_values[10] = pru.pr_oublk;         /* block outout op. */
-  rusage_values[11] = pru.pr_msnd;          /* messages sent */
-  rusage_values[12] = pru.pr_mrcv;          /* messages received */
-  rusage_values[13] = pru.pr_sigs;          /* signals received */
-  rusage_values[14] = pru.pr_vctx;          /* voluntary context switches */
-  rusage_values[15] = pru.pr_ictx;          /* involuntary  "        " */
-  rusage_values[16] = pru.pr_sysc;          /* system calls */
-  rusage_values[17] = pru.pr_ioch;          /* chars read and written */
-  rusage_values[18] = get_time_int(&pru.pr_rtime); /* total lwp real (elapsed) time */
-  rusage_values[19] = get_time_int(&pru.pr_ttime); /* other system trap CPU time */
-  rusage_values[20] = get_time_int(&pru.pr_tftime); /* text page fault sleep time */
-  rusage_values[21] = get_time_int(&pru.pr_dftime); /* data page fault sleep time */
-  rusage_values[22] = get_time_int(&pru.pr_kftime); /* kernel page fault sleep time */
-  rusage_values[23] = get_time_int(&pru.pr_ltime); /* user lock wait sleep time */
-  rusage_values[24] = get_time_int(&pru.pr_slptime); /* all other sleep time */
-  rusage_values[25] = get_time_int(&pru.pr_wtime); /* wait-cpu (latency) time */
-  rusage_values[26] = get_time_int(&pru.pr_stoptime); /* stopped time */
-#ifdef GETRUSAGE_THROUGH_PROCFS_PRS
-  rusage_values[27] = prs.pr_brksize;
-  rusage_values[28] = prs.pr_stksize;
-#endif
-
-  return 1;
-}
-
-#else /* GETRUSAGE_THROUGH_PROCFS */
 #ifdef HAVE_GETRUSAGE
 #include <sys/resource.h>
 #ifdef HAVE_SYS_RUSAGE
@@ -243,9 +158,14 @@ PMOD_EXPORT int pike_get_rusage(pike_rusage_t rusage_values)
   stime = rus.ru_stime.tv_sec * 1000L + rus.ru_stime.tv_usec / 1000;
 
 #ifndef GETRUSAGE_RESTRICTED
+  /* ru_maxrss on Linux and most BSDs is in KB. */
   maxrss = rus.ru_maxrss;
 #ifdef sun
+  /* ru_maxrss on Solaris is in pages. */
   maxrss *= getpagesize() / 1024;
+#elif defined(__APPLE__) && defined(__MACH__)
+  /* ru_maxrss on MacOS X is in bytes. */
+  maxrss /= 1024;
 #endif
 #endif
   rusage_values[0] = utime;
@@ -313,7 +233,6 @@ PMOD_EXPORT int pike_get_rusage(pike_rusage_t rusage_values)
 
 #endif /* HAVE_TIMES */
 #endif /* HAVE_GETRUSAGE */
-#endif /* GETRUSAGE_THROUGH_PROCFS */
 #endif /* __NT__ */
 
 /*
@@ -393,6 +312,9 @@ PMOD_EXPORT cpu_time_t posix_process_gct_res (void)
 
 #endif
 
+#if defined(GCT_RUNTIME_CHOICE) &&	   \
+  (defined(MIGHT_HAVE_POSIX_THREAD_GCT) || \
+   defined(MIGHT_HAVE_POSIX_PROCESS_GCT))
 /* From Linux man page clock_gettime(3), dated 2003-08-24:
  *
  * NOTE for SMP systems
@@ -418,6 +340,7 @@ static int posix_cputime_is_reliable (void)
 }
 #else
 #define posix_cputime_is_reliable() 1
+#endif
 #endif
 
 #if defined (MIGHT_HAVE_POSIX_MONOTONIC_GRT) &&				\
@@ -578,31 +501,7 @@ PMOD_EXPORT cpu_time_t fallback_grt (void)
 #else  /* !__NT__ && !HAVE_WORKING_GETHRVTIME */
 
 #ifdef DEFINE_FALLBACK_GCT
-#ifdef GETRUSAGE_THROUGH_PROCFS
-
-PMOD_EXPORT const char fallback_gct_impl[] = "/proc/";
-
-PMOD_EXPORT cpu_time_t fallback_gct (void)
-{
-  prstatus_t  prs;
-
-  if (proc_fd < 0 && !open_proc_fd()) return (cpu_time_t) -1;
-  while(ioctl(proc_fd, PIOCSTATUS, &prs) < 0)
-  {
-    if(errno == EINTR)
-      continue;
-
-    return (cpu_time_t) -1;
-  }
-
-  return
-    prs.pr_utime.tv_sec * CPU_TIME_TICKS +
-    NSEC_TO_CPU_TIME_T (prs.pr_utime.tv_nsec) +
-    prs.pr_stime.tv_sec * CPU_TIME_TICKS +
-    NSEC_TO_CPU_TIME_T (prs.pr_stime.tv_nsec);
-}
-
-#elif defined (HAVE_THREAD_INFO)
+#ifdef HAVE_THREAD_INFO
 
 /* Mach */
 
@@ -943,6 +842,9 @@ void init_rusage (void)
 
   {
 #ifdef HAVE_HOST_GET_CLOCK_SERVICE
+#ifdef _REENTRANT
+    th_atfork(NULL, NULL, init_mach_clock);
+#endif
     init_mach_clock();
 #elif defined (MIGHT_HAVE_POSIX_REALTIME_GRT)
     /* Always exists according to POSIX - no need to check with sysconf. */

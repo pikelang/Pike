@@ -1,4 +1,4 @@
-PIKE 8.1 ANNOUNCEMENT
+PIKE 9.0 ANNOUNCEMENT
 
 Pike is an interpreted, object-oriented programming language with a
 syntax reminiscent of C and Java, and freely available and distributable
@@ -16,7 +16,7 @@ Some Pike highlights:
     + Freely distributable under GPL, LGPL and MPL
     + Interpreted - no compilation and linking needed to run code
     + Object Oriented - straightforward and powerful object
-	  orientation, including multiple inheritance
+      orientation, including multiple inheritance
     + Modular - extendible with modules written in C or Pike
     + Powerful - high-level language, concise code
     + Source Code Available - promoting sharing of useful code
@@ -25,7 +25,7 @@ Some Pike highlights:
     + Powerful, Flexible and Efficient Data Types
     + Automatic Memory Management
     + Scalable - as useful for small scripts as for powerful and
-	  complex applications.
+      complex applications.
     + Text Processing - e.g. for filtering
     + Exception Handling
     + Multi-Threaded Application Development Possible
@@ -35,11 +35,11 @@ The standard Pike distribution comes with a number of modules for
 various useful purposes. Among these are:
 
     + Image processing with support for several graphic file
-          formats (such as JPEG, GIF, PNG, Photoshop and Gimp), and
-          numerous image manipulation functions
+      formats (such as JPEG, GIF, PNG, Photoshop and Gimp), and
+      numerous image manipulation functions
     + Cryptographic functions, including SSL/TLS support
     + Database interface to several common SQL databases,
-          including MySQL, ODBC and Oracle
+      including MySQL, ODBC and Oracle
     + Embedding interfaces for Java and Perl
 
 Some other modules include support for OpenGL, Gz, Gdbm, GTK, XML,

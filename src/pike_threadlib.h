@@ -80,6 +80,12 @@
 #ifdef USE_DARWIN_THREADS_WITHOUT_MACH
 /* OSX Threads don't get along with mach headers! */
 #else
+#ifdef HAVE_MACH_PORT_H
+#include <mach/port.h>
+#endif
+#ifdef HAVE_MACH_MESSAGE_H
+#include <mach/message.h>
+#endif
 #ifdef HAVE_MACH_TASK_INFO_H
 #include <mach/task_info.h>
 #endif
@@ -668,6 +674,9 @@ PMOD_EXPORT void pike_threads_disallow_ext (struct thread_state *ts
 
 #ifndef PIKE_THREADS
 
+#define THREAD_T	void *
+#define THREAD_T_IS_POINTER
+
 #define th_atfork(X,Y,Z)
 #define th_atfork_prepare()
 #define th_atfork_parent()
@@ -743,5 +752,9 @@ PMOD_EXPORT HANDLE CheckValidHandle(HANDLE h);
 #define THREAD_T_TO_PTR(X)	((void *)(ptrdiff_t)(X))
 #endif /* PIKE_THREAD_T_IS_POINTER */
 #endif /* !THREAD_T_TO_PTR */
+
+#ifdef PIKE_DEBUG
+extern THREAD_T threads_disabled_thread;
+#endif
 
 #endif /* PIKE_THREADLIB_H */

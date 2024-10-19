@@ -1,3 +1,5 @@
+/* -*- mode: Pike; c-basic-offset: 3; -*- */
+
 #pike __REAL_VERSION__
 
 //!  	This is a handy simple parser of SGML-like
@@ -68,7 +70,7 @@
       array(SGMLatom) data=({});
       int open;
 
-      string _sprintf(int t, mapping m)
+      protected string _sprintf(int t, mapping m)
       {
 	 if (t=='s')
 	 {
@@ -109,7 +111,7 @@
       }
    }
 
-   protected array(array(SGMLatom|string)) res=({({})});
+   protected array(array(SGMLatom|string))|zero res=({({})});
    protected array(SGMLatom) tagstack=({});
    protected array(object) errors;
 
@@ -197,7 +199,9 @@
 
    function name_formater;
    function argname_formater;
-   void create(void|string _file,function|void _name_formater,function|void _argname_formater)
+   protected void create(void|string _file,
+			 function|void _name_formater,
+			 function|void _argname_formater)
    {
       file=_file;
       if(_name_formater)

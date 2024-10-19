@@ -32,7 +32,7 @@ class Decrypt
   private array key = ({305419896, 591751049, 878082192});
   private array tab = allocate(256);
 
-  private void create(string pw)
+  protected void create(string pw)
   {
     gentab();
     foreach(pw;; int ch)
@@ -1054,7 +1054,7 @@ class _Zip
 
   //! add a file to an archive.
   //!
-  void add_file(string filename, string|Stdio.File data,
+  void add_file(string filename, string|Stdio.File|zero data,
                 int|object|void stamp, int|void no_compress)
   {
     mapping entry = ([]);
@@ -1183,7 +1183,7 @@ class _ZipFS
     return f;
   }
 
-  Filesystem.Base cd(string directory)
+  object(Filesystem.Base)|zero cd(string directory)
   {
     Filesystem.Stat st = stat(directory);
     if(!st) return 0;
@@ -1229,7 +1229,7 @@ class `()
 {
   inherit _ZipFS;
 
-  protected void create(string|object filename,
+  protected void create(string|object|zero filename,
                         void|Filesystem.Base parent,
                         void|object f)
   {
@@ -1239,7 +1239,7 @@ class `()
 
     if(f)
       fd = f;
-    else
+    else if (filename)
       fd = parent->open(filename, "r");
 
     if(!fd)

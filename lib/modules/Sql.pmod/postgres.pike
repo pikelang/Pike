@@ -129,7 +129,7 @@ private string has_relexpires = "unknown";
 //! Should you need to report a bug to the author, please submit along with
 //! the report the driver version number, as returned by this call.
 
-private protected string glob_to_regexp (string glob) {
+private protected string|zero glob_to_regexp (string glob) {
 	if (!glob||!sizeof(glob))
 		return 0;
 	return "^"+replace(glob,({"*","?","'","\\"}),({".*",".","\\'","\\\\"}))+"$";
@@ -174,8 +174,8 @@ protected private int mkbool(string s) {
 //!
 //! @seealso
 //!   @[Sql.pgsql], @[Postgres.postgres], @[Sql.Sql], @[postgres->select_db]
-void create(void|string host, void|string database, void|string user,
-	    void|string _pass, void|mapping options) {
+protected void create(void|string host, void|string database, void|string user,
+		      void|string _pass, void|mapping options) {
 	string pass = _pass;
 	_pass = "CENSORED";
 	string real_host=host, real_db=database;
@@ -461,7 +461,7 @@ int|object streaming_query(object|string q,
   return big_query(q, bindings);
 }
 
-#else
+#elif constant(Sql.pgsql)
 /*
  * If libpq wasn't available at compile time, the pgsql-module can provide
  * near the same functionality as the postgres module.
@@ -479,4 +479,6 @@ int|object streaming_query(object|string q,
 //! @seealso
 //!   @[Sql.pgsql], @[Sql.Sql]
 inherit Sql.pgsql;
-#endif /* constant(Postgres.postgres) */
+#else /* constant(Sql.pgsql) */
+constant this_program_does_not_exist = 1;
+#endif

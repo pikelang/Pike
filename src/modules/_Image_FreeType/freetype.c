@@ -210,7 +210,7 @@ static void image_ft_face_attach_file( INT32 args )
 {
   char *path;
   FT_Error errcode;
-  get_all_args( NULL, args, "%s", &path );
+  get_all_args( NULL, args, "%c", &path );
   if ((errcode = FT_Attach_File( TFACE, path )))
     image_ft_error("Failed to attach file", errcode);
 }
@@ -356,7 +356,7 @@ static void image_ft_face_create( INT32 args )
   FT_Encoding best_enc = ft_encoding_none;
   int enc_no, enc_score, best_enc_score = -2;
 
-  get_all_args(NULL, args, "%s.%d", &font, &face_number);
+  get_all_args(NULL, args, "%c.%d", &font, &face_number);
 
   if (face_number < 0)
     SIMPLE_ARG_TYPE_ERROR("create", 2, "int(0..)");
@@ -396,7 +396,7 @@ static void image_ft_face_create( INT32 args )
   }
   er = FT_Select_Charmap(TFACE, best_enc);
   if( er )
-    Pike_error("Failed to set a character map for the font %S\n",
+    Pike_error("Failed to set a character map for the font %pS\n",
 	       sp[-args].u.string);
 }
 

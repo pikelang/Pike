@@ -1493,12 +1493,14 @@ PIKEFUN void create(string enc, string|void replace,
   pop_n_elems(args);
 }
 
-PIKEFUN void set_replacement_callback(function(string: string)|void repcb)
+PIKEFUN object set_replacement_callback(function(string: string)|void repcb)
 {
   struct iso2022enc_stor *s = (struct iso2022enc_stor *)fp->current_storage;
 
   if(repcb)
     assign_svalue(&s->_repcb, repcb);
+
+  push_object(this_object());
 }
 
 INIT

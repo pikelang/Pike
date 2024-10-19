@@ -194,7 +194,7 @@ void set_geometry_hints(GTK2.Widget widget, mapping(string:int) geometry)
     struct mapping *m;
     GdkGeometry geo;
 /*    GdkWindowHints mask; */
-    long mask;
+    long mask = 0;
     get_all_args(NULL,args,"%o%m",&o1,&m);
     GET_ARG(min_width,PIKE_T_INT,GDK_HINT_MIN_SIZE);
     GET_ARG(min_height,PIKE_T_INT,GDK_HINT_MIN_SIZE);

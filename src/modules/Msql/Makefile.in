@@ -4,8 +4,6 @@ OBJS=msqlmod.o
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 MSQL_SUPPORTED=@MSQL_SUPPORTED@
 
-CONFIG_HEADERS=@CONFIG_HEADERS@
-
 @dynamic_module_makefile@
 
 msqlmod.o: $(SRCDIR)/msqlmod.c

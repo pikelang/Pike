@@ -19,8 +19,6 @@
 #include "buffer.h"
 #include "blobs.h"
 
-static void exit_linkfarm_struct( );
-
 #define HSIZE 211
 
 static struct program *linkfarm_program;
@@ -139,7 +137,7 @@ static void f_linkfarm_add( INT32 args )
   struct pike_string *s;
   struct linkfarm *f = THIS;
 
-  get_all_args(NULL, args, "%W", &s);
+  get_all_args(NULL, args, "%t", &s);
   low_add(f, s);
   pop_n_elems(args);
 }

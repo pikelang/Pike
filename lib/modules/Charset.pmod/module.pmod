@@ -1,6 +1,10 @@
 // -*- Pike -*-
 
+#charset iso-8859-1
 #pike __REAL_VERSION__
+
+#pragma strict_types
+
 //! @ignore
 protected private inherit _Charset;
 //! @endignore
@@ -181,7 +185,10 @@ class Encoder
   this_program set_replacement_callback(function(string:string) rc);
 }
 
-private class ASCIIDec {
+private class ASCIIDec
+{
+  @Pike.Annotations.Implements(Decoder);
+
   constant charset = "iso88591";
   protected private string s = "";
   this_program feed(string ss)
@@ -202,12 +209,15 @@ private class ASCIIDec {
   }
 }
 
-private class UTF16dec {
+private class UTF16dec
+{
+  @Pike.Annotations.Implements(Decoder);
+
   inherit ASCIIDec;
   constant charset = "utf16";
   protected int check_bom=1, le=0;
   string drain() {
-    string s = ::drain();
+    string(8bit) s = [string(8bit)]::drain();
     if(sizeof(s)&1) {
       feed(s[sizeof(s)-1..]);
       s = s[..<1];
@@ -222,18 +232,24 @@ private class UTF16dec {
 	 check_bom=0;
       }
     if(le)
-      s = map(s/2, reverse)*"";
+      s = [string(8bit)](map(s/2, reverse)*"");
     return unicode_to_string(s);
   }
 }
 
-private class UTF16LEdec {
+private class UTF16LEdec
+{
+  @Pike.Annotations.Implements(Decoder);
+
   inherit UTF16dec;
   constant charset = "utf16le";
   protected void create() { le=1; }
 }
 
-private class UTF32dec {
+private class UTF32dec
+{
+  @Pike.Annotations.Implements(Decoder);
+
   inherit ASCIIDec;
   constant charset = "utf32";
   string drain()
@@ -247,7 +263,10 @@ private class UTF32dec {
   }
 }
 
-private class UTF32LEdec {
+private class UTF32LEdec
+{
+  @Pike.Annotations.Implements(Decoder);
+
   inherit ASCIIDec;
   constant charset = "utf32le";
   string drain()
@@ -261,8 +280,11 @@ private class UTF32LEdec {
   }
 }
 
-private class ISO6937dec {
-  protected Decoder decoder = rfc1345("iso6937");
+private class ISO6937dec
+{
+  @Pike.Annotations.Implements(Decoder);
+
+  protected Decoder decoder = [object(Decoder)]rfc1345("iso6937");
   protected string trailer = "";
   string drain()
   {
@@ -308,8 +330,11 @@ private class ISO6937dec {
 }
 
 // Decode GSM 03.38.
-private class GSM03_38dec {
-  protected Decoder decoder = rfc1345("gsm0338");
+private class GSM03_38dec
+{
+  @Pike.Annotations.Implements(Decoder);
+
+  protected Decoder decoder = [object(Decoder)]rfc1345("gsm0338");
   protected string trailer = "";
   string drain()
   {
@@ -405,7 +430,7 @@ private class HZ_dec
 
 //! All character set names are normalized through this function
 //! before compared.
-string normalize(string in) {
+string|zero normalize(string|zero in) {
   if(!in) return 0;
   string out = replace(lower_case(in),
 		      ({ "_",".",":","-","(",")" }),
@@ -443,11 +468,11 @@ string normalize(string in) {
   return out;
 }
 
-private mapping(string:Decoder) custom_decoders = ([]);
+private mapping(string:program(Decoder)) custom_decoders = ([]);
 
 //! Adds a custom defined character set decoder. The name is
 //! normalized through the use of @[normalize].
-void set_decoder(string name, Decoder decoder)
+void set_decoder(string name, program(Decoder) decoder)
 {
   custom_decoders[normalize(name)]=decoder;
 }
@@ -463,9 +488,9 @@ void set_decoder(string name, Decoder decoder)
 //!   various encodings as described by @rfc{1345@}.
 //! @throws
 //!   If the asked-for @[name] was not supported, an error is thrown.
-Decoder decoder(string name)
+Decoder decoder(string|zero name)
 {
-  string orig_name = name;
+  string|zero orig_name = name;
 
   name = normalize(name);
 
@@ -482,7 +507,7 @@ Decoder decoder(string name)
   if(has_prefix(name, "iso2022"))
     return ISO2022Dec();
 
-  program p = ([
+  program(Decoder)|zero p = ([
     "utf7": UTF7dec,
     "utf8": UTF8dec,
     "utfebcdic": UTF_EBCDICdec,
@@ -513,7 +538,7 @@ Decoder decoder(string name)
   }
 
   if(has_prefix(name, "euc")) {
-    string sub = ([
+    string|zero sub = ([
       "kr":"ksc5601",	// FIXME: Ought to be KS X 1001!
       "jp":"x0208",
       "cn":"gb2312",
@@ -532,16 +557,20 @@ Decoder decoder(string name)
   if( (< "gb18030", "gbk", "936", "949" >)[ name ] )
     return MulticharDec(name);
 
-  Decoder o = rfc1345(name);
+  object(Decoder)|zero o = [object(Decoder)]rfc1345(name);
 
   if(o)
-    return o;
+    return [object]o;
 
-  if ((o = .Tables[name]) && (p = o->decoder)) {
+  mixed oo;
+
+  if ((oo = .Tables[name]) && objectp(oo) &&
+      (p = [program(Decoder)|zero](([object]oo)->decoder))) {
     return p();
   }
 
-  if( p = master()->resolv(orig_name+".CharsetDecoder") )
+  if( p = [program(Decoder)|zero]
+      (master()->resolv(orig_name+".CharsetDecoder")) )
     return p();
 
   error("Unknown character encoding "+orig_name+"\n");
@@ -549,10 +578,12 @@ Decoder decoder(string name)
 
 private class ASCIIEnc
 {
+  @Pike.Annotations.Implements(Encoder);
+
   constant charset = "iso88591";
   protected string s = "";
-  protected string|void replacement;
-  protected function(string:string)|void repcb;
+  protected string|zero|void replacement;
+  protected function(string:string)|zero|void repcb;
   protected string low_convert(string s, string|void r,
 			       function(string:string)|void rc)
   {
@@ -561,7 +592,7 @@ private class ASCIIEnc
     String.Buffer res = String.Buffer();
     function(string ...:void) add = res->add;
 
-    string rr;
+    string|zero rr;
     int l;
     foreach(s; int i; int c) {
       if(c>255) {
@@ -571,7 +602,7 @@ private class ASCIIEnc
 	if(rc && (rr = rc(s[i..i])))
 	  add(low_convert(rr,r));
 	else if(r)
-	  add(r);
+	  add([string]r);
 	else
 	  encode_error (s, i, charset, "Character unsupported by encoding.\n");
       }
@@ -601,14 +632,17 @@ private class ASCIIEnc
     repcb = rc;
     return this;
   }
-  protected void create(string|void r, string|void rc)
+  protected void create(string|void r, function(string:string)|void rc)
   {
-    replacement = r && low_convert(r);
+    replacement = r && low_convert([string]r);
     repcb = rc;
   }
 }
 
-private class USASCIIEnc {
+private class USASCIIEnc
+{
+  @Pike.Annotations.Implements(Encoder);
+
   //  7-bit US ASCII
   inherit ASCIIEnc;
   constant charset = "usascii";
@@ -618,7 +652,7 @@ private class USASCIIEnc {
     String.Buffer res = String.Buffer();
     function(string ...:void) add = res->add;
 
-    string rr;
+    string|zero rr;
     int l;
     foreach(s; int i; int c) {
       if(c>127) {
@@ -628,7 +662,7 @@ private class USASCIIEnc {
 	if(rc && (rr = rc(s[i..i])))
 	  add(low_convert(rr,r));
 	else if(r)
-	  add(r);
+	  add([string]r);
 	else
 	  encode_error (s, i, charset, "Character unsupported by encoding.\n");
       }
@@ -639,7 +673,10 @@ private class USASCIIEnc {
   }
 }
 
-private class UTF16enc {
+private class UTF16enc
+{
+  @Pike.Annotations.Implements(Encoder);
+
   inherit ASCIIEnc;
   constant charset = "utf16";
   protected private string low_convert(string s, string|void r,
@@ -650,7 +687,7 @@ private class UTF16enc {
     String.Buffer res = String.Buffer();
     function(string ...:void) add = res->add;
 
-    string rr;
+    string|zero rr;
     int l;
     foreach(s; int i; int c) {
       if(c>0x10ffff) {
@@ -660,7 +697,7 @@ private class UTF16enc {
 	if(rc && (rr = rc(s[i..i])))
 	  add(low_convert(rr,r));
 	else if(r)
-	  add(r);
+	  add([string]r);
 	else
 	  encode_error (s, i, charset, "Character unsupported by encoding.\n");
       }
@@ -684,7 +721,10 @@ private class UTF16enc {
   }
 }
 
-private class UTF16LEenc {
+private class UTF16LEenc
+{
+  @Pike.Annotations.Implements(Encoder);
+
   inherit UTF16enc;
   constant charset = "utf16le";
   string drain() {
@@ -692,7 +732,10 @@ private class UTF16LEenc {
   }
 }
 
-private class UTF32enc {
+private class UTF32enc
+{
+  @Pike.Annotations.Implements(Encoder);
+
   inherit ASCIIEnc;
   protected string low_convert(string s, string|void r,
 			       function(string:string)|void rc)
@@ -701,7 +744,10 @@ private class UTF32enc {
   }
 }
 
-private class UTF32LEenc {
+private class UTF32LEenc
+{
+  @Pike.Annotations.Implements(Encoder);
+
   inherit ASCIIEnc;
   protected string low_convert(string s, string|void r,
 			       function(string:string)|void rc)
@@ -710,12 +756,16 @@ private class UTF32LEenc {
   }
 }
 
-private class ISO6937enc {
-  protected Encoder encoder;
+private class ISO6937enc
+{
+  @Pike.Annotations.Implements(Encoder);
+
+  protected Encoder encoder = [object(Encoder)]rfc1345("iso6937", 1);
   protected void create(string|void replacement,
-		     function(string:string)|void repcb)
+			function(string:string)|void repcb)
   {
-    encoder = rfc1345("iso6937", 1, replacement, repcb);
+    if (!replacement && !repcb) return;
+    encoder = [object(Encoder)]rfc1345("iso6937", 1, replacement, repcb);
   }
   string drain()
   {
@@ -749,15 +799,24 @@ private class ISO6937enc {
     encoder->clear();
     return this;
   }
+  this_program set_replacement_callback(function(string:string) rc)
+  {
+    encoder->set_replacement_callback(rc);
+    return this;
+  }
 }
 
 // Encode GSM 03.38.
-private class GSM03_38enc {
-  protected Encoder encoder;
+private class GSM03_38enc
+{
+  @Pike.Annotations.Implements(Encoder);
+
+  protected Encoder encoder = [object(Encoder)]rfc1345("gsm0338", 1);
   protected void create(string|void replacement,
-		     function(string:string)|void repcb)
+			function(string:string)|void repcb)
   {
-    encoder = rfc1345("gsm0338", 1, replacement, repcb);
+    if (!replacement && !repcb) return;
+    encoder = [object(Encoder)]rfc1345("gsm0338", 1, replacement, repcb);
   }
   string drain()
   {
@@ -778,13 +837,18 @@ private class GSM03_38enc {
     encoder->clear();
     return this;
   }
+  this_program set_replacement_callback(function(string:string) rc)
+  {
+    encoder->set_replacement_callback(rc);
+    return this;
+  }
 }
 
-private mapping(string:Encoder) custom_encoders = ([]);
+private mapping(string:program(Encoder)) custom_encoders = ([]);
 
 //! Adds a custom defined character set encoder. The name is
 //! normalized through the use of @[normalize].
-void set_encoder(string name, Encoder encoder)
+void set_encoder(string name, program(Encoder) encoder)
 {
   custom_encoders[normalize(name)]=encoder;
 }
@@ -816,10 +880,10 @@ void set_encoder(string name, Encoder encoder)
 //!
 //! @throws
 //!   If the asked-for @[name] was not supported, an error is thrown.
-Encoder encoder(string name, string|void replacement,
+Encoder encoder(string|zero name, string|void replacement,
 		function(string:string)|void repcb)
 {
-  string orig_name = name;
+  string|zero orig_name = name;
 
   name = normalize(name);
 
@@ -840,7 +904,7 @@ Encoder encoder(string name, string|void replacement,
   if(has_prefix(name, "iso2022"))
     return ISO2022Enc(name[7..], replacement, repcb);
 
-  program p = ([
+  program(Encoder)|zero p = ([
     "utf7": UTF7enc,
     "utf8": UTF8enc,
     "utfebcdic": UTF_EBCDICenc,
@@ -873,7 +937,7 @@ Encoder encoder(string name, string|void replacement,
   }
 
   if(has_prefix(name, "euc")) {
-    string sub = ([
+    string|zero sub = ([
       "kr":"ksc5601",	// FIXME: Ought to be KS X 1001!
       "jp":"x0208",
       "cn":"gb2312",
@@ -888,12 +952,15 @@ Encoder encoder(string name, string|void replacement,
 	 "eucpkdfmtjapanese" >)[ name ] )
     return EUCEnc("x0208", "eucpkdfmtjapanese", replacement, repcb);
 
-  Encoder o = rfc1345(name, 1, replacement, repcb);
+  Encoder o = [object(Encoder)]rfc1345(name, 1, replacement, repcb);
 
   if(o)
     return o;
 
-  if ((o = .Tables[name]) && (p = o->encoder)) {
+  mixed oo;
+
+  if ((oo = .Tables[name]) && objectp(oo) &&
+      (p = [program(Encoder)|zero](([object]oo)->encoder))) {
     return p(replacement, repcb);
   }
 
@@ -1163,24 +1230,32 @@ Encoder encoder_from_mib(int mib,  string|void replacement,
   return e;
 }
 
-protected string format_err_msg (
-  string intro, string err_str, int err_pos, string charset, string reason)
+protected class CharsetGenericError
+//! Base class for errors thrown by the @[Charset] module.
 {
-  string pre_context = err_pos > 23 ?
-    sprintf ("...%O", err_str[err_pos - 20..err_pos - 1]) :
-    err_pos > 0 ?
-    sprintf ("%O", err_str[..err_pos - 1]) :
-    "";
-  string post_context = err_pos < sizeof (err_str) - 24 ?
-    sprintf ("%O...", err_str[err_pos + 1..err_pos + 20]) :
-    err_pos + 1 < sizeof (err_str) ?
-    sprintf ("%O", err_str[err_pos + 1..]) :
-    "";
-  err_str = sprintf ("%s[0x%x]%s",
-		     pre_context, err_str[err_pos], post_context);
+  inherit Error.Generic;
+  constant error_type = "charset";
 
-  return intro + " " + err_str + " using " + charset +
-    (reason ? ": " + reason : ".\n");
+  protected string format_err_msg (
+    string intro, string err_str, int err_pos, string charset,
+    string|zero reason)
+  {
+    string pre_context = err_pos > 23 ?
+      sprintf ("...%O", err_str[err_pos - 20..err_pos - 1]) :
+      err_pos > 0 ?
+      sprintf ("%O", err_str[..err_pos - 1]) :
+      "";
+    string post_context = err_pos < sizeof (err_str) - 24 ?
+      sprintf ("%O...", err_str[err_pos + 1..err_pos + 20]) :
+      err_pos + 1 < sizeof (err_str) ?
+      sprintf ("%O", err_str[err_pos + 1..]) :
+      "";
+    err_str = sprintf ("%s[0x%x]%s",
+		       pre_context, err_str[err_pos], post_context);
+
+    return intro + " " + err_str + " using " + charset +
+      (reason ? ": " + reason : ".\n");
+  }
 }
 
 class DecodeError
@@ -1192,17 +1267,17 @@ class DecodeError
 //! errors are still thrown as untyped error arrays. At this point it
 //! exists only for use by other modules.
 {
-  inherit Error.Generic;
+  inherit CharsetGenericError;
   constant error_type = "charset_decode";
   constant is_charset_decode_error = 1;
 
-  string err_str;
+  string err_str = "";
   //! The string that failed to be decoded.
 
   int err_pos;
   //! The failing position in @[err_str].
 
-  string charset;
+  string charset = "";
   //! The decoding charset, typically as known to
   //! @[Charset.decoder].
   //!
@@ -1227,12 +1302,12 @@ class DecodeError
 }
 
 void decode_error (string err_str, int err_pos, string charset,
-		   void|string reason, void|mixed... args)
+		   void|string reason, mixed... args)
 //! Throws a @[DecodeError] exception. See @[DecodeError.create] for
 //! details about the arguments. If @[args] is given then the error
 //! reason is formatted using @expr{sprintf(@[reason], @@@[args])@}.
 {
-  if (sizeof (args)) reason = sprintf (reason, @args);
+  if (reason && sizeof (args)) reason = sprintf ([string]reason, @args);
   throw (DecodeError (err_str, err_pos, charset, reason, backtrace()[..<1]));
 }
 
@@ -1245,17 +1320,17 @@ class EncodeError
 //! errors are still thrown as untyped error arrays. At this point it
 //! exists only for use by other modules.
 {
-  inherit Error.Generic;
+  inherit CharsetGenericError;
   constant error_type = "charset_encode";
   constant is_charset_encode_error = 1;
 
-  string err_str;
+  string err_str = "";
   //! The string that failed to be encoded.
 
   int err_pos;
   //! The failing position in @[err_str].
 
-  string charset;
+  string charset = "";
   //! The encoding charset, typically as known to
   //! @[Charset.encoder].
   //!
@@ -1280,11 +1355,11 @@ class EncodeError
 }
 
 void encode_error (string err_str, int err_pos, string charset,
-		   void|string reason, void|mixed... args)
+		   void|string reason, mixed... args)
 //! Throws an @[EncodeError] exception. See @[EncodeError.create] for
 //! details about the arguments. If @[args] is given then the error
 //! reason is formatted using @expr{sprintf(@[reason], @@@[args])@}.
 {
-  if (sizeof (args)) reason = sprintf (reason, @args);
+  if (reason && sizeof (args)) reason = sprintf ([string]reason, @args);
   throw (EncodeError (err_str, err_pos, charset, reason, backtrace()[..<1]));
 }

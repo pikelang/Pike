@@ -49,11 +49,9 @@
 
 #ifdef HAVE_POLL_H
 #include <poll.h>
-#endif /* HAVE_POLL_H */
-
-#ifdef HAVE_SYS_POLL_H
+#elif defined(HAVE_SYS_POLL_H)
 #include <sys/poll.h>
-#endif /* HAVE_SYS_POLL_H */
+#endif /* HAVE_POLL_H || HAVE_SYS_POLL_H */
 
 /* Some constants... */
 
@@ -133,6 +131,7 @@ struct udp_storage {
   int protocol;
 
   struct svalue read_callback;	/* Mapped. */
+  struct svalue write_callback;	/* Mapped. */
 };
 
 void zero_udp(struct object *ignored);
@@ -146,11 +145,144 @@ void exit_udp(struct object *UNUSED(ignored)) {
 #define THISOBJ (Pike_fp->current_object)
 #define FD (THIS->box.fd)
 
-/*! @module Stdio
+/*! @module _Stdio
  */
 
 /*! @class UDP
  */
+
+/*! @decl UDP fd_factory()
+ *!
+ *! Factory creating @[Stdio.UDP] objects.
+ *!
+ *! This function is called by @[dup()]
+ *! and other functions creating new UDP objects.
+ *!
+ *! The default implementation calls @expr{object_program(this_object())()@}
+ *! to create the new object, and returns the @[UDP] inherit in it.
+ *!
+ *! @note
+ *!   Note that this function must return the @[UDP] inherit in the object.
+ *!
+ *! @seealso
+ *!   @[dup()], @[Stdio.File()->fd_factory()]
+ */
+static int udp_fd_factory_fun_num = -1;
+static void udp_fd_factory(INT32 args)
+{
+  pop_n_elems(args);
+  push_object_inherit(clone_object_from_object(Pike_fp->current_object, 0),
+		      Pike_fp->context - Pike_fp->current_program->inherits);
+}
+
+/*! @decl object(UDP) `_fd()
+ *!
+ *! Getter for the UDP object.
+ */
+static void udp_backtick__fd(INT32 args)
+{
+  pop_n_elems(args);
+  ref_push_object_inherit(Pike_fp->current_object,
+			  Pike_fp->context -
+			  Pike_fp->current_program->inherits);
+}
+
+/* Use ptrdiff_t for the fd since we're passed a void * and should
+ * read it as an integer of the same size. */
+static void do_close_udp(void *_fd)
+{
+  int ret;
+  ptrdiff_t fd = (ptrdiff_t)_fd;
+
+  if (fd < 0) return;
+  errno = 0;
+  do {
+    ret = fd_close(fd);
+  } while ((ret == -1) && (errno == EINTR));
+}
+
+static void push_new_udp_object(int factory_fun_num, int fd)
+{
+  struct object *o = NULL;
+  struct udp_storage *udp;
+  ONERROR err;
+  struct inherit *inh;
+
+  SET_ONERROR(err, do_close_udp, (ptrdiff_t) fd);
+  apply_current(factory_fun_num, 0);
+  if ((TYPEOF(Pike_sp[-1]) != PIKE_T_OBJECT) ||
+      !(o = Pike_sp[-1].u.object)->prog ||
+      ((inh = &o->prog->inherits[SUBTYPEOF(Pike_sp[-1])])->prog !=
+       Pike_fp->context->prog)) {
+    Pike_error("Invalid return value from fd_factory(). "
+	       "Expected object(is Stdio.UDP).\n");
+  }
+  udp = (struct udp_storage *)(o->storage + inh->storage_offset);
+  if (udp->box.fd != -1) {
+    Pike_error("Invalid return value from fd_factory(). "
+	       "Expected unopened object(is Stdio.UDP). fd:%d\n",
+	       udp->box.fd);
+  }
+  UNSET_ONERROR(err);
+  change_fd_for_box(&udp->box, fd);
+#ifdef PIKE_DEBUG
+  if (fd >= 0) {
+    debug_check_fd_not_in_use (fd);
+  }
+#endif
+}
+
+static int got_udp_event (struct fd_callback_box *box, int event);
+
+static void low_dup_udp(struct udp_storage *to,
+			struct udp_storage *from)
+{
+  my_set_close_on_exec(to->box.fd, to->box.fd > 2);
+
+  unhook_fd_callback_box (&to->box);
+  if (from->box.backend)
+    INIT_FD_CALLBACK_BOX (&to->box, from->box.backend, to->box.ref_obj,
+			  to->box.fd, from->box.events, got_udp_event,
+			  from->box.flags);
+
+  assign_svalue (&to->read_callback, &from->read_callback);
+  assign_svalue (&to->write_callback, &from->write_callback);
+}
+
+/*! @decl Stdio.UDP dup()
+ *!
+ *!   Duplicate the udp socket.
+ *!
+ *! @seealso
+ *!   @[fd_factory()]
+ */
+static void udp_dup(INT32 args)
+{
+  int fd;
+  struct object *o;
+  struct udp_storage *udp;
+
+  pop_n_elems(args);
+
+  if(FD < 0)
+    Pike_error("Not open.\n");
+
+  if((fd=fd_dup(FD)) < 0)
+  {
+    THIS->my_errno = errno;
+    push_int(0);
+    return;
+  }
+  push_new_udp_object(udp_fd_factory_fun_num, fd);
+  o = Pike_sp[-1].u.object;
+  udp = ((struct udp_storage *)
+	 (o->storage + o->prog->inherits[SUBTYPEOF(Pike_sp[-1])].storage_offset));
+  THIS->my_errno = 0;
+  low_dup_udp(udp, THIS);
+
+  /* Return the top-level object. */
+  push_object(o);
+}
 
 /*! @decl int(0..1) close()
  *!
@@ -414,7 +546,7 @@ void udp_enable_multicast(INT32 args)
   char *ip;
   PIKE_SOCKADDR reply;
 
-  get_all_args(NULL, args, "%s", &ip);
+  get_all_args(NULL, args, "%c", &ip);
 
   get_inet_addr(&reply, ip, NULL, -1, THIS->inet_flags);
   INVALIDATE_CURRENT_TIME();
@@ -513,7 +645,7 @@ void udp_add_membership(INT32 args)
   struct ip_mreq sock;
   PIKE_SOCKADDR addr;
 
-  get_all_args(NULL, args, "%s.%s%d", &group, &address, &face);
+  get_all_args(NULL, args, "%c.%c%d", &group, &address, &face);
 
   get_inet_addr(&addr, group, NULL, -1, THIS->inet_flags);
   INVALIDATE_CURRENT_TIME();
@@ -599,7 +731,7 @@ void udp_drop_membership(INT32 args)
   struct ip_mreq sock;
   PIKE_SOCKADDR addr;
 
-  get_all_args(NULL, args, "%s.%s%d", &group, &address, &face);
+  get_all_args(NULL, args, "%c.%c%d", &group, &address, &face);
 
   get_inet_addr(&addr, group, NULL, -1, THIS->inet_flags);
   INVALIDATE_CURRENT_TIME();
@@ -888,11 +1020,20 @@ void udp_read(INT32 args)
 /*! @decl int send(string to, int|string port, string message)
  *! @decl int send(string to, int|string port, string message, int flags)
  *!
- *! Send data to a UDP socket. The recipient address will be @[to]
- *! and port will be @[port].
+ *! Send data to a UDP socket.
  *!
- *! Flag @[flag] is a bitfield, 1 for out of band data and
- *! 2 for don't route flag.
+ *! @param to
+ *!   The recipient address. For @[connect()]ed objects specifying a
+ *!   recipient of either @[UNDEFINED] or @expr{""@} causes the default
+ *!   recipient to be used.
+ *!
+ *! @param port
+ *!   The recipient port number. For @[connect()]ed objects specifying
+ *!   port number @expr{0@} casues the default recipient port to be used.
+ *!
+ *! @param flag
+ *!   A flag bitfield with @expr{1@} for out of band data and
+ *!   @expr{2@} for don't route flag.
  *!
  *! @returns
  *!   @int
@@ -915,15 +1056,23 @@ void udp_read(INT32 args)
  *! @note
  *!   Versions of Pike prior to 8.1.5 threw errors also on EMSGSIZE
  *!   (@expr{"Too big message"@}) and EWOULDBLOCK
- *!  .(@expr{"Message would block."@}). These versions of Pike also
+ *!   (@expr{"Message would block."@}). These versions of Pike also
  *!   did not update the object errno on this function failing.
+ *!
+ *! @note
+ *!   Versions of Pike prior to 8.1.13 did not support the default
+ *!   recipient for @[connect()]ed objects.
+ *!
+ *! @seealso
+ *!   @[connect()], @[errno()], @[query_mtu()]
  */
 void udp_sendto(INT32 args)
 {
   int flags = 0, fd, e;
   ptrdiff_t res = 0;
-  PIKE_SOCKADDR to;
-  int to_len;
+  PIKE_SOCKADDR to_buf;
+  struct sockaddr *to = NULL;
+  int to_len = 0;
   char *str;
   ptrdiff_t len;
 
@@ -931,7 +1080,8 @@ void udp_sendto(INT32 args)
     Pike_error("UDP: not open\n");
 
   check_all_args(NULL, args,
-		 BIT_STRING, BIT_INT|BIT_STRING, BIT_STRING, BIT_INT|BIT_VOID, 0);
+		 BIT_ZERO|BIT_STRING, BIT_INT|BIT_STRING,
+		 BIT_STRING, BIT_INT|BIT_VOID, 0);
 
   if(args>3)
   {
@@ -950,12 +1100,17 @@ void udp_sendto(INT32 args)
     }
   }
 
-  to_len = get_inet_addr(&to, Pike_sp[-args].u.string->str,
-			 (TYPEOF(Pike_sp[1-args]) == PIKE_T_STRING?
-			  Pike_sp[1-args].u.string->str : NULL),
-			 (TYPEOF(Pike_sp[1-args]) == PIKE_T_INT?
-			  Pike_sp[1-args].u.integer : -1),
-			 THIS->inet_flags);
+  if ((TYPEOF(Pike_sp[-args]) == PIKE_T_STRING) &&
+      Pike_sp[-args].u.string->len) {
+    to_len = get_inet_addr(&to_buf, Pike_sp[-args].u.string->str,
+			   (TYPEOF(Pike_sp[1-args]) == PIKE_T_STRING?
+			    Pike_sp[1-args].u.string->str : NULL),
+			   (TYPEOF(Pike_sp[1-args]) == PIKE_T_INT?
+			    Pike_sp[1-args].u.integer : -1),
+			   THIS->inet_flags);
+    to = (struct sockaddr *)&to_buf;
+  }
+
   INVALIDATE_CURRENT_TIME();
 
   fd = FD;
@@ -964,7 +1119,7 @@ void udp_sendto(INT32 args)
 
   do {
     THREADS_ALLOW();
-    res = fd_sendto( fd, str, len, flags, (struct sockaddr *)&to, to_len);
+    res = fd_sendto( fd, str, len, flags, to, to_len);
     e = errno;
     THREADS_DISALLOW();
 
@@ -1001,26 +1156,46 @@ void udp_sendto(INT32 args)
 }
 
 
-static int got_udp_event (struct fd_callback_box *box, int DEBUGUSED(event))
+static int got_udp_event (struct fd_callback_box *box, int event)
 {
   struct udp_storage *u = (struct udp_storage *) box;
 #ifdef PIKE_DEBUG
   if (event != PIKE_FD_READ)
-    Pike_fatal ("Got unexpected event %d.\n", event);
 #endif
 
   u->my_errno = errno;		/* Propagate backend setting. */
 
-  check_destructed (&u->read_callback);
-  if (UNSAFE_IS_ZERO (&u->read_callback))
-    set_fd_callback_events (&u->box, 0, 0);
-  else {
-    apply_svalue (&u->read_callback, 0);
-    if (TYPEOF(Pike_sp[-1]) == PIKE_T_INT && Pike_sp[-1].u.integer == -1) {
+  switch(event) {
+  case PIKE_FD_READ:
+    check_destructed (&u->read_callback);
+    if (UNSAFE_IS_ZERO (&u->read_callback))
+      set_fd_callback_events (&u->box, u->box.events & ~PIKE_BIT_FD_READ, 0);
+    else {
+      apply_svalue (&u->read_callback, 0);
+      if (TYPEOF(Pike_sp[-1]) == PIKE_T_INT && Pike_sp[-1].u.integer == -1) {
+	pop_stack();
+	return -1;
+      }
       pop_stack();
-      return -1;
     }
-    pop_stack();
+    break;
+  case PIKE_FD_WRITE:
+    check_destructed (&u->write_callback);
+    if (UNSAFE_IS_ZERO (&u->write_callback))
+      set_fd_callback_events (&u->box, u->box.events & ~PIKE_BIT_FD_WRITE, 0);
+    else {
+      apply_svalue (&u->write_callback, 0);
+      if (TYPEOF(Pike_sp[-1]) == PIKE_T_INT && Pike_sp[-1].u.integer == -1) {
+	pop_stack();
+	return -1;
+      }
+      pop_stack();
+    }
+    break;
+#ifdef PIKE_DEBUG
+  default:
+    Pike_fatal ("Got unexpected event %d.\n", event);
+#endif
   }
   return 0;
 }
@@ -1032,7 +1207,7 @@ void zero_udp(struct object *o)
   THIS->inet_flags = PIKE_INET_FLAG_UDP;
   THIS->type=SOCK_DGRAM;
   THIS->protocol=0;
-  /* map_variable handles read_callback. */
+  /* map_variable handles read_callback and write_callback. */
 }
 
 int low_exit_udp()
@@ -1050,7 +1225,7 @@ int low_exit_udp()
     THREADS_DISALLOW();
   }
 
-  /* map_variable handles read_callback. */
+  /* map_variable handles read_callback and write_callback. */
 
   return ret;
 }
@@ -1064,29 +1239,64 @@ static void udp_set_read_callback(INT32 args)
   assign_svalue(& u->read_callback, Pike_sp-1);
   if (UNSAFE_IS_ZERO (Pike_sp - 1)) {
     if (u->box.backend)
-      set_fd_callback_events (&u->box, 0, 0);
+      set_fd_callback_events (&u->box, u->box.events & ~PIKE_BIT_FD_READ, 0);
   }
   else {
     if (!u->box.backend)
       INIT_FD_CALLBACK_BOX (&u->box, default_backend, u->box.ref_obj,
-			    u->box.fd, PIKE_BIT_FD_READ, got_udp_event, 0);
+			    u->box.fd, u->box.events | PIKE_BIT_FD_READ,
+			    got_udp_event, 0);
     else
-      set_fd_callback_events (&u->box, PIKE_BIT_FD_READ, 0);
+      set_fd_callback_events (&u->box, u->box.events | PIKE_BIT_FD_READ, 0);
   }
 
-  pop_stack();
+  pop_n_elems(args);
   ref_push_object(THISOBJ);
 }
 
+static void udp_set_write_callback(INT32 args)
+{
+  struct udp_storage *u = THIS;
+  if(args != 1)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("set_write_callback", 1);
+
+  assign_svalue(& u->write_callback, Pike_sp-1);
+  if (UNSAFE_IS_ZERO (Pike_sp - 1)) {
+    if (u->box.backend)
+      set_fd_callback_events (&u->box, u->box.events & ~PIKE_BIT_FD_WRITE, 0);
+  }
+  else {
+    if (!u->box.backend)
+      INIT_FD_CALLBACK_BOX (&u->box, default_backend, u->box.ref_obj,
+			    u->box.fd, u->box.events | PIKE_BIT_FD_WRITE,
+			    got_udp_event, 0);
+    else
+      set_fd_callback_events (&u->box, u->box.events | PIKE_BIT_FD_WRITE, 0);
+  }
+
+  pop_n_elems(args);
+  ref_push_object(THISOBJ);
+}
+
+/*! @decl object set_nonblocking(function|void rcb, function|void wcb)
+ *!
+ *! Sets this object to be nonblocking and the read and write callbacks.
+ */
 static void udp_set_nonblocking(INT32 args)
 {
   if (FD < 0) Pike_error("File not open.\n");
 
-  if (args)
-  {
-     udp_set_read_callback(args);
-     pop_stack();
+  while (args < 2) {
+    push_undefined();
+    args++;
   }
+
+  udp_set_write_callback(args - 1);
+  pop_stack();
+
+  udp_set_read_callback(1);
+  pop_stack();
+
   set_nonblocking(FD,1);
   THIS->inet_flags |= PIKE_INET_FLAG_NB;
   ref_push_object(THISOBJ);
@@ -1133,7 +1343,7 @@ static void udp_connect(INT32 args)
 
   int tmp;
 
-  get_all_args(NULL, args, "%S%*", &dest_addr, &dest_port);
+  get_all_args(NULL, args, "%n%*", &dest_addr, &dest_port);
 
   if(TYPEOF(*dest_port) != PIKE_T_INT &&
      (TYPEOF(*dest_port) != PIKE_T_STRING || dest_port->u.string->size_shift))
@@ -1241,6 +1451,63 @@ static void udp_query_address(INT32 args)
     push_text(buffer);
   }
 }
+
+#ifdef IP_MTU
+/*! @decl int query_mtu()
+ *!
+ *! Get the Max Transfer Unit for the object (if any).
+ *!
+ *! @returns
+ *!   @int
+ *!     @value -1
+ *!       Returns @expr{-1@} if the object is not a socket or
+ *!       if the mtu is unknown.
+ *!     @value 1..
+ *!       Returns a positive value with the mtu on success.
+ *!   @endint
+ *!
+ *! @note
+ *!   The returned value is adjusted to take account for the
+ *!   IP and UDP headers, so that it should be usable without
+ *!   further adjustment unless further IP options are in use.
+ */
+static void udp_query_mtu(INT32 args)
+{
+  int mtu = -1;
+  PIKE_SOCKADDR addr;
+  ACCEPT_SIZE_T len = sizeof(addr);
+  int level = SOL_SOCKET;
+  int option = IP_MTU;
+  int ip_udp_header_size = 20 + 8;	/* IPv4 and UDP header sizes. */
+
+  if(FD <0)
+    Pike_error("Port not bound yet.\n");
+
+  if (fd_getsockname(FD, (struct sockaddr *)&addr, &len) < 0) {
+    THIS->my_errno = errno;
+    push_int(-1);
+    return;
+  }
+
+  if (SOCKADDR_FAMILY(addr) == AF_INET) {
+    level = IPPROTO_IP;
+#ifdef IPV6_MTU
+  } else if (SOCKADDR_FAMILY(addr) == AF_INET6) {
+    level = IPPROTO_IPV6;
+    option = IPV6_MTU;
+    ip_udp_header_size = 40 + 8;	/* IPv6 and UDP header sizes. */
+#endif
+  }
+
+  len = sizeof(mtu);
+  if (fd_getsockopt(FD, level, option, (void *)&mtu, &len) < 0) {
+    THIS->my_errno = errno;
+    push_int(-1);
+    return;
+  }
+  push_int(mtu - ip_udp_header_size);
+}
+#endif /* IP_MTU */
 
 /*! @decl void set_backend (Pike.Backend backend)
  *!
@@ -1355,7 +1622,7 @@ static void udp_set_buffer(INT32 args)
   if(FD==-1)
     Pike_error("Port is closed.\n");
 
-  get_all_args(NULL, args, "%+.%s", &bufsize, &c);
+  get_all_args(NULL, args, "%+.%c", &bufsize, &c);
 
   if(bufsize < 0)
     Pike_error("Bufsize must be larger than zero.\n");
@@ -1396,16 +1663,51 @@ static void udp_set_buffer(INT32 args)
 }
 
 /*! @decl constant MSG_OOB
- *! @fixme
- *! Document this constant.
+ *!
+ *! Flag to specify to @[read()] to read out of band packets.
  */
 
 /*! @decl constant MSG_PEEK
- *! @fixme
- *! Document this constant.
+ *!
+ *! Flag to specify to @[read()] to cause it to not remove the packet
+ *! from the input buffer.
  */
 
 /*! @endclass
+ */
+
+/*! @module SOCK
+ *!
+ *! Module containing constants for specifying socket options.
+ */
+
+/*! @decl constant STREAM
+ */
+
+/*! @decl constant DGRAM
+ */
+
+/*! @decl constant SEQPACKET
+ */
+
+/*! @decl constant RAW
+ */
+
+/*! @decl constant RDM
+ */
+
+/*! @decl constant PACKET
+ */
+
+/*! @endmodule
+ */
+
+/*! @module IPPROTO
+ *!
+ *! Module containing various IP-protocol options.
+ */
+
+/*! @endmodule
  */
 
 /*! @endmodule
@@ -1419,6 +1721,15 @@ void init_stdio_udp(void)
 
   PIKE_MAP_VARIABLE("_read_callback", OFFSETOF(udp_storage, read_callback),
 		    tFunc(tNone, tInt_10), PIKE_T_MIXED, ID_PROTECTED|ID_PRIVATE);
+
+  PIKE_MAP_VARIABLE("_write_callback", OFFSETOF(udp_storage, write_callback),
+		    tFunc(tNone, tInt_10), PIKE_T_MIXED, ID_PROTECTED|ID_PRIVATE);
+
+  udp_fd_factory_fun_num =
+    ADD_FUNCTION("fd_factory", udp_fd_factory,
+		 tFunc(tNone, tObjIs_STDIO_UDP), ID_PROTECTED);
+
+  ADD_FUNCTION("`_fd", udp_backtick__fd, tFunc(tNone, tObjIs_STDIO_UDP), 0);
 
   ADD_FUNCTION("set_type",udp_set_type,
 	       tFunc(tInt tOr(tVoid,tInt),tObj),0);
@@ -1435,6 +1746,8 @@ void init_stdio_udp(void)
 
   ADD_FUNCTION("query_fd",udp_query_fd,
          tFunc(tVoid,tInt),0);
+
+  ADD_FUNCTION("dup", udp_dup, tFunc(tNone, tObjImpl_STDIO_UDP), 0);
 
   ADD_FUNCTION("enable_broadcast", udp_enable_broadcast,
 	       tFunc(tNone,tInt01), 0);
@@ -1468,12 +1781,18 @@ void init_stdio_udp(void)
 	       tFunc(tString tOr(tInt,tStr),tInt),0);
 
   ADD_FUNCTION("_set_nonblocking", udp_set_nonblocking,
-	       tFunc(tOr(tFunc(tVoid,tVoid),tVoid),tObj), 0 );
+	       tFunc(tOr(tFunc(tVoid, tInt_10), tVoid)
+		     tOr(tFunc(tVoid, tInt_10), tVoid), tObj), 0 );
   ADD_FUNCTION("_set_read_callback", udp_set_read_callback,
-	       tFunc(tFunc(tVoid,tVoid),tObj), 0 );
+	       tFunc(tFunc(tVoid, tInt_10), tObj), 0 );
+  ADD_FUNCTION("_set_write_callback", udp_set_write_callback,
+	       tFunc(tFunc(tVoid, tInt_10), tObj), 0 );
 
   ADD_FUNCTION("set_blocking",udp_set_blocking,tFunc(tVoid,tObj), 0 );
   ADD_FUNCTION("query_address",udp_query_address,tFunc(tNone,tStr),0);
+#ifdef IP_MTU
+  ADD_FUNCTION("query_mtu", udp_query_mtu, tFunc(tNone,tInt), 0);
+#endif
 
   ADD_FUNCTION ("set_backend", udp_set_backend, tFunc(tObj,tVoid), 0);
   ADD_FUNCTION ("query_backend", udp_query_backend, tFunc(tVoid,tObj), 0);

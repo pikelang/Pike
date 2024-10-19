@@ -99,7 +99,7 @@ int activate(GDK2.Event event, GTK2.Widget widget, string path,
     const gchar *path;
     INT_TYPE flags;
     int res;
-    get_all_args(NULL,args,"%o%o%s%o%o%i",&o1,&o2,&path,&o3,&o4,&flags);
+    get_all_args(NULL,args,"%o%o%c%o%o%i",&o1,&o2,&path,&o3,&o4,&flags);
     res=gtk_cell_renderer_activate(GTK_CELL_RENDERER(THIS->obj),
 		(GdkEvent *)get_gdkobject(o1,event),
 		GTK_WIDGET(get_gobject(o2)),
@@ -120,7 +120,7 @@ void start_editing(GDK2.Event event, GTK2.Widget widget, string path,
     struct object *o1,*o2,*o3,*o4;
     const gchar *path;
     INT_TYPE flags;
-    get_all_args(NULL,args,"%o%o%s%o%o%i",&o1,&o2,&path,&o3,&o4,&flags);
+    get_all_args(NULL,args,"%o%o%c%o%o%i",&o1,&o2,&path,&o3,&o4,&flags);
     gtk_cell_renderer_start_editing(GTK_CELL_RENDERER(THIS->obj),
 		(GdkEvent *)get_gdkobject(o1,event),
 		GTK_WIDGET(get_gobject(o2)),path,

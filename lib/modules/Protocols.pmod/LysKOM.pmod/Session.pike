@@ -1,3 +1,5 @@
+/* -*- mode: Pike; c-basic-offset: 3; -*- */
+
 #pike __REAL_VERSION__
 
 import ".";
@@ -40,7 +42,7 @@ mapping(int:object) _conference=([]);
 //!
 //! @seealso
 //!   @[Connection]
-void create(object|string _server,void|mapping options)
+protected void create(object|string _server, mapping options = ([]))
 {
    if (objectp(_server)) // clone
    {
@@ -55,7 +57,7 @@ void create(object|string _server,void|mapping options)
    }
    server=_server;
    con=Connection(_server,options);
-   user=(options && options->login)?person(options->login):0;
+   user = options->login ? person(options->login) : 0;
    protlevel=con->protocol_level;
 
    /* setup async stuff */
@@ -126,7 +128,7 @@ void async_new_text_old()
 
 class MiscInfo
 {
-  string _sprintf(int t)
+  protected string|zero _sprintf(int t)
   {
     if(t!='O') return 0;
     array(string) to = ({});
@@ -148,7 +150,7 @@ class MiscInfo
     object received_at;
     object sent_by;
     object sent_at;
-    string _sprintf(int t)
+    protected string _sprintf(int t)
     {
       return t=='O' && sprintf("%O(conf %d: text %d)", this_program,
 			       conf && conf->no, local_no);
@@ -164,7 +166,7 @@ class MiscInfo
    array(object) foot_to=({});
    array(object) foot_in=({});
 
-   void create(void|mapping|array(int) a)
+   protected void create(void|mapping|array(int) a)
    {
       int i;
       object r;
@@ -267,7 +269,7 @@ class MiscInfo
 				       VAR=CONV;			\
 				    fetch_##WHAT=0;			\
 				    array m=fetch_##WHAT##_callbacks;	\
-				    fetch_##WHAT##_callbacks=0;		\
+				    fetch_##WHAT##_callbacks = ({});	\
 				    m(this);				\
 				 },ARGS);				\
    }									\
@@ -458,8 +460,8 @@ class AuxItemInput
 {
   inherit ProtocolTypes.AuxItemInput;
 
-  void create(string|int tag_type, multiset _flags,
-	      int _inherit_limit, string _data)
+  protected void create(string|int tag_type, multiset _flags,
+			int _inherit_limit, string _data)
   {
     if(intp(tag_type))
       tag = tag_type;
@@ -470,7 +472,7 @@ class AuxItemInput
     data = _data;
   }
 
-  string _sprintf(int t)
+  protected string _sprintf(int t)
   {
     return t=='O' && sprintf("%O(%s)", this_program,
 			     search(itemname_to_tag, tag));
@@ -481,7 +483,7 @@ class AuxItemInput
 //!   Undocumented
 class AuxItems
 {
-  string _sprintf(int t)
+  protected string|zero _sprintf(int t)
   {
     if(t!='O') return 0;
     array desc = ({});
@@ -496,7 +498,7 @@ class AuxItems
 
   array(ProtocolTypes.AuxItem) aux_items;
 
-  void create(array(ProtocolTypes.AuxItem) _aux_items)
+  protected void create(array(ProtocolTypes.AuxItem) _aux_items)
   {
     aux_items=_aux_items;
     foreach(aux_items, ProtocolTypes.AuxItem item)
@@ -508,7 +510,7 @@ class AuxItems
     }
   }
 
-  mixed `[](string what)
+  protected mixed `[](string what)
   {
     switch (what)
     {
@@ -520,12 +522,12 @@ class AuxItems
     }
   }
 
-  array(string) _indices()
+  protected array(string) _indices()
   {
     return ({ "create" }) + indices(itemname_to_tag);
   }
 
-  mixed `->(string what) { return `[](what); }
+  protected mixed `->(string what) { return `[](what); }
 }
 
 //! All variables in this class is read only.
@@ -547,7 +549,7 @@ class Text
 
   //! @decl void create(string textnumber)
   //!	Initializes a Text object.
-   void create(int _no)
+   protected void create(int _no)
    {
       no=_no;
    }
@@ -580,7 +582,7 @@ class Text
        error */
   }
 
-  string _sprintf(int t)
+  protected string _sprintf(int t)
   {
     return t=='O' && sprintf("%O(%d)", this_program, no);
   }
@@ -614,7 +616,7 @@ class Text
   //! @decl mixed creation_time
   //!   The time the text was created on the server.
 
-   mixed `[](string what)
+   protected mixed `[](string what)
    {
       switch (what)
       {
@@ -676,9 +678,9 @@ class Text
       }
    }
 
-   mixed `->(string what) { return `[](what); }
+   protected mixed `->(string what) { return `[](what); }
 
-  array(string) _indices()
+  protected array(string) _indices()
   {
     return ({ "create",	"prefetch_text", "misc",
 	      "no",	"prefetch_stat", "marks",
@@ -752,7 +754,7 @@ class Membership
     }
   }
 
-  void create(object mb,int pers)
+  protected void create(object mb,int pers)
   {
     person=pers;
     setup(mb);
@@ -824,7 +826,7 @@ class Membership
     return map( sort(values(unread_numbers)), text );
   }
 
-  mixed `[](string what)
+  protected mixed `[](string what)
   {
     switch (what)
     {
@@ -845,14 +847,14 @@ class Membership
     }
   }
 
-  mixed `->(string what) { return `[](what); }
+  protected mixed `->(string what) { return `[](what); }
 
-  string _sprintf(int t)
+  protected string _sprintf(int t)
   {
     return t=='O' && sprintf("%O(%d)", this_program, conf->no);
   }
 
-  array(string) _indices()
+  protected array(string) _indices()
   {
     return ({ "unread_texts", "last_time_read",
 	      "read_texts",   "last_text_read",
@@ -886,7 +888,7 @@ class Person
    //! @endignore
 
   //! @decl void create(int no)
-   void create(int _no)
+   protected void create(int _no)
    {
       no=_no;
       conf=conference(no);
@@ -922,7 +924,7 @@ class Person
   //! @fixme
   //!   Undocumented
 
-   mixed `[](string what)
+   protected mixed `[](string what)
    {
       switch (what)
       {
@@ -974,14 +976,14 @@ class Person
       return conf[what];
    }
 
-   mixed `->(string what) { return `[](what); }
+   protected mixed `->(string what) { return `[](what); }
 
-  string _sprintf(int t)
+  protected string _sprintf(int t)
   {
     return t=='O' && sprintf("%O(%d)", this_program, no);
   }
 
-  array(string) _indices()
+  protected array(string) _indices()
   {
     return ({ "prefetch_stat",		"create",
 	      "prefetch_conf",		"no",
@@ -1024,7 +1026,7 @@ class Conference
   //! @endignore
 
   //! @decl void create(int no)
-  void create(int _no)
+  protected void create(int _no)
   {
     no=_no;
   }
@@ -1050,7 +1052,7 @@ class Conference
   //! @fixme
   //!   Undocumented
 
-  mixed `[](string what)
+  protected mixed `[](string what)
   {
     switch (what)
     {
@@ -1093,9 +1095,9 @@ class Conference
       }
    }
 
-   mixed `->(string what) { return `[](what); }
+   protected mixed `->(string what) { return `[](what); }
 
-  array(string) _indices()
+  protected array(string) _indices()
   {
     return ({ "create",	"aux_items",	"prefetch_stat",
 	      "no",	"super_conf",	"no_of_members",
@@ -1107,7 +1109,7 @@ class Conference
 	      "permitted_submitters", });
   }
 
-  string _sprintf(int t)
+  protected string _sprintf(int t)
   {
     return t=='O' && sprintf("%O(%d)", this_program, no);
   }
@@ -1191,14 +1193,12 @@ this_program logout()
 //! @seealso
 //!   @[Conference.create_text()], @[Text.comment()], @[Text.footnote()]
 object|void create_text(string subject,string body,
-			void|mapping options,
+			mapping options = ([]),
 			void|function callback,
-			void|mixed ...extra)
+                        mixed ...extra)
 {
    string text=replace(subject,"\n"," ")+"\n"+body;
    MiscInfo misc=MiscInfo(options);
-
-   if (!options) options=([]);
 
    return _create_text(text,misc,
 		       options->aux_items,
@@ -1208,10 +1208,10 @@ object|void create_text(string subject,string body,
 
 object|void _create_text(string textstring,
 			 MiscInfo misc,
-			 void|array(AuxItemInput) aux_items,
+			 array(AuxItemInput) aux_items = ({}),
 			 int anonymous,
 			 void|function callback,
-			 void|mixed ...extra)
+                         mixed ...extra)
 {
    int|object res;
    string call;
@@ -1224,7 +1224,7 @@ object|void _create_text(string textstring,
    if(protlevel<10)
      call += "_old";
    else
-     args += ({ aux_items || ({}) });
+     args += ({ aux_items });
 
    if (callback)
    {
@@ -1271,7 +1271,7 @@ void register_async_message_callback(function(int,int,string:void) cb)
   con->con->add_async_callback("async-send-message", cb);
 }
 
-string _sprintf(int t)
+protected string _sprintf(int t)
 {
   return t=='O' && sprintf("%O(%s)", this_program, server||"");
 }

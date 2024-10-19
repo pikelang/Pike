@@ -26,6 +26,8 @@ int maybe_tty = 1;
 
 mapping(string:int) cond_cache=([]);
 
+float float_precision = 1.0;
+
 #if constant(thread_create)
 #define HAVE_DEBUG
 #endif
@@ -70,30 +72,35 @@ array(string) find_testsuites(string dir)
   return ret;
 }
 
-class ScriptTestsuite(string file_name)
+class ScriptTestsuite(string|zero file_name)
 {
   inherit Testsuite;
+
+  int pos = -1;
+
   protected int(1..1) _sizeof() { return 1; }
-  protected this_program `+(mixed steps)
+  protected int(0..0) _iterator_next()
   {
-    if(steps) file_name = 0;
-    return this;
-  }
-  protected int(0..1) `!() { return !file_name; }
-  int(0..0) next()
-  {
-    file_name = 0;
+    pos++;
+    if (pos) {
+      pos = -1;
+      return UNDEFINED;
+    }
     return 0;
   }
-  int(0..) index() { return 0; }
-  Test value()
+  protected int(0..) _iterator_index() { return pos && UNDEFINED; }
+  protected Test _iterator_value()
   {
     return Test(file_name, 1, 1, "RUNCT",
                 sprintf("array a() { return Tools.Testsuite.run_script (({ %q })); }", file_name));
   }
+  this_program skip(int steps)
+  {
+    pos += steps;
+  }
 }
 
-Testsuite read_tests( string fn ) {
+object(Testsuite)|zero read_tests( string fn ) {
   string tests = Stdio.read_file( fn );
   if(!tests) {
     log_msg("Failed to read test file %O, errno=%d.\n",
@@ -125,7 +132,7 @@ class WarningFlag {
   void compile_warning(string file, int line, string text) {
     if (pushed_warnings[text]) return;
     if (sizeof(filter(indices(pushed_warnings), glob, text))) return;
-    warnings += ({ sprintf("%s:%d: %s", file, line, text) });
+    warnings += ({ sprintf("%s:%d: Warning: %s", file, line, text) });
     warning = 1;
   }
 
@@ -137,7 +144,7 @@ class WarningFlag {
   }
 
   void compile_error(string file, int line, string text) {
-    log_msg("%s:%d: %s\n", file,line,text);
+    log_msg("%s:%d: Error: %s\n", file,line,text);
   }
 }
 
@@ -146,12 +153,12 @@ class WarningFlag {
 //
 
 #ifndef WATCHDOG_TIMEOUT
-// 40 minutes should be enough...
+// 10 minutes should be enough...
 #if !constant(_reset_dmalloc)
-#define WATCHDOG_TIMEOUT 60*40
+#define WATCHDOG_TIMEOUT 60*10
 #else
 // ... unless we're running dmalloc
-#define WATCHDOG_TIMEOUT 60*160
+#define WATCHDOG_TIMEOUT 60*40
 #endif
 #endif
 
@@ -281,7 +288,11 @@ class Watchdog
       WATCHDOG_MSG ("Error reading stdin pipe: %s.\n",
 		    strerror (stdin->errno()));
     }
-    _exit(EXIT_OK);
+    if (!timeout_phase) {
+      _exit(EXIT_OK);
+    } else {
+      _exit(EXIT_WATCHDOG_FAILED);
+    }
   }
 
   void check_parent_pid()
@@ -322,7 +333,6 @@ class Watchdog
 	  }
 	  WATCHDOG_MSG ("%s: Sending SIGABRT to %d.\n", ts, watched_pid);
 	  kill(watched_pid, signum("SIGABRT"));
-	  stdin->close();
 	  timeout_phase = 1;
 	  call_out (timeout, 60);
 	  break;
@@ -370,7 +380,7 @@ class Watchdog
     if (err) master()->report_error(err);
   }
 
-  void create (int pid, int verbose)
+  protected void create (int pid, int verbose)
   {
     parent_pid = watched_pid = pid;
     this::verbose = verbose;
@@ -415,6 +425,9 @@ array(string) find_test(string ts)
 class WidenerPlugin
 {
   inherit Plugin;
+
+  @Pike.Annotations.Implements(Plugin);
+
   int shift;
 
   int(0..1) active(Test t)
@@ -441,6 +454,8 @@ class SaveParentPlugin
 {
   inherit Plugin;
 
+  @Pike.Annotations.Implements(Plugin);
+
   int(0..1) active(Test t)
   {
     if( has_value(t->source, "don't save parent") ) return 0;
@@ -448,7 +463,7 @@ class SaveParentPlugin
     return (t->number/6)&1;
   }
 
-  string process_name(string name, string source)
+  string process_name(string name)
   {
     return name + " (save parent)";
   }
@@ -462,6 +477,8 @@ class SaveParentPlugin
 class CRNLPlugin
 {
   inherit Plugin;
+
+  @Pike.Annotations.Implements(Plugin);
 
   int(0..1) active(Test t)
   {
@@ -482,6 +499,9 @@ class CRNLPlugin
 class LinePlugin
 {
   inherit Plugin;
+
+  @Pike.Annotations.Implements(Plugin);
+
   string preprocess(string source)
   {
     if(source[-1]!='\n') source+="\n";
@@ -523,19 +543,74 @@ class LinePlugin
 }
 
 //
+// Custom master
+//
+// This is mostly used to catch code that triggers
+// calls of master()->handle_error().
+//
+
+class TestMaster
+{
+  inherit "/master";
+
+  protected int error_counter;
+  int get_and_clear_error_counter()
+  {
+    int ret = error_counter;
+    error_counter = 0;
+    return ret;
+  }
+
+  void handle_error(array|object trace)
+  {
+    if (arrayp(trace) && stringp(trace[0]) &&
+	has_prefix(trace[0], "Ignore")) {
+      return;
+    }
+    error_counter++;
+    log_msg(sprintf("Runtime error: %s\n",
+		    describe_backtrace(trace)));
+  }
+
+  protected void create(object|void orig_master)
+  {
+    ::create();
+
+    if (orig_master) {
+      environment = orig_master->getenv(-1);
+      /* Copy variables from the original master. */
+      foreach(indices(orig_master), string varname) {
+	catch {
+	  this[varname] = orig_master[varname];
+	};
+	/* Ignore errors when copying functions, etc. */
+      }
+    }
+
+    programs["/master"] = this_program;
+    objects[this_program] = this;
+  }
+}
+
+//
 // Main program
 //
 
 int main(int argc, array(string) argv)
 {
   int watchdog_pid, subprocess, failed_cond;
-  int verbose, prompt, successes, errors, t, check, asmdebug;
+  int verbose, prompt, successes, errors, t, check, asmdebug, optdebug;
   int skipped;
   array(string) forked;
   int start, fail, mem;
   int loop=1;
   int end=0x7fffffff;
   string extra_info="";
+
+  object real_master = master();
+
+  replace_master(TestMaster(real_master));
+  add_constant("__real_master", real_master);
 
 #if constant(System.getrlimit)
   // Attempt to enable coredumps.
@@ -586,8 +661,11 @@ int main(int argc, array(string) argv)
     ({"loop",Getopt.HAS_ARG,({"-l","--loop"})}),
     ({"trace",Getopt.HAS_ARG,({"-t","--trace"})}),
     ({"check",Getopt.MAY_HAVE_ARG,({"-c","--check"})}),
-#if constant(_assembler_debug)
+#if constant(Debug.assembler_debug)
     ({"asm",Getopt.MAY_HAVE_ARG,({"--assembler-debug"})}),
+#endif
+#if constant(Debug.optimizer_debug)
+    ({"opt",Getopt.MAY_HAVE_ARG,({"--optimizer-debug"})}),
 #endif
     ({"mem",Getopt.NO_ARG,({"-m","--mem","--memory"})}),
     ({"auto",Getopt.MAY_HAVE_ARG,({"-a","--auto"})}),
@@ -647,6 +725,7 @@ int main(int argc, array(string) argv)
 	case "trace": t+=foo(opt[1]); break;
 	case "check": check+=foo(opt[1]); break;
         case "asm": asmdebug+=foo(opt[1]); break;
+        case "opt": optdebug+=foo(opt[1]); break;
 	case "mem": mem=1; break;
 
         case "auto":
@@ -689,6 +768,20 @@ int main(int argc, array(string) argv)
       }
     }
 
+  int mantissa_bits = Pike.get_runtime_info()->float_size - 9;
+  if (mantissa_bits > 23) {
+    // 32-bit IEEE has 23 bits mantissa.
+    // 64-bit IEEE has 52-bits mantissa.
+    // 128-bit IEEE has 112-bits mantissa.
+    // IBM 128-bit has 106-bits mantissa.
+    mantissa_bits -= 3;
+    if (mantissa_bits > 52)
+      mantissa_bits -= 10;
+  }
+
+  // NB: Allow fluctuation in the least significant decimal digit (ie 4bits).
+  float_precision = 1.0/(1<<(mantissa_bits - 5));
+
   // For easy access in spawned test scripts.
   putenv ("TEST_VERBOSITY", (string) verbose);
   putenv ("TEST_ON_TTY", (string) (maybe_tty && Stdio.Terminfo.is_tty()));
@@ -728,6 +821,7 @@ int main(int argc, array(string) argv)
     if (t) forked += ({ "--trace=" + t });
     if (check) forked += ({ "--check=" + check });
     if (asmdebug) forked += ({ "--asm=" + asmdebug });
+    if (optdebug) forked += ({ "--asm=" + optdebug });
     if (mem) forked += ({ "--memory" });
     // auto already handled.
     if (failed_cond) forked += ({ "--failed-cond" });
@@ -760,6 +854,7 @@ int main(int argc, array(string) argv)
 	exit(EXIT_WATCHDOG_FAILED);
       }
       pipe_2->dup2 (Stdio.stdout);
+      pipe_2->close();
       watchdog=Process.create_process(
 	backtrace()[0][3] + ({ "--watchdog="+getpid() }),
 	(["stdin": pipe_1, "stdout": orig_stdout]));
@@ -819,9 +914,13 @@ int main(int argc, array(string) argv)
   array const_names = indices(all_constants());
 #endif
 
-#if constant(_assembler_debug)
+#if constant(Debug.assembler_debug)
   if(asmdebug)
-    _assembler_debug(asmdebug);
+    Debug.assembler_debug(asmdebug);
+#endif
+#if constant(Debug.optimizer_debug)
+  if(optdebug)
+    Debug.optimizer_debug(optdebug);
 #endif
 
   while(loop--)
@@ -869,10 +968,10 @@ int main(int argc, array(string) argv)
       log_msg("Doing tests in %s (%s)\n",
               tests->name ? tests->name() : testsuite,
               ({sizeof(tests) + " tests",
-		subprocess && ("pid " + getpid())}) * ", ");
+                0 && subprocess && ("pid " + getpid())}) * ", ");
       int qmade, qskipped, qmadep, qskipp;
 
-      tests+=start;
+      tests->skip(start);
       foreach(tests; int e; Test test)
       {
 	if (!((e-start) % 10))
@@ -1039,7 +1138,8 @@ int main(int argc, array(string) argv)
           test->compile();
           if(test->compilation_error)
 	  {
-            if (test->compilation_error->is_cpp_or_compilation_error)
+            if (objectp(test->compilation_error) &&
+		test->compilation_error->is_cpp_or_compilation_error)
 	      log_msg ("%s failed.\n", fname);
 	    else
               log_msg ("%s failed:\n%s", fname,
@@ -1063,7 +1163,8 @@ int main(int argc, array(string) argv)
           test->compile();
           if(test->compilation_error)
 	  {
-            if (test->compilation_error->is_cpp_or_compilation_error) {
+            if (objectp(test->compilation_error) &&
+		test->compilation_error->is_cpp_or_compilation_error) {
               successes++;
 	    }
 	    else {
@@ -1087,7 +1188,8 @@ int main(int argc, array(string) argv)
           test->compile();
           if(test->compilation_error)
 	  {
-            if (test->compilation_error->is_cpp_or_compilation_error)
+            if (objectp(test->compilation_error) &&
+		test->compilation_error->is_cpp_or_compilation_error)
 	      log_msg ("%s failed.\n", fname);
 	    else
               log_msg ("%s failed:\n%s", fname,
@@ -1168,7 +1270,8 @@ int main(int argc, array(string) argv)
           }) {
 	    if(t) trace(0);
             watchdog_show_last_test();
-            if (test->compilation_error?->is_cpp_or_compilation_error)
+            if (objectp(test->compilation_error) &&
+		test->compilation_error->is_cpp_or_compilation_error)
 	      log_msg ("%s failed.\n", fname);
 	    else
               log_msg ("%s failed:\n%s\n", fname,
@@ -1283,8 +1386,12 @@ int main(int argc, array(string) argv)
 	      watchdog_show_last_test();
 	      log_msg(fname + " failed.\n");
 	      print_code(source);
-	      log_msg_result("o->a(): %O\n"
-                             "o->b(): %O\n", a, b);
+	      log_msg_result("o->a()%s: %O\n"
+                             "o->b()%s: %O\n",
+			     (stringp(a)||arrayp(a))?
+			     sprintf(" [%d elements]", sizeof(a)):"", a,
+			     (stringp(b)||arrayp(b))?
+			     sprintf(" [%d elements]", sizeof(b)):"", b);
 	      errors++;
 	      if (stringp(a) && stringp(b) && (sizeof(a) == sizeof(b)) &&
 		  (sizeof(a) > 20)) {
@@ -1311,8 +1418,12 @@ int main(int argc, array(string) argv)
 	      watchdog_show_last_test();
 	      log_msg(fname + " failed.\n");
 	      print_code(source);
-	      log_msg_result("o->a(): %O\n"
-                             "o->b(): %O\n", a, b);
+	      log_msg_result("o->a()%s: %O\n"
+                             "o->b()%s: %O\n",
+			     (stringp(a)||arrayp(a))?
+			     sprintf(" [%d elements]", sizeof(a)):"", a,
+			     (stringp(b)||arrayp(b))?
+			     sprintf(" [%d elements]", sizeof(b)):"", b);
 	      errors++;
 	      if (stringp(a) && stringp(b) && (sizeof(a) == sizeof(b)) &&
 		  (sizeof(a) > 20)) {
@@ -1323,13 +1434,84 @@ int main(int argc, array(string) argv)
 		    log_msg("  %4d: 0x%04x != 0x%04x\n", i, a[i], b[i]);
 		  }
 		}
+              } else if (arrayp(a) && arrayp(b) && (sizeof(a) == sizeof(b))) {
+                log_msg("Differences at:\n");
+                int i;
+                for(i = 0; i < sizeof(a); i++) {
+                  if (!equal(a[i], b[i])) {
+                    log_msg("  %4d: %O != %O\n", i, a[i], b[i]);
+                  }
+                }
 	      }
 	    }
+            break;
+
+          case "APPROX":
+            int match = 0;
+            float delta = 1.0;
+            if (floatp(a) && floatp(b)) {
+              if (a != 0.0) {
+                if (a > 0.0) {
+                  delta = a;
+                } else {
+                  delta = -a;
+                }
+              }
+              if (b != 0.0) {
+                if (b > 0.0) {
+                  if (b < delta) {
+                    delta = b;
+                  }
+                } else {
+                  if (-b < delta) {
+                    delta = -b;
+                  }
+                }
+              } else {
+                // When comparing against 0.0, we allow for
+                // a float_precision discrepancy.
+                if (delta > 1.0) {
+                  delta = 1.0;
+                }
+              }
+              delta *= float_precision;
+              match = ((a + delta >= b) && (a - delta <= b));
+            } else {
+              // For convenience, allow returning eg strings
+              // to signal errors.
+              match = equal(a, b);
+            }
+            if (match) {
+              successes++;
+            }
+            else {
+              watchdog_show_last_test();
+              log_msg(fname + " failed.\n");
+              print_code(source);
+              log_msg_result("o->a(): %O\n"
+                             "o->b(): %O\n",
+                             a, b);
+              if (floatp(a) && floatp(b)) {
+                log_msg_result("diff (a - b): %O\n"
+                               "expected precision: %O\n",
+                               a - b, delta);
+              }
+              errors++;
+            }
             break;
 
 	  default:
 	    log_msg("%s: Unknown test type (%O).\n", fname, test->type);
 	    errors++;
+	  }
+
+	  // Count asynchronously generated runtime errors too.
+	  int runtime_errors = master()->get_and_clear_error_counter();
+	  if (runtime_errors) {
+	    // The errors have already been reported.
+	    log_msg(fname + " caused runtime errors.\n");
+	    print_code(source);
+	    errors += runtime_errors;
 	  }
 	}
 

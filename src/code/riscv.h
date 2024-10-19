@@ -69,7 +69,9 @@ void riscv_upd_int(PIKE_OPCODE_T *ptr, INT32 n);
 #define READ_INCR_BYTE(PC)	(((PC)++)[0])
 #endif
 #define ins_data(VAL)	  riscv_ins_int((INT32)(VAL))
-#define read_program_data(PTR, OFF)	riscv_read_int((PTR) + ((sizeof(INT32)/sizeof(PIKE_OPCODE_T))*(OFF)))
+#define read_program_data(PTR, OFF)	\
+  riscv_read_int((PTR) + (((ptrdiff_t)(sizeof(INT32)/sizeof(PIKE_OPCODE_T))) * \
+                          (OFF)))
 
 #define LOW_GET_JUMP()	riscv_read_int(&PROG_COUNTER[JUMP_EPILOGUE_SIZE])
 #define LOW_SKIPJUMP()	(SET_PROG_COUNTER(PROG_COUNTER + JUMP_EPILOGUE_SIZE + 2))

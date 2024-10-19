@@ -57,7 +57,7 @@ int wf_blob_next( Blob *b )
     }
     ref_push_string( b->word );
     push_int( b->docid );
-    push_int64( (INT64) b );
+    push_int64( (INT64)(ptrdiff_t) b );
     apply_svalue( b->feed, 3 );
     if( TYPEOF(sp[-1]) != T_STRING )
     {
@@ -80,7 +80,7 @@ int wf_blob_next( Blob *b )
       }
       ref_push_string( b->word );
       push_int( b->docid );
-      push_int64( (INT64) b );
+      push_int64( (INT64)(ptrdiff_t) b );
       apply_svalue( b->feed, 3 );
       if( TYPEOF(sp[-1]) != T_STRING )
       {
@@ -124,6 +124,7 @@ Hit wf_blob_hit( Blob *b, int n )
   {
     hit.type = HIT_NOTHING;
     hit.raw = 0;
+    hit.u.combined = 0;
     return hit;
   }
   else

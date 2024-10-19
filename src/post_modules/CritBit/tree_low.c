@@ -1,3 +1,4 @@
+/* -*- mode: C; c-basic-offset: 4; -*- */
 #include <stdlib.h>
 #include <sys/types.h>
 
@@ -326,6 +327,8 @@ PARENT:
 	    }
 	}
 
+    } else if (val) {
+      SET_SVAL(*val, PIKE_T_INT, NUMBER_UNDEFINED, integer, 0);
     }
 
     cb_check_node(tree->root);

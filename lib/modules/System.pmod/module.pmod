@@ -20,7 +20,7 @@ constant TM    = __builtin.TM;
 //!  On NT systems, this returns the user the current thread is running as,
 //!  while on Unix-like systems this function returns the user that started
 //!  the process (rather than the effective user)..
-string get_user()
+string|zero get_user()
 {
 #if constant(_system.GetUserName)
   return GetUserName();
@@ -40,7 +40,7 @@ string get_user()
 //! @note
 //! This method uses the standard environment variables for
 //! various systems to determine the home directory.
-string get_home()
+string|zero get_home()
 {
   string home = [string]getenv("HOME");
   if(home) return home;
@@ -54,4 +54,62 @@ string get_home()
 #endif
 
   return 0;
+}
+
+//! Drops the process privileges to the provided @[user] and
+//! optionally @[group]. If no group is provided the default group for
+//! the user is used.
+//!
+//! @param exception
+//!   If true, an error exception will be thrown if
+void drop_privs(string user, void|string group, void|int exception) {
+
+  void my_error(string msg, mixed ... args) {
+    if( exception )
+      error(msg, @args);
+    exit(1, msg, @args);
+  }
+
+#if constant(_system.getpwent)
+  // FIXME: Reset the cursor for System.getpwent()!
+  int uid=-1, gid=-1;
+  array|zero pwent;
+  while( pwent = getpwent() ) {
+    if( pwent[0]==user ) {
+      uid = [int]pwent[2];
+      gid = [int]pwent[3];
+      break;
+    }
+  }
+  if( uid==-1 ) {
+    my_error("Unable to drop privileges. Unknown user %O.\n", user);
+  }
+
+  if( group ) {
+    // FIXME: Reset the cursor for System.getgrent()!
+    gid = -1;
+    array|zero grent;
+    while( grent = getgrent() ) {
+      if( grent[0]==group ) {
+        gid = [int]grent[2];
+        break;
+      }
+    }
+    if( gid==-1 ) {
+      my_error("Unable to drop privileges. Unknown group %O.\n", group);
+    }
+  }
+
+  if( System.setgid(gid) != 0 ) {
+    my_error("Unable to change group to gid %d\n", gid);
+  }
+  if( System.setuid(uid) != 0 ) {
+    my_error("Unable to change user to uid %d\n", uid);
+  }
+  if( System.setuid(0) == 0 ) {
+    my_error("Privileges not actually dropped.\n");
+  }
+#else
+  my_error("Dropping of privileges not implemented.\n");
+#endif
 }

@@ -9,6 +9,8 @@
 
 inherit Nettle.CHACHA;
 
+@Pike.Annotations.Implements(Crypto.Cipher);
+
 #if constant(Nettle.CHACHA_POLY1305)
 
 //! @module POLY1305

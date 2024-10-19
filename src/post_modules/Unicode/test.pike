@@ -1,5 +1,7 @@
 #! /usr/bin/env pike
 
+#charset iso-8859-1
+
 #define c1 c[0]
 #define c2 c[1]
 #define c3 c[2]

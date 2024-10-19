@@ -37,7 +37,7 @@
 
 #include <time.h>
 
-/* Old versions of the headerfiles don't have this constant... */
+/* Old versions of the headerfiles don't have these constants... */
 #ifndef INVALID_SET_FILE_POINTER
 #define INVALID_SET_FILE_POINTER ((DWORD)-1)
 #endif
@@ -46,7 +46,24 @@
 #define ENOTSOCK	WSAENOTSOCK
 #endif
 
+#ifndef ERROR_DIRECTORY_NOT_SUPPORTED
+#define ERROR_DIRECTORY_NOT_SUPPORTED	336L
+#endif
+
+#ifndef SYMBOLIC_LINK_FLAG_DIRECTORY
+#define SYMBOLIC_LINK_FLAG_DIRECTORY			0x1
+#endif
+
+#ifndef SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE
+#define SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE	0x2
+#endif
+
+#ifndef FSCTL_GET_REPARSE_POINT
+#define FSCTL_GET_REPARSE_POINT				0x0900a8
+#endif
+
 #include "threads.h"
+#include "signal_handler.h"
 
 /* Mutex protecting da_handle, fd_type, fd_busy and first_free_handle. */
 static PIKE_MUTEX_T fd_mutex;
@@ -74,6 +91,9 @@ HANDLE da_handle[FD_SETSIZE];
  *
  *   FD_PIPE (-5)
  *     Handle from CreatePipe().
+ *
+ *   FD_PTY (-6)
+ *     struct my_pty * set by openpty().
  */
 int fd_type[FD_SETSIZE];
 
@@ -198,6 +218,7 @@ static const unsigned long pike_doserrtab[][2] = {
   {  ERROR_INFLOOP_IN_RELOC_CHAIN,	ENOEXEC		}, /* 202 */
   {  ERROR_FILENAME_EXCED_RANGE,	ENOENT,		}, /* 206 */
   {  ERROR_NESTING_NOT_ALLOWED,		EAGAIN,		}, /* 215 */
+  {  ERROR_DIRECTORY_NOT_SUPPORTED,	EISDIR,		}, /* 336 */
   {  ERROR_NOT_ENOUGH_QUOTA,		ENOMEM,		}, /* 1816 */
 };
 
@@ -265,10 +286,81 @@ PMOD_EXPORT void set_errno_from_win32_error (unsigned long err)
 
 #undef NTLIBFUNC
 #define NTLIBFUNC(LIB, RET, NAME, ARGLIST)				\
-  typedef RET (WINAPI * PIKE_CONCAT3(Pike_NT_, NAME, _type)) ARGLIST;	\
-  static PIKE_CONCAT3(Pike_NT_, NAME, _type) PIKE_CONCAT(Pike_NT_, NAME)
+  PIKE_CONCAT3(Pike_NT_, NAME, _type) PIKE_CONCAT(Pike_NT_, NAME)
 
 #include "ntlibfuncs.h"
+
+/* PTY-handling
+ *
+ * PTYs on NT are implemented via ConPTY (Windows 10 1809 (build 17763)
+ * and later).
+ *
+ * We attempt to have them behave similar to ptys on POSIX-systems.
+ * This does however require a bit of work.
+ *
+ * Ptys are allocated as a pair of pipes (one in each direction)
+ * between master and slave. The slave end is given to ConPTY.
+ *
+ * When a process is started that uses a slave for stdin, stdout
+ * or stderr, it will instead of the slave pipes be registered
+ * with the ConPTY, which in turn will provide the actual pty handles.
+ *
+ * Caveat: The ConPTY does not terminate its end of the pipes
+ *         when all client processes have closed their handles.
+ *         This is due to it still being possible to use the
+ *         ConPTY for further processes.
+ *
+ * Update: The above behavior is apparently a bug. Cf
+ *         https://github.com/microsoft/terminal/issues/4564
+ *
+ * Note also that closing the ConPTY causes any remaining client
+ * processes to be terminated.
+ *
+ * In order to handle the above, we keep track of the processes
+ * that have been registered with the ConPTY, and use this list
+ * to close the ConPTY when all the processes are dead and
+ * we do not have the slave end any more.
+ */
+
+void free_pty(struct my_pty *pty)
+{
+  if (sub_ref(pty)) return;
+  free(pty);
+}
+
+/* NB: fd_mutex MUST be held at entry. */
+static void close_pty(struct my_pty *pty)
+{
+  struct my_pty *other;
+  struct pid_status *pid;
+
+  if (--pty->fd_refs) {
+    sub_ref(pty);
+    return;
+  }
+
+  CloseHandle(pty->write_pipe);
+  CloseHandle(pty->read_pipe);
+
+  /* Unlink the pair. */
+  other = pty->other;
+  if (other) {
+    other->other = NULL;
+    pty->other = NULL;
+  }
+
+  if (pty->conpty) {
+    /* Closing the master side. */
+    Pike_NT_ClosePseudoConsole(pty->conpty);
+    pty->conpty = 0;
+  }
+
+  while ((pid = pty->clients)) {
+    pty->clients = pid_status_unlink_pty(pid);
+  }
+
+  free_pty(pty);
+}
 
 #define ISSEPARATOR(a) ((a) == '\\' || (a) == '/')
 
@@ -307,7 +399,7 @@ PMOD_EXPORT HANDLE CheckValidHandle(HANDLE h)
 #endif
 
 /* Used by signal_handler.c:get_inheritable_handle(). */
-int fd_to_handle(int fd, int *type, HANDLE *handle)
+int fd_to_handle(int fd, int *type, HANDLE *handle, int exclusive)
 {
   int ret = -1;
 
@@ -315,7 +407,7 @@ int fd_to_handle(int fd, int *type, HANDLE *handle)
 
   if (fd >= FD_NO_MORE_FREE) {
     mt_lock(&fd_mutex);
-    while (fd_busy[fd]) {
+    while ((fd_busy[fd] < 0) || (exclusive && fd_busy[fd])) {
       FDDEBUG(fprintf(stderr, "fd %d is busy; waiting...\n", fd));
       co_wait(&fd_cond, &fd_mutex);
     }
@@ -323,10 +415,14 @@ int fd_to_handle(int fd, int *type, HANDLE *handle)
       FDDEBUG(fprintf(stderr, "fd %d is valid.\n", fd));
       if (type) *type = fd_type[fd];
       if (handle) *handle = da_handle[fd];
-      fd_busy[fd] = 1;
+      if (exclusive) {
+	fd_busy[fd] = -1;
+      } else {
+	fd_busy[fd]++;
+      }
       ret = 0;
-      FDDEBUG(fprintf(stderr, "fd %d ==> handle: %ld (%d)\n",
-		      fd, (long)da_handle[fd], fd_type[fd]));
+      FDDEBUG(fprintf(stderr, "fd %d ==> handle: 0x%lx (%d)\n",
+		      fd, (unsigned long)da_handle[fd], fd_type[fd]));
     } else {
       FDDEBUG(fprintf(stderr, "fd %d is invalid.\n", fd));
       errno = EBADF;
@@ -340,7 +436,7 @@ int fd_to_handle(int fd, int *type, HANDLE *handle)
   return ret;
 }
 
-static int fd_to_socket(int fd, SOCKET *socket)
+static int fd_to_socket(int fd, SOCKET *socket, int exclusive)
 {
   int ret = -1;
 
@@ -348,14 +444,18 @@ static int fd_to_socket(int fd, SOCKET *socket)
 
   if (fd >= FD_NO_MORE_FREE) {
     mt_lock(&fd_mutex);
-    while (fd_busy[fd]) {
+    while ((fd_busy[fd] < 0) || (exclusive && fd_busy[fd])) {
       FDDEBUG(fprintf(stderr, "fd %d is busy; waiting...\n", fd));
       co_wait(&fd_cond, &fd_mutex);
     }
     if (fd_type[fd] == FD_SOCKET) {
       FDDEBUG(fprintf(stderr, "fd %d is a valid socket.\n", fd));
       if (socket) *socket = (SOCKET)da_handle[fd];
-      fd_busy[fd] = 1;
+      if (exclusive) {
+	fd_busy[fd] = -1;
+      } else {
+	fd_busy[fd]++;
+      }
       ret = 0;
     } else if (fd_type[fd] < 0) {
       FDDEBUG(fprintf(stderr, "fd %d is not a socket.\n", fd));
@@ -395,7 +495,7 @@ static int allocate_fd(int type, HANDLE handle)
     first_free_handle = fd_type[fd];
     fd_type[fd] = type;
     da_handle[fd] = handle;
-    fd_busy[fd] = 1;
+    fd_busy[fd] = -1;
   } else {
     FDDEBUG(fprintf(stderr, "All fds are allocated.\n"));
     errno = EMFILE;
@@ -429,7 +529,7 @@ static int reallocate_fd(int fd, int type, HANDLE handle)
     goto reallocate;
   }
 
-  FDDEBUG(fprintf(stderr, "fd %d was not i use. Allocating.\n", fd));
+  FDDEBUG(fprintf(stderr, "fd %d was not in use. Allocating.\n", fd));
 
   prev_fd = first_free_handle;
 
@@ -458,9 +558,16 @@ static int reallocate_fd(int fd, int type, HANDLE handle)
   return -1;
 
  reallocate:
+  FDDEBUG(fprintf(stderr, "Reallocating fd %d from handle 0x%08lx to 0x%08lx\n",
+		  fd, (unsigned long)(ptrdiff_t)da_handle[fd],
+		  (unsigned long)(ptrdiff_t)handle));
+
   if (fd_type[fd] == FD_SOCKET) {
     FDDEBUG(fprintf(stderr, "Closing socket that was fd %d.\n", fd));
     closesocket((SOCKET)da_handle[fd]);
+  } else if (fd_type[fd] == FD_PTY) {
+    FDDEBUG(fprintf(stderr, "Closing pty that was fd %d.\n", fd));
+    close_pty((struct my_pty *)da_handle[fd]);
   } else {
     FDDEBUG(fprintf(stderr, "Closing handle that was fd %d.\n", fd));
     CloseHandle(da_handle[fd]);
@@ -471,7 +578,7 @@ static int reallocate_fd(int fd, int type, HANDLE handle)
   FDDEBUG(fprintf(stderr, "Allocating fd %d.\n", fd));
   fd_type[fd] = type;
   da_handle[fd] = handle;
-  fd_busy[fd] = 1;
+  fd_busy[fd] = -1;
   mt_unlock(&fd_mutex);
   return fd;
 }
@@ -489,7 +596,11 @@ void release_fd(int fd)
 
   assert(fd_busy[fd]);
 
-  fd_busy[fd] = 0;
+  if (fd_busy[fd] < 0) {
+    fd_busy[fd] = 0;
+  } else {
+    fd_busy[fd]--;
+  }
 
   FDDEBUG(fprintf(stderr, "Broadcasting now that fd %d is no longer busy.\n",
 		  fd));
@@ -508,7 +619,7 @@ static void free_fd(int fd)
   FDDEBUG(fprintf(stderr, "Freeing fd %d. Busy: %d\n", fd, fd_busy[fd]));
 
   if (fd_type[fd] < FD_NO_MORE_FREE) {
-    assert(fd_busy[fd]);
+    assert(fd_busy[fd] < 0);
 
     fd_type[fd] = first_free_handle;
     first_free_handle = fd;
@@ -531,7 +642,7 @@ static void set_fd_handle(int fd, HANDLE handle)
   }
 
   mt_lock(&fd_mutex);
-  assert(fd_busy[fd]);
+  assert(fd_busy[fd] < 0);
 
   da_handle[fd] = handle;
   mt_unlock(&fd_mutex);
@@ -551,8 +662,37 @@ PMOD_EXPORT char *debug_fd_info(int fd)
     case FD_CONSOLE: return "IS CONSOLE";
     case FD_FILE: return "IS FILE";
     case FD_PIPE: return "IS PIPE";
+    case FD_PTY: return "IS PTY";
     default: return "NOT OPEN";
   }
+}
+
+PMOD_EXPORT int debug_fd_isatty(int fd)
+{
+  int type;
+  HANDLE h;
+
+  if (fd_to_handle(fd, &type, &h, 0) < 0) {
+    return 0;
+  }
+
+  if (Pike_NT_GetConsoleMode) {
+    DWORD mode = 0;
+    if (Pike_NT_GetConsoleMode(h, &mode)) {
+      release_fd(fd);
+      return 1;
+    }
+  } else {
+    if (GetFileType(h) == FILE_TYPE_CHAR) {
+      /* Assume it is the console. */
+      release_fd(fd);
+      return 1;
+    }
+  }
+
+  errno = ENOTTY;
+  release_fd(fd);
+  return 0;
 }
 
 PMOD_EXPORT int debug_fd_query_properties(int fd, int guess)
@@ -561,7 +701,7 @@ PMOD_EXPORT int debug_fd_query_properties(int fd, int guess)
 
   FDDEBUG(fprintf(stderr, "fd_query_properties(%d, %d)...\n", fd, guess));
 
-  if (fd_to_handle(fd, &type, NULL) < 0) return 0;
+  if (fd_to_handle(fd, &type, NULL, 0) < 0) return 0;
   release_fd(fd);
 
   switch(type)
@@ -577,6 +717,9 @@ PMOD_EXPORT int debug_fd_query_properties(int fd, int guess)
 
     case FD_PIPE:
       return fd_INTERPROCESSABLE | fd_BUFFERED;
+
+    case FD_PTY:
+      return fd_INTERPROCESSABLE | fd_BUFFERED | fd_BIDIRECTIONAL;
     default: return 0;
   }
 }
@@ -586,6 +729,8 @@ void fd_init(void)
   int e;
   WSADATA wsadata;
   OSVERSIONINFO osversion;
+
+  FDDEBUG(fprintf(stderr, "fd_init()...\n"));
 
   mt_init(&fd_mutex);
   co_init(&fd_cond);
@@ -879,7 +1024,7 @@ static int IsUncRoot(const p_wchar1 *path)
   return 0 ;
 }
 
-PMOD_EXPORT p_wchar1 *pike_dwim_utf8_to_utf16(const p_wchar0 *str)
+p_wchar1 *low_dwim_utf8_to_utf16(const p_wchar0 *str, size_t len)
 {
   /* NB: Maximum expansion factor is 2.
    *
@@ -892,7 +1037,6 @@ PMOD_EXPORT p_wchar1 *pike_dwim_utf8_to_utf16(const p_wchar0 *str)
    * NB: Some extra padding at the end for NUL and adding
    *     of terminating slashes, etc.
    */
-  size_t len = strlen(str);
   p_wchar1 *res = malloc((len + 4) * sizeof(p_wchar1));
   size_t i = 0, j = 0;
 
@@ -950,6 +1094,11 @@ PMOD_EXPORT p_wchar1 *pike_dwim_utf8_to_utf16(const p_wchar0 *str)
  done:
   res[j++] = 0;	/* NUL-termination. */
   return res;
+}
+
+PMOD_EXPORT p_wchar1 *pike_dwim_utf8_to_utf16(const p_wchar0 *str)
+{
+  return low_dwim_utf8_to_utf16(str, strlen(str));
 }
 
 PMOD_EXPORT p_wchar0 *pike_utf16_to_utf8(const p_wchar1 *str)
@@ -1281,6 +1430,27 @@ PMOD_EXPORT int debug_fd_stat(const char *file, PIKE_STAT_T *buf)
   return(0);
 }
 
+PMOD_EXPORT int debug_fd_utime(const char *file, struct fd_utimbuf *times)
+{
+  p_wchar1 *fname = pike_dwim_utf8_to_utf16(file);
+  int ret;
+
+  if (!fname) {
+    errno = ENOMEM;
+    return -1;
+  }
+
+#ifdef HAVE__WUTIME64
+  ret = _wutime64(fname, times);
+#else
+  ret = _wutime(fname, times);
+#endif
+
+  free(fname);
+
+  return ret;
+}
+
 PMOD_EXPORT int debug_fd_truncate(const char *file, INT64 len)
 {
   p_wchar1 *fname = pike_dwim_utf8_to_utf16(file);
@@ -1320,6 +1490,191 @@ PMOD_EXPORT int debug_fd_truncate(const char *file, INT64 len)
   }
   CloseHandle(h);
   return 0;
+}
+
+PMOD_EXPORT int debug_fd_link(const char *oldpath, const char *newpath)
+{
+  if (!Pike_NT_CreateHardLinkW) {
+    errno = ENOTSUPP;
+    return -1;
+  }
+
+  {
+    p_wchar1 *oname = pike_dwim_utf8_to_utf16(oldpath);
+    ONERROR uwp;
+    p_wchar1 *nname;
+    int ret = 0;
+
+    SET_ONERROR(uwp, free, oname);
+
+    /* FIXME: Consider prefixing with "\\\\?\\" (4 characters)
+     *        to allow paths longer than 260 characters.
+     */
+    nname = pike_dwim_utf8_to_utf16(newpath);
+
+    if (!Pike_NT_CreateHardLinkW(nname, oname, NULL)) {
+      set_errno_from_win32_error(GetLastError());
+      ret = -1;
+    }
+
+    free(nname);
+    CALL_AND_UNSET_ONERROR(uwp);
+
+    return ret;
+  }
+}
+
+PMOD_EXPORT int debug_fd_symlink(const char *target, const char *linkpath)
+{
+  if (!Pike_NT_CreateSymbolicLinkW) {
+    errno = ENOTSUPP;
+    return -1;
+  }
+
+  {
+    p_wchar1 *tname = pike_dwim_utf8_to_utf16(target);
+    ONERROR uwp;
+    p_wchar1 *lnk;
+    int ret = 0;
+
+    SET_ONERROR(uwp, free, tname);
+
+    /* FIXME: Consider prefixing with "\\\\?\\" (4 characters)
+     *        to allow paths longer than 260 characters.
+     */
+    lnk = pike_dwim_utf8_to_utf16(linkpath);
+
+    if (!Pike_NT_CreateSymbolicLinkW(tname, lnk,
+                                     SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE) &&
+        ((GetLastError() != ERROR_DIRECTORY_NOT_SUPPORTED) ||
+         !Pike_NT_CreateSymbolicLinkW(tname, lnk,
+                                      SYMBOLIC_LINK_FLAG_DIRECTORY |
+                                      SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE))) {
+      set_errno_from_win32_error(GetLastError());
+      ret = -1;
+    }
+
+    free(lnk);
+    CALL_AND_UNSET_ONERROR(uwp);
+
+    return ret;
+  }
+}
+
+/* NB: Copied from
+ * https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/ntifs/ns-ntifs-_reparse_data_buffer
+ * in order to support compilation with old SDKs.
+ *
+ * The REPARSE_DATA_BUFFER type seems to typically be defined in <Ntifs.h>.
+ */
+struct Pike_NT_REPARSE_DATA_BUFFER_struct {
+  ULONG  ReparseTag;
+  USHORT ReparseDataLength;
+  USHORT Reserved;
+  union {
+    struct {
+      USHORT SubstituteNameOffset;
+      USHORT SubstituteNameLength;
+      USHORT PrintNameOffset;
+      USHORT PrintNameLength;
+      ULONG  Flags;
+      WCHAR  PathBuffer[1];
+    } SymbolicLinkReparseBuffer;
+    struct {
+      USHORT SubstituteNameOffset;
+      USHORT SubstituteNameLength;
+      USHORT PrintNameOffset;
+      USHORT PrintNameLength;
+      WCHAR  PathBuffer[1];
+    } MountPointReparseBuffer;
+    struct {
+      UCHAR DataBuffer[1];
+    } GenericReparseBuffer;
+  } DUMMYUNIONNAME;
+};
+
+PMOD_EXPORT ptrdiff_t debug_fd_readlink(const char *file,
+                                        char *buf, size_t bufsiz)
+{
+  p_wchar1 *fname = pike_dwim_utf8_to_utf16(file);
+  HANDLE h;
+  DWORD bytes = 0;
+  int ret = -1;
+  int e = EINVAL; /* Not a symlink. */
+
+  if (!fname) {
+    errno = ENOMEM;
+    return -1;
+  }
+
+  h = CreateFileW(fname, 0, 0, 0, OPEN_EXISTING,
+                  FILE_FLAG_OPEN_REPARSE_POINT|
+                  FILE_FLAG_BACKUP_SEMANTICS, 0);
+
+  if (h != INVALID_HANDLE_VALUE) {
+    struct Pike_NT_REPARSE_DATA_BUFFER_struct *reparse;
+    size_t sz = sizeof(struct Pike_NT_REPARSE_DATA_BUFFER_struct) +
+      bufsiz * 2 + 2;
+
+    e = ENOMEM;
+    if ((reparse = malloc(sz))) {
+      e = EINVAL;
+      if (DeviceIoControl(h, FSCTL_GET_REPARSE_POINT, 0, 0,
+                          reparse, sz, &bytes, 0)) {
+        p_wchar1 *dest = NULL;
+        size_t destlen = 0;
+        p_wchar0 *utf8_buf;
+
+        switch(reparse->ReparseTag) {
+        case IO_REPARSE_TAG_SYMLINK:
+          /* Adjust the struct to be what you typically expect... */
+          reparse->SymbolicLinkReparseBuffer.SubstituteNameOffset /= 2;
+          reparse->SymbolicLinkReparseBuffer.SubstituteNameLength /= 2;
+
+          dest = reparse->SymbolicLinkReparseBuffer.PathBuffer +
+            reparse->SymbolicLinkReparseBuffer.SubstituteNameOffset;
+          destlen = reparse->SymbolicLinkReparseBuffer.SubstituteNameLength;
+          break;
+        case IO_REPARSE_TAG_MOUNT_POINT:
+          /* Adjust the struct to be what you typically expect... */
+          reparse->MountPointReparseBuffer.SubstituteNameOffset /= 2;
+          reparse->MountPointReparseBuffer.SubstituteNameLength /= 2;
+
+          dest = reparse->MountPointReparseBuffer.PathBuffer +
+            reparse->MountPointReparseBuffer.SubstituteNameOffset;
+          destlen = reparse->MountPointReparseBuffer.SubstituteNameLength;
+          break;
+        }
+
+        if (dest) {
+          /* NUL terminate. */
+          dest[destlen] = 0;
+
+          e = ENOMEM;
+          utf8_buf = pike_utf16_to_utf8(dest);
+
+          if (utf8_buf) {
+            strncpy(buf, utf8_buf, bufsiz);
+            ret = strlen(utf8_buf) + 1;	/* Include NUL. */
+            if ((size_t)ret > bufsiz) ret = bufsiz;
+            e = 0;
+
+            free(utf8_buf);
+          }
+        }
+      }
+      free(reparse);
+    }
+  }
+
+  CloseHandle(h);
+
+  if (e) {
+    errno = e;
+    return -1;
+  }
+
+  return ret;
 }
 
 PMOD_EXPORT int debug_fd_rmdir(const char *dir)
@@ -1832,10 +2187,10 @@ PMOD_EXPORT FD debug_fd_accept(FD fd, struct sockaddr *addr,
 
   FDDEBUG(fprintf(stderr, "fd_accept(%d, %p, %p)...\n", fd, addr, addrlen));
 
-  if (fd_to_socket(fd, &s) < 0) return -1;
+  if (fd_to_socket(fd, &s, 0) < 0) return -1;
 
   FDDEBUG(fprintf(stderr,"Accept on %d (%ld)..\n",
-		  fd, PTRDIFF_T_TO_LONG((ptrdiff_t)s)));
+		  fd, (long)(ptrdiff_t)s));
 
   new_fd = allocate_fd(FD_SOCKET, (HANDLE)INVALID_SOCKET);
   if (new_fd < 0) return -1;
@@ -1870,17 +2225,19 @@ PMOD_EXPORT FD debug_fd_accept(FD fd, struct sockaddr *addr,
 PMOD_EXPORT int PIKE_CONCAT(debug_fd_,NAME) X1 { \
   SOCKET s; \
   int ret; \
+  int err; \
   FDDEBUG(fprintf(stderr, "fd_" #NAME "(%d, ...)...\n", fd)); \
-  if (fd_to_socket(fd, &s) < 0) return -1; \
+  if (fd_to_socket(fd, &s, 0) < 0) return -1;		      \
   FDDEBUG(fprintf(stderr, #NAME " on %d (%ld)\n", \
 		  fd, (long)(ptrdiff_t)s)); \
   ret = NAME X2; \
+  err = WSAGetLastError(); \
   release_fd(fd); \
   if(ret == SOCKET_ERROR) { \
-    set_errno_from_win32_error (WSAGetLastError()); \
+    set_errno_from_win32_error (err); \
     ret = -1; \
   } \
-  FDDEBUG(fprintf(stderr, #NAME " returned %d (%d)\n", ret, errno)); \
+  FDDEBUG(fprintf(stderr, #NAME " returned %d (%d:%d)\n", ret, err, errno)); \
   return ret; \
 }
 
@@ -1918,7 +2275,7 @@ PMOD_EXPORT int debug_fd_connect (FD fd, struct sockaddr *a, int len)
 
   FDDEBUG(fprintf(stderr, "fd_connect(%d, %p, %d)...\n", fd, a, len));
 
-  if (fd_to_socket(fd, &ret) < 0) return -1;
+  if (fd_to_socket(fd, &ret, 0) < 0) return -1;
 
   FDDEBUG(fprintf(stderr, "connect on %d (%ld)\n",
                   fd, (long)(ptrdiff_t)ret);
@@ -1946,7 +2303,7 @@ PMOD_EXPORT int debug_fd_close(FD fd)
 
   FDDEBUG(fprintf(stderr, "fd_close(%d)...\n", fd));
 
-  if (fd_to_handle(fd, &type, &h) < 0) return -1;
+  if (fd_to_handle(fd, &type, &h, 1) < 0) return -1;
 
   FDDEBUG(fprintf(stderr,"Closing %d (%ld)\n",
                   fd, (long)h));
@@ -1962,6 +2319,14 @@ PMOD_EXPORT int debug_fd_close(FD fd)
 	FDDEBUG(fprintf(stderr,"Closing %d (%ld) failed with errno=%d\n",
                         fd, (long)(ptrdiff_t)h, errno));
 	return -1;
+      }
+      break;
+
+    case FD_PTY:
+      {
+	mt_lock(&fd_mutex);
+	close_pty((struct my_pty *)h);
+	mt_unlock(&fd_mutex);
       }
       break;
 
@@ -1985,10 +2350,10 @@ PMOD_EXPORT ptrdiff_t debug_fd_write(FD fd, void *buf, ptrdiff_t len)
 
   FDDEBUG(fprintf(stderr, "fd_write(%d, %p, %ld)...\n", fd, buf, (long)len));
 
-  if (fd_to_handle(fd, &kind, &handle) < 0) return -1;
+  if (fd_to_handle(fd, &kind, &handle, 0) < 0) return -1;
 
-  FDDEBUG(fprintf(stderr, "Writing %d bytes to %d (%d)\n",
-		  len, fd, (long)(ptrdiff_t)handle));
+  FDDEBUG(fprintf(stderr, "Writing %ld bytes to %d (%d)\n",
+                  (long)len, fd, (long)(ptrdiff_t)handle));
 
   switch(kind)
   {
@@ -2006,9 +2371,16 @@ PMOD_EXPORT ptrdiff_t debug_fd_write(FD fd, void *buf, ptrdiff_t len)
 	  }
 	  return -1;
 	}
-	FDDEBUG(fprintf(stderr, "Wrote %d bytes to %d)\n", len, fd));
+        FDDEBUG(fprintf(stderr, "Wrote %ld bytes to %d)\n", (long)ret, fd));
 	return ret;
       }
+
+    case FD_PTY:
+      {
+	struct my_pty *pty = (struct my_pty *)handle;
+	handle = pty->write_pipe;
+      }
+      /* FALLTHRU */
 
     case FD_CONSOLE:
     case FD_FILE:
@@ -2034,19 +2406,30 @@ PMOD_EXPORT ptrdiff_t debug_fd_write(FD fd, void *buf, ptrdiff_t len)
   }
 }
 
-PMOD_EXPORT ptrdiff_t debug_fd_read(FD fd, void *to, ptrdiff_t len)
+PMOD_EXPORT ptrdiff_t debug_fd_writev(FD fd, struct iovec *iov, ptrdiff_t n)
+{
+  /* NB: writev(2) MUST be atomic. */
+  for(;n--;iov++) {
+    if (!iov->iov_len) continue;
+    return fd_write(fd, iov->iov_base, iov->iov_len);
+  }
+
+  return 0;
+}
+
+PMOD_EXPORT ptrdiff_t debug_fd_read(FD fd, void *to, size_t len)
 {
   int type;
   DWORD ret;
   ptrdiff_t rret;
   HANDLE handle;
 
-  FDDEBUG(fprintf("fd_read(%d, %p, %ld)...\n", fd, to, (long)len));
+  FDDEBUG(fprintf(stderr, "fd_read(%d, %p, %ld)...\n", fd, to, (long)len));
 
-  if (fd_to_handle(fd, &type, &handle) < 0) return -1;
+  if (fd_to_handle(fd, &type, &handle, 0) < 0) return -1;
 
-  FDDEBUG(fprintf(stderr,"Reading %d bytes from %d (%d) to %lx\n",
-		  len, fd, (long)(ptrdiff_t)h,
+  FDDEBUG(fprintf(stderr,"Reading %ld bytes from %d (%d) to %lx\n",
+                  (long)len, fd, (long)(ptrdiff_t)handle,
 		  (unsigned long)(ptrdiff_t)to));
 
   switch(type)
@@ -2063,63 +2446,98 @@ PMOD_EXPORT ptrdiff_t debug_fd_read(FD fd, void *to, ptrdiff_t len)
       FDDEBUG(fprintf(stderr,"Read on %d returned %ld\n",fd,rret));
       return rret;
 
+    case FD_PTY:
+      {
+	struct my_pty *pty = (struct my_pty *)handle;
+	handle = pty->read_pipe;
+
+	if (pty->conpty && !pty->other && !check_pty_clients(pty)) {
+	  /* Master side, no local slave and all known clients are dead.
+	   *
+	   * Terminate the ConPTY so that we can get an EOF.
+	   */
+	  Pike_NT_ClosePseudoConsole(pty->conpty);
+	  pty->conpty = 0;
+	}
+      }
+      /* FALLTHRU */
+
+    case FD_PIPE:
+      if (len) {
+	DWORD available_bytes = 0;
+	if (PeekNamedPipe(handle, NULL, 0, NULL, &available_bytes, NULL)) {
+	  if (available_bytes) {
+	    if (available_bytes < len) {
+	      len = available_bytes;
+	    }
+	  } else {
+	    /* Wait for some data, but avoid waiting for the entire
+	     * buffer to fill. Higher level code is responsible to
+	     * reschedule the read to get the rest (if any).
+	     */
+	    len = 1;
+	  }
+	}
+      }
+      break;
+
     case FD_CONSOLE:
     case FD_FILE:
-    case FD_PIPE:
-      ret=0;
-      while(len && !ReadFile(handle, to, (DWORD)len, &ret, 0) && ret<=0)
-      {
-	unsigned int err = GetLastError();
-	release_fd(fd);
-	set_errno_from_win32_error (err);
-	switch(err)
-	{
-	  case ERROR_NOT_ENOUGH_MEMORY:
-	    /* This can happen when reading from stdin, and can be due
-	     * to running out of OS io-buffers. cf ReadConsole():
-	     *
-	     * | lpBuffer [out]
-	     * |   A pointer to a buffer that receives the data read from
-	     * |   the console input buffer.
-	     * |
-	     * |   The storage for this buffer is allocated from a shared
-	     * |   heap for the process that is 64 KB in size. The maximum
-	     * |   size of the buffer will depend on heap usage.
-	     *
-	     * The limit seems to be 26608 bytes on Windows Server 2003,
-	     * and 31004 bytes on some versions of Windows XP.
-	     *
-	     * The gdb people ran into the same bug in 2006.
-	     * cf http://permalink.gmane.org/gmane.comp.gdb.patches/29669
-	     *
-	     * FIXME: We ought to attempt to fill the remainder of
-	     *        the buffer on success and full read, but as
-	     *        this failure mode usually only happens with
-	     *        the console, we would risk blocking, so let
-	     *        the higher levels of code deal with the
-	     *        resulting short reads.
-	     */
-	    /* Halve the size of the request and retry. */
-	    len = len >> 1;
-	    if (len) continue;
-	    /* Total failure. Fall out to the generic error return. */
-	    break;
-	  case ERROR_BROKEN_PIPE:
-	    /* Pretend we reached the end of the file */
-	    return 0;
-	}
-	FDDEBUG(fprintf(stderr,"Read failed %d\n",errno));
-	return -1;
-      }
-      FDDEBUG(fprintf(stderr,"Read on %d returned %ld\n",fd,ret));
-      release_fd(fd);
-      return ret;
+      break;
 
     default:
       errno=ENOTSUPP;
       release_fd(fd);
       return -1;
   }
+
+  ret=0;
+  while(len && !ReadFile(handle, to, (DWORD)len, &ret,0) && ret<=0) {
+    unsigned int err = GetLastError();
+    release_fd(fd);
+    set_errno_from_win32_error (err);
+    switch(err)
+    {
+      case ERROR_NOT_ENOUGH_MEMORY:
+	/* This can happen when reading from stdin, and can be due
+	 * to running out of OS io-buffers. cf ReadConsole():
+	 *
+	 * | lpBuffer [out]
+	 * |   A pointer to a buffer that receives the data read from
+	 * |   the console input buffer.
+	 * |
+	 * |   The storage for this buffer is allocated from a shared
+	 * |   heap for the process that is 64 KB in size. The maximum
+	 * |   size of the buffer will depend on heap usage.
+	 *
+	 * The limit seems to be 26608 bytes on Windows Server 2003,
+	 * and 31004 bytes on some versions of Windows XP.
+	 *
+	 * The gdb people ran into the same bug in 2006.
+	 * cf http://permalink.gmane.org/gmane.comp.gdb.patches/29669
+	 *
+	 * FIXME: We ought to attempt to fill the remainder of
+	 *        the buffer on success and full read, but as
+	 *        this failure mode usually only happens with
+	 *        the console, we would risk blocking, so let
+	 *        the higher levels of code deal with the
+	 *        resulting short reads.
+	 */
+	/* Halve the size of the request and retry. */
+	len = len >> 1;
+	if (len) continue;
+	/* Total failure. Fall out to the generic error return. */
+	break;
+      case ERROR_BROKEN_PIPE:
+	/* Pretend we reached the end of the file */
+        return 0;
+    }
+    FDDEBUG(fprintf(stderr,"Read failed %d\n",errno));
+    return -1;
+  }
+  FDDEBUG(fprintf(stderr,"Read on %d returned %ld\n",fd,ret));
+  release_fd(fd);
+  return ret;
 }
 
 PMOD_EXPORT PIKE_OFF_T debug_fd_lseek(FD fd, PIKE_OFF_T pos, int where)
@@ -2130,7 +2548,7 @@ PMOD_EXPORT PIKE_OFF_T debug_fd_lseek(FD fd, PIKE_OFF_T pos, int where)
 
   FDDEBUG(fprintf(stderr, "fd_lseek(%d)...\n", fd));
 
-  if (fd_to_handle(fd, &type, &h) < 0) return -1;
+  if (fd_to_handle(fd, &type, &h, 0) < 0) return -1;
   if(type != FD_FILE)
   {
     release_fd(fd);
@@ -2190,7 +2608,7 @@ PMOD_EXPORT int debug_fd_ftruncate(FD fd, PIKE_OFF_T len)
 
   FDDEBUG(fprintf(stderr, "fd_ftruncate(%d)...\n", fd));
 
-  if (fd_to_handle(fd, &type, &h) < 0) return -1;
+  if (fd_to_handle(fd, &type, &h, 0) < 0) return -1;
   if(type != FD_FILE)
   {
     release_fd(fd);
@@ -2250,7 +2668,7 @@ PMOD_EXPORT int debug_fd_flock(FD fd, int oper)
 
   FDDEBUG(fprintf(stderr, "fd_flock(%d)...\n", fd));
 
-  if (fd_to_handle(fd, &type, &h) < 0) return -1;
+  if (fd_to_handle(fd, &type, &h, 0) < 0) return -1;
   if(type != FD_FILE)
   {
     release_fd(fd);
@@ -2297,7 +2715,6 @@ PMOD_EXPORT int debug_fd_flock(FD fd, int oper)
   return 0;
 }
 
-
 /* Note: s->st_ctime is set to the file creation time. It should
  * probably be the last access time to be closer to the unix
  * counterpart, but the creation time is admittedly more useful. */
@@ -2309,13 +2726,7 @@ PMOD_EXPORT int debug_fd_fstat(FD fd, PIKE_STAT_T *s)
 
   FDDEBUG(fprintf(stderr, "fd_fstat(%d, %p)\n", fd, s));
 
-  if (fd_to_handle(fd, &type, &h) < 0) return -1;
-  if (type != FD_FILE)
-  {
-    release_fd(fd);
-    errno=ENOTSUPP;
-    return -1;
-  }
+  if (fd_to_handle(fd, &type, &h, 0) < 0) return -1;
 
   FDDEBUG(fprintf(stderr, "fstat on %d (%ld)\n",
 		  fd, (long)(ptrdiff_t)h));
@@ -2327,6 +2738,10 @@ PMOD_EXPORT int debug_fd_fstat(FD fd, PIKE_STAT_T *s)
   {
     case FD_SOCKET:
       s->st_mode=S_IFSOCK;
+      break;
+
+    case FD_PTY:
+      s->st_mode = S_IFIFO;
       break;
 
     default:
@@ -2380,7 +2795,17 @@ static void dump_FDSET(FD_SET *x, int fds)
     fprintf(stderr,"[");
     for(e = 0; e < FD_SETSIZE; e++)
     {
-      if(FD_ISSET(da_handle[e],x))
+      HANDLE h = da_handle[e];
+      if (fd_type[e] == FD_PTY){
+	struct my_pty *pty = (struct my_pty *)h;
+	if(FD_ISSET(pty->read_pipe, x))
+	{
+	  h = pty->read_pipe;
+	} else {
+	  h = pty->write_pipe;
+	}
+      }
+      if(FD_ISSET(h, x))
       {
 	if(!first) fprintf(stderr,",",e);
 	fprintf(stderr,"%d",e);
@@ -2435,24 +2860,81 @@ PMOD_EXPORT int debug_fd_select(int fds, FD_SET *a, FD_SET *b, FD_SET *c, struct
 PMOD_EXPORT int debug_fd_ioctl(FD fd, int cmd, void *data)
 {
   int ret;
-  SOCKET s;
 
   FDDEBUG(fprintf(stderr, "fd_ioctl(%d, %d, %p)...\n", fd, cmd, data));
 
-  if (fd_to_socket(fd, &s) < 0) return -1;
+  if (((cmd >> 8) & 0xff) == 'T') {
+    /* TTY ioctl */
+    HANDLE h;
+    int type;
+    struct my_pty *pty;
+    HPCON conpty;
+    struct winsize *win = data;
+    COORD coord;
 
-  FDDEBUG(fprintf(stderr,"ioctl(%d (%ld,%d,%p)\n",
-		  fd, (long)(ptrdiff_t)s, cmd, data));
+    if (fd_to_handle(fd, &type, &h, 0) < 0) return -1;
 
-  ret = ioctlsocket(s, cmd, data);
+    if ((type != FD_PTY) || !Pike_NT_ResizePseudoConsole) {
+      release_fd(fd);
+      errno = ENOTTY;
+      return -1;
+    }
+    pty = (struct my_pty *)h;
 
-  FDDEBUG(fprintf(stderr,"ioctlsocket returned %ld (%d)\n",ret,errno));
+    if (!(conpty = pty->conpty)) {
+      /* Slave, try looking at the master. */
+      if (!(pty = pty->other) || !(conpty = pty->conpty)) {
+	release_fd(fd);
+	errno = ENOTTY;
+	return -1;
+      }
+    }
+
+    switch(cmd) {
+    case TIOCSWINSZ:
+      coord.X = win->ws_col;
+      coord.Y = win->ws_row;
+      ret = Pike_NT_ResizePseudoConsole(conpty, coord);
+      if (ret == S_OK) {
+	pty->winsize = coord;
+      }
+      break;
+
+    case TIOCGWINSZ:
+      win->ws_col = pty->winsize.X;
+      win->ws_row = pty->winsize.Y;
+      ret = S_OK;
+      break;
+
+    default:
+      release_fd(fd);
+      errno = EINVAL;
+      return -1;
+    }
+  } else {
+    SOCKET s;
+
+    if (fd_to_socket(fd, &s, 0) < 0) {
+      return -1;
+    }
+
+    FDDEBUG(fprintf(stderr,"ioctl(%d (%ld,%d,%p)\n",
+		    fd, (long)(ptrdiff_t)s, cmd, data));
+
+    ret = ioctlsocket(s, cmd, data);
+
+    FDDEBUG(fprintf(stderr,"ioctlsocket returned %ld (%d)\n",ret,errno));
+  }
 
   release_fd(fd);
 
-  if(ret==SOCKET_ERROR)
+  if(ret != S_OK)
   {
-    set_errno_from_win32_error (WSAGetLastError());
+    if (ret == SOCKET_ERROR) {
+      set_errno_from_win32_error (WSAGetLastError());
+    } else {
+      set_errno_from_win32_error (GetLastError());
+    }
     return -1;
   }
 
@@ -2468,7 +2950,23 @@ PMOD_EXPORT FD debug_fd_dup(FD from)
 
   FDDEBUG(fprintf(stderr, "fd_dup(%d)...\n", from));
 
-  if (fd_to_handle(from, &type, &h) < 0) return -1;
+  if (fd_to_handle(from, &type, &h, 0) < 0) return -1;
+
+  if (type == FD_PTY) {
+    struct my_pty *pty = (struct my_pty *)h;
+
+    fd = allocate_fd(type, h);
+
+    release_fd(from);
+
+    if (fd < 0) return -1;
+
+    add_ref(pty);
+    pty->fd_refs++;
+
+    release_fd(fd);
+    return fd;
+  }
 
   fd = allocate_fd(type,
 		   (type == FD_SOCKET)?
@@ -2510,10 +3008,20 @@ PMOD_EXPORT FD debug_fd_dup2(FD from, FD to)
 
   FDDEBUG(fprintf(stderr, "fd_dup2(%d, %d)...\n", from, to));
 
-  if (fd_to_handle(from, &type, &h) < 0) return -1;
+  if (fd_to_handle(from, &type, &h, 0) < 0) return -1;
 
-  if(!DuplicateHandle(p, h, p, &x, 0, 0, DUPLICATE_SAME_ACCESS))
-  {
+  if (type == FD_PTY) {
+    struct my_pty *pty = (struct my_pty *)h;
+    /* Note that we need to hold a reference, so that we
+     * do not disappear when from is released below.
+     *
+     * The reference is then either stolen by reallocate_fd()
+     * or freed by close_pty().
+     */
+    add_ref(pty);
+    pty->fd_refs++;
+    x = h;
+  } else if(!DuplicateHandle(p, h, p, &x, 0, 0, DUPLICATE_SAME_ACCESS)) {
     release_fd(from);
     set_errno_from_win32_error (GetLastError());
     return -1;
@@ -2551,7 +3059,11 @@ PMOD_EXPORT FD debug_fd_dup2(FD from, FD to)
       if (box_obj) free_object(box_obj);
     }
 
-    if (type == FD_SOCKET) {
+    if (type == FD_PTY) {
+      mt_lock(&fd_mutex);
+      close_pty((struct my_pty *)x);
+      mt_unlock(&fd_mutex);
+    } else if (type == FD_SOCKET) {
       closesocket((SOCKET)x);
     } else {
       CloseHandle(x);
@@ -2634,7 +3146,103 @@ PMOD_EXPORT const char *debug_fd_inet_ntop(int af, const void *addr,
   }
   return inet_ntop_funp(af, addr, cp, sz);
 }
-#endif /* HAVE_WINSOCK_H && !__GNUC__ */
+
+PMOD_EXPORT int debug_fd_openpty(int *master, int *slave,
+				 char *ignored_name,
+				 void *ignored_term,
+				 struct winsize *winp)
+{
+  struct my_pty *master_pty = NULL;
+  struct my_pty *slave_pty = NULL;
+  int master_fd = -1;
+  int slave_fd = -1;
+
+  if (!Pike_NT_CreatePseudoConsole) {
+    errno = ENOTSUPP;
+    return -1;
+  }
+
+  if (!(master_pty = calloc(sizeof(struct my_pty), 1))) {
+    errno = ENOMEM;
+    goto fail;
+  }
+  if (!(slave_pty = calloc(sizeof(struct my_pty), 1))) {
+    errno = ENOMEM;
+    goto fail;
+  }
+
+  add_ref(master_pty);
+  master_pty->fd_refs++;
+  master_pty->read_pipe = INVALID_HANDLE_VALUE;
+  master_pty->write_pipe = INVALID_HANDLE_VALUE;
+  master_pty->other = slave_pty;
+  add_ref(slave_pty);
+  slave_pty->fd_refs++;
+  slave_pty->read_pipe = INVALID_HANDLE_VALUE;
+  slave_pty->write_pipe = INVALID_HANDLE_VALUE;
+  slave_pty->other = master_pty;
+
+  master_fd = allocate_fd(FD_PTY, (HANDLE)master_pty);
+  if (master_fd < 0) goto fail;
+
+  slave_fd = allocate_fd(FD_PTY, (HANDLE)slave_pty);
+  if (slave_fd < 0) goto fail;
+
+  if (!CreatePipe(&slave_pty->read_pipe, &master_pty->write_pipe, NULL, 0)) {
+    goto win32_fail;
+  }
+  if (!CreatePipe(&master_pty->read_pipe, &slave_pty->write_pipe, NULL, 0)) {
+    goto win32_fail;
+  }
+
+  /* Some reasonable defaults. */
+  master_pty->winsize.X = 80;
+  master_pty->winsize.Y = 25;
+
+  if (winp) {
+    master_pty->winsize.X = winp->ws_col;
+    master_pty->winsize.Y = winp->ws_row;
+  }
+
+  if (FAILED(Pike_NT_CreatePseudoConsole(master_pty->winsize,
+					 slave_pty->read_pipe,
+					 slave_pty->write_pipe,
+					 0, &master_pty->conpty))) {
+    goto win32_fail;
+  }
+
+  release_fd(master_fd);
+  release_fd(slave_fd);
+
+  *master = master_fd;
+  *slave = slave_fd;
+
+  return 0;
+
+ win32_fail:
+    set_errno_from_win32_error(GetLastError());
+
+ fail:
+  /* NB: Order significant!
+   *
+   * In the case where master_fd >= 0 and slave_fd < 0, the
+   * slave_pty must not have been freed when master_fd is closed.
+   */
+  if (master_fd >= 0) {
+    release_fd(master_fd);
+    fd_close(master_fd);
+  } else if (master_pty) {
+    free(master_pty);
+  }
+  if (slave_fd >= 0) {
+    release_fd(slave_fd);
+    fd_close(slave_fd);
+  } else if (slave_pty) {
+    free(slave_pty);
+  }
+
+  return -1;
+}
 
 #ifdef EMULATE_DIRECT
 PMOD_EXPORT DIR *opendir(char *dir)
@@ -2714,13 +3322,15 @@ PMOD_EXPORT void closedir(DIR *dir)
   }
   free(dir);
 }
-#endif
+#endif /* EMULATE_DIRECT */
 
-#if defined(HAVE_WINSOCK_H) && defined(USE_DL_MALLOC)
+#ifdef USE_DL_MALLOC
 /* NB: We use some calls above that allocate memory with the libc malloc. */
 #undef free
 static inline void libc_free(void *ptr)
 {
   if (ptr) free(ptr);
 }
-#endif
+#endif /* USE_DL_MALLOC */
+
+#endif /* HAVE_WINSOCK_H */

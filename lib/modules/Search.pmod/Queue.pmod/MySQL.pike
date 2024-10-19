@@ -34,13 +34,13 @@ protected string to_md5(string url)
 //!   @[Sql.Sql] table name to store the queue in.
 //!
 //!   If the table doesn't exist it will be created.
-void create( Web.Crawler.Stats _stats,
-	     Web.Crawler.Policy _policy,
+protected void create( Web.Crawler.Stats _stats,
+		       Web.Crawler.Policy _policy,
 
-	     string _url, string _table,
+		       string _url, string _table,
 
-	     void|Web.Crawler.RuleSet _allow,
-	     void|Web.Crawler.RuleSet _deny)
+		       void|Web.Crawler.RuleSet _allow,
+		       void|Web.Crawler.RuleSet _deny)
 {
   stats = _stats;   policy = _policy;
   allow=_allow;     deny=_deny;
@@ -89,7 +89,8 @@ protected int has_uri( string|Standards.URI uri )
 		      to_md5(uri))));
 }
 
-void add_uri( Standards.URI uri, int recurse, string template, void|int force )
+void add_uri( Standards.URI uri, int recurse, string|zero template,
+	      void|int force )
 {
   // The language is encoded in the fragment.
   Standards.URI r = Standards.URI( (string)uri );

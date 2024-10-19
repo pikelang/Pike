@@ -32,7 +32,7 @@
 
 #ifdef STRUCT
 #define IMEMBER(TYPE, FIELD, VALUE)	TYPE FIELD;
-#define STACKMEMBER(TYPE, FIELD, VALUE)	TYPE FIELD;
+#define STACKMEMBER(TYPE, FIELD, VALUE, DISCARD)	TYPE FIELD;
 #define ZMEMBER(TYPE, FIELD, VALUE)	TYPE FIELD;
 #define SNAME(STRUCT_TAG, VAR_NAME)			\
   struct STRUCT_TAG { struct STRUCT_TAG *previous;
@@ -41,7 +41,7 @@
 
 #ifdef EXTERN
 #define IMEMBER(X,Y,Z)
-#define STACKMEMBER(X,Y,z)
+#define STACKMEMBER(X,Y,Z,DISCARD)
 #define ZMEMBER(X,Y,Z)
 #define SNAME(X,Y) PMOD_EXPORT extern struct X * Y;
 #define SEND
@@ -49,7 +49,7 @@
 
 #ifdef DECLARE
 #define IMEMBER(X,Y,Z) Z,
-#define STACKMEMBER(X,Y,Z) 0,
+#define STACKMEMBER(X,Y,Z,DISCARD) 0,
 #define ZMEMBER(X,Y,Z) Z,
 #define SNAME(X,Y) \
   extern struct X PIKE_CONCAT(Y,_base); \
@@ -60,7 +60,7 @@
 
 #ifdef PUSH
 #define IMEMBER(X,Y,Z) (nEw->Y=Pike_compiler->Y);
-#define STACKMEMBER(X,Y,Z) (nEw->Y=Pike_compiler->Y);
+#define STACKMEMBER(X,Y,Z,DISCARD) (nEw->Y=Pike_compiler->Y);
 #define ZMEMBER(X,Y,Z) /* Zapped by the memset in SNAME() below. */;
 #define SNAME(X,Y) { \
       struct X *nEw; \
@@ -78,10 +78,15 @@
 #define IMEMBER(X,Y,Z)
 #define ZMEMBER(X,Y,Z)
 
-#define STACKMEMBER(X,Y,Z) DO_DEBUG_CODE( \
-  if(Pike_compiler->Y < oLd->Y) \
-    Pike_fatal("Stack " #Y " shrunk %ld steps compilation, currently: %p.\n", \
-               (long)(oLd->Y - Pike_compiler->Y), Pike_compiler->Y); )
+#define STACKMEMBER(X,Y,Z,DISCARD) do {                                 \
+    DO_DEBUG_CODE(if(Pike_compiler->Y < oLd->Y)                         \
+      Pike_fatal("Stack " #Y " shrunk %ld steps "                       \
+                 "compilation, currently: %p.\n",                       \
+                 (long)(oLd->Y - Pike_compiler->Y), Pike_compiler->Y); ); \
+    while (oLd->Y < Pike_compiler->Y) {                                 \
+      DISCARD;                                                          \
+    }                                                                   \
+  } while(0);
 
 #define SNAME(X,Y) { \
       struct X *oLd=Pike_compiler->previous;
@@ -99,7 +104,7 @@
 
 #ifdef INIT
 #define IMEMBER(X,Y,Z) (c->Y=Pike_compiler->Y);
-#define STACKMEMBER(X,Y,Z) (c->Y=Pike_compiler->Y);
+#define STACKMEMBER(X,Y,Z,DISCARD) (c->Y=Pike_compiler->Y);
 #define ZMEMBER(X,Y,Z) /* Zapped by the memset in SNAME() below. */;
 #define SNAME(X,Y) { \
       memset(c, 0, sizeof(struct X));		\
@@ -115,10 +120,15 @@
 #define IMEMBER(X,Y,Z)
 #define ZMEMBER(X,Y,Z)
 
-#define STACKMEMBER(X,Y,Z) DO_DEBUG_CODE( \
-  if(c->Y < oLd->Y) \
-    Pike_fatal("Stack " #Y " shrunk %ld steps compilation, currently: %p.\n", \
-               (long)(oLd->Y - c->Y), c->Y); )
+#define STACKMEMBER(X,Y,Z,DISCARD) do {           \
+    DO_DEBUG_CODE(if(c->Y < oLd->Y)               \
+      Pike_fatal("Stack " #Y " shrunk %ld steps " \
+                 "compilation, currently: %p.\n", \
+                 (long)(oLd->Y - c->Y), c->Y); ); \
+    while (oLd->Y < c->Y) {                       \
+      DISCARD;                                    \
+    }                                             \
+  } while(0);
 
 #define SNAME(X,Y) { \
     struct X *oLd = c->previous;
@@ -163,20 +173,22 @@
   ZMEMBER(int,local_class_counter,0)
   ZMEMBER(int,catch_level,0)
   ZMEMBER(INT32,current_modifiers,0)
+  ZMEMBER(node *, current_annotations, 0)
   ZMEMBER(node *,current_attributes,0)
-  ZMEMBER(int,varargs,0)
+  ZMEMBER(struct array *, generic_types, 0)
+  ZMEMBER(struct array *, generic_bindings, 0)
+  ZMEMBER(int, num_generics, 0)
   ZMEMBER(int, num_create_args, 0)
   ZMEMBER(int, num_inherits, 0)	/* Used during second pass. */
   STRMEMBER(last_identifier,0)
   ZMEMBER(struct mapping *,module_index_cache,0)
-  STACKMEMBER(struct pike_type **,type_stackp,type_stack)
-  STACKMEMBER(struct pike_type ***,pike_type_mark_stackp,pike_type_mark_stack)
+  STACKMEMBER(struct pike_type ***,pike_type_mark_stackp,pike_type_mark_stack,pop_stack_mark())
+  STACKMEMBER(struct pike_type **,type_stackp,type_stack,compiler_discard_top_type())
   ZMEMBER(INT32,parent_identifier,0)
   IMEMBER(int, compat_major, PIKE_MAJOR_VERSION)
   IMEMBER(int, compat_minor, PIKE_MINOR_VERSION)
   ZMEMBER(int, flags, 0)
   ZMEMBER(struct compilation *,compiler,0)
-  ZMEMBER(struct block_allocator, node_allocator, BA_INIT_PAGES(sizeof(struct node_s), 2))
   SEND
 
 #undef PCODE

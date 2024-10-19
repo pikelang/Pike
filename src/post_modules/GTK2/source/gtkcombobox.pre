@@ -38,7 +38,7 @@ void create(GTK2.TreeModel|mapping(string:mixed)|string|void model_or_props)
     GtkWidget *gcb;
     if (TYPEOF(Pike_sp[-args]) == PIKE_T_STRING) {
       char *text;
-      get_all_args(NULL,args,"%s",&text);
+      get_all_args(NULL,args,"%c",&text);
       gcb=gtk_combo_box_new_text();
       THIS->obj=G_OBJECT(gcb);
     } else if (TYPEOF(Pike_sp[-args]) == PIKE_T_OBJECT) {

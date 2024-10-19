@@ -32,6 +32,11 @@
 #define _GNU_SOURCE
 #endif /* !_GNU_SOURCE */
 
+/* This is needed for SysV stuff. */
+#ifndef _DEFAULT_SOURCE
+#define _DEFAULT_SOURCE
+#endif
+
 #ifdef __NT__
 /* To get <windows.h> to stop including the entire OS,
  * we need to define this one.
@@ -94,6 +99,9 @@
 #endif /* _MSC_VER <= 1900 */
 #endif /* _MSC_VER */
 
+#endif /* __NT__ */
+
+#if defined(__NT__) || defined(__HAIKU__)
 /* NB: Defaults to 64. */
 #ifndef FD_SETSIZE
 /*
@@ -233,19 +241,20 @@ struct timeval;
 #endif
 
 #ifdef HAS___BUILTIN_UNREACHABLE
-# define UNREACHABLE(X) __builtin_unreachable()
+# define UNREACHABLE()	__builtin_unreachable()
+#elif defined(HAS___ASSUME)
+# define UNREACHABLE()	__assume(0)
 #else
-# define UNREACHABLE(X) X
+# include <setjmp.h>
+# define UNREACHABLE()	longjmp(NULL, 0)
 #endif
 
 #ifdef HAS___BUILTIN_ASSUME
 # define STATIC_ASSUME(X) __builtin_assume(X)
+#elif defined(HAS___ASSUME)
+# define STATIC_ASSUME(X) __assume(X)
 #else
-# ifdef HAS___BUILTIN_UNREACHABLE
-#  define STATIC_ASSUME(X) do { if (!(X)) UNREACHABLE(0); } while(0)
-# else
-#  define STATIC_ASSUME(X)
-# endif
+# define STATIC_ASSUME(X) do { if (!(X)) UNREACHABLE(); } while(0)
 #endif
 
 #ifdef HAS___BUILTIN_CONSTANT_P
@@ -453,6 +462,7 @@ void *alloca();
 #  define PIKEFLOAT_MIN		LDBL_MIN
 #  define PIKEFLOAT_EPSILON	LDBL_EPSILON
 #  define PRINTPIKEFLOAT	"L"
+#  define PIKEFLOAT_C(c)        c ## L
 
 #elif defined(WITH_DOUBLE_PRECISION_SVALUE)
 
@@ -466,6 +476,7 @@ void *alloca();
 #  define PIKEFLOAT_MIN		DBL_MIN
 #  define PIKEFLOAT_EPSILON	DBL_EPSILON
 #  define PRINTPIKEFLOAT	""
+#  define PIKEFLOAT_C(c)        c
 
 #else
 
@@ -480,6 +491,7 @@ void *alloca();
 #  define PIKEFLOAT_EPSILON	FLT_EPSILON
 #  define PRINTPIKEFLOAT	""
 #  define FLOAT_ARG_TYPE	double
+#  define PIKEFLOAT_C(c)        c
 
 #endif
 
@@ -599,6 +611,49 @@ typedef struct p_wchar_p
 # define DMALLOCUSED(x) PIKE_UNUSED(x)
 #endif
 
+/* Add some recognition macros for availability of #pragmas. */
+#ifdef __GNUC__
+# if (__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 4)
+   /* Several #pragmas were added in GCC 4.4. */
+#  define HAVE_PRAGMA_GCC_OPTIMIZE
+#  define HAVE_PRAGMA_GCC_PUSH_POP_OPTIONS
+#  define HAVE_PRAGMA_GCC_RESET_OPTIONS
+# endif
+# if (__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)
+   /* #pragma GCC diagnostic was added in GCC 4.6. */
+#  define HAVE_PRAGMA_GCC_DIAGNOSTIC
+# endif
+# if (__GNUC__ >= 8)
+#  define HAVE_PRAGMA_GCC_UNROLL
+# endif
+#endif
+
+#ifdef __GNUC__
+# if (__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3)
+/* The hot and cold attributes are not implemented in GCC
+ * versions prior to 4.3.
+ */
+#  define PIKE_HOT_ATTRIBUTE	ATTRIBUTE((hot))
+#  define PIKE_COLD_ATTRIBUTE	ATTRIBUTE((cold))
+# elif defined(__clang__)
+#  define PIKE_HOT_ATTRIBUTE	ATTRIBUTE((hot))
+#  define PIKE_COLD_ATTRIBUTE	ATTRIBUTE((cold))
+# endif
+# if (__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
+/* The noclone attribute was added in GCC 4.5. */
+#  define ATTRIBUTE_NOCLONE	ATTRIBUTE((noinline,noclone))
+# elif defined(__clang__)
+#  define ATTRIBUTE_NOCLONE	ATTRIBUTE((noinline,noclone))
+# endif
+#endif
+#ifndef PIKE_HOT_ATTRIBUTE
+# define PIKE_HOT_ATTRIBUTE
+# define PIKE_COLD_ATTRIBUTE
+#endif
+#ifndef ATTRIBUTE_NOCLONE
+/* In prior versions of GCC noinline implied noclone. */
+# define ATTRIBUTE_NOCLONE	ATTRIBUTE((noinline))
+#endif
 
 /* PMOD_EXPORT exports a function / variable vfsh. */
 #ifndef PMOD_EXPORT
@@ -611,12 +666,12 @@ typedef struct p_wchar_p
  * themselves, unless they are compiled statically. */
 #   define PMOD_EXPORT __declspec(dllexport)
 #  endif
-# elif defined(__clang__) && defined(MAC_OS_X_VERSION_MIN_REQUIRED)
+# elif defined(__clang__) && (defined(MAC_OS_X_VERSION_MIN_REQUIRED) || defined(__ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__))
 /* According to Clang source the protected behavior is ELF-specific and not
    applicable to OS X. */
 #  define PMOD_EXPORT    __attribute__ ((visibility("default")))
-# elif __GNUC__ >= 4
-#  ifdef DYNAMIC_MODULE
+# elif __GNUC__ >= 4 && !defined(DISABLE_ATTRIBUTE_VISIBILITY)
+#  if defined(DYNAMIC_MODULE) || defined(__HAIKU__)
 #    define PMOD_EXPORT  __attribute__ ((visibility("default")))
 #  else
 #    define PMOD_EXPORT  __attribute__ ((visibility("protected")))
@@ -730,6 +785,18 @@ FILE *popen (char *,char *);
 char *getenv (char *);
 #endif
 
+#ifdef HAVE_SYNC_INSTRUCTION_MEMORY
+/* Solaris libc has the function, but no prototype.
+ *
+ * NB: <asm/sunddi.h> has an inline function that shadows
+ *     it when _BOOT is defined.
+ *
+ * There is also a corresponding kernel-api function
+ * kobj_sync_instruction_memory() declared in <sys/kobj_impl.h>.
+ */
+void sync_instruction_memory(caddr_t v, size_t len);
+#endif
+
 /* If this define is present, error() has been renamed to Pike_error() and
  * error.h has been renamed to pike_error.h
  * Expect to see other similar defines in the future. -Hubbe
@@ -751,7 +818,7 @@ char *getenv (char *);
 #ifdef PROFILING_DEBUG
 #define W_PROFILING_DEBUG(...) WERR(__VA_ARGS__)
 #else /* !PROFILING_DEBUG */
-#define W_PROFILING_DEBIG(...)
+#define W_PROFILING_DEBUG(...)
 #endif /* PROFILING_DEBUG */
 
 #ifdef HAVE_C99_STRUCT_LITERAL_EXPR

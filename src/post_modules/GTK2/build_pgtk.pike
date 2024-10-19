@@ -145,22 +145,22 @@ string unsillycaps(string what)
 }
 
 class GtkFunction(Class parent,
-               string name,
-               Type return_type,
-               array(Type) arg_types,
-               array(string) arg_names,
-               mixed body,
-               array require,
-               string doc,
-               string file,
-               int line)
+		  string name,
+		  object(Type)|zero return_type,
+		  array(Type) arg_types,
+		  array(string) arg_names,
+		  mixed body,
+		  array require,
+		  string doc,
+		  string file,
+		  int line)
 {
   protected string _sprintf(int fmt)
   {
     return fmt=='O' && sprintf("GtkFunction( %O, %O )",name, return_type );
   }
 
-  string pike_type( )
+  string|zero pike_type( )
   {
     if(!return_type)
       return 0;
@@ -300,9 +300,7 @@ class GtkFunction(Class parent,
       }
       if( required )
         emit( "  if( args < "+required+" )\n"
-              "    Pike_error("+S("Too few arguments, %d required, got %d\n",
-                                  1,1,16)+",\n"
-              "               "+required+", args);\n");
+              "    SIMPLE_WRONG_NUM_ARGS_ERROR(NULL, " + required + ");\n");
 
       a = 0;
       foreach( arg_types, Type t )
@@ -463,7 +461,7 @@ class Member( string name, Type type, int set,
 	"{\n"
 	+ type->c_declare( 0 )+
 	"  if( args != 1)\n"
-	"    Pike_error("+S("Wrong number of arguments.\n",1,1,16)+");\n"
+        "    SIMPLE_WRONG_NUM_ARGS_ERROR(NULL, 1);\n"
 	+ type->c_fetch_from_stack( 0 ) +
 	"  "+parent->c_cast( "THIS->obj" )+"->"+name[4..]+" = "+type->c_pass_to_function(0)+";\n"
 	"  RETURN_THIS();\n"
@@ -474,7 +472,7 @@ class Member( string name, Type type, int set,
 	"void "+glue_c_name(c_name())+#"( INT32 args )\n"
 	"{\n"
 	"  if( args )\n"
-	"    Pike_error("+S("Too many arguments.\n",1,1,1)+");\n"
+        "    SIMPLE_WRONG_NUM_ARGS_ERROR(NULL, 0);\n"
 	+type->direct_push( parent->c_cast( "THIS->obj" ) +"->"+name )+
 	"\n}\n\n";
     }
@@ -498,12 +496,14 @@ class Property( string name, Type type, int set,
       ret="void "+glue_c_name(c_name())+"( INT32 args )\n{\n"
 	+type->c_declare(0);
       ret+="  if( args != 1 )\n"
-	"    Pike_error("+S("Wrong number of arguments.\n",1,1,16)+");\n"
+        "    SIMPLE_WRONG_NUM_ARGS_ERROR(NULL, 1);\n"
 	+ type->c_fetch_from_stack( 0 ) + "  ";
       ret=ret+"g_object_set(THIS->obj,\""+replace(name[4..],"_","-")+"\",";
       switch (type->name) {
 	case "uint":
 	case "int":
+        case "uint64":
+        case "int64":
 	case "double":
 	case "float":
 	  ret+="&";
@@ -518,7 +518,7 @@ class Property( string name, Type type, int set,
       ret="void "+glue_c_name(c_name())+"( INT32 args )\n{\n"
 	+type->c_declare(0);
       ret=ret + "  if ( args )\n"
-	"    Pike_error("+S("Too many arguments.\n",1,1,16)+");\n"
+        "    SIMPLE_WRONG_NUM_ARGS_ERROR(NULL, 0);\n"
 	"  g_object_get(G_OBJECT(THIS->obj),\""+replace(name,"_","-")+"\",&a0"
 	",NULL);\n"
 	+type->direct_push(type->c_pass_to_function(0))+
@@ -598,7 +598,10 @@ class Type
       case "Stdio.Buffer":
          return "object";
       case "uint":
+      case "uint64":
 	return "int(0..)"+optp;
+      case "int64":
+        return "int"+optp;
       case "bool":
         return "int(0..1)";
       case "array":
@@ -660,7 +663,7 @@ class Type
     }
   }
 
-  void create( string n )
+  protected void create( string n )
   {
     array q = n/"|";
     if( sizeof(q) != 1 )
@@ -707,7 +710,7 @@ class Type
     }
   }
 
-  string _sprintf(int fmt)
+  protected string _sprintf(int fmt)
   {
     if(fmt != 'O') return UNDEFINED;
     if( subtypes )
@@ -802,6 +805,8 @@ class Type
 
      case "int":
      case "uint":
+     case "int64":
+     case "uint64":
      case "bool":
        return sprintf( (_push = "  PGTK_PUSH_INT( %s );"), vv );
 
@@ -868,6 +873,14 @@ class Type
        fetch = "  a%[0]d = (gint)PGTK_GETINT(&Pike_sp[%[0]d-args]);\n";
        pass =  "a%[0]d";
        break;
+     case "int64":
+     case "uint64":
+       declare = "  INT64 a%[0]d = 0;\n";
+       if( name == "uint")
+         declare = " unsigned INT64 a%[0]d = 0;\n";
+       fetch = "  a%[0]d = PGTK_GETINT(&Pike_sp[%[0]d-args]);\n";
+       pass =  "a%[0]d";
+       break;
      case "bool":
        declare = "  gboolean a%[0]d = 0;\n";
        fetch = " a%[0]d = !!(gint)PGTK_GETINT(&Pike_sp[%[0]d-args]);\n";
@@ -889,9 +902,11 @@ class Type
      case "string":
        declare = " CONST gchar *a%[0]d = 0;\n";
 //       declare = "  gchar *a%[0]d = 0;\n";
+       /* FIXME: Name of function! */
        fetch =
              "  if( TYPEOF(Pike_sp[%[0]d-args]) != PIKE_T_STRING )\n"
-             "    Pike_error( "+S("Illegal argument %d, expected string\n",1,0,16)+",\n                %[0]d);\n"
+             "    SIMPLE_ARG_TYPE_ERROR(\"\", %[0]d + 1, " +
+               S("string",1,0,26) + ");\n"
              "  a%[0]d = PGTK_GETSTR( &Pike_sp[%[0]d-args] );\n";
        free = "  PGTK_FREESTR( a%[0]d );\n";
        pass = "a%[0]d";
@@ -914,6 +929,7 @@ class Type
               lfree = "  PGTK_FREESTR(a%[0]d[_i%[0]d])";
               break;
             case "int":
+            case "int64": /* Not really, but... */
               array_type = parse_type( SPLIT("int","type") );
               sub = "gint *a%[0]d;";
               pt = 0;
@@ -928,6 +944,7 @@ class Type
               process = "(time_t)PGTK_GETINT(&_a%[0]d->item[_i%[0]d])";
               break;
             case "uint":
+            case "uint64": /* Not really, but... */
               array_type = parse_type( SPLIT("uint","type") );
               sub = "guint *a%[0]d;";
               pt = 0;
@@ -982,10 +999,11 @@ class Type
          declare = "  int _i%[0]d;\n  struct array *_a%[0]d = 0;\n  " +
                  "CONST "+sub+"\n";
          pass = "a%d";
+         /* FIXME: Name of function! */
          fetch =
 #"
   if( TYPEOF(Pike_sp[%[0]d-args]) != PIKE_T_ARRAY )
-    Pike_error("+S("Bad argument %d, expected array\n", 1,0,16)+#",\n                %[0]d);
+    SIMPLE_ARG_TYPE_ERROR(\"\", %[0]d + 1, " + S("array",1,0,26) + #");
   _a%[0]d = Pike_sp[%[0]d-args].u.array;
 "+(check_size||"")+
 "  a%[0]d = g_malloc0( sizeof( a%[0]d[0] ) * (_a%[0]d->size "+
@@ -1034,7 +1052,7 @@ class Type
     if( !c_inited )c_init();
     return consumed;
   }
-  string c_declare( int a, int|void is_const )
+  string|zero c_declare( int a, int|void is_const )
   {
     if( !c_inited )c_init();
     c_declared = 1;
@@ -1075,7 +1093,7 @@ class Type
 
 int last_class_id = 2000;
 
-class Class( string name, string file, int line )
+class Class( string name, string|zero file, int line )
 {
   array(Class) inherits = ({});
   mapping(string:GtkFunction) functions = ([]);
@@ -1127,7 +1145,7 @@ class Class( string name, string file, int line )
 
   void create_default_sprintf( )
   {
-    if( name == "_global" || mixin_for ) return 0;
+    if( name == "_global" || mixin_for ) return;
     add_function( GtkFunction(this,
                            "_sprintf",
                            Type("string"), ({
@@ -1410,6 +1428,7 @@ class Constant( string name, Type type, string file, int line )
      case "string":
        return "  add_string_constant( "+S(pike_name(),1,0,30)+", "+name+", ID_FINAL );\n";
      case "int":
+     case "int64":
        return "  add_integer_constant( "+S(pike_name(),1,0,30)+", "+name+", ID_FINAL );\n";
      case "float":
        return "  add_float_constant( "+S(pike_name(),1,0,30)+", "+name+", ID_FINAL );\n";
@@ -1439,7 +1458,7 @@ Constant get_constant_def( string name, Type t, string file, int line )
 }
 
 Class get_class_ref( string name, string file, int line,
-                     Class p )
+                     object(Class)|zero p )
 {
   Class res = classes[ name ];
   if(!res)
@@ -1470,7 +1489,7 @@ Class get_class_define( string name, string file, int line )
 }
 
 mapping(string:Type) types = ([]);
-Type parse_type( mixed t )
+object(Type)|zero parse_type( mixed t )
 {
   string tt;
   if(!sizeof(t))
@@ -1494,6 +1513,8 @@ Type parse_type( mixed t )
   {
    case "int":
    case "uint":
+   case "int64":
+   case "uint64":
    case "mapping":
    case "object":
    case "mixed":

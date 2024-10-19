@@ -21,18 +21,22 @@ typedef void (*c_fun)(INT32);
 
 struct compiler_frame;		/* Avoid gcc warning. */
 
-int islocal(struct pike_string *str);
+/*
+ * Prototypes for functions in language.yacc.
+ */
+struct pike_string *get_new_name(struct pike_string *prefix);
+int low_bind_local(struct compiler_frame *frame, node *n);
+int bind_local(struct compiler_frame *frame, int local_no);
+void release_local(struct compiler_frame *frame, int var);
 int low_add_local_name(struct compiler_frame *frame,
                        struct pike_string *str,
                        struct pike_type *type,
-                       node *def);
+                       node *def,
+		       node *init);
 int add_local_name(struct pike_string *str,
                    struct pike_type *type,
-                   node *def);
-int verify_declared(struct pike_string *str);
-
-
-extern int cumulative_parse_error;
+                   node *init);
+int islocal(struct pike_string *str);
 
 
 #ifndef STRUCT_NODE_S_DECLARED
@@ -47,14 +51,29 @@ typedef struct node_s node;
 /* var used in subscope -- needs to be saved when function returns */
 #define LOCAL_VAR_USED_IN_SCOPE         2
 
-struct local_variable
+/* Var is an argument. def is used for default value. */
+#define LOCAL_VAR_IS_ARGUMENT		4
+
+/**
+ * Represents a single mapping from symbol to local
+ * definition. Usually an F_LOCAL or F_LOCAL_INDIRECT
+ * node (ie a local variable), but may also be eg
+ * an F_CONSTANT node or an F_TRAMPOLINE node.
+ *
+ * NB: Only valid while the corresponding block
+ *     is being parsed. Will be reused while
+ *     parsing later blocks.
+ *
+ * Cf struct compiler_frame::local_names[].
+ */
+struct local_name
 {
   struct pike_string *name;
-  struct pike_type *type;
-  node *def;
-  /* FIXME: Consider moving these two to the def node above? */
-  struct pike_string *file;
-  int line;
+  node *def;		/* Definition; typically an F_LOCAL or
+                         * F_LOCAL_INDIRECT node, but may eg
+                         * be a local function or constant.
+                         */
+  node *init;		/* Initial/default value. */
   unsigned int flags;
 };
 
@@ -65,17 +84,28 @@ struct compiler_frame
 
   struct pike_type *current_type;
   struct pike_type *current_return_type;
-  int current_number_of_locals;
-  int max_number_of_locals;
+  int current_number_of_locals;	/* Current number of local_names. */
+  int max_number_of_locals;	/* Number of variables needed in the
+                                 * stack frame.
+                                 */
   int min_number_of_locals;
+  int next_local_offset;	/* Next stack offset for locals. */
   int last_block_level; /* used to detect variables declared in same block */
   int num_args;
+  int varargs;
   int lexical_scope;
   int current_function_number;
   int recur_label;
   int is_inline;
   unsigned int opt_flags;
-  struct local_variable variable[MAX_LOCAL];
+  int generator_fun;		/* Reference to generator inner function. */
+  int generator_is_async;	/* __async__ generator function. */
+  int generator_local;		/* Local num for __generator_entry_point__. */
+  int generator_index;		/* Number of generator jumps. */
+  INT32 *generator_jumptable;
+  struct local_name local_names[MAX_LOCAL];	/* Local symbols. */
+  unsigned char local_variables[MAX_LOCAL];	/* Local variable allocation. */
+  unsigned INT16 local_shared[(MAX_LOCAL + 15)>>4];	/* Shared locals. */
 };
 
 /* Also used in struct node_identifier */
@@ -113,7 +143,12 @@ union node_data
 
 struct node_s
 {
+#ifdef PIKE_DEBUG
+  /* Used to keep track of leaked nodes. */
+  GC_MARKER_MEMBERS;
+#else
   unsigned INT32 refs;
+#endif
   struct pike_string *current_file;
   struct pike_type *type;
   struct pike_string *name;
@@ -145,21 +180,26 @@ INT32 count_args(node *n);
 struct pike_type *find_return_type(node *n);
 int check_tailrecursion(void);
 struct node_chunk;
-void free_all_nodes(void);
 void debug_free_node(node *n);
 node *debug_mknode(int token,node *a,node *b);
+node *mknestednodes(int token, ...);
+void set_node_name(node *n, struct pike_string *name);
+node *mkbindnode(node *expr, struct pike_type *type);
 node *debug_mkstrnode(struct pike_string *str);
 node *debug_mkintnode(INT_TYPE nr);
 node *debug_mknewintnode(INT_TYPE nr);
 node *debug_mkfloatnode(FLOAT_TYPE foo);
+node *debug_mkarrownode(node *n, const char *str);
 node *debug_mkprgnode(struct program *p);
 node *debug_mkapplynode(node *func,node *args);
 node *debug_mkefuncallnode(char *function, node *args);
 node *debug_mkopernode(char *oper_id, node *arg1, node *arg2);
 node *debug_mkversionnode(int major, int minor);
+node *internal_mklocalnode(struct compiler_frame *f, int var);
 node *debug_mklocalnode(int var, int depth);
 node *debug_mkidentifiernode(int i);
 node *debug_mktrampolinenode(int i, struct compiler_frame *depth);
+node *debug_mkgeneratornode(int i);
 node *debug_mkexternalnode(struct program *prog, int i);
 node *debug_mkthisnode(struct program *parent_prog, int inherit_num);
 node *debug_mkcastnode(struct pike_type *type, node *n);
@@ -167,7 +207,7 @@ node *debug_mksoftcastnode(struct pike_type *type, node *n);
 void resolv_constant(node *n);
 void resolv_class(node *n);
 void resolv_class(node *n);
-node *index_node(node *n, char *node_name, struct pike_string *id);
+node *index_node(node * const n, struct pike_string *id);
 int node_is_eq(node *a,node *b);
 node *debug_mktypenode(struct pike_type *t);
 node *debug_mkconstantsvaluenode(const struct svalue *s);
@@ -186,6 +226,7 @@ node **my_get_arg(node **a,int n);
 node **is_call_to(node *n, c_fun f);
 void print_tree(node *n);
 struct used_vars;
+void fix_auto_node(node *n, struct pike_type *type);
 void fix_type_field(node *n);
 struct timer_oflo;
 ptrdiff_t eval_low(node *n,int print_error);
@@ -194,7 +235,8 @@ int dooptcode(struct pike_string *name,
 	      struct pike_type *type,
 	      int modifiers);
 void resolv_type(node *n);
-void fix_foreach_type(node *lval_lval);
+void init_las(void);
+void exit_las(void);
 /* Prototypes end here */
 
 /* Handling of nodes */
@@ -205,14 +247,17 @@ void fix_foreach_type(node *lval_lval);
 #define mkintnode(nr)       dmalloc_touch(node *, debug_mkintnode(nr))
 #define mknewintnode(nr)    dmalloc_touch(node *, debug_mknewintnode(nr))
 #define mkfloatnode(foo)    dmalloc_touch(node *, debug_mkfloatnode(foo))
+#define mkarrownode(val, str) dmalloc_touch(node *, debug_mkarrownode(val, str))
 #define mkprgnode(p)        dmalloc_touch(node *, debug_mkprgnode(p))
 #define mkapplynode(func, args) dmalloc_touch(node *, debug_mkapplynode(dmalloc_touch(node *, func),dmalloc_touch(node *, args)))
 #define mkefuncallnode(function, args) dmalloc_touch(node *, debug_mkefuncallnode(function, dmalloc_touch(node *, args)))
 #define mkopernode(oper_id, arg1, arg2) dmalloc_touch(node *, debug_mkopernode(oper_id, dmalloc_touch(node *, arg1), dmalloc_touch(node *, arg2)))
 #define mkversionnode(major, minor) dmalloc_touch(node *, debug_mkversionnode(major, minor))
+#define internal_mklocalnode(frame, var) dmalloc_touch(node *, internal_mklocalnode(frame, var))
 #define mklocalnode(var, depth) dmalloc_touch(node *, debug_mklocalnode(var, depth))
 #define mkidentifiernode(i) dmalloc_touch(node *, debug_mkidentifiernode(i))
 #define mktrampolinenode(i,f) dmalloc_touch(node *, debug_mktrampolinenode(i, f))
+#define mkgeneratornode(i) dmalloc_touch(node *, debug_mkgeneratornode(i))
 #define mkexternalnode(parent_prog, i) dmalloc_touch(node *, debug_mkexternalnode(parent_prog, i))
 #define mkthisnode(parent_prog, i) dmalloc_touch(node *, debug_mkthisnode(parent_prog, i))
 #define mkcastnode(type, n) dmalloc_touch(node *, debug_mkcastnode(type, dmalloc_touch(node *, n)))

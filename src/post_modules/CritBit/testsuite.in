@@ -117,7 +117,7 @@ define(test_loop,[[
 	test_const_loop([[
 	    void test_range_operator(int step) {
 		int i = (step < 0) ? sizeof(tree)-1 : 0;
-		foreach (tree->_get_iterator(step); mixed key; mixed value) {
+		foreach (get_iterator(tree, step); mixed key; mixed value) {
 		    if (GET_SORTED_A()[i] != key)
 			error("Key mismatch in range iterate(): (%O : %O) vs (%O : %O)\n", i, GET_SORTED_A()[i], i, key);
 		    if (GET_SAMPLE()[GET_SORTED_A()[i] ] != value)
@@ -138,7 +138,7 @@ define(test_loop,[[
 
 		if (step == 0) return;
 
-		foreach (tree->_get_iterator(step, a[start], a[stop]); mixed key; mixed value) {
+		foreach (get_iterator(tree, step, a[start], a[stop]); mixed key; mixed value) {
 		    if (GET_SORTED_A()[i] != key)
 			error("Key mismatch in range iterate(): (%O : %O) vs (%O : %O)\n", i, GET_SORTED_A()[i], i, key);
 		    if (GET_SAMPLE()[GET_SORTED_A()[i] ] != value)

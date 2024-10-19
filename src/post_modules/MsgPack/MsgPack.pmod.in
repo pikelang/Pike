@@ -47,7 +47,7 @@ class DecodeError {
     }
 }
 
-void decode_error(Stdio.Buffer buffer, int err_pos, void|string reason, void|mixed ... args) {
+void decode_error(Stdio.Buffer buffer, int err_pos, void|string reason, mixed ... args) {
     if (sizeof(args)) reason = sprintf(reason, @args);
     throw(DecodeError(buffer, err_pos, reason, backtrace()[..<1]));
 }

@@ -1,4 +1,4 @@
-/*
+/* -*- mode: C; c-basic-offset: 3; -*-
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
@@ -134,6 +134,10 @@ static void image_magic_index(INT32 args)
 	 ref_push_object(submagic[i].o);
 	 return;
       }
+
+   if (!Pike_fp->current_object) {
+     Pike_fatal("Image: Lost track of module object!\n");
+   }
 
    stack_dup();
    ref_push_object(fp->current_object);

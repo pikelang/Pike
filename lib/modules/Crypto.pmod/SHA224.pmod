@@ -7,3 +7,5 @@
 //! values of 224 bits, or 28 octets.
 
 inherit Nettle.SHA224;
+
+@Pike.Annotations.Implements(Crypto.Hash);

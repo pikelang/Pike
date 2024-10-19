@@ -30,9 +30,10 @@ Image.Image decode( string data )
 
 //! Attempts to decode @[data] as image data. The heuristics
 //! has some limited ability to decode macbinary files as well.
-mapping _decode( string data )
+mapping|zero _decode( string data, int(0..1)|void exif )
 {
   Image.Image i, a;
+  mapping e;
   string format;
 
   if(!data)
@@ -72,7 +73,7 @@ mapping _decode( string data )
       format = "PS";
     };
     break;
-#if constant(Image.WebP.decode)
+#if constant(_Image_WebP.decode)
   case "RIFF":
       if( has_value( data[..20], "WEBPVP8 ") )
       {
@@ -92,7 +93,7 @@ mapping _decode( string data )
       if (csum != 65535) {
 	// FIXME: Verify checksum.
       }
-#if constant(Image.TIFF.decode)
+#if constant(_Image_TIFF.decode)
       if (tiff_start && tiff_len) {
 	catch {
 	  i = Image.TIFF.decode(data[tiff_start..tiff_start + tiff_len -1]);
@@ -113,7 +114,7 @@ mapping _decode( string data )
 
 
   // Use the low-level decode function to get the alpha channel.
-#if constant(Image.GIF)
+#if constant(_Image_GIF)
   if (!i) {
     catch
     {
@@ -130,14 +131,25 @@ mapping _decode( string data )
   }
 #endif
 
+  // Use the low-level EXIF decode function if applicable
+#if constant(_Image_JPEG)
+  if (!i && data[..1] == "\xff\xd8") {
+      mapping res = (exif? Image.JPEG.exif_decode( data ) : Image.JPEG._decode( data ));
+      i = res->image;
+      a = res->alpha;
+      e = res->exif;
+      format = "JPEG";
+  }
+#endif
+
   if(!i) {
     catch {
-      // PNM, JPEG, XCF, PNG, (GIF), ILBM, BMP, RAS, PVR,
+      // PNM, (JPEG), XCF, PNG, (GIF), ILBM, BMP, RAS, PVR,
       // TIM, XWD, PCX, PSD
       mapping res = Image.ANY._decode( data );
       i = res->image;
       a = res->alpha;
-      format = fmts[res->format];
+      format = fmts[res->type];
     };
   }
 
@@ -163,20 +175,26 @@ mapping _decode( string data )
     "alpha":a,
     "img":i,
     "image":i,
-  ]);
+  ]) + (e? (["exif":e]) : ([]));
+}
+
+//! Like @[_decode()] but decodes EXIF and applies the rotation.
+mapping exif_decode( string data )
+{
+  return _decode( data, 1 );
 }
 
 //! Attempts to decode @[data] as image layer data. Additional
 //! arguments to the various formats decode_layers method can
 //! be passed through @[opt].
-array(Image.Layer) decode_layers( string data, mapping|void opt )
+array(Image.Layer)|zero decode_layers( string data, mapping|void opt )
 {
   array i;
   function f;
   if(!data)
     return 0;
 
-#if constant(Image.GIF)
+#if constant(_Image_GIF)
   catch( i = Image["GIF"]->decode_layers( data ) );
 #endif
 

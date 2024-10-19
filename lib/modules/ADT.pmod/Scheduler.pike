@@ -1,5 +1,6 @@
 // -*- encoding: utf-8; -*-
 
+#charset utf-8
 #pike __REAL_VERSION__
 
 protected inherit .Heap;

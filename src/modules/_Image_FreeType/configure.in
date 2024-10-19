@@ -11,7 +11,11 @@ if test "x$with_freetype" = "xyes" ; then
   PIKE_FEATURE_NODEP(Image.FreeType)
   PIKE_SELECT_ABI
 
-  MY_AC_PATH_PROGS(FT_CONFIG, ${pike_cv_tool_prefix}freetype-config ${ac_tool_prefix}freetype-config, no)
+  PIKE_PKG_CONFIG(freetype2, [
+    FT_CONFIG="${PKG_CONFIG} freetype2"
+  ], [
+    MY_AC_PATH_PROGS(FT_CONFIG, ${pike_cv_tool_prefix}freetype-config ${ac_tool_prefix}freetype-config, no)
+  ])
 
   if test "$FT_CONFIG" = "no" ; then
      :

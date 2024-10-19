@@ -12,6 +12,10 @@
 //!                     "group=%s", group)->name * ",";
 //! }
 
+//! Field to set in the query bindings mapping to set a character set
+//! for just the current query. Only supported by some databases.
+constant QUERY_OPTION_CHARSET = __builtin.Sql.QUERY_OPTION_CHARSET;
+
 //! @ignore
 // Use getters and Val-> to ensure dynamic resolving in case the
 // values in Val.pmod are replaced.
@@ -181,14 +185,14 @@ protected program(Connection) find_dbm(string program_name)
 //!
 //! @seealso
 //!   @[8.0::Sql.Sql], @[Connection]
-Connection Sql(string host,
+Connection Sql(string|zero host,
 	       void|string|mapping(string:int|string) db,
 	       void|string user, void|string _password,
 	       void|mapping(string:int|string) options)
 {
   // Note: No need to censor host here, since it is rewritten below if
   //       it contains an SQL-URL.
-  string password = _password;
+  string|zero password = _password;
   _password = "CENSORED";
 
   Connection con;
@@ -312,9 +316,9 @@ Connection Sql(string host,
 //!
 //! @seealso
 //!   @[8.0::Sql.Sql], @[Connection]
-variant Connection Sql(__deprecated__(Connection) con, void|string db)
+variant Connection Sql(__deprecated__(Connection) con, string db = "")
 {
-  if (db && db != "") {
+  if (db != "") {
     con->select_db(db);
   }
 

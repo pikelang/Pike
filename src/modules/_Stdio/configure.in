@@ -1,18 +1,18 @@
-AC_INIT(file.c)
+AC_INIT(file.cmod)
 AC_CONFIG_HEADER(file_machine.h)
 
 AC_MODULE_INIT()
 
 AC_DEFINE(WITH_TERMIOS)
 
-AC_HAVE_HEADERS(sys/types.h sys/socket.h arpa/inet.h sys/socketvar.h \
+AC_HAVE_HEADERS(sys/types.h sys/socket.h arpa/inet.h sys/socketvar.h pty.h \
   netinet/in.h poll.h sys/poll.h sys/uio.h sys/mman.h linux/mman.h sys/time.h \
   sys/param.h sys/mount.h ustat.h sys/statfs.h sys/statvfs.h sys/vfs.h \
   sys/stream.h sys/protosw.h netdb.h sys/sysproto.h winsock2.h ws2tcpip.h \
   direct.h sys/wait.h process.h sys/file.h net/netdb.h unistd.h sys/termios.h \
   termios.h poll.h sys/poll.h sys/select.h sys/un.h netinet/tcp.h \
   sys/sendfile.h sys/ioctl.h linux/if.h linux/magic.h sys/xattr.h libzfs.h \
-  AvailabilityMacros.h,,,[
+  AvailabilityMacros.h sys/stropts.h libutil.h,,,[
 /* Needed for <sys/socket.h> on FreeBSD 4.9. */
 #include <sys/types.h>
 /* Needed for <sys/socketvar.h> on Solaris 10. */
@@ -22,6 +22,13 @@ AC_HAVE_HEADERS(sys/types.h sys/socket.h arpa/inet.h sys/socketvar.h \
 /* Needed for <sys/mount.h> on OpenBSD */
 #ifdef HAVE_SYS_PARAM_H
 #include <sys/param.h>
+#endif
+/* Likely needed for <libutil.h> on FreeBSD. */
+#ifdef HAVE_TERMIOS_H
+#include <termios.h>
+#elif defined(HAVE_SYS_TERMIOS_H)
+/* NB: Deprecated by <termios.h> above. */
+#include <sys/termios.h>
 #endif
 ])
 
@@ -56,6 +63,7 @@ fi
 
 AC_HEADER_DIRENT
 AC_CHECK_LIB(socket, socket)
+AC_CHECK_LIB(network, socket)
 AC_CHECK_LIB(nsl, gethostbyname)
 AC_CHECK_LIB(net, __get_socket_descriptor)
 dnl AC_CHECK_LIB(zfs, libzfs_init)
@@ -65,11 +73,16 @@ dnl updated here. This is needed in case the gmp library is not a
 dnl shared library.
 AC_CHECK_LIB(gmp, main)
 
+AC_CHECK_LIB(util, openpty)
+
 AC_HAVE_FUNCS(readdir_r statvfs statfs ustat lseek64 lstat fsync \
  grantpt unlockpt ptsname posix_openpt socketpair writev sendfile munmap \
+ openpty tcgetattr fchdir \
  madvise poll setsockopt getprotobyname inet_ntoa \
  inet_ntop execve listxattr flistxattr getxattr fgetxattr setxattr fsetxattr \
- fdopendir pathconf fpathconf dirfd fstatat openat unlinkat kqueue access)
+ fdopendir pathconf fpathconf dirfd \
+ fstatat openat unlinkat linkat symlinkat readlinkat \
+ kqueue access)
 
 AC_MSG_CHECKING([whether IPPROTO_IPV6 exists])
 AC_CACHE_VAL(pike_cv_have_IPPROTO_IPV6, [
@@ -270,7 +283,20 @@ if test "$ac_cv_func_sendfile" = "yes"; then
       ], [
         /* Try HPUX */
         return (int)sendfile(0,0,0,0,(void *)0,0);
-      ], [ pike_cv_sendfile_args=6 ], [ pike_cv_sendfile_args=4 ])
+      ], [ pike_cv_sendfile_args=6 ], [
+        AC_TRY_COMPILE([
+#include <sys/types.h>
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif /* HAVE_SYS_SOCKET_H */
+#ifdef HAVE_SYS_UIO_H
+#include <sys/uio.h>
+#endif /* HAVE_SYS_UIO_H */
+        ], [
+          /* Try Linux */
+          return sendfile(0,0,(void *)0,0);
+        ], [ pike_cv_sendfile_args=4 ], [ pike_cv_sendfile_args=bad ])
+      ])
     ])
   ])
   if test "$pike_cv_sendfile_args" = "7"; then
@@ -360,7 +386,12 @@ if test "$ac_cv_func_sendfile" = "yes"; then
         AC_DEFINE(HAVE_HPUX_SENDFILE)
       fi
     else
-      AC_MSG_RESULT([4 - Linux style])
+      if test "$pike_cv_sendfile_args" = "4"; then
+        AC_MSG_RESULT([4 - Linux style])
+      else
+        AC_MSG_RESULT(failed - disabling use of sendfile)
+        AC_DEFINE(HAVE_BROKEN_SENDFILE)
+      fi
     fi
   fi
 else
@@ -384,6 +415,7 @@ if test x$ac_cv_func_getxattr = xyes ; then
 #ifndef POSIX_SOURCE
 #define POSIX_SOURCE
 #endif
+#include <stdlib.h>
 #include <sys/types.h>
 #ifdef HAVE_SYS_XATTR_H
 #include <sys/xattr.h>
@@ -408,6 +440,7 @@ if test x$ac_cv_func_getxattr = xyes ; then
 #ifndef POSIX_SOURCE
 #define POSIX_SOURCE
 #endif
+#include <stdlib.h>
 #include <sys/types.h>
 #ifdef HAVE_SYS_XATTR_H
 #include <sys/xattr.h>
@@ -458,6 +491,7 @@ if test x$ac_cv_func_readdir_r = xyes ; then
 #ifndef POSIX_SOURCE
 #define POSIX_SOURCE
 #endif
+#include <stdlib.h>
 #include <sys/types.h>
 #ifdef HAVE_DIRENT_H
 #include <dirent.h>
@@ -509,6 +543,7 @@ if test x$pike_cv_func_posix_readdir_r = xyes ; then
 #ifndef POSIX_SOURCE
 #define POSIX_SOURCE
 #endif
+#include <stdlib.h>
 #include <sys/errno.h>
 #ifdef HAVE_DIRENT_H
 #include <dirent.h>
@@ -593,6 +628,7 @@ else
 #ifndef POSIX_SOURCE
 #define POSIX_SOURCE
 #endif
+#include <stdlib.h>
 #include <sys/errno.h>
 #ifdef HAVE_DIRENT_H
 #include <dirent.h>
@@ -825,6 +861,7 @@ if test x$ac_cv_func_statfs = xyes ; then
 #ifndef POSIX_SOURCE
 #define POSIX_SOURCE
 #endif
+#include <stdlib.h>
 #ifdef HAVE_SYS_PARAM_H
 #include <sys/param.h>
 #endif
@@ -1108,6 +1145,7 @@ AC_CACHE_VAL(pike_cv_func_failsafe_strerror,
 AC_TRY_RUN([
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 int main()
 {
   int e;
@@ -1144,6 +1182,7 @@ AC_TRY_RUN([
 #define POSIX_SOURCE
 #endif
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <netinet/in.h>

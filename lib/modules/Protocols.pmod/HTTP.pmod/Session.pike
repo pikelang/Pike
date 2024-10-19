@@ -56,7 +56,7 @@ class Request
 //!	additions. If a cookie is encountered, this
 //!	function is called. Default is to call
 //!	@[set_http_cookie] in the @[Session] object.
-   function(string,Standards.URI:mixed) cookie_encountered=set_http_cookie;
+   function(string,Standards.URI:mixed|void) cookie_encountered=set_http_cookie;
 
 // ----------------
 
@@ -149,7 +149,7 @@ class Request
 //!	0 upon failure, this object upon success
 //! @seealso
 //!     @[prepare_method], @[do_async], @[do_thread]
-   Request do_sync(array(string|int|mapping) args)
+   object(Request)|zero do_sync(array(string|int|mapping) args)
    {
       for (;;)
       {
@@ -203,7 +203,7 @@ class Request
 //!	0 upon failure, or the called object upon success.
 //! @seealso
 //!     @[do_thread]
-   Request wait()
+   object(Request)|zero wait()
    {
       if (con->`()())
       {
@@ -215,9 +215,9 @@ class Request
 
 // ---------------- async
 
-   protected function(mixed...:mixed) headers_callback;
-   protected function(mixed...:mixed) data_callback;
-   protected function(mixed...:mixed) fail_callback;
+   protected function(mixed...:mixed)|zero headers_callback;
+   protected function(mixed...:mixed)|zero data_callback;
+   protected function(mixed...:mixed)|zero fail_callback;
    protected array(mixed) extra_callback_arguments;
 
 //!	Setup callbacks for async mode,
@@ -228,9 +228,9 @@ class Request
 //!
 //!	Note here that an error message from the server isn't
 //!	considered a failure, only a failed TCP connection.
-   void set_callbacks(function(mixed...:mixed) headers,
-		      function(mixed...:mixed) data,
-		      function(mixed...:mixed) fail,
+   void set_callbacks(function(mixed...:mixed)|zero headers,
+		      function(mixed...:mixed)|zero data,
+		      function(mixed...:mixed)|zero fail,
 		      mixed ...callback_arguments)
    {
       headers_callback=headers;
@@ -305,7 +305,7 @@ class Request
       con->set_callbacks(0,0);
 
       array eca=extra_callback_arguments;
-      function fc=fail_callback;
+      function|zero fc=fail_callback;
       set_callbacks(0,0,0); // drop all references
 
       if (fc) fc(@eca); // note that we may be destructed here
@@ -372,6 +372,7 @@ class Request
 
 // ----------------
 
+#pragma no_deprecation_warnings
 //!	But since this clears the HTTP connection from the Request object,
 //!	it can also be used to reuse a @[Request] object.
    void destroy()
@@ -379,6 +380,7 @@ class Request
       if (con) return_connection(url_requested,con);
       con=0;
    }
+#pragma deprecation_warnings
 
 //! 	@[_destruct] is called when an object is destructed.
    protected void _destruct()
@@ -388,7 +390,7 @@ class Request
 
 // ----------------
 
-   string _sprintf(int t)
+   protected string _sprintf(int t)
    {
       if (t=='O')
 	 return sprintf("Request(%O",(string)url_requested)+
@@ -419,7 +421,7 @@ class Cookie
    string domain="";
    int secure=0;
 
-   string _sprintf(int t)
+   protected string _sprintf(int t)
    {
       if (t=='O')
 	 return sprintf(
@@ -505,7 +507,7 @@ void set_http_cookie(string cookie,Standards.URI at)
 //!	The cookie will be checked against current security levels et al,
 //!	using the parameter @[who].
 //!	If @[who] is zero, no security checks will be performed.
-void set_cookie(Cookie cookie,Standards.URI who)
+void set_cookie(Cookie cookie, Standards.URI|zero who)
 {
 // fixme: insert security checks here
 
@@ -615,6 +617,7 @@ int maximum_connection_reuse=1000000;
 
 // internal (but readable for debug purposes)
 mapping(string:array(KeptConnection)) connection_cache=([]);
+Thread.Mutex connection_cache_mux = Thread.Mutex();
 int connections_kept_n=0;
 int connections_inuse_n=0;
 mapping(string:int) connections_host_n=([]);
@@ -624,8 +627,9 @@ protected class KeptConnection
    string lookup;
    Query q;
 
-   void create(string _lookup,Query _q)
+   protected void create(string _lookup,Query _q)
    {
+      Thread.MutexKey key = connection_cache_mux->lock(2);
       lookup=_lookup;
       q=_q;
 
@@ -637,21 +641,27 @@ protected class KeptConnection
 
    void disconnect()
    {
-      connection_cache[lookup]-=({this});
-      if (!sizeof(connection_cache[lookup]))
-	 m_delete(connection_cache,lookup);
-      remove_call_out(disconnect); // if called externally
+      if (global::this)
+      {
+         Thread.MutexKey key = connection_cache_mux->lock(2);
 
-      if (q->con) destruct(q->con);
-      connections_kept_n--;
-      if (!--connections_host_n[lookup])
-	 m_delete(connections_host_n,lookup);
+         connection_cache[lookup]-=({this});
+         if (!sizeof(connection_cache[lookup]))
+            m_delete(connection_cache,lookup);
+         remove_call_out(disconnect); // if called externally
+         connections_kept_n--;
+         if (!--connections_host_n[lookup])
+            m_delete(connections_host_n,lookup);
+      }
+
+      if (q && q->con) {q->con->close(); destruct(q->con);}
       destruct(q);
       destruct(this);
    }
 
    Query use()
    {
+      Thread.MutexKey key = connection_cache_mux->lock(2);
       connection_cache[lookup]-=({this});
       if (!sizeof(connection_cache[lookup]))
 	 m_delete(connection_cache,lookup);
@@ -673,15 +683,30 @@ protected inline string connection_lookup(Standards.URI url)
 Query give_me_connection(Standards.URI url)
 {
    Query q;
+   Query old_q;
+
+   Thread.MutexKey key = connection_cache_mux->lock();
 
    if (array(KeptConnection) v =
        connection_cache[connection_lookup(url)])
    {
-      q=v[0]->use(); // removes itself
-      // clean up
-      q->buf="";
-      q->headerbuf="";
-      q->n_used++;
+      old_q = v[0]->use(); // removes itself
+   }
+
+   q = SessionQuery();
+   q->hostname_cache=hostname_cache;
+   if (old_q) {
+      // Transfer connection from the old Query object to the new.
+      foreach(({ "con", "host", "port",
+#if constant(SSL.Cipher)
+		 "https", "context", "ssl_session",
+#endif
+	      }), string field) {
+         q[field] = old_q[field];
+      }
+      q->n_used = old_q->n_used+1;
+      old_q->con = 0;
+      destruct(old_q);
    }
    else
    {
@@ -695,8 +720,6 @@ Query give_me_connection(Standards.URI url)
 	 one->disconnect(); // removes itself
       }
 
-      q=SessionQuery();
-      q->hostname_cache=hostname_cache;
       connections_host_n[connection_lookup(url)]++; // new
    }
    connections_inuse_n++;
@@ -751,6 +774,7 @@ void return_connection(Standards.URI url,Query query)
 	 freed_connection(lookup);
 	 return;
       }
+      query->con->close(); // SSL.File needs to be explicitly closed before destruction
       destruct(query->con);
    }
    destruct(query);
@@ -875,9 +899,9 @@ Request async_do_method_url(string method,
 			    void|mapping query_variables,
 			    void|string|mapping data,
 			    void|mapping extra_headers,
-			    function callback_headers_ok,
-			    function callback_data_ok,
-			    function callback_fail,
+			    function|zero callback_headers_ok,
+			    function|zero callback_data_ok,
+			    function|zero callback_fail,
 			    array callback_arguments)
 {
    if(stringp(url)) url=Standards.URI(url);
@@ -905,28 +929,28 @@ Request async_do_method_url(string method,
 
 //! @decl Request async_get_url(URL url,@
 //! 			    void|mapping query_variables,@
-//! 			    function callback_headers_ok,@
-//! 			    function callback_data_ok,@
-//! 			    function callback_fail,@
+//! 			    function|zero callback_headers_ok,@
+//! 			    function|zero callback_data_ok,@
+//! 			    function|zero callback_fail,@
 //! 			    mixed... callback_arguments)
 //! @decl Request async_put_url(URL url,@
 //! 			    void|string file,@
 //! 			    void|mapping query_variables,@
-//! 			    function callback_headers_ok,@
-//! 			    function callback_data_ok,@
-//! 			    function callback_fail,@
+//! 			    function|zero callback_headers_ok,@
+//! 			    function|zero callback_data_ok,@
+//! 			    function|zero callback_fail,@
 //! 			    mixed... callback_arguments)
 //! @decl Request async_delete_url(URL url,@
 //! 			       void|mapping query_variables,@
-//! 			       function callback_headers_ok,@
-//! 			       function callback_data_ok,@
-//! 			       function callback_fail,@
+//! 			       function|zero callback_headers_ok,@
+//! 			       function|zero callback_data_ok,@
+//! 			       function|zero callback_fail,@
 //! 			       mixed... callback_arguments)
 //! @decl Request async_post_url(URL url,@
 //! 			     mapping query_variables,@
-//! 			     function callback_headers_ok,@
-//! 			     function callback_data_ok,@
-//! 			     function callback_fail,@
+//! 			     function|zero callback_headers_ok,@
+//! 			     function|zero callback_data_ok,@
+//! 			     function|zero callback_fail,@
 //! 			     mixed... callback_arguments)
 //!
 //! 	Sends a HTTP GET, POST, PUT or DELETE request to the server in
@@ -948,9 +972,9 @@ Request async_do_method_url(string method,
 
 Request async_get_url(URL url,
 		      void|mapping query_variables,
-		      function callback_headers_ok,
-		      function callback_data_ok,
-		      function callback_fail,
+		      function|zero callback_headers_ok,
+		      function|zero callback_data_ok,
+		      function|zero callback_fail,
 		      mixed ...callback_arguments)
 {
    return async_do_method_url("GET", url, query_variables,0,0,
@@ -961,9 +985,9 @@ Request async_get_url(URL url,
 Request async_put_url(URL url,
 		      void|string file,
 		      void|mapping query_variables,
-		      function callback_headers_ok,
-		      function callback_data_ok,
-		      function callback_fail,
+		      function|zero callback_headers_ok,
+		      function|zero callback_data_ok,
+		      function|zero callback_fail,
 		      mixed ...callback_arguments)
 {
    return async_do_method_url("PUT", url, query_variables, file,0,
@@ -973,9 +997,9 @@ Request async_put_url(URL url,
 
 Request async_delete_url(URL url,
 			 void|mapping query_variables,
-			 function callback_headers_ok,
-			 function callback_data_ok,
-			 function callback_fail,
+			 function|zero callback_headers_ok,
+			 function|zero callback_data_ok,
+			 function|zero callback_fail,
 			 mixed ...callback_arguments)
 {
    return async_do_method_url("DELETE", url, query_variables, 0,0,
@@ -985,9 +1009,9 @@ Request async_delete_url(URL url,
 
 Request async_post_url(URL url,
 		       mapping|string query_variables,
-		       function callback_headers_ok,
-		       function callback_data_ok,
-		       function callback_fail,
+		       function|zero callback_headers_ok,
+		       function|zero callback_data_ok,
+		       function|zero callback_fail,
 		       mixed ...callback_arguments)
 {
    return async_do_method_url("POST", url, 0, query_variables, 0,
@@ -1009,9 +1033,9 @@ class SessionURL
 //! instantiate a SessionURL object;
 //! when fed to Protocols.HTTP.Session calls, will add
 //! referer to the HTTP handshaking variables
-   void create(URL uri,
-	       URL base_uri,
-	       URL _referer)
+   protected void create(URL uri,
+			 URL base_uri,
+			 URL _referer)
    {
       ::create(uri,base_uri);
       referer=_referer;

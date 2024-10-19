@@ -25,7 +25,7 @@ class ANY {
   int streamed = 0;
   mixed peekdata = 0;
 
-  void create() { }
+  protected void create() { }
 
   //! Reads data from file
   //!
@@ -88,7 +88,7 @@ class ANY {
     return 0;
   }
 
-  string _sprintf(int|void ctype) {
+  protected string _sprintf(int|void ctype) {
       return ctype=='O' &&
 	sprintf("%O(\"%O\",%O)", this_program, buffer->fd, nochk);
   }
@@ -118,7 +118,7 @@ class vbuffer {
   //
   // @param _fd
   //  The Stdio.File object or string contained MP3 file
-  void create(Stdio.File|Stdio.FakeFile _fd) {
+  protected void create(Stdio.File|Stdio.FakeFile _fd) {
     if(objectp(_fd))
       fd = _fd;
     else

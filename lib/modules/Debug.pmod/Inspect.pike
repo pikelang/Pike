@@ -31,6 +31,7 @@
 //!  the file.
 
 #pike __REAL_VERSION__
+#require constant(Thread.Thread)
 
 #pragma dynamic_dot
 
@@ -59,7 +60,7 @@
 //! @seealso
 //!  @[triggersignal], @[pollinterval], @[_loopthread], @[_callback],
 //!  @[Debug.globals]
-void create(string|function(void:void)|void cb) {
+protected void create(string|function(void:void)|void cb) {
   _callback = cb;
   Thread.Thread(loop);
 }

@@ -1,3 +1,4 @@
+#pike 7.8
 
 //! The Digital Signature Algorithm (aka DSS, Digital Signature Standard).
 
@@ -5,23 +6,23 @@
 #pragma strict_types
 #require constant(Crypto.Random)
 
-protected Gmp.mpz p; // Modulo
-protected Gmp.mpz q; // Group order
-protected Gmp.mpz g; // Generator
+protected object(Gmp.mpz)|zero p; // Modulo
+protected object(Gmp.mpz)|zero q; // Group order
+protected object(Gmp.mpz)|zero g; // Generator
 
-protected Gmp.mpz y; // Public key
-protected Gmp.mpz x; // Private key
+protected object(Gmp.mpz)|zero y; // Public key
+protected object(Gmp.mpz)|zero x; // Private key
 
 function(int(0..):string) random = Crypto.Random.random_string;
 
 
 // Accessors
 
-Gmp.mpz get_p() { return p; } //! Returns the modulo.
-Gmp.mpz get_q() { return q; } //! Returns the group order.
-Gmp.mpz get_g() { return g; } //! Returns the generator.
-Gmp.mpz get_y() { return y; } //! Returns the public key.
-Gmp.mpz get_x() { return x; } //! Returns the private key.
+object(Gmp.mpz)|zero get_p() { return p; } //! Returns the modulo.
+object(Gmp.mpz)|zero get_q() { return q; } //! Returns the group order.
+object(Gmp.mpz)|zero get_g() { return g; } //! Returns the generator.
+object(Gmp.mpz)|zero get_y() { return y; } //! Returns the public key.
+object(Gmp.mpz)|zero get_x() { return x; } //! Returns the private key.
 
 
 //! Sets the public key in this DSA object.
@@ -69,7 +70,7 @@ array(Gmp.mpz) raw_sign(Gmp.mpz h, void|Gmp.mpz k)
   if(!k) k = random_exponent();
 
   Gmp.mpz r = [object(Gmp.mpz)](g->powm(k, p) % q);
-  Gmp.mpz s = [object(Gmp.mpz)]((k->invert(q) * (h + x*r)) % q);
+  Gmp.mpz s = [object(Gmp.mpz)]((k->invert(q) * (h + [object(Gmp.mpz)](x*r))) % q);
 
   return ({ r, s });
 }
@@ -77,7 +78,7 @@ array(Gmp.mpz) raw_sign(Gmp.mpz h, void|Gmp.mpz k)
 //! Verify the signature @[r],@[s] against the message @[h].
 int(0..1) raw_verify(Gmp.mpz h, Gmp.mpz r, Gmp.mpz s)
 {
-  Gmp.mpz w;
+  object(Gmp.mpz)|zero w;
   if (catch
       {
 	w = s->invert(q);
@@ -190,7 +191,7 @@ array(Gmp.mpz) nist_primes(int l)
 
       Gmp.mpz p = Gmp.mpz(buffer, 256);
 
-      p -= p % (2 * q) - 1;
+      p -= [object(Gmp.mpz)](p % (2 * q) - 1);
 
       if (!p->small_factor() && p->probably_prime_p())
       {
@@ -201,10 +202,10 @@ array(Gmp.mpz) nist_primes(int l)
   }
 }
 
-protected Gmp.mpz find_generator(Gmp.mpz p, Gmp.mpz q)
+protected object(Gmp.mpz)|zero find_generator(Gmp.mpz p, Gmp.mpz q)
 {
   Gmp.mpz e = [object(Gmp.mpz)]((p - 1) / q);
-  Gmp.mpz g;
+  object(Gmp.mpz)|zero g;
 
   do
   {

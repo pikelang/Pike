@@ -8,7 +8,7 @@ private class Tree
 {
     Tree left, right;
     int val;
-    void create( int v, int vv, int depth )
+    protected void create( int v, int vv, int depth )
     {
         val = v;
         if( depth > 0 )

@@ -50,7 +50,7 @@
 #define PTR_HASH_HASHFUN_DEFINED
 
 static inline PIKE_HASH_T PIKE_UNUSED_ATTRIBUTE ptr_hashfun(void * ptr) {
-  PIKE_HASH_T q = (size_t)((char*)ptr - (char*)0);
+  PIKE_HASH_T q = (size_t)((char*)ptr);
   q ^= (q >> 20) ^ (q >> 12);
   return q ^ (q >> 7) ^ (q >> 4);
 }
@@ -80,12 +80,19 @@ static struct block_allocator PIKE_CONCAT(DATA,_allocator) =                 \
                                                                              \
 struct DATA *PIKE_CONCAT(alloc_,DATA)(void) {	                             \
   struct DATA * ptr = (struct DATA *)ba_alloc(&PIKE_CONCAT(DATA,_allocator));\
+  DO_IF_DMALLOC(							     \
+    dmalloc_register(ptr, sizeof(struct DATA),				     \
+		     DMALLOC_NAMED_LOCATION(TOSTR(DATA)))		     \
+  );									     \
   INIT_BLOCK(ptr);                                                           \
   return ptr;                                                                \
 }									     \
                                                                              \
 void PIKE_CONCAT(really_free_,DATA)(struct DATA *d) {		             \
   EXIT_BLOCK(d);							     \
+  DO_IF_DMALLOC(							     \
+    dmalloc_unregister(d, 0)						     \
+  );									     \
   ba_free(&PIKE_CONCAT(DATA,_allocator), d);                                 \
 }                                                                            \
                                                                              \
@@ -230,8 +237,9 @@ static void PIKE_UNUSED_ATTRIBUTE PIKE_CONCAT3(init_,DATA,_hash)(void)       \
   PIKE_CONCAT3(low_init_,DATA,_hash)(BSIZE);		                     \
 }									     \
 									     \
-static void PIKE_CONCAT3(exit_,DATA,_hash)(void)				     \
+static void PIKE_CONCAT3(exit_,DATA,_hash)(void)			     \
 {									     \
+  DO_IF_DMALLOC(dmalloc_unregister_all(& PIKE_CONCAT(DATA,_allocator)));     \
   ba_free_all(& PIKE_CONCAT(DATA,_allocator));                               \
   free(PIKE_CONCAT(DATA,_hash_table));					     \
   PIKE_CONCAT(DATA,_hash_table)=0;					     \
@@ -306,6 +314,9 @@ static struct DATA *PIKE_CONCAT3(make_,DATA,_unlocked)(void *ptr,		     \
 									     \
   DO_IF_DEBUG( if(!PIKE_CONCAT(DATA,_hash_table))			     \
     Pike_fatal("Hash table error!\n"); )				     \
+  DO_IF_DEBUG( if (PIKE_CONCAT(find_, DATA)(ptr))			     \
+    Pike_fatal("%s for %p already exists!\n",				     \
+	       TOSTR(DATA), ptr); )					     \
   PIKE_CONCAT(num_,DATA)++;						     \
 									     \
   if(( PIKE_CONCAT(num_,DATA)>>BLOCK_ALLOC_HSIZE_SHIFT ) >=		     \
@@ -320,5 +331,9 @@ static struct DATA *PIKE_CONCAT3(make_,DATA,_unlocked)(void *ptr,		     \
   p->PTR_HASH_ALLOC_DATA=ptr;						     \
   p->BLOCK_ALLOC_NEXT=PIKE_CONCAT(DATA,_hash_table)[hval];		     \
   PIKE_CONCAT(DATA,_hash_table)[hval]=p;				     \
+									     \
+  DO_IF_DEBUG( if (!PIKE_CONCAT(find_, DATA)(ptr))			     \
+    Pike_fatal("%s for %p not found after insertion!\n",		     \
+	       TOSTR(DATA), ptr); )					     \
   return p;								     \
 }

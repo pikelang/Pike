@@ -5,6 +5,10 @@ class Pango.LayoutLine;
 
 //! PangoLayoutLine.
 
+%{
+extern void push_pango_rectangle(PangoRectangle *pos);
+%}
+
 array(mapping(string:int)) get_extents()
 //! Computes the logical and ink extents of a layout line.
 {

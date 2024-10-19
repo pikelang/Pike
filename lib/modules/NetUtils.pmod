@@ -23,7 +23,7 @@ final constant DOMAIN_LABEL_MAX_LENGTH = 63;
 //! @returns
 //!     The string representation of the address, or 0 if the IP
 //!     was invalid.
-string ip_to_string( int ip, bool|void v6_only )
+string|zero ip_to_string( int ip, bool|void v6_only )
 {
     if( ip < 0 )
         return 0;
@@ -120,7 +120,7 @@ int netmask_to_cidr( string mask )
 //!             The bitmask.
 //!     @endarray
 //!     Returns 0 if the string could not be parsed.
-array(int) cidr_to_netmask(string cidr)
+array(int)|zero cidr_to_netmask(string|zero cidr)
 {
     string ips;
     int bits;
@@ -388,7 +388,7 @@ class IpRangeLookup
     //!     Each range can be a single addresses ("192.168.1.1"), a
     //!     range of addresses ("192.168.1.1-192.168.1.5") or be
     //!     written in CIDR notation ("192.168.1.0/24").
-    void create(mapping(mixed:array(string)) ranges)
+    protected void create(mapping(mixed:array(string)) ranges)
     {
         void add_range( Range range )
         {
@@ -526,8 +526,8 @@ string port_of( RemoteAddressObject|string|int(0..0) inc,
 //!
 //! This function can return 0 if @[inc] is a @[RemoteAddressObject]
 //! and query_address throws an error or does not return a string.
-array(string) ip_and_port_of( RemoteAddressObject|string|int(0..0) inc,
-                              bool|void local_address)
+array(string)|zero ip_and_port_of( RemoteAddressObject|string|int(0..0) inc,
+                                   bool|void local_address)
 {
     if( objectp(inc) && (catch(inc = inc->query_address(local_address)) || !inc) )
         return 0;
@@ -535,18 +535,18 @@ array(string) ip_and_port_of( RemoteAddressObject|string|int(0..0) inc,
     if( !stringp(inc) )
         return 0;
 
-    array ip_and_port = inc / " ";
+    array(string) ip_and_port = ([string]inc) / " ";
     if (sizeof(ip_and_port) < 2)
         ip_and_port += ({ 0 });
     return ip_and_port;
 }
 
-private multiset(string) __lips;
-private multiset(int)    __lipi;
-private mapping(string:array(string)) __interfaces;
-private IpRangeLookup _local_networks;
-private mapping _broadcast_addresses;
-private array(NetworkType) __c_n_t;
+private multiset(string)|zero __lips;
+private multiset(int)|zero    __lipi;
+private mapping(string:array(string))|zero __interfaces;
+private object(IpRangeLookup)|zero _local_networks;
+private mapping|zero _broadcast_addresses;
+private array(NetworkType)|zero __c_n_t;
 
 
 
@@ -581,7 +581,7 @@ private System find_system() {
     return NT;
 #else
     if( uname()->sysname == "Linux" ||
-        String.count(Process.popen(_ifconfig+" -s 2>/dev/null"),"\n") > 1 )
+        String.count(Process.run(({ _ifconfig, "-s" }))->stdout, "\n") > 1 )
         return Linux;
     return _ifconfig ? Other : Unsupported;
 #endif
@@ -598,23 +598,134 @@ string ifconfig( string command )
     switch( command )
     {
         case "list if":
+            // Return a '\n'-separated list of interface names.
             switch( system )
             {
                 case Linux:
                 {
-                    string data = Process.popen( _ifconfig + " -s" );
+                    string data = Process.run(({ _ifconfig, "-s" }))->stdout;
                     return column(((data/"\n")[*]/" ")[1..<1],0)*"\n";
                 }
                 case NT:
+                    // Using netstat:
+/* > netstat -rn
+ *
+ * IPv4 Route Table
+ * ===========================================================================
+ * Interface List
+ * 0x1 ........................... MS TCP Loopback interface
+ * 0x10003 ...AA BB CC DD EE FF ...... XYZ Adapter
+ * ===========================================================================
+ * ===========================================================================
+ * Active Routes:
+ * Network Destination        Netmask          Gateway       Interface  Metric
+ *           0.0.0.0          0.0.0.0          a.b.c.1          a.b.c.d     10
+ *         127.0.0.0        255.0.0.0        127.0.0.1        127.0.0.1      1
+ *           a.b.c.0    255.255.255.0          a.b.c.d          a.b.c.d     10
+ *           a.b.c.d  255.255.255.255        127.0.0.1        127.0.0.1     10
+ *         a.b.c.255  255.255.255.255          a.b.c.d          a.b.c.d     10
+ *         224.0.0.0        240.0.0.0          a.b.c.d          a.b.c.d     10
+ *   255.255.255.255  255.255.255.255          a.b.c.d          a.b.c.d      1
+ * Default Gateway:      212.247.28.1
+ * ===========================================================================
+ * Persistent Routes:
+ *   None
+ */
+                {
+                    // The strings in the "Interface List" above do not
+                    // seem to be useable for anything (except for the
+                    // interface MAC-address), so we instead return the
+                    // list of interface addresses and prefix.
+                    string data = Process.run(({ "netstat", "-rn" }))->stdout;
+                    // Return the unique values from the "Interface"
+                    // column above.
+                    array(string) interfaces = ({});
+                    foreach(data/"\n", string line) {
+                        if (has_prefix(line, " ")) {
+                            if (sscanf(line,
+                                       "%*[ ]%[^ ]"	// Destination
+                                       "%*[ ]%[^ ]"	// Netmask
+                                       "%*[ ]%[^ ]"	// Gateway
+                                       "%*[ ]%[^ ]"	// Interface
+                                       "%*[ ]%d",	// Metric
+                                       string dest,
+                                       string mask,
+                                       string gw,
+                                       string iface,
+                                       int metric) == 10) {
+                                if (gw != iface) {
+                                    // External GW.
+                                    continue;
+                                }
+                                int di = string_to_ip(dest);
+                                int mi = string_to_ip(mask);
+                                int ii = string_to_ip(iface);
+                                if (di == (mi & ii)) {
+                                    // Network matches masked iface.
+                                    interfaces += ({
+                                        iface + "/" + netmask_to_cidr(mask),
+                                    });
+                                }
+                            }
+                        }
+                    }
+                    return sort(interfaces)*"\n";
+                }
+                    // Using ipconfig:
+/* > ipconfig -all
+ * Windows IP Configuration
+ *
+ *    Host Name . . . . . . . . . . . . : starcraft
+ *    Primary Dns Suffix  . . . . . . . : roxen.com
+ *    Node Type . . . . . . . . . . . . : Unknown
+ *    IP Routing Enabled. . . . . . . . : No
+ *    WINS Proxy Enabled. . . . . . . . : No
+ *    DNS Suffix Search List. . . . . . : roxen.com
+ *
+ * Ethernet adapter Local Area Connection:
+ *
+ *    Connection-specific DNS Suffix  . :
+ *    Description . . . . . . . . . . . : XYZ Adapter
+ *    Physical Address. . . . . . . . . : AA-BB-CC-DD-EE-FF
+ *    DHCP Enabled. . . . . . . . . . . : No
+ *    IP Address. . . . . . . . . . . . : a.b.c.d
+ *    Subnet Mask . . . . . . . . . . . : 255.255.255.0
+ *    Default Gateway . . . . . . . . . : a.b.c.1
+ *    DNS Servers . . . . . . . . . . . : a.b.c.e
+ *                                        a.b.c.f
+ *
+ */
                     error("FIXME: NT not currently supported\n");
-                    return Process.popen( "ipconfig /all" );
-
+                    return Process.run(({ "ipconfig", "/all" }))->stdout;
+                    // FIXME: Consider switching to using netsh:
+/* > netsh interface show interface
+ *
+ * Admin State    State          Type             Interface Name
+ * -------------------------------------------------------------------------
+ * Enabled        Unreachable    Dedicated        Local Area Connection
+ * Enabled        Unreachable    Internal         Internal
+ * Enabled        Unreachable    Loopback         Loopback
+ * $ netsh interface ip show address "Local Area Connection"
+ *
+ * Configuration for interface "Local Area Connection"
+ *     DHCP enabled:                         No
+ *     IP Address:                           a.b.c.d
+ *     SubnetMask:                           255.255.255.0
+ *     Default Gateway:                      a.b.c.1
+ *     GatewayMetric:                        0
+ *     InterfaceMetric:                      0
+ *
+ * > netsh interface ipv6 show address "Local Area Connection"
+ * IPv6 is not installed.
+ *
+ */
                 default:
                  {
-                     string data = Process.popen(_ifconfig + " -a | grep -v '\t'");
+                     string data = Process.run(({ _ifconfig, "-a" }))->stdout;
                      array res = ({});
                      foreach( data/"\n", string x )
                      {
+                         if (has_value(x, "\t")) continue;
                          if( strlen( x ) )
                          {
                              x = (x/" ")[0];
@@ -626,10 +737,10 @@ string ifconfig( string command )
             }
         case "all":
             if( system == NT )
-                return Process.popen( "ipconfig /all");
-            return Process.popen( _ifconfig + " -a" );
-        default:
-            return Process.popen( _ifconfig +" "+ command );
+                return Process.run(({ "ipconfig", "/all" }))->stdout;
+            return Process.run(({ _ifconfig, "-a" }))->stdout;
+        default:	// Usually the name of an interface.
+            return Process.run(({ _ifconfig, command }))->stdout;
     }
 }
 
@@ -644,6 +755,22 @@ mapping(string:array(string)) local_interfaces()
     mapping(string:array(string)) next__interfaces = ([]);
 
     mapping(string:array(string)) next__broadcast_addresses = ([]);
+#ifdef __NT__
+    foreach( ifconfig("list if" )/"\n", string iface )
+    {
+        array(string) addrs = ({ iface });
+        if (!has_value(iface, ":")) {
+            // Not IPv6. Add the mapped address. */
+            array(string) a = iface/"/";
+            addrs += ({ "::ffff:" + a[0] + "/" + (96 + (int)a[1]) });
+        }
+        if (has_prefix(iface, "127.0.0.1/") || has_prefix(iface, "::1/")) {
+            next__interfaces["lo"] += addrs;
+        } else {
+            next__interfaces["eth"] += addrs;
+        }
+    }
+#else
     foreach( ifconfig("list if" )/"\n", string iface )
     {
         array ips = ({});
@@ -695,6 +822,7 @@ mapping(string:array(string)) local_interfaces()
         if( sizeof( ips ) )
             next__interfaces[iface] = ips;
     }
+#endif
     next__interfaces["lo"] += ({ "::/128" });
     __interfaces = next__interfaces;
     _broadcast_addresses = next__broadcast_addresses;
@@ -724,7 +852,7 @@ IpRangeLookup local_networks()
 //! on a computer that does not actually have any ipv6 addresses (and
 //! thus no support for ipv6), at least on linux, causes the bind call
 //! to fail entirely.
-string `ANY()
+string|zero `ANY()
 {
     if( has_ipv6() )
         return "::";
@@ -842,7 +970,7 @@ string local_host()
     return "127.0.0.1";
 }
 
-private IpRangeLookup _special_networks;
+private object(IpRangeLookup)|zero _special_networks;
 
 // NOTE: If you add a network type here you also need to fix
 // connectable_network_types below.
@@ -908,7 +1036,7 @@ bool ip_less_global( int|string which, int|string towhat, bool|void prefer_v4 )
 //! addresses.
 //!
 //! Will return 0 if @[a] is not a valid address.
-string normalize_address( string a )
+string|zero normalize_address( string a )
 {
     if( !a ) return 0;
 
@@ -1069,7 +1197,7 @@ array(NetworkType) connectable_network_types()
 
 // Used for seltests.
 array(string) _sort_addresses(array(string) addresses,
-                              array(NetworkType) exclude_types,
+                              array(NetworkType)|zero exclude_types,
                               bool separate_v6,
                               array(NetworkType) connectable_types )
 {

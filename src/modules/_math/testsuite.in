@@ -10,20 +10,14 @@ define(exarg2,[[test_any([[
   return x(0.5, 0.4);
 ]], $1(0.5, 0.4)) ]])
 
-define(test_approx_eq,[[test_any([[
-  float x=$1, y=$2;
-  float fuzz=abs(y)/1048576;
-  return (x==y) || (x > y-fuzz && x < y+fuzz);
-]], 1)]])
-
 define(test_nan,[[test_true(Float.isnan($1))]])
 
 
 dnl - tan
 test_true(floatp(tan(0.5)))
 test_true(floatp(tan(1)))
-test_true(`<=(-0.0000001, 0.5-tan(atan(0.5)), 0.0000001))
-test_true(`<=(-0.0000001, 0.5-atan(tan(0.5)), 0.0000001))
+test_approx(tan(atan(0.5)), 0.5)
+test_approx(atan(tan(0.5)), 0.5)
 exarg(tan)
 test_eval_error( return tan(Math.inf) )
 test_nan(tan(Math.nan))
@@ -31,7 +25,7 @@ test_nan(tan(Math.nan))
 dnl - asin
 test_true(floatp(asin(0.7)))
 test_true(floatp(asin(1)))
-test_true(`<=(-0.0000001, asin(0.0), 0.0000001))
+test_approx(asin(0.0), 0.0)
 exarg(asin)
 test_nan(asin(Math.inf))
 test_nan(asin(Math.nan))
@@ -39,8 +33,7 @@ test_nan(asin(Math.nan))
 dnl - atan
 test_true(floatp(atan(0.7)))
 test_true(floatp(atan(1)))
-test_true(3.1415 < 4.0*atan(1.0))
-test_true(3.1416 > 4.0*atan(1.0))
+test_approx(4.0 * atan(1.0), Math.pi)
 exarg(atan)
 test_nan(atan(Math.nan))
 
@@ -52,16 +45,14 @@ exarg2(atan2)
 dnl - sin
 test_true(floatp(sin(1.2)))
 test_true(floatp(sin(1)))
-test_true(sin(atan(1.0))>0.707)
-test_true(sin(atan(1.0))<0.708)
+test_appox(sin(atan(1.0)), sqrt(0.5))
 exarg(sin)
 test_nan(sin(Math.inf))
 test_nan(sin(Math.nan))
 
 dnl - acos
 test_true(floatp(acos(1)))
-test_true(acos(0.7) > 0.795)
-test_true(acos(0.7) < 0.796)
+test_approx(4.0 * acos(sqrt(0.5)), Math.pi)
 exarg(acos)
 test_nan(acos(Math.inf))
 test_nan(acos(Math.nan))
@@ -69,8 +60,7 @@ test_nan(acos(Math.nan))
 dnl - cos
 test_true(floatp(cos(1.2)))
 test_true(floatp(cos(1)))
-test_true(cos(atan(1.0))>0.707)
-test_true(cos(atan(1.0))<0.708)
+test_approx(cos(atan(1.0)), sqrt(0.5))
 exarg(cos)
 test_nan(cos(Math.inf))
 test_nan(cos(Math.nan))
@@ -85,25 +75,25 @@ test_true(floatp(tanh(1)))
 test_true(floatp(atanh(1)))
 
 define(test_hyper,[[dnl
-ifelse([[$2]],,,[[test_approx_eq([[sinh($1)]],[[$2]])]])dnl
-ifelse([[$3]],,,[[test_approx_eq([[cosh($1)]],[[$3]])]])dnl
-ifelse([[$4]],,,[[test_approx_eq([[tanh($1)]],[[$4]])]])dnl
-ifelse([[$5]],,,[[test_approx_eq([[asinh($1)]],[[$5]])]])dnl
-ifelse([[$6]],,,[[test_approx_eq([[acosh($1)]],[[$6]])]])dnl
-ifelse([[$7]],,,[[test_approx_eq([[atanh($1)]],[[$7]])]])dnl
+ifelse([[$2]],,,[[test_approx([[sinh($1)]],[[$2]])]])dnl
+ifelse([[$3]],,,[[test_approx([[cosh($1)]],[[$3]])]])dnl
+ifelse([[$4]],,,[[test_approx([[tanh($1)]],[[$4]])]])dnl
+ifelse([[$5]],,,[[test_approx([[asinh($1)]],[[$5]])]])dnl
+ifelse([[$6]],,,[[test_approx([[acosh($1)]],[[$6]])]])dnl
+ifelse([[$7]],,,[[test_approx([[atanh($1)]],[[$7]])]])dnl
 ]])
 
-test_hyper(-42.0,-869637470800000000.0,869637470800000000.0,-1.0,-4.430958492,,)
-test_hyper(-13.7,-445455.583,445455.583,-1.0,-3.311872344,,)
-test_hyper(-1.4,-1.904301501,2.150898465,-0.885351648,-1.137982046,,)
-test_hyper(-0.65,-0.696747526,1.218793303,-0.571669966,-0.611224313,,-0.775298706)
-test_hyper(-0.01,-0.010000166,1.00005,-0.009999666,-0.009999833,,-0.010000333)
+test_hyper(-42.0,-869637470760250523.69734065180561761,869637470760250523.69734065180561761,-1.0,-4.4309584920805433188108853236369357,,)
+test_hyper(-13.7,-445455.58298901924957399137915078733,445455.58299014169593922572252746873,-0.99999999999748022831434759668929259,-3.311872343563386948149029696750666,,)
+test_hyper(-1.4,-1.9043015014515340551421238276974263,2.1508984653931405320819850675311939,-0.88535164820226250758341765202557393,-1.1379820462933673973875479107020657,,)
+test_hyper(-0.65,-0.69674752612644001112604502773659979,1.2187933028874560590206531649454535,-0.57166996608511722520417694451685434,-0.6112243137627636719969315805893453,,-0.77529870620558346517591803572223764)
+test_hyper(-0.01,-0.010000166667500001984129739861411738,1.0000500004166680555580357170414483,-0.0099996666799994603393289197088394975,-0.009999833340832886935141612163953796,,-0.010000333353334762015882107551404224)
 test_hyper(0.0,0.0,1.0,0.0,0.0,,0.0)
-test_hyper(0.01,0.010000166,1.00005,0.009999666,0.009999833,,0.010000333)
-test_hyper(0.65,0.696747526,1.218793303,0.571669966,0.611224313,,0.775298706)
-test_hyper(1.4,1.904301501,2.150898465,0.885351648,1.137982046,0.867014726,)
-test_hyper(13.7,445455.583,445455.583,1.0,3.311872344,3.309208361,)
-test_hyper(42.0,869637470800000000.0,869637470800000000.0,1.0,4.430958492,,)
+test_hyper(0.01,0.010000166667500001984129739861411738,1.0000500004166680555580357170414483,0.0099996666799994603393289197088394975,0.009999833340832886935141612163953796,,0.010000333353334762015882107551404224)
+test_hyper(0.65,0.69674752612644001112604502773659979,1.2187933028874560590206531649454535,0.57166996608511722520417694451685434,0.6112243137627636719969315805893453,,0.77529870620558346517591803572223764)
+test_hyper(1.4,1.9043015014515340551421238276974263,2.1508984653931405320819850675311939,0.88535164820226250758341765202557393,1.1379820462933673973875479107020657,0.86701472649056510395052026950146738,)
+test_hyper(13.7,445455.58298901924957399137915078733,445455.58299014169593922572252746873,0.99999999999748022831434759668929259,3.311872343563386948149029696750666,3.3092083606287244632912754464749901,)
+test_hyper(42.0,869637470760250523.69734065180561761,869637470760250523.69734065180561761,1.0,4.4309584920805433188108853236369357,4.4306750453495479364522424005637439,)
 
 test_eq(sinh(Math.inf),Math.inf)
 test_eq(sinh(-Math.inf),-Math.inf)
@@ -129,7 +119,7 @@ test_any([[
   return -1;
 ]],-1)
 test_any([[
-  class A { int _sqrt() { return 17; } };
+  class A { protected int _sqrt() { return 17; } };
   return sqrt(A());
 ]], 17)
 exarg(sqrt)
@@ -167,10 +157,8 @@ dnl - exp
 dnl - log
 test_true(floatp(log(2)))
 test_true(floatp(exp(2)))
-test_true(2.70001>exp(log(2.7)))
-test_true(2.69999<exp(log(2.7)))
-test_true(2.70001>log(exp(2.7)))
-test_true(2.69999<log(exp(2.7)))
+test_approx(exp(log(2.7)), 2.7)
+test_approx(log(exp(2.7)), 2.7)
 exarg(log)
 exarg(exp)
 test_eq(exp(Math.inf),Math.inf)
@@ -189,13 +177,13 @@ test_eq(pow(1, 100000000000000), 1)
 test_eq(pow(1, 100000000000001), 1)
 test_eq(pow(-1, 100000000000000), 1)
 test_eq(pow(-1, 100000000000001), -1)
-test_eval_error(return pow(2, 100000000000000))
+test_eval_error(return sizeof(pow(2, 100000000000000)->digits(256)))
 
 test_eq(1->pow(100000000000000), 1)
 test_eq(1->pow(100000000000001), 1)
 test_eq((-1)->pow(100000000000000), 1)
 test_eq((-1)->pow(100000000000001), -1)
-test_eval_error(return 2->pow(100000000000000))
+test_eval_error(return sizeof(2->pow(100000000000000)->digits(256)))
 
 test_true(floatp(pow(2.0,2.0)))
 test_true(floatp(pow(2,2.0)))
@@ -235,11 +223,14 @@ test_eq(abs(-5),5)
 test_eq(abs(1.0),1.0)
 test_eq(abs(-1.0),1.0)
 test_any([[
-  object a=class { int `<() { return 0; } }();
+  object a=class { protected int `<() { return 0; } }();
   return a==abs(a);
 ]],1)
 test_any([[
-  object a=class { int `<() { return 1; } int `-() { return 7; } }();
+  object a = class {
+      protected int `<() { return 1; }
+      protected int `-() { return 7; }
+    }();
   return abs(a);
 ]],7)
 dnl exarg(abs)

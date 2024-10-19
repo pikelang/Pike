@@ -1,0 +1,7 @@
+@make_variables@
+VPATH=@srcdir@
+OBJS=zlibmod.o
+MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
+
+@dynamic_module_makefile@
+@dependencies@

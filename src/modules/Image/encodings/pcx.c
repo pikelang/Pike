@@ -256,7 +256,7 @@ static struct object *low_pcx_decode( struct pike_string *data )
 
   if(b.len < sizeof(struct pcx_header))
     Pike_error("There is not enough data available for this to be a PCX image\n");
-  pcx_header = *((struct pcx_header *)get_chunk(&b,sizeof(struct pcx_header)));
+  memcpy(&pcx_header, get_chunk(&b,sizeof(struct pcx_header)), sizeof(struct pcx_header));
 #if PIKE_BYTEORDER == 1234
   pcx_header.x1 = SWAP_S(pcx_header.x1);
   pcx_header.x2 = SWAP_S(pcx_header.x2);
@@ -298,9 +298,16 @@ static struct object *low_pcx_decode( struct pike_string *data )
      switch(pcx_header.planes)
      {
       case 1:
+	if (pcx_header.bytesperline < width || b.len < 256 * 3)
+	{
+	  Pike_error("Malformed PCX Image.\n");
+	}
         load_palette_pcx( &pcx_header, &b, dest );
         break;
       case 3:
+	if (pcx_header.bytesperline < width)
+	  Pike_error("Malformed PCX Image.\n");
+
         load_rgb_pcx( &pcx_header, &b, dest );
         break;
       default:
@@ -312,9 +319,13 @@ static struct object *low_pcx_decode( struct pike_string *data )
      switch(pcx_header.planes)
      {
       case 1:
+	if (pcx_header.bytesperline <= ((width - 1) >> 3))
+	  Pike_error("Malformed PCX Image.\n");
         load_mono_pcx( &pcx_header, &b, dest );
         break;
       case 4: /* palette 16 bpl planar image!? */
+	if (pcx_header.bytesperline <= ((width - 1) >> 3))
+	  Pike_error("Malformed PCX Image.\n");
         load_planar_palette_pcx( &pcx_header, &b, dest );
         break;
       default:
@@ -341,7 +352,7 @@ void image_pcx_decode( INT32 args )
 {
   struct pike_string *data;
   struct object *o;
-  get_all_args( NULL, args, "%S", &data );
+  get_all_args( NULL, args, "%n", &data );
   o = low_pcx_decode( data );
   pop_n_elems(args);
   push_object( o );
@@ -407,7 +418,7 @@ static void f_rle_encode( INT32 args )
   unsigned char value, *source;
   unsigned char nelems;
   int i;
-  get_all_args( NULL, args, "%S", &data );
+  get_all_args( NULL, args, "%n", &data );
   init_string_builder( &result, 0 );
 
   source = (unsigned char *)data->str;

@@ -98,7 +98,7 @@ void set(string key, mixed value,
   //should I refuse storing objects too?
   if (programp(value)||functionp(value)) {
     werror("can't store value\n"); //TODO: use crumbs
-    return 0;
+    return;
   }
   string tmp;
   int tm=time(1);
@@ -142,7 +142,7 @@ void aget(string key,
 }
 
 void delete(string key, void|int(0..1) hard) {
-  multiset(string) dependants=0;
+  multiset(string)|zero dependants=0;
 
   if (have_dependants) {
     string emeta=metadb->fetch(key);
@@ -173,7 +173,7 @@ void delete(string key, void|int(0..1) hard) {
 }
 
 //! A GDBM storage-manager must be hooked to a GDBM Database.
-void create(string path) {
+protected void create(string path) {
   db=Gdbm.gdbm(path+".db","rwcf");
   metadb=Gdbm.gdbm(path+"_meta.db","rwcf");
 }

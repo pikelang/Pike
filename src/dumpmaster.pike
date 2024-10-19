@@ -28,6 +28,11 @@ void handle_error(mixed err)
   werror("%O\n",err);
 }
 
+string|int(0..0) describe_program(program|function p)
+{
+  return UNDEFINED;
+}
+
 void compile_error(string file,int line,string err)
 {
   werror("%s:%s:%s\n", file, line?(string)line:"-", err);
@@ -64,6 +69,7 @@ class Codec
 #define CONST(X) if (x == X) return #X
     CONST(_static_modules._Stdio.Stat);
     CONST(_static_modules.Builtin.__backend);
+    CONST(_static_modules.Builtin.automap_marker);
     encoded+=({x});
     return UNDEFINED;
   } 
@@ -80,4 +86,10 @@ void _main(array(string) argv, array(string) env)
   exit(0);
 }
 
-mixed resolv() { return UNDEFINED; }
+mixed resolv(string sym)
+{
+  if (sym == "_static_modules.Builtin.automap_marker") {
+    return _static_modules.Builtin.automap_marker;
+  }
+  return UNDEFINED;
+}

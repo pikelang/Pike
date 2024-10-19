@@ -54,6 +54,7 @@ PMOD_EXPORT extern const char msg_fatal_error[];
 #define pike_fatal_dloc							\
  (fprintf (stderr, msg_fatal_error, DLOC_ARGS), debug_fatal)
 
+PMOD_EXPORT void pike_atfatal(void (*fun)(void));
 PMOD_EXPORT DECLSPEC(noreturn) void debug_va_fatal(const char *fmt, va_list args) ATTRIBUTE((noreturn));
 PMOD_EXPORT DECLSPEC(noreturn) void debug_fatal(const char *fmt, ...) ATTRIBUTE((noreturn));
 
@@ -152,24 +153,26 @@ PMOD_EXPORT extern const char msg_unsetjmp_nosync_2[];
 
 
 #ifdef PIKE_DEBUG
-#define SET_ONERROR(X,Y,Z)					\
-  do{								\
-    check_recovery_context();					\
-    OED_FPRINTF("SET_ONERROR(%p, %p, %p) %s:%d\n",              \
-                 &(X), (Y), (void *)(Z), __FILE__, __LINE__);	\
-    X.frame_pointer = Pike_interpreter.frame_pointer;		\
-    X.func=(error_call)(Y);					\
-    DO_IF_DMALLOC( if( X.func == free ) X.func=dmalloc_free);	\
-    X.arg=(void *)(Z);						\
-    if(!Pike_interpreter.recoveries) {				\
-      X.previous = NULL;					\
-      break;							\
-    }								\
-    X.previous=Pike_interpreter.recoveries->onerror;		\
-    X.file = __FILE__;						\
-    X.line = __LINE__;						\
-    Pike_interpreter.recoveries->onerror=&X;			\
+#define LOW_SET_ONERROR(X,Y,Z)						\
+  do{									\
+    check_recovery_context();						\
+    OED_FPRINTF("SET_ONERROR(%p, %p, %p) %s:%d\n",			\
+		(X), (Y), (void *)(Z), __FILE__, __LINE__);		\
+    (X)->frame_pointer = Pike_interpreter.frame_pointer;		\
+    (X)->func = (error_call)(Y);					\
+    DO_IF_DMALLOC( if( (X)->func == free ) (X)->func = dmalloc_free);	\
+    (X)->arg = (void *)(Z);						\
+    if (!Pike_interpreter.recoveries) {					\
+      (X)->previous = NULL;						\
+      break;								\
+    }									\
+    (X)->previous = Pike_interpreter.recoveries->onerror;		\
+    (X)->file = __FILE__;						\
+    (X)->line = __LINE__;						\
+    Pike_interpreter.recoveries->onerror = (X);				\
   }while(0)
+
+#define SET_ONERROR(X,Y,Z) LOW_SET_ONERROR(&X, Y, Z)
 
 PMOD_EXPORT extern const char msg_last_setjmp[];
 PMOD_EXPORT extern const char msg_unset_onerr_nosync_1[];
@@ -193,18 +196,20 @@ PMOD_EXPORT extern const char msg_unset_onerr_nosync_2[];
     Pike_interpreter.recoveries->onerror=(X).previous;		\
   } while(0)
 #else /* !PIKE_DEBUG */
-#define SET_ONERROR(X,Y,Z) \
+#define LOW_SET_ONERROR(X,Y,Z) \
   do{ \
-     X.func=(error_call)(Y); \
-     X.arg=(void *)(Z); \
-     X.frame_pointer = Pike_interpreter.frame_pointer; \
+     (X)->func=(error_call)(Y); \
+     (X)->arg=(void *)(Z); \
+     (X)->frame_pointer = Pike_interpreter.frame_pointer; \
      if(!Pike_interpreter.recoveries) {		       \
-       X.previous = NULL;			       \
+       (X)->previous = NULL;			       \
        break;					       \
      }						       \
-     X.previous=Pike_interpreter.recoveries->onerror; \
-     Pike_interpreter.recoveries->onerror=&X; \
+     (X)->previous=Pike_interpreter.recoveries->onerror; \
+     Pike_interpreter.recoveries->onerror=(X); \
   }while(0)
+
+#define SET_ONERROR(X,Y,Z) LOW_SET_ONERROR(&X, Y, Z)
 
 #define UNSET_ONERROR(X) Pike_interpreter.recoveries && (Pike_interpreter.recoveries->onerror=X.previous)
 
@@ -225,12 +230,15 @@ PMOD_EXPORT DECLSPEC(noreturn) void pike_throw(void) ATTRIBUTE((noreturn));
 PMOD_EXPORT DECLSPEC(noreturn) void low_error(const char *buf) ATTRIBUTE((noreturn));
 PMOD_EXPORT void va_make_error (const char *fmt, va_list args);
 PMOD_EXPORT void DECLSPEC(noreturn) va_error(const char *fmt, va_list args) ATTRIBUTE((noreturn));
-PMOD_EXPORT void make_error (const char *fmt, ...);
-PMOD_EXPORT DECLSPEC(noreturn) void Pike_error(const char *fmt,...) ATTRIBUTE((noreturn));
+PMOD_EXPORT void make_error (const char *fmt, ...)
+  ATTRIBUTE((format (printf, 1, 2)));
+PMOD_EXPORT DECLSPEC(noreturn) void Pike_error(const char *fmt,...)
+  ATTRIBUTE((noreturn)) ATTRIBUTE((format (printf, 1, 2)));
 PMOD_EXPORT DECLSPEC(noreturn) void new_error(const char *name, const char *text, struct svalue *oldsp, INT32 args) ATTRIBUTE((noreturn));
 PMOD_EXPORT void exit_on_error(const void *msg);
 PMOD_EXPORT void fatal_on_error(const void *msg);
-PMOD_EXPORT DECLSPEC(noreturn) void debug_fatal(const char *fmt, ...) ATTRIBUTE((noreturn));
+PMOD_EXPORT DECLSPEC(noreturn) void debug_fatal(const char *fmt, ...)
+  ATTRIBUTE((noreturn)) ATTRIBUTE((format (printf, 1, 2)));
 PMOD_EXPORT DECLSPEC(noreturn) void generic_error_va(
   struct object *o, const char *func, const struct svalue *base_sp, int args,
   const char *fmt, va_list *fmt_args)
@@ -238,30 +246,37 @@ PMOD_EXPORT DECLSPEC(noreturn) void generic_error_va(
 PMOD_EXPORT DECLSPEC(noreturn) void throw_error_object(
   struct object *o,
   const char *func, int args,
-  const char *desc, ...) ATTRIBUTE((noreturn));
+  const char *desc, ...)
+  ATTRIBUTE((noreturn)) ATTRIBUTE((format (printf, 4, 5)));
 PMOD_EXPORT void DECLSPEC(noreturn) generic_error(
   const char *func,
   const struct svalue *base_sp,  int args,
-  const char *desc, ...) ATTRIBUTE((noreturn));
+  const char *desc, ...)
+  ATTRIBUTE((noreturn)) ATTRIBUTE((format (printf, 4, 5)));
 PMOD_EXPORT DECLSPEC(noreturn) void index_error(
   const char *func, int args,
   struct svalue *val,
   struct svalue *ind,
-  const char *desc, ...) ATTRIBUTE((noreturn));
+  const char *desc, ...)
+  ATTRIBUTE((noreturn)) ATTRIBUTE((format (printf, 5, 6)));
 PMOD_EXPORT DECLSPEC(noreturn) void bad_arg_error(
   const char *func, int args,
   int which_arg,
   const char *expected_type,
   struct svalue *got,
-  const char *desc, ...)  ATTRIBUTE((noreturn));
+  const char *desc, ...)
+  ATTRIBUTE((noreturn)) ATTRIBUTE((format (printf, 6, 7)));
 PMOD_EXPORT void DECLSPEC(noreturn) math_error(
   const char *func, int args,
   struct svalue *number,
-  const char *desc, ...) ATTRIBUTE((noreturn));
+  const char *desc, ...)
+  ATTRIBUTE((noreturn)) ATTRIBUTE((format (printf, 4, 5)));
 PMOD_EXPORT void DECLSPEC(noreturn) out_of_memory_error (
   const char *func, int args,
-  size_t amount) ATTRIBUTE((noreturn));
-PMOD_EXPORT void wrong_number_of_args_error(const char *name, int args, int expected)
+  size_t amount)
+  ATTRIBUTE((noreturn));
+PMOD_EXPORT void wrong_number_of_args_error(const char *name, int args,
+                                            int expected)
   ATTRIBUTE((noreturn));
 void init_error(void);
 void cleanup_error(void);
@@ -276,7 +291,7 @@ PMOD_EXPORT extern const char msg_bad_arg[];
  * and EXPECT will be inserted into "Bad argument %d to %s(). Expected
  * %s.\n"
  *
- * @param FUNC The name of the function, e.g. "create".
+ * @param FUNC The name of the function, e.g. "create" REQUIRED.
  * @param ARG The number of the argument, e.g. 1 for the first.
  * @param EXPECT The expected type, e.g. "int(0..1)".
  */
@@ -327,7 +342,8 @@ PMOD_EXPORT extern const char msg_out_of_mem_2[];
 
 PMOD_EXPORT extern const char msg_div_by_zero[];
 #define SIMPLE_DIVISION_BY_ZERO_ERROR(FUNC) \
-     math_error(FUNC, args, 0, msg_div_by_zero)
+  ((void (*)(const char *, int, struct svalue *, const char *, ...)) \
+   math_error)(FUNC, args, 0, msg_div_by_zero)
 
 #ifndef PIKE_DEBUG
 #define check_recovery_context() ((void)0)

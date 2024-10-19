@@ -5,3 +5,5 @@
 //! The Camellia 128-bit block cipher.
 
 inherit Nettle.CAMELLIA;
+
+@Pike.Annotations.Implements(Crypto.BlockCipher);

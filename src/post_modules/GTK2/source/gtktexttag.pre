@@ -89,7 +89,7 @@ void create(string|mapping(string:mixed) name_or_props)
     if (TYPEOF(Pike_sp[-args]) == PIKE_T_STRING) {
       char *name;
       GtkTextTag *gt;
-      get_all_args(NULL,args,"%s",&name);
+      get_all_args(NULL,args,"%c",&name);
       gt=gtk_text_tag_new(name);
       THIS->obj=G_OBJECT(gt);
     } else {

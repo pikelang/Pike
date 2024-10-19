@@ -55,6 +55,42 @@ PIKEFUN int(0..) map_all_objects(function(object:void) cb)
     RETURN total;
 }
 
+/*! @decl int(0..) map_all_strings(function(string:void) cb)
+ *!
+ *! Call cb for all strings that currently exist.
+ *!
+ *! strings might be missed if @[cb] creates new strings or destroys
+ *! old ones.
+ *!
+ *! This function is only intended to be used for debug purposes.
+ *!
+ *! @returns
+ *!   The total number of strings
+ *!
+ *! @seealso
+ *!   @[next_object()]
+ */
+PIKEFUN int(0..) map_all_strings(function(string:void) cb)
+{
+    struct pike_string *o = first_pike_string();
+    INT32 total = 0;
+
+    while( o )
+    {
+        struct pike_string * next;
+        add_ref(o);
+        ref_push_string( o );
+        safe_apply_svalue( Pike_sp-2, 1, 1 );
+        pop_stack();
+        total++;
+        next = next_pike_string(o);
+        sub_ref(o = next);
+        if (o == first_pike_string())
+          break;
+    }
+    RETURN total;
+}
+
 /*! @decl array(object) find_all_clones(program p, @
  *!                                     int(0..1)|void include_subclasses)
  *!
@@ -475,6 +511,9 @@ PIKEFUN void disassemble(function fun)
       struct pike_string *tripples =
 	p->strings[read_program_data(p->program + id->func.offset, -1)];
       switch(tripples->size_shift) {
+#define VALIDINSTR0(X) (0) // A p_wchar0 can never be >= F_OFFSET (257)
+#define VALIDINSTR1(X) ((X) >= F_OFFSET)
+#define VALIDINSTR2(X) ((X) >= F_OFFSET)
 #define CASE(SHIFT)					\
 	case SHIFT:					\
 	  {						\
@@ -482,11 +521,16 @@ PIKEFUN void disassemble(function fun)
 	      PIKE_CONCAT(STR, SHIFT)(tripples);	\
 	    int i=0;					\
 	    while(i < tripples->len) {			\
-              WERR("@@@ %d: %s, %d, %d\n",              \
-		      i/3,				\
-		      instrs[*str - F_OFFSET].		\
-		      name,				\
-		      str[1], str[2]);			\
+	      if (PIKE_CONCAT(VALIDINSTR, SHIFT)(*str)) { \
+		WERR("@@@ %d: %s, %d, %d\n",		\
+		     i/3,				\
+		     instrs[*str - F_OFFSET].		\
+		     name,				\
+		     str[1], str[2]);			\
+	      } else {					\
+		WERR("@@@ %d: INVALID 0x%x, 0x%x, 0x%x\n", \
+		     i/3, *str, str[1], str[2]);	\
+	      }						\
 	      str += 3;					\
 	      i += 3;					\
 	    }						\
@@ -496,6 +540,9 @@ PIKEFUN void disassemble(function fun)
 	CASE(1);
 	CASE(2);
 #undef CASE
+#undef VALIDINSTR0
+#undef VALIDINSTR1
+#undef VALIDINSTR2
       }
     } else {
       WERR("Prototype.\n");

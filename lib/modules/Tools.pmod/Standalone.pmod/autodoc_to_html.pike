@@ -40,6 +40,10 @@ mapping lay = ([
  "_fixmehead" : "</dt>\n",
  "fixmebody" : "<dd class='body--fixme'>",
  "_fixmebody" : "</dd>",
+ "annotation" : "<dd class='body--annotation'>",
+ "_annotation" : "</dd>",
+ "generic" : "<dd class='body--generic'>",
+ "_generic" : "</dd>",
 
  "parameter" : "<code class='parameter'>",
  "_parameter" : "</code>",
@@ -88,6 +92,11 @@ string quote(string in) {
   return Parser.XML.Tree.text_quote(in);
 }
 
+// NB: Overloaded by autodoc_to_split_html.
+string cquote(string in) {
+  return quote(in);
+}
+
 string render_tag(string tag, mapping(string:string) attrs, int|void term)
 {
   string res = "<" + tag;
@@ -111,9 +120,7 @@ Node get_first_element(Node n)
   return UNDEFINED;
 }
 
-int section, subsection;
-
-string low_parse_chapter(Node n, int chapter) {
+string low_parse_chapter(Node n, array(string) section_path) {
   string ret = "";
   Node dummy = Node(XML_ELEMENT, "dummy", ([]), "");
   foreach(n->get_elements(), Node c)
@@ -121,7 +128,7 @@ string low_parse_chapter(Node n, int chapter) {
 
     case "p":
       dummy->replace_children( ({ c }) );
-      ret += parse_text(dummy);
+      ret += parse_text(dummy, UNDEFINED, section_path);
       break;
 
     case "example":
@@ -150,33 +157,21 @@ string low_parse_chapter(Node n, int chapter) {
       break;
 
     case "section":
-      if(section)
-	error("Section inside section.\n");
-      if(subsection)
-	error("Section inside subsection.\n");
-      section = (int)c->get_attributes()->number;
-      ret += "</dd>\n<dt><a name='" + section + "'></a>\n"
-	"<h2 class='header'>" + chapter + "." + section +
-	". " + quote(c->get_attributes()->title ||
-		     // The following for bug compat.
-		     c->get_attributes()->name) +
-	"</h2></dt>\n<dd>";
-      ret += low_parse_chapter(c, chapter);
-      section = 0;
-      break;
-
     case "subsection":
-      if(!section)
-	error("Subsection outside section.\n");
-      if(subsection)
-	error("Subsection inside subsection.\n");
-      subsection = (int)c->get_attributes()->number;
-      ret += "</dd><dt>"
-	"<h3 class='header'>" + chapter + "." + section + "." + subsection +
-	". " + quote(c->get_attributes()->title) +
-	"</h3></dt><dd>";
-      ret += low_parse_chapter(c, chapter);
-      subsection = 0;
+      string section = c->get_attributes()->number;
+      array(string) new_section_path = section_path + ({ section });
+      string section_name = new_section_path * ".";
+      ret += sprintf("</dd>\n<dt><a name='%s'></a>\n"
+		     "<h%d class='header'>%s. %s</h%d></dt>\n<dd>",
+		     section_name,
+		     sizeof(new_section_path),
+		     section_name,
+		     quote(c->get_attributes()->title ||
+			   // The following for bug compat.
+			   c->get_attributes()->name ||
+			   ""),
+		     sizeof(new_section_path));
+      ret += low_parse_chapter(c, new_section_path);
       break;
 
     case "docgroup":
@@ -224,7 +219,7 @@ string parse_chapter(Node n, void|int noheader) {
       "</dt><dd>";
   }
 
-  ret += low_parse_chapter(n, (int)n->get_attributes()->number);
+  ret += low_parse_chapter(n, ({ n->get_attributes()->number }));
 
   if(!noheader)
     ret = ret + "</dd></dl>";
@@ -243,7 +238,8 @@ string parse_appendix(Node n, void|int noheader) {
 
   Node c = n->get_first_element("doc");
   if(c)
-    ret += parse_text(c);
+    ret += parse_text(c, UNDEFINED,
+		      ({ (string)({ 64+(int)n->get_attributes()->number }) }));
   else
     error( "No doc element in appendix.\n" );
 
@@ -345,21 +341,51 @@ string parse_module(Node n, void|int noheader) {
   return ret;
 }
 
+string parse_annotations(Node n, void|int noheader)
+{
+  string ret = "";
+  ret += lay->dochead + "Annotations" + lay->_dochead;
+  foreach(n->get_elements("annotation"), Node a) {
+    ret += lay->annotation + lay->code + "@" + parse_text(a) +
+      lay->_code + lay->_annotation;
+  }
+  return ret;
+}
+
 ADT.Stack old_class_name = ADT.Stack();
 string parse_class(Node n, void|int noheader) {
   string ret ="";
-  if(!noheader)
+  if(!noheader) {
+    array(Node) generics =
+      n->get_elements("docgroup")->get_first_element("generic") -
+      ({ 0 });
+    string generics_decl = "";
+    if (sizeof(generics)) {
+      array(mapping(string:string)) attrs = generics->get_attributes();
+      sort((array(int))attrs->index, attrs);
+      generics_decl = "</b> (&lt; <b class='ms datatype'>" +
+        (map(attrs->name, quote) * "</b>, <b class='ms datatype'>") +
+        "</b> &gt;)<b class='ms datatype'>";
+    }
+
     ret += "<dl><dt>"
       "<h2 class='header'>Class <b class='ms datatype'>" +
       n->get_attributes()->class_path + n->get_attributes()->name +
-      "</b></h2>\n"
+      generics_decl + "</b>"
+      "</h2>\n"
       "</dt><dd>";
+  }
 
+  Node a = n->get_first_element("annotations");
   Node c = n->get_first_element("doc");
   old_class_name->push(class_name);
   class_name = n->get_attributes()->class_path+n->get_attributes()->name;
-  if(c)
-    ret += "<dl class='group--doc'>" + parse_doc(c) + "</dl>";
+  if(a || c) {
+    ret += "<dl class='group--doc'>";
+    if (a) ret += parse_annotations(a);
+    if (c) ret += parse_doc(c);
+    ret += "</dl>";
+  }
 
   if((sizeof(n->get_elements("doc"))>1) &&
      ((flags & (Tools.AutoDoc.FLAG_KEEP_GOING|Tools.AutoDoc.FLAG_DEBUG)) ==
@@ -485,29 +511,45 @@ void build_box(Node n, String.Buffer ret, string first, string second, function 
   nicebox(rows, ret);
 }
 
-// type(min..max)
-string range_type( string type, Node min, Node max )
+// min..max
+string low_range_type( Node min, Node max )
 {
     // Work with plain text; if there's no node, that's the same as an empty node.
     string min_text = min ? parse_text(min) : "";
     string max_text = max ? parse_text(max) : "";
     if( min_text == "" && max_text == "" )
-        return type;
+        return "";
     if( min_text == "" )
-        return type+"(.."+max_text+")";
+        return ".." + max_text;
     if( max_text == "" )
-        return type+"("+min_text+"..)";
+        return min_text + "..";
 
     int low = (int)min_text;
     int high = (int)max_text;
 
     if( low == 0 && high && (high+1)->popcount() == 1 )
     {
-      if( high == 1 && type == "int" )
-        return "bool";
-      return type+"("+strlen((high)->digits(2))+"bit)";
+      return strlen((high)->digits(2)) + "bit";
     }
-    return type+"("+low+".."+high+")";
+    if (low == high) {
+      return low + "";
+    }
+    return low + ".." + high;
+}
+
+// type(min..max)
+string range_type( string type, Node min, Node max )
+{
+  // Work with plain text; if there's no node, that's the same as an empty node.
+  string ret = low_range_type(min, max);
+
+  if ((ret == "1bit") && (type == "int")) {
+    return "bool";
+  }
+
+  if (ret == "") return type;
+
+  return type + "(" + ret + ")";
 }
 
 Tools.Standalone.pike_to_html code_highlighter;
@@ -584,7 +626,8 @@ string parse_code(Node n, void|String.Buffer ret)
 }
 
 //! Typically called with a <group/> node or a sub-node that is a container.
-string parse_text(Node n, void|String.Buffer ret) {
+string parse_text(Node n, void|String.Buffer ret,
+		  array(string)|void section_path) {
   if(n->get_node_type()==XML_TEXT && n->get_text()) {
     if(ret)
       ret->add("parse_text:#1:", quote(n->get_text()));
@@ -620,7 +663,7 @@ string parse_text(Node n, void|String.Buffer ret) {
     switch(name) {
     case "text":
       ret->add("<dd>");
-      parse_text(c, ret);
+      parse_text(c, ret, section_path);
       ret->add("</dd>\n");
       break;
 
@@ -631,13 +674,13 @@ string parse_text(Node n, void|String.Buffer ret) {
     case "sub":
     case "sup":
       ret->add("<", name, ">");
-      parse_text(c, ret);
+      parse_text(c, ret, section_path);
       ret->add("</", name, ">");
       break;
 
     case "pre":
       ret->add(lay->pre);
-      parse_text(c, ret);
+      parse_text(c, ret, section_path);
       ret->add(lay->_pre);
       break;
 
@@ -700,7 +743,7 @@ string parse_text(Node n, void|String.Buffer ret) {
 	}
       } else if (c->count_children()) {
 	ret->add("<dt>");
-	parse_text(c, ret);
+	parse_text(c, ret, section_path);
 	ret->add("</dt>");
       }
       break;
@@ -800,46 +843,58 @@ string parse_text(Node n, void|String.Buffer ret) {
       break;
 
     case "section":
-      if(section && !(flags & Tools.AutoDoc.FLAG_KEEP_GOING))
-	error("Section inside section.\n");
-      ret->add ("<h2>", quote (c->get_attributes()->title ||
+    case "subsection":
+      array(string) new_section_path = section_path +
+	({ c->get_attributes()->number });
+      ret->sprintf("<h%d>%s</h%d>\n",
+		   sizeof(new_section_path),
+		   quote (c->get_attributes()->title ||
 			       // The following for bug compat.
 			       c->get_attributes()->name),
-		"</h2>\n");
+		   sizeof(new_section_path));
       if (!equal (c->get_children()->get_any_name(), ({"text"})) &&
 	  !(flags & Tools.AutoDoc.FLAG_KEEP_GOING))
 	error ("Expected a single <text> element inside <section>.\n");
-      section = -1;
-      parse_text (c->get_children()[0], ret);
-      section = 0;
+      parse_text (c->get_children()[0], ret, new_section_path);
       break;
 
     case "ul":
-      ret->add( "<ul>\n" );
-      foreach(c->get_elements("group"), Node c) {
-	ret->add("<li>");
-	array(Node) d = c->get_elements("item");
-	if(sizeof(d->get_attributes()->name-({0}))) {
-	  ret->add("<b>");
-	  ret->add( String.implode_nicely(d->get_attributes()->name-({0})) );
-	  ret->add("</b>");
-	}
-	Node e = c->get_first_element("text");
-	if(e)
-	  parse_text(e, ret);
-	ret->add("</li>");
-      }
-      ret->add("</ul>");
-      break;
-
     case "ol":
-      ret->add("<ol>\n");
+      ret->add( "<", name, ">\n" );
       foreach(c->get_elements("group"), Node c) {
-	ret->add("<li>");
-	parse_text(c->get_first_element("text"), ret);
-	ret->add("</li>");
+	int got_item;
+	foreach(c->get_elements(), Node e) {
+	  switch(e->get_any_name()) {
+	  case "item":
+	    if (got_item) {
+	      ret->add("</li>");
+	    }
+	    ret->add("<li>");
+	    string title = e->get_attributes()->name;
+	    if (title) {
+	      ret->add("<b>", title, "</b>");
+	    }
+	    got_item = 1;
+	    break;
+	  case "text":
+	    if (!got_item) {
+	      ret->add("<li>");
+	    }
+	    parse_text(e, ret, section_path);
+	    ret->add("</li>");
+	    got_item = 0;
+	    break;
+	  default:
+	    // Ignored.
+	    break;
+	  }
+	}
+	if (got_item) {
+	  ret->add("</li>");
+	  got_item = 0;
+	}
       }
-      ret->add("</ol>");
+      ret->add("</", name, ">");
       break;
 
     case "source-position":
@@ -853,7 +908,7 @@ string parse_text(Node n, void|String.Buffer ret) {
 
     case "fixme":
       ret->add("<span class='fixme'>FIXME: ");
-      parse_text(c, ret);
+      parse_text(c, ret, section_path);
       ret->add("</span>");
       break;
 
@@ -1005,8 +1060,26 @@ string parse_type(Node n, void|string debug) {
 
   case "array":
     ret += "<code class='datatype'>array</code>";
-    c = n->get_first_element("valuetype");
-    if(c) ret += "(" + parse_type( get_first_element(c) ) + ")";
+    c = n->get_first_element("length");
+    d = n->get_first_element("valuetype");
+    if(c||d) {
+      ret += "(";
+      if(c) {
+	Node l = get_first_element(c);
+	if (l->get_tag_name() == "int") {
+	  // Trivial case.
+	  ret += ("<code class='datatype'>" +
+		  low_range_type(l->get_first_element("min"),
+				 l->get_first_element("max")) +
+		  "</code>");
+	} else {
+	  ret += parse_type(l);
+	}
+        ret += ":";
+      }
+      if(d) ret += parse_type( get_first_element(d) );
+      ret += ")";
+    }
     break;
 
   case "mapping":
@@ -1058,6 +1131,10 @@ string parse_type(Node n, void|string debug) {
     ret += "<code class='datatype'>" + n->get_any_name() + "</code>";
     break;
 
+  case "unknown":
+    ret += "<code class='datatype'>__unknown__</code>";
+    break;
+
   case "string":
   case "int":
       ret += ("<code class='datatype'>" +
@@ -1075,11 +1152,17 @@ string parse_type(Node n, void|string debug) {
       if (attr == "\"deprecated\"") {
 	ret += "<code class='deprecated'>__deprecated__</code> " +
                subtype;
+      } else if (attr == "\"experimental\"") {
+        ret += "<code class='experimental'>__experimental__</code> " +
+               subtype;
       } else {
 	ret += sprintf("__attribute__(%s) %s", attr, subtype);
       }
     } else if (attr == "\"deprecated\"") {
       ret += "<code class='deprecated'>__deprecated__</code>(" +
+             subtype + ")";
+    } else if (attr == "\"experimental\"") {
+      ret += "<code class='experimental'>__experimental__</code>(" +
              subtype + ")";
     } else {
       ret += sprintf("__attribute__(%s, %s)", attr, subtype);
@@ -1134,7 +1217,9 @@ void resolve_class_paths(Node n, string|void path, Node|void parent)
   case "doc":
   case "source-position":
   case "modifiers":
+  case "annotations":
   case "classname":
+  case "generic":
     // We're not interrested in the stuff under the above nodes.
     return;
   default:
@@ -1166,8 +1251,8 @@ void resolve_class_paths(Node n, string|void path, Node|void parent)
     path = "";
     break;
   case "namespace":
-    if ((<"", "lfun">)[name]) {
-      // Censor namespaces other than :: and lfun::
+    if ((<"", "lfun", "continue::" >)[name]) {
+      // Censor namespaces other than ::, continue:: and lfun::
       path = name+"::";
     } else {
       path = "";
@@ -1232,8 +1317,8 @@ string render_class_path(Node n,int|void class_only)
   if (a[0]->get_any_name() == "namespace") {
     a = a->get_attributes()->name;
     a[0] += "::";
-    if ((<"::","lfun::">)[a[0]]) {
-      // Censor namespaces other than :: and lfun::
+    if ((<"::", "continue::", "lfun::">)[a[0]]) {
+      // Censor namespaces other than ::, continue:: and lfun::
       ret = a[0];
     }
     a = a[1..];
@@ -1276,7 +1361,7 @@ string class_name = "";
 
 string parse_not_doc(Node n) {
   string ret = "";
-  int method, argument, variable, num_const, typedf, cppdir;
+  int method, argument, variable, num_const, typedf, cppdir, generics;
 
   if (!n) return "";
 
@@ -1575,6 +1660,16 @@ string parse_not_doc(Node n) {
         "<code class='typedef'>" + c->get_attributes()->name + "</code></code>";
       break;
 
+    case "generic":
+      if (generics++) ret += "<br>\n";
+      ret += "<code><code class='datatype'>__generic__</code> ";
+      ret += parse_type(get_first_element(c->get_first_element("type"))) + " " +
+        "<code class='typedef'>" + c->get_attributes()->name + "</code>";
+      ret += " = " +
+        parse_type(get_first_element(c->get_first_element("default_type"))) +
+        "</code>";
+      break;
+
     case "inherit":
       ret += "<code><span class='datatype'>";
       cc = c->get_first_element("modifiers");
@@ -1586,6 +1681,12 @@ string parse_not_doc(Node n) {
 	  resolve_reference(n->value_of_node(), n->get_attributes());
       } else {
 	ret += Parser.encode_html_entities(n->value_of_node()) + "</span>";
+      }
+      n = c->get_first_element("bindings");
+      if (n) {
+        ret += "(< " +
+          map(n->get_elements(), parse_type) * ", " +
+          " >)";
       }
       if (c->get_attributes()->name) {
 	ret += " : " + "<span class='inherit'>" +
@@ -1603,6 +1704,9 @@ string parse_not_doc(Node n) {
       if(cppdir++) ret += "<br>\n";
       ret += "<code class='directive'>" + quote(c->get_attributes()->name) +
 	     "</code>";
+      break;
+
+    case "annotation":
       break;
 
     default:
@@ -1631,21 +1735,17 @@ string parse_docgroup(Node n) {
       string type = "<span class='homogen--type'>" +
 	quote(String.capitalize(m["homogen-type"])) +
 	"</span>\n";
-      if(m["homogen-name"]) {
-	ret += type + "<span class='homogen--name'><b>" +
-	  quote((m->belongs?m->belongs+" ":"") + m["homogen-name"]) +
-	  "</b></span>\n";
-      } else {
-	array(string) names =
-	  Array.uniq(map(n->get_elements(m["homogen-type"]),
-			 lambda(Node child) {
-			   return child->get_attributes()->name ||
-			     child->value_of_node();
-			 }));
-	foreach(names, string name)
-	  ret += type +
-	    "<span class='homogen--name'><b>" + quote(name) + "</b></span><br>\n";
-      }
+      array(string) names =
+        Array.uniq(map(n->get_elements(m["homogen-type"]),
+                       lambda(Node child) {
+                         return child->get_attributes()->name ||
+                           child->value_of_node();
+                       }));
+      foreach(names, string name)
+        ret +=
+          "<span class='homogen--name'>"
+          "<a name='" + cquote(name) + "'></a>" +
+          type + "<b>" + quote(name) + "</b></span><br>\n";
     }
     else
       ret += "Syntax";
@@ -1664,9 +1764,51 @@ string parse_docgroup(Node n) {
   return ret + lay->_docgroup;
 }
 
+protected mapping(string:string) node_type_groups = ([
+  "generic":	"0",
+  "inherit":	"1",
+  "typedef":	"2",
+  "constant":	"3",
+  "variable":	"4",
+  "directive":	"5",
+  "method":	"6",
+  "import":	"9",	// Note that these are filtered in the output.
+]);
+
+string node_type_group(Node n)
+{
+  mapping(string:string) attributes = n->get_attributes();
+  string t = attributes["homogen-type"] || n->get_tag_name();
+
+  return (node_type_groups[t] || node_type_groups->method) +
+    (attributes->index || "");
+}
+
+string docgroup_sort_key(Node n)
+{
+  mapping(string:string) attributes = n->get_attributes();
+
+  string name = attributes["homogen-name"];
+
+  if (!name) {
+    array(string) names = n->get_elements()->get_attributes()->name - ({ 0 });
+    sort(map(names, lower_case), names);
+    names += ({ "" });
+    name = names[0];
+  }
+
+  return node_type_group(n) + ":" + name;
+}
+
 string parse_children(Node n, string tag, function cb, mixed ... args) {
   string ret = "";
-  foreach(n->get_elements(tag), Node c)
+  array(Node) elements = n->get_elements(tag);
+  if (tag == "docgroup") {
+    sort(map(elements, docgroup_sort_key), elements);
+  } else {
+    sort(elements->get_attributes()->name, elements);
+  }
+  foreach(elements, Node c)
     ret += cb(c, @args);
 
   return ret;
@@ -1736,6 +1878,11 @@ string layout_toploop(Node n, Git.Export|void exporter) {
 
     case "chapter":
       res += parse_chapter(c);
+      break;
+
+    case "chapter-ref":
+    case "appendix-ref":
+      werror("Missing chapter or appendix.\n");
       break;
 
     default:

@@ -142,7 +142,7 @@ Node load_tree(string fn) {
 int(0..1) join_files(array(string) files, string save_to,
 		     int(0..1) post_process, Tools.AutoDoc.Flags flags)
 {
-  string post_process_log = UNDEFINED;
+  string|zero post_process_log = UNDEFINED;
   if (post_process) {
     post_process_log = combine_path(save_to, "../resolution.log");
   }

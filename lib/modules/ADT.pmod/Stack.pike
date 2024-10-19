@@ -15,11 +15,14 @@
 //     The pragma is to be removed when ptr and arr are declared protected.
 #pragma no_deprecation_warnings
 
+//! Type for the elements on the stack.
+__generic__ ElementType;
+
 __deprecated__(int) ptr;
-__deprecated__(array) arr;
+__deprecated__(array(ElementType)) arr;
 
 //! Push an element on the top of the stack.
-void push(mixed val)
+void push(ElementType val)
 {
   if(ptr == sizeof(arr)) {
     arr += allocate(ptr);
@@ -33,7 +36,7 @@ void push(mixed val)
 //!   Throws an error if called on an empty stack.
 //! @seealso
 //!   @[peek()]
-mixed top()
+ElementType top()
 {
   if (ptr) {
     return arr[ptr-1];
@@ -51,7 +54,7 @@ mixed top()
 //!
 //! @seealso
 //!   @[top()]
-mixed peek(int|void offset)
+ElementType peek(int|void offset)
 {
   if ((offset >= 0) && ((ptr-offset) > 0)) {
     return arr[ptr-offset-1];
@@ -77,11 +80,22 @@ void quick_pop(void|int val)
   }
 }
 
+//! Pops entries from the stack until the specified @[depth] is
+//! reached. The popped entries are not actually freed, only the
+//! stack pointer is moved.
+void pop_to(int depth)
+{
+  if ((ptr < depth) || (depth < 0)) {
+    error("Stack underflow.\n");
+  }
+  ptr = depth;
+}
+
 //! Pops and returns entry @[val] from the stack, counting
 //! from the top. If no value is given the top element is
 //! popped and returned. All popped entries are freed from
 //! the stack.
-mixed pop(void|int val)
+ElementType pop(void|int val)
 {
   mixed ret;
 
@@ -114,35 +128,35 @@ mixed pop(void|int val)
 //! or 32 if none is given.
 //! @seealso
 //!   @[create]
-void reset(int|void initial_size)
+void reset(int(1..) initial_size = 32)
 {
-  arr = allocate(initial_size || 32);
+  arr = allocate(initial_size);
   ptr = 0;
 }
 
 //! An initial stack size can be given when
 //! a stack is cloned. The default value is
 //! 32.
-void create(int|void initial_size)
+protected void create(int(1..) initial_size = 32)
 {
-  arr = allocate(initial_size || 32);
+  arr = allocate(initial_size);
 }
 
 //! Sets the stacks content to the provided array.
-void set_stack(array stack) {
+void set_stack(array(ElementType) stack) {
   arr = stack;
   ptr = sizeof(arr);
 }
 
 //! @[sizeof] on a stack returns the number of entries
 //! in the stack.
-int _sizeof() {
+protected int _sizeof() {
   return ptr;
 }
 
 //! @[values] on a stack returns all the entries in
 //! the stack, in order.
-array _values() {
+protected array(ElementType) _values() {
   return arr[..ptr-1];
 }
 
@@ -163,20 +177,20 @@ protected int _search(mixed item)
 //! stack with all the elements from both stacks,
 //! and the elements from the second stack at the
 //! top of the new stack.
-this_program `+(this_program s) {
-  array elem = arr[..ptr-1]+values(s);
-  this_program ns = this_program(1);
+protected this_program(<mixed>) `+(this_program s) {
+  array(ElementType|mixed) elem = arr[..ptr-1]+values(s);
+  this_program(<mixed>) ns = this_program(<mixed>)(1);
   ns->set_stack(elem);
   return ns;
 }
 
-protected mixed cast(string to)
+protected array(ElementType)|zero cast(string to)
 {
   if( to=="array" )
     return _values();
   return UNDEFINED;
 }
 
-string _sprintf(int t) {
+protected string _sprintf(int t) {
   return t=='O' && sprintf("%O%O", this_program, _values());
 }

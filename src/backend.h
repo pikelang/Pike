@@ -105,6 +105,13 @@ PMOD_EXPORT struct callback *debug_add_backend_callback(callback_func call,
 
 struct fd_callback_box;
 
+/**
+ * Callback for when an event has triggered on a box.
+ *
+ * Two return values are defined:
+ *   0  - Continue backend processing with the next event.
+ *  -1  - Terminate the current round of the backend and restart processing.
+ */
 typedef int (*fd_box_callback) (struct fd_callback_box *box, int event);
 
 /** The callback user should keep an instance of this struct around for as long

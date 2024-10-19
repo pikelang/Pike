@@ -1,4 +1,4 @@
-AC_INIT()
+AC_INIT(bson.cmod)
 AC_MODULE_INIT()
 AC_CONFIG_HEADER(bson_config.h)
 AC_CHECK_HEADERS(WinSock2.h arpa/inet.h)

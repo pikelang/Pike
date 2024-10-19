@@ -17,11 +17,13 @@
 #include "peep.h"
 #include "bignum.h"
 #include "opcodes.h"
+#include "threads.h"
 #include "builtin_functions.h"
 #include "constants.h"
 #include "interpret.h"
 #include "pikecode.h"
 #include "pike_compiler.h"
+#include "pike_types.h"
 
 static int hasarg(int opcode)
 {
@@ -33,15 +35,52 @@ static int hasarg2(int opcode)
   return instrs[opcode-F_OFFSET].flags & I_HASARG2;
 }
 
+static int arg_type(int opcode)
+{
+  return instrs[opcode-F_OFFSET].flags & I_ARG_T_MASK;
+}
+
+static int arg2_type(int opcode)
+{
+  return (instrs[opcode-F_OFFSET].flags >> I_ARG2_T_SHIFT) & I_ARG_T_MASK;
+}
+
+static void dump_arg(int arg, int argt)
+{
+  switch(argt) {
+  case I_ARG_T_CONST:	/* FIXME */
+  default:
+    fprintf(stderr, "%d", arg);
+    break;
+  case I_ARG_T_LOCAL:
+    fprintf(stderr, "$%d", arg);
+    break;
+  case I_ARG_T_RTYPE:
+    fprintf(stderr, "%s", get_name_of_type(arg));
+    break;
+  case I_ARG_T_GLOBAL:
+    safe_pike_fprintf(stderr, "%pS",
+                      ID_FROM_INT(Pike_compiler->new_program, arg)->name);
+    break;
+  case I_ARG_T_STRING:
+    safe_pike_fprintf(stderr, "%pq",
+                      Pike_compiler->new_program->strings[arg]);
+    break;
+  }
+}
+
 static void dump_instr(p_instr *p)
 {
   if(!p) return;
   fprintf(stderr,"%s",get_token_name(p->opcode));
   if(hasarg(p->opcode))
   {
-    fprintf(stderr,"(%d",p->arg);
-    if(hasarg2(p->opcode))
-      fprintf(stderr,",%d",p->arg2);
+    fprintf(stderr, "(");
+    dump_arg(p->arg, arg_type(p->opcode));
+    if(hasarg2(p->opcode)) {
+      fprintf(stderr, ", ");
+      dump_arg(p->arg2, arg2_type(p->opcode));
+    }
     fprintf(stderr,")");
   }
 }
@@ -177,6 +216,7 @@ INT32 assemble(int store_linenumbers)
   INT32 max_pointer=-1;
   int synch_depth = 0;
   size_t fun_start = Pike_compiler->new_program->num_program;
+  struct pike_string *prev_file = NULL;
 #endif
   int relabel;
   int reoptimize = relabel = !(debug_options & NO_PEEP_OPTIMIZING);
@@ -230,7 +270,8 @@ INT32 assemble(int store_linenumbers)
 
     if (!(triples = begin_wide_shared_string(3*(length+num_linedirectives),
 					      2))) {
-      Pike_fatal("Failed to allocate wide string of length %d 3*(%d + %d).\n",
+      Pike_fatal("Failed to allocate wide string of length %"PRINTPTRDIFFT"d "
+                 "3*(%"PRINTPTRDIFFT"d + %"PRINTPTRDIFFT"d).\n",
 		 3*(length+num_linedirectives), length, num_linedirectives);
     }
     previous_file = NULL;
@@ -266,7 +307,9 @@ INT32 assemble(int store_linenumbers)
     }
 #ifdef PIKE_DEBUG
     if (current_triple != STR2(triples) + 3*(length + num_linedirectives)) {
-      Pike_fatal("Triple length mismatch %d != %d 3*(%d + %d)\n",
+      Pike_fatal("Triple length mismatch %"PRINTPTRDIFFT"d "
+                 "!= %"PRINTPTRDIFFT"d 3*(%"PRINTPTRDIFFT"d "
+                 "+ %"PRINTPTRDIFFT"d)\n",
 		 current_triple - STR2(triples),
 		 3*(length + num_linedirectives),
 		 length, num_linedirectives);
@@ -508,10 +551,15 @@ INT32 assemble(int store_linenumbers)
     {
 #ifdef PIKE_DEBUG
       if (c->opcode == F_POP_SYNCH_MARK) synch_depth--;
-      fprintf(stderr, "===%4ld %4lx %*s", (long)c->line,
+      if (c->file != prev_file) {
+        fprintf(stderr, "===           %*s.file \"%s\"\n",
+                synch_depth, "", c->file?c->file->str:"");
+        prev_file = c->file;
+      }
+      fprintf(stderr, "=== %4ld %4lx %*s", (long)c->line,
               (unsigned long)PIKE_PC, synch_depth, "");
 #else
-      fprintf(stderr, "===%4ld %4lx ", (long)c->line, (unsigned long)PIKE_PC);
+      fprintf(stderr, "=== %4ld %4lx ", (long)c->line, (unsigned long)PIKE_PC);
 #endif
       dump_instr(c);
       fprintf(stderr,"\n");
@@ -520,14 +568,22 @@ INT32 assemble(int store_linenumbers)
 #endif
     }
 
-    if(store_linenumbers) {
-      store_linenumber(c->line, dmalloc_touch_named(struct pike_string *,
-						    c->file,
-						    "store_line"));
+    if(store_linenumbers && (c->opcode != F_ALIGN)) {
+      int new_line =
+	store_linenumber(c->line, dmalloc_touch_named(struct pike_string *,
+						      c->file,
+						      "store_line"));
 #ifdef PIKE_DEBUG
       if (c->opcode < F_MAX_OPCODE)
 	ADD_COMPILED(c->opcode);
 #endif /* PIKE_DEBUG */
+#ifdef INS_TRACE_POINT
+      if (new_line && (c->opcode != F_ENTRY) &&
+	  (c->opcode != F_BYTE) && (c->opcode != F_DATA) &&
+	  (c->opcode != F_LABEL) && (c->opcode != F_POINTER)) {
+	INS_TRACE_POINT();
+      }
+#endif
     }
 
     switch(c->opcode)
@@ -550,6 +606,28 @@ INT32 assemble(int store_linenumbers)
 
     case F_DATA:
       ins_data(c->arg);
+      break;
+
+    case F_SET_LOCAL_NAME:
+      if (store_linenumbers) {
+	store_linenumber_local_name(c->arg, c->arg2);
+      }
+      break;
+
+    case F_SET_LOCAL_TYPE:
+      if (store_linenumbers) {
+	store_linenumber_local_type(c->arg, c->arg2);
+      }
+      break;
+
+    case F_SET_LOCAL_FLAGS:
+      Pike_compiler->compiler_frame->local_names[c->arg].flags |= c->arg2;
+      break;
+
+    case F_SET_LOCAL_END:
+      if (store_linenumbers) {
+	store_linenumber_local_end(c->arg);
+      }
       break;
 
     case F_ENTRY:
@@ -601,6 +679,10 @@ INT32 assemble(int store_linenumbers)
       ins_pointer(jumps[c->arg]);
       jumps[c->arg]=tmp;
       break;
+
+    case F_VOLATILE_RECUR:
+      c->opcode = F_RECUR;
+      /* FALLTHRU */
 
     default:
       switch(instrs[c->opcode - F_OFFSET].flags & I_IS_MASK)
@@ -817,6 +899,7 @@ static void do_optimization(int topop, int topush, ...);
 static inline int opcode(int offset);
 static inline int argument(int offset);
 static inline int argument2(int offset);
+static inline unsigned int check_local_var_flag(int var, int flag);
 
 #include "peep_engine.c"
 
@@ -887,7 +970,7 @@ static inline p_instr *insopt0(int f, INT_TYPE cl, struct pike_string *cf)
 static void debug(void)
 {
   if (num_instrs != (long)buffer_content_length(&instrbuf) / (long)sizeof(p_instr)) {
-    Pike_fatal("PEEP: instrbuf lost count (%d != %d)\n",
+    Pike_fatal("PEEP: instrbuf lost count (%ld != %ld)\n",
 	       num_instrs, (long)buffer_content_length(&instrbuf) / (long)sizeof(p_instr));
   }
   if(buffer_content_length(&instrbuf))
@@ -933,6 +1016,18 @@ static inline int argument2(int offset)
   if(a) return a->arg2;
   return -1;
 }
+
+/* This is used from two peep.in rules, merely because coverity did not
+ * like accessing ...->local_names[arguments(1)], as arguments() could in theory
+ * return a negative value. Neither very pretty nor generic... */
+static inline unsigned int check_local_var_flag(int var, int flag)
+{
+  if (var >= 0)
+    return Pike_compiler->compiler_frame->local_names[var].flags & flag;
+
+  return 0;
+}
+
 
 static int advance(void)
 {

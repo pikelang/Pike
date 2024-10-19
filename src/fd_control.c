@@ -38,11 +38,10 @@
 #include <sys/socket.h>
 #endif
 
-#include <errno.h>
-
-#ifdef HAVE_SYS_ERRNO_H
-#include <sys/errno.h>
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h>
 #endif
+#include <errno.h>
 
 #ifdef HAVE_WINSOCK2_H
 #include <winsock2.h>
@@ -69,7 +68,6 @@
 #include <sys/file.h>
 #endif
 
-
 PMOD_EXPORT int set_nonblocking(int fd,int which)
 {
   int ret;
@@ -80,7 +78,7 @@ PMOD_EXPORT int set_nonblocking(int fd,int which)
 
   do
   {
-#if defined(USE_IOCTL_FIONBIO) || defined(__NT__)
+#if defined(USE_IOCTL_FIONBIO) || defined(__NT__) || defined(__amigaos__)
     ret=fd_ioctl(fd, FIONBIO, &which);
 #else
 
@@ -126,6 +124,55 @@ PMOD_EXPORT int query_nonblocking(int fd)
 #else
   return ret;
 #endif
+}
+
+#if !defined(SOL_TCP) && defined(IPPROTO_TCP)
+    /* SOL_TCP isn't defined in Solaris. */
+#define SOL_TCP IPPROTO_TCP
+#endif
+
+#ifdef SOL_TCP
+#ifdef TCP_CORK
+static int gsockopt(int fd, int opt) {
+  int val = 0;
+  socklen_t old_len = (socklen_t) sizeof(int);
+  while (getsockopt(fd, SOL_TCP, opt,
+                    &val, &old_len) < 0 && errno == EINTR);
+  return val;
+}
+
+static void ssockopt(int fd, int opt, int val) {
+  while (setsockopt(fd, SOL_TCP, opt,
+                    &val, sizeof(val)) < 0 && errno == EINTR);
+}
+#endif
+#endif
+
+PMOD_EXPORT int bulkmode_start(int fd) {
+  int ret = 0;
+  (void)fd;
+  // FIXME Cache NODELAY/CORK state to avoid getsockopt() system calls
+#ifdef SOL_TCP
+#ifdef TCP_CORK
+  if (!gsockopt(fd, TCP_CORK)) {
+    ssockopt(fd, TCP_CORK, 1);		// Turn on cork mode.
+    ret |= 2;
+  }
+#endif
+#endif /* SOL_TCP */
+  return ret;
+}
+
+PMOD_EXPORT void bulkmode_restore(int fd, int which) {
+  (void)fd;
+  (void)which;
+#ifdef SOL_TCP
+#ifdef TCP_CORK
+  ssockopt(fd, TCP_CORK, 0);	 // Briefly unplug always, to flush data
+  if (!(which & 2))		// Only replug cork if it was on before
+    ssockopt(fd, TCP_CORK, 1);
+#endif
+#endif /* SOL_TCP */
 }
 
 /* The following code doesn't link without help, and
@@ -243,6 +290,7 @@ int accept4(int fd, struct sockaddr *addr, ACCEPT_SIZE_T *addrlen, int flags)
 
 #ifdef TESTING
 
+#include <stdlib.h>
 
 #if defined(HAVE_WINSOCK_H) && defined(USE_IOCTLSOCKET_FIONBIO)
 int main()
@@ -289,7 +337,7 @@ int main()
   set_nonblocking(tmp[0],1);
   signal(SIGALRM, sigalrm_handler1);
   alarm(1);
-  res = read(tmp[0],foo,999);
+  res = recv(tmp[0], foo, 999, 0);
   e = errno;
   alarm(0);
   if ((res >= 0) || (e != EAGAIN)) {
@@ -307,7 +355,7 @@ int main()
   set_nonblocking(tmp[0],0);
   signal(SIGALRM, sigalrm_handler0);
   alarm(1);
-  res = read(tmp[0],foo,999);
+  res = recv(tmp[0], foo, 999, 0);
   e = errno;
   fprintf(stderr,"Failed at end of main; res:%d, errno:%d\n", res, e);
   exit(1);

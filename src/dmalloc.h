@@ -75,6 +75,7 @@ typedef void describe_block_fn (void *);
 
 #ifdef DEBUG_MALLOC
 struct memhdr;
+struct block_allocator;
 
 void dump_memhdr_locations(struct memhdr *from,
 			   struct memhdr *notfrom,
@@ -87,6 +88,7 @@ extern int verbose_debug_malloc;
 PMOD_EXPORT void dmalloc_trace(void *);
 PMOD_EXPORT void dmalloc_register(void *, int, LOCATION);
 PMOD_EXPORT int dmalloc_unregister(void *, int);
+PMOD_EXPORT void dmalloc_unregister_all(struct block_allocator *);
 PMOD_EXPORT void *debug_malloc(size_t, LOCATION);
 PMOD_EXPORT void *debug_calloc(size_t, size_t, LOCATION);
 PMOD_EXPORT void *debug_realloc(void *, size_t, LOCATION);
@@ -196,7 +198,7 @@ PMOD_EXPORT void* dlmemalign(size_t, size_t);
 PMOD_EXPORT void* dlvalloc(size_t);
 PMOD_EXPORT void* dlpvalloc(size_t);
 PMOD_EXPORT struct mallinfo dlmallinfo(void);
-#define malloc	  dlmalloc
+#define malloc(x) dlmalloc(x)
 #define free	  dlfree
 #define calloc    dlcalloc
 #define realloc	  dlrealloc
@@ -241,6 +243,7 @@ PMOD_EXPORT struct mallinfo dlmallinfo(void);
 #define dmalloc_trace(X)
 #define dmalloc_register(X,Y,Z)
 #define dmalloc_unregister(X,Y) 1
+#define dmalloc_unregister_all(X)
 #define debug_free(X,Y,Z) free((X))
 #define debug_malloc_name(P,FN,LINE)
 #define debug_malloc_copy_names(p,p2) 0
@@ -258,8 +261,8 @@ PMOD_EXPORT struct mallinfo dlmallinfo(void);
 #define debug_malloc_pass_named(X,NAME) (DMALLOC_TRACE_LOG(DMALLOC_NAMED_LOCATION(" " NAME)), (X))
 #define debug_malloc_touch_bt(X) DMALLOC_TRACE_LOG(DMALLOC_LOCATION())
 #define debug_malloc_touch_named_bt(X,NAME) DMALLOC_TRACE_LOG(DMALLOC_NAMED_LOCATION(" " NAME))
-#define dmalloc_touch(TYPE,X) debug_malloc_pass (X)
-#define dmalloc_touch_named(TYPE,X,NAME) debug_malloc_pass_named (X, NAME)
+#define dmalloc_touch(TYPE,X) ((TYPE)debug_malloc_pass(X))
+#define dmalloc_touch_named(TYPE,X,NAME) ((TYPE)debug_malloc_pass_named(X, NAME))
 #else /* DMALLOC_TRACE */
 #define debug_malloc_update_location(X,Y) (X)
 #define dmalloc_touch_svalue(X)
@@ -270,8 +273,8 @@ PMOD_EXPORT struct mallinfo dlmallinfo(void);
 #define debug_malloc_pass_named(X,NAME) (X)
 #define debug_malloc_touch_bt(X)
 #define debug_malloc_touch_named_bt(X,NAME)
-#define dmalloc_touch(TYPE,X) (X)
-#define dmalloc_touch_named(TYPE,X,NAME) (X)
+#define dmalloc_touch(TYPE,X) ((TYPE)(X))
+#define dmalloc_touch_named(TYPE,X,NAME) ((TYPE)(X))
 #endif /* !MALLOC_TRACE */
 
 #endif /* !DEBUG_MALLOC */

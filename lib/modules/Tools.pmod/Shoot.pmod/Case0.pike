@@ -6,7 +6,7 @@ constant m = 255;
 
 string t;
 
-void create()
+protected void create()
 {
   String.Buffer b = String.Buffer();
   while(sizeof(b)<1024*1024)

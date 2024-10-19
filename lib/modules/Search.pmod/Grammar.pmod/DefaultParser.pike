@@ -105,8 +105,8 @@ protected int lookingAtDateStart(void|int offset) {
 
 
 //!
-protected void create(mapping(string:mixed)|void opt) {
-  options = opt || ([ "implicit" : "or" ]);
+protected void create(mapping(string:mixed) opt = ([ "implicit" : "or" ])) {
+  options = opt;
   if (!options["fields"])
     options["fields"] = getDefaultFields();
 }
@@ -195,7 +195,7 @@ protected ParseNode parseExpr2() {
   return parseExpr3();
 }
 
-protected ParseNode parseExpr3() {
+protected object(ParseNode)|zero parseExpr3() {
   //  TRACE;
   if (lookingAtFieldStart() || lookingAtDateStart())
     return 0;
@@ -236,7 +236,7 @@ protected ParseNode parseExpr4() {
   return and;
 }
 
-protected ParseNode parseExpr5() {
+protected object(ParseNode)|zero parseExpr5() {
   //  TRACE;
   ParseNode text = TextNode();
   ParseNode res;

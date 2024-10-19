@@ -1,6 +1,8 @@
 #pike 7.8
 // #pragma strict_types
 
+#pragma no_deprecation_warnings
+
 //! A connection switches from one set of state objects to another, one or
 //! more times during its lifetime. Each state object handles a one-way
 //! stream of packets, and operates in either decryption or encryption

@@ -1,7 +1,6 @@
 @make_variables@
 
 VPATH=@srcdir@
-CONFIG_HEADERS=@CONFIG_HEADERS@
 
 OBJS=fuse.o
 

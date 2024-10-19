@@ -402,7 +402,11 @@ static ptrdiff_t _parse_JSON_number(PCHARP str, ptrdiff_t p, ptrdiff_t pe, struc
 	if (cs >= JSON_number_first_final) {
 		if (!(state->flags&JSON_VALIDATE)) {
 			if (d == 1) {
+#if SIZEOF_FLOAT_TYPE > SIZEOF_DOUBLE
+				push_float((FLOAT_TYPE)STRTOLD_PCHARP(ADD_PCHARP(str, i), NULL));
+#else
 				push_float((FLOAT_TYPE)STRTOD_PCHARP(ADD_PCHARP(str, i), NULL));
+#endif
 			} else {
 				pcharp_to_svalue_inumber(Pike_sp++, ADD_PCHARP(str, i), NULL, 10, p - i);
 			}

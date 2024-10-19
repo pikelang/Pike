@@ -100,7 +100,7 @@ int datapos, discarded_bytes, cpos;
 object conthread;
 #endif
 
-local function request_ok,request_fail;
+local function|zero request_ok,request_fail;
 array extra_args;
 
 void init_async_timeout()
@@ -248,6 +248,11 @@ protected int ponder_answer( int|void start_position )
    ok=1;
    remove_async_timeout();
    TOUCH_TIMEOUT_WATCHDOG();
+   if (con && con->set_timeout) {
+     // SSL connection.
+     con->set_timeout((data_timeout || timeout) &&
+                      (float)(data_timeout || timeout));
+   }
 
    if (request_ok) request_ok(this,@extra_args);
    return 1;
@@ -302,6 +307,8 @@ void start_tls(int|void blocking, int|void async)
     ssl->set_blocking();
   }
 
+  ssl->set_timeout(timeout && (float)timeout);
+
   if (!(ssl_session = ssl->connect(real_host, ssl_session))) {
     error("HTTPS connection failed.\n");
   }
@@ -318,7 +325,7 @@ void start_tls(int|void blocking, int|void async)
   }
 }
 
-protected void connect(string server,int port,int blocking)
+protected void connect(array(string) server,int port,int blocking)
 {
    DBG("<- (connect %O:%d)\n",server,port);
 
@@ -326,11 +333,11 @@ protected void connect(string server,int port,int blocking)
    while(1) {
      int success;
      if(con->_fd)
-       success = con->connect(server, port);
+       success = con->connect(server[0], port);
      else
        // What is this supposed to do? /mast
        // SSL.File?
-       success = con->connect(server, port, blocking);
+       success = con->connect(server[0], port, blocking);
 
      if (success) {
        if (count) DBG("<- (connect success)\n");
@@ -341,6 +348,10 @@ protected void connect(string server,int port,int blocking)
      DBG("<- (connect error: %s)\n", strerror (errno));
      count++;
      if ((count > 10) || (errno != System.EADDRINUSE)) {
+       if (sizeof(server) > 1) {
+         server = server[1..];
+         continue;
+       }
        DBG("<- (connect fail)\n");
        close_connection();
        ok = 0;
@@ -433,9 +444,10 @@ protected void low_async_failed(int errno)
    if (errno)
      this::errno = errno;
    ok=0;
-   if (request_fail) request_fail(this,@extra_args);
 
    remove_async_timeout();
+
+   if (request_fail) request_fail(this, @extra_args);
 }
 
 protected void async_failed()
@@ -475,10 +487,10 @@ protected void async_timeout(void|bool force)
 #endif
 }
 
-void async_got_host(string server,int port)
+void async_got_host(array(string) server,int port)
 {
-   DBG("async_got_host %s:%d\n", server || "NULL", port);
-   if (!server)
+   DBG("async_got_host %O:%d\n", server || "NULL", port);
+   if (!server || !sizeof(server))
    {
       async_failed();
       if (this) {
@@ -489,7 +501,7 @@ void async_got_host(string server,int port)
    }
 
    con = Stdio.File();
-   if( !con->async_connect(server, port,
+   if( !con->async_connect(server[0], port,
                            lambda(int success)
                            {
                              if (success) {
@@ -505,7 +517,11 @@ void async_got_host(string server,int port)
                                  // Other code assumes an existing con is
                                  // an open one.
                                  con = 0;
-                               async_failed();
+                               if (sizeof(server) > 1)
+                                 // Try the next IP address if available.
+                                 async_got_host(server[1..], port);
+                               else
+                                 async_failed();
                              }
                            }))
    {
@@ -581,7 +597,7 @@ void async_fetch_close()
 }
 
 /****** utilities **************************************************/
-string headers_encode(mapping(string:array(string)|string) h)
+string headers_encode(mapping(string:array(string)|string|int) h)
 {
     constant rfc_headers = ({ "accept-charset", "accept-encoding", "accept-language",
                               "accept-ranges", "cache-control", "content-length",
@@ -593,7 +609,7 @@ string headers_encode(mapping(string:array(string)|string) h)
 
    if (!h || !sizeof(h)) return "";
    String.Buffer buf = String.Buffer();
-   foreach(h; string name; array(string)|string value)
+   foreach(h; string name; array(string)|string|int value)
    {
      if( replace_headers[name] )
        name = replace_headers[name];
@@ -622,46 +638,25 @@ string headers_encode(mapping(string:array(string)|string) h)
 //!	Set this to a global mapping if you want to use a cache,
 //!	prior of calling *request().
 //!
-mapping hostname_cache=([]);
-
-protected object/*Protocols.DNS.async_client*/ async_dns;
-protected int last_async_dns;
-protected mixed async_id;
+mapping(string:array(string)) hostname_cache = ([]);
 
 #ifndef PROTOCOLS_HTTP_DNS_OBJECT_TIMEOUT
 #define PROTOCOLS_HTTP_DNS_OBJECT_TIMEOUT	60
 #endif
 
-// Check if it's time to clean up the async dns object.
-protected void clean_async_dns()
-{
-  int time_left = last_async_dns + PROTOCOLS_HTTP_DNS_OBJECT_TIMEOUT - time(1);
-  if (time_left >= 0) {
-    // Not yet.
-    async_id = call_out(clean_async_dns, time_left + 1);
-    return;
-  }
-  async_id = 0;
-
-  if(async_dns)
-    async_dns->close();
-  async_dns = 0;
-
-  last_async_dns = 0;
-}
-
-void dns_lookup_callback(string name,string ip,function callback,
+void dns_lookup_callback(string name,array(string) ips,function callback,
 			 mixed ...extra)
 {
-   DBG("dns_lookup_callback %s = %s\n", name, ip||"NULL");
-   hostname_cache[name]=ip;
+   DBG("dns_lookup_callback %s = %O\n", name, ips||"NULL");
+   hostname_cache[name]=ips;
    if (functionp(callback))
-      callback(ip,@extra);
+      callback(ips,@extra);
 }
 
 void dns_lookup_async(string hostname,function callback,mixed ...extra)
 {
-   string id;
+   DBG("dns_lookup_async %s\n", hostname);
+   string|array(string) id;
    if (!hostname || hostname=="")
    {
       call_out(callback,0,0,@extra); // can't lookup that...
@@ -673,55 +668,47 @@ void dns_lookup_async(string hostname,function callback,mixed ...extra)
    } else {
      sscanf(hostname,"%[0-9.]",id);
    }
-   if (hostname==id ||
-       (id=hostname_cache[hostname]))
-   {
+   if (hostname==id) {
+      call_out(callback,0,({id}),@extra);
+      return;
+   } else if (id=hostname_cache[hostname]) {
       call_out(callback,0,id,@extra);
       return;
    }
 
-   if (!async_dns) {
-     async_dns = RUNTIME_RESOLVE(Protocols.DNS.async_client)();
-   }
-   async_dns->host_to_ip(hostname, dns_lookup_callback, callback, @extra);
-   last_async_dns = time(1);
-   if (!async_id) {
-     async_id = call_out(clean_async_dns, PROTOCOLS_HTTP_DNS_OBJECT_TIMEOUT+1);
-   }
+   Protocols.DNS.async_host_to_ips(hostname, dns_lookup_callback, callback, @extra);
 }
 
-string dns_lookup(string hostname)
+array(string) dns_lookup(string hostname)
 {
-   string id;
+   string|array(string) id;
    if (has_value(hostname, ":")) {
      //  IPv6
      sscanf(hostname, "%[0-9a-fA-F:.]", id);
    } else {
      sscanf(hostname,"%[0-9.]",id);
    }
-   if (hostname==id ||
-       (id=hostname_cache[hostname]))
+   if (hostname==id)
+      return ({id});
+   else if (id=hostname_cache[hostname])
       return id;
 
    array hosts = gethostbyname(hostname);//RUNTIME_RESOLVE(Protocols.DNS.client)()->gethostbyname( hostname );
    if (array ip = hosts && hosts[1])
      if (sizeof(ip)) {
-       //  Prefer IPv4 addresses
+       //  Prefer IPv6 addresses
        array(string) v6 = filter(ip, has_value, ":");
        array(string) v4 = ip - v6;
-       
-       if (sizeof(v4))
-	 return v4[random(sizeof(v4))];
-       return sizeof(v6) && v6[random(sizeof(v6))];
+       return v6 + v4;
      }
-   return 0;
+   return ({});
 }
 
 
 /****** called methods *********************************************/
 
-//! @decl Protocols.HTTP.Query set_callbacks(function request_ok, @
-//!                                          function request_fail, @
+//! @decl Protocols.HTTP.Query set_callbacks(function|zero request_ok, @
+//!                                          function|zero request_fail, @
 //!                                          mixed ... extra)
 //! @decl Protocols.HTTP.Query async_request(string server, int port, @
 //!                                          string query)
@@ -742,8 +729,8 @@ string dns_lookup(string hostname)
 //! @returns
 //!	Returns the called object
 
-this_program set_callbacks(function(object,mixed...:mixed) _ok,
-			   function(object,mixed...:mixed) _fail,
+this_program set_callbacks(function(this_program,__unknown__...:mixed)|zero _ok,
+			   function(this_program,__unknown__...:mixed)|zero _fail,
 			   mixed ...extra)
 {
    extra_args=extra;
@@ -779,13 +766,13 @@ this_program thread_request(string server, int port, string query,
 {
    // start open the connection
 
-   string server1=dns_lookup(server);
+   array(string) ips=dns_lookup(server);
 
-   if (server1) server=server1; // cheaty, if host doesn't exist
+   if (!ips || !sizeof(ips)) ips = ({server}); // cheaty, if host doesn't exist
 
    con = 0;
-   Stdio.File new_con = Stdio.File();
-   if (!new_con->open_socket(-1, 0, server)) {
+   object(Stdio.File)|zero new_con = Stdio.File();
+   if (!new_con->open_socket(-1, 0, ips[0])) {
      int errno = con->errno();
      new_con = 0;
      error("HTTP.Query(): can't open socket; "+strerror(errno)+"\n");
@@ -814,7 +801,7 @@ this_program thread_request(string server, int port, string query,
 
    request=query+"\r\n"+headers+"\r\n"+data;
 
-   conthread=thread_create(connect,server,port,1);
+   conthread=thread_create(connect,ips,port,1);
 
    return this;
 }
@@ -826,8 +813,9 @@ this_program sync_request(string server, int port, string query,
 			  void|string data)
 {
   int kept_alive;
+  array(string) ips;
 
-  this::real_host = server;
+  this::real_host = http_headers->?Host || http_headers->?host || server;
   // start open the connection
   if(con && con->is_open() &&
      this::host == server &&
@@ -852,12 +840,12 @@ this_program sync_request(string server, int port, string query,
     this::host = server;
     this::port = port;
 
-    string ip = dns_lookup( server );
-    if(ip) server = ip; // cheaty, if host doesn't exist
+    ips = dns_lookup( server );
+    if(!ips || !sizeof(ips)) ips = ({server}); // cheaty, if host doesn't exist
 
     con = 0;
-    Stdio.File new_con = Stdio.File();
-    if(!new_con->open_socket(-1, 0, server)) {
+    object(Stdio.File)|zero new_con = Stdio.File();
+    if(!new_con->open_socket(-1, 0, ips[0])) {
       int errno = con->errno();
       new_con = 0;
       error("HTTP.Query(): can't open socket; "+strerror(errno)+"\n");
@@ -919,7 +907,7 @@ this_program sync_request(string server, int port, string query,
 	return sync_request (server, port, query, http_headers, data);
       }
   } else
-    connect(server, port,1);
+    connect(ips, port,1);
 
   return this;
 }
@@ -981,7 +969,7 @@ this_program async_request(string server,int port,string query,
 //! @returns
 //!	Returns @expr{1@} on successfull connection, @expr{0@} on failure.
 //!
-int `()()
+protected int `()()
 {
    // wait for completion
    if (conthread) conthread->wait();
@@ -1340,15 +1328,6 @@ object datafile()
 
 protected void _destruct()
 {
-   if (async_id) {
-     remove_call_out(async_id);
-   }
-   async_id = 0;
-   if(async_dns) {
-     async_dns->close();
-     async_dns = 0;
-   }
-
    catch(close_connection(1));
 }
 
@@ -1357,10 +1336,6 @@ protected void _destruct()
 void close()
 {
   close_connection();
-  if(async_dns) {
-    async_dns->close();
-    async_dns = 0;
-  }
 }
 
 private int(0..1) is_empty_response()
@@ -1421,8 +1396,8 @@ void async_fetch(function callback,mixed ... extra)
 //!
 //! @seealso
 //!   @[async_fetch()], @[async_request()], @[set_callbacks()]
-void timed_async_fetch(function(object, mixed ...:void) ok_callback,
-		       function(object, mixed ...:void) fail_callback,
+void timed_async_fetch(function(this_program, __unknown__ ...:void) ok_callback,
+		       function(this_program, __unknown__ ...:void) fail_callback,
 		       mixed ... extra) {
   if (body_is_fetched()) {
     call_out(ok_callback, 0, this, @extra);

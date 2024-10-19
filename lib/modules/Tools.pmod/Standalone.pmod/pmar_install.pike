@@ -328,6 +328,7 @@ int main(int argc, array(string) argv)
     {
       werror(err[0]);
       werror("Installation of module failed.\n");
+      werror(master()->describe_backtrace(err));
       return 1;
     }
 //  if(has_dir(s, fsroot + "/INCLUDE"))
@@ -364,7 +365,6 @@ int runscript(string sn, object installer, object pmar)
     return 1;
 
   pmar = pmar->cd(fsroot+ "/SCRIPTS");
-
   if(!(stat = pmar->stat(sn + ".pike")))
     return 1;
 
@@ -472,8 +472,9 @@ protected Filesystem.System getfs(object source, string cwd) {
 }
 
 int untar(object source, string path, void|string cwd) {
-  if (!cwd)
+ if (!cwd)
     cwd = "/";
+ else if (cwd[0] != '/') cwd = "/" + cwd;
   object t = getfs(source, cwd);
   array files = t->get_dir();
   int c;

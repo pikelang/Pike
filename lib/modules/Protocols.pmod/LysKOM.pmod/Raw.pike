@@ -1,3 +1,5 @@
+/* -*- mode: Pike; c-basic-offset: 3; -*- */
+
 #pike __REAL_VERSION__
 
 import .Helper;
@@ -65,7 +67,7 @@ class Send
    string request;
    function(string:void) callback;
 
-   void create(int rf,string r,function(string:void) c)
+   protected void create(int rf,string r,function(string:void) c)
    {
       ref=rf;
       request=r;
@@ -188,7 +190,7 @@ void|array|object recv(mixed x,string what,void|int syn)
 //    werror("<- (%d bytes) (%d asyncs left)\n",sizeof(what),
 // 	  sizeof(indices(async)));
 
-   array|object ires=0;
+   array|object ires = ({});
    buf+=what;
    // wait for newline before we do anything at all
    while (has_value(buf,"\n"))
@@ -313,9 +315,21 @@ void connection_lost()
 }
 
 
-void create(string server,void|int port,void|string whoami)
+protected void create(string server, int(1..) port = 4894,
+		      string whoami = (
+#if constant(getpwuid) && constant(getuid)
+				       (getpwuid(getuid())||({"*unknown*"}))[0]+
+#else
+				       "*unknown*"
+#endif
+				       "%"
+#if constant(uname)
+				       +uname()->nodename
+#else
+				       "*unknown*"
+#endif
+				       ))
 {
-   if (!port) port=4894;
    con=Stdio.File();
    if (!con->connect(server,port))
    {
@@ -326,19 +340,7 @@ void create(string server,void|int port,void|string whoami)
      return;
    }
 
-   conwrite("A"+H(whoami||
-#if constant(getpwuid) && constant(getuid)
-		  (getpwuid(getuid())||({"*unknown*"}))[0]+
-#else
-		  "*unknown*"
-#endif
-		  "%"
-#if constant(uname)
-		  +uname()->nodename
-#else
-		  "*unknown*"
-#endif
-		  ));
+   conwrite("A"+H(whoami));
    string reply=con->read(7);
 #ifdef LYSKOM_DEBUG
    werror("<- %O\n",reply);

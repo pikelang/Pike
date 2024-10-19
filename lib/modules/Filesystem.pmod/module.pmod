@@ -105,7 +105,7 @@ class Stat
   //! Change to the stated directory.
   //! @returns
   //! the directory if the stated object was a directory, 0 otherwise.
-  object /* Filesystem.Base */ cd()
+  object|zero /* Filesystem.Base */ cd()
   {
     if(isdir)
       return filesystem->cd(fullpath);
@@ -153,7 +153,7 @@ class Stat
 		   path?fullpath:name);
   }
 
-  string _sprintf(int t)
+  protected string _sprintf(int t)
   {
     return t=='O' && sprintf("Stat(/* %s */)", lsprint(1));
   }
@@ -235,7 +235,7 @@ program get_filesystem(string what)
 }
 
   //! @xml{<fixme>Document this function</fixme>@}
-function `()(void|string path)
+protected function `()(void|string path)
 {
   return get_filesystem("System")(".")->cd(path||".") ||
 	 error("Can't create filesystem on given path\n"),0;
@@ -286,7 +286,7 @@ class Traversion {
   //! @param sort_fun
   //! Sort function to be applied to directory entries before
   //! traversing. Can also be a filter function.
-  void create(string _path, void|int(0..1) _symlink, void|int(0..1) _ignore_errors, void|function(array:array) _sort_fun) {
+  protected void create(string _path=".", void|int(0..1) _symlink, void|int(0..1) _ignore_errors, void|function(array:array) _sort_fun) {
     path = _path;
     if(path[-1]!='/') path+="/";
     files = get_dir(path);
@@ -317,13 +317,13 @@ class Traversion {
     current = Traversion(path + files[pos], symlink, ignore_errors, sort_fun);
   }
 
-  int `!() {
+  protected int `!() {
     if( pos >= sizeof(files) ) return 1;
     return 0;
   }
 
   //! Returns the stat for the current index-value-pair.
-  Stdio.Stat stat() {
+  object(Stdio.Stat)|zero stat() {
     if(!current) return 0;
     if(current->is_traversion)
       return current->stat();
@@ -341,12 +341,16 @@ class Traversion {
     return 0;
   }
 
-  void `+=(int steps) {
+  protected void `+=(int steps) {
     if (steps < 0) error ("Cannot step backwards.\n");
     add(steps);
   }
 
   string index() {
+    return _iterator_index();
+  }
+
+  protected string _iterator_index() {
     if(current && current->is_traversion)
       return current->index();
     if( pos >= sizeof(files) ) return UNDEFINED;
@@ -354,6 +358,10 @@ class Traversion {
   }
 
   string value() {
+    return _iterator_value();
+  }
+
+  protected string _iterator_value() {
     if(current && current->is_traversion)
       return current->value();
     if( pos >= sizeof(files) ) return UNDEFINED;

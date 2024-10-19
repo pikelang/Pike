@@ -42,7 +42,7 @@ class MouseAbs
 	return x;
     }
 
-    void create( int q, int pr, float _xp, float _yp  )
+    protected void create( int q, int pr, float _xp, float _yp  )
     {
 	if( floatp(_xp) && floatp(_yp) )
 	{

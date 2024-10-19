@@ -113,21 +113,43 @@ class ArrayType {
   //! The @[Type] of the array elements.
   Type valuetype;
 
+  //! The length of the array.
+  object(Type) length;
+
   //!
-  void create() { ::create("array"); }
+  protected void create() { ::create("array"); }
 
   string print() {
-    if (valuetype)
-      return "array(" + valuetype->print() + ")";
-    else
-      return "array";
+    string ret = "array";
+    if (valuetype || length) {
+      ret += "(";
+      if (length) {
+	if (length->classname == "int") {
+	  if (length->min || length->max) {
+	    ret += length->min || "";
+	    if (length->min != length->max) {
+	      ret += "..";
+	      ret += length->max || "";
+	    }
+	  }
+	} else {
+	  ret += length->print();
+	}
+	ret += ":";
+      }
+      if (valuetype) ret += valuetype->print();
+      ret += ")";
+    }
+    return ret;
   }
 
   string xml(.Flags|void flags) {
-    if (!valuetype)
+    string xml = "";
+    if (length) xml += xmltag("length", length->xml(flags));
+    if (valuetype) xml += xmltag("valuetype", valuetype->xml(flags));
+    if (xml=="" )
       return ::xml(flags);
-    return xmltag("array",
-                  xmltag("valuetype", valuetype->xml(flags)));
+    return xmltag("array", xml);
   }
 }
 
@@ -151,7 +173,7 @@ class ProgramType {
   // FIXME xml() needs to be overridden.
 
   //!
-  void create() { ::create("program"); }
+  protected void create() { ::create("program"); }
 }
 
 //! The class for representing the float type.
@@ -163,7 +185,7 @@ class FloatType {
   inherit Type;
 
   //!
-  void create() { ::create("float"); }
+  protected void create() { ::create("float"); }
 }
 
 //! The class for representing integer types.
@@ -178,7 +200,7 @@ class IntType {
   string min, max;
 
   //!
-  void create() { ::create("int"); }
+  protected void create() { ::create("int"); }
 
   string print() {
     if (min || max)
@@ -210,7 +232,7 @@ class StringType {
   string max;
 
   //!
-  void create() { ::create("string"); }
+  protected void create() { ::create("string"); }
 
   string print() {
     if (min||max)
@@ -237,7 +259,7 @@ class MixedType {
   inherit Type;
 
   //!
-  void create() { ::create("mixed"); }
+  protected void create() { ::create("mixed"); }
 }
 
 //! The class for representing function types.
@@ -255,7 +277,7 @@ class FunctionType {
   Type returntype;
 
   //!
-  void create() { ::create("function"); }
+  protected void create() { ::create("function"); }
 
   string print() {
     if (argtypes && returntype) {
@@ -292,7 +314,7 @@ class MappingType {
   Type indextype, valuetype;
 
   //!
-  void create() { ::create("mapping"); }
+  protected void create() { ::create("mapping"); }
 
   string print() {
     if (indextype && valuetype) {
@@ -327,7 +349,7 @@ class MultisetType {
   Type indextype;
 
   //!
-  void create() { ::create("multiset"); }
+  protected void create() { ::create("multiset"); }
 
   string print() {
     if (indextype) {
@@ -357,17 +379,20 @@ class ObjectType {
   //! The name of the class for the object.
   string classname;
 
+  array(Type)|zero bindings;
+
   //!
-  void create() { ::create("object"); }
+  protected void create() { ::create("object"); }
 
   string print() {
     if (classname)
-      return "object(" + classname + ")";
+      return "object(" + classname + ")" +
+        (bindings?("(<" + bindings->print() * "," + ">)"):"");
     else
       return "object";
   }
   string xml(.Flags|void flags) {
-    return xmltag("object", classname);
+    return xmltag("object", classname, @((bindings||({}))->xml(flags)));
   }
 }
 
@@ -383,7 +408,7 @@ class TypeType {
   Type subtype = MixedType();
 
   //!
-  void create() { ::create("type"); }
+  protected void create() { ::create("type"); }
 
   string print() {
     if (subtype->name != "mixed") {
@@ -405,7 +430,7 @@ class VoidType {
   inherit Type;
 
   //!
-  void create() { ::create("void"); }
+  protected void create() { ::create("void"); }
 }
 
 //! The class for representing the zero type.
@@ -417,7 +442,19 @@ class ZeroType {
   inherit Type;
 
   //!
-  void create() { ::create("zero"); }
+  protected void create() { ::create("zero"); }
+}
+
+//! The class for representing the unknown type.
+//!
+//! @seealso
+//!   @[Type]
+class UnknownType {
+  //!
+  inherit Type;
+
+  //!
+  protected void create() { ::create("unknown"); }
 }
 
 //! The class for representing union types.
@@ -432,7 +469,7 @@ class OrType {
   array(Type) types;
 
   //!
-  void create() { ::create("or"); }
+  protected void create() { ::create("or"); }
 
   string print() {
     return map(types, lambda(Type t) { return t->print(); }) * " | ";
@@ -457,7 +494,7 @@ class VarargsType {
   Type type;
 
   //!
-  void create(Type t) { ::create("varargs"); type = t; }
+  protected void create(Type t) { ::create("varargs"); type = t; }
 
   string print() { return type->print() + " ..."; }
   string xml(.Flags|void flags) { return xmltag("varargs", type->xml(flags)); }
@@ -488,12 +525,15 @@ class AttributeType {
   int prefix;
 
   //!
-  void create() { ::create("__attribute__"); }
+  protected void create() { ::create("__attribute__"); }
 
   string print() {
     if (attribute == "\"deprecated\"") {
       return prefix?"__deprecated__ " + subtype->print():
 	"__deprecated__(" + subtype->print() + ")";
+    } else if (attribute == "\"experimental\"") {
+      return prefix?"__experimental__ " + subtype->print():
+        "__experimental__(" + subtype->print() + ")";
     } else {
       return prefix?"__attribute__(" + attribute + ") " + subtype->print():
 	"__attribute__(" + attribute + ", " + subtype->print() + ")";
@@ -533,7 +573,8 @@ class DocGroup {
   Documentation documentation = 0;
 
   //!
-  protected void create(array(PikeObject) objs, Documentation doc) {
+  protected void create(array(PikeObject) objs,
+                        Documentation doc = EmptyDoc) {
     documentation = doc;
     objects = objs;
   }
@@ -576,6 +617,79 @@ class DocGroup {
 // REPRESENTATION OF PIKES LEXICAL OBJECTS (class, function, variable ...)
 //========================================================================
 
+//! Class representing an annotation.
+class Annotation
+{
+  constant is_annotation = 1;
+
+  constant objtype = "annotation";
+
+  array(string) tokens;
+
+  void format_xml(String.Buffer buf, array(string|array) tokens)
+  {
+    string end_tag;
+    foreach(tokens, string|array elem) {
+      if (arrayp(elem)) {
+	if (end_tag) {
+	  buf->add(end_tag);
+	  end_tag = UNDEFINED;
+	}
+	format_xml(buf, elem);
+      } else {
+	switch(elem) {
+	case ",": case "(": case "{": case "[": case ")": case "}": case "]":
+	  // Separator.
+	  if (end_tag) {
+	    buf->add(end_tag);
+	    end_tag = UNDEFINED;
+	  }
+	  buf->add(elem);
+	  break;
+	default:
+	  elem = String.trim_all_whites(elem);
+	  if (elem == "") continue;
+	  if ((elem[0] == '"') || (elem[0] == '\'')) {
+	    // String or character literal.
+	    if (end_tag) {
+	      buf->add(end_tag);
+	      end_tag = UNDEFINED;
+	    }
+	  } else if (!end_tag) {
+	    buf->add("<ref>");
+	    end_tag = "</ref>";
+	  }
+	  buf->add(xmlquote(elem));
+	  break;
+	}
+      }
+    }
+    if (end_tag) {
+      buf->add(end_tag);
+    }
+  }
+
+  string xml(.Flags|void flags)
+  {
+    String.Buffer res = String.Buffer();
+    res->add("<annotation>");
+    array(string|array) grouped = Parser.Pike.group(tokens);
+    format_xml(res, tokens);
+    res->add("</annotation>");
+    return res->get();
+  }
+
+  string `name()
+  {
+    return tokens * "";
+  }
+
+  protected void create(array(string) tokens)
+  {
+    this::tokens = filter(tokens, `!=, "\n");
+  }
+}
+
 //! Base class for representing a documentable Pike lexical entity.
 //!
 //! This class is inherited by classes for representing
@@ -586,6 +700,8 @@ class DocGroup {
 //!   @[Modifier], @[Method], @[Constant], @[Typedef], @[EnumConstant],
 //!   @[Enum], @[Variable]
 class PikeObject {
+  array(Annotation)|zero annotations = UNDEFINED;
+
   //! The set of modifiers affecting this entity.
   array(string) modifiers = ({ });
 
@@ -615,6 +731,8 @@ class PikeObject {
     string s = "";
     if (position)
       s += position->xml(flags);
+    if (annotations && sizeof(annotations))
+      s += xmltag("annotations", annotations->xml(flags) * "");
     if (sizeof(modifiers))
       s += xmltag("modifiers", map(modifiers, xmltag) * "");
     return s;
@@ -658,6 +776,17 @@ class Inherit {
 
   //! Name of the class that is inherited.
   string classname;
+
+  //! Bindings (if any).
+  array(Type) bindings;
+
+  string standardTags(.Flags|void flags) {
+    if (bindings && sizeof(bindings)) {
+      return xmltag("bindings", bindings->xml(flags) * "\n") +
+        ::standardTags(flags);
+    }
+    return ::standardTags(flags);
+  }
 
   string xml(.Flags|void flags) {
     return standardStart(flags) +
@@ -722,6 +851,9 @@ class _Class_or_Module {
   //! Documented entities that are children to this entity.
   array(DocGroup) docGroups = ({ });
 
+  //! Array of symbol followed by type and default type triples.
+  array(array(string|PikeObject)) generics = ({});
+
   void fixGettersSetters()
   {
     mapping(string:array(PikeObject)) found = ([]);
@@ -736,7 +868,7 @@ class _Class_or_Module {
 	  werror("WARNING: Dropping documentation for %s. "
 		 "There is no such operator\n"
 		 "Found in documentation for %s\n",
-		 o->name,o->position?->filename||name);
+		 o->name,o->position->?filename||name);
 	  doge->objects[subindex] = 0;
 	}
 	else if( o->name[0..0] == "`" && !lfuns[o->name] )
@@ -783,7 +915,7 @@ class _Class_or_Module {
       outdoc->position = o[0]->position;
 
       mapping(string:Documentation) doc = docs[key];
-      if( doc?->set?->text && doc?->get?->text &&
+      if( doc->?set->?text && doc->?get->?text &&
 	  strlen(doc->set->text) && strlen(doc->get->text) &&
 	  doc->set->text != doc->get->text )
       {
@@ -794,11 +926,11 @@ class _Class_or_Module {
       }
       else
       {
-	if( doc?->set?->text && strlen(doc->set->text) )
+	if( doc->?set->?text && strlen(doc->set->text) )
 	{
 	  outdoc->text = doc->set->text;
 	}
-	else if( doc?->get?->text && strlen(doc->get->text) )
+	else if( doc->?get->?text && strlen(doc->get->text) )
 	{
 	  outdoc->text = doc->get->text;
 	}
@@ -842,7 +974,7 @@ class _Class_or_Module {
 
   //! @returns
   //!   Returns the first child with the name @[name] if any.
-  PikeObject findChild(string name) {
+  object(PikeObject)|zero findChild(string name) {
     int a = Array.search_array(children,
                                lambda(PikeObject o, string n) {
                                  return o->name == n;
@@ -854,7 +986,7 @@ class _Class_or_Module {
   //! @returns
   //!   Returns the first @[DocGroup] that documents an entity
   //!   with the name @[name] if any.
-  DocGroup findObject(string name) {
+  object(DocGroup)|zero findObject(string name) {
     int a = Array.search_array(docGroups,
                                lambda(DocGroup d, string n) {
                                  return (search(d->objects->name, n) >= 0);
@@ -877,6 +1009,11 @@ class _Class_or_Module {
     children -= ({ 0 }); // FIXME
     foreach (children, _Class_or_Module c)
       contents += c->xml(flags);
+    foreach (generics || ({}); int i; array(string|Type) generic) {
+      // Wrap the generics in docgroups.
+      DocGroup dg = DocGroup(({ Generic(i, @generic) }), EmptyDoc);
+      contents += dg->xml(flags);
+    }
     foreach (inherits, Inherit in) {
       // Wrap the undocumented inherits in docgroups.
       DocGroup dg = DocGroup(({in}), EmptyDoc);
@@ -1071,22 +1208,56 @@ class Typedef {
   }
 }
 
-//! The values inside @expr{enum Foo { ... }@}
-class EnumConstant {
+//! Represents a generic.
+class Generic {
   //!
-  inherit PikeObject;
+  inherit Typedef;
 
   //!
-  constant objtype = "constant";
+  constant objtype = "generic";
+
+  //!
+  int generic_argument_number;
+
+  //! Default @[Type].
+  Type default_type = 0;
+
+  protected mapping(string:string) standardAttributes(.Flags|void flags) {
+    mapping(string:string) m = ::standardAttributes(flags);
+    m->index = "" + generic_argument_number;
+    return m;
+  }
 
   string xml(.Flags|void flags) {
-    mapping m = ([]) + standardAttributes(flags);
-    return opentag(objtype, m) + standardTags(flags)
+    return standardStart(flags) + standardTags(flags)
+      + xmltag("type", type->xml(flags))
+      + xmltag("default_type", default_type->xml(flags))
       + standardEnd(flags);
   }
+
   string print() {
-    return "constant";  // for now...
+    return ::print() +
+      (default_type? " " + default_type->print() : "");
   }
+
+  protected void create(int i,
+                        string name,
+                        Type type = MixedType(),
+                        Type default_type = type)
+  {
+    this::generic_argument_number = i;
+    this::name = name;
+    this::type = type;
+    this::default_type = default_type;
+  }
+}
+
+//! The values inside @expr{enum Foo { ... }@}
+//!
+//! These are currently handled identically to normal constants.
+class EnumConstant {
+  //!
+  inherit Constant;
 }
 
 //! The enum container.
@@ -1158,11 +1329,11 @@ class Enum {
             && group->get_any_name() == "group")
         {
           int constants = 0;
-          string homogenName = 0;
+          string|zero homogenName = 0;
           SimpleNode docGroupNode =
 	    SimpleNode(XML_ELEMENT, "docgroup",
 		       ([ "homogen-type" : "constant" ]), 0);
-          SimpleNode text = 0;
+          object(SimpleNode)|zero text = 0;
           foreach (group->get_children(), SimpleNode child)
             if (child->get_node_type() == XML_ELEMENT)
               if (child->get_any_name() == "constant") {

@@ -29,7 +29,10 @@ protected mapping(string : string) reverseMatchTokens =
 protected multiset(string) modifiers =
 (< "nomask", "final", "static", "extern",
    "private", "local", "public", "protected",
-   "inline", "optional", "variant"  >);
+   "inline", "optional", "variant",
+
+   "__async__", "__generator__",
+>);
 
 protected multiset(string) scopeModules =
 (< "predef", "top", "lfun", "efun" >);
@@ -50,25 +53,28 @@ void skip(multiset(string)|string tokens) {
 }
 
 //! Skip passed a matched pair of parenthesis, brackets or braces.
-void skipBlock() {
+array(string) skipBlock()
+{
   string left = peekToken();
   string right = matchTokens[left];
   if (!right)        // there was no block to skip !!
-    return;
+    return ({});
   int level = 1;
-  readToken();
+  array(string) res = ({});
+  res += ({ readToken() });
   string s = peekToken();
   while (s != EOF) {
     if (s == left)
       ++level;
     else if (s == right && !--level) {
-      readToken();
-      return;
+      res += ({ readToken() });
+      return res;
     }
-    readToken();
+    res += ({ readToken() });
     s = peekToken();
   }
   parseError("expected " + quoteString(right));
+  return ({});
 }
 
 //! Skip tokens until one of @[tokens] is the next to read.
@@ -79,16 +85,17 @@ void skipBlock() {
 //!
 //! @seealso
 //!   @[skip()]
-void skipUntil(multiset(string)|string tokens) {
+array(string) skipUntil(multiset(string)|string tokens) {
   string s = peekToken(WITH_NL);
+  array(string) res = ({});
   if (stringp(tokens)) {
     while (s != tokens) {
       if (s == EOF)
         parseError("expected " + quoteString(tokens));
       if (matchTokens[s])
-        skipBlock();
+        res += skipBlock();
       else
-        readToken(WITH_NL);
+        res += ({ readToken(WITH_NL) });
       s = peekToken(WITH_NL);
     }
   }
@@ -98,12 +105,13 @@ void skipUntil(multiset(string)|string tokens) {
         parseError("expected one of " +
                    Array.map(Array.uniq(indices(tokens)), quoteString) * ", ");
       if (matchTokens[s])
-        skipBlock();
+        res += skipBlock();
       else
-        readToken(WITH_NL);
+        res += ({ readToken(WITH_NL) });
       s = peekToken(WITH_NL);
     }
   }
+  return res;
 }
 
 //! Skip past any newlines.
@@ -347,7 +355,32 @@ ArrayType parseArray() {
   ArrayType a = ArrayType();
   if (peekToken() == "(") {
     readToken();
-    a->valuetype = parseOrType();
+    Type t;
+    if ((peekToken()[0] >= '0') && (peekToken()[0] <= '9')) {
+      t = IntType();
+      if ((lookAhead(1) == ":") &&
+	  !has_suffix(peekToken(), "bit") &&
+	  !has_suffix(peekToken(), "bits")) {
+	// Integer literal followed by a ':'.
+	t->min = t->max = eatLiteral();
+      } else {
+	lowParseRange(t);
+      }
+    } else if (peekToken() == "..") {
+      t = IntType();
+      lowParseRange(t);
+    } else if (peekToken() != ":") {
+      t = parseOrType();
+    }
+    if (peekToken() == ":") {
+      a->length = t;
+      eat(":");
+      if (peekToken() != ")") {
+	a->valuetype = parseOrType();
+      }
+    } else {
+      a->valuetype = t;
+    }
     eat(")");
   }
   return a;
@@ -397,36 +430,44 @@ FunctionType parseFunction() {
 }
 
 
-StringType|IntType parseRange(StringType|IntType s)
+StringType|IntType lowParseRange(StringType|IntType s)
 {
   string tk;
+
+  switch (peekToken()) {
+  case "zero":
+    eat("zero");
+    s->min = s->max = "0";
+    return s;
+  case "..":
+    break;
+  default:
+    s->min = eatLiteral();
+    if(sscanf(s->min, "%sbit", s->min) ||
+       (<"bit","bits">)[(tk = peekToken())] )
+    {
+      if (tk) eat(tk);
+
+      s->max = (string)((1<<(int)s->min)-1);
+      s->min = "0";
+      return s;
+    }
+  }
+
+  eat("..");
+
+  if (!(<")", ",", ":">)[peekToken()])
+    s->max = eatLiteral();
+
+  return s;
+}
+
+StringType|IntType parseRange(StringType|IntType s)
+{
   if (peekToken() == "(") {
     readToken();
-    switch (peekToken()) {
-    case "zero":
-      eat("zero");
-      s->min = s->max = "0";
-      eat(")");
-      return s;
-    case "..":
-      break;
-    default:
-      s->min = eatLiteral();
-      if(sscanf(s->min, "%sbit", s->min) ||
-	 (<"bit","bits">)[(tk = peekToken())] )
-      {
-        if (tk) eat(tk);
-        eat(")");
-        s->max = (string)((1<<(int)s->min)-1);
-        s->min = "0";
-        return s;
-      }
-    }
 
-    eat("..");
-
-    if (peekToken() != ")")
-      s->max = eatLiteral();
+    lowParseRange(s);
 
     eat(")");
   }
@@ -483,6 +524,79 @@ string parseProgramName() {
   return s;
 }
 
+array(string|Type) parseGenericDecl()
+{
+  string name = peekToken();
+
+  if (lower_case(name) == upper_case(name)) {
+    parseError("Invalid generic declaration.");
+  }
+
+  Type t = parseOrType();
+  string sym = peekToken();
+  Type def = t;
+
+  if (!t || (t && (< "=", ",", ">", ";", EOF >)[sym])) {
+    t = def = MixedType();
+  } else {
+    name = eatIdentifier();
+    sym = peekToken();
+  }
+
+  if (sym == "=") {
+    eat("=");
+    def = parseOrType();
+  }
+
+  if (peekToken() == ",") {
+    eat(",");
+  }
+
+  return ({ name, t, def });
+}
+
+array(array(string|Type))|zero parseGenericsDecl()
+{
+  if ((peekToken() != "(") || (lookAhead(1) != "<")) return 0;
+
+  eat("(");
+  eat("<");
+
+  array(array(string|Type)) generics = ({});
+  while ((peekToken() != ">") && (peekToken() != EOF)) {
+    generics += ({ parseGenericDecl() });
+  }
+
+  eat(">");
+  eat(")");
+
+  return generics;
+}
+
+array(Type)|zero parseOptionalBindings()
+{
+  if ((peekToken() != "(") || (lookAhead(1) != "<")) return 0;
+
+  eat("(");
+  eat("<");
+
+  array(Type) res = ({});
+  while (peekToken() != ">") {
+    Type t = parseOrType();
+    if (t) {
+      res += ({ t });
+    }
+    if ((peekToken() == ",") || !t) {
+      eat(",");
+    }
+  }
+
+  eat(">");
+  eat(")");
+
+  return res;
+}
+
 ObjectType parseObject() {
   ObjectType obj = ObjectType();
   if (peekToken() == "object") {
@@ -496,11 +610,13 @@ ObjectType parseObject() {
       }
       else
         obj->classname = parseProgramName();
+      obj->bindings = parseOptionalBindings();
       eat(")");
     }
   }
   else
     obj->classname = parseProgramName();
+  obj->bindings = obj->bindings || parseOptionalBindings();
   return obj;
 }
 
@@ -573,7 +689,27 @@ AttributeType parseDeprecated()
   return t;
 }
 
-Type parseType() {
+AttributeType parseExperimental()
+{
+  eat("__experimental__");
+  AttributeType t = AttributeType();
+  t->attribute = "\"experimental\"";
+  if (peekToken() == "(") {
+    readToken();
+    if (peekToken() == ")") {
+      readToken();
+    } else {
+      t->subtype = parseType();
+      eat(")");
+      return t;
+    }
+  }
+  t->prefix = 1;
+  t->subtype = parseType();
+  return t;
+}
+
+object(Type)|zero parseType() {
   string s = peekToken();
   switch(s) {
     case "float":
@@ -590,6 +726,9 @@ Type parseType() {
     case "zero":
       eat("zero");
       return ZeroType();
+    case "__unknown__":
+      eat("__unknown__");
+      return UnknownType();
 
     case "array":
       return parseArray();
@@ -611,6 +750,8 @@ Type parseType() {
       return parseAttributeType();
     case "__deprecated__":
       return parseDeprecated();
+    case "__experimental__":
+      return parseExperimental();
     case ".":
       return parseObject();
     default:
@@ -638,14 +779,14 @@ Type parseType() {
 array parseArgList(int|void allowLiterals) {
   array(string) argnames = ({ });
   array(Type) argtypes = ({ });
-  if (peekToken() == ")")
-    return ({ argnames, argtypes });
   for (;;) {
+    if (peekToken() == ")")
+      return ({ argnames, argtypes });
     Type typ = parseOrType();
     if (typ && typ->name == "void" && peekToken() == ")")
       return ({ argnames, argtypes });
-    string literal = 0;
-    string identifier = 0;
+    string|zero literal = 0;
+    string|zero identifier = 0;
     if (!typ)
       literal = parseLiteral();
     else {
@@ -661,6 +802,23 @@ array parseArgList(int|void allowLiterals) {
       // Note: identifier may be zero for unnamed arguments in prototypes.
       argnames += ({ identifier });
       argtypes += ({ typ });
+
+      if (peekToken() == "=") {
+	// FIXME: Consider documenting the default value in the
+	//        trivial case (ie literal constant).
+	eat("=");
+	skipUntil((< ",", ")", ";", EOF >));
+
+	// Adjust the type to be '|void'.
+	if (argtypes[-1]->types) {
+	  // Or-type.
+	  argtypes[-1]->types += ({ VoidType() });
+	} else {
+	  typ = OrType();
+	  typ->types = ({ argtypes[-1], VoidType() });
+	  argtypes[-1] = typ;
+	}
+      }
     }
     else {
       if (typ) {
@@ -675,6 +833,25 @@ array parseArgList(int|void allowLiterals) {
       return ({ argnames, argtypes });
     eat(",");
   }
+}
+
+//! Parse a single annotation from the token stream.
+object(Annotation)|zero parseAnnotation()
+{
+  if (peekToken() != "@") return 0;
+  eat("@");
+  return Annotation(skipUntil((< ":", ";", EOF >)));
+}
+
+//! Parse a set of annotations from the token stream.
+array(Annotation) parseAnnotations()
+{
+  array(Annotation) annotations = ({});
+  Annotation a;
+  while (a = parseAnnotation()) {
+    eat(":");
+  }
+  return annotations;
 }
 
 //! Parse a set of modifiers from the token stream.
@@ -696,19 +873,23 @@ array(string) parseModifiers() {
   if (sizeof(mods) > 1) {
     // Clean up implied modifiers.
     if (has_value(mods, "private")) {
-      // private implies protected.
-      mods -= ({ "protected", });
+      // private implies local & protected.
+      mods -= ({ "local", "protected", });
     }
     if (has_value(mods, "final")) {
       // final implies local.
       mods -= ({ "local" });
+    }
+    if (has_value(mods, "extern")) {
+      // extern implies optional.
+      mods -= ({ "optional" });
     }
   }
   return mods;
 }
 
 //! Parse the next literal constant (if any) from the token stream.
-void|string parseLiteral() {
+string|zero parseLiteral() {
   string sign = peekToken() == "-" ? readToken() : "";
   string s = peekToken();
   if (s && s != "" &&
@@ -720,7 +901,7 @@ void|string parseLiteral() {
   return 0;
 }
 
-Type literalType (string literal)
+object(Type)|zero literalType (string literal)
 //! Returns the type of a literal. Currently only recognizes the top
 //! level type. Currently does not thoroughly check that the literal
 //! is syntactically valid.
@@ -760,11 +941,26 @@ string eatLiteral() {
 //! @note
 //!   @[parseDecl()] reads ONLY THE HEAD, NOT the @expr{";"@}
 //!   or @expr{"{" .. "}"@} !!!
-PikeObject|array(PikeObject) parseDecl(mapping|void args) {
+PikeObject|array(PikeObject)|Annotation parseDecl(mapping|void args) {
   args = args || ([]);
   skip("\n");
   peekToken();
   SourcePosition position = currentPosition;
+  Annotation a = parseAnnotation();
+  array(Annotation)|zero annotations = UNDEFINED;
+  if (a) {
+    switch(peekToken()) {
+    case ";":
+      eat(";");
+      // FALL_THROUGH
+    case EOF:
+      return a;
+    default:
+      eat(":");
+      annotations = ({ a }) + parseAnnotations();
+      break;
+    }
+  }
   array(string) modifiers = parseModifiers();
   string s = peekToken(WITH_NL);
   while (s == "\n") {
@@ -775,6 +971,7 @@ PikeObject|array(PikeObject) parseDecl(mapping|void args) {
   if (s == "class") {
     Class c = Class();
     c->position = position;
+    c->annotations = annotations;
     c->modifiers = modifiers;
     readToken();
     c->name = eatIdentifier();
@@ -783,12 +980,14 @@ PikeObject|array(PikeObject) parseDecl(mapping|void args) {
   else if (s == "{") {
     Modifier m = Modifier();
     m->position = position;
+    m->annotations = annotations;
     m->modifiers = modifiers;
     return m;
   }
   else if (s == "constant") {
     Constant c = Constant();
     c->position = position;
+    c->annotations = annotations;
     c->modifiers = modifiers;
     readToken();
     int save_pos = tokenPtr;
@@ -823,6 +1022,7 @@ PikeObject|array(PikeObject) parseDecl(mapping|void args) {
     object(Inherit)|Import i;
     i = (s == "inherit")?Inherit():Import();
     i->position = position;
+    i->annotations = annotations;
     i->modifiers = modifiers;
     readToken();
     i->name = i->classname = parseProgramName();
@@ -837,11 +1037,23 @@ PikeObject|array(PikeObject) parseDecl(mapping|void args) {
 			   ({ ".", ".", "" }))/".")[-1];
       }
     }
+    i->bindings = parseOptionalBindings();
     return i;
+  }
+  else if (s == "__generic__") {
+    eat("__generic__");
+    array(Generic) generics = ({});
+
+    while ((peekToken() != ";") && (peekToken() != EOF)) {
+      generics += ({ Generic(sizeof(generics), @parseGenericDecl()) });
+    }
+
+    return generics;
   }
   else if (s == "typedef") {
     Typedef t = Typedef();
     t->position = position;
+    t->annotations = annotations;
     t->modifiers = modifiers;
     readToken();
     t->type = parseOrType();
@@ -851,19 +1063,38 @@ PikeObject|array(PikeObject) parseDecl(mapping|void args) {
   else if (s == "enum") {
     Enum e = Enum();
     e->position = position;
+    e->annotations = annotations;
     e->modifiers = modifiers;
     readToken();
     if (peekToken() != "{")
       e->name = eatIdentifier();
+    else
+      e->name = "";
     return e;
+  }
+  else if ((s == "static_assert") || (s == "_Static_assert")) {
+    // Static assertion. Skip.
+    skipBlock();
+    eat(";");
+    return parseDecl(args);
   }
   else {
     Type t = parseOrType();
+
+    if (peekToken() == "(") {
+      // Probably a static assertion, or similar macro expansion.
+      // Skip.
+      skipBlock();
+      skip(";");
+      return parseDecl(args);
+    }
+
     // only allow lfun::, predef::, :: in front of methods/variables
     string name = eatIdentifier(args["allowScopePrefix"]);
 
     if (peekToken() == "(") { // It's a method def
       Method m = Method();
+      m->annotations = annotations;
       m->modifiers = modifiers;
       m->name = name;
       m->position = position;
@@ -876,6 +1107,7 @@ PikeObject|array(PikeObject) parseDecl(mapping|void args) {
       array vars = ({ });
       for (;;) {
         Variable v = Variable();
+	v->annotations = annotations;
         v->modifiers = modifiers;
         v->name = name;
 	v->position = position;

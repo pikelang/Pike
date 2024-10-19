@@ -57,10 +57,10 @@
 #define SOL_TCP	IPPROTO_TCP
 #endif
 
-/*! @module Stdio
+/*! @module _Stdio
  */
 
-/*! @class Port
+/*! @class _port
  */
 
 struct port
@@ -132,14 +132,49 @@ static void do_close(struct port *p)
  *! This function sets the id used for accept_callback by this port.
  *! The default id is @[this_object()].
  *!
+ *! @note
+ *!   In Pike 8.0 and earlier the default value was @expr{0@} (zero)
+ *!   (even though it was documented as above).
+ *!
  *! @seealso
- *!   @[query_id]
+ *!   @[query_id], @[set_accept_callback()]
  */
 static void port_set_id(INT32 args)
 {
   check_all_args(NULL, args, BIT_MIXED, 0);
+
+  /* NB: Inlined code for PIKE_T_NO_REF_MIXED from object_lower_set_index(). */
+  if (((TYPEOF(THIS->id) == T_OBJECT) || (TYPEOF(THIS->id) == T_FUNCTION)) &&
+      (THIS->id.u.object == Pike_fp->current_object)) {
+    /* Restore the reference so that assign_svalue() below can remove it. */
+    add_ref(Pike_fp->current_object);
+  }
+
   assign_svalue(& THIS->id, Pike_sp-args);
+
+  if (((TYPEOF(THIS->id) == T_OBJECT) || (TYPEOF(THIS->id) == T_FUNCTION)) &&
+      (THIS->id.u.object == Pike_fp->current_object)) {
+    /* Remove the reference that assign_svalue() added above. */
+    sub_ref(Pike_fp->current_object);
+  }
   pop_n_elems(args-1);
+}
+
+/*! @decl void set_accept_callback(function|void accept_callback)
+ *!
+ *! Change or remove the accept callback.
+ *!
+ *! @param accept_callback
+ *!   New accept callback.
+ *!
+ *! @seealso
+ *!   @[bind()], @[listen()], @[set_id()]
+ */
+static void port_set_accept_callback(INT32 args)
+{
+  push_undefined();	/* Return value and argument fallback if void. */
+  args++;
+  assign_accept_cb(THIS, Pike_sp-args);
 }
 
 /*! @decl mixed query_id()
@@ -332,12 +367,13 @@ static void port_bind(INT32 args)
   my_set_close_on_exec(fd,1);
 
   THREADS_ALLOW_UID();
-  if( !(tmp=fd_bind(fd, (struct sockaddr *)&addr, addr_len) < 0) )
+  if( !(tmp=fd_bind(fd, (struct sockaddr *)&addr, addr_len) < 0) ) {
 #ifdef TCP_FASTOPEN
-      tmp = 256,
-      setsockopt(fd,SOL_TCP, TCP_FASTOPEN, &tmp, sizeof(tmp)),
+    tmp = 256;
+    fd_setsockopt(fd, IPPROTO_TCP, TCP_FASTOPEN, (char *)&tmp, sizeof(tmp));
 #endif
-      (tmp =  fd_listen(fd, 16384) < 0);
+    tmp = (fd_listen(fd, 16384) < 0);
+  }
   THREADS_DISALLOW_UID();
 
   if(!Pike_fp->current_object->prog)
@@ -744,7 +780,8 @@ static void init_port_struct(struct object *o)
 {
   INIT_FD_CALLBACK_BOX(&THIS->box, NULL, o, -1, 0, got_port_event, 0);
   THIS->my_errno=0;
-  /* map_variable takes care of id and accept_callback. */
+  /* NB: NOT reference-counted! */
+  SET_SVAL(THIS->id, T_OBJECT, 0, object, Pike_fp->current_object);
 }
 
 static void exit_port_struct(struct object *UNUSED(o))
@@ -775,7 +812,7 @@ void init_stdio_port(void)
                     offset + OFFSETOF(port, accept_callback),
                     tMix, PIKE_T_MIXED, 0);
   PIKE_MAP_VARIABLE("_id",
-                    offset + OFFSETOF(port, id), tMix, PIKE_T_MIXED, 0);
+		    offset + OFFSETOF(port, id), tMix, PIKE_T_NO_REF_MIXED, 0);
   /* function(int|string,void|mixed,void|string:int) */
   ADD_FUNCTION("bind", port_bind,
 	       tFunc(tOr(tInt,tStr) tOr(tVoid,tMix) tOr(tVoid,tStr) tOr(tVoid,tInt),tInt), 0);
@@ -789,6 +826,9 @@ void init_stdio_port(void)
   ADD_FUNCTION("listen_fd",port_listen_fd,tFunc(tInt tOr(tVoid,tMix),tInt),0);
   /* function(mixed:mixed) */
   ADD_FUNCTION("set_id",port_set_id,tFunc(tMix,tMix),0);
+  /* function(mixed:void) */
+  ADD_FUNCTION("set_accept_callback", port_set_accept_callback,
+               tFunc(tMix, tVoid), 0);
   /* function(:mixed) */
   ADD_FUNCTION("query_id",port_query_id,tFunc(tNone,tMix),0);
   /* function(:string) */

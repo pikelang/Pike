@@ -40,7 +40,7 @@ array(string) setup_gtk(array(string)|string|void name, int|void norc)
   return res;
 }
 
-mixed `[](string what)
+protected mixed `[](string what)
 {
   if(what == "destroy")
     if(sizeof(backtrace())>2)
@@ -49,9 +49,9 @@ mixed `[](string what)
       return s_destroy;
     }
     else
-     return ([])[0];
+     return UNDEFINED;
 
-  if(what == "_module_value") return ([])[0];
+  if(what == "_module_value") return UNDEFINED;
 
   if(!zero_type(INDEX(what)))
     return INDEX(what);

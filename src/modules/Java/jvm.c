@@ -30,6 +30,12 @@
 #include "operators.h"
 #include "signal_handler.h"
 #include "pike_types.h"
+#include "pike_compiler.h"
+
+#ifdef __NT__
+/* Needed for yywarning(). */
+#include "pike_compiler.h"
+#endif
 
 #ifdef HAVE_JAVA
 
@@ -198,10 +204,13 @@ static JNIEnv *jvm_procure_env(struct object *jvm)
   if(j) {
 
 #ifdef _REENTRANT
-    void *env;
+    JNIEnv *env;
 
-    if(JNI_OK == (*j->jvm)->GetEnv(j->jvm, &env, JNI_VERSION_1_2)) {
-      return (JNIEnv *)env;
+    /* NB: Second argument is actually a void **, but some versions
+     *     of gcc (like eg 3.4.3) complain about type-punning then.
+     */
+    if(JNI_OK == (*j->jvm)->GetEnv(j->jvm, (void *)&env, JNI_VERSION_1_2)) {
+      return env;
     }
 
     if(j->tl_env != NULL && j->tl_env->prog != NULL) {
@@ -211,7 +220,7 @@ static JNIEnv *jvm_procure_env(struct object *jvm)
       else {
 	env = ((struct att_storage *)((Pike_sp[-1].u.object)->storage))->env;
 	pop_n_elems(1);
-	return (JNIEnv *)env;
+        return env;
       }
     }
 
@@ -228,7 +237,7 @@ static JNIEnv *jvm_procure_env(struct object *jvm)
       safe_apply(j->tl_env, "set", 1);
 
     pop_n_elems(1);
-    return (JNIEnv *)env;
+    return env;
 #else
     return j->env;
 #endif /* _REENTRANT */
@@ -554,7 +563,7 @@ static void f_method_create(INT32 args)
   JNIEnv *env;
   char *p;
 
-  get_all_args(NULL, args, "%S%S%o", &name, &sig, &class);
+  get_all_args(NULL, args, "%n%n%o", &name, &sig, &class);
 
   if((c = get_storage(class, jclass_program)) == NULL)
     SIMPLE_ARG_TYPE_ERROR("create", 3, "Java class");
@@ -1180,7 +1189,7 @@ static void f_field_create(INT32 args)
     name = NULL;
     sig = NULL;
   } else
-    get_all_args(NULL, args, "%S%S%o", &name, &sig, &class);
+    get_all_args(NULL, args, "%n%n%o", &name, &sig, &class);
 
   if((c = get_storage(class, jclass_program)) == NULL)
     SIMPLE_ARG_TYPE_ERROR("create", 3, "Java class");
@@ -1516,8 +1525,40 @@ static void native_dispatch(struct native_method_context *ctx,
 #define ffi_sarg SINT_ARG
 #endif
 
+/* Work-around for some versions of libffi using C11-syntax
+ * (albeit C89-syntax valid) when declaring the ffi_closure
+ * typedef. With an old compiler the struct lacks some fields.
+ * This causes sizeof(ffi_closure) to be too small, leading to
+ * buffer overruns, etc.
+ *
+ * NB: We only use this struct as an argument to sizeof().
+ */
+struct pike_ffi_closure {
+  union {
+    ffi_closure ffi_c;
+#ifdef FFI_TRAMPOLINE_SIZE
+    /* NB: The following is compatible with at least
+     *     libffi 2.00-beta, 3.0.4 and 3.4.4.
+     */
+    struct {
+      union {
+        char pad[FFI_TRAMPOLINE_SIZE];
+        void *ptr;
+      } u;
+      void *ptr0;
+      void (*funptr)(void *, void *, void *, void *);
+      void *ptr1;
+    } pike_c;
+#endif
+  } u;
+};
+
 struct cpu_context {
+#ifdef HAVE_FFI_PREP_CLOSURE_LOC
+  ffi_closure *closure;
+#else
   ffi_closure closure;
+#endif
   ffi_cif cif;
   ffi_type **atypes;
   int statc;
@@ -1613,6 +1654,7 @@ static void *make_stub(struct cpu_context *ctx, void *data, int statc,
   ffi_type *rtype, **atypes;
   ffi_abi abi;
   int na = 2;
+  void *r;
 
   ctx->statc = statc;
   ctx->atypes = atypes = xalloc(args*sizeof(ffi_type *));
@@ -1649,27 +1691,47 @@ static void *make_stub(struct cpu_context *ctx, void *data, int statc,
     Pike_error("ffi error %d\n", s);
 
 #ifdef HAVE_FFI_PREP_CLOSURE_LOC
-  /* FIXME: Use ffi_closure_alloc() et al. */
-  s = ffi_prep_closure_loc (&ctx->closure, &ctx->cif,
-			    ffi_dispatch, data, &ctx->closure);
+  /* NB: On some platforms with older compilers sizeof(ffi_closure)
+   *     is too small to contain the trampoline code, leading to
+   *     buffer overruns and obscure failures.
+   *
+   *     We instead use sizeof(struct pike_ffi_closure) here
+   *     to make sure that we have enough space.
+   *
+   *     See also the declaration of struct pike_ffi_closure above.
+   */
+  if (!(ctx->closure = ffi_closure_alloc(sizeof(struct pike_ffi_closure), &r)))
+    Pike_error("ffi failed to allocate closure\n");
+  s = ffi_prep_closure_loc (ctx->closure, &ctx->cif,
+			    ffi_dispatch, data, r);
 #else
+  r = &ctx->closure;
   s = ffi_prep_closure (&ctx->closure, &ctx->cif,
 			ffi_dispatch, data);
 #endif
   if(s != FFI_OK)
     Pike_error("ffi error %d\n", s);
 
-  return &ctx->closure;
+  return r;
 }
 
 #define ARGS_TYPE void**
 #define GET_NATIVE_ARG(ty) (*(ty*)*(args)++)
 #define USE_SMALL_ARGS
 
+#ifdef HAVE_FFI_PREP_CLOSURE_LOC
+#define EXTRA_FREE_NATIVE_CON(c) do {		\
+    if((c).cpu.closure)				\
+      ffi_closure_free((c).cpu.closure);        \
+    if((c).cpu.atypes)				\
+      free((c).cpu.atypes);			\
+  } while(0)
+#else
 #define EXTRA_FREE_NATIVE_CON(c) do {		\
     if((c).cpu.atypes)				\
       free((c).cpu.atypes);			\
   } while(0)
+#endif
 
 #else
 
@@ -2263,8 +2325,6 @@ struct natives_storage {
 static void make_java_exception(struct object *jvm, JNIEnv *env,
 				struct svalue *v)
 {
-  union anything *a;
-  struct generic_error_struct *gen_err;
   struct jvm_storage *j = get_storage(jvm, jvm_program);
 
   if(!j)
@@ -2323,7 +2383,6 @@ static void do_native_dispatch(void *arg)
   struct dispatch *d = (struct dispatch *)arg;
   struct native_method_context *ctx = d->ctx;
   JNIEnv *env = d->env;
-  ARGS_TYPE args = d->args;
   jvalue *rc = d->rc;
 
   if (SETJMP(recovery)) {
@@ -2336,6 +2395,7 @@ static void do_native_dispatch(void *arg)
   }
 
   {
+    ARGS_TYPE args = d->args;
     int nargs = 0;
 
     if(!d->cls) {
@@ -2473,6 +2533,7 @@ static void build_native_entry(JNIEnv *env, jclass cls,
       break;
     case 'D':
       dbl_args |= 1<<FLT_ARG_OFFS;
+      /* FALLTHRU */
     case 'J':
       args ++;
       wargs ++;
@@ -2487,8 +2548,10 @@ static void build_native_entry(JNIEnv *env, jclass cls,
       if(!*p)
 	break;
       if(*p++ != 'L') { args++; break; }
+      /* FALLTHRU */
     case 'L':
       while(*p && *p++!=';');
+      /* FALLTHRU */
     default:
       args++;
     }
@@ -2537,7 +2600,11 @@ static void exit_natives_struct(struct object *PIKE_UNUSED(o))
       EXTRA_FREE_NATIVE_CON(n->cons[i]);
 #endif
     }
+#if defined(HAVE_FFI) && defined(HAVE_FFI_PREP_CLOSURE_LOC)
+    free(n->cons);
+#else
     mexec_free(n->cons);
+#endif
   }
 }
 
@@ -2600,11 +2667,20 @@ static void f_natives_create(INT32 args)
     n->jnms = xalloc(arr->size * sizeof(JNINativeMethod));
 
     if (n->cons) {
+#if defined(HAVE_FFI) && defined(HAVE_FFI_PREP_CLOSURE_LOC)
+      free(n->cons);
+#else
       mexec_free(n->cons);
+#endif
     }
 
     if (!(n->cons = (struct native_method_context *)
-          mexec_alloc(arr->size * sizeof(struct native_method_context)))) {
+#if defined(HAVE_FFI) && defined(HAVE_FFI_PREP_CLOSURE_LOC)
+          calloc(arr->size, sizeof(struct native_method_context))
+#else
+          mexec_alloc(arr->size * sizeof(struct native_method_context))
+#endif
+          )) {
       SIMPLE_OUT_OF_MEMORY_ERROR("create",0);
     }
 
@@ -2653,6 +2729,20 @@ static void f_super_class(INT32 args)
     push_int(0);
 }
 
+static void f_is_array(INT32 PIKE_UNUSED(args))
+{
+  struct jobj_storage *jo = THIS_JOBJ;
+  JNIEnv *env;
+
+  if((env = jvm_procure_env(jo->jvm))) {
+    /* jclass jc = (*env)->GetObjectClass(env, jo); */
+    struct jvm_storage *j = get_storage(jo->jvm, jvm_program);
+    push_int((*env)->CallBooleanMethod(env, jo->jobj /*jc*/, j->method_isarray));
+  } else {
+    push_undefined();
+  }
+}
+
 static void f_is_assignable_from(INT32 args)
 {
   struct jobj_storage *jc, *jo = THIS_JOBJ;
@@ -2681,7 +2771,7 @@ static void f_throw_new(INT32 args)
   JNIEnv *env;
   char *cn;
 
-  get_all_args(NULL, args, "%s", &cn);
+  get_all_args(NULL, args, "%c", &cn);
 
   if((env = jvm_procure_env(jo->jvm))) {
 
@@ -3427,8 +3517,33 @@ static void f_create(INT32 args)
     jint errcode;
     void *vp; /* To avoid aliasing. */
     if((errcode = JNI_CreateJavaVM(&j->jvm, &vp, &j->vm_args))) {
-      Pike_error("Failed to create virtual machine: %s (%d)\n",
-		 pike_jni_error(errcode), errcode);
+
+#if SIZEOF_CHAR_P < 8
+      /* 32-bit jvms typically want to allocate the heap
+       * in one block.
+       */
+      if (errcode == JNI_ENOMEM) {
+        /* Out of memory.
+         *
+         * Retry with a reduced java heap size.
+         */
+        j->vm_args.options[j->vm_args.nOptions].optionString = "-Xmx128M";
+        j->vm_args.options[j->vm_args.nOptions].extraInfo = NULL;
+        j->vm_args.nOptions++;
+
+        errcode = JNI_CreateJavaVM(&j->jvm, &vp, &j->vm_args);
+      }
+#endif
+
+      if(errcode) {
+        /* NB: Throw a compilation error object to have the backtrace
+         *     suppressed in case we were initialized via the Pike
+         *     compiler (likely).
+         */
+        throw_error_object(fast_clone_object(compilation_error_program), 0, 0,
+                           "Failed to create virtual machine: %s (%d)\n",
+                           pike_jni_error(errcode), errcode);
+      }
     }
     j->env = vp;
   }
@@ -3595,7 +3710,7 @@ static void f_find_class(INT32 args)
   char *cn;
   jclass c;
 
-  get_all_args(NULL, args, "%s", &cn);
+  get_all_args(NULL, args, "%c", &cn);
   if((env = jvm_procure_env(Pike_fp->current_object))) {
     c = (*env)->FindClass(env, cn);
     pop_n_elems(args);
@@ -3616,7 +3731,7 @@ static void f_define_class(INT32 args)
   char *name;
   jclass c;
 
-  get_all_args(NULL, args, "%s%o%S", &name, &obj, &str);
+  get_all_args(NULL, args, "%c%o%n", &name, &obj, &str);
   if((ldr = THAT_JOBJ(obj))==NULL)
     Pike_error("Bad argument 2 to define_class().\n");
   if((env = jvm_procure_env(Pike_fp->current_object))) {
@@ -3682,7 +3797,7 @@ static void f_javafatal(INT32 args)
   JNIEnv *env;
   char *msg;
 
-  get_all_args(NULL, args, "%s", &msg);
+  get_all_args(NULL, args, "%c", &msg);
   if((env = jvm_procure_env(Pike_fp->current_object))) {
     (*env)->FatalError(env, msg);
     jvm_vacate_env(Pike_fp->current_object, env);
@@ -3867,9 +3982,9 @@ PIKE_MODULE_INIT
 
   start_new_program();
   ADD_STORAGE(struct jobj_storage);
-  ADD_FUNCTION("cast", f_jobj_cast, tFunc(tStr,tMix), 0);
-  ADD_FUNCTION("`==", f_jobj_eq, tFunc(tMix,tInt01), 0);
-  ADD_FUNCTION("__hash", f_jobj_hash, tFunc(tNone,tInt), 0);
+  ADD_FUNCTION("cast", f_jobj_cast, tFunc(tStr,tMix), ID_PROTECTED);
+  ADD_FUNCTION("`==", f_jobj_eq, tFunc(tMix,tInt01), ID_PROTECTED);
+  ADD_FUNCTION("__hash", f_jobj_hash, tFunc(tNone,tInt), ID_PROTECTED);
   ADD_FUNCTION("is_instance_of", f_jobj_instance, tFunc(tObj,tInt01), 0);
   ADD_FUNCTION("monitor_enter", f_monitor_enter, tFunc(tNone,tObj), 0);
   ADD_FUNCTION("get_object_class", f_jobj_get_class, tFunc(tNone,tObj), 0);
@@ -3882,8 +3997,9 @@ PIKE_MODULE_INIT
 
   start_new_program();
   prog.u.program = jobj_program;
-  do_inherit(&prog, 0, NULL);
+  do_inherit(&prog, 0, NULL, NULL);
   ADD_FUNCTION("super_class", f_super_class, tFunc(tNone,tObj), 0);
+  ADD_FUNCTION("is_array", f_is_array, tFunc(tNone, tInt01), 0);
   ADD_FUNCTION("is_assignable_from", f_is_assignable_from,
 	       tFunc(tObj,tInt), 0);
   ADD_FUNCTION("throw_new", f_throw_new, tFunc(tStr,tVoid), 0);
@@ -3903,27 +4019,27 @@ PIKE_MODULE_INIT
   jclass_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;
 
   start_new_program();
-  do_inherit(&prog, 0, NULL);
+  do_inherit(&prog, 0, NULL, NULL);
   ADD_FUNCTION("throw", f_javathrow, tFunc(tNone,tVoid), 0);
   jthrowable_program = end_program();
   jthrowable_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;
 
   start_new_program();
-  do_inherit(&prog, 0, NULL);
+  do_inherit(&prog, 0, NULL, NULL);
   jarray_stor_offs = ADD_STORAGE(struct jarray_storage);
-  ADD_FUNCTION("_sizeof", f_javaarray_sizeof, tFunc(tNone,tInt), 0);
+  ADD_FUNCTION("_sizeof", f_javaarray_sizeof, tFunc(tNone,tInt), ID_PROTECTED);
   ADD_FUNCTION("`[]", f_javaarray_getelt,
-	       tFunc(tInt tOr(tInt,tVoid), tMix), 0);
-  ADD_FUNCTION("`[]=", f_javaarray_setelt, tFunc(tInt tMix,tMix), 0);
-  ADD_FUNCTION("_indices", f_javaarray_indices, tFunc(tNone,tArr(tInt)), 0);
-  ADD_FUNCTION("_values", f_javaarray_values, tFunc(tNone,tArray), 0);
+	       tFunc(tInt tOr(tInt,tVoid), tMix), ID_PROTECTED);
+  ADD_FUNCTION("`[]=", f_javaarray_setelt, tFunc(tInt tMix,tMix), ID_PROTECTED);
+  ADD_FUNCTION("_indices", f_javaarray_indices, tFunc(tNone,tArr(tInt)), ID_PROTECTED);
+  ADD_FUNCTION("_values", f_javaarray_values, tFunc(tNone,tArray), ID_PROTECTED);
   jarray_program = end_program();
   jarray_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;
 
   start_new_program();
   ADD_STORAGE(struct method_storage);
-  ADD_FUNCTION("create", f_method_create, tFunc(tStr tStr tObj,tVoid), 0);
-  ADD_FUNCTION("`()", f_call_static, tFuncV(tNone,tMix,tMix), 0);
+  ADD_FUNCTION("create", f_method_create, tFunc(tStr tStr tObj,tVoid), ID_PROTECTED);
+  ADD_FUNCTION("`()", f_call_static, tFuncV(tNone,tMix,tMix), ID_PROTECTED);
   set_init_callback(init_method_struct);
   set_exit_callback(exit_method_struct);
   set_gc_check_callback(method_gc_check);
@@ -3933,8 +4049,8 @@ PIKE_MODULE_INIT
 
   start_new_program();
   ADD_STORAGE(struct method_storage);
-  ADD_FUNCTION("create", f_method_create, tFunc(tStr tStr tObj,tVoid), 0);
-  ADD_FUNCTION("`()", f_call_virtual, tFuncV(tObj,tMix,tMix), 0);
+  ADD_FUNCTION("create", f_method_create, tFunc(tStr tStr tObj,tVoid), ID_PROTECTED);
+  ADD_FUNCTION("`()", f_call_virtual, tFuncV(tObj,tMix,tMix), ID_PROTECTED);
   ADD_FUNCTION("call_nonvirtual", f_call_nonvirtual, tFuncV(tObj,tMix,tMix),0);
   set_init_callback(init_method_struct);
   set_exit_callback(exit_method_struct);
@@ -3945,7 +4061,7 @@ PIKE_MODULE_INIT
 
   start_new_program();
   ADD_STORAGE(struct field_storage);
-  ADD_FUNCTION("create", f_field_create, tFunc(tStr tStr tObj,tVoid), 0);
+  ADD_FUNCTION("create", f_field_create, tFunc(tStr tStr tObj,tVoid), ID_PROTECTED);
   ADD_FUNCTION("set", f_field_set, tFunc(tObj tMix,tMix), 0);
   ADD_FUNCTION("get", f_field_get, tFunc(tObj,tMix), 0);
   set_init_callback(init_field_struct);
@@ -3957,7 +4073,7 @@ PIKE_MODULE_INIT
 
   start_new_program();
   ADD_STORAGE(struct field_storage);
-  ADD_FUNCTION("create", f_field_create, tFunc(tStr tStr tObj,tVoid), 0);
+  ADD_FUNCTION("create", f_field_create, tFunc(tStr tStr tObj,tVoid), ID_PROTECTED);
   ADD_FUNCTION("set", f_static_field_set, tFunc(tMix,tMix), 0);
   ADD_FUNCTION("get", f_static_field_get, tFunc(tNone,tMix), 0);
   set_init_callback(init_field_struct);
@@ -3969,7 +4085,7 @@ PIKE_MODULE_INIT
 
   start_new_program();
   ADD_STORAGE(struct monitor_storage);
-  ADD_FUNCTION("create", f_monitor_create, tFunc(tObj,tVoid), 0);
+  ADD_FUNCTION("create", f_monitor_create, tFunc(tObj,tVoid), ID_PROTECTED);
   set_init_callback(init_monitor_struct);
   set_exit_callback(exit_monitor_struct);
   set_gc_check_callback(monitor_gc_check);
@@ -3981,7 +4097,7 @@ PIKE_MODULE_INIT
   start_new_program();
   ADD_STORAGE(struct natives_storage);
   ADD_FUNCTION("create", f_natives_create,
-	       tFunc(tArr(tArr(tOr(tStr,tFunction))) tObj,tVoid), 0);
+	       tFunc(tArr(tArr(tOr(tStr,tFunction))) tObj,tVoid), ID_PROTECTED);
   set_init_callback(init_natives_struct);
   set_exit_callback(exit_natives_struct);
   set_gc_check_callback(natives_gc_check);
@@ -3994,7 +4110,7 @@ PIKE_MODULE_INIT
 #ifdef _REENTRANT
   start_new_program();
   ADD_STORAGE(struct att_storage);
-  ADD_FUNCTION("create", f_att_create, tFunc(tObj,tVoid), 0);
+  ADD_FUNCTION("create", f_att_create, tFunc(tObj,tVoid), ID_PROTECTED);
   set_init_callback(init_att_struct);
   set_exit_callback(exit_att_struct);
   set_gc_check_callback(att_gc_check);
@@ -4005,7 +4121,7 @@ PIKE_MODULE_INIT
 
   start_new_program();
   ADD_STORAGE(struct jvm_storage);
-  ADD_FUNCTION("create", f_create, tFunc(tOr(tStr,tVoid),tVoid), 0);
+  ADD_FUNCTION("create", f_create, tFunc(tOr(tStr,tVoid),tVoid), ID_PROTECTED);
   ADD_FUNCTION("get_version", f_get_version, tFunc(tNone,tInt), 0);
   ADD_FUNCTION("find_class", f_find_class, tFunc(tStr,tObj), 0);
   ADD_FUNCTION("define_class", f_define_class, tFunc(tStr tObj tStr,tObj), 0);
@@ -4032,6 +4148,20 @@ PIKE_MODULE_INIT
 #endif /* _REENTRANT */
   add_program_constant("jvm", jvm_program = end_program(), 0);
   jvm_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;
+  {
+    JMP_BUF rec;
+    if (SETJMP(rec)) {
+      handle_compile_exception(NULL);
+    } else {
+      struct object *machine;
+      push_text("CLASSPATH");
+      SAFE_APPLY_MASTER("getenv", 1);
+      machine = clone_object(jvm_program, 1);
+      add_object_constant("__machine", machine, ID_PROTECTED);
+      free_object(machine);
+    }
+    UNSETJMP(rec);
+  }
 #endif /* HAVE_JAVA */
 }
 

@@ -160,25 +160,35 @@ test_eval_error( Crypto.CBC( class{} ) )
 test_eval_error( object o=class{}(); Crypto.CBC(o); )
 test_eval_error([[
   class A {
+    inherit Crypto.CipherState;
+
     int block_size() { return 0; }
     int key_size() { return 0; }
     void set_encrypt_key(string key) { }
     void set_decrypt_key(string key) { }
     string crypt(string data) {}
   };
+  // Fail due to zero block_size.
+  // "Bad block size 0."
   Crypto.CBC(A);
 ]])
 test_eval_error([[
   class A {
+    inherit Crypto.CipherState;
+
     int key_size() { return 0; }
     void set_encrypt_key(string key) { }
     void set_decrypt_key(string key) { }
     string crypt(string data) {}
   };
+  // Fail due to no block_size().
+  // "Object is missing identifier \"block_size\""
   Crypto.CBC(A);
 ]])
 test_do([[
   class A {
+    inherit Crypto.CipherState;
+
     int block_size() { return 512; }
     int key_size() { return 0; }
     void set_encrypt_key(string key) { }
@@ -232,25 +242,35 @@ test_eval_error( Crypto.Buffer( class{} ) )
 test_eval_error( object o=class{}(); Crypto.Buffer(o); )
 test_eval_error([[
   class A {
+    inherit Crypto.CipherState;
+
     int block_size() { return 0; }
     int key_size() { return 0; }
     void set_encrypt_key(string key) { }
     void set_decrypt_key(string key) { }
     string crypt(string data) {}
   };
+  // Fail due to zero block_size.
+  // "Bad block size 0."
   Crypto.Buffer(A);
 ]])
 test_eval_error([[
   class A {
+    inherit Crypto.CipherState;
+
     int key_size() { return 0; }
     void set_encrypt_key(string key) { }
     void set_decrypt_key(string key) { }
     string crypt(string data) {}
   };
+  // Fail due to no block_size().
+  // "Object is missing identifier \"block_size\""
   Crypto.Buffer(A);
 ]])
 test_do([[
   class A {
+    inherit Crypto.CipherState;
+
     int block_size() { return 512; }
     int key_size() { return 0; }
     void set_encrypt_key(string key) { }

@@ -58,9 +58,9 @@ string decode_http( string data, mapping headers,
 
   // 2: Find <meta> header in the first Kb of data.
   int done;
-  void do_meta(Parser.HTML p, mapping m)
+  zero do_meta(Parser.HTML p, mapping m)
   {
-    if( done ) return;
+    if( done ) return 0;
     if( (lower_case(m->name||"")=="content-type")         ||
 	(lower_case(m["http-equiv"]||"")=="content-type") ||
 	(lower_case(m["httpequiv"]||"")=="content-type")  ||

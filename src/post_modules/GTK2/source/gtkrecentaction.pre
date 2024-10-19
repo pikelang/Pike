@@ -21,7 +21,7 @@ void create(string|mapping(string:mixed) name_or_props, ?string label,
     GtkRecentAction *gra;
     GtkRecentManager *grm=NULL;
 
-    get_all_args(NULL,args,"%s.%t%t%s%o",
+    get_all_args(NULL,args,"%c.%t%t%c%o",
 		&name,&label,&tooltip,&stock_id,&o);
     if (label) {
       ref_push_string(label);

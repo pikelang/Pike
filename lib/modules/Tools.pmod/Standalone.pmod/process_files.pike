@@ -165,7 +165,7 @@ int(0..) main( int argc, array(string) argv ) {
     }
   argv = Getopt.get_args(argv);
 
-  int min_args = 2 + want_args;
+  int min_args = 2 + want_args - recursive;
   if( (argc = sizeof(argv)) < min_args ) {
     werror( usage );
     return 1;
@@ -173,8 +173,8 @@ int(0..) main( int argc, array(string) argv ) {
 
   array(string) args = ({});
   if( want_args )
-     args = argv[1..want_args];
-  if( argc == min_args && argv[-1] == "-" ) {
+     args = argv[<want_args-1..];
+  if( !recursive && argc == min_args && argv[-1] == "-" ) {
     string input = Stdio.stdin.read();
     if( input ) {
       if( verbosity > 1 )
@@ -188,7 +188,15 @@ int(0..) main( int argc, array(string) argv ) {
   int failures;
   if( verbosity > 1 )
     werror( "Replaced strings in these files:\n" );
-  foreach( argv[min_args-1..], string path )
+
+  array paths;
+  if( recursive && sizeof(argv)==want_args+1 ) {
+    paths = ({"."});
+  } else {
+    paths = argv[1..<want_args];
+  }
+
+  foreach( paths, string path )
     failures += process_path( path, @args );
   return failures;
 }

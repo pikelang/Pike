@@ -144,7 +144,7 @@ class simple
   //! @seealso
   //!   @[handle_command()], @[line_separator]
   //!
-  protected string read_line()
+  protected string|zero read_line()
   {
     // FIXME: Should probably keep track of where the search ended last time.
     int i = search(read_buffer, line_separator);
@@ -287,7 +287,7 @@ class simple
   //! @seealso
   //! @[touch_time()], @[do_timeout()]
   //!
-  void create(Stdio.File con, int|void timeout)
+  protected void create(Stdio.File con, int|void timeout)
   {
     this::con = con;
     this::timeout = timeout;
@@ -329,7 +329,7 @@ class smtp_style
   //!
   void send(int(100 .. 999) code, array(string)|string|void lines)
   {
-    lines = lines || errorcodes[code] || "Error";
+    lines = lines || ([mapping(int:string)](mixed)errorcodes)[code] || "Error";
 
     if (stringp(lines)) {
       lines /= "\n";

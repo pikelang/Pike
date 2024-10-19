@@ -17,15 +17,15 @@ protected void create(string(8bit) entropy, void|string(8bit) personalization)
 {
   if( personalization )
   {
-    if(sizeof(personalization)>SEEDLEN)
+    if(sizeof([string]personalization)>SEEDLEN)
       error("Personalization longer than seed length (%d)\n", SEEDLEN);
-    personalization = sprintf("%-*'\0's", SEEDLEN, personalization);
-    entropy ^= personalization;
+    personalization = sprintf("%-*'\0's", SEEDLEN, [string]personalization);
+    entropy ^= [string]personalization;
   }
   reseed(entropy);
 }
 
-protected .Interface rnd;
+protected object(.Interface)|zero rnd;
 
 //! This method is called when a reseed is forced. By default new
 //! entropy is gethered from Random.System. Overload to change the

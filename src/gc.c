@@ -102,6 +102,10 @@ struct svalue gc_done_cb;
  * And the following simulated passes:
  *
  * GC_PASS_LOCATE
+ *   Search for check_for. Note that markers are (intentionally)
+ *   NOT used in this pass, and the reported number of references
+ *   may be thus larger than the actual number of references due
+ *   to double traversal of C-structures caused by this.
  *
  * GC_PASS_DISABLED
  */
@@ -643,25 +647,25 @@ int gc_in_cycle_check = 0;
 
 static int gc_is_watching = 0;
 
-int attempt_to_identify(void *something, void **inblock)
+int attempt_to_identify(const void *something, const void **inblock)
 {
   size_t i;
-  struct array *a;
-  struct object *o;
-  struct program *p;
-  struct mapping *m;
-  struct multiset *mu;
-  struct pike_type *t;
-  struct callable *c;
+  const struct array *a;
+  const struct object *o;
+  const struct program *p;
+  const struct mapping *m;
+  const struct multiset *mu;
+  const struct pike_type *t;
+  const struct callable *c;
 
   if (inblock) *inblock = 0;
 
   for (a = first_array; a; a = a->next) {
-    if(a==(struct array *)something) return T_ARRAY;
+    if(a==(const struct array *)something) return T_ARRAY;
   }
 
   for(o=first_object;o;o=o->next) {
-    if(o==(struct object *)something)
+    if(o==(const struct object *)something)
       return T_OBJECT;
     if (o->storage && o->prog &&
 	(char *) something >= o->storage &&
@@ -672,32 +676,32 @@ int attempt_to_identify(void *something, void **inblock)
   }
 
   for(p=first_program;p;p=p->next)
-    if(p==(struct program *)something)
+    if(p==(const struct program *)something)
       return T_PROGRAM;
 
   for(m=first_mapping;m;m=m->next)
-    if(m==(struct mapping *)something)
+    if(m==(const struct mapping *)something)
       return T_MAPPING;
-    else if (m->data == (struct mapping_data *) something)
+    else if (m->data == (const struct mapping_data *) something)
       return T_MAPPING_DATA;
 
   for(mu=first_multiset;mu;mu=mu->next)
-    if(mu==(struct multiset *)something)
+    if(mu==(const struct multiset *)something)
       return T_MULTISET;
-    else if (mu->msd == (struct multiset_data *) something)
+    else if (mu->msd == (const struct multiset_data *) something)
       return T_MULTISET_DATA;
 
-  if(safe_debug_findstring((struct pike_string *)something))
+  if(safe_debug_findstring((const struct pike_string *)something))
     return T_STRING;
 
   if (pike_type_hash)
     for (i = 0; i <= pike_type_hash_size; i++)
       for (t = pike_type_hash[i]; t; t = t->next)
-	if (t == (struct pike_type *) something)
+        if (t == (const struct pike_type *) something)
 	  return T_TYPE;
 
   for (c = first_callable; c; c = c->next)
-    if (c == (struct callable *) something)
+    if (c == (const struct callable *) something)
       return T_STRUCT_CALLABLE;
 
   return PIKE_T_UNKNOWN;
@@ -724,7 +728,9 @@ void describe_location(void *real_memblock,
 		       int flags)
 {
   struct program *p;
-  void *memblock=0, *descblock, *inblock = NULL;
+  void *memblock=0, *descblock;
+  const void *inblock = NULL;
+
   if(!location) return;
 /*  fprintf(stderr,"**Location of (short) svalue: %p\n",location); */
 
@@ -1027,7 +1033,7 @@ static void debug_gc_fatal_va (void *DEBUGUSED(a), int DEBUGUSED(type), int DEBU
 
 #ifdef PIKE_DEBUG
   if (a) {
-    void *inblock = NULL;
+    const void *inblock = NULL;
     /* Temporarily jumping out of gc to avoid being caught in debug
      * checks in describe(). */
     Pike_in_gc = 0;
@@ -1123,12 +1129,12 @@ static void gdb_gc_stop_here(void *UNUSED(a), int weak)
   fprintf(stderr,"----------end------------\n");
 }
 
-void low_describe_something(void *a,
+void low_describe_something(const void *a,
 			    int t,
 			    int indent,
 			    int depth,
 			    int flags,
-			    void *inblock)
+                            const void *inblock)
 {
   struct program *p=(struct program *)a;
   struct marker *m;
@@ -1230,14 +1236,33 @@ again:
 	  else
 	    fprintf(stderr, "%*s**Function %s at unknown location.\n",
 		    indent, "", id->name->str);
-
-	  if (depth && o->prog) {
-	    fprintf (stderr, "%*s**Describing function's object:\n",
-		     indent, "");
-	    describe_something (o, T_OBJECT, indent + 2, depth - 1,
-				(flags & DESCRIBE_SHORT) & ~DESCRIBE_MEM,
-				0);
+	} else {
+	  fprintf(stderr, "%*s**Function #%d\n", indent, "", t->func);
+	}
+	fprintf(stderr, "%*s**Context frame: %p (%d refs)\n",
+		indent, "", t->frame, t->frame->refs);
+	if (p) {
+	  id = ID_FROM_INT(p, t->frame->fun);
+	  if (IDENTIFIER_IS_PIKE_FUNCTION(id->identifier_flags) &&
+	      id->func.offset >= 0 &&
+	      (file = get_line(p->program + id->func.offset, p, &line))) {
+	    fprintf(stderr, "%*s**Lexical parent function %s at %s:%ld\n",
+		    indent, "", id->name->str, file->str, (long) line);
+	    free_string(file);
 	  }
+	  else
+	    fprintf(stderr, "%*s**Lexical parent function %s at unknown location.\n",
+		    indent, "", id->name->str);
+	} else {
+	  fprintf(stderr, "%*s**Lexical parent function #%d\n",
+		  indent, "", t->frame->fun);
+	}
+	if (depth && o->prog) {
+	  fprintf (stderr, "%*s**Describing function's object:\n",
+		   indent, "");
+	  describe_something (o, T_OBJECT, indent + 2, depth - 1,
+			      (flags & DESCRIBE_SHORT) & ~DESCRIBE_MEM,
+			      0);
 	}
       }
 
@@ -1615,8 +1640,8 @@ again:
   }
 }
 
-void describe_something(void *a, int t, int indent, int depth, int flags,
-			void *inblock)
+void describe_something(const void *a, int t, int indent, int depth, int flags,
+                        const void *inblock)
 {
   int tmp;
   struct program *p=(struct program *)a;
@@ -1670,9 +1695,9 @@ void describe_something(void *a, int t, int indent, int depth, int flags,
   d_flag=tmp;
 }
 
-PMOD_EXPORT void describe(void *x)
+PMOD_EXPORT void describe(const void *x)
 {
-  void *inblock;
+  const void *inblock;
   int type = attempt_to_identify(x, &inblock);
   describe_something(x, type, 0, 0, 0, inblock);
 }
@@ -2054,6 +2079,9 @@ PMOD_EXPORT void locate_references(void *a)
 {
   int tmp, orig_in_gc = Pike_in_gc;
   const char *orig_gc_found_place = gc_found_place;
+
+  ADD_GC_CALL_FRAME();
+
   Pike_in_gc = GC_PASS_LOCATE;
   gc_found_place = NULL;
 
@@ -2078,6 +2106,8 @@ PMOD_EXPORT void locate_references(void *a)
     gc_check_all_types();
   } GC_LEAVE;
 
+  GC_ASSERT_ZAPPED_CALL_FRAME();
+
 #ifdef DEBUG_MALLOC
   {
     extern void dmalloc_find_references_to(void *);
@@ -2093,6 +2123,9 @@ PMOD_EXPORT void locate_references(void *a)
 
   Pike_in_gc = orig_in_gc;
   gc_found_place = orig_gc_found_place;
+
+  GC_POP_CALL_FRAME();
+
   d_flag=tmp;
 }
 
@@ -2977,7 +3010,7 @@ int gc_cycle_push(void *data, struct marker *m, int weak)
 	  struct gc_rec_frame *rot_beg;
 	  rot_beg = rotate_rec_stack (cycle_frame, break_pos);
 	  rot_beg->rf_flags &= ~(GC_PREV_WEAK|GC_PREV_BROKEN);
-	  if (weak >= 0) rot_beg->rf_flags |= GC_PREV_STRONG;
+	  if (weak < 0) rot_beg->rf_flags |= GC_PREV_STRONG;
 
 	  if (rot_beg->cycle_id != break_pos->prev->cycle_id)
 	    /* Ensure that the cycle id frame is kept deepest in the
@@ -3401,7 +3434,7 @@ static void warn_bad_cycles(void)
 #endif
 }
 
-size_t do_gc(void *UNUSED(ignored), int explicit_call)
+size_t do_gc(int explicit_call)
 {
   ALLOC_COUNT_TYPE start_allocs;
   size_t start_num_objs, unreferenced;
@@ -3441,7 +3474,8 @@ size_t do_gc(void *UNUSED(ignored), int explicit_call)
   if(debug_options & GC_RESET_DMALLOC)
     reset_debug_malloc();
 #endif
-  gc_generation++;
+  /* For paranoia reasons; avoid gc_generation #0. */
+  if (gc_generation++ == 0xffff) gc_generation = 1;
   Pike_in_gc=GC_PASS_PREPARE;
 
   if (!SAFE_IS_ZERO(&gc_pre_cb)) {
@@ -3484,6 +3518,8 @@ size_t do_gc(void *UNUSED(ignored), int explicit_call)
     Pike_fatal("Panic, less than zero objects!\n");
 #endif
 
+  ADD_GC_CALL_FRAME();		/* Placeholder frame for gc_check_object(). */
+
   last_gc=time(0);
   start_num_objs = num_objects;
   start_allocs = num_allocs;
@@ -3513,6 +3549,8 @@ size_t do_gc(void *UNUSED(ignored), int explicit_call)
     GC_VERBOSE_DO(fprintf(stderr, "| pretouch: %u things\n", n));
   }
 
+  GC_ASSERT_ZAPPED_CALL_FRAME();
+
   /* First we count internal references */
   Pike_in_gc=GC_PASS_CHECK;
   gc_ext_weak_refs = 0;
@@ -3536,6 +3574,8 @@ size_t do_gc(void *UNUSED(ignored), int explicit_call)
   GC_VERBOSE_DO(fprintf(stderr, "| check: %u references in %d things, "
 			"counted %"PRINTSIZET"u weak refs\n",
 			checked, num_objects, gc_ext_weak_refs));
+
+  GC_ASSERT_ZAPPED_CALL_FRAME();
 
   /* Object alloc/free are still disallowed, but refs might be lowered
    * by gc_free_(short_)svalue. */
@@ -3584,6 +3624,8 @@ size_t do_gc(void *UNUSED(ignored), int explicit_call)
 			  marked, weak_freed, delayed_freed, gc_ext_weak_refs));
   }
 
+  GC_ASSERT_ZAPPED_CALL_FRAME();
+
   {
 #ifdef PIKE_DEBUG
     size_t orig_ext_weak_refs = gc_ext_weak_refs;
@@ -3628,6 +3670,8 @@ size_t do_gc(void *UNUSED(ignored), int explicit_call)
 #endif
   }
 
+  GC_ASSERT_ZAPPED_CALL_FRAME();
+
   if (gc_ext_weak_refs) {
     size_t to_free = gc_ext_weak_refs;
 #ifdef PIKE_DEBUG
@@ -3652,6 +3696,8 @@ size_t do_gc(void *UNUSED(ignored), int explicit_call)
 	      to_free - gc_ext_weak_refs, gc_ext_weak_refs,
 	      delayed_freed - obj_count));
   }
+
+  GC_ASSERT_ZAPPED_CALL_FRAME();
 
   if (gc_debug) {
     unsigned n;
@@ -3692,6 +3738,8 @@ size_t do_gc(void *UNUSED(ignored), int explicit_call)
     GC_VERBOSE_DO(fprintf(stderr, "| posttouch\n"));
   }
 
+  GC_ASSERT_ZAPPED_CALL_FRAME();
+
   /* Object alloc/free and reference changes are allowed again now. */
 
   Pike_in_gc=GC_PASS_FREE;
@@ -3699,6 +3747,8 @@ size_t do_gc(void *UNUSED(ignored), int explicit_call)
   weak_freed = 0;
   obj_count = num_objects;
 #endif
+
+  GC_POP_CALL_FRAME();	/* We can now free the frame. */
 
   /* Now we free the unused stuff. The extra refs to gc_internal_*
    * added above are removed just before the calls so we'll get the
@@ -3836,8 +3886,8 @@ size_t do_gc(void *UNUSED(ignored), int explicit_call)
       }
 
       destruct_object (o, reason);
-      free_object(o);
       gc_free_extra_ref(o);
+      free_object(o);
 #if defined (PIKE_DEBUG) || defined (DO_PIKE_CLEANUP)
       destruct_count++;
 #endif
@@ -4102,6 +4152,12 @@ size_t do_gc(void *UNUSED(ignored), int explicit_call)
   }
 
   return unreferenced;
+}
+
+void do_gc_callback(struct callback *UNUSED(cb), void *UNUSED(arg1),
+                    void *UNUSED(arg2))
+{
+    do_gc(0);
 }
 
 /*! @decl mapping(string:int|float) gc_status()
@@ -4585,10 +4641,12 @@ static unsigned mc_ext_toggle_bias = 0;
 
 #define INIT_CLEARED_EXTERNAL(M) do {					\
     struct mc_marker *_m = (M);						\
+    debug_malloc_touch_named(_m, "INIT_CLEARED_EXTERNAL");		\
     if (mc_ext_toggle_bias) _m->flags |= MC_FLAG_EXT_TOGGLE;		\
   } while (0)
 #define FLAG_EXTERNAL(M) do {						\
     struct mc_marker *_m = (M);						\
+    debug_malloc_touch_named(_m, "FLAG_EXTERNAL");			\
     assert (!IS_EXTERNAL (_m));						\
     _m->flags ^= MC_FLAG_EXT_TOGGLE;					\
   } while (0)
@@ -4653,6 +4711,7 @@ static struct mc_marker *my_make_mc_marker (void *thing,
   m->dl_prev = m->dl_next = (void *) (ptrdiff_t) -1;
   m->la_count = ((unsigned INT16) -1) >> 1;
 #endif
+  assert(find_mc_marker(thing) == m);
   return m;
 }
 
@@ -4714,6 +4773,8 @@ static struct mc_marker mc_indirect = {
       assert (_m->dl_prev == (void *) (ptrdiff_t) -1);			\
       assert (_m->dl_next == (void *) (ptrdiff_t) -1);			\
     );									\
+    debug_malloc_touch_named(_m, "DL_ADD_LAST (_m)");			\
+    debug_malloc_touch_named(_list_prev, "DL_ADD_LAST (_list_prev)");	\
     _m->dl_prev = _list_prev;						\
     _m->dl_next = &LIST;						\
     LIST.dl_prev = _list_prev->dl_next = _m;				\
@@ -4725,6 +4786,9 @@ static struct mc_marker mc_indirect = {
     struct mc_marker *_list_next = _m->dl_next;				\
     assert (_m->dl_prev != (void *) (ptrdiff_t) -1);			\
     assert (_m->dl_next != (void *) (ptrdiff_t) -1);			\
+    debug_malloc_touch_named(_m, "DL_REMOVE (_m)");			\
+    debug_malloc_touch_named(_list_prev, "DL_REMOVE (_list_prev)");	\
+    debug_malloc_touch_named(_list_next, "DL_REMOVE (_list_next)");	\
     _list_prev->dl_next = _list_next;					\
     _list_next->dl_prev = _list_prev;					\
     DO_IF_DEBUG (_m->dl_prev = _m->dl_next = (void *) (ptrdiff_t) -1);	\
@@ -4733,6 +4797,9 @@ static struct mc_marker mc_indirect = {
 #define DL_MOVE(FROM_LIST, TO_LIST) do {				\
     if (FROM_LIST.dl_next != &FROM_LIST) {				\
       struct mc_marker *to_list_last = TO_LIST.dl_prev;			\
+      debug_malloc_touch_named(&FROM_LIST, "DL_MOVE (FROM_LIST");	\
+      debug_malloc_touch_named(&TO_LIST, "DL_MOVE (TO_LIST)");		\
+      debug_malloc_touch_named(to_list_last, "DL_MOVE (to_list_last)");	\
       TO_LIST.dl_prev = FROM_LIST.dl_prev;				\
       to_list_last->dl_next = FROM_LIST.dl_next;			\
       FROM_LIST.dl_prev->dl_next = &TO_LIST;				\
@@ -4766,6 +4833,7 @@ static void MC_DEBUG_MSG (struct mc_marker *m, const char *msg)
     fprintf (stderr, "} %s\n", msg);
   }
 }
+#define MC_DEBUG_MSG(m, msg) MC_DEBUG_MSG(debug_malloc_pass_named(m, TOSTR(msg)), msg)
 #else
 #define MC_DEBUG_MSG(m, msg) do {} while (0)
 #endif
@@ -4812,6 +4880,7 @@ static struct mc_marker *mc_wq_dequeue()
     struct mc_marker *n, *last = mc_work_queue[mc_wq_used];
     int last_la_count = last->la_count;
     unsigned pos = 1;
+    debug_malloc_touch_named(last, "last");
 
     while (pos <= mc_wq_used / 2) {
       unsigned child_pos = 2 * pos;
@@ -4823,11 +4892,14 @@ static struct mc_marker *mc_wq_dequeue()
       if (mc_work_queue[child_pos]->la_count <= last_la_count)
 	break;
 
+      debug_malloc_touch_named(mc_work_queue[pos], "mc_work_queue[pos]");
       n = mc_work_queue[pos] = mc_work_queue[child_pos];
       n->queuepos = pos;
+      debug_malloc_touch_named(n, "n");
       pos = child_pos;
     }
 
+    debug_malloc_touch_named(mc_work_queue[pos], "mc_work_queue[pos] = last");
     mc_work_queue[pos] = last;
     last->queuepos = pos;
   }
@@ -4861,26 +4933,30 @@ static void mc_wq_enqueue (struct mc_marker *m)
 
   else {
     if (mc_wq_used > mc_wq_size) {
-      struct mc_marker **p;
+      void *p;
       mc_wq_size *= 2;
-      p = realloc (mc_work_queue + 1, mc_wq_size * sizeof (mc_work_queue[0]));
+      /* NB: Add 1 to size to compensate for 1-based indexing. */
+      p = realloc (mc_work_queue, (mc_wq_size + 1) * sizeof (mc_work_queue[0]));
       if (!p) {
-	make_error (msg_out_of_mem_2, mc_wq_size * sizeof (mc_work_queue[0]));
+	make_error (msg_out_of_mem_2,
+		    (mc_wq_size + 1) * sizeof (mc_work_queue[0]));
 	free_svalue (&throw_value);
 	move_svalue (&throw_value, --Pike_sp);
 	mc_wq_size /= 2;
 	return;
       }
-      mc_work_queue = p - 1;	/* Compensate for 1-based indexing. */
+      mc_work_queue = p;
     }
     pos = mc_wq_used++;
   }
 
   while (pos > 1 && (n = mc_work_queue[pos / 2])->la_count < m_la_count) {
+    debug_malloc_touch_named(n, "n");
     mc_work_queue[pos] = n;
     n->queuepos = pos;
     pos /= 2;
   }
+  debug_malloc_touch_named(m, "m");
   mc_work_queue[pos] = m;
   m->queuepos = pos;
 
@@ -4902,7 +4978,7 @@ static int mc_cycle_depth_from_obj (struct object *o)
     int i = find_shared_string_identifier (pike_cycle_depth_str.u.string, p);
     INT_TYPE line;
     struct pike_string *file = get_identifier_line (p, i, &line);
-    make_error ("Object got non-integer pike_cycle_depth %O at %S:%ld.\n",
+    make_error ("Object got non-integer pike_cycle_depth %pO at %pS:%ld.\n",
 		&val, file, (long)line);
     free_svalue (&val);
     free_svalue (&throw_value);
@@ -4920,7 +4996,7 @@ static int mc_cycle_depth_from_obj (struct object *o)
     int i = find_shared_string_identifier (pike_cycle_depth_str.u.string, p);
     INT_TYPE line;
     struct pike_string *file = get_identifier_line (p, i, &line);
-    make_error ("Object got negative pike_cycle_depth at %S:%ld.\n",
+    make_error ("Object got negative pike_cycle_depth %pO at %pS:%ld.\n",
 		&val, file, (long)line);
     free_svalue (&throw_value);
     move_svalue (&throw_value, --Pike_sp);
@@ -4954,12 +5030,14 @@ static void pass_lookahead_visit_ref (void *thing, int ref_type,
   }
 
   ref_to = find_mc_marker (thing);
+  debug_malloc_touch_named(ref_to, "ref_to");
   ref_from_flags = mc_ref_from->flags;
 
   /* Create mc_marker if necessary. */
 
   if (!ref_to) {
     ref_to = my_make_mc_marker (thing, visit_fn, extra);
+    debug_malloc_touch(ref_to);
     MC_DEBUG_MSG (ref_to, "visiting new thing");
     assert (!(ref_from_flags & (MC_FLAG_INT_VISITED | MC_FLAG_LA_VISITED)));
     ref_to_la_count = old_la_count = 0;
@@ -5224,6 +5302,9 @@ static void current_only_visit_ref (void *thing, int ref_type,
 
   if (!ref_to) {
     ref_to = my_make_mc_marker (thing, visit_fn, extra);
+    debug_malloc_touch(ref_to);
+    ref_to->la_count = 0; /* initialize so the queue doesn't order on
+                             uninitialized memory (... valgrind) */
     MC_DEBUG_MSG (ref_to, "got new thing");
   }
   else if (ref_to->flags & MC_FLAG_INTERNAL) {
@@ -5268,6 +5349,7 @@ PMOD_EXPORT int mc_count_bytes (void *thing)
 #ifdef PIKE_DEBUG
     if (!m) Pike_fatal ("mc_marker not found for %p.\n", thing);
 #endif
+    MC_DEBUG_MSG(m, "mc_count_bytes (LA)");
     if ((m->flags & (MC_FLAG_INTERNAL|MC_FLAG_INT_VISITED)) == MC_FLAG_INTERNAL)
       return 1;
   }
@@ -5275,7 +5357,7 @@ PMOD_EXPORT int mc_count_bytes (void *thing)
 }
 
 /*! @decl int count_memory (int|mapping(string:int) options, @
- *!         array|multiset|mapping|object|program|string|type|int... things)
+ *!         mixed ... things)
  *! @appears Pike.count_memory
  *!
  *! In brief, if you call @expr{Pike.count_memory(0,x)@} you get back
@@ -5575,14 +5657,15 @@ void f_count_memory (INT32 args)
   }
 
   assert (mc_work_queue == NULL);
-  mc_work_queue = malloc (MC_WQ_START_SIZE * sizeof (mc_work_queue[0]));
+  /* NB: Add 1 to size to compensate for 1-based indexing. */
+  mc_work_queue = malloc ((MC_WQ_START_SIZE + 1) * sizeof (mc_work_queue[0]));
   if (!mc_work_queue) {
     stop_mc();
     SIMPLE_OUT_OF_MEMORY_ERROR ("Pike.count_memory",
-				MC_WQ_START_SIZE * sizeof (mc_work_queue[0]));
+				(MC_WQ_START_SIZE + 1) *
+				sizeof (mc_work_queue[0]));
   }
   mc_wq_size = MC_WQ_START_SIZE;
-  mc_work_queue--;		/* Compensate for 1-based indexing. */
   mc_wq_used = 1;
 
   assert (!mc_pass);
@@ -5602,31 +5685,33 @@ void f_count_memory (INT32 args)
 	continue;
 
       else if (!REFCOUNTED_TYPE(TYPEOF(*s))) {
-	mc_work_queue++;		/* Compensate for 1-based indexing. */
-	free(mc_work_queue);
-	mc_work_queue = NULL;
-	stop_mc();
-	SIMPLE_ARG_TYPE_ERROR (
-	  "count_memory", i + args + 1,
-	  "array|multiset|mapping|object|program|string|type|int");
+	/* Not refcounted. Replace with 0 and ignore. */
+	SET_SVAL(*s, T_INT, NUMBER_NUMBER, integer, 0);
+	continue;
       }
-
       else {
 	if (TYPEOF(*s) == T_FUNCTION) {
 	  struct svalue s2;
-	  if (!(s2.u.program = program_from_function (s))) {
-	    mc_work_queue++;		/* Compensate for 1-based indexing. */
-	    free(mc_work_queue);
-	    mc_work_queue = NULL;
-	    stop_mc();
-	    SIMPLE_ARG_TYPE_ERROR (
-	      "count_memory", i + args + 1,
-	      "array|multiset|mapping|object|program|string|type|int");
+	  if ((s2.u.program = program_from_function (s))) {
+	    add_ref (s2.u.program);
+	    SET_SVAL_TYPE(s2, T_PROGRAM);
+	    free_svalue (s);
+	    move_svalue (s, &s2);
+	  } else if (SUBTYPEOF(*s) == FUNCTION_BUILTIN) {
+	    free_svalue(s);
+	    SET_SVAL(*s, T_INT, NUMBER_NUMBER, integer, 0);
+	    continue;
+	  } else {
+	    /* Convert from function to object. */
+	    SET_SVAL_TYPE_SUBTYPE(*s, T_OBJECT, 0);
 	  }
-	  add_ref (s2.u.program);
-	  SET_SVAL_TYPE(s2, T_PROGRAM);
-	  free_svalue (s);
-	  move_svalue (s, &s2);
+	}
+
+	if (!visit_fn_from_type[TYPEOF(*s)]) {
+	  /* Unsupported type. Replace with 0 and ignore. */
+	  free_svalue(s);
+	  SET_SVAL(*s, T_INT, NUMBER_NUMBER, integer, 0);
+	  continue;
 	}
 
 	if (find_mc_marker (s->u.ptr)) {
@@ -5636,11 +5721,11 @@ void f_count_memory (INT32 args)
 	else {
 	  struct mc_marker *m =
 	    my_make_mc_marker (s->u.ptr, visit_fn_from_type[TYPEOF(*s)], NULL);
+	  debug_malloc_touch(m);
 	  m->flags |= MC_FLAG_INTERNAL;
 	  if (!mc_block_pike_cycle_depth && TYPEOF(*s) == T_OBJECT) {
 	    int cycle_depth = mc_cycle_depth_from_obj (s->u.object);
 	    if (TYPEOF(throw_value) != PIKE_T_FREE) {
-	      mc_work_queue++;		/* Compensate for 1-based indexing. */
 	      free(mc_work_queue);
 	      mc_work_queue = NULL;
 	      stop_mc();
@@ -5770,7 +5855,6 @@ void f_count_memory (INT32 args)
       }
 
       if (TYPEOF(throw_value) != PIKE_T_FREE) {
-	mc_work_queue++;		/* Compensate for 1-based indexing. */
 	free(mc_work_queue);
 	mc_work_queue = NULL;
 	stop_mc();
@@ -5878,6 +5962,11 @@ void f_count_memory (INT32 args)
       } while (m != &mc_complete);
     }
 
+    /* We've moved all the markers on mc_complete to the work queue,
+     * so we need to empty mc_complete in order to use it again for
+     * the next batch of indirect markers.
+     */
+    DL_MAKE_EMPTY(mc_complete);
     DL_MOVE (mc_indirect, mc_complete);
 
     TOGGLE_EXT_FLAGS();
@@ -6014,7 +6103,6 @@ void f_count_memory (INT32 args)
 #endif
 
   assert (mc_wq_used == 1);
-  mc_work_queue++;		/* Compensate for 1-based indexing. */
   free(mc_work_queue);
   mc_work_queue = NULL;
   stop_mc();
@@ -6047,6 +6135,11 @@ void identify_loop_visit_ref(void *dst, int UNUSED(ref_type),
   }
 
   ref_to = my_make_mc_marker(dst, visit_dst, extra);
+  debug_malloc_touch(ref_to);
+  ref_to->la_count = 0; /* initialize just so the queue doesn't order on
+                           uninitialized memory (... valgrind) */
+
+  MC_DEBUG_MSG(ref_to, "identify_loop_visit_ref()");
 
   if (type != PIKE_T_UNKNOWN) {
     /* NB: low_mapping_insert() for object indices may throw errors
@@ -6101,7 +6194,6 @@ void identify_loop_visit_leave(void *UNUSED(thing), int type, void *UNUSED(extra
 void f_identify_cycle(INT32 args)
 {
   struct svalue *s;
-  struct mc_marker *m;
   struct svalue *k;
 
   if (args != 1)
@@ -6129,14 +6221,13 @@ void f_identify_cycle(INT32 args)
   }
 
   assert (mc_work_queue == NULL);
-  mc_work_queue = malloc (MC_WQ_START_SIZE * sizeof (mc_work_queue[0]));
+  /* NB: Add 1 to size to compensate for 1-based indexing. */
+  mc_work_queue = malloc ((MC_WQ_START_SIZE + 1) * sizeof (mc_work_queue[0]));
   if (!mc_work_queue) {
     stop_mc();
     SIMPLE_OUT_OF_MEMORY_ERROR ("Pike.count_memory",
-				MC_WQ_START_SIZE * sizeof (mc_work_queue[0]));
+				(MC_WQ_START_SIZE + 1) * sizeof (mc_work_queue[0]));
   }
-  /* NB: 1-based indexing in mc_work_queue. */
-  mc_work_queue--;
   mc_wq_size = MC_WQ_START_SIZE;
   mc_wq_used = 1;
   mc_lookahead = -1;
@@ -6173,7 +6264,6 @@ void f_identify_cycle(INT32 args)
   mc_ref_from = (void *) (ptrdiff_t) -1;
 #endif
 
-  mc_work_queue++;		/* Compensate for 1-based indexing. */
   free(mc_work_queue);
   mc_work_queue = NULL;
 

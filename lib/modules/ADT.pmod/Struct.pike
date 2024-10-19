@@ -152,7 +152,7 @@ class Item {
   void set(mixed in) { value=in; }
   mixed get() { return value; }
 
-  int _sizeof() { return size; }
+  protected int _sizeof() { return size; }
 
   protected string _sprintf(int t) {
     return t=='O' && sprintf("%O(%O)", this_program, value);
@@ -376,10 +376,11 @@ class Varchars {
   inherit Chars;
   protected int min,max;
 
-  protected void create(void|int _min, void|int _max, void|string _value) {
+  protected void create(void|int _min, void|int _max,
+			string _value = " " * _min) {
     min = _min;
     max = _max;
-    set(_value || " "*min);
+    set(_value);
   }
 
   void set(string in) {

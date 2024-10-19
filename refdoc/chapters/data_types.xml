@@ -1015,6 +1015,23 @@ complicated.</p>
 
 </subsection>
 
+<subsection title="__unknown__">
+
+  <p>The type <tt>__unknown__</tt> is used to indicate that nothing is
+  known about the type of the value. It is the inverse of <tt>mixed|void</tt>.
+  </p>
+
+  <p>It is most commonly used as the type for the content of empty
+  container types (like eg: <tt>({})</tt> (<tt>array(__unknown__)</tt>)
+  or <tt>([])</tt> (<tt>mapping(__unknown__:__unknown__)</tt>)), or
+  as the type for the many field in a callback function:
+  (eg: <tt>function(int, __unknown__...:int)</tt>).</p>
+
+  <p>Note this type is new in Pike 9.0. In Pike 8.0 and earlier
+  <tt>mixed</tt> was used for this in most contexts.</p>
+
+</subsection>
+
 <subsection title="Constructed types">
 
 <p>Futhermore more specific compile-time types may be constructed by
@@ -1029,6 +1046,198 @@ respectively).</p>
 
 </subsection>
 
+<subsection title="Generic types">
+  <p>To improve the type-safety over just using <tt>mixed</tt>, it
+  is possible to define place-holder types that are replaced with
+  actual types when the class is used.</p>
+
+  <example>
+    class Container (&lt;T&gt;) (T|void content) {}
+
+    Container(&lt;int&gt;) int_container = Container(&lt;int&gt;)(17);
+    Container(&lt;float&gt;) float_container = Container(&lt;float&gt;)(17.0);
+    Container mixed_container = Container("foo");
+  </example>
+
+  <p>The above class is similar to:</p>
+
+  <example>
+    class Container(mixed|void content) {}
+  </example>
+
+  <p>But the former allows the compiler to eg check that only values
+  of the expected types are put in <tt>int_container</tt> and
+  <tt>float_container</tt>.</p>
+</subsection>
+
+</section>
+
+<section title="Modifiers">
+  <p>Modifiers are keywords that may be specified before the type
+  of a symbol declaration or inherit. They typically affect the
+  symbol lookup or other related compiler behavior.</p>
+
+  <subsection title="protected">
+    <p>The <tt>protected</tt> modifier hides symbols from external
+    indexing (ie they are still accessable to subclassess that
+    have inherited the class, but not via <ref>predef::`->()</ref>
+    or <ref>predef::`[]()</ref>).</p>
+
+    <p>In ancient versions of Pike this modifier was known
+    as <tt>static</tt>.</p>
+  </subsection>
+
+  <subsection title="local">
+    <p>The <tt>local</tt> modifier causes use of the symbol from
+    the current class to not be affected by overloading by
+    subclasses.</p>
+
+    <p>This modifier is also available with the name <tt>inline</tt>.</p>
+
+    <p>The modifier <tt>final</tt> is similar.</p>
+  </subsection>
+
+  <subsection title="private">
+    <p>The <tt>private</tt> modifier hides symbols from internal
+    indexing (ie they are not accessable to subclasses) and implies
+    <tt>protected</tt> and <tt>local</tt>.</p>
+  </subsection>
+
+  <subsection title="final">
+    <p>The <tt>final</tt> modifier causes the compiler to issue
+    an error if a subclass attempts to overload the symbol.</p>
+
+    <p>The modifier <tt>local</tt> is similar, but more permissive.</p>
+
+    <p>Note in ancient versions of Pike this modifier was also
+    available with the name <tt>nomask</tt>.</p>
+  </subsection>
+
+  <subsection title="optional">
+    <p>The <tt>optional</tt> modifier causes the type checker to
+    consider the symbol as optional to implement to satisfy the
+    API (albeit if the symbol exists it still must comply with
+    the type).</p>
+  </subsection>
+
+  <subsection title="extern">
+    <p>The <tt>extern</tt> modifier indicates that a symbol may
+    be implemented by a subclass, but does not define it in the
+    current class. It implies <tt>optional</tt>.</p>
+  </subsection>
+
+  <subsection title="public">
+    <p>The <tt>public</tt> modifier causes inherited <tt>private</tt>
+    symbols to become <tt>local</tt> <tt>protected</tt> (and thus
+    available to both the inheriting class and subsequent inherits,
+    albeit not overrideable).</p>
+
+    <p>Note that the <tt>public</tt> modifier is only useful for
+    <tt>inherit</tt> statements. In all other cases it is essentially
+    a no-op.</p>
+  </subsection>
+
+  <subsection title="variant">
+    <p>The <tt>variant</tt> modifier is used to provide alternative
+    APIs for functions. The different functions will be called
+    depending on what the arguments are when the symbol is called.</p>
+  </subsection>
+
+  <subsection title="__weak__">
+    <p>The <tt>__weak__</tt> modifier is used to indicate to the
+    garbage collector that it may clear the variable if it is
+    the only holder of the value.</p>
+
+    <p>Note that this modifier is new in Pike 9.0.</p>
+  </subsection>
+
+  <subsection title="__unused__">
+    <p>The <tt>__unused__</tt> modifier is used to inhibit the
+    warning that the symbol is not used.</p>
+
+    <p>Note that this modifier is new in Pike 9.0.</p>
+  </subsection>
+
+  <subsection title="__generator__">
+    <p>The <tt>__generator__</tt> modifier converts a function
+    into a function that returns a restartable function.</p>
+
+    <example>
+      __generator__ int counter(int start, int stop)
+      {
+        while (start &lt; stop) {
+          continue return start++;
+        }
+        return stop;
+      }
+    </example>
+
+    <p>The above behaves similar to:</p>
+
+    <example>
+      function(:int) counter(int start, int stop)
+      {
+        return lambda() {
+          if (start &lt;= stop) {
+            return start++;
+          }
+          return UNDEFINED;
+        };
+      }
+    </example>
+
+    <p>Note that this modifier is new in Pike 9.0.</p>
+  </subsection>
+
+  <subsection title="__async__">
+    <p>The <tt>__async__</tt> modifier converts a function
+    into an asynchronous function. For such functions an
+    implicit <ref>Concurrent.Promise</ref> object is allocated,
+    and all returns and yields are converted into setting
+    the promise followed by returning <tt>UNDEFINED</tt>,
+    except for the first return or yield which will return the
+    <ref>Concurrent.Future</ref> corresponding to the promise.</p>
+
+    <example>
+      __async__ int foo(mixed ... args)
+      {
+        return 17;
+      }
+    </example>
+
+    <p>The above behaves similar to:</p>
+
+    <example>
+      Concurrent.Future(&lt;int&gt;) foo(mixed ... args)
+      {
+        Concurrent.Promise(&lt;int&gt;) __async_promise__ =
+          Concurrent.Promise(&lt;int&gt;)();
+
+        __generator__ lambda() {
+          __async_promise__-&gt;failure(catch {
+              __async_promise__-&gt;success(17);
+              return UNDEFINED;
+            });
+          return UNDEFINED;
+        }()();
+
+        return __async_promise__-&gt;future();
+      }
+    </example>
+
+    <p>Restartable functions are required in order to be able
+    to use <ref>predef::await()</ref>.</p>
+
+    <p>Note that this modifier is new in Pike 9.0.</p>
+  </subsection>
+
+  <subsection title="static">
+    <p>The <tt>static</tt> modifier is currently identical
+    to the <tt>protected</tt> modifier except for warning
+    that it is being used (as of Pike 9.0).</p>
+
+    <p>Note: In a future version of Pike this may change. Do not use.</p>
+  </subsection>
 </section>
 
 <section title="Sharing data">

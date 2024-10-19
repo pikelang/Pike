@@ -79,22 +79,19 @@ void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
       if(i<0 || i>=len)
       {
 	if(len == 0)
-	  Pike_error("Attempt to index the empty string with %"PRINTPIKEINT"d.\n", i);
+          index_error(NULL, 0, what, ind,
+                      "Attempt to index the empty string with %"PRINTPIKEINT"d.\n", i);
 	else
-	  Pike_error("Index %"PRINTPIKEINT"d is out of string range "
-		     "%"PRINTPTRDIFFT"d..%"PRINTPTRDIFFT"d.\n",
-		     i, -len, len - 1);
+          index_error(NULL, 0, what, ind,
+                      "Index %"PRINTPIKEINT"d is out of string range "
+                      "%"PRINTPTRDIFFT"d..%"PRINTPTRDIFFT"d.\n",
+                      i, -len, len - 1);
       } else
 	i=index_shared_string(what->u.string,i);
       SET_SVAL(*to, T_INT, NUMBER_NUMBER, integer, i);
       break;
     }else{
-      if (TYPEOF(*ind) == T_STRING)
-	Pike_error ("Expected integer as string index, got \"%S\".\n",
-		    ind->u.string);
-      else
-	Pike_error ("Expected integer as string index, got %s.\n",
-		    get_name_of_type (TYPEOF(*ind)));
+      index_error(NULL, 0, what, ind, NULL);
     }
 
   case T_FUNCTION:
@@ -110,12 +107,12 @@ void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
       index_no_free(to, what, ind);
       if(IS_UNDEFINED(to)) {
 	if (val) {
-	  Pike_error("Indexing the integer %"PRINTPIKEINT"d "
-		     "with unknown method \"%S\".\n",
-		     val, ind->u.string);
+          index_error(NULL, 0, what, ind,
+                      "Indexing the integer %"PRINTPIKEINT"d "
+                      "with unknown method \"%pS\".\n",
+                      val, ind->u.string);
 	} else {
-	  Pike_error("Indexing the NULL value with \"%S\".\n",
-		     ind->u.string);
+          index_error(NULL, 0, what, ind, NULL);
 	}
       }
       break;
@@ -125,26 +122,7 @@ void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 
   default:
   index_error:
-    if (TYPEOF(*ind) == T_INT)
-      Pike_error ("Cannot index %s with %"PRINTPIKEINT"d.\n",
-		  (TYPEOF(*what) == T_INT && !what->u.integer)?
-		  "the NULL value":get_name_of_type(TYPEOF(*what)),
-		  ind->u.integer);
-    else if (TYPEOF(*ind) == T_FLOAT)
-      Pike_error ("Cannot index %s with %"PRINTPIKEFLOAT"e.\n",
-		  (TYPEOF(*what) == T_INT && !what->u.integer)?
-		  "the NULL value":get_name_of_type(TYPEOF(*what)),
-		  ind->u.float_number);
-    else if (TYPEOF(*ind) == T_STRING)
-      Pike_error ("Cannot index %s with \"%S\".\n",
-		  (TYPEOF(*what) == T_INT && !what->u.integer)?
-		  "the NULL value":get_name_of_type(TYPEOF(*what)),
-		  ind->u.string);
-    else
-      Pike_error ("Cannot index %s with %s.\n",
-		  (TYPEOF(*what) == T_INT && !what->u.integer)?
-		  "the NULL value":get_name_of_type(TYPEOF(*what)),
-		  get_name_of_type (TYPEOF(*ind)));
+    index_error(NULL, 0, what, ind, NULL);
   }
 }
 
@@ -336,7 +314,7 @@ PMOD_EXPORT void o_cast_to_string(void)
 	INT_TYPE val;
 	if (TYPEOF(a->item[i]) != T_INT) {
 	  Pike_error(
-         "Can only cast array(int) to string, item %d is not an integer: %O\n",
+         "Can only cast array(int) to string, item %d is not an integer: %pO\n",
 	   i, a->item + i);
 	}
 	val = a->item[i].u.integer;
@@ -418,20 +396,20 @@ PMOD_EXPORT void o_cast_to_string(void)
       i = org;
 
       if( org < 0 )
-        i = -i;
+        i = -org;
 
-      goto jin;				       /* C as a macro assembler :-) */
       do
       {
+        *b-- = '0'+(i%10);
         i /= 10;
-jin:    *b-- = '0'+(i%10);
       }
-      while( i >= 10 );
+      while( i );
 
       if( org < 0 )
         *b = '-';
       else
         b++;
+
       s = make_shared_string(b);
     }
     break;
@@ -456,39 +434,41 @@ PMOD_EXPORT void o_cast(struct pike_type *type, INT32 run_time_type)
     if(TYPEOF(Pike_sp[-1]) == T_OBJECT)
     {
       struct object *o = Pike_sp[-1].u.object;
-      int f = FIND_LFUN(o->prog->inherits[SUBTYPEOF(Pike_sp[-1])].prog, LFUN_CAST);
-      if(f == -1) {
-        if (run_time_type == T_MAPPING) {
-          stack_dup();
-          f_indices(1);
-          stack_swap();
-          f_values(1);
-          f_mkmapping(2);
-          goto emulated_type_ok;
-        }
-	if (run_time_type != T_PROGRAM) {
-	  Pike_error("No cast method in object.\n");
+      int f = FIND_LFUN(o->prog->inherits[SUBTYPEOF(Pike_sp[-1])].prog,
+			LFUN_CAST);
+      if(f >= 0) {
+	push_static_text(get_name_of_type(run_time_type));
+	apply_low(o, f, 1);
+
+	if (!IS_UNDEFINED(Pike_sp-1)) {
+	  stack_pop_keep_top();
+
+	  goto check_cast;
 	}
+
+	pop_stack();
+      }
+
+      if (run_time_type == T_MAPPING) {
+	stack_dup();
+	f_indices(1);
+	stack_swap();
+	f_values(1);
+	f_mkmapping(2);
+	goto emulated_type_ok;
+      }
+
+      if (run_time_type == T_PROGRAM) {
 	f_object_program(1);
 	return;
       }
-      push_static_text(get_name_of_type(type->type));
-      apply_low(o, f, 1);
 
-      if (run_time_type == T_PROGRAM) {
-	if (IS_UNDEFINED(Pike_sp-1)) {
-	  pop_stack();
-	  f_object_program(1);
-	  return;
-	}
-      }
-
-      stack_pop_keep_top();
-
-      if(TYPEOF(Pike_sp[-1]) == T_INT &&
-         SUBTYPEOF(Pike_sp[-1]) == NUMBER_UNDEFINED)
+      if (f >= 0) {
         Pike_error("Cannot cast this object to %s.\n",
-                   get_name_of_type(type->type));
+                   get_name_of_type(run_time_type));
+      } else {
+	Pike_error("No cast method in object.\n");
+      }
 
     } else
 
@@ -503,7 +483,6 @@ PMOD_EXPORT void o_cast(struct pike_type *type, INT32 run_time_type)
 	{
         case T_ARRAY:
 	  {
-	    extern void f_mkmultiset(INT32);
 	    f_mkmultiset(1);
 	    break;
 	  }
@@ -591,10 +570,17 @@ PMOD_EXPORT void o_cast(struct pike_type *type, INT32 run_time_type)
 	    break;
 
 	  case T_STRING:
+#if SIZEOF_FLOAT_TYPE > SIZEOF_DOUBLE
+	    f =
+	      (FLOAT_TYPE)STRTOLD_PCHARP(MKPCHARP(Pike_sp[-1].u.string->str,
+						  Pike_sp[-1].u.string->size_shift),
+					0);
+#else
 	    f =
 	      (FLOAT_TYPE)STRTOD_PCHARP(MKPCHARP(Pike_sp[-1].u.string->str,
 						 Pike_sp[-1].u.string->size_shift),
 					0);
+#endif
 	    free_string(Pike_sp[-1].u.string);
 	    break;
 
@@ -623,7 +609,8 @@ PMOD_EXPORT void o_cast(struct pike_type *type, INT32 run_time_type)
           struct pike_string *file;
           INT_TYPE lineno;
           if(Pike_fp->pc &&
-             (file = low_get_line(Pike_fp->pc, Pike_fp->context->prog, &lineno))) {
+             (file = low_get_line(Pike_fp->pc, Pike_fp->context->prog,
+				  &lineno, NULL))) {
             push_string(file);
           }else{
             push_int(0);
@@ -661,7 +648,8 @@ PMOD_EXPORT void o_cast(struct pike_type *type, INT32 run_time_type)
 	  struct pike_string *file;
 	  INT_TYPE lineno;
 	  if(Pike_fp->pc &&
-	     (file = low_get_line(Pike_fp->pc, Pike_fp->context->prog, &lineno))) {
+	     (file = low_get_line(Pike_fp->pc, Pike_fp->context->prog,
+				  &lineno, NULL))) {
 	    push_string(file);
 	  }else{
 	    push_int(0);
@@ -707,6 +695,7 @@ PMOD_EXPORT void o_cast(struct pike_type *type, INT32 run_time_type)
       }
   }
 
+ check_cast:
   if(run_time_type != TYPEOF(Pike_sp[-1]))
   {
     switch(TYPEOF(Pike_sp[-1])) {
@@ -924,6 +913,108 @@ PMOD_EXPORT void f_cast(void)
   dmalloc_touch_svalue(Pike_sp);
 }
 
+/*! @decl mixed __cast(mixed val, string|type type_name)
+ *!
+ *! Cast @[val] to the type indicated by @[type_name].
+ *!
+ *! @seealso
+ *!   @[lfun::cast()]
+ */
+static void f___cast(INT32 args)
+{
+  DECLARE_CYCLIC();
+
+  if (args != 2) {
+    SIMPLE_WRONG_NUM_ARGS_ERROR("__cast", 2);
+  }
+
+  if (BEGIN_CYCLIC(Pike_sp[-1].u.refs, Pike_sp[2].u.refs)) {
+    END_CYCLIC();
+    pop_n_elems(args);
+    push_undefined();
+    return;
+  }
+
+  SET_CYCLIC_RET(1);
+
+  if (TYPEOF(Pike_sp[-1]) == PIKE_T_STRING) {
+    struct pike_string *type_name = Pike_sp[-1].u.string;
+    if ((type_name->len >= 3) && (type_name->size_shift == eightbit)) {
+      /* Recognized primary types:
+       *
+       * array
+       * float
+       * function
+       * int
+       * mapping
+       * multiset
+       * object
+       * program
+       * string
+       */
+      switch(type_name->str[0]) {
+      case 'a':
+	if (type_name == literal_array_string) {
+	  pop_stack();
+	  ref_push_type_value(array_type_string);
+	}
+	break;
+      case 'f':
+	if (type_name == literal_float_string) {
+	  pop_stack();
+	  ref_push_type_value(float_type_string);
+	}
+	break;
+      case 'i':
+	if (type_name == literal_int_string) {
+	  pop_stack();
+	  ref_push_type_value(int_type_string);
+	}
+	break;
+      case 'm':
+	if (type_name == literal_mapping_string) {
+	  pop_stack();
+	  ref_push_type_value(mapping_type_string);
+	}
+	if (type_name == literal_multiset_string) {
+	  pop_stack();
+	  ref_push_type_value(multiset_type_string);
+	}
+	break;
+      case 'o':
+	if (type_name == literal_object_string) {
+	  pop_stack();
+	  ref_push_type_value(object_type_string);
+	}
+	break;
+      case 'p':
+	if (type_name == literal_program_string) {
+	  pop_stack();
+	  ref_push_type_value(program_type_string);
+	}
+	break;
+      case 's':
+	if (type_name == literal_string_string) {
+	  pop_stack();
+	  ref_push_type_value(string_type_string);
+	}
+	break;
+      }
+    }
+  }
+
+  if (TYPEOF(Pike_sp[-1]) != PIKE_T_TYPE) {
+    END_CYCLIC();
+    bad_arg_error("__cast", args, 2, "string|type", Pike_sp - 2,
+		  "Expected type or type name.\n");
+  }
+
+  stack_swap();
+  f_cast();
+
+  END_CYCLIC();
+}
+
 /* Returns 1 if s is a valid in the type type. */
 int low_check_soft_cast(struct svalue *s, struct pike_type *type)
 {
@@ -1094,11 +1185,11 @@ void o_check_soft_cast(struct svalue *s, struct pike_type *type)
     free_type(sval_type);
 
     bad_arg_error(NULL, -1, 1, t1->str, Pike_sp-1,
-		  "%s(): Soft cast failed.\n%S",
+                  "%s(): Soft cast failed.\n%pS",
 		  fname, s.s);
 
-    UNREACHABLE(CALL_AND_UNSET_ONERROR(tmp1));
-    UNREACHABLE(CALL_AND_UNSET_ONERROR(tmp0));
+    UNREACHABLE();
+    UNREACHABLE();
   }
 }
 
@@ -1478,8 +1569,10 @@ static int pair_add()
         if (DO_INT_TYPE_ADD_OVERFLOW(Pike_sp[-2].u.integer, Pike_sp[-1].u.integer, &res))
         {
           convert_svalue_to_bignum(Pike_sp-2);
-          call_lfun(LFUN_ADD,LFUN_RADD);
-          return 1;
+          if (LIKELY(call_lfun(LFUN_ADD,LFUN_RADD))) {
+	    return 1;
+	  }
+	  Pike_fatal("Failed to call `+() in bignum.\n");
         }
         Pike_sp[-2].u.integer = res;
         Pike_sp--;
@@ -1614,7 +1707,7 @@ PMOD_EXPORT void f_add(INT32 args)
         push_svalue(s+e);
         if(!pair_add())
         {
-          Pike_error("Addition on unsupported types: %s + %s\nm",
+          Pike_error("Addition on unsupported types: %s + %s\n",
                      get_name_of_type(TYPEOF(*(s+e))),
                      get_name_of_type(TYPEOF(*s)));
         }
@@ -1653,6 +1746,7 @@ PMOD_EXPORT void f_add(INT32 args)
   case BIT_INT:
   {
     INT_TYPE size = Pike_sp[-args].u.integer;
+    int all_undef = !size && SUBTYPEOF(Pike_sp[-args]);
     for(e = -args+1; e < 0; e++)
     {
       if (DO_INT_TYPE_ADD_OVERFLOW(size, Pike_sp[e].u.integer, &size))
@@ -1661,15 +1755,21 @@ PMOD_EXPORT void f_add(INT32 args)
         f_add(args);
         return;
       }
+      all_undef = all_undef && !size && SUBTYPEOF(Pike_sp[e]);
     }
     Pike_sp-=args;
-    push_int(size);
+    if (all_undef) {
+      /* Adding UNDEFINED's give UNDEFINED. */
+      push_undefined();
+    } else {
+      push_int(size);
+    }
     break;
   }
 
   case BIT_FLOAT:
     {
-      double res = Pike_sp[-args].u.float_number;
+      FLOAT_ARG_TYPE res = Pike_sp[-args].u.float_number;
       for(e=args-1; e>0; e-- )
         res += Pike_sp[-e].u.float_number;
       Pike_sp -= args-1;
@@ -1679,13 +1779,13 @@ PMOD_EXPORT void f_add(INT32 args)
 
   case BIT_FLOAT|BIT_INT:
   {
-    double res = 0.0;
+    FLOAT_ARG_TYPE res = 0.0;
     int i;
     for(i=0; i<args; i++)
       if (TYPEOF(Pike_sp[i-args]) == T_FLOAT)
         res += Pike_sp[i-args].u.float_number;
       else
-        res += (double)Pike_sp[i-args].u.integer;
+        res += (FLOAT_ARG_TYPE)Pike_sp[i-args].u.integer;
     Pike_sp-=args;
     push_float(res);
     return;
@@ -1767,8 +1867,8 @@ static int generate_sum(node *n)
       emit0(F_ADD_FLOATS);
     }
     else if(first_arg[0]->type && second_arg[0]->type &&
-	    pike_types_le(first_arg[0]->type, int_type_string) &&
-	    pike_types_le(second_arg[0]->type, int_type_string))
+	    pike_types_le(first_arg[0]->type, int_type_string, 0, 0) &&
+	    pike_types_le(second_arg[0]->type, int_type_string, 0, 0))
     {
       emit0(F_ADD_INTS);
     }
@@ -1799,15 +1899,15 @@ static int generate_sum(node *n)
       }
     }
     else if(first_arg[0]->type && second_arg[0]->type &&
-	    pike_types_le(first_arg[0]->type, int_type_string) &&
-	    pike_types_le(second_arg[0]->type, int_type_string))
+	    pike_types_le(first_arg[0]->type, int_type_string, 0, 0) &&
+	    pike_types_le(second_arg[0]->type, int_type_string, 0, 0))
     {
       do_docode(*first_arg, 0);
       do_docode(*second_arg, 0);
       emit0(F_ADD_INTS);
       modify_stack_depth(-1);
       if (third_arg[0]->type &&
-	  pike_types_le(third_arg[0]->type, int_type_string)) {
+	  pike_types_le(third_arg[0]->type, int_type_string, 0, 0)) {
 	do_docode(*third_arg, 0);
 	emit0(F_ADD_INTS);
 	modify_stack_depth(-1);
@@ -1937,9 +2037,9 @@ static node *optimize_not(node *n)
       node *search_args = *more_args;
       if ((search_args->token == F_ARG_LIST) &&
 	  CAR(search_args) &&
-	  pike_types_le(CAR(search_args)->type, string_type_string) &&
+	  pike_types_le(CAR(search_args)->type, string_type_string, 0, 0) &&
 	  CDR(search_args) &&
-	  pike_types_le(CDR(search_args)->type, string_type_string)) {
+	  pike_types_le(CDR(search_args)->type, string_type_string, 0, 0)) {
 	/* !search(string a, string b)  =>  has_prefix(a, b) */
 	ADD_NODE_REF(*more_args);
 	return mkefuncallnode("has_prefix", search_args);
@@ -2035,7 +2135,7 @@ static node *optimize_binary(node *n)
     if (str_width != 32) {
       type_stack_mark();
       push_int_type(0, (1<<str_width)-1);
-      push_type(T_STRING);
+      push_unlimited_array_type(T_STRING);
       free_type(n->type);
       n->type = pop_unfinished_type();
     }
@@ -2201,7 +2301,9 @@ PMOD_EXPORT void o_subtract(void)
 	  {
 	     struct mapping *m;
 
-	     int got_cmp_less = !!multiset_get_cmp_less (Pike_sp[-1].u.multiset);
+	     int got_cmp_less =
+               TYPEOF(*multiset_get_cmp_less (Pike_sp[-1].u.multiset)) !=
+               PIKE_T_INT;
 	     struct array *ind = multiset_indices (Pike_sp[-1].u.multiset);
 	     pop_stack();
 	     push_array (ind);
@@ -2270,8 +2372,10 @@ PMOD_EXPORT void o_subtract(void)
     if(INT_TYPE_SUB_OVERFLOW(Pike_sp[-2].u.integer, Pike_sp[-1].u.integer))
     {
       convert_stack_top_to_bignum();
-      call_lfun(LFUN_SUBTRACT, LFUN_RSUBTRACT);
-      return;
+      if (LIKELY(call_lfun(LFUN_SUBTRACT, LFUN_RSUBTRACT))) {
+	return;
+      }
+      Pike_fatal("Failed to call `-() in bignum.\n");
     }
     Pike_sp--;
     SET_SVAL(Pike_sp[-1], PIKE_T_INT, NUMBER_NUMBER, integer,
@@ -2291,7 +2395,19 @@ PMOD_EXPORT void o_subtract(void)
     return;
   }
 
-  /* FIXME: Support types? */
+  case T_TYPE:
+    {
+      struct pike_type *t = type_binop(PT_BINOP_MINUS,
+				       Pike_sp[-2].u.type, Pike_sp[-1].u.type,
+				       0, 0, 0);
+      pop_n_elems(2);
+      if (t) {
+	push_type_value(t);
+      } else {
+	push_undefined();
+      }
+      return;
+    }
 
   default:
     {
@@ -2500,7 +2616,9 @@ PMOD_EXPORT void o_and(void)
 	   {
 	      struct mapping *m;
 
-	     int got_cmp_less = !!multiset_get_cmp_less (Pike_sp[-1].u.multiset);
+	     int got_cmp_less =
+                 TYPEOF(*multiset_get_cmp_less (Pike_sp[-1].u.multiset)) !=
+                 PIKE_T_INT;
 	     struct array *ind = multiset_indices (Pike_sp[-1].u.multiset);
 	     pop_stack();
 	     push_array (ind);
@@ -2573,7 +2691,7 @@ PMOD_EXPORT void o_and(void)
   case T_TYPE:
   {
     struct pike_type *t;
-    t = and_pike_types(Pike_sp[-2].u.type, Pike_sp[-1].u.type);
+    t = intersect_types(Pike_sp[-2].u.type, Pike_sp[-1].u.type, 0, 0, 0);
     pop_n_elems(2);
     push_type_value(t);
     return;
@@ -2822,6 +2940,27 @@ PMOD_EXPORT void o_or(void)
       }
     } else {
       int args = 2;
+
+      if ((TYPEOF(Pike_sp[-1]) == PIKE_T_INT) &&
+	  (SUBTYPEOF(Pike_sp[-1]) == NUMBER_UNDEFINED)) {
+	if (TYPEOF(Pike_sp[-2]) == PIKE_T_MULTISET) {
+	  struct multiset *l = copy_multiset(Pike_sp[-2].u.multiset);
+	  pop_stack();
+	  pop_stack();
+	  push_multiset(l);
+	  return;
+	}
+      } else if ((TYPEOF(Pike_sp[-2]) == PIKE_T_INT) &&
+		 (SUBTYPEOF(Pike_sp[-2]) == NUMBER_UNDEFINED)) {
+	if (TYPEOF(Pike_sp[-1]) == PIKE_T_MULTISET) {
+	  struct multiset *l = copy_multiset(Pike_sp[-1].u.multiset);
+	  pop_stack();
+	  pop_stack();
+	  push_multiset(l);
+	  return;
+	}
+      }
+
       SIMPLE_ARG_TYPE_ERROR("`|", 2, get_name_of_type(TYPEOF(Pike_sp[-2])));
     }
   }
@@ -2968,6 +3107,9 @@ PMOD_EXPORT void o_or(void)
  *!   @mixed arg1
  *!     @type int
  *!       Bitwise or of @[arg1] and @[arg2].
+ *!     @type zero
+ *!       @[UNDEFINED] may be or:ed with multisets, behaving as if
+ *!       it was an empty multiset.
  *!     @type string
  *!       The result is a string where each character is the bitwise
  *!       or of the characters in the same position in @[arg1] and
@@ -2989,7 +3131,7 @@ PMOD_EXPORT void o_or(void)
  *!       and @[`==]) occur in both, the value from @[arg2] is used.
  *!     @type multiset
  *!       The result is like @[arg1] but extended with the entries in
- *!       @[arg2] that doesn't already occur in @[arg1] (according to
+ *!       @[arg2] that don't already occur in @[arg1] (according to
  *!       @[`>], @[`<] and @[`==]). Subsequences with orderwise equal
  *!       entries (i.e. where @[`<] returns false) are handled just
  *!       like the array case above.
@@ -3003,6 +3145,8 @@ PMOD_EXPORT void o_or(void)
  *!   If this operator is used with arrays or multisets containing objects
  *!   which implement @[lfun::`==()] but @b{not@} @[lfun::`>()] and
  *!   @[lfun::`<()], the result will be undefined.
+ *!
+ *!   The treatment of @[UNDEFINED] with multisets was new in Pike 8.1.
  *!
  *! @seealso
  *!   @[`&()], @[lfun::`|()], @[lfun::``|()]
@@ -3656,7 +3800,7 @@ PMOD_EXPORT void o_multiply(void)
  */
 PMOD_EXPORT void f_exponent(INT32 args)
 {
-  double a, b;
+  FLOAT_ARG_TYPE a, b;
 
   if(args != 2 )
     SIMPLE_WRONG_NUM_ARGS_ERROR("`**",2);
@@ -3670,17 +3814,21 @@ PMOD_EXPORT void f_exponent(INT32 args)
 
     case TWO_TYPES(T_FLOAT,T_INT):
       a = Pike_sp[-2].u.float_number;
-      b = (double)Pike_sp[-1].u.integer;
+      b = (FLOAT_ARG_TYPE)Pike_sp[-1].u.integer;
       goto res_is_powf;
 
     case TWO_TYPES(T_INT,T_FLOAT):
-      a = (double)Pike_sp[-2].u.integer;
-      b = (double)Pike_sp[-1].u.float_number;
+      a = (FLOAT_ARG_TYPE)Pike_sp[-2].u.integer;
+      b = (FLOAT_ARG_TYPE)Pike_sp[-1].u.float_number;
 
     res_is_powf:
       {
         Pike_sp-=2;
-        push_float( pow( a, b ) );
+#if SIZEOF_FLOAT_TYPE > SIZEOF_DOUBLE
+	push_float( powl( a, b ) );
+#else
+	push_float( pow( a, b ) );
+#endif
         return;
       }
     default:
@@ -4038,8 +4186,10 @@ PMOD_EXPORT void o_divide(void)
       stack_swap();
       convert_stack_top_to_bignum();
       stack_swap();
-      call_lfun(LFUN_DIVIDE,LFUN_RDIVIDE);
-      return;
+      if (LIKELY(call_lfun(LFUN_DIVIDE,LFUN_RDIVIDE))) {
+	return;
+      }
+      Pike_fatal("Failed to call `/() in bignum.\n");
     }
     else
       tmp = Pike_sp[-2].u.integer/Pike_sp[-1].u.integer;
@@ -4587,6 +4737,10 @@ PMOD_EXPORT void o_negate(void)
     SET_SVAL(Pike_sp[-1], T_INT, NUMBER_NUMBER, integer, -Pike_sp[-1].u.integer);
     return;
 
+  case T_TYPE:
+    o_compl();
+    return;
+
   default:
     PIKE_ERROR("`-", "Bad argument to unary minus.\n", Pike_sp, 1);
   }
@@ -4701,6 +4855,11 @@ static int call_old_range_lfun (int bound_types, struct object *o,
       push_int (0);
       break;
     default:
+#ifdef PIKE_DEBUG
+      Pike_fatal("Invalid low range mask: 0x%02x\n", bound_types);
+#endif
+      /* FALLTHRU */
+    case RANGE_LOW_FROM_END:
       push_svalue (&end_pos);
       move_svalue (Pike_sp++, low);
       mark_free_svalue (low);
@@ -4717,6 +4876,11 @@ static int call_old_range_lfun (int bound_types, struct object *o,
       push_int (MAX_INT_TYPE);
       break;
     default:
+#ifdef PIKE_DEBUG
+      Pike_fatal("Invalid high range mask: 0x%02x\n", bound_types);
+#endif
+      /* FALLTHRU */
+    case RANGE_HIGH_FROM_END:
       push_svalue (&end_pos);
       move_svalue (Pike_sp++, high);
       mark_free_svalue (high);
@@ -4756,7 +4920,7 @@ static const char *range_func_name (int bound_types)
       Pike_fatal ("Unexpected bound_types.\n");
 #endif
   }
-  UNREACHABLE(return "Unexpected bound_types");
+  UNREACHABLE();
 }
 
 PMOD_EXPORT void o_range2 (int bound_types)
@@ -4764,6 +4928,20 @@ PMOD_EXPORT void o_range2 (int bound_types)
  * RANGE_LOW_OPEN and/or RANGE_HIGH_OPEN is set in bound_types. */
 {
   struct svalue *ind, *low, *high;
+
+#ifdef PIKE_DEBUG
+  {
+    /* Require exactly one low range bit and one high range bit to be set. */
+    int tmp = bound_types & RANGE_LOW_MASK;
+    if (!tmp || (tmp & (tmp - 1))) {
+      Pike_fatal("Invalid low range operator mask: 0x%02x\n", bound_types);
+    }
+    tmp = bound_types & RANGE_HIGH_MASK;
+    if (!tmp || (tmp & (tmp - 1))) {
+      Pike_fatal("Invalid high range operator mask: 0x%02x\n", bound_types);
+    }
+  }
+#endif
 
   high = bound_types & RANGE_HIGH_OPEN ? Pike_sp : Pike_sp - 1;
   low = bound_types & RANGE_LOW_OPEN ? high : high - 1;
@@ -5379,11 +5557,11 @@ PMOD_EXPORT void f_arrow_assign(INT32 args)
   }
 }
 
-/*! @decl int sizeof(string arg)
- *! @decl int sizeof(array arg)
- *! @decl int sizeof(mapping arg)
- *! @decl int sizeof(multiset arg)
- *! @decl int sizeof(object arg)
+/*! @decl int(0..) sizeof(string arg)
+ *! @decl int(0..) sizeof(array arg)
+ *! @decl int(0..) sizeof(mapping arg)
+ *! @decl int(0..) sizeof(multiset arg)
+ *! @decl int(0..) sizeof(object arg)
  *!
  *!   Size query.
  *!
@@ -5427,7 +5605,7 @@ static node *optimize_sizeof(node *n)
     /* sizeof(efun(...)) */
     if ((CADR(n)->u.sval.u.efun->function == f_divide) &&
 	CDDR(n) && (CDDR(n)->token == F_ARG_LIST) &&
-	CADDR(n) && pike_types_le(CADDR(n)->type, string_type_string) &&
+	CADDR(n) && pike_types_le(CADDR(n)->type, string_type_string, 0, 0) &&
 	CDDDR(n) && (CDDDR(n)->token == F_CONSTANT) &&
 	(TYPEOF(CDDDR(n)->u.sval) == T_STRING) &&
 	(CDDDR(n)->u.sval.u.string->len == 1)) {
@@ -5449,7 +5627,7 @@ static node *optimize_sizeof(node *n)
 	(SUBTYPEOF(CAADDR(n)->u.sval) == FUNCTION_BUILTIN) &&
 	(CAADDR(n)->u.sval.u.efun->function == f_divide) &&
 	CDADDR(n) && (CDADDR(n)->token == F_ARG_LIST) &&
-	CADADDR(n) && pike_types_le(CADADDR(n)->type, string_type_string) &&
+	CADADDR(n) && pike_types_le(CADADDR(n)->type, string_type_string, 0, 0) &&
 	CDDADDR(n) && (CDDADDR(n)->token == F_CONSTANT) &&
 	(TYPEOF(CDDADDR(n)->u.sval) == T_STRING) &&
 	(CDDADDR(n)->u.sval.u.string->len == 1) &&
@@ -5494,9 +5672,9 @@ static int generate_sizeof(node *n)
   if(count_args(CDR(n)) != 1) return 0;
   if(do_docode(CDR(n),DO_NOT_COPY) != 1)
     Pike_fatal("Count args was wrong in sizeof().\n");
-  if( pike_types_le( my_get_arg(&CDR(n), 0)[0]->type, string_type_string ) )
+  if( pike_types_le( my_get_arg(&CDR(n), 0)[0]->type, string_type_string, 0, 0 ) )
       emit0(F_SIZEOF_STRING);
-  /* else if( pike_types_le( my_get_arg(&CDR(n), 0)[0]->type, array_type_string ) ) */
+  /* else if( pike_types_le( my_get_arg(&CDR(n), 0)[0]->type, array_type_string, 0, 0 ) ) */
   /*     emit0(F_SIZEOF_ARRAY); */
   else
       emit0(F_SIZEOF);
@@ -5547,7 +5725,7 @@ static int generate__Static_assert(node *n)
   }
   if (tmp > 1) pop_n_elems(tmp-1);
   if (SAFE_IS_ZERO(Pike_sp-1)) {
-    my_yyerror("Assertion failed: %S", Pike_sp[-2].u.string);
+    my_yyerror("Assertion failed: %pS", Pike_sp[-2].u.string);
   }
   pop_n_elems(2);
   return 1;
@@ -5652,8 +5830,10 @@ static void exit_string_assignment_storage(struct object *UNUSED(o))
 
 void init_operators(void)
 {
+  ADD_EFUN("__cast", f___cast, tFunc(tMix tOr(tStr,tType(tMix)), tMix),
+	   OPT_TRY_OPTIMIZE);
   ADD_EFUN ("`[..]", f_range,
-	    tOr3(tFunc(tStr tInt tRangeBound tInt tRangeBound, tStr),
+	    tOr3(tFunc(tSetvar(1,tStr) tInt tRangeBound tInt tRangeBound, tVar(1)),
 		 tFunc(tArr(tSetvar(0,tMix)) tInt tRangeBound tInt tRangeBound, tArr(tVar(0))),
 		 tFunc(tObj tMix tRangeBound tMix tRangeBound, tMix)),
 	    OPT_TRY_OPTIMIZE);
@@ -5692,7 +5872,7 @@ void init_operators(void)
 
   /* function(mixed...:int) */
   ADD_EFUN2("`==",f_eq,
-	    tOr6(tFuncV(tOr(tInt,tFloat) tOr(tInt,tFloat),
+            tOr7(tFuncV(tOr(tInt,tFloat) tOr(tInt,tFloat),
 			tOr(tInt,tFloat),tInt01),
 		 tFuncV(tSetvar(0,tOr4(tString,tMapping,tMultiset,tArray))
 			tVar(0), tVar(0),tInt01),
@@ -5701,11 +5881,13 @@ void init_operators(void)
 		 tFuncV(tType(tMix) tType(tMix),
 			tOr3(tPrg(tObj),tFunction,tType(tMix)),tInt01),
 		 tFuncV(tSetvar(0,tOr4(tString,tMapping,tMultiset,tArray)),
-			tNot(tVar(0)),tInt0)),
+                        tNot(tVar(0)),tInt0),
+                 tFuncV(tSetvar(0,tNot(tOr5(tString,tMapping,tMultiset,tArray,tVoid))),
+                        tVar(0),tInt01)),
 	    OPT_WEAK_TYPE|OPT_TRY_OPTIMIZE,optimize_eq,generate_comparison);
   /* function(mixed...:int) */
   ADD_EFUN2("`!=",f_ne,
-	    tOr6(tFuncV(tOr(tInt,tFloat) tOr(tInt,tFloat),
+            tOr7(tFuncV(tOr(tInt,tFloat) tOr(tInt,tFloat),
 			tOr(tInt,tFloat),tInt01),
 		 tFuncV(tSetvar(0,tOr4(tString,tMapping,tMultiset,tArray))
 			tVar(0), tVar(0),tInt01),
@@ -5714,7 +5896,9 @@ void init_operators(void)
 		 tFuncV(tType(tMix) tType(tMix),
 			tOr3(tPrg(tObj),tFunction,tType(tMix)),tInt01),
 		 tFuncV(tSetvar(0,tOr4(tString,tMapping,tMultiset,tArray)),
-			tNot(tVar(0)),tInt1)),
+                        tNot(tVar(0)),tInt1),
+                 tFuncV(tSetvar(0,tNot(tOr5(tString,tMapping,tMultiset,tArray,tVoid))),
+                        tVar(0),tInt01)),
 	    OPT_WEAK_TYPE|OPT_TRY_OPTIMIZE,0,generate_comparison);
   /* function(mixed:int) */
   ADD_EFUN2("`!",f_not,tFuncV(tMix,tVoid,tInt01),
@@ -5726,44 +5910,72 @@ void init_operators(void)
   add_efun2("`>", f_gt,CMP_TYPE,OPT_TRY_OPTIMIZE,0,generate_comparison);
   add_efun2("`>=",f_ge,CMP_TYPE,OPT_TRY_OPTIMIZE,0,generate_comparison);
 
-  ADD_EFUN2("`+",f_add,
-	    tOr7(tIfnot(tFuncV(tNone,tNot(tOr(tObj,tMix)),tMix),
-			tFuncV(tNone,tMix,tMix)),
-		 tOr3(tFuncV(tIntPos,tIntPos,tIntPos),
-		      tFuncV(tIntNeg,tIntNeg,tIntNeg),
-		      tIfnot(tFuncV(tNone, tNot(tIntNeg), tMix),
-			     tIfnot(tFuncV(tNone, tNot(tIntPos), tMix),
-				    tFuncV(tInt, tInt, tInt)))),
-		 tIfnot(tFuncV(tNone, tNot(tFlt), tMix),
-			tFuncV(tOr(tInt,tFlt),tOr(tInt,tFlt),tFlt)),
-		 tIfnot(tFuncV(tNone, tNot(tStr), tMix),
-			tFuncV(tOr3(tSetvar(0, tStr),tInt,tFlt),
-			       tOr3(tSetvar(1, tStr),tInt,tFlt),tOr(tVar(0),tVar(1)))),
-		 tFuncV(tSetvar(0,tArray),tSetvar(1,tArray),
-			tOr(tVar(0),tVar(1))),
-		 tFuncV(tSetvar(0,tMapping),tSetvar(1,tMapping),
-			tOr(tVar(0),tVar(1))),
-		 tFuncV(tSetvar(0,tMultiset),tSetvar(1,tMultiset),
-			tOr(tVar(0),tVar(1)))),
+  ADD_EFUN2("`+", f_add,
+	    tTransitive(tFunc(tSetvar(0, tOr7(tObj, tInt, tFloat, tStr,
+					      tArr(tMix), tMapping, tMultiset)),
+			      tVar(0)),
+			tOr9(tOr(tFuncArg(tSetvar(1, tObj),
+					  tFindLFun(tVar(1), "`+")),
+				 tFuncArg(tSetvar(1, tMix),
+					  tFuncArg(tSetvar(2, tObj),
+						   tApply(tFindLFun(tVar(2),
+								    "``+"),
+							  tVar(1))))),
+			     tFunc(tSetvar(2, tInt) tSetvar(3, tInt),
+				   tAddInt(tVar(2), tVar(3))),
+			     tOr(tFunc(tFloat tOr(tFloat, tInt), tFloat),
+				 tFunc(tOr(tFloat, tInt) tFloat, tFloat)),
+			     tOr3(tFunc(tLStr(tSetvar(2, tIntPos), tSetvar(0, tInt))
+					tLStr(tSetvar(3, tIntPos), tSetvar(1, tInt)),
+					tLStr(tAddInt(tVar(2), tVar(3)),
+					      tOr(tVar(0), tVar(1)))),
+				  tFunc(tNStr(tSetvar(2, tInt))
+					tOr(tInt, tFloat),
+					tNStr(tOr(tVar(2), tInt7bit))),
+				  tFunc(tOr(tInt, tFloat)
+					tNStr(tSetvar(3, tInt)),
+					tNStr(tOr(tInt7bit, tVar(3))))),
+			     tFunc(tLArr(tSetvar(2, tIntPos), tSetvar(0,tMix))
+				   tLArr(tSetvar(3, tIntPos), tSetvar(1,tMix)),
+				   tLArr(tAddInt(tVar(2), tVar(3)),
+					 tOr(tVar(0), tVar(1)))),
+			     tFunc(tSetvar(0, tMapping) tSetvar(1, tMapping),
+				   tOr(tVar(0), tVar(1))),
+			     tFunc(tSetvar(0, tMultiset) tSetvar(1, tMultiset),
+				   tOr(tVar(0), tVar(1))),
+			     tFunc(tZero tSetvar(0, tOr3(tArray, tMultiset, tMapping)), tVar(0)),
+			     tFunc(tSetvar(0, tOr3(tArray, tMultiset, tMapping)) tZero, tVar(0))
+			     )),
 	    OPT_TRY_OPTIMIZE,optimize_binary,generate_sum);
 
-  ADD_EFUN2("`-",f_minus,
-	    tOr7(tIfnot(tFuncV(tNone,tNot(tOr(tObj,tMix)),tMix),
-			tFuncV(tNone,tMix,tMix)),
-		 tOr4(tFuncV(tIntNeg,tIntPos,tIntNeg),
-		      tFuncV(tIntPos,tIntNeg,tIntPos),
-		      tIfnot(tFuncV(tNot(tIntPos), tNot(tIntPos), tMix),
-			     tFuncV(tInt, tInt, tInt)),
-		      tIfnot(tFuncV(tNot(tIntNeg), tNot(tIntNeg), tMix),
-			     tFuncV(tInt, tInt, tInt))),
-		 tIfnot(tFuncV(tNone,tNot(tFlt),tMix),
-			tFuncV(tOr(tInt,tFlt),tOr(tInt,tFlt),tFlt)),
-		 tFuncV(tArr(tSetvar(0,tMix)),tArray,tArr(tVar(0))),
-		 tFuncV(tMap(tSetvar(1,tMix),tSetvar(2,tMix)),
-			tOr3(tMapping,tArray,tMultiset),
-			tMap(tVar(1),tVar(2))),
-		 tFunc(tSet(tSetvar(3,tMix)) tMultiset,tSet(tVar(3))),
-		 tFuncV(tSetvar(0,tStr),tStr,tVar(0))),
+  ADD_EFUN2("`-", f_minus,
+	    tOr(tOr4(tFunc(tSetvar(0, tInt), tNegateInt(tVar(0))),
+		     tFunc(tFlt, tFlt),
+		     tFunc(tSetvar(0, tType(tMix)), tVar(0)),
+		     tFuncArg(tSetvar(0, tObj), tFindLFun(tVar(0), "`-"))),
+		tTransitive(tUnknown,
+			    tOr8(tOr(tFuncArg(tSetvar(1,tObj),
+					      tFindLFun(tVar(1), "`-")),
+				     tFuncArg(tSetvar(1, tMix),
+					      tFuncArg(tSetvar(2, tObj),
+						       tApply(tFindLFun(tVar(2),
+									"``-"),
+							      tVar(1))))),
+				 tFunc(tSetvar(2, tInt) tSetvar(3, tInt),
+				       tSubInt(tVar(2), tVar(3))),
+				 tOr(tFunc(tFloat tOr(tFloat, tInt), tFloat),
+				     tFunc(tOr(tFloat, tInt) tFloat, tFloat)),
+				 tFunc(tNStr(tSetvar(0,tInt)) tStr,
+				       tNStr(tVar(0))),
+				 tFunc(tArr(tSetvar(0,tMix)) tArray,
+				       tArr(tVar(0))),
+				 tFunc(tMap(tSetvar(1,tMix), tSetvar(2,tMix))
+				       tOr3(tMapping, tArray, tMultiset),
+				       tMap(tVar(1), tVar(2))),
+				 tFunc(tSet(tSetvar(3, tMix)) tMultiset,
+				       tSet(tVar(3))),
+				 tFunc(tType(tSetvar(0, tMix))  tType(tMix),
+				       tType(tVar(0)))))),
 	    OPT_TRY_OPTIMIZE,0,generate_minus);
 
 /*
@@ -5785,63 +5997,56 @@ multiset & mapping -> mapping
 
  */
 
+#define LOW_LOG_TYPE(OP)						\
+  tOr8(tFunc(tSetvar(0, tInt) tSetvar(1, tInt),				\
+	     OP(tVar(0), tVar(1))),					\
+       tFunc(tMap(tSetvar(0, tMix), tSetvar(1, tMix))			\
+	     tMap(tSetvar(2, tMix), tSetvar(3, tMix)),			\
+	     tMap(tOr(tVar(0), tVar(2)), tOr(tVar(1), tVar(3)))),	\
+       tFunc(tSet(tSetvar(0, tMix)) tSet(tSetvar(1, tMix)),		\
+	     tSet(tOr(tVar(0), tVar(1)))),				\
+       tFunc(tArr(tSetvar(0, tMix)) tArr(tSetvar(1, tMix)),		\
+	     tArr(tOr(tVar(0), tVar(1)))),				\
+       tFunc(tNStr(tSetvar(0, tInt)) tNStr(tSetvar(1, tInt)),		\
+	     tNStr(OP(tVar(0), tVar(1)))),				\
+       tFunc(tOr(tType(tMix), tPrg(tObj))				\
+	     tOr(tType(tMix), tPrg(tObj)),				\
+	     tType(tMix)),						\
+       tFunc(tObj tMix, tMix),						\
+       tFunc(tMix tObj, tMix)						\
+       )
 
-#define F_AND_TYPE(Z)						\
-	    tOr(tFunc(tSetvar(0,Z),tVar(0)),			\
-		tIfnot(tFuncV(tNone, tNot(Z), tMix),		\
-		       tFuncV(tSetvar(1,Z),tSetvar(2,Z),	\
-			      tOr(tVar(1),tVar(2)))))
-
+#define LOG_TYPE(TRANS)							\
+  tTransitive(tFunc(tSetvar(0, tMix), tVar(0)), TRANS)
 
   ADD_EFUN2("`&",f_and,
-	    tOr4(
-	       tFunc(tSetvar(0,tMix),tVar(0)),
-
-	       tOr(tFuncV(tMix tObj,tMix,tMix),
-		   tFuncV(tObj tMix,tMix,tMix)),
-
-	       tOr6( F_AND_TYPE(tInt),
-		     F_AND_TYPE(tArray),
-		     F_AND_TYPE(tMapping),
-		     F_AND_TYPE(tMultiset),
-		     F_AND_TYPE(tString),
-		     F_AND_TYPE(tOr(tType(tMix),tPrg(tObj))) ),
-
-	       tIfnot(tFuncV(tNone, tNot(tMapping), tMix),
-		      tFuncV(tNone,
-			     tOr3(tArray,tMultiset,tSetvar(4,tMapping)),
-			     tVar(4)) )
-	       ),
-
+	    LOG_TYPE(tOr3(LOW_LOG_TYPE(tAndInt),
+			  tFunc(tSetvar(4, tMapping)
+				tOr(tArray,tMultiset),
+				tVar(4)),
+			  tFunc(tOr(tArray,tMultiset)
+				tSetvar(4, tMapping),
+				tVar(4)))),
 	    OPT_TRY_OPTIMIZE,optimize_binary,generate_and);
 
-#define LOG_TYPE								\
-  tOr7(tOr(tFuncV(tMix tObj,tMix,tMix),						\
-	   tFuncV(tObj,tMix,tMix)),						\
-       tFuncV(tInt,tInt,tInt),							\
-       tFuncV(tSetvar(1,tMapping),tSetvar(2,tMapping),tOr(tVar(1),tVar(2))),	\
-       tFuncV(tSetvar(3,tMultiset),tSetvar(4,tMultiset),tOr(tVar(3),tVar(4))),	\
-       tFuncV(tSetvar(5,tArray),tSetvar(6,tArray),tOr(tVar(5),tVar(6))),	\
-       tFuncV(tString,tString,tString),						\
-       tFuncV(tOr(tType(tMix),tPrg(tObj)),tOr(tType(tMix),tPrg(tObj)),tType(tMix)))
+  ADD_EFUN2("`|", f_or, LOG_TYPE(LOW_LOG_TYPE(tOrInt)),
+	    OPT_TRY_OPTIMIZE, optimize_binary, generate_or);
 
-  ADD_EFUN2("`|",f_or,LOG_TYPE,OPT_TRY_OPTIMIZE,optimize_binary,generate_or);
+  ADD_EFUN2("`^", f_xor, LOG_TYPE(LOW_LOG_TYPE(tXorInt)),
+	    OPT_TRY_OPTIMIZE, optimize_binary, generate_xor);
 
-  ADD_EFUN2("`^",f_xor,LOG_TYPE,OPT_TRY_OPTIMIZE,optimize_binary,generate_xor);
-
-#define SHIFT_TYPE							\
-  tOr3(tIfnot(tFuncV(tNone, tNot(tObj), tMix),				\
-	      tOr(tFunc(tMix tObj,tMix),				\
-		  tFunc(tObj tMix,tMix))),				\
+#define SHIFT_TYPE(LFUN)						\
+  tOr4(tFuncArg(tSetvar(0,tObj), tFindLFun(tVar(0), LFUN)),		\
+       tFunc(tSetvar(0, tMix) tSetvar(1, tObj),				\
+	     tGetReturn(tApply(tFindLFun(tVar(1), "`"LFUN), tVar(0)))), \
        tOr3(tFunc(tInt1Plus tIntPos, tIntPos),				\
-	    tFunc(tInt0 tIntPos, tInt0),				\
+	    tFunc(tOr(tInt0,tZero) tIntPos, tInt0),			\
 	    tFunc(tIntMinus tIntPos, tIntNeg)),				\
-       tIfnot(tFuncV(tNot(tFloat), tNot(tIntPos), tMix),		\
-	      tFunc(tAnd(tFloat, tNot(tInt0)) tIntPos, tFloat)))
+       tFunc(tFloat tIntPos, tFloat))
 
-  ADD_EFUN2("`<<", f_lsh, SHIFT_TYPE, OPT_TRY_OPTIMIZE,
+  ADD_EFUN2("`<<", f_lsh, SHIFT_TYPE("`<<"), OPT_TRY_OPTIMIZE,
 	    may_have_side_effects, generate_lsh);
-  ADD_EFUN2("`>>", f_rsh, SHIFT_TYPE, OPT_TRY_OPTIMIZE,
+  ADD_EFUN2("`>>", f_rsh, SHIFT_TYPE("`>>"), OPT_TRY_OPTIMIZE,
 	    may_have_side_effects, generate_rsh);
 
   /* !function(!object...:mixed)&function(mixed...:mixed)|"
@@ -5859,27 +6064,44 @@ multiset & mapping -> mapping
                  tFunc(tFloat tFloat, tFloat),
                  tFunc(tOr(tInt,tFloat) tObj, tOr3(tFloat,tInt,tFloat)),
                  tFunc(tInt tFloat, tFloat),
-                 tFunc(tObj tMix, tOr3(tFloat,tInt,tObj)),
-                 tFunc(tMix tObj, tOr3(tFloat,tInt,tObj)),
+                 tFuncArg(tSetvar(0, tObj), tFindLFun(tVar(0), "`**")),
+                 tFunc(tSetvar(0, tMix) tSetvar(1, tObj),
+		       tGetReturn(tApply(tFindLFun(tVar(1), "``**"),
+					 tVar(0)))),
                  tFunc(tFloat tInt, tFloat)),
             OPT_TRY_OPTIMIZE,0,0);
 
   ADD_EFUN2("`*", f_multiply,
-	    tOr9(tIfnot(tFuncV(tNone,tNot(tOr(tObj,tMix)),tMix),
-			tFuncV(tNone,tOr(tMix,tVoid),tMix)),
-		 tFunc(tArr(tArr(tSetvar(1,tMix)))
-		       tArr(tSetvar(1,tMix)),tArr(tVar(1))),
-		 tOr4(tFuncV(tIntPos,tIntPos,tIntPos),
-		      tFuncV(tIntNeg,tIntNeg,tIntPos),
-		      tFuncV(tIntPos,tIntNeg,tIntNeg),
-		      tFuncV(tIntNeg,tIntPos,tIntNeg)),
-		 tIfnot(tFuncV(tNone,tNot(tFlt),tMix),
-			tFuncV(tOr(tFlt,tInt),tOr(tFlt,tInt),tFlt)),
-		 tFunc(tArr(tStr) tStr,tStr),
-		 tFunc(tArr(tSetvar(0,tMix)) tInt,tArr(tVar(0))),
-		 tFunc(tArr(tSetvar(0,tMix)) tFlt,tArr(tVar(0))),
-		 tFunc(tSetvar(0, tStr) tInt,tVar(0)),
-		 tFunc(tSetvar(0, tStr) tFlt,tVar(0))),
+	    tTransitive(tUnknown,
+			tOr8(tFuncArg(tSetvar(0, tObj),
+				      tFindLFun(tVar(0), "`*")),
+			     tFunc(tSetvar(0, tMix) tSetvar(1, tObj),
+				   tGetReturn(tApply(tFindLFun(tVar(1), "``*"),
+						     tVar(0)))),
+			     tFunc(tArr(tArr(tSetvar(0,tMix)))
+				   tArr(tSetvar(1,tMix)),
+				   tArr(tOr(tVar(0), tVar(1)))),
+			     tFunc(tSetvar(0, tInt) tSetvar(1, tInt),
+				   tMulInt(tVar(0), tVar(1))),
+			     tOr(tFunc(tInt tFloat, tFloat),
+				 tFunc(tFloat tOr(tInt, tFloat), tFloat)),
+			     tFunc(tArr(tNStr(tSetvar(0, tInt)))
+				   tNStr(tSetvar(1, tInt)),
+				   tNStr(tOr(tVar(0), tVar(1)))),
+			     tOr(tFunc(tLArr(tSetvar(1, tIntPos),
+					     tSetvar(0,tMix))
+				       tSetvar(2, tIntPos),
+				       tLArr(tMulInt(tVar(1), tVar(2)),
+					     tVar(0))),
+				 tFunc(tArr(tSetvar(0,tMix)) tFloat,
+				       tArr(tVar(0)))),
+			     tOr(tFunc(tLStr(tSetvar(1, tIntPos),
+					     tSetvar(0, tInt))
+				       tSetvar(2, tIntPos),
+				       tLStr(tMulInt(tVar(1), tVar(2)),
+					     tVar(0))),
+				 tFunc(tNStr(tSetvar(0, tInt)) tFloat,
+				       tNStr(tVar(0)))))),
 	    OPT_TRY_OPTIMIZE,optimize_binary,generate_multiply);
 
   /* !function(!object...:mixed)&function(mixed...:mixed)|"
@@ -5888,18 +6110,23 @@ multiset & mapping -> mapping
 	    "function(array(0=mixed),array|int|float...:array(array(0)))|"
 	    "function(string,string|int|float...:array(string)) */
   ADD_EFUN2("`/", f_divide,
-	    tOr5(tIfnot(tFuncV(tNone,tNot(tOr(tObj,tMix)),tMix),
-			tFuncV(tNone,tMix,tMix)),
-		 tOr4(tFuncV(tIntPos,tIntPos,tIntPos),
-		      tFuncV(tIntNeg,tIntNeg,tIntPos),
-		      tFuncV(tIntPos,tIntNeg,tIntNeg),
-		      tFuncV(tIntNeg,tIntPos,tIntNeg)),
-		 tIfnot(tFuncV(tNone, tNot(tFlt), tMix),
-			tFuncV(tOr(tFlt,tInt),tOr(tFlt,tInt),tFlt)),
-		 tFuncV(tArr(tSetvar(0,tMix)),
-			tOr3(tArray,tInt,tFlt),
-			tArr(tArr(tVar(0)))),
-		 tFuncV(tStr,tOr3(tStr,tInt,tFlt),tArr(tStr))),
+	    tTransitive(tUnknown,
+			tOr6(tFuncArg(tSetvar(1, tObj),
+				      tFindLFun(tVar(1), "`/")),
+			     tFuncArg(tSetvar(1, tMix),
+				      tFuncArg(tSetvar(2, tObj),
+					       tApply(tFindLFun(tVar(2), "``/"),
+						      tVar(1)))),
+                             tFunc(tSetvar(0, tInt) tSetvar(1, tInt),
+                                   tDivInt(tVar(0), tVar(1))),
+			     tOr(tFunc(tFloat tOr(tFloat, tInt), tFloat),
+				 tFunc(tInt tFloat, tFloat)),
+			     tFunc(tArr(tSetvar(0, tMix))
+				   tOr4(tArray, tInt1Plus, tIntMinus, tFloat),
+				   tArr(tArr(tVar(0)))),
+			     tFunc(tNStr(tSetvar(0, tInt))
+				   tOr4(tStr, tInt1Plus, tIntMinus, tFloat),
+				   tArr(tNStr(tVar(0)))))),
 	    OPT_TRY_OPTIMIZE,0,generate_divide);
 
   /* function(mixed,object:mixed)|"
@@ -5909,34 +6136,43 @@ multiset & mapping -> mapping
 	    "function(array(0=mixed),int:array(0))|"
 	    "!function(int,int:mixed)&function(int|float,int|float:float) */
   ADD_EFUN2("`%", f_mod,
-	    tOr7(tFunc(tMix tObj,tMix),
-		 tFunc(tObj tMix,tMix),
-		 tFunc(tInt tIntPos, tIntPos),
-		 tFunc(tInt tIntNeg, tIntNeg),
-		 tFunc(tStr tInt,tStr),
-		 tFunc(tArr(tSetvar(0,tMix)) tInt,tArr(tVar(0))),
-		 tIfnot(tFuncV(tNone, tNot(tFlt), tMix),
-			tFunc(tOr(tInt,tFlt) tOr(tInt,tFlt),tFlt))),
+	    tOr9(tFuncArg(tSetvar(0, tObj), tFindLFun(tVar(0), "`%")),
+		 tFunc(tSetvar(0, tMix) tSetvar(1, tObj),
+		       tGetReturn(tApply(tFindLFun(tVar(1), "``%"), tVar(0)))),
+		 tFunc(tInt tSetvar(0, tInt1Plus),
+		       tRangeInt(tInt0, tSubInt(tVar(0), tInt1))),
+		 tFunc(tInt tSetvar(0, tIntMinus),
+		       tRangeInt(tAddInt(tVar(0), tInt1), tInt0)),
+		 tFunc(tNStr(tSetvar(0, tInt)) tSetvar(1, tInt1Plus),
+		       tLStr(tRangeInt(tInt0, tSubInt(tVar(1), tInt1)), tVar(0))),
+		 tFunc(tNStr(tSetvar(0, tInt)) tSetvar(1, tIntMinus),
+		       tLStr(tRangeInt(tInt0, tSubInt(tInt_1, tVar(1))), tVar(0))),
+		 tFunc(tArr(tSetvar(0,tMix)) tOr(tInt1Plus, tIntMinus),
+		       tArr(tVar(0))),
+		 tFunc(tFloat tOr(tInt, tFloat), tFloat),
+		 tFunc(tInt tFloat, tFloat)),
 	    OPT_TRY_OPTIMIZE,0,generate_mod);
 
   /* function(object:mixed)|function(int:int)|function(float:float)|function(string:string) */
   ADD_EFUN2("`~",f_compl,
-	    tOr7(tFunc(tObj,tMix),
-		 tFunc(tIntPos,tIntMinus),
-		 tFunc(tIntMinus,tIntPos),
+	    tOr6(tFuncArg(tSetvar(0, tObj), tFindLFun(tVar(0), "`~")),
+		 tFunc(tSetvar(1, tInt), tInvertInt(tVar(1))),
 		 tFunc(tFlt,tFlt),
-		 tFunc(tStr,tStr),
+		 tFunc(tLStr(tSetvar(0, tIntPos), tSetvar(1, tInt8bit)),
+		       tLStr(tVar(0), tSubInt(tInt255, tVar(1)))),
 		 tFunc(tType(tSetvar(0, tMix)), tType(tNot(tVar(0)))),
-		 tFunc(tPrg(tObj), tType(tMix))),
+		 tFunc(tPrg(tSetvar(0, tObj)), tType(tNot(tVar(0))))),
 	    OPT_TRY_OPTIMIZE,0,generate_compl);
   /* function(string|multiset|array|mapping|object:int(0..)) */
   ADD_EFUN2("sizeof", f_sizeof,
-	    tFunc(tOr5(tStr,tMultiset,tArray,tMapping,tObj),tIntPos),
+	    tOr3(tFunc(tOr3(tMultiset,tMapping,tObj),tIntPos),
+		 tFunc(tLStr(tSetvar(0,tIntPos),tInt), tVar(0)),
+		 tFunc(tLArr(tSetvar(0,tIntPos),tMix), tVar(0))),
 	    OPT_TRY_OPTIMIZE, optimize_sizeof, generate_sizeof);
 
   ADD_EFUN2("strlen", f_sizeof,
-            tFunc(tStr,tIntPos), OPT_TRY_OPTIMIZE, optimize_sizeof,
-            generate_sizeof);
+	    tFunc(tLStr(tSetvar(0, tIntPos), tInt), tVar(0)),
+	    OPT_TRY_OPTIMIZE, optimize_sizeof, generate_sizeof);
 
   /* function(mixed,mixed ...:mixed) */
   ADD_EFUN2("`()",f_call_function,tFuncV(tMix,tMix,tMix),OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND,0,generate_call_function);

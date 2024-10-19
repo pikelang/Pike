@@ -74,7 +74,7 @@ PIKE_MODULE_INIT
   char_class['+'] = CLS_PLUS;
 
   add_function_constant( "read", f_read,
-			 "function(function(array(string|int),int|void:void),"
+			 "function(function(array(string|int),int:void),"
 			 "string|object,int|void:int)", 0 );
 }
 
@@ -140,8 +140,14 @@ PIKE_MODULE_EXIT
  *! The second callback argument is the current offset to the end of the
  *! current line.
  *!
+ *! @param logfile
+ *!   The logfile to parse. Either an open @[Stdio.File] object, or
+ *!   a string with the path to the logfile.
+ *!
  *! @param offset
- *! The position in the file where the parser should begin.
+ *!   The absolute position in the file where the parser should begin.
+ *!   Note that the offset defaults to 0 (zero), NOT the current offset
+ *!   of @[logfile].
  */
 
 static void f_read( INT32 args )

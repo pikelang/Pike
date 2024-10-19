@@ -1,3 +1,5 @@
+/* -*- mode: Pike; c-basic-offset: 3; -*- */
+
 #pike __REAL_VERSION__
 
 //! This is the islamic calendar. Due to some sources,
@@ -181,7 +183,7 @@ class cYear
 	 ->number_of_weeks();
    }
 
-   TimeRange place(TimeRange what,void|int force)
+   object(TimeRange)|zero place(TimeRange what,void|int force)
    {
       if (what->is_day)
       {

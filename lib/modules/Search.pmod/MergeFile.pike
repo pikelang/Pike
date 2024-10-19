@@ -3,17 +3,17 @@
 private Stdio.File fd;
 
 //!
-void create(Stdio.File _fd)
+protected void create(Stdio.File _fd)
 {
   fd = _fd;
 }
 
 protected void write_blob(String.Buffer buf, string word, string blob,
-                          void|string blob2)
+                          string blob2="")
 {
   buf->add(sprintf("%4c%s%4c",
 		   sizeof(word), word,
-		   sizeof(blob) + sizeof(blob2||"")),
+                   sizeof(blob) + sizeof(blob2)),
 	   blob);
   if(blob2)
     buf->add(blob2);
@@ -35,7 +35,7 @@ void write_blobs(_WhiteFish.Blobs blobs)
     fd->write(buf->get());
 }
 
-array get_next_word_blob()
+array|zero get_next_word_blob()
 {
   int length;
   if(!sscanf(fd->read(4), "%4c", length))

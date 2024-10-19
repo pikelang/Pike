@@ -28,14 +28,27 @@ final constant SERVFAIL=2;
 final constant NXDOMAIN=3;
 
 //! The name server does not support the specified Opcode.
-final constant NOTIMPL=4;
+final constant NOTIMP=4;
+final constant NOTIMPL=4;		// Deprecated
 
 //! The name server refuses to perform the specified operation for
 //! policy or security reasons.
 final constant REFUSED=5;
 
+//! Name that should not exist, does exist.
+final constant YXDOMAIN=6;
+
+//! RRset that should not exist, does exist.
+final constant YXRRSET=7;
+
 //! Some RRset that ought to exist, does not exist.
 final constant NXRRSET=8;
+
+//! Server not authoritative for zone.
+final constant NOTAUTH=9;
+
+//! Name not contained in zone.
+final constant NOTZONE=10;
 
 final constant QUERY=0;
 
@@ -307,6 +320,9 @@ int safe_bind(Stdio.UDP udp, string|int port, string|void device)
 #if constant(System.EADDRINUSE)
   if (errno() == System.EADDRINUSE) return 0;
 #endif
+#if constant(System.EACCES)
+  if (errno() == System.EACCES) return 0;	// Privileged port.
+#endif
 #if constant(System.WSAEACCES)
   if (errno() == System.WSAEACCES) return 0;
 #endif
@@ -428,9 +444,9 @@ class protocol
 		      encode_T_LOC_tinyfloat(entry->size? entry->size:100.0), //Default is 1M
 		      encode_T_LOC_tinyfloat(entry->h_prec? entry->h_prec:1000*100.0), // Default is 10KM
 		      encode_T_LOC_tinyfloat(entry->v_prec? entry->v_prec:10*100.0), // Default is 10M
-		      entry->lat?(int)(entry->lat*3600000.0)+(2<<30):2<<30, // Default is 2<<30 which is 0.0
-		      entry->long?(int)(entry->long*3600000.0)+(2<<30):2<<30, // Default is 2<<30 which is 0.0
-		      entry->alt?(int)((entry->alt+100000)*100):100000, // Default to 0 WGS84 (which is 100000)
+		      entry->lat?(int)round(entry->lat*3600000.0)+(2<<30):2<<30, // Default is 2<<30 which is 0.0
+		      entry->long?(int)round(entry->long*3600000.0)+(2<<30):2<<30, // Default is 2<<30 which is 0.0
+		      entry->alt?(int)round((entry->alt+100000)*100):100000, // Default to 0 WGS84 (which is 100000)
 		      );
      case T_CAA:
        if (entry->tag == "" || !entry->tag)
@@ -1013,8 +1029,8 @@ class server_base
   //!     @member int "ad"
   //!       Set to 1 to include the Authenticated Data bit in the response
   //!   @endmapping
-  protected mapping reply_query(mapping query, mapping udp_data,
-				 function(mapping:void) cb)
+  protected mapping|zero reply_query(mapping query, mapping udp_data,
+                                     function(mapping:void) cb)
   {
     // Override this function.
     //
@@ -1424,15 +1440,16 @@ class client
     return sizeof(res) ? res : ({ fallbackvalue });
   }
 
-#else /* !__NT__ */
+#endif /* !__NT__ */
 
-  protected private mapping(string:string) etc_hosts;
+  protected private mapping(string:array(string)) etc_hosts;
 
-  protected private int is_ip(string ip)
+  private Regexp is_ip_regex
+   = Regexp("^([0-9a-fA-F:]+:[0-9a-fA-F:]*|[0-9]+(\\.[0-9]+)+)$");
+
+  protected private int is_ip(string(8bit) ip)
   {
-    if( has_value( ip, ":") )
-        return (replace(ip, "0123456789abcdefABCDEF:"/1, allocate(23,"")) == "");
-    return (replace(ip, "0123456789."/1, allocate(11,"")) == "");
+    return is_ip_regex->match(ip);
   }
 
   protected private string read_etc_file(string fname)
@@ -1461,10 +1478,12 @@ class client
     return res;
   }
 
-  protected private string match_etc_hosts(string host)
+  //! Return /etc/hosts records
+  array(string)|zero match_etc_hosts(string host)
   {
     if (!etc_hosts) {
-      etc_hosts = ([ "localhost":"127.0.0.1" ]);
+      etc_hosts = ([ "localhost":({ "127.0.0.1" }) ,
+                     "127.0.0.1":({ "localhost" }) ]);
 
       string raw = read_etc_file("hosts");
 
@@ -1476,9 +1495,12 @@ class client
 
 	  if (sizeof(arr) > 1) {
 	    if (is_ip(arr[0])) {
-	      foreach(arr[1..], string name) {
-		etc_hosts[name] = arr[0];
-	      }
+              // Store reverse lookup
+              if (sizeof(arr) > 1)
+                etc_hosts[arr[0]] += arr[1..];
+              // Store forward lookups
+	      foreach (arr[1..], string name)
+                etc_hosts[name] += ({ arr[0] });
 	    } else {
 	      // Bad /etc/hosts entry ignored.
 	    }
@@ -1490,7 +1512,6 @@ class client
     }
     return etc_hosts[lower_case(host)];
   }
-#endif /* !__NT__ */
 
   // FIXME: Read hosts entry in /etc/nswitch.conf?
 
@@ -1585,13 +1606,14 @@ class client
 	      if (!is_ip(rest)) {
 		// Not an IP-number!
 		string host = rest;
-		if (!(rest = match_etc_hosts(host))) {
+		array(string)|zero hostip = match_etc_hosts(host);
+		if (!hostip) {
 		  werror("Protocols.DNS.client(): "
 			 "Can't resolv nameserver \"%s\"\n", host);
 		  break;
 		}
-	      }
-	      if (sizeof(rest)) {
+                nameservers += hostip;
+	      } else if (sizeof(rest)) {
 		nameservers += ({ rest });
 	      }
 	      break;
@@ -1642,7 +1664,7 @@ class client
   //!     object d=Protocols.DNS.client();
   //!     mapping r=d->do_sync_query(d->mkquery("pike.lysator.liu.se", C_IN, T_A));
   //!   @endcode
-  mapping do_sync_query(string s)
+  mapping|zero do_sync_query(string s)
   {
     int i;
     object udp = Stdio.UDP();
@@ -1897,7 +1919,7 @@ class client
   //! @returns
   //!   Returns the hostname of the primary mail exchanger.
   //!
-  string get_primary_mx(string host)
+  string|zero get_primary_mx(string host)
   {
     mapping m;
     if(sizeof(domains) && host[-1] != '.' && sizeof(host/".") < 3) {
@@ -1929,7 +1951,7 @@ class client
   }
 
   //!
-  array(string) get_mx(string host)
+  array(string)|zero get_mx(string host)
   {
     mapping m;
     if(sizeof(domains) && host[-1] != '.' && sizeof(host/".") < 3) {
@@ -1957,7 +1979,7 @@ class client
 
   //!
   class Request(string domain, string req,
-		function(string,mapping,mixed...:void) callback,
+		function(string,mapping|zero,__unknown__...:void)|zero callback,
 		array(mixed) args)
   {
     int retries;
@@ -1987,6 +2009,15 @@ class client
 
 #define REMOVE_DELAY 120
 #define GIVE_UP_DELAY (RETRIES * RETRY_DELAY + REMOVE_DELAY)*2
+
+private mapping dnstypetonum = ([
+  "A":    Protocols.DNS.T_A,
+  "MX":   Protocols.DNS.T_MX,
+  "MXIP": Protocols.DNS.T_MX,
+  "TXT":  Protocols.DNS.T_TXT,
+  "AAAA": Protocols.DNS.T_AAAA,
+  "PTR":  Protocols.DNS.T_PTR,
+]);
 
 // FIXME: Randomized source port!
 //! Asynchronous DNS client.
@@ -2021,9 +2052,10 @@ class async_client
   //! @note
   //!   Pike versions prior to 8.0 did not return the @[Request] object.
   Request do_query(string domain, int cl, int type,
-		   function(string,mapping,mixed...:void) callback,
+		   function(string,mapping,__unknown__...:void) callback,
 		   mixed ... args)
   {
+    if (!callback) return UNDEFINED;
     for(int e=next_client ? 100 : 256;e>=0;e--)
     {
       int lid = random(65536);
@@ -2052,22 +2084,288 @@ class async_client
   protected private void rec_data(mapping m)
   {
     mixed err;
+    object r;
+    mapping res;
     if (err = catch {
       if(m->port != 53 || !has_value(nameservers, m->ip)) return;
       sscanf(m->data,"%2c",int id);
-      object r=requests[id];
+      r = requests[id];
       if(!r) {
 	// Invalid request id. Spoofed answer?
 	// FIXME: Consider black- or greylisting the answer.
 	return;
       }
       m_delete(requests,id);
-      r->callback(r->domain,decode_res(m->data),@r->args);
-      destruct(r);
+      res = decode_res(m->data);
     }) {
       werror("DNS: Failed to read UDP packet. Connection refused?\n%s\n",
 	     describe_backtrace(err));
     }
+    // NB: The callback may have gone away during our processing.
+    //     Don't complain if that is the case.
+    if (r->callback && (err = catch {
+	r->callback(r->domain, res, @r->args);
+      })) {
+      werror("DNS: Callback failed:\n"
+	     "%s\n",
+	     describe_backtrace(err));
+    }
+    destruct(r);
+  }
+
+  private void collect_return(string domain, mapping res,
+                              function(array|zero, __unknown__ ...:void)|zero callback,
+                              mixed ... restargs) {
+    array an = res->an;
+    switch (res->rcode) {
+      case Protocols.DNS.SERVFAIL:
+      case Protocols.DNS.NOTIMP:
+      case Protocols.DNS.REFUSED:
+      case Protocols.DNS.YXDOMAIN:
+      case Protocols.DNS.YXRRSET:
+      case Protocols.DNS.NXRRSET:
+      case Protocols.DNS.NOTZONE:
+        if (!sizeof(an)) {
+          if (callback)				// Callback might have vanished
+            callback(0, @restargs);
+          return;
+        }
+    }
+    sort(an->preference, an);
+    if (callback) {				// Callback might have vanished
+      callback(an->aaaa + an->a + an->mx + an->txt + an->ptr - ({ 0 }),
+               @restargs);
+    }
+  }
+
+  private array prepslots(int numslots,
+      function(array(string)|zero, __unknown__ ...:void) callback,
+      mixed ... restargs) {
+    array slots = allocate(numslots + 1);
+    slots[0] = numslots;
+    return ({ slots, callback }) + restargs;
+  }
+
+   // FIXME This actually is a hand-rolled Promise/Future construction.
+  //        Would it be more elegant (but more overhead) to use a real Promise?
+  private void collectslots(array|zero results, int slot, array slots,
+      function(array(string)|zero, __unknown__ ...:void) callback,
+      mixed ... restargs) {
+    // All queries are racing; collect all results in order
+    slots[slot] = results;
+    if (!--slots[0]) {				// Last slot filled
+      array|zero allresults;
+      for (slot = 0; ++slot < sizeof(slots);) {
+        if (results = slots[slot]) {
+          if (allresults)
+            results -= allresults;		// Eliminate duplicates
+          else
+            allresults = ({});
+          allresults += results;
+        }
+      }
+      if (callback)				// Callback might have vanished
+        callback(allresults, @restargs);	// Report back
+    }
+  }
+
+  private void multicallback(array|zero results,
+      string type, string domain, array(string) multiq,
+      function(array(string)|zero, __unknown__ ...:void) callback,
+      mixed ... restargs) {
+    // If we have results, return early
+    if (results && sizeof(results)) {
+      if (callback)			// Callback might have vanished
+        callback(results, @restargs);
+    } else {
+      // No results, so try the next domain extension
+      domain += "." + multiq[0];
+      if (sizeof(multiq) == 1)		// Last try, short to final callback
+        low_generic_query(2, type, domain, callback, @restargs);
+      else {
+        low_generic_query(2, type, domain,	// Shift remaining domain list
+          multicallback, type, domain, multiq[1..], callback, @restargs);
+      }
+    }
+  }
+
+  private void mxfallback(array|zero results, string domain,
+      function(array(string)|zero, __unknown__ ...:void) callback,
+      mixed ... restargs) {
+    // We just want the names, not the IP addresses
+    if (results && sizeof(results))
+      results = ({ domain });
+    if (callback)			// Callback might have vanished
+      callback(results, @restargs);
+  }
+
+  private void collectmx(array|zero results, string domain,
+      function(array(string)|zero, __unknown__ ...:void) callback,
+      mixed ... restargs) {
+    if (results && sizeof(results)) {
+      if (callback)			// Callback might have vanished
+        callback(results, @restargs);	// Got actual MX records
+    } else
+      // Promote any A records to MX 0 records
+      generic_query("AAAA", domain, mxfallback, domain, callback, @restargs);
+  }
+
+  private void collectmxip(array|zero results, string domain,
+      function(array(string)|zero, __unknown__ ...:void) callback,
+      mixed ... restargs) {
+    if (results && sizeof(results)) {
+      restargs = prepslots(sizeof(results), callback, @restargs);
+      foreach (results; int i; string mx)	// MX -> IP
+        low_generic_query(1, "AAAA", mx, collectslots, i + 1, @restargs);
+    } else
+      // Promote A any records to MX 0 records
+      generic_query("AAAA", domain, callback, @restargs);
+  }
+
+  //! @param restrictsearch
+  //!   @int
+  //!     @value 0
+  //!       Try @expr{/etc/hosts@} first, then try all configured
+  //!       domain-postfixes when querying the DNS servers (default).
+  //!     @value 1
+  //!       Try @expr{/etc/hosts@} first, then try an unaltered query
+  //!       on the DNS servers.
+  //!     @value 2
+  //!       Just try an unaltered query on the DNS servers.
+  //!   @endint
+  //!
+  private void low_generic_query(int restrictsearch, string type,
+       string domain, function(array(string)|zero, __unknown__ ...:void) callback,
+       mixed ... restargs) {
+    int itype = dnstypetonum[type];
+    if (!itype) {
+      callback(0, @restargs);
+      return;
+    }
+    // Check /etc/hosts only in particular circumstances
+    if (restrictsearch <= 1) {
+      switch (type) {
+        case "PTR":
+        case "AAAA":
+        case "A":
+          array(string)|zero etchosts = match_etc_hosts(domain);
+          if (etchosts) {
+            callback(etchosts, @restargs);
+            return;
+          }
+      }
+    }
+    switch (type) {
+      case "MXIP":
+      case "MX":
+        restargs = ({ domain, callback }) + restargs;
+        callback = collectmx;
+        break;
+      case "PTR":
+        domain = arpa_from_ip(domain);
+        break;
+      case "AAAA":
+      case "A":
+        if (!restrictsearch) {
+          if (domain[-1] != '.' && sizeof(domains)) {
+            array(string) multiq;
+            if (has_value(domain, "."))
+              multiq = domains;
+            else {
+              multiq += domains[1..] + ({ "" });
+              domain = domain + "." + domains[0];
+            }
+            restargs = ({ domain, type, multiq, callback }) + restargs;
+            callback = multicallback;
+          }
+        }
+        break;
+    }
+    switch (type) {
+      case "MXIP":
+        callback = collectmxip;
+        break;
+      case "AAAA":
+        restargs = prepslots(2, callback, @restargs);
+        do_query(domain, Protocols.DNS.C_IN, dnstypetonum["A"],
+                 collect_return, collectslots, 2, @restargs);
+        restargs = ({ 1 }) + restargs;
+        callback = collectslots;
+        break;
+    }
+    do_query(domain, Protocols.DNS.C_IN, itype,
+             collect_return, callback, @restargs);
+  }
+
+  //! Asynchronous DNS query with multiple results and a distinction
+  //! between failure and empty results.
+  //!
+  //! @param type
+  //!  DNS query type. Currenlty supported:
+  //!   @string
+  //!     @value "A"
+  //!       Return just IPv4 records.
+  //!     @value "AAAA"
+  //!       Return both IPv6 and IPv4 records.
+  //!     @value "PTR"
+  //!       Reverse lookup for IP addresses, it expects normal
+  //!       IP addresses for @expr{domain@}.
+  //!     @value "TXT"
+  //!       Return TXT records.
+  //!     @value "MX"
+  //!       Return MX records sorted by @expr{preference@}, lowest
+  //!       numbers first.
+  //!     @value "MXIP"
+  //!       Like querying for @expr{MX@}, except it returns IP
+  //!       addresses instead of the MX records themselves.
+  //!   @endstring
+  //!
+  //! @param domain
+  //!  The domain name we are querying.  Add a trailing dot to prohibit
+  //!  domain-postfix searching.
+  //!
+  //! @param callback
+  //!  The callback function that receives the result of the DNS query.
+  //!  It should be declared as follows:
+  //!     @expr{void callback(array(string)|zero results, mixed ... restargs);@}
+  //!  If the request fails it will return @expr{zero@} for @expr{results@}.
+  //!
+  //! @param restargs
+  //!  They are passed unaltered to the @expr{callback@} function.
+  //!
+  //! @note
+  //!   There is a notable difference between @expr{results@} equal
+  //!   to @expr{zero@} (= request failed and can be retried) and
+  //!   @expr{({})@} (= request definitively answered the record
+  //!   does not exist; retries are pointless).
+  //!
+  //! @note
+  //!   This method uses the exact same heuristics as the standard DNS
+  //!   resolver library (regarding the use of /etc/hosts, and when to
+  //!   perform a domain-postfix search, and when not to (i.e. trailing
+  //!   dot)).
+  //!
+  //! @note
+  //!   All queries sort automatically by preference (lowest numbers first).
+  void generic_query(string type, string domain,
+       function(array(string)|zero, __unknown__ ...:void) callback,
+       mixed ... restargs) {
+    low_generic_query(0, upper_case(type), domain, callback, @restargs);
+  }
+
+  private void single_result(array|zero results,
+      string domain, function(string, string, __unknown__ ...:void) callback,
+      mixed ... restargs) {
+    if (callback)
+      callback(domain, results && sizeof(results) ? results[0] : "",
+               @restargs);
+  }
+
+  private void multiple_results(array|zero results,
+      string domain, function(string, array, __unknown__ ...:void) callback,
+      mixed ... restargs) {
+    if (callback)
+      callback(domain, results, @restargs);
   }
 
   protected private Request generic_get(string d,
@@ -2080,6 +2378,7 @@ class async_client
 					function callback,
 					mixed ... args)
   {
+    if (!callback) return UNDEFINED;
     if(!answer || !answer->an || !sizeof(answer->an))
     {
       if(multi == -1 || multi >= sizeof(domains)) {
@@ -2108,30 +2407,93 @@ class async_client
     return UNDEFINED;
   }
 
+  //! Looks up the IPv4 address for a host, and when done calls the
+  //! function callback with the host name and IP number as arguments.
   //!
-  Request host_to_ip(string host, function callback, mixed ... args)
+  //! @returns
+  //!   Returns a @[Request] object where progress can be observed
+  //!   from the retries variable and the request can be cancelled
+  //!   using the @[cancel] method.
+  //!
+  //! @seealso
+  //!   @[host_to_ips]
+  Request host_to_ip(string host, function(string,string,__unknown__...:void) callback, mixed ... args)
   {
-    if(sizeof(domains) && host[-1] != '.' && sizeof(host/".") < 3) {
-      return do_query(host, C_IN, T_A,
-		      generic_get, 0, 0, T_A, "a", host, callback, @args );
-    } else {
-      return do_query(host, C_IN, T_A,
-		      generic_get, -1, 0, T_A, "a",
-		      host, callback, @args);
+    generic_query("A", host, single_result, host, callback, @args);
+  }
+
+  //! Looks up the IPv4 address for a host. Returns a
+  //! @[Concurrent.Future] object that resolves into the IP number as
+  //! a string, or 0 if it is missing.
+  //!
+  //! @seealso
+  //!   @[host_to_ips]
+  variant Concurrent.Future host_to_ip(string host) {
+    Concurrent.Promise p = Concurrent.Promise();
+    void success(string host, string ip) {
+      p->success(ip);
     }
+    host_to_ip(host, success);
+    return p->future();
   }
 
+  //! Looks up the IP number(s) for a host, and when done calls the
+  //! function callback with the host name and array of IP addresses
+  //! as arguments. If IPv6 and IPv4 addresses are both available,
+  //! IPv6 addresses will be earlier in the array.
   //!
-  Request ip_to_host(string ip, function callback, mixed ... args)
+  //! @returns
+  //!   Returns a @[Request] object where progress can be observed
+  //!   from the retries variable and the request can be cancelled
+  //!   using the @[cancel] method.
+  Request host_to_ips(string host,
+		      function(string, array, __unknown__...:void) callback,
+		      mixed ... args)
   {
-    return do_query(arpa_from_ip(ip), C_IN, T_PTR,
-		    generic_get, -1, 0, T_PTR, "ptr",
-		    ip, callback,
-		    @args);
+    generic_query("AAAA", host, multiple_results, host, callback, @args);
   }
 
+  //! Looks up the IP number for a host. Returns a
+  //! @[Concurrent.Future] object that resolves into an array of
+  //! IP addresses as strings, or an empty array if it is missing.
+  variant Concurrent.Future host_to_ips(string host) {
+    Concurrent.Promise p = Concurrent.Promise();
+    host_to_ips(host) {p->success(__ARGS__[1]);};
+    return p->future();
+  }
+
+  //! Looks up the host name for an IP number, and when done calls the
+  //! function callback with the IP number adn host name as arguments.
   //!
-  Request get_mx_all(string host, function callback, mixed ... args)
+  //! @returns
+  //!   Returns a @[Request] object where progress can be observed
+  //!   from the retries variable and the request can be cancelled
+  //!   using the @[cancel] method.
+  Request ip_to_host(string ip, function(string,string,__unknown__...:void) callback, mixed ... args)
+  {
+    generic_query("PTR", ip, single_result, ip, callback, @args);
+  }
+
+  //! Looks up the host name for an IP number. Returns a
+  //! @[Concurrent.Future] object that resolves into the host name, or
+  //! 0 if it is missing.
+  variant Concurrent.Future ip_to_host(string ip) {
+    Concurrent.Promise p = Concurrent.Promise();
+    void success(string ip, string host) {
+      p->success(host);
+    }
+    ip_to_host(ip, success);
+    return p->future();
+  }
+
+  //! Looks up the mx pointers for a host, and when done calls the
+  //! function callback with the results as an array of mappings.
+  //!
+  //! @returns
+  //!   Returns a @[Request] object where progress can be observed
+  //!   from the retries variable and the request can be cancelled
+  //!   using the @[cancel] method.
+  Request get_mx_all(string host, function(string,array(mapping(string:string|int)),__unknown__...:void) callback, mixed ... args)
   {
     if(sizeof(domains) && host[-1] != '.' && sizeof(host/".") < 3) {
       return do_query(host, C_IN, T_MX,
@@ -2142,8 +2504,27 @@ class async_client
     }
   }
 
+  //! Looks up the mx pointers for a host. Returns a
+  //! @[Concurrent.Future] object that resolves into an array of
+  //! mappings.
+  variant Concurrent.Future get_mx_all(string host) {
+    Concurrent.Promise p = Concurrent.Promise();
+    void success(string host, array(mapping(string:string|int)) results) {
+      p->success(results);
+    }
+    get_mx_all(host, success);
+    return p->future();
+  }
+
+  //! Looks up the mx pointers for a host, and when done calls the
+  //! function callback with the results as an array of strings. These
+  //! can be host names, IP numbers, or a mix.
   //!
-  Request get_mx(string host, function callback, mixed ... args)
+  //! @returns
+  //!   Returns a @[Request] object where progress can be observed
+  //!   from the retries variable and the request can be cancelled
+  //!   using the @[cancel] method.
+  Request get_mx(string host, function(array(string),__unknown__...:void) callback, mixed ... args)
   {
     return get_mx_all(host,
 		      lambda(string domain, array(mapping) mx,
@@ -2155,6 +2536,18 @@ class async_client
 			}
 			callback(a, @args);
 		      }, callback, @args);
+  }
+
+  //! Looks up the mx pointers for a host. Returns a
+  //! @[Concurrent.Future] object that resolves into an array of
+  //! strings.
+  variant Concurrent.Future get_mx(string host) {
+    Concurrent.Promise p = Concurrent.Promise();
+    void success(array(string) results) {
+      p->success(results);
+    }
+    get_mx(host, success);
+    return p->future();
   }
 
   //! Close the client.
@@ -2216,7 +2609,7 @@ class tcp_client
   //!     object d=Protocols.DNS.tcp_client();
   //!     mapping r=d->do_sync_query(d->mkquery("pike.lysator.liu.se", C_IN, T_A));
   //!   @endcode
-  mapping do_sync_query(string s)
+  mapping|zero do_sync_query(string s)
   {
     for (int i=0; i < RETRIES; i++) {
       object tcp = Stdio.File();
@@ -2247,7 +2640,7 @@ class async_tcp_client
     protected string writebuf="",readbuf="";
 
     protected void create(string domain, string req,
-			  function(string,mapping,mixed...:void) callback,
+			  function(string,mapping,__unknown__...:void) callback,
 			  array(mixed) args)
     {
       ::create(domain, req, callback, args);
@@ -2263,6 +2656,7 @@ class async_tcp_client
 
     protected void connectedcb(int ok)
     {
+      if (!callback) return;
       if (!ok) {callback(domain, 0, @args); return;}
       sock->set_nonblocking(readcb, writecb, closecb);
       writebuf=sprintf("%2H",req);
@@ -2299,7 +2693,7 @@ class async_tcp_client
 
   //!
   Request do_query(string domain, int cl, int type,
-		   function(string,mapping,mixed...:void) callback,
+		   function(string,mapping,__unknown__...:void) callback,
 		   mixed ... args)
   {
     string req=low_mkquery(random(65536),domain,cl,type);
@@ -2321,7 +2715,7 @@ class dual_client
     return TCP::do_sync_query(s);
   }
 
-  void create(mixed ... args) {::create(@args);}
+  protected void create(mixed ... args) {::create(@args);}
 }
 
 //! Both an @[async_client] and an @[async_tcp_client].
@@ -2331,7 +2725,7 @@ class async_dual_client
   inherit async_tcp_client : TCP;
 
   void check_truncation(string domain, mapping result, int cl, int type,
-			function(string,mapping,mixed...:void) callback,
+			function(string,mapping,__unknown__...:void) callback,
 			mixed ... args)
   {
     if (!result || !result->tc) callback(domain,result,@args);
@@ -2340,14 +2734,14 @@ class async_dual_client
 
   //!
   Request do_query(string domain, int cl, int type,
-		   function(string,mapping,mixed...:void) callback,
+		   function(string,mapping,__unknown__...:void) callback,
 		   mixed ... args)
   {
     return UDP::do_query(domain,cl,type,check_truncation,
 			 cl,type,callback,@args);
   }
 
-  void create(mixed ... args) {::create(@args);}
+  protected void create(mixed ... args) {::create(@args);}
 }
 
 
@@ -2359,27 +2753,57 @@ async_client.Request async_##X( string host, function callback, mixed ... args )
   if( !global_async_client )						\
     global_async_client = async_client();				\
   return global_async_client->X(host,callback,@args);			\
+}                                                                       \
+variant Concurrent.Future async_##X( string host ) {                    \
+  if( !global_async_client )						\
+    global_async_client = async_client();				\
+  return global_async_client->X(host);                                  \
 }
 
 //! @ignore
 GAC(ip_to_host);
 //! @endignore
-//! @decl void async_ip_to_host(string ip, function cb, mixed ... cba)
+//! @decl client.Request async_ip_to_host(string ip, function cb, mixed ... cba)
+//! @decl Concurrent.Future async_ip_to_host(string ip)
+//! Calls ip_to_host in a global async_client created on demand.
+//! @seealso
+//!   @[async_client.ip_to_host()]
 
 //! @ignore
 GAC(host_to_ip);
 //! @endignore
-//! @decl void async_host_to_ip(string host, function cb, mixed ... cba)
+//! @decl client.Request async_host_to_ip(string host, function cb, mixed ... cba)
+//! @decl Concurrent.Future async_host_to_ip(string host)
+//! Calls host_to_ip in a global async_client created on demand.
+//! @seealso
+//!   @[async_client.host_to_ip()]
+
+//! @ignore
+GAC(host_to_ips);
+//! @endignore
+//! @decl client.Request async_host_to_ips(string host, function cb, mixed ... cba)
+//! @decl Concurrent.Future async_host_to_ips(string host)
+//! Calls host_to_ips in a global async_client created on demand.
+//! @seealso
+//!   @[async_client.host_to_ips()]
 
 //! @ignore
 GAC(get_mx_all);
 //! @endignore
-//! @decl void async_get_mx_all(string host, function cb, mixed ... cba)
+//! @decl client.Request async_get_mx_all(string host, function cb, mixed ... cba)
+//! @decl Concurrent.Future async_get_mx_all(string host)
+//! Calls get_mx_all in a global async_client created on demand.
+//! @seealso
+//!   @[async_client.get_mx_all()]
 
 //! @ignore
 GAC(get_mx);
 //! @endignore
-//! @decl void async_get_mx(string host, function cb, mixed ... cba)
+//! @decl client.Request async_get_mx(string host, function cb, mixed ... cba)
+//! @decl Concurrent.Future async_get_mx(string host)
+//! Calls get_mx in a global async_client created on demand.
+//! @seealso
+//!   @[async_client.get_mx()]
 
 
 client global_client;

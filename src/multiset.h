@@ -157,7 +157,7 @@ PMOD_EXPORT extern const char msg_no_multiset_flag_marker[];
     *_ms_index_to_ = msnode_check (NODE)->i.ind;			\
     DO_IF_DEBUG (							\
       if (!(TYPEOF(*_ms_index_to_) & MULTISET_FLAG_MARKER))		\
-	Pike_fatal (msg_no_multiset_flag_marker);			\
+        Pike_fatal ("%s", msg_no_multiset_flag_marker);			\
     );									\
     SET_SVAL_TYPE(*_ms_index_to_,					\
 		  TYPEOF(*_ms_index_to_) & ~MULTISET_FLAG_MASK);	\
@@ -173,7 +173,8 @@ PMOD_EXPORT extern const char msg_no_multiset_flag_marker[];
 #define low_use_multiset_index(NODE, VAR)				\
   ((VAR) = msnode_check (NODE)->i.ind,					\
     DO_IF_DEBUG (TYPEOF(VAR) & MULTISET_FLAG_MARKER ? 0 :		\
-		(Pike_fatal (msg_no_multiset_flag_marker), 0) COMMA)	\
+		(Pike_fatal ("%s", msg_no_multiset_flag_marker),	\
+		 0) COMMA)						\
    SET_SVAL_TYPE((VAR), TYPEOF(VAR) & ~MULTISET_FLAG_MASK),		\
    &(VAR))
 
@@ -293,7 +294,8 @@ PMOD_EXPORT extern const char msg_multiset_no_node_refs[];
 #define sub_msnode_ref(L) do {						\
     struct multiset *_ms_ = (L);					\
     DO_IF_DEBUG (							\
-      if (!_ms_->node_refs) Pike_fatal (msg_multiset_no_node_refs);	\
+      if (!_ms_->node_refs)						\
+        Pike_fatal ("%s", msg_multiset_no_node_refs);\
     );									\
     if (!--_ms_->node_refs && _ms_->msd->refs == 1)			\
       multiset_clear_node_refs (_ms_);					\
@@ -340,11 +342,13 @@ PMOD_EXPORT struct multiset *real_allocate_multiset (int allocsize,
 						     int flags,
 						     struct svalue *cmp_less);
 PMOD_EXPORT void do_free_multiset (struct multiset *l);
+PMOD_EXPORT void clear_multiset(struct multiset *l);
 PMOD_EXPORT void multiset_fix_type_field (struct multiset *l);
 PMOD_EXPORT void multiset_set_flags (struct multiset *l, int flags);
 PMOD_EXPORT struct multiset *mkmultiset (struct array *indices);
 PMOD_EXPORT void multiset_insert (struct multiset *l,
 				  struct svalue *ind);
+PMOD_EXPORT ptrdiff_t multiset_add(struct multiset *l, struct svalue *ind);
 PMOD_EXPORT int multiset_delete (struct multiset *l,
 				 struct svalue *ind);
 PMOD_EXPORT int multiset_delete_2 (struct multiset *l,

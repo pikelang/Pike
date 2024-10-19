@@ -59,7 +59,7 @@ class TocNode {
 	  Node dd = Node( XML_ELEMENT, "dd", ([]), 0 );
 	  sub++;
 	  Node link = Node( XML_ELEMENT, "url",
-			    ([ "href" : file+"#"+sub ]), 0 );
+			    ([ "href" : file + "#" + ent[2] + "." + sub ]), 0 );
 	  link->add_child( Node( XML_TEXT, 0, 0, ent[2]+"."+sub+". "+subtit ) );
 	  dd->add_child( link );
 	  add_child( dd );
@@ -85,7 +85,7 @@ class TocNode {
     return ::count_children();
   }
 
-  void create(string _path, int(1..3) _depth) {
+  protected void create(string _path, int(1..3) _depth) {
     path = _path;
     depth = _depth;
     ::create(XML_ELEMENT, "dl", ([]), "");
@@ -95,8 +95,19 @@ class TocNode {
 class Entry (Node target) {
   constant type = "";
   mapping args;
-  string _sprintf() {
+
+  protected string _sprintf(int t) {
     return sprintf("%sEntry( %O )", type, target);
+  }
+
+  int done;
+  protected void `()(Node data) {
+    done++;
+  }
+
+  int pass2()
+  {
+    return done;
   }
 }
 
@@ -145,19 +156,36 @@ class mvEntry {
 
   Node parent;
 
+  array(Node) result = ({});
+
   protected void create(Node target, Node parent)
   {
     ::create(target);
     mvEntry::parent = parent;
   }
 
-  void `()(Node data) {
+  protected void `()(Node data) {
     if(args) {
       mapping m = data->get_attributes();
       foreach(indices(args), string index)
 	m[index] = args[index];
     }
-    parent->replace_child(target, data);
+    result += ({ data });
+
+    ::`()(data);
+  }
+
+  int pass2()
+  {
+    // WARNING! Disrespecting information hiding!
+    int pos = search(parent->mChildren, target);
+    if (pos < 0) {
+      error("Lost track of destination target!\n");
+    }
+    parent->mChildren =
+      parent->mChildren[..pos-1] + result + parent->mChildren[pos+1..];
+
+    return ::pass2();
   }
 }
 
@@ -173,12 +201,14 @@ class mvPeelEntry {
     mvPeelEntry::parent = parent;
   }
 
-  void `()(Node data) {
+  protected void `()(Node data) {
     // WARNING! Disrespecting information hiding!
     int pos = search(parent->mChildren, data);
     array pre = parent->mChildren[..pos-1];
     array post = parent->mChildren[pos+1..];
     parent->mChildren = pre + data->mChildren + post;
+
+    ::`()(data);
   }
 }
 
@@ -186,9 +216,11 @@ class cpEntry {
   inherit Entry;
   constant type = "cp";
 
-  void `()(Node data) {
+  protected void `()(Node data) {
     // clone data subtree
     // target->replace_node(clone);
+
+    ::`()(data);
   }
 }
 
@@ -246,44 +278,21 @@ Node parse_file(string fn)
   return n;
 }
 
-void section_ref_expansion(Node n) {
-  int subsection;
-  foreach(n->get_elements(), Node c)
-    switch(c->get_tag_name()) {
-
-    case "p":
-    case "example":
-    case "dl":
-    case "ul":
-    case "matrix":
-      break;
-
-    case "subsection":
-      c->get_attributes()->number = (string)++subsection;
-      break;
-
-    case "insert-move":
-      enqueue_move(c, n);
-      break;
-
-    default:
-      error("Unknown element %O in section element.\n", c->get_tag_name());
-      break;
-    }
-}
-
-void chapter_ref_expansion(Node n, string dir) {
+void chapter_ref_expansion(Node n, string dir, array(int) section_path) {
   int section;
   foreach(n->get_elements(), Node c)
     switch(c->get_tag_name()) {
 
 
     case "ul":
+    case "ol":
     case "li":
     case "dl":
     case "dt":
     case "dd":
     case "p":
+    case "example":
+    case "matrix":
       break;
 
     case "contents":
@@ -291,8 +300,15 @@ void chapter_ref_expansion(Node n, string dir) {
       break;
 
     case "section":
+    case "subsection":
+      if (sizeof(section_path) == 1) {
+	c->set_tag_name("section");
+      } else {
+	c->set_tag_name("subsection");
+      }
       c->get_attributes()->number = (string)++section;
-      section_ref_expansion(c);
+      chapter_ref_expansion(c, dir,
+			    section_path + ({ c->get_attributes()->number }));
       break;
 
     case "insert-move":
@@ -300,7 +316,8 @@ void chapter_ref_expansion(Node n, string dir) {
       break;
 
     default:
-      error("Unknown element %O in chapter element.\n", c->get_tag_name());
+      error("Unknown element %O in %s element.\n",
+	    c->get_tag_name(), n->get_tag_name());
       break;
     }
 }
@@ -374,7 +391,7 @@ void ref_expansion(Node n, string dir, void|string file)
 	m->number = (string)++chapter;
       toc += ({ ({ m->title, file, m->number }) });
       chapters += ({ c });
-      chapter_ref_expansion(c, dir);
+      chapter_ref_expansion(c, dir, ({ m->number }));
       break;
 
     case "appendix-ref":
@@ -432,7 +449,7 @@ void ref_expansion(Node n, string dir, void|string file)
     case "void":
       n->remove_child(c);
       void_node->add_child(c);
-      chapter_ref_expansion(c, dir);
+      chapter_ref_expansion(c, dir, ({}));
       break;
 
     default:
@@ -443,13 +460,32 @@ void ref_expansion(Node n, string dir, void|string file)
   }
 }
 
+void job_queue_pass2(mapping job_queue)
+{
+  foreach(job_queue; string ind; mapping|Entry entry) {
+    if (mappingp(entry)) {
+      job_queue_pass2(entry);
+      if (sizeof(entry)) continue;
+    } else if (objectp(entry)) {
+      if (!entry->done) {
+	werror("Entry %O: %O not done!\n", ind, entry);
+	continue;
+      }
+      if (!entry->pass2()) {
+	werror("Entry %O: %O failed in pass2!\n", ind, entry);
+	continue;
+      }
+    }
+    m_delete(job_queue, ind);
+  }
+}
+
 void move_appendices(Node n) {
   foreach(n->get_elements("appendix"), Node c) {
     string name = c->get_attributes()->name;
     Node a = appendix_queue[name];
     if(a) {
       a(c);
-      m_delete(appendix_queue, name);
     }
     else {
       c->remove_node();
@@ -458,6 +494,9 @@ void move_appendices(Node n) {
       }
     }
   }
+
+  job_queue_pass2(appendix_queue);
+
   if(sizeof(appendix_queue)) {
     if (verbose) {
       werror("Failed to find appendi%s %s.\n",
@@ -492,7 +531,6 @@ protected void move_items_low(Node parent, Node n, mapping jobs,
       jobs[0]( wrap(n, wrapper->clone()) );
     else
       jobs[0](n);
-    m_delete(jobs, 0);
   }
   if(!sizeof(jobs)) return;
 
@@ -573,16 +611,6 @@ protected void move_items_low(Node parent, Node n, mapping jobs,
 	wr = wrap( wr, wrapper->clone() );
 
       move_items_low(n, c, e, wr);
-
-      if ((parent != jobs) && !sizeof(e)) {
-	m_delete(parent, name);
-	name = parent_name;
-	e = jobs[e];
-	if (!e) continue;
-      }
-
-      if(!sizeof(e))
-	m_delete(jobs, name);
     }
 }
 
@@ -590,37 +618,39 @@ void move_items(Node n, mapping jobs)
 {
   if(jobs[0]) {
     jobs[0](n);
-    m_delete(jobs, 0);
   }
-  if(!sizeof(jobs) && !sizeof(ns_queue)) return;
 
-  foreach(n->get_elements("namespace"), Node c) {
-    mapping m = c->get_attributes();
-    string name = m->name + "::";
+  // Skip looping if this is the onepage case.
+  if((sizeof(jobs) != !!jobs[0]) || sizeof(ns_queue)) {
 
-    if(ns_queue[name]) {
-      ns_queue[name]( c );
-      m_delete(ns_queue, name);
+    foreach(n->get_elements("namespace"), Node c) {
+      mapping m = c->get_attributes();
+      string name = m->name + "::";
+
+      if(ns_queue[name]) {
+	ns_queue[name]( c );
+      }
+
+      mapping e = jobs[name];
+      if(!e) continue;
+
+      Node wr = Node(XML_ELEMENT, "autodoc",
+		     n->get_attributes()+(["hidden":"1"]), 0);
+
+      move_items_low(n, c, e, wr);
     }
-
-    mapping e = jobs[name];
-    if(!e) continue;
-
-    Node wr = Node(XML_ELEMENT, "autodoc",
-		   n->get_attributes()+(["hidden":"1"]), 0);
-
-    move_items_low(n, c, e, wr);
-
-    if(!sizeof(e))
-      m_delete(jobs, name);
   }
 
-  if (verbose >= Tools.AutoDoc.FLAG_VERBOSE) {
-    foreach(indices(ns_queue), string name)
+  job_queue_pass2(ns_queue);
+  job_queue_pass2(jobs);
+
+  foreach(ns_queue; string name; Entry n) {
+    if (verbose >= Tools.AutoDoc.FLAG_VERBOSE) {
       werror("Failed to move namespace %O.\n", name);
-  }
-  foreach(values(ns_queue), Node n)
+    }
     n(ElementNode("namespace", ([])));
+  }
+  job_queue_pass2(ns_queue);
 }
 
 void clean_empty_files(Node n)

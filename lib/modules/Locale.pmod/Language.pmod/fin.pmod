@@ -1,3 +1,4 @@
+#charset iso-8859-1
 #pike __REAL_VERSION__
 
 //! Finnish language locale created by Janne Edelman, Turku Unix Users

@@ -2,7 +2,7 @@
 
 // Some IPv6 utilities.
 
-protected array(int) parse_ipv6_seq (string seq)
+protected array(int)|zero parse_ipv6_seq (string seq)
 {
   if (has_value (seq, "-"))
     // "-" could be interpreted as a minus sign.
@@ -15,7 +15,7 @@ protected array(int) parse_ipv6_seq (string seq)
     return ({first}) + (rest * ({}));
 }
 
-protected array(int) parse_ipv6_seq_with_ipv4_suffix (string seq)
+protected array(int)|zero parse_ipv6_seq_with_ipv4_suffix (string seq)
 // seq is assumed to contain at least one ".".
 {
   array(int) segments = ({});
@@ -76,7 +76,7 @@ protected array(int) parse_ipv6_seq_with_ipv4_suffix (string seq)
   return segments;
 }
 
-array(int(0..65535)) parse_addr (string addr)
+array(int(0..65535))|zero parse_addr (string addr)
 //! Parses an IPv6 address on the formatted hexadecimal
 //! @expr{"x:x:x:x:x:x:x:x"@} form, or any of the shorthand varieties
 //! (see @rfc{2373:2.2@}).
@@ -173,7 +173,7 @@ string format_addr_short (array(int(0..65535)) bin_addr)
   return ((split * ({})) * "")[..<1]; // Get rid of the trailing ":".
 }
 
-string normalize_addr_basic (string addr)
+string|zero normalize_addr_basic (string addr)
 //! Normalizes a formatted IPv6 address to a string with eight
 //! hexadecimal numbers separated by @tt{":"@}. @[addr] is given on
 //! the same form, or any of the shorthand varieties as specified in
@@ -197,7 +197,7 @@ string normalize_addr_basic (string addr)
   return sprintf ("%{%x:%}", bin_addr)[..<1];
 }
 
-string normalize_addr_short (string addr)
+string|zero normalize_addr_short (string addr)
 //! Normalizes a formatted IPv6 address to a canonical shortest form.
 //! @[addr] is parsed according to the hexadecimal
 //! @expr{"x:x:x:x:x:x:x:x"@} syntax or any of its shorthand varieties

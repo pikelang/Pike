@@ -305,10 +305,8 @@ void mirror_screen( string how )
 //!   @endmapping
 //! @seealso
 //! @[get_drivers]
-void init(void|mapping(string:mixed) options) {
-
-  if(!options)
-    options = ([]);
+void init(mapping(string:mixed) options = ([]))
+{
 
   if(options->event_callback)
     event_callback = options->event_callback;
@@ -320,7 +318,8 @@ void init(void|mapping(string:mixed) options) {
   if(options->resize_callback)
     resize_callback = options->resize_callback;
   else
-    resize_callback = lambda(){};
+    resize_callback =
+      lambda(float aspect, int(0..1) hidden, float z_rotation){};
 
   start_driver(options->driver_names, options->title, options->icon_title);
 
@@ -678,7 +677,7 @@ class DynList {
   //! @param f
   //! Function which contains the GL commands that generates
   //! the displaylist.
-  void create( function|void f ) {
+  protected void create( function|void f ) {
     ::create();
     if( f )
       set_generator( f );
@@ -1010,7 +1009,7 @@ class BaseTexture {
 
   //! Paste the image @[i] with alpha channel @[a] at coordinates @[x]
   //! and @[y] in the current texture.
-  void paste( Image.Image i, Image.Image a, int x, int y ) {
+  void paste( zero|Image.Image i, Image.Image a, int x, int y ) {
 #ifdef __NT__
     // We need backing store.  Why, you ask? Because when we switch
     // mode or somebody else does for us, all textures become invalid.
@@ -1051,7 +1050,7 @@ class BaseTexture {
   }
 
   //! Returns the size of memory allocated by the texture.
-  int _sizeof() {
+  protected int _sizeof() {
     int multiplier = 1, size = t_width * t_height;
 
     if( depth == 16 ) {
@@ -1138,7 +1137,7 @@ class BaseTexture {
   }
 #endif
 
-  protected string _sprintf( int f ) {
+  protected string|zero _sprintf( int f ) {
     if(f!='O') return 0;
 
     string ms;
@@ -1323,7 +1322,7 @@ class BaseDWIM {
   //! argument list, the remaining integers will be interpreted as
   //! width, height, alpha, mipmap and mode, unless there is only one
   //! argument. In that case it will be interpreted as the alpha mode.
-  void create(mixed ... args) {
+  protected void create(mixed ... args) {
     mapping imgs;
     int height, width, alpha=-1, mipmap, clamp, mode, cnt;
     string debug;
@@ -1499,7 +1498,7 @@ class Region( float x, float y, float w, float h ) {
   }
 
   //! Creates a new region with the intersection of this region and @[R].
-  Region `&( mixed R ) {
+  protected Region `&( mixed R ) {
     if(!objectp(R) || !R->is_region)
       error("Regions can only be ANDed with other regions.\n");
 
@@ -1553,18 +1552,20 @@ class Font
   protected float scale_spacing;
 
   //!
-  void create( Image.Fonts.Font f, float|void _scale_width,
-	       float|void _scale_spacing ) {
-    font = f;
-    scale_width = _scale_width || 0.69;
-    scale_spacing = _scale_spacing || 0.40;
+  protected void create( Image.Fonts.Font font,
+                         float scale_width = 0.69,
+                         float scale_spacing = 0.40 ) {
+    this::font = font;
+    this::scale_width = scale_width;
+    this::scale_spacing = scale_spacing;
 
-    character_height = f->write("A")->ysize()/2+1;
-    if( f->font && f->font->advance )
-      spacew = (f->font->advance( ' ' )/(2.0*(character_height-1)))
-	*scale_width;
+    character_height = font->write("A")->ysize()/2+1;
+    if( font->font && font->font->advance )
+      spacew = (font->font->advance(' ')/(2.0*(character_height-1))) *
+        scale_width;
     else
-      spacew = (f->write("f")->xsize()/(2.0*(character_height-1)))*scale_width;
+      spacew = (font->write("f")->xsize()/(2.0*(character_height-1))) *
+        scale_width;
   }
 
 
@@ -2083,7 +2084,7 @@ class SquareMesh
   //! The @[calculator] will be called for each corner and should
   //! return a 1x3 matrix describing the coordinates for the given
   //! spot om the surface.
-  void create( function(float,float:Math.Matrix) calculator )
+  protected void create( function(float,float:Math.Matrix) calculator )
   {
     set_size( 10, 10 );
     need_recalc = 1;

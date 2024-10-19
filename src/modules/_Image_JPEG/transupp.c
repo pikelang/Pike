@@ -63,6 +63,13 @@
 #endif
 #endif
 
+/* Some releases of <jconfig.h> contain (re-)definitions
+ * of HAVE_STDLIB_H...
+ */
+#ifdef HAVE_STDLIB_H
+#undef HAVE_STDLIB_H
+#endif
+
 #include <jerror.h>
 #include "jinclude.h"
 #include <jpeglib.h>

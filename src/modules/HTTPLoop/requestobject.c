@@ -19,7 +19,9 @@
 #include "svalue.h"
 #include "threads.h"
 #include "fdlib.h"
+#include "fd_control.h"
 #include "builtin_functions.h"
+#include "bignum.h"
 
 #include <errno.h>
 #ifdef HAVE_SYS_SOCKET_H
@@ -94,7 +96,7 @@ do { 						\
 
 #define IINSERT(MAP,INDEX,VAL)\
 do { 						\
-  push_int(VAL);				\
+  push_int64(VAL);				\
   push_string(INDEX);                           \
   mapping_insert((MAP),sp-1,sp-2);		\
   sp -= 2;                                      \
@@ -126,7 +128,7 @@ void f_aap_scan_for_query(INT32 args)
   if(args)
   {
     struct pike_string *_s;
-    get_all_args(NULL, args, "%S", &_s);
+    get_all_args(NULL, args, "%n", &_s);
     s = (char *)_s->str;
     len = _s->len;
   }
@@ -320,7 +322,7 @@ void f_aap_index_op(INT32 args)
   }
 
   if(!THIS->request) Pike_error("Reply called. No data available\n");
-  get_all_args(NULL, args, "%S", &s);
+  get_all_args(NULL, args, "%n", &s);
 
   if(s == s_not_query || s==s_query )
   {
@@ -537,6 +539,7 @@ static void free_send_args(struct send_args *s)
 static void actually_send(struct send_args *a)
 {
   int first=0;
+  int oldbulkmode = 0;
   char foo[10];
   unsigned char *data = NULL;
   ptrdiff_t fail, data_len = 0;
@@ -647,17 +650,8 @@ static void actually_send(struct send_args *a)
   {
     memcpy(foo, data+MINIMUM((data_len-4),9), 4);
     first=1;
-#if !defined(SOL_TCP) && defined(IPPROTO_TCP)
-    /* SOL_TCP isn't defined in Solaris. */
-#define SOL_TCP	IPPROTO_TCP
-#endif
-#if defined(TCP_CORK) && defined(SOL_TCP)
     DWERROR("cork... \n");
-    {
-      int true=1;
-      fd_setsockopt( a->to->fd, SOL_TCP, TCP_CORK, &true, sizeof(true) );
-    }
-#endif
+    oldbulkmode = bulkmode_start(a->to->fd);
     fail = WRITE(a->to->fd, (char *)data, data_len);
     a->sent += fail;
     if(fail != data_len)
@@ -743,12 +737,7 @@ static void actually_send(struct send_args *a)
 
  end:
   DWERROR("all written.. \n");
-#if defined(TCP_CORK) && defined(SOL_TCP)
-  {
-    int false = 0;
-    fd_setsockopt( a->to->fd, SOL_TCP, TCP_CORK, &false, sizeof(false) );
-  }
-#endif
+  bulkmode_restore(a->to->fd, oldbulkmode);
   {
     struct args *arg = a->to;
     LOG(a->sent, a->to, atoi(foo));
@@ -830,11 +819,13 @@ void f_aap_reply_with_cache(INT32 args)
 {
   struct cache_entry *ce;
   struct pike_string *reply;
-  INT_TYPE time_to_keep, t, freed=0;
+  INT_TYPE time_to_keep, freed=0;
+  time_t t;
+
   if(!THIS->request)
     Pike_error("Reply already called.\n");
 
-  get_all_args(NULL, args, "%S%i", &reply, &time_to_keep);
+  get_all_args(NULL, args, "%n%i", &reply, &time_to_keep);
 
   if((size_t)reply->len < (size_t)THIS->request->cache->max_size/2)
   {

@@ -212,7 +212,7 @@ class Connection
     return sprintf("%4c%4c", qbase, qid++);
   }
 
-  protected string cmd_bigquery(string|array(string) q)
+  protected string|zero cmd_bigquery(string|array(string) q)
   {
     object res;
     if (arrayp(q)) {
@@ -245,7 +245,7 @@ class Connection
 
   protected int cmd_insert_id()
   {
-    return sqlobj->master_sql->insert_id();
+    return sqlobj->insert_id();
   }
 
   protected int|array(string|int) cmd_fetchrow(string qid)
@@ -352,7 +352,7 @@ class Connection
     }
   }
 
-  void create(object s, mapping(string:string)|void u)
+  protected void create(object s, mapping(string:string)|void u)
   {
     users = u;
     clntsock = s;
@@ -375,7 +375,8 @@ class Server
       Connection(s, users);
   }
 
-  void create(int|void port, string|void ip, mapping(string:string)|void usrs)
+  protected void create(int|void port, string|void ip,
+			mapping(string:string)|void usrs)
   {
     users = usrs;
     if(!port)

@@ -186,7 +186,7 @@ mapping(string:mixed) create_pie(mapping(string:mixed) diagram_data)
       pnumbers=({400});
 
   //Initiate the piediagram!
-  float FI=0;
+  float FI = 0.0;
   if (diagram_data->center)
     {
       //If to great center integer is given, module is used.

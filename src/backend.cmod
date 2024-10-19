@@ -63,10 +63,9 @@
 /* For poll and /dev/poll and epoll */
 #ifdef HAVE_POLL_H
 #include <poll.h>
-#endif /* HAVE_POLL_H */
-#ifdef HAVE_SYS_POLL_H
+#elif defined(HAVE_SYS_POLL_H)
 #include <sys/poll.h>
-#endif /* HAVE_SYS_POLL_H */
+#endif /* HAVE_POLL_H || HAVE_SYS_POLL_H */
 
 /* For /dev/poll */
 #ifdef HAVE_SYS_DEVPOLL_H
@@ -513,10 +512,19 @@ PIKECLASS Backend
     CVAR INT32 pos;
     CVAR size_t fun_hval;
     CVAR struct timeval tv;
+
+    /* The {next,prev}_fun chain is a list of call_outs of
+     * functions having the same fun_hval % hash_size.
+     */
     CVAR struct Backend_CallOut_struct *next_fun;
     CVAR struct Backend_CallOut_struct **prev_fun;
+
+    /* The {next,prev}_arr chain is a list of call_outs that
+     * have args arrays that hash to the same bucket.
+     */
     CVAR struct Backend_CallOut_struct *next_arr;
     CVAR struct Backend_CallOut_struct **prev_arr;
+
     /*! @decl protected array args
      *!
      *! The array containing the function and arguments.
@@ -728,10 +736,10 @@ PIKECLASS Backend
 	}
 	CALL_(me->num_pending_calls) = NULL;
 	this->pos = -1;
+	EXIT_CO(this);
 	free_object(this->this);
 	this->this = NULL;
       }
-      EXIT_CO(this);
     }
 
     /*! @decl void create(int|float seconds, mixed fun, mixed ... args)
@@ -848,6 +856,12 @@ PIKECLASS Backend
       case T_INT:
 	new->tv.tv_sec = seconds->u.integer;
 	new->tv.tv_usec = 0;
+        if (!seconds->u.integer) {
+          /* We need accurate time in order to attempt to preserve
+           * ordering between different call_out(f, 0) calls.
+           */
+          INVALIDATE_CURRENT_TIME();
+        }
 	break;
 
       case T_FLOAT:
@@ -943,7 +957,6 @@ PIKECLASS Backend
     struct svalue *save_sp = Pike_sp;
     backend_count_memory_in_call_outs(THIS);
     f_aggregate_mapping(Pike_sp - save_sp);
-    stack_pop_n_elems_keep_top(args);
   }
 
    /* FIXME */
@@ -985,9 +998,6 @@ PIKECLASS Backend
        struct svalue tmp;
        struct object *co;
        struct Backend_CallOut_struct *c;
-
-       if(args<2)
-         SIMPLE_WRONG_NUM_ARGS_ERROR("call_out", 2);
 
        if(TYPEOF(*t) != T_INT && TYPEOF(*t) != T_FLOAT)
 	 SIMPLE_ARG_TYPE_ERROR("call_out", 2, "int|float");
@@ -1196,7 +1206,7 @@ PIKECLASS Backend
    static int backend_find_call_out(struct Backend_struct *me,
 				    struct array *co_info)
      {
-       size_t hval, fun_hval;
+       size_t hval;
        struct Backend_CallOut_struct *c;
 
        if(!co_info || !me->num_pending_calls) return -1;
@@ -1356,8 +1366,10 @@ PIKECLASS Backend
 	 }
 	 CALL_(me->num_pending_calls) = NULL;
 	 c->pos = -1;
+	 EXIT_CO(c);
 
 	 free_object(c->this);
+	 c->this = NULL;
        }else{
 	 pop_n_elems(args);
 	 /* NB: This is a very exotic value! */
@@ -1382,7 +1394,6 @@ PIKECLASS Backend
      {
        int e;
        struct array *ret;
-       struct timeval now;
        ONERROR err;
        DECLARE_PROTECT_CALL_OUTS;
 
@@ -1391,29 +1402,35 @@ PIKECLASS Backend
        ret=allocate_array_no_init(0, me->num_pending_calls);
        SET_ONERROR(err, do_free_array, ret);
        ret->type_field = BIT_ARRAY;
-       if(me->num_pending_calls) INACCURATE_GETTIMEOFDAY(&now);
-       for(e=0;e<me->num_pending_calls;e++)
-       {
-	 struct array *v;
-	 v=allocate_array_no_init(CALL(e)->args->size+2, 0);
-	 ITEM(v)[0].u.integer=CALL(e)->tv.tv_sec - now.tv_sec;
 
-	 /* FIXME: ITEM(v)[1] used to be the current object
-	  *        from when the call_out was created, but
-	  *        that is always the backend since the
-	  *        backend.cmod rewrite.
-	  *        Now we just leave it zero.
-	  */
-	 v->type_field = BIT_INT;
+       if(me->num_pending_calls) {
+         struct timeval now;
+         INACCURATE_GETTIMEOFDAY(&now);
 
-	 v->type_field |=
-	   assign_svalues_no_free(ITEM(v)+2,
-				  ITEM(CALL(e)->args),
-				  CALL(e)->args->size,BIT_MIXED);
+         for(e=0;e<me->num_pending_calls;e++)
+         {
+           struct array *v;
+           v=allocate_array_no_init(CALL(e)->args->size+2, 0);
+           ITEM(v)[0].u.integer=CALL(e)->tv.tv_sec - now.tv_sec;
 
-	 SET_SVAL(ITEM(ret)[e], T_ARRAY, 0, array, v);
-	 ret->size++;
+           /* FIXME: ITEM(v)[1] used to be the current object
+            *        from when the call_out was created, but
+            *        that is always the backend since the
+            *        backend.cmod rewrite.
+            *        Now we just leave it zero.
+            */
+           v->type_field = BIT_INT;
+
+           v->type_field |=
+             assign_svalues_no_free(ITEM(v)+2,
+                                    ITEM(CALL(e)->args),
+                                    CALL(e)->args->size,BIT_MIXED);
+
+           SET_SVAL(ITEM(ret)[e], T_ARRAY, 0, array, v);
+           ret->size++;
+         }
        }
+
        UNSET_ONERROR(err);
        UNPROTECT_CALL_OUTS();
        return ret;
@@ -1553,6 +1570,9 @@ PIKECLASS Backend
      struct Backend_struct *me = box->backend;
      int fd = box->fd;
 
+     PDWERR("[%d]BACKEND[%d]: add_box(%p[fd:%d)\n",
+	    THR_NO, me->id, box, fd);
+
 #ifdef PIKE_DEBUG
      if (fd >= 0) {
        struct fd_callback_box *old_box = SAFE_GET_ACTIVE_BOX (me, fd);
@@ -1688,6 +1708,8 @@ PIKECLASS Backend
      int fd = box->fd;
      check_box (box, INT_MAX);
 
+     PDWERR("[%d]BACKEND[%d]: remove_fd_box(%p[fd:%d])\n",
+	    THR_NO, me->id, box, fd);
      /* FIXME: Shrink arrays? */
 
      if (fd >= 0) {
@@ -1721,7 +1743,8 @@ PIKECLASS Backend
        me->update_fd_set_handler(me, me->handler_data,
 				 fd, old_events, new_events, flags);
      } else {
-       Pike_fatal("No update_fd_set_handler set[%p, %d, 0x%04x, 0x%04x].\n");
+       Pike_fatal("No update_fd_set_handler set[%p, %d, 0x%04x, 0x%04x].\n",
+                  me, fd, old_events, new_events);
      }
    }
 
@@ -2154,14 +2177,15 @@ PIKECLASS Backend
    *           but it has not completed in time).
    */
   static int low_backend_once_setup(struct Backend_struct *me,
-				    struct timeval *start_time)
+				    struct timeval *start_time,
+				    ONERROR *uwp)
   {
 #ifdef PIKE_DEBUG
     struct timeval max_timeout;
 #endif
     struct timeval *next_timeout = &me->next_timeout, now;
 
-    alloca(0);			/* Do garbage collect */
+    void *keep_compiler_happy = alloca(0);	/* Do garbage collect */
 #ifdef PIKE_DEBUG
     if(d_flag > 1) do_debug();
 #endif
@@ -2197,9 +2221,12 @@ PIKECLASS Backend
 	if (next_timeout->tv_sec < 0) {
 	  co_wait_interpreter(&me->backend_signal);
 	} else {
-	  co_wait_interpreter_timeout(&me->backend_signal,
-				      next_timeout->tv_sec,
-				      next_timeout->tv_usec * 1000);
+          struct timeval timeout = *next_timeout;
+          my_subtract_timeval(&timeout, &now);
+          if (timeout.tv_sec >= 0)
+            co_wait_interpreter_timeout(&me->backend_signal,
+                                        timeout.tv_sec,
+                                        timeout.tv_usec * 1000);
 	}
 	SWAP_IN_CURRENT_THREAD();
 	if (me->done_counter == old_done_counter) {
@@ -2227,6 +2254,8 @@ PIKECLASS Backend
 #else
     me->exec_thread = 1;
 #endif
+
+    LOW_SET_ONERROR(uwp, low_backend_cleanup, me);
 
     /* Call outs */
     if(me->num_pending_calls)
@@ -2277,6 +2306,8 @@ PIKECLASS Backend
                                            struct Backend_struct *PDUNUSED(me))
   {
     struct fd_callback_box *box;
+    PDWERR("[%d]BACKEND[%d]: backend_call_active_callbacks.\n",
+	   THR_NO, me->id);
     while((box = fd_list->next))
     {
       int fd = box->fd;
@@ -2377,7 +2408,7 @@ PIKECLASS Backend
 	/* FIXME: This could be too late - the error might be
 	 * clobbered by the callbacks we might have called
 	 * above. */
-	if (!getsockopt (fd, SOL_SOCKET, SO_ERROR, (void *) &err, &len)) {
+        if (!fd_getsockopt (fd, SOL_SOCKET, SO_ERROR, (void *) &err, &len)) {
           PDWERR("[%d]BACKEND[%d]: POLLERR on %d, error=%d\n",
                  THR_NO, me->id, fd, err);
 	  errno = err;
@@ -2440,9 +2471,13 @@ PIKECLASS Backend
 
       CALL_AND_UNSET_ONERROR(uwp);
     }
+    PDWERR("[%d]BACKEND[%d]: backend_call_active_callbacks: done.\n",
+	   THR_NO, me->id);
     return 0;
 
   backend_round_done:
+    PDWERR("[%d]BACKEND[%d]: backend_call_active_callbacks: early exit.\n",
+	   THR_NO, me->id);
     return 1;
   }
 
@@ -2711,6 +2746,16 @@ PIKECLASS Backend
 #define OPEN_POLL_DEVICE(X)	open(PIKE_POLL_DEVICE, O_RDWR)
 #define CHILD_NEEDS_TO_REOPEN
 
+#ifdef STRUCT_DVPOLL_HAS_DP_SETP
+#define DECLARE_POLL_EXTRAS		\
+  POLL_EVENT poll_fds[POLL_SET_SIZE];	\
+  struct dvpoll poll_request = {	\
+    poll_fds,				\
+    POLL_SET_SIZE,			\
+    0,					\
+    NULL,				\
+  }
+#else
 #define DECLARE_POLL_EXTRAS		\
   POLL_EVENT poll_fds[POLL_SET_SIZE];	\
   struct dvpoll poll_request = {	\
@@ -2718,6 +2763,7 @@ PIKECLASS Backend
     POLL_SET_SIZE,			\
     0,					\
   }
+#endif
 
 #define PDB_POLL(PFD, TIMEOUT)					\
   ((poll_request.dp_timeout = (TIMEOUT)),			\
@@ -2878,15 +2924,15 @@ int POLL_DEVICE_SET_EVENTS(struct Backend_struct *UNUSED(me),
 
     /* The /dev/epoll interface exposes kernel implementation details...
      */
-    PDWERR("epoll_ctl(%d, EPOLL_CTL_MOD, %d, { 0x%08x, %d })\n",
+    PDWERR("epoll_ctl(%d, EPOLL_CTL_ADD, %d, { 0x%08x, %d })\n",
            pfd, fd, events, fd);
-    while (((e = epoll_ctl(pfd, EPOLL_CTL_MOD, fd, &ev)) < 0)  &&
+    while (((e = epoll_ctl(pfd, EPOLL_CTL_ADD, fd, &ev)) < 0)  &&
 	   (errno == EINTR))
       ;
-    if ((e < 0) && (errno == ENOENT)) {
-      PDWERR("epoll_ctl(%d, EPOLL_CTL_ADD, %d, { 0x%08x, %d })\n",
+    if ((e < 0) && (errno == EEXIST)) {
+      PDWERR("epoll_ctl(%d, EPOLL_CTL_MOD, %d, { 0x%08x, %d })\n",
              pfd, fd, events, fd);
-      while (((e = epoll_ctl(pfd, EPOLL_CTL_ADD, fd, &ev)) < 0)  &&
+      while (((e = epoll_ctl(pfd, EPOLL_CTL_MOD, fd, &ev)) < 0)  &&
 	     (errno == EINTR))
 	;
     }
@@ -3475,7 +3521,6 @@ PIKECLASS PollDeviceBackend
   static void pdb_REOPEN_POLL_DEVICE(struct PollDeviceBackend_struct *me)
   {
     int fd;
-
     while ((close(me->set) < 0) && (errno == EINTR))
       ;
     while (((fd = OPEN_POLL_DEVICE(me)) < 0) && (errno == EINTR))
@@ -3627,6 +3672,15 @@ PIKECLASS PollDeviceBackend
 	  pdb_MY_FD_CLR(&pdb->set, fd, MY_POLLOUT);
 	}
       }
+	  
+	  // TODO kqueue ADD fflags
+	        if (changed_events & PIKE_BIT_FD_FS_EVENT) {
+	  	if (new_events & PIKE_BIT_FD_FS_EVENT)
+	  	  pdb_MY_FD_SET2(&pdb->set, fd, MY_POLLFSEVENT, flags);
+	  	else {
+	  	    pdb_MY_FD_CLR(&pdb->set, fd, MY_POLLFSEVENT);
+	  	}
+	  }
 
       if (new_events & PIKE_BIT_FD_FS_EVENT) {
 	struct fd_callback_box *box = safe_get_box(me, fd);
@@ -3709,14 +3763,7 @@ PIKECLASS PollDeviceBackend
 	}
       }
 
-// TODO kqueue ADD fflags
-      if (changed_events & PIKE_BIT_FD_FS_EVENT) {
-	if (new_events & PIKE_BIT_FD_FS_EVENT)
-	  pdb_MY_FD_SET2(&pdb->set, fd, MY_POLLFSEVENT, flags);
-	else {
-	    pdb_MY_FD_CLR(&pdb->set, fd, MY_POLLFSEVENT);
-	}
-      }
+      
 
 #endif	/* !BACKEND_USES_POLL_DEVICE */
 
@@ -3835,10 +3882,10 @@ PIKECLASS PollDeviceBackend
     DECLARE_POLL_EXTRAS;
 #endif /* DECLARE_POLL_EXTRAS */
 
-    if ((done_something = low_backend_once_setup(pdb->backend, &start_time))) {
+    if ((done_something =
+	 low_backend_once_setup(pdb->backend, &start_time, &uwp))) {
       goto low_backend_round_done;
     }
-    SET_ONERROR(uwp, low_backend_cleanup, me);
 
     if (TYPEOF(me->before_callback) != T_INT)
       call_backend_monitor_cb (me, &me->before_callback);
@@ -3870,8 +3917,8 @@ PIKECLASS PollDeviceBackend
       else if(next_timeout->tv_sec > (INT_MAX/1002)) /* about 24 days.*/
 	poll_timeout = INT_MAX/1002;
       else
-        poll_timeout = MAXIMUM((next_timeout->tv_sec*1000) +
-			       next_timeout->tv_usec/1000,2);
+        poll_timeout = (next_timeout->tv_sec*1000) +
+	  (next_timeout->tv_usec + 999)/1000;
 #elif defined(TIMEOUT_IS_TIMEVAL)
       poll_timeout = *next_timeout;
 #elif defined(TIMEOUT_IS_TIMESPEC)
@@ -4688,10 +4735,10 @@ PIKECLASS PollBackend
     DECLARE_POLL_EXTRAS;
 #endif /* DECLARE_POLL_EXTRAS */
 
-    if ((done_something = low_backend_once_setup(pb->backend, &start_time))) {
+    if ((done_something =
+	 low_backend_once_setup(pb->backend, &start_time, &uwp))) {
       goto low_backend_round_done;
     }
-    SET_ONERROR(uwp, low_backend_cleanup, THIS->backend);
 
     if (TYPEOF(me->before_callback) != T_INT)
       call_backend_monitor_cb (me, &me->before_callback);
@@ -4711,7 +4758,7 @@ PIKECLASS PollBackend
 	poll_timeout = INT_MAX;
       else
 	poll_timeout = (next_timeout->tv_sec*1000) +
-	  next_timeout->tv_usec/1000;
+	  (next_timeout->tv_usec + 999)/1000;
 
       pb_copy_selectors(& pb->active_set, &pb->set);
 
@@ -4849,13 +4896,15 @@ PIKECLASS PollBackend
 	    box->revents |= PIKE_BIT_FD_ERROR;
 	  }
 
-	  if (PB_CHECK_EVENT(pb->active_set.poll_fds[i], MY_POLLRDBAND)) {
-            PDWERR("[%d]BACKEND[%d]: POLLRDBAND on %d\n", THR_NO, me->id, fd);
+	  if (PB_CHECK_EVENT(pb->active_set.poll_fds[i], MY_POLLRDBAND) ||
+	      PB_CHECK_ERROR_EVENT(pb->active_set.poll_fds[i], MY_POLLHUP)) {
+            PDWERR("[%d]BACKEND[%d]: POLLRDBAND|POLLHUP on %d\n", THR_NO, me->id, fd);
 	    box->revents |= PIKE_BIT_FD_READ_OOB;
 	    DO_IF_DEBUG(handled = 1);
 	  }
-	  if (PB_CHECK_EVENT(pb->active_set.poll_fds[i], MY_POLLIN)) {
-            PDWERR("[%d]BACKEND[%d]: POLLRDNORM|POLLIN on %d\n",
+	  if (PB_CHECK_EVENT(pb->active_set.poll_fds[i], MY_POLLIN) ||
+	      PB_CHECK_ERROR_EVENT(pb->active_set.poll_fds[i], MY_POLLHUP)) {
+            PDWERR("[%d]BACKEND[%d]: POLLRDNORM|POLLIN|POLLHUP on %d\n",
                    THR_NO, me->id, fd);
 	    box->revents |= PIKE_BIT_FD_READ;
 	    DO_IF_DEBUG(handled = 1);
@@ -5133,7 +5182,10 @@ PIKECLASS SelectBackend
 
     PDWERR("[%d]BACKEND[%d]: sb_update_fd_set(.., %d, %d, %d):\n",
            THR_NO, me->id, fd, old_events, new_events);
-
+#ifdef __NT__
+    PDWERR("[%d]BACKEND[%d]: handle: 0x%08lx\n",
+	   THR_NO, me->id, (unsigned long)da_handle[fd]);
+#endif
 
     if (changed_events) {
       if (changed_events & PIKE_BIT_FD_READ) {
@@ -5144,11 +5196,16 @@ PIKECLASS SelectBackend
 	  sb_MY_FD_SET(&sb->set, fd, MY_EXCEPTSET);
 	}
 	else {
+	  PDWERR("[%d]BACKEND[%d]: Clearing READ for fd %d\n",
+		 THR_NO, me->id, fd);
 	  sb_MY_FD_CLR(&sb->set, fd, MY_READSET);
 	  if (!(new_events & PIKE_BIT_FD_READ_OOB) &&
-	      !(new_events & PIKE_BIT_FD_WRITE))
+	      !(new_events & PIKE_BIT_FD_WRITE)) {
 	    /* Exceptions might cause calls to read, read_oob and write. */
+	    PDWERR("[%d]BACKEND[%d]: Clearing OOB for fd %d\n",
+		   THR_NO, me->id, fd);
 	    sb_MY_FD_CLR(&sb->set, fd, MY_EXCEPTSET);
+	  }
 	}
       }
 
@@ -5157,9 +5214,12 @@ PIKECLASS SelectBackend
 	  sb_MY_FD_SET(&sb->set, fd, MY_EXCEPTSET);
 	else {
 	  if (!(new_events & PIKE_BIT_FD_READ)) {
-	    if (!(new_events & PIKE_BIT_FD_WRITE))
+	    if (!(new_events & PIKE_BIT_FD_WRITE)) {
 	      /* Exceptions might cause calls to read, read_oob and write. */
+	      PDWERR("[%d]BACKEND[%d]: Clearing OOB for fd %d\n",
+		     THR_NO, me->id, fd);
 	      sb_MY_FD_CLR(&sb->set, fd, MY_EXCEPTSET);
+	    }
 	  }
 	}
       }
@@ -5175,9 +5235,12 @@ PIKECLASS SelectBackend
 	  if (!(new_events & PIKE_BIT_FD_WRITE_OOB)) {
 	    sb_MY_FD_CLR(&sb->set, fd, MY_WRITESET);
 	    if (!(new_events & PIKE_BIT_FD_READ) &&
-		!(new_events & PIKE_BIT_FD_READ_OOB))
+		!(new_events & PIKE_BIT_FD_READ_OOB)) {
 	      /* Exceptions might cause calls to read, read_oob and write. */
+	      PDWERR("[%d]BACKEND[%d]: Clearing OOB for fd %d\n",
+		     THR_NO, me->id, fd);
 	      sb_MY_FD_CLR(&sb->set, fd, MY_EXCEPTSET);
+	    }
 	  }
 	}
       }
@@ -5187,6 +5250,8 @@ PIKECLASS SelectBackend
 	  sb_MY_FD_SET(&sb->set, fd, MY_WRITESET);
 	else {
 	  if (!(new_events & PIKE_BIT_FD_WRITE)) {
+	    PDWERR("[%d]BACKEND[%d]: Clearing WRITE for fd %d\n",
+		   THR_NO, me->id, fd);
 	    sb_MY_FD_CLR(&sb->set, fd, MY_WRITESET);
 	  }
 	}
@@ -5206,38 +5271,58 @@ PIKECLASS SelectBackend
       int e;
       PIKE_STAT_T tmp;
 
+#ifdef __NT__
+      int i;
+      for (i = 0; i < 3; i++) {
+	int j;
+	for (j = 0; j < sb->set.sets[i].fd_count; j++) {
+	  SOCKET s = sb->set.sets[i].fd_array[j];
+	  for (e = 0; e < FD_SETSIZE; e++) {
+	    if (s == (SOCKET)da_handle[e]) break;
+	  }
+	  if (e == FD_SETSIZE) {
+	    Pike_fatal("No fd found for socket 0x%08lx.\n", (long)s);
+	  }
+#else
       /* FIXME: OOB? */
       for(e=0;e<=sb->set.max_fd;e++)
       {
 	if(fd_FD_ISSET(e, sb->set.sets + MY_READSET)
 	   || fd_FD_ISSET(e, sb->set.sets + MY_WRITESET)
 	   || fd_FD_ISSET(e, sb->set.sets + MY_EXCEPTSET)
-	  )
-	{
-	  int ret;
-
-	  if (e >= fd_map_size || fd_map[e] != me)
-	    Pike_fatal("Unmapped fd %d in select set.\n", e);
-
-	  do {
-	    ret = fd_fstat(e, &tmp);
-	    /* FIXME: Perhaps do check_threads_etc() here? */
-	  }while(ret < 0 && errno == EINTR);
-
-	  if(ret<0)
+	   ) {
+#endif
 	  {
-	    switch(errno)
+	    int ret;
+
+	    if (e >= fd_map_size || fd_map[e] != me)
+	      Pike_fatal("Unmapped fd %d in select set.\n", e);
+
+	    do {
+	      ret = fd_fstat(e, &tmp);
+	      /* FIXME: Perhaps do check_threads_etc() here? */
+	    }while(ret < 0 && errno == EINTR);
+
+	    if(ret<0)
 	    {
+	      switch(errno)
+	      {
 	      case EBADF:
 		Pike_fatal("Backend filedescriptor %d is bad.\n",e);
 		break;
 	      case ENOENT:
 		Pike_fatal("Backend filedescriptor %d is not.\n",e);
 		break;
+	      }
 	    }
 	  }
+        }
+      }
+#if 0
+      /* Make the precompiler happy... */
 	}
       }
+#endif /* 0 */
     }
 
 #endif	/* PIKE_DEBUG */
@@ -5258,10 +5343,10 @@ PIKECLASS SelectBackend
     DECLARE_POLL_EXTRAS;
 #endif /* DECLARE_POLL_EXTRAS */
 
-    if ((done_something = low_backend_once_setup(sb->backend, &start_time))) {
+    if ((done_something =
+	 low_backend_once_setup(sb->backend, &start_time, &uwp))) {
       goto low_backend_round_done;
     }
-    SET_ONERROR(uwp, low_backend_cleanup, THIS->backend);
 
     if (TYPEOF(me->before_callback) != T_INT)
       call_backend_monitor_cb (me, &me->before_callback);
@@ -5327,12 +5412,14 @@ PIKECLASS SelectBackend
 	  int err = 0;
 	  ACCEPT_SIZE_T len = sizeof (err);
           PDWERR("[%d]BACKEND[%d]: exception on %d\n", THR_NO, me->id, i);
-	  if (!getsockopt (i, SOL_SOCKET, SO_ERROR, (void *)&err, &len) &&
+          if (!fd_getsockopt (i, SOL_SOCKET, SO_ERROR, (void *)&err, &len) &&
 	      err) {
             PDWERR("[%d]BACKEND[%d]: error on %d, error=%d\n",
                    THR_NO, me->id, i, err);
 	    box->revents |= PIKE_BIT_FD_ERROR;
 	  } else {
+            PDWERR("[%d]BACKEND[%d]: read oob on %d\n",
+                   THR_NO, me->id, i);
 	    box->revents |= PIKE_BIT_FD_READ_OOB;
 	  }
 	}
@@ -5792,7 +5879,7 @@ static int compat_box_dispatcher (struct fd_callback_box *box, int event)
       Pike_fatal ("Unexpected event type %d.\n", event);
 #endif
   }
-  UNREACHABLE(return 0);
+  UNREACHABLE();
 }
 
 #define LOW_WRAP_SET_CB(CB, EVENT_BIT, SFLAGS, CFLAGS)			\
@@ -5955,7 +6042,7 @@ void do_debug(void)
   if(default_backend)
     backend_do_debug(default_backend);
 
-  if(d_flag>3) do_gc(NULL, 1);
+  if(d_flag>3) do_gc(1);
 
   current_do_debug_cycle=0;
 }

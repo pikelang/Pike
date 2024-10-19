@@ -18,6 +18,8 @@ OPCODE_NOCODE("arg+=256*X", F_PREFIX2_CHARX256,0)
 OPCODE_NOCODE("arg+=256*XX", F_PREFIX2_WORDX256,0)
 OPCODE_NOCODE("arg+=256*XXX", F_PREFIX2_24BITX256,0)
 
+OPCODE_NOCODE("instr=256+XXX", F_INSTR_PREFIX_256,0)
+
 #include "interpret_protos.h"
 
 /* Used to mark an entry point from eval_instruction(). */
@@ -28,7 +30,7 @@ OPCODE_NOCODE("filename", F_FILENAME, 0)
 OPCODE_NOCODE("line", F_LINE, 0)
 
 /* Alias for F_EXTERNAL when the identifier is a getter/setter. */
-OPCODE_NOCODE("get/set", F_GET_SET, 0)
+OPCODE_NOCODE("get/set", F_GET_SET, I_TWO_ARGS)
 
 /*
  * These are token values that needn't have an associated code for the
@@ -88,8 +90,35 @@ OPCODE_NOCODE("typeof", F_TYPEOF, 0)
 /* Alias for F_RETURN, but cannot be optimized into a tail recursion call */
 OPCODE_NOCODE("volatile_return", F_VOLATILE_RETURN, 0)
 
-/* Alias for F_ASSIGN, used when LHS has side-effects that should                                         
+/* Alias for F_RECUR, but cannot be optimized into a tail recursion call */
+OPCODE_NOCODE("volatile_recur", F_VOLATILE_RECUR, I_ISPTRJUMP|I_UPDATE_ALL)
+
+/* Alias for F_ASSIGN, used when LHS has side-effects that should
  * only be evaluated once. */
 OPCODE_NOCODE("assign_self", F_ASSIGN_SELF, 0)
+
+/* The following three cause assemble() to generate
+ * corresponding entries in the linenumber table.
+ */
+
+/* local_num, string_num */
+OPCODE_NOCODE("set_local_name", F_SET_LOCAL_NAME,
+              I_TWO_ARGS|I_ARG_T_LOCAL|I_ARG2_T_STRING)
+/* local_num, constant_num */
+OPCODE_NOCODE("set_local_type", F_SET_LOCAL_TYPE,
+              I_TWO_ARGS|I_ARG_T_LOCAL|I_ARG2_T_CONST)
+/* local_num, flags */
+OPCODE_NOCODE("set_local_flags", F_SET_LOCAL_FLAGS,
+              I_TWO_ARGS|I_ARG_T_LOCAL)
+/* local_num */
+OPCODE_NOCODE("set_local_end", F_SET_LOCAL_END, I_HASARG|I_ARG_T_LOCAL)
+
+/* Initial assignment to local variable. */
+OPCODE_NOCODE("initialize", F_INITIALIZE, 0)
+
+/* Marker for rest of array in multi assignment. */
+OPCODE_NOCODE("...", F_DOT_DOT_DOT, 0)
+
+OPCODE_NOCODE("bind_generics", F_BIND_GENERICS, 0)
 
 OPCODE_NOCODE("instr_max", F_MAX_INSTR, 0)

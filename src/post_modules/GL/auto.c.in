@@ -436,8 +436,9 @@ static int check_1n_args(char *func, INT32 args, int ty, int rty,
  * data.
  *
  */
-static int check_1unlimited_args(char *func, INT32 args, int ty, int rty,
-			 union zvalue **ret)
+static int PIKE_UNUSED_ATTRIBUTE check_1unlimited_args(char *func, INT32 args,
+                                                       int ty, int rty,
+                                                       union zvalue **ret)
 {
   int i, tt, tr=0, arr=0;
   struct svalue *s;

@@ -1,75 +1,97 @@
 #pike __REAL_VERSION__
 
-// Informational
-constant HTTP_CONTINUE		= 100; // RFC 2616 10.1.1: Continue
-constant HTTP_SWITCH_PROT	= 101; // RFC 2616 10.1.2: Switching protocols
-constant DAV_PROCESSING		= 102; // RFC 2518 10.1: Processing
+//! HTTP Status codes.
+//!
+//! @seealso
+//!   @[response_codes],
+//!   @url{https://www.iana.org/assignments/http-status-codes/http-status-codes.txt@}
+enum StatusCode {
+  // 1xx: Informational - Request received, continuing process
+  HTTP_CONTINUE			= 100, //! @rfc{2616:10.1.1@}: 100 Continue
+  HTTP_SWITCH_PROT		= 101, //! @rfc{2616:10.1.2@}: 101 Switching protocols
+  DAV_PROCESSING		= 102, //! @rfc{2518:10.1@}: 102 Processing
+  HTTP_EARLY_HINTS		= 103, //! @rfc{8297:2@}: 103 Early Hints
 
-// Successful
-constant HTTP_OK		= 200; // RFC 2616 10.2.1: OK
-constant HTTP_CREATED		= 201; // RFC 2616 10.2.2: Created
-constant HTTP_ACCEPTED		= 202; // RFC 2616 10.2.3: Accepted
-constant HTTP_NONAUTHORATIVE	= 203; // RFC 2616 10.2.4: Non-Authorative Information
-constant HTTP_NO_CONTENT	= 204; // RFC 2616 10.2.5: No Content
-constant HTTP_RESET_CONTENT	= 205; // RFC 2616 10.2.6: Reset Content
-constant HTTP_PARTIAL_CONTENT	= 206; // RFC 2616 10.2.7: Partial Content
-constant DAV_MULTISTATUS	= 207; // RFC 2518 10.2: Multi-Status
-constant DELTA_HTTP_IM_USED	= 226; // RFC 3229 10.4.1: IM Used
+  // 2xx: Success - The action was successfully received, understood, and accepted
+  HTTP_OK			= 200, //! @rfc{2616:10.2.1@}: 200 OK
+  HTTP_CREATED			= 201, //! @rfc{2616:10.2.2@}: 201 Created
+  HTTP_ACCEPTED			= 202, //! @rfc{2616:10.2.3@}: 202 Accepted
+  HTTP_NONAUTHORATIVE		= 203, //! @rfc{2616:10.2.4@}: 203 Non-Authorative Information
+  HTTP_NO_CONTENT		= 204, //! @rfc{2616:10.2.5@}: 204 No Content
+  HTTP_RESET_CONTENT		= 205, //! @rfc{2616:10.2.6@}: 205 Reset Content
+  HTTP_PARTIAL_CONTENT		= 206, //! @rfc{2616:10.2.7@}: 206 Partial Content
+  DAV_MULTISTATUS		= 207, //! @rfc{2518:10.2@}: 207 Multi-Status
+  DAV_ALREADY_REPORTED		= 208, //! @rfc{5842:7.1@}: 208 Already Reported
+  DELTA_HTTP_IM_USED		= 226, //! @rfc{3229:10.4.1@}: 226 IM Used
 
-// Redirection
-constant HTTP_MULTIPLE		= 300; // RFC 2616 10.3.1: Multiple Choices
-constant HTTP_MOVED_PERM	= 301; // RFC 2616 10.3.2: Moved Permanently
-constant HTTP_FOUND		= 302; // RFC 2616 10.3.3: Found
-constant HTTP_SEE_OTHER		= 303; // RFC 2616 10.3.4: See Other
-constant HTTP_NOT_MODIFIED	= 304; // RFC 2616 10.3.5: Not Modified
-constant HTTP_USE_PROXY		= 305; // RFC 2616 10.3.6: Use Proxy
-// RFC 2616 10.3.7: 306 not used but reserved.
-constant HTTP_TEMP_REDIRECT	= 307; // RFC 2616 10.3.8: Temporary Redirect
+  // 3xx: Redirection - Further action must be taken in order to complete the request
+  HTTP_MULTIPLE			= 300, //! @rfc{2616:10.3.1@}: 300 Multiple Choices
+  HTTP_MOVED_PERM		= 301, //! @rfc{2616:10.3.2@}: 301 Moved Permanently
+  HTTP_FOUND			= 302, //! @rfc{2616:10.3.3@}: 302 Found
+  HTTP_SEE_OTHER		= 303, //! @rfc{2616:10.3.4@}: 303 See Other
+  HTTP_NOT_MODIFIED		= 304, //! @rfc{2616:10.3.5@}: 304 Not Modified
+  HTTP_USE_PROXY		= 305, //! @rfc{2616:10.3.6@}: 305 Use Proxy
+  // @rfc{2616:10.3.7@}: 306 not used but reserved.
+  HTTP_TEMP_REDIRECT		= 307, //! @rfc{2616:10.3.8@}: 307 Temporary Redirect
+  HTTP_PERM_REDIRECT		= 308, //! @rfc{7538:3@}: 308 Permanent Redirect
 
-// Client errors
-constant HTTP_BAD		= 400; // RFC 2616 10.4.1: Bad Request
-constant HTTP_UNAUTH		= 401; // RFC 2616 10.4.2: Unauthorized
-constant HTTP_PAY		= 402; // RFC 2616 10.4.3: Payment Required
-constant HTTP_FORBIDDEN		= 403; // RFC 2616 10.4.4: Forbidden
-constant HTTP_NOT_FOUND		= 404; // RFC 2616 10.4.5: Not Found
-constant HTTP_METHOD_INVALID	= 405; // RFC 2616 10.4.6: Method Not Allowed
-constant HTTP_NOT_ACCEPTABLE	= 406; // RFC 2616 10.4.7: Not Acceptable
-constant HTTP_PROXY_AUTH_REQ	= 407; // RFC 2616 10.4.8: Proxy Authentication Required
-constant HTTP_TIMEOUT		= 408; // RFC 2616 10.4.9: Request Timeout
-constant HTTP_CONFLICT		= 409; // RFC 2616 10.4.10: Conflict
-constant HTTP_GONE		= 410; // RFC 2616 10.4.11: Gone
-constant HTTP_LENGTH_REQ	= 411; // RFC 2616 10.4.12: Length Required
-constant HTTP_PRECOND_FAILED	= 412; // RFC 2616 10.4.13: Precondition Failed
-constant HTTP_REQ_TOO_LARGE	= 413; // RFC 2616 10.4.14: Request Entity Too Large
-constant HTTP_URI_TOO_LONG	= 414; // RFC 2616 10.4.15: Request-URI Too Long
-constant HTTP_UNSUPP_MEDIA	= 415; // RFC 2616 10.4.16: Unsupported Media Type
-constant HTTP_BAD_RANGE		= 416; // RFC 2616 10.4.17: Requested Range Not Satisfiable
-constant HTTP_EXPECT_FAILED	= 417; // RFC 2616 10.4.18: Expectation Failed
-constant HTCPCP_TEAPOT		= 418; // RFC 2324 2.3.2: I'm a teapot
-constant HTTP_MISDIRECTED_REQ	= 421; // RFC 7540 9.1.2: Misdirected Request
-constant DAV_UNPROCESSABLE	= 422; // RFC 2518 10.3: Unprocessable Entry
-constant DAV_LOCKED		= 423; // RFC 2518 10.4: Locked
-constant DAV_FAILED_DEP		= 424; // RFC 2518 10.5: Failed Dependency
+  // 4xx: Client Error - The request contains bad syntax or cannot be fulfilled
+  HTTP_BAD			= 400, //! @rfc{2616:10.4.1@}: 400 Bad Request
+  HTTP_UNAUTH			= 401, //! @rfc{2616:10.4.2@}: 401 Unauthorized
+  HTTP_PAY			= 402, //! @rfc{2616:10.4.3@}: 402 Payment Required
+  HTTP_FORBIDDEN		= 403, //! @rfc{2616:10.4.4@}: 403 Forbidden
+  HTTP_NOT_FOUND		= 404, //! @rfc{2616:10.4.5@}: 404 Not Found
+  HTTP_METHOD_INVALID		= 405, //! @rfc{2616:10.4.6@}: 405 Method Not Allowed
+  HTTP_NOT_ACCEPTABLE		= 406, //! @rfc{2616:10.4.7@}: 406 Not Acceptable
+  HTTP_PROXY_AUTH_REQ		= 407, //! @rfc{2616:10.4.8@}: 407 Proxy Authentication Required
+  HTTP_TIMEOUT			= 408, //! @rfc{2616:10.4.9@}: 408 Request Timeout
+  HTTP_CONFLICT			= 409, //! @rfc{2616:10.4.10@}: 409 Conflict
+  HTTP_GONE			= 410, //! @rfc{2616:10.4.11@}: 410 Gone
+  HTTP_LENGTH_REQ		= 411, //! @rfc{2616:10.4.12@}: 411 Length Required
+  HTTP_PRECOND_FAILED		= 412, //! @rfc{2616:10.4.13@}: 412 Precondition Failed
+  HTTP_REQ_TOO_LARGE		= 413, //! @rfc{2616:10.4.14@}: 413 Request Entity Too Large
+  HTTP_URI_TOO_LONG		= 414, //! @rfc{2616:10.4.15@}: 414 Request-URI Too Long
+  HTTP_UNSUPP_MEDIA		= 415, //! @rfc{2616:10.4.16@}: 415 Unsupported Media Type
+  HTTP_BAD_RANGE		= 416, //! @rfc{2616:10.4.17@}: 416 Requested Range Not Satisfiable
+  HTTP_EXPECT_FAILED		= 417, //! @rfc{2616:10.4.18@}: 417 Expectation Failed
+  HTCPCP_TEAPOT			= 418, //! @rfc{2324:2.3.2@}: 418 I'm a teapot
+  HTTP_MISDIRECTED_REQ		= 421, //! @rfc{7540:9.1.2@}: 421 Misdirected Request
+  DAV_UNPROCESSABLE		= 422, //! @rfc{2518:10.3@}: 422 Unprocessable Entry
+  DAV_LOCKED			= 423, //! @rfc{2518:10.4@}: 423 Locked
+  DAV_FAILED_DEP		= 424, //! @rfc{2518:10.5@}: 424 Failed Dependency
+  TLS_TOO_EARLY			= 425, //! @rfc{8470:5.2@}: 425 Too Early
+  TLS_UPGRADE_REQUIRED		= 426, //! @rfc{2817:4.2@}: 426 Upgrade Required
+  HTTP_PRECOND_REQUIRED		= 428, //! @rfc{6585:3@}: 428 Precondition required
+  HTTP_TOO_MANY_REQUESTS	= 429, //! @rfc{6585:4@}: 429 Too Many Requests
+  HTTP_HEADERS_TOO_LARGE	= 431, //! @rfc{6585:5@}: 431 Request Header Fields Too Large
 
-constant HTTP_LEGALLY_RESTRICTED= 451; // Draft: Unavailable for Legal Reasons
+  HTTP_LEGALLY_RESTRICTED	= 451, //! @rfc{7725:3@}: 451 Unavailable For Legal Reasons
 
-// Server errors
-constant HTTP_INTERNAL_ERR	= 500; // RFC 2616 10.5.1: Internal Server Error
-constant HTTP_NOT_IMPL		= 501; // RFC 2616 10.5.2: Not Implemented
-constant HTTP_BAD_GW		= 502; // RFC 2616 10.5.3: Bad Gateway
-constant HTTP_UNAVAIL		= 503; // RFC 2616 10.5.4: Service Unavailable
-constant HTTP_GW_TIMEOUT	= 504; // RFC 2616 10.5.5: Gateway Timeout
-constant HTTP_UNSUPP_VERSION	= 505; // RFC 2616 10.5.6: HTTP Version Not Supported
-constant TCN_VARIANT_NEGOTIATES	= 506; // RFC 2295 8.1: Variant Also Negotiates
-constant DAV_STORAGE_FULL	= 507; // RFC 2518 10.6: Insufficient Storage
+  // 5xx: Server Error - The server failed to fulfill an apparently valid request
+  HTTP_INTERNAL_ERR		= 500, //! @rfc{2616:10.5.1@}: 500 Internal Server Error
+  HTTP_NOT_IMPL			= 501, //! @rfc{2616:10.5.2@}: 501 Not Implemented
+  HTTP_BAD_GW			= 502, //! @rfc{2616:10.5.3@}: 502 Bad Gateway
+  HTTP_UNAVAIL			= 503, //! @rfc{2616:10.5.4@}: 503 Service Unavailable
+  HTTP_GW_TIMEOUT		= 504, //! @rfc{2616:10.5.5@}: 504 Gateway Timeout
+  HTTP_UNSUPP_VERSION		= 505, //! @rfc{2616:10.5.6@}: 505 HTTP Version Not Supported
+  TCN_VARIANT_NEGOTIATES	= 506, //! @rfc{2295:8.1@}: 506 Variant Also Negotiates
+  DAV_STORAGE_FULL		= 507, //! @rfc{2518:10.6@}: 507 Insufficient Storage
+  DAV_LOOP_DETECTED		= 508, //! @rfc{5842:7.2@}: 508 Loop Detected
+  HTTP_NOT_EXTENDED		= 510, //! @rfc{2774:7@}: 510 Not Extended (obsolete)
+  HTTP_NET_AUTH_REQUIRED	= 511, //! @rfc{6585:6@}: 511 Network Authentication Required
+};
 
+//! Mapping from @[StatusCode] to descriptive string.
+//!
+//! @seealso
+//!   @[StatusCode]
 constant response_codes =
 ([
   // Informational
   100:"100 Continue",
   101:"101 Switching Protocols",
   102:"102 Processing", // WebDAV
-  103:"103 Checkpoint",
+  103:"103 Early Hints",
   122:"122 Request-URI too long", // a non standard IE7 error
 
   // Successful
@@ -81,6 +103,7 @@ constant response_codes =
   205:"205 Reset Content",
   206:"206 Partial Content", // Byte ranges
   207:"207 Multi-Status", // WebDAV
+  208:"208 Already Reported", // WebDAV
   226:"226 IM Used", // RFC 3229
 
   // Redirection
@@ -92,7 +115,7 @@ constant response_codes =
   305:"305 Use Proxy",
   306:"306 Switch Proxy", // Deprecated
   307:"307 Temporary Redirect", // retry request elsewhere, don't change method.
-  308:"308 Resume Incomplete",
+  308:"308 Permanent Redirect",
 
   // Client Error
   400:"400 Bad Request",
@@ -118,9 +141,12 @@ constant response_codes =
   422:"422 Unprocessable Entity", // WebDAV
   423:"423 Locked", // WebDAV
   424:"424 Failed Dependency", // WebDAV
-  425:"425 Unordered Collection", // RFC3648
+  425:"425 Too Early",
   426:"426 Upgrade Required", // RFC2817
-  451:"451 Unavailable for Legal Reasons", // draft-tbray-http-legally-restricted-status
+  428:"428 Precondition Required",
+  429:"429 Too Many Requests",
+  431:"431 Request Header Fields Too Large",
+  451:"451 Unavailable For Legal Reasons", // RFC7725
 
   // Internal Server Errors
   500:"500 Internal Server Error.",
@@ -131,8 +157,10 @@ constant response_codes =
   505:"505 HTTP Version Not Supported",
   506:"506 Variant Also Negotiates", // RFC2295
   507:"507 Insufficient Storage", // WebDAV / RFC4918
+  508:"508 Loop Detected", // WebDAV / RFC5842
   509:"509 Bandwidth Limit Exceeded", // An Apache defined extension in popular use
   510:"510 Not Extended", // RFC2774
+  511:"511 Network Authentication Required",
   598:"598 Network read timeout error", // Informal extension used by some HTTP proxies
   599:"599 Network connect timeout error", // Informal extension used by some HTTP proxies
 ]);
@@ -162,7 +190,7 @@ constant response_codes =
                          string method,
                          string|Standards.URI url,
                          void|mapping(string:int|string|array(string)) query_variables,
-                         void|mapping(string:string|array(string)) request_headers,
+                         void|mapping(string:string|array(string)|int) request_headers,
                          void|Protocols.HTTP.Query con, void|string data)
 {
   if (!proxy || (proxy == "")) {
@@ -173,17 +201,17 @@ constant response_codes =
   proxy = Standards.URI(proxy);
   url = Standards.URI(url);
 
-  mapping(string:string|array(string)) proxy_headers;
+  mapping(string:string|array(string)) proxy_headers = ([]);
 
   if( user || password )
   {
-    if( !request_headers )
-      proxy_headers = ([]);
-    else
-      proxy_headers = request_headers + ([]);
-
     proxy_headers["Proxy-Authorization"] = "Basic "
       + MIME.encode_base64((user || "") + ":" + (password || ""), 1);
+  }
+  if (has_value(proxy->host, ":")) {
+    proxy_headers["host"] = "[" + proxy->host + "]:" + proxy->port;
+  } else {
+    proxy_headers["host"] = proxy->host + ":" + proxy->port;
   }
 
   if (url->scheme == "http") {
@@ -198,6 +226,10 @@ constant response_codes =
     url->port = proxy->port;
     query_variables = url->query = 0;
     url->path = web_url;
+
+    if (request_headers) {
+      proxy_headers = request_headers + proxy_headers;
+    }
   } else if (url->scheme == "https") {
 #ifdef HTTP_QUERY_DEBUG
     werror("Proxied SSL request.\n");
@@ -206,12 +238,11 @@ constant response_codes =
       // Make a CONNECT request to the proxy,
       // and use keep-alive to stack the real request on top.
       proxy->path = url->host + ":" + url->port;
-      if (!proxy_headers) proxy_headers = ([]);
       proxy_headers->connection = "keep-alive";
-      m_delete(proxy_headers, "authorization");	// Keep the proxy in the dark.
       con = do_method("CONNECT", proxy, 0, proxy_headers);
       con->data(0);
-      if (con->status/100 > 2) {
+      if (con->status >= 300) {
+	// Proxy did not like us or failed to connect to the remote.
 	return con;
       }
       con->headers["connection"] = "keep-alive";
@@ -251,11 +282,12 @@ constant response_codes =
 //!
 //! @seealso
 //!   @[do_sync_method()]
-.Query do_method(string method,
-		 string|Standards.URI url,
-		 void|mapping(string:int|string|array(string)) query_variables,
-		 void|mapping(string:string|array(string)) request_headers,
-		 void|Protocols.HTTP.Query con, void|string data)
+object(.Query)|zero
+  do_method(string method,
+            string|Standards.URI url,
+            void|mapping(string:int|string|array(string)) query_variables,
+            void|mapping(string:string|array(string)|int) request_headers,
+            void|Protocols.HTTP.Query con, void|string data)
 {
   if(stringp(url))
     url=Standards.URI(url);
@@ -272,7 +304,7 @@ constant response_codes =
     error("Can't handle %O or any other protocols than HTTP or HTTPS.\n",
 	  url->scheme);
 
-  con->https = (url->scheme=="https")? 1 : 0;
+  con->https = (url->scheme=="https");
 
   mapping default_headers = ([
     "user-agent" : "Mozilla/5.0 (compatible; MSIE 6.0; Pike HTTP client)"
@@ -319,7 +351,7 @@ constant response_codes =
 
 protected .Query do_udp_method(string method, Standards.URI url,
 			    void|mapping(string:int|string|array(string)) query_variables,
-			    void|mapping(string:string|array(string))
+			    void|mapping(string:string|array(string)|int)
 			    request_headers, void|Protocols.HTTP.Query con,
 			    void|string data)
 {
@@ -388,7 +420,7 @@ protected .Query do_udp_method(string method, Standards.URI url,
 void do_async_method(string method,
 		     string|Standards.URI url,
 		     void|mapping(string:int|string|array(string)) query_variables,
-		     void|mapping(string:string|array(string)) request_headers,
+		     void|mapping(string:string|array(string)|int) request_headers,
 		     Protocols.HTTP.Query con, void|string data)
 {
   if(stringp(url))
@@ -402,22 +434,28 @@ void do_async_method(string method,
     error("Can't handle %O or any other protocols than HTTP or HTTPS.\n",
 	  url->scheme);
 
-  con->https = (url->scheme=="https")? 1 : 0;
+  con->https = (url->scheme=="https");
 
   if(!request_headers)
     request_headers = ([]);
-  mapping default_headers = ([
-    "user-agent" : "Mozilla/5.0 (compatible; MSIE 6.0; Pike HTTP client)"
-    " Pike/" + __REAL_MAJOR__ + "." + __REAL_MINOR__ + "." + __REAL_BUILD__,
-    "host" : url->host +
-    (url->port!=(url->scheme=="https"?443:80)?":"+url->port:"")]);
 
-  if(url->user || url->password)
-    default_headers->authorization = "Basic "
-				   + MIME.encode_base64(url->user + ":" +
-							(url->password || ""),
-                                                        1);
-  request_headers = default_headers | request_headers;
+  multiset lc_headers = (<>);
+  foreach( request_headers; string header; string value ) {
+    lc_headers[lower_case(header)] = 1;
+  }
+
+  if( !lc_headers["user-agent"] )
+    request_headers["user-agent"] = "Mozilla/5.0 (compatible; MSIE 6.0; Pike HTTP client) Pike/" + __REAL_MAJOR__ + "." + __REAL_MINOR__ + "." + __REAL_BUILD__;
+
+  if( !lc_headers["host"] )
+    request_headers->host = url->host +
+      (url->port!=(url->scheme=="https"?443:80)?":"+url->port:"");
+
+  // Will overwrite any existing authorization header instead of
+  // adding two headers.
+  if( url->user )
+    request_headers->authorization = "Basic "
+      + MIME.encode_base64(url->user + ":" + (url->password || ""), 1);
 
   string query=url->query;
   if(query_variables && sizeof(query_variables))
@@ -455,10 +493,26 @@ protected void https_proxy_connect_ok(Protocols.HTTP.Query con,
 				      string data)
 {
   con->set_callbacks(@orig_cb_info);
+  if (con->status >= 300) {
+    // Proxy did not like us or failed to connect to the remote.
+    // Return the failure message.
+    if (con->request_ok) {
+      con->request_ok(con, @con->extra_args);
+    }
+    return;
+  }
 
   // Install the timeout handler for the interval until
   // the TLS connection is up.
   con->init_async_timeout();
+
+  con->headers["connection"] = "keep-alive";
+  con->headers["content-length"] = "0";
+  con->host = url->host;
+  con->port = url->port;
+  con->https = 1;
+  con->start_tls(0);
+
   con->con->set_nonblocking(0,
 			    lambda() {
 			      // Remove the timeout handler; it will be
@@ -467,13 +521,6 @@ protected void https_proxy_connect_ok(Protocols.HTTP.Query con,
 			      do_async_method(method, url, query_variables,
 					      request_headers, con, data);
 			    }, con->async_failed);
-
-  con->headers["connection"] = "keep-alive";
-  con->headers["content-length"] = "0";
-  con->host = url->host;
-  con->port = url->port;
-  con->https = 1;
-  con->start_tls(0);
 }
 
 //! Low level asynchronous proxied HTTP call method.
@@ -514,7 +561,7 @@ void do_async_proxied_method(string|Standards.URI proxy,
 			     string method,
 			     string|Standards.URI url,
 			     void|mapping(string:int|string|array(string)) query_variables,
-			     void|mapping(string:string|array(string)) request_headers,
+			     void|mapping(string:string|array(string)|int) request_headers,
 			     Protocols.HTTP.Query con, void|string data)
 {
   if (!proxy || (proxy == "")) {
@@ -530,17 +577,17 @@ void do_async_proxied_method(string|Standards.URI proxy,
     error("Asynchronous httpu or httpmu not yet supported.\n");
   }
 
-  mapping(string:string|array(string)) proxy_headers;
+  mapping(string:string|array(string)) proxy_headers = ([]);
 
   if( user || password )
   {
-    if( !request_headers )
-      proxy_headers = ([]);
-    else
-      proxy_headers = request_headers + ([]);
-
     proxy_headers["Proxy-Authorization"] = "Basic "
       + MIME.encode_base64((user || "") + ":" + (password || ""), 1);
+  }
+  if (has_value(proxy->host, ":")) {
+    proxy_headers["host"] = "[" + proxy->host + "]:" + proxy->port;
+  } else {
+    proxy_headers["host"] = proxy->host + ":" + proxy->port;
   }
 
   if (url->scheme == "http") {
@@ -555,6 +602,10 @@ void do_async_proxied_method(string|Standards.URI proxy,
     url->port = proxy->port;
     query_variables = url->query = 0;
     url->path = web_url;
+
+    if (request_headers) {
+      proxy_headers = request_headers + proxy_headers;
+    }
   } else if(url->scheme == "https") {
 #ifdef HTTP_QUERY_DEBUG
     werror("Proxied SSL request.\n");
@@ -565,7 +616,6 @@ void do_async_proxied_method(string|Standards.URI proxy,
       proxy->path = url->host + ":" + url->port;
       if (!proxy_headers) proxy_headers = ([]);
       proxy_headers->connection = "keep-alive";
-      m_delete(proxy_headers, "authorization");	// Keep the proxy in the dark.
 
       array(mixed) orig_cb_info = ({
 	con->request_ok,
@@ -577,7 +627,7 @@ void do_async_proxied_method(string|Standards.URI proxy,
 			 orig_cb_info,
 			 url, method,
 			 query_variables,
-			 request_headers && request_headers + ([]),
+			 request_headers,
 			 data);
       method = "CONNECT";
       url = proxy;
@@ -601,7 +651,7 @@ void do_async_proxied_method(string|Standards.URI proxy,
 //!
 .Query get_url(string|Standards.URI url,
 	       void|mapping(string:int|string|array(string)) query_variables,
-	       void|mapping(string:string|array(string)) request_headers,
+	       void|mapping(string:string|array(string)|int) request_headers,
 	       void|Protocols.HTTP.Query con)
 {
   return do_method("GET", url, query_variables, request_headers, con);
@@ -617,7 +667,7 @@ void do_async_proxied_method(string|Standards.URI proxy,
 .Query put_url(string|Standards.URI url,
 	       void|string file,
 	       void|mapping(string:int|string|array(string)) query_variables,
-	       void|mapping(string:string|array(string)) request_headers,
+	       void|mapping(string:string|array(string)|int) request_headers,
 	       void|Protocols.HTTP.Query con)
 {
   return do_method("PUT", url, query_variables, request_headers, con, file);
@@ -632,7 +682,7 @@ void do_async_proxied_method(string|Standards.URI proxy,
 //!
 .Query delete_url(string|Standards.URI url,
 		  void|mapping(string:int|string|array(string)) query_variables,
-		  void|mapping(string:string|array(string)) request_headers,
+		  void|mapping(string:string|array(string)|int) request_headers,
 		  void|Protocols.HTTP.Query con)
 {
   return do_method("DELETE", url, query_variables, request_headers, con);
@@ -642,10 +692,11 @@ void do_async_proxied_method(string|Standards.URI proxy,
 //! the requested server for the information. @expr{0@} is returned
 //! upon failure. Redirects (HTTP 302) are automatically followed.
 //!
-array(string) get_url_nice(string|Standards.URI url,
-			   void|mapping(string:int|string|array(string)) query_variables,
-			   void|mapping(string:string|array(string)) request_headers,
-			   void|Protocols.HTTP.Query con)
+array(string)|zero
+  get_url_nice(string|Standards.URI url,
+               void|mapping(string:int|string|array(string)) query_variables,
+               void|mapping(string:string|array(string)|int) request_headers,
+               void|Protocols.HTTP.Query con)
 {
   .Query c;
   multiset seen = (<>);
@@ -667,7 +718,7 @@ array(string) get_url_nice(string|Standards.URI url,
 //!
 string get_url_data(string|Standards.URI url,
 		    void|mapping(string:int|string|array(string)) query_variables,
-		    void|mapping(string:string|array(string)) request_headers,
+		    void|mapping(string:string|array(string)|int) request_headers,
 		    void|Protocols.HTTP.Query con)
 {
   array(string) z = get_url_nice(url, query_variables, request_headers, con);
@@ -681,7 +732,7 @@ string get_url_data(string|Standards.URI url,
 //! manually, in this case.
 .Query post_url(string|Standards.URI url,
 	mapping(string:int|string|array(string))|string query_variables,
-		void|mapping(string:string|array(string)) request_headers,
+		void|mapping(string:string|array(string)|int) request_headers,
 		void|Protocols.HTTP.Query con)
 {
   return do_method("POST", url, 0, stringp(query_variables) ? request_headers
@@ -697,7 +748,7 @@ string get_url_data(string|Standards.URI url,
 //! a POST request instead of a GET request.
 array(string) post_url_nice(string|Standards.URI url,
 			    mapping(string:int|string|array(string))|string query_variables,
-			    void|mapping(string:string|array(string)) request_headers,
+			    void|mapping(string:string|array(string)|int) request_headers,
 			    void|Protocols.HTTP.Query con)
 {
   .Query c = post_url(url, query_variables, request_headers, con);
@@ -708,7 +759,7 @@ array(string) post_url_nice(string|Standards.URI url,
 //! a POST request instead of a GET request.
 string post_url_data(string|Standards.URI url,
 		     mapping(string:int|string|array(string))|string query_variables,
-		     void|mapping(string:string|array(string)) request_headers,
+		     void|mapping(string:string|array(string)|int) request_headers,
 		     void|Protocols.HTTP.Query con)
 {
   .Query z = post_url(url, query_variables, request_headers, con);
@@ -859,7 +910,9 @@ string uri_decode (string s)
   // conversion according to RFC 3987 section 3.2. Most importantly
   // any invalid utf8-sequences should be left percent-encoded in the
   // result.
-  return utf8_to_string (_Roxen.http_decode_string (s));
+  s = _Roxen.http_decode_string (s);
+  catch { s = utf8_to_string (s); };
+  return s;
 }
 
 string iri_encode (string s)
@@ -910,7 +963,7 @@ string quoted_string_encode (string s)
 //! @seealso
 //! @[quoted_string_decode]
 {
-  return replace (s, (["\"": "\\\"", "\\": "\\\\"]));
+  return MIME.quote(({s}))[1..<1];
 }
 
 string quoted_string_decode (string s)
@@ -921,5 +974,5 @@ string quoted_string_decode (string s)
 //! @seealso
 //! @[quoted_string_encode]
 {
-  return map (s / "\\\\", replace, "\\", "") * "\\";
+  return MIME.tokenize("\"" + s + "\"")[0];
 }

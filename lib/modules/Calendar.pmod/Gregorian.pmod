@@ -1,3 +1,5 @@
+/* -*- mode: Pike; c-basic-offset: 3; -*- */
+
 #pike __REAL_VERSION__
 
 //! This is the standard conservative christian calendar,
@@ -189,7 +191,7 @@ class cYear
 	 ->number_of_weeks();
    }
 
-   TimeRange place(TimeRange what,void|int force)
+   object(TimeRange)|zero place(TimeRange what,void|int force)
    {
       if (what->is_day)
       {
@@ -243,7 +245,7 @@ class cMonth
       return (y2-y)*12+(m2-m);
    }
 
-   TimeRange place(TimeRange what,int|void force)
+   object(TimeRange)|zero place(TimeRange what,int|void force)
    {
       if (what->is_day)
       {

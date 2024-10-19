@@ -98,7 +98,7 @@ extern int gc_keep_markers;
 #define gc_keep_markers 0
 #endif
 
-#define ADD_GC_CALLBACK() do { if(!gc_evaluator_callback)  gc_evaluator_callback=add_to_callback(&evaluator_callbacks,(callback_func)do_gc,0,0); }while(0)
+#define ADD_GC_CALLBACK() do { if(!gc_evaluator_callback)  gc_evaluator_callback=add_to_callback(&evaluator_callbacks,(callback_func)do_gc_callback,0,0); }while(0)
 
 #define LOW_GC_ALLOC(OBJ) do {						\
  num_objects++;								\
@@ -124,6 +124,59 @@ extern int gc_keep_markers;
     ADD_GC_CALLBACK();							\
 } while(0)
 #endif
+
+#define ADD_GC_CALL_FRAME() do {                          \
+    struct pike_frame *pike_frame = alloc_pike_frame();   \
+    DO_IF_PROFILING(pike_frame->children_base =           \
+                    Pike_interpreter.accounted_time);     \
+    DO_IF_PROFILING(pike_frame->start_time =              \
+                    get_cpu_time() -                      \
+                    Pike_interpreter.unlocked_time);      \
+    W_PROFILING_DEBUG("%p{: Push at %" PRINT_CPU_TIME     \
+                      " %" PRINT_CPU_TIME "\n",           \
+                      Pike_interpreter.thread_state,      \
+                      pike_frame->start_time,             \
+                      pike_frame->children_base);         \
+    pike_frame->next = Pike_fp;                           \
+    pike_frame->current_object = NULL;                    \
+    pike_frame->current_program = NULL;                   \
+    pike_frame->locals = 0;                               \
+    pike_frame->num_locals = 0;                           \
+    pike_frame->fun = FUNCTION_BUILTIN;                   \
+    pike_frame->pc = 0;                                   \
+    pike_frame->context = NULL;                           \
+    Pike_fp = pike_frame;                                 \
+  } while(0)
+
+#define GC_ASSERT_ZAPPED_CALL_FRAME() do {            \
+    DO_IF_DEBUG(if (Pike_fp->current_object) {        \
+        Pike_fatal("Pike_fp->current_object: %p\n",   \
+                   Pike_fp->current_object);          \
+      }                                               \
+      if (Pike_fp->current_program) {                 \
+        Pike_fatal("Pike_fp->current_program: %p\n",  \
+                   Pike_fp->current_program);         \
+      })                                              \
+  } while(0)
+
+#define GC_SET_CALL_FRAME(O, P) do {                         \
+    struct object *gc_save_obj = Pike_fp->current_object;    \
+    struct program *gc_save_prog = Pike_fp->current_program; \
+    Pike_fp->current_object = (O);                           \
+    Pike_fp->current_program = (P);                          \
+
+#define GC_UNSET_CALL_FRAME() \
+    Pike_fp->current_object = gc_save_obj;              \
+    Pike_fp->current_program = gc_save_prog;            \
+  } while(0)
+
+#define GC_POP_CALL_FRAME() do {                      \
+    struct pike_frame *pike_frame = Pike_fp;          \
+    GC_ASSERT_ZAPPED_CALL_FRAME();                    \
+    Pike_fp = pike_frame->next;                       \
+    pike_frame->next = NULL;                          \
+    free_pike_frame(pike_frame);                      \
+  } while(0)
 
 #ifdef PIKE_DEBUG
 
@@ -241,7 +294,7 @@ struct gc_rec_frame;
 
 extern unsigned INT16 gc_generation;
 
-static inline struct marker *find_marker(void *ptr) {
+static inline struct marker *find_marker(const void *ptr) {
     struct marker *m = (struct marker *)ptr;
 
     if (m->gc_generation != gc_generation) return NULL;
@@ -259,8 +312,7 @@ static inline struct marker *get_marker(void *ptr) {
     return m;
 }
 
-static inline void remove_marker(void *ptr) {
-    ptr = ptr;
+static inline void remove_marker(void *PIKE_UNUSED(ptr)) {
 }
 
 static inline void move_marker(struct marker *m, void *ptr) {
@@ -279,7 +331,7 @@ struct callback *debug_add_gc_callback(callback_func call,
 				 void *arg,
 				 callback_func free_func);
 void dump_gc_info(void);
-int attempt_to_identify(void *something, void **inblock);
+int attempt_to_identify(const void *something, const void **inblock);
 void describe_location(void *real_memblock,
 		       int real_type,
 		       void *location,
@@ -289,20 +341,21 @@ void describe_location(void *real_memblock,
 void debug_gc_fatal(void *a, int flags, const char *fmt, ...);
 void debug_gc_fatal_2 (void *a, int type, int flags, const char *fmt, ...);
 #ifdef PIKE_DEBUG
-void low_describe_something(void *a,
+void low_describe_something(const void *a,
 			    int t,
 			    int indent,
 			    int depth,
 			    int flags,
-			    void *inblock);
-void describe_something(void *a, int t, int indent, int depth, int flags, void *inblock);
-PMOD_EXPORT void describe(void *x);
+                            const void *inblock);
+void describe_something(const void *a, int t, int indent, int depth, int flags,
+                        const void *inblock);
+PMOD_EXPORT void describe(const void *x);
 PMOD_EXPORT void debug_describe_svalue(struct svalue *s);
 PMOD_EXPORT void gc_watch(void *a);
 #endif
 void debug_gc_touch(void *a);
-PMOD_EXPORT int real_gc_check(void *a);
-PMOD_EXPORT int real_gc_check_weak(void *a);
+PMOD_EXPORT INT32 real_gc_check(void *a);
+PMOD_EXPORT INT32 real_gc_check_weak(void *a);
 void exit_gc(void);
 PMOD_EXPORT void locate_references(void *a);
 void debug_gc_add_extra_ref(void *a);
@@ -321,7 +374,8 @@ int gc_cycle_push(void *x, struct marker *m, int weak);
 void do_gc_recurse_svalues(struct svalue *s, int num);
 void do_gc_recurse_short_svalue(union anything *u, int type);
 int gc_do_free(void *a);
-size_t do_gc(void *ignored, int explicit_call);
+size_t do_gc(int explicit_call);
+void do_gc_callback(struct callback *cb, void *arg1, void *arg2);
 void f__gc_status(INT32 args);
 void f_implicit_gc_real_time (INT32 args);
 void f_count_memory (INT32 args);
@@ -401,6 +455,7 @@ static inline int PIKE_UNUSED_ATTRIBUTE debug_gc_check (void *a, const char *pla
 {
   int res;
   const char *orig_gc_found_place = gc_found_place;
+  if (!a) return 0;
   gc_found_place = place;
   res = gc_check (a);
   gc_found_place = orig_gc_found_place;
@@ -411,6 +466,7 @@ static inline int PIKE_UNUSED_ATTRIBUTE debug_gc_check_weak (void *a, const char
 {
   int res;
   const char *orig_gc_found_place = gc_found_place;
+  if (!a) return 0;
   gc_found_place = place;
   res = gc_check_weak (a);
   gc_found_place = orig_gc_found_place;

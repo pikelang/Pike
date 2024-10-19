@@ -1502,7 +1502,7 @@ struct rb_node_hdr *rb_make_tree (struct rb_node_hdr *list, size_t length)
   }
 
 #ifdef PIKE_DEBUG
-  if (list) Pike_fatal ("List longer than expected %d.\n", length);
+  if (list) Pike_fatal ("List longer than expected %"PRINTSIZET"u.\n", length);
 #endif
   return root;
 }

@@ -79,8 +79,10 @@ PMOD_EXPORT int check_args(int args, ...)
 
 static const char* get_fname(const char *fname)
 {
+  struct identifier *id;
   if (fname) return fname;
-  return (Pike_fp->context->prog->identifiers + Pike_fp->fun)->name->str;
+  id = ID_FROM_INT(Pike_fp->current_program, Pike_fp->fun);
+  return id->name->str;
 }
 
 /* This function generates errors if any of the args first arguments
@@ -457,8 +459,10 @@ static int va_get_args_2(struct svalue *s,
 	  /* FALLTHRU */
 
 	default:
-	  if (*fmt == 'P' && UNSAFE_IS_ZERO(s))
+	  if (*fmt == 'P' && UNSAFE_IS_ZERO(s)) {
 	    *cast_arg(ptr, struct program **) = NULL;
+            break;
+          }
 	  goto type_err;
       }
       break;
@@ -535,12 +539,14 @@ PMOD_EXPORT void get_all_args(const char *fname, INT32 args,
 	"Bad argument %d to %s(). NUL in string.\n",
         ret+1, fname);
       UNREACHABLE();
+      break;
 
     case ARGS_SUBTYPED_OBJECT:
       bad_arg_error(get_fname(fname), args, ret+1, "object",
 		    Pike_sp+ret-args,
 		    "Subtyped objects are not supported.\n");
       UNREACHABLE();
+      break;
 
     case ARGS_SHORT:
     default: {

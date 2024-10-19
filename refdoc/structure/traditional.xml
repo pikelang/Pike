@@ -35,36 +35,96 @@
     <chapter-ref file="chapters/hilfe.xml"/>
   </file>
   <file>
-    <chapter title="LFUN">
-      <insert-move entity="lfun::"/>
-      <insert-move entity="::"/>
+    <chapter title="Special object functions">
+      <section title="LFUN">
+	<insert-move entity="lfun::"/>
+      </section>
+      <section title="::">
+	<insert-move entity="::"/>
+      </section>
+      <section title="continue::">
+        <insert-move entity="continue::"/>
+      </section>
     </chapter>
   </file>
   <file>
     <chapter title="I/O">
-      <insert-move entity="Stdio.File"/>
-      <insert-move entity="Stdio.FILE"/>
+      <section title="File system manipulation">
+	<insert-move entity="access"/>
+	<insert-move entity="cd"/>
+	<insert-move entity="getcwd"/>
+	<insert-move entity="get_dir"/>
+	<insert-move entity="mkdir"/>
+	<insert-move entity="cp"/>
+	<insert-move entity="mv"/>
+	<insert-move entity="rm"/>
+	<insert-move entity="file_truncate"/>
+      </section>
+      <section title="Path manipulation">
+	<insert-move entity="basename"/>
+	<insert-move entity="dirname"/>
+	<insert-move entity="combine_path"/>
+	<!-- insert-move entity="append_path"/ -->
+	<insert-move entity="explode_path"/>
+      </section>
+      <section title="Status">
+	<insert-move entity="file_stat"/>
+	<insert-move entity="filesystem_stat"/>
+	<insert-move entity="Stdio.Stat"/>
+      </section>
+      <section title="Error handling">
+	<insert-move entity="errno"/>
+	<insert-move entity="strerror"/>
+      </section>
+      <section title="Files and sockets">
+	<insert-move entity="Stdio.File"/>
+	<insert-move entity="Stdio.FILE"/>
 <!--      <insert-move entity="Stdio.stdin"/> -->
 <!--      <insert-move entity="Stdio.stdout"/> -->
 <!--      <insert-move entity="Stdio.stderr"/> -->
-      <insert-move entity="Stdio.Port"/>
-      <insert-move entity="Stdio.UDP"/>
-      <insert-move entity="Stdio.Terminfo"/>
-      <insert-move entity="Stdio.Readline"/>
-      <insert-move entity="Stdio"/>
+      </section>
+      <section title="Ports and UDP">
+	<insert-move entity="Stdio.Port"/>
+	<insert-move entity="Stdio.UDP"/>
+      </section>
+      <section title="Terminal I/O">
+	<insert-move entity="Stdio.Terminfo"/>
+	<insert-move entity="Stdio.Readline"/>
+      </section>
+      <section title="Other">
+	<insert-move entity="Stdio"/>
+      </section>
     </chapter>
   </file>
   <file>
     <chapter title="Specific Datatype Modules">
-      <insert-move entity="String"/>
-      <insert-move entity="Array"/>
-      <insert-move entity="Mapping"/>
-      <insert-move entity="Multiset"/>
-      <insert-move entity="Int"/>
-      <insert-move entity="Float"/>
-      <insert-move entity="Function"/>
-      <insert-move entity="Program"/>
-      <insert-move entity="ADT"/>
+      <section title="String">
+	<insert-move entity="String"/>
+      </section>
+      <section title="Array">
+	<insert-move entity="Array"/>
+      </section>
+      <section title="Mapping">
+	<insert-move entity="Mapping"/>
+      </section>
+      <section title="Multiset">
+	<insert-move entity="Multiset"/>
+      </section>
+      <section title="Int">
+	<insert-move entity="Int"/>
+      </section>
+      <section title="Float">
+	<insert-move entity="Float"/>
+      </section>
+      <section title="Function">
+	<insert-move entity="Function"/>
+      </section>
+      <section title="Program">
+	<insert-move entity="Program"/>
+      </section>
+      <section title="ADT">
+	<insert-move entity="ADT"/>
+      </section>
     </chapter>
   </file>
   <file>
@@ -81,40 +141,233 @@
       <insert-move entity="Image.Font"/>
       <insert-move entity="Image.Colortable"/>
       <insert-move entity="Image.Color"/>
+      <insert-move entity="Colors"/>
       <insert-move entity="Image.ANY"/>
       <insert-move entity="Image"/>
     </chapter>
   </file>
   <file>
     <chapter title="Protocols">
-      <insert-move entity="Protocols.HTTP"/>
-      <insert-move entity="SSL"/>
-      <insert-move entity="Protocols.LysKOM"/>
-      <insert-move entity="Protocols.DNS"/>
-      <insert-move entity="Protocols"/>
+      <section title="HTTP">
+	<insert-move entity="Protocols.HTTP"/>
+      </section>
+      <section title="TLS/SSL">
+	<insert-move entity="SSL"/>
+      </section>
+      <section title="DNS">
+	<insert-move entity="Protocols.DNS"/>
+      </section>
+      <section title="LysKOM">
+	<insert-move entity="Protocols.LysKOM"/>
+      </section>
+      <section title="Other protocols">
+	<insert-move entity="Protocols"/>
+      </section>
     </chapter>
   </file>
   <file>
     <chapter title="Database Access">
-      <insert-move entity="Sql"/>
-      <insert-move entity="Mysql"/>
-      <insert-move entity="Msql"/>
-      <insert-move entity="Postgres"/>
-      <insert-move entity="Gdbm"/>
-      <insert-move entity="Yabu"/>
+      <section title="Generic Sql API">
+	<subsection title="Sql.Sql">
+	  <insert-move entity="Sql.Sql"/>
+	</subsection>
+	<subsection title="Sql.Connection objects">
+	  <insert-move entity="Sql.Connection"/>
+	  <insert-move entity="__builtin.Sql.Connection"/>
+	</subsection>
+	<subsection title="Sql.Result objects">
+	  <insert-move entity="Sql.Result"/>
+	  <insert-move entity="__builtin.Sql.Result"/>
+	</subsection>
+      </section>
+      <section title="Sql protocol drivers">
+	<subsection title="Mysql">
+	  <insert-move entity="Sql.mysql"/>
+	  <insert-move entity="Sql.mysqls"/>
+	  <insert-move entity="Mysql"/>
+	</subsection>
+	<subsection title="Msql">
+	  <insert-move entity="Sql.msql"/>
+	  <insert-move entity="Msql"/>
+	</subsection>
+	<subsection title="Postgresql">
+	  <insert-move entity="Sql.pgsql"/>
+	  <insert-move entity="Sql.pgsqls"/>
+	  <insert-move entity="Sql.postgres"/>
+	  <insert-move entity="Postgres"/>
+	</subsection>
+	<subsection title="SQLite">
+	  <!-- insert-move entity="SQL.sqlite"/ -->
+	  <insert-move entity="SQLite"/>
+	</subsection>
+	<subsection title="Oracle">
+	  <!-- insert-move entity="SQL.oracle"/ -->
+	  <insert-move entity="Oracle"/>
+	</subsection>
+	<subsection title="Odbc">
+	  <insert-move entity="Sql.odbc"/>
+	  <!-- insert-move entity="Sql.dsn"/ -->
+	  <insert-move entity="Odbc"/>
+	</subsection>
+	<subsection title="Other">
+	  <insert-move entity="Sql"/>
+	</subsection>
+      </section>
+      <section title="Key-value stores">
+	<subsection title="Gdbm">
+	  <insert-move entity="Gdbm"/>
+	</subsection>
+	<subsection title="Yabu">
+	  <insert-move entity="Yabu"/>
+	</subsection>
+      </section>
+    </chapter>
+  </file>
+  <file>
+    <chapter title="Compression">
+      <insert-move entity="Gz"/>
+      <insert-move entity="Bz2"/>
+      <insert-move entity="HPack"/>
     </chapter>
   </file>
   <file>
     <chapter title="Graphic User Interface">
       <insert-move entity="GTK"/>
       <insert-move entity="GTK2"/>
+      <insert-move entity="GDK"/>
+      <insert-move entity="GDK2"/>
     </chapter>
   </file>
   <file>
     <chapter title="3D Vector Graphics">
       <insert-move entity="GL"/>
       <insert-move entity="GLU"/>
+      <insert-move entity="GLUE"/>
       <insert-move entity="GLUT"/>
+      <insert-move entity="GLSL"/>
+    </chapter>
+  </file>
+  <file>
+    <chapter title="Threads">
+      <insert-move entity="_disable_threads"/>
+      <insert-move entity="Thread"/>
+    </chapter>
+  </file>
+  <file>
+    <chapter title="Asynchronous Operation">
+      <section title="Backends">
+	<insert-move entity="call_out"/>
+	<insert-move entity="Pike.Backend"/>
+      </section>
+      <section title="Promises and Futures">
+	<insert-move entity="Concurrent"/>
+      </section>
+    </chapter>
+  </file>
+  <file>
+    <chapter title="Calendar">
+      <insert-move entity="Calendar"/>
+    </chapter>
+  </file>
+  <file>
+    <chapter title="Cryptography">
+      <section title="Password hashing">
+	<insert-move entity="crypt"/>
+	<insert-move entity="Crypto.Password"/>
+      </section>
+      <section title="Kerberos and GSSAPI">
+	<insert-move entity="GSSAPI"/>
+      </section>
+      <section title="Cryptographic primitives">
+	<insert-move entity="Crypto"/>
+	<insert-move entity="Nettle"/>
+      </section>
+    </chapter>
+  </file>
+  <file>
+    <chapter title="Charset">
+      <insert-move entity="Charset"/>
+    </chapter>
+  </file>
+  <file>
+    <chapter title="Introspection">
+      <section title="Value inspection">
+	<insert-move entity="arrayp"/>
+	<insert-move entity="callablep"/>
+	<insert-move entity="destructedp"/>
+	<insert-move entity="floatp"/>
+	<insert-move entity="functionp"/>
+	<insert-move entity="intp"/>
+	<insert-move entity="mappingp"/>
+	<insert-move entity="multisetp"/>
+	<insert-move entity="programp"/>
+	<insert-move entity="undefinedp"/>
+	<insert-move entity="_typeof"/>
+      </section>
+      <section title="Content inspection">
+	<insert-move entity="indices"/>
+	<insert-move entity="values"/>
+	<insert-move entity="types"/>
+	<insert-move entity="annotations"/>
+	<insert-move entity="get_weak_flag"/>
+      </section>
+      <section title="Integer inspection">
+	<insert-move entity="zero_type"/>
+      </section>
+      <section title="Function inspection">
+	<insert-move entity="function_name"/>
+	<insert-move entity="function_object"/>
+	<insert-move entity="function_program"/>
+      </section>
+      <section title="Object inspection">
+	<insert-move entity="object_program"/>
+      </section>
+      <section title="Program inspection">
+	<insert-move entity="get_profiling_info"/>
+	<insert-move entity="typeof_identifier"/>
+      </section>
+      <section title="Type inspection">
+	<insert-move entity="deprecated_typep"/>
+      </section>
+    </chapter>
+  </file>
+  <file>
+    <chapter title="Runtime">
+      <insert-move entity="exit"/>
+      <insert-move entity="_exit"/>
+      <insert-move entity="atexit"/>
+      <insert-move entity="trace"/>
+      <insert-move entity="backtrace"/>
+      <insert-move entity="gc"/>
+      <insert-move entity="query_num_arg"/>
+      <insert-move entity="version"/>
+    </chapter>
+  </file>
+  <file>
+    <chapter title="Implementation internals">
+      <insert-move entity="Builtin"/>
+      <insert-move entity="__builtin"/>
+      <insert-move entity="_static_modules"/>
+    </chapter>
+  </file>
+  <file>
+    <chapter title="Operation System Specific">
+      <section title="POSIX">
+	<insert-move entity="alarm"/>
+	<insert-move entity="fork"/>
+	<insert-move entity="exece"/>
+      </section>
+      <section title="Apple OS X">
+	<insert-move entity="Apple"/>
+      </section>
+      <section title="Microsoft Windows">
+	<subsection title="Registry handling">
+          <insert-move entity="System.RegGetKeyNames"/>
+	  <!-- insert-move entity="HKEY_CLASSES_ROOT"/ -->
+          <insert-move entity="System.RegGetValue"/>
+          <insert-move entity="System.RegGetValues"/>
+	</subsection>
+      </section>
     </chapter>
   </file>
   <file>

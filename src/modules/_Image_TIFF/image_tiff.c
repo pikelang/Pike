@@ -24,17 +24,31 @@
 #include "module_support.h"
 #include "pike_error.h"
 #include "operators.h"
+#include "bignum.h"
 #include "../Image/image.h"
 
 #ifdef INLINE
 #undef INLINE
 #endif
+
+/* Disable declaration of depreecated types. We will define them
+ * ourselves later instead.
+ */
+#define TIFF_DISABLE_DEPRECATED
+
 #include <tiff.h>
 #ifdef HAVE_TIFFIOP_H
 #include <tiffiop.h>
 #endif
 #include <tiffio.h>
 
+#ifdef TIFF_GCC_DEPRECATED
+/* Recent version of libtiff. We use old-style types below,
+ * so provide some compat.
+ */
+#define	uint32		uint32_t
+#define uint16		uint16_t
+#endif
 
 #define sp Pike_sp
 
@@ -420,7 +434,8 @@ void low_image_tiff_decode( struct buffer *buf,
 {
   TIFF *tif;
   unsigned int i;
-  uint32 w, h, *raster,  *s;
+  uint32 w, h, pixels, *raster,  *s;
+  tsize_t bytes_needed;
   rgb_group *di, *da=NULL;
   tif = TIFFClientOpen("memoryfile", "r", (thandle_t) buf,
 		       read_buffer, write_buffer,
@@ -432,11 +447,37 @@ void low_image_tiff_decode( struct buffer *buf,
 
   TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &w);
   TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &h);
-  s = raster = (uint32 *)_TIFFmalloc(w*h*sizeof(uint32));
+
+  if (DO_UINT32_MUL_OVERFLOW(w, h, &pixels)
+	|| pixels > 0x7fffffff) {
+    /* There is no need to continue, Image.Image does not support >2G
+     * pixels. */
+    TIFFClose(tif);
+    Pike_error("Image.TIFF: Image too large (%u x %u >2G pixels)\n",
+               w, h);
+  }
+
+#if SIZEOF_TSIZE_T == 8
+  /* We can expect sizeof(uint32) * pixels to fit into a tsize_t. */
+  bytes_needed = (tsize_t)pixels * sizeof(uint32);
+#else /* reasonably safe to assume sizeof(tsize_t) == 4 */
+  /* tsize_t is signed, the amount of space we need may not fit into the
+   * type. */
+  if (!(DO_UINT32_MUL_OVERFLOW(pixels, sizeof(uint32), &pixels)
+      || pixels > INT_MAX)) {
+    bytes_needed = pixels;
+  } else {
+    TIFFClose(tif);
+    Pike_error("Image.TIFF: Cannot allocate buffer for %u x %u image.\n",
+               w, h);
+  }
+#endif
+
+  s = raster = (uint32 *)_TIFFmalloc(bytes_needed);
   if (raster == NULL) {
     TIFFClose (tif);
-    Pike_error("Malloc failed to allocate buffer for %ldx%ld image\n",
-	  (long)w, (long)h);
+    Pike_error("Malloc failed to allocate buffer for %ux%u image\n",
+               w, h);
   }
 
   if(!TIFFReadRGBAImage(tif, w, h, raster, 0)) {

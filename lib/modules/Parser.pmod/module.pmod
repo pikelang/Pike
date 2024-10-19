@@ -311,7 +311,7 @@ constant html_entities=
    "diams":"\x2666",
 ]);
 
-string decode_numeric_xml_entity (string chref)
+string|zero decode_numeric_xml_entity (string chref)
 //! Decodes the numeric XML entity @[chref], e.g. @tt{"&#x34;"@} and
 //! returns the character as a string. @[chref] is the name part of
 //! the entity, i.e. without the leading '&' and trailing ';'. Returns

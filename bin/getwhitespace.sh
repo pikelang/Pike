@@ -22,4 +22,4 @@ y/ABCDEFGHIJKLMNOPQRSTUVWXYZ/abcdefghijklmnopqrstuvwxyz/
 /^00/ d
 s/^\([^ ]*\) .*$/case 0x\1:\\/
 '
-echo ''
+echo '/* END_SENTINEL */'

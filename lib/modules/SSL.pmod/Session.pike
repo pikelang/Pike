@@ -22,49 +22,49 @@ import Constants;
 int last_activity = time();
 
 //! Identifies the session to the server
-string(8bit) identity;
+string(8bit)|zero identity;
 
 //! Alternative identification of the session to the server.
 //! @seealso
 //!   @rfc{4507@}, @rfc{5077@}
-string(8bit) ticket;
+string(8bit)|zero ticket;
 
 //! Expiry time for @[ticket].
-int ticket_expiry_time;
+int|zero ticket_expiry_time;
 
 //! Always COMPRESSION_null.
-int compression_algorithm;
+int|zero compression_algorithm;
 
 //! Constant defining a choice of keyexchange, encryption and mac
 //! algorithm.
-int cipher_suite;
+int cipher_suite = SSL_invalid_suite;
 
 //! Information about the encryption method derived from the
 //! cipher_suite.
-Cipher.CipherSpec cipher_spec;
+Cipher.CipherSpec|zero cipher_spec;
 
 //! 48 byte secret shared between the client and the server. Used for
 //! deriving the actual keys.
-string(8bit) master_secret;
+string(8bit)|zero master_secret;
 
 //! Information about the certificate in use by the peer, such as
 //! issuing authority, and verification status.
-mapping cert_data;
+mapping|zero cert_data;
 
 //! Negotiated protocol version.
-ProtocolVersion version;
+ProtocolVersion|zero version;
 
 //! The peer certificate chain
-array(string(8bit)) peer_certificate_chain;
+array(string(8bit))|zero peer_certificate_chain;
 
 //! Our certificate chain
-array(string(8bit)) certificate_chain;
+array(string(8bit))|zero certificate_chain;
 
 //! Our private key.
-Crypto.Sign.State private_key;
+Crypto.Sign.State|zero private_key;
 
 //! The peer's public key (from the certificate).
-Crypto.Sign.State peer_public_key;
+Crypto.Sign.State|zero peer_public_key;
 
 //! The max fragment size requested by the client.
 int max_packet_size = PACKET_MAX_SIZE;
@@ -89,21 +89,21 @@ protected void create(string(8bit)|void id)
  */
 
 //! @rfc{6066:3.1@} (SNI)
-string(8bit) server_name;
+string(8bit)|zero server_name;
 
 //! The set of <hash, signature> combinations supported by the peer.
 //!
 //! Only used with TLS 1.2 and later.
 //!
 //! Defaults to the settings from @rfc{5246:7.4.1.4.1@}.
-array(array(int)) signature_algorithms = ({
+array(int) signature_algorithms = ({
   // RFC 5246 7.4.1.4.1:
   // Note: this is a change from TLS 1.1 where there are no explicit
   // rules, but as a practical matter one can assume that the peer
   // supports MD5 and SHA-1.
-  ({ HASH_sha1, SIGNATURE_rsa }),
-  ({ HASH_sha1, SIGNATURE_dsa }),
-  ({ HASH_sha1, SIGNATURE_ecdsa }),
+  HASH_sha1 | SIGNATURE_rsa,
+  HASH_sha1 | SIGNATURE_dsa,
+  HASH_sha1 | SIGNATURE_ecdsa,
 });
 
 //! Supported finite field diffie-hellman groups in order of preference.
@@ -116,7 +116,7 @@ array(array(int)) signature_algorithms = ({
 //!   @type array(int)
 //!     List of supported groups, with the most preferred first.
 //! @endmixed
-array(int) ffdhe_groups;
+array(int)|zero ffdhe_groups;
 
 //! Supported elliptical curve cipher curves in order of preference.
 array(int) ecc_curves = ({});
@@ -150,7 +150,7 @@ int encrypt_then_mac = 0;
 //!     (typically the largest curve supported by both
 //!     the client and the server).
 //! @endint
-Crypto.ECC.Curve curve;
+Crypto.ECC.Curve|zero curve;
 #endif /* Crypto.ECC.Curve */
 
 //! Heartbeat mode.
@@ -193,10 +193,10 @@ protected int(0..1) is_supported_cert(CertificatePair cp,
     if (!(ke_mask & cp->ke_mask_invariant)) return 0;
 
     // Check that all sign_algs in the cert chain are supported by the peer.
-    foreach(cp->sign_algs, array(int) sign_alg) {
+    foreach([array(SignatureScheme)]cp->sign_algs, int sign_alg) {
       int found;
-      foreach(signature_algorithms, array(int) sup_alg) {
-	if (found = equal(sign_alg, sup_alg)) break;
+      foreach(signature_algorithms, int sup_alg) {
+	if (found = (sign_alg == sup_alg)) break;
       }
       if (!found) return 0;
     }
@@ -206,8 +206,8 @@ protected int(0..1) is_supported_cert(CertificatePair cp,
 #if constant(Crypto.ECC.Curve)
   if (cp->key->get_curve) {
     // Is the ECC curve supported by the client?
-    Crypto.ECC.Curve c =
-      ([object(Crypto.ECC.Curve.ECDSA)]cp->key)->get_curve();
+    Crypto.ECC.Curve c = [object(Crypto.ECC.Curve)]
+       ([object(Crypto.ECC.Curve.ECDSA)]cp->key)->get_curve();
     SSL3_DEBUG_MSG("Curve: %O (%O)\n",
 		   c, ECC_NAME_TO_CURVE[c->name()]);
     return has_value(ecc_curves, ECC_NAME_TO_CURVE[c->name()]);
@@ -318,8 +318,10 @@ private array(CertificatePair)
     array(CertificatePair) c = [array(CertificatePair)]
       filter(certs, lambda(CertificatePair cp)
         {
+	  int scheme = cp->sign_algs[0];
+	  if ((scheme & HASH_MASK) == HASH_intrinsic) return 1;
           Crypto.Hash hash = [object(Crypto.Hash)]
-            HASH_lookup[cp->sign_algs[0][0]];
+            HASH_lookup[cp->sign_algs[0] & HASH_MASK];
           return hash->digest_size() <= h_max;
         });
     // Don't clear out the entire list though, as that makes all peers
@@ -430,7 +432,7 @@ int select_cipher_suite(array(CertificatePair) certs,
 
   // Now we can select the actual cert to use.
   if ( !KE_Anonymous[ke_method] ) {
-    CertificatePair cert;
+    object(CertificatePair)|zero cert;
 
     if (version >= PROTOCOL_TLS_1_2) {
       foreach(certs, CertificatePair cp) {
@@ -492,7 +494,7 @@ int select_cipher_suite(array(CertificatePair) certs,
 //! @param max_hash_size
 //!
 int set_cipher_suite(int suite, ProtocolVersion version,
-		     array(array(int)) signature_algorithms,
+		     array(int)|zero signature_algorithms,
 		     int max_hash_size)
 {
   this::version = version;
@@ -830,4 +832,9 @@ int(0..1) reusable_as(Session other)
     equal(signature_algorithms, other->signature_algorithms) &&
     equal(ecc_curves, other->ecc_curves) &&
     equal(ffdhe_groups, other->ffdhe_groups);
+}
+
+//! Validate that KE RSA key is more than 512 bits or exportable.
+int(0..1) validate_rsa_key(Crypto.RSA.State rsa) {
+  return cipher_spec->is_exportable==1 || rsa->key_size()>512;
 }

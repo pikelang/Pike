@@ -1,3 +1,6 @@
+/* -*- mode: Pike; c-basic-offset: 3; -*- */
+
+#charset iso-8859-1
 #pike __REAL_VERSION__
 
 import ".";
@@ -247,11 +250,11 @@ Event.Namedays find_namedays(string region)
    int i2=search(all,"\nRegion",i+1);
    if (i2==-1) i2=sizeof(all)-1;
 
-   array(array(string)) names=0;
+   array(array(string))|zero names = 0;
    int start=-1,stop=-1;
    int leapdayshift=2000;
    string charset="iso-8859-1";
-   function(string:string) decoder=0;
+   function(string:string)|zero decoder = 0;
 
    foreach (all[i..i2]/"\n",string line)
    {
@@ -431,11 +434,11 @@ array all_regions()
 //! return the Event object for the specified region or the specified
 //! named event.
 
-program|Event.Event `[](string s)
+protected program|Event.Event `[](string s)
 {
    return ::`[](s) || magic_event(s);
 }
-program|Event.Event `-> (string s) {return `[] (s);}
+protected program|Event.Event `-> (string s) {return `[] (s);}
 
 // Don't load Geogrphy.Countries unless we have to
 object country_lookup=0;

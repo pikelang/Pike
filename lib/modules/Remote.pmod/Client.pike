@@ -42,8 +42,8 @@ void client_close_callback()
 //!
 //! @param max_call_threads
 //!   Maximum number of concurrent threads.
-void create(string host, int port, void|int nice,
-	    void|int timeout, void|int max_call_threads)
+protected void create(string host, int port, void|int nice,
+		      void|int timeout, void|int max_call_threads)
 {
   con = Connection(nice, max_call_threads);
   if(!con->connect(host, port, timeout))

@@ -145,6 +145,8 @@ Boolean false = False();
 //! Type for the @[Val.null] object. Do not create more instances of
 //! this - use @[Val.null] instead.
 
+//! @decl inherit Builtin.Null
+
 constant Null = Builtin.Null;
 
 //! @endclass
@@ -218,7 +220,7 @@ int local_timezone = lambda() {
 //!  @[localtime()]
 final string iso_timezone(int timezone) {
   if (timezone) {
-    string res;
+    string res = "";
     if (timezone < 0)
       timezone = -timezone, res = "+";
     else
@@ -312,7 +314,7 @@ class Timebase {
 
   protected mixed `+(mixed that) {
     if (objectp(that) && ([object]that)->is_interval) {
-      this_program n;
+      object(this_program)|zero n;
       if (([object]that)->days || ([object]that)->months) {
         mapping(string:int) t = tm();
         if (([object]that)->days)
@@ -344,7 +346,7 @@ class Timebase {
   }
 
   protected mixed `-(mixed that) {
-    return this + -that;
+    return this + -[int|float|object]that;
   }
 
   protected int(0..1) `<(mixed that) {
@@ -366,6 +368,10 @@ class Timebase {
     return (["nsec": abs(nsecs) % NANOSECONDS ]);
   }
 
+  public string encode_json() {
+    return sprintf("\"%s\"", this);
+  }
+
   //! Can be casted to string, float and int.
   //! Casting it to float and int return unix-time values.
   //!  @seealso
@@ -384,6 +390,8 @@ class Timebase {
   }
 
   protected string _sprintf(int fmt, mapping(string:mixed) params) {
+    if (!this)					// Not in destructed objects
+      return "(destructed)";
     switch (fmt) {
       case 's': return (string)this;
       default: return sprintf(sprintf("%%*%c", fmt), params, 0);
@@ -433,7 +441,7 @@ class Time {
 
   protected mixed `+(mixed that) {
     if (objectp(that) && ([object]that)->is_date)
-      return that + this;
+      return ([object(Date)]that) + this;
     return ::`+(that);
   }
 
@@ -451,6 +459,8 @@ class Time {
   }
 
   protected string _sprintf(int fmt, mapping(string:mixed) params) {
+    if (!this)					// Not in destructed objects
+      return "(destructed)";
     if (fmt == 'O')
       return sprintf("Time(%s)", (string)this);
     return ::_sprintf(fmt, params);
@@ -545,11 +555,13 @@ class TimeTZ {
 
   protected mixed cast(string to) {
     if (to == "string")
-      return ::cast(to) + iso_timezone(timezone);
+      return ([string]::cast(to)) + iso_timezone(timezone);
     return ::cast(to);
   }
 
   protected string _sprintf(int fmt, mapping(string:mixed) params) {
+    if (!this)					// Not in destructed objects
+      return "(destructed)";
     if (fmt == 'O')
       return sprintf("TimeTZ(%s)", (string)this);
     return ::_sprintf(fmt, params);
@@ -594,16 +606,16 @@ class Interval {
     months = copy->months;
   }
 
-  protected mixed `*(mixed that) {
+  protected this_program `*(int|float that) {
     this_program n = this_program(this);
     if (intp(that)) {
-      n->nsecs *= that;
-      n->days *= that;
-      n->months *= that;
+      n->nsecs *= [int]that;
+      n->days *= [int]that;
+      n->months *= [int]that;
     } else if (floatp(that)) {
-      n->nsecs = (int)(nsecs * that);
-      n->days = (int)(days * that);
-      n->months = (int)(months * that);
+      n->nsecs = (int)(nsecs * [float]that);
+      n->days = (int)(days * [float]that);
+      n->months = (int)(months * [float]that);
       if (days && n->days % days || months && n->months % months)
         error("Cannot create fractional days or months\n");
     } else
@@ -611,7 +623,7 @@ class Interval {
     return n;
   }
 
-  protected mixed `/(mixed that) {
+  protected this_program `/(int|float that) {
     if (!intp(that) && !floatp(that))
       error("Cannot divide by %O\n", that);
     this_program n = this_program(this);
@@ -623,17 +635,17 @@ class Interval {
     return n;
   }
 
-  protected mixed `+(mixed that) {
-    if (!objectp(that) || !([object]that)->is_interval)
+  protected mixed `+(this_program that) {
+    if (!objectp(that) || !that->is_interval)
       error("Cannot add %O\n", that);
     this_program n = this_program(this);
-    n->nsecs += ([object]that)->nsecs;
-    n->days += ([object]that)->days;
-    n->months += ([object]that)->months;
+    n->nsecs += that->nsecs;
+    n->days += that->days;
+    n->months += that->months;
     return n;
   }
 
-  protected mixed `-(void|mixed that) {
+  protected this_program `-(void|this_program that) {
     this_program n = this_program(this);
     if (zero_type(that)) {
       n->nsecs  = -n->nsecs;
@@ -642,9 +654,9 @@ class Interval {
     } else if (!objectp(that) || !([object]that)->is_interval)
       error("Cannot substract %O\n", that);
     else {
-      n->nsecs  -= ([object]that)->nsecs;
-      n->days   -= ([object]that)->days;
-      n->months -= ([object]that)->months;
+      n->nsecs  -= ([object(this_program)]that)->nsecs;
+      n->days   -= ([object(this_program)]that)->days;
+      n->months -= ([object(this_program)]that)->months;
     }
     return n;
   }
@@ -652,19 +664,22 @@ class Interval {
   protected int(0..1) `<(mixed that) {
     return objectp(that) && ([object]that)->is_interval
      &&
-      (  months <= ([object]that)->months && days <= ([object]that)->days
-         && nsecs  < ([object]that)->nsecs
-      || months <= ([object]that)->months && days  < ([object]that)->days
-         && nsecs <= ([object]that)->nsecs
-      || months  < ([object]that)->months && days <= ([object]that)->days
-         && nsecs <= ([object]that)->nsecs);
+      (  (months <= ([object(this_program)]that)->months &&
+	  days   <= ([object(this_program)]that)->days &&
+	  nsecs  <  ([object(this_program)]that)->nsecs) ||
+	 (months <= ([object(this_program)]that)->months &&
+	  days   <  ([object(this_program)]that)->days &&
+	  nsecs  <= ([object(this_program)]that)->nsecs) ||
+	 (months <  ([object(this_program)]that)->months &&
+	  days   <= ([object(this_program)]that)->days &&
+	  nsecs  <= ([object(this_program)]that)->nsecs));
   }
 
   protected int(0..1) `==(mixed that) {
     return objectp(that) && ([object]that)->is_interval
-     && months == [int]([object]that)->months
-     && days == [int]([object]that)->days
-     && nsecs == [int]([object]that)->nsecs;
+      && months == ([object(this_program)]that)->months
+      && days == ([object(this_program)]that)->days
+      && nsecs == ([object(this_program)]that)->nsecs;
   }
 
   //! @returns
@@ -688,7 +703,7 @@ class Interval {
         string res = months ? sprintf("%d MONTH", months) : "";
         if (days)
           res += (res > "" ? " " : "") + sprintf("%d DAY", days);
-        return res + (nsecs ? (res > "" ? " " : "") + ::cast(to) : "");
+        return res + (nsecs ? (res > "" ? " " : "") + [string]::cast(to) : "");
       }
       case "float":
       case "int":
@@ -699,6 +714,8 @@ class Interval {
   }
 
   protected string _sprintf(int fmt, mapping(string:mixed) params) {
+    if (!this)					// Not in destructed objects
+      return "(destructed)";
     if (fmt == 'O')
       return sprintf("Interval(%s)", (string)this);
     return ::_sprintf(fmt, params);
@@ -773,11 +790,11 @@ class Timestamp {
       if (!([object]that)->is_interval)
         error("Cannot substract %O\n", that);
     }
-    return this + -that;
+    return this + -([int|float|object(Interval)]that);
   }
 
   inline protected int(0..1) `<(mixed that) {
-    return intp(that) ? (int)this < that : ::`<(that);
+    return intp(that) ? (int)this < ([int]that) : ::`<(that);
   }
 
   //! @returns
@@ -806,6 +823,8 @@ class Timestamp {
   }
 
   protected string _sprintf(int fmt, mapping(string:mixed) params) {
+    if (!this)					// Not in destructed objects
+      return "(destructed)";
     if (fmt == 'O')
       return sprintf("Timestamp(%s)", (string)this);
     return ::_sprintf(fmt, params);
@@ -859,17 +878,17 @@ class Date {
   }
 
   protected mixed `+(mixed that) {
-    object n = this_program(this);
+    object(this_program)|object(Timestamp) n = this_program(this);
     if (objectp(that)) {
       if (([object]that)->is_interval) {
-        n->days += ([object]that)->days;
+        ([object(this_program)]n)->days += ([object(Interval)]that)->days;
         if(([object]that)->months) {
           mapping(string:int) t = [mapping(string:int)]n->tm();
-          t->mon += ([object]that)->months;
+          t->mon += ([object(Interval)]that)->months;
           n = this_program(t);
         }
         if (([object]that)->nsecs)
-          (n = Timestamp(n))->nsecs += ([object]that)->nsecs;
+          (n = Timestamp(n))->nsecs += ([object(Timebase)]that)->nsecs;
       } else if (([object]that)->is_time) {
           mapping(string:int) t = [mapping(string:int)]n->tm()
            + [mapping(string:int)]([object]that)->tm();
@@ -877,7 +896,7 @@ class Date {
       } else
         error("Cannot add %O\n", that);
     } else if (intp(that))
-      n->days += that;
+      ([object(this_program)]n)->days += [int]that;
     else
       error("Cannot add %O\n", that);
     return n;
@@ -898,42 +917,46 @@ class Date {
       }
       error("Cannot substract %O\n", that);
     }
-    return this + -that;
+    return this + -[int|float]that;
   }
 
   inline protected int(0..1) `<(mixed that) {
     return
-       intp(that) ? (int)this < that
-     : floatp(that) ? (float)this < that
+       intp(that) ? (int)this < [int]that
+     : floatp(that) ? (float)this < [float]that
      : objectp(that)
-      && (([object]that)->is_date ? days < ([object]that)->days
+      && (([object]that)->is_date ? days < ([object(Date)]that)->days
         : ([object]that)->is_timestamp
-          && days * 24 * 3600 * NANOSECONDS < ([object]that)->nsecs);
+          && days * 24 * 3600 * NANOSECONDS < ([object(Timestamp)]that)->nsecs);
   }
 
   inline protected int(0..1) `>(mixed that) {
     return
-       intp(that) ? (int)this > that
-     : floatp(that) ? (float)this > that
+       intp(that) ? (int)this > [int]that
+     : floatp(that) ? (float)this > [float]that
      : objectp(that)
-      && (([object]that)->is_date ? days > ([object]that)->days
+      && (([object]that)->is_date ? days > ([object(Date)]that)->days
         : ([object]that)->is_timestamp
-          && days * 24 * 3600 * NANOSECONDS > ([object]that)->nsecs);
+          && days * 24 * 3600 * NANOSECONDS > ([object(Timestamp)]that)->nsecs);
   }
 
   protected int(0..1) `==(mixed that) {
     return
         objectp(that)
-         && (days == [int]([object]that)->days
+      && (days == ([object(Interval)]that)->days
              && !zero_type(([object]that)->days)
           || !zero_type(([object]that)->nsecs)
-           && days * 24 * 3600 * NANOSECONDS == [int]([object]that)->nsecs)
+	  && days * 24 * 3600 * NANOSECONDS == ([object(Interval)]that)->nsecs)
      || intp(that) && (int)this == [int]that
      || floatp(that) && (float)this == [float]that;
   }
 
   public mapping(string:int) tm() {
     return gmtime((int)this);
+  }
+
+  public string encode_json() {
+    return (string)this;
   }
 
   protected mixed cast(string to) {
@@ -952,6 +975,8 @@ class Date {
   }
 
   protected string _sprintf(int fmt, mapping(string:mixed) params) {
+    if (!this)					// Not in destructed objects
+      return "(destructed)";
     switch (fmt) {
       case 'O': return sprintf("Date(%s)", (string)this);
       case 's': return (string)this;

@@ -58,7 +58,7 @@ static int alloc_regs = 0, valid_regs = 0;
 #define CLEAR_REGS() do {} while (0)
 #endif
 
-#define PUSH_INT(X) ins_int((INT32)(X), (void (*)(char))add_to_program)
+#define PUSH_INT(X) ins_int((INT32)(X), (void (*)(unsigned char))add_to_program)
 #define PUSH_ADDR(X) PUSH_INT((X))
 
 #define NOP() add_to_program(0x90); /* for alignment */
@@ -584,12 +584,12 @@ static void ia32_push_svalue (enum ia32_reg svalue_ptr_reg)
   /* Compare the type which is in the lower 16 bits of svalue_ptr_reg. */
   CHECK_VALID_REG (svalue_ptr_reg);
   add_to_program(0x66);		/* Switch to 16 bit operand mode. */
-  add_to_program(0x83);		/* cmp $xx,svalue_ptr_reg */
-  add_to_program(0xf8 | svalue_ptr_reg);
+  add_to_program(0x83);		/* and $xx,svalue_ptr_reg */
+  add_to_program(0xe0 | svalue_ptr_reg);	/* 11 | 100 | reg */
   add_to_program(MIN_REF_TYPE);
   DEALLOC_REG (svalue_ptr_reg);
 
-  add_to_program(0x7c); /* jl bork */
+  add_to_program(0x74); /* jz bork */
   add_to_program(0x02);
 
   CHECK_VALID_REG (tmp_reg);
@@ -827,7 +827,7 @@ void ins_f_byte(unsigned int b)
 
   b-=F_OFFSET;
 #ifdef PIKE_DEBUG
-  if(b>255)
+  if(b > MAX_SUPPORTED_INSTR)
     Pike_error("Instruction too big %d\n",b);
 #endif
   maybe_update_pc();
@@ -905,6 +905,19 @@ void ins_f_byte(unsigned int b)
       MOV_REG_TO_RELSTACK(P_REG_EAX, 0);
     }
     break;
+  case F_CATCH_AT - F_OFFSET:
+    {
+      /* Special argument for the F_CATCH_AT instruction. */
+      addr = inter_return_opcode_F_CATCH_AT;
+      /* FIXME: Is there really no easier way to get at EIP? */
+      add_to_program(0xe8);
+      PUSH_INT(0);
+      POP_REG(P_REG_EAX);	/* EIP ==> EAX */
+      ADD_VAL_TO_REG(0x7fffffff, P_REG_EAX);
+      rel_addr = PIKE_PC;
+      MOV_REG_TO_RELSTACK(P_REG_EAX, 0);
+    }
+    break;
 #endif
   }
 #endif /* !DEBUG_MALLOC */
@@ -964,7 +977,7 @@ void ins_f_byte(unsigned int b)
     add_to_program (0xe0);
 
 #ifdef OPCODE_INLINE_RETURN
-    if (b + F_OFFSET == F_CATCH) {
+    if ((b + F_OFFSET == F_CATCH) || (b + F_OFFSET == F_CATCH_AT)) {
       upd_pointer(rel_addr - 4, PIKE_PC + 6 - rel_addr);
     }
 #endif

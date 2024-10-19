@@ -12,3 +12,5 @@
 //! to Arcfour.
 
 inherit Nettle.ARCFOUR;
+
+@Pike.Annotations.Implements(Crypto.Cipher);

@@ -97,7 +97,7 @@ static void smpz_invert(INT32 args)
 void pike_init_smpz_module(void)
 {
   start_new_program();
-  low_inherit(mpzmod_program, NULL, -1, 0, 0, NULL);
+  low_inherit(mpzmod_program, NULL, -1, 0, 0, NULL, NULL);
 
 #ifdef HAVE_GMP5
   ADD_INT_CONSTANT("sec_powm", 1, 0);

@@ -635,9 +635,9 @@ static void mpzmod___hash(INT32 args)
 
   pop_n_elems(args);
   if (mpz_sgn(mpz) < 0)
-    push_int(-h);
+    push_int((INT_TYPE)~h);
   else
-    push_int(h);
+    push_int((INT_TYPE)h);
   return;
 }
 
@@ -668,8 +668,6 @@ struct pike_string *low_get_mpz_digits(MP_INT *mpz, int base)
   }
   else if ((base == 256) || (base == -256))
   {
-    size_t i;
-
     if (mpz_sgn(mpz) < 0)
       Pike_error("Only non-negative numbers can be converted to base 256.\n");
 
@@ -695,7 +693,7 @@ struct pike_string *low_get_mpz_digits(MP_INT *mpz, int base)
   else
   {
     Pike_error("Invalid base.\n");
-    UNREACHABLE(return 0);
+    UNREACHABLE();
   }
 
   return s;
@@ -1011,7 +1009,7 @@ double double_from_sval(struct svalue *s)
     default:
       Pike_error("Bad argument, expected a number of some sort.\n");
   }
-  UNREACHABLE(return (double)0.0);
+  UNREACHABLE();
 }
 
 #define BINFUN2(name, errmsg_op, fun, OP, f_op, LFUN)			\
@@ -1644,16 +1642,17 @@ CMPEQU(mpzmod_lt, "`<", <, RET_UNDEFINED)
  */
 CMPEQU(mpzmod_eq, "`==", ==, RET_UNDEFINED)
 
-/*! @decl int(0..1) probably_prime_p(int count)
+/*! @decl int(0..2) probably_prime_p(void|int count)
  *!
- *! Return 1 if this mpz object is a prime, and 0 most of the time if
- *! it is not.
+ *! Return 2 if this mpz object is a prime, 1 if it probably is a
+ *! prime, and 0 if it definitely is not a prime. Testing values below
+ *! 1000000 will only return 2 or 0.
  *!
  *! @param count
  *!   The prime number testing is using Donald Knuth's probabilistic
  *!   primality test. The chance for a false positive is
- *!   pow(0.25,count). The higher value, the more probable it is that
- *!   the number is a prime. Default value is 25.
+ *!   pow(0.25,count). Default value is 25 and resonable values are
+ *!   between 15 and 50.
  */
 static void mpzmod_probably_prime_p(INT32 args)
 {
@@ -1718,7 +1717,13 @@ static void mpzmod_small_factor(INT32 args)
   push_int(mpz_small_factor(THIS, limit));
 }
 
-/*! @decl Gmp.mpz next_prime(void|int count, void|int limit)
+/*! @decl Gmp.mpz next_prime()
+ *!
+ *! Returns the next higher prime for positive numbers and the next
+ *! lower for negative.
+ *!
+ *! The prime number testing is using Donald Knuth's probabilistic
+ *! primality test. The chance for a false positive is pow(0.25,25).
  */
 static void mpzmod_next_prime(INT32 args)
 {
@@ -2080,10 +2085,19 @@ static void mpzmod_pow(INT32 args)
       else
       {
           mi = get_mpz(sp-1, 1, "pow", 1, 1);
-          exponent=mpz_get_ui(mi);
-	  if(mpz_sgn(mi)<0)
-	  {
-	    goto negative_exponent;
+	  if (mpz_fits_ulong_p(mi) ||
+	      ((mpz_cmp_si(THIS, -1) >= 0) && (mpz_cmp_si(THIS, 1) <= 0))) {
+	      /* The exponent fits in an unsigned long, or
+	       * the base is -1, 0, or 1 in which case the higher bits
+	       * of the exponent are not relevant.
+	       */
+	      exponent=mpz_get_ui(mi);
+	      if(mpz_sgn(mi)<0)
+	      {
+		goto negative_exponent;
+	      }
+	  } else {
+	      SIMPLE_ARG_ERROR ("pow", 1, "Exponent too large.");
 	  }
       }
   }
@@ -2092,8 +2106,17 @@ static void mpzmod_pow(INT32 args)
   size = mpz_size(THIS);
   if (INT_TYPE_MUL_OVERFLOW(exponent, size) ||
       size * exponent > (INT_TYPE)(0x40000000/sizeof(mp_limb_t))) {
-    if(mpz_cmp_si(THIS, -1)<0 || mpz_cmp_si(THIS, 1)>0)
-      SIMPLE_ARG_ERROR ("pow", 1, "Exponent too large.");
+    if ((mpz_cmp_si(THIS, -1) < 0) || (mpz_cmp_si(THIS, 1) > 0)) {
+      /* Could be a problem. Let's look closer... */
+      long e;
+      double mantissa = mpz_get_d_2exp(&e, THIS);
+      if (mantissa < 0) mantissa = -mantissa;
+      ep = (e + log2(mantissa)) * exponent;	/* ~= log2(result) */
+      ep /= 8.0;	/* bits ==> bytes */
+      if (ep > ((double)0x40000000)) {	/* 1GB */
+	SIMPLE_ARG_ERROR ("pow", 1, "Exponent too large.");
+      }
+    }
   }
 
   res = fast_clone_object(THIS_PROGRAM);
@@ -2214,10 +2237,10 @@ static void mpzmod_random(INT32 args)
     // could be smarter here, but it's easy to introduce bias by
     // mistake.
 
-    push_int(bytes);
+    push_int((int)bytes);
     apply_svalue(&sp[-2], 1);
     if (TYPEOF(sp[-1]) != T_STRING)
-      Pike_error("random_string(%ld) returned non string.\n", bytes);
+      Pike_error("random_string(%u) returned non string.\n", bytes);
     if ((unsigned)sp[-1].u.string->len != bytes ||
         sp[-1].u.string->size_shift != 0)
       Pike_error("Wrong size random string generated.\n");
@@ -2418,14 +2441,14 @@ static void pike_mp_free (void *ptr, size_t UNUSED(size))
   ADD_FUNCTION("_sprintf", mpzmod__sprintf, tFunc(tInt tMapping,tStr),  \
                ID_PROTECTED);                                           \
   ADD_FUNCTION("_size_object",mpzmod__size_object, tFunc(tVoid,tInt),0);\
-  ADD_FUNCTION("size", mpzmod_size,tFunc(tOr(tVoid,tInt),tIntPos), 0);	\
+  ADD_FUNCTION("size", mpzmod_size,tFunc(tOr(tVoid,tInt),tInt1Plus), 0);\
 									\
   ADD_FUNCTION("probably_prime_p",mpzmod_probably_prime_p,		\
                tFunc(tOr(tVoid,tIntPos),tInt01),0);                     \
   ADD_FUNCTION("small_factor", mpzmod_small_factor,			\
 	       tFunc(tOr(tInt,tVoid),tInt), 0);				\
   ADD_FUNCTION("next_prime", mpzmod_next_prime,				\
-	       tFunc(tOr(tInt,tVoid) tOr(tInt,tVoid),tMpz_ret), 0);	\
+	       tFunc(tNone, tMpz_ret), 0);				\
   									\
   ADD_FUNCTION("gcd",mpzmod_gcd, tMpz_binop_type, 0);			\
   ADD_FUNCTION("gcdext",mpzmod_gcdext,tFunc(tMpz_arg,tArr(tMpz_ret)),0);\
@@ -2517,8 +2540,8 @@ PIKE_MODULE_INIT
   pike_init_mpf_module();
   pike_init_smpz_module();
 
-  /* @decl constant version
-   * The version of the current GMP library, e.g. "6.1.0".
+  /*! @decl constant version
+   *! The version of the current GMP library, e.g. @expr{"6.1.0"@}.
    */
 #ifdef __NT__
   /* NB: <gmp.h> lacks sufficient export declarations to export
@@ -2526,10 +2549,10 @@ PIKE_MODULE_INIT
    *     We thus need to look up the symbol by hand.
    */
   {
-    HINSTANCE gmp_dll = LoadLibrary("gmp");
+    HINSTANCE gmp_dll = LoadLibraryA("gmp");
     if (gmp_dll) {
       const char **gmp_version_var =
-	GetProcAddress(gmp_dll, DEFINETOSTR(gmp_version));
+        (void *)GetProcAddress(gmp_dll, DEFINETOSTR(gmp_version));
       if (gmp_version_var) {
 	const char *gmp_version = *gmp_version_var;
 	add_string_constant("version", gmp_version, 0);

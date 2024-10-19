@@ -67,7 +67,7 @@ void timeout()
 
 object f=Stdio.File();
 int z;
-object p=Stdio.Port();
+object|zero p=Stdio.Port();
 
 int main()
 {

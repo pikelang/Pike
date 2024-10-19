@@ -9,3 +9,5 @@
 //! octets.
 
 inherit Nettle.RIPEMD160;
+
+@Pike.Annotations.Implements(Crypto.Hash);

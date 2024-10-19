@@ -141,11 +141,16 @@ static long lex_strtol(char *buf, char **end, int base)
   return ret;
 }
 
-static double lex_strtod(char *buf, char **end)
+static FLOAT_TYPE lex_strtod(char *buf, char **end)
 {
   PCHARP foo;
+#if SIZEOF_FLOAT_TYPE > SIZEOF_DOUBLE
+  FLOAT_TYPE ret;
+  ret=STRTOLD_PCHARP(MKPCHARP(buf,SHIFT),&foo);
+#else
   double ret;
   ret=STRTOD_PCHARP(MKPCHARP(buf,SHIFT),&foo);
+#endif
   if(end) end[0]=(char *)foo.ptr;
   return ret;
 }
@@ -485,7 +490,7 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 
       PIKE_MEM_WO_RANGE (yylval, sizeof (YYSTYPE));
 
-      if(len>1 && len<16)
+      if (len > 1)
       {
 	/* NOTE: TWO_CHAR() will generate false positives with wide strings,
 	 * but that doesn't matter, since ISWORD() will fix it.
@@ -558,7 +563,6 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	  break;
 	case TWO_CHAR('i','m'):
 	  if(ISWORD("import")) return TOK_IMPORT;
-	  if(ISWORD("implement")) return TOK_IMPLEMENT;
 	  break;
 	case TWO_CHAR('i','n'):
 	  if(ISWORD("int")) return TOK_INT_ID;
@@ -626,14 +630,30 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	  break;
 	case TWO_CHAR('_','_'):
 	  if(len < 5) break;
+          if(ISWORD("__args__"))	/* Handled as an identifier. */
+            break;
+          if(ISWORD("__async__"))
+            return TOK_ASYNC;
 	  if(ISWORD("__attribute__"))
 	    return TOK_ATTRIBUTE_ID;
 	  if(ISWORD("__deprecated__"))
 	    return TOK_DEPRECATED_ID;
+          if(ISWORD("__experimental__"))
+            return TOK_EXPERIMENTAL_ID;
 	  if(ISWORD("__func__"))
 	    return TOK_FUNCTION_NAME;
+          if(ISWORD("__generic__"))
+            return TOK_GENERIC;
+          if(ISWORD("__generator__"))
+            return TOK_GENERATOR;
 	  if(ISWORD("__weak__"))
 	    return TOK_WEAK;
+	  if(ISWORD("__unused__"))
+	    return TOK_UNUSED;
+	  if(ISWORD("__unknown__"))
+	    return TOK_UNKNOWN;
+          if(ISWORD("__pragma_save_parent__"))	/* Handled as an identifier. */
+            break;
 	  /* Allow triple (or more) underscore for the user, and make sure we
 	   * don't get false matches below for wide strings.
 	   */
@@ -661,10 +681,6 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	     * - Upper case is used for symbols intended for #if constant().
 	     */
 	    if (tmp->size_shift) {
-	      free_string(tmp);
-	      return TOK_IDENTIFIER;
-	    }
-	    if(ISWORD("__args__")) {
 	      free_string(tmp);
 	      return TOK_IDENTIFIER;
 	    }
@@ -789,6 +805,10 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	  {
 	    lex->pragmas |= ID_STRICT_TYPES;
 	  }
+	  else if (ISWORD("no_strict_types"))
+	  {
+	    lex->pragmas &= ~ID_STRICT_TYPES;
+	  }
 	  else if (ISWORD("save_parent"))
 	  {
 	    lex->pragmas |= ID_SAVE_PARENT;
@@ -805,6 +825,14 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	  {
 	    lex->pragmas &= ~ID_NO_DEPRECATION_WARNINGS;
 	  }
+          else if (ISWORD("no_experimental_warnings"))
+          {
+            lex->pragmas |= ID_NO_EXPERIMENTAL_WARNINGS;
+          }
+          else if (ISWORD("experimental_warnings"))
+          {
+            lex->pragmas &= ~ID_NO_EXPERIMENTAL_WARNINGS;
+          }
 	  else if (ISWORD("disassemble"))
 	  {
 	    lex->pragmas |= ID_DISASSEMBLE;
@@ -820,6 +848,14 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
           else if (ISWORD("no_dynamic_dot"))
           {
             lex->pragmas &= ~ID_DYNAMIC_DOT;
+          }
+          else if (ISWORD("compiler_trace"))
+          {
+            lex->pragmas |= ID_COMPILER_TRACE;
+          }
+          else if (ISWORD("no_compiler_trace"))
+          {
+            lex->pragmas &= ~ID_COMPILER_TRACE;
           }
           else
           {
@@ -866,7 +902,7 @@ unknown_directive:
 	  struct pike_string *dir =
 	    make_shared_binary_string2((p_wchar2 *)buf, len);
 #endif
-	  my_yyerror("Unknown preprocessor directive %S.", dir);
+          my_yyerror("Unknown preprocessor directive %pS.", dir);
 	  free_string(dir);
 	} else {
 	  yyerror("Unknown preprocessor directive.");
@@ -941,6 +977,7 @@ unknown_directive:
         return TOK_NUMBER;
       }
       UNREACHABLE();
+      break;
     case '"':
     {
       struct pike_string *s=readstring(lex);
@@ -999,7 +1036,7 @@ unknown_directive:
     case '5': case '6': case '7': case '8': case '9':
     {
       char *p1, *p2;
-      double f;
+      FLOAT_TYPE f;
       long l;
       struct svalue sval;
 
@@ -1053,10 +1090,10 @@ unknown_directive:
 	  }
 	}
 	free_svalue(&sval);
-	yylval->fnum=(FLOAT_TYPE)f;
+	yylval->fnum=f;
 #if 0
-	fprintf(stderr, "LEX: \"%.8s\" => %f, %f\n",
-		(char *)lex->pos, f, yylval->fnum);
+	fprintf(stderr, "LEX: \"%.8s\" => %"PRINTPIKEFLOAT"f\n",
+		(char *)lex->pos, f);
 #endif /* 0 */
 	lex->pos=p1;
 	if (lex_isidchar (LOOK())) {
@@ -1089,7 +1126,12 @@ unknown_directive:
 
     case '-':
       if(GOBBLE('=')) return TOK_SUB_EQ;
-      if(GOBBLE('>')) return TOK_ARROW;
+      if(GOBBLE('>')) {
+	if(GOBBLE('?') ) /* ->? */
+	  return TOK_SAFE_INDEX;
+	else
+	  return TOK_ARROW;
+      }
       if(GOBBLE('-')) return TOK_DEC;
       return '-';
 
@@ -1158,29 +1200,25 @@ unknown_directive:
 
     case '(':
       if(GOBBLE('<')) return TOK_MULTISET_START;
+      if(GOBBLE('?') ) /* (? */
+	  return TOK_SAFE_APPLY;
       return '(';
 
     case '?':
       if(GOBBLE(':'))
         return TOK_LOR;
 
-      if(GOBBLE('-') ) /* safe index: ?->  or ?[] */
+      if(GOBBLE('-') )
       {
-        if( GOBBLE( '>' ) ) /* ?-> */
-            return TOK_SAFE_INDEX;
+        if( GOBBLE( '>' ) ) { /* ?-> */
+	  yywarning(" ?-> safe indexing is deprecated, use ->?");
+	  return TOK_SAFE_INDEX;
+	}
         SKIPN(-1); /* Undo GOBBLE('-') above */
       }
 
-      /* Probably wanted:
-
-         ?.   for safe constant index
-         ?[]  for safe [] index
-
-         They however conflict with valid ?: syntaxes.
-      */
-
-      /* if( GOBBLE('.' ) ) */
-      /*   return TOK_SAFE_INDEX; */
+      if (GOBBLE('='))
+	return TOK_ATOMIC_GET_SET;
 
       /* FALLTHRU */
 

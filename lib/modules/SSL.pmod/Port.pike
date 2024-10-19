@@ -38,10 +38,24 @@ void `ctx=(Context c)
   _ctx = c;
 }
 
+//! Queue of new @[SSL.File]s that have been negotiated.
 protected ADT.Queue accept_queue = ADT.Queue();
 
 //!
-function(object, mixed|void:void) accept_callback;
+function(mixed|void:void) accept_callback;
+
+protected void call_accept_callback()
+{
+  function cb;
+  while ((cb = accept_callback) && sizeof(accept_queue)) {
+    mixed err = catch {
+        cb(_id);
+      };
+    if (err) {
+      master()->handle_error(err);
+    }
+  }
+}
 
 //! @decl void finished_callback(SSL.File f, mixed|void id)
 //!
@@ -63,10 +77,7 @@ function(object, mixed|void:void) accept_callback;
 void finished_callback(object f, mixed|void id)
 {
   accept_queue->put(f);
-  while (accept_callback && sizeof(accept_queue))
-  {
-    accept_callback(f, id);
-  }
+  call_accept_callback();
 }
 
 //! Connection accept callback.
@@ -75,8 +86,14 @@ void finished_callback(object f, mixed|void id)
 //! accepts the connection and creates a corresponding @[File] with
 //! @[finished_callback()] as the accept callback.
 //!
+//! @note
+//!   If no @[accept_callback] has been installed via @[bind()],
+//!   @[listen_fd()] or @[set_accept_callback()], installation
+//!   of this function as the @[Stdio.Port] callback will be
+//!   delayed until the first call of @[accept()].
+//!
 //! @seealso
-//!   @[bind()], @[finished_callback()]
+//!   @[bind()], @[finished_callback()], @[set_accept_callback()]
 void ssl_callback(mixed id)
 {
   object f = socket_accept();
@@ -101,7 +118,7 @@ mixed query_id()
 #endif
 
 //! @decl int bind(int port, @
-//!                function(SSL.File|void, mixed|void: int) callback, @
+//!                function(mixed|void: int)|void callback, @
 //!                string|void ip,@
 //!                int|void reuse_port)
 //!
@@ -111,13 +128,15 @@ mixed query_id()
 //!   Port number to bind.
 //!
 //! @param callback
-//!   Callback to call when the SSL connection has been negotiated.
+//!   Callback to call when an SSL connection has been negotiated.
 //!
-//!   The callback is called with an @[File] as the first argument,
-//!   and the id for the @[File] as the second.
+//!   The callback is called with the @[_id] as the argument.
+//!   The new @[SSL.File] is then typically retrieved by
+//!   calling @[accept()].
 //!
-//!   If the @[callback] is @expr{0@} (zero), then negotiated @[File]s
-//!   will be enqueued for later retrieval with @[accept()].
+//!   If the @[callback] is @expr{0@} (zero), then connections
+//!   will not be accepted until the first call of @[accept()],
+//!   or a callback has been installed with @[set_accept_callback()].
 //!
 //! @param ip
 //!   Optional IP-number to bind.
@@ -132,14 +151,13 @@ mixed query_id()
 //! @seealso
 //!   @[Stdio.Port()->bind()], @[File()->set_accept_callback()],
 //!   @[listen_fd()]
-int bind(int port, function callback, string|void ip, int|void reuse_port)
+int bind(int port, function|void callback, string|void ip, int|void reuse_port)
 {
   accept_callback = callback;
-  return socket::bind(port, ssl_callback, ip, reuse_port);
+  return socket::bind(port, callback && ssl_callback, ip, reuse_port);
 }
 
-//! @decl int listen_fd(int fd, @
-//!                     function(File|void, mixed|void: int) callback)
+//! @decl int listen_fd(int fd, function(mixed|void: int)|void callback)
 //!
 //! Set up listening for SSL connections on an already opened fd.
 //!
@@ -162,10 +180,18 @@ int bind(int port, function callback, string|void ip, int|void reuse_port)
 //! @seealso
 //!   @[Stdio.Port()->listen_fd()], @[File()->set_accept_callback()],
 //!   @[bind()]
-int listen_fd(int fd, function callback)
+int listen_fd(int fd, function|void callback)
 {
   accept_callback = callback;
-  return socket::listen_fd(fd, ssl_callback);
+  return socket::listen_fd(fd, callback && ssl_callback);
+}
+
+//! Set the accept callback.
+void set_accept_callback(function|void accept_callback)
+{
+  this::accept_callback = accept_callback;
+  socket::set_accept_callback(ssl_callback);
+  call_out(call_accept_callback, 0);
 }
 
 //! Low-level accept.
@@ -186,6 +212,11 @@ Stdio.File socket_accept()
 //!   there are none.
 object accept()
 {
+  if (!socket::_accept_callback) {
+    // Enable the callback on first call in order to allow
+    // late initialization of the context.
+    socket::set_accept_callback(ssl_callback);
+  }
   return accept_queue->get();
 }
 

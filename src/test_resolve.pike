@@ -69,6 +69,12 @@ void test_dir(string dir, int|void base_size, object|void handler)
   // Otherwise their loading errors will be hidden.
   sort(reverse(files[*]), files);
   files = reverse(files);
+  if ((Pike.get_runtime_info()->abi <= 32) &&
+      has_value(files, "___Java.so")) {
+    // NB: Java on 32-bit platforms needs to be loaded
+    //     *before* the heap becomes fragmented.
+    files = ({ "___Java.so" }) + (files - ({ "___Java.so" }));
+  }
   foreach(files, string s)
   {
     switch(s)
@@ -116,7 +122,7 @@ void test_dir(string dir, int|void base_size, object|void handler)
 	  // loading errors aren't hidden.
 	  mixed err;
 	  if (err = catch{
-	    program ret = load_module(file);
+	    program|zero ret = load_module(file);
 	    if (ret && ret->this_program_does_not_exist)
 	      ret = 0;
 	    master()->programs[file] = ret;
@@ -154,7 +160,12 @@ int main()
 
   // Note: Get at all versions (including the main version)
   //       by going via the handler cache.
-  foreach(Array.uniq(values(master()->compat_handler_cache)), object handler)
+  //
+  // Start with the most recent handler, and end with the oldest.
+  array(object) handlers = values(master()->compat_handler_cache);
+  sort(indices(master()->compat_handler_cache), handlers);
+  handlers = Array.uniq(reverse(handlers));
+  foreach(handlers, object handler)
     if (handler) {
       Array.map(handler->pike_module_path, test_dir, 0,
 		(handler != master())?handler:UNDEFINED);

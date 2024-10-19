@@ -123,4 +123,22 @@ void vcdiff_free_decoder (const void* vcdecoder)
   delete (const open_vcdiff::VCDiffStreamingDecoder*) vcdecoder;
 }
 
+int vcdiff_decoder_set_max_window_size(const void *vcdecoder,
+                                       size_t new_size)
+{
+  open_vcdiff::VCDiffStreamingDecoder *vcdec =
+    (open_vcdiff::VCDiffStreamingDecoder*) vcdecoder;
+
+  return vcdec->SetMaximumTargetWindowSize(new_size);
+}
+
+int vcdiff_decoder_set_max_file_size(const void *vcdecoder,
+                                     size_t new_size)
+{
+  open_vcdiff::VCDiffStreamingDecoder *vcdec =
+    (open_vcdiff::VCDiffStreamingDecoder*) vcdecoder;
+
+  return vcdec->SetMaximumTargetFileSize(new_size);
+}
+
 #endif /* HAVE_VCDIFF */

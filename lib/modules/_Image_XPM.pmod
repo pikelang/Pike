@@ -36,13 +36,11 @@ int old_time,start_time;
 //!
 //! No options are currently supported.
 
-mapping _decode( string what, void|mapping opts )
+mapping _decode( string what, mapping opts = ([]) )
 {
   array data;
   mapping retopts = ([ ]);
   retopts->format = "image/xpm";
-  if(!opts)
-    opts = ([]);
   TI("Scan for header");
   if(sscanf(what, "%*s/*%*[ \t]XPM%*[ \t]*/%*s{%s", what)  != 5)
     error("This is not a XPM image (1)\n");
@@ -64,7 +62,7 @@ mapping _decode( string what, void|mapping opts )
 
   TD("Explode");
   data = what/"\n";
-  what = 0;
+  what = "";
   int len = sizeof(data);
 
   TD("Trim");
@@ -114,7 +112,7 @@ constant ok = ({
   "O",  "P",  "Q",  "R",  "S",  "T",  "U",  "V",  "W",  "X",  "Y",  "Z",  " ",
 });
 
-private array cmap_t;
+private array|zero cmap_t;
 
 //! @decl string encode(Image.Image image, mapping|void options)
 //! @belongs Image.XPM
@@ -132,11 +130,10 @@ private array cmap_t;
 //! @member string(1..128) "comment"
 //! @endmapping
 
-string encode( object what, mapping|void options )
+string encode( object what, mapping options = ([]) )
 {
   int x,y,q;
   TI("Encode init");
-  if(!options) options = ([]);
   if(!cmap_t)
   {
     cmap_t = allocate( 8100 );

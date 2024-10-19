@@ -46,7 +46,7 @@ void image_hrz_f_decode(INT32 args)
   struct object *io;
   struct pike_string *s;
   int c;
-  get_all_args( NULL, args, "%S", &s);
+  get_all_args( NULL, args, "%n", &s);
 
   if(s->len != 256*240*3) Pike_error("This is not a HRZ file\n");
 

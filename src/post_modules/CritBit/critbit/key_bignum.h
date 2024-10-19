@@ -1,8 +1,10 @@
+/* -*- mode: C; c-basic-offset: 4; -*- */
 #ifndef CB_KEY_PIKEINT_H
 #define CB_KEY_PIKEINT_H
 #include "bitvector.h"
 #include "pike_int_types.h"
 #include "bignum.h"
+#include "critbit_machine.h"
 
 typedef struct object * CB_NAME(string);
 typedef mp_limb_t CB_NAME(char);
@@ -16,6 +18,16 @@ typedef mp_limb_t CB_NAME(char);
 # undef cb_char
 #endif
 #define cb_char CB_NAME(char)
+
+#ifdef PIKE_GMP_LIMB_BITS_INVALID
+/* Attempt to repair the header file... */
+#undef GMP_LIMB_BITS
+#define GMP_LIMB_BITS (SIZEOF_MP_LIMB_T * CHAR_BIT)
+#ifdef PIKE_GMP_NUMB_BITS
+#undef GMP_NUMB_BITS
+#define GMP_NUMB_BITS PIKE_GMP_NUMB_BITS
+#endif /* PIKE_GMP_NUMB_BITS */
+#endif /* PIKE_GMP_LIMB_BITS_INVALID */
 
 static inline unsigned INT32 gclz(mp_limb_t a) {
 #if GMP_NUMB_BITS == 64
@@ -55,7 +67,7 @@ static inline mp_limb_t CB_GET_CHAR(cb_string s, ptrdiff_t n) {
 }
 
 #define CB_WIDTH(s)	(sizeof(cb_char)*8)
-#define CB_LENGTH(str)	0
+#define CB_LENGTH(str)	1
 #define CB_SIZE(key)	(-abs(K2G(key)->_mp_size))
 #define CB_GET_BIT(str, size)			\
 	(BITN(cb_char, CB_GET_CHAR((str), (size).chars), (size).bits))

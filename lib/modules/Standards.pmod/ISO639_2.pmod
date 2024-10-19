@@ -2,6 +2,7 @@
 
 // Updated 2014-08-06 from http://lcweb.loc.gov/standards/iso639-2/
 
+#charset iso-8859-1
 #pike __REAL_VERSION__
 
 // Mapping from ISO 639-2/T code to language name.
@@ -559,7 +560,7 @@ mapping (string:string) list_languages_b() {
 }
 
 //! Converts an ISO 639-2/B code to an ISO 639-2/T code.
-string convert_b_to_t(string code) {
+string|zero convert_b_to_t(string code) {
   string res = b_to_t[code];
   if(res) return res;
   if(languages[code]) return code;
@@ -567,7 +568,7 @@ string convert_b_to_t(string code) {
 }
 
 //! Converts an ISO 639-2/T code to an ISO 639-2/B code.
-string convert_t_to_b(string code) {
+string|zero convert_t_to_b(string code) {
   string res = search(b_to_t, code);
   if(res) return res;
   if(languages[code]) return code;

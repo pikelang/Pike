@@ -54,6 +54,10 @@
 #endif /* HAVE_MYSQL_ERRMSG_H */
 #endif /* HAVE_ERRMGS_H */
 
+#ifndef HAVE_MY_BOOL
+#define my_bool bool
+#endif
+
 #endif /* HAVE_MYSQL */
 
 /* From the Pike-dist */
@@ -176,7 +180,7 @@ PIKECLASS mysql
 
   DECLARE_STORAGE;
 
-  /* @decl inherit __builtin.Sql.Connection
+  /*! @decl inherit __builtin.Sql.Connection
    */
   INHERIT "__builtin.Sql.Connection";
 
@@ -421,7 +425,9 @@ static void low_query(INT32 args, char *name, int flags);
 
 static void connection_set_charset (struct pike_string *charset)
 {
+#ifdef HAVE_MYSQL_SET_CHARACTER_SET
   int res;
+#endif
   MYSQL *mysql = PIKE_MYSQL->mysql;
 
 #if defined (HAVE_MYSQL_OPTIONS) && defined (HAVE_MYSQL_SET_CHARSET_NAME)
@@ -793,6 +799,37 @@ PIKEFUN void create(string(1..255)|void host, string(1..255)|void database,
   pop_n_elems(args);
 }
 
+/*! @decl void reset()
+ *!
+ *! Reset connection state.
+ *!
+ *! Currently this just releases all table locks.
+ */
+PIKEFUN void reset()
+{
+  MYSQL *mysql = PIKE_MYSQL->mysql;
+
+  if (mysql) {
+    const char *query = "UNLOCK TABLES";
+    size_t qlen = strlen(query);
+    int tmp;
+
+#ifdef HAVE_MYSQL_REAL_QUERY
+    tmp = mysql_real_query(mysql, query, qlen);
+#else
+    tmp = mysql_query(mysql, query);
+#endif /* HAVE_MYSQL_REAL_QUERY */
+
+    if (!tmp) {
+      MYSQL_RES *result;
+      result = mysql_store_result(mysql);
+      if (result) {
+	mysql_free_result(result);
+      }
+    }
+  }
+}
+
 /*! @decl string _sprintf(int type, void|mapping flags)
  */
 PIKEFUN string _sprintf(int type, void|mapping flags)
@@ -1050,7 +1087,7 @@ PIKEFUN string sqlstate()
  *! you want to access with this function.
  *!
  *! @seealso
- *!   @[create()], @[create_db()], @[drop_db()]
+ *!   @[create()], @[create_db()], @[drop_db()], @[query_db()]
  */
 PIKEFUN void select_db(string(1..255) database)
 {
@@ -1078,6 +1115,24 @@ PIKEFUN void select_db(string(1..255) database)
   add_ref(PIKE_MYSQL->database = database);
 
   pop_n_elems(args);
+}
+
+/*! @decl string|zero query_db()
+ *!
+ *! Returns the currently selected database.
+ *!
+ *! @seealso
+ *!   @[select_db()]
+ */
+PIKEFUN string|zero query_db()
+{
+  MYSQL *mysql = PIKE_MYSQL->mysql;
+
+  if (mysql && mysql->db) {
+    push_text(mysql->db);
+  } else {
+    push_undefined();
+  }
 }
 
 static void low_query(INT32 args, char *name, int flags)
@@ -1122,10 +1177,10 @@ static void low_query(INT32 args, char *name, int flags)
     err = mysql_error(mysql);
 
     if (sp[-args].u.string->len <= 512) {
-      Pike_error("%s(): Query \"%s\" failed (%s)\n",
-		 name, query, err);
+      Pike_error("%s(): Query \"%s\" failed (%d: %s)\n",
+		 name, query, tmp, err);
     } else {
-      Pike_error("%s(): Query failed (%s)\n", name, err);
+      Pike_error("%s(): Query failed (%d: %s)\n", name, tmp, err);
     }
   }
 
@@ -1845,7 +1900,7 @@ PIKEFUN string(8bit) client_info()
   push_static_text("MariaDB/");
   {
     char *vers = NULL;
-    if (mariadb_get_info(NULL, MARIADB_CLIENT_VERSION, &vers) < 0) {
+    if (mariadb_get_info(NULL, MARIADB_CLIENT_VERSION, &vers)) {
       vers = "unknown";
     }
     push_text(vers);

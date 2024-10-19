@@ -4,7 +4,7 @@
 
 constant dont_dump_program = 1;
 
-Stdio.File fd=Stdio.File();
+object(Stdio.File)|zero fd = Stdio.File();
 
 .Torrent parent;
 
@@ -80,7 +80,7 @@ constant msg_to_string=([
    MSG_CANCEL:"cancel",
 ]);
 
-function(string,mixed...:void|mixed) warning=werror;
+function(string, __unknown__ ...:void|mixed) warning = werror;
 int cancelled=0;
 
 int bandwidth_out=0; // bytes/s
@@ -97,7 +97,7 @@ constant BANDWIDTH_O_METER_C=(int)(20/BANDWIDTH_O_METER_DELAY);
 // ----------------------------------------------------------------
 
 // created with a peer-info dictionary
-void create(.Torrent _parent,mapping m)
+protected void create(.Torrent _parent,mapping m)
 {
    parent=_parent;
    ip=m->ip;
@@ -281,7 +281,7 @@ void connect2(string ip2)
       });
 }
 
-void drop(string how,void|string misc)
+void drop(string|zero how,void|string misc)
 {
    online=0;
    if (how) _status(how,misc);
@@ -1026,7 +1026,7 @@ void status(string type,void|int|string data)
 
 // ----------------------------------------------------------------
 
-string _sprintf(int t)
+protected string|zero _sprintf(int t)
 {
    if (t=='O')
       return sprintf("Bittorrent.Peer(%s:%d %O%s%s%s%s%s%s%s v%d ^%d b/s q:%d p:%d sb:%d)",

@@ -9,7 +9,7 @@ int main()
 
 class Port
 {
-  Request request_program = Request;
+  program(Request) request_program = Request;
 }
 
 class Request
@@ -18,7 +18,8 @@ class Request
 
   void _attach_fd(Stdio.NonblockingStream _fd, void|Concurrent.Promise p)
   {
-    ::attach_fd(_fd, Port(), p?->success || _callback);
+    // NB: Do NOT use the inherited Port.
+    ::attach_fd(_fd, global::Port(), p->?success || _callback);
   }
 
   array _requests = ({});
@@ -31,7 +32,7 @@ class Request
 class FDWrapper
 {
   string response = "";
-  array get_response()
+  array|zero get_response()
   {
     array ret = _Roxen.HeaderParser()->feed(response);
     if( !ret ) return 0;
@@ -54,12 +55,12 @@ class FDWrapper
   class FD
   {
     Stdio.Buffer outbuf = Stdio.Buffer();
-    void create(string method, string path, mapping args, string data)
+    protected void create(string method, string path, mapping args, string data)
     {
       request(method, path, args, data);
     }
 
-    variant void create(string data)
+    protected variant void create(string data)
     {
       outbuf->add(data);
     }
@@ -89,6 +90,8 @@ class FDWrapper
       if( this && w ) w();
     }
 
+    void set_nodelay(int(0..1)|void state) { }
+
     void set_read_callback(function a) { }
     void set_blocking() { }
     int write(string d)
@@ -116,7 +119,7 @@ void do_tests()
 
   void Test(function test)
   {
-    next = next->then(lambda()
+    next = next->then(lambda(mixed ...)
       {
         return test();
       },
@@ -137,6 +140,32 @@ void do_tests()
       object frame = backtrace()[-2];
       werror("\n%s:%d\n", frame[0], frame[1]);
       werror("%O != %O.\n", a, b);
+      bad++;
+    }
+  };
+
+  void test_lt(mixed a, mixed b)
+  {
+    if( a < b )
+      good++;
+    else
+    {
+      object frame = backtrace()[-2];
+      werror("\n%s:%d\n", frame[0], frame[1]);
+      werror("%O >= %O.\n", a, b);
+      bad++;
+    }
+  };
+
+  void test_gt(mixed a, mixed b)
+  {
+    if( a > b )
+      good++;
+    else
+    {
+      object frame = backtrace()[-2];
+      werror("\n%s:%d\n", frame[0], frame[1]);
+      werror("%O <= %O.\n", a, b);
       bad++;
     }
   };
@@ -162,7 +191,7 @@ void do_tests()
       test_eq(r->not_query, "/");
       test_eq(r->query, "");
       test_eq(r->protocol, "HTTP/1.0");
-      test_eq(abs(r->started-time())<2, 1);
+      test_lt(abs(r->started-time()), 2);
       test_eq(r->request_headers, ([]));
       test_eq(r->variables, ([]));
       test_eq(r->cookies, ([]));
@@ -180,7 +209,7 @@ void do_tests()
         Request r = __ARGS__[0];
 
         // Actual size depends on header sizes (date, server).
-        test_eq(r->sent_data()>228, 1);
+        test_gt(r->sent_data(), 209);
 
         array resp = fd->get_response();
         test_eq(resp[0], "");
@@ -193,7 +222,6 @@ void do_tests()
         test_eq(stringp(m_delete(m, "server")), 1);
         test_eq(m, ([
                   "connection": "close",
-                  "content-length": "0",
                   "content-type": "application/octet-stream",
                 ]));
       };

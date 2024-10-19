@@ -27,7 +27,10 @@ struct processing
   void *pointer_a, *pointer_b;
 };
 
-struct ref_dummy;
+struct ref_dummy
+{
+  INT32 refs;
+};
 
 /** the union of possible types in an svalue.
 */
@@ -62,7 +65,9 @@ enum PIKE_TYPE {
     PIKE_T_INT=0,
     PIKE_T_FLOAT=1,
 
-/* NB: The reference counted types all have bit 4 set. */
+    PIKE_T_FUNCTION_ARG = 4,	/* Only used in type strings. */
+
+/* NB: The reference counted types all have bit 3 (8) set. */
     PIKE_T_ARRAY=8,
     PIKE_T_MAPPING=9,
     PIKE_T_MULTISET=10,
@@ -78,7 +83,7 @@ enum PIKE_TYPE {
 
 /* NB: 6 & 7 below are selected for easy backward compat with Pike 7.8. */
     PIKE_T_ZERO= 6,	/**< Can return 0, but nothing else */
-    T_UNFINISHED=7,
+    PIKE_T_UNFINISHED=7,
 
 /*
  * NOTE: The following types may show up on the stack, but are NOT
@@ -86,15 +91,13 @@ enum PIKE_TYPE {
  *       lvalues. They MUST NOT have a value that has bit 3 (8) set.
  */
 
-    T_VOID=       16, /**< Can't return any value. Also used on stack to fill out the second
- * svalue on an lvalue when it isn't used. */
+    PIKE_T_VOID=       16, /**< Can't return any value. Also used on stack
+			    * to fill out the second
+			    * svalue on an lvalue when it isn't used. */
 
-    T_MANY=       17,
+    PIKE_T_MANY=       17,
 
     PIKE_T_INT_UNTYPED= 18, /* Optimization of int type size */
-
-    PIKE_T_GET_SET= 32,	/* Getter setter.
-                         * Only valid in struct identifier */
 
 
 /* Type to put in freed svalues. Only the type field in such svalues
@@ -112,17 +115,129 @@ enum PIKE_TYPE {
 /** svalue.u.lval points to an svalue. Primarily used in lvalues on
  * stack, but can also occur in arrays containing lvalue pairs.
  */
-    T_SVALUE_PTR=20,
+    PIKE_T_SVALUE_PTR=20,
 
 /** svalue.u.identifer is an identifier index in an object. Primarily
  * used in lvalues on stack, but can also occur in arrays containing
  * lvalue pairs.
  */
-    T_OBJ_INDEX=21,
-    T_ARRAY_LVALUE=22,
+    PIKE_T_OBJ_INDEX=21,
+    PIKE_T_ARRAY_LVALUE=22,
 
 /* No types above this value should appear on the stack. */
-    PIKE_T_STACK_MAX=	T_ARRAY_LVALUE,
+    PIKE_T_STACK_MAX=	PIKE_T_ARRAY_LVALUE,
+
+    PIKE_T_GET_SET= 32,	/* Getter setter.
+                         * Only valid in struct identifier */
+
+    /**
+     * Values 0x30 - 0x3f reserved for variables.
+     * Only 0x30 - 0x39 used currently.
+     */
+    PIKE_T_VAR_0 = '0',		/* 48 */
+    PIKE_T_VAR_1 = '1',
+    PIKE_T_VAR_2 = '2',
+    PIKE_T_VAR_3 = '3',
+    PIKE_T_VAR_4 = '4',
+    PIKE_T_VAR_5 = '5',
+    PIKE_T_VAR_6 = '6',
+    PIKE_T_VAR_7 = '7',
+    PIKE_T_VAR_8 = '8',
+    PIKE_T_VAR_9 = '9',		/* 57 */
+
+    PIKE_T_GENERIC = 64,
+    PIKE_T_BIND = 65,		/* Apply the binding in CAR to CDR. */
+
+    /* Operators. These all have 0x80 in the low 8 bits, and
+     * a non-zero function number in the next 8 bits.
+     *
+     * Bit 15 (0x8000) indicates that cdr is a type-node.
+     *
+     * Note that this overlaps with the PIKE_T_NO_REF_FLAG,
+     * but that should be safe, as operators aren't valid
+     * run-time types.
+     *
+     * Bin 14 (0x4000) indicates that it is an int op.
+     */
+    PIKE_T_OPERATOR = 0x0080,
+    PIKE_T_FIND_LFUN = 0x0180,	/* Look up an lfun in an object type. */
+    PIKE_T_GET_RETURN = 0x0280,	/* Get the return type for a function. */
+    PIKE_T_THRESHOLD = 0x0380,	/* Coerce type to mixed|void if not UNKNOWN. */
+
+    PIKE_T_APPLY = 0x8180,	/* Apply a function with a single argument. */
+    PIKE_T_SET_CAR = 0x8280,	/* Set the CAR of the CAR type to CDR. */
+    PIKE_T_SET_CDR = 0x8380,	/* Set the CDR of the CAR type to CDR. */
+
+    PIKE_T_INT_OP_SUB = 0xc080,	/* INT OP `-. */
+    PIKE_T_INT_OP_AND = 0xc180,	/* INT OP `&. */
+    PIKE_T_INT_OP_XOR = 0xc280,	/* INT OP `^. */
+    PIKE_T_INT_OP_RANGE = 0xc380,	/* int(min(car) .. max(cdr)) */
+    PIKE_T_INT_OP_MIN = 0xc480,	/* int(MIN(min(car), min(cdr)) .. MIN(max(car), max(cdr))) */
+    PIKE_T_INT_OP_MAX = 0xc580,	/* int(MAX(min(car), min(cdr)) .. MAX(max(car), max(cdr))) */
+    PIKE_T_INT_OP_MUL = 0xc680,	/* INT OP `*. */
+    PIKE_T_INT_OP_DIV = 0xc780,	/* INT OP `/. */
+
+    PIKE_T_TRANSITIVE = 0x00c0,	/* Repeatedly apply a function type. */
+
+/*
+ * The following types are only used in compile-time types and
+ * as markers in struct identifier.
+ */
+
+    PIKE_T_LARRAY = 236,	/* Limited array. Only for serialization. */
+    PIKE_T_LSTRING = 237,	/* Limited string. Only for serialization. */
+
+    PIKE_T_ATTRIBUTE = 238,	/* Attribute node. */
+    PIKE_T_NSTRING = 239,	/* Narrow string. Only for serialization. */
+    PIKE_T_RING = 240,
+    PIKE_T_NAME = 241,		/**< Named type. */
+    PIKE_T_SCOPE = 243,		/**< Not supported yet */
+    PIKE_T_TUPLE = 244,		/**< Not supported yet */
+    PIKE_T_ASSIGN = 245,
+    PIKE_T_DELETED = 246,
+
+    /** Used to mark an svalue as free and not valid for input
+     *  to the svalue free functions.
+     *  Cf assert_free_svalue().
+     *
+     *  Also used as a placeholder for the empty many type in
+     *  serialized function types (eg tFunction) (cf tUnknown).
+     */
+    PIKE_T_UNKNOWN=247,
+
+/* should only be used while compiling */
+
+    PIKE_T_AUTO = 248,
+
+    /* Historic values:
+     * T_OBJ_INDEX = 248,	// Renumbered to 21.
+     * T_LVALUE = 249,		// Renamed to T_SVALUE_PTR and renumbered to 20.
+     * T_ARRAY_LVALUE = 250,	// Renumbered to 22.
+     */
+
+    PIKE_T_MIXED = 251,
+    PIKE_T_NOT = 253,
+    PIKE_T_AND = 254,
+    PIKE_T_OR = 255,
+
+/* This flag is only valid in struct reference, and corresponds
+ * to struct identifier identifier_flags IDENTIFIER_NO_THIS_REF. */
+#define PIKE_T_NO_REF_FLAG	256
+#define PIKE_T_NO_REF_OBJECT	(PIKE_T_NO_REF_FLAG|PIKE_T_OBJECT)
+#define PIKE_T_NO_REF_FUNCTION	(PIKE_T_NO_REF_FLAG|PIKE_T_FUNCTION)
+#define PIKE_T_NO_REF_MIXED	(PIKE_T_NO_REF_FLAG|PIKE_T_MIXED)
+#define PIKE_T_NO_REF_INT	(PIKE_T_NO_REF_FLAG|PIKE_T_INT)
+#define PIKE_T_NO_REF_FLOAT	(PIKE_T_NO_REF_FLAG|PIKE_T_FLOAT)
+
+/* These are only used together with describe() and friends. */
+#define T_STORAGE 10000
+#define T_MAPPING_DATA 10001
+#define T_PIKE_FRAME 10002
+#define T_MULTISET_DATA 10003
+#define T_STRUCT_CALLABLE 10004
+
+/* Mask to get rid of flag bits from the type. */
+    PIKE_T_MASK = 255,
 };
 
 /**
@@ -149,7 +264,7 @@ struct svalue
      */
     INT32 type_subtype;
 #if SIZEOF_CHAR_P == 8
-    INT32 pad__;
+    ptrdiff_t pad__;
 #endif
 #endif
   } tu;
@@ -190,52 +305,17 @@ struct svalue
 #define INVALIDATE_SVAL(SVAL) SET_SVAL_TYPE_DC(SVAL, 99) /* an invalid type */
 
 
-/*
- * The following types are only used in compile-time types and
- * as markers in struct identifier.
- */
-
-/* should only be used while compiling */
-
-#define PIKE_T_ATTRIBUTE 238	/* Attribute node. */
-#define PIKE_T_NSTRING 239	/* Narrow string. Only for serialization. */
-#define PIKE_T_RING 240
-#define PIKE_T_NAME 241		/**< Named type. */
-#define PIKE_T_SCOPE 243	/**< Not supported yet */
-#define PIKE_T_TUPLE 244	/**< Not supported yet */
-#define T_ASSIGN 245
-#define T_DELETED 246
-#define PIKE_T_UNKNOWN 247
-#define PIKE_T_AUTO 248
-
-
-#define PIKE_T_MIXED 251
-#define T_NOT 253
-#define T_AND 254
-#define T_OR 255
-
-/* This flag is only valid in struct reference, and corresponds
- * to struct identifier identifier_flags IDENTIFIER_NO_THIS_REF. */
-#define PIKE_T_NO_REF_FLAG	256
-#define PIKE_T_NO_REF_OBJECT	(PIKE_T_NO_REF_FLAG|PIKE_T_OBJECT)
-#define PIKE_T_NO_REF_FUNCTION	(PIKE_T_NO_REF_FLAG|PIKE_T_FUNCTION)
-#define PIKE_T_NO_REF_MIXED	(PIKE_T_NO_REF_FLAG|PIKE_T_MIXED)
-#define PIKE_T_NO_REF_INT	(PIKE_T_NO_REF_FLAG|PIKE_T_INT)
-#define PIKE_T_NO_REF_FLOAT	(PIKE_T_NO_REF_FLAG|PIKE_T_FLOAT)
-
-/* These are only used together with describe() and friends. */
-#define T_STORAGE 10000
-#define T_MAPPING_DATA 10001
-#define T_PIKE_FRAME 10002
-#define T_MULTISET_DATA 10003
-#define T_STRUCT_CALLABLE 10004
-
-/* NOTE: The t* macros below currently use the old type encoding
+/* Macros for generating strings compatible with
+ * pike_types.cmod:make_pike_type() et al, as well
+ * as encode.c:decode_type().
+ *
+ * NOTE: The t* macros below currently use the old type encoding
  *       to be compatible with __parse_pike_type() in older
  *       versions of Pike.
  */
 #define tArr(VAL) "\000" VAL
 #define tArray tArr(tMix)
+#define tLArr(LEN, VAL) "\354" LEN VAL
 #define tMap(IND,VAL) "\001" IND VAL
 #define tMapping tMap(tMix,tMix)
 #define tSet(IND) "\002" IND
@@ -244,6 +324,7 @@ struct svalue
 
 #define tFuncV(ARGS,REST,RET) MagictFuncV(RET,REST,ARGS)
 #define tFunc(ARGS,RET) MagictFunc(RET,ARGS)
+#define tFuncArg(ARG,REST) "\014" ARG REST
 
 #define tTuple(T1,T2)		"\364" T1 T2
 #define tTriple(T1,T2,T3)	tTuple(T1, tTuple(T2, T3))
@@ -253,24 +334,39 @@ struct svalue
  * even if 'ARGS' is empty.
  */
 #define MagictFuncV(RET,REST,ARGS) "\004" ARGS "\021" REST RET
-#define MagictFunc(RET,ARGS) tFuncV(ARGS "", tVoid, RET)
-#define tFunction tFuncV("" ,tOr(tZero,tVoid),tOr(tMix,tVoid))
+#define MagictFunc(RET,ARGS) tFuncV(ARGS tNone, tVoid, RET)
+#define tFunction tFuncV(tNone, tUnknown, tOr(tMix,tVoid))
 #define tNone ""
+#define tUnknown "\367"
 #define tPrg(X) "\005" X
 #define tProgram(X) "\005" X
 #define tStr "\006"
 #define tString "\006"
 #define tNStr(T) "\357" T
-#define tStr0 "\357" tZero
-#define tStr7 "\357" "\010\000\000\000\000\000\000\000\177"
-#define tStr8 "\357" "\010\000\000\000\000\000\000\000\377"
-#define tStr16 "\357" "\010\000\000\000\000\000\000\377\377"
+/* NB: tStr0 is a misnomer as it refers to the length of
+ *     the string rather than the content.
+ */
+#define tStr0 tLStr(tZero, tUnknown)
+#define tStr7 tNStr(tInt7bit)
+#define tStr8 tNStr(tInt8bit)
+#define tStr16 tNStr(tInt16bit)
 #define tStr32 "\006"
+#define tLStr(LEN, VAL) "\355" LEN VAL
 #define tType(T) "\007" T
 #define tInt "\022"
 #define tInt0 "\010\000\000\000\000\000\000\000\000"
 #define tInt1 "\010\000\000\000\001\000\000\000\001"
 #define tInt2 "\010\000\000\000\002\000\000\000\002"
+#define tInt3 "\010\000\000\000\003\000\000\000\003"
+#define tInt4 "\010\000\000\000\004\000\000\000\004"
+#define tInt127 "\010\000\000\000\177\000\000\000\177"
+#define tInt128 "\010\000\000\000\200\000\000\000\200"
+#define tInt254 "\010\000\000\000\376\000\000\000\376"
+#define tInt255 "\010\000\000\000\377\000\000\000\377"
+#define tInt256 "\010\000\000\001\000\000\000\001\000"
+#define tInt376 "\010\000\000\001\170\000\000\001\170"
+#define tInt65535 "\010\000\000\377\377\000\000\377\377"
+#define tInt65536 "\010\000\001\000\000\000\001\000\000"
 #define tInt01 "\010\000\000\000\000\000\000\000\001"
 #define tInt02 "\010\000\000\000\000\000\000\000\002"
 #define tInt03 "\010\000\000\000\000\000\000\000\003"
@@ -280,13 +376,26 @@ struct svalue
 #define tInt07 "\010\000\000\000\000\000\000\000\007"
 #define tInt08 "\010\000\000\000\000\000\000\000\010"
 #define tInt09 "\010\000\000\000\000\000\000\000\011"
+#define tInt7bit "\010\000\000\000\000\000\000\000\177"
+#define tInt8bit "\010\000\000\000\000\000\000\000\377"
+#define tInt16bit "\010\000\000\000\000\000\000\377\377"
 #define tIntPos "\010\000\000\000\000\177\377\377\377"
 #define tIntNeg "\010\200\000\000\000\000\000\000\000"
 #define tInt1Plus "\010\000\000\000\001\177\377\377\377"
 #define tInt2Plus "\010\000\000\000\002\177\377\377\377"
 #define tIntMinus "\010\200\000\000\000\377\377\377\377"
+#define tInt_1 "\010\377\377\377\377\377\377\377\377"
 #define tInt_10 "\010\377\377\377\377\000\000\000\000"
 #define tInt_11 "\010\377\377\377\377\000\000\000\001"
+#define tIntMax "\010\177\377\377\377\177\377\377\377"
+#define tIntCharRange(LOW,HIGH) "\010\000\000\000" LOW "\000\000\000" HIGH
+#define tIntChar(CHAR) tIntCharRange(CHAR, CHAR)
+#define tIntDigits tIntCharRange("0", "9")
+#define tIntPlusSign tIntChar("+")
+#define tIntMinusSign tIntChar("-")
+#define tIntDecimal tIntChar(".")
+#define tIntSlash tIntChar("/")
+#define tIntExp tIntChar("e")
 #define tByte "\010\000\000\000\000\000\000\000\377"
 #define tWord "\010\000\000\000\000\000\000\377\377"
 #define tFlt "\011"
@@ -296,7 +405,10 @@ struct svalue
 #define tVoid "\020"
 #define tVar(X) #X
 #define tSetvar(X,Y) "\365" #X Y
-#define tScope(X,T) "\363" #X Y
+#define tAssign(X,Y) "\365" X Y
+#define tScope(X,Y) "\363" #X Y
+#define tGeneric(OBJ,X)	"\100" OBJ tVar(X)
+#define tBind(ASS, EXPR)	"\101" ASS EXPR
 #define tNot(X) "\375" X
 #define tAnd(X,Y) "\376" X Y
 #define tOr(X,Y) "\377" X Y
@@ -313,6 +425,7 @@ struct svalue
 #define tStringIndicable tOr5(tMapping,tObj,tFunction,tPrg(tObj),tMultiset)
 #define tRef tOr(tString,tComplex)
 #define tIfnot(X,Y) tAnd(tNot(X),Y)
+#define tIfexists(X, FUN) tIfnot(tFuncV(tNone, tNot(X), tMix), FUN)
 #define tAny tOr(tVoid,tMix)
 #define tAttr(X,Y) "\356\0" X "\0" Y
 #define tName(X,Y) "\361\0" X "\0" Y
@@ -336,6 +449,33 @@ struct svalue
 #define tDeprecated(X)		tAttr("deprecated", X)
 #define tUtf8Str		tAttr("utf8", tStr8)
 
+#define tGetReturn(X)		"\200\002" X
+#define tThreshold(X)		"\200\003" X
+#define tApply(FUN, ARG)	"\200\201" FUN ARG
+#define tFindLFun(X, LFUN)	"\200\001" X LFUN "\0"
+#define tSetCar(X, Y)		"\200\202" X Y
+#define tSetCdr(X, Y)		"\200\203" X Y
+
+#define tSubInt(X, Y)		"\200\300" X Y
+#define tNegateInt(X)		tSubInt(tInt0, X)
+#define tAddInt(X, Y)		tSubInt(X, tNegateInt(Y))
+#define tInvertInt(X)		tSubInt(tInt_1, X)
+#define tIncInt(X)		tSubInt(X, tInt_1)
+#define tDecInt(X)		tSubInt(X, tInt1)
+
+#define tAndInt(X, Y)		"\200\301" X Y
+#define tOrInt(X, Y)		tInvertInt(tAndInt(tInvertInt(X), tInvertInt(Y)))
+#define tXorInt(X, Y)		"\200\302" X Y
+
+#define tRangeInt(X, Y)		"\200\303" X Y
+#define tMinInt(X, Y)		"\200\304" X Y
+#define tMaxInt(X, Y)		"\200\305" X Y
+
+#define tMulInt(X, Y)		"\200\306" X Y
+#define tDivInt(X, Y)		"\200\307" X Y
+
+#define tTransitive(X, Y)	"\300" X Y
+
 #define tSimpleCallable tOr3(tArray,tFunction,tObj)
 #define tCallable tOr3(tArr(tSimpleCallable),tFunction,tObj)
 
@@ -354,17 +494,17 @@ struct svalue
 
 /** Used to signify that the type field hasn't been set according to
  * reality. */
-#define BIT_UNFINISHED (1 << T_UNFINISHED)
+#define BIT_UNFINISHED (1 << PIKE_T_UNFINISHED)
 
 /** This is only used in typechecking to signify that this
  * argument may be omitted.
  */
-#define BIT_VOID (1 << T_VOID)
+#define BIT_VOID (1 << PIKE_T_VOID)
 
 /** This is used in typechecking to signify that the rest of the
  * arguments have to be of this type.
  */
-#define BIT_MANY (1 << T_MANY)
+#define BIT_MANY (1 << PIKE_T_MANY)
 
 #define BIT_NOTHING 0
 #define BIT_MIXED 0xff7f
@@ -381,6 +521,14 @@ struct svalue
 #define MAX_TYPE PIKE_T_TYPE
 
 #define REFCOUNTED_TYPE(T)	(((T) & ~(MIN_REF_TYPE - 1)) == MIN_REF_TYPE)
+
+/**
+ * Returns true if the given type is one of the complex types defined
+ * by BIT_COMPLEX.
+ */
+static inline int IS_COMPLEX_TYPE(enum PIKE_TYPE type) {
+  return type <= MAX_TYPE && (1 << type) & BIT_COMPLEX;
+}
 
 #define NUMBER_NUMBER 0
 #define NUMBER_UNDEFINED 1
@@ -447,8 +595,14 @@ do{ \
 #define add_ref(X) ((void)((X)->refs++))
 #define sub_ref(X) (--(X)->refs > 0)
 
+static inline void safe_add_ref(void *ptr)
+{
+  if (!ptr) return;
+  add_ref((struct ref_dummy *)ptr);
+}
+
 #ifdef PIKE_DEBUG
-PMOD_EXPORT extern void describe(void *); /* defined in gc.c */
+PMOD_EXPORT extern void describe(const void *); /* defined in gc.c */
 PMOD_EXPORT extern const char msg_type_error[];
 PMOD_EXPORT extern const char msg_assign_svalue_error[];
 
@@ -798,9 +952,16 @@ PMOD_EXPORT void print_svalue_compact (FILE *out, const struct svalue *s);
 PMOD_EXPORT void safe_print_svalue_compact (FILE *out, const struct svalue *s);
 PMOD_EXPORT void print_short_svalue_compact (FILE *out, const union anything *a, TYPE_T type);
 PMOD_EXPORT void safe_print_short_svalue_compact (FILE *out, const union anything *a, TYPE_T type);
+PMOD_EXPORT void pike_vfprintf (FILE *out, const char *fmt, va_list args);
+PMOD_EXPORT void pike_fprintf (FILE *out, const char *fmt, ...)
+  ATTRIBUTE((format (printf, 2, 3)));
 #ifdef PIKE_DEBUG
 PMOD_EXPORT void safe_pike_vfprintf (FILE *out, const char *fmt, va_list args);
-PMOD_EXPORT void safe_pike_fprintf (FILE *out, const char *fmt, ...);
+PMOD_EXPORT void safe_pike_fprintf (FILE *out, const char *fmt, ...)
+  ATTRIBUTE((format (printf, 2, 3)));
+#else
+#define safe_pike_vfprintf		pike_vfprintf
+#define safe_pike_fprintf		pike_fprintf
 #endif
 PMOD_EXPORT void copy_svalues_recursively_no_free(struct svalue *to,
 						  const struct svalue *from,
@@ -870,6 +1031,18 @@ static inline TYPE_FIELD PIKE_UNUSED_ATTRIBUTE dmalloc_gc_cycle_check_svalues (s
 
 #ifndef NO_PIKE_SHORTHAND
 
+#define T_UNFINISHED	PIKE_T_UNFINISHED
+#define T_VOID		PIKE_T_VOID
+#define T_MANY		PIKE_T_MANY
+#define T_SVALUE_PTR	PIKE_T_SVALUE_PTR
+#define T_OBJ_INDEX	PIKE_T_OBJ_INDEX
+#define T_ARRAY_LVALUE	PIKE_T_ARRAY_LVALUE
+#define T_ASSIGN	PIKE_T_ASSIGN
+#define T_DELETED	PIKE_T_DELETED
+#define T_NOT		PIKE_T_NOT
+#define T_AND		PIKE_T_AND
+#define T_OR		PIKE_T_OR
+
 #define T_ARRAY    PIKE_T_ARRAY
 #define T_MAPPING  PIKE_T_MAPPING
 #define T_MULTISET PIKE_T_MULTISET
@@ -900,11 +1073,6 @@ static inline TYPE_FIELD PIKE_UNUSED_ATTRIBUTE dmalloc_gc_cycle_check_svalues (s
 #define EXIT_PIKE_MEMOBJ(X) do {                        \
   struct ref_dummy *v_=(struct ref_dummy *)(X); 	\
 }while(0)
-
-struct ref_dummy
-{
-  INT32 refs;
-};
 
 /* The following macro is useful to initialize static svalues. . */
 /* assumes sizeof void* >= all initialization arguments. */

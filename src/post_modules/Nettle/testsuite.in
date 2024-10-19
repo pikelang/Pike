@@ -641,6 +641,42 @@ define(test_generic_cipher_autopad,[[
   ]])
 ]])
 
+dnl Test keywrapping
+dnl cipher, hex_kek, hex_key, hex_wrap, [method]
+define(test_keywrap, [[
+  test_any_equal([[
+    object c = Crypto.$1();
+    object d = Crypto.$1();
+    string kek = H($2);
+    string k = H($3);
+    string w = H($4);
+
+    c->set_encrypt_key(kek);
+    string ww;
+    mixed err = catch {
+]] ifelse([[$5]],,[[
+      ww = c->wrap_key(k);
+]], [[
+      ww = c->wrap_key(k, $5);
+]]) [[
+    };
+    if (err) ww = describe_error(err);
+
+    d->set_decrypt_key(kek);
+    string kk;
+    err = catch {
+]] ifelse([[$5]],,[[
+      kk = d->unwrap_key(ww);
+]], [[
+      kk = d->unwrap_key(ww, $5);
+]]) [[
+    };
+    if (err) kk = describe_error(err) + "ww: " + String.string2hex(ww) + "\n";
+
+    return ({ kek, kk, ww, });
+  ]], ({ H($2), H($3), H($4) }))
+]])
+
 // AES
 test_generic_cipher(Crypto.AES)
 test_generic_cipher(Crypto.AES.ABC)
@@ -661,6 +697,43 @@ cond_resolv( Nettle.AES, [[
 	      "5C6D71CA30DE8B8B00549984D2EC7D4B",
 	      "59AB30F4D4EE6E4FF9907EF65B1FB68C")
 
+  dnl Test vectors from RFC 3394 Section 4.
+  test_keywrap(AES, "000102030405060708090A0B0C0D0E0F",
+               "00112233445566778899AABBCCDDEEFF",
+               "1FA68B0A8112B447 AEF34BD8FB5A7B82 9D3E862371D2CFE5")
+  test_keywrap(AES, "000102030405060708090A0B0C0D0E0F1011121314151617",
+               "00112233445566778899AABBCCDDEEFF",
+               "96778B25AE6CA435 F92B5B97C050AED2 468AB8A17AD84E5D")
+  test_keywrap(AES, "000102030405060708090A0B0C0D0E0F"
+                    "101112131415161718191A1B1C1D1E1F",
+               "00112233445566778899AABBCCDDEEFF",
+               "64E8C3F9CE0F5BA2 63E9777905818A2A 93C8191E7D6E8AE7")
+  test_keywrap(AES, "000102030405060708090A0B0C0D0E0F1011121314151617",
+               "00112233445566778899AABBCCDDEEFF0001020304050607",
+               "031D33264E15D332 68F24EC260743EDC"
+               "E1C6C7DDEE725A93 6BA814915C6762D2")
+  test_keywrap(AES, "000102030405060708090A0B0C0D0E0F"
+                    "101112131415161718191A1B1C1D1E1F",
+               "00112233445566778899AABBCCDDEEFF0001020304050607",
+               "A8F9BC1612C68B3F F6E6F4FBE30E71E4"
+               "769C8B80A32CB895 8CD5D17D6B254DA1")
+  test_keywrap(AES, "000102030405060708090A0B0C0D0E0F"
+                    "101112131415161718191A1B1C1D1E1F",
+               "00112233445566778899AABBCCDDEEFF"
+               "000102030405060708090A0B0C0D0E0F",
+               "28C9F404C4B810F4 CBCCB35CFB87F826 3F5786E2D80ED326"
+               "CBC7F0E71A99F43B FB988B9B7A02DD21")
+
+  dnl Testvectors from RFC 5649 Section 6.
+  test_keywrap(AES, "5840df6e29b02af1 ab493b705bf16ea1 ae8338f4dcc176a8",
+               "c37b7e6492584340 bed1220780894115 5068f738",
+               "138bdeaa9b8fa7fc 61f97742e72248ee 5ae6ae5360d1ae6a"
+               "5f54f373fa543b6a", 1)
+  test_keywrap(AES, "5840df6e29b02af1 ab493b705bf16ea1 ae8338f4dcc176a8",
+               "466f7250617369",
+               "afbeb0f07dfbf541 9200f2ccb50bb24f", 1)
+]])
+cond_resolv( Nettle.AES, [[
   // AES-CTR Test vectors from RFC 3686 Section 6.
 
   dnl Test Vector #1: Encrypting 16 octets using AES-CTR with 128-bit key
@@ -936,10 +1009,12 @@ test_generic_cipher(Crypto.Blowfish.PCBC)
 test_generic_cipher_autopad(Crypto.Blowfish.CFB)
 test_generic_cipher_autopad(Crypto.Blowfish.OFB)
 test_generic_cipher_autopad(Crypto.Blowfish.CTR)
-test_do([[
-  // Blowfish has lots of weak keys; make sure that make_key() doesn't throw errors.
-  object c = Crypto.Blowfish();
-  for(int i = 0; i < 100000; i++) c->make_key();
+cond_resolv( Nettle.BLOWFISH, [[
+  test_do([[
+    // Blowfish has lots of weak keys; make sure that make_key() doesn't throw errors.
+    object c = Crypto.Blowfish();
+    for(int i = 0; i < 100000; i++) c->make_key();
+  ]])
 ]])
 
 // CAMELLIA
@@ -979,6 +1054,22 @@ test_generic_cipher(Crypto.CAST.PCBC)
 test_generic_cipher_autopad(Crypto.CAST.CFB)
 test_generic_cipher_autopad(Crypto.CAST.OFB)
 test_generic_cipher_autopad(Crypto.CAST.CTR)
+cond_resolv( Nettle.CAST128, [[
+  test_true([[objectp(Nettle.CAST128()())]])
+  // From RFC 2144 B.1
+  test_cipher(CAST128,
+              "01 23 45 67 12 34 56 78 23 45 67 89 34 56 78 9A",
+              "01 23 45 67 89 AB CD EF",
+              "23 8B 4F E5 84 7E 44 B2")
+  test_cipher(CAST128,
+              "01 23 45 67 12 34 56 78 23 45",
+              "01 23 45 67 89 AB CD EF",
+              "EB 6A 71 1A 2C 02 27 1B")
+  test_cipher(CAST128,
+              "01 23 45 67 12",
+              "01 23 45 67 89 AB CD EF",
+              "7A C8 16 D1 6E 9B 30 2E")
+]])
 
 // CHACHA
 test_generic_cipher(Crypto.ChaCha20)
@@ -1509,6 +1600,15 @@ test_aead(Crypto.AES.CCM,
 	"AB F2 1C 0B  02 FE B8 8F  85 6D F4 A3  73 81 BC E3  CC 12 85 17  D4",
 	"F3 29 05 B8  8A 64 1B 04  B9 C9 FF B5  8C C3 90 90  0F 3D A1 2A  B1",
 	"6D CE 9E 82  EF A1 6D A6  20 59", 10)
+
+dnl Bug #10074 - Broken digest for authenticated data of lengths 14 - 0xfeff.
+test_aead(Crypto.AES.CCM,
+	"1a44f3550688fddbc1e5041dc98952c0",
+	"5d2904298f668ba95eaa1797",
+	"d55908958b70abee81054cdf3d3df5",
+	"",
+	"",
+	"5c71b4f069cfa13b7634db4b13e7be7d")
 
 test_generic_aead(Crypto.AES.EAX)
 
@@ -2063,7 +2163,7 @@ test_eq(Nettle.rsa_unpad(H("02fffeffffffffffff0064"),1),0)
 test_eq(Nettle.rsa_unpad(H("02fffeffffffffffff0064"),2),10)
 test_eq(Nettle.rsa_unpad(H("01ffffffffffffff000064"),1),0)
 cond_resolv(Nettle.ECC_Curve, [[
-  test_eval_error(Nettle.ECC_Curve(5))
+  test_eval_error(Nettle.ECC_Curve(7))
 ]])
 
 test_do([[

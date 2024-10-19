@@ -89,7 +89,7 @@ GTK2.IconInfo lookup_icon(string name, int size, int flags)
     char *name;
     INT_TYPE size,flags;
     GtkIconInfo *gi;
-    get_all_args(NULL,args,"%s%i%i",&name,&size,&flags);
+    get_all_args(NULL,args,"%c%i%i",&name,&size,&flags);
     gi=gtk_icon_theme_lookup_icon(GTK_ICON_THEME(THIS->obj),name,size,flags);
     pgtk2_pop_n_elems(args);
     if (gi)
@@ -108,7 +108,7 @@ GDK2.Pixbuf load_icon(string name, int size, int flags)
     GdkPixbuf *pixbuf;
     char *name;
     INT_TYPE size,flags;
-    get_all_args(NULL,args,"%s%i%i",&name,&size,&flags);
+    get_all_args(NULL,args,"%c%i%i",&name,&size,&flags);
     pixbuf=gtk_icon_theme_load_icon(GTK_ICON_THEME(THIS->obj),name,size,flags,NULL);
     pgtk2_pop_n_elems(args);
     push_gobject(pixbuf);
@@ -127,7 +127,7 @@ array(string) list_icons(?string context)
     GList *gl,*g2;
     int i = 0;
     if (args)
-      get_all_args(NULL,args,"%s",&context);
+      get_all_args(NULL,args,"%c",&context);
     gl=g2=gtk_icon_theme_list_icons(GTK_ICON_THEME(THIS->obj),context);
     pgtk2_pop_n_elems(args);
     while (g2) {
@@ -152,7 +152,7 @@ array(int) get_icon_sizes(string name)
     char *name;
     gint *gt,*g2;
     int i=0;
-    get_all_args(NULL,args,"%s",&name);
+    get_all_args(NULL,args,"%c",&name);
     gt=g2=gtk_icon_theme_get_icon_sizes(GTK_ICON_THEME(THIS->obj),name);
     pgtk2_pop_n_elems(args);
     while (g2) {

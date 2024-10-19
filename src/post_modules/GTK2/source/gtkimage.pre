@@ -37,7 +37,7 @@ void create(string|GDK2.Pixbuf|GDK2.PixbufAnimation|GDK2.Image|GDK2.Pixmap|mappi
 
       if (TYPEOF(Pike_sp[-args]) == PIKE_T_STRING) {
 	char *filename;
-	get_all_args(NULL,args,"%s",&filename);
+	get_all_args(NULL,args,"%c",&filename);
 	gi=gtk_image_new_from_file(filename);
       } else {
 	struct object *o1;

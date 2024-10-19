@@ -31,12 +31,12 @@
 //!
 //! where line is numeral, first 'line'==0
 
-protected array sedreplace(string s,object re,string with,
-			array whatin,int first,int lastmod,
-			multiset flags)
+protected array|zero sedreplace(string s,object re,string with,
+                                array whatin,int first,int lastmod,
+                                multiset flags)
 {
-   array a;
-   string w=0;
+   array|zero a;
+   string w = "";
    array pr=({});
 
    if (!(a=re->split(s)))
@@ -44,7 +44,7 @@ protected array sedreplace(string s,object re,string with,
 
    if (first)
    {
-      array wa;
+      array|zero wa;
       wa=sedreplace(a[0],re,with,whatin,first,lastmod,flags);
       if (wa)
 	 if (!flags["g"])
@@ -66,7 +66,7 @@ protected array sedreplace(string s,object re,string with,
    {
       if (lastmod)
       {
-	 array wa;
+	 array|zero wa;
 	 wa=sedreplace(a[-1],re,with,whatin,first,lastmod,flags);
 	 if (wa)
 	 {
@@ -125,9 +125,9 @@ protected array scan_for_linenumber(string cmd,
 }
 
 //!
-string|array `()(string|array(string) commands,
-		 string|array(string) data,
-		 void|int suppress)
+protected string|array `()(string|array(string) commands,
+			   string|array(string) data,
+			   void|int suppress)
 {
    int start,stop;
    string div,what,with,inflags;

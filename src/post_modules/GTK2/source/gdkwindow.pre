@@ -19,7 +19,8 @@ void create(GDK2.Window|int parent, mapping|void attributes)
     w=gdk_window_foreign_new(id);
     THIS->obj=G_OBJECT(w);
     if (!THIS->obj)
-      Pike_error("The window with id 0x%x does not exist\n",id);
+      Pike_error("The window with id 0x%lx does not exist\n",
+                 (unsigned long)id);
   } else if (TYPEOF(Pike_sp[-args]) == PIKE_T_OBJECT) {
     struct object *parent;
     struct mapping *m;
@@ -285,7 +286,7 @@ void set_icon_name(string name)
 //! Set the icon name to the specified string.
 {
   gchar *t;
-  get_all_args(NULL,args,"%s",&t);
+  get_all_args(NULL,args,"%c",&t);
   gdk_window_set_icon_name(GDK_WINDOW(THIS->obj),t);
   RETURN_THIS();
 }
@@ -407,7 +408,7 @@ void change_property(GDK2.Atom property, GDK2.Atom type, int mode, string data)
   struct object *o,*t;
   struct pike_string *s;
   INT_TYPE m;
-  get_all_args(NULL,args,"%o%o%i%W",&o,&t,&m,&s);
+  get_all_args(NULL,args,"%o%o%i%t",&o,&t,&m,&s);
 
   gdk_property_change(GDK_WINDOW(THIS->obj),get_gdkatom(o),
                        get_gdkatom(t),8<<s->size_shift,

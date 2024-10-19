@@ -321,7 +321,7 @@ PIKECLASS Api
 
         if ((err = sass_context_get_error_status (ctx_out))) {
           const char *errstr = sass_context_get_error_message (ctx_out);
-          Pike_error("Failed generating source map (code: %ld): %s\n",
+          Pike_error("Failed generating source map (code: %d): %s\n",
                      err, errstr);
         }
       }
@@ -350,12 +350,23 @@ PIKECLASS Api
    *!
    *! Compiles the string @[source] and returns the generated CSS.
    *!
+   *! @param source
+   *!  The string to compile
+   *!
+   *! @returns
+   *!  A mapping with the generated CSS and source mapping file if such is
+   *!  set to be generated
+   *!
+   *!  @mapping
+   *!   @member string(8bit) "css"
+   *!    The generated CSS
+   *!   @member string(8bit) "map"
+   *!    The generated source mapping data
+   *!  @endmapping
+   *!
    *! @note
    *!  If the @[source] contain @tt{@@import@} directives you have to
    *!  explicitly set the include path via @[include_path].
-   *!
-   *! @param source
-   *!  The string to compile
    */
   PIKEFUN mapping(string(8bit):string(8bit))
   compile_string (string(8bit) source)
@@ -395,7 +406,7 @@ PIKECLASS Api
 
     if (err) {
       const char *errstr = sass_context_get_error_message (ctx_out);
-      Pike_error("Sass compile error (code: %ld):\n%s\n", err, errstr);
+      Pike_error("Sass compile error (code: %d):\n%s\n", err, errstr);
     }
 
     out = sass_context_get_output_string (ctx_out);
@@ -409,7 +420,7 @@ PIKECLASS Api
 
         if ((err = sass_context_get_error_status (ctx_out))) {
           const char *errstr = sass_context_get_error_message (ctx_out);
-          Pike_error("Failed generating source map (code: %ld): %s\n",
+          Pike_error("Failed generating source map (code: %d): %s\n",
                      err, errstr);
         }
       }
@@ -606,12 +617,11 @@ PIKE_MODULE_INIT
   add_integer_constant ("HTTP_IMPORT_GREEDY", 1, 0);
   add_integer_constant ("HTTP_IMPORT_ANY",    2, 0);
 
-  /**
-   * @decl constant SASS2SCSS_KEEP_COMMENT = 32
-   * @decl constant SASS2SCSS_STRIP_COMMENT = 64
-   * @decl constant SASS2SCSS_CONVERT_COMMENT = 128
-   *
-   * Constants that can be given as option to @[sass2scss()].
+  /*! @decl constant SASS2SCSS_KEEP_COMMENT = 32
+   *! @decl constant SASS2SCSS_STRIP_COMMENT = 64
+   *! @decl constant SASS2SCSS_CONVERT_COMMENT = 128
+   *!
+   *! Constants that can be given as option to @[sass2scss()].
    */
 
   add_integer_constant ("SASS2SCSS_KEEP_COMMENT", SASS2SCSS_KEEP_COMMENT, 0);

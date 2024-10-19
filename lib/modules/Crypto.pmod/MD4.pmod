@@ -8,6 +8,8 @@
 
 inherit Nettle.MD4;
 
+@Pike.Annotations.Implements(Crypto.Hash);
+
 Standards.ASN1.Types.Identifier pkcs_hash_id()
 {
   return Standards.PKCS.Identifiers.md4_id;

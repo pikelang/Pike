@@ -1,4 +1,5 @@
-/* vim:syntax=ragel
+/* -*- mode: C; c-basic-offset: 4; -*-
+ * vim:syntax=ragel
  */
 #define HEX2DEC(x) ((x) <= '9' ? (x) - '0' : ((x) < 'G') ? (x) - 'A' + 10 : (x) - 'a' + 10)
 
@@ -136,7 +137,7 @@ static ptrdiff_t _parse_JSON_string_utf8(PCHARP str, ptrdiff_t pos, ptrdiff_t en
     struct string_builder s;
     int cs;
     ONERROR handle;
-    int hexchr0, hexchr1;
+    int hexchr0 = 0, hexchr1 = 0;
     const int validate = !(state->flags&JSON_VALIDATE);
     p_wchar2 unicode = 0;
 

@@ -3,16 +3,12 @@
 //! Google authentication classes.
 
 //! Default Google authorization class
-//! For more info see @url{https://developers.google.com/+/web/api/rest/oauth@}
 class Authorization
 {
   inherit Web.Auth.OAuth2.Client;
 
   //!
   constant OAUTH_AUTH_URI  = "https://accounts.google.com/o/oauth2/auth";
-
-  //!
-  constant OAUTH_TOKEN_URI = "https://accounts.google.com/o/oauth2/token";
 
   //!
   constant SCOPE_PROFILE = "profile";
@@ -23,8 +19,8 @@ class Authorization
   //!
   constant SCOPE_OPENID = "openid";
 
-  //! All valid socpes
-  protected multiset(string) valid_scopes = (<
+  //! All valid scopes
+  multiset(string) valid_scopes = (<
     SCOPE_PROFILE, SCOPE_EMAIL, SCOPE_OPENID >);
 
   protected string _scope = SCOPE_PROFILE;
@@ -45,7 +41,7 @@ class Analytics
     "https://www.googleapis.com/auth/analytics.manage.users.readonly";
 
   //! All valid scopes
-  protected multiset(string) valid_scopes = (<
+  multiset(string) valid_scopes = (<
     SCOPE_RO, SCOPE_RW, SCOPE_EDIT, SCOPE_MANAGE_USERS,
     SCOPE_MANAGE_USERS_RO >);
 

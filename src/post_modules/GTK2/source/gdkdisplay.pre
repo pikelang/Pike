@@ -35,7 +35,7 @@ void open(string name)
     const gchar *name;
     GdkDisplay *gd;
 
-    get_all_args(NULL,args,"%s",&name);
+    get_all_args(NULL,args,"%c",&name);
     gd=gdk_display_open(name);
     if (THIS->obj)
       g_object_unref(THIS->obj);

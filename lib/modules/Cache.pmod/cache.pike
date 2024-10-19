@@ -14,7 +14,7 @@
 #if constant(thread_create)
 #define do_possibly_threaded_call thread_create
 #else
-#define do_possibly_threaded_call call_function
+#define do_possibly_threaded_call predef::`()
 #endif
 
 #define DEFAULT_CLEANUP_CYCLE 300
@@ -39,7 +39,7 @@ mixed lookup(string key) {
 // single backend-request.
 private mapping (string:multiset(array)) pending_requests=([]);
 
-private void got_results(string key, int|Cache.Data value) {
+private void got_results(string key, zero|Cache.Data value, mixed ... rest) {
   mixed data=UNDEFINED;
   if (pending_requests[key]) {
     if (value) {
@@ -103,7 +103,7 @@ void alookup(string key,
 void store(string key, mixed value, void|int max_life,
             void|float preciousness, void|multiset(string) dependants ) {
   if (!stringp(key)) key=(string)key; // paranoia
-  multiset(string) rd=UNDEFINED;  // real-dependants, after string-check
+  multiset(string)|void rd=UNDEFINED; // real-dependants, after string-check
   if (dependants) {
     rd=(<>);
     foreach((array)dependants,mixed d) {
@@ -198,9 +198,9 @@ void threaded_cleanup_cycle() {
 
 //! Creates a new cache object. Required are a storage manager, and an
 //! expiration policy object.
-void create(Cache.Storage.Base storage_mgr,
-            Cache.Policy.Base policy_mgr,
-            void|int cleanup_cycle_delay) {
+protected void create(Cache.Storage.Base storage_mgr,
+		      Cache.Policy.Base policy_mgr,
+		      void|int cleanup_cycle_delay) {
   if (!storage_mgr || !policy_mgr)
     error ( "I need a storage manager and a policy manager\n" );
   storage=storage_mgr;

@@ -13,7 +13,7 @@
 inherit .__Hash;
 
 //! Calling `() will return a @[State] object.
-State `()() { return State(); }
+protected State `()() { return State(); }
 
 //!  Works as a (possibly faster) shortcut for e.g.
 //!  @expr{State(data)->digest()@}, where @[State] is the hash state
@@ -24,7 +24,7 @@ State `()() { return State(); }
 //!
 //! @seealso
 //!   @[Stdio.File], @[State()->update()] and @[State()->digest()].
-string(8bit) hash(string data)
+string(8bit) hash(string(8bit) data)
 {
   return State(data)->digest();
 }
@@ -38,24 +38,24 @@ string(8bit) hash(string data)
 //!
 //! @param bytes
 //!   The number of bytes of the @[source] object that should be
-//!   hashed. Zero and negative numbers are ignored and the whole file
-//!   is hashed.
+//!   hashed. Zero and negative values are ignored and the whole file
+//!   is hashed. Support for negative values is deprecated.
 //!
 //! @[Stdio.File], @[Stdio.Buffer], @[String.Buffer], @[System.Memory]
 variant string(8bit) hash(Stdio.File|Stdio.Buffer|String.Buffer|System.Memory source,
-                    int|void bytes)
+			  int(0..)|void bytes)
 {
-  function(int|void:string) f;
+  function(int|void:string(8bit))|zero f;
 
   if (source->read)
   {
     // Stdio.File, Stdio.Buffer
-    f = [function(int|void:string)]source->read;
+    f = [function(int|void:string(8bit))]source->read;
   }
   else if (source->get)
   {
     // String.Buffer
-    f = [function(int|void:string)]source->get;
+    f = [function(int|void:string(8bit))]source->get;
   }
   else if (source->pread)
   {
@@ -75,6 +75,12 @@ variant string(8bit) hash(Stdio.File|Stdio.Buffer|String.Buffer|System.Memory so
       return hash( f() );
   }
   error("Incompatible object\n");
+}
+
+variant string(8bit) hash(Stdio.File|Stdio.Buffer|String.Buffer|System.Memory source,
+			  __deprecated__(int(..-1)) bytes)
+{
+  return hash( source );
 }
 
 //! JWS algorithm id (if any) for the HMAC sub-module.
@@ -140,10 +146,10 @@ protected class _HMAC
   {
     inherit ::this_program;
 
-    protected string(8bit) ikey; /* ipad XOR:ed with the key */
-    protected string(8bit) okey; /* opad XOR:ed with the key */
+    protected zero|string(8bit) ikey; /* ipad XOR:ed with the key */
+    protected zero|string(8bit) okey; /* opad XOR:ed with the key */
 
-    protected global::State h;
+    protected zero|global::State h;
 
     //! @param passwd
     //!   The secret password (K).
@@ -151,16 +157,14 @@ protected class _HMAC
     //! @param b
     //!   Block size. Must be larger than or equal to the @[digest_size()].
     //!   Defaults to the @[block_size()].
-    protected void create (string(8bit) passwd, void|int b)
+    protected void create (string(8bit) passwd, int(1..) b = block_size())
     {
-      if (!b)
-	b = block_size();
-      else if (digest_size()>b)
+      if (digest_size()>b)
 	error("Block size is less than hash digest size.\n");
       if (sizeof(passwd) > b)
 	passwd = hash(passwd);
       if (sizeof(passwd) < b)
-	passwd = passwd + "\0" * (b - sizeof(passwd));
+	passwd = passwd + "\0" * [int(1..)](b - sizeof(passwd));
 
       ikey = [string(8bit)](passwd ^ ("6" * b));
       okey = [string(8bit)](passwd ^ ("\\" * b));
@@ -181,7 +185,7 @@ protected class _HMAC
     //! the hash value.
     //!
     //! This works as a combined @[update()] and @[digest()].
-    string(8bit) `()(string(8bit) text)
+    protected string(8bit) `()(string(8bit) text)
     {
       return hash(okey + hash(ikey + text));
     }
@@ -200,7 +204,7 @@ protected class _HMAC
     this_program init(string(8bit)|void data)
     {
       h = 0;
-      if (data) update(data);
+      if (data) update([string]data);
       return this;
     }
 
@@ -241,13 +245,13 @@ protected class _HMAC
     //!
     //! @seealso
     //!   @[create()], @[Web.encode_jwk()], @rfc{7517:4@}, @rfc{7518:6.4@}
-    mapping(string(7bit):string(7bit)) jwk(int(0..1)|void private_key)
+    mapping(string(7bit):string(7bit))|zero jwk(int(0..1)|void private_key)
     {
       if (!jwa()) return 0;	// Not supported for this hash.
       mapping(string(7bit):string(7bit)) jwk = ([
 	"kty":"oct",
 	"alg":jwa(),
-	"k": MIME.encode_base64url(ikey ^ ("6" * block_size())),
+	"k": MIME.encode_base64url(([string]ikey) ^ ("6" * block_size())),
       ]);
       return jwk;
     }
@@ -256,9 +260,9 @@ protected class _HMAC
   //! Returns a new @[State] object initialized with a @[password],
   //! and optionally block size @[b]. Block size defaults to the hash
   //! function block size.
-  State `()(string(8bit) password, void|int b)
+  protected State `()(string(8bit) password, int(1..) b = block_size())
   {
-    if (!b || (b == block_size())) {
+    if (b == block_size()) {
       return State(password);
     }
     // Unusual block size.
@@ -297,13 +301,19 @@ private void b64enc(String.Buffer dest, int a, int b, int c, int sz)
 //!
 //!   This is the algorithm used by @tt{crypt(2)@} in
 //!   methods @tt{$5$@} (SHA256) and @tt{$6$@} (SHA512).
+//!   See @[crypt_hash_pike()] for details.
+//!
+//! @note
+//!   In Pike 8.0.1876 and earlier this function generated incompatible
+//!   hashes for passwords that had a length that was a power of 2.
 //!
 //! @seealso
-//!   @[crypt_md5()]
-string crypt_hash(string password, string salt, int rounds)
+//!   @[crypt_md5()], @[crypt_hash_pike()]
+string(7bit) crypt_hash(string(8bit) password, string(8bit) salt,
+                        int(0..) rounds)
 {
-  int dsz = digest_size();
-  int plen = sizeof(password);
+  int(1..) dsz = [int(1..)]digest_size();
+  int(0..) plen = sizeof(password);
 
   if (!rounds) rounds = 5000;
   if (rounds < 1000) rounds = 1000;
@@ -312,17 +322,17 @@ string crypt_hash(string password, string salt, int rounds)
   // FIXME: Send the first param directly to create()?
   State hash_obj = State();
 
-  function(string:State) update = hash_obj->update;
-  function(:string) digest = hash_obj->digest;
+  function(string(8bit):State) update = hash_obj->update;
+  function(:string(8bit)) digest = hash_obj->digest;
 
   salt = salt[..15];
 
   /* NB: Comments refer to http://www.akkadia.org/drepper/SHA-crypt.txt */
-  string b = update(password + salt + password)->digest();	/* 5-8 */
+  string(8bit) b = update(password + salt + password)->digest();/* 5-8 */
   update(password);						/* 2 */
   update(salt);							/* 3 */
 
-  void crypt_add(string in, int len)
+  void crypt_add(string(8bit) in, int len)
   {
     int i;
     for (; i+dsz<len; i += dsz)
@@ -332,32 +342,32 @@ string crypt_hash(string password, string salt, int rounds)
 
   crypt_add(b, plen);						/* 9-10 */
 
-  for (int i = 1; i < plen; i <<= 1) {				/* 11 */
+  for (int i = 1; i <= plen; i <<= 1) {				/* 11 */
     if (plen & i)
       update(b);
     else
       update(password);
   }
 
-  string a = digest();						/* 12 */
+  string(8bit) a = digest();					/* 12 */
 
   for (int i = 0; i < plen; i++)				/* 14 */
     update(password);
 
-  string dp = digest();						/* 15 */
+  string(8bit) dp = digest();					/* 15 */
 
   if (dsz != plen) {
-    dp *= 1 + (plen-1)/dsz;					/* 16 */
+    dp *= [int(1..)](1 + (plen-1)/dsz);				/* 16 */
     dp = dp[..plen-1];
   }
 
   for(int i = 0; i < 16 + (a[0] & 0xff); i++)			/* 18 */
     update(salt);
 
-  string ds = digest();						/* 19 */
+  string(8bit) ds = digest();					/* 19 */
 
   if (dsz != sizeof(salt)) {
-    ds *= 1 + (sizeof(salt)-1)/dsz;				/* 20 */
+    ds *= [int(1..)](1 + (sizeof(salt)-1)/dsz);			/* 20 */
     ds = ds[..sizeof(salt)-1];
   }
 
@@ -426,7 +436,222 @@ string crypt_hash(string password, string salt, int rounds)
   t = dsz/3*3;
   b64enc(ret, a[t], a[t+1], a[t+2], dsz%3+1);
 
-  return (string)ret;
+  return (string(7bit))ret;
+}
+
+//!   Password hashing function in @[crypt_md5()]-style.
+//!
+//!   Almost implements the algorithm described in
+//!   @url{http://www.akkadia.org/drepper/SHA-crypt.txt@}.
+//!
+//!   This function is provided for compatibility with hashes
+//!   generated by Pike 8.0.1876 and earlier.
+//!
+//!   It differs from @[crypt_hash()] for passwords that
+//!   have a length that is a power of 2 (phase 11).
+//!
+//! @note
+//!   Do not use unless you know what you are doing!
+//!
+//! @seealso
+//!   @[crypt_md5()], @[crypt_hash()]
+string(7bit) crypt_hash_pike(string(8bit) password, string(8bit) salt,
+                             int(0..) rounds)
+{
+  int(1..) dsz = [int(1..)]digest_size();
+  int(0..) plen = sizeof(password);
+
+  if (!rounds) rounds = 5000;
+  if (rounds < 1000) rounds = 1000;
+  if (rounds > 999999999) rounds = 999999999;
+
+  // FIXME: Send the first param directly to create()?
+  State hash_obj = State();
+
+  function(string(8bit):State) update = hash_obj->update;
+  function(:string(8bit)) digest = hash_obj->digest;
+
+  salt = salt[..15];
+
+  /* NB: Comments refer to http://www.akkadia.org/drepper/SHA-crypt.txt */
+  string(8bit) b = update(password + salt + password)->digest();/* 5-8 */
+  update(password);						/* 2 */
+  update(salt);							/* 3 */
+
+  void crypt_add(string(8bit) in, int len)
+  {
+    int i;
+    for (; i+dsz<len; i += dsz)
+      update(in);
+    update(in[..len-i-1]);
+  };
+
+  crypt_add(b, plen);						/* 9-10 */
+
+  for (int i = 1; i < plen; i <<= 1) {				/* 11 */
+    if (plen & i)
+      update(b);
+    else
+      update(password);
+  }
+
+  string(8bit) a = digest();					/* 12 */
+
+  for (int i = 0; i < plen; i++)				/* 14 */
+    update(password);
+
+  string(8bit) dp = digest();					/* 15 */
+
+  if (dsz != plen) {
+    dp *= [int(1..)](1 + (plen-1)/dsz);				/* 16 */
+    dp = dp[..plen-1];
+  }
+
+  for(int i = 0; i < 16 + (a[0] & 0xff); i++)			/* 18 */
+    update(salt);
+
+  string(8bit) ds = digest();					/* 19 */
+
+  if (dsz != sizeof(salt)) {
+    ds *= [int(1..)](1 + (sizeof(salt)-1)/dsz);			/* 20 */
+    ds = ds[..sizeof(salt)-1];
+  }
+
+  for (int r = 0; r < rounds; r++) {				/* 21 */
+    if (r & 1)
+      crypt_add(dp, plen);					/* b */
+    else							/* c */
+      update(a);
+
+    if (r % 3)							/* d */
+      crypt_add(ds, sizeof(salt));
+
+    if (r % 7)							/* e */
+      crypt_add(dp, plen);
+
+    if (r & 1)							/* f */
+      update(a);
+    else							/* g */
+      crypt_add(dp, plen);
+
+    a = digest();						/* h */
+  }
+
+  /* And now time for some pointless shuffling of the result.
+   * Note that the shuffling is slightly different between
+   * the two cases.
+   *
+   * Instead of having fixed tables for the shuffling, we
+   * generate the table incrementally. Note that the
+   * specification document doesn't say how the shuffling
+   * should be done when the digest size % 3 is zero
+   * (or actually for that matter when the digest size
+   * is other than 32 or 64). We assume that the shuffler
+   * index rotation is based on the modulo, and that zero
+   * implies no rotation.
+   *
+   * This is followed by a custom base64-style encoding.
+   */
+
+  /* We do some table magic here to avoid modulo operations
+   * on the table index.
+   */
+  array(array(int)) shuffler = allocate(5, allocate)(2);
+  shuffler[3] = shuffler[0];
+  shuffler[4] = shuffler[1];
+
+  int sublength = sizeof(a)/3;
+  shuffler[0][0] = 0;
+  shuffler[1][0] = sublength;
+  shuffler[2][0] = sublength*2;
+
+  int shift = sizeof(a) % 3;
+
+  int t;
+  String.Buffer ret = String.Buffer();
+  for (int i = 0; i + 3 < dsz; i+=3)
+  {
+    b64enc(ret, a[shuffler[2][t]], a[shuffler[1][t]], a[shuffler[0][t]], 4);
+    shuffler[0][!t] = shuffler[shift][t]+1;
+    shuffler[1][!t] = shuffler[shift+1][t]+1;
+    shuffler[2][!t] = shuffler[shift+2][t]+1;
+    t=!t;
+  }
+
+  a+="\0\0";
+  t = dsz/3*3;
+  b64enc(ret, a[t], a[t+1], a[t+2], dsz%3+1);
+
+  return (string(7bit))ret;
+}
+
+//! Password hashing PHP Portable Hash-style.
+//!
+//! @param password
+//!   Password to hash.
+//!
+//! @param salt
+//!   7 bit string of length 8 or 9. The first character may encode
+//!   the exponent for the number of rounds if @[rounds] is @expr{0@}.
+//!
+//! @param rounds
+//!   Number of rounds. Defaults to taking the value from the @[salt]
+//!   if the @[salt] has length @expr{9@}, otherwise defaults to
+//!   @expr{1<<19@}.
+//!
+//! This algorithm used with @[Crypto.MD5] is the one used
+//! for PHP Portable Hashes (aka @expr{"$P$"@} and @expr{"$H$"@}).
+//!
+//! Used with @[Crypto.SHA1] it should be compatible with
+//! hashes from Escher CMS (aka @expr{"$Q$"@}).
+//!
+//! Used with @[Crypto.SHA512] it should be compatible with
+//! hashes from Drupal (aka @expr{"$S$"@}).
+//!
+//! @seealso
+//!   @[crypt_hash()], @[Crypto.Password]
+string(7bit) crypt_php(string(8bit) password, string(7bit) salt,
+		       int(0..)|void rounds)
+{
+  string(8bit) passwd = password;
+  password = "CENSORED";
+  int(0..) r = rounds;
+  if (!r) {
+    if (sizeof(salt) > 8) {
+      int(-1..63) exponent = [int(-1..63)]search(b64tab, salt[0]);
+      if ((exponent < 7) || (exponent > 30)) {
+	error("Unsupported exponent for rounds: %d\n", exponent);
+      }
+      r = 1 << [int(0..63)]exponent;
+      salt = salt[1..];
+    } else {
+      r = 1 << 19;
+    }
+  } else {
+    if (r < (1<<7)) r = 1<<7;
+    else if (r > (1<<30)) r = 1<<30;
+    else if (r & (r-1)) {
+      r <<= 1;
+      int(0..) tmp;
+      // This loop removes one extraneous bit at a time.
+      while (tmp = [int(0..)](r & (r-1))) {
+	r = tmp;
+      }
+    }
+  }
+  string(8bit) checksum = salt[..7];
+  do {
+    checksum = hash(checksum + passwd);
+  } while (r--);
+
+  String.Buffer ret = String.Buffer();
+  foreach([array(string(8bit))](checksum/3.0), string(8bit) bytes) {
+    bytes += "\0\0";
+    b64enc(ret, bytes[0], bytes[1], bytes[2], sizeof(bytes)-1);
+  }
+
+  string(7bit) res = (string(7bit)) ret;
+  return res;
 }
 
 //! Password Based Key Derivation Function #1 from @rfc{2898@}. This
@@ -453,7 +678,7 @@ string crypt_hash(string password, string salt, int rounds)
 //!
 //! @seealso
 //!   @[hkdf()], @[pbkdf2()], @[openssl_pbkdf()], @[crypt_password()]
-string pbkdf1(string password, string salt, int rounds, int bytes)
+string(8bit) pbkdf1(string(8bit) password, string(8bit) salt, int rounds, int bytes)
 {
   if( bytes>digest_size() )
     error("Requested bytes %d exceeds hash digest size %d.\n",
@@ -461,7 +686,7 @@ string pbkdf1(string password, string salt, int rounds, int bytes)
   if( rounds <=0 )
     error("Rounds needs to be 1 or higher.\n");
 
-  string res = password + salt;
+  string(8bit) res = password + salt;
 
   password = "CENSORED";
 
@@ -500,7 +725,7 @@ string(8bit) pbkdf2(string(8bit) password, string(8bit) salt,
   password = "CENSORED";
 
   string(8bit) res = "";
-  int dsz = digest_size();
+  int(0..) dsz = digest_size();
   int fragno;
   while (sizeof(res) < bytes) {
     string(8bit) frag = "\0" * dsz;
@@ -515,6 +740,30 @@ string(8bit) pbkdf2(string(8bit) password, string(8bit) salt,
   return res[..bytes-1];
 }
 
+//! crypt()-style function using @[pbkdf2()].
+//!
+//! Compatible with PassLib and Phpass password hashing schemes
+//! @expr{"pbdkf2"@}, @expr{"pbdkf2-sha256"@} and @expr{"pbdkf2-sha512"@}.
+//!
+//! @note
+//!   This function is provided for interoperability with
+//!   password hashes provided from PassLib and/or Phpass.
+//!   It is not recommended for use for new code, as this
+//!   is not the indended use for the @[pbkdf2] algorithm.
+//!
+//! @seealso
+//!   @[pbkdf2()], @[Crypto.Password.hash()], @[Crypto.Password.verify()]
+string(7bit) crypt_pbkdf2(string(8bit) password, string(7bit) salt, int rounds)
+{
+  string(8bit) passwd = password;
+  password = "CENSORED";
+  if (!rounds) rounds = 29000;
+  string(8bit) slt = MIME.decode_base64([string(7bit)]replace(salt, ".", "+"));
+  return [string(7bit)]replace(MIME.encode_base64(pbkdf2(passwd, slt, rounds,
+							 digest_size()), 1),
+			       ({ "+", "=" }), ({ ".", "" }));
+}
+
 //! HMAC-based Extract-and-Expand Key Derivation Function, HKDF,
 //! @rfc{5869@}. This is very similar to @[pbkdf2], with a few
 //! important differences. HKDF can use an "info" string that binds a
@@ -524,14 +773,14 @@ string(8bit) pbkdf2(string(8bit) password, string(8bit) salt,
 //! attacks.
 class HKDF
 {
-  protected string(8bit) prk;
-  protected object(_HMAC.State) hmac;
+  protected zero|string(8bit) prk;
+  protected zero|object(_HMAC.State) hmac;
 
   //! Initializes the HKDF object with a RFC 5869 2.2
   //! HKDF-Extract(salt, IKM) call.
-  protected void create(string(8bit) password, void|string(8bit) salt)
+  protected void create(string(8bit) password,
+			string(8bit) salt = "\0"*digest_size())
   {
-    if(!salt) salt = "\0"*digest_size();
     prk = salt;
     extract(password);
   }
@@ -684,12 +933,12 @@ string(8bit) mgf1(string(8bit) seed, int(0..) bytes)
 //!
 //! @seealso
 //!   @[eme_oaep_decode()]
-string(8bit) eme_oaep_encode(string(8bit) message,
-			     int(1..) bytes,
-			     string(8bit) seed,
-			     string(8bit)|void label,
-			     function(string(8bit), int(0..):
-				      string(8bit))|void mgf)
+string(8bit)|zero eme_oaep_encode(string(8bit) message,
+                                  int(1..) bytes,
+                                  string(8bit) seed,
+                                  string(8bit) label = "",
+                                  function(string(8bit), int(0..):
+                                           string(8bit))|void mgf)
 {
   int(0..) hlen = digest_size();
 
@@ -702,12 +951,11 @@ string(8bit) eme_oaep_encode(string(8bit) message,
   // EME-OAEP encoding (see Figure 1 below):
   // a. If the label L is not provided, let L be the empty string. Let
   //    lHash = Hash(L), an octet string of length hLen (see the note below).
-  if (!label) label = "";
-  string(8bit) lhash = hash(label);
+  string(8bit) lhash = hash([string]label);
 
   // b. Generate an octet string PS consisting of k - mLen - 2hLen - 2
   //    zero octets. The length of PS may be zero.
-  string(8bit) ps = "\0" * (bytes - (sizeof(message) + 2*hlen + 2));
+  string(8bit) ps = "\0" * [int(0..)](bytes - (sizeof(message) + 2*hlen + 2));
 
   // c. Concatenate lHash, PS, a single octet with hexadecimal value
   //    0x01, and the message M to form a data block DB of length
@@ -761,10 +1009,10 @@ string(8bit) eme_oaep_encode(string(8bit) message,
 //!
 //! @seealso
 //!   @[eme_oaep_encode()], @rfc{3447:7.1.2@}
-string(8bit) eme_oaep_decode(string(8bit) message,
-			     string(8bit)|void label,
-			     function(string(8bit), int(0..):
-				      string(8bit))|void mgf)
+string(8bit)|zero eme_oaep_decode(string(8bit) message,
+                                  string(8bit) label = "",
+                                  function(string(8bit), int(0..):
+                                           string(8bit))|void mgf)
 {
   int(0..) hlen = digest_size();
 
@@ -777,8 +1025,7 @@ string(8bit) eme_oaep_decode(string(8bit) message,
   // a. If the label L is not provided, let L be the empty string. Let
   //    lHash = Hash(L), an octet string of length hLen (see the note
   //    in Section 7.1.1).
-  if (!label) label = "";
-  string(8bit) lhash = hash(label);
+  string(8bit) lhash = hash([string]label);
 
   // b. Separate the encoded message EM into a single octet Y, an octet
   //    string maskedSeed of length hLen, and an octet string maskedDB
@@ -851,23 +1098,20 @@ string(8bit) eme_oaep_decode(string(8bit) message,
 //!
 //! @seealso
 //!   @[emsa_pss_verify()], @[mgf1()].
-string(8bit) emsa_pss_encode(string(8bit) message, int(1..) bits,
-			     string(8bit)|void salt,
-			     function(string(8bit), int(0..):
-				      string(8bit))|void mgf)
+string(8bit)|zero emsa_pss_encode(string(8bit) message, int(1..) bits,
+                                  string(8bit) salt = "",
+                                  function(string(8bit), int(0..):
+                                           string(8bit)) mgf = mgf1)
 {
-  if (!mgf) mgf = mgf1;
-  if (!salt) salt = "";
-
   // 1. If the length of M is greater than the input limitation for the
   //    hash function (2^61 - 1 octets for SHA-1), output "message too
   //    long" and stop.
   /* N/A */
 
-  int emlen = (bits+7)/8;
+  int(1..) emlen = [int(1..)]((bits+7)/8);
 
   // 3. If emLen < hLen + sLen + 2, output "encoding error" and stop.
-  if (emlen < sizeof(salt) + digest_size() + 2) return 0;
+  if (emlen < sizeof([string]salt) + digest_size() + 2) return 0;
 
   // 2. Let mHash = Hash(M), an octet string of length hLen.
   string(8bit) mhash = hash(message);
@@ -881,18 +1125,19 @@ string(8bit) emsa_pss_encode(string(8bit) message, int(1..) bits,
   //    M' = (0x)00 00 00 00 00 00 00 00 || mHash || salt;
   //    M' is an octet string of length 8 + hLen + sLen with eight initial
   //    zero octets.
-  string(8bit) m = "\0\0\0\0\0\0\0\0" + mhash + salt;
+  string(8bit) m = "\0\0\0\0\0\0\0\0" + mhash + [string]salt;
 
   // 6. Let H = Hash(M'), an octet string of length hLen.
   string(8bit) h = hash(m);
 
   // 7. Generate an octet string PS consisting of emLen - sLen - hLen - 2
   //    zero octets. The length of PS may be 0.
-  string(8bit) ps = "\0" * (emlen - (sizeof(salt) + sizeof(h) + 2));
+  string(8bit) ps = "\0" *
+    [int(0..)](emlen - (sizeof([string]salt) + sizeof(h) + 2));
 
   // 8. Let DB = PS || 0x01 || salt; DB is an octet string of length
   //    emLen - hLen - 1.
-  string(8bit) db = ps + "\1" + salt;
+  string(8bit) db = ps + "\1" + [string]salt;
 
   // 9. Let dbMask = MGF(H, emLen - hLen - 1).
   string(8bit) dbmask = mgf(h, [int(1..)](emlen - (sizeof(h) + 1)));
@@ -938,17 +1183,15 @@ string(8bit) emsa_pss_encode(string(8bit) message, int(1..) bits,
 int(0..1) emsa_pss_verify(string(8bit) message, string(8bit) sign,
 			  int(1..) bits, int(0..)|void saltlen,
 			  function(string(8bit), int(0..):
-				   string(8bit))|void mgf)
+				   string(8bit)) mgf = mgf1)
 {
-  if (!mgf) mgf = mgf1;
-
   // 1. If the length of M is greater than the input limitation for
   //    the hash function (2^61 - 1 octets for SHA-1), output
   //    "inconsistent" and stop.
   /* N/A */
 
   // 3. If emLen < hLen + sLen + 2, output "inconsistent" and stop.
-  if (sizeof(sign) < digest_size() + saltlen + 2) {
+  if (sizeof(sign) < digest_size() + [int]saltlen + 2) {
     return 0;
   }
 
@@ -992,7 +1235,7 @@ int(0..1) emsa_pss_verify(string(8bit) message, string(8bit) sign,
   //     not zero or if the octet at position emLen - hLen - sLen - 1
   //     (the leftmost position is "position 1") does not have
   //     hexadecimal value 0x01, output "inconsistent" and stop.
-  string(8bit) ps = db[..sizeof(sign) -(sizeof(mhash) + saltlen + 3)];
+  string(8bit) ps = db[..sizeof(sign) -(sizeof(mhash) + [int]saltlen + 3)];
   if ((ps != "\0"*sizeof(ps)) || (db[sizeof(ps)] != 0x01)) {
     return 0;
   }
@@ -1030,7 +1273,7 @@ int(0..1) emsa_pss_verify(string(8bit) message, string(8bit) sign,
 //!   The maximum number of digits of the one-time password. Defaults
 //!   to 6. Note that the result is usually 0-padded to this length
 //!   for user display purposes.
-int hotp(string(8bit) secret, int factor, void|int length)
+int hotp(string(8bit) secret, int factor, int(1..) length = 6)
 {
   // 1
   string(8bit) hs = HMAC(secret)(sprintf("%8c",factor));
@@ -1042,14 +1285,14 @@ int hotp(string(8bit) secret, int factor, void|int length)
   snum &= 0x7fffffff;
 
   // 3
-  return snum % [int]pow(10, length||6);
+  return snum % [int]pow(10, length);
 }
 
 // Salted password cache for SCRAM
 // FIXME: Consider mark as weak?
 private mapping(string:string(8bit)) SCRAM_salted_password_cache = ([]);
 
-final string(8bit) SCRAM_get_salted_password(string key) {
+final string(8bit)|zero SCRAM_get_salted_password(string key) {
   mapping(string:string(8bit)) m = SCRAM_salted_password_cache;
   return m && m[key];
 }
@@ -1084,7 +1327,8 @@ final void SCRAM_set_salted_password(string(8bit) SaltedPassword, string key) {
 //!   @[client_1], @[server_1]
 class SCRAM
 {
-  private string(8bit) first, nonce;
+  private zero|string(8bit) first;
+  private zero|string(7bit) nonce, server_signature;
 
   private string(7bit) encode64(string(8bit) raw) {
     return MIME.encode_base64(raw, 1);
@@ -1094,11 +1338,20 @@ class SCRAM
     return encode64(random_string(18));
   }
 
+  private string(7bit)|zero validate_nonce(string r) {
+    [int min, int max] = String.range(r);
+    if (min < 32 || max > 126 || search(r, ",") >= 0)
+      /* Invalid nonce */
+      return 0;
+    /* Check above guarantees 7bit-ness */
+    return [string(7bit)]r;
+  }
+
   private string(7bit) clientproof(string(8bit) salted_password) {
     _HMAC.State hmacsaltedpw = HMAC(salted_password);
     salted_password = hmacsaltedpw("Client Key");
-    // Returns ServerSignature through nonce
-    nonce = encode64(HMAC(hmacsaltedpw("Server Key"))(first));
+    // Returns ServerSignature through server_signature
+    server_signature = encode64(HMAC(hmacsaltedpw("Server Key"))(first));
     return encode64([string(8bit)]
 		    (salted_password ^ HMAC(hash(salted_password))(first)));
   }
@@ -1118,9 +1371,13 @@ class SCRAM
   //!   @[client_2]
   string(7bit) client_1(void|string username) {
     nonce = randomstring();
-    return [string(7bit)](first = [string(8bit)]sprintf("n,,n=%s,r=%s",
-      username && username != "" ? Standards.IDNA.to_ascii(username, 1) : "",
-      nonce));
+    string(7bit) request =
+      sprintf("n,,n=%s,r=%s",
+	      username && username != "" ?
+	      [string(7bit)]Standards.IDNA.to_ascii([string]username, 1) : "",
+	      nonce);
+    first = request;
+    return request;
   }
 
   //! Server-side step 1 in the SCRAM handshake.
@@ -1134,16 +1391,18 @@ class SCRAM
   //!
   //! @seealso
   //!   @[server_2]
-  string server_1(string(8bit) line) {
+  string|zero server_1(string(8bit) line) {
     constant format = "n,,n=%s,r=%s";
-    string username, r;
+    string|zero username;
     catch {
-      first = [string(8bit)]line[3..];
-      [username, r] = array_sscanf(line, format);
-      nonce = [string(8bit)]r;
-      r = Standards.IDNA.to_unicode(username);
+      first = line[3..];
+      [username, string(8bit) r] =
+	[array(string(8bit))]array_sscanf(line, format);
+      if (!(nonce = validate_nonce(r)))
+	return 0;
+      username = [string]Standards.IDNA.to_unicode(username);
     };
-    return r;
+    return username;
   }
 
   //! Server-side step 2 in the SCRAM handshake.
@@ -1161,10 +1420,10 @@ class SCRAM
   //! @seealso
   //!   @[server_3]
   string(7bit) server_2(string(8bit) salt, int iters) {
-    string response = sprintf("r=%s,s=%s,i=%d",
+    string(7bit) response = sprintf("r=%s,s=%s,i=%d",
       nonce += randomstring(), encode64(salt), iters);
     first += "," + response + ",";
-    return [string(7bit)]response;
+    return response;
   }
 
   //! Client-side step 2 in the SCRAM handshake.
@@ -1181,30 +1440,34 @@ class SCRAM
   //!
   //! @seealso
   //!   @[client_3]
-  string(7bit) client_2(string(8bit) line, string(8bit) pass) {
+  string(7bit)|zero client_2(string(8bit) line, string pass) {
     constant format = "r=%s,s=%s,i=%d";
-    string(8bit) r, salt;
-    int iters;
-    if (!catch([r, salt, iters] = [array(string(8bit)|int)]
-				   array_sscanf(line, format))
+    string(7bit) punypass = "";
+    string(7bit)|zero validated_r;
+    string(7bit)|zero response;
+    if (!catch([string(8bit)|zero r, string(8bit) salt, int iters] =
+	       [array(string(8bit)|int)]array_sscanf(line, format))
 	&& iters > 0
+	&& (validated_r = validate_nonce(r))
 	&& has_prefix(r, nonce)) {
-      line = [string(8bit)]sprintf("c=biws,r=%s", r);
-      first = [string(8bit)]sprintf("%s,r=%s,s=%s,i=%d,%s",
-				    first[3..], r, salt, iters, line);
+      string(7bit) newline = sprintf("c=biws,r=%s", validated_r);
+      first = sprintf("%s,r=%s,s=%s,i=%d,%s",
+		      first[3..], validated_r, salt, iters, newline);
       if (pass != "")
-	pass = [string(7bit)]Standards.IDNA.to_ascii(pass);
-      salt = MIME.decode_base64(salt);
-      nonce = [string(8bit)]sprintf("%s,%s,%d", pass, salt, iters);
-      if (!(r = SCRAM_get_salted_password(nonce))) {
-	r = pbkdf2(pass, salt, iters, digest_size());
-	SCRAM_set_salted_password(r, nonce);
+	punypass = [string(7bit)]Standards.IDNA.to_ascii(pass);
+      else
+	punypass = "";
+      salt = MIME.decode_base64([string(7bit)]salt);
+      string(8bit) key = sprintf("%s,%s,%d", punypass, salt, iters);
+      if (!(r = SCRAM_get_salted_password(key))) {
+	r = pbkdf2(punypass, salt, iters, digest_size());
+	SCRAM_set_salted_password([string]r, key);
       }
-      salt = sprintf("%s,p=%s", line, clientproof(r));
+      response = sprintf("%s,p=%s", newline, clientproof([string]r));
       first = 0;                         // Free memory
     } else
-      salt = 0;
-    return [string(7bit)]salt;
+      response = 0;
+    return response;
   }
 
   //! Final server-side step in the SCRAM handshake.
@@ -1220,16 +1483,17 @@ class SCRAM
   //!   The server-final response to send to the client.  If the response
   //!   is null, the client did not supply the correct credentials or
   //!   the response was unparseable.
-  string(7bit) server_3(string(8bit) line,
-			string(8bit) salted_password) {
+  string(7bit)|zero server_3(string(8bit) line,
+			     string(8bit) salted_password) {
     constant format = "c=biws,r=%s,p=%s";
-    string r, p;
-    if (!catch([r, p] = array_sscanf(line, format))
+    string(7bit)|zero ret;
+    if (!catch([string(8bit) r, string(8bit) p] =
+	       [array(string(8bit))]array_sscanf(line, format))
 	&& r == nonce) {
-      first += sprintf("c=biws,r=%s", r);
-      p = p == clientproof(salted_password) && sprintf("v=%s", nonce);
+      first += [string(8bit)]sprintf("c=biws,r=%s", r);
+      ret = p == clientproof(salted_password) && sprintf("v=%s", server_signature);
     }
-    return [string(7bit)]p;
+    return ret;
   }
 
   //! Final client-side step in the SCRAM handshake.  If we get this far, the
@@ -1244,8 +1508,7 @@ class SCRAM
   //!   True if the server is valid, false if the server is invalid.
   int(0..1) client_3(string(8bit) line) {
     constant format = "v=%s";
-    string v;
-    return !catch([v] = array_sscanf(line, format))
-      && v == nonce;
+    return !catch(string v = array_sscanf(line, format)[0])
+      && v == server_signature;
   }
 }

@@ -74,11 +74,9 @@
 #ifdef HAVE_POLL
 #ifdef HAVE_POLL_H
 #include <poll.h>
-#endif /* HAVE_POLL_H */
-
-#ifdef HAVE_SYS_POLL_H
+#elif defined(HAVE_SYS_POLL_H)
 #include <sys/poll.h>
-#endif /* HAVE_SYS_POLL_H */
+#endif /* HAVE_POLL_H || HAVE_SYS_POLL_H */
 #endif /* HAVE_POLL */
 
 #ifdef HAVE_SYS_RESOURCE_H
@@ -378,7 +376,7 @@
    using modern OS:es and setting the signal flags correctly, but...)
 */
 
-#ifdef __GNUC__
+#ifdef HAVE_PRAGMA_GCC_OPTIMIZE
 #pragma GCC optimize "-Os"
 #endif
 
@@ -480,16 +478,12 @@ static const struct sigdesc signal_desc []={
 #ifdef SIGTERM
   { SIGTERM, "SIGTERM" },
 #endif
-
-#if !defined(__linux__) || !defined(_REENTRANT)
 #ifdef SIGUSR1
   { SIGUSR1, "SIGUSR1" },
 #endif
 #ifdef SIGUSR2
   { SIGUSR2, "SIGUSR2" },
 #endif
-#endif /* !defined(__linux__) || !defined(_REENTRANT) */
-
 #ifdef SIGCHLD
   { SIGCHLD, "SIGCHLD" },
 #endif
@@ -937,10 +931,6 @@ static void f_signal(int args)
   signum=Pike_sp[-args].u.integer;
   if(signum <0 ||
      signum >=MAX_SIGNALS
-#if defined(__linux__) && defined(_REENTRANT)
-     || signum == SIGUSR1
-     || signum == SIGUSR2
-#endif
     )
   {
     Pike_error("Signal %d out of range.\n", signum);
@@ -1247,6 +1237,8 @@ struct pid_status
   INT_TYPE pid;
 #ifdef __NT__
   HANDLE handle;
+  struct pid_status *next_pty_client;	/* PTY client chain. */
+  struct my_pty *pty;			/* PTY master, refcounted. */
 #else
   INT_TYPE sig;
   INT_TYPE flags;
@@ -1272,6 +1264,48 @@ static void init_pid_status(struct object *UNUSED(o))
 #endif
 }
 
+#ifdef __NT__
+struct pid_status *pid_status_unlink_pty(struct pid_status *pid)
+{
+  struct pid_status *ret;
+  if (!pid) return NULL;
+  ret = pid->next_pty_client;
+  pid->next_pty_client = NULL;
+  if (pid->pty) {
+    free_pty(pid->pty);
+    pid->pty = NULL;
+  }
+  return ret;
+}
+
+static void pid_status_link_pty(struct pid_status *pid, struct my_pty *pty)
+{
+  add_ref(pty);
+  pid->pty = pty;
+  pid->next_pty_client = pty->clients;
+  pty->clients = pid;
+}
+
+int check_pty_clients(struct my_pty *pty)
+{
+  struct pid_status *pid;
+  while ((pid = pty->clients)) {
+    DWORD status;
+    /* FIXME: RACE: pid->handle my be INVALID_HANDLE_VALUE if
+     *              the process is about to be started.
+     */
+    if ((pid->pid == -1) && (pid->handle == INVALID_HANDLE_VALUE)) return 1;
+    if (GetExitCodeProcess(pid->handle, &status) &&
+	(status == STILL_ACTIVE)) {
+      return 1;
+    }
+    /* Process has terminated. Unlink and check the next. */
+    pty->clients = pid_status_unlink_pty(pid);
+  }
+  return 0;
+}
+#endif /* __NT__ */
+
 static void exit_pid_status(struct object *UNUSED(o))
 {
 #ifdef USE_PID_MAPPING
@@ -1284,6 +1318,25 @@ static void exit_pid_status(struct object *UNUSED(o))
 #endif
 
 #ifdef __NT__
+  if (THIS->pty) {
+    struct my_pty *pty = THIS->pty;
+    struct pid_status **pidptr = &pty->clients;
+    while (*pidptr && (*pidptr != THIS)) {
+      pidptr = &(*pidptr)->next_pty_client;
+    }
+    if (*pidptr) {
+      *pidptr = pid_status_unlink_pty(THIS);
+    }
+    if (!pty->clients && !pty->other && pty->conpty) {
+      /* Last client for this ConPTY has terminated,
+       * and our local copy of the slave has been closed.
+       *
+       * Close the ConPTY.
+       */
+      Pike_NT_ClosePseudoConsole(pty->conpty);
+      pty->conpty = 0;
+    }
+  }
   CloseHandle(THIS->handle);
 #endif
 }
@@ -1732,8 +1785,8 @@ static void f_pid_status_wait(INT32 args)
 
       default:
 lostchild:
-	Pike_error("Lost track of a child (pid %d, errno from wait %d).\n",
-		   THIS->pid, err);
+        Pike_error("Lost track of a child (pid %ld, errno from wait %d).\n",
+                   (long)THIS->pid, err);
 	break;
       }
     } else {
@@ -1827,7 +1880,7 @@ static void f_pid_status_set_priority(INT32 args)
   char *to;
   int r;
 
-  get_all_args(NULL, args, "%s", &to);
+  get_all_args(NULL, args, "%c", &to);
   r = set_priority( THIS->pid, to );
   pop_n_elems(args);
   push_int(r);
@@ -2105,7 +2158,8 @@ static void free_perishables(struct perishables *storage)
  */
 static HANDLE get_inheritable_handle(struct mapping *optional,
 				     char *name,
-				     int for_reading)
+				     int for_reading,
+				     HPCON *conpty)
 {
   HANDLE ret = INVALID_HANDLE_VALUE;
   struct svalue *save_stack=Pike_sp;
@@ -2116,6 +2170,7 @@ static HANDLE get_inheritable_handle(struct mapping *optional,
     {
       INT32 fd=fd_from_object(tmp->u.object);
       HANDLE h;
+      int type;
 
       if(fd == -1)
 	Pike_error("File for %s is not open.\n",name);
@@ -2128,8 +2183,64 @@ static HANDLE get_inheritable_handle(struct mapping *optional,
 	fd=fd_from_object(Pike_sp[-1].u.object);
       }
 
-      if(fd_to_handle(fd, NULL, &h) < 0)
+      if(fd_to_handle(fd, &type, &h, 0) < 0)
 	Pike_error("File for %s is not open.\n",name);
+
+      if (type == FD_PTY) {
+	struct my_pty *pty = (struct my_pty *)h;
+	if (!conpty || pty->conpty || !pty->other || !pty->other->conpty ||
+	    (*conpty && (*conpty != pty->other->conpty))) {
+	  /* Master side, or detached slave,
+	   * or we have already selected a different conpty.
+	   */
+	  if (for_reading) {
+	    h = pty->read_pipe;
+	  } else {
+	    h = pty->write_pipe;
+	  }
+	} else {
+	  /* Slave side. Get the conpty from the master side.
+	   *
+	   * NB: Stdin, stdout and stderr are handled automatically
+	   *     by setting the conpty. The conpty has duplicated
+	   *     handles of the original pipes, and in turn provides
+	   *     actual CONSOLE handles to the subprocess. We thus
+	   *     do NOT return the base pipe handle.
+	   *
+	   * BUGS: It is not possible to have multiple conpty
+	   *       objects for the same process, so the first
+	   *       pty for stdin, stdout and stderr wins
+	   *       (see above).
+	   *
+	   * BUGS: As the conpty is a separate process that may survive
+	   *       our subprocess terminating, we need to keep track
+	   *       of which master pty the process was bound to so
+	   *       that we can close the corresponding conpty
+	   *       when no one else will use it.
+	   *
+	   * BUGS: The above behavior is apparently a bug according
+	   *       to the ConPTY developers. Fixing the bug however
+	   *       leads to a race condition with respect to short-
+	   *       lived processes causing the ConPTY to terminate
+	   *       before we have closed out slave connection.
+	   */
+	  pid_status_link_pty(THIS, pty->other);
+	  *conpty = pty->other->conpty;
+	  release_fd(fd);
+
+	  /* From the documentation for GetStdHandle():
+	   *
+	   *   If the existing value of the standard handle is NULL, or
+	   *   the existing value of the standard handle looks like a
+	   *   console pseudohandle, the handle is replaced with a
+	   *   console handle.
+	   *
+	   * This is not documented in conjunction with CreateProcess() or
+	   * PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE, but it seems to work.
+	   */
+	  return 0;
+	}
+      }
 
       if(!DuplicateHandle(GetCurrentProcess(),	/* Source process */
 			  h,
@@ -2234,16 +2345,22 @@ extern int pike_make_pipe(int *);
 #define PROCE_CHROOT		13
 #define PROCE_CLRCLOEXEC	14
 
+#ifdef B_POSIX_ERROR_BASE
+#define ERRNO_OFFSET	B_POSIX_ERROR_BASE
+#else
+#define ERRNO_OFFSET	0
+#endif
+
 #define PROCERROR(err, id)	do { int _l, _i; \
-    buf[0] = err; buf[1] = errno; buf[2] = id; \
+    buf[0] = err; buf[1] = errno - ERRNO_OFFSET; buf[2] = id; \
     for(_i = 0; _i < 3; _i += _l) { \
       while (((_l = write(control_pipe[1], buf + _i, 3 - _i)) < 0) && \
              (errno == EINTR)) \
         ; \
-      if (_l < 0) exit (99 - errno); \
+      if (_l < 0) exit (99 - (errno - ERRNO_OFFSET)); \
     } \
     while((_l = close(control_pipe[1])) < 0 && errno==EINTR); \
-    if (_l < 0) exit (99 + errno); \
+    if (_l < 0) exit (99 + (errno - ERRNO_OFFSET)); \
     exit(99); \
   } while(0)
 
@@ -2463,7 +2580,7 @@ void f_set_priority( INT32 args )
   INT_TYPE pid = 0;
   char *plevel;
 
-  get_all_args("set_priority", args, "%s.%+", &plevel, &pid);
+  get_all_args("set_priority", args, "%c.%+", &plevel, &pid);
   pid = set_priority( pid, plevel );
   pop_n_elems(args);
   push_int( pid );
@@ -2603,7 +2720,7 @@ int fd_cleanup_cb(void *data, int fd)
  *!  by the main thread when the main backend is idle. Indeed, you can
  *!  specify a callback even if your program does not use a backend.
  *!
- *! @member string "cwd"
+ *! @member string|object(Stdio.Fd) "cwd"
  *!  Execute the command in another directory than the current
  *!  directory of this process. Please note that if the command is
  *!  given is a relative path, it will be relative to this directory
@@ -2611,11 +2728,17 @@ int fd_cleanup_cb(void *data, int fd)
  *!
  *!  Note also that the path is relative to the @expr{"chroot"@} if used.
  *!
- *! @member string "chroot"
+ *!  Note that support for the @[Stdio.Fd] variant is not present prior
+ *!  to Pike 9.0, and is only present on some OSes.
+ *!
+ *! @member string|object(Stdio.Fd) "chroot"
  *!   Chroot to this directory before executing the command.
  *!
  *!   Note that the current directory will be changed to @expr{"/"@} in
  *!   the chroot environment, unless @expr{"cwd"@} above has been set.
+ *!
+ *!   Note that support for the @[Stdio.Fd] variant is not present prior
+ *!   to Pike 9.0, and is only present on some OSes.
  *!
  *! @member Stdio.File "stdin"
  *! @member Stdio.File "stdout"
@@ -2722,6 +2845,10 @@ int fd_cleanup_cb(void *data, int fd)
  *!  maximum stack size in bytes
  *! @endmapping
  *!
+ *! @member Stdio.File "conpty"
+ *!  Bind the process to the console associated with this
+ *!  pty slave. NT only.
+ *!
  *! @endmapping
  *!
  *! @example
@@ -2750,8 +2877,8 @@ int fd_cleanup_cb(void *data, int fd)
  *!
  *! @note
  *!   On NT the only supported modifiers are: @expr{"cwd"@},
- *!   @expr{"stdin"@}, @expr{"stdout"@}, @expr{"stderr"@} and
- *!   @expr{"env"@}. All other modifiers are silently ignored.
+ *!   @expr{"conpty"@}, @expr{"stdin"@}, @expr{"stdout"@}, @expr{"stderr"@}
+ *!   and @expr{"env"@}. All other modifiers are silently ignored.
  *!
  *! @note
  *!   Support for @expr{"callback"@} was added in Pike 7.7.
@@ -2811,12 +2938,11 @@ void f_create_process(INT32 args)
     HANDLE t1 = INVALID_HANDLE_VALUE;
     HANDLE t2 = INVALID_HANDLE_VALUE;
     HANDLE t3 = INVALID_HANDLE_VALUE;
-    STARTUPINFO info;
+    STARTUPINFOEXW info;
     PROCESS_INFORMATION proc;
-    int ret,err;
-    TCHAR *filename=NULL, *command_line=NULL, *dir=NULL;
-    void *env=NULL;
-    struct byte_buffer buf;
+    int ret = 0, err;
+    WCHAR *filename=NULL, *command_line=NULL, *dir=NULL;
+    WCHAR *env=NULL;
 
     /* Quote command to allow all characters (if possible) */
     /* Damn! NT doesn't have quoting! The below code attempts to
@@ -2827,6 +2953,8 @@ void f_create_process(INT32 args)
      */
     {
       int e,d;
+      struct byte_buffer buf;
+
       buffer_init(&buf);
       for(e=0;e<cmd->size;e++)
       {
@@ -2905,47 +3033,101 @@ void f_create_process(INT32 args)
        *       operations on it.
        */
 
-      command_line = (TCHAR *)buffer_get_string(&buf);
+      command_line = pike_dwim_utf8_to_utf16(buffer_get_string(&buf));
+      buffer_free(&buf);
     }
 
     /* FIXME: Ought to set filename properly.
      */
 
     memset(&info,0,sizeof(info));
-    info.cb=sizeof(info);
+    info.StartupInfo.cb = sizeof(info);
 
-    GetStartupInfo(&info);
+#if 0
+    /* CAUTION!!!!
+     *
+     * This function fills in several reserved fields in the
+     * StartupInfo, which in turn cause CreateProcessW() below
+     * to fail with error ERROR_INVALID_PARAMETER (87) when
+     * EXTENDED_STARTUPINFO_PRESENT is set.
+     */
+    GetStartupInfoW(&info.StartupInfo);
+#endif
 
     /* Protect inherit status for handles */
     LOCK_IMUTEX(&handle_protection_mutex);
 
-    info.dwFlags|=STARTF_USESTDHANDLES;
-    info.hStdInput=GetStdHandle(STD_INPUT_HANDLE);
-    info.hStdOutput=GetStdHandle(STD_OUTPUT_HANDLE);
-    info.hStdError=GetStdHandle(STD_ERROR_HANDLE);
-    SetHandleInformation(info.hStdInput, HANDLE_FLAG_INHERIT, 0);
-    SetHandleInformation(info.hStdOutput, HANDLE_FLAG_INHERIT, 0);
-    SetHandleInformation(info.hStdError, HANDLE_FLAG_INHERIT, 0);
+    info.StartupInfo.dwFlags |= STARTF_USESTDHANDLES;
+    info.StartupInfo.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
+    info.StartupInfo.hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
+    info.StartupInfo.hStdError = GetStdHandle(STD_ERROR_HANDLE);
+    SetHandleInformation(info.StartupInfo.hStdInput, HANDLE_FLAG_INHERIT, 0);
+    SetHandleInformation(info.StartupInfo.hStdOutput, HANDLE_FLAG_INHERIT, 0);
+    SetHandleInformation(info.StartupInfo.hStdError, HANDLE_FLAG_INHERIT, 0);
+
+    info.lpAttributeList = NULL;
 
     if(optional)
     {
+      HPCON conpty = (HPCON)0;
+
       if( (tmp=simple_mapping_string_lookup(optional, "cwd")) )
       {
 	if(TYPEOF(*tmp) == T_STRING)
 	{
-	  dir=(TCHAR *)STR0(tmp->u.string);
+	  dir = pike_dwim_utf8_to_utf16(STR0(tmp->u.string));
 	  /* fprintf(stderr,"DIR: %s\n",STR0(tmp->u.string)); */
 	}
       }
 
-      t1=get_inheritable_handle(optional, "stdin",1);
-      if(t1 != INVALID_HANDLE_VALUE) info.hStdInput=t1;
+      CloseHandle(get_inheritable_handle(optional, "conpty", 1, &conpty));
 
-      t2=get_inheritable_handle(optional, "stdout",0);
-      if(t2 != INVALID_HANDLE_VALUE) info.hStdOutput=t2;
+      t1 = get_inheritable_handle(optional, "stdin", 1, &conpty);
+      if(t1 != INVALID_HANDLE_VALUE) {
+	info.StartupInfo.hStdInput = t1;
+      }
 
-      t3=get_inheritable_handle(optional, "stderr",0);
-      if(t3 != INVALID_HANDLE_VALUE) info.hStdError=t3;
+      t2 = get_inheritable_handle(optional, "stdout", 0, &conpty);
+      if(t2 != INVALID_HANDLE_VALUE) {
+	info.StartupInfo.hStdOutput = t2;
+      }
+
+      t3 = get_inheritable_handle(optional, "stderr", 0, &conpty);
+      if(t3 != INVALID_HANDLE_VALUE) {
+	info.StartupInfo.hStdError = t3;
+      }
+
+      if (conpty) {
+	LPPROC_THREAD_ATTRIBUTE_LIST attrlist = NULL;
+	SIZE_T attrlist_sz = 0;
+	/* Hook in the pty controller. */
+
+	/* Get the required size for a single attribute. */
+	Pike_NT_InitializeProcThreadAttributeList(attrlist, 1, 0, &attrlist_sz);
+
+	if (!(attrlist = malloc(attrlist_sz)) ||
+	    !(Pike_NT_InitializeProcThreadAttributeList(attrlist, 1, 0,
+							&attrlist_sz) &&
+	      (info.lpAttributeList = attrlist)) ||
+	    !Pike_NT_UpdateProcThreadAttribute(attrlist, 0,
+					       PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE,
+					       conpty, sizeof(conpty),
+					       NULL, NULL)) {
+	  /* Out of memory or similar. */
+	  if (attrlist) {
+	    err = GetLastError();
+	    if (!info.lpAttributeList) {
+	      /* InitializeProcThreadAttributeList() failed. */
+	      free(attrlist);
+	    }
+	  } else {
+	    /* malloc() failed. */
+	    err = ERROR_NOT_ENOUGH_MEMORY;
+	  }
+
+	  goto fail;
+	}
+      }
 
 	if((tmp=simple_mapping_string_lookup(optional, "env")))
 	{
@@ -2982,8 +3164,13 @@ void f_create_process(INT32 args)
 	    f_aggregate(ptr+1);
 	    push_string(make_shared_binary_string("\0",1));
 	    o_multiply();
-	    /* FIXME: Wide strings? */
-	    env=(void *)Pike_sp[-1].u.string->str;
+
+	    /* NB: The environment string contains lots of NUL characters,
+	     *     so we must use the low-level variant here.
+	     */
+	    env = low_dwim_utf8_to_utf16(Pike_sp[-1].u.string->str,
+					 Pike_sp[-1].u.string->len);
+	    pop_stack();
 	  }
 	}
 
@@ -2993,27 +3180,39 @@ void f_create_process(INT32 args)
     THREADS_ALLOW_UID();
 
 
-    SetHandleInformation(info.hStdInput, HANDLE_FLAG_INHERIT, HANDLE_FLAG_INHERIT);
-    SetHandleInformation(info.hStdOutput, HANDLE_FLAG_INHERIT, HANDLE_FLAG_INHERIT);
-    SetHandleInformation(info.hStdError, HANDLE_FLAG_INHERIT, HANDLE_FLAG_INHERIT);
-    ret=CreateProcess(filename,
-		      command_line,
-		      NULL,  /* process security attribute */
-		      NULL,  /* thread security attribute */
-		      1,     /* inherithandles */
-		      0,     /* create flags */
-		      env,  /* environment */
-		      dir,   /* current dir */
-		      &info,
-		      &proc);
+    SetHandleInformation(info.StartupInfo.hStdInput, HANDLE_FLAG_INHERIT,
+			 HANDLE_FLAG_INHERIT);
+    SetHandleInformation(info.StartupInfo.hStdOutput, HANDLE_FLAG_INHERIT,
+			 HANDLE_FLAG_INHERIT);
+    SetHandleInformation(info.StartupInfo.hStdError, HANDLE_FLAG_INHERIT,
+			 HANDLE_FLAG_INHERIT);
+    ret = CreateProcessW(filename,
+			 command_line,
+			 NULL,  /* process security attribute */
+			 NULL,  /* thread security attribute */
+			 1,     /* inherithandles */
+			 CREATE_UNICODE_ENVIRONMENT |
+			 EXTENDED_STARTUPINFO_PRESENT,     /* create flags */
+			 env,  /* environment */
+			 dir,   /* current dir */
+			 &info.StartupInfo,
+			 &proc);
     err=GetLastError();
 
     THREADS_DISALLOW_UID();
 
+  fail:
+
     UNLOCK_IMUTEX(&handle_protection_mutex);
 
-    if(env) pop_stack();
-    buffer_free(&buf);
+    if (info.lpAttributeList) {
+      Pike_NT_DeleteProcThreadAttributeList(info.lpAttributeList);
+      free(info.lpAttributeList);
+    }
+    if(env) free(env);
+    if(dir) free(dir);
+    if(filename) free(filename);
+    if(command_line) free(command_line);
 #if 1
     if(t1 != INVALID_HANDLE_VALUE) CloseHandle(t1);
     if(t2 != INVALID_HANDLE_VALUE) CloseHandle(t2);
@@ -3078,12 +3277,12 @@ void f_create_process(INT32 args)
     PROC_FPRINTF("[%d] SystemTags(\"%s\", SYS_Asynch, TRUE, NP_Input, %p, "
                  "NP_Output, %p, NP_Error, %p, %s, %p, TAG_END);\n",
                  getpid(),
-                 storage.cmd_buf.s.str, storage.stdin_b,
+                 buffer_get_string(&storage.cmd_buf), storage.stdin_b,
                  storage.stdout_b, storage.stderr_b,
                  (storage.cwd_lock!=0? "NP_CurrentDir":"TAG_IGNORE"),
                  storage.cwd_lock);
 
-    if(SystemTags(storage.cmd_buf.s.str, SYS_Asynch, TRUE,
+    if(SystemTags(buffer_get_string(&storage.cmd_buf), SYS_Asynch, TRUE,
 		  NP_Input, storage.stdin_b, NP_Output, storage.stdout_b,
 		  NP_Error, storage.stderr_b,
 	          (storage.cwd_lock!=0? NP_CurrentDir:TAG_IGNORE),
@@ -3125,7 +3324,9 @@ void f_create_process(INT32 args)
     int stds[3]; /* stdin, out and err */
     int cterm; /* controlling terminal */
     char *tmp_cwd; /* to CD to */
+    int tmp_cwd_fd = -1;
     char *mchroot;
+    int mchroot_fd = -1;
     char *priority = NULL;
     int *fds;
     int num_fds = 3;
@@ -3205,13 +3406,21 @@ void f_create_process(INT32 args)
 	}
       }
 
-      if((tmp = simple_mapping_string_lookup( optional, "chroot" )) &&
-         TYPEOF(*tmp) == T_STRING && !tmp->u.string->size_shift)
-        mchroot = tmp->u.string->str;
+      if ((tmp = simple_mapping_string_lookup( optional, "chroot" ))) {
+        if (TYPEOF(*tmp) == T_STRING && !tmp->u.string->size_shift) {
+          mchroot = tmp->u.string->str;
+        } else if (TYPEOF(*tmp) == T_OBJECT) {
+          mchroot_fd = fd_from_object(tmp->u.object);
+        }
+      }
 
-      if((tmp = simple_mapping_string_lookup( optional, "cwd" )) &&
-         TYPEOF(*tmp) == T_STRING && !tmp->u.string->size_shift)
-        tmp_cwd = tmp->u.string->str;
+      if ((tmp = simple_mapping_string_lookup( optional, "cwd" ))) {
+        if (TYPEOF(*tmp) == T_STRING && !tmp->u.string->size_shift) {
+          tmp_cwd = tmp->u.string->str;
+        } else if (TYPEOF(*tmp) == T_OBJECT) {
+          tmp_cwd_fd = fd_from_object(tmp->u.object);
+        }
+      }
 
       if((tmp = simple_mapping_string_lookup( optional, "setsid" )) &&
 	 ((TYPEOF(*tmp) == PIKE_T_INT && tmp->u.integer) ||
@@ -3644,6 +3853,8 @@ void f_create_process(INT32 args)
 #endif /* !HAVE_VFORK */
 
       PROC_FPRINTF("[%d] Parent: Wait for child...\n", getpid());
+
+      buf[0] = buf[1] = buf[2] = 0;
       /* Wait for exec or error */
 #if defined(EBADF) && defined(EPIPE)
       /* Attempt to workaround spurious errors from read(2) on FreeBSD. */
@@ -3680,55 +3891,57 @@ void f_create_process(INT32 args)
 	Pike_error("read(2) failed with errno %d.\n", olderrno);
       } else {
 	/* Something went wrong in the child. */
+        int child_errno = buf[1] + ERRNO_OFFSET;
 	switch(buf[0]) {
 	case PROCE_CHDIR:
 	  if (buf[2]) {
-	    Pike_error("chdir(\"/\") in chroot failed. errno:%d.\n", buf[1]);
+            Pike_error("chdir(\"/\") in chroot failed. errno:%d.\n",
+                       child_errno);
 	  }
-	  Pike_error("chdir() failed. errno:%d.\n", buf[1]);
+          Pike_error("chdir() failed. errno:%d.\n", child_errno);
 	  break;
 	case PROCE_DUP:
-	  Pike_error("dup() failed. errno:%d.\n", buf[1]);
+          Pike_error("dup() failed. errno:%d.\n", child_errno);
 	  break;
 	case PROCE_DUP2:
-	  if (buf[1] == EINVAL) {
+          if (child_errno == EINVAL) {
 	    Pike_error("dup2(x, %d) failed with EINVAL.\n", buf[2]);
 	  }
-	  Pike_error("dup2(x, %d) failed. errno:%d.\n", buf[2], buf[1]);
+          Pike_error("dup2(x, %d) failed. errno:%d.\n", buf[2], child_errno);
 	  break;
 	case PROCE_SETGID:
-	  Pike_error("setgid(%d) failed. errno:%d\n", buf[2], buf[1]);
+          Pike_error("setgid(%d) failed. errno:%d\n", buf[2], child_errno);
 	  break;
 #ifdef HAVE_SETGROUPS
 	case PROCE_SETGROUPS:
-	  if (buf[1] == EINVAL) {
+          if (child_errno == EINVAL) {
 	    Pike_error("setgroups() failed with EINVAL.\n"
 		       "Too many supplementary groups (%d)?\n",
 		       storage.num_wanted_gids);
 	  }
-	  Pike_error("setgroups() failed. errno:%d.\n", buf[1]);
+          Pike_error("setgroups() failed. errno:%d.\n", child_errno);
 	  break;
 #endif
 	case PROCE_GETPWUID:
-	  Pike_error("getpwuid(%d) failed. errno:%d.\n", buf[2], buf[1]);
+          Pike_error("getpwuid(%d) failed. errno:%d.\n", buf[2], child_errno);
 	  break;
 	case PROCE_INITGROUPS:
-	  Pike_error("initgroups() failed. errno:%d.\n", buf[1]);
+          Pike_error("initgroups() failed. errno:%d.\n", child_errno);
 	  break;
 	case PROCE_SETUID:
-	  if (buf[1] == EINVAL) {
+          if (child_errno == EINVAL) {
 	    Pike_error("Invalid uid: %d.\n", (int)wanted_uid);
 	  }
-	  Pike_error("setuid(%d) failed. errno:%d.\n", buf[2], buf[1]);
+          Pike_error("setuid(%d) failed. errno:%d.\n", buf[2], child_errno);
 	  break;
 	case PROCE_SETSID:
           Pike_error("setsid() failed.\n");
 	  break;
 	case PROCE_SETCTTY:
-          Pike_error("Failed to set controlling TTY. errno:%d.\n", buf[1]);
+          Pike_error("Failed to set controlling TTY. errno:%d.\n", child_errno);
 	  break;
 	case PROCE_EXEC:
-	  switch(buf[1]) {
+          switch(child_errno) {
 	  case ENOENT:
 	    Pike_error("Executable file not found.\n");
 	    break;
@@ -3742,24 +3955,24 @@ void f_create_process(INT32 args)
 #endif /* E2BIG */
 	  }
 
-	  Pike_error("exec() failed. errno:%d. File not found?\n", buf[1]);
+          Pike_error("exec() failed. errno:%d. File not found?\n", child_errno);
 	  break;
 	case PROCE_CLOEXEC:
 	  Pike_error("set_close_on_exec(%d, 1) failed. errno:%d.\n",
-		     buf[2], buf[1]);
+                     buf[2], child_errno);
 	  break;
 	case PROCE_CLRCLOEXEC:
 	  Pike_error("set_close_on_exec(%d, 0) failed. errno:%d.\n",
-		     buf[2], buf[1]);
+                     buf[2], child_errno);
 	  break;
 	case PROCE_CHROOT:
-	  Pike_error("chroot() failed. errno:%d.\n", buf[1]);
+          Pike_error("chroot() failed. errno:%d.\n", child_errno);
 	  break;
 	case 0:
 	  /* read() probably failed. */
 	default:
-	  Pike_error("Child failed: %d, %d, %d, %d, %d!\n",
-		     buf[0], buf[1], buf[2], e, olderrno);
+          Pike_error("Child failed: %d, %d (%d), %d, %d, %d!\n",
+                     buf[0], child_errno, buf[1], buf[2], e, olderrno);
 	  break;
 	}
       }
@@ -3805,12 +4018,13 @@ void f_create_process(INT32 args)
 
 #ifdef PROC_DEBUG
       if (e < 0) {
+        int ee = errno - ERRNO_OFFSET;
 	char buf[5] = {
-	  '0' + (errno/1000)%10,
-	  '0' + (errno/100)%10,
-	  '0' + (errno/10)%10,
-	  '0' + errno%10,
-	  '\n'
+          '0' + (ee/1000)%10,
+          '0' + (ee/100)%10,
+          '0' + (ee/10)%10,
+          '0' + ee%10,
+          '\n'
 	};
 
 	write(2, debug_prefix, sizeof(debug_prefix));
@@ -3853,13 +4067,14 @@ void f_create_process(INT32 args)
 #endif /* _sys_nsig */
       }
 
+#ifdef HAVE_CHROOT
       if(mchroot)
       {
 	if( chroot( mchroot ) )
         {
 	  /* fprintf is not safe if we use vfork. */
           PROC_FPRINTF("[%d] child: chroot(\"%s\") failed, errno=%d\n",
-                       getpid(), chroot, errno);
+                       getpid(), mchroot, errno);
           PROCERROR(PROCE_CHROOT, 0);
         }
 	if (chdir("/"))
@@ -3869,6 +4084,26 @@ void f_create_process(INT32 args)
 	  PROCERROR(PROCE_CHDIR, 1);
 	}
       }
+
+#ifdef HAVE_FCHDIR
+      if(mchroot_fd != -1)
+      {
+        if (fchdir(mchroot_fd)) {
+          /* fprintf is not safe if we use vfork. */
+          PROC_FPRINTF("[%d] child: fchdir(%d) failed, errno=%d\n",
+                       getpid(), mchroot_fd, errno);
+          PROCERROR(PROCE_CHDIR, 0);
+        }
+        if (chroot("."))
+        {
+          /* fprintf is not safe if we use vfork. */
+          PROC_FPRINTF("[%d] child: chroot(\".\") failed, errno=%d\n",
+                       getpid(), errno);
+          PROCERROR(PROCE_CHROOT, 1);
+        }
+      }
+#endif
+#endif
 
       if(tmp_cwd)
       {
@@ -3880,6 +4115,19 @@ void f_create_process(INT32 args)
           PROCERROR(PROCE_CHDIR, 0);
         }
       }
+
+#ifdef HAVE_FCHDIR
+      if(tmp_cwd_fd != -1)
+      {
+        if( fchdir( tmp_cwd_fd ) )
+        {
+          /* fprintf is not safe if we use vfork. */
+          PROC_FPRINTF("[%d] child: fchdir(%d) failed, errno=%d\n",
+                       getpid(), tmp_cwd_fd, errno);
+          PROCERROR(PROCE_CHDIR, 0);
+        }
+      }
+#endif
 
 #ifdef HAVE_NICE
       if(nice_val)
@@ -4037,8 +4285,9 @@ void f_create_process(INT32 args)
 		/* NOTE: OpenBSD sets errno to EBADF if fd is > than
 		 *       any open fd.
 		 */
-	      } while (UNLIKELY(errno && (errno != EBADF)));
-	      break;
+	      } while (UNLIKELY(errno && (errno != EBADF && errno != ENOSYS)));
+	      if (errno != ENOSYS)
+		break;
 	    }
 #endif
 #ifdef HAVE_BROKEN_F_SETFD
@@ -4317,6 +4566,11 @@ void Pike_f_fork(INT32 args)
     num_threads=1;
 #endif
 
+#if defined(PIKE_USE_MACHINE_CODE) && defined(HAVE_PTHREAD_JIT_WRITE_PROTECT_NP)
+    /* Workaround for spurious crashes when returning to JITed code on macOS */
+    pthread_jit_write_protect_np(1);
+#endif
+
     REINIT_FIFO(sig, unsigned char);
     REINIT_FIFO(wait,wait_data);
 
@@ -4497,7 +4751,7 @@ static void f_pid_status_kill(INT32 args)
 
   get_all_args(NULL, args, "%+", &signum);
 
-  PROC_FPRINTF("[%d] kill: pid=%d, signum=%d\n", getpid(), pid, signum);
+  PROC_FPRINTF("[%d] kill: pid=%d, signum=%"PRINTPIKEINT"d\n", getpid(), pid, signum);
 
   THREADS_ALLOW_UID();
   res = !kill(pid, signum);
@@ -4726,14 +4980,16 @@ static void f_ualarm(INT32 args)
 
 static struct array *atexit_functions;
 
-static void run_atexit_functions(struct callback *UNUSED(cb), void *UNUSED(arg),void *UNUSED(arg2))
+static void run_atexit_functions(struct callback *UNUSED(cb),
+				 void *UNUSED(arg),
+				 void *UNUSED(arg2))
 {
   if(atexit_functions)
   {
     int i;
     for (i = atexit_functions->size; i--;) {
       struct svalue *s = ITEM (atexit_functions) + i;
-      if (!IS_DESTRUCTED (s)) {
+      if (callablep(s)) {
 	safe_apply_svalue (s, 0, 1);
 	pop_stack();
       }
@@ -4957,7 +5213,7 @@ void init_signals(void)
 #ifdef HAVE_PTRACE
   start_new_program();
   /* NOTE: This inherit MUST be first! */
-  low_inherit(pid_status_program, NULL, -1, 0, 0, NULL);
+  low_inherit(pid_status_program, NULL, -1, 0, 0, NULL, NULL);
   set_init_callback(init_trace_process);
   set_exit_callback(exit_trace_process);
 

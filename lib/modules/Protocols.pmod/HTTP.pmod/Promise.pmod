@@ -154,6 +154,8 @@ public Concurrent.Future do_method(string http_method,
 
   Concurrent.Promise p = Concurrent.Promise();
   Session s = Session();
+  // Prevent keep-alive since we won't reuse the Session
+  s->maximum_connection_reuse = 0;
 
   if (args->maxtime || _maxtime) {
     s->maxtime = args->maxtime || _maxtime;
@@ -310,7 +312,7 @@ class Result
 
   //! Returns the charset of the requested document, if given by the
   //! response headers.
-  public string `charset() {
+  public string|zero `charset() {
     string ce = headers["content-type"];
     if (ce && sscanf (ce, "%*s;%*scharset=%*1['\"]%[^'\"]%*1['\"]", ce) == 5)
       return ce;
@@ -351,6 +353,7 @@ protected class Session
         Result ret = Result(url_requested, q, eca && eca[1..]);
         fc(ret);
       }
+      destroy(); // return connection to pool
     }
 
     protected void async_ok(object q)
@@ -382,8 +385,8 @@ protected class Session
         extra_callback_arguments = 0; // to allow garb
     }
 
-    protected void async_data() {
-      string s = con->data();
+    protected void async_data(object q) {
+      string|zero s = con->data();
 
       if (!s)		// data incomplete, try again later
         return;
@@ -399,6 +402,7 @@ protected class Session
         Result ret = Result(url_requested, con, eca && eca[1..], s);
         dc(ret);
       }
+      destroy(); // return connection to pool
     }
 
     //! @ignore

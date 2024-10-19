@@ -30,7 +30,7 @@ void create(string|mapping(string:mixed)|void title,
       char *label=NULL;
       struct object *o1=NULL;
 
-      get_all_args(NULL,args,"%s.%o",&label,&o1);
+      get_all_args(NULL,args,"%c.%o",&label,&o1);
 
       if (o1) {
 #ifdef HAVE_GTK24

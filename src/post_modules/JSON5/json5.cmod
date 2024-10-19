@@ -1,4 +1,4 @@
-/* -*- c -*-
+/* -*- mode: C; c-basic-offset: 4; -*-
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
@@ -68,6 +68,10 @@ static char *err_msg;
     } else if (state->level > 0) return i;				\
     c++;								\
 } while(0)
+
+/* NB: <WinNls.h> defines IS_{HIGH,LOW}_SURROGATE(). */
+#undef IS_HIGH_SURROGATE
+#undef IS_LOW_SURROGATE
 
 #define IS_SURROGATE(x) ((x) >= 0xd800 && (x) < 0xe000)
 #define IS_HIGH_SURROGATE(x) ((x) >= 0xd800 && (x) < 0xdc00)
@@ -174,6 +178,7 @@ static void encode_mapcont (struct encode_context *ctx, struct mapping *m)
 
   NEW_MAPPING_LOOP (md) {
     if (notfirst) {
+      fast_check_threads_etc(8);
       string_builder_putchar (buf, ',');
       if (ctx->indent >= 0) {
 	int indent = ctx->indent;
@@ -191,7 +196,7 @@ static void encode_mapcont (struct encode_context *ctx, struct mapping *m)
     }
 
     if (TYPEOF(k->ind) != T_STRING)
-      Pike_error ("Cannot json5 encode mapping with non-string index %O.\n",
+      Pike_error ("Cannot json5 encode mapping with non-string index %pO.\n",
 		  &k->ind);
     json5_encode_key (ctx, &k->ind);
 
@@ -250,7 +255,7 @@ static void encode_mapcont_canon (struct encode_context *ctx, struct mapping *m)
     }
 
     if (TYPEOF(*ind) != T_STRING)
-      Pike_error ("Cannot json5 encode mapping with non-string index %O.\n",
+      Pike_error ("Cannot json5 encode mapping with non-string index %pO.\n",
 		  ind);
     json5_encode_key (ctx, ind);
 
@@ -286,7 +291,7 @@ static void json5_encode_low_recur (struct encode_context *ctx, struct svalue *v
   check_c_stack (1024);
 
   if (TYPEOF(*val) <= MAX_COMPLEX && BEGIN_CYCLIC (val->u.ptr, 0))
-    Pike_error ("Cyclic data structure - already visited %O.\n", val);
+    Pike_error ("Cyclic data structure - already visited %pO.\n", val);
 
   switch (TYPEOF(*val)) {
     case PIKE_T_STRING: {
@@ -337,6 +342,7 @@ static void json5_encode_low_recur (struct encode_context *ctx, struct svalue *v
 	  }
 	  json5_encode_recur (ctx, ITEM (a));
 	  for (i = 1; i < size; i++) {
+	    fast_check_threads_etc(8);
 	    string_builder_putchar (buf, ',');
 	    if (ctx->indent >= 0) {
 	      int indent = ctx->indent;
@@ -393,7 +399,7 @@ static void json5_encode_low_recur (struct encode_context *ctx, struct svalue *v
 	if (fun < 0) {
 	  int args = 2;
 	  if (!ctx->callback)
-	    Pike_error ("Cannot json5 encode object %O without "
+            Pike_error ("Cannot json5 encode object %pO without "
 			"encode_json5 or encode_json function.\n", val);
 	  if (TYPEOF(*ctx->callback) == PIKE_T_STRING) {
 	    string_builder_shared_strcat (&ctx->buf, ctx->callback->u.string);
@@ -416,7 +422,7 @@ static void json5_encode_low_recur (struct encode_context *ctx, struct svalue *v
 	  apply_low (o, fun, args);
 	}
 	if (TYPEOF(Pike_sp[-1]) != PIKE_T_STRING)
-	  Pike_error ("Expected string from %O->%s(), got %s.\n",
+          Pike_error ("Expected string from %pO->%s(), got %s.\n",
 		      val, enc_name, get_name_of_type (TYPEOF(Pike_sp[-1])));
 	string_builder_shared_strcat (&ctx->buf, Pike_sp[-1].u.string);
 	free_string ((--Pike_sp)->u.string);
@@ -575,7 +581,7 @@ PIKEFUN string escape_string (string str, void|int flags)
 
 #include "json5_parser.c"
 
-void low_validate(struct pike_string *data, int flags) {
+static void low_validate(struct pike_string *data, int flags) {
     ptrdiff_t stop;
     struct parser_state state;
 
@@ -593,7 +599,7 @@ void low_validate(struct pike_string *data, int flags) {
     return;
 }
 
-ptrdiff_t parse_json5_pcharp( PCHARP data, size_t len, int flags, char **err_out )
+static ptrdiff_t parse_json5_pcharp( PCHARP data, size_t len, int flags, char **err_out )
 {
     ptrdiff_t stop;
     struct parser_state state;
@@ -611,7 +617,7 @@ ptrdiff_t parse_json5_pcharp( PCHARP data, size_t len, int flags, char **err_out
     return stop;
 }
 
-void low_decode(struct pike_string *data, int flags) {
+static void low_decode(struct pike_string *data, int flags) {
     ptrdiff_t stop;
     struct parser_state state;
 

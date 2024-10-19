@@ -188,7 +188,7 @@ class Socket {
     fd_fail("Got unexpected out of band data on %O: %O", o->query_fd(), foo);
   }
 
-  void create(object|void o)
+  protected void create(object|void o)
   {
     got_callback();
     start();
@@ -272,7 +272,7 @@ class BufferSocket {
     }
   }
 
-  void read_callback(mixed id, Stdio.Buffer in)
+  void read_callback(mixed id, Stdio.Buffer|string in)
   {
     got_callback();
     DEBUG_WERR("read_callback[%O]: Got %O\n", o->query_fd(), in);
@@ -291,7 +291,7 @@ class BufferSocket {
     fd_fail("Got unexpected out of band data on %O: %O", o->query_fd(), foo);
   }
 
-  void create(object|void o)
+  protected void create(object|void o)
   {
     ::create(o);
     if (Socket::o->set_buffer_mode) {
@@ -413,7 +413,7 @@ void got_oob0(object socket, string got)
 
 inherit Stdio.Port : port1;
 inherit Stdio.Port : port2;
-void create() {
+protected void create() {
 #ifdef BACKEND
   port1::set_backend(backend);
   port2::set_backend(backend);
@@ -541,7 +541,7 @@ array(object) spair(int type)
   case 2:
     sock1 = Stdio.FakePipe();
     DO_IF_BACKEND(sock1->set_backend(backend));
-    sock2 = sock1->get_other();
+    sock2 = sock1->other;
     break;
   }
   DO_IF_BACKEND(sock2->set_backend(backend));
@@ -639,6 +639,9 @@ void finish(program Socket)
 	break;
 
       case 6..14:
+#ifdef SOCKTEST_FORWARD
+        tests = (_tests - 3) * 2;
+#else
         if( _tests>6 && num_failed == last_num_failed )
         {
           _tests = 14;
@@ -646,6 +649,7 @@ void finish(program Socket)
           return;
         }
         tests=(17-_tests)*2;
+#endif
 	log_status("Testing "+(tests*2)+" sockets");
 	for(int e=0;e<tests;e++) stdtest(Socket);
         stdtest(Socket);
@@ -653,6 +657,9 @@ void finish(program Socket)
 
       case 15..27:
 	if (max_fds > 64) {
+#ifdef SOCKTEST_FORWARD
+          tests = (_tests - 3) * 2;
+#else
           if( _tests>15 && num_failed == last_num_failed )
           {
             _tests = 27;
@@ -661,6 +668,7 @@ void finish(program Socket)
           }
 	  /* These tests require more than 64 open fds. */
           tests=(39-_tests)*2;
+#endif
 	  log_status("Testing "+(tests*2)+" sockets");
 	  for(int e=0;e<tests;e++) stdtest(Socket);
 	  stdtest(Socket);
@@ -671,6 +679,9 @@ void finish(program Socket)
 	/* FALL_THROUGH */
 
       case 28..49:
+#ifdef SOCKTEST_FORWARD
+        tests = _tests - 26;
+#else
         if( _tests>28 && num_failed == last_num_failed )
         {
           _tests = 49;
@@ -678,6 +689,7 @@ void finish(program Socket)
           return;
         }
         tests=51-_tests;
+#endif
 	log_status("Copying "+((tests/2)*(2<<(tests/2))*11)+" bytes of data on "+(tests&~1)+" "+(tests&1?"pipes":"sockets"));
 	for(int e=0;e<tests/2;e++)
 	{
@@ -702,6 +714,9 @@ void finish(program Socket)
         break;
 
       case 50..55:
+#ifdef SOCKTEST_FORWARD
+        tests = _tests - 48;
+#else
         if( _tests>50 && num_failed == last_num_failed )
         {
           _tests = 55;
@@ -709,6 +724,7 @@ void finish(program Socket)
           return;
         }
         tests=57-_tests;
+#endif
 	log_status("Copying "+(tests*(2<<tests)*11)+" bytes of data on "+(tests*2)+" fake pipes");
 	for(int e=0;e<tests;e++)
 	{

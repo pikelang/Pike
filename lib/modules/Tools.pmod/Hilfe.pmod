@@ -32,7 +32,7 @@ class Command {
 
   //! Returns a one line description of the command. This help should
   //! be shorter than 54 characters.
-  string help(string what);
+  string help(string|zero what);
 
   //! A more elaborate documentation of the command. This should be
   //! less than 68 characters per line.
@@ -116,8 +116,9 @@ protected class CommandSet {
   }
 
   protected class Reswriter (string format) {
-    void `()(function(string, mixed ... : int) w, string sres, int num,
-	     mixed res, int last_compile_time, int last_eval_time) {
+    protected void `()(function(string, mixed ... : int) w,
+		       string sres, int num, mixed res,
+		       int last_compile_time, int last_eval_time) {
       mixed err = catch {
 	if(!sres)
 	  w("Ok.\n");
@@ -347,7 +348,7 @@ by pressing F1.";
       docs = module;
 
     object child;
-    if (docs?->documentation)
+    if (docs->?documentation)
     {
       if (docs->objects && sizeof(docs->objects))
         e->safe_write("\n%{%s\n%}\n", docs->objects->print());
@@ -428,7 +429,7 @@ Enter \"help me more\" for further Hilfe help.
 
 protected class CommandDot {
   inherit Command;
-  string help(string what) { return 0; }
+  string|zero help(string what) { return 0; }
 
   local protected constant usr_vector_a = ({
     89, 111, 117, 32, 97, 114, 101, 32, 105, 110, 115, 105, 100, 101, 32, 97,
@@ -485,7 +486,7 @@ class CommandDump {
   protected function(array(string)|string, mixed ... : int) write;
 
   string help(string what) { return "Dump variables and other info."; }
-  string doc(string what, string with) { return documentation_dump; }
+  string doc(string|zero what, string|zero with) { return documentation_dump; }
 
   protected void wrapper(Evaluator e) {
     if(!e->last_compiled_expr) {
@@ -571,7 +572,7 @@ class CommandDump {
 
 protected class CommandHej {
   inherit Command;
-  string help(string what) { return 0; }
+  string|zero help(string what) { return 0; }
   void exec(Evaluator e, string line, array(string) words,
 	    array(string) tokens) {
     if(line[0]=='.') e->safe_write( (string)({ 84,106,97,98,97,33,10 }) );
@@ -755,57 +756,6 @@ protected class SubSysLogger {
   int(0..1) runningp() { return running; }
 }
 
-protected class SubSysPhish {
-
-  constant startdoc = "phish\n"
-    "\tStart the Pike Hilfe Shell.\n";
-  constant stopdoc = "phish\n\tTurns off phish.\n";
-
-  protected int(0..1) running;
-  protected int(0..1) in_expr;
-  protected Evaluator e;
-
-  int(0..1) runningp() { return running; }
-
-  protected int(0..1) do_cmd(string cmd) {
-    if(in_expr) {
-      return 0;
-    }
-
-    array c = cmd[..<1]/" ";
-    if(e->commands[c[0]] || cmd==".\n")
-      return 0;
-
-    string src = c[0]+"(";
-    array arg = ({});
-    for(int i=1; i<sizeof(c); i++) {
-      if(c[i][0]=="\"") {
-	string str = "";
-	do {
-	  str += c[i++];
-	} while(i+1<sizeof(c) && c[i+1][-1]!="\"");
-	arg += ({ str });
-      }
-      else
-	arg += ({ "\"" + c[i] + "\"" });
-    }
-    e->add_buffer(src + arg*"," + ");\n");
-    return 1;
-  }
-
-  void start(Evaluator _e, array(string) words) {
-    if(running) return;
-    e = _e;
-    e->add_input_hook(do_cmd);
-    running = 1;
-  }
-
-  void stop(Evaluator e, void|array(string) words) {
-    e->remove_input_hook(do_cmd);
-    running = 0;
-  }
-}
-
 //
 // Support stuff..
 //
@@ -822,7 +772,6 @@ protected class SubSystems {
       "backend":SubSysBackend(),
 #endif
       "logging":SubSysLogger(),
-      "phish":SubSysPhish(),
     ]);
   }
 
@@ -987,12 +936,12 @@ class Expression {
   }
 
   //! The number of non-whitespace tokens in the expression.
-  int _sizeof() {
+  protected int _sizeof() {
     return sizeof(positions);
   }
 
   //! Returns a token or a token range without whitespaces.
-  string `[](int f, void|int t) {
+  protected string|zero `[](int f, void|int t) {
     if(f>sizeof(positions) || -f>sizeof(positions))
       return 0;
     if(!t)
@@ -1005,7 +954,7 @@ class Expression {
   }
 
   //! Replaces a token with a new token.
-  string `[]= (int f, string v) {
+  protected string `[]= (int f, string v) {
     return tokens[positions[f]] = v;
   }
 
@@ -1024,7 +973,7 @@ class Expression {
   //! @returns
   //!   Returns an error message as a string if the expression
   //!   contains a forbidden modifier, otherwise @expr{0@}.
-  string check_modifiers() {
+  string|zero check_modifiers() {
     foreach(sort(values(positions)), int pos)
       if(modifier[tokens[pos]])
 	return "Hilfe Error: Modifier \"" + tokens[pos] +
@@ -1089,6 +1038,14 @@ class Expression {
     if( t=="." ) position++;
 
     for(; position<sizeof(positions); position++) {
+      // NB: It seems the tokenizer does not recognize multiset start
+      //     and multiset end as separate tokens.
+      if ((`[](position+1) == "(") && (`[](position+2) == "<")) {
+        // Generic binding.
+        position = find_matching("(", position+2);
+        if (position < 0) return -1;
+        if (`[](position-1) != ">") return -1;
+      }
       if( notype[ `[](position+1) ] )
         return -1;
       if( `[](position+1)=="." ) {
@@ -1166,7 +1123,8 @@ class Expression {
 //! that manages the current state of the parser. Essentially tokens are
 //! entered in one end and complete expressions are output in the other.
 //! The parser object is accessible as ___Hilfe->state from Hilfe expressions.
-protected class ParserState {
+protected class ParserState(Evaluator evaluator) {
+
   protected ADT.Stack pstack = ADT.Stack();
   protected constant starts = ([ ")":"(", "}":"{", "]":"[",
 			       ">)":"(<", "})":"({", "])":"([" ]);
@@ -1196,6 +1154,11 @@ protected class ParserState {
             block = "class stop";
           pstack->push(token);
           continue;
+
+        case "(":
+          if(block=="class" && last=="class")
+            block = "class stop";
+          break;
 
         case "lambda":
           block = token;
@@ -1309,7 +1272,7 @@ protected class ParserState {
   //! Sends the input @[line] to @[Parser.Pike] for tokenization,
   //! but keeps a state between each call to handle multiline
   //! /**/ comments and multiline #"" strings.
-  array(string) push_string(string line) {
+  array(string)|zero push_string(string line) {
     array(string) tokens;
     array err;
     if(sizeof(line) && line[0]=='#') {
@@ -1331,8 +1294,12 @@ protected class ParserState {
 	return 0;
       }
       if( has_prefix(tmp, "#pragma") ){
-	caught_error = "Pragma does not work inside Hilfe.\n";
-	return 0;
+        if( tmp=="#pragmastrict_types\n" ) {
+          evaluator->strict_types = 1;
+        } else {
+          caught_error = "Pragma does not work inside Hilfe.\n";
+        }
+        return 0;
       }
       if( has_prefix(tmp, "#if") || has_prefix(tmp, "#elif") ||
 	  has_prefix(tmp, "#else") || has_prefix(tmp, "#endif") ) {
@@ -1341,8 +1308,14 @@ protected class ParserState {
 	return 0;
       }
     }
-    if(err = catch( tokens = Parser.Pike.split(line, low_state) )) {
+    if(err = catch( tokens = Parser.Pike.low_split(line, low_state) )) {
       caught_error = err[0];
+      return 0;
+    }
+    if (low_state->remains && has_prefix(low_state->remains, "\"")) {
+      caught_error =
+        Parser.Pike.UnterminatedStringError(tokens*"", low_state->remains)[0];
+      m_delete(low_state, "remains");
       return 0;
     }
     return tokens;
@@ -1443,7 +1416,7 @@ class Evaluator {
   mapping(string:Command) commands = ([]);
 
   //! Keeps the state, e.g. multiline input in process etc.
-  ParserState state = ParserState();
+  ParserState state = ParserState(this);
 
   //! The locally defined variables (name:value).
   mapping(string:mixed) variables;
@@ -1475,7 +1448,7 @@ class Evaluator {
   //! Adds another output function.
   void add_writer(object|function(string : int(0..)) new) {
     if(arrayp(write))
-      write += ({ new });
+      write = ([array]write) + ({ new });
     else if (write)
       write = ({ write, new });
     else
@@ -1485,7 +1458,7 @@ class Evaluator {
   //! Removes an output function.
   void remove_writer(object|function old) {
     if(arrayp(write))
-      write -= ({ old });
+      write = ([array]write) - ({ old });
     else
       write = 0;
   }
@@ -1742,12 +1715,17 @@ class Evaluator {
         if(type=="class") top=0;
 	multiset(string) new_scope = symbols+(<>);
 
-	// No () for catch, gauge, do and possibly class.
+        // No () for gauge, do and possibly class.
 	// Get variable names for next scope clobber.
 	if(expr[p]=="(") {
 	  p++;
 
 	  switch(type) {
+
+          case "catch":
+            p = relocate(expr, symbols, new_scope, p);
+            p++;
+            break;
 
 	  case "foreach":
 	    p = relocate(expr, symbols, new_scope, p, ",");
@@ -1816,20 +1794,20 @@ class Evaluator {
   // Some debug code to intercept calls to relocate. Aspect
   // Oriented Programming would be handy here...
   protected int relocate( Expression expr, multiset(string) symbols,
-			multiset(string) next_symbols, int p,
-			void|string safe_word, void|int(0..1) top) {
+			  multiset(string)|zero next_symbols, int p,
+			  void|string safe_word, void|int(0..1) top) {
     int op = p;
     werror("%O %O %d\n", (symbols?indices(symbols||(<>))*", ":0),
            (next_symbols?indices(next_symbols||(<>))*", ":0), top );
     p = _relocate(expr, symbols, next_symbols, p, safe_word, top);
-    werror(" relocate %O %O\n", op, expr[op..p]);
+    werror(" relocate %O..%O %O\n", op, p, expr[op..p]);
     return p;
   }
 #endif
 
   protected int relocate( Expression expr, multiset(string) symbols,
-			multiset(string) next_symbols, int p,
-			void|string safe_word, void|int(0..1) top) {
+			  multiset(string)|zero next_symbols, int p,
+                          void|string safe_word, void|int(0..1) top) {
     // Type declaration?
     int pos = expr->endoftype(p);
     if(pos>=0) {
@@ -1988,7 +1966,7 @@ class Evaluator {
 
   //! Parses a Pike expression. Returns 0 if everything went well,
   //! or a string with an error message otherwise.
-  string parse_expression(Expression expr)
+  string|zero parse_expression(Expression expr)
   {
     // Check for modifiers
     expr->check_modifiers();
@@ -2049,7 +2027,7 @@ class Evaluator {
 
       case "class":
 
-	if(expr[1]=="{") {
+	if(expr[1]=="{" || expr[1]=="(") {
 	  // Unnamed class ("class {}();").
 	  evaluate("return " + expr->code(), 1);
 	}
@@ -2175,7 +2153,7 @@ class Evaluator {
 
     mapping(string:mixed) get_default_module() {
       object compat = get_active_compilation_handler();
-      if (compat?->get_default_module) {
+      if (compat->?get_default_module) {
 	// Support things like @expr{7.4::rusage}.
 	return (compat->get_default_module()||all_constants()) + hilfe_symbols;
       }
@@ -2234,7 +2212,7 @@ class Evaluator {
   //! If a new variable is compiled to be tested, its name
   //! should be given in @[new_var] so that magically defined
   //! entities can be undefined and a warning printed.
-  object hilfe_compile(string f, void|string new_var)
+  object|zero hilfe_compile(string f, void|string new_var)
   {
     if(new_var && commands[new_var])
       safe_write("Hilfe Warning: Command %O no longer reachable. "
@@ -2286,7 +2264,7 @@ class Evaluator {
 
       map(imports, lambda(string f) { return "import "+f+";\n"; }) * "" +
 
-      "mapping(string:mixed) ___hilfe = ___Hilfe->variables;\n# 1\n" + f +
+      "mapping(string:mixed)|zero ___hilfe = ___Hilfe->variables;\n# 1\n" + f +
       "\n";
 
     HilfeCompileHandler handler = HilfeCompileHandler (sizeof (backtrace()));
@@ -2356,11 +2334,11 @@ class Evaluator {
       float eval_time = gauge {
 	err = catch {
 	  res = o->___HilfeWrapper();
-	  trace(0);
-#if constant(_debug)
-	  _debug(0);
-#endif
 	};
+	trace(0);
+#if constant(_debug)
+	_debug(0);
+#endif
       };
       last_eval_time = (int)(eval_time*1000000);
 
@@ -2784,7 +2762,7 @@ class StdinHilfe
           completions[count] += filetypes[stat->type]||"";
 
         stat = file_stat(dir+"/"+item, 1);
-        if (stat?->type == "lnk")
+        if (stat->?type == "lnk")
           completions[count] += filetypes["lnk"];
       }
       return completions;
@@ -3016,7 +2994,10 @@ class GenericAsyncHilfe (Stdio.File infile, Stdio.File outfile)
 
   void send_output(string s, mixed ... args)
   {
-    outbuffer+=sprintf(s,@args);
+    if (sizeof(args))
+      outbuffer+=sprintf(s,@args);
+    else
+      outbuffer+=s;
     write_callback();
   }
 
@@ -3085,9 +3066,10 @@ format
 
 hedda
     Initializes some variables for quick access, unless they are
-    already defined. These variables may be added: mixed foo,
-    mixed bar, int i, float f=0.0, mapping m=([]), array a=({})
-    and string s=\"\".
+    already defined. These variables may be added: mixed foo, mixed
+    bar, int i, float f=0.0, mapping m=([]), array a=({}) and string
+    s=\"\". The indices function will also sort indices made on
+    objects and programs.
 
 history
     Change the maximum number of entries that are kept in the

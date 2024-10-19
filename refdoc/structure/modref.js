@@ -621,7 +621,7 @@ PikeDoc = (function() {
     lowNavbar(s, 'Directives', types.directive, '');
     lowNavbar(s, 'Methods',    types.method,    '()');
     lowNavbar(s, 'Operators',  types.operator,  '()');
-    lowNavbar(s, 'Members',    types.member,    '()');
+    lowNavbar(s, 'Members',    types.member,    '');
     lowNavbar(s, 'Namespaces', types.namespace, '::');
     lowNavbar(s, 'Appendices', types.appendix,  '');
 

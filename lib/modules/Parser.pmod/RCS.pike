@@ -100,8 +100,9 @@ string rcs_file_name;
 //! @param max_revisions
 //!   Maximum number of revisions to process. If unset, all revisions
 //!   will be processed.
-void create(string|void file_name, string|int(0..0)|void file_contents,
-            void|int max_revisions)
+protected void create(string|void file_name,
+		      string|int(0..0)|void file_contents,
+		      void|int max_revisions)
 {
   if(!file_name)
   {
@@ -346,7 +347,7 @@ void parse_deltatext_sections(array raw,
 {
   DeltatextIterator iterate = DeltatextIterator(raw, progress_callback,
 						callback_args);
-  while(iterate->next());
+  foreach(iterate;;);
 }
 
 //! Iterator for the deltatext sections of the RCS file. Typical usage:
@@ -406,46 +407,29 @@ class DeltatextIterator
   //! @returns
   //! the number of deltatext entries processed so far (0..N-1, N
   //! being the total number of revisions in the rcs file)
-  int index()
+  protected int _iterator_index()
   {
-    return this_no;
+    if (!this_no) return UNDEFINED;
+    return this_no - 1;
   }
 
   //! @returns
   //! the @[Revision] at whose deltatext data we are, updated with its info
-  Revision value()
+  protected Revision _iterator_value()
   {
     return revisions[this_rev];
   }
 
-  //! @returns
-  //! 1 if the iterator has processed all deltatext entries, 0 otherwise.
-  int(0..1) `!()
-  {
-    return finished;
-  }
-
-  //! Advance @[nsteps] sections.
+  //! Advance the iterator one step.
   //!
-  //! @returns
-  //!   Returns the iterator object.
-  this_program `+=(int nsteps)
+  //! Returns @[UNDEFINED] when the iterator is finished, and
+  //! otherwise the same as @[_iterator_index()].
+  protected int _iterator_next()
   {
-    while(nsteps--)
-      next();
-    return this;
-  }
-
-  //! like @expr{@[`+=](1)@}, but returns 0 if the iterator is finished
-  int(0..1) next()
-  {
-    return read_next() && (++this_no, 1);
-  }
-
-  //! Restart not implemented; always returns 0 (==failed)
-  int(0..1) first()
-  {
-    return 0;
+    if (read_next()) {
+      return this_no++;
+    }
+    return UNDEFINED;
   }
 
   //! Chops off the first deltatext section from the token array @[raw] and
@@ -573,8 +557,8 @@ this_program parse(array raw, void|function(string:void) progress_callback,
 //! cut down memory use at the expense of slow access to older revisions.
 //! @seealso
 //!   @[expand_keywords_for_revision()]
-string get_contents_for_revision( string|Revision rev,
-				  void|int(0..1) dont_cache_data)
+string|zero get_contents_for_revision( string|Revision rev,
+                                       void|int(0..1) dont_cache_data)
 {
   if( stringp( rev ) ) rev = revisions[rev];
   if( !rev ) return 0;
@@ -595,7 +579,7 @@ string get_contents_for_revision( string|Revision rev,
   if (!base)
     return 0;
 
-  Revision clear_in_next_iter = 0;
+  object(Revision)|zero clear_in_next_iter = 0;
   foreach (reverse(diff_revs), Revision cur) {
     string diff = cur->rcs_text;
     String.Buffer new = String.Buffer();
@@ -670,7 +654,7 @@ string get_contents_for_revision( string|Revision rev,
   }
 
   //  Return for requested revision
-  string res = rev->text;
+  string|zero res = rev->text;
   if (dont_cache_data)
     rev->text = 0;
   return res;
@@ -713,8 +697,9 @@ protected string kwchars = Array.uniq(sort("Author" "Date" "Header" "Id" "Name"
 //!
 //! @seealso
 //!   @[get_contents_for_revision]
-string expand_keywords_for_revision( string|Revision rev, string|void text,
-				     int|void expansion_mode )
+string|zero
+  expand_keywords_for_revision( string|Revision rev, string|void text,
+                                int|void expansion_mode )
 {
   if( stringp( rev ) ) rev = revisions[rev];
   if( !rev ) return 0;
@@ -807,7 +792,7 @@ class Revision
   //!
   //! @seealso
   //!   @[next], @[prev], @[rcs_prev]
-  string rcs_next;
+  string|zero rcs_next;
 
   //! The revision that this revision is based on,
   //! or @expr{0@} if it is the HEAD.
@@ -818,7 +803,7 @@ class Revision
   //!
   //! @seealso
   //!   @[rcs_next]
-  string rcs_prev;
+  string|zero rcs_prev;
 
 
   //! The revision of the ancestor of this revision, or @expr{0@} if this was
@@ -826,14 +811,14 @@ class Revision
   //!
   //! @seealso
   //!   @[next]
-  string ancestor;
+  string|zero ancestor;
 
   //! The revision that succeeds this revision, or @expr{0@} if none exists
   //! (ie if this is the HEAD of the trunk or of a branch).
   //!
   //! @seealso
   //!   @[ancestor]
-  string next;
+  string|zero next;
 
   //! The log message associated with the revision.
   string log;
@@ -874,7 +859,7 @@ class Revision
   //!
   //! @seealso
   //!   @[get_contents_for_revision()], @[rcs_text]
-  string text;
+  string|zero text;
 
   protected string _sprintf(int type)
   {

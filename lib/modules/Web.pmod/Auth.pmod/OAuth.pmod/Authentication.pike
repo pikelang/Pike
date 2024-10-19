@@ -11,13 +11,13 @@ inherit .Client : oauth;
 #include "oauth.h"
 
 //! The endpoint to send request for a request token.
-constant REQUEST_TOKEN_URL = 0;
+constant REQUEST_TOKEN_URL = "";
 
 //! The endpoint to send request for an access token.
-constant ACCESS_TOKEN_URL = 0;
+constant ACCESS_TOKEN_URL = "";
 
 //! The enpoint to redirect to when authorize an application.
-constant USER_AUTH_URL = 0;
+constant USER_AUTH_URL = "";
 
 //! Creates an OAuth object.
 //!

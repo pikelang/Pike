@@ -73,7 +73,7 @@ void got_connection(object f)
 //!
 //! @param max_call_threads
 //!   Maximum number of concurrent threads.
-void create(string host, int p, void|int _max_call_threads)
+protected void create(string host, int p, void|int _max_call_threads)
 {
   portno = p;
   max_call_threads = _max_call_threads;

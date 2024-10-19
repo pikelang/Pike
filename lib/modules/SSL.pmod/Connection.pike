@@ -38,8 +38,8 @@ private constant Session = .Session;
 private constant Context = .Context;
 private constant Buffer = .Buffer;
 
-Session session;
-Context context;
+Session|zero session;
+Context|zero context;
 
 array(State) pending_read_state = ({});
 array(State) pending_write_state = ({});
@@ -67,19 +67,21 @@ string(8bit) server_verify_data = "";
 //      ClientHello and the ServerHello.
 
 //! The active @[Cipher.KeyExchange] (if any).
-.Cipher.KeyExchange ke;
+.Cipher.KeyExchange|zero ke;
 
 ProtocolVersion version;
 ProtocolVersion client_version; /* Used to check for version roll-back attacks. */
 
+int(0..1) dtls;			/* Indicates whether DTLS or not. */
+
 //! Random cookies, sent and received with the hello-messages.
-string(8bit) client_random;
-string(8bit) server_random;
+string(8bit)|zero client_random;
+string(8bit)|zero server_random;
 
 private constant Packet = .Packet;
 private constant Alert = .Alert;
 
-int(0..3) tickets_enabled = 0;
+int(0..1) tickets_enabled = 0;
 
 // RFC 7301 (ALPN) 3.1:
 //   Unlike many other TLS extensions, this extension does not establish
@@ -92,7 +94,7 @@ int(0..3) tickets_enabled = 0;
 //! @note
 //!   Note that this is a connection property, and needs to be renegotiated
 //!   on session resumption.
-string(8bit) application_protocol;
+string(8bit)|zero application_protocol;
 
 Alert alert(int(1..2) level, int(8bit) description,
             string|void message)
@@ -104,10 +106,9 @@ Alert alert(int(1..2) level, int(8bit) description,
 Buffer get_signature_algorithms()
 {
   Buffer sign_algs = Buffer();
-  foreach(context->get_signature_algorithms(), [int hash, int sign])
+  foreach(context->get_signature_algorithms(), int signature_scheme)
   {
-    sign_algs->add_int(hash, 1);
-    sign_algs->add_int(sign, 1);
+    sign_algs->add_int(signature_scheme, 2);
   }
   return sign_algs;
 }
@@ -230,8 +231,8 @@ Packet heartbeat_packet(Buffer s)
   return Packet(version, PACKET_heartbeat, s->read());
 }
 
-protected Crypto.AES heartbeat_encode;
-protected Crypto.AES heartbeat_decode;
+protected Crypto.AES|zero heartbeat_encode;
+protected Crypto.AES|zero heartbeat_decode;
 
 Packet heartbleed_packet()
 {
@@ -270,7 +271,7 @@ Packet heartbleed_packet()
 }
 
 // Verify that a certificate chain is acceptable
-private array(Standards.X509.TBSCertificate)
+private array(Standards.X509.TBSCertificate)|zero
   verify_certificate_chain(array(string) certs)
 {
   // If we're not requiring the certificate, and we don't provide one,
@@ -316,11 +317,14 @@ private array(Standards.X509.TBSCertificate)
   // chain is unbroken.
   mapping result = ([]);
   catch {
-    result = Standards.X509.verify_certificate_chain(certs,
+    result = [mapping]
+      Standards.X509.verify_certificate_chain(certs,
                                      context->trusted_issuers_cache,
-                                     context->auth_level >= AUTHLEVEL_require);
+                                     context->auth_level >= AUTHLEVEL_require,
+                                     ([ "verifier_algorithms"
+                                        : context->verifier_algorithms ]));
   };
-  if( !result ) return 0;
+  if( !result->verified ) return 0;
 
   if (session->server_name && sizeof([array](result->certificates || ({})))) {
     array(Standards.X509.TBSCertificate) certs =
@@ -331,8 +335,25 @@ private array(Standards.X509.TBSCertificate)
     if (cert->ext_subjectAltName_dNSName) {
       globs += cert->ext_subjectAltName_dNSName;
     }
-    result->verified = glob(map(globs, lower_case),
-			    lower_case(session->server_name));
+
+    array(string) split_server_name = lower_case(session->server_name) / ".";
+
+    result->verified = 0;
+
+OUTER: foreach (map(globs, lower_case);; string the_glob) {
+      array(string) split_glob = the_glob / ".";
+
+      if (sizeof(split_glob) != sizeof(split_server_name))
+        continue;
+
+      foreach (split_glob; int i; string the_glob) {
+        if (!glob(the_glob, split_server_name[i]))
+          continue OUTER;
+      }
+
+      result->verified = 1;
+      break;
+    }
   }
 
   // This data isn't actually used internally.
@@ -369,7 +390,7 @@ int(0..1) handle_certificates(Buffer packet)
   }
 
   // This array is in the reverse order of the certs array.
-  array(Standards.X509.TBSCertificate) decoded =
+  array(Standards.X509.TBSCertificate)|zero decoded =
     verify_certificate_chain(certs);
   if( !decoded )
   {
@@ -408,7 +429,8 @@ void derive_master_secret(string(8bit) premaster_secret)
   } else {
     session->master_secret =
       session->cipher_spec->prf(premaster_secret, "master secret",
-				client_random + server_random, 48);
+				[string(8bit)](client_random + server_random),
+                                48);
   }
 
   new_cipher_states();
@@ -451,18 +473,18 @@ void shutdown()
 //
 
 
-State current_read_state;
-State current_write_state;
-Stdio.Buffer read_buffer = Stdio.Buffer();
-Packet packet;
+State|zero current_read_state;
+State|zero current_write_state;
+Stdio.Buffer|zero read_buffer = Stdio.Buffer();
+Packet|zero packet;
 
 //! Number of application data bytes sent by us.
-int sent;
+int|zero sent;
 
 //! Bitfield with the current connection state.
 ConnectionState state = CONNECTION_handshaking;
 
-function(object,int|object,string:void) alert_callback;
+function(object,int|object,string:void)|zero alert_callback;
 
 constant PRI_alert = 1;
 constant PRI_urgent = 2;
@@ -477,7 +499,9 @@ string describe_state()
 {
   if (!state) return "ready";
   array(string) res = ({});
-  if (state & CONNECTION_handshaking) res += ({ "handshaking" });
+  if (state & CONNECTION_handshaking) {
+    res += ({ "handshaking(" + fmt_constant(handshake_state, "STATE") + ")" });
+  }
   if (state & CONNECTION_local_failing) {
     if (state & CONNECTION_local_fatal) {
       res += ({ "local_fatal" });
@@ -513,7 +537,7 @@ void set_alert_callback(function(object,int|object,string:void) callback)
 
 //! Low-level receive handler. Returns a packet, an alert, or zero if
 //! more data is needed to get a complete packet.
-protected Packet recv_packet()
+protected object(Packet)|zero recv_packet()
 {
   if (!packet)
     packet = Packet(version, 2048);
@@ -641,8 +665,7 @@ int(-1..2) to_write(Stdio.Buffer output)
   if (packet->content_type == PACKET_alert)
   {
     if (packet->level == ALERT_fatal) {
-      state = [int(0..0)|ConnectionState](state | CONNECTION_local_fatal |
-					  CONNECTION_peer_closed);
+      state = [int(0..0)|ConnectionState](state | CONNECTION_local_fatal);
       current_read_state = UNDEFINED;
       pending_read_state = ({});
       // SSL3 5.4:
@@ -658,7 +681,7 @@ int(-1..2) to_write(Stdio.Buffer output)
       state = [int(0..0)|ConnectionState](state | CONNECTION_local_closed);
     }
   }
-  packet = current_write_state->encrypt_packet(packet, context);
+  packet = [object]current_write_state->encrypt_packet(packet, context);
   if (packet->content_type == PACKET_change_cipher_spec) {
     if (sizeof(pending_write_state)) {
       current_write_state = pending_write_state[0];
@@ -708,20 +731,26 @@ int send_streaming_data (string(8bit) data)
   return size;
 }
 
-// @returns
-// @int
-//   @elem value -1
-//     A Fatal error occurred and processing should stop.
-//   @elem value 0
-//     Processing can continue.
-//   @elem value 1
-//     Connection should close.
-// @endint
-protected int(-1..1) handle_alert(string s)
+//! Handle an alert received from the peer.
+//!
+//! @param level
+//!   Alert level; either @[ALERT_warning] or @[ALERT_fatal].
+//!
+//! @param description
+//!   Alert description code; one of
+//!   @expr{indices(SSL.Constants.ALERT_descriptions)@}.
+//!
+//! @returns
+//! @int
+//!   @value -1
+//!     A Fatal error occurred and processing should stop.
+//!   @value 0
+//!     Processing can continue.
+//!   @value 1
+//!     Connection should close.
+//! @endint
+int(-1..1) handle_alert(int level, int description)
 {
-  // sizeof(s)==2, checked at caller.
-  int level = s[0];
-  int description = s[1];
   COND_FATAL(!(ALERT_levels[level] && ALERT_descriptions[description]),
              ALERT_unexpected_message, "Invalid alert\n");
 
@@ -771,8 +800,8 @@ protected int(-1..1) handle_alert(string s)
   }
 #ifdef SSL3_DEBUG
   else
-    werror("SSL.Connection: Received warning alert %O\n",
-           ALERT_descriptions[description]);
+    SSL3_DEBUG_MSG("SSL.Connection: Received warning alert %O\n",
+                   ALERT_descriptions[description]);
 #endif
   return 0;
 }
@@ -822,7 +851,7 @@ void handle_heartbeat(string(8bit) s)
   SSL3_DEBUG_MSG("SSL.Connection: Heartbeat %s (%d bytes)\n",
 		 fmt_constant(hb_type, "HEARTBEAT_MESSAGE"), hb_len);
 
-  string(8bit) payload;
+  string(8bit) payload = "";
   int(0..) pad_len = 16;
 
   // RFC 6520 4:
@@ -886,6 +915,157 @@ void handle_heartbeat(string(8bit) s)
   }
 }
 
+// DTLS state handling.
+
+private int next_seq_num;
+
+//! Number of passed sequence numbers to keep track of.
+//! @rfc{4347:4.1.2.5@}:
+//!   A minimum window size of 32 MUST be supported, but a window size
+//!   of 64 is preferred and SHOULD be employed as the default. Another
+//!   window size (larger than the minimum) MAY be chosen by the receiver.
+private constant window_size = 64;
+
+//! Bitmask representing sequence numbers for accepted
+//! received packets in the interval
+//! [@expr{next_seq_num-window_size@}..@expr{next_seq_num-2@}].
+//! @note
+//!   The packet with seqence number @expr{next_seq_num-1@} is
+//!   implicitly known to have been received.
+private int sequence_mask = 0;
+
+//! Check whether @[num] is a valid seqence number for a new packet.
+int valid_seq_nump(int num)
+{
+  if (num < next_seq_num-(window_size)) return 0;
+  if (num >= next_seq_num) return 1;
+  if (num == next_seq_num-1) return 0;
+  return !(sequence_mask & (1<<[int(0..)](num + window_size - next_seq_num)));
+}
+
+//! Mark seqence number @[num] as seen and accepted.
+//!
+//! This will cause @[valid_seq_nump()] to return @expr{0@} for it
+//! if it shows up again.
+void mark_seq_num(int num)
+{
+  if (num < next_seq_num-(window_size)) return;
+  if (num == next_seq_num-1) return;
+  if (num < next_seq_num) {
+    sequence_mask |= (1<<[int(0..)](num + window_size - next_seq_num));
+  } else {
+    int delta = 1 + num - next_seq_num;
+    if (delta < window_size) {
+      sequence_mask >>= [int(1..)]delta;
+      sequence_mask |= 1 << [int(0..)](window_size-(delta + 1));
+    } else {
+      sequence_mask = 0;
+    }
+    next_seq_num = num + 1;
+  }
+}
+
+void print_sequence_set()
+{
+  werror("([ ");
+  if (next_seq_num > 0) {
+    int mask = 1;
+    for (int i = next_seq_num-(window_size); i+1 < next_seq_num; i++) {
+      if ((sequence_mask & mask) && (i >= 0)) {
+	werror("%d, ", i);
+      }
+      mask <<= 1;
+    }
+    werror("%d ", next_seq_num - 1);
+  }
+  werror("])\n");
+}
+
+private class HandshakeFragment(int mt, int len, int offset,
+				string(8bit) data) {}
+
+int next_handshake_message_seq = 0;
+mapping(int:array(HandshakeFragment)) handshake_fragments = ([]);
+
+protected void got_dtls_handshake_fragment(string(8bit) data)
+{
+  int mt;
+  int seq;
+  int len;
+  int offset;
+  int frag_len;
+  if ((sscanf(data, "%1c%3c%2c%3c%3c%s",
+	      mt, len, seq, offset, frag_len, data) != 6) ||
+      (sizeof(data) < frag_len)) {
+    // Truncated fragment.
+    return;
+  }
+  if ((seq < next_handshake_message_seq) ||
+      (seq > (next_handshake_message_seq + 16)) ||
+      (offset > len)) {
+    // Ignore fragments for messages already received or that
+    // aren't relevant yet.
+    return;
+  }
+  if ((offset + frag_len) > len) {
+    // Paranoia - Fragment out of bounds.
+    frag_len = len - offset;
+  }
+  if (sizeof(data) > frag_len) {
+    // More paranoia - Extraneous data in fragment.
+    data = data[..frag_len-1];
+  }
+  array(HandshakeFragment|zero)|zero frags = handshake_fragments[seq];
+  if (sizeof(frags || ({})) &&
+      ((mt != frags[0]->mt) || (len != frags[0]->len))) {
+    // Inconsistent handshake message metadata.
+    // FIXME: Generate an alert.
+    return;
+  }
+  HandshakeFragment new_frag = HandshakeFragment(mt, len, offset, data);
+  if (!frags || (!offset && (len == sizeof(data)))) {
+    handshake_fragments[seq] = ({ new_frag });
+  } else {
+    frags += ({ new_frag });
+    sort(frags->offset, frags);
+
+    object(HandshakeFragment)|zero prev;
+    foreach([array(HandshakeFragment)]frags; int i; HandshakeFragment frag) {
+      if (!prev) {
+	prev = frag;
+	continue;
+      }
+      if (frag->offset <= prev->offset + sizeof(prev->data)) {
+	prev->data +=
+	  frag->data[prev->offset + sizeof(prev->data) - frag->offset..];
+	frags[i] = 0;
+	continue;
+      }
+      prev = frag;
+    }
+    frags -= ({ 0 });
+    handshake_fragments[seq] = frags;
+  }
+}
+
+protected string(8bit) get_dtls_handshake_data()
+{
+  array(HandshakeFragment)|zero frags =
+    handshake_fragments[next_handshake_message_seq];
+  if (!frags || (sizeof(frags) != 1)) return UNDEFINED;
+  HandshakeFragment frag = frags[0];
+  if (frag->len != sizeof(frag->data)) return UNDEFINED;
+  string(8bit) packet =
+    sprintf("%1c%3c%2c%3c%3c%s",
+	    frag->mt,
+	    frag->len,
+	    next_handshake_message_seq,
+	    0, frag->len,
+	    frag->data);
+  m_delete(handshake_fragments, next_handshake_message_seq++);
+  return packet;
+}
+
 Stdio.Buffer handshake_buffer = Stdio.Buffer(); // Error mode 0.
 Stdio.Buffer alert_buffer = Stdio.Buffer();
 
@@ -928,8 +1108,8 @@ Stdio.Buffer alert_buffer = Stdio.Buffer();
 //! This function is intended to be called from an i/o read callback.
 string(8bit)|int(-1..1) got_data(string(8bit) data)
 {
-  if (state & CONNECTION_peer_closed) {
-    // The peer has closed the connection.
+  if (state & (CONNECTION_peer_closed|CONNECTION_local_fatal)) {
+    // The peer has closed the connection, or we sent a fatal.
     return 1;
   }
   // If closing we continue to try to read a remote close message.
@@ -941,8 +1121,7 @@ string(8bit)|int(-1..1) got_data(string(8bit) data)
   Stdio.Buffer.RewindKey read_buffer_key = read_buffer->rewind_key();
 
   string(8bit) res = "";
-  Packet packet;
-  while (packet = recv_packet())
+  while (object(Packet)|zero packet = recv_packet())
   {
     if (packet->is_alert)
     {
@@ -956,7 +1135,7 @@ string(8bit)|int(-1..1) got_data(string(8bit) data)
       {
         Stdio.Buffer.RewindKey here = read_buffer->rewind_key();
         read_buffer_key->rewind();
-        alert_callback(packet, current_read_state->seq_num,
+        alert_callback(packet, current_read_state->next_seq_num,
                        (string)read_buffer);
         here->rewind();
       }
@@ -969,8 +1148,16 @@ string(8bit)|int(-1..1) got_data(string(8bit) data)
       return -1;
     }
 
+    if (dtls) {
+      if (!valid_seq_nump(packet->seq_num)) {
+	continue;
+      }
+      mark_seq_num(packet->seq_num);
+    }
+
     SSL3_DEBUG_MSG("SSL.Connection: received packet of type %d\n",
                    packet->content_type);
+
     switch (packet->content_type)
     {
     case PACKET_alert:
@@ -983,7 +1170,7 @@ string(8bit)|int(-1..1) got_data(string(8bit) data)
         int(-1..1) err = 0;
         alert_buffer->add( packet->fragment );
         while(!err && sizeof(alert_buffer)>1)
-          err = handle_alert(alert_buffer->read(2));
+          err = handle_alert(@((array(2:int))alert_buffer->read(2)));
 
         if (err)
         {
@@ -1020,82 +1207,115 @@ string(8bit)|int(-1..1) got_data(string(8bit) data)
       {
         SSL3_DEBUG_MSG("SSL.Connection: HANDSHAKE\n");
 
-        COND_FATAL(!sizeof(packet->fragment), ALERT_unexpected_message,
-                   "Zero length Handshake fragments not allowed.\n");
+	if (dtls) {
+	  // FIXME: Defragment and serialize packets.
+	  got_dtls_handshake_fragment(packet->fragment);
+	  string(8bit) new_fragment = get_dtls_handshake_data();
+	  if (new_fragment) {
+	    packet->fragment = new_fragment;
+	  } else {
+	    packet = 0;
+	  }
+	}
 
-        // Don't allow renegotiation in unsecure mode, to address
-        // http://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2009-3555.
-        // For details see: http://www.g-sec.lu/practicaltls.pdf and
-        // RFC 5746.
-        COND_FATAL(!(state & CONNECTION_handshaking) &&
-                   !secure_renegotiation, ALERT_no_renegotiation,
-                   "Renegotiation not supported in unsecure mode.\n");
+	while(packet) {
+	  COND_FATAL(!sizeof(packet->fragment), ALERT_unexpected_message,
+		     "Zero length Handshake fragments not allowed.\n");
 
-	COND_FATAL(!(state & CONNECTION_handshaking) &&
-		   !context->enable_renegotiation, ALERT_no_renegotiation,
-		   "Renegotiation disabled by context.\n");
+	  // Don't allow renegotiation in unsecure mode, to address
+	  // http://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2009-3555.
+	  // For details see: http://www.g-sec.lu/practicaltls.pdf and
+	  // RFC 5746.
+	  COND_FATAL(!(state & CONNECTION_handshaking) &&
+		     !secure_renegotiation, ALERT_no_renegotiation,
+		     "Renegotiation not supported in unsecure mode.\n");
 
-        /* No change_cipher message was received */
-        // FIXME: There's a bug somewhere since expect_change_cipher
-        // often remains set after the handshake is completed. The
-        // effect is that renegotiation doesn't work all the time.
-        //
-        // A side effect is that we are partly invulnerable to the
-        // renegotiation vulnerability mentioned above. It is however
-        // not safe to assume that, since there might be routes past
-        // this, maybe through the use of a version 2 hello message
-        // below.
-        COND_FATAL(expect_change_cipher && (version < PROTOCOL_TLS_1_3),
-                   ALERT_unexpected_message, "Expected change cipher.\n");
+	  COND_FATAL(!(state & CONNECTION_handshaking) &&
+		     !context->enable_renegotiation, ALERT_no_renegotiation,
+		     "Renegotiation disabled by context.\n");
 
-        int(-1..1) err;
-        handshake_buffer->add( packet->fragment );
+	  /* No change_cipher message was received */
+	  // FIXME: There's a bug somewhere since expect_change_cipher
+	  // often remains set after the handshake is completed. The
+	  // effect is that renegotiation doesn't work all the time.
+	  //
+	  // A side effect is that we are partly invulnerable to the
+	  // renegotiation vulnerability mentioned above. It is however
+	  // not safe to assume that, since there might be routes past
+	  // this, maybe through the use of a version 2 hello message
+	  // below.
+	  COND_FATAL(expect_change_cipher && (version < PROTOCOL_TLS_1_3),
+		     ALERT_unexpected_message, "Expected change cipher.\n");
 
-        while (sizeof(handshake_buffer) >= 4)
-        {
-          Stdio.Buffer.RewindKey key = handshake_buffer->rewind_key();
-          int type = handshake_buffer->read_int8();
-          Buffer input = Buffer(handshake_buffer->read_hbuffer(3));
-          if(!input)
-          {
-            // Not enough data.
-            key->rewind();
-            break;
-          }
+	  int(-1..1) err;
+	  handshake_buffer->add( packet->fragment );
 
-          int len = 1+3+sizeof(input);
-          key->rewind();
-          Stdio.Buffer raw = handshake_buffer->read_buffer(len);
+	  while (sizeof(handshake_buffer) >= 4)
+	  {
+	    Stdio.Buffer.RewindKey key = handshake_buffer->rewind_key();
+	    int type = handshake_buffer->read_int8();
+	    if (dtls) {
+	      // Strip fragmentation info.
+	      handshake_buffer->read(2 + 3 + 3);
+	    }
+	    Buffer input = Buffer(handshake_buffer->read_hbuffer(3));
+	    if(!input)
+	    {
+	      // Not enough data.
+	      key->rewind();
+	      break;
+	    }
 
-          mixed exception = catch {
-              err = handle_handshake(type, input, raw);
-              COND_FATAL(err>=0 && sizeof(input), ALERT_record_overflow,
-                         sprintf("Extraneous handshake packet data (%O).\n",
-                                 type));
-            };
-          if( exception )
-          {
-            if( objectp(exception) && ([object]exception)->buffer_error )
-            {
-              Error.Generic e = [object(Error.Generic)]exception;
-              COND_FATAL(1, ALERT_decode_error, e->message());
-            }
-            throw(exception);
-          }
-          if (err < 0)
-            return err;
-          if (err > 0) {
-            state &= ~CONNECTION_handshaking;
-            if ((version >= PROTOCOL_TLS_1_3) || expect_change_cipher) {
-              // NB: Renegotiation is available in TLS 1.2 and earlier.
-              COND_FATAL(sizeof(handshake_buffer), ALERT_unexpected_message,
-                         "Extraneous handshake packets.\n");
-            }
-            COND_FATAL(sizeof(handshake_buffer) && !secure_renegotiation,
-                       ALERT_no_renegotiation,
-                       "Renegotiation not supported in unsecure mode.\n");
-          }
-        }
+            int(0..) len = 1+3+sizeof(input);
+	    if (dtls) len += 2 + 3 + 3;	// Fragmentation info.
+	    key->rewind();
+	    Stdio.Buffer raw = handshake_buffer->read_buffer(len);
+
+	    SSL3_DEBUG_MSG("Connection: %s(%O)...\n",
+			   fmt_constant(type, "HANDSHAKE"),
+			   input);
+
+	    mixed exception = catch {
+		err = handle_handshake(type, input, raw);
+		COND_FATAL(err>=0 && sizeof(input), ALERT_record_overflow,
+			   sprintf("Extraneous handshake packet data (%O).\n",
+				   type));
+	      };
+	    if( exception )
+	    {
+	      if( objectp(exception) && ([object]exception)->buffer_error )
+	      {
+		Error.Generic e = [object(Error.Generic)]exception;
+		COND_FATAL(1, ALERT_decode_error, e->message());
+	      }
+	      throw(exception);
+	    }
+	    if (err < 0)
+	      return err;
+	    if (err > 0) {
+	      state &= ~CONNECTION_handshaking;
+	      if ((version >= PROTOCOL_TLS_1_3) || expect_change_cipher) {
+		// NB: Renegotiation is available in TLS 1.2 and earlier.
+		COND_FATAL(sizeof(handshake_buffer), ALERT_unexpected_message,
+			   "Extraneous handshake packets.\n");
+	      }
+	      COND_FATAL(sizeof(handshake_buffer) && !secure_renegotiation,
+			 ALERT_no_renegotiation,
+			 "Renegotiation not supported in unsecure mode.\n");
+	    }
+	  }
+
+	  if (dtls) {
+	    string(8bit) new_fragment = get_dtls_handshake_data();
+	    if (new_fragment) {
+	      packet->fragment = new_fragment;
+	    } else {
+	      packet = 0;
+	    }
+	  } else {
+	    break;
+	  }
+	}
         break;
       }
     case PACKET_application_data:
@@ -1155,6 +1375,11 @@ string(8bit)|int(-1..1) got_data(string(8bit) data)
                      fmt_constant(packet->content_type, "PACKET"));
       break;
     }
+  }
+
+  if (dtls) {
+    // This should normally be a no-op, but better safe than sorry.
+    read_buffer->clear();
   }
 
   if (sizeof(res)) return res;

@@ -62,8 +62,8 @@ private void result_cb(.Result result, array(array(mixed)) rows) {
         failed(err);
     }
     if (maxresults >= 0 && result->num_rows() > maxresults)
-      failed(sprintf("Too many records returned: %d > %d",
-                          result->num_rows(), maxresults));
+      failed(sprintf("Too many records returned: %d > %d\n%O",
+                          result->num_rows(), maxresults, result));
     if (discardover >= 0) {
       int room = discardover - sizeof(res->data);
       if (room >= 0)
@@ -73,7 +73,8 @@ private void result_cb(.Result result, array(array(mixed)) rows) {
   } else if (sizeof(res->data) >= minresults)
     succeeded(result);
   else					// Collect any SQL errors first
-    failed(catch(result->eof()) || "Insufficient number of records returned");
+    failed(catch(result->eof()) ||
+      sprintf("Insufficient number of records returned\n%O", result));
 }
 
 //! @param min
@@ -101,21 +102,21 @@ final this_program discard_records(int(-1..) over) {
 }
 
 protected
- void create(.Connection db, string q, mapping(string:mixed) bindings,
-             function(array, .Result, array :array) map_cb) {
+ void create(.Connection db, string q, mapping(string:mixed)|zero bindings,
+             function(array, .Result, array :array)|zero map_cb) {
   PD("Create future %O %O %O\n", db, q, bindings);
+  ::create();
   this::map_cb = map_cb;
   res = .FutureResult(db, q, bindings);
   discardover = maxresults = -1;
   if (res->status_command_complete = catch(db->streaming_typed_query(q, bindings)
                                     ->set_result_array_callback(result_cb)))
     failed(res->status_command_complete);
-  ::create();
 }
 
 #ifdef SP_DEBUG
 protected void _destruct() {
-  PD("Destroy promise %O %O\n", query, bindings);
+  PD("Destroy promise %O\n", this);
   ::_destruct();
 }
 #endif

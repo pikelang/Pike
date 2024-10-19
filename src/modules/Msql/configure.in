@@ -77,6 +77,7 @@ dnl		AC_MSG_RESULT($pike_cv_msql_lib_dir)
 
 		# On some OS's (Solaris 2) these are requiered
 		AC_CHECK_LIB(socket, socket, [], [])
+                AC_CHECK_LIB(network, socket, [], [])
 		AC_CHECK_LIB(nsl, gethostbyname, [], [])
 
 		AC_CHECK_LIB(msql, msqlClose)

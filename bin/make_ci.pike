@@ -1,4 +1,5 @@
 #! /usr/bin/env pike
+#charset iso-8859-1
 
 /*
  * Creates the file case_info.h

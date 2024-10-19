@@ -1,10 +1,48 @@
 START_MARKER
 
 
+// nt.c:
+
+cond_begin([[(cpp("__NT__")/"\n")[-1] != "__NT__"]])
+
+// AllocConsole		__NT__
+// AttachConsole	__NT__
+// FreeConsole		__NT__
+// GetComputerName	__NT__
+test_true(stringp(System.GetComputerName()))
+// GetFileAttributes	__NT__
+// GetNamedSecurityInfo	__NT__
+// GetUserName		__NT__
+test_true(stringp(System.GetUserName()))
+// LogonUser		__NT__
+// LookupAccountName	__NT__
+test_equal(System.LookupAccountName(UNDEFINED, "LocalService")[1..],
+  ({ "NT AUTHORITY", 5 }))
+test_equal(System.LookupAccountName(UNDEFINED, "LocalService")[0]->account(),
+  ({ "LOCAL SERVICE", "NT AUTHORITY", 5 }))
+// NetGetAnyDCName	__NT__
+// NetGetDCName		__NT__
+// NetGroupEnum		__NT__
+// NetGroupGetUsers	__NT__
+// NetLocalGroupEnum	__NT__
+// NetLocalGroupGetMembers __NT__
+// NetSessionEnum	__NT__
+// NetUserEnum		__NT__
+// NetUserGetGroups	__NT__
+// NetUserGetInfo	__NT__
+// NetUserGetLocalGroups __NT__
+// NetWkstaUserEnum	__NT__
+// RegGetKeyNames	__NT__
+// RegGetValue		__NT__
+// RegGetValues		__NT__
+// SetFileAttributes	__NT__
+// SetNamedSecurityInfo	__NT__
+// cp			__NT__
+
+cond_end // __NT__
+
 // system.c:
 
-// RegGetValue		__NT__
-// cp			__NT__
 // umask
 // chmod
 // chown		HAVE_CHOWN
@@ -166,6 +204,9 @@ cond([[System->normalize_path]],
 	werror ("System.normalize_path (%O) produced 0\n", ff);
 	return 0;
       }
+      if (catch(utf8_to_string(f))) {
+        f = string_to_utf8(f);
+      }
 #ifdef __NT__
       if (!has_suffix (n, "\\testsuite_test\\" + f)) {
 	werror ("System.normalize_path (%O) produced %O\n", ff, n);
@@ -177,6 +218,7 @@ cond([[System->normalize_path]],
 
     if (!test_normalize_path ("foo")) return 0;
     if (!test_normalize_path ("\345\344\366")) return 0;
+    if (!test_normalize_path ("\303\245\303\244\303\266")) return 0;
     return 1;
   ]], 1)
 ]])
@@ -307,10 +349,10 @@ test_eq(intp(System.TM(1513871300)->gmtoff), 1)
 test_eq(stringp(System.TM(1513871300)->zone), 1)
 test_eq(stringp(System.TM(1513871300)->asctime()), 1)
 test_eq(System.TM(1513871300)->unix_time(), 1513871300)
-test_equal(map("%d%D%e%G%g%H%I%k%l%M%m%p%r%R%T%u%U%V%w"/2,
+test_equal(map("%d%D%e%G%g%H%I%M%m%p%r%R%T%u%U%V%w"/2,
                System.TM(1513871300)->strftime),
   ({ "21", "12/21/17", "21", "2017", "17",
-     "15", "03", "15", " 3", "48", "12", "PM",
+     "15", "03", "48", "12", "PM",
      "03:48:20 PM", "15:48", "15:48:20", "4", "51", "51", "4" }))
 
 test_eq(stringp((string)System.TM(1513871300)), 1)

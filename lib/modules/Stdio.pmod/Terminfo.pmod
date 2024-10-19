@@ -343,6 +343,16 @@ class Terminfo {
   {
     int magic, sname, nbool, nnum, nstr, sstr;
 
+    // terminfo(F):
+    //
+    // The header section begins the file. This section contains six
+    // short integers in the format described below. These integers
+    // are (1) the magic number (octal 0432); (2) the size, in bytes,
+    // of the names section; (3) the number of bytes in the boolean
+    // section; (4) the number of short integers in the numbers
+    // section; (5) the number of offsets (short integers) in the
+    // strings section; (6) the size, in bytes, of the string table.
+
     if (6!=sscanf(swab(f->read(12)), "%2c%2c%2c%2c%2c%2c",
 		  magic, sname, nbool, nnum, nstr, sstr) ||
 	(magic != MAGIC && magic != MAGIC2))
@@ -482,7 +492,7 @@ class TermcapDB {
     return cap/"|";
   }
 
-  protected private string read()
+  protected private string|zero read()
   {
     int i, st;
     string res="";
@@ -601,7 +611,7 @@ class TermcapDB {
                                         Termcap, this)));
   }
 
-  protected private string read_next(string find) // quick search
+  protected private string|zero read_next(string find) // quick search
   {
     for (;;)
     {
@@ -634,7 +644,7 @@ class TermcapDB {
     }
   }
 
-  protected Termcap load(string term, int|void maxrecurse)
+  Termcap load(string term, int|void maxrecurse)
   {
     int|string|Termcap cap;
 
@@ -737,14 +747,13 @@ class TerminfoDB {
   protected array(object) _values()
   {
     return predef::map(_indices(),
-                       [function(string:object(Terminfo))]
                        lambda(string name) {
                          return cache[name] ||
                            Terminfo(dir+name[..0]+"/"+name);
                        });
   }
 
-  protected Terminfo load(string term)
+  protected object(Terminfo)|zero load(string term)
   {
     Terminfo ti;
 
@@ -800,6 +809,7 @@ class MetaTerminfoDB {
 	"/etc/terminfo",
 	// Operating System terminfo.
 	"/lib/terminfo", "/usr/lib/terminfo",
+        "/boot/system/data/terminfo",
 	// Extra terminfo. These are often symlinks to the above.
 	"/usr/share/lib/terminfo", "/usr/share/terminfo",
 	"/usr/share/termcap", "/usr/share/misc/terminfo",
@@ -820,7 +830,7 @@ class MetaTerminfoDB {
     }
   }
 
-  protected Terminfo `[](string name)
+  protected object(Terminfo)|zero `[](string name)
   {
     foreach(dbs, TerminfoDB db) {
       Terminfo ti = db[name];

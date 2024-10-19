@@ -93,10 +93,11 @@ variant array(int(0..255)) cmyk_to_rgb(array(int) cmyk)
 //! essentially calling @[Image.Color.guess()], but returns the
 //! default value (or black if none is provided) if it failes.
 //!
-array(int(0..255)) parse_color(string name, void|array(int) def)
+array(3:int(0..255)) parse_color(string|zero name,
+                                 array(3:int(0..255)) def=({ 0,0,0 }))
 {
   Image.Color.Color color;
-  if(!name || !sizeof(name)) return def||({ 0,0,0 }); // Odd color...
+  if(!name || !sizeof(name)) return def; // Odd color...
 
   if(color=Image.Color.guess(name)) return color->rgb();
 
@@ -104,7 +105,7 @@ array(int(0..255)) parse_color(string name, void|array(int) def)
   if(color=Image.Color.guess(name)) return color->rgb();
 
   // Lets call it black and be happy..... :-)
-  return def||({ 0,0,0 });
+  return def;
 }
 
 //! Tries to find a name to color described by  the provided RGB
@@ -113,7 +114,7 @@ array(int(0..255)) parse_color(string name, void|array(int) def)
 //! can find RGB values for. Returns the colors rgb hex value prepended
 //! with "#" upon failure.
 //!
-string color_name(array(int(0..255)) rgb)
+string color_name(array(3:int(0..255))|zero rgb)
 {
   if(!arrayp(rgb) || sizeof(rgb)!=3) return "-";
   string name = Image.Color(@rgb)->name();

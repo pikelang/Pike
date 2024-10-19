@@ -328,7 +328,7 @@ static void set_error (char * newerror)
 		PQfinish(conn);
 		PQ_UNLOCK();
 		THREADS_DISALLOW();
-		Pike_error("Could not connect to database. Reason: \"%S\".\n",
+                Pike_error("Could not connect to database. Reason: \"%pS\".\n",
 			   THIS->last_error);
 		conn=NULL;
 	}
@@ -357,7 +357,7 @@ PIKEFUN void select(string db_)
 	PGconn * conn, *newconn;
 	PQ_FETCH();
 
-        get_all_args(NULL,args,"%s", &db);
+        get_all_args(NULL,args,"%c", &db);
 
 	if (!THIS->dblink)
 	  Pike_error ("Driver error. How can you possibly not be linked to a "
@@ -594,7 +594,7 @@ yupbegin:       res=PQexec(conn,"BEGIN");
 	THIS->lastcommit=lastcommit;
 
         if (paramValues) {
-	  xfree(paramValues);
+          xfree((void *)paramValues);
         }
 
 	pop_n_elems(args);
@@ -634,7 +634,7 @@ yupbegin:       res=PQexec(conn,"BEGIN");
 			pgdebug("\tBad.\n");
 			set_error(PQerrorMessage(conn));
 			PQclear(res);
-			Pike_error("Postgres error: %S\n", THIS->last_error);
+                        Pike_error("Postgres error: %pS\n", THIS->last_error);
 		case PGRES_TUPLES_OK:
 			pgdebug("\tResult.\n");
                         THIS->last_rows=PQntuples(res);
@@ -825,7 +825,7 @@ PIKEFUN string _quote(string s_)
 	struct pike_string *s;
 	char *err_msg;
 
-        get_all_args(NULL, args, "%S", &s);
+        get_all_args(NULL, args, "%n", &s);
 
 	ret = begin_shared_string(s->len * 2 + 1);
 #ifdef HAVE_PQESCAPESTRINGCONN
@@ -833,7 +833,7 @@ PIKEFUN string _quote(string s_)
 	if (err != 0) {
 		err_msg = PQerrorMessage(THIS->dblink);
 		set_error(err_msg);
-		Pike_error(err_msg);
+                Pike_error("%s", err_msg);
 	}
 #else
 	len = PQescapeString(ret->str, s->str, s->len);

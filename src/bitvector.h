@@ -91,7 +91,7 @@ static inline unsigned INT32 PIKE_UNUSED_ATTRIBUTE ctz32(unsigned INT32 i) {
 #define ctz16(i) (i ? ctz32(i) : 16)
 #define ctz8(i) (i ? ctz32(i) : 8)
 
-#if !defined(HAVE___BSWAP32) && !defined(HAVE_BSWAP32)
+#if !defined(HAVE___BSWAP32) && !defined(HAVE_BSWAP32) && !defined(bswap32)
 /**
  * Reverses the bytes in the 32-bit integer x.
  */
@@ -178,7 +178,7 @@ static inline unsigned INT32 PIKE_UNUSED_ATTRIBUTE ctz64(UINT64 i) {
 # endif
 }
 
-#if !defined(HAVE___BSWAP64) && !defined(HAVE_BSWAP64)
+#if !defined(HAVE___BSWAP64) && !defined(HAVE_BSWAP64) && !defined(bswap64)
 /**
  * Reverses the bytes in the 64-bit integer x.
  */
@@ -194,6 +194,23 @@ static inline UINT64 PIKE_UNUSED_ATTRIBUTE bswap64(UINT64 x) {
 #endif
 }
 #endif /* !HAVE___BSWAP64 && !HAVE_BSWAP64 */
+
+#if defined(__SIZEOF_INT128__) && __SIZEOF_INT128__ == 16
+/**
+ * Counts the number of leading zeros in a 128-bit unsigned
+ * integer. Returns a value between 0 and 128.
+ */
+static inline unsigned INT32 PIKE_UNUSED_ATTRIBUTE clz128(unsigned __int128 i) {
+# if SIZEOF_LONG == 16 && defined(HAS___BUILTIN_CLZL)
+    return i ? __builtin_clzl(i) : 128;
+# elif SIZEOF_LONG_LONG == 16 && defined(HAS___BUILTIN_CLZLL)
+    return i ? __builtin_clzll(i) : 128;
+# else
+    UINT64 hi = i >> 64;
+    return hi? clz64(hi) : 64 + clz64((UINT64)i);
+# endif
+}
+#endif /* __SIZEOF_INT128__ */
 
 static inline UINT64 PIKE_UNUSED_ATTRIBUTE round_up64(UINT64 v) {
     unsigned INT32 i;
@@ -265,7 +282,7 @@ static inline unsigned INT32 PIKE_UNUSED_ATTRIBUTE log2_u32(unsigned INT32 v) {
     return fls32(v) - 1;
 }
 
-#if !defined(HAVE___BSWAP16) && !defined(HAVE_BSWAP16)
+#if !defined(HAVE___BSWAP16) && !defined(HAVE_BSWAP16) && !defined(bswap16)
 #define bswap16(x)     ((unsigned INT16)bswap32((unsigned INT32)x << 16))
 #endif /* !HAVE___BSWAP16 && !HAVE_BSWAP16 */
 

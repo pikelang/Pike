@@ -28,10 +28,10 @@
 #include "util.h"
 
 
-int aap_get_time(void)
+time_t aap_get_time(void)
 {
   static int t = 0;
-  static int last_time;
+  static time_t last_time;
   if(!(t++%10)) last_time = time(0);
   return last_time;
 }

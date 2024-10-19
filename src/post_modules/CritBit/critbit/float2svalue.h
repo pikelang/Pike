@@ -1,3 +1,4 @@
+/* -*- mode: C; c-basic-offset: 4; -*- */
 #ifdef CB_NAMESPACE
 # undef CB_NAMESPACE
 #endif

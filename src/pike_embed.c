@@ -15,13 +15,13 @@
 #include "backend.h"
 #include "lex.h"
 #include "pike_types.h"
+#include "threads.h"
 #include "builtin_functions.h"
 #include "interpret.h"
 #include "pike_error.h"
 #include "pike_macros.h"
 #include "callback.h"
 #include "signal_handler.h"
-#include "threads.h"
 #include "dynamic_load.h"
 #include "gc.h"
 #include "cpp.h"
@@ -193,7 +193,7 @@ void init_pike_runtime(void (*exit_cb)(int))
     if(!getrlimit(RLIMIT_STACK, &lim))
     {
 #ifdef RLIM_INFINITY
-      if(lim.rlim_cur == RLIM_INFINITY)
+      if(lim.rlim_cur == (rlim_t)RLIM_INFINITY)
 	lim.rlim_cur=1024*1024*32;
 #endif
 
@@ -282,6 +282,9 @@ void init_pike_runtime(void (*exit_cb)(int))
 
   TRACE((stderr, "Init strings...\n"));
   init_shared_string_table();
+
+  TRACE((stderr, "Init las...\n"));
+  init_las();
 
   TRACE((stderr, "Init interpreter...\n"));
   init_interpreter();
@@ -422,8 +425,28 @@ PMOD_EXPORT struct callback *add_exit_callback(callback_func call,
 
 void pike_do_exit(int num)
 {
+  /* Add a frame so that backtraces generated in this stage
+   * (from eg an atexit() function) can be easily identified.
+   */
+  struct pike_frame *new_frame = alloc_pike_frame();
+#ifdef PROFILING
+  new_frame->children_base = Pike_interpreter.accounted_time;
+  new_frame->start_time = get_cpu_time() - Pike_interpreter.unlocked_time;
+  W_PROFILING_DEBUG("%p{: Push at %" PRINT_CPU_TIME
+		    " %" PRINT_CPU_TIME "\n",
+		    Pike_interpreter.thread_state, new_frame->start_time,
+		    new_frame->children_base);
+#endif
+  new_frame->next = Pike_fp;
+  new_frame->pc = (PIKE_OPCODE_T *)pike_do_exit;
+  Pike_fp = new_frame;
+
   call_callback(&exit_callbacks, NULL);
   free_callback_list(&exit_callbacks);
+
+  POP_PIKE_FRAME();
+
+  exit_las();
 
   exit_modules();
 

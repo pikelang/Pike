@@ -10,6 +10,8 @@
 
 inherit Protocols.DNS : DNS;
 
+#pragma no_deprecation_warnings
+
 //! Pike 7.8 compatibility version of @[predef::Protocols.DNS.server].
 class server
 {

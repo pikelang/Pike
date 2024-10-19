@@ -56,7 +56,7 @@ PIKECLASS PIKE_NAME
 						      0, parent_State_fun_num);
 	  low_inherit(parent_State_prog, 0,
 		      parent_State_fun_num,
-		      1 + 42, 0, NULL);
+                      1 + 42, 0, NULL, NULL);
 	}
       }
     }

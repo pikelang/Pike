@@ -44,19 +44,19 @@ constant BUCKET_SIZE = 8;
 constant MAX_BUCKETS = 160;
 
 //! Our global ID for this DHT router, expressed as a 20 byte hash.
-protected string my_node_id = UNDEFINED;
+protected string|zero my_node_id = UNDEFINED;
 
 //! Indicates if the DHT instance is up and running or not.
 int is_running = 0;
 
 //! The UDP port on which we listen for messages.
-Stdio.UDP port;
+object(Stdio.UDP)|zero port;
 
 // Some statistics that we collect. This is not a stable API at the
 // moment.
 mapping stats = ([]);
 
-Routingtable rt;
+object(Routingtable)|zero rt;
 
 // Callbacks called when a nodes has been added or removed from a
 // bucket, added as a candidate, promoted from candidate to peer or
@@ -67,11 +67,11 @@ function(DHTNode, object /* Bucket */:void) node_added_cb, node_removed_cb,
 //! Abstraction for the routing table.
 class Routingtable {
   //! Node ID that this routing table belongs to
-  protected string my_node_id;
+  protected string|zero my_node_id;
 
   //! Lookup table for nodess so we can quickly find out if any given
   //! hash is already in our table somewhere.
-  mapping(string:DHTNode) nodes_by_hash = set_weak_flag(([]), Pike.WEAK);
+  mapping(string:DHTNode) nodes_by_hash = ([]);//set_weak_flag(([]), Pike.WEAK);
   mapping(string:DHTNode) nodes_by_endpoint = set_weak_flag(([]), Pike.WEAK);
 
   //! Buckets in our routing table
@@ -80,7 +80,7 @@ class Routingtable {
 
 
   protected class Bucket {
-    string uuid;
+    string|zero uuid;
 
     // Live nodes in the bucket.
     array(object) nodes = ({});
@@ -115,7 +115,7 @@ class Routingtable {
       bucket_by_uuid[uuid] = this;
     }
 
-    string _sprintf(int t) {
+    protected string _sprintf(int t) {
       return sprintf("Bucket(%d/%d %s)", sizeof(nodes), sizeof(candidates), uuid);
     }
 
@@ -466,7 +466,7 @@ class Node {
     return ({ node_id, address, port });
   }
 
-  mixed cast(string type) {
+  protected mixed cast(string type) {
     switch(type) {
     case "array":
       return node_info_array();
@@ -746,7 +746,8 @@ class DHTNode {
 
 //! Base class for operations that need to iterate over the DHT in
 //! some way like get_peers and find_node.
-class DHTOperation(string target_hash, function done_cb, mixed ... done_cb_args) {
+class DHTOperation(string target_hash, function|zero done_cb,
+		   mixed ... done_cb_args) {
 
   //
   // Variables controling behaviour of this op
@@ -787,6 +788,7 @@ class DHTOperation(string target_hash, function done_cb, mixed ... done_cb_args)
   protected mapping(string:Node) seen_nodes = ([]);                // Nodes we've already traversed
   protected mapping(string:mapping) transactions_in_flight = ([]); // Outstanding transactions
   protected array(Node) nodes_to_query = ({});                     // Nodes in line to be queried
+  protected int(0..1) nodes_need_sorting;			   // Nodes need to be sorted.
 
   protected int i_am_done = 0;                                     // Indicates that the Op is done
 
@@ -809,6 +811,7 @@ class DHTOperation(string target_hash, function done_cb, mixed ... done_cb_args)
   //! Add a node to the list of nodes to query.
   void add_node_to_query(Node n) {
     nodes_to_query += ({ n });
+    nodes_need_sorting = (sizeof(nodes_to_query) > 1);
   }
 
   //
@@ -847,15 +850,14 @@ class DHTOperation(string target_hash, function done_cb, mixed ... done_cb_args)
 
     got_response(resp);
 
-    // Sort the queue of nodes to query so that we ask closer nodes
-    // first.
-    nodes_to_query =
-      Array.sort_array(nodes_to_query,
-		       lambda(Node a, Node b) {
-			 int ad = distance_exp(a->node_id, target_hash);
-			 int bd = distance_exp(b->node_id, target_hash);
-			 return ad>bd;
-		       });
+    if (nodes_need_sorting) {
+      // Sort the queue of nodes to query so that we ask closer nodes
+      // first.
+      array(int) distances =
+        map(nodes_to_query->node_id, distance_exp, target_hash);
+      sort(distances, nodes_to_query);
+      nodes_need_sorting = 0;
+    }
 
 
     if (is_done()) {
@@ -993,6 +995,7 @@ class DHTOperation(string target_hash, function done_cb, mixed ... done_cb_args)
     if (!nodes_to_query || !sizeof(nodes_to_query)) {
       object b = rt->bucket_for(target_hash);
       nodes_to_query += b->nodes + b->candidates;
+      nodes_need_sorting = 1;
     }
     run();
     return this;
@@ -1142,15 +1145,13 @@ class GetPeers {
       responder->token = resp->r->token;
 
     // Keep a list of the 8 closest nodes.
-    closest_nodes += ({ responder });
-    closest_nodes = Array.uniq(closest_nodes);
-    closest_nodes =
-      Array.sort_array(closest_nodes - ({ 0 }),
-		       lambda(object a, object b) {
-			 int ad = distance_exp(a->node_id, target_hash);
-			 int bd = distance_exp(b->node_id, target_hash);
-			 return ad < bd;
-		       })[0..7];
+    if (!has_value(closest_nodes, responder)) {
+      closest_nodes = closest_nodes - ({ 0 }) + ({ responder });
+      array(int) distances =
+        map(closest_nodes->node_id, distance_exp, target_hash);
+      sort(distances, closest_nodes);
+      closest_nodes = closest_nodes[..7];
+    }
 
     // First process additional nodes.
     if (resp->r->nodes) {
@@ -1216,16 +1217,16 @@ int distance_exp(string h1, string h2) {
     return UNDEFINED;
   }
 
-  foreach(h1; int i; int c) {
-    int t = c ^ h2[i];
+  foreach(h1^h2; int i; int t) {
     if (!t) continue;
 
-    int bit = (19-i) * 8;
-    for(int b=7; b >= 0; b--) {
-      if (t >= (1<<b)) {
-	return bit+b;
-      }
-    }
+    int bit = (20-i) * 8;
+    int mask = 0x80;
+    do {
+      bit--;
+      if (t & mask) return bit;
+      mask >>= 1;
+    } while(mask);
 
     return bit;
   }
@@ -1334,7 +1335,7 @@ string send_ping(string ip, int port, function(mapping, string, int:void) cb) {
 //! cannot rely on the send_dht_query() callback to propagate this.
 protected void read_timeout(string txid) {
   m_delete(request_timeouts, txid);
-  [function cb, array args] = m_delete(callbacks_by_txid, txid);
+  [function cb, array args] = m_delete(callbacks_by_txid, txid) || ({ 0, 0 });
   functionp(cb) && cb(([
 			"t" : txid,
 			"r" : "e",
@@ -1867,7 +1868,7 @@ string get_node_id() { return my_node_id; };
 //
 //! Start up the DHT instance.
 void start(int port, void|string bind_address) {
-  if (is_running) return 0;
+  if (is_running) return;
   is_running = 1;
   this_program::port = Stdio.UDP();
   this_program::port->bind(port, bind_address, 1);

@@ -17,7 +17,7 @@ struct keyword
 {
   const char *word;
   const int token;
-  const int flags;
+  const unsigned int flags;
 #ifdef PIKE_USE_MACHINE_CODE
   void *address;
 #endif
@@ -50,6 +50,24 @@ struct keyword
 #define I_UPDATE_M_SP	1024	/* Opcode modifies Pike_mark_sp */
 
 #define I_RETURN	2048	/* Opcode may return to the previous frame. */
+
+/* Argument type information for disassembly. */
+#define I_ARG_T_INT	0	/* Argument is integer. */
+#define I_ARG_T_STRING	0x1000	/* Argument is string index. */
+#define I_ARG_T_LOCAL	0x2000	/* Argument is local number. */
+#define I_ARG_T_GLOBAL	0x3000	/* Argument is global number. */
+#define I_ARG_T_RTYPE	0x4000	/* Argument is runtime type. */
+#define I_ARG_T_CONST	0x5000	/* Argument is constant index. */
+#define I_ARG_T_MASK	0x7000	/* Mask for I_ARG_T_* above. */
+
+#define I_ARG2_T_SHIFT	3	/* Bits to shift left for arg2 info. */
+#define I_ARG2_T_INT	0	/* Argument is integer. */
+#define I_ARG2_T_STRING	0x08000	/* Argument is string index. */
+#define I_ARG2_T_LOCAL	0x10000	/* Argument is local number. */
+#define I_ARG2_T_GLOBAL	0x18000	/* Argument is global number. */
+#define I_ARG2_T_RTYPE	0x20000	/* Argument is runtime type. */
+#define I_ARG2_T_CONST	0x28000	/* Argument is constant index. */
+#define I_ARG2_T_MASK	0x38000	/* Mask for I_ARG_T_* above. */
 
 /* Convenience variants */
 #define I_TWO_ARGS	(I_HASARG | I_HASARG2)
@@ -126,94 +144,7 @@ extern const struct instr instrs[];
 extern size_t instrs_checksum;
 #endif /* PIKE_USE_MACHINE_CODE */
 
-/* Opcode enum */
-
-#define OPCODE0(X,Y,F) X,
-#define OPCODE1(X,Y,F) X,
-#define OPCODE2(X,Y,F) X,
-#define OPCODE0_TAIL(X,Y,F) X,
-#define OPCODE1_TAIL(X,Y,F) X,
-#define OPCODE2_TAIL(X,Y,F) X,
-#define OPCODE0_JUMP(X,Y,F) X,
-#define OPCODE1_JUMP(X,Y,F) X,
-#define OPCODE2_JUMP(X,Y,F) X,
-#define OPCODE0_TAILJUMP(X,Y,F) X,
-#define OPCODE1_TAILJUMP(X,Y,F) X,
-#define OPCODE2_TAILJUMP(X,Y,F) X,
-#define OPCODE0_PTRJUMP(X,Y,F) X,
-#define OPCODE1_PTRJUMP(X,Y,F) X,
-#define OPCODE2_PTRJUMP(X,Y,F) X,
-#define OPCODE0_TAILPTRJUMP(X,Y,F) X,
-#define OPCODE1_TAILPTRJUMP(X,Y,F) X,
-#define OPCODE2_TAILPTRJUMP(X,Y,F) X,
-#define OPCODE0_RETURN(X,Y,F) X,
-#define OPCODE1_RETURN(X,Y,F) X,
-#define OPCODE2_RETURN(X,Y,F) X,
-#define OPCODE0_TAILRETURN(X,Y,F) X,
-#define OPCODE1_TAILRETURN(X,Y,F) X,
-#define OPCODE2_TAILRETURN(X,Y,F) X,
-#define OPCODE0_BRANCH(X,Y,F) X,
-#define OPCODE1_BRANCH(X,Y,F) X,
-#define OPCODE2_BRANCH(X,Y,F) X,
-#define OPCODE0_TAILBRANCH(X,Y,F) X,
-#define OPCODE1_TAILBRANCH(X,Y,F) X,
-#define OPCODE2_TAILBRANCH(X,Y,F) X,
-#define OPCODE0_ALIAS(X,Y,F,A) X,
-#define OPCODE1_ALIAS(X,Y,F,A) X,
-#define OPCODE2_ALIAS(X,Y,F,A) X,
-
-#define OPCODE_NOCODE(DESC, OP, FLAGS)   OP,
-
-enum Pike_opcodes
-{
-  F_OFFSET = 257,
-#include "opcode_list.h"
-
-  /* These are only used for the parse tree. */
-
-  F_SPACE = ' ',
-  F_COLON = ':',
-  F_COND = '?',
-
-#ifdef PIKE_DEBUG
-  OPCODES_END = USHRT_MAX
-#endif
-};
-
-#undef OPCODE0
-#undef OPCODE1
-#undef OPCODE2
-#undef OPCODE0_TAIL
-#undef OPCODE1_TAIL
-#undef OPCODE2_TAIL
-#undef OPCODE0_PTRJUMP
-#undef OPCODE1_PTRJUMP
-#undef OPCODE2_PTRJUMP
-#undef OPCODE0_TAILPTRJUMP
-#undef OPCODE1_TAILPTRJUMP
-#undef OPCODE2_TAILPTRJUMP
-#undef OPCODE0_RETURN
-#undef OPCODE1_RETURN
-#undef OPCODE2_RETURN
-#undef OPCODE0_TAILRETURN
-#undef OPCODE1_TAILRETURN
-#undef OPCODE2_TAILRETURN
-#undef OPCODE0_BRANCH
-#undef OPCODE1_BRANCH
-#undef OPCODE2_BRANCH
-#undef OPCODE0_TAILBRANCH
-#undef OPCODE1_TAILBRANCH
-#undef OPCODE2_TAILBRANCH
-#undef OPCODE0_JUMP
-#undef OPCODE1_JUMP
-#undef OPCODE2_JUMP
-#undef OPCODE0_TAILJUMP
-#undef OPCODE1_TAILJUMP
-#undef OPCODE2_TAILJUMP
-#undef OPCODE0_ALIAS
-#undef OPCODE1_ALIAS
-#undef OPCODE2_ALIAS
-#undef OPCODE_NOCODE
+#include "enum_Pike_opcodes.h"
 
 #ifdef PIKE_DEBUG
 const char *low_get_f_name(int n,struct program *p);

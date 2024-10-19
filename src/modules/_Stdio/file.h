@@ -179,7 +179,6 @@ struct file_lock_key_storage;
 void mark_ids(struct callback *foo, void *bar, void *gazonk);
 PMOD_EXPORT int pike_make_pipe(int *fds);
 PMOD_EXPORT int fd_from_object(struct object *o);
-void f_strerror(INT32 args);
 void push_stat(PIKE_STAT_T *s);
 
 #ifndef __NT__

@@ -24,7 +24,15 @@
 #include <fp_class.h>
 #endif
 
-#ifdef HAVE__ISNAN
+/* Needed for infinity constants on NT. */
+#ifdef HAVE_XMATH_H
+#include <xmath.h>
+#elif defined(HAVE_YMATH_H)
+#include <ymath.h>
+#endif
+
+#if defined(HAVE__ISNAN) && !defined(HAVE_ISNAN) && !defined(isnan)
+/* Only fall back to using _isnan() if isnan() does not exist. */
 #define PIKE_ISNAN(X) _isnan(X)
 #else
 #define PIKE_ISNAN(X) isnan(X)
@@ -34,6 +42,8 @@
 #define PIKE_ISINF(X)	isinf(X)
 #elif defined(HAVE_ISFINITE)
 #define PIKE_ISINF(X)   (!isfinite(X))
+#elif defined(HAVE_FINITE)
+#define PIKE_ISINF(X)   (!finite(X))
 #elif defined(HAVE__FINITE)
 #define PIKE_ISINF(X)   (!_finite(X))
 #else

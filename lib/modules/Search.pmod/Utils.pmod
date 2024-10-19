@@ -60,9 +60,9 @@ class ProfileEntry {
   //!                   ProfileCache cache)
   //! @param cache
   //!  The parent cache object.
-  void create(int _database_profile_id,
-	      int _query_profile_id,
-	      ProfileCache _my_cache) {
+  protected void create(int _database_profile_id,
+			int _query_profile_id,
+			ProfileCache _my_cache) {
     database_profile_id = _database_profile_id;
     query_profile_id = _query_profile_id;
     my_cache = _my_cache;
@@ -131,7 +131,7 @@ class ProfileEntry {
       return this;
     }
 
-    ADTSet `+(mixed in) {
+    protected ADTSet `+(mixed in) {
       if(stringp(in)||intp(in)||floatp(in))
 	add(in);
       else
@@ -139,7 +139,7 @@ class ProfileEntry {
       return this;
     }
 
-    ADTSet `-(mixed out) {
+    protected ADTSet `-(mixed out) {
       if(stringp(out)||intp(out)||floatp(out))
 	sub(out);
       else
@@ -459,7 +459,7 @@ class Scheduler {
   private mixed schedule_run;
 #endif
 
-  void create(mapping _db_profiles) {
+  protected void create(mapping _db_profiles) {
     db_profiles = _db_profiles;
     schedule();
   }
@@ -503,11 +503,15 @@ class Scheduler {
 	crawl_queue[dbp->id] = next;
 	check_priority_queue(id);
 	if(!quiet) WERR(" Crawl: "+(next-time()));
+      } else {
+        m_delete(crawl_queue, dbp->id);
       }
       next = dbp->next_compact();
       if(next != -1) {
 	compact_queue[dbp->id] = next;
 	if(!quiet) WERR(" Compact: "+(next-time()));
+      } else {
+        m_delete(compact_queue, dbp->id);
       }
       if(!quiet) WERR("");
     }
@@ -672,6 +676,8 @@ class Logger {
   private int last_log_purge_time;
   private constant log_purge_freq = 8*60*60; // Purge log every 8 h or so.
 
+  private string indentation = " " * 20;
+
   private Sql.Sql get_db() {
     Sql.Sql db;
 #if constant(DBManager)
@@ -687,12 +693,22 @@ class Logger {
     return db;
   }
 
+  //  Detection constant for code that instantiate this class to avoid
+  //  compilation errors.
+  constant supports_flexible_indentation = 1;
+
   //! @decl void create(Sql.Sql db_object, int profile, int stderr_logging)
   //! @decl void create(string db_url, int profile, int stderr_logging)
-  void create(string|Sql.Sql _logdb, int _profile, int _stderr_logging) {
+  protected void create(string|Sql.Sql _logdb, int _profile,
+                        int _stderr_logging,
+                        void|int(0..) indentation_width)
+  {
     logdb = _logdb;
     profile = _profile;
     stderr_logging = _stderr_logging;
+    if (!zero_type(indentation_width)) {
+      indentation = (" " * indentation_width);
+    }
 
     // create table eventlog (event int unsigned auto_increment primary key,
     // at timestamp not null, code int unsigned not null, extra varchar(255))
@@ -715,8 +731,8 @@ class Logger {
 		       "warning" : "Warning",
 		       "notice" :  "Notice", ]);
 
-    werror(sprintf("%sSearch: %s: %s\n",
-		   "                    : ",
+    werror(sprintf("%s: Search: %s: %s\n",
+		   indentation,
 		   types[type],
 		   extra?sprintf(codes[(int)code], @(extra/"\n")):codes[(int)code]));
   }

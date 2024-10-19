@@ -135,7 +135,7 @@ private void request_received(mapping rdata) {
 //!    only one agent may be bound to a port at one time
 //!    the agent does not currently support SMUX or AGENTX or other
 //!    agent multiplexing protocols.
-void create(int|void port, string|void addr) {
+protected void create(int|void port, string|void addr) {
   int p=port||SNMP_DEFAULT_PORT;
 
   if(addr)

@@ -10,12 +10,20 @@
 #include "lex.h"
 #include "program.h"
 
+/* #define SUPPORT_COMPILER_HANDLERS */
+
 extern struct program *reporter_program;
 extern struct program *compilation_env_program;
 extern struct program *compilation_program;
 extern struct object *compilation_environment;
+PMOD_EXPORT extern struct program *Annotation_program;
+PMOD_EXPORT extern struct program *Implements_program;
+PMOD_EXPORT extern struct object *Inherited_annotation;
 
-typedef int supporter_callback (void *, int);
+struct Supporter;
+
+typedef int supporter_callback (struct Supporter *, int);
+typedef void supporter_exit_callback (struct Supporter *);
 
 struct Supporter
 {
@@ -34,7 +42,13 @@ struct Supporter
   /* The supporter furthest in on the current_supporter linked list
    * that this one depends on. When it gets unlinked from that list,
    * this becomes a back pointer for the dependants linked list
-   * below. */
+   * below.
+   *
+   * NOTE: NOT reference-counted (the reference is held via the
+   *       current_supporters list. This means that it MUST be
+   *       set to NULL when the depended on supporter is unlinked
+   *       from the current_supporters list.
+   */
 
   struct Supporter *dependants, *next_dependant;
   /* dependants points to a linked list of supporters that depends on
@@ -42,20 +56,36 @@ struct Supporter
    * supporters. A supporter is linked onto this list when it is
    * unlinked from the current_supporter list. */
 
-  struct object *self;
+  struct svalue self;
+  /* CompilerEnvironment.PikeCompiler object for this supporter.
+   * Used for adding references to supporters held by previous,
+   * dependants and next_dependant above.
+   *
+   * NB: NOT reference counted directly!
+   * NB: Subtyped to the CompilerEnvironment.PikeCompiler inherit.
+   */
+
   supporter_callback *fun;
   void *data;
+  supporter_exit_callback *exit_fun;
 
   struct program *prog;
   /* The top level program in the compilation unit. */
 };
 
+/**
+ * This is the storage for CompilationEnvironment.PikeCompiler.
+ *
+ * There is one of these for each translation unit being compiled.
+ */
 struct compilation
 {
   struct Supporter supporter;
   struct pike_string *prog;		/* String to compile. */
+#ifdef SUPPORT_COMPILER_HANDLERS
   struct object *handler;		/* error_handler */
   struct object *compat_handler;	/* compat_handler */
+#endif /* SUPPORT_COMPILER_HANDLERS */
   int major, minor;			/* Base compat version */
   struct program *target;		/* Program being compiled. */
   struct object *placeholder;
@@ -63,21 +93,40 @@ struct compilation
 
   struct program *p;			/* Compiled program or NULL. */
   struct lex lex;
-  int compilation_inherit;		/* Inherit in supporter->self containing
-					 * compilation_program. */
+  struct block_allocator node_allocator;/* Allocator for parse tree nodes. */
 
   struct svalue default_module;		/* predef:: */
-  struct byte_buffer used_modules;		/* Stack of svalues with imported
+  struct byte_buffer used_modules;	/* Stack of svalues with imported
 					 * modules. */
   INT32 num_used_modules;		/* Number of entries on the stack. */
 
   int compilation_depth;		/* Current class nesting depth. */
+
+  int cumulative_parse_error;		/* Number of parse errors. */
 
 #ifdef PIKE_THREADS
   int saved_lock_depth;
 #endif
   struct mapping *resolve_cache;
 };
+
+/*
+ * The next level is struct program_state, which are held in
+ * a linked list stack rooted in the Pike_compiler variable.
+ * There is one such struct for each class being compiled,
+ * with the current class being in Pike_compiler.
+ *
+ * Cf compilation.h for its definition.
+ */
+
+/*
+ * The next level is struct compiler_frame, which are held in
+ * a linked list stack rooted in the field of the same name in
+ * struct program_state. They keep track of state for the
+ * current function.
+ *
+ * Cf las.h for its definition.
+ */
 
 #ifdef PIKE_DEBUG
 #define CHECK_COMPILER()	do {				\
@@ -125,8 +174,10 @@ struct compilation
 #define PC_HANDLE_IMPORT_FUN_NUM			8
 #define PC_POP_TYPE_ATTRIBUTE_FUN_NUM			9
 #define PC_PUSH_TYPE_ATTRIBUTE_FUN_NUM			10
-#define PC_APPLY_TYPE_ATTRIBUTE_FUN_NUM			11
-#define PC_APPLY_ATTRIBUTE_CONSTANT_FUN_NUM		12
+#define PC_INDEX_TYPE_ATTRIBUTE_FUN_NUM			11
+#define PC_APPLY_TYPE_ATTRIBUTE_FUN_NUM			12
+#define PC_APPLY_ATTRIBUTE_CONSTANT_FUN_NUM		13
+#define PC_EVAL_TYPE_ATTRIBUTE_FUN_NUM			14
 
 extern struct program *null_program;
 extern struct program *placeholder_program;
@@ -157,8 +208,10 @@ PMOD_EXPORT void low_yyreport(int severity_level,
 			      INT32 args, const char *fmt, ...);
 PMOD_EXPORT void yyreport(int severity_level, struct pike_string *system,
 			  INT32 args, const char *fmt, ...);
-PMOD_EXPORT void yywarning(char *fmt, ...);
-PMOD_EXPORT void my_yyerror(const char *fmt,...);
+PMOD_EXPORT void yywarning(char *fmt, ...)
+  ATTRIBUTE((format (printf, 1, 2)));
+PMOD_EXPORT void my_yyerror(const char *fmt,...)
+  ATTRIBUTE((format (printf, 1, 2)));
 PMOD_EXPORT void yyerror(const char *s);
 void yytype_report(int severity_level,
 		   struct pike_string *expect_file, INT_TYPE expect_line,
@@ -169,14 +222,20 @@ void yytype_report(int severity_level,
 void yytype_error(const char *msg, struct pike_type *expected_t,
 		  struct pike_type *got_t, unsigned int flags);
 struct pike_string *format_exception_for_error_msg (struct svalue *thrown);
-void handle_compile_exception (const char *yyerror_fmt, ...);
+PMOD_EXPORT void handle_compile_exception (const char *yyerror_fmt, ...)
+  ATTRIBUTE((format (printf, 1, 2)));
 void push_compiler_frame(int lexical_scope);
 node *low_pop_local_variables(int level, node *block);
 node *pop_local_variables(int level, node *block);
 void pop_compiler_frame(void);
 PMOD_EXPORT void change_compiler_compatibility(int major, int minor);
+void low_init_pike_compiler(void);
 void init_pike_compiler(void);
 void cleanup_pike_compiler(void);
+void low_cleanup_pike_compiler(void);
 /* Prototypes end here */
+
+#define low_pop_local_variables(LEVEL, BLOCK)	dmalloc_touch(node *, low_pop_local_variables(LEVEL, dmalloc_touch(node *, BLOCK)))
+#define pop_local_variables(LEVEL, BLOCK)	dmalloc_touch(node *, pop_local_variables(LEVEL, dmalloc_touch(node *, BLOCK)))
 
 #endif	/* !PIKE_COMPILER_H */

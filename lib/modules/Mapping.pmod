@@ -13,13 +13,13 @@ class ShadowedMapping(protected mapping|ShadowedMapping parent)
 {
   protected mapping shadow = ([]);
 
-  protected mapping joined;
-  protected mapping parent_copy;
+  protected mapping|zero joined;
+  protected mapping|zero parent_copy;
 
-  protected int(0..1) modify_parent;
+  protected int(0..2) modify_parent;
 
   //! @decl void create(mapping|ShadowedMapping parent, @
-  //!                   mapping|void shadow, int(0..1)|void modify_parent)
+  //!                   mapping|void shadow, int(0..2)|void modify_parent)
   //!
   //! @param parent
   //!   Mapping to be shadowed.
@@ -27,11 +27,20 @@ class ShadowedMapping(protected mapping|ShadowedMapping parent)
   //!   Initial shadow of @[parent].
   //! @param modify_parent
   //!   Modifications should be done to @[parent] rather than
-  //!   to @[shadow]. If this is set, only entries that are
-  //!   already present in @[shadow] can be modified by later
-  //!   operations.
-
-  protected void create(mapping|void shadow, int(0..1)|void modify_parent)
+  //!   to @[shadow].
+  //!   @int
+  //!     @value 0
+  //!       Modifications should be done only to @[shadow].
+  //!     @value 1
+  //!       Entries that already present in @[shadow] can be modified
+  //!       by later operations. Other modifications will be performed
+  //!       in @[parent].
+  //!     @value 2
+  //!       All modifications will be performed in @[parent]. If the
+  //!       entry to be modified is present in @[shadow], it will
+  //!       be removed from it.
+  //!   @endint
+  protected void create(mapping|void shadow, int(0..2)|void modify_parent)
   {
     if (shadow) this::shadow = shadow + ([]);
     this::modify_parent = modify_parent;
@@ -56,8 +65,13 @@ class ShadowedMapping(protected mapping|ShadowedMapping parent)
   protected void `[]=(mixed ind, mixed val)
   {
     joined = 0;
-    if (modify_parent && !has_index(shadow, ind)) {
-      parent[ind] = val;
+    if (modify_parent) {
+      if ((modify_parent == 1) && has_index(shadow, ind)) {
+        shadow[ind] = val;
+      } else {
+        m_delete(shadow, ind);
+        parent[ind] = val;
+      }
     } else {
       shadow[ind] = val;
     }
@@ -82,10 +96,12 @@ class ShadowedMapping(protected mapping|ShadowedMapping parent)
   protected mixed _m_delete(mixed ind)
   {
     mixed res = m_delete(shadow, ind);
-    if (undefinedp(res))
+    if (undefinedp(res)) {
       res = m_delete(parent, ind);
-    else
-      joined = 0;
+    } else if (modify_parent == 2) {
+      m_delete(parent, ind);
+    }
+    joined = 0;
 
     return res;
   }
@@ -102,25 +118,25 @@ class ShadowedMapping(protected mapping|ShadowedMapping parent)
     return values(joined);
   }
 
-  protected mixed `+(mixed arg)
+  protected mixed `+(mapping|zero|this_program arg)
   {
     update_joined();
     return predef::`+(joined, arg);
   }
 
-  protected mixed ``+(mixed arg)
+  protected mixed ``+(mapping|zero|this_program arg)
   {
     update_joined();
     return predef::`+(arg, joined);
   }
 
-  protected mixed `-(mixed arg)
+  protected mixed `-(mapping|zero|this_program arg)
   {
     update_joined();
     return predef::`-(joined, arg);
   }
 
-  protected mixed ``-(mixed arg)
+  protected mixed ``-(mapping|zero|this_program arg)
   {
     update_joined();
     return predef::`-(arg, joined);

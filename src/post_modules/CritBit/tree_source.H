@@ -1,3 +1,4 @@
+/* -*- mode: C; c-basic-offset: 4; -*- */
 #ifndef CB_GC_RECURSE_KEY
 # define CB_GC_RECURSE_KEY(X)
 #endif
@@ -68,10 +69,12 @@ cmod_DEFINE_EVAL(COPY_TREE, TREE_CLASSIFY(_copy_tree))
 
 cmod_DEFINE_EVAL(COPY_NODE, TREE_CLASSIFY(_copy_node))
 
-    /*! @decl mixed _m_delete(mixed key)
+    DOCSTART() @decl mixed _m_delete(mixed key)
      *! m_delete callback.
-     */
-    PIKEFUN mixed _m_delete(mixed key) {
+    DOCEND()
+    PIKEFUN mixed _m_delete(mixed key)
+	flags ID_PROTECTED;
+    {
 	size_t size, oldsize;
 	cb_key k;
 
@@ -79,7 +82,12 @@ cmod_DEFINE_EVAL(COPY_NODE, TREE_CLASSIFY(_copy_node))
 
 	oldsize = (THIS->tree.root) ? THIS->tree.root->size : 0;
 	if (oldsize) {
-	    cb_delete(& THIS->tree, k, Pike_sp++);
+	    /* NB: cb_delete() may run pike code (like eg when
+	     *     comparing bignums). The stack must thus be
+	     *     consistent in case eg a gc() is triggered.
+	     */
+	    push_undefined();
+	    cb_delete(& THIS->tree, k, Pike_sp-1);
 	    size = (THIS->tree.root) ? THIS->tree.root->size : 0;
 	    if (size < oldsize) {
 		THIS->rev++;
@@ -98,7 +106,9 @@ cmod_DEFINE_EVAL(COPY_NODE, TREE_CLASSIFY(_copy_node))
     DOCSTART() @decl void create(array|mapping|void o)
      *! Create a tree_class from o.
     DOCEND()
-    PIKEFUN void create (array|mapping|void o) {
+    PIKEFUN void create (array|mapping|void o)
+	flags ID_PROTECTED;
+    {
 	if (o) {
 	  switch (TYPEOF(*o)) {
 	    case PIKE_T_MAPPING: {
@@ -134,14 +144,18 @@ ARG_ERROR:
 DOCSTART() @decl int _sizeof()
  *! Gives the number of entries in the @[tree_class].
 DOCEND()
-    PIKEFUN int _sizeof() {
+    PIKEFUN int _sizeof()
+	flags ID_PROTECTED;
+    {
 	push_int(THIS->tree.root ? THIS->tree.root->size : 0);
     }
 
 DOCSTART() @decl array _indices()
  *! Returns a sorted array of indices of the @[tree_class].
 DOCEND()
-    PIKEFUN array _indices() {
+    PIKEFUN array _indices()
+	flags ID_PROTECTED;
+    {
 	size_t size = THIS->tree.root ? THIS->tree.root->size : 0;
 	if (size) {
 	    size_t start = 0;
@@ -179,7 +193,9 @@ DOCSTART() @decl array _values()
  *! @[_indices] so that @expr{mkmapping(indices(tree), values(tree))@} would
  *! create a mapping with the same contents as this @[tree_class].
 DOCEND()
-    PIKEFUN array _values() {
+    PIKEFUN array _values()
+	flags ID_PROTECTED;
+    {
 	size_t size = THIS->tree.root ? THIS->tree.root->size : 0;
 	if (size) {
 	    struct array * a = allocate_array_no_init(size, 0);
@@ -190,8 +206,13 @@ DOCEND()
 	ref_push_array(&empty_array);
     }
 
-    /*! @decl mixed `[]=(mixed key, mixed val) */
-    PIKEFUN mixed `[]=(mixed key, mixed val) {
+DOCSTART() @decl mixed `[]=(mixed key, mixed val, @
+ *!                         mixed|void context, int|void access)
+DOCEND()
+    PIKEFUN mixed `[]=(mixed key, mixed val,
+		       mixed|void context, int|void access)
+	flags ID_PROTECTED;
+    {
 	cb_key k = CB_KEY_FROM_SVALUE(key);
 	cb_insert(& THIS->tree, k, val);
 #ifdef DEBUG_CHECK
@@ -214,11 +235,13 @@ DOCEND()
 	stack_pop_keep_top();
     }
 
-    /*! @decl mapping cast(string type)
+    DOCSTART() @decl mapping cast(string type)
      *! Cast callback. Supports only cast to mapping and
      *! behaves as the inverse of create().
-     */
-    PIKEFUN mapping cast(string type) {
+    DOCEND()
+    PIKEFUN mapping cast(string type)
+	flags ID_PROTECTED;
+    {
       pop_stack(); /* type as at least one more reference. */
 
       if (type == literal_mapping_string) {
@@ -230,11 +253,11 @@ DOCEND()
         push_undefined();
     }
 
-    /*! @decl mixed nth(int(0..) n)
+    DOCSTART() @decl mixed nth(int(0..) n)
      *! Get the @expr{n@}th entry in order.
      *! @returns
      *! 	An array @expr{({ key, value })@}.
-     */
+    DOCEND()
     PIKEFUN mixed nth(int n) {
 	cb_node_t node;
 
@@ -256,12 +279,14 @@ DOCEND()
 	return;
     }
 
-    /*! @decl array _random(function random_string, function random)
+    DOCSTART() @decl array _random(function random_string, function random)
      *! Get a random entry.
      *! @returns
      *! 	An array @expr{({ key, value })@}.
-     */
-    PIKEFUN array _random(function random_string, function random) {
+    DOCEND()
+    PIKEFUN array _random(function random_string, function random)
+	flags ID_PROTECTED;
+    {
         cb_node_t node;
 
         if (THIS->tree.root) {
@@ -285,9 +310,11 @@ DOCEND()
 	return;
     }
 
-    /*! @decl mixed `[](mixed key)
-     */
-    PIKEFUN mixed `[](mixed key) {
+    DOCSTART() @decl mixed `[](mixed key)
+    DOCEND()
+    PIKEFUN mixed `[](mixed key)
+	flags ID_PROTECTED;
+    {
 	CB_TRANSFORM_KEY(key);
 	if ((1 << TYPEOF(*key)) & T_KEY) {
 	    cb_node_t n;
@@ -303,9 +330,11 @@ DOCEND()
 	push_undefined();
     }
 
-    /*! @decl int(0..1) _equal(mixed o)
-     */
-    PIKEFUN int _equal(mixed o) {
+    DOCSTART() @decl int(0..1) _equal(mixed o)
+    DOCEND()
+    PIKEFUN int _equal(mixed o)
+	flags ID_PROTECTED;
+    {
 	if (TYPEOF(*o) == PIKE_T_OBJECT
 	    && o->u.object->prog == Pike_fp->current_object->prog) {
 	    cb_node_t tree1, tree2;
@@ -335,10 +364,12 @@ DOCEND()
 	return;
     }
 
-    /*! @decl mixed `-(mixed o)
+    DOCSTART() @decl mixed `-(mixed o)
      *! Sub[s]tract two trees from each other (key-wise).
-     */
-    PIKEFUN mixed `-(mixed o) {
+    DOCEND()
+    PIKEFUN mixed `-(mixed o)
+	flags ID_PROTECTED;
+    {
 	struct object * res;
 	cb_node_t node, tree = NULL;
 
@@ -369,10 +400,12 @@ DOCEND()
 	return;
     }
 
-    /*! @decl mixed `+(mixed o)
+    DOCSTART() @decl mixed `+(mixed o)
      *!	Add callback. Returns the union of two trees.
-     */
-    PIKEFUN mixed `+(mixed o) {
+    DOCEND()
+    PIKEFUN mixed `+(mixed o)
+	flags ID_PROTECTED;
+    {
 	cb_node_t tree1, tree2;
         TREE_T *T;
 
@@ -410,11 +443,13 @@ DOCEND()
 	return;
     }
 
-    /*! @decl mixed `[..](mixed a, int atype, mixed b, int btype)
+    DOCSTART() @decl mixed `[..](mixed a, int atype, mixed b, int btype)
      *! @seealso
      *! 	@[predef::`[..]]
-     */
-    PIKEFUN mixed `[..](mixed a, int atype, mixed b, int btype) {
+    DOCEND()
+    PIKEFUN mixed `[..](mixed a, int atype, mixed b, int btype)
+	flags ID_PROTECTED;
+    {
 	struct object * o = NULL;
 
 	if (THIS->tree.root) {
@@ -479,7 +514,9 @@ illegal_index:
     }
 
 #cmod_if 0
-    PIKEFUN mixed `[](mixed a, mixed b) {
+    PIKEFUN mixed `[](mixed a, mixed b)
+	flags ID_PROTECTED;
+    {
 	struct object * o = NULL;
 
 	if (THIS->tree.root) {
@@ -570,10 +607,10 @@ range_do_clone:
 	push_undefined();
     }
 
-    /*! @decl string bkey(mixed key)
+    DOCSTART() @decl string bkey(mixed key)
      *! Render the internally used binary representation of
      *! the key into a string as a strings of '0's and '1's.
-     */
+    DOCEND()
     PIKEFUN string bkey(mixed key) {
 	struct string_builder s;
 	cb_key k;
@@ -626,9 +663,9 @@ range_do_clone:
 	push_undefined();
     }
 
-    /*! @decl int(0..) depth()
+    DOCSTART() @decl int(0..) depth()
      *! Calculate the depth of the tree.
-     */
+    DOCEND()
     PIKEFUN int depth() {
 	if (THIS->tree.root) {
 	    push_int(cb_get_depth(THIS->tree.root));
@@ -708,4 +745,4 @@ range_do_clone:
 	});
     }
 
-/*! @endclass */
+DOCSTART() @endclass DOCEND()

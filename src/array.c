@@ -35,8 +35,8 @@ PMOD_EXPORT struct array empty_array=
   0,			 /* no flags */
   &weak_empty_array,     /* Next */
   0,			 /* previous */
-  empty_array.real_item, /* Initialize the item pointer. */
-  {SVALUE_INIT_FREE},
+  empty_array.u.real_item, /* Initialize the item pointer. */
+  {{SVALUE_INIT_FREE}},
 };
 
 /** The empty weak array. */
@@ -49,8 +49,8 @@ PMOD_EXPORT struct array weak_empty_array=
   ARRAY_WEAK_FLAG,	 /* weak */
   0,                     /* next */
   &empty_array,		 /* previous */
-  weak_empty_array.real_item, /* Initialize the item pointer. */
-  {SVALUE_INIT_FREE},
+  weak_empty_array.u.real_item, /* Initialize the item pointer. */
+  {{SVALUE_INIT_FREE}},
 };
 
 struct array *first_array = &empty_array;
@@ -114,14 +114,14 @@ PMOD_EXPORT struct array *real_allocate_array(ptrdiff_t size,
   v->type_field = BIT_MIXED | BIT_UNFINISHED;
 
   v->malloced_size = (INT32)(size + extra_space);
-  v->item=v->real_item;
+  v->item=v->u.real_item;
   v->size = (INT32)size;
   INIT_PIKE_MEMOBJ(v, T_ARRAY);
   DOUBLELINK (first_array, v);
 
   return v;
 TOO_BIG:
-  Pike_error("Too large array (size %ld is too big).\n", length);
+  Pike_error("Too large array (size %"PRINTSIZET"d is too big).\n", length);
 }
 
 /**
@@ -255,6 +255,11 @@ PMOD_EXPORT struct array *array_column (struct array *data, struct svalue *index
     {
       index_no_free(&sval, ITEM(data)+e, index);
       types |= 1 << TYPEOF(sval);
+      if (!(types & BIT_INT) && (TYPEOF(sval) == PIKE_T_OBJECT) &&
+	  (sval.u.object->prog == bignum_program)) {
+	/* Lie, and claim that the array contains integers too. */
+	types |= BIT_INT;
+      }
       free_svalue(ITEM(data)+e);
       move_svalue (ITEM(data) + e, &sval);
     }
@@ -273,6 +278,11 @@ PMOD_EXPORT struct array *array_column (struct array *data, struct svalue *index
     for(e=0;e<a->size;e++) {
       index_no_free(ITEM(a)+e, ITEM(data)+e, index);
       types |= 1 << TYPEOF(ITEM(a)[e]);
+      if (!(types & BIT_INT) && (TYPEOF(ITEM(a)[e]) == PIKE_T_OBJECT) &&
+	  (ITEM(a)[e].u.object->prog == bignum_program)) {
+	/* Lie, and claim that the array contains integers too. */
+	types |= BIT_INT;
+      }
     }
     a->type_field = types;
 
@@ -384,6 +394,39 @@ PMOD_EXPORT void simple_set_index(struct array *a,struct svalue *ind,struct sval
 }
 
 /**
+ *  Atomically set an element in an array to a value and get
+ *  the previous value.
+ *
+ *  @param a the array whose element is to be set
+ *  @param i the index to get and set
+ *  @param from_to the value to get and set
+ *
+ *  On return the @ref svalue at position @b i of the array @b a has been
+ *  swapped with the @ref svalue at @b from_to.
+ */
+PMOD_EXPORT void array_atomic_get_set(struct array *a, INT32 i,
+				      struct svalue *from_to)
+{
+  INT32 p = i;
+  struct svalue tmp;
+
+  if (i < 0) i += a->size;
+
+  if(i<0 || i>=a->size) {
+    if (a->size) {
+      Pike_error("Index %d is out of array range "
+		 "%d..%d.\n", p, -a->size, a->size-1);
+    } else {
+      Pike_error("Attempt to index the empty array with %d.\n", p);
+    }
+  }
+
+  tmp = ITEM(a)[i];
+  ITEM(a)[i] = *from_to;
+  *from_to = tmp;
+}
+
+/**
  * Insert an svalue into an array and grow the array if necessary.
  */
 PMOD_EXPORT struct array *array_insert(struct array *v,struct svalue *s,INT32 index)
@@ -396,9 +439,9 @@ PMOD_EXPORT struct array *array_insert(struct array *v,struct svalue *s,INT32 in
   /* Can we fit it into the existing block? */
   if(v->refs<=1 && (v->malloced_size > v->size))
   {
-    if ((v->item != v->real_item) &&
+    if ((v->item != v->u.real_item) &&
 	(((index<<1) < v->size) ||
-	 ((v->item + v->size) == (v->real_item + v->malloced_size)))) {
+	 ((v->item + v->size) == (v->u.real_item + v->malloced_size)))) {
       memmove(ITEM(v)-1, ITEM(v), index * sizeof(struct svalue));
       v->item--;
     } else {
@@ -473,13 +516,18 @@ void o_append_array(INT32 args)
 	/* There's a function controlling assignments in this object,
 	 * so we can't alter the array in place.
 	 */
-      } else if( v->real_item+v->malloced_size >= v->item+v->size+args ) {
+      } else if( v->u.real_item+v->malloced_size >= v->item+v->size+args ) {
         struct svalue *from = val+1;
         int i;
         for( i = 0; i<args; i++,from++ )
         {
           v->item[v->size++] = *from;
           v->type_field |= 1<<TYPEOF(*from);
+	  if (!(v->type_field & BIT_INT) && (TYPEOF(*from) == PIKE_T_OBJECT) &&
+	      (from->u.object->prog == bignum_program)) {
+	    /* Lie, and claim that the array contains integers too. */
+	    v->type_field |= BIT_INT;
+	  }
         }
         Pike_sp -= args;
         stack_pop_2_elems_keep_top();
@@ -607,7 +655,7 @@ PMOD_EXPORT struct array *resize_array(struct array *a, INT32 size)
     /* We should grow the array */
 
     if((a->malloced_size >= size) &&
-       ((a->item + size) <= (a->real_item + a->malloced_size)))
+       ((a->item + size) <= (a->u.real_item + a->malloced_size)))
     {
       for(;a->size < size; a->size++)
       {
@@ -680,7 +728,8 @@ PMOD_EXPORT struct array *array_remove(struct array *v,INT32 index)
   }
 }
 
-static ptrdiff_t fast_array_search( struct array *v, struct svalue *s, ptrdiff_t start )
+static ptrdiff_t fast_array_search( struct array *v, const struct svalue *s,
+                                    ptrdiff_t start )
 {
   ptrdiff_t e;
   struct svalue *ip = ITEM(v);
@@ -697,7 +746,7 @@ static ptrdiff_t fast_array_search( struct array *v, struct svalue *s, ptrdiff_t
  * @param start the index to start search at
  * @return the index if found, -1 otherwise
  */
-PMOD_EXPORT ptrdiff_t array_search(struct array *v, struct svalue *s,
+PMOD_EXPORT ptrdiff_t array_search(struct array *v, const struct svalue *s,
 				   ptrdiff_t start)
 {
 #ifdef PIKE_DEBUG
@@ -707,7 +756,7 @@ PMOD_EXPORT ptrdiff_t array_search(struct array *v, struct svalue *s,
 #ifdef PIKE_DEBUG
   if(d_flag > 1)  array_check_type_field(v);
 #endif
-  check_destructed(s);
+  safe_check_destructed(s);
 
   /* Why search for something that is not there?
    * however, we must explicitly check for searches
@@ -726,6 +775,14 @@ PMOD_EXPORT ptrdiff_t array_search(struct array *v, struct svalue *s,
  * @param start the beginning element to be included
  * @param end the element beyond the end of the slice
  * @return an array consisting of v[start..end-1]
+ *
+ * NOTE: Dangerous as it has an unconventional API!
+ * The original array will keep its reference regardless
+ * of whether it has been reused (and thus been altered)
+ * or not.
+ *
+ * The conventional API would have been to steal/free a reference
+ * from v. This is NOT done here!
  */
 PMOD_EXPORT struct array *slice_array(struct array *v, ptrdiff_t start,
 				      ptrdiff_t end)
@@ -841,6 +898,11 @@ PMOD_EXPORT void check_array_for_destruct(struct array *v)
 	types |= BIT_INT;
       }else{
 	types |= 1<<TYPEOF(ITEM(v)[e]);
+	if (!(types & BIT_INT) && (TYPEOF(ITEM(v)[e]) == PIKE_T_OBJECT) &&
+	    (ITEM(v)[e].u.object->prog == bignum_program)) {
+	  /* Lie, and claim that the array contains integers too. */
+	  types |= BIT_INT;
+	}
       }
     }
     v->type_field = types;
@@ -870,6 +932,11 @@ PMOD_EXPORT INT32 array_find_destructed_object(struct array *v)
 	 (!ITEM(v)[e].u.object->prog))
 	return e;
       types |= 1<<TYPEOF(ITEM(v)[e]);
+      if (!(types & BIT_INT) && (TYPEOF(ITEM(v)[e]) == PIKE_T_OBJECT) &&
+	  (ITEM(v)[e].u.object->prog == bignum_program)) {
+	/* Lie, and claim that the array contains integers too. */
+	types |= BIT_INT;
+      }
     }
     v->type_field = types;
   }
@@ -1198,28 +1265,44 @@ int alpha_svalue_cmpfun(const struct svalue *a, const struct svalue *b)
       else
 	if (!b->u.array->size)
 	  return 1;
+      check_c_stack(1024);
       return alpha_svalue_cmpfun(ITEM(a->u.array), ITEM(b->u.array));
 
     case T_MULTISET:
       if (a == b) return 0;
       {
+        /* Note that multiset_first takes a reference to the multiset
+         * data if it does not return -1.
+         */
 	ptrdiff_t a_pos = multiset_first (a->u.multiset);
 	ptrdiff_t b_pos = multiset_first (b->u.multiset);
 	int res;
 	struct svalue ind_a, ind_b;
 	if (a_pos < 0)
-	  if (b_pos < 0)
-	    return 0;
-	  else
-	    return -1;
-	else
-	  if (b_pos < 0)
-	    return 1;
-	res = alpha_svalue_cmpfun (
-	  use_multiset_index (a->u.multiset, a_pos, ind_a),
-	  use_multiset_index (b->u.multiset, b_pos, ind_b));
-	sub_msnode_ref (a->u.multiset);
-	sub_msnode_ref (b->u.multiset);
+        {
+          res = (b_pos < 0) ? 0 : -1;
+        }
+        else if (b_pos < 0)
+        {
+          res = 1;
+        }
+        else
+        {
+          ONERROR a_uwp, b_uwp;
+          SET_ONERROR(a_uwp, do_sub_msnode_ref, a->u.multiset);
+          SET_ONERROR(b_uwp, do_sub_msnode_ref, b->u.multiset);
+
+          check_c_stack(1024);
+
+          res = alpha_svalue_cmpfun (
+            use_multiset_index (a->u.multiset, a_pos, ind_a),
+            use_multiset_index (b->u.multiset, b_pos, ind_b));
+
+          UNSET_ONERROR(b_uwp);
+          UNSET_ONERROR(a_uwp);
+        }
+        if (b_pos >= 0) sub_msnode_ref (b->u.multiset);
+        if (a_pos >= 0) sub_msnode_ref (a->u.multiset);
 	return res;
       }
 
@@ -1361,7 +1444,7 @@ static INT32 low_lookup(struct array *v,
   b=v->size;
   while(b > a)
   {
-    c=(a+b)/2;
+    c=((unsigned INT32)a+(unsigned INT32)b)/2;
     q=fun(ITEM(v)+c,s);
 
     if(q < 0)
@@ -1396,8 +1479,36 @@ INT32 set_lookup(struct array *a, struct svalue *s)
   return low_lookup(a,s,set_svalue_cmpfun);
 }
 
-INT32 switch_lookup(struct array *a, struct svalue *s)
+/**
+ * Lookup an svalue in a switch table.
+ *
+ * Returns the array index if found, and
+ * if not found the inverse of the index
+ * for the first larger element or the
+ * inverse of the size of the array if
+ * the svalue is larger than all elements
+ * of the array.
+ */
+INT32 switch_lookup(struct svalue *table, struct svalue *s)
 {
+  struct array *a;
+
+  if (TYPEOF(*table) == PIKE_T_MAPPING) {
+    s = low_mapping_lookup(table->u.mapping, s);
+    if (s && (TYPEOF(*s) == PIKE_T_INT)) {
+      return s->u.integer;
+    }
+    return -1;
+  }
+
+#ifdef PIKE_DEBUG
+  if (TYPEOF(*table) != PIKE_T_ARRAY) {
+    Pike_fatal("Unsupported switch lookup table type: %s.\n",
+               get_name_of_type(TYPEOF(*table)));
+  }
+#endif
+  a = table->u.array;
+
   /* face it, it's not there */
 #ifdef PIKE_DEBUG
   if(d_flag > 1)  array_check_type_field(a);
@@ -1460,6 +1571,23 @@ PMOD_EXPORT TYPE_FIELD array_fix_type_field(struct array *v)
   for(e=0; e<v->size; e++) {
     check_svalue (ITEM(v) + e);
     t |= BITOF(ITEM(v)[e]);
+    if (!(t & BIT_INT) &&
+	(((TYPEOF(ITEM(v)[e]) == PIKE_T_OBJECT) &&
+	  ((ITEM(v)[e].u.object->prog == bignum_program) ||
+	   !ITEM(v)[e].u.object->prog)) ||
+	 ((TYPEOF(ITEM(v)[e]) == PIKE_T_FUNCTION) &&
+	  (SUBTYPEOF(ITEM(v)[e]) != FUNCTION_BUILTIN) &&
+	  !ITEM(v)[e].u.object->prog))) {
+      /*
+       * Bignum or destructed object or destructed function.
+       *
+       * Lie, and claim that the array contains integers too.
+       */
+      t |= BIT_INT;
+#ifdef PIKE_DEBUG
+      v->type_field |= BIT_INT;
+#endif
+    }
   }
 
 #ifdef PIKE_DEBUG
@@ -1476,7 +1604,7 @@ PMOD_EXPORT TYPE_FIELD array_fix_type_field(struct array *v)
 
 #ifdef PIKE_DEBUG
 /* Maybe I should have a 'clean' flag for this computation */
-PMOD_EXPORT void array_check_type_field(struct array *v)
+PMOD_EXPORT void array_check_type_field(const struct array *v)
 {
   int e;
   TYPE_FIELD t;
@@ -1499,6 +1627,12 @@ PMOD_EXPORT void array_check_type_field(struct array *v)
       Pike_fatal("Type is out of range.\n");
 
     t |= 1 << TYPEOF(ITEM(v)[e]);
+
+    if (!(t & BIT_INT) && (TYPEOF(ITEM(v)[e]) == PIKE_T_OBJECT) &&
+	(ITEM(v)[e].u.object->prog == bignum_program)) {
+      /* Lie, and claim that the array contains integers too. */
+      t |= BIT_INT;
+    }
   }
 
   if(t & ~(v->type_field))
@@ -1672,8 +1806,8 @@ PMOD_EXPORT struct array *add_arrays(struct svalue *argp, INT32 args)
       v=argp[e].u.array;
       if(v->refs == 1 && v->malloced_size >= size)
       {
-	if (((v->item - v->real_item) >= tmp) &&
-	    ((v->item + size - tmp) <= (v->real_item + v->malloced_size))) {
+	if (((v->item - v->u.real_item) >= tmp) &&
+	    ((v->item + size - tmp) <= (v->u.real_item + v->malloced_size))) {
 	  /* There's enough space before and after. */
 	  debug_malloc_touch(v);
 	  mark_free_svalue(argp + e);
@@ -1719,9 +1853,9 @@ PMOD_EXPORT struct array *add_arrays(struct svalue *argp, INT32 args)
     if (v2) {
       debug_malloc_touch(v2);
       mark_free_svalue(argp + e2);
-      memmove(v2->real_item + tmp2, ITEM(v2),
+      memmove(v2->u.real_item + tmp2, ITEM(v2),
               v2->size * sizeof(struct svalue));
-      v2->item = v2->real_item + tmp2;
+      v2->item = v2->u.real_item + tmp2;
       for(tmp=e2-1;tmp>=0;tmp--)
       {
 	v = argp[tmp].u.array;
@@ -1780,6 +1914,7 @@ PMOD_EXPORT int array_equal_p(struct array *a, struct array *b, struct processin
   INT32 e;
 
   if(a == b) return 1;
+  if(!a || !b) return 0;
   if(a->size != b->size) return 0;
   if(!a->size) return 1;
 
@@ -1932,7 +2067,8 @@ PMOD_EXPORT struct array *merge_array_with_order(struct array *a,
 
 /** Remove all instances of an svalue from an array
 */
-static struct array *subtract_array_svalue(struct array *a, struct svalue *b)
+PMOD_EXPORT struct array *subtract_array_svalue(struct array *a,
+						struct svalue *b)
 {
   size_t size = a->size;
   size_t from=0, to=0;
@@ -1969,6 +2105,11 @@ static struct array *subtract_array_svalue(struct array *a, struct svalue *b)
     {
       assign_svalue_no_free(dp, ip);
       type_field |= 1<<TYPEOF(*dp);
+      if (!(type_field & BIT_INT) && (TYPEOF(*dp) == PIKE_T_OBJECT) &&
+	  (dp->u.object->prog == bignum_program)) {
+	/* Lie, and claim that the array contains integers too. */
+	type_field |= BIT_INT;
+      }
     }
     a->size = from;
   }
@@ -1977,6 +2118,11 @@ static struct array *subtract_array_svalue(struct array *a, struct svalue *b)
     if( X )                                                                 \
     {  /* include entry */                                                  \
       type_field|=1<<TYPEOF(*ip);                                           \
+      if (!(type_field & BIT_INT) && (TYPEOF(*ip) == PIKE_T_OBJECT) &&	    \
+	  (ip->u.object->prog == bignum_program)) {			    \
+	/* Lie, and claim that the array contains integers too. */	    \
+	type_field |= BIT_INT;						    \
+      }									    \
       if(!destructive)                                                      \
         assign_svalue_no_free(dp,ip);                                       \
       else if(ip!=dp)                                                       \
@@ -2106,7 +2252,7 @@ node *make_node_from_array(struct array *a)
   {
     debug_malloc_touch(a);
     for(e=0; e<a->size; e++)
-      if(ITEM(a)[e].u.integer != 0)
+      if(ITEM(a)[e].u.integer || SUBTYPEOF(ITEM(a)[e]))
 	break;
     if(e == a->size)
     {
@@ -2122,9 +2268,11 @@ node *make_node_from_array(struct array *a)
     {
       case BIT_INT:
 	for(e=1; e<a->size; e++)
-	  if(ITEM(a)[e].u.integer != ITEM(a)[0].u.integer)
+	  if((ITEM(a)[e].u.integer != ITEM(a)[0].u.integer) ||
+	     (SUBTYPEOF(ITEM(a)[e]) != SUBTYPEOF(ITEM(a)[0]))) {
 	    break;
-	if(e==a->size && ITEM(a)[0].u.integer==0)
+	  }
+	if(e==a->size && ITEM(a)[0].u.integer==0 && !SUBTYPEOF(ITEM(a)[0]))
 	  return mkefuncallnode("allocate",mkintnode(a->size));
 	break;
 
@@ -2207,7 +2355,9 @@ void describe_array_low(struct byte_buffer *buf, struct array *a, struct process
 void simple_describe_array(struct array *a)
 {
   char *s;
-  if (a->size) {
+  if (!a) {
+    fputs("NULL-array\n", stderr);
+  } else if (a->size) {
     struct byte_buffer buf = BUFFER_INIT();
     describe_array_low(&buf,a,0,0);
     fprintf(stderr,"({\n%s\n})\n",buffer_get_string(&buf));
@@ -2224,6 +2374,12 @@ void describe_array(struct byte_buffer *buffer,struct array *a,struct processing
   struct processing doing;
   INT32 e;
   char buf[60];
+
+  if (!a) {
+    buffer_add_str(buffer, "UNDEFINED");
+    return;
+  }
+
   if(! a->size)
   {
     buffer_add_str(buffer, "({ })");
@@ -2273,7 +2429,8 @@ PMOD_EXPORT struct array *aggregate_array(INT32 args)
   return a;
 }
 
-/** Add an element to the end of an array by resizing the array.
+/**
+ * Add an element to the end of an array by resizing the array.
  *
  * @param a the array to be appended
  * @param s the value to be added to the new element in the array
@@ -2286,7 +2443,8 @@ PMOD_EXPORT struct array *append_array(struct array *a, struct svalue *s)
   return a;
 }
 
-/** Automap assignments
+/**
+ * Automap assignments
  * This implements X[*] = ...[*]..
  * Assign elements in a at @level to elements from b at the same @level.
  * This will not actually modify any of the arrays, only change the
@@ -2468,7 +2626,7 @@ PMOD_EXPORT struct pike_string *implode(struct array *a,
 	   continue;		    /* skip zero (strings) */
 	 /* FALLTHROUGH */
       default:
-	Pike_error("Array element %d is not a string\n", ae-a->item);
+        Pike_error("Array element %td is not a string\n", ae-a->item);
 	break;
       case T_STRING:
 	delims++;
@@ -2586,6 +2744,11 @@ PMOD_EXPORT void apply_array(struct array *a, INT32 args, int flags)
       /* FIXME: Don't throw apply errors from apply_svalue here. */
       apply_svalue(ITEM(a)+e, args);
       new_types |= 1 << TYPEOF(Pike_sp[-1]);
+      if (!(new_types & BIT_INT) && (TYPEOF(Pike_sp[-1]) == PIKE_T_OBJECT) &&
+	  (Pike_sp[-1].u.object->prog == bignum_program)) {
+	/* Lie, and claim that the array contains integers too. */
+	new_types |= BIT_INT;
+      }
       assign_svalue(ITEM(aa)+e, &Pike_sp[-1]);
       pop_stack();
     }
@@ -2721,10 +2884,10 @@ PMOD_EXPORT void check_array(struct array *a)
   if(a->malloced_size < 0)
     Pike_fatal("Array malloced size is negative!\n");
 
-  if((a->item + a->size) > (a->real_item + a->malloced_size))
+  if((a->item + a->size) > (a->u.real_item + a->malloced_size))
     Pike_fatal("Array uses memory outside of the malloced block!\n");
 
-  if(a->item < a->real_item)
+  if(a->item < a->u.real_item)
   {
 #ifdef DEBUG_MALLOC
     describe(a);

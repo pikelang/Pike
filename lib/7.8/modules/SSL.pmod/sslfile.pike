@@ -1,5 +1,7 @@
 #pike 7.8
 
+#pragma no_deprecation_warnings
+
 #if constant(SSL.Cipher.CipherAlgorithm)
 
 //! Interface similar to @[Stdio.File].
@@ -636,13 +638,14 @@ int close (void|string how, void|int clean_close, void|int dont_throw)
       // Should be shut down after close(), even if an error occurred.
       int err = errno();
       shutdown();
+      local_errno = err;
       if (dont_throw) {
-	local_errno = err;
 	RETURN (0);
       }
-      else if( err != System.EPIPE )
+      else if (!(< 0, System.EPIPE, System.ECONNRESET, >)[err]) {
 	// Errors are normally thrown from close().
         error ("Failed to close SSL connection: %s\n", strerror (err));
+      }
     }
 
     if (stream && (stream->query_read_callback() || stream->query_write_callback())) {
@@ -1861,7 +1864,7 @@ protected int ssl_read_callback (int called_from_real_backend, string input)
 	// Shouldn't get here when close_state == ABRUPT_CLOSE.
 	close_state < NORMAL_CLOSE;
       do_close_stuff =
-	!!((conn->closing & 2) || cb_errno);
+        !!((conn->closing & 2) || cb_errno) && !sizeof(read_buffer);
     }
 
     if (alert_cb_called || call_accept_cb + call_read_cb + do_close_stuff > 1) {
@@ -2144,7 +2147,8 @@ protected int ssl_write_callback (int called_from_real_backend)
     } while (sizeof (write_buffer));
 
     if (called_from_real_backend) {
-      if (close_packet_send_state >= CLOSE_PACKET_SCHEDULED) {
+      if ((close_packet_send_state >= CLOSE_PACKET_SCHEDULED) &&
+          !sizeof(read_buffer)) {
 	if (close_callback && cb_errno && close_state < NORMAL_CLOSE) {
 	  // Better signal errors writing the close packet to the
 	  // close callback.
@@ -2240,26 +2244,28 @@ protected int ssl_close_callback (int called_from_real_backend)
       }
     }
 
-    if (called_from_real_backend && close_callback) {
-      // errno() should return the error in the close callback - need to
-      // propagate it here.
-      FIX_ERRNOS (
-	SSL3_DEBUG_MSG ("ssl_close_callback: Calling close callback %O (error %s)\n",
-			close_callback, strerror (local_errno)),
-	SSL3_DEBUG_MSG ("ssl_close_callback: Calling close callback %O (read eof)\n",
-			close_callback)
-      );
-      RESTORE;
-      // Note that the callback should call close() (or free things
-      // so that we get destructed) - there's no need for us to
-      // schedule a shutdown after it.
-      return close_callback (callback_id);
-    }
+    if (!sizeof(read_buffer)) {
+      if (called_from_real_backend && close_callback) {
+        // errno() should return the error in the close callback - need to
+        // propagate it here.
+        FIX_ERRNOS (
+          SSL3_DEBUG_MSG ("ssl_close_callback: Calling close callback %O (error %s)\n",
+                          close_callback, strerror (local_errno)),
+          SSL3_DEBUG_MSG ("ssl_close_callback: Calling close callback %O (read eof)\n",
+                          close_callback)
+        );
+        RESTORE;
+        // Note that the callback should call close() (or free things
+        // so that we get destructed) - there's no need for us to
+        // schedule a shutdown after it.
+        return close_callback (callback_id);
+      }
 
-    if (close_state >= NORMAL_CLOSE) {
-      SSL3_DEBUG_MSG ("ssl_close_callback: "
-		      "In or after local close - shutting down\n");
-      shutdown();
+      if (close_state >= NORMAL_CLOSE) {
+        SSL3_DEBUG_MSG ("ssl_close_callback: "
+                        "In or after local close - shutting down\n");
+        shutdown();
+      }
     }
   } LEAVE;
 

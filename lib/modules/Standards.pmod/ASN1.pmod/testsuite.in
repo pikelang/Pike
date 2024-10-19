@@ -20,6 +20,12 @@ test_do( add_constant("P", lambda(object o)
 
 test_eval_error(Standards.ASN1.Decode.simple_der_decode(""))
 
+test_eval_error(Standards.ASN1.Decode.simple_der_decode(""))
+test_eq(Standards.ASN1.Decode.secure_der_decode(""), 0)
+
+test_eval_error(Standards.ASN1.Decode.simple_der_decode(String.hex2string("a2184515521e4c5d26f05590543c696ca2bd04b7754a18107d7f62744fbcb3a52ee80de3dca53339c3f6b2196afe3c540adfeb92686029f2")))
+test_eq(Standards.ASN1.Decode.secure_der_decode(String.hex2string("a2184515521e4c5d26f05590543c696ca2bd04b7754a18107d7f62744fbcb3a52ee80de3dca53339c3f6b2196afe3c540adfeb92686029f2")), 0)
+
 define(test_decode,[[
   test_eq(P(Standards.ASN1.Decode.simple_der_decode(String.hex2string($1))),$2)
   test_eq(Standards.ASN1.Decode.simple_der_decode(String.hex2string($1))->get_der(),
@@ -62,9 +68,14 @@ dnl
 
 dnl 5.4
 test_decode("03 04 06 6e 5d c0", "BitString(18 011011100101110111)")
-test_false(Standards.ASN1.Decode.simple_der_decode(String.hex2string("03 04 06 6e 5d e0")))
+test_eq(P(Standards.ASN1.Decode.simple_der_decode(String.hex2string("03 04 06 6e 5d e0"))), "BitString(18 011011100101110111)")
+test_false(Standards.ASN1.Decode.secure_der_decode(String.hex2string("03 04 06 6e 5d e0")))
 test_eq(P(Standards.ASN1.Decode.simple_der_decode(String.hex2string("03 81 04 06 6e 5d c0"))), "BitString(18 011011100101110111)")
+test_false(Standards.ASN1.Decode.secure_der_decode(String.hex2string("03 81 04 06 6e 5d c0")))
 test_eq(P(Standards.ASN1.Decode.simple_der_decode(String.hex2string("23 09 03 03 00 6e 5d 03 02 06 c0"))), "BitString(18 011011100101110111)")
+dnl FIXME: Should the following fail?
+test_eq(P(Standards.ASN1.Decode.secure_der_decode(String.hex2string("23 09 03 03 00 6e 5d 03 02 06 c0"))), "BitString(18 011011100101110111)")
+
 
 dnl 5.6
 test_decode("16 0d 74 65 73 74 31 40 72 73 61 2e 63 6f 6d",
@@ -216,6 +227,33 @@ test_eq(Standards.ASN1.Decode.secure_der_decode("\1\1\0")->get_der(),
 "\1\1\0")
 test_eq(Standards.ASN1.Decode.secure_der_decode("\1\1\0\0"), 0)
 
+// Pike #10134
+dnl Canonical encoding.
+test_true(Standards.ASN1.Decode.secure_der_decode(
+String.hex2string("303d021d00a545d62d6e336775fb6a9b8495721646a54bd8c6173fc0a2295a1b7b021c3be6bae0e8763818840a9151ad8ed2b3b348e4a2c488d3fbdbbca844")))
+dnl Long form length encoding.
+test_false(Standards.ASN1.Decode.secure_der_decode(
+String.hex2string("30813d021d00a545d62d6e336775fb6a9b8495721646a54bd8c6173fc0a2295a1b7b021c3be6bae0e8763818840a9151ad8ed2b3b348e4a2c488d3fbdbbca844")))
+dnl Long form length encoding with 0-prefix.
+test_false(Standards.ASN1.Decode.secure_der_decode(
+String.hex2string("3082003d021d00a545d62d6e336775fb6a9b8495721646a54bd8c6173fc0a2295a1b7b021c3be6bae0e8763818840a9151ad8ed2b3b348e4a2c488d3fbdbbca844")))
+dnl Long form tag encoding.
+test_false(Standards.ASN1.Decode.secure_der_decode(
+String.hex2string("3f003d021d00a545d62d6e336775fb6a9b8495721646a54bd8c6173fc0a2295a1b7b021c3be6bae0e8763818840a9151ad8ed2b3b348e4a2c488d3fbdbbca844")))
+dnl Long form tag encoding with 0-prefix.
+test_false(Standards.ASN1.Decode.secure_der_decode(
+String.hex2string("3f80003d021d00a545d62d6e336775fb6a9b8495721646a54bd8c6173fc0a2295a1b7b021c3be6bae0e8763818840a9151ad8ed2b3b348e4a2c488d3fbdbbca844")))
+
+test_any([[
+  string sig = String.hex2string("3082003d021d00a545d62d6e336775fb6a9b8495721646a54bd8c6173fc0a2295a1b7b021c068259cf902e5d55eb26e7bf850a82d40fc5456b3a902679612ea4a8");
+
+  object o = Standards.ASN1.Decode.simple_der_decode(sig);
+  if( o[0]->value != 17405257248838891816469921369101584473558545790090909834630401760123 ) return 0;
+  if( o[1]->value != 685496968505591163571084568128572561995827594072077741814321161384 ) return 0;
+  o = Standards.ASN1.Decode.secure_der_decode(sig);
+  return 1;
+]], 1)
+
 test_any([[
   // Sequence(Integer(4),Integer(7))
   Types.Sequence s = Standards.ASN1.Decode.simple_der_decode("0\6\2\1\4\2\1\a");
@@ -233,6 +271,9 @@ test_decode("180f32313036303230373036323831365a", "GeneralizedTime(2106020706281
 test_eq(Types.GeneralizedTime()->set_posix(1<<32)->get_der(), "\30\17""21060207062816Z")
 test_decode("180f32323432303331363132353633325a", "GeneralizedTime(22420316125632Z)")
 test_eq(Types.GeneralizedTime()->set_posix(1<<33)->get_der(), "\30\17""22420316125632Z")
+
+test_do(Standards.ASN1.Decode.simple_der_decode(Standards.ASN1.Types.Identifier(@allocate(587,1))->get_der()))
+test_eval_error(Standards.ASN1.Decode.simple_der_decode(Standards.ASN1.Types.Identifier(@allocate(588,1))->get_der()))
 
 test_do( add_constant("P"); )
 test_do( add_constant("Types"); )

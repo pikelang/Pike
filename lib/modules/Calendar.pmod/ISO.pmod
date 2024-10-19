@@ -1,3 +1,5 @@
+/* -*- mode: Pike; c-basic-offset: 3; -*- */
+
 #pike __REAL_VERSION__
 
 //! This is the standard western calendar, which is a derivate
@@ -104,7 +106,7 @@ protected array(int) week_from_week(int y,int w)
 class cYear
 {
    inherit Gregorian::cYear;
-   TimeRange place(TimeRange what,void|int force)
+   object(TimeRange)|zero place(TimeRange what,void|int force)
    {
       if (what->is_day)
       {
@@ -165,7 +167,7 @@ class cMonth
 {
    inherit Gregorian::cMonth;
 
-   TimeRange place(TimeRange what,int|void force)
+   object(TimeRange)|zero place(TimeRange what,int|void force)
    {
       if (what->is_day)
       {

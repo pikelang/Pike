@@ -16,6 +16,8 @@
 #include "object.h"
 #include "builtin_functions.h"
 
+#include <inttypes.h>
+
 /*
  * Register definitions
  */
@@ -183,6 +185,19 @@
 	if (val_ & 0xfff) {						\
 	  SPARC_OR(reg_, reg_, val_ & 0xfff, 1);			\
 	}								\
+      } else if (val_ <= 0xfffffffffffLL) {				\
+	/* The top 20 bits are zero. */					\
+	/* sethi %hi(val_>>12), reg */					\
+	SPARC_SETHI(reg_, val_>>12);					\
+	if (val_ & 0x3ff000) {						\
+	  /* or reg, %lo(val_>>12), reg */				\
+	  SPARC_OR(reg_, reg_, (val_ & 0x3ff000)>>12, 1);		\
+	}								\
+	SPARC_SLL(reg_, reg_, 12, 1);					\
+	if (val_ & 0xfff) {						\
+	  /* or reg, %lo(val_), reg */					\
+	  SPARC_OR(reg_, reg_, val_ & 0xfff, 1);			\
+	}								\
       } else {								\
 	/* FIXME: SPARC64 */						\
 	Pike_fatal("Value out of range: %p\n", (void *)val_);		\
@@ -205,21 +220,44 @@
     } else {								\
       add_to_program(0); /* Placeholder... */				\
     }									\
+    p_->num_program--;							\
     /*fprintf(stderr, "call %p (pc:%p)\n", ptr_, p_->program);*/	\
     /* call X	*/							\
     delta_ = ptr_ - (p_->program + off_);				\
     if ((-0x20000000L <= delta_) && (delta_ <= 0x1fffffff)) {		\
-      p_->program[off_] = 0x40000000 | (delta_ & 0x3fffffff);		\
+      SPARC_CALL((delta_<<2));						\
       add_to_relocations(off_);						\
     } else {								\
-      /* NOTE: Assumes top 30 bits are zero! */				\
-      /* sethi %hi(ptr_>>2), %o7 */					\
-      p_->program[off_] =						\
-	0x01000000|(SPARC_REG_O7<<25)|((((size_t)ptr_)>>12)&0x3fffff);	\
-      /* sll %o7, 2, %o7 */						\
-      SPARC_SLL(SPARC_REG_O7, SPARC_REG_O7, 2, 1);			\
-      /* call %o7 + %lo(ptr_) */					\
-      SPARC_JMPL(SPARC_REG_O7, SPARC_REG_O7, ((size_t)ptr_)&0xfff, 1);	\
+      size_t ptr_val_ = (size_t)ptr_;					\
+      if (ptr_val_ <= 0xffffffffLL) {					\
+	/* NOTE: Top 32 bits are zero! */				\
+	/* sethi %hi(ptr_val_), %o7 */					\
+	SPARC_SETHI(SPARC_REG_O7, ptr_val_);				\
+	/* call %o7 + %lo(ptr_val_) */					\
+	SPARC_JMPL(SPARC_REG_O7, SPARC_REG_O7, ptr_val_ & 0x3ff, 1);	\
+      } else if (ptr_val_ <= 0x3ffffffffLL) {				\
+	/* NOTE: Top 30 bits are zero! */				\
+	/* sethi %hi(ptr_val_>>2), %o7 */				\
+	SPARC_SETHI(SPARC_REG_O7, ptr_val_>>2);				\
+	/* sll %o7, 2, %o7 */						\
+	SPARC_SLL(SPARC_REG_O7, SPARC_REG_O7, 2, 1);			\
+	/* call %o7 + %lo(ptr_val_) */					\
+	SPARC_JMPL(SPARC_REG_O7, SPARC_REG_O7, ptr_val_ & 0xfff, 1);	\
+      } else if (ptr_val_ <= 0xfffffffffffLL) {				\
+	/* The top 20 bits are zero. */					\
+	/* sethi %hi(ptr_val_>>12), %o7 */				\
+	SPARC_SETHI(SPARC_REG_O7, ptr_val_>>12);			\
+	if (ptr_val_ & 0x3ff000) {					\
+	  /* or %o7, %lo(ptr_val_>>12), %o7 */				\
+	  SPARC_OR(SPARC_REG_O7, SPARC_REG_O7,				\
+		   (ptr_val_ & 0x3ff000)>>12, 1);			\
+	}								\
+	SPARC_SLL(SPARC_REG_O7, SPARC_REG_O7, 12, 1);			\
+	/* call %o7 + %lo(ptr_val_) */					\
+	SPARC_JMPL(SPARC_REG_O7, SPARC_REG_O7, ptr_val_ & 0xfff, 1);	\
+      } else {								\
+	Pike_fatal("Address out of range: %p\n", (void *)ptr_);		\
+      }									\
     }									\
     add_to_program(delay_);						\
     sparc_last_pc = off_;	/* Value in %o7. */			\
@@ -489,21 +527,6 @@ static void sparc_push_int(INT_TYPE x, int sub_type)
   sparc_codegen_state |= SPARC_CODEGEN_SP_NEEDS_STORE;
 }
 
-static void sparc_clear_string_subtype(void)
-{
-  LOAD_PIKE_SP();
-  /* lduh [ %pike_sp, %g0 ], %i0 */
-  SPARC_LDUH(SPARC_REG_I0, SPARC_REG_PIKE_SP,
-	     sparc_pike_sp_bias + OFFSETOF(svalue, tu.t.type), 1);
-  /* subcc %g0, %i0, 8 */
-  SPARC_SUBcc(SPARC_REG_G0, SPARC_REG_I0, PIKE_T_INT, 1);
-  /* be,a .+8 */
-  SPARC_BE(8, 1);
-  /* sth %g0, [ %pike_sp, 2 ] */
-  SPARC_STH(SPARC_REG_G0, SPARC_REG_PIKE_SP,
-	    sparc_pike_sp_bias + OFFSETOF(svalue, tu.t.subtype), 1);
-}
-
 static void sparc_push_lfun(unsigned int no)
 {
   LOAD_PIKE_FP();
@@ -589,9 +612,25 @@ void sparc_debug_check_registers(int state,
        (cached_sp != Pike_interpreter.stack_pointer)) ||
       ((state & SPARC_CODEGEN_MARK_SP_IS_SET) &&
        (cached_mark_sp != Pike_interpreter.mark_stack_pointer))) {
+#ifdef PIKE_BYTECODE_SPARC64
     Pike_fatal("Bad machine code cache key (0x%04x):\n"
-	       "Cached: ip:0x%08x, fp:0x%08x, sp:0x%08x, m_sp:0x%08x\n"
-	       "  Real: ip:0x%08x, fp:0x%08x, sp:0x%08x, m_sp:0x%08x\n",
+               "Cached: ip:0x%016"PRIx64", fp:0x%016"PRIx64", "
+               "sp:0x%016"PRIx64", m_sp:0x%016"PRIx64"\n"
+               "  Real: ip:0x%016"PRIx64", fp:0x%016"PRIx64", "
+               "sp:0x%016"PRIx64", m_sp:0x%016"PRIx64"\n",
+               state,
+               (INT64)cached_ip, (INT64)cached_fp,
+               (INT64)cached_sp, (INT64)cached_mark_sp,
+               (INT64)Pike_interpreter_pointer,
+               (INT64)Pike_interpreter.frame_pointer,
+               (INT64)Pike_interpreter.stack_pointer,
+               (INT64)Pike_interpreter.mark_stack_pointer);
+#else
+    Pike_fatal("Bad machine code cache key (0x%04x):\n"
+               "Cached: ip:0x%08"PRIx32", fp:0x%08"PRIx32", "
+               "sp:0x%08"PRIx32", m_sp:0x%08"PRIx32"\n"
+               "  Real: ip:0x%08"PRIx32", fp:0x%08"PRIx32", "
+               "sp:0x%08"PRIx32", m_sp:0x%08"PRIx32"\n",
 	       state,
 	       (INT32)cached_ip, (INT32)cached_fp,
 	       (INT32)cached_sp, (INT32)cached_mark_sp,
@@ -599,6 +638,7 @@ void sparc_debug_check_registers(int state,
 	       (INT32)Pike_interpreter.frame_pointer,
 	       (INT32)Pike_interpreter.stack_pointer,
 	       (INT32)Pike_interpreter.mark_stack_pointer);
+#endif
   }
 }
 
@@ -698,7 +738,7 @@ static void low_ins_f_byte(unsigned int b, int delay_ok)
 
   b-=F_OFFSET;
 #ifdef PIKE_DEBUG
-  if(b>255)
+  if(b > MAX_SUPPORTED_INSTR)
     Pike_error("Instruction too big %d\n",b);
 #endif
 
@@ -1086,7 +1126,7 @@ void sparc_disassemble_code(void *addr, size_t bytes)
       params[0] = params[1];
       params[1] = NULL;
     }
-    string_builder_append_disassembly(&buf, code, code+1,
+    string_builder_append_disassembly(&buf, (size_t)code, code, code+1,
 				      mnemonic, params, NULL);
     code++;
   }

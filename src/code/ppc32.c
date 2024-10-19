@@ -426,20 +426,26 @@ void ins_f_byte(unsigned int b)
 
   b-=F_OFFSET;
 #ifdef PIKE_DEBUG
-  if(b>255)
+  if(b > MAX_SUPPORTED_INSTR)
     Pike_error("Instruction too big %d\n",b);
 #endif
   maybe_update_pc();
   addr = instrs[b].address;
 
 #ifdef PIKE_DEBUG
-  if (d_flag < 3)
+  if (d_flag < 3
+#ifdef OPCODE_INLINE_RETURN
+      || b == F_CATCH - F_OFFSET
+      || b == F_CATCH_AT - F_OFFSET
+#endif
+      )
 #endif
   /* This is not very pretty */
   switch(b)
   {
    case F_MARK2 - F_OFFSET:
      ppc32_mark();
+     /* FALLTHRU */
    case F_MARK - F_OFFSET:
      ppc32_mark();
      return;
@@ -469,6 +475,7 @@ void ins_f_byte(unsigned int b)
 
   case F_EXIT_CATCH - F_OFFSET:
     ppc32_push_int(0, 1);
+    /* FALLTHRU */
   case F_ESCAPE_CATCH - F_OFFSET:
     ppc32_escape_catch();
     return;
@@ -477,6 +484,17 @@ void ins_f_byte(unsigned int b)
   case F_CATCH - F_OFFSET:
     /* Special argument for the F_CATCH instruction. */
     addr = inter_return_opcode_F_CATCH;
+    /* bl .+4 */
+    BL(4);
+    /* mflr r3 */
+    MFSPR(PPC_REG_ARG1, PPC_SPREG_LR);
+    rel_addr = PIKE_PC;
+    /* addi r3, r3, offs */
+    ADDI(PPC_REG_ARG1, PPC_REG_ARG1, 4);
+    break;
+  case F_CATCH_AT - F_OFFSET:
+    /* Special argument for the F_CATCH_AT instruction. */
+    addr = inter_return_opcode_F_CATCH_AT;
     /* bl .+4 */
     BL(4);
     /* mflr r3 */
@@ -529,7 +547,7 @@ void ins_f_byte(unsigned int b)
     BCLR(20, 0);
 
 #ifdef OPCODE_INLINE_RETURN
-    if (b == F_CATCH - F_OFFSET) {
+    if ((b == F_CATCH - F_OFFSET) || (b == F_CATCH_AT - F_OFFSET)) {
       Pike_compiler->new_program->program[rel_addr] += (PIKE_PC - rel_addr)*4;
     }
 #endif
@@ -548,6 +566,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
   {
    case F_MARK_AND_LOCAL:
      ppc32_mark();
+     /* FALLTHRU */
 
    case F_LOCAL:
      ppc32_push_local(b);
@@ -559,6 +578,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
 
    case F_MARK_AND_GLOBAL:
      ppc32_mark();
+     /* FALLTHRU */
 
    case F_GLOBAL:
      ppc32_push_global(b);
@@ -566,6 +586,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
 
    case F_MARK_AND_STRING:
      ppc32_mark();
+     /* FALLTHRU */
 
    case F_STRING:
      ppc32_push_string(b, 0);
@@ -638,7 +659,7 @@ INT32 ppc32_ins_f_jump(unsigned int a, int backward_jump)
   int (*test_func)(void);
   if(a == F_BRANCH)
     test_func = NULL;
-  else if(a == F_CATCH || a == F_RECUR ||
+  else if(a == F_CATCH || a == F_CATCH_AT || a == F_RECUR ||
 	  a == F_RECUR_AND_POP || a == F_TAIL_RECUR)
     return -1;
   else
@@ -997,7 +1018,7 @@ void ppc32_disassemble_code(void *addr, size_t bytes)
 	if((imm & 0x8000) && opcd != 10 && (opcd < 24 || opcd > 29))
 	  imm -= 0x10000;
 	if(imm<0)
-	  sprintf(immtext, "-0x%x", -imm);
+	  sprintf(immtext, "-0x%x", (unsigned INT16)-imm);
 	else
 	  sprintf(immtext, "0x%x", imm);
 	if(opcd == 3)

@@ -141,7 +141,7 @@ class URIResource {
   }
 
   //! Returns the qualifying name, or zero.
-  string get_qname(void|string ns) {
+  string|zero get_qname(void|string ns) {
     fix_namespaces();
     if(!ns) ns=common_ns;
     string nns,obj;
@@ -305,7 +305,7 @@ Resource reify_low(Resource subj, Resource pred, Resource obj) {
 
 //! Returns a resource that is the subject of the reified statement
 //! {subj, pred, obj}, if such a resource exists in the RDF domain.
-Resource get_reify(Resource subj, Resource pred, Resource obj) {
+object(Resource)|zero get_reify(Resource subj, Resource pred, Resource obj) {
   array rs = find_statements(0, rdf_predicate, pred)[*][0] &
     find_statements(0, rdf_subject, subj)[*][0] &
     find_statements(0, rdf_object, obj)[*][0];
@@ -383,7 +383,7 @@ mapping(Resource:mapping(Resource:array(Resource))) get_subject_map() {
 
 //! Returns an RDF resource with the given URI as identifier,
 //! or zero.
-URIResource get_resource(string uri) {
+object(URIResource)|zero get_resource(string uri) {
   if(uris[uri]) return uris[uri];
   return 0;
 }
@@ -920,7 +920,7 @@ protected class XML {
   int ind;
   int(0..1) optimize;
 
-  void create(int(0..1) opt) {
+  protected void create(int(0..1) opt) {
     optimize = opt;
   }
 

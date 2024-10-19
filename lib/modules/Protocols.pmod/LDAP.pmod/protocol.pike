@@ -84,7 +84,7 @@ protected int last_io_time; // Timestamp when I/O on the fd was made last.
 //!
 //! @seealso
 //!  @[error_string], @[error_number]
-string server_error_string() {return ldap_rem_errstr;}
+string|zero server_error_string() {return ldap_rem_errstr;}
 
   array error() { return ({error_number(), error_string()}); }
 
@@ -201,7 +201,7 @@ int get_last_io_time() {return last_io_time;}
     return 1;
   }
 
-  void create(object fd) {
+  protected void create(object fd) {
   // -------------------
     ldapfd = fd;
     last_io_time = time();

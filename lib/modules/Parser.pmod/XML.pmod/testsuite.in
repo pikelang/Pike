@@ -39,10 +39,29 @@ test_tree_eq([[ ("<?xml version='1.0' encoding='utf-8'?><!DOCTYPE foo PUBLIC \"-
 dnl You could argue that the decoding should cause an error as 0x2122
 dnl is outside of iso-8859-1, but we could just manipulate the text
 dnl node instead.
-test_eq([[ Parser.XML.Tree.parse_input("<?xml version='1.0' encoding='iso-8859-1'?><a>\x2122</a>")->render_xml() ]], "<?xml version='1.0' encoding='iso-8859-1'?><a>&#2122;</a>" )
+test_eq([[ Parser.XML.Tree.parse_input("<?xml version='1.0' encoding='iso-8859-1'?><a>\x2122</a>")->render_xml() ]], "<?xml version='1.0' encoding='iso-8859-1'?><a>&#x2122;</a>" )
 test_eq([[ Parser.XML.Tree.parse_input("<?xml version='1.0' encoding='iso-8859-1'?><a>\x2122</a>")->render_xml(0,0,"utf-8") ]], "<?xml version='1.0' encoding='utf-8'?><a>\342\204\242</a>" )
 
 test_eq([[ Parser.XML.Tree.parse_input("\xef\xbb\xbf<i></i>")->render_xml() ]], "<i/>")
+
+test_any([[
+  object doc = Parser.XML.Tree.parse_input("<a>Hello</a>");
+  object a = doc->get_first_element();
+  array c = a->get_children();
+  c[0]->remove_node();
+  return (string)doc;
+]], "<a/>")
+
+test_any([[
+  object doc = Parser.XML.Tree.parse_input("<a> <b/> <c> <d/> </c> </a>");
+  object a = doc->get_first_element();
+  a->walk_inorder(lambda(object node) {
+    if( node->get_node_type()==Parser.XML.Tree.XML_TEXT ) {
+      node->remove_node();
+    }
+  });
+  return (string)doc;
+]], "<a><b/><c><d/></c></a>")
 
 test_any([[
 
@@ -174,30 +193,37 @@ test_any([[
   return (string)o;
 ]], "<x><a/><q/><r/><c/></x>")
 
+test_eq([[Parser.XML.Tree.parse_input("<x a='\"1\"' b=\"'2'\" c='3'/>")->render_xml(0,0,0,0)]], "<x a='\"1\"' b=\"'2'\" c='3'/>")
+test_eq([[Parser.XML.Tree.parse_input("<x a='\"1\"' b=\"'2'\" c='3'/>")->render_xml(0,0,0,1)]], "<x a='\"1\"' b=\"'2'\" c=\"3\"/>")
+test_eq([[Parser.XML.Tree.parse_input("<x a='\"1\"' b=\"'2'\" c='3'/>")->render_xml(0,0,0,2)]], "<x a='\"1\"' b='&apos;2&apos;' c='3'/>")
+test_eq([[Parser.XML.Tree.parse_input("<x a='\"1\"' b=\"'2'\" c='3'/>")->render_xml(0,0,0,3)]], "<x a=\"&quot;1&quot;\" b=\"'2'\" c=\"3\"/>")
+
 // NSTree
 
 // XML NS section 2
 
 test_any_equal([[
-object x=Parser.XML.NSTree.parse_input(#"
-<x>
+string s = #"<x>
   <!-- No namespace here. -->
-</x>");
+</x>";
+object x=Parser.XML.NSTree.parse_input(s);
 x=x[0];
 array r = ({});
 r += ({ x->get_any_name() });
 r += ({ x->get_default_ns() });
 r += ({ x->get_ns() });
 r += ({ x->get_defined_nss()->edi });
+r += ({ (string)x==s });
 return r;
-]], ({ "x", 0, 0, 0 }) )
+]], ({ "x", 0, 0, 0, 1 }) )
 
 test_any_equal([[
-object x=Parser.XML.NSTree.parse_input(#"
-<x xmlns:edi='http://ecommerce.org/schema'>
+string s = #"<x xmlns:edi='http://ecommerce.org/schema'>
   <!-- the 'edi' prefix is bound to http://ecommerce.org/schema
        for the 'x' element and contents -->
-</x>");
+</x>";
+object x=Parser.XML.NSTree.parse_input(s);
+
 x=x[0];
 array r = ({});
 r += ({ x->get_any_name() });
@@ -208,52 +234,60 @@ r += ({ x->get_defined_nss()->edi });
 r += ({ x[0]->get_default_ns() });
 r += ({ x[0]->get_ns() });
 r += ({ x[0]->get_defined_nss()->edi });
+
+r += ({ (string)x==s });
 return r;
 ]], ({ "x", 0, 0, "http://ecommerce.org/schema",
-    0, 0, "http://ecommerce.org/schema" }) )
+    0, 0, "http://ecommerce.org/schema", 1 }) )
 
 // XML NS section 4
 
 test_any_equal([[
-object x=Parser.XML.NSTree.parse_input(#"
-<x xmlns:edi='http://ecommerce.org/schema'>
+string s = #"<x xmlns:edi='http://ecommerce.org/schema'>
   <!-- the 'price' element's namespace is http://ecommerce.org/schema -->
   <edi:price units='Euro'>32.18</edi:price>
-</x>");
+</x>";
+object x=Parser.XML.NSTree.parse_input(s);
 x=x[0];
 array r = ({});
 r += ({ x[3]->get_any_name() });
 r += ({ x[3]->get_ns() });
-r += ({ x[3]->get_attributes()->units });
+r += ({ x[3]->get_attributes() });
 r += ({ x[3][0]->get_ns() });
+
+r += ({ (string)x==s });
 return r;
-]], ({ "price", "http://ecommerce.org/schema", "Euro", 0 }) );
+]], ({ "price", "http://ecommerce.org/schema", (["units":"Euro"]), 0, 1 }) );
 
 test_any_equal([[
-object x=Parser.XML.NSTree.parse_input(#"
-<x xmlns:edi='http://ecommerce.org/schema'>
+string s = #"<x xmlns:edi='http://ecommerce.org/schema'>
   <!-- the 'taxClass' attribute's namespace is http://ecommerce.org/schema -->
-  <lineItem edi:taxClass=\"exempt\">Baby food</lineItem>
-</x>");
+  <lineItem edi:taxClass='exempt'>Baby food</lineItem>
+</x>";
+object x=Parser.XML.NSTree.parse_input(s);
 x=x[0];
 array r = ({});
 r += ({ x[3]->get_ns() });
 r += ({ x[3]->get_attributes() });
 r += ({ x[3]->get_ns_attributes() });
+r += ({ x[3]->get_short_attributes() });
+
+r += ({ (string)x==s });
 return r;
 ]], ({ 0, ([]), ([ "http://ecommerce.org/schema":
-	 ([ "taxClass":"exempt" ]) ]) }) )
+         ([ "taxClass":"exempt" ]) ]), ([ "edi:taxClass":"exempt" ]), 1 }) )
 
 // XML NS section 5.1
 
 test_any_equal([[
-object x=Parser.XML.NSTree.parse_input(#"<?xml version=\"1.0\"?>
+string s = #"<?xml version=\"1.0\"?>
 <!-- all elements here are explicitly in the HTML namespace -->
 <html:html xmlns:html='http://www.w3.org/TR/REC-html40'>
   <html:head><html:title>Frobnostication</html:title></html:head>
   <html:body><html:p>Moved to
     <html:a href='http://frob.com'>here.</html:a></html:p></html:body>
-</html:html>");
+</html:html>";
+object x=Parser.XML.NSTree.parse_input(s);
 x=x[2];
 array r = ({});
 r += ({ x->get_ns() });
@@ -351,6 +385,98 @@ for(int i; i<120; i++)
   Parser.XML.NSTree.parse_input("<soap:Envelope "+Array.permute(args,i)*" "+"/>");
 ]])
 
+define(nstree_eq,[[
+test_any([[
+object x=Parser.XML.NSTree.parse_input($1);
+return (string)x;
+]],$2)
+]])
+
+nstree_eq("<a:foo xmlns:a='ns-one'><b:foo xmlns:b='ns-two'/></a:foo>",
+"<a:foo xmlns:a='ns-one' xmlns:b='ns-two'><b:foo/></a:foo>")
+
+nstree_eq("<a:foo xmlns:a='ns-one'><foo xmlns='ns-two'/></a:foo>",
+"<a:foo xmlns:a='ns-one'><foo xmlns='ns-two'/></a:foo>")
+
+dnl nstree_eq("<a:foo xmlns:a='ns-one' xmlns:b='ns-one'><b:foo/></a:foo>",
+dnl "<a:foo xmlns:a='ns-one' xmlns:b='ns-one'><b:foo/></a:foo>")
+
+test_any_equal([[
+object x=Parser.XML.NSTree.parse_input(#"<x xmlns:a='a' xmlns:b='b'>
+<y xmlns:b='B' xmlns:c='c'/>
+</x>");
+x = x->get_first_element("x");
+x = x->get_first_element("y");
+return x->diff_namespaces();
+]],[[ (["b":"B","c":"c"]) ]])
+
+test_any_equal([[
+object x=Parser.XML.NSTree.parse_input("<x>\xa3</x>");
+return (string)x;
+]], "<x>\302\243</x>")
+
+test_any_equal([[
+object x=Parser.XML.NSTree.parse_input("<x>\xa3</x>");
+return x->render_xml("iso-8859-1");
+]], "<x>\243</x>")
+
+test_any_equal([[
+object x=Parser.XML.NSTree.parse_input("<?xml version='1.0' encoding='iso-8859-1'?><x>\xa3</x>");
+return (string)x;
+]], "<?xml version='1.0' encoding='iso-8859-1'?><x>\243</x>")
+
+test_any_equal([[
+object x=Parser.XML.NSTree.parse_input("<x:a xmlns:x='X'><x:b>foo</x:b></x:a>");
+x->walk_inorder(lambda(object n) {
+  if( n->get_xml_name()=="x:b" ) {
+    string s = n->value_of_node();
+    n->replace_node(Parser.XML.NSTree.NSNode(Parser.XML.Tree.XML_TEXT, "", 0, s));
+  }
+});
+return (string)x;
+]], "<x:a xmlns:x='X'>foo</x:a>")
+
+test_any([[
+object a = Parser.XML.NSTree.parse_input("<x:a xmlns:x='A'></x:a>");
+object b = Parser.XML.NSTree.parse_input("<x:a xmlns:x='B'></x:a>");
+a->get_first_element()->add_child(b->get_first_element());
+return (string)a;
+]], "<x:a xmlns:x='A'><x:a xmlns:x='B'/></x:a>");
+
+test_any([[
+object a = Parser.XML.NSTree.parse_input("<x:a xmlns:x='A'></x:a>");
+object b = Parser.XML.NSTree.parse_input("<x:a xmlns:x='B'><x:c/></x:a>");
+a->get_first_element()->add_child(b->get_first_element()->get_first_element());
+return (string)a;
+]], "<x:a xmlns:x='A'><x:c xmlns:x='B'/></x:a>");
+
+test_any([[
+object a = Parser.XML.NSTree.parse_input("<x:a xmlns:x='A'></x:a>");
+object b = Parser.XML.NSTree.parse_input("<x:b xmlns:x='A'></x:b>");
+a->get_first_element()->add_child(b->get_first_element());
+return (string)a;
+]], "<x:a xmlns:x='A'><x:b/></x:a>");
+
+test_any([[
+object a = Parser.XML.NSTree.parse_input("<x:a xmlns:x='A'></x:a>");
+object b = Parser.XML.NSTree.parse_input("<x:b xmlns:x='A'><x:c/></x:b>");
+a->get_first_element()->add_child(b->get_first_element()->get_first_element());
+return (string)a;
+]], "<x:a xmlns:x='A'><x:c/></x:a>");
+
+test_any([[
+object a = Parser.XML.NSTree.parse_input("<x:a xmlns:x='A'></x:a>");
+object b = Parser.XML.NSTree.parse_input("<y:b xmlns:y='A'></y:b>");
+a->get_first_element()->add_child(b->get_first_element());
+return (string)a;
+]], "<x:a xmlns:x='A' xmlns:y='A'><y:b/></x:a>");
+
+test_any([[
+object a = Parser.XML.NSTree.parse_input("<x:a xmlns:x='A'></x:a>");
+object b = Parser.XML.NSTree.parse_input("<y:b xmlns:y='A'><y:c/></y:b>");
+a->get_first_element()->add_child(b->get_first_element()->get_first_element());
+return (string)a;
+]], "<x:a xmlns:x='A' xmlns:y='A'><y:c/></x:a>");
 
 // Simple
 
@@ -726,6 +852,42 @@ test_any([[
 	    });
   return error;
 ]], "All data must be inside tags")
+test_any([[
+  string error;
+  object o = Parser.XML.Simple();
+  o->parse ("\xfeff<a/>",
+            lambda (string type, string name, mapping attrs, string data) {
+              if (type == "error") error = data;
+            });
+  return error;
+]], 0)
+test_any([[
+  string error;
+  object o = Parser.XML.Simple();
+  o->parse ("\xfeff<?xml version='1.0'?><a/>",
+            lambda (string type, string name, mapping attrs, string data) {
+              if (type == "error") error = data;
+            });
+  return error;
+]], 0)
+test_any([[
+  string error;
+  object o = Parser.XML.Simple();
+  o->parse ("\xfeff <?xml version='1.0'?><a/>",
+            lambda (string type, string name, mapping attrs, string data) {
+              if (type == "error") error = data;
+            });
+  return error;
+]], "XML header must be at the first byte in the document.")
+test_any([[
+  string error;
+  object o = Parser.XML.Simple();
+  o->parse (" <?xml version='1.0'?><a/>",
+            lambda (string type, string name, mapping attrs, string data) {
+              if (type == "error") error = data;
+            });
+  return error;
+]], "XML header must be at the first byte in the document.")
 
 // Validating
 END_MARKER

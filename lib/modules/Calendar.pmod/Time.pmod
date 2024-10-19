@@ -1,3 +1,5 @@
+/* -*- mode: Pike; c-basic-offset: 3; -*- */
+
 //!
 //! module Calendar
 //! submodule Time
@@ -178,7 +180,7 @@ class TimeofDay
       }
    }
 
-   TimeRange `*(int|float n)
+   protected TimeRange `*(int|float n)
    {
       if(intp(n))
         return set_size(n,this);
@@ -1118,7 +1120,7 @@ class cSuperTimeRange
    {
       int from=0,to=0x7fffffff,pos=0;
       array res=({});
-      TimeRange last=0;
+      object(TimeRange)|zero last=0;
       string ums=unit[..<1]; // no 's'
 
       if (sizeof(range)==2)
@@ -1154,7 +1156,7 @@ class cSuperTimeRange
    protected int num_units(string unit)
    {
       int pos=0;
-      TimeRange last=0;
+      object(TimeRange)|zero last=0;
       string ums=unit[..<1]; // no 's'
 
       foreach (parts,TimeRange part)

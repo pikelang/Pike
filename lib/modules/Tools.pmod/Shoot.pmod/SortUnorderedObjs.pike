@@ -5,7 +5,7 @@ constant name="Sort unordered objects";
 
 class Foo {
   int n = random (10000);
-  int `< (Foo o) {return n < o->n;}
+  protected int `< (Foo o) {return n < o->n;}
 }
 
 array(Foo) test_array = allocate (10000, Foo) ();

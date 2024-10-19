@@ -24,7 +24,7 @@
 //!
 //! @seealso
 //!   @[Sql.Connection->big_typed_query()]
-final array(mixed) data;
+final array(mixed)|zero data;
 
 //! @returns
 //! The returned labeled records, all typed data.
@@ -40,10 +40,10 @@ final array(mapping(string:mixed)) get() {
 }
 
 //! The SQL query.
-final string query;
+final string|zero query;
 
 //! The parameter bindings belonging to the query.
-final mapping(string:mixed) bindings;
+final mapping(string:mixed)|zero bindings;
 
 //! The status of the completed command.
 //! If the command is still in progress, the value is @expr{null@}.
@@ -54,24 +54,27 @@ final string|mixed status_command_complete;
 final int affected_rows;
 
 //! The description of the fields in a record.
-final array(mapping(string:mixed)) fields;
+final array(mapping(string:mixed))|zero fields;
 
-final .Connection _dblink;
+final object(.Connection)|zero _dblink;
 
 protected string _sprintf(int type) {
   string res;
   switch(type) {
     case 'O':
-      res = sprintf("FutureResult from query: %O, bindings: %O\n"
-                    "recordcount: %d",
-       query, bindings, sizeof(data));
+      res = status_command_complete && arrayp(status_command_complete)
+        ? status_command_complete[0]
+        : sprintf("FutureResult from query: %O, bindings: %O\n"
+                  "recordcount: %d\nSQL status: %s",
+                      query, bindings, sizeof(data),
+                      status_command_complete || "still running...");
       break;
   }
   return res;
 }
 
 protected
- void create(.Connection db, string q, mapping(string:mixed) bindings) {
+ void create(.Connection db, string q, zero|mapping(string:mixed) bindings) {
   PD("Create future result %O %O %O\n", db, q, bindings);
   query = q;
   this::bindings = bindings;

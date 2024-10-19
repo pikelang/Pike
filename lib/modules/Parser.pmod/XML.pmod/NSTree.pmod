@@ -50,6 +50,20 @@ class NSNode {
     return ns_attrs;
   }
 
+  //! Return the attributes for the element with the names given their
+  //! short name prefixes.
+  mapping(string:string) get_short_attributes() {
+    mapping ret = ([]);
+    foreach(ns_attrs; string ns; mapping attrs) {
+      string prefix = get_ns_short(ns) || make_prefix(ns);
+      foreach(attrs; string name; string value) {
+        if( prefix!="" ) name = prefix + ":" + name;
+        ret[name] = value;
+      }
+    }
+    return ret;
+  }
+
   //! Adds a new namespace to this node. The preferred symbol to
   //! use to identify the namespace can be provided in the @[symbol]
   //! argument. If @[chain] is set, no attempts to overwrite an
@@ -65,13 +79,14 @@ class NSNode {
     get_children()->add_namespace(ns, symbol, 1);
   }
 
-  //! Returns the difference between this nodes and its parents namespaces.
+  //! Returns the difference between this node and its parent namespaces.
   mapping(string:string) diff_namespaces() {
-    mapping res = ([]);
-    if(!nss) return res;
-    foreach(nss; string sym; string ns)
-      if(nss[sym]!=ns)
-	res[sym]=nss[sym];
+    mapping pnss = mParent && mParent->get_defined_nss();
+    if(!nss || !pnss) return ([]);
+    mapping res = nss + ([]);
+    foreach(pnss; string sym; string ns)
+      if(nss[sym]==ns)
+        m_delete(res, sym);
     return res;
   }
 
@@ -82,6 +97,14 @@ class NSNode {
 #else /* !constant(Crypto.MD5) */
     return sprintf("%08x", hash(ns));
 #endif /* constant(Crypto.MD5) */
+  }
+
+  //! Returns the short name for the given namespace in this
+  //! context. Returns the empty string if the namespace is the
+  //! default namespace. Returns 0 if the namespace is unknown.
+  string get_ns_short(string ns) {
+    if(ns==element_ns) return "";
+    return search(nss, ns);
   }
 
   //! Returns the element name as it occurs in xml files. E.g.
@@ -97,10 +120,35 @@ class NSNode {
     return prefix + ":" + mTagName;
   }
 
+  //! Change all elements and attributes in the subtree in namespace
+  //! @[from] to namespace @[to]. In case an attribute is defined in
+  //! both namespaces it will be overwritten.
+  void change_namespace(string from, string to) {
+    if(element_ns == from)
+      element_ns = to;
+    if(ns_attrs[from]) {
+      // += on undefined will create the mapping.
+      ns_attrs[to] += m_delete(ns_attrs, from);
+    }
+    foreach(mChildren, Node c)
+      c->change_namespace(from, to);
+  }
+
+  //! Renames the namespace prefix of a namespace. No checks will be
+  //! made to see if the namespace represented is the same throughout
+  //! the subtree.
+  void rename_namespace(string from, string to) {
+    string ns = m_delete(nss, from);
+    if( ns ) {
+      nss[to] = ns;
+    }
+    get_children()->rename_namespace(from, to);
+  }
+
   // Override old stuff
 
-  void create(int type, string name, mapping attr, string text,
-	      void|NSNode parent) {
+  protected void create(int type, string name, mapping|zero attr, string text,
+			void|NSNode parent) {
 
     // Get the parent namespace context.
     if(parent) {
@@ -156,7 +204,7 @@ class NSNode {
 	if( sscanf(name, "%s:%s", ns, m)==2 ) {
 	  if(!nss[ns]) {
 	    if(ns=="xml")
-	      add_namespace("xml","xml");
+              add_namespace("http://www.w3.org/XML/1998/namespace", "xml");
 	    else
 	      error("Unknown namespace %s.\n", ns);
 	  }
@@ -183,7 +231,13 @@ class NSNode {
   }
 
   void set_parent(NSNode parent) {
-    nss = parent->get_defined_nss() + diff_namespaces();
+    if( nss ) {
+      foreach(parent->get_defined_nss(); string sym; string ns) {
+        if( nss[sym] ) continue;
+        if( has_value(nss, ns) ) continue;
+        nss[sym] = ns;
+      }
+    }
     ::set_parent(parent);
   }
 
@@ -202,6 +256,11 @@ class NSNode {
   {
     c->set_parent (this);
     return ::add_child_after (c, old);
+  }
+
+  NSNode replace_child (NSNode old, NSNode|array(NSNode) new) {
+    ::replace_child(old, new);
+    new->set_parent (this);
   }
 
   //! @decl void remove_child(NSNode child)
@@ -231,55 +290,119 @@ class NSNode {
     return n;
   }
 
-  string render_xml()
+  //! Return the defined namespaces from the tree.
+  //!
+  //! @param intermediate
+  //!   If namespaces are clobbered, the node that needs additional
+  //!   xmlns attributes are added to this mapping.
+  mapping child_namespaces(mapping(Node:mapping(string:string)) intermediate) {
+    if( !sizeof(mChildren) )
+      return nss;
+
+    mapping ret = nss  ? nss + ([]) : ([]);
+    intermediate = intermediate || ([]);
+    foreach(mChildren, Node c) {
+      mapping child_ns = c->child_namespaces(intermediate);
+      foreach(child_ns; string sym; string ns) {
+        if( ret[sym] && ret[sym] != ns ) {
+          if( !intermediate[c] ) intermediate[c] = ([]);
+          intermediate[c][sym] = ns;
+        }
+        else {
+          ret[sym] = ns;
+        }
+      }
+    }
+
+    return ret;
+  }
+
+  //! Renders the object tree to a string.
+  //!
+  //! @param encoding
+  //!   The character encoding to be used. Defaults the character
+  //!   encoding in the XML header, or UTF-8 if none.
+  string render_xml(void|string encoding)
   {
     String.Buffer data = String.Buffer();
 
-    walk_preorder_2(
-		    lambda(Node n) {
-		      switch(n->get_node_type()) {
+    // Create a mapping from element nodes to what xmlns attributes
+    // should be inserted in them on creation.
+    mapping ns_nodes = ([]);
+    Node root = this;
+    if( mNodeType == XML_ROOT ) {
+      root = get_first_element();
+    }
+    ns_nodes[root] = child_namespaces(ns_nodes);
+    m_delete(ns_nodes[root], "xml");
 
-		      case XML_TEXT:
-                        data->add( text_quote(n->get_text()) );
-			break;
+    walk_preorder_2(lambda(Node n) {
+        switch(n->get_node_type()) {
 
-		      case XML_ELEMENT:
-			if (!sizeof(n->get_tag_name()))
-			  break;
+        case XML_ROOT:
+          break;
 
-			data->add("<", n->get_xml_name());
+        case XML_TEXT:
+          data->add( text_quote(n->get_text()) );
+          break;
 
-			if (mapping attr = n->get_attributes()) { // FIXME
-                          foreach(indices(attr), string a)
-                            data->add(" ", a, "='",
-				      attribute_quote(attr[a]), "'");
-			}
-			/*
-			mapping attr = n->get_ns_attrubutes();
-			if(sizeof(attr)) {
-			  foreach(attr; string ns; mapping attr) {
-			  }
-			}
-			*/
-			if (n->count_children())
-			  data->add(">");
-			else
-			  data->add("/>");
-			break;
-		      }
-		    },
+        case XML_ELEMENT:
+          if (!sizeof(n->get_tag_name()))
+            break;
 
-		    lambda(Node n) {
-		      if (n->get_node_type() == XML_ELEMENT)
-			if (n->count_children())
-			  if (sizeof(n->get_tag_name()))
-			    data->add("</", n->get_xml_name(), ">");
-		    });
+          string tagname = n->get_xml_name();
+          data->add("<", tagname);
 
-    return (string)data;
+          mapping attr = n->get_short_attributes();
+          if( ns_nodes[n] ) {
+            foreach(ns_nodes[n]; string sym; string ns)
+              attr[ "xmlns:"+sym ] = ns;
+          }
+
+          // If this node has a namespace different than it's parent,
+          // and isn't prefixed, declare it with xmlns.
+          if( n->get_ns() && !has_value(tagname, ":") &&
+              n->get_ns() != n->get_parent()->get_ns() ) {
+            // We are overwriting potentially invalid xmlns attribute.
+            attr->xmlns = n->get_ns();
+          }
+
+          foreach(sort(indices(attr)), string a) {
+            if( has_value(attr[a], "'") )
+              data->add(" ", a, "=\"", attribute_quote(attr[a], "'"), "\"");
+            else
+              data->add(" ", a, "='", attribute_quote(attr[a], "\""), "'");
+          }
+
+          if (n->count_children())
+            data->add(">");
+          else
+            data->add("/>");
+          break;
+
+        case XML_HEADER:
+          if( !encoding ) {
+            encoding = n->get_attributes()->encoding;
+          }
+          // Fallthrough
+
+        default:
+          low_render_xml(data, n, text_quote, attribute_quote);
+          break;
+        }
+      },
+
+      lambda(Node n) {
+        if (n->get_node_type() == XML_ELEMENT)
+          if (n->count_children())
+            if (sizeof(n->get_tag_name()))
+              data->add("</", n->get_xml_name(), ">");
+      });
+
+    return get_encoder(encoding||"utf-8")->feed((string)data)->drain();
   }
 
-  string _sprintf(int t) {
+  protected string _sprintf(int t) {
     if(t=='O') {
       mapping nt = ([ XML_ROOT:"ROOT",
 		      XML_ELEMENT:"ELEMENT",
@@ -299,9 +422,9 @@ class NSNode {
   }
 }
 
-protected NSNode|int(0..0) parse_xml_callback(string type, string name,
-					   mapping attr, string|array contents,
-					   mixed location, mixed ...extra)
+protected NSNode|zero parse_xml_callback(string type, string name,
+                                         mapping attr, string|array contents,
+                                         mixed location, mixed ...extra)
 {
   NSNode parent = sizeof(extra[0]) && extra[0]->top();
 

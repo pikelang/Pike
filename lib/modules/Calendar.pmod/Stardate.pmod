@@ -1,3 +1,5 @@
+/* -*- mode: Pike; c-basic-offset: 3; -*- */
+
 #pike __REAL_VERSION__
 
 //! This implements TNG stardates.
@@ -227,14 +229,14 @@ class cTick
       return ({ CMP(b1,b2),CMP(b1,e2),CMP(e1,b2),CMP(e1,e2) });
    }
 
-   int __hash() { return (int)t; }
+   protected int __hash() { return (int)t; }
 
    Calendar.TimeRange set_ruleset(Calendar.Ruleset r)
    {
       return Tick("stardate",r,t,len);
    }
 
-   protected string _sprintf(int t)
+   protected string|zero _sprintf(int t)
    {
       switch (t)
       {

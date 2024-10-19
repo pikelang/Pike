@@ -39,7 +39,7 @@ class Button
   int button;  // The number of the mouse button used
   //!
 
-  function(object, int, mapping:void) redraw_callback;
+  function(object, int, mapping|zero:void) redraw_callback;
   function(object:void) clicked_callback;
 
   //!
@@ -49,7 +49,7 @@ class Button
   }
 
   //!
-  mapping button_pressed(mapping event)
+  mapping|zero button_pressed(mapping event)
   {
     werror(sprintf("Button %d pressed.\n", event->detail));
     if (event->detail == button)
@@ -65,7 +65,7 @@ class Button
   }
 
   //!
-  mapping button_released(mapping event)
+  mapping|zero button_released(mapping event)
   {
     if (event->detail == button)
       {
@@ -80,7 +80,7 @@ class Button
   }
 
   //!
-  mapping window_entered(mapping event)
+  mapping|zero window_entered(mapping event)
   {
     inside = 1;
     if (pressed && style)
@@ -89,7 +89,7 @@ class Button
   }
 
   //!
-  mapping window_left(mapping event)
+  mapping|zero window_left(mapping event)
   {
     inside = 0;
     if (pressed && style)
@@ -98,7 +98,7 @@ class Button
   }
 
   //!
-  void create(object w, int|void b)
+  protected void create(object w, int|void b)
   {
     window = w;
     button = b || 1;

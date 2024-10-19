@@ -230,7 +230,7 @@ static void mov_reg32_reg(enum amd64_reg from_reg, enum amd64_reg to_reg )
   modrm( 3, from_reg, to_reg );
 }
 
-#define PUSH_INT(X) ins_int((INT32)(X), (void (*)(char))add_to_program)
+#define PUSH_INT(X) ins_int((INT32)(X), add_to_program)
 static void low_mov_mem_reg(enum amd64_reg from_reg, ptrdiff_t offset,
                             enum amd64_reg to_reg)
 {
@@ -1275,8 +1275,8 @@ void amd64_ins_entry(void)
   amd64_flush_code_generator_state();
 
   if( PIKE_PC - orig_ppc != ENTRY_PROLOGUE_SIZE ) /* sanity check */
-    Pike_fatal("ENTRY_PROLOGUE_SIZE incorrectly set, should be 0x%x\n",
-               PIKE_PC-orig_ppc );
+    Pike_fatal("ENTRY_PROLOGUE_SIZE incorrectly set, should be 0x%lx\n",
+               (unsigned long)(PIKE_PC-orig_ppc) );
 }
 
 void amd64_flush_code_generator_state(void)
@@ -1605,6 +1605,9 @@ void amd64_update_pc(void)
 {
   INT32 tmp = PIKE_PC, disp;
   const enum amd64_reg tmp_reg = P_REG_RAX;
+#ifdef PIKE_AMD64_VALIDATE_RSP
+  LABELS();
+#endif
 
   if(amd64_prev_stored_pc == - 1)
   {
@@ -1636,6 +1639,15 @@ void amd64_update_pc(void)
       fprintf (stderr, "pc %d  update pc - already up-to-date\n", tmp);
 #endif
    }
+
+#ifdef PIKE_AMD64_VALIDATE_RSP
+  mov_reg_reg(P_REG_RSP, tmp_reg);
+  and_reg_imm(tmp_reg, 0x0f);
+  je(&label_A);
+  /* Broken RSP */
+  call_reg(tmp_reg);	/* Jump to zero-page should trigger a SIGSEGV. */
+  LABEL_A;
+#endif
 }
 
 
@@ -1699,6 +1711,7 @@ static void amd64_call_c_opcode(void *addr, int flags)
 #ifdef PIKE_DEBUG
 static void ins_debug_instr_prologue (PIKE_INSTR_T instr, INT32 arg1, INT32 arg2)
 {
+  /* NB: instr has been offset by F_OFFSET. */
   int flags = instrs[instr].flags;
 
   /* Note: maybe_update_pc() is called by amd64_call_c_opcode() above,
@@ -1860,7 +1873,7 @@ void ins_f_byte(unsigned int b)
 
   b-=F_OFFSET;
 #ifdef PIKE_DEBUG
-  if(b>255)
+  if(b > MAX_SUPPORTED_INSTR)
     Pike_error("Instruction too big %d\n",b);
 #endif
   maybe_update_pc();
@@ -1870,13 +1883,6 @@ void ins_f_byte(unsigned int b)
   addr=instrs[b].address;
   switch(b + F_OFFSET)
   {
-  case F_DUP:
-    ins_debug_instr_prologue(b, 0, 0);
-    amd64_load_sp_reg();
-    add_reg_imm_reg(sp_reg, -sizeof(struct svalue), P_REG_R10 );
-    amd64_push_svaluep( P_REG_R10 );
-    return;
-
 #if 0
   case F_ESCAPE_CATCH:
 
@@ -2325,19 +2331,6 @@ void ins_f_byte(unsigned int b)
     }
     return;
 
-  case F_SWAP:
-    /*
-      pike_sp[-1] = pike_sp[-2]
-    */
-    ins_debug_instr_prologue(b, 0, 0);
-    amd64_load_sp_reg();
-    add_reg_imm_reg( sp_reg, -2*sizeof(struct svalue), P_REG_RCX );
-    mov_mem128_reg( P_REG_RCX, 0, P_REG_XMM0 );
-    mov_mem128_reg( P_REG_RCX, 16, P_REG_XMM1 );
-    mov_reg_mem128( P_REG_XMM1, P_REG_RCX, 0 );
-    mov_reg_mem128( P_REG_XMM0, P_REG_RCX, 16 );
-    return;
-
   case F_INDEX:
     /*
       pike_sp[-2][pike_sp[-1]]
@@ -2470,6 +2463,7 @@ void ins_f_byte(unsigned int b)
     return;
 
   case F_CATCH:
+  case F_CATCH_AT:
     {
       INT32 base_addr = 0;
 
@@ -2477,7 +2471,11 @@ void ins_f_byte(unsigned int b)
       mov_rip_imm_reg(0, ARG1_REG);	/* Address for the POINTER. */
       base_addr = PIKE_PC;
 
-      amd64_call_c_function (setup_catch_context);
+      if ((b + F_OFFSET) == F_CATCH) {
+	amd64_call_c_function (setup_catch_context);
+      } else {
+	amd64_call_c_function (setup_catch_at_context);
+      }
       mov_reg_reg(P_REG_RAX, P_REG_RBX);
 
       /* Pass a pointer to Pike_interpreter.catch_ctx.recovery.recovery to
@@ -2861,7 +2859,7 @@ int amd64_ins_f_jump(unsigned int op, int backward_jump)
   LABELS();
 
 #ifdef PIKE_DEBUG
-  if(off>255)
+  if(off > MAX_SUPPORTED_INSTR)
     Pike_error("Instruction too big %d\n",off);
 #endif
   flags = instrs[off].flags;
@@ -3147,6 +3145,28 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
 {
   maybe_update_pc();
   switch(a) {
+  case F_DUP:
+    ins_debug_instr_prologue(b, 0, 0);
+    amd64_load_sp_reg();
+    add_reg_imm_reg(sp_reg, -sizeof(struct svalue) * (b + 1), P_REG_R10 );
+    amd64_push_svaluep( P_REG_R10 );
+    return;
+
+  case F_SWAP:
+    /*
+     * swap(pike_sp - 1, pike_sp - (arg1 + 2))
+     *
+     * NB: *KNOWS* that sizeof(struct svalue) == 16.
+     */
+    ins_debug_instr_prologue(b, 0, 0);
+    amd64_load_sp_reg();
+    add_reg_imm_reg( sp_reg, -(b + 2)*sizeof(struct svalue), P_REG_RCX );
+    mov_mem128_reg( P_REG_RCX, 0, P_REG_XMM0 );
+    mov_mem128_reg( P_REG_RCX, (b + 1)*16, P_REG_XMM1 );
+    mov_reg_mem128( P_REG_XMM1, P_REG_RCX, 0 );
+    mov_reg_mem128( P_REG_XMM0, P_REG_RCX, (b + 1)*16 );
+    return;
+
   case F_THIS_OBJECT:
     if( b == 0 )
     {
@@ -3412,7 +3432,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
     {
     LABELS();
     amd64_load_sp_reg();
-    ins_debug_instr_prologue(a,b,0);
+    ins_debug_instr_prologue(a-F_OFFSET,b,0);
     mov_mem8_reg(sp_reg,SVAL(-1).type, P_REG_RAX);
     test_reg32(P_REG_RAX);
     jnz(&label_A);
@@ -3781,6 +3801,38 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
     ins_f_byte_with_2_args( F_CLEAR_N_LOCAL, b, 1 );
     return;
 
+  case F_SWAP_STACK_LOCAL:
+    /*
+     * tmp = Pike_sp[-1]
+     * Pike_sp[-1] = Pike_fp->locals[arg1]
+     * Pike_fp->locals[arg1] = tmp
+     */
+    ins_debug_instr_prologue(a-F_OFFSET, b, 0);
+    amd64_load_fp_reg();
+    amd64_load_sp_reg();
+    mov_mem_reg(fp_reg, OFFSETOF(pike_frame, locals), P_REG_RAX);
+    add_reg_imm_reg( sp_reg, -sizeof(struct svalue), P_REG_RCX );
+
+#if SIZEOF_LONG_DOUBLE != 16
+    if (OFFSETOF(array, u.real_item) & 0x0f) {
+      mov_mem_reg( P_REG_RAX, b * sizeof(struct svalue), P_REG_RBX );
+      mov_mem_reg( P_REG_RCX, 0, P_REG_R10 );
+      mov_reg_mem( P_REG_RBX, P_REG_RCX, 0 );
+      mov_reg_mem( P_REG_R10, P_REG_RAX, b * sizeof(struct svalue) );
+      mov_mem_reg( P_REG_RAX, b * sizeof(struct svalue) + 8, P_REG_RBX );
+      mov_mem_reg( P_REG_RCX, 8, P_REG_R10 );
+      mov_reg_mem( P_REG_RBX, P_REG_RCX, 8 );
+      mov_reg_mem( P_REG_R10, P_REG_RAX, b * sizeof(struct svalue) + 8 );
+      return
+    }
+#endif
+
+    mov_mem128_reg( P_REG_RAX, b * sizeof(struct svalue), P_REG_XMM1 );
+    mov_mem128_reg( P_REG_RCX, 0, P_REG_XMM0 );
+    mov_reg_mem128( P_REG_XMM0, P_REG_RAX, b * sizeof(struct svalue) );
+    mov_reg_mem128( P_REG_XMM1, P_REG_RCX, 0 );
+    return;
+
   case F_INC_LOCAL_AND_POP:
     {
       LABELS();
@@ -4006,7 +4058,11 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
     ins_debug_instr_prologue(a-F_OFFSET, b, 0);
     amd64_load_fp_reg();
     amd64_load_mark_sp_reg();
-    mov_mem_reg(fp_reg, OFFSETOF(pike_frame, locals), ARG1_REG);
+    if (Pike_compiler->compiler_frame->generator_local != -1) {
+      mov_mem_reg(fp_reg, OFFSETOF(pike_frame, save_sp), ARG1_REG);
+    } else {
+      mov_mem_reg(fp_reg, OFFSETOF(pike_frame, locals), ARG1_REG);
+    }
     if (b) {
       add_reg_imm_reg(ARG1_REG, sizeof(struct svalue) * b, ARG1_REG);
     }
@@ -4730,8 +4786,8 @@ static struct amd64_opcode amd64_opcodes[4][256] = {
   { "or", ALI8, }, { "or", AI, }, { NULL, 0, }, { "F", OP_F, },
 
   /* 0x10 */
-  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
-  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { "adc", RMR8, }, { "adc", RMR, }, { "adc", RRM8, }, { "adc", RRM, },
+  { "adc", ALI8, }, { "adc", AI, }, { NULL, 0, }, { NULL, 0, },
   { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
   { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
 
@@ -4780,12 +4836,12 @@ static struct amd64_opcode amd64_opcodes[4][256] = {
   /* 0x90 */
   { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
   { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
-  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { "cbw/cwde/cdqe", OP_IMPLICIT_A, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
   { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
 
   /* 0xa0 */
   { "mov", ALM8, }, { "mov", AM, }, { "mov", MAL8, }, { "mov", MA, },
-  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { "cmpsb", 0, }, { "cmps", 0, },
   { "test", ALI8, }, { "test", AI, }, { NULL, 0, }, { NULL, 0, },
   { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
 
@@ -4823,7 +4879,7 @@ static struct amd64_opcode amd64_opcodes[4][256] = {
 {
   /* 0x00 */
   { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
-  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { "clts", 0, }, { NULL, 0, },
   { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
   { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
 
@@ -4837,7 +4893,7 @@ static struct amd64_opcode amd64_opcodes[4][256] = {
   { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
   { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
   { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
-  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { "comiss/d", RRM, },
 
   /* 0x30 */
   { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
@@ -4853,8 +4909,8 @@ static struct amd64_opcode amd64_opcodes[4][256] = {
 
   /* 0x50 */
   { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
-  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
-  { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
+  { "andps/d", RRM, }, { "andnps/d", RRM, }, { NULL, 0, }, { NULL, 0, },
+  { "add[p]s/d", RRM, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
   { NULL, 0, }, { NULL, 0, }, { NULL, 0, }, { NULL, 0, },
 
   /* 0x60 */
@@ -5273,7 +5329,12 @@ size_t amd64_disassemble_modrm(PIKE_OPCODE_T *pc,
       bytes++;
       break;
     case 0x80:
-      bytes += amd64_readint32(pc + bytes, buf);
+      if (legacy_prefix[2] == 0x66) {
+	sprintf(buf, "%d", ((INT16 *)(pc + bytes))[0]);
+	bytes += 2;
+      } else {
+	bytes += amd64_readint32(pc + bytes, buf);
+      }
       sprintf(buf + strlen(buf), "(%s)", reg_buf);
       break;
     }
@@ -5359,6 +5420,10 @@ void amd64_disassemble_code(PIKE_OPCODE_T *pc, size_t len)
       }
       if (op->flags & (OP_8|OP_S8)) {
 	sprintf(buffers[0] + strlen(buffers[0]), "$%d", ((signed char *)pc)[pos++]);
+      } else if (legacy_prefix[2] == 0x66) {
+	/* 16-bit */
+	sprintf(buffers[1] + strlen(buffers[1]), "$%d", ((signed INT16 *)(pc + pos))[0]);
+	pos += 2;
       } else {
 	sprintf(buffers[0] + strlen(buffers[0]), "$");
 	pos += amd64_readint32(pc + pos, buffers[0] + strlen(buffers[0]));
@@ -5404,7 +5469,8 @@ void amd64_disassemble_code(PIKE_OPCODE_T *pc, size_t len)
       }
     }
 
-    string_builder_append_disassembly(&buf, pc + op_start, pc + pos,
+    string_builder_append_disassembly(&buf, (size_t)(pc + op_start),
+				      pc + op_start, pc + pos,
 				      opcode, params, NULL);
   }
 

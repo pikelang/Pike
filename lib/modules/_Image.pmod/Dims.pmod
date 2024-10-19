@@ -2,7 +2,7 @@
 #pike __REAL_VERSION__
 
 //   Imagedimensionreadermodule for Pike.
-//   Created by Johan Sch�n, <js@roxen.com>.
+//   Created by Johan Schön, <js@roxen.com>.
 //
 //   This software is based in part on the work of the Independent JPEG Group.
 
@@ -29,12 +29,12 @@
 #define M_COM   0xFE		/* COMment */
 #define M_APP1  0xE1
 
-protected int(0..255) read_1_byte(Stdio.File f)
+protected int(0..255) read_1_byte(Stdio.Stream f)
 {
   return f->read(1)[0];
 }
 
-protected int(0..65535) read_2_bytes(Stdio.File f)
+protected int(0..65535) read_2_bytes(Stdio.Stream f)
 {
   int c;
   sscanf( f->read(2), "%2c", c );
@@ -50,7 +50,7 @@ protected int(0..65535) read_2_bytes(Stdio.File f)
  * file and then return a misleading error message...
  */
 
-protected int first_marker(Stdio.File f)
+protected int first_marker(Stdio.Stream f)
 {
   int c1, c2;
 
@@ -69,7 +69,7 @@ protected int first_marker(Stdio.File f)
  * not deal correctly with FF/00 sequences in the compressed image data...
  */
 
-protected int next_marker(Stdio.File f)
+protected int next_marker(Stdio.Stream f)
 {
   // Find 0xFF byte; count and skip any non-FFs.
   int c = read_1_byte(f);
@@ -85,7 +85,7 @@ protected int next_marker(Stdio.File f)
 }
 
 /* Skip over an unknown or uninteresting variable-length marker */
-protected int skip_variable(Stdio.File f)
+protected int skip_variable(Stdio.Stream f)
 {
   int length = read_2_bytes(f);
   if (length < 2) return 0;  // Length includes itself, so must be at least 2.
@@ -94,9 +94,8 @@ protected int skip_variable(Stdio.File f)
   return 1;
 }
 
-//! Reads the dimensions from a JPEG file and returns an array with
-//! width and height, or if the file isn't a valid image, 0.
-array(int) get_JPEG(Stdio.File f)
+/* Get the width, height and orientation from a JPEG file */
+protected mapping|zero get_JPEG_internal(Stdio.BlockFile f)
 {
   if (!first_marker(f))
     return 0;
@@ -122,16 +121,7 @@ array(int) get_JPEG(Stdio.File f)
     case M_SOF15:		/* Differential lossless, arithmetic */
       int image_height, image_width;
       sscanf(f->read(7), "%*3s%2c%2c", image_height, image_width);
-      if( exif && has_value(exif, "Orientation") &&
-          (< "5", "6", "7", "8" >)[exif->Orientation] )
-      {
-        // Picture has been rotated/flipped 90 or 270 degrees, so
-        // exchange width and height to reflect that.
-        int tmp = image_height;
-        image_height = image_width;
-        image_width = tmp;
-      }
-      return ({ image_width,image_height });
+      return ([ "width": image_width, "height": image_height, "exif": exif ]);
       break;
 
     case M_APP1:
@@ -158,6 +148,39 @@ array(int) get_JPEG(Stdio.File f)
   }
 }
 
+//! Reads the dimensions from a JPEG file and returns an array with
+//! width and height, or if the file isn't a valid image, 0.
+array(int) get_JPEG(Stdio.BlockFile f)
+{
+  mapping result = get_JPEG_internal(f);
+  return result && ({ result->width, result->height });
+}
+
+/* Perform EXIF based dimension flipping */
+protected array(int) exif_flip(array(int) dims, mapping exif)
+{
+  if (arrayp(dims) && exif && has_index(exif, "Orientation"))
+  {
+    if ((< "5", "6", "7", "8" >)[exif->Orientation])
+    {
+      // Picture has been rotated/flipped 90 or 270 degrees, so
+      // exchange width and height to reflect that.
+      int tmp = dims[1];
+      dims[1] = dims[0];
+      dims[0] = tmp;
+    }
+  }
+  return dims;
+}
+
+//! Like @[get_JPEG()], but returns the dimensions flipped if
+//! @[Image.JPEG.exif_decode()] would flip them
+array(int) exif_get_JPEG(Stdio.BlockFile f)
+{
+  mapping result = get_JPEG_internal(f);
+  return result && exif_flip(({ result->width, result->height }), result->exif);
+}
+
 // GIF-header:
 // typedef struct _GifHeader
 // {
@@ -174,7 +197,7 @@ array(int) get_JPEG(Stdio.File f)
 
 //! Reads the dimensions from a GIF file and returns an array with
 //! width and height, or if the file isn't a valid image, 0.
-array(int) get_GIF(Stdio.File f)
+array(int)|zero get_GIF(Stdio.BlockFile f)
 {
   if(f->read(3)!="GIF") return 0;
   f->seek(3, Stdio.SEEK_CUR);
@@ -183,7 +206,7 @@ array(int) get_GIF(Stdio.File f)
 
 //! Reads the dimensions from a PNG file and returns an array with
 //! width and height, or if the file isn't a valid image, 0.
-array(int) get_PNG(Stdio.File f)
+array(int)|zero get_PNG(Stdio.BlockFile f)
 {
   int offs=f->tell();
   if(f->read(6)!="\211PNG\r\n") return 0;
@@ -194,7 +217,7 @@ array(int) get_PNG(Stdio.File f)
 
 //! Reads the dimensions from a TIFF file and returns an array with
 //! width and height, or if the file isn't a valid image, 0.
-array(int) get_TIFF(Stdio.File f)
+array(int)|zero get_TIFF(Stdio.BlockFile f)
 {
  int|string buf;
  int entries;
@@ -298,7 +321,7 @@ array(int) get_TIFF(Stdio.File f)
 
 //! Reads the dimensions from a PSD file and returns an array with
 //! width and height, or if the file isn't a valid image, 0.
-array(int) get_PSD(Stdio.File f)
+array(int)|zero get_PSD(Stdio.BlockFile f)
 {
   //  4 bytes signature + 2 bytes version
   if (f->read(6) != "8BPS\0\1") return 0;
@@ -313,7 +336,7 @@ array(int) get_PSD(Stdio.File f)
 
 //! Reads the dimensions from a WebP file and returns an array with
 //! width and height, or if the file isn't a valid image, 0.
-array(int) get_WebP(Stdio.File f)
+array(int)|zero get_WebP(Stdio.BlockFile f)
 {
   if (f->read(4) != "RIFF") return 0;
   f->read(4);
@@ -367,7 +390,7 @@ array(int) get_WebP(Stdio.File f)
 //!       Image type. Any of @expr{"gif"@}, @expr{"png"@}, @expr{"tiff"@},
 //!       @expr{"jpeg"@}, @expr{"webp"@} and @expr{"psd"@}.
 //!   @endarray
-array(int|string) get(string|Stdio.File file) {
+array(int|string)|zero get(string|Stdio.BlockFile file, int(0..1)|void exif) {
 
   if(stringp(file))
     file = Stdio.FakeFile(file);
@@ -383,7 +406,7 @@ array(int|string) get(string|Stdio.File file) {
   case "\x89P":
     if(file->read(4)=="NG\r\n")
     {
-      file->read(6+4);
+      file->read(6+4); // offset+IHDR
       return array_sscanf(file->read(8), "%4c%4c") + ({ "png" });
     }
     break;
@@ -391,7 +414,13 @@ array(int|string) get(string|Stdio.File file) {
   case "8B":
     if(file->read(4)=="PS\0\1")
     {
+      //  Photoshop PSD
+      //
+      //  4 bytes signature + 2 bytes version
+      //  6 bytes reserved
+      //  2 bytes channel count
       file->read(6+2);
+      //  4 bytes height, 4 bytes width (big-endian)
       return reverse(array_sscanf(file->read(8), "%4c%4c")) + ({ "psd" });
     }
     break;
@@ -405,7 +434,7 @@ array(int|string) get(string|Stdio.File file) {
 
   case "\xff\xd8":
     file->seek(-2, Stdio.SEEK_CUR);
-    ret = get_JPEG(file);
+    ret = (exif? exif_get_JPEG(file) : get_JPEG(file));
     if(ret) return ret+({ "jpeg" });
     break;
 
@@ -417,4 +446,10 @@ array(int|string) get(string|Stdio.File file) {
   }
 
   return 0;
+}
+
+//! Like @[get()], but returns the dimensions flipped if
+//! @[Image.JPEG.exif_decode()] would flip them
+array(int) exif_get(string|Stdio.BlockFile file) {
+  return get(file, 1);
 }

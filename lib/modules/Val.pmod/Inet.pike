@@ -116,6 +116,36 @@ protected int(0..1) `==(mixed that) {
    : address == [int]that;
 }
 
+private int(0..1) containsorequal(int thataddress, int lmask) {
+  lmask = 128 - lmask;
+  lmask = ~0 << [int(0..)] lmask;
+  return (address & lmask) == (thataddress & lmask);
+}
+
+//! Is contained by.
+protected int(0..1) `<<(mixed that) {
+  if (objectp(that)) {
+    int lmask = [int]([object]that)->masklen;
+    if (masklen > lmask)
+      return containsorequal([int]([object]that)->address, lmask);
+  }
+  return 0;
+}
+
+//! Contains.
+protected int(0..1) `>>(mixed that) {
+  if (objectp(that)) {
+    if (masklen < [int]([object]that)->masklen)
+      return containsorequal([int]([object]that)->address, masklen);
+  } else if (intp(that) && masklen < 128)
+    return containsorequal([int]that, masklen);
+  return 0;
+}
+
+public string encode_json() {
+  return sprintf("\"%s\"", this);
+}
+
 protected mixed cast(string to) {
   switch (to) {
     case "string":
@@ -130,6 +160,8 @@ protected mixed cast(string to) {
 }
 
 protected string _sprintf(int fmt, mapping(string:mixed) params) {
+  if (!this)					// Not in destructed objects
+    return "(destructed)";
   switch (fmt) {
     case 'O': return sprintf("Inet(%s)", (string)this);
     case 's': return (string)this;

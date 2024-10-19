@@ -1,3 +1,5 @@
+/* -*- mode: Pike; c-basic-offset: 3; -*- */
+
 //!
 //! module Calendar
 //! submodule YMD
@@ -7,6 +9,7 @@
 //!
 //! inherits Time
 
+#charset iso-8859-1
 #pike __REAL_VERSION__
 
 //  #pragma strict_types
@@ -215,7 +218,7 @@ class YMD
       [wy,w,wd,wnd,wjd]=week_from_julian_day(jd);
    }
 
-   int __hash() { return jd; }
+   protected int __hash() { return jd; }
 
 // --- query
 
@@ -848,10 +851,8 @@ class YMD
 		 { return Year("ymd_yn",rules,x,1); });
    }
 
-   cYear year(void|int m)
+   cYear year(int m = 1)
    {
-      if (undefinedp (m)) m=1;
-
       if (!n&&m==-1)
 	 return Year("ymd_y",rules,y,yjd,1);
 
@@ -926,10 +927,8 @@ class YMD
 //!
 //!     If n is negative, it is counted from the end of the range.
 
-   cDay day(void|int m, mixed... ignored)
+   cDay day(int m = 1, mixed... ignored)
    {
-      if (undefinedp (m)) m=1;
-
       if (!n)
 	 return Day("ymd_yd",rules,y,yjd,jd,yd,1);
 
@@ -1176,7 +1175,7 @@ class YMD
 	       ->autopromote()});
    }
 
-   TimeRange `*(int|float n)
+   protected TimeRange `*(int|float n)
    {
       if(intp(n))
         return set_size(n,this);
@@ -1184,11 +1183,9 @@ class YMD
         return second()*(int)(how_many(Second)*n);
    }
 
-   array(TimeRange) split(int|float n, void|function|TimeRange with)
+   array(TimeRange) split(int|float n, function|TimeRange with = Second())
    {
-      if(!with)
-        with=Second();
-      else if (functionp(with))
+      if (functionp(with))
         with=promote_program(with);
 
       int length=(int)(how_many(with)/n);
@@ -1431,7 +1428,7 @@ class cYear
 	 n=0;
    }
 
-   TimeRange place(TimeRange what,void|int force)
+   object(TimeRange)|zero place(TimeRange what,void|int force)
    {
       if (what->is_day)
       {
@@ -1758,7 +1755,7 @@ class cMonth
 	 ->autopromote();
    }
 
-   TimeRange place_day(int day,int day_n,void|int force)
+   object(TimeRange)|zero place_day(int day,int day_n,void|int force)
    {
       if (day>number_of_days()) return 0; // doesn't exist
       return Day("ymd_jd",rules,jd+day-1,day_n)->autopromote();
@@ -2094,7 +2091,7 @@ class cWeek
       error("add: Incompatible type %O\n",step);
    }
 
-   TimeRange place_day(int day,int day_n,int force)
+   object(TimeRange)|zero place_day(int day,int day_n,int force)
    {
       if (day>number_of_days())
 	 if (!force)
@@ -2801,7 +2798,8 @@ class cSuperTimeRange
 
 // dwim time of day; needed to correct timezones
 // this API may change without further notice
-protected TimeRange dwim_tod(TimeRange origin,string whut,int h,int m,int s)
+protected object(TimeRange)|zero dwim_tod(TimeRange origin,
+                                          string whut,int h,int m,int s)
 {
    TimeRange tr;
    if (catch {
@@ -2823,6 +2821,18 @@ protected TimeRange dwim_tod(TimeRange origin,string whut,int h,int m,int s)
 //        werror("%O %O %O -> %O %O %O (%O)\n",
 //  	     tr->hour_no(),tr->minute_no(),tr->second_no(),
 //  	     h,m,s,tr);
+      string tr_ymd = tr->format_ymd_short();
+      string origin_ymd = origin->format_ymd_short();
+      if (tr_ymd != origin_ymd) {
+         // Timezone adjustment has moved tr to a different day.
+         // This happens eg for the first 14 seconds of 1900-01-01,
+         // which move back to 1899-12-31 in the timezone Europe/Stockholm.
+         if (tr_ymd < origin_ymd) {
+            tr = tr->add(1, Day);
+         } else {
+            tr = tr->add(-1, Day);
+         }
+      }
       if (tr->hour_no()!=h)
 	 tr=tr->add(h-tr->hour_no(),Hour);
       if (tr->minute_no()!=m)
@@ -2839,8 +2849,8 @@ protected mapping abbr2zones;
 
 // dwim timezone and call dwim time of day above
 // this API may change without further notice
-protected TimeRange dwim_zone(TimeRange origin,string zonename,
-			   string whut,int ...args)
+protected object(TimeRange)|zero dwim_zone(TimeRange origin,string zonename,
+                                           string whut,int ...args)
 {
    if (zonename=="") return 0;
 
@@ -2891,7 +2901,7 @@ protected mapping(string:array) parse_format_cache=([]);
 protected mapping dwim_year=([ "past_lower":70, "past_upper":100,
                             "current_century":2000, "past_century":1900 ]);
 
-TimeRange parse(string fmt,string arg,void|TimeRange context)
+object(TimeRange)|zero parse(string fmt,string arg,void|TimeRange context)
 {
    [string nfmt,array q]=(parse_format_cache[fmt]||({0,0}));
 
@@ -3052,7 +3062,7 @@ TimeRange parse(string fmt,string arg,void|TimeRange context)
 
       int h=0,mi=0,s=0;
       float sub_second;
-      string g=0;
+      string|zero g=0;
 
       if (m->t)
       {
@@ -3318,7 +3328,7 @@ TimeofDay dwim_time(string what,void|TimeRange cx)
 }
 
 // Parses time according to HTTP 1.1 (RFC 2616) HTTP-date token.
-TimeofDay http_time(string what, void|TimeRange cx)
+object(TimeofDay)|zero http_time(string what, void|TimeRange cx)
 {
   TimeofDay t;
 

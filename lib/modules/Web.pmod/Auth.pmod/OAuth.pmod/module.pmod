@@ -184,7 +184,7 @@ class Request
   }
 
   //! Get param with name @[name].
-  Param get_param(string name)
+  object(Param)|zero get_param(string name)
   {
     foreach (values(params), Param p)
       if (p[name])
@@ -296,7 +296,7 @@ class Consumer
 }
 
 //! Token class.
-class Token (string key, string secret)
+class Token (string|zero key, string|zero secret)
 {
   //! Only supports casting to string wich will return a query string
   //! of the object.
@@ -386,7 +386,7 @@ class Param
   }
 
   //! Index lookup.
-  protected object `[](string key)
+  protected object|zero `[](string key)
   {
     if (key == name)
       return this;
@@ -503,7 +503,7 @@ class Params
     foreach (args; string k; string v)
       params += ({ Param(k, v) });
 
-    return this_object;
+    return this_object();
   }
 
   //! Append @[p] to the internal array.

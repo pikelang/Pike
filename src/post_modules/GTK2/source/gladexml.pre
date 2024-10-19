@@ -32,6 +32,14 @@ static void pgtk2__signal_connect(const gchar *handler_name,
 		 "after: %d\n",
 		 handler_name,signal_name,signal_data,after);
 #endif
+  signal_id = g_signal_lookup(signal_name, G_TYPE_FROM_INSTANCE(object));
+  if (!signal_id) {
+    fprintf(stderr,
+            "** WARNING **; Signal \"%s\" not defined in the '%s' "
+            "class ancestry.\n",
+            signal_name, g_type_name(G_TYPE_FROM_INSTANCE(object)));
+    return;
+  }
   get_all_args(NULL,*(INT32 *)args,"%m%*",&callbacks,&data);
 /*
   funname=make_shared_string(handler_name);
@@ -49,18 +57,13 @@ static void pgtk2__signal_connect(const gchar *handler_name,
     return;
   }
   b=(struct signal_data *)g_malloc(sizeof(struct signal_data));
-  if (b==NULL)
-    Pike_error(msg_out_of_mem);
+  if (b==NULL) {
+    int args = -1;
+    SIMPLE_OUT_OF_MEMORY_ERROR(NULL, sizeof(struct signal_data));
+  }
   assign_svalue_no_free(&b->cb,cb);
   assign_svalue_no_free(&b->args,data);
-  b->signal_id=g_signal_lookup(signal_name,G_TYPE_FROM_INSTANCE(object));
-  if (!b->signal_id) {
-    g_free(b);
-    fprintf(stderr,
-	    "** WARNING **; Signal \"%s\" not defined in the '%s' "
-	    "class ancestry.\n",
-	    signal_name,g_type_name(G_TYPE_FROM_INSTANCE(object)));
-  }
+  b->signal_id = signal_id;
 /*
   id=g_signal_connect_data(G_OBJECT(object),signal_name,
 			   G_CALLBACK(pgtk2_signal_func_wrapper),b,
@@ -100,7 +103,7 @@ void create(string filename_or_buffer, ?int size, ?string root, ?string domain)
     struct pike_string *fname;
     char *root=NULL,*dom=NULL;
     INT_TYPE size=0;
-    get_all_args(NULL,args,"%n.%i%s%s",&fname,&size,&root,&dom);
+    get_all_args(NULL,args,"%n.%i%c%c",&fname,&size,&root,&dom);
     if (size==0)
       gl=glade_xml_new(fname->str,root,dom);
     else if ((size < 0) || (size > fname->len))
@@ -122,7 +125,7 @@ void create(string filename_or_buffer, ?int size, ?string root, ?string domain)
   {
     char *name;
     GtkWidget *widget;
-    get_all_args(NULL,args,"%s",&name);
+    get_all_args(NULL,args,"%c",&name);
     widget=glade_xml_get_widget(GLADE_XML(THIS->obj),name);
     pgtk2_pop_n_elems(args);
     push_gobject(widget);
@@ -138,7 +141,7 @@ array(GTK2.Widget) get_widget_prefix(string name)
     char *name;
     GList *gl,*g2;
     int i=0;
-    get_all_args(NULL,args,"%s",&name);
+    get_all_args(NULL,args,"%c",&name);
     gl=g2=glade_xml_get_widget_prefix(GLADE_XML(THIS->obj),name);
     pgtk2_pop_n_elems(args);
     while (g2) {

@@ -24,13 +24,13 @@ object Atom = class
     {
       return get_atom()->get_name();
     }
-    void create(string q)
+    protected void create(string q)
     {
       n = q;
     }
   }
 
-  object `[](string what)
+  protected object `[](string what)
   {
     if(atoms[what])
       return atoms[what];
@@ -38,7 +38,7 @@ object Atom = class
   }
 }();
 
-mixed `[](string what)
+protected mixed `[](string what)
 {
   if(what == "_module_value") return UNDEFINED;
   if(what == "Atom") return Atom;

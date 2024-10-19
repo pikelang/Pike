@@ -40,9 +40,9 @@ void ins_byte(INT32 val);
 void ins_data(INT32 val);
 	Insert a 32bit value at the current offset.
 
-INT32 read_program_data(PIKE_OPCODE_T *origin, int offset)
+INT32 read_program_data(PIKE_OPCODE_T *origin, ptrdiff_t offset)
 	Read a data item stored by ins_data. Note that the offset
-	is in number of data units.
+	is in number of data units, and that it may be negative.
 
 void ins_f_byte(unsigned int op);
 	Insert the opcode 'op' at the current offset.
@@ -254,8 +254,17 @@ PIKE_OPCODE_T *inter_return_opcode_F_CATCH(PIKE_OPCODE_T *addr)
 	Function to simplify implementation of F_CATCH in
 	OPCODE_INLINE_RETURN mode. See interpret.c for details.
 
+PIKE_OPCODE_T *inter_return_opcode_F_CATCH_AT(PIKE_OPCODE_T *addr)
+	Function to simplify implementation of F_CATCH_AT in
+	OPCODE_INLINE_RETURN mode. See interpret.c for details.
+
 PIKE_OPCODE_T *setup_catch_context(PIKE_OPCODE_T *addr)
 	Helper function for F_CATCH machine code. See interpret.c for details.
 
+PIKE_OPCODE_T *setup_catch_at_context(PIKE_OPCODE_T *addr)
+	Helper function for F_CATCH_AT machine code.
+	See interpret.c for details.
+
 PIKE_OPCODE_T *handle_caught_exception(void)
-	Helper function for F_CATCH machine code. See interpret.c for details.
+	Helper function for F_CATCH and F_CATCH_AT machine code.
+	See interpret.c for details.

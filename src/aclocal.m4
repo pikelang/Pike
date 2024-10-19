@@ -10,11 +10,16 @@ ifdef([_AC_OUTPUT_SUBDIRS], ,
       [define([_AC_OUTPUT_SUBDIRS],
 	      [AC_OUTPUT_SUBDIRS(AC_LIST_SUBDIRS)])])
 
+dnl Autoconf 2.71+ has put AC_REQUIRE[AC_CANONICAL_HOST] everywhere...
+m4_copy([AC_CANONICAL_HOST], [ORIG_AC_CANONICAL_HOST])
+m4_defun([AC_CANONICAL_HOST], [])
+
 dnl Not really a prerequisite, but suggest the use of Autoconf 2.50 to
 dnl autoconf-wrapper if it is used.  dnl can't be used since the wrapper
 dnl checks for it, so just store it in a dummy define.
 define([require_autoconf_2_50],[AC_PREREQ(2.50)])
 
+dnl major, minor, on_ge, on_lt
 define([if_autoconf],
 [ifelse(ifelse(index(AC_ACVERSION,.),-1,0,[m4_eval(
   translit(substr(AC_ACVERSION, 0, index(AC_ACVERSION,.)),[A-Za-z])-0 >= $1 &&
@@ -22,7 +27,33 @@ define([if_autoconf],
    translit(substr(AC_ACVERSION, 0, index(AC_ACVERSION,.)),[A-Za-z])-0 > $1 ||
    translit(substr(AC_ACVERSION, index(+AC_ACVERSION,.)),[A-Za-z])-0 >= $2
   )
-)]),1,$3,$4)])
+)]),1,[$3],[$4])])
+
+dnl Autoconf 2.60 is the first version that supports C99.
+dnl C99-compilers complain about implicit declarations.
+dnl For autoconf 2.59 and earlier: Make sure at least
+dnl exit(3C) is declared.
+dnl
+dnl NB: Simply always including <stdlib.h> causes some
+dnl     AC_HAVE_FUNC tests to fail due to mismatching
+dnl     prototypes.
+dnl
+dnl We overload _AC_PROG_CC_STDC to insert an extra
+dnl call of _AC_PROG_CXX_EXIT_DECLARATION due to it
+dnl usually only being used for C++.
+if_autoconf(2,60,,[
+  m4_copy([_AC_PROG_CC_STDC], [ORIG__AC_PROG_CC_STDC])
+  m4_define([_AC_PROG_CC_STDC], [
+    ORIG__AC_PROG_CC_STDC
+    # Some C99 compilers default to -Werror,-Wimplicit-function-declaration
+    # Attempt to find a suitable prototype for exit(3C).
+    _AC_COMPILE_IFELSE([@%:@ifdef __cplusplus
+      choke me
+@%:@endif], [
+      patsubst(_AC_PROG_CXX_EXIT_DECLARATION, [ifdef], [ifndef])
+    ])
+  ])
+])
 
 pushdef([AC_PROG_CC_WORKS],
 [
@@ -67,7 +98,7 @@ pushdef([AC_PROG_CC],
     fi
   fi
 
-  if test "$ac_test_CFLAGS" = set; then :; else
+  if test "$ac_test_CFLAGS"; then :; else
     if test "$GCC" = yes; then
       # Remove -O2, and use a real test to restore it.
       if test "$ac_cv_prog_cc_g" = yes; then
@@ -220,17 +251,19 @@ define([MY_AC_PROG_CC],
   AC_PROG_CC
   undefine([ac_cv_prog_CC])
   AC_PROG_CPP
-  if test "x$enable_binary" = "no"; then
+  if test "x$enable_binary" = x"no"; then
     # Do the check above even when --disable-binary is used, since we
     # need a real $CPP, and AC_PROG_CPP wants AC_PROG_CC to be called
     # earlier.
     CC="$BINDIR/nobinary_dummy cc"
+    ac_cv_c_undeclared_builtin_options='none needed'
   fi
 ])
 
 dnl Not available before Autoconf 2.60.
 ifdef([AC_USE_SYSTEM_EXTENSIONS],[],[
-  AH_VERBATIM([USE_SYSTEM_EXTENSIONS],
+  m4_defun([AC_USE_SYSTEM_EXTENSIONS], [
+    AH_VERBATIM([USE_SYSTEM_EXTENSIONS],
 [/* Enable GNU extensions on systems that have them.  */
 #ifndef _GNU_SOURCE
 # undef _GNU_SOURCE
@@ -252,11 +285,12 @@ ifdef([AC_USE_SYSTEM_EXTENSIONS],[],[
 # undef _TANDEM_SOURCE
 #endif
 ])
-  AC_DEFINE(_GNU_SOURCE)
-  AC_DEFINE(_DARWIN_C_SOURCE)
-  AC_DEFINE(_NETBSD_SOURCE)
-  AC_DEFINE(_POSIX_PTHREAD_SEMANTICS)
-  AC_DEFINE(_TANDEM_SOURCE)
+    AC_DEFINE(_GNU_SOURCE)
+    AC_DEFINE(_DARWIN_C_SOURCE)
+    AC_DEFINE(_NETBSD_SOURCE)
+    AC_DEFINE(_POSIX_PTHREAD_SEMANTICS)
+    AC_DEFINE(_TANDEM_SOURCE)
+  ])
 ])
 
 AC_DEFUN([PIKE_USE_SYSTEM_EXTENSIONS],
@@ -296,7 +330,7 @@ AC_DEFUN([PIKE_USE_SYSTEM_EXTENSIONS],
 # undef _XOPEN_SOURCE
 
 # if defined(_XOPEN_SOURCE) && ((_XOPEN_SOURCE + 0) < 500)
-   /* Define to 4 for XPG 4. NB: Overrides _XOPEN_SOURCE_EXTENDED below). */
+   /* Define to 4 for XPG 4. NB: Overrides _XOPEN_SOURCE_EXTENDED below. */
 #  undef _XOPEN_VERSION
 
    /* Define to 1 (and do NOT define _XOPEN_VERSION) for XPG 4v2. */
@@ -499,6 +533,12 @@ ifelse([$3], , , [$3
 fi
 ])
 
+AC_DEFUN([PIKE_IS_CROSS_COMPILING], [[${ac_cv_prog_cc_cross:-${cross_compiling}}]])
+AC_DEFUN([PIKE_OVERRIDE_CROSS_COMPILING], [[
+if [ -n "${ac_cv_prog_cc_cross}" -o -z "${cross_compiling}" ]; then
+ac_cv_prog_cc_cross=$1; else cross_compiling=$1; fi
+]])
+
 dnl PIKE_SEARCH_LIBS(FUNCTION, CALL-CODE, SEARCH-LIBS,
 dnl                  [ACTION-IF-FOUND], [ACTION-IF-NOT-FOUND],
 dnl                  [OTHER-LIBRARIES])
@@ -549,20 +589,35 @@ $2], break, pike_cv_search_$1=no)
   fi
 ])
 
+AC_DEFUN([PIKE_AC_CC_IS_RNT],
+[
+  if test "x$pike_cc_is_rnt" = "x"; then
+    if echo foo "$CC" | $EGREP 'rntc.|rnt.cl' >/dev/null; then
+      pike_cc_is_rnt=yes
+    else
+      pike_cc_is_rnt=no
+    fi
+  fi
+])
+
+AC_DEFUN([PIKE_REQUIRE_AC_CC_IS_RNT], [AC_REQUIRE([PIKE_AC_CC_IS_RNT])])
+
 define([ORIG_AC_CHECK_SIZEOF], defn([AC_CHECK_SIZEOF]))
 pushdef([AC_CHECK_SIZEOF],
 [
   changequote(<<, >>)dnl
   define(<<AC_CV_NAME>>, translit(ac_cv_sizeof_$1, [ *], [_p]))dnl
   changequote([, ])dnl
-  if test "x$cross_compiling" = "xyes"; then
-    AC_MSG_CHECKING(size of $1 ... crosscompiling or tcc)
+  PIKE_REQUIRE_AC_CC_IS_RNT()dnl
+  if test x"PIKE_IS_CROSS_COMPILING" = x"yes" -o "x$pike_cc_is_rnt" = "xyes"; then
+    AC_MSG_CHECKING(size of $1 ... crosscompiling or rnt)
     AC_CACHE_VAL(AC_CV_NAME,[
       cat > conftest.$ac_ext <<EOF
 dnl This sometimes fails to find confdefs.h, for some reason.
 dnl [#]line __oline__ "[$]0"
 [#]line __oline__ "configure"
 #include "confdefs.h"
+[$3]
 
 #include <stdio.h>
 
@@ -595,7 +650,9 @@ EOF
   ORIG_AC_CHECK_SIZEOF([$1],[$2],[$3])
 ])
 
-define([ORIG_CHECK_HEADERS], defn([AC_CHECK_HEADERS]))
+m4_copy([AC_CHECK_HEADERS], [ORIG_CHECK_HEADERS])
+ifdef([_AC_CHECK_HEADERS],
+	[m4_copy([_AC_CHECK_HEADERS], [_ORIG_CHECK_HEADERS])])
 define([AC_CHECK_HEADERS],
 [
   if test "x$enable_binary" != "xno"; then
@@ -693,7 +750,7 @@ AC_DEFUN(PIKE_AC_CHECK_OS, [
   AC_PATH_PROG(uname_prog,uname,no)
   AC_MSG_CHECKING(operating system)
   AC_CACHE_VAL(pike_cv_sys_os, [
-    if test "$cross_compiling" = "yes"; then
+    if test "PIKE_IS_CROSS_COMPILING" = "yes"; then
       case "$host_alias" in
 	*amigaos*)	pike_cv_sys_os="AmigaOS";;
 	*linux*)	pike_cv_sys_os="Linux";;
@@ -809,9 +866,11 @@ define([AC_LOW_MODULE_INIT],
   
   MY_AC_PROG_CC
 
-  PIKE_SELECT_ABI
+  AC_PROG_EGREP
 
   PIKE_USE_SYSTEM_EXTENSIONS
+
+  PIKE_SELECT_ABI
 
   dnl The following shouldn't be necessary; it comes from the core
   dnl machine.h via global.h anyway. Defining it here makes the
@@ -849,18 +908,14 @@ define([AC_LOW_MODULE_INIT],
     # since autoconf macros like AC_TRY_RUN will complain bitterly then.
     CROSS=yes
   else
-    CROSS="$ac_cv_prog_cc_cross"
-    # newer autoconf
-    if test x"$CROSS" = x; then
-      CROSS="$cross_compiling"
-    fi
+    CROSS="PIKE_IS_CROSS_COMPILING"
   fi
   AC_SUBST(CROSS)
 
   if test "x$enable_binary" = "xno"; then
     RUNPIKE="USE_PIKE"
   else
-    if test "x$cross_compiling" = "xyes"; then
+    if test x"PIKE_IS_CROSS_COMPILING" = x"yes"; then
       RUNPIKE="USE_PIKE"
     else
       RUNPIKE="DEFAULT_RUNPIKE"
@@ -937,6 +992,8 @@ define([AC_MODULE_INIT],
 pushdef([AC_OUTPUT],
 [
   AC_SET_MAKE
+
+  AC_CONFIG_FILES([stamp-h], [echo foo >stamp-h])
 
   PMOD_TARGETS=`echo $srcdir/*.cmod | sed -e "s/\.cmod/\.c/g" | sed -e "s|$srcdir/|\\$(SRCDIR)/|g"`
   test "$PMOD_TARGETS" = '$(SRCDIR)/*.c' && PMOD_TARGETS=
@@ -1023,6 +1080,20 @@ pushdef([AC_OUTPUT],
 
   AC_SUBST_FILE(make_variables)
   make_variables=make_variables
+
+  ACCONFIG_H=""
+  if test -f "$srcdir/acconfig.h"; then
+    ACCONFIG_H='$(SRCDIR)/acconfig.h'
+  fi
+  AC_SUBST(ACCONFIG_H)
+
+  CONFIG_HEADERS_IN=""
+  if test "x$CONFIG_HEADERS" = "x"; then :; else
+    for h in $CONFIG_HEADERS; do
+      CONFIG_HEADERS_IN="$CONFIG_HEADERS_IN \$(SRCDIR)/$h.in"
+    done
+  fi
+  AC_SUBST(CONFIG_HEADERS_IN)
 
   dnl Assert that there are configure-scripts in the subdirectories.
   if test "x$subdirs" != x; then
@@ -1145,12 +1216,12 @@ $1 tmp;
       found=no
       for mod in $2 ; do
 	AC_TRY_RUN([
-#include <stddef.h>
-#include <stdio.h>
-
 #define CONFIGURE_TEST
 #include "global.h"
 #include "pike_int_types.h"
+
+#include <stddef.h>
+#include <stdio.h>
 
 int main() {
   char buf[50];
@@ -1435,8 +1506,9 @@ define([DO_IF_OS],
 dnl variable, file-path
 AC_DEFUN(PIKE_CHECK_FILE_ABI,
 [
-  PIKE_filetype=`file "$2" 2>/dev/null | sed -e 's/.*://'`
-  case "[$]PIKE_filetype" in
+  PIKE_filetype=`file "$2" 2>/dev/null | sed -e 's/[[^:]]*://'`
+  PIKE_filetype_L=`file -L "$2" 2>/dev/null | sed -e 's/[[^:]]*://'`
+  case "[$]PIKE_filetype:[$]PIKE_filetype_L" in
     *64-bit*)
       $1=64
       ;;
@@ -1460,9 +1532,13 @@ AC_DEFUN(PIKE_CHECK_FILE_ABI,
       #   Mach-O object ppc
       $1=32
       ;;
+    *"POSIX shell script"*)
+      # Shell scripts do not have an ABI
+      $1=noarch
+      ;;
     *)
       # Unknown. Probably cross-compiling.
-      PIKE_MSG_WARN([Unrecognized object file format: $filetype])
+      PIKE_MSG_WARN([Unrecognized object file format: $PIKE_filetype:$PIKE_filetype_L])
       if dd if="$2" count=2 bs=1 2>/dev/null | \
 	grep 'L' >/dev/null; then
 	# A common case is rntcl...
@@ -1473,6 +1549,9 @@ AC_DEFUN(PIKE_CHECK_FILE_ABI,
   esac
 ])
 
+dnl Check the default ABI of the compiler.
+dnl
+dnl Result: $pike_cv_default_compiler_abi (one of 32, 64 or unknown).
 AC_DEFUN(PIKE_CHECK_DEFAULT_ABI,
 [
   if test "x$ac_cv_objext" = "x"; then
@@ -1500,8 +1579,59 @@ EOF
   AC_MSG_RESULT($pike_cv_default_compiler_abi)
 ])
 
+dnl Check the default ABI of the platform.
+dnl This is typically the same as that of the compiler,
+dnl but on some platforms (eg Solaris) it defaults to
+dnl the legacy ABI.
+dnl
+dnl Result: $pike_cv_native_abi (one of 32, 64 or unknown).
+AC_DEFUN(PIKE_CHECK_NATIVE_ABI,
+[
+  AC_REQUIRE([PIKE_CHECK_DEFAULT_ABI])dnl
+
+  AC_MSG_CHECKING([what the native ABI is])
+
+  # Default to the compiler default.
+  pike_cv_native_abi="$pike_cv_default_compiler_abi"
+
+  case "x`uname -m`" in
+    x*64)
+      pike_cv_native_abi="64"
+      ;;
+    xalpha)
+      pike_cv_native_abi="64"
+      ;;
+  esac
+
+  if type isainfo 2>/dev/null >/dev/null; then
+    # Solaris and rntcl.
+    pike_cv_native_abi="`isainfo -b`"
+  elif type sysctl 2>/dev/null >/dev/null; then
+    # MacOS X or Linux.
+    #
+    # On MacOS X hw.optional.64bitop is set to 1 if
+    # 64bit is supported and useful.
+    if test "`sysctl -n hw.optional.64bitops 2>/dev/null`" = "1"; then
+      pike_cv_native_abi="64"
+    fi
+    # On MacOS X hw.cpu64bit_capable is set to 1 if
+    # 64bit is supported and useful.
+    if test "`sysctl -n hw.cpu64bit_capable 2>/dev/null`" = "1"; then
+      pike_cv_wanted_abi="64"
+    fi
+  fi
+
+  AC_MSG_RESULT($pike_cv_native_abi)
+])
+
+dnl Check the ABI wanted by the user.
+dnl Defaults to the native ABI for the platform.
+dnl
+dnl Result: $pike_cv_wanted_abi (one of 32 or 64).
 AC_DEFUN(PIKE_WITH_ABI,
 [
+  AC_REQUIRE([PIKE_CHECK_NATIVE_ABI])dnl
+
   AC_ARG_WITH(abi, MY_DESCR([--with-abi=32/64],
 			    [specify ABI to use in case there are multiple]))
 
@@ -1516,36 +1646,9 @@ AC_DEFUN(PIKE_WITH_ABI,
       ;;
       *)
         # Defaults
-	if test "x$pike_cv_default_compiler_abi" = "xunknown"; then
+        pike_cv_wanted_abi="$pike_cv_native_abi"
+        if test "x$pike_cv_wanted_abi" = "xunknown"; then
           pike_cv_wanted_abi="32"
-	else
-	  # Default to the compiler default.
-	  pike_cv_wanted_abi="$pike_cv_default_compiler_abi"
-	fi
-        case "x`uname -m`" in
-          x*64)
-            pike_cv_wanted_abi="64"
-          ;;
-          xalpha)
-	    pike_cv_wanted_abi="64"
-          ;;
-        esac
-        if type isainfo 2>/dev/null >/dev/null; then
-          # Solaris
-          pike_cv_wanted_abi="`isainfo -b`"
-        elif type sysctl 2>/dev/null >/dev/null; then
-          # MacOS X or Linux.
-          #
-          # On MacOS X hw.optional.64bitop is set to 1 if
-          # 64bit is supported and useful.
-          if test "`sysctl -n hw.optional.64bitops 2>/dev/null`" = "1"; then
-            pike_cv_wanted_abi="64"
-          fi
-          # On MacOS X hw.cpu64bit_capable is set to 1 if
-          # 64bit is supported and useful.
-          if test "`sysctl -n hw.cpu64bit_capable 2>/dev/null`" = "1"; then
-            pike_cv_wanted_abi="64"
-          fi
         fi
       ;;
     esac
@@ -1601,6 +1704,7 @@ AC_DEFUN(PIKE_ATTEMPT_ABI64,
   fi
 ])
 
+dnl Select the ABI to target.
 AC_DEFUN(PIKE_SELECT_ABI,
 [
   AC_REQUIRE([PIKE_CHECK_DEFAULT_ABI])dnl
@@ -1663,7 +1767,7 @@ AC_DEFUN(PIKE_SELECT_ABI,
   # Prefix for pkg-config and other tools that don't support multiple ABIs
   # natively.
   if test "x$ac_tool_prefix" = x; then
-    AC_MSG_CHECKING(For $pike_cv_abi ABI tool prefix)
+    AC_MSG_CHECKING(For $pike_cv_abi-bit ABI tool prefix)
     AC_CACHE_VAL(pike_cv_tool_prefix, [
       SAVE_IFS="$IFS"
       IFS=":"
@@ -1679,6 +1783,20 @@ AC_DEFUN(PIKE_SELECT_ABI,
 	    fi
 	  fi
 	done
+        if test -h "$d/pkg-config" && readlink >/dev/null 2>&1 "$d/pkg-config"; then
+          link_target=`readlink "$d/pkg-config"`
+          case "$link_target" in
+            /*) ;;
+            *) link_target="$d/$link_target";;
+          esac
+          case "$link_target" in
+            *-pkg-config"$exeext")
+               PIKE_CHECK_FILE_ABI(file_abi, "$link_target")
+               if test "x$file_abi" = "x$pike_cv_abi"; then
+                 pike_cv_tool_prefix=`echo "$link_target" | sed -e 's|.*/||g' -e 's|pkg-config.*||'`
+               fi;;
+          esac
+        fi
         if test "x$pike_cv_tool_prefix" = x; then :; else
 	  break;
 	fi
@@ -1755,7 +1873,7 @@ AC_DEFUN(PIKE_CHECK_ABI_DIR,
 	 grep "unknown" >/dev/null; then
       cached=""
       empty=yes
-      for f in "$d"/* no; do
+      for f in "$1"/* no; do
         if test -f "$f"; then
 	  empty=no
 	  # NB: GNU file and BSD file default to not following symlinks.
@@ -1779,6 +1897,8 @@ AC_DEFUN(PIKE_CHECK_ABI_DIR,
 	  filetype="`echo $filetype | sed -e 's/...bit symbol table//'`"
 
 	  case "$filetype" in
+            *executable*)
+              continue;;
             *32-bit*)
   	      abi_32=yes
 	      ;;
@@ -1937,6 +2057,7 @@ AC_DEFUN(PIKE_CHECK_ABI_LIB_DIR,
       LDFLAGS="${LDFLAGS} $add_ldflags -lm"
       AC_TRY_RUN([
 #include <stdio.h>
+#include <stdlib.h>
 #include <math.h>
 int main(int argc, char **argv)
 {
@@ -1950,6 +2071,7 @@ int main(int argc, char **argv)
             add_ldflags=""
         ],[AC_TRY_LINK([
 #include <stdio.h>
+#include <stdlib.h>
 #include <math.h>
     	   ],[
     	     double (*foo)(double) = ceil;
@@ -1979,6 +2101,7 @@ int main(int argc, char **argv)
 ])
 
 AC_SUBST(PKG_CONFIG_PATH)
+AC_SUBST(PKG_CONFIG_LIBDIR)
 
 AC_DEFUN(PIKE_FIND_LIB_INCLUDE,
 [
@@ -1999,6 +2122,25 @@ AC_DEFUN(PIKE_PROG_PKG_CONFIG,
 [
   # NB: pkg-config does not have native support for multiple ABIs.
   MY_AC_PATH_PROGS(PKG_CONFIG, ${pike_cv_tool_prefix}pkg-config ${ac_tool_prefix}pkg-config, no)
+  if test "$pike_cv_sys_os:$pike_cv_abi:$PKG_CONFIG:$PKG_CONFIG_LIBDIR" = \
+          "Solaris:64:/usr/bin/pkg-config:"; then
+    # Workaround for 32-bit only pkg-config on Solaris 11.
+    AC_MSG_CHECKING([Value for PKG_CONFIG_LIBDIR])
+    for d in $pike_cv_abi_suffixes; do
+      if test "x$d" = "x/."; then continue; fi
+      if test -d "/usr/lib$d/pkgconfig/."; then
+	PKG_CONFIG_LIBDIR="$PKG_CONFIG_LIBDIR/usr/lib$d/pkgconfig:"
+      fi
+      # Note: Some pkg-config files (eg nspr) for 64-bit OSes are erroneously
+      #       installed in /usr/lib/pkgconfig/amd64/.
+      if test -d "/usr/lib/pkgconfig$d/."; then
+	PKG_CONFIG_LIBDIR="$PKG_CONFIG_LIBDIR/usr/lib/pkgconfig$d:"
+      fi
+    done
+    PKG_CONFIG_LIBDIR="$PKG_CONFIG_LIBDIR/usr/share/pkgconfig"
+    export PKG_CONFIG_LIBDIR
+    AC_MSG_RESULT([$PKG_CONFIG_LIBDIR])
+  fi
 ])
 
 dnl package, variable, options
@@ -2028,8 +2170,9 @@ AC_DEFUN(PIKE_PKG_CONFIG,
       PIKE_LOW_PKG_CONFIG([$1], [LDFLAGS],  [--libs-only-L])
       PIKE_LOW_PKG_CONFIG([$1], [LIBS],     [--libs-only-l --libs-only-other])
       AC_MSG_CHECKING([if $1 breaks compilation...])
-      AC_TRY_COMPILE([
+      AC_TRY_LINK([
 #include <stdio.h>
+#include <stdlib.h>
 ],[
         printf("Hello, world\n");
 	exit(0);
@@ -2055,3 +2198,55 @@ AC_DEFUN(PIKE_PKG_CONFIG,
     fi
   ])
 ])
+
+define([PIKE_PARSE_SITE_PREFIXES], [
+p_site_prefixes_to_add=""
+p_site_prefixes_to_remove=""
+eval "set ignored $ac_configure_args"
+shift
+for p_option; do
+  echo "Option: $p_option"
+  case $p_option in
+    --with-site-prefixes*)
+      p_useropt=`expr "x$p_option" : 'x--with-site-prefixes=\(.*\)'`
+      if test "x$p_useropt" != 'x'  ; then
+        p_site_prefixes_to_add="${p_site_prefixes_to_add}:${p_useropt}"
+      fi
+    ;;
+
+    --with-exclude-site-prefixes*)
+      p_useropt=`expr "x$p_option" : 'x--with-exclude-site-prefixes=\(.*\)'`
+      if test "x$p_useropt" != 'x' ; then
+        p_site_prefixes_to_remove="${p_site_prefixes_to_remove}:${p_useropt}"
+      fi
+    ;;
+  esac
+done
+
+m4_divert_once([HELP_WITH], [[
+Optional Packages:
+  --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
+  --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)]])
+m4_divert_once([HELP_WITH], AS_HELP_STRING([--with-site-prefixes=path], [:-separated list of prefixes to search for include, lib and bin dirs.]))
+m4_divert_once([HELP_WITH], AS_HELP_STRING([--with-exclude-site-prefixes=path], [:-separated list of prefixes to exclude for include, lib and bin dirs.]))
+])
+
+AC_DEFUN([PIKE_DIVERT_BEFORE_HELP],
+[ifdef([m4_divert_text], [m4_divert_text([PARSE_ARGS],[$1])],
+       [ifdef([AC_DIVERT], [AC_DIVERT([PARSE_ARGS],[$1])],[$2])])])
+
+AC_DEFUN([PIKE_FOREACH_CONFIG_SUBDIR], [
+  for $1 in `(cd $srcdir ; echo *)`
+  do
+    if test -d "$srcdir/[$]$1" ; then
+      if test -f "$srcdir/[$]$1/configure.in"; then
+        $2
+      fi
+    fi
+  done
+])
+
+AC_DEFUN([PIKE_DYNAMIC_CONFIG_SUBDIRS], [PIKE_DIVERT_BEFORE_HELP([
+  ac_subdirs_all=''
+  PIKE_FOREACH_CONFIG_SUBDIR([a], [ac_subdirs_all="$ac_subdirs_all $a"])
+])])

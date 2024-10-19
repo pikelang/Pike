@@ -1,3 +1,4 @@
+/* -*- mode: C; c-basic-offset: 4; -*- */
 #ifdef __SSE4_2__
 # include <smmintrin.h>
 #endif

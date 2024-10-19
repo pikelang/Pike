@@ -86,7 +86,7 @@ static void f_substring_index( INT32 args )
 
   if( i < 0 ) i = s->len + i;
   if( i >= s->len ) {
-    Pike_error("Index out of bounds, %ld > %ld\n", i, (long)s->len-1 );
+    Pike_error("Index out of bounds, %"PRINTPTRDIFFT"d > %ld\n", i, (long)s->len-1 );
   }
   push_int( ((unsigned char *)s->s->str)[s->offset+i] );
 }
@@ -660,8 +660,8 @@ static struct layer read_layer( struct buffer *buff, struct buffer *initial )
     struct buffer loffset = *initial;
     struct layer_mask *m=ALLOC_STRUCT(layer_mask);
     res.mask = m;
-    read_data( &loffset, lm_offset );
     memset(m, 0, sizeof( struct layer_mask ));
+    read_data( &loffset, lm_offset );
     *m = read_layer_mask( &loffset, initial );
   }
 
@@ -887,7 +887,7 @@ static void image_xcf____decode( INT32 args )
   struct buffer b;
   struct gimp_image res;
   ONERROR err;
-  get_all_args( NULL, args, "%S", &s );
+  get_all_args( NULL, args, "%n", &s );
   if(args > 1)
     Pike_error("Too many arguments to Image.XCF.___decode()\n");
 
@@ -1490,7 +1490,7 @@ void init_image_xcf(void)
 
   start_new_program();
   ADD_STORAGE( struct substring );
-  ADD_FUNCTION("cast", f_substring_cast, tFunc(tStr,tStr), ID_PRIVATE);
+  ADD_FUNCTION("cast", f_substring_cast, tFunc(tStr,tStr), ID_PROTECTED);
   ADD_FUNCTION("`[]", f_substring_index, tFunc(tInt,tInt), 0);
   ADD_FUNCTION("get_short", f_substring_get_short, tFunc(tInt,tInt), 0 );
   ADD_FUNCTION("get_ushort", f_substring_get_ushort, tFunc(tInt,tInt), 0 );

@@ -1,6 +1,8 @@
 #pike 7.8
 #pragma strict_types
 
+#pragma no_deprecation_warnings
+
 //! Alert packet.
 
 import .Constants;
@@ -42,7 +44,7 @@ void create(int l, int d, int version, string|void m, mixed|void t)
 
 #ifdef SSL3_DEBUG
   if(m)
-    werror(m);
+    werror("%s", [string]m);
   if(t)
     werror(describe_backtrace(t));
 #endif

@@ -1,4 +1,4 @@
-/*
+/* -*- mode: C; c-basic-offset: 3; -*-
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
@@ -68,7 +68,7 @@ static inline INT32 PIKE_UNUSED_ATTRIBUTE FLOAT_TO_COLORL(double X)
    * COLORL range (0 - COLORLMAX, ie (COLORLMAX + 1)) and check
    * for the special case of X == 1.0.
    */
-  unsigned INT32 tmp = X * ((double)COLORLMAX + 1.0);
+  unsigned INT32 tmp = (unsigned INT32)(X * ((double)COLORLMAX + 1.0));
   if (UNLIKELY(tmp > (unsigned INT32)COLORLMAX)) return COLORLMAX;
   return (INT32)tmp;
 }
@@ -126,7 +126,7 @@ struct color_struct
    struct pike_string *name;
 };
 
-#define tColor tOr3(tArr(tInt),tString,tObj)
+#define tColor tOr3(tLArr(tInt3,tInt8bit),tString,tObj)
 #define tLayerMap tMap(tString,tOr4(tString,tColor,tFloat,tInt))
 
 /* blit.c */

@@ -44,6 +44,7 @@ struct statement_label_name
 {
   struct statement_label_name *next;
   struct pike_string *str;
+  struct pike_string *file;
   INT_TYPE line_number;
   int used;
 };
@@ -54,7 +55,7 @@ struct statement_label
   struct statement_label_name *name;
   /* -2 in break_label is used to flag "open" statement_label entries.
    * If an open entry is on top of the stack, it's used instead of a
-   * new one. That's used to associate statement labels to the
+   * new one. This is used to associate statement labels to the
    * following statement. */
   INT32 break_label, continue_label;
   int emit_break_label;
@@ -62,9 +63,8 @@ struct statement_label
   struct cleanup_frame *cleanups;
 };
 
-static struct statement_label top_statement_label_dummy =
-  {0, 0, -1, -1, 0, -1, 0};
-static struct statement_label *current_label = &top_statement_label_dummy;
+static struct statement_label *current_label = NULL;
+
 #ifdef PIKE_DEBUG
 static int current_stack_depth = -4711;
 #else
@@ -77,6 +77,9 @@ static int current_stack_depth = 0;
   cleanup_frame__.cleanup_arg = (void *)(ptrdiff_t) (arg);		\
   cleanup_frame__.stack_depth = current_stack_depth;			\
   DO_IF_DEBUG(								\
+    if (!current_label) {						\
+      Pike_fatal("no current_label!\n");				\
+    }									\
     if (current_label->cleanups == (void *)(ptrdiff_t) -1)		\
       Pike_fatal("current_label points to an unused statement_label.\n");	\
   )									\
@@ -136,7 +139,7 @@ static int current_stack_depth = 0;
 #define PUSH_STATEMENT_LABEL do {					\
   struct statement_label new_label__;					\
   new_label__.prev = current_label;					\
-  if (current_label->break_label != -2) {				\
+  if (!current_label || (current_label->break_label != -2)) {		\
     /* Only cover the current label if it's closed. */			\
     new_label__.name = 0;						\
     new_label__.break_label = new_label__.continue_label = -1;		\
@@ -272,6 +275,11 @@ void do_pop(int x)
   modify_stack_depth(-x);
 }
 
+static void do_pop_cleanup(void *x)
+{
+  do_pop((int)(ptrdiff_t)x);
+}
+
 static void do_pop_mark(void *UNUSED(ignored))
 {
   struct compilation *c = THIS_COMPILATION;
@@ -285,7 +293,7 @@ static void do_pop_to_mark(void *UNUSED(ignored))
 }
 
 #ifdef PIKE_DEBUG
-static void do_cleanup_synch_mark(void)
+static void do_cleanup_synch_mark(void *UNUSED(ignored))
 {
   struct compilation *c = THIS_COMPILATION;
   if (d_flag > 2)
@@ -293,10 +301,39 @@ static void do_cleanup_synch_mark(void)
 }
 #endif
 
-static void do_escape_catch(void)
+static void do_escape_catch(void *UNUSED(ignored))
 {
   struct compilation *c = THIS_COMPILATION;
   emit0(F_ESCAPE_CATCH);
+}
+
+static void zap_dead_locals(struct compilation *c, node *n)
+{
+  if (!n) return;
+
+  switch(n->token) {
+  case F_SET_LOCAL_END:
+    n = CAR(n);
+    if (n->token != F_LOCAL) {
+      break;
+    }
+    if (n->u.integer.b) {
+      break;
+    }
+    emit1(F_CLEAR_LOCAL, n->u.integer.a);
+    break;
+  case F_SET_LOCAL_NAME:
+  case F_CATCH:
+    break;
+  default:
+    if (car_is_node(n)) {
+      zap_dead_locals(c, CAR(n));
+    }
+    if (cdr_is_node(n)) {
+      zap_dead_locals(c, CDR(n));
+    }
+    break;
+  }
 }
 
 #define DO_CODE_BLOCK(X) do_pop(do_docode((X),DO_NOT_COPY | DO_POP ))
@@ -307,14 +344,17 @@ int do_docode(node *n, int flags)
   int stack_depth_save = current_stack_depth;
   struct compilation *c = THIS_COMPILATION;
   INT_TYPE save_current_line = c->lex.current_line;
+  struct pike_string *save_current_file = c->lex.current_file;
   if(!n) return 0;
   c->lex.current_line=n->line_number;
+  c->lex.current_file = n->current_file;
 #ifdef PIKE_DEBUG
   if (current_stack_depth == -4711) Pike_fatal("do_docode() used outside docode().\n");
 #endif
   i=do_docode2(n, flags);
   current_stack_depth = stack_depth_save + i;
 
+  c->lex.current_file = save_current_file;
   c->lex.current_line=save_current_line;
   return i;
 }
@@ -435,6 +475,26 @@ static INT32 count_cases(node *n)
   }
 }
 
+static INT32 count_continue_returns(node *n)
+{
+  INT32 ret = 0;
+  if(!n) return 0;
+  switch(n->token)
+  {
+  case F_RETURN:
+  case F_RETURN_IF_TRUE:
+  case F_VOLATILE_RETURN:
+    /* FIXME: continue returns in expressions are likely to be broken. */
+    if (CDR(n) && CDR(n)->u.sval.u.integer) ret = 1;
+
+    /* FALLTHRU */
+  default:
+    if(car_is_node(n)) ret += count_continue_returns(CAR(n));
+    if(cdr_is_node(n)) ret += count_continue_returns(CDR(n));
+    return ret;
+  }
+}
+
 static int has_automap(node *n)
 {
   if(!n) return 0;
@@ -468,6 +528,7 @@ int generate_call_function(node *n)
 static struct compiler_frame *find_local_frame(INT32 depth)
 {
   struct compiler_frame *f=Pike_compiler->compiler_frame;
+  /* NB: Negative depth (ie -1) must be handled as depth == 0. */
   while(--depth>=0) f=f->previous;
   return f;
 }
@@ -509,11 +570,20 @@ static int do_lfun_call(int id, node *args)
    *
    * * Check that the current function doesn't contain scoped functions.
    */
-    if(Pike_compiler->compiler_frame->is_inline || (ref->id_flags & (ID_INLINE|ID_PRIVATE)))
+    if(Pike_compiler->compiler_frame->is_inline ||
+       (ref->id_flags & (ID_INLINE|ID_PRIVATE)))
     {
       /* Identifier is declared inline/local
        * or in inlining pass.
        */
+      enum Pike_opcodes recur = F_RECUR;
+      if (!check_tailrecursion()) {
+	/* Tail recursion is not safe (ie there might be stuff in
+	 * local variables (eg Thread.MutexKey objects) that have
+	 * side effects if they are cleared.
+	 */
+	recur = F_VOLATILE_RECUR;
+      }
       if ((ref->id_flags & (ID_INLINE|ID_PRIVATE)) &&
 	  (!Pike_compiler->compiler_frame->is_inline)) {
 	/* Explicit local:: reference in first pass.
@@ -523,10 +593,10 @@ static int do_lfun_call(int id, node *args)
 	 * Note that we in this case don't know if we are overloaded or
 	 * not, and thus can't RECUR to the recur_label.
 	 */
-	do_jump(F_RECUR, 0);
+	do_jump(recur, 0);
       } else {
 	Pike_compiler->compiler_frame->recur_label =
-	  do_jump(F_RECUR, Pike_compiler->compiler_frame->recur_label);
+	  do_jump(recur, Pike_compiler->compiler_frame->recur_label);
       }
     } else {
       /* Recur if not overloaded. */
@@ -565,13 +635,20 @@ static int do_lfun_call(int id, node *args)
  * FIXME: this can be optimized, but is not really used
  * enough to be worth it yet.
  */
-static void emit_apply_builtin(char *func)
+static void low_emit_apply_builtin(char *func, char *fallback)
 {
   INT32 tmp1;
   struct compilation *c = THIS_COMPILATION;
   struct pike_string *n1=make_shared_string(func);
   node *n=find_module_identifier(n1,0);
   free_string(n1);
+
+  if (!n && fallback) {
+    func = fallback;
+    n1 = make_shared_string(func);
+    n = find_module_identifier(n1, 0);
+    free_string(n1);
+  }
 
   switch(n?n->token:0)
   {
@@ -590,6 +667,24 @@ static void emit_apply_builtin(char *func)
       my_yyerror("docode: Failed to make call to %s",func);
   }
   free_node(n);
+}
+
+static void emit_apply_builtin(char *func)
+{
+  low_emit_apply_builtin(func, NULL);
+}
+
+static void emit_automap_marker(int depth)
+{
+  struct compilation *c = THIS_COMPILATION;
+  emit1(F_NUMBER, depth);
+
+  /* NB: __builtin is not available without a full master.
+   *     In particular it is not available when compiling
+   *     the main master.
+   */
+  low_emit_apply_builtin("__builtin.automap_marker",
+			 "_static_modules.Builtin.automap_marker");
 }
 
 static int do_encode_automap_arg_list(node *n,
@@ -622,9 +717,10 @@ static int do_encode_automap_arg_list(node *n,
 	depth++;
       }
       emit0(F_MARK);
+      PUSH_CLEANUP_FRAME(do_pop_mark, 0);
       code_expression(n, 0, "[*]");
-      emit1(F_NUMBER, depth);
-      emit_apply_builtin("__builtin.automap_marker");
+      emit_automap_marker(depth);
+      POP_AND_DONT_CLEANUP;
       return 1;
     }
   }
@@ -825,19 +921,50 @@ static int is_apply_constant_function_arg0( node *n, node *target )
     return 0;
 }
 
+static int count_required_multi_assign(node *lval_list)
+{
+  int res = 0;
+  int pos;
+
+  for (pos = 0; lval_list; pos++) {
+    node *lval = lval_list;
+    lval_list = NULL;
+    if (lval->token == F_LVALUE_LIST)  {
+      lval_list = CDR(lval);
+      lval = CAR(lval);
+    }
+    if (lval->token == F_DOT_DOT_DOT) {
+      res = ~pos;
+      if (lval_list) {
+        yyerror("More variables after ... in multi-assign.");
+        lval_list = NULL;
+      }
+    } else if ((lval->token != F_ASSIGN) &&
+               (lval->token != F_GET_SET_LVALUE) &&
+               (lval->token != F_COMMA_EXPR)) {
+      /* This position is not optional. */
+      res = pos + 1;
+    }
+  }
+
+  return res;
+}
+
 static void emit_multi_assign(node *vals, node *vars, int no)
 {
   struct compilation *c = THIS_COMPILATION;
   node *var;
-  node *val;
-  node **valp = my_get_arg(&vals, no);
+  node **valp = my_get_arg(&vals, no++);
 
-  if (!vars && (!valp || !*valp)) return;
-  if (!(vars && valp && (val = *valp))) {
-    yyerror("Argument count mismatch for multi-assignment.\n");
+  if (!vars) {
+    /* No more lvalues. */
+    if (valp && *valp) {
+      yyerror("Too many arguments for multi-assignment.\n");
+    }
     return;
   }
 
+  /* Get the next lvalue. */
   if (vars->token == F_LVALUE_LIST) {
     var = CAR(vars);
     vars = CDR(vars);
@@ -846,90 +973,78 @@ static void emit_multi_assign(node *vals, node *vars, int no)
     vars = NULL;
   }
 
+  /* Push the lvalue (if needed). */
   switch(var->token) {
+  case F_CLEAR_LOCAL:
+    var = CAR(var);
+    emit1(F_CLEAR_LOCAL, var->u.integer.a);
+    /* FALLTHRU */
   case F_LOCAL:
     if(var->u.integer.a >=
-       find_local_frame(var->u.integer.b)->max_number_of_locals)
-      yyerror("Illegal to use local variable here.");
-
-    if(var->u.integer.b) goto normal_assign;
-
-    if (var->node_info & OPT_ASSIGNMENT) {
-      /* Initialize. */
-      emit0(F_CONST0);
-      emit1(F_ASSIGN_LOCAL_AND_POP, var->u.integer.a);
+       find_local_frame(var->u.integer.b)->max_number_of_locals) {
+      Pike_fatal("Local variable $%d out of range (max: %d).\n",
+                 var->u.integer.a,
+                 find_local_frame(var->u.integer.b)->max_number_of_locals);
     }
-    code_expression(val, 0, "RHS");
-    emit_multi_assign(vals, vars, no+1);
-    emit1(F_ASSIGN_LOCAL_AND_POP, var->u.integer.a );
+
+    if(var->u.integer.b) goto do_lvalue;
     break;
 
   case F_GET_SET:
-    {
-      /* Check for the setter function. */
-      struct program_state *state = Pike_compiler;
-      int program_id = var->u.integer.a;
-      int level = 0;
-      while (state && (state->new_program->id != program_id)) {
-	state = state->previous;
-	level++;
-      }
-      if (!state) {
-	yyerror("Lost parent.");
-      } else {
-	struct reference *ref =
-	  PTR_FROM_INT(state->new_program, var->u.integer.b);
-	struct identifier *id =
-	  ID_FROM_PTR(state->new_program, ref);
-	struct inherit *inh =
-	  INHERIT_FROM_PTR(state->new_program, ref);
-	int f;
-#ifdef PIKE_DEBUG
-	if (!IDENTIFIER_IS_VARIABLE(id->identifier_flags) ||
-	    (id->run_time_type != PIKE_T_GET_SET)) {
-	  Pike_fatal("Not a getter/setter in a F_GET_SET node!\n"
-		     "  identifier_flags: 0x%08x\n"
-		     "  run_time_type; %s (%d)\n",
-		     id->identifier_flags,
-		     get_name_of_type(id->run_time_type),
-		     id->run_time_type);
-	}
-#endif /* PIKE_DEBUG */
-	f = id->func.gs_info.setter;
-	if (f == -1) {
-	  yywarning("Variable %S lacks a setter.", id->name);
-	} else if (!level) {
-	  f += inh->identifier_level;
-	  emit0(F_MARK);
-	  code_expression(val, 0, "RHS");
-	  emit_multi_assign(vals, vars, no+1);
-	  emit1(F_CALL_LFUN, f);
-	  emit0(F_POP_VALUE);
-	}
-      }
-    }
-    /* FALLTHRU */
   case F_EXTERNAL:
     /* Check that it is in this context */
     if(Pike_compiler ->new_program->id == var->u.integer.a)
     {
       /* Check that it is a variable */
       if(var->u.integer.b != IDREF_MAGIC_THIS &&
-	 IDENTIFIER_IS_VARIABLE( ID_FROM_INT(Pike_compiler->new_program, var->u.integer.b)->identifier_flags))
+         IDENTIFIER_IS_VARIABLE( ID_FROM_INT(Pike_compiler->new_program, var->u.integer.b)->identifier_flags))
       {
-	code_expression(val, 0, "RHS");
-	emit_multi_assign(vals, vars, no+1);
+        break;
+      }
+    }
+    /* fall through */
+
+  default:
+  do_lvalue:
+    do_docode(var, DO_LVALUE);
+    break;
+  }
+
+  /* Push the value. */
+  if (!valp || !*valp) {
+    yyerror("Too few arguments to multi-assignment.\n");
+    emit0(F_UNDEFINED);
+  } else {
+    code_expression(*valp, 0, "RHS");
+    emit_multi_assign(vals, vars, no);
+  }
+
+  /* Emit the assign and pop opcode. */
+  switch(var->token) {
+  case F_CLEAR_LOCAL:	/* Paranoia: Should not happen. */
+  case F_LOCAL:
+    if(var->u.integer.b) goto normal_assign;
+
+    emit1(F_ASSIGN_LOCAL_AND_POP, var->u.integer.a );
+    break;
+
+  case F_GET_SET:
+  case F_EXTERNAL:
+    /* Check that it is in this context */
+    if(Pike_compiler ->new_program->id == var->u.integer.a)
+    {
+      /* Check that it is a variable */
+      if(var->u.integer.b != IDREF_MAGIC_THIS &&
+         IDENTIFIER_IS_VARIABLE( ID_FROM_INT(Pike_compiler->new_program, var->u.integer.b)->identifier_flags))
+      {
         emit_assign_global( var->u.integer.b, 1 );
-	break;
+        break;
       }
     }
     /* fall through */
 
   default:
   normal_assign:
-    do_docode(var, DO_LVALUE);
-    if(do_docode(val, 0) != 1) yyerror("RHS is void!");
-    emit_multi_assign(vals, vars, no+1);
     emit0(F_ASSIGN_AND_POP);
     break;
   }
@@ -940,6 +1055,7 @@ static int do_docode2(node *n, int flags)
   struct compilation *c = THIS_COMPILATION;
   ptrdiff_t tmp1,tmp2,tmp3;
   int ret;
+  node *tmpn;
 
   if(!n) return 0;
 
@@ -955,6 +1071,7 @@ static int do_docode2(node *n, int flags)
 
       case F_ARRAY_LVALUE:
       case F_LVALUE_LIST:
+      case F_CLEAR_LOCAL:
       case F_LOCAL:
       case F_GLOBAL:
       case F_INDEX:
@@ -978,8 +1095,8 @@ static int do_docode2(node *n, int flags)
 
   /* Stack check */
   {
-    ptrdiff_t x_= ((char *)&x_) + STACK_DIRECTION * (32768) -
-      Pike_interpreter.stack_top ;
+    ptrdiff_t x_= ((char *)&x_) - Pike_interpreter.stack_top +
+      STACK_DIRECTION * (32768);
     x_*=STACK_DIRECTION;
     if(x_>0)
     {
@@ -1002,6 +1119,7 @@ static int do_docode2(node *n, int flags)
   case F_MAGIC_INDICES:
   case F_MAGIC_VALUES:
   case F_MAGIC_TYPES:
+  case F_MAGIC_ANNOTATIONS:
     emit2(n->token,
 	  n->u.node.b->u.sval.u.integer,
 	  n->u.node.a->u.sval.u.integer);
@@ -1036,6 +1154,22 @@ static int do_docode2(node *n, int flags)
 	  emit1(F_GLOBAL_LVALUE, n->u.integer.b);
 	}
 	return 2;
+      } else if (n->u.integer.b == IDREF_MAGIC_THIS) {
+	if (n->token == F_GET_SET) {
+	  my_yyerror("this is not a getter/setter.");
+	}
+	if (level) {
+	  struct program_state *state = Pike_compiler;
+	  int e;
+	  for (e = level; e; e--) {
+	    state->new_program->flags |=
+	      PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT;
+	    state = state->previous;
+	  }
+	  emit2(F_EXTERNAL, IDREF_MAGIC_THIS, level);
+	} else {
+	  emit1(F_THIS_OBJECT, 0);
+	}
       } else {
 	struct reference *ref =
 	  PTR_FROM_INT(state->new_program, n->u.integer.b);
@@ -1058,7 +1192,7 @@ static int do_docode2(node *n, int flags)
 #endif /* PIKE_DEBUG */
 	  f = id->func.gs_info.getter;
 	  if (f == -1) {
-	    yywarning("Variable %S lacks a getter.", id->name);
+            yywarning("Variable %pS lacks a getter.", id->name);
 	  } else if (!level) {
 	    return do_lfun_call(f + inh->identifier_level, NULL);
 	  } else {
@@ -1099,8 +1233,6 @@ static int do_docode2(node *n, int flags)
 	    }
 	    emit2(F_EXTERNAL, n->u.integer.b, level);
 	  }
-	} else if (n->u.integer.b == IDREF_MAGIC_THIS) {
-	  emit1(F_THIS_OBJECT, 0);
 	} else if(IDENTIFIER_IS_FUNCTION(id->identifier_flags) &&
 		  id->identifier_flags & IDENTIFIER_HAS_BODY)
 	{
@@ -1157,7 +1289,7 @@ static int do_docode2(node *n, int flags)
     return 1;
 
   case F_PUSH_ARRAY: {
-    if (current_label != &top_statement_label_dummy || current_label->cleanups) {
+    if (current_label) {
       /* Might not have a surrounding apply node if evaluated as a
        * constant by the optimizer. */
 #ifdef PIKE_DEBUG
@@ -1255,18 +1387,21 @@ static int do_docode2(node *n, int flags)
       return 0;
     } else {
       /* Fall back to the normal assign case. */
-      tmp1=do_docode(CAR(n),DO_LVALUE);
+      emit1(F_NUMBER, count_required_multi_assign(CAR(n)));
+      tmp1 = do_docode(CAR(n), DO_LVALUE|DO_NO_DEFAULT);
 #ifdef PIKE_DEBUG
       if(tmp1 & 1)
 	Pike_fatal("Very internal compiler error.\n");
 #endif
-      emit1(F_ARRAY_LVALUE, (INT32)(tmp1>>1) );
+      emit1(F_ARRAY_LVALUE, tmp1 + 1);
       emit0(F_MARK);
       PUSH_CLEANUP_FRAME(do_pop_mark, 0);
       do_docode(CDR(n), 0);
       emit_apply_builtin("aggregate");
       POP_AND_DONT_CLEANUP;
       emit0(F_ASSIGN);
+
+      /* FIXME: Handle default values here. */
       return 1;
     }
 
@@ -1284,7 +1419,26 @@ static int do_docode2(node *n, int flags)
       yyerror("[*] is not yet supported here\n");
     return emit_ltosval_call_and_assign( CAR(n), CAADR(n), CDADR(n) );
 
+  case F_ATOMIC_GET_SET:
+    if (CAR(n)->token == F_AUTO_MAP_MARKER) {
+      yyerror("Unsupported lvalue for ?=.");
+      emit0(F_UNDEFINED);
+      return 1;
+    }
+    if (!(flags & DO_POP)) {
+      tmp1 = do_docode(CAR(n), DO_LVALUE);
+      if (do_docode(CDR(n), 0) != 1) yyerror("RHS is void!");
+      emit0(F_ATOMIC_GET_SET);
+      return 1;
+    }
+
+    yywarning("Use of operator ?= without using return value.");
+    n->token = F_ASSIGN;
+
+    /* FALLTHROUGH */
+
   case F_ASSIGN:
+  case F_INITIALIZE:
 
     if( CAR(n)->token == F_AUTO_MAP_MARKER )
     {
@@ -1354,7 +1508,9 @@ static int do_docode2(node *n, int flags)
 	  emit0(CDR(n)->token);
 
 	emit0(n->token);
-	return n->token==F_ASSIGN; /* So when is this false? /mast */
+
+	/* So when is this false? /mast */
+	return (n->token == F_ASSIGN) || (n->token == F_INITIALIZE);
       }
       goto do_not_suboptimize_assign;
 
@@ -1371,28 +1527,29 @@ static int do_docode2(node *n, int flags)
       /* FALLTHRU */
     default:
       do_not_suboptimize_assign:
-      switch(CAR(n)->token)
+      tmpn = CAR(n);
+      switch(tmpn->token)
       {
       case F_GLOBAL:
-	  if(CAR(n)->u.integer.b) goto normal_assign;
+	  if(tmpn->u.integer.b) goto normal_assign;
 	  code_expression(CDR(n), 0, "RHS");
-          emit_assign_global( CAR(n)->u.integer.a, flags & DO_POP );
+          emit_assign_global( tmpn->u.integer.a, flags & DO_POP );
           break;
+      case F_CLEAR_LOCAL:
+	/* Initialize. */
+	tmpn = CAR(tmpn);
+	emit1(F_CLEAR_LOCAL, tmpn->u.integer.a);
+	/* FALLTHRU */
       case F_LOCAL:
-	if(CAR(n)->u.integer.a >=
-	   find_local_frame(CAR(n)->u.integer.b)->max_number_of_locals)
+	if(tmpn->u.integer.a >=
+	   find_local_frame(tmpn->u.integer.b)->max_number_of_locals)
 	  yyerror("Illegal to use local variable here.");
 
-	if(CAR(n)->u.integer.b) goto normal_assign;
+	if(tmpn->u.integer.b) goto normal_assign;
 
-	if (CAR(n)->node_info & OPT_ASSIGNMENT) {
-	  /* Initialize. */
-	  emit0(F_CONST0);
-	  emit1(F_ASSIGN_LOCAL_AND_POP, CAR(n)->u.integer.a);
-	}
 	code_expression(CDR(n), 0, "RHS");
 	emit1(flags & DO_POP ? F_ASSIGN_LOCAL_AND_POP:F_ASSIGN_LOCAL,
-	     CAR(n)->u.integer.a );
+	     tmpn->u.integer.a );
 	break;
 
       case F_GET_SET:
@@ -1428,26 +1585,28 @@ static int do_docode2(node *n, int flags)
 #endif /* PIKE_DEBUG */
           f = id->func.gs_info.setter;
           if (f == -1) {
-            yywarning("Variable %S lacks a setter.", id->name);
+            yywarning("Variable %pS lacks a setter.", id->name);
           } else if (!level) {
             f += inh->identifier_level;
+	    PUSH_CLEANUP_FRAME(do_pop_mark, 0);
             if (flags & DO_POP) {
 #ifndef USE_APPLY_N
               emit0(F_MARK);
 #endif
               code_expression(CDR(n), 0, "RHS");
             } else {
-              code_expression(CAR(n), 0, "RHS");
+              code_expression(CDR(n), 0, "RHS");
 #ifndef USE_APPLY_N
               emit0(F_MARK);
 #endif
-              emit0(F_DUP);
+              emit1(F_DUP, 0);
             }
 #ifdef USE_APPLY_N
             emit2(F_CALL_LFUN_N, f, 1);
 #else
             emit1(F_CALL_LFUN, f);
 #endif
+	    POP_AND_DONT_CLEANUP;
             emit0(F_POP_VALUE);
             return !(flags & DO_POP);
           }
@@ -1542,15 +1701,18 @@ static int do_docode2(node *n, int flags)
 	Pike_fatal("HELP! FATAL INTERNAL COMPILER ERROR (1)\n");
 #endif
 
+      PUSH_CLEANUP_FRAME(do_pop_mark, 0);
       emit0(F_MARK);
+      PUSH_CLEANUP_FRAME(do_pop_mark, 0);
       emit0(F_MARK);
       emit0(F_LTOSVAL);
-      emit1(F_NUMBER, depth);
-      emit_apply_builtin("__builtin.automap_marker");
+      emit_automap_marker(depth);
+      POP_AND_DONT_CLEANUP;
       emit_builtin_svalue("`+");
       emit2(F_REARRANGE,1,1);
       emit1(F_NUMBER, 1);
       emit_apply_builtin("__automap__");
+      POP_AND_DONT_CLEANUP;
 
       if(flags & DO_POP)
       {
@@ -1604,15 +1766,18 @@ static int do_docode2(node *n, int flags)
 	Pike_fatal("HELP! FATAL INTERNAL COMPILER ERROR (1)\n");
 #endif
 
+      PUSH_CLEANUP_FRAME(do_pop_mark, 0);
       emit0(F_MARK);
+      PUSH_CLEANUP_FRAME(do_pop_mark, 0);
       emit0(F_MARK);
       emit0(F_LTOSVAL);
-      emit1(F_NUMBER, depth);
-      emit_apply_builtin("__builtin.automap_marker");
+      emit_automap_marker(depth);
+      POP_AND_DONT_CLEANUP;
       emit_builtin_svalue("`-");
       emit2(F_REARRANGE,1,1);
       emit1(F_NUMBER, 1);
       emit_apply_builtin("__automap__");
+      POP_AND_DONT_CLEANUP;
 
       if(flags & DO_POP)
       {
@@ -1703,7 +1868,7 @@ static int do_docode2(node *n, int flags)
 	modify_stack_depth(2);
       }
 
-      PUSH_CLEANUP_FRAME(do_pop, 5);
+      PUSH_CLEANUP_FRAME(do_pop_cleanup, 5);
 
       PUSH_STATEMENT_LABEL;
       current_switch.jumptable=0;
@@ -1753,7 +1918,7 @@ static int do_docode2(node *n, int flags)
 	}
 	do_docode (CAR(low), DO_NOT_COPY);
 	tmp1 = alloc_label();
-	emit0(F_DUP);
+        emit1(F_DUP, 0);
 	emit0(F_CONST0);
 	do_jump(F_BRANCH_WHEN_GE, tmp1);
 	/* The value is negative. replace it with zero. */
@@ -1767,7 +1932,7 @@ static int do_docode2(node *n, int flags)
     emit0(F_CONST0);
     modify_stack_depth(1);
   foreach_arg_pushed:
-    PUSH_CLEANUP_FRAME(do_pop, 4);
+    PUSH_CLEANUP_FRAME(do_pop_cleanup, 4);
 
     PUSH_STATEMENT_LABEL;
     current_switch.jumptable=0;
@@ -1798,7 +1963,7 @@ static int do_docode2(node *n, int flags)
     BLOCK_BEGIN;
 
     do_docode(CAR(n),0);
-    PUSH_CLEANUP_FRAME(do_pop, 3);
+    PUSH_CLEANUP_FRAME(do_pop_cleanup, 3);
 
     PUSH_STATEMENT_LABEL;
     current_switch.jumptable=0;
@@ -1848,9 +2013,9 @@ static int do_docode2(node *n, int flags)
     current_label->continue_label=alloc_label();
 
     tmp2=ins_label(-1);
-    DO_CODE_BLOCK(CAR(n));
+    DO_CODE_BLOCK(CDR(n));
     ins_label(current_label->continue_label);
-    do_jump_when_non_zero(CDR(n), (INT32)tmp2);
+    do_jump_when_non_zero(CAR(n), (INT32)tmp2);
     ins_label(current_label->break_label);
 
     current_switch.jumptable = prev_switch_jumptable;
@@ -1934,6 +2099,9 @@ static int do_docode2(node *n, int flags)
     if (tmp1 > 1) do_pop((INT32)(tmp1 - 1));
     return !!tmp1;
 
+  case F_BIND_GENERICS:
+    return do_docode(CAR(n), flags);
+
   case F_APPLY:
     if(CAR(n)->token == F_CONSTANT)
     {
@@ -1972,7 +2140,7 @@ static int do_docode2(node *n, int flags)
 	    }
 	  }
 	  if (!n->type) fix_type_field(n);
-	  return !pike_types_le(n->type, void_type_string);
+	  return !pike_types_le(n->type, void_type_string, 0, 0);
 	}else{
 	  if(CAR(n)->u.sval.u.object == Pike_compiler->fake_object)
 	    return do_lfun_call(SUBTYPEOF(CAR(n)->u.sval), CDR(n));
@@ -2027,7 +2195,6 @@ static int do_docode2(node *n, int flags)
     }
     else
     {
-      struct pike_string *tmp;
       node *foo;
 
       emit0(F_MARK);
@@ -2111,7 +2278,7 @@ static int do_docode2(node *n, int flags)
      * So far all switches are implemented with a binsearch lookup.
      * It stores the case values in the programs area for constants.
      * It also has a jump-table in the program itself, for every index in
-     * the array of cases, there is 2 indexes in the jumptable, and one extra.
+     * the array of cases, there are 2 indices in the jumptable, and one extra.
      * The first entry in the jumptable is used if you call switch with
      * a value that is ranked lower than all the indexes in the array of
      * cases. (Ranked by the binsearch that is) The second is used if it
@@ -2124,6 +2291,7 @@ static int do_docode2(node *n, int flags)
   {
     INT32 e,cases,*order;
     INT32 *jumptable;
+    INT32 got_range = 0;
     struct switch_data prev_switch = current_switch;
 #ifdef PIKE_DEBUG
     struct svalue *save_sp=Pike_sp;
@@ -2212,12 +2380,23 @@ static int do_docode2(node *n, int flags)
     if(current_switch.default_label < 0)
       current_switch.default_label = ins_label(-1);
 
-    for(e=1;e<cases*2+2;e++)
+    for(e=1;e<cases*2+2;e++) {
       if(current_switch.jumptable[e]==-1)
 	current_switch.jumptable[e]=current_switch.default_label;
+      else if (e & 1) {
+        got_range = 1;
+      }
+    }
 
     for(e=1; e<cases*2+2; e++)
       update_arg(jumptable[e], current_switch.jumptable[e]);
+
+    if (!got_range) {
+      /* Optimize to common case where ranges are not in use. */
+      push_svalue(Pike_sp-1);
+      f_indices(1);
+      f_mkmapping(2);
+    }
 
     update_arg((INT32)tmp1, store_constant(Pike_sp-1,1,0));
 
@@ -2238,6 +2417,9 @@ static int do_docode2(node *n, int flags)
     return 0;
   }
 
+  /* NB: Pushes the case values on the Pike stack during compilation.
+   *     These will be collected by the case for F_SWITCH above.
+   */
   case F_CASE:
   case F_CASE_RANGE:
   {
@@ -2256,7 +2438,7 @@ static int do_docode2(node *n, int flags)
 	    yyerror("Case label isn't constant.");
 
 	  if (case_val->type) {
-	    if (!pike_types_le(case_val->type, current_switch.type)) {
+	    if (!pike_types_le(case_val->type, current_switch.type, 0, 0)) {
 	      if (!match_types(case_val->type, current_switch.type)) {
 		yytype_error("Type mismatch in case.",
 			     current_switch.type, case_val->type, 0);
@@ -2333,7 +2515,7 @@ static int do_docode2(node *n, int flags)
 	    lbl_name->used = 1;
 	    goto label_found_1;
 	  }
-      my_yyerror("No surrounding statement labeled %S.", name);
+      my_yyerror("No surrounding statement labeled %pS.", name);
       return 0;
 
     label_found_1:
@@ -2390,6 +2572,7 @@ static int do_docode2(node *n, int flags)
     PUSH_STATEMENT_LABEL;
     name.str = CAR(n)->u.sval.u.string;
     name.line_number = n->line_number;
+    name.file = n->current_file;
     name.used = 0;
 
     for (label = current_label; label; label = label->prev) {
@@ -2397,10 +2580,13 @@ static int do_docode2(node *n, int flags)
       for (lbl_name = label->name; lbl_name; lbl_name = lbl_name->next)
 	if (lbl_name->str == name.str) {
 	  INT_TYPE save_line = c->lex.current_line;
+	  struct pike_string *save_file = c->lex.current_file;
 	  c->lex.current_line = name.line_number;
-	  my_yyerror("Duplicate nested labels, previous one on line %d.",
-		     lbl_name->line_number);
+	  c->lex.current_file = name.file;
+          my_yyerror("Duplicate nested labels, previous one on line %ld.",
+                     (long)lbl_name->line_number);
 	  c->lex.current_line = save_line;
+	  c->lex.current_file = save_file;
 	  goto label_check_done;
 	}
     }
@@ -2424,30 +2610,144 @@ static int do_docode2(node *n, int flags)
     if (!name.used) {
       low_yyreport(REPORT_WARNING, n->current_file, n->line_number,
 		   parser_system_string, 0,
-                   "Label %S not used.", name.str);
+                   "Label %pS not used.", name.str);
     }
     POP_STATEMENT_LABEL;
     BLOCK_END;
     return 0;
   }
 
+  case F_RETURN_IF_TRUE:
+  case F_VOLATILE_RETURN:
   case F_RETURN: {
     struct statement_label *p;
     int in_catch = 0;
-    do_docode(CAR(n),0);
+    int continue_label = -1;
+    int resume_label = -1;
+    int skip_label = -1;
+    int got_val;
+
+
+    /* Evaluate the expression. */
+    got_val = do_docode(CAR(n),0);
+
+    if (n->token == F_RETURN_IF_TRUE) {
+      if (got_val) {
+        skip_label = do_jump(F_BRANCH_AND_POP_WHEN_ZERO, -1);
+      } else {
+        skip_label = do_jump(F_BRANCH, -1);
+      }
+    }
+
+    if (Pike_compiler->compiler_frame->generator_is_async && got_val) {
+      /* __async__ function.
+       *
+       * Move the return value to the Promise, and return UNDEFINED.
+       */
+      emit1(F_MARK_X, 1);
+      emit1(F_LOCAL, Pike_compiler->compiler_frame->generator_local + 4);
+      emit1(F_SWAP, 0);
+      emit1(F_CALL_OTHER_AND_POP, store_prog_string(success_string));
+      emit0(F_UNDEFINED);
+    } else if (!got_val) {
+      emit0(F_UNDEFINED);
+      modify_stack_depth(1);
+    }
+
+    if ((Pike_compiler->compiler_frame->generator_local != -1) &&
+	CDR(n) && CDR(n)->u.sval.u.integer) {
+      /* Continue return.
+       *
+       * Note that we must save the stack before we start
+       * popping marks etc in the label loop below.
+       */
+
+      /* Check if __generator_entry_point__ is -2
+       * in which case we have already been called.
+       *
+       * Note that we reset __generator_entry_point__ to -1,
+       * so that the next yield will not be passed.
+       *
+       * Note also that the interpreter lock must not
+       * be released before we reach the F_RETURN or similar.
+       * This means that opcodes that call pike functions
+       * or backward branches may not be used.
+       *
+       * The return expression is still on the stack after
+       * the branch.
+       */
+      emit1(F_NUMBER, -2);
+      emit1(F_NUMBER, -1);
+      emit1(F_SWAP_STACK_LOCAL,
+            Pike_compiler->compiler_frame->generator_local);
+      resume_label = do_jump(F_BRANCH_WHEN_EQ, -1);
+
+      /* Count the number of active catches. */
+      for (p = current_label; p; p = p->prev) {
+	struct cleanup_frame *q;
+	for (q = p->cleanups; q; q = q->prev) {
+	  if (q->cleanup == do_escape_catch) {
+	    in_catch++;
+	  }
+	}
+      }
+      if (in_catch) {
+	emit1(F_PUSH_CATCHES, in_catch);
+        modify_stack_depth(2 * in_catch);
+	/* NB: For simplicity we save the return value, as it is
+	 *     followed by 2*in_catch items that we must save.
+	 *
+	 * FIXME: This could be fixed by adding an instruction
+	 *        here that rotates the stack so that the return
+	 *        value ends up on top.
+	 */
+	emit2(F_SAVE_STACK_TO_LOCAL,
+	      Pike_compiler->compiler_frame->generator_local + 1, 0);
+	/* Pop so that the return value ends up on top. */
+	do_pop(in_catch*2);
+      } else {
+	/* NB: Common case, here we can skip saving the return value. */
+	emit2(F_SAVE_STACK_TO_LOCAL,
+	      Pike_compiler->compiler_frame->generator_local + 1, 1);
+      }
+      continue_label = alloc_label();
+      /* NB: Subtract 1 to compensate for starting cases at -1. */
+      emit1(F_NUMBER,
+	    Pike_compiler->compiler_frame->generator_index-1);
+      emit1(F_ASSIGN_LOCAL_AND_POP,
+	    Pike_compiler->compiler_frame->generator_local);
+    } else if (CDR(n) && CDR(n)->u.sval.u.integer) {
+      if (CDR(n)->u.sval.u.integer == 1) {
+	yywarning("Continue return statement in non-generator function.");
+      } else {
+	yywarning("Yield expression in non-generator function.");
+      }
+      yywarning("Converted into a plain return.");
+    }
 
     /* Insert the appropriate number of F_ESCAPE_CATCH. The rest of
      * the cleanup is handled wholesale in low_return et al.
      * Alternatively we could handle this too in low_return and
      * then allow tail recursion of these kind of returns too. */
+    in_catch = 0;
     for (p = current_label; p; p = p->prev) {
       struct cleanup_frame *q;
       for (q = p->cleanups; q; q = q->prev) {
-	if (q->cleanup == (cleanup_func) do_escape_catch) {
-	  in_catch = 1;
-	  do_escape_catch();
+	if (q->cleanup == do_escape_catch) {
+	  in_catch++;
+	  do_escape_catch(q->cleanup_arg);
 	}
 #ifdef PIKE_DEBUG
+        else if (Pike_compiler->compiler_frame->generator_local != -1) {
+          /* There may be active marks if we are in a yield-expression.
+           *
+           * NB: We do not need to restore the mark stack here in the
+           *     non-DEBUG case as it will be done by F_RETURN below.
+           */
+          if (q->cleanup == (cleanup_func) do_pop_mark) {
+            do_pop_mark(NULL);
+          }
+        }
 	/* Have to pop marks from F_SYNCH_MARK too if the debug level
 	 * is high enough to get them inserted, otherwise we'll get
 	 * false alarms from debug checks in e.g. POP_CATCH_CONTEXT. */
@@ -2462,21 +2762,105 @@ static int do_docode2(node *n, int flags)
       }
     }
 
-    emit0(in_catch ? F_VOLATILE_RETURN : F_RETURN);
+    emit0(((n->token == F_VOLATILE_RETURN) || in_catch) ?
+	  F_VOLATILE_RETURN : F_RETURN);
+
+    if (continue_label != -1) {
+      int pop_skip_label = -1;
+
+      Pike_compiler->compiler_frame->generator_jumptable[
+        Pike_compiler->compiler_frame->generator_index++] =
+	ins_label(continue_label);
+      if (in_catch) {
+	/* Restore the catch context.
+	 * Insert the appropriate number of F_CATCH.
+	 * NB: We use the Pike stack to reverse the nesting order
+	 *     of the cleanup frames.
+	 */
+	struct svalue *save_sp = Pike_sp;
+
+        /* Return value followed by catch contexts "pushed" by
+         * F_PUSH_CATCHES/F_SAVE_STACK_TO_LOCAL/F_RESTORE_STACK_FROM_LOCAL
+         *
+         * See F_PUSH_CATCHES above.
+         */
+        modify_stack_depth(1 + in_catch*2);
+
+	for (p = current_label; p; p = p->prev) {
+	  struct cleanup_frame *q;
+	  for (q = p->cleanups; q; q = q->prev) {
+	    if (q->cleanup == (cleanup_func) do_escape_catch) {
+	      push_int((ptrdiff_t)q->cleanup_arg);
+	    }
+	  }
+	}
+
+	while (Pike_sp > save_sp) {
+	  do_jump(F_CATCH_AT, Pike_sp[-1].u.integer);
+          modify_stack_depth(-2);
+	  emit0(F_ENTRY);
+	  pop_stack();
+	}
+
+        /* NB: The restored return value is on the stack here.
+         *     it will be removed by the resume_label pop().
+         */
+      } else {
+        pop_skip_label = do_branch(-1);
+      }
+
+      /* Resume. */
+      ins_label(resume_label);
+      do_pop(1);	/* Pop the (restored) return value. */
+
+      if (pop_skip_label != -1) {
+        ins_label(pop_skip_label);
+      }
+
+      /* Call the resumption callback if it is set. */
+      emit0(F_MARK);
+      emit0(F_UNDEFINED);
+      emit1(F_SWAP_STACK_LOCAL,
+	    Pike_compiler->compiler_frame->generator_local + 3);
+      tmp1 = do_jump(F_BRANCH_AND_POP_WHEN_ZERO, -1);
+      emit1(F_LOCAL,
+	    Pike_compiler->compiler_frame->generator_local + 2);
+      emit0(F_CALL_FUNCTION_AND_POP);
+      tmp2 = do_jump(F_BRANCH, -1);
+      ins_label(tmp1);
+      emit0(F_POP_MARK);
+      ins_label(tmp2);
+
+      if (CDR(n) ->u.sval.u.integer == 2) {
+        /* yield().
+         *
+         * Push the resumption value.
+         */
+	emit0(F_UNDEFINED);
+	emit1(F_SWAP_STACK_LOCAL,
+	      Pike_compiler->compiler_frame->generator_local + 2);
+	modify_stack_depth(1);
+	return 1;
+      }
+    }
+    if (skip_label != -1) {
+      ins_label(skip_label);
+    }
     return 0;
   }
 
   case F_SSCANF:
+  case F_SSCANF_80:
     tmp1=do_docode(CAR(n),DO_NOT_COPY);
     tmp2=do_docode(CDR(n),DO_NOT_COPY | DO_LVALUE);
-    emit1(F_SSCANF, (INT32)(tmp1+tmp2));
+    emit1(n->token, (INT32)(tmp1+tmp2));
     return 1;
 
   case F_CATCH: {
     INT32 *prev_switch_jumptable = current_switch.jumptable;
 
     tmp1=do_jump(F_CATCH,-1);
-    PUSH_CLEANUP_FRAME(do_escape_catch, 0);
+    PUSH_CLEANUP_FRAME(do_escape_catch, (void *)(ptrdiff_t)tmp1);
 
     /* Entry point called via catching_eval_instruction(). */
     emit0(F_ENTRY);
@@ -2506,20 +2890,27 @@ static int do_docode2(node *n, int flags)
     ins_label((INT32)tmp1);
 
     POP_AND_DONT_CLEANUP;
+
+    /* Zap any non-scoped locals that were used in the block in case
+     * they hold state. Cf issue #10104.
+     */
+    zap_dead_locals(c, CAR(n));
+
     return 1;
   }
 
   case F_LVALUE_LIST:
-    ret = do_docode(CAR(n),DO_LVALUE);
-    return ret + do_docode(CDR(n),DO_LVALUE);
+    ret = do_docode(CAR(n), flags);
+    return ret + do_docode(CDR(n), flags);
 
     case F_ARRAY_LVALUE:
-      tmp1=do_docode(CAR(n),DO_LVALUE);
+      emit1(F_NUMBER, count_required_multi_assign(CAR(n)));
+      tmp1 = do_docode(CAR(n), flags);
 #ifdef PIKE_DEBUG
       if(tmp1 & 1)
 	Pike_fatal("Very internal compiler error.\n");
 #endif
-      emit1(F_ARRAY_LVALUE, (INT32)(tmp1>>1));
+      emit1(F_ARRAY_LVALUE, tmp1 + 1);
       return 2;
 
   case F_ARROW:
@@ -2712,39 +3103,43 @@ static int do_docode2(node *n, int flags)
 
     }
 
+  case F_CLEAR_LOCAL:
+#ifdef PIKE_DEBUG
+    if (!CAR(n) || (CAR(n)->token != F_LOCAL) || (CAR(n)->u.integer.b > 0)) {
+      print_tree(n);
+      Pike_fatal("Invalid CLEAR_LOCAL variable.\n");
+    }
+#endif
+    n = CAR(n);
+    emit1(F_CLEAR_LOCAL, n->u.integer.a);
+    /* FALLTHRU */
+
   case F_LOCAL:
     if(n->u.integer.a >=
-       find_local_frame(n->u.integer.b)->max_number_of_locals)
-      yyerror("Illegal to use local variable here.");
+       find_local_frame(n->u.integer.b)->max_number_of_locals) {
+      Pike_fatal("Local variable $%d out of range (max: %d).\n",
+                 n->u.integer.a,
+                 find_local_frame(n->u.integer.b)->max_number_of_locals);
+    }
 
-    if(n->u.integer.b)
+    if((tmp1 = n->u.integer.b))
     {
+      if (tmp1 < 0) tmp1 = 0;	/* LOCAL_VAR_USED_IN_SCOPE */
       if(flags & WANT_LVALUE)
       {
-	emit2(F_LEXICAL_LOCAL_LVALUE, n->u.integer.a, n->u.integer.b);
+        emit2(F_LEXICAL_LOCAL_LVALUE, n->u.integer.a, tmp1);
 	return 2;
       }else{
-	emit2(F_LEXICAL_LOCAL, n->u.integer.a, n->u.integer.b);
+        emit2(F_LEXICAL_LOCAL, n->u.integer.a, tmp1);
 	return 1;
       }
     }else{
       if(flags & WANT_LVALUE)
       {
-	if (n->node_info & OPT_ASSIGNMENT) {
-	  /* Initialize the variable. */
-	  emit0(F_CONST0);
-	  emit1(F_ASSIGN_LOCAL_AND_POP, n->u.integer.a);
-	}
 	emit1(F_LOCAL_LVALUE, n->u.integer.a);
 	return 2;
       }else{
-	if (n->node_info & OPT_ASSIGNMENT) {
-	  /* Initialize the variable. */
-	  emit0(F_CONST0);
-	  emit1(F_ASSIGN_LOCAL, n->u.integer.a);
-	} else {
-	  emit1(F_LOCAL, n->u.integer.a);
-	}
+	emit1(F_LOCAL, n->u.integer.a);
 	return 1;
       }
     }
@@ -2761,6 +3156,17 @@ static int do_docode2(node *n, int flags)
       return 1;
     }
 
+  case F_GENERATOR:
+    {
+      tmp1 = do_docode(CAR(n), 0);
+      if ((tmp1 != 1) || !CAR(n) || (CAR(n)->token != F_TRAMPOLINE)) {
+	emit0(F_UNDEFINED);
+	return 1;
+      }
+      emit1(F_GENERATOR, CAR(n)->u.trampoline.ident);
+      return 1;
+    }
+
   case F_VAL_LVAL:
   case F_FOREACH_VAL_LVAL:
     ret = do_docode(CAR(n),flags);
@@ -2768,9 +3174,11 @@ static int do_docode2(node *n, int flags)
 
   case F_AUTO_MAP:
     emit0(F_MARK);
+    PUSH_CLEANUP_FRAME(do_pop_mark, 0);
     code_expression(CAR(n), 0, "automap function");
     do_encode_automap_arg_list(CDR(n),0);
     emit_apply_builtin("__automap__");
+    POP_AND_DONT_CLEANUP;
     return 1;
 
   case F_AUTO_MAP_MARKER:
@@ -2798,9 +3206,51 @@ static int do_docode2(node *n, int flags)
     }
     return 1;
 
+  case F_SET_LOCAL_NAME:
+    if (CAR(n) && (CAR(n)->token == F_LOCAL) && !CAR(n)->u.integer.b &&
+	CDR(n) && (CDR(n)->token == F_ARG_LIST)) {
+      /* F_SET_LOCAL_NAME(F_LOCAL(stack_offset, 0),
+       *                  F_ARG_LIST(F_CONSTANT(T_STRING, "varname"),
+       *                             F_CONSTANT(T_INT, varflags)))
+       */
+      tmp2 = CAR(n)->u.integer.a;
+
+      /* varname. */
+      tmp1 = store_prog_string(CADR(n)->u.sval.u.string);
+      emit2(F_SET_LOCAL_NAME, tmp2, tmp1);
+
+      /* vartype. Taken from the type for the F_LOCAL node. */
+      ref_push_type_value(CAR(n)->type);
+      tmp1 = store_constant(Pike_sp - 1, 0, NULL);
+      pop_stack();
+      emit2(F_SET_LOCAL_TYPE, tmp2, tmp1);
+
+      /* varflags. */
+      tmp1 = CDDR(n)->u.sval.u.integer;
+      if (tmp1 & LOCAL_VAR_USED_IN_SCOPE) {
+	emit2(F_SET_LOCAL_FLAGS, tmp2, tmp1);
+      }
+    }
+    return 0;
+
+  case F_SET_LOCAL_END:
+    if (CAR(n) && (CAR(n)->token == F_LOCAL) && !CAR(n)->u.integer.b) {
+      emit1(F_SET_LOCAL_END, CAR(n)->u.integer.a);
+    }
+    return 0;
+
+  case F_GET_SET_LVALUE:
+    if (flags & WANT_LVALUE) {
+      do_docode(CAR(n), 0);
+      emit0(F_GET_SET_LVALUE);
+      return 2;
+    }
+    yyerror("Invalid r-value.\n");
+    return 0;
+
   default:
     Pike_fatal("Infernal compiler error (unknown parse-tree-token %d).\n", n->token);
-    UNREACHABLE(return 0);
+    UNREACHABLE();
   }
 }
 
@@ -2808,23 +3258,44 @@ static void emit_save_locals(struct compiler_frame *f)
 {
   struct compilation *c = THIS_COMPILATION;
   unsigned INT16 offset;
-  unsigned INT16 idx;
   int num_locals = f->max_number_of_locals;
 
   for (offset = 0; offset < (num_locals >> 4) + 1; offset++) {
-    unsigned int bitmask = 0;
-    for (idx = 0; idx < 16; idx++) {
-      int local_var_idx = offset * 16 + idx;
-      if (local_var_idx >= num_locals) {
-        break;
-      }
-      if (f->variable[local_var_idx].flags & LOCAL_VAR_USED_IN_SCOPE) {
-        bitmask |= 1 << idx;
-      }
-    }
+    unsigned int bitmask = f->local_shared[offset];
     if (bitmask) {
       emit1(F_SAVE_LOCALS, (offset << 16) | bitmask);
     }
+  }
+}
+
+static void bind_local_variables(struct compiler_frame *frame, node *n)
+{
+  if (!n) return;
+
+  switch(n->token) {
+  case F_LOCAL_INDIRECT:
+    low_bind_local(frame, n);
+    break;
+
+  case F_SET_LOCAL_END:
+    n = CAR(n);
+    if (n && (n->token == F_LOCAL) && !n->u.integer.b) {
+      /* Mark the offset as unused. */
+      release_local(frame, n->u.integer.a);
+    }
+    break;
+
+  default:
+    if (!(n->tree_info & OPT_NOT_CONST)) {
+      break;
+    }
+    if (car_is_node(n)) {
+      bind_local_variables(frame, CAR(n));
+    }
+    if (cdr_is_node(n)) {
+      bind_local_variables(frame, CDR(n));
+    }
+    break;
   }
 }
 
@@ -2834,10 +3305,26 @@ INT32 do_code_block(node *n, int identifier_flags)
   struct compilation *c = THIS_COMPILATION;
   struct reference *id = NULL;
   INT32 entry_point;
+  INT32 generator_switch = -1, *generator_jumptable = NULL;
   int aggregate_cnum = -1;
-  int save_stack_depth = current_stack_depth;
   int save_label_no = label_no;
-  current_stack_depth = 0;
+  struct statement_label *save_label;
+  int tmp1, tmp2;
+  struct lex *lex = &c->lex;
+  struct byte_buffer instrbuf_save = instrbuf;
+
+  if (lex->pragmas & ID_DISASSEMBLE) {
+    fprintf(stderr, "Binding locals for:\n");
+    print_tree(n);
+  }
+
+  /* Start by binding all remaining unbound local variables. */
+  bind_local_variables(Pike_compiler->compiler_frame, n);
+
+  if (lex->pragmas & ID_DISASSEMBLE) {
+    fprintf(stderr, "Bound locals:\n");
+    print_tree(n);
+  }
 
   if (Pike_compiler->compiler_frame->current_function_number >= 0) {
     id = Pike_compiler->new_program->identifier_references +
@@ -2846,43 +3333,139 @@ INT32 do_code_block(node *n, int identifier_flags)
 
   init_bytecode();
   label_no=1;
+  save_label = current_label;
+  current_label = NULL;
+  PUSH_STATEMENT_LABEL;
+  PUSH_CLEANUP_FRAME(NULL, NULL);
+  current_stack_depth = 0;
 
   /* NOTE: This is no ordinary label... */
   low_insert_label(0);
   emit0(F_ENTRY);
   emit0(F_START_FUNCTION);
 
-  if (Pike_compiler->compiler_frame->num_args) {
-    emit2(F_FILL_STACK, Pike_compiler->compiler_frame->num_args, 1);
-  }
-  emit1(F_MARK_AT, Pike_compiler->compiler_frame->num_args);
-  if (identifier_flags & IDENTIFIER_VARARGS) {
-    struct svalue *sval =
-      simple_mapping_string_lookup(get_builtin_constants(), "aggregate");
-    if (!sval) {
-      yyerror("predef::aggregate() is missing.\n");
-      Pike_fatal("No aggregate!\n");
-      UNREACHABLE(return 0);
-    }
-    aggregate_cnum = store_constant(sval, 0, NULL);
-    emit1(F_CALL_BUILTIN, aggregate_cnum);
-    if (Pike_compiler->compiler_frame->max_number_of_locals !=
-	Pike_compiler->compiler_frame->num_args+1) {
-      emit2(F_FILL_STACK,
-	    Pike_compiler->compiler_frame->max_number_of_locals, 0);
-    }
-  } else {
+  if (Pike_compiler->compiler_frame->generator_local != -1) {
+    INT32 e, states;
+
+    /* Save the arguments for later.
+     *
+     * NB: apply_low() ensures that we always have exactly 2 arguments.
+     */
+    emit1(F_ASSIGN_LOCAL_AND_POP,
+	  Pike_compiler->compiler_frame->generator_local + 3);
+    emit1(F_ASSIGN_LOCAL_AND_POP,
+	  Pike_compiler->compiler_frame->generator_local + 2);
+
+    /* Zap the arguments to be able to restore the stack. */
+    emit1(F_MARK_AT, 0);
     emit0(F_POP_TO_MARK);
-    if (Pike_compiler->compiler_frame->max_number_of_locals !=
-	Pike_compiler->compiler_frame->num_args) {
-      emit2(F_FILL_STACK,
-	    Pike_compiler->compiler_frame->max_number_of_locals, 0);
+
+    /* Restore the stack content and zap extra references. */
+    emit1(F_RESTORE_STACK_FROM_LOCAL,
+	  Pike_compiler->compiler_frame->generator_local + 1);
+
+    /* Emit the state-machine switch for the generator. */
+    emit1(F_NUMBER, -1);
+    emit1(F_SWAP_STACK_LOCAL, Pike_compiler->compiler_frame->generator_local);
+    generator_switch = emit1(F_SWITCH, 0);
+    emit1(F_ALIGN, sizeof(INT32));
+
+    /* NB: Three implicit states:
+     *     -1: return UNDEFINED;	// Termination state. Goto state -2.
+     *      0: code			// Code start.
+     *    ...
+     *      *: return UNDEFINED;	// Termination state (again).
+     *
+     * Jumptable:
+     *
+     * jmp_index  case_index  case_value  label
+     *         0           -           -  Terminate
+     *         1           0           0  Start
+     *         2           -           1  Cont #0
+     *       ...
+     *       n+2    (n+2)>>1         n+1  Cont #n
+     *       n+3           -           -  Terminate
+     *
+     * Note that the above requires an even number of continuation states.
+     * We therefore add an extra termination state if we have an odd
+     * number of continuation states.
+     */
+    states = count_continue_returns(n);
+
+    Pike_compiler->compiler_frame->generator_index = 0;
+    Pike_compiler->compiler_frame->generator_jumptable =
+      xalloc(2 * sizeof(INT32) * (states + (states & 1) + 3));
+    generator_jumptable = Pike_compiler->compiler_frame->generator_jumptable +
+      (states + (states & 1) + 3);
+
+    for (e = 0; e < states + (states & 1) + 3; e++) {
+      generator_jumptable[e] = (INT32)emit1(F_POINTER, 0);
+      Pike_compiler->compiler_frame->generator_jumptable[e] = -1;
     }
-  }
-  emit2(F_INIT_FRAME, Pike_compiler->compiler_frame->num_args,
-        Pike_compiler->compiler_frame->max_number_of_locals);
-  if (Pike_compiler->compiler_frame->lexical_scope & SCOPE_SCOPE_USED) {
-    emit_save_locals(Pike_compiler->compiler_frame);
+    emit0(F_NOTREACHED);
+
+    /* Termination state. (-2, -1, default) */
+    Pike_compiler->compiler_frame->generator_jumptable[
+      Pike_compiler->compiler_frame->generator_index++] = ins_label(-1);
+    /* Set the state to -2 if it is -1.
+     * This is used in yield() to detect the race that
+     * the function has been called before the yield
+     * has completed.
+     */
+    emit1(F_NUMBER, -2);
+    emit1(F_NUMBER, -1);
+    emit1(F_TEST_AND_SET_LOCAL, Pike_compiler->compiler_frame->generator_local);
+    emit0(F_UNDEFINED);
+    emit0(F_RETURN);
+
+    /* Start. (0) */
+    Pike_compiler->compiler_frame->generator_jumptable[
+      Pike_compiler->compiler_frame->generator_index++] = ins_label(-1);
+
+    /* Call the resumption callback. */
+    emit1(F_MARK_AND_LOCAL,
+	  Pike_compiler->compiler_frame->generator_local + 3);
+    tmp1 = do_jump(F_BRANCH_AND_POP_WHEN_ZERO, -1);
+    emit1(F_LOCAL,
+	  Pike_compiler->compiler_frame->generator_local + 2);
+    emit0(F_CALL_FUNCTION_AND_POP);
+    tmp2 = do_jump(F_BRANCH, -1);
+    ins_label(tmp1);
+    emit0(F_POP_MARK);
+    ins_label(tmp2);
+  } else {
+    if (Pike_compiler->compiler_frame->num_args) {
+      emit2(F_FILL_STACK, Pike_compiler->compiler_frame->num_args, 1);
+    }
+    emit1(F_MARK_AT, Pike_compiler->compiler_frame->num_args);
+    if (identifier_flags & IDENTIFIER_VARARGS) {
+      struct svalue *sval =
+	simple_mapping_string_lookup(get_builtin_constants(), "aggregate");
+      if (!sval) {
+	yyerror("predef::aggregate() is missing.\n");
+	Pike_fatal("No aggregate!\n");
+        UNREACHABLE();
+      }
+      aggregate_cnum = store_constant(sval, 0, NULL);
+      emit1(F_CALL_BUILTIN, aggregate_cnum);
+      if (Pike_compiler->compiler_frame->max_number_of_locals !=
+	  Pike_compiler->compiler_frame->num_args+1) {
+	emit2(F_FILL_STACK,
+	      Pike_compiler->compiler_frame->max_number_of_locals, 0);
+      }
+    } else {
+      emit0(F_POP_TO_MARK);
+      if (Pike_compiler->compiler_frame->max_number_of_locals !=
+	  Pike_compiler->compiler_frame->num_args) {
+	emit2(F_FILL_STACK,
+	      Pike_compiler->compiler_frame->max_number_of_locals, 0);
+      }
+    }
+    emit2(F_INIT_FRAME, Pike_compiler->compiler_frame->num_args,
+	  Pike_compiler->compiler_frame->max_number_of_locals);
+    if (Pike_compiler->compiler_frame->lexical_scope & SCOPE_SCOPE_USED) {
+      emit_save_locals(Pike_compiler->compiler_frame);
+    }
   }
 
   if(id && (id->id_flags & ID_INLINE))
@@ -2893,7 +3476,47 @@ INT32 do_code_block(node *n, int identifier_flags)
 
   DO_CODE_BLOCK(n);
 
-  if(Pike_compiler->compiler_frame->recur_label > 0)
+  if (generator_switch != -1) {
+    INT32 e;
+    struct svalue *save_sp = Pike_sp;
+
+    /* Termination state. (-1, default) */
+    if (Pike_compiler->compiler_frame->generator_index & 1) {
+      Pike_compiler->compiler_frame->generator_jumptable[
+        Pike_compiler->compiler_frame->generator_index++] =
+	Pike_compiler->compiler_frame->generator_jumptable[0];
+    }
+    Pike_compiler->compiler_frame->generator_jumptable[
+      Pike_compiler->compiler_frame->generator_index++] =
+      Pike_compiler->compiler_frame->generator_jumptable[0];
+
+    for (e = 0; e < Pike_compiler->compiler_frame->generator_index; e++) {
+      INT32 jmp = Pike_compiler->compiler_frame->generator_jumptable[e];
+      if (jmp < 0) {
+	yywarning("Lost track of continue return #%d.\n", e - 2);
+	jmp = Pike_compiler->compiler_frame->generator_jumptable[0];
+      }
+      if (!generator_jumptable[e]) {
+	my_yyerror("Lost address for switch pointer #%d.\n", e);
+      } else {
+	update_arg(generator_jumptable[e], jmp);
+      }
+    }
+
+    /* NB: For eg 5 entries (-1, 0, 1, 2, (3)), we need 2 entries in the array
+     *     ({ 0, 2 }).
+     */
+    for (e = 0; e < Pike_compiler->compiler_frame->generator_index-1; e += 2) {
+      push_int(e);
+    }
+    f_aggregate(Pike_sp - save_sp);
+
+    update_arg(generator_switch, store_constant(Pike_sp - 1, 1, 0));
+    pop_stack();
+
+    free(Pike_compiler->compiler_frame->generator_jumptable);
+    Pike_compiler->compiler_frame->generator_jumptable = NULL;
+  } else if(Pike_compiler->compiler_frame->recur_label > 0)
   {
 #ifdef PIKE_DEBUG
     if(l_flag)
@@ -2939,38 +3562,74 @@ INT32 do_code_block(node *n, int identifier_flags)
     DO_CODE_BLOCK(n);
   }
   entry_point = assemble(1);
+  instrbuf=instrbuf_save;
 
-  current_stack_depth = save_stack_depth;
+  current_stack_depth = cleanup_frame__.stack_depth;
+  POP_AND_DONT_CLEANUP;
+  POP_STATEMENT_LABEL;
+  current_label = save_label;
   label_no = save_label_no;
+
   return entry_point;
 }
 
-/* Used by eval_low() to build code for constant expressions. */
+/* Used by eval_low() to build code for constant expressions.
+ *
+ * NB: This implies that n never contains local variables.
+ */
 INT32 docode(node *n)
 {
+  struct compilation *c = THIS_COMPILATION;
   INT32 entry_point;
   int label_no_save = label_no;
+  int generator_local_save = Pike_compiler->compiler_frame->generator_local;
   struct byte_buffer instrbuf_save = instrbuf;
-  int stack_depth_save = current_stack_depth;
-  struct statement_label *label_save = current_label;
-  struct cleanup_frame *top_cleanups_save = top_statement_label_dummy.cleanups;
+  struct statement_label *label_save;
 
+  label_save = current_label;
+  current_label = NULL;
+  PUSH_STATEMENT_LABEL;
+  PUSH_CLEANUP_FRAME(NULL, NULL);
   label_no=1;
   current_stack_depth = 0;
-  current_label = &top_statement_label_dummy;	/* Fix these two to */
-  top_statement_label_dummy.cleanups = 0;	/* please F_PUSH_ARRAY. */
+  Pike_compiler->compiler_frame->generator_local = -1;
   init_bytecode();
 
   insert_opcode0(F_ENTRY, n->line_number, n->current_file);
-  /* FIXME: Should we check that do_docode() returns 1? */
+
+  /* NB: Add a mark (or rather do_pop_mark cleanup callback) so that
+   *     F_PUSH_ARRAY stays happy even when n is an F_ARG_LIST.
+   */
+  emit0(F_MARK);
+  PUSH_CLEANUP_FRAME(do_pop_mark, 0);
+
+  /* NB: Should we check that do_docode() returns 1?
+   *
+   *  - No, it returning multiple values (or none) is a
+   *    supported operation (cf F_ARG_LIST).
+   */
   do_docode(n,0);
+
+  /* Clean up the mark we set above.
+   *
+   * NB: We can not use POP_AND_DO_CLEANUP here as it will
+   *     also pop the value stack.
+   */
+  do_pop_mark(NULL);
+  POP_AND_DONT_CLEANUP;
+
   insert_opcode0(F_DUMB_RETURN, n->line_number, n->current_file);
   entry_point = assemble(0);		/* Don't store linenumbers. */
 
   instrbuf=instrbuf_save;
-  label_no = label_no_save;
-  current_stack_depth = stack_depth_save;
+  Pike_compiler->compiler_frame->generator_local = generator_local_save;
+
+  current_stack_depth = cleanup_frame__.stack_depth;
+  POP_AND_DONT_CLEANUP;
+  POP_STATEMENT_LABEL;
+  Pike_compiler->compiler_frame->generator_local = generator_local_save;
   current_label = label_save;
-  top_statement_label_dummy.cleanups = top_cleanups_save;
+  label_no = label_no_save;
+
   return entry_point;
 }

@@ -3,6 +3,8 @@
 // WebSocket testsuite
 //
 
+#if constant(Thread.Thread)
+
 constant loopback = "127.0.0.1";
 
 int successes;
@@ -159,7 +161,7 @@ void got_client_fail()
   cond->broadcast();
 }
 
-void got_client_ok()
+void got_client_ok(mixed ... ignored)
 {
   object key = mux->lock();
   done |= 2;
@@ -174,7 +176,8 @@ void got_server_http(Protocols.WebSocket.Request req)
   got_server_fail();
 }
 
-void got_client_close(Protocols.WebSocket.CLOSE_STATUS cause)
+void got_client_close(Protocols.WebSocket.CLOSE_STATUS cause,
+		      mixed ... ignored)
 {
   Tools.Testsuite.log_status("Got close: %d\n", cause);
   if (cause != Protocols.WebSocket.CLOSE_NORMAL) got_client_fail();
@@ -208,10 +211,19 @@ void wait_for_completion(int|void expect_failure)
   }
 }
 
+class SSLPort_1024
+{
+  inherit Protocols.WebSocket.SSLPort;
+
+  // Reduce the size for the RSA and DSA keys to something
+  // that is reasonable even for old and slow machines.
+  constant default_rsa_bits = 1024;
+  constant default_dsa_p_bits = 1024;
+}
+
 void run_tests()
 {
-  foreach(({ Protocols.WebSocket.Port, Protocols.WebSocket.SSLPort,
-	     BrokenPort,
+  foreach(({ Protocols.WebSocket.Port, SSLPort_1024, BrokenPort,
 	  }), program(Protocols.WebSocket.Port) port_prog) {
     Tools.Testsuite.log_status("Attempting to open a %O port.\n", port_prog);
     // NB: The API doesn't allow for the ANY port.
@@ -312,3 +324,12 @@ int main(int argc, array(string) argv)
   Thread.thread_create(run_tests);
   return -1;
 }
+
+#else
+
+int main(int argc, array(string) argv)
+{
+  Tools.Testsuite.report_result(0, 0, 1);
+}
+
+#endif

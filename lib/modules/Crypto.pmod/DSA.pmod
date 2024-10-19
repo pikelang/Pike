@@ -8,11 +8,15 @@
 
 inherit Crypto.Sign;
 
+@Pike.Annotations.Implements(Crypto.Sign);
+
 //! Returns the string @expr{"DSA"@}.
-string(8bit) name() { return "DSA"; }
+string(7bit) name() { return "DSA"; }
 
 class State {
   inherit ::this_program;
+
+  @Pike.Annotations.Implements(Crypto.Sign.State);
 
   protected string _sprintf(int t)
   {
@@ -23,20 +27,20 @@ class State {
   // --- Variables and accessors
   //
 
-  protected Gmp.mpz p; // Modulo
-  protected Gmp.mpz q; // Group order
-  protected Gmp.mpz g; // Generator
+  protected Gmp.mpz|zero p; // Modulo
+  protected Gmp.mpz|zero q; // Group order
+  protected Gmp.mpz|zero g; // Generator
 
-  protected Gmp.mpz y; // Public key
-  protected Gmp.mpz x; // Private key
+  protected Gmp.mpz|zero y; // Public key
+  protected Gmp.mpz|zero x; // Private key
 
   protected function(int(0..):string(8bit)) random = random_string;
 
-  Gmp.mpz get_p() { return p; } //! Returns the DSA modulo (p).
-  Gmp.mpz get_q() { return q; } //! Returns the DSA group order (q).
-  Gmp.mpz get_g() { return g; } //! Returns the DSA generator (g).
-  Gmp.mpz get_y() { return y; } //! Returns the DSA public key (y).
-  Gmp.mpz get_x() { return x; } //! Returns the DSA private key (x).
+  Gmp.mpz|zero get_p() { return p; } //! Returns the DSA modulo (p).
+  Gmp.mpz|zero get_q() { return q; } //! Returns the DSA group order (q).
+  Gmp.mpz|zero get_g() { return g; } //! Returns the DSA generator (g).
+  Gmp.mpz|zero get_y() { return y; } //! Returns the DSA public key (y).
+  Gmp.mpz|zero get_x() { return x; } //! Returns the DSA private key (x).
 
   //! Sets the random function, used to generate keys and parameters, to
   //! the function @[r]. Default is @[random_string].
@@ -47,7 +51,7 @@ class State {
   }
 
   //! Returns the string @expr{"DSA"@}.
-  string(8bit) name() { return "DSA"; }
+  string(7bit) name() { return "DSA"; }
 
   //
   // --- Key methods
@@ -90,8 +94,9 @@ class State {
 
   //! Compares the public key in this object with that in the provided
   //! DSA object.
-  int(0..1) public_key_equal(this_program dsa)
+  int(0..1) public_key_equal(object other)
   {
+    this_program dsa = [object(this_program)]other;
     return (p == dsa->get_p()) && (q == dsa->get_q()) &&
       (g == dsa->get_g()) && (y == dsa->get_y());
   }
@@ -145,13 +150,12 @@ class State {
       string(8bit) seed = random(SEED_LENGTH);
       Gmp.mpz s = Gmp.mpz(seed, 256);
 
-      string(8bit) h = [string(8bit)]
-	(nist_hash(s) ^ nist_hash( [object(Gmp.mpz)](s + 1) ));
+      string(8bit) h = (nist_hash(s) ^ nist_hash(s + 1));
 
       h = sprintf("%c%s%c",
-		  [int(8bit)](h[0] | 0x80),
+                  (h[0] | 0x80),
 		  h[1..<1],
-		  [int(8bit)](h[-1] | 1));
+                  (h[-1] | 1));
 
       Gmp.mpz q = Gmp.mpz(h, 256);
 
@@ -168,10 +172,10 @@ class State {
 	int k;
 
 	for (k = 0; k<= n; k++)
-	  buffer = nist_hash( [object(Gmp.mpz)](s + j + k) ) + buffer;
+          buffer = nist_hash(s + j + k) + buffer;
 
 	buffer = buffer[sizeof(buffer) - L/8 ..];
-	buffer[0] = [int(8bit)](buffer[0] | 0x80);
+        buffer[0] = buffer[0] | 0x80;
 
 	Gmp.mpz p = Gmp.mpz(buffer, 256);
 
@@ -188,12 +192,12 @@ class State {
 
   protected Gmp.mpz find_generator(Gmp.mpz p, Gmp.mpz q)
   {
-    Gmp.mpz e = [object(Gmp.mpz)]((p - 1) / q);
-    Gmp.mpz g;
+    Gmp.mpz e = ((p - 1) / q);
+    Gmp.mpz g = p;
 
     do {
       /* A random number in { 2, 3, ... p - 2 } */
-      g = ([object(Gmp.mpz)](random_number( [object(Gmp.mpz)](p-3) ) + 2))
+      g = (random_number(p-3) + 2)
 	/* Exponentiate to get an element of order 1 or q */
 	->powm(e, p);
     } while (g == 1);
@@ -293,7 +297,7 @@ class State {
 
   //! Returns the PKCS-1 algorithm identifier for DSA and the provided
   //! hash algorithm. Only @[SHA1] supported.
-  Sequence pkcs_signature_algorithm_id(.Hash hash)
+  object(Sequence)|zero pkcs_signature_algorithm_id(__builtin.Nettle.Hash hash)
   {
     switch(hash->name())
     {
@@ -326,7 +330,7 @@ class State {
 
   //! Signs the @[message] with a PKCS-1 signature using hash algorithm
   //! @[h].
-  string(8bit) pkcs_sign(string(8bit) message, .Hash h)
+  string(8bit) pkcs_sign(string(8bit) message, __builtin.Nettle.Hash h)
   {
     array sign = map(raw_sign(hash(message, h)), Standards.ASN1.Types.Integer);
     return Standards.ASN1.Types.Sequence(sign)->get_der();
@@ -338,9 +342,10 @@ class State {
 
   //! Verify PKCS-1 signature @[sign] of message @[message] using hash
   //! algorithm @[h].
-  int(0..1) pkcs_verify(string(8bit) message, .Hash h, string(8bit) sign)
+  int(0..1) pkcs_verify(string(8bit) message, __builtin.Nettle.Hash h,
+                        string(8bit) sign)
   {
-    Object a = Standards.ASN1.Decode.secure_der_decode(sign);
+    object(Object)|zero a = Standards.ASN1.Decode.secure_der_decode(sign);
 
     // The signature is the DER-encoded ASN.1 sequence Dss-Sig-Value
     // with the two integers r and s. See RFC 3279 section 2.2.2.
@@ -364,9 +369,8 @@ class State {
   //  --- Below are methods for DSA applied in other standards.
   //
 
-
-  //! Makes a DSA hash of the messge @[msg].
-  Gmp.mpz hash(string(8bit) msg, .Hash h)
+  //! Makes a DSA hash of the message @[msg].
+  Gmp.mpz hash(string(8bit) msg, __builtin.Nettle.Hash h)
   {
     string(8bit) digest = h->hash(msg)[..q->size()/8-1];
     return [object(Gmp.mpz)](Gmp.mpz(digest, 256) % q);
@@ -385,12 +389,10 @@ class State {
 
   //! Sign the message @[h]. Returns the signature as two @[Gmp.mpz]
   //! objects.
-  array(Gmp.mpz) raw_sign(Gmp.mpz h, void|Gmp.mpz k)
+  array(Gmp.mpz) raw_sign(Gmp.mpz h, Gmp.mpz k = random_exponent())
   {
-    if(!k) k = random_exponent();
-
     Gmp.mpz r = [object(Gmp.mpz)](g->powm(k, p) % q);
-    Gmp.mpz s = [object(Gmp.mpz)]((k->invert(q) * (h + x*r)) % q);
+    Gmp.mpz s = [object(Gmp.mpz)]((k->invert(q) * (h + [object(Gmp.mpz)](x*r))) % q);
 
     return ({ r, s });
   }
@@ -398,7 +400,10 @@ class State {
   //! Verify the signature @[r],@[s] against the message @[h].
   int(0..1) raw_verify(Gmp.mpz h, Gmp.mpz r, Gmp.mpz s)
   {
-    Gmp.mpz w;
+    if ((r > q) || (s > q)) {
+      return 0;
+    }
+    object(Gmp.mpz)|zero w;
     if (catch
       {
 	w = s->invert(q);

@@ -4,6 +4,7 @@ AC_CONFIG_HEADER(inotify_config.h)
 AC_MODULE_INIT()
 AC_HAVE_HEADERS(sys/inotify.h)
 AC_CHECK_HEADERS(sys/inotify.h)
+AC_CHECK_LIB(inotify, inotify_init)
 
   AC_MSG_CHECKING(if struct dirent has a d_type member)
   AC_CACHE_VAL(pike_cv_dirent_d_type, [

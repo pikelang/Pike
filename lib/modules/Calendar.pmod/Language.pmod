@@ -1,3 +1,6 @@
+/* -*- mode: Pike; c-basic-offset: 3; -*- */
+
+#charset iso-8859-1
 #pike __REAL_VERSION__
 
 protected string flat(string s)
@@ -39,7 +42,7 @@ protected class _ymd_base
    protected mapping(int:string) week_day_n2ss;
    protected mapping(string:int) week_day_s2n;
 
-   string name()
+   string|zero name()
    {
      //  Perform the inverse operation to the `[] method below. We don't
      //  care about normalizing the name among several aliases.
@@ -706,7 +709,7 @@ class cSPANISH
 
    protected private constant month_names=
    ({"enero","febrero","marzo","abril","mayo","junio",
-     "julio","agosto","setiembre","octubre","noviembre","diciembre"});
+     "julio","agosto","septiembre","octubre","noviembre","diciembre"});
 
    protected private constant week_day_names=
    ({"lunes","martes","miércoles","jueves",
@@ -1819,7 +1822,7 @@ class cCATALAN
       "setembre",
       "octubre",
       "novembre",
-      "decembre",
+      "desembre",
    });
 
    protected private constant week_day_names=
@@ -2210,7 +2213,7 @@ class cGREEK_UNICODE
 
 protected mapping _cache=([]);
 
-Calendar.Rule.Language `[](string lang)
+protected Calendar.Rule.Language `[](string lang)
 {
    lang=upper_case(lang);
    Calendar.Rule.Language l=_cache[lang];

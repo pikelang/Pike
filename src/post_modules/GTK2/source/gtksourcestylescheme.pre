@@ -17,7 +17,7 @@ mapping(string:mixed) get_tag_style(string name)
     GtkSourceTagStyle *gs;
     char *name;
     GdkColor *fg,*bg;
-    get_all_args(NULL,args,"%s",&name);
+    get_all_args(NULL,args,"%c",&name);
     gs=gtk_source_style_scheme_get_tag_style((GtkSourceStyleScheme *)THIS->obj,
 			name);
     pgtk2_pop_n_elems(args);

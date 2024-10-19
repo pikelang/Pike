@@ -15,7 +15,7 @@ void create(string|void name, string|void ppd_display_name,
     GtkPaperSize *gps;
     gchar *name=NULL;
 
-    get_all_args(NULL,args,".%s",&name);
+    get_all_args(NULL,args,".%c",&name);
     gps=gtk_paper_size_new(name);
     THIS->obj=(void *)gps;
   } else if (args==4 || args==5) {
@@ -25,7 +25,7 @@ void create(string|void name, string|void ppd_display_name,
     float width,height;
     INT_TYPE unit=-1;
 
-    get_all_args(NULL,args,"%s%s%f%f.%i",&name,&ppd_display_name,&width,
+    get_all_args(NULL,args,"%c%c%f%f.%i",&name,&ppd_display_name,&width,
 		 &height,&unit);
     if (unit==-1)
       gps=gtk_paper_size_new_from_ppd(name,ppd_display_name,width,height);

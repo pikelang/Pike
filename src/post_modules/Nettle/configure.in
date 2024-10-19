@@ -11,6 +11,14 @@ else
   dnl GMP is required and tested for in Gmp module. We just want LIBS
   dnl updated here.
   AC_CHECK_LIB(gmp, main)
+
+  # Some versions of Nettle on NT have a <nettle/nettle-stdint.h> that
+  # triggers "warning C4142: benign redefinition of type".
+  DO_IF_OS(Windows_NT,
+  [
+      AC_SYS_COMPILER_FLAG(-wd4142, wd4142, WARN)
+  ])
+
   AC_MSG_CHECKING(CryptAcquireContext in -ladvapi32)
   AC_CACHE_VAL(pike_cv_nettle_advapi32_CryptAcquireContext,
   [
@@ -56,44 +64,87 @@ else
   # NB: Some versions of RedHat have censored the weaker curves
   #     (secp_192r1 and secp_224r1 (cf [LysLysKOM 21863021])), and
   #     there are no identifying macros, so we need to probe for them.
-  define(PIKE_CHECK_ECC_CURVE, [
-    AC_MSG_CHECKING(if curve $1 is available)
-    AC_CACHE_VAL(pike_cv_have_curve_$1, [
-      AC_TRY_LINK([#include <nettle/ecc-curve.h>],
-		  [ struct ecc_curve *c = &$1; ],
-		  [ pike_cv_have_curve_$1=yes ],
-		  [ pike_cv_have_curve_$1=no ])
+  define(PIKE_CHECK_NETTLE_ECC_CURVE, [
+    AC_CHECK_FUNC(nettle_get_$1, [
+      AC_DEFINE(translit(HAVE_CURVE_NETTLE_$1,[a-z],[A-Z]), 1,
+		[Define if your libnettle has the nettle curve $1.])
+    ], [
+      # NB: No need to handle the GOST curves here as they always
+      #     have getters if they exist.
+      AC_MSG_CHECKING(if legacy declaration of nettle curve $1 is available)
+
+      AC_CACHE_VAL(pike_cv_have_curve_nettle_$1, [
+        AC_TRY_LINK([#include <nettle/ecc-curve.h>],
+		    [ struct ecc_curve *c = &nettle_$1; ],
+		    [ pike_cv_have_curve_nettle_$1=yes ],
+		    [ pike_cv_have_curve_nettle_$1=no ])
+      ])
+      AC_MSG_RESULT($pike_cv_have_curve_nettle_$1);
+      if test "x$pike_cv_have_curve_nettle_$1" = "xyes"; then
+        AC_DEFINE(translit(HAVE_CURVE_NETTLE_$1,[a-z],[A-Z]), 1,
+		  [Define if your libnettle has the nettle curve $1.])
+        AC_DEFINE(translit(NEED_WRAPPER_FOR_CURVE_NETTLE_$1,[a-z],[A-Z]), 1,
+		  [Define if your libnettle is missing the getter for the nettle curve $1.])
+      fi
     ])
-    AC_MSG_RESULT($pike_cv_have_curve_$1);
-    if test "x$pike_cv_have_curve_$1" = "xyes"; then
-      AC_DEFINE(translit(HAVE_CURVE_$1,[a-z],[A-Z]), 1,
-		[Define if your libnettle has the curve $1.])
-    fi
   ])
 
   AC_ARG_WITH(weak-curves, [  --with-weak-curves      Include SECP192R1 and SECP224R1, frequently removed from Nettle binary dists], [weak_curves=yes], [])
   if test "x$weak_curves" = "xyes" ; then
-    PIKE_CHECK_ECC_CURVE(nettle_secp_192r1)
-    PIKE_CHECK_ECC_CURVE(nettle_secp_224r1)
+    PIKE_CHECK_NETTLE_ECC_CURVE(secp_192r1)
+    PIKE_CHECK_NETTLE_ECC_CURVE(secp_224r1)
   fi
-  PIKE_CHECK_ECC_CURVE(nettle_secp_256r1)
-  PIKE_CHECK_ECC_CURVE(nettle_secp_384r1)
-  PIKE_CHECK_ECC_CURVE(nettle_secp_521r1)
+  PIKE_CHECK_NETTLE_ECC_CURVE(secp_256r1)
+  PIKE_CHECK_NETTLE_ECC_CURVE(secp_384r1)
+  PIKE_CHECK_NETTLE_ECC_CURVE(secp_521r1)
+  PIKE_CHECK_NETTLE_ECC_CURVE(gost_gc256b)
+  PIKE_CHECK_NETTLE_ECC_CURVE(gost_gc512a)
 
   AC_SUBST(IDEA_OBJ)
 
   if test "x$ac_cv_lib_nettle_nettle_ctr_crypt" = "xyes"; then
     PIKE_FEATURE_OK(Nettle)
 
-    # camellia is available in Nettle 2.1 and later.
-    # gcm is available in Nettle 2.2 and later.
-    # ripemd160 is available in Nettle 2.3 and later.
-    # sha3 and gosthash94 are available in Nettle 2.6 and later.
-    # chacha, poly1305 and eax are available in Nettle 3.0 and later.
-    # curve25519 and eddsa are available in Nettle 3.1 and later.
-    # pbkdf2 is available in Nettle 3.1 and later.
-    # version.h was added in Nettle 3.1.1, but nettle_version_{major,minor}()
-    # are first available in Nettle 3.2 and later.
+    # Header file availability in various Nettle releases:
+    #
+    # Nettle 2.1 and later:
+    #   camellia.h
+    # Nettle 2.2 and later:
+    #   gcm.h
+    # Nettle 2.3 and later:
+    #   ripemd160.h
+    # Nettle 2.6 and later:
+    #   gosthash94.h
+    #   sha3.h
+    # Nettle 3.0 and later:
+    #   chacha.h
+    #   eax.h
+    #   poly1305.h
+    # Nettle 3.1 and later:
+    #   curve25519.h
+    #   eddsa.h
+    #   pbkdf2.h
+    # Nettle 3.1.1 and later:
+    #   version.h
+    # Nettle 3.2 and later:
+    #   version.h:nettle_version_{major,minor}
+    # Nettle 3.5 and later:
+    #   cmac.h
+    # Nettle 3.6 and later:
+    #   curve448.h
+    #   gostdsa.h
+    #   gosthash94.h:gosthash94cp
+    # Nettle 3.7 and later:
+    #   streebog.h
+    # Nettle 3.8 and later:
+    #   nist-keywrap.h
+    #   sm3.h
+    # Nettle 3.9 and later:
+    #   balloon.h
+    #   ocb.h
+    #   sm4.h
+    # Nettle 3.10 and later:
+    #   drbg-ctr.h
     AC_CHECK_HEADERS(nettle/camellia.h \
 		     nettle/gcm.h \
 		     nettle/ripemd160.h \
@@ -103,6 +154,12 @@ else
 		     nettle/dsa.h nettle/umac.h nettle/ecdsa.h \
 		     nettle/curve25519.h nettle/eddsa.h \
                      nettle/version.h nettle/pbkdf2.h nettle/hmac.h \
+		     nettle/cmac.h \
+                     nettle/curve448.h nettle/gostdsa.h \
+                     nettle/streebog.h \
+                     nettle/sm3.h \
+                     nettle/balloon.h nettle/ocb.h nettle/sm4.h \
+                     nettle/drbg-ctr.h \
 		    )
     # Check that the libraries match.
     #
@@ -117,6 +174,11 @@ else
 		   nettle_dsa_sign nettle_umac128_digest nettle_ecdsa_sign \
 		   nettle_curve25519_mul nettle_ed25519_sha512_sign \
                    nettle_version_major \
+		   nettle_cmac128_set_key \
+                   nettle_blowfish_bcrypt_hash nettle_ed448_shake256_sign \
+                   nettle_sm3_init \
+                   nettle_balloon nettle_ocb_encrypt nettle_sm4_crypt \
+                   nettle_drbg_ctr_aes256_init nettle_sha3_128_shake \
 		   )
 
     AC_MSG_CHECKING([for idea.c])
@@ -146,6 +208,10 @@ else
     # This was added in Nettle 3.0.
     AC_CHECK_FUNCS(nettle_ecc_bit_size)
 
+    # The generic AES functions were marked deprecated in Nettle 3.5.
+    # Check for the more recent size-specific API.
+    AC_CHECK_FUNCS(nettle_aes128_encrypt)
+
     # nettle_crypt_func was changed in Nettle 2.0.
     AC_MSG_CHECKING([whether nettle_crypt_func is a pointer type])
     AC_CACHE_VAL(pike_cv_nettle_crypt_func_is_pointer, [
@@ -162,6 +228,25 @@ else
     AC_MSG_RESULT($pike_cv_nettle_crypt_func_is_pointer);
     if test "x$pike_cv_nettle_crypt_func_is_pointer" = "xyes"; then
       AC_DEFINE(HAVE_NETTLE_CRYPT_FUNC_IS_POINTER)
+    fi
+
+    # struct aes_ctx was changed in Nettle 3.5...
+    AC_MSG_CHECKING([whether struct aes_ctx has the field key_size])
+    AC_CACHE_VAL(pike_cv_nettle_struct_aes_ctx_field_key_size, [
+      pike_cv_nettle_struct_aes_ctx_field_key_size=no
+      AC_TRY_COMPILE([
+#include <nettle/aes.h>
+      ], [
+  struct aes_ctx ctx;
+  ctx.key_size = 0;
+  return (int)ctx.key_size;
+      ], [
+        pike_cv_nettle_struct_aes_ctx_field_key_size=yes
+      ])
+    ])
+    AC_MSG_RESULT($pike_cv_nettle_struct_aes_ctx_field_key_size);
+    if test "x$pike_cv_nettle_struct_aes_ctx_field_key_size" = "xyes"; then
+      AC_DEFINE(HAVE_NETTLE_STRUCT_AES_CTX_FIELD_KEY_SIZE)
     fi
   else
     AC_ERROR([Cannot compile --with-nettle without the Nettle library.

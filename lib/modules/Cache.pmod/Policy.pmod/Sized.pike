@@ -56,7 +56,7 @@ void expire (Cache.Storage.Base storage) {
 }
 
 //!
-void create (int max, void|int min) {
+protected void create (int max, void|int min) {
   max_size=max;
   if (min)
     min_size=min;

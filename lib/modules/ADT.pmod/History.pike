@@ -6,8 +6,11 @@
 //! (where you push objects onto the table in one end and objects are falling
 //! off the table in the other.
 
+//! Type for the individual elements on the history stack.
+__generic__ ValueType;
+
 // The stack where the values are stored.
-protected array stack;
+protected array(ValueType|zero) stack;
 
 // A pointer to the top of the stack.
 protected int(0..) top;
@@ -27,7 +30,7 @@ protected int(0..1) no_adjacent_duplicates;
 
 //! @[max_size] is the maximum number of entries that can reside in the
 //! history at the same time.
-void create(int max_size) {
+protected void create(int(0..) max_size) {
   stack = allocate(max_size);
   maxsize = max_size;
   /*
@@ -37,9 +40,9 @@ void create(int max_size) {
   */
 }
 
-array _encode()
+array(int(0..)|array(ValueType)) _encode()
 {
-  array elems = stack[..top-1];
+  array(ValueType) elems = stack[..top-1];
   if (size == maxsize) {
     elems = stack[top..] + elems;
   }
@@ -81,7 +84,7 @@ int(0..1) query_no_adjacent_duplicates() {
 }
 
 //! Push a new value into the history.
-void push(mixed value) {
+void push(ValueType value) {
   if(!maxsize) return;
   if(size && no_adjacent_duplicates && `[](-1)==value)
     return;
@@ -96,7 +99,7 @@ void push(mixed value) {
 //! A @[sizeof] operation on this object returns the number
 //! of elements currently in the history, e.g. <= the current
 //! max size.
-int _sizeof() { return size; }
+protected int _sizeof() { return size; }
 
 //! Returns the maximum number of values in the history
 //! @seealso
@@ -136,13 +139,13 @@ protected int(0..) find_pos(int i) {
 //! both positive and negative numbers may be used. The positive
 //! numbers are however offset with 1, so [1] is the first entry
 //! in the history and [-1] is the last.
-mixed `[](int i) {
+protected ValueType `[](int i) {
   return stack[find_pos(i)];
 }
 
 //! Overwrite one value in the history. The history position may be
 //! identified either by positive or negative offset, like @[`[]].
-void `[]=(int i, mixed value) {
+protected void `[]=(int i, ValueType value) {
   stack[find_pos(i)]=value;
 }
 
@@ -154,7 +157,7 @@ void set_maxsize(int _maxsize) {
   if(_maxsize==maxsize)
     return;
 
-  array old_values;
+  array(ValueType) old_values;
   if(size<maxsize)
     old_values = stack;
   else {
@@ -188,7 +191,7 @@ protected array(int) _indices() {
 }
 
 //! Returns the values of the available history entries.
-protected array _values() {
+protected array(ValueType) _values() {
   return map(_indices(), `[]);
 }
 
