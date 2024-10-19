@@ -298,11 +298,17 @@ class DynamicImporter {
 
   protected mixed `[](string namespace)
   {
+    string|zero version = 0;
+    int colon = search(namespace, ":");
+    if (colon > 0) {
+      version = namespace[colon+1..];
+      namespace = namespace[..colon-1];
+    }
     if (cache[namespace])
       return cache[namespace];
     if (!repository->enumerate_versions(namespace))
       return UNDEFINED;
-    IntrospectionModule m = IntrospectionModule(namespace);
+    IntrospectionModule m = IntrospectionModule(namespace, version);
     if (m)
       cache[namespace] = m;
     return m;
