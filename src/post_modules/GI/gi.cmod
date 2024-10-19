@@ -46,6 +46,7 @@ static void push_gi_info(GIBaseInfo *info);
 static GObject *make_gobject_from_props(struct object *info, struct mapping *props);
 static void make_gboxed(struct GI_GBoxed_struct *this, struct object *info, gboolean allocate);
 static void push_gvalue(const GValue *v);
+static GType get_gtype_from_svalue(const struct svalue *s);
 static void set_gvalue_from_svalue(GValue *v, const struct svalue *s);
 
 struct signal_data {
@@ -552,7 +553,22 @@ static void get_gi_argument_interface(struct svalue *s, GIArgument *arg,
       arg->v_pointer = NULL;
       break;
     }
-    if (TYPEOF(*s) != T_OBJECT)
+    if(TYPEOF(*s) != T_OBJECT &&
+       g_registered_type_info_get_g_type(info) == G_TYPE_VALUE) {
+      /* Convert to a boxed GValue */
+      GValue *gv;
+      struct object *box = fast_clone_object(GI_GBoxed_program);
+      struct GI_GBoxed_struct *that =
+        (struct GI_GBoxed_struct *)get_storage (box, GI_GBoxed_program);
+      push_object(box);
+      that->type = G_TYPE_VALUE;
+      that->allocated_size = sizeof(GValue);
+      that->box = gv = g_slice_alloc0(sizeof(GValue)); 
+      g_value_init(gv, get_gtype_from_svalue(s));
+      set_gvalue_from_svalue(gv, s);
+      s = Pike_sp - 1;
+    }
+    if (TYPEOF(*s) != T_OBJECT) 
       Pike_error("object expected\n");
     else {
       struct GI_GBoxed_struct *that =
@@ -1392,6 +1408,17 @@ static void push_gvalue(const GValue *v)
   default:
     Pike_error("Don't know how to push a gvalue type %u\n",
                (unsigned)G_TYPE_FUNDAMENTAL(gt));
+  }
+}
+
+static GType get_gtype_from_svalue(const struct svalue *s)
+{
+  switch (TYPEOF(*s)) {
+  case PIKE_T_INT: return G_TYPE_INT;
+  case PIKE_T_FLOAT: return G_TYPE_DOUBLE;
+  case PIKE_T_STRING: return G_TYPE_STRING;
+  case PIKE_T_OBJECT: return G_TYPE_OBJECT;
+  default: return G_TYPE_NONE;
   }
 }
 
