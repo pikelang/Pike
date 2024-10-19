@@ -21,6 +21,10 @@ DECLARATIONS
 
 #include <girepository.h>
 
+#if GLIB_CHECK_VERSION(2, 54, 0)
+#define USE_G_OBJECT_NEW_WITH_PROPERTIES 1
+#endif
+
 static GQuark object_quark;
 static struct mapping *magic_mapping = NULL;
 
@@ -1504,59 +1508,93 @@ static void set_gvalue_from_svalue(GValue *v, const struct svalue *s)
   }
 }
 
-static int build_one_parameter(GObjectClass *class, GParameter *p,
-                               const struct svalue *name,
-                               const struct svalue *value)
+static char *build_one_parameter(GObjectClass *class, GValue *pvalue,
+                                 const struct svalue *name,
+                                 const struct svalue *value)
 {
   GParamSpec *pspec;
+  char *pname;
   if (name == NULL || TYPEOF(*name) != PIKE_T_STRING)
     Pike_error("Invalid type for parameter name\n");
   ref_push_string(name->u.string);
   f_string_to_utf8(1);
-  p->name = g_strdup((const gchar *)STR0(Pike_sp[-1].u.string));
+  pname = g_strdup((const gchar *)STR0(Pike_sp[-1].u.string));
   pop_stack();
-  pspec = g_object_class_find_property(class, p->name);
+  pspec = g_object_class_find_property(class, pname);
   if (pspec == NULL)
     Pike_error("GObject %s does not support property %pS\n",
                G_OBJECT_CLASS_NAME(class), name->u.string);
-  g_value_init(&p->value, G_PARAM_SPEC_VALUE_TYPE(pspec));
-  set_gvalue_from_svalue(&p->value, value);
-  return 1;
+  g_value_init(pvalue, G_PARAM_SPEC_VALUE_TYPE(pspec));
+  set_gvalue_from_svalue(pvalue, value);
+  return pname;
 }
 
-static guint build_parameters_from_mapping(GType gt, struct mapping *m,
-                                           guint free_space,
-                                           GParameter *parms)
+struct gparams_list {
+  guint nparam;
+#if USE_G_OBJECT_NEW_WITH_PROPERTIES
+  const char** names;
+  GValue* values;
+#else
+  GParameter *params;
+#endif
+};
+
+static void build_parameters_from_mapping(GType gt, struct mapping *m,
+                                          struct gparams_list *parms)
 {
+  guint free_space = parms->nparam;
   ONERROR onerror;
   INT32 e;
   struct keypair *k;
   guint count = 0;
+  char *pname;
   GObjectClass *class = g_type_class_ref(gt);
   if (class == NULL)
     Pike_error("Type class not available!\n");
   SET_ONERROR(onerror, g_type_class_unref, class);
   NEW_MAPPING_LOOP(m->data)
     if (free_space &&
-        build_one_parameter(class, parms, &k->ind, &k->val)) {
+        (pname = build_one_parameter(class,
+#if USE_G_OBJECT_NEW_WITH_PROPERTIES
+                                     &parms->values[count],
+#else
+                                     &parms->params[count].value,
+#endif
+                                     &k->ind, &k->val))) {
+#if USE_G_OBJECT_NEW_WITH_PROPERTIES
+      parms->names[count] = pname;
+#else
+      parms->params[count].name = pname;
+#endif
       --free_space;
       count++;
-      parms++;
     }
   UNSET_ONERROR(onerror);
   g_type_class_unref(class);
-  return count;
+  parms->nparam = count;
 }
-
-struct gparams_list {
-  guint nparam;
-  GParameter *params;
-};
 
 static void low_free_gparams(struct gparams_list *gpl)
 {
   guint i;
   guint nparam = gpl->nparam;
+#if USE_G_OBJECT_NEW_WITH_PROPERTIES
+  const char **names = gpl->names;
+  GValue *values = gpl->values;
+  if (names) {
+    for (i = 0; i < nparam; i++)
+      g_free((gchar *)names[i]);
+    g_free(names);
+    gpl->names = NULL;
+  }
+  if (values) {
+    for (i = 0; i < nparam; i++)
+      if (G_VALUE_TYPE(&values[i]) != G_TYPE_INVALID)
+        g_value_unset(&values[i]);
+    g_free(values);
+    gpl->values = NULL;
+  }
+#else
   GParameter *params = gpl->params;
   if (params) {
     for (i = 0; i < nparam; i++) {
@@ -1567,6 +1605,7 @@ static void low_free_gparams(struct gparams_list *gpl)
     g_free(params);
     gpl->params = NULL;
   }
+#endif
 }
 
 static GObject *make_gobject_from_props(struct object *info, struct mapping *props)
@@ -1576,7 +1615,8 @@ static GObject *make_gobject_from_props(struct object *info, struct mapping *pro
   struct GI_BaseInfo_struct *that;
   GType gt;
   GObject *obj;
-  struct gparams_list params = { 0, NULL };
+  struct gparams_list params = { 0, };
+  int free_params = 0;
   if (info == NULL ||
       (that =
        (struct GI_BaseInfo_struct *)get_storage (info, GI_BaseInfo_program))
@@ -1588,15 +1628,24 @@ static GObject *make_gobject_from_props(struct object *info, struct mapping *pro
     Pike_error("Failed to get GType\n");
   if (props != NULL && m_sizeof(props) > 0) {
     params.nparam = m_sizeof(props);
+#if USE_G_OBJECT_NEW_WITH_PROPERTIES
+    params.names = g_new0(const char *, params.nparam);
+    params.values = g_new0(GValue, params.nparam);
+#else
     params.params = g_new0(GParameter, params.nparam);
+#endif
     SET_ONERROR(onerror, low_free_gparams, &params);
-    params.nparam = build_parameters_from_mapping(gt, props, params.nparam,
-                                                  params.params);
+    free_params = 1;
+    build_parameters_from_mapping(gt, props, &params);
   }
+#if USE_G_OBJECT_NEW_WITH_PROPERTIES
+  obj = g_object_new_with_properties(gt, params.nparam, params.names, params.values);
+#else
   obj = g_object_newv(gt, params.nparam, params.params);
+#endif
   if (obj == NULL)
     Pike_error("Failed to create GObject\n");
-  if (params.params != NULL) {
+  if (free_params) {
     UNSET_ONERROR(onerror);
     low_free_gparams(&params);
   }
@@ -1757,7 +1806,11 @@ PIKEFUN Repository get_default_repository()
 PIKE_MODULE_INIT
 {
 #ifdef HAVE_GI
+#if GLIB_CHECK_VERSION(2, 36, 0)
+  /* No call to g_type_init() needed since 2.36 */
+#else
   g_type_init();
+#endif
   object_quark = g_quark_from_static_string("PikeGI::object");
   magic_mapping = allocate_mapping(0);
   INIT
