@@ -55,7 +55,7 @@ class DynamicImporter {
       class Instance {
         inherit GObject;
 
-        protected private string _sprintf(int mode)
+        protected string _sprintf(int mode)
         {
           return mode == 'O' && sprintf("%O()", Object::this);
         }
@@ -156,14 +156,14 @@ class DynamicImporter {
 
         protected private string format_fields()
         {
-          string s = 0;
+          string|zero s = 0;
           foreach(fields; string name; FieldInfo info)
             s = s? sprintf("%s, %s=%O", s, name, info->get_field(this)) :
               sprintf("%s=%O", name, info->get_field(this));
           return s || "";
         }
 
-        protected private string _sprintf(int mode)
+        protected string _sprintf(int mode)
         {
           return mode == 'O' && sprintf("%O(%s)", Struct::this, format_fields());
         }
