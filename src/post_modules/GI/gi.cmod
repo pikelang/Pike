@@ -12,6 +12,7 @@
 #include "operators.h"
 #include "mapping.h"
 #include "threads.h"
+#include "sprintf.h"
 #include "gimod_config.h"
 
 DECLARATIONS
@@ -100,7 +101,7 @@ static void invoke_signal_func(void *arg)
   GValue *return_value = ctx->return_value;
   JMP_BUF recovery;
   unsigned int i;
-  INT32 args = n_params;
+  INT32 args;
   struct svalue *osp = Pike_sp;
 
   if (SETJMP(recovery)) {
@@ -115,6 +116,7 @@ static void invoke_signal_func(void *arg)
   for (i=0; i<n_params; i++) {
     push_gvalue(&(param_values[i]));
   }
+  args = n_params;
   if (TYPEOF(d->extra_args) == PIKE_T_ARRAY) {
     struct array *a = d->extra_args.u.array;
     INT32 asize = a->size;
@@ -195,7 +197,7 @@ PIKECLASS GObject
         !g_signal_parse_name((const gchar *)STR0(signal_spec),
                              G_OBJECT_TYPE(THIS->obj),
                              &sigid, &detail, TRUE)) {
-      Pike_error("Signal \"%S\" is not defined in the '%s' class ancestry.\n",
+      Pike_error("Signal \"%pS\" is not defined in the '%s' class ancestry.\n",
                  signal_spec, g_type_name(G_TYPE_FROM_INSTANCE(THIS->obj)));
     }
 
@@ -235,7 +237,7 @@ PIKECLASS GObject
         !g_signal_parse_name((const gchar *)STR0(signal_spec),
                              G_OBJECT_TYPE(THIS->obj),
                              &sigid, &detail, TRUE)) {
-      Pike_error("Signal \"%S\" is not defined in the '%s' class ancestry.\n",
+      Pike_error("Signal \"%pS\" is not defined in the '%s' class ancestry.\n",
                  signal_spec, g_type_name(G_TYPE_FROM_INSTANCE(THIS->obj)));
     }
 
@@ -1248,7 +1250,8 @@ PIKECLASS ConstantInfo
     g_constant_info_free_value(ctx.info, &arg);
     UNSET_ONERROR(onerror);
     g_base_info_unref(info);
-    stack_pop_n_elems_keep_top(args);
+    if (args)
+      stack_pop_n_elems_keep_top(args);
   }
 }
 
@@ -1372,8 +1375,8 @@ static void push_gvalue(const GValue *v)
     break;
 
   default:
-    Pike_error("Don't know how to push a gvalue type %d\n",
-               G_TYPE_FUNDAMENTAL(gt));
+    Pike_error("Don't know how to push a gvalue type %u\n",
+               (unsigned)G_TYPE_FUNDAMENTAL(gt));
   }
 }
 
@@ -1496,8 +1499,8 @@ static void set_gvalue_from_svalue(GValue *v, const struct svalue *s)
     break;
 
   default:
-    Pike_error("Don't know how to set a gvalue type %d\n",
-               G_TYPE_FUNDAMENTAL(gt));
+    Pike_error("Don't know how to set a gvalue type %u\n",
+               (unsigned)G_TYPE_FUNDAMENTAL(gt));
   }
 }
 
@@ -1514,7 +1517,7 @@ static int build_one_parameter(GObjectClass *class, GParameter *p,
   pop_stack();
   pspec = g_object_class_find_property(class, p->name);
   if (pspec == NULL)
-    Pike_error("GObject %s does not support property %S\n",
+    Pike_error("GObject %s does not support property %pS\n",
                G_OBJECT_CLASS_NAME(class), name->u.string);
   g_value_init(&p->value, G_PARAM_SPEC_VALUE_TYPE(pspec));
   set_gvalue_from_svalue(&p->value, value);
@@ -1688,7 +1691,7 @@ PIKECLASS Repository
     num = g_irepository_get_n_infos(THIS->repository,
                                     (gchar *)STR0(namespace));
     if (num < 0)
-      Pike_error("Namespace '%S' not loaded\n", namespace);
+      Pike_error("Namespace '%pS' not loaded\n", namespace);
     arr = allocate_array(num);
     SET_ONERROR(onerror, do_free_array, arr);
     for(i=0; i<num; i++) {
