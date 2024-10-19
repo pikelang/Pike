@@ -21,8 +21,8 @@ class DynamicImporter {
       protected string _sprintf(int mode)
       {
         return mode == 'O' && sprintf("%O.%s",
-        			      IntrospectionModule::this,
-        			      info->get_name());
+                                      IntrospectionModule::this,
+                                      info->get_name());
       }
     }
 
@@ -48,7 +48,7 @@ class DynamicImporter {
         protected string _sprintf(int mode)
         {
           return mode == 'O' && sprintf("%O.%s", Object::this,
-        				info->get_name());
+                                        info->get_name());
         }
       }
 
@@ -86,8 +86,8 @@ class DynamicImporter {
       protected string _sprintf(int mode)
       {
         return mode == 'O' && sprintf("%O.%s",
-        			      IntrospectionModule::this,
-        			      info->get_name());
+                                      IntrospectionModule::this,
+                                      info->get_name());
       }
 
       protected void create(ObjectInfo oi)
@@ -126,8 +126,8 @@ class DynamicImporter {
       protected string _sprintf(int mode)
       {
         return mode == 'O' && sprintf("%O.%s",
-        			      IntrospectionModule::this,
-        			      info->get_name());
+                                      IntrospectionModule::this,
+                                      info->get_name());
       }
 
       class Method
@@ -147,7 +147,7 @@ class DynamicImporter {
         protected string _sprintf(int mode)
         {
           return mode == 'O' && sprintf("%O.%s", Struct::this,
-        				info->get_name());
+                                        info->get_name());
         }
       }
 
@@ -232,8 +232,8 @@ class DynamicImporter {
       protected string _sprintf(int mode)
       {
         return mode == 'O' && sprintf("%O.%s",
-        			      IntrospectionModule::this,
-        			      info->get_name());
+                                      IntrospectionModule::this,
+                                      info->get_name());
       }
 
       protected void create(EnumInfo ei)
