@@ -56,17 +56,17 @@ static void free_signal_data(struct signal_data *s, GClosure *gcl)
 }
 
 static void marshaller(GClosure *closure,
-		       GValue *return_value,
-		       guint n_params,
-		       const GValue *param_values,
-		       gpointer invocation_hint,
-		       gpointer marshal_data)
+                       GValue *return_value,
+                       guint n_params,
+                       const GValue *param_values,
+                       gpointer invocation_hint,
+                       gpointer marshal_data)
 {
   typedef void (*marshal_func)(gpointer data1,
-			       gpointer data2,
-			       guint n_params, 
-			       const GValue *param_values,
-			       GValue *return_value);
+                               gpointer data2,
+                               guint n_params, 
+                               const GValue *param_values,
+                               GValue *return_value);
   marshal_func callback;
   GCClosure *cc=(GCClosure *)closure;
   gpointer data1, data2;
@@ -131,10 +131,10 @@ static void invoke_signal_func(void *arg)
 }
 
 static void signal_func_wrapper(struct signal_data *d,
-				gpointer go,
-				guint n_params,
-				const GValue *param_values,
-				GValue *return_value)
+                                gpointer go,
+                                guint n_params,
+                                const GValue *param_values,
+                                GValue *return_value)
 {
   struct signal_wrapper_context ctx = {
     d, n_params, param_values, return_value
@@ -158,9 +158,9 @@ PIKECLASS GObject
   EXIT
     {
       if (THIS->obj != NULL) {
-	g_object_set_qdata(THIS->obj, object_quark, NULL);
-	g_object_unref(THIS->obj);
-	THIS->obj = NULL;
+        g_object_set_qdata(THIS->obj, object_quark, NULL);
+        g_object_unref(THIS->obj);
+        THIS->obj = NULL;
       }
     }
 
@@ -192,11 +192,11 @@ PIKECLASS GObject
     gulong id;
 
     if (signal_spec->size_shift ||
-	!g_signal_parse_name((const gchar *)STR0(signal_spec),
-			     G_OBJECT_TYPE(THIS->obj),
-			     &sigid, &detail, TRUE)) {
+        !g_signal_parse_name((const gchar *)STR0(signal_spec),
+                             G_OBJECT_TYPE(THIS->obj),
+                             &sigid, &detail, TRUE)) {
       Pike_error("Signal \"%S\" is not defined in the '%s' class ancestry.\n",
-		 signal_spec, g_type_name(G_TYPE_FROM_INSTANCE(THIS->obj)));
+                 signal_spec, g_type_name(G_TYPE_FROM_INSTANCE(THIS->obj)));
     }
 
     b=(struct signal_data *)g_malloc0(sizeof(struct signal_data));
@@ -213,11 +213,11 @@ PIKECLASS GObject
     }
 
     gc=g_cclosure_new_swap(G_CALLBACK(signal_func_wrapper), b,
-			   (GClosureNotify)free_signal_data);
+                           (GClosureNotify)free_signal_data);
     g_closure_set_marshal(gc, marshaller);
 
     id = g_signal_connect_closure_by_id(G_OBJECT(THIS->obj), sigid, detail,
-					gc, FALSE);
+                                        gc, FALSE);
     RETURN id;
   }
 
@@ -232,11 +232,11 @@ PIKECLASS GObject
     gulong id;
 
     if (signal_spec->size_shift ||
-	!g_signal_parse_name((const gchar *)STR0(signal_spec),
-			     G_OBJECT_TYPE(THIS->obj),
-			     &sigid, &detail, TRUE)) {
+        !g_signal_parse_name((const gchar *)STR0(signal_spec),
+                             G_OBJECT_TYPE(THIS->obj),
+                             &sigid, &detail, TRUE)) {
       Pike_error("Signal \"%S\" is not defined in the '%s' class ancestry.\n",
-		 signal_spec, g_type_name(G_TYPE_FROM_INSTANCE(THIS->obj)));
+                 signal_spec, g_type_name(G_TYPE_FROM_INSTANCE(THIS->obj)));
     }
 
     b=(struct signal_data *)g_malloc0(sizeof(struct signal_data));
@@ -253,11 +253,11 @@ PIKECLASS GObject
     }
 
     gc=g_cclosure_new_swap(G_CALLBACK(signal_func_wrapper), b,
-			   (GClosureNotify)free_signal_data);
+                           (GClosureNotify)free_signal_data);
     g_closure_set_marshal(gc, marshaller);
 
     id = g_signal_connect_closure_by_id(G_OBJECT(THIS->obj), sigid, detail,
-					gc, TRUE);
+                                        gc, TRUE);
     RETURN id;
   }
 }
@@ -284,9 +284,9 @@ PIKECLASS GBoxed
   EXIT
     {
       if (THIS->box != NULL) {
-	if (THIS->allocated_size)
-	  g_slice_free1(THIS->allocated_size, THIS->box);
-	THIS->box = NULL;
+        if (THIS->allocated_size)
+          g_slice_free1(THIS->allocated_size, THIS->box);
+        THIS->box = NULL;
       }
     }
 
@@ -306,7 +306,7 @@ PIKECLASS GBoxed
       INT32 e;
       struct keypair *k;
       NEW_MAPPING_LOOP(props->data)
-	object_set_index(Pike_fp->current_object, 0, &k->ind, &k->val);
+        object_set_index(Pike_fp->current_object, 0, &k->ind, &k->val);
     }
   }
 }
@@ -334,31 +334,31 @@ static void push_wrapped_gobject(gpointer gobj, GIBaseInfo *info)
       GType rttype = G_OBJECT_TYPE((GObject *)gobj);
       GIBaseInfo *rtinfo = g_irepository_find_by_gtype (NULL, rttype);
       if (rtinfo != NULL) {
-	push_wrapper_name_from_info(rtinfo);
-	g_base_info_unref(rtinfo);
+        push_wrapper_name_from_info(rtinfo);
+        g_base_info_unref(rtinfo);
       }
       else if (info != NULL)
-	push_wrapper_name_from_info(info);
+        push_wrapper_name_from_info(info);
       else
-	Pike_error("Received an object of an unregistered type!\n");
+        Pike_error("Received an object of an unregistered type!\n");
       APPLY_MASTER ("resolv", 1);
       if (TYPEOF(Pike_sp[-1]) != T_OBJECT)
-	Pike_error("Failed to resolve GI object class.\n");
+        Pike_error("Failed to resolve GI object class.\n");
       ref_push_mapping(magic_mapping);
       apply(Pike_sp[-2].u.object, "Instance", 1);
       stack_pop_keep_top();
       if (TYPEOF(Pike_sp[-1]) != T_OBJECT)
-	Pike_error("Failed to instantiate GI object class.\n");
+        Pike_error("Failed to instantiate GI object class.\n");
       {
-	struct GI_GObject_struct *that =
-	  (struct GI_GObject_struct *)get_storage ((obj = Pike_sp[-1].u.object),
-						GI_GObject_program);
-	if (that == NULL)
-	  Pike_error("No storage for GObject!\n");
-	if (that->obj != NULL)
-	  Pike_error("GObject already initialized!\n");
-	g_object_ref ((that->obj = gobj));
-	g_object_set_qdata(that->obj, object_quark, obj);
+        struct GI_GObject_struct *that =
+          (struct GI_GObject_struct *)get_storage ((obj = Pike_sp[-1].u.object),
+                                                GI_GObject_program);
+        if (that == NULL)
+          Pike_error("No storage for GObject!\n");
+        if (that->obj != NULL)
+          Pike_error("GObject already initialized!\n");
+        g_object_ref ((that->obj = gobj));
+        g_object_set_qdata(that->obj, object_quark, obj);
       }
     } else
       ref_push_object(obj);
@@ -375,10 +375,10 @@ static void push_wrapped_boxed(gpointer gbox, GIBaseInfo *info, GType rttype)
     } else {
       GIBaseInfo *rtinfo = g_irepository_find_by_gtype (NULL, rttype);
       if (rtinfo != NULL) {
-	push_wrapper_name_from_info(rtinfo);
-	g_base_info_unref(rtinfo);
+        push_wrapper_name_from_info(rtinfo);
+        g_base_info_unref(rtinfo);
       } else
-	Pike_error("Received a box of an unregistered type!\n");
+        Pike_error("Received a box of an unregistered type!\n");
     }
     APPLY_MASTER ("resolv", 1);
     if (TYPEOF(Pike_sp[-1]) != T_OBJECT)
@@ -389,12 +389,12 @@ static void push_wrapped_boxed(gpointer gbox, GIBaseInfo *info, GType rttype)
       Pike_error("Failed to instantiate GI box class.\n");
     {
       struct GI_GBoxed_struct *that =
-	(struct GI_GBoxed_struct *)get_storage (Pike_sp[-1].u.object,
-					     GI_GBoxed_program);
+        (struct GI_GBoxed_struct *)get_storage (Pike_sp[-1].u.object,
+                                             GI_GBoxed_program);
       if (that == NULL)
-	Pike_error("No storage for GBoxed!\n");
+        Pike_error("No storage for GBoxed!\n");
       if (that->box != NULL)
-	Pike_error("GBoxed already initialized!\n");
+        Pike_error("GBoxed already initialized!\n");
       that->box = gbox;
     }
   }
@@ -492,12 +492,12 @@ static void push_gi_argument(GIArgument *arg, GITypeInfo *info)
       INT32 count = 0;
       GSList *list = arg->v_pointer;
       while(list != NULL) {
-	GIArgument item;
-	GITypeInfo *item_info = g_type_info_get_param_type(info, 0);
-	item.v_pointer = list->data;
-	push_gi_argument(&item, item_info);
-	count++;
-	list = g_slist_next (list);
+        GIArgument item;
+        GITypeInfo *item_info = g_type_info_get_param_type(info, 0);
+        item.v_pointer = list->data;
+        push_gi_argument(&item, item_info);
+        count++;
+        list = g_slist_next (list);
       }
       f_aggregate(count);
     }
@@ -509,7 +509,7 @@ static void push_gi_argument(GIArgument *arg, GITypeInfo *info)
 }
 
 static void get_gi_argument_interface(struct svalue *s, GIArgument *arg,
-				      GIBaseInfo *info)
+                                      GIBaseInfo *info)
 {
   switch(g_base_info_get_type(info)) {
 
@@ -529,14 +529,14 @@ static void get_gi_argument_interface(struct svalue *s, GIArgument *arg,
       Pike_error("object expected\n");
     else {
       struct GI_GObject_struct *that =
-	(struct GI_GObject_struct *)get_storage (s->u.object, GI_GObject_program);
+        (struct GI_GObject_struct *)get_storage (s->u.object, GI_GObject_program);
       if (that == NULL)
-	Pike_error("argument is not a GObject\n");
+        Pike_error("argument is not a GObject\n");
       if (that->obj == NULL ||
-	  !g_type_is_a(G_OBJECT_TYPE(that->obj),
-		       g_registered_type_info_get_g_type(info)))
-	Pike_error("Object is not a %s\n",
-		   g_base_info_get_name(info));
+          !g_type_is_a(G_OBJECT_TYPE(that->obj),
+                       g_registered_type_info_get_g_type(info)))
+        Pike_error("Object is not a %s\n",
+                   g_base_info_get_name(info));
       arg->v_pointer = that->obj;
     }
     break;
@@ -550,14 +550,14 @@ static void get_gi_argument_interface(struct svalue *s, GIArgument *arg,
       Pike_error("object expected\n");
     else {
       struct GI_GBoxed_struct *that =
-	(struct GI_GBoxed_struct *)get_storage (s->u.object, GI_GBoxed_program);
+        (struct GI_GBoxed_struct *)get_storage (s->u.object, GI_GBoxed_program);
       if (that == NULL)
-	Pike_error("argument is not a GBoxed\n");
+        Pike_error("argument is not a GBoxed\n");
       if (that->box == NULL ||
-	  !g_type_is_a(that->type,
-		       g_registered_type_info_get_g_type(info)))
-	Pike_error("Object is not a %s\n",
-		   g_base_info_get_name(info));
+          !g_type_is_a(that->type,
+                       g_registered_type_info_get_g_type(info)))
+        Pike_error("Object is not a %s\n",
+                   g_base_info_get_name(info));
       arg->v_pointer = that->box;
     }
     break;
@@ -568,7 +568,7 @@ static void get_gi_argument_interface(struct svalue *s, GIArgument *arg,
 }
 
 static void get_gi_argument_type(struct svalue *s, GIArgument *arg,
-				 GITypeInfo *ti)
+                                 GITypeInfo *ti)
 {
   switch (g_type_info_get_tag(ti)) {
   case GI_TYPE_TAG_VOID:
@@ -648,20 +648,20 @@ static void get_gi_argument_type(struct svalue *s, GIArgument *arg,
     }
     if (TYPEOF(*s) != PIKE_T_ARRAY) {
       if (TYPEOF(*s) == PIKE_T_STRING && !s->u.string->size_shift) {
-	GITypeInfo *itemti = g_type_info_get_param_type(ti, 0);
-	if (g_type_info_get_tag(itemti) == GI_TYPE_TAG_UINT8) {
-	  ONERROR onerror;
-	  GArray *arr;
-	  SET_ONERROR(onerror, g_base_info_unref, itemti);
-	  arr = g_array_sized_new(g_type_info_is_zero_terminated(ti),
-				  FALSE, sizeof(guint8), s->u.string->len);
-	  g_array_insert_vals(arr, 0, STR0(s->u.string), s->u.string->len);
-	  UNSET_ONERROR(onerror);
-	  g_base_info_unref(itemti);
-	  arg->v_pointer = arr->data;
-	  break;
-	} else
-	  g_base_info_unref(itemti);
+        GITypeInfo *itemti = g_type_info_get_param_type(ti, 0);
+        if (g_type_info_get_tag(itemti) == GI_TYPE_TAG_UINT8) {
+          ONERROR onerror;
+          GArray *arr;
+          SET_ONERROR(onerror, g_base_info_unref, itemti);
+          arr = g_array_sized_new(g_type_info_is_zero_terminated(ti),
+                                  FALSE, sizeof(guint8), s->u.string->len);
+          g_array_insert_vals(arr, 0, STR0(s->u.string), s->u.string->len);
+          UNSET_ONERROR(onerror);
+          g_base_info_unref(itemti);
+          arg->v_pointer = arr->data;
+          break;
+        } else
+          g_base_info_unref(itemti);
       }
       Pike_error("array expected\n");
     } else {
@@ -671,12 +671,12 @@ static void get_gi_argument_type(struct svalue *s, GIArgument *arg,
       GITypeInfo *itemti = g_type_info_get_param_type(ti, 0);
       SET_ONERROR(onerror, g_base_info_unref, itemti);
       arr = g_array_sized_new(g_type_info_is_zero_terminated(ti),
-			      FALSE, sizeof(gpointer) /*FIXME*/,
-			      s->u.array->size);
+                              FALSE, sizeof(gpointer) /*FIXME*/,
+                              s->u.array->size);
       for (i=0; i<s->u.array->size; i++) {
-	GIArgument a;
-	get_gi_argument_type(&ITEM(s->u.array)[i], &a, itemti);
-	g_array_insert_val(arr, i, a);
+        GIArgument a;
+        get_gi_argument_type(&ITEM(s->u.array)[i], &a, itemti);
+        g_array_insert_val(arr, i, a);
       }
       UNSET_ONERROR(onerror);
       g_base_info_unref(itemti);
@@ -755,8 +755,8 @@ PIKECLASS BaseInfo
   EXIT
     {
       if (THIS->info != NULL) {
-	g_base_info_unref(THIS->info);
-	THIS->info = NULL;
+        g_base_info_unref(THIS->info);
+        THIS->info = NULL;
       }
     }
 
@@ -825,43 +825,43 @@ PIKECLASS FunctionInfo
     gint num_args = g_callable_info_get_n_args(THIS->info);
     GIFunctionInfoFlags flags = g_function_info_get_flags (THIS->info);
     GIArgument *in_args = (num_args || (flags & GI_FUNCTION_IS_METHOD)?
-			   xalloc((2 * num_args + 1) * sizeof(GIArgument)) :
-			   NULL);
+                           xalloc((2 * num_args + 1) * sizeof(GIArgument)) :
+                           NULL);
     GIArgument out_arg_0, *out_args = (num_args? in_args+num_args+1 : NULL);
     SET_ONERROR(onerror, free, in_args);
     if (flags & GI_FUNCTION_IS_METHOD) {
       if (args < 1 || TYPEOF(*mark) != T_OBJECT)
-	Pike_error("Missing object for method call\n");
+        Pike_error("Missing object for method call\n");
       else {
-	GIBaseInfo *cont = g_base_info_get_container(THIS->info);
-	if (g_base_info_get_type(cont) == GI_INFO_TYPE_OBJECT ||
-	    g_base_info_get_type(cont) == GI_INFO_TYPE_INTERFACE) {
-	  struct GI_GObject_struct *that =
-	    (struct GI_GObject_struct *)get_storage (mark->u.object,
-						  GI_GObject_program);
-	  if (that == NULL)
-	    Pike_error("Instance argument is not a GObject\n");
-	  if (that->obj == NULL ||
-	      !g_type_is_a(G_OBJECT_TYPE(that->obj),
-			   g_registered_type_info_get_g_type(cont)))
-	    Pike_error("Object is not a %s\n",
-		       g_base_info_get_name(cont));
-	  in_args[0].v_pointer = that->obj;
-	} else {
-	  struct GI_GBoxed_struct *that =
-	    (struct GI_GBoxed_struct *)get_storage (mark->u.object,
-						 GI_GBoxed_program);
-	  if (that == NULL)
-	    Pike_error("Instance argument is not a GBoxed\n");
-	  if (that->box == NULL ||
-	      !g_type_is_a(that->type,
-			   g_registered_type_info_get_g_type(cont)))
-	    Pike_error("Boxed is not a %s\n",
-		       g_base_info_get_name(cont));
-	  in_args[0].v_pointer = that->box;
-	}
-	i++;
-	num_in_args++;
+        GIBaseInfo *cont = g_base_info_get_container(THIS->info);
+        if (g_base_info_get_type(cont) == GI_INFO_TYPE_OBJECT ||
+            g_base_info_get_type(cont) == GI_INFO_TYPE_INTERFACE) {
+          struct GI_GObject_struct *that =
+            (struct GI_GObject_struct *)get_storage (mark->u.object,
+                                                  GI_GObject_program);
+          if (that == NULL)
+            Pike_error("Instance argument is not a GObject\n");
+          if (that->obj == NULL ||
+              !g_type_is_a(G_OBJECT_TYPE(that->obj),
+                           g_registered_type_info_get_g_type(cont)))
+            Pike_error("Object is not a %s\n",
+                       g_base_info_get_name(cont));
+          in_args[0].v_pointer = that->obj;
+        } else {
+          struct GI_GBoxed_struct *that =
+            (struct GI_GBoxed_struct *)get_storage (mark->u.object,
+                                                 GI_GBoxed_program);
+          if (that == NULL)
+            Pike_error("Instance argument is not a GBoxed\n");
+          if (that->box == NULL ||
+              !g_type_is_a(that->type,
+                           g_registered_type_info_get_g_type(cont)))
+            Pike_error("Boxed is not a %s\n",
+                       g_base_info_get_name(cont));
+          in_args[0].v_pointer = that->box;
+        }
+        i++;
+        num_in_args++;
       }
     }
     for (arg_num=0; arg_num<num_args; arg_num++) {
@@ -869,34 +869,34 @@ PIKECLASS FunctionInfo
       GIArgInfo *ai;
       ai = g_callable_info_get_arg(THIS->info, arg_num);
       if (!ai)
-	Pike_error("Too many arguments to function %s\n",
-		   g_base_info_get_name(THIS->info));
+        Pike_error("Too many arguments to function %s\n",
+                   g_base_info_get_name(THIS->info));
       SET_ONERROR(onerror2, g_base_info_unref, ai);
       if (num_out_args == 0)
-	out_arg_0_num = arg_num;
+        out_arg_0_num = arg_num;
       if (g_arg_info_get_direction(ai) == GI_DIRECTION_OUT) {
-	gsize size = get_arg_size(ai);
-	out_args[num_out_args].v_pointer = NULL;
-	if (size > 0)
-	  out_args[num_out_args].v_pointer = g_slice_alloc0(size);
-	num_out_args++;
+        gsize size = get_arg_size(ai);
+        out_args[num_out_args].v_pointer = NULL;
+        if (size > 0)
+          out_args[num_out_args].v_pointer = g_slice_alloc0(size);
+        num_out_args++;
       } else if (i<args) {
-	get_gi_argument(mark+i, &in_args[num_in_args++], ai);
-	if(g_arg_info_get_direction(ai) == GI_DIRECTION_INOUT) {
-	  out_args[num_out_args] = in_args[num_in_args-1];
-	  in_args[num_in_args-1].v_pointer = &out_args[num_out_args];
-	  num_out_args++;
-	}
-	i++;
+        get_gi_argument(mark+i, &in_args[num_in_args++], ai);
+        if(g_arg_info_get_direction(ai) == GI_DIRECTION_INOUT) {
+          out_args[num_out_args] = in_args[num_in_args-1];
+          in_args[num_in_args-1].v_pointer = &out_args[num_out_args];
+          num_out_args++;
+        }
+        i++;
       }
       UNSET_ONERROR(onerror2);
       g_base_info_unref(ai);
     }
     if (i<args)
       Pike_error("Too many arguments to function %s\n",
-		 g_base_info_get_name(THIS->info));
+                 g_base_info_get_name(THIS->info));
     ok = g_function_info_invoke(THIS->info, in_args, num_in_args,
-				out_args, num_out_args, &retval, &error);
+                                out_args, num_out_args, &retval, &error);
     if (num_out_args > 0)
       out_arg_0 = out_args[0];
     UNSET_ONERROR(onerror);
@@ -955,10 +955,10 @@ PIKECLASS FieldInfo
     if (that == NULL)
       Pike_error("argument is not a GBoxed\n");
     if (that->box == NULL ||
-	!g_type_is_a(that->type,
-		     g_registered_type_info_get_g_type(sinfo)))
+        !g_type_is_a(that->type,
+                     g_registered_type_info_get_g_type(sinfo)))
       Pike_error("Boxed is not a %s\n",
-		 g_base_info_get_name(sinfo));
+                 g_base_info_get_name(sinfo));
     ti = g_field_info_get_type((GIFieldInfo *)THIS->info);
     SET_ONERROR(onerror, g_base_info_unref, ti);
     if (!g_field_info_get_field((GIFieldInfo *)THIS->info, that->box, &value))
@@ -982,10 +982,10 @@ PIKECLASS FieldInfo
     if (that == NULL)
       Pike_error("argument is not a GBoxed\n");
     if (that->box == NULL ||
-	!g_type_is_a(that->type,
-		     g_registered_type_info_get_g_type(sinfo)))
+        !g_type_is_a(that->type,
+                     g_registered_type_info_get_g_type(sinfo)))
       Pike_error("Boxed is not a %s\n",
-		 g_base_info_get_name(sinfo));
+                 g_base_info_get_name(sinfo));
     ti = g_field_info_get_type((GIFieldInfo *)THIS->info);
     SET_ONERROR(onerror, g_base_info_unref, ti);
     get_gi_argument_type(value, &val, ti);
@@ -1017,7 +1017,7 @@ PIKECLASS StructInfo
     for(i=0; i<num; i++) {
       GIBaseInfo *info;
       info =
-	(GIBaseInfo *)g_struct_info_get_method((GIStructInfo *)THIS->info, i);
+        (GIBaseInfo *)g_struct_info_get_method((GIStructInfo *)THIS->info, i);
       SET_ONERROR(onerror2, g_base_info_unref, info);
       push_gi_info(info);
       UNSET_ONERROR(onerror2);
@@ -1042,7 +1042,7 @@ PIKECLASS StructInfo
     for(i=0; i<num; i++) {
       GIBaseInfo *info;
       info =
-	(GIBaseInfo *)g_struct_info_get_field((GIStructInfo *)THIS->info, i);
+        (GIBaseInfo *)g_struct_info_get_field((GIStructInfo *)THIS->info, i);
       SET_ONERROR(onerror2, g_base_info_unref, info);
       push_gi_info(info);
       UNSET_ONERROR(onerror2);
@@ -1090,7 +1090,7 @@ PIKECLASS EnumInfo
     for(i=0; i<num; i++) {
       GIBaseInfo *info;
       info =
-	(GIBaseInfo *)g_enum_info_get_value((GIEnumInfo *)THIS->info, i);
+        (GIBaseInfo *)g_enum_info_get_value((GIEnumInfo *)THIS->info, i);
       SET_ONERROR(onerror2, g_base_info_unref, info);
       push_gi_info(info);
       UNSET_ONERROR(onerror2);
@@ -1123,7 +1123,7 @@ PIKECLASS InterfaceInfo
     for(i=0; i<num; i++) {
       GIBaseInfo *info;
       info =
-	(GIBaseInfo *)g_interface_info_get_method((GIInterfaceInfo *)THIS->info, i);
+        (GIBaseInfo *)g_interface_info_get_method((GIInterfaceInfo *)THIS->info, i);
       SET_ONERROR(onerror2, g_base_info_unref, info);
       push_gi_info(info);
       UNSET_ONERROR(onerror2);
@@ -1156,7 +1156,7 @@ PIKECLASS ObjectInfo
     for(i=0; i<num; i++) {
       GIBaseInfo *info;
       info =
-	(GIBaseInfo *)g_object_info_get_method((GIObjectInfo *)THIS->info, i);
+        (GIBaseInfo *)g_object_info_get_method((GIObjectInfo *)THIS->info, i);
       SET_ONERROR(onerror2, g_base_info_unref, info);
       push_gi_info(info);
       UNSET_ONERROR(onerror2);
@@ -1181,7 +1181,7 @@ PIKECLASS ObjectInfo
     for(i=0; i<num; i++) {
       GIBaseInfo *info;
       info =
-	(GIBaseInfo *)g_object_info_get_interface((GIObjectInfo *)THIS->info, i);
+        (GIBaseInfo *)g_object_info_get_interface((GIObjectInfo *)THIS->info, i);
       SET_ONERROR(onerror2, g_base_info_unref, info);
       push_gi_info(info);
       UNSET_ONERROR(onerror2);
@@ -1355,10 +1355,10 @@ static void push_gvalue(const GValue *v)
     {
       const gchar *s = g_value_get_string(v);
       if (s == NULL)
-	push_int(0);
+        push_int(0);
       else {
-	push_text(s);
-	f_utf8_to_string(1);
+        push_text(s);
+        f_utf8_to_string(1);
       }
       break;
     }
@@ -1373,7 +1373,7 @@ static void push_gvalue(const GValue *v)
 
   default:
     Pike_error("Don't know how to push a gvalue type %d\n",
-	       G_TYPE_FUNDAMENTAL(gt));
+               G_TYPE_FUNDAMENTAL(gt));
   }
 }
 
@@ -1480,16 +1480,16 @@ static void set_gvalue_from_svalue(GValue *v, const struct svalue *s)
       Pike_error("object expected\n");
     else {
       struct GI_GObject_struct *that =
-	(struct GI_GObject_struct *)get_storage (s->u.object, GI_GObject_program);
+        (struct GI_GObject_struct *)get_storage (s->u.object, GI_GObject_program);
       if (that == NULL)
-	Pike_error("argument is not a GObject\n");
+        Pike_error("argument is not a GObject\n");
       if (that->obj == NULL ||
-	  !g_type_is_a(G_OBJECT_TYPE(that->obj), gt)) {
-	const gchar *tn = g_type_name(gt);
-	if (tn)
-	  Pike_error("Object is not a %s\n", tn);
-	else
-	  Pike_error("Object is not of the correct type\n");
+          !g_type_is_a(G_OBJECT_TYPE(that->obj), gt)) {
+        const gchar *tn = g_type_name(gt);
+        if (tn)
+          Pike_error("Object is not a %s\n", tn);
+        else
+          Pike_error("Object is not of the correct type\n");
       }
       g_value_set_object(v, that->obj);
     }
@@ -1497,13 +1497,13 @@ static void set_gvalue_from_svalue(GValue *v, const struct svalue *s)
 
   default:
     Pike_error("Don't know how to set a gvalue type %d\n",
-	       G_TYPE_FUNDAMENTAL(gt));
+               G_TYPE_FUNDAMENTAL(gt));
   }
 }
 
 static int build_one_parameter(GObjectClass *class, GParameter *p,
-			       const struct svalue *name,
-			       const struct svalue *value)
+                               const struct svalue *name,
+                               const struct svalue *value)
 {
   GParamSpec *pspec;
   if (name == NULL || TYPEOF(*name) != PIKE_T_STRING)
@@ -1515,15 +1515,15 @@ static int build_one_parameter(GObjectClass *class, GParameter *p,
   pspec = g_object_class_find_property(class, p->name);
   if (pspec == NULL)
     Pike_error("GObject %s does not support property %S\n",
-	       G_OBJECT_CLASS_NAME(class), name->u.string);
+               G_OBJECT_CLASS_NAME(class), name->u.string);
   g_value_init(&p->value, G_PARAM_SPEC_VALUE_TYPE(pspec));
   set_gvalue_from_svalue(&p->value, value);
   return 1;
 }
 
 static guint build_parameters_from_mapping(GType gt, struct mapping *m,
-					   guint free_space,
-					   GParameter *parms)
+                                           guint free_space,
+                                           GParameter *parms)
 {
   ONERROR onerror;
   INT32 e;
@@ -1535,7 +1535,7 @@ static guint build_parameters_from_mapping(GType gt, struct mapping *m,
   SET_ONERROR(onerror, g_type_class_unref, class);
   NEW_MAPPING_LOOP(m->data)
     if (free_space &&
-	build_one_parameter(class, parms, &k->ind, &k->val)) {
+        build_one_parameter(class, parms, &k->ind, &k->val)) {
       --free_space;
       count++;
       parms++;
@@ -1559,7 +1559,7 @@ static void low_free_gparams(struct gparams_list *gpl)
     for (i = 0; i < nparam; i++) {
       g_free((gchar *)params[i].name);
       if (G_VALUE_TYPE(&params[i].value) != G_TYPE_INVALID)
-	g_value_unset(&params[i].value);
+        g_value_unset(&params[i].value);
     }
     g_free(params);
     gpl->params = NULL;
@@ -1588,7 +1588,7 @@ static GObject *make_gobject_from_props(struct object *info, struct mapping *pro
     params.params = g_new0(GParameter, params.nparam);
     SET_ONERROR(onerror, low_free_gparams, &params);
     params.nparam = build_parameters_from_mapping(gt, props, params.nparam,
-						  params.params);
+                                                  params.params);
   }
   obj = g_object_newv(gt, params.nparam, params.params);
   if (obj == NULL)
@@ -1638,7 +1638,7 @@ PIKECLASS Repository
     int count = 0;
     GList *item, *versions =
       g_irepository_enumerate_versions(THIS->repository,
-				       (gchar *)STR0(namespace));
+                                       (gchar *)STR0(namespace));
     if (versions == NULL) {
       pop_n_elems(args);
       push_int(0);
@@ -1648,9 +1648,9 @@ PIKECLASS Repository
     pop_n_elems(args);
     for (item = versions; item; item = item->next) {
         char *version = item->data;
-	push_text(version);
-	f_utf8_to_string(1);
-	count++;
+        push_text(version);
+        f_utf8_to_string(1);
+        count++;
     }
     UNSET_ONERROR(onerror);
     free_glist_full_free(versions);
@@ -1664,8 +1664,8 @@ PIKECLASS Repository
     ONERROR onerror;
     GIBaseInfo *info =
       g_irepository_find_by_name(THIS->repository,
-				 (gchar *)STR0(namespace),
-				 (gchar *)STR0(name));
+                                 (gchar *)STR0(namespace),
+                                 (gchar *)STR0(name));
     if (info) {
       SET_ONERROR(onerror, g_base_info_unref, info);
       pop_n_elems(args);
@@ -1686,7 +1686,7 @@ PIKECLASS Repository
     struct array *arr;
     gssize i, num;
     num = g_irepository_get_n_infos(THIS->repository,
-				    (gchar *)STR0(namespace));
+                                    (gchar *)STR0(namespace));
     if (num < 0)
       Pike_error("Namespace '%S' not loaded\n", namespace);
     arr = allocate_array(num);
@@ -1694,7 +1694,7 @@ PIKECLASS Repository
     for(i=0; i<num; i++) {
       GIBaseInfo *info;
       info = g_irepository_get_info(THIS->repository,
-				    (gchar *)STR0(namespace), i);
+                                    (gchar *)STR0(namespace), i);
       SET_ONERROR(onerror2, g_base_info_unref, info);
       push_gi_info(info);
       UNSET_ONERROR(onerror2);
@@ -1714,11 +1714,11 @@ PIKECLASS Repository
     GTypelib *typelib;
 
     typelib = g_irepository_require(THIS->repository,
-				    (gchar *)STR0(namespace),
-				    (version? (gchar *)STR0(version) : NULL),
-				    ((lazy != NULL && !UNSAFE_IS_ZERO(lazy))? 
-				     G_IREPOSITORY_LOAD_FLAG_LAZY : 0),
-				    &error);
+                                    (gchar *)STR0(namespace),
+                                    (version? (gchar *)STR0(version) : NULL),
+                                    ((lazy != NULL && !UNSAFE_IS_ZERO(lazy))?
+                                     G_IREPOSITORY_LOAD_FLAG_LAZY : 0),
+                                    &error);
 
     if(error)
       throw_gerror(error);
