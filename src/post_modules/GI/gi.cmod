@@ -1268,6 +1268,15 @@ PIKECLASS UnionInfo
 }
 
 
+/*! @class BoxedInfo
+ */
+
+PIKECLASS BoxedInfo
+{
+  INHERIT BaseInfo;
+}
+
+
 static void push_gi_info(GIBaseInfo *info)
 {
   struct program *p;
@@ -1295,6 +1304,8 @@ static void push_gi_info(GIBaseInfo *info)
     p = GI_ValueInfo_program; break;
   case GI_INFO_TYPE_FIELD:
     p = GI_FieldInfo_program; break;
+  case GI_INFO_TYPE_BOXED:
+    p = GI_BoxedInfo_program; break;
   default:
     Pike_error("No class for %d\n", g_base_info_get_type(info));
   }
