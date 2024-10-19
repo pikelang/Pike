@@ -37,7 +37,7 @@ bool write(string|Stdio.Buffer data)
 
  if( TYPEOF(Pike_sp[-1]) == PIKE_T_STRING )
  {
-   data = Pike_sp[-1].u.string->str;
+   data = STR0(Pike_sp[-1].u.string);
    count = Pike_sp[-1].u.string->len;
   }
   else if( TYPEOF(Pike_sp[-1]) == PIKE_T_OBJECT )

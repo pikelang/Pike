@@ -23,5 +23,21 @@ void set_text(string text)
 }
 
 
-string get_text();
+string get_text()
 //! Retrieve the selection data as a string.
+{
+  /* NB: This is identical to the automatically generated code, except
+   *     for the cast, which is due to gtk_selection_data_get_text()
+   *     returning a const guchar * (rather than const gchar *), and
+   *     it thus fixes a signedness warning.
+   *
+   * /grubba 2024-10-17
+   */
+  pgtk2_verify_inited();
+  {
+    const gchar *text;
+    text = (const gchar*)gtk_selection_data_get_text( GTK_SELECTION_DATA(THIS->obj) );
+    my_pop_n_elems(args);
+    PGTK_PUSH_GCHAR(text);
+  }
+}
