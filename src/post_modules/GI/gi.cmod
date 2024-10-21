@@ -272,6 +272,7 @@ PIKECLASS GObject
 /*! @endclass
  */
 
+
 /*! @class GBoxed
  */
 
@@ -826,6 +827,10 @@ PIKECLASS BaseInfo
   }
 }
 
+/*! @endclass
+ */
+
+
 /*! @class FunctionInfo
  */
 
@@ -949,6 +954,10 @@ PIKECLASS FunctionInfo
   }
 }
 
+/*! @endclass
+ */
+
+
 /*! @class CallbackInfo
  */
 
@@ -956,6 +965,10 @@ PIKECLASS CallbackInfo
 {
   INHERIT BaseInfo;
 }
+
+/*! @endclass
+ */
+
 
 /*! @class FieldInfo
  */
@@ -1019,6 +1032,10 @@ PIKECLASS FieldInfo
   }
 }
 
+/*! @endclass
+ */
+
+
 /*! @class StructInfo
  */
 
@@ -1077,6 +1094,10 @@ PIKECLASS StructInfo
   }
 }
 
+/*! @endclass
+ */
+
+
 /*! @class ValueInfo
  */
 
@@ -1091,6 +1112,10 @@ PIKECLASS ValueInfo
     RETURN g_value_info_get_value((GIValueInfo *)THIS->info);
   }
 }
+
+/*! @endclass
+ */
+
 
 /*! @class EnumInfo
  */
@@ -1125,6 +1150,10 @@ PIKECLASS EnumInfo
   }
 }
 
+/*! @endclass
+ */
+
+
 /*! @class InterfaceInfo
  */
 
@@ -1157,6 +1186,10 @@ PIKECLASS InterfaceInfo
     RETURN arr;
   }
 }
+
+/*! @endclass
+ */
+
 
 /*! @class ObjectInfo
  */
@@ -1235,6 +1268,10 @@ PIKECLASS ObjectInfo
   }
 }
 
+/*! @endclass
+ */
+
+
 /*! @class ConstantInfo
  */
 
@@ -1275,6 +1312,10 @@ PIKECLASS ConstantInfo
   }
 }
 
+/*! @endclass
+ */
+
+
 /*! @class UnionInfo
  */
 
@@ -1282,6 +1323,9 @@ PIKECLASS UnionInfo
 {
   INHERIT BaseInfo;
 }
+
+/*! @endclass
+ */
 
 
 /*! @class BoxedInfo
@@ -1292,6 +1336,8 @@ PIKECLASS BoxedInfo
   INHERIT BaseInfo;
 }
 
+/*! @endclass
+ */
 
 static void push_gi_info(GIBaseInfo *info)
 {
@@ -1819,6 +1865,7 @@ PIKECLASS Repository
 
 /*! @endclass
  */
+
 
 /*! @decl Repository get_default_repository()
  */
