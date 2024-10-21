@@ -398,10 +398,9 @@ static struct rb_node_hdr *rebalance_after_delete (struct rb_node_hdr *node,
 						   int keep_rbstack)
 {
   struct rb_node_hdr *parent, *sibling, *top = node;
-  struct rbstack_ptr rbstack = *rbstack_ptr, rbstack_top;
+  struct rbstack_ptr rbstack = *rbstack_ptr, rbstack_top = rbstack;
 
   if (keep_rbstack) {
-    rbstack_top = rbstack;
     RBSTACK_UP (rbstack, parent);
   }
   else
