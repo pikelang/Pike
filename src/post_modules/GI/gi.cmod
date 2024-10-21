@@ -179,6 +179,7 @@ PIKECLASS GObject
   /*! @decl void create(ObjectInfo info, mapping(string:mixed)|void props)
    */
   PIKEFUN void create(ObjectInfo info, mapping(string:mixed)|void props)
+    flags ID_PROTECTED;
   {
     if (THIS->obj != NULL)
       Pike_error("GObject.create called twice!\n");
@@ -306,6 +307,7 @@ PIKECLASS GBoxed
   /*! @decl void create(StructInfo info, mapping(string:mixed)|void props)
    */
   PIKEFUN void create(StructInfo info, mapping(string:mixed)|void props)
+    flags ID_PROTECTED;
   {
     if (THIS->box != NULL)
       Pike_error("GBoxed.create called twice!\n");
