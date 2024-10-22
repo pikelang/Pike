@@ -5976,9 +5976,17 @@ PIKECLASS BlockCipher16
         void *ctx = THIS->encrypt_object;
         key->flags |= STRING_CLEAR_ON_EXIT;
 
+        if (args > 2) {
+          /* Paranoia */
+          pop_n_elems(args - 2);
+        }
+        if ((args > 1) && !flags) pop_stack();
+
+        args = 1;
         ref_push_string(key);
-        if (args > 1) {
+        if (flags) {
           push_svalue(flags);
+          args = 2;
         }
         apply(THIS->encrypt_object, "set_encrypt_key", args);
         pop_stack();
@@ -6017,9 +6025,17 @@ PIKECLASS BlockCipher16
         void *ctx = THIS->encrypt_object;
         key->flags |= STRING_CLEAR_ON_EXIT;
 
+        if (args > 2) {
+          /* Paranoia */
+          pop_n_elems(args - 2);
+        }
+        if ((args > 1) && !flags) pop_stack();
+
+        args = 1;
         ref_push_string(key);
-        if (args > 1) {
+        if (flags) {
           push_svalue(flags);
+          args = 2;
         }
         /* NOTE: OCB always uses the encryption function
          *       of the underlying cipher!
