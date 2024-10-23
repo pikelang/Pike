@@ -116,7 +116,7 @@ class Socket {
 	       input_finished, output_finished);
     if(input_finished && output_finished)
     {
-      DEBUG_WERR("Closing fd:%O\n", o->query_fd());
+      DEBUG_WERR("Closing fd:%O\n", o->query_fd?o->query_fd():o);
       o->close();
       o->set_blocking();
       destruct(o);
@@ -133,7 +133,7 @@ class Socket {
   void close_callback()
   {
     int err=o->errno();
-    DEBUG_WERR("close_callback[%O]\n", o->query_fd());
+    DEBUG_WERR("close_callback[%O]\n", o->query_fd?o->query_fd():o);
     got_callback();
     if(input_buffer != expected_data)
     {
@@ -153,7 +153,7 @@ class Socket {
     DO_IF_BACKEND(o->set_backend(backend));
     got_callback();
     DEBUG_WERR("write_callback[%O]: output_buffer: %O\n",
-	       o->query_fd(), output_buffer);
+               o->query_fd?o->query_fd():o, sizeof(output_buffer));
     if(sizeof(output_buffer))
     {
       int tmp=o->write(output_buffer);
@@ -176,7 +176,7 @@ class Socket {
   void read_callback(mixed id, string foo)
   {
     got_callback();
-    DEBUG_WERR("read_callback[%O]: Got %O\n", o->query_fd(), foo);
+    DEBUG_WERR("read_callback[%O]: Got %O\n", o->query_fd?o->query_fd():o, foo);
     if( !sizeof(foo) )
       fd_fail("Got empty read callback.\n");
     input_buffer+=foo;
@@ -185,7 +185,7 @@ class Socket {
   void read_oob_callback(mixed id, string foo)
   {
     got_callback();
-    fd_fail("Got unexpected out of band data on %O: %O", o->query_fd(), foo);
+    fd_fail("Got unexpected out of band data on %O: %O", o->query_fd?o->query_fd():o, foo);
   }
 
   protected void create(object|void o)
@@ -249,7 +249,7 @@ class BufferSocket {
     DO_IF_BACKEND(set_backend(backend));
     got_callback();
     DEBUG_WERR("write_callback[%O]: output_buffer: %O\n",
-	       o->query_fd(), output_buffer);
+               o->query_fd?o->query_fd():o, sizeof(output_buffer));
     if(sizeof(output_buffer))
     {
       if(out) {
