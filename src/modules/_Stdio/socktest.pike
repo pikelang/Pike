@@ -520,7 +520,34 @@ array(object) spair(int type)
 
   switch(type) {
   case 0:
+#if defined(IPV6) && constant(uname)
+    mapping u = uname();
+    if((u->sysname == "Linux") && has_prefix(u->release, "2.6")) {
+      // Linux 2.6.x seems to sometimes hang on connect to IPV6 ports
+      // on the loopback. Try using nonblocking connect().
+      if(!sock1->open_socket(0, ANY))
+      {
+        fd_fail("Failed to open socket: "+strerror(sock1->errno())+"\n");
+      }
+      sock1->set_nonblocking();
+      for (int i = 0; !sock1->connect(LOOPBACK, portno2); i++) {
+        if (i >= 256) {
+          fd_fail("sock1->connect(%O, %O) failed. err: %s (%d), attempt: %d.\n",
+                  LOOPBACK, portno2,
+                  strerror(sock1->errno()), sock1->errno(), i);
+        }
+        log_msg("sock1->connect(%O, %O) failed. err: %s (%d), attempt: %d.\n",
+                LOOPBACK, portno2,
+                strerror(sock1->errno()), sock1->errno(), i);
+        sleep(0.1);
+      }
+      sock1->set_blocking();
+    } else {
+      sock1->connect(LOOPBACK, portno2);
+    }
+#else
     sock1->connect(LOOPBACK, portno2);
+#endif
     sock2=port2::accept();
     if(!sock2)
     {
