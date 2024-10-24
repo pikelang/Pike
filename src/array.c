@@ -354,6 +354,20 @@ PMOD_EXPORT void array_free_index(struct array *v,INT32 index)
  */
 PMOD_EXPORT void simple_set_index(struct array *a,struct svalue *ind,struct svalue *s)
 {
+  /* NB: The following test ought to be within PIKE_DEBUG, but it is enabled
+   *     for all in order to catch an intermittent failure in ADT.Sequence
+   *     where ITEM(a) appears to be NULL. The failure is triggered by the
+   *     pikefarm testsuite on several platforms, but it is uncommon
+   *     (~ once every 100 builds).
+   *
+   * /grubba 2024-10-23
+   */
+  if (!a || !ITEM(a)) {
+    pike_fprintf(stderr, "simple_set_index(%px, %pO, %pO): Invalid array.\n",
+                 a, ind, s);
+    if (a) fprintf(stderr, "ITEM(%p) is NULL!\n", a);
+    Pike_fatal("Invalid array.\n");
+  }
   switch (TYPEOF(*ind)) {
     case T_INT: {
       INT_TYPE p = ind->u.integer;
