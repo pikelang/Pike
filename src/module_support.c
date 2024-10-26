@@ -28,6 +28,7 @@ static int va_check_args(struct svalue *s,
 {
   res->error_type = ERR_NONE;
   res->expected = 0;
+  res->got = PIKE_T_UNKNOWN;
 
   for (res->argno=0; res->argno < args_to_check; res->argno++)
   {
