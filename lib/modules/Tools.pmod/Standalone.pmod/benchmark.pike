@@ -124,6 +124,7 @@ int main(int num, array(string) args)
 
 void run_tests()
 {
+  int failed;
   mixed err = catch {
    /* Run overhead check first. */
    float overhead_time;
@@ -139,6 +140,8 @@ void run_tests()
    {
      n_tests++;
      res = Tools.Shoot.run( tests[id], seconds_per_test, overhead_time );
+
+     if (res->readable == "FAIL") failed = 1;
 
      if( json )
      {
@@ -195,5 +198,5 @@ void run_tests()
     write("\n"+describe_backtrace(err));
     exit(1);
   }
-  exit(0);
+  exit(failed);
 }
