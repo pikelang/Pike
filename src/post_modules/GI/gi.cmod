@@ -395,6 +395,7 @@ static void push_wrapped_boxed(gpointer gbox, GIBaseInfo *info, GType rttype)
       Pike_error("Failed to resolve GI box class.\n");
     ref_push_mapping(magic_mapping);
     apply(Pike_sp[-2].u.object, "Instance", 1);
+    stack_pop_keep_top();
     if (TYPEOF(Pike_sp[-1]) != T_OBJECT)
       Pike_error("Failed to instantiate GI box class.\n");
     {
