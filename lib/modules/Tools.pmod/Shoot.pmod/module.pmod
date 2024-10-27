@@ -78,7 +78,7 @@ mapping(string:Test) tests()
   return _tests;
 }
 
-mapping(string:int|float) run(Test test, int maximum_seconds, float overhead)
+mapping(string:int|float|string) run(Test test, int maximum_seconds, float overhead)
 {
     Stdio.File fd = Stdio.File();
     string test_name;
@@ -92,5 +92,12 @@ mapping(string:int|float) run(Test test, int maximum_seconds, float overhead)
     Process.spawn_pike( ({"-e", sprintf("Tools.Shoot.run_sub( Tools.Shoot[%q](), %d, %f )",
                                 test_name, maximum_seconds, overhead ) }),
                         (["stdout":fd->pipe()]));
-    return Standards.JSON.decode( fd->read() );
+    mixed err = catch {
+      return Standards.JSON.decode( fd->read() );
+    };
+    master()->handle_error(err);
+    // JSON decoding failed. Likely due to not having received any data from
+    // the subprocess. The most common cause for this is that the subprocess
+    // crashed with a SIGSEGV or SIGBUS or similar.
+    return ([ "readable": "FAIL" ]);
 }
