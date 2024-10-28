@@ -3366,22 +3366,34 @@ static void free_obj_arr(void *oa)
  *!   @string
  *!     @value "gc"
  *!       The garbage collector.
+ *!     @value "runtime"
+ *!       The runtime itself.
  *!   @endstring
  *!
  *! @param msg
  *!   Warning message.
- *!   Currently the following messages may be generated:
- *!   @string
- *!     @value "bad_cycle"
- *!       A cycle where the destruction order isn't deterministic
- *!       was detected by the garbage collector.
- *!
- *!       @[data] will in this case contain an array of the elements
- *!       in the cycle.
- *!   @endstring
  *!
  *! @param data
  *!   Optional data that further describes the warning specified by @[msg].
+ *!
+ *! Currently the following subsystems and messages are defined:
+ *! @xml{<matrix><r><c><b><tt>subsystem</tt></b></c>
+ *!                 <c><b><tt>message</tt></b></c>
+ *!                 <c><b><tt>data</tt></b></c></r>
+ *!              <r><c><expr>"gc"</expr></c><c><expr>"bad_cycle"</expr></c>
+ *!                 <c><argument name='cycle'><type><array><mixed/></array></type></argument></c></r>
+ *!              <r><c><p>A cycle where the destruction order isn't
+ *!                       deterministic was detected by the garbage collector.
+ *!                    </p><p><tt>cycle</tt> is an array of the elements
+ *!                           in the cycle.</p></c></r>
+ *!              <r><c><tt>"runtime"</tt></c>
+ *!                 <c><tt>"unsupported_compat"</tt></c>
+ *!                 <c><tt><b>Version</b> requested_version</tt></c></r>
+ *!              <r><c><p>Compatibility with a version older than
+ *!                       the oldest supported version was requested.
+ *!                    </p><p><tt>requested_version</tt> is the
+ *!                           requested version.</p></c></r>
+ *!      </matrix>@}
  */
 
 /*! @endclass
