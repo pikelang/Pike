@@ -3381,14 +3381,15 @@ static void free_obj_arr(void *oa)
  *!                 <c><b><tt>message</tt></b></c>
  *!                 <c><b><tt>data</tt></b></c></r>
  *!              <r><c><expr>"gc"</expr></c><c><expr>"bad_cycle"</expr></c>
- *!                 <c><argument name='cycle'><type><array><mixed/></array></type></argument></c></r>
+ *!                 <c><tt><b>array</b> <expr>cycle</expr></tt></c></r>
  *!              <r><c><p>A cycle where the destruction order isn't
  *!                       deterministic was detected by the garbage collector.
  *!                    </p><p><tt>cycle</tt> is an array of the elements
  *!                           in the cycle.</p></c></r>
- *!              <r><c><tt>"runtime"</tt></c>
- *!                 <c><tt>"unsupported_compat"</tt></c>
- *!                 <c><tt><b>Version</b> requested_version</tt></c></r>
+ *!              <r><c><expr>"runtime"</expr></c>
+ *!                 <c><expr>"unsupported_compat"</expr></c>
+ *!                 <c><tt><b><ref>Version</ref></b>
+ *!                        <expr>requested_version</expr></tt></c></r>
  *!              <r><c><p>Compatibility with a version older than
  *!                       the oldest supported version was requested.
  *!                    </p><p><tt>requested_version</tt> is the
