@@ -1011,8 +1011,7 @@ node *debug_mknode(int token, node *a, node *b)
   case F_POP_VALUE:
     copy_pike_type(res->type, void_type_string);
 
-    if(a) res->tree_info |= a->tree_info;
-    if(b) res->tree_info |= b->tree_info;
+    goto set_default_tree_info;
     break;
 
   case F_MAGIC_SET_INDEX:
@@ -1095,12 +1094,7 @@ node *debug_mknode(int token, node *a, node *b)
   case F_ASSIGN_SELF:
   case F_INITIALIZE:
     res->node_info |= OPT_ASSIGNMENT;
-    if (a) {
-      res->tree_info |= a->tree_info;
-    }
-    if (b) {
-      res->tree_info |= b->tree_info;
-    }
+    goto set_default_tree_info;
     break;
 
   case F_CLEAR_LOCAL:
