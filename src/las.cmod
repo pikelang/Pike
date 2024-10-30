@@ -395,7 +395,7 @@ struct pike_type *find_return_type(node *n)
       } else {
 #ifdef PIKE_DEBUG
 	if (l_flag > 2) {
-	  fputs("Return with untyped argument.\n", stderr);
+          fputs("Return or yield with untyped argument.\n", stderr);
 	  print_tree(n);
 	}
 #endif /* PIKE_DEBUG */
