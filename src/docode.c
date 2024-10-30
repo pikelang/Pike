@@ -254,6 +254,12 @@ void modify_stack_depth(int delta)
 {
   current_stack_depth += delta;
 #ifdef PIKE_DEBUG
+  if ((a_flag > 4) && delta) {
+    fprintf(stderr, "sp %s %d ==> %d\n",
+            (delta < 0)?"-=":"+=",
+            (delta < 0)?-delta:delta,
+            current_stack_depth);
+  }
   if (current_stack_depth < 0) {
     Pike_fatal("Popped out of virtual stack.\n");
   }
@@ -353,6 +359,18 @@ int do_docode(node *n, int flags)
 #endif
   i=do_docode2(n, flags);
   current_stack_depth = stack_depth_save + i;
+#ifdef PIKE_DEBUG
+  if (a_flag > 4) {
+    fprintf(stderr, "sp = %d + %d ==> %d\n",
+            stack_depth_save, i,
+            current_stack_depth);
+  }
+  if ((flags & DO_LVALUE) && (i & 1)) {
+    fprintf(stderr, "Code-generator failure for lvalue (stack depth: %d): ", i);
+    print_tree(n);
+    fprintf(stderr, "\n");
+  }
+#endif
 
   c->lex.current_file = save_current_file;
   c->lex.current_line=save_current_line;
@@ -710,8 +728,22 @@ static int do_encode_automap_arg_list(node *n,
       int ret;
       ret=do_encode_automap_arg_list(CAR(n), flags);
       current_stack_depth=stack_depth_save + ret;
+#ifdef PIKE_DEBUG
+      if (a_flag > 4) {
+        fprintf(stderr, "sp = %d + %d ==> %d\n",
+                stack_depth_save, ret,
+                current_stack_depth);
+      }
+#endif
       ret+=do_encode_automap_arg_list(CDR(n), flags);
       current_stack_depth=stack_depth_save + ret;
+#ifdef PIKE_DEBUG
+      if (a_flag > 4) {
+        fprintf(stderr, "sp = %d + %d ==> %d\n",
+                stack_depth_save, ret,
+                current_stack_depth);
+      }
+#endif
       return ret;
     }
 
@@ -3414,6 +3446,11 @@ INT32 do_code_block(node *n, int identifier_flags)
   PUSH_STATEMENT_LABEL;
   PUSH_CLEANUP_FRAME(NULL, NULL);
   current_stack_depth = 0;
+#ifdef PIKE_DEBUG
+  if (a_flag > 4) {
+    fprintf(stderr, "sp = %d\n", current_stack_depth);
+  }
+#endif
 
   /* NOTE: This is no ordinary label... */
   low_insert_label(0);
@@ -3641,6 +3678,11 @@ INT32 do_code_block(node *n, int identifier_flags)
   instrbuf=instrbuf_save;
 
   current_stack_depth = cleanup_frame__.stack_depth;
+#ifdef PIKE_DEBUG
+  if (a_flag > 4) {
+    fprintf(stderr, "sp = %d\n", current_stack_depth);
+  }
+#endif
   POP_AND_DONT_CLEANUP;
   POP_STATEMENT_LABEL;
   current_label = save_label;
@@ -3668,6 +3710,11 @@ INT32 docode(node *n)
   PUSH_CLEANUP_FRAME(NULL, NULL);
   label_no=1;
   current_stack_depth = 0;
+#ifdef PIKE_DEBUG
+  if (a_flag > 4) {
+    fprintf(stderr, "sp = %d\n", current_stack_depth);
+  }
+#endif
   Pike_compiler->compiler_frame->generator_local = -1;
   init_bytecode();
 
@@ -3701,6 +3748,11 @@ INT32 docode(node *n)
   Pike_compiler->compiler_frame->generator_local = generator_local_save;
 
   current_stack_depth = cleanup_frame__.stack_depth;
+#ifdef PIKE_DEBUG
+  if (a_flag > 4) {
+    fprintf(stderr, "sp = %d\n", current_stack_depth);
+  }
+#endif
   POP_AND_DONT_CLEANUP;
   POP_STATEMENT_LABEL;
   Pike_compiler->compiler_frame->generator_local = generator_local_save;
