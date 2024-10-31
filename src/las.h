@@ -224,6 +224,7 @@ int node_may_overload(node *n, int lfun);
 node **last_cmd(node **a);
 node **my_get_arg(node **a,int n);
 node **is_call_to(node *n, c_fun f);
+void describe_node_tree(struct string_builder *s, node *n);
 void print_tree(node *n);
 struct used_vars;
 void fix_auto_node(node *n, struct pike_type *type);
