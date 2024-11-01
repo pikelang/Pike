@@ -170,6 +170,8 @@ struct node_s
 #define SCOPE_SCOPED 2
 #define SCOPE_SCOPE_USED 4
 
+struct string_builder;
+
 void count_memory_in_node_ss(size_t *num, size_t *size);
 
 /* Prototypes begin here */
