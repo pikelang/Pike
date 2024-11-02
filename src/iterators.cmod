@@ -203,6 +203,35 @@ PIKECLASS Iterator
     flags ID_OPTIONAL;
     prototype;
   {}
+
+  /*! @decl optional protected Iterator `+ (int steps)
+   *!
+   *! Returns a clone of this iterator which is advanced the specified
+   *! number of steps. The amount may be negative to move backwards.
+   *!
+   *! If the iterator doesn't support backward movement it should
+   *! throw an exception in that case.
+   *!
+   *! @seealso
+   *!   @[_iterator_next], @[`-]
+   */
+  PIKEFUN Iterator `+(int steps)
+    flags ID_PROTECTED|ID_OPTIONAL;
+    prototype;
+  {}
+
+  /*! @decl optional protected Iterator `- (int steps)
+   *!
+   *! Returns a clone of this iterator which is backed up the specified
+   *! number of steps. The amount may be negative to move forward.
+   *!
+   *! @seealso
+   *!   @[_iterator_next], @[`+],
+   */
+  PIKEFUN int(0..1) `-(int steps)
+    flags ID_PROTECTED|ID_OPTIONAL;
+    prototype;
+  {}
 }
 
 /*! @class CompatIterator
