@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-#pike __REAL_VERSION__
+#pike 7.8
 
 #define FUNC_OVERLOAD
 
