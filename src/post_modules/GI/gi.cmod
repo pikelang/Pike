@@ -634,6 +634,14 @@ static void get_gi_argument_type(struct svalue *s, GIArgument *arg,
       Pike_error("int expected\n");
     arg->v_uint32 = s->u.integer;
     break;
+  case GI_TYPE_TAG_INT64:
+    if (!int64_from_svalue((INT64 *)&arg->v_int64, s))
+      Pike_error("int expected\n");
+    break;
+  case GI_TYPE_TAG_UINT64:
+    if (!int64_from_svalue((INT64 *)&arg->v_uint64, s))
+      Pike_error("int expected\n");
+    break;
 
   case GI_TYPE_TAG_FLOAT:
     if (TYPEOF(*s) == PIKE_T_INT)
