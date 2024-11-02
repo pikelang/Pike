@@ -47,149 +47,78 @@ DECLARATIONS
  *! @[foreach] to iterate over objects conveniently.
  *!
  *! It's not an error to advance an iterator past the beginning or end
- *! of the data set; @[`!()] will only return true then, and @[_iterator_index]
- *! and @[_iterator_value] will return @[UNDEFINED]. An iterator in that state
+ *! of the data set; @[_iterator_index] and @[_iterator_value] will
+ *! just return @[UNDEFINED] then. An iterator in that state
  *! need not keep track of positions, so it's undefined what happens
  *! if it's "moved back" into the set of items.
  *!
- *! Backward movement for iterators is optional. It's supported if and
- *! only if @[`-()] is defined, but even then it's undefined how far
- *! back the iterator can move. Therefore iterators may support only a
- *! limited amount of backward movement, e.g. when they access a
- *! stream through a limited buffer. If such an iterator is moved back
- *! past the limit then it'll behave as if it's pointing entirely
- *! outside the data set (see above).
- *!
- *! An iterator that doesn't support backward movement at all should
- *! throw an error if it's attempted.
+ *! Backward movement for iterators is currently not supported.
  *!
  *! @seealso
  *!   @[predef::get_iterator], @[lfun::_get_iterator],
  *!   @[Array.Iterator], @[Mapping.Iterator], @[Multiset.Iterator],
- *!   @[String.Iterator], @[String.SplitIterator].
+ *!   @[String.Iterator], @[String.SplitIterator], @[8.0::Iterator].
  */
 
 PIKECLASS Iterator
 {
-  /*! @decl void create (void|mixed data)
+  /*! @decl optional protected void create (void|mixed data)
    *!
    *! Initialize this iterator to access a data set in @[data]. The
    *! type of @[data] is specific to the iterator implementation. An
    *! iterator may also access some implicit data set, in which case
    *! @[data] isn't specified at all.
    *!
-   *! The iterator initially points to the first item in the data set,
+   *! The iterator initially points to before the first item in the data set,
    *! if there is any.
    *!
    *! The iterator does not need to support being reused, so this
    *! function is typically declared @expr{protected@}.
+   *!
+   *! @note
+   *!   In the iterator API in Pike 8.0 and earlier the iterators initially
+   *!   pointed to the first element.
+   *!
+   *! @seealso
+   *!   @[CompatIterator]
    */
   PIKEFUN void create(void|mixed data)
     flags ID_PROTECTED;
     prototype;
   {}
 
-  /*! @decl int(0..1) `!()
-   *!
-   *! Returns @expr{0@} (zero) when the iterator points to an item,
-   *! @expr{1@} otherwise.
-   */
-  PIKEFUN int(0..1) `!()
-    flags ID_PROTECTED;
-    prototype;
-  {}
-
-  /*! @decl optional Iterator `+ (int steps)
-   *!
-   *! Returns a clone of this iterator which is advanced the specified
-   *! number of steps. The amount may be negative to move backwards.
-   *! If the iterator doesn't support backward movement it should
-   *! throw an exception in that case.
-   *!
-   *! @seealso
-   *!   @[_iterator_next], @[`+=], @[`-]
-   */
-  PIKEFUN Iterator `+(int steps)
-    flags ID_PROTECTED|ID_OPTIONAL;
-    prototype;
-  {}
-
-  /*! @decl optional Iterator `+= (int steps)
-   *!
-   *! Advance this iterator the specified number of steps and return
-   *! it. The amount may be negative to move backwards. If the
-   *! iterator doesn't support backward movement it should throw an
-   *! exception in that case.
-   *!
-   *! @note
-   *!   @[foreach] calls this function with a step value of @expr{1@}
-   *!   if @[_iterator_next()] doesn't exist for compatibility with Pike 7.6
-   *!   and earlier.
-   *!
-   *! @note
-   *!   @[foreach] will call this function even when the the
-   *!   iterator has more than one reference. If you want to
-   *!   loop over a copy of the iterator, you can create a
-   *!   copy by adding @expr{0@} (zero) to it:
-   *!   @code
-   *!     Iterator iterator;
-   *!     ...
-   *!     foreach(iterator+0; mixed index; mixed value) {
-   *!       ...
-   *!     }
-   *!   @endcode
-   *!
-   *! @note
-   *!   Even though this function is sufficient for @[foreach] to
-   *!   advance the iterator, @[_iterator_next()] is the preferred API.
-   *!
-   *! @seealso
-   *!   @[_iterator_next], @[`+], @[`-]
-   */
-  PIKEFUN Iterator `+=(int steps)
-    prototype;
-    flags ID_PROTECTED|ID_OPTIONAL;
-  {}
-
-  /*! @decl optional Iterator `- (int steps)
-   *!
-   *! This lfun should be defined if and only if the iterator supports
-   *! backward movement to some degree. It should back up the
-   *! specified number of steps. The amount may be negative to move
-   *! forward.
-   *!
-   *! @seealso
-   *!   @[_iterator_next], @[`+], @[`+=]
-   */
-  PIKEFUN int(0..1) `-(int steps)
-    flags ID_PROTECTED|ID_OPTIONAL;
-    prototype;
-  {}
-
-  /*! @decl mixed _iterator_index()
+  /*! @decl optional protected mixed _iterator_index()
    *!
    *! Returns the current index, or @[UNDEFINED] if the iterator
    *! doesn't point to any item.
    *!
    *! If there's no obvious index set then the index is the current
    *! position in the data set, counting from @expr{0@} (zero).
+   *!
+   *! @seealso
+   *!   @[_iterator_value()], @[lfun::_iterator_index()],
+   *!   @[iterator_index()]
    */
   PIKEFUN mixed _iterator_index()
-    flags ID_PROTECTED;
+    flags ID_PROTECTED|ID_OPTIONAL;
     prototype;
   {}
 
-  /*! @decl mixed _iterator_value()
+  /*! @decl optional protected mixed _iterator_value()
    *!
    *! Returns the current value, or @[UNDEFINED] if the iterator
    *! doesn't point to any item.
+   *!
+   *! @seealso
+   *!   @[_iterator_index()], @[lfun::_iterator_value()],
+   *!   @[iterator_value()]
    */
   PIKEFUN mixed _iterator_value()
-    flags ID_PROTECTED;
+    flags ID_PROTECTED|ID_OPTIONAL;
     prototype;
   {}
 
-  /*! @decl optional int _sizeof()
+  /*! @decl optional protected int _sizeof()
    *!
    *! Returns the total number of items in the data set according to
    *! this iterator. If the size of the data set is unlimited or
@@ -200,12 +129,16 @@ PIKECLASS Iterator
     prototype;
   {}
 
-  /*! @decl optional void _random(function random_string, function random)
+  /*! @decl optional protected void _random(function random_string, @
+   *!                                       function random)
    *!
    *! If this function is defined then it sets the iterator to point
-   *! to a random item in the accessible set. The random distribution
-   *! should be rectangular within that set, and the pseudorandom
-   *! sequence provided by @[random] should be used.
+   *! to before a random item in the accessible set. The random
+   *! distribution should be rectangular within that set, and the
+   *! pseudorandom sequence provided by @[random] should be used.
+   *!
+   *! @seealso
+   *!   @[random()]
    */
   PIKEFUN void _random(function rnd_str, function rnd)
     flags ID_PROTECTED|ID_OPTIONAL;
@@ -215,7 +148,7 @@ PIKECLASS Iterator
   /*! @decl optional int(0..1) first()
    *!
    *! If this function is defined then it resets the iterator to point
-   *! to the first item.
+   *! to before the first item.
    *!
    *! @returns
    *!   Returns zero if there are no items at all in
@@ -232,24 +165,25 @@ PIKECLASS Iterator
     prototype;
   {}
 
-  /*! @decl int _iterator_next()
+  /*! @decl protected mixed _iterator_next()
    *!
-   *! If this function is defined it should advance the iterator one
-   *! step, just like @expr{@[`+=](1)@} would do.
-   *!
-   *! @note
-   *!   This is the preferred way to advance the iterator, since it
-   *!   reduces the overhead.
+   *!   This function advances the iterator one step.
    *!
    *! @note
-   *!   This function was optional in Pike 7.6 and earlier.
+   *!   This is the only function that is required in the Pike 9.0
+   *!   and later iterator API. Presence of this function indicates
+   *!   that the iterator implements the Pike 9.0 API.
    *!
    *! @returns
-   *!   Returns @tt{1@} if it succeeded in advancing, and
-   *!   @tt{0@} (zero) if it has reached the end of the iterator.
+   *!   Returns @expr{UNDEFINED@} if there are no more values in the set
+   *!   of elements. It may return any other value if it succeeded in
+   *!   advancing to a new element. The returned value is used as the
+   *!   result for @[_iterator_index()] and @[_iterator_value()] if
+   *!   they are not implemented.
    *!
    *! @seealso
-   *!   @[`+], @[`+=], @[`-]
+   *!   @[_iterator_index()], @[_iterator_value()], @[lfun::_iterator_next()],
+   *!   @[iterator_next()]
    */
   PIKEFUN int(0..1) _iterator_next()
     flags ID_PROTECTED;
@@ -274,16 +208,16 @@ PIKECLASS Iterator
 /*! @class CompatIterator
  *!
  *! Wrapper for iterators implementing the Pike 8.0 and
- *! earlier iterator API. Used transparantly by
- *! @[predef::get_iterator()] to provide an iterator
- *! suitable for @[foreach()].
+ *! earlier iterator API (@[8.0::Iterator]). Used transparently by
+ *! @[predef::get_iterator()] to provide an iterator suitable
+ *! for @[foreach()].
  *!
  *! @note
  *!   This class provides only those functions that are required
  *!   by the iterator API. It does not proxy any other functions.
  *!
  *! @seealso
- *!   @[get_iterator()]
+ *!   @[get_iterator()], @[8.0::Iterator]
  */
 PIKECLASS CompatIterator
 {
