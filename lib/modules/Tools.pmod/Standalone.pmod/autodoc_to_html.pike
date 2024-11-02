@@ -444,11 +444,19 @@ string layout_matrix( array(array(string)) rows ) {
 
   foreach(rows, array row) {
     ret += "<tr>";
-    if(sizeof(row)<dim)
-      ret += "<td>" + row[..sizeof(row)-2]*"</td><td>" +
-	"</td><td colspan='"+ (dim-sizeof(row)) + "'>" + row[-1] + "</td>";
-    else
+    if(sizeof(row)<dim) {
+      if (sizeof(row) == 1) {
+        // Span the entire row with a single column.
+        ret +=
+          "<td colspan='" + dim + "'>" + row[0] + "</td>";
+      } else if (sizeof(row)) {
+        // The last column spans all of the remaining columns.
+        ret += "<td>" + row[..sizeof(row)-2]*"</td><td>" +
+          "</td><td colspan='"+ (dim-sizeof(row)) + "'>" + row[-1] + "</td>";
+      }
+    } else {
       ret += "<td>" + row*"</td><td>" + "</td>";
+    }
     ret += "</tr>\n";
   }
 
