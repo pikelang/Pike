@@ -324,13 +324,8 @@ static int va_get_args_2(struct svalue *s,
       break;
 
     case 'l':
-      if (TYPEOF(*s) == T_INT) {
-        *cast_arg(ptr, INT64 *)=s->u.integer;
+      if (int64_from_svalue(cast_arg(ptr, INT64 *), s))
 	break;
-      } else if (is_bignum_object_in_svalue(s) &&
-                 int64_from_bignum(cast_arg(ptr, INT64 *), s->u.object) == 1) {
-        break;
-      }
       /* FIXME: Error reporting for bignum objects. */
       goto type_err;
 

@@ -62,3 +62,16 @@ PMOD_EXPORT int compare_bignums(struct object *a, struct object *b)
   if (!is_bignum_object(b)) Pike_error("Second object is not a bignum.\n");
   return low_compare_bignums((MP_INT *)a->storage, (MP_INT *)b->storage);
 }
+
+PMOD_EXPORT int int64_from_svalue(INT64 *i, struct svalue *sv)
+{
+  if (TYPEOF(*sv) == PIKE_T_INT) {
+    *i = sv->u.integer;
+    return 1;
+  } else if (is_bignum_object_in_svalue(sv))
+    return int64_from_bignum(i, sv->u.object);
+  else {
+    *i = 0;
+    return 0;
+  }
+}
