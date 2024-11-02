@@ -383,6 +383,16 @@ o Protocols.HTTP.Server
 
   Header names in "extra_heads" will not have their case modified.
 
+o SSL.File: Propagate fatal alerts to close and write callbacks.
+
+  SSL did not call the close_callback on SSL.File()s that connect outgoing
+  and abort the handshake by sending fatal alerts to the server.
+
+  Fatal alerts generated locally (ie due to broken data from peer)
+  are now signalled on the close and write callbacks with errno set
+  to ECONNABORTED and fatal alerts received from the peer have errno
+  set to ECONNRESET.
+
 o Standards.JSON and Standards.JSON5
 
   encode() now allows other threads to run every now and then.
@@ -394,6 +404,13 @@ o ADT.OrderedMapping
 
 Incompatible changes
 --------------------
+
+o Compatibility code for Pike 7.6 and earlier removed.
+
+o Require GMP 4.1 or later.
+
+  Support for compiling Pike without bignums or with ancient
+  GMP has been removed.
 
 o As mentioned above; variables that may be set to 0 or UNDEFINED
   now need to be declared accordingly. Note that this is not needed
@@ -429,6 +446,18 @@ o Sql.Sql is no longer a wrapper class, but a function.
   The wrapper class has been obsoleted by introduction of the
   new base class __builtin.Sql.Connection. Note that it is
   still possible to use Sql.Sql as the type of connection objects.
+
+o Stdio.File has had some name space cleanups.
+
+  Multiple symbols in Stdio.File are now protected:
+
+    * {in,out}buffer
+
+    * ___{read,write,close,read_oob,write_oob,fs_event}_callback
+
+    * ___id
+
+  Moved the {read,write}_callback_t types to the Stdio module proper.
 
 o Stdio.Port now has a default id of itself (as documented).
 
@@ -521,6 +550,9 @@ o __builtin.Sql
   Generic base classes for Sql API modules.
 
 o Filesystem.Zip
+
+  New filesystem class with support for operation on Zip files.
+
 o Function.bind()
 
   Partially evaluate a function. Similar to Function.curry, but with
