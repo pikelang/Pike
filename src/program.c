@@ -7257,6 +7257,7 @@ PMOD_EXPORT int add_typed_constant(struct pike_string *name,
        )
     {
       yyerror("Pass2: Constant disappeared!");
+      free_type(type);
     }else{
       struct reference *ref = PTR_FROM_INT(Pike_compiler->new_program, n);
       struct identifier *id = ID_FROM_PTR(Pike_compiler->new_program, ref);
