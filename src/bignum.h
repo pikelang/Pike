@@ -364,6 +364,7 @@ PMOD_EXPORT int low_int64_from_bignum(INT64 *i, struct object *bignum);
 
 /* Returns nonzero iff conversion is successful. */
 PMOD_EXPORT int int64_from_bignum(INT64 *i, struct object *bignum);
+PMOD_EXPORT int int64_from_svalue(INT64 *i, struct svalue *sv);
 
 PMOD_EXPORT void reduce_stack_top_bignum(void);
 

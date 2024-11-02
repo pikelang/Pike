@@ -5,7 +5,7 @@
 #error At least 7.8 is required.
 #endif
 
-#pike __REAL_VERSION__
+#pike 9.0
 
 #define TOSTR(X) #X
 #define DEFINETOSTR(X) TOSTR(X)

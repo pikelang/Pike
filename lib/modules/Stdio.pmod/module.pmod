@@ -654,8 +654,12 @@ class File
   //! fact)
   //!
   //! @returns
-  //! This function returns 1 or the remaining @[data] for success, 0
-  //! otherwise.
+  //! This function returns @expr{1@} or the remaining @[data] for success,
+  //! @expr{0@} otherwise.
+  //!
+  //! @note
+  //!   To use nonblocking mode, @[open_socket()] and @[set_nonblocking()]
+  //!   (or equivalent) need to be called before this function.
   //!
   //! @note
   //!
@@ -668,7 +672,8 @@ class File
   //! or not.
   //!
   //! @seealso
-  //! @[query_address()], @[async_connect()], @[connect_unix()]
+  //!   @[query_address()], @[async_connect()], @[connect_unix()],
+  //!   @[open_socket()], @[::connect()]
   //!
   variant int connect(string(7bit) host, int(0..)|string(7bit) port)
   {

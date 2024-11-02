@@ -5516,6 +5516,8 @@ static void file_connect_unix( INT32 args )
  *!   to @tt{EWOULDBLOCK@} or @tt{WSAEWOULDBLOCK@}. This should not be regarded
  *!   as a connection failure.
  *!
+ *! @seealso
+ *!   @[open_socket()]
  */
 static void file_connect(INT32 args)
 {
