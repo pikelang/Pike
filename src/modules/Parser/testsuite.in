@@ -1325,6 +1325,8 @@ test_any([[
 dnl - Parser.RCS
 
 test_do(add_constant("rcsraw", Stdio.read_file("SRCDIR/testdata/COPYRIGHT,v")))
+
+// First: Test the low-level api.
 test_do(add_constant("rcsobj", Parser.RCS("SRCDIR/testdata/COPYRIGHT,v", 0)))
 test_do(add_constant("rcsarr", rcsobj->parse_admin_section(rcsraw)))
 test_eq(sizeof(rcsarr), 66);
@@ -1339,6 +1341,14 @@ test_do([[
   add_constant("rcsrevs", rcsrevs);
 ]])
 test_eq(sizeof(rcsrevs), 13)
+
+// Second: Test the high-level api.
+test_do(add_constant("rcsobj", Parser.RCS("SRCDIR/testdata/COPYRIGHT,v")))
+test_eq(rcsobj->head, "1.13")
+test_true(rcsobj->get_contents_for_revision("1.13"))
+test_equal(sizeof(rcsobj->get_contents_for_revision("1.13")||""), 1112)
+test_true(rcsobj->get_contents_for_revision("1.1"))
+test_equal(sizeof(rcsobj->get_contents_for_revision("1.1")||""), 392)
 
 test_do(add_constant("rcsrevs"))
 test_do(add_constant("rcsarr"))
