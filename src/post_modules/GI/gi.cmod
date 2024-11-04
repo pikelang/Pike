@@ -492,8 +492,7 @@ static void push_gi_argument(GIArgument *arg, GITypeInfo *info)
       info2 = g_type_info_get_interface(info);
       SET_ONERROR(onerror, g_base_info_unref, info2);
       push_gi_argument_interface(arg, info2);
-      UNSET_ONERROR(onerror);
-      g_base_info_unref(info2);
+      CALL_AND_UNSET_ONERROR(onerror);
     }
     break;
 
@@ -690,8 +689,7 @@ static void get_gi_argument_type(struct svalue *s, GIArgument *arg,
           arr = g_array_sized_new(g_type_info_is_zero_terminated(ti),
                                   FALSE, sizeof(guint8), s->u.string->len);
           g_array_insert_vals(arr, 0, STR0(s->u.string), s->u.string->len);
-          UNSET_ONERROR(onerror);
-          g_base_info_unref(itemti);
+          CALL_AND_UNSET_ONERROR(onerror);
           arg->v_pointer = arr->data;
           break;
         } else
@@ -712,8 +710,7 @@ static void get_gi_argument_type(struct svalue *s, GIArgument *arg,
         get_gi_argument_type(&ITEM(s->u.array)[i], &a, itemti);
         g_array_insert_val(arr, i, a);
       }
-      UNSET_ONERROR(onerror);
-      g_base_info_unref(itemti);
+      CALL_AND_UNSET_ONERROR(onerror);
       arg->v_pointer = arr->data;
     }
     break;
@@ -725,8 +722,7 @@ static void get_gi_argument_type(struct svalue *s, GIArgument *arg,
       info = g_type_info_get_interface(ti);
       SET_ONERROR(onerror, g_base_info_unref, info);
       get_gi_argument_interface(s, arg, info);
-      UNSET_ONERROR(onerror);
-      g_base_info_unref(info);
+      CALL_AND_UNSET_ONERROR(onerror);
     }
     break;
 
@@ -927,8 +923,7 @@ PIKECLASS FunctionInfo
         }
         i++;
       }
-      UNSET_ONERROR(onerror2);
-      g_base_info_unref(ai);
+      CALL_AND_UNSET_ONERROR(onerror2);
     }
     if (i<args)
       Pike_error("Too many arguments to function %s\n",
@@ -937,8 +932,7 @@ PIKECLASS FunctionInfo
                                 out_args, num_out_args, &retval, &error);
     if (num_out_args > 0)
       out_arg_0 = out_args[0];
-    UNSET_ONERROR(onerror);
-    free(in_args);
+    CALL_AND_UNSET_ONERROR(onerror);
     if(error)
       throw_gerror(error);
     if(!ok)
@@ -949,18 +943,15 @@ PIKECLASS FunctionInfo
     if(num_out_args > 0 && g_type_info_get_tag(ti) == GI_TYPE_TAG_VOID) {
       GIArgInfo *ai;
       GITypeInfo ati;
-      UNSET_ONERROR(onerror);
-      g_base_info_unref(ti);
+      CALL_AND_UNSET_ONERROR(onerror);
       ai = g_callable_info_get_arg(THIS->info, out_arg_0_num);
       SET_ONERROR(onerror, g_base_info_unref, ai);
       g_arg_info_load_type(ai, &ati);
       push_gi_argument(&out_arg_0, &ati);
-      UNSET_ONERROR(onerror);
-      g_base_info_unref(ai);
+      CALL_AND_UNSET_ONERROR(onerror);
     } else {
       push_gi_argument(&retval, ti);
-      UNSET_ONERROR(onerror);
-      g_base_info_unref(ti);
+      CALL_AND_UNSET_ONERROR(onerror);
     }
   }
 }
@@ -1010,8 +1001,7 @@ PIKECLASS FieldInfo
     if (!g_field_info_get_field((GIFieldInfo *)THIS->info, that->box, &value))
       Pike_error("Field can not be read\n");
     push_gi_argument(&value, ti);
-    UNSET_ONERROR(onerror);
-    g_base_info_unref(ti);
+    CALL_AND_UNSET_ONERROR(onerror);
     stack_pop_n_elems_keep_top(args);
   }
 
@@ -1037,8 +1027,7 @@ PIKECLASS FieldInfo
     get_gi_argument_type(value, &val, ti);
     if (!g_field_info_set_field((GIFieldInfo *)THIS->info, that->box, &val))
       Pike_error("Field can not be written\n");
-    UNSET_ONERROR(onerror);
-    g_base_info_unref(ti);
+    CALL_AND_UNSET_ONERROR(onerror);
     stack_pop_n_elems_keep_top(args);
   }
 }
@@ -1070,8 +1059,7 @@ PIKECLASS StructInfo
         (GIBaseInfo *)g_struct_info_get_method((GIStructInfo *)THIS->info, i);
       SET_ONERROR(onerror2, g_base_info_unref, info);
       push_gi_info(info);
-      UNSET_ONERROR(onerror2);
-      g_base_info_unref(info);
+      CALL_AND_UNSET_ONERROR(onerror2);
       array_set_index_no_free(arr, i, Pike_sp-1);
       pop_stack();
     }
@@ -1095,8 +1083,7 @@ PIKECLASS StructInfo
         (GIBaseInfo *)g_struct_info_get_field((GIStructInfo *)THIS->info, i);
       SET_ONERROR(onerror2, g_base_info_unref, info);
       push_gi_info(info);
-      UNSET_ONERROR(onerror2);
-      g_base_info_unref(info);
+      CALL_AND_UNSET_ONERROR(onerror2);
       array_set_index_no_free(arr, i, Pike_sp-1);
       pop_stack();
     }
@@ -1151,7 +1138,7 @@ PIKECLASS EnumInfo
         (GIBaseInfo *)g_enum_info_get_value((GIEnumInfo *)THIS->info, i);
       SET_ONERROR(onerror2, g_base_info_unref, info);
       push_gi_info(info);
-      UNSET_ONERROR(onerror2);
+      CALL_AND_UNSET_ONERROR(onerror2);
       g_base_info_unref(info);
       array_set_index_no_free(arr, i, Pike_sp-1);
       pop_stack();
@@ -1188,8 +1175,7 @@ PIKECLASS InterfaceInfo
         (GIBaseInfo *)g_interface_info_get_method((GIInterfaceInfo *)THIS->info, i);
       SET_ONERROR(onerror2, g_base_info_unref, info);
       push_gi_info(info);
-      UNSET_ONERROR(onerror2);
-      g_base_info_unref(info);
+      CALL_AND_UNSET_ONERROR(onerror2);
       array_set_index_no_free(arr, i, Pike_sp-1);
       pop_stack();
     }
@@ -1225,8 +1211,7 @@ PIKECLASS ObjectInfo
         (GIBaseInfo *)g_object_info_get_method((GIObjectInfo *)THIS->info, i);
       SET_ONERROR(onerror2, g_base_info_unref, info);
       push_gi_info(info);
-      UNSET_ONERROR(onerror2);
-      g_base_info_unref(info);
+      CALL_AND_UNSET_ONERROR(onerror2);
       array_set_index_no_free(arr, i, Pike_sp-1);
       pop_stack();
     }
@@ -1250,8 +1235,7 @@ PIKECLASS ObjectInfo
         (GIBaseInfo *)g_object_info_get_interface((GIObjectInfo *)THIS->info, i);
       SET_ONERROR(onerror2, g_base_info_unref, info);
       push_gi_info(info);
-      UNSET_ONERROR(onerror2);
-      g_base_info_unref(info);
+      CALL_AND_UNSET_ONERROR(onerror2);
       array_set_index_no_free(arr, i, Pike_sp-1);
       pop_stack();
     }
@@ -1268,14 +1252,13 @@ PIKECLASS ObjectInfo
       (GIBaseInfo *)g_object_info_get_parent((GIObjectInfo *)THIS->info);
     if (info == NULL) {
       pop_n_elems(args);
-      push_int(0);
+      push_undefined();
       return;
     }
     SET_ONERROR(onerror, g_base_info_unref, info);
     pop_n_elems(args);
     push_gi_info(info);
-    UNSET_ONERROR(onerror);
-    g_base_info_unref(info);
+    CALL_AND_UNSET_ONERROR(onerror);
   }
 }
 
@@ -1316,8 +1299,7 @@ PIKECLASS ConstantInfo
     push_gi_argument(&arg, info);
     UNSET_ONERROR(onerror2);
     g_constant_info_free_value(ctx.info, &arg);
-    UNSET_ONERROR(onerror);
-    g_base_info_unref(info);
+    CALL_AND_UNSET_ONERROR(onerror);
     if (args)
       stack_pop_n_elems_keep_top(args);
   }
@@ -1664,8 +1646,7 @@ static void build_parameters_from_mapping(GType gt, struct mapping *m,
       --free_space;
       count++;
     }
-  UNSET_ONERROR(onerror);
-  g_type_class_unref(class);
+  CALL_AND_UNSET_ONERROR(onerror);
   parms->nparam = count;
 }
 
@@ -1741,8 +1722,7 @@ static GObject *make_gobject_from_props(struct object *info, struct mapping *pro
   if (obj == NULL)
     Pike_error("Failed to create GObject\n");
   if (free_params) {
-    UNSET_ONERROR(onerror);
-    low_free_gparams(&params);
+    CALL_AND_UNSET_ONERROR(onerror);
   }
   if (G_IS_INITIALLY_UNOWNED(obj))
     g_object_ref_sink(obj);
@@ -1799,8 +1779,7 @@ PIKECLASS Repository
         f_utf8_to_string(1);
         count++;
     }
-    UNSET_ONERROR(onerror);
-    free_glist_full_free(versions);
+    CALL_AND_UNSET_ONERROR(onerror);
     f_aggregate(count);
   }
 
@@ -1817,8 +1796,7 @@ PIKECLASS Repository
       SET_ONERROR(onerror, g_base_info_unref, info);
       pop_n_elems(args);
       push_gi_info(info);
-      UNSET_ONERROR(onerror);
-      g_base_info_unref(info);
+      CALL_AND_UNSET_ONERROR(onerror);
     } else {
       pop_n_elems(args);
       push_int(0);
@@ -1844,8 +1822,7 @@ PIKECLASS Repository
                                     (gchar *)STR0(namespace), i);
       SET_ONERROR(onerror2, g_base_info_unref, info);
       push_gi_info(info);
-      UNSET_ONERROR(onerror2);
-      g_base_info_unref(info);
+      CALL_AND_UNSET_ONERROR(onerror2);
       array_set_index_no_free(arr, i, Pike_sp-1);
       pop_stack();
     }
