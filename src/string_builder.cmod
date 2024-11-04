@@ -1017,13 +1017,21 @@ static INT64 pike_va_int(VA_LIST_PTR args, int flags)
  *   'e'	Insert double.
  *   'f'	Insert double.
  *   'g'	Insert double.
+ *   'i'	RESERVED: Same as 'd'.
+ *   'n'	RESERVED: Number of characters so written far stored in
+ *                        argument, default int * (width modifiers apply).
+ *   'm'	RESERVED: Insert strerror(errno) (GLIBC et al).
  *   'o'	Insert octal integer.
  *   'p'	Insert pointer / Pike extension-prefix.
  *   's'	Insert string.
  *   'u'	Insert unsigned decimal integer.
  *   'x'	Insert lower-case hexadecimal integer.
+ *   'A'	RESERVED: Same as 'a' but upper case (C99).
+ *   'C'	RESERVED: Same as 'lc', avoid (SUSv2).
  *   'E'	Insert double.
+ *   'F'	RESERVED: Same as 'f' but upper case.
  *   'G'	Insert double.
+ *   'S'	RESERVED: Same as 'ls', avoid (SUSv2).
  *   'X'	Insert upper-case hexadecimal integer.
  *
  * Format modifiers supported by string_builder_{v,}sprintf():
@@ -1039,6 +1047,9 @@ static INT64 pike_va_int(VA_LIST_PTR args, int flags)
  *   't'	Pointer-width signed input (ptrdiff_t).
  *   'w'	Wide input (same as 'l', but only for strings).
  *   'z'	Pointer-width unsigned input (size_t).
+ *   'I'	RESERVED: Use locale representation of integers (GLIBC)
+ *   'L'	RESERVED: Long double (C99).
+ *   'Z'	RESERVED: Same as 'z', avoid.
  *
  * For integers the width modifiers are:
  *
@@ -1048,7 +1059,11 @@ static INT64 pike_va_int(VA_LIST_PTR args, int flags)
  *      	or 64-bit).
  *   'll'	64-bit.
  *   't'	ptrdiff_t.
+ *   'q'	RESERVED: Same as 'll', avoid (BSD)
  *   'z'	size_t.
+ *   'I'	RESERVED: Use locale representation of integers (GLIBC)
+ *   'L'	RESERVED: Long double (C99).
+ *   'Z'	RESERVED: Same as 'z', avoid.
  *
  * Extended formats supported by string_builder_{v,}sprintf()
  * these accept 'p' as an immediate prefix in order to keep gcc happy:
@@ -1069,6 +1084,11 @@ static INT64 pike_va_int(VA_LIST_PTR args, int flags)
  * a raw pointer immediately followed by a literal A/m/M/O/P/q/S/T/x.
  * i.e. '%pxO' prints a raw pointer followed by the letter 'O',
  * '%pxx' prints a raw pointer followed by the letter 'x'.
+ *
+ * The formats marked as RESERVED are currently not implemented and/or
+ * may conflict with the Pike extended formats above.
+ *
+ * Currently unreserved alphabetic characters: jkrvyBDHJKQRUVWY
  */
 
 /* Values used internally in string_builder_vsprintf() */
