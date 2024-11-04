@@ -1393,13 +1393,13 @@ static void push_gvalue(const GValue *v)
     push_int(g_value_get_int(v));
     break;
   case G_TYPE_UINT:
-    push_int(g_value_get_uint(v));
+    push_int64(g_value_get_uint(v));
     break;
   case G_TYPE_LONG:
-    push_int(g_value_get_long(v));
+    push_int64(g_value_get_long(v));
     break;
   case G_TYPE_ULONG:
-    push_int(g_value_get_ulong(v));
+    push_int64(g_value_get_ulong(v));
     break;
   case G_TYPE_INT64:
     push_int64(g_value_get_int64(v));
