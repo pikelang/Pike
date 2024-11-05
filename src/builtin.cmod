@@ -2503,14 +2503,15 @@ PIKEFUN void m_add(multiset|object l, mixed val)
   pop_n_elems(args);
 }
 
-/*! @decl int(0..1) iterator_next(object iter)
+/*! @decl mixed iterator_next(Iterator iter)
  *!
  *! Advance @[iter] one step.
  *!
  *! @seealso
+ *!   @[iterator_prev()], @[lfun::_iterator_next()],
  *!   @[get_iterator()]
  */
-PIKEFUN int(0..1) iterator_next(object iter)
+PIKEFUN mixed iterator_next(object iter)
   efun;
   optflags OPT_SIDE_EFFECT;
   rawtype tFuncArg(tSetvar(0, tObj), tFindLFun(tVar(0), "_iterator_next"));
@@ -2520,11 +2521,30 @@ PIKEFUN int(0..1) iterator_next(object iter)
   pop_stack();
 }
 
-/*! @decl mixed iterator_value(object iter)
+/*! @decl mixed iterator_prev(Iterator iter)
+ *!
+ *! Advance @[iter] one step backward (if supported).
+ *!
+ *! @seealso
+ *!   @[iterator_next()], @[lfun::_iterator_prev()],
+ *!   @[get_iterator()]
+ */
+PIKEFUN mixed iterator_prev(object iter)
+  efun;
+  optflags OPT_SIDE_EFFECT;
+  rawtype tFuncArg(tSetvar(0, tObj), tFindLFun(tVar(0), "_iterator_prev"));
+{
+  apply_lfun(iter, LFUN__ITERATOR_NEXT_FUN, args - 1);
+  stack_swap();
+  pop_stack();
+}
+
+/*! @decl mixed iterator_value(Iterator iter)
  *!
  *! Get the current value for @[iter].
  *!
  *! @seealso
+ *!   @[iterator_index()], @[lfun::_iterator_value()],
  *!   @[get_iterator()]
  */
 PIKEFUN mixed iterator_value(object iter)
@@ -2537,11 +2557,12 @@ PIKEFUN mixed iterator_value(object iter)
   pop_stack();
 }
 
-/*! @decl mixed iterator_index(object iter)
+/*! @decl mixed iterator_index(Iterator iter)
  *!
  *! Get the current index for @[iter].
  *!
  *! @seealso
+ *!   @[iterator_value()], @[lfun::_iterator_index()],
  *!   @[get_iterator()]
  */
 PIKEFUN mixed iterator_index(object iter)
