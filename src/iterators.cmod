@@ -182,11 +182,31 @@ PIKECLASS Iterator
    *!   they are not implemented.
    *!
    *! @seealso
-   *!   @[_iterator_index()], @[_iterator_value()], @[lfun::_iterator_next()],
-   *!   @[iterator_next()]
+   *!   @[_iterator_prev()], @[lfun::_iterator_next()], @[iterator_next()],
+   *!   @[_iterator_index()], @[_iterator_value()]
    */
-  PIKEFUN int(0..1) _iterator_next()
+  PIKEFUN mixed _iterator_next()
     flags ID_PROTECTED;
+    prototype;
+  {}
+
+  /*! @decl optional protected mixed _iterator_prev()
+   *!
+   *!   This function advances the iterator one step backwards.
+   *!
+   *! @returns
+   *!   Returns @expr{UNDEFINED@} if there are no more values in the set
+   *!   of elements. It may return any other value if it succeeded in
+   *!   advancing to the previous element. The returned value may be used
+   *!   as the result for @[_iterator_index()] and @[_iterator_value()] if
+   *!   they are not implemented.
+   *!
+   *! @seealso
+   *!   @[_iterator_next()], @[lfun::_iterator_prev()], @[iterator_prev()],
+   *!   @[_iterator_index()], @[_iterator_value()]
+   */
+  PIKEFUN mixed _iterator_prev()
+    flags ID_PROTECTED|ID_OPTIONAL;
     prototype;
   {}
 

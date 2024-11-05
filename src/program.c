@@ -219,6 +219,7 @@ const char *const lfun_names[]  = {
   "\0_iterator_next\0next",
   "\0_iterator_index\0index",
   "\0_iterator_value\0value",
+  "\0_iterator_prev\0prev",
   0,
   0,		/* End marker. */
 };
@@ -319,6 +320,7 @@ static const char *const raw_lfun_types[] = {
   tFuncV(tNone, tUnknown, tMix),		/* "_iterator_next", */
   tFuncV(tNone, tUnknown, tMix),		/* "_iterator_index", */
   tFuncV(tNone, tUnknown, tMix),		/* "_iterator_value", */
+  tFuncV(tNone, tUnknown, tMix),		/* "_iterator_prev", */
   0,
   0,		/* End marker. */
 };
@@ -1609,14 +1611,19 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!   there is no @[lfun::_iterator_index()] and/or no
  *!   @[lfun::_iterator_value()].
  *!
+ *! @note
+ *!   This is the only function that is required by the iterator API.
+ *!
  *! @seealso
+ *!   @[predef::iterator_next()], @[lfun::_iterator_prev()],
  *!   @[lfun::_iterator_index()], @[lfun::_iterator_value()]
  */
 
-/*! @decl mixed lfun::_iterator_index()
+/*! @decl optional mixed lfun::_iterator_index()
  *!
  *!   Called in @[Iterator] objects by foreach (optional).
  *!
+ *! @returns
  *!   Returns the current index for an iterator, or @[UNDEFINED]
  *!   if the iterator doesn't point to any item. If this
  *!   function is not present, the return value from
@@ -1626,15 +1633,46 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!   position in the data set, counting from @expr{0@} (zero).
  *!
  *! @seealso
- *!   @[lfun::_iterator_next()], @[lfun::_iterator_value()]
+ *!   @[predef::iterator_index()], @[lfun::_iterator_next()],
+ *!   @[lfun::_iterator_prev()], @[lfun::_iterator_value()]
  */
 
-/*! @decl mixed lfun::_iterator_value()
+/*! @decl optional mixed lfun::_iterator_value()
  *!
  *!   Called in @[Iterator] objects by foreach (optional).
  *!
+ *! @returns
  *!   Returns the current value for an iterator, or @[UNDEFINED]
  *!   if the iterator doesn't point to any item.
+ *!
+ *! @seealso
+ *!   @[predef::iterator_value()], @[lfun::_iterator_next()],
+ *!   @[lfun::_iterator_prev()], @[lfun::_iterator_index()]
+ */
+
+/*! @decl optional mixed lfun::_iterator_prev()
+ *!
+ *!   Step an iterator backwards.
+ *!
+ *!   Calling this function after it or @[_iterator_next()] it has
+ *!   returned @[UNDEFINED] will typically cause it to restart the
+ *!   iteration with the last element (ie the start and end sentinel
+ *!   values are the same).
+ *!
+ *! @returns
+ *!   Returns @[UNDEFINED] if there are no more elements in the
+ *!   iterator. Otherwise it may return any other value, which
+ *!   for convenience may be used as index and/or value in case
+ *!   there is no @[lfun::_iterator_index()] and/or no
+ *!   @[lfun::_iterator_value()].
+ *!
+ *! @note
+ *!   This function is an optional part of the iterator API
+ *!   and is not called directly by the runtime.
+ *!
+ *! @seealso
+ *!   @[predef::iterator_prev()], @[lfun::_iterator_next()],
+ *!   @[lfun::_iterator_value()], @[lfun::_iterator_index()]
  */
 
 /*! @decl mixed lfun::_atomic_get_set(mixed index, mixed value)
