@@ -2873,6 +2873,32 @@ struct program *parent_compilation(int level)
   return p->new_program;
 }
 
+static struct callback_list program_id_callbacks;
+
+/**
+ *   Add a function to be called when id_to_program() wants to resolve
+ *   an unknown program id.
+ *
+ * @param func
+ *   Function to call. It will be called with the struct callback *
+ *   representing itself as the first argument, the state as the
+ *   second, and the program id casted to void * as the third
+ *   (cast it to ptrdiff_t to retrieve the value).
+ *
+ * @param state
+ *   State to associate with func().
+ *
+ *   To unregister the callback, call remove_callback() with
+ *   the struct callback * returned by this function, or the
+ *   argument passed to func().
+ */
+PMOD_EXPORT struct callback *add_program_id_callback(callback_func func,
+                                                     void *state)
+{
+  return add_to_callback(&program_id_callbacks, func, state,
+                         (callback_func)NULL);
+}
+
 #define ID_TO_PROGRAM_CACHE_SIZE 512
 struct program *id_to_program_cache[ID_TO_PROGRAM_CACHE_SIZE];
 
@@ -2944,24 +2970,29 @@ struct program *low_id_to_program(INT32 id, int inhibit_module_load)
 	}
 	break;
       }
-    }
 
-    if (module && get_master()) {
-      /* fprintf(stderr, "%s... ", module); */
-      push_text(module);
-      SAFE_APPLY_MASTER("resolv", 1);
-      pop_stack();
+      if (module && get_master()) {
+        /* fprintf(stderr, "%s... ", module); */
+        push_text(module);
+        SAFE_APPLY_MASTER("resolv", 1);
+        pop_stack();
+      } else if (program_id_callbacks.callbacks) {
+        low_call_callback(&program_id_callbacks, (void *)(ptrdiff_t)id);
+      } else {
+        END_CYCLIC();
+        return NULL;
+      }
 
       /* Try again... */
       for(p=first_program;p;p=p->next)
       {
-	if(id==p->id)
-	{
-	  id_to_program_cache[h]=p;
-	  /* fprintf(stderr, "found: %p\n", p); */
-	  END_CYCLIC();
-	  return p;
-	}
+        if(id==p->id)
+        {
+          id_to_program_cache[h]=p;
+          /* fprintf(stderr, "found: %p\n", p); */
+          END_CYCLIC();
+          return p;
+        }
       }
     }
     END_CYCLIC();
