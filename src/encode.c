@@ -3850,7 +3850,7 @@ static void decode_value2(struct decode_data *data)
 	  break;
 
 	case 5: {		/* Forward reference for new-style encoding. */
-	  struct program *p = low_allocate_program();
+          struct program *p = low_allocate_program(0);
           ETRACE({
 	      DECODE_WERR(".entry   program, 5");
 	    });

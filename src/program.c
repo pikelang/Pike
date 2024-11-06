@@ -2872,6 +2872,32 @@ struct program *parent_compilation(int level)
   return p->new_program;
 }
 
+static struct callback_list program_id_callbacks;
+
+/**
+ *   Add a function to be called when id_to_program() wants to resolve
+ *   an unknown program id.
+ *
+ * @param func
+ *   Function to call. It will be called with the struct callback *
+ *   representing itself as the first argument, the state as the
+ *   second, and the program id casted to void * as the third
+ *   (cast it to ptrdiff_t to retrieve the value).
+ *
+ * @param state
+ *   State to associate with func().
+ *
+ *   To unregister the callback, call remove_callback() with
+ *   the struct callback * returned by this function, or the
+ *   argument passed to func().
+ */
+PMOD_EXPORT struct callback *add_program_id_callback(callback_func func,
+                                                     void *state)
+{
+  return add_to_callback(&program_id_callbacks, func, state,
+                         (callback_func)NULL);
+}
+
 #define ID_TO_PROGRAM_CACHE_SIZE 512
 struct program *id_to_program_cache[ID_TO_PROGRAM_CACHE_SIZE];
 
@@ -2943,24 +2969,29 @@ struct program *low_id_to_program(INT32 id, int inhibit_module_load)
 	}
 	break;
       }
-    }
 
-    if (module && get_master()) {
-      /* fprintf(stderr, "%s... ", module); */
-      push_text(module);
-      SAFE_APPLY_MASTER("resolv", 1);
-      pop_stack();
+      if (module && get_master()) {
+        /* fprintf(stderr, "%s... ", module); */
+        push_text(module);
+        SAFE_APPLY_MASTER("resolv", 1);
+        pop_stack();
+      } else if (program_id_callbacks.callbacks) {
+        low_call_callback(&program_id_callbacks, (void *)(ptrdiff_t)id);
+      } else {
+        END_CYCLIC();
+        return NULL;
+      }
 
       /* Try again... */
       for(p=first_program;p;p=p->next)
       {
-	if(id==p->id)
-	{
-	  id_to_program_cache[h]=p;
-	  /* fprintf(stderr, "found: %p\n", p); */
-	  END_CYCLIC();
-	  return p;
-	}
+        if(id==p->id)
+        {
+          id_to_program_cache[h]=p;
+          /* fprintf(stderr, "found: %p\n", p); */
+          END_CYCLIC();
+          return p;
+        }
       }
     }
     END_CYCLIC();
@@ -3693,7 +3724,17 @@ void fixate_program(void)
 #endif
 }
 
-struct program *low_allocate_program(void)
+/**
+ *   Allocate a program id number.
+ *
+ *   Typically used in conjunction with add_program_id_callback().
+ */
+PMOD_EXPORT int allocate_program_id(void)
+{
+  return ++current_program_id;
+}
+
+PMOD_EXPORT struct program *low_allocate_program(INT32 id)
 {
   struct program *p=alloc_program();
   memset(p, 0, sizeof(struct program));
@@ -3702,7 +3743,7 @@ struct program *low_allocate_program(void)
   p->alignment_needed=1;
 
   GC_ALLOC(p);
-  p->id=++current_program_id;
+  p->id = id ? id : ++current_program_id;
   INIT_PIKE_MEMOBJ(p, T_PROGRAM);
 
   DOUBLELINK(first_program, p);
@@ -3719,11 +3760,11 @@ struct program *low_allocate_program(void)
 /**
  * Start building a new program
  */
-void low_start_new_program(struct program *p,
-			   int pass,
-			   struct pike_string *name,
-			   int flags,
-			   int *idp)
+PMOD_EXPORT void low_start_new_program(struct program *p,
+                                       int pass,
+                                       struct pike_string *name,
+                                       int flags,
+                                       int *idp)
 {
   struct compilation *c = THIS_COMPILATION;
   int id=0;
@@ -3742,7 +3783,7 @@ void low_start_new_program(struct program *p,
   SET_SVAL_TYPE(tmp, T_PROGRAM);
   if(!p)
   {
-    p=low_allocate_program();
+    p = low_allocate_program(0);
     if(name)
     {
       tmp.u.program=p;
@@ -4067,11 +4108,13 @@ void low_start_new_program(struct program *p,
   debug_malloc_touch(Pike_compiler->fake_object->storage);
 }
 
-PMOD_EXPORT void debug_start_new_program(INT_TYPE line, const char *file)
+PMOD_EXPORT void debug_start_new_program_id(INT_TYPE line, const char *file,
+                                            INT32 id)
 {
   struct pike_string *save_file;
   INT_TYPE save_line;
   struct compilation *c;
+  struct program *p = NULL;
 
   CHECK_COMPILER();
   c = THIS_COMPILATION;
@@ -4088,18 +4131,29 @@ PMOD_EXPORT void debug_start_new_program(INT_TYPE line, const char *file)
     c->lex.current_line = line;
   }
 
-  CDFPRINTF("th(%ld) start_new_program(%ld, %s): "
+  CDFPRINTF("th(%ld) start_new_program_id(%ld, %s, %d): "
             "compilation_depth:%d\n",
-            (long)th_self(), (long)line, file,
+            (long)th_self(), (long)line, file, id,
             c->compilation_depth);
 
-  low_start_new_program(0, COMPILER_PASS_FIRST, 0, 0, 0);
+  if (id) {
+    p = low_allocate_program(id);
+  }
+
+  low_start_new_program(p, COMPILER_PASS_FIRST, 0, 0, 0);
   store_linenumber(line,c->lex.current_file);
   debug_malloc_name(Pike_compiler->new_program, file, line);
+
+  if (p) free_program(p);
 
   free_string(c->lex.current_file);
   c->lex.current_file = dmalloc_touch(struct pike_string *, save_file);
   c->lex.current_line = save_line;
+}
+
+PMOD_EXPORT void debug_start_new_program(INT_TYPE line, const char *file)
+{
+  debug_start_new_program_id(line, file, 0);
 }
 
 

@@ -16,6 +16,7 @@
 #include "block_allocator.h"
 #include "string_builder.h"
 #include "gc_header.h"
+#include "callback.h"
 
 #include "enum_Pike_opcodes.h"
 
@@ -913,6 +914,8 @@ node *program_magic_identifier (struct program_state *state,
 				struct pike_string *ident,
 				int colon_colon_ref);
 struct program *parent_compilation(int level);
+PMOD_EXPORT struct callback *add_program_id_callback(callback_func func,
+                                                     void *state);
 struct program *low_id_to_program(INT32 id, int inhibit_module_load);
 struct program *id_to_program(INT32 id);
 void optimize_program(struct program *p);
@@ -923,12 +926,15 @@ struct pike_string *find_program_name(struct program *p, INT_TYPE *line);
 int override_identifier (struct reference *ref, struct pike_string *name,
 			 int required_flags);
 void fixate_program(void);
-struct program *low_allocate_program(void);
-void low_start_new_program(struct program *p,
-			   int pass,
-			   struct pike_string *name,
-			   int flags,
-			   int *idp);
+PMOD_EXPORT int allocate_program_id(void);
+PMOD_EXPORT struct program *low_allocate_program(INT32 id);
+PMOD_EXPORT void low_start_new_program(struct program *p,
+                                       int pass,
+                                       struct pike_string *name,
+                                       int flags,
+                                       int *idp);
+PMOD_EXPORT void debug_start_new_program_id(INT_TYPE line, const char *file,
+                                            INT32 id);
 PMOD_EXPORT void debug_start_new_program(INT_TYPE line, const char *file);
 void dump_program_desc(struct program *p);
 int sizeof_variable(int run_time_type);
@@ -1258,10 +1264,9 @@ static inline int PIKE_UNUSED_ATTRIBUTE FIND_LFUN(struct program * p, enum LFUN 
 #define ADD_INHERIT(PROGRAM, FLAGS) \
   low_inherit((PROGRAM), 0, 0, 0, (FLAGS), 0)
 
-#define START_NEW_PROGRAM_ID(ID) do { \
-    start_new_program();  \
-    Pike_compiler->new_program->id=PIKE_CONCAT3(PROG_,ID,_ID); \
-  }while(0)
+#define START_NEW_PROGRAM_ID(ID) do {                     \
+    start_new_program_id(PIKE_CONCAT3(PROG_,ID,_ID));     \
+  } while(0)
 
 #ifdef DEBUG_MALLOC
 #define end_program() ((struct program *)debug_malloc_pass(debug_end_program()))
@@ -1273,6 +1278,7 @@ static inline int PIKE_UNUSED_ATTRIBUTE FIND_LFUN(struct program * p, enum LFUN 
 
 
 #define start_new_program() debug_start_new_program(__LINE__,__FILE__)
+#define start_new_program_id(ID) debug_start_new_program_id(__LINE__,__FILE__,ID)
 
 #define visit_program_ref(P, REF_TYPE, EXTRA)			\
   visit_ref (pass_program (P), (REF_TYPE),			\
