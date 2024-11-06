@@ -2620,7 +2620,7 @@ PIKEFUN program __empty_program(int|zero|void line, string|void file)
   efun;
   optflags OPT_EXTERNAL_DEPEND;
 {
-  struct program *prog = low_allocate_program();
+  struct program *prog = low_allocate_program(0);
   if (file) ext_store_program_line (prog, line, file);
   RETURN prog;
 }

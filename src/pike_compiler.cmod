@@ -3151,12 +3151,12 @@ static void program_state_event_handler(int UNUSED(event))
  */
 static void compile_compiler(void)
 {
-  struct program *p = low_allocate_program();
-  struct program *p2 = compilation_program = low_allocate_program();
+  struct program *p = low_allocate_program(PROG_COMPILERENVIRONMENT_ID);
+  struct program *p2 = compilation_program =
+    low_allocate_program(PROG_COMPILERENVIRONMENT_PIKECOMPILER_ID);
   struct object *co;
   struct inherit *inh;
 
-  p->id = PROG_COMPILERENVIRONMENT_ID;
   p->parent_info_storage = -1;
   /* p->event_handler = compilation_env_event_handler; */
   p->flags |= PROGRAM_HAS_C_METHODS;
@@ -3194,7 +3194,6 @@ static void compile_compiler(void)
   /* Once more, this time for p2...
    */
 
-  p2->id = PROG_COMPILERENVIRONMENT_PIKECOMPILER_ID;
   p2->parent_info_storage = 0;
   p2->xstorage = sizeof(struct parent_info);
   p2->event_handler = compilation_event_handler;

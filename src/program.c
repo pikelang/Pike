@@ -3721,7 +3721,17 @@ void fixate_program(void)
 #endif
 }
 
-struct program *low_allocate_program(void)
+/**
+ *   Allocate a program id number.
+ *
+ *   Typically used in conjunction with add_program_id_callback().
+ */
+PMOD_EXPORT int allocate_program_id(void)
+{
+  return ++current_program_id;
+}
+
+PMOD_EXPORT struct program *low_allocate_program(INT32 id)
 {
   struct program *p=alloc_program();
   memset(p, 0, sizeof(struct program));
@@ -3730,7 +3740,7 @@ struct program *low_allocate_program(void)
   p->alignment_needed=1;
 
   GC_ALLOC(p);
-  p->id=++current_program_id;
+  p->id = id ? id : ++current_program_id;
   INIT_PIKE_MEMOBJ(p, T_PROGRAM);
 
   DOUBLELINK(first_program, p);
@@ -3747,11 +3757,11 @@ struct program *low_allocate_program(void)
 /**
  * Start building a new program
  */
-void low_start_new_program(struct program *p,
-			   int pass,
-			   struct pike_string *name,
-			   int flags,
-			   int *idp)
+PMOD_EXPORT void low_start_new_program(struct program *p,
+                                       int pass,
+                                       struct pike_string *name,
+                                       int flags,
+                                       int *idp)
 {
   struct compilation *c = THIS_COMPILATION;
   int id=0;
@@ -3770,7 +3780,7 @@ void low_start_new_program(struct program *p,
   SET_SVAL_TYPE(tmp, T_PROGRAM);
   if(!p)
   {
-    p=low_allocate_program();
+    p = low_allocate_program(0);
     if(name)
     {
       tmp.u.program=p;
@@ -4092,11 +4102,13 @@ void low_start_new_program(struct program *p,
   debug_malloc_touch(Pike_compiler->fake_object->storage);
 }
 
-PMOD_EXPORT void debug_start_new_program(INT_TYPE line, const char *file)
+PMOD_EXPORT void debug_start_new_program_id(INT_TYPE line, const char *file,
+                                            INT32 id)
 {
   struct pike_string *save_file;
   INT_TYPE save_line;
   struct compilation *c;
+  struct program *p = NULL;
 
   CHECK_COMPILER();
   c = THIS_COMPILATION;
@@ -4113,18 +4125,29 @@ PMOD_EXPORT void debug_start_new_program(INT_TYPE line, const char *file)
     c->lex.current_line = line;
   }
 
-  CDFPRINTF("th(%ld) start_new_program(%ld, %s): "
+  CDFPRINTF("th(%ld) start_new_program_id(%ld, %s, %d): "
             "compilation_depth:%d\n",
-            (long)th_self(), (long)line, file,
+            (long)th_self(), (long)line, file, id,
             c->compilation_depth);
 
-  low_start_new_program(0, COMPILER_PASS_FIRST, 0, 0, 0);
+  if (id) {
+    p = low_allocate_program(id);
+  }
+
+  low_start_new_program(p, COMPILER_PASS_FIRST, 0, 0, 0);
   store_linenumber(line,c->lex.current_file);
   debug_malloc_name(Pike_compiler->new_program, file, line);
+
+  if (p) free_program(p);
 
   free_string(c->lex.current_file);
   c->lex.current_file = dmalloc_touch(struct pike_string *, save_file);
   c->lex.current_line = save_line;
+}
+
+PMOD_EXPORT void debug_start_new_program(INT_TYPE line, const char *file)
+{
+  debug_start_new_program_id(line, file, 0);
 }
 
 
