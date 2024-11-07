@@ -7430,30 +7430,74 @@ PIKECLASS List
      *!   at the end of the list.
      *!
      *! @seealso
-     *!   @[prev()]
+     *!   @[_iterator_prev()]
      */
     PIKEFUN mixed _iterator_next()
       flags ID_PROTECTED;
     {
+      struct pike_list_node *orig = THIS->cur;
       struct pike_list_node *next;
-      if (!THIS->cur) {
-	add_ref(THIS->cur = next = List__get_iterator_find_parent()->head);
-	THIS->ind = 0;
-      } else if ((next = THIS->cur->next)) {
-	free_list_node(THIS->cur);
-	add_ref(THIS->cur = next);
-	THIS->ind++;
-      } else {
-	/* We are at the tail sentinel. */
-	next = TAIL_TO_LIST(THIS->cur)->head;
-	free_list_node(THIS->cur);
-	add_ref(THIS->cur = next);
-	THIS->ind = 0;
+
+      if (!orig || !(next = orig->next)) {
+        /* We were at the tail sentinel. Move to the head sentinel. */
+        struct List_struct *list = List__get_iterator_find_parent();
+        next = HEAD_SENTINEL(list)->next;
+        THIS->ind = -1;
       }
+
       if (next->next) {
+        add_ref(THIS->cur = next);
+        THIS->ind++;
 	push_svalue(&next->val);
       } else {
-	push_undefined();
+        /* We are at the tail sentinel. */
+        THIS->cur = NULL;
+        THIS->ind = -1;
+        push_undefined();
+      }
+
+      if (orig) {
+        free_list_node(orig);
+      }
+    }
+
+    /*! @decl mixed _iterator_prev()
+     *!
+     *!   Retrace to the previous element in the list.
+     *!
+     *! @returns
+     *!   Returns the new element on success, and @[UNDEFINED]
+     *!   at the start of the list.
+     *!
+     *! @seealso
+     *!   @[_iterator_next()]
+     */
+    PIKEFUN mixed _iterator_prev()
+      flags ID_PROTECTED;
+    {
+      struct pike_list_node *orig = THIS->cur;
+      struct pike_list_node *prev;
+
+      if (!orig || !(prev = orig->prev)) {
+        /* We were at the head sentinel. Move to the tail sentinel. */
+        struct List_struct *list = List__get_iterator_find_parent();
+        prev = TAIL_SENTINEL(list)->prev;
+        THIS->ind = list->num_elems;
+      }
+
+      if (prev->prev) {
+        add_ref(THIS->cur = prev);
+        THIS->ind--;
+        push_svalue(&prev->val);
+      } else {
+        /* We are now at the head sentinel. */
+        THIS->cur = NULL;
+        THIS->ind = -1;
+        push_undefined();
+      }
+
+      if (orig) {
+        free_list_node(orig);
       }
     }
 
@@ -7475,8 +7519,9 @@ PIKECLASS List
 	add_ref(THIS->cur = next = List__get_iterator_find_parent()->head);
 	THIS->ind = 0;
       } else if ((next = THIS->cur->next)) {
+        add_ref(next);
 	free_list_node(THIS->cur);
-	add_ref(THIS->cur = next);
+        THIS->cur = next;
 	THIS->ind++;
       }
       if (THIS->cur->next) {
@@ -7500,16 +7545,26 @@ PIKECLASS List
      *! @seealso
      *!   @[next()]
      */
-    PIKEFUN int(0..1) prev()
+    PIKEFUN int(0..1) prev()		/* Compat. */
     {
       struct pike_list_node *prev;
-      if ((prev = THIS->cur->prev)) {
+      if (!THIS->cur) {
+        struct List_struct *list = List__get_iterator_find_parent();
+        add_ref(THIS->cur = prev = list->tail_pred);
+        THIS->ind = list->num_elems-1;
+      } else if ((prev = THIS->cur->prev)) {
+        add_ref(prev);
 	free_list_node(THIS->cur);
-	add_ref(THIS->cur = prev);
+        THIS->cur = prev;
 	THIS->ind--;
-        if (prev->prev)
-          RETURN 1;
       }
+      if (THIS->cur->prev) {
+        RETURN 1;
+      }
+      /* Head sentinel. */
+      free_list_node(THIS->cur);
+      THIS->cur = NULL;
+      THIS->ind = -1;
       RETURN 0;
     }
 
