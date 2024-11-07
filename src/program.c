@@ -7673,7 +7673,7 @@ INT32 define_function(struct pike_string *name,
 	   *     present (at least for the Pike code case).
 	   */
 	  if ((lfun_id->u.integer >= LFUN__ITERATOR_NEXT_FUN) &&
-	      (lfun_id->u.integer <= LFUN__ITERATOR_VALUE_FUN)) {
+              (lfun_id->u.integer <= LFUN__ITERATOR_PREV_FUN)) {
 	    /* Only fallback and warn if all three are implemented in old style.
 	     *
 	     * Otherwise the symbols are probably used for some
