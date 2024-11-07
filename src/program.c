@@ -8602,8 +8602,11 @@ PMOD_EXPORT int low_find_lfun(struct program *p, enum LFUN lfun)
       if ((i >= 0) && !(p->flags & PROGRAM_FINISHED) && !TEST_COMPAT(8,0)) {
 	struct compilation *c = MAYBE_THIS_COMPILATION;
 	if ((lfun >= LFUN__ITERATOR_NEXT_FUN) &&
-	    (lfun <= LFUN__ITERATOR_VALUE_FUN)) {
-	  /* Only fallback and warn if all three are implemented in old style.
+            (lfun <= LFUN__ITERATOR_PREV_FUN)) {
+          /* Compat iterator lfun (ie next(), index(), value() or prev()).
+           *
+           * Only fallback and warn if all primary iterator lfuns
+           * (ie the first three) are implemented in the old style.
 	   *
 	   * Otherwise the symbols are probably used for some
 	   * other purpose.
