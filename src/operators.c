@@ -2230,6 +2230,10 @@ static int call_lhs_lfun( enum LFUN lfun, int arg )
 
   if(i != -1)
   {
+    if (SUBTYPEOF(Pike_sp[-arg])) {
+      struct program *p = Pike_sp[-arg].u.object->prog;
+      i += p->inherits[SUBTYPEOF(Pike_sp[-arg])].identifier_level;
+    }
     apply_low(Pike_sp[-arg].u.object, i, arg-1);
     return 1;
   }
@@ -2246,6 +2250,9 @@ static int call_lfun(enum LFUN left, enum LFUN right)
      (p = (o = Pike_sp[-2].u.object)->prog) &&
      (i = FIND_LFUN(p->inherits[SUBTYPEOF(Pike_sp[-2])].prog, left)) != -1)
   {
+    if (SUBTYPEOF(Pike_sp[-2])) {
+      i += p->inherits[SUBTYPEOF(Pike_sp[-2])].identifier_level;
+    }
     apply_low(o, i, 1);
     free_svalue(Pike_sp-2);
     Pike_sp[-2]=Pike_sp[-1];
@@ -2258,6 +2265,9 @@ static int call_lfun(enum LFUN left, enum LFUN right)
      (p = (o = Pike_sp[-1].u.object)->prog) &&
      (i = FIND_LFUN(p->inherits[SUBTYPEOF(Pike_sp[-1])].prog, right)) != -1)
   {
+    if (SUBTYPEOF(Pike_sp[-1])) {
+      i += p->inherits[SUBTYPEOF(Pike_sp[-1])].identifier_level;
+    }
     push_svalue(Pike_sp-2);
     apply_low(o, i, 1);
     free_svalue(Pike_sp-3);
@@ -4959,6 +4969,8 @@ PMOD_EXPORT void o_range2 (int bound_types)
       if ((f = FIND_LFUN(o->prog->inherits[SUBTYPEOF(*ind)].prog,
 			 LFUN_RANGE)) != -1) {
 	struct svalue h;
+        f += o->prog->inherits[SUBTYPEOF(*ind)].identifier_level;
+
 	if (!(bound_types & RANGE_HIGH_OPEN)) {
 	  move_svalue (&h, high);
 	  Pike_sp = high;
@@ -5197,6 +5209,7 @@ PMOD_EXPORT void f_range(INT32 args)
 
       if ((f = FIND_LFUN(o->prog->inherits[SUBTYPEOF(*ind)].prog,
 			 LFUN_RANGE)) != -1) {
+        f += o->prog->inherits[SUBTYPEOF(*ind)].identifier_level;
 	apply_low (o, f, 4);
 	stack_pop_keep_top();
       }
