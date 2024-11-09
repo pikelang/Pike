@@ -458,6 +458,7 @@ static void push_gi_argument(GIArgument *arg, GITypeInfo *info)
     push_int(arg->v_int32);
     break;
   case GI_TYPE_TAG_UINT32:
+  case GI_TYPE_TAG_UNICHAR:	/* Cf girepository/girffi.c */
     push_int64(arg->v_uint32);
     break;
   case GI_TYPE_TAG_INT64:
