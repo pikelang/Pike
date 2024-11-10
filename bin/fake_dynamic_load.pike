@@ -475,7 +475,7 @@ int main(int argc, array(string) argv)
       ret+=sprintf("extern int %s;\n",expr->name);
     ret+="\nvoid *PikeSymbol[]= {\n";
     foreach(prototypes, mixed expr)
-      ret+=sprintf("  (void *)& %s,\n",expr->name,expr->name);
+      ret += sprintf("  (void *)& %s,\n", expr->name);
     ret+="0 };\n\n";
     
     Stdio.write_file("export_functions.c",ret);
