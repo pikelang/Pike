@@ -1134,8 +1134,9 @@ F_DO(0 = +[node_is_true($$)], -):
 
 
 // No body -- No reason to loop...
+// NB: Old-style foreach, $0 can not be an iterator.
 F_FOREACH(F_FOREACH_VAL_LVAL(0 = +[!($$->node_info & (OPT_SIDE_EFFECT|OPT_ASSIGNMENT))],
-		     1 = +[($$->token != ':')]), -):
+                             1 = +[($$->token != ':')]), -):
 {
   // Note: We still need to set the loop variable as if the last
   //       turn of the loop has executed, in case it is used later.
@@ -1158,7 +1159,8 @@ F_FOREACH(F_FOREACH_VAL_LVAL(0[ pike_types_le($$->type, array_type_string, 0, 0)
   F_FOREACH(F_FOREACH_VAL_LVAL($0, $1), $2);
 
 // foreach(arr, -) body;  ->  loop(sizeof(arr)) body;
-F_FOREACH(F_FOREACH_VAL_LVAL(0, -), 1):
+// FIXME: But only if the index set can't contain destructed values.
+F_FOREACH(F_FOREACH_VAL_LVAL(0 = +, -), 1):
   {
     $$ = mknode(F_LOOP, mkefuncallnode("sizeof", $0), $1);
   }
@@ -1166,8 +1168,10 @@ F_FOREACH(F_FOREACH_VAL_LVAL(0, -), 1):
 
 // foreach(X;;)  ->  loop(sizeof(X)) body;
 //
+// Unless we have an iterator (cf Parser.RCS.parse_deltatext_sections())...
+//
 // FIXME: But only if the index set can't contain destructed values.
-// F_FOREACH(F_FOREACH_VAL_LVAL(0, ':'(-, -)), 1):
+// F_FOREACH(F_FOREACH_VAL_LVAL(0 = +[!match_types($$->type, object_type_string)], ':'(-, -)), 1):
 //   {
 //     $$ = mknode(F_LOOP, mkefuncallnode("sizeof", $0), $1);
 //   }
