@@ -165,30 +165,52 @@ class LocaleObject
 {
   // key:string
   protected mapping(string|int:string) bindings;
+  // key:string
+  protected mapping(string|int:string) origs;
   // key:function
   public mapping(string:function) functions;
   int timestamp = time(1);
   constant is_locale=1;
+  string id = "";
 
   protected void create(mapping(string|int:string) _bindings,
-		     void|mapping(string:function) _functions)
+                        mapping(string:function) _functions = ([]),
+                        mapping(string|int:string) _origs = ([]))
   {
     bindings = _bindings;
-    if(_functions)
-      functions = _functions;
-    else
-      functions = ([]);
+    functions = _functions;
+    origs = _origs;
   }
 
   array(string|int) list_ids() {
     return indices(bindings);
   }
 
-  string translate(string|int key)
+  string translate(string|int key, string|void fallback)
   {
 #ifdef LOCALE_DEBUG_ALL
-    werror("L: %O -> %O\n",key,bindings[key]);
+    werror("L: %O -> %O, Orig: %O, Fallback: %O\n",
+           key, bindings[key], origs[key], fallback);
 #endif
+    if (fallback && origs[key] && (origs[key] != fallback) && bindings[key]) {
+      // The translation is stale.
+      //
+      // Warn once and use the fallback. This is eg needed in
+      // case it is a format string where the arguments have
+      // changed since the string was translated.
+      if (id != "") {
+        werror("Warning: Translation for id %O in %O is stale.\n"
+               "Original: %O\n"
+               "Current:  %O\n"
+               "Translated: %O\n",
+               key, id, origs[key], fallback, bindings[key]);
+      }
+#ifdef LOCALE_DEBUG
+      fallback = "STALE: " + fallback;
+#endif
+      m_delete(origs, key);
+      return bindings[key] = fallback;
+    }
     return bindings[key];
   }
 
@@ -254,6 +276,7 @@ object|zero get_object(string project, string lang) {
   }
 
   mapping(string|int:string) bindings = ([]);
+  mapping(string|int:string) origs = ([]);
   mapping(string:function) functions = ([]);
 #ifdef LOCALE_DEBUG
   float sec = gauge{
@@ -328,6 +351,25 @@ object|zero get_object(string project, string lang) {
     }
     return 0;
   };
+  string|zero o_tag(Parser.HTML parser, mapping m, string c) {
+    if(!id) {
+      if(!m->id)
+        return 0;
+      else {
+        if((int)m->id)
+          id = (int)m->id;
+        else
+          id = m->id;
+      }
+    }
+    if(String.trim_whites(c)=="")
+      return 0;
+    // Replace encoded entities
+    c = replace(c, ({"&lt;","&gt;","&amp;"}),
+                ({ "<",   ">",    "&"  }));
+    origs[id]=c;
+    return 0;
+  };
   string|zero t_tag(Parser.HTML parser, mapping m, string c) {
     if(!id) {
       if(!m->id)
@@ -370,8 +412,10 @@ object|zero get_object(string project, string lang) {
   xml_parser->case_insensitive_tag(1);
   xml_parser->
     add_containers( ([ "str"       : str_tag,
+                       "o"         : o_tag,
+                       "original"  : o_tag,	// Verbose-style.
 		       "t"         : t_tag,
-		       "translate" : t_tag,
+                       "translate" : t_tag,	// Verbose-style.
 		       "pike"      : pike_tag, ]) );
   xml_parser->feed(data)->finish();
 
@@ -382,7 +426,8 @@ object|zero get_object(string project, string lang) {
   werror("\nLocale: Read %O in %O (bindings: %d, functions: %d) in %.3fs\n",
 	 project, lang, sizeof(bindings), sizeof(functions), sec);
 #endif
-  locale_object = LocaleObject(bindings, functions);
+  locale_object = LocaleObject(bindings, functions, origs);
+  locale_object->id = lang + ":" + project;
   locales[lang][project] = locale_object;
   return locale_object;
 }
@@ -403,7 +448,7 @@ string translate(string project, string lang, string|int id, string fallback)
 {
   LocaleObject locale_object = get_object(project, lang);
   if(locale_object) {
-    string t_str = locale_object->translate(id);
+    string t_str = locale_object->translate(id, fallback);
 #ifdef LOCALE_DEBUG
     if(t_str) t_str+="("+id+")";
 #endif
