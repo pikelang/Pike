@@ -113,6 +113,8 @@ static struct program *implements_a;
 static struct program *implements_b;
 static int implements_mode;
 
+DECLARATIONS
+
 #ifdef PIKE_DEBUG
 void TYPE_STACK_DEBUG(const char *fun)
 {
@@ -2646,18 +2648,24 @@ void low_describe_type(struct string_builder *s, struct pike_type *t)
 
     case PIKE_T_ATTRIBUTE:
       {
-	struct pike_string *deprecated;
-	MAKE_CONST_STRING(deprecated, "deprecated");
-	if (((struct pike_string *)t->car) == deprecated) {
+        if (((struct pike_string *)t->car) == MK_STRING("deprecated")) {
           string_builder_sprintf(s, "__deprecated__(%pT)", t->cdr);
-	} else if (t == utf8_type_string) {
-	  string_builder_sprintf(s, "utf8_string");
-	} else {
-	  struct svalue sval;
-	  SET_SVAL(sval, PIKE_T_STRING, 0, string,
-		   (struct pike_string *)t->car);
-          string_builder_sprintf(s, "__attribute__(%pO, %pT)", &sval, t->cdr);
-	}
+          break;
+        } else if (((struct pike_string *)t->car) == MK_STRING("utf8")) {
+          if (t == utf8_type_string) {
+            string_builder_sprintf(s, "utf8_string");
+            break;
+          } else if ((t->cdr->type == T_STRING) &&
+                     (((ptrdiff_t)t->cdr->cdr) <= 127) &&
+                     (((ptrdiff_t)t->cdr->car) >= 0)) {
+            /* Narrow string. Suppress UTF8 attribute. */
+            string_builder_sprintf(s, "%pT", t->cdr);
+            break;
+          }
+        }
+
+        string_builder_sprintf(s, "__attribute__(%pq, %pT)",
+                               t->car, t->cdr);
       }
       break;
 
@@ -15081,6 +15089,9 @@ struct pike_type *get_type_of_svalue(const struct svalue *s)
     }
     push_int_type(s->u.string->len, s->u.string->len);
     push_type(T_STRING);
+    if (!s->u.string->len || s->u.string->string_is_utf8) {
+      push_type_attribute(MK_STRING("utf8"));
+    }
     return pop_unfinished_type();
 
   default:
