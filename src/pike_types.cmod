@@ -3094,6 +3094,14 @@ static int lower_or_pike_types(struct pike_type *t1,
     }
 #endif /* PIKE_DEBUG */
     switch(t1->type) {
+    case PIKE_T_ATTRIBUTE:
+      if (t1->car == t2->car) {
+        low_or_pike_types(t1->cdr, t2->cdr, 0);
+        push_type_attribute((struct pike_string *)t1->car);
+        return 0;
+      }
+      goto default_case;
+
     case T_INT:
       if (CAR_TO_INT(t1) < CAR_TO_INT(t2)) {
 	t = t1;
@@ -3228,6 +3236,7 @@ static int lower_or_pike_types(struct pike_type *t1,
       }
       /* FALLTHRU */
     default:
+    default_case:
 #if 0
       if (pike_types_le(t1, t2, 0, 0)) {
 	t = t2;
