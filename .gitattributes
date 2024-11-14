@@ -430,7 +430,6 @@ Makefile.rl -space_indent tab_indent
 /lib/modules/__builtin.pmod/Nettle.pmod/BlockCipher.pike mixed_indent
 /lib/modules/__builtin.pmod/Nettle.pmod/ECC_Curve.pike mixed_indent
 /lib/modules/__builtin.pmod/Nettle.pmod/Hash.pike mixed_indent
-/lib/modules/__builtin.pmod/Nettle.pmod/MAC.pike mixed_indent
 /lib/modules/__builtin.pmod/Nettle.pmod/Sign.pike mixed_indent
 /lib/modules/__builtin.pmod/Sql.pmod/Connection.pike mixed_indent
 /lib/modules/__builtin.pmod/Sql.pmod/Result.pike mixed_indent
