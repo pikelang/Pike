@@ -117,15 +117,19 @@ class State
     if (sizeof(segments) != 3) return 0;
     catch {
       mapping(string(7bit):string(7bit)|int) headers =
-	[mapping(string(7bit):string(7bit)|int)](mixed)
-        Pike.Lazy.Standards.JSON.decode(utf8_to_string([string(8bit)]Pike.Lazy.MIME.decode_base64url(segments[0])));
+        [mapping(string(7bit):string(7bit)|int)]
+        Pike.Lazy.Standards.JSON.decode_utf8(
+          Pike.Lazy.MIME.decode_base64url(segments[0]));
       if (!mappingp(headers)) return 0;
       if (headers->alg != alg) return 0;
       string(7bit) tbs = sprintf("%s.%s", segments[0], segments[1]);
       init(tbs);
       string(8bit) raw = digest();
       if (Pike.Lazy.MIME.encode_base64url(raw) == segments[2]) {
-        return ({ headers, [string(8bit)]Pike.Lazy.MIME.decode_base64url(segments[1]) });
+        return ({
+          headers,
+          [string(8bit)]Pike.Lazy.MIME.decode_base64url(segments[1]),
+        });
       }
     };
     return 0;
