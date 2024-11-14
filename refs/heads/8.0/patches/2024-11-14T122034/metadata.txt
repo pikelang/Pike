@@ -1,0 +1,29 @@
+subject: Pike 8.0: Sync with 8.0.1940 (Roxen 8.1.207-r1)
+from: 54e881583ca09dab126ad1cb0e5a393168e95ea3
+to: 5f792e2b036c613164cd29a974e40b948f62df48
+originator: Henrik Grubbström (Grubba) <grubba@grubba.org>
+depends: 2024-08-21T102723
+restart: true
+
+Multiple fixes:
+
+• Updated to tzdata2024a.
+
+• Tools.Standalone.precompile: Forward-compat: Use the current version of Pike.
+
+Future versions of Pike may be used to run the precompiler. They may be
+incompatible with the version that precompile.pike was written for when
+npt running in the correct compat mode.
+
+Fixes issues like eg the Pike 8.0 precompiler being incompatible
+with the Pike 9.0 type checker.
+
+• Tools.Standalone.extract_autodoc: Fix typo in sscanf pattern.
+
+• Tools.Standalone.extract_autodoc: Fix broken cmod precompilation.
+
+When the precompiler was called by extract_autodoc, it was not
+provided the --base argument, which in turn caused it to sometimes
+generate *.c-files that were uncompilable. extract_autodoc now
+attempts to derive the base argument in the same way as the usual
+Makefiles do.
