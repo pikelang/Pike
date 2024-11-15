@@ -213,7 +213,7 @@ mapping(int:program(.Types.Object)) universal_types =
    U(9) : .Types.Real,
    U(10) : .Types.Enumerated,
    // 11 : Embedded-pdv
-   U(12) : .Types.UTF8String,
+   U(12) : [program(.Types.Object)](mixed).Types.UTF8String,
    // 13 : Relative object identifier
    // 14 : Time
    // 15 : reserved
