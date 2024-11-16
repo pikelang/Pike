@@ -1422,7 +1422,6 @@ PIKECLASS EnumInfo
       SET_ONERROR(onerror2, g_base_info_unref, info);
       push_gi_info(info);
       CALL_AND_UNSET_ONERROR(onerror2);
-      g_base_info_unref(info);
       array_set_index_no_free(arr, i, Pike_sp-1);
       pop_stack();
     }
