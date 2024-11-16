@@ -2656,8 +2656,10 @@ void low_describe_type(struct string_builder *s, struct pike_type *t)
             string_builder_sprintf(s, "utf8_string");
             break;
           } else if ((t->cdr->type == T_STRING) &&
-                     (((ptrdiff_t)t->cdr->cdr) <= 127) &&
-                     (((ptrdiff_t)t->cdr->car) >= 0)) {
+                     (!t->cdr->cdr || (t->cdr->cdr->type == PIKE_T_ZERO) ||
+                      ((t->cdr->cdr->type == PIKE_T_INT) &&
+                       (((ptrdiff_t)t->cdr->cdr->cdr) <= 127) &&
+                       (((ptrdiff_t)t->cdr->cdr->car) >= 0)))) {
             /* Narrow string. Suppress UTF8 attribute. */
             string_builder_sprintf(s, "%pT", t->cdr);
             break;
