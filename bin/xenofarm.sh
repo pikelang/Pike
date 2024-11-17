@@ -88,8 +88,8 @@ log_start response_assembly
       cat "$f"
     done
   ) > xenofarm_result/configlogs.txt
-  cp "$BUILDDIR/config.info" xenofarm_result/configinfo.txt || /bin/true
-  cp "$BUILDDIR/config.cache" xenofarm_result/configcache.txt || /bin/true;
+  cp "$BUILDDIR/config.info" xenofarm_result/configinfo.txt || true
+  cp "$BUILDDIR/config.cache" xenofarm_result/configcache.txt || true;
   # Compilation
   if test "`find $BUILDDIR -name '*.fail' -print`" = ""; then :; else
     (
@@ -101,10 +101,10 @@ log_start response_assembly
     ) >xenofarm_result/compilation_failure.txt
   fi
   # Installation
-  cp "$BUILDDIR/dumpmodule.log" xenofarm_result/dumplog.txt || /bin/true
+  cp "$BUILDDIR/dumpmodule.log" xenofarm_result/dumplog.txt || true
   # Testing
   if test ! -f "xenofarm_result/exportlog.txt"; then
-    cp "$BUILDDIR/testsuite" xenofarm_result/testsuite.txt || /bin/true;
+    cp "$BUILDDIR/testsuite" xenofarm_result/testsuite.txt || true;
   fi
   # Core files
   find . -name "core" -exec \
