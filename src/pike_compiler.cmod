@@ -2385,8 +2385,22 @@ static void f_compilation_suppress_deprecation_warnings(INT32 args)
  *!   @[b] had the type attribute @[attribute] before the
  *!   comparison.
  *!
- *!   The default implementation implements the @expr{"deprecated"@}
- *!   and @expr{"experimental"@} attributes.
+ *!   The default implementation implements the following attributes:
+ *!   @string
+ *!     @value "deprecated"
+ *!       Warns about use of deprecated functions and values.
+ *!     @value "experimental"
+ *!       Warns about use of experimental functions and values.
+ *!     @value "sprintf_args"
+ *!     @value "sprintf_char"
+ *!     @value "sprintf_lfun"
+ *!     @value "sprintf_string"
+ *!       Used for type checking of @[sprintf()] arguments. They are
+ *!       passed along to @[__handle_sprintf_format()].
+ *!     @value "utf8"
+ *!       Warns about passing non-UTF-8 string values to places that
+ *!       expect UTF-8 encoded strings.
+ *!  @endstring
  *!
  *! @returns
  *!   Returns one of:
@@ -2401,7 +2415,7 @@ static void f_compilation_suppress_deprecation_warnings(INT32 args)
  *!   @endmixed
  *!
  *! @seealso
- *!   @[pop_type_attribute()], @[index_type_attribute()]
+ *!   @[pop_type_attribute()], @[index_type_attribute()], @[utf8_string]
  */
 static void f_compilation_push_type_attribute(INT32 args)
 {
@@ -2489,6 +2503,31 @@ static void f_compilation_push_type_attribute(INT32 args)
 		    NULL, 0, NULL,
 		    1, "Using deprecated %O value.");
     }
+    MAKE_CONST_STRING(test, "utf8");
+    if ((attr == test) && (c->lex.pragmas & ID_STRICT_TYPES)) {
+      /* Warn about expected utf-8 strings. */
+      if ((a->u.type->type == PIKE_T_STRING) &&
+          (a->u.type->cdr->type == PIKE_T_INT) &&
+          (CDR_TO_INT(a->u.type->cdr) <= 0x7f)) {
+        /* Common. */
+        goto ok;
+      }
+      if (b->u.type == utf8_type_string->cdr) {
+        yytype_report(REPORT_WARNING, NULL, 0, utf8_type_string,
+                      NULL, 0, a->u.type,
+                      0, "Missing utf8 attribute.");
+      } else {
+        struct pike_type *t;
+        type_stack_mark();
+        push_finished_type(b->u.type);
+        push_type_attribute(attr);
+        t = pop_unfinished_type();
+        yytype_report(REPORT_WARNING, NULL, 0, t,
+                      NULL, 0, a->u.type,
+                      0, "Missing utf8 attribute.");
+        free_type(t);
+      }
+    }
     MAKE_CONST_STRING(test, "experimental");
     if ((attr == test) &&
         !(c->lex.pragmas &
@@ -2501,6 +2540,8 @@ static void f_compilation_push_type_attribute(INT32 args)
                     1, "Using experimental %O value.");
     }
   }
+
+ ok:
   pop_n_elems(args);
   push_int(1);
 }
