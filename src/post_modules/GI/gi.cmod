@@ -938,6 +938,8 @@ static void cb_closure_handler(ffi_cif *cif, void *result,
   struct gi_callback_context *cbc = (struct gi_callback_context *)data;
   struct svalue *osp = Pike_sp;
   JMP_BUF recovery;
+  gint arg_num, num_args;
+  void **argp;
   if (SETJMP(recovery)) {
     pop_n_elems(Pike_sp-osp);
     UNSETJMP(recovery);
@@ -946,13 +948,14 @@ static void cb_closure_handler(ffi_cif *cif, void *result,
     call_handle_error();
     return;
   }
-  gint arg_num, num_args = g_callable_info_get_n_args(cbc->callable);
+  argp = args;
+  num_args = g_callable_info_get_n_args(cbc->callable);
   for (arg_num=0; arg_num<num_args; arg_num++) {
     GIArgInfo *ai = g_callable_info_get_arg(cbc->callable, arg_num);
     if (!ai)
       break;
     if (g_arg_info_get_direction(ai) != GI_DIRECTION_OUT)
-      push_ffi_argument(*args++, ai);
+      push_ffi_argument(*argp++, ai);
   }
   apply_svalue(&cbc->func, Pike_sp-osp);
   pop_stack();
