@@ -9,8 +9,27 @@ AC_SUBST(CONFIG_HEADERS)
 rm -f config.warnings 2>/dev/null
 rm -f config.notes 2>/dev/null
 
-if_autoconf(2,50,, [
-  PIKE_MSG_WARN([configure script has been generated with autoconf 2.13 or earlier.])
+force_config_cache=no
+if_autoconf(2,50,[
+      # Check whether it would be prudent to enable
+      # the configure cache.
+      function got_timeout()
+      {
+          force_config_cache=yes
+      }
+      trap got_timeout ALRM
+      # echo;echo;echo Start timeout at: `date`; echo; echo
+      # Some benchmarks:                    w/o cache   w/ cache
+      #   Semi-recent Linux/x86_64: <1s     ~3min       ~1min30s
+      #   Rntcl/x86_64:             48s     ~4h?        ~47min
+      #   Solaris/sparcv9@450MHz:   18s     ~1h30min    ~20min?
+      #
+      # We enable use of config.cache if the initial configure
+      # stuff takes more than 10s.
+      sleep 10 && kill -ALRM $$ &
+      timeout_pid="$!"
+  ], [
+      PIKE_MSG_WARN([configure script has been generated with autoconf 2.13 or earlier.])
 ])
 
 # We want an absolute path to the source-dir.
@@ -43,25 +62,7 @@ Fix your permissions.
 ])
 fi
 
-if_autoconf(2,50,[
-  if test "x$cache_file" = "x/dev/null"; then
-    if uname | grep -i windows >/dev/null; then
-      PIKE_MSG_NOTE([Windows detected.])
-      PIKE_MSG_NOTE([Enabling the configure cache for performance reasons.])
-      cache_file=./config.cache
-      if test -r "$cache_file"; then
-	echo "loading cache $cache_file"
-	  . $cache_file
-      else
-	echo "creating cache $cache_file"
-	  > $cache_file
-      fi
-    fi
-  fi
-])
-
 AC_PROG_MAKE_SET
-
 
 rm -f "conftest_VPATH.in" 2>/dev/null
 touch "$srcdir/conftest_VPATH.in"
@@ -277,6 +278,23 @@ if test "x$enable_binary" != "xno"; then
   AC_AIX
   AC_MINIX
 fi
+
+if_autoconf(2,50,[
+  # echo;echo;echo End timeout at: `date`; echo; echo
+  kill "$timeout_pid" 2>/dev/null
+  if test "x$cache_file$force_config_cache" = "x/dev/nullyes"; then
+      PIKE_MSG_NOTE([Slow configure detected.])
+      PIKE_MSG_NOTE([Enabling the configure cache for performance reasons.])
+      cache_file=./config.cache
+      if test -r "$cache_file"; then
+          echo "loading cache $cache_file"
+          . $cache_file
+      else
+          echo "creating cache $cache_file"
+          > $cache_file
+      fi
+  fi
+])
 
 #############################################################################
 
