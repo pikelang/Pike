@@ -5217,9 +5217,8 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
     return pop_unfinished_type();
   }
 
-  /* Attributes and names. */
-  switch(a?a->type:PIKE_T_UNKNOWN) {
-  case PIKE_T_NAME:
+  /* Names. */
+  if (a && (a->type == PIKE_T_NAME)) {
     tmp = low_type_binop(op, a->cdr, b, remap, aflags, bflags, remap_flags);
     if (!tmp) {
       return NULL;
@@ -5233,6 +5232,25 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
     free_type(tmp);
 
     return pop_unfinished_type();
+  }
+  if (b && (b->type == PIKE_T_NAME)) {
+    tmp = low_type_binop(op, a, b->cdr, remap, aflags, bflags, remap_flags);
+    if (!tmp) {
+      return NULL;
+    }
+    if (tmp != b->cdr) {
+      return tmp;
+    }
+    type_stack_mark();
+    push_finished_type(tmp);
+    push_type_name((struct pike_string *)(b->car));
+    free_type(tmp);
+
+    return pop_unfinished_type();
+  }
+
+  /* Attributes. */
+  switch(a?a->type:PIKE_T_UNKNOWN) {
   case PIKE_T_ATTRIBUTE:
     if (b && (b->type == PIKE_T_ATTRIBUTE) && (b->car == a->car)) {
       /* Types a and b have the same attribute.
@@ -5313,20 +5331,6 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
     return pop_unfinished_type();
   }
   switch(b?b->type:PIKE_T_UNKNOWN) {
-  case PIKE_T_NAME:
-    tmp = low_type_binop(op, a, b->cdr, remap, aflags, bflags, remap_flags);
-    if (!tmp) {
-      return NULL;
-    }
-    if (tmp != b->cdr) {
-      return tmp;
-    }
-    type_stack_mark();
-    push_finished_type(tmp);
-    push_type_name((struct pike_string *)(b->car));
-    free_type(tmp);
-
-    return pop_unfinished_type();
   case PIKE_T_ATTRIBUTE:
     tmp = low_type_binop(op, a, b->cdr, remap, aflags, bflags, remap_flags);
     if (!tmp) {
