@@ -251,6 +251,9 @@ if test "$ac_cv_func_sendfile" = "yes"; then
 #ifdef HAVE_SYS_UIO_H
 #include <sys/uio.h>
 #endif /* HAVE_SYS_UIO_H */
+#ifdef HAVE_SYS_SENDFILE_H
+#include <sys/sendfile.h>
+#endif
     ], [
       return sendfile(0,0,0,0,(void *)0,(void *)0,0);
     ], [
@@ -264,6 +267,9 @@ if test "$ac_cv_func_sendfile" = "yes"; then
 #ifdef HAVE_SYS_UIO_H
 #include <sys/uio.h>
 #endif /* HAVE_SYS_UIO_H */
+#ifdef HAVE_SYS_SENDFILE_H
+#include <sys/sendfile.h>
+#endif
       ], [
         /* This should fail on FreeBSD and HPUX.
          * If it succeeds, we do not have a prototype,
@@ -280,6 +286,9 @@ if test "$ac_cv_func_sendfile" = "yes"; then
 #ifdef HAVE_SYS_UIO_H
 #include <sys/uio.h>
 #endif /* HAVE_SYS_UIO_H */
+#ifdef HAVE_SYS_SENDFILE_H
+#include <sys/sendfile.h>
+#endif
       ], [
         /* Try HPUX */
         return (int)sendfile(0,0,0,0,(void *)0,0);
@@ -292,6 +301,9 @@ if test "$ac_cv_func_sendfile" = "yes"; then
 #ifdef HAVE_SYS_UIO_H
 #include <sys/uio.h>
 #endif /* HAVE_SYS_UIO_H */
+#ifdef HAVE_SYS_SENDFILE_H
+#include <sys/sendfile.h>
+#endif
         ], [
           /* Try Linux */
           return sendfile(0,0,(void *)0,0);
