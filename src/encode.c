@@ -4772,32 +4772,32 @@ static void decode_value2(struct decode_data *data)
           }
 	  if (!delay) {
 #include "program_areas.h"
-	  }
 
-          if (init_placeholder) {
-            struct unfinished_obj_link *up;
+            if (init_placeholder) {
+              struct unfinished_obj_link *up;
 
-	    if (placeholder->prog == null_program) {
-	      free_program(placeholder->prog);
-	      add_ref(placeholder->prog = p);
-	    } else if (placeholder->prog != p) {
-	      decode_error(data, NULL,
-			   "Placeholder has been zapped during decoding.\n");
-	    }
-	    debug_malloc_touch(placeholder);
-	    placeholder->storage = p->storage_needed ?
-	      (char *)xcalloc(p->storage_needed, 1) :
-	      (char *)NULL;
-	    call_c_initializers(placeholder);
-	    /* It's not safe to call __INIT() or create() yet */
+              if (placeholder->prog == null_program) {
+                free_program(placeholder->prog);
+                add_ref(placeholder->prog = p);
+              } else if (placeholder->prog != p) {
+                decode_error(data, NULL,
+                             "Placeholder has been zapped during decoding.\n");
+              }
+              debug_malloc_touch(placeholder);
+              placeholder->storage = p->storage_needed ?
+                (char *)xcalloc(p->storage_needed, 1) :
+                (char *)NULL;
+              call_c_initializers(placeholder);
+              /* It's not safe to call __INIT() or create() yet */
 
-            up = ALLOC_STRUCT(unfinished_obj_link);
-	    up->next = data->unfinished_placeholders;
-	    data->unfinished_placeholders = up;
-	    add_ref(up->o = placeholder);
-	    pop_stack();
+              up = ALLOC_STRUCT(unfinished_obj_link);
+              up->next = data->unfinished_placeholders;
+              data->unfinished_placeholders = up;
+              add_ref(up->o = placeholder);
+              pop_stack();
 
-            STACK_LEVEL_CHECK(1);
+              STACK_LEVEL_CHECK(1);
+            }
 	  }
 
 	  /* Decode the actual constants
