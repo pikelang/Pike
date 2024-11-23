@@ -2132,7 +2132,7 @@ EOF
     # Split, and generate the case entries.
     # Remove any duplicate sequences of slashes.
     mount | \
-      sed -e 's/\(.*\) on \(.*\) type user.*/\2 _split_ \1/p' -ed | \
+      sed -e 's/\(.*\) on \(.*\) type .*/\2 _split_ \1/p' -ed | \
       sort -r | \
       sed -e 's/\\/\//g' | \
       sed -e 's/\([[ 	]]\)/\\\1/g' -e 's/\$/\\\\\\\$/g' | \
