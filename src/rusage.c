@@ -258,7 +258,7 @@ PMOD_EXPORT cpu_time_t (*get_real_time_res) (void);
 /* First see if we can use the POSIX standard interface. */
 
 #ifdef _POSIX_TIMERS
-#if _POSIX_TIMERS > 0
+#if _POSIX_TIMERS > 0 && !defined(__NT__)
 
 #if defined (MIGHT_HAVE_POSIX_THREAD_GCT) &&				\
   (defined (GCT_IS_POSIX_THREAD) || defined (GCT_RUNTIME_CHOICE))
