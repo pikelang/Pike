@@ -10549,59 +10549,132 @@ PMOD_EXPORT void *get_inherit_storage(struct object *o, int inherit)
   return o->storage + o->prog->inherits[inherit].storage_offset;
 }
 
-#define GET_STORAGE_CACHE_SIZE 1024
-static struct get_storage_cache
+#define FIND_INHERIT_CACHE_SIZE 1024
+static struct find_inherit_cache
 {
   INT32 oid, pid;
-  ptrdiff_t offset;
-} get_storage_cache[GET_STORAGE_CACHE_SIZE];
+  ptrdiff_t inh;
+} find_inherit_cache[FIND_INHERIT_CACHE_SIZE];
 
-PMOD_EXPORT ptrdiff_t low_get_storage(struct program *o, struct program *p)
+/**
+ *  Find the inherit number for a program in a program.
+ *
+ *  @param o
+ *    Program that may contain an inherit of program p.
+ *
+ *  @param p
+ *    Program that may be inherited by program o.
+ *
+ *  Returns the inherit number if found, and -1 on failure.
+ *
+ *  Note: Returns the first inherit found, which may not be
+ *        the most shallow inherit of p.
+ *
+ *  CAVEAT: The above behavior is subject to change.
+ */
+PMOD_EXPORT ptrdiff_t program_find_inherit(struct program *o, struct program *p)
 {
   INT32 oid, pid;
-  ptrdiff_t offset;
+  ptrdiff_t inh;
   unsigned INT32 hval;
 
   if(!o) return -1;
   oid=o->id;
   pid=p->id;
   hval=(unsigned)oid*9248339 + (unsigned)pid;
-  hval&=GET_STORAGE_CACHE_SIZE-1;
-  if(get_storage_cache[hval].oid == oid &&
-     get_storage_cache[hval].pid == pid)
-  {
-    offset=get_storage_cache[hval].offset;
+  hval &= FIND_INHERIT_CACHE_SIZE-1;
+  if ((find_inherit_cache[hval].oid == oid) &&
+      (find_inherit_cache[hval].pid == pid)) {
+    inh = find_inherit_cache[hval].inh;
   }else{
     INT32 e;
-    offset=-1;
+    inh = -1;
     for(e=0;e<o->num_inherits;e++)
     {
       if(o->inherits[e].prog==p)
       {
-	offset=o->inherits[e].storage_offset;
+        inh = e;
 	break;
       }
     }
 
-    get_storage_cache[hval].oid=oid;
-    get_storage_cache[hval].pid=pid;
-    get_storage_cache[hval].offset=offset;
+    find_inherit_cache[hval].oid = oid;
+    find_inherit_cache[hval].pid = pid;
+    find_inherit_cache[hval].inh = inh;
   }
 
-  return offset;
+  return inh;
 }
 
+PMOD_EXPORT ptrdiff_t low_get_storage(struct program *o, struct program *p)
+{
+  ptrdiff_t inh = program_find_inherit(o, p);
+
+  if (inh < 0) return -1;
+
+  return o->inherits[inh].storage_offset;
+}
+
+/**
+ * Return the storage pointer for an inherit of an object.
+ *
+ * @arg o
+ *   Object holding the storage.
+ *
+ * @arg p
+ *   Program for the inherit we want.
+ *
+ * Returns a pointer to the storage if found, or NULL on failure.
+ *
+ * This variant searches all inherits in o->prog. To search
+ * a subset, use get_sub_storage().
+ */
 PMOD_EXPORT void *get_storage(struct object *o, struct program *p)
 {
-  ptrdiff_t offset;
+  ptrdiff_t inh;
 
 #ifdef _REENTRANT
   if(d_flag) CHECK_INTERPRETER_LOCK();
 #endif
 
-  offset= low_get_storage(o->prog, p);
-  if(offset == -1) return 0;
-  return o->storage + offset;
+  inh = program_find_inherit(o->prog, p);
+  if (inh < 0) return NULL;
+
+  return get_inherit_storage(o, inh);
+}
+
+/**
+ * Return the storage pointer for an inherit of an object originating
+ * from a specific inherit.
+ *
+ * @arg o
+ *   Object holding the storage.
+ *
+ * @arg inh
+ *   Inherit number of o->prog to start from.
+ *
+ * @arg p
+ *   Program for the inherit we want.
+ *
+ * Returns a pointer to the storage if found, or NULL on failure.
+ *
+ * Calling this function with an inh of 0 is equivalent to
+ * calling get_storage(o, p).
+ */
+PMOD_EXPORT void *get_sub_storage(struct object *o, int inh, struct program *p)
+{
+  ptrdiff_t sub_inh;
+
+#ifdef _REENTRANT
+  if(d_flag) CHECK_INTERPRETER_LOCK();
+#endif
+
+  if (!o->prog) return NULL;
+
+  sub_inh = program_find_inherit(o->prog->inherits[inh].prog, p);
+  if (sub_inh < 0) return NULL;
+
+  return get_inherit_storage(o, inh + sub_inh);
 }
 
 PMOD_EXPORT struct program *low_program_from_function(struct object *o, INT32 i)
