@@ -62,6 +62,7 @@
 #include "operators.h"
 #include "fdlib.h"
 #include "bignum.h"
+#include "pike_cpulib.h"
 
 #define sp Pike_sp
 
