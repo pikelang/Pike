@@ -92,9 +92,6 @@
 
 /* FP_CLASS compleation */
 
-/* Now for some functions */
-#define Emulate_GetLongPathName GetLongPathNameA
-
 #endif /* __MINGW32__ */
 
 #ifndef HAVE_GETTIMEOFDAY
