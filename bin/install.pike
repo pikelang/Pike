@@ -1830,6 +1830,14 @@ class InstallHandler(mapping vars, string prefix) {
   {
   }
 
+  protected string add_link_suffix(string link, string suffix)
+  {
+    if (has_suffix(link, ".exe"))
+      return link[..<4]+suffix+".exe";
+    else
+      return link+suffix;
+  }
+
   protected void do_post_install_actions()
   {
     dump_modules();
@@ -1846,7 +1854,7 @@ class InstallHandler(mapping vars, string prefix) {
       mixed s=file_stat(fakeroot(lnk),1);
       if(s)
       {
-	if(!mv(fakeroot(lnk),fakeroot(lnk+".old")))
+	if(!mv(fakeroot(lnk),fakeroot(add_link_suffix(lnk, ".old"))))
 	{
 	  error_msg ("Failed to move %s\n",lnk);
 	  exit(1);
@@ -1858,8 +1866,8 @@ class InstallHandler(mapping vars, string prefix) {
       mkdirhier(fakeroot(dirname(lnk)));
       symlink(pike,fakeroot(lnk));
       catch {
-	rm(fakeroot(lnk)+__MAJOR__+__MINOR__);
-	symlink(pike,fakeroot(lnk)+__MAJOR__+__MINOR__);
+	rm(add_link_suffix(fakeroot(lnk), ""+__MAJOR__+__MINOR__));
+	symlink(pike,add_link_suffix(fakeroot(lnk), ""+__MAJOR__+__MINOR__));
       };
       status("Creating",lnk,"done");
     }
@@ -1881,6 +1889,8 @@ class InstallHandler(mapping vars, string prefix) {
       pike_bin_file+=".exe";
       pike+=".exe";
       suffix = ".exe";
+      if (lnk && !has_suffix(lnk, suffix))
+        lnk += suffix;
     }
 
     low_finalize_pike(pike_bin_file, suffix);
