@@ -3742,6 +3742,14 @@ INT32 docode(node *n)
   POP_AND_DONT_CLEANUP;
 
   insert_opcode0(F_DUMB_RETURN, n->line_number, n->current_file);
+  if(
+#ifdef PIKEDEBUG
+     (a_flag > 3) ||
+#endif
+     (c->lex.pragmas & ID_DISASSEMBLE)) {
+    fprintf(stderr, "=== %4ld %4lx .temporary\n",
+            (long)n->line_number, (unsigned long)PIKE_PC);
+  }
   entry_point = assemble(0);		/* Don't store linenumbers. */
 
   instrbuf=instrbuf_save;
