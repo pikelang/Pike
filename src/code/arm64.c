@@ -575,7 +575,7 @@ MACRO int value_to_bit(UINT64 v)
 {
     int bit = ctz64(v);
     ARM_ASSERT(v != 0);
-    ARM_ASSERT(v == (1UL<<bit));
+    ARM_ASSERT(v == (((UINT64)1U)<<bit));
     return bit;
 }
 
@@ -609,7 +609,7 @@ MACRO int arm64_make_logic_imm(UINT64 v, unsigned char *n, unsigned char *immr, 
     for (; e >= 2; e>>=1) {
 	UINT64 elt;
 	if (e < 64) {
-	    UINT64 mask = (1UL<<e)-1;
+            UINT64 mask = (((UINT64)1U)<<e)-1;
 	    elt = v & mask;
 	    if (((v >> e)&mask) != elt)
 		break;
@@ -3254,9 +3254,9 @@ static const char *extendname(PIKE_OPCODE_T mode, int sf)
 }
 
 static int decode_bit_masks(unsigned char n, unsigned char imms, unsigned char immr,
-			    int immediate, unsigned long *wmask, unsigned long *tmask)
+                            int immediate, UINT64 *wmask, UINT64 *tmask)
 {
-    unsigned long welem, telem;
+    UINT64 welem, telem;
     unsigned char d, esize = 1<<(31-clz32((n<<6)|(imms^0x3f)));
     if (esize < 2)
         return 0;
@@ -3265,12 +3265,12 @@ static int decode_bit_masks(unsigned char n, unsigned char imms, unsigned char i
     imms &= esize-1;
     immr &= esize-1;
     d = (imms - immr)&(esize-1);
-    welem = (1UL<<(imms+1))-1;
-    telem = (1UL<<(d+1))-1;
+    welem = (((UINT64)1U)<<(imms+1))-1;
+    telem = (((UINT64)1U)<<(d+1))-1;
     if (immr) {
         welem = (welem >> immr) | (welem << (esize-immr));
 	if (esize < 64)
-	    welem &= (1UL<<esize)-1;
+            welem &= (((UINT64)1U)<<esize)-1;
     }
     while (esize < 64) {
         welem |= welem << esize;
@@ -3309,7 +3309,7 @@ void arm64_disassemble_code(PIKE_OPCODE_T *addr, size_t bytes) {
 	        /* PC-rel. addressing */
 	        fprintf(stderr, "%s\t%s,%p\n", (((instr>>31)&1)==0? "adr":"adrp"),
 			regname(instr, 1, 0), ((char *)(addr+i))+
-			(((unsigned long)(((instr>>3)&0xffffff)|((instr>>29)&3)))
+                        (((size_t)(((instr>>3)&0xffffff)|((instr>>29)&3)))
 			 <<(((instr>>31)&1)? 12:0)));
 		continue;
 	    case 1:
@@ -3335,7 +3335,7 @@ void arm64_disassemble_code(PIKE_OPCODE_T *addr, size_t bytes) {
 		    unsigned char imms = (instr>>10)&63;
 		    unsigned char immr = (instr>>16)&63;
 		    unsigned char opc = (instr>>29)&3;
-		    unsigned long imm;
+                    UINT64 imm;
 		    if (!decode_bit_masks(n, imms, immr, 1, &imm, NULL))
 		        break;
 		    if (sf || !n) {
@@ -3352,7 +3352,7 @@ void arm64_disassemble_code(PIKE_OPCODE_T *addr, size_t bytes) {
 		    }
 		    if (!sf)
 		        imm = (unsigned INT32)imm;
-		    fprintf(stderr, ",#0x%lx\n", imm);
+                    fprintf(stderr, ",#0x%" PRINTINT64 "x\n", imm);
 		    continue;
 		} else {
 		    /* Move wide (immediate) */
@@ -3363,12 +3363,13 @@ void arm64_disassemble_code(PIKE_OPCODE_T *addr, size_t bytes) {
 		        break;
 		    if (opc != 3 && !(((instr>>5)&0xffff)==0 && hw!=0) &&
 			(opc != 0 || sf || ((instr>>5)&0xffff)!=0xffff)) {
-		        unsigned long imm = ((unsigned long)((instr>>5)&0xffff))<<(hw<<4);
+                        UINT64 imm = ((UINT64)((instr>>5)&0xffff))<<(hw<<4);
 			if (opc == 0)
 			    imm = ~imm;
 			if (!sf)
 			    imm = (unsigned INT32)imm;
-		        fprintf(stderr, "mov\t%s,#0x%lx\n", regname(instr, sf, 0), imm);
+                        fprintf(stderr, "mov\t%s,#0x%" PRINTINT64 "x\n",
+                                regname(instr, sf, 0), imm);
 		        continue;
 		    }
 		    fprintf(stderr, "%s\t%s,#0x%x", movname[opc], regname(instr, sf, 0),
