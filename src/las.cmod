@@ -5270,9 +5270,12 @@ int dooptcode(struct pike_string *name,
      (a_flag > 1) ||
 #endif
      ((c->lex.pragmas & ID_DISASSEMBLE) &&
-      (Pike_compiler->compiler_pass == COMPILER_PASS_LAST)))
+      (Pike_compiler->compiler_pass == COMPILER_PASS_LAST))) {
     fprintf(stderr, "Doing function '%s' at %lx\n", name->str,
             (unsigned long)PIKE_PC);
+    safe_pike_fprintf(stderr, "=== %4ld %4lx .global %pS:\n",
+                      (long)n->line_number, (unsigned long)PIKE_PC, name);
+  }
 
   args=count_arguments(type);
 #ifdef PIKE_DEBUG

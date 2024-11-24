@@ -4392,6 +4392,14 @@ static void decode_value2(struct decode_data *data)
 			    data->depth, "");
 		    a_flag = (a_flag > (data->debug-1))?a_flag:(data->debug-1);
 		  });
+                  if(
+#ifdef PIKEDEBUG
+                     (a_flag > 2) ||
+#endif
+                     (c->lex.pragmas & ID_DISASSEMBLE)) {
+                    safe_pike_fprintf(stderr, "===           .global %pS:\n",
+                                 Pike_sp[-2].u.string);
+                  }
 		  func.offset = decode_portable_bytecode(data, func.offset);
 		  EDB(2, a_flag = old_a_flag);
 		}
