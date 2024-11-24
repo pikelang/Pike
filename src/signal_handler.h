@@ -11,6 +11,8 @@ typedef RETSIGTYPE (*sigfunctype) (int);
 
 /* Prototypes begin here */
 struct sigdesc;
+struct my_pty;
+struct pid_status;
 void my_signal(int sig, sigfunctype fun);
 PMOD_EXPORT void check_signals(struct callback *foo, void *bar, void *gazonk);
 void set_default_signal_handler(int signum, void (*func)(INT32));
@@ -21,7 +23,6 @@ int check_pty_clients(struct my_pty *pty);
 void process_started(pid_t pid);
 void process_done(pid_t pid, const char *from);
 struct wait_data;
-struct pid_status;
 struct perishables;
 struct plimit;
 struct perishables;
