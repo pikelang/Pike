@@ -796,6 +796,10 @@ MACRO void load32_reg_imm(enum arm64_register dst, enum arm64_register base, INT
     arm64_add_to_program(gen_load_reg_imm(dst, base, offset, 2, 0));
 }
 
+MACRO void load32s_reg_imm(enum arm64_register dst, enum arm64_register base, INT32 offset) {
+    arm64_add_to_program(gen_load_reg_imm(dst, base, offset, 2, 0) ^ (3 << 22));
+}
+
 MACRO void load64_reg_imm(enum arm64_register dst, enum arm64_register base, INT32 offset) {
     arm64_add_to_program(gen_load_reg_imm(dst, base, offset, 3, 0));
 }
@@ -1516,7 +1520,10 @@ MACRO void arm64_push_non_ref_type(unsigned INT32 type, UINT64 value) {
 }
 
 MACRO void arm64_push_int(UINT64 value, int subtype) {
-    arm64_push_non_ref_type(TYPE_SUBTYPE(PIKE_T_INT, subtype), value);
+#if SIZEOF_INT_TYPE == 4 && PIKE_BYTEORDER != 1234
+  value <<= 32;
+#endif
+  arm64_push_non_ref_type(TYPE_SUBTYPE(PIKE_T_INT, subtype), value);
 }
 
 MACRO void arm64_push_ptr_type(enum arm64_register treg, enum arm64_register vreg) {
@@ -1551,7 +1558,7 @@ MACRO void arm64_push_constant(struct svalue *sv) {
                           sv->u.ptr);
     } else {
       arm64_push_non_ref_type(TYPE_SUBTYPE(TYPEOF(*sv), SUBTYPEOF(*sv)),
-                              sv->u.integer);
+                              *(const UINT64 *)&sv->u);
     }
 }
 
@@ -1654,6 +1661,30 @@ MACRO enum arm64_condition arm64_ne_types(enum arm64_register type1, enum arm64_
     arm64_add_to_program(gen_ccmp_reg_reg(type1, type2, ARM_COND_EQ, 0));
 
     return ARM_COND_NE;
+}
+
+MACRO void load_svalue_int(enum arm64_register reg, enum arm64_register base,
+                           INT32 offset)
+{
+#if SIZEOF_INT_TYPE == 8
+  load64_reg_imm(reg, base, offset+(INT32)OFFSETOF(svalue, u.integer));
+#elif SIZEOF_INT_TYPE == 4
+  load32s_reg_imm(reg, base, offset+(INT32)OFFSETOF(svalue, u.integer));
+#else
+#error Size of int must be ether 32 or 64 bit
+#endif
+}
+
+MACRO void store_svalue_int(enum arm64_register reg, enum arm64_register base,
+                            INT32 offset)
+{
+#if SIZEOF_INT_TYPE == 8
+  store64_reg_imm(reg, base, offset+(INT32)OFFSETOF(svalue, u.integer));
+#elif SIZEOF_INT_TYPE == 4
+  store32_reg_imm(reg, base, offset+(INT32)OFFSETOF(svalue, u.integer));
+#else
+#error Size of int must be ether 32 or 64 bit
+#endif
 }
 
 void arm64_flush_codegen_state(void) {
@@ -2099,6 +2130,7 @@ static void low_ins_f_byte(unsigned int opcode)
           ra_free(reg);
       }
       return;
+#if SIZEOF_INT_TYPE == 8 /* Code below assumes same size of ints and pointers */
   case F_EQ:
   case F_NE:
   case F_GT:
@@ -2292,6 +2324,7 @@ static void low_ins_f_byte(unsigned int opcode)
           ra_free(reg);
       }
       return;
+#endif
   case F_MARK:
       arm64_debug_instr_prologue_0(opcode);
       arm64_load_sp_reg();
@@ -2339,14 +2372,18 @@ static void low_ins_f_byte(unsigned int opcode)
           cond = arm64_ne_types(reg1, reg2, TYPE_SUBTYPE(PIKE_T_INT, NUMBER_NUMBER));
           b_imm_cond(label_dist(&slow), cond);
 
-          load64_reg_imm(reg1, ARM_REG_PIKE_SP, -2*(INT32)sizeof(struct svalue)+(INT32)OFFSETOF(svalue, u));
-          load64_reg_imm(reg2, ARM_REG_PIKE_SP, -1*(INT32)sizeof(struct svalue)+(INT32)OFFSETOF(svalue, u));
+          load_svalue_int(reg1, ARM_REG_PIKE_SP, -2*(INT32)sizeof(struct svalue));
+          load_svalue_int(reg2, ARM_REG_PIKE_SP, -1*(INT32)sizeof(struct svalue));
 
+#if SIZEOF_INT_TYPE == 4
+          adds32_reg_reg(reg1, reg1, reg2);
+#else
           adds64_reg_reg(reg1, reg1, reg2);
+#endif
 
 	  b_imm_cond(label_dist(&slow), ARM_COND_VS);
 
-	  store64_reg_imm(reg1, ARM_REG_PIKE_SP, -2*(INT32)sizeof(struct svalue)+(INT32)OFFSETOF(svalue, u)),
+          store_svalue_int(reg1, ARM_REG_PIKE_SP, -2*(INT32)sizeof(struct svalue));
 
           ra_free(reg1);
           ra_free(reg2);
@@ -2387,7 +2424,7 @@ static void low_ins_f_byte(unsigned int opcode)
           arm64_tst_int(tmp, BIT_FUNCTION|BIT_OBJECT|BIT_INT);
           b_imm_cond(label_dist(&my_pike_return), ARM_COND_Z);
 
-	  load64_reg_imm(ARM_REG_ARG1, ARM_REG_PIKE_SP, -(INT32)sizeof(struct svalue)+(INT32)OFFSETOF(svalue, u));
+	  load_svalue_int(ARM_REG_ARG1, ARM_REG_PIKE_SP, -(INT32)sizeof(struct svalue));
 	  tbnz_imm(tmp, value_to_bit(BIT_INT), label_dist(&do_return_if_true));
 
           ra_free(tmp);
@@ -2446,7 +2483,7 @@ static void low_ins_f_byte(unsigned int opcode)
 
           tbz_imm(value, PIKE_T_INT, label_dist(&complex));
 
-          load64_reg_imm(value, ARM_REG_PIKE_SP, (INT32)(-sizeof(struct svalue)+OFFSETOF(svalue, u)));
+          load_svalue_int(value, ARM_REG_PIKE_SP, (INT32)(-sizeof(struct svalue)));
 
           /* jump to the check, we are done */
           b_imm(label_dist(&done));
@@ -2564,15 +2601,23 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
       b_imm_cond(label_dist(&fallback), ARM_COND_NE);
 
       /* load integer value and do operation */
-      load64_reg_imm(tmp, ARM_REG_PIKE_SP, -(INT32)sizeof(struct svalue)+(INT32)OFFSETOF(svalue, u.integer));
+      load_svalue_int(tmp, ARM_REG_PIKE_SP, -(INT32)sizeof(struct svalue));
 
       switch (opcode) {
       case F_SUBTRACT_INT:
+#if SIZEOF_INT_TYPE == 4
+        arm64_subs32_reg_int(tmp, tmp, (INT32)arg1);
+#else
         arm64_subs64_reg_int(tmp, tmp, (INT64)arg1);
+#endif
         b_imm_cond(label_dist(&fallback), ARM_COND_VS);
         break;
       case F_ADD_INT:
+#if SIZEOF_INT_TYPE == 4
+        arm64_adds32_reg_int(tmp, tmp, (INT32)arg1);
+#else
         arm64_adds64_reg_int(tmp, tmp, (INT64)arg1);
+#endif
         b_imm_cond(label_dist(&fallback), ARM_COND_VS);
         break;
       case F_OR_INT:
@@ -2586,7 +2631,7 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
         break;
       }
 
-      store64_reg_imm(tmp, ARM_REG_PIKE_SP, -(INT32)sizeof(struct svalue)+(INT32)OFFSETOF(svalue, u.integer));
+      store_svalue_int(tmp, ARM_REG_PIKE_SP, -(INT32)sizeof(struct svalue));
       ra_free(tmp);
       b_imm(label_dist(&done));
 
@@ -2771,14 +2816,22 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
           arm64_cmp_int(tmp, TYPE_SUBTYPE(PIKE_T_INT, NUMBER_NUMBER));
           b_imm_cond(label_dist(&fallback), ARM_COND_NE);
 
-          load64_reg_imm(tmp, dst, OFFSETOF(svalue, u));
+          load_svalue_int(tmp, dst, 0);
 
           if (opcode == F_INC_LOCAL_AND_POP ||
               opcode == F_INC_LOCAL ||
               opcode == F_POST_INC_LOCAL) {
-              adds64_reg_imm(res, tmp, 1, 0);
+#if SIZEOF_INT_TYPE == 4
+            adds32_reg_imm(res, tmp, 1, 0);
+#else
+            adds64_reg_imm(res, tmp, 1, 0);
+#endif
           } else {
-              subs64_reg_imm(res, tmp, 1, 0);
+#if SIZEOF_INT_TYPE == 4
+            subs32_reg_imm(res, tmp, 1, 0);
+#else
+            subs64_reg_imm(res, tmp, 1, 0);
+#endif
           }
 
           b_imm_cond(label_dist(&fallback), ARM_COND_VS);
@@ -2789,7 +2842,7 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
               arm64_push_int_reg(res, NUMBER_NUMBER);
           }
 
-          store64_reg_imm(res, dst, OFFSETOF(svalue, u));
+          store_svalue_int(res, dst, 0);
 
           ra_free(tmp);
           ra_free(res);
@@ -3033,7 +3086,7 @@ int arm64_ins_f_jump(unsigned int opcode, int backward_jump) {
             arm64_debug_instr_prologue_0(opcode);
 
             arm64_change_sp(-1);
-            load64_reg_imm(tmp, ARM_REG_PIKE_SP, 8);
+            load_svalue_int(tmp, ARM_REG_PIKE_SP, 0);
 	    label_init(&skip);
             if (opcode == F_QUICK_BRANCH_WHEN_ZERO)
 	        cbnz64_imm(tmp, label_dist(&skip));
@@ -3069,8 +3122,7 @@ int arm64_ins_f_jump(unsigned int opcode, int backward_jump) {
           arm64_cmp_int(ARM_REG_ARG1, TYPE_SUBTYPE(PIKE_T_INT, NUMBER_NUMBER));
           b_imm_cond(label_dist(&fallback), ARM_COND_NE);
 
-          load64_reg_imm(ARM_REG_ARG1, ARM_REG_PIKE_SP,
-			 -(INT32)sizeof(struct svalue)+(INT32)OFFSETOF(svalue, u));
+          load_svalue_int(ARM_REG_ARG1, ARM_REG_PIKE_SP, -(INT32)sizeof(struct svalue));
 
           /* compare loop count with 0 */
           cmp_reg_imm(ARM_REG_ARG1, 0, 0);
@@ -3080,8 +3132,7 @@ int arm64_ins_f_jump(unsigned int opcode, int backward_jump) {
           /* subtract 1 and store if the count is > 0 */
 	  sub64_reg_imm(ARM_REG_ARG1, ARM_REG_ARG1, 1, 0);
 
-          store64_reg_imm(ARM_REG_ARG1, ARM_REG_PIKE_SP,
-			  -(INT32)sizeof(struct svalue)+(INT32)OFFSETOF(svalue, u));
+          store_svalue_int(ARM_REG_ARG1, ARM_REG_PIKE_SP, -(INT32)sizeof(struct svalue));
 
           label_generate(&jump);
           ret = PIKE_PC;
