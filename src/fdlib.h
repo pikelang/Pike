@@ -194,6 +194,7 @@ struct winsize {
 
 
 /* Prototypes begin here */
+struct my_pty;
 PMOD_EXPORT void set_errno_from_win32_error (unsigned long err);
 void free_pty(struct my_pty *pty);
 int fd_to_handle(int fd, int *type, HANDLE *handle, int exclusive);

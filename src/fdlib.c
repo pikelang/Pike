@@ -1630,10 +1630,10 @@ PMOD_EXPORT int debug_fd_symlink(const char *target, const char *linkpath)
      */
     lnk = pike_dwim_utf8_to_utf16(linkpath);
 
-    if (!Pike_NT_CreateSymbolicLinkW(tname, lnk,
+    if (!Pike_NT_CreateSymbolicLinkW(lnk, tname,
                                      SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE) &&
         ((GetLastError() != ERROR_DIRECTORY_NOT_SUPPORTED) ||
-         !Pike_NT_CreateSymbolicLinkW(tname, lnk,
+         !Pike_NT_CreateSymbolicLinkW(lnk, tname,
                                       SYMBOLIC_LINK_FLAG_DIRECTORY |
                                       SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE))) {
       set_errno_from_win32_error(GetLastError());

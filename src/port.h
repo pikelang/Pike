@@ -92,8 +92,18 @@
 
 /* FP_CLASS compleation */
 
-/* Now for some functions */
-#define Emulate_GetLongPathName GetLongPathNameA
+#if defined(__aarch64__) && defined(PIKE_USE_MACHINE_CODE)
+/* The Windows implementation of longjmp in ucrtbase.dll always does stack
+   unwinding on 64-bit ARM, which does not work with generated code.
+   Use the MinGW implementation of setjmp/longjmp instead */
+#include <setjmp.h>
+#undef setjmp
+#undef longjmp
+extern int __mingw_setjmp(jmp_buf);
+extern void __attribute__((noreturn)) __mingw_longjmp(jmp_buf, int);
+#define setjmp(env) __mingw_setjmp(env)
+#define longjmp(env, val) __mingw_longjmp(env, val)
+#endif
 
 #endif /* __MINGW32__ */
 

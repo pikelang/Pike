@@ -11,6 +11,14 @@
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
+#ifdef HAVE_WINSOCK2_H
+#include <WinSock2.h>
+#ifdef HAVE_WS2TCPIP_H
+#include <WS2tcpip.h>
+#endif
+#elif defined(HAVE_WINSOCK_H)
+#include <winsock.h>
+#endif
 
 /* NB: The default values are compatible with Linux,
  *     but should work on other OSs as well, since

@@ -10,6 +10,13 @@ EOF
 exit 0
 fi
 
+posix_to_native=cat
+for ptn in ./posix_to_native.sh "$3/posix_to_native.sh" ; do
+    if [ -x "$ptn" ]; then
+        posix_to_native="$ptn"
+    fi
+done
+
 
 # The following transforms are done:
 
@@ -26,12 +33,21 @@ fi
 d1="`echo \"$1\" | sed -e 's:[.*[\\^$@]:\\\\&:g'`"
 d2="`echo \"$2\" | sed -e 's:[.*[\\^$@]:\\\\&:g'`"
 d3="`echo \"$3\" | sed -e 's:[.*[\\^$@]:\\\\&:g'`"
+d4="`echo \"$1\" | "$posix_to_native" | sed -e 's:[.*[\\^$@]:\\\\&:g'`"
+d5="`echo \"$2\" | "$posix_to_native" | sed -e 's:[.*[\\^$@]:\\\\&:g'`"
+d6="`echo \"$3\" | "$posix_to_native" | sed -e 's:[.*[\\^$@]:\\\\&:g'`"
+d7="`pwd | sed -e 's:[.*[\\^$@]:\\\\&:g'`"
+d8="`pwd | "$posix_to_native" | sed -e 's:[.*[\\^$@]:\\\\&:g'`"
 
 if grep .protos $1/Makefile.in >/dev/null 2>&1; then
   sed -e "s@\([ 	]\)$d1/\([-a-zA-Z0-9.,_]*\)@\1\$(SRCDIR)/\2@g" \
       -e "s@\([ 	]\)$d2/\([-a-zA-Z0-9.,_]*\)@\1\$(PIKE_SRC_DIR)/\2@g" \
       -e "s@\([ 	]\)$d3/\([-a-zA-Z0-9.,_]*\)@\1\$(BUILD_BASE)/\2@g" \
-      -e "s@\([ 	]\)`pwd`\([^ 	]\)*@\1./\2@" \
+      -e "s@\([ 	]\)$d4/\([-a-zA-Z0-9.,_]*\)@\1\$(SRCDIR)/\2@g" \
+      -e "s@\([ 	]\)$d5/\([-a-zA-Z0-9.,_]*\)@\1\$(PIKE_SRC_DIR)/\2@g" \
+      -e "s@\([ 	]\)$d6/\([-a-zA-Z0-9.,_]*\)@\1\$(BUILD_BASE)/\2@g" \
+      -e "s@\([ 	]\)$d7\([^ 	]\)*@\1./\2@" \
+      -e "s@\([ 	]\)$d8\([^ 	]\)*@\1./\2@" \
       -e 's/^\([-a-zA-Z0-9.,_]*\)\.o: /\1.o \1.protos: /g' \
       -e 's@\([ 	]\)/[^ 	]*@\1@g' \
       -e '/^[ 	]*\\$/d'
@@ -39,7 +55,11 @@ else
   sed -e "s@\([ 	]\)$d1/\([-a-zA-Z0-9.,_]*\)@\1\$(SRCDIR)/\2@g" \
       -e "s@\([ 	]\)$d2/\([-a-zA-Z0-9.,_]*\)@\1\$(PIKE_SRC_DIR)/\2@g" \
       -e "s@\([ 	]\)$d3/\([-a-zA-Z0-9.,_]*\)@\1\$(BUILD_BASE)/\2@g" \
-      -e "s@\([ 	]\)`pwd`\([^ 	]\)*@\1./\2@" \
+      -e "s@\([ 	]\)$d4/\([-a-zA-Z0-9.,_]*\)@\1\$(SRCDIR)/\2@g" \
+      -e "s@\([ 	]\)$d5/\([-a-zA-Z0-9.,_]*\)@\1\$(PIKE_SRC_DIR)/\2@g" \
+      -e "s@\([ 	]\)$d6/\([-a-zA-Z0-9.,_]*\)@\1\$(BUILD_BASE)/\2@g" \
+      -e "s@\([ 	]\)$d7\([^ 	]\)*@\1./\2@" \
+      -e "s@\([ 	]\)$d8\([^ 	]\)*@\1./\2@" \
       -e 's@\([ 	]\)/[^ 	]*@\1@g' \
       -e '/^[ 	]*\\$/d'
 fi >"$1/dependencies"
