@@ -1461,7 +1461,7 @@ PMOD_EXPORT
 PIKEFUN string string_trim_whites (string s)
   errname trim_whites;
   optflags OPT_TRY_OPTIMIZE;
-rawtype tFunc(tNStr(tSetvar(0, tInt)),tNStr(tVar(0)))
+  rawtype tFunc(tNStr(tSetvar(0, tInt)), tNStr(tVar(0)));
 {
   ptrdiff_t start = 0, end = s->len;
   int chr;
@@ -1512,7 +1512,7 @@ PMOD_EXPORT
 PIKEFUN string string_normalize_space (string s, string|void whitespace)
   errname normalize_space;
   optflags OPT_TRY_OPTIMIZE;
-rawtype tFunc(tNStr(tSetvar(0, tInt)) tOr(tStr,tVoid),tNStr(tVar(0)))
+  rawtype tFunc(tNStr(tSetvar(0, tInt)) tOr(tStr,tVoid), tNStr(tVar(0)));
 {
   size_t len = s->len, wlen;
   const void *src = s->str;
@@ -1644,7 +1644,7 @@ PMOD_EXPORT
 PIKEFUN string string_trim (string s)
   errname trim;
   optflags OPT_TRY_OPTIMIZE;
-rawtype tFunc(tNStr(tSetvar(0, tInt)),tNStr(tVar(0)))
+  rawtype tFunc(tNStr(tSetvar(0, tInt)), tNStr(tVar(0)));
 {
   ptrdiff_t start = 0, end = s->len;
   int chr;
