@@ -21,8 +21,8 @@ if_autoconf(2,50,[
       # echo;echo;echo Start timeout at: `date`; echo; echo
       # Some benchmarks:                    w/o cache   w/ cache
       #   Semi-recent Linux/x86_64: <1s     ~3min       ~1min30s
-      #   Rntcl/x86_64:             48s     ~4h?        ~47min
-      #   Solaris/sparcv9@450MHz:   18s     ~1h30min    ~20min?
+      #   Rntcl/x86_64:             48s     ~1h23min    ~47min
+      #   Solaris/sparcv9@450MHz:   18s     ~1h30min    ~1h20min
       #
       # We enable use of config.cache if the initial configure
       # stuff takes more than 10s.
