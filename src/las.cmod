@@ -1003,7 +1003,7 @@ node *debug_mknode(int token, node *a, node *b)
 	/* Applying something that has external dependencies
 	 * renders a result that isn't constant.
 	 */
-	res->tree_info |= OPT_NOT_CONST;
+        res->node_info |= OPT_NOT_CONST;
       }
     }
     break;
