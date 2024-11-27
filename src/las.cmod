@@ -2388,6 +2388,16 @@ node *copy_node(node *n)
   return n;
 }
 
+/**
+ *  Returns whether a node is a constant expression or not.
+ *
+ *  @arg n
+ *    Node to check.
+ *
+ *  A node is a constant expression if it has no side effects,
+ *  no external dependencies, no assignments and does not
+ *  affect program flow.
+ */
 int is_const(node *n)
 {
   if(!n) return 1;
@@ -2402,6 +2412,17 @@ int is_const(node *n)
 			   ));
 }
 
+/**
+ *  Returns whether a node is tossable or not.
+ *
+ *  @arg n
+ *    Node to check.
+ *
+ *  A node is tossable if has no side effects and does not
+ *  affect program flow. Ie no assignments, entrypoints
+ *  (ie case labels), break, continue or return, and
+ *  does not throw errors.
+ */
 int node_is_tossable(node *n)
 {
   if (!(n->tree_info & (OPT_SIDE_EFFECT |
