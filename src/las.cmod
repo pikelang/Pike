@@ -5445,7 +5445,20 @@ static node *lexicalize_node(node *n)
     return tmp;
   case F_LOCAL:
     if (n->u.integer.b < 0) {
-      tmp = mklocalnode(n->u.integer.a, 1);
+      struct compiler_frame *frame = Pike_compiler->compiler_frame->previous;
+      int local_no = 0;
+      tmp = NULL;
+      for (; local_no < frame->current_number_of_locals; local_no++) {
+        if (frame->local_names[local_no].def == n) {
+          tmp = mklocalnode(local_no, 1);
+          break;
+        }
+      }
+      if (!tmp) {
+        yywarning("Bound local %pq (<%d:%d>) not found in parent scope.",
+                  n->name, n->u.integer.a, n->u.integer.b);
+        tmp = mklocalnode(n->u.integer.a, 1);
+      }
     } else {
       tmp = mklocalnode(n->u.integer.a, n->u.integer.b + 1);
     }
