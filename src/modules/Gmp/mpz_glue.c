@@ -2201,7 +2201,7 @@ static void mpzmod_random(INT32 args)
   mpz_res = OBTOMPZ(res);
   bits = mpz_sizeinbase(THIS, 2);
   bytes = ((bits-1)>>3)+1;
-  mask = (1UL<<(bits & ((sizeof(mp_limb_t)<<3) - 1)))-1;
+  mask = (((mp_limb_t)1)<<(bits & ((sizeof(mp_limb_t)<<3) - 1)))-1;
 
   if (mpz_popcount(THIS) == 1) {
     /* The number of bits is a power of 2.
