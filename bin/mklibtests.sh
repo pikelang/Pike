@@ -62,7 +62,8 @@ recurse () {
 	cat "$src_dir$path$fn" >&5
     else
        if [ "$PIKE_PATH_TRANSLATE" = "" ]; then
-         "$bin_dir"mktestsuite "$src_dir$path$fn" >&5 -DSRCDIR="$src_dir$path"
+           "$bin_dir"mktestsuite "$src_dir$path$fn" >&5 \
+             -DSRCDIR="`echo $src_dir$path|${build_dir}posix_to_native.sh`"
        else
          "$bin_dir"mktestsuite "$src_dir$path$fn" >&5 \
            -DSRCDIR="`echo $src_dir$path|sed -e $PIKE_PATH_TRANSLATE|${build_dir}posix_to_native.sh`"
