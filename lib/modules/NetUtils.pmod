@@ -653,7 +653,7 @@ string ifconfig( string command )
                                        string gw,
                                        string iface,
                                        int metric) == 10) {
-                                if (gw != iface) {
+                                if (gw != iface && gw != "On-link") {
                                     // External GW.
                                     continue;
                                 }
