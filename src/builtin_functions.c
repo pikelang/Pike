@@ -509,8 +509,11 @@ void f_hash_value(INT32 args)
 
   h = hash_svalue (Pike_sp - args);
   pop_n_elems (args);
-  /* NB: We assume that INT_TYPE has the same width as size_t. */
+#if SIZEOF_INT_TYPE < SIZEOF_CHAR_P
+  push_int64 (h);
+#else
   push_int (h);
+#endif
 }
 
 /*! @decl mixed copy_value(mixed value)
