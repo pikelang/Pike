@@ -7284,8 +7284,8 @@ static struct array *longest_ordered_sequence(struct array *a)
     return &empty_array;
   }
 
-  stack = calloc(sizeof(int), a->size);
-  links = calloc(sizeof(int), a->size);
+  stack = calloc(a->size, sizeof(int));
+  links = calloc(a->size, sizeof(int));
 
   if (!stack || !links)
   {
@@ -7600,7 +7600,7 @@ static struct array *diff_longest_sequence(struct array *cmptbl, int blen)
    if(!cmptbl->size)
      return allocate_array(0);
 
-   stack = xcalloc(sizeof(struct diff_magic_link*), cmptbl->size);
+   stack = xcalloc(cmptbl->size, sizeof(struct diff_magic_link*));
 
    /* NB: marks is used for optimization purposes only */
    marks = calloc(blen, 1);
@@ -7813,7 +7813,7 @@ static struct array *diff_dyn_longest_sequence(struct array *cmptbl, int blen)
   unsigned int off2 = blen + 1;
   ONERROR err;
 
-  table = xcalloc(sizeof(struct diff_magic_link_head)*2, off2);
+  table = xcalloc(off2, sizeof(struct diff_magic_link_head)*2);
 
   /* FIXME: Assumes NULL is represented with all zeroes */
   /* NOTE: Scan strings backwards to get the same result as the G-M
