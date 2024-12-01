@@ -5702,7 +5702,7 @@ if test yes = "$with_machine_code"; then
        AC_DEFINE_UNQUOTED(PIKE_CPU_REG_PREFIX,"$pike_cv_cpu_reg_prefix");;
   esac
 
-  if test "x$PAXCTL" = "x:"; then :; else
+  if test "x$PAXCTL" = "x"; then :; else
     AC_MSG_CHECKING(${PAXCTL} syntax to allow mprotect)
     AC_CACHE_VAL(pike_cv_paxctl_allow_mprotect,
     [
