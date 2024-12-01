@@ -942,7 +942,11 @@ unknown_directive:
               {
                 /* overflow possible. Switch to bignums. */
                 mpz_init(&bigint);
+#if SIZEOF_INT_TYPE > SIZEOF_LONG
+                mpz_import(&bigint, 1,1, SIZEOF_INT_TYPE, 0,0, &res.u.integer);
+#else
                 mpz_set_ui(&bigint,res.u.integer);
+#endif
                 TYPEOF(res) = PIKE_T_OBJECT;
               }
 
