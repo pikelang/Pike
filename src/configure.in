@@ -5702,7 +5702,7 @@ if test yes = "$with_machine_code"; then
        AC_DEFINE_UNQUOTED(PIKE_CPU_REG_PREFIX,"$pike_cv_cpu_reg_prefix");;
   esac
 
-  if test "x$PAXCTL" = "x:"; then :; else
+  if test "x$PAXCTL" = "x"; then :; else
     AC_MSG_CHECKING(${PAXCTL} syntax to allow mprotect)
     AC_CACHE_VAL(pike_cv_paxctl_allow_mprotect,
     [
@@ -7949,6 +7949,10 @@ AC_MSG_RESULT($pike_cv_sys_dynamic_loading)
 if test "x$with_dynamic_modules" != "xno" ; then
   if test x$pike_cv_sys_dynamic_loading = xno ; then
     with_dynamic_modules=no
+    LDSHARED_BASE_REQS=""
+    LDSHARED_MODULE_ARGS=""
+    LDSHARED_MODULE_REQS=""
+    LDSHARED_MODULE_ARGS=""
   else
     with_dynamic_modules=yes
   fi

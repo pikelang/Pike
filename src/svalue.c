@@ -462,12 +462,22 @@ PMOD_EXPORT size_t hash_svalue(const struct svalue *s)
 	safe_apply_low2(s->u.object,
 			fun + p->inherits[SUBTYPEOF(*s)].identifier_level,
 			0, "__hash");
+#if SIZEOF_INT_TYPE < SIZEOF_CHAR_P
+        unsigned INT64 i;
+        if (int64_from_svalue((INT64 *)&i, Pike_sp-1))
+        {
+          q=i;
+        }else{
+          q=0;
+        }
+#else
 	if(TYPEOF(Pike_sp[-1]) == T_INT)
 	{
 	  q=Pike_sp[-1].u.integer;
 	}else{
 	  q=0;
 	}
+#endif
 	pop_stack();
 	/* do not mix the return value of __hash, since this makes using
 	 * hash_value pointless */
