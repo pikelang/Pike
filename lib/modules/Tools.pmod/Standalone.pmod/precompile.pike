@@ -1533,9 +1533,12 @@ array fix_return(array body, PikeType rettype, mixed args)
   {
     int pos2=search(body,PC.Token(";",0),pos+1);
     body[pos]=sprintf("do { %s ret_=(",rettype->c_storage_type());
-    body[pos2]=sprintf("); %s push_%s(ret_); return; }while(0);",
-		       make_pop(args),
-		       rettype->basetype());
+    // NB: Reuse the ";" token at pos2, so that following whitespace is preserved.
+    body = body[..pos2-1] + ({
+      sprintf("); %s push_%s(ret_); return; }while(0)",
+              make_pop(args),
+              rettype->basetype()),
+    }) + body[pos2..];
     pos=pos2+1;
   }
 
@@ -1544,9 +1547,12 @@ array fix_return(array body, PikeType rettype, mixed args)
   {
     int pos2=search(body,PC.Token(";",0),pos+1);
     body[pos]=sprintf("do { %s ret_=(",rettype->c_storage_type());
-    body[pos2]=sprintf("); add_ref(ret_); %s push_%s(ret_); return; }while(0);",
-		       make_pop(args),
-		       rettype->basetype());
+    // NB: Reuse the ";" token at pos2, so that following whitespace is preserved.
+    body = body[..pos2-1] + ({
+      sprintf("); add_ref(ret_); %s push_%s(ret_); return; }while(0)",
+              make_pop(args),
+              rettype->basetype()),
+    }) + body[pos2..];
     pos=pos2+1;
   }
   return body;
