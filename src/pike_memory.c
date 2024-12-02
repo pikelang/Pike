@@ -28,6 +28,22 @@
 #include <fcntl.h>
 #endif
 
+#if (defined(__arm__) || defined(__aarch64__)) && defined(HAVE_CRC32_INTRINSICS)
+#ifdef HAVE_SYS_AUXV_H
+#include <sys/auxv.h>
+#endif
+#ifdef HAVE_ASM_HWCAP_H
+#include <asm/hwcap.h>
+#endif
+#ifdef __APPLE__
+#include <sys/types.h>
+#include <sys/sysctl.h>
+#endif
+#ifdef __NT__
+#include <processthreadsapi.h>
+#endif
+#endif
+
 #include <errno.h>
 
 int page_size;
@@ -289,6 +305,175 @@ static void init_hashmem()
 {
   if( supports_sse42() )
     low_hashmem = low_hashmem_ia32_crc32;
+  else
+    low_hashmem = low_hashmem_default;
+}
+#elif (defined(__arm__) || defined(__aarch64__)) && defined(HAVE_CRC32_INTRINSICS)
+ATTRIBUTE((const)) static inline int supports_crc( )
+{
+#if defined(HAVE_GETAUXVAL)
+#ifdef __aarch64__
+  return getauxval(AT_HWCAP) & HWCAP_CRC32;
+#else
+  return getauxval(AT_HWCAP2) & HWCAP2_CRC32;
+#endif
+#elif defined(__APPLE__)
+  int val = 0;
+  size_t len = sizeof(val);
+  return (sysctlbyname("hw.optional.armv8_crc32", &val, &len, NULL, 0) ?
+          0 : val);
+#elif defined(__NT__)
+  return IsProcessorFeaturePresent(PF_ARM_V8_CRC32_INSTRUCTIONS_AVAILABLE);
+#else
+#warning No way to check for CRC32
+  return 0;
+#endif
+}
+
+#ifdef __ARM_BIG_ENDIAN
+#define SWAB32(x) __builtin_bswap32(x)
+#define SWAB64(x) __builtin_bswap64(x)
+#else
+#define SWAB32(x) x
+#define SWAB64(x) x
+#endif
+
+#if defined(__arm__) || defined(__clang__)
+#define CRC32CB(H,P) H=__builtin_arm_crc32cb(H,*(P))
+#define CRC32CW(H,P) H=__builtin_arm_crc32cw(H,SWAB32(*(P)))
+#define CRC32CX(H,P) H=__builtin_arm_crc32cd(H,SWAB64(*(P)))
+#else
+#define CRC32CB(H,P) H=__builtin_aarch64_crc32cb(H,*(P))
+#define CRC32CW(H,P) H=__builtin_aarch64_crc32cw(H,SWAB32(*(P)))
+#define CRC32CX(H,P) H=__builtin_aarch64_crc32cx(H,SWAB64(*(P)))
+#endif
+
+#ifdef __arm__
+ATTRIBUTE((target("arch=armv8-a+crc")))
+#endif
+#ifdef __aarch64__
+ATTRIBUTE((target("+crc")))
+#endif
+PIKE_HOT_ATTRIBUTE
+static inline size_t low_hashmem_arm_crc32( const void *s, size_t len,
+                                            size_t nbytes, UINT64 key )
+{
+  unsigned int h = len;
+  const unsigned char *c = s;
+  const unsigned int *p;
+  size_t trailer_bytes = 8;
+
+  if( key )
+      return low_hashmem_siphash24(s,len,nbytes,key);
+
+  if (UNLIKELY(!len)) return h;
+
+  if( nbytes >= len )
+  {
+    /* Hash the whole memory area */
+    nbytes = len;
+    trailer_bytes = 0;
+  } else if (UNLIKELY(nbytes < 32)) {
+    /* Hash the whole memory area once */
+    trailer_bytes = 0;
+  }
+
+  /* Hash the initial unaligned bytes (if any). */
+  while (UNLIKELY(((size_t)c) & 0x03) && nbytes) {
+    CRC32CB(h, c++);
+    nbytes--;
+  }
+
+  /* c is now aligned. */
+
+  p = (const unsigned int *)c;
+
+#ifdef __aarch64__
+  if ((nbytes & 4)) {
+    CRC32CW(h, &p[0]);
+    p++;
+    nbytes -= 4;
+  }
+#endif
+  
+  /* .. all full integers in blocks of 8 .. */
+  while (nbytes & ~31) {
+#ifdef __aarch64__
+    CRC32CX(h, (const UINT64*)&p[0]);
+    CRC32CX(h, (const UINT64*)&p[2]);
+    CRC32CX(h, (const UINT64*)&p[4]);
+    CRC32CX(h, (const UINT64*)&p[6]);
+#else
+    CRC32CW(h, &p[0]);
+    CRC32CW(h, &p[1]);
+    CRC32CW(h, &p[2]);
+    CRC32CW(h, &p[3]);
+    CRC32CW(h, &p[4]);
+    CRC32CW(h, &p[5]);
+    CRC32CW(h, &p[6]);
+    CRC32CW(h, &p[7]);
+#endif
+    p += 8;
+    nbytes -= 32;
+  }
+
+  /* .. all remaining full integers .. */
+#ifdef __aarch64__
+  while (nbytes & ~7) {
+    CRC32CX(h, (const UINT64*)&p[0]);
+    p+=2;
+    nbytes -= 8;
+  }
+  if (nbytes & ~3) {
+    CRC32CW(h, &p[0]);
+    p++;
+    nbytes -= 4;
+  }
+#else
+  while (nbytes & ~3) {
+    CRC32CW(h, &p[0]);
+    p++;
+    nbytes -= 4;
+  }
+#endif
+  
+  /* any remaining bytes. */
+  c = (const unsigned char *)p;
+  while (nbytes--) {
+    CRC32CB( h, c++ );
+  }
+
+  if (trailer_bytes) {
+    /* include 8 bytes from the end. Note that this might be a
+     * duplicate of the previous bytes.
+     *
+     * Also note that this means we are rather likely to read
+     * unaligned memory.  That is OK, however.
+     */
+    p = (const unsigned int *)((const unsigned char *)s+len-8);
+    CRC32CW(h, p++);
+    CRC32CW(h, p);
+  }
+
+#if SIZEOF_CHAR_P > 4
+  return (((size_t)h)<<32) | h;
+#else
+  return h;
+#endif
+}
+
+PIKE_HOT_ATTRIBUTE
+static size_t low_hashmem_default(const void *a, size_t len_, size_t mlen_, UINT64 key_)
+{
+    return low_hashmem_siphash24(a, len_, mlen_, key_);
+}
+
+size_t (*low_hashmem)(const void *, size_t, size_t, UINT64);
+
+static void init_hashmem()
+{
+  if (supports_crc())
+    low_hashmem = low_hashmem_arm_crc32;
   else
     low_hashmem = low_hashmem_default;
 }
