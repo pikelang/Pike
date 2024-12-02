@@ -1300,7 +1300,7 @@ static void mpzmod_div(INT32 args)
       }
       else
       {
-        MP_INT *tmp=get_mpz(sp-1,1,"`/",e,e);
+        MP_INT *tmp=get_mpz(sp-1,1,"`/",1,1);
         mpz_fdiv_q(OBTOMPZ(res), OBTOMPZ(res), tmp);
         /* will this leak? there is no simple way of poking at the
            references to tmp */
@@ -2061,6 +2061,20 @@ static void mpzmod_pow(INT32 args)
        */
       exponent &= 1;
     }
+#ifdef BIG_PIKE_INT
+    else if (exponent != sp[-1].u.integer) {
+      if(mpz_cmp_si(THIS, -1)<0 || mpz_cmp_si(THIS, 1)>0) {
+        /* Not -1, 0, or +1. */
+        SIMPLE_ARG_ERROR ("pow", 1, "Exponent too large.");
+      }
+      /* We are either -1, 0, or +1 here.  We only care about
+       * the exponent being even or odd.
+       */
+      exponent &= 1;
+      /* Prevent wrong result for 0^even */
+      exponent |= 2;
+    }
+#endif
   } else if( TYPEOF(sp[-1]) == PIKE_T_FLOAT )
   {
       sp[-1].u.float_number = pow(mpz_get_d(THIS),sp[-1].u.float_number);
@@ -2161,7 +2175,7 @@ static void mpzmod_hamdist(INT32 args)
   if (args != 1)
     SIMPLE_WRONG_NUM_ARGS_ERROR ("hamdist", 1);
   x = get_mpz(sp-1, 1, "hamdist", 1, 1);
-  push_int(mpz_hamdist(THIS, x));
+  push_int((long int)mpz_hamdist(THIS, x));
   stack_swap();
   pop_stack();
 }

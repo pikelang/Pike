@@ -798,7 +798,16 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	   * performing a recursive call, which means that we need
 	   * a proper pike_string anyway.
 	   */
+#if SIZEOF_INT_TYPE > SIZEOF_LONG
+          int neg = i < 0;
+
+          if (neg) i = -i;
+          mpz_init (&tmp);
+          mpz_import (&tmp, 1, 1, SIZEOF_INT_TYPE, 0, 0, &i);
+          if (neg) mpz_neg (&tmp, &tmp);
+#else
           mpz_init_set_si( &tmp, i );
+#endif
 	  push_string(low_get_mpz_digits(&tmp, 36));
 	  mpz_clear( &tmp );
 	  encode_value2(Pike_sp-1, data, force_encode);
