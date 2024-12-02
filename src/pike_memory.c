@@ -274,6 +274,15 @@ static inline size_t low_hashmem_ia32_crc32( const void *s, size_t len,
 #ifdef __i386__
 ATTRIBUTE((fastcall))
 #endif
+PIKE_HOT_ATTRIBUTE
+static size_t low_hashmem_default(const void *a, size_t len_, size_t mlen_, UINT64 key_)
+{
+    return low_hashmem_siphash24(a, len_, mlen_, key_);
+}
+
+#ifdef __i386__
+ATTRIBUTE((fastcall))
+#endif
   size_t (*low_hashmem)(const void *, size_t, size_t, UINT64);
 
 static void init_hashmem()
@@ -281,7 +290,7 @@ static void init_hashmem()
   if( supports_sse42() )
     low_hashmem = low_hashmem_ia32_crc32;
   else
-    low_hashmem = low_hashmem_siphash24;
+    low_hashmem = low_hashmem_default;
 }
 #else
 static void init_hashmem(){}
