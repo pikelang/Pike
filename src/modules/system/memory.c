@@ -351,23 +351,37 @@ static void memory__mmap(INT32 args,int complain,int private)
       doclose=1;
    }
 
-   if (osize<0)
-   {
-      if (doclose) fd_close(fd);
-      if (!complain)
-	 RETURN(0);
-      else
-         Pike_error("Not a regular file.\n");
+   if (!size) {
+      if (osize < 0) {
+         if (doclose) fd_close(fd);
+         if (!complain)
+            RETURN(0);
+         else
+            Pike_error("Not a regular file.\n");
+      }
+
+      /* NB: The following may underflow, but that will
+       *     be detected below.
+       */
+      size = ((size_t)osize) - offset;
+   }
+   if ((osize >= 0) &&
+       ((offset > (size_t)osize) ||
+        (size > (size_t)osize) ||
+        (offset + size > (size_t)osize))) {
+      /* NB: Compares each of offset, size and the sum separately
+       *     to avoid issues with overflows.
+       */
+     if (doclose) fd_close(fd);
+      Pike_error("Mapped area outside file.\n");
    }
 
-   if (!size) size=((size_t)osize)-offset;
-   if (offset+size>(size_t)osize)
-      Pike_error("Mapped area outside file.\n");
-
 #ifdef PAGE_SIZE
-   if (offset%PAGE_SIZE)
+   if (offset%PAGE_SIZE) {
+      if (doclose) fd_close(fd);
       Pike_error("Mapped offset not aligned to PAGE_SIZE "
                  "(%d aka System.PAGE_SIZE).\n",(int)offset);
+   }
 #endif
 
    if (private) flags|=MAP_PRIVATE;
