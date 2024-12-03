@@ -1972,9 +1972,22 @@ fi
 AC_MSG_CHECKING([crc32 intrinsics])
 AC_CACHE_VAL(pike_cv_sys_have_crc_intrinsics,[
   AC_TRY_LINK([
+#if (defined(__i386__) || defined(__amd64__)) && defined(__GNUC__)
     __attribute__((target("sse4"))) int c(int a) {
       return __builtin_ia32_crc32si(0,a);
-    }],[
+    }
+#elif (defined(__arm__) && defined(__GNUC__)) || (defined(__aarch64__) && defined(__clang__))
+    __attribute__((target("arch=armv8-a+crc"))) int c(int a) {
+      return __builtin_arm_crc32cw(0,a);
+    }
+#elif defined(__aarch64__) && defined(__GNUC__)
+    __attribute__((target("+crc"))) int c(int a) {
+      return __builtin_aarch64_crc32cw(0,a);
+    }
+#else
+#error Do not know how to check for crc32 intrinsics on your system
+#endif
+    ],[
       return c(0);
     ],
     [pike_cv_sys_have_crc_intrinsics=yes],
@@ -2970,7 +2983,7 @@ AC_CHECK_HEADERS(winsock2.h sys/rusage.h sys/time.h \
 		 mach/mach_init.h syscall.h sys/syscall.h devices/timer.h \
 		 direct.h CoreServices/CoreServices.h execinfo.h \
 		 mach/mach.h mach/thread_act.h mach/clock.h \
-                 mach/port.h mach/message.h,,,[
+                 mach/port.h mach/message.h sys/auxv.h asm/hwcap.h,,,[
 #if (defined(__WINNT__) || defined(__WIN32__)) && !defined(__NT__)
 #define __NT__
 #endif
@@ -4352,6 +4365,7 @@ AC_CHECK_FUNCS( \
  fchdir \
  fdwalk \
  ftruncate64 \
+ getauxval \
  gethrtime \
  gethrvtime \
  getrlimit \

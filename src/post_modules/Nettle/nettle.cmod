@@ -23,6 +23,22 @@
 #include <nettle/version.h>
 #endif
 
+#if (defined(__arm__) || defined(__aarch64__)) && defined(HAVE_CRC32_INTRINSICS)
+#ifdef HAVE_SYS_AUXV_H
+#include <sys/auxv.h>
+#endif
+#ifdef HAVE_ASM_HWCAP_H
+#include <asm/hwcap.h>
+#endif
+#ifdef __APPLE__
+#include <sys/types.h>
+#include <sys/sysctl.h>
+#endif
+#ifdef __NT__
+#include <processthreadsapi.h>
+#endif
+#endif
+
 DECLARATIONS
 
 /*! @module Nettle
@@ -797,6 +813,7 @@ PIKEFUN string(0..127) crypt_md5(string pw, string salt,
 }
 
 #ifdef HAVE_CRC32_INTRINSICS
+#if defined(__i386__) || defined(__amd64__)
 static int supports_sse42 = 0;
 
 static ATTRIBUTE((target("sse4")))
@@ -819,6 +836,51 @@ static ATTRIBUTE((target("sse4")))
 
   return ~h;
 }
+#elif defined(__arm__) || defined(__aarch64__)
+static int supports_crc = 0;
+
+#ifdef __ARM_BIG_ENDIAN
+#define SWAB32(x) __builtin_bswap32(x)
+#else
+#define SWAB32(x) x
+#endif
+
+#if defined(__arm__) || defined(__clang__)
+#define CRC32CB(H,P) H=__builtin_arm_crc32cb(H,*(P))
+#define CRC32CW(H,P) H=__builtin_arm_crc32cw(H,SWAB32(*(P)))
+#else
+#define CRC32CB(H,P) H=__builtin_aarch64_crc32cb(H,*(P))
+#define CRC32CW(H,P) H=__builtin_aarch64_crc32cw(H,SWAB32(*(P)))
+#endif
+
+#ifdef __arm__
+ATTRIBUTE((target("arch=armv8-a+crc")))
+#endif
+#ifdef __aarch64__
+ATTRIBUTE((target("+crc")))
+#endif
+static unsigned int arm_crc32c(const unsigned int *p, size_t len,
+   unsigned int h)
+{
+  const unsigned int *e = p + (len>>2);
+  const unsigned char *c = (const unsigned char*)e;
+  h = ~h;
+
+  /* .. all full integers .. */
+  while( p<e )
+    CRC32CW(h, p++);
+
+  len &= 3;
+
+  /* any remaining bytes. */
+  while( len-- )
+    CRC32CB(h , c++);
+
+  return ~h;
+}
+#else
+#error Unknown architecture for crc32 intrinsics
+#endif
 #endif /* HAVE_CRC32_INTRINSICS */
 
 /* Copyright 2001, D. Otis.  Use this program, code or tables    */
@@ -905,11 +967,21 @@ PIKEFUN int(0..) crc32c(string(8bit) data, void|int(0..) seed)
     h = seed->u.integer;
 
 #ifdef HAVE_CRC32_INTRINSICS
+#if defined(__i386__) || defined(__amd64__)
   if(supports_sse42)
   {
     push_int64(intel_crc32c((const unsigned int *)data->str, data->len, h));
   }
   else
+#elif defined(__arm__) || defined(__aarch64__)
+  if(supports_crc)
+  {
+    push_int64(arm_crc32c((const unsigned int *)data->str, data->len, h));
+  }
+  else
+#else
+#error Unknown architecture for crc32 intrinsics
+#endif
 #endif /* HAVE_CRC32_INTRISINCS */
   {
     unsigned int i=0, len = data->len;
@@ -950,11 +1022,34 @@ PIKE_MODULE_INIT
 #endif
 
 #ifdef HAVE_CRC32_INTRINSICS
+#if defined(__i386__) || defined(__amd64__)
   {
     INT32 cpuid[4];
     x86_get_cpuid (1, cpuid);
     supports_sse42 = cpuid[3] & bit_SSE4_2;
   }
+#elif defined(__arm__) || defined(__aarch64__)
+#if defined(HAVE_GETAUXVAL)
+#ifdef __aarch64__
+  supports_crc = getauxval(AT_HWCAP) & HWCAP_CRC32;
+#else
+  supports_crc = getauxval(AT_HWCAP2) & HWCAP2_CRC32;
+#endif
+#elif defined(__APPLE__)
+  {
+    int val = 0;
+    size_t len = sizeof(val);
+    if (!sysctlbyname("hw.optional.armv8_crc32", &val, &len, NULL, 0))
+      supports_crc = val;
+  }
+#elif defined(__NT__)
+  supports_crc = IsProcessorFeaturePresent(PF_ARM_V8_CRC32_INSTRUCTIONS_AVAILABLE);
+#else
+#warning No way to check for CRC32
+#endif
+#else
+#error Unknown architecture for crc32 intrinsics
+#endif
 #endif /* HAVE_CRC32_INTRISINCS */
 }
 
