@@ -542,6 +542,23 @@ static void close_fd_quietly(void)
     }
     break;
   }
+
+#ifdef _REENTRANT
+#ifdef SIGCHLD
+  if (THIS->flags & FILE_BUSY) {
+    /* The fd appears to be busy in some other thread.
+     *
+     * Force that syscall to fail with EINTR.
+     */
+    if (THIS->flags & FILE_RBUSY) {
+      th_kill(THIS->rthread, SIGCHLD);
+    }
+    if (THIS->flags & FILE_WBUSY) {
+      th_kill(THIS->wthread, SIGCHLD);
+    }
+  }
+#endif
+#endif
 }
 
 static void close_fd(void)
@@ -594,6 +611,23 @@ static void close_fd(void)
     }
     break;
   }
+
+#ifdef _REENTRANT
+#ifdef SIGCHLD
+  if (THIS->flags & FILE_BUSY) {
+    /* The fd appears to be busy in some other thread.
+     *
+     * Force that syscall to fail with EINTR.
+     */
+    if (THIS->flags & FILE_RBUSY) {
+      th_kill(THIS->rthread, SIGCHLD);
+    }
+    if (THIS->flags & FILE_WBUSY) {
+      th_kill(THIS->wthread, SIGCHLD);
+    }
+  }
+#endif
+#endif
 }
 
 void my_set_close_on_exec(int fd, int to)
@@ -695,6 +729,11 @@ static struct pike_string *do_read(int fd,
     do{
       int fd=FD;
       int e;
+
+      if (fd < 0) {
+        /* Closed from another thread? */
+        break;
+      }
       THREADS_ALLOW();
 
       try_read = i;
@@ -773,8 +812,14 @@ static struct pike_string *do_read(int fd,
     SET_ONERROR(ebuf, free_dynamic_buffer, &b);
     i = all && !INT32_MUL_OVERFLOW(r, 2) ? DIRECT_BUFSIZE : READ_BUFFER;
     do{
+      int fd=FD;
       int e;
       char *buf;
+
+      if (fd < 0) {
+        /* Closed from another thread? */
+        break;
+      }
 
       try_read = i;
 
@@ -1036,6 +1081,11 @@ static struct pike_string *do_recvmsg(INT32 r, int all)
     do{
       int fd=FD;
       int e;
+
+      if (fd < 0) {
+        /* Closed from another thread? */
+        break;
+      }
 #ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
       /* XPG 4.2 */
       message.msg.msg_control = &message.cmsgbuf;
@@ -1113,7 +1163,13 @@ static struct pike_string *do_recvmsg(INT32 r, int all)
     initialize_buf(&b);
     SET_ONERROR(ebuf, free_dynamic_buffer, &b);
     do{
+      int fd=FD;
       int e;
+
+      if (fd < 0) {
+        /* Closed from another thread? */
+        break;
+      }
       try_read=MINIMUM(CHUNK,r);
 
 #ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
@@ -1258,6 +1314,11 @@ static struct pike_string *do_read_oob(int UNUSED(fd),
     do{
       int e;
       int fd=FD;
+
+      if (fd < 0) {
+        /* Closed from another thread? */
+        break;
+      }
       THREADS_ALLOW();
       i=fd_recv(fd, str->str+bytes_read, r, MSG_OOB);
       e=errno;
@@ -1396,6 +1457,14 @@ static void file_read(INT32 args)
     all=1;
   }
 
+#ifdef _REENTRANT
+  if (THIS->flags & FILE_RBUSY) {
+    Pike_error("File in use by another thread.\n");
+  }
+  THIS->flags |= FILE_RBUSY;
+  THIS->rthread = th_self();
+#endif
+
   pop_n_elems(args);
 
 #ifdef HAVE_PIKE_SEND_FD
@@ -1416,6 +1485,10 @@ static void file_read(INT32 args)
       errno = ERRNO;
       push_int(0);
     }
+
+#ifdef _REENTRANT
+  THIS->flags &= ~FILE_RBUSY;
+#endif
 
   if (!(THIS->open_mode & FILE_NONBLOCKING))
     INVALIDATE_CURRENT_TIME();
@@ -1518,6 +1591,14 @@ static void file_peek(INT32 args)
     fds.events=POLLIN;
     fds.revents=0;
 
+#ifdef _REENTRANT
+    if (THIS->flags & FILE_RBUSY) {
+      Pike_error("File in use by another thread.\n");
+    }
+    THIS->flags |= FILE_RBUSY;
+    THIS->rthread = th_self();
+#endif
+
     if (timeout) {
       THREADS_ALLOW();
       ret=poll(&fds, 1, timeout);
@@ -1525,6 +1606,10 @@ static void file_peek(INT32 args)
     } else {
       ret=poll(&fds, 1, 0);
     }
+
+#ifdef _REENTRANT
+    THIS->flags &= ~FILE_RBUSY;
+#endif
 
     if(ret < 0)
     {
@@ -1560,6 +1645,14 @@ static void file_peek(INT32 args)
       tv.tv_usec=(int)(1000000*(tf-tv.tv_sec));
     }
 
+#ifdef _REENTRANT
+    if (THIS->flags & FILE_RBUSY) {
+      Pike_error("File in use by another thread.\n");
+    }
+    THIS->flags |= FILE_RBUSY;
+    THIS->rthread = th_self();
+#endif
+
     /* FIXME: Handling of EOF and not_eof */
 
     if(tv.tv_sec || tv.tv_usec) {
@@ -1569,6 +1662,10 @@ static void file_peek(INT32 args)
     }
     else
       ret = fd_select(ret+1,&tmp,0,0,&tv);
+
+#ifdef _REENTRANT
+    THIS->flags &= ~FILE_RBUSY;
+#endif
 
     if(ret < 0)
     {
@@ -1676,6 +1773,14 @@ static void file_read_oob(INT32 args)
     all=1;
   }
 
+#ifdef _REENTRANT
+  if (THIS->flags & FILE_RBUSY) {
+    Pike_error("File in use by another thread.\n");
+  }
+  THIS->flags |= FILE_RBUSY;
+  THIS->rthread = th_self();
+#endif
+
   pop_n_elems(args);
 
   if((tmp=do_read_oob(FD, len, all, & ERRNO)))
@@ -1684,6 +1789,10 @@ static void file_read_oob(INT32 args)
     errno = ERRNO;
     push_int(0);
   }
+
+#ifdef _REENTRANT
+  THIS->flags &= ~FILE_RBUSY;
+#endif
 
   if (!(THIS->open_mode & FILE_NONBLOCKING))
     INVALIDATE_CURRENT_TIME();
@@ -1859,6 +1968,12 @@ static void file_write(INT32 args)
   if(FD < 0)
     Pike_error("File not open for write.\n");
 
+#ifdef _REENTRANT
+  if (THIS->flags & FILE_WBUSY) {
+    Pike_error("File in use by another thread.\n");
+  }
+#endif
+
   if (TYPEOF(Pike_sp[-args]) == PIKE_T_ARRAY) {
     struct array *a = Pike_sp[-args].u.array;
 
@@ -1915,6 +2030,10 @@ static void file_write(INT32 args)
 	}
       }
 
+#ifdef _REENTRANT
+      THIS->flags |= FILE_WBUSY;
+      THIS->wthread = th_self();
+#endif
       for(written = 0; iovcnt; check_signals(0,0,0)) {
 	int fd = FD;
 	int e;
@@ -1927,6 +2046,10 @@ static void file_write(INT32 args)
 	  THIS->fd_info = NULL;
 	}
 #endif
+        if (fd < 0) {
+          /* Closed from another thread? */
+          break;
+        }
 	THREADS_ALLOW();
 
 #ifdef IOV_MAX
@@ -2005,13 +2128,11 @@ static void file_write(INT32 args)
 	    }
 	  }
 	}
-#ifdef _REENTRANT
-	if (FD<0) {
-	  free(iovbase);
-	  Pike_error("File closed while in file->write.\n");
-	}
-#endif
       }
+
+#ifdef _REENTRANT
+      THIS->flags &= ~FILE_WBUSY;
+#endif
 
       free(iovbase);
 
@@ -2038,6 +2159,10 @@ static void file_write(INT32 args)
   if(str->size_shift)
     Pike_error("Stdio.File->write(): cannot output wide strings.\n");
 
+#ifdef _REENTRANT
+  THIS->flags |= FILE_WBUSY;
+  THIS->wthread = th_self();
+#endif
   for(written=0;written < str->len;check_signals(0,0,0))
   {
     int fd=FD;
@@ -2051,6 +2176,10 @@ static void file_write(INT32 args)
       THIS->fd_info = NULL;
     }
 #endif
+    if (fd < 0) {
+      /* Closed from another thread? */
+      break;
+    }
     THREADS_ALLOW();
 #ifdef HAVE_PIKE_SEND_FD
     if (fd_info) {
@@ -2107,15 +2236,12 @@ static void file_write(INT32 args)
       if(THIS->open_mode & FILE_NONBLOCKING)
 	break;
     }
-#ifdef _REENTRANT
-    if(FD<0) Pike_error("File closed while in file->write.\n");
-#endif
   }
 
 #ifdef _REENTRANT
-  /* check_signals() may have done something... */
-  if(FD<0) Pike_error("File closed while in file->write.\n");
+  THIS->flags &= ~FILE_WBUSY;
 #endif
+
   /* Race: A backend in another thread might have managed to set these
    * again for buffer space available after the write above. Not that
    * bad - it will get through in a later backend round. */
@@ -2186,10 +2312,23 @@ static void file_write_oob(INT32 args)
   if(str->size_shift)
     Pike_error("Stdio.File->write_oob(): cannot output wide strings.\n");
 
+#ifdef _REENTRANT
+  if (THIS->flags & FILE_WBUSY) {
+    Pike_error("File in use by another thread.\n");
+  }
+  THIS->flags |= FILE_WBUSY;
+  THIS->wthread = th_self();
+#endif
+
   while(written < str->len)
   {
     int fd=FD;
     int e;
+
+    if (fd < 0) {
+      /* Closed from another thread? */
+      break;
+    }
     THREADS_ALLOW();
     i = fd_send(fd, str->str + written, str->len - written, MSG_OOB);
     e=errno;
@@ -2229,6 +2368,10 @@ static void file_write_oob(INT32 args)
 	break;
     }
   }
+
+#ifdef _REENTRANT
+  THIS->flags &= ~FILE_WBUSY;
+#endif
 
   /* Race: A backend in another thread might have managed to set these
    * again for buffer space available after the write above. Not that
@@ -2904,6 +3047,13 @@ static void file_openat(INT32 args)
     Pike_error("Must open file for at least one of read and write.\n");
 
   do {
+    dir_fd = FD;
+    if (dir_fd < 0) {
+      /* Unlikely, but... */
+      fd = -1;
+      err = EBADF;
+      break;
+    }
     THREADS_ALLOW_UID();
     fd = openat(dir_fd, str->str, map(flags), access);
     err = errno;
@@ -3353,6 +3503,7 @@ static void file_unlinkat(INT32 args)
 
   THREADS_ALLOW_UID();
   do {
+    /* FIXME: Handle concurrent close of dir_fd. */
     i = fstatat(dir_fd, str->str, &st, AT_SYMLINK_NOFOLLOW);
   } while ((i < 0) && (errno == EINTR));
   if (i >= 0) {
@@ -3361,6 +3512,7 @@ static void file_unlinkat(INT32 args)
       flag = AT_REMOVEDIR;
     }
     do {
+      /* FIXME: Handle concurrent close of dir_fd. */
       i = unlinkat(dir_fd, str->str, flag);
     } while ((i < 0) && (errno == EINTR));
   }
@@ -3430,6 +3582,11 @@ static void file_get_dir(INT32 args)
 
     if ((dfd == -1) && (errno == EINTR)) {
       check_threads_etc();
+      fd = FD;
+      if (fd < 0) {
+        errno = EBADF;
+        break;
+      }
       continue;
     }
     break;
