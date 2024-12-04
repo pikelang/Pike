@@ -322,6 +322,7 @@ PMOD_EXPORT extern pthread_attr_t small_pattr;
 #define low_th_yield() Sleep(0)
 #define th_equal(X,Y) ((X)==(Y))
 #define th_hash(X) (X)
+#define th_kill(ID, sig)
 
 /* FIXME: Check if we can switch to the cheaper CRITICAL_SECTION objects. */
 
@@ -700,6 +701,7 @@ PMOD_EXPORT void pike_threads_disallow_ext (struct thread_state *ts
 #define th_cleanup()
 #define th_init_programs()
 #define th_self() NULL
+#define th_kill(ID, sig)
 #define co_wait(X,Y)
 #define co_wait_timeout(X,Y,S,N)
 #define co_signal(X)

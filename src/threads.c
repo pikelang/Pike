@@ -2794,7 +2794,8 @@ static void f_thread_id_interrupt(INT32 args)
       thread_interrupt_callback =
 	add_to_callback(&evaluator_callbacks, check_thread_interrupt, 0, 0);
     }
-    /* FIXME: Actually interrupt the thread. */
+    /* Actually interrupt the thread. */
+    th_kill(THIS_THREAD->id, SIGCHLD);
   }
   THIS_THREAD->flags |= THREAD_FLAG_INTR;
   push_int(0);
@@ -2808,7 +2809,8 @@ static void low_thread_kill (struct thread_state *th)
       thread_interrupt_callback =
 	add_to_callback(&evaluator_callbacks, check_thread_interrupt, 0, 0);
     }
-    /* FIXME: Actually interrupt the thread. */
+    /* Actually interrupt the thread. */
+    th_kill(th->id, SIGCHLD);
   }
   th->flags |= THREAD_FLAG_TERM;
 }
