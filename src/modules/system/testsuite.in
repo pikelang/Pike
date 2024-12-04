@@ -3,7 +3,7 @@ START_MARKER
 
 // nt.c:
 
-cond_begin([[(cpp("__NT__")/"\n")[-1] != "__NT__"]])
+cond_begin([[!has_value(cpp("__NT__"), "__NT__")]])
 
 // AllocConsole		__NT__
 // AttachConsole	__NT__
