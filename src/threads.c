@@ -3158,7 +3158,8 @@ static void f_thread_id_interrupt(INT32 args)
       thread_interrupt_callback =
 	add_to_callback(&evaluator_callbacks, check_thread_interrupt, 0, 0);
     }
-    /* FIXME: Actually interrupt the thread. */
+    /* Actually interrupt the thread. */
+    th_kill(THIS_THREAD->id, SIGCHLD);
   }
   THIS_THREAD->flags |= THREAD_FLAG_INTR;
   push_int(0);
@@ -3172,7 +3173,8 @@ static void low_thread_kill (struct thread_state *th)
       thread_interrupt_callback =
 	add_to_callback(&evaluator_callbacks, check_thread_interrupt, 0, 0);
     }
-    /* FIXME: Actually interrupt the thread. */
+    /* Actually interrupt the thread. */
+    th_kill(th->id, SIGCHLD);
   }
   th->flags |= THREAD_FLAG_TERM;
 }
@@ -3218,16 +3220,16 @@ static void cleanup_thread_state (struct thread_state *th)
   if (th->status == THREAD_RUNNING || th->waiting)
     return;
 
-  if (THIS_THREAD->flags & THREAD_FLAG_SIGNAL_MASK) {
+  if (th->flags & THREAD_FLAG_SIGNAL_MASK) {
     Pike_interpreter.thread_state->flags &= ~THREAD_FLAG_SIGNAL_MASK;
     if (!--num_pending_interrupts) {
       remove_callback(thread_interrupt_callback);
       thread_interrupt_callback = NULL;
-    }    
+    }
   }
 
-  co_destroy(& THIS_THREAD->status_change);
-  th_destroy(& THIS_THREAD->id);
+  co_destroy(& th->status_change);
+  th_destroy(& th->id);
 }
 
 void exit_thread_obj(struct object *UNUSED(o))
