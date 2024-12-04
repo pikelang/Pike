@@ -2856,16 +2856,16 @@ static void cleanup_thread_state (struct thread_state *th)
   if (th->status == THREAD_RUNNING || th->waiting)
     return;
 
-  if (THIS_THREAD->flags & THREAD_FLAG_SIGNAL_MASK) {
+  if (th->flags & THREAD_FLAG_SIGNAL_MASK) {
     Pike_interpreter.thread_state->flags &= ~THREAD_FLAG_SIGNAL_MASK;
     if (!--num_pending_interrupts) {
       remove_callback(thread_interrupt_callback);
       thread_interrupt_callback = NULL;
-    }    
+    }
   }
 
-  co_destroy(& THIS_THREAD->status_change);
-  th_destroy(& THIS_THREAD->id);
+  co_destroy(& th->status_change);
+  th_destroy(& th->id);
 }
 
 void exit_thread_obj(struct object *UNUSED(o))
