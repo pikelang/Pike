@@ -242,6 +242,20 @@ test_true(stringp(strerror(2)||""))
 
 test_do(object o=Stdio.File(); if(!o->open(testfile,"wct")) return -1; o->write("foo\n" * 100); o->close();)
 
+cond([[all_constants()->kill && all_constants()->thread_create && has_value(cpp("__NT__"), "__NT__") ]],
+[[
+  test_any([[
+    // Test concurrent close during read().
+    object f = Stdio.File();
+    object p = f->pipe();
+    f->write("foo");
+    object t = Thread.Thread(lambda(object p) { sleep(1); p->close(); }, p);
+    string r = p->read(5);
+    t->wait();
+    return r;
+  ]], "foo")
+]])
+
 dnl Stdio.FILE
 test_any([[object o=Stdio.FILE(); o->open(testfile,"r"); return o->gets()]],"foo")
 test_any(object o=Stdio.FILE(); o->open(testfile,"r"); return o->gets()+o->gets()+o->gets(),"foofoofoo")
