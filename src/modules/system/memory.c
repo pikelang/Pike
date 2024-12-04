@@ -166,7 +166,6 @@ static void memory_create(INT32 args)
 	memory_shm( args );
       else
          SIMPLE_ARG_TYPE_ERROR("create",1,"int|string");
-      pop_n_elems(args);
    }
    else
    {
