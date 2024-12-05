@@ -270,6 +270,76 @@ static struct my_file *get_file_storage(struct object *o)
   return 0;
 }
 
+#ifdef _REENTRANT
+/**
+ *  Mark a file as used by the current thread.
+ *
+ *  Busy threads are interrupted by close_fd() when it closes the fd.
+ *
+ *  Operations that perform blocking operations on fds (eg read(),
+ *  or write()) should mark the file as busy. They should also
+ *  verify that f->fd (aka FD) is still valid after their system
+ *  calls fail with EINTR.
+ */
+static inline void mark_file_busy(struct my_file *f)
+{
+  struct thread_state *self = Pike_interpreter.thread_state;
+#ifdef PIKE_DEBUG
+  if (self->busy_prev || self->busy_next) {
+    Pike_fatal("Thread is already busy!\n");
+  }
+  if (f->busy_threads == self) {
+    Pike_fatal("File contains stale reference to current thread!\n");
+  }
+#endif
+
+  self->busy_next = f->busy_threads;
+  if (self->busy_next) {
+#ifdef PIKE_DEBUG
+    if (self->busy_next->busy_prev) {
+      Pike_fatal("Bad reverse link in busy list!\n");
+    }
+#endif
+    self->busy_next->busy_prev = self;
+  }
+  f->busy_threads = self;
+}
+
+/**
+ *  Remove the current thread from the busy list for a file.
+ *
+ *  This function must be called when the file is no longer busy,
+ *  as a thread my only be busy with one thing at a time.
+ */
+static void mark_file_idle(struct my_file *f)
+{
+  struct thread_state *self = Pike_interpreter.thread_state;
+
+  if (!self->busy_prev) {
+#ifdef PIKE_DEBUG
+    if (f->busy_threads != self) {
+      Pike_fatal("Thread has already been unlinked from busy list!\n");
+    }
+#endif
+    f->busy_threads = self->busy_next;
+  } else {
+#ifdef PIKE_DEBUG
+    if (self->busy_prev->busy_next != self) {
+      Pike_fatal("Thread has already been unlinked from busy list!\n");
+    }
+#endif
+    self->busy_prev->busy_next = self->busy_next;
+  }
+  if (self->busy_next) {
+    self->busy_next->busy_prev = self->busy_prev;
+  }
+  self->busy_prev = self->busy_next = NULL;
+}
+#else
+static inline void mark_file_busy(struct my_file *f) {}
+static void mark_file_idle(struct my_file *f) {}
+#endif
+
 #ifdef PIKE_DEBUG
 static void debug_check_internals (struct my_file *f)
 {
@@ -369,6 +439,9 @@ static void init_fd(int fd, int open_mode, int flags)
 #endif
 #if defined(HAVE_FD_FLOCK) || defined(HAVE_FD_LOCKF)
   THIS->key=0;
+#endif
+#ifdef _REENTRANT
+  THIS->busy_threads = NULL;
 #endif
 #ifdef PIKE_DEBUG
   /* Don't cause a fatal when opening fds by number
@@ -545,16 +618,16 @@ static void close_fd_quietly(void)
 
 #ifdef _REENTRANT
 #ifdef SIGCHLD
-  if (THIS->flags & FILE_BUSY) {
-    /* The fd appears to be busy in some other thread.
-     *
-     * Force that syscall to fail with EINTR.
-     */
-    if (THIS->flags & FILE_RBUSY) {
-      th_kill(THIS->rthread, SIGCHLD);
-    }
-    if (THIS->flags & FILE_WBUSY) {
-      th_kill(THIS->wthread, SIGCHLD);
+  {
+    struct thread_state *t = THIS->busy_threads;
+    while (t) {
+      /* The fd appears to be busy in some other thread(s).
+       *
+       * Force that syscall to fail with EINTR.
+       */
+      th_kill(t->id, SIGCHLD);
+
+      t = t->busy_next;
     }
   }
 #endif
@@ -614,16 +687,16 @@ static void close_fd(void)
 
 #ifdef _REENTRANT
 #ifdef SIGCHLD
-  if (THIS->flags & FILE_BUSY) {
-    /* The fd appears to be busy in some other thread.
-     *
-     * Force that syscall to fail with EINTR.
-     */
-    if (THIS->flags & FILE_RBUSY) {
-      th_kill(THIS->rthread, SIGCHLD);
-    }
-    if (THIS->flags & FILE_WBUSY) {
-      th_kill(THIS->wthread, SIGCHLD);
+  {
+    struct thread_state *t = THIS->busy_threads;
+    while (t) {
+      /* The fd appears to be busy in some other thread(s).
+       *
+       * Force that syscall to fail with EINTR.
+       */
+      th_kill(t->id, SIGCHLD);
+
+      t = t->busy_next;
     }
   }
 #endif
@@ -1433,6 +1506,7 @@ static void file_read(INT32 args)
 {
   struct pike_string *tmp;
   INT32 all, len;
+  ONERROR err;
 
   if(FD < 0)
     Pike_error("File not open.\n");
@@ -1457,13 +1531,8 @@ static void file_read(INT32 args)
     all=1;
   }
 
-#ifdef _REENTRANT
-  if (THIS->flags & FILE_RBUSY) {
-    Pike_error("File in use by another thread.\n");
-  }
-  THIS->flags |= FILE_RBUSY;
-  THIS->rthread = th_self();
-#endif
+  mark_file_busy(THIS);
+  SET_ONERROR(err, mark_file_idle, THIS);
 
   pop_n_elems(args);
 
@@ -1486,9 +1555,7 @@ static void file_read(INT32 args)
       push_int(0);
     }
 
-#ifdef _REENTRANT
-  THIS->flags &= ~FILE_RBUSY;
-#endif
+  CALL_AND_UNSET_ONERROR(err);
 
   if (!(THIS->open_mode & FILE_NONBLOCKING))
     INVALIDATE_CURRENT_TIME();
@@ -1577,6 +1644,7 @@ static void file_peek(INT32 args)
   int ret;
   int not_eof = 0;
   FLOAT_TYPE tf = 0.0;
+  ONERROR err;
 
   get_all_args("peek",args,".%F%d",&tf,&not_eof);
 
@@ -1591,13 +1659,7 @@ static void file_peek(INT32 args)
     fds.events=POLLIN;
     fds.revents=0;
 
-#ifdef _REENTRANT
-    if (THIS->flags & FILE_RBUSY) {
-      Pike_error("File in use by another thread.\n");
-    }
-    THIS->flags |= FILE_RBUSY;
-    THIS->rthread = th_self();
-#endif
+    mark_file_busy(THIS);
 
     if (timeout) {
       THREADS_ALLOW();
@@ -1607,9 +1669,7 @@ static void file_peek(INT32 args)
       ret=poll(&fds, 1, 0);
     }
 
-#ifdef _REENTRANT
-    THIS->flags &= ~FILE_RBUSY;
-#endif
+    mark_file_idle(THIS);
 
     if(ret < 0)
     {
@@ -1645,13 +1705,7 @@ static void file_peek(INT32 args)
       tv.tv_usec=(int)(1000000*(tf-tv.tv_sec));
     }
 
-#ifdef _REENTRANT
-    if (THIS->flags & FILE_RBUSY) {
-      Pike_error("File in use by another thread.\n");
-    }
-    THIS->flags |= FILE_RBUSY;
-    THIS->rthread = th_self();
-#endif
+    mark_file_busy(THIS);
 
     /* FIXME: Handling of EOF and not_eof */
 
@@ -1663,9 +1717,7 @@ static void file_peek(INT32 args)
     else
       ret = fd_select(ret+1,&tmp,0,0,&tv);
 
-#ifdef _REENTRANT
-    THIS->flags &= ~FILE_RBUSY;
-#endif
+    mark_file_idle(THIS);
 
     if(ret < 0)
     {
@@ -1749,6 +1801,7 @@ static void file_read_oob(INT32 args)
 {
   struct pike_string *tmp;
   INT32 all, len;
+  ONERROR err;
 
   if(FD < 0)
     Pike_error("File not open.\n");
@@ -1773,13 +1826,8 @@ static void file_read_oob(INT32 args)
     all=1;
   }
 
-#ifdef _REENTRANT
-  if (THIS->flags & FILE_RBUSY) {
-    Pike_error("File in use by another thread.\n");
-  }
-  THIS->flags |= FILE_RBUSY;
-  THIS->rthread = th_self();
-#endif
+  mark_file_busy(THIS);
+  SET_ONERROR(err, mark_file_idle, THIS);
 
   pop_n_elems(args);
 
@@ -1790,9 +1838,7 @@ static void file_read_oob(INT32 args)
     push_int(0);
   }
 
-#ifdef _REENTRANT
-  THIS->flags &= ~FILE_RBUSY;
-#endif
+  CALL_AND_UNSET_ONERROR(err);
 
   if (!(THIS->open_mode & FILE_NONBLOCKING))
     INVALIDATE_CURRENT_TIME();
@@ -1960,6 +2006,7 @@ static void file_write(INT32 args)
 {
   ptrdiff_t written, i;
   struct pike_string *str;
+  ONERROR err;
 
   if(args<1 || ((TYPEOF(Pike_sp[-args]) != PIKE_T_STRING) &&
 		(TYPEOF(Pike_sp[-args]) != PIKE_T_ARRAY)))
@@ -1968,11 +2015,8 @@ static void file_write(INT32 args)
   if(FD < 0)
     Pike_error("File not open for write.\n");
 
-#ifdef _REENTRANT
-  if (THIS->flags & FILE_WBUSY) {
-    Pike_error("File in use by another thread.\n");
-  }
-#endif
+  mark_file_busy(THIS);
+  SET_ONERROR(err, mark_file_idle, THIS);
 
   if (TYPEOF(Pike_sp[-args]) == PIKE_T_ARRAY) {
     struct array *a = Pike_sp[-args].u.array;
@@ -2030,10 +2074,6 @@ static void file_write(INT32 args)
 	}
       }
 
-#ifdef _REENTRANT
-      THIS->flags |= FILE_WBUSY;
-      THIS->wthread = th_self();
-#endif
       for(written = 0; iovcnt; check_signals(0,0,0)) {
 	int fd = FD;
 	int e;
@@ -2087,6 +2127,9 @@ static void file_write(INT32 args)
 	    free(iovbase);
 	    ERRNO=errno=e;
 	    pop_n_elems(args);
+
+            CALL_AND_UNSET_ONERROR(err);
+
 	    if (!written) {
 	      push_int(-1);
 	    } else {
@@ -2130,15 +2173,13 @@ static void file_write(INT32 args)
 	}
       }
 
-#ifdef _REENTRANT
-      THIS->flags &= ~FILE_WBUSY;
-#endif
-
       free(iovbase);
 
       if(!SAFE_IS_ZERO(& THIS->event_cbs[PIKE_FD_WRITE]))
 	ADD_FD_EVENTS (THIS, PIKE_BIT_FD_WRITE);
       ERRNO=0;
+
+      CALL_AND_UNSET_ONERROR(err);
 
       pop_stack();
       push_int(written);
@@ -2159,10 +2200,6 @@ static void file_write(INT32 args)
   if(str->size_shift)
     Pike_error("Stdio.File->write(): cannot output wide strings.\n");
 
-#ifdef _REENTRANT
-  THIS->flags |= FILE_WBUSY;
-  THIS->wthread = th_self();
-#endif
   for(written=0;written < str->len;check_signals(0,0,0))
   {
     int fd=FD;
@@ -2210,6 +2247,9 @@ static void file_write(INT32 args)
       default:
 	ERRNO=errno=e;
 	pop_n_elems(args);
+
+        CALL_AND_UNSET_ONERROR(err);
+
 	if (!written) {
 	  push_int(-1);
 	} else {
@@ -2238,10 +2278,6 @@ static void file_write(INT32 args)
     }
   }
 
-#ifdef _REENTRANT
-  THIS->flags &= ~FILE_WBUSY;
-#endif
-
   /* Race: A backend in another thread might have managed to set these
    * again for buffer space available after the write above. Not that
    * bad - it will get through in a later backend round. */
@@ -2250,6 +2286,8 @@ static void file_write(INT32 args)
   if(!SAFE_IS_ZERO(& THIS->event_cbs[PIKE_FD_WRITE]))
     ADD_FD_EVENTS (THIS, PIKE_BIT_FD_WRITE);
   ERRNO=0;
+
+  CALL_AND_UNSET_ONERROR(err);
 
   pop_n_elems(args);
   push_int64(written);
@@ -2294,6 +2332,7 @@ static void file_write_oob(INT32 args)
 {
   ptrdiff_t written, i;
   struct pike_string *str;
+  ONERROR err;
 
   if(args<1 || TYPEOF(Pike_sp[-args]) != PIKE_T_STRING)
     SIMPLE_BAD_ARG_ERROR("Stdio.File->write_oob()",1,"string");
@@ -2312,13 +2351,8 @@ static void file_write_oob(INT32 args)
   if(str->size_shift)
     Pike_error("Stdio.File->write_oob(): cannot output wide strings.\n");
 
-#ifdef _REENTRANT
-  if (THIS->flags & FILE_WBUSY) {
-    Pike_error("File in use by another thread.\n");
-  }
-  THIS->flags |= FILE_WBUSY;
-  THIS->wthread = th_self();
-#endif
+  mark_file_busy(THIS);
+  SET_ONERROR(err, mark_file_idle, THIS);
 
   while(written < str->len)
   {
@@ -2336,10 +2370,6 @@ static void file_write_oob(INT32 args)
 
     check_threads_etc();
 
-#ifdef _REENTRANT
-    if(FD<0) Pike_error("File closed while in file->write_oob.\n");
-#endif
-
     if(i<0)
     {
       switch(e)
@@ -2347,6 +2377,9 @@ static void file_write_oob(INT32 args)
       default:
 	ERRNO=errno=e;
 	pop_n_elems(args);
+
+        CALL_AND_UNSET_ONERROR(err);
+
 	if (!written) {
 	  push_int(-1);
 	} else {
@@ -2369,9 +2402,7 @@ static void file_write_oob(INT32 args)
     }
   }
 
-#ifdef _REENTRANT
-  THIS->flags &= ~FILE_WBUSY;
-#endif
+  CALL_AND_UNSET_ONERROR(err);
 
   /* Race: A backend in another thread might have managed to set these
    * again for buffer space available after the write above. Not that
