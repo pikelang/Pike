@@ -92,13 +92,8 @@ struct my_file
   struct object *key;
 #endif
 #ifdef _REENTRANT
-  /* Threads that need to be woken up on concurrent close(2).
-   *
-   * NB: May be stale. Only valid if the corresponding FILE_BUSY
-   *     bit is set in flags.
-   */
-  THREAD_T rthread;
-  THREAD_T wthread;
+  /* List of pike threads that need to be woken up on concurrent close(2). */
+  struct thread_state *busy_threads;
 #endif
 };
 
@@ -221,8 +216,5 @@ void low_get_dir(DIR *dir, ptrdiff_t name_max);
 #define FILE_LOCK_FD		0x0004
 #define FILE_NOT_OPENED         0x0010
 #define FILE_HAVE_RECV_FD	0x0020
-#define FILE_RBUSY		0x0040
-#define FILE_WBUSY		0x0080
-#define FILE_BUSY		0x00c0
 
 #endif

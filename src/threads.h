@@ -41,6 +41,7 @@ struct thread_state {
   struct object *thread_obj;	/* NOTE: Not ref-counted! */
   struct mapping *thread_locals;
   struct thread_state *hashlink, **backlink;
+  struct thread_state *busy_prev, *busy_next;
   struct svalue result;
   COND_T status_change;
   THREAD_T id;
