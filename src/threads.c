@@ -584,6 +584,7 @@ PMOD_EXPORT void pike_init_thread_state (struct thread_state *ts)
   ts->state = Pike_interpreter;
   Pike_interpreter_pointer = &ts->state;
   ts->id = th_self();
+  ts->busy_prev = ts->busy_next = NULL;
   ts->status = THREAD_RUNNING;
   ts->swapped = 0;
   ts->interval_start = get_real_time();
@@ -1305,6 +1306,13 @@ PMOD_EXPORT void call_with_interpreter(void (*func)(void *ctx), void *ctx)
 
     CALL_WITH_ERROR_HANDLING(Pike_interpreter.thread_state, func, ctx);
 
+#ifdef PIKE_DEBUG
+    if (Pike_interpreter.thread_state->busy_prev ||
+        Pike_interpreter.thread_state->busy_next) {
+      Pike_fatal("Thread is still registered as busy when terminating!\n");
+    }
+#endif
+
     cleanup_interpret();        /* Must be done before EXIT_THREAD_STATE */
     Pike_interpreter.thread_state->status=THREAD_EXITED;
     co_signal(&Pike_interpreter.thread_state->status_change);
@@ -1866,6 +1874,12 @@ TH_RETURN_TYPE new_thread_func(void *data)
     POP_PIKE_FRAME();
 
   reset_evaluator();
+
+#ifdef PIKE_DEBUG
+  if (thread_state->busy_prev || thread_state->busy_next) {
+    Pike_fatal("Thread is still registered as busy when terminating!\n");
+  }
+#endif
 
   low_cleanup_interpret(&thread_state->state);
 
