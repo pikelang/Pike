@@ -1727,7 +1727,11 @@ PIKECLASS Backend
    static void update_fd_set (struct Backend_struct *me, int fd,
 			      int old_events, int new_events, int flags)
    {
-     if (fd < 0) return;
+     if (fd < 0) {
+       /* fd closed. Wake up any backend that is waiting on it. */
+       backend_wake_up_backend(me);
+       return;
+     }
 
 #ifdef __NT__
      if (new_events &&
