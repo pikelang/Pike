@@ -801,8 +801,8 @@ PWRITEN(memory_pwrite32i,2,1)
 PWRITEN(memory_pwrite16n,1,0)
 PWRITEN(memory_pwrite32n,2,0)
 
-/*! @decl int `[](int pos)
- *! @decl string `[](int pos1,int pos2)
+/*! @decl int(8bit) `[](int pos)
+ *! @decl string(8bit) `[](int pos1, int pos2)
  */
 static void memory_index(INT32 args)
 {
@@ -853,7 +853,7 @@ static void memory_index(INT32 args)
    stack_pop_n_elems_keep_top(args);
 }
 
-/*! @decl int `[]=(int pos,int char)
+/*! @decl int(8bit) `[]=(int pos, int(8bit) char)
  */
 static void memory_index_write(INT32 args)
 {
@@ -905,7 +905,7 @@ void init_system_memory(void)
    ADD_FUNCTION("create",
 		memory_create,
 		tOr3(tFunc(tVoid,tVoid),
-		     tFunc(tOr(tStr,tObj)
+                     tFunc(tOr(tStr8,tObj)
 			   tOr(tIntPos,tVoid) tOr(tIntPos,tVoid),tVoid),
 		     tFunc(tIntPos tOr(tByte,tVoid),tVoid)),
 		ID_PROTECTED);
@@ -915,12 +915,12 @@ void init_system_memory(void)
 #endif
 
 #ifdef HAVE_MMAP
-   ADD_FUNCTION("mmap",memory_mmap,
-		tFunc(tOr(tStr,tObj)
-		      tOr(tIntPos,tVoid) tOr(tIntPos,tVoid),tInt),0);
-   ADD_FUNCTION("mmap_private",memory_mmap_private,
-		tFunc(tOr(tStr,tObj)
-		      tOr(tIntPos,tVoid) tOr(tIntPos,tVoid),tInt),0);
+   ADD_FUNCTION("mmap", memory_mmap,
+                tFunc(tOr(tStr8, tObj)
+                      tOr(tIntPos, tVoid) tOr(tIntPos, tVoid), tInt), 0);
+   ADD_FUNCTION("mmap_private", memory_mmap_private,
+                tFunc(tOr(tStr8, tObj)
+                      tOr(tIntPos, tVoid) tOr(tIntPos, tVoid), tInt), 0);
 #endif
 
    ADD_FUNCTION("allocate",memory_allocate,
@@ -939,11 +939,11 @@ void init_system_memory(void)
 		tFunc(tStr,tOr(tArr(tInt),tStr)), ID_PROTECTED);
 
    ADD_FUNCTION("`[]",memory_index,
-		tOr(tFunc(tInt,tInt),
-		    tFunc(tInt tInt,tStr)), ID_PROTECTED);
+                tOr(tFunc(tInt, tInt8bit),
+                    tFunc(tInt tInt, tStr8)), ID_PROTECTED);
 
    ADD_FUNCTION("`[]=",memory_index_write,
-		tFunc(tInt tInt,tInt), ID_PROTECTED);
+                tFunc(tInt tInt8bit, tInt8bit), ID_PROTECTED);
 
    ADD_FUNCTION("pread",memory_pread,tFunc(tInt tInt,tStr8),0);
    ADD_FUNCTION("pread16",memory_pread16,tFunc(tInt tInt,tStr16),0);
