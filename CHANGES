@@ -641,6 +641,10 @@ o Protocols.HTTP2
 o Bittorrent.DHT
 o Standards.MsgPack
 
+o System.Memory
+
+  Support mmapping of devices on relevant platforms.
+
 o Thread.Mutex
 
   - Implemented support for multiple readers / single writer

@@ -371,7 +371,7 @@ static void memory__mmap(INT32 args,int complain,int private)
       /* NB: Compares each of offset, size and the sum separately
        *     to avoid issues with overflows.
        */
-     if (doclose) fd_close(fd);
+      if (doclose) fd_close(fd);
       Pike_error("Mapped area outside file.\n");
    }
 
