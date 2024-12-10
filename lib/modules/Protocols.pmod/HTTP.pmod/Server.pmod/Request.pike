@@ -10,7 +10,7 @@
 //!     | (Incoming data)
 //!     v
 //!   @[read_cb]
-//!     | If complete headers are read
+//!     | When complete headers are read
 //!     v
 //!   @[parse_request]
 //!     v
@@ -24,7 +24,7 @@
 //!     | (Incoming data)
 //!     v
 //!   @[read_cb_post]
-//!     | If enough data has been received
+//!     | When enough data has been received
 //!     v
 //!   @[finalize]
 //! @endcode
@@ -582,7 +582,7 @@ void set_mode(int mode) {
   _mode = mode;
 }
 
-//! return a properly formatted response to the HTTP client
+//! Return a properly formatted response to the HTTP client
 //! @param m
 //! Contains elements for generating a response to the client.
 //! @mapping m
@@ -594,17 +594,16 @@ void set_mode(int mode) {
 //! @member int "error"
 //!   HTTP error code
 //! @member int "size"
-//!   length of content returned. If @i{file@} is provided, @i{size@}
+//!   Length of content to be returned. If @i{file@} is provided, @i{size@}
 //!   bytes will be returned to client.
 //! @member string "modified"
-//!   contains optional modification date.
+//!   Contains optional modification date.
 //! @member string "type"
-//!   contains optional content-type
+//!   Contains optional content-type
 //! @member mapping "extra_heads"
-//!   contains a mapping of additional headers to be
-//! returned to client.
+//!   Contains a mapping of additional headers to be returned to client.
 //! @member string "server"
-//!   contains the server identification header.
+//!   Contains the server identification header.
 //! @endmapping
 void response_and_finish(mapping m, function|void _log_cb)
 {

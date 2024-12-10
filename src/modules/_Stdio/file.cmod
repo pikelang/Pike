@@ -6595,6 +6595,20 @@ static void f_get_all_active_fd(INT32 args)
  *!   @[Stdio.File()->pipe()]
  */
 
+/*! @decl constant __HAVE_CONCURRENT_CLOSE__
+ *!
+ *!   Support concurrent closing of files while other blocking operations
+ *!   (eg @[Stdio.File->read()] or @[Stdio.File()->write()]) are active in
+ *!   other threads. This is typically used to implement timeout recovery.
+ *!
+ *! @note
+ *!   Support for concurrent closing of files is present in Pike 8.0.1950,
+ *!   Pike 9.0.11 and later on most non-NT platforms.
+ *!
+ *! @seealso
+ *!   @[Stdio.File()->close()]
+ */
+
 /*! @decl constant __OOB__
  *! Implementation level of nonblocking I/O OOB support.
  *! @int
@@ -7018,6 +7032,11 @@ PIKE_MODULE_INIT
 
 #ifdef HAVE_PIKE_SEND_FD
   add_integer_constant("__HAVE_SEND_FD__", 1, 0);
+#endif
+#if defined(_REENTRANT) && defined(SIGCHLD) && !defined(__NT__)
+#if defined(HAVE_PTHREAD_KILL) || defined(UNIX_THREADS)
+  add_integer_constant("__HAVE_CONCURRENT_CLOSE__", 1, 0);
+#endif
 #endif
   /* function(:array(int)) */
   ADD_FUNCTION2("get_all_active_fd", f_get_all_active_fd,
