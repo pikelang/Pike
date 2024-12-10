@@ -78,5 +78,68 @@ test_eq( R->raw, req )
 test_do( add_constant("req") )
 clear_request_test()
 
+cond([[ all_constants()->thread_create && Stdio["__HAVE_CONCURRENT_CLOSE__"] ]], [[
+  test_any([[
+    class R {
+      inherit Protocols.HTTP.Server.Request;
+      void response_and_finish(mapping m, function|void log_cb)
+      {
+        if (!undefinedp(m->size)) {
+          /* Lie about the content-length. */
+          m->size += 5;
+        }
+        ::response_and_finish(m, log_cb);
+      }
+    };
+
+    string request_thread(Stdio.File f)
+    {
+      Protocols.HTTP.Query q = Protocols.HTTP.Query();
+      // Set some minimal timeouts.
+      q->timeout = 1;
+      q->data_timeout = 1;
+      // Use the pipe for the request.
+      q->con = f;
+      // NB: The following are needed in order to simulate a keep-alive
+      //     connection reuse request (and not connect to the real example.com).
+      q->host = "example.com";
+      q->port = 80;
+      q->headers = ([ "connection": "keep-alive" ]);
+      q->buf = "";
+      return Protocols.HTTP.get_url("http://example.com/index.txt",
+                                    UNDEFINED, UNDEFINED, q)->data();
+    };
+
+    mapping got_request(R r)
+    {
+      r->response_and_finish(([ "data": "Data underflow.",
+                                "error": 200,
+                                "size": 15,
+                                "type": "text/plain",
+                                "server": "Broken content-length",
+                             ]));
+    };
+
+    Stdio.File f = Stdio.File();
+    Stdio.File p = f->pipe(Stdio.PROP_BIDIRECTIONAL);
+
+    R r = R();
+    r->attach_fd(p, UNDEFINED, got_request);
+
+    Thread.Thread t = Thread.Thread(request_thread, f);
+    for (int i = 0; i < 20; i++) {
+      if (t->status()) break;
+      Pike.DefaultBackend(1.0);
+    }
+    if (!t->status()) {
+      t->interrupt("Hang.\n");
+      return "Timeout handler not called.";
+    }
+    if (f->is_open()) {
+      return "File not closed by timeout handler.";
+    }
+    return t->wait();
+  ]], "Data underflow.")
+]])
 
 END_MARKER

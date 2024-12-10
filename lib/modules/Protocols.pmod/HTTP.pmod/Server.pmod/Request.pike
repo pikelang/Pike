@@ -1,13 +1,13 @@
 #pike __REAL_VERSION__
 
 // There are three different read callbacks that can be active, which
-// has the following call graphs. read_cb is the default read
+// have the following call graphs. read_cb is the default read
 // callback, installed by attach_fd.
 //
 //   | (Incoming data)
 //   v
 // read_cb
-//   | If complete headers are read
+//   | When complete headers are read
 //   v
 // parse_request
 //   v
@@ -19,7 +19,7 @@
 //   | (Incoming data)
 //   v
 // read_cb_post
-//   | If enough data has been received
+//   | When enough data has been received
 //   v
 // finalize
 //
@@ -657,8 +657,8 @@ string get_ip()
    return addr;
 }
 
-//! return a properly formatted response to the HTTP client
-//! @param m 
+//! Return a properly formatted response to the HTTP client
+//! @param m
 //! Contains elements for generating a response to the client.
 //! @mapping m
 //! @member string "data"
@@ -667,18 +667,17 @@ string get_ip()
 //!   File object, the contents of which will be returned to the client.
 //! @member int "error"
 //!   HTTP error code
-//! @member int "length"
-//!   length of content returned. If @i{file@} is provided, @i{size@} 
+//! @member int "size"
+//!   Length of content to be returned. If @i{file@} is provided, @i{size@}
 //!   bytes will be returned to client.
 //! @member string "modified"
-//!   contains optional modification date.
+//!   Contains optional modification date.
 //! @member string "type"
-//!   contains optional content-type
+//!   Contains optional content-type
 //! @member mapping "extra_heads"
-//!   contains a mapping of additional headers to be 
-//! returned to client.
-//! @member string "server" 
-//!   contains the server identification header.
+//!   Contains a mapping of additional headers to be returned to client.
+//! @member string "server"
+//!   Contains the server identification header.
 //! @endmapping
 void response_and_finish(mapping m, function|void _log_cb)
 {
