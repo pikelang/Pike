@@ -26,7 +26,7 @@
 //! }
 
 #ifdef HTTP_QUERY_DEBUG
-#define DBG(X ...) werror(X)
+#define DBG(X ...) werror(sprintf("%q:%d: ", __FILE__, __LINE__) + X)
 #else
 #define DBG(X ...)
 #endif
