@@ -835,6 +835,14 @@ string data(int|void max_length)
 
    if (buf=="") return ""; // already emptied
 
+   mixed timeout_co;
+#if constant(thread_create) && constant(Stdio.__HAVE_CONCURRENT_CLOSE__)
+   if (data_timeout && (Thread.this_thread() != master()->backend_thread())) {
+      DBG("data timeout: %O\n", data_timeout);
+      timeout_co = call_out(async_timeout, data_timeout);
+   }
+#endif
+
    if (headers["transfer-encoding"] &&
        lower_case(headers["transfer-encoding"])=="chunked")
    {
@@ -857,20 +865,30 @@ string data(int|void max_length)
 		  int i;
 		  if ((i=search(rbuf,"\r\n\r\n"))==-1)
 		  {
-		    DBG ("<- data() read\n");
+                     DBG ("<- data() read\n");
 		     s=con->read(8192,1);
-		     if (!s) {
-		       errno = con->errno();
-		       DBG ("<- (read error: %s)\n", strerror (errno));
-		       return 0;
-		     }
-		     if (s=="") return lbuf;
+                     if (!s || !sizeof(s)) {
+                        if (timeout_co) {
+                           DBG("remove timeout.\n");
+                           remove_call_out(timeout_co);
+                        }
+                        if (!s) {
+                           errno = con->errno();
+                           DBG ("<- (read error: %s)\n", strerror (errno));
+                           return 0;
+                        }
+                        return lbuf;
+                     }
 		     rbuf+=s;
 		     buf+=s;
 		  }
 		  else
 		  {
  	             // entity_headers=rbuf[..i-1];
+                     if (timeout_co) {
+                        DBG("remove timeout.\n");
+                        remove_call_out(timeout_co);
+                     }
 		     return lbuf;
 		  }
 	       }
@@ -879,14 +897,20 @@ string data(int|void max_length)
 	    {
 	       if (strlen(s)<len)
 	       {
-		 DBG ("<- data() read 2\n");
+                  DBG ("<- data() read 2\n");
 		  string t=con->read(len-strlen(s)+6); // + crlfx3
-		  if (!t) {
-		    errno = con->errno();
-		    DBG ("<- (read error: %s)\n", strerror (errno));
-		    return 0;
-		  }
-		  if (t=="") return lbuf+s;
+                  if (!t || !sizeof(t)) {
+                     if (timeout_co) {
+                        DBG("remove timeout.\n");
+                        remove_call_out(timeout_co);
+                     }
+                     if (!t) {
+                        errno = con->errno();
+                        DBG ("<- (read error: %s)\n", strerror (errno));
+                        return 0;
+                     }
+                     return lbuf+s;
+                  }
 		  buf+=t;
 		  lbuf+=s+t[..len-strlen(s)-1];
 		  rbuf=t[len-strlen(s)+2..];
@@ -900,14 +924,20 @@ string data(int|void max_length)
 	 }
 	 else
 	 {
-	   DBG ("<- data() read 3\n");
+            DBG ("<- data() read 3\n");
 	    s=con->read(8192,1);
-	    if (!s) {
-	      errno = con->errno();
-	      DBG ("<- (read error: %s)\n", strerror (errno));
-	      return 0;
-	    }
-	    if (s=="") return lbuf;
+            if (!s || !sizeof(s)) {
+               if (timeout_co) {
+                  DBG("remove timeout.\n");
+                  remove_call_out(timeout_co);
+               }
+               if (!s) {
+                  errno = con->errno();
+                  DBG ("<- (read error: %s)\n", strerror (errno));
+                  return 0;
+               }
+               return lbuf;
+            }
 	    buf+=s;
 	    rbuf+=s;
 	 }
@@ -935,6 +965,10 @@ string data(int|void max_length)
      { // Some servers reporting this name exhibit some really hideous behaviour:
        DBG ("<- data() read 4\n");
        string s = con->read();
+       if (timeout_co) {
+         DBG("remove timeout.\n");
+         remove_call_out(timeout_co);
+       }
        if (!s) {
 	 errno = con->errno();
 	 DBG ("<- (read error: %s)\n", strerror (errno));
@@ -947,15 +981,28 @@ string data(int|void max_length)
      else
      {
        DBG ("<- data() read 5\n");
-       string s = con->read(l);
-       if (!s && strlen(buf) <= datapos) {
-	 errno = con->errno();
-	 DBG ("<- (read error: %s)\n", strerror (errno));
-	 return 0;
+       while ((l > 0) && con) {
+         string s = con->read(l);
+         if (!s) {
+           if (strlen(buf) <= datapos) {
+             if (timeout_co) {
+               DBG("remove timeout.\n");
+               remove_call_out(timeout_co);
+             }
+             errno = con->errno();
+             DBG ("<- (read error: %s)\n", strerror (errno));
+             return 0;
+           }
+           break;
+         }
+         buf += s;
+         l -= sizeof(s);
        }
-       if( s )
-	 buf += s;
      }
+   }
+   if (timeout_co) {
+     DBG("remove timeout.\n");
+     remove_call_out(timeout_co);
    }
    if(zero_type( len ))
      len = sizeof( buf ) - datapos;
