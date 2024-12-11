@@ -80,7 +80,7 @@ int(0..1) https = 0;
 
 // This is used in async_fetch* and aync_timeout to keep track of when we last
 // got data and if the timeout should abort or be reset
-protected int(0..) timeout_watchdog;
+protected int(0..) timeout_watchdog = UNDEFINED;
 
 //! Connected host and port.
 //!
@@ -467,9 +467,9 @@ protected void async_failed()
 protected void async_timeout(void|bool force)
 {
    if (!force && !zero_type(timeout_watchdog)) {
-     int deltat = time(1) - timeout_watchdog;
-     if (deltat >= 0) {
-       call_out(this_function, data_timeout || timeout);
+     int deltat = time(1) - (timeout_watchdog + (data_timeout || timeout));
+     if (deltat > 0) {
+       call_out(this_function, deltat);
        return;
      }
    }
@@ -992,6 +992,7 @@ string data(int|void max_length)
 #if constant(thread_create) && constant(Stdio.__HAVE_CONCURRENT_CLOSE__)
    if (data_timeout && (Thread.this_thread() != master()->backend_thread())) {
       DBG("data timeout: %O\n", data_timeout);
+      TOUCH_TIMEOUT_WATCHDOG();
       timeout_co = call_out(async_timeout, data_timeout);
    }
 #endif
@@ -1020,6 +1021,7 @@ string data(int|void max_length)
 		  {
                      DBG ("<- data() read\n");
 		     s=con->read(8192,1);
+                     TOUCH_TIMEOUT_WATCHDOG();
                      if (!s || !sizeof(s)) {
                         if (timeout_co) {
                            DBG("remove timeout.\n");
@@ -1052,6 +1054,7 @@ string data(int|void max_length)
 	       {
                   DBG ("<- data() read 2\n");
 		  string t=con->read(len-strlen(s)+6); // + crlfx3
+                  TOUCH_TIMEOUT_WATCHDOG();
                   if (!t || !sizeof(t)) {
                      if (timeout_co) {
                         DBG("remove timeout.\n");
@@ -1079,6 +1082,7 @@ string data(int|void max_length)
 	 {
             DBG ("<- data() read 3\n");
 	    s=con->read(8192,1);
+            TOUCH_TIMEOUT_WATCHDOG();
             if (!s || !sizeof(s)) {
                if (timeout_co) {
                   DBG("remove timeout.\n");
@@ -1117,6 +1121,7 @@ string data(int|void max_length)
      { // Some servers reporting this name exhibit some really hideous behaviour:
        DBG ("<- data() read 4\n");
        string s = con->read();
+       TOUCH_TIMEOUT_WATCHDOG();
        if (timeout_co) {
          DBG("remove timeout.\n");
          remove_call_out(timeout_co);
@@ -1135,6 +1140,7 @@ string data(int|void max_length)
        DBG ("<- data() read 5\n");
        while ((l > 0) && con) {
          string s = con->read(l);
+         TOUCH_TIMEOUT_WATCHDOG();
          if (!s) {
            if (strlen(buf) <= datapos) {
              if (timeout_co) {
