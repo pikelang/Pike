@@ -1281,7 +1281,7 @@ PIKECLASS file_line_iterator
       return;
    }
 
-  PIKEFUN string _iterator_value()
+  PIKEFUN string(8bit) _iterator_value()
     flags ID_PROTECTED;
     {
       if (THIS->current) {
@@ -1301,7 +1301,7 @@ PIKECLASS file_line_iterator
       }
     }
 
-  PIKEFUN string value()	/* Compat. */
+    PIKEFUN string(8bit) value()	/* Compat. */
     {
       if (THIS->current) {
 	ref_push_string(THIS->current);
@@ -1310,7 +1310,7 @@ PIKECLASS file_line_iterator
       }
     }
 
-  PIKEFUN int index()		/* Compat. */
+    PIKEFUN int(8bit) index()		/* Compat. */
     {
       if (!THIS->current) {
 	push_undefined();
@@ -1332,7 +1332,7 @@ PIKECLASS file_line_iterator
       RETURN !!THIS->current;
     }
 
-  PIKEFUN void create(function(:string) feed)
+  PIKEFUN void create(function(:string(8bit)) feed)
     flags ID_PROTECTED;
     {
       if (THIS->buffer) {
