@@ -3953,25 +3953,32 @@ void gdb_backtrace (
 		  break;
 
 		default:
-		  if(j>=0 && j<256 && isprint(j))
-		  {
+                  if (((j >= ' ') && (j < 127)) ||
+                      (j == '\n') || (j == '\r') || (j == '\t')) {
 		    fputc (j, stderr);
 		    break;
 		  }
 
 		  fputc ('\\', stderr);
-		  fprintf (stderr, "%o", j);
+                  if ((j >= 0) && (j < 256)) {
+                    fprintf (stderr, "%o", j);
 
-		  switch(index_shared_string(arg->u.string,i+1))
-		  {
+                    switch(index_shared_string(arg->u.string,i+1))
+                    {
 		    case '0': case '1': case '2': case '3':
 		    case '4': case '5': case '6': case '7':
 		    case '8': case '9':
 		      fputc ('"', stderr);
 		      fputc ('"', stderr);
-		  }
-		  break;
-	      }
+                    }
+                    break;
+                  } else if ((j > 0) && (j < 0x10000)) {
+                    fprintf(stderr, "u%04x", j);
+                  } else {
+                    fprintf(stderr, "U%08x", (unsigned INT32)j);
+                  }
+                  break;
+              }
 	    }
 	    fputc ('"', stderr);
 	    if (i < arg->u.string->len)
