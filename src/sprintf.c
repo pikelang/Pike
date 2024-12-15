@@ -1255,13 +1255,17 @@ cont_2:
       switch(mode)
       {
       default:
-	if(mode < 256 && isprint(mode))
-	{
-	  sprintf_error(fs, "Error in format string, %c is not a format.\n",
+        if ((c > ' ') && (c < 127)) {
+          sprintf_error(fs, "Error in format string, %%%c is not a format.\n",
 			mode);
-	}else{
-	  sprintf_error(fs,"Error in format string, U%08x is not a format.\n",
-			mode);
+        } else if ((c >= 0) && (c < 0x10000)) {
+          sprintf_error(fs,
+                        "Error in format string, %%\\u%04x is not a format.\n",
+                        mode);
+        } else {
+          sprintf_error(fs,
+                        "Error in format string, %%\\U%08x is not a format.\n",
+                        (unsigned INT32)mode);
 	}
 	break;
 
@@ -2242,15 +2246,18 @@ static struct array *parse_sprintf_argument_types(PCHARP format,
       switch(c = EXTRACT_PCHARP(a))
       {
       default:
-	if(c < 256 && isprint(c))
-	{
+        if ((c > ' ') && (c < 127)) {
 	  yyreport(severity, type_check_system_string,
-		   0, "Error in format string, %c is not a format.",
+                   0, "Error in format string, %%%c is not a format.",
 		   c);
-	}else{
+        } else if ((c >= 0) && (c < 0x10000)) {
+          yyreport(severity, type_check_system_string,
+                   0, "Error in format string, %%\\u%04x is not a format.",
+                   c);
+        } else {
 	  yyreport(severity, type_check_system_string,
-		   0, "Error in format string, U%08x is not a format.",
-		   c);
+                   0, "Error in format string, %%\\U%08x is not a format.",
+                   (unsigned INT32)c);
 	}
 	return NULL;
 
