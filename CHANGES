@@ -397,6 +397,10 @@ o Standards.JSON and Standards.JSON5
 
   encode() now allows other threads to run every now and then.
 
+o Stdio.File: Support concurrent close() during read() and write().
+
+  Previously this had an inconsistent behavior.
+
 o ADT.OrderedMapping
 
   Adding duplicate keys now replaces the existing keys.
