@@ -816,6 +816,7 @@ static void close_fd(int quiet)
     break;
   }
 
+  /* NB: Apparently no need for this on NT. */
 #ifdef _REENTRANT
 #ifdef SIGCHLD
   {
@@ -7033,9 +7034,13 @@ PIKE_MODULE_INIT
 #ifdef HAVE_PIKE_SEND_FD
   add_integer_constant("__HAVE_SEND_FD__", 1, 0);
 #endif
-#if defined(_REENTRANT) && defined(SIGCHLD) && !defined(__NT__)
+#if defined(_REENTRANT)
+#ifdef __NT__
+  add_integer_constant("__HAVE_CONCURRENT_CLOSE__", 1, 0);
+#elif defined(SIGCHLD)
 #if defined(HAVE_PTHREAD_KILL) || defined(UNIX_THREADS)
   add_integer_constant("__HAVE_CONCURRENT_CLOSE__", 1, 0);
+#endif
 #endif
 #endif
   /* function(:array(int)) */

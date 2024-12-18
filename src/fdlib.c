@@ -2350,19 +2350,22 @@ PMOD_EXPORT int debug_fd_connect (FD fd, struct sockaddr *a, int len)
   return (int)ret;
 }
 
-PMOD_EXPORT int debug_fd_close(FD fd)
+static int low_fd_close(FD fd)
 {
   HANDLE h;
   int type;
 
-  FDDEBUG(fprintf(stderr, "fd_close(%d)...\n", fd));
+  FDDEBUG(fprintf(stderr, "low_fd_close(%d)...\n", fd));
 
-  if (fd_to_handle(fd, &type, &h, 1) < 0) return -1;
+  /* NB: NOT exclusive!
+   *
+   * When a handle is closed any pending concurrent operations
+   * on the handle are apparently interrupted.
+   */
+  if (fd_to_handle(fd, &type, &h, 0) < 0) return -1;
 
-  FDDEBUG(fprintf(stderr,"Closing %d (%ld)\n",
+  FDDEBUG(fprintf(stderr,"Closing handle %d (%ld)\n",
                   fd, (long)h));
-
-  free_fd(fd);
 
   switch(type)
   {
@@ -2372,6 +2375,8 @@ PMOD_EXPORT int debug_fd_close(FD fd)
 	set_errno_from_win32_error (GetLastError());
 	FDDEBUG(fprintf(stderr,"Closing %d (%ld) failed with errno=%d\n",
                         fd, (long)(ptrdiff_t)h, errno));
+
+        release_fd(fd);
 	return -1;
       }
       break;
@@ -2388,13 +2393,40 @@ PMOD_EXPORT int debug_fd_close(FD fd)
       if(!CloseHandle(h))
       {
 	set_errno_from_win32_error (GetLastError());
+
+        release_fd(fd);
 	return -1;
       }
   }
 
+  release_fd(fd);
+
   FDDEBUG(fprintf(stderr,"%d (%ld) closed\n", fd, (ptrdiff_t)h));
 
   return 0;
+}
+
+PMOD_EXPORT int debug_fd_close(FD fd)
+{
+  int ret;
+  HANDLE h;
+  int type;
+
+  FDDEBUG(fprintf(stderr, "fd_close(%d)...\n", fd));
+
+  /* First close the underlying handle. */
+  ret = low_fd_close(fd);
+
+  /* Then take the exclusive lock (which will wait for
+   * the other threads to complete their use of the fd).
+   */
+  if (fd_to_handle(fd, &type, &h, 1) < 0) return -1;
+
+  FDDEBUG(fprintf(stderr, "Free fd %d\n", fd));
+
+  free_fd(fd);
+
+  return ret;
 }
 
 PMOD_EXPORT ptrdiff_t debug_fd_write(FD fd, void *buf, ptrdiff_t len)
