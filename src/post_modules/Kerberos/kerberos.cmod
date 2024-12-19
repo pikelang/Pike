@@ -51,6 +51,11 @@ DECLARATIONS
 #endif
 #endif
 
+/*! @module Kerberos
+ */
+
+/*! @class Context
+ */
 PIKECLASS Context
 {
   CVAR krb5_context ctx;
@@ -71,6 +76,8 @@ PIKECLASS Context
     }
   }
 
+  /*! @decl int(0..1) authenticate(string user, string password)
+   */
   PIKEFUN int(0..1) authenticate(string user, string password)
     optflags OPT_EXTERNAL_DEPEND;
   {
@@ -135,7 +142,11 @@ PIKECLASS Context
     return;
   }
 }
+/*! @endclass
+ */
 
+/*! @endmodule
+ */
 
 #endif /* HAVE_KRB5 */
 
