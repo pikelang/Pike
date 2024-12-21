@@ -104,6 +104,12 @@
 //!     from the password and the salt. Source: GNU libc
 //!     @url{http://www.gnu.org/software/libtool/manual/libc/crypt.html@}.
 //!
+//!   @value "$apr1$SSSSSSSS$XXXXXXXXXXXXXXXXXXXXXX"
+//!     The Apache proprietary MD5-derived password hashing algorithm.
+//!     This is similar to the @expr{"$1$"@} algorithm above.
+//!     Source: Apache
+//!     @url{http://httpd.apache.org/docs/2.4/misc/password_encryptions.html@}
+//!
 //!   @value "$sha1$RRRRR$SSSSSSSS$XXXXXXXXXXXXXXXXXXXX"
 //!     The string is interpreted as a NetBSD-style @[SHA1.HMAC.crypt_hash()]
 //!     (aka @tt{crypt_sha1(3C)@}),
@@ -241,6 +247,9 @@ int verify(string(8bit) password, string(7bit) hash)
     switch(scheme) {
     case "1":	// crypt_md5
       return Nettle.crypt_md5(passwd, salt) == hash;
+
+    case "apr1":// crypt_hash_apr1
+      return Crypto.MD5.crypt_hash_apr1(passwd, salt) == hash;
 
 #if constant(Nettle.bcrypt_hash)
     case "2":	// Blowfish (obsolete)
@@ -387,6 +396,10 @@ int verify(string(8bit) password, string(7bit) hash)
 //!     @value "1"
 //!     @value "$1$"
 //!       @[MD5.crypt_hash()] with 48 bits of salt and @expr{1000@} rounds.
+//!
+//!     @value "apr1"
+//!     @value "$apr1$"
+//!       @[MD5.crypt_hash_apr1()] with 48 bits of salt and @expr{1000@} rounds.
 //!
 //!     @value "sha1"
 //!       @[SHA1.HMAC.crypt_hash()] with 48 bits of salt and a default
@@ -566,6 +579,13 @@ string(7bit) hash(string(8bit) password, string(7bit)|void scheme,
     rounds = 1000;		// Currently only 1000 rounds is supported.
     default_rounds = 1000;
     scheme = "1";
+    break;
+  case "apr1":
+    crypt_hash = Crypto.MD5.crypt_hash_apr1;
+    salt_size = 8;
+    rounds = 1000;		// Currently only 1000 rounds is supported.
+    default_rounds = 1000;
+    scheme = "apr1";
     break;
   case "":
     return crypt(password);
