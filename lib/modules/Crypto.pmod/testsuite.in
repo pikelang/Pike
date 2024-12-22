@@ -1740,6 +1740,14 @@ dnl  The following test is disabled since we do not perform any
 dnl  validation of the characters used in the salt.
 dnl  test_false(P("invalid salt", "$1$`!@#%^&*$E6hD76/pKTS8qToBCkux30"))
 ]])
+cond_resolv(Crypto.MD5, [[
+  // Tests for crypt_hash_apr1
+  // From WhiteHat101 https://github.com/whitehat101/apr1-md5
+  test_true(P("WhiteHat101", "$apr1$HIcWIbgX$G9YqNkCVGlFAN63bClpoT/"))
+  test_true(P("apache", "$apr1$rOioh4Wh$bVD3DRwksETubcpEH90ww0"))
+  test_true(P("ChangeMe1", "$apr1$PVWlTz/5$SNkIVyogockgH65nMLn.W1"))
+  test_true(P("ChangeMe1", "$apr1$$DbHa0iITto8vNFPlkQsBX1"))
+]])
 cond_resolv(Nettle.bcrypt_hash, [[
   test_true(P("yawinpassword",
      "$2a$04$MzVXtd4o0y4DOlyHMMLMDeE4/eezrsT5Xad.2lmGr/NkCpwBgvn3e"))
