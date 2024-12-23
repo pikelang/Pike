@@ -1747,6 +1747,7 @@ cond_resolv(Crypto.MD5, [[
   test_true(P("apache", "$apr1$rOioh4Wh$bVD3DRwksETubcpEH90ww0"))
   test_true(P("ChangeMe1", "$apr1$PVWlTz/5$SNkIVyogockgH65nMLn.W1"))
   test_true(P("ChangeMe1", "$apr1$$DbHa0iITto8vNFPlkQsBX1"))
+  test_true(P("ChangeMe1", "$apr1$PVWlTz/50123456789$SNkIVyogockgH65nMLn.W1"))
 ]])
 cond_resolv(Nettle.bcrypt_hash, [[
   test_true(P("yawinpassword",

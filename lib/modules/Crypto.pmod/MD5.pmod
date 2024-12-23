@@ -56,6 +56,7 @@ string(7bit) crypt_hash_apr1(string(8bit) password, string(7bit) salt,
   String.secure(orig_password);
   int max = sizeof(orig_password);
 
+  salt = salt[..7];
   State ctx = State();
   ctx->update(orig_password)->update(salt)->update(orig_password);
   string(8bit) digest = ctx->digest();
