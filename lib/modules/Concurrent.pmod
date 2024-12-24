@@ -1548,11 +1548,11 @@ Future serialize(array(Future) futures,
                  function(mixed, __unknown__ ... : mixed) fun,
                  mixed ... extra)
 {
-  array(Promise) promises = allocate(sizeof(futures), Promise)();
-
-  if (!sizeof(promises)) {
+  if (!sizeof(futures)) {
     return resolve(({}));
   }
+
+  array(Promise) promises = allocate(sizeof(futures), Promise)();
 
   void do_one(mixed val, int idx, array(Future) futures,
               array(Promise) promises,
