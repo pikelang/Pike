@@ -23,16 +23,63 @@
 
 #pike __REAL_VERSION__
 
+//! XAuthority related stuff.
+
+//!
+enum AddressFamily {
+  FamilyInternet = 0,
+  FamilyDECnet = 1,
+  FamilyChaos = 2,
+  FamilyInternet6 = 6,
+  FamilyAmoeba = 33,
+  FamilyLocalHost = 252,
+  FamilyKrb5Principal = 253,
+  FamilyNetname = 254,
+  FamilyLocal = 255,
+  FamilyWild = 65535,
+}
+
+//! XAuthority key database.
 class auth_file
 {
+  //! Mapping from address family to mapping from destination key
+  //! (cf @[make_key()]) to authentication entry.
+  //!
+  //! Known address families:
+  //! @int
+  //!   @value 0
+  //!     IPv4 address.
+  //!   @value 1
+  //!     DECNet address.
+  //!   @value 2
+  //!     Chaos net address.
+  //!   @value 6
+  //!     IPv6 address.
+  //!   @value 33
+  //!     Amoeba address.
+  //!   @value 252
+  //!     Localhost.
+  //!   @value 253
+  //!     Kerberos 5 Principal.
+  //!   @value 254
+  //!     Netname.
+  //!   @value 256
+  //!     Local connection (typically unix domain socket or loopback).
+  //!   @value 65535
+  //!     Wildcard.
+  //! @endint
   mapping(int:mapping(string:mapping)) auth = ([]);
 
+  //! Make a lookup key suitable for @[auth] given
+  //! @[address] and @[display].
   string make_key(string address, int display)
   {
     return sprintf("%d:%s", display, address);
   }
 
-  protected void create(string s)
+  //! @param s
+  //!   Raw Xauthority file data.
+  protected void create(string(8bit) s)
   {
     Stdio.Buffer struct = Stdio.Buffer(s);
 
@@ -53,11 +100,14 @@ class auth_file
       }
   }
 
+  //! Lookup authentication entry for the unix domain socket
+  //! @[name]:@[display].
   mapping lookup_local(string name, int display)
   {
     return auth[256] && auth[256][make_key(name, display)];
   }
 
+  //!
   string ip2string(string ip)
   {
     return sprintf("%@c", Array.map(ip / ".",
@@ -65,6 +115,7 @@ class auth_file
 				    { return (int) s; }));
   }
 
+  //!
   mapping lookup_ip(string ip, int display)
   {
     if(ip == "127.0.0.1")
@@ -73,6 +124,7 @@ class auth_file
   }
 }
 
+//!
 class lock_key
 {
   string name;
@@ -113,12 +165,14 @@ class lock_key
   }
 }
 
+//!
 object lock_file(string name)
 {
   return lock_key(name)->lock();
 }
 
-object read_auth_data()
+//! Read the authentication database specified by @tt{$XAUTHORITY@}.
+object(auth_file) read_auth_data()
 {
   string fname = getenv("XAUTHORITY");
   if (!fname)
