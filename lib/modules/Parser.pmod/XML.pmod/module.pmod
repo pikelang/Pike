@@ -88,3 +88,10 @@ private array low_node_to_struct(.NSTree.NSNode|.Tree.Node n) {
   return ({n->get_full_name(), sizeof(ret) ? ret : ""});
 }
 
+//! Quotes the string given in @[data] by escaping &, < and >.
+string text_quote(string data)
+{
+  return replace(data, ([ "&":"&amp;",
+                          "<":"&lt;",
+                          ">":"&gt;" ]) );
+}
