@@ -319,7 +319,7 @@ void f_readlink(INT32 args)
 #endif /* !HAVE_RESOLVEPATH && !HAVE_REALPATH */
 
 #if defined(HAVE_RESOLVEPATH) || defined(HAVE_REALPATH)
-/*! @decl string resolvepath(string path)
+/*! @decl string(8bit) resolvepath(string(8bit) path)
  *!
  *!   Resolve all symbolic links of a pathname.
  *!
@@ -3301,8 +3301,10 @@ PIKE_MODULE_INIT
 #if defined(HAVE_RESOLVEPATH) || defined(HAVE_REALPATH)
 
 /* function(string:string) */
-  ADD_EFUN("resolvepath", f_resolvepath,tFunc(tStr,tStr), OPT_EXTERNAL_DEPEND);
-  ADD_FUNCTION2("resolvepath", f_resolvepath,tFunc(tStr,tStr), 0, OPT_EXTERNAL_DEPEND);
+  ADD_EFUN("resolvepath", f_resolvepath, tFunc(tStr8, tStr8),
+           OPT_EXTERNAL_DEPEND);
+  ADD_FUNCTION2("resolvepath", f_resolvepath, tFunc(tStr8, tStr8), 0,
+                OPT_EXTERNAL_DEPEND);
 #endif /* HAVE_RESOLVEPATH || HAVE_REALPATH */
 
 #ifdef HAVE_CLONEFILE
