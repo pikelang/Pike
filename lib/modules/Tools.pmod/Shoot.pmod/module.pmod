@@ -10,6 +10,7 @@
 import ".";
 
 
+//! Format an integer with SI-suffixes.
 string format_big_number(int i)
 {
     if( i > 10000000000 )
@@ -22,8 +23,42 @@ string format_big_number(int i)
     return (string)i;
 }
 
-// This function runs the actual test, it is started in a sub-process from run.
-void run_sub( Test test, int maximum_seconds, float overhead)
+//! Run a single benchmark test in the current process and
+//! return the result as JSON on stdout.
+//!
+//! @param test
+//!   Benchmark to run.
+//!
+//! @param maximum_seconds
+//!   Number of seconds to run the test before terminating it.
+//!
+//! @param overhead
+//!   Ignored, obsolete.
+//!
+//! @returns
+//!   Writes a JSON-encoded mapping with the following fields on success:
+//!   @mapping
+//!     @member float "time"
+//!       Actual number of seconds that the test ran.
+//!     @member int "loops"
+//!       Number of times that the test ran.
+//!     @member int "n"
+//!       Number of sub tests that were run.
+//!     @member string "readable"
+//!       Description of the test result.
+//!     @member int "n_over_time"
+//!       Number of sub tests per second.
+//!   @endmapping
+//!   On benchmark failure a JSON-encoded mapping with the single entry
+//!   @expr{"readable"@} set to @expr{"FAIL"@} is written to stdout.
+//!
+//! @note
+//!   This is the funcction that is called in a sub-process by @[run()].
+//!
+//! @seealso
+//!   @[run()], @[tests()]
+void run_sub( Test test, int maximum_seconds,
+              __deprecated__(float)|void overhead)
 {
     float tg=0.0;
     int testntot=0;
@@ -53,6 +88,11 @@ void run_sub( Test test, int maximum_seconds, float overhead)
 private mapping(string:Test) _tests;
 private mapping(Test:string) rtests;
 
+//! Return a mapping with all known and enabled benchmark tests.
+//!
+//! @returns
+//!   Returns a mapping indexed on the display names
+//!   of the benchmark tests.
 mapping(string:Test) tests()
 {
   if( !_tests )
@@ -78,7 +118,38 @@ mapping(string:Test) tests()
   return _tests;
 }
 
-mapping(string:int|float|string) run(Test test, int maximum_seconds, float overhead)
+//! Run a single benchmark test.
+//!
+//! @param test
+//!   Benchmark to run.
+//!
+//! @param maximum_seconds
+//!   Number of seconds to run the test before terminating it.
+//!
+//! @param overhead
+//!   Ignored, obsolete.
+//!
+//! @returns
+//!   Returns a mapping with the following fields on success:
+//!   @mapping
+//!     @member float "time"
+//!       Actual number of seconds that the test ran.
+//!     @member int "loops"
+//!       Number of times that the test ran.
+//!     @member int "n"
+//!       Number of sub tests that were run.
+//!     @member string "readable"
+//!       Description of the test result.
+//!     @member int "n_over_time"
+//!       Number of sub tests per second.
+//!   @endmapping
+//!   On benchmark failure a mapping with the single entry
+//!   @expr{"readable"@} set to @expr{"FAIL"@} is returned.
+//!
+//! @seealso
+//!   @[run_sub()], @[tests()]
+mapping(string:int|float|string) run(Test test, int maximum_seconds,
+                                     __deprecated__(float)|void overhead)
 {
     Stdio.File fd = Stdio.File();
     string test_name;
@@ -89,8 +160,8 @@ mapping(string:int|float|string) run(Test test, int maximum_seconds, float overh
       error("Test %O is not a test\n", test);
 
 
-    Process.spawn_pike( ({"-e", sprintf("Tools.Shoot.run_sub( Tools.Shoot[%q](), %d, %f )",
-                                test_name, maximum_seconds, overhead ) }),
+    Process.spawn_pike( ({"-e", sprintf("Tools.Shoot.run_sub( Tools.Shoot[%q](), %d )",
+                                        test_name, maximum_seconds ) }),
                         (["stdout":fd->pipe()]));
     mixed err = catch {
       return Standards.JSON.decode( fd->read() );
