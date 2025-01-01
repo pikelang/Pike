@@ -754,7 +754,7 @@ static ptrdiff_t fast_array_search( struct array *v, const struct svalue *s,
 }
 
 /**
- * Search for in svalue in an array.
+ * Search for an svalue in an array.
  * @param v the array to search
  * @param s the value to search for
  * @param start the index to start search at
