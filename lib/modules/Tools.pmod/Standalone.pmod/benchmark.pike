@@ -99,7 +99,7 @@ int main(int num, array(string) args)
         break;
       case "list":
         write("Available tests:\n%{  %s\n%}",
-              sort(indices(tests)-({"Overhead"})));
+              sort(indices(tests)));
         return 0;
         break;
     }
@@ -126,20 +126,17 @@ void run_tests()
 {
   int failed;
   mixed err = catch {
-   /* Run overhead check first. */
-   float overhead_time;
-   array(string) to_run = glob(test_globs,sort(indices (tests)-({"Overhead"})));
-   mapping res = Tools.Shoot.run( tests["Overhead"], 1, 0.0 );
+   array(string) to_run = glob(test_globs,sort(indices (tests)));
+   mapping res;
    float total_pct;
    int n_tests;
-   overhead_time = res->time / res->n;
    bool odd;
    bool isatty = Stdio.Terminfo.is_tty();
 
    foreach (to_run; int i; string id)
    {
      n_tests++;
-     res = Tools.Shoot.run( tests[id], seconds_per_test, overhead_time );
+     res = Tools.Shoot.run( tests[id], seconds_per_test );
 
      if (res->readable == "FAIL") failed = 1;
 
