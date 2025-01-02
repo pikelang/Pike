@@ -2811,6 +2811,68 @@ void print_tree(node *n)
   pike_fprintf(stderr, "%pN\n", n);
 }
 
+void describe_compiler_frame(struct compiler_frame *f)
+{
+  if (!f) f = Pike_compiler->compiler_frame;
+
+  while(f) {
+    fprintf(stderr, "Compiler frame %p:\n", f);
+    fprintf(stderr, "  Locals:\n"
+            "    Current: %d\n"
+            "    Max: %d\n"
+            "    Min: %d\n"
+            "    Next: %d\n"
+            "    Level: %d\n"
+            "    Args: %d\n",
+            f->current_number_of_locals,
+            f->max_number_of_locals,
+            f->min_number_of_locals,
+            f->next_local_offset,
+            f->last_block_level,
+            f->num_args);
+    if (f->current_number_of_locals) {
+      int e;
+      fprintf(stderr, "  Local names:\n");
+      for (e = 0; e < f->current_number_of_locals; e++) {
+        struct local_name *var = f->local_names + e;
+        safe_pike_fprintf(stderr,
+                          "    #%d Name: %pq, flags: 0x%08x, type: %pT\n"
+                          "        Def: ",
+                          e, var->name, var->flags,
+                          var->def?var->def->type:NULL);
+        if (var->def) {
+          if (var->def->token == F_LOCAL) {
+            fprintf(stderr, "F_LOCAL(%d, %d)\n",
+                    var->def->u.integer.a, var->def->u.integer.b);
+          } else if (var->def->token == F_LOCAL_INDIRECT) {
+            fprintf(stderr, "F_LOCAL_INDIRECT(%d, %d)\n",
+                    var->def->u.integer.a, var->def->u.integer.b);
+          } else {
+            print_tree(var->def);
+          }
+        } else {
+          fprintf(stderr, "(NULL)\n");
+        }
+        if (var->init) {
+          fprintf(stderr, "        Init: ");
+          print_tree(var->init);
+        }
+      }
+      fprintf(stderr, "  Local variables:\n");
+      for (e = 0; e < (int)NELEM(f->local_variables); e++) {
+        int ee = f->local_variables[e] - 1;
+        struct local_name *var;
+        if (ee < 0) continue;
+        var = f->local_names + ee;
+        safe_pike_fprintf(stderr, "    %d: #%d %pq\n", e, ee, var->name);
+      }
+    }
+    f = f->previous;
+    fprintf(stderr, "  Parent: %p\n", f);
+  }
+  fprintf(stderr, "\n");
+}
+
 /* The following routines need much better commenting. */
 /* They also needed to support lexical scoping and external variables.
  * /grubba 2000-08-27
