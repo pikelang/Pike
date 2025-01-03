@@ -113,3 +113,138 @@ void drop_privs(string user, void|string group, void|int exception) {
   my_error("Dropping of privileges not implemented.\n");
 #endif
 }
+
+#if defined(__APPLE__) && constant(resolvepath)
+// Needed to avoid resolver loop.
+private constant Stdio = _static_modules._Stdio;
+
+protected int(0..1) compare_stat(Stdio.Stat st, Stdio.Stat st2)
+{
+  if (!st && !st2) return 1;
+  return st && st2 &&
+    (st->mode == st2->mode) &&
+    (st->dev == st2->dev) &&
+    (st->ino == st2->ino);
+}
+
+//!   Normalize an existing MacOS X file system path.
+//!
+//!   The following transformations are currently done:
+//!   @ul
+//!     @item
+//!       If the @[path] is not valid UTF-8, it will be converted
+//!       into UTF-8.
+//!     @item
+//!       Relative paths are expanded to absolute paths.
+//!     @item
+//!       Initial components @expr{"/private"@} and @expr{"/var/automount"@}
+//!       (or both) are removed if the result indicates the same
+//!       directory node.
+//!     @item
+//!       Trailing slashes (@expr{'/'@}) are removed.
+//!     @item
+//!       Current- and parent-directory path components (@expr{"."@}
+//!       and @expr{".."@}) are followed, similar to @[combine_path].
+//!     @item
+//!       Case-information in directory and file names is restored.
+//!     @item
+//!       File fork information is stripped (ie all stuff after the
+//!       first non-directory in the path is stripped).
+//!   @endul
+//!
+//! @returns
+//!   A normalized absolute path without trailing slashes.
+//!
+//!   Throws errors on failure, e.g. if the file or directory doesn't
+//!   exist.
+//!
+//! @seealso
+//!   @[combine_path()]
+utf8_string normalize_path(utf8_string path)
+{
+  /* Re: Feature set:
+   * cf https://developer.apple.com/documentation/foundation/nsstring/1407194-standardizingpath
+   */
+
+  if (!validate_utf8(path, ~0)) {
+    path = string_to_utf8(path, 1);
+  }
+  path = [object(utf8_string)]combine_path(getcwd(), path);
+  // path = resolvepath(path);
+
+  array(utf8_string) res = [array(utf8_string)](path/"/");
+  int i;
+
+  Stdio.Fd d = [object(Stdio.Fd)]Pike.Lazy.Stdio.File();
+  if (has_prefix(path, "/")) {
+    d->open("/", "r");
+    i = 1;
+  } else {
+    d->open(".", "r");
+  }
+  // NB: We assume that "/" and "." exist and are directories.
+
+  for (;i < sizeof(res); i++) {
+    utf8_string seg = res[i];
+
+    Stdio.Stat st = d->statat(seg);
+    if (!st) {
+      i--;
+      break;
+    }
+    array(utf8_string) files = [array(utf8_string)]d->get_dir();
+    if (has_value(files, seg)) continue;
+    string seg2 = lower_case(Unicode.normalize(utf8_to_string(seg), "NFC"));
+    array(string) files2 = map(map(map(files, utf8_to_string),
+                                   Unicode.normalize, "NFC"),
+                               lower_case);
+    int best = -1;
+    foreach(files2; int j; string f2) {
+      Stdio.Stat st2 = d->statat(files[j]);
+      if (compare_stat(st, st2)) {
+        best = j;
+        if (f2 == seg2) {
+          // This looks as good as it gets.
+          break;
+        }
+      }
+    }
+    if (best < 0) {
+      // Not found!
+      // The path segment in seg apparently works, so keep it.
+    } else {
+      res[i] = seg = files[best];
+    }
+    if (!st->isdir) break;
+    d = d->openat(seg, "r");
+  }
+
+  // Strip potential fork information.
+  if (i || (res[0] != "")) {
+    res = res[..i];
+  } else {
+    // Root directory.
+    res = ({ "", "" });
+  }
+
+  path = [object(utf8_string)](res * "/");
+
+  // Some hard-coded stuff...
+  foreach (({ "/private/", "/var/automount/" }), utf8_string prefix) {
+    if (has_prefix(path, prefix)) {
+      int i = search(path, "/", sizeof(prefix));
+      if (i < 0) i = sizeof(path);
+      if (i) {
+        utf8_string seg = [object(utf8_string)]path[sizeof(prefix)-1..i-1];
+        Stdio.Stat st = file_stat(seg);
+        Stdio.Stat st2 = file_stat(path[..i-1]);
+        if (compare_stat(st, st2)) {
+          path = [object(utf8_string)]path[sizeof(prefix)-1..];
+        }
+      }
+    }
+  }
+
+  return path;
+}
+#endif /* __APPLE__ && resolvepath() */
