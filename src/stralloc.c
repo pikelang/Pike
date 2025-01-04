@@ -752,6 +752,20 @@ PMOD_EXPORT struct pike_string * make_shared_wide_string(const void *str, size_t
   return end_shared_string(s);
 }
 
+PMOD_EXPORT struct pike_string *debug_begin_utf16_string(size_t len)
+{
+  struct pike_string *ret = begin_wide_shared_string(len, sixteenbit);
+  if (ret) ret->flags |= STRING_CONVERT_SURROGATES;
+  return ret;
+}
+
+PMOD_EXPORT struct pike_string *make_utf16_string(const p_wchar1 *str, size_t len)
+{
+  struct pike_string *s = begin_utf16_string(len);
+  memcpy(s->str, str, len << sixteenbit);
+  return end_shared_string(s);
+}
+
 static struct pike_string * make_static_string(const char * str, size_t len,
                                                enum size_shift shift)
 {

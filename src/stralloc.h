@@ -307,6 +307,8 @@ PMOD_EXPORT struct pike_string * debug_make_shared_binary_string1(const p_wchar1
 PMOD_EXPORT struct pike_string * debug_make_shared_binary_string2(const p_wchar2 *str,size_t len);
 PMOD_EXPORT struct pike_string * make_shared_wide_string(const void *str, size_t len,
                                                          enum size_shift shift);
+PMOD_EXPORT struct pike_string *debug_begin_utf16_string(size_t len);
+PMOD_EXPORT struct pike_string *make_utf16_string(const p_wchar1 *str, size_t len);
 PMOD_EXPORT struct pike_string * make_shared_static_string(const char *str, size_t len, enum size_shift);
 PMOD_EXPORT struct pike_string * make_shared_malloc_string(char *str, size_t len, enum size_shift);
 PMOD_EXPORT struct pike_string *debug_make_shared_string(const char *str);
@@ -520,6 +522,8 @@ static inline enum size_shift PIKE_UNUSED_ATTRIBUTE min_magnitude(const unsigned
  ((struct pike_string *)debug_malloc_pass(debug_begin_shared_string(X)))
 #define begin_wide_shared_string(X,Y) \
  ((struct pike_string *)debug_malloc_pass(debug_begin_wide_shared_string((X),(Y))))
+#define begin_utf16_string(X) \
+ ((struct pike_string *)debug_malloc_pass(debug_begin_utf16_string((X))))
 
 #define make_shared_pcharp(X) \
  ((struct pike_string *)debug_malloc_pass(debug_make_shared_pcharp(X)))
@@ -544,6 +548,7 @@ static inline enum size_shift PIKE_UNUSED_ATTRIBUTE min_magnitude(const unsigned
 
 #define begin_shared_string debug_begin_shared_string
 #define begin_wide_shared_string debug_begin_wide_shared_string
+#define begin_utf16_string debug_begin_utf16_string
 
 #define make_shared_pcharp debug_make_shared_pcharp
 #define make_shared_binary_pcharp debug_make_shared_binary_pcharp
