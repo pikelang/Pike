@@ -2501,8 +2501,10 @@ static void f_compilation_push_type_attribute(INT32 args)
     if ((attr == test) && (c->lex.pragmas & ID_STRICT_TYPES)) {
       /* Warn about expected utf-8 strings. */
       if ((a->u.type->type == PIKE_T_STRING) &&
-          (a->u.type->cdr->type == PIKE_T_INT) &&
-          (CDR_TO_INT(a->u.type->cdr) <= 0x7f)) {
+          (!a->u.type->cdr ||
+           (a->u.type->cdr->type == PIKE_T_ZERO) ||
+           ((a->u.type->cdr->type == PIKE_T_INT) &&
+            (CDR_TO_INT(a->u.type->cdr) <= 0x7f)))) {
         /* Common. */
         goto ok;
       }
