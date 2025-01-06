@@ -99,6 +99,12 @@ AC_CACHE_VAL(pike_cv_have_IPPROTO_IPV6, [
 #include <winsock2.h>
 #endif
 #include <sys/types.h>
+#ifdef __APPLE__
+/* The <sys/socket.h> header file is broken and disregards _DARWIN_C_SOURCE
+ * for the sendfile() declaration.
+ */
+#undef _POSIX_C_SOURCE
+#endif
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
@@ -223,6 +229,12 @@ AC_MSG_CHECKING([if struct sockaddr_un has a sun_len member (BSD)])
 AC_CACHE_VAL(pike_cv_struct_sockaddr_un_sun_len, [
 	AC_TRY_COMPILE([
 #include <sys/types.h>
+#ifdef __APPLE__
+/* The <sys/socket.h> header file is broken and disregards _DARWIN_C_SOURCE
+ * for the sendfile() declaration.
+ */
+#undef _POSIX_C_SOURCE
+#endif
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif /* HAVE_SYS_SOCKET_H */
@@ -245,6 +257,12 @@ if test "$ac_cv_func_sendfile" = "yes"; then
   AC_CACHE_VAL(pike_cv_sendfile_args, [
     AC_TRY_COMPILE([
 #include <sys/types.h>
+#ifdef __APPLE__
+/* The <sys/socket.h> header file is broken and disregards _DARWIN_C_SOURCE
+ * for the sendfile() declaration.
+ */
+#undef _POSIX_C_SOURCE
+#endif
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif /* HAVE_SYS_SOCKET_H */
@@ -261,6 +279,12 @@ if test "$ac_cv_func_sendfile" = "yes"; then
       # we indeed have a prototype...
       AC_TRY_COMPILE([
 #include <sys/types.h>
+#ifdef __APPLE__
+/* The <sys/socket.h> header file is broken and disregards _DARWIN_C_SOURCE
+ * for the sendfile() declaration.
+ */
+#undef _POSIX_C_SOURCE
+#endif
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif /* HAVE_SYS_SOCKET_H */
@@ -280,6 +304,12 @@ if test "$ac_cv_func_sendfile" = "yes"; then
     ], [
       AC_TRY_COMPILE([
 #include <sys/types.h>
+#ifdef __APPLE__
+/* The <sys/socket.h> header file is broken and disregards _DARWIN_C_SOURCE
+ * for the sendfile() declaration.
+ */
+#undef _POSIX_C_SOURCE
+#endif
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif /* HAVE_SYS_SOCKET_H */
@@ -295,6 +325,12 @@ if test "$ac_cv_func_sendfile" = "yes"; then
       ], [ pike_cv_sendfile_args=6 ], [
         AC_TRY_COMPILE([
 #include <sys/types.h>
+#ifdef __APPLE__
+/* The <sys/socket.h> header file is broken and disregards _DARWIN_C_SOURCE
+ * for the sendfile() declaration.
+ */
+#undef _POSIX_C_SOURCE
+#endif
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif /* HAVE_SYS_SOCKET_H */
@@ -372,6 +408,12 @@ if test "$ac_cv_func_sendfile" = "yes"; then
       AC_CACHE_VAL(pike_cv_has_struct_sf_hdtr, [
         AC_TRY_LINK([
 #include <sys/types.h>
+#ifdef __APPLE__
+/* The <sys/socket.h> header file is broken and disregards _DARWIN_C_SOURCE
+ * for the sendfile() declaration.
+ */
+#undef _POSIX_C_SOURCE
+#endif
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
@@ -1206,6 +1248,12 @@ AC_TRY_RUN([
 #ifdef HAVE_SYS_SELECT_H
 #include <sys/select.h>
 #endif
+#ifdef __APPLE__
+/* The <sys/socket.h> header file is broken and disregards _DARWIN_C_SOURCE
+ * for the sendfile() declaration.
+ */
+#undef _POSIX_C_SOURCE
+#endif
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
@@ -1360,6 +1408,12 @@ AC_TRY_RUN([
 #include <fcntl.h>
 #include <signal.h>
 #include <sys/wait.h>
+#ifdef __APPLE__
+/* The <sys/socket.h> header file is broken and disregards _DARWIN_C_SOURCE
+ * for the sendfile() declaration.
+ */
+#undef _POSIX_C_SOURCE
+#endif
 #include <sys/socket.h>
 
 int main()

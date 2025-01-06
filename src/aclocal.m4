@@ -300,11 +300,24 @@ AC_DEFUN([PIKE_USE_SYSTEM_EXTENSIONS],
 
   AH_VERBATIM([USE_POSIX_C_EXTENSIONS],
 [
+#ifndef _DARWIN_C_SOURCE
+/* Overrides disabling of non-posix symbols by _POSIX_C_SOURCE on Darwin. */
+#undef _DARWIN_C_SOURCE
+#endif
+
 #ifndef POSIX_SOURCE
  /* We must define this *always* */
 # define POSIX_SOURCE	1
 #endif
 #ifndef _POSIX_C_SOURCE
+#if defined(__APPLE__) && defined(HAVE_SYS_SOCKET_H)
+/* The <sys/socket.h> headerfile is broken on MacOS X as is disregards
+ * _DARWIN_C_SOURCE with respect to the declaration of sendfile(2).
+ * We thus need to include <sys/socket.h> before we set the POSIX
+ * compatibility level.
+ */
+#include <sys/socket.h>
+#endif
   /* Version of POSIX that we want to support.
    * Note that POSIX.1-2001 and later require C99, and the earlier
    * require C89.
@@ -336,9 +349,6 @@ AC_DEFUN([PIKE_USE_SYSTEM_EXTENSIONS],
    /* Define to 1 (and do NOT define _XOPEN_VERSION) for XPG 4v2. */
 #  undef _XOPEN_SOURCE_EXTENDED
 # endif
-#endif
-#ifndef _DARWIN_C_SOURCE
-#undef _DARWIN_C_SOURCE
 #endif
 #ifndef _NETBSD_SOURCE
 #undef _NETBSD_SOURCE
