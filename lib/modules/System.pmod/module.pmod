@@ -155,7 +155,7 @@ protected int(0..1) compare_stat(Stdio.Stat st, Stdio.Stat st2)
 //! @returns
 //!   A normalized absolute path without trailing slashes.
 //!
-//!   Throws errors on failure, e.g. if the file or directory doesn't
+//!   May throw errors on failure, e.g. if the file or directory doesn't
 //!   exist.
 //!
 //! @seealso
@@ -193,27 +193,28 @@ utf8_string normalize_path(utf8_string path)
       break;
     }
     array(utf8_string) files = [array(utf8_string)]d->get_dir();
-    if (has_value(files, seg)) continue;
-    string seg2 = lower_case(Unicode.normalize(utf8_to_string(seg), "NFC"));
-    array(string) files2 = map(map(map(files, utf8_to_string),
-                                   Unicode.normalize, "NFC"),
-                               lower_case);
-    int best = -1;
-    foreach(files2; int j; string f2) {
-      Stdio.Stat st2 = d->statat(files[j]);
-      if (compare_stat(st, st2)) {
-        best = j;
-        if (f2 == seg2) {
-          // This looks as good as it gets.
-          break;
+    if (!has_value(files, seg)) {
+      string seg2 = lower_case(Unicode.normalize(utf8_to_string(seg), "NFC"));
+      array(string) files2 = map(map(map(files, utf8_to_string),
+                                     Unicode.normalize, "NFC"),
+                                 lower_case);
+      int best = -1;
+      foreach(files2; int j; string f2) {
+        Stdio.Stat st2 = d->statat(files[j]);
+        if (compare_stat(st, st2)) {
+          best = j;
+          if (f2 == seg2) {
+            // This looks as good as it gets.
+            break;
+          }
         }
       }
-    }
-    if (best < 0) {
-      // Not found!
-      // The path segment in seg apparently works, so keep it.
-    } else {
-      res[i] = seg = files[best];
+      if (best < 0) {
+        // Not found!
+        // The path segment in seg apparently works, so keep it.
+      } else {
+        res[i] = seg = files[best];
+      }
     }
     if (!st->isdir) break;
     d = d->openat(seg, "r");
