@@ -114,9 +114,13 @@ void drop_privs(string user, void|string group, void|int exception) {
 #endif
 }
 
-#if defined(__APPLE__) && constant(resolvepath)
+#if defined(__APPLE__) && constant(resolvepath) && constant(_Stdio.__HAVE_STATAT__)
 // Needed to avoid resolver loop.
 private constant Stdio = _static_modules._Stdio;
+
+// NB: Protects precompilation of eg unicode_module.cmod.
+private function(string, string:string) normalize_unicode =
+  [function(string, string:string)]Pike.Lazy.Unicode.normalize;
 
 protected int(0..1) compare_stat(Stdio.Stat st, Stdio.Stat st2)
 {
@@ -172,6 +176,8 @@ utf8_string normalize_path(utf8_string path)
   path = [object(utf8_string)]combine_path(getcwd(), path);
   // path = resolvepath(path);
 
+  if (path == "/") return "/";
+
   array(utf8_string) res = [array(utf8_string)](path/"/");
   int i;
 
@@ -187,16 +193,22 @@ utf8_string normalize_path(utf8_string path)
   for (;i < sizeof(res); i++) {
     utf8_string seg = res[i];
 
-    Stdio.Stat st = d->statat(seg);
-    if (!st) {
+    if (seg == "") {
+      // As we have passed through combine_path() above, this only
+      // happens for a trailing "/". Get rid of it.
       i--;
       break;
     }
+
+    Stdio.Stat st = d->statat(seg);
+    if (!st) {
+      error("File not found: %q.\n", res[..i] * "/");
+    }
     array(utf8_string) files = [array(utf8_string)]d->get_dir();
     if (!has_value(files, seg)) {
-      string seg2 = lower_case(Unicode.normalize(utf8_to_string(seg), "NFC"));
+      string seg2 = lower_case(normalize_unicode(utf8_to_string(seg), "NFC"));
       array(string) files2 = map(map(map(files, utf8_to_string),
-                                     Unicode.normalize, "NFC"),
+                                     normalize_unicode, "NFC"),
                                  lower_case);
       int best = -1;
       foreach(files2; int j; string f2) {
