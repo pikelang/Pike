@@ -195,19 +195,19 @@ cond([[System->normalize_path]],
     Stdio.recursive_rm ("testsuite_test");
     mkdir ("testsuite_test");
 
-    int test_normalize_path (string f)
+    int test_normalize_path (string(8bit) f)
     {
-      string ff = "testsuite_test/" + f;
+      string(8bit) ff = "testsuite_test/" + f;
       Stdio.write_file (ff, "foo");
-      string n = System.normalize_path (ff);
+      string(8bit) n = System.normalize_path (ff);
       if (!n) {
 	werror ("System.normalize_path (%O) produced 0\n", ff);
 	return 0;
       }
+#ifdef __NT__
       if (catch(utf8_to_string(f))) {
         f = string_to_utf8(f);
       }
-#ifdef __NT__
       if (!has_suffix (n, "\\testsuite_test\\" + f)) {
 	werror ("System.normalize_path (%O) produced %O\n", ff, n);
 	return 0;
@@ -217,7 +217,9 @@ cond([[System->normalize_path]],
     };
 
     if (!test_normalize_path ("foo")) return 0;
+#ifdef __NT__
     if (!test_normalize_path ("\345\344\366")) return 0;
+#endif
     if (!test_normalize_path ("\303\245\303\244\303\266")) return 0;
     return 1;
   ]], 1)

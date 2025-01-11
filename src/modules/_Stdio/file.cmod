@@ -3793,6 +3793,23 @@ static void file_stat(INT32 args)
   }
 }
 
+#if !defined(HAVE_FSTATAT) && defined(HAVE_OPENAT)
+/* Emulate with openat(2) + fstat(2). */
+#define fstatat pike_fstatat
+#ifndef AT_SYMLINK_NOFOLLOW
+#define AT_SYMLINK_NOFOLLOW	0
+#endif
+static int fstatat(int dfd, const char *path, PIKE_STAT_T *st, int flags)
+{
+  int fd = openat(dfd, path, O_RDONLY);
+  int ret;
+  if (fd < 0) return -1;
+  ret = fd_fstat(fd, st);
+  fd_close(fd);
+  return ret;
+}
+#define HAVE_FSTATAT
+#endif
 
 #ifdef HAVE_FSTATAT
 /*! @decl Stat statat(string path, void|int(0..1) symlink)
@@ -3809,6 +3826,10 @@ static void file_stat(INT32 args)
  *!
  *! @note
  *!   Not available on all architectures.
+ *!
+ *! @note
+ *!   The @[symlink] mode may not be available. In which case an
+ *!   error will be thrown if the operation is attempted.
  *!
  *! @seealso
  *!   @[file_stat()], @[stat()], @[openat()], @[unlinkat()]
@@ -3832,6 +3853,10 @@ static void file_statat(INT32 args)
     pop_n_elems(args);
     push_int(0);
     return;
+  }
+
+  if (nofollow && !AT_SYMLINK_NOFOLLOW) {
+    Pike_error("Unsupported operation.\n");
   }
 
   fd=FD;
