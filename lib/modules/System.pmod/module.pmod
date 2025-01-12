@@ -136,9 +136,6 @@ protected int(0..1) compare_stat(Stdio.Stat st, Stdio.Stat st2)
 //!   The following transformations are currently done:
 //!   @ul
 //!     @item
-//!       If the @[path] is not valid UTF-8, it will be converted
-//!       into UTF-8.
-//!     @item
 //!       Relative paths are expanded to absolute paths.
 //!     @item
 //!       Initial components @expr{"/private"@} and @expr{"/var/automount"@}
@@ -160,7 +157,7 @@ protected int(0..1) compare_stat(Stdio.Stat st, Stdio.Stat st2)
 //!   A normalized absolute path without trailing slashes.
 //!
 //!   May throw errors on failure, e.g. if the file or directory doesn't
-//!   exist.
+//!   exist or if the @[path] is not valid UTF-8.
 //!
 //! @seealso
 //!   @[combine_path()]
@@ -170,9 +167,6 @@ utf8_string normalize_path(utf8_string path)
    * cf https://developer.apple.com/documentation/foundation/nsstring/1407194-standardizingpath
    */
 
-  if (!validate_utf8(path, ~0)) {
-    path = string_to_utf8(path, 1);
-  }
   path = [object(utf8_string)]combine_path(getcwd(), path);
   // path = resolvepath(path);
 
