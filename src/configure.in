@@ -2684,7 +2684,9 @@ cat >conftest.y<<\EOF
 %pure_parser
 %{
 #include <stdlib.h>
-void parse();
+#define YYSTYPE void
+int yylex(YYSTYPE *yylval);
+void parse(void);
 void yyerror(char *);
 %}
 %%
@@ -2709,7 +2711,7 @@ int yylex(YYSTYPE *yylval)
 }
 
 int depth=0;
-void parse()
+void parse(void)
 {
   int tmp;
   if(depth++>5) return;
@@ -2720,7 +2722,7 @@ void parse()
 }
 int errors=0;
 void yyerror(char *fel) { errors++; }
-int main()
+int main(void)
 {
   parse();
   exit(errors);
@@ -2771,7 +2773,9 @@ AC_CACHE_VAL(pike_cv_short_use,
 #else
 #define short
 #endif
-void parse();
+#define YYSTYPE void
+int yylex(YYSTYPE *yylval);
+void parse(void);
 void yyerror(char *);
 %}
 %%
