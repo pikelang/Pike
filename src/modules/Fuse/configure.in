@@ -15,6 +15,7 @@ else
     AC_MSG_CHECKING([if we can compile C9x code])
     AC_CACHE_VAL(pike_cv_c9x_compiler, [
       AC_TRY_COMPILE([
+#include <stdlib.h>
 	// C++ comment.
 
 	// Structure field assignment.
