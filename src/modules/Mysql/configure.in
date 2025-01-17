@@ -328,17 +328,51 @@ dnl   fi
       LIBS="${MARIADB_LIBS} ${LIBS}"
   fi
 
+  # Check whether we have declarations for mysql_real_connect()
+  # and/or mysql_connect().
+  AC_CHECK_DECL(mysql_real_connect,,,[
+#ifdef HAVE_WINSOCK2_H
+#include <winsock2.h>
+#elif defined(HAVE_WINSOCK_H)
+#include <winsock.h>
+#endif
+
+#ifdef HAVE_MYSQL_H
+#include <mysql.h>
+#else
+#ifdef HAVE_MYSQL_MYSQL_H
+#include <mysql/mysql.h>
+#endif
+#endif
+  ])
+  AC_CHECK_DECL(mysql_connect,,,[
+#ifdef HAVE_WINSOCK2_H
+#include <winsock2.h>
+#elif defined(HAVE_WINSOCK_H)
+#include <winsock.h>
+#endif
+
+#ifdef HAVE_MYSQL_H
+#include <mysql.h>
+#else
+#ifdef HAVE_MYSQL_MYSQL_H
+#include <mysql/mysql.h>
+#endif
+#endif
+  ])
+
   # Try a couple of mysqlclient libs
   # in order of age, newest first.
 
 define([AC_CHECK_SQLLIB],
 [
-AC_MSG_CHECKING(for mysql_real_connect in $1)
-AC_CACHE_VAL(ac_cv_pike_lib_$1_mysql_real_connect,
-[
-  ac_save_LIBS="$LIBS"
-LIBS="-l$1 $LIBS"
-  AC_TRY_LINK(
+  if test "x$ac_cv_have_decl_mysql_real_connect" = "xyes"; then
+    AC_MSG_CHECKING(for mysql_real_connect in $1)
+    AC_CACHE_VAL(ac_cv_pike_lib_$1_mysql_real_connect,
+    [
+      ac_save_LIBS="$LIBS"
+      LIBS="-l$1 $LIBS"
+      AC_TRY_LINK(
 [
 #ifdef HAVE_WINSOCK2_H
 #include <winsock2.h>
@@ -354,25 +388,29 @@ LIBS="-l$1 $LIBS"
 #endif
 #endif
 ],[
-  mysql_real_connect(0,0,0,0,0,0,0,0);
+        mysql_real_connect(0,0,0,0,0,0,0,0);
 ],ac_cv_pike_lib_$1_mysql_real_connect=yes,
   ac_cv_pike_lib_$1_mysql_real_connect=no)
-LIBS="$ac_save_LIBS"
+      LIBS="$ac_save_LIBS"
 ])
 
-if test "x$ac_cv_pike_lib_$1_mysql_real_connect" = xyes ; then
-  PIKE_FEATURE(Mysql,[yes (lib$1)])
-  AC_MSG_RESULT(yes)
-  $2
-else
-  AC_MSG_RESULT(no)
-
-  AC_MSG_CHECKING(for mysql_connect in $1)
-  AC_CACHE_VAL(ac_cv_pike_lib_$1_mysql_connect,
-  [
-    ac_save_LIBS="$LIBS"
-    LIBS="-l$1 $LIBS"
-    AC_TRY_LINK(
+    if test "x$ac_cv_pike_lib_$1_mysql_real_connect" = xyes ; then
+      PIKE_FEATURE(Mysql,[yes (lib$1)])
+      AC_MSG_RESULT(yes)
+    else
+      AC_MSG_RESULT(no)
+    fi
+  fi
+  if test "x$ac_cv_pike_lib_$1_mysql_real_connect" = xyes ; then
+    $2
+  else
+    if test "x$ac_cv_have_decl_mysql_connect" = "xyes"; then
+      AC_MSG_CHECKING(for mysql_connect in $1)
+      AC_CACHE_VAL(ac_cv_pike_lib_$1_mysql_connect,
+      [
+        ac_save_LIBS="$LIBS"
+        LIBS="-l$1 $LIBS"
+        AC_TRY_LINK(
 [
 #ifdef HAVE_WINSOCK2_H
 #include <winsock2.h>
@@ -388,21 +426,25 @@ else
 #endif
 #endif
 ],[
-  mysql_connect(0,0,0,0);
+          mysql_connect(0,0,0,0);
 ],ac_cv_pike_lib_$1_mysql_connect=yes,
   ac_cv_pike_lib_$1_mysql_connect=no)
-  LIBS="$ac_save_LIBS"
-  ])
+        LIBS="$ac_save_LIBS"
+      ])
 
-  if test "x$ac_cv_pike_lib_$1_mysql_connect" = xyes ; then
-    PIKE_FEATURE(Mysql,[yes (lib$1)])
-    AC_MSG_RESULT(yes)
-    $2
-  else
-    AC_MSG_RESULT(no)
-    $3
+      if test "x$ac_cv_pike_lib_$1_mysql_connect" = xyes ; then
+        PIKE_FEATURE(Mysql,[yes (lib$1)])
+        AC_MSG_RESULT(yes)
+      else
+        AC_MSG_RESULT(no)
+      fi
+    fi
+    if test "x$ac_cv_pike_lib_$1_mysql_connect" = xyes ; then
+      $2
+    else
+      $3
+    fi
   fi
-fi
 ])
 
   TRY_MYSQLCLIENT="yes"
