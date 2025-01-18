@@ -3118,7 +3118,7 @@ AC_CHECK_TYPES([HPCON, LPPROC_THREAD_ATTRIBUTE_LIST, LPSTARTUPINFOEXW,
 #endif
 ])
 
-if test "x$ac_cv_have_xmath_h:$ac_cv_have_ymath_h" = "xno:no" ; then :; else
+if test "x$ac_cv_header_xmath_h:$ac_cv_header_ymath_h" = "xno:no" ; then :; else
     # Internal header files on NT.
     #
     # Some notes:
