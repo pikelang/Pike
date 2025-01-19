@@ -218,7 +218,7 @@ if test "x$CC" = "x"; then :; else
   AC_MSG_CHECKING([whether we need an icc workaround])
   AC_CACHE_VAL(pike_cv_need_icc_gcc_version, [
 cat >conftest.c <<EOF
-  int main() { return 0; }
+  int main(void) { return 0; }
 EOF
     ORIG_CFLAGS="$CFLAGS"
     for pike_cv_need_icc_gcc_version in no 420 410 400 340 330 320 310 no; do
@@ -319,7 +319,7 @@ if test "x$GCC" = "xno"; then
 
     AC_CACHE_VAL(pike_cv_datasegment_required, [
       PIKE_OVERRIDE_CROSS_COMPILING(no)
-      AC_TRY_RUN([int foo;main(){return(0);}], [
+      AC_TRY_RUN([int foo;main(void){return(0);}], [
         pike_cv_datasegment_required=yes
       ], [
         pike_cv_datasegment_required=no
@@ -511,8 +511,8 @@ else
   	return sum;
       }
 
-      extern size_t __chkstk();
-      size_t _chkstk() { return __chkstk(); }
+      extern size_t __chkstk(void);
+      size_t _chkstk(void) { return __chkstk(); }
 
     ], [
       return !eat_stack(4711);
@@ -3768,7 +3768,7 @@ pthread_mutexattr_t attr;
 pthread_mutex_t tmp;
 pthread_t gazonk;
 
-int main()
+int main(void)
 {
   void *sune;
 #ifdef HAVE_PTHREAD_INIT
@@ -4016,7 +4016,7 @@ pthread_mutexattr_t attr;
 pthread_mutex_t tmp;
 pthread_t gazonk;
 
-int main()
+int main(void)
 {
   void *sune;
 #ifdef HAVE_PTHREAD_INIT
@@ -4095,7 +4095,7 @@ void *foo(void *bar) { thr_exit(0); return 0; }
 mutex_t tmp;
 thread_t gazonk;
 
-int main()
+int main(void)
 {
   void *sune;
   mutex_lock(& tmp);
@@ -4678,10 +4678,10 @@ int sig_child(int arg)
 #endif
 }
 
-int sig_alarm() { exit(1); }
+int sig_alarm(void) { exit(1); }
 #endif /* !__NT__ */
 
-int main()
+int main(void)
 {
   char *tmp;
 #ifndef __NT__
@@ -4752,10 +4752,10 @@ int sig_child(int arg)
 #endif
 }
 
-int sig_alarm() { exit(1); }
+int sig_alarm(void) { exit(1); }
 #endif /* !__NT__ */
 
-int main()
+int main(void)
 {
   char *tmp;
 #ifndef __NT__
@@ -5020,7 +5020,7 @@ fi
 #   			       :"=a" (((unsigned long*)&x)[0]), 		\
 #   			       "=d" (((unsigned long*)&x)[1]))
 #
-#   void own_gethrtime_init()
+#   void own_gethrtime_init(void)
 #   {
 #      GETTIMEOFDAY(&hrtime_timeval_zero);
 #      RTSC(hrtime_rtsc_zero);
@@ -5045,7 +5045,7 @@ fi
 #
 #   /* this is very sensitive to the compiler; keep all crap */
 #
-#   long long gethrtime()
+#   long long gethrtime(void)
 #   {
 #      long long now;
 #      struct timeval tv;
@@ -5077,7 +5077,7 @@ fi
 #
 #   #include <stdio.h>
 #
-#   int main()
+#   int main(void)
 #   {
 #      struct timeval tv1,tv2;
 #      long long td,t1,t2;
@@ -5401,7 +5401,7 @@ static int find_stack_direction(void *foo, int cnt)
   }
 }
 
-int main() {
+int main(void) {
   find_stack_direction_funptr = find_stack_direction;
   void *bar; exit( find_stack_direction_funptr(&bar, 0x10) < 0);
 }
@@ -5434,7 +5434,7 @@ else
 AC_TRY_RUN([
 #include <stdio.h>
 
-int main()
+int main(void)
 {
 #if SIZEOF_INT == 4
 #define T int
@@ -5513,7 +5513,7 @@ union test {
   void * ptr;
   int val;
 };
-int main()
+int main(void)
 {
   union test t;
   t.ptr = NULL;
@@ -5775,7 +5775,7 @@ AC_MSG_CHECKING([for the RDTSC instruction (x86)])
 AC_CACHE_VAL(pike_cv_have_rdtsc, [
 AC_TRY_RUN([
 
-static long long rdtsc()
+static long long rdtsc(void)
 {
    unsigned long l, h;
 #if defined (_M_IX86) || defined (_M_X64)
@@ -5790,7 +5790,7 @@ static long long rdtsc()
    return (((long long)h)<<32)|l;
 }
 
-int main()
+int main(void)
 {
    if (rdtsc()!=rdtsc())
       return 0;
@@ -6008,7 +6008,7 @@ AC_CACHE_VAL(pike_cv_method_extract_uchar,
 [
 AC_TRY_RUN([
 #include <stdlib.h>
-int main()
+int main(void)
 {
   char i,*p;
   i=-10;
@@ -6034,7 +6034,7 @@ AC_CACHE_VAL(pike_cv_method_extract_char,
 [
 AC_TRY_RUN([
 #include <stdlib.h>
-int main()
+int main(void)
 {
   char i,*p;
   i=-10;
@@ -6223,7 +6223,7 @@ void check(TY n, char *pf, char *pd)
       exit(1);
 #endif
 }
-int main()
+int main(void)
 {
   if(sizeof(TY)!=EXPECTED_SIZE_$1)
     exit(1);
@@ -6396,7 +6396,7 @@ RETSIGTYPE func(int sig)
   sigrun[0] = -1;
 }
 
-int main()
+int main(void)
 {
 #define sig SIGSEGV
 
@@ -6511,7 +6511,7 @@ AC_CACHE_VAL(pike_cv_have_working___func__,
   AC_TRY_RUN([
 #include <stdlib.h>
 #include <string.h>
-int main()
+int main(void)
 {
   exit(strcmp("main", __func__));
 }
@@ -6531,7 +6531,7 @@ AC_CACHE_VAL(pike_cv_have_working___FUNCTION__,
   AC_TRY_RUN([
 #include <stdlib.h>
 #include <string.h>
-int main()
+int main(void)
 {
   exit(strcmp("main", __FUNCTION__));
 }
@@ -6574,7 +6574,7 @@ __declspec(noreturn) void fatal(char *foo,...)
   exit(2);
 }
 
-int main() {  exit(0); }
+int main(void) {  exit(0); }
 
   ], pike_cv_lc___declspec=yes, pike_cv_lc___declspec=no, [
     echo $ac_n "crosscompiling... $ac_c" 1>&6
@@ -6623,7 +6623,7 @@ void fatal(char *foo,...)
   exit(2);
 }
 
-int main() {  exit(0); }
+int main(void) {  exit(0); }
 
   ], pike_cv_gcc_attributes=yes, pike_cv_gcc_attributes=no, [
     echo $ac_n "crosscompiling... $ac_c" 1>&6
@@ -6680,7 +6680,7 @@ int foo(int a, ...)
   return a;
 }
 
-int main()
+int main(void)
 {
   return foo(2, 1, 0);
 }
@@ -7244,7 +7244,7 @@ AC_CACHE_VAL(pike_cv_configure_test_port_c, [
 
 #include "port.c"
 
-int main()
+int main(void)
 {
   return 0;
 }
@@ -7289,7 +7289,7 @@ struct timeval
 };
 #endif
 
-int main() {
+int main(void) {
   struct timeval tv;
   gettimeofday(&tv,(void *)0);
   exit(0);
@@ -7348,7 +7348,7 @@ if test "x$ac_cv_func_gethrvtime" = xyes; then
 
 #include "port.c"
 
-int main()
+int main(void)
 {
   time_t start = TIME (0), now;
   hrtime_t vt = gethrvtime(), next_vt;
@@ -7393,7 +7393,7 @@ AC_CACHE_VAL(pike_cv_configure_test_rusage_c, [
 #include "port.c"		/* Tested earlier, but might be required. */
 #include "rusage.c"
 
-int main()
+int main(void)
 {
   init_rusage();
   return 0;
@@ -7431,7 +7431,7 @@ AC_CACHE_VAL(pike_cv_configure_test_threads_c, [
 #include "port.c"		/* Tested earlier, but might be required. */
 #include "threads.c"
 
-int main()
+int main(void)
 {
   return 0;
 }
@@ -7505,7 +7505,7 @@ TH_RETURN_TYPE work_thread (void *dummy)
   return 0;
 }
 
-int main()
+int main(void)
 {
   cpu_time_t start;
   THREAD_T worker;
@@ -7551,7 +7551,7 @@ int main()
 }
 
 #else
-int main()
+int main(void)
 {
   FILE *res = fopen ("confdefs.out.2", "w"); /* weird name to circumvent configure cleanups */
   if (!res) return 6;
@@ -7603,7 +7603,7 @@ else
     AC_TRY_RUN([
   #include <stdlib.h>
 
-      int main()
+      int main(void)
       {
         putenv ("foo=bar");
         if (putenv ("foo") && !putenv ("foo=") && !getenv ("foo")) return 1;
@@ -7847,7 +7847,7 @@ then
 
       FreeBSD*)
         AC_TRY_RUN([#include <stdlib.h>
-int main(){exit(
+int main(void){exit(
 #ifdef __ELF__
     0
 #else
@@ -7871,7 +7871,7 @@ int main(){exit(
 
       FreeBSD*)
         AC_TRY_RUN([#include <stdlib.h>
-int main(){exit(
+int main(void){exit(
 #ifdef __ELF__
     0
 #else
@@ -7888,7 +7888,7 @@ fi
    OLD_CFLAGS="$CFLAGS"
    CFLAGS="$CFLAGS $LINKFORSHARED"
    AC_TRY_RUN([#include <stdlib.h>
-int main() { exit(0); }],
+int main(void) { exit(0); }],
  pike_cv_sys_linkforshared="$LINKFORSHARED", pike_cv_sys_linkforshared='', pike_cv_sys_linkforshared='')
    CFLAGS="$OLD_CFLAGS"
 ])
@@ -8528,7 +8528,7 @@ AC_TRY_RUN([
 #include <stdio.h>
 #include "svalue.h"
 
-int main()
+int main(void)
 {
    FILE *fp, *out;
    char float_type[80] = "?";
