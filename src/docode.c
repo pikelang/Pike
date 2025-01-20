@@ -2285,6 +2285,8 @@ static int do_docode2(node *n, int flags)
      * is equal to the first index. The third if it is greater than the
      * first, but lesser than the second. The fourth if it is equal to
      * the second.... etc. etc.
+     *
+     * Note that the jumptable starts at index 1. Index 0 is NOT used.
      */
 
   case F_SWITCH:
@@ -2396,6 +2398,10 @@ static int do_docode2(node *n, int flags)
       push_svalue(Pike_sp-1);
       f_indices(1);
       f_mkmapping(2);
+    } else {
+      /* FIXME: Consider expanding short integer ranges (max 16?).
+       *        Cf #10126.
+       */
     }
 
     update_arg((INT32)tmp1, store_constant(Pike_sp-1,1,0));
