@@ -2492,6 +2492,8 @@ PMOD_EXPORT ptrdiff_t debug_fd_write(FD fd, void *buf, ptrdiff_t len)
   }
 }
 
+/* FIXME: Implement debug_fd_pwrite() using WriteFileEx(). */
+
 PMOD_EXPORT ptrdiff_t debug_fd_writev(FD fd, struct iovec *iov, ptrdiff_t n)
 {
   /* NB: writev(2) MUST be atomic. */
@@ -2625,6 +2627,8 @@ PMOD_EXPORT ptrdiff_t debug_fd_read(FD fd, void *to, size_t len)
   release_fd(fd);
   return ret;
 }
+
+/* FIXME: Implement debug_fd_pread() using ReadFileEx(). */
 
 PMOD_EXPORT PIKE_OFF_T debug_fd_lseek(FD fd, PIKE_OFF_T pos, int where)
 {
