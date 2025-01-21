@@ -550,7 +550,13 @@ static char PIKE_UNUSED_ATTRIBUTE *debug_get_current_dir_name(void)
 
 #define fd_write(fd,X,Y) write(dmalloc_touch_fd(fd),(X),(Y))
 #define fd_writev(fd,X,Y) writev(dmalloc_touch_fd(fd),(X),(Y))
+#ifdef HAVE_PWRITE
+#define fd_pwrite(fd,X,Y,Z) pwrite(dmalloc_touch_fd(fd),(X),(Y),(Z))
+#endif
 #define fd_read(fd,X,Y) read(dmalloc_touch_fd(fd),(X),(Y))
+#ifdef HAVE_PREAD
+#define fd_pread(fd,X,Y,Z) pread(dmalloc_touch_fd(fd),(X),(Y),(Z))
+#endif
 #define fd_lseek(fd,X,Y) lseek(dmalloc_touch_fd(fd),(X),(Y))
 #ifdef HAVE_FTRUNCATE64
 #define fd_ftruncate(fd,X) ftruncate64(dmalloc_touch_fd(fd),(X))
@@ -647,10 +653,14 @@ static char PIKE_UNUSED_ATTRIBUTE *debug_get_current_dir_name(void)
 #define S_IFSOCK 0xc000
 #endif
 
+/* Some symbols defined elsewhere. */
+
+/* modules/_Stdio/file.cmod: */
 PMOD_EXPORT int pike_make_pipe(int *fds);
 PMOD_EXPORT int fd_from_object(struct object *o);
 PMOD_EXPORT void create_proxy_pipe(struct object *o, int for_reading);
 PMOD_EXPORT struct object *file_make_object_from_fd(int fd, int mode, int guess);
+/* modules/_Stdio/socket.c: */
 PMOD_EXPORT extern struct program *port_program;
 
 #endif /* FDLIB_H */
