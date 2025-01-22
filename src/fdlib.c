@@ -13,6 +13,8 @@
  *
  * The UTF-8 filenames are recoded to UTF16 and used
  * with the wide versions of the NT system calls.
+ *
+ * NOTE: It also provides wrappers for some I/O system calls on POSIX.
  */
 
 #include "global.h"
@@ -26,6 +28,27 @@
 #ifdef HAVE_DIRECT_H
 #include <direct.h>
 #endif
+
+#ifdef HAVE_SYS_UIO_H
+#include <sys/uio.h>
+#endif
+
+/* #define FD_DEBUG */
+/* #define FD_STAT_DEBUG */
+
+#ifdef FD_DEBUG
+#define FDDEBUG(X) X
+#else
+#define FDDEBUG(X)
+#endif
+
+#ifdef FD_STAT_DEBUG
+#define STATDEBUG(X) X
+#else
+#define STATDEBUG(X) do {} while (0)
+#endif
+
+#define FDWERR(...)	FDDEBUG(fprintf(stderr, __VA_ARGS__))
 
 #if defined(HAVE_WINSOCK_H)
 
@@ -109,22 +132,6 @@ int first_free_handle;
 
 /* The root desktop folder. */
 static LPSHELLFOLDER isf = NULL;
-
-/* #define FD_DEBUG */
-/* #define FD_STAT_DEBUG */
-
-#ifdef FD_DEBUG
-#define FDDEBUG(X) X
-#else
-#define FDDEBUG(X)
-#endif
-
-#ifdef FD_STAT_DEBUG
-#define STATDEBUG(X) X
-#else
-#define STATDEBUG(X) do {} while (0)
-#endif
-
 
 #ifdef USE_DL_MALLOC
 /* NB: We use some calls that allocate memory with the libc malloc(). */
@@ -3424,3 +3431,68 @@ static inline void libc_free(void *ptr)
 #endif /* USE_DL_MALLOC */
 
 #endif /* HAVE_WINSOCK_H */
+
+/*
+ * Wrap/emulate I/O-related system calls that have different
+ * APIs on different OSes.
+ */
+
+/**
+ *  writev() without the IOV_MAX limit.
+ */
+PMOD_EXPORT INT64 pike_writev(int fd, struct iovec *iov, int iovcnt)
+{
+  INT64 sent = 0;
+
+  FDWERR("pike_writev(%d, %p, %d)...\n", fd, iov, iovcnt);
+  FDDEBUG({
+      int cnt;
+      for(cnt = 0; cnt < iovcnt; cnt++) {
+        FDWERR("pike_writev: %4d: iov_base: %p, iov_len: %ld\n",
+               cnt, iov[cnt].iov_base, (long)iov[cnt].iov_len);
+      }
+    })
+
+  while (iovcnt) {
+    ptrdiff_t bytes;
+    int cnt = iovcnt;
+
+#ifdef IOV_MAX
+    if (cnt > IOV_MAX) cnt = IOV_MAX;
+#endif
+
+#ifdef DEF_IOV_MAX
+    if (cnt > DEF_IOV_MAX) cnt = DEF_IOV_MAX;
+#endif
+
+#ifdef MAX_IOVEC
+    if (cnt > MAX_IOVEC) cnt = MAX_IOVEC;
+#endif
+
+    bytes = fd_writev(fd, iov, cnt);
+
+    if (bytes < 0) {
+      /* Error or file closed at other end. */
+      FDWERR("pike_writev(): writev() failed with errno:%d.\n"
+             "Sent %ld bytes so far.\n",
+             errno, (long)sent);
+      return sent ? sent : bytes;
+    } else {
+      sent += bytes;
+
+      while (bytes) {
+        if ((size_t)bytes >= (size_t)iov->iov_len) {
+          bytes -= iov->iov_len;
+          iov++;
+          iovcnt--;
+        } else {
+          iov->iov_base = ((char *)iov->iov_base) + bytes;
+          iov->iov_len -= bytes;
+          break;
+        }
+      }
+    }
+  }
+  FDWERR("pike_writev(): Sent %d bytes\n", sent);
+  return sent;
+}
