@@ -626,6 +626,8 @@ static char PIKE_UNUSED_ATTRIBUTE *debug_get_current_dir_name(void)
 
 #endif /* Don't HAVE_WINSOCK_H */
 
+/* Some I/O macros that some OSes lack. */
+
 #ifndef SEEK_SET
 #define SEEK_SET 0
 #endif
@@ -652,6 +654,9 @@ static char PIKE_UNUSED_ATTRIBUTE *debug_get_current_dir_name(void)
 #ifndef S_IFSOCK
 #define S_IFSOCK 0xc000
 #endif
+
+/* Prototypes for wrapped I/O-related system calls. */
+PMOD_EXPORT INT64 pike_writev(int fd, struct iovec *iov, int iovcnt);
 
 /* Some symbols defined elsewhere. */
 

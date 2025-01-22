@@ -259,70 +259,6 @@ static void call_callback_and_free(struct callback *cb, void *this_, void *UNUSE
  * Code called in the threaded case.
  */
 
-/* writev() without the IOV_MAX limit. */
-static ptrdiff_t send_iov(int fd, struct iovec *iov, int iovcnt)
-{
-  ptrdiff_t sent = 0;
-
-  SF_DFPRINTF((stderr, "sendfile: send_iov(%d, %p, %d)...\n",
-	       fd, iov, iovcnt));
-#ifdef SF_DEBUG
-  {
-    int cnt;
-    for(cnt = 0; cnt < iovcnt; cnt++) {
-      SF_DFPRINTF((stderr, "sendfile: %4d: iov_base: %p, iov_len: %ld\n",
-                   cnt, iov[cnt].iov_base, (long)iov[cnt].iov_len));
-    }
-  }
-#endif /* SF_DEBUG */
-
-  while (iovcnt) {
-    ptrdiff_t bytes;
-    int cnt = iovcnt;
-
-#ifdef IOV_MAX
-    if (cnt > IOV_MAX) cnt = IOV_MAX;
-#endif
-
-#ifdef DEF_IOV_MAX
-    if (cnt > DEF_IOV_MAX) cnt = DEF_IOV_MAX;
-#endif
-
-#ifdef MAX_IOVEC
-    if (cnt > MAX_IOVEC) cnt = MAX_IOVEC;
-#endif
-
-    bytes = writev(fd, iov, cnt);
-
-    if ((bytes < 0) && (errno == EINTR)) {
-      continue;
-    } else if (bytes < 0) {
-      /* Error or file closed at other end. */
-      SF_DFPRINTF((stderr, "sendfile: send_iov(): writev() failed with errno:%d.\n"
-		   "sendfile: Sent %ld bytes so far.\n",
-                   errno, (long)sent));
-      return sent;
-    } else {
-      sent += bytes;
-
-      while (bytes) {
-	if ((size_t)bytes >= (size_t)iov->iov_len) {
-	  bytes -= iov->iov_len;
-	  iov++;
-	  iovcnt--;
-	} else {
-	  iov->iov_base = ((char *)iov->iov_base) + bytes;
-	  iov->iov_len -= bytes;
-	  break;
-	}
-      }
-    }
-  }
-  SF_DFPRINTF((stderr, "sendfile: send_iov(): Sent %d bytes\n",
-	       sent));
-  return sent;
-}
-
 void low_do_sendfile(struct pike_sendfile *this)
 {
   int oldbulkmode = bulkmode_start(this->to_fd);
@@ -480,7 +416,7 @@ void low_do_sendfile(struct pike_sendfile *this)
 
     /* Send headers */
     if (this->hd_cnt) {
-      this->sent += send_iov(this->to_fd, this->hd_iov, this->hd_cnt);
+      this->sent += pike_writev(this->to_fd, this->hd_iov, this->hd_cnt);
     }
 
     SF_DFPRINTF((stderr, "sendfile: Sent %ld bytes so far.\n",
@@ -637,7 +573,7 @@ void low_do_sendfile(struct pike_sendfile *this)
     SF_DFPRINTF((stderr, "sendfile: Sending trailers.\n"));
 
     if (this->tr_cnt) {
-      this->sent += send_iov(this->to_fd, this->tr_iov, this->tr_cnt);
+      this->sent += pike_writev(this->to_fd, this->tr_iov, this->tr_cnt);
     }
   } else {
     /* Only headers & trailers */
@@ -665,7 +601,7 @@ void low_do_sendfile(struct pike_sendfile *this)
     }
     /* All iovec's are now in iov & iovcnt */
 
-    this->sent += send_iov(this->to_fd, iov, iovcnt);
+    this->sent += pike_writev(this->to_fd, iov, iovcnt);
   }
 
 #if defined(HAVE_FREEBSD_SENDFILE) || defined(HAVE_HPUX_SENDFILE) || defined(HAVE_MACOSX_SENDFILE)
