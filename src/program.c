@@ -7388,7 +7388,7 @@ PMOD_EXPORT int add_typed_constant(struct pike_string *name,
 	       n, id->func.const_info.offset);
 #endif
 
-      compiler_add_annotations(n);
+      compiler_add_annotations(ref->identifier_offset);
     }
     return n;
   }
@@ -8025,7 +8025,7 @@ INT32 define_function(struct pike_string *name,
       free_type(funp->type);
       copy_pike_type(funp->type, type);
 
-      compiler_add_annotations(i);
+      compiler_add_annotations(ref.identifier_offset);
     }else{
 #ifdef PROGRAM_BUILD_DEBUG
       fprintf(stderr, "%*sidentifier was inherited\n",
