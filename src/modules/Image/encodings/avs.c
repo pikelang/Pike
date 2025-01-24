@@ -71,8 +71,8 @@ void image_avs_f__decode(INT32 args)
     Pike_error("This is not an AVS file.\n");
 
   q = (unsigned char *)s->str;
-  w = q[0]<<24 | q[1]<<16 | q[2]<<8 | q[3];
-  h = q[4]<<24 | q[5]<<16 | q[6]<<8 | q[7];
+  w = ((unsigned)q[0])<<24 | q[1]<<16 | q[2]<<8 | q[3];
+  h = ((unsigned)q[4])<<24 | q[5]<<16 | q[6]<<8 | q[7];
 
   /* Check for under- and overflow. */
   if ((w <= 0) || (h <= 0) || INT32_MUL_OVERFLOW(w, h) ||
@@ -157,7 +157,7 @@ void image_avs_f_encode(INT32 args )
       unsigned int rv = 0;
       rgb_group pix = *(is++);
       if(as) apix = *(as++);
-      rv = ((apix.g<<24)|(pix.r<<16)|(pix.g<<8)|pix.b);
+      rv = ((((unsigned)apix.g)<<24)|(pix.r<<16)|(pix.g<<8)|pix.b);
       *(q++) = htonl(rv);
     }
   pop_n_elems(args);
