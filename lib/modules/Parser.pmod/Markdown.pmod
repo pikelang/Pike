@@ -163,6 +163,24 @@ protected string decode_html(string html)
   });
 }
 
+//! TeX encode special characters eg @tt{#&\\} etc
+protected string encode_tex(string str)
+{
+  return replace(str, ([
+    "#": "\\#",
+    "%": "\\%",
+    "&": "\\&",
+    "$": "\\$",
+    "_": "\\_",
+    "{": "\\{",
+    "}": "\\}",
+    "~": "\\~",
+    "^": "\\^",
+    "\"" : "\\ensuremath{{}^{\\prime\\prime}}",
+    "'": "\\ensuremath{{}^{\\prime}}",
+  ]));
+}
+
 protected constant default_options = ([
   "gfm"           : true,
   "tables"        : true,
@@ -1285,5 +1303,140 @@ class Renderer
     string i = sprintf("<img src='%s' alt='%s'", url, text);
     if (text) i += sprintf(" title='%s'", text);
     return i + (options->xhtml ? "/>" : ">");
+  }
+}
+
+//!
+class LaTeXRenderer
+{
+  //! Markdown renderer to LaTeX fragment. Does not generate a complete document;
+  //! this can be inserted into a document.
+
+  inherit Renderer;
+
+  //! Attributes are currently not supported and will be ignored.
+  string attrs(mapping token, mapping|void dflt)
+  {
+    return "";
+  }
+
+  //!
+  string code(string code, string lang, bool escaped, mapping token)
+  {
+    if (options->highlight) {
+      string out = options->highlight(code, lang);
+      if (out && out != code) {
+        code = out;
+        escaped = true;
+      }
+    }
+
+    if (!lang) {
+      return sprintf("\\begin{verbatim}\n%s\n\\end{verbatim}",
+                     !escaped ? encode_tex(code) : code);
+    }
+
+    return sprintf(
+      "\\begin[%s%s]{verbatim}\n%s\n\\end{verbatim}",
+      options->lang_prefix,
+      encode_tex(lang),
+      !escaped ? encode_tex(code) : code,
+    );
+  }
+
+  //!
+  string blockquote(string text, mapping token)
+  {
+    return sprintf("\\begin{quotation}\n%s\\end{quotation}\n", text);
+  }
+
+  //!
+  string hr() { return "\\hrulefill\n"; }
+
+  //!
+  string heading(string text, int level, string raw, mapping token)
+  {
+    //TODO: Support different heading levels
+    return "\\section{" + text + "}\n";
+  }
+
+  //!
+  string list(string body, void|bool ordered, mapping token)
+  {
+    return sprintf("\\begin{itemize}\n%s\\end{itemize}\n", body);
+  }
+
+  //!
+  string listitem(string text, mapping token)
+  {
+    return sprintf("\\item %s\n", text);
+  }
+
+  //!
+  string paragraph(string text, mapping token)
+  {
+    return sprintf("\\par{%s}\n", text);
+  }
+
+  //!
+  string table(string header, string body, mapping token)
+  {
+    return sprintf(
+      "\\begin{tabular}{|%{l|%}}\n\\hline\n%s%s\n\\end{tabular}\n",
+      token->header, header, body
+    );
+  }
+
+  //!
+  string tablerow(string row, mapping token)
+  {
+    // A row will consist of a series of cells with ampersands after them.
+    // Strip off the last ampersand and put a pair of backslashes instead.
+    return row[..<2] + "\\\\\n\\hline\n";
+  }
+
+  //!
+  string tablecell(string cell, mapping flags, mapping token)
+  {
+    return flags->header ? "\\textbf{" + cell + "} & " : cell + " & ";
+  }
+
+  //!
+  string html(string text, mapping token)  { return text; }
+  string text(string t, mapping token)     { return t; }
+  string strong(string t, mapping token)   { return sprintf("\\textbf{%s}", t); }
+  string em(string t, mapping token)       { return sprintf("\\textit{%s}", t); }
+  string del(string t, mapping token)      { return sprintf("\\st{%s}", t); }
+  string codespan(string t, mapping token) { return sprintf("\\texttt{%s}", t); }
+  string br(mapping token)                 { return "\\setlength{\\fboxsep}{5pt}"; }
+
+  //!
+  string link(string href, string|zero title, string text, mapping token)
+  {
+    if (options->sanitize) {
+      mixed e = catch {
+        string t = Protocols.HTTP.uri_decode(decode_html(href));
+        t = REGX("[^\\w:]")->replace(t, "");
+        if (has_prefix(t, "javascript:") || has_prefix(t, "vbscript:")) {
+          return "";
+        }
+      };
+
+      if (e) {
+        return "";
+      }
+    }
+
+    return sprintf(
+      "\\href{%s}{%s}",
+      href,
+      text
+    );
+  }
+
+  //!
+  string image(string url, string title, string text, mapping token)
+  {
+    return sprintf("\\includegraphics{%s}}", url);
   }
 }
