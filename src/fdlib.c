@@ -3657,7 +3657,7 @@ static INT64 low_pike_sendfile(int to_fd,
 #endif
 
   if (!len || (from_fd < 0) ||
-      (fd_fstat(fd, &st) < 0) || !S_ISREG(st.st_mode)) {
+      (fd_fstat(from_fd, &st) < 0) || !S_ISREG(st.st_mode)) {
     /* No file to send or not a regular file.
      *
      * Trigger the caller to use the fallback.
