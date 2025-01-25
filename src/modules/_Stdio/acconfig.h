@@ -10,33 +10,11 @@
 @TOP@
 @BOTTOM@
 
-/* Define this if your <sys/sendfile.h> is broken. */
-#undef HAVE_BROKEN_SYS_SENDFILE_H
-
 /* Define this if you have IPPROTO_IPV6. */
 #undef HAVE_IPPROTO_IPV6
 
 /* Define this if you have ZFS_PROP_UTF8ONLY. */
 #undef HAVE_ZFS_PROP_UTF8ONLY
-
-/* Define this if you have a FreeBSD-style (7 args) sendfile(). */
-#undef HAVE_FREEBSD_SENDFILE
-
-/* Define this if you have a HP/UX-style (6 args) sendfile()
- * with no struct sf_hdtr. */
-#undef HAVE_HPUX_SENDFILE
-
-/* Define this if you have a MacOS X-style (6 args) sendfile()
- * with struct sf_hdtr. */
-#undef HAVE_MACOSX_SENDFILE
-
-/* Define this if you have a sendfile(2) where the length of the headers
- * are counted towards the file length argument.
- * This is the case for MacOS X and FreeBSD before FreeBSD 5.0. */
-#undef HAVE_SENDFILE_HEADER_LEN_PROBLEM
-
-/* Define this if you want to disable the use of sendfile(2). */
-#undef HAVE_BROKEN_SENDFILE
 
 /* Define this if your DIR has the field dd_fd (POSIX or X/OPEN). */
 #undef HAVE_DIR_DD_FD

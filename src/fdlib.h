@@ -657,6 +657,10 @@ static char PIKE_UNUSED_ATTRIBUTE *debug_get_current_dir_name(void)
 
 /* Prototypes for wrapped I/O-related system calls. */
 PMOD_EXPORT INT64 pike_writev(int fd, struct iovec *iov, int iovcnt);
+PMOD_EXPORT INT64 pike_sendfile(int to_fd,
+                                struct iovec *hd_iov, int hd_cnt,
+                                int from_fd, off_t *offsetp, INT64 len,
+                                struct iovec *tr_iov, int tr_cnt);
 
 /* Some symbols defined elsewhere. */
 

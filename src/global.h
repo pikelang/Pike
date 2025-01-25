@@ -755,6 +755,17 @@ static inline u_longlong_t PIKE_UNUSED_ATTRIBUTE pike_uint64_to_ulonglong(unsign
 #define pike_uint64_to_ulonglong(VAL)	((unsigned INT64)(VAL))
 #endif /* HAVE_NON_SCALAR_OFF64_T */
 
+#ifdef HAVE_BROKEN_SYS_SENDFILE_H
+#undef HAVE_SYS_SENDFILE_H
+#endif
+
+#ifdef HAVE_BROKEN_SENDFILE
+#undef HAVE_SENDFILE
+#undef HAVE_FREEBSD_SENDFILE
+#undef HAVE_HPUX_SENDFILE
+#undef HAVE_MACOSX_SENDFILE
+#endif
+
 #include "port.h"
 #include "dmalloc.h"
 

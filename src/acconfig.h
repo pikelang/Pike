@@ -529,6 +529,28 @@
 
 @BOTTOM@
 
+/* Define this if your <sys/sendfile.h> is broken. */
+#undef HAVE_BROKEN_SYS_SENDFILE_H
+
+/* Define this if you have a FreeBSD-style (7 args) sendfile(). */
+#undef HAVE_FREEBSD_SENDFILE
+
+/* Define this if you have a HP/UX-style (6 args) sendfile()
+ * with no struct sf_hdtr. */
+#undef HAVE_HPUX_SENDFILE
+
+/* Define this if you have a MacOS X-style (6 args) sendfile()
+ * with struct sf_hdtr. */
+#undef HAVE_MACOSX_SENDFILE
+
+/* Define this if you have a sendfile(2) where the length of the headers
+ * are counted towards the file length argument.
+ * This is the case for MacOS X and FreeBSD before FreeBSD 5.0. */
+#undef HAVE_SENDFILE_HEADER_LEN_PROBLEM
+
+/* Define this if you want to disable the use of sendfile(2). */
+#undef HAVE_BROKEN_SENDFILE
+
 /* Define to the size of the c-stack for new threads */
 #undef PIKE_THREAD_C_STACK_SIZE
 
