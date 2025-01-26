@@ -2544,6 +2544,8 @@ static void image_gif_lzw_encode(INT32 args)
 
    pop_n_elems(args);
    push_string(make_shared_binary_string((char*)lzw.out,lzw.outpos));
+
+   image_gif_lzw_free(&lzw);
 }
 
 static void image_gif_lzw_decode(INT32 args)
