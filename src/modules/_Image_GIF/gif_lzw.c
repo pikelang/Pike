@@ -22,6 +22,7 @@
 
 static inline void lzw_output(struct gif_lzw *lzw,lzwcode_t codeno)
 {
+   if (lzw->broken) return;
    if (lzw->outpos+4>=lzw->outlen)
    {
       unsigned char *new;
@@ -131,6 +132,8 @@ static inline void lzw_add(struct gif_lzw *lzw,int c)
 
       lzw_output(lzw,lzw->current);
 
+      if (lzw->broken) return;
+
       for (i=0; i<(1L<<lzw->bits); i++)
 	 lzw->code[i].firstchild=LZWCNULL;
       lzw->codes=(1L<<lzw->bits)+2;
@@ -149,6 +152,8 @@ static inline void lzw_add(struct gif_lzw *lzw,int c)
    /* output current code no, make new & reset */
 
    lzw_output(lzw,lzw->current);
+
+   if (lzw->broken) return;
 
    lno=lzw->code[lzw->current].firstchild;
    lno2 = (lzwcode_t)lzw->codes;
@@ -209,6 +214,9 @@ void image_gif_lzw_finish(struct gif_lzw *lzw)
    if (lzw->current!=LZWCNULL)
       lzw_output(lzw,lzw->current);
    lzw_output( lzw, (lzwcode_t)(1L<<lzw->bits)+1 ); /* GIF end code */
+
+   if (lzw->broken) return;
+
    if (lzw->outbit)
    {
       if (lzw->reversebits)
@@ -221,8 +229,14 @@ void image_gif_lzw_finish(struct gif_lzw *lzw)
 
 void image_gif_lzw_free(struct gif_lzw *lzw)
 {
-   if (lzw->out) free(lzw->out);
-   if (lzw->code) free(lzw->code);
+   if (lzw->out) {
+      free(lzw->out);
+      lzw->out = NULL;
+   }
+   if (lzw->code) {
+      free(lzw->code);
+      lzw->code = NULL;
+   }
 }
 
 void image_gif_lzw_add(struct gif_lzw *lzw, unsigned char *data, size_t len)
