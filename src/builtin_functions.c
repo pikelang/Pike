@@ -7050,7 +7050,7 @@ static void f_interleave_array(INT32 args)
   struct array *arr = NULL;
   struct array *min = NULL;
   struct array *order = NULL;
-  int max = 0;
+  INT_TYPE max = 0;
   int nelems = 0;
   int i;
 
