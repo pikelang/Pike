@@ -1075,7 +1075,7 @@ class InlineLexer
       // text
       if (cap = rules->text->split2(src)) {
         SRC_SUBSTR();
-        add(renderer->text(encode_html(smartypants(cap[0])), ([])));
+        add(renderer->text(cap[0], ([])));
         continue;
       }
 
@@ -1084,32 +1084,6 @@ class InlineLexer
     }
 
     return buf->get();
-  }
-
-  protected string smartypants(string text)
-  {
-    if (!options->smartypants) return text;
-
-    // em-dashes, en-dashes
-    text = replace(text, ([ "---" : "&mdash;", "--" : "&ndash;" ]));
-    // opening singles
-    text = REGX("(^|[-—/(\\[{\"\\s])'")->replace(text,
-                                                lambda (string a, string b) {
-                                                  return b + "&lsquo;";
-                                                });
-    // closing singles & apostrophes
-    text = replace(text, "'", "&rsquo;");
-    // opening doubles
-    text = REGX("(^|[-—/(\\[{‘\\s])\"")->replace(text,
-                                                 lambda (string a, string b) {
-                                                   return b + "&ldquo;";
-                                                 });
-    // closing doubles
-    text = replace(text, "\"", "&rdquo;");
-    // ellipses
-    text = REGX("\\.{3}")->replace(text, "&hellip;");
-
-    return text;
   }
 
   protected string output_link(array cap, mapping link)
@@ -1266,12 +1240,38 @@ class Renderer
 
   //!
   string html(string text, mapping token)  { return text; }
-  string text(string t, mapping token)     { return t; }
+  string text(string t, mapping token)     { return encode_html(smartypants(t)); }
   string strong(string t, mapping token)   { return sprintf("<strong%s>%s</strong>", attrs(token), t); }
   string em(string t, mapping token)       { return sprintf("<em%s>%s</em>", attrs(token), t); }
   string del(string t, mapping token)      { return sprintf("<del%s>%s</del>", attrs(token), t); }
   string codespan(string t, mapping token) { return sprintf("<code%s>%s</code>", attrs(token), t); }
   string br(mapping token)                 { return options->xhtml ? "<br/>" : "<br>"; }
+
+  protected string smartypants(string text)
+  {
+    if (!options->smartypants) return text;
+
+    // em-dashes, en-dashes
+    text = replace(text, ([ "---" : "&mdash;", "--" : "&ndash;" ]));
+    // opening singles
+    text = REGX("(^|[-—/(\\[{\"\\s])'")->replace(text,
+                                                lambda (string a, string b) {
+                                                  return b + "&lsquo;";
+                                                });
+    // closing singles & apostrophes
+    text = replace(text, "'", "&rsquo;");
+    // opening doubles
+    text = REGX("(^|[-—/(\\[{‘\\s])\"")->replace(text,
+                                                 lambda (string a, string b) {
+                                                   return b + "&ldquo;";
+                                                 });
+    // closing doubles
+    text = replace(text, "\"", "&rdquo;");
+    // ellipses
+    text = REGX("\\.{3}")->replace(text, "&hellip;");
+
+    return text;
+  }
 
   //!
   string link(string href, string|zero title, string text, mapping token)
