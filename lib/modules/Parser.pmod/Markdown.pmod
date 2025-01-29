@@ -1363,7 +1363,7 @@ class LaTeXRenderer
       "\\normalsize",
       "\\small",
     });
-    return sprintf("\\%s{\\textbf{%s %s}}\n",
+    return sprintf("\\vspace{10pt}\\%s{\\textbf{%s %s}}\\vspace{2pt}\n",
       options->heading_sections ? "section" : "par",
       levels[limit(0, level - 1, sizeof(levels) - 1)],
       text,
