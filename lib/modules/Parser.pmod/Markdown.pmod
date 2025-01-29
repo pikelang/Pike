@@ -1356,8 +1356,18 @@ class LaTeXRenderer
   //!
   string heading(string text, int level, string raw, mapping token)
   {
-    //TODO: Support different heading levels
-    return "\\section{" + text + "}\n";
+    array levels = ({
+      "\\huge",
+      "\\Large",
+      "\\large",
+      "\\normalsize",
+      "\\small",
+    });
+    return sprintf("\\%s{\\textbf{%s %s}}\n",
+      options->heading_sections ? "section" : "par",
+      levels[limit(0, level - 1, sizeof(levels) - 1)],
+      text,
+    );
   }
 
   //!
