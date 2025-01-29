@@ -1392,7 +1392,7 @@ class LaTeXRenderer
   string table(string header, string body, mapping token)
   {
     return sprintf(
-      "\\begin{tabular}{|%{l|%}}\n\\hline\n%s%s\n\\end{tabular}\n",
+      "\\par{\\begin{tabular}{|%{l|%}}\n\\hline\n%s%s\n\\end{tabular}}\n",
       token->header, header, body
     );
   }
