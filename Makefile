@@ -249,6 +249,9 @@ verify:
 valgrind_verify:
 	@$(DO_MAKE) "METATARGET=valgrind_verify" _make_in_builddir
 
+clang_tidy:
+	@$(DO_MAKE) "METATARGET=clang_tidy" _make_in_builddir
+
 verify_installed:
 	@$(DO_MAKE) "METATARGET=verify_installed" _make_in_builddir
 
