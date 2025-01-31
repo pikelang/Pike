@@ -1,4 +1,4 @@
-/*
+/* -*- mode: C; c-basic-offset: 3; -*-
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
@@ -28,10 +28,10 @@ static inline void lzw_output(struct gif_lzw *lzw,lzwcode_t codeno)
       unsigned char *new;
       new=realloc(lzw->out,lzw->outlen*=2);
       if (!new) {
-        lzw->outpos=0;
-        lzw->broken=1;
-        image_gif_lzw_free(lzw);
-        return;
+         lzw->outpos=0;
+         lzw->broken=1;
+         image_gif_lzw_free(lzw);
+         return;
       }
       lzw->out=new;
    }
@@ -111,17 +111,17 @@ static inline void lzw_add(struct gif_lzw *lzw,int c)
    if (!lzw->skipone)
    {
 #endif
-     /* check if we have this sequence */
-     lno=lzw->code[lzw->current].firstchild;
-     while (lno!=LZWCNULL)
-     {
-       if (lzw->code[lno].c==c && lno!=lzw->codes-1 )
-       {
-	 lzw->current=lno;
-	 return;
-       }
-       lno=lzw->code[lno].next;
-     }
+      /* check if we have this sequence */
+      lno=lzw->code[lzw->current].firstchild;
+      while (lno!=LZWCNULL)
+      {
+         if (lzw->code[lno].c==c && lno!=lzw->codes-1 )
+         {
+            lzw->current=lno;
+            return;
+         }
+         lno=lzw->code[lno].next;
+      }
 #ifdef GIF_LZW_LZ
    }
 #endif
@@ -195,9 +195,9 @@ void image_gif_lzw_init(struct gif_lzw *lzw,int bits)
    }
    lzw->out=malloc(DEFAULT_OUTBYTES);
    if (!lzw->out) {
-     lzw->broken=1;
-     image_gif_lzw_free(lzw);
-     return;
+      lzw->broken=1;
+      image_gif_lzw_free(lzw);
+      return;
    }
    lzw->outlen=DEFAULT_OUTBYTES;
    lzw->outpos=0;
