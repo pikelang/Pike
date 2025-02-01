@@ -2587,6 +2587,19 @@ if test "x${PAXCTL-}" = x ; then
 fi
 AC_SUBST(PAXCTL)
 
+if test "x${CLANG_TIDY-}" = x ; then
+    CLANG_PATH=""
+    for d in "$with_root/usr/lib/llvm/"*"/bin" ; do
+        if test -d "$d/." ; then
+            # NB: Prepend the directory in order to prefer the most recent.
+            CLANG_PATH=":$d$CLANG_PATH"
+        fi
+    done
+    AC_PATH_PROG(CLANG_TIDY, clang-tidy, , $PATH:$EXTRA_PATH$CLANG_PATH)
+    export CLANG_TIDY
+fi
+AC_SUBST(CLANG_TIDY)
+
 if test "x${RNTANY-}" = x ; then
   AC_PATH_PROG(RNTANY, rntany, , $PATH:$EXTRA_PATH)
   export RNTANY

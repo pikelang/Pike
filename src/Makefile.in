@@ -132,6 +132,8 @@ RUNPIKE=$(@RUNPIKE@)
 RUNTPIKE=$(@RUNTPIKE@)
 PIKE_MODULE_RELOC=@PIKE_MODULE_RELOC@
 
+CLANG_TIDY=@CLANG_TIDY@
+
 # Set to an appropriate invocation of valgrind (or similar)
 VALGRIND=@VALGRIND@
 VALGRINDARGS=@VALGRINDARGS@
@@ -769,7 +771,7 @@ valgrind_just_verify: testsuites master-stamp
 	$(VALGRIND) $(VALGRINDARGS) $(RUNPIKE) -x test_pike --subproc-start="$(VALGRIND) $(VALGRINDARGS)" $$args
 
 clang_tidy:
-	clang-tidy -checks='-*,bugprone-*' $(addprefix $(SRCDIR)/, $(subst .o,.c,$(OBJ))) -- $(CFLAGS)
+	$(CLANG_TIDY) -checks='-*,bugprone-*' $(addprefix $(SRCDIR)/, $(subst .o,.c,$(OBJ))) -- $(CFLAGS)
 
 dtrace_probes.h: $(SRCDIR)/dtrace/dtrace_probes.d
 	dtrace -h -s "$(SRCDIR)/dtrace/dtrace_probes.d" -o "$(TMP_BUILDDIR)/dtrace_probes.h"
