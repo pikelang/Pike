@@ -46,6 +46,10 @@
 
 #include <errno.h>
 
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif /* HAVE_SYS_TYPES_H */
+
 #ifdef HAVE_SYS_PARAM_H
 #include <sys/param.h>
 #endif /* HAVE_SYS_PARAM_H */
@@ -262,351 +266,24 @@ static void call_callback_and_free(struct callback *cb, void *this_, void *UNUSE
 void low_do_sendfile(struct pike_sendfile *this)
 {
   int oldbulkmode = bulkmode_start(this->to_fd);
+  off_t *offsetp = (this->offset >= 0) ? &this->offset : NULL;
+  INT64 sent = 0;
+
   /* Make sure we're using blocking I/O */
   set_nonblocking(this->to_fd, 0);
 
   SF_DFPRINTF((stderr, "sendfile: Worker started\n"));
 
-  if ((this->from_file) && (this->len)) {
-#if defined(HAVE_FREEBSD_SENDFILE) || defined(HAVE_HPUX_SENDFILE) || defined(HAVE_MACOSX_SENDFILE)
-    off_t sent = 0;
-    int len = this->len;
-    int res;
+  do {
+    sent = pike_sendfile(this->to_fd,
+                         this->hd_iov, this->hd_cnt,
+                         this->from_fd, offsetp, this->len,
+                         this->tr_iov, this->tr_cnt);
+  } while ((sent < 0) && (errno == EINTR));
 
-#if defined(HAVE_FREEBSD_SENDFILE) || defined(HAVE_MACOSX_SENDFILE)
-    struct sf_hdtr hdtr = { NULL, 0, NULL, 0 };
-#ifdef HAVE_FREEBSD_SENDFILE
-    SF_DFPRINTF((stderr, "sendfile: Using FreeBSD-style sendfile()\n"));
-#else
-    SF_DFPRINTF((stderr, "sendfile: Using MacOS X-style sendfile()\n"));
-#endif
-
-    if (this->hd_cnt) {
-      hdtr.headers = this->hd_iov;
-      hdtr.hdr_cnt = this->hd_cnt;
-    }
-    if (this->tr_cnt) {
-      hdtr.trailers = this->tr_iov;
-      hdtr.trl_cnt = this->tr_cnt;
-    }
-
-#else /* !(HAVE_FREEBSD_SENDFILE || HAVE_MACOSX_SENDFILE) */
-    /* HPUX_SENDFILE */
-    struct iovec hdtr[2] = { NULL, 0, NULL, 0 };
-    SF_DFPRINTF((stderr, "sendfile: Using HP/UX-style sendfile()\n"));
-
-    /* NOTE: hd_cnt/tr_cnt are always 0 or 1 since
-     * we've joined the headers/trailers in sf_create().
-     */
-    if (this->hd_cnt) {
-      hdtr[0].iov_base = this->hd_iov->iov_base;
-      hdtr[0].iov_len = this->hd_iov->iov_len;
-    }
-    if (this->tr_cnt) {
-      hdtr[1].iov_base = this->tr_iov->iov_base;
-      hdtr[1].iov_len = this->tr_iov->iov_len;
-    }
-
-#endif /* HAVE_FREEBSD_SENDFILE */
-
-    if (len < 0) {
-      /* Send entire file.
-       *
-       * From FreeBSD:
-       *   The nbytes argument specifies how many bytes of the file
-       *   should be sent, with 0 having the special meaning of send
-       *   until the end of file has been reached.
-       *
-       * From HPUX:
-       *   nbytes is the number of bytes to be sent from the file. If
-       *   this parameter is set to zero, data from the offset to the
-       *   end of the file will be sent.
-       *
-       * From MacOS X:
-       *   The len argument is a value-result parameter, that
-       *   specifies how many bytes of the file should be sent and/or
-       *   how many bytes have been sent. Initially the value pointed
-       *   to by the len argument specifies how many bytes should be
-       *   sent with 0 having the special meaning to send until the
-       *   end of file has been reached. On return the value pointed
-       *   to by the len argument indicates how many bytes have been
-       *   sent. The len pointer may not be NULL.
-       */
-      len = 0;
-    }
-#ifdef HAVE_SENDFILE_HEADER_LEN_PROBLEM
-    if (len) {
-      /* Adjust the length to account for the length of the headers. */
-      /* From FreeBSD 7.x src/sys/kern/uipc_syscalls.c:kern_sendfile():
-       *
-       * In FBSD < 5.0 the nbytes to send also included
-       * the header.  If compat is specified subtract the
-       * header size from nbytes.
-       */
-      /* From MacOS X 10.5.6 xnu/bsd/kern/uipc_syscalls.c:sendfile():
-       *
-       * Get number of bytes to send
-       * Should it applies to size of header and trailer?
-       * JMM - error handling?
-       */
-      for (res = 0; res < this->hd_cnt; res ++) {
-	len += this->hd_iov[res].iov_len;
-      }
-    }
-#endif
-
-    do {
-#ifdef HAVE_FREEBSD_SENDFILE
-      res = sendfile(this->from_fd, this->to_fd, this->offset, len,
-		     &hdtr, &sent, 0);
-#else /* !HAVE_FREEBSD_SENDFILE */
-#ifdef HAVE_MACOSX_SENDFILE
-      sent = len;
-      res = sendfile(this->from_fd, this->to_fd, this->offset, &sent,
-		     &hdtr, 0);
-#else
-    /* HPUX_SENDFILE */
-      res = sendfile(this->to_fd, this->from_fd, this->offset, len,
-		     hdtr, 0);
-#endif /* HAVE_MACOSX_SENDFILE */
-#endif /* HAVE_FREEBSD_SENDFILE */
-
-      SF_DFPRINTF((stderr, "sendfile: sendfile() returned %d\n", res));
-    } while ((res < 0) && (errno == EINTR));
-
-    if (res < 0) {
-      switch(errno) {
-      default:
-      case ENOTSOCK:
-      case EINVAL:
-	/* Try doing it by hand instead. */
-	goto fallback;
-	break;
-      case EFAULT:
-	/* Bad arguments */
-#ifdef HAVE_FREEBSD_SENDFILE
-	Pike_fatal("FreeBSD style sendfile(): EFAULT\n");
-#else /* !HAVE_FREEBSD_SENDFILE */
-	/* HPUX_SENDFILE */
-	Pike_fatal("HP/UX style sendfile(): EFAULT\n");
-#endif /* HAVE_FREEBSD_SENDFILE */
-	break;
-      case EBADF:
-      case ENOTCONN:
-      case EPIPE:
-      case EIO:
-      case EAGAIN:
-	/* Bad fd's or socket has been closed at other end. */
-	break;
-      }
-#ifdef HAVE_HPUX_SENDFILE
-      /* HPUX_SENDFILE */
-    } else {
-      sent = res;
-#endif /* HAVE_HPUX_SENDFILE */
-    }
+  if (sent >= 0) {
     this->sent += sent;
-
-    goto done;
-
-  fallback:
-#endif /* HAVE_FREEBSD_SENDFILE || HAVE_HPUX_SENDFILE || HAVE_MACOSX_SENDFILE */
-
-    SF_DFPRINTF((stderr, "sendfile: Sending headers\n"));
-
-    /* Send headers */
-    if (this->hd_cnt) {
-      this->sent += pike_writev(this->to_fd, this->hd_iov, this->hd_cnt);
-    }
-
-    SF_DFPRINTF((stderr, "sendfile: Sent %ld bytes so far.\n",
-                 (long)this->sent));
-
-#if defined(HAVE_SENDFILE) && !defined(HAVE_FREEBSD_SENDFILE) && !defined(HAVE_HPUX_SENDFILE) && !defined(HAVE_MACOSX_SENDFILE)
-    SF_DFPRINTF((stderr,
-		 "sendfile: Sending file with sendfile() Linux & Solaris.\n"));
-    {
-      int fail;
-      off_t offset = this->offset;
-      if (this->len < 0) {
-	PIKE_STAT_T st;
-	if (!fd_fstat(this->from_fd, &st) &&
-	    S_ISREG(st.st_mode)) {
-	  this->len = st.st_size - offset;	/* To end of file */
-	} else {
-	  this->len = MAX_INT64;
-	}
-      }
-      while (this->len > 0) {
-	do {
-	  fail = sendfile(this->to_fd, this->from_fd, &offset, this->len);
-	} while ((fail < 0) && (errno == EINTR));
-	this->offset = offset;
-
-	if (fail <= 0) {
-	  if (!fail) break;	/* EOF */
-	  /* Failed: Try normal... */
-	  goto normal;
-	}
-	this->sent += fail;
-	this->len -= fail;
-      }
-      goto send_trailers;
-    }
-  normal:
-#endif /* HAVE_SENDFILE && !HAVE_FREEBSD_SENDFILE && !HAVE_HPUX_SENDFILE && !HAVE_MACOSX_SENDFILE */
-    SF_DFPRINTF((stderr, "sendfile: Sending file by hand\n"));
-
-#if 0 /* mmap is slower than read/write on most if not all systems */
-#if defined(HAVE_MMAP) && defined(HAVE_MUNMAP)
-    {
-      PIKE_STAT_T st;
-
-      if (!fd_fstat(this->from_fd, &st) &&
-	  S_ISREG(st.st_mode)) {
-	/* Regular file, try using mmap(). */
-
-	SF_DFPRINTF((stderr,
-		     "sendfile: from is a regular file - trying mmap().\n"));
-
-	while (this->len) {
-	  void *mem;
-	  ptrdiff_t len = st.st_size - this->offset; /* To end of file */
-	  char *buf;
-	  int buflen;
-	  if ((len > this->len) && (this->len >= 0)) {
-	    len = this->len;
-	  }
-	  /* Try to limit memory space usage */
-	  if (len > MMAP_SIZE) {
-	    len = MMAP_SIZE;
-	  }
-
-	  if (!len) {
-	    /* Done */
-	    goto send_trailers;
-	  }
-
-	  mem = mmap(NULL, len, PROT_READ, MAP_FILE|MAP_SHARED,
-		     this->from_fd, this->offset);
-	  if (((long)mem) == ((long)MAP_FAILED)) {
-	    /* Try using read & write instead. */
-	    goto use_read_write;
-	  }
-#if defined(HAVE_MADVISE) && defined(MADV_SEQUENTIAL)
-	  madvise(mem, len, MADV_SEQUENTIAL);
-#endif /* HAVE_MADVISE && MADV_SEQUENTIAL */
-	  buf = mem;
-	  buflen = len;
-	  while (buflen) {
-	    int wrlen = fd_write(this->to_fd, buf, buflen);
-
-	    if ((wrlen < 0) && (errno == EINTR)) {
-	      continue;
-	    } else if (wrlen < 0) {
-	      munmap(mem, len);
-	      goto send_trailers;
-	    }
-	    buf += wrlen;
-	    buflen -= wrlen;
-	    this->sent += wrlen;
-	    this->offset += wrlen;
-	    if (this->len > 0) {
-	      this->len -= wrlen;
-	    }
-	  }
-	  munmap(mem, len);
-	}
-
-	/* Shouldn't there be a goto here ? /Hubbe */
-	/* True. Fixed. /grubba */
-	goto send_trailers;
-      }
-    }
-  use_read_write:
-#endif /* HAVE_MMAP && HAVE_MUNMAP */
-#endif
-    SF_DFPRINTF((stderr, "sendfile: Using read() and write().\n"));
-
-    while ((fd_lseek(this->from_fd, this->offset, SEEK_SET) < 0) &&
-	   (errno == EINTR))
-      ;
-
-    {
-      ptrdiff_t buflen;
-      ptrdiff_t len;
-      if ((this->len > this->buf_size) || (this->len < 0)) {
-	len = this->buf_size;
-      }
-      else
-        len = (ptrdiff_t) this->len;
-      while ((buflen = fd_read(this->from_fd, this->buffer, len)) > 0) {
-	char *buf = this->buffer;
-	this->len -= buflen;
-	this->offset += buflen;
-	while (buflen) {
-	  ptrdiff_t wrlen = fd_write(this->to_fd, buf, buflen);
-	  if ((wrlen < 0) && (errno == EINTR)) {
-	    continue;
-	  } else if (wrlen < 0) {
-	    goto send_trailers;
-	  }
-	  buf += wrlen;
-	  buflen -= wrlen;
-	  this->sent += wrlen;
-	}
-	if ((this->len > this->buf_size) || (this->len < 0)) {
-	  len = this->buf_size;
-	}
-	else
-          len = (ptrdiff_t) this->len;
-      }
-    }
-  send_trailers:
-    SF_DFPRINTF((stderr, "sendfile: Sent %ld bytes so far.\n",
-                 (long)this->sent));
-
-    /* No more need for the buffer */
-    free(this->buffer);
-    this->buffer = NULL;
-
-    SF_DFPRINTF((stderr, "sendfile: Sending trailers.\n"));
-
-    if (this->tr_cnt) {
-      this->sent += pike_writev(this->to_fd, this->tr_iov, this->tr_cnt);
-    }
-  } else {
-    /* Only headers & trailers */
-    struct iovec *iov = this->hd_iov;
-    int iovcnt = this->hd_cnt;
-
-    SF_DFPRINTF((stderr, "sendfile: Only headers & trailers.\n"));
-
-    if (!iovcnt) {
-      /* Only trailers */
-      iovcnt = this->tr_cnt;
-      iov = this->tr_iov;
-    } else if (this->tr_cnt) {
-      /* Both headers & trailers */
-      if (iov + this->hd_cnt != this->tr_iov) {
-	/* They are not back-to-back. Fix! */
-	int i;
-	struct iovec *iov_tmp = iov + this->hd_cnt;
-	for (i=0; i < this->tr_cnt; i++) {
-	  iov_tmp[i] = this->tr_iov[i];
-	}
-      }
-      /* They are now back-to-back. */
-      iovcnt += this->tr_cnt;
-    }
-    /* All iovec's are now in iov & iovcnt */
-
-    this->sent += pike_writev(this->to_fd, iov, iovcnt);
   }
-
-#if defined(HAVE_FREEBSD_SENDFILE) || defined(HAVE_HPUX_SENDFILE) || defined(HAVE_MACOSX_SENDFILE)
- done:
-#endif /* HAVE_FREEBSD_SENDFILE || HAVE_HPUX_SENDFILE || HAVE_MACOSX_SENDFILE */
 
   bulkmode_restore(this->to_fd, oldbulkmode);
 
@@ -1002,6 +679,8 @@ static void sf_create(INT32 args)
     /*
      * Setup done. Note that we keep refs to all refcounted svalues in
      * our object.
+     *
+     * Note also that the auto variable sf is copied to the object here.
      */
     sp -= args;
     *THIS = sf;
