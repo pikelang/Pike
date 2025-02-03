@@ -1,0 +1,16 @@
+subject: Pike 8.0: Pike.Lazy, Protocols.HTTP
+from: 5f792e2b036c613164cd29a974e40b948f62df48
+to: e22f9917a8e382dc52a1703a27a1a7fa4c75f087
+originator: Henrik Grubbström (Grubba) <grubba@grubba.org>
+depends: 2024-11-14T122034|pike/8.0.1940
+restart: true
+
+Multiple fixes:
+
+• Abstract lazy resolving into the Pike.Lazy module.
+
+• Protocols.HTTP.Query: Improved diagnostics for HTTP_QUERY_DEBUG.
+
+• Protocols.HTTP.Query: Use data_timeout for blocking requests too.
+
+• Protocols.HTTP.Server.Request: Fix some documentation issues.
