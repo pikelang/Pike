@@ -507,6 +507,8 @@ static void sf_create(INT32 args)
       SIMPLE_ARG_TYPE_ERROR("sendfile", 2, "object(Stdio.File)");
     }
     sf.from_fd = sf.from->box.fd;
+  } else {
+    sf.from_fd = -1;
   }
 
   /* Do some extra arg checking */

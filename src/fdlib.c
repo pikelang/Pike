@@ -3552,7 +3552,9 @@ static INT64 fallback_sendfile(int to_fd,
     }
 
     if (tr_iov && tr_cnt) {
-      return pike_writev(to_fd, tr_iov, tr_cnt);
+      INT64 bytes = pike_writev(to_fd, tr_iov, tr_cnt);
+      if (bytes < 0) goto failed;
+      sent += bytes;
     }
   }
 
@@ -3717,7 +3719,7 @@ static INT64 low_pike_sendfile(int to_fd,
   while (len > 0) {
     INT64 bytes = sendfile(to_fd, from_fd, offsetp, len);
     if (bytes <= 0) {
-      if (bytes < 0) goto failed;
+      if (bytes < 0) goto sendfile_failed;
       break;	/* Typically EOF on from_fd and unknown length. */
     }
     sent += bytes;
@@ -3733,7 +3735,11 @@ static INT64 low_pike_sendfile(int to_fd,
     }
 
     if (tr_iov && tr_cnt) {
-      return pike_writev(to_fd, tr_iov, tr_cnt);
+      INT64 bytes = pike_writev(to_fd, tr_iov, tr_cnt);
+
+      if (bytes < 0) goto failed;
+
+      sent += bytes;
     }
   }
 
@@ -3741,6 +3747,23 @@ static INT64 low_pike_sendfile(int to_fd,
   /* Nothing more to send. */
   return sent;
 
+ sendfile_failed:
+  if ((errno == EINVAL) || (errno == ENOSYS)) {
+    /* sendfile(2) operation not supported for from_fd
+     * or sendfile(2) not implemented.
+     *
+     * NB: We have already sent the headers (if any).
+     */
+    INT64 bytes = fallback_sendfile(to_fd, NULL, 0,
+                                    from_fd, offsetp, len,
+                                    tr_iov, tr_cnt);
+    if (bytes >= 0) {
+      sent += bytes;
+      goto done;
+    }
+  }
+
+  /* FALLTHRU */
  failed:
   return sent?sent:-1;
 #endif
