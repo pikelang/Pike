@@ -167,7 +167,7 @@ void test4()
     exit_test(1);
   }
 
-  if (!Stdio.sendfile(testdata/4096, pair[1], 0, -1,
+  if (!Stdio.sendfile(testdata/4096, pair[1], -1, -1,
 		      testdata/512, To("conftest.dst"), done, TEST_SIZE*5)) {
     log_msg("Stdio.sendfile() failed!\n");
     exit_test(1);
@@ -183,10 +183,37 @@ void test6()
 {
   Verify();
 
-  next();
+  /* Try a loopback test in compat mode. */
+
+  array(object) pair = SocketPair();
+
+  if (!Stdio.sendfile(testdata/4096, From("conftest.src"), 0, -1,
+                      testdata/512, pair[0], done, TEST_SIZE*3)) {
+    log_msg("Stdio.sendfile() failed!\n");
+    exit_test(1);
+  }
+
+  /* NB: Compat: Offset 0 on a pipe. */
+  if (!Stdio.sendfile(testdata/4096, pair[1], 0, -1,
+                      testdata/512, To("conftest.dst"), done, TEST_SIZE*5)) {
+    log_msg("Stdio.sendfile() failed!\n");
+    exit_test(1);
+  }
 }
 
 void test7()
+{
+  /* Dummy (test 6 will call done twice). */
+}
+
+void test8()
+{
+  Verify();
+
+  next();
+}
+
+void test9()
 {
   /* Clean up. */
   rm("conftest.src");

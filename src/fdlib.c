@@ -3489,9 +3489,15 @@ static INT64 fallback_sendfile(int to_fd,
 
 #ifndef fd_pread
       orig_offset = fd_lseek(from_fd, 0, SEEK_CUR);
-      if (orig_offset < 0) goto failed;
-
-      if (fd_lseek(from_fd, offset, SEEK_SET) < 0) goto failed;
+      if (orig_offset < 0) {
+        if ((errno != ESPIPE) || offset) {
+          goto failed;
+        }
+        /* Compat with Pike 8.x and earlier. */
+        offsetp = NULL;
+      } else {
+        if (fd_lseek(from_fd, offset, SEEK_SET) < 0) goto failed;
+      }
 #endif
     }
 
@@ -3514,6 +3520,11 @@ static INT64 fallback_sendfile(int to_fd,
 #ifdef fd_pread
       if (offsetp) {
         buflen = fd_pread(from_fd, buffer, readlen, offset);
+        if ((buflen < 0) && (errno == ESPIPE) && !offset) {
+          /* Compat with Pike 8.x and earlier. */
+          offsetp = NULL;
+          continue;
+        }
       } else
 #endif
       {
@@ -3718,6 +3729,11 @@ static INT64 low_pike_sendfile(int to_fd,
 
   while (len > 0) {
     INT64 bytes = sendfile(to_fd, from_fd, offsetp, len);
+    if ((bytes < 0) && (errno == ESPIPE) && offsetp && !*offsetp) {
+      /* Compat with Pike 8.x and earlier. */
+      offsetp = NULL;
+      bytes = sendfile(to_fd, from_fd, offsetp, len);
+    }
     if (bytes <= 0) {
       if (bytes < 0) goto sendfile_failed;
       break;	/* Typically EOF on from_fd and unknown length. */
