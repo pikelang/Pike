@@ -1,0 +1,10 @@
+subject: Pike 8.0: [REPD-1403] Protocols.HTTP.Query: Fix infinite loop on EOF
+from: e22f9917a8e382dc52a1703a27a1a7fa4c75f087
+to: 8223e7669c62792c361cce5381236629d6a56dd1
+originator: Marcus Wellhardh
+depends: 2025-02-03T141617
+restart: true
+
+• Protocols.HTTP.Query: Fix infinite loop on EOF.
+
+Fixes loop on bad or missing Content-Length header.
