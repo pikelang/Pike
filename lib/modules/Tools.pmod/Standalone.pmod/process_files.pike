@@ -173,7 +173,7 @@ int(0..) main( int argc, array(string) argv ) {
 
   array(string) args = ({});
   if( want_args )
-     args = argv[<want_args-1..];
+     args = argv[1..want_args];
   if( !recursive && argc == min_args && argv[-1] == "-" ) {
     string input = Stdio.stdin.read();
     if( input ) {
@@ -188,12 +188,11 @@ int(0..) main( int argc, array(string) argv ) {
   int failures;
   if( verbosity > 1 )
     werror( "Replaced strings in these files:\n" );
-
   array paths;
   if( recursive && sizeof(argv)==want_args+1 ) {
     paths = ({"."});
   } else {
-    paths = argv[1..<want_args];
+    paths = argv[want_args+1..];
   }
 
   foreach( paths, string path )
