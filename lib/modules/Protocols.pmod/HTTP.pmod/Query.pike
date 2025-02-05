@@ -1070,8 +1070,10 @@ string data(int|void max_length)
        DBG ("<- data() read 5\n");
        while ((l > 0) && con) {
          string s = con->read(l);
-         if (!s) {
-           if (strlen(buf) <= datapos) {
+         if (!s || !sizeof(s)) {
+           // Error or EOF.
+           if (!s && (strlen(buf) <= datapos)) {
+             // Error and we have not received any data yet.
              if (timeout_co) {
                DBG("remove timeout.\n");
                remove_call_out(timeout_co);
