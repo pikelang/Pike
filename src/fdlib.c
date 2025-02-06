@@ -2649,7 +2649,7 @@ PMOD_EXPORT PIKE_OFF_T debug_fd_lseek(FD fd, PIKE_OFF_T pos, int where)
   if(type != FD_FILE)
   {
     release_fd(fd);
-    errno=ENOTSUPP;
+    errno = ESPIPE;
     return -1;
   }
 
