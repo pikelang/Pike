@@ -3421,15 +3421,6 @@ PMOD_EXPORT void closedir(DIR *dir)
 }
 #endif /* EMULATE_DIRECT */
 
-#ifdef USE_DL_MALLOC
-/* NB: We use some calls above that allocate memory with the libc malloc. */
-#undef free
-static inline void libc_free(void *ptr)
-{
-  if (ptr) free(ptr);
-}
-#endif /* USE_DL_MALLOC */
-
 #endif /* HAVE_WINSOCK_H */
 
 /*
@@ -3584,6 +3575,7 @@ static INT64 fallback_sendfile(int to_fd,
       {
         buflen = fd_read(from_fd, buffer, readlen);
       }
+
       if (buflen <= 0) {
         free(buffer);
         if (buflen < 0) goto failed;
@@ -3596,6 +3588,7 @@ static INT64 fallback_sendfile(int to_fd,
 
       while (buflen) {
         ptrdiff_t wrlen = fd_write(to_fd, buf, buflen);
+
         if (wrlen < 0) {
           free(buffer);
           goto failed;
@@ -3631,6 +3624,7 @@ static INT64 fallback_sendfile(int to_fd,
     fd_lseek(from_fd, orig_offset, SEEK_SET);
 #endif
   }
+
   return sent;
 
  failed:
@@ -3892,3 +3886,15 @@ PMOD_EXPORT INT64 pike_sendfile(int to_fd,
   }
   return sent;
 }
+
+#if defined(HAVE_WINSOCK_H)
+#ifdef USE_DL_MALLOC
+/* NB: We use some calls above that allocate memory with the libc malloc. */
+#undef free
+static inline void libc_free(void *ptr)
+{
+  if (ptr) free(ptr);
+}
+#endif /* USE_DL_MALLOC */
+
+#endif /* HAVE_WINSOCK_H */
