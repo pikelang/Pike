@@ -101,7 +101,7 @@ int main(int argc, char **argv)
   int linking = 1;	/* Maybe */
   int compiling = 1;	/* Maybe */
 
-  int verbose = getenv("SMARTLINK_DEBUG");
+  int verbose = !!getenv("SMARTLINK_DEBUG");
 
   prog_name = argv[0];
 
