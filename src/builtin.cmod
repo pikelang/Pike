@@ -6179,6 +6179,93 @@ PIKECLASS Null
 /*! @endclass
  */
 
+/*! @class Pointer
+ *!
+ *! This class is used to implement the low-level aspects of @[Val.Pointer].
+ *!
+ *! @note
+ *!   This class should typically not be used directly. Use
+ *!   @[Val.Pointer] instead.
+ *!
+ *! @seealso
+ *!   @[Val.Pointer]
+ */
+PIKECLASS Pointer
+{
+  CVAR void *ptr;
+  CVAR void (*destroy_func)(void *);
+  
+  PIKEFUN int(0..1) `!()
+    flags ID_PROTECTED;
+  {
+    RETURN !THIS->ptr;
+  }
+
+  PIKEFUN string|zero _sprintf(int fmt, mixed ... extras)
+    flags ID_PROTECTED;
+  {
+    pop_n_elems(args);
+    if (fmt == 'O') {
+      char buf[32 + (sizeof(void *)*CHAR_BIT)/4];
+      snprintf(buf, sizeof(buf), "Val.Pointer(%p)", THIS->ptr);
+      push_text(buf);
+    } else {
+      push_undefined();
+    }
+  }
+
+  PIKEFUN int __hash()
+    flags ID_PROTECTED;
+  {
+    RETURN (ptrdiff_t)THIS->ptr;
+  }
+
+  PIKEFUN int `==(mixed other)
+    flags ID_PROTECTED;
+  {
+    if (TYPEOF(*other) != T_OBJECT)
+      RETURN 0;
+
+    struct Pointer_struct *other_pointer = get_storage(other->u.object,
+                                                       Pointer_program);
+    if (!other_pointer)
+      RETURN 0;
+
+    RETURN other_pointer->ptr == THIS->ptr;
+  }
+
+#ifdef PIKE_NULL_IS_SPECIAL
+    INIT {
+        THIS->ptr = 0;
+        THIS->destroy_func = 0;
+    }
+#endif
+
+    EXIT {
+      if (THIS->destroy_func)
+        THIS->destroy_func(THIS->ptr);
+    }
+}
+
+/*! @endclass
+ */
+
+PMOD_EXPORT struct object *make_pointer_object(void *ptr, void (*destroy_func)(void *))
+{
+  struct object *res = clone_object(Pointer_program, 0);
+  struct Pointer_struct *pointer = OBJ2_POINTER(res);
+  pointer->ptr = ptr;
+  pointer->destroy_func = destroy_func;
+  return res;
+}
+
+PMOD_EXPORT void *get_pointer_from_pointer_object(struct object *o)
+{
+    struct Pointer_struct *pointer = get_storage(o, Pointer_program);
+    return (pointer? pointer->ptr : NULL);
+}
+
+
 PMOD_EXPORT
 PIKEFUN int levenshtein_distance(string a, string b)
 {
