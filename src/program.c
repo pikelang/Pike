@@ -3849,6 +3849,11 @@ PMOD_EXPORT void low_start_new_program(struct program *p,
     memset(Pike_compiler->fake_object->storage,0x55,256*sizeof(struct svalue));
     PIKE_MEM_WO_RANGE (Pike_compiler->fake_object->storage,
 		       256 * sizeof (struct svalue));
+    if (p->flags & PROGRAM_USES_PARENT) {
+      /* NB: The parent info may get accessed by eg object_program(). */
+      memset(LOW_PARENT_INFO(Pike_compiler->fake_object, p),
+             0, sizeof(struct parent_info));
+    }
   }
 #else
   Pike_compiler->fake_object->storage=(char *)malloc(sizeof(struct parent_info));
@@ -5432,17 +5437,17 @@ struct program *end_first_pass(int finish)
 
     Pike_compiler->new_program->flags |= PROGRAM_PASS_1_DONE;
 
+    if ((Pike_compiler->new_program->flags & PROGRAM_USES_PARENT) &&
+        !Pike_compiler->new_program->parent_info_storage) {
+      Pike_compiler->new_program->parent_info_storage =
+        add_xstorage(sizeof(struct parent_info),
+                     ALIGNOF(struct parent_info),
+                     0);
+    }
+
     if(finish)
     {
-      if(Pike_compiler->new_program->flags & PROGRAM_USES_PARENT)
-      {
-	if (!Pike_compiler->new_program->parent_info_storage) {
-	  Pike_compiler->new_program->parent_info_storage =
-	    add_xstorage(sizeof(struct parent_info),
-			 ALIGNOF(struct parent_info),
-			 0);
-	}
-      }else{
+      if (!(Pike_compiler->new_program->flags & PROGRAM_USES_PARENT)) {
 	/* Cause errors if used hopefully */
 	Pike_compiler->new_program->parent_info_storage=-1;
       }
