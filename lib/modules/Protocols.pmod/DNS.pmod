@@ -2750,14 +2750,17 @@ async_client global_async_client;
 #define GAC(X)								\
 async_client.Request async_##X( string host, function callback, mixed ... args ) 	\
 {									\
-  if( !global_async_client )						\
-    global_async_client = async_client();				\
-  return global_async_client->X(host,callback,@args);			\
+  return get_async_client()->X(host,callback,@args);			\
 }                                                                       \
 variant Concurrent.Future async_##X( string host ) {                    \
-  if( !global_async_client )						\
-    global_async_client = async_client();				\
-  return global_async_client->X(host);                                  \
+  return get_async_client()->X(host);                                   \
+}
+
+//! Returns an asynchronous DNS client object.
+async_client get_async_client() {
+  if( !global_async_client )
+    global_async_client = async_client();
+  return global_async_client;
 }
 
 //! @ignore
