@@ -2017,6 +2017,7 @@ private mapping dnstypetonum = ([
   "TXT":  Protocols.DNS.T_TXT,
   "AAAA": Protocols.DNS.T_AAAA,
   "PTR":  Protocols.DNS.T_PTR,
+  "CAA":  Protocols.DNS.T_CAA,
 ]);
 
 // FIXME: Randomized source port!
@@ -2133,7 +2134,7 @@ class async_client
     }
     sort(an->preference, an);
     if (callback) {				// Callback might have vanished
-      callback(an->aaaa + an->a + an->mx + an->txt + an->ptr - ({ 0 }),
+      callback(an->aaaa + an->a + an->mx + an->txt + an->ptr + an->value - ({ 0 }),
                @restargs);
     }
   }
