@@ -1,5 +1,6 @@
 #! /usr/bin/env pike
 
+#pike 8.0
 multiset except_modules = (<>);
 string vpath;
 
