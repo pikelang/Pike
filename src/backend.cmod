@@ -1351,8 +1351,9 @@ PIKECLASS Backend
 	 struct timeval now;
 
 	 INACCURATE_GETTIMEOFDAY(&now);
-         COWERR("BACKEND[%d]: Removing call out at %ld.%ld "
+         COWERR("BACKEND[%d]: Removing call %p out at %ld.%ld "
                 "(current_time is %ld.%ld)\n", me->id,
+                c->args,
                 c->tv.tv_sec, c->tv.tv_usec,
                 now.tv_sec, now.tv_usec);
 	 pop_n_elems(args);
@@ -1382,6 +1383,7 @@ PIKECLASS Backend
        clear_array(co_info);
 
        free_array(co_info);
+       destruct_objects_to_destruct();
        backend_verify_call_outs(me);
        UNPROTECT_CALL_OUTS();
      }
