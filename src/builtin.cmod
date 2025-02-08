@@ -6223,11 +6223,12 @@ PIKECLASS Pointer
   PIKEFUN int `==(mixed other)
     flags ID_PROTECTED;
   {
+    struct Pointer_struct *other_pointer;
+
     if (TYPEOF(*other) != T_OBJECT)
       RETURN 0;
 
-    struct Pointer_struct *other_pointer = get_storage(other->u.object,
-                                                       Pointer_program);
+    other_pointer = get_storage(other->u.object, Pointer_program);
     if (!other_pointer)
       RETURN 0;
 
