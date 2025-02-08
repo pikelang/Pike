@@ -1,9 +1,9 @@
 UNICODE CHARACTER DATABASE
-Version 14.0.0
+Version 16.0.0
 
- Revision           14.0.0
- Date               2021-09-10
- This Version       http://www.unicode.org/Public/14.0.0/ucd/
+ Revision           16.0.0
+ Date               2024-08-25
+ This Version       http://www.unicode.org/Public/16.0.0/ucd/
  Latest Version     http://www.unicode.org/Public/UCD/latest/
 
 UNICODE, INC. LICENSE AGREEMENT - DATA FILES AND SOFTWARE
@@ -21,7 +21,7 @@ THE DATA FILES OR SOFTWARE.
 
 COPYRIGHT AND PERMISSION NOTICE
 
-Copyright © 1991-2021 Unicode, Inc. All rights reserved.
+Copyright © 1991-2024 Unicode, Inc. All rights reserved.
 Distributed under the Terms of Use in https://www.unicode.org/copyright.html.
 
 Permission is hereby granted, free of charge, to any person obtaining
