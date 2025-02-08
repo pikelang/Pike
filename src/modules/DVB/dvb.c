@@ -975,7 +975,7 @@ static void ParseCADescriptor (dvb_stream_data *st, unsigned char *data,
 static void f_parse_pmt(INT32 args)
 {
   unsigned char buffer[4096];
-  unsigned int length,info_len,data_len, index;
+  size_t length,info_len,data_len, index;
   int retries;
   int pid;
   int n;
@@ -1054,6 +1054,12 @@ static void f_parse_pmt(INT32 args)
   {
     if (buffer[index] == 0x09)
       ParseCADescriptor(&stream, &buffer[index+2], buffer[index+1]);
+
+    if (2+buffer[index+1] > info_len) {
+/* fprintf(stderr, "Invalid PMT descriptior length.\n"); */
+      push_int(0);
+      return;
+    }
 
     info_len -= 2+buffer[index+1];
     index += 2+buffer[index+1];
