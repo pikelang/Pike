@@ -57,7 +57,7 @@ enum{
 
 struct dvb_es_packet {
 	unsigned char	*payload;
-	int		 payload_len;
+        unsigned int	 payload_len;
 	int		 ptype;
 	unsigned char	 attr[2];
 	int		 skipped;

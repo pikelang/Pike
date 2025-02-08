@@ -1055,7 +1055,7 @@ static void f_parse_pmt(INT32 args)
     if (buffer[index] == 0x09)
       ParseCADescriptor(&stream, &buffer[index+2], buffer[index+1]);
 
-    if (2+buffer[index+1] > info_len) {
+    if (((size_t)2+buffer[index+1]) > info_len) {
 /* fprintf(stderr, "Invalid PMT descriptior length.\n"); */
       push_int(0);
       return;
@@ -1377,7 +1377,8 @@ static void f_stream_detach(INT32 args) {
 static void f_stream_read(INT32 args) {
 
   dvb_stream_data *dvb_stream = DVBStream;
-  int all = 1, ret, e, cnt, ix = 0;
+  int all = 1, e, cnt, ix = 0;
+  ptrdiff_t ret;
   unsigned char buf[MAX_DVB_READ_SIZE], *bufptr;
 
   if(dvb_stream->fd < 0)
