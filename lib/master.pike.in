@@ -4896,6 +4896,10 @@ string decode_charset(string data, string charset)
   if (charset == "iso-8859-1")
     return data;
 
+  if ((< "utf8", "utf-8" >)[charset]) {
+    return utf8_to_string(data);
+  }
+
   if (!Charset) {
     Charset = [object]resolv("Charset");
     if (!Charset)
