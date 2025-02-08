@@ -332,7 +332,7 @@ int main(int argc, array(string) argv)
 			    lambda(array(int) bytes) {
 			      return sprintf(" %{ 0x%02x,%}\n", bytes);
 			    }) * "",
-			enc_table,
+			[array(array(int))]enc_table,
 			sizeof(enc_table));
   //write(code);
   Stdio.write_file(argv[2], code);
