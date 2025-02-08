@@ -4,6 +4,7 @@
  * Henrik Grubbström 1999-11-06
  */
 
+#pike 8.0
 #pragma strict_types
 
 /*
