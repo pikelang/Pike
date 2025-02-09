@@ -1,3 +1,6 @@
+Changes since Pike 8.0.1956 (release 16)
+----------------------------------------------------------------------
+
 Changes since Pike 8.0.1738 (release 15)
 ----------------------------------------------------------------------
 
@@ -9,11 +12,393 @@ o ADT.CircularList
   add(), push_front() and push_back() now take an optional second
   argument to force overwrite if the list is full.
 
+o Calendar
+
+  Updated to tzdata2024a.
+
+o Compiler
+
+  Internal references to getters and setters are now local.
+
+  This makes it possible to reference to the previous implementation
+  of a getter/setter with ::symbol instead of having to use the
+  inherited getter and setter functions explicitly.
+
+o Concurrent
+
+  Add serialize().
+
+  This function does the same as traverse(), but only has once active
+  call of the mapped function active at a time. This is useful when
+  the mapped function is resource heavy.
+
+o Crypto
+
+  Improved rejection of non-canonical signatures.
+
+o Debug
+
+  Add functions to generate perf map files.
+
+o EFUNs
+
+  - Add clonefile() on Linux and macOS.
+
+  - Add strptime() and strftime().
+
+  - Fix timezone support via $TZ in mktime_zone() (used on eg NT).
+
+    tzset() needs to be called after altering the $TZ environment variable.
+
+    This caused mktime() on NT to fail on times near
+    1970-01-01T00:00:00UTC as it does not support negative
+    timestamps.
+
+    Also fixes potential issue where putenv() may have overwritten
+    the saved old value for $TZ.
+
+  - Attempt to support dates before 1970-01-01T00:00:00.
+
+    gmtime(), localtime() and mktime() now attempt to support negative
+    timestamps also on NT and AIX.
+
+    Note that localtime() is best-effort, and likely has issues on
+    times near midnight December 31 some years.
+
+  - Fix mktime() on 32-bit big-endian without altzone (eg old Solaris).
+
+    Fixes mktime_zone() on eg Solaris 8/Sparc with 32-bit ABI.
+
+    Note that eg Solaris 11 has altzone and is thus not affected.
+
+  - Add work-around for mktime(3C) being off by one second on Haiku.
+
+    mktime() on Haiku appears to attempt to support time before
+    1970-01-01T00:00:00 albeit it is off by one second. Add a
+    work-around that compensates by subtracting one second before
+    calling mktime(3C) for years 1969 and earlier.
+
+  - Improved support for time beyond 2038-01-19 in mktime().
+
+o Mysql.SqlTable
+
+  Avoid explicit use of db_conn->master_sql.
+
+  Switched from using eg
+
+    db_conn->master_sql->big_query(q, 0, query_charset)
+
+  to
+
+    db_conn->big_query(q, query_options)
+
+o Parser.XML.Simple
+
+  Disallow entities outside top-level element.
+
+o Pike.count_memory()
+
+  Pike.count_memory() now ignores arguments that are not reference
+  counted rather than complaining about them.
+
+o Pike.Lazy
+
+  Abstract lazy resolving into the Pike.Lazy module.
+
+o Protocols.HTTP
+
+  - Enable timeouts for blocking SSL too.
+
+    Non-responsive blocking https requests will now terminate after
+    the set timeout (default 2 minutes).
+
+  - Use data_timeout for blocking requests too.
+
+  - Updated the set of known status codes.
+
+    The set of status codes should now be up to date with
+    http://www.iana.org/assignments/http-status-codes/http-status-codes.txt .
+
+  - Add the enum StatusCode for grouping the status codes and
+    autodoc markup with rfc references for all the symbols.
+
+o Sql.Sql
+
+  - Add insert_id() and affected_rows().
+
+    This makes it possible to avoid the most common cases where
+    master_sql is used.
+
+  - Add support for query options.
+
+o SSL.File
+
+  Automatically write packets after accept(data).
+
+o Standards.ASN1.Decode
+
+  - Enforce canonical length encoding.
+
+    Do not allow longer length encoding than needed.
+
+    Do not allow longer tag encoding than needed.
+
+  - Make ASN.1 secure_der_decode always catch decoding errors and return 0 instead.
+
+  - Make leading zero in integer encodings an error in secure mode.
+
+o Stdio.File
+
+  - Add isatty().
+
+  - pipe() now supports PROP_TTY on NT.
+
+  - Support closing from a concurrent thread.
+
+    Pending read() and write() operations will now be interrupted
+    if the file is concurrently closed by another thread. Typical
+    intended use is for timeouts of blocking operations.
+
+    Availability of this can be detected via the detection
+    constant __HAVE_CONCURRENT_CLOSE__.
+
+o System.TM
+
+  - Add wrapper for strftime() on NT.
+
+    The native strftime() on NT crashes on unsupported formats; this is NOT
+    what we want...
+
+  - Improved handling of UTC.
+
+  - Make output from asctime() deterministic.
+
+o Threads
+
+  interrupt() and kill() now actually attempt to interrupt the thread.
+
+  Use SIGCHLD to interrupt the other thread. This will typically cause
+  any blocking system calls in the target thread to fail with EINTR,
+  but not affect anything else.
+
+o Unicode
+
+  Updated to 16.0.0 from 14.0.0.
+
+o VCDiff.Decoder
+
+  Add set_max_{file,window}_size().
+
+  These are needed to raise the file size limit above 64MB.
+
+o Web.Api
+
+  - Authenticate with the Authorization header by default.
+
+    Sending OAuth authorization information via query variables has been
+    deprecated by RFC6750 (and others), and some endpoints (eg GitHub)
+    do no longer support the old method.
+
+    Switched to using
+
+      Authorization: Bearer <access_token>
+
+    by default.
+
+  - Accept all 200-series result codes as success.
+
+    Eg Github uses status code 202 on success.
+
+Bug Fixes
+---------
+
+o Calendar.YMD
+
+  Survive timezone shift backward at midnight.
+
+  Fixes eg handling of 1900-01-01T00:00:00 in the timezone
+  Europe/Stockholm, where the first 14 seconds of the year
+  were moved back to 1899-12-31.
+
+o Cache.Storage.MySQL
+
+  Fix quoting syntax.
+
+  It seems this module used ancient (pre 2001-01-09)-syntax in
+  its arguments to sql->query() et al.
+
+o Compiler
+
+  - Adjusted behavior for private inherit.
+
+    Previously symbols in privately inherited programs could be overridden
+    with symbols in the current program. Now they are instead kept as is.
+
+  - Fix C-stack alignment issue on amd64.
+
+  - Fixed several obscure compiler bugs.
+
+  - Mark getters and setters as used.
+
+  - Minor adjustments of extern and private.
+
+    extern now implies optional, and private implies inline.
+
+  - Reenable the code that hid prototypes from the LFUN lookup table.
+
+o Crypto.Hash
+
+  - crypt_hash() should now be compatible with other implementations.
+
+  - Added crypt_hash_pike() to be compatible with old versions of Pike.
+
+o Crypto.Password
+
+  - Add support for NTLM hash.
+
+  - Fixed issue with crypto_hash() and passwords that had a length
+    that was a power of 2.
+
+o Crypto.RSA
+
+  Do not allow NUL-prefixed cipher text.
+
+o EFUNs
+
+  - Fix optimizer in the single argument case for filter() and map().
+
+  - Fix support for reverse() on subranges of strings.
+
+  - sync() now actually attempts to flush the filesystem buffers on NT.
+
+o Filesystem.System
+
+  Fix filtering in find().
+
+  filter() when called with a string as the second argument requires
+  it to resolve to a function or zero. Filesystem.Stat()->isdir is
+  no longer a function, so filter() failed when it evaluated to 1.
+
+o GC
+
+  Pre-allocate the pike_frame for objects.
+
+  Freeing pike_frames during the gc is a bad idea.
+
+  We now allocate a single pike_frame when the gc starts, and
+  reuse it for all calls that need a pike_frame.
+
+  Fixes some issues where the gc data-structures could get trashed
+  due to freeing of pike_frames.
+
+o Gettext
+
+  Survive GNU Gettext 0.22.5 and later.
+
+  Gettext 0.22.5 calls abort(2) when gettext(3C) or dcgettext(3C)
+  is called with LC_ALL. Throw an error instead.
+
+o Gz
+
+  Fixed error handling in deflate initialized with a mapping.
+
+o Image.Colortable
+
+  Guarded against two cases in which we might have performed invalid
+  memory access (use after free/double free).
+
+o Image.PS
+
+  Fix fallback to /bin/sh -c gs.
+
+  This has been broken since the initial version of the module.
+  Note that the most likely cause for the fallback being triggered
+  is that the gs binary is missing, so it is unlikely to improve
+  anything in practise.
+
+o Nettle.IDEA
+
+  Fixed to properly clear an internal copy of key material from memory.
+
+o Tools.Standalone.precompile
+
+  Use the current version of Pike.
+
+  Future versions of Pike may be used to run the precompiler. They may be
+  incompatible with the version that precompile.pike was written for when
+  not running in the correct compat mode.
+
+  Fixes issues like eg the Pike 8.0 precompiler being incompatible
+  with the Pike 9.0 type checker.
+
+o Runtime
+
+  - Fixed issue with the F_XOR_INT opcode on amd64.
+
+  - Fixed leak of type stack marks when dispatching variants.
+
+  - Fixed calling the NULL-value errors from atexit().
+
+  - Perform pending destructions before unloading a dynamic module.
+
+    Fixes issue where the exit callback for an object attempted
+    to run code that had already been unloaded.
+
+o SQLite.ResObj: Survive THIS->stmt being NULL in fetch_fields().
+
+  Some versions of sqlite3_column_name() do not like THIS->stmt
+  being NULL.
+
+o Standards.X509
+
+  Ignore root cert files which can not be read.
+
+o Standards.BSON
+
+  Improve robustness of BSON parser
+
+  The BSON parser had a few issues with parsing size headers correctly
+  that have been fixed in 9.0 as part of a refactor, but were still
+  causing problems in 8.0.
+
+o Standards.EXIF
+
+  Improved robustness of IFD parser.
+
+  This notably makes the IFD parser stop attempting to parse IFDs
+  after the EXIF IFD. It seems that it is common for the EXIF IFD
+  to not be followed by an IFD list terminator.
+
+o Standards.IIM
+
+  Fix alignment of Photoshop 6 block scanner.
+
+  https://www.adobe.com/devnet-apps/photoshop/fileformatashtml/
+  says that the pascal string containing the description text
+  is NUL-padded to an even length.
+
+o Stdio.Buffer.RewindKey
+
+  Fixed a NULL pointer dereferences that occured in manually created
+  Stdio.Buffer.RewindKey objects.
+
+o System
+
+  Fix extraction of DWORDs from the registry on NT.
+
 Building & Tools
 ----------------
 
 o Adopted Gz configure checks to work with/accept zlib 1.2.12 changed
   behaviour.
+
+o PIKE_DEBUG now implies YYDEBUG.
+
+o Survive '@' in $(BASE_LDFLAGS).
+
+  Library paths containing '@' have been observed in the wild (eg with
+  homebrew on MacOS X: BASE_LDFLAGS=-L/usr/local/opt/postgresql@15/lib).
+  Switch to using a character much less likely to show up in paths ('|').
 
 Changes since Pike 8.0.1116 (release 14)
 ----------------------------------------------------------------------
@@ -60,17 +445,6 @@ o crypt
   Fixed a bug which caused crypt() with a random salt to sometimes return
   "*0" instead of an encrypted password.
 
-o Crypto.Password
-
-  Fixed issue with crypto_hash() and passwords that had a length
-  that was a power of 2.
-
-o Crypto.Hash
-
-  - crypt_hash() should now be compatible with other implementations.
-
-  - Added crypt_hash_pike() to be compatible with old versions of Pike.
-
 o Concurrent
 
   - The future generated by ->timeout() would not necessarily resolve with
@@ -91,11 +465,6 @@ o Inotify
 o Image.BMP
 
   Improved size check better detects malformed BMP images.
-
-o Image.Colortable
-
-  Guarded against two cases in which we might have performed invalid
-  memory access (use after free/double free).
 
 o Image.GIF
 
@@ -154,10 +523,6 @@ o Image.XWD
 
   Improved size check better detects malformed XWD images.
 
-o Nettle.IDEA
-
-  Fixed to properly clear an internal copy of key material from memory.
-  
 o Protocols.LDAP.client
 
   LDAP connections secured with TLS/SSL now timeout if the server does not 
@@ -180,11 +545,6 @@ o Standards.BSON
 
   Improved robustness of the BSON parser with regards to large size headers
   and truncated input data.
-
-o Stdio.Buffer.RewindKey
-
-  Fixed a NULL pointer dereferences that occured in manually created
-  Stdio.Buffer.RewindKey objects.
 
 Building & Tools
 ----------------
