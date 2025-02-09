@@ -1,13 +1,13 @@
 .\" name section last-modified title section-name product/status architecture
 .ds ]L Pike
-.TH pike 1 "$Date: 2008/08/12 20:18:50 $" Pike "Pike Manual" Pike
-.\" On Solaris ]L will contain "Last modified $Date: 2008/08/12 20:18:50 $"
+.TH pike 1 "$Date: 2025/02/08 20:22:50 $" Pike "Pike Manual" Pike
+.\" On Solaris ]L will contain "Last modified $Date: 2025/02/08 20:22:50 $"
 .\" while HPUX uses ]L to contain "Pike".
 .\" On OSF/1 ]L will already contain the wanted string.
-.if !\*(]LPike .ds ]L $Date: 2008/08/12 20:18:50 $ \" Solaris nroff
+.if !\*(]LPike .ds ]L $Date: 2025/02/08 20:22:50 $ \" Solaris nroff
 .\" Major (mj) and minor (mn) version of Pike
-.nr mj 8
-.nr mn 1
+.nr mj 9
+.nr mn 0
 .SH NAME
 pike \- pike compiler and interpreter
 .SH SYNOPSIS
@@ -209,7 +209,7 @@ Hide
 from the resolver (debug).
 .TP
 .B \-\-dumpversion
-Print the Pike version number to stderr, e.g. "\n(mj.\n(mn.10\\n"
+Print the Pike version number to stdout, e.g. "\n(mj.\n(mn.10\\n"
 .TP
 .B \-\-features
 List some of the features that are enabled in this Pike binary
@@ -251,6 +251,7 @@ If no script is specified, pike will start in interactive- (Hilfe) mode.
 On Windows, Pike is affected by the following keys in the registry:
 
 .B HKEY_CURRENT_USER\eSoftware\ePike\e\n(mj.\n(mn\ePIKE_MASTER
+.br
 .B HKEY_LOCAL_MACHINE\eSoftware\ePike\e\n(mj.\n(mn\ePIKE_MASTER
 .RS
 Specifies the name of the master program (overridden by
