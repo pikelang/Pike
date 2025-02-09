@@ -80,6 +80,9 @@ PMOD_EXPORT void x86_get_cpuid(int oper, INT32 *cpuid_ptr)
 
 /** Same thing as (int)floor(log((double)x) / log(2.0)), except a bit
  *  quicker.
+ *
+ * I.e. it returns the bit number for the most significant set bit in x,
+ * with 0 for x <= 1.
  */
 PMOD_EXPORT int my_log2(UINT64 x)
 {
