@@ -1,5 +1,9 @@
 #!/usr/local/bin/pike
 
+#ifndef TIMEOUT
+final constant TIMEOUT = 5*60;
+#endif
+
 final constant TEST_SIZE = 16384;
 
 string testdata = random_string(TEST_SIZE);
@@ -229,7 +233,12 @@ int main(int argc, array(string) argv)
 {
   verbose = (int) (getenv()->TEST_VERBOSITY || 2);
 #if constant(alarm)
-  alarm(5*60);	// 5 minutes should be sufficient for this test.
+  alarm(TIMEOUT);	// 5 minutes should be sufficient for this test.
+#else
+  call_out(lambda() {
+    log_msg("Stdio.sendfile() time_out!\n");
+    exit_test(1);
+  }, TIMEOUT);
 #endif
   loopback->bind(0);
   loopbackport = (int)((loopback->query_address()/" ")[1]);
