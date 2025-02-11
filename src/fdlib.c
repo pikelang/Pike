@@ -1043,6 +1043,10 @@ p_wchar1 *low_dwim_utf8_to_utf16(const p_wchar0 *str, size_t len)
    *
    * NB: Some extra padding at the end for NUL and adding
    *     of terminating slashes, etc.
+   *
+   * FIXME: Consider prefixing path with "\\?\", which removes
+   *        the MAXPATH (ie 260 character) length limit. Note
+   *        that this removes the support for ".." and ".".
    */
   p_wchar1 *res = malloc((len + 4) * sizeof(p_wchar1));
   size_t i = 0, j = 0;
