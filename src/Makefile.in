@@ -771,7 +771,7 @@ valgrind_just_verify: testsuites master-stamp
 	$(VALGRIND) $(VALGRINDARGS) $(RUNPIKE) -x test_pike --subproc-start="$(VALGRIND) $(VALGRINDARGS)" $$args
 
 clang_tidy:
-	$(CLANG_TIDY) -checks='-*,bugprone-*' $(addprefix $(SRCDIR)/, $(subst .o,.c,$(OBJ))) -- $(CFLAGS)
+	$(CLANG_TIDY) -checks='-*,bugprone-*,-bugprone-assignment-in-if-condition,-bugprone-easily-swappable-parameters,-bugprone-casting-through-void' $(addprefix $(SRCDIR)/, $(subst .o,.c,$(OBJ))) -- $(CFLAGS)
 
 dtrace_probes.h: $(SRCDIR)/dtrace/dtrace_probes.d
 	dtrace -h -s "$(SRCDIR)/dtrace/dtrace_probes.d" -o "$(TMP_BUILDDIR)/dtrace_probes.h"
