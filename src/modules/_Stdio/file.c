@@ -846,7 +846,12 @@ static struct pike_string *do_read(int fd,
       e=errno;
       THREADS_DISALLOW();
 
+      /* NB: This is needed in case check_threads_etc() below
+       *     triggers some function that performs I/O.
+       */
+      mark_file_idle(THIS);
       check_threads_etc();
+      mark_file_busy(THIS);
 
       if(i>0)
       {
@@ -935,7 +940,12 @@ static struct pike_string *do_read(int fd,
       e=errno;
       THREADS_DISALLOW();
 
+      /* NB: This is needed in case check_threads_etc() below
+       *     triggers some function that performs I/O.
+       */
+      mark_file_idle(THIS);
       check_threads_etc();
+      mark_file_busy(THIS);
 
       if(i>=0)
       {
@@ -1207,7 +1217,12 @@ static struct pike_string *do_recvmsg(INT32 r, int all)
       e=errno;
       THREADS_DISALLOW();
 
+      /* NB: This is needed in case check_threads_etc() below
+       *     triggers some function that performs I/O.
+       */
+      mark_file_idle(THIS);
       check_threads_etc();
+      mark_file_busy(THIS);
 
       if(i>0)
       {
@@ -1292,7 +1307,12 @@ static struct pike_string *do_recvmsg(INT32 r, int all)
       e=errno;
       THREADS_DISALLOW();
 
+      /* NB: This is needed in case check_threads_etc() below
+       *     triggers some function that performs I/O.
+       */
+      mark_file_idle(THIS);
       check_threads_etc();
+      mark_file_busy(THIS);
 
       if(i>0)
       {
@@ -1429,7 +1449,12 @@ static struct pike_string *do_read_oob(int UNUSED(fd),
       e=errno;
       THREADS_DISALLOW();
 
+      /* NB: This is needed in case check_threads_etc() below
+       *     triggers some function that performs I/O.
+       */
+      mark_file_idle(THIS);
       check_threads_etc();
+      mark_file_busy(THIS);
 
       if(i>0)
       {
@@ -2114,6 +2139,9 @@ static void file_write(INT32 args)
     } else if (!a->size) {
       /* Special case for empty array */
       ERRNO = 0;
+
+      CALL_AND_UNSET_ONERROR(err);
+
       pop_stack();
       push_int(0);
       return;
@@ -2173,7 +2201,12 @@ static void file_write(INT32 args)
 	   fd, (unsigned int)iov, cnt, i); */
 
 	e=errno; /* check_threads_etc may effect errno */
-	check_threads_etc();
+        /* NB: This is needed in case check_threads_etc() below
+         *     triggers some function that performs I/O.
+         */
+        mark_file_idle(THIS);
+        check_threads_etc();
+        mark_file_busy(THIS);
 
 	if(i<0)
 	{
@@ -2296,7 +2329,12 @@ static void file_write(INT32 args)
     e=errno;
     THREADS_DISALLOW();
 
+    /* NB: This is needed in case check_threads_etc() below
+     *     triggers some function that performs I/O.
+     */
+    mark_file_idle(THIS);
     check_threads_etc();
+    mark_file_busy(THIS);
 
     if (!(THIS->open_mode & FILE_NONBLOCKING))
       INVALIDATE_CURRENT_TIME();
@@ -2434,7 +2472,12 @@ static void file_write_oob(INT32 args)
     e=errno;
     THREADS_DISALLOW();
 
+    /* NB: This is needed in case check_threads_etc() below
+     *     triggers some function that performs I/O.
+     */
+    mark_file_idle(THIS);
     check_threads_etc();
+    mark_file_busy(THIS);
 
     if(i<0)
     {
