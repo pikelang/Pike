@@ -962,7 +962,12 @@ static struct pike_string *do_read(int fd,
 
     THREADS_DISALLOW();
 
+    /* NB: This is needed in case check_threads_etc() below
+     *     triggers some function that performs I/O.
+     */
+    mark_file_idle(THIS);
     check_threads_etc();
+    mark_file_busy(THIS);
 
     fd = FD;
     if (fd < 0) {
@@ -1001,6 +1006,7 @@ static ptrdiff_t do_read_into_buffer(int fd,
   ptrdiff_t bytes_read;
   
   do {
+    mark_file_busy(THIS);
     e = 0;
     bytes_read = fd_read(fd, ptr, len);
 
@@ -1008,6 +1014,10 @@ static ptrdiff_t do_read_into_buffer(int fd,
       e=errno;
     }
 
+    /* NB: This is needed in case check_threads_etc() below
+     *     triggers some function that performs I/O.
+     */
+    mark_file_idle(THIS);
     check_threads_etc();
   } while (e == EINTR);
 
@@ -1273,7 +1283,12 @@ static struct pike_string *do_recvmsg(int fd, size_t count, unsigned INT32 mode,
 
     THREADS_DISALLOW();
 
+    /* NB: This is needed in case check_threads_etc() below
+     *     triggers some function that performs I/O.
+     */
+    mark_file_idle(THIS);
     check_threads_etc();
+    mark_file_busy(THIS);
 
     fd = FD;
     if (fd < 0) {
@@ -1406,7 +1421,12 @@ static struct pike_string *do_read_oob(int UNUSED(fd),
       e=errno;
       THREADS_DISALLOW();
 
+      /* NB: This is needed in case check_threads_etc() below
+       *     triggers some function that performs I/O.
+       */
+      mark_file_idle(THIS);
       check_threads_etc();
+      mark_file_busy(THIS);
 
       if(i>0)
       {
@@ -2256,7 +2276,12 @@ static ptrdiff_t file_write_array(struct my_file *file, struct array *a)
     /* fprintf(stderr, "writev(%d, 0x%08x, %d) => %d\n",
        fd, (unsigned int)iov, cnt, i); */
 
+    /* NB: This is needed in case check_threads_etc() below
+     *     triggers some function that performs I/O.
+     */
+    mark_file_idle(THIS);
     check_threads_etc();
+    mark_file_busy(THIS);
 
     if(i<0)
     {
@@ -2440,7 +2465,12 @@ static ptrdiff_t file_write_string(struct my_file *file, struct pike_string *str
     if (i < 0) e = errno;
     THREADS_DISALLOW();
 
+    /* NB: This is needed in case check_threads_etc() below
+     *     triggers some function that performs I/O.
+     */
+    mark_file_idle(THIS);
     check_threads_etc();
+    mark_file_busy(THIS);
 
     if(i<0)
     {
@@ -2663,7 +2693,12 @@ static void file_write_oob(INT32 args)
     e=errno;
     THREADS_DISALLOW();
 
+    /* NB: This is needed in case check_threads_etc() below
+     *     triggers some function that performs I/O.
+     */
+    mark_file_idle(THIS);
     check_threads_etc();
+    mark_file_busy(THIS);
 
     if(i<0)
     {
