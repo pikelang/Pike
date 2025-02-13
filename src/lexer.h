@@ -157,6 +157,16 @@ static FLOAT_TYPE lex_strtod(char *buf, char **end)
 
 #endif /* SHIFT == 0 */
 
+#define GOT_NUL(WHERE) do {                             \
+    if (lex->pos > lex->end) {                          \
+      lex->pos -= (1<<SHIFT);                           \
+      yyerror("Unexpected end of file in " WHERE ".");  \
+    } else {                                            \
+      yyerror("Illegal control character "              \
+              "<NUL> (0x00) in " WHERE ".");            \
+    }                                                   \
+  } while(0)
+
 
 /*** Lexical analyzing ***/
 
@@ -366,8 +376,8 @@ static p_wchar2 char_const(struct lex *lex)
       lex->current_line++;
       return '\n';
     case 3:
-      yyerror("Unexpected end of file.");
-      lex->pos -= (1<<SHIFT);
+      lex->pos += (1<<SHIFT);
+      GOT_NUL("character escape");
       return 0;
     case 4: case 5: case 6:
       if( Pike_compiler->compiler_pass == COMPILER_PASS_FIRST )
@@ -415,8 +425,7 @@ static struct pike_string *readstring(struct lex *lex)
     switch(c=GETC())
     {
     case 0:
-      lex->pos -= (1<<SHIFT);
-      yyerror("End of file in string.");
+      GOT_NUL("string");
       break;
 
     case '\n': case '\r':
@@ -719,10 +728,9 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
     switch(c)
     {
     case 0:
-      lex->pos -= (1<<SHIFT);
-      if(lex->end != lex->pos)
-	yyerror("Illegal character (NUL)");
-
+      if (lex->end >= lex->pos) {
+        GOT_NUL("program text");
+      }
 #ifdef TOK_LEX_EOF
       return TOK_LEX_EOF;
 #else /* !TOK_LEX_EOF */
@@ -929,8 +937,7 @@ unknown_directive:
           switch( (tmp=GETC()) )
           {
             case 0:
-              lex->pos -= (1<<SHIFT);
-              yyerror("Unexpected end of file\n");
+              GOT_NUL("character constant");
               goto return_char;
 
             case '\\':
@@ -1428,6 +1435,7 @@ unknown_directive:
 #undef READBUF
 #undef TWO_CHAR
 #undef ISWORD
+#undef GOT_NUL
 
 #undef low_isword
 #undef parse_esc_seq
