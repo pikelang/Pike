@@ -6688,7 +6688,7 @@ void compiler_do_inherit(node *n,
 	  offset++;
 	}
 	if (!state) {
-	  yyerror("Failed to resolv external constant.");
+          yyerror("Failed to resolve external constant.");
 	  return;
 	}
 	p = state->new_program;
@@ -8851,7 +8851,7 @@ int store_prog_string(struct pike_string *str)
   return Pike_compiler->new_program->num_strings-1;
 }
 
-/* NOTE: O(n²)! */
+/* NOTE: O(nÂ²)! */
 int store_constant(const struct svalue *foo,
 		   int equal,
 		   struct pike_string *UNUSED(constant_name))
