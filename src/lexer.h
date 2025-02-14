@@ -1408,10 +1408,19 @@ unknown_directive:
 
     default:
       {
-	if (c > 31) {
-	  my_yyerror("Illegal character '%c' (0x%02x)", c, c);
+        if ((c & 0x9f) == c) {
+          /* Control character. */
+          if ((c & 0x1f) == c) {
+            my_yyerror("Illegal control character <%s> (0x%02x)",
+                       control_codes[c], c);
+          } else {
+            my_yyerror("Illegal control character <%s> (0x%02x)",
+                       control_codes[c - 0x60], c);
+          }
+        } else if (c == 127) {
+          my_yyerror("Illegal control character <DEL> (0x7f)");
 	} else {
-	  my_yyerror("Illegal character 0x%02x", c);
+          my_yyerror("Illegal character '%c' 0x%02x", c, c);
 	}
 	return ' ';
       }

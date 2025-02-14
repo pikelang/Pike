@@ -30,6 +30,30 @@ static FLOAT_TYPE my_strtod(const char *nptr, char **endptr)
   return tmp;
 }
 
+static const char *control_codes[64] = {
+  /* 7-bit control codes.
+   * Names taken from the Unicode standard.
+   */
+  "NUL", "STX", "SOT", "ETX", "EOT", "ENQ", "ACK", "BEL",
+  "BS",  "HT",  "LF",  "VT",  "FF",  "CR",  "SO",  "SI",
+  "DLE", "DC1", "DC2", "DC3", "DC4", "NAK", "SYN", "ETB",
+  "CAN", "EM",  "SUB", "ESC", "FS",  "GS",  "RS",  "US",
+
+  /* 8-bit control codes.
+   * Names taken from https://vt100.net/docs/vt510-rm/chapter4.html
+   * table 4-3 (preferred) and figure 4-2 (others).
+   * Equivalent to <ESC> + character.
+   */
+  /* @   A      B        C      D      E      F      G */
+  "80",  "81",  "82",    "83",  "IND", "NEL", "SSA", "ESA",
+  /* H   I      J        K      L      M      N      O */
+  "HTS", "HTJ", "VTS",   "PLD", "PLU", "RI",  "SS2", "SS3",
+  /* P   Q      R        S      T      U      V      W */
+  "DCS", "PU1", "PU2",   "STS", "CRH", "MW",  "SPA", "EPA",
+  /* X   Y      Z        [      \      ]      ^      _ */
+  "SOS", "99",  "DECID", "CSI", "ST",  "OSC", "PM",  "APC",
+};
+
 #define LEXDEBUG 0
 
 /* Make lexers for shifts 0, 1 and 2. */
