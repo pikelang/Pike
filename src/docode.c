@@ -2532,7 +2532,7 @@ static int do_docode2(node *n, int flags)
 
   case F_ARROW:
     if(CDR(n)->token != F_CONSTANT || TYPEOF(CDR(n)->u.sval) != T_STRING)
-      Pike_fatal("Bugg in F_ARROW, index not string.\n");
+      Pike_fatal("Bug in F_ARROW, index not string.\n");
     if(flags & WANT_LVALUE)
     {
       /* FIXME!!!! ??? I wonder what needs fixing... /Hubbe */

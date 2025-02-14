@@ -1194,7 +1194,7 @@ PMOD_EXPORT void f_has_prefix(INT32 args)
       /* Note: Integers do not need to be freed. */
       object_index_no_free(Pike_sp-1, o, inherit_no, Pike_sp-1);
       if (TYPEOF(Pike_sp[-1]) != PIKE_T_INT) {
-	Pike_error("Unexepected value returned from index operator.\n");
+	Pike_error("Unexpected value returned from index operator.\n");
       }
       if (ch != Pike_sp[-1].u.integer) {
 	pop_n_elems(args + 1);
@@ -7295,7 +7295,7 @@ static INLINE int diff_ponder_array(int x,
  *
  * For binary data:
  *  K == 256 => O(Na * Nb * lg(Na * Nb)),
- *  Na ~= Nb ~= N => O(N² * lg(N))
+ *  Na ~= Nb ~= N => O(NÂ² * lg(N))
  *
  * For ascii data:
  *  K ~= C * min(Na, Nb), C constant => O(max(Na, Nb)*lg(max(Na,Nb))),
