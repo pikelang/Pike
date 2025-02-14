@@ -2508,7 +2508,7 @@ PMOD_EXPORT void o_and(void)
   {
   case T_OBJECT:
     if(!call_lfun(LFUN_AND,LFUN_RAND))
-      PIKE_ERROR("`&", "Bitwise and on objects without `& operator.\n", Pike_sp, 2);
+      PIKE_ERROR("`&", "Bitwise AND on objects without `& operator.\n", Pike_sp, 2);
     return;
 
   case T_INT:
@@ -2799,7 +2799,7 @@ PMOD_EXPORT void o_or(void)
   {
   case T_OBJECT:
     if(!call_lfun(LFUN_OR,LFUN_ROR))
-      PIKE_ERROR("`|", "Bitwise or on objects without `| operator.\n", Pike_sp, 2);
+      PIKE_ERROR("`|", "Bitwise OR on objects without `| operator.\n", Pike_sp, 2);
     return;
 
   case T_INT:
@@ -3048,7 +3048,7 @@ PMOD_EXPORT void o_xor(void)
   {
   case T_OBJECT:
     if(!call_lfun(LFUN_XOR,LFUN_RXOR))
-      PIKE_ERROR("`^", "Bitwise xor on objects without `^ operator.\n", Pike_sp, 2);
+      PIKE_ERROR("`^", "Bitwise XOR on objects without `^ operator.\n", Pike_sp, 2);
     return;
 
   case T_INT:
