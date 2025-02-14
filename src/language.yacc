@@ -1204,7 +1204,7 @@ def: modifiers optional_attributes type_or_error optional_constant optional_star
 optional_dot_dot_dot: TOK_DOT_DOT_DOT { $$=1; }
   | TOK_DOT_DOT
   {
-    yyerror("Range indicator ('..') where elipsis ('...') expected.");
+    yyerror("Range indicator ('..') where ellipsis ('...') expected.");
     $$=1;
   }
   | /* empty */ { $$=0; }
@@ -1661,7 +1661,7 @@ number_or_minint: /* Empty */
 expected_dot_dot: TOK_DOT_DOT
   | TOK_DOT_DOT_DOT
   {
-    yyerror("Elipsis ('...') where range indicator ('..') expected.");
+    yyerror("Ellipsis ('...') where range indicator ('..') expected.");
   }
   ;
 
