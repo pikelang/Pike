@@ -1179,7 +1179,7 @@ INPUT_IS_WIDE(								 \
 	          goto test_again;					 \
 									 \
 		case 's':						 \
-		  Pike_error("Illegal to have two adjecent %%s.\n");	 \
+		  Pike_error("Illegal to have two adjacent %%s.\n");	 \
                   UNREACHABLE(return 0);                                 \
 									 \
 	  /* sscanf("foo-bar","%s%d",a,b) might not work as expected */	 \
@@ -1604,7 +1604,7 @@ INT32 low_sscanf(struct pike_string *data, struct pike_string *format)
  *!     endianness. For example @expr{"%-2c"@} decodes @expr{"0101"@}
  *!     into @expr{12592@}, leaving @expr{"01"@} for later directives.
  *!     The sign modifiers can be used to modify the signature of the
- *!     data, making @expr{"%+1c"@} decode @expr{"ä"@} into
+ *!     data, making @expr{"%+1c"@} decode @expr{"Ã¤"@} into
  *!     @expr{-28@}.
  *!   @value "%n"
  *!     Returns the current character offset in @[data].
