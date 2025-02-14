@@ -1920,7 +1920,7 @@ static struct object *decoder_codec (struct decode_data *data)
   struct pike_string *decoder_str;
   if (data->codec) return data->codec;
   if (data->explicit_codec)
-    Pike_fatal("Trying to load codec while explicitely opted out.\n");
+    Pike_fatal("Trying to load codec while explicitly opted out.\n");
   MAKE_CONST_STRING (decoder_str, "Decoder");
   return data->codec = lookup_codec (decoder_str);
 }
