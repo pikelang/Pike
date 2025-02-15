@@ -1795,6 +1795,116 @@ test_compile_any([[
   }
 ]])
 
+test_any_equal([[
+  // Test Pike.DestructImmediate.
+  class Foo {
+    int counter;
+
+    class Key {
+      inherit Pike.DestructImmediate;
+      /* Make the symbols visible outside. */
+      protected void destroy()
+      {
+        counter++;
+      }
+      protected void _destruct()
+      {
+        counter++;
+      }
+    }
+
+    void noop() {}
+    int peek() { return counter; }
+
+    void return_and_pop()
+    {
+      Key k = Key();
+      counter = 10;
+    }
+
+    void return_and_pop_n(int i)
+    {
+      Key k = Key();
+      counter = i;
+    }
+
+    int return_val()
+    {
+      Key k = Key();
+      counter = 30;
+      return counter;
+    }
+
+    int return_and_pop_keep_val(int i)
+    {
+      Key k = Key();
+      counter = i;
+      return counter;
+    }
+
+    int return_auto_val()
+    {
+      Key k = Key();
+      counter = 50;
+      int c = counter;
+      counter = 60;
+      return c;
+    }
+
+    int return_and_pop_keep_auto_val(int i)
+    {
+      Key k = Key();
+      counter = i;
+      int c = counter;
+      counter = 80;
+      return c;
+    }
+  }
+
+  array(int) res = ({});
+  Foo f = Foo();
+
+  add_constant("FooF", f);
+
+  return ({
+    (f->return_and_pop(), f->counter),
+    (f->noop(), f->counter), f->peek(), f->counter,
+    (f->return_and_pop_n(20), f->counter),
+    (f->noop(), f->counter), f->peek(), f->counter,
+    f->return_val(), f->counter,
+    (f->noop(), f->counter), f->peek(), f->counter,
+    f->return_and_pop_keep_val(40), f->counter,
+    (f->noop(), f->counter), f->peek(), f->counter,
+    f->return_auto_val(), f->counter,
+    (f->noop(), f->counter), f->peek(), f->counter,
+    f->return_and_pop_keep_auto_val(70), f->counter,
+    (f->noop(), f->counter), f->peek(), f->counter,
+  });
+]], ({ 11, 11, 11, 11, 21, 21, 21, 21, 30, 31, 31, 31, 31,
+       40, 41, 41, 41, 41, 50, 61, 61, 61, 61, 70, 81, 81, 81, 81 }))
+
+test_any_equal([[
+  // Test Pike.DestructImmediate.
+  array(int) res = ({});
+  add_constant("FooF");
+
+  return ({
+    (FooF.return_and_pop(), FooF->counter),
+    (FooF.noop(), FooF->counter), FooF.peek(), FooF->counter,
+    (FooF.return_and_pop_n(20), FooF->counter),
+    (FooF.noop(), FooF->counter), FooF.peek(), FooF->counter,
+    FooF.return_val(), FooF->counter,
+    (FooF.noop(), FooF->counter), FooF.peek(), FooF->counter,
+    FooF.return_and_pop_keep_val(40), FooF->counter,
+    (FooF.noop(), FooF->counter), FooF.peek(), FooF->counter,
+    FooF.return_auto_val(), FooF->counter,
+    (FooF.noop(), FooF->counter), FooF.peek(), FooF->counter,
+    FooF.return_and_pop_keep_auto_val(70), FooF->counter,
+    (FooF.noop(), FooF->counter), FooF.peek(), FooF->counter,
+  });
+]], ({ 11, 11, 11, 11, 21, 21, 21, 21, 30, 31, 31, 31, 31,
+       40, 41, 41, 41, 41, 50, 61, 61, 61, 61, 70, 81, 81, 81, 81 }))
+
 test_any([[
   // Test Pike.InhibitDestruct.
   class Foo {
