@@ -709,11 +709,19 @@ o Calendar
   - The timezone expert system has been updated for the first time
     in quite a while.
 
+o CompilerEnvironment()->lock()
+
+  Access to the compiler lock.
+
 o Crypto & Nettle
 
   - Added Curve25519 with EdDSA.
 
   - Added support for CMAC.
+
+o Crypto.ECC.Curve.Point
+
+  A point on an ECC curve.
 
 o Filesystem.Monitor
 
@@ -746,13 +754,35 @@ o MasterObject
     the default backend will be started, and the pike interpreter
     will terminate when the Concurrent.Future object is fulfilled.
 
-o CompilerEnvironment()->lock()
+o Mysql.SqlTable
 
-  Access to the compiler lock.
+  - handle_extraargs() has moved to the db-connection.
 
-o Crypto.ECC.Curve.Point
+    A bindings mapping may now be provided after the sprintf-style
+    arguments to the various query functions.
 
-  A point on an ECC curve.
+    Also makes handle_extraargs() externally visible.
+
+  - Avoid explicit use of db_conn->master_sql.
+
+    Switches from using eg
+
+      db_conn->master_sql->big_query(q, 0, query_charset)
+
+    to
+
+      db_conn->big_query(q, query_options)
+
+    This makes it easier to make wrappers for db_conn that wrap
+    big_query() et al.
+
+o Nettle.BlockCipher16
+
+  - Add support for RFC 5649-style key wrapping.
+
+  - Move RFC3394 support to wrap_key() and unwrap_key().
+
+  - The submodule KW is no more. Its API was not suitable for use.
 
 o Parser.Pike
 
@@ -852,7 +882,12 @@ o Sql
   - All Sql driver modules have __builtin.Sql.Connection as
     a common base class.
 
+  - Added a new method for specifying query options (by adding them
+    to the bindings mapping).
+
   - Added next_result() to support queries returning multiple resultsets.
+
+  - Added insert_id() and affected_rows() to the generic API.
 
   - ODBC & tds: Support more datatypes.
 
@@ -863,6 +898,13 @@ o Sql
   - pgsql: Toggle cache_autoprepared_statements default to off;
     turning it on triggers a bug in PostgreSQL sometimes
     that causes spikes in CPU usage of the database.
+
+o Sql.sql_util
+
+  - Removed stuff that is present in __builtin.Sql.Connection.
+
+  - Also renamed __builtin.Sql.zero to __builtin.Sql.zero_arg (analogous
+    to __builtin.Sql.null_arg) to avoid name confusion with predef::zero.
 
 o SSL
 
@@ -880,6 +922,8 @@ o SSL
 
   - SSL.File supports set_buffer_mode().
 
+  - Improved support for timeouts in SSL.File.
+
 o Standards.JSON.CANONICAL
 
   Support RFC 8785-compliant canonical encoding of JSON on platforms
@@ -890,9 +934,17 @@ o Standards.PKCS
 
   Support PKCS#8 private keys.
 
+o Standards.UUID.UUID
+
+  Stricter parsing of hexadecimal UUIDs.
+
 o Stdio.Fd
 
   - Support changing directory relative to an open file.
+
+o String
+
+  Add strict mode for hex2string().
 
 o String.Buffer & Stdio.Buffer
 
@@ -916,6 +968,13 @@ o Thread
   - Thread.Condition are now bound to the first Thread.Mutex object
     that they are used together with. This ensures that the correct
     Thread.Mutex is aways used.
+
+o Thread.Mutex
+
+  Add future_{,shared_}lock().
+
+  These return a Concurrent.Future(<Thread.MutexKey>) corresponding
+  to the respective {,shared_}lock().
 
 o sprintf %x
 
