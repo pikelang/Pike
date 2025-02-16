@@ -221,9 +221,11 @@ PMOD_EXPORT extern const char msg_pop_neg[];
 #define stack_pop_n_elems_keep_top(X) stack_unlink(X)
 
 #define stack_pop_keep_top() do {					\
+    struct svalue top;                                                  \
     struct svalue *_sp_ = --Pike_sp;					\
+    move_svalue (&top, _sp_);                                           \
     free_svalue (_sp_ - 1);						\
-    move_svalue (_sp_ - 1, _sp_);					\
+    move_svalue (_sp_ - 1, &top);					\
     debug_check_stack();						\
   } while (0)
 
