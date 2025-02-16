@@ -2977,7 +2977,7 @@ named_class: TOK_CLASS line_number_info simple_identifier
       {
 	/* Seriously broken... */
 	yyerror("Pass 2: program not defined!");
-	low_start_new_program(0, COMPILER_PASS_LAST, 0,
+        low_start_new_program(0, Pike_compiler->compiler_pass, 0,
 			      $<number>0,
 			      &$<number>$);
       }else{
@@ -2990,7 +2990,7 @@ named_class: TOK_CLASS line_number_info simple_identifier
 			constants[id->func.const_info.offset].sval)) ==
 	       T_PROGRAM))
 	  {
-	    low_start_new_program(s->u.program, COMPILER_PASS_LAST,
+            low_start_new_program(s->u.program, Pike_compiler->compiler_pass,
 				  $3->u.sval.u.string,
 				  $<number>0,
 				  &$<number>$);
@@ -3000,13 +3000,13 @@ named_class: TOK_CLASS line_number_info simple_identifier
 
 	  }else{
 	    yyerror("Pass 2: constant redefined!");
-	    low_start_new_program(0, COMPILER_PASS_LAST, 0,
+            low_start_new_program(0, Pike_compiler->compiler_pass, 0,
 				  $<number>0,
 				  &$<number>$);
 	  }
 	}else{
 	  yyerror("Pass 2: class constant no longer constant!");
-	  low_start_new_program(0, COMPILER_PASS_LAST, 0,
+          low_start_new_program(0, Pike_compiler->compiler_pass, 0,
 				$<number>0,
 				&$<number>$);
 	}
