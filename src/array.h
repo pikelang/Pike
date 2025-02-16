@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.h,v 1.47 2003/04/26 16:23:26 mast Exp $
+|| $Id$
 */
 
 #ifndef ARRAY_H
@@ -91,6 +91,7 @@ PMOD_EXPORT void really_free_array(struct array *v);
 PMOD_EXPORT void do_free_array(struct array *a);
 PMOD_EXPORT struct array *array_set_flags(struct array *a, int flags);
 PMOD_EXPORT void array_index(struct svalue *s,struct array *v,INT32 ind);
+PMOD_EXPORT struct array *array_column (struct array *data, struct svalue *index);
 PMOD_EXPORT void simple_array_index_no_free(struct svalue *s,
 				struct array *a,struct svalue *ind);
 PMOD_EXPORT void array_free_index(struct array *v,INT32 ind);
@@ -263,5 +264,13 @@ PMOD_EXPORT struct array *implode_array(struct array *a, struct array *b);
   free_svalue(&tmp_);							 \
 }while(0)
 
+#define array_fix_bad_type_field(A) do {				\
+    struct array *a_ = (A);						\
+    if (a_->type_field == BIT_MIXED ||					\
+	a_->type_field == (BIT_MIXED|BIT_UNFINISHED)) {			\
+      DO_IF_DEBUG (array_check_type_field (a_));			\
+      array_fix_type_field (a_);					\
+    }									\
+  } while (0)
 
 #endif /* ARRAY_H */
