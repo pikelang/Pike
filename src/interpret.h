@@ -230,10 +230,12 @@ PMOD_EXPORT extern const char msg_pop_neg[];
   } while (0)
 
 #define stack_pop_2_elems_keep_top() do {				\
+    struct svalue top;                                                  \
     struct svalue *_sp_ = Pike_sp = Pike_sp - 2;			\
-    free_svalue (_sp_ - 1);						\
+    move_svalue (&top, _sp_ + 1);                                       \
     free_svalue (_sp_);							\
-    move_svalue (_sp_ - 1, _sp_ + 1);					\
+    free_svalue (_sp_ - 1);						\
+    move_svalue (_sp_ - 1, &top);					\
     debug_check_stack();						\
   } while (0)
 
