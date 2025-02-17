@@ -266,7 +266,7 @@ static void call_callback_and_free(struct callback *cb, void *this_, void *UNUSE
 void low_do_sendfile(struct pike_sendfile *this)
 {
   int oldbulkmode = bulkmode_start(this->to_fd);
-  off_t *offsetp = (this->offset >= 0) ? &this->offset : NULL;
+  INT64 *offsetp = (this->offset >= 0) ? &this->offset : NULL;
   INT64 sent = 0;
 
   /* Make sure we're using blocking I/O */
