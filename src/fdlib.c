@@ -3452,13 +3452,13 @@ PMOD_EXPORT INT64 pike_writev(int fd, struct iovec *iov, int iovcnt)
 
 static INT64 fallback_sendfile(int to_fd,
                                struct iovec *hd_iov, int hd_cnt,
-                               int from_fd, off_t *offsetp, INT64 len,
+                               int from_fd, INT64 *offsetp, INT64 len,
                                struct iovec *tr_iov, int tr_cnt)
 {
   INT64 sent = 0;
-  off_t offset = 0;
+  INT64 offset = 0;
 #ifndef fd_pread
-  off_t orig_offset = -1;
+  INT64 orig_offset = -1;
 #endif
 
   /* Send headers. */
@@ -3598,13 +3598,17 @@ static INT64 fallback_sendfile(int to_fd,
 #ifdef HAVE_SENDFILE
 static INT64 low_pike_sendfile(int to_fd,
                                struct iovec *hd_iov, int hd_cnt,
-                               int from_fd, off_t *offsetp, INT64 len,
+                               int from_fd, INT64 *offsetp, INT64 len,
                                struct iovec *tr_iov, int tr_cnt)
 {
 #if defined(HAVE_FREEBSD_SENDFILE) || defined(HAVE_MACOSX_SENDFILE) || defined(HAVE_HPUX_SENDFILE)
   int res = -1;
-  off_t offset = offsetp ? *offsetp : 0;
+  INT64 offset = offsetp ? *offsetp : 0;
+#ifdef HAVE_HPUX_SENDFILE
+  INT64 sent = 0;
+#else /* FREEBSD or MACOSX */
   off_t sent = 0;
+#endif
   INT64 hd_len = 0;
   PIKE_STAT_T st;
 #if defined(HAVE_FREEBSD_SENDFILE) || defined(HAVE_MACOSX_SENDFILE)
@@ -3680,18 +3684,20 @@ static INT64 low_pike_sendfile(int to_fd,
     if (offset < 0) offset = 0;
   }
 
+  /* NB: len might theoretically get truncated below, but not in practice. */
 #ifdef HAVE_FREEBSD_SENDFILE
   res = sendfile(from_fd, to_fd, offset, len, &hdtr, &sent, 0);
 #elif defined(HAVE_MACOSX_SENDFILE)
   sent = len;
   res = sendfile(from_fd, to_fd, offset, &sent, &hdtr, 0);
 #else /* HPUX_SENDFILE */
-  res = sent = sendfile(to_fd, from_fd, offset, len, hdtr, 0);
+  sent = sendfile(to_fd, from_fd, offset, len, hdtr, 0);
+  res = ((sent < 0)? -1 : 0);
 #endif
   if (res < 0) return -1;
 
   if (offsetp && (sent > hd_len)) {
-    *offsetp += (off_t)(sent - hd_len);
+    *offsetp += (sent - hd_len);
   }
 
   return sent;
@@ -3726,11 +3732,13 @@ static INT64 low_pike_sendfile(int to_fd,
   }
 
   while (len > 0) {
-    INT64 bytes = sendfile(to_fd, from_fd, offsetp, len);
+    off_t off = offsetp?(off_t)*offsetp:0;
+    INT64 bytes = sendfile(to_fd, from_fd, offsetp?&off:NULL, len);
+    if (offsetp) *offsetp = off;
     if ((bytes < 0) && (errno == ESPIPE) && offsetp && !*offsetp) {
       /* Compat with Pike 8.x and earlier. */
       offsetp = NULL;
-      bytes = sendfile(to_fd, from_fd, offsetp, len);
+      bytes = sendfile(to_fd, from_fd, NULL, len);
     }
     if (bytes <= 0) {
       if (bytes < 0) goto sendfile_failed;
