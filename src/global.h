@@ -286,6 +286,8 @@ struct timeval;
 #define TOSTR(X)	#X
 #define DEFINETOSTR(X)	TOSTR(X)
 
+#define PIKE_LOCATION	__FILE__ ":" DEFINETOSTR(__LINE__)
+
 /*
  * Max number of local variables in a function.
  * Currently there is no support for more than 256
