@@ -162,6 +162,23 @@ array sum_arrays(function(int(0..0) ...:mixed) sum, array ... args)
   return ret;
 }
 
+int(0..1) is_sorted(array arr,
+                    function(int(0..0),int(0..0),mixed ...:int)|void cmp,
+                    mixed ... args)
+{
+  if (sizeof(arr) < 2) return 1;
+
+  int i = sizeof(arr)-1;
+  mixed n = arr[i];
+  while (i--) {
+    mixed p = arr[i];
+    if (!([function(mixed,mixed,mixed...:int)]cmp)(n, p, @args)) return 0;
+    n = p;
+  }
+
+  return 1;
+}
+
 //! @decl array sort_array(array arr, function|void cmp, mixed ... args)
 //!
 //! This function sorts the array @[arr] after a compare-function
@@ -195,15 +212,23 @@ array sort_array(array arr, function(__unknown__, __unknown__, __unknown__ ...:i
   if(!cmp || cmp==`>)
   {
     sort(arr);
+
+    cmp = [function(int(0..0),int(0..0),mixed ...:int)]`>;
+  } else if(cmp == `<)
+  {
+    sort(arr);
+    arr = reverse(arr);
+  }
+
+  // Short-cut if the array is already sorted or got properly
+  // sorted by predef::sort() above. Note that predef::sort()
+  // does NOT interleave values of different types (eg ints
+  // and floats).
+  if (is_sorted(arr, cmp, @args)) {
     return arr;
   }
 
-  if(cmp == `<)
-  {
-    sort(arr);
-    return reverse(arr);
-  }
-
+  // Bottom-up Merge Sort.
   length=sizeof(arr);
 
   array bar = allocate(length);
