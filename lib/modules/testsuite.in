@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.39 2007/12/27 00:51:47 nilsson Exp $
+dnl $Id$
 
 START_MARKER
 
@@ -128,8 +128,14 @@ dnl Array.search_array
 test_equal( Array.sum_arrays( `+, ({}) ), ({}) )
 test_equal( Array.sum_arrays( `+, enumerate(5), enumerate(5)), ({0,2,4,6,8}) )
 
+dnl Array.sort_array
+
 test_equal(Array.sort_array(({})), ({}))
 test_equal([[ Array.sort_array(enumerate(9), `<) ]], [[ enumerate(9,-1,8) ]])
+test_equal([[ Array.sort_array(enumerate(4) + enumerate(3, 1, 0.5), `>) ]],
+           [[ ({ 0, 0.5, 1, 1.5, 2, 2.5, 3 }) ]])
+test_equal([[ Array.sort_array(enumerate(4) + enumerate(3, 1, 0.5), `<) ]],
+           [[ ({ 3, 2.5, 2, 1.5, 1, 0.5, 0 }) ]])
 
 dnl Array.columns
 dnl Array.transpose_old
