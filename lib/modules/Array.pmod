@@ -163,7 +163,7 @@ array sum_arrays(function(int(0..0) ...:mixed) sum, array ... args)
 }
 
 int(0..1) is_sorted(array arr,
-                    function(int(0..0),int(0..0),mixed ...:int)|void cmp,
+                    function(__unknown__,__unknown__,__unknown__ ...:int)|void cmp,
                     mixed ... args)
 {
   if (sizeof(arr) < 2) return 1;
@@ -213,7 +213,7 @@ array sort_array(array arr, function(__unknown__, __unknown__, __unknown__ ...:i
   {
     sort(arr);
 
-    cmp = [function(int(0..0),int(0..0),mixed ...:int)]`>;
+    cmp = `>;
   } else if(cmp == `<)
   {
     sort(arr);
