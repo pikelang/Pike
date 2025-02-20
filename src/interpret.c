@@ -224,17 +224,16 @@ PMOD_EXPORT int low_init_interpreter(struct Pike_interpreter_struct *interpreter
   (Y *)mmap(0, (X)*sizeof(Y), PROT_READ|PROT_WRITE,			\
 	    MAP_NORESERVE|MAP_PRIVATE|MAP_ANONYMOUS, fd, 0)
 
-  interpreter->evaluator_stack_malloced = 0;
-  interpreter->mark_stack_malloced = 0;
+  interpreter->flags = 0;
   interpreter->evaluator_stack = MMALLOC(Pike_stack_size,struct svalue);
   interpreter->mark_stack = MMALLOC(Pike_stack_size, struct svalue *);
   if((char *)MAP_FAILED == (char *)interpreter->evaluator_stack) {
     interpreter->evaluator_stack = 0;
-    interpreter->evaluator_stack_malloced = 1;
+    interpreter->flags |= INTERPRETER_EVALUATOR_STACK_MALLOCED;
   }
   if((char *)MAP_FAILED == (char *)interpreter->mark_stack) {
     interpreter->mark_stack = 0;
-    interpreter->mark_stack_malloced = 1;
+    interpreter->flags |= INTERPRETER_MARK_STACK_MALLOCED;
   }
 
 #ifdef NEED_USE_MALLOC_LABEL
@@ -243,9 +242,8 @@ use_malloc:
 
 #else /* !USE_MMAP_FOR_STACK */
   interpreter->evaluator_stack = 0;
-  interpreter->evaluator_stack_malloced = 1;
   interpreter->mark_stack = 0;
-  interpreter->mark_stack_malloced = 1;
+  interpreter->flags = INTERPRETER_MALLOCED_STACKS;
 #endif /* USE_MMAP_FOR_STACK */
 
   if(!interpreter->evaluator_stack)
@@ -4146,13 +4144,13 @@ PMOD_EXPORT void custom_check_stack(ptrdiff_t amount, const char *fmt, ...)
 PMOD_EXPORT void low_cleanup_interpret(struct Pike_interpreter_struct *interpreter)
 {
 #ifdef USE_MMAP_FOR_STACK
-  if(!interpreter->evaluator_stack_malloced)
+  if(!(interpreter->flags & INTERPRETER_EVALUATOR_STACK_MALLOCED))
   {
     munmap((char *)interpreter->evaluator_stack,
 	   Pike_stack_size*sizeof(struct svalue));
     interpreter->evaluator_stack = 0;
   }
-  if(!interpreter->mark_stack_malloced)
+  if(!(interpreter->flags & INTERPRETER_MARK_STACK_MALLOCED))
   {
     munmap((char *)interpreter->mark_stack,
 	   Pike_stack_size*sizeof(struct svalue *));
@@ -4167,8 +4165,7 @@ PMOD_EXPORT void low_cleanup_interpret(struct Pike_interpreter_struct *interpret
 
   interpreter->mark_stack = 0;
   interpreter->evaluator_stack = 0;
-  interpreter->mark_stack_malloced = 0;
-  interpreter->evaluator_stack_malloced = 0;
+  interpreter->flags = 0;
 
   interpreter->stack_pointer = 0;
   interpreter->mark_stack_pointer = 0;
