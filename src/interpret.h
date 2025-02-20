@@ -25,6 +25,12 @@ struct catch_context
 #endif
 };
 
+enum interpreter_flags {
+  INTERPRETER_EVALUATOR_STACK_MALLOCED = 1,
+  INTERPRETER_MARK_STACK_MALLOCED      = 2,
+  INTERPRETER_MALLOCED_STACKS          = 3,
+};
+
 struct Pike_interpreter_struct {
   /* Swapped variables */
   struct svalue *stack_pointer;
@@ -44,16 +50,14 @@ struct Pike_interpreter_struct {
   int svalue_stack_margin;
   int c_stack_margin;
 
-  INT16 evaluator_stack_malloced;
-  INT16 mark_stack_malloced;
+  int trace_level;
+  enum interpreter_flags flags;
 
 #ifdef PROFILING
+  char *stack_bottom;
   cpu_time_t accounted_time;	/** Time spent and accounted for so far. */
   cpu_time_t unlocked_time;	/** Time spent unlocked so far. */
-  char *stack_bottom;
 #endif
-
-  int trace_level;
 };
 
 #ifndef STRUCT_FRAME_DECLARED
