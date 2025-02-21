@@ -29,6 +29,8 @@ enum interpreter_flags {
   INTERPRETER_EVALUATOR_STACK_MALLOCED = 1,
   INTERPRETER_MARK_STACK_MALLOCED      = 2,
   INTERPRETER_MALLOCED_STACKS          = 3,
+
+  INTERPRETER_HAS_SIGNAL_CONTEXT       = 256,
 };
 
 struct Pike_interpreter_struct {

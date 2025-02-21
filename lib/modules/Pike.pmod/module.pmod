@@ -53,6 +53,10 @@ constant LiveBacktraceFrame = __builtin.LiveBacktraceFrame;
 constant FakeObject = __builtin.FakeObject;
 #endif
 
+#if constant(__builtin.signal_contextp)
+constant signal_contextp = __builtin.signal_contextp;
+#endif
+
 constant __Backend = __builtin.Backend;
 
 //! @class Backend
