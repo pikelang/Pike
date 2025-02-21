@@ -393,6 +393,11 @@ int main(int argc, char **argv)
 	switch(*p)
 	{
 	case 'D':
+	  if(*(p+1) == '\0')
+	    {
+	      fprintf(stderr,"Missing macro name after '-D'\n");
+	      exit(1);
+	    }
 	  add_predefine(p+1);
 	  p+=strlen(p);
 	  break;
