@@ -1532,12 +1532,16 @@ array fix_return(array body, PikeType rettype, mixed args)
   while( (pos=search(body,PC.Token("RETURN",0),pos)) != -1)
   {
     int pos2=search(body,PC.Token(";",0),pos+1);
-    body[pos]=sprintf("do { %s ret_=(",rettype->c_storage_type());
+    if (pos2 == pos+1)
+      body[pos]="do { ";
+    else
+      body[pos]=sprintf("do { %s ret_=(",rettype->c_storage_type());
     // NB: Reuse the ";" token at pos2, so that following whitespace is preserved.
     body = body[..pos2-1] + ({
-      sprintf("); %s push_%s(ret_); return; }while(0)",
-              make_pop(args),
-              rettype->basetype()),
+      (pos2 == pos+1? make_pop(args)+" return; }while(0)" :
+       sprintf("); %s push_%s(ret_); return; }while(0)",
+               make_pop(args),
+               rettype->basetype())),
     }) + body[pos2..];
     pos=pos2+1;
   }
@@ -1546,6 +1550,9 @@ array fix_return(array body, PikeType rettype, mixed args)
   while( (pos=search(body,PC.Token("REF_RETURN",0),pos)) != -1)
   {
     int pos2=search(body,PC.Token(";",0),pos+1);
+    if (pos2 == pos+1)
+      error("%s:%d: REF_RETURN needs an argument\n",
+            body[pos]->file, body[pos]->line);
     body[pos]=sprintf("do { %s ret_=(",rettype->c_storage_type());
     // NB: Reuse the ";" token at pos2, so that following whitespace is preserved.
     body = body[..pos2-1] + ({
