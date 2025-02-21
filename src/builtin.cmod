@@ -3321,10 +3321,6 @@ PIKEFUN void _putenv (string var, void|string val)
 #endif /* !USE_SETENV */
 }
 
-/*
- * Backtrace handling.
- */
-
 /*! @module Pike
  */
 
@@ -3455,6 +3451,10 @@ PIKECLASS InhibitDestruct
 };
 
 /*! @endclass
+ */
+
+/*
+ * Backtrace handling.
  */
 
 /*! @class FakeObject
@@ -4342,6 +4342,29 @@ PIKEFUN mapping(string:int|string) get_runtime_info()
   push_static_text("auto_bignum");
   push_int(1);
   f_aggregate_mapping(7*2);
+}
+
+/*! @decl int(0..1) signal_contextp()
+ *!
+ *! Returns whether the current thread is running in a
+ *! signal handler context (eg via an @[lfun::_destruct()]
+ *! called by an implicit @[gc()]).
+ *!
+ *! In a signal handler context eg locking of @[Thread.Mutex] or
+ *! waiting on @[Thread.Condition] is not allowed.
+ *!
+ *! Intended use is to be able to throw errors early in APIs
+ *! that are not signal context safe, or to be able to detect
+ *! this and upgrade the call to a normal context (eg via
+ *! @[call_out()]).
+ *!
+ *! @seealso
+ *!   @[lfun::_destruct()], @[call_out()], @[gc()]
+ */
+PIKEFUN int(0..1) signal_contextp()
+  optflags OPT_EXTERNAL_DEPEND;
+{
+  push_int(!!(Pike_interpreter.flags & INTERPRETER_HAS_SIGNAL_CONTEXT));
 }
 
 /*! @endmodule
