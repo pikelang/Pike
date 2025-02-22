@@ -1127,11 +1127,18 @@ static struct callback *destruct_object_evaluator_callback = NULL;
 void low_destruct_objects_to_destruct(void)
 {
   struct object *o, *next;
+  enum interpreter_flags save_iflags = Pike_interpreter.flags;
 
 #ifdef PIKE_DEBUG
   if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_FREE)
     Pike_fatal("Can't meddle with the object link list in gc pass %d.\n", Pike_in_gc);
 #endif
+
+  /* The objects that are destructed do not necessarily have any
+   * synchronous relation to the context we are executing in, so
+   * mark the context as a signal context.
+   */
+  Pike_interpreter.flags |= INTERPRETER_HAS_SIGNAL_CONTEXT;
 
   /* We unlink the list from objects_to_destruct before processing it,
    * to avoid that reentrant calls to this function go through all
@@ -1172,6 +1179,8 @@ void low_destruct_objects_to_destruct(void)
 
     got_unlinked_things--;
   }
+
+  Pike_interpreter.flags = save_iflags;
 }
 
 void destruct_objects_to_destruct_cb(void)
@@ -1214,10 +1223,21 @@ PMOD_EXPORT void schedule_really_free_object(struct object *o)
 
   if(o->prog && (o->prog->flags & PROGRAM_DESTRUCT_IMMEDIATE))
   {
+    enum interpreter_flags save_iflags = Pike_interpreter.flags;
+    Pike_interpreter.flags |= INTERPRETER_HAS_SIGNAL_CONTEXT;
     add_ref(o);
     destruct_object (o, DESTRUCT_NO_REFS);
+    Pike_interpreter.flags = save_iflags;
     if(sub_ref(o)) return;
   }
+
+  /* FIXME: Consider performing an immediate destruct if
+   *        there is no lfun::_destruct() or equivalent?
+   *
+   *        This could be achieved by letting the compiler
+   *        set an equivalent flag that is not propagated
+   *        on inherit.
+   */
 
   debug_malloc_touch(o);
   debug_malloc_touch(o->storage);
