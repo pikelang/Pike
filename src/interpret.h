@@ -620,10 +620,13 @@ PMOD_EXPORT void apply_master(const char* fun, INT32 args, int mode);
 PMOD_EXPORT extern unsigned long evaluator_callback_calls;
 #endif
 
-#define low_check_threads_etc() do { \
-  DO_IF_INTERNAL_PROFILING (evaluator_callback_calls++); \
-  call_callback(& evaluator_callbacks, NULL); \
-}while(0)
+#define low_check_threads_etc() do {                                    \
+    enum interpreter_flags save_iflags_ = Pike_interpreter.flags;       \
+    Pike_interpreter.flags |= INTERPRETER_HAS_SIGNAL_CONTEXT;           \
+    DO_IF_INTERNAL_PROFILING(evaluator_callback_calls++);               \
+    call_callback(& evaluator_callbacks, NULL);                         \
+    Pike_interpreter.flags = save_iflags_;                              \
+  }while(0)
 
 #define check_threads_etc() do {					\
     DO_IF_DEBUG (if (Pike_interpreter.trace_level > 2)			\

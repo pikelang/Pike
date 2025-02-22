@@ -3344,6 +3344,9 @@ PMOD_EXPORT void f_call_function(INT32 args)
 
 PMOD_EXPORT void call_handle_error(void)
 {
+  enum interpreter_flags save_iflags = Pike_interpreter.flags;
+  Pike_interpreter.flags |= INTERPRETER_HAS_SIGNAL_CONTEXT;
+
   dmalloc_touch_svalue(&throw_value);
 
   if (Pike_interpreter.svalue_stack_margin > LOW_SVALUE_STACK_MARGIN) {
@@ -3391,6 +3394,8 @@ PMOD_EXPORT void call_handle_error(void)
     free_svalue(&throw_value);
     mark_free_svalue (&throw_value);
   }
+
+  Pike_interpreter.flags = save_iflags;
 }
 
 /* NOTE: This function may only be called from the compiler! */

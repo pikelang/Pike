@@ -799,8 +799,10 @@ PMOD_EXPORT void check_signals(struct callback *UNUSED(foo), void *UNUSED(bar), 
 
   if (QUICK_CHECK_FIFO(sig, unsigned char))
   {
+    enum interpreter_flags save_iflags = Pike_interpreter.flags;
     unsigned char sig = ~0;
 
+    Pike_interpreter.flags |= INTERPRETER_HAS_SIGNAL_CONTEXT;
     while (sig_pop(&sig)) {
 
 #ifdef USE_SIGCHILD
@@ -859,6 +861,7 @@ PMOD_EXPORT void check_signals(struct callback *UNUSED(foo), void *UNUSED(bar), 
 	signal_masks[sig] = 2;
       }
     }
+    Pike_interpreter.flags = save_iflags;
   }
 }
 
