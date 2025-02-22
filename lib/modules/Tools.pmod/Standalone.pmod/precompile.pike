@@ -186,6 +186,10 @@ string usage = #"[options] <from> > <to>
                   destructed before this one (a very common trait since most
                   EXIT functions only do simple cleanup), then this attribute
                   can be added to make the gc work a little easier.
+   get_all_args;  Use the get_all_args() function to fetch arguments into
+                  local variables.  If a value is specified it's the format
+                  string to use.  If no value is specified a format string
+                  is generated based on the formal argument declarations.
 
  POLYMORPHIC FUNCTION OVERLOADING
    You can define the same function several times with different
@@ -1476,6 +1480,84 @@ class Argument
     }
 };
 
+string make_get_all_args_format_for_args(array(Argument) args, int min_args,
+                                         int repeat_arg)
+{
+  string fmt = "";
+  foreach(args; int index; Argument arg) {
+    if (index == repeat_arg)
+      // get_all_args can not handle the repeat argument
+      break;
+    if (index == min_args)
+      fmt += ".";
+    switch (arg->realtype()) {
+    case "int": fmt += "%i"; break;
+    case "float": fmt += "%f"; break;
+    case "utf8_string": fmt += (arg->may_be_void_or_zero(1, 1)? "%N" : "%n"); break;
+    case "sprintf_format":
+    case "string": fmt += (arg->may_be_void_or_zero(1, 1)? "%T" : "%t"); break;
+    case "array": fmt += (arg->may_be_void_or_zero(1, 1)? "%A" : "%a"); break;
+    case "multiset": fmt += (arg->may_be_void_or_zero(1, 1)? "%U" : "%u"); break;
+    case "mapping": fmt += (arg->may_be_void_or_zero(1, 1)? "%G" : "%m"); break;
+    case "object": fmt += (arg->may_be_void_or_zero(1, 1)? "%O" : "%o"); break;
+    case "program": fmt += (arg->may_be_void_or_zero(1, 1)? "%P" : "%p"); break;
+    case "mixed":
+      multiset alltypes =
+        mkmultiset(arg->type()->basetypes()) - (<"void", "zero">);
+      if (equal(alltypes, (<"int", "float">)))
+        fmt += "%F";
+      else
+        fmt += "%*";
+      break;
+    default: error("Can't infer get_all_args specifier for argument %s\n", arg);
+    }
+  }
+  return fmt;
+}
+
+int update_args_from_get_all_args_format(array(Argument) args, int num_args,
+                                         string fmt)
+{
+  int argnum = 0;
+  int fmtpos = 0;
+  int min_args = -1;
+  while (fmtpos < strlen(fmt)) {
+    if (fmt[fmtpos] == '.' && min_args < 0) {
+      min_args = argnum;
+      fmtpos++;
+      continue;
+    }
+    if (fmt[fmtpos] != '%' || fmtpos+1 >= strlen(fmt))
+      error("Invalid get_all_args format string %O\n", fmt);
+    if (argnum >= num_args)
+      break;
+    string ty;
+    switch (fmt[fmtpos+1]) {
+    case 'i': case 'I': case '+': ty = "INT_TYPE"; break;
+    case 'd': case 'D':           ty = "int"; break;
+    case 'l':                     ty = "INT64"; break;
+    case 'c': case 'C': case 's': ty = "char *"; break;
+    case 'n': case 'N': case 't':
+    case 'T': case 'S': case 'W': ty = "struct pike_string *"; break;
+    case 'a': case 'A':           ty = "struct array *"; break;
+    case 'f': case 'F':           ty = "FLOAT_TYPE"; break;
+    case 'm': case 'G':           ty = "struct mapping *"; break;
+    case 'u': case 'U': case 'M': ty = "struct multiset *"; break;
+    case 'o': case 'O':           ty = "struct object *"; break;
+    case 'p': case 'P':           ty = "struct program *"; break;
+    case '*':                     ty = "struct svalue *"; break;
+    default:
+      error("Unknown specifier \"%%%c\" in get_all_args format string\n",
+            fmt[fmtpos+1]);
+    }
+    args[argnum++]->_c_type = ty;
+    fmtpos += 2;
+  }
+  if (fmtpos != strlen(fmt) || argnum != num_args)
+    error("Wrong number of specifiers in get_all_args format string %O\n", fmt);
+  return (min_args < 0? num_args : min_args);
+}
+
 /*
  * This function takes a bunch of strings an makes
  * a unique C identifier with underscores in between.
@@ -1601,6 +1683,7 @@ constant valid_attributes = (<
   "program_id",
   "num_generics",	/* PIKECLASS only. */
   "bind_generics",	/* INHERIT only. */
+  "get_all_args",
 >);
 
 /*
@@ -2861,10 +2944,24 @@ static struct %s *%s_gdb_dummy_ptr;
 	  while(min_args>0 && args[min_args-1]->may_be_void())
 	    min_args--;
 
-	  foreach(args, Argument arg)
+          if (attributes->get_all_args) {
+            if (!stringp(attributes->get_all_args))
+              attributes->get_all_args =
+                make_get_all_args_format_for_args(args, min_args, repeat_arg);
+            min_args =
+              update_args_from_get_all_args_format(args,
+                                                   (repeat_arg >= 0?
+                                                    repeat_arg : sizeof(args)),
+                                                   attributes->get_all_args);
+          }
+
+          foreach(args; int argno; Argument arg)
 	    if( arg->name() != "UNUSED" ) {
               ret+=({
-                  PC.Token(sprintf("%s %s;\n",arg->c_type(), arg->name()),
+                PC.Token(sprintf("%s %s%s;\n",arg->c_type(), arg->name(),
+                                 // get_all_args does not init optional args
+                                 (argno >= min_args && attributes->get_all_args
+                                  && argno != repeat_arg ? "= 0" : "")),
                            arg->line()),
               });
 	      if (arg->c_type() == "struct object *") {
@@ -2895,7 +2992,9 @@ static struct %s *%s_gdb_dummy_ptr;
 	  }else{
 	    argbase="-args";
 	    num_arguments="args";
-	    if(min_args > 0) {
+            if (attributes->get_all_args)
+              ; // get_all_args already checks for too few args
+            else if(min_args > 0) {
 	      ret+=({
 		PC.Token(sprintf("if(args < %d) "
 				 "wrong_number_of_args_error(%O,args,%d);\n",
@@ -2927,6 +3026,16 @@ static struct %s *%s_gdb_dummy_ptr;
 
 	  string check_argbase = argbase;
 
+          if (attributes->get_all_args && sizeof(args) && repeat_arg != 0)
+          {
+            ret += ({ PC.Token(sprintf("get_all_args(%O,args,%O%{,&%s%});\n",
+                                       name, attributes->get_all_args,
+                                       map(args[..(repeat_arg > 0?
+                                                   repeat_arg : sizeof(args))-1],
+                                           "name")/1),
+                               proto[0]->line) });
+          }
+
 	  foreach(args, Argument arg)
 	  {
 	    int got_void_or_zero_check = 0;
@@ -2947,7 +3056,20 @@ static struct %s *%s_gdb_dummy_ptr;
 					 argnum, argnum, check_argbase),
 				 arg->line()) });
 	    }
-
+            else if (attributes->get_all_args) {
+              // get_all_args will not fill out the inherit number
+              if (arg->c_type() == "struct object *") {
+                ret += ({
+                  PC.Token(sprintf("if(%s) %s_inh_num = SUBTYPEOF(Pike_sp[%d%s]);\n",
+                                   (arg->may_be_void_or_zero(1, 1)?
+                                    arg->name() : "1"),
+                                   arg->name(),
+                                   argnum,argbase),arg->line())
+                });
+              }
+              argnum++;
+              continue;
+            }
 	    else {
 	      int void_or_zero = arg->may_be_void_or_zero (2, 1);
 	      if (void_or_zero == 2) {
