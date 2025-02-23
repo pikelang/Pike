@@ -628,6 +628,12 @@ PMOD_EXPORT extern unsigned long evaluator_callback_calls;
     Pike_interpreter.flags = save_iflags_;                              \
   }while(0)
 
+#define ASSERT_NOT_SIGNAL_CONTEXT() do {                                \
+    if (Pike_interpreter.flags & INTERPRETER_HAS_SIGNAL_CONTEXT) {      \
+      Pike_error("Operation not supported in a signal context.\n");     \
+    }                                                                   \
+  } while(0)
+
 #define check_threads_etc() do {					\
     DO_IF_DEBUG (if (Pike_interpreter.trace_level > 2)			\
 		   fprintf (stderr, "- thread yield point\n"));		\

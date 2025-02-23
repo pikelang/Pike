@@ -2280,6 +2280,8 @@ void f_mutex_lock(INT32 args)
 
   DEBUG_CHECK_THREAD();
 
+  ASSERT_NOT_SIGNAL_CONTEXT();
+
   m=THIS_MUTEX;
   if (args <= 2) {
     FLOAT_TYPE fsecs = 0.0;
@@ -2516,10 +2518,13 @@ void f_mutex_trylock(INT32 args)
  */
 static void f_mutex_future_lock(INT32 args)
 {
-  struct object *promise = make_promise();
+  struct object *promise;
 
   DEBUG_CHECK_THREAD();
 
+  ASSERT_NOT_SIGNAL_CONTEXT();
+
+  promise = make_promise();
   push_object(promise);
   f_aggregate(1);
 
@@ -2637,6 +2642,8 @@ void f_mutex_shared_lock(INT32 args)
   INT_TYPE seconds = 0, nanos = 0;
 
   DEBUG_CHECK_THREAD();
+
+  ASSERT_NOT_SIGNAL_CONTEXT();
 
   m=THIS_MUTEX;
   if (args <= 2) {
@@ -2952,10 +2959,13 @@ void f_mutex_try_shared_lock(INT32 args)
  */
 static void f_mutex_future_shared_lock(INT32 args)
 {
-  struct object *promise = make_promise();
+  struct object *promise;
 
   DEBUG_CHECK_THREAD();
 
+  ASSERT_NOT_SIGNAL_CONTEXT();
+
+  promise = make_promise();
   push_object(promise);
   push_int(1);				/* Shared. */
   f_aggregate(2);
@@ -3478,6 +3488,8 @@ static void f_mutex_key_upgrade(INT32 args)
   struct mutex_storage *m = key->mut;
   INT_TYPE seconds = 0, nanos = 0;
 
+  ASSERT_NOT_SIGNAL_CONTEXT();
+
   if (key->kind >= KEY_PENDING) return;
 
   if (key->kind != KEY_DOWNGRADED) {
@@ -3781,6 +3793,8 @@ void f_cond_wait(INT32 args)
 
   if(threads_disabled)
     Pike_error("Cannot wait for conditions when threads are disabled!\n");
+
+  ASSERT_NOT_SIGNAL_CONTEXT();
 
   if (args <= 2) {
     FLOAT_TYPE fsecs = 0.0;
@@ -4106,6 +4120,8 @@ static void f_thread_id_result(INT32 UNUSED(args))
   if (threads_disabled) {
     Pike_error("Cannot wait for threads when threads are disabled!\n");
   }
+
+  ASSERT_NOT_SIGNAL_CONTEXT();
 
   th->waiting++;
 

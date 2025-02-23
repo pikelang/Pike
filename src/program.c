@@ -443,6 +443,7 @@ static struct pike_type *lfun_setter_type_string = NULL;
  */
 
 /*! @decl void lfun::_destruct (void|int reason)
+ *! @decl void lfun::destroy(void|int reason)
  *!
  *!   Object destruction callback.
  *!
@@ -468,6 +469,13 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!       configure option @tt{--with-cleanup-on-exit@}. See note
  *!       below.
  *!   @endint
+ *!
+ *! @note
+ *!   @[lfun::_destruct()] is typically called in a signal handler
+ *!   context (cf @[Pike.signal_contextp()]) (except when the object
+ *!   was destructed explicitly from a non signal handler context).
+ *!   Appropriate care must thus be taken to avoid operations that
+ *!   are not supported in a signal handler context.
  *!
  *! @note
  *! Objects are normally not destructed when a process exits, so
@@ -549,6 +557,13 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *! @[lfun::_destruct] in the cycle are already scheduled for
  *! destruction and will therefore be destroyed even if external
  *! references are added to them.
+ *!
+ *! @note
+ *!   The function was renamed from @[lfun::destroy()] to
+ *!   @[lfun::_destruct()] in Pike 9.0 in order to have a
+ *!   more consistent naming scheme. The old name will still
+ *!   work in more recent versions of Pike, but will cause a
+ *!   compiler warning when not running in compatibility mode.
  *!
  *! @seealso
  *!   @[lfun::create()], @[predef::destruct()]

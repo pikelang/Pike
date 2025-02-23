@@ -472,6 +472,13 @@ o Thread.Farm()->run() et al now return Concurrent.Future objects.
   Previously they returned Thread.Farm.Result objects (which had
   similar functionality, but a different API).
 
+o Thread.Mutex()->lock() and Thread.Condition()->wait() et al.
+
+  Several functions that wait on other threads or similar
+  now complain (ie throw a runtime error) if called in a
+  signal handler context. Previously such code was prone to
+  cause dead-locks. See also Pike.signal_contextp() below.
+
 o Named classes are always statements.
 
   As mentioned above, it is no longer possible to define a named
@@ -633,6 +640,11 @@ o Pike.ProxyFactory()
 
   This is a function that generates a proxy class for objects
   of the given class.
+
+o Pike.signal_contextp()
+
+  This function returns whether the current thread is running
+  in a signal handler context or not.
 
 o Process.Process
 
