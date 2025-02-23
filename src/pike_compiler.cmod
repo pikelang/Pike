@@ -47,6 +47,8 @@ static int lock_depth = 0;
 
 PMOD_EXPORT void lock_pike_compiler(void)
 {
+  ASSERT_NOT_SIGNAL_CONTEXT();
+
   if (lock_depth && (Pike_compiler_thread != th_self())) {
     SWAP_OUT_CURRENT_THREAD();
     while (lock_depth && (Pike_compiler_thread != th_self())) {
@@ -71,6 +73,7 @@ PMOD_EXPORT void unlock_pike_compiler(void)
 #else
 PMOD_EXPORT void lock_pike_compiler(void)
 {
+  ASSERT_NOT_SIGNAL_CONTEXT();
 }
 PMOD_EXPORT void unlock_pike_compiler(void)
 {
@@ -1829,6 +1832,8 @@ static void f_compilation_compile(INT32 args)
     else push_int(0);
     return;
   }
+
+  ASSERT_NOT_SIGNAL_CONTEXT();
 
   if (!c->prog) {
     /* No program text. */
