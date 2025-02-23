@@ -590,6 +590,51 @@ class PikeType
   }
 
   /*
+   * return the lower or upper limit of this type, or UNDEFINED if not ranged
+   */
+  int get_limit(int(0..1)|void upper)
+  {
+    string ret=(string)t;
+    switch(ret)
+    {
+    case "CTYPE":
+      return args[1]->get_limit(upper);
+
+    case "|":
+    case "&": {
+      int current = UNDEFINED;
+      int (0..1) u2 = upper;
+      if (ret == "&")
+        u2 = !u2;
+      foreach (args, PikeType arg) {
+        int new = arg->get_limit(upper);
+        if (undefinedp(new))
+          return new;
+        if (undefinedp(current) ||
+            (u2? (new > current) : (new < current)))
+          current = new;
+      }
+      return current;
+    }
+
+    case "__deprecated__":
+    case "=":
+      return args[-1]->get_limit(upper);
+
+    case "zero":
+    case "void":
+      return 0;
+
+    case "int":
+    case "string":
+      return limit(-0x80000000, (int)(string)(args[upper]->t), 0x7fffffff);
+
+    default:
+      return UNDEFINED;
+    }
+  }
+  
+  /*
    * return the 'one-word' description of this type
    */
   string basetype()
@@ -1491,11 +1536,15 @@ string make_get_all_args_format_for_args(array(Argument) args, int min_args,
     if (index == min_args)
       fmt += ".";
     switch (arg->realtype()) {
-    case "int": fmt += "%i"; break;
+    case "int": fmt += (arg->type()->get_limit() >= 0? "%+" : "%i"); break;
     case "float": fmt += "%f"; break;
     case "utf8_string": fmt += (arg->may_be_void_or_zero(1, 1)? "%N" : "%n"); break;
-    case "sprintf_format":
-    case "string": fmt += (arg->may_be_void_or_zero(1, 1)? "%T" : "%t"); break;
+    case "string":
+      if (arg->type()->get_limit(0) >= 0 &&
+          arg->type()->get_limit(1) <= 255)
+        { fmt += (arg->may_be_void_or_zero(1, 1)? "%N" : "%n"); break; }
+      /* FALLTHRU */
+    case "sprintf_format": fmt += (arg->may_be_void_or_zero(1, 1)? "%T" : "%t"); break;
     case "array": fmt += (arg->may_be_void_or_zero(1, 1)? "%A" : "%a"); break;
     case "multiset": fmt += (arg->may_be_void_or_zero(1, 1)? "%U" : "%u"); break;
     case "mapping": fmt += (arg->may_be_void_or_zero(1, 1)? "%G" : "%m"); break;
