@@ -118,7 +118,7 @@ void log_msg (string msg, mixed... args)
 {
   if (sizeof (args)) msg = sprintf (msg, @args);
 
-  Thread.MutexKey lock = log_mutex->lock();
+  Thread.MutexKey lock = Pike.signal_contextp()?log_mutex->trylock():log_mutex->lock();
 
   if (last_line_length) {
     if (last_line_length < 0) werror ("\n"); else write ("\n");
