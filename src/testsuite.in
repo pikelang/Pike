@@ -1945,6 +1945,42 @@ test_any([[
   return 0;
 ]], 0)
 
+dnl Pike.signal_contextp()
+test_any_equal([[
+  class Foo {
+    int counter;
+    class Bar(int n, array a) {
+      inherit Pike.DestructImmediate;
+      protected void _destruct(int when)
+      {
+        a[n] = ({ counter, when, Pike.signal_contextp() });
+      }
+    }
+
+    array foo()
+    {
+      array a = allocate(3);
+      counter++;
+      int(0..0)|Bar b = Bar(0, a);
+      counter++;
+      b = Bar(1, a);
+      counter++;
+      destruct(b);
+      counter++;
+      b = Bar(2, a);
+      counter++;
+      b = 0;
+      counter++;
+      return a;
+    }
+  }
+  return Foo()->foo();
+]], [[ ({
+  ({ 2, Pike.DESTRUCT_NO_REFS, 1, }),
+  ({ 3, Pike.DESTRUCT_EXPLICIT, 0, }),
+  ({ 5, Pike.DESTRUCT_NO_REFS, 1, }),
+})]])
+
 test_any([[
   class Foo {
     constant zero = 0;
