@@ -171,16 +171,6 @@ PMOD_EXPORT struct object *low_clone(struct program *p)
   pike_frame->context=NULL;                     \
   Pike_fp = pike_frame
 
-#define LOW_PUSH_FRAME(O, P)	do{		\
-    struct pike_frame *pike_frame;		\
-    LOW_PUSH_FRAME2(O, P)
-
-
-#define PUSH_FRAME(O, P)			\
-  LOW_PUSH_FRAME(O, P);				\
-  add_ref(pike_frame->current_object);		\
-  add_ref(pike_frame->current_program)
-
 #define PUSH_FRAME2(O, P) do{			\
     LOW_PUSH_FRAME2(O, P);			\
     add_ref(pike_frame->current_object);	\
@@ -209,24 +199,11 @@ PMOD_EXPORT struct object *low_clone(struct program *p)
 #define CHECK_FRAME()	0
 #endif
 
-#define POP_FRAME()				\
-  CHECK_FRAME();				\
-  Pike_fp=pike_frame->next;			\
-  pike_frame->next=0;				\
-  free_pike_frame(pike_frame); }while(0)
-
 #define POP_FRAME2()				\
   do{CHECK_FRAME();				\
   Pike_fp=pike_frame->next;			\
   pike_frame->next=0;				\
   free_pike_frame(pike_frame);}while(0)
-
-#define LOW_POP_FRAME()				\
-  add_ref(Pike_fp->current_object); \
-  add_ref(Pike_fp->current_program); \
-  POP_FRAME();
-
-
 
 PMOD_EXPORT void call_c_initializers(struct object *o)
 {
