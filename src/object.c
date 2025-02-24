@@ -191,7 +191,7 @@ PMOD_EXPORT struct object *low_clone(struct program *p)
   return o;
 }
 
-#define LOW_PUSH_FRAME2(O, P)			\
+#define LOW_PUSH_FRAME(O, P)			\
   pike_frame=alloc_pike_frame();		\
   DO_IF_PROFILING(pike_frame->children_base =	\
 	  Pike_interpreter.accounted_time);	\
@@ -213,18 +213,8 @@ PMOD_EXPORT struct object *low_clone(struct program *p)
   pike_frame->context=NULL;                     \
   Pike_fp = pike_frame
 
-#define LOW_PUSH_FRAME(O, P)	do{		\
-    struct pike_frame *pike_frame;		\
-    LOW_PUSH_FRAME2(O, P)
-
-
-#define PUSH_FRAME(O, P)			\
-  LOW_PUSH_FRAME(O, P);				\
-  add_ref(pike_frame->current_object);		\
-  add_ref(pike_frame->current_program)
-
-#define PUSH_FRAME2(O, P) do{			\
-    LOW_PUSH_FRAME2(O, P);			\
+#define PUSH_FRAME(O, P) do{			\
+    LOW_PUSH_FRAME(O, P);			\
     add_ref(pike_frame->current_object);	\
     add_ref(pike_frame->current_program);	\
   }while(0)
@@ -252,22 +242,10 @@ PMOD_EXPORT struct object *low_clone(struct program *p)
 #endif
 
 #define POP_FRAME()				\
-  CHECK_FRAME();				\
-  Pike_fp=pike_frame->next;			\
-  pike_frame->next=0;				\
-  free_pike_frame(pike_frame); }while(0)
-
-#define POP_FRAME2()				\
   do{CHECK_FRAME();				\
   Pike_fp=pike_frame->next;			\
   pike_frame->next=0;				\
   free_pike_frame(pike_frame);}while(0)
-
-#define LOW_POP_FRAME()				\
-  add_ref(Pike_fp->current_object); \
-  add_ref(Pike_fp->current_program); \
-  POP_FRAME();
-
 
 /**
  * Call object initializers written in C.
@@ -297,7 +275,7 @@ PMOD_EXPORT void call_c_initializers(struct object *o)
     {
       if( !frame_pushed )
       {
-	PUSH_FRAME2(o, p);
+        PUSH_FRAME(o, p);
 	Pike_fp->num_args = 0;
 	frame_pushed = 1;
       }
@@ -306,7 +284,7 @@ PMOD_EXPORT void call_c_initializers(struct object *o)
     }
   }
   if( frame_pushed )
-    POP_FRAME2();
+    POP_FRAME();
 }
 
 
@@ -325,7 +303,7 @@ PMOD_EXPORT void call_prog_event(struct object *o, int event)
     {
       if( !frame_pushed )
       {
-	PUSH_FRAME2(o, p);
+        PUSH_FRAME(o, p);
 	frame_pushed = 1;
       }
       SET_FRAME_CONTEXT(p->inherits + e);
@@ -333,7 +311,7 @@ PMOD_EXPORT void call_prog_event(struct object *o, int event)
     }
   }
   if( frame_pushed )
-    POP_FRAME2();
+    POP_FRAME();
 }
 
 /**
@@ -1020,7 +998,7 @@ PMOD_EXPORT int destruct_object (struct object *o,
     {
       if( !frame_pushed )
       {
-	PUSH_FRAME2(o, p);
+        PUSH_FRAME(o, p);
 	frame_pushed = 1;
       }
       SET_FRAME_CONTEXT(p->inherits + e);
@@ -1088,7 +1066,7 @@ PMOD_EXPORT int destruct_object (struct object *o,
   }
 
   if( frame_pushed )
-    POP_FRAME2();
+    POP_FRAME();
 
   if (o->storage) {
     if (o->flags & OBJECT_CLEAR_ON_EXIT)
@@ -2864,13 +2842,13 @@ PMOD_EXPORT void visit_object (struct object *o, int action, void *extra)
       }
 
       if (inh_prog->event_handler) {
-	if (!pike_frame) PUSH_FRAME2 (o, p);
+        if (!pike_frame) PUSH_FRAME (o, p);
 	SET_FRAME_CONTEXT (inh + e);
 	inh_prog->event_handler (PROG_EVENT_GC_RECURSE);
       }
     }
 
-    if (pike_frame) POP_FRAME2();
+    if (pike_frame) POP_FRAME();
 
     /* Strong ref follows. It must be last. */
     if (p->flags & PROGRAM_USES_PARENT)
