@@ -251,23 +251,11 @@ PMOD_EXPORT struct object *low_clone(struct program *p)
 #define CHECK_FRAME()	0
 #endif
 
-#define POP_FRAME()				\
-  CHECK_FRAME();				\
-  Pike_fp=pike_frame->next;			\
-  pike_frame->next=0;				\
-  free_pike_frame(pike_frame); }while(0)
-
 #define POP_FRAME2()				\
   do{CHECK_FRAME();				\
   Pike_fp=pike_frame->next;			\
   pike_frame->next=0;				\
   free_pike_frame(pike_frame);}while(0)
-
-#define LOW_POP_FRAME()				\
-  add_ref(Pike_fp->current_object); \
-  add_ref(Pike_fp->current_program); \
-  POP_FRAME();
-
 
 /**
  * Call object initializers written in C.
