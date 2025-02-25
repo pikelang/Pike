@@ -3828,7 +3828,7 @@ static INT64 low_pike_sendfile(int to_fd,
  */
 PMOD_EXPORT INT64 pike_sendfile(int to_fd,
                                 struct iovec *hd_iov, int hd_cnt,
-                                int from_fd, off_t *offsetp, INT64 len,
+                                int from_fd, INT64 *offsetp, INT64 len,
                                 struct iovec *tr_iov, int tr_cnt)
 {
   INT64 sent = -1;
