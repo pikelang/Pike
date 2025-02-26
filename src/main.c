@@ -424,26 +424,7 @@ int main(int argc, char **argv)
 	    p=argv[e];
 	  }else{
 	    p++;
-	    if(*p=='s')
-	    {
-	      if(!p[1])
-	      {
-		e++;
-		if(e >= argc)
-		{
-		  fprintf(stderr,"Missing argument to -ss\n");
-		  exit(1);
-		}
-		p=argv[e];
-	      }else{
-		p++;
-	      }
-#ifdef _REENTRANT
-	      thread_stack_size=strtol(p,&p,0);
-#endif
-	      p+=strlen(p);
-	      break;
-	    }
+            if(*p == 's') goto handle_S_opt;	/* Compat: -ss */
 	  }
 	  Pike_stack_size=strtol(p,&p,0);
 	  p+=strlen(p);
@@ -454,6 +435,26 @@ int main(int argc, char **argv)
 	    exit(1);
 	  }
 	  break;
+
+        case 'S':
+        handle_S_opt:
+          if(!p[1])
+          {
+            e++;
+            if(e >= argc)
+            {
+              fprintf(stderr,"Missing argument to -S\n");
+              exit(1);
+            }
+            p=argv[e];
+          }else{
+            p++;
+          }
+#ifdef _REENTRANT
+          thread_stack_size=strtol(p,&p,0);
+#endif
+          p+=strlen(p);
+          break;
 
 	case 'q':
 	  if(!p[1])
