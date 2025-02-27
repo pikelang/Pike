@@ -309,7 +309,7 @@ PIKECLASS CompatIterator
     THIS->count = 0;
   }
 
-  PIKEFUN mixed _iterator_next()
+  PIKEFUN int(0..1) _iterator_next()
     flags ID_PROTECTED;
   {
     int fun;
@@ -343,8 +343,7 @@ PIKECLASS CompatIterator
       }
     }
 
-    fun = FIND_LFUN(THIS->iter->prog, LFUN__ITERATOR_INDEX_FUN);
-    apply_low(THIS->iter, fun, 0);
+    push_int(1);
     return;
 
   fail:

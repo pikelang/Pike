@@ -1182,7 +1182,15 @@ PIKECLASS CircularList
       }
     }
 
-    PIKEFUN int _iterator_next()
+    /*! @decl int(0..1) _iterator_next()
+     *!   Advances the iterator to the next position.
+     *!
+     *! @returns
+     *!   Returns @expr{1@} if the iterator advanced to an
+     *!   existing node, and @expr{UNDEFINED@} otherwise.
+     */
+
+    PIKEFUN int(0..1) _iterator_next()
       flags ID_PROTECTED;
     {
       if (!THIS->list || !THIS->list->a) {
@@ -1194,7 +1202,7 @@ PIKECLASS CircularList
 	THIS->pos = -1;
 	push_undefined();
       } else {
-	push_int(THIS->pos);
+        push_int(1);
       }
     }
 
