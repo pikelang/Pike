@@ -176,10 +176,11 @@ PIKECLASS Iterator
    *!
    *! @returns
    *!   Returns @expr{UNDEFINED@} if there are no more values in the set
-   *!   of elements. It may return any other value if it succeeded in
-   *!   advancing to a new element. The returned value is used as the
-   *!   result for @[_iterator_index()] and @[_iterator_value()] if
-   *!   they are not implemented.
+   *!   of elements. If [_iterator_value()] is implemented, @expr{0@}
+   *!   (zero) may also be returned if there are no more values. Any other
+   *!   value may be returned if it succeeded in advancing to a new element.
+   *!   The returned value is used as the result for @[_iterator_index()]
+   *!   and @[_iterator_value()] if they are not implemented.
    *!
    *! @seealso
    *!   @[_iterator_prev()], @[lfun::_iterator_next()], @[iterator_next()],
@@ -2402,10 +2403,13 @@ int foreach_iterate(struct object *o)
    *       can thus often be used in place of the return value
    *       from _iterator_index() and/or _iterator_value(),
    *       which means that they are both optional to implement.
+   *
+   * EXCEPT: If a _iterator_value() exists, then a plain zero
+   *         is also regarded as a failure.
    */
   apply_low(o, fun, 0);
-  if(IS_UNDEFINED(Pike_sp-1))
-  {
+  if((TYPEOF(Pike_sp[-1]) == T_INT) && !Pike_sp[-1].u.integer &&
+     (SUBTYPEOF(Pike_sp[-1]) || (FIND_LFUN(prog, LFUN__ITERATOR_VALUE_FUN) >= 0))) {
     pop_stack();
     return 0;
   }
