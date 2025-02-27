@@ -1621,8 +1621,10 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!
  *! @returns
  *!   Returns @[UNDEFINED] if there are no more elements in the
- *!   iterator. Otherwise it may return any other value, which
- *!   for convenience will be used as index and/or value in case
+ *!   iterator. If [_iterator_value()] is implemented, @expr{0@}
+ *!   (zero) may also be returned if there are no more values.
+ *!   Otherwise it may return any other value, which for
+ *!   convenience will be used as index and/or value in case
  *!   there is no @[lfun::_iterator_index()] and/or no
  *!   @[lfun::_iterator_value()].
  *!
