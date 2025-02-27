@@ -2507,6 +2507,16 @@ PIKEFUN void m_add(multiset|object l, mixed val)
  *!
  *! Advance @[iter] one step.
  *!
+ *! @returns
+ *!   Returns @expr{UNDEFINED@} if the iterator failed to
+ *!   advance, and otherwise the value returned from
+ *!   @[lfun::_iterator_next()].
+ *!
+ *! @note
+ *!   Zero values returned by @[lfun::_iterator_next()] are
+ *!   converted to @expr{UNDEFINED@} when @[lfun::_iterator_value()]
+ *!   is implemented.
+ *!
  *! @seealso
  *!   @[iterator_prev()], @[lfun::_iterator_next()],
  *!   @[get_iterator()]
@@ -2517,6 +2527,14 @@ PIKEFUN mixed iterator_next(object iter)
   rawtype tFuncArg(tSetvar(0, tObj), tFindLFun(tVar(0), "_iterator_next"));
 {
   apply_lfun(iter, LFUN__ITERATOR_NEXT_FUN, args - 1);
+  if ((TYPEOF(Pike_sp[-1]) == PIKE_T_INT) && !Pike_sp[-1].u.integer) {
+    if (!SUBTYPEOF(Pike_sp[-1]) &&
+        (FIND_LFUN(iter->prog, LFUN__ITERATOR_VALUE_FUN) >= 0)) {
+      pop_2_elems();
+      push_undefined();
+      return;
+    }
+  }
   stack_swap();
   pop_stack();
 }
@@ -7555,7 +7573,7 @@ PIKECLASS List
      *!   Advance to the next element in the list.
      *!
      *! @returns
-     *!   Returns the new element on success, and @[UNDEFINED]
+     *!   Returns @expr{1@} on success, and @[UNDEFINED]
      *!   at the end of the list.
      *!
      *! @seealso
@@ -7577,7 +7595,7 @@ PIKECLASS List
       if (next->next) {
         add_ref(THIS->cur = next);
         THIS->ind++;
-	push_svalue(&next->val);
+        push_int(1);
       } else {
         /* We are at the tail sentinel. */
         THIS->cur = NULL;
