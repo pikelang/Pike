@@ -423,13 +423,10 @@ class DeltatextIterator
   //! Advance the iterator one step.
   //!
   //! Returns @[UNDEFINED] when the iterator is finished, and
-  //! otherwise the same as @[_iterator_index()].
-  protected int _iterator_next()
+  //! @expr{1@} otherwise.
+  protected int(0..1) _iterator_next()
   {
-    if (read_next()) {
-      return this_no++;
-    }
-    return UNDEFINED;
+    return read_next() || UNDEFINED;
   }
 
   //! Chops off the first deltatext section from the token array @[raw] and
