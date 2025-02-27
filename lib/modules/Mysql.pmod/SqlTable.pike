@@ -1378,11 +1378,11 @@ class Result
       return cur_row < cached_num_rows ? cur_rec : UNDEFINED;
     }
 
-    protected int _iterator_next()
+    protected int(0..1) _iterator_next()
     {
       fetch();
       if (!cur_rec) return UNDEFINED;
-      return cur_row < cached_num_rows ? cur_row: UNDEFINED;
+      return cur_row < cached_num_rows ? 1: UNDEFINED;
     }
   }
 }

@@ -269,7 +269,7 @@ protected class _get_iterator {
     return rights[vpos];
   }
 
-  protected int(0..) _iterator_next()
+  protected int(0..1) _iterator_next()
   {
     vpos++;
     if (vpos >= sizeof(rights)) {
@@ -284,7 +284,7 @@ protected class _get_iterator {
       // NB: We assume that rights is not empty.
     }
 
-    return ipos;
+    return 1;
   }
 
   protected this_program `+=(int steps) {

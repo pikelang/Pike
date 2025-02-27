@@ -227,10 +227,10 @@ class _get_iterator
     return row;
   }
 
-  protected int _iterator_next()
+  protected int(0..1) _iterator_next()
   {
     if (row = fetch_row()) {
-      return index;
+      return 1;
     }
     row = UNDEFINED;
     return UNDEFINED;
