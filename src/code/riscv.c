@@ -779,6 +779,7 @@ void riscv_ins_f_byte(unsigned int opcode)
   case F_RETURN_IF_TRUE:
     {
       rv_load_sp_reg();
+      unsigned INT32 saved_flags = compiler_state.flags;
       rv_emit(RV_LHU(RV_REG_A5,
 		     -(INT32)sizeof(struct svalue)+(INT32)OFFSETOF(svalue, tu.t.type),
 		     RV_REG_PIKE_SP));
@@ -807,6 +808,7 @@ void riscv_ins_f_byte(unsigned int opcode)
       UPDATE_F_JUMP(branch_op1, PIKE_PC);
       rv_return();
       UPDATE_F_JUMP(branch_op3, PIKE_PC);
+      compiler_state.flags = saved_flags;
       rv_call_c_opcode(F_POP_VALUE);
     }
     return;
