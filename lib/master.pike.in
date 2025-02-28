@@ -908,7 +908,7 @@ protected class CompilerEnvironment
     }
 
     //! @decl void report(SeverityLevel severity, @
-    //!                   string filename, int(1..) linenumber, @
+    //!                   string filename, int(0..) linenumber, @
     //!                   string subsystem, @
     //!                   sprintf_format message, sprintf_args ... extra_args)
     //!
@@ -920,6 +920,9 @@ protected class CompilerEnvironment
     //! @param filename
     //! @param linenumber
     //!   Location which triggered the diagnostic.
+    //!   @[linenumber] @expr{0@} (zero) indicates that it is
+    //!   not applicable (typically originating from command
+    //!   line arguments or similar).
     //!
     //! @param subsystem
     //!   Typically @expr{"cpp"@}.

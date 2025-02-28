@@ -420,7 +420,7 @@ static void do_yyparse(void)
  */
 
 /*! @decl void report(SeverityLevel severity, @
- *!                   string filename, int(1..) linenumber, @
+ *!                   string filename, int(0..) linenumber, @
  *!                   string subsystem, @
  *!                   string message, mixed ... extra_args)
  *!
@@ -432,6 +432,9 @@ static void do_yyparse(void)
  *! @param filename
  *! @param linenumber
  *!   Location which triggered the diagnostic.
+ *!   @[linenumber] @expr{0@} (zero) indicates that it is
+ *!   not applicable (typically originating from command
+ *!   line arguments or similar).
  *!
  *! @param subsystem
  *!   Compiler subsystem that generated the diagnostic.
@@ -516,14 +519,26 @@ static void f_reporter_report(INT32 args)
       ref_push_string(message);
       f_string_to_utf8(1);
       args += 2;
-      if (level >= REPORT_ERROR) {
-	fprintf(stderr, "%s:%ld: Error: %s\n",
-                Pike_sp[-2].u.string->str, (long)linenumber,
-                Pike_sp[-1].u.string->str);
+      if (linenumber) {
+        if (level >= REPORT_ERROR) {
+          fprintf(stderr, "%s:%ld: Error: %s\n",
+                  Pike_sp[-2].u.string->str, (long)linenumber,
+                  Pike_sp[-1].u.string->str);
+        } else {
+          fprintf(stderr, "%s:%ld: Warning: %s\n",
+                  Pike_sp[-2].u.string->str, (long)linenumber,
+                  Pike_sp[-1].u.string->str);
+        }
       } else {
-	fprintf(stderr, "%s:%ld: Warning: %s\n",
-                Pike_sp[-2].u.string->str, (long)linenumber,
-                Pike_sp[-1].u.string->str);
+        if (level >= REPORT_ERROR) {
+          fprintf(stderr, "%s:-: Error: %s\n",
+                  Pike_sp[-2].u.string->str,
+                  Pike_sp[-1].u.string->str);
+        } else {
+          fprintf(stderr, "%s:-: Warning: %s\n",
+                  Pike_sp[-2].u.string->str,
+                  Pike_sp[-1].u.string->str);
+        }
       }
       fflush(stderr);
     }

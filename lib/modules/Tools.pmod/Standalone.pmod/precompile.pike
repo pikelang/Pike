@@ -1663,13 +1663,15 @@ array fix_return(array body, PikeType rettype, mixed args)
   while( (pos=search(body,PC.Token("RETURN",0),pos)) != -1)
   {
     int pos2=search(body,PC.Token(";",0),pos+1);
-    if (pos2 == pos+1)
-      body[pos]="do { ";
-    else
+    if (pos2 == pos+1 || (pos2 == pos+2 && body[pos+1] == "UNDEFINED")) {
+      body[pos]="do { "+make_pop(args);
+      if (pos2 == pos+2)
+        body[++pos] = " push_undefined();";
+    } else
       body[pos]=sprintf("do { %s ret_=(",rettype->c_storage_type());
     // NB: Reuse the ";" token at pos2, so that following whitespace is preserved.
     body = body[..pos2-1] + ({
-      (pos2 == pos+1? make_pop(args)+" return; }while(0)" :
+      (pos2 == pos+1? " return; }while(0)" :
        sprintf("); %s push_%s(ret_); return; }while(0)",
                make_pop(args),
                rettype->basetype())),

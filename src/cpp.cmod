@@ -550,7 +550,7 @@ static ptrdiff_t calc(struct CPP_struct *this, const PCHARP data,
 
 
   /*! @decl void report(SeverityLevel severity, @
-   *!                   string filename, int(1..) linenumber, @
+   *!                   string filename, int(0..) linenumber, @
    *!                   string subsystem, @
    *!                   string message, mixed ... extra_args)
    *!
@@ -562,6 +562,9 @@ static ptrdiff_t calc(struct CPP_struct *this, const PCHARP data,
    *! @param filename
    *! @param linenumber
    *!   Location which triggered the diagnostic.
+   *!   @[linenumber] @expr{0@} (zero) indicates that it is
+   *!   not applicable (typically originating from command
+   *!   line arguments or similar).
    *!
    *! @param subsystem
    *!   Always @expr{"cpp"@}.
@@ -581,7 +584,7 @@ static ptrdiff_t calc(struct CPP_struct *this, const PCHARP data,
    *!   @[Reporter()->report()], @[cpp_error()]
    */
   PIKEFUN void report(int(0..3) severity,
-		      string filename, int(1..) linenumber,
+                      string filename, int(0..) linenumber,
 		      string subsystem,
 		      string message, mixed ... extra_args)
   {
