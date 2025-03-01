@@ -5570,14 +5570,27 @@ if test "x$ac_cv_func_ptrace" = "xyes"; then
     ],pike_cv_ptrace_takes_four_args=yes,pike_cv_ptrace_takes_four_args=no)
   ])
   if test "$pike_cv_ptrace_takes_four_args" = yes; then
+    # FreeBSD:
+    #   int ptrace(int request, pid_t pid, caddr_t addr, int data);
+    # IRIX:
+    #   int ptrace(int request, pid_t pid, int addr, int data);
+    # Linux:
+    #   long ptrace(enum __ptrace_request request, pid_t pid,
+    #               void *addr, void *data);
+    # Solaris 8:
+    #   long ptrace(int, pid_t, long, long);
+    # Solaris 10, 11 and later, 32-bit ABI only:
+    #   int ptrace(int, pid_t, int, int);
     AC_MSG_RESULT(4)
     AC_DEFINE(PTRACE_TAKES_FOUR_ARGS)
-  else
-    AC_MSG_RESULT(5)
-  fi
-  AC_MSG_CHECKING([type of argument 3 (addr) to ptrace])
-  AC_CACHE_VAL(pike_cv_ptrace_addr_type, [
-    AC_TRY_COMPILE([
+
+    AC_MSG_CHECKING([type of argument 3 (addr) to ptrace])
+    AC_CACHE_VAL(pike_cv_ptrace_addr_type, [
+      # Modern OSes appear to use a pointer type.
+      pike_cv_ptrace_addr_type=pointer
+
+      # Test some integer variants.
+      AC_TRY_COMPILE([
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif /* HAVE_UNISTD_H */
@@ -5585,18 +5598,37 @@ if test "x$ac_cv_func_ptrace" = "xyes"; then
 #ifdef HAVE_SYS_PTRACE_H
 #include <sys/ptrace.h>
 #endif /* HAVE_SYS_PTRACE_H */
-    ],[
-#ifdef PTRACE_TAKES_FOUR_ARGS
-      ptrace(0,0,(void *)0,0);
-#else
-      ptrace(0,0,(void *)0,0,0);
-#endif
-    ],pike_cv_ptrace_addr_type=pointer,pike_cv_ptrace_addr_type=integer)
-  ])
-  if test "$pike_cv_ptrace_addr_type" = pointer; then
-    AC_MSG_RESULT(pointer)
-    AC_DEFINE(PTRACE_ADDR_TYPE_IS_POINTER)
+        /* Various 32-bit platforms. */
+        int ptrace(int, pid_t, int, int);
+      ],[
+        ptrace(0,0,0,0);
+      ],pike_cv_ptrace_addr_type=integer, [
+        AC_TRY_COMPILE([
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif /* HAVE_UNISTD_H */
+#include <sys/types.h>
+#ifdef HAVE_SYS_PTRACE_H
+#include <sys/ptrace.h>
+#endif /* HAVE_SYS_PTRACE_H */
+          /* Solaris 8 */
+          long ptrace(int, pid_t, long, long);
+        ],[
+          ptrace(0,0,0,0);
+        ],pike_cv_ptrace_addr_type=integer)
+      ])
+    ])
+    if test "$pike_cv_ptrace_addr_type" = pointer; then
+      AC_MSG_RESULT(pointer)
+      AC_DEFINE(PTRACE_ADDR_TYPE_IS_POINTER)
+    else
+      AC_MSG_RESULT([integer (SVID)])
+    fi
   else
+    # HPUX 11.0:
+    #   int ptrace(int request, pid_t pid, int addr, int data, int addr2);
+    AC_MSG_RESULT(5)
+    AC_MSG_CHECKING([type of argument 3 (addr) to ptrace])
     AC_MSG_RESULT([integer (SVID)])
   fi
 fi
