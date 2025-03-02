@@ -2223,7 +2223,11 @@ else
     if test "$dd" = "/usr/lib"; then continue; fi
     for suff in $pike_cv_abi_suffixes; do
       d="$dd$suff"
-      PIKE_CHECK_ABI_LIB_DIR($d)
+      expect_ok='yes'
+      if test "x$suff" = "x/."; then
+        expect_ok='no'
+      fi
+      PIKE_CHECK_ABI_LIB_DIR($d, , , , $expect_ok)
     done
   done
 fi
@@ -2323,11 +2327,15 @@ if test $ldflags_is_set = yes -a $cppflags_is_set = yes ; then :; else
     if test $ldflags_is_set = yes ; then :; else
       for suff in $pike_cv_abi_suffixes; do
         d="$dd/lib$suff"
+        expect_ok='yes'
+        if test "x$suff" = "x/."; then
+          expect_ok='no'
+        fi
         PIKE_CHECK_ABI_LIB_DIR($d, [libs_found="yes"], [
   	  if test "x$libs_found" = "x"; then
   	    libs_found="no"
   	  fi
-        ], [libs_found="yes"])
+        ], [libs_found="yes"], [$expect_ok])
       done
     fi
     AC_MSG_CHECKING($dd/bin)
