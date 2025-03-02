@@ -1834,7 +1834,7 @@ AC_DEFUN(PIKE_INIT_REAL_DIRS,
   real_incs='/include /usr/include'
 ])
 
-# directory, if-true, if-false, real-variable(OBSOLETE)
+# directory, if-true, if-false, real-variable(OBSOLETE), expect-ok
 AC_DEFUN(PIKE_CHECK_ABI_DIR,
 [
   AC_REQUIRE([PIKE_SELECT_ABI])dnl
@@ -1847,7 +1847,16 @@ AC_DEFUN(PIKE_CHECK_ABI_DIR,
   abi_dir_dynamic="unknown"
   real_dir="$1"
   while :; do
-    if test -d "$1/." ; then :; else 
+    if test -d "$1/." ; then
+      if test "x$5" = "xyes"; then
+        # Directory exists, expected OK.
+        abi_dir_ok="yes"
+        abi_dir_dynamic="yes"
+        AC_MSG_RESULT(yes - exists and assumed good)
+        break;
+      fi
+      :;
+    else
       AC_MSG_RESULT(no - does not exist)
       break
     fi
@@ -2045,7 +2054,7 @@ AC_DEFUN(PIKE_CHECK_ABI_DIR,
   fi
 ])
 
-# directory, if-added, if-bad, if-already-added
+# directory, if-added, if-bad, if-already-added, expect-ok
 AC_DEFUN(PIKE_CHECK_ABI_LIB_DIR,
 [
   PIKE_CHECK_ABI_DIR($1, [
@@ -2107,7 +2116,7 @@ int main(int argc, char **argv)
     else
       AC_MSG_RESULT(no)
     fi
-  ], $3)
+  ], $3, , $5)
 ])
 
 AC_SUBST(PKG_CONFIG_PATH)
