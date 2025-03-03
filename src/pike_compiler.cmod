@@ -2931,6 +2931,35 @@ PMOD_EXPORT void exit_compiler(void)
  *       by Pike-code, in which case it is a NO-OP.
  *
  * On return the pike stack arguments have been popped.
+ *
+ * @param severity_level
+ *   Severity of the issue to be reported.
+ *   Messages of severity less than REPORT_ERROR are ignored if there
+ *   have been earlier compilation errors for the compilation unit.
+ *   If there have been more than 20 errors for the compilation unit
+ *   any further messages are ignored.
+ *
+ * @param file
+ * @param line
+ *   Location where the issue occurred. If both are NULL, the
+ *   location is taken from the current lexer position.
+ *   If file is NULL the filename is taken from the lexer.
+ *
+ * @param system
+ *   Compiler subsystem where the issue was detected.
+ *
+ * @param args
+ *   Number of pike stack arguments to pass in addition to
+ *   the fmt string to the pike report() function.
+ *   (Consider deprecation).
+ *
+ * @param fmt
+ *   string_builder_vsprintf() format string if args is 0,
+ *   otherwise a pike sprintf() format string.
+ *
+ * @param vargs
+ *   Variant arguments to string_builder_vsprintf() if args is 0,
+ *   otherwise ignored.
  */
 PMOD_EXPORT void va_yyreport(int severity_level,
 			     struct pike_string *file, INT_TYPE line,
@@ -2988,7 +3017,7 @@ PMOD_EXPORT void va_yyreport(int severity_level,
 
   push_int(severity_level);
   ref_push_string(file?file:c->lex.current_file);
-  push_int(line?line:c->lex.current_line);
+  push_int((line || file)?line:c->lex.current_line);
   ref_push_string(system);
   if (args) {
     int i = args;
@@ -3091,14 +3120,14 @@ void yytype_report(int severity_level,
   if (expected_t && got_t) {
     yyexplain_nonmatching_types(severity_level,
 				expected_file?expected_file:got_file,
-				expected_line?expected_line:got_line,
+                                (expected_line || expected_file)?expected_line:got_line,
 				expected_t,
 				got_file, got_line, got_t);
   } else if (expected_t) {
     ref_push_type_value(expected_t);
     low_yyreport(severity_level,
 		 expected_file?expected_file:got_file,
-		 expected_line?expected_line:got_line,
+                 (expected_line || expected_file)?expected_line:got_line,
 		 type_check_system_string,
 		 1, "Expected: %O.");
   } else if (got_t) {
