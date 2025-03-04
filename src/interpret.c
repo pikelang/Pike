@@ -3302,20 +3302,48 @@ PMOD_EXPORT void call_handle_error(void)
       APPLY_MASTER("handle_error", 1);
     }
     else {
-      struct byte_buffer buf = BUFFER_INIT();
-      fprintf (stderr, "There's no master to handle the error. Dumping it raw:\n");
-      describe_svalue (&buf, Pike_sp - 1, 0, 0);
-      fprintf(stderr,"%s\n",buffer_get_string(&buf));
-      buffer_free(&buf);
+      if (!master_program) {
+        /* Error during initialization of the master.
+         * This is likely errors like invalid cpp macro definitions
+         * or bad master objects specified on the command line.
+         * The backtrace is typically not of interest.
+         *
+         * Print the error message (if found) and exit.
+         *
+         * Otherwise fall back to a raw error dump.
+         */
+        struct generic_error_struct *err;
+        struct pike_string *err_msg = NULL;
+
+        if ((TYPEOF(Pike_sp[-1]) == PIKE_T_ARRAY) &&
+            (TYPEOF(ITEM(Pike_sp[-1].u.array)[0]) == PIKE_T_STRING)) {
+          err_msg = ITEM(Pike_sp[-1].u.array)[0].u.string;
+        } else if ((TYPEOF(Pike_sp[-1]) == T_OBJECT) &&
+                   (err = get_storage(Pike_sp[-1].u.object,
+                                      generic_error_program))) {
+          /* Error object derived from generic error. */
+          err_msg = err->error_message;
+        }
+
+        fprintf(stderr, "Error during load of the master object.\n");
+
+        if (err_msg) {
+          safe_pike_fprintf(stderr, "%pS", err_msg);
+          exit(1);
+        }
+      }
+
+      safe_pike_fprintf(stderr,
+                        "There's no master to handle the error. Dumping it raw:\n"
+                        "%pO\n", Pike_sp - 1);
+
       if (TYPEOF(Pike_sp[-1]) == PIKE_T_OBJECT && Pike_sp[-1].u.object->prog) {
 	int fun = find_identifier("backtrace", Pike_sp[-1].u.object->prog);
 	if (fun != -1) {
 	  fprintf(stderr, "Attempting to extract the backtrace.\n");
 	  safe_apply_low2(Pike_sp[-1].u.object, fun, 0, 0);
-	  describe_svalue(&buf, Pike_sp - 1, 0, 0);
+          safe_pike_fprintf(stderr, "%pO\n", Pike_sp - 1);
 	  pop_stack();
-	  fprintf(stderr,"%s\n",buffer_get_string(&buf));
-	  buffer_free(&buf);
 	}
       }
     }
