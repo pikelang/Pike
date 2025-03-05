@@ -261,7 +261,7 @@ static void find_lib_dir(int argc, char **argv)
       }
       break;
 
-    case 'q':
+    case 'D': case 'q':
       if(!argv[e][2]) e++;
       break;
     }
@@ -393,8 +393,19 @@ int main(int argc, char **argv)
 	switch(*p)
 	{
 	case 'D':
-	  add_predefine(p+1);
-	  p+=strlen(p);
+          if (p[1]) {
+            add_predefine(p+1);
+            p+=strlen(p);
+          } else {
+            p++;
+            e++;
+            if (e < argc) {
+              add_predefine(argv[e]);
+            } else {
+              fprintf(stderr, "Missing argument to -D\n");
+              exit(1);
+            }
+          }
 	  break;
 
 	case 'm':
