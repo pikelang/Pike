@@ -8868,7 +8868,7 @@ int store_prog_string(struct pike_string *str)
   return Pike_compiler->new_program->num_strings-1;
 }
 
-/* NOTE: O(n²)! */
+/* NOTE: O(nÂ²)! */
 int store_constant(const struct svalue *foo,
 		   int equal,
 		   struct pike_string *UNUSED(constant_name))
@@ -11365,7 +11365,6 @@ void yyexplain_not_compatible(int severity_level,
 			      struct program *a, struct program *b)
 {
   int e;
-  int res = 1;
   int swapped = 0;
   INT_TYPE a_line = 0;
   INT_TYPE b_line = 0;
@@ -11567,7 +11566,6 @@ void string_builder_explain_not_compatible(struct string_builder *s,
 					   struct program *b)
 {
   int e;
-  int res = 1;
   DECLARE_CYCLIC();
 
   /* Optimize the loop somewhat */
@@ -11620,7 +11618,6 @@ void string_builder_explain_not_compatible(struct string_builder *s,
     }
   }
   END_CYCLIC();
-  return;
 }
 
 /* FIXME: code duplication of yyexplain_not_implements() above! */
