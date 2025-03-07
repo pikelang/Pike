@@ -2580,6 +2580,8 @@ class TarExportInstallHandler {
     allow_mkdirhier = 1;
     set_simple_status(0);
 
+    // NB: On entry CWD is $TMP_BUILDDIR/Pike-vX.Y.Z-ARCH.dir/.
+    //     as created by create_export_base() above.
     cd("..");
 
     string tmpname = sprintf("PtmP%07x",random(0xfffffff));
@@ -2704,19 +2706,21 @@ done
 
     Process.create_process(({"gzip","-9",tmpname+".tar"}))->wait();
 
-    status("Creating", export_base_name);
+    if (vars->DESTDIR) mkdirhier(vars->DESTDIR);
+    string dest_name = combine_path(vars->DESTDIR || "", export_base_name);
+    status("Creating", dest_name);
 
     //  Setting COPYFILE_DISABLE avoids a "._PtmP..." resource file to be added
     //  on OS X which otherwise would hinder self-extraction from bootstrapping.
-    Process.create_process( ({ "tar","cf", export_base_name,
+    Process.create_process( ({ "tar","cf", dest_name,
 			       script, tmpname+".x", tmpname+".tar.gz" }),
 			    ([ "env" : ([ "COPYFILE_DISABLE" : "true" ]) ]) )
       ->wait();
 
-    status("Filtering to root/root ownership", export_base_name);
-    tarfilter(export_base_name);
+    status("Filtering to root/root ownership", dest_name);
+    tarfilter(dest_name);
 
-    chmod(export_base_name,0755);
+    chmod(dest_name, 0755);
 
     status("Cleaning up","");
 
@@ -2861,6 +2865,8 @@ class BurkExportInstallHandler {
       status(0,"");
     }
 
+    // NB: Compression and strapping of the burk is
+    //     performed by the bin_export makefile target.
   }
 
   protected void check_vc8()
@@ -3293,6 +3299,10 @@ class AmigaOSExportInstallHandler {
 	to_export_from[i] = 0;
     }
 
+    if (vars->DESTDIR) mkdirhier(vars->DESTDIR);
+    string dest_name = combine_path(vars->DESTDIR || "", export_base_name);
+    status("Creating", dest_name+".lha");
+
     string tmpmsg=".";
 
     string lhaarg="cq";
@@ -3300,10 +3310,11 @@ class AmigaOSExportInstallHandler {
     {
       status("Creating", export_base_name+".lha", tmpmsg);
       tmpmsg+=".";
-      Process.create_process(({"lha",lhaarg,export_base_name+".lha"})+ files_to_lha)
+      Process.create_process(({"lha", lhaarg, dest_name+".lha"}) + files_to_lha)
 	->wait();
       lhaarg="aq";
     }
+
 
     // Clean up symlinks again.
     for (int i = 0; i < sizeof (to_export_from); i++)
