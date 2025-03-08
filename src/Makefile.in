@@ -62,6 +62,10 @@ TESTARGS_FORK = -F $(TESTARGS_NOFORK)
 # Arguments for install.pike used by the install targets.
 INSTALLARGS = --new-style
 
+# Arguments for install.pike used by the export targets.
+INSTALLER_DESTDIR=
+INSTALL_EXPORT_ARGS = @INSTALL_EXPORT_ARGS@ DESTDIR="$(INSTALLER_DESTDIR)"
+
 #
 # use bison please, yacc isn't good enough.
 #
@@ -612,7 +616,7 @@ Pike_module.wxs: pike-complete-stamp $(TMP_BINDIR)/install.pike Makefile
 	@no_autodoc="--no-autodoc"; \
 	if [ -f autodoc.xml ]; then no_autodoc=""; fi; \
 	$(RUNPIKE) $(TMP_BINDIR)/install.pike --wix-module $$no_autodoc \
-	@INSTALL_EXPORT_ARGS@ \
+	$(INSTALL_EXPORT_ARGS) \
 	exec_prefix="$(bindir)" lib_prefix="$(lib_prefix)" \
 	TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" \
 	SRCDIR="$(SRCDIR)" prefix="$(prefix)" DOCDIR_SRC="$(DOCDIR_SRC)" \
@@ -625,7 +629,7 @@ Pike.wxs: $(TMP_BINDIR)/install.pike Makefile
 	@no_autodoc="--no-autodoc"; \
 	if [ -f autodoc.xml ]; then no_autodoc=""; fi; \
 	$(RUNPIKE) $(TMP_BINDIR)/install.pike --wix $$no_autodoc \
-	@INSTALL_EXPORT_ARGS@ \
+	$(INSTALL_EXPORT_ARGS) \
 	exec_prefix="$(bindir)" lib_prefix="$(lib_prefix)" \
 	TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" \
 	SRCDIR="$(SRCDIR)" prefix="$(prefix)" DOCDIR_SRC="$(DOCDIR_SRC)" \
@@ -1065,7 +1069,7 @@ bin_export:
 	@no_autodoc="--no-autodoc"; \
 	if [ -f autodoc.xml ]; then no_autodoc=""; fi; \
 	$(RUNPIKE) $(TMP_BINDIR)/install.pike --export $$no_autodoc \
-	@INSTALL_EXPORT_ARGS@ \
+	$(INSTALL_EXPORT_ARGS) \
 	exec_prefix="$(bindir)" lib_prefix="$(lib_prefix)" \
 	TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" \
 	SRCDIR="$(SRCDIR)" prefix="$(prefix)" DOCDIR_SRC="$(DOCDIR_SRC)" \
@@ -1077,8 +1081,9 @@ bin_export:
 	  *\ rnt*) \
 	    $(MAKE) $(MAKE_FLAGS) uncompress_header ;\
 	    echo "Compressing..." ;\
-	    filename=`echo *.burk | sed 's@\.burk$$@@g'`.exe ;\
-	    ( cat uncompress_header.exe ; gzip -9 -c *.burk ) > $$filename ;\
+	    destdir="$(INSTALLER_DESTDIR)"; \
+	    filename="$${destdir:-.}"/`echo *.burk | sed 's@\.burk$$@@g'`.exe ;\
+	    ( cat uncompress_header.exe ; gzip -9 -c *.burk ) > "$$filename" ;\
 	    echo "Done." ;\
 	  ;; \
 	esac
