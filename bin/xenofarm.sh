@@ -50,7 +50,8 @@ xenofarm_post_build() {
   [ $LASTERR = 0 ] || return 1
   
   log_start export
-  $MAKE bin_export > xenofarm_result/exportlog.txt 2>&1
+  $MAKE bin_export INSTALLER_DESTDIR="$PWD/xenofarm_result" > \
+    xenofarm_result/exportlog.txt 2>&1
   log_end $?
   [ $LASTERR = 0 ] || return 1
   return $POST_RESULT
