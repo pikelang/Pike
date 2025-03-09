@@ -48,19 +48,26 @@ struct GI_GBoxed_struct;
 static void push_gi_info(GIBaseInfo *info);
 static GObject *make_gobject_from_props(struct object *info, struct mapping *props);
 static void make_gboxed(struct GI_GBoxed_struct *this, struct object *info, gboolean allocate);
-static void push_gvalue(const GValue *v);
+static GIArgument gvalue_to_giargument(const GValue *value, GITypeInfo *info);
 static GType get_gtype_from_svalue(const struct svalue *s);
 static void set_gvalue_from_svalue(GValue *v, const struct svalue *s);
+static void push_gi_argument(GIArgument *arg, GITypeInfo *info);
+static void push_gi_argument_array(void *arg, GITypeInfo *info,
+                                   const GValue *length_argument);
+static void push_wrapped_gobject(gpointer gobj, GIBaseInfo *info);
 
 struct signal_data {
   struct svalue cb;
   struct svalue extra_args;
+  GISignalInfo *siginfo;
 };
 
 static void free_signal_data(struct signal_data *s, GClosure *gcl)
 {
   free_svalue(&s->cb);
   free_svalue(&s->extra_args);
+  if (s->siginfo)
+    g_base_info_unref(s->siginfo);
   g_free(s);
 }
 
@@ -89,7 +96,7 @@ static void marshaller(GClosure *closure,
   }
 
   callback=(marshal_func)(marshal_data? marshal_data : cc->callback);
-  callback(data1, data2, n_params-1, param_values+1, return_value);
+  callback(data1, data2, n_params, param_values, return_value);
 }
 
 struct signal_wrapper_context
@@ -121,9 +128,26 @@ static void invoke_signal_func(void *arg)
     return;
   }
 
-  for (i=0; i<n_params; i++) {
-    push_gvalue(&(param_values[i]));
-  }
+  for (i=0; i<n_params; i++)
+    if (!i) {
+      if (G_VALUE_HOLDS_OBJECT(&param_values[0]))
+        push_wrapped_gobject(g_value_get_object(&param_values[0]), NULL);
+      else
+        Pike_error("Signal emitter is not an object\n");
+    } else {
+      GIArgInfo arg_info;
+      GITypeInfo type_info;
+      GIArgument arg;
+      g_callable_info_load_arg(d->siginfo, i-1, &arg_info);
+      g_arg_info_load_type(&arg_info, &type_info);
+      arg = gvalue_to_giargument(&(param_values[i]), &type_info);
+      if (g_type_info_get_tag(&type_info) == GI_TYPE_TAG_ARRAY) {
+        gint index = g_type_info_get_array_length(&type_info);
+        push_gi_argument_array(arg.v_pointer, &type_info,
+                               (index < 0? NULL : &(param_values[index+1])));
+      } else
+        push_gi_argument(&arg, &type_info);
+    }
   args = n_params;
   if (TYPEOF(d->extra_args) == PIKE_T_ARRAY) {
     struct array *a = d->extra_args.u.array;
@@ -201,6 +225,9 @@ PIKECLASS GObject
     guint sigid;
     GQuark detail = 0;
     gulong id;
+    GSignalQuery sigquery;
+    GIBaseInfo *iinfo;
+    GISignalInfo *siginfo = NULL;
 
     if (signal_spec->size_shift ||
         !g_signal_parse_name((const gchar *)STR0(signal_spec),
@@ -210,9 +237,27 @@ PIKECLASS GObject
                  signal_spec, g_type_name(G_TYPE_FROM_INSTANCE(THIS->obj)));
     }
 
+    g_signal_query(sigid, &sigquery);
+    if (!sigquery.signal_id)
+      Pike_error("Failed to query signal");
+    if ((iinfo = g_irepository_find_by_gtype(NULL, sigquery.itype))) {
+      if (GI_IS_OBJECT_INFO (iinfo))
+        siginfo = g_object_info_find_signal(iinfo, sigquery.signal_name);
+      else if (GI_IS_INTERFACE_INFO (iinfo))
+        siginfo = g_interface_info_find_signal(iinfo, sigquery.signal_name);
+      g_base_info_unref(iinfo);
+    }
+
+    if (!iinfo)
+      Pike_error("Unable to find introspection info for signal %s\n",
+                 sigquery.signal_name);
+
     b=(struct signal_data *)g_malloc0(sizeof(struct signal_data));
-    if (b==NULL)
+    if (b==NULL) {
+      g_base_info_unref(siginfo);
       SIMPLE_OUT_OF_MEMORY_ERROR("connect",sizeof(struct signal_data));
+    } else
+      b->siginfo = siginfo;
     assign_svalue_no_free(&b->cb, callback);
     if (extra_args) {
       f_aggregate(args-2);
@@ -435,6 +480,56 @@ static void push_gi_argument_interface(GIArgument *arg, GIBaseInfo *info)
   default:
     Pike_error("Don't know how to push a base %d\n", g_base_info_get_type(info));
   }
+}
+
+static void push_gi_argument_array(void *arg, GITypeInfo *info,
+                                   const GValue *length_argument)
+{
+  size_t i, length = 0;
+
+  if (!arg) {
+    push_undefined();
+    return;
+  }
+
+  switch (g_type_info_get_array_type(info)) {
+  case GI_ARRAY_TYPE_C:
+    {
+      GIArgument item;
+      GITypeInfo *item_info;
+      gint l;
+      if (g_type_info_is_zero_terminated(info)) {
+        Pike_error("Can't push zero terminated arrays\n");
+      } else if ((l = g_type_info_get_array_fixed_size(info)) >= 0)
+        length = l;
+      else if (length_argument) {
+        GValue vlength = G_VALUE_INIT;
+        g_value_init(&vlength, G_TYPE_ULONG);
+        if (!g_value_transform(length_argument, &vlength))
+          Pike_error("Can't convert array length to an ulong\n");
+        length = g_value_get_ulong(&vlength);
+      } else
+        Pike_error("Can't push array of unknown length\n");
+      item_info = g_type_info_get_param_type(info, 0);
+      if (g_type_info_get_tag(item_info) == GI_TYPE_TAG_INTERFACE) {
+        ONERROR onerror;
+        GIBaseInfo *item_info2;
+        item_info2 = g_type_info_get_interface(item_info);
+        SET_ONERROR(onerror, g_base_info_unref, item_info2);
+        for (i=0; i<length; i++) {
+          item.v_pointer = ((void **)arg)[i];
+          push_gi_argument_interface(&item, item_info2);
+        }
+        CALL_AND_UNSET_ONERROR(onerror);
+      } else
+        Pike_error("Can only handle arrays of interfaces\n");
+    }
+    break;
+  default:
+    Pike_error("Can't push array type %d\n", (int)g_type_info_get_array_type(info));
+  }
+
+  f_aggregate(length);
 }
 
 static void push_gi_argument(GIArgument *arg, GITypeInfo *info)
@@ -1659,81 +1754,117 @@ static void push_gi_info(GIBaseInfo *info)
   }
 }
 
-static void push_gvalue(const GValue *v)
+static GIArgument gvalue_to_giargument(const GValue *value, GITypeInfo *info)
 {
-  GType gt = G_VALUE_TYPE(v);
-  switch(G_TYPE_FUNDAMENTAL(gt)) {
+  GIArgument arg={0,};
 
-  case G_TYPE_CHAR:
-    push_int(g_value_get_schar(v));
+  switch (g_type_info_get_tag(info)) {
+  case GI_TYPE_TAG_BOOLEAN:
+    arg.v_boolean = g_value_get_boolean(value);
     break;
-  case G_TYPE_UCHAR:
-    push_int(g_value_get_uchar(v));
+  case GI_TYPE_TAG_INT8:
+    arg.v_int8 = g_value_get_schar(value);
     break;
-
-  case G_TYPE_BOOLEAN:
-    push_int(g_value_get_boolean(v));
+  case GI_TYPE_TAG_INT16:
+  case GI_TYPE_TAG_INT32:
+    if (g_type_is_a(G_VALUE_TYPE(value), G_TYPE_LONG))
+      arg.v_int32 = (gint32)g_value_get_long(value);
+    else
+      arg.v_int32 = (gint32)g_value_get_int(value);
     break;
-
-  case G_TYPE_INT:
-    push_int(g_value_get_int(v));
+  case GI_TYPE_TAG_INT64:
+    if (g_type_is_a(G_VALUE_TYPE(value), G_TYPE_LONG))
+      arg.v_int64 = g_value_get_long(value);
+    else
+      arg.v_int64 = g_value_get_int64(value);
     break;
-  case G_TYPE_UINT:
-    push_int64(g_value_get_uint(v));
+  case GI_TYPE_TAG_UINT8:
+    arg.v_uint8 = g_value_get_uchar(value);
     break;
-  case G_TYPE_LONG:
-    push_int64(g_value_get_long(v));
+  case GI_TYPE_TAG_UINT16:
+  case GI_TYPE_TAG_UINT32:
+    if (g_type_is_a(G_VALUE_TYPE(value), G_TYPE_ULONG))
+      arg.v_uint32 = (guint32)g_value_get_ulong(value);
+    else
+      arg.v_uint32 = (guint32)g_value_get_uint(value);
     break;
-  case G_TYPE_ULONG:
-    push_int64(g_value_get_ulong(v));
+  case GI_TYPE_TAG_UINT64:
+    if (g_type_is_a (G_VALUE_TYPE(value), G_TYPE_ULONG))
+      arg.v_uint64 = g_value_get_ulong(value);
+    else
+      arg.v_uint64 = g_value_get_uint64(value);
     break;
-  case G_TYPE_INT64:
-    push_int64(g_value_get_int64(v));
+  case GI_TYPE_TAG_UNICHAR:
+    arg.v_uint32 = g_value_get_schar(value);
     break;
-  case G_TYPE_UINT64:
-    push_int64(g_value_get_uint64(v));
+  case GI_TYPE_TAG_FLOAT:
+    arg.v_float = g_value_get_float(value);
     break;
-
-  case G_TYPE_ENUM:
-    push_int(g_value_get_enum(v));
+  case GI_TYPE_TAG_DOUBLE:
+    arg.v_double = g_value_get_double(value);
     break;
-
-  case G_TYPE_FLAGS:
-    push_int(g_value_get_flags(v));
+  case GI_TYPE_TAG_GTYPE:
+    arg.v_size = g_value_get_gtype(value);
     break;
-
-  case G_TYPE_FLOAT:
-    push_float(g_value_get_float(v));
+  case GI_TYPE_TAG_UTF8:
+  case GI_TYPE_TAG_FILENAME:
+    arg.v_string = (char *)g_value_get_string(value);
     break;
-
-  case G_TYPE_DOUBLE:
-    push_float(g_value_get_double(v));
+  case GI_TYPE_TAG_GLIST:
+  case GI_TYPE_TAG_GSLIST:
+  case GI_TYPE_TAG_ARRAY:
+  case GI_TYPE_TAG_GHASH:
+    if (G_VALUE_HOLDS_BOXED(value)) {
+  case GI_TYPE_TAG_ERROR:
+      arg.v_pointer = g_value_get_boxed(value);
+    } else {
+      /* FALLTHRU */
+  case GI_TYPE_TAG_VOID:
+      arg.v_pointer = g_value_get_pointer(value);
+    }
     break;
-
-  case G_TYPE_STRING:
+  case GI_TYPE_TAG_INTERFACE:
     {
-      const gchar *s = g_value_get_string(v);
-      if (s == NULL)
-        push_int(0);
-      else {
-        push_text(s);
-        f_utf8_to_string(1);
+      GIBaseInfo *iinfo = g_type_info_get_interface(info);
+      GIInfoType t = g_base_info_get_type(iinfo);
+      g_base_info_unref(iinfo);
+      switch (t) {
+      case GI_INFO_TYPE_FLAGS:
+        arg.v_uint = g_value_get_flags(value);
+        break;
+      case GI_INFO_TYPE_ENUM:
+        arg.v_int = g_value_get_enum(value);
+        break;
+      case GI_INFO_TYPE_INTERFACE:
+      case GI_INFO_TYPE_OBJECT:
+        if (G_VALUE_HOLDS_PARAM(value))
+          arg.v_pointer = g_value_get_param(value);
+        else if (G_VALUE_HOLDS_OBJECT(value))
+          arg.v_pointer = g_value_get_object(value);
+        else
+          Pike_error("Failed to convert interface from GValue\n");
+        break;
+      case GI_INFO_TYPE_STRUCT:
+      case GI_INFO_TYPE_UNION:
+        if (G_VALUE_HOLDS(value, G_TYPE_BOXED))
+          arg.v_pointer = g_value_get_boxed(value);
+        else if (G_VALUE_HOLDS(value, G_TYPE_VARIANT))
+          arg.v_pointer = g_value_get_variant(value);
+        else if (G_VALUE_HOLDS (value, G_TYPE_POINTER))
+          arg.v_pointer = g_value_get_pointer(value);
+        else
+          Pike_error("Failed to convert interface from GValue\n");
+        break;
+      default:
+        Pike_error("Failed to convert interface from GValue\n");
       }
       break;
     }
-
-  case G_TYPE_BOXED:
-    push_wrapped_boxed(g_value_get_boxed(v), NULL, gt);
-    break;
-
-  case G_TYPE_OBJECT:
-    push_wrapped_gobject(g_value_get_object(v), NULL);
-    break;
-
   default:
-    Pike_error("Don't know how to push a gvalue type %u\n",
-               (unsigned)G_TYPE_FUNDAMENTAL(gt));
+    break;
   }
+
+  return arg;
 }
 
 static GType get_gtype_from_svalue(const struct svalue *s)
