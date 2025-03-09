@@ -14,6 +14,8 @@
 #include <string.h>
 #else
 #include <windows.h>
+#include <io.h>
+#include <direct.h>
 #endif
 #include <zlib.h>
 
@@ -183,7 +185,11 @@ void my_uncompress(char *file,int argc, char **argv)
 	 * directory already exists
 	 */
 	/* fprintf(stderr,"mkdir(%s)\n",buffer); */
+#ifdef __NT__
+        mkdir(buffer);
+#else
 	mkdir(buffer, 0777);
+#endif
 	break;
 
       case 'f': /* file */
