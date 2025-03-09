@@ -8578,8 +8578,9 @@ PIKEFUN int stride_for_width(int format, int width)
  *! @decl constant int ANTIALIAS_SUBPIXEL
  *! Perform antialiasing by taking advantage of the order of subpixel
  *! elements on devices such as LCD panels
- *!
- *! @decl constant int ANTIALIAS_FAST
+ */
+#if CAIRO_VERSION >= CAIRO_VERSION_ENCODE(1, 12, 0)
+/*! @decl constant int ANTIALIAS_FAST
  *! Hint that the backend should perform some antialiasing but prefer
  *! speed over quality
  *!
@@ -8590,6 +8591,7 @@ PIKEFUN int stride_for_width(int format, int width)
  *! Hint that the backend should render at the highest quality,
  *! sacrificing speed if necessary
  */
+#endif
 
 /*! @decl constant int FILL_RULE_WINDING
  *! If the path crosses the ray from left-to-right, counts +1.  If the
@@ -8666,8 +8668,9 @@ PIKEFUN int stride_for_width(int format, int width)
  *!
  *! @decl constant int OPERATOR_SATURATE
  *! like over, but assuming source and dest are disjoint geometries
- *!
- *! @decl constant int OPERATOR_MULTIPLY
+ */
+#if CAIRO_VERSION >= CAIRO_VERSION_ENCODE(1, 10, 0)
+/*! @decl constant int OPERATOR_MULTIPLY
  *! source and destination layers are multiplied. This causes the
  *! result to be at least as dark as the darker inputs.
  *!
@@ -8726,6 +8729,7 @@ PIKEFUN int stride_for_width(int format, int width)
  *! saturation of the target. This produces an inverse effect to
  *! @[OPERATOR_HSL_COLOR].
  */
+#endif
 
 /*! @decl constant int PATH_MOVE_TO
  *! A move-to operation
@@ -8951,10 +8955,12 @@ PIKEFUN int stride_for_width(int format, int width)
  *! The surface will hold color and alpha content.
  */
 
+#if CAIRO_VERSION >= CAIRO_VERSION_ENCODE(1, 9, 8)
 /*! @decl constant int FORMAT_INVALID
  *! no such format exists or is supported.
- *!
- *! @decl constant int FORMAT_ARGB32
+ */
+#endif
+/*! @decl constant int FORMAT_ARGB32
  *! each pixel is a 32-bit quantity, with alpha in the upper 8 bits,
  *! then red, then green, then blue.  The 32-bit quantities are stored
  *! native-endian.  Pre-multiplied alpha is used.  (That is, 50%
@@ -9229,9 +9235,11 @@ PIKE_MODULE_INIT
   add_integer_constant("ANTIALIAS_NONE", CAIRO_ANTIALIAS_NONE, 0);
   add_integer_constant("ANTIALIAS_GRAY", CAIRO_ANTIALIAS_GRAY, 0);
   add_integer_constant("ANTIALIAS_SUBPIXEL", CAIRO_ANTIALIAS_SUBPIXEL, 0);
+#if CAIRO_VERSION >= CAIRO_VERSION_ENCODE(1, 12, 0)
   add_integer_constant("ANTIALIAS_FAST", CAIRO_ANTIALIAS_FAST, 0);
   add_integer_constant("ANTIALIAS_GOOD", CAIRO_ANTIALIAS_GOOD, 0);
   add_integer_constant("ANTIALIAS_BEST", CAIRO_ANTIALIAS_BEST, 0);
+#endif
 
   add_integer_constant("FILL_RULE_WINDING", CAIRO_FILL_RULE_WINDING, 0);
   add_integer_constant("FILL_RULE_EVEN_ODD", CAIRO_FILL_RULE_EVEN_ODD, 0);
@@ -9258,6 +9266,7 @@ PIKE_MODULE_INIT
   add_integer_constant("OPERATOR_XOR", CAIRO_OPERATOR_XOR, 0);
   add_integer_constant("OPERATOR_ADD", CAIRO_OPERATOR_ADD, 0);
   add_integer_constant("OPERATOR_SATURATE", CAIRO_OPERATOR_SATURATE, 0);
+#if CAIRO_VERSION >= CAIRO_VERSION_ENCODE(1, 10, 0)
   add_integer_constant("OPERATOR_MULTIPLY", CAIRO_OPERATOR_MULTIPLY, 0);
   add_integer_constant("OPERATOR_SCREEN", CAIRO_OPERATOR_SCREEN, 0);
   add_integer_constant("OPERATOR_OVERLAY", CAIRO_OPERATOR_OVERLAY, 0);
@@ -9273,6 +9282,7 @@ PIKE_MODULE_INIT
   add_integer_constant("OPERATOR_HSL_SATURATION", CAIRO_OPERATOR_HSL_SATURATION, 0);
   add_integer_constant("OPERATOR_HSL_COLOR", CAIRO_OPERATOR_HSL_COLOR, 0);
   add_integer_constant("OPERATOR_HSL_LUMINOSITY", CAIRO_OPERATOR_HSL_LUMINOSITY, 0);
+#endif
 
   add_integer_constant("PATH_MOVE_TO", CAIRO_PATH_MOVE_TO, 0);
   add_integer_constant("PATH_LINE_TO", CAIRO_PATH_LINE_TO, 0);
@@ -9361,7 +9371,9 @@ PIKE_MODULE_INIT
   add_integer_constant("CONTENT_ALPHA", CAIRO_CONTENT_ALPHA, 0);
   add_integer_constant("CONTENT_COLOR_ALPHA", CAIRO_CONTENT_COLOR_ALPHA, 0);
 
+#if CAIRO_VERSION >= CAIRO_VERSION_ENCODE(1, 9, 8)
   add_integer_constant("FORMAT_INVALID", CAIRO_FORMAT_INVALID, 0);
+#endif
   add_integer_constant("FORMAT_ARGB32", CAIRO_FORMAT_ARGB32, 0);
   add_integer_constant("FORMAT_RGB24", CAIRO_FORMAT_RGB24, 0);
   add_integer_constant("FORMAT_A8", CAIRO_FORMAT_A8, 0);
