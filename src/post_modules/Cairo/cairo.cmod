@@ -149,6 +149,7 @@ PIKECLASS Rectangle
   PIKEVAR float width;
   PIKEVAR float height;
 
+#if CAIRO_VERSION >= CAIRO_VERSION_ENCODE(1, 10, 0)
   static void rectangle_load(cairo_rectangle_t *rectangle, const struct Cairo_Rectangle_struct *r)
   {
     rectangle->x = r->x;
@@ -156,6 +157,7 @@ PIKECLASS Rectangle
     rectangle->width = r->width;
     rectangle->height = r->height;
   }
+#endif
 
   static void rectangle_store(const cairo_rectangle_t *rectangle, struct Cairo_Rectangle_struct *r)
   {
@@ -173,6 +175,7 @@ PIKECLASS Rectangle
     return o;
   }
 
+#if CAIRO_VERSION >= CAIRO_VERSION_ENCODE(1, 10, 0)
   static int rectangle_from_object(struct object *o, cairo_rectangle_t *rectangle)
   {
     struct Cairo_Rectangle_struct *r;
@@ -181,6 +184,7 @@ PIKECLASS Rectangle
     rectangle_load(rectangle, r);
     return 1;
   }
+#endif
 
   /*! @decl protected void create(float|int x, float|int y,           @
    *!                             float|int width, float|int height)
@@ -2161,7 +2165,9 @@ static struct object *ref_scaled_font_to_object(cairo_scaled_font_t *scaled_font
   return o;
 }
 
+#ifdef CAIRO_HAS_SCRIPT_SURFACE
 static cairo_surface_t *surface_from_object(struct object *o);
+#endif
 
 #if CAIRO_VERSION >= CAIRO_VERSION_ENCODE(1, 10, 0)
 /*! @class Device
@@ -3189,11 +3195,13 @@ PIKECLASS Surface
       cairo_surface_destroy(THIS->surface);
   }
 
+#ifdef CAIRO_HAS_SCRIPT_SURFACE
   static cairo_surface_t *surface_from_object(struct object *o)
   {
     struct Cairo_Surface_struct *s = get_storage(o, Cairo_Surface_program);
     return (s? s->surface : NULL);
   }
+#endif
 
   static void copy_pike_image_to_surface(struct image *img,
                                          cairo_surface_t *surface)
