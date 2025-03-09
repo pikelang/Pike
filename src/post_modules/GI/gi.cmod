@@ -424,6 +424,7 @@ static void push_gi_argument_interface(GIArgument *arg, GIBaseInfo *info)
     break;
 
   case GI_INFO_TYPE_OBJECT:
+  case GI_INFO_TYPE_INTERFACE:
     push_wrapped_gobject(arg->v_pointer, info);
     break;
 
