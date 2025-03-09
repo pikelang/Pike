@@ -1122,6 +1122,43 @@ PIKECLASS BaseInfo
       f_sprintf(3);
     }
   }
+
+  ATTRIBUTE((const)) static inline size_t hashstr(const unsigned char *str, ptrdiff_t maxn)
+  {
+    size_t ret,c;
+
+    if(!(ret=str++[0]))
+      return ret;
+    for(; maxn>=0; maxn--) {
+      c=str++[0];
+      if(!c) break;
+      ret ^= ( ret << 4 ) + c ;
+      ret &= 0x7fffffff;
+    }
+
+    return ret;
+  }
+
+  PIKEFUN int __hash()
+    flags ID_PROTECTED;
+  {
+    const gchar *name = g_base_info_get_name(THIS->info);
+    if (name)
+      RETURN hashstr((const unsigned char *)name, 8);
+    else
+      RETURN 0;
+  }
+
+  PIKEFUN int `==(mixed x)
+    flags ID_PROTECTED;
+  {
+    struct GI_BaseInfo_struct *other;
+    if (!x || (TYPEOF(*x) != PIKE_T_OBJECT) ||
+        !x->u.object || !x->u.object->prog ||
+        !(other = get_storage(x->u.object, GI_BaseInfo_program)))
+      RETURN 0;
+    RETURN g_base_info_equal(THIS->info, other->info);
+  }
 }
 
 /*! @endclass
