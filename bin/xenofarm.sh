@@ -50,6 +50,8 @@ xenofarm_post_build() {
   [ $LASTERR = 0 ] || return 1
   
   log_start export
+  PIKE_VERSION_SUFFIX="`sed -e 's/^revision:\(.......\).*/-\1/p' -ed buildid.txt`"
+  export PIKE_VERSION_SUFFIX
   $MAKE bin_export INSTALLER_DESTDIR="`pwd`/xenofarm_result" > \
     xenofarm_result/exportlog.txt 2>&1
   log_end $?
