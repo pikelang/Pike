@@ -1638,7 +1638,7 @@ PIKECLASS Buffer
    *!   Indexing with negative offsets was not supported in
    *!   Pike 8.0 and earlier.
    */
-  PIKEFUN void `[]=( int off, int val )
+  PIKEFUN void `[]=( int off, int val, mixed|void context, int|void access )
     flags ID_PROTECTED;
   {
     Buffer *io = THIS;
