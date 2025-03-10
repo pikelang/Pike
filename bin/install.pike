@@ -45,10 +45,11 @@ constant line_feed = Standards.XML.Wix.line_feed;
 constant WixNode = Standards.XML.Wix.WixNode;
 constant Directory = Standards.XML.Wix.Directory;
 
-string version_str = sprintf("%d.%d.%d",
+string version_str = sprintf("%d.%d.%d%s",
 			     __REAL_MAJOR__,
 			     __REAL_MINOR__,
-			     __REAL_BUILD__);
+                             __REAL_BUILD__,
+                             getenv("PIKE_VERSION_SUFFIX") || "");
 #if constant(Standards.UUID.make_version3)
 #define SUPPORT_WIX
 string version_guid = Standards.UUID.make_version3(version_str,

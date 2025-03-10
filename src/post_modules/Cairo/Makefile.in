@@ -1,0 +1,13 @@
+@make_variables@
+VPATH=@srcdir@
+
+OBJS = cairo.o
+
+MODULE_LDFLAGS = @LDFLAGS@ @LIBS@ @CAIRO_LIBS@
+MODULE_CFLAGS = @CAIRO_CFLAGS@
+
+@dynamic_module_makefile@
+
+cairo.o: $(SRCDIR)/cairo.c
+
+@dependencies@
