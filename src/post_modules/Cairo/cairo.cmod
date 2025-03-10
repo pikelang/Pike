@@ -4132,14 +4132,16 @@ PIKECLASS RecordingSurface
   PIKEFUN void create(int content, Rectangle|void extents)
     get_all_args;
   {
-    cairo_rectangle_t extents_rect;
-    if (!rectangle_from_object(extents, &extents_rect))
-      SIMPLE_ARG_TYPE_ERROR("create", 2, "Cairo.Rectangle");
+    cairo_rectangle_t extents_rect, *pextents_rect = NULL;
+    if (extents) {
+      if (!rectangle_from_object(extents, (pextents_rect = &extents_rect)))
+        SIMPLE_ARG_TYPE_ERROR("create", 2, "Cairo.Rectangle");
+    }
 
     if (THIS->surface)
       Pike_error("Surface already initialized\n");
 
-    THIS->surface = cairo_recording_surface_create(content, &extents_rect);
+    THIS->surface = cairo_recording_surface_create(content, pextents_rect);
     check_status(cairo_surface_status(THIS->surface));
     RETURN;
   }
