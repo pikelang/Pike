@@ -2309,7 +2309,9 @@ class ExportInstallHandler {
   
   protected void setup_paths()
   {
-    export_base_name = get_export_base_name(replace( version(), ([ " ":"-", " release ":"." ]) ));
+    export_base_name =
+      get_export_base_name(replace(version(), ([ " ":"-", " release ":"." ])) +
+                           (getenv("PIKE_VERSION_SUFFIX") || ""));
 
     status1("Building export %s", export_base_name);
 
