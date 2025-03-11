@@ -2311,7 +2311,8 @@ class ExportInstallHandler {
   {
     export_base_name =
       get_export_base_name(replace(version(), ([ " ":"-", " release ":"." ])) +
-                           (getenv("PIKE_VERSION_SUFFIX") || ""));
+                           (getenv("PIKE_VERSION_SUFFIX") ||
+                            vars->VERSION_SUFFIX || ""));
 
     status1("Building export %s", export_base_name);
 
