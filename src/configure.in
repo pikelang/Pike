@@ -8249,7 +8249,12 @@ fi
 # Let the --with-crt argument override the chosen crt linkage.
 test x"$with_crt" != x && crt_type="$with_crt"
 
-INSTALL_EXPORT_ARGS=
+INSTALL_EXPORT_ARGS=''
+
+if test "x$pike_cv_sys_os" = xWindows_NT ; then
+  # POSIX-side environment variables are not passed by sprsh.
+  INSTALL_EXPORT_ARGS="${INSTALL_EXPORT_ARGS} "'VERSION_SUFFIX=$${PIKE_VERSION_SUFFIX}'
+fi
 
 if test x"$crt_type" = xdynamic; then
   CFLAGS="$CFLAGS $dynamic_crt_flag"
