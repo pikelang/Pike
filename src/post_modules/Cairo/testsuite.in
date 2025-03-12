@@ -1,1 +1,12 @@
+START_MARKER
+cond_begin([[ master()->resolv("Cairo")->cairo_version ]])
 
+test_any([[
+  int v=0;
+  foreach(Cairo.cairo_version_string()/".";; string n)
+    v=100*v+(int)n;
+  return v;
+]], Cairo.cairo_version())
+
+cond_end // GTK2.version
+END_MARKER

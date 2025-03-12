@@ -183,12 +183,15 @@ void image_any__decode(INT32 args)
 	break;
 
       case CHAR2(0,0):
-	 switch (CHAR2(sp[-args].u.string->str[2],sp[-args].u.string->str[3]))
-	 {
-	    case CHAR2(0,'k'):
-	       /* XWD */
-	       image_xwd__decode(1);
-	       return; /* done */
+         if ((CHAR2(sp[-args].u.string->str[2],
+                    sp[-args].u.string->str[3]) >= CHAR2(0, 100)) &&
+             (CHAR2(sp[-args].u.string->str[4], sp[-args].u.string->str[5]) ==
+              CHAR2(0, 0)) &&
+             (CHAR2(sp[-args].u.string->str[6],
+                    sp[-args].u.string->str[7]) == CHAR2(0, 7))) {
+            /* XWD version 7. */
+            image_xwd__decode(1);
+            return; /* done */
 	 }
 
 	 goto unknown_format;
