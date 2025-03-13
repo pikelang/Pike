@@ -307,7 +307,7 @@ static const char *const raw_lfun_types[] = {
 	tOr(tVar(0), tVoid)),			/* "`[]=", */
   tFunc(tLStr(tUnknown, tUnknown) tSetvar(0, tMix) tObj tInt,
 	tOr(tVar(0), tVoid)),			/* "`->=", */
-  tFunc(tUnknown, tMix),			/* "_m_delete", */
+  tFunc(tUnknown tUnknown, tMix),		/* "_m_delete", */
   tFunc(tNone, tVoid),				/* "_m_clear", */
   tFunc(tUnknown, tVoid),			/* "_m_add", */
   tFunc(tUnknown tUnknown, tMix),		/* "_atomic_get_set", */
@@ -1360,9 +1360,20 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!   @[predef::equal()], @[lfun::`==()]
  */
 
-/*! @decl mixed lfun::_m_delete(mixed arg)
+/*! @decl mixed lfun::_m_delete(mixed arg, mixed|void expected)
  *!
  *!   Delete index callback.
+ *!
+ *!   Element at index @[arg] should be deleted and its value
+ *!   returned (when @[expected] has been specified, only if
+ *!   the value is @[`==()] with @[expected]).
+ *!
+ *! @returns
+ *!   Returns the value that was at @[arg] if it was deleted
+ *!   and @[UNDEFINED] otherwise.
+ *!
+ *! @note
+ *!   The @[expected] argument was added in Pike 9.0.
  *!
  *! @seealso
  *!   @[predef::m_delete()]

@@ -2310,7 +2310,8 @@ PIKEFUN int(8 .. 8)|int(16 .. 16)|int(32 .. 32) string_width(string s)
   RETURN 8 * (1 << s->size_shift);
 }
 
-/*! @decl mixed m_delete(object|mapping|multiset map, mixed index)
+/*! @decl mixed m_delete(object|mapping|multiset map, mixed index, @
+ *!                      mixed|void expected)
  *!
  *! If @[map] is an object that implements @[lfun::_m_delete()],
  *! that function will be called with @[index] as its single argument.
@@ -2321,6 +2322,9 @@ PIKEFUN int(8 .. 8)|int(16 .. 16)|int(32 .. 32) string_width(string s)
  *! If the mapping or multiset does not have an entry with
  *! index @[index], nothing is done.
  *!
+ *! If @[expected] has been specified, the entry will only be
+ *! removed if its value matches (with @[`==()]).
+ *!
  *! @returns
  *!   The value that was removed will be returned,
  *!   and @expr{UNDEFINED@} otherwise.
@@ -2328,22 +2332,70 @@ PIKEFUN int(8 .. 8)|int(16 .. 16)|int(32 .. 32) string_width(string s)
  *! @note
  *!   Note that @[m_delete()] changes @[map] destructively.
  *!
+ *! @note
+ *!   The third argument (@[expected]) was added in Pike 9.0,
+ *!   and can be used for atomic test and unset.
+ *!
  *! @seealso
  *!   @[mappingp()]
  */
 PMOD_EXPORT
-PIKEFUN mixed m_delete(object|mapping|multiset map, mixed index)
+PIKEFUN mixed m_delete(object|mapping|multiset map, mixed index,
+                       mixed|void expected)
   efun;
   optflags OPT_SIDE_EFFECT;
-  rawtype tOr3(tFunc(tMap(tSetvar(0,tMix),tSetvar(1,tMix)) tVar(0),
+  rawtype tOr3(tFunc(tMap(tSetvar(0,tMix),tSetvar(1,tMix)) tVar(0)
+                     tOr(tVar(1), tVoid),
 		     tOr(tVar(1), tZero)),
-	       tFunc(tSet(tSetvar(0,tMix)) tVar(0),tInt01),
-	       tFunc(tObj tMix,tMix));
+               tFunc(tSet(tSetvar(0,tMix)) tVar(0) tOr(tInt01, tVoid), tInt01),
+               tFunc(tObj tMix tOr(tMix, tVoid), tMix));
 {
   struct program *p;
   if( TYPEOF(*map) == T_MAPPING )
   {
     struct svalue s;
+    if (expected) {
+      struct svalue *val = low_mapping_lookup(map->u.mapping, index);
+      if (val) {
+        if ((TYPEOF(*val) == PIKE_T_OBJECT) ||
+            (TYPEOF(*expected) == PIKE_T_OBJECT)) {
+          /* NB: lfun::`==() may get called, in which case
+           *     we must validate that the value has not
+           *     been changed in the interval.
+           */
+          push_svalue(val);	/* For validation. */
+          if (is_eq(expected, val)) {
+            /* NB: val may get invalidated during the lfun call. */
+            val = low_mapping_lookup(map->u.mapping, index);
+            if (val &&
+                ((TYPEOF(*val) != TYPEOF(Pike_sp[-1])) ||
+                 (SUBTYPEOF(*val) != SUBTYPEOF(Pike_sp[-1])) ||
+                 (val->u.ptr != Pike_sp[-1].u.ptr))) {
+              /* Value has been altered during is_eq() call.
+               *
+               * NB: For integers and floats the value will not have changed.
+               *
+               *     For other types we have added a reference via
+               *     push_svalue(), so the pointer will stay valid.
+               *
+               *     The test above is thus sufficient.
+               */
+              val = NULL;
+            }
+          } else {
+            val = NULL;
+          }
+          pop_stack();
+        }
+      } else if (!is_eq(expected, val)) {
+        val = NULL;
+      }
+      if (!val) {
+        pop_n_elems(args);
+        push_undefined();
+        return;
+      }
+    }
     map_delete_no_free(map->u.mapping, index, &s);
     pop_n_elems(args);
     *Pike_sp=s;
@@ -2355,14 +2407,27 @@ PIKEFUN mixed m_delete(object|mapping|multiset map, mixed index)
     int id = FIND_LFUN(p->inherits[SUBTYPEOF(*map)].prog, LFUN__M_DELETE);
 
     if( id == -1 )
-      SIMPLE_ARG_TYPE_ERROR("m_delete", 1, "object containing the _m_delete method");
+      SIMPLE_ARG_TYPE_ERROR("m_delete", 1,
+                            "object containing the _m_delete method");
 
+    if ((args > 1) && !expected) {
+      pop_n_elems(args - 1);
+      args = 1;
+    }
     apply_low(map->u.object,
-	      id + p->inherits[SUBTYPEOF(*map)].identifier_level, 1);
+              id + p->inherits[SUBTYPEOF(*map)].identifier_level, args);
     stack_swap();
     pop_stack();
   } else if (TYPEOF(*map) == T_MULTISET) {
     struct svalue s;
+    if (expected &&
+        ((TYPEOF(*expected) != PIKE_T_INT) ||
+         (expected->u.integer != 1) ||
+         !multiset_member(map->u.multiset, index))) {
+      pop_n_elems(args);
+      push_undefined();
+      return;
+    }
     multiset_delete_2(map->u.multiset, index, &s);
     pop_n_elems(args);
     *Pike_sp = s;

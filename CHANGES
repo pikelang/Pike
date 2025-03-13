@@ -147,6 +147,8 @@ o __cast() added.
   may be specified either as a type value or as a string. It is intended
   to help in implementing lfun::cast().
 
+o m_delete() now supports atomic test and remove.
+
 o Binary or between a multiset and UNDEFINED is now behaves like
   binary or between the multiset and the empty multiset.
 
