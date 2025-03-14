@@ -1419,7 +1419,7 @@ PIKE_OPCODE_T *inter_return_opcode_F_CATCH(PIKE_OPCODE_T *addr)
 	UNSETJMP (cc->recovery);
 	move_svalue (Pike_sp++, &throw_value);
 	mark_free_svalue (&throw_value);
-	low_destruct_objects_to_destruct();
+        destruct_objects_to_destruct();
 
 	if (cc->continue_reladdr < 0)
 	  FAST_CHECK_THREADS_ON_BRANCH();
@@ -1572,7 +1572,7 @@ PIKE_OPCODE_T *inter_return_opcode_F_CATCH_AT(PIKE_OPCODE_T *addr)
 	UNSETJMP (cc->recovery);
 	move_svalue (Pike_sp++, &throw_value);
 	mark_free_svalue (&throw_value);
-	low_destruct_objects_to_destruct();
+        destruct_objects_to_destruct();
 
 	if (cc->continue_reladdr < 0)
 	  FAST_CHECK_THREADS_ON_BRANCH();
@@ -1715,7 +1715,7 @@ PIKE_OPCODE_T *handle_caught_exception(void)
   UNSETJMP (cc->recovery);
   move_svalue (Pike_sp++, &throw_value);
   mark_free_svalue (&throw_value);
-  low_destruct_objects_to_destruct();
+  destruct_objects_to_destruct();
 
   if (cc->continue_reladdr < 0)
     FAST_CHECK_THREADS_ON_BRANCH();
@@ -3024,7 +3024,7 @@ void* low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
     {
       assign_svalue(save_sp,Pike_sp-1);
       pop_n_elems(Pike_sp-save_sp-1);
-      low_destruct_objects_to_destruct(); /* consider using a flag for immediate destruct instead... */
+      destruct_objects_to_destruct(); /* consider using a flag for immediate destruct instead... */
     }
     if(Pike_interpreter.trace_level>1)
       do_trace_func_return (1, o, fun);
@@ -3092,12 +3092,9 @@ void low_return(void)
   basic_low_return (save_sp);
 
   stack_pop_n_elems_keep_top (Pike_sp - save_sp);
-  {
-      /* consider using a flag for immediate destruct instead... */
-      extern struct object *objects_to_destruct;
-      if( objects_to_destruct )
-          destruct_objects_to_destruct();
-  }
+
+  /* consider using a flag for immediate destruct instead... */
+  destruct_objects_to_destruct();
 
 #ifdef PIKE_DEBUG
   if(save_sp > Pike_sp)
