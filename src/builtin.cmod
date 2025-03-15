@@ -2410,12 +2410,12 @@ PIKEFUN mixed m_delete(object|mapping|multiset map, mixed index,
       SIMPLE_ARG_TYPE_ERROR("m_delete", 1,
                             "object containing the _m_delete method");
 
-    if ((args > 1) && !expected) {
-      pop_n_elems(args - 1);
-      args = 1;
+    if ((args > 2) && !expected) {
+      pop_n_elems(args - 2);
+      args = 2;
     }
     apply_low(map->u.object,
-              id + p->inherits[SUBTYPEOF(*map)].identifier_level, args);
+              id + p->inherits[SUBTYPEOF(*map)].identifier_level, args - 1);
     stack_swap();
     pop_stack();
   } else if (TYPEOF(*map) == T_MULTISET) {
