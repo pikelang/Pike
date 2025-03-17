@@ -46,6 +46,7 @@ extern struct program *image_program;
 
 void image_x_decode_truecolor_masks(INT32 args);
 void image_x_decode_pseudocolor(INT32 args);
+void image_x_convert_xy_to_z(INT32 args);
 
 /*
 **! method mapping _decode(string data)
@@ -88,7 +89,7 @@ void img_xwd__decode(INT32 args,int header_only,int skipcmap)
 
    struct
    {
-      unsigned long header_size;
+      unsigned long header_size;      /* Header size + window name */
 
       unsigned long file_version;     /* = XWD_FILE_VERSION above */
       unsigned long pixmap_format;    /* ZPixmap or XYPixmap */
@@ -146,7 +147,7 @@ void img_xwd__decode(INT32 args,int header_only,int skipcmap)
    header.file_version=CARD32n(s,1);
 
    if (header.file_version!=7)
-      Pike_error("Image.XWD._decode: don't understand any other file format then 7\n");
+      Pike_error("Image.XWD._decode: don't understand any other file format than 7\n");
 
    add_ref(s);
    pop_n_elems(args);
@@ -239,8 +240,9 @@ void img_xwd__decode(INT32 args,int header_only,int skipcmap)
 
    /* the size of the header is 100 bytes, name is null-terminated */
    push_static_text("windowname");
-   if (header.header_size>100)
-      push_string(make_shared_binary_string(s->str+100,header.header_size-100-1));
+   if (header.header_size > sizeof(header))
+      push_string(make_shared_binary_string(s->str + sizeof(header),
+                                            header.header_size-sizeof(header)-1));
    else
       push_int(0);
    n++;
@@ -304,10 +306,21 @@ void img_xwd__decode(INT32 args,int header_only,int skipcmap)
 
       if ((size_t)s->len < (header.header_size+header.ncolors*12))
 	 push_empty_string();
-      else
+      else {
 	 push_string(make_shared_binary_string(
 	    s->str+(header.header_size+header.ncolors*12),
 	    s->len-(header.header_size+header.ncolors*12)));
+         if (header.pixmap_format == 1) {
+            push_int(header.pixmap_width);
+            push_int(header.pixmap_height);
+            push_int(header.pixmap_depth);
+            push_int(header.bitmap_pad);
+            push_int(header.bitmap_bit_order != 0);
+            image_x_convert_xy_to_z(6);
+            header.pixmap_format = 2;
+            header.bits_per_pixel = header.pixmap_depth;
+         }
+      }
 
       switch (header.visual_class*100+header.pixmap_format)
       {
