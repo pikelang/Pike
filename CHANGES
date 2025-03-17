@@ -752,6 +752,18 @@ o GTK2
 
   Multiple runtime fixes.
 
+o Image.ANY
+
+  Fixed detection of XWD.
+
+o Image.X
+
+  Added convert_xy_to_z() that converts XY pixmaps to Z pixmaps.
+
+o Image.XWD
+
+  Added support for XY format.
+
 o JOSE (JSON Object Signing and Encryption)
 
   Some low-level API support has been added to the Crypto and Web
