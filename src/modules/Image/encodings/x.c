@@ -1159,8 +1159,11 @@ void image_x_decode_pseudocolor(INT32 args)
 }
 
 /*
-**! method string convert_xy_to_z(string data,int width,int height,int bpp,int alignbits,int bitmap_bit_order)
+**! method string convert_xy_to_z(string data,int width,int height,int bpp,int|void alignbits,int|void bitmap_bit_order,int|void byte_order)
 **!    lazy support for converting XYPixmaps to ZPixmaps.
+**!
+**!    alignbits defaults to 8 bits (ie byte-aligned), bitmap_bit_order to
+**!    zero (ie LSBFirst) and byte_order to the same as bitmap_bit_order.
 **!
 **! note:
 **!    currently, only byte-aligned pixmaps are supported
@@ -1169,15 +1172,17 @@ void image_x_decode_pseudocolor(INT32 args)
 void image_x_convert_xy_to_z(INT32 args)
 {
    struct pike_string *data;
-   unsigned int xsz, ysz, bits, align = 8, bit_order = 0;
+   unsigned int xsz, ysz, bits, align = 8, bit_order = 0, byte_order = 2;
    struct pike_string *res;
    int bytes_per_pixel, dalign = 0;
    unsigned int bytes_per_16pixel = 0;
    unsigned int bytes_per_line;
    unsigned int b, boff, bit;
    unsigned char *s;
-   get_all_args(NULL, args, "%n%d%d%d.%d%d",
-                &data, &xsz, &ysz, &bits, &align, &bit_order);
+   get_all_args(NULL, args, "%n%d%d%d.%d%d%d",
+                &data, &xsz, &ysz, &bits, &align, &bit_order, &byte_order);
+
+   if (byte_order == 2) byte_order = bit_order;
 
    if (!align) {
       Pike_error("Image.X.convert_xy_to_z: Invalid alignment.\n");
@@ -1216,14 +1221,17 @@ void image_x_convert_xy_to_z(INT32 args)
       unsigned int y;
       unsigned char *nextd = STR0(res);
       unsigned char *d = nextd;
-      if (bit_order) {
+      if (!bit_order) {
+         /* Initial step should only advance 8pixels. */
+         d -= bytes_per_16pixel>>1;
+         d += bytes_per_pixel;
+      }
+      if (byte_order) {
          /* MSBFirst. */
          boff = b>>3;
       } else {
          /* LSBFirst. */
          boff = (bits - b - 1)>>3;
-         /* Initial step should only advance 8pixels. */
-         d -= bytes_per_16pixel>>1;
       }
       /* NB: The bitmaps come with the most significant bitplane first. */
       bit = 0x80 >> (b & 7);
@@ -1340,7 +1348,8 @@ void init_image_x(void)
 		tFunc(tStr tInt tInt tInt tInt tInt tObj,tObj), 0);
 
    ADD_FUNCTION("convert_xy_to_z", image_x_convert_xy_to_z,
-                tFunc(tStr8 tInt tInt tInt tInt tInt, tStr8), 0);
+                tFunc(tStr8 tInt tInt tInt tOr(tInt1Plus,tVoid)
+                      tOr(tInt01,tVoid) tOr(tInt01,tVoid), tStr8), 0);
 }
 
 void exit_image_x(void)

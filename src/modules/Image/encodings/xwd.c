@@ -314,11 +314,13 @@ void img_xwd__decode(INT32 args,int header_only,int skipcmap)
             push_int(header.pixmap_width);
             push_int(header.pixmap_height);
             push_int(header.pixmap_depth);
-            push_int(header.bitmap_pad);
+            push_int(header.bitmap_unit);
             push_int(header.bitmap_bit_order != 0);
-            image_x_convert_xy_to_z(6);
+            push_int(header.byte_order != 0);
+            image_x_convert_xy_to_z(7);
             header.pixmap_format = 2;
             header.bits_per_pixel = header.pixmap_depth;
+            header.bitmap_pad = 8;
          }
       }
 
