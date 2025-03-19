@@ -900,14 +900,10 @@ test_encoding(PNM,,)
 dnl test_encoding(PVR,,)
 test_encoding(RAS,,)
 test_encoding(TGA,,)
-dnl test_encoding(WBF,[[
-dnl   object c=Image.Colortable(({Image.Color.white,Image.Color.black}));
-dnl   img=c*img;
-dnl ]],)
-dnl test_encoding(WBMP,[[
-dnl   object c=Image.Colortable(({Image.Color.white,Image.Color.black}));
-dnl   img=c*img;
-dnl ]],)
+test_encoding(WBMP,[[
+  object c=Image.Colortable(({Image.Color.white,Image.Color.black}));
+  img=c*img;
+]],)
 test_encoding(XBM,[[
   object c=Image.Colortable(({Image.Color.white,Image.Color.black}));
   img=c*img;
