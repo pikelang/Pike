@@ -156,7 +156,7 @@ static void f_encode(INT32 args)
     PIKE_ERROR("encode", "Invalid dimensions.\n", sp, args);
   }
 
-  res = begin_shared_string((img->xsize * img->ysize * 2) + 8);
+  res = begin_shared_string((img->xsize * img->ysize * 3) + 8);
   pos = STR0(res);
 
   x = (size_t)img->xsize;
