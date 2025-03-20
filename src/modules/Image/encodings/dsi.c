@@ -66,7 +66,7 @@ static void f__decode( INT32 args )
 
   if( (xs * ys * 2) != (ptrdiff_t)(len-8) ||
       INT32_MUL_OVERFLOW(xs, ys) || ((xs * ys) & -0x8000000) )
-    Pike_error("Not a DSI %d * %d + 8 != %ld\n",
+    Pike_error("Not a DSI %d * %d * 2 + 8 != %ld\n",
           xs, ys, (long)len);
 
   push_int( xs );
@@ -156,7 +156,7 @@ static void f_encode(INT32 args)
     PIKE_ERROR("encode", "Invalid dimensions.\n", sp, args);
   }
 
-  res = begin_shared_string((img->xsize * img->ysize * 3) + 8);
+  res = begin_shared_string((img->xsize * img->ysize * 2) + 8);
   pos = STR0(res);
 
   x = (size_t)img->xsize;
