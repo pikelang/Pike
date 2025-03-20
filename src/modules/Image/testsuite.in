@@ -859,6 +859,22 @@ test_do([[
   return Image.BMP.decode(s, (["quality":50]));
 ]])
 
+test_encoding(DSI,[[
+  // Reduce the color space in the same way as Image.DSI.decode().
+  for (int y = 0; y < 100; y++) {
+    for (int x = 0; x < 100; x++) {
+      array(int) c = img->getpixel(x, y);
+      c[0] = ((c[0] & 0xf8)*0x21)>>5;
+      c[1] = ((c[1] & 0xfc)*0x41)>>6;
+      c[2] = ((c[2] & 0xf8)*0x21)>>5;
+      if (!c[1] && (c[0] == 0xff) && (c[2] == 0xff)) {
+        c[1] = 0x04;
+      }
+      img->setpixel(x, y, @c);
+    }
+  }
+]])
+
 test_encoding(GIF,[[
   img = Image.Colortable(img,250)->cubicles(10,10,10,1)->
     floyd_steinberg()*img;
