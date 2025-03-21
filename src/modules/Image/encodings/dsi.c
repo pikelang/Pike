@@ -66,7 +66,7 @@ static void f__decode( INT32 args )
 
   if( (xs * ys * 2) != (ptrdiff_t)(len-8) ||
       INT32_MUL_OVERFLOW(xs, ys) || ((xs * ys) & -0x8000000) )
-    Pike_error("Not a DSI %d * %d + 8 != %ld\n",
+    Pike_error("Not a DSI %d * %d * 2 + 8 != %ld\n",
           xs, ys, (long)len);
 
   push_int( xs );
