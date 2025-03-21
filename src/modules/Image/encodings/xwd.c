@@ -22,9 +22,17 @@
 **! see also: Image, Image.Image, Image.PNM, Image.X
 */
 #include "global.h"
+#include "image_machine.h"
 
 #include <math.h>
 #include <ctype.h>
+
+#ifdef HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
 
 #include "stralloc.h"
 #include "object.h"
@@ -81,49 +89,51 @@ static inline unsigned long int_from_16bit(unsigned char *data)
 
 #define CARD32n(S,N) int_from_32bit((unsigned char*)(S)->str+(N)*4)
 
+struct xwd_header
+{
+   unsigned INT32 header_size;      /* Header size + window name */
+
+   unsigned INT32 file_version;     /* = XWD_FILE_VERSION above */
+   unsigned INT32 pixmap_format;    /* ZPixmap or XYPixmap */
+   unsigned INT32 pixmap_depth;     /* Pixmap depth */
+   unsigned INT32 pixmap_width;     /* Pixmap width */
+   unsigned INT32 pixmap_height;    /* Pixmap height */
+   unsigned INT32 xoffset;          /* Bitmap x offset, normally 0 */
+   unsigned INT32 byte_order;       /* of image data: MSBFirst, LSBFirst */
+
+   unsigned INT32 bitmap_unit;      /* scanline padding for bitmaps */
+
+   unsigned INT32 bitmap_bit_order; /* bitmaps only: MSBFirst, LSBFirst */
+
+   unsigned INT32 bitmap_pad;       /* scanline padding for pixmaps */
+
+   unsigned INT32 bits_per_pixel;   /* Bits per pixel */
+
+   /* bytes_per_line is pixmap_width padded to bitmap_unit (bitmaps)
+    * or bitmap_pad (pixmaps).  It is the delta (in bytes) to get
+    * to the same x position on an adjacent row. */
+   unsigned INT32 bytes_per_line;
+   unsigned INT32 visual_class;     /* Class of colormap */
+   unsigned INT32 red_mask;         /* Z red mask */
+   unsigned INT32 green_mask;       /* Z green mask */
+   unsigned INT32 blue_mask;        /* Z blue mask */
+   unsigned INT32 bits_per_rgb;     /* Log2 of distinct color values */
+   unsigned INT32 colormap_entries; /* Number of entries in colmap unused?*/
+   unsigned INT32 ncolors;          /* Number of XWDColor structures */
+   unsigned INT32 window_width;     /* Window width */
+   unsigned INT32 window_height;    /* Window height */
+   unsigned INT32 window_x;         /* Window upper left X coordinate */
+   unsigned INT32 window_y;         /* Window upper left Y coordinate */
+   unsigned INT32 window_bdrwidth;  /* Window border width */
+};
+
 void img_xwd__decode(INT32 args,int header_only,int skipcmap)
 {
    struct object *co=NULL;
 
    struct pike_string *s;
 
-   struct
-   {
-      unsigned long header_size;      /* Header size + window name */
-
-      unsigned long file_version;     /* = XWD_FILE_VERSION above */
-      unsigned long pixmap_format;    /* ZPixmap or XYPixmap */
-      unsigned long pixmap_depth;     /* Pixmap depth */
-      unsigned long pixmap_width;     /* Pixmap width */
-      unsigned long pixmap_height;    /* Pixmap height */
-      unsigned long xoffset;          /* Bitmap x offset, normally 0 */
-      unsigned long byte_order;       /* of image data: MSBFirst, LSBFirst */
-
-      unsigned long bitmap_unit;      /* scanline padding for bitmaps */
-
-      unsigned long bitmap_bit_order; /* bitmaps only: MSBFirst, LSBFirst */
-
-      unsigned long bitmap_pad;       /* scanline padding for pixmaps */
-
-      unsigned long bits_per_pixel;   /* Bits per pixel */
-
-      /* bytes_per_line is pixmap_width padded to bitmap_unit (bitmaps)
-       * or bitmap_pad (pixmaps).  It is the delta (in bytes) to get
-       * to the same x position on an adjacent row. */
-      unsigned long bytes_per_line;
-      unsigned long visual_class;     /* Class of colormap */
-      unsigned long red_mask;         /* Z red mask */
-      unsigned long green_mask;       /* Z green mask */
-      unsigned long blue_mask;        /* Z blue mask */
-      unsigned long bits_per_rgb;     /* Log2 of distinct color values */
-      unsigned long colormap_entries; /* Number of entries in colmap unused?*/
-      unsigned long ncolors;          /* Number of XWDColor structures */
-      unsigned long window_width;     /* Window width */
-      unsigned long window_height;    /* Window height */
-      unsigned long window_x;         /* Window upper left X coordinate */
-      unsigned long window_y;         /* Window upper left Y coordinate */
-      unsigned long window_bdrwidth;  /* Window border width */
-   } header;
+   struct xwd_header header;
 
    int n=0;
 
@@ -254,49 +264,51 @@ void img_xwd__decode(INT32 args,int header_only,int skipcmap)
        header.visual_class==3 ||
        header.visual_class==5)
    {
-      push_static_text("colors");
-      if (s->len-header.header_size>=12*header.ncolors)
-      {
-	 unsigned long i;
+      if (header.ncolors) {
+         push_static_text("colors");
+         if (s->len-header.header_size>=12*header.ncolors)
+         {
+            unsigned long i;
 
-	 if (skipcmap)
-	    push_int(0);
-	 else
-	 {
-	    for (i=0; i<header.ncolors; i++)
-	    {
-	       push_int(int_from_32bit((unsigned char*)s->str+header.header_size+i*12 +0));
-	       push_int(int_from_16bit((unsigned char*)s->str+header.header_size+i*12 +4));
-	       push_int(int_from_16bit((unsigned char*)s->str+header.header_size+i*12 +6));
-	       push_int(int_from_16bit((unsigned char*)s->str+header.header_size+i*12 +8));
-	       push_int(*(unsigned char*)(s->str+header.header_size+i*12 +10));
-	       push_int(*(unsigned char*)(s->str+header.header_size+i*12 +11));
-	       f_aggregate(6);
-	    }
-	    f_aggregate(header.ncolors);
-	 }
+            if (skipcmap)
+               push_int(0);
+            else
+            {
+               for (i=0; i<header.ncolors; i++)
+               {
+                  push_int(int_from_32bit((unsigned char*)s->str+header.header_size+i*12 +0));
+                  push_int(int_from_16bit((unsigned char*)s->str+header.header_size+i*12 +4));
+                  push_int(int_from_16bit((unsigned char*)s->str+header.header_size+i*12 +6));
+                  push_int(int_from_16bit((unsigned char*)s->str+header.header_size+i*12 +8));
+                  push_int(*(unsigned char*)(s->str+header.header_size+i*12 +10));
+                  push_int(*(unsigned char*)(s->str+header.header_size+i*12 +11));
+                  f_aggregate(6);
+               }
+               f_aggregate(header.ncolors);
+            }
 
-	 push_static_text("colortable");
+            push_static_text("colortable");
 
-	 for (i=0; i<header.ncolors; i++)
-	 {
-	    push_int(int_from_16bit((unsigned char*)s->str+header.header_size+i*12 +4)>>8);
-	    push_int(int_from_16bit((unsigned char*)s->str+header.header_size+i*12 +6)>>8);
-	    push_int(int_from_16bit((unsigned char*)s->str+header.header_size+i*12 +8)>>8);
-	    f_aggregate(3);
-	 }
+            for (i=0; i<header.ncolors; i++)
+            {
+               push_int(int_from_16bit((unsigned char*)s->str+header.header_size+i*12 +4)>>8);
+               push_int(int_from_16bit((unsigned char*)s->str+header.header_size+i*12 +6)>>8);
+               push_int(int_from_16bit((unsigned char*)s->str+header.header_size+i*12 +8)>>8);
+               f_aggregate(3);
+            }
 
-	 f_aggregate(header.ncolors);
-	 push_object(co=clone_object(image_colortable_program,1));
+            f_aggregate(header.ncolors);
+            push_object(co=clone_object(image_colortable_program,1));
+         }
+         else
+         {
+            f_aggregate(0); /* no room for colors */
+            push_static_text("colortable");
+            push_int(0);
+         }
+         n+=2;
+         skipcmap=0;
       }
-      else
-      {
-	 f_aggregate(0); /* no room for colors */
-	 push_static_text("colortable");
-	 push_int(0);
-      }
-      n+=2;
-      skipcmap=0;
    }
 
    if (!header_only)
@@ -417,6 +429,87 @@ static void image_xwd_decode(INT32 args)
    f_index(2);
 }
 
+/*
+**! method string encode(object image)
+**!	Encode an image to an XWD image file.
+**!
+**!     Currently always encodes the image to
+**!     ZPixmap 24bit TrueColor in native byteorder
+**!     with no colormap, padding or title.
+*/
+
+static void image_xwd_encode(INT32 args)
+{
+   struct image *img = NULL;
+   struct pike_string *res = NULL;
+   size_t image_size = 0;
+   struct xwd_header *header;
+
+   if (!args) {
+      SIMPLE_WRONG_NUM_ARGS_ERROR("encode", 1);
+   }
+
+   if (TYPEOF(Pike_sp[-args]) != PIKE_T_OBJECT ||
+       !(img = get_storage(Pike_sp[-args].u.object, image_program))) {
+      SIMPLE_ARG_TYPE_ERROR("encode", 1, "Image.Image");
+   }
+
+   if (!img->img) {
+      PIKE_ERROR("encode", "No image.\n", Pike_sp, args);
+   }
+
+   if ((img->xsize & ~0xffff) || (img->ysize & ~0xffff)) {
+      PIKE_ERROR("encode", "Invalid dimensions.\n", Pike_sp, args);
+   }
+
+   image_size = img->xsize * img->ysize * sizeof(rgb_group);
+
+   res = begin_shared_string(image_size + sizeof(struct xwd_header));
+   header = (void *)STR0(res);
+
+   header->header_size = sizeof(struct xwd_header);	/* No title. */
+   header->file_version = 7;
+   header->pixmap_format = 2;				/* ZPixmap. */
+   header->pixmap_depth = 24;
+   header->pixmap_width = img->xsize;
+   header->pixmap_height = img->ysize;
+   header->xoffset = 0;
+   header->byte_order = (PIKE_BYTEORDER != 1234);
+   header->bitmap_unit = 0;
+   header->bitmap_bit_order = 0;
+   header->bitmap_pad = 0;
+   header->bits_per_pixel = sizeof(rgb_group) * 8;
+   header->bytes_per_line = img->xsize * sizeof(rgb_group);
+   header->visual_class = 4;				/* TrueColor. */
+   header->red_mask = 0xff<<((PIKE_BYTEORDER != 1234)*16);
+   header->green_mask = 0xff00;
+   header->blue_mask = 0xff<<((PIKE_BYTEORDER == 1234)*16);
+   header->bits_per_rgb = 24;
+   header->colormap_entries = 0;			/* No colortable. */
+   header->ncolors = 0;
+   header->window_width = img->xsize;
+   header->window_height = img->ysize;
+   header->window_x = 0;
+   header->window_y = 0;
+   header->window_bdrwidth = 0;
+
+#if PIKE_BYTEORDER != 4321
+   {
+      unsigned INT32 *fixup = &header->header_size;
+      while (fixup <= &header->window_bdrwidth) {
+         *fixup = htonl(*fixup);
+         fixup++;
+      }
+   }
+#endif
+
+   /* FIXME: Add a non-empty color table to make old versions of Pike happy? */
+
+   memcpy(header+1, img->img, image_size);
+
+   push_string(end_shared_string(res));
+}
+
 struct program *image_xwd_module_program=NULL;
 
 void init_image_xwd(void)
@@ -428,6 +521,8 @@ void init_image_xwd(void)
    ADD_FUNCTION("decode",image_xwd_decode,tFunc(tStr,tObj),0);
 
    ADD_FUNCTION("decode_header",image_xwd_decode_header,tFunc(tStr,tObj),0);
+
+   ADD_FUNCTION("encode", image_xwd_encode, tFunc(tObj, tStr), 0);
 }
 
 void exit_image_xwd(void)
