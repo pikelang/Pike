@@ -40,6 +40,12 @@ extern struct program *image_program;
 **!     with a one bit alpha channel.
 */
 
+/* See also "The TIM file format explained":
+ *   https://www.psxdev.net/forum/viewtopic.php?t=109
+ * and "Parsing PSX TIM Images with Typescript":
+ *   https://jackrobinson.co.nz/blog/tim-image-parsing/
+ */
+
 /*
 **! method object decode(string data)
 **! method object decode_alpha(string data)
@@ -85,24 +91,45 @@ static void tim_decode_rect(INT32 attr, unsigned char *src, rgb_group *dst,
        dst++;
      }
      break;
+   case MODE_DC24:
+     {
+       INT32 remaining = 0;
+       /* Convert width to scanline bytes including pad. */
+       w = w*3 + (w & 1);
+       while(cnt--) {
+         if (remaining < 3) {
+           /* Skip the end of scanline pad byte. */
+           src += remaining;
+           remaining = w;
+         }
+         dst->r = *src++;
+         dst->g = *src++;
+         dst->b = *src++;
+         dst++;
+         remaining -= 3;
+       }
+     }
+     break;
    case MODE_CLUT4:
      cnt = cnt/2;
      while(cnt--) {
        int i, cluti = (src[0]&0xf)*2;
-       unsigned int p;
 
        if (clutlength <= cluti + 1)
          Pike_error("Malformed TIM image.\n");
 
-       p = clut[cluti]|(clut[cluti+1]<<8);
-
        for(i=0; i<2; i++)
        {
+         unsigned int p = clut[cluti]|(clut[cluti+1]<<8);
+
          dst->b = ((p&0x7c00)>>7)|((p&0x7000)>>12);
          dst->g = ((p&0x03e0)>>2)|((p&0x0380)>>7);
          dst->r = ((p&0x001f)<<3)|((p&0x001c)>>2);
          dst++;
          cluti = (src[0]>>4)*2;
+
+         if (clutlength <= cluti + 1)
+           Pike_error("Malformed TIM image.\n");
        }
        src++;
      }
@@ -127,6 +154,7 @@ static void tim_decode_rect(INT32 attr, unsigned char *src, rgb_group *dst,
   }
 }
 
+/* NB: a is the high byte of the 16bit color below. */
 #define ALPHA(a) if(!a)               /* Transparent */           \
 	           dst->b = dst->g = dst->r = 0;                  \
                  else if(!(a&0x80))  /* Not transparent */        \
@@ -192,7 +220,7 @@ void img_tim_decode(INT32 args, int header_only)
 
   if(len < 12 || (s[0] != 0x10 || s[2] != 0 || s[3] != 0))
     Pike_error("not a TIM texture\n");
-  else if(s[2] != 0)
+  else if(s[1] != 0)
     Pike_error("unknown version of TIM texture\n");
 
   s += 4; len -= 4;
@@ -216,7 +244,7 @@ void img_tim_decode(INT32 args, int header_only)
     if (bsize > len || bsize < 0)
       Pike_error("Malformed TIM.\n");
 #ifdef TIM_DEBUG
-    printf("bsize: %d\n", bsize);
+    fprintf(stderr, "bsize: %d\n", bsize);
 #endif
     s += bsize; len -= bsize;
   }
@@ -230,8 +258,8 @@ void img_tim_decode(INT32 args, int header_only)
   switch(attr&7) {
    case MODE_DC15:
 #ifdef TIM_DEBUG
-     printf("15bit\n");
-     printf("dx: %d, dy: %d\n", s[0]|(s[1]<<8), s[2]|(s[3]<<8));
+     fprintf(stderr, "15bit\n");
+     fprintf(stderr, "dx: %d, dy: %d\n", s[0]|(s[1]<<8), s[2]|(s[3]<<8));
 #endif
      s += 4; len -= 4;
      w = s[0]|(s[1]<<8);
@@ -242,14 +270,20 @@ void img_tim_decode(INT32 args, int header_only)
      break;
    case MODE_DC24:
 #ifdef TIM_DEBUG
-     printf("24bit\n");
+     fprintf(stderr, "24bit\n");
 #endif
-     Pike_error("24bit TIMs not supported. Please send an example to peter@roxen.com\n");
+     s += 4; len -= 4;
+     w = s[0]|(s[1]<<8);
+     h = s[2]|(s[3]<<8);
+     s += 4; len -= 4;
+     bitpp = 24;
+     hasalpha = 0;
+     break;
    case MODE_CLUT4:
      /* dx and dy word ignored */
 #ifdef TIM_DEBUG
-     printf("CLUT4\n");
-     printf("dx: %d, dy: %d\n", s[0]|(s[1]<<8), s[2]|(s[3]<<8));
+     fprintf(stderr, "CLUT4\n");
+     fprintf(stderr, "dx: %d, dy: %d\n", s[0]|(s[1]<<8), s[2]|(s[3]<<8));
 #endif
      if (!(attr&FLAG_CLUT))
        Pike_error("Malformed TIM image (CLUT mode but no CLUT bit)\n");
@@ -264,8 +298,8 @@ void img_tim_decode(INT32 args, int header_only)
    case MODE_CLUT8:
      /* dx and dy word ignored */
 #ifdef TIM_DEBUG
-     printf("CLUT8\n");
-     printf("dx: %d, dy: %d\n", s[0]|(s[1]<<8), s[2]|(s[3]<<8));
+     fprintf(stderr, "CLUT8\n");
+     fprintf(stderr, "dx: %d, dy: %d\n", s[0]|(s[1]<<8), s[2]|(s[3]<<8));
 #endif
      if (!(attr&FLAG_CLUT))
        Pike_error("Malformed TIM image (CLUT mode but no CLUT bit)\n");
@@ -278,7 +312,7 @@ void img_tim_decode(INT32 args, int header_only)
      break;
    case MODE_MIXED:
 #ifdef TIM_DEBUG
-     printf("Mixed\n");
+     fprintf(stderr, "Mixed\n");
 #endif
      Pike_error("mixed TIMs not supported\n");
    default:
@@ -293,13 +327,13 @@ void img_tim_decode(INT32 args, int header_only)
   n++;
 
 #ifdef TIM_DEBUG
-  printf("w: %d, h: %d\n", w, h);
+  fprintf(stderr, "w: %d, h: %d\n", w, h);
 #endif
 
   if(!header_only) {
     struct object *o;
     struct image *img;
-    INT32 bytes_needed;
+    INT32 bytes_needed = 0;
 
     if ((INT32)h < 0 || (INT32)w < 0
         || DO_INT32_MUL_OVERFLOW(h, w, &bytes_needed)
@@ -308,8 +342,10 @@ void img_tim_decode(INT32 args, int header_only)
       Pike_error("TIM Image too large.\n");
     }
 
+    bytes_needed >>= 3;	/* Adjust unit from bits to bytes. */
+
     if(len < bytes_needed)
-      Pike_error("short pixel data\n");
+      Pike_error("short pixel data (%ld < %d)\n", (long)len, bytes_needed);
 
     push_static_text("image");
     push_int(w);
@@ -364,12 +400,139 @@ void image_tim_f__decode(INT32 args)
    img_tim_decode(args,0);
 }
 
+static void image_tim_f_encode(INT32 args)
+{
+  struct image *img = NULL;
+  size_t x, y;
+  rgb_group *s;
+  struct pike_string *res = NULL;
+  p_wchar0 *pos;
+  int encoding = MODE_DC15;
+  size_t image_size = 0;
+
+  if (!args) {
+     SIMPLE_WRONG_NUM_ARGS_ERROR("encode", 1);
+  }
+
+  if (TYPEOF(Pike_sp[-args]) != PIKE_T_OBJECT ||
+      !(img = get_storage(Pike_sp[-args].u.object, image_program))) {
+    SIMPLE_ARG_TYPE_ERROR("encode", 1, "Image.Image");
+  }
+
+  if (!img->img) {
+    PIKE_ERROR("encode", "No image.\n", Pike_sp, args);
+  }
+
+  if ((img->xsize & ~0xffff) || (img->ysize & ~0xffff)) {
+    PIKE_ERROR("encode", "Invalid dimensions.\n", Pike_sp, args);
+  }
+
+  if (args>1) {
+    if ((TYPEOF(Pike_sp[1-args]) != PIKE_T_INT) ||
+        ((Pike_sp[1-args].u.integer != MODE_DC15) &&
+         (Pike_sp[1-args].u.integer != MODE_DC24))) {
+      SIMPLE_ARG_TYPE_ERROR("encode", 2, "int(2..3)");
+    }
+    encoding = Pike_sp[1-args].u.integer;
+  }
+
+  if (encoding == MODE_DC24) {
+    /* 12 bytes of header.
+     * 3 bytes per pixel
+     * 1 byte padding per line if the width is odd.
+     */
+    image_size = (img->xsize * 3 + (img->xsize & 1)) * img->ysize + 12;
+  } else {
+    /* MODE_DC15
+     *
+     * 12 bytes of header.
+     * 2 bytes per pixel
+     */
+    image_size = img->xsize * 2 * img->ysize + 12;
+  }
+
+  res = begin_shared_string(image_size + 16);
+  pos = STR0(res);
+
+  *pos++ = 0x10;
+  *pos++ = 0x0;
+  *pos++ = 0x0;
+  *pos++ = 0x0;
+  *pos++ = encoding;
+  *pos++ = 0x0;
+  *pos++ = 0x0;
+  *pos++ = 0x0;
+
+  /* No CLUT for DC15 and DC24. */
+
+  /* Number of bytes of image data including header (32bit). */
+  *pos++ = image_size & 0xff;
+  *pos++ = (image_size>>8) & 0xff;
+  *pos++ = (image_size>>16) & 0xff;
+  *pos++ = (image_size>>24) & 0xff;
+
+  /* Texture position x, y (16 + 16 bit). */
+  *pos++ = 0x00;
+  *pos++ = 0x00;
+  *pos++ = 0x00;
+  *pos++ = 0x00;
+
+  /* Texture width (16bit). */
+  x = (size_t)img->xsize;
+  *pos++ = x & 0xff;
+  *pos++ = (x>>8) & 0xff;
+
+  /* Texture height (16bit). */
+  y = (size_t)img->ysize;
+  *pos++ = y & 0xff;
+  *pos++ = (y>>8) & 0xff;
+
+  s = img->img;
+  if (encoding == MODE_DC24) {
+    /* Direct color 24bit. */
+    for (y = (size_t)img->ysize; y--;) {
+      for (x = (size_t)img->xsize; x--;) {
+        *pos++ = s->r;
+        *pos++ = s->g;
+        *pos++ = s->b;
+        s++;
+      }
+      if (img->xsize & 1) {
+        *pos++ = 0x00;	/* Pad to 16bit. */
+      }
+    }
+  } else {
+    /* Direct color 15+1bit. */
+    for (y = (size_t)img->ysize; y--;) {
+      for (x = (size_t)img->xsize; x--;) {
+        unsigned char r = s->r>>3;
+        unsigned char g = s->g>>3;
+        unsigned char b = s->b>>3;
+        unsigned int c = r | (g << 5) | (b << 10);
+        if (!c) {
+          /* Transparent -- Set STP to get black. */
+          c |= 0x8000;
+        }
+        *pos++ = c & 0xff;
+        *pos++ = (c>>8) & 0xff;
+        s++;
+      }
+    }
+  }
+
+  push_string(end_shared_string(res));
+}
+
+
 void init_image_tim(void)
 {
   ADD_FUNCTION( "decode",  image_tim_f_decode,  tFunc(tStr,tObj), 0);
   ADD_FUNCTION( "decode_alpha",  image_tim_f_decode_alpha,  tFunc(tStr,tObj), 0);
   ADD_FUNCTION( "_decode", image_tim_f__decode, tFunc(tStr,tMapping), 0);
   ADD_FUNCTION( "decode_header", image_tim_f_decode_header, tFunc(tStr,tMapping), 0);
+
+  ADD_FUNCTION( "encode",  image_tim_f_encode,
+                tFunc(tObj tOr3(tInt2, tInt3, tVoid), tStr), 0);
 }
 
 void exit_image_tim(void)
