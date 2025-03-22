@@ -9,15 +9,23 @@
 [attr]tab_indent filter=tab-indent
 [attr]binary -text -crlf -diff -ident -filter -mixed_indent -space_indent -tab_indent
 * text ident space_indent
+*.bmp binary
 *.db binary
 *.diff binary
+*.dsi binary
 *.gif binary
 *.ibd binary
 *.ico binary
 *.pbm binary
 *.png binary
 *.pnm binary
+*.psd binary
+*.neo binary
 *.tiff binary
+*.tim binary
+*.wbmp binary
+*.xcf binary
+*.xwd binary
 # Some binary files without extensions.
 /src/install-welcome binary
 /src/modules/Image/testfont binary

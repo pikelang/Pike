@@ -916,6 +916,33 @@ test_encoding(PNM,,)
 dnl test_encoding(PVR,,)
 test_encoding(RAS,,)
 test_encoding(TGA,,)
+test_encoding(TIM,[[
+  // Default encoding: MODE_DC15.
+  // Reduce the color space in the same way as Image.TIM.decode().
+  for (int y = 0; y < 100; y++) {
+    for (int x = 0; x < 100; x++) {
+      array(int) c = img->getpixel(x, y);
+      c[0] = ((c[0] & 0xf8)*0x21)>>5;
+      c[1] = ((c[1] & 0xf8)*0x21)>>5;
+      c[2] = ((c[2] & 0xf8)*0x21)>>5;
+      img->setpixel(x, y, @c);
+    }
+  }
+]],)
+test_encoding(TIM,[[
+  // Explicit MODE_DC15.
+  // Reduce the color space in the same way as Image.TIM.decode().
+  for (int y = 0; y < 100; y++) {
+    for (int x = 0; x < 100; x++) {
+      array(int) c = img->getpixel(x, y);
+      c[0] = ((c[0] & 0xf8)*0x21)>>5;
+      c[1] = ((c[1] & 0xf8)*0x21)>>5;
+      c[2] = ((c[2] & 0xf8)*0x21)>>5;
+      img->setpixel(x, y, @c);
+    }
+  }
+]],[[,2]])
+test_encoding(TIM,,[[,3]])
 test_encoding(WBMP,[[
   object c=Image.Colortable(({Image.Color.white,Image.Color.black}));
   img=c*img;
