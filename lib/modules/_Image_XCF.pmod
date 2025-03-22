@@ -3,6 +3,7 @@
 //! @appears Image.XCF
 //! eXperimental Computing Facility (aka GIMP native) format.
 
+//!
 inherit Image._XCF;
 
 #define SIGNED(X) if(X>=(1<<31)) X=-((1<<32)-X)

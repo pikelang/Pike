@@ -33,7 +33,11 @@ extern struct program *image_program;
 
 /*
 **! module Image
-**! submodule XCF
+**! submodule _XCF
+**!
+**!   XCF is short for the eXperimental Computing Facility, and is
+**!   the native image file format for the GNU Image Manipulation
+**!   Program (aka the GIMP).
 **!
 */
 
