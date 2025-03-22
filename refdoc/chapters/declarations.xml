@@ -1,0 +1,548 @@
+<?xml version="1.0" encoding="utf-8"?>
+<chapter title="Declarations">
+
+  <p>In this chapter we will discuss some of the different ways to declare
+  symbols in Pike in detail. We have seen examples of many of these, but
+  we haven't really gone into how they work.</p>
+
+  <section title="Variables">
+
+    <p>A variable represents a place to store a value that may be changed.
+    There are two main locations where variables are stored; either in
+    an object (this is where variables declared outside of functions are
+    stored) or on the stack (this is where variables declared in functions
+    are stored). For variables in objects their lifetime is the same as
+    that of their object. For variables on the stack their lifetime
+    typically ends when the function returns, but there are exceptions
+    (eg trampolines, generator functions and asynchronous functions).</p>
+
+    <p>When declaring a variable, you also have to specify what type of variable
+    it is. For most types, such as <tt>int</tt> and <tt>string</tt> this is
+    very easy. But there are much more interesting ways to declare variables
+    than that, let's look at a few examples:</p>
+
+    <example>
+int x; // x is an integer
+int|string x; // x is a string or an integer
+array(string) x; // x is an array of strings
+array x; // x is an array of mixed
+mixed x; // x can be any type
+string *x; // x is an array of strings
+
+// x is a mapping from int to string
+mapping(string:int) x;
+
+// x implements Stdio.File
+Stdio.File x;
+
+// x implements Stdio.File
+object(Stdio.File) x;
+
+// x is a function that takes two integer
+// arguments and returns a string
+function(int,int:string) x;
+
+// x is a function taking any amount of
+// integer arguments and returns nothing.
+function(int...:void) x;
+
+// x is ... complicated
+mapping(string:function(string|int...:mapping(string:array(string)))) x;
+    </example>
+
+    <p>As you can see there are some interesting ways to specify types.
+    Here is a list of what is possible:</p>
+
+    <dl>
+      <dt> <tt>mixed</tt></dt>
+      <dd> This means that the variable can contain any type, or the
+      function return any value.</dd>
+
+      <dt> <tt>array( <i>type</i> )</tt></dt>
+      <dd> This means an array of elements with the type <i>type</i>.</dd>
+
+      <dt> <tt>mapping( <i>key type</i> : <i>value type</i> )</tt></dt>
+      <dd> This is a mapping where the keys are of type <i>key type</i> and the
+      values of <i>value type</i>.</dd>
+
+      <dt> <tt>multiset ( <i>type</i> )</tt></dt>
+      <dd> This means a multiset containing values of the type <i>type</i>.</dd>
+
+      <dt> <tt>object ( <i>program</i> )</tt></dt>
+      <dd> This means an object which 'implements'  the specified program. The
+      <i>program</i> can be a class, a constant, or a string.
+      If the program is a string it will be casted to a program first.
+      See the documentation for <tt>inherit</tt> for more information
+      about this casting. The compiler will assume that any function
+      or variable accessed in this object has the same type information
+      as that function or variable has in <i>program</i>.</dd>
+
+      <dt> <tt><i>program</i></tt></dt>
+      <dd> This too means 'an object which implements <i>program</i>'.
+      <i>program</i> can be a class or a constant.</dd>
+
+      <dt> <tt>function( <i>argument types</i> : <i>return type</i> )</tt></dt>
+      <dd> This is a function taking the specified arguments and returning
+      <i>return type</i>. The <i>argument types</i> is a comma separated
+      list of types that specify the arguments. The argument list can also
+      end with <tt>...</tt> to signify that there can be any amount of the
+      last type.</dd>
+
+      <dt> <tt><i>type1</i> | <i>type2</i></tt></dt>
+      <dd> This means either <i>type1</i> or <i>type2</i></dd>
+
+      <dt> <tt>void</tt></dt>
+      <dd> Void can only be used in certain places, if used as return type for a
+      function it means that the function does not return a value. If used
+      in the argument list for a function it means that that argument can
+      be omitted. Example: <tt>function(int|void:void)</tt> this means a
+      function that may or may not take an integer argument and does not
+      return a value.</dd>
+    </dl>
+  </section>
+
+  <section title="Functions">
+
+    <p>Functions are declared with a syntax similar to that of variables,
+    but the symbol name is followed by a parenthesized comma-separated
+    list of variables representing the function arguments, and the initial
+    type representing the type of the returned value.</p>
+
+    <subsection title="Basic declaration of functions">
+
+      <!-- <image src=function.fig>fig 4.6 -->
+
+      <p>When a function is called, the interpreter sets <ref>this</ref>
+      and <ref>this_object()</ref> to the object in which the function is
+      located and proceeds to execute the function it points to. Also note
+      that function pointers can be passed around just like any other data
+      type:</p>
+
+      <example>
+        int foo() { return 1; }
+        function bar() { return foo; }
+        int gazonk() { return foo(); }
+        int teleledningsanka() { return bar()(); }
+      </example>
+
+      <p>In this example, the function bar returns a pointer to the function
+      <tt>foo</tt>. No indexing is necessary since the function <tt>foo</tt> is
+      located in the same object. The function <tt>gazonk</tt> simply calls
+      <tt>foo</tt>. However, note that the word <tt>foo</tt> in that function
+      is an expression returning a function pointer that is then called. To
+      further illustrate this, <tt>foo</tt> has been replaced by <tt>bar()</tt>
+      in the function <tt>teleledningsanka</tt>.</p>
+
+      <p>For convenience, there is also a simple way to write a function
+      inside another function. To do this you use the <tt>lambda</tt> keyword.
+      The syntax is the same as for a normal function, except you write
+      <tt>lambda</tt> instead of the function name:</p>
+
+      <example>
+        lambda ( types ) { statements }
+      </example>
+
+      <p>The major difference is that this is an expression that can be
+      used inside an other function. Example:</p>
+
+      <example>
+        function bar() { return lambda() { return 1; }; )
+      </example>
+
+      <p>This is the same as the first two lines in the previous example,
+      the keyword <tt>lambda</tt> allows you to write the function inside
+      <tt>bar</tt>.</p>
+
+      <p>Arguments to functions may be declared to be optional. This
+      is done by specifying that the argument may be <tt>void</tt>.
+      Omitted arguments evaluate to <tt>UNDEFINED</tt>.</p>
+
+      <example>
+        int foo(int arg1, int|void arg2) {
+          if (undefinedp(arg2)) arg2 = arg1 - 1;
+          return arg1 + arg2;
+        }
+      </example>
+
+      <p>It is also possible to specify that an optional argument has
+      a default value other than <tt>UNDEFINED</tt>. The above example
+      can also be written as:</p>
+
+      <example>
+        int foo(int arg1, int arg2 = arg1 - 1) {
+          return arg1 + arg2;
+        }
+      </example>
+    </subsection>
+
+    <subsection title="Variant functions">
+      <p>Similar to C++ and Java you can use function overloading in Pike.
+      This means that you can have one function called 'foo' which takes
+      an integer argument and another function 'foo' which takes a float
+      argument.</p>
+
+      <p>Unlike C++ and Java you must however declare that this is your
+      intention. Note also that the compiler must be able to differentiate
+      between the variants (most notably, it does currently (Pike 9.0)
+      not differentiate between different object types for the same
+      argument position).</p>
+
+      <example>
+        class Foo {
+          int foo(int a) { return a*3; }
+          variant float foo(float b) { return b/3.0; }
+        }
+      </example>
+
+      <p>The above example results in a function named <tt>foo</tt>
+      that has the type <tt>function(int:int)|function(float:float)</tt>.</p>
+
+      <p>You may have noticed that the first <tt>foo</tt> function above
+      did not have the <tt>variant</tt> keyword. This makes a difference
+      when you have inherited the same symbol.</p>
+
+      <example>
+        class Bar {
+          inherit Foo;
+          int foo(int a) { return ::foo(a) + a; }
+        }
+        class Baz {
+          inherit Foo;
+          variant int foo(int a) { return ::foo(a) + a; }
+        }
+      </example>
+
+      <p>In the above example, <tt>Bar()->foo</tt> has the
+      type <tt>function(int:int)</tt>, while <tt>Baz()->foo</tt>
+      has the type <tt>function(int:int)|function(float:float)</tt>.</p>
+    </subsection>
+
+  </section>
+
+  <section title="Constants">
+    <p>A constant is a symbol that will not change its value
+    during runtime. It may however be changed via overriding
+    via inherit.</p>
+
+    <p>There are several ways to declare constant symbols in
+    a program in Pike.</p>
+
+    <subsection title="constant">
+      <example>
+        constant message = "Hello, world!";
+      </example>
+
+      <p>The above makes the symbol <tt>message</tt> have the
+      constant value <tt>"Hello, world!"</tt>.</p>
+    </subsection>
+
+    <subsection title="enum">
+      <p>Enums can be used to declare multiple constants
+      in a convenient way:</p>
+
+      <example>
+        enum Level {
+          LOW = 0,
+          MEDIUM,
+          HIGH,
+        }
+      </example>
+
+      <p>The above declares 4 constants; <tt>LOW</tt>, <tt>MEDIUM</tt>
+      and <tt>HIGH</tt> with the respective values <tt>0</tt>, <tt>1</tt>
+      and <tt>2</tt>, as well as <tt>Level</tt> with the type value
+      <tt>int(0..3)</tt>. This makes <tt>Level</tt> a suitable type to
+      use for values intended to hold one of <tt>LOW</tt>, <tt>MEDIUM</tt>
+      or <tt>HIGH</tt>.</p>
+    </subsection>
+
+    <subsection title="typedef">
+      <p>A typedef is a syntax to declare an alias for a type.</p>
+
+      <example>
+        typedef Level|void OptionalLevel;
+      </example>
+
+      <p>A typedefed symbol (eg <tt>OptionalLevel</tt> above) may be used
+      anywhere that a class name may be used.</p>
+    </subsection>
+  </section>
+
+  <section title="Classes">
+
+    <p>A class (aka <tt>program</tt> groups a set of symbols (variables,
+    functions and constants, etc) into a single unit and can be used as
+    a template to create objects implementing the class.</p>
+
+    <subsection title="Inheritance">
+      <p>The functionality of a class may be extended by a new class
+      by means of inheritance.</p>
+
+      <example>
+        class Foo {
+          int a;
+        }
+        class Bar {
+          inherit Foo;
+          int b;
+        }
+      </example>
+
+      <p>In the above example, the class <tt>Bar</tt> contains all
+      the symbols of <tt>Foo</tt>, and also the variable <tt>b</tt>.
+      Exactly what symbols that are inherited can be controlled by
+      modifiers (see further below).</p>
+    </subsection>
+
+    <subsection title="LFUNs">
+
+      <p>LFUns are functions that are called by various operators and
+      global functions (aka EFUNs) when they operate on objects.
+      They are typically declared <tt>protected</tt> in order to
+      only be used by the corresponding operator or function.</p>
+
+      <p>The most common LFUN is <tt>create</tt>, which is called
+      at object creation. It is typically used to initialize the
+      object to a desired initial state.</p>
+
+      <example>
+        class Foo {
+          int a;
+          protected void create(int initial_a) { a = initial_a; }
+        }
+      </example>
+
+      <p>In the above example a call of <tt>Foo(17)</tt> results
+      in an object of type <tt>Foo</tt> where the variable <tt>a</tt>
+      has been set to <tt>17</tt>.</p>
+
+      <p>As can be seen from the example above <tt>create</tt>
+      often consists of just initializing some variables directly
+      from its arguments. This can also be simplified by using
+      the implicit create syntax:</p>
+
+      <example>
+        class Foo(int a){}
+      </example>
+
+      <p>The above is equivalent to the previous declaration of
+      <tt>Foo</tt>.</p>
+
+      <p>Other common LFUNs are <tt>_destruct</tt>, <tt>_sprintf</tt>
+      and <tt>_get_iterator</tt>. See the <b>Special object functions
+      chapter</b> for details.</p>
+
+    </subsection>
+
+    <subsection title="Getters and setters">
+
+      <p>Sometimes you may want to have a symbol run some code
+      every time it is accessed or modified. Then a getter/setter
+      may be appropriate.</p>
+
+      <example>
+        int foo;
+        int `bar() { return ~foo; }          // Getter for bar.
+        void `bar=(int val) { foo = ~val; }  // Setter for bar.
+      </example>
+
+      <p>The above will add a symbol <tt>bar</tt> that will evaluate
+      to <tt>~foo</tt> everytime it is accessed, and will set
+      <tt>foo</tt> to the inverted value when ever it is set.</p>
+    </subsection>
+
+    <subsection title="Generic types">
+      <p>To improve the type-safety over just using <tt>mixed</tt>, it
+      is possible to define place-holder types that are replaced with
+      actual types when the class is used.</p>
+
+      <example>
+        class Container (&lt;T&gt;) (T|void content) {}
+
+        Container(&lt;int&gt;) int_container = Container(&lt;int&gt;)(17);
+        Container(&lt;float&gt;) float_container = Container(&lt;float&gt;)(17.0);
+        Container mixed_container = Container("foo");
+      </example>
+
+      <p>The above class is similar to:</p>
+
+      <example>
+        class Container(mixed|void content) {}
+      </example>
+
+      <p>But the former allows the compiler to eg check that only values
+      of the expected types are put in <tt>int_container</tt> and
+      <tt>float_container</tt>.</p>
+    </subsection>
+  </section>
+
+  <section title="Modifiers">
+    <p>Modifiers are keywords that may be specified before the type
+    of a symbol declaration or inherit. They typically affect the
+    symbol lookup or other related compiler behavior.</p>
+
+    <subsection title="protected">
+      <p>The <tt>protected</tt> modifier hides symbols from external
+      indexing (ie they are still accessable to subclassess that
+      have inherited the class, but not via <ref>predef::`->()</ref>
+      or <ref>predef::`[]()</ref>).</p>
+
+      <p>In ancient versions of Pike this modifier was known
+      as <tt>static</tt>.</p>
+    </subsection>
+
+    <subsection title="local">
+      <p>The <tt>local</tt> modifier causes use of the symbol from
+      the current class to not be affected by overloading by
+      subclasses.</p>
+
+      <p>This modifier is also available with the name <tt>inline</tt>.</p>
+
+      <p>The modifier <tt>final</tt> is similar.</p>
+    </subsection>
+
+    <subsection title="private">
+      <p>The <tt>private</tt> modifier hides symbols from internal
+      indexing (ie they are not accessable to subclasses) and implies
+      <tt>protected</tt> and <tt>local</tt>.</p>
+    </subsection>
+
+    <subsection title="final">
+      <p>The <tt>final</tt> modifier causes the compiler to issue
+      an error if a subclass attempts to overload the symbol.</p>
+
+      <p>The modifier <tt>local</tt> is similar, but more permissive.</p>
+
+      <p>Note in ancient versions of Pike this modifier was also
+      available with the name <tt>nomask</tt>.</p>
+    </subsection>
+
+    <subsection title="optional">
+      <p>The <tt>optional</tt> modifier causes the type checker to
+      consider the symbol as optional to implement to satisfy the
+      API (albeit if the symbol exists it still must comply with
+      the type).</p>
+    </subsection>
+
+    <subsection title="extern">
+      <p>The <tt>extern</tt> modifier indicates that a symbol may
+      be implemented by a subclass, but does not define it in the
+      current class. It implies <tt>optional</tt>.</p>
+    </subsection>
+
+    <subsection title="public">
+      <p>The <tt>public</tt> modifier causes inherited <tt>private</tt>
+      symbols to become <tt>local</tt> <tt>protected</tt> (and thus
+      available to both the inheriting class and subsequent inherits,
+      albeit not overrideable or visible via external indexing).
+      All other inherited symbols retain their modifiers.</p>
+
+      <p>Note that the <tt>public</tt> modifier is only useful for
+      <tt>inherit</tt> statements. In all other cases it is essentially
+      a no-op.</p>
+    </subsection>
+
+    <subsection title="variant">
+      <p>The <tt>variant</tt> modifier is used to provide alternative
+      APIs for functions. The different functions will be called
+      depending on what the arguments are when the symbol is called.</p>
+    </subsection>
+
+    <subsection title="__weak__">
+      <p>The <tt>__weak__</tt> modifier is used to indicate to the
+      garbage collector that it may clear the variable if it is
+      the only holder of the value.</p>
+
+      <p>Note that this modifier is new in Pike 9.0.</p>
+    </subsection>
+
+    <subsection title="__unused__">
+      <p>The <tt>__unused__</tt> modifier is used to inhibit the
+      warning that the symbol is not used.</p>
+
+      <p>Note that this modifier is new in Pike 9.0.</p>
+    </subsection>
+
+    <subsection title="__generator__">
+      <p>The <tt>__generator__</tt> modifier converts a function
+      into a function that returns a restartable function.</p>
+
+      <example>
+        __generator__ int counter(int start, int stop)
+        {
+          while (start &lt; stop) {
+            continue return start++;
+          }
+          return stop;
+        }
+      </example>
+
+      <p>The above behaves similar to:</p>
+
+      <example>
+        function(:int) counter(int start, int stop)
+        {
+          return lambda() {
+            if (start &lt;= stop) {
+              return start++;
+            }
+            return UNDEFINED;
+          };
+        }
+      </example>
+
+      <p>Note that this modifier is new in Pike 9.0.</p>
+    </subsection>
+
+    <subsection title="__async__">
+      <p>The <tt>__async__</tt> modifier converts a function
+      into an asynchronous function. For such functions an
+      implicit <ref>Concurrent.Promise</ref> object is allocated,
+      and all returns and yields are converted into setting
+      the promise followed by returning <tt>UNDEFINED</tt>,
+      except for the first return or yield which will return the
+      <ref>Concurrent.Future</ref> corresponding to the promise.</p>
+
+      <example>
+        __async__ int foo(mixed ... args)
+        {
+          return 17;
+        }
+      </example>
+
+      <p>The above behaves similar to:</p>
+
+      <example>
+        Concurrent.Future(&lt;int&gt;) foo(mixed ... args)
+        {
+          Concurrent.Promise(&lt;int&gt;) __async_promise__ =
+            Concurrent.Promise(&lt;int&gt;)();
+
+          __generator__ lambda() {
+            __async_promise__-&gt;failure(catch {
+                __async_promise__-&gt;success(17);
+                return UNDEFINED;
+              });
+            return UNDEFINED;
+          }()();
+
+          return __async_promise__-&gt;future();
+        }
+      </example>
+
+      <p>Restartable functions are required in order to be able
+      to use <ref>predef::await()</ref>.</p>
+
+      <p>Note that this modifier is new in Pike 9.0.</p>
+    </subsection>
+
+    <subsection title="static">
+      <p>The <tt>static</tt> modifier is currently identical
+      to the <tt>protected</tt> modifier except for warning
+      that it is being used (as of Pike 9.0).</p>
+
+      <p>Note: In a future version of Pike this may change. Do not use.</p>
+    </subsection>
+  </section>
+
+</chapter>

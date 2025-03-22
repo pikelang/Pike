@@ -17,10 +17,13 @@
     <chapter-ref file="chapters/introduction.xml"/>
   </file>
   <file>
-    <chapter-ref file="chapters/control_structures.xml"/>
+    <chapter-ref file="chapters/data_types.xml"/>
   </file>
   <file>
-    <chapter-ref file="chapters/data_types.xml"/>
+    <chapter-ref file="chapters/declarations.xml"/>
+  </file>
+  <file>
+    <chapter-ref file="chapters/control_structures.xml"/>
   </file>
   <file>
     <chapter-ref file="chapters/operators.xml"/>
