@@ -173,7 +173,7 @@ void image_any__decode(INT32 args)
 	 return;
 
       case CHAR2(0x10,0):
-         /* TIM */
+         /* TIM Version 0 */
 	 image_tim_f__decode(1);
 	 return;
 
@@ -193,6 +193,14 @@ void image_any__decode(INT32 args)
             image_xwd__decode(1);
             return; /* done */
 	 }
+
+         if ((CHAR2(sp[-args].u.string->str[2],
+                    sp[-args].u.string->str[2]) < 3) &&
+             (sp[-args].u.string->len == 32128)) {
+            /* NEOchrome image. */
+            image_neo_f_decode(1);
+            return; /* done */
+         }
 
 	 goto unknown_format;
 
