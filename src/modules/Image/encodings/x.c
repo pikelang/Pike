@@ -1242,7 +1242,6 @@ void image_x_convert_xy_to_z(INT32 args)
          nextd += bytes_per_line;
          /* NB: We need to read even bytes due to LSBFirst mode. */
          for (x = 0; x < ((xsz + 7) & ~7); x++) {
-            int j;
             mask >>= 1;
             if (!mask) {
                mask = 0x80;
