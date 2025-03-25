@@ -1001,7 +1001,7 @@ cond( (master()->resolv("Image.XFace")||([]))->encode,[[
 cond_resolv(Image.XCF.decode, [[
   test_do([[
     add_constant("TestImage",
-                 Stdio.read_bytes("SRCDIR/encodings/examples/tab_list.xcf"));
+                 Stdio.read_bytes("]]SRCDIR[[/encodings/examples/tab_list.xcf"));
   ]])
   test_equal([[Image.XCF.decode_header(TestImage)]],
              ([ "type": "image/x-gimp-image",
