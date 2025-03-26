@@ -466,7 +466,7 @@ PIKECLASS CircularList
    *!   This is the same operation as @[push_front()].
    *!
    *! @seealso
-   *!   @[push_back()], @[push_front()]
+   *!   @[replace_back()], @[replace_front()], @[push_back()], @[push_front()]
    */
 
   PIKEFUN void add(mixed value, int(0..1)|void force)
@@ -491,6 +491,113 @@ PIKECLASS CircularList
     simple_set_index(THIS->a, &ind, value);
     THIS->size++;
     pop_n_elems(args);
+  }
+
+  /*! @decl mixed replace_back(mixed value)
+   *!   Replace a value to the back of the list.
+   *!
+   *! @param value
+   *!   The value to add.
+   *!
+   *! @returns
+   *!   Returns the element that was at the front of the list
+   *!   if it was full, and @[UNDEFINED] otherwise.
+   *!
+   *!   This operation is similar to:
+   *!   @code
+   *!     mixed replace_back(mixed value)
+   *!     {
+   *!       mixed ret = UNDEFINED;
+   *!       if (sizeof(this) == max_size()) {
+   *!         ret = pop_front();
+   *!       }
+   *!       push_back(value);
+   *!       return ret;
+   *!     }
+   *!   @endcode
+   *!
+   *! @note
+   *!   Presence of this function is indicated by
+   *!   @[__HAVE_CIRCULAR_LIST_REPLACE_BACK__].
+   *!
+   *! @seealso
+   *!   @[add()], @[pop_back()], @[push_front()], @[replace_front()]
+   */
+
+  PIKEFUN mixed replace_back(mixed value)
+  {
+    struct svalue ind;
+    int pos = THIS->pos;
+    ASSERT_INITIALIZED();
+    if (!THIS->a->size) return;	/* Returns the argument. */
+    should_copy();
+    if (THIS->size == THIS->a->size) {
+      push_svalue(ITEM(THIS->a) + THIS->pos);
+      if (++THIS->pos >= THIS->a->size) {
+        THIS->pos -= THIS->a->size;
+      }
+    } else {
+      push_undefined();
+      pos = THIS->pos + THIS->size - THIS->a->size;
+      if (pos < 0) {
+        pos += THIS->a->size;
+      }
+      THIS->size++;
+    }
+    SET_SVAL(ind, T_INT, NUMBER_NUMBER, integer, pos);
+    simple_set_index(THIS->a, &ind, value);
+  }
+
+  /*! @decl mixed replace_front(mixed value)
+   *!   Replace a value to the front of the list.
+   *!
+   *! @param value
+   *!   The value to add.
+   *!
+   *! @returns
+   *!   Returns the element that was at the back of the list
+   *!   if it was full, and @[UNDEFINED] otherwise.
+   *!
+   *!   This operation is similar to:
+   *!   @code
+   *!     mixed replace_front(mixed value)
+   *!     {
+   *!       mixed ret = UNDEFINED;
+   *!       if (sizeof(this) == max_size()) {
+   *!         ret = pop_back();
+   *!       }
+   *!       push_front(value);
+   *!       return ret;
+   *!     }
+   *!   @endcode
+   *!
+   *! @note
+   *!   Presence of this function is indicated by
+   *!   @[__HAVE_CIRCULAR_LIST_REPLACE_FRONT__].
+   *!
+   *! @seealso
+   *!   @[add()], @[pop_back()], @[push_front()], @[replace_back()]
+   */
+
+  PIKEFUN mixed replace_front(mixed value)
+  {
+    struct svalue ind;
+    ASSERT_INITIALIZED();
+    if (!THIS->a->size) return;	/* Returns the argument. */
+    should_copy();
+    THIS->pos--;
+    if (THIS->pos < 0)
+    {
+      THIS->pos = THIS->a->size-1;
+    }
+    if (THIS->size == THIS->a->size) {
+      push_svalue(ITEM(THIS->a) + THIS->pos);
+    } else {
+      push_undefined();
+      THIS->size++;
+    }
+    SET_SVAL(ind, T_INT, NUMBER_NUMBER, integer, THIS->pos);
+    simple_set_index(THIS->a, &ind, value);
   }
 
   /*! @decl void allocate(int elements)
@@ -1408,6 +1515,18 @@ PIKECLASS CircularList
 /*! @endclass    
   */
 
+/*! @decl constant __HAVE_CIRCULAR_LIST_REPLACE_BACK__ = 1
+ *!
+ *! Presence of this symbol indicates that @[CircularList()->replace_back()]
+ *! is implemented.
+ */
+
+/*! @decl constant __HAVE_CIRCULAR_LIST_REPLACE_FRONT__ = 1
+ *!
+ *! Presence of this symbol indicates that @[CircularList()->replace_front()]
+ *! is implemented.
+ */
+
 /*! @endmodule
  */
 
@@ -1415,6 +1534,9 @@ PIKECLASS CircularList
 void pike_init_CircularList_module(void)
 {
   INIT;
+
+  ADD_INT_CONSTANT("__HAVE_CIRCULAR_LIST_REPLACE_FRONT__", 1, 0);
+  ADD_INT_CONSTANT("__HAVE_CIRCULAR_LIST_REPLACE_BACK__", 1, 0);
 }
 
 void pike_exit_CircularList_module(void)

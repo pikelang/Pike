@@ -852,6 +852,27 @@ test_any(_ADT.CircularList a = _ADT.CircularList(({1,2,3,4,1,2,3,4}));
           a->clear();
 	  return sizeof(a), 0)
 
+*************************** test replace_front/replace_back ****************
+
+test_any_equal([[
+  _ADT.CircularList a = _ADT.CircularList(4);
+  array(string|int(0..1)) ret = ({
+    ADT.__HAVE_CIRCULAR_LIST_REPLACE_FRONT__,
+    ADT.__HAVE_CIRCULAR_LIST_REPLACE_BACK__,
+  });
+  a->add("A");
+  a->add("B");
+  ret += ({ a->replace_front("C") });
+  ret += ({ a->replace_front("D") });
+  ret += ({ a->replace_front("E") });
+  ret += ({ a->replace_back("A") });
+  ret += ({ a->replace_back("@") });
+  ret += ({ a->pop_front() });
+  ret += ({ a->pop_back() });
+  ret += values(a);
+  return map(ret, lambda(mixed x) { return undefinedp(x)?"UNDEFINED":x; });
+]], ({ 1, 1, "UNDEFINED", "UNDEFINED", "A", "E", "D", "C", "@", "B", "A", }))
+
 *************************** test search ************************************
 
 test_any(_ADT.CircularList l = _ADT.CircularList(({1,2,3,4,1,2,3,4}));
