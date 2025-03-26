@@ -528,7 +528,6 @@ PIKECLASS CircularList
   {
     struct svalue ind;
     int pos = THIS->pos;
-    ASSERT_INITIALIZED();
     if (!THIS->a->size) return;	/* Returns the argument. */
     should_copy();
     if (THIS->size == THIS->a->size) {
@@ -582,7 +581,6 @@ PIKECLASS CircularList
   PIKEFUN mixed replace_front(mixed value)
   {
     struct svalue ind;
-    ASSERT_INITIALIZED();
     if (!THIS->a->size) return;	/* Returns the argument. */
     should_copy();
     THIS->pos--;
