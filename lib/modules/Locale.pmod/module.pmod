@@ -161,6 +161,7 @@ array(string) list_languages(string project)
   return list;
 }
 
+//! Class for objects representing a Locale.
 class LocaleObject
 {
   // key:string
@@ -173,6 +174,7 @@ class LocaleObject
   constant is_locale=1;
   string id = "";
 
+  //!
   protected void create(mapping(string|int:string) _bindings,
                         mapping(string:function) _functions = ([]),
                         mapping(string|int:string) _origs = ([]))
@@ -186,6 +188,7 @@ class LocaleObject
     return indices(bindings);
   }
 
+  //! Returns the translation for the key @[key]
   string translate(string|int key, string|void fallback)
   {
 #ifdef LOCALE_DEBUG_ALL
@@ -214,11 +217,18 @@ class LocaleObject
     return bindings[key];
   }
 
+  //! @returns
+  //!   Returns the function for the function name @[f] if it exists
+  //!   and is a function and @expr{0@} (zero) otherwise.
   function is_function(string f)
   {
     return functionp(functions[f]) ? functions[f] : 0;
   }
 
+  //! Calls the function @[f] with the arguments @[args] if it
+  //! exists and is a function. Otherwise returns the value
+  //! (ie constant function) for @[f] and @expr{UNDEFINED@}
+  //! if it does not exist.
   protected mixed `() (string f, mixed ... args)
   {
     if(functionp(functions[f]))
@@ -227,6 +237,9 @@ class LocaleObject
       return functions[f];
   }
 
+  //! @returns
+  //!   Returns an estimate of the number of bytes that
+  //!   the object uses.
   int estimate_size()
   {
     int size=2*64+8; //Two mappings and a timestamp
@@ -241,6 +254,7 @@ class LocaleObject
     return size;
   }
 
+  //!
   protected string _sprintf(int t)
   {
     return t=='O' && sprintf("%O(timestamp: %d, bindings: %d, functions: %d)",
@@ -249,8 +263,14 @@ class LocaleObject
   }
 }
 
-object|zero get_object(string project, string lang) {
-
+//! @returns
+//!   Returns the corresponding @[LocaleObject] if it exists
+//!   and @expr{0@} (zero) if it does not.
+//!
+//! @seealso
+//!   @[get_objects()]
+LocaleObject|zero get_object(string project, string lang)
+{
   // Is there such a project?
   int guess_project;
   if(!projects[project]) {
@@ -480,6 +500,10 @@ function|zero call(string project, string lang, string name,
   return f || [function]fb;
 }
 
+//! Remove old @[LocaleObject]s from the cache.
+//!
+//! @seealso
+//!   @[flush_cache()]
 void clean_cache() {
   remove_call_out(clean_cache);
   int t = time(1)-CLEAN_CYCLE;
@@ -499,6 +523,7 @@ void clean_cache() {
   call_out(clean_cache, CLEAN_CYCLE);
 }
 
+//! Remove all entries in the @[LocaleObject] cache.
 void flush_cache() {
 #ifdef LOCALE_DEBUG
   werror("Locale.flush_cache()\n");
@@ -508,6 +533,8 @@ void flush_cache() {
   // but then things would probably stop working.
 }
 
+//! Retrieve some statistics about the
+//! currently loaded @[LocaleObject]s.
 mapping(string:int) cache_status() {
   int size=0, lp=0;
   foreach(locales;; mapping l)
