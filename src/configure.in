@@ -285,7 +285,12 @@ if_autoconf(2,50,[
   if test "x$cache_file$force_config_cache" = "x/dev/nullyes"; then
       PIKE_MSG_NOTE([Slow configure detected.])
       PIKE_MSG_NOTE([Enabling the configure cache for performance reasons.])
-      cache_file=./config.cache
+      if test "x$CONFIG_CACHE_FILE" = "x"; then
+          cache_file=./config.cache
+      else
+          # Cache file suggested by Xenofarm.
+          cache_file="$CONFIG_CACHE_FILE"
+      fi
       if test -r "$cache_file"; then
           echo "loading cache $cache_file"
           . $cache_file
