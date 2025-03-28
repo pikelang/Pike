@@ -92,7 +92,10 @@ log_start response_assembly
     done
   ) > xenofarm_result/configlogs.txt
   cp "$BUILDDIR/config.info" xenofarm_result/configinfo.txt || true
-  cp "$BUILDDIR/config.cache" xenofarm_result/configcache.txt || true;
+  if [ "x$CONFIG_CACHE_FILE" = "x" ]; then
+      CONFIG_CACHE_FILE="$BUILDDIR/config.cache"
+  fi
+  cp "$CONFIG_CACHE_FILE" xenofarm_result/configcache.txt || true;
   # Compilation
   if test "`find $BUILDDIR -name '*.fail' -print`" = ""; then :; else
     (
