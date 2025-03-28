@@ -1,4 +1,4 @@
-/*
+/* -*- mode: C; c-basic-offset: 3; -*-
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
@@ -1044,15 +1044,19 @@ void _image_gif_encode(INT32 args,int fs)
 	    push_int(n);
 	    nctobj=clone_object(image_colortable_program,2);
 	    nct=get_storage(nctobj,image_colortable_program);
-	    if (!nct)
+            if (!nct) {
+               free_object(imgobj);
+               free_object(nctobj);
 	       Pike_error("Image.GIF.encode(): Internal error; colortable isn't colortable\n");
+            }
 	    arg=2;
 	 }
 	 else arg=1;
       }
-      else if (TYPEOF(sp[1-args]) != T_OBJECT)
+      else if (TYPEOF(sp[1-args]) != T_OBJECT) {
+         free_object(imgobj);
 	 Pike_error("Image.GIF.encode(): Illegal argument 2 (expected image or colortable object or int)\n");
-      else if ((nct=get_storage(nctobj=sp[1-args].u.object,image_colortable_program)))
+      } else if ((nct=get_storage(nctobj=sp[1-args].u.object,image_colortable_program)))
       {
 	add_ref(nctobj);
       }
@@ -1072,9 +1076,11 @@ void _image_gif_encode(INT32 args,int fs)
 	    if (args-arg<4 ||
 		TYPEOF(sp[1+arg-args]) != T_INT ||
 		TYPEOF(sp[2+arg-args]) != T_INT ||
-		TYPEOF(sp[3+arg-args]) != T_INT)
+                TYPEOF(sp[3+arg-args]) != T_INT) {
+               free_object(imgobj);
+               free_object(nctobj);
 	       Pike_error("Image.GIF.encode: Illegal arguments %d..%d (expected int)\n",arg+2,arg+4);
-	    else
+            } else
 	    {
 	       ac.r=sp[1+arg-args].u.integer;
 	       ac.g=sp[2+arg-args].u.integer;
@@ -1094,9 +1100,12 @@ void _image_gif_encode(INT32 args,int fs)
 	 if (arg==2 &&
 	     TYPEOF(sp[arg-args]) == T_INT)
 	    tridx=sp[arg-args].u.integer;
-	 else
+         else {
+            free_object(imgobj);
+            free_object(nctobj);
 	    Pike_error("Image.GIF.encode(): Illegal argument %d or %d..%d\n",
 		  arg+1,arg+1,arg+3);
+         }
 	 trans=1;
       }
       else
@@ -1107,13 +1116,15 @@ void _image_gif_encode(INT32 args,int fs)
 	 /* make a colortable if we don't have one */
 	 if (!nct)
 	 {
-	   add_ref(imgobj);
+            add_ref(imgobj);
 	    push_object(imgobj);
 	    push_int(256);
 	    nctobj=clone_object(image_colortable_program,2);
 	    nct=get_storage(nctobj,image_colortable_program);
-	    if (!nct)
+            if (!nct) {
+               free_object(imgobj);
 	       Pike_error("Image.GIF.encode(): Internal error; colortable isn't colortable\n");
+            }
 	 }
 
 	 tr.r=(unsigned char)sp[arg-args].u.integer;
@@ -1129,12 +1140,15 @@ void _image_gif_encode(INT32 args,int fs)
    /* make a colortable if we don't have one */
    if (!nct)
    {
-     ref_push_object(imgobj);
+      ref_push_object(imgobj);
       if (alpha) push_int(255); else push_int(256);
       nctobj=clone_object(image_colortable_program,2);
       nct=get_storage(nctobj,image_colortable_program);
-      if (!nct)
+      if (!nct) {
+         free_object(imgobj);
+         free_object(nctobj);
 	 Pike_error("Image.GIF.encode(): Internal error; colortable isn't colortable\n");
+      }
    }
 
    if (fs) image_colortable_internal_floyd_steinberg(nct);
