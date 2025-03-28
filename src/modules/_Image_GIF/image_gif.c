@@ -1078,7 +1078,7 @@ void _image_gif_encode(INT32 args,int fs)
 		TYPEOF(sp[2+arg-args]) != T_INT ||
                 TYPEOF(sp[3+arg-args]) != T_INT) {
                free_object(imgobj);
-               free_object(nctobj);
+               if (nctobj) free_object(nctobj);
 	       Pike_error("Image.GIF.encode: Illegal arguments %d..%d (expected int)\n",arg+2,arg+4);
             } else
 	    {
@@ -1102,7 +1102,7 @@ void _image_gif_encode(INT32 args,int fs)
 	    tridx=sp[arg-args].u.integer;
          else {
             free_object(imgobj);
-            free_object(nctobj);
+            if (nctobj) free_object(nctobj);
 	    Pike_error("Image.GIF.encode(): Illegal argument %d or %d..%d\n",
 		  arg+1,arg+1,arg+3);
          }
@@ -1123,6 +1123,7 @@ void _image_gif_encode(INT32 args,int fs)
 	    nct=get_storage(nctobj,image_colortable_program);
             if (!nct) {
                free_object(imgobj);
+               free_object(nctobj);
 	       Pike_error("Image.GIF.encode(): Internal error; colortable isn't colortable\n");
             }
 	 }
