@@ -1268,7 +1268,7 @@ static void image_change_color(INT32 args)
 
 /*
 **! method object quantize_colors(int(0..8) bits)
-**! method object quantize_colors(int(0..8) rbits, int(0..8) gbits, int(0..8) bbits)
+**! method object quantize_colors(int(0..8) rbits,int(0..8) gbits,int(0..8) bbits)
 **!
 **! 	Reduces the colorspace to the specified number of bits per channel.
 **!
