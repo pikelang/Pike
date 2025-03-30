@@ -65,9 +65,9 @@ struct atari_palette* decode_atari_palette(unsigned char *pal,
     rgb_group col;
     /* The first part is the ST palette. The second part is
        the STE color bit */
-    col.r = (pal[i*2]&7)*36 + ((pal[i*2]&8)?3:0);
-    col.g = ((pal[i*2+1]>>4)&7)*36 + ((pal[i*2+1]&0x80)?3:0);
-    col.b = (pal[i*2+1]&7)*36 + ((pal[i*2+1]&8)?3:0);
+    col.r = (pal[i*2]&7)*0x22 + ((pal[i*2]&8)?0x11:0);
+    col.g = ((pal[i*2+1]>>4)&7)*0x22 + ((pal[i*2+1]&0x80)?0x11:0);
+    col.b = (pal[i*2+1]&7)*0x22 + ((pal[i*2+1]&8)?0x11:0);
     ret_pal->colors[i] = col;
   }
   return ret_pal;

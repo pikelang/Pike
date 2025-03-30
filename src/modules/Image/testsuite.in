@@ -910,6 +910,13 @@ cond( (master()->resolv("Image.JPEG")||([]))->encode,[[
   ]],1)
 ]])
 
+test_encoding(NEO,[[
+  img = Image.Image(Image.NEO.WIDTH, Image.NEO.HEIGHT)->test(43);
+  object c = Image.Colortable(img, 16)->floyd_steinberg();
+  img = c * img;
+  img = img->quantize_colors(4);
+]],)
+
 test_encoding(PCX,,)
 test_encoding(PNG,,)
 test_encoding(PNM,,)
