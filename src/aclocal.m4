@@ -1846,6 +1846,9 @@ AC_DEFUN(PIKE_CHECK_ABI_DIR,
   abi_dir_ok="no"
   abi_dir_dynamic="unknown"
   real_dir="$1"
+  update_abi_32="no"
+  update_abi_64="no"
+  update_abi_dynamic="no"
   while :; do
     if test -d "$1/." ; then
       if test "x$5" = "xyes"; then
@@ -1872,6 +1875,7 @@ AC_DEFUN(PIKE_CHECK_ABI_DIR,
       abi_32=no
     else
       abi_32=unknown
+      update_abi_32="yes"
     fi
     if echo " $pike_cv_64bit_dirs " | grep " $real_dir " >/dev/null; then
       abi_64=yes
@@ -1879,6 +1883,7 @@ AC_DEFUN(PIKE_CHECK_ABI_DIR,
       abi_64=no
     else
       abi_64=unknown
+      update_abi_64="yes"
     fi
     if echo " $pike_cv_dynamic_dirs " | grep " $real_dir " >/dev/null; then
       abi_dir_dynamic=yes
@@ -1886,6 +1891,7 @@ AC_DEFUN(PIKE_CHECK_ABI_DIR,
       abi_dir_dynamic=no
     else
       abi_dir_dynamic=unknown
+      update_abi_dynamic="yes"
     fi
     empty=no
     if echo "$abi_32:$abi_64:$abi_dir_dynamic" | \
@@ -2012,29 +2018,38 @@ AC_DEFUN(PIKE_CHECK_ABI_DIR,
 	  empty=other
         fi
       done
-      if test "$abi_32" = "yes"; then
-        pike_cv_32bit_dirs="$pike_cv_32bit_dirs $real_dir"
-	if test "$abi_64" = "unknown"; then
-          abi_64="no"
-	fi
-      else
-        pike_cv_not_32bit_dirs="$pike_cv_not_32bit_dirs $real_dir"
+      if test "$update_abi_32" = "yes"; then
+        if test "$abi_32" = "yes"; then
+          pike_cv_32bit_dirs="$pike_cv_32bit_dirs $real_dir"
+          if test "$abi_64" = "unknown"; then
+            abi_64="no"
+          fi
+        else
+          pike_cv_not_32bit_dirs="$pike_cv_not_32bit_dirs $real_dir"
+        fi
+        update_abi_32="no"
       fi
-      if test "$abi_64" = "yes"; then
-        pike_cv_64bit_dirs="$pike_cv_64bit_dirs $real_dir"
-	if test "$abi_32" = "unknown"; then
-          abi_32="no"
-	fi
-      elif test "$abi_64" = "no"; then
-        pike_cv_not_64bit_dirs="$pike_cv_not_64bit_dirs $real_dir"
+      if test "$update_abi_64" = "yes"; then
+        if test "$abi_64" = "yes"; then
+          pike_cv_64bit_dirs="$pike_cv_64bit_dirs $real_dir"
+          if test "$abi_32" = "unknown"; then
+            abi_32="no"
+          fi
+        elif test "$abi_64" = "no"; then
+          pike_cv_not_64bit_dirs="$pike_cv_not_64bit_dirs $real_dir"
+        fi
       fi
-      if test "$abi_32" = "no"; then
-        pike_cv_not_32bit_dirs="$pike_cv_not_32bit_dirs $real_dir"
+      if test "$update_abi_32" = "yes"; then
+        if test "$abi_32" = "no"; then
+          pike_cv_not_32bit_dirs="$pike_cv_not_32bit_dirs $real_dir"
+        fi
       fi
-      if test "$abi_dir_dynamic" = "yes"; then
-	pike_cv_dynamic_dirs="$pike_cv_dynamic_dirs $real_dir"
-      else
-	pike_cv_not_dynamic_dirs="$pike_cv_not_dynamic_dirs $real_dir"
+      if test "$update_abi_dynamic" = "yes"; then
+        if test "$abi_dir_dynamic" = "yes"; then
+          pike_cv_dynamic_dirs="$pike_cv_dynamic_dirs $real_dir"
+        else
+          pike_cv_not_dynamic_dirs="$pike_cv_not_dynamic_dirs $real_dir"
+        fi
       fi
     fi
     if test "$abi_32:$pike_cv_abi" = "no:32" \
