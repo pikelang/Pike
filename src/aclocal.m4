@@ -1871,7 +1871,7 @@ AC_DEFUN(PIKE_CHECK_ABI_DIR,
     fi
     if echo " $pike_cv_32bit_dirs " | grep " $real_dir " >/dev/null; then
       abi_32=yes
-    elif echo " $pike_cv_not_32bit_dir " | grep " $real_dir " >/dev/null; then
+    elif echo " $pike_cv_not_32bit_dirs " | grep " $real_dir " >/dev/null; then
       abi_32=no
     else
       abi_32=unknown
@@ -1894,6 +1894,9 @@ AC_DEFUN(PIKE_CHECK_ABI_DIR,
       update_abi_dynamic="yes"
     fi
     empty=no
+    # echo
+    # echo "cache key:$abi_32:$abi_64:$abi_dir_dynamic for $real_dir"
+    # echo
     if echo "$abi_32:$abi_64:$abi_dir_dynamic" | \
 	 grep "unknown" >/dev/null; then
       cached=""
@@ -2020,34 +2023,55 @@ AC_DEFUN(PIKE_CHECK_ABI_DIR,
       done
       if test "$update_abi_32" = "yes"; then
         if test "$abi_32" = "yes"; then
+          # echo
+          # echo "Adding $real_dir to pike_cv_32bit_dirs"
+          # echo
           pike_cv_32bit_dirs="$pike_cv_32bit_dirs $real_dir"
           if test "$abi_64" = "unknown"; then
             abi_64="no"
           fi
         else
+          # echo
+          # echo "Adding $real_dir to pike_cv_not_32bit_dirs"
+          # echo
           pike_cv_not_32bit_dirs="$pike_cv_not_32bit_dirs $real_dir"
         fi
         update_abi_32="no"
       fi
       if test "$update_abi_64" = "yes"; then
         if test "$abi_64" = "yes"; then
+          # echo
+          # echo "Adding $real_dir to pike_cv_64bit_dirs"
+          # echo
           pike_cv_64bit_dirs="$pike_cv_64bit_dirs $real_dir"
           if test "$abi_32" = "unknown"; then
             abi_32="no"
           fi
         elif test "$abi_64" = "no"; then
+          # echo
+          # echo "Adding $real_dir to pike_cv_not_64bit_dirs"
+          # echo
           pike_cv_not_64bit_dirs="$pike_cv_not_64bit_dirs $real_dir"
         fi
       fi
       if test "$update_abi_32" = "yes"; then
         if test "$abi_32" = "no"; then
+          # echo
+          # echo "Adding $real_dir to pike_cv_not_32bit_dirs"
+          # echo
           pike_cv_not_32bit_dirs="$pike_cv_not_32bit_dirs $real_dir"
         fi
       fi
       if test "$update_abi_dynamic" = "yes"; then
         if test "$abi_dir_dynamic" = "yes"; then
+          # echo
+          # echo "Adding $real_dir to pike_cv_dynamic_dirs"
+          # echo
           pike_cv_dynamic_dirs="$pike_cv_dynamic_dirs $real_dir"
         else
+          # echo
+          # echo "Adding $real_dir to pike_cv_not_dynamic_dirs"
+          # echo
           pike_cv_not_dynamic_dirs="$pike_cv_not_dynamic_dirs $real_dir"
         fi
       fi
