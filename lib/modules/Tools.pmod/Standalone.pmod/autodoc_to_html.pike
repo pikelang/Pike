@@ -1734,7 +1734,7 @@ string parse_docgroup(Node n) {
     if(m["homogen-type"]) {
       string type = "<span class='homogen--type'>" +
 	quote(String.capitalize(m["homogen-type"])) +
-	"</span>\n";
+        "\n</span>";
       array(string) names =
         Array.uniq(map(n->get_elements(m["homogen-type"]),
                        lambda(Node child) {
