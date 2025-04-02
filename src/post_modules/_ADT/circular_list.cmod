@@ -23,7 +23,12 @@
 #include "circular_list.h"
 
 
-
+#ifndef PROG_CIRCULARLIST_CIRCULARLISTITERATOR_ID
+/* Use a shorter symbol name. */
+#ifdef PROG_CIRCULARLISTITERATOR_ID
+#define PROG_CIRCULARLIST_CIRCULARLISTITERATOR_ID PROG_CIRCULARLISTITERATOR_ID
+#endif
+#endif
 
 /*! @module ADT
  */
@@ -1505,6 +1510,7 @@ PIKECLASS CircularList
      */
 
     PIKEFUN int(0..1) _equal(mixed iter)
+      flags ID_PROTECTED;
     {
       if (TYPEOF(*iter) == T_OBJECT &&
 	  iter->u.object->prog == CircularList_CircularListIterator_program)
@@ -1529,6 +1535,7 @@ PIKECLASS CircularList
      */
 
     PIKEFUN int(0..1) `<(mixed iter)
+      flags ID_PROTECTED;
     {
       if (TYPEOF(*iter) == T_OBJECT &&
 	  iter->u.object->prog == CircularList_CircularListIterator_program)
@@ -1554,6 +1561,7 @@ PIKECLASS CircularList
 
 
     PIKEFUN int(0..1) `>(mixed iter)
+      flags ID_PROTECTED;
     {
       if (TYPEOF(*iter) == T_OBJECT &&
 	  iter->u.object->prog == CircularList_CircularListIterator_program)
