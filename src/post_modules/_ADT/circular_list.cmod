@@ -39,7 +39,10 @@ DECLARATIONS
  */
 
 PIKECLASS CircularList
+  num_generics 1;
 {
+  /*! @decl __generic__ ValueType;
+   */
 
   CVAR int pos;
   CVAR struct array *a;
@@ -79,7 +82,7 @@ PIKECLASS CircularList
 
 
 
-/*! @decl mixed `[](int index)
+/*! @decl ValueType `[](int index)
  *! Index operator
  *!
  *! @param index
@@ -94,6 +97,7 @@ PIKECLASS CircularList
 
   PIKEFUN mixed `[](int index)
     flags ID_PROTECTED;
+    rawtype tFunc(tInt, tCircularListValueType);
   {
     struct svalue ind;
     ASSERT_INITIALIZED();
@@ -104,7 +108,7 @@ PIKECLASS CircularList
   }
 
 
-/*! @decl mixed `[]=(int index, mixed value)
+/*! @decl ValueType `[]=(int index, ValueType value)
  *! Index assign operator.
  *! Set the value at the index @[index] to be @[value]
  *!
@@ -124,6 +128,9 @@ PIKECLASS CircularList
   PIKEFUN mixed `[]=(int index, mixed value, mixed|void context,
                      int|void access)
     flags ID_PROTECTED;
+    rawtype tFunc(tInt tCircularListValueType
+                  tOr(tMix, tVoid) tOr(tInt, tVoid),
+                  tCircularListValueType);
   {
     struct svalue ind;
     ASSERT_INITIALIZED();
@@ -135,7 +142,7 @@ PIKECLASS CircularList
   }
 
 
-/*! @decl CircularList `+(CircularList ... coll)
+/*! @decl CircularList(<ValueType>) `+(CircularList(<ValueType>) ... coll)
  *! Addition operator
  *!
  *! Append the content of this CircularList and @@@[coll] and
@@ -151,6 +158,8 @@ PIKECLASS CircularList
 
   PIKEFUN object `+(object ... coll)
     flags ID_PROTECTED;
+    rawtype tFuncV(tNone, tCircularList(tCircularListValueType),
+                   tCircularList(tCircularListValueType));
   {
     struct array *a;
     struct CircularList_struct *tmpList;
@@ -287,7 +296,7 @@ PIKECLASS CircularList
     RETURN 0;
   }
 
-  /*! @decl array _indices()
+  /*! @decl array(ValueType) _indices()
    *!
    *! @returns
    *!   The indices in this list as an array.
@@ -295,6 +304,7 @@ PIKECLASS CircularList
 
   PIKEFUN array _indices()
     flags ID_PROTECTED;
+    rawtype tFunc(tNone, tArr(tCircularListValueType));
   {
     ptrdiff_t size = THIS->size;
     struct array *a;
@@ -308,7 +318,7 @@ PIKECLASS CircularList
     RETURN a;
   }
 
-/*! @decl void _insert_element(int index, mixed value)
+/*! @decl void _insert_element(int index, ValueType value)
  *! Insert an element in the list at the position @[index], the value
  *! at the position @[index] and all above will have their index increased
  *! by one.
@@ -330,6 +340,7 @@ PIKECLASS CircularList
  */
 
   PIKEFUN void _insert_element(int index, mixed value)
+    rawtype tFunc(tInt tCircularListValueType, tVoid);
   {
     int ind;
     ASSERT_INITIALIZED();
@@ -343,7 +354,7 @@ PIKECLASS CircularList
     }
   }
 
-/*! @decl mixed _remove_element(int index)
+/*! @decl ValueType _remove_element(int index)
  *!  Remove the values at index @[index] from the list.
  *!
  *! @param index
@@ -363,6 +374,7 @@ PIKECLASS CircularList
  */
 
   PIKEFUN mixed _remove_element(int index)
+    rawtype tFunc(tInt, tCircularListValueType);
   {
     ASSERT_INITIALIZED();
     FIX_AND_CHECK_INDEX(index, THIS->size, 0);
@@ -378,7 +390,7 @@ PIKECLASS CircularList
   }
 
 
-/*! @decl int _search(mixed value, void|int start)
+/*! @decl int(-1..) _search(ValueType value, void|int(0..) start)
  *!   Search the list for a specific value. Return the index of the first
  *!   value that is equal to @[value]. If no value was found @expr{UNDEFINED@}
  *!   is returned instead
@@ -399,6 +411,8 @@ PIKECLASS CircularList
 
   PIKEFUN int _search(mixed value, void|int start)
     flags ID_PROTECTED;
+    rawtype tFunc(tCircularListValueType tOr(tIntPos, tVoid),
+                  tOr(tInt_1, tIntPos));
   {
     int s;
     int retval;
@@ -434,19 +448,19 @@ PIKECLASS CircularList
 
   }
 
-/*! @decl int _sizeof()
+/*! @decl int(0..) _sizeof()
  *!
  *! @returns
  *!   The number of elements in this list.
  */
 
-  PIKEFUN int _sizeof()
+  PIKEFUN int(0..) _sizeof()
     flags ID_PROTECTED;
   {
     RETURN THIS->size;
   }
 
-  /*! @decl array _values()
+  /*! @decl array(ValueType) _values()
    *!
    *! @returns
    *!   The values in this list as an array.
@@ -454,6 +468,7 @@ PIKECLASS CircularList
 
   PIKEFUN array _values()
     flags ID_PROTECTED;
+    rawtype tFunc(tNone, tArr(tCircularListValueType));
   {
     struct array *a;
     int end;
@@ -487,7 +502,7 @@ PIKECLASS CircularList
   }
 
 
-  /*! @decl void add(mixed value, int(0..1)|void force)
+  /*! @decl void add(ValueType value, int(0..1)|void force)
    *!   Add a value at the front of the list
    *!
    *! @param value
@@ -511,6 +526,7 @@ PIKECLASS CircularList
    */
 
   PIKEFUN void add(mixed value, int(0..1)|void force)
+    rawtype tFunc(tCircularListValueType tOr(tInt01, tVoid), tVoid);
   {
     struct svalue ind;
     ASSERT_INITIALIZED();
@@ -534,7 +550,7 @@ PIKECLASS CircularList
     THIS->size++;
   }
 
-  /*! @decl mixed replace_back(mixed value)
+  /*! @decl ValueType|zero replace_back(ValueType value)
    *!   Replace a value to the back of the list.
    *!
    *! @param value
@@ -566,6 +582,7 @@ PIKECLASS CircularList
    */
 
   PIKEFUN mixed replace_back(mixed value)
+    rawtype tFunc(tCircularListValueType, tOr(tCircularListValueType, tZero));
   {
     struct svalue ind;
     int pos = THIS->pos;
@@ -589,7 +606,7 @@ PIKECLASS CircularList
     simple_set_index(THIS->a, &ind, value);
   }
 
-  /*! @decl mixed replace_front(mixed value)
+  /*! @decl ValueType|zero replace_front(ValueType value)
    *!   Replace a value to the front of the list.
    *!
    *! @param value
@@ -621,6 +638,7 @@ PIKECLASS CircularList
    */
 
   PIKEFUN mixed replace_front(mixed value)
+    rawtype tFunc(tCircularListValueType, tOr(tCircularListValueType, tZero));
   {
     struct svalue ind;
     ASSERT_INITIALIZED();
@@ -641,7 +659,7 @@ PIKECLASS CircularList
     simple_set_index(THIS->a, &ind, value);
   }
 
-  /*! @decl void allocate(int elements)
+  /*! @decl void allocate(int(0..) elements)
    *! Increase the maxsize of the CircularlList.
    *!
    *! @param elements
@@ -733,7 +751,7 @@ PIKECLASS CircularList
     }
   }
 
-/*! @decl array cast(string type)
+/*! @decl array(ValueType) cast(string type)
  *! Cast operator.
  *!
  *! @param type
@@ -751,6 +769,7 @@ PIKECLASS CircularList
 
   PIKEFUN array cast(string type)
     flags ID_PROTECTED;
+    rawtype tFunc(tStr, tArr(tCircularListValueType));
   {
     ASSERT_INITIALIZED();
     pop_n_elems(args); /* type as at least one more reference. */
@@ -829,7 +848,7 @@ PIKECLASS CircularList
     THIS->pos  =0;
   }
 
-  /*! @decl int delete_value(mixed value)
+  /*! @decl int(-1..) delete_value(ValueType value)
    *!   Remove the first occurrence of the value @[value] from the list.
    *!
    *! @param value
@@ -841,6 +860,7 @@ PIKECLASS CircularList
    */
 
   PIKEFUN int delete_value(mixed value)
+    rawtype tFunc(tCircularListValueType, tOr(tInt_1, tIntPos));
   {
     if (THIS->a) {
       INT32 index = array_search(THIS->a, value, THIS->pos);
@@ -867,7 +887,7 @@ PIKECLASS CircularList
     RETURN !(THIS->size);
   }
 
-  /*! @decl int max_size()
+  /*! @decl int(0..) max_size()
    *!
    *! @returns
    *!   Returns the maximal size of this list.
@@ -876,13 +896,13 @@ PIKECLASS CircularList
    *!   @[set_max_size()]
    */
 
-  PIKEFUN int max_size()
+  PIKEFUN int(0..) max_size()
   {
     if (!THIS->a) RETURN 0;
     RETURN THIS->a->size;
   }
 
-  /*! @decl int set_max_size(int(0..) new_size)
+  /*! @decl int(0..) set_max_size(int(0..) new_size)
    *!
    *! @param new_size
    *!   The new size of the list.
@@ -897,7 +917,7 @@ PIKECLASS CircularList
    *! @seealso
    *!   @[allocate()], @[max_size()]
    */
-  PIKEFUN int set_max_size(int(0..) new_size)
+  PIKEFUN int(0..) set_max_size(int(0..) new_size)
   {
     struct array *new_a;
     struct array *old_a = THIS->a;
@@ -957,13 +977,14 @@ PIKECLASS CircularList
     THIS->a = new_a;
   }
 
-  /*! @decl mixed peek_back()
+  /*! @decl ValueType peek_back()
    *!
    *! @returns
    *!    The value at the back of the list but do not remove it from the list.
    */
 
  PIKEFUN mixed peek_back()
+   rawtype tFunc(tNone, tCircularListValueType);
   {
     struct svalue ind;
     if (THIS->size <= 0)
@@ -975,13 +996,14 @@ PIKECLASS CircularList
     Pike_sp++;
   }
 
-  /*! @decl mixed peek_front()
+  /*! @decl ValueType peek_front()
    *!
    *! @returns
    *!    The value at the front of the list but do not remove it from the list.
    */
 
   PIKEFUN mixed peek_front()
+   rawtype tFunc(tNone, tCircularListValueType);
   {
     struct svalue ind;
     if (THIS->size == 0)
@@ -993,7 +1015,7 @@ PIKECLASS CircularList
     Pike_sp++;
   }
 
-  /*! @decl mixed pop_back()
+  /*! @decl ValueType pop_back()
    *!
    *! Remove the value at the back of the list and return it.
    *!
@@ -1002,6 +1024,7 @@ PIKECLASS CircularList
    */
 
   PIKEFUN mixed pop_back()
+   rawtype tFunc(tNone, tCircularListValueType);
   {
     struct svalue ind;
     struct svalue zero;
@@ -1020,7 +1043,7 @@ PIKECLASS CircularList
   }
 
 
-  /*! @decl mixed pop_front()
+  /*! @decl ValueType pop_front()
    *!
    *! Remove the value at the front of the list and return it.
    *!
@@ -1029,6 +1052,7 @@ PIKECLASS CircularList
    */
 
   PIKEFUN mixed pop_front()
+   rawtype tFunc(tNone, tCircularListValueType);
   {
     struct svalue ind;
     struct svalue zero;
@@ -1051,7 +1075,7 @@ PIKECLASS CircularList
   }
 
 
-  /*! @decl void push_back(mixed value, int(0..1)|void force)
+  /*! @decl void push_back(ValueType value, int(0..1)|void force)
    *!
    *! Add a new value at the end of the list.
    *!
@@ -1073,6 +1097,7 @@ PIKECLASS CircularList
    */
 
   PIKEFUN void push_back(mixed value, int(0..1)|void force)
+    rawtype tFunc(tCircularListValueType tOr(tInt01, tVoid), tVoid);
   {
     struct svalue ind;
     ASSERT_INITIALIZED();
@@ -1096,7 +1121,7 @@ PIKECLASS CircularList
   }
 
 
-  /*! @decl void push_front(mixed value, int(0..1)|void force)
+  /*! @decl void push_front(ValueType value, int(0..1)|void force)
    *!
    *! Add a new value at the front of the list.
    *!
@@ -1121,6 +1146,7 @@ PIKECLASS CircularList
    */
 
   PIKEFUN void push_front(mixed value, int(0..1)|void force)
+    rawtype tFunc(tCircularListValueType tOr(tInt01, tVoid), tVoid);
   {
     struct svalue ind;
     ASSERT_INITIALIZED();
@@ -1146,12 +1172,13 @@ PIKECLASS CircularList
   }
 
 
-  /*! @decl void create(array|int arg)
+  /*! @decl void create(array(ValueType)|int arg)
    *!   Creates a new @[CircularList] around the array arg or a new
    *!   @[CircularList] with the maximum size of arg.
    */
 
   PIKEFUN void create(array|int(0..) arg)
+    rawtype tFunc(tOr(tArr(tCircularListValueType), tIntPos), tVoid);
   {
     struct array *old_a = THIS->a;
     if (TYPEOF(*arg) == T_INT)
@@ -1200,19 +1227,26 @@ PIKECLASS CircularList
    */
 
   PIKECLASS CircularListIterator
+    num_generics 1;
   {
+    /*! @decl __generic__ ValueType = CircularList::ValueType;
+     */
+
     CVAR int pos;
     CVAR struct CircularList_struct *list;
     CVAR struct object *obj;
 
 
-  /*! @decl void create(object list, void|int start)
+  /*! @decl void create(CircularList(<ValueType>) list, void|int start)
    *!   Creates a new iterator for the CircularList @[list]. If @[start] is
    *!   supplied it will try to position the iterator at @[start].
    *!
    */
 
     PIKEFUN void create(object list, void|int start)
+      flags ID_PROTECTED;
+      rawtype tFunc(tCircularList(tCircularListIterValueType)
+                    tOr(tIntPos, tVoid), tVoid);
     {
 
       if (list->prog != CircularList_program)
@@ -1243,13 +1277,13 @@ PIKECLASS CircularList
       }
     }
 
-    /*! @decl int _iterator_index()
+    /*! @decl int(0..) _iterator_index()
      *!
      *! @returns
      *!    The index at the current position.
      */
 
-    PIKEFUN int _iterator_index()
+    PIKEFUN int(0..) _iterator_index()
       flags ID_PROTECTED;
     {
       if(!THIS->list ||
@@ -1266,7 +1300,7 @@ PIKECLASS CircularList
     }
 
 
-    /*! @decl mixed _iterator_value()
+    /*! @decl ValueType _iterator_value()
      *!
      *! @returns
      *!    The value at the current position.
@@ -1274,6 +1308,7 @@ PIKECLASS CircularList
 
     PIKEFUN mixed _iterator_value()
       flags ID_PROTECTED;
+      rawtype tFunc(tNone, tCircularListIterValueType);
     {
       if(!THIS->list ||
 	 !THIS->list->a ||
@@ -1313,7 +1348,7 @@ PIKECLASS CircularList
       }
     }
 
-    /*! @decl CircularListIterator `+(int steps)
+    /*! @decl CircularListIterator(<ValueType>) `+(int steps)
      *!   Move the iterator @[steps] steps forward (negative value on @[steps]
      *!   will cause the iterator to move backwards) and return the result
      *!   as a new iterator.
@@ -1322,6 +1357,8 @@ PIKECLASS CircularList
      */
 
     PIKEFUN object `+(int steps)
+      flags ID_PROTECTED;
+      rawtype tFunc(tInt, tCircularListIterator(tCircularListIterValueType));
     {
       struct object *o=fast_clone_object(CircularList_CircularListIterator_program);
       struct CircularList_CircularListIterator_struct *new;
@@ -1343,7 +1380,7 @@ PIKECLASS CircularList
       RETURN o;
     }
 
-    /*! @decl CircularListIterator `+=(int steps)
+    /*! @decl CircularListIterator(<ValueType>) `+=(int steps)
      *!   Move this iterator @[steps] steps forward (negative value on @[steps]
      *!   will cause the iterator to move backwards) and return the result.
      *!
@@ -1353,6 +1390,8 @@ PIKECLASS CircularList
 
 
     PIKEFUN object `+=(int steps)
+      flags ID_PROTECTED;
+      rawtype tFunc(tInt, tCircularListIterator(tCircularListIterValueType));
     {
       if (steps < 0) {
 	if (THIS->pos < 0) {
@@ -1374,7 +1413,7 @@ PIKECLASS CircularList
 
 
 
-    /*! @decl CircularListIterator `-(int steps)
+    /*! @decl CircularListIterator(<ValueType>) `-(int steps)
      *!   Move the iterator @[steps] steps backwards (negative value on
      *!   @[steps] will cause the iterator to move forwards) and return
      *!   the result as a new iterator.
@@ -1383,6 +1422,8 @@ PIKECLASS CircularList
      */
 
     PIKEFUN object `-(int steps)
+      flags ID_PROTECTED;
+      rawtype tFunc(tInt, tCircularListIterator(tCircularListIterValueType));
     {
       struct object *o=fast_clone_object(CircularList_CircularListIterator_program);
       struct CircularList_CircularListIterator_struct *new;
@@ -1527,7 +1568,7 @@ PIKECLASS CircularList
       }
     }
 
-    /*! @decl int distance(object iter)
+    /*! @decl int distance(CircularListIterator(<ValueType>) iter)
      *!
      *! @param iter
      *!    The iterator to measure the distance to.
@@ -1542,6 +1583,7 @@ PIKECLASS CircularList
      */
 
     PIKEFUN int distance(object iter)
+      rawtype tFunc(tCircularListIterator(tCircularListIterValueType), tInt);
     {
       struct CircularList_CircularListIterator_struct *i = NULL;
       if ((iter->prog == CircularList_CircularListIterator_program) &&
@@ -1555,7 +1597,7 @@ PIKECLASS CircularList
       }
     }
 
-    /*! @decl CircularList get_collection()
+    /*! @decl CircularList(<ValueType>) get_collection()
      *!
      *! @returns
      *!    Returns the CircularList this iterator currently iterates over.
@@ -1563,12 +1605,13 @@ PIKECLASS CircularList
 
 
     PIKEFUN object get_collection()
+      rawtype tFunc(tNone, tCircularList(tCircularListIterValueType));
     {
       REF_RETURN THIS->obj;
     }
 
 
-    /*! @decl mixed set_value(mixed val)
+    /*! @decl ValueType set_value(ValueType val)
      *!    Set the value at the current position.
      *!
      *! @param val
@@ -1579,6 +1622,7 @@ PIKECLASS CircularList
 
 
     PIKEFUN mixed set_value(mixed val)
+      rawtype tFunc(tCircularListIterValueType, tCircularListIterValueType);
     {
       if (THIS->list &&
 	  (THIS->pos >= 0) &&
@@ -1629,7 +1673,7 @@ PIKECLASS CircularList
   /*! @endclass
   */
 
-  /*! @decl CircularListIterator _get_iterator(void|int ind)
+  /*! @decl CircularListIterator(<ValueType>) _get_iterator(void|int ind)
    *!   Create and initiate a new CircularListIterator that could be used
    *!   to iterate over this list.
    *!
@@ -1642,6 +1686,9 @@ PIKECLASS CircularList
    */
 
   PIKEFUN object _get_iterator(void|int ind)
+      flags ID_PROTECTED;
+      rawtype tFunc(tOr(tInt, tVoid),
+                    tCircularListIterator(tCircularListValueType));
   {
     ref_push_object(Pike_fp->current_object);
     if (ind)
@@ -1653,7 +1700,7 @@ PIKECLASS CircularList
   }
 
 
-  /*! @decl __deprecated__ CircularListIterator first()
+  /*! @decl __deprecated__ CircularListIterator(<ValueType>) first()
    *!   Create and initiate a new CircularListIterator that could be used
    *!   to iterate over this list.
    *!
@@ -1669,7 +1716,8 @@ PIKECLASS CircularList
    */
 
   PIKEFUN object first()
-    rawtype tDeprecated(tFunc(tNone, tObj));
+    rawtype tDeprecated(tFunc(tNone,
+                              tCircularListIterator(tCircularListValueType)));
   {
     ref_push_object(Pike_fp->current_object);
     push_object(clone_object(CircularList_CircularListIterator_program, 1));
@@ -1692,7 +1740,8 @@ PIKECLASS CircularList
    */
 
   PIKEFUN object last()
-    rawtype tDeprecated(tFunc(tNone, tObj));
+    rawtype tDeprecated(tFunc(tNone,
+                              tCircularListIterator(tCircularListValueType)));
   {
     ref_push_object(Pike_fp->current_object);
     push_object(clone_object(CircularList_CircularListIterator_program, 1));
