@@ -210,6 +210,8 @@
  */
 #define PROG_GENERICS_ID_START		0x8000
 
+/* 0x8000 - 0x8003: Concurrent. */
+
 #define     PROG_FUTURE_ID					0x8000
 #define tObjImpl_FUTURE                    "\003\000\000\000\200\000"
 #define tFutureValueType	tGeneric(tObjImpl_FUTURE, 0)
@@ -219,11 +221,15 @@
 #define tPromiseValueType	tGeneric(tObjImpl_PROMISE, 0)
 #define tPromise(X)		tBind(tAssign(tPromiseValueType, X), tObjImpl_PROMISE)
 
+/* 0x8004 - 0x800f: Threads. */
+
 #define     PROG_THREAD_LOCAL_ID                                0x8006
 #define tObjImpl_THREAD_LOCAL              "\003\000\000\000\200\006"
 #define   tObjIs_THREAD_LOCAL              "\003\001\000\000\200\006"
 #define tThreadLocalValueType	tGeneric(tObjImpl_THREAD_LOCAL, 0)
 #define tThreadLocal(X)		tBind(tAssign(tThreadLocalValueType, X), tObjImpl_THREAD_LOCAL)
+
+/* 0x8010 - 0x801f: Iterators. */
 
 #define     PROG_STRING_SPLIT_ITERATOR_ID			0x8014
 #define tObjImpl_STRING_SPLIT_ITERATOR     "\003\000\000\000\200\024"
@@ -234,6 +240,18 @@
 #define tObjImpl_FUNCTION_ITERATOR         "\003\000\000\000\200\037"
 #define tFunctionIterValueType	tGeneric(tObjImpl_FUNCTION_ITERATOR, 0)
 #define tFunctionIter(X)		tBind(tAssign(tFunctionIterValueType, X), tObjImpl_FUNCTION_ITERATOR)
+
+/* 0x8020 - 0x803f: ADT. */
+
+#define     PROG_CIRCULARLIST_ID				0x8020
+#define tObjImpl_CIRCULATLIST              "\003\000\000\000\200\040"
+#define tCircularListValueType	tGeneric(tObjImpl_CIRCULARLIST, 0)
+#define tCircularList(X)		tBind(tAssign(tCircularListValueType, X), tObjImpl_CIRCULARLIST)
+
+#define     PROG_CIRCULARLISTITERATOR_ID			0x8021
+#define tObjImpl_CIRCULARLISTITERATOR      "\003\000\000\000\200\041"
+#define tCircularListIterValueType	tGeneric(tObjImpl_CIRCULARLISTITERATOR, 0)
+#define tCircularListIterator(X)	tBind(tAssign(tCircularListIterValueType, X), tObjImpl_CIRCULARLISTITERATOR)
 
 /* Start for dynamically allocated program ids. */
 #define PROG_DYNAMIC_ID_START		0x10000
