@@ -566,6 +566,8 @@ optional class Farm
               ([object]q[0])->provide_error( err );
             else
               ([object]q[0])->provide( res );
+          } else if (err) {
+            master()->handle_error(err);
           }
           object lock = mutex->lock();
           free_threads += ({ this });
@@ -785,6 +787,10 @@ optional class Farm
   //!
   //! @param args
   //!   The parameters for @[f].
+  //!
+  //! @note
+  //!   In some versions of Pike 8.0 and earlier, errors thrown
+  //!   by @[f] were silently suppressed.
   //!
   //! @seealso
   //!   @[run()]
