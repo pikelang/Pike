@@ -51,12 +51,14 @@ protected class Handler
 
         err = catch(res = q[1][0]( @q[1][1] ));
 
-        if( q[0] )
+        if( p )
         {
           if( err )
             p->failure(err);
           else
             p->success(res);
+        } else if (err) {
+          master()->handle_error(err);
         }
         object|zero lock = mutex->lock();
         free_threads += ({ this });
@@ -272,6 +274,10 @@ Concurrent.Future run( function f, mixed ... args )
 //!
 //! @param args
 //!   The parameters for @[f].
+//!
+//! @note
+//!   In some versions of Pike 8.0 and earlier, errors thrown
+//!   by @[f] were silently suppressed.
 //!
 //! @seealso
 //!   @[run()]
