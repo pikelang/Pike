@@ -13824,10 +13824,22 @@ static void push_apply_bindings_recur(struct pike_type *t,
              *     temporarily to avoid an infinite loop.
              */
             struct svalue ss;
-            map_delete_no_free(bindings, Pike_sp-1, &ss);
+#ifdef PIKE_DEBUG
+            /* NB: Due to the cyclic check above, we MUST have
+             *     a different mapping if we change the contents.
+             */
+            struct mapping *tmp_bindings = copy_mapping(bindings);
+#else
+            struct mapping *tmp_bindings = bindings;
+#endif
+            map_delete_no_free(tmp_bindings, Pike_sp-1, &ss);
             /* NB: val is invalid after the above. */
-            push_apply_bindings_recur(ss.u.type, bindings);
+            push_apply_bindings_recur(ss.u.type, tmp_bindings);
+#ifdef PIKE_DEBUG
+            free_mapping(tmp_bindings);
+#else
             mapping_insert(bindings, Pike_sp-1, &ss);
+#endif
             free_svalue(&ss);
           } else {
             /* Common case. Nothing to expand here. */
