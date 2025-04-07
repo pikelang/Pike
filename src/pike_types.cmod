@@ -11910,6 +11910,78 @@ struct pike_type *check_call_svalue(struct pike_type *fun_type,
   return res;
 }
 
+/**
+ * Bind any generics in the callable type.
+ *
+ * This is a helper function needed to propagate bindings
+ * of generics in arguments to LFUNs (create() and `()()).
+ **/
+static struct pike_type *bind_callable(struct pike_type *callable,
+                                       struct pike_type *bind,
+                                       INT32 flags)
+{
+  struct pike_type *tmp;
+ loop:
+  if (!callable) return NULL;
+  switch(callable->type) {
+  case T_SCOPE:
+    /* FIXME: Save and restore the corresponding marker set. */
+  case T_ASSIGN:
+  case PIKE_T_NAME:
+    callable = callable->cdr;
+    goto loop;
+
+  case PIKE_T_BIND:
+    callable = bind_callable(callable->cdr, callable->car, flags);
+
+    if (!callable) return NULL;
+    break;
+  case PIKE_T_OBJECT:
+    callable = low_object_lfun_type(callable, LFUN_CALL);
+    if (!callable) {
+      callable = mixed_type_string;
+    }
+    add_ref(callable);
+    break;
+  case PIKE_T_PROGRAM:
+    tmp = low_object_lfun_type(callable->car, LFUN_CREATE);
+    if (!tmp) {
+      /* No create() -- No arguments. */
+      /* FIXME: Multiple cases:
+       *          Untyped object.		function(mixed...:obj)
+       *          Failed to lookup program id.	function(mixed...:obj)
+       *          Program does not have a create().	function(:obj)
+       *
+       * We simply ignore the args.
+       */
+
+      type_stack_mark();
+      push_finished_type(callable->car);
+      push_type(T_MIXED);
+      push_type(T_VOID);
+      push_type(T_OR);
+      push_type(T_MANY);
+      callable = pop_unfinished_type();
+    } else {
+      callable = zzap_function_return(tmp, callable->car);
+    }
+    break;
+
+    /* FIXME: Do we need special cases for PIKE_T_TRANSITIVE
+     *        or obscure PIKE_T_FUNCTION->cdr?
+     */
+
+  default:
+    add_ref(callable);
+    break;
+  }
+
+  tmp = apply_bindings(bind, callable);
+  free_type(callable);
+
+  return tmp;
+}
+
 /* Check whether arg_type may be used as the type of the first argument
  * in a call to fun_type.
  *
@@ -12125,8 +12197,8 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
     break;
 
   case PIKE_T_BIND:
-    tmp = low_new_check_call(fun_type->cdr, arg_type, flags, cs, sval);
-    res = apply_bindings(fun_type->car, tmp);
+    tmp = bind_callable(fun_type->cdr, fun_type->car, flags);
+    res = low_new_check_call(tmp, arg_type, flags, cs, sval);
     free_type(tmp);
     break;
 
