@@ -885,41 +885,33 @@ INPUT_IS_WIDE(								 \
 	    field_length=1;						\
           if(field_length == 0)                                         \
             Pike_error("%%H size field is 0.\n");                       \
-          if(eye+field_length > input_len)				\
-	  {								\
-	    chars_matched[0]=eye;					\
+          chars_matched[0]=eye;                                         \
+          if(eye+field_length > input_len) {                            \
 	    return matches;						\
 	  }								\
 	  INPUT_IS_WIDE (						\
-	    for(e=0;e<field_length;e++)					\
-	    {								\
-	      if((unsigned INT32) input[eye+e] > 255)			\
-	      {								\
+            for(e=0;e<field_length;e++) {                               \
+              if((unsigned INT32) input[eye+e] > 255) {                 \
 		chars_matched[0]=eye;					\
 		return matches;						\
 	      }								\
 	    }								\
 	  );								\
-	  if (minus_flag)						\
-	  {								\
+          if (minus_flag) {                                             \
 	    int pos=0;							\
 	    pos = (eye += field_length);				\
-            while(--field_length >= 0)					\
-	    {								\
+            while(--field_length >= 0) {                                \
 	      len<<=8;							\
 	      len |= input[--pos];					\
 	    }								\
 	  } else {							\
-	    while(--field_length >= 0)					\
-	    {								\
+            while(--field_length >= 0) {                                \
 	      len<<=8;							\
 	      len |= input[eye];					\
 	      eye++;							\
 	    }								\
 	  }								\
-	  if(len > (unsigned long)(input_len-eye))                      \
-	  {								\
-	    chars_matched[0]=eye-field_length;				\
+          if(len > (unsigned long)(input_len-eye)) {                    \
 	    return matches;						\
 	  }								\
 	  if (no_assign) {						\
