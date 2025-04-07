@@ -6,7 +6,13 @@
 
 #pike __REAL_VERSION__
 
-private mapping(mixed:multiset) val          = ([]);
+//! Type for the left values in the relation.
+__generic__ LeftType;
+
+//! Type for the right values in the relation.
+__generic__ RightType = LeftType;
+
+private mapping(LeftType:multiset(RightType)) val          = ([]);
 private mixed                   id;
 private int                     items        = 0;
 private int                     need_recount = 0;
@@ -14,21 +20,21 @@ private int                     need_recount = 0;
 constant is_binary_relation = 1;
 
 //! Return true/false: does the relation "@[left] R @[right]" exist?
-mixed contains(mixed left, mixed right)
+bool contains(LeftType left, RightType right)
 {
   return val[left] && val[left][right];
 }
 
 //! Does the same as the @[contains] function: returns true if the
 //! relation "@[left] R @[right]" exists, and otherwise false.
-protected mixed `()(mixed left, mixed right)
+protected bool `()(LeftType left, RightType right)
 {
   return contains(left, right);
 }
 
 //! Adds "@[left] R @[right]" as a member of the relation. Returns
 //! the same relation.
-this_program add(mixed left, mixed right)
+this_program(<LeftType, RightType>) add(LeftType left, RightType right)
 {
   if (!val[left])
     val[left] = (<>);
@@ -39,7 +45,7 @@ this_program add(mixed left, mixed right)
 
 //! Removes "@[left] R @[right]" as a member of the relation. Returns
 //! the same relation.
-this_program remove(mixed left, mixed right)
+this_program(<LeftType, RightType>) remove(LeftType left, RightType right)
 {
   if (val[left] && val[left][right])
     --items, val[left][right] = 0;
@@ -58,11 +64,11 @@ this_program remove(mixed left, mixed right)
 //! order. If you need to know which relation entry produced which
 //! result in the array, you have to make that information part
 //! of the value that @[f] returns.
-array map(function f)
+array map(function(LeftType, RightType:mixed) f)
 {
   array a = ({});
-  foreach(indices(val), mixed left)
-    foreach(indices(val[left]), mixed right)
+  foreach(indices(val), LeftType left)
+    foreach(indices(val[left]), RightType right)
       a += ({ f(left, right) });
   return a;
 }
@@ -71,11 +77,14 @@ array map(function f)
 //! all those entries for which the filtering function @[f] returned
 //! true. The function @[f] gets two arguments: the left and the right
 //! value for every entry in the relation.
-object filter(function f)
+//!
+//! @seealso
+//!   @[filter_destructively()]
+this_program(<LeftType, RightType>) filter(function(LeftType, RightType: mixed) f)
 {
   ADT.Relation.Binary res = ADT.Relation.Binary(id);
-  foreach(indices(val), mixed left)
-    foreach(indices(val[left]), mixed right)
+  foreach(indices(val), LeftType left)
+    foreach(indices(val[left]), RightType right)
       if (f(left, right))
         res->add(left, right);
   return res;
@@ -85,11 +94,15 @@ object filter(function f)
 //! entries for which the filtering function @[f] returns false.
 //! The function @[f] gets two arguments: the left and the right value
 //! for each entry in the relation.
-this_program filter_destructively(function f)
+//!
+//! @seealso
+//!   @[filter()]
+this_program(<LeftType, RightType>) filter_destructively(function(LeftType,
+                                                                  RightType:mixed) f)
 {
-  foreach(indices(val), mixed left)
+  foreach(indices(val), LeftType left)
   {
-    foreach(indices(val[left]), mixed right)
+    foreach(indices(val[left]), RightType right)
       if (!f(left, right))
         remove(left, right);
     if (sizeof(val[left]) == 0)
@@ -100,13 +113,13 @@ this_program filter_destructively(function f)
 
 //! Returns the number of relation entries in the relation. (Or with
 //! other words: the number of relations in the relation set.)
-protected mixed _sizeof()
+protected int(0..) _sizeof()
 {
   if (need_recount)
   {
     int i = 0;
     need_recount = 0;
-    foreach(indices(val), mixed left)
+    foreach(indices(val), LeftType left)
       i += sizeof(val[left]);
     items = i;
   }
@@ -136,12 +149,12 @@ protected int(0..1) `!=(mixed rel)
 //! rel1 and rel2.
 protected mixed `&(mixed rel)
 {
-  return filter(lambda (mixed left, mixed right)
+  return filter(lambda (LeftType left, RightType right)
                        { return rel->contains(left, right);});
 }
 
-//! @decl mixed `+(mixed rel)
-//! @decl mixed `|(mixed rel)
+//! @decl this_program(<LeftType, RightType>) `+(mixed rel)
+//! @decl this_program(<LeftType, RightType>) `|(mixed rel)
 //! The expression `rel1 | rel2' and `rel1 + rel2' returns a new
 //! relation which has all the relation entries present in rel1,
 //! or rel2, or both.
@@ -149,30 +162,33 @@ protected mixed `&(mixed rel)
 protected mixed `|(mixed rel)
 {
   ADT.Relation.Binary res = ADT.Relation.Binary(id, rel);
-  foreach(indices(val), mixed left)
-    foreach(indices(val[left]), mixed right)
+  foreach(indices(val), LeftType left)
+    foreach(indices(val[left]), RightType right)
       res->add(left, right);
   return res;
 }
 
-protected mixed `+ = `|;
+protected function(mixed:mixed) `+ = `|;
 
 //! The expression `rel1 - rel2' returns a new relation which has
 //! those and only those relation entries that are present in rel1
 //! and not present in rel2.
 protected mixed `-(mixed rel)
 {
-  return filter(lambda (mixed left, mixed right)
+  return filter(lambda (LeftType left, RightType right)
                        { return !rel->contains(left, right);});
 }
 
 //! Makes the relation symmetric, i.e. makes sure that if xRy is part
 //! of the relation set, then yRx should also be a part of the relation
 //! set.
-this_program make_symmetric()
+//!
+//! @note
+//!   This operation modifies the current object.
+this_program(<LeftType|RightType, RightType|LeftType>) make_symmetric()
 {
-  foreach(indices(val), mixed left)
-    foreach(indices(val[left]), mixed right)
+  foreach(indices(val), LeftType left)
+    foreach(indices(val[left]), RightType right)
       add(right, left);
   return this;
 }
@@ -191,7 +207,9 @@ this_program make_symmetric()
 //!
 //! The argument @[avoiding] is either 0 (or omitted), or a multiset of
 //! nodes that must not be part of the path.
-array|zero find_shortest_path(mixed from, mixed to, void|multiset avoiding)
+array(LeftType|RightType)|zero find_shortest_path(LeftType|RightType from,
+                                                  LeftType|RightType to,
+                                                  void|multiset(LeftType|RightType) avoiding)
 {
   if (from == to)
      return ({ from });
@@ -208,9 +226,9 @@ array|zero find_shortest_path(mixed from, mixed to, void|multiset avoiding)
   // But those algorithms typically have worse space complexity, so
   // this will do for now.
 
-  array|zero subpath, found = 0;
+  array(LeftType|RightType)|zero subpath, found = 0;
   avoiding = avoiding ? avoiding + (< from >) : (< from >);
-  foreach(indices(val[from]), mixed right)
+  foreach(indices(val[from]), LeftType right)
     if (!avoiding[right])
       if (subpath = find_shortest_path(right, to, avoiding))
         if (!found || sizeof(subpath)+1 < sizeof(found))
@@ -237,13 +255,14 @@ mixed get_id()
   return id;
 }
 
-protected void create(void|mixed _id, void|mapping|object _initial)
+//!
+protected void create(void|mixed _id, void|mapping(LeftType:RightType)|object _initial)
 {
   id = _id;
   if (objectp(_initial) && _initial->is_binary_relation)
-    _initial->map(lambda (mixed left, mixed right) { add(left,right); });
+    _initial->map(lambda (LeftType left, RightType right) { add(left,right); });
   else if (mappingp(_initial))
-    foreach(indices(_initial), mixed key)
+    foreach(indices(_initial), LeftType key)
       add(key, _initial[key]);
   else if (_initial)
     error("Bad initializer for ADT.Relation.Binary.\n");
@@ -251,20 +270,20 @@ protected void create(void|mixed _id, void|mapping|object _initial)
 
 //! An iterator which makes all the left/right entities in the relation
 //! available as index/value pairs.
-protected class _get_iterator {
-
+protected class _get_iterator (< LeftType, RightType = LeftType >)
+{
   protected int(-1..) ipos = -1;
   protected int(-1..) vpos = -1;
 
-  protected array lefts = indices(val);
-  protected array rights = ({});
+  protected array(LeftType) lefts = indices(val);
+  protected array(RightType) rights = ({});
 
-  protected mixed _iterator_index() {
+  protected LeftType _iterator_index() {
     if (ipos < 0) return UNDEFINED;
     return lefts[ipos];
   }
 
-  protected mixed _iterator_value() {
+  protected RightType _iterator_value() {
     if (ipos < 0) return UNDEFINED;
     return rights[vpos];
   }
@@ -287,7 +306,7 @@ protected class _get_iterator {
     return 1;
   }
 
-  protected this_program `+=(int steps) {
+  protected this_program(<LeftType, RightType>) `+=(int steps) {
     if (steps < 0) error ("Cannot step backwards.\n");
     while(steps--) {
       if (zero_type(_iterator_next())) {
