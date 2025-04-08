@@ -6,6 +6,7 @@ constant name="Adding element to array (private global)";
 #define ITER 10000
 
 private final array a = ({});
+void prepare() { a = ({}); }
 int perform()
 {
   for (int i=0; i<ITER; i++)
