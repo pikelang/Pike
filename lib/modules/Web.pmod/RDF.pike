@@ -214,7 +214,7 @@ protected int(0..1) is_resource(mixed res) {
 //
 
 // predicate : Relation( subject, object )
-protected mapping(Resource:ADT.Relation.Binary) statements = ([]);
+protected mapping(Resource:ADT.Relation.Binary(<Resource>)) statements = ([]);
 
 //! Adds a statement to the RDF set. If any argument is a string, it
 //! will be converted into a @[LiteralResource]. If any argument is a
@@ -259,9 +259,9 @@ this_program add_statement(Resource|string|multiset(string) subj,
 
   if(!is_resource(subj) || !is_resource(pred) || !is_resource(obj))
     error("Non-resource argument to add_statement");
-  ADT.Relation.Binary rel = statements[pred];
+  ADT.Relation.Binary(<Resource>) rel = statements[pred];
   if(!rel) {
-    rel = ADT.Relation.Binary();
+    rel = ADT.Relation.Binary(<Resource>)();
     statements[pred] = rel;
   }
 
@@ -272,7 +272,7 @@ this_program add_statement(Resource|string|multiset(string) subj,
 //! Returns 1 if the RDF domain contains the relation {subj, pred, obj},
 //! otherwise 0.
 int(0..1) has_statement(Resource subj, Resource pred, Resource obj) {
-  ADT.Relation.Binary rel = statements[pred];
+  ADT.Relation.Binary(<Resource>) rel = statements[pred];
   if(!rel) return 0;
   return rel->contains(subj,obj);
 }
@@ -281,7 +281,7 @@ int(0..1) has_statement(Resource subj, Resource pred, Resource obj) {
 //! did exist in the RDF set.
 int(0..1) remove_statement(Resource subj, Resource pred, Resource obj) {
   if(!has_statement(subj, pred, obj)) return 0;
-  ADT.Relation.Binary rel = statements[pred];
+  ADT.Relation.Binary(<Resource>) rel = statements[pred];
   rel->remove(subj,obj);
   if(!sizeof(statements[pred])) m_delete(statements, pred);
   return 1;
@@ -368,7 +368,7 @@ array(Resource) get_properties() {
 //! as value.
 mapping(Resource:mapping(Resource:array(Resource))) get_subject_map() {
   mapping subs = ([]);
-  foreach(statements; Resource pred; ADT.Relation.Binary rel)
+  foreach(statements; Resource pred; ADT.Relation.Binary(<Resource>) rel)
     foreach(rel; Resource subj; Resource obj)
       if(subs[subj]) {
 	if(subs[subj][pred])
@@ -417,14 +417,15 @@ array(array(Resource)) find_statements(Resource|int(0..0) subj,
 
   // Optimize the case when all search predicates are 0.
   if(!subj && !pred && !obj) {
-    foreach(statements; Resource pred; ADT.Relation.Binary rel)
+    foreach(statements; Resource pred; ADT.Relation.Binary(<Resource>) rel)
       foreach(rel; Resource subj; Resource obj)
 	ret += ({ ({ subj, pred, obj }) });
     return ret;
   }
 
   array(array(Resource)) find_subj_obj(Resource subj, Resource pred,
-				       Resource obj, ADT.Relation.Binary rel) {
+                                       Resource obj,
+                                       ADT.Relation.Binary(<Resource>) rel) {
     if(subj && obj) {
       if(rel(subj,obj)) return ({ ({ subj, pred, obj }) });
       return ({});
@@ -443,7 +444,7 @@ array(array(Resource)) find_statements(Resource|int(0..0) subj,
     return find_subj_obj(subj, pred, obj, statements[pred]);
   if(pred) return ({});
 
-  foreach(statements; Resource pred; ADT.Relation.Binary rel)
+  foreach(statements; Resource pred; ADT.Relation.Binary(<Resource>) rel)
     ret += find_subj_obj(subj, pred, obj, rel);
   return ret;
 }
@@ -476,7 +477,7 @@ int(0..1) is_object(Resource r) {
 string get_3_tuples() {
   String.Buffer ret = String.Buffer();
 
-  foreach(statements; Resource n; ADT.Relation.Binary rel) {
+  foreach(statements; Resource n; ADT.Relation.Binary(<Resource>) rel) {
     string rel_name = n->get_3_tuple_name();
     foreach(rel; Resource left; Resource right) {
       ret->add( "{", left->get_3_tuple_name(), ", ", rel_name,
@@ -497,7 +498,7 @@ string get_3_tuples() {
 string get_n_triples() {
   String.Buffer ret = String.Buffer();
 
-  foreach(statements; Resource n; ADT.Relation.Binary rel) {
+  foreach(statements; Resource n; ADT.Relation.Binary(<Resource>) rel) {
     string rel_name = n->get_n_triple_name();
     foreach(rel; Resource left; Resource right)
       ret->add( left->get_n_triple_name(), " ", rel_name,
