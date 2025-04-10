@@ -20,16 +20,16 @@
 
 #pike __REAL_VERSION__
 
-protected string data = "";
+protected string(8bit) data = "";
 protected int dptr;
 
 //! The buffer can be initialized with initial data during creation.
-protected void create(void|string data) {
+protected void create(void|string(8bit) data) {
   if(data) feed(data);
 }
 
 //! Adds full bytes to the buffer.
-this_program feed( string x ) {
+this_program feed( string(8bit) x ) {
   if(String.width(x)!=8) error("Only eight bits wide characters allowed.\n");
   if(bob)
     foreach(x;; int c)
@@ -47,10 +47,10 @@ this_program feed( string x ) {
 
 
 //! Drains the buffer of all full (8-bits wide) bytes.
-string drain() {
+string(8bit) drain() {
   if(_sizeof()<8)
     return "";
-  string d;
+  string(8bit) d;
   if(bib+bob==0)
     d = data;
   else {
@@ -101,7 +101,7 @@ int get( int bits ) {
 
 //! Reads @[bytes] (or less) bytes from the buffer and returns as
 //! string.
-string read( void|int bytes )
+string(8bit) read( void|int bytes )
 {
   if( undefinedp(bytes) )
     bytes = _sizeof()/8;
@@ -110,7 +110,7 @@ string read( void|int bytes )
   String.Buffer buf = String.Buffer(bytes);
   while(bytes--)
     buf->putchar( get(8) );
-  return (string)buf;
+  return (string(8bit))buf;
 }
 
 protected int in_buffer, bob;
