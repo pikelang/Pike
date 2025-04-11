@@ -1382,9 +1382,9 @@ static ptrdiff_t find_end_parenthesis(struct cpp *this,
     case ')':  return pos;
     case '/':
       if (INDEX_PCHARP(data,pos) == '*') {
-	pos = find_end_of_comment(this,data,len,pos+1,0);
+        pos = find_end_of_comment(this,data,len,pos+1,1);
       } else if (INDEX_PCHARP(data,pos) == '/') {
-	pos = find_end_of_line(this,data,len,pos+1,0);
+        pos = find_end_of_line(this,data,len,pos+1,1);
       }
     }
   }
@@ -1418,9 +1418,9 @@ static ptrdiff_t find_end_brace(struct cpp *this,
     case '}':  return pos;
     case '/':
       if (INDEX_PCHARP(data,pos) == '*') {
-	pos=find_end_of_comment(this,data,len,pos,0);
+        pos=find_end_of_comment(this,data,len,pos,1);
       } else if (INDEX_PCHARP(data,pos) == '/') {
-	pos=find_end_of_line(this,data,len,pos,0);
+        pos=find_end_of_line(this,data,len,pos,1);
       }
     }
   }
