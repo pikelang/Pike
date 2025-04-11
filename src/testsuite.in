@@ -11082,6 +11082,28 @@ test_do([[cpp(#"
 FOO(// Pike 7.6 and earlier don't seem to like single
     /* quotes (') in comments in macro arguments. */
 arg)")]])
+test_any([[
+#define FOO(X) X
+  FOO({ /* Some versions of Pike 9.0 did not handle multi-line comments in
+         * braced macro arguments correctly with respect to line numbering.
+         * This comment contains 3 line breaks which are lost.
+         */
+        // Also test multi-line single-line comments \
+           Comment continues here.
+        return "FOO";
+      });
+]], "FOO")
+test_any([[
+#define FOO(X) X
+  return FOO((/* Some versions of Pike 9.0 did not handle multi-line comments in
+               * parenthesised macro arguments correctly with respect to line numbering.
+               * This comment contains 3 line breaks which are lost.
+               */
+              // Also test multi-line single-line comments \
+                 Comment continues here.
+              "FOO"
+             ));
+]], "FOO")
 test_equal([[cpp(#"
 FOO(foo)", ([
   "predefines": ([
