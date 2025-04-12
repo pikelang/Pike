@@ -95,31 +95,34 @@ void pop_to(int depth)
 //! from the top. If no value is given the top element is
 //! popped and returned. All popped entries are freed from
 //! the stack.
-ElementType pop(void|int val)
+ElementType pop(void|zero val)
 {
-  mixed ret;
+  if(--ptr < 0)
+    error("Stack underflow\n");
 
-  if (val) {
-    if (ptr <= 0) {
-	error("Stack underflow\n");
-    }
+  ElementType ret = arr[ptr];
+  arr[ptr]=0; /* Don't waste references */
 
-    if (ptr < val) {
-      val = ptr;
-    }
-    ptr -= val;
-    ret = arr[ptr..ptr + val - 1];
+  return ret;
+}
 
-    for (int i=0; i < val; i++) {
-      arr[ptr + i] = 0;       /* Don't waste references */
-    }
-  } else {
-    if(--ptr < 0)
-	error("Stack underflow\n");
-
-    ret = arr[ptr];
-    arr[ptr]=0; /* Don't waste references */
+//!
+variant array(ElementType) pop(int(1..) val)
+{
+  if (ptr <= 0) {
+    error("Stack underflow\n");
   }
+
+  if (ptr < val) {
+    val = ptr;
+  }
+  ptr -= val;
+  array(ElementType) ret = arr[ptr..ptr + val - 1];
+
+  for (int i=0; i < val; i++) {
+    arr[ptr + i] = 0;       /* Don't waste references */
+  }
+
   return ret;
 }
 
