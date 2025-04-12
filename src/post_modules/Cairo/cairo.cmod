@@ -2429,7 +2429,7 @@ PIKECLASS ScriptDevice
    *! @param recording_surface
    *!   the recording surface to replay
    */
-  PIKEFUN void from_recording_surface(object/*(Cairo.RecordingSurface)*/ recording_surface)
+  PIKEFUN void from_recording_surface(object(Cairo.RecordingSurface) recording_surface)
     get_all_args;
   {
     cairo_surface_t *surf;
