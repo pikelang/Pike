@@ -2100,12 +2100,14 @@ array generate_overload_func_for(array(FuncData) d,
 }
 
 int gid;
+int dynamic_id = 0;
 
 // Parses a block of cmod code, separating it into declarations,
 // functions to add, exit functions and other code.
 class ParseBlock
 {
   array code=({});
+  array addtypes=({});
   array addfuncs=({});
   array exitfuncs=({});
   array declarations=({});
@@ -2499,36 +2501,46 @@ sprintf("        } else {\n"
 		    DEFINE("THIS", "THIS_" + upper_case(base)));
 
             need_obj_defines["tObjImpl_"+upper_case(lname)] = 1;
-            map_types[subclass->local_id] = ({ define, "return "+program_var+"->id;" });
+            map_types[subclass->local_id] = ({ define, "return PROG_"+upper_case(lname)+"_ID;" });
 
             check_used[program_var+"_fun_num"]=1;
-	    addfuncs+=
-	      IFDEF(define,
+            array alloc_id;
+            if (attributes->program_id)
+              alloc_id = DEFINE("PROG_"+upper_case(lname)+"_ID",
+                                "PROG_"+attributes->program_id+"_ID");
+            else {
+              int did = dynamic_id++;
+              alloc_id = IFDEF("CMOD_MAP_PROGRAM_IDS_DEFINED",
+                               ({
+                                 PC.Token(sprintf("  ___cmod_dynamic_program_ids[%d] = allocate_program_id();\n", did),
+                                          proto[0]->line),
+                                 DEFINE("PROG_"+upper_case(lname)+"_ID",
+                                        sprintf("___cmod_dynamic_program_ids[%d]", did))
+                               }),
+                               DEFINE("PROG_"+upper_case(lname)+"_ID", "0"));
+            }
+            addtypes+=
+              IFDEF(define,
 		    ({
-		      IFDEF("PROG_"+upper_case(lname)+"_ID",
-			    ({
-			      PC.Token(sprintf("  START_NEW_PROGRAM_ID(%s);\n",
-					       upper_case(lname)),
-				       proto[0]->line),
-			      "#else\n",
-			      attributes->program_id?
-			      PC.Token(sprintf("  START_NEW_PROGRAM_ID(%s);\n",
-					       attributes->program_id),
-				       proto[0]->line):
-			      PC.Token("  start_new_program();\n",
-				       proto[0]->line),
-			    })),
-		      PC.Token(sprintf("  %s = Pike_compiler->new_program;\n",
-				       program_var),
-			       proto[0]->line),
+		      IFDEF("PROG_"+upper_case(lname)+"_ID", 0, alloc_id),
 		      IFDEF("tObjImpl_"+upper_case(lname),
 			    0,
 			    DEFINE("tObjIs_"+upper_case(lname),
-                                   sprintf("%O", sprintf("\3\1\x7f%3c",
-                                                         subclass->local_id)))+
+				   sprintf("%O", sprintf("\3\1\x7f%3c",
+							 subclass->local_id)))+
 			    DEFINE("tObjImpl_"+upper_case(lname),
-                                   sprintf("%O", sprintf("\3\0\x7f%3c",
-                                                         subclass->local_id)))),
+				   sprintf("%O", sprintf("\3\0\x7f%3c",
+							 subclass->local_id))))
+		    })+subclass->addtypes);
+	    addfuncs+=
+	      IFDEF(define,
+		    ({
+                      PC.Token(sprintf("  start_new_program_id(PROG_%s_ID);\n",
+                                       upper_case(lname)),
+                               proto[0]->line),
+		      PC.Token(sprintf("  %s = Pike_compiler->new_program;\n",
+				       program_var),
+			       proto[0]->line),
 		    })+
                     (num_generics ? ({
                       PC.Token(sprintf("  %s->num_generics = %d;\n",
@@ -3839,7 +3851,9 @@ int main(int argc, array(string) argv)
     "#define PIKE_UNUSED_ATTRIBUTE\n"
     "#endif\n"
     "#define CMOD_MAP_PROGRAM_IDS_DEFINED 1\n"
-    "static int ___cmod_map_program_ids(int id) PIKE_UNUSED_ATTRIBUTE;\n"
+    "static int ___cmod_map_program_ids(int id) PIKE_UNUSED_ATTRIBUTE;\n" +
+    (dynamic_id?
+     sprintf("static int ___cmod_dynamic_program_ids[%d] PIKE_UNUSED_ATTRIBUTE;\n", dynamic_id) : "") +
     "#ifndef TYPEOF\n"
     "/* Compat with older Pikes. */\n"
     "#define TYPEOF(SVAL)\t((SVAL).type)\n"
@@ -3989,6 +4003,8 @@ int main(int argc, array(string) argv)
     "}\n"
     "#endif /* CMOD_MAP_PROGRAM_IDS_DEFINED */\n"
   });
+
+  tmp->addfuncs = tmp->addtypes + tmp->addfuncs;
 
   tmp->code = x;
   x=recursive(replace,x,PC.Token("INIT",0),tmp->addfuncs);
