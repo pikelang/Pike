@@ -5951,6 +5951,7 @@ PIKEFUN mapping(string:string|function|object|array(string|int)) get_predefines(
 
   static void set_current_file(void *file)
   {
+    free_string(THIS->current_file);
     THIS->current_file = file;
   }
   static void set_current_line(void *line)
@@ -5979,11 +5980,15 @@ PIKEFUN mapping(string:string|function|object|array(string|int)) get_predefines(
     SET_ONERROR(restore_current_file, set_current_file, THIS->current_file);
     SET_ONERROR(restore_current_line, set_current_line,
                 (void *)(ptrdiff_t)THIS->current_line);
-    THIS->current_file = MK_STRING("<built-in>");
+    /* NB: We need to add references to the current_file string here
+     *     in order to keep the gc happy.
+     */
+    copy_shared_string(THIS->current_file, MK_STRING("<built-in>"));
     THIS->current_line = 0;
     apply_current(f_CPP_define_ansi_macros_fun_num, 0);
     apply_current(f_CPP_define_pike_macros_fun_num, 0);
-    THIS->current_file = MK_STRING("<command-line>");
+    free_string(THIS->current_file);
+    copy_shared_string(THIS->current_file, MK_STRING("<command-line>"));
     apply_current(f_CPP_get_predefines_fun_num, 0);
     apply_current(f_CPP_define_multiple_macros_fun_num, 1);
     CALL_AND_UNSET_ONERROR(restore_current_line);
