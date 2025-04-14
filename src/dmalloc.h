@@ -9,7 +9,6 @@
 
 PMOD_EXPORT extern void *debug_xalloc(size_t);
 PMOD_EXPORT extern void debug_xfree(void *);
-PMOD_EXPORT extern void *debug_xmalloc(size_t);
 PMOD_EXPORT extern void *debug_xcalloc(size_t,size_t);
 PMOD_EXPORT extern void *debug_xrealloc(void *,size_t);
 PMOD_EXPORT char *debug_xstrdup(const char *src);
@@ -140,7 +139,6 @@ const char *dmalloc_find_name(void *p);
 
 #define xalloc(X) ((void *)debug_malloc_update_location((void *)debug_xalloc(X), DMALLOC_NAMED_LOCATION(" xalloc")))
 #define xcalloc(N, S) ((void *)debug_malloc_update_location((void *)debug_xcalloc(N, S), DMALLOC_NAMED_LOCATION(" xcalloc")))
-#define xmalloc(X) ((void *)debug_malloc_update_location((void *)debug_xmalloc(X), DMALLOC_NAMED_LOCATION(" xmalloc")))
 #define xrealloc(N, S) ((void *)debug_malloc_update_location((void *)debug_xrealloc(N, S), DMALLOC_NAMED_LOCATION(" xrealloc")))
 #define xstrdup(X) ((void *)debug_malloc_update_location((void *)debug_xstrdup(X), DMALLOC_NAMED_LOCATION(" xstrdup")))
 #define xfree(X) debug_xfree(debug_malloc_update_location((X), DMALLOC_NAMED_LOCATION(" free")))
@@ -230,10 +228,8 @@ PMOD_EXPORT struct mallinfo dlmallinfo(void);
 #define xstrdup debug_xstrdup
 
 #if defined(DYNAMIC_MODULE) && defined(__NT__) && !defined(USE_DLL)
-#define xmalloc debug_xmalloc
 #define xfree debug_xfree
 #else
-#define xmalloc malloc
 #define xfree free
 #endif /* defined(DYNAMIC_MODULE) && defined(__NT__) && !defined(USE_DLL) */
 
