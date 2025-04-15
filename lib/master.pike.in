@@ -4369,7 +4369,7 @@ void _main(array(string(0..255)) orig_argv)
         exit(0);
 
       case "version":
-        exit(0, version() + " Copyright © 1994-2024 Linköping University\n"
+        exit(0, version() + " Copyright Â© 1994-2024 LinkÃ¶ping University\n"
             "Pike comes with ABSOLUTELY NO WARRANTY; This is free software and you are\n"
             "welcome to redistribute it under certain conditions; read the files\n"
             "COPYING and COPYRIGHT in the Pike distribution for more details.\n");
@@ -4515,7 +4515,7 @@ void _main(array(string(0..255)) orig_argv)
   if(sizeof(argv)==1)
   {
     if(run_tool) {
-      werror("Pike -x specificed without tool name.\n"
+      werror("Pike -x specified without tool name.\n"
 	     "Available tools:\n");
       mapping t = ([]);
       int i;
