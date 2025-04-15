@@ -68,7 +68,7 @@ string usage = #"[options] <from> > <to>
 
    CVAR int foo;
    PIKEVAR mapping m
-     attributes;
+     comma_separated_attributes;
 
    DECLARE_STORAGE; // optional
 
@@ -152,6 +152,9 @@ string usage = #"[options] <from> > <to>
  \"int|string\", then no type checking at all is performed on the svalue. That
  is not a bug - the user code has to do a type check later anyway, and it's
  more efficient to add the error handling there.
+
+ Note: If multiple attributes are needed for a PIKEVAR, they are
+ separated by comma \",\".
 
  Currently, the following attributes are understood:
    efun;          makes this function a global constant (no value)
@@ -2594,7 +2597,8 @@ sprintf("        } else {\n"
             name = (string)name + (string)x[pos2+1]+ (string)x[pos2+2];
             pos2+=2;
         }
-	    mapping attributes = parse_attributes(x[pos2+1..pos]);
+            mapping attributes =
+              parse_attributes(replace(x[pos2+1..pos], ",", ";"));
 //    werror("type: %O\n",type);
 	    mixed csym = attributes->c_name || name;
         if( !has_value( csym, "." ) )
