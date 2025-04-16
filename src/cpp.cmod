@@ -478,22 +478,55 @@ PIKECLASS define
 /*! @endclass define
  */
 
+/*! @decl string handle_include(string header_file, string current_file, @
+ *!                             int(0..1) is_local_ref)
+ *!
+ *!   The default implementation calls the corresponding
+ *!   function in @[master()] with the same arguments
+ *!   and returns its result.
+ */
 PIKEFUN string handle_include(string header_file, string current_file,
 			      int(0..1) is_local_ref)
 {
   APPLY_MASTER("handle_include", args);
 }
 
+/*! @decl string read_include(string filename)
+ *!
+ *!   The default implementation calls the corresponding
+ *!   function in @[master()] with the same arguments
+ *!   and returns its result.
+ */
 PIKEFUN string read_include(string filename)
 {
   APPLY_MASTER("read_include", args);
 }
 
+/*! @decl string decode_charset(string data, string charset)
+ *!
+ *!   The default implementation calls the corresponding
+ *!   function in @[master()] with the same arguments
+ *!   and returns its result.
+ */
 PIKEFUN string decode_charset(string data, string charset)
 {
   APPLY_MASTER("decode_charset", args);
 }
 
+/*! @decl mapping(string:string|function|object) get_predefines()
+ *!
+ *! Returns a mapping containing the set of predefined macros.
+ *! These are typically the macros defined via the @tt{-D@} option
+ *! when starting Pike.
+ *!
+ *! After @[_take_over_initial_predefines()] has been called, it
+ *! instead calls @[master()->get_predefines()] and returns
+ *! its result.
+ *!
+ *! @seealso
+ *!   @[cpp()], @[CompilationHandler->get_predefines()],
+ *!   @[_take_over_initial_predefines()]
+ */
 PIKEFUN mapping(string:string|function|object) get_predefines()
 {
   if (use_initial_predefs) {
@@ -4001,8 +4034,8 @@ static void parse_define_body(struct CPP_struct *this,
   f_aggregate(Pike_sp - partbase);
 }
 
-/*
- * Preprocessor template.
+/**
+ * Preprocess template.
  *
  * NB: There are two basic cases where this function is called:
  *
@@ -4012,6 +4045,17 @@ static void parse_define_body(struct CPP_struct *this,
  *
  *   * Or parsing to the end of the line after a directive.
  *     The result of this is added to a temporary buffer.
+ *
+ * @param data
+ *   String of data to preprocess.
+ *
+ * @param len
+ *   Length of data to preprocess.
+ *
+ * @param charset
+ *   Charset for data if known.
+ *
+ * Returns the number of characters processed from data.
  */
 static ptrdiff_t low_cpp(struct CPP_struct *this,
                            const PCHARP data,
@@ -5049,6 +5093,18 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
   return pos;
 }
 
+  /*! @decl void low_cpp(string data, int flags)
+   *!
+   *!   Preprocess a string fragment.
+   *!
+   *!   The preocessed result is appended to the current output buffer.
+   *!
+   *! @note
+   *!   This is probably not the function you want.
+   *!
+   *! @seealso
+   *!   @[cpp()], @[high_cpp()], @[drain()]
+   */
   PIKEFUN void low_cpp(string data, int flags)
   {
     struct CPP_struct *this = THIS;
@@ -5173,6 +5229,17 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
     }
   }
 
+  /*! @decl string drain()
+   *!
+   *!   Return the preprocessor output so far,
+   *!   and empties the buffer.
+   *!
+   *! @returns
+   *!   Returns the content of the output buffer.
+   *!
+   *! @seealso
+   *!   @[low_cpp()], @[high_cpp()]
+   */
   PIKEFUN string drain()
   {
     struct CPP_struct *this = THIS;
@@ -6033,12 +6100,20 @@ PIKEFUN mapping(string:string|function|object|array(string|int)) get_predefines(
    *!   Convenience function for initializing the preprocessor
    *!   to Pike defaults.
    *!
-   *!   The default implementation is essentially:
+   *!   The default implementation is essentially (disregarding
+   *!   error handling):
    *!   @code
    *!     {
+   *!       string save_file = current_file;
+   *!       int save_line = current_line;
+   *!       current_file = "<built-in>";
+   *!       current_line = 0;
    *!       define_ansi_macros();
    *!       define_pike_macros();
+   *!       current_file = "<command-line>";
    *!       define_multiple_macros(get_predefines());
+   *!       current_file = save_current_file;
+   *!       current_line = save_line;
    *!     }
    *!   @endcode
    */
