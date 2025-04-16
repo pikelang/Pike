@@ -172,6 +172,9 @@ PIKECLASS define
 #endif
   }
 
+  /*! @decl void create(string name, int num_args, @
+   *!                   array(string|int|function(mixed|void...:string)) parts)
+   */
   PIKEFUN void create(string name, int num_args,
 		      array(string|int|function(mixed|void...:string)) parts)
     flags ID_PROTECTED;
@@ -1117,6 +1120,11 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
     apply_external(1, CE_RESOLV_FUN_NUM, 4);
   }
 
+  /*! @decl mapping|object|program handle_import(string module)
+   *!
+   *!   The default implementation is a proxy for the same function
+   *!   in the lexical parent class.
+   */
   PIKEFUN mapping|object|program handle_import(string module)
   {
     struct CPP_struct *this = THIS;
@@ -1135,6 +1143,12 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
 #endif
   }
 
+  /*! @decl string handle_include(string header_file, string current_file, @
+   *!                             int(0..1) is_local_ref)
+   *!
+   *!   The default implementation is a proxy for the same function
+   *!   in the lexical parent class.
+   */
   PIKEFUN string handle_include(string header_file, string current_file,
 				int(0..1) is_local_ref)
   {
@@ -1147,6 +1161,11 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
 #endif
   }
 
+  /*! @decl string read_include(string filename)
+   *!
+   *!   The default implementation is a proxy for the same function
+   *!   in the lexical parent class.
+   */
   PIKEFUN string read_include(string filename)
   {
 #ifdef SUPPORT_HANDLERS
@@ -1158,6 +1177,11 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
 #endif
   }
 
+  /*! @decl string decode_charset(string data, string charset)
+   *!
+   *!   The default implementation is a proxy for the same function
+   *!   in the lexical parent class.
+   */
   PIKEFUN string decode_charset(string data, string charset)
   {
 #ifdef SUPPORT_HANDLERS
@@ -2427,6 +2451,8 @@ static void undefine(struct CPP_struct *this, struct pike_string *name)
  *!   And in the @tt{@i{<replacement string>@}@}, @tt{arg1@} and @tt{arg2@}
  *!   will be replaced with @tt{something1@} and @tt{something2@}.
  */
+
+/*! @endnamespace */
 
 static struct pike_string *make_define_name(struct CPP_struct *this,
                                             const char *name)
@@ -5258,6 +5284,9 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
 
 /*** Magic defines ***/
 
+  /*! @namespace cpp::
+   */
+
   /*! @decl constant __LINE__
    *!
    *! This define contains the current line number, represented as an
@@ -5495,7 +5524,6 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
 
     push_string(finish_string_builder(&tmp));
   }
-
 
 /*! @decl constant __REAL_VERSION__
  *!
