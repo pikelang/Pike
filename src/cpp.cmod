@@ -5946,7 +5946,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
   /*! @decl void define_pike_macros()
    *!
    *!   Adds some pike-specific cpp macros,
-   *!   such as @[__DIR__], @[__VERSION__], [__PIKE__], etc.
+   *!   such as @[__DIR__], @[__VERSION__], @[__PIKE__], etc.
    *!
    *! @seealso
    *!   @[define_macro()], @[define_ansi_macros()]
