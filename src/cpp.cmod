@@ -446,6 +446,34 @@ PIKECLASS define
 
     push_int(0);
   }
+
+  PIKEFUN string _sprintf(int c, mapping(string:mixed)|void params)
+    flags ID_PROTECTED;
+  {
+    if (c != 'O') {
+      push_undefined();
+      return;
+    }
+
+    push_text("define(%s)");
+    ref_push_string(THIS->name);
+    if (THIS->args >= 0) {
+      int i = THIS->args;
+      push_text("(");
+      while (i--) {
+        push_text("ARG_");
+        push_int(THIS->args - i);
+        if (i) push_text(", ");
+      }
+      push_text(")");
+      if (THIS->args) {
+        f_add(2 + THIS->args * 3);
+      } else {
+        f_add(3);
+      }
+    }
+    f_sprintf(2);
+  }
 }
 /*! @endclass define
  */
