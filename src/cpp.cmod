@@ -446,26 +446,87 @@ PIKECLASS define
 
     push_int(0);
   }
+
+  PIKEFUN string _sprintf(int c, mapping(string:mixed)|void params)
+    flags ID_PROTECTED;
+  {
+    if (c != 'O') {
+      push_undefined();
+      return;
+    }
+
+    push_text("define(%s)");
+    ref_push_string(THIS->name);
+    if (THIS->args >= 0) {
+      int i = THIS->args;
+      push_text("(");
+      while (i--) {
+        push_text("ARG_");
+        push_int(THIS->args - i);
+        if (i) push_text(", ");
+      }
+      push_text(")");
+      if (THIS->args) {
+        f_add(2 + THIS->args * 3);
+      } else {
+        f_add(3);
+      }
+    }
+    f_sprintf(2);
+  }
 }
 /*! @endclass define
  */
 
+/*! @decl string handle_include(string header_file, string current_file, @
+ *!                             int(0..1) is_local_ref)
+ *!
+ *!   The default implementation calls the corresponding
+ *!   function in @[master()] with the same arguments
+ *!   and returns its result.
+ */
 PIKEFUN string handle_include(string header_file, string current_file,
 			      int(0..1) is_local_ref)
 {
   APPLY_MASTER("handle_include", args);
 }
 
+/*! @decl string read_include(string filename)
+ *!
+ *!   The default implementation calls the corresponding
+ *!   function in @[master()] with the same arguments
+ *!   and returns its result.
+ */
 PIKEFUN string read_include(string filename)
 {
   APPLY_MASTER("read_include", args);
 }
 
+/*! @decl string decode_charset(string data, string charset)
+ *!
+ *!   The default implementation calls the corresponding
+ *!   function in @[master()] with the same arguments
+ *!   and returns its result.
+ */
 PIKEFUN string decode_charset(string data, string charset)
 {
   APPLY_MASTER("decode_charset", args);
 }
 
+/*! @decl mapping(string:string|function|object) get_predefines()
+ *!
+ *! Returns a mapping containing the set of predefined macros.
+ *! These are typically the macros defined via the @tt{-D@} option
+ *! when starting Pike.
+ *!
+ *! After @[_take_over_initial_predefines()] has been called, it
+ *! instead calls @[master()->get_predefines()] and returns
+ *! its result.
+ *!
+ *! @seealso
+ *!   @[cpp()], @[CompilationHandler->get_predefines()],
+ *!   @[_take_over_initial_predefines()]
+ */
 PIKEFUN mapping(string:string|function|object) get_predefines()
 {
   if (use_initial_predefs) {
@@ -485,7 +546,9 @@ PIKEFUN mapping(string:string|function|object) get_predefines()
 PIKECLASS CPP
   program_flags PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT;
 {
-  PIKEVAR mapping(string:object(define)) defines flags ID_PRIVATE|ID_PROTECTED;
+  PIKEVAR mapping(string:object(define)) defines_mapping
+    c_name defines,	// NB: c_name first for compat with old precompile.
+    flags ID_PRIVATE|ID_PROTECTED;
   PIKEVAR int current_line;
   PIKEVAR int compile_errors;
   PIKEVAR string current_file;
@@ -3971,8 +4034,8 @@ static void parse_define_body(struct CPP_struct *this,
   f_aggregate(Pike_sp - partbase);
 }
 
-/*
- * Preprocessor template.
+/**
+ * Preprocess template.
  *
  * NB: There are two basic cases where this function is called:
  *
@@ -3982,6 +4045,17 @@ static void parse_define_body(struct CPP_struct *this,
  *
  *   * Or parsing to the end of the line after a directive.
  *     The result of this is added to a temporary buffer.
+ *
+ * @param data
+ *   String of data to preprocess.
+ *
+ * @param len
+ *   Length of data to preprocess.
+ *
+ * @param charset
+ *   Charset for data if known.
+ *
+ * Returns the number of characters processed from data.
  */
 static ptrdiff_t low_cpp(struct CPP_struct *this,
                            const PCHARP data,
@@ -5019,6 +5093,18 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
   return pos;
 }
 
+  /*! @decl void low_cpp(string data, int flags)
+   *!
+   *!   Preprocess a string fragment.
+   *!
+   *!   The preocessed result is appended to the current output buffer.
+   *!
+   *! @note
+   *!   This is probably not the function you want.
+   *!
+   *! @seealso
+   *!   @[cpp()], @[high_cpp()], @[drain()]
+   */
   PIKEFUN void low_cpp(string data, int flags)
   {
     struct CPP_struct *this = THIS;
@@ -5034,7 +5120,17 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
 #endif /* PIKE_DEBUG */
   }
 
-  PIKEFUN string cpp(string data, int flags)
+  /*! @decl string cpp(string data, int|void flags)
+   *!
+   *!   Preprocess a string.
+   *!
+   *! @returns
+   *!   Returns the preprocessed result.
+   *!
+   *! @seealso
+   *!   @[low_cpp()], @[high_cpp()]
+   */
+  PIKEFUN string cpp(string data, int|void flags)
   {
     struct CPP_struct *this = THIS;
     struct string_builder save_buf = this->buf;
@@ -5048,7 +5144,8 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
     if (save_file) add_ref(save_file);
     init_string_builder(&this->buf, 0);
 
-    low_cpp(this, MKPCHARP_STR(data), data->len, flags, THIS->charset);
+    low_cpp(this, MKPCHARP_STR(data), data->len,
+            flags?flags->u.integer:0, THIS->charset);
 
     push_string(finish_string_builder(&this->buf));
 
@@ -5062,7 +5159,26 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
 #endif /* PIKE_DEBUG */
   }
 
-  PIKEFUN string high_cpp(string data)
+  /*! @decl string|zero high_cpp(string data)
+   *!
+   *!   Preprocess a string.
+   *!
+   *! @returns
+   *!   Returns the preprocessed result, unless there was a
+   *!   dependency failure in which case @expr{0@} (zero) is returned.
+   *!   If the function has failed, the result so far may be
+   *!   retrieved with @[drain()].
+   *!
+   *! @note
+   *!   Clears the set of defined macros on completion.
+   *!
+   *! @throws
+   *!   Throws error on preprocessor failure.
+   *!
+   *! @seealso
+   *!   @[low_cpp()], @[cpp()], @[drain()]
+   */
+  PIKEFUN string|zero high_cpp(string data)
   {
     struct CPP_struct *this = THIS;
 
@@ -5091,6 +5207,11 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
     push_int(0); /* flags */
     apply_current(f_CPP_low_cpp_fun_num, 2);
 
+    /* Zap all macros to break any circularities via the mapping. */
+    if (this->defines) {
+      clear_mapping(this->defines);
+    }
+
     if(this->compile_errors)
     {
       throw_error_object(fast_clone_object(cpp_error_program), 0, 0,
@@ -5106,18 +5227,33 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
       /* NB: Make sure the buffer isn't freed twice. */
       this->buf.s = NULL;
     }
-
-    /* Zap all macros to break any circularities via the mapping. */
-    if (this->defines) {
-      clear_mapping(this->defines);
-    }
   }
 
+  /*! @decl string drain()
+   *!
+   *!   Return the preprocessor output so far,
+   *!   and empties the buffer.
+   *!
+   *! @returns
+   *!   Returns the content of the output buffer.
+   *!
+   *! @seealso
+   *!   @[low_cpp()], @[high_cpp()]
+   */
   PIKEFUN string drain()
   {
     struct CPP_struct *this = THIS;
     push_string(finish_string_builder(&this->buf));
     init_string_builder(&this->buf, 0);
+  }
+
+  /*! @decl mapping(string:mixed) `defines()
+   *!
+   *!   Getter for the set of active macros.
+   */
+  PIKEFUN mapping(string:mixed) `defines()
+  {
+    push_mapping(copy_mapping(THIS->defines));
   }
 
 /*** Magic defines ***/
@@ -5932,7 +6068,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
    *!
    *! @seealso
    *!   @[init_pike_cpp()], @[define_multiple_macros()],
-   *!   @[_take_over_initial_predefines()]
+   *!   @[_take_over_initial_predefines()], @[defines]
    */
 PIKEFUN mapping(string:string|function|object|array(string|int)) get_predefines()
   {
@@ -5964,12 +6100,20 @@ PIKEFUN mapping(string:string|function|object|array(string|int)) get_predefines(
    *!   Convenience function for initializing the preprocessor
    *!   to Pike defaults.
    *!
-   *!   The default implementation is essentially:
+   *!   The default implementation is essentially (disregarding
+   *!   error handling):
    *!   @code
    *!     {
+   *!       string save_file = current_file;
+   *!       int save_line = current_line;
+   *!       current_file = "<built-in>";
+   *!       current_line = 0;
    *!       define_ansi_macros();
    *!       define_pike_macros();
+   *!       current_file = "<command-line>";
    *!       define_multiple_macros(get_predefines());
+   *!       current_file = save_current_file;
+   *!       current_line = save_line;
    *!     }
    *!   @endcode
    */
