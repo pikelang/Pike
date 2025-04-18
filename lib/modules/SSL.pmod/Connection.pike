@@ -490,9 +490,9 @@ constant PRI_alert = 1;
 constant PRI_urgent = 2;
 constant PRI_application = 3;
 
-protected ADT.Queue alert_q = ADT.Queue();
-protected ADT.Queue urgent_q = ADT.Queue();
-protected ADT.Queue application_q = ADT.Queue();
+protected ADT.Queue(<Packet>) alert_q = ADT.Queue(<Packet>)();
+protected ADT.Queue(<Packet>) urgent_q = ADT.Queue(<Packet>)();
+protected ADT.Queue(<Packet>) application_q = ADT.Queue(<Packet>)();
 
 //! Returns a string describing the current connection state.
 string describe_state()
