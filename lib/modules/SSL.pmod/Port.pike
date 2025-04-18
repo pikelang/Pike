@@ -39,7 +39,7 @@ void `ctx=(Context c)
 }
 
 //! Queue of new @[SSL.File]s that have been negotiated.
-protected ADT.Queue accept_queue = ADT.Queue();
+  protected ADT.Queue(<SSL.File>) accept_queue = ADT.Queue(<SSL.File>)();
 
 //!
 function(mixed|void:void) accept_callback;
@@ -74,7 +74,7 @@ protected void call_accept_callback()
 //!
 //! If there's no @[accept_callback], then the @[File] will have to be
 //! retrieved from the queue by calling @[accept()].
-void finished_callback(object f, mixed|void id)
+void finished_callback(SSL.File f, mixed|void id)
 {
   accept_queue->put(f);
   call_accept_callback();
@@ -210,7 +210,7 @@ Stdio.File socket_accept()
 //! @returns
 //!   Returns the next pending @[File] if any, and @expr{0@} (zero) if
 //!   there are none.
-object accept()
+SSL.File accept()
 {
   if (!socket::_accept_callback) {
     // Enable the callback on first call in order to allow
