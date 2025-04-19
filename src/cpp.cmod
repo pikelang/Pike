@@ -148,11 +148,21 @@ DECLARATIONS;
  */
 PIKECLASS define
 {
-  PIKEVAR string name flags ID_PRIVATE|ID_PROTECTED;
-  PIKEVAR array(string|int) parts flags ID_PRIVATE|ID_PROTECTED;
-  CVAR magic_define_fun magic;
+  /*! @decl string name
+   *!
+   *!   Macro name.
+   */
+  PIKEVAR string name;
+
+  /*! @decl array(string|int|function(mixed...:string))|zero parts;
+   *!
+   *!   Macro expansion rule.
+   */
+  PIKEVAR array(string|int)|zero parts;
+
+  CVAR magic_define_fun magic;       /* Mostly unused. */
   CVAR int args;
-  CVAR short flags;         /* CPP_MACRO_* */
+  CVAR unsigned short flags;         /* CPP_MACRO_* */
 
   CVAR struct svalue self;
 
@@ -194,6 +204,25 @@ PIKECLASS define
 #ifndef tObjImpl_CPP
 #define tObjImpl_CPP	tObj
 #endif
+
+  /*! @decl int(-1..) `num_args()
+   *!
+   *!   Number of arguments for macro (if any).
+   *!
+   *!   @expr{-1@} if the macro is not a function-style macro.
+   *!   Otherwise the minimum number of expected arguments.
+   */
+  PIKEFUN int(-1..) `num_args()
+  {
+    push_int(THIS->args);
+  }
+
+  /*! @decl int(16bit) `flags()
+   */
+  PIKEFUN int(16bit) `flags()
+  {
+    push_int(THIS->flags);
+  }
 
   /*! @decl string `()(array(string)|void arguments, CPP|void context, @
    *!                  int|void flags)
@@ -543,15 +572,21 @@ PIKEFUN mapping(string:string|function|object) get_predefines()
  *!
  *! The state for an instance of the preprocessor.
  *!
+ *! The default set of supported directives and macros, etc
+ *! is documented in the @[cpp::] scope.
+ *!
  *! @seealso
- *!   @[predef::cpp()]
+ *!   @[predef::cpp()], @[cpp()], @[cpp::]
  */
 PIKECLASS CPP
   program_flags PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT;
 {
-  PIKEVAR mapping(string:object(define)) defines_mapping
-    c_name defines,	// NB: c_name first for compat with old precompile.
-    flags ID_PRIVATE|ID_PROTECTED;
+  /*! @decl mapping(string:define) defines()
+   *!
+   *!   Mapping containing the set of active macros.
+   */
+  PIKEVAR mapping(string:object(define))|zero defines;
+
   PIKEVAR int current_line;
   PIKEVAR int compile_errors;
   PIKEVAR string current_file;
@@ -569,6 +604,7 @@ PIKECLASS CPP
   PIKEVAR int dependencies_fail;
   PIKEVAR int auto_convert;
 
+  /* FIXME: Consider making this mapping public too. */
   PIKEVAR mapping(string:function(string:string)) directives flags ID_PROTECTED;
 
   INIT
@@ -5271,15 +5307,6 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
     struct CPP_struct *this = THIS;
     push_string(finish_string_builder(&this->buf));
     init_string_builder(&this->buf, 0);
-  }
-
-  /*! @decl mapping(string:mixed) `defines()
-   *!
-   *!   Getter for the set of active macros.
-   */
-  PIKEFUN mapping(string:mixed) `defines()
-  {
-    push_mapping(copy_mapping(THIS->defines));
   }
 
 /*** Magic defines ***/
