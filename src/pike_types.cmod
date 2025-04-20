@@ -531,7 +531,8 @@ static struct pike_type *debug_mk_type(unsigned INT32 type,
   case PIKE_T_BIND:
     if (car && (car->type == PIKE_T_ASSIGN) &&
         ((car->car == car->cdr) ||
-         ((car->cdr->type == PIKE_T_NAME) && (car->car == car->cdr->cdr)))) {
+         (car->cdr && (car->cdr->type == PIKE_T_NAME) &&
+          (car->car == car->cdr->cdr)))) {
       /* Binding of a generic to itself.
        *
        * This is typically used to avoid the implicit
@@ -543,7 +544,10 @@ static struct pike_type *debug_mk_type(unsigned INT32 type,
       free_type(car);
       return cdr;
     }
-    if (!cdr) return NULL;
+    if (!cdr) {
+      free_type(car);
+      return NULL;
+    }
     break;
   }
 
@@ -13855,6 +13859,7 @@ static void push_apply_bindings_recur(struct pike_type *t,
   DECLARE_CYCLIC();
 
   if (BEGIN_CYCLIC((ptrdiff_t)t, (ptrdiff_t)bindings)) {
+    /* This can happen when the generics are bound to themselves. */
     pike_fprintf(stderr, "push_apply_bindings_recur(%pT, %pm)\n", t, bindings);
     Pike_fatal("Infinite loop when applying bindings.\n");
   }
