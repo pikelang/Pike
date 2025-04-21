@@ -13,7 +13,7 @@ force_config_cache=no
 if_autoconf(2,50,[
       # Check whether it would be prudent to enable
       # the configure cache.
-      function got_timeout()
+      got_timeout()
       {
           force_config_cache=yes
       }
