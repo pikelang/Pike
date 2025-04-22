@@ -53,7 +53,7 @@
 #define DEF_ARG_NOPRESPACE  0x200000
 #define DEF_ARG_NOPOSTSPACE 0x400000
 #define DEF_ARG_NEED_COMMA  0x800000
-#define DEF_ARG_MASK        0x0fffff
+#define DEF_ARG_MASK        0x0000ff
 
 #ifdef HAVE_PRAGMA_GCC_OPTIMIZE
 #pragma GCC optimize "-Os"
@@ -144,6 +144,152 @@ DECLARATIONS;
  * }
  */
 
+EXTRA {
+  /*! @enum CppFlags
+   *!
+   *!   Flags for @[CPP()->low_cpp()] and directives.
+   */
+  type_stack_mark();
+  push_int_type(0, 0x7f);
+  push_type_value(pop_unfinished_type());
+  simple_add_constant("CppFlags", Pike_sp-1, ID_LOCAL);
+  pop_stack();
+
+  /*! @decl constant CPP_NO_OUTPUT = 1
+   *!
+   *!   Inside false section of #if/#else.
+   */
+  add_integer_constant("CPP_NO_OUTPUT", CPP_NO_OUTPUT, ID_LOCAL);
+
+  /*! @decl constant CPP_EXPECT_ELSE = 2
+   *!
+   *!   Expect #else/#elif/#elseif.
+   */
+  add_integer_constant("CPP_EXPECT_ELSE", CPP_EXPECT_ELSE, ID_LOCAL);
+
+  /*! @decl constant CPP_EXPECT_ENDIF = 4
+   *!
+   *!   Expect #endif.
+   */
+  add_integer_constant("CPP_EXPECT_ENDIF", CPP_EXPECT_ENDIF, ID_LOCAL);
+
+  /*! @decl constant CPP_REALLY_NO_OUTPUT = 8
+   *!
+   *!   Entire preprocessor is in false section.
+   */
+  add_integer_constant("CPP_REALLY_NO_OUTPUT", CPP_REALLY_NO_OUTPUT, ID_LOCAL);
+
+  /*! @decl constant CPP_END_AT_NEWLINE = 16
+   *!
+   *!   Halt at end of line.
+   */
+  add_integer_constant("CPP_END_AT_NEWLINE", CPP_END_AT_NEWLINE, ID_LOCAL);
+
+  /*! @decl constant CPP_DO_IF = 32
+   */
+  add_integer_constant("CPP_DO_IF", CPP_DO_IF, ID_LOCAL);
+
+  /*! @decl constant CPP_NO_EXPAND = 64
+   */
+  add_integer_constant("CPP_NO_EXPAND", CPP_NO_EXPAND, ID_LOCAL);
+
+  /*! @endenum
+   */
+
+  /*! @enum CppMacroFlags
+   *!
+   *!   Flags for @[define()].
+   */
+  type_stack_mark();
+  push_int_type(0, 0x3f);
+  push_type_value(pop_unfinished_type());
+  simple_add_constant("CppMacroFlags", Pike_sp-1, ID_LOCAL);
+  pop_stack();
+
+  /*! @decl constant CPP_MACRO_VARARGS = 0x01
+   *!
+   *!   Macro is a function-style macro that accepts
+   *!   more arguments than @[define()->num_args].
+   */
+  add_integer_constant("CPP_MACRO_VARARGS", CPP_MACRO_VARARGS, ID_LOCAL);
+
+  /*! @decl constant CPP_MACRO_KEEP_NL = 0x02
+   *!
+   *!   Keep newlines.
+   */
+  add_integer_constant("CPP_MACRO_KEEP_NL", CPP_MACRO_KEEP_NL, ID_LOCAL);
+
+  /*! @decl constant CPP_MACRO_USER_FLAGS = 0x03
+   *!
+   *!   Mask for valid user flags (ie @[CPP_MACRO_VARARGS] or
+   *!   @[CPP_MACRO_KEEP_NL]).
+   */
+  add_integer_constant("CPP_MACRO_USER_FLAGS", CPP_MACRO_USER_FLAGS, ID_LOCAL);
+
+  /*! @decl constant CPP_MACRO_DISABLED	= 0x10
+   *!
+   *!   Flag indicating that the macro is temorarily disabled.
+   *!   Don't expand. This flag is used during preprocessing
+   *!   of the result from expansion of the macro.
+   */
+  add_integer_constant("CPP_MACRO_DISABLED", CPP_MACRO_DISABLED, ID_LOCAL);
+
+  /*! @decl constant CPP_MACRO_IN_USE = 0x20
+   *!
+   *!   In use. This flag is used during preprocessing of
+   *!   arguments to the macro.
+   */
+  add_integer_constant("CPP_MACRO_IN_USE", CPP_MACRO_IN_USE, ID_LOCAL);
+
+  /*! @endenum
+   */
+
+  /*! @enum CppDefArgFlags
+   *!
+   *!   These flags affect the behavior of macro argument expansion,
+   *!   and are used in the @[define()->parts] array.
+   */
+  type_stack_mark();
+  push_int_type(0, 0xffffff);
+  push_type_value(pop_unfinished_type());
+  simple_add_constant("CppDefArgFlags", Pike_sp-1, ID_LOCAL);
+  pop_stack();
+
+  /*! @decl constant CPP_DEF_ARG_STRINGIFY   = 0x100000
+   *!
+   *!   Convert the argument to a quoted string (including initial
+   *!   and ending @expr{'"'@}).
+   */
+  add_integer_constant("CPP_DEF_ARG_STRINGIFY", DEF_ARG_STRINGIFY, ID_LOCAL);
+
+  /*! @decl constant CPP_DEF_ARG_NOPRESPACE  = 0x200000
+   *!
+   *!   Inhibit insertion of whitespace before the argument expansion.
+   */
+  add_integer_constant("CPP_DEF_ARG_NOPRESPACE", DEF_ARG_NOPRESPACE, ID_LOCAL);
+
+  /*! @decl constant CPP_DEF_ARG_NOPOSTSPACE = 0x400000
+   *!
+   *!   Inhibit insertion of whitespace after the argument expansion.
+   */
+  add_integer_constant("CPP_DEF_ARG_NOPOSTSPACE", DEF_ARG_NOPOSTSPACE, ID_LOCAL);
+
+  /*! @decl constant CPP_DEF_ARG_NEED_COMMA  = 0x800000
+   *!
+   *!   Insert a comma before the argument if it is not the empty varargs argument.
+   */
+  add_integer_constant("CPP_DEF_ARG_NEED_COMMA", DEF_ARG_NEED_COMMA, ID_LOCAL);
+
+  /*! @decl constant CPP_DEF_ARG_MASK        = 0x0000ff
+   *!
+   *!   Mask for converting a @[define()->parts] entry into an argument number.
+   */
+  add_integer_constant("CPP_DEF_ARG_MASK", DEF_ARG_MASK, ID_LOCAL);
+
+  /*! @endenum
+   */
+}
+
 /*! @class define
  */
 PIKECLASS define
@@ -217,15 +363,15 @@ PIKECLASS define
     push_int(THIS->args);
   }
 
-  /*! @decl int(16bit) `flags()
+  /*! @decl CppMacroFlags `flags()
    */
-  PIKEFUN int(16bit) `flags()
+  PIKEFUN int(6bit) `flags()
   {
     push_int(THIS->flags);
   }
 
   /*! @decl string `()(array(string)|void arguments, CPP|void context, @
-   *!                  int|void flags)
+   *!                  CppFlags|void flags)
    *!
    *! @param arguments
    *!   Array of arguments to the macro. Zero if no parenthesis.
@@ -238,7 +384,7 @@ PIKECLASS define
    *!   on failure (typically due to invalid @[arguments]).
    */
   PIKEFUN string `()(array(string)|void arguments, object(CPP)|void context_obj,
-		     int|void flags_sval)
+                     int(7bit)|void flags_sval)
     flags ID_PROTECTED;
   {
     struct define_struct *d = THIS;
@@ -575,6 +721,10 @@ PIKEFUN mapping(string:string|function|object) get_predefines()
  *! The default set of supported directives and macros, etc
  *! is documented in the @[cpp::] scope.
  *!
+ *! Custom directives may be added by inheriting this class and adding non-private
+ *! functions @expr{string directive_XXX(CppFlags flags, string rest_of_line)@},
+ *! or by adding the same to the @[directives] mapping.
+ *!
  *! @seealso
  *!   @[predef::cpp()], @[cpp()], @[cpp::]
  */
@@ -604,8 +754,15 @@ PIKECLASS CPP
   PIKEVAR int dependencies_fail;
   PIKEVAR int auto_convert;
 
-  /* FIXME: Consider making this mapping public too. */
-  PIKEVAR mapping(string:function(string:string)) directives flags ID_PROTECTED;
+  /*! @decl mapping(string:function(int(16bit), string: string|zero))|zero directives
+   *!
+   *! Mapping containing the set of active dynamic custom preprocessor directives.
+   *!
+   *! @note
+   *!   This mapping is only consulted if a corresponding @expr{directive_XXX@}
+   *!   symbol is not present (or is private) in @expr{this@}.
+   */
+  PIKEVAR mapping(string:function(string:string))|zero directives;
 
   INIT
   {
@@ -1328,7 +1485,7 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
    *! @seealso
    *!   @[#if]
    */
-  PIKEFUN string(0..0) directive_require(int flags, string line)
+  PIKEFUN string(0..0) directive_require(int(7bit) flags, string line)
   {
     struct CPP_struct *this = THIS;
 
@@ -1534,7 +1691,7 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
    *! @seealso
    *!   @[#warning]
    */
-  PIKEFUN string(0..0) directive_error(int flags, string line)
+  PIKEFUN string(0..0) directive_error(int(7bit) flags, string line)
   {
     struct CPP_struct *this = THIS;
 
@@ -1561,7 +1718,7 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
    *! @seealso
    *!   @[#error]
    */
-  PIKEFUN string(0..0) directive_warning(int flags, string line)
+  PIKEFUN string(0..0) directive_warning(int(7bit) flags, string line)
   {
     struct CPP_struct *this = THIS;
 
@@ -1636,7 +1793,7 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
    *!   #pike __REAL_VERSION__
    *!   @endcode
    */
-  PIKEFUN string(0..0) directive_pike(int flags, string line)
+  PIKEFUN string(0..0) directive_pike(int(7bit) flags, string line)
   {
     struct CPP_struct *this = THIS;
 
@@ -1772,7 +1929,7 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
    *!       Disable disassembly output (default).
    *!   @endstring
    */
-  PIKEFUN string(0..0) directive_pragma(int flags, string line)
+  PIKEFUN string(0..0) directive_pragma(int(7bit) flags, string line)
   {
     struct CPP_struct *this = THIS;
 
@@ -5085,8 +5242,10 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
 		struct svalue sv;
 		struct pike_string *directive_string =
 		  add_shared_strings(MK_STRING("directive_"), directive);
-		int id = find_shared_string_identifier(directive_string,
-						       Pike_fp->current_object->prog);
+                int id =
+                  really_low_find_shared_string_identifier(directive_string,
+                                                           Pike_fp->current_program,
+                                                           SEE_PROTECTED);
 
 		free_string(directive_string);
 		if (id >= 0) {
@@ -5129,7 +5288,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
               }
 
               if (directive) {
-                cpp_error_sprintf(this, "Unknown preprocessor directive %pS.",
+                cpp_error_sprintf(this, "Unknown preprocessor directive #%pS.",
                                   directive);
                 free_string(directive);
               } else {
@@ -5155,7 +5314,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
   return pos;
 }
 
-  /*! @decl void low_cpp(string data, int flags)
+  /*! @decl void low_cpp(string data, CppFlags flags)
    *!
    *!   Preprocess a string fragment.
    *!
@@ -5167,7 +5326,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
    *! @seealso
    *!   @[cpp()], @[high_cpp()], @[drain()]
    */
-  PIKEFUN void low_cpp(string data, int flags)
+  PIKEFUN void low_cpp(string data, int(7bit) flags)
   {
     struct CPP_struct *this = THIS;
 #ifdef PIKE_DEBUG
@@ -5182,7 +5341,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
 #endif /* PIKE_DEBUG */
   }
 
-  /*! @decl string cpp(string data, int|void flags)
+  /*! @decl string cpp(string data, CppFlags|void flags)
    *!
    *!   Preprocess a string.
    *!
@@ -5192,7 +5351,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
    *! @seealso
    *!   @[low_cpp()], @[high_cpp()]
    */
-  PIKEFUN string cpp(string data, int|void flags)
+  PIKEFUN string cpp(string data, int(7bit)|void flags)
   {
     struct CPP_struct *this = THIS;
     struct string_builder save_buf = this->buf;
@@ -5881,7 +6040,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
   /*! @decl void define_macro(string name, @
    *!                         string|object|array|function|void value, @
    *!                         int(-1..)|void numargs, @
-   *!                         int(0..3)|void flags)
+   *!                         CppMacroFlags|void flags)
    *!
    *! Define a cpp macro.
    *!
@@ -5901,10 +6060,10 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
    *! @param flags
    *!   Bit-wise or of flags affecting the macro behavior:
    *!   @int
-   *!     @value 1
+   *!     @value CPP_MACRO_VARARGS
    *!       Function style macro with a variable number of arguments.
    *!       Invalid if @[numargs] is @expr{-1@}.
-   *!     @value 2
+   *!     @value CPP_MACRO_KEEP_NL
    *!       Keep newlines emitted by the macro.
    *!   @endint
    *!   Defaults to @expr{0@}.
@@ -5915,7 +6074,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
   PIKEFUN void define_macro(string name,
 			    string|object|array|function|void value,
 			    int(-1..)|void numargs,
-			    int(0..3)|void flags)
+                            int(6bit)|void flags)
   {
     struct CPP_struct *this = THIS;
     int real_numargs = -2;
