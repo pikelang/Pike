@@ -2116,6 +2116,30 @@ class ParseBlock
   array declarations=({});
   int local_id = ++gid;
 
+  // Splits an array of tokens into separate code and comments.
+  // This is useful for avoiding to move comments that contain
+  // eg autodoc markup.
+  protected array(array(PC.Token)|PC.Token)
+    split_comments(PC.Token|array(PC.Token) x)
+  {
+    // werror("x: %O\n", x);
+    if (arrayp(x)) {
+      array(array(PC.Token)|PC.Token) ret = ({ ({}), ({}) });
+      foreach(x, array(PC.Token)|PC.Token xx) {
+        [array(PC.Token)|PC.Token code, array(PC.Token)|PC.Token comments] =
+          split_comments(xx);
+        ret[0] += ({ code });
+        ret[1] += ({ comments });
+      }
+      return ret;
+    }
+    if (has_prefix(x->text, "/*") || has_prefix(x->text, "//")) {
+      // Found comment.
+      return ({ ({}), x });
+    }
+    return ({ x, ({}) });
+  }
+
   protected void create(array(array|PC.Token) x, string base, string class_name,
 			mapping(string:string) names)
     {
@@ -2461,8 +2485,10 @@ sprintf("        } else {\n"
 	case "EXTRA":
 	  {
 	    string define = make_unique_name("extra",base,"defined");
-	    addfuncs += IFDEF(define, x[e+1]);
-	    ret += DEFINE(define);
+            [array(PC.Token)|PC.Token code, array(PC.Token)|PC.Token comments] =
+              split_comments(x[e+1]);
+            addfuncs += IFDEF(define, code);
+            ret += ({ comments }) + DEFINE(define);
 	    e++;
 	    break;
 	  }
