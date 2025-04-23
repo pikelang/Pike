@@ -186,10 +186,14 @@ EXTRA {
   add_integer_constant("CPP_END_AT_NEWLINE", CPP_END_AT_NEWLINE, ID_LOCAL);
 
   /*! @decl constant CPP_DO_IF = 32
+   *!
+   *!   Enable @[cpp::defined()] et al.
    */
   add_integer_constant("CPP_DO_IF", CPP_DO_IF, ID_LOCAL);
 
   /*! @decl constant CPP_NO_EXPAND = 64
+   *!
+   *!   Reserved.
    */
   add_integer_constant("CPP_NO_EXPAND", CPP_NO_EXPAND, ID_LOCAL);
 
