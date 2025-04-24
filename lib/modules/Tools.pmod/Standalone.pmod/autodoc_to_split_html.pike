@@ -565,6 +565,7 @@ class Node
   {
     if(_make_class_path) return _make_class_path;
     array a = reverse(parent->get_ancestors());
+    if (parent->type == "enum") a = a[..<1];
 
     _make_class_path = "";
     _raw_class_path = "";
@@ -859,17 +860,21 @@ class Node
 
   Node find_prev_node()
   {
-    array(Node) siblings = find_siblings();
-    int index = search( siblings, this );
+    Node me = this;
+    if (parent->type == "enum") {
+      me = parent;
+    }
+    array(Node) siblings = me->find_siblings();
+    int index = search( siblings, me );
 
     Node tmp;
 
     if(index==0 || index == -1)
-      return parent;
+      return me->parent;
 
     tmp = siblings[index-1];
 
-    while(sizeof(tmp->find_children()))
+    while (sizeof(tmp->find_children()) && (tmp->type != "enum"))
       tmp = tmp->find_children()[-1];
 
     return tmp;
@@ -877,15 +882,22 @@ class Node
 
   Node find_next_node(void|int dont_descend)
   {
-    if(!dont_descend && sizeof(find_children()))
-      return find_children()[0];
+    Node me = this;
+    if (parent->type == "enum") {
+      me = parent;
+    }
+    if (me->type == "enum") {
+      dont_descend = 1;
+    }
+    if(!dont_descend && sizeof(me->find_children()))
+      return me->find_children()[0];
 
-    array(Node) siblings = find_siblings();
-    int index = search( siblings, this );
+    array(Node) siblings = me->find_siblings();
+    int index = search( siblings, me );
 
     Node tmp;
     if(index==sizeof(siblings)-1)
-      tmp = parent->find_next_node(1);
+      tmp = me->parent->find_next_node(1);
     else
       tmp = siblings[index+1];
     return tmp;
