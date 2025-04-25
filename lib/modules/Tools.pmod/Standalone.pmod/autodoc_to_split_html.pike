@@ -809,10 +809,14 @@ class Node
     array(string) js_inherits;
 
     if (sizeof(inherits)) {
+      string self_filename = make_load_index_filename();
+
       js_inherits = ({});
       foreach(inherits, array(string|Node) inh) {
         Node n = objectp(inh[2])?inh[2]:refs[inh[2]];
         if (!n) continue;
+        string filename = n->make_load_index_filename();
+        if (filename == self_filename) continue;	// Avoid recursion.
 
         string cls_path = n->make_class_path();
         js_inherits += ({ cls_path });
@@ -821,7 +825,7 @@ class Node
                        "PikeDoc.loadScript(%q, %[0]q);\n"
                        "\n",
                        cls_path,
-                       n->make_load_index_filename());
+                       filename);
       }
       if (sizeof(res)) {
         #if 0
