@@ -453,7 +453,7 @@ class Node
 
   string make_index_filename()
   {
-    if((type == "method") || (type == "directive")) {
+    if((type == "method") || (type == "directive") || (type == "enum")) {
       return parent->make_index_filename();
     }
     // NB: We need the full path for the benefit of the exporter.
@@ -462,7 +462,7 @@ class Node
 
   string make_load_index_filename()
   {
-    if((type == "method") || (type == "directive")) {
+    if((type == "method") || (type == "directive") || (type == "enum")) {
       return parent->make_load_index_filename();
     }
     // NB: We need the full path for the benefit of the exporter.
@@ -741,6 +741,16 @@ class Node
 
   string make_index_js()
   {
+    array(Node) member_children = this::member_children;
+
+    if (sizeof(enum_children)) {
+      // Make enum constants visible in the same context
+      // as the enum name.
+      foreach(enum_children->member_children, array(Node) children) {
+        member_children += children;
+      }
+      sort(map(member_children->name, lower_case), member_children);
+    }
 #if 1
     string cp = make_class_path();
     string res = "// Class path " + cp + "\n";
@@ -799,10 +809,14 @@ class Node
     array(string) js_inherits;
 
     if (sizeof(inherits)) {
+      string self_filename = make_load_index_filename();
+
       js_inherits = ({});
       foreach(inherits, array(string|Node) inh) {
         Node n = objectp(inh[2])?inh[2]:refs[inh[2]];
         if (!n) continue;
+        string filename = n->make_load_index_filename();
+        if (filename == self_filename) continue;	// Avoid recursion.
 
         string cls_path = n->make_class_path();
         js_inherits += ({ cls_path });
@@ -811,7 +825,7 @@ class Node
                        "PikeDoc.loadScript(%q, %[0]q);\n"
                        "\n",
                        cls_path,
-                       n->make_load_index_filename());
+                       filename);
       }
       if (sizeof(res)) {
         #if 0
@@ -1229,7 +1243,7 @@ class Node
 
   void make_html(string template, string path, Git.Export|void exporter)
   {
-    if ((type != "method") && (type != "directive")) {
+    if ((type != "method") && (type != "directive") && (type != "enum")) {
       string index_js = make_index_js();
       string index = make_index_filename() + ".js";
       if (exporter) {
