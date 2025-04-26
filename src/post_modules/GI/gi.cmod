@@ -439,6 +439,11 @@ static void push_wrapped_boxed(gpointer gbox, GIBaseInfo *info, GType rttype)
         Pike_error("Received a box of an unregistered type!\n");
     }
     APPLY_MASTER ("resolv", 1);
+    if (TYPEOF(Pike_sp[-1]) == T_PROGRAM) {
+      push_object(make_pointer_object(gbox, NULL));
+      mega_apply(APPLY_STACK, 2, 0, 0);
+      return;
+    }
     if (TYPEOF(Pike_sp[-1]) != T_OBJECT)
       Pike_error("Failed to resolve GI box class.\n");
     ref_push_mapping(magic_mapping);

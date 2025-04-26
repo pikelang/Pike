@@ -5,11 +5,17 @@ inherit @module@ : GI;
 #if constant(@module@.Repository)
 
 class DynamicImporter {
+
+  constant magic_remaps = ([
+    "cairo" : ([ "Context" : "Cairo.Context" ])
+  ]);
+
   protected Repository repository = get_default_repository();
 
   class IntrospectionModule {
 
     protected string namespace;
+    protected mapping(BaseInfo:mixed) wrap_special = ([]);
 
     class Function(protected FunctionInfo info)
     {
@@ -332,6 +338,13 @@ class DynamicImporter {
     {
       namespace = namespace_;
       repository->require(namespace, version);
+      if (magic_remaps[namespace])
+        foreach (magic_remaps[namespace]; string from; string to) {
+          BaseInfo ctx1 = repository->find_by_name(namespace, from);
+          program ctx2 = master()->resolv(to);
+          if (ctx1 && ctx2)
+            wrap_special[ctx1] = ctx2;
+        }
     }
 
     protected string _sprintf(int mode)
@@ -341,7 +354,9 @@ class DynamicImporter {
 
     protected mixed wrap(BaseInfo info)
     {
-      if (object_program(info) == ObjectInfo)
+      if (sizeof(wrap_special) && wrap_special[info])
+        return wrap_special[info];
+      else if (object_program(info) == ObjectInfo)
         return Object([object(ObjectInfo)]info);
       else if (object_program(info) == InterfaceInfo)
         return Interface([object(InterfaceInfo)]info);
