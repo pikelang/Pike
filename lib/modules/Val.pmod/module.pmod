@@ -196,6 +196,17 @@ Null null = Null();
 //! affected if this object is replaced.
 
 
+//! @class Pointer
+//! A wrapper for a passing around raw pointers between modules.
+//! Should not be used directly from pike code.
+
+//! @decl inherit Builtin.Pointer
+
+constant Pointer = Builtin.Pointer;
+
+//! @endclass
+
+
 #define NANOSECONDS		1000000000
 
 //! The local timezone without daylight-saving correction.

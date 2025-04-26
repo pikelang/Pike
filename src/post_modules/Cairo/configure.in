@@ -1,0 +1,57 @@
+AC_INIT(cairo.cmod)
+
+AC_ARG_WITH(cairo,[  --without-cairo       no support for Cairo],[],[with_cairo=yes])
+
+AC_MODULE_INIT()
+AC_CONFIG_HEADER(cairo_config.h)
+
+PIKE_FEATURE_WITHOUT(Cairo)
+
+AC_SUBST(CAIRO_CFLAGS)
+AC_SUBST(CAIRO_LIBS)
+
+if test x$with_cairo = xyes ; then
+  PIKE_FEATURE_NODEP(Cairo)
+
+  PIKE_PROG_PKG_CONFIG
+
+  if ${PKG_CONFIG} cairo 2>/dev/null ; then
+    CAIRO_CFLAGS="`${PKG_CONFIG} cairo --cflags`"
+    CAIRO_LIBS="`${PKG_CONFIG} cairo --libs`"
+    CAIRO_VERSION="`${PKG_CONFIG} cairo --modversion`"
+    AC_MSG_CHECKING(if cairo actually works)
+
+    OLDCPPFLAGS="$CPPFLAGS"
+    OLDLIBS="$LIBS"
+    CPPFLAGS="$CAIRO_CFLAGS $CPPFLAGS"
+    LIBS="$CAIRO_LIBS $LIBS"
+
+    AC_TRY_LINK([
+#include <cairo/cairo.h>
+],
+[
+  cairo_surface_t *surface;
+  cairo_t *cr;
+  surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, 120, 120);
+  cr = cairo_create (surface);
+  cairo_destroy (cr);
+  cairo_surface_destroy (surface);
+],
+[cairo_ok=yes],
+[cairo_ok=no])
+    if test yes = "$cairo_ok" ; then
+      AC_MSG_RESULT(yes)
+      AC_DEFINE(HAVE_CAIRO, [], [Define if you have cairo])
+      PIKE_FEATURE_OK(Cairo)
+    else
+      AC_MSG_RESULT(no)
+      CAIRO_CFLAGS=""
+      CAIRO_LIBS=""
+      CAIRO_VERSION=""
+      CPPFLAGS="$OLDCPPFLAGS"
+      LIBS="$OLDLIBS"
+    fi
+  fi
+fi
+
+AC_OUTPUT(Makefile,echo FOO >stamp-h )

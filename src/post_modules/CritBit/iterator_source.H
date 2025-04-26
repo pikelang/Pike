@@ -226,7 +226,7 @@
 	    ref_push_object(Pike_fp->current_object);
 	}
 
-	PIKEFUN mixed _iterator_next()
+        PIKEFUN int(0..1) _iterator_next()
 	  flags ID_PROTECTED;
 	{
 	    struct object *tree = TREE_CLASSIFY(_get_iterator_find_parent)();
@@ -279,10 +279,7 @@
 		return;
 	    }
 
-	    CB_PUSH_KEY(THIS->lastkey);
-	    if (T->decode_fun >= 0) {
-		apply_low(tree, T->decode_fun, 1);
-	    }
+            push_int(1);
 	    return;
 	}
 

@@ -1030,6 +1030,17 @@ string parse_type(Node n, void|string debug) {
   Node c, d;
   switch(n->get_any_name()) {
 
+  case "binding":
+    ret += parse_type(get_first_element(n), debug);
+    ret += "(&lt; " +
+      map(n->get_elements("bind"), parse_type, debug) * ", " +
+      " &gt;)";
+    break;
+
+  case "bind":
+    ret = parse_type(get_first_element(n), debug);
+    break;
+
   case "object":
     if(n->count_children()) {
       if (resolve_reference) {
@@ -1734,7 +1745,7 @@ string parse_docgroup(Node n) {
     if(m["homogen-type"]) {
       string type = "<span class='homogen--type'>" +
 	quote(String.capitalize(m["homogen-type"])) +
-	"</span>\n";
+        "\n</span>";
       array(string) names =
         Array.uniq(map(n->get_elements(m["homogen-type"]),
                        lambda(Node child) {

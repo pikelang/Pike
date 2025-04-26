@@ -859,6 +859,22 @@ test_do([[
   return Image.BMP.decode(s, (["quality":50]));
 ]])
 
+test_encoding(DSI,[[
+  // Reduce the color space in the same way as Image.DSI.decode().
+  for (int y = 0; y < 100; y++) {
+    for (int x = 0; x < 100; x++) {
+      array(int) c = img->getpixel(x, y);
+      c[0] = ((c[0] & 0xf8)*0x21)>>5;
+      c[1] = ((c[1] & 0xfc)*0x41)>>6;
+      c[2] = ((c[2] & 0xf8)*0x21)>>5;
+      if (!c[1] && (c[0] == 0xff) && (c[2] == 0xff)) {
+        c[1] = 0x04;
+      }
+      img->setpixel(x, y, @c);
+    }
+  }
+]])
+
 test_encoding(GIF,[[
   img = Image.Colortable(img,250)->cubicles(10,10,10,1)->
     floyd_steinberg()*img;
@@ -894,20 +910,50 @@ cond( (master()->resolv("Image.JPEG")||([]))->encode,[[
   ]],1)
 ]])
 
+test_encoding(NEO,[[
+  img = Image.Image(Image.NEO.WIDTH, Image.NEO.HEIGHT)->test(43);
+  object c = Image.Colortable(img, 16)->floyd_steinberg();
+  img = c * img;
+  img = img->quantize_colors(4);
+]],)
+
 test_encoding(PCX,,)
 test_encoding(PNG,,)
 test_encoding(PNM,,)
 dnl test_encoding(PVR,,)
 test_encoding(RAS,,)
 test_encoding(TGA,,)
-dnl test_encoding(WBF,[[
-dnl   object c=Image.Colortable(({Image.Color.white,Image.Color.black}));
-dnl   img=c*img;
-dnl ]],)
-dnl test_encoding(WBMP,[[
-dnl   object c=Image.Colortable(({Image.Color.white,Image.Color.black}));
-dnl   img=c*img;
-dnl ]],)
+test_encoding(TIM,[[
+  // Default encoding: MODE_DC15.
+  // Reduce the color space in the same way as Image.TIM.decode().
+  for (int y = 0; y < 100; y++) {
+    for (int x = 0; x < 100; x++) {
+      array(int) c = img->getpixel(x, y);
+      c[0] = ((c[0] & 0xf8)*0x21)>>5;
+      c[1] = ((c[1] & 0xf8)*0x21)>>5;
+      c[2] = ((c[2] & 0xf8)*0x21)>>5;
+      img->setpixel(x, y, @c);
+    }
+  }
+]],)
+test_encoding(TIM,[[
+  // Explicit MODE_DC15.
+  // Reduce the color space in the same way as Image.TIM.decode().
+  for (int y = 0; y < 100; y++) {
+    for (int x = 0; x < 100; x++) {
+      array(int) c = img->getpixel(x, y);
+      c[0] = ((c[0] & 0xf8)*0x21)>>5;
+      c[1] = ((c[1] & 0xf8)*0x21)>>5;
+      c[2] = ((c[2] & 0xf8)*0x21)>>5;
+      img->setpixel(x, y, @c);
+    }
+  }
+]],[[,2]])
+test_encoding(TIM,,[[,3]])
+test_encoding(WBMP,[[
+  object c=Image.Colortable(({Image.Color.white,Image.Color.black}));
+  img=c*img;
+]],)
 test_encoding(XBM,[[
   object c=Image.Colortable(({Image.Color.white,Image.Color.black}));
   img=c*img;
@@ -958,6 +1004,125 @@ cond( (master()->resolv("Image.XFace")||([]))->encode,[[
     return Image.XFace.decode(Image.XFace.encode(img))==img;
   ]],1)
 ]])
+
+cond_resolv(Image.XCF.decode, [[
+  test_do([[
+    add_constant("TestImage",
+                 Stdio.read_bytes("]]SRCDIR[[/encodings/examples/tab_list.xcf"));
+  ]])
+  test_equal([[Image.XCF.decode_header(TestImage)]],
+             ([ "type": "image/x-gimp-image",
+                "xsize": 67,
+                "ysize": 17,
+             ]))
+  test_do([[ add_constant("TestImage"); ]])
+]])
+
+test_encoding(XWD,,)
+cond_resolv(Image.XWD.decode, [[
+  test_do([[
+    add_constant("TestImage", Image.PNM.decode(#"P3
+6 3
+255
+  0 0 0     0 0 127     0 127 127     0 127 255     0 255 255     0 255 127
+127 0 0   127 0 127   127 127 127   127 127 255   127 255 255   127 255 127
+255 0 0   255 0 127   255 127 127   255 127 255   255 255 255   255 255 127
+    "));
+  ]])
+  test_equal([[
+    Image.XWD.decode(String.hex2string(
+      "0000006d"
+      "00000007"			// Version 7
+      "00000002"			// ZPixmap
+      "00000018"
+      "00000006"
+      "00000003"
+      "00000000"
+      "00000000"
+      "00000020"
+      "00000000"
+      "00000020"
+      "00000020"
+      "00000018"
+      "00000004"
+      "00ff0000"
+      "0000ff00"
+      "000000ff"
+      "00000008"
+      "00000003"
+      "00000003"
+      "00000006"
+      "00000020"
+      "0000077e"
+      "00000425"
+      "00000000"
+      "50696b652047544b00"		// "Pike GTK\0"
+      "0000000000000000000007ec"	// Color 00: 00 00 00
+      "007f7f7f7f7f7f7f7f7f07ec"	// Color 7f: 7f 7f 7f
+      "00ffffffffffffffffff07ec"	// Color ff: ff ff ff
+      "000000007f0000007f7f0000ff7f0000ffff00007fff0000"
+      "00007f007f007f007f7f7f00ff7f7f00ffff7f007fff7f00"
+      "0000ff007f00ff007f7fff00ff7fff00ffffff007fffff00"));
+  ]], TestImage)
+  test_equal([[
+    Image.XWD.decode(String.hex2string(
+      "0000006d"
+      "00000007"			// Version 7
+      "00000001"			// XYPixmap
+      "00000018"
+      "00000006"
+      "00000003"
+      "00000000"
+      "00000000"
+      "00000020"
+      "00000000"
+      "00000020"
+      "00000001"
+      "00000004"
+      "00000004"
+      "00ff0000"
+      "0000ff00"
+      "000000ff"
+      "00000008"
+      "00000003"
+      "00000003"
+      "00000006"
+      "00000020"
+      "0000077e"
+      "00000425"
+      "00000000"
+      "50696b652047544b00"		// "Pike GTK\0"
+      "00000000000000000000071f"	// Color 00: 00 00 00
+      "007f7f7f7f7f7f7f7f7f071f"	// Color 7f: 7f 7f 7f
+      "00ffffffffffffffffff071f"	// Color ff: ff ff ff
+      "00000000000000003f000000"	// MSB Red
+      "000000003f0000003f000000"
+      "000000003f0000003f000000"
+      "000000003f0000003f000000"
+      "000000003f0000003f000000"
+      "000000003f0000003f000000"
+      "000000003f0000003f000000"
+      "000000003f0000003f000000"	// LSB Red
+      "300000003000000030000000"	// MSB Green
+      "3c0000003c0000003c000000"
+      "3c0000003c0000003c000000"
+      "3c0000003c0000003c000000"
+      "3c0000003c0000003c000000"
+      "3c0000003c0000003c000000"
+      "3c0000003c0000003c000000"
+      "3c0000003c0000003c000000"	// LSB Green
+      "180000001800000018000000"	// MSB Blue
+      "3e0000003e0000003e000000"
+      "3e0000003e0000003e000000"
+      "3e0000003e0000003e000000"
+      "3e0000003e0000003e000000"
+      "3e0000003e0000003e000000"
+      "3e0000003e0000003e000000"
+      "3e0000003e0000003e000000"	// LSB Blue
+    ));
+  ]], TestImage)
+  test_do([[ add_constant("TestImage"); ]])
+]]);
 
 test_encoding(XPM,[[
   object c=Image.Colortable(16,16,16);

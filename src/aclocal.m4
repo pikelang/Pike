@@ -300,11 +300,24 @@ AC_DEFUN([PIKE_USE_SYSTEM_EXTENSIONS],
 
   AH_VERBATIM([USE_POSIX_C_EXTENSIONS],
 [
+#ifndef _DARWIN_C_SOURCE
+/* Overrides disabling of non-posix symbols by _POSIX_C_SOURCE on Darwin. */
+#undef _DARWIN_C_SOURCE
+#endif
+
 #ifndef POSIX_SOURCE
  /* We must define this *always* */
 # define POSIX_SOURCE	1
 #endif
 #ifndef _POSIX_C_SOURCE
+#if defined(__APPLE__) && defined(HAVE_SYS_SOCKET_H)
+/* The <sys/socket.h> headerfile is broken on MacOS X as is disregards
+ * _DARWIN_C_SOURCE with respect to the declaration of sendfile(2).
+ * We thus need to include <sys/socket.h> before we set the POSIX
+ * compatibility level.
+ */
+#include <sys/socket.h>
+#endif
   /* Version of POSIX that we want to support.
    * Note that POSIX.1-2001 and later require C99, and the earlier
    * require C89.
@@ -336,9 +349,6 @@ AC_DEFUN([PIKE_USE_SYSTEM_EXTENSIONS],
    /* Define to 1 (and do NOT define _XOPEN_VERSION) for XPG 4v2. */
 #  undef _XOPEN_SOURCE_EXTENDED
 # endif
-#endif
-#ifndef _DARWIN_C_SOURCE
-#undef _DARWIN_C_SOURCE
 #endif
 #ifndef _NETBSD_SOURCE
 #undef _NETBSD_SOURCE
@@ -1824,7 +1834,7 @@ AC_DEFUN(PIKE_INIT_REAL_DIRS,
   real_incs='/include /usr/include'
 ])
 
-# directory, if-true, if-false, real-variable(OBSOLETE)
+# directory, if-true, if-false, real-variable(OBSOLETE), expect-ok
 AC_DEFUN(PIKE_CHECK_ABI_DIR,
 [
   AC_REQUIRE([PIKE_SELECT_ABI])dnl
@@ -1836,8 +1846,20 @@ AC_DEFUN(PIKE_CHECK_ABI_DIR,
   abi_dir_ok="no"
   abi_dir_dynamic="unknown"
   real_dir="$1"
+  update_abi_32="no"
+  update_abi_64="no"
+  update_abi_dynamic="no"
   while :; do
-    if test -d "$1/." ; then :; else 
+    if test -d "$1/." ; then
+      if test "x$5" = "xyes"; then
+        # Directory exists, expected OK.
+        abi_dir_ok="yes"
+        abi_dir_dynamic="yes"
+        AC_MSG_RESULT(yes - exists and assumed good)
+        break;
+      fi
+      :;
+    else
       AC_MSG_RESULT(no - does not exist)
       break
     fi
@@ -1849,10 +1871,11 @@ AC_DEFUN(PIKE_CHECK_ABI_DIR,
     fi
     if echo " $pike_cv_32bit_dirs " | grep " $real_dir " >/dev/null; then
       abi_32=yes
-    elif echo " $pike_cv_not_32bit_dir " | grep " $real_dir " >/dev/null; then
+    elif echo " $pike_cv_not_32bit_dirs " | grep " $real_dir " >/dev/null; then
       abi_32=no
     else
       abi_32=unknown
+      update_abi_32="yes"
     fi
     if echo " $pike_cv_64bit_dirs " | grep " $real_dir " >/dev/null; then
       abi_64=yes
@@ -1860,6 +1883,7 @@ AC_DEFUN(PIKE_CHECK_ABI_DIR,
       abi_64=no
     else
       abi_64=unknown
+      update_abi_64="yes"
     fi
     if echo " $pike_cv_dynamic_dirs " | grep " $real_dir " >/dev/null; then
       abi_dir_dynamic=yes
@@ -1867,8 +1891,12 @@ AC_DEFUN(PIKE_CHECK_ABI_DIR,
       abi_dir_dynamic=no
     else
       abi_dir_dynamic=unknown
+      update_abi_dynamic="yes"
     fi
     empty=no
+    # echo
+    # echo "cache key:$abi_32:$abi_64:$abi_dir_dynamic for $real_dir"
+    # echo
     if echo "$abi_32:$abi_64:$abi_dir_dynamic" | \
 	 grep "unknown" >/dev/null; then
       cached=""
@@ -1993,29 +2021,59 @@ AC_DEFUN(PIKE_CHECK_ABI_DIR,
 	  empty=other
         fi
       done
-      if test "$abi_32" = "yes"; then
-        pike_cv_32bit_dirs="$pike_cv_32bit_dirs $real_dir"
-	if test "$abi_64" = "unknown"; then
-          abi_64="no"
-	fi
-      else
-        pike_cv_not_32bit_dirs="$pike_cv_not_32bit_dirs $real_dir"
+      if test "$update_abi_32" = "yes"; then
+        if test "$abi_32" = "yes"; then
+          # echo
+          # echo "Adding $real_dir to pike_cv_32bit_dirs"
+          # echo
+          pike_cv_32bit_dirs="$pike_cv_32bit_dirs $real_dir"
+          if test "$abi_64" = "unknown"; then
+            abi_64="no"
+          fi
+        else
+          # echo
+          # echo "Adding $real_dir to pike_cv_not_32bit_dirs"
+          # echo
+          pike_cv_not_32bit_dirs="$pike_cv_not_32bit_dirs $real_dir"
+        fi
+        update_abi_32="no"
       fi
-      if test "$abi_64" = "yes"; then
-        pike_cv_64bit_dirs="$pike_cv_64bit_dirs $real_dir"
-	if test "$abi_32" = "unknown"; then
-          abi_32="no"
-	fi
-      elif test "$abi_64" = "no"; then
-        pike_cv_not_64bit_dirs="$pike_cv_not_64bit_dirs $real_dir"
+      if test "$update_abi_64" = "yes"; then
+        if test "$abi_64" = "yes"; then
+          # echo
+          # echo "Adding $real_dir to pike_cv_64bit_dirs"
+          # echo
+          pike_cv_64bit_dirs="$pike_cv_64bit_dirs $real_dir"
+          if test "$abi_32" = "unknown"; then
+            abi_32="no"
+          fi
+        elif test "$abi_64" = "no"; then
+          # echo
+          # echo "Adding $real_dir to pike_cv_not_64bit_dirs"
+          # echo
+          pike_cv_not_64bit_dirs="$pike_cv_not_64bit_dirs $real_dir"
+        fi
       fi
-      if test "$abi_32" = "no"; then
-        pike_cv_not_32bit_dirs="$pike_cv_not_32bit_dirs $real_dir"
+      if test "$update_abi_32" = "yes"; then
+        if test "$abi_32" = "no"; then
+          # echo
+          # echo "Adding $real_dir to pike_cv_not_32bit_dirs"
+          # echo
+          pike_cv_not_32bit_dirs="$pike_cv_not_32bit_dirs $real_dir"
+        fi
       fi
-      if test "$abi_dir_dynamic" = "yes"; then
-	pike_cv_dynamic_dirs="$pike_cv_dynamic_dirs $real_dir"
-      else
-	pike_cv_not_dynamic_dirs="$pike_cv_not_dynamic_dirs $real_dir"
+      if test "$update_abi_dynamic" = "yes"; then
+        if test "$abi_dir_dynamic" = "yes"; then
+          # echo
+          # echo "Adding $real_dir to pike_cv_dynamic_dirs"
+          # echo
+          pike_cv_dynamic_dirs="$pike_cv_dynamic_dirs $real_dir"
+        else
+          # echo
+          # echo "Adding $real_dir to pike_cv_not_dynamic_dirs"
+          # echo
+          pike_cv_not_dynamic_dirs="$pike_cv_not_dynamic_dirs $real_dir"
+        fi
       fi
     fi
     if test "$abi_32:$pike_cv_abi" = "no:32" \
@@ -2035,7 +2093,7 @@ AC_DEFUN(PIKE_CHECK_ABI_DIR,
   fi
 ])
 
-# directory, if-added, if-bad, if-already-added
+# directory, if-added, if-bad, if-already-added, expect-ok
 AC_DEFUN(PIKE_CHECK_ABI_LIB_DIR,
 [
   PIKE_CHECK_ABI_DIR($1, [
@@ -2097,7 +2155,7 @@ int main(int argc, char **argv)
     else
       AC_MSG_RESULT(no)
     fi
-  ], $3)
+  ], $3, , $5)
 ])
 
 AC_SUBST(PKG_CONFIG_PATH)

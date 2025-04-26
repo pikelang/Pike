@@ -196,7 +196,7 @@ static struct mapping_data weak_both_empty_data =
  */
 static unsigned INT32 find_next_power(unsigned INT32 x)
 {
-    if( x == 0 ) return 1;
+    if( x <= 1 ) return 1;
     return 1<<(my_log2(x-1)+1);
 }
 

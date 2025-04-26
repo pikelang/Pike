@@ -13,6 +13,8 @@
  *
  * The UTF-8 filenames are recoded to UTF16 and used
  * with the wide versions of the NT system calls.
+ *
+ * NOTE: It also provides wrappers for some I/O system calls on POSIX.
  */
 
 #include "global.h"
@@ -26,6 +28,27 @@
 #ifdef HAVE_DIRECT_H
 #include <direct.h>
 #endif
+
+#ifdef HAVE_SYS_UIO_H
+#include <sys/uio.h>
+#endif
+
+/* #define FD_DEBUG */
+/* #define FD_STAT_DEBUG */
+
+#ifdef FD_DEBUG
+#define FDDEBUG(X) X
+#else
+#define FDDEBUG(X)
+#endif
+
+#ifdef FD_STAT_DEBUG
+#define STATDEBUG(X) X
+#else
+#define STATDEBUG(X) do {} while (0)
+#endif
+
+#define FDWERR(...)	FDDEBUG(fprintf(stderr, __VA_ARGS__))
 
 #if defined(HAVE_WINSOCK_H)
 
@@ -105,22 +128,6 @@ int first_free_handle;
 
 /* The root desktop folder. */
 static LPSHELLFOLDER isf = NULL;
-
-/* #define FD_DEBUG */
-/* #define FD_STAT_DEBUG */
-
-#ifdef FD_DEBUG
-#define FDDEBUG(X) X
-#else
-#define FDDEBUG(X)
-#endif
-
-#ifdef FD_STAT_DEBUG
-#define STATDEBUG(X) X
-#else
-#define STATDEBUG(X) do {} while (0)
-#endif
-
 
 #ifdef USE_DL_MALLOC
 /* NB: We use some calls that allocate memory with the libc malloc(). */
@@ -1036,6 +1043,10 @@ p_wchar1 *low_dwim_utf8_to_utf16(const p_wchar0 *str, size_t len)
    *
    * NB: Some extra padding at the end for NUL and adding
    *     of terminating slashes, etc.
+   *
+   * FIXME: Consider prefixing path with "\\?\", which removes
+   *        the MAXPATH (ie 260 character) length limit. Note
+   *        that this removes the support for ".." and ".".
    */
   p_wchar1 *res = malloc((len + 4) * sizeof(p_wchar1));
   size_t i = 0, j = 0;
@@ -1544,10 +1555,10 @@ PMOD_EXPORT int debug_fd_symlink(const char *target, const char *linkpath)
      */
     lnk = pike_dwim_utf8_to_utf16(linkpath);
 
-    if (!Pike_NT_CreateSymbolicLinkW(tname, lnk,
+    if (!Pike_NT_CreateSymbolicLinkW(lnk, tname,
                                      SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE) &&
         ((GetLastError() != ERROR_DIRECTORY_NOT_SUPPORTED) ||
-         !Pike_NT_CreateSymbolicLinkW(tname, lnk,
+         !Pike_NT_CreateSymbolicLinkW(lnk, tname,
                                       SYMBOLIC_LINK_FLAG_DIRECTORY |
                                       SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE))) {
       set_errno_from_win32_error(GetLastError());
@@ -2296,19 +2307,22 @@ PMOD_EXPORT int debug_fd_connect (FD fd, struct sockaddr *a, int len)
   return (int)ret;
 }
 
-PMOD_EXPORT int debug_fd_close(FD fd)
+static int low_fd_close(FD fd)
 {
   HANDLE h;
   int type;
 
-  FDDEBUG(fprintf(stderr, "fd_close(%d)...\n", fd));
+  FDDEBUG(fprintf(stderr, "low_fd_close(%d)...\n", fd));
 
-  if (fd_to_handle(fd, &type, &h, 1) < 0) return -1;
+  /* NB: NOT exclusive!
+   *
+   * When a handle is closed any pending concurrent operations
+   * on the handle are apparently interrupted.
+   */
+  if (fd_to_handle(fd, &type, &h, 0) < 0) return -1;
 
-  FDDEBUG(fprintf(stderr,"Closing %d (%ld)\n",
+  FDDEBUG(fprintf(stderr,"Closing handle %d (%ld)\n",
                   fd, (long)h));
-
-  free_fd(fd);
 
   switch(type)
   {
@@ -2318,6 +2332,8 @@ PMOD_EXPORT int debug_fd_close(FD fd)
 	set_errno_from_win32_error (GetLastError());
 	FDDEBUG(fprintf(stderr,"Closing %d (%ld) failed with errno=%d\n",
                         fd, (long)(ptrdiff_t)h, errno));
+
+        release_fd(fd);
 	return -1;
       }
       break;
@@ -2334,13 +2350,40 @@ PMOD_EXPORT int debug_fd_close(FD fd)
       if(!CloseHandle(h))
       {
 	set_errno_from_win32_error (GetLastError());
+
+        release_fd(fd);
 	return -1;
       }
   }
 
+  release_fd(fd);
+
   FDDEBUG(fprintf(stderr,"%d (%ld) closed\n", fd, (ptrdiff_t)h));
 
   return 0;
+}
+
+PMOD_EXPORT int debug_fd_close(FD fd)
+{
+  int ret;
+  HANDLE h;
+  int type;
+
+  FDDEBUG(fprintf(stderr, "fd_close(%d)...\n", fd));
+
+  /* First close the underlying handle. */
+  ret = low_fd_close(fd);
+
+  /* Then take the exclusive lock (which will wait for
+   * the other threads to complete their use of the fd).
+   */
+  if (fd_to_handle(fd, &type, &h, 1) < 0) return -1;
+
+  FDDEBUG(fprintf(stderr, "Free fd %d\n", fd));
+
+  free_fd(fd);
+
+  return ret;
 }
 
 PMOD_EXPORT ptrdiff_t debug_fd_write(FD fd, void *buf, ptrdiff_t len)
@@ -2405,6 +2448,8 @@ PMOD_EXPORT ptrdiff_t debug_fd_write(FD fd, void *buf, ptrdiff_t len)
       return -1;
   }
 }
+
+/* FIXME: Implement debug_fd_pwrite() using WriteFileEx(). */
 
 PMOD_EXPORT ptrdiff_t debug_fd_writev(FD fd, struct iovec *iov, ptrdiff_t n)
 {
@@ -2540,6 +2585,8 @@ PMOD_EXPORT ptrdiff_t debug_fd_read(FD fd, void *to, size_t len)
   return ret;
 }
 
+/* FIXME: Implement debug_fd_pread() using ReadFileEx(). */
+
 PMOD_EXPORT PIKE_OFF_T debug_fd_lseek(FD fd, PIKE_OFF_T pos, int where)
 {
   PIKE_OFF_T ret;
@@ -2552,7 +2599,7 @@ PMOD_EXPORT PIKE_OFF_T debug_fd_lseek(FD fd, PIKE_OFF_T pos, int where)
   if(type != FD_FILE)
   {
     release_fd(fd);
-    errno=ENOTSUPP;
+    errno = ESPIPE;
     return -1;
   }
 
@@ -3324,6 +3371,481 @@ PMOD_EXPORT void closedir(DIR *dir)
 }
 #endif /* EMULATE_DIRECT */
 
+#endif /* HAVE_WINSOCK_H */
+
+/*
+ * Wrap/emulate I/O-related system calls that have different
+ * APIs on different OSes.
+ */
+
+/**
+ *  writev() without the IOV_MAX limit.
+ */
+PMOD_EXPORT INT64 pike_writev(int fd, struct iovec *iov, int iovcnt)
+{
+  INT64 sent = 0;
+
+  FDWERR("pike_writev(%d, %p, %d)...\n", fd, iov, iovcnt);
+  FDDEBUG({
+      int cnt;
+      for(cnt = 0; cnt < iovcnt; cnt++) {
+        FDWERR("pike_writev: %4d: iov_base: %p, iov_len: %ld\n",
+               cnt, iov[cnt].iov_base, (long)iov[cnt].iov_len);
+      }
+    })
+
+  while (iovcnt) {
+    ptrdiff_t bytes;
+    int cnt = iovcnt;
+
+#ifdef IOV_MAX
+    if (cnt > IOV_MAX) cnt = IOV_MAX;
+#endif
+
+#ifdef DEF_IOV_MAX
+    if (cnt > DEF_IOV_MAX) cnt = DEF_IOV_MAX;
+#endif
+
+#ifdef MAX_IOVEC
+    if (cnt > MAX_IOVEC) cnt = MAX_IOVEC;
+#endif
+
+    bytes = fd_writev(fd, iov, cnt);
+
+    if (bytes < 0) {
+      /* Error or file closed at other end. */
+      FDWERR("pike_writev(): writev() failed with errno:%d.\n"
+             "Sent %ld bytes so far.\n",
+             errno, (long)sent);
+      return sent ? sent : bytes;
+    } else {
+      sent += bytes;
+
+      while (bytes) {
+        if ((size_t)bytes >= (size_t)iov->iov_len) {
+          bytes -= iov->iov_len;
+          iov++;
+          iovcnt--;
+        } else {
+          iov->iov_base = ((char *)iov->iov_base) + bytes;
+          iov->iov_len -= bytes;
+          break;
+        }
+      }
+    }
+  }
+  FDWERR("pike_writev(): Sent %d bytes\n", sent);
+  return sent;
+}
+
+#ifdef HAVE_SYS_UIO_H
+#include <sys/uio.h>
+#endif /* HAVE_SYS_UIO_H */
+
+#ifdef HAVE_NETINET_TCP_H
+#include <netinet/tcp.h>
+#endif /* HAVE_NETINET_TCP_H */
+
+#ifdef HAVE_SYS_SENDFILE_H
+#include <sys/sendfile.h>
+#endif /* HAVE_SYS_SENDFILE_H */
+
+static INT64 fallback_sendfile(int to_fd,
+                               struct iovec *hd_iov, int hd_cnt,
+                               int from_fd, INT64 *offsetp, INT64 len,
+                               struct iovec *tr_iov, int tr_cnt)
+{
+  INT64 sent = 0;
+  INT64 offset = 0;
+#ifndef fd_pread
+  INT64 orig_offset = -1;
+#endif
+
+  /* Send headers. */
+  if (hd_iov && hd_cnt) {
+    /* Skip empty headers. */
+    while (hd_cnt && !hd_iov->iov_len) {
+      hd_iov++;
+      hd_cnt--;
+    }
+
+    if (hd_iov && hd_cnt) {
+      sent = pike_writev(to_fd, hd_iov, hd_cnt);
+      if (sent < 0) return sent;
+    }
+  }
+
+  /* Send file. */
+  if (len && (from_fd >= 0)) {
+    char *buffer;
+
+    if (offsetp) {
+      offset = *offsetp;
+
+#ifndef fd_pread
+      orig_offset = fd_lseek(from_fd, 0, SEEK_CUR);
+      if (orig_offset < 0) {
+        if ((errno != ESPIPE) || offset) {
+          goto failed;
+        }
+        /* Compat with Pike 8.x and earlier. */
+        offsetp = NULL;
+      } else {
+        if (fd_lseek(from_fd, offset, SEEK_SET) < 0) goto failed;
+      }
+#endif
+    }
+
+#define BUF_SIZE	0x00010000 /* 64K */
+    buffer = malloc(BUF_SIZE);
+    if (!buffer) {
+      errno = ENOMEM;
+      goto failed;
+    }
+
+    while(1) {
+      ptrdiff_t readlen = BUF_SIZE;
+      char *buf = buffer;
+      ptrdiff_t buflen;
+
+      if ((len < BUF_SIZE) && (len > 0)) {
+        readlen = (ptrdiff_t) len;
+      }
+
+#ifdef fd_pread
+      if (offsetp) {
+        buflen = fd_pread(from_fd, buffer, readlen, offset);
+        if ((buflen < 0) && (errno == ESPIPE) && !offset) {
+          /* Compat with Pike 8.x and earlier. */
+          offsetp = NULL;
+          continue;
+        }
+      } else
+#endif
+      {
+        buflen = fd_read(from_fd, buffer, readlen);
+      }
+
+      if (buflen <= 0) {
+        free(buffer);
+        if (buflen < 0) goto failed;
+        break;
+      }
+
+      if (len > 0) {
+        len -= buflen;
+      }
+
+      while (buflen) {
+        ptrdiff_t wrlen = fd_write(to_fd, buf, buflen);
+
+        if (wrlen < 0) {
+          free(buffer);
+          goto failed;
+        }
+        buf += wrlen;
+        buflen -= wrlen;
+        sent += wrlen;
+        offset += wrlen;
+      }
+    }
+  }
+
+  /* Send trailers. */
+  if (tr_iov && tr_cnt) {
+    /* Skip empty headers. */
+    while (tr_cnt && !tr_iov->iov_len) {
+      tr_iov++;
+      tr_cnt--;
+    }
+
+    if (tr_iov && tr_cnt) {
+      INT64 bytes = pike_writev(to_fd, tr_iov, tr_cnt);
+      if (bytes < 0) goto failed;
+      sent += bytes;
+    }
+  }
+
+  /* Nothing more to send. */
+  if (offsetp) {
+    /* Restore the seek position. */
+    *offsetp = offset;
+#ifndef fd_pread
+    fd_lseek(from_fd, orig_offset, SEEK_SET);
+#endif
+  }
+
+  return sent;
+
+ failed:
+  /* Something failed.
+   *
+   * errno has been set. Return the number of bytes sent (if any),
+   * or -1 to indicate failure otherwise.
+   */
+  if (offsetp) {
+    /* Restore the seek position. */
+    *offsetp = offset;
+#ifndef fd_pread
+    if (orig_offset >= 0) {
+      fd_lseek(from_fd, orig_offset, SEEK_SET);
+    }
+#endif
+  }
+  return sent?sent:-1;
+}
+
+#ifdef HAVE_SENDFILE
+static INT64 low_pike_sendfile(int to_fd,
+                               struct iovec *hd_iov, int hd_cnt,
+                               int from_fd, INT64 *offsetp, INT64 len,
+                               struct iovec *tr_iov, int tr_cnt)
+{
+#if defined(HAVE_FREEBSD_SENDFILE) || defined(HAVE_MACOSX_SENDFILE) || defined(HAVE_HPUX_SENDFILE)
+  int res = -1;
+  INT64 offset = offsetp ? *offsetp : 0;
+#ifdef HAVE_HPUX_SENDFILE
+  INT64 sent = 0;
+#else /* FREEBSD or MACOSX */
+  off_t sent = 0;
+#endif
+  INT64 hd_len = 0;
+  PIKE_STAT_T st;
+#if defined(HAVE_FREEBSD_SENDFILE) || defined(HAVE_MACOSX_SENDFILE)
+  struct sf_hdtr hdtr = { hd_iov, hd_cnt, tr_iov, tr_cnt };
+#else
+  struct iovec hdtr[2] = { hd_iov, hd_cnt, tr_iov, tr_cnt };
+#endif
+
+  if (!len || (from_fd < 0) ||
+      (fd_fstat(from_fd, &st) < 0) || !S_ISREG(st.st_mode)) {
+    /* No file to send or not a regular file.
+     *
+     * Trigger the caller to use the fallback.
+     */
+    errno = EBADF;
+    return -1;
+  }
+
+  if (len < 0) {
+    /* Send entire file.
+     *
+     * From FreeBSD:
+     *   The nbytes argument specifies how many bytes of the file
+     *   should be sent, with 0 having the special meaning of send
+     *   until the end of file has been reached.
+     *
+     * From HPUX:
+     *   nbytes is the number of bytes to be sent from the file. If
+     *   this parameter is set to zero, data from the offset to the
+     *   end of the file will be sent.
+     *
+     * From MacOS X:
+     *   The len argument is a value-result parameter, that
+     *   specifies how many bytes of the file should be sent and/or
+     *   how many bytes have been sent. Initially the value pointed
+     *   to by the len argument specifies how many bytes should be
+     *   sent with 0 having the special meaning to send until the
+     *   end of file has been reached. On return the value pointed
+     *   to by the len argument indicates how many bytes have been
+     *   sent. The len pointer may not be NULL.
+     */
+    len = 0;
+  }
+
+  for (res = 0; res < hd_cnt; res++) {
+    hd_len += hd_iov[res].iov_len;
+  }
+  res = -1;
+
+#ifdef HAVE_SENDFILE_HEADER_LEN_PROBLEM
+  if (len) {
+    /* Adjust the length to account for the length of the headers. */
+    /* From FreeBSD 7.x src/sys/kern/uipc_syscalls.c:kern_sendfile():
+     *
+     * In FBSD < 5.0 the nbytes to send also included
+     * the header.  If compat is specified subtract the
+     * header size from nbytes.
+     */
+    /* From MacOS X 10.5.6 xnu/bsd/kern/uipc_syscalls.c:sendfile():
+     *
+     * Get number of bytes to send
+     * Should it applies to size of header and trailer?
+     * JMM - error handling?
+     */
+    len += hd_len;
+  }
+#endif
+
+  if (offsetp) {
+    offset = *offsetp;
+  } else {
+    offset = fd_lseek(from_fd, 0, SEEK_CUR);
+    if (offset < 0) offset = 0;
+  }
+
+  /* NB: len might theoretically get truncated below, but not in practice. */
+#ifdef HAVE_FREEBSD_SENDFILE
+  res = sendfile(from_fd, to_fd, offset, len, &hdtr, &sent, 0);
+#elif defined(HAVE_MACOSX_SENDFILE)
+  sent = len;
+  res = sendfile(from_fd, to_fd, offset, &sent, &hdtr, 0);
+#else /* HPUX_SENDFILE */
+  sent = sendfile(to_fd, from_fd, offset, len, hdtr, 0);
+  res = ((sent < 0)? -1 : 0);
+#endif
+  if (res < 0) return -1;
+
+  if (offsetp && (sent > hd_len)) {
+    *offsetp += (sent - hd_len);
+  }
+
+  return sent;
+#else
+  /* No support for headers in sendfile(2) (eg Linux & Solaris). */
+  INT64 sent = 0;
+
+  if (hd_iov && hd_cnt) {
+    /* Skip empty headers. */
+    while (hd_cnt && !hd_iov->iov_len) {
+      hd_iov++;
+      hd_cnt--;
+    }
+
+    if (hd_iov && hd_cnt) {
+      sent = pike_writev(to_fd, hd_iov, hd_cnt);
+      if (sent < 0) return sent;
+    }
+  }
+
+  if (!len || (from_fd < 0)) goto send_trailers;
+
+  if (len < 0) {
+    PIKE_STAT_T st;
+    if (!fd_fstat(from_fd, &st) && S_ISREG(st.st_mode)) {
+      len = st.st_size;			/* To end of file. */
+      if (offsetp) len -= *offsetp;
+      if (len < 0) len = 0;		/* offset past the end of the file. */
+    } else {
+      len = MAX_INT64;
+    }
+  }
+
+  while (len > 0) {
+    off_t off = offsetp?(off_t)*offsetp:0;
+    INT64 bytes = sendfile(to_fd, from_fd, offsetp?&off:NULL, len);
+    if (offsetp) *offsetp = off;
+    if ((bytes < 0) && (errno == ESPIPE) && offsetp && !*offsetp) {
+      /* Compat with Pike 8.x and earlier. */
+      offsetp = NULL;
+      bytes = sendfile(to_fd, from_fd, NULL, len);
+    }
+    if (bytes <= 0) {
+      if (bytes < 0) goto sendfile_failed;
+      break;	/* Typically EOF on from_fd and unknown length. */
+    }
+    sent += bytes;
+    len -= bytes;
+  }
+
+ send_trailers:
+  if (tr_iov && tr_cnt) {
+    /* Skip empty headers. */
+    while (tr_cnt && !tr_iov->iov_len) {
+      tr_iov++;
+      tr_cnt--;
+    }
+
+    if (tr_iov && tr_cnt) {
+      INT64 bytes = pike_writev(to_fd, tr_iov, tr_cnt);
+
+      if (bytes < 0) goto failed;
+
+      sent += bytes;
+    }
+  }
+
+ done:
+  /* Nothing more to send. */
+  return sent;
+
+ sendfile_failed:
+  if ((errno == EINVAL) || (errno == ENOSYS)) {
+    /* sendfile(2) operation not supported for from_fd
+     * or sendfile(2) not implemented.
+     *
+     * NB: We have already sent the headers (if any).
+     */
+    INT64 bytes = fallback_sendfile(to_fd, NULL, 0,
+                                    from_fd, offsetp, len,
+                                    tr_iov, tr_cnt);
+    if (bytes >= 0) {
+      sent += bytes;
+      goto done;
+    }
+  }
+
+  /* FALLTHRU */
+ failed:
+  return sent?sent:-1;
+#endif
+}
+#endif
+
+/**
+ *  Wrapper and fallback code for sendfile(2).
+ *
+ *  @param to_fd
+ *    File descriptor to write to. Typically a socket.
+ *
+ *  @param hd_iov
+ *  @param hd_cnt
+ *    Array of iovecs with stuff to send before the actual file.
+ *
+ *  @param from_fd
+ *    File descriptior to send. Typically a regular file.
+ *
+ *  @param offsetp
+ *    Either NULL, in which case data will be sent from the
+ *    current file position of from_fd and the file position
+ *    will be updated when pike_sendfile() returns.
+ *
+ *    Or a pointer to an absolute file offset for from_fd, in
+ *    which case data will be sent from that position and the
+ *    value will be updated on return. The current file
+ *    position for from_fd will not be altered when the
+ *    function returns (though it may be during operation).
+ *
+ *  @param len
+ *    Number of bytes to send from from_fd.
+ *
+ *  @param tr_iov
+ *  @param tr_cnt
+ *    Array of iovecs to send after the file contents.
+ *
+ *  Returns the total number of bytes sent on success and
+ *  -1 on failure.
+ */
+PMOD_EXPORT INT64 pike_sendfile(int to_fd,
+                                struct iovec *hd_iov, int hd_cnt,
+                                int from_fd, INT64 *offsetp, INT64 len,
+                                struct iovec *tr_iov, int tr_cnt)
+{
+  INT64 sent = -1;
+#ifdef HAVE_SENDFILE
+  sent = low_pike_sendfile(to_fd, hd_iov, hd_cnt,
+                           from_fd, offsetp, len,
+                           tr_iov, tr_cnt);
+#endif
+  if (sent < 0) {
+    sent = fallback_sendfile(to_fd, hd_iov, hd_cnt,
+                             from_fd, offsetp, len,
+                             tr_iov, tr_cnt);
+  }
+  return sent;
+}
+
+#if defined(HAVE_WINSOCK_H)
 #ifdef USE_DL_MALLOC
 /* NB: We use some calls above that allocate memory with the libc malloc. */
 #undef free

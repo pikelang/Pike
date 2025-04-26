@@ -509,8 +509,11 @@ void f_hash_value(INT32 args)
 
   h = hash_svalue (Pike_sp - args);
   pop_n_elems (args);
-  /* NB: We assume that INT_TYPE has the same width as size_t. */
+#if SIZEOF_INT_TYPE < SIZEOF_CHAR_P
+  push_int64 (h);
+#else
   push_int (h);
+#endif
 }
 
 /*! @decl mixed copy_value(mixed value)
@@ -1263,7 +1266,7 @@ PMOD_EXPORT void f_has_prefix(INT32 args)
       /* Note: Integers do not need to be freed. */
       object_index_no_free(Pike_sp-1, o, inherit_no, Pike_sp-1);
       if (TYPEOF(Pike_sp[-1]) != PIKE_T_INT) {
-	Pike_error("Unexepected value returned from index operator.\n");
+        Pike_error("Unexpected value returned from index operator.\n");
       }
       if (ch != Pike_sp[-1].u.integer) {
 	pop_n_elems(args + 1);
@@ -7047,7 +7050,7 @@ static void f_interleave_array(INT32 args)
   struct array *arr = NULL;
   struct array *min = NULL;
   struct array *order = NULL;
-  int max = 0;
+  INT_TYPE max = 0;
   int nelems = 0;
   int i;
 
@@ -7235,8 +7238,8 @@ static struct array *longest_ordered_sequence(struct array *a)
     return &empty_array;
   }
 
-  stack = calloc(sizeof(int), a->size);
-  links = calloc(sizeof(int), a->size);
+  stack = calloc(a->size, sizeof(int));
+  links = calloc(a->size, sizeof(int));
 
   if (!stack || !links)
   {
@@ -7529,7 +7532,7 @@ static inline int diff_ponder_array(int x,
  *
  * For binary data:
  *  K == 256 => O(Na * Nb * lg(Na * Nb)),
- *  Na ~= Nb ~= N => O(N² * lg(N))
+ *  Na ~= Nb ~= N => O(NÂ² * lg(N))
  *
  * For ascii data:
  *  K ~= C * min(Na, Nb), C constant => O(max(Na, Nb)*lg(max(Na,Nb))),
@@ -7551,7 +7554,7 @@ static struct array *diff_longest_sequence(struct array *cmptbl, int blen)
    if(!cmptbl->size)
      return allocate_array(0);
 
-   stack = xcalloc(sizeof(struct diff_magic_link*), cmptbl->size);
+   stack = xcalloc(cmptbl->size, sizeof(struct diff_magic_link*));
 
    /* NB: marks is used for optimization purposes only */
    marks = calloc(blen, 1);
@@ -7764,7 +7767,7 @@ static struct array *diff_dyn_longest_sequence(struct array *cmptbl, int blen)
   unsigned int off2 = blen + 1;
   ONERROR err;
 
-  table = xcalloc(sizeof(struct diff_magic_link_head)*2, off2);
+  table = xcalloc(off2, sizeof(struct diff_magic_link_head)*2);
 
   /* FIXME: Assumes NULL is represented with all zeroes */
   /* NOTE: Scan strings backwards to get the same result as the G-M

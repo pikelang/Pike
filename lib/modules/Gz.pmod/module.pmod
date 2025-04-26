@@ -1,8 +1,21 @@
 #pike __REAL_VERSION__
 #require constant(_Gz)
 
+//!
 inherit _Gz;
 
+//! Check whether a file has a valid gzip header.
+//!
+//! @param f
+//!   File to check.
+//!
+//! @param buf
+//!   Prefix of @[f].
+//!
+//! @returns
+//!   Returns the content of @[f] after the gzip header
+//!   if a header was found. Returns @expr{0@} (zero)
+//!   if there was no header.
 string(8bit)|zero
  check_header(Stdio.Stream|void f, Stdio.Buffer|string(8bit)|void buf) {
   int flags, len;
@@ -56,6 +69,14 @@ string(8bit)|zero
   return buf->read();
 }
 
+//! Write a gzip header to a file or buffer.
+//!
+//! @param f
+//!   File or buffer to write a gzip header to.
+//!
+//! @returns
+//!   Returns @expr{1@} on success and @expr{0@} (zero)
+//!   on failure.
 int make_header(Stdio.Stream|Stdio.Buffer f) {
   constant fmt = "\x1f\x8b\x08\0\0\0\0\0\0\3";
   if (f->add) {

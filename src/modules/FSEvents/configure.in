@@ -48,6 +48,7 @@ m4_define([AH_CHECK_FRAMEWORK],
 [AH_TEMPLATE(AS_TR_CPP(HAVE_FRAMEWORK_$1),
         [Define to 1 if you have the `]$1[' framework (-framework ]$1[).])])
 
+# '` Balance quotes.
 # End support functionality
 #
 
@@ -58,9 +59,40 @@ AC_MODULE_INIT()
 AC_CHECK_HEADERS(CoreServices/CoreServices.h)
 AC_CHECK_FRAMEWORK(CoreServices, FSEventStreamCreate)
 
-AC_CHECK_DECLS([kFSEventStreamEventFlagMustScanSubDirs, kFSEventStreamEventFlagUserDropped, kFSEventStreamEventFlagKernelDropped, kFSEventStreamEventFlagEventIdsWrapped, kFSEventStreamEventFlagHistoryDone, kFSEventStreamEventFlagRootChanged, kFSEventStreamEventFlagMount, kFSEventStreamEventFlagUnmount],[],[],[#import <CoreServices/CoreServices.h>])
-AC_CHECK_DECLS([kFSEventStreamEventFlagItemCreated, kFSEventStreamEventFlagItemRemoved, kFSEventStreamEventFlagItemInodeMetaMod, kFSEventStreamEventFlagItemRenamed, kFSEventStreamEventFlagItemModified, kFSEventStreamEventFlagItemFinderInfoMod, kFSEventStreamEventFlagItemChangeOwner, kFSEventStreamEventFlagItemXattrMod, kFSEventStreamEventFlagItemIsFile, kFSEventStreamEventFlagItemIsDir, kFSEventStreamEventFlagItemIsSymlink, kFSEventStreamCreateFlagFileEvents],[],[],[#import <CoreServices/CoreServices.h>])
-AC_CHECK_DECLS([kFSEventStreamCreateFlagIgnoreSelf, kFSEventStreamCreateFlagNone, kFSEventStreamCreateFlagFileEvents, kFSEventStreamCreateFlagWatchRoot, kFSEventStreamCreateFlagNoDefer, kFSEventStreamEventIdSinceNow],[],[],[#import <CoreServices/CoreServices.h>])
+if test "x$ac_cv_framework_CoreServices_FSEventStreamCreate" = "xyes"; then
+
+    AC_CHECK_DECLS([kFSEventStreamEventFlagMustScanSubDirs,
+                    kFSEventStreamEventFlagUserDropped,
+                    kFSEventStreamEventFlagKernelDropped,
+                    kFSEventStreamEventFlagEventIdsWrapped,
+                    kFSEventStreamEventFlagHistoryDone,
+                    kFSEventStreamEventFlagRootChanged,
+                    kFSEventStreamEventFlagMount,
+                    kFSEventStreamEventFlagUnmount],[],[],
+                   [#import <CoreServices/CoreServices.h>])
+    AC_CHECK_DECLS([kFSEventStreamEventFlagItemCreated,
+                    kFSEventStreamEventFlagItemRemoved,
+                    kFSEventStreamEventFlagItemInodeMetaMod,
+                    kFSEventStreamEventFlagItemRenamed,
+                    kFSEventStreamEventFlagItemModified,
+                    kFSEventStreamEventFlagItemFinderInfoMod,
+                    kFSEventStreamEventFlagItemChangeOwner,
+                    kFSEventStreamEventFlagItemXattrMod,
+                    kFSEventStreamEventFlagItemIsFile,
+                    kFSEventStreamEventFlagItemIsDir,
+                    kFSEventStreamEventFlagItemIsSymlink,
+                    kFSEventStreamCreateFlagFileEvents],[],[],
+                   [#import <CoreServices/CoreServices.h>])
+    AC_CHECK_DECLS([kFSEventStreamCreateFlagIgnoreSelf,
+                    kFSEventStreamCreateFlagNone,
+                    kFSEventStreamCreateFlagFileEvents,
+                    kFSEventStreamCreateFlagWatchRoot,
+                    kFSEventStreamCreateFlagNoDefer,
+                    kFSEventStreamEventIdSinceNow],[],[],
+                   [#import <CoreServices/CoreServices.h>])
+
+fi
+
 AC_SUBST(CMOD_CFLAGS)
 AC_SUBST(CMOD_LIBS)
 

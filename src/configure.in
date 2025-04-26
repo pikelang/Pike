@@ -9,8 +9,27 @@ AC_SUBST(CONFIG_HEADERS)
 rm -f config.warnings 2>/dev/null
 rm -f config.notes 2>/dev/null
 
-if_autoconf(2,50,, [
-  PIKE_MSG_WARN([configure script has been generated with autoconf 2.13 or earlier.])
+force_config_cache=no
+if_autoconf(2,50,[
+      # Check whether it would be prudent to enable
+      # the configure cache.
+      got_timeout()
+      {
+          force_config_cache=yes
+      }
+      trap got_timeout ALRM
+      # echo;echo;echo Start timeout at: `date`; echo; echo
+      # Some benchmarks:                    w/o cache   w/ cache
+      #   Semi-recent Linux/x86_64: <1s     ~3min       ~1min30s
+      #   Rntcl/x86_64:             48s     ~1h23min    ~47min
+      #   Solaris/sparcv9@450MHz:   18s     ~1h30min    ~1h20min
+      #
+      # We enable use of config.cache if the initial configure
+      # stuff takes more than 10s.
+      sleep 10 && kill -ALRM $$ &
+      timeout_pid="$!"
+  ], [
+      PIKE_MSG_WARN([configure script has been generated with autoconf 2.13 or earlier.])
 ])
 
 # We want an absolute path to the source-dir.
@@ -43,25 +62,7 @@ Fix your permissions.
 ])
 fi
 
-if_autoconf(2,50,[
-  if test "x$cache_file" = "x/dev/null"; then
-    if uname | grep -i windows >/dev/null; then
-      PIKE_MSG_NOTE([Windows detected.])
-      PIKE_MSG_NOTE([Enabling the configure cache for performance reasons.])
-      cache_file=./config.cache
-      if test -r "$cache_file"; then
-	echo "loading cache $cache_file"
-	  . $cache_file
-      else
-	echo "creating cache $cache_file"
-	  > $cache_file
-      fi
-    fi
-  fi
-])
-
 AC_PROG_MAKE_SET
-
 
 rm -f "conftest_VPATH.in" 2>/dev/null
 touch "$srcdir/conftest_VPATH.in"
@@ -217,7 +218,7 @@ if test "x$CC" = "x"; then :; else
   AC_MSG_CHECKING([whether we need an icc workaround])
   AC_CACHE_VAL(pike_cv_need_icc_gcc_version, [
 cat >conftest.c <<EOF
-  int main() { return 0; }
+  int main(void) { return 0; }
 EOF
     ORIG_CFLAGS="$CFLAGS"
     for pike_cv_need_icc_gcc_version in no 420 410 400 340 330 320 310 no; do
@@ -278,6 +279,28 @@ if test "x$enable_binary" != "xno"; then
   AC_MINIX
 fi
 
+if_autoconf(2,50,[
+  # echo;echo;echo End timeout at: `date`; echo; echo
+  kill "$timeout_pid" 2>/dev/null
+  if test "x$cache_file$force_config_cache" = "x/dev/nullyes"; then
+      PIKE_MSG_NOTE([Slow configure detected.])
+      PIKE_MSG_NOTE([Enabling the configure cache for performance reasons.])
+      if test "x$CONFIG_CACHE_FILE" = "x"; then
+          cache_file=./config.cache
+      else
+          # Cache file suggested by Xenofarm.
+          cache_file="$CONFIG_CACHE_FILE"
+      fi
+      if test -r "$cache_file"; then
+          echo "loading cache $cache_file"
+          . $cache_file
+      else
+          echo "creating cache $cache_file"
+          > $cache_file
+      fi
+  fi
+])
+
 #############################################################################
 
 # ABI selection.
@@ -301,7 +324,7 @@ if test "x$GCC" = "xno"; then
 
     AC_CACHE_VAL(pike_cv_datasegment_required, [
       PIKE_OVERRIDE_CROSS_COMPILING(no)
-      AC_TRY_RUN([int foo;main(){return(0);}], [
+      AC_TRY_RUN([int foo;main(void){return(0);}], [
         pike_cv_datasegment_required=yes
       ], [
         pike_cv_datasegment_required=no
@@ -493,8 +516,8 @@ else
   	return sum;
       }
 
-      extern size_t __chkstk();
-      size_t _chkstk() { return __chkstk(); }
+      extern size_t __chkstk(void);
+      size_t _chkstk(void) { return __chkstk(); }
 
     ], [
       return !eat_stack(4711);
@@ -1954,9 +1977,22 @@ fi
 AC_MSG_CHECKING([crc32 intrinsics])
 AC_CACHE_VAL(pike_cv_sys_have_crc_intrinsics,[
   AC_TRY_LINK([
+#if (defined(__i386__) || defined(__amd64__)) && defined(__GNUC__)
     __attribute__((target("sse4"))) int c(int a) {
       return __builtin_ia32_crc32si(0,a);
-    }],[
+    }
+#elif (defined(__arm__) && defined(__GNUC__)) || (defined(__aarch64__) && defined(__clang__))
+    __attribute__((target("arch=armv8-a+crc"))) int c(int a) {
+      return __builtin_arm_crc32cw(0,a);
+    }
+#elif defined(__aarch64__) && defined(__GNUC__)
+    __attribute__((target("+crc"))) int c(int a) {
+      return __builtin_aarch64_crc32cw(0,a);
+    }
+#else
+#error Do not know how to check for crc32 intrinsics on your system
+#endif
+    ],[
       return c(0);
     ],
     [pike_cv_sys_have_crc_intrinsics=yes],
@@ -2114,7 +2150,7 @@ EOF
     # Split, and generate the case entries.
     # Remove any duplicate sequences of slashes.
     mount | \
-      sed -e 's/\(.*\) on \(.*\) type user.*/\2 _split_ \1/p' -ed | \
+      sed -e 's/\(.*\) on \(.*\) type .*/\2 _split_ \1/p' -ed | \
       sort -r | \
       sed -e 's/\\/\//g' | \
       sed -e 's/\([[ 	]]\)/\\\1/g' -e 's/\$/\\\\\\\$/g' | \
@@ -2192,7 +2228,11 @@ else
     if test "$dd" = "/usr/lib"; then continue; fi
     for suff in $pike_cv_abi_suffixes; do
       d="$dd$suff"
-      PIKE_CHECK_ABI_LIB_DIR($d)
+      expect_ok='yes'
+      if test "x$suff" = "x/."; then
+        expect_ok='no'
+      fi
+      PIKE_CHECK_ABI_LIB_DIR($d, , , , $expect_ok)
     done
   done
 fi
@@ -2292,11 +2332,15 @@ if test $ldflags_is_set = yes -a $cppflags_is_set = yes ; then :; else
     if test $ldflags_is_set = yes ; then :; else
       for suff in $pike_cv_abi_suffixes; do
         d="$dd/lib$suff"
+        expect_ok='yes'
+        if test "x$suff" = "x/."; then
+          expect_ok='no'
+        fi
         PIKE_CHECK_ABI_LIB_DIR($d, [libs_found="yes"], [
   	  if test "x$libs_found" = "x"; then
   	    libs_found="no"
   	  fi
-        ], [libs_found="yes"])
+        ], [libs_found="yes"], [$expect_ok])
       done
     fi
     AC_MSG_CHECKING($dd/bin)
@@ -2653,7 +2697,9 @@ cat >conftest.y<<\EOF
 %pure_parser
 %{
 #include <stdlib.h>
-void parse();
+#define YYSTYPE void
+int yylex(YYSTYPE *yylval);
+void parse(void);
 void yyerror(char *);
 %}
 %%
@@ -2678,7 +2724,7 @@ int yylex(YYSTYPE *yylval)
 }
 
 int depth=0;
-void parse()
+void parse(void)
 {
   int tmp;
   if(depth++>5) return;
@@ -2689,7 +2735,7 @@ void parse()
 }
 int errors=0;
 void yyerror(char *fel) { errors++; }
-int main()
+int main(void)
 {
   parse();
   exit(errors);
@@ -2740,7 +2786,9 @@ AC_CACHE_VAL(pike_cv_short_use,
 #else
 #define short
 #endif
-void parse();
+#define YYSTYPE void
+int yylex(YYSTYPE *yylval);
+void parse(void);
 void yyerror(char *);
 %}
 %%
@@ -2945,14 +2993,14 @@ AC_CHECK_HEADERS(winsock2.h sys/rusage.h sys/time.h \
 		 sys/poll.h socket.h ieeefp.h fp_class.h floatingpoint.h \
 		 sys/priocntl.h sys/sched.h winbase.h \
 		 sys/termio.h termios.h sys/termios.h \
-                 utime.h sys/utime.h \
+                 sys/sendfile.h utime.h sys/utime.h \
                  xmath.h ymath.h \
 		 ws2tcpip.h valgrind/memcheck.h memcheck.h valgrind.h \
 		 sys/prctl.h sys/ioctl.h mach/task_info.h mach/task.h \
 		 mach/mach_init.h syscall.h sys/syscall.h devices/timer.h \
 		 direct.h CoreServices/CoreServices.h execinfo.h \
 		 mach/mach.h mach/thread_act.h mach/clock.h \
-                 mach/port.h mach/message.h,,,[
+                 mach/port.h mach/message.h sys/auxv.h asm/hwcap.h,,,[
 #if (defined(__WINNT__) || defined(__WIN32__)) && !defined(__NT__)
 #define __NT__
 #endif
@@ -3083,7 +3131,7 @@ AC_CHECK_TYPES([HPCON, LPPROC_THREAD_ATTRIBUTE_LIST, LPSTARTUPINFOEXW,
 #endif
 ])
 
-if test "x$ac_cv_have_xmath_h:$ac_cv_have_ymath_h" = "xno:no" ; then :; else
+if test "x$ac_cv_header_xmath_h:$ac_cv_header_ymath_h" = "xno:no" ; then :; else
     # Internal header files on NT.
     #
     # Some notes:
@@ -3111,6 +3159,24 @@ if test "x$ac_cv_have_xmath_h:$ac_cv_have_ymath_h" = "xno:no" ; then :; else
 #include <ymath.h>
 #endif
     ])
+fi
+
+if test "x$ac_cv_header_sys_sendfile_h" = "xyes"; then
+  AC_MSG_CHECKING([if <sys/sendfile.h> supports _FILE_OFFSET_BITS=64])
+  AC_CACHE_VAL(pike_cv_header_sys_sendfile_h, [
+    AC_TRY_CPP([
+#define _FILE_OFFSET_BITS 64
+#include <sys/sendfile.h>
+    ], [
+      pike_cv_header_sys_sendfile_h=yes
+    ], [
+      pike_cv_header_sys_sendfile_h=no
+    ])
+  ])
+  AC_MSG_RESULT($pike_cv_header_sys_sendfile_h)
+  if test "x$pike_cv_header_sys_sendfile_h" = "xno"; then
+    AC_DEFINE(HAVE_BROKEN_SYS_SENDFILE_H)
+  fi
 fi
 
 # Setjmp.
@@ -3733,7 +3799,7 @@ pthread_mutexattr_t attr;
 pthread_mutex_t tmp;
 pthread_t gazonk;
 
-int main()
+int main(void)
 {
   void *sune;
 #ifdef HAVE_PTHREAD_INIT
@@ -3981,7 +4047,7 @@ pthread_mutexattr_t attr;
 pthread_mutex_t tmp;
 pthread_t gazonk;
 
-int main()
+int main(void)
 {
   void *sune;
 #ifdef HAVE_PTHREAD_INIT
@@ -4060,7 +4126,7 @@ void *foo(void *bar) { thr_exit(0); return 0; }
 mutex_t tmp;
 thread_t gazonk;
 
-int main()
+int main(void)
 {
   void *sune;
   mutex_lock(& tmp);
@@ -4334,6 +4400,7 @@ AC_CHECK_FUNCS( \
  fchdir \
  fdwalk \
  ftruncate64 \
+ getauxval \
  gethrtime \
  gethrvtime \
  getrlimit \
@@ -4349,6 +4416,7 @@ AC_CHECK_FUNCS( \
  mallinfo \
  mallinfo2 \
  mallopt \
+ pread pwrite \
  ptrace \
  setrlimit \
  setresuid \
@@ -4382,6 +4450,7 @@ AC_CHECK_FUNCS( \
  getgrent getgrnam \
  setsid \
  initgroups setgroups \
+ sendfile \
  socketpair \
  openpty \
  bswap16 \
@@ -4642,10 +4711,10 @@ int sig_child(int arg)
 #endif
 }
 
-int sig_alarm() { exit(1); }
+int sig_alarm(void) { exit(1); }
 #endif /* !__NT__ */
 
-int main()
+int main(void)
 {
   char *tmp;
 #ifndef __NT__
@@ -4716,10 +4785,10 @@ int sig_child(int arg)
 #endif
 }
 
-int sig_alarm() { exit(1); }
+int sig_alarm(void) { exit(1); }
 #endif /* !__NT__ */
 
-int main()
+int main(void)
 {
   char *tmp;
 #ifndef __NT__
@@ -4783,6 +4852,206 @@ AC_TRY_COMPILE([
 
 AC_MSG_RESULT($pike_cv_func_mkdir_args)
 AC_DEFINE_UNQUOTED(MKDIR_ARGS,$pike_cv_func_mkdir_args)
+
+if test "$ac_cv_func_sendfile" = "yes"; then
+  AC_MSG_CHECKING(if sendfile takes 4(Linux) or 6(HP/UX or MacOS X) or 7(FreeBSD) arguments)
+  AC_CACHE_VAL(pike_cv_sendfile_args, [
+    AC_TRY_COMPILE([
+#include <sys/types.h>
+#ifdef __APPLE__
+/* The <sys/socket.h> header file is broken and disregards _DARWIN_C_SOURCE
+ * for the sendfile() declaration.
+ */
+#undef _POSIX_C_SOURCE
+#endif
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif /* HAVE_SYS_SOCKET_H */
+#ifdef HAVE_SYS_UIO_H
+#include <sys/uio.h>
+#endif /* HAVE_SYS_UIO_H */
+#ifdef HAVE_SYS_SENDFILE_H
+#include <sys/sendfile.h>
+#endif
+    ], [
+      return sendfile(0,0,0,0,(void *)0,(void *)0,0);
+    ], [
+      # Probably FreeBSD-style, but we need to check that
+      # we indeed have a prototype...
+      AC_TRY_COMPILE([
+#include <sys/types.h>
+#ifdef __APPLE__
+/* The <sys/socket.h> header file is broken and disregards _DARWIN_C_SOURCE
+ * for the sendfile() declaration.
+ */
+#undef _POSIX_C_SOURCE
+#endif
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif /* HAVE_SYS_SOCKET_H */
+#ifdef HAVE_SYS_UIO_H
+#include <sys/uio.h>
+#endif /* HAVE_SYS_UIO_H */
+#ifdef HAVE_SYS_SENDFILE_H
+#include <sys/sendfile.h>
+#endif
+      ], [
+        /* This should fail on FreeBSD and HPUX.
+         * If it succeeds, we do not have a prototype,
+         * which would indicate Linux.
+         */
+        return sendfile(0,0,(void *)0,0);
+      ], [ pike_cv_sendfile_args=4 ], [ pike_cv_sendfile_args=7 ])
+    ], [
+      AC_TRY_COMPILE([
+#include <sys/types.h>
+#ifdef __APPLE__
+/* The <sys/socket.h> header file is broken and disregards _DARWIN_C_SOURCE
+ * for the sendfile() declaration.
+ */
+#undef _POSIX_C_SOURCE
+#endif
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif /* HAVE_SYS_SOCKET_H */
+#ifdef HAVE_SYS_UIO_H
+#include <sys/uio.h>
+#endif /* HAVE_SYS_UIO_H */
+#ifdef HAVE_SYS_SENDFILE_H
+#include <sys/sendfile.h>
+#endif
+      ], [
+        /* Try HPUX */
+        return (int)sendfile(0,0,0,0,(void *)0,0);
+      ], [ pike_cv_sendfile_args=6 ], [
+        AC_TRY_COMPILE([
+#include <sys/types.h>
+#ifdef __APPLE__
+/* The <sys/socket.h> header file is broken and disregards _DARWIN_C_SOURCE
+ * for the sendfile() declaration.
+ */
+#undef _POSIX_C_SOURCE
+#endif
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif /* HAVE_SYS_SOCKET_H */
+#ifdef HAVE_SYS_UIO_H
+#include <sys/uio.h>
+#endif /* HAVE_SYS_UIO_H */
+#ifdef HAVE_SYS_SENDFILE_H
+#include <sys/sendfile.h>
+#endif
+        ], [
+          /* Try Linux */
+          return sendfile(0,0,(void *)0,0);
+        ], [ pike_cv_sendfile_args=4 ], [ pike_cv_sendfile_args=bad ])
+      ])
+    ])
+  ])
+  if test "$pike_cv_sendfile_args" = "7"; then
+    AC_MSG_RESULT([7 - FreeBSD style])
+    AC_DEFINE(HAVE_FREEBSD_SENDFILE)
+
+    AC_MSG_CHECKING([if sendfile looks thread-safe])
+    AC_CACHE_VAL(pike_cv_freebsd_sendfile_threadsafe, [
+      # We're optimistic -- default to assuming it works.
+      pike_cv_freebsd_sendfile_threadsafe="yes"
+      if test -f /usr/lib/libc_r.so; then
+        if /usr/bin/nm -D /usr/lib/libc_r.so 2>&1 | grep _thread_sys >/dev/null 2>&1; then
+          # Ok, looks like we can perform the test.
+          # Assume we have a broken sendfile(2).
+          pike_cv_freebsd_sendfile_threadsafe="no"
+          if /usr/bin/nm -D /usr/lib/libc_r.so 2>&1 | grep _thread_sys_sendfile >/dev/null 2>&1; then
+            # Wee! They have actually added a wrapper for sendfile(2)!
+            pike_cv_freebsd_sendfile_threadsafe="yes"
+          else :; fi
+        else :; fi
+      else :; fi
+    ])
+
+    if test "$pike_cv_freebsd_sendfile_threadsafe" = "yes"; then
+      AC_MSG_RESULT(yes)
+
+      AC_MSG_CHECKING([whether headers count to the filelength])
+      AC_CACHE_VAL(pike_cv_new_freebsd_sendfile, [
+        # FIXME: Ought to do a proper test of whether
+        #        headers affect the file length or not.
+        pike_cv_new_freebsd_sendfile="unknown"
+        case "x$pike_cv_sys_os" in
+          xFreeBSD*)
+            pike_cv_new_freebsd_sendfile="yes"
+            # The behaviour was fixed in FreeBSD 5.0.
+            if test `uname -r | awk -F. '{print $1}'` -lt 5; then
+              pike_cv_new_freebsd_sendfile="no"
+            fi
+          ;;
+        esac
+      ])
+      AC_MSG_RESULT($pike_cv_new_freebsd_sendfile)
+      if test "x$pike_cv_new_freebsd_sendfile" = "xno"; then
+        AC_DEFINE(HAVE_SENDFILE_HEADER_LEN_PROBLEM)
+      fi
+    else
+      AC_MSG_RESULT(no - disabling use of sendfile)
+      AC_DEFINE(HAVE_BROKEN_SENDFILE)
+    fi
+  else
+    if test "$pike_cv_sendfile_args" = "6"; then
+      AC_MSG_RESULT([6 - HP/UX or MacOS X style])
+      # FIXME: Detect whether HPUX:
+      #   sbsize_t sendfile(int from, int to, off_t off, bsize_t bytes,
+      #                     struct iovec *hdtrl, int flags)
+      # or MacOS X:
+      #   int sendfile(int to, int from, off_t off, off_t *bytes,
+      #                struct sf_hdtrl *hdtrl, int flags)
+
+      AC_MSG_CHECKING(struct sf_hdtr)
+      AC_CACHE_VAL(pike_cv_has_struct_sf_hdtr, [
+        AC_TRY_LINK([
+#include <sys/types.h>
+#ifdef __APPLE__
+/* The <sys/socket.h> header file is broken and disregards _DARWIN_C_SOURCE
+ * for the sendfile() declaration.
+ */
+#undef _POSIX_C_SOURCE
+#endif
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
+#ifdef HAVE_SYS_UIO_H
+#include <sys/uio.h>
+#endif
+        ], [
+          struct sf_hdtr foo;
+        ], [
+          pike_cv_has_struct_sf_hdtr=yes
+        ], [
+          pike_cv_has_struct_sf_hdtr=no
+        ])
+      ])
+      if test "$pike_cv_has_struct_sf_hdtr" = "yes"; then
+        AC_MSG_RESULT(yes - MacOS X)
+        AC_DEFINE(HAVE_MACOSX_SENDFILE)
+        # MacOS X sendfile() has the bug from FreeBSD 4.x and earlier.
+        # FIXME: Ought to do a proper test of whether
+        #        headers affect the file length or not.
+        AC_DEFINE(HAVE_SENDFILE_HEADER_LEN_PROBLEM)
+      else
+        AC_MSG_RESULT(no - HPUX)
+        AC_DEFINE(HAVE_HPUX_SENDFILE)
+      fi
+    else
+      if test "$pike_cv_sendfile_args" = "4"; then
+        AC_MSG_RESULT([4 - Linux style])
+      else
+        AC_MSG_RESULT(failed - disabling use of sendfile)
+        AC_DEFINE(HAVE_BROKEN_SENDFILE)
+      fi
+    fi
+  fi
+else
+  :
+fi
 
 if test x"$pike_cv_sys_os" = xWindows_NT ; then
  AC_DEFINE(HAVE_LOADLIBRARY)
@@ -4984,7 +5253,7 @@ fi
 #   			       :"=a" (((unsigned long*)&x)[0]), 		\
 #   			       "=d" (((unsigned long*)&x)[1]))
 #
-#   void own_gethrtime_init()
+#   void own_gethrtime_init(void)
 #   {
 #      GETTIMEOFDAY(&hrtime_timeval_zero);
 #      RTSC(hrtime_rtsc_zero);
@@ -5009,7 +5278,7 @@ fi
 #
 #   /* this is very sensitive to the compiler; keep all crap */
 #
-#   long long gethrtime()
+#   long long gethrtime(void)
 #   {
 #      long long now;
 #      struct timeval tv;
@@ -5041,7 +5310,7 @@ fi
 #
 #   #include <stdio.h>
 #
-#   int main()
+#   int main(void)
 #   {
 #      struct timeval tv1,tv2;
 #      long long td,t1,t2;
@@ -5314,14 +5583,27 @@ if test "x$ac_cv_func_ptrace" = "xyes"; then
     ],pike_cv_ptrace_takes_four_args=yes,pike_cv_ptrace_takes_four_args=no)
   ])
   if test "$pike_cv_ptrace_takes_four_args" = yes; then
+    # FreeBSD:
+    #   int ptrace(int request, pid_t pid, caddr_t addr, int data);
+    # IRIX:
+    #   int ptrace(int request, pid_t pid, int addr, int data);
+    # Linux:
+    #   long ptrace(enum __ptrace_request request, pid_t pid,
+    #               void *addr, void *data);
+    # Solaris 8:
+    #   long ptrace(int, pid_t, long, long);
+    # Solaris 10, 11 and later, 32-bit ABI only:
+    #   int ptrace(int, pid_t, int, int);
     AC_MSG_RESULT(4)
     AC_DEFINE(PTRACE_TAKES_FOUR_ARGS)
-  else
-    AC_MSG_RESULT(5)
-  fi
-  AC_MSG_CHECKING([type of argument 3 (addr) to ptrace])
-  AC_CACHE_VAL(pike_cv_ptrace_addr_type, [
-    AC_TRY_COMPILE([
+
+    AC_MSG_CHECKING([type of argument 3 (addr) to ptrace])
+    AC_CACHE_VAL(pike_cv_ptrace_addr_type, [
+      # Modern OSes appear to use a pointer type.
+      pike_cv_ptrace_addr_type=pointer
+
+      # Test some integer variants.
+      AC_TRY_COMPILE([
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif /* HAVE_UNISTD_H */
@@ -5329,18 +5611,37 @@ if test "x$ac_cv_func_ptrace" = "xyes"; then
 #ifdef HAVE_SYS_PTRACE_H
 #include <sys/ptrace.h>
 #endif /* HAVE_SYS_PTRACE_H */
-    ],[
-#ifdef PTRACE_TAKES_FOUR_ARGS
-      ptrace(0,0,(void *)0,0);
-#else
-      ptrace(0,0,(void *)0,0,0);
-#endif
-    ],pike_cv_ptrace_addr_type=pointer,pike_cv_ptrace_addr_type=integer)
-  ])
-  if test "$pike_cv_ptrace_addr_type" = pointer; then
-    AC_MSG_RESULT(pointer)
-    AC_DEFINE(PTRACE_ADDR_TYPE_IS_POINTER)
+        /* Various 32-bit platforms. */
+        int ptrace(int, pid_t, int, int);
+      ],[
+        ptrace(0,0,0,0);
+      ],pike_cv_ptrace_addr_type=integer, [
+        AC_TRY_COMPILE([
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif /* HAVE_UNISTD_H */
+#include <sys/types.h>
+#ifdef HAVE_SYS_PTRACE_H
+#include <sys/ptrace.h>
+#endif /* HAVE_SYS_PTRACE_H */
+          /* Solaris 8 */
+          long ptrace(int, pid_t, long, long);
+        ],[
+          ptrace(0,0,0,0);
+        ],pike_cv_ptrace_addr_type=integer)
+      ])
+    ])
+    if test "$pike_cv_ptrace_addr_type" = pointer; then
+      AC_MSG_RESULT(pointer)
+      AC_DEFINE(PTRACE_ADDR_TYPE_IS_POINTER)
+    else
+      AC_MSG_RESULT([integer (SVID)])
+    fi
   else
+    # HPUX 11.0:
+    #   int ptrace(int request, pid_t pid, int addr, int data, int addr2);
+    AC_MSG_RESULT(5)
+    AC_MSG_CHECKING([type of argument 3 (addr) to ptrace])
     AC_MSG_RESULT([integer (SVID)])
   fi
 fi
@@ -5365,7 +5666,7 @@ static int find_stack_direction(void *foo, int cnt)
   }
 }
 
-int main() {
+int main(void) {
   find_stack_direction_funptr = find_stack_direction;
   void *bar; exit( find_stack_direction_funptr(&bar, 0x10) < 0);
 }
@@ -5398,7 +5699,7 @@ else
 AC_TRY_RUN([
 #include <stdio.h>
 
-int main()
+int main(void)
 {
 #if SIZEOF_INT == 4
 #define T int
@@ -5477,7 +5778,7 @@ union test {
   void * ptr;
   int val;
 };
-int main()
+int main(void)
 {
   union test t;
   t.ptr = NULL;
@@ -5684,7 +5985,7 @@ if test yes = "$with_machine_code"; then
        AC_DEFINE_UNQUOTED(PIKE_CPU_REG_PREFIX,"$pike_cv_cpu_reg_prefix");;
   esac
 
-  if test "x$PAXCTL" = "x:"; then :; else
+  if test "x$PAXCTL" = "x"; then :; else
     AC_MSG_CHECKING(${PAXCTL} syntax to allow mprotect)
     AC_CACHE_VAL(pike_cv_paxctl_allow_mprotect,
     [
@@ -5739,7 +6040,7 @@ AC_MSG_CHECKING([for the RDTSC instruction (x86)])
 AC_CACHE_VAL(pike_cv_have_rdtsc, [
 AC_TRY_RUN([
 
-static long long rdtsc()
+static long long rdtsc(void)
 {
    unsigned long l, h;
 #if defined (_M_IX86) || defined (_M_X64)
@@ -5754,7 +6055,7 @@ static long long rdtsc()
    return (((long long)h)<<32)|l;
 }
 
-int main()
+int main(void)
 {
    if (rdtsc()!=rdtsc())
       return 0;
@@ -5972,7 +6273,7 @@ AC_CACHE_VAL(pike_cv_method_extract_uchar,
 [
 AC_TRY_RUN([
 #include <stdlib.h>
-int main()
+int main(void)
 {
   char i,*p;
   i=-10;
@@ -5998,7 +6299,7 @@ AC_CACHE_VAL(pike_cv_method_extract_char,
 [
 AC_TRY_RUN([
 #include <stdlib.h>
-int main()
+int main(void)
 {
   char i,*p;
   i=-10;
@@ -6187,7 +6488,7 @@ void check(TY n, char *pf, char *pd)
       exit(1);
 #endif
 }
-int main()
+int main(void)
 {
   if(sizeof(TY)!=EXPECTED_SIZE_$1)
     exit(1);
@@ -6360,7 +6661,7 @@ RETSIGTYPE func(int sig)
   sigrun[0] = -1;
 }
 
-int main()
+int main(void)
 {
 #define sig SIGSEGV
 
@@ -6475,7 +6776,7 @@ AC_CACHE_VAL(pike_cv_have_working___func__,
   AC_TRY_RUN([
 #include <stdlib.h>
 #include <string.h>
-int main()
+int main(void)
 {
   exit(strcmp("main", __func__));
 }
@@ -6495,7 +6796,7 @@ AC_CACHE_VAL(pike_cv_have_working___FUNCTION__,
   AC_TRY_RUN([
 #include <stdlib.h>
 #include <string.h>
-int main()
+int main(void)
 {
   exit(strcmp("main", __FUNCTION__));
 }
@@ -6538,7 +6839,7 @@ __declspec(noreturn) void fatal(char *foo,...)
   exit(2);
 }
 
-int main() {  exit(0); }
+int main(void) {  exit(0); }
 
   ], pike_cv_lc___declspec=yes, pike_cv_lc___declspec=no, [
     echo $ac_n "crosscompiling... $ac_c" 1>&6
@@ -6587,7 +6888,7 @@ void fatal(char *foo,...)
   exit(2);
 }
 
-int main() {  exit(0); }
+int main(void) {  exit(0); }
 
   ], pike_cv_gcc_attributes=yes, pike_cv_gcc_attributes=no, [
     echo $ac_n "crosscompiling... $ac_c" 1>&6
@@ -6644,7 +6945,7 @@ int foo(int a, ...)
   return a;
 }
 
-int main()
+int main(void)
 {
   return foo(2, 1, 0);
 }
@@ -7208,7 +7509,7 @@ AC_CACHE_VAL(pike_cv_configure_test_port_c, [
 
 #include "port.c"
 
-int main()
+int main(void)
 {
   return 0;
 }
@@ -7253,7 +7554,7 @@ struct timeval
 };
 #endif
 
-int main() {
+int main(void) {
   struct timeval tv;
   gettimeofday(&tv,(void *)0);
   exit(0);
@@ -7312,7 +7613,7 @@ if test "x$ac_cv_func_gethrvtime" = xyes; then
 
 #include "port.c"
 
-int main()
+int main(void)
 {
   time_t start = TIME (0), now;
   hrtime_t vt = gethrvtime(), next_vt;
@@ -7357,7 +7658,7 @@ AC_CACHE_VAL(pike_cv_configure_test_rusage_c, [
 #include "port.c"		/* Tested earlier, but might be required. */
 #include "rusage.c"
 
-int main()
+int main(void)
 {
   init_rusage();
   return 0;
@@ -7395,7 +7696,7 @@ AC_CACHE_VAL(pike_cv_configure_test_threads_c, [
 #include "port.c"		/* Tested earlier, but might be required. */
 #include "threads.c"
 
-int main()
+int main(void)
 {
   return 0;
 }
@@ -7469,7 +7770,7 @@ TH_RETURN_TYPE work_thread (void *dummy)
   return 0;
 }
 
-int main()
+int main(void)
 {
   cpu_time_t start;
   THREAD_T worker;
@@ -7515,7 +7816,7 @@ int main()
 }
 
 #else
-int main()
+int main(void)
 {
   FILE *res = fopen ("confdefs.out.2", "w"); /* weird name to circumvent configure cleanups */
   if (!res) return 6;
@@ -7567,7 +7868,7 @@ else
     AC_TRY_RUN([
   #include <stdlib.h>
 
-      int main()
+      int main(void)
       {
         putenv ("foo=bar");
         if (putenv ("foo") && !putenv ("foo=") && !getenv ("foo")) return 1;
@@ -7811,7 +8112,7 @@ then
 
       FreeBSD*)
         AC_TRY_RUN([#include <stdlib.h>
-int main(){exit(
+int main(void){exit(
 #ifdef __ELF__
     0
 #else
@@ -7835,7 +8136,7 @@ int main(){exit(
 
       FreeBSD*)
         AC_TRY_RUN([#include <stdlib.h>
-int main(){exit(
+int main(void){exit(
 #ifdef __ELF__
     0
 #else
@@ -7852,7 +8153,7 @@ fi
    OLD_CFLAGS="$CFLAGS"
    CFLAGS="$CFLAGS $LINKFORSHARED"
    AC_TRY_RUN([#include <stdlib.h>
-int main() { exit(0); }],
+int main(void) { exit(0); }],
  pike_cv_sys_linkforshared="$LINKFORSHARED", pike_cv_sys_linkforshared='', pike_cv_sys_linkforshared='')
    CFLAGS="$OLD_CFLAGS"
 ])
@@ -7931,6 +8232,10 @@ AC_MSG_RESULT($pike_cv_sys_dynamic_loading)
 if test "x$with_dynamic_modules" != "xno" ; then
   if test x$pike_cv_sys_dynamic_loading = xno ; then
     with_dynamic_modules=no
+    LDSHARED_BASE_REQS=""
+    LDSHARED_MODULE_ARGS=""
+    LDSHARED_MODULE_REQS=""
+    LDSHARED_MODULE_ARGS=""
   else
     with_dynamic_modules=yes
   fi
@@ -7949,7 +8254,12 @@ fi
 # Let the --with-crt argument override the chosen crt linkage.
 test x"$with_crt" != x && crt_type="$with_crt"
 
-INSTALL_EXPORT_ARGS=
+INSTALL_EXPORT_ARGS=''
+
+if test "x$pike_cv_sys_os" = xWindows_NT ; then
+  # POSIX-side environment variables are not passed by sprsh.
+  INSTALL_EXPORT_ARGS="${INSTALL_EXPORT_ARGS} "'VERSION_SUFFIX=$${PIKE_VERSION_SUFFIX}'
+fi
 
 if test x"$crt_type" = xdynamic; then
   CFLAGS="$CFLAGS $dynamic_crt_flag"
@@ -8488,7 +8798,7 @@ AC_TRY_RUN([
 #include <stdio.h>
 #include "svalue.h"
 
-int main()
+int main(void)
 {
    FILE *fp, *out;
    char float_type[80] = "?";

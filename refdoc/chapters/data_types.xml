@@ -1,55 +1,57 @@
 <?xml version="1.0" encoding="utf-8"?>
-<chapter title="Data types">
+<chapter title="Data types and literal values">
 
-<p>In this chapter we will discuss all the different ways to store data
-in Pike in detail. We have seen examples of many of these, but we haven't
-really gone into how they work. In this chapter we will also see which
-operators and functions work with the different types.</p>
-<p>Types in Pike are used in two different contexts; during compile-time,
-and during run-time. Some types are only used during compile-time
-(<tt>void</tt>, <tt>mixed</tt> and all constructed types), all other types
-are also used during run-time. Also note the following functions and special
-forms:</p>
-<dl>
-<dt><tt>type <ref>typeof</ref>(mixed <i>x</i>)</tt></dt>
-<dd>This special form returns the compile-time type for the expression <i>x</i>
-(which is not evaluated). Ie the type that the compiler believes that the
-expression will return if evaluated.</dd>
-<dt><tt>type <ref>_typeof</ref>(mixed <i>x</i>)</tt></dt>
-<dd>This function returns the run-type of the value <i>x</i> (which is
-evaluated).</dd>
-</dl>
+  <p>In this chapter we will discuss all the types of data in Pike in detail.
+  We have seen examples of many of these, but we haven't really gone into how
+  they work. In this chapter we will also see which operators and functions
+  work with the different types.</p>
 
-<p>There are two categories of run-time data types in Pike: <b>basic types</b>,
-and <b>pointer types</b>. The difference is that basic types are copied when
-assigned to a variable. With pointer types, merely the pointer is copied,
-that way you get two variables pointing to the same thing.</p>
+  <p>Types in Pike are used in two different contexts; during compile-time,
+  and during run-time. Some types are only used during compile-time
+  (<tt>void</tt>, <tt>mixed</tt> and all constructed types), all other types
+  are also used during run-time. Also note the following functions and special
+  forms:</p>
+
+  <dl>
+    <dt><tt>type <ref>typeof</ref>(mixed <i>x</i>)</tt></dt>
+    <dd>This special form returns the compile-time type for the expression
+    <i>x</i> (which is not evaluated). Ie the type that the compiler
+    believes that the expression will return if evaluated.</dd>
+    <dt><tt>type <ref>_typeof</ref>(mixed <i>x</i>)</tt></dt>
+    <dd>This function returns the run-type of the value <i>x</i> (which is
+    evaluated).</dd>
+  </dl>
+
+  <p>There are two categories of run-time data types in Pike:
+  <b>basic types</b>, and <b>pointer types</b>. The difference is that
+  basic types are immutable and are copied when assigned to a variable.
+  With pointer types, merely the pointer is copied, that way you get
+  two variables pointing to the same thing.</p>
 
 <section title="Basic types">
 
-<p>The basic types are <tt>int</tt>, <tt>float</tt> and <tt>string</tt>.
-For you who are accustomed to C or C++, it may seem odd that a string
-is a basic type as opposed to an array of char, but it is surprisingly
-easy to get used to.</p>
+  <p>The basic types are <tt>int</tt>, <tt>float</tt> and <tt>string</tt>.
+  For you who are accustomed to C or C++, it may seem odd that a string
+  is a basic type as opposed to an array of char, but it is surprisingly
+  easy to get used to.</p>
 
 <subsection title="int">
 
-<p><tt>Int</tt> is short for integer, or integer number. They are
-normally 32 bit integers, which means that they are in the range
--2147483648 to 2147483647. (Note that on some machines an <tt>int</tt>
-might be larger than 32 bits.) If Pike is compiled with bignum support
-the 32 bit limitation does not apply and thus the integers can be of
-arbitrary size.  Since they are integers, no decimals are allowed. An
-integer constant can be written in several ways:</p>
+  <p><tt>Int</tt> is short for integer, or integer number. They are
+  normally the native integer width for the platform (ie 32 bit or
+  64 bit), and will seamlessly change representation to become
+  <ref>Gmp.bignum</ref> objects when they exceed that size.
+  Since they are integers, no decimals are allowed. An integer constant
+  can be written in several ways:</p>
 
-<matrix>
-<r><c><b>Pattern</b></c><c><b>Example</b></c><c><b>Description</b></c></r>
-<r><c>-?[1-9][0-9]*</c><c>78</c><c>Decimal number</c></r>
-<r><c>-?0[0-9]*</c><c>0116</c><c>Octal number</c></r>
-<r><c>-?0[xX][0-9a-fA-F]+</c><c>0x4e</c><c>Hexadecimal number</c></r>
-<r><c>-?0[bB][01]+</c><c>0b1001110</c><c>Binary number</c></r>
-<r><c>-?'\\?.'</c><c>'N'</c><c>ASCII character</c></r>
-</matrix>
+  <matrix>
+    <r><c><b>Pattern</b></c><c><b>Example</b></c><c><b>Description</b></c></r>
+    <r><c>-?[1-9][0-9]*</c><c>78</c><c>Decimal number</c></r>
+    <r><c>-?0[0-9]*</c><c>0116</c><c>Octal number</c></r>
+    <r><c>-?0[xX][0-9a-fA-F]+</c><c>0x4e</c><c>Hexadecimal number</c></r>
+    <r><c>-?0[bB][01]+</c><c>0b1001110</c><c>Binary number</c></r>
+    <r><c>-?'\\?.'</c><c>'N'</c><c>ASCII character</c></r>
+  </matrix>
 
 <p>All of the above represent the number 78. Octal notation means that
 each digit is worth 8 times as much as the one after. Hexadecimal notation
@@ -65,13 +67,16 @@ characters, listed under strings, must be used instead. Specifically this
 applies to the single quote character itself, which has to be written as
 <expr>'\''</expr>.</p>
 
-<p>When pike is compiled with bignum support integers in never
-overflow or underflow when they reach the system-defined
-maxint/minint. Instead they are silently converted into bignums.
-Integers are usually implemented as 2-complement 32-bits integers, and
-thus are limited within -2147483648 and 2147483647. This may however
-vary between platforms, especially 64-bit platforms. <fixme>Conversion
-back to normal integer?</fixme></p>
+<p>Integers in Pike will never overflow or underflow when they reach the
+system-defined maxint/minint. Instead they are silently converted into bignums.
+Integers are usually implemented as 2-complement 32-bits or 64-bits integers,
+and thus are limited within -2147483648 and 2147483647 or
+-18446744073709551616 and 18446744073709551615 respectively. The native
+integer width in bits can be retrieved by calling
+<ref>Pike.get_runtime_info()</ref>. When a bignum operation results
+in a value within the range of a native integer, a netive integer
+will be used. Note though that some APIs that accept <tt>int</tt> values
+do not accept bignums.</p>
 
 <p>All the arithmetic, bitwise and comparison operators can be used on
 integers. Also note these functions:</p>
@@ -92,10 +97,11 @@ integers. Also note these functions:</p>
 <p>Although most programs only use integers, they are unpractical when doing
 trigonometric calculations, transformations or anything else where you
 need decimals. For this purpose you use <expr>float</expr>. Floats are
-normally 32 bit floating point numbers, which means that they can represent
-very large and very small numbers, but only with 9 accurate digits. To write
-a floating point constant, you just put in the decimals or write it in the
-exponential form:</p>
+normally the same width in bits as the native integer, which means that they
+can represent very large and very small numbers, but only with 9 accurate
+digits on 32-bit platforms. For higher precision <ref>Gmp.mpf</ref> or
+<ref>Gmp.mpq</ref> may be used. To write a floating point constant, you just
+put in the decimals or write it in the exponential form:</p>
 
 <matrix>
 <r><c><b>Pattern</b></c><c><b>Example</b></c><c><b>Equals</b></c></r>
@@ -896,82 +902,41 @@ the <tt>record</tt> program.</p>
 
 <subsection title="function">
 
-<p>When indexing an object on a string, and that string is the name of a function
-in the object a <tt>function</tt> is returned. Despite its name, a
-<tt>function</tt> is really a <b>function pointer</b>.</p>
+  <p>When indexing an object on a string, and that string is the name
+  of a function in the object a <tt>function</tt> is returned. Despite
+  its name, a <tt>function</tt> is really a <b>function pointer</b>.</p>
 
-<!-- <image src=function.fig>fig 4.6 -->
+  <p>This is some of what you can do with a function pointer.</p>
 
-<p>When the function pointer is called, the interpreter sets
-<ref>this_object()</ref> to the object in which the function is located and
-proceeds to execute the function it points to. Also note that function pointers
-can be passed around just like any other data type:</p>
+  <dl>
+    <dt> calling ( <i>f</i> ( mixed ... <i>args</i> ) )</dt>
+    <dd> As mentioned earlier, all function pointers can be called.
+    In this example the function <i>f</i> is called with the arguments
+    <i>args</i>.</dd>
 
-<example>
-int foo() { return 1; }
-function bar() { return foo; }
-int gazonk() { return foo(); }
-int teleledningsanka() { return bar()(); }
-</example>
+    <dt> <tt>string <ref>function_name</ref>(function <i>f</i>)</tt></dt>
+    <dd> This function returns the name of the function <i>f</i> is
+    pointing at.</dd>
 
-<p>In this example, the function bar returns a pointer to the function
-<tt>foo</tt>. No indexing is necessary since the function <tt>foo</tt> is
-located in the same object. The function <tt>gazonk</tt> simply calls
-<tt>foo</tt>. However, note that the word <tt>foo</tt> in that function
-is an expression returning a function pointer that is then called. To
-further illustrate this, <tt>foo</tt> has been replaced by <tt>bar()</tt>
-in the function <tt>teleledningsanka</tt>.</p>
+    <dt> <tt>object <ref>function_object</ref>(function <i>f</i>)</tt></dt>
+    <dd> This function returns the object the function <i>f</i> is
+    located in.</dd>
 
-<p>For convenience, there is also a simple way to write a function inside another
-function. To do this you use the <tt>lambda</tt> keyword.  The
-syntax is the same as for a normal function, except you write
-<tt>lambda</tt> instead of the function name:</p>
+    <dt> <tt>int <ref>functionp</ref>(mixed <i>f</i>)</tt></dt>
+    <dd> This function returns 1 if <i>f</i> is a <tt>function</tt>,
+    0 otherwise. If <i>f</i> is located in a destructed object,
+    0 is returned.</dd>
 
-<example>
-lambda ( types ) { statements }
-</example>
-
-<p>The major difference is that this is an expression that can be used inside
-an other function. Example:</p>
-
-<example>
-function bar() { return lambda() { return 1; }; )
-</example>
-
-<p>This is the same as the first two lines in the previous example, the keyword
-<tt>lambda</tt> allows you to write the function inside <tt>bar</tt>.</p>
-
-<p>Note that unlike C++ and Java you can not use function overloading in Pike.
-This means that you cannot have one function called 'foo' which takes an
-integer argument and another function 'foo' which takes a float argument.</p>
-
-<p>This is what you can do with a function pointer.</p>
-
-<dl>
-<dt> calling ( <i>f</i> ( mixed ... <i>args</i> ) )</dt>
-<dd> As mentioned earlier, all function pointers can be called. In this example
-     the function <i>f</i> is called with the arguments <i>args</i>.</dd>
-
-<dt> <tt>string <ref>function_name</ref>(function <i>f</i>)</tt></dt>
-<dd> This function returns the name of the function <i>f</i> is pointing at.</dd>
-
-<dt> <tt>object <ref>function_object</ref>(function <i>f</i>)</tt></dt>
-<dd> This function returns the object the function <i>f</i> is located in.</dd>
-
-<dt> <tt>int <ref>functionp</ref>(mixed <i>f</i>)</tt></dt>
-<dd> This function returns 1 if <i>f</i> is a <tt>function</tt>, 0 otherwise.
-     If <i>f</i> is located in a destructed object, 0 is returned.</dd>
-
-<dt> <tt>function <ref>this_function</ref>()</tt></dt>
-<dd> This function returns a pointer to the function it is called from.
-     This is normally only used with <b>lambda</b> functions because they
-     do not have a name.</dd>
-</dl>
+    <dt> <tt>function <ref>this_function</ref>()</tt></dt>
+    <dd> This function returns a pointer to the function it is called from.
+    This is normally only used with <b>lambda</b> functions because they
+    do not have a name.</dd>
+  </dl>
 </subsection>
 </section>
 
 <section title="Compile-time types">
-<p>There are two types that are pure compile-time types:</p>
+<p>There are three types that are pure compile-time types:</p>
 
 <subsection title="void">
 
@@ -1032,6 +997,21 @@ complicated.</p>
 
 </subsection>
 
+<section title="Type values">
+
+  <p>Types may be passed as run time values. These values most commonly
+  originate from <tt>enum</tt> or <tt>typedef</tt> declarations, or from
+  the return value of <tt>typeof()</tt> or <tt>_typeof()</tt>.</p>
+
+  <p>Type values are currently essentially opaque and there is no syntax for
+  declaring a variable to accept a type value except for <tt>mixed</tt>.</p>
+
+  <subsection title="Type operators">
+    Several operators accept types as operands.
+  </subsection>
+
+</section>
+
 <subsection title="Constructed types">
 
 <p>Futhermore more specific compile-time types may be constructed by
@@ -1046,198 +1026,6 @@ respectively).</p>
 
 </subsection>
 
-<subsection title="Generic types">
-  <p>To improve the type-safety over just using <tt>mixed</tt>, it
-  is possible to define place-holder types that are replaced with
-  actual types when the class is used.</p>
-
-  <example>
-    class Container (&lt;T&gt;) (T|void content) {}
-
-    Container(&lt;int&gt;) int_container = Container(&lt;int&gt;)(17);
-    Container(&lt;float&gt;) float_container = Container(&lt;float&gt;)(17.0);
-    Container mixed_container = Container("foo");
-  </example>
-
-  <p>The above class is similar to:</p>
-
-  <example>
-    class Container(mixed|void content) {}
-  </example>
-
-  <p>But the former allows the compiler to eg check that only values
-  of the expected types are put in <tt>int_container</tt> and
-  <tt>float_container</tt>.</p>
-</subsection>
-
-</section>
-
-<section title="Modifiers">
-  <p>Modifiers are keywords that may be specified before the type
-  of a symbol declaration or inherit. They typically affect the
-  symbol lookup or other related compiler behavior.</p>
-
-  <subsection title="protected">
-    <p>The <tt>protected</tt> modifier hides symbols from external
-    indexing (ie they are still accessable to subclassess that
-    have inherited the class, but not via <ref>predef::`->()</ref>
-    or <ref>predef::`[]()</ref>).</p>
-
-    <p>In ancient versions of Pike this modifier was known
-    as <tt>static</tt>.</p>
-  </subsection>
-
-  <subsection title="local">
-    <p>The <tt>local</tt> modifier causes use of the symbol from
-    the current class to not be affected by overloading by
-    subclasses.</p>
-
-    <p>This modifier is also available with the name <tt>inline</tt>.</p>
-
-    <p>The modifier <tt>final</tt> is similar.</p>
-  </subsection>
-
-  <subsection title="private">
-    <p>The <tt>private</tt> modifier hides symbols from internal
-    indexing (ie they are not accessable to subclasses) and implies
-    <tt>protected</tt> and <tt>local</tt>.</p>
-  </subsection>
-
-  <subsection title="final">
-    <p>The <tt>final</tt> modifier causes the compiler to issue
-    an error if a subclass attempts to overload the symbol.</p>
-
-    <p>The modifier <tt>local</tt> is similar, but more permissive.</p>
-
-    <p>Note in ancient versions of Pike this modifier was also
-    available with the name <tt>nomask</tt>.</p>
-  </subsection>
-
-  <subsection title="optional">
-    <p>The <tt>optional</tt> modifier causes the type checker to
-    consider the symbol as optional to implement to satisfy the
-    API (albeit if the symbol exists it still must comply with
-    the type).</p>
-  </subsection>
-
-  <subsection title="extern">
-    <p>The <tt>extern</tt> modifier indicates that a symbol may
-    be implemented by a subclass, but does not define it in the
-    current class. It implies <tt>optional</tt>.</p>
-  </subsection>
-
-  <subsection title="public">
-    <p>The <tt>public</tt> modifier causes inherited <tt>private</tt>
-    symbols to become <tt>local</tt> <tt>protected</tt> (and thus
-    available to both the inheriting class and subsequent inherits,
-    albeit not overrideable).</p>
-
-    <p>Note that the <tt>public</tt> modifier is only useful for
-    <tt>inherit</tt> statements. In all other cases it is essentially
-    a no-op.</p>
-  </subsection>
-
-  <subsection title="variant">
-    <p>The <tt>variant</tt> modifier is used to provide alternative
-    APIs for functions. The different functions will be called
-    depending on what the arguments are when the symbol is called.</p>
-  </subsection>
-
-  <subsection title="__weak__">
-    <p>The <tt>__weak__</tt> modifier is used to indicate to the
-    garbage collector that it may clear the variable if it is
-    the only holder of the value.</p>
-
-    <p>Note that this modifier is new in Pike 9.0.</p>
-  </subsection>
-
-  <subsection title="__unused__">
-    <p>The <tt>__unused__</tt> modifier is used to inhibit the
-    warning that the symbol is not used.</p>
-
-    <p>Note that this modifier is new in Pike 9.0.</p>
-  </subsection>
-
-  <subsection title="__generator__">
-    <p>The <tt>__generator__</tt> modifier converts a function
-    into a function that returns a restartable function.</p>
-
-    <example>
-      __generator__ int counter(int start, int stop)
-      {
-        while (start &lt; stop) {
-          continue return start++;
-        }
-        return stop;
-      }
-    </example>
-
-    <p>The above behaves similar to:</p>
-
-    <example>
-      function(:int) counter(int start, int stop)
-      {
-        return lambda() {
-          if (start &lt;= stop) {
-            return start++;
-          }
-          return UNDEFINED;
-        };
-      }
-    </example>
-
-    <p>Note that this modifier is new in Pike 9.0.</p>
-  </subsection>
-
-  <subsection title="__async__">
-    <p>The <tt>__async__</tt> modifier converts a function
-    into an asynchronous function. For such functions an
-    implicit <ref>Concurrent.Promise</ref> object is allocated,
-    and all returns and yields are converted into setting
-    the promise followed by returning <tt>UNDEFINED</tt>,
-    except for the first return or yield which will return the
-    <ref>Concurrent.Future</ref> corresponding to the promise.</p>
-
-    <example>
-      __async__ int foo(mixed ... args)
-      {
-        return 17;
-      }
-    </example>
-
-    <p>The above behaves similar to:</p>
-
-    <example>
-      Concurrent.Future(&lt;int&gt;) foo(mixed ... args)
-      {
-        Concurrent.Promise(&lt;int&gt;) __async_promise__ =
-          Concurrent.Promise(&lt;int&gt;)();
-
-        __generator__ lambda() {
-          __async_promise__-&gt;failure(catch {
-              __async_promise__-&gt;success(17);
-              return UNDEFINED;
-            });
-          return UNDEFINED;
-        }()();
-
-        return __async_promise__-&gt;future();
-      }
-    </example>
-
-    <p>Restartable functions are required in order to be able
-    to use <ref>predef::await()</ref>.</p>
-
-    <p>Note that this modifier is new in Pike 9.0.</p>
-  </subsection>
-
-  <subsection title="static">
-    <p>The <tt>static</tt> modifier is currently identical
-    to the <tt>protected</tt> modifier except for warning
-    that it is being used (as of Pike 9.0).</p>
-
-    <p>Note: In a future version of Pike this may change. Do not use.</p>
-  </subsection>
 </section>
 
 <section title="Sharing data">
@@ -1271,95 +1059,6 @@ copy recursively, you can use the plus operator instead. For instance,
 to create a copy of an array you simply add an empty array to it, like this:
 <tt>copy_of_arr = arr + ({});</tt> If you need to copy a mapping you use
 an empty mapping, and for a multiset you use an empty multiset.</p>
-</section>
-
-
-<section title="Variables">
-
-<p>When declaring a variable, you also have to specify what type of variable
-it is. For most types, such as <tt>int</tt> and <tt>string</tt> this is
-very easy. But there are much more interesting ways to declare variables
-than that, let's look at a few examples:</p>
-
-<example>
-int x; // x is an integer
-int|string x; // x is a string or an integer
-array(string) x; // x is an array of strings
-array x; // x is an array of mixed
-mixed x; // x can be any type
-string *x; // x is an array of strings
-
-// x is a mapping from int to string
-mapping(string:int) x;
-
-// x implements Stdio.File
-Stdio.File x;
-
-// x implements Stdio.File
-object(Stdio.File) x;
-
-// x is a function that takes two integer
-// arguments and returns a string
-function(int,int:string) x;
-
-// x is a function taking any amount of
-// integer arguments and returns nothing.
-function(int...:void) x;
-
-// x is ... complicated
-mapping(string:function(string|int...:mapping(string:array(string)))) x;
-</example>
-
-<p>As you can see there are some interesting ways to specify types.
-Here is a list of what is possible:</p>
-
-<dl>
-<dt> <tt>mixed</tt></dt>
-<dd> This means that the variable can contain any type, or the
-     function return any value.</dd>
-
-<dt> <tt>array( <i>type</i> )</tt></dt>
-<dd> This means an array of elements with the type <i>type</i>.</dd>
-
-<dt> <tt>mapping( <i>key type</i> : <i>value type</i> )</tt></dt>
-<dd> This is a mapping where the keys are of type <i>key type</i> and the
-      values of <i>value type</i>.</dd>
-
-<dt> <tt>multiset ( <i>type</i> )</tt></dt>
-<dd> This means a multiset containing values of the type <i>type</i>.</dd>
-
-<dt> <tt>object ( <i>program</i> )</tt></dt>
-<dd> This means an object which 'implements'  the specified program. The
-     <i>program</i> can be a class, a constant, or a string.
-     If the program is a string it will be casted to a program first.
-     See the documentation for <tt>inherit</tt> for more information
-     about this casting. The compiler will assume that any function
-     or variable accessed in this object has the same type information
-     as that function or variable has in <i>program</i>.</dd>
-
-<dt> <tt><i>program</i></tt></dt>
-<dd> This too means 'an object which implements <i>program</i>'.
-     <i>program</i> can be a class or a constant.</dd>
-
-<dt> <tt>function( <i>argument types</i> : <i>return type</i> )</tt></dt>
-<dd> This is a function taking the specified arguments and returning
-     <i>return type</i>. The <i>argument types</i> is a comma separated
-     list of types that specify the arguments. The argument list can also
-     end with <tt>...</tt> to signify that there can be any amount of the
-     last type.</dd>
-
-<dt> <tt><i>type1</i> | <i>type2</i></tt></dt>
-<dd> This means either <i>type1</i> or <i>type2</i></dd>
-
-<dt> <tt>void</tt></dt>
-<dd> Void can only be used in certain places, if used as return type for a
-     function it means that the function does not return a value. If used
-     in the argument list for a function it means that that argument can
-     be omitted. Example: <tt>function(int|void:void)</tt> this means a
-     function that may or may not take an integer argument and does not
-     return a value.</dd>
-</dl>
-
 </section>
 
 </chapter>

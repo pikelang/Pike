@@ -729,7 +729,7 @@ class Parser
 
     /* Then see if it is nullable */
     if (!r->has_tokens) {
-      ADT.Stack new_nullables = ADT.Stack(1024);
+      ADT.Stack(<string|int>) new_nullables = ADT.Stack(<string|int>)(1024);
 
       foreach (r->symbols, symbol) {
 	if (nullable[symbol]) {
@@ -874,7 +874,7 @@ class Parser
   //! In the queue section are the states that remain to be compiled.
   StateQueue|zero s_q;
 
-  protected ADT.Stack|zero item_stack;
+  protected ADT.Stack(<Item>)|zero item_stack;
 
   protected void traverse_items(Item i,
 			     function(int:void) conflict_func)
@@ -901,7 +901,7 @@ class Parser
       int empty_cycle = 1;
       object(Item)|zero i2;
 
-      while ((i2 = [object(Item)]item_stack->pop()) != i) {
+      while ((i2 = item_stack->pop()) != i) {
 
 	i2->number = 0x7fffffff;
 
@@ -927,7 +927,7 @@ class Parser
 
   protected void handle_shift_conflicts()
   {
-    item_stack = ADT.Stack(131072);
+    item_stack = ADT.Stack(<Item>)(131072);
 
     /* Initialize the counter */
     for (int index = 0; index < s_q->tail; index++) {
@@ -959,7 +959,7 @@ class Parser
 
   protected void handle_follow_conflicts()
   {
-    item_stack = ADT.Stack(131072);
+    item_stack = ADT.Stack(<Item>)(131072);
 
     /* Initialize the counter */
     for (int index = 0; index < s_q->tail; index++) {
@@ -1582,7 +1582,7 @@ class Parser
 	      void|object action_object)
   {
     ADT.Stack value_stack = ADT.Stack(4096);
-    ADT.Stack state_stack = ADT.Stack(4096);
+    ADT.Stack(<Kernel>) state_stack = ADT.Stack(<Kernel>)(4096);
     Kernel state = [object]start_state;
 
     string input = "";
@@ -1649,9 +1649,9 @@ class Parser
 	      if (func) {
 		if (sizeof(r->symbols)) {
 		  value_stack->push(([function(mixed ...:mixed)]func)
-				    (@[array(mixed)]value_stack->
-				     pop(sizeof(r->symbols))));
-		  state = ([array(Kernel)]state_stack->pop(sizeof(r->symbols)))[0];
+                                    (@value_stack->
+                                     pop([int(1..)]sizeof(r->symbols))));
+                  state = state_stack->pop([int(1..)]sizeof(r->symbols))[0];
 		} else {
 		  value_stack->push(r->action());
 		}
@@ -1663,7 +1663,7 @@ class Parser
 	      if (sizeof(r->symbols) > 1) {
 		value_stack->quick_pop(sizeof(r->symbols) - 1);
 	      }
-	      state = ([array(Kernel)]state_stack->pop(sizeof(r->symbols)))[0];
+              state = state_stack->pop([int(1..)]sizeof(r->symbols))[0];
 	    } else {
 	      value_stack->push(0);
 	    }
@@ -1696,7 +1696,7 @@ class Parser
 	      if (sizeof(value_stack)) {
 		report(ERROR, "parse", "Bad state at EOF -- Throwing \"%O\"",
 		       value_stack->pop());
-		state = [object(Kernel)]state_stack->pop();
+                state = state_stack->pop();
 		continue;
 	      } else {
 		report(ERROR, "parse", "Empty stack at EOF!");

@@ -1267,6 +1267,75 @@ static void image_change_color(INT32 args)
 }
 
 /*
+**! method object quantize_colors(int(0..8) bits)
+**! method object quantize_colors(int(0..8) rbits,int(0..8) gbits,int(0..8) bbits)
+**!
+**! 	Reduces the colorspace to the specified number of bits per channel.
+**!
+**! returns a new (the destination) image object.
+*/
+
+void image_quantize_colors(INT32 args)
+{
+   int rbits, gbits, bbits;
+   struct object *o;
+   struct image *img;
+   rgb_group *src, *dst;
+   size_t num_pixels;
+   unsigned int rmask = 0, bmask = 0, gmask = 0;
+   unsigned int rmul = 0, bmul = 0, gmul = 0;
+   const unsigned int masktable[9] = {
+      0, 0x80, 0xc0, 0xe0, 0xf0, 0xf8, 0xfc, 0xfe, 0xff,
+   };
+   const unsigned int multable[9] = {
+      0, 0xffff, 0x5555, 0x2492, 0x1111, 0x0842, 0x0410, 0x0204, 0x0100,
+   };
+
+   if (args < 1) SIMPLE_WRONG_NUM_ARGS_ERROR("quantize_colors", 1);
+   if (args == 2) SIMPLE_WRONG_NUM_ARGS_ERROR("quantize_colors", 3);
+
+   get_all_args("quantize_colors", args, "%d.%d%d", &rbits, &gbits, &bbits);
+
+   if ((rbits < 0) || (rbits > 8)) {
+      SIMPLE_ARG_TYPE_ERROR("quantize_colors", 1, "int(0..8)");
+   }
+   if (args == 1) {
+      gbits = bbits = rbits;
+   } else {
+      if ((gbits < 0) || (gbits > 8)) {
+         SIMPLE_ARG_TYPE_ERROR("quantize_colors", 2, "int(0..8)");
+      }
+      if ((bbits < 0) || (bbits > 8)) {
+         SIMPLE_ARG_TYPE_ERROR("quantize_colors", 3, "int(0..8)");
+      }
+   }
+
+   rmask = masktable[rbits];
+   gmask = masktable[gbits];
+   bmask = masktable[bbits];
+
+   rmul = multable[rbits];
+   gmul = multable[gbits];
+   bmul = multable[bbits];
+
+   push_int(THIS->xsize);
+   push_int(THIS->ysize);
+   push_object(o = clone_object(image_program, 2));
+   img = (struct image*)(o->storage);
+
+   num_pixels = THIS->xsize * THIS->ysize;
+   src = THIS->img;
+   dst = img->img;
+   while (num_pixels--) {
+      dst->r = ((src->r & rmask) * rmul) >> 8;
+      dst->g = ((src->g & gmask) * gmul) >> 8;
+      dst->b = ((src->b & bmask) * bmul) >> 8;
+      src++;
+      dst++;
+   }
+}
+
+/*
 **! method object autocrop()
 **! method object autocrop(int border)
 **! method object autocrop(int border,Color color)
@@ -4903,6 +4972,9 @@ void init_image_image(void)
    ADD_FUNCTION("change_color",image_change_color,
 		tOr(tFunc(tInt tInt tInt tRGB,tObj),
 		    tFunc(tColor tRGB,tObj)),0);
+   ADD_FUNCTION("quantize_colors", image_quantize_colors,
+                tOr(tFunc(tInt08 tInt08 tInt08, tObj),
+                    tFunc(tInt08, tObj)), 0);
    ADD_FUNCTION("invert",image_invert,
 		tFunc(tRGB,tObj),0);
    ADD_FUNCTION("threshold",image_threshold,

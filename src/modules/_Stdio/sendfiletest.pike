@@ -1,5 +1,9 @@
 #!/usr/local/bin/pike
 
+#ifndef TIMEOUT
+final constant TIMEOUT = 5*60;
+#endif
+
 final constant TEST_SIZE = 16384;
 
 string testdata = random_string(TEST_SIZE);
@@ -167,7 +171,7 @@ void test4()
     exit_test(1);
   }
 
-  if (!Stdio.sendfile(testdata/4096, pair[1], 0, -1,
+  if (!Stdio.sendfile(testdata/4096, pair[1], -1, -1,
 		      testdata/512, To("conftest.dst"), done, TEST_SIZE*5)) {
     log_msg("Stdio.sendfile() failed!\n");
     exit_test(1);
@@ -183,10 +187,37 @@ void test6()
 {
   Verify();
 
-  next();
+  /* Try a loopback test in compat mode. */
+
+  array(object) pair = SocketPair();
+
+  if (!Stdio.sendfile(testdata/4096, From("conftest.src"), 0, -1,
+                      testdata/512, pair[0], done, TEST_SIZE*3)) {
+    log_msg("Stdio.sendfile() failed!\n");
+    exit_test(1);
+  }
+
+  /* NB: Compat: Offset 0 on a pipe. */
+  if (!Stdio.sendfile(testdata/4096, pair[1], 0, -1,
+                      testdata/512, To("conftest.dst"), done, TEST_SIZE*5)) {
+    log_msg("Stdio.sendfile() failed!\n");
+    exit_test(1);
+  }
 }
 
 void test7()
+{
+  /* Dummy (test 6 will call done twice). */
+}
+
+void test8()
+{
+  Verify();
+
+  next();
+}
+
+void test9()
 {
   /* Clean up. */
   rm("conftest.src");
@@ -202,7 +233,12 @@ int main(int argc, array(string) argv)
 {
   verbose = (int) (getenv()->TEST_VERBOSITY || 2);
 #if constant(alarm)
-  alarm(5*60);	// 5 minutes should be sufficient for this test.
+  alarm(TIMEOUT);	// 5 minutes should be sufficient for this test.
+#else
+  call_out(lambda() {
+    log_msg("Stdio.sendfile() time_out!\n");
+    exit_test(1);
+  }, TIMEOUT);
 #endif
   loopback->bind(0);
   loopbackport = (int)((loopback->query_address()/" ")[1]);

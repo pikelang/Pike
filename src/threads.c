@@ -584,6 +584,7 @@ PMOD_EXPORT void pike_init_thread_state (struct thread_state *ts)
   ts->state = Pike_interpreter;
   Pike_interpreter_pointer = &ts->state;
   ts->id = th_self();
+  ts->busy_prev = ts->busy_next = NULL;
   ts->status = THREAD_RUNNING;
   ts->swapped = 0;
   ts->interval_start = get_real_time();
@@ -1305,6 +1306,13 @@ PMOD_EXPORT void call_with_interpreter(void (*func)(void *ctx), void *ctx)
 
     CALL_WITH_ERROR_HANDLING(Pike_interpreter.thread_state, func, ctx);
 
+#ifdef PIKE_DEBUG
+    if (Pike_interpreter.thread_state->busy_prev ||
+        Pike_interpreter.thread_state->busy_next) {
+      Pike_fatal("Thread is still registered as busy when terminating!\n");
+    }
+#endif
+
     cleanup_interpret();        /* Must be done before EXIT_THREAD_STATE */
     Pike_interpreter.thread_state->status=THREAD_EXITED;
     co_signal(&Pike_interpreter.thread_state->status_change);
@@ -1867,6 +1875,12 @@ TH_RETURN_TYPE new_thread_func(void *data)
 
   reset_evaluator();
 
+#ifdef PIKE_DEBUG
+  if (thread_state->busy_prev || thread_state->busy_next) {
+    Pike_fatal("Thread is still registered as busy when terminating!\n");
+  }
+#endif
+
   low_cleanup_interpret(&thread_state->state);
 
   if (!thread_state->thread_obj)
@@ -2266,6 +2280,8 @@ void f_mutex_lock(INT32 args)
 
   DEBUG_CHECK_THREAD();
 
+  ASSERT_NOT_SIGNAL_CONTEXT();
+
   m=THIS_MUTEX;
   if (args <= 2) {
     FLOAT_TYPE fsecs = 0.0;
@@ -2502,10 +2518,13 @@ void f_mutex_trylock(INT32 args)
  */
 static void f_mutex_future_lock(INT32 args)
 {
-  struct object *promise = make_promise();
+  struct object *promise;
 
   DEBUG_CHECK_THREAD();
 
+  ASSERT_NOT_SIGNAL_CONTEXT();
+
+  promise = make_promise();
   push_object(promise);
   f_aggregate(1);
 
@@ -2623,6 +2642,8 @@ void f_mutex_shared_lock(INT32 args)
   INT_TYPE seconds = 0, nanos = 0;
 
   DEBUG_CHECK_THREAD();
+
+  ASSERT_NOT_SIGNAL_CONTEXT();
 
   m=THIS_MUTEX;
   if (args <= 2) {
@@ -2938,10 +2959,13 @@ void f_mutex_try_shared_lock(INT32 args)
  */
 static void f_mutex_future_shared_lock(INT32 args)
 {
-  struct object *promise = make_promise();
+  struct object *promise;
 
   DEBUG_CHECK_THREAD();
 
+  ASSERT_NOT_SIGNAL_CONTEXT();
+
+  promise = make_promise();
   push_object(promise);
   push_int(1);				/* Shared. */
   f_aggregate(2);
@@ -3464,6 +3488,8 @@ static void f_mutex_key_upgrade(INT32 args)
   struct mutex_storage *m = key->mut;
   INT_TYPE seconds = 0, nanos = 0;
 
+  ASSERT_NOT_SIGNAL_CONTEXT();
+
   if (key->kind >= KEY_PENDING) return;
 
   if (key->kind != KEY_DOWNGRADED) {
@@ -3767,6 +3793,8 @@ void f_cond_wait(INT32 args)
 
   if(threads_disabled)
     Pike_error("Cannot wait for conditions when threads are disabled!\n");
+
+  ASSERT_NOT_SIGNAL_CONTEXT();
 
   if (args <= 2) {
     FLOAT_TYPE fsecs = 0.0;
@@ -4093,6 +4121,8 @@ static void f_thread_id_result(INT32 UNUSED(args))
     Pike_error("Cannot wait for threads when threads are disabled!\n");
   }
 
+  ASSERT_NOT_SIGNAL_CONTEXT();
+
   th->waiting++;
 
   THREADS_FPRINTF(0, "Thread->wait(): Waiting for thread_state %p "
@@ -4181,7 +4211,8 @@ static void f_thread_id_interrupt(INT32 args)
       thread_interrupt_callback =
 	add_to_callback(&evaluator_callbacks, check_thread_interrupt, 0, 0);
     }
-    /* FIXME: Actually interrupt the thread. */
+    /* Actually interrupt the thread. */
+    th_kill(THIS_THREAD->id, SIGCHLD);
   }
   THIS_THREAD->flags |= THREAD_FLAG_INTR;
 }
@@ -4194,7 +4225,8 @@ static void low_thread_kill (struct thread_state *th)
       thread_interrupt_callback =
 	add_to_callback(&evaluator_callbacks, check_thread_interrupt, 0, 0);
     }
-    /* FIXME: Actually interrupt the thread. */
+    /* Actually interrupt the thread. */
+    th_kill(th->id, SIGCHLD);
   }
   th->flags |= THREAD_FLAG_TERM;
 }
@@ -4243,7 +4275,7 @@ static void cleanup_thread_state (struct thread_state *th)
   if (th->status == THREAD_RUNNING || th->waiting)
     return;
 
-  if (THIS_THREAD->flags & THREAD_FLAG_SIGNAL_MASK) {
+  if (th->flags & THREAD_FLAG_SIGNAL_MASK) {
     Pike_interpreter.thread_state->flags &= ~THREAD_FLAG_SIGNAL_MASK;
     if (!--num_pending_interrupts) {
       remove_callback(thread_interrupt_callback);
@@ -4251,8 +4283,8 @@ static void cleanup_thread_state (struct thread_state *th)
     }
   }
 
-  co_destroy(& THIS_THREAD->status_change);
-  th_destroy(& THIS_THREAD->id);
+  co_destroy(& th->status_change);
+  th_destroy(& th->id);
 }
 
 void exit_thread_obj(struct object *UNUSED(o))

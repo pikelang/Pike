@@ -639,7 +639,7 @@ static struct nct_flat _img_reduce_number_of_colors(struct nct_flat flat,
 
    if ((size_t)flat.numentries <= (size_t)maxcols) return flat;
 
-   newe=calloc(sizeof(struct nct_flat_entry), flat.numentries);
+   newe=calloc(flat.numentries, sizeof(struct nct_flat_entry));
    if (!newe) { return flat; }
 
    i = reduce_recurse(flat.entries, newe, flat.numentries, maxcols, 0, sf,
@@ -816,7 +816,7 @@ rerun_rehash:
    fprintf(stderr,"COLORTABLE %ld pixels left; hashsize=%ld\n",i,hashsize);
 #endif
 
-   hash=calloc(sizeof(struct color_hash_entry), hashsize);
+   hash=calloc(hashsize, sizeof(struct color_hash_entry));
 	 if (!hash)
 	 {
 	    free(oldhash);
@@ -862,7 +862,7 @@ rerun_mask:
       oldhash=hash;
       j=hashsize;
 
-      hash=calloc(sizeof(struct color_hash_entry), hashsize);
+      hash=calloc(hashsize, sizeof(struct color_hash_entry));
       if (!hash)
       {
 	 free(oldhash);
@@ -908,7 +908,7 @@ rerun_mask:
 #endif
 
    flat.numentries=j;
-   flat.entries=calloc(sizeof(struct nct_flat_entry), j);
+   flat.entries=calloc(j, sizeof(struct nct_flat_entry));
    if (!flat.entries)
    {
       free(hash);
@@ -1373,7 +1373,7 @@ rerun_rehash_add_1:
 
 	 hashsize*=2;
 
-	 hash=calloc(sizeof(struct color_hash_entry), hashsize);
+         hash=calloc(hashsize, sizeof(struct color_hash_entry));
 	 if (!hash)
 	 {
 	    free(oldhash);
@@ -1423,7 +1423,7 @@ rerun_rehash_add_2:
 
 	 hashsize*=2;
 
-	 hash=calloc(sizeof(struct color_hash_entry), hashsize);
+         hash=calloc(hashsize, sizeof(struct color_hash_entry));
 	 if (!hash)
 	 {
 	    free(oldhash);
@@ -1471,7 +1471,7 @@ rerun_rehash_add_2:
       if (hash[i].pixels) j++;
    /* j is now the number of colors */
    flat.numentries=j;
-   flat.entries=calloc(sizeof(struct nct_flat_entry), j);
+   flat.entries=calloc(j, sizeof(struct nct_flat_entry));
    if (!flat.entries)
    {
       free(hash);
@@ -1563,7 +1563,7 @@ rerun_rehash_add_1:
 
 	 hashsize*=2;
 
-	 hash=calloc(sizeof(struct color_hash_entry), hashsize);
+         hash=calloc(hashsize, sizeof(struct color_hash_entry));
 	 if (!hash)
 	 {
 	    free(oldhash);
@@ -1611,7 +1611,7 @@ rerun_rehash_add_2:
 
 	 hashsize*=2;
 
-	 hash=calloc(sizeof(struct color_hash_entry), hashsize);
+         hash=calloc(hashsize, sizeof(struct color_hash_entry));
 	 if (!hash)
 	 {
 	    free(oldhash);
@@ -1651,7 +1651,7 @@ rerun_rehash_add_2:
       if (hash[i].pixels && hash[i].pixels!=WEIGHT_REMOVE) j++;
    /* j is now the number of colors */
    flat.numentries=j;
-   flat.entries=calloc(sizeof(struct nct_flat_entry), j);
+   flat.entries=calloc(j, sizeof(struct nct_flat_entry));
    if (!flat.entries)
    {
       free(hash);
@@ -3984,8 +3984,8 @@ static int* ordered_calculate_errors(int dxs,int dys)
    int xf,yf;
    int x,y;
 
-   src=calloc(sizeof(int),dxs*dys);
-   dest=calloc(sizeof(int),dxs*dys);
+   src=calloc(dxs*dys,sizeof(int));
+   dest=calloc(dxs*dys,sizeof(int));
 
    if (!src||!dest)
    {
@@ -4080,7 +4080,7 @@ static int *ordered_make_diff(int *errors,int sz,int err)
    int n=sz;
    double q;
 
-   d=dest=calloc(sizeof(int), sz);
+   d=dest=calloc(sz, sizeof(int));
    if (!d) return d;
 
    if (sz!=1) q = 1.0/(sz-1); else q=1.0;

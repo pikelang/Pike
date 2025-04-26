@@ -246,9 +246,9 @@ protected class InternalIterator (< IndexType = IndexType, ValueType = ValueType
     return sizeof(__indices);
   }
 
-  protected int _iterator_next() {
+  protected int(0..1) _iterator_next() {
     if (++idx < sizeof(__indices)) {
-      return idx;
+      return 1;
     }
     idx = -1;
     return UNDEFINED;

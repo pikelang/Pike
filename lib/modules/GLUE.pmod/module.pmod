@@ -1810,7 +1810,7 @@ class Font
   {
     void menda() {
 #ifdef __NT__
-      if( _refs(object_program(this)) > 1000 )
+      if( Debug.refs(object_program(this)) > 1000 )
 	gc();
 #endif
       q->write_now( text, h, roi, align );

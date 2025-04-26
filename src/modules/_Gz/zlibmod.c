@@ -1307,16 +1307,16 @@ PIKE_MODULE_INIT
 #ifdef Z_RLE
   if (deflateInit2(&z, 8, Z_DEFLATED, 9, 9, Z_RLE) == Z_OK) {
     have_rle = 1;
-    deflateEnd(&z);
     add_integer_constant("RLE", Z_RLE,0);
   }
+  deflateEnd(&z);
 #endif
 #ifdef Z_FIXED
   if (deflateInit2(&z, 8, Z_DEFLATED, 9, 9, Z_FIXED) == Z_OK) {
     have_fixed = 1;
-    deflateEnd(&z);
     add_integer_constant("FIXED", Z_FIXED,0);
   }
+  deflateEnd(&z);
 #endif
 
   set_init_callback(init_gz_deflate);

@@ -595,7 +595,7 @@ static int pgtk2_push_object_param(const GValue *a) {
 }
 
 static int pgtk2_push_pike_object_param(const GValue *a) {
-  push_int64((INT64)g_value_get_pointer(a));
+  push_int64((INT64)(ptrdiff_t)g_value_get_pointer(a));
   return PUSHED_VALUE;
 }
 

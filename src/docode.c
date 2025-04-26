@@ -2285,6 +2285,8 @@ static int do_docode2(node *n, int flags)
      * is equal to the first index. The third if it is greater than the
      * first, but lesser than the second. The fourth if it is equal to
      * the second.... etc. etc.
+     *
+     * Note that the jumptable starts at index 1. Index 0 is NOT used.
      */
 
   case F_SWITCH:
@@ -2396,6 +2398,10 @@ static int do_docode2(node *n, int flags)
       push_svalue(Pike_sp-1);
       f_indices(1);
       f_mkmapping(2);
+    } else {
+      /* FIXME: Consider expanding short integer ranges (max 16?).
+       *        Cf #10126.
+       */
     }
 
     update_arg((INT32)tmp1, store_constant(Pike_sp-1,1,0));
@@ -2915,7 +2921,7 @@ static int do_docode2(node *n, int flags)
 
   case F_ARROW:
     if(CDR(n)->token != F_CONSTANT || TYPEOF(CDR(n)->u.sval) != T_STRING)
-      Pike_fatal("Bugg in F_ARROW, index not string.\n");
+      Pike_fatal("Bug in F_ARROW, index not string.\n");
     if(flags & WANT_LVALUE)
     {
       /* FIXME!!!! ??? I wonder what needs fixing... /Hubbe */
@@ -3619,6 +3625,14 @@ INT32 docode(node *n)
   POP_AND_DONT_CLEANUP;
 
   insert_opcode0(F_DUMB_RETURN, n->line_number, n->current_file);
+  if(
+#ifdef PIKEDEBUG
+     (a_flag > 3) ||
+#endif
+     (c->lex.pragmas & ID_DISASSEMBLE)) {
+    fprintf(stderr, "=== %4ld %4lx .temporary\n",
+            (long)n->line_number, (unsigned long)PIKE_PC);
+  }
   entry_point = assemble(0);		/* Don't store linenumbers. */
 
   instrbuf=instrbuf_save;

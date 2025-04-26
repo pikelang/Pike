@@ -25,6 +25,14 @@ struct catch_context
 #endif
 };
 
+enum interpreter_flags {
+  INTERPRETER_EVALUATOR_STACK_MALLOCED = 1,
+  INTERPRETER_MARK_STACK_MALLOCED      = 2,
+  INTERPRETER_MALLOCED_STACKS          = 3,
+
+  INTERPRETER_HAS_SIGNAL_CONTEXT       = 256,
+};
+
 struct Pike_interpreter_struct {
   /* Swapped variables */
   struct svalue *stack_pointer;
@@ -44,16 +52,14 @@ struct Pike_interpreter_struct {
   int svalue_stack_margin;
   int c_stack_margin;
 
-  INT16 evaluator_stack_malloced;
-  INT16 mark_stack_malloced;
+  int trace_level;
+  enum interpreter_flags flags;
 
 #ifdef PROFILING
+  char *stack_bottom;
   cpu_time_t accounted_time;	/** Time spent and accounted for so far. */
   cpu_time_t unlocked_time;	/** Time spent unlocked so far. */
-  char *stack_bottom;
 #endif
-
-  int trace_level;
 };
 
 #ifndef STRUCT_FRAME_DECLARED
@@ -253,9 +259,11 @@ PMOD_EXPORT extern const char msg_pop_neg[];
 #define stack_unlink(X) do {						\
     ptrdiff_t x2_ = (X);						\
     if (x2_) {								\
+      struct svalue top;                                                \
       struct svalue *_sp_ = --Pike_sp;					\
+      move_svalue (&top, _sp_);                                         \
       free_svalue (_sp_ - x2_);						\
-      move_svalue (_sp_ - x2_, _sp_);					\
+      move_svalue (_sp_ - x2_, &top);					\
       pop_n_elems (x2_ - 1);						\
     }									\
   }while(0)
@@ -263,17 +271,21 @@ PMOD_EXPORT extern const char msg_pop_neg[];
 #define stack_pop_n_elems_keep_top(X) stack_unlink(X)
 
 #define stack_pop_keep_top() do {					\
+    struct svalue top;                                                  \
     struct svalue *_sp_ = --Pike_sp;					\
+    move_svalue (&top, _sp_);                                           \
     free_svalue (_sp_ - 1);						\
-    move_svalue (_sp_ - 1, _sp_);					\
+    move_svalue (_sp_ - 1, &top);					\
     debug_check_stack();						\
   } while (0)
 
 #define stack_pop_2_elems_keep_top() do {				\
+    struct svalue top;                                                  \
     struct svalue *_sp_ = Pike_sp = Pike_sp - 2;			\
-    free_svalue (_sp_ - 1);						\
+    move_svalue (&top, _sp_ + 1);                                       \
     free_svalue (_sp_);							\
-    move_svalue (_sp_ - 1, _sp_ + 1);					\
+    free_svalue (_sp_ - 1);						\
+    move_svalue (_sp_ - 1, &top);					\
     debug_check_stack();						\
   } while (0)
 
@@ -608,10 +620,19 @@ PMOD_EXPORT void apply_master(const char* fun, INT32 args, int mode);
 PMOD_EXPORT extern unsigned long evaluator_callback_calls;
 #endif
 
-#define low_check_threads_etc() do { \
-  DO_IF_INTERNAL_PROFILING (evaluator_callback_calls++); \
-  call_callback(& evaluator_callbacks, NULL); \
-}while(0)
+#define low_check_threads_etc() do {                                    \
+    enum interpreter_flags save_iflags_ = Pike_interpreter.flags;       \
+    Pike_interpreter.flags |= INTERPRETER_HAS_SIGNAL_CONTEXT;           \
+    DO_IF_INTERNAL_PROFILING(evaluator_callback_calls++);               \
+    call_callback(& evaluator_callbacks, NULL);                         \
+    Pike_interpreter.flags = save_iflags_;                              \
+  }while(0)
+
+#define ASSERT_NOT_SIGNAL_CONTEXT() do {                                \
+    if (Pike_interpreter.flags & INTERPRETER_HAS_SIGNAL_CONTEXT) {      \
+      Pike_error("Operation not supported in a signal context.\n");     \
+    }                                                                   \
+  } while(0)
 
 #define check_threads_etc() do {					\
     DO_IF_DEBUG (if (Pike_interpreter.trace_level > 2)			\

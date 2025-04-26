@@ -482,8 +482,12 @@ class ResourceCountKey {
 
   protected void _destruct()
   {
-    MutexKey key = parent->_mutex->lock();
+    MutexKey key = parent->_mutex->trylock();
     --parent->_count;
+    if (!key) {
+      // The signal might get lost, so wake up via the backend.
+      call_out(parent->async_wakeup, 0);
+    }
     parent->_cond->signal();
   }
 }
@@ -525,6 +529,11 @@ class ResourceCount {
     MutexKey key = _mutex->lock();
     _count++;
     return ResourceCountKey(this);
+  }
+
+  void async_wakeup() {
+    MutexKey key = _mutex->lock();
+    _cond->signal();
   }
 
   protected string _sprintf(int type)

@@ -462,12 +462,22 @@ PMOD_EXPORT size_t hash_svalue(const struct svalue *s)
 	safe_apply_low2(s->u.object,
 			fun + p->inherits[SUBTYPEOF(*s)].identifier_level,
 			0, "__hash");
+#if SIZEOF_INT_TYPE < SIZEOF_CHAR_P
+        unsigned INT64 i;
+        if (int64_from_svalue((INT64 *)&i, Pike_sp-1))
+        {
+          q=i;
+        }else{
+          q=0;
+        }
+#else
 	if(TYPEOF(Pike_sp[-1]) == T_INT)
 	{
 	  q=Pike_sp[-1].u.integer;
 	}else{
 	  q=0;
 	}
+#endif
 	pop_stack();
 	/* do not mix the return value of __hash, since this makes using
 	 * hash_value pointless */
@@ -1320,7 +1330,7 @@ static void dsv_add_string_to_buf (struct byte_buffer *buf, struct pike_string *
 	buffer_add_char_unsafe(buf, j);
 	buffer_add_char_unsafe(buf, j);
       }
-      else if ((j < 256) && (isprint(j) || (j=='\n' || j=='\r')))
+      else if ((j < 127) && (j >= ' ' || j=='\n' || j=='\r'))
 	buffer_add_char_unsafe(buf, j);
       else {
 	if (backslashes % 2)
@@ -1446,9 +1456,8 @@ PMOD_EXPORT void describe_svalue(struct byte_buffer *buf, const struct svalue *s
 
             default:
 	      if((unsigned INT32) j < 256) {
-		if (isprint(j)) {
+                if ((j >= ' ') && (j < 127)) {
 		  buffer_add_char_unsafe(buf, j);
-
                 } else {
 		  /* Use octal escapes for eight bit chars since
 		   * they're more compact than unicode escapes. */
@@ -1469,7 +1478,7 @@ PMOD_EXPORT void describe_svalue(struct byte_buffer *buf, const struct svalue *s
 		/* Use unicode escapes for wide chars to avoid the
 		 * double quote trickery. Also, hex is easier to read
 		 * than octal. */
-		if (j > 0xffff)
+                if (((unsigned INT32)j) > 0xffff)
 		  buffer_advance(buf, sprintf (buffer_dst(buf), "\\U%08x", j));
 		else
 		  buffer_advance(buf, sprintf (buffer_dst(buf), "\\u%04x", j));

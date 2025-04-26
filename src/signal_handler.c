@@ -799,8 +799,10 @@ PMOD_EXPORT void check_signals(struct callback *UNUSED(foo), void *UNUSED(bar), 
 
   if (QUICK_CHECK_FIFO(sig, unsigned char))
   {
+    enum interpreter_flags save_iflags = Pike_interpreter.flags;
     unsigned char sig = ~0;
 
+    Pike_interpreter.flags |= INTERPRETER_HAS_SIGNAL_CONTEXT;
     while (sig_pop(&sig)) {
 
 #ifdef USE_SIGCHILD
@@ -859,6 +861,7 @@ PMOD_EXPORT void check_signals(struct callback *UNUSED(foo), void *UNUSED(bar), 
 	signal_masks[sig] = 2;
       }
     }
+    Pike_interpreter.flags = save_iflags;
   }
 }
 
@@ -2017,7 +2020,7 @@ static void f_trace_process_exit(INT32 args)
     Pike_error("Process not stopped\n");
   }
 
-  if (ptrace(PTRACE_KILL, THIS->pid, NULL, 0) == -1) {
+  if (ptrace(PTRACE_KILL, THIS->pid, CAST_TO_PTRACE_ADDR(0), 0) == -1) {
     int err = errno;
     /* FIXME: Better diagnostics. */
     Pike_error("Failed to exit process. errno:%d\n", err);
@@ -2064,7 +2067,8 @@ static void f_proc_reg_index(INT32 args)
     SIMPLE_ARG_TYPE_ERROR("`[]", 1, "register number");
 
   if ((val = ptrace(PTRACE_PEEKUSER, proc->pid,
-		    ((long *)(((struct user *)NULL)->regs)) + regno, 0)) == -1) {
+                    CAST_TO_PTRACE_ADDR(OFFSETOF(user, regs) + regno * sizeof(long)),
+                    0)) == -1) {
     int err = errno;
     /* FIXME: Better diagnostics. */
     if (errno) {
@@ -4422,7 +4426,7 @@ void f_create_process(INT32 args)
 #endif /* PROC_DEBUG */
 
 	/* NB: A return value is not defined for this ptrace request! */
-	ptrace(PTRACE_TRACEME, 0, NULL, 0);
+        ptrace(PTRACE_TRACEME, 0, CAST_TO_PTRACE_ADDR(0), 0);
       }
 #endif /* HAVE_PTRACE */
 

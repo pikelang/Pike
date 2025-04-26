@@ -1,4 +1,4 @@
-/*
+/* -*- mode: C; c-basic-offset: 3; -*-
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
@@ -22,11 +22,17 @@
 
 static inline void lzw_output(struct gif_lzw *lzw,lzwcode_t codeno)
 {
+   if (lzw->broken) return;
    if (lzw->outpos+4>=lzw->outlen)
    {
       unsigned char *new;
       new=realloc(lzw->out,lzw->outlen*=2);
-      if (!new) { lzw->outpos=0; lzw->broken=1; return; }
+      if (!new) {
+         lzw->outpos=0;
+         lzw->broken=1;
+         image_gif_lzw_free(lzw);
+         return;
+      }
       lzw->out=new;
    }
 
@@ -105,17 +111,17 @@ static inline void lzw_add(struct gif_lzw *lzw,int c)
    if (!lzw->skipone)
    {
 #endif
-     /* check if we have this sequence */
-     lno=lzw->code[lzw->current].firstchild;
-     while (lno!=LZWCNULL)
-     {
-       if (lzw->code[lno].c==c && lno!=lzw->codes-1 )
-       {
-	 lzw->current=lno;
-	 return;
-       }
-       lno=lzw->code[lno].next;
-     }
+      /* check if we have this sequence */
+      lno=lzw->code[lzw->current].firstchild;
+      while (lno!=LZWCNULL)
+      {
+         if (lzw->code[lno].c==c && lno!=lzw->codes-1 )
+         {
+            lzw->current=lno;
+            return;
+         }
+         lno=lzw->code[lno].next;
+      }
 #ifdef GIF_LZW_LZ
    }
 #endif
@@ -125,6 +131,8 @@ static inline void lzw_add(struct gif_lzw *lzw,int c)
       int i;
 
       lzw_output(lzw,lzw->current);
+
+      if (lzw->broken) return;
 
       for (i=0; i<(1L<<lzw->bits); i++)
 	 lzw->code[i].firstchild=LZWCNULL;
@@ -144,6 +152,8 @@ static inline void lzw_add(struct gif_lzw *lzw,int c)
    /* output current code no, make new & reset */
 
    lzw_output(lzw,lzw->current);
+
+   if (lzw->broken) return;
 
    lno=lzw->code[lzw->current].firstchild;
    lno2 = (lzwcode_t)lzw->codes;
@@ -172,6 +182,7 @@ void image_gif_lzw_init(struct gif_lzw *lzw,int bits)
    lzw->codes=(1L<<bits)+2;
    lzw->bits=bits;
    lzw->codebits=bits+1;
+   lzw->out = NULL;
    lzw->code=malloc(sizeof(struct gif_lzwc)*4096);
 
    if (!lzw->code) { lzw->broken=1; return; }
@@ -183,7 +194,11 @@ void image_gif_lzw_init(struct gif_lzw *lzw,int bits)
       lzw->code[i].next=LZWCNULL;
    }
    lzw->out=malloc(DEFAULT_OUTBYTES);
-   if (!lzw->out) { lzw->broken=1; return; }
+   if (!lzw->out) {
+      lzw->broken=1;
+      image_gif_lzw_free(lzw);
+      return;
+   }
    lzw->outlen=DEFAULT_OUTBYTES;
    lzw->outpos=0;
    lzw->current=LZWCNULL;
@@ -199,6 +214,9 @@ void image_gif_lzw_finish(struct gif_lzw *lzw)
    if (lzw->current!=LZWCNULL)
       lzw_output(lzw,lzw->current);
    lzw_output( lzw, (lzwcode_t)(1L<<lzw->bits)+1 ); /* GIF end code */
+
+   if (lzw->broken) return;
+
    if (lzw->outbit)
    {
       if (lzw->reversebits)
@@ -211,8 +229,14 @@ void image_gif_lzw_finish(struct gif_lzw *lzw)
 
 void image_gif_lzw_free(struct gif_lzw *lzw)
 {
-   if (lzw->out) free(lzw->out);
-   if (lzw->code) free(lzw->code);
+   if (lzw->out) {
+      free(lzw->out);
+      lzw->out = NULL;
+   }
+   if (lzw->code) {
+      free(lzw->code);
+      lzw->code = NULL;
+   }
 }
 
 void image_gif_lzw_add(struct gif_lzw *lzw, unsigned char *data, size_t len)

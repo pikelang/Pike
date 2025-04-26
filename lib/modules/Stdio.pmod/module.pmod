@@ -27,6 +27,10 @@ inherit _Stdio;
 
 constant LineIterator = __builtin.file_line_iterator;
 
+// Avoid dependency circularity.
+// NB: This is safe as we only use various errnos and cp() from System.
+private constant System = _system;
+
 final constant DATA_CHUNK_SIZE = 64 * 1024;
 //! Size used in various places to divide incoming or outgoing data
 //! into chunks.
@@ -1303,7 +1307,7 @@ class File
 
   private int __read_callback_error()
   {
-#if constant(System.EWOULDBLOCK)
+#if constant(_system.EWOULDBLOCK)
     if (errno() == System.EWOULDBLOCK) {
       // Necessary to reregister since the callback is disabled
       // until a successful read() has been done.
@@ -1498,7 +1502,7 @@ class File
     else {
       BE_WERR ("  got error %s from read_oob()", strerror(errno()));
 
-#if constant(System.EWOULDBLOCK)
+#if constant(_system.EWOULDBLOCK)
       if (errno() == System.EWOULDBLOCK) {
 	// Necessary to reregister since the callback is disabled
 	// until a successful read() has been done.
@@ -3166,7 +3170,7 @@ int cp(string from, string to)
   }
   else
   {
-#if constant(System.cp)
+#if constant(_system.cp)
     if (!System.cp (from, to))
       return 0;
 #else

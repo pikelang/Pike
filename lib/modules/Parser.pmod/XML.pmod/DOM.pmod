@@ -1,5 +1,6 @@
 #pike __REAL_VERSION__
 
+//!
 class DOMException(int code) {
 
   // ExceptionCode
@@ -64,6 +65,7 @@ class DOMException(int code) {
 
 };
 
+//!
 class DOMImplementation
 {
   int has_feature(string feature, string|void version)
@@ -85,6 +87,7 @@ class DOMImplementation
   }
 }
 
+//!
 class NodeList
 {
   protected array(Node) nodes;
@@ -118,6 +121,7 @@ class NodeList
   protected void create(array(Node)|void elts) { nodes = elts || ({}); }
 }
 
+//!
 class NamedNodeMap
 {
   protected Document owner_document;
@@ -190,6 +194,7 @@ class NamedNodeMap
   }
 }
 
+//!
 class Node
 {
   // NodeType
@@ -359,6 +364,7 @@ class Node
   }
 }
 
+//!
 class DocumentFragment
 {
   inherit Node;
@@ -388,6 +394,7 @@ class DocumentFragment
   }
 }
 
+//!
 class Document
 {
   inherit Node;
@@ -493,6 +500,7 @@ class Document
   }
 }
 
+//!
 class CharacterData
 {
   inherit Node;
@@ -558,6 +566,7 @@ class CharacterData
   }
 }
 
+//!
 class Attr
 {
   inherit Node;
@@ -623,6 +632,7 @@ class Attr
 
 }
 
+//!
 class Element
 {
   inherit Node : node;
@@ -751,6 +761,7 @@ class Element
   }
 }
 
+//!
 class Text
 {
   inherit CharacterData;
@@ -778,6 +789,7 @@ class Text
   }
 }
 
+//!
 class Comment
 {
   inherit CharacterData;
@@ -796,6 +808,7 @@ class Comment
   }
 }
 
+//!
 class CDATASection
 {
   inherit Text;
@@ -814,6 +827,7 @@ class CDATASection
   }
 }
 
+//!
 class DocumentType
 {
   inherit Node;
@@ -852,6 +866,7 @@ class DocumentType
   }
 }
 
+//!
 class Notation
 {
   inherit Node;
@@ -873,6 +888,7 @@ class Notation
   }
 }
 
+//!
 class Entity
 {
   inherit Node;
@@ -915,6 +931,7 @@ class Entity
   }
 }
 
+//!
 class EntityReference
 {
   inherit Node;
@@ -961,6 +978,7 @@ class EntityReference
   }
 }
 
+//!
 class ProcessingInstruction
 {
   inherit Node;
@@ -992,8 +1010,7 @@ class ProcessingInstruction
   }
 }
 
-
-
+//!
 class ParseException
 {
   protected string message, pubid, sysid;
@@ -1035,6 +1052,7 @@ class ParseException
   }
 }
 
+//!
 class InputSource {
 
   protected string sysid, pubid, encoding;
@@ -1075,6 +1093,7 @@ class InputSource {
   }
 }
 
+//!
 class AbstractDOMParser
 {
   protected class ErrorHandler {
@@ -1198,6 +1217,7 @@ class AbstractDOMParser
   }
 }
 
+//!
 class NonValidatingDOMParser
 {
   inherit AbstractDOMParser;
@@ -1216,6 +1236,7 @@ class NonValidatingDOMParser
   }
 }
 
+//!
 class DOMParser
 {
   inherit AbstractDOMParser;

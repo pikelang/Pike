@@ -213,6 +213,50 @@ class Node
     data = make_faked_wrapper(data);
   }
 
+  protected mapping(string:Node)|zero lookup_tab;
+
+  //! Lookup a single symbol in the current node.
+  object(Node)|zero low_lookup(string sym)
+  {
+    if (has_suffix(sym, "()") && (sym != "`()")) {
+      sym = sym[..<2];
+    }
+    if ((sym == "") || (sym == "this")) return this;
+    if (!lookup_tab) {
+      lookup_tab = ([]);
+      foreach(({ class_children, module_children, enum_children,
+                 directive_children, method_children, member_children,
+              }), array(Node)|zero children) {
+        if (children && sizeof(children)) {
+          lookup_tab += mkmapping(children->name, children);
+        }
+      }
+    }
+    return lookup_tab[sym];
+  }
+
+  //! Perform a lexical lookup rooted in the current node.
+  object(Node)|zero lookup(string reference)
+  {
+    // Split the reference on any combination of '.' and '->',
+    // but not on the operators '`[..]' or '`->'.
+    array(string) a =
+      replace(reference,
+              ({ "`->", "->", "`[..]", ".", }),
+              ({ "`->", "\0", "`[..]", "\0", }))/"\0";
+    object(Node)|zero orig = this;
+    while(orig) {
+      object(Node)|zero n = orig;
+      foreach(a, string sym) {
+        n = n->low_lookup(sym);
+        if (!n) break;
+      }
+      if (n) return n;
+      orig = orig->parent;
+    }
+    return UNDEFINED;
+  }
+
   array(Node) check_uniq(array children) {
     array names = children->name;
     foreach(Array.uniq(names), string n)
@@ -453,7 +497,7 @@ class Node
 
   string make_index_filename()
   {
-    if((type == "method") || (type == "directive")) {
+    if((type == "method") || (type == "directive") || (type == "enum")) {
       return parent->make_index_filename();
     }
     // NB: We need the full path for the benefit of the exporter.
@@ -462,7 +506,7 @@ class Node
 
   string make_load_index_filename()
   {
-    if((type == "method") || (type == "directive")) {
+    if((type == "method") || (type == "directive") || (type == "enum")) {
       return parent->make_load_index_filename();
     }
     // NB: We need the full path for the benefit of the exporter.
@@ -502,9 +546,16 @@ class Node
 
   string my_resolve_reference(string _reference, mapping vars)
   {
-    array(string) resolved = vars->resolved && vars->resolved/"\0";
-    if(default_namespace && has_prefix(_reference, default_namespace+"::"))
-      _reference = _reference[sizeof(default_namespace)+2..];
+    array(string)|zero resolved = vars->resolved && vars->resolved/"\0";
+    if(default_namespace && has_prefix(_reference, default_namespace+"::") &&
+       resolved) {
+      string short_ref = _reference[sizeof(default_namespace)+2..];
+      object(Node)|zero other = lookup(short_ref);
+      if (!other || (other == refs[resolved[0]])) {
+        // The shortened name is valid
+        _reference = short_ref;
+      }
+    }
 
     if(vars->param)
       return "<code class='reference param'>" + _reference + "</code>";
@@ -565,6 +616,7 @@ class Node
   {
     if(_make_class_path) return _make_class_path;
     array a = reverse(parent->get_ancestors());
+    if (parent->type == "enum") a = a[..<1];
 
     _make_class_path = "";
     _raw_class_path = "";
@@ -740,6 +792,16 @@ class Node
 
   string make_index_js()
   {
+    array(Node) member_children = this::member_children;
+
+    if (sizeof(enum_children)) {
+      // Make enum constants visible in the same context
+      // as the enum name.
+      foreach(enum_children->member_children, array(Node) children) {
+        member_children += children;
+      }
+      sort(map(member_children->name, lower_case), member_children);
+    }
 #if 1
     string cp = make_class_path();
     string res = "// Class path " + cp + "\n";
@@ -798,10 +860,14 @@ class Node
     array(string) js_inherits;
 
     if (sizeof(inherits)) {
+      string self_filename = make_load_index_filename();
+
       js_inherits = ({});
       foreach(inherits, array(string|Node) inh) {
         Node n = objectp(inh[2])?inh[2]:refs[inh[2]];
         if (!n) continue;
+        string filename = n->make_load_index_filename();
+        if (filename == self_filename) continue;	// Avoid recursion.
 
         string cls_path = n->make_class_path();
         js_inherits += ({ cls_path });
@@ -810,7 +876,7 @@ class Node
                        "PikeDoc.loadScript(%q, %[0]q);\n"
                        "\n",
                        cls_path,
-                       n->make_load_index_filename());
+                       filename);
       }
       if (sizeof(res)) {
         #if 0
@@ -859,17 +925,21 @@ class Node
 
   Node find_prev_node()
   {
-    array(Node) siblings = find_siblings();
-    int index = search( siblings, this );
+    Node me = this;
+    if (parent->type == "enum") {
+      me = parent;
+    }
+    array(Node) siblings = me->find_siblings();
+    int index = search( siblings, me );
 
     Node tmp;
 
     if(index==0 || index == -1)
-      return parent;
+      return me->parent;
 
     tmp = siblings[index-1];
 
-    while(sizeof(tmp->find_children()))
+    while (sizeof(tmp->find_children()) && (tmp->type != "enum"))
       tmp = tmp->find_children()[-1];
 
     return tmp;
@@ -877,15 +947,22 @@ class Node
 
   Node find_next_node(void|int dont_descend)
   {
-    if(!dont_descend && sizeof(find_children()))
-      return find_children()[0];
+    Node me = this;
+    if (parent->type == "enum") {
+      me = parent;
+    }
+    if (me->type == "enum") {
+      dont_descend = 1;
+    }
+    if(!dont_descend && sizeof(me->find_children()))
+      return me->find_children()[0];
 
-    array(Node) siblings = find_siblings();
-    int index = search( siblings, this );
+    array(Node) siblings = me->find_siblings();
+    int index = search( siblings, me );
 
     Node tmp;
     if(index==sizeof(siblings)-1)
-      tmp = parent->find_next_node(1);
+      tmp = me->parent->find_next_node(1);
     else
       tmp = siblings[index+1];
     return tmp;
@@ -1217,7 +1294,7 @@ class Node
 
   void make_html(string template, string path, Git.Export|void exporter)
   {
-    if ((type != "method") && (type != "directive")) {
+    if ((type != "method") && (type != "directive") && (type != "enum")) {
       string index_js = make_index_js();
       string index = make_index_filename() + ".js";
       if (exporter) {

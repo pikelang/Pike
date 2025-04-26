@@ -234,7 +234,7 @@ static void low_set_backend_for_fd(int fd, struct Backend_struct *b)
     if (fd_map) {
       fd_map = realloc(fd_map, sizeof(struct Backend_struct *) * fd_map_size);
     } else {
-      fd_map = calloc(sizeof(struct Backend_struct *), fd_map_size);
+      fd_map = calloc(fd_map_size, sizeof(struct Backend_struct *));
     }
     if(!fd_map)
       Pike_fatal("Out of memory in backend:low_set_backend_for_fd.\n"
@@ -785,14 +785,14 @@ PIKECLASS Backend
 	{
 	  if (!me->call_heap) {
 	    me->call_heap_size = 128;
-	    me->call_heap = xcalloc(sizeof(struct Backend_CallOut_struct *),
-                                    me->call_heap_size);
+            me->call_heap = xcalloc(me->call_heap_size,
+                                    sizeof(struct Backend_CallOut_struct *));
 	    me->num_pending_calls = 0;
 	  }
 
 	  if (!me->call_hash) {
 	    me->hash_size = hashprimes[me->hash_order];
-	    me->call_hash = xcalloc(sizeof(struct hash_ent), me->hash_size);
+            me->call_hash = xcalloc(me->hash_size, sizeof(struct hash_ent));
 	  }
 	}else{
 	  struct hash_ent *new_hash;
@@ -805,8 +805,8 @@ PIKECLASS Backend
 	  me->call_heap_size *= 2;
 	  me->call_heap = new_heap;
 
-	  if((new_hash=calloc(sizeof(struct hash_ent),
-                              hashprimes[me->hash_order+1])))
+          if((new_hash = calloc(hashprimes[me->hash_order+1],
+                                sizeof(struct hash_ent))))
 	  {
 	    free(me->call_hash);
 	    me->call_hash = new_hash;
@@ -1351,8 +1351,9 @@ PIKECLASS Backend
 	 struct timeval now;
 
 	 INACCURATE_GETTIMEOFDAY(&now);
-         COWERR("BACKEND[%d]: Removing call out at %ld.%ld "
+         COWERR("BACKEND[%d]: Removing call %p out at %ld.%ld "
                 "(current_time is %ld.%ld)\n", me->id,
+                c->args,
                 c->tv.tv_sec, c->tv.tv_usec,
                 now.tv_sec, now.tv_usec);
 	 pop_n_elems(args);
@@ -1382,6 +1383,7 @@ PIKECLASS Backend
        clear_array(co_info);
 
        free_array(co_info);
+       destruct_objects_to_destruct();
        backend_verify_call_outs(me);
        UNPROTECT_CALL_OUTS();
      }
@@ -1598,7 +1600,7 @@ PIKECLASS Backend
        if (!me->fd_boxes_size) {
 	 /* Start small since backends with only a single fd aren't uncommon. */
 	 me->fd_boxes_size = 4;
-	 me->fd_boxes = calloc (sizeof (me->fd_boxes[0]), me->fd_boxes_size);
+         me->fd_boxes = calloc(me->fd_boxes_size, sizeof(me->fd_boxes[0]));
 	 if (!me->fd_boxes)
 	   Pike_fatal ("Out of memory in backend::add_fd_box(): "
 		       "Tried to allocate %d fd_callback_box pointers\n",
@@ -1727,7 +1729,11 @@ PIKECLASS Backend
    static void update_fd_set (struct Backend_struct *me, int fd,
 			      int old_events, int new_events, int flags)
    {
-     if (fd < 0) return;
+     if (fd < 0) {
+       /* fd closed. Wake up any backend that is waiting on it. */
+       backend_wake_up_backend(me);
+       return;
+     }
 
 #ifdef __NT__
      if (new_events &&

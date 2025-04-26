@@ -32,4 +32,10 @@ test_any_equal([[
   // "Thu Oct 12 16:43:20 2023\n", "CEST",
 })]])
 
+cond([[System->normalize_path && Stdio.is_dir("/var/lib")]], [[
+  test_eq(System.normalize_path("/VaR/Lib"), "/var/lib")
+  test_eq(System.normalize_path("/VaR/lib"), "/var/lib")
+  test_eq(System.normalize_path("/var/Lib"), "/var/lib")
+  test_eq(System.normalize_path("/var/lib"), "/var/lib")
+]])
 END_MARKER

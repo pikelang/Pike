@@ -166,7 +166,6 @@ static void memory_create(INT32 args)
 	memory_shm( args );
       else
          SIMPLE_ARG_TYPE_ERROR("create",1,"int|string");
-      pop_n_elems(args);
    }
    else
    {
@@ -351,23 +350,37 @@ static void memory__mmap(INT32 args,int complain,int private)
       doclose=1;
    }
 
-   if (osize<0)
-   {
+   if (!size) {
+      if (osize < 0) {
+         if (doclose) fd_close(fd);
+         if (!complain)
+            RETURN(0);
+         else
+            Pike_error("Not a regular file.\n");
+      }
+
+      /* NB: The following may underflow, but that will
+       *     be detected below.
+       */
+      size = ((size_t)osize) - offset;
+   }
+   if ((osize >= 0) &&
+       ((offset > (size_t)osize) ||
+        (size > (size_t)osize) ||
+        (offset + size > (size_t)osize))) {
+      /* NB: Compares each of offset, size and the sum separately
+       *     to avoid issues with overflows.
+       */
       if (doclose) fd_close(fd);
-      if (!complain)
-	 RETURN(0);
-      else
-         Pike_error("Not a regular file.\n");
+      Pike_error("Mapped area outside file.\n");
    }
 
-   if (!size) size=((size_t)osize)-offset;
-   if (offset+size>(size_t)osize)
-      Pike_error("Mapped area outside file.\n");
-
 #ifdef PAGE_SIZE
-   if (offset%PAGE_SIZE)
+   if (offset%PAGE_SIZE) {
+      if (doclose) fd_close(fd);
       Pike_error("Mapped offset not aligned to PAGE_SIZE "
                  "(%d aka System.PAGE_SIZE).\n",(int)offset);
+   }
 #endif
 
    if (private) flags|=MAP_PRIVATE;
@@ -788,59 +801,89 @@ PWRITEN(memory_pwrite32i,2,1)
 PWRITEN(memory_pwrite16n,1,0)
 PWRITEN(memory_pwrite32n,2,0)
 
-/*! @decl int `[](int pos)
- *! @decl string `[](int pos1,int pos2)
+/*! @decl int(8bit) `[](int pos)
+ *!
+ *! Indexing the object returns the value of the byte at that position.
  */
 static void memory_index(INT32 args)
 {
+   INT_TYPE pos;
+   size_t rpos = 0;
+
+   get_all_args("`[]",args,"%i",&pos);
+
    MEMORY_VALID(THIS);
-
-   if (args==1)
-   {
-      INT_TYPE pos;
-      size_t rpos = 0;
-      get_all_args("`[]",args,"%i",&pos);
-      if (pos<0) {
-         if ((off_t)-pos>=(off_t)THIS->size)
-            Pike_error("Index is out of range.\n");
-	 else
-            rpos=(size_t)((off_t)(THIS->size)+(off_t)pos);
-      }
+   if (pos<0) {
+      if ((off_t)-pos>=(off_t)THIS->size)
+         Pike_error("Index is out of range.\n");
       else
-      {
-	 rpos=(size_t)pos;
-
-	 if (rpos>THIS->size)
-            Pike_error("Index is out of range.\n");
-      }
-
-      push_int( (((unsigned char*)(THIS->p)))[rpos] );
+         rpos=(size_t)((off_t)(THIS->size)+(off_t)pos);
    }
    else
    {
-      if (THIS->size==0)
-	 push_empty_string();
-      else
-      {
-	 INT_TYPE pos1,pos2;
-	 size_t rpos1,rpos2;
+      rpos=(size_t)pos;
 
-	 get_all_args("`[]",args,"%i%i",&pos1,&pos2);
-	 if (pos1<0) rpos1=0; else rpos1=(size_t)pos1;
-	 if ((size_t)pos2>=THIS->size) rpos2=THIS->size-1;
-	 else rpos2=(size_t)pos2;
-
-	 if (rpos2<rpos1)
-	    push_empty_string();
-	 else
-	    push_string(make_shared_binary_string((char *)THIS->p+rpos1,
-						  rpos2-rpos1+1));
-      }
+      if (rpos>THIS->size)
+         Pike_error("Index is out of range.\n");
    }
+
+   push_int( (((unsigned char*)(THIS->p)))[rpos] );
    stack_pop_n_elems_keep_top(args);
 }
 
-/*! @decl int `[]=(int pos,int char)
+/*! @decl string(8bit) `[..](int low, int low_bound_type, @
+ *!                          int high, int high_bound_type)
+ *!
+ *! The range operator on the object gives a string containing
+ *! the bytes in the range.
+ */
+static void memory_range(INT32 args)
+{
+   INT_TYPE pos1, pos1_bound, pos2, pos2_bound;
+   size_t rpos1,rpos2;
+
+   get_all_args("`[]", args, "%i%i%i%i",
+                &pos1, &pos1_bound, &pos2, &pos2_bound);
+
+   MEMORY_VALID(THIS);
+
+   if (THIS->size==0)
+      push_empty_string();
+   else
+   {
+      switch(pos1_bound) {
+      case OPEN_BOUND:
+         pos1 = 0;
+         break;
+      case INDEX_FROM_END:
+         pos1 = THIS->size - 1 - pos1;
+         break;
+      }
+      if (pos1<0) rpos1=0; else rpos1=(size_t)pos1;
+      switch(pos2_bound) {
+      case OPEN_BOUND:
+         pos2 = THIS->size - 1;
+         break;
+      case INDEX_FROM_END:
+         pos2 = THIS->size - 1 - pos2;
+         break;
+      }
+      if ((size_t)pos2>=THIS->size) rpos2=THIS->size-1;
+      else rpos2=(size_t)pos2;
+
+      if (rpos2<rpos1)
+         push_empty_string();
+      else
+         push_string(make_shared_binary_string((char *)THIS->p+rpos1,
+                                               rpos2-rpos1+1));
+   }
+
+   stack_pop_n_elems_keep_top(args);
+}
+
+/*! @decl int(8bit) `[]=(int pos, int(8bit) char)
+ *!
+ *! Set the value of the byte at the specified position.
  */
 static void memory_index_write(INT32 args)
 {
@@ -892,7 +935,7 @@ void init_system_memory(void)
    ADD_FUNCTION("create",
 		memory_create,
 		tOr3(tFunc(tVoid,tVoid),
-		     tFunc(tOr(tStr,tObj)
+                     tFunc(tOr(tStr8,tObj)
 			   tOr(tIntPos,tVoid) tOr(tIntPos,tVoid),tVoid),
 		     tFunc(tIntPos tOr(tByte,tVoid),tVoid)),
 		ID_PROTECTED);
@@ -902,12 +945,12 @@ void init_system_memory(void)
 #endif
 
 #ifdef HAVE_MMAP
-   ADD_FUNCTION("mmap",memory_mmap,
-		tFunc(tOr(tStr,tObj)
-		      tOr(tIntPos,tVoid) tOr(tIntPos,tVoid),tInt),0);
-   ADD_FUNCTION("mmap_private",memory_mmap_private,
-		tFunc(tOr(tStr,tObj)
-		      tOr(tIntPos,tVoid) tOr(tIntPos,tVoid),tInt),0);
+   ADD_FUNCTION("mmap", memory_mmap,
+                tFunc(tOr(tStr8, tObj)
+                      tOr(tIntPos, tVoid) tOr(tIntPos, tVoid), tInt), 0);
+   ADD_FUNCTION("mmap_private", memory_mmap_private,
+                tFunc(tOr(tStr8, tObj)
+                      tOr(tIntPos, tVoid) tOr(tIntPos, tVoid), tInt), 0);
 #endif
 
    ADD_FUNCTION("allocate",memory_allocate,
@@ -925,12 +968,11 @@ void init_system_memory(void)
    ADD_FUNCTION("cast",memory_cast,
 		tFunc(tStr,tOr(tArr(tInt),tStr)), ID_PROTECTED);
 
-   ADD_FUNCTION("`[]",memory_index,
-		tOr(tFunc(tInt,tInt),
-		    tFunc(tInt tInt,tStr)), ID_PROTECTED);
+   ADD_FUNCTION("`[]", memory_index, tFunc(tInt, tInt8bit), ID_PROTECTED);
+   ADD_FUNCTION("`[..]", memory_range, tFunc(tInt tInt tInt tInt, tStr8), ID_PROTECTED);
 
    ADD_FUNCTION("`[]=",memory_index_write,
-		tFunc(tInt tInt,tInt), ID_PROTECTED);
+                tFunc(tInt tInt8bit, tInt8bit), ID_PROTECTED);
 
    ADD_FUNCTION("pread",memory_pread,tFunc(tInt tInt,tStr8),0);
    ADD_FUNCTION("pread16",memory_pread16,tFunc(tInt tInt,tStr16),0);

@@ -224,17 +224,16 @@ PMOD_EXPORT int low_init_interpreter(struct Pike_interpreter_struct *interpreter
   (Y *)mmap(0, (X)*sizeof(Y), PROT_READ|PROT_WRITE,			\
 	    MAP_NORESERVE|MAP_PRIVATE|MAP_ANONYMOUS, fd, 0)
 
-  interpreter->evaluator_stack_malloced = 0;
-  interpreter->mark_stack_malloced = 0;
+  interpreter->flags = 0;
   interpreter->evaluator_stack = MMALLOC(Pike_stack_size,struct svalue);
   interpreter->mark_stack = MMALLOC(Pike_stack_size, struct svalue *);
   if((char *)MAP_FAILED == (char *)interpreter->evaluator_stack) {
     interpreter->evaluator_stack = 0;
-    interpreter->evaluator_stack_malloced = 1;
+    interpreter->flags |= INTERPRETER_EVALUATOR_STACK_MALLOCED;
   }
   if((char *)MAP_FAILED == (char *)interpreter->mark_stack) {
     interpreter->mark_stack = 0;
-    interpreter->mark_stack_malloced = 1;
+    interpreter->flags |= INTERPRETER_MARK_STACK_MALLOCED;
   }
 
 #ifdef NEED_USE_MALLOC_LABEL
@@ -243,9 +242,8 @@ use_malloc:
 
 #else /* !USE_MMAP_FOR_STACK */
   interpreter->evaluator_stack = 0;
-  interpreter->evaluator_stack_malloced = 1;
   interpreter->mark_stack = 0;
-  interpreter->mark_stack_malloced = 1;
+  interpreter->flags = INTERPRETER_MALLOCED_STACKS;
 #endif /* USE_MMAP_FOR_STACK */
 
   if(!interpreter->evaluator_stack)
@@ -1417,7 +1415,7 @@ PIKE_OPCODE_T *inter_return_opcode_F_CATCH(PIKE_OPCODE_T *addr)
 	UNSETJMP (cc->recovery);
 	move_svalue (Pike_sp++, &throw_value);
 	mark_free_svalue (&throw_value);
-	low_destruct_objects_to_destruct();
+        destruct_objects_to_destruct();
 
 	if (cc->continue_reladdr < 0)
 	  FAST_CHECK_THREADS_ON_BRANCH();
@@ -1570,7 +1568,7 @@ PIKE_OPCODE_T *inter_return_opcode_F_CATCH_AT(PIKE_OPCODE_T *addr)
 	UNSETJMP (cc->recovery);
 	move_svalue (Pike_sp++, &throw_value);
 	mark_free_svalue (&throw_value);
-	low_destruct_objects_to_destruct();
+        destruct_objects_to_destruct();
 
 	if (cc->continue_reladdr < 0)
 	  FAST_CHECK_THREADS_ON_BRANCH();
@@ -1713,7 +1711,7 @@ PIKE_OPCODE_T *handle_caught_exception(void)
   UNSETJMP (cc->recovery);
   move_svalue (Pike_sp++, &throw_value);
   mark_free_svalue (&throw_value);
-  low_destruct_objects_to_destruct();
+  destruct_objects_to_destruct();
 
   if (cc->continue_reladdr < 0)
     FAST_CHECK_THREADS_ON_BRANCH();
@@ -2964,7 +2962,7 @@ void* low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
     {
       assign_svalue(save_sp,Pike_sp-1);
       pop_n_elems(Pike_sp-save_sp-1);
-      low_destruct_objects_to_destruct(); /* consider using a flag for immediate destruct instead... */
+      destruct_objects_to_destruct(); /* consider using a flag for immediate destruct instead... */
     }
     if(Pike_interpreter.trace_level>1)
       do_trace_func_return (1, o, fun);
@@ -3032,12 +3030,9 @@ void low_return(void)
   basic_low_return (save_sp);
 
   stack_pop_n_elems_keep_top (Pike_sp - save_sp);
-  {
-      /* consider using a flag for immediate destruct instead... */
-      extern struct object *objects_to_destruct;
-      if( objects_to_destruct )
-          destruct_objects_to_destruct();
-  }
+
+  /* consider using a flag for immediate destruct instead... */
+  destruct_objects_to_destruct();
 
 #ifdef PIKE_DEBUG
   if(save_sp > Pike_sp)
@@ -3284,6 +3279,9 @@ PMOD_EXPORT void f_call_function(INT32 args)
 
 PMOD_EXPORT void call_handle_error(void)
 {
+  enum interpreter_flags save_iflags = Pike_interpreter.flags;
+  Pike_interpreter.flags |= INTERPRETER_HAS_SIGNAL_CONTEXT;
+
   dmalloc_touch_svalue(&throw_value);
 
   if (Pike_interpreter.svalue_stack_margin > LOW_SVALUE_STACK_MARGIN) {
@@ -3301,20 +3299,48 @@ PMOD_EXPORT void call_handle_error(void)
       APPLY_MASTER("handle_error", 1);
     }
     else {
-      struct byte_buffer buf = BUFFER_INIT();
-      fprintf (stderr, "There's no master to handle the error. Dumping it raw:\n");
-      describe_svalue (&buf, Pike_sp - 1, 0, 0);
-      fprintf(stderr,"%s\n",buffer_get_string(&buf));
-      buffer_free(&buf);
+      if (!master_program) {
+        /* Error during initialization of the master.
+         * This is likely errors like invalid cpp macro definitions
+         * or bad master objects specified on the command line.
+         * The backtrace is typically not of interest.
+         *
+         * Print the error message (if found) and exit.
+         *
+         * Otherwise fall back to a raw error dump.
+         */
+        struct generic_error_struct *err;
+        struct pike_string *err_msg = NULL;
+
+        if ((TYPEOF(Pike_sp[-1]) == PIKE_T_ARRAY) &&
+            (TYPEOF(ITEM(Pike_sp[-1].u.array)[0]) == PIKE_T_STRING)) {
+          err_msg = ITEM(Pike_sp[-1].u.array)[0].u.string;
+        } else if ((TYPEOF(Pike_sp[-1]) == T_OBJECT) &&
+                   (err = get_storage(Pike_sp[-1].u.object,
+                                      generic_error_program))) {
+          /* Error object derived from generic error. */
+          err_msg = err->error_message;
+        }
+
+        fprintf(stderr, "Error during load of the master object.\n");
+
+        if (err_msg) {
+          safe_pike_fprintf(stderr, "%pS", err_msg);
+          exit(1);
+        }
+      }
+
+      safe_pike_fprintf(stderr,
+                        "There's no master to handle the error. Dumping it raw:\n"
+                        "%pO\n", Pike_sp - 1);
+
       if (TYPEOF(Pike_sp[-1]) == PIKE_T_OBJECT && Pike_sp[-1].u.object->prog) {
 	int fun = find_identifier("backtrace", Pike_sp[-1].u.object->prog);
 	if (fun != -1) {
 	  fprintf(stderr, "Attempting to extract the backtrace.\n");
 	  safe_apply_low2(Pike_sp[-1].u.object, fun, 0, 0);
-	  describe_svalue(&buf, Pike_sp - 1, 0, 0);
+          safe_pike_fprintf(stderr, "%pO\n", Pike_sp - 1);
 	  pop_stack();
-	  fprintf(stderr,"%s\n",buffer_get_string(&buf));
-	  buffer_free(&buf);
 	}
       }
     }
@@ -3331,6 +3357,8 @@ PMOD_EXPORT void call_handle_error(void)
     free_svalue(&throw_value);
     mark_free_svalue (&throw_value);
   }
+
+  Pike_interpreter.flags = save_iflags;
 }
 
 /* NOTE: This function may only be called from the compiler! */
@@ -3953,25 +3981,32 @@ void gdb_backtrace (
 		  break;
 
 		default:
-		  if(j>=0 && j<256 && isprint(j))
-		  {
+                  if (((j >= ' ') && (j < 127)) ||
+                      (j == '\n') || (j == '\r') || (j == '\t')) {
 		    fputc (j, stderr);
 		    break;
 		  }
 
 		  fputc ('\\', stderr);
-		  fprintf (stderr, "%o", j);
+                  if ((j >= 0) && (j < 256)) {
+                    fprintf (stderr, "%o", j);
 
-		  switch(index_shared_string(arg->u.string,i+1))
-		  {
+                    switch(index_shared_string(arg->u.string,i+1))
+                    {
 		    case '0': case '1': case '2': case '3':
 		    case '4': case '5': case '6': case '7':
 		    case '8': case '9':
 		      fputc ('"', stderr);
 		      fputc ('"', stderr);
-		  }
-		  break;
-	      }
+                    }
+                    break;
+                  } else if ((j > 0) && (j < 0x10000)) {
+                    fprintf(stderr, "u%04x", j);
+                  } else {
+                    fprintf(stderr, "U%08x", (unsigned INT32)j);
+                  }
+                  break;
+              }
 	    }
 	    fputc ('"', stderr);
 	    if (i < arg->u.string->len)
@@ -4077,13 +4112,13 @@ PMOD_EXPORT void custom_check_stack(ptrdiff_t amount, const char *fmt, ...)
 PMOD_EXPORT void low_cleanup_interpret(struct Pike_interpreter_struct *interpreter)
 {
 #ifdef USE_MMAP_FOR_STACK
-  if(!interpreter->evaluator_stack_malloced)
+  if(!(interpreter->flags & INTERPRETER_EVALUATOR_STACK_MALLOCED))
   {
     munmap((char *)interpreter->evaluator_stack,
 	   Pike_stack_size*sizeof(struct svalue));
     interpreter->evaluator_stack = 0;
   }
-  if(!interpreter->mark_stack_malloced)
+  if(!(interpreter->flags & INTERPRETER_MARK_STACK_MALLOCED))
   {
     munmap((char *)interpreter->mark_stack,
 	   Pike_stack_size*sizeof(struct svalue *));
@@ -4098,8 +4133,7 @@ PMOD_EXPORT void low_cleanup_interpret(struct Pike_interpreter_struct *interpret
 
   interpreter->mark_stack = 0;
   interpreter->evaluator_stack = 0;
-  interpreter->mark_stack_malloced = 0;
-  interpreter->evaluator_stack_malloced = 0;
+  interpreter->flags = 0;
 
   interpreter->stack_pointer = 0;
   interpreter->mark_stack_pointer = 0;

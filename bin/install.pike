@@ -45,10 +45,11 @@ constant line_feed = Standards.XML.Wix.line_feed;
 constant WixNode = Standards.XML.Wix.WixNode;
 constant Directory = Standards.XML.Wix.Directory;
 
-string version_str = sprintf("%d.%d.%d",
+string version_str = sprintf("%d.%d.%d%s",
 			     __REAL_MAJOR__,
 			     __REAL_MINOR__,
-			     __REAL_BUILD__);
+                             __REAL_BUILD__,
+                             getenv("PIKE_VERSION_SUFFIX") || "");
 #if constant(Standards.UUID.make_version3)
 #define SUPPORT_WIX
 string version_guid = Standards.UUID.make_version3(version_str,
@@ -1830,6 +1831,14 @@ class InstallHandler(mapping vars, string prefix) {
   {
   }
 
+  protected string add_link_suffix(string link, string suffix)
+  {
+    if (has_suffix(link, ".exe"))
+      return link[..<4]+suffix+".exe";
+    else
+      return link+suffix;
+  }
+
   protected void do_post_install_actions()
   {
     dump_modules();
@@ -1846,7 +1855,7 @@ class InstallHandler(mapping vars, string prefix) {
       mixed s=file_stat(fakeroot(lnk),1);
       if(s)
       {
-	if(!mv(fakeroot(lnk),fakeroot(lnk+".old")))
+	if(!mv(fakeroot(lnk),fakeroot(add_link_suffix(lnk, ".old"))))
 	{
 	  error_msg ("Failed to move %s\n",lnk);
 	  exit(1);
@@ -1858,8 +1867,8 @@ class InstallHandler(mapping vars, string prefix) {
       mkdirhier(fakeroot(dirname(lnk)));
       symlink(pike,fakeroot(lnk));
       catch {
-	rm(fakeroot(lnk)+__MAJOR__+__MINOR__);
-	symlink(pike,fakeroot(lnk)+__MAJOR__+__MINOR__);
+	rm(add_link_suffix(fakeroot(lnk), ""+__MAJOR__+__MINOR__));
+	symlink(pike,add_link_suffix(fakeroot(lnk), ""+__MAJOR__+__MINOR__));
       };
       status("Creating",lnk,"done");
     }
@@ -1881,6 +1890,8 @@ class InstallHandler(mapping vars, string prefix) {
       pike_bin_file+=".exe";
       pike+=".exe";
       suffix = ".exe";
+      if (lnk && !has_suffix(lnk, suffix))
+        lnk += suffix;
     }
 
     low_finalize_pike(pike_bin_file, suffix);
@@ -2298,7 +2309,10 @@ class ExportInstallHandler {
   
   protected void setup_paths()
   {
-    export_base_name = get_export_base_name(replace( version(), ([ " ":"-", " release ":"." ]) ));
+    export_base_name =
+      get_export_base_name(replace(version(), ([ " ":"-", " release ":"." ])) +
+                           (getenv("PIKE_VERSION_SUFFIX") ||
+                            vars->VERSION_SUFFIX || ""));
 
     status1("Building export %s", export_base_name);
 
@@ -2570,6 +2584,8 @@ class TarExportInstallHandler {
     allow_mkdirhier = 1;
     set_simple_status(0);
 
+    // NB: On entry CWD is $TMP_BUILDDIR/Pike-vX.Y.Z-ARCH.dir/.
+    //     as created by create_export_base() above.
     cd("..");
 
     string tmpname = sprintf("PtmP%07x",random(0xfffffff));
@@ -2694,19 +2710,21 @@ done
 
     Process.create_process(({"gzip","-9",tmpname+".tar"}))->wait();
 
-    status("Creating", export_base_name);
+    if (vars->DESTDIR) mkdirhier(vars->DESTDIR);
+    string dest_name = combine_path(vars->DESTDIR || "", export_base_name);
+    status("Creating", dest_name);
 
     //  Setting COPYFILE_DISABLE avoids a "._PtmP..." resource file to be added
     //  on OS X which otherwise would hinder self-extraction from bootstrapping.
-    Process.create_process( ({ "tar","cf", export_base_name,
+    Process.create_process( ({ "tar","cf", dest_name,
 			       script, tmpname+".x", tmpname+".tar.gz" }),
 			    ([ "env" : ([ "COPYFILE_DISABLE" : "true" ]) ]) )
       ->wait();
 
-    status("Filtering to root/root ownership", export_base_name);
-    tarfilter(export_base_name);
+    status("Filtering to root/root ownership", dest_name);
+    tarfilter(dest_name);
 
-    chmod(export_base_name,0755);
+    chmod(dest_name, 0755);
 
     status("Cleaning up","");
 
@@ -2851,6 +2869,8 @@ class BurkExportInstallHandler {
       status(0,"");
     }
 
+    // NB: Compression and strapping of the burk is
+    //     performed by the bin_export makefile target.
   }
 
   protected void check_vc8()
@@ -3283,6 +3303,10 @@ class AmigaOSExportInstallHandler {
 	to_export_from[i] = 0;
     }
 
+    if (vars->DESTDIR) mkdirhier(vars->DESTDIR);
+    string dest_name = combine_path(vars->DESTDIR || "", export_base_name);
+    status("Creating", dest_name+".lha");
+
     string tmpmsg=".";
 
     string lhaarg="cq";
@@ -3290,10 +3314,11 @@ class AmigaOSExportInstallHandler {
     {
       status("Creating", export_base_name+".lha", tmpmsg);
       tmpmsg+=".";
-      Process.create_process(({"lha",lhaarg,export_base_name+".lha"})+ files_to_lha)
+      Process.create_process(({"lha", lhaarg, dest_name+".lha"}) + files_to_lha)
 	->wait();
       lhaarg="aq";
     }
+
 
     // Clean up symlinks again.
     for (int i = 0; i < sizeof (to_export_from); i++)

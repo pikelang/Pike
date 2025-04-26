@@ -16,6 +16,7 @@
 #include "block_allocator.h"
 #include "string_builder.h"
 #include "gc_header.h"
+#include "callback.h"
 
 #include "enum_Pike_opcodes.h"
 
@@ -171,6 +172,7 @@ enum LFUN {
     LFUN__ITERATOR_NEXT_FUN	= 0x90,
     LFUN__ITERATOR_INDEX_FUN,
     LFUN__ITERATOR_VALUE_FUN,
+    LFUN__ITERATOR_PREV_FUN,
 
     NUM_LFUNS,
 };
@@ -912,6 +914,8 @@ node *program_magic_identifier (struct program_state *state,
 				struct pike_string *ident,
 				int colon_colon_ref);
 struct program *parent_compilation(int level);
+PMOD_EXPORT struct callback *add_program_id_callback(callback_func func,
+                                                     void *state);
 struct program *low_id_to_program(INT32 id, int inhibit_module_load);
 struct program *id_to_program(INT32 id);
 void optimize_program(struct program *p);
@@ -922,12 +926,15 @@ struct pike_string *find_program_name(struct program *p, INT_TYPE *line);
 int override_identifier (struct reference *ref, struct pike_string *name,
 			 int required_flags);
 void fixate_program(void);
-struct program *low_allocate_program(void);
-void low_start_new_program(struct program *p,
-			   int pass,
-			   struct pike_string *name,
-			   int flags,
-			   int *idp);
+PMOD_EXPORT int allocate_program_id(void);
+PMOD_EXPORT struct program *low_allocate_program(INT32 id);
+PMOD_EXPORT void low_start_new_program(struct program *p,
+                                       int pass,
+                                       struct pike_string *name,
+                                       int flags,
+                                       int *idp);
+PMOD_EXPORT void debug_start_new_program_id(INT_TYPE line, const char *file,
+                                            INT32 id);
 PMOD_EXPORT void debug_start_new_program(INT_TYPE line, const char *file);
 void dump_program_desc(struct program *p);
 int sizeof_variable(int run_time_type);
@@ -1147,8 +1154,10 @@ void gc_cycle_check_all_programs(void);
 void gc_zap_ext_weak_refs_in_programs(void);
 size_t gc_free_all_unreferenced_programs(void);
 PMOD_EXPORT void *get_inherit_storage(struct object *o, int inherit);
+PMOD_EXPORT ptrdiff_t program_find_inherit(struct program *o, struct program *p);
 PMOD_EXPORT ptrdiff_t low_get_storage(struct program *o, struct program *p);
 PMOD_EXPORT void *get_storage(struct object *o, struct program *p);
+PMOD_EXPORT void *get_sub_storage(struct object *o, int inh, struct program *p);
 PMOD_EXPORT struct program *low_program_from_function(struct object *o, INT32 i);
 PMOD_EXPORT struct program *program_from_function(const struct svalue *f);
 PMOD_EXPORT struct program *program_from_type(const struct pike_type *t);
@@ -1257,10 +1266,9 @@ static inline int PIKE_UNUSED_ATTRIBUTE FIND_LFUN(struct program * p, enum LFUN 
 #define ADD_INHERIT(PROGRAM, FLAGS) \
   low_inherit((PROGRAM), 0, 0, 0, (FLAGS), 0)
 
-#define START_NEW_PROGRAM_ID(ID) do { \
-    start_new_program();  \
-    Pike_compiler->new_program->id=PIKE_CONCAT3(PROG_,ID,_ID); \
-  }while(0)
+#define START_NEW_PROGRAM_ID(ID) do {                     \
+    start_new_program_id(PIKE_CONCAT3(PROG_,ID,_ID));     \
+  } while(0)
 
 #ifdef DEBUG_MALLOC
 #define end_program() ((struct program *)debug_malloc_pass(debug_end_program()))
@@ -1272,6 +1280,7 @@ static inline int PIKE_UNUSED_ATTRIBUTE FIND_LFUN(struct program * p, enum LFUN 
 
 
 #define start_new_program() debug_start_new_program(__LINE__,__FILE__)
+#define start_new_program_id(ID) debug_start_new_program_id(__LINE__,__FILE__,ID)
 
 #define visit_program_ref(P, REF_TYPE, EXTRA)			\
   visit_ref (pass_program (P), (REF_TYPE),			\

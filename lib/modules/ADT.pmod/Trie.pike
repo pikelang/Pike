@@ -6,9 +6,10 @@
  * 2007-08-24 Henrik Grubbström
  */
 
+__generic__ ValueType;
 
 int offset;
-mixed value = UNDEFINED;
+int(0..0)|ValueType value = UNDEFINED;
 string|array(int) path = ({});
 mapping(int:this_program) trie;
 
@@ -89,7 +90,7 @@ void merge(this_program o)
   }
 }
 
-void insert(string|array(int) key, mixed val)
+void insert(string|array(int) key, ValueType val)
 {
   this_program o;
   if (undefinedp(val)) return;
@@ -124,9 +125,9 @@ void insert(string|array(int) key, mixed val)
   }
 }
 
-mixed remove(string|array(int) key)
+ValueType remove(string|array(int) key)
 {
-  mixed val;
+  ValueType val;
   this_program o;
   if (sizeof(key) == offset) {
     val = value;
@@ -163,7 +164,7 @@ mixed remove(string|array(int) key)
   }
 }
 
-mixed lookup(string|array(int) key)
+ValueType lookup(string|array(int) key)
 {
   if (sizeof(key) < offset) return UNDEFINED;
   if (sizeof(key) == offset) {
@@ -237,7 +238,7 @@ protected string|array(int) _iterator_next()
   return iterator_position = next(iterator_position);
 }
 
-protected mixed _iterator_value()
+protected ValueType _iterator_value()
 {
   if (!iterator_position) return UNDEFINED;
   return lookup(iterator_position);

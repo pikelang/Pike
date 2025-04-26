@@ -639,7 +639,11 @@ class MultiTree {
         {
 	    while(1) {
 		mixed val = iterator_next(it);
-		if (!undefinedp(val)) return val;
+                if (!undefinedp(val)) {
+                    // NB: We implement lfun::_iterator_value(),
+                    //     so we MUST NOT return 0 on success.
+                    return val || 1;
+                }
 
 		// Try the next tree.
 		if (step < 0) {

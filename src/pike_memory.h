@@ -222,7 +222,9 @@ p_wchar2 *MEMCHR2(p_wchar2 *p, p_wchar2 c, ptrdiff_t e)  ATTRIBUTE((pure));
 void reorder(char *memory, INT32 nitems, INT32 size, const INT32 *order);
 
 size_t hashmem_siphash24( const void *s, size_t len );
-#if (defined(__i386__) || defined(__amd64__)) && defined(__GNUC__)
+#if ((defined(__i386__) || defined(__amd64__)) && defined(__GNUC__)) || \
+  (defined(HAVE_CRC32_INTRINSICS) && \
+   (defined(__arm__) || defined(__aarch64__)))
 extern PMOD_EXPORT
 #ifdef __i386__
 ATTRIBUTE((fastcall))

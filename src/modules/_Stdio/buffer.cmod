@@ -1096,6 +1096,37 @@ PIKECLASS Buffer
    *! If no bytes have been written successfully and @expr{fun()@} failed
    *! with an error, @expr{-1@} will be returned.
    *!
+   *! This function is similar to
+   *! @code
+   *!   int(-1..) output_to(Stdio.Stream|function(string(8bit):int) fun,
+   *!                       int(0..)|void nbytes)
+   *!   {
+   *!     if (objectp(fun)) fun = ([object]fun)->write;
+   *!
+   *!     int (0..) total;
+   *!     while (sizeof(this)) {
+   *!       int(0..) bytes = undefinedp(nbytes)?sizeof(this):nbytes;
+   *!       if (bytes > 0x8000) bytes = 0x8000;
+   *!       string(8bit) chunk = read(bytes);
+   *!       int(-1..) written = ([function]fun)(chunk);
+   *!       if (written <= 0) {
+   *!         return total || written;
+   *!       }
+   *!       total += written;
+   *!       if (written < sizeof(chunk)) {
+   *!         unread(sizeof(chunk) - written);
+   *!       }
+   *!       if (!undefinedp(nbytes)) {
+   *!         nbytes -= written;
+   *!         if (!nbytes) {
+   *!           break;
+   *!         }
+   *!       }
+   *!     }
+   *!     return total;
+   *!   }
+   *! @endcode
+   *!
    *! @deprecated
    *!   This function is going to get deprecated. In case you want to use
    *!   it against an @[Stdio.File] like object, please consider using
@@ -1638,7 +1669,7 @@ PIKECLASS Buffer
    *!   Indexing with negative offsets was not supported in
    *!   Pike 8.0 and earlier.
    */
-  PIKEFUN void `[]=( int off, int val )
+  PIKEFUN void `[]=( int off, int val, mixed|void context, int|void access )
     flags ID_PROTECTED;
   {
     Buffer *io = THIS;

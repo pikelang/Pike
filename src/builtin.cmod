@@ -1461,7 +1461,7 @@ PMOD_EXPORT
 PIKEFUN string string_trim_whites (string s)
   errname trim_whites;
   optflags OPT_TRY_OPTIMIZE;
-rawtype tFunc(tNStr(tSetvar(0, tInt)),tNStr(tVar(0)))
+  rawtype tFunc(tNStr(tSetvar(0, tInt)), tNStr(tVar(0)));
 {
   ptrdiff_t start = 0, end = s->len;
   int chr;
@@ -1512,7 +1512,7 @@ PMOD_EXPORT
 PIKEFUN string string_normalize_space (string s, string|void whitespace)
   errname normalize_space;
   optflags OPT_TRY_OPTIMIZE;
-rawtype tFunc(tNStr(tSetvar(0, tInt)) tOr(tStr,tVoid),tNStr(tVar(0)))
+  rawtype tFunc(tNStr(tSetvar(0, tInt)) tOr(tStr,tVoid), tNStr(tVar(0)));
 {
   size_t len = s->len, wlen;
   const void *src = s->str;
@@ -1644,7 +1644,7 @@ PMOD_EXPORT
 PIKEFUN string string_trim (string s)
   errname trim;
   optflags OPT_TRY_OPTIMIZE;
-rawtype tFunc(tNStr(tSetvar(0, tInt)),tNStr(tVar(0)))
+  rawtype tFunc(tNStr(tSetvar(0, tInt)), tNStr(tVar(0)));
 {
   ptrdiff_t start = 0, end = s->len;
   int chr;
@@ -2310,7 +2310,8 @@ PIKEFUN int(8 .. 8)|int(16 .. 16)|int(32 .. 32) string_width(string s)
   RETURN 8 * (1 << s->size_shift);
 }
 
-/*! @decl mixed m_delete(object|mapping|multiset map, mixed index)
+/*! @decl mixed m_delete(object|mapping|multiset map, mixed index, @
+ *!                      mixed|void expected)
  *!
  *! If @[map] is an object that implements @[lfun::_m_delete()],
  *! that function will be called with @[index] as its single argument.
@@ -2321,6 +2322,9 @@ PIKEFUN int(8 .. 8)|int(16 .. 16)|int(32 .. 32) string_width(string s)
  *! If the mapping or multiset does not have an entry with
  *! index @[index], nothing is done.
  *!
+ *! If @[expected] has been specified, the entry will only be
+ *! removed if its value matches (with @[`==()]).
+ *!
  *! @returns
  *!   The value that was removed will be returned,
  *!   and @expr{UNDEFINED@} otherwise.
@@ -2328,22 +2332,70 @@ PIKEFUN int(8 .. 8)|int(16 .. 16)|int(32 .. 32) string_width(string s)
  *! @note
  *!   Note that @[m_delete()] changes @[map] destructively.
  *!
+ *! @note
+ *!   The third argument (@[expected]) was added in Pike 9.0,
+ *!   and can be used for atomic test and unset.
+ *!
  *! @seealso
  *!   @[mappingp()]
  */
 PMOD_EXPORT
-PIKEFUN mixed m_delete(object|mapping|multiset map, mixed index)
+PIKEFUN mixed m_delete(object|mapping|multiset map, mixed index,
+                       mixed|void expected)
   efun;
   optflags OPT_SIDE_EFFECT;
-  rawtype tOr3(tFunc(tMap(tSetvar(0,tMix),tSetvar(1,tMix)) tVar(0),
+  rawtype tOr3(tFunc(tMap(tSetvar(0,tMix),tSetvar(1,tMix)) tVar(0)
+                     tOr(tVar(1), tVoid),
 		     tOr(tVar(1), tZero)),
-	       tFunc(tSet(tSetvar(0,tMix)) tVar(0),tInt01),
-	       tFunc(tObj tMix,tMix));
+               tFunc(tSet(tSetvar(0,tMix)) tVar(0) tOr(tInt01, tVoid), tInt01),
+               tFunc(tObj tMix tOr(tMix, tVoid), tMix));
 {
   struct program *p;
   if( TYPEOF(*map) == T_MAPPING )
   {
     struct svalue s;
+    if (expected) {
+      struct svalue *val = low_mapping_lookup(map->u.mapping, index);
+      if (val) {
+        if ((TYPEOF(*val) == PIKE_T_OBJECT) ||
+            (TYPEOF(*expected) == PIKE_T_OBJECT)) {
+          /* NB: lfun::`==() may get called, in which case
+           *     we must validate that the value has not
+           *     been changed in the interval.
+           */
+          push_svalue(val);	/* For validation. */
+          if (is_eq(expected, val)) {
+            /* NB: val may get invalidated during the lfun call. */
+            val = low_mapping_lookup(map->u.mapping, index);
+            if (val &&
+                ((TYPEOF(*val) != TYPEOF(Pike_sp[-1])) ||
+                 (SUBTYPEOF(*val) != SUBTYPEOF(Pike_sp[-1])) ||
+                 (val->u.ptr != Pike_sp[-1].u.ptr))) {
+              /* Value has been altered during is_eq() call.
+               *
+               * NB: For integers and floats the value will not have changed.
+               *
+               *     For other types we have added a reference via
+               *     push_svalue(), so the pointer will stay valid.
+               *
+               *     The test above is thus sufficient.
+               */
+              val = NULL;
+            }
+          } else {
+            val = NULL;
+          }
+          pop_stack();
+        }
+      } else if (!is_eq(expected, val)) {
+        val = NULL;
+      }
+      if (!val) {
+        pop_n_elems(args);
+        push_undefined();
+        return;
+      }
+    }
     map_delete_no_free(map->u.mapping, index, &s);
     pop_n_elems(args);
     *Pike_sp=s;
@@ -2355,14 +2407,27 @@ PIKEFUN mixed m_delete(object|mapping|multiset map, mixed index)
     int id = FIND_LFUN(p->inherits[SUBTYPEOF(*map)].prog, LFUN__M_DELETE);
 
     if( id == -1 )
-      SIMPLE_ARG_TYPE_ERROR("m_delete", 1, "object containing the _m_delete method");
+      SIMPLE_ARG_TYPE_ERROR("m_delete", 1,
+                            "object containing the _m_delete method");
 
+    if ((args > 2) && !expected) {
+      pop_n_elems(args - 2);
+      args = 2;
+    }
     apply_low(map->u.object,
-	      id + p->inherits[SUBTYPEOF(*map)].identifier_level, 1);
+              id + p->inherits[SUBTYPEOF(*map)].identifier_level, args - 1);
     stack_swap();
     pop_stack();
   } else if (TYPEOF(*map) == T_MULTISET) {
     struct svalue s;
+    if (expected &&
+        ((TYPEOF(*expected) != PIKE_T_INT) ||
+         (expected->u.integer != 1) ||
+         !multiset_member(map->u.multiset, index))) {
+      pop_n_elems(args);
+      push_undefined();
+      return;
+    }
     multiset_delete_2(map->u.multiset, index, &s);
     pop_n_elems(args);
     *Pike_sp = s;
@@ -2503,28 +2568,66 @@ PIKEFUN void m_add(multiset|object l, mixed val)
   pop_n_elems(args);
 }
 
-/*! @decl int(0..1) iterator_next(object iter)
+/*! @decl mixed iterator_next(Iterator iter)
  *!
  *! Advance @[iter] one step.
  *!
+ *! @returns
+ *!   Returns @expr{UNDEFINED@} if the iterator failed to
+ *!   advance, and otherwise the value returned from
+ *!   @[lfun::_iterator_next()].
+ *!
+ *! @note
+ *!   Zero values returned by @[lfun::_iterator_next()] are
+ *!   converted to @expr{UNDEFINED@} when @[lfun::_iterator_value()]
+ *!   is implemented.
+ *!
  *! @seealso
+ *!   @[iterator_prev()], @[lfun::_iterator_next()],
  *!   @[get_iterator()]
  */
-PIKEFUN int(0..1) iterator_next(object iter)
+PIKEFUN mixed iterator_next(object iter)
   efun;
   optflags OPT_SIDE_EFFECT;
   rawtype tFuncArg(tSetvar(0, tObj), tFindLFun(tVar(0), "_iterator_next"));
+{
+  apply_lfun(iter, LFUN__ITERATOR_NEXT_FUN, args - 1);
+  if ((TYPEOF(Pike_sp[-1]) == PIKE_T_INT) && !Pike_sp[-1].u.integer) {
+    if (!SUBTYPEOF(Pike_sp[-1]) &&
+        (FIND_LFUN(iter->prog, LFUN__ITERATOR_VALUE_FUN) >= 0)) {
+      pop_2_elems();
+      push_undefined();
+      return;
+    }
+  }
+  stack_swap();
+  pop_stack();
+}
+
+/*! @decl mixed iterator_prev(Iterator iter)
+ *!
+ *! Advance @[iter] one step backward (if supported).
+ *!
+ *! @seealso
+ *!   @[iterator_next()], @[lfun::_iterator_prev()],
+ *!   @[get_iterator()]
+ */
+PIKEFUN mixed iterator_prev(object iter)
+  efun;
+  optflags OPT_SIDE_EFFECT;
+  rawtype tFuncArg(tSetvar(0, tObj), tFindLFun(tVar(0), "_iterator_prev"));
 {
   apply_lfun(iter, LFUN__ITERATOR_NEXT_FUN, args - 1);
   stack_swap();
   pop_stack();
 }
 
-/*! @decl mixed iterator_value(object iter)
+/*! @decl mixed iterator_value(Iterator iter)
  *!
  *! Get the current value for @[iter].
  *!
  *! @seealso
+ *!   @[iterator_index()], @[lfun::_iterator_value()],
  *!   @[get_iterator()]
  */
 PIKEFUN mixed iterator_value(object iter)
@@ -2537,11 +2640,12 @@ PIKEFUN mixed iterator_value(object iter)
   pop_stack();
 }
 
-/*! @decl mixed iterator_index(object iter)
+/*! @decl mixed iterator_index(Iterator iter)
  *!
  *! Get the current index for @[iter].
  *!
  *! @seealso
+ *!   @[iterator_value()], @[lfun::_iterator_index()],
  *!   @[get_iterator()]
  */
 PIKEFUN mixed iterator_index(object iter)
@@ -2599,7 +2703,7 @@ PIKEFUN program __empty_program(int|zero|void line, string|void file)
   efun;
   optflags OPT_EXTERNAL_DEPEND;
 {
-  struct program *prog = low_allocate_program();
+  struct program *prog = low_allocate_program(0);
   if (file) ext_store_program_line (prog, line, file);
   RETURN prog;
 }
@@ -3300,10 +3404,6 @@ PIKEFUN void _putenv (string var, void|string val)
 #endif /* !USE_SETENV */
 }
 
-/*
- * Backtrace handling.
- */
-
 /*! @module Pike
  */
 
@@ -3434,6 +3534,10 @@ PIKECLASS InhibitDestruct
 };
 
 /*! @endclass
+ */
+
+/*
+ * Backtrace handling.
  */
 
 /*! @class FakeObject
@@ -4321,6 +4425,47 @@ PIKEFUN mapping(string:int|string) get_runtime_info()
   push_static_text("auto_bignum");
   push_int(1);
   f_aggregate_mapping(7*2);
+}
+
+/*! @decl int(0..1) signal_contextp()
+ *!
+ *! Returns whether the current thread is running in a
+ *! signal handler context.
+ *!
+ *! A signal handler context implies that ordinary program flow for
+ *! the current thread has been interrupted (note that other threads
+ *! will continue to execute concurrently), and will resume when the
+ *! handler returns. Note that code that is executing in a signal
+ *! context may still be interrupted.
+ *!
+ *! Some origins for entering a signal handler context are:
+ *!
+ *! @ul
+ *!   @item
+ *!     A caught signal triggering a signal handler to be called.
+ *!   @item
+ *!     An object implementing @[lfun::_destruct()] running out
+ *!     of references or being destructed by the @[gc()].
+ *!   @item
+ *!     An uncaught runtime error (causing @[MasterObject()->handle_error()]
+ *!     to be called).
+ *! @endul
+ *!
+ *! In a signal handler context some operations are not supported
+ *! eg locking of @[Thread.Mutex] or waiting on @[Thread.Condition].
+ *!
+ *! Intended use is to be able to throw errors early in APIs that are
+ *! not signal context safe, or to be able to detect this and upgrade
+ *! the call to a normal context (eg via @[call_out()]).
+ *!
+ *! @seealso
+ *!   @[lfun::_destruct()], @[call_out()], @[gc()],
+ *!   @[MasterObject()->handle_error()]
+ */
+PIKEFUN int(0..1) signal_contextp()
+  optflags OPT_EXTERNAL_DEPEND;
+{
+  push_int(!!(Pike_interpreter.flags & INTERPRETER_HAS_SIGNAL_CONTEXT));
 }
 
 /*! @endmodule
@@ -6158,6 +6303,94 @@ PIKECLASS Null
 /*! @endclass
  */
 
+/*! @class Pointer
+ *!
+ *! This class is used to implement the low-level aspects of @[Val.Pointer].
+ *!
+ *! @note
+ *!   This class should typically not be used directly. Use
+ *!   @[Val.Pointer] instead.
+ *!
+ *! @seealso
+ *!   @[Val.Pointer]
+ */
+PIKECLASS Pointer
+{
+  CVAR void *ptr;
+  CVAR void (*destroy_func)(void *);
+  
+  PIKEFUN int(0..1) `!()
+    flags ID_PROTECTED;
+  {
+    RETURN !THIS->ptr;
+  }
+
+  PIKEFUN string|zero _sprintf(int fmt, mixed ... extras)
+    flags ID_PROTECTED;
+  {
+    pop_n_elems(args);
+    if (fmt == 'O') {
+      char buf[32 + (sizeof(void *)*CHAR_BIT)/4];
+      snprintf(buf, sizeof(buf), "Val.Pointer(%p)", THIS->ptr);
+      push_text(buf);
+    } else {
+      push_undefined();
+    }
+  }
+
+  PIKEFUN int __hash()
+    flags ID_PROTECTED;
+  {
+    RETURN (ptrdiff_t)THIS->ptr;
+  }
+
+  PIKEFUN int `==(mixed other)
+    flags ID_PROTECTED;
+  {
+    struct Pointer_struct *other_pointer;
+
+    if (TYPEOF(*other) != T_OBJECT)
+      RETURN 0;
+
+    other_pointer = get_storage(other->u.object, Pointer_program);
+    if (!other_pointer)
+      RETURN 0;
+
+    RETURN other_pointer->ptr == THIS->ptr;
+  }
+
+#ifdef PIKE_NULL_IS_SPECIAL
+    INIT {
+        THIS->ptr = 0;
+        THIS->destroy_func = 0;
+    }
+#endif
+
+    EXIT {
+      if (THIS->destroy_func)
+        THIS->destroy_func(THIS->ptr);
+    }
+}
+
+/*! @endclass
+ */
+
+PMOD_EXPORT struct object *make_pointer_object(void *ptr, void (*destroy_func)(void *))
+{
+  struct object *res = clone_object(Pointer_program, 0);
+  struct Pointer_struct *pointer = OBJ2_POINTER(res);
+  pointer->ptr = ptr;
+  pointer->destroy_func = destroy_func;
+  return res;
+}
+
+PMOD_EXPORT void *get_pointer_from_pointer_object(struct object *o)
+{
+    struct Pointer_struct *pointer = get_storage(o, Pointer_program);
+    return (pointer? pointer->ptr : NULL);
+}
+
+
 PMOD_EXPORT
 PIKEFUN int levenshtein_distance(string a, string b)
 {
@@ -7405,34 +7638,78 @@ PIKECLASS List
      *!   Advance to the next element in the list.
      *!
      *! @returns
-     *!   Returns the new element on success, and @[UNDEFINED]
+     *!   Returns @expr{1@} on success, and @[UNDEFINED]
      *!   at the end of the list.
      *!
      *! @seealso
-     *!   @[prev()]
+     *!   @[_iterator_prev()]
      */
     PIKEFUN mixed _iterator_next()
       flags ID_PROTECTED;
     {
+      struct pike_list_node *orig = THIS->cur;
       struct pike_list_node *next;
-      if (!THIS->cur) {
-	add_ref(THIS->cur = next = List__get_iterator_find_parent()->head);
-	THIS->ind = 0;
-      } else if ((next = THIS->cur->next)) {
-	free_list_node(THIS->cur);
-	add_ref(THIS->cur = next);
-	THIS->ind++;
-      } else {
-	/* We are at the tail sentinel. */
-	next = TAIL_TO_LIST(THIS->cur)->head;
-	free_list_node(THIS->cur);
-	add_ref(THIS->cur = next);
-	THIS->ind = 0;
+
+      if (!orig || !(next = orig->next)) {
+        /* We were at the tail sentinel. Move to the head sentinel. */
+        struct List_struct *list = List__get_iterator_find_parent();
+        next = HEAD_SENTINEL(list)->next;
+        THIS->ind = -1;
       }
+
       if (next->next) {
-	push_svalue(&next->val);
+        add_ref(THIS->cur = next);
+        THIS->ind++;
+        push_int(1);
       } else {
-	push_undefined();
+        /* We are at the tail sentinel. */
+        THIS->cur = NULL;
+        THIS->ind = -1;
+        push_undefined();
+      }
+
+      if (orig) {
+        free_list_node(orig);
+      }
+    }
+
+    /*! @decl mixed _iterator_prev()
+     *!
+     *!   Retrace to the previous element in the list.
+     *!
+     *! @returns
+     *!   Returns the new element on success, and @[UNDEFINED]
+     *!   at the start of the list.
+     *!
+     *! @seealso
+     *!   @[_iterator_next()]
+     */
+    PIKEFUN mixed _iterator_prev()
+      flags ID_PROTECTED;
+    {
+      struct pike_list_node *orig = THIS->cur;
+      struct pike_list_node *prev;
+
+      if (!orig || !(prev = orig->prev)) {
+        /* We were at the head sentinel. Move to the tail sentinel. */
+        struct List_struct *list = List__get_iterator_find_parent();
+        prev = TAIL_SENTINEL(list)->prev;
+        THIS->ind = list->num_elems;
+      }
+
+      if (prev->prev) {
+        add_ref(THIS->cur = prev);
+        THIS->ind--;
+        push_svalue(&prev->val);
+      } else {
+        /* We are now at the head sentinel. */
+        THIS->cur = NULL;
+        THIS->ind = -1;
+        push_undefined();
+      }
+
+      if (orig) {
+        free_list_node(orig);
       }
     }
 
@@ -7454,8 +7731,9 @@ PIKECLASS List
 	add_ref(THIS->cur = next = List__get_iterator_find_parent()->head);
 	THIS->ind = 0;
       } else if ((next = THIS->cur->next)) {
+        add_ref(next);
 	free_list_node(THIS->cur);
-	add_ref(THIS->cur = next);
+        THIS->cur = next;
 	THIS->ind++;
       }
       if (THIS->cur->next) {
@@ -7479,16 +7757,26 @@ PIKECLASS List
      *! @seealso
      *!   @[next()]
      */
-    PIKEFUN int(0..1) prev()
+    PIKEFUN int(0..1) prev()		/* Compat. */
     {
       struct pike_list_node *prev;
-      if ((prev = THIS->cur->prev)) {
+      if (!THIS->cur) {
+        struct List_struct *list = List__get_iterator_find_parent();
+        add_ref(THIS->cur = prev = list->tail_pred);
+        THIS->ind = list->num_elems-1;
+      } else if ((prev = THIS->cur->prev)) {
+        add_ref(prev);
 	free_list_node(THIS->cur);
-	add_ref(THIS->cur = prev);
+        THIS->cur = prev;
 	THIS->ind--;
-        if (prev->prev)
-          RETURN 1;
       }
+      if (THIS->cur->prev) {
+        RETURN 1;
+      }
+      /* Head sentinel. */
+      free_list_node(THIS->cur);
+      THIS->cur = NULL;
+      THIS->ind = -1;
       RETURN 0;
     }
 

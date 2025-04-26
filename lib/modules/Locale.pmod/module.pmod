@@ -161,42 +161,74 @@ array(string) list_languages(string project)
   return list;
 }
 
+//! Class for objects representing a Locale.
 class LocaleObject
 {
   // key:string
   protected mapping(string|int:string) bindings;
+  // key:string
+  protected mapping(string|int:string) origs;
   // key:function
   public mapping(string:function) functions;
   int timestamp = time(1);
   constant is_locale=1;
+  string id = "";
 
+  //!
   protected void create(mapping(string|int:string) _bindings,
-		     void|mapping(string:function) _functions)
+                        mapping(string:function) _functions = ([]),
+                        mapping(string|int:string) _origs = ([]))
   {
     bindings = _bindings;
-    if(_functions)
-      functions = _functions;
-    else
-      functions = ([]);
+    functions = _functions;
+    origs = _origs;
   }
 
   array(string|int) list_ids() {
     return indices(bindings);
   }
 
-  string translate(string|int key)
+  //! Returns the translation for the key @[key]
+  string translate(string|int key, string|void fallback)
   {
 #ifdef LOCALE_DEBUG_ALL
-    werror("L: %O -> %O\n",key,bindings[key]);
+    werror("L: %O -> %O, Orig: %O, Fallback: %O\n",
+           key, bindings[key], origs[key], fallback);
 #endif
+    if (fallback && origs[key] && (origs[key] != fallback) && bindings[key]) {
+      // The translation is stale.
+      //
+      // Warn once and use the fallback. This is eg needed in
+      // case it is a format string where the arguments have
+      // changed since the string was translated.
+      if (id != "") {
+        werror("Warning: Translation for id %O in %O is stale.\n"
+               "Original: %O\n"
+               "Current:  %O\n"
+               "Translated: %O\n",
+               key, id, origs[key], fallback, bindings[key]);
+      }
+#ifdef LOCALE_DEBUG
+      fallback = "STALE: " + fallback;
+#endif
+      m_delete(origs, key);
+      return bindings[key] = fallback;
+    }
     return bindings[key];
   }
 
+  //! @returns
+  //!   Returns the function for the function name @[f] if it exists
+  //!   and is a function and @expr{0@} (zero) otherwise.
   function is_function(string f)
   {
     return functionp(functions[f]) ? functions[f] : 0;
   }
 
+  //! Calls the function @[f] with the arguments @[args] if it
+  //! exists and is a function. Otherwise returns the value
+  //! (ie constant function) for @[f] and @expr{UNDEFINED@}
+  //! if it does not exist.
   protected mixed `() (string f, mixed ... args)
   {
     if(functionp(functions[f]))
@@ -205,6 +237,9 @@ class LocaleObject
       return functions[f];
   }
 
+  //! @returns
+  //!   Returns an estimate of the number of bytes that
+  //!   the object uses.
   int estimate_size()
   {
     int size=2*64+8; //Two mappings and a timestamp
@@ -219,6 +254,7 @@ class LocaleObject
     return size;
   }
 
+  //!
   protected string _sprintf(int t)
   {
     return t=='O' && sprintf("%O(timestamp: %d, bindings: %d, functions: %d)",
@@ -227,8 +263,14 @@ class LocaleObject
   }
 }
 
-object|zero get_object(string project, string lang) {
-
+//! @returns
+//!   Returns the corresponding @[LocaleObject] if it exists
+//!   and @expr{0@} (zero) if it does not.
+//!
+//! @seealso
+//!   @[get_objects()]
+LocaleObject|zero get_object(string project, string lang)
+{
   // Is there such a project?
   int guess_project;
   if(!projects[project]) {
@@ -254,6 +296,7 @@ object|zero get_object(string project, string lang) {
   }
 
   mapping(string|int:string) bindings = ([]);
+  mapping(string|int:string) origs = ([]);
   mapping(string:function) functions = ([]);
 #ifdef LOCALE_DEBUG
   float sec = gauge{
@@ -328,6 +371,25 @@ object|zero get_object(string project, string lang) {
     }
     return 0;
   };
+  string|zero o_tag(Parser.HTML parser, mapping m, string c) {
+    if(!id) {
+      if(!m->id)
+        return 0;
+      else {
+        if((int)m->id)
+          id = (int)m->id;
+        else
+          id = m->id;
+      }
+    }
+    if(String.trim_whites(c)=="")
+      return 0;
+    // Replace encoded entities
+    c = replace(c, ({"&lt;","&gt;","&amp;"}),
+                ({ "<",   ">",    "&"  }));
+    origs[id]=c;
+    return 0;
+  };
   string|zero t_tag(Parser.HTML parser, mapping m, string c) {
     if(!id) {
       if(!m->id)
@@ -370,8 +432,10 @@ object|zero get_object(string project, string lang) {
   xml_parser->case_insensitive_tag(1);
   xml_parser->
     add_containers( ([ "str"       : str_tag,
+                       "o"         : o_tag,
+                       "original"  : o_tag,	// Verbose-style.
 		       "t"         : t_tag,
-		       "translate" : t_tag,
+                       "translate" : t_tag,	// Verbose-style.
 		       "pike"      : pike_tag, ]) );
   xml_parser->feed(data)->finish();
 
@@ -382,7 +446,8 @@ object|zero get_object(string project, string lang) {
   werror("\nLocale: Read %O in %O (bindings: %d, functions: %d) in %.3fs\n",
 	 project, lang, sizeof(bindings), sizeof(functions), sec);
 #endif
-  locale_object = LocaleObject(bindings, functions);
+  locale_object = LocaleObject(bindings, functions, origs);
+  locale_object->id = lang + ":" + project;
   locales[lang][project] = locale_object;
   return locale_object;
 }
@@ -403,7 +468,7 @@ string translate(string project, string lang, string|int id, string fallback)
 {
   LocaleObject locale_object = get_object(project, lang);
   if(locale_object) {
-    string t_str = locale_object->translate(id);
+    string t_str = locale_object->translate(id, fallback);
 #ifdef LOCALE_DEBUG
     if(t_str) t_str+="("+id+")";
 #endif
@@ -435,6 +500,10 @@ function|zero call(string project, string lang, string name,
   return f || [function]fb;
 }
 
+//! Remove old @[LocaleObject]s from the cache.
+//!
+//! @seealso
+//!   @[flush_cache()]
 void clean_cache() {
   remove_call_out(clean_cache);
   int t = time(1)-CLEAN_CYCLE;
@@ -454,6 +523,7 @@ void clean_cache() {
   call_out(clean_cache, CLEAN_CYCLE);
 }
 
+//! Remove all entries in the @[LocaleObject] cache.
 void flush_cache() {
 #ifdef LOCALE_DEBUG
   werror("Locale.flush_cache()\n");
@@ -463,6 +533,8 @@ void flush_cache() {
   // but then things would probably stop working.
 }
 
+//! Retrieve some statistics about the
+//! currently loaded @[LocaleObject]s.
 mapping(string:int) cache_status() {
   int size=0, lp=0;
   foreach(locales;; mapping l)

@@ -624,7 +624,7 @@ PIKECLASS Sequence
       }
     }
 
-    /*! @decl int _iterator_next()
+    /*! @decl int(0..1) _iterator_next()
      *!
      *! Advance to the next position in the sequence.
      *!
@@ -649,7 +649,7 @@ PIKECLASS Sequence
 	THIS->pos = -1;
 	push_undefined();
       } else{
-	push_int(THIS->pos);
+        push_int(1);
       }
     }
 

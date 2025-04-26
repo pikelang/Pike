@@ -723,8 +723,8 @@ class PSSState {
       if (sizeof(segments) != 3) return 0;
       catch {
 	mapping(string(7bit):string(7bit)|int) headers =
-	  [mapping(string(7bit):string(7bit)|int)](mixed)
-	  Standards.JSON.decode(utf8_to_string(MIME.decode_base64url(segments[0])));
+          [mapping(string(7bit):string(7bit)|int)]
+          Standards.JSON.decode_utf8(MIME.decode_base64url(segments[0]));
 	if (!mappingp(headers)) return 0;
 	object(.Hash)|zero h;
 	switch(headers->alg) {
@@ -902,8 +902,8 @@ class PKCS1_5State
     if (sizeof(segments) != 3) return 0;
     catch {
       mapping(string(7bit):string(7bit)|int) headers =
-	[mapping(string(7bit):string(7bit)|int)](mixed)
-	Standards.JSON.decode(utf8_to_string(MIME.decode_base64url(segments[0])));
+        [mapping(string(7bit):string(7bit)|int)]
+        Standards.JSON.decode_utf8(MIME.decode_base64url(segments[0]));
       if (!mappingp(headers)) return 0;
       object(.Hash)|zero h;
       switch(headers->alg) {

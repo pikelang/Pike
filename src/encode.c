@@ -798,7 +798,16 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	   * performing a recursive call, which means that we need
 	   * a proper pike_string anyway.
 	   */
+#if SIZEOF_INT_TYPE > SIZEOF_LONG
+          int neg = i < 0;
+
+          if (neg) i = -i;
+          mpz_init (&tmp);
+          mpz_import (&tmp, 1, 1, SIZEOF_INT_TYPE, 0, 0, &i);
+          if (neg) mpz_neg (&tmp, &tmp);
+#else
           mpz_init_set_si( &tmp, i );
+#endif
 	  push_string(low_get_mpz_digits(&tmp, 36));
 	  mpz_clear( &tmp );
 	  encode_value2(Pike_sp-1, data, force_encode);
@@ -2477,7 +2486,7 @@ static struct object *decoder_codec (struct decode_data *data)
   struct pike_string *decoder_str;
   if (data->codec) return data->codec;
   if (data->explicit_codec)
-    Pike_fatal("Trying to load codec while explicitely opted out.\n");
+    Pike_fatal("Trying to load codec while explicitly opted out.\n");
   MAKE_CONST_STRING (decoder_str, "Decoder");
   return data->codec = lookup_codec (decoder_str);
 }
@@ -3850,7 +3859,7 @@ static void decode_value2(struct decode_data *data)
 	  break;
 
 	case 5: {		/* Forward reference for new-style encoding. */
-	  struct program *p = low_allocate_program();
+          struct program *p = low_allocate_program(0);
           ETRACE({
 	      DECODE_WERR(".entry   program, 5");
 	    });
@@ -4392,6 +4401,14 @@ static void decode_value2(struct decode_data *data)
 			    data->depth, "");
 		    a_flag = (a_flag > (data->debug-1))?a_flag:(data->debug-1);
 		  });
+                  if(
+#ifdef PIKEDEBUG
+                     (a_flag > 2) ||
+#endif
+                     (c->lex.pragmas & ID_DISASSEMBLE)) {
+                    safe_pike_fprintf(stderr, "===           .global %pS:\n",
+                                 Pike_sp[-2].u.string);
+                  }
 		  func.offset = decode_portable_bytecode(data, func.offset);
 		  EDB(2, a_flag = old_a_flag);
 		}

@@ -171,6 +171,25 @@ if test "x$with_com" = xyes -a "x$enable_binary" != xno; then
 
   if test "$ac_cv_header_objbase_h" = yes; then
 
+    AC_MSG_CHECKING([for GUID_NULL in -luuid])
+    AC_CACHE_VAL(ac_cv_lib_uuid_GUID_NULL, [
+      ac_save_LIBS="$LIBS"
+      LIBS="$LIBS -luuid"
+      AC_TRY_LINK([#include <stdio.h>
+                   #include <objbase.h>], dnl
+        [printf("%p\n", &GUID_NULL);], dnl
+        [ac_cv_lib_uuid_GUID_NULL=yes], dnl
+        [ac_cv_lib_uuid_GUID_NULL=no])
+      LIBS="$ac_save_LIBS"
+    ])
+    if test x"$ac_cv_lib_uuid_GUID_NULL" = xyes; then
+      AC_MSG_RESULT(yes)
+      LIBS="$LIBS -luuid"
+      COM_LIBS="${COM_LIBS} -luuid"
+    else
+      AC_MSG_RESULT(no)
+    fi
+
     AC_MSG_CHECKING([for CoCreateInstance])
     AC_CACHE_VAL(ac_cv_lib_com_CoCreateInstance, [
       ac_save_LIBS="$LIBS"

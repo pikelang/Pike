@@ -276,10 +276,11 @@ static inline unsigned INT32 PIKE_UNUSED_ATTRIBUTE fls32(unsigned INT32 v) {
 }
 
 /**
- * Returns the integer 2 log of the 32-bit integer v. Returns -1 for 0.
+ * Returns the integer 2 log of the 32-bit integer v.
+ * Returns ((unsigned INT32)~0) for 0.
  */
 static inline unsigned INT32 PIKE_UNUSED_ATTRIBUTE log2_u32(unsigned INT32 v) {
-    return fls32(v) - 1;
+  return (unsigned INT32)(fls32(v) - 1);
 }
 
 #if !defined(HAVE___BSWAP16) && !defined(HAVE_BSWAP16) && !defined(bswap16)

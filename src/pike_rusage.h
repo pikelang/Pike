@@ -11,7 +11,7 @@
 #include <time.h>
 
 #ifdef _POSIX_TIMERS
-#if _POSIX_TIMERS > 0
+#if _POSIX_TIMERS > 0 && !defined(__NT__)
 
 #ifdef _POSIX_THREAD_CPUTIME
 #  if _POSIX_THREAD_CPUTIME != -1

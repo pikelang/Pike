@@ -53,6 +53,7 @@
 #endif
 
 #include "pike_netlib.h"
+#include "pike_threadlib.h"
 #include "backend.h"
 
 #if defined(HAVE_IPPROTO_IPv6) && !defined(IPPROTO_IPV6)
@@ -89,6 +90,10 @@ struct my_file
 
 #if defined(HAVE_FD_FLOCK) || defined(HAVE_FD_LOCKF)
   struct object *key;
+#endif
+#ifdef _REENTRANT
+  /* List of pike threads that need to be woken up on concurrent close(2). */
+  struct thread_state *busy_threads;
 #endif
 };
 

@@ -53,7 +53,7 @@
 #define DEF_ARG_NOPRESPACE  0x200000
 #define DEF_ARG_NOPOSTSPACE 0x400000
 #define DEF_ARG_NEED_COMMA  0x800000
-#define DEF_ARG_MASK        0x0fffff
+#define DEF_ARG_MASK        0x0000ff
 
 #ifdef HAVE_PRAGMA_GCC_OPTIMIZE
 #pragma GCC optimize "-Os"
@@ -144,15 +144,175 @@ DECLARATIONS;
  * }
  */
 
+EXTRA {
+  /*! @enum CppFlags
+   *!
+   *!   Flags for @[CPP()->low_cpp()] and directives.
+   */
+  type_stack_mark();
+  push_int_type(0, 0x7f);
+  push_type_value(pop_unfinished_type());
+  simple_add_constant("CppFlags", Pike_sp-1, ID_LOCAL);
+  pop_stack();
+
+  /*! @decl constant CPP_NO_OUTPUT = 1
+   *!
+   *!   Inside false section of #if/#else.
+   */
+  add_integer_constant("CPP_NO_OUTPUT", CPP_NO_OUTPUT, ID_LOCAL);
+
+  /*! @decl constant CPP_EXPECT_ELSE = 2
+   *!
+   *!   Expect #else/#elif/#elseif.
+   */
+  add_integer_constant("CPP_EXPECT_ELSE", CPP_EXPECT_ELSE, ID_LOCAL);
+
+  /*! @decl constant CPP_EXPECT_ENDIF = 4
+   *!
+   *!   Expect #endif.
+   */
+  add_integer_constant("CPP_EXPECT_ENDIF", CPP_EXPECT_ENDIF, ID_LOCAL);
+
+  /*! @decl constant CPP_REALLY_NO_OUTPUT = 8
+   *!
+   *!   Entire preprocessor is in false section.
+   */
+  add_integer_constant("CPP_REALLY_NO_OUTPUT", CPP_REALLY_NO_OUTPUT, ID_LOCAL);
+
+  /*! @decl constant CPP_END_AT_NEWLINE = 16
+   *!
+   *!   Halt at end of line.
+   */
+  add_integer_constant("CPP_END_AT_NEWLINE", CPP_END_AT_NEWLINE, ID_LOCAL);
+
+  /*! @decl constant CPP_DO_IF = 32
+   *!
+   *!   Enable @[cpp::defined()] et al.
+   */
+  add_integer_constant("CPP_DO_IF", CPP_DO_IF, ID_LOCAL);
+
+  /*! @decl constant CPP_NO_EXPAND = 64
+   *!
+   *!   Reserved.
+   */
+  add_integer_constant("CPP_NO_EXPAND", CPP_NO_EXPAND, ID_LOCAL);
+
+  /*! @endenum
+   */
+
+  /*! @enum CppMacroFlags
+   *!
+   *!   Flags for @[define()].
+   */
+  type_stack_mark();
+  push_int_type(0, 0x3f);
+  push_type_value(pop_unfinished_type());
+  simple_add_constant("CppMacroFlags", Pike_sp-1, ID_LOCAL);
+  pop_stack();
+
+  /*! @decl constant CPP_MACRO_VARARGS = 0x01
+   *!
+   *!   Macro is a function-style macro that accepts
+   *!   more arguments than @[define()->num_args].
+   */
+  add_integer_constant("CPP_MACRO_VARARGS", CPP_MACRO_VARARGS, ID_LOCAL);
+
+  /*! @decl constant CPP_MACRO_KEEP_NL = 0x02
+   *!
+   *!   Keep newlines.
+   */
+  add_integer_constant("CPP_MACRO_KEEP_NL", CPP_MACRO_KEEP_NL, ID_LOCAL);
+
+  /*! @decl constant CPP_MACRO_USER_FLAGS = 0x03
+   *!
+   *!   Mask for valid user flags (ie @[CPP_MACRO_VARARGS] or
+   *!   @[CPP_MACRO_KEEP_NL]).
+   */
+  add_integer_constant("CPP_MACRO_USER_FLAGS", CPP_MACRO_USER_FLAGS, ID_LOCAL);
+
+  /*! @decl constant CPP_MACRO_DISABLED	= 0x10
+   *!
+   *!   Flag indicating that the macro is temorarily disabled.
+   *!   Don't expand. This flag is used during preprocessing
+   *!   of the result from expansion of the macro.
+   */
+  add_integer_constant("CPP_MACRO_DISABLED", CPP_MACRO_DISABLED, ID_LOCAL);
+
+  /*! @decl constant CPP_MACRO_IN_USE = 0x20
+   *!
+   *!   In use. This flag is used during preprocessing of
+   *!   arguments to the macro.
+   */
+  add_integer_constant("CPP_MACRO_IN_USE", CPP_MACRO_IN_USE, ID_LOCAL);
+
+  /*! @endenum
+   */
+
+  /*! @enum CppDefArgFlags
+   *!
+   *!   These flags affect the behavior of macro argument expansion,
+   *!   and are used in the @[define()->parts] array.
+   */
+  type_stack_mark();
+  push_int_type(0, 0xffffff);
+  push_type_value(pop_unfinished_type());
+  simple_add_constant("CppDefArgFlags", Pike_sp-1, ID_LOCAL);
+  pop_stack();
+
+  /*! @decl constant CPP_DEF_ARG_STRINGIFY   = 0x100000
+   *!
+   *!   Convert the argument to a quoted string (including initial
+   *!   and ending @expr{'"'@}).
+   */
+  add_integer_constant("CPP_DEF_ARG_STRINGIFY", DEF_ARG_STRINGIFY, ID_LOCAL);
+
+  /*! @decl constant CPP_DEF_ARG_NOPRESPACE  = 0x200000
+   *!
+   *!   Inhibit insertion of whitespace before the argument expansion.
+   */
+  add_integer_constant("CPP_DEF_ARG_NOPRESPACE", DEF_ARG_NOPRESPACE, ID_LOCAL);
+
+  /*! @decl constant CPP_DEF_ARG_NOPOSTSPACE = 0x400000
+   *!
+   *!   Inhibit insertion of whitespace after the argument expansion.
+   */
+  add_integer_constant("CPP_DEF_ARG_NOPOSTSPACE", DEF_ARG_NOPOSTSPACE, ID_LOCAL);
+
+  /*! @decl constant CPP_DEF_ARG_NEED_COMMA  = 0x800000
+   *!
+   *!   Insert a comma before the argument if it is not the empty varargs argument.
+   */
+  add_integer_constant("CPP_DEF_ARG_NEED_COMMA", DEF_ARG_NEED_COMMA, ID_LOCAL);
+
+  /*! @decl constant CPP_DEF_ARG_MASK        = 0x0000ff
+   *!
+   *!   Mask for converting a @[define()->parts] entry into an argument number.
+   */
+  add_integer_constant("CPP_DEF_ARG_MASK", DEF_ARG_MASK, ID_LOCAL);
+
+  /*! @endenum
+   */
+}
+
 /*! @class define
  */
 PIKECLASS define
 {
-  PIKEVAR string name flags ID_PRIVATE|ID_PROTECTED;
-  PIKEVAR array(string|int) parts flags ID_PRIVATE|ID_PROTECTED;
-  CVAR magic_define_fun magic;
+  /*! @decl string name
+   *!
+   *!   Macro name.
+   */
+  PIKEVAR string name;
+
+  /*! @decl array(string|int|function(mixed...:string))|zero parts;
+   *!
+   *!   Macro expansion rule.
+   */
+  PIKEVAR array(string|int)|zero parts;
+
+  CVAR magic_define_fun magic;       /* Mostly unused. */
   CVAR int args;
-  CVAR short flags;         /* CPP_MACRO_* */
+  CVAR unsigned short flags;         /* CPP_MACRO_* */
 
   CVAR struct svalue self;
 
@@ -172,6 +332,9 @@ PIKECLASS define
 #endif
   }
 
+  /*! @decl void create(string name, int num_args, @
+   *!                   array(string|int|function(mixed|void...:string)) parts)
+   */
   PIKEFUN void create(string name, int num_args,
 		      array(string|int|function(mixed|void...:string)) parts)
     flags ID_PROTECTED;
@@ -192,8 +355,27 @@ PIKECLASS define
 #define tObjImpl_CPP	tObj
 #endif
 
+  /*! @decl int(-1..) `num_args()
+   *!
+   *!   Number of arguments for macro (if any).
+   *!
+   *!   @expr{-1@} if the macro is not a function-style macro.
+   *!   Otherwise the minimum number of expected arguments.
+   */
+  PIKEFUN int(-1..) `num_args()
+  {
+    push_int(THIS->args);
+  }
+
+  /*! @decl CppMacroFlags `flags()
+   */
+  PIKEFUN int(6bit) `flags()
+  {
+    push_int(THIS->flags);
+  }
+
   /*! @decl string `()(array(string)|void arguments, CPP|void context, @
-   *!                  int|void flags)
+   *!                  CppFlags|void flags)
    *!
    *! @param arguments
    *!   Array of arguments to the macro. Zero if no parenthesis.
@@ -206,7 +388,7 @@ PIKECLASS define
    *!   on failure (typically due to invalid @[arguments]).
    */
   PIKEFUN string `()(array(string)|void arguments, object(CPP)|void context_obj,
-		     int|void flags_sval)
+                     int(7bit)|void flags_sval)
     flags ID_PROTECTED;
   {
     struct define_struct *d = THIS;
@@ -446,26 +628,87 @@ PIKECLASS define
 
     push_int(0);
   }
+
+  PIKEFUN string _sprintf(int c, mapping(string:mixed)|void params)
+    flags ID_PROTECTED;
+  {
+    if (c != 'O') {
+      push_undefined();
+      return;
+    }
+
+    push_text("define(%s)");
+    ref_push_string(THIS->name);
+    if (THIS->args >= 0) {
+      int i = THIS->args;
+      push_text("(");
+      while (i--) {
+        push_text("ARG_");
+        push_int(THIS->args - i);
+        if (i) push_text(", ");
+      }
+      push_text(")");
+      if (THIS->args) {
+        f_add(2 + THIS->args * 3);
+      } else {
+        f_add(3);
+      }
+    }
+    f_sprintf(2);
+  }
 }
 /*! @endclass define
  */
 
+/*! @decl string handle_include(string header_file, string current_file, @
+ *!                             int(0..1) is_local_ref)
+ *!
+ *!   The default implementation calls the corresponding
+ *!   function in @[master()] with the same arguments
+ *!   and returns its result.
+ */
 PIKEFUN string handle_include(string header_file, string current_file,
 			      int(0..1) is_local_ref)
 {
   APPLY_MASTER("handle_include", args);
 }
 
+/*! @decl string read_include(string filename)
+ *!
+ *!   The default implementation calls the corresponding
+ *!   function in @[master()] with the same arguments
+ *!   and returns its result.
+ */
 PIKEFUN string read_include(string filename)
 {
   APPLY_MASTER("read_include", args);
 }
 
+/*! @decl string decode_charset(string data, string charset)
+ *!
+ *!   The default implementation calls the corresponding
+ *!   function in @[master()] with the same arguments
+ *!   and returns its result.
+ */
 PIKEFUN string decode_charset(string data, string charset)
 {
   APPLY_MASTER("decode_charset", args);
 }
 
+/*! @decl mapping(string:string|function|object) get_predefines()
+ *!
+ *! Returns a mapping containing the set of predefined macros.
+ *! These are typically the macros defined via the @tt{-D@} option
+ *! when starting Pike.
+ *!
+ *! After @[_take_over_initial_predefines()] has been called, it
+ *! instead calls @[master()->get_predefines()] and returns
+ *! its result.
+ *!
+ *! @seealso
+ *!   @[cpp()], @[CompilationHandler->get_predefines()],
+ *!   @[_take_over_initial_predefines()]
+ */
 PIKEFUN mapping(string:string|function|object) get_predefines()
 {
   if (use_initial_predefs) {
@@ -479,13 +722,25 @@ PIKEFUN mapping(string:string|function|object) get_predefines()
  *!
  *! The state for an instance of the preprocessor.
  *!
+ *! The default set of supported directives and macros, etc
+ *! is documented in the @[cpp::] scope.
+ *!
+ *! Custom directives may be added by inheriting this class and adding non-private
+ *! functions @expr{string directive_XXX(CppFlags flags, string rest_of_line)@},
+ *! or by adding the same to the @[directives] mapping.
+ *!
  *! @seealso
- *!   @[predef::cpp()]
+ *!   @[predef::cpp()], @[cpp()], @[cpp::]
  */
 PIKECLASS CPP
   program_flags PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT;
 {
-  PIKEVAR mapping(string:object(define)) defines flags ID_PRIVATE|ID_PROTECTED;
+  /*! @decl mapping(string:define) defines()
+   *!
+   *!   Mapping containing the set of active macros.
+   */
+  PIKEVAR mapping(string:object(define))|zero defines;
+
   PIKEVAR int current_line;
   PIKEVAR int compile_errors;
   PIKEVAR string current_file;
@@ -503,7 +758,15 @@ PIKECLASS CPP
   PIKEVAR int dependencies_fail;
   PIKEVAR int auto_convert;
 
-  PIKEVAR mapping(string:function(string:string)) directives flags ID_PROTECTED;
+  /*! @decl mapping(string:function(int(16bit), string: string|zero))|zero directives
+   *!
+   *! Mapping containing the set of active dynamic custom preprocessor directives.
+   *!
+   *! @note
+   *!   This mapping is only consulted if a corresponding @expr{directive_XXX@}
+   *!   symbol is not present (or is private) in @expr{this@}.
+   */
+  PIKEVAR mapping(string:function(string:string))|zero directives;
 
   INIT
   {
@@ -550,7 +813,7 @@ static ptrdiff_t calc(struct CPP_struct *this, const PCHARP data,
 
 
   /*! @decl void report(SeverityLevel severity, @
-   *!                   string filename, int(1..) linenumber, @
+   *!                   string filename, int(0..) linenumber, @
    *!                   string subsystem, @
    *!                   string message, mixed ... extra_args)
    *!
@@ -562,6 +825,9 @@ static ptrdiff_t calc(struct CPP_struct *this, const PCHARP data,
    *! @param filename
    *! @param linenumber
    *!   Location which triggered the diagnostic.
+   *!   @[linenumber] @expr{0@} (zero) indicates that it is
+   *!   not applicable (typically originating from command
+   *!   line arguments or similar).
    *!
    *! @param subsystem
    *!   Always @expr{"cpp"@}.
@@ -581,7 +847,7 @@ static ptrdiff_t calc(struct CPP_struct *this, const PCHARP data,
    *!   @[Reporter()->report()], @[cpp_error()]
    */
   PIKEFUN void report(int(0..3) severity,
-		      string filename, int(1..) linenumber,
+                      string filename, int(0..) linenumber,
 		      string subsystem,
 		      string message, mixed ... extra_args)
   {
@@ -1051,6 +1317,11 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
     apply_external(1, CE_RESOLV_FUN_NUM, 4);
   }
 
+  /*! @decl mapping|object|program handle_import(string module)
+   *!
+   *!   The default implementation is a proxy for the same function
+   *!   in the lexical parent class.
+   */
   PIKEFUN mapping|object|program handle_import(string module)
   {
     struct CPP_struct *this = THIS;
@@ -1069,6 +1340,12 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
 #endif
   }
 
+  /*! @decl string handle_include(string header_file, string current_file, @
+   *!                             int(0..1) is_local_ref)
+   *!
+   *!   The default implementation is a proxy for the same function
+   *!   in the lexical parent class.
+   */
   PIKEFUN string handle_include(string header_file, string current_file,
 				int(0..1) is_local_ref)
   {
@@ -1081,6 +1358,11 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
 #endif
   }
 
+  /*! @decl string read_include(string filename)
+   *!
+   *!   The default implementation is a proxy for the same function
+   *!   in the lexical parent class.
+   */
   PIKEFUN string read_include(string filename)
   {
 #ifdef SUPPORT_HANDLERS
@@ -1092,6 +1374,11 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
 #endif
   }
 
+  /*! @decl string decode_charset(string data, string charset)
+   *!
+   *!   The default implementation is a proxy for the same function
+   *!   in the lexical parent class.
+   */
   PIKEFUN string decode_charset(string data, string charset)
   {
 #ifdef SUPPORT_HANDLERS
@@ -1202,7 +1489,7 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
    *! @seealso
    *!   @[#if]
    */
-  PIKEFUN string(0..0) directive_require(int flags, string line)
+  PIKEFUN string(0..0) directive_require(int(7bit) flags, string line)
   {
     struct CPP_struct *this = THIS;
 
@@ -1408,7 +1695,7 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
    *! @seealso
    *!   @[#warning]
    */
-  PIKEFUN string(0..0) directive_error(int flags, string line)
+  PIKEFUN string(0..0) directive_error(int(7bit) flags, string line)
   {
     struct CPP_struct *this = THIS;
 
@@ -1435,7 +1722,7 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
    *! @seealso
    *!   @[#error]
    */
-  PIKEFUN string(0..0) directive_warning(int flags, string line)
+  PIKEFUN string(0..0) directive_warning(int(7bit) flags, string line)
   {
     struct CPP_struct *this = THIS;
 
@@ -1510,7 +1797,7 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
    *!   #pike __REAL_VERSION__
    *!   @endcode
    */
-  PIKEFUN string(0..0) directive_pike(int flags, string line)
+  PIKEFUN string(0..0) directive_pike(int(7bit) flags, string line)
   {
     struct CPP_struct *this = THIS;
 
@@ -1646,7 +1933,7 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
    *!       Disable disassembly output (default).
    *!   @endstring
    */
-  PIKEFUN string(0..0) directive_pragma(int flags, string line)
+  PIKEFUN string(0..0) directive_pragma(int(7bit) flags, string line)
   {
     struct CPP_struct *this = THIS;
 
@@ -2147,9 +2434,9 @@ static ptrdiff_t find_end_parenthesis(struct CPP_struct *this,
     case ')':  return pos;
     case '/':
       if (INDEX_PCHARP(data,pos) == '*') {
-	pos = find_end_of_comment(this,data,len,pos+1,0);
+        pos = find_end_of_comment(this, data, len, pos + 1, 1);
       } else if (INDEX_PCHARP(data,pos) == '/') {
-	pos = find_end_of_line(this,data,len,pos+1,0);
+        pos = find_end_of_line(this, data, len, pos + 1, 1);
       }
     }
   }
@@ -2183,9 +2470,9 @@ static ptrdiff_t find_end_brace(struct CPP_struct *this,
     case '}':  return pos;
     case '/':
       if (INDEX_PCHARP(data,pos) == '*') {
-	pos=find_end_of_comment(this,data,len,pos,0);
+        pos = find_end_of_comment(this, data, len, pos, 1);
       } else if (INDEX_PCHARP(data,pos) == '/') {
-	pos=find_end_of_line(this,data,len,pos,0);
+        pos = find_end_of_line(this, data, len, pos, 1);
       }
     }
   }
@@ -2361,6 +2648,8 @@ static void undefine(struct CPP_struct *this, struct pike_string *name)
  *!   And in the @tt{@i{<replacement string>@}@}, @tt{arg1@} and @tt{arg2@}
  *!   will be replaced with @tt{something1@} and @tt{something2@}.
  */
+
+/*! @endnamespace */
 
 static struct pike_string *make_define_name(struct CPP_struct *this,
                                             const char *name)
@@ -3968,8 +4257,8 @@ static void parse_define_body(struct CPP_struct *this,
   f_aggregate(Pike_sp - partbase);
 }
 
-/*
- * Preprocessor template.
+/**
+ * Preprocess template.
  *
  * NB: There are two basic cases where this function is called:
  *
@@ -3979,6 +4268,17 @@ static void parse_define_body(struct CPP_struct *this,
  *
  *   * Or parsing to the end of the line after a directive.
  *     The result of this is added to a temporary buffer.
+ *
+ * @param data
+ *   String of data to preprocess.
+ *
+ * @param len
+ *   Length of data to preprocess.
+ *
+ * @param charset
+ *   Charset for data if known.
+ *
+ * Returns the number of characters processed from data.
  */
 static ptrdiff_t low_cpp(struct CPP_struct *this,
                            const PCHARP data,
@@ -4946,8 +5246,10 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
 		struct svalue sv;
 		struct pike_string *directive_string =
 		  add_shared_strings(MK_STRING("directive_"), directive);
-		int id = find_shared_string_identifier(directive_string,
-						       Pike_fp->current_object->prog);
+                int id =
+                  really_low_find_shared_string_identifier(directive_string,
+                                                           Pike_fp->current_program,
+                                                           SEE_PROTECTED);
 
 		free_string(directive_string);
 		if (id >= 0) {
@@ -4990,7 +5292,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
               }
 
               if (directive) {
-                cpp_error_sprintf(this, "Unknown preprocessor directive %pS.",
+                cpp_error_sprintf(this, "Unknown preprocessor directive #%pS.",
                                   directive);
                 free_string(directive);
               } else {
@@ -5016,7 +5318,19 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
   return pos;
 }
 
-  PIKEFUN void low_cpp(string data, int flags)
+  /*! @decl void low_cpp(string data, CppFlags flags)
+   *!
+   *!   Preprocess a string fragment.
+   *!
+   *!   The preocessed result is appended to the current output buffer.
+   *!
+   *! @note
+   *!   This is probably not the function you want.
+   *!
+   *! @seealso
+   *!   @[cpp()], @[high_cpp()], @[drain()]
+   */
+  PIKEFUN void low_cpp(string data, int(7bit) flags)
   {
     struct CPP_struct *this = THIS;
 #ifdef PIKE_DEBUG
@@ -5031,7 +5345,17 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
 #endif /* PIKE_DEBUG */
   }
 
-  PIKEFUN string cpp(string data, int flags)
+  /*! @decl string cpp(string data, CppFlags|void flags)
+   *!
+   *!   Preprocess a string.
+   *!
+   *! @returns
+   *!   Returns the preprocessed result.
+   *!
+   *! @seealso
+   *!   @[low_cpp()], @[high_cpp()]
+   */
+  PIKEFUN string cpp(string data, int(7bit)|void flags)
   {
     struct CPP_struct *this = THIS;
     struct string_builder save_buf = this->buf;
@@ -5045,7 +5369,8 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
     if (save_file) add_ref(save_file);
     init_string_builder(&this->buf, 0);
 
-    low_cpp(this, MKPCHARP_STR(data), data->len, flags, THIS->charset);
+    low_cpp(this, MKPCHARP_STR(data), data->len,
+            flags?flags->u.integer:0, THIS->charset);
 
     push_string(finish_string_builder(&this->buf));
 
@@ -5059,7 +5384,26 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
 #endif /* PIKE_DEBUG */
   }
 
-  PIKEFUN string high_cpp(string data)
+  /*! @decl string|zero high_cpp(string data)
+   *!
+   *!   Preprocess a string.
+   *!
+   *! @returns
+   *!   Returns the preprocessed result, unless there was a
+   *!   dependency failure in which case @expr{0@} (zero) is returned.
+   *!   If the function has failed, the result so far may be
+   *!   retrieved with @[drain()].
+   *!
+   *! @note
+   *!   Clears the set of defined macros on completion.
+   *!
+   *! @throws
+   *!   Throws error on preprocessor failure.
+   *!
+   *! @seealso
+   *!   @[low_cpp()], @[cpp()], @[drain()]
+   */
+  PIKEFUN string|zero high_cpp(string data)
   {
     struct CPP_struct *this = THIS;
 
@@ -5088,6 +5432,11 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
     push_int(0); /* flags */
     apply_current(f_CPP_low_cpp_fun_num, 2);
 
+    /* Zap all macros to break any circularities via the mapping. */
+    if (this->defines) {
+      clear_mapping(this->defines);
+    }
+
     if(this->compile_errors)
     {
       throw_error_object(fast_clone_object(cpp_error_program), 0, 0,
@@ -5103,13 +5452,19 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
       /* NB: Make sure the buffer isn't freed twice. */
       this->buf.s = NULL;
     }
-
-    /* Zap all macros to break any circularities via the mapping. */
-    if (this->defines) {
-      clear_mapping(this->defines);
-    }
   }
 
+  /*! @decl string drain()
+   *!
+   *!   Return the preprocessor output so far,
+   *!   and empties the buffer.
+   *!
+   *! @returns
+   *!   Returns the content of the output buffer.
+   *!
+   *! @seealso
+   *!   @[low_cpp()], @[high_cpp()]
+   */
   PIKEFUN string drain()
   {
     struct CPP_struct *this = THIS;
@@ -5118,6 +5473,9 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
   }
 
 /*** Magic defines ***/
+
+  /*! @namespace cpp::
+   */
 
   /*! @decl constant __LINE__
    *!
@@ -5356,7 +5714,6 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
 
     push_string(finish_string_builder(&tmp));
   }
-
 
 /*! @decl constant __REAL_VERSION__
  *!
@@ -5687,7 +6044,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
   /*! @decl void define_macro(string name, @
    *!                         string|object|array|function|void value, @
    *!                         int(-1..)|void numargs, @
-   *!                         int(0..3)|void flags)
+   *!                         CppMacroFlags|void flags)
    *!
    *! Define a cpp macro.
    *!
@@ -5707,10 +6064,10 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
    *! @param flags
    *!   Bit-wise or of flags affecting the macro behavior:
    *!   @int
-   *!     @value 1
+   *!     @value CPP_MACRO_VARARGS
    *!       Function style macro with a variable number of arguments.
    *!       Invalid if @[numargs] is @expr{-1@}.
-   *!     @value 2
+   *!     @value CPP_MACRO_KEEP_NL
    *!       Keep newlines emitted by the macro.
    *!   @endint
    *!   Defaults to @expr{0@}.
@@ -5721,7 +6078,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
   PIKEFUN void define_macro(string name,
 			    string|object|array|function|void value,
 			    int(-1..)|void numargs,
-			    int(0..3)|void flags)
+                            int(6bit)|void flags)
   {
     struct CPP_struct *this = THIS;
     int real_numargs = -2;
@@ -5807,7 +6164,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
   /*! @decl void define_pike_macros()
    *!
    *!   Adds some pike-specific cpp macros,
-   *!   such as @[__DIR__], @[__VERSION__], [__PIKE__], etc.
+   *!   such as @[__DIR__], @[__VERSION__], @[__PIKE__], etc.
    *!
    *! @seealso
    *!   @[define_macro()], @[define_ansi_macros()]
@@ -5929,7 +6286,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
    *!
    *! @seealso
    *!   @[init_pike_cpp()], @[define_multiple_macros()],
-   *!   @[_take_over_initial_predefines()]
+   *!   @[_take_over_initial_predefines()], @[defines]
    */
 PIKEFUN mapping(string:string|function|object|array(string|int)) get_predefines()
   {
@@ -5946,26 +6303,58 @@ PIKEFUN mapping(string:string|function|object|array(string|int)) get_predefines(
 #endif
   }
 
+  static void set_current_file(void *file)
+  {
+    free_string(THIS->current_file);
+    THIS->current_file = file;
+  }
+  static void set_current_line(void *line)
+  {
+    THIS->current_line = (INT_TYPE)(ptrdiff_t)line;
+  }
+
   /*! @decl void init_pike_cpp()
    *!
    *!   Convenience function for initializing the preprocessor
    *!   to Pike defaults.
    *!
-   *!   The default implementation is essentially:
+   *!   The default implementation is essentially (disregarding
+   *!   error handling):
    *!   @code
    *!     {
+   *!       string save_file = current_file;
+   *!       int save_line = current_line;
+   *!       current_file = "<built-in>";
+   *!       current_line = 0;
    *!       define_ansi_macros();
    *!       define_pike_macros();
+   *!       current_file = "<command-line>";
    *!       define_multiple_macros(get_predefines());
+   *!       current_file = save_current_file;
+   *!       current_line = save_line;
    *!     }
    *!   @endcode
    */
   PIKEFUN void init_pike_cpp()
   {
+    ONERROR restore_current_file;
+    ONERROR restore_current_line;
+    SET_ONERROR(restore_current_file, set_current_file, THIS->current_file);
+    SET_ONERROR(restore_current_line, set_current_line,
+                (void *)(ptrdiff_t)THIS->current_line);
+    /* NB: We need to add references to the current_file string here
+     *     in order to keep the gc happy.
+     */
+    copy_shared_string(THIS->current_file, MK_STRING("<built-in>"));
+    THIS->current_line = 0;
     apply_current(f_CPP_define_ansi_macros_fun_num, 0);
     apply_current(f_CPP_define_pike_macros_fun_num, 0);
+    free_string(THIS->current_file);
+    copy_shared_string(THIS->current_file, MK_STRING("<command-line>"));
     apply_current(f_CPP_get_predefines_fun_num, 0);
     apply_current(f_CPP_define_multiple_macros_fun_num, 1);
+    CALL_AND_UNSET_ONERROR(restore_current_line);
+    CALL_AND_UNSET_ONERROR(restore_current_file);
   }
 }
 /*! @endclass CPP

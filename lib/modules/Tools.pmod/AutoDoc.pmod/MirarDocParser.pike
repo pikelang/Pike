@@ -11,8 +11,8 @@ string IMAGE_DIR;
 constant makepic = ({
   // Pike 0.7.11 and later:
   #"// Illustration.
-#pike __REAL_VERSION__
-#line " + sprintf("%d %q", __LINE__ + 1,  __FILE__) + #"
+"#"#pike __REAL_VERSION__
+"#"#line " + sprintf("%d %q", __LINE__ + 1,  __FILE__) + #"
   string fn;
 
   int verbosity;
@@ -72,8 +72,8 @@ constant makepic = ({
   // There was also a compat layer for various functions
   // that later were removed.
   #"// Pike 7.3 illustration, implicit imports.
-#pike 7.3
-#line " + sprintf("%d %q", __LINE__ + 1, __FILE__) + #"
+"#"#pike 7.3
+"#"#line " + sprintf("%d %q", __LINE__ + 1, __FILE__) + #"
 
   import Image;
   import Stdio;
@@ -132,8 +132,8 @@ constant makepic = ({
 ",
   // Prior to 0.7.3 the Image module classes were all lower-case.
   #"// Pike 0.6 illustration, implicit imports, only Image.image.
-#pike 0.6
-#line " + sprintf("%d %q", __LINE__ + 1, __FILE__) + #"
+"#"#pike 0.6
+"#"#line " + sprintf("%d %q", __LINE__ + 1, __FILE__) + #"
 
   import 0.6::Image;
   import 0.6::Stdio;
@@ -1533,7 +1533,7 @@ protected void create(string image_dir, void|.Flags flags)
   else if (IMAGE_DIR[-1] != '/') IMAGE_DIR += "/";
 
   execute = #"
-#line " + sprintf("%d %q", __LINE__ + 1, __FILE__) + #"
+"#"#line " + sprintf("%d %q", __LINE__ + 1, __FILE__) + #"
   class Interceptor {
     string buffer = \"\";
 

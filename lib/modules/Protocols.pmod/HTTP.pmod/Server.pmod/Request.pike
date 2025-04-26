@@ -10,7 +10,7 @@
 //!     | (Incoming data)
 //!     v
 //!   @[read_cb]
-//!     | If complete headers are read
+//!     | When complete headers are read
 //!     v
 //!   @[parse_request]
 //!     v
@@ -24,7 +24,7 @@
 //!     | (Incoming data)
 //!     v
 //!   @[read_cb_post]
-//!     | If enough data has been received
+//!     | When enough data has been received
 //!     v
 //!   @[finalize]
 //! @endcode
@@ -552,6 +552,154 @@ protected string _sprintf(int t)
 // ----------------------------------------------------------------
 function log_cb;
 
+//! Make an HTTP header block from a response mapping.
+//!
+//! @param m
+//!   Contains elements for generating a response to the client.
+//!   @mapping m
+//!     @member string "data"
+//!       Data to be returned to the client.
+//!     @member object "file"
+//!       File object, the contents of which will be returned to the client.
+//!     @member int "error"
+//!       HTTP error code
+//!     @member int "size"
+//!       Length of content to be returned. If @i{file@} is provided, @i{size@}
+//!       bytes will be returned to client.
+//!     @member string "modified"
+//!       Contains optional modification date.
+//!     @member string "type"
+//!       Contains optional content-type
+//!     @member mapping "extra_heads"
+//!       Contains a mapping of additional headers to be returned to client.
+//!     @member string "server"
+//!       Contains the server identification header.
+//!   @endmapping
+//!
+//! @seealso
+//!   @[response_and_finish()]
+string make_response_header(mapping m)
+{
+   return (string)low_make_response_header(m,Stdio.Buffer());
+}
+
+Stdio.Buffer low_make_response_header(mapping m, Stdio.Buffer res)
+{
+   void radd( mixed ... args )
+   {
+      res->add(@(array(string))args,"\r\n");
+   };
+
+   if (protocol!="HTTP/1.0")
+   {
+      if (protocol=="HTTP/1.1")
+      {
+   // check for fire and forget here and go back to 1.0 then
+      }
+      else
+         protocol="HTTP/1.0";
+   }
+
+   if (!m->file && !m->data)
+      m->data="";
+   else if (!m->stat && m->file)
+      m->stat=m->file->stat();
+
+   if (undefinedp(m->size))
+   {
+      if (m->data)
+         m->size=sizeof(m->data);
+      else if (m->stat)
+      {
+         m->size=m->stat->size;
+         if( m->file )
+            m->size -= m->file->tell();
+      }
+      else
+         m->size=-1;
+   }
+
+   if (m->size!=-1)
+   {
+      if (undefinedp(m->start) && m->error==206)
+      {
+         if (m->stop==-1) m->stop=m->size-1;
+         if (m->start>=m->size ||
+             m->stop>=m->size ||
+             m->stop<m->start ||
+             m->size<0)
+            m->error = 416;
+      }
+   }
+
+   switch (m->error)
+   {
+      case 0:
+      case 200:
+         if (undefinedp(m->start))
+            radd(protocol," 200 OK"); // HTTP/1.1 when supported
+         else
+         {
+            radd(protocol," 206 Partial content");
+            m->error=206;
+         }
+         break;
+      default:
+         if(Protocols.HTTP.response_codes[(int)m->error])
+            radd(protocol," ", Protocols.HTTP.response_codes[(int)m->error]);
+         else
+            radd(protocol," ",m->error," ERROR");
+         break;
+   }
+
+   if (!m->type)
+      m->type = .filename_to_type(not_query);
+
+   if( m->error == 206 )
+     radd("Content-Range: bytes ", m->start,"-", m->stop==-1 ? m->size-1 : m->stop,"/",m->size);
+
+   radd("Content-Type: ",m->type);
+   if( m->transfer_encoding )
+     radd("Transfer-Encoding: ", m->transfer_encoding);
+
+   if( m->size >= 0 )
+      radd("Content-Length: ",(string)m->size);
+
+   radd("Server: ", m->server || .http_serverid);
+
+   string http_now = .http_date(time(1));
+   radd("Date: ",http_now);
+
+   if (m->modified)
+      radd("Last-Modified: ", .http_date(m->modified));
+   else if (m->stat)
+      radd("Last-Modified: ", .http_date(m->stat->mtime));
+   else
+      radd("Last-Modified: ", http_now);
+
+   if (m->extra_heads)
+      foreach (m->extra_heads;string name;array|string arr)
+         foreach (Array.arrayify(arr);;string value)
+            radd(String.capitalize(name),": ",value);
+
+// FIXME: insert cookies here?
+   string cc = lower_case(request_headers["connection"]||"");
+
+   if( (protocol=="HTTP/1.1" && !has_value(cc,"close")) || cc=="keep-alive" )
+   {
+       radd("Connection: keep-alive");
+       keep_alive=1;
+   }
+   else
+   {
+       radd("Connection: close");
+   }
+
+   res->add("\r\n");
+   return res;
+}
+
+
 //! Return the IP address that originated the request, or 0 if
 //! the IP address could not be determined. In the event of an
 //! error, @[my_fd]@tt{->errno()@} will be set.
@@ -582,30 +730,29 @@ void set_mode(int mode) {
   _mode = mode;
 }
 
-//! return a properly formatted response to the HTTP client
+//! Return a properly formatted response to the HTTP client
 //! @param m
-//! Contains elements for generating a response to the client.
-//! @mapping m
-//! @member string|array(string|object) "data"
-//!   Data to be returned to the client.  Can be an array of objects
-//!   which are concatenated and sent to the client.
-//! @member object "file"
-//!   File object, the contents of which will be returned to the client.
-//! @member int "error"
-//!   HTTP error code
-//! @member int "size"
-//!   length of content returned. If @i{file@} is provided, @i{size@}
-//!   bytes will be returned to client.
-//! @member string "modified"
-//!   contains optional modification date.
-//! @member string "type"
-//!   contains optional content-type
-//! @member mapping "extra_heads"
-//!   contains a mapping of additional headers to be
-//! returned to client.
-//! @member string "server"
-//!   contains the server identification header.
-//! @endmapping
+//!   Contains elements for generating a response to the client.
+//!   @mapping m
+//!     @member string|array(string|object) "data"
+//!       Data to be returned to the client.  Can be an array of objects
+//!       which are concatenated and sent to the client.
+//!     @member object "file"
+//!       File object, the contents of which will be returned to the client.
+//!     @member int "error"
+//!       HTTP error code
+//!     @member int "size"
+//!       Length of content to be returned. If @i{file@} is provided, @i{size@}
+//!       bytes will be returned to client.
+//!     @member string "modified"
+//!       Contains optional modification date.
+//!     @member string "type"
+//!       Contains optional content-type
+//!     @member mapping "extra_heads"
+//!       Contains a mapping of additional headers to be returned to client.
+//!     @member string "server"
+//!       Contains the server identification header.
+//!   @endmapping
 void response_and_finish(mapping m, function|void _log_cb)
 {
    string tmp;

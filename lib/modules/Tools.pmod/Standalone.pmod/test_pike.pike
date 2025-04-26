@@ -79,14 +79,14 @@ class ScriptTestsuite(string|zero file_name)
   int pos = -1;
 
   protected int(1..1) _sizeof() { return 1; }
-  protected int(0..0) _iterator_next()
+  protected int(0..1) _iterator_next()
   {
     pos++;
     if (pos) {
       pos = -1;
       return UNDEFINED;
     }
-    return 0;
+    return 1;
   }
   protected int(0..) _iterator_index() { return pos && UNDEFINED; }
   protected Test _iterator_value()

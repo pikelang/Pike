@@ -113,6 +113,8 @@ static struct program *implements_a;
 static struct program *implements_b;
 static int implements_mode;
 
+DECLARATIONS
+
 #ifdef PIKE_DEBUG
 void TYPE_STACK_DEBUG(const char *fun)
 {
@@ -529,7 +531,8 @@ static struct pike_type *debug_mk_type(unsigned INT32 type,
   case PIKE_T_BIND:
     if (car && (car->type == PIKE_T_ASSIGN) &&
         ((car->car == car->cdr) ||
-         ((car->cdr->type == PIKE_T_NAME) && (car->car == car->cdr->cdr)))) {
+         (car->cdr && (car->cdr->type == PIKE_T_NAME) &&
+          (car->car == car->cdr->cdr)))) {
       /* Binding of a generic to itself.
        *
        * This is typically used to avoid the implicit
@@ -541,7 +544,10 @@ static struct pike_type *debug_mk_type(unsigned INT32 type,
       free_type(car);
       return cdr;
     }
-    if (!cdr) return NULL;
+    if (!cdr) {
+      free_type(car);
+      return NULL;
+    }
     break;
   }
 
@@ -2646,18 +2652,26 @@ void low_describe_type(struct string_builder *s, struct pike_type *t)
 
     case PIKE_T_ATTRIBUTE:
       {
-	struct pike_string *deprecated;
-	MAKE_CONST_STRING(deprecated, "deprecated");
-	if (((struct pike_string *)t->car) == deprecated) {
+        if (((struct pike_string *)t->car) == MK_STRING("deprecated")) {
           string_builder_sprintf(s, "__deprecated__(%pT)", t->cdr);
-	} else if (t == utf8_type_string) {
-	  string_builder_sprintf(s, "utf8_string");
-	} else {
-	  struct svalue sval;
-	  SET_SVAL(sval, PIKE_T_STRING, 0, string,
-		   (struct pike_string *)t->car);
-          string_builder_sprintf(s, "__attribute__(%pO, %pT)", &sval, t->cdr);
-	}
+          break;
+        } else if (((struct pike_string *)t->car) == MK_STRING("utf8")) {
+          if (t == utf8_type_string) {
+            string_builder_sprintf(s, "utf8_string");
+            break;
+          } else if ((t->cdr->type == T_STRING) &&
+                     (!t->cdr->cdr || (t->cdr->cdr->type == PIKE_T_ZERO) ||
+                      ((t->cdr->cdr->type == PIKE_T_INT) &&
+                       (((ptrdiff_t)t->cdr->cdr->cdr) <= 127) &&
+                       (((ptrdiff_t)t->cdr->cdr->car) >= 0)))) {
+            /* Narrow string. Suppress UTF8 attribute. */
+            string_builder_sprintf(s, "%pT", t->cdr);
+            break;
+          }
+        }
+
+        string_builder_sprintf(s, "__attribute__(%pq, %pT)",
+                               t->car, t->cdr);
       }
       break;
 
@@ -3086,6 +3100,14 @@ static int lower_or_pike_types(struct pike_type *t1,
     }
 #endif /* PIKE_DEBUG */
     switch(t1->type) {
+    case PIKE_T_ATTRIBUTE:
+      if (t1->car == t2->car) {
+        low_or_pike_types(t1->cdr, t2->cdr, 0);
+        push_type_attribute((struct pike_string *)t1->car);
+        return 0;
+      }
+      goto default_case;
+
     case T_INT:
       if (CAR_TO_INT(t1) < CAR_TO_INT(t2)) {
 	t = t1;
@@ -3220,6 +3242,7 @@ static int lower_or_pike_types(struct pike_type *t1,
       }
       /* FALLTHRU */
     default:
+    default_case:
 #if 0
       if (pike_types_le(t1, t2, 0, 0)) {
 	t = t2;
@@ -3429,6 +3452,16 @@ static void low_or_pike_types(struct pike_type *t1,
       push_type(T_VOID);
       push_type(T_OR);
     }
+  } else if ((t1->type == PIKE_T_ATTRIBUTE) &&
+             (t2->type != PIKE_T_ATTRIBUTE) &&
+             (t1->cdr->type == t2->type)) {
+    /* Pop the attribute. */
+    low_or_pike_types(t1->cdr, t2, zero_implied);
+  } else if ((t2->type == PIKE_T_ATTRIBUTE) &&
+             (t1->type != PIKE_T_ATTRIBUTE) &&
+             (t2->cdr->type == t1->type)) {
+    /* Pop the attribute. */
+    low_or_pike_types(t1, t2->cdr, zero_implied);
   }
   else if ((t1->type == T_OR) || (t2->type == T_OR)) {
     int on_stack = 0;
@@ -5188,9 +5221,8 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
     return pop_unfinished_type();
   }
 
-  /* Attributes and names. */
-  switch(a?a->type:PIKE_T_UNKNOWN) {
-  case PIKE_T_NAME:
+  /* Names. */
+  if (a && (a->type == PIKE_T_NAME)) {
     tmp = low_type_binop(op, a->cdr, b, remap, aflags, bflags, remap_flags);
     if (!tmp) {
       return NULL;
@@ -5204,6 +5236,25 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
     free_type(tmp);
 
     return pop_unfinished_type();
+  }
+  if (b && (b->type == PIKE_T_NAME)) {
+    tmp = low_type_binop(op, a, b->cdr, remap, aflags, bflags, remap_flags);
+    if (!tmp) {
+      return NULL;
+    }
+    if (tmp != b->cdr) {
+      return tmp;
+    }
+    type_stack_mark();
+    push_finished_type(tmp);
+    push_type_name((struct pike_string *)(b->car));
+    free_type(tmp);
+
+    return pop_unfinished_type();
+  }
+
+  /* Attributes. */
+  switch(a?a->type:PIKE_T_UNKNOWN) {
   case PIKE_T_ATTRIBUTE:
     if (b && (b->type == PIKE_T_ATTRIBUTE) && (b->car == a->car)) {
       /* Types a and b have the same attribute.
@@ -5284,20 +5335,6 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
     return pop_unfinished_type();
   }
   switch(b?b->type:PIKE_T_UNKNOWN) {
-  case PIKE_T_NAME:
-    tmp = low_type_binop(op, a, b->cdr, remap, aflags, bflags, remap_flags);
-    if (!tmp) {
-      return NULL;
-    }
-    if (tmp != b->cdr) {
-      return tmp;
-    }
-    type_stack_mark();
-    push_finished_type(tmp);
-    push_type_name((struct pike_string *)(b->car));
-    free_type(tmp);
-
-    return pop_unfinished_type();
   case PIKE_T_ATTRIBUTE:
     tmp = low_type_binop(op, a, b->cdr, remap, aflags, bflags, remap_flags);
     if (!tmp) {
@@ -11867,6 +11904,78 @@ struct pike_type *check_call_svalue(struct pike_type *fun_type,
   return res;
 }
 
+/**
+ * Bind any generics in the callable type.
+ *
+ * This is a helper function needed to propagate bindings
+ * of generics in arguments to LFUNs (create() and `()()).
+ **/
+static struct pike_type *bind_callable(struct pike_type *callable,
+                                       struct pike_type *bind,
+                                       INT32 flags)
+{
+  struct pike_type *tmp;
+ loop:
+  if (!callable) return NULL;
+  switch(callable->type) {
+  case T_SCOPE:
+    /* FIXME: Save and restore the corresponding marker set. */
+  case T_ASSIGN:
+  case PIKE_T_NAME:
+    callable = callable->cdr;
+    goto loop;
+
+  case PIKE_T_BIND:
+    callable = bind_callable(callable->cdr, callable->car, flags);
+
+    if (!callable) return NULL;
+    break;
+  case PIKE_T_OBJECT:
+    callable = low_object_lfun_type(callable, LFUN_CALL);
+    if (!callable) {
+      callable = mixed_type_string;
+    }
+    add_ref(callable);
+    break;
+  case PIKE_T_PROGRAM:
+    tmp = low_object_lfun_type(callable->car, LFUN_CREATE);
+    if (!tmp) {
+      /* No create() -- No arguments. */
+      /* FIXME: Multiple cases:
+       *          Untyped object.		function(mixed...:obj)
+       *          Failed to lookup program id.	function(mixed...:obj)
+       *          Program does not have a create().	function(:obj)
+       *
+       * We simply ignore the args.
+       */
+
+      type_stack_mark();
+      push_finished_type(callable->car);
+      push_type(T_MIXED);
+      push_type(T_VOID);
+      push_type(T_OR);
+      push_type(T_MANY);
+      callable = pop_unfinished_type();
+    } else {
+      callable = zzap_function_return(tmp, callable->car);
+    }
+    break;
+
+    /* FIXME: Do we need special cases for PIKE_T_TRANSITIVE
+     *        or obscure PIKE_T_FUNCTION->cdr?
+     */
+
+  default:
+    add_ref(callable);
+    break;
+  }
+
+  tmp = apply_bindings(bind, callable);
+  free_type(callable);
+
+  return tmp;
+}
+
 /* Check whether arg_type may be used as the type of the first argument
  * in a call to fun_type.
  *
@@ -12082,8 +12191,8 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
     break;
 
   case PIKE_T_BIND:
-    tmp = low_new_check_call(fun_type->cdr, arg_type, flags, cs, sval);
-    res = apply_bindings(fun_type->car, tmp);
+    tmp = bind_callable(fun_type->cdr, fun_type->car, flags);
+    res = low_new_check_call(tmp, arg_type, flags, cs, sval);
     free_type(tmp);
     break;
 
@@ -13750,6 +13859,7 @@ static void push_apply_bindings_recur(struct pike_type *t,
   DECLARE_CYCLIC();
 
   if (BEGIN_CYCLIC((ptrdiff_t)t, (ptrdiff_t)bindings)) {
+    /* This can happen when the generics are bound to themselves. */
     pike_fprintf(stderr, "push_apply_bindings_recur(%pT, %pm)\n", t, bindings);
     Pike_fatal("Infinite loop when applying bindings.\n");
   }
@@ -13791,10 +13901,22 @@ static void push_apply_bindings_recur(struct pike_type *t,
              *     temporarily to avoid an infinite loop.
              */
             struct svalue ss;
-            map_delete_no_free(bindings, Pike_sp-1, &ss);
+#ifdef PIKE_DEBUG
+            /* NB: Due to the cyclic check above, we MUST have
+             *     a different mapping if we change the contents.
+             */
+            struct mapping *tmp_bindings = copy_mapping(bindings);
+#else
+            struct mapping *tmp_bindings = bindings;
+#endif
+            map_delete_no_free(tmp_bindings, Pike_sp-1, &ss);
             /* NB: val is invalid after the above. */
-            push_apply_bindings_recur(ss.u.type, bindings);
+            push_apply_bindings_recur(ss.u.type, tmp_bindings);
+#ifdef PIKE_DEBUG
+            free_mapping(tmp_bindings);
+#else
             mapping_insert(bindings, Pike_sp-1, &ss);
+#endif
             free_svalue(&ss);
           } else {
             /* Common case. Nothing to expand here. */
@@ -15045,6 +15167,9 @@ struct pike_type *get_type_of_svalue(const struct svalue *s)
     }
     push_int_type(s->u.string->len, s->u.string->len);
     push_type(T_STRING);
+    if (!s->u.string->len || s->u.string->string_is_utf8) {
+      push_type_attribute(MK_STRING("utf8"));
+    }
     return pop_unfinished_type();
 
   default:

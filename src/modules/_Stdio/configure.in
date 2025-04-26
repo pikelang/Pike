@@ -42,24 +42,6 @@ fi
 #   <sys/tsol/label.h>, which is only available if patch 120050 (sparc)
 #   or patch 120051 (x86) has been applied.
 
-if test "x$ac_cv_header_sys_sendfile_h" = "xyes"; then
-  AC_MSG_CHECKING([if <sys/sendfile.h> supports _FILE_OFFSET_BITS=64])
-  AC_CACHE_VAL(pike_cv_header_sys_sendfile_h, [
-    AC_TRY_CPP([
-#define _FILE_OFFSET_BITS 64
-#include <sys/sendfile.h>
-    ], [
-      pike_cv_header_sys_sendfile_h=yes
-    ], [
-      pike_cv_header_sys_sendfile_h=no
-    ])
-  ])
-  AC_MSG_RESULT($pike_cv_header_sys_sendfile_h)
-  if test "x$pike_cv_header_sys_sendfile_h" = "xno"; then
-    AC_DEFINE(HAVE_BROKEN_SYS_SENDFILE_H)
-  fi
-fi
-
 
 AC_HEADER_DIRENT
 AC_CHECK_LIB(socket, socket)
@@ -99,6 +81,12 @@ AC_CACHE_VAL(pike_cv_have_IPPROTO_IPV6, [
 #include <winsock2.h>
 #endif
 #include <sys/types.h>
+#ifdef __APPLE__
+/* The <sys/socket.h> header file is broken and disregards _DARWIN_C_SOURCE
+ * for the sendfile() declaration.
+ */
+#undef _POSIX_C_SOURCE
+#endif
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
@@ -223,6 +211,12 @@ AC_MSG_CHECKING([if struct sockaddr_un has a sun_len member (BSD)])
 AC_CACHE_VAL(pike_cv_struct_sockaddr_un_sun_len, [
 	AC_TRY_COMPILE([
 #include <sys/types.h>
+#ifdef __APPLE__
+/* The <sys/socket.h> header file is broken and disregards _DARWIN_C_SOURCE
+ * for the sendfile() declaration.
+ */
+#undef _POSIX_C_SOURCE
+#endif
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif /* HAVE_SYS_SOCKET_H */
@@ -238,164 +232,6 @@ if test "$pike_cv_struct_sockaddr_un_sun_len" = "yes"; then
   AC_DEFINE(HAVE_STRUCT_SOCKADDR_UN_SUN_LEN)
 else
   AC_MSG_RESULT(no)
-fi
-
-if test "$ac_cv_func_sendfile" = "yes"; then
-  AC_MSG_CHECKING(if sendfile takes 4(Linux) or 6(HP/UX or MacOS X) or 7(FreeBSD) arguments)
-  AC_CACHE_VAL(pike_cv_sendfile_args, [
-    AC_TRY_COMPILE([
-#include <sys/types.h>
-#ifdef HAVE_SYS_SOCKET_H
-#include <sys/socket.h>
-#endif /* HAVE_SYS_SOCKET_H */
-#ifdef HAVE_SYS_UIO_H
-#include <sys/uio.h>
-#endif /* HAVE_SYS_UIO_H */
-    ], [
-      return sendfile(0,0,0,0,(void *)0,(void *)0,0);
-    ], [
-      # Probably FreeBSD-style, but we need to check that
-      # we indeed have a prototype...
-      AC_TRY_COMPILE([
-#include <sys/types.h>
-#ifdef HAVE_SYS_SOCKET_H
-#include <sys/socket.h>
-#endif /* HAVE_SYS_SOCKET_H */
-#ifdef HAVE_SYS_UIO_H
-#include <sys/uio.h>
-#endif /* HAVE_SYS_UIO_H */
-      ], [
-        /* This should fail on FreeBSD and HPUX.
-         * If it succeeds, we do not have a prototype,
-         * which would indicate Linux.
-         */
-        return sendfile(0,0,(void *)0,0);
-      ], [ pike_cv_sendfile_args=4 ], [ pike_cv_sendfile_args=7 ])
-    ], [
-      AC_TRY_COMPILE([
-#include <sys/types.h>
-#ifdef HAVE_SYS_SOCKET_H
-#include <sys/socket.h>
-#endif /* HAVE_SYS_SOCKET_H */
-#ifdef HAVE_SYS_UIO_H
-#include <sys/uio.h>
-#endif /* HAVE_SYS_UIO_H */
-      ], [
-        /* Try HPUX */
-        return (int)sendfile(0,0,0,0,(void *)0,0);
-      ], [ pike_cv_sendfile_args=6 ], [
-        AC_TRY_COMPILE([
-#include <sys/types.h>
-#ifdef HAVE_SYS_SOCKET_H
-#include <sys/socket.h>
-#endif /* HAVE_SYS_SOCKET_H */
-#ifdef HAVE_SYS_UIO_H
-#include <sys/uio.h>
-#endif /* HAVE_SYS_UIO_H */
-        ], [
-          /* Try Linux */
-          return sendfile(0,0,(void *)0,0);
-        ], [ pike_cv_sendfile_args=4 ], [ pike_cv_sendfile_args=bad ])
-      ])
-    ])
-  ])
-  if test "$pike_cv_sendfile_args" = "7"; then
-    AC_MSG_RESULT([7 - FreeBSD style])
-    AC_DEFINE(HAVE_FREEBSD_SENDFILE)
-
-    AC_MSG_CHECKING([if sendfile looks thread-safe])
-    AC_CACHE_VAL(pike_cv_freebsd_sendfile_threadsafe, [
-      # We're optimistic -- default to assuming it works.
-      pike_cv_freebsd_sendfile_threadsafe="yes"
-      if test -f /usr/lib/libc_r.so; then
-        if /usr/bin/nm -D /usr/lib/libc_r.so 2>&1 | grep _thread_sys >/dev/null 2>&1; then
-	  # Ok, looks like we can perform the test.
-	  # Assume we have a broken sendfile(2).
-          pike_cv_freebsd_sendfile_threadsafe="no"
-	  if /usr/bin/nm -D /usr/lib/libc_r.so 2>&1 | grep _thread_sys_sendfile >/dev/null 2>&1; then
-	    # Wee! They have actually added a wrapper for sendfile(2)!
-	    pike_cv_freebsd_sendfile_threadsafe="yes"
-	  else :; fi
-	else :; fi
-      else :; fi
-    ])
-
-    if test "$pike_cv_freebsd_sendfile_threadsafe" = "yes"; then
-      AC_MSG_RESULT(yes)
-
-      AC_MSG_CHECKING([whether headers count to the filelength])
-      AC_CACHE_VAL(pike_cv_new_freebsd_sendfile, [
-        # FIXME: Ought to do a proper test of whether
-        #        headers affect the file length or not.
-	pike_cv_new_freebsd_sendfile="unknown"
-        case "x$pike_cv_sys_os" in
-	  xFreeBSD*)
-	    pike_cv_new_freebsd_sendfile="yes"
-	    # The behaviour was fixed in FreeBSD 5.0.
-            if test `uname -r | awk -F. '{print $1}'` -lt 5; then
-	      pike_cv_new_freebsd_sendfile="no"
-	    fi
-	  ;;
-	esac
-      ])
-      AC_MSG_RESULT($pike_cv_new_freebsd_sendfile)
-      if test "x$pike_cv_new_freebsd_sendfile" = "xno"; then
-        AC_DEFINE(HAVE_SENDFILE_HEADER_LEN_PROBLEM)
-      fi
-    else
-      AC_MSG_RESULT(no - disabling use of sendfile)
-      AC_DEFINE(HAVE_BROKEN_SENDFILE)
-    fi
-  else
-    if test "$pike_cv_sendfile_args" = "6"; then
-      AC_MSG_RESULT([6 - HP/UX or MacOS X style])
-      # FIXME: Detect whether HPUX:
-      #   sbsize_t sendfile(int from, int to, off_t off, bsize_t bytes,
-      #                     struct iovec *hdtrl, int flags)
-      # or MacOS X:
-      #   int sendfile(int to, int from, off_t off, off_t *bytes,
-      #                struct sf_hdtrl *hdtrl, int flags)
-
-      AC_MSG_CHECKING(struct sf_hdtr)
-      AC_CACHE_VAL(pike_cv_has_struct_sf_hdtr, [
-        AC_TRY_LINK([
-#include <sys/types.h>
-#ifdef HAVE_SYS_SOCKET_H
-#include <sys/socket.h>
-#endif
-#ifdef HAVE_SYS_UIO_H
-#include <sys/uio.h>
-#endif
-	], [
-	  struct sf_hdtr foo;
-	], [
-          pike_cv_has_struct_sf_hdtr=yes
-        ], [
-          pike_cv_has_struct_sf_hdtr=no
-        ])
-      ])
-      if test "$pike_cv_has_struct_sf_hdtr" = "yes"; then
-        AC_MSG_RESULT(yes - MacOS X)
-        AC_DEFINE(HAVE_MACOSX_SENDFILE)
-	# MacOS X sendfile() has the bug from FreeBSD 4.x and earlier.
-        # FIXME: Ought to do a proper test of whether
-        #        headers affect the file length or not.
-        AC_DEFINE(HAVE_SENDFILE_HEADER_LEN_PROBLEM)
-      else
-        AC_MSG_RESULT(no - HPUX)
-        AC_DEFINE(HAVE_HPUX_SENDFILE)
-      fi
-    else
-      if test "$pike_cv_sendfile_args" = "4"; then
-        AC_MSG_RESULT([4 - Linux style])
-      else
-        AC_MSG_RESULT(failed - disabling use of sendfile)
-        AC_DEFINE(HAVE_BROKEN_SENDFILE)
-      fi
-    fi
-  fi
-else
-  :
 fi
 
 if test x$ac_cv_func_getxattr = xyes ; then
@@ -1194,6 +1030,12 @@ AC_TRY_RUN([
 #ifdef HAVE_SYS_SELECT_H
 #include <sys/select.h>
 #endif
+#ifdef __APPLE__
+/* The <sys/socket.h> header file is broken and disregards _DARWIN_C_SOURCE
+ * for the sendfile() declaration.
+ */
+#undef _POSIX_C_SOURCE
+#endif
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
@@ -1348,6 +1190,12 @@ AC_TRY_RUN([
 #include <fcntl.h>
 #include <signal.h>
 #include <sys/wait.h>
+#ifdef __APPLE__
+/* The <sys/socket.h> header file is broken and disregards _DARWIN_C_SOURCE
+ * for the sendfile() declaration.
+ */
+#undef _POSIX_C_SOURCE
+#endif
 #include <sys/socket.h>
 
 int main()

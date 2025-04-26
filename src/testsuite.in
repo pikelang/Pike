@@ -1795,6 +1795,116 @@ test_compile_any([[
   }
 ]])
 
+test_any_equal([[
+  // Test Pike.DestructImmediate.
+  class Foo {
+    int counter;
+
+    class Key {
+      inherit Pike.DestructImmediate;
+      /* Make the symbols visible outside. */
+      protected void destroy()
+      {
+        counter++;
+      }
+      protected void _destruct()
+      {
+        counter++;
+      }
+    }
+
+    void noop() {}
+    int peek() { return counter; }
+
+    void return_and_pop()
+    {
+      Key k = Key();
+      counter = 10;
+    }
+
+    void return_and_pop_n(int i)
+    {
+      Key k = Key();
+      counter = i;
+    }
+
+    int return_val()
+    {
+      Key k = Key();
+      counter = 30;
+      return counter;
+    }
+
+    int return_and_pop_keep_val(int i)
+    {
+      Key k = Key();
+      counter = i;
+      return counter;
+    }
+
+    int return_auto_val()
+    {
+      Key k = Key();
+      counter = 50;
+      int c = counter;
+      counter = 60;
+      return c;
+    }
+
+    int return_and_pop_keep_auto_val(int i)
+    {
+      Key k = Key();
+      counter = i;
+      int c = counter;
+      counter = 80;
+      return c;
+    }
+  }
+
+  array(int) res = ({});
+  Foo f = Foo();
+
+  add_constant("FooF", f);
+
+  return ({
+    (f->return_and_pop(), f->counter),
+    (f->noop(), f->counter), f->peek(), f->counter,
+    (f->return_and_pop_n(20), f->counter),
+    (f->noop(), f->counter), f->peek(), f->counter,
+    f->return_val(), f->counter,
+    (f->noop(), f->counter), f->peek(), f->counter,
+    f->return_and_pop_keep_val(40), f->counter,
+    (f->noop(), f->counter), f->peek(), f->counter,
+    f->return_auto_val(), f->counter,
+    (f->noop(), f->counter), f->peek(), f->counter,
+    f->return_and_pop_keep_auto_val(70), f->counter,
+    (f->noop(), f->counter), f->peek(), f->counter,
+  });
+]], ({ 11, 11, 11, 11, 21, 21, 21, 21, 30, 31, 31, 31, 31,
+       40, 41, 41, 41, 41, 50, 61, 61, 61, 61, 70, 81, 81, 81, 81 }))
+
+test_any_equal([[
+  // Test Pike.DestructImmediate.
+  array(int) res = ({});
+  add_constant("FooF");
+
+  return ({
+    (FooF.return_and_pop(), FooF->counter),
+    (FooF.noop(), FooF->counter), FooF.peek(), FooF->counter,
+    (FooF.return_and_pop_n(20), FooF->counter),
+    (FooF.noop(), FooF->counter), FooF.peek(), FooF->counter,
+    FooF.return_val(), FooF->counter,
+    (FooF.noop(), FooF->counter), FooF.peek(), FooF->counter,
+    FooF.return_and_pop_keep_val(40), FooF->counter,
+    (FooF.noop(), FooF->counter), FooF.peek(), FooF->counter,
+    FooF.return_auto_val(), FooF->counter,
+    (FooF.noop(), FooF->counter), FooF.peek(), FooF->counter,
+    FooF.return_and_pop_keep_auto_val(70), FooF->counter,
+    (FooF.noop(), FooF->counter), FooF.peek(), FooF->counter,
+  });
+]], ({ 11, 11, 11, 11, 21, 21, 21, 21, 30, 31, 31, 31, 31,
+       40, 41, 41, 41, 41, 50, 61, 61, 61, 61, 70, 81, 81, 81, 81 }))
+
 test_any([[
   // Test Pike.InhibitDestruct.
   class Foo {
@@ -1826,6 +1936,42 @@ test_any([[
   if (o) return 7;
   return 0;
 ]], 0)
+
+dnl Pike.signal_contextp()
+test_any_equal([[
+  class Foo {
+    int counter;
+    class Bar(int n, array a) {
+      inherit Pike.DestructImmediate;
+      protected void _destruct(int when)
+      {
+        a[n] = ({ counter, when, Pike.signal_contextp() });
+      }
+    }
+
+    array foo()
+    {
+      array a = allocate(3);
+      counter++;
+      int(0..0)|Bar b = Bar(0, a);
+      counter++;
+      b = Bar(1, a);
+      counter++;
+      destruct(b);
+      counter++;
+      b = Bar(2, a);
+      counter++;
+      b = 0;
+      counter++;
+      return a;
+    }
+  }
+  return Foo()->foo();
+]], [[ ({
+  ({ 2, Object.DESTRUCT_NO_REFS, 1, }),
+  ({ 3, Object.DESTRUCT_EXPLICIT, 0, }),
+  ({ 5, Object.DESTRUCT_NO_REFS, 1, }),
+})]])
 
 test_any([[
   class Foo {
@@ -9110,7 +9256,7 @@ test_true(intp(signum("SIGKILL")))
 
 // kill, signal, getpid
 test_true(intp(getpid()))
-cond([[all_constants()->kill && (cpp("__NT__")/"\n")[-1]=="__NT__" ]],
+cond([[all_constants()->kill && has_value(cpp("__NT__"), "__NT__") ]],
 [[
   test_do(signal(signum("SIGFPE"),lambda() { add_constant("AFJLLAF",17); }))
   test_do(kill(getpid(),signum("SIGFPE")))
@@ -10936,6 +11082,28 @@ test_do([[cpp(#"
 FOO(// Pike 7.6 and earlier don't seem to like single
     /* quotes (') in comments in macro arguments. */
 arg)")]])
+test_any([[
+#define FOO(X) X
+  FOO({ /* Some versions of Pike 9.0 did not handle multi-line comments in
+         * braced macro arguments correctly with respect to line numbering.
+         * This comment contains 3 line breaks which are lost.
+         */
+        // Also test multi-line single-line comments \
+           Comment continues here.
+        return "FOO";
+      });
+]], "FOO")
+test_any([[
+#define FOO(X) X
+  return FOO((/* Some versions of Pike 9.0 did not handle multi-line comments in
+               * parenthesised macro arguments correctly with respect to line numbering.
+               * This comment contains 3 line breaks which are lost.
+               */
+              // Also test multi-line single-line comments \
+                 Comment continues here.
+              "FOO"
+             ));
+]], "FOO")
 test_equal([[cpp(#"
 FOO(foo)", ([
   "predefines": ([
@@ -13601,7 +13769,7 @@ test_equal(lower_case((string) ({
 0x118e0, 0x1e900, 0x1e922, 0x1e944, })), (string) ({
 0x2d00, 0x10c6, 0x2d27, 0x10c8, 0x2d2d, 0xab70, 0x13f8, 0x13f6,
 0x13f8, 0x13fe, 0x1c80, 0x1c81, 0x1c82, 0x1c83, 0x1c85, 0x1c86,
-0x1c87, 0x1c88, 0x1c89, 0x1d79, 0x1d7a, 0x1d7d, 0x1d7e, 0x1d8e,
+0x1c87, 0x1c88, 0x1c8a, 0x1d79, 0x1d7a, 0x1d7d, 0x1d7e, 0x1d8e,
 0x1e01, 0x1e96, 0x1e9b, 0x1e9c, 0x00df, 0x1e9f, 0x1ea1, 0x1f00,
 0x1f00, 0x1f10, 0x1f16, 0x1f10, 0x1f1e, 0x1f20, 0x1f20, 0x1f30,
 0x1f30, 0x1f40, 0x1f46, 0x1f40, 0x1f4e, 0x1f51, 0x1f52, 0x1f53,
@@ -14878,7 +15046,7 @@ test_equal(upper_case((string) ({
 0x0130, 0x0049, 0x0132, 0x0138, 0x0139, 0x0149, 0x014a, 0x0178,
 0x0179, 0x0053, 0x0243, 0x0181, 0x0182, 0x0186, 0x0187, 0x0189,
 0x018b, 0x018d, 0x018e, 0x018f, 0x0190, 0x0191, 0x0193, 0x0194,
-0x01f6, 0x0196, 0x0197, 0x0198, 0x023d, 0x019b, 0x019c, 0x019d,
+0x01f6, 0x0196, 0x0197, 0x0198, 0x023d, 0xa7dc, 0x019c, 0x019d,
 0x0220, 0x019f, 0x01a0, 0x01a6, 0x01a7, 0x01a9, 0x01aa, 0x01ac,
 0x01ae, 0x01af, 0x01b1, 0x01b3, 0x01b7, 0x01b8, 0x01ba, 0x01bc,
 0x01be, 0x01f7, 0x01c0, 0x01c4, 0x01c5, 0x01c7, 0x01c8, 0x01ca,
@@ -14887,7 +15055,7 @@ test_equal(upper_case((string) ({
 0x023e, 0x2c7e, 0x0241, 0x0243, 0x0244, 0x0245, 0x0246, 0x2c6f,
 0x2c6d, 0x2c70, 0x0181, 0x0186, 0x0255, 0x0189, 0x0258, 0x018f,
 0x025a, 0x0190, 0xa7ab, 0x025d, 0x0193, 0xa7ac, 0x0262, 0x0194,
-0x0264, 0xa78d, 0xa7aa, 0x0267, 0x0197, 0x0196, 0xa7ae, 0x2c62,
+0xa7cb, 0xa78d, 0xa7aa, 0x0267, 0x0197, 0x0196, 0xa7ae, 0x2c62,
 0xa7ad, 0x026d, 0x019c, 0x0270, 0x2c6e, 0x019d, 0x0273, 0x019f,
 0x0276, 0x2c64, 0x027e, 0x01a6, 0x0281, 0xa7c5, 0x01a9, 0x0284, 0xa7b1,
 0x01ae, 0x0244, 0x01b1, 0x0245, 0x028d, 0x01b7, 0x0293, 0xa7b2,

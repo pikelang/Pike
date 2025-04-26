@@ -261,7 +261,7 @@ static void find_lib_dir(int argc, char **argv)
       }
       break;
 
-    case 'q':
+    case 'D': case 'q':
       if(!argv[e][2]) e++;
       break;
     }
@@ -393,8 +393,19 @@ int main(int argc, char **argv)
 	switch(*p)
 	{
 	case 'D':
-	  add_predefine(p+1);
-	  p+=strlen(p);
+          if (p[1]) {
+            add_predefine(p+1);
+            p+=strlen(p);
+          } else {
+            p++;
+            e++;
+            if (e < argc) {
+              add_predefine(argv[e]);
+            } else {
+              fprintf(stderr, "Missing argument to -D\n");
+              exit(1);
+            }
+          }
 	  break;
 
 	case 'm':
@@ -424,26 +435,7 @@ int main(int argc, char **argv)
 	    p=argv[e];
 	  }else{
 	    p++;
-	    if(*p=='s')
-	    {
-	      if(!p[1])
-	      {
-		e++;
-		if(e >= argc)
-		{
-		  fprintf(stderr,"Missing argument to -ss\n");
-		  exit(1);
-		}
-		p=argv[e];
-	      }else{
-		p++;
-	      }
-#ifdef _REENTRANT
-	      thread_stack_size=strtol(p,&p,0);
-#endif
-	      p+=strlen(p);
-	      break;
-	    }
+            if(*p == 's') goto handle_S_opt;	/* Compat: -ss */
 	  }
 	  Pike_stack_size=strtol(p,&p,0);
 	  p+=strlen(p);
@@ -454,6 +446,26 @@ int main(int argc, char **argv)
 	    exit(1);
 	  }
 	  break;
+
+        case 'S':
+        handle_S_opt:
+          if(!p[1])
+          {
+            e++;
+            if(e >= argc)
+            {
+              fprintf(stderr,"Missing argument to -S\n");
+              exit(1);
+            }
+            p=argv[e];
+          }else{
+            p++;
+          }
+#ifdef _REENTRANT
+          thread_stack_size=strtol(p,&p,0);
+#endif
+          p+=strlen(p);
+          break;
 
 	case 'q':
 	  if(!p[1])

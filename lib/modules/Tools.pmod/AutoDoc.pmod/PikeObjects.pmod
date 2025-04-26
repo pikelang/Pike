@@ -392,7 +392,15 @@ class ObjectType {
       return "object";
   }
   string xml(.Flags|void flags) {
-    return xmltag("object", classname, @((bindings||({}))->xml(flags)));
+    string ret = xmltag("object", classname);
+    if (bindings && sizeof(bindings)) {
+      ret = xmltag("binding", ret +
+                   map(bindings->xml(flags),
+                       lambda(string b) {
+                         return xmltag("bind", b);
+                       }) * "");
+    }
+    return ret;
   }
 }
 

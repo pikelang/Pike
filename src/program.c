@@ -219,6 +219,7 @@ const char *const lfun_names[]  = {
   "\0_iterator_next\0next",
   "\0_iterator_index\0index",
   "\0_iterator_value\0value",
+  "\0_iterator_prev\0prev",
   0,
   0,		/* End marker. */
 };
@@ -306,7 +307,7 @@ static const char *const raw_lfun_types[] = {
 	tOr(tVar(0), tVoid)),			/* "`[]=", */
   tFunc(tLStr(tUnknown, tUnknown) tSetvar(0, tMix) tObj tInt,
 	tOr(tVar(0), tVoid)),			/* "`->=", */
-  tFunc(tUnknown, tMix),			/* "_m_delete", */
+  tFunc(tUnknown tUnknown, tMix),		/* "_m_delete", */
   tFunc(tNone, tVoid),				/* "_m_clear", */
   tFunc(tUnknown, tVoid),			/* "_m_add", */
   tFunc(tUnknown tUnknown, tMix),		/* "_atomic_get_set", */
@@ -319,6 +320,7 @@ static const char *const raw_lfun_types[] = {
   tFuncV(tNone, tUnknown, tMix),		/* "_iterator_next", */
   tFuncV(tNone, tUnknown, tMix),		/* "_iterator_index", */
   tFuncV(tNone, tUnknown, tMix),		/* "_iterator_value", */
+  tFuncV(tNone, tUnknown, tMix),		/* "_iterator_prev", */
   0,
   0,		/* End marker. */
 };
@@ -441,6 +443,7 @@ static struct pike_type *lfun_setter_type_string = NULL;
  */
 
 /*! @decl void lfun::_destruct (void|int reason)
+ *! @decl void lfun::destroy(void|int reason)
  *!
  *!   Object destruction callback.
  *!
@@ -466,6 +469,13 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!       configure option @tt{--with-cleanup-on-exit@}. See note
  *!       below.
  *!   @endint
+ *!
+ *! @note
+ *!   @[lfun::_destruct()] is typically called in a signal handler
+ *!   context (cf @[Pike.signal_contextp()]) (except when the object
+ *!   was destructed explicitly from a non signal handler context).
+ *!   Appropriate care must thus be taken to avoid operations that
+ *!   are not supported in a signal handler context.
  *!
  *! @note
  *! Objects are normally not destructed when a process exits, so
@@ -547,6 +557,13 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *! @[lfun::_destruct] in the cycle are already scheduled for
  *! destruction and will therefore be destroyed even if external
  *! references are added to them.
+ *!
+ *! @note
+ *!   The function was renamed from @[lfun::destroy()] to
+ *!   @[lfun::_destruct()] in Pike 9.0 in order to have a
+ *!   more consistent naming scheme. The old name will still
+ *!   work in more recent versions of Pike, but will cause a
+ *!   compiler warning when not running in compatibility mode.
  *!
  *! @seealso
  *!   @[lfun::create()], @[predef::destruct()]
@@ -1343,9 +1360,20 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!   @[predef::equal()], @[lfun::`==()]
  */
 
-/*! @decl mixed lfun::_m_delete(mixed arg)
+/*! @decl mixed lfun::_m_delete(mixed arg, mixed|void expected)
  *!
  *!   Delete index callback.
+ *!
+ *!   Element at index @[arg] should be deleted and its value
+ *!   returned (when @[expected] has been specified, only if
+ *!   the value is @[`==()] with @[expected]).
+ *!
+ *! @returns
+ *!   Returns the value that was at @[arg] if it was deleted
+ *!   and @[UNDEFINED] otherwise.
+ *!
+ *! @note
+ *!   The @[expected] argument was added in Pike 9.0.
  *!
  *! @seealso
  *!   @[predef::m_delete()]
@@ -1604,19 +1632,26 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!
  *! @returns
  *!   Returns @[UNDEFINED] if there are no more elements in the
- *!   iterator. Otherwise it may return any other value, which
- *!   for convenience will be used as index and/or value in case
+ *!   iterator. If [_iterator_value()] is implemented, @expr{0@}
+ *!   (zero) may also be returned if there are no more values.
+ *!   Otherwise it may return any other value, which for
+ *!   convenience will be used as index and/or value in case
  *!   there is no @[lfun::_iterator_index()] and/or no
  *!   @[lfun::_iterator_value()].
  *!
+ *! @note
+ *!   This is the only function that is required by the iterator API.
+ *!
  *! @seealso
+ *!   @[predef::iterator_next()], @[lfun::_iterator_prev()],
  *!   @[lfun::_iterator_index()], @[lfun::_iterator_value()]
  */
 
-/*! @decl mixed lfun::_iterator_index()
+/*! @decl optional mixed lfun::_iterator_index()
  *!
  *!   Called in @[Iterator] objects by foreach (optional).
  *!
+ *! @returns
  *!   Returns the current index for an iterator, or @[UNDEFINED]
  *!   if the iterator doesn't point to any item. If this
  *!   function is not present, the return value from
@@ -1626,15 +1661,46 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!   position in the data set, counting from @expr{0@} (zero).
  *!
  *! @seealso
- *!   @[lfun::_iterator_next()], @[lfun::_iterator_value()]
+ *!   @[predef::iterator_index()], @[lfun::_iterator_next()],
+ *!   @[lfun::_iterator_prev()], @[lfun::_iterator_value()]
  */
 
-/*! @decl mixed lfun::_iterator_value()
+/*! @decl optional mixed lfun::_iterator_value()
  *!
  *!   Called in @[Iterator] objects by foreach (optional).
  *!
+ *! @returns
  *!   Returns the current value for an iterator, or @[UNDEFINED]
  *!   if the iterator doesn't point to any item.
+ *!
+ *! @seealso
+ *!   @[predef::iterator_value()], @[lfun::_iterator_next()],
+ *!   @[lfun::_iterator_prev()], @[lfun::_iterator_index()]
+ */
+
+/*! @decl optional mixed lfun::_iterator_prev()
+ *!
+ *!   Step an iterator backwards.
+ *!
+ *!   Calling this function after it or @[_iterator_next()] it has
+ *!   returned @[UNDEFINED] will typically cause it to restart the
+ *!   iteration with the last element (ie the start and end sentinel
+ *!   values are the same).
+ *!
+ *! @returns
+ *!   Returns @[UNDEFINED] if there are no more elements in the
+ *!   iterator. Otherwise it may return any other value, which
+ *!   for convenience may be used as index and/or value in case
+ *!   there is no @[lfun::_iterator_index()] and/or no
+ *!   @[lfun::_iterator_value()].
+ *!
+ *! @note
+ *!   This function is an optional part of the iterator API
+ *!   and is not called directly by the runtime.
+ *!
+ *! @seealso
+ *!   @[predef::iterator_prev()], @[lfun::_iterator_next()],
+ *!   @[lfun::_iterator_value()], @[lfun::_iterator_index()]
  */
 
 /*! @decl mixed lfun::_atomic_get_set(mixed index, mixed value)
@@ -2835,6 +2901,32 @@ struct program *parent_compilation(int level)
   return p->new_program;
 }
 
+static struct callback_list program_id_callbacks;
+
+/**
+ *   Add a function to be called when id_to_program() wants to resolve
+ *   an unknown program id.
+ *
+ * @param func
+ *   Function to call. It will be called with the struct callback *
+ *   representing itself as the first argument, the state as the
+ *   second, and the program id casted to void * as the third
+ *   (cast it to ptrdiff_t to retrieve the value).
+ *
+ * @param state
+ *   State to associate with func().
+ *
+ *   To unregister the callback, call remove_callback() with
+ *   the struct callback * returned by this function, or the
+ *   argument passed to func().
+ */
+PMOD_EXPORT struct callback *add_program_id_callback(callback_func func,
+                                                     void *state)
+{
+  return add_to_callback(&program_id_callbacks, func, state,
+                         (callback_func)NULL);
+}
+
 #define ID_TO_PROGRAM_CACHE_SIZE 512
 struct program *id_to_program_cache[ID_TO_PROGRAM_CACHE_SIZE];
 
@@ -2906,24 +2998,29 @@ struct program *low_id_to_program(INT32 id, int inhibit_module_load)
 	}
 	break;
       }
-    }
 
-    if (module && get_master()) {
-      /* fprintf(stderr, "%s... ", module); */
-      push_text(module);
-      SAFE_APPLY_MASTER("resolv", 1);
-      pop_stack();
+      if (module && get_master()) {
+        /* fprintf(stderr, "%s... ", module); */
+        push_text(module);
+        SAFE_APPLY_MASTER("resolv", 1);
+        pop_stack();
+      } else if (program_id_callbacks.callbacks) {
+        low_call_callback(&program_id_callbacks, (void *)(ptrdiff_t)id);
+      } else {
+        END_CYCLIC();
+        return NULL;
+      }
 
       /* Try again... */
       for(p=first_program;p;p=p->next)
       {
-	if(id==p->id)
-	{
-	  id_to_program_cache[h]=p;
-	  /* fprintf(stderr, "found: %p\n", p); */
-	  END_CYCLIC();
-	  return p;
-	}
+        if(id==p->id)
+        {
+          id_to_program_cache[h]=p;
+          /* fprintf(stderr, "found: %p\n", p); */
+          END_CYCLIC();
+          return p;
+        }
       }
     }
     END_CYCLIC();
@@ -3652,7 +3749,17 @@ void fixate_program(void)
 #endif
 }
 
-struct program *low_allocate_program(void)
+/**
+ *   Allocate a program id number.
+ *
+ *   Typically used in conjunction with add_program_id_callback().
+ */
+PMOD_EXPORT int allocate_program_id(void)
+{
+  return ++current_program_id;
+}
+
+PMOD_EXPORT struct program *low_allocate_program(INT32 id)
 {
   struct program *p=alloc_program();
   memset(p, 0, sizeof(struct program));
@@ -3661,7 +3768,7 @@ struct program *low_allocate_program(void)
   p->alignment_needed=1;
 
   GC_ALLOC(p);
-  p->id=++current_program_id;
+  p->id = id ? id : ++current_program_id;
   INIT_PIKE_MEMOBJ(p, T_PROGRAM);
 
   DOUBLELINK(first_program, p);
@@ -3678,11 +3785,11 @@ struct program *low_allocate_program(void)
 /**
  * Start building a new program
  */
-void low_start_new_program(struct program *p,
-			   int pass,
-			   struct pike_string *name,
-			   int flags,
-			   int *idp)
+PMOD_EXPORT void low_start_new_program(struct program *p,
+                                       int pass,
+                                       struct pike_string *name,
+                                       int flags,
+                                       int *idp)
 {
   struct compilation *c = THIS_COMPILATION;
   int id=0;
@@ -3701,7 +3808,7 @@ void low_start_new_program(struct program *p,
   SET_SVAL_TYPE(tmp, T_PROGRAM);
   if(!p)
   {
-    p=low_allocate_program();
+    p = low_allocate_program(0);
     if(name)
     {
       tmp.u.program=p;
@@ -4023,11 +4130,13 @@ void low_start_new_program(struct program *p,
   debug_malloc_touch(Pike_compiler->fake_object->storage);
 }
 
-PMOD_EXPORT void debug_start_new_program(INT_TYPE line, const char *file)
+PMOD_EXPORT void debug_start_new_program_id(INT_TYPE line, const char *file,
+                                            INT32 id)
 {
   struct pike_string *save_file;
   INT_TYPE save_line;
   struct compilation *c;
+  struct program *p = NULL;
 
   CHECK_COMPILER();
   c = THIS_COMPILATION;
@@ -4044,18 +4153,29 @@ PMOD_EXPORT void debug_start_new_program(INT_TYPE line, const char *file)
     c->lex.current_line = line;
   }
 
-  CDFPRINTF("th(%ld) start_new_program(%ld, %s): "
+  CDFPRINTF("th(%ld) start_new_program_id(%ld, %s, %d): "
             "compilation_depth:%d\n",
-            (long)th_self(), (long)line, file,
+            (long)th_self(), (long)line, file, id,
             c->compilation_depth);
 
-  low_start_new_program(0, COMPILER_PASS_FIRST, 0, 0, 0);
+  if (id) {
+    p = low_allocate_program(id);
+  }
+
+  low_start_new_program(p, COMPILER_PASS_FIRST, 0, 0, 0);
   store_linenumber(line,c->lex.current_file);
   debug_malloc_name(Pike_compiler->new_program, file, line);
+
+  if (p) free_program(p);
 
   free_string(c->lex.current_file);
   c->lex.current_file = dmalloc_touch(struct pike_string *, save_file);
   c->lex.current_line = save_line;
+}
+
+PMOD_EXPORT void debug_start_new_program(INT_TYPE line, const char *file)
+{
+  debug_start_new_program_id(line, file, 0);
 }
 
 
@@ -5344,12 +5464,12 @@ struct program *end_first_pass(int finish)
     {
       if(Pike_compiler->new_program->flags & PROGRAM_USES_PARENT)
       {
-	if (!Pike_compiler->new_program->parent_info_storage) {
-	  Pike_compiler->new_program->parent_info_storage =
-	    add_xstorage(sizeof(struct parent_info),
-			 ALIGNOF(struct parent_info),
-			 0);
-	}
+        if (!Pike_compiler->new_program->parent_info_storage) {
+          Pike_compiler->new_program->parent_info_storage =
+            add_xstorage(sizeof(struct parent_info),
+                         ALIGNOF(struct parent_info),
+                         0);
+        }
       }else{
 	/* Cause errors if used hopefully */
 	Pike_compiler->new_program->parent_info_storage=-1;
@@ -6580,7 +6700,7 @@ void compiler_do_inherit(node *n,
 	  offset++;
 	}
 	if (!state) {
-	  yyerror("Failed to resolv external constant.");
+          yyerror("Failed to resolve external constant.");
 	  return;
 	}
 	p = state->new_program;
@@ -7280,7 +7400,7 @@ PMOD_EXPORT int add_typed_constant(struct pike_string *name,
 	       n, id->func.const_info.offset);
 #endif
 
-      compiler_add_annotations(n);
+      compiler_add_annotations(ref->identifier_offset);
     }
     return n;
   }
@@ -7581,7 +7701,7 @@ INT32 define_function(struct pike_string *name,
 	   *     present (at least for the Pike code case).
 	   */
 	  if ((lfun_id->u.integer >= LFUN__ITERATOR_NEXT_FUN) &&
-	      (lfun_id->u.integer <= LFUN__ITERATOR_VALUE_FUN)) {
+              (lfun_id->u.integer <= LFUN__ITERATOR_PREV_FUN)) {
 	    /* Only fallback and warn if all three are implemented in old style.
 	     *
 	     * Otherwise the symbols are probably used for some
@@ -7901,7 +8021,7 @@ INT32 define_function(struct pike_string *name,
       free_type(funp->type);
       copy_pike_type(funp->type, type);
 
-      compiler_add_annotations(i);
+      compiler_add_annotations(ref.identifier_offset);
     }else{
 #ifdef PROGRAM_BUILD_DEBUG
       fprintf(stderr, "%*sidentifier was inherited\n",
@@ -8510,8 +8630,11 @@ PMOD_EXPORT int low_find_lfun(struct program *p, enum LFUN lfun)
       if ((i >= 0) && !(p->flags & PROGRAM_FINISHED) && !TEST_COMPAT(8,0)) {
 	struct compilation *c = MAYBE_THIS_COMPILATION;
 	if ((lfun >= LFUN__ITERATOR_NEXT_FUN) &&
-	    (lfun <= LFUN__ITERATOR_VALUE_FUN)) {
-	  /* Only fallback and warn if all three are implemented in old style.
+            (lfun <= LFUN__ITERATOR_PREV_FUN)) {
+          /* Compat iterator lfun (ie next(), index(), value() or prev()).
+           *
+           * Only fallback and warn if all primary iterator lfuns
+           * (ie the first three) are implemented in the old style.
 	   *
 	   * Otherwise the symbols are probably used for some
 	   * other purpose.
@@ -8723,7 +8846,7 @@ int store_prog_string(struct pike_string *str)
   return Pike_compiler->new_program->num_strings-1;
 }
 
-/* NOTE: O(n²)! */
+/* NOTE: O(nÂ²)! */
 int store_constant(const struct svalue *foo,
 		   int equal,
 		   struct pike_string *UNUSED(constant_name))
@@ -10454,59 +10577,132 @@ PMOD_EXPORT void *get_inherit_storage(struct object *o, int inherit)
   return o->storage + o->prog->inherits[inherit].storage_offset;
 }
 
-#define GET_STORAGE_CACHE_SIZE 1024
-static struct get_storage_cache
+#define FIND_INHERIT_CACHE_SIZE 1024
+static struct find_inherit_cache
 {
   INT32 oid, pid;
-  ptrdiff_t offset;
-} get_storage_cache[GET_STORAGE_CACHE_SIZE];
+  ptrdiff_t inh;
+} find_inherit_cache[FIND_INHERIT_CACHE_SIZE];
 
-PMOD_EXPORT ptrdiff_t low_get_storage(struct program *o, struct program *p)
+/**
+ *  Find the inherit number for a program in a program.
+ *
+ *  @param o
+ *    Program that may contain an inherit of program p.
+ *
+ *  @param p
+ *    Program that may be inherited by program o.
+ *
+ *  Returns the inherit number if found, and -1 on failure.
+ *
+ *  Note: Returns the first inherit found, which may not be
+ *        the most shallow inherit of p.
+ *
+ *  CAVEAT: The above behavior is subject to change.
+ */
+PMOD_EXPORT ptrdiff_t program_find_inherit(struct program *o, struct program *p)
 {
   INT32 oid, pid;
-  ptrdiff_t offset;
+  ptrdiff_t inh;
   unsigned INT32 hval;
 
   if(!o) return -1;
   oid=o->id;
   pid=p->id;
   hval=(unsigned)oid*9248339 + (unsigned)pid;
-  hval&=GET_STORAGE_CACHE_SIZE-1;
-  if(get_storage_cache[hval].oid == oid &&
-     get_storage_cache[hval].pid == pid)
-  {
-    offset=get_storage_cache[hval].offset;
+  hval &= FIND_INHERIT_CACHE_SIZE-1;
+  if ((find_inherit_cache[hval].oid == oid) &&
+      (find_inherit_cache[hval].pid == pid)) {
+    inh = find_inherit_cache[hval].inh;
   }else{
     INT32 e;
-    offset=-1;
+    inh = -1;
     for(e=0;e<o->num_inherits;e++)
     {
       if(o->inherits[e].prog==p)
       {
-	offset=o->inherits[e].storage_offset;
+        inh = e;
 	break;
       }
     }
 
-    get_storage_cache[hval].oid=oid;
-    get_storage_cache[hval].pid=pid;
-    get_storage_cache[hval].offset=offset;
+    find_inherit_cache[hval].oid = oid;
+    find_inherit_cache[hval].pid = pid;
+    find_inherit_cache[hval].inh = inh;
   }
 
-  return offset;
+  return inh;
 }
 
+PMOD_EXPORT ptrdiff_t low_get_storage(struct program *o, struct program *p)
+{
+  ptrdiff_t inh = program_find_inherit(o, p);
+
+  if (inh < 0) return -1;
+
+  return o->inherits[inh].storage_offset;
+}
+
+/**
+ * Return the storage pointer for an inherit of an object.
+ *
+ * @arg o
+ *   Object holding the storage.
+ *
+ * @arg p
+ *   Program for the inherit we want.
+ *
+ * Returns a pointer to the storage if found, or NULL on failure.
+ *
+ * This variant searches all inherits in o->prog. To search
+ * a subset, use get_sub_storage().
+ */
 PMOD_EXPORT void *get_storage(struct object *o, struct program *p)
 {
-  ptrdiff_t offset;
+  ptrdiff_t inh;
 
 #ifdef _REENTRANT
   if(d_flag) CHECK_INTERPRETER_LOCK();
 #endif
 
-  offset= low_get_storage(o->prog, p);
-  if(offset == -1) return 0;
-  return o->storage + offset;
+  inh = program_find_inherit(o->prog, p);
+  if (inh < 0) return NULL;
+
+  return get_inherit_storage(o, inh);
+}
+
+/**
+ * Return the storage pointer for an inherit of an object originating
+ * from a specific inherit.
+ *
+ * @arg o
+ *   Object holding the storage.
+ *
+ * @arg inh
+ *   Inherit number of o->prog to start from.
+ *
+ * @arg p
+ *   Program for the inherit we want.
+ *
+ * Returns a pointer to the storage if found, or NULL on failure.
+ *
+ * Calling this function with an inh of 0 is equivalent to
+ * calling get_storage(o, p).
+ */
+PMOD_EXPORT void *get_sub_storage(struct object *o, int inh, struct program *p)
+{
+  ptrdiff_t sub_inh;
+
+#ifdef _REENTRANT
+  if(d_flag) CHECK_INTERPRETER_LOCK();
+#endif
+
+  if (!o->prog) return NULL;
+
+  sub_inh = program_find_inherit(o->prog->inherits[inh].prog, p);
+  if (sub_inh < 0) return NULL;
+
+  return get_inherit_storage(o, inh + sub_inh);
 }
 
 PMOD_EXPORT struct program *low_program_from_function(struct object *o, INT32 i)
