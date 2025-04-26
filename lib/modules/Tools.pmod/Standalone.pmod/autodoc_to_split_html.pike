@@ -213,6 +213,50 @@ class Node
     data = make_faked_wrapper(data);
   }
 
+  protected mapping(string:Node)|zero lookup_tab;
+
+  //! Lookup a single symbol in the current node.
+  object(Node)|zero low_lookup(string sym)
+  {
+    if (has_suffix(sym, "()") && (sym != "`()")) {
+      sym = sym[..<2];
+    }
+    if ((sym == "") || (sym == "this")) return this;
+    if (!lookup_tab) {
+      lookup_tab = ([]);
+      foreach(({ class_children, module_children, enum_children,
+                 directive_children, method_children, member_children,
+              }), array(Node)|zero children) {
+        if (children && sizeof(children)) {
+          lookup_tab += mkmapping(children->name, children);
+        }
+      }
+    }
+    return lookup_tab[sym];
+  }
+
+  //! Perform a lexical lookup rooted in the current node.
+  object(Node)|zero lookup(string reference)
+  {
+    // Split the reference on any combination of '.' and '->',
+    // but not on the operators '`[..]' or '`->'.
+    array(string) a =
+      replace(reference,
+              ({ "`->", "->", "`[..]", ".", }),
+              ({ "`->", "\0", "`[..]", "\0", }))/"\0";
+    object(Node)|zero orig = this;
+    while(orig) {
+      object(Node)|zero n = orig;
+      foreach(a, string sym) {
+        n = n->low_lookup(sym);
+        if (!n) break;
+      }
+      if (n) return n;
+      orig = orig->parent;
+    }
+    return UNDEFINED;
+  }
+
   array(Node) check_uniq(array children) {
     array names = children->name;
     foreach(Array.uniq(names), string n)
@@ -502,9 +546,16 @@ class Node
 
   string my_resolve_reference(string _reference, mapping vars)
   {
-    array(string) resolved = vars->resolved && vars->resolved/"\0";
-    if(default_namespace && has_prefix(_reference, default_namespace+"::"))
-      _reference = _reference[sizeof(default_namespace)+2..];
+    array(string)|zero resolved = vars->resolved && vars->resolved/"\0";
+    if(default_namespace && has_prefix(_reference, default_namespace+"::") &&
+       resolved) {
+      string short_ref = _reference[sizeof(default_namespace)+2..];
+      object(Node)|zero other = lookup(short_ref);
+      if (!other || (other == refs[resolved[0]])) {
+        // The shortened name is valid
+        _reference = short_ref;
+      }
+    }
 
     if(vars->param)
       return "<code class='reference param'>" + _reference + "</code>";
