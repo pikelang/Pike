@@ -3,7 +3,9 @@
 #charset utf-8
 #pike __REAL_VERSION__
 
-protected inherit .Heap;
+__generic__ ValueType;
+
+protected inherit .Heap (< ValueType >);
 
 //! This class implements a quantized resource scheduler.
 //!
@@ -43,8 +45,8 @@ protected enum ConsumerState
 //! A resource consumer.
 //!
 //! Active consumers are kept in a (min-)@[Heap].
-class Consumer {
-  inherit Element;
+class Consumer (< ValueType >) {
+  inherit Element (< ValueType >);
 
   protected int|float weight_;
 
@@ -81,7 +83,7 @@ class Consumer {
       // Otherwise we'll get an unfair amount of the resource until
       // we reach this point. The element on the top of the heap is
       // representative of the accumulated consumption so far.
-      Consumer c = Heap::low_peek();
+      Consumer(< ValueType >) c = Heap::low_peek();
       pri += c->pri - c->quanta/2.0;
     } else if (normalization_offset) {
       pri -= (float)normalization_offset;
@@ -136,7 +138,7 @@ class Consumer {
 }
 
 //! (Re-)activate a @[Consumer].
-Consumer add(Consumer c)
+Consumer(< ValueType >) add(Consumer(< ValueType >) c)
 {
   if (c->state & STATE_ACTIVE) {
     return c;
@@ -150,14 +152,14 @@ Consumer add(Consumer c)
 
 //! Create a @[Consumer] with the weight @[weight] for the value @[val],
 //! and add it to the Scheduler.
-variant Consumer add(int|float weight, mixed val)
+variant Consumer(< ValueType >) add(int|float weight, ValueType val)
 {
   return add(Consumer(weight, val));
 }
 
 //! Adjust the weight value @[new_weight] of the @[Consumer] @[c] in the
 //! scheduling table.
-void adjust_weight(Consumer c, int new_weight)
+void adjust_weight(Consumer(< ValueType >) c, int new_weight)
 {
   c->set_weight(new_weight);
 }
@@ -165,7 +167,7 @@ void adjust_weight(Consumer c, int new_weight)
 //! Remove the @[Consumer] @[c] from the set of active consumers.
 //!
 //! The consumer may be reactivated by calling @[add()].
-void remove(Consumer c)
+void remove(Consumer(< ValueType >) c)
 {
   if (c->state & STATE_ACTIVE) {
     Heap::remove(c);
@@ -183,6 +185,6 @@ void remove(Consumer c)
 //!   The same @[Consumer] will be returned until it has either
 //!   consumed some of the resource, been removed or another
 //!   @[Consumer] with lower priority has been added.
-Consumer get() {
+Consumer(< ValueType >) get() {
   return Heap::low_peek();
 }
