@@ -12,6 +12,12 @@ constant List = __builtin.List;
 
 #if constant(__builtin.Stack)
 constant LowLevelStack = __builtin.Stack;
+
+//! @class LowLevelStack
+
+//! @decl inherit __builtin.Stack
+
+//! @endclass
 #endif
 
 // Internal stuff for ADT.Struct
