@@ -1,0 +1,26 @@
+subject: Pike 8.0: Sync with 8.0.1984 (Roxen 8.2.286-r1)
+from: 8223e7669c62792c361cce5381236629d6a56dd1
+to: 23918d9f4e8f5ed7300b86d2f4f225d686f77413
+originator: Henrik Grubbström (Grubba) <grubba@grubba.org>
+depends: 2025-02-05T103156
+restart: true
+
+Multiple fixes:
+
+• Tools.Shoot: Don't use unbounded memory in ArrayAdding benchmarks
+
+The global variable variants of the ArrayAdding benchmarks kept
+adding elements to the same array for the duration of the test
+(3 seconds by default) without ever clearing it.  This caused
+the array to grow very large on fast machines.  Change the tests
+to clear the array after every 10000 additions, just like the local
+variable based benchmark does.  This has just a small effect on the
+result (about 1%) but a large one on memory use.
+
+• Thread.Farm: Report errors thrown via run_async().
+
+Such errors were previously silenced.
+
+• Array: Fix bug in sort_array() where mixed types were not sorted correctly.
+
+Fixes #10176.
