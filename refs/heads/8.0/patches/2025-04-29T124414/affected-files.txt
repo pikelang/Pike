@@ -1,0 +1,6 @@
+Modified files:
+  pike/lib/master.pike.in
+  pike/lib/modules/Array.pmod
+  pike/lib/modules/Thread.pmod
+  pike/lib/modules/Tools.pmod/Shoot.pmod/ArrayAdding2.pike
+  pike/lib/modules/Tools.pmod/Shoot.pmod/ArrayAdding3.pike
