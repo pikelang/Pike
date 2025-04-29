@@ -109,10 +109,9 @@
 #define tObjImpl_LIST__GET_ITERATOR	      "\003\000\000\000\000\056"
 #define     PROG_STRING_BUFFER_ID				    057
 #define tObjImpl_STRING_BUFFER                "\003\000\000\000\000\057"
+#define OLD_PROG_STACK_ID					    064
 
 /* Classes in cpp.cmod. */
-#define     PROG_STACK_ID					    064
-#define tObjImpl_STACK			      "\003\000\000\000\000\064"
 #define     PROG_DEFINE_ID					    065
 #define tObjImpl_DEFINE			      "\003\000\000\000\000\065"
 #define     PROG_CPP_ID						    066
@@ -252,6 +251,11 @@
 #define tObjImpl_CIRCULARLISTITERATOR      "\003\000\000\000\200\041"
 #define tCircularListIterValueType	tGeneric(tObjImpl_CIRCULARLISTITERATOR, 0)
 #define tCircularListIterator(X)	tBind(tAssign(tCircularListIterValueType, X), tObjImpl_CIRCULARLISTITERATOR)
+
+#define     PROG_STACK_ID					0x8024
+#define tObjImpl_STACK                     "\003\000\000\000\200\044"
+#define tStackValueType		tGeneric(tObjImpl_STACK, 0)
+#define tStack(X)		tBind(tAssign(tStackValueType, X), tObjImpl_STACK)
 
 /* Start for dynamically allocated program ids. */
 #define PROG_DYNAMIC_ID_START		0x10000
