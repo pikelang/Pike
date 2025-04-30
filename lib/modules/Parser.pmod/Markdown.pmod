@@ -1413,7 +1413,7 @@ class LaTeXRenderer
 
   //!
   string html(string text, mapping token)  { return text; }
-  string text(string t, mapping token)     { return t; }
+  string text(string t, mapping token)     { return encode_tex(t); }
   string strong(string t, mapping token)   { return sprintf("\\textbf{%s}", t); }
   string em(string t, mapping token)       { return sprintf("\\textit{%s}", t); }
   string del(string t, mapping token)      { return sprintf("\\st{%s}", t); }
