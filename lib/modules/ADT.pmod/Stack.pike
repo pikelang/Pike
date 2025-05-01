@@ -65,6 +65,9 @@ ElementType peek(int|void offset)
 //! Pops @[val] entries from the stack, or one entry
 //! if no value is given. The popped entries are not
 //! actually freed, only the stack pointer is moved.
+//!
+//! @seealso
+//!   @[pop()], @[pop_to()]
 void quick_pop(void|int val)
 {
   if (val) {
@@ -83,6 +86,9 @@ void quick_pop(void|int val)
 //! Pops entries from the stack until the specified @[depth] is
 //! reached. The popped entries are not actually freed, only the
 //! stack pointer is moved.
+//!
+//! @seealso
+//!   @[quick_pop()]
 void pop_to(int depth)
 {
   if ((ptr < depth) || (depth < 0)) {
@@ -91,10 +97,7 @@ void pop_to(int depth)
   ptr = depth;
 }
 
-//! Pops and returns entry @[val] from the stack, counting
-//! from the top. If no value is given the top element is
-//! popped and returned. All popped entries are freed from
-//! the stack.
+//! If the top element is popped and returned.
 ElementType pop(void|zero val)
 {
   if(--ptr < 0)
@@ -106,7 +109,11 @@ ElementType pop(void|zero val)
   return ret;
 }
 
+//! Pops and returns an array with the top @[val] entries from the stack.
+//! All popped entries are freed from the stack.
 //!
+//! seealso
+//!   @[quick_pop()]
 variant array(ElementType) pop(int(1..) val)
 {
   if (ptr <= 0) {
