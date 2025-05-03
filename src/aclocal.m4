@@ -1546,7 +1546,7 @@ AC_DEFUN(PIKE_CHECK_FILE_ABI,
       #   Mach-O object ppc
       $1=32
       ;;
-    *"POSIX shell script"*)
+    *"shell script"*)
       # Shell scripts do not have an ABI
       $1=noarch
       ;;
@@ -1809,6 +1809,11 @@ AC_DEFUN(PIKE_SELECT_ABI,
                PIKE_CHECK_FILE_ABI(file_abi, "$link_target")
                if test "x$file_abi" = "x$pike_cv_abi"; then
                  pike_cv_tool_prefix=`echo "$link_target" | sed -e 's|.*/||g' -e 's|pkg-config.*||'`
+               fi;;
+            *-pkgconf"$exeext")
+               PIKE_CHECK_FILE_ABI(file_abi, "$link_target")
+               if test "x$file_abi" = "x$pike_cv_abi"; then
+                 pike_cv_tool_prefix=`echo "$link_target" | sed -e 's|.*/||g' -e 's|pkgconf.*||'`
                fi;;
           esac
         fi
