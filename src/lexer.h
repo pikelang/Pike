@@ -1113,6 +1113,8 @@ unknown_directive:
 	}
 	return TOK_FLOAT;
       }else{
+        if (p2 == lex->pos)
+          Pike_fatal("Numeric literal could be parsed as neither int nor float\n");
 	dmalloc_touch_svalue(&sval);
 	yylval->n = mksvaluenode(&sval);
 	free_svalue(&sval);
