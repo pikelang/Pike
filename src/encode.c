@@ -2467,6 +2467,7 @@ struct decode_data
   int pass;
   int delay_counter;
   int support_delay_counter;
+  int skip_values;
   struct compilation *support_compilation;
   struct pike_string *raw;
   struct decode_data *next;
@@ -3778,12 +3779,16 @@ static void decode_value2(struct decode_data *data)
 	    });
 
 	  decode_value2(data);
-	  apply(decoder_codec (data),"programof", 1);
+          if (data->skip_values) {
+            pop_stack();
+            push_undefined();
+          } else
+            apply(decoder_codec (data),"programof", 1);
 
 	  p = program_from_svalue(Pike_sp-1);
 
 	  if (!p) {
-	    if(data->pickyness)
+            if(data->pickyness && !data->skip_values)
 	      decode_error(data, NULL, "Failed to decode program. Got: %pO\n",
 			   Pike_sp - 1);
 	    pop_stack();
@@ -4821,6 +4826,9 @@ static void decode_value2(struct decode_data *data)
 	   *
 	   * This must be done after the program has been ended.
 	   */
+          {
+          int old_skip_values = data->skip_values;
+          data->skip_values |= delay;
 	  for (e=0; e<local_num_constants; e++) {
 	    struct program_constant *constant = p->constants+e;
 	    if ((TYPEOF(constant->sval) != T_INT) ||
@@ -4845,6 +4853,8 @@ static void decode_value2(struct decode_data *data)
 			data->depth, "",
 			e, get_name_of_type(TYPEOF(constant->sval))));
 	  }
+          data->skip_values = old_skip_values;
+          }
 
 #ifdef ENCODE_DEBUG
 	  if (!data->debug)
@@ -5065,6 +5075,7 @@ static INT32 my_decode(struct pike_string *tmp,
   data->unfinished_placeholders = NULL;
   data->delay_counter = 0;
   data->support_delay_counter = 0;
+  data->skip_values = 0;
   data->support_compilation = NULL;
   data->raw = tmp;
   data->next = current_decode;
