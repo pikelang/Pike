@@ -559,10 +559,9 @@ decode_words_tokenized_labled_remapped(string phrase, int|void flags)
 //!
 //! @seealso
 //! @[encode_headerfield_params]
-array(mapping(string:string)|ADT.OrderedMapping(<string, string>))
-  decode_headerfield_params (string s)
+array(ADT.OrderedMapping(<string, string>)) decode_headerfield_params (string s)
 {
-  array(mapping(string:string)|ADT.OrderedMapping(<string, string>)) totres = ({});
+  array(ADT.OrderedMapping(<string, string>)) totres = ({});
   ADT.OrderedMapping(<string, string>) mapres =
     ADT.OrderedMapping(<string, string>)();
   string key, goteq;
