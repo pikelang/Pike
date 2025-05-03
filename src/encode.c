@@ -2972,7 +2972,7 @@ static void low_decode_type(struct decode_data *data)
 static void cleanup_placeholder (void **_placeholder)
 {
   struct object *placeholder = *_placeholder;
-  if (placeholder && placeholder->prog != null_program) {
+  if (placeholder && placeholder->prog && placeholder->prog != null_program) {
     free_program(placeholder->prog);
     add_ref(placeholder->prog = null_program);
   }
