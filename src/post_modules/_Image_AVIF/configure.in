@@ -1,0 +1,21 @@
+#
+AC_INIT(image_avif.cmod)
+AC_MODULE_INIT()
+AC_CONFIG_HEADER(config.h)
+
+PIKE_FEATURE_NODEP(Image.AVIF)
+
+AC_CHECK_HEADERS(avif/avif.h)
+if test $ac_cv_header_avif_avif_h = yes ; then
+  have_libavif=false
+  AC_CHECK_LIB([avif], [avifVersion], [
+    LIBS="${LIBS-} -lavif"
+    have_libavif=true
+  ])
+  if $have_libavif; then
+    AC_DEFINE(HAVE_LIBAVIF,[],[Define when the -lavif library is available])
+    PIKE_FEATURE_OK(Image.AVIF)
+  fi
+fi
+
+AC_OUTPUT(Makefile,echo FOO >stamp-h )

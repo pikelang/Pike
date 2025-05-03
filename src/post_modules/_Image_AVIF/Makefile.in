@@ -1,0 +1,10 @@
+@make_variables@
+VPATH=@srcdir@
+OBJS=image_avif.o
+MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
+
+@dynamic_module_makefile@
+
+image_avif.o : $(SRCDIR)/image_avif.c
+
+@dependencies@

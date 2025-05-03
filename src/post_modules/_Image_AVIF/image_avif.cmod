@@ -1,0 +1,195 @@
+/* -*- c -*-
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
+/* https://github.com/AOMediaCodec/libavif/tree/main/examples
+ */
+
+#include "pike_macros.h"
+#include "object.h"
+#include "constants.h"
+#include "interpret.h"
+#include "svalue.h"
+#include "threads.h"
+#include "array.h"
+#include "builtin_functions.h"
+#include "mapping.h"
+#include "pike_error.h"
+#include "operators.h"
+#include "module_support.h"
+#include "modules/Image/image.h"
+#include "config.h"
+
+#ifdef HAVE_LIBAVIF
+DECLARATIONS
+
+#include <avif/avif.h>
+
+static struct program *img_program;
+
+static struct program *image_program()
+{
+  if( !img_program )
+  {
+    push_static_text("Image.Image");
+    SAFE_APPLY_MASTER("resolv",1);
+    img_program = Pike_sp[-1].u.program;
+    Pike_sp--;
+  }
+  return img_program;
+}
+
+static struct object *allocate_image(int w, int h )
+{
+  push_int(w);
+  push_int(h);
+  return clone_object(image_program(),2);
+}
+
+static inline unsigned char *image_ptr( struct object *img )
+{
+  char *x;
+  if( !img ) return 0;
+  x = get_storage( img, image_program() );
+  if( !x ) return 0;
+  return (unsigned char *)(((struct image  *)x)->img);
+}
+
+PIKEFUN mapping(string:object(Image.Image)|string) _decode( string data )
+{
+  int width, height, npix;
+  uint8_t *ip, *ap;
+  uint8_t av;
+  struct object *i = NULL, *a = NULL;
+
+  avifRGBImage rgb;
+  memset(&rgb, 0, sizeof(rgb));
+
+  avifDecoder *decoder = avifDecoderCreate();
+  decoder->imageCountLimit = 1;
+
+  avifResult result = avifDecoderSetIOMemory(decoder, (const uint8_t *)data->str, data->len);
+  if( result != AVIF_RESULT_OK ) {
+    goto cleanup;
+  }
+
+  result = avifDecoderParse(decoder);
+  if( result != AVIF_RESULT_OK ) {
+    goto cleanup;
+  }
+
+  if( avifDecoderNextImage(decoder) != AVIF_RESULT_OK ) {
+    goto cleanup;
+  }
+
+  avifRGBImageSetDefaults(&rgb, decoder->image);
+  /*result =*/ avifRGBImageAllocatePixels(&rgb);
+  /*if( result != AVIF_RESULT_OK ) {
+    goto cleanup;
+  }*/
+
+  result = avifImageYUVToRGB(decoder->image, &rgb);
+  if( result != AVIF_RESULT_OK ) {
+    goto cleanup;
+  }
+
+  pop_n_elems(args);
+
+  width = decoder->image->width;
+  height = decoder->image->height;
+
+  npix = width * height;
+  ip = ap = NULL;
+
+  if( decoder->alphaPresent ) {
+    a = allocate_image( width, height );
+    ap = image_ptr( a );
+  }
+  i = allocate_image( width, height );
+  ip = image_ptr( i );
+
+  if( rgb.depth > 8 ) {
+    uint16_t *rp = (uint16_t *)rgb.pixels;
+    int shift = rgb.depth - 8;
+    while( npix-- ) {
+      *(ip++) = (uint8_t)( *(rp++) >> shift ); // R
+      *(ip++) = (uint8_t)( *(rp++) >> shift ); // G
+      *(ip++) = (uint8_t)( *(rp++) >> shift ); // B
+      av = (uint8_t)( *(rp++) >> shift );
+
+      if( ap ) {
+        *(ap++) = av; // A
+        *(ap++) = av;
+        *(ap++) = av;
+      }
+    }
+  } else {
+    uint8_t *rp = rgb.pixels;
+    while( npix-- ) {
+      *(ip++) = *(rp++); // R
+      *(ip++) = *(rp++); // G
+      *(ip++) = *(rp++); // B
+      av = *(rp++);
+
+      if( ap ) {
+        *(ap++) = av; // A
+        *(ap++) = av;
+        *(ap++) = av;
+      }
+    }
+  }
+
+  push_static_text( "format" ); push_text( "image/avif" );
+  push_static_text( "xsize" ); push_int( width );
+  push_static_text( "ysize" ); push_int( height );
+  push_static_text( "image" );  push_object( i );
+  push_static_text( "alpha" );
+  if( a )
+    push_object( a );
+  else
+    push_undefined( );
+
+  f_aggregate_mapping( 10 );
+
+ cleanup:
+  avifRGBImageFreePixels(&rgb);
+  avifDecoderDestroy(decoder);
+  if( result != AVIF_RESULT_OK ) {
+    Pike_error("Failed to decode image\n");
+  }
+}
+
+PIKEFUN object(Image.Image) decode( string data )
+{
+  struct mapping *m;
+  struct svalue *p;
+
+  apply(Pike_fp->current_object, "_decode", args);
+
+  m = Pike_sp[-1].u.mapping;
+
+  if( TYPEOF(Pike_sp[-1]) != PIKE_T_MAPPING )
+      Pike_error("Decoding failed\n");
+
+  p = simple_mapping_string_lookup(m,"image");
+
+  if( !p || TYPEOF(*p) != PIKE_T_OBJECT )
+      Pike_error("Decoding failed\n");
+
+  ref_push_object( p->u.object );
+  stack_unlink(1);
+}
+
+PIKE_MODULE_INIT
+{
+  INIT
+  add_integer_constant("version", AVIF_VERSION, 0);
+}
+
+PIKE_MODULE_EXIT
+{
+  EXIT
+}
+#endif
