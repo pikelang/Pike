@@ -1782,9 +1782,10 @@ AC_DEFUN(PIKE_SELECT_ABI,
       SAVE_IFS="$IFS"
       IFS=":"
       file_abi=""
+      pike_cv_tool_prefix=no
       for d in $PATH; do
 	IFS="$SAVE_IFS"
-	for f in "$d/"*-pkg-config"$exeext"; do
+	for f in "$d/pkg-config$exeext" "$d/"*-pkg-config"$exeext"; do
 	  if test -f "$f"; then
 	    PIKE_CHECK_FILE_ABI(file_abi, "$f")
 	    if test "x$file_abi" = "x$pike_cv_abi"; then
@@ -1807,16 +1808,15 @@ AC_DEFUN(PIKE_SELECT_ABI,
                fi;;
           esac
         fi
-        if test "x$pike_cv_tool_prefix" = x; then :; else
+        if test "x$pike_cv_tool_prefix" = xno; then :; else
 	  break;
 	fi
       done
       IFS="$SAVE_IFS"
     ])
-    if test "x$pike_cv_tool_prefix" = "x"; then
-      AC_MSG_RESULT(no)
-    else
-      AC_MSG_RESULT($pike_cv_tool_prefix)
+    AC_MSG_RESULT($pike_cv_tool_prefix)
+    if test "x$pike_cv_tool_prefix" = "xno"; then
+      pike_cv_tool_prefix=""
     fi
   else
     pike_cv_tool_prefix="$ac_tool_prefix"
