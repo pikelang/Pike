@@ -473,6 +473,27 @@ class Zone (string id)
 {
    array rules=({});
 
+   protected string fmt_z(int offset)
+   {
+      int hour = offset/60;
+      int min = hour % 60;
+      string ret = "+";
+      if (hour < 0) {
+         hour = -hour;
+         if (min) {
+            min = 60 - min;
+            hour -= 60;
+         }
+         ret = "-";
+      }
+      hour /= 60;
+      ret += sprintf("%02d", hour);
+      if (min) {
+         ret += sprintf("%02d", min);
+      }
+      return ret;
+   }
+
    void add(string line)
    {
       array a= array_sscanf(line, replace("%s %s %s %s",
@@ -485,6 +506,11 @@ class Zone (string id)
 	  a[2], // string
 	  a[3],
 	  0, 0, "tz", 0}); // until
+
+      if (a[2] == "%z") {
+         a[2] = fmt_z(a[0]) + "/" + fmt_z(a[0] + 3600);
+      }
+
       a[5]=rule_shift(a);
       a[4]=clone_rule(a);
 
@@ -745,12 +771,23 @@ int main(int ac,array(string) am)
 			   "leapseconds", "version", >)[fname] ||
 			(upper_case(fname) == fname) ||
 			has_prefix(fname, "solar") ||
+                        has_suffix(fname, ".1") ||
+                        has_suffix(fname, ".3") ||
+                        has_suffix(fname, ".5") ||
+                        has_suffix(fname, ".8") ||
 			has_suffix(fname, ".awk") ||
+                        has_suffix(fname, ".c") ||
+                        has_suffix(fname, ".h") ||
 			has_suffix(fname, ".html") ||
+                        has_suffix(fname, ".ksh") ||
 			has_suffix(fname, ".list") ||
 			has_suffix(fname, ".pl") ||
 			has_suffix(fname, ".sh") ||
-			has_suffix(fname, ".tab")) return 0;
+                        has_suffix(fname, ".tab") ||
+                        has_suffix(fname, ".txt") ||
+                        has_suffix(fname, ".tzs") ||
+                        has_suffix(fname, ".zi")
+                        ) return 0;
                     return combine_path(__DIR__, "tzdata", fname);
 		  }) - ({ 0 });
    }
