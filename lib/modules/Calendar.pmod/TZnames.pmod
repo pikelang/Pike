@@ -172,21 +172,21 @@ mapping zones =
    "Asia":      ({"Aden", "Almaty", "Amman", "Anadyr", "Aqtau", "Aqtobe",
                   "Ashgabat", "Atyrau", "Baghdad", "Bahrain", "Baku",
                   "Bangkok", "Barnaul", "Beirut", "Bishkek", "Brunei",
-                  "Chita", "Choibalsan", "Chongqing", "Colombo", "Damascus",
-                  "Dhaka", "Dili", "Dubai", "Dushanbe", "Famagusta", "Gaza",
-                  "Hanoi", "Harbin", "Hebron", "Ho_Chi_Minh", "Hong_Kong",
-                  "Hovd", "Irkutsk", "Jakarta", "Jayapura", "Jerusalem",
-                  "Kabul", "Kamchatka", "Karachi", "Kashgar", "Kathmandu",
-                  "Khandyga", "Kolkata", "Krasnoyarsk", "Kuala_Lumpur",
-                  "Kuching", "Kuwait", "Macau", "Magadan", "Makassar",
-                  "Manila", "Muscat", "Nicosia", "Novokuznetsk",
-                  "Novosibirsk", "Omsk", "Oral", "Phnom_Penh", "Pontianak",
-                  "Pyongyang", "Qatar", "Qostanay", "Qyzylorda", "Riyadh",
-                  "Sakhalin", "Samarkand", "Seoul", "Shanghai", "Singapore",
-                  "Srednekolymsk", "Taipei", "Tashkent", "Tbilisi", "Tehran",
-                  "Tel_Aviv", "Thimphu", "Tokyo", "Tomsk", "Ulaanbaatar",
-                  "Urumqi", "Ust-Nera", "Vientiane", "Vladivostok", "Yakutsk",
-                  "Yangon", "Yekaterinburg",
+                  "Chita", "Chongqing", "Colombo", "Damascus", "Dhaka",
+                  "Dili", "Dubai", "Dushanbe", "Famagusta", "Gaza", "Hanoi",
+                  "Harbin", "Hebron", "Ho_Chi_Minh", "Hong_Kong", "Hovd",
+                  "Irkutsk", "Jakarta", "Jayapura", "Jerusalem", "Kabul",
+                  "Kamchatka", "Karachi", "Kashgar", "Kathmandu", "Khandyga",
+                  "Kolkata", "Krasnoyarsk", "Kuala_Lumpur", "Kuching",
+                  "Kuwait", "Macau", "Magadan", "Makassar", "Manila",
+                  "Muscat", "Nicosia", "Novokuznetsk", "Novosibirsk", "Omsk",
+                  "Oral", "Phnom_Penh", "Pontianak", "Pyongyang", "Qatar",
+                  "Qostanay", "Qyzylorda", "Riyadh", "Sakhalin", "Samarkand",
+                  "Seoul", "Shanghai", "Singapore", "Srednekolymsk", "Taipei",
+                  "Tashkent", "Tbilisi", "Tehran", "Tel_Aviv", "Thimphu",
+                  "Tokyo", "Tomsk", "Ulaanbaatar", "Urumqi", "Ust-Nera",
+                  "Vientiane", "Vladivostok", "Yakutsk", "Yangon",
+                  "Yekaterinburg",
                   "Yerevan"}),
    "Australia": ({"Adelaide", "Brisbane", "Broken_Hill", "Currie", "Darwin",
                   "Eucla", "Hobart", "Lindeman", "Lord_Howe", "Melbourne",
@@ -233,13 +233,17 @@ mapping abbr2zones =
      "Europe/Jersey",
    }),
    "+00": ({
+     "Africa/Bissau",
      "Africa/Casablanca",
      "Africa/El_Aaiun",
      "America/Scoresbysund",
      "Antarctica/Troll",
      "Atlantic/Azores",
+     "Atlantic/Canary",
+     "Atlantic/Cape_Verde",
      "Atlantic/Madeira",
      "Atlantic/Reykjavik",
+     "Etc/GMT+1",
    }),
    "+0020": ({
      "Africa/Accra",
@@ -252,17 +256,20 @@ mapping abbr2zones =
    "+01": ({
      "Africa/Casablanca",
      "Africa/El_Aaiun",
-     "Atlantic/Madeira",
      "Etc/GMT-1",
    }),
    "+0120": ({
      "Europe/Amsterdam",
    }),
    "+0130": ({
+     "Africa/Lagos",
      "Africa/Windhoek",
    }),
    "+02": ({
+     "Africa/Casablanca",
+     "Africa/El_Aaiun",
      "Antarctica/Troll",
+     "Etc/GMT-1",
      "Etc/GMT-2",
      "Europe/Samara",
      "Europe/Ulyanovsk",
@@ -274,6 +281,7 @@ mapping abbr2zones =
      "Africa/Kampala",
      "Africa/Mogadishu",
      "Africa/Nairobi",
+     "Africa/Windhoek",
    }),
    "+0245": ({
      "Africa/Dar_es_Salaam",
@@ -296,6 +304,7 @@ mapping abbr2zones =
      "Asia/Riyadh",
      "Asia/Tbilisi",
      "Asia/Yerevan",
+     "Etc/GMT-2",
      "Etc/GMT-3",
      "Europe/Astrakhan",
      "Europe/Istanbul",
@@ -308,10 +317,15 @@ mapping abbr2zones =
      "Europe/Volgograd",
    }),
    "+0330": ({
+     "Africa/Nairobi",
      "Asia/Bahrain",
      "Asia/Tehran",
    }),
+   "+0345": ({
+     "Africa/Nairobi",
+   }),
    "+04": ({
+     "Asia/Amman",
      "Asia/Aqtau",
      "Asia/Aqtobe",
      "Asia/Ashgabat",
@@ -319,22 +333,28 @@ mapping abbr2zones =
      "Asia/Baghdad",
      "Asia/Bahrain",
      "Asia/Baku",
+     "Asia/Damascus",
      "Asia/Dubai",
+     "Asia/Famagusta",
      "Asia/Kabul",
      "Asia/Muscat",
      "Asia/Oral",
      "Asia/Qatar",
      "Asia/Qostanay",
      "Asia/Qyzylorda",
+     "Asia/Riyadh",
      "Asia/Samarkand",
      "Asia/Tbilisi",
      "Asia/Tehran",
      "Asia/Yekaterinburg",
      "Asia/Yerevan",
+     "Etc/GMT-3",
      "Etc/GMT-4",
      "Europe/Astrakhan",
      "Europe/Istanbul",
+     "Europe/Kaliningrad",
      "Europe/Kirov",
+     "Europe/Minsk",
      "Europe/Samara",
      "Europe/Saratov",
      "Europe/Ulyanovsk",
@@ -358,11 +378,14 @@ mapping abbr2zones =
      "Asia/Atyrau",
      "Asia/Baku",
      "Asia/Bishkek",
+     "Asia/Dubai",
      "Asia/Dushanbe",
+     "Asia/Kabul",
      "Asia/Karachi",
      "Asia/Kashgar",
      "Asia/Omsk",
      "Asia/Oral",
+     "Asia/Qatar",
      "Asia/Qostanay",
      "Asia/Qyzylorda",
      "Asia/Samarkand",
@@ -371,6 +394,7 @@ mapping abbr2zones =
      "Asia/Tehran",
      "Asia/Yekaterinburg",
      "Asia/Yerevan",
+     "Etc/GMT-4",
      "Etc/GMT-5",
      "Europe/Astrakhan",
      "Europe/Kirov",
@@ -387,16 +411,20 @@ mapping abbr2zones =
    "+0530": ({
      "Asia/Colombo",
      "Asia/Dhaka",
+     "Asia/Kabul",
      "Asia/Karachi",
      "Asia/Kashgar",
      "Asia/Kathmandu",
+     "Asia/Kolkata",
      "Asia/Thimphu",
    }),
    "+0545": ({
      "Asia/Kathmandu",
    }),
    "+06": ({
+     "Antarctica/Davis",
      "Antarctica/Mawson",
+     "Antarctica/Vostok",
      "Asia/Almaty",
      "Asia/Aqtau",
      "Asia/Aqtobe",
@@ -408,6 +436,7 @@ mapping abbr2zones =
      "Asia/Dhaka",
      "Asia/Dushanbe",
      "Asia/Hovd",
+     "Asia/Karachi",
      "Asia/Krasnoyarsk",
      "Asia/Novokuznetsk",
      "Asia/Novosibirsk",
@@ -421,26 +450,37 @@ mapping abbr2zones =
      "Asia/Tomsk",
      "Asia/Urumqi",
      "Asia/Yekaterinburg",
+     "Etc/GMT-5",
      "Etc/GMT-6",
      "Indian/Chagos",
+     "Indian/Maldives",
    }),
    "+0630": ({
      "Asia/Colombo",
      "Asia/Dhaka",
      "Asia/Karachi",
+     "Asia/Kathmandu",
      "Asia/Kolkata",
+     "Asia/Thimphu",
      "Asia/Yangon",
      "Indian/Cocos",
    }),
+   "+0645": ({
+     "Asia/Kathmandu",
+   }),
    "+07": ({
      "Antarctica/Davis",
+     "Antarctica/Mawson",
      "Antarctica/Vostok",
      "Asia/Almaty",
+     "Asia/Aqtau",
+     "Asia/Aqtobe",
+     "Asia/Atyrau",
      "Asia/Bangkok",
      "Asia/Barnaul",
      "Asia/Bishkek",
-     "Asia/Choibalsan",
      "Asia/Chongqing",
+     "Asia/Colombo",
      "Asia/Dhaka",
      "Asia/Dushanbe",
      "Asia/Hanoi",
@@ -452,14 +492,22 @@ mapping abbr2zones =
      "Asia/Novokuznetsk",
      "Asia/Novosibirsk",
      "Asia/Omsk",
+     "Asia/Oral",
      "Asia/Phnom_Penh",
+     "Asia/Qostanay",
      "Asia/Qyzylorda",
+     "Asia/Samarkand",
      "Asia/Singapore",
      "Asia/Tashkent",
+     "Asia/Thimphu",
      "Asia/Tomsk",
      "Asia/Ulaanbaatar",
+     "Asia/Urumqi",
      "Asia/Vientiane",
+     "Asia/Yekaterinburg",
+     "Etc/GMT-6",
      "Etc/GMT-7",
+     "Indian/Chagos",
      "Indian/Christmas",
    }),
    "+0720": ({
@@ -469,18 +517,23 @@ mapping abbr2zones =
    }),
    "+0730": ({
      "Asia/Brunei",
+     "Asia/Colombo",
+     "Asia/Dhaka",
      "Asia/Jakarta",
      "Asia/Kuala_Lumpur",
      "Asia/Kuching",
      "Asia/Pontianak",
      "Asia/Singapore",
+     "Asia/Yangon",
    }),
    "+08": ({
      "Antarctica/Casey",
+     "Antarctica/Davis",
+     "Antarctica/Vostok",
+     "Asia/Bangkok",
      "Asia/Barnaul",
      "Asia/Brunei",
      "Asia/Chita",
-     "Asia/Choibalsan",
      "Asia/Dili",
      "Asia/Hanoi",
      "Asia/Ho_Chi_Minh",
@@ -494,6 +547,7 @@ mapping abbr2zones =
      "Asia/Makassar",
      "Asia/Novokuznetsk",
      "Asia/Novosibirsk",
+     "Asia/Omsk",
      "Asia/Phnom_Penh",
      "Asia/Pontianak",
      "Asia/Singapore",
@@ -502,20 +556,26 @@ mapping abbr2zones =
      "Asia/Ust-Nera",
      "Asia/Vientiane",
      "Asia/Yakutsk",
+     "Etc/GMT-7",
      "Etc/GMT-8",
    }),
    "+0820": ({
-     "Asia/Kuching",
+     "Asia/Jakarta",
+     "Asia/Singapore",
    }),
    "+0830": ({
      "Asia/Harbin",
+     "Asia/Jakarta",
+     "Asia/Kuching",
+     "Asia/Pontianak",
+     "Asia/Singapore",
    }),
    "+0845": ({
      "Australia/Eucla",
    }),
    "+09": ({
+     "Antarctica/Casey",
      "Asia/Chita",
-     "Asia/Choibalsan",
      "Asia/Dili",
      "Asia/Hanoi",
      "Asia/Harbin",
@@ -524,6 +584,7 @@ mapping abbr2zones =
      "Asia/Jakarta",
      "Asia/Jayapura",
      "Asia/Khandyga",
+     "Asia/Krasnoyarsk",
      "Asia/Kuala_Lumpur",
      "Asia/Kuching",
      "Asia/Macau",
@@ -538,6 +599,7 @@ mapping abbr2zones =
      "Asia/Vladivostok",
      "Asia/Yakutsk",
      "Asia/Yangon",
+     "Etc/GMT-8",
      "Etc/GMT-9",
      "Pacific/Bougainville",
      "Pacific/Chuuk",
@@ -559,30 +621,45 @@ mapping abbr2zones =
    "+10": ({
      "Antarctica/DumontDUrville",
      "Asia/Chita",
-     "Asia/Choibalsan",
+     "Asia/Dili",
+     "Asia/Ho_Chi_Minh",
+     "Asia/Irkutsk",
+     "Asia/Jakarta",
+     "Asia/Jayapura",
      "Asia/Khandyga",
+     "Asia/Kuching",
      "Asia/Macau",
      "Asia/Magadan",
+     "Asia/Makassar",
+     "Asia/Pontianak",
      "Asia/Sakhalin",
+     "Asia/Singapore",
      "Asia/Srednekolymsk",
      "Asia/Ust-Nera",
      "Asia/Vladivostok",
      "Asia/Yakutsk",
+     "Asia/Yangon",
      "Etc/GMT-10",
+     "Etc/GMT-9",
      "Pacific/Bougainville",
      "Pacific/Chuuk",
+     "Pacific/Guam",
      "Pacific/Kosrae",
      "Pacific/Kwajalein",
      "Pacific/Majuro",
+     "Pacific/Nauru",
+     "Pacific/Palau",
      "Pacific/Pohnpei",
      "Pacific/Port_Moresby",
    }),
    "+1030": ({
+     "Asia/Jayapura",
      "Australia/Lord_Howe",
    }),
    "+11": ({
      "Antarctica/Casey",
      "Asia/Anadyr",
+     "Asia/Chita",
      "Asia/Kamchatka",
      "Asia/Khandyga",
      "Asia/Magadan",
@@ -590,7 +667,8 @@ mapping abbr2zones =
      "Asia/Srednekolymsk",
      "Asia/Ust-Nera",
      "Asia/Vladivostok",
-     "Australia/Lord_Howe",
+     "Asia/Yakutsk",
+     "Etc/GMT-10",
      "Etc/GMT-11",
      "Pacific/Bougainville",
      "Pacific/Efate",
@@ -601,6 +679,7 @@ mapping abbr2zones =
      "Pacific/Norfolk",
      "Pacific/Noumea",
      "Pacific/Pohnpei",
+     "Pacific/Port_Moresby",
    }),
    "+1112": ({
      "Pacific/Norfolk",
@@ -611,16 +690,22 @@ mapping abbr2zones =
      "Pacific/Norfolk",
    }),
    "+12": ({
+     "Antarctica/Casey",
      "Asia/Anadyr",
      "Asia/Kamchatka",
+     "Asia/Khandyga",
      "Asia/Magadan",
      "Asia/Sakhalin",
      "Asia/Srednekolymsk",
      "Asia/Ust-Nera",
+     "Asia/Vladivostok",
+     "Etc/GMT-11",
      "Etc/GMT-12",
+     "Pacific/Bougainville",
      "Pacific/Efate",
      "Pacific/Fiji",
      "Pacific/Funafuti",
+     "Pacific/Guadalcanal",
      "Pacific/Kosrae",
      "Pacific/Kwajalein",
      "Pacific/Majuro",
@@ -631,6 +716,9 @@ mapping abbr2zones =
      "Pacific/Wake",
      "Pacific/Wallis",
    }),
+   "+1212": ({
+     "Pacific/Norfolk",
+   }),
    "+1215": ({
      "Pacific/Chatham",
    }),
@@ -638,6 +726,7 @@ mapping abbr2zones =
      "Pacific/Tongatapu",
    }),
    "+1230": ({
+     "Pacific/Nauru",
      "Pacific/Norfolk",
    }),
    "+1245": ({
@@ -646,11 +735,25 @@ mapping abbr2zones =
    "+13": ({
      "Asia/Anadyr",
      "Asia/Kamchatka",
+     "Asia/Magadan",
+     "Asia/Srednekolymsk",
+     "Asia/Ust-Nera",
+     "Etc/GMT-12",
      "Etc/GMT-13",
      "Pacific/Apia",
      "Pacific/Fakaofo",
      "Pacific/Fiji",
      "Pacific/Kanton",
+     "Pacific/Kosrae",
+     "Pacific/Kwajalein",
+     "Pacific/Nauru",
+     "Pacific/Tarawa",
+     "Pacific/Tongatapu",
+   }),
+   "+1315": ({
+     "Pacific/Chatham",
+   }),
+   "+1320": ({
      "Pacific/Tongatapu",
    }),
    "+1345": ({
@@ -658,10 +761,17 @@ mapping abbr2zones =
    }),
    "+14": ({
      "Asia/Anadyr",
+     "Etc/GMT-13",
      "Etc/GMT-14",
      "Pacific/Apia",
+     "Pacific/Fakaofo",
+     "Pacific/Kanton",
      "Pacific/Kiritimati",
      "Pacific/Tongatapu",
+   }),
+   "+15": ({
+     "Etc/GMT-14",
+     "Pacific/Kiritimati",
    }),
    "-00": ({
      "America/Cambridge_Bay",
@@ -709,10 +819,16 @@ mapping abbr2zones =
      "Atlantic/Jan_Mayen",
      "Atlantic/Madeira",
      "Atlantic/Reykjavik",
+     "Atlantic/South_Georgia",
      "Etc/GMT+1",
+     "Etc/GMT+2",
    }),
    "-0130": ({
      "America/Montevideo",
+     "America/Paramaribo",
+   }),
+   "-0145": ({
+     "America/Guyana",
    }),
    "-02": ({
      "America/Araguaina",
@@ -729,28 +845,41 @@ mapping abbr2zones =
      "America/Argentina/San_Luis",
      "America/Argentina/Tucuman",
      "America/Argentina/Ushuaia",
+     "America/Asuncion",
      "America/Bahia",
      "America/Belem",
+     "America/Cayenne",
      "America/Danmarkshavn",
      "America/Fortaleza",
+     "America/Guyana",
      "America/Maceio",
      "America/Miquelon",
      "America/Montevideo",
      "America/Noronha",
      "America/Nuuk",
+     "America/Paramaribo",
+     "America/Punta_Arenas",
      "America/Recife",
      "America/Rosario",
+     "America/Santarem",
      "America/Sao_Paulo",
      "America/Scoresbysund",
      "Antarctica/Palmer",
+     "Antarctica/Rothera",
      "Atlantic/Azores",
      "Atlantic/Cape_Verde",
      "Atlantic/South_Georgia",
      "Atlantic/Stanley",
      "Etc/GMT+2",
+     "Etc/GMT+3",
    }),
    "-0230": ({
+     "America/Caracas",
      "America/Montevideo",
+     "America/Paramaribo",
+   }),
+   "-0245": ({
+     "America/Guyana",
    }),
    "-03": ({
      "America/Araguaina",
@@ -772,11 +901,14 @@ mapping abbr2zones =
      "America/Belem",
      "America/Boa_Vista",
      "America/Campo_Grande",
+     "America/Caracas",
      "America/Cayenne",
      "America/Cuiaba",
      "America/Danmarkshavn",
+     "America/Eirunepe",
      "America/Fortaleza",
      "America/Guyana",
+     "America/La_Paz",
      "America/Maceio",
      "America/Manaus",
      "America/Miquelon",
@@ -786,6 +918,7 @@ mapping abbr2zones =
      "America/Porto_Velho",
      "America/Punta_Arenas",
      "America/Recife",
+     "America/Rio_Branco",
      "America/Rosario",
      "America/Santarem",
      "America/Santiago",
@@ -794,14 +927,11 @@ mapping abbr2zones =
      "Antarctica/Rothera",
      "Atlantic/Stanley",
      "Etc/GMT+3",
+     "Etc/GMT+4",
    }),
    "-0330": ({
      "America/Barbados",
-     "America/Montevideo",
-     "America/Paramaribo",
-   }),
-   "-0345": ({
-     "America/Guyana",
+     "America/Caracas",
    }),
    "-04": ({
      "America/Argentina/Buenos_Aires",
@@ -840,10 +970,11 @@ mapping abbr2zones =
      "Antarctica/Palmer",
      "Atlantic/Stanley",
      "Etc/GMT+4",
+     "Etc/GMT+5",
+     "Pacific/Galapagos",
    }),
    "-0430": ({
      "America/Aruba",
-     "America/Caracas",
      "America/Curacao",
      "America/Santo_Domingo",
    }),
@@ -856,6 +987,7 @@ mapping abbr2zones =
      "America/Rio_Branco",
      "America/Santiago",
      "Etc/GMT+5",
+     "Etc/GMT+6",
      "Pacific/Easter",
      "Pacific/Galapagos",
    }),
@@ -864,55 +996,81 @@ mapping abbr2zones =
    }),
    "-06": ({
      "Etc/GMT+6",
+     "Etc/GMT+7",
      "Pacific/Easter",
      "Pacific/Galapagos",
    }),
+   "-0630": ({
+     "Pacific/Pitcairn",
+   }),
    "-07": ({
      "Etc/GMT+7",
+     "Etc/GMT+8",
      "Pacific/Easter",
+     "Pacific/Pitcairn",
+   }),
+   "-0730": ({
+     "Pacific/Marquesas",
+     "Pacific/Pitcairn",
    }),
    "-08": ({
      "Etc/GMT+8",
+     "Etc/GMT+9",
+     "Pacific/Gambier",
      "Pacific/Pitcairn",
    }),
    "-0830": ({
-     "Pacific/Pitcairn",
-   }),
-   "-09": ({
-     "Etc/GMT+9",
-     "Pacific/Gambier",
-   }),
-   "-0930": ({
      "Pacific/Marquesas",
      "Pacific/Rarotonga",
    }),
-   "-10": ({
-     "Etc/GMT+10",
-     "Pacific/Apia",
+   "-0840": ({
      "Pacific/Kiritimati",
-     "Pacific/Midway",
+   }),
+   "-09": ({
+     "Etc/GMT+10",
+     "Etc/GMT+9",
+     "Pacific/Gambier",
+     "Pacific/Kiritimati",
      "Pacific/Rarotonga",
      "Pacific/Tahiti",
    }),
-   "-1030": ({
+   "-0920": ({
+     "Pacific/Niue",
+   }),
+   "-0930": ({
+     "Pacific/Apia",
      "Pacific/Rarotonga",
    }),
-   "-1040": ({
+   "-0940": ({
      "Pacific/Kiritimati",
    }),
-   "-11": ({
+   "-10": ({
+     "Etc/GMT+10",
      "Etc/GMT+11",
      "Pacific/Apia",
      "Pacific/Fakaofo",
      "Pacific/Kanton",
+     "Pacific/Kiritimati",
      "Pacific/Midway",
      "Pacific/Niue",
+     "Pacific/Rarotonga",
+     "Pacific/Tahiti",
    }),
-   "-1120": ({
+   "-1020": ({
      "Pacific/Niue",
    }),
-   "-1130": ({
+   "-1030": ({
      "Pacific/Apia",
+   }),
+   "-11": ({
+     "Etc/GMT+11",
+     "Etc/GMT+12",
+     "Pacific/Apia",
+     "Pacific/Fakaofo",
+     "Pacific/Kanton",
+     "Pacific/Kwajalein",
+     "Pacific/Midway",
+     "Pacific/Niue",
    }),
    "-12": ({
      "Etc/GMT+12",
@@ -1131,6 +1289,7 @@ mapping abbr2zones =
      "America/Atikokan",
      "America/Pangnirtung",
      "America/Rainy_River",
+     "CST6CDT",
    }),
    "CAST": ({
      "Africa/Gaborone",
@@ -1195,9 +1354,9 @@ mapping abbr2zones =
      "Asia/Macau",
      "Asia/Shanghai",
      "Asia/Taipei",
-     "CST6CDT",
    }),
    "CE%sT": ({
+     "CET",
      "Europe/Amsterdam",
      "Europe/Copenhagen",
      "Europe/Guernsey",
@@ -1225,7 +1384,6 @@ mapping abbr2zones =
      "Africa/Ceuta",
      "Africa/Tripoli",
      "Africa/Tunis",
-     "CET",
      "Europe/Amsterdam",
      "Europe/Andorra",
      "Europe/Athens",
@@ -1268,7 +1426,6 @@ mapping abbr2zones =
      "Africa/Ceuta",
      "Africa/Tripoli",
      "Africa/Tunis",
-     "CET",
      "Europe/Amsterdam",
      "Europe/Andorra",
      "Europe/Athens",
@@ -1354,7 +1511,6 @@ mapping abbr2zones =
      "America/Rankin_Inlet",
      "America/Resolute",
      "America/Winnipeg",
-     "CST6CDT",
    }),
    "CST": ({
      "America/Bahia_Banderas",
@@ -1405,7 +1561,6 @@ mapping abbr2zones =
      "Asia/Macau",
      "Asia/Shanghai",
      "Asia/Taipei",
-     "CST6CDT",
    }),
    "CT": ({
      "Asia/Macau",
@@ -1441,7 +1596,6 @@ mapping abbr2zones =
      "America/Rankin_Inlet",
      "America/Resolute",
      "America/Winnipeg",
-     "CST6CDT",
    }),
    "ChST": ({
      "Pacific/Guam",
@@ -1462,6 +1616,7 @@ mapping abbr2zones =
      "America/Nipigon",
      "America/Pangnirtung",
      "America/Thunder_Bay",
+     "EST5EDT",
    }),
    "EAST": ({
      "Indian/Antananarivo",
@@ -1502,9 +1657,9 @@ mapping abbr2zones =
      "America/Port-au-Prince",
      "America/Santo_Domingo",
      "America/Toronto",
-     "EST5EDT",
    }),
    "EE%sT": ({
+     "EET",
      "Europe/Tiraspol",
      "Europe/Uzhgorod",
      "Europe/Zaporozhye",
@@ -1518,7 +1673,6 @@ mapping abbr2zones =
      "Asia/Gaza",
      "Asia/Hebron",
      "Asia/Nicosia",
-     "EET",
      "Europe/Athens",
      "Europe/Bucharest",
      "Europe/Chisinau",
@@ -1546,7 +1700,6 @@ mapping abbr2zones =
      "Asia/Gaza",
      "Asia/Hebron",
      "Asia/Nicosia",
-     "EET",
      "Europe/Athens",
      "Europe/Bucharest",
      "Europe/Chisinau",
@@ -1587,7 +1740,6 @@ mapping abbr2zones =
      "America/New_York",
      "America/Santo_Domingo",
      "America/Toronto",
-     "EST5EDT",
    }),
    "EST": ({
      "America/Antigua",
@@ -1626,7 +1778,6 @@ mapping abbr2zones =
      "America/Thunder_Bay",
      "America/Toronto",
      "EST",
-     "EST5EDT",
    }),
    "EWT": ({
      "America/Cancun",
@@ -1647,7 +1798,6 @@ mapping abbr2zones =
      "America/New_York",
      "America/Santo_Domingo",
      "America/Toronto",
-     "EST5EDT",
    }),
    "FFMT": ({
      "America/Martinique",
@@ -2000,7 +2150,6 @@ mapping abbr2zones =
      "Asia/Bishkek",
      "Asia/Brunei",
      "Asia/Chita",
-     "Asia/Choibalsan",
      "Asia/Chongqing",
      "Asia/Colombo",
      "Asia/Damascus",
@@ -2203,6 +2352,7 @@ mapping abbr2zones =
    }),
    "M%sT": ({
      "America/Yellowknife",
+     "MST7MDT",
    }),
    "MDST": ({
      "Europe/Moscow",
@@ -2219,6 +2369,7 @@ mapping abbr2zones =
      "America/Inuvik",
      "America/Mazatlan",
      "America/Mexico_City",
+     "America/Monterrey",
      "America/North_Dakota/Beulah",
      "America/North_Dakota/Center",
      "America/North_Dakota/New_Salem",
@@ -2226,12 +2377,8 @@ mapping abbr2zones =
      "America/Phoenix",
      "America/Regina",
      "America/Swift_Current",
-     "MST7MDT",
    }),
-   "MEST": ({
-     "MET",
-   }),
-   "MET": ({
+   "ME%sT": ({
      "MET",
    }),
    "MMT": ({
@@ -2259,7 +2406,6 @@ mapping abbr2zones =
      "America/Phoenix",
      "America/Regina",
      "America/Swift_Current",
-     "MST7MDT",
    }),
    "MSD": ({
      "Europe/Chisinau",
@@ -2310,6 +2456,7 @@ mapping abbr2zones =
      "America/Inuvik",
      "America/Mazatlan",
      "America/Mexico_City",
+     "America/Monterrey",
      "America/North_Dakota/Beulah",
      "America/North_Dakota/Center",
      "America/North_Dakota/New_Salem",
@@ -2321,7 +2468,6 @@ mapping abbr2zones =
      "America/Whitehorse",
      "Europe/Moscow",
      "MST",
-     "MST7MDT",
    }),
    "MWT": ({
      "America/Bahia_Banderas",
@@ -2335,6 +2481,7 @@ mapping abbr2zones =
      "America/Inuvik",
      "America/Mazatlan",
      "America/Mexico_City",
+     "America/Monterrey",
      "America/North_Dakota/Beulah",
      "America/North_Dakota/Center",
      "America/North_Dakota/New_Salem",
@@ -2342,7 +2489,6 @@ mapping abbr2zones =
      "America/Phoenix",
      "America/Regina",
      "America/Swift_Current",
-     "MST7MDT",
    }),
    "NDDT": ({
      "America/Goose_Bay",
@@ -2391,6 +2537,7 @@ mapping abbr2zones =
    }),
    "P%sT": ({
      "America/Ensenada",
+     "PST8PDT",
    }),
    "PDT": ({
      "America/Boise",
@@ -2406,7 +2553,6 @@ mapping abbr2zones =
      "America/Vancouver",
      "America/Whitehorse",
      "Asia/Manila",
-     "PST8PDT",
    }),
    "PKST": ({
      "Asia/Karachi",
@@ -2450,28 +2596,23 @@ mapping abbr2zones =
      "America/Tijuana",
      "America/Vancouver",
      "America/Whitehorse",
-     "PST8PDT",
    }),
    "PST": ({
-     "America/Bahia_Banderas",
      "America/Boise",
      "America/Creston",
      "America/Dawson",
      "America/Dawson_Creek",
      "America/Ensenada",
      "America/Fort_Nelson",
-     "America/Hermosillo",
      "America/Inuvik",
      "America/Juneau",
      "America/Los_Angeles",
-     "America/Mazatlan",
      "America/Metlakatla",
      "America/Sitka",
      "America/Tijuana",
      "America/Vancouver",
      "America/Whitehorse",
      "Asia/Manila",
-     "PST8PDT",
    }),
    "PWT": ({
      "America/Boise",
@@ -2486,7 +2627,6 @@ mapping abbr2zones =
      "America/Tijuana",
      "America/Vancouver",
      "America/Whitehorse",
-     "PST8PDT",
    }),
    "QMT": ({
      "America/Guayaquil",
@@ -2560,6 +2700,7 @@ mapping abbr2zones =
    "WE%sT": ({
      "Europe/Luxembourg",
      "Europe/Monaco",
+     "WET",
    }),
    "WEMT": ({
      "Africa/Ceuta",
@@ -2580,7 +2721,6 @@ mapping abbr2zones =
      "Europe/Luxembourg",
      "Europe/Madrid",
      "Europe/Paris",
-     "WET",
    }),
    "WET": ({
      "Africa/Algiers",
@@ -2595,7 +2735,6 @@ mapping abbr2zones =
      "Europe/Luxembourg",
      "Europe/Madrid",
      "Europe/Paris",
-     "WET",
    }),
    "WIB": ({
      "Asia/Jakarta",
@@ -2812,7 +2951,7 @@ mapping timezone_expert_tree =
                            -28800:"Asia/Taipei",
                         ]),
                      -28800:
-                        ([ "test":-815315400, // 1944-03-01 11:30:00
+                        ([ "test":-767815200, // 1945-09-02 06:00:00
                            -32400:"Asia/Manila",
                            -28800:"Australia/Perth",
                         ]),
@@ -2836,7 +2975,6 @@ mapping timezone_expert_tree =
       ]),
    -25200:
       ([ "test":771841800, // 1994-06-17 08:30:00
-         -36000:"Asia/Choibalsan",
          -32400:"Asia/Ulaanbaatar",
          -28800:
             ([ "test":1436643000, // 2015-07-11 19:30:00
@@ -3119,14 +3257,14 @@ mapping timezone_expert_tree =
                -7200:
                   ([ "test":-580478400, // 1951-08-10 12:00:00
                      -7200:
-                        ([ "test":-2109290842, // 1903-02-28 21:52:38
+                        ([ "test":-2109290658, // 1903-02-28 21:55:42
                            -8400:"Africa/Blantyre",
-                           -7464:"Africa/Mbabane",
+                           -7818:"Africa/Maputo",
                            -7452:"Africa/Harare",
                            -7216:"Africa/Kigali",
                            -7200:
-                              ([ "test":-2316909834, // 1896-07-30 21:56:06
-                                 -7820:"Africa/Maputo",
+                              ([ "test":-2316909656, // 1896-07-30 21:59:04
+                                 -7464:"Africa/Mbabane",
                                  -7200:"Africa/Bujumbura",
                               ]),
                            -6788:"Africa/Lusaka",
@@ -3253,7 +3391,7 @@ mapping timezone_expert_tree =
                0:"Antarctica/Troll",
             ]),
          -3600:
-            ([ "test":10243800, // 1970-04-29 13:30:00
+            ([ "test":-69890400, // 1967-10-15 02:00:00
                -3600:
                   ([ "test":-2021169296, // 1905-12-14 20:05:04
                      0:
@@ -3272,18 +3410,18 @@ mapping timezone_expert_tree =
                0:
                   ([ "test":331389000, // 1980-07-02 12:30:00
                      -3600:
-                        ([ "test":-165153600, // 1964-10-07 12:00:00
-                           0:
-                              ([ "test":277993800, // 1978-10-23 12:30:00
-                                 -3600:"Africa/Algiers",
-                                 0:"Atlantic/Canary",
-                              ]),
-                           3600:"Atlantic/Madeira",
+                        ([ "test":277993800, // 1978-10-23 12:30:00
+                           -3600:"Africa/Algiers",
+                           0:"Atlantic/Canary",
                         ]),
                      0:
-                        ([ "test":397699200, // 1982-08-09 00:00:00
-                           -3600:"Atlantic/Faroe",
-                           0:"Africa/Casablanca",
+                        ([ "test":-937779290, // 1940-04-14 01:45:10
+                           -3600:"Africa/Casablanca",
+                           0:
+                              ([ "test":366940800, // 1981-08-18 00:00:00
+                                 -3600:"Atlantic/Faroe",
+                                 0:"Atlantic/Madeira",
+                              ]),
                         ]),
                   ]),
             ]),
@@ -3318,7 +3456,7 @@ mapping timezone_expert_tree =
       ([ "test":178030800, // 1975-08-23 13:00:00
          0:"Africa/Bissau",
          3600:
-            ([ "test":315797400, // 1980-01-04 01:30:00
+            ([ "test":292208400, // 1979-04-06 01:00:00
                0:"Africa/El_Aaiun",
                3600:"Atlantic/Azores",
             ]),
@@ -3604,7 +3742,7 @@ mapping timezone_expert_tree =
                18000:"America/Indiana/Petersburg",
             ]),
          18000:
-            ([ "test":141609600, // 1974-06-28 00:00:00
+            ([ "test":141742800, // 1974-06-29 13:00:00
                18000:
                   ([ "test":979439400, // 2001-01-14 02:30:00
                      18000:
@@ -3627,18 +3765,18 @@ mapping timezone_expert_tree =
                         ]),
                   ]),
                21600:
-                  ([ "test":392794200, // 1982-06-13 05:30:00
+                  ([ "test":391635000, // 1982-05-30 19:30:00
                      18000:
-                        ([ "test":654831000, // 1990-10-02 01:30:00
+                        ([ "test":407786400, // 1982-12-03 18:00:00
                            18000:"America/Cancun",
                            21600:"America/Merida",
                         ]),
                      21600:
                         ([ "test":583804800, // 1988-07-02 00:00:00
                            18000:
-                              ([ "test":-1530522000, // 1921-07-02 15:00:00
-                                 23400:"America/Matamoros",
-                                 24076:"America/Monterrey",
+                              ([ "test":-1428946200, // 1924-09-20 06:30:00
+                                 21600:"America/Matamoros",
+                                 25200:"America/Monterrey",
                               ]),
                            21600:"America/Mexico_City",
                         ]),
@@ -3691,28 +3829,31 @@ mapping timezone_expert_tree =
                18000:"America/Cambridge_Bay",
                21600:"America/Swift_Current",
                25200:
-                  ([ "test":127659600, // 1974-01-17 13:00:00
-                     21600:"America/Denver",
+                  ([ "test":-47347200, // 1968-07-02 00:00:00
+                     21600:
+                        ([ "test":127659600, // 1974-01-17 13:00:00
+                           21600:"America/Denver",
+                           25200:"America/Boise",
+                        ]),
                      25200:
                         ([ "test":425970000, // 1983-07-02 05:00:00
                            21600:
-                              ([ "test":-1735254784, // 1915-01-06 00:46:56
+                              ([ "test":-1551600784, // 1920-10-31 15:46:56
                                  0:"America/Yellowknife",
                                  25200:"America/Edmonton",
-                                 28800:"America/Boise",
                               ]),
                            25200:"America/Mazatlan",
                         ]),
                   ]),
             ]),
          25200:
-            ([ "test":-28121400, // 1969-02-09 12:30:00
+            ([ "test":867801600, // 1997-07-02 00:00:00
+               21600:"America/Hermosillo",
                25200:
                   ([ "test":-75470400, // 1967-08-11 12:00:00
                      21600:"America/Phoenix",
                      25200:"America/Creston",
                   ]),
-               28800:"America/Hermosillo",
             ]),
       ]),
    28800:
@@ -3734,10 +3875,13 @@ mapping timezone_expert_tree =
                      29548:"America/Vancouver",
                   ]),
                28800:
-                  ([ "test":-394459200, // 1957-07-02 12:00:00
-                     25200:"America/Tijuana",
-                     28800:"America/Ensenada",
-                     32400:"America/Whitehorse",
+                  ([ "test":-139568400, // 1965-07-30 15:00:00
+                     25200:"America/Whitehorse",
+                     28800:
+                        ([ "test":-394459200, // 1957-07-02 12:00:00
+                           25200:"America/Tijuana",
+                           28800:"America/Ensenada",
+                        ]),
                   ]),
             ]),
          32400:

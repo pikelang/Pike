@@ -2413,21 +2413,35 @@ class Phil
       {
          case 1936:
             return ({({0           ,0         ,0    ,"S"   }),  // ?
-                     ({FIXED(306)  ,UO+0      ,3600 ,"D"   })});// Nov 1
+                     ({FIXED(305)  ,UO+86400  ,3600 ,"D"   })});// Oct 31
          case 1937:
             return ({({0           ,0         ,3600 ,"D"   }),  
-                     ({FIXED(32)   ,UO-3600   ,0    ,"S"   })});// Feb 1
+                     ({FIXED(15)   ,UO+82800  ,0    ,"S"   })});// Jan 15
+         case 1941:
+            return ({({0           ,0         ,0    ,"S"   }),  
+                     ({FIXED(349)  ,UO+86400  ,3600 ,"D"   })});// Dec 15
+         case 1942..1944:
+            return ({({0           ,0         ,3600 ,"D"   })});
+         case 1945:
+            return ({({0           ,0         ,3600 ,"D"   }),  
+                     ({FIXED(334)  ,UO+82800  ,0    ,"S"   })});// Nov 30
          case 1954:
             return ({({0           ,0         ,0    ,"S"   }),  
-                     ({FIXED(102)  ,UO+0      ,3600 ,"D"   }),  // Apr 12
-                     ({FIXED(182)  ,UO-3600   ,0    ,"S"   })});// Jul 1
-         case 1978:
+                     ({FIXED(101)  ,UO+86400  ,3600 ,"D"   }),  // Apr 11
+                     ({FIXED(155)  ,UO+82800  ,0    ,"S"   })});// Jun 4
+         case 1977:
             return ({({0           ,0         ,0    ,"S"   }),  
-                     ({FIXED(81)   ,UO+0      ,3600 ,"D"   }),  // Mar 22
-                     ({FIXED(264)  ,UO-3600   ,0    ,"S"   })});// Sep 21
-         default: // ..1935 and 1979..
-         case 1938..1953:
-         case 1955..1977:
+                     ({FIXED(86)   ,UO+86400  ,3600 ,"D"   }),  // Mar 27
+                     ({FIXED(264)  ,UO+82800  ,0    ,"S"   })});// Sep 21
+         case 1990:
+            return ({({0           ,0         ,0    ,"S"   }),  
+                     ({FIXED(141)  ,UO+0      ,3600 ,"D"   }),  // May 21
+                     ({FIXED(209)  ,UO+82800  ,0    ,"S"   })});// Jul 28
+         default: // ..1935 and 1991..
+         case 1938..1940:
+         case 1946..1953:
+         case 1955..1976:
+         case 1978..1989:
             return ({({0           ,0         ,0    ,"S"   })});
       }
    }
@@ -5036,24 +5050,14 @@ class Port
             return ({({0           ,0         ,0    ,""    }),  // ?
                      ({FIXED(169)  ,UO+82800  ,3600 ,"S"   }),  // Jun 17
                      ({FIXED(306)  ,UO+0      ,0    ,""    })});// Nov 1
-         case 1918:
+         case 1917..1921:
             return ({({0           ,0         ,0    ,""    }),  
-                     ({FIXED(60)   ,UO+82800  ,3600 ,"S"   }),  // Mar 1
-                     ({FIXED(287)  ,UO+82800  ,0    ,""    })});// Oct 14
-         case 1920:
-            return ({({0           ,0         ,0    ,""    }),  
-                     ({FIXED(60)   ,UO+82800  ,3600 ,"S"   }),  // Feb 29
-                     ({FIXED(288)  ,UO+82800  ,0    ,""    })});// Oct 14
-         case 1917:
-         case 1919:
-         case 1921:
-            return ({({0           ,0         ,0    ,""    }),  
-                     ({FIXED(59)   ,UO+82800  ,3600 ,"S"   }),  // Feb 28
-                     ({FIXED(287)  ,UO+82800  ,0    ,""    })});// Oct 14
+                     ({FIX_L(60)   ,UO+0      ,3600 ,"S"   }),  // Mar 1
+                     ({FIX_L(287)  ,UO+82800  ,0    ,""    })});// Oct 14
          case 1924:
             return ({({0           ,0         ,0    ,""    }),  
                      ({FIXED(107)  ,UO+82800  ,3600 ,"S"   }),  // Apr 16
-                     ({FIXED(288)  ,UO+82800  ,0    ,""    })});// Oct 14
+                     ({FIXED(278)  ,UO+82800  ,0    ,""    })});// Oct 4
          case 1926:
             return ({({0           ,0         ,0    ,""    }),  
                      ({FIXED(107)  ,UO+82800  ,3600 ,"S"   }),  // Apr 17
@@ -5074,6 +5078,12 @@ class Port
             return ({({0           ,0         ,0    ,""    }),  
                      ({FIXED(93)   ,UO+82800  ,3600 ,"S"   }),  // Apr 2
                      ({LDAY (281,6),UO+82800  ,0    ,""    })});// Oct Sat>=1
+         default: // ..1915:
+         case 1922..1923:
+         case 1925:
+         case 1930:
+         case 1933:
+            return ({({0           ,0         ,0    ,""    })});
          case 1934:
             return ({({0           ,0         ,0    ,""    }),  
                      ({FIXED(97)   ,UO+82800  ,3600 ,"S"   }),  // Apr 7
@@ -5102,7 +5112,7 @@ class Port
          case 1940:
             return ({({0           ,0         ,0    ,""    }),  
                      ({FIXED(55)   ,UO+82800  ,3600 ,"S"   }),  // Feb 24
-                     ({FIXED(279)  ,UO+82800  ,0    ,""    })});// Oct 5
+                     ({FIXED(281)  ,UO+82800  ,0    ,""    })});// Oct 7
          case 1941:
             return ({({0           ,0         ,0    ,""    }),  
                      ({FIXED(95)   ,UO+82800  ,3600 ,"S"   }),  // Apr 5
@@ -5133,37 +5143,30 @@ class Port
             return ({({0           ,0         ,0    ,""    }),  
                      ({LDAYL(97,7) ,UO+7200   ,3600 ,"S"   }),  // Apr Sun>=1
                      ({LDAYL(280,7),UO+7200   ,0    ,""    })});// Oct Sun>=1
-         default: // ..1915:
-         case 1922..1923:
-         case 1925:
-         case 1930:
-         case 1933:
-         case 1966..1976:
-            return ({({0           ,0         ,0    ,""    })});
-         case 1977:
+         case 1966:
             return ({({0           ,0         ,0    ,""    }),  
-                     ({FIXED(86)   ,UO+0      ,3600 ,"S"   }),  // Mar 27
-                     ({FIXED(268)  ,UO+0      ,0    ,""    })});// Sep 25
+                     ({LDAY (97,7) ,UO+7200   ,3600 ,"S"   })});// Apr Sun>=1
+         case 1976:
+            return ({({0           ,0         ,3600 ,"S"   }),  
+                     ({LDAY (274,7),UO+0      ,0    ,""    })});// Sep lastSun
          case 1978:
             return ({({0           ,0         ,0    ,""    }),  
-                     ({LDAY (97,7) ,UO+0      ,3600 ,"S"   }),  // Apr Sun>=1
-                     ({FIXED(274)  ,UO+0      ,0    ,""    })});// Oct 1
-         case 1979:
+                     ({LDAY (97,7) ,UO+3600   ,3600 ,"S"   }),  // Apr Sun>=1
+                     ({FIXED(274)  ,UO+3600   ,0    ,""    })});// Oct 1
+         case 1979..1980:
             return ({({0           ,0         ,0    ,""    }),  
-                     ({LDAY (97,7) ,UO+0      ,3600 ,"S"   }),  // Apr Sun>=1
-                     ({LDAY (273,7),UO+3600   ,0    ,""    })});// Sep lastSun
-         case 1980:
+                     ({LDAYL(97,7) ,UO+3600   ,3600 ,"S"   }),  // Apr Sun>=1
+                     ({LDAYL(273,7),UO+3600   ,0    ,""    })});// Sep lastSun
+         case 1977:
+         case 1981..1985:
             return ({({0           ,0         ,0    ,""    }),  
-                     ({LDAY (91,7) ,UO+0      ,3600 ,"S"   }),  // Mar lastSun
-                     ({LDAY (274,7),UO+3600   ,0    ,""    })});// Sep lastSun
-         case 1981..1982:
+                     ({LDAYL(90,7) ,UO+0      ,3600 ,"S"   }),  // Mar lastSun
+                     ({LDAYL(273,7),UO+0      ,0    ,""    })});// Sep lastSun
+         case 1986:
             return ({({0           ,0         ,0    ,""    }),  
-                     ({LDAY (90,7) ,UO+3600   ,3600 ,"S"   }),  // Mar lastSun
-                     ({LDAY (273,7),UO+3600   ,0    ,""    })});// Sep lastSun
-         case 1983:
-            return ({({0           ,0         ,0    ,""    }),  
-                     ({LDAY (90,7) ,UO+7200   ,3600 ,"S"   })});// Mar lastSun
-         case 1984..:
+                     ({LDAY (90,7) ,UO+0      ,3600 ,"S"   })});// Mar lastSun
+         case 1967..1975:
+         case 1987..:
             return ({({0           ,0         ,3600 ,"S"   })});
       }
    }
@@ -6529,7 +6532,7 @@ class Mexico
       {
          case 1931:
             return ({({0           ,0         ,0    ,"S"   }),  // ?
-                     ({FIXED(121)  ,UO+82800  ,3600 ,"D"   }),  // May 1
+                     ({FIXED(120)  ,UO+0      ,3600 ,"D"   }),  // Apr 30
                      ({FIXED(274)  ,UO-3600   ,0    ,"S"   })});// Oct 1
          case 1939:
             return ({({0           ,0         ,0    ,"S"   }),  
@@ -7583,10 +7586,12 @@ class Para
             return ({({0           ,0         ,3600 ,""    }),  
                      ({LDAYL(104,7),UO-3600   ,0    ,""    }),  // Apr Sun>=8
                      ({LDAYL(280,7),UO+0      ,3600 ,""    })});// Oct Sun>=1
-         case 2013..:
+         case 2013..2024:
             return ({({0           ,0         ,3600 ,""    }),  
                      ({LDAYL(87,7) ,UO-3600   ,0    ,""    }),  // Mar Sun>=22
                      ({LDAYL(280,7),UO+0      ,3600 ,""    })});// Oct Sun>=1
+         case 2025..:
+            return ({({0           ,0         ,3600 ,""    })});
       }
    }
 }
