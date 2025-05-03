@@ -1003,7 +1003,7 @@ class Asia_Tehran
    Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=284011200) // from 1979 
+      if (ux>=279604800) // from 1978 Nov 10 24:00 
          return tz3 || (tz3=TZrules.Iran(-12600,"+0330/+0430"));
       if (ux>=246256200) // from 1977 Oct 20 24:00 
          return tz4 || (tz4=TZrules.Iran(-14400,"+04/+05"));
@@ -8317,6 +8317,42 @@ class America_Santiago
    }
 }
 constant Chile_Continental=America_Santiago;
+
+class America_Coyhaique
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6,tz7,tz8;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=1742418000) // from 2025 Mar 20 
+         return tz8 || (tz8=Rule.Timezone(10800,"-03/-02"));
+      if (ux>=-713649600) // from 1947 May 21 23:00 
+         return tz7 || (tz7=TZrules.Chile(14400,"-04/-03"));
+      if (ux>=-718056000) // from 1947 Mar 31 24:00 
+         return tz3 || (tz3=Rule.Timezone(18000,"-05/-04"));
+      if (ux>=-736632000) // from 1946 Aug 28 24:00 
+         return tz6 || (tz6=Rule.Timezone(14400,"-05/-04"));
+      if (ux>=-865278000) // from 1942 Aug  1 
+         return tz4 || (tz4=Rule.Timezone(14400,"-04/-03"));
+      if (ux>=-870552000) // from 1942 Jun  1 
+         return tz3 || (tz3=Rule.Timezone(18000,"-05/-04"));
+      if (ux>=-1178168400) // from 1932 Sep  1 
+         return tz4 || (tz4=Rule.Timezone(14400,"-04/-03"));
+      if (ux>=-1335986235) // from 1927 Sep  1 
+         return tz5 || (tz5=TZrules.Chile(18000,"-05/-04"));
+      if (ux>=-1593806400) // from 1919 Jul  1 
+         return tz2 || (tz2=Rule.Timezone(16965,"SMT"));
+      if (ux>=-1619205435) // from 1918 Sep 10 
+         return tz4 || (tz4=Rule.Timezone(14400,"-04/-03"));
+      if (ux>=-1688410800) // from 1916 Jul  1 
+         return tz2 || (tz2=Rule.Timezone(16965,"SMT"));
+      if (ux>=-1892661435) // from 1910 Jan 10 
+         return tz3 || (tz3=Rule.Timezone(18000,"-05/-04"));
+      if (ux>=-2524504304) // from 1890 
+         return tz2 || (tz2=Rule.Timezone(16965,"SMT"));
+      return tz1 || (tz1=Rule.Timezone(17296,"LMT"));
+   }
+}
 
 class America_Punta_Arenas
 {

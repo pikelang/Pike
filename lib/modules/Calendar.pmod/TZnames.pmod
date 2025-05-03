@@ -98,8 +98,8 @@ mapping zones =
                   "Blanc-Sablon", "Boa_Vista", "Bogota", "Boise",
                   "Cambridge_Bay", "Campo_Grande", "Cancun", "Caracas",
                   "Cayenne", "Cayman", "Chicago", "Chihuahua",
-                  "Ciudad_Juarez", "Coral_Harbour", "Costa_Rica", "Creston",
-                  "Cuiaba", "Curacao", "Danmarkshavn", "Dawson",
+                  "Ciudad_Juarez", "Coral_Harbour", "Costa_Rica", "Coyhaique",
+                  "Creston", "Cuiaba", "Curacao", "Danmarkshavn", "Dawson",
                   "Dawson_Creek", "Denver", "Detroit", "Dominica", "Edmonton",
                   "Eirunepe", "El_Salvador", "Ensenada", "Fort_Nelson",
                   "Fortaleza", "Glace_Bay", "Goose_Bay", "Grand_Turk",
@@ -849,6 +849,7 @@ mapping abbr2zones =
      "America/Bahia",
      "America/Belem",
      "America/Cayenne",
+     "America/Coyhaique",
      "America/Danmarkshavn",
      "America/Fortaleza",
      "America/Guyana",
@@ -903,6 +904,7 @@ mapping abbr2zones =
      "America/Campo_Grande",
      "America/Caracas",
      "America/Cayenne",
+     "America/Coyhaique",
      "America/Cuiaba",
      "America/Danmarkshavn",
      "America/Eirunepe",
@@ -953,6 +955,7 @@ mapping abbr2zones =
      "America/Campo_Grande",
      "America/Caracas",
      "America/Cayenne",
+     "America/Coyhaique",
      "America/Cuiaba",
      "America/Eirunepe",
      "America/Guayaquil",
@@ -980,6 +983,7 @@ mapping abbr2zones =
    }),
    "-05": ({
      "America/Bogota",
+     "America/Coyhaique",
      "America/Eirunepe",
      "America/Guayaquil",
      "America/Lima",
@@ -2031,6 +2035,7 @@ mapping abbr2zones =
      "America/Ciudad_Juarez",
      "America/Coral_Harbour",
      "America/Costa_Rica",
+     "America/Coyhaique",
      "America/Creston",
      "America/Cuiaba",
      "America/Curacao",
@@ -2657,6 +2662,7 @@ mapping abbr2zones =
      "America/Costa_Rica",
    }),
    "SMT": ({
+     "America/Coyhaique",
      "America/Punta_Arenas",
      "America/Santiago",
      "Asia/Kuala_Lumpur",
@@ -3517,7 +3523,7 @@ mapping timezone_expert_tree =
                   ]),
             ]),
          14400:
-            ([ "test":667787400, // 1991-03-01 00:30:00
+            ([ "test":667872000, // 1991-03-02 00:00:00
                7200:
                   ([ "test":677939400, // 1991-06-26 12:30:00
                      10800:
@@ -3536,23 +3542,24 @@ mapping timezone_expert_tree =
                         ]),
                   ]),
                10800:
+                  ([ "test":-738577800, // 1946-08-06 15:30:00
+                     0:"Antarctica/Palmer",
+                     10800:"America/Santiago",
+                     14400:
+                        ([ "test":-2524504442, // 1890-01-01 04:45:58
+                           16965:"America/Punta_Arenas",
+                           17296:"America/Coyhaique",
+                        ]),
+                  ]),
+               14400:
                   ([ "test":636939000, // 1990-03-08 23:30:00
                      7200:"America/Argentina/San_Luis",
                      10800:
-                        ([ "test":1496577600, // 2017-06-04 12:00:00
-                           10800:
-                              ([ "test":-435708000, // 1956-03-12 02:00:00
-                                 0:"Antarctica/Palmer",
-                                 14400:"America/Punta_Arenas",
-                              ]),
-                           14400:"America/Santiago",
+                        ([ "test":1086015600, // 2004-05-31 15:00:00
+                           10800:"America/Argentina/La_Rioja",
+                           14400:"America/Argentina/San_Juan",
                         ]),
                      14400:"America/Argentina/Mendoza",
-                  ]),
-               14400:
-                  ([ "test":1086015600, // 2004-05-31 15:00:00
-                     10800:"America/Argentina/La_Rioja",
-                     14400:"America/Argentina/San_Juan",
                   ]),
             ]),
       ]),
