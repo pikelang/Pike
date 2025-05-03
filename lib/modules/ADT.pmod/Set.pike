@@ -82,9 +82,9 @@ array(mixed) map(function(ValueType:mixed) f)
 //!
 //! The filtering function is called with a single mixed-type argument
 //! which is the member value to be checked.
-this_program filter(function(ValueType:mixed) f)
+this_program(<ValueType>) filter(function(ValueType:mixed) f)
 {
-  ADT.Set result = ADT.Set();
+  ADT.Set(<ValueType>) result = ADT.Set(<ValueType>)();
 
   foreach(indices(set), ValueType item)
     if (f(item))
@@ -103,7 +103,7 @@ this_program filter(function(ValueType:mixed) f)
 //! @note
 //!   CAVEAT EMPTOR: This function was just a duplicate of @[filter()]
 //!   in Pike 8.0 and earlier.
-this_program filter_destructively(function(ValueType:mixed) f)
+this_program(<ValueType>) filter_destructively(function(ValueType:mixed) f)
 {
   foreach(indices(set), ValueType item)
     if (!f(item))
@@ -128,7 +128,7 @@ int(0..1) subset(ADT.Set other)
 }
 
 //! Superset. A >= B returns true if all items in B are also present in A.
-int(0..1) superset(ADT.Set other)
+int(0..1) superset(ADT.Set(<ValueType>) other)
 {
   return other <= this;
 }
@@ -136,7 +136,7 @@ int(0..1) superset(ADT.Set other)
 
 //! Equality. A == B returns true if all items in A are present in B,
 //! and all items in B are present in A. Otherwise, it returns false.
-protected int(0..1) `==(ADT.Set other)
+protected int(0..1) `==(ADT.Set(<ValueType>) other)
 {
   if (sizeof(this) != sizeof(other))
     return 0;
@@ -158,7 +158,7 @@ protected int(0..1) `<(ADT.Set other)
 
 //! True superset. A > B returns true if each item in B is also present
 //! in A, and A contains at least one item not present in B.i
-protected int(0..1) `>(ADT.Set other)
+protected int(0..1) `>(ADT.Set(<ValueType>) other)
 {
   if (sizeof(this) <= sizeof(other))
     return 0;
@@ -170,7 +170,7 @@ protected int(0..1) `>(ADT.Set other)
 //! or both of the operand sets.
 protected this_program(<mixed>) `|(ADT.Set(<mixed>) other)
 {
-  ADT.Set result = ADT.Set(this);
+  ADT.Set(<mixed>) result = ADT.Set(<mixed>)(this);
 
   foreach(indices(other), mixed item)
     result->add(item);
@@ -183,7 +183,7 @@ protected mixed `+ = `|; // Addition on sets works the same as union on sets.
 
 //! Intersection. Returns a set containing those values that were
 //! present in both the operand sets.
-protected this_program `&(ADT.Set other)
+protected this_program(<ValueType>) `&(ADT.Set(<ValueType>) other)
 {
   return filter(lambda (ValueType x) { return other->contains(x);});
 }
@@ -191,7 +191,7 @@ protected this_program `&(ADT.Set other)
 
 //! Difference. The expression 'A - B', where A and B are sets, returns
 //! all elements in A that are not also present in B.
-protected this_program `-(ADT.Set other)
+protected this_program(<ValueType>) `-(ADT.Set(<ValueType>) other)
 {
   return filter(lambda (ValueType x) { return !other->contains(x);});
 }
