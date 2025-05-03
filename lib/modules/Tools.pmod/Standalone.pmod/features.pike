@@ -230,6 +230,7 @@ int main(int num, array(string) args) {
   M(Gz.crc32);
 
   write("\nImage\n");
+  M(Image.AVIF.decode);
   M(Image.FreeType.Face);
   M(Image.GIF.decode);
   M(Image.JPEG.decode);
@@ -422,9 +423,6 @@ int main(int num, array(string) args) {
 
   write("\nYp\n");
   M(Yp.default_domain);
-
-  write("\nZXID\n");
-  M(ZXID.Configuration);
 
   return 0;
 }
