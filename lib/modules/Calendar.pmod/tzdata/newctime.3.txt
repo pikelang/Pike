@@ -1,0 +1,173 @@
+newctime(3)                Library Functions Manual                newctime(3)
+
+NAME
+       asctime, ctime, difftime, gmtime, localtime, mktime - convert date and
+       time
+
+SYNOPSIS
+       #include <time.h>
+
+       struct tm *localtime(time_t const *clock);
+       struct tm *localtime_r(time_t const *restrict clock,
+           struct tm *restrict result);
+       struct tm *localtime_rz(timezone_t restrict zone,
+           time_t const *restrict clock,
+           struct tm *restrict result);
+
+       struct tm *gmtime(time_t const *clock);
+       struct tm *gmtime_r(time_t const *restrict clock,
+           struct tm *restrict result);
+
+       time_t mktime(struct tm *tm);
+       time_t mktime_z(timezone_t restrict zone,
+           struct tm *restrict tm);
+
+       double difftime(time_t time1, time_t time0);
+
+       [[deprecated]] char *asctime(struct tm const *tm);
+       [[deprecated]] char *ctime(time_t const *clock);
+
+       /* Only in POSIX.1-2017 and earlier.  */
+       char *ctime_r(time_t const *clock, char *buf);
+       char *asctime_r(struct tm const *restrict tm,
+           char *restrict result);
+
+       cc ... -ltz
+
+DESCRIPTION
+       The localtime and gmtime functions convert an integer, pointed to by
+       clock, and return pointers to "tm" structures, described below.  If the
+       integer is out of range for conversion, these functions return a null
+       pointer.  The localtime function corrects for the time zone and any
+       time zone adjustments (such as Daylight Saving Time in the United
+       States).  The gmtime function converts to Coordinated Universal Time.
+
+       The *clock timestamp represents the time in seconds since 1970-01-01
+       00:00:00 Coordinated Universal Time (UTC).  The POSIX standard says
+       that timestamps must be nonnegative and must ignore leap seconds.  Many
+       implementations extend POSIX by allowing negative timestamps, and can
+       therefore represent timestamps that predate the introduction of UTC and
+       are some other flavor of Universal Time (UT).  Some implementations
+       support leap seconds, in contradiction to POSIX.
+
+       The mktime function converts the broken-down time, expressed as local
+       time, in the structure pointed to by tm into a calendar time value with
+       the same encoding as that of the values returned by the time function.
+       The original values of the tm_wday and tm_yday components of the
+       structure are ignored, and the original values of the other components
+       are not restricted to their normal ranges.  (A positive or zero value
+       for tm_isdst causes mktime to presume initially that daylight saving
+       time respectively, is or is not in effect for the specified time.  A
+       negative value for tm_isdst causes the mktime function to attempt to
+       divine whether daylight saving time is in effect for the specified
+       time; in this case it does not use a consistent rule and may give a
+       different answer when later presented with the same argument.)  On
+       successful completion, the values of the tm_wday and tm_yday components
+       of the structure are set appropriately, and the other components are
+       set to represent the specified calendar time, but with their values
+       forced to their normal ranges; the final value of tm_mday is not set
+       until tm_mon and tm_year are determined.  The mktime function returns
+       the specified calendar time.  If the calendar time cannot be
+       represented, it returns -1 without updating the structure.  To
+       distinguish failure from a valid -1 return, you can set tm_wday or
+       tm_yday to a negative value before calling mktime; if that value is
+       still negative when mktime returns, the calendar time could not be
+       represented.
+
+       The difftime function returns the difference between two calendar
+       times, (time1 - time0), expressed in seconds.
+
+       The asctime function converts a time value contained in a "tm"
+       structure to a pointer to a string of the form
+                            Thu Nov 24 18:22:48 1986\n\0
+       Years requiring fewer than four characters are padded with leading
+       zeroes.  For years longer than four characters, the string is of the
+       form
+                          Thu Nov 24 18:22:48     81986\n\0
+       with five spaces before the year.  This unusual format is designed to
+       make it less likely that older software that expects exactly 26 bytes
+       of output will mistakenly output misleading values for out-of-range
+       years.  This function is deprecated starting in C23.  Callers can use
+       strftime instead.
+
+       The ctime function is equivalent to calliing localtime and then calling
+       asctime on the result.  Like asctime, this function is deprecated
+       starting in C23.  Callers can use localtime and strftime instead.
+
+       The ctime_r, localtime_r, gmtime_r, and asctime_r functions are like
+       their unsuffixed counterparts, except that they accept an additional
+       argument specifying where to store the result if successful.  The
+       ctime_r and asctime_r functions are present only on systems supporting
+       POSIX.1-2017 and earlier, as they are removed in POSIX.1-2024 and user
+       code can define these functions with other meanings.
+
+       The localtime_rz and mktime_z functions are like their unsuffixed
+       counterparts, except that they accept an extra initial zone argument
+       specifying the timezone to be used for conversion.  If zone is null, UT
+       is used; otherwise, zone should be have been allocated by tzalloc and
+       should not be freed until after all uses (e.g., by calls to strftime)
+       of the filled-in tm_zone fields.
+
+       Declarations of all the functions and externals, and the "tm"
+       structure, are in the <time.h> header file.  The structure (of type)
+       struct tm includes the following fields:
+
+                int tm_sec;      /* seconds (0-60) */
+                int tm_min;      /* minutes (0-59) */
+                int tm_hour;     /* hours (0-23) */
+                int tm_mday;     /* day of month (1-31) */
+                int tm_mon;      /* month of year (0-11) */
+                int tm_year;     /* year - 1900 */
+                int tm_wday;     /* day of week (Sunday = 0) */
+                int tm_yday;     /* day of year (0-365) */
+                int tm_isdst;    /* is daylight saving time in effect? */
+                char *tm_zone;   /* time zone abbreviation (optional) */
+                long tm_gmtoff;  /* offset from UT in seconds (optional) */
+
+       The tm_isdst field is non-zero if daylight saving time is in effect.
+
+       The tm_gmtoff field is the offset (in seconds) of the time represented
+       from UT, with positive values indicating east of the Prime Meridian.
+       The field's name is derived from Greenwich Mean Time, a precursor of
+       UT.
+
+       In platforms conforming to POSIX.1-2024 the struct tm the tm_zone and
+       tm_gmtoff fields exist, and are filled in.  For localtime_rz and
+       mktime_rz the storage lifetime of the strings addressed by tm_zone
+       extends until the corresponding timezone_t object is freed via tzfree.
+       For the other functions the lifetime extends until the TZ environment
+       variable changes state and tzset is then called.
+
+       As a side effect, the ctime, localtime and mktime functions also behave
+       as if tzset were called.  The ctime_r and localtime_r functions might
+       (or might not) also behave this way.  This is for compatibility with
+       older platforms, as required by POSIX.
+
+FILES
+       /etc/localtime                  local timezone file
+       /usr/share/zoneinfo             timezone directory
+       /usr/share/zoneinfo/posixrules  default DST rules (obsolete)
+       /usr/share/zoneinfo/GMT         for UTC leap seconds
+
+       If /usr/share/zoneinfo/GMT is absent, UTC leap seconds are loaded from
+       /usr/share/zoneinfo/GMT0 if present.
+
+SEE ALSO
+       getenv(3), newstrftime(3), newtzset(3), time(2), tzfile(5).
+
+NOTES
+       The return values of asctime, ctime, gmtime, and localtime point to
+       static data overwritten by each call.  The remaining functions and data
+       are thread-safe.
+
+       The asctime, asctime_r, ctime, and ctime_r functions behave strangely
+       for years before 1000 or after 9999.  The 1989 and 1999 editions of the
+       C Standard say that years from -99 through 999 are converted without
+       extra spaces, but this conflicts with longstanding tradition and with
+       this implementation.  The 2011 edition says that the behavior is
+       undefined if the year is before 1000 or after 9999.  Traditional
+       implementations of these two functions are restricted to years in the
+       range 1900 through 2099.  To avoid this portability mess, new programs
+       should use strftime instead.
+
+Time Zone Database                                                 newctime(3)

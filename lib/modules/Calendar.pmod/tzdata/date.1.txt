@@ -1,0 +1,45 @@
+date(1)                     General Commands Manual                    date(1)
+
+NAME
+       date - show and set date and time
+
+SYNOPSIS
+       date [ -u ] [ -c ] [ -r seconds ] [ +format ] [ [yyyy]mmddhhmm[yy][.ss]
+       ]
+
+DESCRIPTION
+       The date command without arguments writes the date and time to the
+       standard output in the form
+                            Sat Mar  8 14:54:40 EST 2025
+       with EST replaced by the local time zone's abbreviation (or by the
+       abbreviation for the time zone specified in the TZ environment variable
+       if set).  The exact output format depends on the locale.
+
+       If a command-line argument starts with a plus sign ("+"), the rest of
+       the argument is used as a format that is processed by strftime(3) to
+       determine what to output; a newline character is appended.  For
+       example, the shell command:
+                            date +"%Y-%m-%d %H:%M:%S %z"
+       outputs a line like "2025-03-08 14:54:40 -0500" instead.
+
+       These options are available:
+
+       -u or -c
+              Use Universal Time when setting and showing the date and time.
+
+       -r seconds
+              Output  the  date  that corresponds to seconds past the epoch of
+              1970-01-01 00:00:00 UTC, where seconds  should  be  an  integer,
+              either  decimal, octal (leading 0), or hexadecimal (leading 0x),
+              preceded by an optional sign.
+
+FILES
+       /etc/localtime               local timezone file
+       /usr/lib/locale/L/LC_TIME    description of time locale L
+       /usr/share/zoneinfo          timezone directory
+       /usr/share/zoneinfo/Etc/UTC  for UTC leap seconds
+
+SEE ALSO
+       strftime(3).
+
+Time Zone Database                                                     date(1)
