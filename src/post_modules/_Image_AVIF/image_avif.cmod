@@ -181,15 +181,17 @@ PIKEFUN object(Image.Image) decode( string data )
   ref_push_object( p->u.object );
   stack_unlink(1);
 }
+#endif
 
 PIKE_MODULE_INIT
 {
   INIT
+#ifdef HAVE_LIBAVIF
   add_integer_constant("version", AVIF_VERSION, 0);
+#endif
 }
 
 PIKE_MODULE_EXIT
 {
   EXIT
 }
-#endif
