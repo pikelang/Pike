@@ -10,6 +10,10 @@ ifdef([_AC_OUTPUT_SUBDIRS], ,
       [define([_AC_OUTPUT_SUBDIRS],
 	      [AC_OUTPUT_SUBDIRS(AC_LIST_SUBDIRS)])])
 
+dnl Autoconf 2.71 and 2.72 insist on attempting to force C11/CXX11.
+m4_defun([_AC_PROG_CC_STDC_EDITION], [])
+m4_defun([_AC_PROG_CXX_STDCXX_EDITION], [])
+
 dnl Autoconf 2.71+ has put AC_REQUIRE[AC_CANONICAL_HOST] everywhere...
 m4_copy([AC_CANONICAL_HOST], [ORIG_AC_CANONICAL_HOST])
 m4_defun([AC_CANONICAL_HOST], [])
