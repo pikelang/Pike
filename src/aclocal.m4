@@ -10,6 +10,10 @@ ifdef([_AC_OUTPUT_SUBDIRS], ,
       [define([_AC_OUTPUT_SUBDIRS],
 	      [AC_OUTPUT_SUBDIRS(AC_LIST_SUBDIRS)])])
 
+dnl Autoconf 2.71 and 2.72 insist on attempting to force C11/CXX11.
+m4_defun([_AC_PROG_CC_STDC_EDITION], [])
+m4_defun([_AC_PROG_CXX_STDCXX_EDITION], [])
+
 dnl Autoconf 2.71+ has put AC_REQUIRE[AC_CANONICAL_HOST] everywhere...
 m4_copy([AC_CANONICAL_HOST], [ORIG_AC_CANONICAL_HOST])
 m4_defun([AC_CANONICAL_HOST], [])
@@ -1542,7 +1546,7 @@ AC_DEFUN(PIKE_CHECK_FILE_ABI,
       #   Mach-O object ppc
       $1=32
       ;;
-    *"POSIX shell script"*)
+    *"shell script"*)
       # Shell scripts do not have an ABI
       $1=noarch
       ;;
@@ -1782,9 +1786,10 @@ AC_DEFUN(PIKE_SELECT_ABI,
       SAVE_IFS="$IFS"
       IFS=":"
       file_abi=""
+      pike_cv_tool_prefix=no
       for d in $PATH; do
 	IFS="$SAVE_IFS"
-	for f in "$d/"*-pkg-config"$exeext"; do
+	for f in "$d/pkg-config$exeext" "$d/"*-pkg-config"$exeext"; do
 	  if test -f "$f"; then
 	    PIKE_CHECK_FILE_ABI(file_abi, "$f")
 	    if test "x$file_abi" = "x$pike_cv_abi"; then
@@ -1805,18 +1810,22 @@ AC_DEFUN(PIKE_SELECT_ABI,
                if test "x$file_abi" = "x$pike_cv_abi"; then
                  pike_cv_tool_prefix=`echo "$link_target" | sed -e 's|.*/||g' -e 's|pkg-config.*||'`
                fi;;
+            *-pkgconf"$exeext")
+               PIKE_CHECK_FILE_ABI(file_abi, "$link_target")
+               if test "x$file_abi" = "x$pike_cv_abi"; then
+                 pike_cv_tool_prefix=`echo "$link_target" | sed -e 's|.*/||g' -e 's|pkgconf.*||'`
+               fi;;
           esac
         fi
-        if test "x$pike_cv_tool_prefix" = x; then :; else
+        if test "x$pike_cv_tool_prefix" = xno; then :; else
 	  break;
 	fi
       done
       IFS="$SAVE_IFS"
     ])
-    if test "x$pike_cv_tool_prefix" = "x"; then
-      AC_MSG_RESULT(no)
-    else
-      AC_MSG_RESULT($pike_cv_tool_prefix)
+    AC_MSG_RESULT($pike_cv_tool_prefix)
+    if test "x$pike_cv_tool_prefix" = "xno"; then
+      pike_cv_tool_prefix=""
     fi
   else
     pike_cv_tool_prefix="$ac_tool_prefix"

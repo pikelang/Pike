@@ -80,9 +80,10 @@ array map(function(LeftType, RightType:mixed) f)
 //!
 //! @seealso
 //!   @[filter_destructively()]
-this_program(<LeftType, RightType>) filter(function(LeftType, RightType: mixed) f)
+ADT.Relation.Binary(<LeftType, RightType>) filter(function(LeftType, RightType: mixed) f)
 {
-  ADT.Relation.Binary res = ADT.Relation.Binary(id);
+  ADT.Relation.Binary(<LeftType, RightType>) res =
+    ADT.Relation.Binary(<LeftType, RightType>)(id);
   foreach(indices(val), LeftType left)
     foreach(indices(val[left]), RightType right)
       if (f(left, right))
@@ -144,22 +145,24 @@ protected int(0..1) `!=(mixed rel)
   return !(this == rel);
 }
 
-//! The expression `rel1 & rel2' returns a new relation which has
+//! The expression `´@expr{rel1 & rel2@} returns a new relation which has
 //! those and only those relation entries that are present in both
 //! rel1 and rel2.
-protected mixed `&(mixed rel)
+protected ADT.Relation.Binary(<LeftType, RightType>) `&(ADT.Relation.Binary rel)
 {
   return filter(lambda (LeftType left, RightType right)
                        { return rel->contains(left, right);});
 }
 
-//! @decl this_program(<LeftType, RightType>) `+(mixed rel)
-//! @decl this_program(<LeftType, RightType>) `|(mixed rel)
-//! The expression `rel1 | rel2' and `rel1 + rel2' returns a new
+//! @decl ADT.Relation.Binary(<LeftType, RightType>) @
+//!         `+(mapping(LeftType:RightType)|this_program rel)
+//! @decl ADT.Relation.Binary(<LeftType, RightType>) @
+//!         `|(mapping(LeftType:RightType)|this_program rel)
+//! The expressions @expr{rel1 | rel2@} and @expr{rel1 + rel2@} return a new
 //! relation which has all the relation entries present in rel1,
 //! or rel2, or both.
 
-protected mixed `|(mixed rel)
+protected ADT.Relation.Binary `|(mapping(LeftType:RightType)|this_program rel)
 {
   ADT.Relation.Binary res = ADT.Relation.Binary(id, rel);
   foreach(indices(val), LeftType left)
@@ -168,12 +171,13 @@ protected mixed `|(mixed rel)
   return res;
 }
 
-protected function(mixed:mixed) `+ = `|;
+protected function(mapping(LeftType:RightType)|this_program:
+                   ADT.Relation.Binary) `+ = `|;
 
-//! The expression `rel1 - rel2' returns a new relation which has
+//! The expression @expr{rel1 - rel2@} returns a new relation which has
 //! those and only those relation entries that are present in rel1
 //! and not present in rel2.
-protected mixed `-(mixed rel)
+protected ADT.Relation.Binary(<LeftType, RightType>) `-(this_program rel)
 {
   return filter(lambda (LeftType left, RightType right)
                        { return !rel->contains(left, right);});
@@ -205,17 +209,17 @@ this_program(<LeftType|RightType, RightType|LeftType>) make_symmetric()
 //! returning an array of one element: the node itself. (Or in other
 //! words, a path with no steps, only a starting/ending point).
 //!
-//! The argument @[avoiding] is either 0 (or omitted), or a multiset of
-//! nodes that must not be part of the path.
+//! The argument @[avoiding] is either @expr{0@} (or omitted), or
+//! a multiset of nodes that must not be part of the path.
 array(LeftType|RightType)|zero find_shortest_path(LeftType|RightType from,
                                                   LeftType|RightType to,
-                                                  void|multiset(LeftType|RightType) avoiding)
+                                                  multiset(LeftType|RightType) avoiding = (<>))
 {
+  if (avoiding[from] || avoiding[to])
+     return 0;
   if (from == to)
      return ({ from });
   if (!val[from])
-     return 0;
-  if (avoiding && avoiding[to])
      return 0;
   if (contains(from, to))
      return ({ from, to });
@@ -227,20 +231,23 @@ array(LeftType|RightType)|zero find_shortest_path(LeftType|RightType from,
   // this will do for now.
 
   array(LeftType|RightType)|zero subpath, found = 0;
-  avoiding = avoiding ? avoiding + (< from >) : (< from >);
-  foreach(indices(val[from]), LeftType right)
+  avoiding[from] = 1;
+  foreach(indices(val[from]), LeftType right) {
+    if (right == to) {
+      found = ({ from, to });
+      // We can't find a shorter path than this, so there's no
+      // point in looking for more alternatives.
+      break;
+    }
+
     if (!avoiding[right])
       if (subpath = find_shortest_path(right, to, avoiding))
         if (!found || sizeof(subpath)+1 < sizeof(found))
         {
           found = ({ from, @subpath });
-          if (sizeof(subpath) == 1)
-          {
-            // We can't find a shorter path than this, so there's no
-            // point in looking for more alternatives.
-            break;
-          }
         }
+  }
+  avoiding[from] = 0;
   return found;
 }
 
@@ -255,22 +262,34 @@ mixed get_id()
   return id;
 }
 
+//! Initialize a new @[ADT.Relation.Binary] object.
 //!
-protected void create(void|mixed _id, void|mapping(LeftType:RightType)|object _initial)
+//! @param id
+//!   Identifier for the relation.
+//!
+//! @param initial
+//!   Initial contents of the relation.
+//!
+//! @seealso
+//!   @[get_id()]
+protected void create(void|mixed id,
+                      void|mapping(LeftType:RightType)|
+                      this_program(<LeftType, RightType>) initial)
 {
-  id = _id;
-  if (objectp(_initial) && _initial->is_binary_relation)
-    _initial->map(lambda (LeftType left, RightType right) { add(left,right); });
-  else if (mappingp(_initial))
-    foreach(indices(_initial), LeftType key)
-      add(key, _initial[key]);
-  else if (_initial)
+  this::id = id;
+  if (objectp(initial) && initial->is_binary_relation)
+    initial->map(lambda (LeftType left, RightType right) { add(left, right); });
+  else if (mappingp(initial))
+    foreach([mapping]initial; LeftType left; RightType right)
+      add(left, right);
+  else if (initial)
     error("Bad initializer for ADT.Relation.Binary.\n");
 }
 
 //! An iterator which makes all the left/right entities in the relation
 //! available as index/value pairs.
-protected class _get_iterator (< LeftType, RightType = LeftType >)
+protected class _get_iterator (< LeftType = LeftType,
+                                 RightType = RightType >)
 {
   protected int(-1..) ipos = -1;
   protected int(-1..) vpos = -1;

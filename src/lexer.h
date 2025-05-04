@@ -51,7 +51,7 @@
 #define low_yylex low_yylex0
 #define lex_atoi atoi
 #define lex_strtol strtol
-#define lex_strtod my_strtod
+#define lex_strtod lex_strtod0
 #define lex_isidchar isidchar
 
 #else /* SHIFT != 0 */
@@ -141,6 +141,8 @@ static long lex_strtol(char *buf, char **end, int base)
   return ret;
 }
 
+#endif /* SHIFT == 0 */
+
 static FLOAT_TYPE lex_strtod(char *buf, char **end)
 {
   PCHARP foo;
@@ -154,8 +156,6 @@ static FLOAT_TYPE lex_strtod(char *buf, char **end)
   if(end) end[0]=(char *)foo.ptr;
   return ret;
 }
-
-#endif /* SHIFT == 0 */
 
 #define GOT_NUL(WHERE) do {                             \
     if (lex->pos > lex->end) {                          \
@@ -1113,6 +1113,8 @@ unknown_directive:
 	}
 	return TOK_FLOAT;
       }else{
+        if (p2 == lex->pos)
+          Pike_fatal("Numeric literal could be parsed as neither int nor float\n");
 	dmalloc_touch_svalue(&sval);
 	yylval->n = mksvaluenode(&sval);
 	free_svalue(&sval);

@@ -15,8 +15,6 @@ import ".";
 // Timezones
 // ----------------------------------------------------------------------
 
-Rule.Timezone Atlantic_Jan_Mayen=Rule.Timezone(3600,"-01");
-Rule.Timezone Pacific_Johnston=Rule.Timezone(36000,"HST");
 Rule.Timezone Etc_UTC=Rule.Timezone(0,"UTC");
 Rule.Timezone Etc_UCT=Etc_UTC;
 Rule.Timezone Etc_Universal=Etc_UTC;
@@ -35,44 +33,46 @@ Rule.Timezone GMT_0=Etc_GMT;
 Rule.Timezone GMT0=Etc_GMT;
 Rule.Timezone Greenwich=Etc_GMT;
 Rule.Timezone GMT=Etc_GMT;
-Rule.Timezone Etc_GMT_14=Rule.Timezone(-50400,"+14");
-Rule.Timezone Etc_GMT_13=Rule.Timezone(-46800,"+13");
-Rule.Timezone Etc_GMT_12=Rule.Timezone(-43200,"+12");
-Rule.Timezone Etc_GMT_11=Rule.Timezone(-39600,"+11");
-Rule.Timezone Etc_GMT_10=Rule.Timezone(-36000,"+10");
-Rule.Timezone Etc_GMT_9=Rule.Timezone(-32400,"+09");
-Rule.Timezone Etc_GMT_8=Rule.Timezone(-28800,"+08");
-Rule.Timezone Etc_GMT_7=Rule.Timezone(-25200,"+07");
-Rule.Timezone Etc_GMT_6=Rule.Timezone(-21600,"+06");
-Rule.Timezone Etc_GMT_5=Rule.Timezone(-18000,"+05");
-Rule.Timezone Etc_GMT_4=Rule.Timezone(-14400,"+04");
-Rule.Timezone Etc_GMT_3=Rule.Timezone(-10800,"+03");
-Rule.Timezone Etc_GMT_2=Rule.Timezone(-7200,"+02");
-Rule.Timezone Etc_GMT_1=Rule.Timezone(-3600,"+01");
-Rule.Timezone Etc_GMTp1=Rule.Timezone(3600,"-01");
-Rule.Timezone Etc_GMTp2=Rule.Timezone(7200,"-02");
-Rule.Timezone Etc_GMTp3=Rule.Timezone(10800,"-03");
-Rule.Timezone Etc_GMTp4=Rule.Timezone(14400,"-04");
-Rule.Timezone Etc_GMTp5=Rule.Timezone(18000,"-05");
-Rule.Timezone Etc_GMTp6=Rule.Timezone(21600,"-06");
-Rule.Timezone Etc_GMTp7=Rule.Timezone(25200,"-07");
-Rule.Timezone Etc_GMTp8=Rule.Timezone(28800,"-08");
-Rule.Timezone Etc_GMTp9=Rule.Timezone(32400,"-09");
-Rule.Timezone Etc_GMTp10=Rule.Timezone(36000,"-10");
-Rule.Timezone Etc_GMTp11=Rule.Timezone(39600,"-11");
-Rule.Timezone Etc_GMTp12=Rule.Timezone(43200,"-12");
+Rule.Timezone Etc_GMT_14=Rule.Timezone(-50400,"+14/+15");
+Rule.Timezone Etc_GMT_13=Rule.Timezone(-46800,"+13/+14");
+Rule.Timezone Etc_GMT_12=Rule.Timezone(-43200,"+12/+13");
+Rule.Timezone Etc_GMT_11=Rule.Timezone(-39600,"+11/+12");
+Rule.Timezone Etc_GMT_10=Rule.Timezone(-36000,"+10/+11");
+Rule.Timezone Etc_GMT_9=Rule.Timezone(-32400,"+09/+10");
+Rule.Timezone Etc_GMT_8=Rule.Timezone(-28800,"+08/+09");
+Rule.Timezone Etc_GMT_7=Rule.Timezone(-25200,"+07/+08");
+Rule.Timezone Etc_GMT_6=Rule.Timezone(-21600,"+06/+07");
+Rule.Timezone Etc_GMT_5=Rule.Timezone(-18000,"+05/+06");
+Rule.Timezone Etc_GMT_4=Rule.Timezone(-14400,"+04/+05");
+Rule.Timezone Etc_GMT_3=Rule.Timezone(-10800,"+03/+04");
+Rule.Timezone Etc_GMT_2=Rule.Timezone(-7200,"+02/+03");
+Rule.Timezone Etc_GMT_1=Rule.Timezone(-3600,"+01/+02");
+Rule.Timezone Etc_GMTp1=Rule.Timezone(3600,"-01/+00");
+Rule.Timezone Etc_GMTp2=Rule.Timezone(7200,"-02/-01");
+Rule.Timezone Etc_GMTp3=Rule.Timezone(10800,"-03/-02");
+Rule.Timezone Etc_GMTp4=Rule.Timezone(14400,"-04/-03");
+Rule.Timezone Etc_GMTp5=Rule.Timezone(18000,"-05/-04");
+Rule.Timezone Etc_GMTp6=Rule.Timezone(21600,"-06/-05");
+Rule.Timezone Etc_GMTp7=Rule.Timezone(25200,"-07/-06");
+Rule.Timezone Etc_GMTp8=Rule.Timezone(28800,"-08/-07");
+Rule.Timezone Etc_GMTp9=Rule.Timezone(32400,"-09/-08");
+Rule.Timezone Etc_GMTp10=Rule.Timezone(36000,"-10/-09");
+Rule.Timezone Etc_GMTp11=Rule.Timezone(39600,"-11/-10");
+Rule.Timezone Etc_GMTp12=Rule.Timezone(43200,"-12/-11");
+Rule.Timezone Factory=Rule.Timezone(0,"-00");
+Rule.Timezone Atlantic_Jan_Mayen=Rule.Timezone(3600,"-01");
+Rule.Timezone Pacific_Johnston=Rule.Timezone(36000,"HST");
+Rule.Timezone HST=Rule.Timezone(36000,"HST");
+Rule.Timezone PST8PDT=TZrules.US(28800,"P%sT");
+Rule.Timezone MST=Rule.Timezone(25200,"MST");
+Rule.Timezone MST7MDT=TZrules.US(25200,"M%sT");
+Rule.Timezone CST6CDT=TZrules.US(21600,"C%sT");
+Rule.Timezone EST=Rule.Timezone(18000,"EST");
+Rule.Timezone EST5EDT=TZrules.US(18000,"E%sT");
 Rule.Timezone WET=TZrules.EU(0,"WE%sT");
 Rule.Timezone CET=TZrules.C_Eur(-3600,"CE%sT");
 Rule.Timezone MET=TZrules.C_Eur(-3600,"ME%sT");
 Rule.Timezone EET=TZrules.EU(-7200,"EE%sT");
-Rule.Timezone Factory=Rule.Timezone(0,"-00");
-Rule.Timezone EST=Rule.Timezone(18000,"EST");
-Rule.Timezone MST=Rule.Timezone(25200,"MST");
-Rule.Timezone HST=Rule.Timezone(36000,"HST");
-Rule.Timezone EST5EDT=TZrules.US(18000,"E%sT");
-Rule.Timezone CST6CDT=TZrules.US(21600,"C%sT");
-Rule.Timezone MST7MDT=TZrules.US(25200,"M%sT");
-Rule.Timezone PST8PDT=TZrules.US(28800,"P%sT");
 
 // ----------------------------------------------------------------------
 // Timezones with an attitude
@@ -84,21 +84,21 @@ class Africa_Algiers
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=357523200) // from 1981 May 
+      if (ux>=357523200) // from 1981 May
          return tz6 || (tz6=Rule.Timezone(-3600,"CET"));
-      if (ux>=309747600) // from 1979 Oct 26 
+      if (ux>=309747600) // from 1979 Oct 26
          return tz3 || (tz3=TZrules.Algeria(0,"WE%sT"));
-      if (ux>=246240000) // from 1977 Oct 21 
+      if (ux>=246240000) // from 1977 Oct 21
          return tz4 || (tz4=TZrules.Algeria(-3600,"CE%sT"));
-      if (ux>=-212029200) // from 1963 Apr 14 
+      if (ux>=-212029200) // from 1963 Apr 14
          return tz3 || (tz3=TZrules.Algeria(0,"WE%sT"));
-      if (ux>=-439430400) // from 1956 Jan 29 
+      if (ux>=-439430400) // from 1956 Jan 29
          return tz6 || (tz6=Rule.Timezone(-3600,"CET"));
-      if (ux>=-733273200) // from 1946 Oct  7 
+      if (ux>=-733273200) // from 1946 Oct  7
          return tz5 || (tz5=Rule.Timezone(0,"WET"));
-      if (ux>=-942012000) // from 1940 Feb 25  2:00 
+      if (ux>=-942012000) // from 1940 Feb 25  2:00
          return tz4 || (tz4=TZrules.Algeria(-3600,"CE%sT"));
-      if (ux>=-1855958961) // from 1911 Mar 11 
+      if (ux>=-1855958961) // from 1911 Mar 11
          return tz3 || (tz3=TZrules.Algeria(0,"WE%sT"));
       if (ux>=-2486592732) // from 1891 Mar 16 Paris Mean Time
          return tz2 || (tz2=Rule.Timezone(-561,"PMT"));
@@ -109,17 +109,17 @@ class Africa_Algiers
 class Atlantic_Cape_Verde
 {
    inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3;
+   Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=186120000) // from 1975 Nov 25  2:00 
-         return tz3 || (tz3=Rule.Timezone(3600,"-01"));
-      if (ux>=-764118000) // from 1945 Oct 15 
-         return tz2 || (tz2=Rule.Timezone(7200,"-02"));
-      if (ux>=-862610400) // from 1942 Sep 
-         return tz3 || (tz3=Rule.Timezone(3600,"-01"));
-      if (ux>=-1830376800) // from 1912 Jan 01  2:00u 
-         return tz2 || (tz2=Rule.Timezone(7200,"-02"));
+      if (ux>=186120000) // from 1975 Nov 25  2:00
+         return tz4 || (tz4=Rule.Timezone(3600,"-01/+00"));
+      if (ux>=-764118000) // from 1945 Oct 15
+         return tz2 || (tz2=Rule.Timezone(7200,"-02/-01"));
+      if (ux>=-862610400) // from 1942 Sep
+         return tz3 || (tz3=Rule.Timezone(3600,"-02/-01"));
+      if (ux>=-1830376800) // from 1912 Jan 01  2:00u
+         return tz2 || (tz2=Rule.Timezone(7200,"-02/-01"));
       // Praia
       return tz1 || (tz1=Rule.Timezone(5644,"LMT"));
    }
@@ -131,11 +131,11 @@ class Africa_Ndjamena
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=321314400) // from 1980 Mar  8 
+      if (ux>=321314400) // from 1980 Mar  8
          return tz2 || (tz2=Rule.Timezone(-3600,"WAT"));
-      if (ux>=308703600) // from 1979 Oct 14 
+      if (ux>=308703600) // from 1979 Oct 14
          return tz3 || (tz3=Rule.Timezone(-7200,"WAST"));
-      if (ux>=-1830387612) // from 1912 Jan  1 
+      if (ux>=-1830387612) // from 1912 Jan  1
          return tz2 || (tz2=Rule.Timezone(-3600,"WAT"));
       // N'Djamena
       return tz1 || (tz1=Rule.Timezone(-3612,"LMT"));
@@ -148,7 +148,7 @@ class Africa_Abidjan
    Rule.Timezone tz1,tz2;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-1830383032) // from 1912 Jan  1 
+      if (ux>=-1830383032) // from 1912 Jan  1
          return tz2 || (tz2=Rule.Timezone(0,"GMT"));
       return tz1 || (tz1=Rule.Timezone(968,"LMT"));
    }
@@ -173,7 +173,7 @@ class Africa_Cairo
    Rule.Timezone tz1,tz2;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-2185409109) // from 1900 Oct 
+      if (ux>=-2185409109) // from 1900 Oct
          return tz2 || (tz2=TZrules.Egypt(-7200,"EE%sT"));
       return tz1 || (tz1=Rule.Timezone(-7509,"LMT"));
    }
@@ -186,10 +186,10 @@ class Africa_Bissau
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=157770000) // from 1975 
+      if (ux>=157770000) // from 1975
          return tz3 || (tz3=Rule.Timezone(0,"GMT"));
-      if (ux>=-1830380400) // from 1912 Jan  1  1:00u 
-         return tz2 || (tz2=Rule.Timezone(3600,"-01"));
+      if (ux>=-1830380400) // from 1912 Jan  1  1:00u
+         return tz2 || (tz2=Rule.Timezone(3600,"-01/+00"));
       return tz1 || (tz1=Rule.Timezone(3740,"LMT"));
    }
 }
@@ -200,16 +200,16 @@ class Africa_Nairobi
    Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-865305900) // from 1942 Jul 31 24:00 
+      if (ux>=-865305900) // from 1942 Jul 31 24:00
          return tz3 || (tz3=Rule.Timezone(-10800,"EAT"));
-      if (ux>=-1041388200) // from 1936 Dec 31 24:00 
-         return tz4 || (tz4=Rule.Timezone(-9900,"+0245"));
-      if (ux>=-1261969200) // from 1930 Jan  4 24:00 
-         return tz2 || (tz2=Rule.Timezone(-9000,"+0230"));
-      if (ux>=-1309746600) // from 1928 Jun 30 24:00 
+      if (ux>=-1041388200) // from 1936 Dec 31 24:00
+         return tz4 || (tz4=Rule.Timezone(-9900,"+0245/+0345"));
+      if (ux>=-1261969200) // from 1930 Jan  4 24:00
+         return tz2 || (tz2=Rule.Timezone(-9000,"+0230/+0330"));
+      if (ux>=-1309746600) // from 1928 Jun 30 24:00
          return tz3 || (tz3=Rule.Timezone(-10800,"EAT"));
-      if (ux>=-1946168836) // from 1908 May 
-         return tz2 || (tz2=Rule.Timezone(-9000,"+0230"));
+      if (ux>=-1946168836) // from 1908 May
+         return tz2 || (tz2=Rule.Timezone(-9000,"+0230/+0330"));
       return tz1 || (tz1=Rule.Timezone(-8836,"LMT"));
    }
 }
@@ -230,7 +230,7 @@ class Africa_Monrovia
    Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=63593070) // from 1972 Jan 7 
+      if (ux>=63593070) // from 1972 Jan 7
          return tz4 || (tz4=Rule.Timezone(0,"GMT"));
       if (ux>=-1604359012) // from 1919 Mar approximately MMT
          return tz3 || (tz3=Rule.Timezone(2670,"MMT"));
@@ -246,21 +246,21 @@ class Africa_Tripoli
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1382673600) // from 2013 Oct 25  2:00 
+      if (ux>=1382673600) // from 2013 Oct 25  2:00
          return tz3 || (tz3=Rule.Timezone(-7200,"EET"));
-      if (ux>=1352505600) // from 2012 Nov 10  2:00 
+      if (ux>=1352505600) // from 2012 Nov 10  2:00
          return tz2 || (tz2=TZrules.Libya(-3600,"CE%sT"));
-      if (ux>=875926800) // from 1997 Oct  4 
+      if (ux>=875926800) // from 1997 Oct  4
          return tz3 || (tz3=Rule.Timezone(-7200,"EET"));
-      if (ux>=844034400) // from 1996 Sep 30 
+      if (ux>=844034400) // from 1996 Sep 30
          return tz2 || (tz2=TZrules.Libya(-3600,"CE%sT"));
-      if (ux>=641782800) // from 1990 May  4 
+      if (ux>=641782800) // from 1990 May  4
          return tz3 || (tz3=Rule.Timezone(-7200,"EET"));
-      if (ux>=378684000) // from 1982 
+      if (ux>=378684000) // from 1982
          return tz2 || (tz2=TZrules.Libya(-3600,"CE%sT"));
-      if (ux>=-347151600) // from 1959 
+      if (ux>=-347151600) // from 1959
          return tz3 || (tz3=Rule.Timezone(-7200,"EET"));
-      if (ux>=-1577926364) // from 1920 
+      if (ux>=-1577926364) // from 1920
          return tz2 || (tz2=TZrules.Libya(-3600,"CE%sT"));
       return tz1 || (tz1=Rule.Timezone(-3164,"LMT"));
    }
@@ -273,7 +273,7 @@ class Indian_Mauritius
    Rule.Timezone tz1,tz2;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-1988164200) // from 1907 
+      if (ux>=-1988164200) // from 1907
          return tz2 || (tz2=TZrules.Mauritius(-14400,"+04/+05"));
       // Port Louis
       return tz1 || (tz1=Rule.Timezone(-13800,"LMT"));
@@ -286,13 +286,13 @@ class Africa_Casablanca
    Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1540699200) // from 2018 Oct 28  3:00 
-         return tz4 || (tz4=TZrules.Morocco(-3600,"+01/+00"));
-      if (ux>=504918000) // from 1986 
+      if (ux>=1540699200) // from 2018 Oct 28  3:00
+         return tz4 || (tz4=TZrules.Morocco(-3600,"+01/+02"));
+      if (ux>=504918000) // from 1986
          return tz2 || (tz2=TZrules.Morocco(0,"+00/+01"));
-      if (ux>=448243200) // from 1984 Mar 16 
-         return tz3 || (tz3=Rule.Timezone(-3600,"+01"));
-      if (ux>=-1773012580) // from 1913 Oct 26 
+      if (ux>=448243200) // from 1984 Mar 16
+         return tz3 || (tz3=Rule.Timezone(-3600,"+01/+02"));
+      if (ux>=-1773012580) // from 1913 Oct 26
          return tz2 || (tz2=TZrules.Morocco(0,"+00/+01"));
       return tz1 || (tz1=Rule.Timezone(1820,"LMT"));
    }
@@ -304,12 +304,12 @@ class Africa_El_Aaiun
    Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1540699200) // from 2018 Oct 28  3:00 
-         return tz4 || (tz4=TZrules.Morocco(-3600,"+01/+00"));
-      if (ux>=198291600) // from 1976 Apr 14 
+      if (ux>=1540699200) // from 2018 Oct 28  3:00
+         return tz4 || (tz4=TZrules.Morocco(-3600,"+01/+02"));
+      if (ux>=198291600) // from 1976 Apr 14
          return tz3 || (tz3=TZrules.Morocco(0,"+00/+01"));
-      if (ux>=-1136070432) // from 1934 Jan 
-         return tz2 || (tz2=Rule.Timezone(3600,"-01"));
+      if (ux>=-1136070432) // from 1934 Jan
+         return tz2 || (tz2=Rule.Timezone(3600,"-01/+00"));
       // El Aaiún
       return tz1 || (tz1=Rule.Timezone(3168,"LMT"));
    }
@@ -321,9 +321,9 @@ class Africa_Maputo
    Rule.Timezone tz1,tz2;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-2109291020) // from 1903 Mar 
+      if (ux>=-1924999818) // from 1909
          return tz2 || (tz2=Rule.Timezone(-7200,"CAT"));
-      return tz1 || (tz1=Rule.Timezone(-7820,"LMT"));
+      return tz1 || (tz1=Rule.Timezone(-7818,"LMT"));
    }
 }
 constant Africa_Blantyre=Africa_Maputo;
@@ -340,16 +340,16 @@ class Africa_Windhoek
    Rule.Timezone tz1,tz2,tz3,tz4,tz5;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=637970400) // from 1990 Mar 21 
+      if (ux>=637970400) // from 1990 Mar 21
          return tz5 || (tz5=TZrules.Namibia(-7200,"%s"));
       if (ux>=-845254800) // from 1943 Mar 21  2:00 independence
          return tz3 || (tz3=Rule.Timezone(-7200,"SAST"));
-      if (ux>=-860976000) // from 1942 Sep 20  2:00 
+      if (ux>=-860976000) // from 1942 Sep 20  2:00
          return tz4 || (tz4=Rule.Timezone(-10800,"SAST"));
-      if (ux>=-2109288600) // from 1903 Mar 
+      if (ux>=-2109288600) // from 1903 Mar
          return tz3 || (tz3=Rule.Timezone(-7200,"SAST"));
-      if (ux>=-2458170504) // from 1892 Feb 8 
-         return tz2 || (tz2=Rule.Timezone(-5400,"+0130"));
+      if (ux>=-2458170504) // from 1892 Feb 8
+         return tz2 || (tz2=Rule.Timezone(-5400,"+0130/+0230"));
       return tz1 || (tz1=Rule.Timezone(-4104,"LMT"));
    }
 }
@@ -360,13 +360,13 @@ class Africa_Lagos
    Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-1588465800) // from 1919 Sep  1 
+      if (ux>=-1588465800) // from 1919 Sep  1
          return tz4 || (tz4=Rule.Timezone(-3600,"WAT"));
-      if (ux>=-1767226415) // from 1914 Jan  1 
-         return tz3 || (tz3=Rule.Timezone(-1800,"+0030"));
-      if (ux>=-1940889600) // from 1908 Jul  1 
+      if (ux>=-1767226415) // from 1914 Jan  1
+         return tz3 || (tz3=Rule.Timezone(-1800,"+0030/+0130"));
+      if (ux>=-1940889600) // from 1908 Jul  1
          return tz1 || (tz1=Rule.Timezone(-815,"LMT"));
-      if (ux>=-2035584815) // from 1905 Jul  1 
+      if (ux>=-2035584815) // from 1905 Jul  1
          return tz2 || (tz2=Rule.Timezone(0,"GMT"));
       return tz1 || (tz1=Rule.Timezone(-815,"LMT"));
    }
@@ -387,11 +387,11 @@ class Africa_Sao_Tome
    Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1546304400) // from 2019 Jan  1 02:00 
+      if (ux>=1546304400) // from 2019 Jan  1 02:00
          return tz3 || (tz3=Rule.Timezone(0,"GMT"));
-      if (ux>=1514768400) // from 2018 Jan  1 01:00 
+      if (ux>=1514768400) // from 2018 Jan  1 01:00
          return tz4 || (tz4=Rule.Timezone(-3600,"WAT"));
-      if (ux>=-1830384000) // from 1912 Jan  1 00:00u 
+      if (ux>=-1830384000) // from 1912 Jan  1 00:00u
          return tz3 || (tz3=Rule.Timezone(0,"GMT"));
       if (ux>=-2713912016) // from 1884 Lisbon MT
          return tz2 || (tz2=Rule.Timezone(2205,"LMT"));
@@ -405,9 +405,9 @@ class Africa_Johannesburg
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-2109288600) // from 1903 Mar 
+      if (ux>=-2109288600) // from 1903 Mar
          return tz3 || (tz3=TZrules.SA(-7200,"SAST"));
-      if (ux>=-2458173120) // from 1892 Feb 8 
+      if (ux>=-2458173120) // from 1892 Feb 8
          return tz2 || (tz2=Rule.Timezone(-5400,"SAST"));
       return tz1 || (tz1=Rule.Timezone(-6720,"LMT"));
    }
@@ -421,11 +421,11 @@ class Africa_Khartoum
    Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1509483600) // from 2017 Nov  1 
+      if (ux>=1509483600) // from 2017 Nov  1
          return tz4 || (tz4=Rule.Timezone(-7200,"CAT"));
-      if (ux>=947944800) // from 2000 Jan 15 12:00 
+      if (ux>=947944800) // from 2000 Jan 15 12:00
          return tz3 || (tz3=Rule.Timezone(-10800,"EAT"));
-      if (ux>=-1230775808) // from 1931 
+      if (ux>=-1230775808) // from 1931
          return tz2 || (tz2=TZrules.Sudan(-7200,"CA%sT"));
       return tz1 || (tz1=Rule.Timezone(-7808,"LMT"));
    }
@@ -437,11 +437,11 @@ class Africa_Juba
    Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1612126800) // from 2021 Feb  1 00:00 
+      if (ux>=1612126800) // from 2021 Feb  1 00:00
          return tz4 || (tz4=Rule.Timezone(-7200,"CAT"));
-      if (ux>=947944800) // from 2000 Jan 15 12:00 
+      if (ux>=947944800) // from 2000 Jan 15 12:00
          return tz3 || (tz3=Rule.Timezone(-10800,"EAT"));
-      if (ux>=-1230775588) // from 1931 
+      if (ux>=-1230775588) // from 1931
          return tz2 || (tz2=TZrules.Sudan(-7200,"CA%sT"));
       return tz1 || (tz1=Rule.Timezone(-7588,"LMT"));
    }
@@ -453,7 +453,7 @@ class Africa_Tunis
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-1855958961) // from 1911 Mar 11 
+      if (ux>=-1855958961) // from 1911 Mar 11
          return tz3 || (tz3=TZrules.Tunisia(-3600,"CE%sT"));
       if (ux>=-2797202444) // from 1881 May 12 Paris Mean Time
          return tz2 || (tz2=Rule.Timezone(-561,"PMT"));
@@ -467,40 +467,40 @@ class Antarctica_Casey
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1678291200) // from 2023 Mar  9  3:00 
-         return tz2 || (tz2=Rule.Timezone(-28800,"+08"));
-      if (ux>=1664640060) // from 2022 Oct  2  0:01 
-         return tz3 || (tz3=Rule.Timezone(-39600,"+11"));
-      if (ux>=1647090000) // from 2022 Mar 13  0:00 
-         return tz2 || (tz2=Rule.Timezone(-28800,"+08"));
-      if (ux>=1633190460) // from 2021 Oct  3  0:01 
-         return tz3 || (tz3=Rule.Timezone(-39600,"+11"));
-      if (ux>=1615640400) // from 2021 Mar 14  0:00 
-         return tz2 || (tz2=Rule.Timezone(-28800,"+08"));
-      if (ux>=1601740860) // from 2020 Oct  4  0:01 
-         return tz3 || (tz3=Rule.Timezone(-39600,"+11"));
-      if (ux>=1583596800) // from 2020 Mar  8  3:00 
-         return tz2 || (tz2=Rule.Timezone(-28800,"+08"));
-      if (ux>=1570129200) // from 2019 Oct  4  3:00 
-         return tz3 || (tz3=Rule.Timezone(-39600,"+11"));
-      if (ux>=1552752000) // from 2019 Mar 17  3:00 
-         return tz2 || (tz2=Rule.Timezone(-28800,"+08"));
-      if (ux>=1538856000) // from 2018 Oct  7  4:00 
-         return tz3 || (tz3=Rule.Timezone(-39600,"+11"));
-      if (ux>=1520701200) // from 2018 Mar 11  4:00 
-         return tz2 || (tz2=Rule.Timezone(-28800,"+08"));
-      if (ux>=1477065600) // from 2016 Oct 22 
-         return tz3 || (tz3=Rule.Timezone(-39600,"+11"));
-      if (ux>=1329843600) // from 2012 Feb 21 17:00u 
-         return tz2 || (tz2=Rule.Timezone(-28800,"+08"));
-      if (ux>=1319738400) // from 2011 Oct 28  2:00 
-         return tz3 || (tz3=Rule.Timezone(-39600,"+11"));
-      if (ux>=1267714800) // from 2010 Mar  5  2:00 
-         return tz2 || (tz2=Rule.Timezone(-28800,"+08"));
-      if (ux>=1255802400) // from 2009 Oct 18  2:00 
-         return tz3 || (tz3=Rule.Timezone(-39600,"+11"));
-      if (ux>=-31536000) // from 1969 
-         return tz2 || (tz2=Rule.Timezone(-28800,"+08"));
+      if (ux>=1678291200) // from 2023 Mar  9  3:00
+         return tz2 || (tz2=Rule.Timezone(-28800,"+08/+09"));
+      if (ux>=1664640060) // from 2022 Oct  2  0:01
+         return tz3 || (tz3=Rule.Timezone(-39600,"+11/+12"));
+      if (ux>=1647090000) // from 2022 Mar 13  0:00
+         return tz2 || (tz2=Rule.Timezone(-28800,"+08/+09"));
+      if (ux>=1633190460) // from 2021 Oct  3  0:01
+         return tz3 || (tz3=Rule.Timezone(-39600,"+11/+12"));
+      if (ux>=1615640400) // from 2021 Mar 14  0:00
+         return tz2 || (tz2=Rule.Timezone(-28800,"+08/+09"));
+      if (ux>=1601740860) // from 2020 Oct  4  0:01
+         return tz3 || (tz3=Rule.Timezone(-39600,"+11/+12"));
+      if (ux>=1583596800) // from 2020 Mar  8  3:00
+         return tz2 || (tz2=Rule.Timezone(-28800,"+08/+09"));
+      if (ux>=1570129200) // from 2019 Oct  4  3:00
+         return tz3 || (tz3=Rule.Timezone(-39600,"+11/+12"));
+      if (ux>=1552752000) // from 2019 Mar 17  3:00
+         return tz2 || (tz2=Rule.Timezone(-28800,"+08/+09"));
+      if (ux>=1538856000) // from 2018 Oct  7  4:00
+         return tz3 || (tz3=Rule.Timezone(-39600,"+11/+12"));
+      if (ux>=1520701200) // from 2018 Mar 11  4:00
+         return tz2 || (tz2=Rule.Timezone(-28800,"+08/+09"));
+      if (ux>=1477065600) // from 2016 Oct 22
+         return tz3 || (tz3=Rule.Timezone(-39600,"+11/+12"));
+      if (ux>=1329843600) // from 2012 Feb 21 17:00u
+         return tz2 || (tz2=Rule.Timezone(-28800,"+08/+09"));
+      if (ux>=1319738400) // from 2011 Oct 28  2:00
+         return tz3 || (tz3=Rule.Timezone(-39600,"+11/+12"));
+      if (ux>=1267714800) // from 2010 Mar  5  2:00
+         return tz2 || (tz2=Rule.Timezone(-28800,"+08/+09"));
+      if (ux>=1255802400) // from 2009 Oct 18  2:00
+         return tz3 || (tz3=Rule.Timezone(-39600,"+11/+12"));
+      if (ux>=-31536000) // from 1969
+         return tz2 || (tz2=Rule.Timezone(-28800,"+08/+09"));
       return tz1 || (tz1=Rule.Timezone(0,"-00"));
    }
 }
@@ -511,20 +511,20 @@ class Antarctica_Davis
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1329854400) // from 2012 Feb 21 20:00u 
-         return tz2 || (tz2=Rule.Timezone(-25200,"+07"));
-      if (ux>=1319742000) // from 2011 Oct 28  2:00 
-         return tz3 || (tz3=Rule.Timezone(-18000,"+05"));
-      if (ux>=1268251200) // from 2010 Mar 10 20:00u 
-         return tz2 || (tz2=Rule.Timezone(-25200,"+07"));
-      if (ux>=1255806000) // from 2009 Oct 18  2:00 
-         return tz3 || (tz3=Rule.Timezone(-18000,"+05"));
-      if (ux>=-28857600) // from 1969 Feb 
-         return tz2 || (tz2=Rule.Timezone(-25200,"+07"));
-      if (ux>=-163062000) // from 1964 Nov 
+      if (ux>=1329854400) // from 2012 Feb 21 20:00u
+         return tz2 || (tz2=Rule.Timezone(-25200,"+07/+08"));
+      if (ux>=1319742000) // from 2011 Oct 28  2:00
+         return tz3 || (tz3=Rule.Timezone(-18000,"+05/+06"));
+      if (ux>=1268251200) // from 2010 Mar 10 20:00u
+         return tz2 || (tz2=Rule.Timezone(-25200,"+07/+08"));
+      if (ux>=1255806000) // from 2009 Oct 18  2:00
+         return tz3 || (tz3=Rule.Timezone(-18000,"+05/+06"));
+      if (ux>=-28857600) // from 1969 Feb
+         return tz2 || (tz2=Rule.Timezone(-25200,"+07/+08"));
+      if (ux>=-163062000) // from 1964 Nov
          return tz1 || (tz1=Rule.Timezone(0,"-00"));
-      if (ux>=-409190400) // from 1957 Jan 13 
-         return tz2 || (tz2=Rule.Timezone(-25200,"+07"));
+      if (ux>=-409190400) // from 1957 Jan 13
+         return tz2 || (tz2=Rule.Timezone(-25200,"+07/+08"));
       return tz1 || (tz1=Rule.Timezone(0,"-00"));
    }
 }
@@ -535,10 +535,10 @@ class Antarctica_Mawson
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1255809600) // from 2009 Oct 18  2:00 
-         return tz3 || (tz3=Rule.Timezone(-18000,"+05"));
-      if (ux>=-501206400) // from 1954 Feb 13 
-         return tz2 || (tz2=Rule.Timezone(-21600,"+06"));
+      if (ux>=1255809600) // from 2009 Oct 18  2:00
+         return tz3 || (tz3=Rule.Timezone(-18000,"+05/+06"));
+      if (ux>=-501206400) // from 1954 Feb 13
+         return tz2 || (tz2=Rule.Timezone(-21600,"+06/+07"));
       return tz1 || (tz1=Rule.Timezone(0,"-00"));
    }
 }
@@ -549,7 +549,7 @@ class Antarctica_Troll
    Rule.Timezone tz1,tz2;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1108166400) // from 2005 Feb 12 
+      if (ux>=1108166400) // from 2005 Feb 12
          return tz2 || (tz2=TZrules.Troll(0,"%s"));
       return tz1 || (tz1=Rule.Timezone(0,"-00"));
    }
@@ -561,14 +561,14 @@ class Antarctica_Vostok
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1702839600) // from 2023 Dec 18  2:00 
-         return tz3 || (tz3=Rule.Timezone(-18000,"+05"));
-      if (ux>=783648000) // from 1994 Nov 
-         return tz2 || (tz2=Rule.Timezone(-25200,"+07"));
-      if (ux>=760035600) // from 1994 Feb 
+      if (ux>=1702839600) // from 2023 Dec 18  2:00
+         return tz3 || (tz3=Rule.Timezone(-18000,"+05/+06"));
+      if (ux>=783648000) // from 1994 Nov
+         return tz2 || (tz2=Rule.Timezone(-25200,"+07/+08"));
+      if (ux>=760035600) // from 1994 Feb
          return tz1 || (tz1=Rule.Timezone(0,"-00"));
-      if (ux>=-380073600) // from 1957 Dec 16 
-         return tz2 || (tz2=Rule.Timezone(-25200,"+07"));
+      if (ux>=-380073600) // from 1957 Dec 16
+         return tz2 || (tz2=Rule.Timezone(-25200,"+07/+08"));
       return tz1 || (tz1=Rule.Timezone(0,"-00"));
    }
 }
@@ -579,8 +579,8 @@ class Antarctica_Rothera
    Rule.Timezone tz1,tz2;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=218246400) // from 1976 Dec  1 
-         return tz2 || (tz2=Rule.Timezone(10800,"-03"));
+      if (ux>=218246400) // from 1976 Dec  1
+         return tz2 || (tz2=Rule.Timezone(10800,"-03/-02"));
       return tz1 || (tz1=Rule.Timezone(0,"-00"));
    }
 }
@@ -591,10 +591,10 @@ class Asia_Kabul
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-788932800) // from 1945 
-         return tz3 || (tz3=Rule.Timezone(-16200,"+0430"));
-      if (ux>=-2524538208) // from 1890 
-         return tz2 || (tz2=Rule.Timezone(-14400,"+04"));
+      if (ux>=-788932800) // from 1945
+         return tz3 || (tz3=Rule.Timezone(-16200,"+0430/+0530"));
+      if (ux>=-2524538208) // from 1890
+         return tz2 || (tz2=Rule.Timezone(-14400,"+04/+05"));
       return tz1 || (tz1=Rule.Timezone(-16608,"LMT"));
    }
 }
@@ -605,18 +605,18 @@ class Asia_Yerevan
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1293854400) // from 2011 
+      if (ux>=1293854400) // from 2011
          return tz6 || (tz6=TZrules.Armenia(-14400,"+04/+05"));
-      if (ux>=852062400) // from 1997 
+      if (ux>=852062400) // from 1997
          return tz3 || (tz3=TZrules.RussiaAsia(-14400,"+04/+05"));
-      if (ux>=811897200) // from 1995 Sep 24  2:00s 
-         return tz5 || (tz5=Rule.Timezone(-14400,"+04"));
-      if (ux>=670370400) // from 1991 Mar 31  2:00s 
+      if (ux>=811897200) // from 1995 Sep 24  2:00s
+         return tz5 || (tz5=Rule.Timezone(-14400,"+04/+05"));
+      if (ux>=670370400) // from 1991 Mar 31  2:00s
          return tz4 || (tz4=TZrules.RussiaAsia(-10800,"+03/+04"));
-      if (ux>=-405140400) // from 1957 Mar 
+      if (ux>=-405140400) // from 1957 Mar
          return tz3 || (tz3=TZrules.RussiaAsia(-14400,"+04/+05"));
-      if (ux>=-1441162680) // from 1924 May  2 
-         return tz2 || (tz2=Rule.Timezone(-10800,"+03"));
+      if (ux>=-1441162680) // from 1924 May  2
+         return tz2 || (tz2=Rule.Timezone(-10800,"+03/+04"));
       return tz1 || (tz1=Rule.Timezone(-10680,"LMT"));
    }
 }
@@ -627,18 +627,18 @@ class Asia_Baku
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6,tz7;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=852091200) // from 1997 
+      if (ux>=852091200) // from 1997
          return tz7 || (tz7=TZrules.Azer(-14400,"+04/+05"));
-      if (ux>=820440000) // from 1996 
+      if (ux>=820440000) // from 1996
          return tz6 || (tz6=TZrules.EUAsia(-14400,"+04/+05"));
-      if (ux>=715320000) // from 1992 Sep lastSun  2:00s 
-         return tz5 || (tz5=Rule.Timezone(-14400,"+04"));
-      if (ux>=670370400) // from 1991 Mar 31  2:00s 
+      if (ux>=715320000) // from 1992 Sep lastSun  2:00s
+         return tz5 || (tz5=Rule.Timezone(-14400,"+04/+05"));
+      if (ux>=670370400) // from 1991 Mar 31  2:00s
          return tz4 || (tz4=TZrules.RussiaAsia(-10800,"+03/+04"));
-      if (ux>=-405140400) // from 1957 Mar 
+      if (ux>=-405140400) // from 1957 Mar
          return tz3 || (tz3=TZrules.RussiaAsia(-14400,"+04/+05"));
-      if (ux>=-1441163964) // from 1924 May  2 
-         return tz2 || (tz2=Rule.Timezone(-10800,"+03"));
+      if (ux>=-1441163964) // from 1924 May  2
+         return tz2 || (tz2=Rule.Timezone(-10800,"+03/+04"));
       return tz1 || (tz1=Rule.Timezone(-11964,"LMT"));
    }
 }
@@ -649,16 +649,16 @@ class Asia_Dhaka
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1230746400) // from 2009 
+      if (ux>=1230746400) // from 2009
          return tz6 || (tz6=TZrules.Dhaka(-21600,"+06/+07"));
-      if (ux>=-576138600) // from 1951 Sep 30 
-         return tz5 || (tz5=Rule.Timezone(-21600,"+06"));
-      if (ux>=-862637400) // from 1942 Sep 
-         return tz3 || (tz3=Rule.Timezone(-23400,"+0630"));
-      if (ux>=-872058600) // from 1942 May 15 
-         return tz4 || (tz4=Rule.Timezone(-19800,"+0530"));
-      if (ux>=-891582800) // from 1941 Oct 
-         return tz3 || (tz3=Rule.Timezone(-23400,"+0630"));
+      if (ux>=-576138600) // from 1951 Sep 30
+         return tz5 || (tz5=Rule.Timezone(-21600,"+06/+07"));
+      if (ux>=-862637400) // from 1942 Sep
+         return tz3 || (tz3=Rule.Timezone(-23400,"+0630/+0730"));
+      if (ux>=-872058600) // from 1942 May 15
+         return tz4 || (tz4=Rule.Timezone(-19800,"+0530/+0630"));
+      if (ux>=-891582800) // from 1941 Oct
+         return tz3 || (tz3=Rule.Timezone(-23400,"+0630/+0730"));
       if (ux>=-2524543300) // from 1890 Howrah Mean Time?
          return tz2 || (tz2=Rule.Timezone(-21200,"HMT"));
       return tz1 || (tz1=Rule.Timezone(-21700,"LMT"));
@@ -672,10 +672,10 @@ class Asia_Thimphu
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=560025000) // from 1987 Oct 
-         return tz3 || (tz3=Rule.Timezone(-21600,"+06"));
-      if (ux>=-706341516) // from 1947 Aug 15 
-         return tz2 || (tz2=Rule.Timezone(-19800,"+0530"));
+      if (ux>=560025000) // from 1987 Oct
+         return tz3 || (tz3=Rule.Timezone(-21600,"+06/+07"));
+      if (ux>=-706341516) // from 1947 Aug 15
+         return tz2 || (tz2=Rule.Timezone(-19800,"+0530/+0630"));
       // or Thimbu
       return tz1 || (tz1=Rule.Timezone(-21516,"LMT"));
    }
@@ -688,10 +688,10 @@ class Indian_Chagos
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=820436400) // from 1996 
-         return tz3 || (tz3=Rule.Timezone(-21600,"+06"));
-      if (ux>=-1988167780) // from 1907 
-         return tz2 || (tz2=Rule.Timezone(-18000,"+05"));
+      if (ux>=820436400) // from 1996
+         return tz3 || (tz3=Rule.Timezone(-21600,"+06/+07"));
+      if (ux>=-1988167780) // from 1907
+         return tz2 || (tz2=Rule.Timezone(-18000,"+05/+06"));
       return tz1 || (tz1=Rule.Timezone(-17380,"LMT"));
    }
 }
@@ -702,12 +702,12 @@ class Asia_Yangon
    Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-778410000) // from 1945 May  3 
-         return tz3 || (tz3=Rule.Timezone(-23400,"+0630"));
-      if (ux>=-873268200) // from 1942 May 
-         return tz4 || (tz4=Rule.Timezone(-32400,"+09"));
-      if (ux>=-1577946287) // from 1920 
-         return tz3 || (tz3=Rule.Timezone(-23400,"+0630"));
+      if (ux>=-778410000) // from 1945 May  3
+         return tz3 || (tz3=Rule.Timezone(-23400,"+0630/+0730"));
+      if (ux>=-873268200) // from 1942 May
+         return tz4 || (tz4=Rule.Timezone(-32400,"+09/+10"));
+      if (ux>=-1577946287) // from 1920
+         return tz3 || (tz3=Rule.Timezone(-23400,"+0630/+0730"));
       if (ux>=-2840163887) // from 1880 Rangoon local time
          return tz2 || (tz2=Rule.Timezone(-23087,"RMT"));
       // or Rangoon
@@ -723,9 +723,9 @@ class Asia_Shanghai
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-649954800) // from 1949 May 28 
+      if (ux>=-649954800) // from 1949 May 28
          return tz3 || (tz3=TZrules.PRC(-28800,"C%sT"));
-      if (ux>=-2177481943) // from 1901 
+      if (ux>=-2177481943) // from 1901
          return tz2 || (tz2=TZrules.Shang(-28800,"C%sT"));
       return tz1 || (tz1=Rule.Timezone(-29143,"LMT"));
    }
@@ -741,8 +741,8 @@ class Asia_Urumqi
    Rule.Timezone tz1,tz2;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-1325483420) // from 1928 
-         return tz2 || (tz2=Rule.Timezone(-21600,"+06"));
+      if (ux>=-1325483420) // from 1928
+         return tz2 || (tz2=Rule.Timezone(-21600,"+06/+07"));
       return tz1 || (tz1=Rule.Timezone(-21020,"LMT"));
    }
 }
@@ -754,15 +754,15 @@ class Asia_Hong_Kong
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-761209200) // from 1945 Nov 18  2:00 
+      if (ux>=-761209200) // from 1945 Nov 18  2:00
          return tz6 || (tz6=TZrules.HK(-28800,"HK%sT"));
-      if (ux>=-884248200) // from 1941 Dec 25 
+      if (ux>=-884248200) // from 1941 Dec 25
          return tz5 || (tz5=Rule.Timezone(-32400,"JST"));
-      if (ux>=-891579600) // from 1941 Oct  1  4:00 
+      if (ux>=-891579600) // from 1941 Oct  1  4:00
          return tz4 || (tz4=Rule.Timezone(-30600,"HKWT"));
-      if (ux>=-900910800) // from 1941 Jun 15  3:00 
+      if (ux>=-900910800) // from 1941 Jun 15  3:00
          return tz3 || (tz3=Rule.Timezone(-32400,"HKST"));
-      if (ux>=-2056690800) // from 1904 Oct 29 17:00u 
+      if (ux>=-2056690800) // from 1904 Oct 29 17:00u
          return tz2 || (tz2=Rule.Timezone(-28800,"HKT"));
       return tz1 || (tz1=Rule.Timezone(-27402,"LMT"));
    }
@@ -775,11 +775,11 @@ class Asia_Taipei
    Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-766224000) // from 1945 Sep 21  1:00 
+      if (ux>=-766224000) // from 1945 Sep 21  1:00
          return tz4 || (tz4=TZrules.Taiwan(-28800,"C%sT"));
-      if (ux>=-1017820800) // from 1937 Oct  1 
+      if (ux>=-1017820800) // from 1937 Oct  1
          return tz3 || (tz3=Rule.Timezone(-32400,"JST"));
-      if (ux>=-2335248360) // from 1896 Jan  1 
+      if (ux>=-2335248360) // from 1896 Jan  1
          return tz2 || (tz2=Rule.Timezone(-28800,"CST"));
       return tz1 || (tz1=Rule.Timezone(-29160,"LMT"));
    }
@@ -792,11 +792,11 @@ class Asia_Macau
    Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-765298800) // from 1945 Sep 30 24:00 
+      if (ux>=-765298800) // from 1945 Sep 30 24:00
          return tz4 || (tz4=TZrules.Macau(-28800,"C%sT"));
-      if (ux>=-884509200) // from 1941 Dec 21 23:00 
+      if (ux>=-884509200) // from 1941 Dec 21 23:00
          return tz3 || (tz3=TZrules.Macau(-32400,"+09/+10"));
-      if (ux>=-2056692850) // from 1904 Oct 30 
+      if (ux>=-2056692850) // from 1904 Oct 30
          return tz2 || (tz2=Rule.Timezone(-28800,"CST"));
       return tz1 || (tz1=Rule.Timezone(-27250,"LMT"));
    }
@@ -809,9 +809,9 @@ class Asia_Nicosia
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=904618800) // from 1998 Sep 
+      if (ux>=904618800) // from 1998 Sep
          return tz3 || (tz3=TZrules.EUAsia(-7200,"EE%sT"));
-      if (ux>=-1518920008) // from 1921 Nov 14 
+      if (ux>=-1518920008) // from 1921 Nov 14
          return tz2 || (tz2=TZrules.Cyprus(-7200,"EE%sT"));
       return tz1 || (tz1=Rule.Timezone(-8008,"LMT"));
    }
@@ -824,13 +824,13 @@ class Asia_Famagusta
    Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1509238800) // from 2017 Oct 29 1:00u 
+      if (ux>=1509238800) // from 2017 Oct 29 1:00u
          return tz3 || (tz3=TZrules.EUAsia(-7200,"EE%sT"));
-      if (ux>=1473303600) // from 2016 Sep  8 
-         return tz4 || (tz4=Rule.Timezone(-10800,"+03"));
-      if (ux>=904618800) // from 1998 Sep 
+      if (ux>=1473303600) // from 2016 Sep  8
+         return tz4 || (tz4=Rule.Timezone(-10800,"+03/+04"));
+      if (ux>=904618800) // from 1998 Sep
          return tz3 || (tz3=TZrules.EUAsia(-7200,"EE%sT"));
-      if (ux>=-1518920148) // from 1921 Nov 14 
+      if (ux>=-1518920148) // from 1921 Nov 14
          return tz2 || (tz2=TZrules.Cyprus(-7200,"EE%sT"));
       return tz1 || (tz1=Rule.Timezone(-8148,"LMT"));
    }
@@ -842,24 +842,24 @@ class Asia_Tbilisi
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6,tz7,tz8,tz9;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1109646000) // from 2005 Mar lastSun  2:00 
-         return tz9 || (tz9=Rule.Timezone(-14400,"+04"));
-      if (ux>=1088312400) // from 2004 Jun 27 
+      if (ux>=1109646000) // from 2005 Mar lastSun  2:00
+         return tz9 || (tz9=Rule.Timezone(-14400,"+04/+05"));
+      if (ux>=1088312400) // from 2004 Jun 27
          return tz5 || (tz5=TZrules.RussiaAsia(-10800,"+03/+04"));
-      if (ux>=857156400) // from 1997 Mar lastSun 
+      if (ux>=857156400) // from 1997 Mar lastSun
          return tz7 || (tz7=TZrules.E_EurAsia(-14400,"+04/+05"));
-      if (ux>=844146000) // from 1996 Oct lastSun 
-         return tz8 || (tz8=Rule.Timezone(-18000,"+05"));
-      if (ux>=778392000) // from 1994 Sep lastSun 
+      if (ux>=844146000) // from 1996 Oct lastSun
+         return tz8 || (tz8=Rule.Timezone(-18000,"+04/+05"));
+      if (ux>=778392000) // from 1994 Sep lastSun
          return tz7 || (tz7=TZrules.E_EurAsia(-14400,"+04/+05"));
-      if (ux>=694234800) // from 1992 
+      if (ux>=694234800) // from 1992
          return tz6 || (tz6=TZrules.E_EurAsia(-10800,"+03/+04"));
-      if (ux>=670370400) // from 1991 Mar 31  2:00s 
+      if (ux>=670370400) // from 1991 Mar 31  2:00s
          return tz5 || (tz5=TZrules.RussiaAsia(-10800,"+03/+04"));
-      if (ux>=-405140400) // from 1957 Mar 
+      if (ux>=-405140400) // from 1957 Mar
          return tz4 || (tz4=TZrules.RussiaAsia(-14400,"+04/+05"));
-      if (ux>=-1441162751) // from 1924 May  2 
-         return tz3 || (tz3=Rule.Timezone(-10800,"+03"));
+      if (ux>=-1441162751) // from 1924 May  2
+         return tz3 || (tz3=Rule.Timezone(-10800,"+03/+04"));
       if (ux>=-2840151551) // from 1880 Tbilisi Mean Time
          return tz2 || (tz2=Rule.Timezone(-10751,"TBMT"));
       return tz1 || (tz1=Rule.Timezone(-10751,"LMT"));
@@ -872,14 +872,14 @@ class Asia_Dili
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=969120000) // from 2000 Sep 17  0:00 
-         return tz3 || (tz3=Rule.Timezone(-32400,"+09"));
-      if (ux>=199897200) // from 1976 May  3 
-         return tz2 || (tz2=Rule.Timezone(-28800,"+08"));
-      if (ux>=-879152400) // from 1942 Feb 21 23:00 
-         return tz3 || (tz3=Rule.Timezone(-32400,"+09"));
-      if (ux>=-1830414140) // from 1912 Jan  1 
-         return tz2 || (tz2=Rule.Timezone(-28800,"+08"));
+      if (ux>=969120000) // from 2000 Sep 17  0:00
+         return tz3 || (tz3=Rule.Timezone(-32400,"+09/+10"));
+      if (ux>=199897200) // from 1976 May  3
+         return tz2 || (tz2=Rule.Timezone(-28800,"+08/+09"));
+      if (ux>=-879152400) // from 1942 Feb 21 23:00
+         return tz3 || (tz3=Rule.Timezone(-32400,"+09/+10"));
+      if (ux>=-1830412800) // from 1911 Dec 31 16:00u
+         return tz2 || (tz2=Rule.Timezone(-28800,"+08/+09"));
       return tz1 || (tz1=Rule.Timezone(-30140,"LMT"));
    }
 }
@@ -890,15 +890,15 @@ class Asia_Kolkata
    Rule.Timezone tz1,tz2,tz3,tz4,tz5;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-764145000) // from 1945 Oct 15 
+      if (ux>=-764145000) // from 1945 Oct 15
          return tz4 || (tz4=Rule.Timezone(-19800,"IST"));
-      if (ux>=-862637400) // from 1942 Sep 
-         return tz5 || (tz5=Rule.Timezone(-23400,"+0630"));
-      if (ux>=-872058600) // from 1942 May 15 
+      if (ux>=-862637400) // from 1942 Sep
+         return tz5 || (tz5=Rule.Timezone(-23400,"+0530/+0630"));
+      if (ux>=-872058600) // from 1942 May 15
          return tz4 || (tz4=Rule.Timezone(-19800,"IST"));
-      if (ux>=-891581400) // from 1941 Oct 
-         return tz5 || (tz5=Rule.Timezone(-23400,"+0630"));
-      if (ux>=-2019705670) // from 1906 Jan  1 
+      if (ux>=-891581400) // from 1941 Oct
+         return tz5 || (tz5=Rule.Timezone(-23400,"+0530/+0630"));
+      if (ux>=-2019705670) // from 1906 Jan  1
          return tz4 || (tz4=Rule.Timezone(-19800,"IST"));
       if (ux>=-3155694800) // from 1870 Madras local time
          return tz3 || (tz3=Rule.Timezone(-19270,"MMT"));
@@ -916,20 +916,20 @@ class Asia_Jakarta
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6,tz7;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-189415800) // from 1964 
+      if (ux>=-189415800) // from 1964
          return tz7 || (tz7=Rule.Timezone(-25200,"WIB"));
-      if (ux>=-620812800) // from 1950 May 
-         return tz4 || (tz4=Rule.Timezone(-27000,"+0730"));
-      if (ux>=-683883000) // from 1948 May 
-         return tz6 || (tz6=Rule.Timezone(-28800,"+08"));
-      if (ux>=-766054800) // from 1945 Sep 23 
-         return tz4 || (tz4=Rule.Timezone(-27000,"+0730"));
-      if (ux>=-876641400) // from 1942 Mar 23 
-         return tz5 || (tz5=Rule.Timezone(-32400,"+09"));
-      if (ux>=-1172906400) // from 1932 Nov 
-         return tz4 || (tz4=Rule.Timezone(-27000,"+0730"));
-      if (ux>=-1451719200) // from 1923 Dec 31 16:40u 
-         return tz3 || (tz3=Rule.Timezone(-26400,"+0720"));
+      if (ux>=-620812800) // from 1950 May
+         return tz4 || (tz4=Rule.Timezone(-27000,"+0730/+0830"));
+      if (ux>=-683883000) // from 1948 May
+         return tz6 || (tz6=Rule.Timezone(-28800,"+08/+09"));
+      if (ux>=-766054800) // from 1945 Sep 23
+         return tz4 || (tz4=Rule.Timezone(-27000,"+0730/+0830"));
+      if (ux>=-876641400) // from 1942 Mar 23
+         return tz5 || (tz5=Rule.Timezone(-32400,"+09/+10"));
+      if (ux>=-1172906400) // from 1932 Nov
+         return tz4 || (tz4=Rule.Timezone(-27000,"+0730/+0830"));
+      if (ux>=-1451719200) // from 1923 Dec 31 16:40u
+         return tz3 || (tz3=Rule.Timezone(-26400,"+0720/+0820"));
       if (ux>=-3231299232) // from 1867 Aug 10 Batavia
          return tz2 || (tz2=Rule.Timezone(-25632,"BMT"));
       return tz1 || (tz1=Rule.Timezone(-25632,"LMT"));
@@ -942,20 +942,20 @@ class Asia_Pontianak
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6,tz7;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=567964800) // from 1988 Jan  1 
+      if (ux>=567964800) // from 1988 Jan  1
          return tz7 || (tz7=Rule.Timezone(-25200,"WIB"));
-      if (ux>=-189415800) // from 1964 
+      if (ux>=-189415800) // from 1964
          return tz6 || (tz6=Rule.Timezone(-28800,"WITA"));
-      if (ux>=-620812800) // from 1950 May 
-         return tz3 || (tz3=Rule.Timezone(-27000,"+0730"));
-      if (ux>=-683883000) // from 1948 May 
-         return tz5 || (tz5=Rule.Timezone(-28800,"+08"));
-      if (ux>=-766054800) // from 1945 Sep 23 
-         return tz3 || (tz3=Rule.Timezone(-27000,"+0730"));
-      if (ux>=-881220600) // from 1942 Jan 29 
-         return tz4 || (tz4=Rule.Timezone(-32400,"+09"));
-      if (ux>=-1172906240) // from 1932 Nov 
-         return tz3 || (tz3=Rule.Timezone(-27000,"+0730"));
+      if (ux>=-620812800) // from 1950 May
+         return tz3 || (tz3=Rule.Timezone(-27000,"+0730/+0830"));
+      if (ux>=-683883000) // from 1948 May
+         return tz5 || (tz5=Rule.Timezone(-28800,"+08/+09"));
+      if (ux>=-766054800) // from 1945 Sep 23
+         return tz3 || (tz3=Rule.Timezone(-27000,"+0730/+0830"));
+      if (ux>=-881220600) // from 1942 Jan 29
+         return tz4 || (tz4=Rule.Timezone(-32400,"+09/+10"));
+      if (ux>=-1172906240) // from 1932 Nov
+         return tz3 || (tz3=Rule.Timezone(-27000,"+0730/+0830"));
       if (ux>=-1946186240) // from 1908 May Pontianak MT
          return tz2 || (tz2=Rule.Timezone(-26240,"PMT"));
       return tz1 || (tz1=Rule.Timezone(-26240,"LMT"));
@@ -968,12 +968,12 @@ class Asia_Makassar
    Rule.Timezone tz1,tz2,tz3,tz4,tz5;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-766054800) // from 1945 Sep 23 
+      if (ux>=-766054800) // from 1945 Sep 23
          return tz5 || (tz5=Rule.Timezone(-28800,"WITA"));
-      if (ux>=-880272000) // from 1942 Feb  9 
-         return tz4 || (tz4=Rule.Timezone(-32400,"+09"));
-      if (ux>=-1172908656) // from 1932 Nov 
-         return tz3 || (tz3=Rule.Timezone(-28800,"+08"));
+      if (ux>=-880272000) // from 1942 Feb  9
+         return tz4 || (tz4=Rule.Timezone(-32400,"+09/+10"));
+      if (ux>=-1172908656) // from 1932 Nov
+         return tz3 || (tz3=Rule.Timezone(-28800,"+08/+09"));
       if (ux>=-1577951856) // from 1920 Macassar MT
          return tz2 || (tz2=Rule.Timezone(-28656,"MMT"));
       return tz1 || (tz1=Rule.Timezone(-28656,"LMT"));
@@ -987,12 +987,12 @@ class Asia_Jayapura
    Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-189423000) // from 1964 
+      if (ux>=-189423000) // from 1964
          return tz4 || (tz4=Rule.Timezone(-32400,"WIT"));
-      if (ux>=-799491600) // from 1944 Sep  1 
-         return tz3 || (tz3=Rule.Timezone(-34200,"+0930"));
-      if (ux>=-1172913768) // from 1932 Nov 
-         return tz2 || (tz2=Rule.Timezone(-32400,"+09"));
+      if (ux>=-799491600) // from 1944 Sep  1
+         return tz3 || (tz3=Rule.Timezone(-34200,"+0930/+1030"));
+      if (ux>=-1172913768) // from 1932 Nov
+         return tz2 || (tz2=Rule.Timezone(-32400,"+09/+10"));
       return tz1 || (tz1=Rule.Timezone(-33768,"LMT"));
    }
 }
@@ -1003,11 +1003,11 @@ class Asia_Tehran
    Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=284011200) // from 1979 
+      if (ux>=279604800) // from 1978 Nov 10 24:00
          return tz3 || (tz3=TZrules.Iran(-12600,"+0330/+0430"));
-      if (ux>=246256200) // from 1977 Oct 20 24:00 
+      if (ux>=246256200) // from 1977 Oct 20 24:00
          return tz4 || (tz4=TZrules.Iran(-14400,"+04/+05"));
-      if (ux>=-1090466744) // from 1935 Jun 13 
+      if (ux>=-1090466744) // from 1935 Jun 13
          return tz3 || (tz3=TZrules.Iran(-12600,"+0330/+0430"));
       if (ux>=-1704165944) // from 1916 Tehran Mean Time
          return tz2 || (tz2=Rule.Timezone(-12344,"TMT"));
@@ -1022,10 +1022,10 @@ class Asia_Baghdad
    Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=389048400) // from 1982 May 
+      if (ux>=389048400) // from 1982 May
          return tz4 || (tz4=TZrules.Iraq(-10800,"+03/+04"));
-      if (ux>=-1641005856) // from 1918 
-         return tz3 || (tz3=Rule.Timezone(-10800,"+03"));
+      if (ux>=-1641005856) // from 1918
+         return tz3 || (tz3=Rule.Timezone(-10800,"+03/+04"));
       if (ux>=-2524532260) // from 1890 Baghdad Mean Time?
          return tz2 || (tz2=Rule.Timezone(-10656,"BMT"));
       return tz1 || (tz1=Rule.Timezone(-10660,"LMT"));
@@ -1038,7 +1038,7 @@ class Asia_Jerusalem
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-1641003640) // from 1918 
+      if (ux>=-1641003640) // from 1918
          return tz3 || (tz3=TZrules.Zion(-7200,"I%sT"));
       if (ux>=-2840149254) // from 1880 Jerusalem Mean Time?
          return tz2 || (tz2=Rule.Timezone(-8440,"JMT"));
@@ -1054,7 +1054,7 @@ class Asia_Tokyo
    Rule.Timezone tz1,tz2;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-2587712400) // from 1887 Dec 31 15:00u 
+      if (ux>=-2587712400) // from 1887 Dec 31 15:00u
          return tz2 || (tz2=TZrules.Japan(-32400,"J%sT"));
       return tz1 || (tz1=Rule.Timezone(-33539,"LMT"));
    }
@@ -1067,9 +1067,9 @@ class Asia_Amman
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1666908000) // from 2022 Oct 28 0:00s 
-         return tz3 || (tz3=Rule.Timezone(-10800,"+03"));
-      if (ux>=-1230776624) // from 1931 
+      if (ux>=1666908000) // from 2022 Oct 28 0:00s
+         return tz3 || (tz3=Rule.Timezone(-10800,"+03/+04"));
+      if (ux>=-1230776624) // from 1931
          return tz2 || (tz2=TZrules.Jordan(-7200,"EE%sT"));
       return tz1 || (tz1=Rule.Timezone(-8624,"LMT"));
    }
@@ -1081,18 +1081,18 @@ class Asia_Almaty
    Rule.Timezone tz1,tz2,tz3,tz4,tz5;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1709229600) // from 2024 Mar  1  0:00 
-         return tz2 || (tz2=Rule.Timezone(-18000,"+05"));
-      if (ux>=1099166400) // from 2004 Oct 31  2:00s 
-         return tz5 || (tz5=Rule.Timezone(-21600,"+06"));
-      if (ux>=695768400) // from 1992 Jan 19  2:00s 
+      if (ux>=1709229600) // from 2024 Mar  1  0:00
+         return tz2 || (tz2=Rule.Timezone(-18000,"+05/+06"));
+      if (ux>=1099166400) // from 2004 Oct 31  2:00s
+         return tz5 || (tz5=Rule.Timezone(-21600,"+06/+07"));
+      if (ux>=695768400) // from 1992 Jan 19  2:00s
          return tz3 || (tz3=TZrules.RussiaAsia(-21600,"+06/+07"));
-      if (ux>=670363200) // from 1991 Mar 31  2:00s 
+      if (ux>=670363200) // from 1991 Mar 31  2:00s
          return tz4 || (tz4=TZrules.RussiaAsia(-18000,"+05/+06"));
-      if (ux>=-1247547600) // from 1930 Jun 21 
+      if (ux>=-1247547600) // from 1930 Jun 21
          return tz3 || (tz3=TZrules.RussiaAsia(-21600,"+06/+07"));
-      if (ux>=-1441170468) // from 1924 May  2 
-         return tz2 || (tz2=Rule.Timezone(-18000,"+05"));
+      if (ux>=-1441170468) // from 1924 May  2
+         return tz2 || (tz2=Rule.Timezone(-18000,"+05/+06"));
       // or Alma-Ata
       return tz1 || (tz1=Rule.Timezone(-18468,"LMT"));
    }
@@ -1101,31 +1101,31 @@ class Asia_Almaty
 class Asia_Qyzylorda
 {
    inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6,tz7;
+   Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6,tz7,tz8;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1545328800) // from 2018 Dec 21  0:00 
-         return tz3 || (tz3=Rule.Timezone(-18000,"+05"));
-      if (ux>=1099170000) // from 2004 Oct 31  2:00s 
-         return tz4 || (tz4=Rule.Timezone(-21600,"+06"));
-      if (ux>=701812800) // from 1992 Mar 29  2:00s 
-         return tz5 || (tz5=TZrules.RussiaAsia(-18000,"+05/+06"));
-      if (ux>=695768400) // from 1992 Jan 19  2:00s 
-         return tz7 || (tz7=TZrules.RussiaAsia(-21600,"+06/+07"));
-      if (ux>=686095200) // from 1991 Sep 29  2:00s 
-         return tz5 || (tz5=TZrules.RussiaAsia(-18000,"+05/+06"));
-      if (ux>=670366800) // from 1991 Mar 31  2:00s 
-         return tz6 || (tz6=TZrules.RussiaAsia(-14400,"+04/+05"));
-      if (ux>=386445600) // from 1982 Apr  1 
-         return tz5 || (tz5=TZrules.RussiaAsia(-18000,"+05/+06"));
-      if (ux>=370720800) // from 1981 Oct  1 
-         return tz4 || (tz4=Rule.Timezone(-21600,"+06"));
-      if (ux>=354913200) // from 1981 Apr  1 
-         return tz4 || (tz4=Rule.Timezone(-21600,"+06"));
-      if (ux>=-1247544000) // from 1930 Jun 21 
-         return tz3 || (tz3=Rule.Timezone(-18000,"+05"));
-      if (ux>=-1441167712) // from 1924 May  2 
-         return tz2 || (tz2=Rule.Timezone(-14400,"+04"));
+      if (ux>=1545328800) // from 2018 Dec 21  0:00
+         return tz3 || (tz3=Rule.Timezone(-18000,"+05/+06"));
+      if (ux>=1099170000) // from 2004 Oct 31  2:00s
+         return tz5 || (tz5=Rule.Timezone(-21600,"+06/+07"));
+      if (ux>=701812800) // from 1992 Mar 29  2:00s
+         return tz6 || (tz6=TZrules.RussiaAsia(-18000,"+05/+06"));
+      if (ux>=695768400) // from 1992 Jan 19  2:00s
+         return tz8 || (tz8=TZrules.RussiaAsia(-21600,"+06/+07"));
+      if (ux>=686095200) // from 1991 Sep 29  2:00s
+         return tz6 || (tz6=TZrules.RussiaAsia(-18000,"+05/+06"));
+      if (ux>=670366800) // from 1991 Mar 31  2:00s
+         return tz7 || (tz7=TZrules.RussiaAsia(-14400,"+04/+05"));
+      if (ux>=386445600) // from 1982 Apr  1
+         return tz6 || (tz6=TZrules.RussiaAsia(-18000,"+05/+06"));
+      if (ux>=370720800) // from 1981 Oct  1
+         return tz5 || (tz5=Rule.Timezone(-21600,"+06/+07"));
+      if (ux>=354913200) // from 1981 Apr  1
+         return tz4 || (tz4=Rule.Timezone(-21600,"+05/+06"));
+      if (ux>=-1247544000) // from 1930 Jun 21
+         return tz3 || (tz3=Rule.Timezone(-18000,"+05/+06"));
+      if (ux>=-1441167712) // from 1924 May  2
+         return tz2 || (tz2=Rule.Timezone(-14400,"+04/+05"));
       return tz1 || (tz1=Rule.Timezone(-15712,"LMT"));
    }
 }
@@ -1133,27 +1133,27 @@ class Asia_Qyzylorda
 class Asia_Qostanay
 {
    inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6;
+   Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6,tz7;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1709229600) // from 2024 Mar  1  0:00 
-         return tz3 || (tz3=Rule.Timezone(-18000,"+05"));
-      if (ux>=1099170000) // from 2004 Oct 31  2:00s 
-         return tz4 || (tz4=Rule.Timezone(-21600,"+06"));
-      if (ux>=695772000) // from 1992 Jan 19  2:00s 
-         return tz5 || (tz5=TZrules.RussiaAsia(-18000,"+05/+06"));
-      if (ux>=670366800) // from 1991 Mar 31  2:00s 
-         return tz6 || (tz6=TZrules.RussiaAsia(-14400,"+04/+05"));
-      if (ux>=386445600) // from 1982 Apr  1 
-         return tz5 || (tz5=TZrules.RussiaAsia(-18000,"+05/+06"));
-      if (ux>=370720800) // from 1981 Oct  1 
-         return tz4 || (tz4=Rule.Timezone(-21600,"+06"));
-      if (ux>=354913200) // from 1981 Apr  1 
-         return tz4 || (tz4=Rule.Timezone(-21600,"+06"));
-      if (ux>=-1247544000) // from 1930 Jun 21 
-         return tz3 || (tz3=Rule.Timezone(-18000,"+05"));
-      if (ux>=-1441167268) // from 1924 May  2 
-         return tz2 || (tz2=Rule.Timezone(-14400,"+04"));
+      if (ux>=1709229600) // from 2024 Mar  1  0:00
+         return tz3 || (tz3=Rule.Timezone(-18000,"+05/+06"));
+      if (ux>=1099170000) // from 2004 Oct 31  2:00s
+         return tz5 || (tz5=Rule.Timezone(-21600,"+06/+07"));
+      if (ux>=695772000) // from 1992 Jan 19  2:00s
+         return tz6 || (tz6=TZrules.RussiaAsia(-18000,"+05/+06"));
+      if (ux>=670366800) // from 1991 Mar 31  2:00s
+         return tz7 || (tz7=TZrules.RussiaAsia(-14400,"+04/+05"));
+      if (ux>=386445600) // from 1982 Apr  1
+         return tz6 || (tz6=TZrules.RussiaAsia(-18000,"+05/+06"));
+      if (ux>=370720800) // from 1981 Oct  1
+         return tz5 || (tz5=Rule.Timezone(-21600,"+06/+07"));
+      if (ux>=354913200) // from 1981 Apr  1
+         return tz4 || (tz4=Rule.Timezone(-21600,"+05/+06"));
+      if (ux>=-1247544000) // from 1930 Jun 21
+         return tz3 || (tz3=Rule.Timezone(-18000,"+05/+06"));
+      if (ux>=-1441167268) // from 1924 May  2
+         return tz2 || (tz2=Rule.Timezone(-14400,"+04/+05"));
       return tz1 || (tz1=Rule.Timezone(-15268,"LMT"));
    }
 }
@@ -1161,25 +1161,25 @@ class Asia_Qostanay
 class Asia_Aqtobe
 {
    inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6;
+   Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6,tz7;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1099170000) // from 2004 Oct 31  2:00s 
-         return tz3 || (tz3=Rule.Timezone(-18000,"+05"));
-      if (ux>=695772000) // from 1992 Jan 19  2:00s 
-         return tz5 || (tz5=TZrules.RussiaAsia(-18000,"+05/+06"));
-      if (ux>=670366800) // from 1991 Mar 31  2:00s 
-         return tz6 || (tz6=TZrules.RussiaAsia(-14400,"+04/+05"));
-      if (ux>=386445600) // from 1982 Apr  1 
-         return tz5 || (tz5=TZrules.RussiaAsia(-18000,"+05/+06"));
-      if (ux>=370720800) // from 1981 Oct  1 
-         return tz4 || (tz4=Rule.Timezone(-21600,"+06"));
-      if (ux>=354913200) // from 1981 Apr  1 
-         return tz4 || (tz4=Rule.Timezone(-21600,"+06"));
-      if (ux>=-1247544000) // from 1930 Jun 21 
-         return tz3 || (tz3=Rule.Timezone(-18000,"+05"));
-      if (ux>=-1441165720) // from 1924 May  2 
-         return tz2 || (tz2=Rule.Timezone(-14400,"+04"));
+      if (ux>=1099170000) // from 2004 Oct 31  2:00s
+         return tz3 || (tz3=Rule.Timezone(-18000,"+05/+06"));
+      if (ux>=695772000) // from 1992 Jan 19  2:00s
+         return tz6 || (tz6=TZrules.RussiaAsia(-18000,"+05/+06"));
+      if (ux>=670366800) // from 1991 Mar 31  2:00s
+         return tz7 || (tz7=TZrules.RussiaAsia(-14400,"+04/+05"));
+      if (ux>=386445600) // from 1982 Apr  1
+         return tz6 || (tz6=TZrules.RussiaAsia(-18000,"+05/+06"));
+      if (ux>=370720800) // from 1981 Oct  1
+         return tz5 || (tz5=Rule.Timezone(-21600,"+06/+07"));
+      if (ux>=354913200) // from 1981 Apr  1
+         return tz4 || (tz4=Rule.Timezone(-21600,"+05/+06"));
+      if (ux>=-1247544000) // from 1930 Jun 21
+         return tz3 || (tz3=Rule.Timezone(-18000,"+05/+06"));
+      if (ux>=-1441165720) // from 1924 May  2
+         return tz2 || (tz2=Rule.Timezone(-14400,"+04/+05"));
       return tz1 || (tz1=Rule.Timezone(-13720,"LMT"));
    }
 }
@@ -1190,22 +1190,22 @@ class Asia_Aqtau
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1099173600) // from 2004 Oct 31  2:00s 
-         return tz3 || (tz3=Rule.Timezone(-18000,"+05"));
-      if (ux>=780440400) // from 1994 Sep 25  2:00s 
+      if (ux>=1099173600) // from 2004 Oct 31  2:00s
+         return tz3 || (tz3=Rule.Timezone(-18000,"+05/+06"));
+      if (ux>=780440400) // from 1994 Sep 25  2:00s
          return tz6 || (tz6=TZrules.RussiaAsia(-14400,"+04/+05"));
-      if (ux>=695772000) // from 1992 Jan 19  2:00s 
+      if (ux>=695772000) // from 1992 Jan 19  2:00s
          return tz5 || (tz5=TZrules.RussiaAsia(-18000,"+05/+06"));
-      if (ux>=670366800) // from 1991 Mar 31  2:00s 
+      if (ux>=670366800) // from 1991 Mar 31  2:00s
          return tz6 || (tz6=TZrules.RussiaAsia(-14400,"+04/+05"));
-      if (ux>=386445600) // from 1982 Apr  1 
+      if (ux>=386445600) // from 1982 Apr  1
          return tz5 || (tz5=TZrules.RussiaAsia(-18000,"+05/+06"));
-      if (ux>=370724400) // from 1981 Oct  1 
-         return tz4 || (tz4=Rule.Timezone(-21600,"+06"));
-      if (ux>=-1247544000) // from 1930 Jun 21 
-         return tz3 || (tz3=Rule.Timezone(-18000,"+05"));
-      if (ux>=-1441164064) // from 1924 May  2 
-         return tz2 || (tz2=Rule.Timezone(-14400,"+04"));
+      if (ux>=370724400) // from 1981 Oct  1
+         return tz4 || (tz4=Rule.Timezone(-21600,"+06/+07"));
+      if (ux>=-1247544000) // from 1930 Jun 21
+         return tz3 || (tz3=Rule.Timezone(-18000,"+05/+06"));
+      if (ux>=-1441164064) // from 1924 May  2
+         return tz2 || (tz2=Rule.Timezone(-14400,"+04/+05"));
       return tz1 || (tz1=Rule.Timezone(-12064,"LMT"));
    }
 }
@@ -1216,22 +1216,22 @@ class Asia_Atyrau
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1099173600) // from 2004 Oct 31  2:00s 
-         return tz3 || (tz3=Rule.Timezone(-18000,"+05"));
-      if (ux>=922568400) // from 1999 Mar 28  2:00s 
+      if (ux>=1099173600) // from 2004 Oct 31  2:00s
+         return tz3 || (tz3=Rule.Timezone(-18000,"+05/+06"));
+      if (ux>=922568400) // from 1999 Mar 28  2:00s
          return tz6 || (tz6=TZrules.RussiaAsia(-14400,"+04/+05"));
-      if (ux>=695772000) // from 1992 Jan 19  2:00s 
+      if (ux>=695772000) // from 1992 Jan 19  2:00s
          return tz5 || (tz5=TZrules.RussiaAsia(-18000,"+05/+06"));
-      if (ux>=670366800) // from 1991 Mar 31  2:00s 
+      if (ux>=670366800) // from 1991 Mar 31  2:00s
          return tz6 || (tz6=TZrules.RussiaAsia(-14400,"+04/+05"));
-      if (ux>=386445600) // from 1982 Apr  1 
+      if (ux>=386445600) // from 1982 Apr  1
          return tz5 || (tz5=TZrules.RussiaAsia(-18000,"+05/+06"));
-      if (ux>=370724400) // from 1981 Oct  1 
-         return tz4 || (tz4=Rule.Timezone(-21600,"+06"));
-      if (ux>=-1247540400) // from 1930 Jun 21 
-         return tz3 || (tz3=Rule.Timezone(-18000,"+05"));
-      if (ux>=-1441164464) // from 1924 May  2 
-         return tz2 || (tz2=Rule.Timezone(-10800,"+03"));
+      if (ux>=370724400) // from 1981 Oct  1
+         return tz4 || (tz4=Rule.Timezone(-21600,"+06/+07"));
+      if (ux>=-1247540400) // from 1930 Jun 21
+         return tz3 || (tz3=Rule.Timezone(-18000,"+05/+06"));
+      if (ux>=-1441164464) // from 1924 May  2
+         return tz2 || (tz2=Rule.Timezone(-10800,"+03/+04"));
       return tz1 || (tz1=Rule.Timezone(-12464,"LMT"));
    }
 }
@@ -1239,27 +1239,27 @@ class Asia_Atyrau
 class Asia_Oral
 {
    inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6;
+   Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6,tz7;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1099173600) // from 2004 Oct 31  2:00s 
-         return tz3 || (tz3=Rule.Timezone(-18000,"+05"));
-      if (ux>=701816400) // from 1992 Mar 29  2:00s 
-         return tz6 || (tz6=TZrules.RussiaAsia(-14400,"+04/+05"));
-      if (ux>=695772000) // from 1992 Jan 19  2:00s 
-         return tz5 || (tz5=TZrules.RussiaAsia(-18000,"+05/+06"));
-      if (ux>=606862800) // from 1989 Mar 26  2:00s 
-         return tz6 || (tz6=TZrules.RussiaAsia(-14400,"+04/+05"));
-      if (ux>=386445600) // from 1982 Apr  1 
-         return tz5 || (tz5=TZrules.RussiaAsia(-18000,"+05/+06"));
-      if (ux>=370720800) // from 1981 Oct  1 
-         return tz4 || (tz4=Rule.Timezone(-21600,"+06"));
-      if (ux>=354913200) // from 1981 Apr  1 
-         return tz4 || (tz4=Rule.Timezone(-21600,"+06"));
-      if (ux>=-1247540400) // from 1930 Jun 21 
-         return tz3 || (tz3=Rule.Timezone(-18000,"+05"));
-      if (ux>=-1441164324) // from 1924 May  2 
-         return tz2 || (tz2=Rule.Timezone(-10800,"+03"));
+      if (ux>=1099173600) // from 2004 Oct 31  2:00s
+         return tz3 || (tz3=Rule.Timezone(-18000,"+05/+06"));
+      if (ux>=701816400) // from 1992 Mar 29  2:00s
+         return tz7 || (tz7=TZrules.RussiaAsia(-14400,"+04/+05"));
+      if (ux>=695772000) // from 1992 Jan 19  2:00s
+         return tz6 || (tz6=TZrules.RussiaAsia(-18000,"+05/+06"));
+      if (ux>=606862800) // from 1989 Mar 26  2:00s
+         return tz7 || (tz7=TZrules.RussiaAsia(-14400,"+04/+05"));
+      if (ux>=386445600) // from 1982 Apr  1
+         return tz6 || (tz6=TZrules.RussiaAsia(-18000,"+05/+06"));
+      if (ux>=370720800) // from 1981 Oct  1
+         return tz5 || (tz5=Rule.Timezone(-21600,"+06/+07"));
+      if (ux>=354913200) // from 1981 Apr  1
+         return tz4 || (tz4=Rule.Timezone(-21600,"+05/+06"));
+      if (ux>=-1247540400) // from 1930 Jun 21
+         return tz3 || (tz3=Rule.Timezone(-18000,"+05/+06"));
+      if (ux>=-1441164324) // from 1924 May  2
+         return tz2 || (tz2=Rule.Timezone(-10800,"+03/+04"));
       // or Ural'sk
       return tz1 || (tz1=Rule.Timezone(-12324,"LMT"));
    }
@@ -1271,16 +1271,16 @@ class Asia_Bishkek
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1123826400) // from 2005 Aug 12 
-         return tz6 || (tz6=Rule.Timezone(-21600,"+06"));
-      if (ux>=683625600) // from 1991 Aug 31  2:00 
+      if (ux>=1123826400) // from 2005 Aug 12
+         return tz6 || (tz6=Rule.Timezone(-21600,"+06/+07"));
+      if (ux>=683625600) // from 1991 Aug 31  2:00
          return tz5 || (tz5=TZrules.Kyrgyz(-18000,"+05/+06"));
-      if (ux>=670363200) // from 1991 Mar 31  2:00s 
+      if (ux>=670363200) // from 1991 Mar 31  2:00s
          return tz4 || (tz4=TZrules.RussiaAsia(-18000,"+05/+06"));
-      if (ux>=-1247547600) // from 1930 Jun 21 
+      if (ux>=-1247547600) // from 1930 Jun 21
          return tz3 || (tz3=TZrules.RussiaAsia(-21600,"+06/+07"));
-      if (ux>=-1441169904) // from 1924 May  2 
-         return tz2 || (tz2=Rule.Timezone(-18000,"+05"));
+      if (ux>=-1441169904) // from 1924 May  2
+         return tz2 || (tz2=Rule.Timezone(-18000,"+05/+06"));
       return tz1 || (tz1=Rule.Timezone(-17904,"LMT"));
    }
 }
@@ -1291,15 +1291,15 @@ class Asia_Seoul
    Rule.Timezone tz1,tz2,tz3,tz4,tz5;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-264871800) // from 1961 Aug 10 
+      if (ux>=-264871800) // from 1961 Aug 10
          return tz4 || (tz4=TZrules.ROK(-32400,"K%sT"));
-      if (ux>=-498063600) // from 1954 Mar 21 
+      if (ux>=-498063600) // from 1954 Mar 21
          return tz5 || (tz5=TZrules.ROK(-30600,"K%sT"));
-      if (ux>=-767350800) // from 1945 Sep  8 
+      if (ux>=-767350800) // from 1945 Sep  8
          return tz4 || (tz4=TZrules.ROK(-32400,"K%sT"));
-      if (ux>=-1830414600) // from 1912 Jan  1 
+      if (ux>=-1830414600) // from 1912 Jan  1
          return tz3 || (tz3=Rule.Timezone(-32400,"JST"));
-      if (ux>=-1948782472) // from 1908 Apr  1 
+      if (ux>=-1948782472) // from 1908 Apr  1
          return tz2 || (tz2=Rule.Timezone(-30600,"KST"));
       return tz1 || (tz1=Rule.Timezone(-30472,"LMT"));
    }
@@ -1312,15 +1312,15 @@ class Asia_Pyongyang
    Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1525446000) // from 2018 May  4 23:30 
+      if (ux>=1525446000) // from 2018 May  4 23:30
          return tz4 || (tz4=Rule.Timezone(-32400,"KST"));
-      if (ux>=1439564400) // from 2015 Aug 15 00:00 
+      if (ux>=1439564400) // from 2015 Aug 15 00:00
          return tz2 || (tz2=Rule.Timezone(-30600,"KST"));
-      if (ux>=-768646800) // from 1945 Aug 24 
+      if (ux>=-768646800) // from 1945 Aug 24
          return tz4 || (tz4=Rule.Timezone(-32400,"KST"));
-      if (ux>=-1830414600) // from 1912 Jan  1 
+      if (ux>=-1830414600) // from 1912 Jan  1
          return tz3 || (tz3=Rule.Timezone(-32400,"JST"));
-      if (ux>=-1948782180) // from 1908 Apr  1 
+      if (ux>=-1948782180) // from 1908 Apr  1
          return tz2 || (tz2=Rule.Timezone(-30600,"KST"));
       return tz1 || (tz1=Rule.Timezone(-30180,"LMT"));
    }
@@ -1332,7 +1332,7 @@ class Asia_Beirut
    Rule.Timezone tz1,tz2;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-2840149320) // from 1880 
+      if (ux>=-2840149320) // from 1880
          return tz2 || (tz2=TZrules.Lebanon(-7200,"EE%sT"));
       return tz1 || (tz1=Rule.Timezone(-8520,"LMT"));
    }
@@ -1344,14 +1344,14 @@ class Asia_Kuching
    Rule.Timezone tz1,tz2,tz3,tz4,tz5;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-767005200) // from 1945 Sep 12 
-         return tz5 || (tz5=Rule.Timezone(-28800,"+08"));
-      if (ux>=-879609600) // from 1942 Feb 16 
-         return tz4 || (tz4=Rule.Timezone(-32400,"+09"));
-      if (ux>=-1167636600) // from 1933 
-         return tz3 || (tz3=TZrules.NBorneo(-28800,"+08/+0820"));
-      if (ux>=-1383463280) // from 1926 Mar 
-         return tz2 || (tz2=Rule.Timezone(-27000,"+0730"));
+      if (ux>=-767005200) // from 1945 Sep 12
+         return tz5 || (tz5=Rule.Timezone(-28800,"+08/+09"));
+      if (ux>=-879609600) // from 1942 Feb 16
+         return tz4 || (tz4=Rule.Timezone(-32400,"+09/+10"));
+      if (ux>=-1167636600) // from 1933
+         return tz3 || (tz3=TZrules.NBorneo(-28800,"+08/+09"));
+      if (ux>=-1383463280) // from 1926 Mar
+         return tz2 || (tz2=Rule.Timezone(-27000,"+0730/+0830"));
       return tz1 || (tz1=Rule.Timezone(-26480,"LMT"));
    }
 }
@@ -1363,8 +1363,8 @@ class Indian_Maldives
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-315636840) // from 1960 
-         return tz3 || (tz3=Rule.Timezone(-18000,"+05"));
+      if (ux>=-315636840) // from 1960
+         return tz3 || (tz3=Rule.Timezone(-18000,"+05/+06"));
       if (ux>=-2840158440) // from 1880 Malé Mean Time
          return tz2 || (tz2=Rule.Timezone(-17640,"MMT"));
       // Malé
@@ -1379,10 +1379,10 @@ class Asia_Hovd
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=252439200) // from 1978 
+      if (ux>=252439200) // from 1978
          return tz3 || (tz3=TZrules.Mongol(-25200,"+07/+08"));
-      if (ux>=-2032927596) // from 1905 Aug 
-         return tz2 || (tz2=Rule.Timezone(-21600,"+06"));
+      if (ux>=-2032927596) // from 1905 Aug
+         return tz2 || (tz2=Rule.Timezone(-21600,"+06/+07"));
       return tz1 || (tz1=Rule.Timezone(-21996,"LMT"));
    }
 }
@@ -1393,32 +1393,15 @@ class Asia_Ulaanbaatar
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=252435600) // from 1978 
+      if (ux>=252435600) // from 1978
          return tz3 || (tz3=TZrules.Mongol(-28800,"+08/+09"));
-      if (ux>=-2032931252) // from 1905 Aug 
-         return tz2 || (tz2=Rule.Timezone(-25200,"+07"));
+      if (ux>=-2032931252) // from 1905 Aug
+         return tz2 || (tz2=Rule.Timezone(-25200,"+07/+08"));
       return tz1 || (tz1=Rule.Timezone(-25652,"LMT"));
    }
 }
+constant Asia_Choibalsan=Asia_Ulaanbaatar;
 constant Asia_Ulan_Bator=Asia_Ulaanbaatar;
-
-class Asia_Choibalsan
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4,tz5;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=1206954000) // from 2008 Mar 31 
-         return tz5 || (tz5=TZrules.Mongol(-28800,"+08/+09"));
-      if (ux>=417974400) // from 1983 Apr 
-         return tz4 || (tz4=TZrules.Mongol(-32400,"+09/+10"));
-      if (ux>=252435600) // from 1978 
-         return tz3 || (tz3=Rule.Timezone(-28800,"+08"));
-      if (ux>=-2032933080) // from 1905 Aug 
-         return tz2 || (tz2=Rule.Timezone(-25200,"+07"));
-      return tz1 || (tz1=Rule.Timezone(-27480,"LMT"));
-   }
-}
 
 class Asia_Kathmandu
 {
@@ -1426,10 +1409,10 @@ class Asia_Kathmandu
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=504901800) // from 1986 
-         return tz3 || (tz3=Rule.Timezone(-20700,"+0545"));
-      if (ux>=-1577943676) // from 1920 
-         return tz2 || (tz2=Rule.Timezone(-19800,"+0530"));
+      if (ux>=504901800) // from 1986
+         return tz3 || (tz3=Rule.Timezone(-20700,"+0545/+0645"));
+      if (ux>=-1577943676) // from 1920
+         return tz2 || (tz2=Rule.Timezone(-19800,"+0530/+0630"));
       return tz1 || (tz1=Rule.Timezone(-20476,"LMT"));
    }
 }
@@ -1443,14 +1426,14 @@ class Asia_Karachi
    {
       if (ux>=38775600) // from 1971 Mar 26 Pakistan Time
          return tz5 || (tz5=TZrules.Pakistan(-18000,"PK%sT"));
-      if (ux>=-576135000) // from 1951 Sep 30 
-         return tz4 || (tz4=Rule.Timezone(-18000,"+05"));
-      if (ux>=-764145000) // from 1945 Oct 15 
-         return tz2 || (tz2=Rule.Timezone(-19800,"+0530"));
-      if (ux>=-862637400) // from 1942 Sep 
-         return tz3 || (tz3=Rule.Timezone(-23400,"+0630"));
-      if (ux>=-1988166492) // from 1907 
-         return tz2 || (tz2=Rule.Timezone(-19800,"+0530"));
+      if (ux>=-576135000) // from 1951 Sep 30
+         return tz4 || (tz4=Rule.Timezone(-18000,"+05/+06"));
+      if (ux>=-764145000) // from 1945 Oct 15
+         return tz2 || (tz2=Rule.Timezone(-19800,"+0530/+0630"));
+      if (ux>=-862637400) // from 1942 Sep
+         return tz3 || (tz3=Rule.Timezone(-23400,"+0530/+0630"));
+      if (ux>=-1988166492) // from 1907
+         return tz2 || (tz2=Rule.Timezone(-19800,"+0530/+0630"));
       return tz1 || (tz1=Rule.Timezone(-16092,"LMT"));
    }
 }
@@ -1461,27 +1444,27 @@ class Asia_Gaza
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6,tz7;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1325368800) // from 2012 
+      if (ux>=1325368800) // from 2012
          return tz6 || (tz6=TZrules.Palestine(-7200,"EE%sT"));
-      if (ux>=1312164000) // from 2011 Aug  1 
+      if (ux>=1312164000) // from 2011 Aug  1
          return tz7 || (tz7=Rule.Timezone(-7200,"EET"));
-      if (ux>=1269640860) // from 2010 Mar 27  0:01 
+      if (ux>=1269640860) // from 2010 Mar 27  0:01
          return tz6 || (tz6=TZrules.Palestine(-7200,"EE%sT"));
-      if (ux>=1262311200) // from 2010 
+      if (ux>=1262311200) // from 2010
          return tz7 || (tz7=Rule.Timezone(-7200,"EET"));
-      if (ux>=1220220000) // from 2008 Sep 
+      if (ux>=1220220000) // from 2008 Sep
          return tz6 || (tz6=TZrules.Palestine(-7200,"EE%sT"));
-      if (ux>=1219978800) // from 2008 Aug 29  0:00 
+      if (ux>=1219978800) // from 2008 Aug 29  0:00
          return tz7 || (tz7=Rule.Timezone(-7200,"EET"));
-      if (ux>=915156000) // from 1999 
+      if (ux>=915156000) // from 1999
          return tz6 || (tz6=TZrules.Palestine(-7200,"EE%sT"));
-      if (ux>=820461600) // from 1996 
+      if (ux>=820461600) // from 1996
          return tz5 || (tz5=TZrules.Jordan(-7200,"EE%sT"));
-      if (ux>=-81291600) // from 1967 Jun  5 
+      if (ux>=-81291600) // from 1967 Jun  5
          return tz4 || (tz4=TZrules.Zion(-7200,"I%sT"));
-      if (ux>=-682639200) // from 1948 May 15 
+      if (ux>=-682639200) // from 1948 May 15
          return tz3 || (tz3=TZrules.EgyptAsia(-7200,"EE%sT"));
-      if (ux>=-2185409872) // from 1900 Oct 
+      if (ux>=-2185409872) // from 1900 Oct
          return tz2 || (tz2=TZrules.Zion(-7200,"EET/EEST"));
       return tz1 || (tz1=Rule.Timezone(-8272,"LMT"));
    }
@@ -1493,15 +1476,15 @@ class Asia_Hebron
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=915156000) // from 1999 
+      if (ux>=915156000) // from 1999
          return tz6 || (tz6=TZrules.Palestine(-7200,"EE%sT"));
-      if (ux>=820461600) // from 1996 
+      if (ux>=820461600) // from 1996
          return tz5 || (tz5=TZrules.Jordan(-7200,"EE%sT"));
-      if (ux>=-81291600) // from 1967 Jun  5 
+      if (ux>=-81291600) // from 1967 Jun  5
          return tz4 || (tz4=TZrules.Zion(-7200,"I%sT"));
-      if (ux>=-682639200) // from 1948 May 15 
+      if (ux>=-682639200) // from 1948 May 15
          return tz3 || (tz3=TZrules.EgyptAsia(-7200,"EE%sT"));
-      if (ux>=-2185410023) // from 1900 Oct 
+      if (ux>=-2185410023) // from 1900 Oct
          return tz2 || (tz2=TZrules.Zion(-7200,"EET/EEST"));
       return tz1 || (tz1=Rule.Timezone(-8423,"LMT"));
    }
@@ -1513,15 +1496,15 @@ class Asia_Manila
    Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-794221200) // from 1944 Nov 
+      if (ux>=-783594000) // from 1945 Mar  4
          return tz3 || (tz3=TZrules.Phil(-28800,"P%sT"));
-      if (ux>=-873216000) // from 1942 May 
+      if (ux>=-879951600) // from 1942 Feb 11 24:00
          return tz4 || (tz4=Rule.Timezone(-32400,"JST"));
-      if (ux>=-2229321840) // from 1899 May 11 
+      if (ux>=-2219083200) // from 1899 Sep  6  4:00u
          return tz3 || (tz3=TZrules.Phil(-28800,"P%sT"));
-      if (ux>=-3944621040) // from 1844 Dec 31 
-         return tz2 || (tz2=Rule.Timezone(-29040,"LMT"));
-      return tz1 || (tz1=Rule.Timezone(57360,"LMT"));
+      if (ux>=-3944621032) // from 1844 Dec 31
+         return tz2 || (tz2=Rule.Timezone(-29032,"LMT"));
+      return tz1 || (tz1=Rule.Timezone(57368,"LMT"));
    }
 }
 
@@ -1531,10 +1514,10 @@ class Asia_Qatar
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=76190400) // from 1972 Jun 
-         return tz3 || (tz3=Rule.Timezone(-10800,"+03"));
-      if (ux>=-1577935568) // from 1920 
-         return tz2 || (tz2=Rule.Timezone(-14400,"+04"));
+      if (ux>=76190400) // from 1972 Jun
+         return tz3 || (tz3=Rule.Timezone(-10800,"+03/+04"));
+      if (ux>=-1577935568) // from 1920
+         return tz2 || (tz2=Rule.Timezone(-14400,"+04/+05"));
       // Al Dawhah / Doha
       return tz1 || (tz1=Rule.Timezone(-12368,"LMT"));
    }
@@ -1547,8 +1530,8 @@ class Asia_Riyadh
    Rule.Timezone tz1,tz2;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-719636812) // from 1947 Mar 14 
-         return tz2 || (tz2=Rule.Timezone(-10800,"+03"));
+      if (ux>=-719636812) // from 1947 Mar 14
+         return tz2 || (tz2=Rule.Timezone(-10800,"+03/+04"));
       return tz1 || (tz1=Rule.Timezone(-11212,"LMT"));
    }
 }
@@ -1559,23 +1542,23 @@ constant Asia_Kuwait=Asia_Riyadh;
 class Asia_Singapore
 {
    inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6,tz7;
+   Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6,tz7,tz8;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=378662400) // from 1981 Dec 31 16:00u 
-         return tz7 || (tz7=Rule.Timezone(-28800,"+08"));
-      if (ux>=-767005200) // from 1945 Sep 12 
-         return tz5 || (tz5=Rule.Timezone(-27000,"+0730"));
-      if (ux>=-879665400) // from 1942 Feb 16 
-         return tz6 || (tz6=Rule.Timezone(-32400,"+09"));
-      if (ux>=-894180000) // from 1941 Sep  1 
-         return tz5 || (tz5=Rule.Timezone(-27000,"+0730"));
-      if (ux>=-1073028000) // from 1936 Jan  1 
-         return tz4 || (tz4=Rule.Timezone(-26400,"+0720"));
-      if (ux>=-1167634800) // from 1933 Jan  1 
-         return tz4 || (tz4=Rule.Timezone(-26400,"+0720"));
-      if (ux>=-2038200925) // from 1905 Jun  1 
-         return tz3 || (tz3=Rule.Timezone(-25200,"+07"));
+      if (ux>=378662400) // from 1981 Dec 31 16:00u
+         return tz8 || (tz8=Rule.Timezone(-28800,"+08/+09"));
+      if (ux>=-767005200) // from 1945 Sep 12
+         return tz6 || (tz6=Rule.Timezone(-27000,"+0730/+0830"));
+      if (ux>=-879665400) // from 1942 Feb 16
+         return tz7 || (tz7=Rule.Timezone(-32400,"+09/+10"));
+      if (ux>=-894180000) // from 1941 Sep  1
+         return tz6 || (tz6=Rule.Timezone(-27000,"+0730/+0830"));
+      if (ux>=-1073028000) // from 1936 Jan  1
+         return tz5 || (tz5=Rule.Timezone(-26400,"+0720/+0820"));
+      if (ux>=-1167634800) // from 1933 Jan  1
+         return tz4 || (tz4=Rule.Timezone(-26400,"+07/+08"));
+      if (ux>=-2038200925) // from 1905 Jun  1
+         return tz3 || (tz3=Rule.Timezone(-25200,"+07/+08"));
       if (ux>=-2177477725) // from 1901 Jan  1 Singapore M.T.
          return tz2 || (tz2=Rule.Timezone(-24925,"SMT"));
       return tz1 || (tz1=Rule.Timezone(-24925,"LMT"));
@@ -1587,23 +1570,23 @@ constant Asia_Kuala_Lumpur=Asia_Singapore;
 class Asia_Colombo
 {
    inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4,tz5;
+   Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6,tz7;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1145039400) // from 2006 Apr 15  0:30 
-         return tz3 || (tz3=Rule.Timezone(-19800,"+0530"));
-      if (ux>=846266400) // from 1996 Oct 26  0:30 
-         return tz4 || (tz4=Rule.Timezone(-21600,"+06"));
-      if (ux>=832962600) // from 1996 May 25  0:00 
-         return tz5 || (tz5=Rule.Timezone(-23400,"+0630"));
-      if (ux>=-764051400) // from 1945 Oct 16  2:00 
-         return tz3 || (tz3=Rule.Timezone(-19800,"+0530"));
-      if (ux>=-862639200) // from 1942 Sep 
-         return tz5 || (tz5=Rule.Timezone(-23400,"+0630"));
-      if (ux>=-883287000) // from 1942 Jan  5 
-         return tz4 || (tz4=Rule.Timezone(-21600,"+06"));
-      if (ux>=-2019705572) // from 1906 
-         return tz3 || (tz3=Rule.Timezone(-19800,"+0530"));
+      if (ux>=1145039400) // from 2006 Apr 15  0:30
+         return tz3 || (tz3=Rule.Timezone(-19800,"+0530/+0630"));
+      if (ux>=846266400) // from 1996 Oct 26  0:30
+         return tz7 || (tz7=Rule.Timezone(-21600,"+06/+07"));
+      if (ux>=832962600) // from 1996 May 25  0:00
+         return tz6 || (tz6=Rule.Timezone(-23400,"+0630/+0730"));
+      if (ux>=-764051400) // from 1945 Oct 16  2:00
+         return tz3 || (tz3=Rule.Timezone(-19800,"+0530/+0630"));
+      if (ux>=-862639200) // from 1942 Sep
+         return tz5 || (tz5=Rule.Timezone(-23400,"+0530/+0630"));
+      if (ux>=-883287000) // from 1942 Jan  5
+         return tz4 || (tz4=Rule.Timezone(-21600,"+0530/+0630"));
+      if (ux>=-2019705572) // from 1906
+         return tz3 || (tz3=Rule.Timezone(-19800,"+0530/+0630"));
       if (ux>=-2840159964) // from 1880 Moratuwa Mean Time
          return tz2 || (tz2=Rule.Timezone(-19172,"MMT"));
       return tz1 || (tz1=Rule.Timezone(-19164,"LMT"));
@@ -1616,9 +1599,9 @@ class Asia_Damascus
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1666922400) // from 2022 Oct 28 0:00 
-         return tz3 || (tz3=Rule.Timezone(-10800,"+03"));
-      if (ux>=-1577931912) // from 1920 
+      if (ux>=1666922400) // from 2022 Oct 28 0:00
+         return tz3 || (tz3=Rule.Timezone(-10800,"+03/+04"));
+      if (ux>=-1577931912) // from 1920
          return tz2 || (tz2=TZrules.Syria(-7200,"EE%sT"));
       // Dimashq
       return tz1 || (tz1=Rule.Timezone(-8712,"LMT"));
@@ -1631,14 +1614,14 @@ class Asia_Dushanbe
    Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=684363600) // from 1991 Sep  9  2:00s 
-         return tz2 || (tz2=Rule.Timezone(-18000,"+05"));
-      if (ux>=670363200) // from 1991 Mar 31  2:00s 
-         return tz4 || (tz4=Rule.Timezone(-21600,"+06"));
-      if (ux>=-1247547600) // from 1930 Jun 21 
+      if (ux>=684363600) // from 1991 Sep  9  2:00s
+         return tz2 || (tz2=Rule.Timezone(-18000,"+05/+06"));
+      if (ux>=670363200) // from 1991 Mar 31  2:00s
+         return tz4 || (tz4=Rule.Timezone(-21600,"+05/+06"));
+      if (ux>=-1247547600) // from 1930 Jun 21
          return tz3 || (tz3=TZrules.RussiaAsia(-21600,"+06/+07"));
-      if (ux>=-1441168512) // from 1924 May  2 
-         return tz2 || (tz2=Rule.Timezone(-18000,"+05"));
+      if (ux>=-1441168512) // from 1924 May  2
+         return tz2 || (tz2=Rule.Timezone(-18000,"+05/+06"));
       return tz1 || (tz1=Rule.Timezone(-16512,"LMT"));
    }
 }
@@ -1649,8 +1632,8 @@ class Asia_Bangkok
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-1570084924) // from 1920 Apr 
-         return tz3 || (tz3=Rule.Timezone(-25200,"+07"));
+      if (ux>=-1570084924) // from 1920 Apr
+         return tz3 || (tz3=Rule.Timezone(-25200,"+07/+08"));
       if (ux>=-2840164924) // from 1880 Bangkok Mean Time
          return tz2 || (tz2=Rule.Timezone(-24124,"BMT"));
       return tz1 || (tz1=Rule.Timezone(-24124,"LMT"));
@@ -1666,14 +1649,14 @@ class Asia_Ashgabat
    Rule.Timezone tz1,tz2,tz3,tz4,tz5;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=695800800) // from 1992 Jan 19  2:00 
-         return tz5 || (tz5=Rule.Timezone(-18000,"+05"));
-      if (ux>=670402800) // from 1991 Mar 31  2:00 
+      if (ux>=695800800) // from 1992 Jan 19  2:00
+         return tz5 || (tz5=Rule.Timezone(-18000,"+05/+06"));
+      if (ux>=670402800) // from 1991 Mar 31  2:00
          return tz4 || (tz4=TZrules.RussiaAsia(-14400,"+04/+05"));
-      if (ux>=-1247544000) // from 1930 Jun 21 
+      if (ux>=-1247544000) // from 1930 Jun 21
          return tz3 || (tz3=TZrules.RussiaAsia(-18000,"+05/+06"));
-      if (ux>=-1441166012) // from 1924 May  2 
-         return tz2 || (tz2=Rule.Timezone(-14400,"+04"));
+      if (ux>=-1441166012) // from 1924 May  2
+         return tz2 || (tz2=Rule.Timezone(-14400,"+04/+05"));
       // or Ashkhabad
       return tz1 || (tz1=Rule.Timezone(-14012,"LMT"));
    }
@@ -1686,8 +1669,8 @@ class Asia_Dubai
    Rule.Timezone tz1,tz2;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-1577936472) // from 1920 
-         return tz2 || (tz2=Rule.Timezone(-14400,"+04"));
+      if (ux>=-1577936472) // from 1920
+         return tz2 || (tz2=Rule.Timezone(-14400,"+04/+05"));
       return tz1 || (tz1=Rule.Timezone(-13272,"LMT"));
    }
 }
@@ -1698,21 +1681,21 @@ constant Indian_Reunion=Asia_Dubai;
 class Asia_Samarkand
 {
    inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4,tz5;
+   Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=694242000) // from 1992 
-         return tz3 || (tz3=Rule.Timezone(-18000,"+05"));
-      if (ux>=386445600) // from 1982 Apr  1 
-         return tz5 || (tz5=TZrules.RussiaAsia(-18000,"+05/+06"));
-      if (ux>=370720800) // from 1981 Oct  1 
-         return tz4 || (tz4=Rule.Timezone(-21600,"+06"));
-      if (ux>=354913200) // from 1981 Apr  1 
-         return tz4 || (tz4=Rule.Timezone(-21600,"+06"));
-      if (ux>=-1247544000) // from 1930 Jun 21 
-         return tz3 || (tz3=Rule.Timezone(-18000,"+05"));
-      if (ux>=-1441168073) // from 1924 May  2 
-         return tz2 || (tz2=Rule.Timezone(-14400,"+04"));
+      if (ux>=694242000) // from 1992
+         return tz3 || (tz3=Rule.Timezone(-18000,"+05/+06"));
+      if (ux>=386445600) // from 1982 Apr  1
+         return tz6 || (tz6=TZrules.RussiaAsia(-18000,"+05/+06"));
+      if (ux>=370720800) // from 1981 Oct  1
+         return tz5 || (tz5=Rule.Timezone(-21600,"+06/+07"));
+      if (ux>=354913200) // from 1981 Apr  1
+         return tz4 || (tz4=Rule.Timezone(-21600,"+05/+06"));
+      if (ux>=-1247544000) // from 1930 Jun 21
+         return tz3 || (tz3=Rule.Timezone(-18000,"+05/+06"));
+      if (ux>=-1441168073) // from 1924 May  2
+         return tz2 || (tz2=Rule.Timezone(-14400,"+04/+05"));
       return tz1 || (tz1=Rule.Timezone(-16073,"LMT"));
    }
 }
@@ -1723,14 +1706,14 @@ class Asia_Tashkent
    Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=694242000) // from 1992 
-         return tz2 || (tz2=Rule.Timezone(-18000,"+05"));
-      if (ux>=670406400) // from 1991 Mar 31  2:00 
+      if (ux>=694242000) // from 1992
+         return tz2 || (tz2=Rule.Timezone(-18000,"+05/+06"));
+      if (ux>=670406400) // from 1991 Mar 31  2:00
          return tz4 || (tz4=TZrules.RussiaAsia(-18000,"+05/+06"));
-      if (ux>=-1247547600) // from 1930 Jun 21 
+      if (ux>=-1247547600) // from 1930 Jun 21
          return tz3 || (tz3=TZrules.RussiaAsia(-21600,"+06/+07"));
-      if (ux>=-1441168631) // from 1924 May  2 
-         return tz2 || (tz2=Rule.Timezone(-18000,"+05"));
+      if (ux>=-1441168631) // from 1924 May  2
+         return tz2 || (tz2=Rule.Timezone(-18000,"+05/+06"));
       return tz1 || (tz1=Rule.Timezone(-16631,"LMT"));
    }
 }
@@ -1741,22 +1724,22 @@ class Asia_Ho_Chi_Minh
    Rule.Timezone tz1,tz2,tz3,tz4,tz5;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=171820800) // from 1975 Jun 13 
-         return tz3 || (tz3=Rule.Timezone(-25200,"+07"));
-      if (ux>=-315648000) // from 1959 Dec 31 23:00 
-         return tz4 || (tz4=Rule.Timezone(-28800,"+08"));
-      if (ux>=-457772400) // from 1955 Jul  1 01:00 
-         return tz3 || (tz3=Rule.Timezone(-25200,"+07"));
-      if (ux>=-718095600) // from 1947 Apr  1 
-         return tz4 || (tz4=Rule.Timezone(-28800,"+08"));
-      if (ux>=-767869200) // from 1945 Sep  1 24:00 
-         return tz3 || (tz3=Rule.Timezone(-25200,"+07"));
-      if (ux>=-782643600) // from 1945 Mar 14 23:00 
-         return tz5 || (tz5=Rule.Timezone(-32400,"+09"));
-      if (ux>=-852105600) // from 1942 Dec 31 23:00 
-         return tz4 || (tz4=Rule.Timezone(-28800,"+08"));
-      if (ux>=-1851577590) // from 1911 May  1 
-         return tz3 || (tz3=Rule.Timezone(-25200,"+07"));
+      if (ux>=171820800) // from 1975 Jun 13
+         return tz3 || (tz3=Rule.Timezone(-25200,"+07/+08"));
+      if (ux>=-315648000) // from 1959 Dec 31 23:00
+         return tz4 || (tz4=Rule.Timezone(-28800,"+08/+09"));
+      if (ux>=-457772400) // from 1955 Jul  1 01:00
+         return tz3 || (tz3=Rule.Timezone(-25200,"+07/+08"));
+      if (ux>=-718095600) // from 1947 Apr  1
+         return tz4 || (tz4=Rule.Timezone(-28800,"+08/+09"));
+      if (ux>=-767869200) // from 1945 Sep  1 24:00
+         return tz3 || (tz3=Rule.Timezone(-25200,"+07/+08"));
+      if (ux>=-782643600) // from 1945 Mar 14 23:00
+         return tz5 || (tz5=Rule.Timezone(-32400,"+09/+10"));
+      if (ux>=-852105600) // from 1942 Dec 31 23:00
+         return tz4 || (tz4=Rule.Timezone(-28800,"+08/+09"));
+      if (ux>=-1851577590) // from 1911 May  1
+         return tz3 || (tz3=Rule.Timezone(-25200,"+07/+08"));
       if (ux>=-2004073590) // from 1906 Jul  1 Phù Liễn MT
          return tz2 || (tz2=Rule.Timezone(-25590,"PLMT"));
       return tz1 || (tz1=Rule.Timezone(-25590,"LMT"));
@@ -1770,9 +1753,9 @@ class Australia_Darwin
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-2230189200) // from 1899 May 
+      if (ux>=-2230189200) // from 1899 May
          return tz3 || (tz3=TZrules.Aus(-34200,"AC%sT"));
-      if (ux>=-2364108200) // from 1895 Feb 
+      if (ux>=-2364108200) // from 1895 Feb
          return tz2 || (tz2=Rule.Timezone(-32400,"ACST"));
       return tz1 || (tz1=Rule.Timezone(-31400,"LMT"));
    }
@@ -1785,9 +1768,9 @@ class Australia_Perth
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-836409600) // from 1943 Jul 
+      if (ux>=-836409600) // from 1943 Jul
          return tz3 || (tz3=TZrules.AW(-28800,"AW%sT"));
-      if (ux>=-2337925404) // from 1895 Dec 
+      if (ux>=-2337925404) // from 1895 Dec
          return tz2 || (tz2=TZrules.Aus(-28800,"AW%sT"));
       return tz1 || (tz1=Rule.Timezone(-27804,"LMT"));
    }
@@ -1800,9 +1783,9 @@ class Australia_Eucla
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-836406900) // from 1943 Jul 
+      if (ux>=-836406900) // from 1943 Jul
          return tz3 || (tz3=TZrules.AW(-31500,"+0845/+0945"));
-      if (ux>=-2337928528) // from 1895 Dec 
+      if (ux>=-2337928528) // from 1895 Dec
          return tz2 || (tz2=TZrules.Aus(-31500,"+0845/+0945"));
       return tz1 || (tz1=Rule.Timezone(-30928,"LMT"));
    }
@@ -1814,9 +1797,9 @@ class Australia_Brisbane
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=31572000) // from 1971 
+      if (ux>=31572000) // from 1971
          return tz3 || (tz3=TZrules.AQ(-36000,"AE%sT"));
-      if (ux>=-2366791928) // from 1895 
+      if (ux>=-2366791928) // from 1895
          return tz2 || (tz2=TZrules.Aus(-36000,"AE%sT"));
       return tz1 || (tz1=Rule.Timezone(-36728,"LMT"));
    }
@@ -1829,11 +1812,11 @@ class Australia_Lindeman
    Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=709984800) // from 1992 Jul 
+      if (ux>=709984800) // from 1992 Jul
          return tz4 || (tz4=TZrules.Holiday(-36000,"AE%sT"));
-      if (ux>=31572000) // from 1971 
+      if (ux>=31572000) // from 1971
          return tz3 || (tz3=TZrules.AQ(-36000,"AE%sT"));
-      if (ux>=-2366790956) // from 1895 
+      if (ux>=-2366790956) // from 1895
          return tz2 || (tz2=TZrules.Aus(-36000,"AE%sT"));
       return tz1 || (tz1=Rule.Timezone(-35756,"LMT"));
    }
@@ -1845,11 +1828,11 @@ class Australia_Adelaide
    Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=31570200) // from 1971 
+      if (ux>=31570200) // from 1971
          return tz4 || (tz4=TZrules.AS(-34200,"AC%sT"));
-      if (ux>=-2230189200) // from 1899 May 
+      if (ux>=-2230189200) // from 1899 May
          return tz3 || (tz3=TZrules.Aus(-34200,"AC%sT"));
-      if (ux>=-2364110060) // from 1895 Feb 
+      if (ux>=-2364110060) // from 1895 Feb
          return tz2 || (tz2=Rule.Timezone(-32400,"ACST"));
       return tz1 || (tz1=Rule.Timezone(-33260,"LMT"));
    }
@@ -1862,11 +1845,11 @@ class Australia_Hobart
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-94658400) // from 1967 
+      if (ux>=-94658400) // from 1967
          return tz2 || (tz2=TZrules.AT(-36000,"AE%sT"));
-      if (ux>=-1583848800) // from 1919 Oct 24 
+      if (ux>=-1583848800) // from 1919 Oct 24
          return tz3 || (tz3=TZrules.Aus(-36000,"AE%sT"));
-      if (ux>=-2345795356) // from 1895 Sep 
+      if (ux>=-2345795356) // from 1895 Sep
          return tz2 || (tz2=TZrules.AT(-36000,"AE%sT"));
       return tz1 || (tz1=Rule.Timezone(-35356,"LMT"));
    }
@@ -1880,9 +1863,9 @@ class Australia_Melbourne
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=31572000) // from 1971 
+      if (ux>=31572000) // from 1971
          return tz3 || (tz3=TZrules.AV(-36000,"AE%sT"));
-      if (ux>=-2364111592) // from 1895 Feb 
+      if (ux>=-2364111592) // from 1895 Feb
          return tz2 || (tz2=TZrules.Aus(-36000,"AE%sT"));
       return tz1 || (tz1=Rule.Timezone(-34792,"LMT"));
    }
@@ -1895,9 +1878,9 @@ class Australia_Sydney
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=31572000) // from 1971 
+      if (ux>=31572000) // from 1971
          return tz3 || (tz3=TZrules.AN(-36000,"AE%sT"));
-      if (ux>=-2364113092) // from 1895 Feb 
+      if (ux>=-2364113092) // from 1895 Feb
          return tz2 || (tz2=TZrules.Aus(-36000,"AE%sT"));
       return tz1 || (tz1=Rule.Timezone(-36292,"LMT"));
    }
@@ -1912,15 +1895,15 @@ class Australia_Broken_Hill
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=946722600) // from 2000 
+      if (ux>=946722600) // from 2000
          return tz6 || (tz6=TZrules.AS(-34200,"AC%sT"));
-      if (ux>=31570200) // from 1971 
+      if (ux>=31570200) // from 1971
          return tz5 || (tz5=TZrules.AN(-34200,"AC%sT"));
-      if (ux>=-2230189200) // from 1899 May 
+      if (ux>=-2230189200) // from 1899 May
          return tz4 || (tz4=TZrules.Aus(-34200,"AC%sT"));
-      if (ux>=-2314951200) // from 1896 Aug 23 
+      if (ux>=-2314951200) // from 1896 Aug 23
          return tz3 || (tz3=Rule.Timezone(-32400,"ACST"));
-      if (ux>=-2364110748) // from 1895 Feb 
+      if (ux>=-2364110748) // from 1895 Feb
          return tz2 || (tz2=Rule.Timezone(-36000,"AEST"));
       return tz1 || (tz1=Rule.Timezone(-33948,"LMT"));
    }
@@ -1930,14 +1913,14 @@ constant Australia_Yancowinna=Australia_Broken_Hill;
 class Australia_Lord_Howe
 {
    inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4;
+   Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=489061800) // from 1985 Jul 
-         return tz4 || (tz4=TZrules.LH(-37800,"+1030/+11"));
-      if (ux>=352216800) // from 1981 Mar 
+      if (ux>=489061800) // from 1985 Jul
          return tz3 || (tz3=TZrules.LH(-37800,"+1030/+1130"));
-      if (ux>=-2364114980) // from 1895 Feb 
+      if (ux>=352216800) // from 1981 Mar
+         return tz3 || (tz3=TZrules.LH(-37800,"+1030/+1130"));
+      if (ux>=-2364114980) // from 1895 Feb
          return tz2 || (tz2=Rule.Timezone(-36000,"AEST"));
       return tz1 || (tz1=Rule.Timezone(-38180,"LMT"));
    }
@@ -1950,21 +1933,21 @@ class Antarctica_Macquarie
    Rule.Timezone tz1,tz2,tz3,tz4,tz5;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1293800400) // from 2011 
+      if (ux>=1293800400) // from 2011
          return tz5 || (tz5=TZrules.AT(-36000,"AE%sT"));
-      if (ux>=1262343600) // from 2010 
+      if (ux>=1262343600) // from 2010
          return tz3 || (tz3=Rule.Timezone(-39600,"AEDT"));
-      if (ux>=-94658400) // from 1967 
+      if (ux>=-94658400) // from 1967
          return tz5 || (tz5=TZrules.AT(-36000,"AE%sT"));
-      if (ux>=-687052800) // from 1948 Mar 25 
+      if (ux>=-687052800) // from 1948 Mar 25
          return tz4 || (tz4=TZrules.Aus(-36000,"AE%sT"));
-      if (ux>=-1601719200) // from 1919 Apr  1  0:00s 
+      if (ux>=-1601719200) // from 1919 Apr  1  0:00s
          return tz1 || (tz1=Rule.Timezone(0,"-00"));
-      if (ux>=-1669892400) // from 1917 Feb 
+      if (ux>=-1669892400) // from 1917 Feb
          return tz4 || (tz4=TZrules.Aus(-36000,"AE%sT"));
-      if (ux>=-1680508800) // from 1916 Oct  1  2:00 
+      if (ux>=-1680508800) // from 1916 Oct  1  2:00
          return tz3 || (tz3=Rule.Timezone(-39600,"AEDT"));
-      if (ux>=-2214259200) // from 1899 Nov 
+      if (ux>=-2214259200) // from 1899 Nov
          return tz2 || (tz2=Rule.Timezone(-36000,"AEST"));
       return tz1 || (tz1=Rule.Timezone(0,"-00"));
    }
@@ -1976,7 +1959,7 @@ class Pacific_Fiji
    Rule.Timezone tz1,tz2;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-1709985344) // from 1915 Oct 26 
+      if (ux>=-1709985344) // from 1915 Oct 26
          return tz2 || (tz2=TZrules.Fiji(-43200,"+12/+13"));
       // Suva
       return tz1 || (tz1=Rule.Timezone(-42944,"LMT"));
@@ -1989,8 +1972,8 @@ class Pacific_Gambier
    Rule.Timezone tz1,tz2;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-1806678012) // from 1912 Oct  1 
-         return tz2 || (tz2=Rule.Timezone(32400,"-09"));
+      if (ux>=-1806678012) // from 1912 Oct  1
+         return tz2 || (tz2=Rule.Timezone(32400,"-09/-08"));
       // Rikitea
       return tz1 || (tz1=Rule.Timezone(32388,"LMT"));
    }
@@ -2002,8 +1985,8 @@ class Pacific_Marquesas
    Rule.Timezone tz1,tz2;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-1806676920) // from 1912 Oct  1 
-         return tz2 || (tz2=Rule.Timezone(34200,"-0930"));
+      if (ux>=-1806676920) // from 1912 Oct  1
+         return tz2 || (tz2=Rule.Timezone(34200,"-0830/-0730"));
       return tz1 || (tz1=Rule.Timezone(33480,"LMT"));
    }
 }
@@ -2014,8 +1997,8 @@ class Pacific_Tahiti
    Rule.Timezone tz1,tz2;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-1806674504) // from 1912 Oct  1 
-         return tz2 || (tz2=Rule.Timezone(36000,"-10"));
+      if (ux>=-1806674504) // from 1912 Oct  1
+         return tz2 || (tz2=Rule.Timezone(36000,"-10/-09"));
       // Papeete
       return tz1 || (tz1=Rule.Timezone(35896,"LMT"));
    }
@@ -2029,10 +2012,10 @@ class Pacific_Guam
    {
       if (ux>=977565600) // from 2000 Dec 23 Chamorro Standard Time
          return tz6 || (tz6=Rule.Timezone(-36000,"ChST"));
-      if (ux>=-802256400) // from 1944 Jul 31 
+      if (ux>=-802256400) // from 1944 Jul 31
          return tz5 || (tz5=TZrules.Guam(-36000,"G%sT"));
-      if (ux>=-885549600) // from 1941 Dec 10 
-         return tz4 || (tz4=Rule.Timezone(-32400,"+09"));
+      if (ux>=-885549600) // from 1941 Dec 10
+         return tz4 || (tz4=Rule.Timezone(-32400,"+09/+10"));
       if (ux>=-2177487540) // from 1901 Guam
          return tz3 || (tz3=Rule.Timezone(-36000,"GST"));
       if (ux>=-3944626740) // from 1844 Dec 31 Agana
@@ -2048,8 +2031,8 @@ class Pacific_Tarawa
    Rule.Timezone tz1,tz2;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-2177494324) // from 1901 
-         return tz2 || (tz2=Rule.Timezone(-43200,"+12"));
+      if (ux>=-2177494324) // from 1901
+         return tz2 || (tz2=Rule.Timezone(-43200,"+12/+13"));
       // Bairiki
       return tz1 || (tz1=Rule.Timezone(-41524,"LMT"));
    }
@@ -2065,12 +2048,12 @@ class Pacific_Kanton
    Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=788871600) // from 1994 Dec 31 
-         return tz4 || (tz4=Rule.Timezone(-46800,"+13"));
-      if (ux>=307627200) // from 1979 Oct 
-         return tz3 || (tz3=Rule.Timezone(39600,"-11"));
-      if (ux>=-1020470400) // from 1937 Aug 31 
-         return tz2 || (tz2=Rule.Timezone(43200,"-12"));
+      if (ux>=788871600) // from 1994 Dec 31
+         return tz4 || (tz4=Rule.Timezone(-46800,"+13/+14"));
+      if (ux>=307627200) // from 1979 Oct
+         return tz3 || (tz3=Rule.Timezone(39600,"-11/-10"));
+      if (ux>=-1020470400) // from 1937 Aug 31
+         return tz2 || (tz2=Rule.Timezone(43200,"-12/-11"));
       return tz1 || (tz1=Rule.Timezone(0,"-00"));
    }
 }
@@ -2082,12 +2065,12 @@ class Pacific_Kiritimati
    Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=788868000) // from 1994 Dec 31 
-         return tz4 || (tz4=Rule.Timezone(-50400,"+14"));
-      if (ux>=307622400) // from 1979 Oct 
-         return tz3 || (tz3=Rule.Timezone(36000,"-10"));
-      if (ux>=-2177415040) // from 1901 
-         return tz2 || (tz2=Rule.Timezone(38400,"-1040"));
+      if (ux>=788868000) // from 1994 Dec 31
+         return tz4 || (tz4=Rule.Timezone(-50400,"+14/+15"));
+      if (ux>=307622400) // from 1979 Oct
+         return tz3 || (tz3=Rule.Timezone(36000,"-10/-09"));
+      if (ux>=-2177415040) // from 1901
+         return tz2 || (tz2=Rule.Timezone(38400,"-0940/-0840"));
       return tz1 || (tz1=Rule.Timezone(37760,"LMT"));
    }
 }
@@ -2098,18 +2081,18 @@ class Pacific_Kwajalein
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=745934400) // from 1993 Aug 20 24:00 
-         return tz6 || (tz6=Rule.Timezone(-43200,"+12"));
-      if (ux>=-7988400) // from 1969 Oct 
-         return tz5 || (tz5=Rule.Timezone(43200,"-12"));
-      if (ux>=-817462800) // from 1944 Feb  6 
-         return tz2 || (tz2=Rule.Timezone(-39600,"+11"));
-      if (ux>=-907408800) // from 1941 Apr  1 
-         return tz4 || (tz4=Rule.Timezone(-32400,"+09"));
-      if (ux>=-1041418800) // from 1937 
-         return tz3 || (tz3=Rule.Timezone(-36000,"+10"));
-      if (ux>=-2177492960) // from 1901 
-         return tz2 || (tz2=Rule.Timezone(-39600,"+11"));
+      if (ux>=745934400) // from 1993 Aug 20 24:00
+         return tz6 || (tz6=Rule.Timezone(-43200,"+12/+13"));
+      if (ux>=-7988400) // from 1969 Oct
+         return tz5 || (tz5=Rule.Timezone(43200,"-12/-11"));
+      if (ux>=-817462800) // from 1944 Feb  6
+         return tz2 || (tz2=Rule.Timezone(-39600,"+11/+12"));
+      if (ux>=-907408800) // from 1941 Apr  1
+         return tz4 || (tz4=Rule.Timezone(-32400,"+09/+10"));
+      if (ux>=-1041418800) // from 1937
+         return tz3 || (tz3=Rule.Timezone(-36000,"+10/+11"));
+      if (ux>=-2177492960) // from 1901
+         return tz2 || (tz2=Rule.Timezone(-39600,"+11/+12"));
       return tz1 || (tz1=Rule.Timezone(-40160,"LMT"));
    }
 }
@@ -2121,23 +2104,23 @@ class Pacific_Kosrae
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=915105600) // from 1999 
-         return tz3 || (tz3=Rule.Timezone(-39600,"+11"));
-      if (ux>=-7988400) // from 1969 Oct 
-         return tz6 || (tz6=Rule.Timezone(-43200,"+12"));
-      if (ux>=-770634000) // from 1945 Aug 
-         return tz3 || (tz3=Rule.Timezone(-39600,"+11"));
-      if (ux>=-907408800) // from 1941 Apr  1 
-         return tz4 || (tz4=Rule.Timezone(-32400,"+09"));
-      if (ux>=-1041418800) // from 1937 
-         return tz5 || (tz5=Rule.Timezone(-36000,"+10"));
-      if (ux>=-1606813200) // from 1919 Feb  1 
-         return tz3 || (tz3=Rule.Timezone(-39600,"+11"));
-      if (ux>=-1743678000) // from 1914 Oct 
-         return tz4 || (tz4=Rule.Timezone(-32400,"+09"));
-      if (ux>=-2177491916) // from 1901 
-         return tz3 || (tz3=Rule.Timezone(-39600,"+11"));
-      if (ux>=-3944631116) // from 1844 Dec 31 
+      if (ux>=915105600) // from 1999
+         return tz3 || (tz3=Rule.Timezone(-39600,"+11/+12"));
+      if (ux>=-7988400) // from 1969 Oct
+         return tz6 || (tz6=Rule.Timezone(-43200,"+12/+13"));
+      if (ux>=-770634000) // from 1945 Aug
+         return tz3 || (tz3=Rule.Timezone(-39600,"+11/+12"));
+      if (ux>=-907408800) // from 1941 Apr  1
+         return tz4 || (tz4=Rule.Timezone(-32400,"+09/+10"));
+      if (ux>=-1041418800) // from 1937
+         return tz5 || (tz5=Rule.Timezone(-36000,"+10/+11"));
+      if (ux>=-1606813200) // from 1919 Feb  1
+         return tz3 || (tz3=Rule.Timezone(-39600,"+11/+12"));
+      if (ux>=-1743678000) // from 1914 Oct
+         return tz4 || (tz4=Rule.Timezone(-32400,"+09/+10"));
+      if (ux>=-2177491916) // from 1901
+         return tz3 || (tz3=Rule.Timezone(-39600,"+11/+12"));
+      if (ux>=-3944631116) // from 1844 Dec 31
          return tz2 || (tz2=Rule.Timezone(-39116,"LMT"));
       return tz1 || (tz1=Rule.Timezone(47284,"LMT"));
    }
@@ -2149,14 +2132,14 @@ class Pacific_Nauru
    Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=287418600) // from 1979 Feb 10  2:00 
-         return tz4 || (tz4=Rule.Timezone(-43200,"+12"));
-      if (ux>=-767350800) // from 1945 Sep  8 
-         return tz2 || (tz2=Rule.Timezone(-41400,"+1130"));
-      if (ux>=-862918200) // from 1942 Aug 29 
-         return tz3 || (tz3=Rule.Timezone(-32400,"+09"));
-      if (ux>=-1545131260) // from 1921 Jan 15 
-         return tz2 || (tz2=Rule.Timezone(-41400,"+1130"));
+      if (ux>=287418600) // from 1979 Feb 10  2:00
+         return tz4 || (tz4=Rule.Timezone(-43200,"+12/+13"));
+      if (ux>=-767350800) // from 1945 Sep  8
+         return tz2 || (tz2=Rule.Timezone(-41400,"+1130/+1230"));
+      if (ux>=-862918200) // from 1942 Aug 29
+         return tz3 || (tz3=Rule.Timezone(-32400,"+09/+10"));
+      if (ux>=-1545131260) // from 1921 Jan 15
+         return tz2 || (tz2=Rule.Timezone(-41400,"+1130/+1230"));
       // Uaobe
       return tz1 || (tz1=Rule.Timezone(-40060,"LMT"));
    }
@@ -2168,7 +2151,7 @@ class Pacific_Noumea
    Rule.Timezone tz1,tz2;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-1829387148) // from 1912 Jan 13 
+      if (ux>=-1829387148) // from 1912 Jan 13
          return tz2 || (tz2=TZrules.NC(-39600,"+11/+12"));
       // Nouméa
       return tz1 || (tz1=Rule.Timezone(-39948,"LMT"));
@@ -2181,9 +2164,9 @@ class Pacific_Auckland
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-757341000) // from 1946 Jan  1 
+      if (ux>=-757341000) // from 1946 Jan  1
          return tz3 || (tz3=TZrules.NZ(-43200,"NZ%sT"));
-      if (ux>=-3192435544) // from 1868 Nov  2 
+      if (ux>=-3192435544) // from 1868 Nov  2
          return tz2 || (tz2=TZrules.NZ(-41400,"NZ%sT"));
       return tz1 || (tz1=Rule.Timezone(-41944,"LMT"));
    }
@@ -2198,10 +2181,10 @@ class Pacific_Chatham
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-757426500) // from 1946 Jan  1 
+      if (ux>=-757426500) // from 1946 Jan  1
          return tz3 || (tz3=TZrules.Chatham(-45900,"+1245/+1345"));
-      if (ux>=-3192437628) // from 1868 Nov  2 
-         return tz2 || (tz2=Rule.Timezone(-44100,"+1215"));
+      if (ux>=-3192437628) // from 1868 Nov  2
+         return tz2 || (tz2=Rule.Timezone(-44100,"+1215/+1315"));
       return tz1 || (tz1=Rule.Timezone(-44028,"LMT"));
    }
 }
@@ -2213,11 +2196,11 @@ class Pacific_Rarotonga
    Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=279714600) // from 1978 Nov 12 
-         return tz4 || (tz4=TZrules.Cook(36000,"-10/-0930"));
-      if (ux>=-543072056) // from 1952 Oct 16 
-         return tz3 || (tz3=Rule.Timezone(37800,"-1030"));
-      if (ux>=-2209555256) // from 1899 Dec 26 
+      if (ux>=279714600) // from 1978 Nov 12
+         return tz4 || (tz4=TZrules.Cook(36000,"-10/-09"));
+      if (ux>=-543072056) // from 1952 Oct 16
+         return tz3 || (tz3=Rule.Timezone(37800,"-0930/-0830"));
+      if (ux>=-2209555256) // from 1899 Dec 26
          return tz2 || (tz2=Rule.Timezone(38344,"LMT"));
       // Avarua
       return tz1 || (tz1=Rule.Timezone(-48056,"LMT"));
@@ -2230,10 +2213,10 @@ class Pacific_Niue
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-173623200) // from 1964 Jul 
-         return tz3 || (tz3=Rule.Timezone(39600,"-11"));
-      if (ux>=-543069620) // from 1952 Oct 16 
-         return tz2 || (tz2=Rule.Timezone(40800,"-1120"));
+      if (ux>=-173623200) // from 1964 Jul
+         return tz3 || (tz3=Rule.Timezone(39600,"-11/-10"));
+      if (ux>=-543069620) // from 1952 Oct 16
+         return tz2 || (tz2=Rule.Timezone(40800,"-1020/-0920"));
       // Alofi
       return tz1 || (tz1=Rule.Timezone(40780,"LMT"));
    }
@@ -2245,18 +2228,18 @@ class Pacific_Norfolk
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1561899600) // from 2019 Jul 
+      if (ux>=1561899600) // from 2019 Jul
          return tz6 || (tz6=TZrules.AN(-39600,"+11/+12"));
-      if (ux>=1443882600) // from 2015 Oct  4 02:00s 
-         return tz5 || (tz5=Rule.Timezone(-39600,"+11"));
-      if (ux>=162916200) // from 1975 Mar  2 02:00s 
-         return tz3 || (tz3=Rule.Timezone(-41400,"+1130"));
-      if (ux>=152029800) // from 1974 Oct 27 02:00s 
-         return tz4 || (tz4=Rule.Timezone(-45000,"+1230"));
-      if (ux>=-599656320) // from 1951 
-         return tz3 || (tz3=Rule.Timezone(-41400,"+1130"));
-      if (ux>=-2177493112) // from 1901 
-         return tz2 || (tz2=Rule.Timezone(-40320,"+1112"));
+      if (ux>=1443882600) // from 2015 Oct  4 02:00s
+         return tz5 || (tz5=Rule.Timezone(-39600,"+11/+12"));
+      if (ux>=162916200) // from 1975 Mar  2 02:00s
+         return tz3 || (tz3=Rule.Timezone(-41400,"+1130/+1230"));
+      if (ux>=152029800) // from 1974 Oct 27 02:00s
+         return tz4 || (tz4=Rule.Timezone(-45000,"+1130/+1230"));
+      if (ux>=-599656320) // from 1951
+         return tz3 || (tz3=Rule.Timezone(-41400,"+1130/+1230"));
+      if (ux>=-2177493112) // from 1901
+         return tz2 || (tz2=Rule.Timezone(-40320,"+1112/+1212"));
       // Kingston
       return tz1 || (tz1=Rule.Timezone(-40312,"LMT"));
    }
@@ -2268,9 +2251,9 @@ class Pacific_Palau
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-2177485076) // from 1901 
-         return tz3 || (tz3=Rule.Timezone(-32400,"+09"));
-      if (ux>=-3944624276) // from 1844 Dec 31 
+      if (ux>=-2177485076) // from 1901
+         return tz3 || (tz3=Rule.Timezone(-32400,"+09/+10"));
+      if (ux>=-3944624276) // from 1844 Dec 31
          return tz2 || (tz2=Rule.Timezone(-32276,"LMT"));
       // Koror
       return tz1 || (tz1=Rule.Timezone(54124,"LMT"));
@@ -2283,8 +2266,8 @@ class Pacific_Port_Moresby
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-2366790512) // from 1895 
-         return tz3 || (tz3=Rule.Timezone(-36000,"+10"));
+      if (ux>=-2366790512) // from 1895
+         return tz3 || (tz3=Rule.Timezone(-36000,"+10/+11"));
       if (ux>=-2840176120) // from 1880 Port Moresby Mean Time
          return tz2 || (tz2=Rule.Timezone(-35312,"PMMT"));
       return tz1 || (tz1=Rule.Timezone(-35320,"LMT"));
@@ -2301,15 +2284,15 @@ class Pacific_Bougainville
    Rule.Timezone tz1,tz2,tz3,tz4,tz5;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1419696000) // from 2014 Dec 28  2:00 
-         return tz5 || (tz5=Rule.Timezone(-39600,"+11"));
-      if (ux>=-768906000) // from 1945 Aug 21 
-         return tz3 || (tz3=Rule.Timezone(-36000,"+10"));
-      if (ux>=-868010400) // from 1942 Jul 
-         return tz4 || (tz4=Rule.Timezone(-32400,"+09"));
-      if (ux>=-2366790512) // from 1895 
-         return tz3 || (tz3=Rule.Timezone(-36000,"+10"));
-      if (ux>=-2840178136) // from 1880 
+      if (ux>=1419696000) // from 2014 Dec 28  2:00
+         return tz5 || (tz5=Rule.Timezone(-39600,"+11/+12"));
+      if (ux>=-768906000) // from 1945 Aug 21
+         return tz3 || (tz3=Rule.Timezone(-36000,"+10/+11"));
+      if (ux>=-868010400) // from 1942 Jul
+         return tz4 || (tz4=Rule.Timezone(-32400,"+09/+10"));
+      if (ux>=-2366790512) // from 1895
+         return tz3 || (tz3=Rule.Timezone(-36000,"+10/+11"));
+      if (ux>=-2840178136) // from 1880
          return tz2 || (tz2=Rule.Timezone(-35312,"PMMT"));
       return tz1 || (tz1=Rule.Timezone(-37336,"LMT"));
    }
@@ -2321,10 +2304,10 @@ class Pacific_Pitcairn
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=893665800) // from 1998 Apr 27  0:00 
-         return tz3 || (tz3=Rule.Timezone(28800,"-08"));
-      if (ux>=-2177421580) // from 1901 
-         return tz2 || (tz2=Rule.Timezone(30600,"-0830"));
+      if (ux>=893665800) // from 1998 Apr 27  0:00
+         return tz3 || (tz3=Rule.Timezone(28800,"-08/-07"));
+      if (ux>=-2177421580) // from 1901
+         return tz2 || (tz2=Rule.Timezone(30600,"-0730/-0630"));
       // Adamstown
       return tz1 || (tz1=Rule.Timezone(31220,"LMT"));
    }
@@ -2338,7 +2321,7 @@ class Pacific_Pago_Pago
    {
       if (ux>=-1861879032) // from 1911 S=Samoa
          return tz3 || (tz3=Rule.Timezone(39600,"SST"));
-      if (ux>=-2445424632) // from 1892 Jul  5 
+      if (ux>=-2445424632) // from 1892 Jul  5
          return tz2 || (tz2=Rule.Timezone(40968,"LMT"));
       return tz1 || (tz1=Rule.Timezone(-45432,"LMT"));
    }
@@ -2353,13 +2336,13 @@ class Pacific_Apia
    Rule.Timezone tz1,tz2,tz3,tz4,tz5;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1325167200) // from 2011 Dec 29 24:00 
+      if (ux>=1325167200) // from 2011 Dec 29 24:00
          return tz5 || (tz5=TZrules.WS(-46800,"+13/+14"));
-      if (ux>=-631110600) // from 1950 
+      if (ux>=-631110600) // from 1950
          return tz4 || (tz4=TZrules.WS(39600,"-11/-10"));
-      if (ux>=-1861878784) // from 1911 
-         return tz3 || (tz3=Rule.Timezone(41400,"-1130"));
-      if (ux>=-2445424384) // from 1892 Jul  5 
+      if (ux>=-1861878784) // from 1911
+         return tz3 || (tz3=Rule.Timezone(41400,"-1030/-0930"));
+      if (ux>=-2445424384) // from 1892 Jul  5
          return tz2 || (tz2=Rule.Timezone(41216,"LMT"));
       return tz1 || (tz1=Rule.Timezone(-45184,"LMT"));
    }
@@ -2371,8 +2354,8 @@ class Pacific_Guadalcanal
    Rule.Timezone tz1,tz2;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-1806748788) // from 1912 Oct  1 
-         return tz2 || (tz2=Rule.Timezone(-39600,"+11"));
+      if (ux>=-1806748788) // from 1912 Oct  1
+         return tz2 || (tz2=Rule.Timezone(-39600,"+11/+12"));
       // Honiara
       return tz1 || (tz1=Rule.Timezone(-38388,"LMT"));
    }
@@ -2386,10 +2369,10 @@ class Pacific_Fakaofo
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1325242800) // from 2011 Dec 30 
-         return tz3 || (tz3=Rule.Timezone(-46800,"+13"));
-      if (ux>=-2177411704) // from 1901 
-         return tz2 || (tz2=Rule.Timezone(39600,"-11"));
+      if (ux>=1325242800) // from 2011 Dec 30
+         return tz3 || (tz3=Rule.Timezone(-46800,"+13/+14"));
+      if (ux>=-2177411704) // from 1901
+         return tz2 || (tz2=Rule.Timezone(39600,"-11/-10"));
       return tz1 || (tz1=Rule.Timezone(41096,"LMT"));
    }
 }
@@ -2400,12 +2383,12 @@ class Pacific_Tongatapu
    Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=915102000) // from 1999 
+      if (ux>=915102000) // from 1999
          return tz4 || (tz4=TZrules.Tonga(-46800,"+13/+14"));
-      if (ux>=-284041200) // from 1961 
-         return tz3 || (tz3=Rule.Timezone(-46800,"+13"));
-      if (ux>=-767189952) // from 1945 Sep 10 
-         return tz2 || (tz2=Rule.Timezone(-44400,"+1220"));
+      if (ux>=-284041200) // from 1961
+         return tz3 || (tz3=Rule.Timezone(-46800,"+13/+14"));
+      if (ux>=-767189952) // from 1945 Sep 10
+         return tz2 || (tz2=Rule.Timezone(-44400,"+1220/+1320"));
       return tz1 || (tz1=Rule.Timezone(-44352,"LMT"));
    }
 }
@@ -2416,1923 +2399,10 @@ class Pacific_Efate
    Rule.Timezone tz1,tz2;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-1829387596) // from 1912 Jan 13 
+      if (ux>=-1829387596) // from 1912 Jan 13
          return tz2 || (tz2=TZrules.Vanuatu(-39600,"+11/+12"));
       // Vila
       return tz1 || (tz1=Rule.Timezone(-40396,"LMT"));
-   }
-}
-
-class Africa_Accra
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-756952200) // from 1946 Jan  6 
-         return tz2 || (tz2=TZrules.Ghana(0,"%s"));
-      if (ux>=-880329600) // from 1942 Feb  8 
-         return tz3 || (tz3=Rule.Timezone(-1800,"+0030"));
-      if (ux>=-1709337548) // from 1915 Nov  2 
-         return tz2 || (tz2=TZrules.Ghana(0,"%s"));
-      return tz1 || (tz1=Rule.Timezone(52,"LMT"));
-   }
-}
-
-class Africa_Addis_Ababa
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-1062210920) // from 1936 May  5 
-         return tz3 || (tz3=Rule.Timezone(-10800,"EAT"));
-      if (ux>=-3155682888) // from 1870 Adis Dera MT
-         return tz2 || (tz2=Rule.Timezone(-9320,"ADMT"));
-      return tz1 || (tz1=Rule.Timezone(-9288,"LMT"));
-   }
-}
-
-class Africa_Asmara
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-1062210920) // from 1936 May  5 
-         return tz4 || (tz4=Rule.Timezone(-10800,"EAT"));
-      if (ux>=-2524530932) // from 1890 Adis Dera MT
-         return tz3 || (tz3=Rule.Timezone(-9320,"ADMT"));
-      if (ux>=-3155682932) // from 1870 Asmara Mean Time
-         return tz2 || (tz2=Rule.Timezone(-9332,"AMT"));
-      return tz1 || (tz1=Rule.Timezone(-9332,"LMT"));
-   }
-}
-constant Africa_Asmera=Africa_Asmara;
-
-class Africa_Bamako
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-300841200) // from 1960 Jun 20 
-         return tz2 || (tz2=Rule.Timezone(0,"GMT"));
-      if (ux>=-1131235200) // from 1934 Feb 26 
-         return tz3 || (tz3=Rule.Timezone(3600,"-01"));
-      if (ux>=-1830382080) // from 1912 
-         return tz2 || (tz2=Rule.Timezone(0,"GMT"));
-      return tz1 || (tz1=Rule.Timezone(1920,"LMT"));
-   }
-}
-
-class Africa_Bangui
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-1830388460) // from 1912 
-         return tz2 || (tz2=Rule.Timezone(-3600,"WAT"));
-      return tz1 || (tz1=Rule.Timezone(-4460,"LMT"));
-   }
-}
-
-class Africa_Banjul
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-880930800) // from 1942 Feb  1  0:00 
-         return tz4 || (tz4=Rule.Timezone(0,"GMT"));
-      if (ux>=-1159829604) // from 1933 Apr  1 
-         return tz3 || (tz3=Rule.Timezone(3600,"-01"));
-      if (ux>=-1830380004) // from 1912 Banjul Mean Time
-         return tz2 || (tz2=Rule.Timezone(3996,"BMT"));
-      return tz1 || (tz1=Rule.Timezone(3996,"LMT"));
-   }
-}
-
-class Africa_Blantyre
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-1404440460) // from 1925 Jul  1 
-         return tz4 || (tz4=Rule.Timezone(-7200,"CAT"));
-      if (ux>=-1751682070) // from 1914 Jun 30 
-         return tz3 || (tz3=Rule.Timezone(-8460,"ZMT"));
-      if (ux>=-1844302800) // from 1911 Jul 24 Zomba Mean Time
-         return tz2 || (tz2=Rule.Timezone(-8470,"ZMT"));
-      return tz1 || (tz1=Rule.Timezone(-8400,"LMT"));
-   }
-}
-
-class Africa_Brazzaville
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-1830387668) // from 1912 
-         return tz2 || (tz2=Rule.Timezone(-3600,"WAT"));
-      return tz1 || (tz1=Rule.Timezone(-3668,"LMT"));
-   }
-}
-
-class Africa_Bujumbura
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-2524528648) // from 1890 
-         return tz2 || (tz2=Rule.Timezone(-7200,"CAT"));
-      return tz1 || (tz1=Rule.Timezone(-7048,"LMT"));
-   }
-}
-
-class Africa_Conakry
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-315615600) // from 1960 
-         return tz2 || (tz2=Rule.Timezone(0,"GMT"));
-      if (ux>=-1131235200) // from 1934 Feb 26 
-         return tz3 || (tz3=Rule.Timezone(3600,"-01"));
-      if (ux>=-1830380708) // from 1912 
-         return tz2 || (tz2=Rule.Timezone(0,"GMT"));
-      return tz1 || (tz1=Rule.Timezone(3292,"LMT"));
-   }
-}
-
-class Africa_Dakar
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-902098800) // from 1941 Jun 
-         return tz3 || (tz3=Rule.Timezone(0,"GMT"));
-      if (ux>=-1830379816) // from 1912 
-         return tz2 || (tz2=Rule.Timezone(3600,"-01"));
-      return tz1 || (tz1=Rule.Timezone(4184,"LMT"));
-   }
-}
-
-class Africa_Dar_es_Salaam
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-284006700) // from 1961 
-         return tz2 || (tz2=Rule.Timezone(-10800,"EAT"));
-      if (ux>=-694321200) // from 1948 
-         return tz3 || (tz3=Rule.Timezone(-9900,"+0245"));
-      if (ux>=-1230777428) // from 1931 
-         return tz2 || (tz2=Rule.Timezone(-10800,"EAT"));
-      return tz1 || (tz1=Rule.Timezone(-9428,"LMT"));
-   }
-}
-
-class Africa_Djibouti
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-1846291956) // from 1911 Jul 
-         return tz2 || (tz2=Rule.Timezone(-10800,"EAT"));
-      return tz1 || (tz1=Rule.Timezone(-10356,"LMT"));
-   }
-}
-
-class Africa_Douala
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-1830386328) // from 1912 
-         return tz2 || (tz2=Rule.Timezone(-3600,"WAT"));
-      return tz1 || (tz1=Rule.Timezone(-2328,"LMT"));
-   }
-}
-
-class Africa_Freetown
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4,tz5;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-885769200) // from 1941 Dec  6 24:00 
-         return tz5 || (tz5=Rule.Timezone(0,"GMT"));
-      if (ux>=-956968800) // from 1939 Sep  5 
-         return tz4 || (tz4=Rule.Timezone(3600,"-01"));
-      if (ux>=-1783120020) // from 1913 Jul  1 
-         return tz3 || (tz3=TZrules.SL(3600,"%s"));
-      if (ux>=-2776979220) // from 1882 Freetown MT
-         return tz2 || (tz2=Rule.Timezone(3180,"FMT"));
-      return tz1 || (tz1=Rule.Timezone(3180,"LMT"));
-   }
-}
-
-class Africa_Gaborone
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-813805200) // from 1944 Mar 19  2:00 
-         return tz3 || (tz3=Rule.Timezone(-7200,"CAT"));
-      if (ux>=-829526400) // from 1943 Sep 19  2:00 
-         return tz4 || (tz4=Rule.Timezone(-10800,"CAST"));
-      if (ux>=-2109288600) // from 1903 Mar 
-         return tz3 || (tz3=Rule.Timezone(-7200,"CAT"));
-      if (ux>=-2682294220) // from 1885 
-         return tz2 || (tz2=Rule.Timezone(-5400,"SAST"));
-      return tz1 || (tz1=Rule.Timezone(-6220,"LMT"));
-   }
-}
-
-class Africa_Harare
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-2109290652) // from 1903 Mar 
-         return tz2 || (tz2=Rule.Timezone(-7200,"CAT"));
-      return tz1 || (tz1=Rule.Timezone(-7452,"LMT"));
-   }
-}
-
-class Africa_Kampala
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-410237100) // from 1957 
-         return tz2 || (tz2=Rule.Timezone(-10800,"EAT"));
-      if (ux>=-694319400) // from 1948 
-         return tz4 || (tz4=Rule.Timezone(-9900,"+0245"));
-      if (ux>=-1262314800) // from 1930 
-         return tz3 || (tz3=Rule.Timezone(-9000,"+0230"));
-      if (ux>=-1309745380) // from 1928 Jul 
-         return tz2 || (tz2=Rule.Timezone(-10800,"EAT"));
-      return tz1 || (tz1=Rule.Timezone(-7780,"LMT"));
-   }
-}
-
-class Africa_Kigali
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-1091498416) // from 1935 Jun 
-         return tz2 || (tz2=Rule.Timezone(-7200,"CAT"));
-      return tz1 || (tz1=Rule.Timezone(-7216,"LMT"));
-   }
-}
-
-class Africa_Kinshasa
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-2276643672) // from 1897 Nov  9 
-         return tz2 || (tz2=Rule.Timezone(-3600,"WAT"));
-      return tz1 || (tz1=Rule.Timezone(-3672,"LMT"));
-   }
-}
-
-class Africa_Libreville
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-1830386268) // from 1912 
-         return tz2 || (tz2=Rule.Timezone(-3600,"WAT"));
-      return tz1 || (tz1=Rule.Timezone(-2268,"LMT"));
-   }
-}
-
-class Africa_Lome
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-2429827492) // from 1893 
-         return tz2 || (tz2=Rule.Timezone(0,"GMT"));
-      return tz1 || (tz1=Rule.Timezone(-292,"LMT"));
-   }
-}
-
-class Africa_Luanda
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-1830387600) // from 1911 Dec 31 23:00u 
-         return tz3 || (tz3=Rule.Timezone(-3600,"WAT"));
-      if (ux>=-2461452776) // from 1892 Luanda MT?
-         return tz2 || (tz2=Rule.Timezone(-3124,"LMT"));
-      return tz1 || (tz1=Rule.Timezone(-3176,"LMT"));
-   }
-}
-
-class Africa_Lubumbashi
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-1567990800) // from 1920 Apr 25 
-         return tz3 || (tz3=Rule.Timezone(-7200,"CAT"));
-      if (ux>=-2276646592) // from 1897 Nov  9 
-         return tz2 || (tz2=Rule.Timezone(-3600,"WAT"));
-      return tz1 || (tz1=Rule.Timezone(-6592,"LMT"));
-   }
-}
-
-class Africa_Lusaka
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-2109289988) // from 1903 Mar 
-         return tz2 || (tz2=Rule.Timezone(-7200,"CAT"));
-      return tz1 || (tz1=Rule.Timezone(-6788,"LMT"));
-   }
-}
-
-class Africa_Malabo
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-190857600) // from 1963 Dec 15 
-         return tz3 || (tz3=Rule.Timezone(-3600,"WAT"));
-      if (ux>=-1830386108) // from 1912 
-         return tz2 || (tz2=Rule.Timezone(0,"GMT"));
-      return tz1 || (tz1=Rule.Timezone(-2108,"LMT"));
-   }
-}
-
-class Africa_Maseru
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-813805200) // from 1944 Mar 19  2:00 
-         return tz2 || (tz2=Rule.Timezone(-7200,"SAST"));
-      if (ux>=-829526400) // from 1943 Sep 19  2:00 
-         return tz3 || (tz3=Rule.Timezone(-10800,"SAST"));
-      if (ux>=-2109289800) // from 1903 Mar 
-         return tz2 || (tz2=Rule.Timezone(-7200,"SAST"));
-      return tz1 || (tz1=Rule.Timezone(-6600,"LMT"));
-   }
-}
-
-class Africa_Mbabane
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-2109290664) // from 1903 Mar 
-         return tz2 || (tz2=Rule.Timezone(-7200,"SAST"));
-      return tz1 || (tz1=Rule.Timezone(-7464,"LMT"));
-   }
-}
-
-class Africa_Mogadishu
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-410236200) // from 1957 
-         return tz2 || (tz2=Rule.Timezone(-10800,"EAT"));
-      if (ux>=-1230778800) // from 1931 
-         return tz3 || (tz3=Rule.Timezone(-9000,"+0230"));
-      if (ux>=-2403572488) // from 1893 Nov 
-         return tz2 || (tz2=Rule.Timezone(-10800,"EAT"));
-      return tz1 || (tz1=Rule.Timezone(-10888,"LMT"));
-   }
-}
-
-class Africa_Niamey
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-315619200) // from 1960 
-         return tz4 || (tz4=Rule.Timezone(-3600,"WAT"));
-      if (ux>=-1131231600) // from 1934 Feb 26 
-         return tz3 || (tz3=Rule.Timezone(0,"GMT"));
-      if (ux>=-1830384508) // from 1912 
-         return tz2 || (tz2=Rule.Timezone(3600,"-01"));
-      return tz1 || (tz1=Rule.Timezone(-508,"LMT"));
-   }
-}
-
-class Africa_Nouakchott
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-286930800) // from 1960 Nov 28 
-         return tz2 || (tz2=Rule.Timezone(0,"GMT"));
-      if (ux>=-1131235200) // from 1934 Feb 26 
-         return tz3 || (tz3=Rule.Timezone(3600,"-01"));
-      if (ux>=-1830380172) // from 1912 
-         return tz2 || (tz2=Rule.Timezone(0,"GMT"));
-      return tz1 || (tz1=Rule.Timezone(3828,"LMT"));
-   }
-}
-
-class Africa_Ouagadougou
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-1830383636) // from 1912 
-         return tz2 || (tz2=Rule.Timezone(0,"GMT"));
-      return tz1 || (tz1=Rule.Timezone(364,"LMT"));
-   }
-}
-
-class Africa_Porto_Novo
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-1131235200) // from 1934 Feb 26 
-         return tz3 || (tz3=Rule.Timezone(-3600,"WAT"));
-      if (ux>=-1830384628) // from 1912 Jan  1 
-         return tz2 || (tz2=Rule.Timezone(0,"GMT"));
-      return tz1 || (tz1=Rule.Timezone(-628,"LMT"));
-   }
-}
-
-class Africa_Timbuktu
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-1830383276) // from 1912 
-         return tz2 || (tz2=Rule.Timezone(0,"GMT"));
-      return tz1 || (tz1=Rule.Timezone(724,"LMT"));
-   }
-}
-
-class America_Anguilla
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-1825098464) // from 1912 Mar  2 
-         return tz2 || (tz2=Rule.Timezone(14400,"AST"));
-      return tz1 || (tz1=Rule.Timezone(15136,"LMT"));
-   }
-}
-
-class America_Antigua
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-599598000) // from 1951 
-         return tz3 || (tz3=Rule.Timezone(14400,"AST"));
-      if (ux>=-1825098768) // from 1912 Mar 2 
-         return tz2 || (tz2=Rule.Timezone(18000,"EST"));
-      return tz1 || (tz1=Rule.Timezone(14832,"LMT"));
-   }
-}
-
-class America_Argentina_ComodRivadavia
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=1087704000) // from 2004 Jun 20 
-         return tz6 || (tz6=Rule.Timezone(10800,"-03"));
-      if (ux>=1086058800) // from 2004 Jun  1 
-         return tz3 || (tz3=Rule.Timezone(14400,"-04"));
-      if (ux>=952027200) // from 2000 Mar  3 
-         return tz6 || (tz6=Rule.Timezone(10800,"-03"));
-      if (ux>=938898000) // from 1999 Oct  3 
-         return tz4 || (tz4=TZrules.Arg(14400,"-04/-03"));
-      if (ux>=687931200) // from 1991 Oct 20 
-         return tz5 || (tz5=TZrules.Arg(10800,"-03/-02"));
-      if (ux>=667947600) // from 1991 Mar  3 
-         return tz3 || (tz3=Rule.Timezone(14400,"-04"));
-      if (ux>=-7617600) // from 1969 Oct  5 
-         return tz5 || (tz5=TZrules.Arg(10800,"-03/-02"));
-      if (ux>=-1233432000) // from 1930 Dec 
-         return tz4 || (tz4=TZrules.Arg(14400,"-04/-03"));
-      if (ux>=-1567453392) // from 1920 May 
-         return tz3 || (tz3=Rule.Timezone(14400,"-04"));
-      if (ux>=-2372095800) // from 1894 Oct 31 
-         return tz2 || (tz2=Rule.Timezone(15408,"CMT"));
-      return tz1 || (tz1=Rule.Timezone(16200,"LMT"));
-   }
-}
-
-class America_Aruba
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-157750200) // from 1965 
-         return tz3 || (tz3=Rule.Timezone(14400,"AST"));
-      if (ux>=-1826738376) // from 1912 Feb 12 
-         return tz2 || (tz2=Rule.Timezone(16200,"-0430"));
-      // Oranjestad
-      return tz1 || (tz1=Rule.Timezone(16824,"LMT"));
-   }
-}
-
-class America_Atikokan
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-765428400) // from 1945 Sep 30  2:00 
-         return tz4 || (tz4=Rule.Timezone(18000,"EST"));
-      if (ux>=-880214400) // from 1942 Feb  9  2:00s 
-         return tz2 || (tz2=TZrules.Canada(21600,"C%sT"));
-      if (ux>=-923292000) // from 1940 Sep 29 
-         return tz3 || (tz3=Rule.Timezone(18000,"CDT"));
-      if (ux>=-2366733212) // from 1895 
-         return tz2 || (tz2=TZrules.Canada(21600,"C%sT"));
-      return tz1 || (tz1=Rule.Timezone(21988,"LMT"));
-   }
-}
-
-class America_Blanc_Sablon
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-14400) // from 1970 
-         return tz3 || (tz3=Rule.Timezone(14400,"AST"));
-      if (ux>=-2713896692) // from 1884 
-         return tz2 || (tz2=TZrules.Canada(14400,"A%sT"));
-      return tz1 || (tz1=Rule.Timezone(13708,"LMT"));
-   }
-}
-
-class America_Cayman
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-1827687170) // from 1912 Feb 
-         return tz3 || (tz3=Rule.Timezone(18000,"EST"));
-      if (ux>=-2524502068) // from 1890 Kingston Mean Time
-         return tz2 || (tz2=Rule.Timezone(18430,"KMT"));
-      // Georgetown
-      return tz1 || (tz1=Rule.Timezone(19532,"LMT"));
-   }
-}
-
-class America_Coral_Harbour
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-757400400) // from 1946 
-         return tz3 || (tz3=Rule.Timezone(18000,"EST"));
-      if (ux>=-2713890440) // from 1884 
-         return tz2 || (tz2=TZrules.NT_YK(18000,"E%sT"));
-      return tz1 || (tz1=Rule.Timezone(19960,"LMT"));
-   }
-}
-
-class America_Creston
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-1627833600) // from 1918 Jun 2 
-         return tz2 || (tz2=Rule.Timezone(25200,"MST"));
-      if (ux>=-1680454800) // from 1916 Oct 1 
-         return tz3 || (tz3=Rule.Timezone(28800,"PST"));
-      if (ux>=-2713882436) // from 1884 
-         return tz2 || (tz2=Rule.Timezone(25200,"MST"));
-      return tz1 || (tz1=Rule.Timezone(27964,"LMT"));
-   }
-}
-
-class America_Curacao
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-157750200) // from 1965 
-         return tz3 || (tz3=Rule.Timezone(14400,"AST"));
-      if (ux>=-1826738653) // from 1912 Feb 12 
-         return tz2 || (tz2=Rule.Timezone(16200,"-0430"));
-      // Willemstad
-      return tz1 || (tz1=Rule.Timezone(16547,"LMT"));
-   }
-}
-constant America_Kralendijk=America_Curacao;
-constant America_Lower_Princes=America_Curacao;
-
-class America_Dominica
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-1846266804) // from 1911 Jul  1  0:01 
-         return tz2 || (tz2=Rule.Timezone(14400,"AST"));
-      // Roseau
-      return tz1 || (tz1=Rule.Timezone(14736,"LMT"));
-   }
-}
-
-class America_Ensenada
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=820483200) // from 1996 
-         return tz4 || (tz4=TZrules.Mexico(28800,"P%sT"));
-      if (ux>=-661539600) // from 1949 Jan 14 
-         return tz2 || (tz2=Rule.Timezone(28800,"PST"));
-      if (ux>=-875808000) // from 1942 Apr 
-         return tz3 || (tz3=Rule.Timezone(25200,"MST"));
-      if (ux>=-1234717200) // from 1930 Nov 16 
-         return tz2 || (tz2=Rule.Timezone(28800,"PST"));
-      if (ux>=-1343062800) // from 1927 Jun 10 23:00 
-         return tz3 || (tz3=Rule.Timezone(25200,"MST"));
-      if (ux>=-1514736000) // from 1922 Jan  1  0:13:32 
-         return tz2 || (tz2=Rule.Timezone(28800,"PST"));
-      return tz1 || (tz1=Rule.Timezone(27988,"LMT"));
-   }
-}
-
-class America_Grenada
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-1846266780) // from 1911 Jul 
-         return tz2 || (tz2=Rule.Timezone(14400,"AST"));
-      // St George's
-      return tz1 || (tz1=Rule.Timezone(14820,"LMT"));
-   }
-}
-
-class America_Guadeloupe
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-1848254032) // from 1911 Jun  8 
-         return tz2 || (tz2=Rule.Timezone(14400,"AST"));
-      // Pointe-à-Pitre
-      return tz1 || (tz1=Rule.Timezone(14768,"LMT"));
-   }
-}
-
-class America_Montreal
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=126212400) // from 1974 
-         return tz3 || (tz3=TZrules.Canada(18000,"E%sT"));
-      if (ux>=-757400400) // from 1946 
-         return tz2 || (tz2=TZrules.Mont(18000,"E%sT"));
-      if (ux>=-880218000) // from 1942 Feb  9  2:00s 
-         return tz3 || (tz3=TZrules.Canada(18000,"E%sT"));
-      if (ux>=-1609477200) // from 1919 
-         return tz2 || (tz2=TZrules.Mont(18000,"E%sT"));
-      if (ux>=-1641013200) // from 1918 
-         return tz3 || (tz3=TZrules.Canada(18000,"E%sT"));
-      if (ux>=-2713892744) // from 1884 
-         return tz2 || (tz2=TZrules.Mont(18000,"E%sT"));
-      return tz1 || (tz1=Rule.Timezone(17656,"LMT"));
-   }
-}
-
-class America_Montserrat
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-1846266608) // from 1911 Jul  1  0:01 
-         return tz2 || (tz2=Rule.Timezone(14400,"AST"));
-      // Cork Hill
-      return tz1 || (tz1=Rule.Timezone(14932,"LMT"));
-   }
-}
-
-class America_Nassau
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=189284400) // from 1976 
-         return tz3 || (tz3=TZrules.US(18000,"E%sT"));
-      if (ux>=-1825095030) // from 1912 Mar 2 
-         return tz2 || (tz2=TZrules.Bahamas(18000,"E%sT"));
-      return tz1 || (tz1=Rule.Timezone(18570,"LMT"));
-   }
-}
-
-class America_Nipigon
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-880218000) // from 1942 Feb  9  2:00s 
-         return tz2 || (tz2=TZrules.Canada(18000,"E%sT"));
-      if (ux>=-923288400) // from 1940 Sep 29 
-         return tz3 || (tz3=Rule.Timezone(14400,"EDT"));
-      if (ux>=-2366734016) // from 1895 
-         return tz2 || (tz2=TZrules.Canada(18000,"E%sT"));
-      return tz1 || (tz1=Rule.Timezone(21184,"LMT"));
-   }
-}
-
-class America_Pangnirtung
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=972766800) // from 2000 Oct 29  2:00 
-         return tz4 || (tz4=TZrules.Canada(18000,"E%sT"));
-      if (ux>=941320800) // from 1999 Oct 31  2:00 
-         return tz3 || (tz3=TZrules.Canada(21600,"C%sT"));
-      if (ux>=-1546300800) // from 1921 
-         return tz2 || (tz2=TZrules.NT_YK(18000,"E%sT"));
-      // trading post est.
-      return tz1 || (tz1=Rule.Timezone(0,"-00"));
-   }
-}
-
-class America_Port_of_Spain
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-1825098836) // from 1912 Mar 2 
-         return tz2 || (tz2=Rule.Timezone(14400,"AST"));
-      return tz1 || (tz1=Rule.Timezone(14764,"LMT"));
-   }
-}
-constant America_Marigot=America_Port_of_Spain;
-constant America_St_Barthelemy=America_Port_of_Spain;
-
-class America_Rainy_River
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-880214400) // from 1942 Feb  9  2:00s 
-         return tz2 || (tz2=TZrules.Canada(21600,"C%sT"));
-      if (ux>=-923292000) // from 1940 Sep 29 
-         return tz3 || (tz3=Rule.Timezone(18000,"CDT"));
-      if (ux>=-2366732504) // from 1895 
-         return tz2 || (tz2=TZrules.Canada(21600,"C%sT"));
-      return tz1 || (tz1=Rule.Timezone(22696,"LMT"));
-   }
-}
-
-class America_Rosario
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=952027200) // from 2000 Mar  3  0:00 
-         return tz6 || (tz6=Rule.Timezone(10800,"-03"));
-      if (ux>=938919600) // from 1999 Oct  3  0:00 
-         return tz4 || (tz4=TZrules.Arg(14400,"-04/-03"));
-      if (ux>=678315600) // from 1991 Jul 
-         return tz6 || (tz6=Rule.Timezone(10800,"-03"));
-      if (ux>=-7617600) // from 1969 Oct  5 
-         return tz5 || (tz5=TZrules.Arg(10800,"-03/-02"));
-      if (ux>=-1233432000) // from 1930 Dec 
-         return tz4 || (tz4=TZrules.Arg(14400,"-04/-03"));
-      if (ux>=-1567453396) // from 1920 May 
-         return tz3 || (tz3=Rule.Timezone(14400,"-04"));
-      if (ux>=-2372011040) // from 1894 Nov 
-         return tz2 || (tz2=Rule.Timezone(15404,"CMT"));
-      return tz1 || (tz1=Rule.Timezone(14560,"LMT"));
-   }
-}
-
-class America_St_Kitts
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-1825098548) // from 1912 Mar  2 
-         return tz2 || (tz2=Rule.Timezone(14400,"AST"));
-      // Basseterre
-      return tz1 || (tz1=Rule.Timezone(15052,"LMT"));
-   }
-}
-
-class America_St_Lucia
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-1830369360) // from 1912 
-         return tz3 || (tz3=Rule.Timezone(14400,"AST"));
-      if (ux>=-2524506960) // from 1890 Castries Mean Time
-         return tz2 || (tz2=Rule.Timezone(14640,"CMT"));
-      // Castries
-      return tz1 || (tz1=Rule.Timezone(14640,"LMT"));
-   }
-}
-
-class America_St_Thomas
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-1846266016) // from 1911 Jul 
-         return tz2 || (tz2=Rule.Timezone(14400,"AST"));
-      // Charlotte Amalie
-      return tz1 || (tz1=Rule.Timezone(15584,"LMT"));
-   }
-}
-constant America_Virgin=America_St_Thomas;
-
-class America_St_Vincent
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-1830369304) // from 1912 
-         return tz3 || (tz3=Rule.Timezone(14400,"AST"));
-      if (ux>=-2524506904) // from 1890 Kingstown Mean Time
-         return tz2 || (tz2=Rule.Timezone(14696,"KMT"));
-      // Kingstown
-      return tz1 || (tz1=Rule.Timezone(14696,"LMT"));
-   }
-}
-
-class America_Thunder_Bay
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4,tz5;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=126212400) // from 1974 
-         return tz4 || (tz4=TZrules.Canada(18000,"E%sT"));
-      if (ux>=-18000) // from 1970 
-         return tz5 || (tz5=TZrules.Toronto(18000,"E%sT"));
-      if (ux>=-883594800) // from 1942 
-         return tz4 || (tz4=TZrules.Canada(18000,"E%sT"));
-      if (ux>=-1893434400) // from 1910 
-         return tz3 || (tz3=Rule.Timezone(18000,"EST"));
-      if (ux>=-2366733780) // from 1895 
-         return tz2 || (tz2=Rule.Timezone(21600,"CST"));
-      return tz1 || (tz1=Rule.Timezone(21420,"LMT"));
-   }
-}
-
-class America_Tortola
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-1846266092) // from 1911 Jul 
-         return tz2 || (tz2=Rule.Timezone(14400,"AST"));
-      // Road Town
-      return tz1 || (tz1=Rule.Timezone(15508,"LMT"));
-   }
-}
-
-class America_Yellowknife
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=315507600) // from 1980 
-         return tz3 || (tz3=TZrules.Canada(25200,"M%sT"));
-      if (ux>=-1104537600) // from 1935 
-         return tz2 || (tz2=TZrules.NT_YK(25200,"M%sT"));
-      // Yellowknife founded?
-      return tz1 || (tz1=Rule.Timezone(0,"-00"));
-   }
-}
-
-class Antarctica_DumontDUrville
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-415497600) // from 1956 Nov 
-         return tz2 || (tz2=Rule.Timezone(-36000,"+10"));
-      if (ux>=-566992800) // from 1952 Jan 14 
-         return tz1 || (tz1=Rule.Timezone(0,"-00"));
-      if (ux>=-725846400) // from 1947 
-         return tz2 || (tz2=Rule.Timezone(-36000,"+10"));
-      return tz1 || (tz1=Rule.Timezone(0,"-00"));
-   }
-}
-
-class Antarctica_McMurdo
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-441849600) // from 1956 
-         return tz2 || (tz2=TZrules.NZ(-43200,"NZ%sT"));
-      return tz1 || (tz1=Rule.Timezone(0,"-00"));
-   }
-}
-constant Antarctica_South_Pole=Antarctica_McMurdo;
-
-class Antarctica_Syowa
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-407808000) // from 1957 Jan 29 
-         return tz2 || (tz2=Rule.Timezone(-10800,"+03"));
-      return tz1 || (tz1=Rule.Timezone(0,"-00"));
-   }
-}
-
-class Asia_Aden
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-631162794) // from 1950 
-         return tz2 || (tz2=Rule.Timezone(-10800,"+03"));
-      return tz1 || (tz1=Rule.Timezone(-10794,"LMT"));
-   }
-}
-
-class Asia_Bahrain
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=76190400) // from 1972 Jun 
-         return tz4 || (tz4=Rule.Timezone(-10800,"+03"));
-      if (ux>=-820553400) // from 1944 Jan  1 
-         return tz3 || (tz3=Rule.Timezone(-14400,"+04"));
-      if (ux>=-897880940) // from 1941 Jul 20 
-         return tz2 || (tz2=Rule.Timezone(-12600,"+0330"));
-      // Manamah
-      return tz1 || (tz1=Rule.Timezone(-12140,"LMT"));
-   }
-}
-
-class Asia_Brunei
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-1167636600) // from 1933 
-         return tz3 || (tz3=Rule.Timezone(-28800,"+08"));
-      if (ux>=-1383464380) // from 1926 Mar 
-         return tz2 || (tz2=Rule.Timezone(-27000,"+0730"));
-      // Bandar Seri Begawan
-      return tz1 || (tz1=Rule.Timezone(-27580,"LMT"));
-   }
-}
-
-class Asia_Chongqing
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=325962000) // from 1980 May 
-         return tz3 || (tz3=TZrules.PRC(-28800,"C%sT"));
-      if (ux>=-1325487980) // from 1928 
-         return tz2 || (tz2=Rule.Timezone(-25200,"+07"));
-      // or Chungking
-      return tz1 || (tz1=Rule.Timezone(-25580,"LMT"));
-   }
-}
-constant Asia_Chungking=Asia_Chongqing;
-
-class Asia_Hanoi
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4,tz5;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-481363200) // from 1954 Oct 
-         return tz3 || (tz3=Rule.Timezone(-25200,"+07"));
-      if (ux>=-718095600) // from 1947 Apr  1 
-         return tz4 || (tz4=Rule.Timezone(-28800,"+08"));
-      if (ux>=-767869200) // from 1945 Sep  2 
-         return tz3 || (tz3=Rule.Timezone(-25200,"+07"));
-      if (ux>=-782643600) // from 1945 Mar 14 23:00 
-         return tz5 || (tz5=Rule.Timezone(-32400,"+09"));
-      if (ux>=-852105600) // from 1942 Dec 31 23:00 
-         return tz4 || (tz4=Rule.Timezone(-28800,"+08"));
-      if (ux>=-1851577590) // from 1911 May  1 
-         return tz3 || (tz3=Rule.Timezone(-25200,"+07"));
-      if (ux>=-2004073404) // from 1906 Jul  1 
-         return tz2 || (tz2=Rule.Timezone(-25590,"PLMT"));
-      return tz1 || (tz1=Rule.Timezone(-25404,"LMT"));
-   }
-}
-
-class Asia_Harbin
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4,tz5;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=325956600) // from 1980 May 
-         return tz5 || (tz5=TZrules.PRC(-28800,"C%sT"));
-      if (ux>=-115894800) // from 1966 May 
-         return tz2 || (tz2=Rule.Timezone(-30600,"+0830"));
-      if (ux>=-946800000) // from 1940 
-         return tz4 || (tz4=Rule.Timezone(-32400,"+09"));
-      if (ux>=-1194078600) // from 1932 Mar 
-         return tz3 || (tz3=Rule.Timezone(-28800,"CST"));
-      if (ux>=-1325492804) // from 1928 
-         return tz2 || (tz2=Rule.Timezone(-30600,"+0830"));
-      // or Haerbin
-      return tz1 || (tz1=Rule.Timezone(-30404,"LMT"));
-   }
-}
-
-class Asia_Kashgar
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=325969200) // from 1980 May 
-         return tz4 || (tz4=TZrules.PRC(-28800,"C%sT"));
-      if (ux>=-946791000) // from 1940 
-         return tz3 || (tz3=Rule.Timezone(-18000,"+05"));
-      if (ux>=-1325480636) // from 1928 
-         return tz2 || (tz2=Rule.Timezone(-19800,"+0530"));
-      // or Kashi or Kaxgar
-      return tz1 || (tz1=Rule.Timezone(-18236,"LMT"));
-   }
-}
-
-class Asia_Kuala_Lumpur
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6,tz7;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=378662400) // from 1981 Dec 31 16:00u 
-         return tz7 || (tz7=Rule.Timezone(-28800,"+08"));
-      if (ux>=-767005200) // from 1945 Sep 12 
-         return tz5 || (tz5=Rule.Timezone(-27000,"+0730"));
-      if (ux>=-879665400) // from 1942 Feb 16 
-         return tz6 || (tz6=Rule.Timezone(-32400,"+09"));
-      if (ux>=-894180000) // from 1941 Sep  1 
-         return tz5 || (tz5=Rule.Timezone(-27000,"+0730"));
-      if (ux>=-1073028000) // from 1936 Jan  1 
-         return tz4 || (tz4=Rule.Timezone(-26400,"+0720"));
-      if (ux>=-1167634800) // from 1933 Jan  1 
-         return tz4 || (tz4=Rule.Timezone(-26400,"+0720"));
-      if (ux>=-2038200925) // from 1905 Jun  1 
-         return tz3 || (tz3=Rule.Timezone(-25200,"+07"));
-      if (ux>=-2177477206) // from 1901 Jan  1 Singapore M.T.
-         return tz2 || (tz2=Rule.Timezone(-24925,"SMT"));
-      return tz1 || (tz1=Rule.Timezone(-24406,"LMT"));
-   }
-}
-
-class Asia_Kuwait
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-631163516) // from 1950 
-         return tz2 || (tz2=Rule.Timezone(-10800,"+03"));
-      return tz1 || (tz1=Rule.Timezone(-11516,"LMT"));
-   }
-}
-
-class Asia_Muscat
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-1577937264) // from 1920 
-         return tz2 || (tz2=Rule.Timezone(-14400,"+04"));
-      return tz1 || (tz1=Rule.Timezone(-14064,"LMT"));
-   }
-}
-
-class Asia_Phnom_Penh
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4,tz5;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-767869200) // from 1945 Sep  2 
-         return tz3 || (tz3=Rule.Timezone(-25200,"+07"));
-      if (ux>=-782643600) // from 1945 Mar 14 23:00 
-         return tz5 || (tz5=Rule.Timezone(-32400,"+09"));
-      if (ux>=-852105600) // from 1942 Dec 31 23:00 
-         return tz4 || (tz4=Rule.Timezone(-28800,"+08"));
-      if (ux>=-1851577590) // from 1911 May  1 
-         return tz3 || (tz3=Rule.Timezone(-25200,"+07"));
-      if (ux>=-2004073180) // from 1906 Jul  1 
-         return tz2 || (tz2=Rule.Timezone(-25590,"PLMT"));
-      return tz1 || (tz1=Rule.Timezone(-25180,"LMT"));
-   }
-}
-
-class Asia_Tel_Aviv
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-1641003660) // from 1918 
-         return tz3 || (tz3=TZrules.Zion(-7200,"I%sT"));
-      if (ux>=-2840149144) // from 1880 
-         return tz2 || (tz2=Rule.Timezone(-8460,"JMT"));
-      return tz1 || (tz1=Rule.Timezone(-8344,"LMT"));
-   }
-}
-
-class Asia_Vientiane
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4,tz5;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-464428800) // from 1955 Apr 15 
-         return tz3 || (tz3=Rule.Timezone(-25200,"+07"));
-      if (ux>=-718095600) // from 1947 Apr  1 
-         return tz4 || (tz4=Rule.Timezone(-28800,"+08"));
-      if (ux>=-767869200) // from 1945 Sep  2 
-         return tz3 || (tz3=Rule.Timezone(-25200,"+07"));
-      if (ux>=-782643600) // from 1945 Mar 14 23:00 
-         return tz5 || (tz5=Rule.Timezone(-32400,"+09"));
-      if (ux>=-852105600) // from 1942 Dec 31 23:00 
-         return tz4 || (tz4=Rule.Timezone(-28800,"+08"));
-      if (ux>=-1851577590) // from 1911 May  1 
-         return tz3 || (tz3=Rule.Timezone(-25200,"+07"));
-      if (ux>=-2004072624) // from 1906 Jul  1 
-         return tz2 || (tz2=Rule.Timezone(-25590,"PLMT"));
-      return tz1 || (tz1=Rule.Timezone(-24624,"LMT"));
-   }
-}
-
-class Atlantic_Reykjavik
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-54770400) // from 1968 Apr  7  1:00s 
-         return tz3 || (tz3=Rule.Timezone(0,"GMT"));
-      if (ux>=-1956609120) // from 1908 
-         return tz2 || (tz2=TZrules.Iceland(3600,"-01/+00"));
-      return tz1 || (tz1=Rule.Timezone(5280,"LMT"));
-   }
-}
-constant Iceland=Atlantic_Reykjavik;
-
-class Atlantic_St_Helena
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-599614632) // from 1951 
-         return tz3 || (tz3=Rule.Timezone(0,"GMT"));
-      if (ux>=-2524520232) // from 1890 Jamestown Mean Time
-         return tz2 || (tz2=Rule.Timezone(1368,"JMT"));
-      // Jamestown
-      return tz1 || (tz1=Rule.Timezone(1368,"LMT"));
-   }
-}
-
-class Australia_Currie
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-38239200) // from 1968 Oct 15 
-         return tz2 || (tz2=TZrules.AT(-36000,"AE%sT"));
-      if (ux>=-1583848800) // from 1919 Oct 24 
-         return tz3 || (tz3=TZrules.Aus(-36000,"AE%sT"));
-      if (ux>=-2345794528) // from 1895 Sep 
-         return tz2 || (tz2=TZrules.AT(-36000,"AE%sT"));
-      return tz1 || (tz1=Rule.Timezone(-34528,"LMT"));
-   }
-}
-
-class Europe_Amsterdam
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=220928400) // from 1977 
-         return tz6 || (tz6=TZrules.EU(-3600,"CE%sT"));
-      if (ux>=-781045200) // from 1945 Apr  2  2:00 
-         return tz5 || (tz5=TZrules.Neth(-3600,"CE%sT"));
-      if (ux>=-935019600) // from 1940 May 16  0:00 
-         return tz4 || (tz4=TZrules.C_Eur(-3600,"CE%sT"));
-      if (ux>=-1025736028) // from 1937 Jul  1 
-         return tz3 || (tz3=TZrules.Neth(-1200,"+0020/+0120"));
-      if (ux>=-4260212372) // from 1835 
-         return tz2 || (tz2=TZrules.Neth(-1172,"%s"));
-      return tz1 || (tz1=Rule.Timezone(-1172,"LMT"));
-   }
-}
-
-class Europe_Belfast
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=820454400) // from 1996 
-         return tz6 || (tz6=TZrules.EU(0,"GMT/BST"));
-      if (ux>=57722400) // from 1971 Oct 31  2:00u 
-         return tz4 || (tz4=TZrules.GB_Eire(0,"%s"));
-      if (ux>=-37234800) // from 1968 Oct 27 
-         return tz5 || (tz5=Rule.Timezone(-3600,"BST"));
-      if (ux>=-1680471279) // from 1916 Oct  1  2:00s 
-         return tz4 || (tz4=TZrules.GB_Eire(0,"%s"));
-      if (ux>=-1691962479) // from 1916 May 21  2:00 
-         return tz3 || (tz3=Rule.Timezone(-2079,"IST"));
-      if (ux>=-2821649780) // from 1880 Aug  2 
-         return tz2 || (tz2=Rule.Timezone(1521,"DMT"));
-      return tz1 || (tz1=Rule.Timezone(1420,"LMT"));
-   }
-}
-
-class Europe_Copenhagen
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4,tz5;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=315536400) // from 1980 
-         return tz5 || (tz5=TZrules.EU(-3600,"CE%sT"));
-      if (ux>=-781045200) // from 1945 Apr  2  2:00 
-         return tz3 || (tz3=TZrules.Denmark(-3600,"CE%sT"));
-      if (ux>=-857257200) // from 1942 Nov  2  2:00s 
-         return tz4 || (tz4=TZrules.C_Eur(-3600,"CE%sT"));
-      if (ux>=-2398294220) // from 1894 Jan  1 
-         return tz3 || (tz3=TZrules.Denmark(-3600,"CE%sT"));
-      if (ux>=-2524524620) // from 1890 Copenhagen MT
-         return tz2 || (tz2=Rule.Timezone(-3020,"CMT"));
-      return tz1 || (tz1=Rule.Timezone(-3020,"LMT"));
-   }
-}
-
-class Europe_Guernsey
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4,tz5;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=820454400) // from 1996 
-         return tz5 || (tz5=TZrules.EU(0,"GMT/BST"));
-      if (ux>=57722400) // from 1971 Oct 31  2:00u 
-         return tz2 || (tz2=TZrules.GB_Eire(0,"%s"));
-      if (ux>=-37234800) // from 1968 Oct 27 
-         return tz4 || (tz4=Rule.Timezone(-3600,"BST"));
-      if (ux>=-777938400) // from 1945 May  8 
-         return tz2 || (tz2=TZrules.GB_Eire(0,"%s"));
-      if (ux>=-930956400) // from 1940 Jul  2 
-         return tz3 || (tz3=TZrules.C_Eur(-3600,"CE%sT"));
-      if (ux>=-1784245791) // from 1913 Jun 18 
-         return tz2 || (tz2=TZrules.GB_Eire(0,"%s"));
-      return tz1 || (tz1=Rule.Timezone(609,"LMT"));
-   }
-}
-
-class Europe_Isle_of_Man
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=820454400) // from 1996 
-         return tz4 || (tz4=TZrules.EU(0,"GMT/BST"));
-      if (ux>=57722400) // from 1971 Oct 31  2:00u 
-         return tz2 || (tz2=TZrules.GB_Eire(0,"%s"));
-      if (ux>=-37234800) // from 1968 Oct 27 
-         return tz3 || (tz3=Rule.Timezone(-3600,"BST"));
-      if (ux>=-2737842125) // from 1883 Mar 30  0:00s 
-         return tz2 || (tz2=TZrules.GB_Eire(0,"%s"));
-      return tz1 || (tz1=Rule.Timezone(1075,"LMT"));
-   }
-}
-
-class Europe_Jersey
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4,tz5;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=820454400) // from 1996 
-         return tz5 || (tz5=TZrules.EU(0,"GMT/BST"));
-      if (ux>=57722400) // from 1971 Oct 31  2:00u 
-         return tz2 || (tz2=TZrules.GB_Eire(0,"%s"));
-      if (ux>=-37234800) // from 1968 Oct 27 
-         return tz4 || (tz4=Rule.Timezone(-3600,"BST"));
-      if (ux>=-777938400) // from 1945 May  8 
-         return tz2 || (tz2=TZrules.GB_Eire(0,"%s"));
-      if (ux>=-930956400) // from 1940 Jul  2 
-         return tz3 || (tz3=TZrules.C_Eur(-3600,"CE%sT"));
-      if (ux>=-2258092800) // from 1898 Jun 11 16:00u 
-         return tz2 || (tz2=TZrules.GB_Eire(0,"%s"));
-      return tz1 || (tz1=Rule.Timezone(506,"LMT"));
-   }
-}
-
-class Europe_Ljubljana
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4,tz5;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=407199600) // from 1982 Nov 27 
-         return tz5 || (tz5=TZrules.EU(-3600,"CE%sT"));
-      if (ux>=-766623600) // from 1945 Sep 16  2:00s 
-         return tz2 || (tz2=Rule.Timezone(-3600,"CET"));
-      if (ux>=-777942000) // from 1945 May  8  2:00s 
-         return tz4 || (tz4=Rule.Timezone(-7200,"CEST"));
-      if (ux>=-905824800) // from 1941 Apr 18 23:00 
-         return tz3 || (tz3=TZrules.C_Eur(-3600,"CE%sT"));
-      if (ux>=-2713913884) // from 1884 
-         return tz2 || (tz2=Rule.Timezone(-3600,"CET"));
-      return tz1 || (tz1=Rule.Timezone(-3484,"LMT"));
-   }
-}
-
-class Europe_Luxembourg
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6,tz7;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=220928400) // from 1977 
-         return tz7 || (tz7=TZrules.EU(-3600,"CE%sT"));
-      if (ux>=-797972400) // from 1944 Sep 18  3:00 
-         return tz6 || (tz6=TZrules.Belgium(-3600,"CE%sT"));
-      if (ux>=-935179200) // from 1940 May 14  3:00 
-         return tz5 || (tz5=TZrules.C_Eur(-3600,"WE%sT"));
-      if (ux>=-1269813600) // from 1929 Oct  6  2:00s 
-         return tz4 || (tz4=TZrules.Belgium(0,"WE%sT"));
-      if (ux>=-1612652400) // from 1918 Nov 25 
-         return tz3 || (tz3=TZrules.Lux(0,"WE%sT"));
-      if (ux>=-2069713476) // from 1904 Jun 
-         return tz2 || (tz2=TZrules.Lux(-3600,"CE%sT"));
-      return tz1 || (tz1=Rule.Timezone(-1476,"LMT"));
-   }
-}
-
-class Europe_Monaco
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4,tz5;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=220928400) // from 1977 
-         return tz5 || (tz5=TZrules.EU(-3600,"CE%sT"));
-      if (ux>=-766609200) // from 1945 Sep 16  3:00 
-         return tz4 || (tz4=TZrules.France(-3600,"CE%sT"));
-      if (ux>=-1854403761) // from 1911 Mar 29 
-         return tz3 || (tz3=TZrules.France(0,"WE%sT"));
-      if (ux>=-2448318572) // from 1892 Jun  1 Paris Mean Time
-         return tz2 || (tz2=Rule.Timezone(-561,"PMT"));
-      return tz1 || (tz1=Rule.Timezone(-1772,"LMT"));
-   }
-}
-
-class Europe_Oslo
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=315536400) // from 1980 
-         return tz4 || (tz4=TZrules.EU(-3600,"CE%sT"));
-      if (ux>=-781045200) // from 1945 Apr  2  2:00 
-         return tz2 || (tz2=TZrules.Norway(-3600,"CE%sT"));
-      if (ux>=-927504000) // from 1940 Aug 10 23:00 
-         return tz3 || (tz3=TZrules.C_Eur(-3600,"CE%sT"));
-      if (ux>=-2366757780) // from 1895 Jan  1 
-         return tz2 || (tz2=TZrules.Norway(-3600,"CE%sT"));
-      return tz1 || (tz1=Rule.Timezone(-2580,"LMT"));
-   }
-}
-constant Arctic_Longyearbyen=Europe_Oslo;
-
-class Europe_Sarajevo
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4,tz5;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=407199600) // from 1982 Nov 27 
-         return tz5 || (tz5=TZrules.EU(-3600,"CE%sT"));
-      if (ux>=-766623600) // from 1945 Sep 16  2:00s 
-         return tz2 || (tz2=Rule.Timezone(-3600,"CET"));
-      if (ux>=-777942000) // from 1945 May  8  2:00s 
-         return tz4 || (tz4=Rule.Timezone(-7200,"CEST"));
-      if (ux>=-905824800) // from 1941 Apr 18 23:00 
-         return tz3 || (tz3=TZrules.C_Eur(-3600,"CE%sT"));
-      if (ux>=-2713914820) // from 1884 
-         return tz2 || (tz2=Rule.Timezone(-3600,"CET"));
-      return tz1 || (tz1=Rule.Timezone(-4420,"LMT"));
-   }
-}
-
-class Europe_Skopje
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4,tz5;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=407199600) // from 1982 Nov 27 
-         return tz5 || (tz5=TZrules.EU(-3600,"CE%sT"));
-      if (ux>=-766623600) // from 1945 Sep 16  2:00s 
-         return tz2 || (tz2=Rule.Timezone(-3600,"CET"));
-      if (ux>=-777942000) // from 1945 May  8  2:00s 
-         return tz4 || (tz4=Rule.Timezone(-7200,"CEST"));
-      if (ux>=-905824800) // from 1941 Apr 18 23:00 
-         return tz3 || (tz3=TZrules.C_Eur(-3600,"CE%sT"));
-      if (ux>=-2713915544) // from 1884 
-         return tz2 || (tz2=Rule.Timezone(-3600,"CET"));
-      return tz1 || (tz1=Rule.Timezone(-5144,"LMT"));
-   }
-}
-
-class Europe_Stockholm
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4,tz5;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=315529200) // from 1980 
-         return tz5 || (tz5=TZrules.EU(-3600,"CE%sT"));
-      if (ux>=-1680483600) // from 1916 Oct  1  1:00 
-         return tz3 || (tz3=Rule.Timezone(-3600,"CET"));
-      if (ux>=-1692496800) // from 1916 May 14 23:00 
-         return tz4 || (tz4=Rule.Timezone(-7200,"CEST"));
-      if (ux>=-2208992414) // from 1900 Jan  1 
-         return tz3 || (tz3=Rule.Timezone(-3600,"CET"));
-      if (ux>=-2871681132) // from 1879 Jan  1 Swedish Time
-         return tz2 || (tz2=Rule.Timezone(-3614,"SET"));
-      return tz1 || (tz1=Rule.Timezone(-4332,"LMT"));
-   }
-}
-
-class Europe_Tiraspol
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6,tz7,tz8;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=695793600) // from 1992 Jan 19  2:00 
-         return tz7 || (tz7=TZrules.Russia(-10800,"MSK/MSD"));
-      if (ux>=670395600) // from 1991 Mar 31  2:00 
-         return tz8 || (tz8=TZrules.Russia(-7200,"EE%sT"));
-      if (ux>=-800143200) // from 1944 Aug 24 
-         return tz7 || (tz7=TZrules.Russia(-10800,"MSK/MSD"));
-      if (ux>=-898138800) // from 1941 Jul 17 
-         return tz6 || (tz6=TZrules.C_Eur(-3600,"CE%sT"));
-      if (ux>=-927151200) // from 1940 Aug 15 
-         return tz5 || (tz5=Rule.Timezone(-10800,"EEST"));
-      if (ux>=-1213148664) // from 1931 Jul 24 
-         return tz4 || (tz4=TZrules.Romania(-7200,"EE%sT"));
-      if (ux>=-1637114100) // from 1918 Feb 15 Bucharest MT
-         return tz3 || (tz3=Rule.Timezone(-6264,"BMT"));
-      if (ux>=-2840147912) // from 1880 Chisinau MT
-         return tz2 || (tz2=Rule.Timezone(-6900,"CMT"));
-      return tz1 || (tz1=Rule.Timezone(-7112,"LMT"));
-   }
-}
-
-class Europe_Uzhgorod
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6,tz7,tz8,tz9;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=831956400) // from 1996 May 13 
-         return tz9 || (tz9=TZrules.EU(-7200,"EE%sT"));
-      if (ux>=701042400) // from 1992 Mar 20 
-         return tz8 || (tz8=TZrules.C_Eur(-7200,"EE%sT"));
-      if (ux>=670384800) // from 1991 Mar 31  3:00 
-         return tz7 || (tz7=Rule.Timezone(-7200,"EET"));
-      if (ux>=646786800) // from 1990 Jul  1  2:00 
-         return tz2 || (tz2=Rule.Timezone(-3600,"CET"));
-      if (ux>=631162800) // from 1990 
-         return tz6 || (tz6=Rule.Timezone(-10800,"MSK"));
-      if (ux>=-773456400) // from 1945 Jun 29 
-         return tz5 || (tz5=TZrules.Russia(-10800,"MSK/MSD"));
-      if (ux>=-794714400) // from 1944 Oct 26 
-         return tz2 || (tz2=Rule.Timezone(-3600,"CET"));
-      if (ux>=-796860000) // from 1944 Oct 
-         return tz4 || (tz4=Rule.Timezone(-7200,"CEST"));
-      if (ux>=-946774800) // from 1940 
-         return tz3 || (tz3=TZrules.C_Eur(-3600,"CE%sT"));
-      if (ux>=-2500939752) // from 1890 Oct 
-         return tz2 || (tz2=Rule.Timezone(-3600,"CET"));
-      return tz1 || (tz1=Rule.Timezone(-5352,"LMT"));
-   }
-}
-
-class Europe_Vaduz
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=347158800) // from 1981 
-         return tz3 || (tz3=TZrules.EU(-3600,"CE%sT"));
-      if (ux>=-2385247084) // from 1894 Jun 
-         return tz2 || (tz2=TZrules.Swiss(-3600,"CE%sT"));
-      return tz1 || (tz1=Rule.Timezone(-2284,"LMT"));
-   }
-}
-
-class Europe_Zagreb
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4,tz5;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=407199600) // from 1982 Nov 27 
-         return tz5 || (tz5=TZrules.EU(-3600,"CE%sT"));
-      if (ux>=-766623600) // from 1945 Sep 16  2:00s 
-         return tz2 || (tz2=Rule.Timezone(-3600,"CET"));
-      if (ux>=-777942000) // from 1945 May  8  2:00s 
-         return tz4 || (tz4=Rule.Timezone(-7200,"CEST"));
-      if (ux>=-905824800) // from 1941 Apr 18 23:00 
-         return tz3 || (tz3=TZrules.C_Eur(-3600,"CE%sT"));
-      if (ux>=-2713914232) // from 1884 
-         return tz2 || (tz2=Rule.Timezone(-3600,"CET"));
-      return tz1 || (tz1=Rule.Timezone(-3832,"LMT"));
-   }
-}
-
-class Europe_Zaporozhye
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6,tz7,tz8,tz9;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=831956400) // from 1996 May 13 
-         return tz9 || (tz9=TZrules.EU(-7200,"EE%sT"));
-      if (ux>=701056800) // from 1992 Mar 20 
-         return tz8 || (tz8=TZrules.C_Eur(-7200,"EE%sT"));
-      if (ux>=670395600) // from 1991 Mar 31  2:00 
-         return tz7 || (tz7=TZrules.E_Eur(-7200,"EE%sT"));
-      if (ux>=-826412400) // from 1943 Oct 25 
-         return tz6 || (tz6=TZrules.Russia(-10800,"MSK/MSD"));
-      if (ux>=-894769200) // from 1941 Aug 25 
-         return tz5 || (tz5=TZrules.C_Eur(-3600,"CE%sT"));
-      if (ux>=-1247536800) // from 1930 Jun 21 
-         return tz4 || (tz4=Rule.Timezone(-10800,"MSK"));
-      if (ux>=-1441160400) // from 1924 May  2 
-         return tz3 || (tz3=Rule.Timezone(-7200,"EET"));
-      if (ux>=-2840149240) // from 1880 
-         return tz2 || (tz2=Rule.Timezone(-8400,"+0220"));
-      return tz1 || (tz1=Rule.Timezone(-8440,"LMT"));
-   }
-}
-
-class Indian_Antananarivo
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-492062400) // from 1954 May 29 23:00s 
-         return tz2 || (tz2=Rule.Timezone(-10800,"EAT"));
-      if (ux>=-499924800) // from 1954 Feb 27 23:00s 
-         return tz3 || (tz3=Rule.Timezone(-14400,"EAST"));
-      if (ux>=-1846293004) // from 1911 Jul 
-         return tz2 || (tz2=Rule.Timezone(-10800,"EAT"));
-      return tz1 || (tz1=Rule.Timezone(-11404,"LMT"));
-   }
-}
-
-class Indian_Christmas
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-2364102172) // from 1895 Feb 
-         return tz2 || (tz2=Rule.Timezone(-25200,"+07"));
-      return tz1 || (tz1=Rule.Timezone(-25372,"LMT"));
-   }
-}
-
-class Indian_Cocos
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-2209012060) // from 1900 
-         return tz2 || (tz2=Rule.Timezone(-23400,"+0630"));
-      return tz1 || (tz1=Rule.Timezone(-23260,"LMT"));
-   }
-}
-
-class Indian_Comoro
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-1846291984) // from 1911 Jul 
-         return tz2 || (tz2=Rule.Timezone(-10800,"EAT"));
-      // Moroni, Gran Comoro
-      return tz1 || (tz1=Rule.Timezone(-10384,"LMT"));
-   }
-}
-
-class Indian_Kerguelen
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-631152000) // from 1950 
-         return tz2 || (tz2=Rule.Timezone(-18000,"+05"));
-      // Port-aux-Français
-      return tz1 || (tz1=Rule.Timezone(0,"-00"));
-   }
-}
-
-class Indian_Mahe
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-1988163708) // from 1907 Jan  1 
-         return tz2 || (tz2=Rule.Timezone(-14400,"+04"));
-      // Victoria
-      return tz1 || (tz1=Rule.Timezone(-13308,"LMT"));
-   }
-}
-
-class Indian_Mayotte
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-1846292456) // from 1911 Jul 
-         return tz2 || (tz2=Rule.Timezone(-10800,"EAT"));
-      // Mamoutzou
-      return tz1 || (tz1=Rule.Timezone(-10856,"LMT"));
-   }
-}
-
-class Indian_Reunion
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-1848886912) // from 1911 Jun 
-         return tz2 || (tz2=Rule.Timezone(-14400,"+04"));
-      // Saint-Denis
-      return tz1 || (tz1=Rule.Timezone(-13312,"LMT"));
-   }
-}
-
-class Pacific_Chuuk
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-770634000) // from 1945 Aug 
-         return tz3 || (tz3=Rule.Timezone(-36000,"+10"));
-      if (ux>=-907408800) // from 1941 Apr  1 
-         return tz4 || (tz4=Rule.Timezone(-32400,"+09"));
-      if (ux>=-1606813200) // from 1919 Feb  1 
-         return tz3 || (tz3=Rule.Timezone(-36000,"+10"));
-      if (ux>=-1743674400) // from 1914 Oct 
-         return tz4 || (tz4=Rule.Timezone(-32400,"+09"));
-      if (ux>=-2177489228) // from 1901 
-         return tz3 || (tz3=Rule.Timezone(-36000,"+10"));
-      if (ux>=-3944628428) // from 1844 Dec 31 
-         return tz2 || (tz2=Rule.Timezone(-36428,"LMT"));
-      return tz1 || (tz1=Rule.Timezone(49972,"LMT"));
-   }
-}
-constant Pacific_Truk=Pacific_Chuuk;
-constant Pacific_Yap=Pacific_Chuuk;
-
-class Pacific_Enderbury
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-880200000) // from 1942 Feb  9 
-         return tz1 || (tz1=Rule.Timezone(0,"-00"));
-      if (ux>=-1004313600) // from 1938 Mar  6 
-         return tz3 || (tz3=Rule.Timezone(43200,"-12"));
-      if (ux>=-2682246940) // from 1885 
-         return tz1 || (tz1=Rule.Timezone(0,"-00"));
-      if (ux>=-3471292800) // from 1860 
-         return tz2 || (tz2=Rule.Timezone(41060,"LMT"));
-      return tz1 || (tz1=Rule.Timezone(0,"-00"));
-   }
-}
-
-class Pacific_Funafuti
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-2177495812) // from 1901 
-         return tz2 || (tz2=Rule.Timezone(-43200,"+12"));
-      return tz1 || (tz1=Rule.Timezone(-43012,"LMT"));
-   }
-}
-
-class Pacific_Majuro
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4,tz5;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-7988400) // from 1969 Oct 
-         return tz5 || (tz5=Rule.Timezone(-43200,"+12"));
-      if (ux>=-818067600) // from 1944 Jan 30 
-         return tz2 || (tz2=Rule.Timezone(-39600,"+11"));
-      if (ux>=-907408800) // from 1941 Apr  1 
-         return tz3 || (tz3=Rule.Timezone(-32400,"+09"));
-      if (ux>=-1041418800) // from 1937 
-         return tz4 || (tz4=Rule.Timezone(-36000,"+10"));
-      if (ux>=-1606813200) // from 1919 Feb  1 
-         return tz2 || (tz2=Rule.Timezone(-39600,"+11"));
-      if (ux>=-1743678000) // from 1914 Oct 
-         return tz3 || (tz3=Rule.Timezone(-32400,"+09"));
-      if (ux>=-2177493888) // from 1901 
-         return tz2 || (tz2=Rule.Timezone(-39600,"+11"));
-      return tz1 || (tz1=Rule.Timezone(-41088,"LMT"));
-   }
-}
-
-class Pacific_Midway
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-420645600) // from 1956 Sep  2 S=Samoa
-         return tz4 || (tz4=Rule.Timezone(39600,"SST"));
-      if (ux>=-428504400) // from 1956 Jun  3 
-         return tz3 || (tz3=Rule.Timezone(36000,"-10"));
-      if (ux>=-2177410232) // from 1901 
-         return tz2 || (tz2=Rule.Timezone(39600,"-11"));
-      return tz1 || (tz1=Rule.Timezone(42568,"LMT"));
-   }
-}
-
-class Pacific_Pohnpei
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4,tz5;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-770634000) // from 1945 Aug 
-         return tz3 || (tz3=Rule.Timezone(-39600,"+11"));
-      if (ux>=-907408800) // from 1941 Apr  1 
-         return tz4 || (tz4=Rule.Timezone(-32400,"+09"));
-      if (ux>=-1041418800) // from 1937 
-         return tz5 || (tz5=Rule.Timezone(-36000,"+10"));
-      if (ux>=-1606813200) // from 1919 Feb  1 
-         return tz3 || (tz3=Rule.Timezone(-39600,"+11"));
-      if (ux>=-1743678000) // from 1914 Oct 
-         return tz4 || (tz4=Rule.Timezone(-32400,"+09"));
-      if (ux>=-2177490772) // from 1901 
-         return tz3 || (tz3=Rule.Timezone(-39600,"+11"));
-      if (ux>=-3944629972) // from 1844 Dec 31 
-         return tz2 || (tz2=Rule.Timezone(-37972,"LMT"));
-      // Kolonia
-      return tz1 || (tz1=Rule.Timezone(48428,"LMT"));
-   }
-}
-constant Pacific_Ponape=Pacific_Pohnpei;
-
-class Pacific_Saipan
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4,tz5;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=977565600) // from 2000 Dec 23 Chamorro Standard Time
-         return tz5 || (tz5=Rule.Timezone(-36000,"ChST"));
-      if (ux>=-804157200) // from 1944 Jul  9 
-         return tz4 || (tz4=TZrules.Guam(-36000,"G%sT"));
-      if (ux>=-2177487780) // from 1901 
-         return tz3 || (tz3=Rule.Timezone(-32400,"+09"));
-      if (ux>=-3944626980) // from 1844 Dec 31 
-         return tz2 || (tz2=Rule.Timezone(-34980,"LMT"));
-      return tz1 || (tz1=Rule.Timezone(51420,"LMT"));
-   }
-}
-
-class Pacific_Wake
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-2177492788) // from 1901 
-         return tz2 || (tz2=Rule.Timezone(-43200,"+12"));
-      return tz1 || (tz1=Rule.Timezone(-39988,"LMT"));
-   }
-}
-
-class Pacific_Wallis
-{
-   inherit TZHistory;
-   Rule.Timezone tz1,tz2;
-   Rule.Timezone whatrule(int ux)
-   {
-      if (ux>=-2177496920) // from 1901 
-         return tz2 || (tz2=Rule.Timezone(-43200,"+12"));
-      return tz1 || (tz1=Rule.Timezone(-44120,"LMT"));
    }
 }
 
@@ -4342,13 +2412,13 @@ class Europe_London
    Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=820454400) // from 1996 
+      if (ux>=820454400) // from 1996
          return tz4 || (tz4=TZrules.EU(0,"GMT/BST"));
-      if (ux>=57722400) // from 1971 Oct 31  2:00u 
+      if (ux>=57722400) // from 1971 Oct 31  2:00u
          return tz2 || (tz2=TZrules.GB_Eire(0,"%s"));
-      if (ux>=-37234800) // from 1968 Oct 27 
+      if (ux>=-37234800) // from 1968 Oct 27
          return tz3 || (tz3=Rule.Timezone(-3600,"BST"));
-      if (ux>=-3852662325) // from 1847 Dec  1 
+      if (ux>=-3852662325) // from 1847 Dec  1
          return tz2 || (tz2=TZrules.GB_Eire(0,"%s"));
       return tz1 || (tz1=Rule.Timezone(75,"LMT"));
    }
@@ -4366,25 +2436,25 @@ class Europe_Dublin
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6,tz7,tz8;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-37234800) // from 1968 Oct 27 
+      if (ux>=-37234800) // from 1968 Oct 27
          return tz8 || (tz8=TZrules.Eire(-3600,"IST/GMT"));
-      if (ux>=-684972000) // from 1948 Apr 18  2:00s 
+      if (ux>=-684972000) // from 1948 Apr 18  2:00s
          return tz5 || (tz5=TZrules.GB_Eire(0,"GMT/IST"));
-      if (ux>=-699487200) // from 1947 Nov  2  2:00s 
+      if (ux>=-699487200) // from 1947 Nov  2  2:00s
          return tz7 || (tz7=Rule.Timezone(0,"GMT"));
-      if (ux>=-719445600) // from 1947 Mar 16  2:00s 
+      if (ux>=-719445600) // from 1947 Mar 16  2:00s
          return tz6 || (tz6=Rule.Timezone(-3600,"IST"));
-      if (ux>=-733356000) // from 1946 Oct  6  2:00s 
+      if (ux>=-733356000) // from 1946 Oct  6  2:00s
          return tz7 || (tz7=Rule.Timezone(0,"GMT"));
-      if (ux>=-942012000) // from 1940 Feb 25  2:00s 
+      if (ux>=-942012000) // from 1940 Feb 25  2:00s
          return tz6 || (tz6=Rule.Timezone(-3600,"IST"));
-      if (ux>=-1517011200) // from 1921 Dec  6 
+      if (ux>=-1517011200) // from 1921 Dec  6
          return tz5 || (tz5=TZrules.GB_Eire(0,"GMT/IST"));
       if (ux>=-1680471279) // from 1916 Oct  1  2:00s independence
          return tz4 || (tz4=TZrules.GB_Eire(0,"%s"));
-      if (ux>=-1691962479) // from 1916 May 21  2:00s 
+      if (ux>=-1691962479) // from 1916 May 21  2:00s
          return tz3 || (tz3=Rule.Timezone(-2079,"IST"));
-      if (ux>=-2821649679) // from 1880 Aug  2 
+      if (ux>=-2821649679) // from 1880 Aug  2
          return tz2 || (tz2=Rule.Timezone(1521,"DMT"));
       return tz1 || (tz1=Rule.Timezone(1521,"LMT"));
    }
@@ -4397,11 +2467,11 @@ class Europe_Tirane
    Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=457495200) // from 1984 Jul 
+      if (ux>=457495200) // from 1984 Jul
          return tz4 || (tz4=TZrules.EU(-3600,"CE%sT"));
-      if (ux>=-932346000) // from 1940 Jun 16 
+      if (ux>=-932346000) // from 1940 Jun 16
          return tz3 || (tz3=TZrules.Albania(-3600,"CE%sT"));
-      if (ux>=-1767230360) // from 1914 
+      if (ux>=-1767230360) // from 1914
          return tz2 || (tz2=Rule.Timezone(-3600,"CET"));
       return tz1 || (tz1=Rule.Timezone(-4760,"LMT"));
    }
@@ -4413,11 +2483,11 @@ class Europe_Andorra
    Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=481078800) // from 1985 Mar 31  2:00 
+      if (ux>=481078800) // from 1985 Mar 31  2:00
          return tz4 || (tz4=TZrules.EU(-3600,"CE%sT"));
-      if (ux>=-733881600) // from 1946 Sep 30 
+      if (ux>=-733881600) // from 1946 Sep 30
          return tz3 || (tz3=Rule.Timezone(-3600,"CET"));
-      if (ux>=-2177453164) // from 1901 
+      if (ux>=-2177453164) // from 1901
          return tz2 || (tz2=Rule.Timezone(0,"WET"));
       return tz1 || (tz1=Rule.Timezone(-364,"LMT"));
    }
@@ -4429,19 +2499,19 @@ class Europe_Vienna
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=347158800) // from 1981 
+      if (ux>=347158800) // from 1981
          return tz6 || (tz6=TZrules.EU(-3600,"CE%sT"));
-      if (ux>=-757386000) // from 1946 
+      if (ux>=-757386000) // from 1946
          return tz3 || (tz3=TZrules.Austria(-3600,"CE%sT"));
-      if (ux>=-780188400) // from 1945 Apr 12  2:00s 
+      if (ux>=-780188400) // from 1945 Apr 12  2:00s
          return tz5 || (tz5=Rule.Timezone(-3600,"CET"));
-      if (ux>=-781052400) // from 1945 Apr  2  2:00s 
+      if (ux>=-781052400) // from 1945 Apr  2  2:00s
          return tz4 || (tz4=Rule.Timezone(-7200,"CEST"));
-      if (ux>=-938905200) // from 1940 Apr  1  2:00s 
+      if (ux>=-938905200) // from 1940 Apr  1  2:00s
          return tz2 || (tz2=TZrules.C_Eur(-3600,"CE%sT"));
-      if (ux>=-1577919600) // from 1920 
+      if (ux>=-1577919600) // from 1920
          return tz3 || (tz3=TZrules.Austria(-3600,"CE%sT"));
-      if (ux>=-2422055121) // from 1893 Apr 
+      if (ux>=-2422055121) // from 1893 Apr
          return tz2 || (tz2=TZrules.C_Eur(-3600,"CE%sT"));
       return tz1 || (tz1=Rule.Timezone(-3921,"LMT"));
    }
@@ -4453,19 +2523,19 @@ class Europe_Minsk
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6,tz7,tz8;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1301184000) // from 2011 Mar 27  2:00s 
-         return tz8 || (tz8=Rule.Timezone(-10800,"+03"));
-      if (ux>=670374000) // from 1991 Mar 31  2:00s 
+      if (ux>=1301184000) // from 2011 Mar 27  2:00s
+         return tz8 || (tz8=Rule.Timezone(-10800,"+03/+04"));
+      if (ux>=670374000) // from 1991 Mar 31  2:00s
          return tz7 || (tz7=TZrules.Russia(-7200,"EE%sT"));
-      if (ux>=631162800) // from 1990 
+      if (ux>=631162800) // from 1990
          return tz4 || (tz4=Rule.Timezone(-10800,"MSK"));
-      if (ux>=-804636000) // from 1944 Jul  3 
+      if (ux>=-804636000) // from 1944 Jul  3
          return tz6 || (tz6=TZrules.Russia(-10800,"MSK/MSD"));
-      if (ux>=-899780400) // from 1941 Jun 28 
+      if (ux>=-899780400) // from 1941 Jun 28
          return tz5 || (tz5=TZrules.C_Eur(-3600,"CE%sT"));
-      if (ux>=-1247536800) // from 1930 Jun 21 
+      if (ux>=-1247536800) // from 1930 Jun 21
          return tz4 || (tz4=Rule.Timezone(-10800,"MSK"));
-      if (ux>=-1441158600) // from 1924 May  2 
+      if (ux>=-1441158600) // from 1924 May  2
          return tz3 || (tz3=Rule.Timezone(-7200,"EET"));
       if (ux>=-2840147416) // from 1880 Minsk Mean Time
          return tz2 || (tz2=Rule.Timezone(-6600,"MMT"));
@@ -4479,25 +2549,27 @@ class Europe_Brussels
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6,tz7,tz8;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=220928400) // from 1977 
+      if (ux>=220928400) // from 1977
          return tz8 || (tz8=TZrules.EU(-3600,"CE%sT"));
-      if (ux>=-799279200) // from 1944 Sep  3 
+      if (ux>=-799279200) // from 1944 Sep  3
          return tz7 || (tz7=TZrules.Belgium(-3600,"CE%sT"));
-      if (ux>=-934668000) // from 1940 May 20  2:00s 
+      if (ux>=-934668000) // from 1940 May 20  2:00s
          return tz5 || (tz5=TZrules.C_Eur(-3600,"CE%sT"));
-      if (ux>=-1613826000) // from 1918 Nov 11 11:00u 
+      if (ux>=-1613826000) // from 1918 Nov 11 11:00u
          return tz6 || (tz6=TZrules.Belgium(0,"WE%sT"));
-      if (ux>=-1693702800) // from 1916 May  1  0:00 
+      if (ux>=-1693702800) // from 1916 May  1  0:00
          return tz5 || (tz5=TZrules.C_Eur(-3600,"CE%sT"));
-      if (ux>=-1740355200) // from 1914 Nov  8 
+      if (ux>=-1740355200) // from 1914 Nov  8
          return tz4 || (tz4=Rule.Timezone(-3600,"CET"));
-      if (ux>=-2450995200) // from 1892 May  1 00:17:30 
+      if (ux>=-2450995200) // from 1892 May  1 00:17:30
          return tz3 || (tz3=Rule.Timezone(0,"WET"));
-      if (ux>=-2840141850) // from 1880 
+      if (ux>=-2840141850) // from 1880
          return tz2 || (tz2=Rule.Timezone(-1050,"BMT"));
       return tz1 || (tz1=Rule.Timezone(-1050,"LMT"));
    }
 }
+constant CET=Europe_Brussels;
+constant MET=Europe_Brussels;
 constant Europe_Amsterdam=Europe_Brussels;
 constant Europe_Luxembourg=Europe_Brussels;
 
@@ -4507,21 +2579,21 @@ class Europe_Sofia
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6,tz7,tz8,tz9;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=852084000) // from 1997 
+      if (ux>=852084000) // from 1997
          return tz9 || (tz9=TZrules.EU(-7200,"EE%sT"));
-      if (ux>=662695200) // from 1991 
+      if (ux>=662695200) // from 1991
          return tz8 || (tz8=TZrules.E_Eur(-7200,"EE%sT"));
-      if (ux>=401868000) // from 1982 Sep 26  3:00 
+      if (ux>=401868000) // from 1982 Sep 26  3:00
          return tz7 || (tz7=TZrules.C_Eur(-7200,"EE%sT"));
-      if (ux>=291762000) // from 1979 Mar 31 23:00 
+      if (ux>=291762000) // from 1979 Mar 31 23:00
          return tz6 || (tz6=TZrules.Bulg(-7200,"EE%sT"));
-      if (ux>=-781048800) // from 1945 Apr  2  3:00 
+      if (ux>=-781048800) // from 1945 Apr  2  3:00
          return tz3 || (tz3=Rule.Timezone(-7200,"EET"));
-      if (ux>=-788914800) // from 1945 
+      if (ux>=-788914800) // from 1945
          return tz5 || (tz5=Rule.Timezone(-3600,"CET"));
-      if (ux>=-857257200) // from 1942 Nov  2  3:00 
+      if (ux>=-857257200) // from 1942 Nov  2  3:00
          return tz4 || (tz4=TZrules.C_Eur(-3600,"CE%sT"));
-      if (ux>=-2369527016) // from 1894 Nov 30 
+      if (ux>=-2369527016) // from 1894 Nov 30
          return tz3 || (tz3=Rule.Timezone(-7200,"EET"));
       if (ux>=-2840146396) // from 1880 Istanbul MT?
          return tz2 || (tz2=Rule.Timezone(-7016,"IMT"));
@@ -4535,15 +2607,15 @@ class Europe_Prague
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=284000400) // from 1979 
+      if (ux>=284000400) // from 1979
          return tz6 || (tz6=TZrules.EU(-3600,"CE%sT"));
-      if (ux>=-721267200) // from 1947 Feb 23  2:00 
+      if (ux>=-721267200) // from 1947 Feb 23  2:00
          return tz4 || (tz4=TZrules.Czech(-3600,"CE%sT"));
-      if (ux>=-728510400) // from 1946 Dec  1  3:00 
+      if (ux>=-728510400) // from 1946 Dec  1  3:00
          return tz5 || (tz5=Rule.Timezone(-7200,"GMT"));
-      if (ux>=-777852000) // from 1945 May  9 
+      if (ux>=-777852000) // from 1945 May  9
          return tz4 || (tz4=TZrules.Czech(-3600,"CE%sT"));
-      if (ux>=-2469401864) // from 1891 Oct 
+      if (ux>=-2469401864) // from 1891 Oct
          return tz3 || (tz3=TZrules.C_Eur(-3600,"CE%sT"));
       if (ux>=-3786829064) // from 1850 Prague Mean Time
          return tz2 || (tz2=Rule.Timezone(-3464,"PMT"));
@@ -4558,9 +2630,9 @@ class Atlantic_Faroe
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=347155200) // from 1981 
+      if (ux>=347155200) // from 1981
          return tz3 || (tz3=TZrules.EU(0,"WE%sT"));
-      if (ux>=-1955748776) // from 1908 Jan 11 
+      if (ux>=-1955748776) // from 1908 Jan 11
          return tz2 || (tz2=Rule.Timezone(0,"WET"));
       // Tórshavn
       return tz1 || (tz1=Rule.Timezone(1624,"LMT"));
@@ -4574,12 +2646,12 @@ class America_Danmarkshavn
    Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=820443600) // from 1996 
+      if (ux>=820443600) // from 1996
          return tz4 || (tz4=Rule.Timezone(0,"GMT"));
-      if (ux>=323845200) // from 1980 Apr  6  2:00 
+      if (ux>=323845200) // from 1980 Apr  6  2:00
          return tz3 || (tz3=TZrules.EU(10800,"-03/-02"));
-      if (ux>=-1686091520) // from 1916 Jul 28 
-         return tz2 || (tz2=Rule.Timezone(10800,"-03"));
+      if (ux>=-1686091520) // from 1916 Jul 28
+         return tz2 || (tz2=Rule.Timezone(10800,"-03/-02"));
       return tz1 || (tz1=Rule.Timezone(4480,"LMT"));
    }
 }
@@ -4590,14 +2662,14 @@ class America_Scoresbysund
    Rule.Timezone tz1,tz2,tz3,tz4,tz5;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1711839600) // from 2024 Mar 31 
+      if (ux>=1711839600) // from 2024 Mar 31
          return tz5 || (tz5=TZrules.EU(7200,"-02/-01"));
-      if (ux>=354664800) // from 1981 Mar 29 
+      if (ux>=354664800) // from 1981 Mar 29
          return tz4 || (tz4=TZrules.EU(3600,"-01/+00"));
-      if (ux>=323841600) // from 1980 Apr  6  2:00 
+      if (ux>=323841600) // from 1980 Apr  6  2:00
          return tz3 || (tz3=TZrules.C_Eur(7200,"-02/-01"));
-      if (ux>=-1686090728) // from 1916 Jul 28 
-         return tz2 || (tz2=Rule.Timezone(7200,"-02"));
+      if (ux>=-1686090728) // from 1916 Jul 28
+         return tz2 || (tz2=Rule.Timezone(7200,"-02/-01"));
       // Ittoqqortoormiit
       return tz1 || (tz1=Rule.Timezone(5272,"LMT"));
    }
@@ -4609,14 +2681,14 @@ class America_Nuuk
    Rule.Timezone tz1,tz2,tz3,tz4,tz5;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1698541200) // from 2023 Oct 29  1:00u 
+      if (ux>=1698541200) // from 2023 Oct 29  1:00u
          return tz5 || (tz5=TZrules.EU(7200,"-02/-01"));
-      if (ux>=1679792400) // from 2023 Mar 26  1:00u 
-         return tz4 || (tz4=Rule.Timezone(7200,"-02"));
-      if (ux>=323845200) // from 1980 Apr  6  2:00 
+      if (ux>=1679792400) // from 2023 Mar 26  1:00u
+         return tz4 || (tz4=Rule.Timezone(7200,"-02/-01"));
+      if (ux>=323845200) // from 1980 Apr  6  2:00
          return tz3 || (tz3=TZrules.EU(10800,"-03/-02"));
-      if (ux>=-1686083584) // from 1916 Jul 28 
-         return tz2 || (tz2=Rule.Timezone(10800,"-03"));
+      if (ux>=-1686083584) // from 1916 Jul 28
+         return tz2 || (tz2=Rule.Timezone(10800,"-03/-02"));
       // Godthåb
       return tz1 || (tz1=Rule.Timezone(12416,"LMT"));
    }
@@ -4629,7 +2701,7 @@ class America_Thule
    Rule.Timezone tz1,tz2;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-1686079492) // from 1916 Jul 28 
+      if (ux>=-1686079492) // from 1916 Jul 28
          return tz2 || (tz2=TZrules.Thule(14400,"A%sT"));
       // Pituffik
       return tz1 || (tz1=Rule.Timezone(16508,"LMT"));
@@ -4642,27 +2714,27 @@ class Europe_Tallinn
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6,tz7,tz8,tz9;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1014242400) // from 2002 Feb 21 
+      if (ux>=1014242400) // from 2002 Feb 21
          return tz9 || (tz9=TZrules.EU(-7200,"EE%sT"));
-      if (ux>=941353200) // from 1999 Oct 31  4:00 
+      if (ux>=941353200) // from 1999 Oct 31  4:00
          return tz4 || (tz4=Rule.Timezone(-7200,"EET"));
-      if (ux>=906433200) // from 1998 Sep 22 
+      if (ux>=906433200) // from 1998 Sep 22
          return tz9 || (tz9=TZrules.EU(-7200,"EE%sT"));
-      if (ux>=622598400) // from 1989 Sep 24  2:00s 
+      if (ux>=622598400) // from 1989 Sep 24  2:00s
          return tz8 || (tz8=TZrules.C_Eur(-7200,"EE%sT"));
-      if (ux>=606870000) // from 1989 Mar 26  2:00s 
+      if (ux>=606870000) // from 1989 Mar 26  2:00s
          return tz7 || (tz7=Rule.Timezone(-10800,"EEST"));
-      if (ux>=-797637600) // from 1944 Sep 22 
+      if (ux>=-797637600) // from 1944 Sep 22
          return tz6 || (tz6=TZrules.Russia(-10800,"MSK/MSD"));
-      if (ux>=-892954800) // from 1941 Sep 15 
+      if (ux>=-892954800) // from 1941 Sep 15
          return tz3 || (tz3=TZrules.C_Eur(-3600,"CE%sT"));
-      if (ux>=-927943200) // from 1940 Aug  6 
+      if (ux>=-927943200) // from 1940 Aug  6
          return tz5 || (tz5=Rule.Timezone(-10800,"MSK"));
-      if (ux>=-1535938740) // from 1921 May 
+      if (ux>=-1535938740) // from 1921 May
          return tz4 || (tz4=Rule.Timezone(-7200,"EET"));
-      if (ux>=-1593817200) // from 1919 Jul 
+      if (ux>=-1593817200) // from 1919 Jul
          return tz2 || (tz2=Rule.Timezone(-5940,"TMT"));
-      if (ux>=-1638322740) // from 1918 Feb 
+      if (ux>=-1638322740) // from 1918 Feb
          return tz3 || (tz3=TZrules.C_Eur(-3600,"CE%sT"));
       if (ux>=-2840146740) // from 1880 Tallinn Mean Time
          return tz2 || (tz2=Rule.Timezone(-5940,"TMT"));
@@ -4676,9 +2748,9 @@ class Europe_Helsinki
    Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=410234400) // from 1983 
+      if (ux>=410234400) // from 1983
          return tz4 || (tz4=TZrules.EU(-7200,"EE%sT"));
-      if (ux>=-1535938789) // from 1921 May 
+      if (ux>=-1535938789) // from 1921 May
          return tz3 || (tz3=TZrules.Finland(-7200,"EE%sT"));
       if (ux>=-2890258789) // from 1878 May 31 Helsinki Mean Time
          return tz2 || (tz2=Rule.Timezone(-5989,"HMT"));
@@ -4693,15 +2765,15 @@ class Europe_Paris
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=220928400) // from 1977 
+      if (ux>=220928400) // from 1977
          return tz6 || (tz6=TZrules.EU(-3600,"CE%sT"));
-      if (ux>=-766609200) // from 1945 Sep 16  3:00 
+      if (ux>=-766609200) // from 1945 Sep 16  3:00
          return tz5 || (tz5=TZrules.France(-3600,"CE%sT"));
-      if (ux>=-800056800) // from 1944 Aug 25 
+      if (ux>=-800056800) // from 1944 Aug 25
          return tz3 || (tz3=TZrules.France(0,"WE%sT"));
-      if (ux>=-932428800) // from 1940 Jun 14 23:00 
+      if (ux>=-932428800) // from 1940 Jun 14 23:00
          return tz4 || (tz4=TZrules.C_Eur(-3600,"CE%sT"));
-      if (ux>=-1855958961) // from 1911 Mar 11 
+      if (ux>=-1855958961) // from 1911 Mar 11
          return tz3 || (tz3=TZrules.France(0,"WE%sT"));
       if (ux>=-2486592561) // from 1891 Mar 16 Paris Mean Time
          return tz2 || (tz2=Rule.Timezone(-561,"PMT"));
@@ -4716,13 +2788,13 @@ class Europe_Berlin
    Rule.Timezone tz1,tz2,tz3,tz4,tz5;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=315536400) // from 1980 
+      if (ux>=315536400) // from 1980
          return tz5 || (tz5=TZrules.EU(-3600,"CE%sT"));
-      if (ux>=-757378800) // from 1946 
+      if (ux>=-757378800) // from 1946
          return tz4 || (tz4=TZrules.Germany(-3600,"CE%sT"));
-      if (ux>=-776548800) // from 1945 May 24  2:00 
+      if (ux>=-776548800) // from 1945 May 24  2:00
          return tz3 || (tz3=TZrules.SovietZone(-3600,"CE%sT"));
-      if (ux>=-2422054408) // from 1893 Apr 
+      if (ux>=-2422054408) // from 1893 Apr
          return tz2 || (tz2=TZrules.C_Eur(-3600,"CE%sT"));
       return tz1 || (tz1=Rule.Timezone(-3208,"LMT"));
    }
@@ -4739,11 +2811,11 @@ class Europe_Gibraltar
    Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=378687600) // from 1982 
+      if (ux>=378687600) // from 1982
          return tz4 || (tz4=TZrules.EU(-3600,"CE%sT"));
-      if (ux>=-401320800) // from 1957 Apr 14  2:00 
+      if (ux>=-401320800) // from 1957 Apr 14  2:00
          return tz3 || (tz3=Rule.Timezone(-3600,"CET"));
-      if (ux>=-2821649916) // from 1880 Aug  2 
+      if (ux>=-2821649916) // from 1880 Aug  2
          return tz2 || (tz2=TZrules.GB_Eire(0,"%s"));
       return tz1 || (tz1=Rule.Timezone(1284,"LMT"));
    }
@@ -4755,19 +2827,20 @@ class Europe_Athens
    Rule.Timezone tz1,tz2,tz3,tz4,tz5;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=347162400) // from 1981 
+      if (ux>=347162400) // from 1981
          return tz5 || (tz5=TZrules.EU(-7200,"EE%sT"));
-      if (ux>=-812415600) // from 1944 Apr  4 
+      if (ux>=-812415600) // from 1944 Apr  4
          return tz3 || (tz3=TZrules.Greece(-7200,"EE%sT"));
-      if (ux>=-904856400) // from 1941 Apr 30 
+      if (ux>=-904856400) // from 1941 Apr 30
          return tz4 || (tz4=TZrules.Greece(-3600,"CE%sT"));
-      if (ux>=-1686101632) // from 1916 Jul 28  0:01 
+      if (ux>=-1686101632) // from 1916 Jul 28  0:01
          return tz3 || (tz3=TZrules.Greece(-7200,"EE%sT"));
       if (ux>=-2344642492) // from 1895 Sep 14 Athens MT
          return tz2 || (tz2=Rule.Timezone(-5692,"AMT"));
       return tz1 || (tz1=Rule.Timezone(-5692,"LMT"));
    }
 }
+constant EET=Europe_Athens;
 
 class Europe_Budapest
 {
@@ -4775,15 +2848,15 @@ class Europe_Budapest
    Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=441766800) // from 1984 
+      if (ux>=441766800) // from 1984
          return tz4 || (tz4=TZrules.EU(-3600,"CE%sT"));
-      if (ux>=-788914800) // from 1945 
+      if (ux>=-788914800) // from 1945
          return tz3 || (tz3=TZrules.Hungary(-3600,"CE%sT"));
-      if (ux>=-906768000) // from 1941 Apr  7 23:00 
+      if (ux>=-906768000) // from 1941 Apr  7 23:00
          return tz2 || (tz2=TZrules.C_Eur(-3600,"CE%sT"));
-      if (ux>=-1640991600) // from 1918 
+      if (ux>=-1640991600) // from 1918
          return tz3 || (tz3=TZrules.Hungary(-3600,"CE%sT"));
-      if (ux>=-2498260580) // from 1890 Nov  1 
+      if (ux>=-2498260580) // from 1890 Nov  1
          return tz2 || (tz2=TZrules.C_Eur(-3600,"CE%sT"));
       return tz1 || (tz1=Rule.Timezone(-4580,"LMT"));
    }
@@ -4795,13 +2868,13 @@ class Europe_Rome
    Rule.Timezone tz1,tz2,tz3,tz4,tz5;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=315536400) // from 1980 
+      if (ux>=315536400) // from 1980
          return tz5 || (tz5=TZrules.EU(-3600,"CE%sT"));
-      if (ux>=-807141600) // from 1944 Jun  4 
+      if (ux>=-807141600) // from 1944 Jun  4
          return tz3 || (tz3=TZrules.Italy(-3600,"CE%sT"));
-      if (ux>=-830296800) // from 1943 Sep 10 
+      if (ux>=-830296800) // from 1943 Sep 10
          return tz4 || (tz4=TZrules.C_Eur(-3600,"CE%sT"));
-      if (ux>=-2403565200) // from 1893 Oct 31 23:00u 
+      if (ux>=-2403565200) // from 1893 Oct 31 23:00u
          return tz3 || (tz3=TZrules.Italy(-3600,"CE%sT"));
       if (ux>=-3252098996) // from 1866 Dec 12 Rome Mean
          return tz2 || (tz2=Rule.Timezone(-2996,"RMT"));
@@ -4817,29 +2890,29 @@ class Europe_Riga
    Rule.Timezone tz1,tz10,tz2,tz3,tz4,tz5,tz6,tz7,tz8,tz9;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=978386400) // from 2001 Jan  2 
+      if (ux>=978386400) // from 2001 Jan  2
          return tz10 || (tz10=TZrules.EU(-7200,"EE%sT"));
-      if (ux>=951789600) // from 2000 Feb 29 
+      if (ux>=951789600) // from 2000 Feb 29
          return tz4 || (tz4=Rule.Timezone(-7200,"EET"));
-      if (ux>=853812000) // from 1997 Jan 21 
+      if (ux>=853812000) // from 1997 Jan 21
          return tz10 || (tz10=TZrules.EU(-7200,"EE%sT"));
-      if (ux>=620600400) // from 1989 Sep lastSun  2:00s 
+      if (ux>=620600400) // from 1989 Sep lastSun  2:00s
          return tz9 || (tz9=TZrules.Latvia(-7200,"EE%sT"));
-      if (ux>=604724400) // from 1989 Mar lastSun  2:00s 
+      if (ux>=604724400) // from 1989 Mar lastSun  2:00s
          return tz8 || (tz8=Rule.Timezone(-10800,"EEST"));
-      if (ux>=-795826800) // from 1944 Oct 13 
+      if (ux>=-795826800) // from 1944 Oct 13
          return tz7 || (tz7=TZrules.Russia(-10800,"MSK/MSD"));
-      if (ux>=-899521200) // from 1941 Jul 
+      if (ux>=-899521200) // from 1941 Jul
          return tz6 || (tz6=TZrules.C_Eur(-3600,"CE%sT"));
-      if (ux>=-928029600) // from 1940 Aug  5 
+      if (ux>=-928029600) // from 1940 Aug  5
          return tz5 || (tz5=Rule.Timezone(-10800,"MSK"));
-      if (ux>=-1377308194) // from 1926 May 11 
+      if (ux>=-1377308194) // from 1926 May 11
          return tz4 || (tz4=Rule.Timezone(-7200,"EET"));
-      if (ux>=-1597275394) // from 1919 May 22  3:00 
+      if (ux>=-1597275394) // from 1919 May 22  3:00
          return tz2 || (tz2=Rule.Timezone(-5794,"RMT"));
-      if (ux>=-1601681794) // from 1919 Apr  1  2:00 
+      if (ux>=-1601681794) // from 1919 Apr  1  2:00
          return tz3 || (tz3=Rule.Timezone(-9394,"LST"));
-      if (ux>=-1618702594) // from 1918 Sep 16  3:00 
+      if (ux>=-1618702594) // from 1918 Sep 16  3:00
          return tz2 || (tz2=Rule.Timezone(-5794,"RMT"));
       if (ux>=-1632008194) // from 1918 Apr 15  2:00 Latvian ST
          return tz3 || (tz3=Rule.Timezone(-9394,"LST"));
@@ -4855,29 +2928,29 @@ class Europe_Vilnius
    Rule.Timezone tz1,tz10,tz11,tz12,tz2,tz3,tz4,tz5,tz6,tz7,tz8,tz9;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1041372000) // from 2003 Jan  1 
+      if (ux>=1041372000) // from 2003 Jan  1
          return tz12 || (tz12=TZrules.EU(-7200,"EE%sT"));
-      if (ux>=941331600) // from 1999 Oct 31  1:00u 
+      if (ux>=941331600) // from 1999 Oct 31  1:00u
          return tz5 || (tz5=Rule.Timezone(-7200,"EET"));
-      if (ux>=891133200) // from 1998 Mar 29  1:00u 
+      if (ux>=891133200) // from 1998 Mar 29  1:00u
          return tz11 || (tz11=TZrules.EU(-3600,"CE%sT"));
-      if (ux>=883620000) // from 1998 
+      if (ux>=883620000) // from 1998
          return tz5 || (tz5=Rule.Timezone(-7200,"EET"));
-      if (ux>=686102400) // from 1991 Sep 29  2:00s 
+      if (ux>=686102400) // from 1991 Sep 29  2:00s
          return tz10 || (tz10=TZrules.C_Eur(-7200,"EE%sT"));
-      if (ux>=606870000) // from 1989 Mar 26  2:00s 
+      if (ux>=606870000) // from 1989 Mar 26  2:00s
          return tz9 || (tz9=TZrules.Russia(-7200,"EE%sT"));
-      if (ux>=-802130400) // from 1944 Aug 
+      if (ux>=-802130400) // from 1944 Aug
          return tz8 || (tz8=TZrules.Russia(-10800,"MSK/MSD"));
-      if (ux>=-900126000) // from 1941 Jun 24 
+      if (ux>=-900126000) // from 1941 Jun 24
          return tz7 || (tz7=TZrules.C_Eur(-3600,"CE%sT"));
-      if (ux>=-928198800) // from 1940 Aug  3 
+      if (ux>=-928198800) // from 1940 Aug  3
          return tz6 || (tz6=Rule.Timezone(-10800,"MSK"));
-      if (ux>=-1553565600) // from 1920 Oct  9 
+      if (ux>=-1553565600) // from 1920 Oct  9
          return tz4 || (tz4=Rule.Timezone(-3600,"CET"));
-      if (ux>=-1561251600) // from 1920 Jul 12 
+      if (ux>=-1561251600) // from 1920 Jul 12
          return tz5 || (tz5=Rule.Timezone(-7200,"EET"));
-      if (ux>=-1585100136) // from 1919 Oct 10 
+      if (ux>=-1585100136) // from 1919 Oct 10
          return tz4 || (tz4=Rule.Timezone(-3600,"CET"));
       if (ux>=-1672536240) // from 1917 Kaunas Mean Time
          return tz3 || (tz3=Rule.Timezone(-5736,"KMT"));
@@ -4893,11 +2966,11 @@ class Europe_Malta
    Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=347158800) // from 1981 
+      if (ux>=347158800) // from 1981
          return tz4 || (tz4=TZrules.EU(-3600,"CE%sT"));
-      if (ux>=102387600) // from 1973 Mar 31 
+      if (ux>=102387600) // from 1973 Mar 31
          return tz3 || (tz3=TZrules.Malta(-3600,"CE%sT"));
-      if (ux>=-2403478684) // from 1893 Nov  2 
+      if (ux>=-2403478684) // from 1893 Nov  2
          return tz2 || (tz2=TZrules.Italy(-3600,"CE%sT"));
       // Valletta
       return tz1 || (tz1=Rule.Timezone(-3484,"LMT"));
@@ -4910,19 +2983,19 @@ class Europe_Chisinau
    Rule.Timezone tz1,tz10,tz2,tz3,tz4,tz5,tz6,tz7,tz8,tz9;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=852084000) // from 1997 
+      if (ux>=852084000) // from 1997
          return tz10 || (tz10=TZrules.Moldova(-7200,"EE%sT"));
-      if (ux>=694231200) // from 1992 
+      if (ux>=694231200) // from 1992
          return tz9 || (tz9=TZrules.E_Eur(-7200,"EE%sT"));
-      if (ux>=641973600) // from 1990 May  6  2:00 
+      if (ux>=641973600) // from 1990 May  6  2:00
          return tz8 || (tz8=TZrules.Russia(-7200,"EE%sT"));
-      if (ux>=-800143200) // from 1944 Aug 24 
+      if (ux>=-800143200) // from 1944 Aug 24
          return tz7 || (tz7=TZrules.Russia(-10800,"MSK/MSD"));
-      if (ux>=-898138800) // from 1941 Jul 17 
+      if (ux>=-898138800) // from 1941 Jul 17
          return tz6 || (tz6=TZrules.C_Eur(-3600,"CE%sT"));
-      if (ux>=-927151200) // from 1940 Aug 15 
+      if (ux>=-927151200) // from 1940 Aug 15
          return tz5 || (tz5=Rule.Timezone(-10800,"EEST"));
-      if (ux>=-1213148664) // from 1931 Jul 24 
+      if (ux>=-1213148664) // from 1931 Jul 24
          return tz4 || (tz4=TZrules.Romania(-7200,"EE%sT"));
       if (ux>=-1637114100) // from 1918 Feb 15 Bucharest MT
          return tz3 || (tz3=Rule.Timezone(-6264,"BMT"));
@@ -4939,19 +3012,19 @@ class Europe_Warsaw
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6,tz7;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=567997200) // from 1988 
+      if (ux>=567997200) // from 1988
          return tz7 || (tz7=TZrules.EU(-3600,"CE%sT"));
-      if (ux>=220928400) // from 1977 
+      if (ux>=220928400) // from 1977
          return tz6 || (tz6=TZrules.W_Eur(-3600,"CE%sT"));
-      if (ux>=-796860000) // from 1944 Oct 
+      if (ux>=-796860000) // from 1944 Oct
          return tz5 || (tz5=TZrules.Poland(-3600,"CE%sT"));
-      if (ux>=-931726800) // from 1940 Jun 23  2:00 
+      if (ux>=-931726800) // from 1940 Jun 23  2:00
          return tz3 || (tz3=TZrules.C_Eur(-3600,"CE%sT"));
-      if (ux>=-1501711200) // from 1922 Jun 
+      if (ux>=-1501711200) // from 1922 Jun
          return tz5 || (tz5=TZrules.Poland(-3600,"CE%sT"));
-      if (ux>=-1618686000) // from 1918 Sep 16  3:00 
+      if (ux>=-1618686000) // from 1918 Sep 16  3:00
          return tz4 || (tz4=TZrules.Poland(-7200,"EE%sT"));
-      if (ux>=-1717032240) // from 1915 Aug  5 
+      if (ux>=-1717032240) // from 1915 Aug  5
          return tz3 || (tz3=TZrules.C_Eur(-3600,"CE%sT"));
       if (ux>=-2840145840) // from 1880 Warsaw Mean Time
          return tz2 || (tz2=Rule.Timezone(-5040,"WMT"));
@@ -4963,20 +3036,20 @@ constant Poland=Europe_Warsaw;
 class Europe_Lisbon
 {
    inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6;
+   Rule.Timezone tz1,tz2,tz3,tz4,tz5;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=828234000) // from 1996 Mar 31  1:00u 
-         return tz6 || (tz6=TZrules.EU(0,"WE%sT"));
-      if (ux>=717555600) // from 1992 Sep 27  1:00s 
+      if (ux>=828234000) // from 1996 Mar 31  1:00u
+         return tz4 || (tz4=TZrules.EU(0,"WE%sT"));
+      if (ux>=717555600) // from 1992 Sep 27  1:00u
          return tz5 || (tz5=TZrules.EU(-3600,"CE%sT"));
-      if (ux>=433299600) // from 1983 Sep 25  1:00s 
-         return tz4 || (tz4=TZrules.W_Eur(0,"WE%sT"));
-      if (ux>=212544000) // from 1976 Sep 26  1:00 
+      if (ux>=504921600) // from 1986
+         return tz4 || (tz4=TZrules.EU(0,"WE%sT"));
+      if (ux>=212544000) // from 1976 Sep 26  1:00
          return tz2 || (tz2=TZrules.Port(0,"WE%sT"));
-      if (ux>=-118274400) // from 1966 Apr  3  2:00 
+      if (ux>=-102549600) // from 1966 Oct  2  2:00s
          return tz3 || (tz3=Rule.Timezone(-3600,"CET"));
-      if (ux>=-1830384000) // from 1912 Jan  1  0:00u 
+      if (ux>=-1830384000) // from 1912 Jan  1  0:00u
          return tz2 || (tz2=TZrules.Port(0,"WE%sT"));
       if (ux>=-2713908195) // from 1884 Lisbon MT
          return tz1 || (tz1=Rule.Timezone(2205,"LMT"));
@@ -4984,38 +3057,25 @@ class Europe_Lisbon
    }
 }
 constant Portugal=Europe_Lisbon;
+constant WET=Europe_Lisbon;
 
 class Atlantic_Azores
 {
    inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6,tz7,tz8;
+   Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6,tz7;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=733280400) // from 1993 Mar 28  1:00u 
-         return tz8 || (tz8=TZrules.EU(3600,"-01/+00"));
-      if (ux>=717559200) // from 1992 Sep 27  1:00s 
+      if (ux>=740278800) // from 1993 Jun 17  1:00u
+         return tz6 || (tz6=TZrules.EU(3600,"-01/+00"));
+      if (ux>=725421600) // from 1992 Dec 27  1:00s
          return tz7 || (tz7=TZrules.EU(0,"WE%sT"));
-      if (ux>=433303200) // from 1983 Sep 25  1:00s 
-         return tz6 || (tz6=TZrules.W_Eur(3600,"-01/+00"));
-      if (ux>=-118281600) // from 1966 Apr  3  2:00 
+      if (ux>=504918000) // from 1986
+         return tz6 || (tz6=TZrules.EU(3600,"-01/+00"));
+      if (ux>=386125200) // from 1982 Mar 28  0:00s
          return tz5 || (tz5=TZrules.Port(3600,"-01/+00"));
-      if (ux>=-768441600) // from 1945 Aug 25 22:00s 
-         return tz3 || (tz3=TZrules.Port(7200,"-02/-01"));
-      if (ux>=-779328000) // from 1945 Apr 21 22:00s 
-         return tz4 || (tz4=TZrules.Port(7200,"+00"));
-      if (ux>=-799891200) // from 1944 Aug 26 22:00s 
-         return tz3 || (tz3=TZrules.Port(7200,"-02/-01"));
-      if (ux>=-810777600) // from 1944 Apr 22 22:00s 
-         return tz4 || (tz4=TZrules.Port(7200,"+00"));
-      if (ux>=-831340800) // from 1943 Aug 28 22:00s 
-         return tz3 || (tz3=TZrules.Port(7200,"-02/-01"));
-      if (ux>=-842832000) // from 1943 Apr 17 22:00s 
-         return tz4 || (tz4=TZrules.Port(7200,"+00"));
-      if (ux>=-864000000) // from 1942 Aug 15 22:00s 
-         return tz3 || (tz3=TZrules.Port(7200,"-02/-01"));
-      if (ux>=-873676800) // from 1942 Apr 25 22:00s 
-         return tz4 || (tz4=TZrules.Port(7200,"+00"));
-      if (ux>=-1830376800) // from 1912 Jan  1  2:00u 
+      if (ux>=-102542400) // from 1966 Oct  2  2:00s
+         return tz4 || (tz4=Rule.Timezone(3600,"-01/+00"));
+      if (ux>=-1830376800) // from 1912 Jan  1  2:00u
          return tz3 || (tz3=TZrules.Port(7200,"-02/-01"));
       if (ux>=-2713904240) // from 1884 Horta MT
          return tz2 || (tz2=Rule.Timezone(6872,"HMT"));
@@ -5030,27 +3090,13 @@ class Atlantic_Madeira
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=433299600) // from 1983 Sep 25  1:00s 
+      if (ux>=523155600) // from 1986 Jul 31
          return tz6 || (tz6=TZrules.EU(0,"WE%sT"));
-      if (ux>=-118278000) // from 1966 Apr  3  2:00 
+      if (ux>=386726400) // from 1982 Apr  4
          return tz5 || (tz5=TZrules.Port(0,"WE%sT"));
-      if (ux>=-768445200) // from 1945 Aug 25 22:00s 
-         return tz3 || (tz3=TZrules.Port(3600,"-01/+00"));
-      if (ux>=-779331600) // from 1945 Apr 21 22:00s 
-         return tz4 || (tz4=TZrules.Port(3600,"+01"));
-      if (ux>=-799894800) // from 1944 Aug 26 22:00s 
-         return tz3 || (tz3=TZrules.Port(3600,"-01/+00"));
-      if (ux>=-810781200) // from 1944 Apr 22 22:00s 
-         return tz4 || (tz4=TZrules.Port(3600,"+01"));
-      if (ux>=-831344400) // from 1943 Aug 28 22:00s 
-         return tz3 || (tz3=TZrules.Port(3600,"-01/+00"));
-      if (ux>=-842835600) // from 1943 Apr 17 22:00s 
-         return tz4 || (tz4=TZrules.Port(3600,"+01"));
-      if (ux>=-864003600) // from 1942 Aug 15 22:00s 
-         return tz3 || (tz3=TZrules.Port(3600,"-01/+00"));
-      if (ux>=-873680400) // from 1942 Apr 25 22:00s 
-         return tz4 || (tz4=TZrules.Port(3600,"+01"));
-      if (ux>=-1830380400) // from 1912 Jan  1  1:00u 
+      if (ux>=-102546000) // from 1966 Oct  2  2:00s
+         return tz4 || (tz4=Rule.Timezone(0,"WET"));
+      if (ux>=-1830380400) // from 1912 Jan  1  1:00u
          return tz3 || (tz3=TZrules.Port(3600,"-01/+00"));
       if (ux>=-2713906344) // from 1884 Funchal MT
          return tz2 || (tz2=Rule.Timezone(4056,"FMT"));
@@ -5065,15 +3111,15 @@ class Europe_Bucharest
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=852084000) // from 1997 
+      if (ux>=852084000) // from 1997
          return tz6 || (tz6=TZrules.EU(-7200,"EE%sT"));
-      if (ux>=757389600) // from 1994 
+      if (ux>=757389600) // from 1994
          return tz5 || (tz5=TZrules.E_Eur(-7200,"EE%sT"));
-      if (ux>=662695200) // from 1991 
+      if (ux>=662695200) // from 1991
          return tz3 || (tz3=TZrules.Romania(-7200,"EE%sT"));
-      if (ux>=354672000) // from 1981 Mar 29  2:00s 
+      if (ux>=354672000) // from 1981 Mar 29  2:00s
          return tz4 || (tz4=TZrules.C_Eur(-7200,"EE%sT"));
-      if (ux>=-1213148664) // from 1931 Jul 24 
+      if (ux>=-1213148664) // from 1931 Jul 24
          return tz3 || (tz3=TZrules.Romania(-7200,"EE%sT"));
       if (ux>=-2469404664) // from 1891 Oct Bucharest MT
          return tz2 || (tz2=Rule.Timezone(-6264,"BMT"));
@@ -5087,17 +3133,17 @@ class Europe_Kaliningrad
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6,tz7;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1414278000) // from 2014 Oct 26  2:00s 
+      if (ux>=1414278000) // from 2014 Oct 26  2:00s
          return tz7 || (tz7=Rule.Timezone(-7200,"EET"));
-      if (ux>=1301184000) // from 2011 Mar 27  2:00s 
-         return tz6 || (tz6=Rule.Timezone(-10800,"+03"));
-      if (ux>=606870000) // from 1989 Mar 26  2:00s 
+      if (ux>=1301184000) // from 2011 Mar 27  2:00s
+         return tz6 || (tz6=Rule.Timezone(-10800,"+03/+04"));
+      if (ux>=606870000) // from 1989 Mar 26  2:00s
          return tz5 || (tz5=TZrules.Russia(-7200,"EE%sT"));
-      if (ux>=-749080800) // from 1946 Apr  7 
+      if (ux>=-749080800) // from 1946 Apr  7
          return tz4 || (tz4=TZrules.Russia(-10800,"MSK/MSD"));
-      if (ux>=-780357600) // from 1945 Apr 10 
+      if (ux>=-780357600) // from 1945 Apr 10
          return tz3 || (tz3=TZrules.Poland(-7200,"EE%sT"));
-      if (ux>=-2422056120) // from 1893 Apr 
+      if (ux>=-2422056120) // from 1893 Apr
          return tz2 || (tz2=TZrules.C_Eur(-3600,"CE%sT"));
       return tz1 || (tz1=Rule.Timezone(-4920,"LMT"));
    }
@@ -5109,23 +3155,23 @@ class Europe_Moscow
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6,tz7,tz8,tz9;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1414274400) // from 2014 Oct 26  2:00s 
+      if (ux>=1414274400) // from 2014 Oct 26  2:00s
          return tz9 || (tz9=Rule.Timezone(-10800,"MSK"));
-      if (ux>=1301180400) // from 2011 Mar 27  2:00s 
+      if (ux>=1301180400) // from 2011 Mar 27  2:00s
          return tz8 || (tz8=Rule.Timezone(-14400,"MSK"));
-      if (ux>=695779200) // from 1992 Jan 19  2:00s 
+      if (ux>=695779200) // from 1992 Jan 19  2:00s
          return tz5 || (tz5=TZrules.Russia(-10800,"MSK/MSD"));
-      if (ux>=670374000) // from 1991 Mar 31  2:00s 
+      if (ux>=670374000) // from 1991 Mar 31  2:00s
          return tz7 || (tz7=TZrules.Russia(-7200,"EE%sT"));
-      if (ux>=-1247536800) // from 1930 Jun 21 
+      if (ux>=-1247536800) // from 1930 Jun 21
          return tz5 || (tz5=TZrules.Russia(-10800,"MSK/MSD"));
-      if (ux>=-1491166800) // from 1922 Oct 
+      if (ux>=-1491166800) // from 1922 Oct
          return tz6 || (tz6=Rule.Timezone(-7200,"EET"));
-      if (ux>=-1522702800) // from 1921 Oct 
+      if (ux>=-1522702800) // from 1921 Oct
          return tz5 || (tz5=TZrules.Russia(-10800,"MSK/MSD"));
-      if (ux>=-1593820800) // from 1919 Jul  1  0:00u 
+      if (ux>=-1593820800) // from 1919 Jul  1  0:00u
          return tz4 || (tz4=TZrules.Russia(-10800,"%s"));
-      if (ux>=-1688265017) // from 1916 Jul  3 
+      if (ux>=-1688265017) // from 1916 Jul  3
          return tz3 || (tz3=TZrules.Russia(-9079,"%s"));
       if (ux>=-2840149817) // from 1880 Moscow Mean Time
          return tz2 || (tz2=Rule.Timezone(-9017,"MMT"));
@@ -5140,31 +3186,31 @@ class Europe_Simferopol
    Rule.Timezone tz1,tz10,tz11,tz2,tz3,tz4,tz5,tz6,tz7,tz8,tz9;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1414274400) // from 2014 Oct 26  2:00s 
+      if (ux>=1414274400) // from 2014 Oct 26  2:00s
          return tz4 || (tz4=Rule.Timezone(-10800,"MSK"));
-      if (ux>=1396152000) // from 2014 Mar 30  2:00 
+      if (ux>=1396152000) // from 2014 Mar 30  2:00
          return tz11 || (tz11=Rule.Timezone(-14400,"MSK"));
-      if (ux>=857163600) // from 1997 Mar lastSun  1:00u 
+      if (ux>=857163600) // from 1997 Mar lastSun  1:00u
          return tz10 || (tz10=TZrules.EU(-7200,"EE%sT"));
-      if (ux>=846374400) // from 1996 Oct 27  3:00s 
+      if (ux>=846374400) // from 1996 Oct 27  3:00s
          return tz4 || (tz4=Rule.Timezone(-10800,"MSK"));
-      if (ux>=828219600) // from 1996 Mar 31  0:00s 
+      if (ux>=828219600) // from 1996 Mar 31  0:00s
          return tz9 || (tz9=Rule.Timezone(-14400,"MSD"));
-      if (ux>=767761200) // from 1994 May 
+      if (ux>=767761200) // from 1994 May
          return tz8 || (tz8=TZrules.C_Eur(-10800,"MSK/MSD"));
-      if (ux>=701042400) // from 1992 Mar 20 
+      if (ux>=701042400) // from 1992 Mar 20
          return tz7 || (tz7=TZrules.C_Eur(-7200,"EE%sT"));
-      if (ux>=646786800) // from 1990 Jul  1  2:00 
+      if (ux>=646786800) // from 1990 Jul  1  2:00
          return tz3 || (tz3=Rule.Timezone(-7200,"EET"));
-      if (ux>=631162800) // from 1990 
+      if (ux>=631162800) // from 1990
          return tz4 || (tz4=Rule.Timezone(-10800,"MSK"));
-      if (ux>=-811634400) // from 1944 Apr 13 
+      if (ux>=-811634400) // from 1944 Apr 13
          return tz6 || (tz6=TZrules.Russia(-10800,"MSK/MSD"));
-      if (ux>=-888894000) // from 1941 Nov 
+      if (ux>=-888894000) // from 1941 Nov
          return tz5 || (tz5=TZrules.C_Eur(-3600,"CE%sT"));
-      if (ux>=-1247536800) // from 1930 Jun 21 
+      if (ux>=-1247536800) // from 1930 Jun 21
          return tz4 || (tz4=Rule.Timezone(-10800,"MSK"));
-      if (ux>=-1441160160) // from 1924 May  2 
+      if (ux>=-1441160160) // from 1924 May  2
          return tz3 || (tz3=Rule.Timezone(-7200,"EET"));
       if (ux>=-2840148984) // from 1880 Simferopol Mean T
          return tz2 || (tz2=Rule.Timezone(-8160,"SMT"));
@@ -5178,22 +3224,22 @@ class Europe_Astrakhan
    Rule.Timezone tz1,tz2,tz3,tz4,tz5;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1459033200) // from 2016 Mar 27  2:00s 
-         return tz5 || (tz5=Rule.Timezone(-14400,"+04"));
-      if (ux>=1414274400) // from 2014 Oct 26  2:00s 
-         return tz2 || (tz2=Rule.Timezone(-10800,"+03"));
-      if (ux>=1301180400) // from 2011 Mar 27  2:00s 
-         return tz5 || (tz5=Rule.Timezone(-14400,"+04"));
-      if (ux>=701820000) // from 1992 Mar 29  2:00s 
+      if (ux>=1459033200) // from 2016 Mar 27  2:00s
+         return tz5 || (tz5=Rule.Timezone(-14400,"+04/+05"));
+      if (ux>=1414274400) // from 2014 Oct 26  2:00s
+         return tz2 || (tz2=Rule.Timezone(-10800,"+03/+04"));
+      if (ux>=1301180400) // from 2011 Mar 27  2:00s
+         return tz5 || (tz5=Rule.Timezone(-14400,"+04/+05"));
+      if (ux>=701820000) // from 1992 Mar 29  2:00s
          return tz4 || (tz4=TZrules.Russia(-10800,"+03/+04"));
-      if (ux>=670374000) // from 1991 Mar 31  2:00s 
-         return tz5 || (tz5=Rule.Timezone(-14400,"+04"));
-      if (ux>=606866400) // from 1989 Mar 26  2:00s 
+      if (ux>=670374000) // from 1991 Mar 31  2:00s
+         return tz5 || (tz5=Rule.Timezone(-14400,"+04/+05"));
+      if (ux>=606866400) // from 1989 Mar 26  2:00s
          return tz4 || (tz4=TZrules.Russia(-10800,"+03/+04"));
-      if (ux>=-1247540400) // from 1930 Jun 21 
+      if (ux>=-1247540400) // from 1930 Jun 21
          return tz3 || (tz3=TZrules.Russia(-14400,"+04/+05"));
-      if (ux>=-1441249932) // from 1924 May 
-         return tz2 || (tz2=Rule.Timezone(-10800,"+03"));
+      if (ux>=-1441249932) // from 1924 May
+         return tz2 || (tz2=Rule.Timezone(-10800,"+03/+04"));
       return tz1 || (tz1=Rule.Timezone(-11532,"LMT"));
    }
 }
@@ -5204,26 +3250,26 @@ class Europe_Volgograd
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6,tz7;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1609020000) // from 2020 Dec 27  2:00s 
+      if (ux>=1609020000) // from 2020 Dec 27  2:00s
          return tz7 || (tz7=Rule.Timezone(-10800,"MSK"));
-      if (ux>=1540681200) // from 2018 Oct 28  2:00s 
-         return tz3 || (tz3=Rule.Timezone(-14400,"+04"));
-      if (ux>=1414274400) // from 2014 Oct 26  2:00s 
+      if (ux>=1540681200) // from 2018 Oct 28  2:00s
+         return tz3 || (tz3=Rule.Timezone(-14400,"+04/+05"));
+      if (ux>=1414274400) // from 2014 Oct 26  2:00s
          return tz7 || (tz7=Rule.Timezone(-10800,"MSK"));
-      if (ux>=1301180400) // from 2011 Mar 27  2:00s 
+      if (ux>=1301180400) // from 2011 Mar 27  2:00s
          return tz6 || (tz6=Rule.Timezone(-14400,"MSK"));
-      if (ux>=701820000) // from 1992 Mar 29  2:00s 
+      if (ux>=701820000) // from 1992 Mar 29  2:00s
          return tz5 || (tz5=TZrules.Russia(-10800,"MSK/MSD"));
-      if (ux>=670374000) // from 1991 Mar 31  2:00s 
-         return tz3 || (tz3=Rule.Timezone(-14400,"+04"));
-      if (ux>=575416800) // from 1988 Mar 27  2:00s 
+      if (ux>=670374000) // from 1991 Mar 31  2:00s
+         return tz3 || (tz3=Rule.Timezone(-14400,"+04/+05"));
+      if (ux>=575416800) // from 1988 Mar 27  2:00s
          return tz5 || (tz5=TZrules.Russia(-10800,"MSK/MSD"));
-      if (ux>=-256881600) // from 1961 Nov 11 
+      if (ux>=-256881600) // from 1961 Nov 11
          return tz4 || (tz4=TZrules.Russia(-14400,"+04/+05"));
-      if (ux>=-1247540400) // from 1930 Jun 21 
-         return tz3 || (tz3=Rule.Timezone(-14400,"+04"));
-      if (ux>=-1577761060) // from 1920 Jan  3 
-         return tz2 || (tz2=Rule.Timezone(-10800,"+03"));
+      if (ux>=-1247540400) // from 1930 Jun 21
+         return tz3 || (tz3=Rule.Timezone(-14400,"+04/+05"));
+      if (ux>=-1577761060) // from 1920 Jan  3
+         return tz2 || (tz2=Rule.Timezone(-10800,"+03/+04"));
       return tz1 || (tz1=Rule.Timezone(-10660,"LMT"));
    }
 }
@@ -5234,22 +3280,22 @@ class Europe_Saratov
    Rule.Timezone tz1,tz2,tz3,tz4,tz5;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1480806000) // from 2016 Dec  4  2:00s 
-         return tz5 || (tz5=Rule.Timezone(-14400,"+04"));
-      if (ux>=1414274400) // from 2014 Oct 26  2:00s 
-         return tz2 || (tz2=Rule.Timezone(-10800,"+03"));
-      if (ux>=1301180400) // from 2011 Mar 27  2:00s 
-         return tz5 || (tz5=Rule.Timezone(-14400,"+04"));
-      if (ux>=701820000) // from 1992 Mar 29  2:00s 
+      if (ux>=1480806000) // from 2016 Dec  4  2:00s
+         return tz5 || (tz5=Rule.Timezone(-14400,"+04/+05"));
+      if (ux>=1414274400) // from 2014 Oct 26  2:00s
+         return tz2 || (tz2=Rule.Timezone(-10800,"+03/+04"));
+      if (ux>=1301180400) // from 2011 Mar 27  2:00s
+         return tz5 || (tz5=Rule.Timezone(-14400,"+04/+05"));
+      if (ux>=701820000) // from 1992 Mar 29  2:00s
          return tz4 || (tz4=TZrules.Russia(-10800,"+03/+04"));
-      if (ux>=670374000) // from 1991 Mar 31  2:00s 
-         return tz5 || (tz5=Rule.Timezone(-14400,"+04"));
-      if (ux>=575416800) // from 1988 Mar 27  2:00s 
+      if (ux>=670374000) // from 1991 Mar 31  2:00s
+         return tz5 || (tz5=Rule.Timezone(-14400,"+04/+05"));
+      if (ux>=575416800) // from 1988 Mar 27  2:00s
          return tz4 || (tz4=TZrules.Russia(-10800,"+03/+04"));
-      if (ux>=-1247540400) // from 1930 Jun 21 
+      if (ux>=-1247540400) // from 1930 Jun 21
          return tz3 || (tz3=TZrules.Russia(-14400,"+04/+05"));
-      if (ux>=-1593820800) // from 1919 Jul  1  0:00u 
-         return tz2 || (tz2=Rule.Timezone(-10800,"+03"));
+      if (ux>=-1593820800) // from 1919 Jul  1  0:00u
+         return tz2 || (tz2=Rule.Timezone(-10800,"+03/+04"));
       return tz1 || (tz1=Rule.Timezone(-11058,"LMT"));
    }
 }
@@ -5260,20 +3306,20 @@ class Europe_Kirov
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6,tz7;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1414274400) // from 2014 Oct 26  2:00s 
+      if (ux>=1414274400) // from 2014 Oct 26  2:00s
          return tz7 || (tz7=Rule.Timezone(-10800,"MSK"));
-      if (ux>=1301180400) // from 2011 Mar 27  2:00s 
+      if (ux>=1301180400) // from 2011 Mar 27  2:00s
          return tz6 || (tz6=Rule.Timezone(-14400,"MSK"));
-      if (ux>=701820000) // from 1992 Mar 29  2:00s 
+      if (ux>=701820000) // from 1992 Mar 29  2:00s
          return tz4 || (tz4=TZrules.Russia(-10800,"MSK/MSD"));
-      if (ux>=670374000) // from 1991 Mar 31  2:00s 
-         return tz5 || (tz5=Rule.Timezone(-14400,"+04"));
-      if (ux>=606866400) // from 1989 Mar 26  2:00s 
+      if (ux>=670374000) // from 1991 Mar 31  2:00s
+         return tz5 || (tz5=Rule.Timezone(-14400,"+04/+05"));
+      if (ux>=606866400) // from 1989 Mar 26  2:00s
          return tz4 || (tz4=TZrules.Russia(-10800,"MSK/MSD"));
-      if (ux>=-1247540400) // from 1930 Jun 21 
+      if (ux>=-1247540400) // from 1930 Jun 21
          return tz3 || (tz3=TZrules.Russia(-14400,"+04/+05"));
-      if (ux>=-1593820800) // from 1919 Jul  1  0:00u 
-         return tz2 || (tz2=Rule.Timezone(-10800,"+03"));
+      if (ux>=-1593820800) // from 1919 Jul  1  0:00u
+         return tz2 || (tz2=Rule.Timezone(-10800,"+03/+04"));
       return tz1 || (tz1=Rule.Timezone(-11928,"LMT"));
    }
 }
@@ -5284,24 +3330,24 @@ class Europe_Samara
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1301180400) // from 2011 Mar 27  2:00s 
-         return tz3 || (tz3=Rule.Timezone(-14400,"+04"));
-      if (ux>=1269727200) // from 2010 Mar 28  2:00s 
+      if (ux>=1301180400) // from 2011 Mar 27  2:00s
+         return tz3 || (tz3=Rule.Timezone(-14400,"+04/+05"));
+      if (ux>=1269727200) // from 2010 Mar 28  2:00s
          return tz5 || (tz5=TZrules.Russia(-10800,"+03/+04"));
-      if (ux>=687916800) // from 1991 Oct 20  3:00 
+      if (ux>=687916800) // from 1991 Oct 20  3:00
          return tz4 || (tz4=TZrules.Russia(-14400,"+04/+05"));
-      if (ux>=686102400) // from 1991 Sep 29  2:00s 
-         return tz2 || (tz2=Rule.Timezone(-10800,"+03"));
-      if (ux>=670374000) // from 1991 Mar 31  2:00s 
+      if (ux>=686102400) // from 1991 Sep 29  2:00s
+         return tz2 || (tz2=Rule.Timezone(-10800,"+03/+04"));
+      if (ux>=670374000) // from 1991 Mar 31  2:00s
          return tz6 || (tz6=TZrules.Russia(-7200,"+02/+03"));
-      if (ux>=606866400) // from 1989 Mar 26  2:00s 
+      if (ux>=606866400) // from 1989 Mar 26  2:00s
          return tz5 || (tz5=TZrules.Russia(-10800,"+03/+04"));
-      if (ux>=-1102305600) // from 1935 Jan 27 
+      if (ux>=-1102305600) // from 1935 Jan 27
          return tz4 || (tz4=TZrules.Russia(-14400,"+04/+05"));
-      if (ux>=-1247540400) // from 1930 Jun 21 
-         return tz3 || (tz3=Rule.Timezone(-14400,"+04"));
-      if (ux>=-1593820800) // from 1919 Jul  1  0:00u 
-         return tz2 || (tz2=Rule.Timezone(-10800,"+03"));
+      if (ux>=-1247540400) // from 1930 Jun 21
+         return tz3 || (tz3=Rule.Timezone(-14400,"+04/+05"));
+      if (ux>=-1593820800) // from 1919 Jul  1  0:00u
+         return tz2 || (tz2=Rule.Timezone(-10800,"+03/+04"));
       return tz1 || (tz1=Rule.Timezone(-12020,"LMT"));
    }
 }
@@ -5312,22 +3358,22 @@ class Europe_Ulyanovsk
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1459033200) // from 2016 Mar 27  2:00s 
-         return tz6 || (tz6=Rule.Timezone(-14400,"+04"));
-      if (ux>=1414274400) // from 2014 Oct 26  2:00s 
-         return tz2 || (tz2=Rule.Timezone(-10800,"+03"));
-      if (ux>=1301180400) // from 2011 Mar 27  2:00s 
-         return tz6 || (tz6=Rule.Timezone(-14400,"+04"));
-      if (ux>=695779200) // from 1992 Jan 19  2:00s 
+      if (ux>=1459033200) // from 2016 Mar 27  2:00s
+         return tz6 || (tz6=Rule.Timezone(-14400,"+04/+05"));
+      if (ux>=1414274400) // from 2014 Oct 26  2:00s
+         return tz2 || (tz2=Rule.Timezone(-10800,"+03/+04"));
+      if (ux>=1301180400) // from 2011 Mar 27  2:00s
+         return tz6 || (tz6=Rule.Timezone(-14400,"+04/+05"));
+      if (ux>=695779200) // from 1992 Jan 19  2:00s
          return tz4 || (tz4=TZrules.Russia(-10800,"+03/+04"));
-      if (ux>=670374000) // from 1991 Mar 31  2:00s 
+      if (ux>=670374000) // from 1991 Mar 31  2:00s
          return tz5 || (tz5=TZrules.Russia(-7200,"+02/+03"));
-      if (ux>=606866400) // from 1989 Mar 26  2:00s 
+      if (ux>=606866400) // from 1989 Mar 26  2:00s
          return tz4 || (tz4=TZrules.Russia(-10800,"+03/+04"));
-      if (ux>=-1247540400) // from 1930 Jun 21 
+      if (ux>=-1247540400) // from 1930 Jun 21
          return tz3 || (tz3=TZrules.Russia(-14400,"+04/+05"));
-      if (ux>=-1593820800) // from 1919 Jul  1  0:00u 
-         return tz2 || (tz2=Rule.Timezone(-10800,"+03"));
+      if (ux>=-1593820800) // from 1919 Jul  1  0:00u
+         return tz2 || (tz2=Rule.Timezone(-10800,"+03/+04"));
       return tz1 || (tz1=Rule.Timezone(-11616,"LMT"));
    }
 }
@@ -5338,19 +3384,19 @@ class Asia_Yekaterinburg
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6,tz7;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1414267200) // from 2014 Oct 26  2:00s 
-         return tz7 || (tz7=Rule.Timezone(-18000,"+05"));
-      if (ux>=1301173200) // from 2011 Mar 27  2:00s 
-         return tz6 || (tz6=Rule.Timezone(-21600,"+06"));
-      if (ux>=695772000) // from 1992 Jan 19  2:00s 
+      if (ux>=1414267200) // from 2014 Oct 26  2:00s
+         return tz7 || (tz7=Rule.Timezone(-18000,"+05/+06"));
+      if (ux>=1301173200) // from 2011 Mar 27  2:00s
+         return tz6 || (tz6=Rule.Timezone(-21600,"+06/+07"));
+      if (ux>=695772000) // from 1992 Jan 19  2:00s
          return tz4 || (tz4=TZrules.Russia(-18000,"+05/+06"));
-      if (ux>=670366800) // from 1991 Mar 31  2:00s 
+      if (ux>=670366800) // from 1991 Mar 31  2:00s
          return tz5 || (tz5=TZrules.Russia(-14400,"+04/+05"));
-      if (ux>=-1247544000) // from 1930 Jun 21 
+      if (ux>=-1247544000) // from 1930 Jun 21
          return tz4 || (tz4=TZrules.Russia(-18000,"+05/+06"));
-      if (ux>=-1592610305) // from 1919 Jul 15  4:00 
-         return tz3 || (tz3=Rule.Timezone(-14400,"+04"));
-      if (ux>=-1688270553) // from 1916 Jul  3 
+      if (ux>=-1592610305) // from 1919 Jul 15  4:00
+         return tz3 || (tz3=Rule.Timezone(-14400,"+04/+05"));
+      if (ux>=-1688270553) // from 1916 Jul  3
          return tz2 || (tz2=Rule.Timezone(-13505,"PMT"));
       return tz1 || (tz1=Rule.Timezone(-14553,"LMT"));
    }
@@ -5362,18 +3408,18 @@ class Asia_Omsk
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1414263600) // from 2014 Oct 26  2:00s 
-         return tz6 || (tz6=Rule.Timezone(-21600,"+06"));
-      if (ux>=1301169600) // from 2011 Mar 27  2:00s 
-         return tz5 || (tz5=Rule.Timezone(-25200,"+07"));
-      if (ux>=695768400) // from 1992 Jan 19  2:00s 
+      if (ux>=1414263600) // from 2014 Oct 26  2:00s
+         return tz6 || (tz6=Rule.Timezone(-21600,"+06/+07"));
+      if (ux>=1301169600) // from 2011 Mar 27  2:00s
+         return tz5 || (tz5=Rule.Timezone(-25200,"+07/+08"));
+      if (ux>=695768400) // from 1992 Jan 19  2:00s
          return tz3 || (tz3=TZrules.Russia(-21600,"+06/+07"));
-      if (ux>=670363200) // from 1991 Mar 31  2:00s 
+      if (ux>=670363200) // from 1991 Mar 31  2:00s
          return tz4 || (tz4=TZrules.Russia(-18000,"+05/+06"));
-      if (ux>=-1247547600) // from 1930 Jun 21 
+      if (ux>=-1247547600) // from 1930 Jun 21
          return tz3 || (tz3=TZrules.Russia(-21600,"+06/+07"));
-      if (ux>=-1582088010) // from 1919 Nov 14 
-         return tz2 || (tz2=Rule.Timezone(-18000,"+05"));
+      if (ux>=-1582088010) // from 1919 Nov 14
+         return tz2 || (tz2=Rule.Timezone(-18000,"+05/+06"));
       return tz1 || (tz1=Rule.Timezone(-17610,"LMT"));
    }
 }
@@ -5384,22 +3430,22 @@ class Asia_Barnaul
    Rule.Timezone tz1,tz2,tz3,tz4,tz5;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1459022400) // from 2016 Mar 27  2:00s 
-         return tz5 || (tz5=Rule.Timezone(-25200,"+07"));
-      if (ux>=1414263600) // from 2014 Oct 26  2:00s 
-         return tz2 || (tz2=Rule.Timezone(-21600,"+06"));
-      if (ux>=1301169600) // from 2011 Mar 27  2:00s 
-         return tz5 || (tz5=Rule.Timezone(-25200,"+07"));
-      if (ux>=801648000) // from 1995 May 28 
+      if (ux>=1459022400) // from 2016 Mar 27  2:00s
+         return tz5 || (tz5=Rule.Timezone(-25200,"+07/+08"));
+      if (ux>=1414263600) // from 2014 Oct 26  2:00s
+         return tz2 || (tz2=Rule.Timezone(-21600,"+06/+07"));
+      if (ux>=1301169600) // from 2011 Mar 27  2:00s
+         return tz5 || (tz5=Rule.Timezone(-25200,"+07/+08"));
+      if (ux>=801648000) // from 1995 May 28
          return tz4 || (tz4=TZrules.Russia(-21600,"+06/+07"));
-      if (ux>=695764800) // from 1992 Jan 19  2:00s 
+      if (ux>=695764800) // from 1992 Jan 19  2:00s
          return tz3 || (tz3=TZrules.Russia(-25200,"+07/+08"));
-      if (ux>=670359600) // from 1991 Mar 31  2:00s 
+      if (ux>=670359600) // from 1991 Mar 31  2:00s
          return tz4 || (tz4=TZrules.Russia(-21600,"+06/+07"));
-      if (ux>=-1247551200) // from 1930 Jun 21 
+      if (ux>=-1247551200) // from 1930 Jun 21
          return tz3 || (tz3=TZrules.Russia(-25200,"+07/+08"));
-      if (ux>=-1579844100) // from 1919 Dec 10 
-         return tz2 || (tz2=Rule.Timezone(-21600,"+06"));
+      if (ux>=-1579844100) // from 1919 Dec 10
+         return tz2 || (tz2=Rule.Timezone(-21600,"+06/+07"));
       return tz1 || (tz1=Rule.Timezone(-20100,"LMT"));
    }
 }
@@ -5410,22 +3456,22 @@ class Asia_Novosibirsk
    Rule.Timezone tz1,tz2,tz3,tz4,tz5;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1469304000) // from 2016 Jul 24  2:00s 
-         return tz5 || (tz5=Rule.Timezone(-25200,"+07"));
-      if (ux>=1414263600) // from 2014 Oct 26  2:00s 
-         return tz2 || (tz2=Rule.Timezone(-21600,"+06"));
-      if (ux>=1301169600) // from 2011 Mar 27  2:00s 
-         return tz5 || (tz5=Rule.Timezone(-25200,"+07"));
-      if (ux>=738144000) // from 1993 May 23 
+      if (ux>=1469304000) // from 2016 Jul 24  2:00s
+         return tz5 || (tz5=Rule.Timezone(-25200,"+07/+08"));
+      if (ux>=1414263600) // from 2014 Oct 26  2:00s
+         return tz2 || (tz2=Rule.Timezone(-21600,"+06/+07"));
+      if (ux>=1301169600) // from 2011 Mar 27  2:00s
+         return tz5 || (tz5=Rule.Timezone(-25200,"+07/+08"));
+      if (ux>=738144000) // from 1993 May 23
          return tz4 || (tz4=TZrules.Russia(-21600,"+06/+07"));
       if (ux>=695764800) // from 1992 Jan 19  2:00s say Shanks & P.
          return tz3 || (tz3=TZrules.Russia(-25200,"+07/+08"));
-      if (ux>=670359600) // from 1991 Mar 31  2:00s 
+      if (ux>=670359600) // from 1991 Mar 31  2:00s
          return tz4 || (tz4=TZrules.Russia(-21600,"+06/+07"));
-      if (ux>=-1247551200) // from 1930 Jun 21 
+      if (ux>=-1247551200) // from 1930 Jun 21
          return tz3 || (tz3=TZrules.Russia(-25200,"+07/+08"));
-      if (ux>=-1579476700) // from 1919 Dec 14  6:00 
-         return tz2 || (tz2=Rule.Timezone(-21600,"+06"));
+      if (ux>=-1579476700) // from 1919 Dec 14  6:00
+         return tz2 || (tz2=Rule.Timezone(-21600,"+06/+07"));
       return tz1 || (tz1=Rule.Timezone(-19900,"LMT"));
    }
 }
@@ -5436,22 +3482,22 @@ class Asia_Tomsk
    Rule.Timezone tz1,tz2,tz3,tz4,tz5;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1464465600) // from 2016 May 29  2:00s 
-         return tz5 || (tz5=Rule.Timezone(-25200,"+07"));
-      if (ux>=1414263600) // from 2014 Oct 26  2:00s 
-         return tz2 || (tz2=Rule.Timezone(-21600,"+06"));
-      if (ux>=1301169600) // from 2011 Mar 27  2:00s 
-         return tz5 || (tz5=Rule.Timezone(-25200,"+07"));
-      if (ux>=1020250800) // from 2002 May  1  3:00 
+      if (ux>=1464465600) // from 2016 May 29  2:00s
+         return tz5 || (tz5=Rule.Timezone(-25200,"+07/+08"));
+      if (ux>=1414263600) // from 2014 Oct 26  2:00s
+         return tz2 || (tz2=Rule.Timezone(-21600,"+06/+07"));
+      if (ux>=1301169600) // from 2011 Mar 27  2:00s
+         return tz5 || (tz5=Rule.Timezone(-25200,"+07/+08"));
+      if (ux>=1020250800) // from 2002 May  1  3:00
          return tz4 || (tz4=TZrules.Russia(-21600,"+06/+07"));
-      if (ux>=695764800) // from 1992 Jan 19  2:00s 
+      if (ux>=695764800) // from 1992 Jan 19  2:00s
          return tz3 || (tz3=TZrules.Russia(-25200,"+07/+08"));
-      if (ux>=670359600) // from 1991 Mar 31  2:00s 
+      if (ux>=670359600) // from 1991 Mar 31  2:00s
          return tz4 || (tz4=TZrules.Russia(-21600,"+06/+07"));
-      if (ux>=-1247551200) // from 1930 Jun 21 
+      if (ux>=-1247551200) // from 1930 Jun 21
          return tz3 || (tz3=TZrules.Russia(-25200,"+07/+08"));
-      if (ux>=-1578807591) // from 1919 Dec 22 
-         return tz2 || (tz2=Rule.Timezone(-21600,"+06"));
+      if (ux>=-1578807591) // from 1919 Dec 22
+         return tz2 || (tz2=Rule.Timezone(-21600,"+06/+07"));
       return tz1 || (tz1=Rule.Timezone(-20391,"LMT"));
    }
 }
@@ -5462,18 +3508,18 @@ class Asia_Novokuznetsk
    Rule.Timezone tz1,tz2,tz3,tz4,tz5;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1301169600) // from 2011 Mar 27  2:00s 
-         return tz5 || (tz5=Rule.Timezone(-25200,"+07"));
-      if (ux>=1269716400) // from 2010 Mar 28  2:00s 
+      if (ux>=1301169600) // from 2011 Mar 27  2:00s
+         return tz5 || (tz5=Rule.Timezone(-25200,"+07/+08"));
+      if (ux>=1269716400) // from 2010 Mar 28  2:00s
          return tz4 || (tz4=TZrules.Russia(-21600,"+06/+07"));
-      if (ux>=695764800) // from 1992 Jan 19  2:00s 
+      if (ux>=695764800) // from 1992 Jan 19  2:00s
          return tz3 || (tz3=TZrules.Russia(-25200,"+07/+08"));
-      if (ux>=670359600) // from 1991 Mar 31  2:00s 
+      if (ux>=670359600) // from 1991 Mar 31  2:00s
          return tz4 || (tz4=TZrules.Russia(-21600,"+06/+07"));
-      if (ux>=-1247551200) // from 1930 Jun 21 
+      if (ux>=-1247551200) // from 1930 Jun 21
          return tz3 || (tz3=TZrules.Russia(-25200,"+07/+08"));
-      if (ux>=-1441259328) // from 1924 May  1 
-         return tz2 || (tz2=Rule.Timezone(-21600,"+06"));
+      if (ux>=-1441259328) // from 1924 May  1
+         return tz2 || (tz2=Rule.Timezone(-21600,"+06/+07"));
       return tz1 || (tz1=Rule.Timezone(-20928,"LMT"));
    }
 }
@@ -5484,18 +3530,18 @@ class Asia_Krasnoyarsk
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1414260000) // from 2014 Oct 26  2:00s 
-         return tz6 || (tz6=Rule.Timezone(-25200,"+07"));
-      if (ux>=1301166000) // from 2011 Mar 27  2:00s 
-         return tz5 || (tz5=Rule.Timezone(-28800,"+08"));
-      if (ux>=695764800) // from 1992 Jan 19  2:00s 
+      if (ux>=1414260000) // from 2014 Oct 26  2:00s
+         return tz6 || (tz6=Rule.Timezone(-25200,"+07/+08"));
+      if (ux>=1301166000) // from 2011 Mar 27  2:00s
+         return tz5 || (tz5=Rule.Timezone(-28800,"+08/+09"));
+      if (ux>=695764800) // from 1992 Jan 19  2:00s
          return tz3 || (tz3=TZrules.Russia(-25200,"+07/+08"));
-      if (ux>=670359600) // from 1991 Mar 31  2:00s 
+      if (ux>=670359600) // from 1991 Mar 31  2:00s
          return tz4 || (tz4=TZrules.Russia(-21600,"+06/+07"));
-      if (ux>=-1247551200) // from 1930 Jun 21 
+      if (ux>=-1247551200) // from 1930 Jun 21
          return tz3 || (tz3=TZrules.Russia(-25200,"+07/+08"));
-      if (ux>=-1577513486) // from 1920 Jan  6 
-         return tz2 || (tz2=Rule.Timezone(-21600,"+06"));
+      if (ux>=-1577513486) // from 1920 Jan  6
+         return tz2 || (tz2=Rule.Timezone(-21600,"+06/+07"));
       return tz1 || (tz1=Rule.Timezone(-22286,"LMT"));
    }
 }
@@ -5506,18 +3552,18 @@ class Asia_Irkutsk
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6,tz7;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1414256400) // from 2014 Oct 26  2:00s 
-         return tz7 || (tz7=Rule.Timezone(-28800,"+08"));
-      if (ux>=1301162400) // from 2011 Mar 27  2:00s 
-         return tz6 || (tz6=Rule.Timezone(-32400,"+09"));
-      if (ux>=695761200) // from 1992 Jan 19  2:00s 
+      if (ux>=1414256400) // from 2014 Oct 26  2:00s
+         return tz7 || (tz7=Rule.Timezone(-28800,"+08/+09"));
+      if (ux>=1301162400) // from 2011 Mar 27  2:00s
+         return tz6 || (tz6=Rule.Timezone(-32400,"+09/+10"));
+      if (ux>=695761200) // from 1992 Jan 19  2:00s
          return tz4 || (tz4=TZrules.Russia(-28800,"+08/+09"));
-      if (ux>=670356000) // from 1991 Mar 31  2:00s 
+      if (ux>=670356000) // from 1991 Mar 31  2:00s
          return tz5 || (tz5=TZrules.Russia(-25200,"+07/+08"));
-      if (ux>=-1247554800) // from 1930 Jun 21 
+      if (ux>=-1247554800) // from 1930 Jun 21
          return tz4 || (tz4=TZrules.Russia(-28800,"+08/+09"));
-      if (ux>=-1575874625) // from 1920 Jan 25 
-         return tz3 || (tz3=Rule.Timezone(-25200,"+07"));
+      if (ux>=-1575874625) // from 1920 Jan 25
+         return tz3 || (tz3=Rule.Timezone(-25200,"+07/+08"));
       if (ux>=-2840165825) // from 1880 Irkutsk Mean Time
          return tz2 || (tz2=Rule.Timezone(-25025,"IMT"));
       return tz1 || (tz1=Rule.Timezone(-25025,"LMT"));
@@ -5530,20 +3576,20 @@ class Asia_Chita
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1459015200) // from 2016 Mar 27  2:00 
-         return tz6 || (tz6=Rule.Timezone(-32400,"+09"));
-      if (ux>=1414252800) // from 2014 Oct 26  2:00s 
-         return tz2 || (tz2=Rule.Timezone(-28800,"+08"));
-      if (ux>=1301158800) // from 2011 Mar 27  2:00s 
-         return tz5 || (tz5=Rule.Timezone(-36000,"+10"));
-      if (ux>=695757600) // from 1992 Jan 19  2:00s 
+      if (ux>=1459015200) // from 2016 Mar 27  2:00
+         return tz6 || (tz6=Rule.Timezone(-32400,"+09/+10"));
+      if (ux>=1414252800) // from 2014 Oct 26  2:00s
+         return tz2 || (tz2=Rule.Timezone(-28800,"+08/+09"));
+      if (ux>=1301158800) // from 2011 Mar 27  2:00s
+         return tz5 || (tz5=Rule.Timezone(-36000,"+10/+11"));
+      if (ux>=695757600) // from 1992 Jan 19  2:00s
          return tz3 || (tz3=TZrules.Russia(-32400,"+09/+10"));
-      if (ux>=670352400) // from 1991 Mar 31  2:00s 
+      if (ux>=670352400) // from 1991 Mar 31  2:00s
          return tz4 || (tz4=TZrules.Russia(-28800,"+08/+09"));
-      if (ux>=-1247558400) // from 1930 Jun 21 
+      if (ux>=-1247558400) // from 1930 Jun 21
          return tz3 || (tz3=TZrules.Russia(-32400,"+09/+10"));
-      if (ux>=-1579419232) // from 1919 Dec 15 
-         return tz2 || (tz2=Rule.Timezone(-28800,"+08"));
+      if (ux>=-1579419232) // from 1919 Dec 15
+         return tz2 || (tz2=Rule.Timezone(-28800,"+08/+09"));
       return tz1 || (tz1=Rule.Timezone(-27232,"LMT"));
    }
 }
@@ -5554,18 +3600,18 @@ class Asia_Yakutsk
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1414252800) // from 2014 Oct 26  2:00s 
-         return tz6 || (tz6=Rule.Timezone(-32400,"+09"));
-      if (ux>=1301158800) // from 2011 Mar 27  2:00s 
-         return tz5 || (tz5=Rule.Timezone(-36000,"+10"));
-      if (ux>=695757600) // from 1992 Jan 19  2:00s 
+      if (ux>=1414252800) // from 2014 Oct 26  2:00s
+         return tz6 || (tz6=Rule.Timezone(-32400,"+09/+10"));
+      if (ux>=1301158800) // from 2011 Mar 27  2:00s
+         return tz5 || (tz5=Rule.Timezone(-36000,"+10/+11"));
+      if (ux>=695757600) // from 1992 Jan 19  2:00s
          return tz3 || (tz3=TZrules.Russia(-32400,"+09/+10"));
-      if (ux>=670352400) // from 1991 Mar 31  2:00s 
+      if (ux>=670352400) // from 1991 Mar 31  2:00s
          return tz4 || (tz4=TZrules.Russia(-28800,"+08/+09"));
-      if (ux>=-1247558400) // from 1930 Jun 21 
+      if (ux>=-1247558400) // from 1930 Jun 21
          return tz3 || (tz3=TZrules.Russia(-32400,"+09/+10"));
-      if (ux>=-1579423138) // from 1919 Dec 15 
-         return tz2 || (tz2=Rule.Timezone(-28800,"+08"));
+      if (ux>=-1579423138) // from 1919 Dec 15
+         return tz2 || (tz2=Rule.Timezone(-28800,"+08/+09"));
       return tz1 || (tz1=Rule.Timezone(-31138,"LMT"));
    }
 }
@@ -5576,18 +3622,18 @@ class Asia_Vladivostok
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1414249200) // from 2014 Oct 26  2:00s 
-         return tz6 || (tz6=Rule.Timezone(-36000,"+10"));
-      if (ux>=1301155200) // from 2011 Mar 27  2:00s 
-         return tz5 || (tz5=Rule.Timezone(-39600,"+11"));
-      if (ux>=695754000) // from 1992 Jan 19  2:00s 
+      if (ux>=1414249200) // from 2014 Oct 26  2:00s
+         return tz6 || (tz6=Rule.Timezone(-36000,"+10/+11"));
+      if (ux>=1301155200) // from 2011 Mar 27  2:00s
+         return tz5 || (tz5=Rule.Timezone(-39600,"+11/+12"));
+      if (ux>=695754000) // from 1992 Jan 19  2:00s
          return tz3 || (tz3=TZrules.Russia(-36000,"+10/+11"));
-      if (ux>=670348800) // from 1991 Mar 31  2:00s 
+      if (ux>=670348800) // from 1991 Mar 31  2:00s
          return tz4 || (tz4=TZrules.Russia(-32400,"+09/+10"));
-      if (ux>=-1247562000) // from 1930 Jun 21 
+      if (ux>=-1247562000) // from 1930 Jun 21
          return tz3 || (tz3=TZrules.Russia(-36000,"+10/+11"));
-      if (ux>=-1487321251) // from 1922 Nov 15 
-         return tz2 || (tz2=Rule.Timezone(-32400,"+09"));
+      if (ux>=-1487321251) // from 1922 Nov 15
+         return tz2 || (tz2=Rule.Timezone(-32400,"+09/+10"));
       return tz1 || (tz1=Rule.Timezone(-31651,"LMT"));
    }
 }
@@ -5598,22 +3644,22 @@ class Asia_Khandyga
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6,tz7,tz8;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1414252800) // from 2014 Oct 26  2:00s 
-         return tz8 || (tz8=Rule.Timezone(-32400,"+09"));
-      if (ux>=1315832400) // from 2011 Sep 13  0:00s 
-         return tz7 || (tz7=Rule.Timezone(-36000,"+10"));
+      if (ux>=1414252800) // from 2014 Oct 26  2:00s
+         return tz8 || (tz8=Rule.Timezone(-32400,"+09/+10"));
+      if (ux>=1315832400) // from 2011 Sep 13  0:00s
+         return tz7 || (tz7=Rule.Timezone(-36000,"+10/+11"));
       if (ux>=1301155200) // from 2011 Mar 27  2:00s Decree 725?
-         return tz6 || (tz6=Rule.Timezone(-39600,"+11"));
-      if (ux>=1072947600) // from 2004 
+         return tz6 || (tz6=Rule.Timezone(-39600,"+11/+12"));
+      if (ux>=1072947600) // from 2004
          return tz5 || (tz5=TZrules.Russia(-36000,"+10/+11"));
-      if (ux>=695757600) // from 1992 Jan 19  2:00s 
+      if (ux>=695757600) // from 1992 Jan 19  2:00s
          return tz3 || (tz3=TZrules.Russia(-32400,"+09/+10"));
-      if (ux>=670352400) // from 1991 Mar 31  2:00s 
+      if (ux>=670352400) // from 1991 Mar 31  2:00s
          return tz4 || (tz4=TZrules.Russia(-28800,"+08/+09"));
-      if (ux>=-1247558400) // from 1930 Jun 21 
+      if (ux>=-1247558400) // from 1930 Jun 21
          return tz3 || (tz3=TZrules.Russia(-32400,"+09/+10"));
-      if (ux>=-1579424533) // from 1919 Dec 15 
-         return tz2 || (tz2=Rule.Timezone(-28800,"+08"));
+      if (ux>=-1579424533) // from 1919 Dec 15
+         return tz2 || (tz2=Rule.Timezone(-28800,"+08/+09"));
       return tz1 || (tz1=Rule.Timezone(-32533,"LMT"));
    }
 }
@@ -5624,22 +3670,22 @@ class Asia_Sakhalin
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1459008000) // from 2016 Mar 27  2:00s 
-         return tz5 || (tz5=Rule.Timezone(-39600,"+11"));
-      if (ux>=1414249200) // from 2014 Oct 26  2:00s 
-         return tz6 || (tz6=Rule.Timezone(-36000,"+10"));
-      if (ux>=1301155200) // from 2011 Mar 27  2:00s 
-         return tz5 || (tz5=Rule.Timezone(-39600,"+11"));
-      if (ux>=857214000) // from 1997 Mar lastSun  2:00s 
+      if (ux>=1459008000) // from 2016 Mar 27  2:00s
+         return tz5 || (tz5=Rule.Timezone(-39600,"+11/+12"));
+      if (ux>=1414249200) // from 2014 Oct 26  2:00s
+         return tz6 || (tz6=Rule.Timezone(-36000,"+10/+11"));
+      if (ux>=1301155200) // from 2011 Mar 27  2:00s
+         return tz5 || (tz5=Rule.Timezone(-39600,"+11/+12"));
+      if (ux>=857214000) // from 1997 Mar lastSun  2:00s
          return tz4 || (tz4=TZrules.Russia(-36000,"+10/+11"));
-      if (ux>=695750400) // from 1992 Jan 19  2:00s 
+      if (ux>=695750400) // from 1992 Jan 19  2:00s
          return tz3 || (tz3=TZrules.Russia(-39600,"+11/+12"));
-      if (ux>=670345200) // from 1991 Mar 31  2:00s 
+      if (ux>=670345200) // from 1991 Mar 31  2:00s
          return tz4 || (tz4=TZrules.Russia(-36000,"+10/+11"));
       if (ux>=-768560400) // from 1945 Aug 25 Sakhalin T
          return tz3 || (tz3=TZrules.Russia(-39600,"+11/+12"));
-      if (ux>=-2031039048) // from 1905 Aug 23 
-         return tz2 || (tz2=Rule.Timezone(-32400,"+09"));
+      if (ux>=-2031039048) // from 1905 Aug 23
+         return tz2 || (tz2=Rule.Timezone(-32400,"+09/+10"));
       return tz1 || (tz1=Rule.Timezone(-34248,"LMT"));
    }
 }
@@ -5650,20 +3696,20 @@ class Asia_Magadan
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1461427200) // from 2016 Apr 24  2:00s 
-         return tz6 || (tz6=Rule.Timezone(-39600,"+11"));
-      if (ux>=1414245600) // from 2014 Oct 26  2:00s 
-         return tz2 || (tz2=Rule.Timezone(-36000,"+10"));
-      if (ux>=1301151600) // from 2011 Mar 27  2:00s 
-         return tz5 || (tz5=Rule.Timezone(-43200,"+12"));
-      if (ux>=695750400) // from 1992 Jan 19  2:00s 
+      if (ux>=1461427200) // from 2016 Apr 24  2:00s
+         return tz6 || (tz6=Rule.Timezone(-39600,"+11/+12"));
+      if (ux>=1414245600) // from 2014 Oct 26  2:00s
+         return tz2 || (tz2=Rule.Timezone(-36000,"+10/+11"));
+      if (ux>=1301151600) // from 2011 Mar 27  2:00s
+         return tz5 || (tz5=Rule.Timezone(-43200,"+12/+13"));
+      if (ux>=695750400) // from 1992 Jan 19  2:00s
          return tz3 || (tz3=TZrules.Russia(-39600,"+11/+12"));
-      if (ux>=670345200) // from 1991 Mar 31  2:00s 
+      if (ux>=670345200) // from 1991 Mar 31  2:00s
          return tz4 || (tz4=TZrules.Russia(-36000,"+10/+11"));
-      if (ux>=-1247565600) // from 1930 Jun 21 
+      if (ux>=-1247565600) // from 1930 Jun 21
          return tz3 || (tz3=TZrules.Russia(-39600,"+11/+12"));
       if (ux>=-1441188192) // from 1924 May  2 Magadan Time
-         return tz2 || (tz2=Rule.Timezone(-36000,"+10"));
+         return tz2 || (tz2=Rule.Timezone(-36000,"+10/+11"));
       return tz1 || (tz1=Rule.Timezone(-36192,"LMT"));
    }
 }
@@ -5674,18 +3720,18 @@ class Asia_Srednekolymsk
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1414245600) // from 2014 Oct 26  2:00s 
-         return tz6 || (tz6=Rule.Timezone(-39600,"+11"));
-      if (ux>=1301151600) // from 2011 Mar 27  2:00s 
-         return tz5 || (tz5=Rule.Timezone(-43200,"+12"));
-      if (ux>=695750400) // from 1992 Jan 19  2:00s 
+      if (ux>=1414245600) // from 2014 Oct 26  2:00s
+         return tz6 || (tz6=Rule.Timezone(-39600,"+11/+12"));
+      if (ux>=1301151600) // from 2011 Mar 27  2:00s
+         return tz5 || (tz5=Rule.Timezone(-43200,"+12/+13"));
+      if (ux>=695750400) // from 1992 Jan 19  2:00s
          return tz3 || (tz3=TZrules.Russia(-39600,"+11/+12"));
-      if (ux>=670345200) // from 1991 Mar 31  2:00s 
+      if (ux>=670345200) // from 1991 Mar 31  2:00s
          return tz4 || (tz4=TZrules.Russia(-36000,"+10/+11"));
-      if (ux>=-1247565600) // from 1930 Jun 21 
+      if (ux>=-1247565600) // from 1930 Jun 21
          return tz3 || (tz3=TZrules.Russia(-39600,"+11/+12"));
-      if (ux>=-1441188892) // from 1924 May  2 
-         return tz2 || (tz2=Rule.Timezone(-36000,"+10"));
+      if (ux>=-1441188892) // from 1924 May  2
+         return tz2 || (tz2=Rule.Timezone(-36000,"+10/+11"));
       return tz1 || (tz1=Rule.Timezone(-36892,"LMT"));
    }
 }
@@ -5696,22 +3742,22 @@ class Asia_Ust_Nera
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6,tz7,tz8;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1414249200) // from 2014 Oct 26  2:00s 
-         return tz8 || (tz8=Rule.Timezone(-36000,"+10"));
-      if (ux>=1315828800) // from 2011 Sep 13  0:00s 
-         return tz7 || (tz7=Rule.Timezone(-39600,"+11"));
+      if (ux>=1414249200) // from 2014 Oct 26  2:00s
+         return tz8 || (tz8=Rule.Timezone(-36000,"+10/+11"));
+      if (ux>=1315828800) // from 2011 Sep 13  0:00s
+         return tz7 || (tz7=Rule.Timezone(-39600,"+11/+12"));
       if (ux>=1301151600) // from 2011 Mar 27  2:00s Decree 725?
-         return tz6 || (tz6=Rule.Timezone(-43200,"+12"));
-      if (ux>=695750400) // from 1992 Jan 19  2:00s 
+         return tz6 || (tz6=Rule.Timezone(-43200,"+12/+13"));
+      if (ux>=695750400) // from 1992 Jan 19  2:00s
          return tz4 || (tz4=TZrules.Russia(-39600,"+11/+12"));
-      if (ux>=670345200) // from 1991 Mar 31  2:00s 
+      if (ux>=670345200) // from 1991 Mar 31  2:00s
          return tz5 || (tz5=TZrules.Russia(-36000,"+10/+11"));
-      if (ux>=354963600) // from 1981 Apr  1 
+      if (ux>=354963600) // from 1981 Apr  1
          return tz4 || (tz4=TZrules.Russia(-39600,"+11/+12"));
-      if (ux>=-1247558400) // from 1930 Jun 21 
+      if (ux>=-1247558400) // from 1930 Jun 21
          return tz3 || (tz3=TZrules.Russia(-32400,"+09/+10"));
-      if (ux>=-1579426374) // from 1919 Dec 15 
-         return tz2 || (tz2=Rule.Timezone(-28800,"+08"));
+      if (ux>=-1579426374) // from 1919 Dec 15
+         return tz2 || (tz2=Rule.Timezone(-28800,"+08/+09"));
       return tz1 || (tz1=Rule.Timezone(-34374,"LMT"));
    }
 }
@@ -5722,18 +3768,18 @@ class Asia_Kamchatka
    Rule.Timezone tz1,tz2,tz3,tz4,tz5;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1301151600) // from 2011 Mar 27  2:00s 
-         return tz5 || (tz5=Rule.Timezone(-43200,"+12"));
-      if (ux>=1269698400) // from 2010 Mar 28  2:00s 
+      if (ux>=1301151600) // from 2011 Mar 27  2:00s
+         return tz5 || (tz5=Rule.Timezone(-43200,"+12/+13"));
+      if (ux>=1269698400) // from 2010 Mar 28  2:00s
          return tz4 || (tz4=TZrules.Russia(-39600,"+11/+12"));
-      if (ux>=695746800) // from 1992 Jan 19  2:00s 
+      if (ux>=695746800) // from 1992 Jan 19  2:00s
          return tz3 || (tz3=TZrules.Russia(-43200,"+12/+13"));
-      if (ux>=670341600) // from 1991 Mar 31  2:00s 
+      if (ux>=670341600) // from 1991 Mar 31  2:00s
          return tz4 || (tz4=TZrules.Russia(-39600,"+11/+12"));
-      if (ux>=-1247569200) // from 1930 Jun 21 
+      if (ux>=-1247569200) // from 1930 Jun 21
          return tz3 || (tz3=TZrules.Russia(-43200,"+12/+13"));
-      if (ux>=-1487759676) // from 1922 Nov 10 
-         return tz2 || (tz2=Rule.Timezone(-39600,"+11"));
+      if (ux>=-1487759676) // from 1922 Nov 10
+         return tz2 || (tz2=Rule.Timezone(-39600,"+11/+12"));
       return tz1 || (tz1=Rule.Timezone(-38076,"LMT"));
    }
 }
@@ -5744,20 +3790,20 @@ class Asia_Anadyr
    Rule.Timezone tz1,tz2,tz3,tz4,tz5;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1301151600) // from 2011 Mar 27  2:00s 
-         return tz2 || (tz2=Rule.Timezone(-43200,"+12"));
-      if (ux>=1269698400) // from 2010 Mar 28  2:00s 
+      if (ux>=1301151600) // from 2011 Mar 27  2:00s
+         return tz2 || (tz2=Rule.Timezone(-43200,"+12/+13"));
+      if (ux>=1269698400) // from 2010 Mar 28  2:00s
          return tz5 || (tz5=TZrules.Russia(-39600,"+11/+12"));
-      if (ux>=695746800) // from 1992 Jan 19  2:00s 
+      if (ux>=695746800) // from 1992 Jan 19  2:00s
          return tz4 || (tz4=TZrules.Russia(-43200,"+12/+13"));
-      if (ux>=670341600) // from 1991 Mar 31  2:00s 
+      if (ux>=670341600) // from 1991 Mar 31  2:00s
          return tz5 || (tz5=TZrules.Russia(-39600,"+11/+12"));
-      if (ux>=386420400) // from 1982 Apr  1  0:00s 
+      if (ux>=386420400) // from 1982 Apr  1  0:00s
          return tz4 || (tz4=TZrules.Russia(-43200,"+12/+13"));
-      if (ux>=-1247572800) // from 1930 Jun 21 
+      if (ux>=-1247572800) // from 1930 Jun 21
          return tz3 || (tz3=TZrules.Russia(-46800,"+13/+14"));
-      if (ux>=-1441194596) // from 1924 May  2 
-         return tz2 || (tz2=Rule.Timezone(-43200,"+12"));
+      if (ux>=-1441194596) // from 1924 May  2
+         return tz2 || (tz2=Rule.Timezone(-43200,"+12/+13"));
       return tz1 || (tz1=Rule.Timezone(-42596,"LMT"));
    }
 }
@@ -5768,17 +3814,17 @@ class Europe_Belgrade
    Rule.Timezone tz1,tz2,tz3,tz4,tz5;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=407199600) // from 1982 Nov 27 
+      if (ux>=407199600) // from 1982 Nov 27
          return tz5 || (tz5=TZrules.EU(-3600,"CE%sT"));
-      if (ux>=-766623600) // from 1945 Sep 16  2:00s 
+      if (ux>=-766623600) // from 1945 Sep 16  2:00s
          return tz2 || (tz2=Rule.Timezone(-3600,"CET"));
-      if (ux>=-777942000) // from 1945 May  8  2:00s 
+      if (ux>=-777942000) // from 1945 May  8  2:00s
          return tz4 || (tz4=Rule.Timezone(-7200,"CEST"));
-      if (ux>=-788914800) // from 1945 
+      if (ux>=-788914800) // from 1945
          return tz2 || (tz2=Rule.Timezone(-3600,"CET"));
-      if (ux>=-905824800) // from 1941 Apr 18 23:00 
+      if (ux>=-905824800) // from 1941 Apr 18 23:00
          return tz3 || (tz3=TZrules.C_Eur(-3600,"CE%sT"));
-      if (ux>=-2713915320) // from 1884 
+      if (ux>=-2713915320) // from 1884
          return tz2 || (tz2=Rule.Timezone(-3600,"CET"));
       return tz1 || (tz1=Rule.Timezone(-4920,"LMT"));
    }
@@ -5795,11 +3841,11 @@ class Europe_Madrid
    Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=284000400) // from 1979 
+      if (ux>=284000400) // from 1979
          return tz4 || (tz4=TZrules.EU(-3600,"CE%sT"));
-      if (ux>=-940208400) // from 1940 Mar 16 23:00 
+      if (ux>=-940208400) // from 1940 Mar 16 23:00
          return tz3 || (tz3=TZrules.Spain(-3600,"CE%sT"));
-      if (ux>=-2177452800) // from 1901 Jan  1  0:00u 
+      if (ux>=-2177452800) // from 1901 Jan  1  0:00u
          return tz2 || (tz2=TZrules.Spain(0,"WE%sT"));
       return tz1 || (tz1=Rule.Timezone(884,"LMT"));
    }
@@ -5811,21 +3857,21 @@ class Africa_Ceuta
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6,tz7;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=504918000) // from 1986 
+      if (ux>=504918000) // from 1986
          return tz7 || (tz7=TZrules.EU(-3600,"CE%sT"));
-      if (ux>=448243200) // from 1984 Mar 16 
+      if (ux>=448243200) // from 1984 Mar 16
          return tz6 || (tz6=Rule.Timezone(-3600,"CET"));
-      if (ux>=-94694400) // from 1967 
+      if (ux>=-94694400) // from 1967
          return tz5 || (tz5=TZrules.SpainAfrica(0,"WE%sT"));
       if (ux>=-1293840000) // from 1929 Help zishrink.awk.
          return tz2 || (tz2=Rule.Timezone(0,"WET"));
-      if (ux>=-1451692800) // from 1924 
+      if (ux>=-1451692800) // from 1924
          return tz4 || (tz4=TZrules.Spain(0,"WE%sT"));
-      if (ux>=-1616810400) // from 1918 Oct  7 23:00 
+      if (ux>=-1616810400) // from 1918 Oct  7 23:00
          return tz2 || (tz2=Rule.Timezone(0,"WET"));
-      if (ux>=-1630112400) // from 1918 May  6 23:00 
+      if (ux>=-1630112400) // from 1918 May  6 23:00
          return tz3 || (tz3=Rule.Timezone(-3600,"WEST"));
-      if (ux>=-2177452800) // from 1901 Jan  1  0:00u 
+      if (ux>=-2177452800) // from 1901 Jan  1  0:00u
          return tz2 || (tz2=Rule.Timezone(0,"WET"));
       return tz1 || (tz1=Rule.Timezone(1276,"LMT"));
    }
@@ -5837,14 +3883,14 @@ class Atlantic_Canary
    Rule.Timezone tz1,tz2,tz3,tz4,tz5;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=338950800) // from 1980 Sep 28  1:00u 
+      if (ux>=338950800) // from 1980 Sep 28  1:00u
          return tz5 || (tz5=TZrules.EU(0,"WE%sT"));
-      if (ux>=323827200) // from 1980 Apr  6  0:00s 
+      if (ux>=323827200) // from 1980 Apr  6  0:00s
          return tz4 || (tz4=Rule.Timezone(-3600,"WEST"));
-      if (ux>=-733874400) // from 1946 Sep 30  1:00 
+      if (ux>=-733874400) // from 1946 Sep 30  1:00
          return tz3 || (tz3=Rule.Timezone(0,"WET"));
-      if (ux>=-1509663504) // from 1922 Mar 
-         return tz2 || (tz2=Rule.Timezone(3600,"-01"));
+      if (ux>=-1509663504) // from 1922 Mar
+         return tz2 || (tz2=Rule.Timezone(3600,"-01/+00"));
       // Las Palmas de Gran C.
       return tz1 || (tz1=Rule.Timezone(3696,"LMT"));
    }
@@ -5856,9 +3902,9 @@ class Europe_Zurich
    Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=347158800) // from 1981 
+      if (ux>=347158800) // from 1981
          return tz4 || (tz4=TZrules.EU(-3600,"CE%sT"));
-      if (ux>=-2385246586) // from 1894 Jun 
+      if (ux>=-2385246586) // from 1894 Jun
          return tz3 || (tz3=TZrules.Swiss(-3600,"CE%sT"));
       if (ux>=-3675198848) // from 1853 Jul 16 Bern Mean Time
          return tz2 || (tz2=Rule.Timezone(-1786,"BMT"));
@@ -5875,27 +3921,27 @@ class Europe_Istanbul
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6,tz7,tz8;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1473217200) // from 2016 Sep  7 
-         return tz8 || (tz8=Rule.Timezone(-10800,"+03"));
-      if (ux>=1446944400) // from 2015 Nov  8  1:00u 
+      if (ux>=1473217200) // from 2016 Sep  7
+         return tz8 || (tz8=Rule.Timezone(-10800,"+03/+04"));
+      if (ux>=1446944400) // from 2015 Nov  8  1:00u
          return tz5 || (tz5=TZrules.EU(-7200,"EE%sT"));
-      if (ux>=1445734800) // from 2015 Oct 25  1:00u 
+      if (ux>=1445734800) // from 2015 Oct 25  1:00u
          return tz7 || (tz7=Rule.Timezone(-10800,"EEST"));
-      if (ux>=1396227600) // from 2014 Mar 31  1:00u 
+      if (ux>=1396227600) // from 2014 Mar 31  1:00u
          return tz5 || (tz5=TZrules.EU(-7200,"EE%sT"));
-      if (ux>=1396141200) // from 2014 Mar 30  1:00u 
+      if (ux>=1396141200) // from 2014 Mar 30  1:00u
          return tz6 || (tz6=Rule.Timezone(-7200,"EET"));
-      if (ux>=1301274000) // from 2011 Mar 28  1:00u 
+      if (ux>=1301274000) // from 2011 Mar 28  1:00u
          return tz5 || (tz5=TZrules.EU(-7200,"EE%sT"));
-      if (ux>=1301187600) // from 2011 Mar 27  1:00u 
+      if (ux>=1301187600) // from 2011 Mar 27  1:00u
          return tz6 || (tz6=Rule.Timezone(-7200,"EET"));
-      if (ux>=1167616800) // from 2007 
+      if (ux>=1167616800) // from 2007
          return tz5 || (tz5=TZrules.EU(-7200,"EE%sT"));
-      if (ux>=468133200) // from 1984 Nov  1  2:00 
+      if (ux>=468133200) // from 1984 Nov  1  2:00
          return tz3 || (tz3=TZrules.Turkey(-7200,"EE%sT"));
-      if (ux>=267933600) // from 1978 Jun 29 
+      if (ux>=267933600) // from 1978 Jun 29
          return tz4 || (tz4=TZrules.Turkey(-10800,"+03/+04"));
-      if (ux>=-1869875816) // from 1910 Oct 
+      if (ux>=-1869875816) // from 1910 Oct
          return tz3 || (tz3=TZrules.Turkey(-7200,"EE%sT"));
       if (ux>=-2840147752) // from 1880 Istanbul Mean Time?
          return tz2 || (tz2=Rule.Timezone(-7016,"IMT"));
@@ -5911,19 +3957,19 @@ class Europe_Kyiv
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6,tz7,tz8,tz9;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=831956400) // from 1996 May 13 
+      if (ux>=831956400) // from 1996 May 13
          return tz9 || (tz9=TZrules.EU(-7200,"EE%sT"));
-      if (ux>=686102400) // from 1991 Sep 29  3:00 
+      if (ux>=686102400) // from 1991 Sep 29  3:00
          return tz8 || (tz8=TZrules.C_Eur(-7200,"EE%sT"));
-      if (ux>=646812000) // from 1990 Jul  1  2:00 
+      if (ux>=646812000) // from 1990 Jul  1  2:00
          return tz7 || (tz7=Rule.Timezone(-10800,"EEST"));
-      if (ux>=-825375600) // from 1943 Nov  6 
+      if (ux>=-825375600) // from 1943 Nov  6
          return tz6 || (tz6=TZrules.Russia(-10800,"MSK/MSD"));
-      if (ux>=-892522800) // from 1941 Sep 20 
+      if (ux>=-892522800) // from 1941 Sep 20
          return tz5 || (tz5=TZrules.C_Eur(-3600,"CE%sT"));
-      if (ux>=-1247536800) // from 1930 Jun 21 
+      if (ux>=-1247536800) // from 1930 Jun 21
          return tz4 || (tz4=Rule.Timezone(-10800,"MSK"));
-      if (ux>=-1441159324) // from 1924 May  2 
+      if (ux>=-1441159324) // from 1924 May  2
          return tz3 || (tz3=Rule.Timezone(-7200,"EET"));
       if (ux>=-2840148124) // from 1880 Kyiv Mean Time
          return tz2 || (tz2=Rule.Timezone(-7324,"KMT"));
@@ -5940,19 +3986,20 @@ class America_New_York
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-94712400) // from 1967 
+      if (ux>=-94712400) // from 1967
          return tz2 || (tz2=TZrules.US(18000,"E%sT"));
-      if (ux>=-757400400) // from 1946 
+      if (ux>=-757400400) // from 1946
          return tz3 || (tz3=TZrules.NYC(18000,"E%sT"));
-      if (ux>=-883630800) // from 1942 
+      if (ux>=-883630800) // from 1942
          return tz2 || (tz2=TZrules.US(18000,"E%sT"));
-      if (ux>=-1577941200) // from 1920 
+      if (ux>=-1577941200) // from 1920
          return tz3 || (tz3=TZrules.NYC(18000,"E%sT"));
-      if (ux>=-2717650800) // from 1883 Nov 18 17:00u 
+      if (ux>=-2717650800) // from 1883 Nov 18 17:00u
          return tz2 || (tz2=TZrules.US(18000,"E%sT"));
       return tz1 || (tz1=Rule.Timezone(17762,"LMT"));
    }
 }
+constant EST5EDT=America_New_York;
 constant US_Eastern=America_New_York;
 
 class America_Chicago
@@ -5961,23 +4008,24 @@ class America_Chicago
    Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-94716000) // from 1967 
+      if (ux>=-94716000) // from 1967
          return tz2 || (tz2=TZrules.US(21600,"C%sT"));
-      if (ux>=-757404000) // from 1946 
+      if (ux>=-757404000) // from 1946
          return tz3 || (tz3=TZrules.Chicago(21600,"C%sT"));
-      if (ux>=-883634400) // from 1942 
+      if (ux>=-883634400) // from 1942
          return tz2 || (tz2=TZrules.US(21600,"C%sT"));
-      if (ux>=-1045414800) // from 1936 Nov 15  2:00 
+      if (ux>=-1045414800) // from 1936 Nov 15  2:00
          return tz3 || (tz3=TZrules.Chicago(21600,"C%sT"));
-      if (ux>=-1067832000) // from 1936 Mar  1  2:00 
+      if (ux>=-1067832000) // from 1936 Mar  1  2:00
          return tz4 || (tz4=Rule.Timezone(18000,"EST"));
-      if (ux>=-1577944800) // from 1920 
+      if (ux>=-1577944800) // from 1920
          return tz3 || (tz3=TZrules.Chicago(21600,"C%sT"));
-      if (ux>=-2717647200) // from 1883 Nov 18 18:00u 
+      if (ux>=-2717647200) // from 1883 Nov 18 18:00u
          return tz2 || (tz2=TZrules.US(21600,"C%sT"));
       return tz1 || (tz1=Rule.Timezone(21036,"LMT"));
    }
 }
+constant CST6CDT=America_Chicago;
 constant US_Central=America_Chicago;
 
 class America_North_Dakota_Center
@@ -5986,9 +4034,9 @@ class America_North_Dakota_Center
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=719956800) // from 1992 Oct 25  2:00 
+      if (ux>=719956800) // from 1992 Oct 25  2:00
          return tz3 || (tz3=TZrules.US(21600,"C%sT"));
-      if (ux>=-2717643600) // from 1883 Nov 18 19:00u 
+      if (ux>=-2717643600) // from 1883 Nov 18 19:00u
          return tz2 || (tz2=TZrules.US(25200,"M%sT"));
       return tz1 || (tz1=Rule.Timezone(24312,"LMT"));
    }
@@ -6000,9 +4048,9 @@ class America_North_Dakota_New_Salem
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1067112000) // from 2003 Oct 26  2:00 
+      if (ux>=1067112000) // from 2003 Oct 26  2:00
          return tz3 || (tz3=TZrules.US(21600,"C%sT"));
-      if (ux>=-2717643600) // from 1883 Nov 18 19:00u 
+      if (ux>=-2717643600) // from 1883 Nov 18 19:00u
          return tz2 || (tz2=TZrules.US(25200,"M%sT"));
       return tz1 || (tz1=Rule.Timezone(24339,"LMT"));
    }
@@ -6014,9 +4062,9 @@ class America_North_Dakota_Beulah
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1289073600) // from 2010 Nov  7  2:00 
+      if (ux>=1289073600) // from 2010 Nov  7  2:00
          return tz3 || (tz3=TZrules.US(21600,"C%sT"));
-      if (ux>=-2717643600) // from 1883 Nov 18 19:00u 
+      if (ux>=-2717643600) // from 1883 Nov 18 19:00u
          return tz2 || (tz2=TZrules.US(25200,"M%sT"));
       return tz1 || (tz1=Rule.Timezone(24427,"LMT"));
    }
@@ -6028,19 +4076,20 @@ class America_Denver
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-94719600) // from 1967 
+      if (ux>=-94719600) // from 1967
          return tz2 || (tz2=TZrules.US(25200,"M%sT"));
-      if (ux>=-757407600) // from 1946 
+      if (ux>=-757407600) // from 1946
          return tz3 || (tz3=TZrules.Denver(25200,"M%sT"));
-      if (ux>=-883638000) // from 1942 
+      if (ux>=-883638000) // from 1942
          return tz2 || (tz2=TZrules.US(25200,"M%sT"));
-      if (ux>=-1577948400) // from 1920 
+      if (ux>=-1577948400) // from 1920
          return tz3 || (tz3=TZrules.Denver(25200,"M%sT"));
-      if (ux>=-2717643600) // from 1883 Nov 18 19:00u 
+      if (ux>=-2717643600) // from 1883 Nov 18 19:00u
          return tz2 || (tz2=TZrules.US(25200,"M%sT"));
       return tz1 || (tz1=Rule.Timezone(25196,"LMT"));
    }
 }
+constant MST7MDT=America_Denver;
 constant Navajo=America_Denver;
 constant US_Mountain=America_Denver;
 constant America_Shiprock=America_Denver;
@@ -6051,16 +4100,17 @@ class America_Los_Angeles
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-94723200) // from 1967 
+      if (ux>=-94723200) // from 1967
          return tz2 || (tz2=TZrules.US(28800,"P%sT"));
-      if (ux>=-757411200) // from 1946 
+      if (ux>=-757411200) // from 1946
          return tz3 || (tz3=TZrules.CA(28800,"P%sT"));
-      if (ux>=-2717640000) // from 1883 Nov 18 20:00u 
+      if (ux>=-2717640000) // from 1883 Nov 18 20:00u
          return tz2 || (tz2=TZrules.US(28800,"P%sT"));
       return tz1 || (tz1=Rule.Timezone(28378,"LMT"));
    }
 }
 constant US_Pacific=America_Los_Angeles;
+constant PST8PDT=America_Los_Angeles;
 
 class America_Juneau
 {
@@ -6068,23 +4118,23 @@ class America_Juneau
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=438966000) // from 1983 Nov 30 
+      if (ux>=438966000) // from 1983 Nov 30
          return tz6 || (tz6=TZrules.US(32400,"AK%sT"));
-      if (ux>=436302000) // from 1983 Oct 30  2:00 
+      if (ux>=436302000) // from 1983 Oct 30  2:00
          return tz5 || (tz5=TZrules.US(32400,"Y%sT"));
-      if (ux>=341344800) // from 1980 Oct 26  2:00 
+      if (ux>=341344800) // from 1980 Oct 26  2:00
          return tz4 || (tz4=TZrules.US(28800,"P%sT"));
-      if (ux>=325620000) // from 1980 Apr 27  2:00 
+      if (ux>=325620000) // from 1980 Apr 27  2:00
          return tz5 || (tz5=TZrules.US(32400,"Y%sT"));
-      if (ux>=-31507200) // from 1969 
+      if (ux>=-31507200) // from 1969
          return tz4 || (tz4=TZrules.US(28800,"P%sT"));
-      if (ux>=-757411200) // from 1946 
+      if (ux>=-757411200) // from 1946
          return tz3 || (tz3=Rule.Timezone(28800,"PST"));
-      if (ux>=-883584000) // from 1942 
+      if (ux>=-883584000) // from 1942
          return tz4 || (tz4=TZrules.US(28800,"P%sT"));
-      if (ux>=-2188954939) // from 1900 Aug 20 12:00 
+      if (ux>=-2188954939) // from 1900 Aug 20 12:00
          return tz3 || (tz3=Rule.Timezone(28800,"PST"));
-      if (ux>=-3225223727) // from 1867 Oct 19 15:33:32 
+      if (ux>=-3225223727) // from 1867 Oct 19 15:33:32
          return tz2 || (tz2=Rule.Timezone(32261,"LMT"));
       return tz1 || (tz1=Rule.Timezone(-54139,"LMT"));
    }
@@ -6096,19 +4146,19 @@ class America_Sitka
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=438966000) // from 1983 Nov 30 
+      if (ux>=438966000) // from 1983 Nov 30
          return tz6 || (tz6=TZrules.US(32400,"AK%sT"));
-      if (ux>=436302000) // from 1983 Oct 30  2:00 
+      if (ux>=436302000) // from 1983 Oct 30  2:00
          return tz5 || (tz5=TZrules.US(32400,"Y%sT"));
-      if (ux>=-31507200) // from 1969 
+      if (ux>=-31507200) // from 1969
          return tz4 || (tz4=TZrules.US(28800,"P%sT"));
-      if (ux>=-757411200) // from 1946 
+      if (ux>=-757411200) // from 1946
          return tz3 || (tz3=Rule.Timezone(28800,"PST"));
-      if (ux>=-883584000) // from 1942 
+      if (ux>=-883584000) // from 1942
          return tz4 || (tz4=TZrules.US(28800,"P%sT"));
-      if (ux>=-2188954727) // from 1900 Aug 20 12:00 
+      if (ux>=-2188954727) // from 1900 Aug 20 12:00
          return tz3 || (tz3=Rule.Timezone(28800,"PST"));
-      if (ux>=-3225223727) // from 1867 Oct 19 15:30 
+      if (ux>=-3225223727) // from 1867 Oct 19 15:30
          return tz2 || (tz2=Rule.Timezone(32473,"LMT"));
       return tz1 || (tz1=Rule.Timezone(-53927,"LMT"));
    }
@@ -6120,23 +4170,23 @@ class America_Metlakatla
    Rule.Timezone tz1,tz2,tz3,tz4,tz5;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1547978400) // from 2019 Jan 20  2:00 
+      if (ux>=1547978400) // from 2019 Jan 20  2:00
          return tz5 || (tz5=TZrules.US(32400,"AK%sT"));
-      if (ux>=1541268000) // from 2018 Nov  4  2:00 
+      if (ux>=1541268000) // from 2018 Nov  4  2:00
          return tz3 || (tz3=Rule.Timezone(28800,"PST"));
-      if (ux>=1446372000) // from 2015 Nov  1  2:00 
+      if (ux>=1446372000) // from 2015 Nov  1  2:00
          return tz5 || (tz5=TZrules.US(32400,"AK%sT"));
-      if (ux>=436302000) // from 1983 Oct 30  2:00 
+      if (ux>=436302000) // from 1983 Oct 30  2:00
          return tz3 || (tz3=Rule.Timezone(28800,"PST"));
-      if (ux>=-31507200) // from 1969 
+      if (ux>=-31507200) // from 1969
          return tz4 || (tz4=TZrules.US(28800,"P%sT"));
-      if (ux>=-757411200) // from 1946 
+      if (ux>=-757411200) // from 1946
          return tz3 || (tz3=Rule.Timezone(28800,"PST"));
-      if (ux>=-883584000) // from 1942 
+      if (ux>=-883584000) // from 1942
          return tz4 || (tz4=TZrules.US(28800,"P%sT"));
-      if (ux>=-2188955622) // from 1900 Aug 20 12:00 
+      if (ux>=-2188955622) // from 1900 Aug 20 12:00
          return tz3 || (tz3=Rule.Timezone(28800,"PST"));
-      if (ux>=-3225223727) // from 1867 Oct 19 15:44:55 
+      if (ux>=-3225223727) // from 1867 Oct 19 15:44:55
          return tz2 || (tz2=Rule.Timezone(31578,"LMT"));
       return tz1 || (tz1=Rule.Timezone(-54822,"LMT"));
    }
@@ -6148,17 +4198,17 @@ class America_Yakutat
    Rule.Timezone tz1,tz2,tz3,tz4,tz5;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=438966000) // from 1983 Nov 30 
+      if (ux>=438966000) // from 1983 Nov 30
          return tz5 || (tz5=TZrules.US(32400,"AK%sT"));
-      if (ux>=-31503600) // from 1969 
+      if (ux>=-31503600) // from 1969
          return tz4 || (tz4=TZrules.US(32400,"Y%sT"));
-      if (ux>=-757414800) // from 1946 
+      if (ux>=-757414800) // from 1946
          return tz3 || (tz3=Rule.Timezone(32400,"YST"));
-      if (ux>=-883580400) // from 1942 
+      if (ux>=-883580400) // from 1942
          return tz4 || (tz4=TZrules.US(32400,"Y%sT"));
-      if (ux>=-2188953665) // from 1900 Aug 20 12:00 
+      if (ux>=-2188953665) // from 1900 Aug 20 12:00
          return tz3 || (tz3=Rule.Timezone(32400,"YST"));
-      if (ux>=-3225223727) // from 1867 Oct 19 15:12:18 
+      if (ux>=-3225223727) // from 1867 Oct 19 15:12:18
          return tz2 || (tz2=Rule.Timezone(33535,"LMT"));
       return tz1 || (tz1=Rule.Timezone(-52865,"LMT"));
    }
@@ -6170,19 +4220,19 @@ class America_Anchorage
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6,tz7,tz8;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=438966000) // from 1983 Nov 30 
+      if (ux>=438966000) // from 1983 Nov 30
          return tz8 || (tz8=TZrules.US(32400,"AK%sT"));
-      if (ux>=436294800) // from 1983 Oct 30  2:00 
+      if (ux>=436294800) // from 1983 Oct 30  2:00
          return tz7 || (tz7=TZrules.US(32400,"Y%sT"));
-      if (ux>=-31500000) // from 1969 
+      if (ux>=-31500000) // from 1969
          return tz6 || (tz6=TZrules.US(36000,"AH%sT"));
-      if (ux>=-86954400) // from 1967 Apr 
+      if (ux>=-86954400) // from 1967 Apr
          return tz5 || (tz5=Rule.Timezone(36000,"AHST"));
-      if (ux>=-883576800) // from 1942 
+      if (ux>=-883576800) // from 1942
          return tz4 || (tz4=TZrules.US(36000,"A%sT"));
-      if (ux>=-2188951224) // from 1900 Aug 20 12:00 
+      if (ux>=-2188951224) // from 1900 Aug 20 12:00
          return tz3 || (tz3=Rule.Timezone(36000,"AST"));
-      if (ux>=-3225223727) // from 1867 Oct 19 14:31:37 
+      if (ux>=-3225223727) // from 1867 Oct 19 14:31:37
          return tz2 || (tz2=Rule.Timezone(35976,"LMT"));
       return tz1 || (tz1=Rule.Timezone(-50424,"LMT"));
    }
@@ -6195,21 +4245,21 @@ class America_Nome
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6,tz7,tz8;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=438966000) // from 1983 Nov 30 
+      if (ux>=438966000) // from 1983 Nov 30
          return tz8 || (tz8=TZrules.US(32400,"AK%sT"));
-      if (ux>=436291200) // from 1983 Oct 30  2:00 
+      if (ux>=436291200) // from 1983 Oct 30  2:00
          return tz7 || (tz7=TZrules.US(32400,"Y%sT"));
-      if (ux>=-31496400) // from 1969 
+      if (ux>=-31496400) // from 1969
          return tz6 || (tz6=TZrules.US(39600,"B%sT"));
-      if (ux>=-86878800) // from 1967 Apr 
+      if (ux>=-86878800) // from 1967 Apr
          return tz5 || (tz5=Rule.Timezone(39600,"BST"));
-      if (ux>=-757422000) // from 1946 
+      if (ux>=-757422000) // from 1946
          return tz3 || (tz3=Rule.Timezone(39600,"NST"));
-      if (ux>=-883573200) // from 1942 
+      if (ux>=-883573200) // from 1942
          return tz4 || (tz4=TZrules.US(39600,"N%sT"));
-      if (ux>=-2188947502) // from 1900 Aug 20 12:00 
+      if (ux>=-2188947502) // from 1900 Aug 20 12:00
          return tz3 || (tz3=Rule.Timezone(39600,"NST"));
-      if (ux>=-3225223727) // from 1867 Oct 19 13:29:35 
+      if (ux>=-3225223727) // from 1867 Oct 19 13:29:35
          return tz2 || (tz2=Rule.Timezone(39698,"LMT"));
       return tz1 || (tz1=Rule.Timezone(-46702,"LMT"));
    }
@@ -6221,21 +4271,21 @@ class America_Adak
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6,tz7,tz8;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=438962400) // from 1983 Nov 30 
+      if (ux>=438962400) // from 1983 Nov 30
          return tz8 || (tz8=TZrules.US(36000,"H%sT"));
-      if (ux>=436291200) // from 1983 Oct 30  2:00 
+      if (ux>=436291200) // from 1983 Oct 30  2:00
          return tz7 || (tz7=TZrules.US(36000,"AH%sT"));
-      if (ux>=-31496400) // from 1969 
+      if (ux>=-31496400) // from 1969
          return tz6 || (tz6=TZrules.US(39600,"B%sT"));
-      if (ux>=-86878800) // from 1967 Apr 
+      if (ux>=-86878800) // from 1967 Apr
          return tz5 || (tz5=Rule.Timezone(39600,"BST"));
-      if (ux>=-757422000) // from 1946 
+      if (ux>=-757422000) // from 1946
          return tz3 || (tz3=Rule.Timezone(39600,"NST"));
-      if (ux>=-883573200) // from 1942 
+      if (ux>=-883573200) // from 1942
          return tz4 || (tz4=TZrules.US(39600,"N%sT"));
-      if (ux>=-2188944802) // from 1900 Aug 20 12:00 
+      if (ux>=-2188944802) // from 1900 Aug 20 12:00
          return tz3 || (tz3=Rule.Timezone(39600,"NST"));
-      if (ux>=-3225223727) // from 1867 Oct 19 12:44:35 
+      if (ux>=-3225223727) // from 1867 Oct 19 12:44:35
          return tz2 || (tz2=Rule.Timezone(42398,"LMT"));
       return tz1 || (tz1=Rule.Timezone(-44002,"LMT"));
    }
@@ -6249,19 +4299,20 @@ class Pacific_Honolulu
    Rule.Timezone tz1,tz2,tz3,tz4,tz5;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-712225800) // from 1947 Jun  8  2:00 
+      if (ux>=-712225800) // from 1947 Jun  8  2:00
          return tz5 || (tz5=Rule.Timezone(36000,"HST"));
-      if (ux>=-1155436200) // from 1933 May 21 12:00 
+      if (ux>=-1155436200) // from 1933 May 21 12:00
          return tz4 || (tz4=TZrules.US(37800,"H%sT"));
-      if (ux>=-1157283000) // from 1933 Apr 30  2:00 
+      if (ux>=-1157283000) // from 1933 Apr 30  2:00
          return tz3 || (tz3=Rule.Timezone(34200,"HDT"));
-      if (ux>=-2334101314) // from 1896 Jan 13 12:00 
+      if (ux>=-2334101314) // from 1896 Jan 13 12:00
          return tz2 || (tz2=Rule.Timezone(37800,"HST"));
       return tz1 || (tz1=Rule.Timezone(37886,"LMT"));
    }
 }
 constant US_Hawaii=Pacific_Honolulu;
 constant Pacific_Johnston=Pacific_Honolulu;
+constant HST=Pacific_Honolulu;
 
 class America_Phoenix
 {
@@ -6269,21 +4320,22 @@ class America_Phoenix
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-56271600) // from 1968 Mar 21 
+      if (ux>=-56271600) // from 1968 Mar 21
          return tz3 || (tz3=Rule.Timezone(25200,"MST"));
-      if (ux>=-94669200) // from 1967 
+      if (ux>=-94669200) // from 1967
          return tz2 || (tz2=TZrules.US(25200,"M%sT"));
-      if (ux>=-796888740) // from 1944 Oct  1  0:01 
+      if (ux>=-796888740) // from 1944 Oct  1  0:01
          return tz3 || (tz3=Rule.Timezone(25200,"MST"));
-      if (ux>=-812653140) // from 1944 Apr  1  0:01 
+      if (ux>=-812653140) // from 1944 Apr  1  0:01
          return tz2 || (tz2=TZrules.US(25200,"M%sT"));
-      if (ux>=-820562340) // from 1944 Jan  1  0:01 
+      if (ux>=-820562340) // from 1944 Jan  1  0:01
          return tz3 || (tz3=Rule.Timezone(25200,"MST"));
-      if (ux>=-2717643600) // from 1883 Nov 18 19:00u 
+      if (ux>=-2717643600) // from 1883 Nov 18 19:00u
          return tz2 || (tz2=TZrules.US(25200,"M%sT"));
       return tz1 || (tz1=Rule.Timezone(26898,"LMT"));
    }
 }
+constant MST=America_Phoenix;
 constant US_Arizona=America_Phoenix;
 constant America_Creston=America_Phoenix;
 
@@ -6293,13 +4345,13 @@ class America_Boise
    Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=129114000) // from 1974 Feb  3  2:00 
+      if (ux>=129114000) // from 1974 Feb  3  2:00
          return tz3 || (tz3=TZrules.US(25200,"M%sT"));
-      if (ux>=126205200) // from 1974 
+      if (ux>=126205200) // from 1974
          return tz4 || (tz4=Rule.Timezone(25200,"MST"));
-      if (ux>=-1471845600) // from 1923 May 13  2:00 
+      if (ux>=-1471845600) // from 1923 May 13  2:00
          return tz3 || (tz3=TZrules.US(25200,"M%sT"));
-      if (ux>=-2717640000) // from 1883 Nov 18 20:00u 
+      if (ux>=-2717640000) // from 1883 Nov 18 20:00u
          return tz2 || (tz2=TZrules.US(28800,"P%sT"));
       return tz1 || (tz1=Rule.Timezone(27889,"LMT"));
    }
@@ -6311,25 +4363,25 @@ class America_Indiana_Indianapolis
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1136091600) // from 2006 
+      if (ux>=1136091600) // from 2006
          return tz6 || (tz6=TZrules.US(18000,"E%sT"));
-      if (ux>=31518000) // from 1971 
+      if (ux>=31518000) // from 1971
          return tz4 || (tz4=Rule.Timezone(18000,"EST"));
-      if (ux>=-31518000) // from 1969 
+      if (ux>=-31518000) // from 1969
          return tz6 || (tz6=TZrules.US(18000,"E%sT"));
-      if (ux>=-368640000) // from 1958 Apr 27  2:00 
+      if (ux>=-368640000) // from 1958 Apr 27  2:00
          return tz4 || (tz4=Rule.Timezone(18000,"EST"));
-      if (ux>=-386787600) // from 1957 Sep 29  2:00 
+      if (ux>=-386787600) // from 1957 Sep 29  2:00
          return tz5 || (tz5=Rule.Timezone(21600,"CST"));
-      if (ux>=-463636800) // from 1955 Apr 24  2:00 
+      if (ux>=-463636800) // from 1955 Apr 24  2:00
          return tz4 || (tz4=Rule.Timezone(18000,"EST"));
-      if (ux>=-757404000) // from 1946 
+      if (ux>=-757404000) // from 1946
          return tz3 || (tz3=TZrules.Indianapolis(21600,"C%sT"));
-      if (ux>=-883634400) // from 1942 
+      if (ux>=-883634400) // from 1942
          return tz2 || (tz2=TZrules.US(21600,"C%sT"));
-      if (ux>=-1577944800) // from 1920 
+      if (ux>=-1577944800) // from 1920
          return tz3 || (tz3=TZrules.Indianapolis(21600,"C%sT"));
-      if (ux>=-2717647200) // from 1883 Nov 18 18:00u 
+      if (ux>=-2717647200) // from 1883 Nov 18 18:00u
          return tz2 || (tz2=TZrules.US(21600,"C%sT"));
       return tz1 || (tz1=Rule.Timezone(20678,"LMT"));
    }
@@ -6344,21 +4396,21 @@ class America_Indiana_Marengo
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1136091600) // from 2006 
+      if (ux>=1136091600) // from 2006
          return tz5 || (tz5=TZrules.US(18000,"E%sT"));
-      if (ux>=189284400) // from 1976 
+      if (ux>=189284400) // from 1976
          return tz4 || (tz4=Rule.Timezone(18000,"EST"));
-      if (ux>=152089200) // from 1974 Oct 27  2:00 
+      if (ux>=152089200) // from 1974 Oct 27  2:00
          return tz5 || (tz5=TZrules.US(18000,"E%sT"));
-      if (ux>=126651600) // from 1974 Jan  6  2:00 
+      if (ux>=126651600) // from 1974 Jan  6  2:00
          return tz6 || (tz6=Rule.Timezone(18000,"CDT"));
-      if (ux>=-31518000) // from 1969 
+      if (ux>=-31518000) // from 1969
          return tz5 || (tz5=TZrules.US(18000,"E%sT"));
-      if (ux>=-273729600) // from 1961 Apr 30  2:00 
+      if (ux>=-273729600) // from 1961 Apr 30  2:00
          return tz4 || (tz4=Rule.Timezone(18000,"EST"));
-      if (ux>=-599637600) // from 1951 
+      if (ux>=-599637600) // from 1951
          return tz3 || (tz3=TZrules.Marengo(21600,"C%sT"));
-      if (ux>=-2717647200) // from 1883 Nov 18 18:00u 
+      if (ux>=-2717647200) // from 1883 Nov 18 18:00u
          return tz2 || (tz2=TZrules.US(21600,"C%sT"));
       return tz1 || (tz1=Rule.Timezone(20723,"LMT"));
    }
@@ -6370,19 +4422,19 @@ class America_Indiana_Vincennes
    Rule.Timezone tz1,tz2,tz3,tz4,tz5;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1194123600) // from 2007 Nov  4  2:00 
+      if (ux>=1194123600) // from 2007 Nov  4  2:00
          return tz5 || (tz5=TZrules.US(18000,"E%sT"));
-      if (ux>=1143961200) // from 2006 Apr  2  2:00 
+      if (ux>=1143961200) // from 2006 Apr  2  2:00
          return tz2 || (tz2=TZrules.US(21600,"C%sT"));
-      if (ux>=31518000) // from 1971 
+      if (ux>=31518000) // from 1971
          return tz4 || (tz4=Rule.Timezone(18000,"EST"));
-      if (ux>=-31518000) // from 1969 
+      if (ux>=-31518000) // from 1969
          return tz5 || (tz5=TZrules.US(18000,"E%sT"));
-      if (ux>=-179380800) // from 1964 Apr 26  2:00 
+      if (ux>=-179380800) // from 1964 Apr 26  2:00
          return tz4 || (tz4=Rule.Timezone(18000,"EST"));
-      if (ux>=-757404000) // from 1946 
+      if (ux>=-757404000) // from 1946
          return tz3 || (tz3=TZrules.Vincennes(21600,"C%sT"));
-      if (ux>=-2717647200) // from 1883 Nov 18 18:00u 
+      if (ux>=-2717647200) // from 1883 Nov 18 18:00u
          return tz2 || (tz2=TZrules.US(21600,"C%sT"));
       return tz1 || (tz1=Rule.Timezone(21007,"LMT"));
    }
@@ -6394,19 +4446,19 @@ class America_Indiana_Tell_City
    Rule.Timezone tz1,tz2,tz3,tz4,tz5;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1143961200) // from 2006 Apr  2  2:00 
+      if (ux>=1143961200) // from 2006 Apr  2  2:00
          return tz2 || (tz2=TZrules.US(21600,"C%sT"));
-      if (ux>=31518000) // from 1971 
+      if (ux>=31518000) // from 1971
          return tz4 || (tz4=Rule.Timezone(18000,"EST"));
-      if (ux>=-21528000) // from 1969 Apr 27  2:00 
+      if (ux>=-21528000) // from 1969 Apr 27  2:00
          return tz5 || (tz5=TZrules.US(18000,"E%sT"));
-      if (ux>=-68662800) // from 1967 Oct 29  2:00 
+      if (ux>=-68662800) // from 1967 Oct 29  2:00
          return tz2 || (tz2=TZrules.US(21600,"C%sT"));
-      if (ux>=-179380800) // from 1964 Apr 26  2:00 
+      if (ux>=-179380800) // from 1964 Apr 26  2:00
          return tz4 || (tz4=Rule.Timezone(18000,"EST"));
-      if (ux>=-757404000) // from 1946 
+      if (ux>=-757404000) // from 1946
          return tz3 || (tz3=TZrules.Perry(21600,"C%sT"));
-      if (ux>=-2717647200) // from 1883 Nov 18 18:00u 
+      if (ux>=-2717647200) // from 1883 Nov 18 18:00u
          return tz2 || (tz2=TZrules.US(21600,"C%sT"));
       return tz1 || (tz1=Rule.Timezone(20823,"LMT"));
    }
@@ -6418,19 +4470,19 @@ class America_Indiana_Petersburg
    Rule.Timezone tz1,tz2,tz3,tz4,tz5;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1194123600) // from 2007 Nov  4  2:00 
+      if (ux>=1194123600) // from 2007 Nov  4  2:00
          return tz5 || (tz5=TZrules.US(18000,"E%sT"));
-      if (ux>=1143961200) // from 2006 Apr  2  2:00 
+      if (ux>=1143961200) // from 2006 Apr  2  2:00
          return tz2 || (tz2=TZrules.US(21600,"C%sT"));
-      if (ux>=247006800) // from 1977 Oct 30  2:00 
+      if (ux>=247006800) // from 1977 Oct 30  2:00
          return tz4 || (tz4=Rule.Timezone(18000,"EST"));
-      if (ux>=-100112400) // from 1966 Oct 30  2:00 
+      if (ux>=-100112400) // from 1966 Oct 30  2:00
          return tz2 || (tz2=TZrules.US(21600,"C%sT"));
-      if (ux>=-147931200) // from 1965 Apr 25  2:00 
+      if (ux>=-147931200) // from 1965 Apr 25  2:00
          return tz4 || (tz4=Rule.Timezone(18000,"EST"));
-      if (ux>=-473407200) // from 1955 
+      if (ux>=-473407200) // from 1955
          return tz3 || (tz3=TZrules.Pike(21600,"C%sT"));
-      if (ux>=-2717647200) // from 1883 Nov 18 18:00u 
+      if (ux>=-2717647200) // from 1883 Nov 18 18:00u
          return tz2 || (tz2=TZrules.US(21600,"C%sT"));
       return tz1 || (tz1=Rule.Timezone(20947,"LMT"));
    }
@@ -6442,17 +4494,17 @@ class America_Indiana_Knox
    Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1143961200) // from 2006 Apr  2  2:00 
+      if (ux>=1143961200) // from 2006 Apr  2  2:00
          return tz2 || (tz2=TZrules.US(21600,"C%sT"));
-      if (ux>=688510800) // from 1991 Oct 27  2:00 
+      if (ux>=688510800) // from 1991 Oct 27  2:00
          return tz4 || (tz4=Rule.Timezone(18000,"EST"));
-      if (ux>=-195066000) // from 1963 Oct 27  2:00 
+      if (ux>=-195066000) // from 1963 Oct 27  2:00
          return tz2 || (tz2=TZrules.US(21600,"C%sT"));
-      if (ux>=-242280000) // from 1962 Apr 29  2:00 
+      if (ux>=-242280000) // from 1962 Apr 29  2:00
          return tz4 || (tz4=Rule.Timezone(18000,"EST"));
-      if (ux>=-725868000) // from 1947 
+      if (ux>=-725868000) // from 1947
          return tz3 || (tz3=TZrules.Starke(21600,"C%sT"));
-      if (ux>=-2717647200) // from 1883 Nov 18 18:00u 
+      if (ux>=-2717647200) // from 1883 Nov 18 18:00u
          return tz2 || (tz2=TZrules.US(21600,"C%sT"));
       return tz1 || (tz1=Rule.Timezone(20790,"LMT"));
    }
@@ -6466,19 +4518,19 @@ class America_Indiana_Winamac
    Rule.Timezone tz1,tz2,tz3,tz4,tz5;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1173556800) // from 2007 Mar 11  2:00 
+      if (ux>=1173556800) // from 2007 Mar 11  2:00
          return tz5 || (tz5=TZrules.US(18000,"E%sT"));
-      if (ux>=1143961200) // from 2006 Apr  2  2:00 
+      if (ux>=1143961200) // from 2006 Apr  2  2:00
          return tz2 || (tz2=TZrules.US(21600,"C%sT"));
-      if (ux>=31518000) // from 1971 
+      if (ux>=31518000) // from 1971
          return tz4 || (tz4=Rule.Timezone(18000,"EST"));
-      if (ux>=-31518000) // from 1969 
+      if (ux>=-31518000) // from 1969
          return tz5 || (tz5=TZrules.US(18000,"E%sT"));
-      if (ux>=-273729600) // from 1961 Apr 30  2:00 
+      if (ux>=-273729600) // from 1961 Apr 30  2:00
          return tz4 || (tz4=Rule.Timezone(18000,"EST"));
-      if (ux>=-757404000) // from 1946 
+      if (ux>=-757404000) // from 1946
          return tz3 || (tz3=TZrules.Pulaski(21600,"C%sT"));
-      if (ux>=-2717647200) // from 1883 Nov 18 18:00u 
+      if (ux>=-2717647200) // from 1883 Nov 18 18:00u
          return tz2 || (tz2=TZrules.US(21600,"C%sT"));
       return tz1 || (tz1=Rule.Timezone(20785,"LMT"));
    }
@@ -6490,15 +4542,15 @@ class America_Indiana_Vevay
    Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1136091600) // from 2006 
+      if (ux>=1136091600) // from 2006
          return tz4 || (tz4=TZrules.US(18000,"E%sT"));
-      if (ux>=94676400) // from 1973 
+      if (ux>=94676400) // from 1973
          return tz3 || (tz3=Rule.Timezone(18000,"EST"));
-      if (ux>=-31518000) // from 1969 
+      if (ux>=-31518000) // from 1969
          return tz4 || (tz4=TZrules.US(18000,"E%sT"));
-      if (ux>=-495086400) // from 1954 Apr 25  2:00 
+      if (ux>=-495086400) // from 1954 Apr 25  2:00
          return tz3 || (tz3=Rule.Timezone(18000,"EST"));
-      if (ux>=-2717647200) // from 1883 Nov 18 18:00u 
+      if (ux>=-2717647200) // from 1883 Nov 18 18:00u
          return tz2 || (tz2=TZrules.US(21600,"C%sT"));
       return tz1 || (tz1=Rule.Timezone(20416,"LMT"));
    }
@@ -6510,21 +4562,21 @@ class America_Kentucky_Louisville
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=152089200) // from 1974 Oct 27  2:00 
+      if (ux>=152089200) // from 1974 Oct 27  2:00
          return tz5 || (tz5=TZrules.US(18000,"E%sT"));
-      if (ux>=126651600) // from 1974 Jan  6  2:00 
+      if (ux>=126651600) // from 1974 Jan  6  2:00
          return tz6 || (tz6=Rule.Timezone(18000,"CDT"));
-      if (ux>=-63140400) // from 1968 
+      if (ux>=-63140400) // from 1968
          return tz5 || (tz5=TZrules.US(18000,"E%sT"));
-      if (ux>=-266468400) // from 1961 Jul 23  2:00 
+      if (ux>=-266468400) // from 1961 Jul 23  2:00
          return tz4 || (tz4=Rule.Timezone(18000,"EST"));
-      if (ux>=-757404000) // from 1946 
+      if (ux>=-757404000) // from 1946
          return tz3 || (tz3=TZrules.Louisville(21600,"C%sT"));
-      if (ux>=-883634400) // from 1942 
+      if (ux>=-883634400) // from 1942
          return tz2 || (tz2=TZrules.US(21600,"C%sT"));
-      if (ux>=-1546322400) // from 1921 
+      if (ux>=-1546322400) // from 1921
          return tz3 || (tz3=TZrules.Louisville(21600,"C%sT"));
-      if (ux>=-2717647200) // from 1883 Nov 18 18:00u 
+      if (ux>=-2717647200) // from 1883 Nov 18 18:00u
          return tz2 || (tz2=TZrules.US(21600,"C%sT"));
       return tz1 || (tz1=Rule.Timezone(20582,"LMT"));
    }
@@ -6537,13 +4589,13 @@ class America_Kentucky_Monticello
    Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=972766800) // from 2000 Oct 29  2:00 
+      if (ux>=972766800) // from 2000 Oct 29  2:00
          return tz4 || (tz4=TZrules.US(18000,"E%sT"));
-      if (ux>=-63136800) // from 1968 
+      if (ux>=-63136800) // from 1968
          return tz2 || (tz2=TZrules.US(21600,"C%sT"));
-      if (ux>=-757404000) // from 1946 
+      if (ux>=-757404000) // from 1946
          return tz3 || (tz3=Rule.Timezone(21600,"CST"));
-      if (ux>=-2717647200) // from 1883 Nov 18 18:00u 
+      if (ux>=-2717647200) // from 1883 Nov 18 18:00u
          return tz2 || (tz2=TZrules.US(21600,"C%sT"));
       return tz1 || (tz1=Rule.Timezone(20364,"LMT"));
    }
@@ -6555,23 +4607,23 @@ class America_Detroit
    Rule.Timezone tz1,tz2,tz3,tz4,tz5;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=167814000) // from 1975 Apr 27  2:00 
+      if (ux>=167814000) // from 1975 Apr 27  2:00
          return tz4 || (tz4=TZrules.US(18000,"E%sT"));
-      if (ux>=157748400) // from 1975 
+      if (ux>=157748400) // from 1975
          return tz3 || (tz3=Rule.Timezone(18000,"EST"));
-      if (ux>=94712400) // from 1973 
+      if (ux>=94712400) // from 1973
          return tz4 || (tz4=TZrules.US(18000,"E%sT"));
-      if (ux>=-31554000) // from 1969 
+      if (ux>=-31554000) // from 1969
          return tz3 || (tz3=Rule.Timezone(18000,"EST"));
-      if (ux>=-80542740) // from 1967 Jun 14  0:01 
+      if (ux>=-80542740) // from 1967 Jun 14  0:01
          return tz4 || (tz4=TZrules.US(18000,"E%sT"));
-      if (ux>=-757400400) // from 1946 
+      if (ux>=-757400400) // from 1946
          return tz5 || (tz5=TZrules.Detroit(18000,"E%sT"));
-      if (ux>=-883594800) // from 1942 
+      if (ux>=-883594800) // from 1942
          return tz4 || (tz4=TZrules.US(18000,"E%sT"));
-      if (ux>=-1724083200) // from 1915 May 15  2:00 
+      if (ux>=-1724083200) // from 1915 May 15  2:00
          return tz3 || (tz3=Rule.Timezone(18000,"EST"));
-      if (ux>=-2051202469) // from 1905 
+      if (ux>=-2051202469) // from 1905
          return tz2 || (tz2=Rule.Timezone(21600,"CST"));
       return tz1 || (tz1=Rule.Timezone(19931,"LMT"));
    }
@@ -6584,13 +4636,13 @@ class America_Menominee
    Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=104914800) // from 1973 Apr 29  2:00 
+      if (ux>=104914800) // from 1973 Apr 29  2:00
          return tz2 || (tz2=TZrules.US(21600,"C%sT"));
-      if (ux>=-21528000) // from 1969 Apr 27  2:00 
+      if (ux>=-21528000) // from 1969 Apr 27  2:00
          return tz4 || (tz4=Rule.Timezone(18000,"EST"));
-      if (ux>=-757404000) // from 1946 
+      if (ux>=-757404000) // from 1946
          return tz3 || (tz3=TZrules.Menominee(21600,"C%sT"));
-      if (ux>=-2659759773) // from 1885 Sep 18 12:00 
+      if (ux>=-2659759773) // from 1885 Sep 18 12:00
          return tz2 || (tz2=TZrules.US(21600,"C%sT"));
       return tz1 || (tz1=Rule.Timezone(21027,"LMT"));
    }
@@ -6602,19 +4654,19 @@ class America_St_Johns
    Rule.Timezone tz1,tz2,tz3,tz4,tz5;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1320096600) // from 2011 Nov 
+      if (ux>=1320096600) // from 2011 Nov
          return tz5 || (tz5=TZrules.Canada(12600,"N%sT"));
-      if (ux>=-757395000) // from 1946 
+      if (ux>=-757395000) // from 1946
          return tz4 || (tz4=TZrules.StJohns(12600,"N%sT"));
-      if (ux>=-872393400) // from 1942 May 11 
+      if (ux>=-872393400) // from 1942 May 11
          return tz5 || (tz5=TZrules.Canada(12600,"N%sT"));
-      if (ux>=-1096947052) // from 1935 Mar 30 
+      if (ux>=-1096947052) // from 1935 Mar 30
          return tz4 || (tz4=TZrules.StJohns(12600,"N%sT"));
-      if (ux>=-1609471852) // from 1919 
+      if (ux>=-1609471852) // from 1919
          return tz2 || (tz2=TZrules.StJohns(12652,"N%sT"));
-      if (ux>=-1641007852) // from 1918 
+      if (ux>=-1641007852) // from 1918
          return tz3 || (tz3=TZrules.Canada(12652,"N%sT"));
-      if (ux>=-2713897748) // from 1884 
+      if (ux>=-2713897748) // from 1884
          return tz2 || (tz2=TZrules.StJohns(12652,"N%sT"));
       return tz1 || (tz1=Rule.Timezone(12652,"LMT"));
    }
@@ -6627,23 +4679,23 @@ class America_Goose_Bay
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6,tz7,tz8;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1320094800) // from 2011 Nov 
+      if (ux>=1320094800) // from 2011 Nov
          return tz8 || (tz8=TZrules.Canada(14400,"A%sT"));
-      if (ux>=-119928600) // from 1966 Mar 15  2:00 
+      if (ux>=-119928600) // from 1966 Mar 15  2:00
          return tz7 || (tz7=TZrules.StJohns(14400,"A%sT"));
-      if (ux>=-757395000) // from 1946 
+      if (ux>=-757395000) // from 1946
          return tz5 || (tz5=TZrules.StJohns(12600,"N%sT"));
-      if (ux>=-872393400) // from 1942 May 11 
+      if (ux>=-872393400) // from 1942 May 11
          return tz6 || (tz6=TZrules.Canada(12600,"N%sT"));
-      if (ux>=-1072989000) // from 1936 
+      if (ux>=-1072989000) // from 1936
          return tz5 || (tz5=TZrules.StJohns(12600,"N%sT"));
-      if (ux>=-1096921748) // from 1935 Mar 30 
+      if (ux>=-1096921748) // from 1935 Mar 30
          return tz4 || (tz4=Rule.Timezone(12600,"NST"));
-      if (ux>=-1609471852) // from 1919 
+      if (ux>=-1609471852) // from 1919
          return tz2 || (tz2=Rule.Timezone(12652,"NST"));
-      if (ux>=-1640982548) // from 1918 
+      if (ux>=-1640982548) // from 1918
          return tz3 || (tz3=TZrules.Canada(12652,"N%sT"));
-      if (ux>=-2713895900) // from 1884 
+      if (ux>=-2713895900) // from 1884
          return tz2 || (tz2=Rule.Timezone(12652,"NST"));
       // Happy Valley-Goose Bay
       return tz1 || (tz1=Rule.Timezone(14500,"LMT"));
@@ -6656,17 +4708,17 @@ class America_Halifax
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=126216000) // from 1974 
+      if (ux>=126216000) // from 1974
          return tz3 || (tz3=TZrules.Canada(14400,"A%sT"));
-      if (ux>=-757396800) // from 1946 
+      if (ux>=-757396800) // from 1946
          return tz2 || (tz2=TZrules.Halifax(14400,"A%sT"));
-      if (ux>=-880221600) // from 1942 Feb  9  2:00s 
+      if (ux>=-880221600) // from 1942 Feb  9  2:00s
          return tz3 || (tz3=TZrules.Canada(14400,"A%sT"));
-      if (ux>=-1609473600) // from 1919 
+      if (ux>=-1609473600) // from 1919
          return tz2 || (tz2=TZrules.Halifax(14400,"A%sT"));
-      if (ux>=-1641009600) // from 1918 
+      if (ux>=-1641009600) // from 1918
          return tz3 || (tz3=TZrules.Canada(14400,"A%sT"));
-      if (ux>=-2131645536) // from 1902 Jun 15 
+      if (ux>=-2131645536) // from 1902 Jun 15
          return tz2 || (tz2=TZrules.Halifax(14400,"A%sT"));
       return tz1 || (tz1=Rule.Timezone(15264,"LMT"));
    }
@@ -6679,15 +4731,15 @@ class America_Glace_Bay
    Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=126216000) // from 1974 
+      if (ux>=126216000) // from 1974
          return tz2 || (tz2=TZrules.Canada(14400,"A%sT"));
-      if (ux>=63086400) // from 1972 
+      if (ux>=63086400) // from 1972
          return tz3 || (tz3=TZrules.Halifax(14400,"A%sT"));
-      if (ux>=-504936000) // from 1954 
+      if (ux>=-504936000) // from 1954
          return tz4 || (tz4=Rule.Timezone(14400,"AST"));
-      if (ux>=-536472000) // from 1953 
+      if (ux>=-536472000) // from 1953
          return tz3 || (tz3=TZrules.Halifax(14400,"A%sT"));
-      if (ux>=-2131646412) // from 1902 Jun 15 
+      if (ux>=-2131646412) // from 1902 Jun 15
          return tz2 || (tz2=TZrules.Canada(14400,"A%sT"));
       return tz1 || (tz1=Rule.Timezone(14388,"LMT"));
    }
@@ -6699,21 +4751,21 @@ class America_Moncton
    Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1167595200) // from 2007 
+      if (ux>=1167595200) // from 2007
          return tz3 || (tz3=TZrules.Canada(14400,"A%sT"));
-      if (ux>=725832000) // from 1993 
+      if (ux>=725832000) // from 1993
          return tz4 || (tz4=TZrules.Moncton(14400,"A%sT"));
-      if (ux>=94680000) // from 1973 
+      if (ux>=94680000) // from 1973
          return tz3 || (tz3=TZrules.Canada(14400,"A%sT"));
-      if (ux>=-757396800) // from 1946 
+      if (ux>=-757396800) // from 1946
          return tz4 || (tz4=TZrules.Moncton(14400,"A%sT"));
-      if (ux>=-883627200) // from 1942 
+      if (ux>=-883627200) // from 1942
          return tz3 || (tz3=TZrules.Canada(14400,"A%sT"));
-      if (ux>=-1167624000) // from 1933 
+      if (ux>=-1167624000) // from 1933
          return tz4 || (tz4=TZrules.Moncton(14400,"A%sT"));
-      if (ux>=-2131642800) // from 1902 Jun 15 
+      if (ux>=-2131642800) // from 1902 Jun 15
          return tz3 || (tz3=TZrules.Canada(14400,"A%sT"));
-      if (ux>=-2715882052) // from 1883 Dec  9 
+      if (ux>=-2715882052) // from 1883 Dec  9
          return tz2 || (tz2=Rule.Timezone(18000,"EST"));
       return tz1 || (tz1=Rule.Timezone(15548,"LMT"));
    }
@@ -6725,15 +4777,15 @@ class America_Toronto
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=126212400) // from 1974 
+      if (ux>=126212400) // from 1974
          return tz2 || (tz2=TZrules.Canada(18000,"E%sT"));
-      if (ux>=-757400400) // from 1946 
+      if (ux>=-757400400) // from 1946
          return tz3 || (tz3=TZrules.Toronto(18000,"E%sT"));
-      if (ux>=-880218000) // from 1942 Feb  9  2:00s 
+      if (ux>=-880218000) // from 1942 Feb  9  2:00s
          return tz2 || (tz2=TZrules.Canada(18000,"E%sT"));
-      if (ux>=-1609477200) // from 1919 
+      if (ux>=-1609477200) // from 1919
          return tz3 || (tz3=TZrules.Toronto(18000,"E%sT"));
-      if (ux>=-2366736148) // from 1895 
+      if (ux>=-2366736148) // from 1895
          return tz2 || (tz2=TZrules.Canada(18000,"E%sT"));
       return tz1 || (tz1=Rule.Timezone(19052,"LMT"));
    }
@@ -6750,9 +4802,9 @@ class America_Winnipeg
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1136052000) // from 2006 
+      if (ux>=1136052000) // from 2006
          return tz3 || (tz3=TZrules.Canada(21600,"C%sT"));
-      if (ux>=-2602258284) // from 1887 Jul 16 
+      if (ux>=-2602258284) // from 1887 Jul 16
          return tz2 || (tz2=TZrules.Winn(21600,"C%sT"));
       return tz1 || (tz1=Rule.Timezone(23316,"LMT"));
    }
@@ -6766,9 +4818,9 @@ class America_Regina
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-307782000) // from 1960 Apr lastSun  2:00 
+      if (ux>=-307782000) // from 1960 Apr lastSun  2:00
          return tz3 || (tz3=Rule.Timezone(21600,"CST"));
-      if (ux>=-2030202084) // from 1905 Sep 
+      if (ux>=-2030202084) // from 1905 Sep
          return tz2 || (tz2=TZrules.Regina(25200,"M%sT"));
       return tz1 || (tz1=Rule.Timezone(25116,"LMT"));
    }
@@ -6781,13 +4833,13 @@ class America_Swift_Current
    Rule.Timezone tz1,tz2,tz3,tz4,tz5;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=70909200) // from 1972 Apr lastSun  2:00 
+      if (ux>=70909200) // from 1972 Apr lastSun  2:00
          return tz5 || (tz5=Rule.Timezone(21600,"CST"));
-      if (ux>=-631177200) // from 1950 
+      if (ux>=-631177200) // from 1950
          return tz4 || (tz4=TZrules.Swift(25200,"M%sT"));
-      if (ux>=-749631600) // from 1946 Apr lastSun  2:00 
+      if (ux>=-749631600) // from 1946 Apr lastSun  2:00
          return tz3 || (tz3=TZrules.Regina(25200,"M%sT"));
-      if (ux>=-2030201320) // from 1905 Sep 
+      if (ux>=-2030201320) // from 1905 Sep
          return tz2 || (tz2=TZrules.Canada(25200,"M%sT"));
       return tz1 || (tz1=Rule.Timezone(25880,"LMT"));
    }
@@ -6799,9 +4851,9 @@ class America_Edmonton
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=536432400) // from 1987 
+      if (ux>=536432400) // from 1987
          return tz3 || (tz3=TZrules.Canada(25200,"M%sT"));
-      if (ux>=-1998663968) // from 1906 Sep 
+      if (ux>=-1998663968) // from 1906 Sep
          return tz2 || (tz2=TZrules.Edm(25200,"M%sT"));
       return tz1 || (tz1=Rule.Timezone(27232,"LMT"));
    }
@@ -6815,9 +4867,9 @@ class America_Vancouver
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=536428800) // from 1987 
+      if (ux>=536428800) // from 1987
          return tz3 || (tz3=TZrules.Canada(28800,"P%sT"));
-      if (ux>=-2713880852) // from 1884 
+      if (ux>=-2713880852) // from 1884
          return tz2 || (tz2=TZrules.Vanc(28800,"P%sT"));
       return tz1 || (tz1=Rule.Timezone(29548,"LMT"));
    }
@@ -6830,11 +4882,11 @@ class America_Dawson_Creek
    Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=83962800) // from 1972 Aug 30  2:00 
+      if (ux>=83962800) // from 1972 Aug 30  2:00
          return tz4 || (tz4=Rule.Timezone(25200,"MST"));
-      if (ux>=-725875200) // from 1947 
+      if (ux>=-725875200) // from 1947
          return tz3 || (tz3=TZrules.Vanc(28800,"P%sT"));
-      if (ux>=-2713881544) // from 1884 
+      if (ux>=-2713881544) // from 1884
          return tz2 || (tz2=TZrules.Canada(28800,"P%sT"));
       return tz1 || (tz1=Rule.Timezone(28856,"LMT"));
    }
@@ -6846,15 +4898,15 @@ class America_Fort_Nelson
    Rule.Timezone tz1,tz2,tz3,tz4,tz5;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1425751200) // from 2015 Mar  8  2:00 
+      if (ux>=1425751200) // from 2015 Mar  8  2:00
          return tz5 || (tz5=Rule.Timezone(25200,"MST"));
-      if (ux>=536428800) // from 1987 
+      if (ux>=536428800) // from 1987
          return tz4 || (tz4=TZrules.Canada(28800,"P%sT"));
-      if (ux>=-725817600) // from 1947 
+      if (ux>=-725817600) // from 1947
          return tz2 || (tz2=TZrules.Vanc(28800,"P%sT"));
-      if (ux>=-757411200) // from 1946 
+      if (ux>=-757411200) // from 1946
          return tz3 || (tz3=Rule.Timezone(28800,"PST"));
-      if (ux>=-2713880953) // from 1884 
+      if (ux>=-2713880953) // from 1884
          return tz2 || (tz2=TZrules.Vanc(28800,"P%sT"));
       return tz1 || (tz1=Rule.Timezone(29447,"LMT"));
    }
@@ -6866,11 +4918,11 @@ class America_Iqaluit
    Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=972766800) // from 2000 Oct 29  2:00 
+      if (ux>=972766800) // from 2000 Oct 29  2:00
          return tz4 || (tz4=TZrules.Canada(18000,"E%sT"));
-      if (ux>=941320800) // from 1999 Oct 31  2:00 
+      if (ux>=941320800) // from 1999 Oct 31  2:00
          return tz3 || (tz3=TZrules.Canada(21600,"C%sT"));
-      if (ux>=-865296000) // from 1942 Aug 
+      if (ux>=-865296000) // from 1942 Aug
          return tz2 || (tz2=TZrules.NT_YK(18000,"E%sT"));
       // Frobisher Bay est.
       return tz1 || (tz1=Rule.Timezone(0,"-00"));
@@ -6884,15 +4936,15 @@ class America_Resolute
    Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1173600000) // from 2007 Mar 11  3:00 
+      if (ux>=1173600000) // from 2007 Mar 11  3:00
          return tz4 || (tz4=TZrules.Canada(21600,"C%sT"));
-      if (ux>=1162069200) // from 2006 Oct 29  2:00 
+      if (ux>=1162069200) // from 2006 Oct 29  2:00
          return tz3 || (tz3=Rule.Timezone(18000,"EST"));
-      if (ux>=986112000) // from 2001 Apr  1  3:00 
+      if (ux>=986112000) // from 2001 Apr  1  3:00
          return tz4 || (tz4=TZrules.Canada(21600,"C%sT"));
-      if (ux>=972766800) // from 2000 Oct 29  2:00 
+      if (ux>=972766800) // from 2000 Oct 29  2:00
          return tz3 || (tz3=Rule.Timezone(18000,"EST"));
-      if (ux>=-704937600) // from 1947 Aug 31 
+      if (ux>=-704937600) // from 1947 Aug 31
          return tz2 || (tz2=TZrules.NT_YK(21600,"C%sT"));
       // Resolute founded
       return tz1 || (tz1=Rule.Timezone(0,"-00"));
@@ -6905,11 +4957,11 @@ class America_Rankin_Inlet
    Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=986112000) // from 2001 Apr  1  3:00 
+      if (ux>=986112000) // from 2001 Apr  1  3:00
          return tz4 || (tz4=TZrules.Canada(21600,"C%sT"));
-      if (ux>=972766800) // from 2000 Oct 29  2:00 
+      if (ux>=972766800) // from 2000 Oct 29  2:00
          return tz3 || (tz3=Rule.Timezone(18000,"EST"));
-      if (ux>=-410227200) // from 1957 
+      if (ux>=-410227200) // from 1957
          return tz2 || (tz2=TZrules.NT_YK(21600,"C%sT"));
       // Rankin Inlet founded
       return tz1 || (tz1=Rule.Timezone(0,"-00"));
@@ -6922,15 +4974,15 @@ class America_Cambridge_Bay
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=986115600) // from 2001 Apr  1  3:00 
+      if (ux>=986115600) // from 2001 Apr  1  3:00
          return tz6 || (tz6=TZrules.Canada(25200,"M%sT"));
-      if (ux>=973400400) // from 2000 Nov  5  0:00 
+      if (ux>=973400400) // from 2000 Nov  5  0:00
          return tz5 || (tz5=Rule.Timezone(21600,"CST"));
-      if (ux>=972766800) // from 2000 Oct 29  2:00 
+      if (ux>=972766800) // from 2000 Oct 29  2:00
          return tz4 || (tz4=Rule.Timezone(18000,"EST"));
-      if (ux>=941313600) // from 1999 Oct 31  2:00 
+      if (ux>=941313600) // from 1999 Oct 31  2:00
          return tz3 || (tz3=TZrules.Canada(21600,"C%sT"));
-      if (ux>=-1577923200) // from 1920 
+      if (ux>=-1577923200) // from 1920
          return tz2 || (tz2=TZrules.NT_YK(25200,"M%sT"));
       // trading post est.?
       return tz1 || (tz1=Rule.Timezone(0,"-00"));
@@ -6943,11 +4995,11 @@ class America_Inuvik
    Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=315507600) // from 1980 
+      if (ux>=315507600) // from 1980
          return tz4 || (tz4=TZrules.Canada(25200,"M%sT"));
-      if (ux>=291744000) // from 1979 Apr lastSun  2:00 
+      if (ux>=291744000) // from 1979 Apr lastSun  2:00
          return tz3 || (tz3=TZrules.NT_YK(25200,"M%sT"));
-      if (ux>=-536457600) // from 1953 
+      if (ux>=-536457600) // from 1953
          return tz2 || (tz2=TZrules.NT_YK(28800,"P%sT"));
       // Inuvik founded
       return tz1 || (tz1=Rule.Timezone(0,"-00"));
@@ -6960,15 +5012,15 @@ class America_Whitehorse
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1604163600) // from 2020 Nov  1 
+      if (ux>=1604163600) // from 2020 Nov  1
          return tz6 || (tz6=Rule.Timezone(25200,"MST"));
-      if (ux>=315561600) // from 1980 
+      if (ux>=315561600) // from 1980
          return tz5 || (tz5=TZrules.Canada(28800,"P%sT"));
-      if (ux>=-121338000) // from 1966 Feb 27  0:00 
+      if (ux>=-121338000) // from 1966 Feb 27  0:00
          return tz4 || (tz4=Rule.Timezone(28800,"PST"));
-      if (ux>=-157798800) // from 1965 
+      if (ux>=-157798800) // from 1965
          return tz3 || (tz3=TZrules.Yukon(32400,"Y%sT"));
-      if (ux>=-2188997988) // from 1900 Aug 20 
+      if (ux>=-2188997988) // from 1900 Aug 20
          return tz2 || (tz2=TZrules.NT_YK(32400,"Y%sT"));
       return tz1 || (tz1=Rule.Timezone(32412,"LMT"));
    }
@@ -6981,15 +5033,15 @@ class America_Dawson
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1604163600) // from 2020 Nov  1 
+      if (ux>=1604163600) // from 2020 Nov  1
          return tz6 || (tz6=Rule.Timezone(25200,"MST"));
-      if (ux>=315561600) // from 1980 
+      if (ux>=315561600) // from 1980
          return tz5 || (tz5=TZrules.Canada(28800,"P%sT"));
-      if (ux>=120582000) // from 1973 Oct 28  0:00 
+      if (ux>=120582000) // from 1973 Oct 28  0:00
          return tz4 || (tz4=Rule.Timezone(28800,"PST"));
-      if (ux>=-157798800) // from 1965 
+      if (ux>=-157798800) // from 1965
          return tz3 || (tz3=TZrules.Yukon(32400,"Y%sT"));
-      if (ux>=-2188996940) // from 1900 Aug 20 
+      if (ux>=-2188996940) // from 1900 Aug 20
          return tz2 || (tz2=TZrules.NT_YK(32400,"Y%sT"));
       return tz1 || (tz1=Rule.Timezone(33460,"LMT"));
    }
@@ -7001,13 +5053,17 @@ class America_Cancun
    Rule.Timezone tz1,tz2,tz3,tz4,tz5;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1422734400) // from 2015 Feb  1  2:00 
-         return tz5 || (tz5=Rule.Timezone(18000,"EST"));
-      if (ux>=902008800) // from 1998 Aug  2  2:00 
+      if (ux>=1422734400) // from 2015 Feb  1  2:00
+         return tz3 || (tz3=Rule.Timezone(18000,"EST"));
+      if (ux>=902008800) // from 1998 Aug  2  2:00
          return tz4 || (tz4=TZrules.Mexico(21600,"C%sT"));
-      if (ux>=377935200) // from 1981 Dec 23 
-         return tz3 || (tz3=TZrules.Mexico(18000,"E%sT"));
-      if (ux>=-1514743200) // from 1922 Jan  1  6:00u 
+      if (ux>=877813200) // from 1997 Oct 26  2:00
+         return tz5 || (tz5=TZrules.Mexico(18000,"E%sT"));
+      if (ux>=410504400) // from 1983 Jan  4  0:00
+         return tz4 || (tz4=TZrules.Mexico(21600,"C%sT"));
+      if (ux>=378201600) // from 1981 Dec 26  2:00
+         return tz3 || (tz3=Rule.Timezone(18000,"EST"));
+      if (ux>=-1514743200) // from 1922 Jan  1  6:00u
          return tz2 || (tz2=Rule.Timezone(21600,"CST"));
       return tz1 || (tz1=Rule.Timezone(20824,"LMT"));
    }
@@ -7019,11 +5075,11 @@ class America_Merida
    Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=407653200) // from 1982 Dec  2 
+      if (ux>=405068400) // from 1982 Nov  2  2:00
          return tz4 || (tz4=TZrules.Mexico(21600,"C%sT"));
-      if (ux>=377935200) // from 1981 Dec 23 
+      if (ux>=378201600) // from 1981 Dec 26  2:00
          return tz3 || (tz3=Rule.Timezone(18000,"EST"));
-      if (ux>=-1514743200) // from 1922 Jan  1  6:00u 
+      if (ux>=-1514743200) // from 1922 Jan  1  6:00u
          return tz2 || (tz2=Rule.Timezone(21600,"CST"));
       return tz1 || (tz1=Rule.Timezone(21508,"LMT"));
    }
@@ -7035,13 +5091,13 @@ class America_Matamoros
    Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1262282400) // from 2010 
+      if (ux>=1262282400) // from 2010
          return tz3 || (tz3=TZrules.US(21600,"C%sT"));
-      if (ux>=599594400) // from 1989 
+      if (ux>=599594400) // from 1989
          return tz4 || (tz4=TZrules.Mexico(21600,"C%sT"));
-      if (ux>=568015200) // from 1988 
+      if (ux>=568015200) // from 1988
          return tz3 || (tz3=TZrules.US(21600,"C%sT"));
-      if (ux>=-1514743200) // from 1922 Jan  1  6:00u 
+      if (ux>=-1514743200) // from 1922 Jan  1  6:00u
          return tz2 || (tz2=Rule.Timezone(21600,"CST"));
       return tz1 || (tz1=Rule.Timezone(23400,"LMT"));
    }
@@ -7050,15 +5106,21 @@ class America_Matamoros
 class America_Monterrey
 {
    inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4;
+   Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=599594400) // from 1989 
-         return tz4 || (tz4=TZrules.Mexico(21600,"C%sT"));
-      if (ux>=568015200) // from 1988 
-         return tz3 || (tz3=TZrules.US(21600,"C%sT"));
-      if (ux>=-1514743200) // from 1922 Jan  1  6:00u 
-         return tz2 || (tz2=Rule.Timezone(21600,"CST"));
+      if (ux>=599594400) // from 1989
+         return tz6 || (tz6=TZrules.Mexico(21600,"C%sT"));
+      if (ux>=568015200) // from 1988
+         return tz5 || (tz5=TZrules.US(21600,"C%sT"));
+      if (ux>=-1191394800) // from 1932 Apr  1
+         return tz3 || (tz3=Rule.Timezone(21600,"CST"));
+      if (ux>=-1234807200) // from 1930 Nov 15
+         return tz4 || (tz4=TZrules.Mexico(25200,"M%sT"));
+      if (ux>=-1343149200) // from 1927 Jun 10
+         return tz3 || (tz3=Rule.Timezone(21600,"CST"));
+      if (ux>=-1514743200) // from 1922 Jan  1  6:00u
+         return tz2 || (tz2=Rule.Timezone(25200,"MST"));
       return tz1 || (tz1=Rule.Timezone(24076,"LMT"));
    }
 }
@@ -7069,17 +5131,17 @@ class America_Mexico_City
    Rule.Timezone tz1,tz2,tz3,tz4,tz5;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1014184800) // from 2002 Feb 20 
+      if (ux>=1014184800) // from 2002 Feb 20
          return tz5 || (tz5=TZrules.Mexico(21600,"C%sT"));
-      if (ux>=1001797200) // from 2001 Sep 30  2:00 
+      if (ux>=1001797200) // from 2001 Sep 30  2:00
          return tz3 || (tz3=Rule.Timezone(21600,"CST"));
-      if (ux>=-1191394800) // from 1932 Apr  1 
+      if (ux>=-1191394800) // from 1932 Apr  1
          return tz5 || (tz5=TZrules.Mexico(21600,"C%sT"));
-      if (ux>=-1234807200) // from 1930 Nov 15 
+      if (ux>=-1234807200) // from 1930 Nov 15
          return tz4 || (tz4=TZrules.Mexico(25200,"M%sT"));
-      if (ux>=-1343066400) // from 1927 Jun 10 23:00 
+      if (ux>=-1343149200) // from 1927 Jun 10
          return tz3 || (tz3=Rule.Timezone(21600,"CST"));
-      if (ux>=-1514739600) // from 1922 Jan  1  7:00u 
+      if (ux>=-1514739600) // from 1922 Jan  1  7:00u
          return tz2 || (tz2=Rule.Timezone(25200,"MST"));
       return tz1 || (tz1=Rule.Timezone(23796,"LMT"));
    }
@@ -7092,25 +5154,25 @@ class America_Ciudad_Juarez
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1669788000) // from 2022 Nov 30  0:00 
+      if (ux>=1669788000) // from 2022 Nov 30  0:00
          return tz6 || (tz6=TZrules.US(25200,"M%sT"));
-      if (ux>=1667073600) // from 2022 Oct 30  2:00 
+      if (ux>=1667073600) // from 2022 Oct 30  2:00
          return tz3 || (tz3=Rule.Timezone(21600,"CST"));
-      if (ux>=1262278800) // from 2010 
+      if (ux>=1262278800) // from 2010
          return tz6 || (tz6=TZrules.US(25200,"M%sT"));
-      if (ux>=891410400) // from 1998 Apr Sun>=1  3:00 
+      if (ux>=891410400) // from 1998 Apr Sun>=1  3:00
          return tz4 || (tz4=TZrules.Mexico(25200,"M%sT"));
-      if (ux>=883591200) // from 1998 
+      if (ux>=883591200) // from 1998
          return tz3 || (tz3=Rule.Timezone(21600,"CST"));
-      if (ux>=820476000) // from 1996 
+      if (ux>=820476000) // from 1996
          return tz5 || (tz5=TZrules.Mexico(21600,"C%sT"));
-      if (ux>=-1191394800) // from 1932 Apr  1 
+      if (ux>=-1191394800) // from 1932 Apr  1
          return tz3 || (tz3=Rule.Timezone(21600,"CST"));
-      if (ux>=-1234807200) // from 1930 Nov 15 
+      if (ux>=-1234807200) // from 1930 Nov 15
          return tz4 || (tz4=TZrules.Mexico(25200,"M%sT"));
-      if (ux>=-1343066400) // from 1927 Jun 10 23:00 
+      if (ux>=-1343149200) // from 1927 Jun 10
          return tz3 || (tz3=Rule.Timezone(21600,"CST"));
-      if (ux>=-1514739600) // from 1922 Jan  1  7:00u 
+      if (ux>=-1514739600) // from 1922 Jan  1  7:00u
          return tz2 || (tz2=Rule.Timezone(25200,"MST"));
       return tz1 || (tz1=Rule.Timezone(25556,"LMT"));
    }
@@ -7122,25 +5184,25 @@ class America_Ojinaga
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6,tz7;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1669788000) // from 2022 Nov 30  0:00 
+      if (ux>=1669788000) // from 2022 Nov 30  0:00
          return tz7 || (tz7=TZrules.US(21600,"C%sT"));
-      if (ux>=1667073600) // from 2022 Oct 30  2:00 
+      if (ux>=1667073600) // from 2022 Oct 30  2:00
          return tz3 || (tz3=Rule.Timezone(21600,"CST"));
-      if (ux>=1262278800) // from 2010 
+      if (ux>=1262278800) // from 2010
          return tz6 || (tz6=TZrules.US(25200,"M%sT"));
-      if (ux>=891410400) // from 1998 Apr Sun>=1  3:00 
+      if (ux>=891410400) // from 1998 Apr Sun>=1  3:00
          return tz4 || (tz4=TZrules.Mexico(25200,"M%sT"));
-      if (ux>=883591200) // from 1998 
+      if (ux>=883591200) // from 1998
          return tz3 || (tz3=Rule.Timezone(21600,"CST"));
-      if (ux>=820476000) // from 1996 
+      if (ux>=820476000) // from 1996
          return tz5 || (tz5=TZrules.Mexico(21600,"C%sT"));
-      if (ux>=-1191394800) // from 1932 Apr  1 
+      if (ux>=-1191394800) // from 1932 Apr  1
          return tz3 || (tz3=Rule.Timezone(21600,"CST"));
-      if (ux>=-1234807200) // from 1930 Nov 15 
+      if (ux>=-1234807200) // from 1930 Nov 15
          return tz4 || (tz4=TZrules.Mexico(25200,"M%sT"));
-      if (ux>=-1343066400) // from 1927 Jun 10 23:00 
+      if (ux>=-1343149200) // from 1927 Jun 10
          return tz3 || (tz3=Rule.Timezone(21600,"CST"));
-      if (ux>=-1514739600) // from 1922 Jan  1  7:00u 
+      if (ux>=-1514739600) // from 1922 Jan  1  7:00u
          return tz2 || (tz2=Rule.Timezone(25200,"MST"));
       return tz1 || (tz1=Rule.Timezone(25060,"LMT"));
    }
@@ -7152,21 +5214,21 @@ class America_Chihuahua
    Rule.Timezone tz1,tz2,tz3,tz4,tz5;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1667073600) // from 2022 Oct 30  2:00 
+      if (ux>=1667073600) // from 2022 Oct 30  2:00
          return tz3 || (tz3=Rule.Timezone(21600,"CST"));
-      if (ux>=891410400) // from 1998 Apr Sun>=1  3:00 
+      if (ux>=891410400) // from 1998 Apr Sun>=1  3:00
          return tz4 || (tz4=TZrules.Mexico(25200,"M%sT"));
-      if (ux>=883591200) // from 1998 
+      if (ux>=883591200) // from 1998
          return tz3 || (tz3=Rule.Timezone(21600,"CST"));
-      if (ux>=820476000) // from 1996 
+      if (ux>=820476000) // from 1996
          return tz5 || (tz5=TZrules.Mexico(21600,"C%sT"));
-      if (ux>=-1191394800) // from 1932 Apr  1 
+      if (ux>=-1191394800) // from 1932 Apr  1
          return tz3 || (tz3=Rule.Timezone(21600,"CST"));
-      if (ux>=-1234807200) // from 1930 Nov 15 
+      if (ux>=-1234807200) // from 1930 Nov 15
          return tz4 || (tz4=TZrules.Mexico(25200,"M%sT"));
-      if (ux>=-1343066400) // from 1927 Jun 10 23:00 
+      if (ux>=-1343149200) // from 1927 Jun 10
          return tz3 || (tz3=Rule.Timezone(21600,"CST"));
-      if (ux>=-1514739600) // from 1922 Jan  1  7:00u 
+      if (ux>=-1514739600) // from 1922 Jan  1  7:00u
          return tz2 || (tz2=Rule.Timezone(25200,"MST"));
       return tz1 || (tz1=Rule.Timezone(25460,"LMT"));
    }
@@ -7175,24 +5237,22 @@ class America_Chihuahua
 class America_Hermosillo
 {
    inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4,tz5;
+   Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=915123600) // from 1999 
+      if (ux>=915123600) // from 1999
          return tz2 || (tz2=Rule.Timezone(25200,"MST"));
-      if (ux>=28800) // from 1970 
+      if (ux>=820479600) // from 1996
          return tz4 || (tz4=TZrules.Mexico(25200,"M%sT"));
-      if (ux>=-661539600) // from 1949 Jan 14 
-         return tz5 || (tz5=Rule.Timezone(28800,"PST"));
-      if (ux>=-873828000) // from 1942 Apr 24 
+      if (ux>=-873828000) // from 1942 Apr 24
          return tz2 || (tz2=Rule.Timezone(25200,"MST"));
-      if (ux>=-1191394800) // from 1932 Apr  1 
+      if (ux>=-1191394800) // from 1932 Apr  1
          return tz3 || (tz3=Rule.Timezone(21600,"CST"));
-      if (ux>=-1234807200) // from 1930 Nov 15 
+      if (ux>=-1234807200) // from 1930 Nov 15
          return tz4 || (tz4=TZrules.Mexico(25200,"M%sT"));
-      if (ux>=-1343066400) // from 1927 Jun 10 23:00 
+      if (ux>=-1343149200) // from 1927 Jun 10
          return tz3 || (tz3=Rule.Timezone(21600,"CST"));
-      if (ux>=-1514739600) // from 1922 Jan  1  7:00u 
+      if (ux>=-1514739600) // from 1922 Jan  1  7:00u
          return tz2 || (tz2=Rule.Timezone(25200,"MST"));
       return tz1 || (tz1=Rule.Timezone(26632,"LMT"));
    }
@@ -7201,22 +5261,20 @@ class America_Hermosillo
 class America_Mazatlan
 {
    inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4,tz5;
+   Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=28800) // from 1970 
+      if (ux>=25200) // from 1970
          return tz4 || (tz4=TZrules.Mexico(25200,"M%sT"));
-      if (ux>=-661539600) // from 1949 Jan 14 
-         return tz5 || (tz5=Rule.Timezone(28800,"PST"));
-      if (ux>=-873828000) // from 1942 Apr 24 
+      if (ux>=-873828000) // from 1942 Apr 24
          return tz2 || (tz2=Rule.Timezone(25200,"MST"));
-      if (ux>=-1191394800) // from 1932 Apr  1 
+      if (ux>=-1191394800) // from 1932 Apr  1
          return tz3 || (tz3=Rule.Timezone(21600,"CST"));
-      if (ux>=-1234807200) // from 1930 Nov 15 
+      if (ux>=-1234807200) // from 1930 Nov 15
          return tz4 || (tz4=TZrules.Mexico(25200,"M%sT"));
-      if (ux>=-1343066400) // from 1927 Jun 10 23:00 
+      if (ux>=-1343149200) // from 1927 Jun 10
          return tz3 || (tz3=Rule.Timezone(21600,"CST"));
-      if (ux>=-1514739600) // from 1922 Jan  1  7:00u 
+      if (ux>=-1514739600) // from 1922 Jan  1  7:00u
          return tz2 || (tz2=Rule.Timezone(25200,"MST"));
       return tz1 || (tz1=Rule.Timezone(25540,"LMT"));
    }
@@ -7226,24 +5284,22 @@ constant Mexico_BajaSur=America_Mazatlan;
 class America_Bahia_Banderas
 {
    inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6;
+   Rule.Timezone tz1,tz2,tz3,tz4,tz5;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1270321200) // from 2010 Apr  4  2:00 
-         return tz6 || (tz6=TZrules.Mexico(21600,"C%sT"));
-      if (ux>=28800) // from 1970 
+      if (ux>=1270321200) // from 2010 Apr  4  2:00
+         return tz5 || (tz5=TZrules.Mexico(21600,"C%sT"));
+      if (ux>=25200) // from 1970
          return tz4 || (tz4=TZrules.Mexico(25200,"M%sT"));
-      if (ux>=-661539600) // from 1949 Jan 14 
-         return tz5 || (tz5=Rule.Timezone(28800,"PST"));
-      if (ux>=-873828000) // from 1942 Apr 24 
+      if (ux>=-873828000) // from 1942 Apr 24
          return tz2 || (tz2=Rule.Timezone(25200,"MST"));
-      if (ux>=-1191394800) // from 1932 Apr  1 
+      if (ux>=-1191394800) // from 1932 Apr  1
          return tz3 || (tz3=Rule.Timezone(21600,"CST"));
-      if (ux>=-1234807200) // from 1930 Nov 15 
+      if (ux>=-1234807200) // from 1930 Nov 15
          return tz4 || (tz4=TZrules.Mexico(25200,"M%sT"));
-      if (ux>=-1343066400) // from 1927 Jun 10 23:00 
+      if (ux>=-1343149200) // from 1927 Jun 10
          return tz3 || (tz3=Rule.Timezone(21600,"CST"));
-      if (ux>=-1514739600) // from 1922 Jan  1  7:00u 
+      if (ux>=-1514739600) // from 1922 Jan  1  7:00u
          return tz2 || (tz2=Rule.Timezone(25200,"MST"));
       return tz1 || (tz1=Rule.Timezone(25260,"LMT"));
    }
@@ -7255,41 +5311,53 @@ class America_Tijuana
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6,tz7,tz8,tz9;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1262275200) // from 2010 
+      if (ux>=1262275200) // from 2010
          return tz8 || (tz8=TZrules.US(28800,"P%sT"));
-      if (ux>=1014134400) // from 2002 Feb 20 
+      if (ux>=1014134400) // from 2002 Feb 20
          return tz9 || (tz9=TZrules.Mexico(28800,"P%sT"));
-      if (ux>=978278400) // from 2001 
+      if (ux>=978278400) // from 2001
          return tz8 || (tz8=TZrules.US(28800,"P%sT"));
-      if (ux>=820425600) // from 1996 
+      if (ux>=820425600) // from 1996
          return tz9 || (tz9=TZrules.Mexico(28800,"P%sT"));
-      if (ux>=189331200) // from 1976 
+      if (ux>=189331200) // from 1976
          return tz8 || (tz8=TZrules.US(28800,"P%sT"));
-      if (ux>=-284025600) // from 1961 
+      if (ux>=-284025600) // from 1961
          return tz3 || (tz3=Rule.Timezone(28800,"PST"));
-      if (ux>=-504892800) // from 1954 
+      if (ux>=-504892800) // from 1954
          return tz7 || (tz7=TZrules.CA(28800,"P%sT"));
-      if (ux>=-661539600) // from 1949 Jan 14 
+      if (ux>=-544633200) // from 1952 Sep 28  2:00
          return tz3 || (tz3=Rule.Timezone(28800,"PST"));
-      if (ux>=-686073600) // from 1948 Apr  5 
+      if (ux>=-557935200) // from 1952 Apr 27  2:00
          return tz4 || (tz4=Rule.Timezone(25200,"PDT"));
-      if (ux>=-761677200) // from 1945 Nov 12 
+      if (ux>=-576082800) // from 1951 Sep 30  2:00
+         return tz3 || (tz3=Rule.Timezone(28800,"PST"));
+      if (ux>=-589384800) // from 1951 Apr 29  2:00
+         return tz4 || (tz4=Rule.Timezone(25200,"PDT"));
+      if (ux>=-608144400) // from 1950 Sep 24
+         return tz3 || (tz3=Rule.Timezone(28800,"PST"));
+      if (ux>=-620755200) // from 1950 May  1
+         return tz4 || (tz4=Rule.Timezone(25200,"PDT"));
+      if (ux>=-661539600) // from 1949 Jan 14
+         return tz3 || (tz3=Rule.Timezone(28800,"PST"));
+      if (ux>=-686073600) // from 1948 Apr  5
+         return tz4 || (tz4=Rule.Timezone(25200,"PDT"));
+      if (ux>=-761418000) // from 1945 Nov 15
          return tz3 || (tz3=Rule.Timezone(28800,"PST"));
       if (ux>=-769395600) // from 1945 Aug 14 23:00u Peace
          return tz6 || (tz6=Rule.Timezone(25200,"PPT"));
-      if (ux>=-873820800) // from 1942 Apr 24 
+      if (ux>=-873820800) // from 1942 Apr 24
          return tz5 || (tz5=Rule.Timezone(25200,"PWT"));
-      if (ux>=-1207242000) // from 1931 Sep 30 
+      if (ux>=-1207242000) // from 1931 Sep 30
          return tz3 || (tz3=Rule.Timezone(28800,"PST"));
-      if (ux>=-1222963200) // from 1931 Apr  1 
+      if (ux>=-1222963200) // from 1931 Apr  1
          return tz4 || (tz4=Rule.Timezone(25200,"PDT"));
-      if (ux>=-1234803600) // from 1930 Nov 15 
+      if (ux>=-1234803600) // from 1930 Nov 15
          return tz3 || (tz3=Rule.Timezone(28800,"PST"));
-      if (ux>=-1343062800) // from 1927 Jun 10 23:00 
+      if (ux>=-1343145600) // from 1927 Jun 10
          return tz2 || (tz2=Rule.Timezone(25200,"MST"));
-      if (ux>=-1451667600) // from 1924 
+      if (ux>=-1451667600) // from 1924
          return tz3 || (tz3=Rule.Timezone(28800,"PST"));
-      if (ux>=-1514739600) // from 1922 Jan  1  7:00u 
+      if (ux>=-1514739600) // from 1922 Jan  1  7:00u
          return tz2 || (tz2=Rule.Timezone(25200,"MST"));
       return tz1 || (tz1=Rule.Timezone(28084,"LMT"));
    }
@@ -7304,11 +5372,11 @@ class America_Barbados
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-788932800) // from 1945 
+      if (ux>=-788932800) // from 1945
          return tz2 || (tz2=TZrules.Barb(14400,"A%sT"));
-      if (ux>=-820555200) // from 1944 
+      if (ux>=-820555200) // from 1944
          return tz3 || (tz3=TZrules.Barb(14400,"AST/-0330"));
-      if (ux>=-1841256091) // from 1911 Aug 28 
+      if (ux>=-1841256091) // from 1911 Aug 28
          return tz2 || (tz2=TZrules.Barb(14400,"A%sT"));
       // Bridgetown
       return tz1 || (tz1=Rule.Timezone(14309,"LMT"));
@@ -7321,7 +5389,7 @@ class America_Belize
    Rule.Timezone tz1,tz2;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-1822500432) // from 1912 Apr  1 
+      if (ux>=-1822500432) // from 1912 Apr  1
          return tz2 || (tz2=TZrules.Belize(21600,"%s"));
       return tz1 || (tz1=Rule.Timezone(21168,"LMT"));
    }
@@ -7333,13 +5401,13 @@ class Atlantic_Bermuda
    Rule.Timezone tz1,tz2,tz3,tz4,tz5;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=189288000) // from 1976 
+      if (ux>=189288000) // from 1976
          return tz5 || (tz5=TZrules.US(14400,"A%sT"));
-      if (ux>=136332000) // from 1974 Apr 28  2:00 
+      if (ux>=136332000) // from 1974 Apr 28  2:00
          return tz4 || (tz4=TZrules.Canada(14400,"A%sT"));
-      if (ux>=-1262312358) // from 1930 Jan 1  2:00 
+      if (ux>=-1262312358) // from 1930 Jan 1  2:00
          return tz3 || (tz3=TZrules.Bermuda(14400,"A%sT"));
-      if (ux>=-2524506042) // from 1890 
+      if (ux>=-2524506042) // from 1890
          return tz2 || (tz2=TZrules.Bermuda(15558,"BMT/BST"));
       // Hamilton
       return tz1 || (tz1=Rule.Timezone(15558,"LMT"));
@@ -7352,7 +5420,7 @@ class America_Costa_Rica
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-1545071027) // from 1921 Jan 15 
+      if (ux>=-1545071027) // from 1921 Jan 15
          return tz3 || (tz3=TZrules.CR(21600,"C%sT"));
       if (ux>=-2524501427) // from 1890 San José Mean Time
          return tz2 || (tz2=Rule.Timezone(20173,"SJMT"));
@@ -7367,7 +5435,7 @@ class America_Havana
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-1402813824) // from 1925 Jul 19 12:00 
+      if (ux>=-1402813824) // from 1925 Jul 19 12:00
          return tz3 || (tz3=TZrules.Cuba(18000,"C%sT"));
       if (ux>=-2524501832) // from 1890 Havana MT
          return tz2 || (tz2=Rule.Timezone(19776,"HMT"));
@@ -7382,13 +5450,13 @@ class America_Santo_Domingo
    Rule.Timezone tz1,tz2,tz3,tz4,tz5;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=975787200) // from 2000 Dec  3  1:00 
+      if (ux>=975787200) // from 2000 Dec  3  1:00
          return tz4 || (tz4=Rule.Timezone(14400,"AST"));
-      if (ux>=972799200) // from 2000 Oct 29  2:00 
+      if (ux>=972799200) // from 2000 Oct 29  2:00
          return tz5 || (tz5=TZrules.US(18000,"E%sT"));
-      if (ux>=152046000) // from 1974 Oct 27 
+      if (ux>=152046000) // from 1974 Oct 27
          return tz4 || (tz4=Rule.Timezone(14400,"AST"));
-      if (ux>=-1159773600) // from 1933 Apr  1 12:00 
+      if (ux>=-1159773600) // from 1933 Apr  1 12:00
          return tz3 || (tz3=TZrules.DR(18000,"%s"));
       if (ux>=-2524504824) // from 1890 S. Dom. MT
          return tz2 || (tz2=Rule.Timezone(16800,"SDMT"));
@@ -7402,7 +5470,7 @@ class America_El_Salvador
    Rule.Timezone tz1,tz2;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-1546279392) // from 1921 
+      if (ux>=-1546279392) // from 1921
          return tz2 || (tz2=TZrules.Salv(21600,"C%sT"));
       // San Salvador
       return tz1 || (tz1=Rule.Timezone(21408,"LMT"));
@@ -7415,7 +5483,7 @@ class America_Guatemala
    Rule.Timezone tz1,tz2;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-1617040676) // from 1918 Oct 5 
+      if (ux>=-1617040676) // from 1918 Oct 5
          return tz2 || (tz2=TZrules.Guat(21600,"C%sT"));
       return tz1 || (tz1=Rule.Timezone(21724,"LMT"));
    }
@@ -7427,7 +5495,7 @@ class America_Port_au_Prince
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-1670483460) // from 1917 Jan 24 12:00 
+      if (ux>=-1670483460) // from 1917 Jan 24 12:00
          return tz3 || (tz3=TZrules.Haiti(18000,"E%sT"));
       if (ux>=-2524504240) // from 1890 P-a-P MT
          return tz2 || (tz2=Rule.Timezone(17340,"PPMT"));
@@ -7441,7 +5509,7 @@ class America_Tegucigalpa
    Rule.Timezone tz1,tz2;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-1538503868) // from 1921 Apr 
+      if (ux>=-1538503868) // from 1921 Apr
          return tz2 || (tz2=TZrules.Hond(21600,"C%sT"));
       return tz1 || (tz1=Rule.Timezone(20932,"LMT"));
    }
@@ -7453,11 +5521,11 @@ class America_Jamaica
    Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=441745200) // from 1984 
+      if (ux>=441745200) // from 1984
          return tz3 || (tz3=Rule.Timezone(18000,"EST"));
-      if (ux>=126248400) // from 1974 
+      if (ux>=126248400) // from 1974
          return tz4 || (tz4=TZrules.US(18000,"E%sT"));
-      if (ux>=-1827687170) // from 1912 Feb 
+      if (ux>=-1827687170) // from 1912 Feb
          return tz3 || (tz3=Rule.Timezone(18000,"EST"));
       if (ux>=-2524503170) // from 1890 Kingston Mean Time
          return tz2 || (tz2=Rule.Timezone(18430,"KMT"));
@@ -7473,11 +5541,11 @@ class America_Martinique
    Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=338958000) // from 1980 Sep 28 
+      if (ux>=338958000) // from 1980 Sep 28
          return tz3 || (tz3=Rule.Timezone(14400,"AST"));
-      if (ux>=323841600) // from 1980 Apr  6 
+      if (ux>=323841600) // from 1980 Apr  6
          return tz4 || (tz4=Rule.Timezone(10800,"ADT"));
-      if (ux>=-1851537340) // from 1911 May  1 
+      if (ux>=-1851537340) // from 1911 May  1
          return tz3 || (tz3=Rule.Timezone(14400,"AST"));
       if (ux>=-2524506940) // from 1890 Fort-de-France MT
          return tz2 || (tz2=Rule.Timezone(14660,"FFMT"));
@@ -7492,19 +5560,19 @@ class America_Managua
    Rule.Timezone tz1,tz2,tz3,tz4,tz5;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=852094800) // from 1997 
+      if (ux>=852094800) // from 1997
          return tz5 || (tz5=TZrules.Nic(21600,"C%sT"));
-      if (ux>=725868000) // from 1993 
+      if (ux>=725868000) // from 1993
          return tz4 || (tz4=Rule.Timezone(18000,"EST"));
-      if (ux>=717310800) // from 1992 Sep 24 
+      if (ux>=717310800) // from 1992 Sep 24
          return tz3 || (tz3=Rule.Timezone(21600,"CST"));
-      if (ux>=694216800) // from 1992 Jan  1  4:00 
+      if (ux>=694216800) // from 1992 Jan  1  4:00
          return tz4 || (tz4=Rule.Timezone(18000,"EST"));
-      if (ux>=161758800) // from 1975 Feb 16 
+      if (ux>=161758800) // from 1975 Feb 16
          return tz5 || (tz5=TZrules.Nic(21600,"C%sT"));
-      if (ux>=105084000) // from 1973 May 
+      if (ux>=105084000) // from 1973 May
          return tz4 || (tz4=Rule.Timezone(18000,"EST"));
-      if (ux>=-1121105688) // from 1934 Jun 23 
+      if (ux>=-1121105688) // from 1934 Jun 23
          return tz3 || (tz3=Rule.Timezone(21600,"CST"));
       if (ux>=-2524500892) // from 1890 Managua Mean Time?
          return tz2 || (tz2=Rule.Timezone(20712,"MMT"));
@@ -7518,13 +5586,14 @@ class America_Panama
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-1946918424) // from 1908 Apr 22 
+      if (ux>=-1946918424) // from 1908 Apr 22
          return tz3 || (tz3=Rule.Timezone(18000,"EST"));
       if (ux>=-2524502512) // from 1890 Colón Mean Time
          return tz2 || (tz2=Rule.Timezone(19176,"CMT"));
       return tz1 || (tz1=Rule.Timezone(19088,"LMT"));
    }
 }
+constant EST=America_Panama;
 constant America_Atikokan=America_Panama;
 constant America_Cayman=America_Panama;
 constant America_Coral_Harbour=America_Panama;
@@ -7535,11 +5604,11 @@ class America_Puerto_Rico
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-757396800) // from 1946 
+      if (ux>=-757396800) // from 1946
          return tz2 || (tz2=Rule.Timezone(14400,"AST"));
-      if (ux>=-873057600) // from 1942 May  3 
+      if (ux>=-873057600) // from 1942 May  3
          return tz3 || (tz3=TZrules.US(14400,"A%sT"));
-      if (ux>=-2233035335) // from 1899 Mar 28 12:00 
+      if (ux>=-2233035335) // from 1899 Mar 28 12:00
          return tz2 || (tz2=Rule.Timezone(14400,"AST"));
       // San Juan
       return tz1 || (tz1=Rule.Timezone(15865,"LMT"));
@@ -7572,11 +5641,11 @@ class America_Miquelon
    Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=536468400) // from 1987 
+      if (ux>=536468400) // from 1987
          return tz4 || (tz4=TZrules.Canada(10800,"-03/-02"));
-      if (ux>=326001600) // from 1980 May 
-         return tz3 || (tz3=Rule.Timezone(10800,"-03"));
-      if (ux>=-1847650520) // from 1911 Jun 15 
+      if (ux>=326001600) // from 1980 May
+         return tz3 || (tz3=Rule.Timezone(10800,"-03/-02"));
+      if (ux>=-1847650520) // from 1911 Jun 15
          return tz2 || (tz2=Rule.Timezone(14400,"AST"));
       // St Pierre
       return tz1 || (tz1=Rule.Timezone(13480,"LMT"));
@@ -7589,13 +5658,13 @@ class America_Grand_Turk
    Rule.Timezone tz1,tz2,tz3,tz4,tz5;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1520751600) // from 2018 Mar 11  3:00 
+      if (ux>=1520751600) // from 2018 Mar 11  3:00
          return tz4 || (tz4=TZrules.US(18000,"E%sT"));
-      if (ux>=1425762000) // from 2015 Mar  8  2:00 
+      if (ux>=1425762000) // from 2015 Mar  8  2:00
          return tz5 || (tz5=Rule.Timezone(14400,"AST"));
-      if (ux>=284014800) // from 1979 
+      if (ux>=284014800) // from 1979
          return tz4 || (tz4=TZrules.US(18000,"E%sT"));
-      if (ux>=-1827687170) // from 1912 Feb 
+      if (ux>=-1827687170) // from 1912 Feb
          return tz3 || (tz3=Rule.Timezone(18000,"EST"));
       if (ux>=-2524504528) // from 1890 Kingston Mean Time
          return tz2 || (tz2=Rule.Timezone(18430,"KMT"));
@@ -7609,16 +5678,16 @@ class America_Argentina_Buenos_Aires
    Rule.Timezone tz1,tz2,tz3,tz4,tz5;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=952027200) // from 2000 Mar  3 
+      if (ux>=952027200) // from 2000 Mar  3
          return tz5 || (tz5=TZrules.Arg(10800,"-03/-02"));
-      if (ux>=938898000) // from 1999 Oct  3 
+      if (ux>=938898000) // from 1999 Oct  3
          return tz4 || (tz4=TZrules.Arg(14400,"-04/-03"));
-      if (ux>=-7617600) // from 1969 Oct  5 
+      if (ux>=-7617600) // from 1969 Oct  5
          return tz5 || (tz5=TZrules.Arg(10800,"-03/-02"));
-      if (ux>=-1233432000) // from 1930 Dec 
+      if (ux>=-1233432000) // from 1930 Dec
          return tz4 || (tz4=TZrules.Arg(14400,"-04/-03"));
-      if (ux>=-1567453392) // from 1920 May 
-         return tz3 || (tz3=Rule.Timezone(14400,"-04"));
+      if (ux>=-1567453392) // from 1920 May
+         return tz3 || (tz3=Rule.Timezone(14400,"-04/-03"));
       if (ux>=-2372097972) // from 1894 Oct 31 Córdoba Mean Time
          return tz2 || (tz2=Rule.Timezone(15408,"CMT"));
       return tz1 || (tz1=Rule.Timezone(14028,"LMT"));
@@ -7632,21 +5701,21 @@ class America_Argentina_Cordoba
    Rule.Timezone tz1,tz2,tz3,tz4,tz5;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=952027200) // from 2000 Mar  3 
+      if (ux>=952027200) // from 2000 Mar  3
          return tz5 || (tz5=TZrules.Arg(10800,"-03/-02"));
-      if (ux>=938898000) // from 1999 Oct  3 
+      if (ux>=938898000) // from 1999 Oct  3
          return tz4 || (tz4=TZrules.Arg(14400,"-04/-03"));
-      if (ux>=687931200) // from 1991 Oct 20 
+      if (ux>=687931200) // from 1991 Oct 20
          return tz5 || (tz5=TZrules.Arg(10800,"-03/-02"));
-      if (ux>=667947600) // from 1991 Mar  3 
-         return tz3 || (tz3=Rule.Timezone(14400,"-04"));
-      if (ux>=-7617600) // from 1969 Oct  5 
+      if (ux>=667947600) // from 1991 Mar  3
+         return tz3 || (tz3=Rule.Timezone(14400,"-04/-03"));
+      if (ux>=-7617600) // from 1969 Oct  5
          return tz5 || (tz5=TZrules.Arg(10800,"-03/-02"));
-      if (ux>=-1233432000) // from 1930 Dec 
+      if (ux>=-1233432000) // from 1930 Dec
          return tz4 || (tz4=TZrules.Arg(14400,"-04/-03"));
-      if (ux>=-1567453392) // from 1920 May 
-         return tz3 || (tz3=Rule.Timezone(14400,"-04"));
-      if (ux>=-2372096592) // from 1894 Oct 31 
+      if (ux>=-1567453392) // from 1920 May
+         return tz3 || (tz3=Rule.Timezone(14400,"-04/-03"));
+      if (ux>=-2372096592) // from 1894 Oct 31
          return tz2 || (tz2=Rule.Timezone(15408,"CMT"));
       return tz1 || (tz1=Rule.Timezone(15408,"LMT"));
    }
@@ -7660,23 +5729,23 @@ class America_Argentina_Salta
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1224277200) // from 2008 Oct 18 
-         return tz6 || (tz6=Rule.Timezone(10800,"-03"));
-      if (ux>=952027200) // from 2000 Mar  3 
+      if (ux>=1224277200) // from 2008 Oct 18
+         return tz6 || (tz6=Rule.Timezone(10800,"-03/-02"));
+      if (ux>=952027200) // from 2000 Mar  3
          return tz5 || (tz5=TZrules.Arg(10800,"-03/-02"));
-      if (ux>=938898000) // from 1999 Oct  3 
+      if (ux>=938898000) // from 1999 Oct  3
          return tz4 || (tz4=TZrules.Arg(14400,"-04/-03"));
-      if (ux>=687931200) // from 1991 Oct 20 
+      if (ux>=687931200) // from 1991 Oct 20
          return tz5 || (tz5=TZrules.Arg(10800,"-03/-02"));
-      if (ux>=667947600) // from 1991 Mar  3 
-         return tz3 || (tz3=Rule.Timezone(14400,"-04"));
-      if (ux>=-7617600) // from 1969 Oct  5 
+      if (ux>=667947600) // from 1991 Mar  3
+         return tz3 || (tz3=Rule.Timezone(14400,"-04/-03"));
+      if (ux>=-7617600) // from 1969 Oct  5
          return tz5 || (tz5=TZrules.Arg(10800,"-03/-02"));
-      if (ux>=-1233432000) // from 1930 Dec 
+      if (ux>=-1233432000) // from 1930 Dec
          return tz4 || (tz4=TZrules.Arg(14400,"-04/-03"));
-      if (ux>=-1567453392) // from 1920 May 
-         return tz3 || (tz3=Rule.Timezone(14400,"-04"));
-      if (ux>=-2372096300) // from 1894 Oct 31 
+      if (ux>=-1567453392) // from 1920 May
+         return tz3 || (tz3=Rule.Timezone(14400,"-04/-03"));
+      if (ux>=-2372096300) // from 1894 Oct 31
          return tz2 || (tz2=Rule.Timezone(15408,"CMT"));
       return tz1 || (tz1=Rule.Timezone(15700,"LMT"));
    }
@@ -7688,25 +5757,25 @@ class America_Argentina_Tucuman
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1087099200) // from 2004 Jun 13 
+      if (ux>=1087099200) // from 2004 Jun 13
          return tz5 || (tz5=TZrules.Arg(10800,"-03/-02"));
-      if (ux>=1086058800) // from 2004 Jun  1 
-         return tz3 || (tz3=Rule.Timezone(14400,"-04"));
-      if (ux>=952027200) // from 2000 Mar  3 
-         return tz6 || (tz6=Rule.Timezone(10800,"-03"));
-      if (ux>=938898000) // from 1999 Oct  3 
+      if (ux>=1086058800) // from 2004 Jun  1
+         return tz3 || (tz3=Rule.Timezone(14400,"-04/-03"));
+      if (ux>=952027200) // from 2000 Mar  3
+         return tz6 || (tz6=Rule.Timezone(10800,"-03/-02"));
+      if (ux>=938898000) // from 1999 Oct  3
          return tz4 || (tz4=TZrules.Arg(14400,"-04/-03"));
-      if (ux>=687931200) // from 1991 Oct 20 
+      if (ux>=687931200) // from 1991 Oct 20
          return tz5 || (tz5=TZrules.Arg(10800,"-03/-02"));
-      if (ux>=667947600) // from 1991 Mar  3 
-         return tz3 || (tz3=Rule.Timezone(14400,"-04"));
-      if (ux>=-7617600) // from 1969 Oct  5 
+      if (ux>=667947600) // from 1991 Mar  3
+         return tz3 || (tz3=Rule.Timezone(14400,"-04/-03"));
+      if (ux>=-7617600) // from 1969 Oct  5
          return tz5 || (tz5=TZrules.Arg(10800,"-03/-02"));
-      if (ux>=-1233432000) // from 1930 Dec 
+      if (ux>=-1233432000) // from 1930 Dec
          return tz4 || (tz4=TZrules.Arg(14400,"-04/-03"));
-      if (ux>=-1567453392) // from 1920 May 
-         return tz3 || (tz3=Rule.Timezone(14400,"-04"));
-      if (ux>=-2372096348) // from 1894 Oct 31 
+      if (ux>=-1567453392) // from 1920 May
+         return tz3 || (tz3=Rule.Timezone(14400,"-04/-03"));
+      if (ux>=-2372096348) // from 1894 Oct 31
          return tz2 || (tz2=Rule.Timezone(15408,"CMT"));
       return tz1 || (tz1=Rule.Timezone(15652,"LMT"));
    }
@@ -7718,27 +5787,27 @@ class America_Argentina_La_Rioja
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1224277200) // from 2008 Oct 18 
-         return tz6 || (tz6=Rule.Timezone(10800,"-03"));
-      if (ux>=1087704000) // from 2004 Jun 20 
+      if (ux>=1224277200) // from 2008 Oct 18
+         return tz6 || (tz6=Rule.Timezone(10800,"-03/-02"));
+      if (ux>=1087704000) // from 2004 Jun 20
          return tz5 || (tz5=TZrules.Arg(10800,"-03/-02"));
-      if (ux>=1086058800) // from 2004 Jun  1 
-         return tz3 || (tz3=Rule.Timezone(14400,"-04"));
-      if (ux>=952027200) // from 2000 Mar  3 
-         return tz6 || (tz6=Rule.Timezone(10800,"-03"));
-      if (ux>=938898000) // from 1999 Oct  3 
+      if (ux>=1086058800) // from 2004 Jun  1
+         return tz3 || (tz3=Rule.Timezone(14400,"-04/-03"));
+      if (ux>=952027200) // from 2000 Mar  3
+         return tz6 || (tz6=Rule.Timezone(10800,"-03/-02"));
+      if (ux>=938898000) // from 1999 Oct  3
          return tz4 || (tz4=TZrules.Arg(14400,"-04/-03"));
-      if (ux>=673588800) // from 1991 May  7 
+      if (ux>=673588800) // from 1991 May  7
          return tz5 || (tz5=TZrules.Arg(10800,"-03/-02"));
-      if (ux>=667778400) // from 1991 Mar  1 
-         return tz3 || (tz3=Rule.Timezone(14400,"-04"));
-      if (ux>=-7617600) // from 1969 Oct  5 
+      if (ux>=667778400) // from 1991 Mar  1
+         return tz3 || (tz3=Rule.Timezone(14400,"-04/-03"));
+      if (ux>=-7617600) // from 1969 Oct  5
          return tz5 || (tz5=TZrules.Arg(10800,"-03/-02"));
-      if (ux>=-1233432000) // from 1930 Dec 
+      if (ux>=-1233432000) // from 1930 Dec
          return tz4 || (tz4=TZrules.Arg(14400,"-04/-03"));
-      if (ux>=-1567453392) // from 1920 May 
-         return tz3 || (tz3=Rule.Timezone(14400,"-04"));
-      if (ux>=-2372095956) // from 1894 Oct 31 
+      if (ux>=-1567453392) // from 1920 May
+         return tz3 || (tz3=Rule.Timezone(14400,"-04/-03"));
+      if (ux>=-2372095956) // from 1894 Oct 31
          return tz2 || (tz2=Rule.Timezone(15408,"CMT"));
       return tz1 || (tz1=Rule.Timezone(16044,"LMT"));
    }
@@ -7750,27 +5819,27 @@ class America_Argentina_San_Juan
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1224277200) // from 2008 Oct 18 
-         return tz6 || (tz6=Rule.Timezone(10800,"-03"));
-      if (ux>=1090728000) // from 2004 Jul 25 
+      if (ux>=1224277200) // from 2008 Oct 18
+         return tz6 || (tz6=Rule.Timezone(10800,"-03/-02"));
+      if (ux>=1090728000) // from 2004 Jul 25
          return tz5 || (tz5=TZrules.Arg(10800,"-03/-02"));
-      if (ux>=1085972400) // from 2004 May 31 
-         return tz3 || (tz3=Rule.Timezone(14400,"-04"));
-      if (ux>=952027200) // from 2000 Mar  3 
-         return tz6 || (tz6=Rule.Timezone(10800,"-03"));
-      if (ux>=938898000) // from 1999 Oct  3 
+      if (ux>=1085972400) // from 2004 May 31
+         return tz3 || (tz3=Rule.Timezone(14400,"-04/-03"));
+      if (ux>=952027200) // from 2000 Mar  3
+         return tz6 || (tz6=Rule.Timezone(10800,"-03/-02"));
+      if (ux>=938898000) // from 1999 Oct  3
          return tz4 || (tz4=TZrules.Arg(14400,"-04/-03"));
-      if (ux>=673588800) // from 1991 May  7 
+      if (ux>=673588800) // from 1991 May  7
          return tz5 || (tz5=TZrules.Arg(10800,"-03/-02"));
-      if (ux>=667778400) // from 1991 Mar  1 
-         return tz3 || (tz3=Rule.Timezone(14400,"-04"));
-      if (ux>=-7617600) // from 1969 Oct  5 
+      if (ux>=667778400) // from 1991 Mar  1
+         return tz3 || (tz3=Rule.Timezone(14400,"-04/-03"));
+      if (ux>=-7617600) // from 1969 Oct  5
          return tz5 || (tz5=TZrules.Arg(10800,"-03/-02"));
-      if (ux>=-1233432000) // from 1930 Dec 
+      if (ux>=-1233432000) // from 1930 Dec
          return tz4 || (tz4=TZrules.Arg(14400,"-04/-03"));
-      if (ux>=-1567453392) // from 1920 May 
-         return tz3 || (tz3=Rule.Timezone(14400,"-04"));
-      if (ux>=-2372095556) // from 1894 Oct 31 
+      if (ux>=-1567453392) // from 1920 May
+         return tz3 || (tz3=Rule.Timezone(14400,"-04/-03"));
+      if (ux>=-2372095556) // from 1894 Oct 31
          return tz2 || (tz2=Rule.Timezone(15408,"CMT"));
       return tz1 || (tz1=Rule.Timezone(16444,"LMT"));
    }
@@ -7779,32 +5848,32 @@ class America_Argentina_San_Juan
 class America_Argentina_Jujuy
 {
    inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6,tz7;
+   Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6,tz7,tz8;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1224277200) // from 2008 Oct 18 
-         return tz6 || (tz6=Rule.Timezone(10800,"-03"));
-      if (ux>=952027200) // from 2000 Mar  3 
+      if (ux>=1224277200) // from 2008 Oct 18
+         return tz8 || (tz8=Rule.Timezone(10800,"-03/-02"));
+      if (ux>=952027200) // from 2000 Mar  3
          return tz5 || (tz5=TZrules.Arg(10800,"-03/-02"));
-      if (ux>=938898000) // from 1999 Oct  3 
+      if (ux>=938898000) // from 1999 Oct  3
          return tz4 || (tz4=TZrules.Arg(14400,"-04/-03"));
-      if (ux>=694231200) // from 1992 
+      if (ux>=694231200) // from 1992
          return tz5 || (tz5=TZrules.Arg(10800,"-03/-02"));
-      if (ux>=686721600) // from 1991 Oct  6 
-         return tz7 || (tz7=Rule.Timezone(7200,"-02"));
-      if (ux>=669178800) // from 1991 Mar 17 
-         return tz3 || (tz3=Rule.Timezone(14400,"-04"));
-      if (ux>=657086400) // from 1990 Oct 28 
-         return tz6 || (tz6=Rule.Timezone(10800,"-03"));
-      if (ux>=636498000) // from 1990 Mar  4 
-         return tz3 || (tz3=Rule.Timezone(14400,"-04"));
-      if (ux>=-7617600) // from 1969 Oct  5 
+      if (ux>=686721600) // from 1991 Oct  6
+         return tz7 || (tz7=Rule.Timezone(7200,"-03/-02"));
+      if (ux>=669178800) // from 1991 Mar 17
+         return tz3 || (tz3=Rule.Timezone(14400,"-04/-03"));
+      if (ux>=657086400) // from 1990 Oct 28
+         return tz6 || (tz6=Rule.Timezone(10800,"-04/-03"));
+      if (ux>=636498000) // from 1990 Mar  4
+         return tz3 || (tz3=Rule.Timezone(14400,"-04/-03"));
+      if (ux>=-7617600) // from 1969 Oct  5
          return tz5 || (tz5=TZrules.Arg(10800,"-03/-02"));
-      if (ux>=-1233432000) // from 1930 Dec 
+      if (ux>=-1233432000) // from 1930 Dec
          return tz4 || (tz4=TZrules.Arg(14400,"-04/-03"));
-      if (ux>=-1567453392) // from 1920 May 
-         return tz3 || (tz3=Rule.Timezone(14400,"-04"));
-      if (ux>=-2372096328) // from 1894 Oct 31 
+      if (ux>=-1567453392) // from 1920 May
+         return tz3 || (tz3=Rule.Timezone(14400,"-04/-03"));
+      if (ux>=-2372096328) // from 1894 Oct 31
          return tz2 || (tz2=Rule.Timezone(15408,"CMT"));
       return tz1 || (tz1=Rule.Timezone(15672,"LMT"));
    }
@@ -7817,27 +5886,27 @@ class America_Argentina_Catamarca
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1224277200) // from 2008 Oct 18 
-         return tz6 || (tz6=Rule.Timezone(10800,"-03"));
-      if (ux>=1087704000) // from 2004 Jun 20 
+      if (ux>=1224277200) // from 2008 Oct 18
+         return tz6 || (tz6=Rule.Timezone(10800,"-03/-02"));
+      if (ux>=1087704000) // from 2004 Jun 20
          return tz5 || (tz5=TZrules.Arg(10800,"-03/-02"));
-      if (ux>=1086058800) // from 2004 Jun  1 
-         return tz3 || (tz3=Rule.Timezone(14400,"-04"));
-      if (ux>=952027200) // from 2000 Mar  3 
-         return tz6 || (tz6=Rule.Timezone(10800,"-03"));
-      if (ux>=938898000) // from 1999 Oct  3 
+      if (ux>=1086058800) // from 2004 Jun  1
+         return tz3 || (tz3=Rule.Timezone(14400,"-04/-03"));
+      if (ux>=952027200) // from 2000 Mar  3
+         return tz6 || (tz6=Rule.Timezone(10800,"-03/-02"));
+      if (ux>=938898000) // from 1999 Oct  3
          return tz4 || (tz4=TZrules.Arg(14400,"-04/-03"));
-      if (ux>=687931200) // from 1991 Oct 20 
+      if (ux>=687931200) // from 1991 Oct 20
          return tz5 || (tz5=TZrules.Arg(10800,"-03/-02"));
-      if (ux>=667947600) // from 1991 Mar  3 
-         return tz3 || (tz3=Rule.Timezone(14400,"-04"));
-      if (ux>=-7617600) // from 1969 Oct  5 
+      if (ux>=667947600) // from 1991 Mar  3
+         return tz3 || (tz3=Rule.Timezone(14400,"-04/-03"));
+      if (ux>=-7617600) // from 1969 Oct  5
          return tz5 || (tz5=TZrules.Arg(10800,"-03/-02"));
-      if (ux>=-1233432000) // from 1930 Dec 
+      if (ux>=-1233432000) // from 1930 Dec
          return tz4 || (tz4=TZrules.Arg(14400,"-04/-03"));
-      if (ux>=-1567453392) // from 1920 May 
-         return tz3 || (tz3=Rule.Timezone(14400,"-04"));
-      if (ux>=-2372096212) // from 1894 Oct 31 
+      if (ux>=-1567453392) // from 1920 May
+         return tz3 || (tz3=Rule.Timezone(14400,"-04/-03"));
+      if (ux>=-2372096212) // from 1894 Oct 31
          return tz2 || (tz2=Rule.Timezone(15408,"CMT"));
       return tz1 || (tz1=Rule.Timezone(15788,"LMT"));
    }
@@ -7848,38 +5917,38 @@ constant America_Argentina_ComodRivadavia=America_Argentina_Catamarca;
 class America_Argentina_Mendoza
 {
    inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6;
+   Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6,tz7;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1224277200) // from 2008 Oct 18 
-         return tz6 || (tz6=Rule.Timezone(10800,"-03"));
-      if (ux>=1096171200) // from 2004 Sep 26 
+      if (ux>=1224277200) // from 2008 Oct 18
+         return tz7 || (tz7=Rule.Timezone(10800,"-03/-02"));
+      if (ux>=1096171200) // from 2004 Sep 26
          return tz5 || (tz5=TZrules.Arg(10800,"-03/-02"));
-      if (ux>=1085281200) // from 2004 May 23 
-         return tz3 || (tz3=Rule.Timezone(14400,"-04"));
-      if (ux>=952027200) // from 2000 Mar  3 
-         return tz6 || (tz6=Rule.Timezone(10800,"-03"));
-      if (ux>=938898000) // from 1999 Oct  3 
+      if (ux>=1085281200) // from 2004 May 23
+         return tz3 || (tz3=Rule.Timezone(14400,"-04/-03"));
+      if (ux>=952027200) // from 2000 Mar  3
+         return tz7 || (tz7=Rule.Timezone(10800,"-03/-02"));
+      if (ux>=938898000) // from 1999 Oct  3
          return tz4 || (tz4=TZrules.Arg(14400,"-04/-03"));
-      if (ux>=719380800) // from 1992 Oct 18 
+      if (ux>=719380800) // from 1992 Oct 18
          return tz5 || (tz5=TZrules.Arg(10800,"-03/-02"));
-      if (ux>=699418800) // from 1992 Mar  1 
-         return tz3 || (tz3=Rule.Timezone(14400,"-04"));
-      if (ux>=687499200) // from 1991 Oct 15 
-         return tz6 || (tz6=Rule.Timezone(10800,"-03"));
-      if (ux>=667796400) // from 1991 Mar  1 
-         return tz3 || (tz3=Rule.Timezone(14400,"-04"));
-      if (ux>=655963200) // from 1990 Oct 15 
-         return tz6 || (tz6=Rule.Timezone(10800,"-03"));
-      if (ux>=636498000) // from 1990 Mar  4 
-         return tz3 || (tz3=Rule.Timezone(14400,"-04"));
-      if (ux>=-7617600) // from 1969 Oct  5 
+      if (ux>=699418800) // from 1992 Mar  1
+         return tz3 || (tz3=Rule.Timezone(14400,"-04/-03"));
+      if (ux>=687499200) // from 1991 Oct 15
+         return tz6 || (tz6=Rule.Timezone(10800,"-04/-03"));
+      if (ux>=667796400) // from 1991 Mar  1
+         return tz3 || (tz3=Rule.Timezone(14400,"-04/-03"));
+      if (ux>=655963200) // from 1990 Oct 15
+         return tz6 || (tz6=Rule.Timezone(10800,"-04/-03"));
+      if (ux>=636498000) // from 1990 Mar  4
+         return tz3 || (tz3=Rule.Timezone(14400,"-04/-03"));
+      if (ux>=-7617600) // from 1969 Oct  5
          return tz5 || (tz5=TZrules.Arg(10800,"-03/-02"));
-      if (ux>=-1233432000) // from 1930 Dec 
+      if (ux>=-1233432000) // from 1930 Dec
          return tz4 || (tz4=TZrules.Arg(14400,"-04/-03"));
-      if (ux>=-1567453392) // from 1920 May 
-         return tz3 || (tz3=Rule.Timezone(14400,"-04"));
-      if (ux>=-2372095484) // from 1894 Oct 31 
+      if (ux>=-1567453392) // from 1920 May
+         return tz3 || (tz3=Rule.Timezone(14400,"-04/-03"));
+      if (ux>=-2372095484) // from 1894 Oct 31
          return tz2 || (tz2=Rule.Timezone(15408,"CMT"));
       return tz1 || (tz1=Rule.Timezone(16516,"LMT"));
    }
@@ -7889,38 +5958,38 @@ constant America_Mendoza=America_Argentina_Mendoza;
 class America_Argentina_San_Luis
 {
    inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6,tz7,tz8;
+   Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6,tz7,tz8,tz9;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1255204800) // from 2009 Oct 11 
-         return tz7 || (tz7=Rule.Timezone(10800,"-03"));
-      if (ux>=1200866400) // from 2008 Jan 21 
-         return tz8 || (tz8=TZrules.SanLuis(14400,"-04/-03"));
-      if (ux>=1090728000) // from 2004 Jul 25 
+      if (ux>=1255204800) // from 2009 Oct 11
+         return tz8 || (tz8=Rule.Timezone(10800,"-03/-02"));
+      if (ux>=1200866400) // from 2008 Jan 21
+         return tz9 || (tz9=TZrules.SanLuis(14400,"-04/-03"));
+      if (ux>=1090728000) // from 2004 Jul 25
          return tz5 || (tz5=TZrules.Arg(10800,"-03/-02"));
-      if (ux>=1085972400) // from 2004 May 31 
-         return tz3 || (tz3=Rule.Timezone(14400,"-04"));
-      if (ux>=952052400) // from 2000 Mar  3 
-         return tz7 || (tz7=Rule.Timezone(10800,"-03"));
-      if (ux>=938919600) // from 1999 Oct  3 
-         return tz7 || (tz7=Rule.Timezone(10800,"-03"));
-      if (ux>=675748800) // from 1991 Jun  1 
-         return tz7 || (tz7=Rule.Timezone(10800,"-03"));
-      if (ux>=667796400) // from 1991 Mar  1 
-         return tz3 || (tz3=Rule.Timezone(14400,"-04"));
-      if (ux>=655963200) // from 1990 Oct 15 
-         return tz7 || (tz7=Rule.Timezone(10800,"-03"));
-      if (ux>=637380000) // from 1990 Mar 14 
-         return tz3 || (tz3=Rule.Timezone(14400,"-04"));
-      if (ux>=631144800) // from 1990 
-         return tz6 || (tz6=Rule.Timezone(7200,"-02"));
-      if (ux>=-7617600) // from 1969 Oct  5 
+      if (ux>=1085972400) // from 2004 May 31
+         return tz3 || (tz3=Rule.Timezone(14400,"-04/-03"));
+      if (ux>=952052400) // from 2000 Mar  3
+         return tz8 || (tz8=Rule.Timezone(10800,"-03/-02"));
+      if (ux>=938919600) // from 1999 Oct  3
+         return tz7 || (tz7=Rule.Timezone(10800,"-04/-03"));
+      if (ux>=675748800) // from 1991 Jun  1
+         return tz8 || (tz8=Rule.Timezone(10800,"-03/-02"));
+      if (ux>=667796400) // from 1991 Mar  1
+         return tz3 || (tz3=Rule.Timezone(14400,"-04/-03"));
+      if (ux>=655963200) // from 1990 Oct 15
+         return tz7 || (tz7=Rule.Timezone(10800,"-04/-03"));
+      if (ux>=637380000) // from 1990 Mar 14
+         return tz3 || (tz3=Rule.Timezone(14400,"-04/-03"));
+      if (ux>=631144800) // from 1990
+         return tz6 || (tz6=Rule.Timezone(7200,"-03/-02"));
+      if (ux>=-7617600) // from 1969 Oct  5
          return tz5 || (tz5=TZrules.Arg(10800,"-03/-02"));
-      if (ux>=-1233432000) // from 1930 Dec 
+      if (ux>=-1233432000) // from 1930 Dec
          return tz4 || (tz4=TZrules.Arg(14400,"-04/-03"));
-      if (ux>=-1567453392) // from 1920 May 
-         return tz3 || (tz3=Rule.Timezone(14400,"-04"));
-      if (ux>=-2372096076) // from 1894 Oct 31 
+      if (ux>=-1567453392) // from 1920 May
+         return tz3 || (tz3=Rule.Timezone(14400,"-04/-03"));
+      if (ux>=-2372096076) // from 1894 Oct 31
          return tz2 || (tz2=Rule.Timezone(15408,"CMT"));
       return tz1 || (tz1=Rule.Timezone(15924,"LMT"));
    }
@@ -7932,23 +6001,23 @@ class America_Argentina_Rio_Gallegos
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1224277200) // from 2008 Oct 18 
-         return tz6 || (tz6=Rule.Timezone(10800,"-03"));
-      if (ux>=1087704000) // from 2004 Jun 20 
+      if (ux>=1224277200) // from 2008 Oct 18
+         return tz6 || (tz6=Rule.Timezone(10800,"-03/-02"));
+      if (ux>=1087704000) // from 2004 Jun 20
          return tz5 || (tz5=TZrules.Arg(10800,"-03/-02"));
-      if (ux>=1086058800) // from 2004 Jun  1 
-         return tz3 || (tz3=Rule.Timezone(14400,"-04"));
-      if (ux>=952027200) // from 2000 Mar  3 
-         return tz6 || (tz6=Rule.Timezone(10800,"-03"));
-      if (ux>=938898000) // from 1999 Oct  3 
+      if (ux>=1086058800) // from 2004 Jun  1
+         return tz3 || (tz3=Rule.Timezone(14400,"-04/-03"));
+      if (ux>=952027200) // from 2000 Mar  3
+         return tz6 || (tz6=Rule.Timezone(10800,"-03/-02"));
+      if (ux>=938898000) // from 1999 Oct  3
          return tz4 || (tz4=TZrules.Arg(14400,"-04/-03"));
-      if (ux>=-7617600) // from 1969 Oct  5 
+      if (ux>=-7617600) // from 1969 Oct  5
          return tz5 || (tz5=TZrules.Arg(10800,"-03/-02"));
-      if (ux>=-1233432000) // from 1930 Dec 
+      if (ux>=-1233432000) // from 1930 Dec
          return tz4 || (tz4=TZrules.Arg(14400,"-04/-03"));
-      if (ux>=-1567453392) // from 1920 May 
-         return tz3 || (tz3=Rule.Timezone(14400,"-04"));
-      if (ux>=-2372095388) // from 1894 Oct 31 
+      if (ux>=-1567453392) // from 1920 May
+         return tz3 || (tz3=Rule.Timezone(14400,"-04/-03"));
+      if (ux>=-2372095388) // from 1894 Oct 31
          return tz2 || (tz2=Rule.Timezone(15408,"CMT"));
       return tz1 || (tz1=Rule.Timezone(16612,"LMT"));
    }
@@ -7960,23 +6029,23 @@ class America_Argentina_Ushuaia
    Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1224277200) // from 2008 Oct 18 
-         return tz6 || (tz6=Rule.Timezone(10800,"-03"));
-      if (ux>=1087704000) // from 2004 Jun 20 
+      if (ux>=1224277200) // from 2008 Oct 18
+         return tz6 || (tz6=Rule.Timezone(10800,"-03/-02"));
+      if (ux>=1087704000) // from 2004 Jun 20
          return tz5 || (tz5=TZrules.Arg(10800,"-03/-02"));
-      if (ux>=1085886000) // from 2004 May 30 
-         return tz3 || (tz3=Rule.Timezone(14400,"-04"));
-      if (ux>=952027200) // from 2000 Mar  3 
-         return tz6 || (tz6=Rule.Timezone(10800,"-03"));
-      if (ux>=938898000) // from 1999 Oct  3 
+      if (ux>=1085886000) // from 2004 May 30
+         return tz3 || (tz3=Rule.Timezone(14400,"-04/-03"));
+      if (ux>=952027200) // from 2000 Mar  3
+         return tz6 || (tz6=Rule.Timezone(10800,"-03/-02"));
+      if (ux>=938898000) // from 1999 Oct  3
          return tz4 || (tz4=TZrules.Arg(14400,"-04/-03"));
-      if (ux>=-7617600) // from 1969 Oct  5 
+      if (ux>=-7617600) // from 1969 Oct  5
          return tz5 || (tz5=TZrules.Arg(10800,"-03/-02"));
-      if (ux>=-1233432000) // from 1930 Dec 
+      if (ux>=-1233432000) // from 1930 Dec
          return tz4 || (tz4=TZrules.Arg(14400,"-04/-03"));
-      if (ux>=-1567453392) // from 1920 May 
-         return tz3 || (tz3=Rule.Timezone(14400,"-04"));
-      if (ux>=-2372095608) // from 1894 Oct 31 
+      if (ux>=-1567453392) // from 1920 May
+         return tz3 || (tz3=Rule.Timezone(14400,"-04/-03"));
+      if (ux>=-2372095608) // from 1894 Oct 31
          return tz2 || (tz2=Rule.Timezone(15408,"CMT"));
       return tz1 || (tz1=Rule.Timezone(16392,"LMT"));
    }
@@ -7988,8 +6057,8 @@ class America_La_Paz
    Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-1192307244) // from 1932 Mar 21 
-         return tz4 || (tz4=Rule.Timezone(14400,"-04"));
+      if (ux>=-1192307244) // from 1932 Mar 21
+         return tz4 || (tz4=Rule.Timezone(14400,"-04/-03"));
       if (ux>=-1205954844) // from 1931 Oct 15 Bolivia ST
          return tz3 || (tz3=Rule.Timezone(12756,"BST"));
       if (ux>=-2524505244) // from 1890 Calamarca MT
@@ -8004,17 +6073,17 @@ class America_Noronha
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1033423200) // from 2002 Oct  1 
-         return tz3 || (tz3=Rule.Timezone(7200,"-02"));
-      if (ux>=1000346400) // from 2001 Sep 13 
+      if (ux>=1033423200) // from 2002 Oct  1
+         return tz3 || (tz3=Rule.Timezone(7200,"-02/-01"));
+      if (ux>=1000346400) // from 2001 Sep 13
          return tz2 || (tz2=TZrules.Brazil(7200,"-02/-01"));
-      if (ux>=971564400) // from 2000 Oct 15 
-         return tz3 || (tz3=Rule.Timezone(7200,"-02"));
-      if (ux>=938656800) // from 1999 Sep 30 
+      if (ux>=971564400) // from 2000 Oct 15
+         return tz3 || (tz3=Rule.Timezone(7200,"-02/-01"));
+      if (ux>=938656800) // from 1999 Sep 30
          return tz2 || (tz2=TZrules.Brazil(7200,"-02/-01"));
-      if (ux>=653522400) // from 1990 Sep 17 
-         return tz3 || (tz3=Rule.Timezone(7200,"-02"));
-      if (ux>=-1767217820) // from 1914 
+      if (ux>=653522400) // from 1990 Sep 17
+         return tz3 || (tz3=Rule.Timezone(7200,"-02/-01"));
+      if (ux>=-1767217820) // from 1914
          return tz2 || (tz2=TZrules.Brazil(7200,"-02/-01"));
       return tz1 || (tz1=Rule.Timezone(7780,"LMT"));
    }
@@ -8027,9 +6096,9 @@ class America_Belem
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=590014800) // from 1988 Sep 12 
-         return tz3 || (tz3=Rule.Timezone(10800,"-03"));
-      if (ux>=-1767213964) // from 1914 
+      if (ux>=590014800) // from 1988 Sep 12
+         return tz3 || (tz3=Rule.Timezone(10800,"-03/-02"));
+      if (ux>=-1767213964) // from 1914
          return tz2 || (tz2=TZrules.Brazil(10800,"-03/-02"));
       return tz1 || (tz1=Rule.Timezone(11636,"LMT"));
    }
@@ -8041,11 +6110,11 @@ class America_Santarem
    Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1214280000) // from 2008 Jun 24  0:00 
-         return tz4 || (tz4=Rule.Timezone(10800,"-03"));
-      if (ux>=590011200) // from 1988 Sep 12 
-         return tz3 || (tz3=Rule.Timezone(14400,"-04"));
-      if (ux>=-1767212472) // from 1914 
+      if (ux>=1214280000) // from 2008 Jun 24  0:00
+         return tz4 || (tz4=Rule.Timezone(10800,"-03/-02"));
+      if (ux>=590011200) // from 1988 Sep 12
+         return tz3 || (tz3=Rule.Timezone(14400,"-04/-03"));
+      if (ux>=-1767212472) // from 1914
          return tz2 || (tz2=TZrules.Brazil(14400,"-04/-03"));
       return tz1 || (tz1=Rule.Timezone(13128,"LMT"));
    }
@@ -8057,17 +6126,17 @@ class America_Fortaleza
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1033419600) // from 2002 Oct  1 
-         return tz3 || (tz3=Rule.Timezone(10800,"-03"));
-      if (ux>=1000350000) // from 2001 Sep 13 
+      if (ux>=1033419600) // from 2002 Oct  1
+         return tz3 || (tz3=Rule.Timezone(10800,"-03/-02"));
+      if (ux>=1000350000) // from 2001 Sep 13
          return tz2 || (tz2=TZrules.Brazil(10800,"-03/-02"));
-      if (ux>=972165600) // from 2000 Oct 22 
-         return tz3 || (tz3=Rule.Timezone(10800,"-03"));
-      if (ux>=938660400) // from 1999 Sep 30 
+      if (ux>=972165600) // from 2000 Oct 22
+         return tz3 || (tz3=Rule.Timezone(10800,"-03/-02"));
+      if (ux>=938660400) // from 1999 Sep 30
          return tz2 || (tz2=TZrules.Brazil(10800,"-03/-02"));
-      if (ux>=653518800) // from 1990 Sep 17 
-         return tz3 || (tz3=Rule.Timezone(10800,"-03"));
-      if (ux>=-1767216360) // from 1914 
+      if (ux>=653518800) // from 1990 Sep 17
+         return tz3 || (tz3=Rule.Timezone(10800,"-03/-02"));
+      if (ux>=-1767216360) // from 1914
          return tz2 || (tz2=TZrules.Brazil(10800,"-03/-02"));
       return tz1 || (tz1=Rule.Timezone(9240,"LMT"));
    }
@@ -8079,17 +6148,17 @@ class America_Recife
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1033419600) // from 2002 Oct  1 
-         return tz3 || (tz3=Rule.Timezone(10800,"-03"));
-      if (ux>=1000350000) // from 2001 Sep 13 
+      if (ux>=1033419600) // from 2002 Oct  1
+         return tz3 || (tz3=Rule.Timezone(10800,"-03/-02"));
+      if (ux>=1000350000) // from 2001 Sep 13
          return tz2 || (tz2=TZrules.Brazil(10800,"-03/-02"));
-      if (ux>=971560800) // from 2000 Oct 15 
-         return tz3 || (tz3=Rule.Timezone(10800,"-03"));
-      if (ux>=938660400) // from 1999 Sep 30 
+      if (ux>=971560800) // from 2000 Oct 15
+         return tz3 || (tz3=Rule.Timezone(10800,"-03/-02"));
+      if (ux>=938660400) // from 1999 Sep 30
          return tz2 || (tz2=TZrules.Brazil(10800,"-03/-02"));
-      if (ux>=653518800) // from 1990 Sep 17 
-         return tz3 || (tz3=Rule.Timezone(10800,"-03"));
-      if (ux>=-1767217224) // from 1914 
+      if (ux>=653518800) // from 1990 Sep 17
+         return tz3 || (tz3=Rule.Timezone(10800,"-03/-02"));
+      if (ux>=-1767217224) // from 1914
          return tz2 || (tz2=TZrules.Brazil(10800,"-03/-02"));
       return tz1 || (tz1=Rule.Timezone(8376,"LMT"));
    }
@@ -8101,17 +6170,17 @@ class America_Araguaina
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1377982800) // from 2013 Sep 
-         return tz3 || (tz3=Rule.Timezone(10800,"-03"));
-      if (ux>=1350788400) // from 2012 Oct 21 
+      if (ux>=1377982800) // from 2013 Sep
+         return tz3 || (tz3=Rule.Timezone(10800,"-03/-02"));
+      if (ux>=1350788400) // from 2012 Oct 21
          return tz2 || (tz2=TZrules.Brazil(10800,"-03/-02"));
-      if (ux>=1064350800) // from 2003 Sep 24 
-         return tz3 || (tz3=Rule.Timezone(10800,"-03"));
-      if (ux>=811047600) // from 1995 Sep 14 
+      if (ux>=1064350800) // from 2003 Sep 24
+         return tz3 || (tz3=Rule.Timezone(10800,"-03/-02"));
+      if (ux>=811047600) // from 1995 Sep 14
          return tz2 || (tz2=TZrules.Brazil(10800,"-03/-02"));
-      if (ux>=653518800) // from 1990 Sep 17 
-         return tz3 || (tz3=Rule.Timezone(10800,"-03"));
-      if (ux>=-1767214032) // from 1914 
+      if (ux>=653518800) // from 1990 Sep 17
+         return tz3 || (tz3=Rule.Timezone(10800,"-03/-02"));
+      if (ux>=-1767214032) // from 1914
          return tz2 || (tz2=TZrules.Brazil(10800,"-03/-02"));
       return tz1 || (tz1=Rule.Timezone(11568,"LMT"));
    }
@@ -8123,21 +6192,21 @@ class America_Maceio
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1033419600) // from 2002 Oct  1 
-         return tz3 || (tz3=Rule.Timezone(10800,"-03"));
-      if (ux>=1000350000) // from 2001 Sep 13 
+      if (ux>=1033419600) // from 2002 Oct  1
+         return tz3 || (tz3=Rule.Timezone(10800,"-03/-02"));
+      if (ux>=1000350000) // from 2001 Sep 13
          return tz2 || (tz2=TZrules.Brazil(10800,"-03/-02"));
-      if (ux>=972165600) // from 2000 Oct 22 
-         return tz3 || (tz3=Rule.Timezone(10800,"-03"));
-      if (ux>=938660400) // from 1999 Sep 30 
+      if (ux>=972165600) // from 2000 Oct 22
+         return tz3 || (tz3=Rule.Timezone(10800,"-03/-02"));
+      if (ux>=938660400) // from 1999 Sep 30
          return tz2 || (tz2=TZrules.Brazil(10800,"-03/-02"));
-      if (ux>=841784400) // from 1996 Sep  4 
-         return tz3 || (tz3=Rule.Timezone(10800,"-03"));
-      if (ux>=813553200) // from 1995 Oct 13 
+      if (ux>=841784400) // from 1996 Sep  4
+         return tz3 || (tz3=Rule.Timezone(10800,"-03/-02"));
+      if (ux>=813553200) // from 1995 Oct 13
          return tz2 || (tz2=TZrules.Brazil(10800,"-03/-02"));
-      if (ux>=653518800) // from 1990 Sep 17 
-         return tz3 || (tz3=Rule.Timezone(10800,"-03"));
-      if (ux>=-1767217028) // from 1914 
+      if (ux>=653518800) // from 1990 Sep 17
+         return tz3 || (tz3=Rule.Timezone(10800,"-03/-02"));
+      if (ux>=-1767217028) // from 1914
          return tz2 || (tz2=TZrules.Brazil(10800,"-03/-02"));
       return tz1 || (tz1=Rule.Timezone(8572,"LMT"));
    }
@@ -8149,13 +6218,13 @@ class America_Bahia
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1350766800) // from 2012 Oct 21 
-         return tz3 || (tz3=Rule.Timezone(10800,"-03"));
-      if (ux>=1318734000) // from 2011 Oct 16 
+      if (ux>=1350766800) // from 2012 Oct 21
+         return tz3 || (tz3=Rule.Timezone(10800,"-03/-02"));
+      if (ux>=1318734000) // from 2011 Oct 16
          return tz2 || (tz2=TZrules.Brazil(10800,"-03/-02"));
-      if (ux>=1064350800) // from 2003 Sep 24 
-         return tz3 || (tz3=Rule.Timezone(10800,"-03"));
-      if (ux>=-1767216356) // from 1914 
+      if (ux>=1064350800) // from 2003 Sep 24
+         return tz3 || (tz3=Rule.Timezone(10800,"-03/-02"));
+      if (ux>=-1767216356) // from 1914
          return tz2 || (tz2=TZrules.Brazil(10800,"-03/-02"));
       return tz1 || (tz1=Rule.Timezone(9244,"LMT"));
    }
@@ -8167,11 +6236,11 @@ class America_Sao_Paulo
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-189381600) // from 1964 
+      if (ux>=-189381600) // from 1964
          return tz2 || (tz2=TZrules.Brazil(10800,"-03/-02"));
-      if (ux>=-195447600) // from 1963 Oct 23  0:00 
-         return tz3 || (tz3=Rule.Timezone(7200,"-02"));
-      if (ux>=-1767214412) // from 1914 
+      if (ux>=-195447600) // from 1963 Oct 23  0:00
+         return tz3 || (tz3=Rule.Timezone(7200,"-03/-02"));
+      if (ux>=-1767214412) // from 1914
          return tz2 || (tz2=TZrules.Brazil(10800,"-03/-02"));
       return tz1 || (tz1=Rule.Timezone(11188,"LMT"));
    }
@@ -8184,7 +6253,7 @@ class America_Campo_Grande
    Rule.Timezone tz1,tz2;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-1767212492) // from 1914 
+      if (ux>=-1767212492) // from 1914
          return tz2 || (tz2=TZrules.Brazil(14400,"-04/-03"));
       return tz1 || (tz1=Rule.Timezone(13108,"LMT"));
    }
@@ -8196,11 +6265,11 @@ class America_Cuiaba
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1096603200) // from 2004 Oct  1 
+      if (ux>=1096603200) // from 2004 Oct  1
          return tz2 || (tz2=TZrules.Brazil(14400,"-04/-03"));
-      if (ux>=1064347200) // from 2003 Sep 24 
-         return tz3 || (tz3=Rule.Timezone(14400,"-04"));
-      if (ux>=-1767212140) // from 1914 
+      if (ux>=1064347200) // from 2003 Sep 24
+         return tz3 || (tz3=Rule.Timezone(14400,"-04/-03"));
+      if (ux>=-1767212140) // from 1914
          return tz2 || (tz2=TZrules.Brazil(14400,"-04/-03"));
       return tz1 || (tz1=Rule.Timezone(13460,"LMT"));
    }
@@ -8212,9 +6281,9 @@ class America_Porto_Velho
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=590011200) // from 1988 Sep 12 
-         return tz3 || (tz3=Rule.Timezone(14400,"-04"));
-      if (ux>=-1767210264) // from 1914 
+      if (ux>=590011200) // from 1988 Sep 12
+         return tz3 || (tz3=Rule.Timezone(14400,"-04/-03"));
+      if (ux>=-1767210264) // from 1914
          return tz2 || (tz2=TZrules.Brazil(14400,"-04/-03"));
       return tz1 || (tz1=Rule.Timezone(15336,"LMT"));
    }
@@ -8226,13 +6295,13 @@ class America_Boa_Vista
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=971557200) // from 2000 Oct 15 
-         return tz3 || (tz3=Rule.Timezone(14400,"-04"));
-      if (ux>=938664000) // from 1999 Sep 30 
+      if (ux>=971557200) // from 2000 Oct 15
+         return tz3 || (tz3=Rule.Timezone(14400,"-04/-03"));
+      if (ux>=938664000) // from 1999 Sep 30
          return tz2 || (tz2=TZrules.Brazil(14400,"-04/-03"));
-      if (ux>=590011200) // from 1988 Sep 12 
-         return tz3 || (tz3=Rule.Timezone(14400,"-04"));
-      if (ux>=-1767211040) // from 1914 
+      if (ux>=590011200) // from 1988 Sep 12
+         return tz3 || (tz3=Rule.Timezone(14400,"-04/-03"));
+      if (ux>=-1767211040) // from 1914
          return tz2 || (tz2=TZrules.Brazil(14400,"-04/-03"));
       return tz1 || (tz1=Rule.Timezone(14560,"LMT"));
    }
@@ -8244,13 +6313,13 @@ class America_Manaus
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=780177600) // from 1994 Sep 22 
-         return tz3 || (tz3=Rule.Timezone(14400,"-04"));
-      if (ux>=749188800) // from 1993 Sep 28 
+      if (ux>=780177600) // from 1994 Sep 22
+         return tz3 || (tz3=Rule.Timezone(14400,"-04/-03"));
+      if (ux>=749188800) // from 1993 Sep 28
          return tz2 || (tz2=TZrules.Brazil(14400,"-04/-03"));
-      if (ux>=590011200) // from 1988 Sep 12 
-         return tz3 || (tz3=Rule.Timezone(14400,"-04"));
-      if (ux>=-1767211196) // from 1914 
+      if (ux>=590011200) // from 1988 Sep 12
+         return tz3 || (tz3=Rule.Timezone(14400,"-04/-03"));
+      if (ux>=-1767211196) // from 1914
          return tz2 || (tz2=TZrules.Brazil(14400,"-04/-03"));
       return tz1 || (tz1=Rule.Timezone(14404,"LMT"));
    }
@@ -8263,17 +6332,17 @@ class America_Eirunepe
    Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1384056000) // from 2013 Nov 10 
-         return tz3 || (tz3=Rule.Timezone(18000,"-05"));
-      if (ux>=1214283600) // from 2008 Jun 24  0:00 
-         return tz4 || (tz4=Rule.Timezone(14400,"-04"));
-      if (ux>=780174000) // from 1994 Sep 22 
-         return tz3 || (tz3=Rule.Timezone(18000,"-05"));
-      if (ux>=749192400) // from 1993 Sep 28 
+      if (ux>=1384056000) // from 2013 Nov 10
+         return tz3 || (tz3=Rule.Timezone(18000,"-05/-04"));
+      if (ux>=1214283600) // from 2008 Jun 24  0:00
+         return tz4 || (tz4=Rule.Timezone(14400,"-04/-03"));
+      if (ux>=780174000) // from 1994 Sep 22
+         return tz3 || (tz3=Rule.Timezone(18000,"-05/-04"));
+      if (ux>=749192400) // from 1993 Sep 28
          return tz2 || (tz2=TZrules.Brazil(18000,"-05/-04"));
-      if (ux>=590007600) // from 1988 Sep 12 
-         return tz3 || (tz3=Rule.Timezone(18000,"-05"));
-      if (ux>=-1767208832) // from 1914 
+      if (ux>=590007600) // from 1988 Sep 12
+         return tz3 || (tz3=Rule.Timezone(18000,"-05/-04"));
+      if (ux>=-1767208832) // from 1914
          return tz2 || (tz2=TZrules.Brazil(18000,"-05/-04"));
       return tz1 || (tz1=Rule.Timezone(16768,"LMT"));
    }
@@ -8285,13 +6354,13 @@ class America_Rio_Branco
    Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1384056000) // from 2013 Nov 10 
-         return tz3 || (tz3=Rule.Timezone(18000,"-05"));
-      if (ux>=1214283600) // from 2008 Jun 24  0:00 
-         return tz4 || (tz4=Rule.Timezone(14400,"-04"));
-      if (ux>=590007600) // from 1988 Sep 12 
-         return tz3 || (tz3=Rule.Timezone(18000,"-05"));
-      if (ux>=-1767209328) // from 1914 
+      if (ux>=1384056000) // from 2013 Nov 10
+         return tz3 || (tz3=Rule.Timezone(18000,"-05/-04"));
+      if (ux>=1214283600) // from 2008 Jun 24  0:00
+         return tz4 || (tz4=Rule.Timezone(14400,"-04/-03"));
+      if (ux>=590007600) // from 1988 Sep 12
+         return tz3 || (tz3=Rule.Timezone(18000,"-05/-04"));
+      if (ux>=-1767209328) // from 1914
          return tz2 || (tz2=TZrules.Brazil(18000,"-05/-04"));
       return tz1 || (tz1=Rule.Timezone(16272,"LMT"));
    }
@@ -8302,33 +6371,33 @@ constant America_Porto_Acre=America_Rio_Branco;
 class America_Santiago
 {
    inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6,tz7;
+   Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6,tz7,tz8;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-713649600) // from 1947 May 21 23:00 
-         return tz7 || (tz7=TZrules.Chile(14400,"-04/-03"));
-      if (ux>=-718056000) // from 1947 Mar 31 24:00 
-         return tz3 || (tz3=Rule.Timezone(18000,"-05"));
-      if (ux>=-736635600) // from 1946 Aug 28 24:00 
-         return tz4 || (tz4=Rule.Timezone(14400,"-04"));
+      if (ux>=-713649600) // from 1947 May 21 23:00
+         return tz8 || (tz8=TZrules.Chile(14400,"-04/-03"));
+      if (ux>=-718056000) // from 1947 Mar 31 24:00
+         return tz3 || (tz3=Rule.Timezone(18000,"-05/-04"));
+      if (ux>=-736635600) // from 1946 Aug 28 24:00
+         return tz7 || (tz7=Rule.Timezone(14400,"-05/-04"));
       if (ux>=-740520000) // from 1946 Jul 14 24:00 central CL
-         return tz6 || (tz6=Rule.Timezone(10800,"-03"));
-      if (ux>=-865278000) // from 1942 Aug  1 
-         return tz4 || (tz4=Rule.Timezone(14400,"-04"));
-      if (ux>=-870552000) // from 1942 Jun  1 
-         return tz3 || (tz3=Rule.Timezone(18000,"-05"));
-      if (ux>=-1178168400) // from 1932 Sep  1 
-         return tz4 || (tz4=Rule.Timezone(14400,"-04"));
-      if (ux>=-1335986235) // from 1927 Sep  1 
+         return tz6 || (tz6=Rule.Timezone(10800,"-04/-03"));
+      if (ux>=-865278000) // from 1942 Aug  1
+         return tz4 || (tz4=Rule.Timezone(14400,"-04/-03"));
+      if (ux>=-870552000) // from 1942 Jun  1
+         return tz3 || (tz3=Rule.Timezone(18000,"-05/-04"));
+      if (ux>=-1178168400) // from 1932 Sep  1
+         return tz4 || (tz4=Rule.Timezone(14400,"-04/-03"));
+      if (ux>=-1335986235) // from 1927 Sep  1
          return tz5 || (tz5=TZrules.Chile(18000,"-05/-04"));
-      if (ux>=-1593806400) // from 1919 Jul  1 
+      if (ux>=-1593806400) // from 1919 Jul  1
          return tz2 || (tz2=Rule.Timezone(16965,"SMT"));
-      if (ux>=-1619205435) // from 1918 Sep 10 
-         return tz4 || (tz4=Rule.Timezone(14400,"-04"));
-      if (ux>=-1688410800) // from 1916 Jul  1 
+      if (ux>=-1619205435) // from 1918 Sep 10
+         return tz4 || (tz4=Rule.Timezone(14400,"-04/-03"));
+      if (ux>=-1688410800) // from 1916 Jul  1
          return tz2 || (tz2=Rule.Timezone(16965,"SMT"));
-      if (ux>=-1892661435) // from 1910 Jan 10 
-         return tz3 || (tz3=Rule.Timezone(18000,"-05"));
+      if (ux>=-1892661435) // from 1910 Jan 10
+         return tz3 || (tz3=Rule.Timezone(18000,"-05/-04"));
       if (ux>=-2524504635) // from 1890 Santiago Mean Time
          return tz2 || (tz2=Rule.Timezone(16965,"SMT"));
       return tz1 || (tz1=Rule.Timezone(16965,"LMT"));
@@ -8336,37 +6405,73 @@ class America_Santiago
 }
 constant Chile_Continental=America_Santiago;
 
+class America_Coyhaique
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6,tz7,tz8;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=1742418000) // from 2025 Mar 20
+         return tz8 || (tz8=Rule.Timezone(10800,"-03/-02"));
+      if (ux>=-713649600) // from 1947 May 21 23:00
+         return tz7 || (tz7=TZrules.Chile(14400,"-04/-03"));
+      if (ux>=-718056000) // from 1947 Mar 31 24:00
+         return tz3 || (tz3=Rule.Timezone(18000,"-05/-04"));
+      if (ux>=-736632000) // from 1946 Aug 28 24:00
+         return tz6 || (tz6=Rule.Timezone(14400,"-05/-04"));
+      if (ux>=-865278000) // from 1942 Aug  1
+         return tz4 || (tz4=Rule.Timezone(14400,"-04/-03"));
+      if (ux>=-870552000) // from 1942 Jun  1
+         return tz3 || (tz3=Rule.Timezone(18000,"-05/-04"));
+      if (ux>=-1178168400) // from 1932 Sep  1
+         return tz4 || (tz4=Rule.Timezone(14400,"-04/-03"));
+      if (ux>=-1335986235) // from 1927 Sep  1
+         return tz5 || (tz5=TZrules.Chile(18000,"-05/-04"));
+      if (ux>=-1593806400) // from 1919 Jul  1
+         return tz2 || (tz2=Rule.Timezone(16965,"SMT"));
+      if (ux>=-1619205435) // from 1918 Sep 10
+         return tz4 || (tz4=Rule.Timezone(14400,"-04/-03"));
+      if (ux>=-1688410800) // from 1916 Jul  1
+         return tz2 || (tz2=Rule.Timezone(16965,"SMT"));
+      if (ux>=-1892661435) // from 1910 Jan 10
+         return tz3 || (tz3=Rule.Timezone(18000,"-05/-04"));
+      if (ux>=-2524504304) // from 1890
+         return tz2 || (tz2=Rule.Timezone(16965,"SMT"));
+      return tz1 || (tz1=Rule.Timezone(17296,"LMT"));
+   }
+}
+
 class America_Punta_Arenas
 {
    inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6,tz7;
+   Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6,tz7,tz8;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1480798800) // from 2016 Dec  4 
-         return tz7 || (tz7=Rule.Timezone(10800,"-03"));
-      if (ux>=-713649600) // from 1947 May 21 23:00 
-         return tz6 || (tz6=TZrules.Chile(14400,"-04/-03"));
-      if (ux>=-718056000) // from 1947 Mar 31 24:00 
-         return tz3 || (tz3=Rule.Timezone(18000,"-05"));
-      if (ux>=-736632000) // from 1946 Aug 28 24:00 
-         return tz4 || (tz4=Rule.Timezone(14400,"-04"));
-      if (ux>=-865278000) // from 1942 Aug  1 
-         return tz4 || (tz4=Rule.Timezone(14400,"-04"));
-      if (ux>=-870552000) // from 1942 Jun  1 
-         return tz3 || (tz3=Rule.Timezone(18000,"-05"));
-      if (ux>=-1178168400) // from 1932 Sep  1 
-         return tz4 || (tz4=Rule.Timezone(14400,"-04"));
-      if (ux>=-1335986235) // from 1927 Sep  1 
+      if (ux>=1480798800) // from 2016 Dec  4
+         return tz8 || (tz8=Rule.Timezone(10800,"-03/-02"));
+      if (ux>=-713649600) // from 1947 May 21 23:00
+         return tz7 || (tz7=TZrules.Chile(14400,"-04/-03"));
+      if (ux>=-718056000) // from 1947 Mar 31 24:00
+         return tz3 || (tz3=Rule.Timezone(18000,"-05/-04"));
+      if (ux>=-736632000) // from 1946 Aug 28 24:00
+         return tz6 || (tz6=Rule.Timezone(14400,"-05/-04"));
+      if (ux>=-865278000) // from 1942 Aug  1
+         return tz4 || (tz4=Rule.Timezone(14400,"-04/-03"));
+      if (ux>=-870552000) // from 1942 Jun  1
+         return tz3 || (tz3=Rule.Timezone(18000,"-05/-04"));
+      if (ux>=-1178168400) // from 1932 Sep  1
+         return tz4 || (tz4=Rule.Timezone(14400,"-04/-03"));
+      if (ux>=-1335986235) // from 1927 Sep  1
          return tz5 || (tz5=TZrules.Chile(18000,"-05/-04"));
-      if (ux>=-1593806400) // from 1919 Jul  1 
+      if (ux>=-1593806400) // from 1919 Jul  1
          return tz2 || (tz2=Rule.Timezone(16965,"SMT"));
-      if (ux>=-1619205435) // from 1918 Sep 10 
-         return tz4 || (tz4=Rule.Timezone(14400,"-04"));
-      if (ux>=-1688410800) // from 1916 Jul  1 
+      if (ux>=-1619205435) // from 1918 Sep 10
+         return tz4 || (tz4=Rule.Timezone(14400,"-04/-03"));
+      if (ux>=-1688410800) // from 1916 Jul  1
          return tz2 || (tz2=Rule.Timezone(16965,"SMT"));
-      if (ux>=-1892661435) // from 1910 Jan 10 
-         return tz3 || (tz3=Rule.Timezone(18000,"-05"));
-      if (ux>=-2524504580) // from 1890 
+      if (ux>=-1892661435) // from 1910 Jan 10
+         return tz3 || (tz3=Rule.Timezone(18000,"-05/-04"));
+      if (ux>=-2524504580) // from 1890
          return tz2 || (tz2=Rule.Timezone(16965,"SMT"));
       return tz1 || (tz1=Rule.Timezone(17020,"LMT"));
    }
@@ -8378,7 +6483,7 @@ class Pacific_Easter
    Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=384922800) // from 1982 Mar 14 3:00u 
+      if (ux>=384922800) // from 1982 Mar 14 3:00u
          return tz4 || (tz4=TZrules.Chile(21600,"-06/-05"));
       if (ux>=-1178124152) // from 1932 Sep Easter Time
          return tz3 || (tz3=TZrules.Chile(25200,"-07/-06"));
@@ -8395,13 +6500,13 @@ class Antarctica_Palmer
    Rule.Timezone tz1,tz2,tz3,tz4,tz5;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1480798800) // from 2016 Dec  4 
-         return tz5 || (tz5=Rule.Timezone(10800,"-03"));
-      if (ux>=389048400) // from 1982 May 
+      if (ux>=1480798800) // from 2016 Dec  4
+         return tz5 || (tz5=Rule.Timezone(10800,"-03/-02"));
+      if (ux>=389048400) // from 1982 May
          return tz4 || (tz4=TZrules.Chile(14400,"-04/-03"));
-      if (ux>=-7617600) // from 1969 Oct  5 
+      if (ux>=-7617600) // from 1969 Oct  5
          return tz3 || (tz3=TZrules.Arg(10800,"-03/-02"));
-      if (ux>=-157766400) // from 1965 
+      if (ux>=-157766400) // from 1965
          return tz2 || (tz2=TZrules.Arg(14400,"-04/-03"));
       return tz1 || (tz1=Rule.Timezone(0,"-00"));
    }
@@ -8413,7 +6518,7 @@ class America_Bogota
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-1739041424) // from 1914 Nov 23 
+      if (ux>=-1739041424) // from 1914 Nov 23
          return tz3 || (tz3=TZrules.CO(18000,"-05/-04"));
       if (ux>=-2707671824) // from 1884 Mar 13 Bogotá Mean Time
          return tz2 || (tz2=Rule.Timezone(17776,"BMT"));
@@ -8427,7 +6532,7 @@ class America_Guayaquil
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-1230749160) // from 1931 
+      if (ux>=-1230749160) // from 1931
          return tz3 || (tz3=TZrules.Ecuador(18000,"-05/-04"));
       if (ux>=-2524502440) // from 1890 Quito Mean Time
          return tz2 || (tz2=Rule.Timezone(18840,"QMT"));
@@ -8441,10 +6546,10 @@ class Pacific_Galapagos
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=504939600) // from 1986 
+      if (ux>=504939600) // from 1986
          return tz3 || (tz3=TZrules.Ecuador(21600,"-06/-05"));
-      if (ux>=-1230746496) // from 1931 
-         return tz2 || (tz2=Rule.Timezone(18000,"-05"));
+      if (ux>=-1230746496) // from 1931
+         return tz2 || (tz2=Rule.Timezone(18000,"-05/-04"));
       // Puerto Baquerizo Moreno
       return tz1 || (tz1=Rule.Timezone(21504,"LMT"));
    }
@@ -8456,13 +6561,13 @@ class Atlantic_Stanley
    Rule.Timezone tz1,tz2,tz3,tz4,tz5;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1283637600) // from 2010 Sep  5  2:00 
-         return tz5 || (tz5=Rule.Timezone(10800,"-03"));
-      if (ux>=495579600) // from 1985 Sep 15 
+      if (ux>=1283637600) // from 2010 Sep  5  2:00
+         return tz5 || (tz5=Rule.Timezone(10800,"-03/-02"));
+      if (ux>=495579600) // from 1985 Sep 15
          return tz3 || (tz3=TZrules.Falk(14400,"-04/-03"));
-      if (ux>=420580800) // from 1983 May 
+      if (ux>=420580800) // from 1983 May
          return tz4 || (tz4=TZrules.Falk(10800,"-03/-02"));
-      if (ux>=-1824235716) // from 1912 Mar 12 
+      if (ux>=-1824235716) // from 1912 Mar 12
          return tz3 || (tz3=TZrules.Falk(14400,"-04/-03"));
       if (ux>=-2524507716) // from 1890 Stanley Mean Time
          return tz2 || (tz2=Rule.Timezone(13884,"SMT"));
@@ -8476,10 +6581,10 @@ class America_Cayenne
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-71092800) // from 1967 Oct 
-         return tz3 || (tz3=Rule.Timezone(10800,"-03"));
-      if (ux>=-1846269040) // from 1911 Jul  1 
-         return tz2 || (tz2=Rule.Timezone(14400,"-04"));
+      if (ux>=-71092800) // from 1967 Oct
+         return tz3 || (tz3=Rule.Timezone(10800,"-03/-02"));
+      if (ux>=-1846269040) // from 1911 Jul  1
+         return tz2 || (tz2=Rule.Timezone(14400,"-04/-03"));
       return tz1 || (tz1=Rule.Timezone(12560,"LMT"));
    }
 }
@@ -8490,14 +6595,14 @@ class America_Guyana
    Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=701841600) // from 1992 Mar 29  1:00 
-         return tz2 || (tz2=Rule.Timezone(14400,"-04"));
-      if (ux>=176096700) // from 1975 Aug  1 
-         return tz4 || (tz4=Rule.Timezone(10800,"-03"));
-      if (ux>=-1730577600) // from 1915 Mar  1 
-         return tz3 || (tz3=Rule.Timezone(13500,"-0345"));
-      if (ux>=-1843589241) // from 1911 Aug  1 
-         return tz2 || (tz2=Rule.Timezone(14400,"-04"));
+      if (ux>=701841600) // from 1992 Mar 29  1:00
+         return tz2 || (tz2=Rule.Timezone(14400,"-04/-03"));
+      if (ux>=176096700) // from 1975 Aug  1
+         return tz4 || (tz4=Rule.Timezone(10800,"-03/-02"));
+      if (ux>=-1730577600) // from 1915 Mar  1
+         return tz3 || (tz3=Rule.Timezone(13500,"-0245/-0145"));
+      if (ux>=-1843589241) // from 1911 Aug  1
+         return tz2 || (tz2=Rule.Timezone(14400,"-04/-03"));
       // Georgetown
       return tz1 || (tz1=Rule.Timezone(13959,"LMT"));
    }
@@ -8509,12 +6614,14 @@ class America_Asuncion
    Rule.Timezone tz1,tz2,tz3,tz4,tz5;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=134017200) // from 1974 Apr 
+      if (ux>=1728939600) // from 2024 Oct 15
+         return tz4 || (tz4=Rule.Timezone(10800,"-03/-02"));
+      if (ux>=134017200) // from 1974 Apr
          return tz5 || (tz5=TZrules.Para(14400,"-04/-03"));
-      if (ux>=86760000) // from 1972 Oct 
-         return tz4 || (tz4=Rule.Timezone(10800,"-03"));
-      if (ux>=-1206389360) // from 1931 Oct 10 
-         return tz3 || (tz3=Rule.Timezone(14400,"-04"));
+      if (ux>=86760000) // from 1972 Oct
+         return tz4 || (tz4=Rule.Timezone(10800,"-03/-02"));
+      if (ux>=-1206389360) // from 1931 Oct 10
+         return tz3 || (tz3=Rule.Timezone(14400,"-04/-03"));
       if (ux>=-2524507760) // from 1890 Asunción Mean Time
          return tz2 || (tz2=Rule.Timezone(13840,"AMT"));
       return tz1 || (tz1=Rule.Timezone(13840,"LMT"));
@@ -8527,7 +6634,7 @@ class America_Lima
    Rule.Timezone tz1,tz2,tz3;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-1938538284) // from 1908 Jul 28 
+      if (ux>=-1938538284) // from 1908 Jul 28
          return tz3 || (tz3=TZrules.Peru(18000,"-05/-04"));
       if (ux>=-2524503108) // from 1890 Lima Mean Time?
          return tz2 || (tz2=Rule.Timezone(18516,"LMT"));
@@ -8541,8 +6648,8 @@ class Atlantic_South_Georgia
    Rule.Timezone tz1,tz2;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=-2524512832) // from 1890 
-         return tz2 || (tz2=Rule.Timezone(7200,"-02"));
+      if (ux>=-2524512832) // from 1890
+         return tz2 || (tz2=Rule.Timezone(7200,"-02/-01"));
       // Grytviken
       return tz1 || (tz1=Rule.Timezone(8768,"LMT"));
    }
@@ -8554,10 +6661,10 @@ class America_Paramaribo
    Rule.Timezone tz1,tz2,tz3,tz4,tz5;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=465449400) // from 1984 Oct 
-         return tz5 || (tz5=Rule.Timezone(10800,"-03"));
-      if (ux>=-765317964) // from 1945 Oct 
-         return tz4 || (tz4=Rule.Timezone(12600,"-0330"));
+      if (ux>=465449400) // from 1984 Oct
+         return tz5 || (tz5=Rule.Timezone(10800,"-03/-02"));
+      if (ux>=-765317964) // from 1945 Oct
+         return tz4 || (tz4=Rule.Timezone(12600,"-0230/-0130"));
       if (ux>=-1104524348) // from 1935 The capital moved?
          return tz3 || (tz3=Rule.Timezone(13236,"PMT"));
       if (ux>=-1861906760) // from 1911 Paramaribo Mean Time
@@ -8569,27 +6676,27 @@ class America_Paramaribo
 class America_Montevideo
 {
    inherit TZHistory;
-   Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6,tz7;
+   Rule.Timezone tz1,tz2,tz3,tz4,tz5;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=156891600) // from 1974 Dec 22 
-         return tz6 || (tz6=TZrules.Uruguay(10800,"-03/-02"));
-      if (ux>=132096600) // from 1974 Mar 10 
-         return tz5 || (tz5=TZrules.Uruguay(10800,"-03/-0230"));
-      if (ux>=126219600) // from 1974 
-         return tz7 || (tz7=TZrules.Uruguay(10800,"-03/-0130"));
-      if (ux>=-10800) // from 1970 
-         return tz6 || (tz6=TZrules.Uruguay(10800,"-03/-02"));
-      if (ux>=-63169200) // from 1968 
-         return tz5 || (tz5=TZrules.Uruguay(10800,"-03/-0230"));
-      if (ux>=-315630000) // from 1960 
-         return tz6 || (tz6=TZrules.Uruguay(10800,"-03/-02"));
-      if (ux>=-853642800) // from 1942 Dec 14 
-         return tz5 || (tz5=TZrules.Uruguay(10800,"-03/-0230"));
-      if (ux>=-1459627200) // from 1923 Oct  1 
-         return tz4 || (tz4=TZrules.Uruguay(12600,"-0330/-03"));
-      if (ux>=-1567455309) // from 1920 May  1 
-         return tz3 || (tz3=Rule.Timezone(14400,"-04"));
+      if (ux>=156891600) // from 1974 Dec 22
+         return tz5 || (tz5=TZrules.Uruguay(10800,"-03/-02"));
+      if (ux>=132096600) // from 1974 Mar 10
+         return tz5 || (tz5=TZrules.Uruguay(10800,"-03/-02"));
+      if (ux>=126219600) // from 1974
+         return tz5 || (tz5=TZrules.Uruguay(10800,"-03/-02"));
+      if (ux>=-10800) // from 1970
+         return tz5 || (tz5=TZrules.Uruguay(10800,"-03/-02"));
+      if (ux>=-63169200) // from 1968
+         return tz5 || (tz5=TZrules.Uruguay(10800,"-03/-02"));
+      if (ux>=-315630000) // from 1960
+         return tz5 || (tz5=TZrules.Uruguay(10800,"-03/-02"));
+      if (ux>=-853642800) // from 1942 Dec 14
+         return tz5 || (tz5=TZrules.Uruguay(10800,"-03/-02"));
+      if (ux>=-1459627200) // from 1923 Oct  1
+         return tz4 || (tz4=TZrules.Uruguay(12600,"-0230/-0130"));
+      if (ux>=-1567455309) // from 1920 May  1
+         return tz3 || (tz3=Rule.Timezone(14400,"-04/-03"));
       if (ux>=-1942690509) // from 1908 Jun 10 Montevideo MT
          return tz2 || (tz2=Rule.Timezone(13491,"MMT"));
       return tz1 || (tz1=Rule.Timezone(13491,"LMT"));
@@ -8602,17 +6709,1930 @@ class America_Caracas
    Rule.Timezone tz1,tz2,tz3,tz4;
    Rule.Timezone whatrule(int ux)
    {
-      if (ux>=1462086000) // from 2016 May  1  2:30 
-         return tz4 || (tz4=Rule.Timezone(14400,"-04"));
-      if (ux>=1197183600) // from 2007 Dec  9  3:00 
-         return tz3 || (tz3=Rule.Timezone(16200,"-0430"));
-      if (ux>=-157750200) // from 1965 Jan  1  0:00 
-         return tz4 || (tz4=Rule.Timezone(14400,"-04"));
-      if (ux>=-1826739140) // from 1912 Feb 12 
-         return tz3 || (tz3=Rule.Timezone(16200,"-0430"));
+      if (ux>=1462086000) // from 2016 May  1  2:30
+         return tz4 || (tz4=Rule.Timezone(14400,"-04/-03"));
+      if (ux>=1197183600) // from 2007 Dec  9  3:00
+         return tz3 || (tz3=Rule.Timezone(16200,"-0330/-0230"));
+      if (ux>=-157750200) // from 1965 Jan  1  0:00
+         return tz4 || (tz4=Rule.Timezone(14400,"-04/-03"));
+      if (ux>=-1826739140) // from 1912 Feb 12
+         return tz3 || (tz3=Rule.Timezone(16200,"-0330/-0230"));
       if (ux>=-2524505536) // from 1890 Caracas Mean Time?
          return tz2 || (tz2=Rule.Timezone(16060,"CMT"));
       return tz1 || (tz1=Rule.Timezone(16064,"LMT"));
+   }
+}
+
+class Africa_Accra
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-756952200) // from 1946 Jan  6
+         return tz2 || (tz2=TZrules.Ghana(0,"%s"));
+      if (ux>=-880329600) // from 1942 Feb  8
+         return tz3 || (tz3=Rule.Timezone(-1800,"+0030"));
+      if (ux>=-1709337548) // from 1915 Nov  2
+         return tz2 || (tz2=TZrules.Ghana(0,"%s"));
+      return tz1 || (tz1=Rule.Timezone(52,"LMT"));
+   }
+}
+
+class Africa_Addis_Ababa
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-1062210920) // from 1936 May  5
+         return tz3 || (tz3=Rule.Timezone(-10800,"EAT"));
+      if (ux>=-3155682888) // from 1870 Adis Dera MT
+         return tz2 || (tz2=Rule.Timezone(-9320,"ADMT"));
+      return tz1 || (tz1=Rule.Timezone(-9288,"LMT"));
+   }
+}
+
+class Africa_Asmara
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3,tz4;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-1062210920) // from 1936 May  5
+         return tz4 || (tz4=Rule.Timezone(-10800,"EAT"));
+      if (ux>=-2524530932) // from 1890 Adis Dera MT
+         return tz3 || (tz3=Rule.Timezone(-9320,"ADMT"));
+      if (ux>=-3155682932) // from 1870 Asmara Mean Time
+         return tz2 || (tz2=Rule.Timezone(-9332,"AMT"));
+      return tz1 || (tz1=Rule.Timezone(-9332,"LMT"));
+   }
+}
+constant Africa_Asmera=Africa_Asmara;
+
+class Africa_Bamako
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-300841200) // from 1960 Jun 20
+         return tz2 || (tz2=Rule.Timezone(0,"GMT"));
+      if (ux>=-1131235200) // from 1934 Feb 26
+         return tz3 || (tz3=Rule.Timezone(3600,"-01"));
+      if (ux>=-1830382080) // from 1912
+         return tz2 || (tz2=Rule.Timezone(0,"GMT"));
+      return tz1 || (tz1=Rule.Timezone(1920,"LMT"));
+   }
+}
+
+class Africa_Bangui
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-1830388460) // from 1912
+         return tz2 || (tz2=Rule.Timezone(-3600,"WAT"));
+      return tz1 || (tz1=Rule.Timezone(-4460,"LMT"));
+   }
+}
+
+class Africa_Banjul
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3,tz4;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-880930800) // from 1942 Feb  1  0:00
+         return tz4 || (tz4=Rule.Timezone(0,"GMT"));
+      if (ux>=-1159829604) // from 1933 Apr  1
+         return tz3 || (tz3=Rule.Timezone(3600,"-01"));
+      if (ux>=-1830380004) // from 1912 Banjul Mean Time
+         return tz2 || (tz2=Rule.Timezone(3996,"BMT"));
+      return tz1 || (tz1=Rule.Timezone(3996,"LMT"));
+   }
+}
+
+class Africa_Blantyre
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3,tz4;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-1404440460) // from 1925 Jul  1
+         return tz4 || (tz4=Rule.Timezone(-7200,"CAT"));
+      if (ux>=-1751682070) // from 1914 Jun 30
+         return tz3 || (tz3=Rule.Timezone(-8460,"ZMT"));
+      if (ux>=-1844302800) // from 1911 Jul 24 Zomba Mean Time
+         return tz2 || (tz2=Rule.Timezone(-8470,"ZMT"));
+      return tz1 || (tz1=Rule.Timezone(-8400,"LMT"));
+   }
+}
+
+class Africa_Brazzaville
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-1830387668) // from 1912
+         return tz2 || (tz2=Rule.Timezone(-3600,"WAT"));
+      return tz1 || (tz1=Rule.Timezone(-3668,"LMT"));
+   }
+}
+
+class Africa_Bujumbura
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-2524528648) // from 1890
+         return tz2 || (tz2=Rule.Timezone(-7200,"CAT"));
+      return tz1 || (tz1=Rule.Timezone(-7048,"LMT"));
+   }
+}
+
+class Africa_Conakry
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-315615600) // from 1960
+         return tz2 || (tz2=Rule.Timezone(0,"GMT"));
+      if (ux>=-1131235200) // from 1934 Feb 26
+         return tz3 || (tz3=Rule.Timezone(3600,"-01"));
+      if (ux>=-1830380708) // from 1912
+         return tz2 || (tz2=Rule.Timezone(0,"GMT"));
+      return tz1 || (tz1=Rule.Timezone(3292,"LMT"));
+   }
+}
+
+class Africa_Dakar
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-902098800) // from 1941 Jun
+         return tz3 || (tz3=Rule.Timezone(0,"GMT"));
+      if (ux>=-1830379816) // from 1912
+         return tz2 || (tz2=Rule.Timezone(3600,"-01"));
+      return tz1 || (tz1=Rule.Timezone(4184,"LMT"));
+   }
+}
+
+class Africa_Dar_es_Salaam
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-284006700) // from 1961
+         return tz2 || (tz2=Rule.Timezone(-10800,"EAT"));
+      if (ux>=-694321200) // from 1948
+         return tz3 || (tz3=Rule.Timezone(-9900,"+0245"));
+      if (ux>=-1230777428) // from 1931
+         return tz2 || (tz2=Rule.Timezone(-10800,"EAT"));
+      return tz1 || (tz1=Rule.Timezone(-9428,"LMT"));
+   }
+}
+
+class Africa_Djibouti
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-1846291956) // from 1911 Jul
+         return tz2 || (tz2=Rule.Timezone(-10800,"EAT"));
+      return tz1 || (tz1=Rule.Timezone(-10356,"LMT"));
+   }
+}
+
+class Africa_Douala
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-1830386328) // from 1912
+         return tz2 || (tz2=Rule.Timezone(-3600,"WAT"));
+      return tz1 || (tz1=Rule.Timezone(-2328,"LMT"));
+   }
+}
+
+class Africa_Freetown
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3,tz4,tz5;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-885769200) // from 1941 Dec  6 24:00
+         return tz5 || (tz5=Rule.Timezone(0,"GMT"));
+      if (ux>=-956968800) // from 1939 Sep  5
+         return tz4 || (tz4=Rule.Timezone(3600,"-01"));
+      if (ux>=-1783120020) // from 1913 Jul  1
+         return tz3 || (tz3=TZrules.SL(3600,"%s"));
+      if (ux>=-2776979220) // from 1882 Freetown MT
+         return tz2 || (tz2=Rule.Timezone(3180,"FMT"));
+      return tz1 || (tz1=Rule.Timezone(3180,"LMT"));
+   }
+}
+
+class Africa_Gaborone
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3,tz4;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-813805200) // from 1944 Mar 19  2:00
+         return tz3 || (tz3=Rule.Timezone(-7200,"CAT"));
+      if (ux>=-829526400) // from 1943 Sep 19  2:00
+         return tz4 || (tz4=Rule.Timezone(-10800,"CAST"));
+      if (ux>=-2109288600) // from 1903 Mar
+         return tz3 || (tz3=Rule.Timezone(-7200,"CAT"));
+      if (ux>=-2682294220) // from 1885
+         return tz2 || (tz2=Rule.Timezone(-5400,"SAST"));
+      return tz1 || (tz1=Rule.Timezone(-6220,"LMT"));
+   }
+}
+
+class Africa_Harare
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-2109290652) // from 1903 Mar
+         return tz2 || (tz2=Rule.Timezone(-7200,"CAT"));
+      return tz1 || (tz1=Rule.Timezone(-7452,"LMT"));
+   }
+}
+
+class Africa_Kampala
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3,tz4;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-410237100) // from 1957
+         return tz2 || (tz2=Rule.Timezone(-10800,"EAT"));
+      if (ux>=-694319400) // from 1948
+         return tz4 || (tz4=Rule.Timezone(-9900,"+0245"));
+      if (ux>=-1262314800) // from 1930
+         return tz3 || (tz3=Rule.Timezone(-9000,"+0230"));
+      if (ux>=-1309745380) // from 1928 Jul
+         return tz2 || (tz2=Rule.Timezone(-10800,"EAT"));
+      return tz1 || (tz1=Rule.Timezone(-7780,"LMT"));
+   }
+}
+
+class Africa_Kigali
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-1091498416) // from 1935 Jun
+         return tz2 || (tz2=Rule.Timezone(-7200,"CAT"));
+      return tz1 || (tz1=Rule.Timezone(-7216,"LMT"));
+   }
+}
+
+class Africa_Kinshasa
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-2276643672) // from 1897 Nov  9
+         return tz2 || (tz2=Rule.Timezone(-3600,"WAT"));
+      return tz1 || (tz1=Rule.Timezone(-3672,"LMT"));
+   }
+}
+
+class Africa_Libreville
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-1830386268) // from 1912
+         return tz2 || (tz2=Rule.Timezone(-3600,"WAT"));
+      return tz1 || (tz1=Rule.Timezone(-2268,"LMT"));
+   }
+}
+
+class Africa_Lome
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-2429827492) // from 1893
+         return tz2 || (tz2=Rule.Timezone(0,"GMT"));
+      return tz1 || (tz1=Rule.Timezone(-292,"LMT"));
+   }
+}
+
+class Africa_Luanda
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-1830387600) // from 1911 Dec 31 23:00u
+         return tz3 || (tz3=Rule.Timezone(-3600,"WAT"));
+      if (ux>=-2461452776) // from 1892 Luanda MT?
+         return tz2 || (tz2=Rule.Timezone(-3124,"LMT"));
+      return tz1 || (tz1=Rule.Timezone(-3176,"LMT"));
+   }
+}
+
+class Africa_Lubumbashi
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-1567990800) // from 1920 Apr 25
+         return tz3 || (tz3=Rule.Timezone(-7200,"CAT"));
+      if (ux>=-2276646592) // from 1897 Nov  9
+         return tz2 || (tz2=Rule.Timezone(-3600,"WAT"));
+      return tz1 || (tz1=Rule.Timezone(-6592,"LMT"));
+   }
+}
+
+class Africa_Lusaka
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-2109289988) // from 1903 Mar
+         return tz2 || (tz2=Rule.Timezone(-7200,"CAT"));
+      return tz1 || (tz1=Rule.Timezone(-6788,"LMT"));
+   }
+}
+
+class Africa_Malabo
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-190857600) // from 1963 Dec 15
+         return tz3 || (tz3=Rule.Timezone(-3600,"WAT"));
+      if (ux>=-1830386108) // from 1912
+         return tz2 || (tz2=Rule.Timezone(0,"GMT"));
+      return tz1 || (tz1=Rule.Timezone(-2108,"LMT"));
+   }
+}
+
+class Africa_Maseru
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-813805200) // from 1944 Mar 19  2:00
+         return tz2 || (tz2=Rule.Timezone(-7200,"SAST"));
+      if (ux>=-829526400) // from 1943 Sep 19  2:00
+         return tz3 || (tz3=Rule.Timezone(-10800,"SAST"));
+      if (ux>=-2109289800) // from 1903 Mar
+         return tz2 || (tz2=Rule.Timezone(-7200,"SAST"));
+      return tz1 || (tz1=Rule.Timezone(-6600,"LMT"));
+   }
+}
+
+class Africa_Mbabane
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-2109290664) // from 1903 Mar
+         return tz2 || (tz2=Rule.Timezone(-7200,"SAST"));
+      return tz1 || (tz1=Rule.Timezone(-7464,"LMT"));
+   }
+}
+
+class Africa_Mogadishu
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-410236200) // from 1957
+         return tz2 || (tz2=Rule.Timezone(-10800,"EAT"));
+      if (ux>=-1230778800) // from 1931
+         return tz3 || (tz3=Rule.Timezone(-9000,"+0230"));
+      if (ux>=-2403572488) // from 1893 Nov
+         return tz2 || (tz2=Rule.Timezone(-10800,"EAT"));
+      return tz1 || (tz1=Rule.Timezone(-10888,"LMT"));
+   }
+}
+
+class Africa_Niamey
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3,tz4;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-315619200) // from 1960
+         return tz4 || (tz4=Rule.Timezone(-3600,"WAT"));
+      if (ux>=-1131231600) // from 1934 Feb 26
+         return tz3 || (tz3=Rule.Timezone(0,"GMT"));
+      if (ux>=-1830384508) // from 1912
+         return tz2 || (tz2=Rule.Timezone(3600,"-01"));
+      return tz1 || (tz1=Rule.Timezone(-508,"LMT"));
+   }
+}
+
+class Africa_Nouakchott
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-286930800) // from 1960 Nov 28
+         return tz2 || (tz2=Rule.Timezone(0,"GMT"));
+      if (ux>=-1131235200) // from 1934 Feb 26
+         return tz3 || (tz3=Rule.Timezone(3600,"-01"));
+      if (ux>=-1830380172) // from 1912
+         return tz2 || (tz2=Rule.Timezone(0,"GMT"));
+      return tz1 || (tz1=Rule.Timezone(3828,"LMT"));
+   }
+}
+
+class Africa_Ouagadougou
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-1830383636) // from 1912
+         return tz2 || (tz2=Rule.Timezone(0,"GMT"));
+      return tz1 || (tz1=Rule.Timezone(364,"LMT"));
+   }
+}
+
+class Africa_Porto_Novo
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-1131235200) // from 1934 Feb 26
+         return tz3 || (tz3=Rule.Timezone(-3600,"WAT"));
+      if (ux>=-1830384628) // from 1912 Jan  1
+         return tz2 || (tz2=Rule.Timezone(0,"GMT"));
+      return tz1 || (tz1=Rule.Timezone(-628,"LMT"));
+   }
+}
+
+class Africa_Timbuktu
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-1830383276) // from 1912
+         return tz2 || (tz2=Rule.Timezone(0,"GMT"));
+      return tz1 || (tz1=Rule.Timezone(724,"LMT"));
+   }
+}
+
+class America_Anguilla
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-1825098464) // from 1912 Mar  2
+         return tz2 || (tz2=Rule.Timezone(14400,"AST"));
+      return tz1 || (tz1=Rule.Timezone(15136,"LMT"));
+   }
+}
+
+class America_Antigua
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-599598000) // from 1951
+         return tz3 || (tz3=Rule.Timezone(14400,"AST"));
+      if (ux>=-1825098768) // from 1912 Mar 2
+         return tz2 || (tz2=Rule.Timezone(18000,"EST"));
+      return tz1 || (tz1=Rule.Timezone(14832,"LMT"));
+   }
+}
+
+class America_Argentina_ComodRivadavia
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=1087704000) // from 2004 Jun 20
+         return tz6 || (tz6=Rule.Timezone(10800,"-03"));
+      if (ux>=1086058800) // from 2004 Jun  1
+         return tz3 || (tz3=Rule.Timezone(14400,"-04"));
+      if (ux>=952027200) // from 2000 Mar  3
+         return tz6 || (tz6=Rule.Timezone(10800,"-03"));
+      if (ux>=938898000) // from 1999 Oct  3
+         return tz4 || (tz4=TZrules.Arg(14400,"-04/-03"));
+      if (ux>=687931200) // from 1991 Oct 20
+         return tz5 || (tz5=TZrules.Arg(10800,"-03/-02"));
+      if (ux>=667947600) // from 1991 Mar  3
+         return tz3 || (tz3=Rule.Timezone(14400,"-04"));
+      if (ux>=-7617600) // from 1969 Oct  5
+         return tz5 || (tz5=TZrules.Arg(10800,"-03/-02"));
+      if (ux>=-1233432000) // from 1930 Dec
+         return tz4 || (tz4=TZrules.Arg(14400,"-04/-03"));
+      if (ux>=-1567453392) // from 1920 May
+         return tz3 || (tz3=Rule.Timezone(14400,"-04"));
+      if (ux>=-2372095800) // from 1894 Oct 31
+         return tz2 || (tz2=Rule.Timezone(15408,"CMT"));
+      return tz1 || (tz1=Rule.Timezone(16200,"LMT"));
+   }
+}
+
+class America_Aruba
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-157750200) // from 1965
+         return tz3 || (tz3=Rule.Timezone(14400,"AST"));
+      if (ux>=-1826738376) // from 1912 Feb 12
+         return tz2 || (tz2=Rule.Timezone(16200,"-0430"));
+      // Oranjestad
+      return tz1 || (tz1=Rule.Timezone(16824,"LMT"));
+   }
+}
+
+class America_Atikokan
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3,tz4;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-765428400) // from 1945 Sep 30  2:00
+         return tz4 || (tz4=Rule.Timezone(18000,"EST"));
+      if (ux>=-880214400) // from 1942 Feb  9  2:00s
+         return tz2 || (tz2=TZrules.Canada(21600,"C%sT"));
+      if (ux>=-923292000) // from 1940 Sep 29
+         return tz3 || (tz3=Rule.Timezone(18000,"CDT"));
+      if (ux>=-2366733212) // from 1895
+         return tz2 || (tz2=TZrules.Canada(21600,"C%sT"));
+      return tz1 || (tz1=Rule.Timezone(21988,"LMT"));
+   }
+}
+
+class America_Blanc_Sablon
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-14400) // from 1970
+         return tz3 || (tz3=Rule.Timezone(14400,"AST"));
+      if (ux>=-2713896692) // from 1884
+         return tz2 || (tz2=TZrules.Canada(14400,"A%sT"));
+      return tz1 || (tz1=Rule.Timezone(13708,"LMT"));
+   }
+}
+
+class America_Cayman
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-1827687170) // from 1912 Feb
+         return tz3 || (tz3=Rule.Timezone(18000,"EST"));
+      if (ux>=-2524502068) // from 1890 Kingston Mean Time
+         return tz2 || (tz2=Rule.Timezone(18430,"KMT"));
+      // Georgetown
+      return tz1 || (tz1=Rule.Timezone(19532,"LMT"));
+   }
+}
+
+class America_Coral_Harbour
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-757400400) // from 1946
+         return tz3 || (tz3=Rule.Timezone(18000,"EST"));
+      if (ux>=-2713890440) // from 1884
+         return tz2 || (tz2=TZrules.NT_YK(18000,"E%sT"));
+      return tz1 || (tz1=Rule.Timezone(19960,"LMT"));
+   }
+}
+
+class America_Creston
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-1627833600) // from 1918 Jun 2
+         return tz2 || (tz2=Rule.Timezone(25200,"MST"));
+      if (ux>=-1680454800) // from 1916 Oct 1
+         return tz3 || (tz3=Rule.Timezone(28800,"PST"));
+      if (ux>=-2713882436) // from 1884
+         return tz2 || (tz2=Rule.Timezone(25200,"MST"));
+      return tz1 || (tz1=Rule.Timezone(27964,"LMT"));
+   }
+}
+
+class America_Curacao
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-157750200) // from 1965
+         return tz3 || (tz3=Rule.Timezone(14400,"AST"));
+      if (ux>=-1826738653) // from 1912 Feb 12
+         return tz2 || (tz2=Rule.Timezone(16200,"-0430"));
+      // Willemstad
+      return tz1 || (tz1=Rule.Timezone(16547,"LMT"));
+   }
+}
+constant America_Kralendijk=America_Curacao;
+constant America_Lower_Princes=America_Curacao;
+
+class America_Dominica
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-1846266804) // from 1911 Jul  1  0:01
+         return tz2 || (tz2=Rule.Timezone(14400,"AST"));
+      // Roseau
+      return tz1 || (tz1=Rule.Timezone(14736,"LMT"));
+   }
+}
+
+class America_Ensenada
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3,tz4;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=820483200) // from 1996
+         return tz4 || (tz4=TZrules.Mexico(28800,"P%sT"));
+      if (ux>=-661539600) // from 1949 Jan 14
+         return tz2 || (tz2=Rule.Timezone(28800,"PST"));
+      if (ux>=-875808000) // from 1942 Apr
+         return tz3 || (tz3=Rule.Timezone(25200,"MST"));
+      if (ux>=-1234717200) // from 1930 Nov 16
+         return tz2 || (tz2=Rule.Timezone(28800,"PST"));
+      if (ux>=-1343062800) // from 1927 Jun 10 23:00
+         return tz3 || (tz3=Rule.Timezone(25200,"MST"));
+      if (ux>=-1514736000) // from 1922 Jan  1  0:13:32
+         return tz2 || (tz2=Rule.Timezone(28800,"PST"));
+      return tz1 || (tz1=Rule.Timezone(27988,"LMT"));
+   }
+}
+
+class America_Grenada
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-1846266780) // from 1911 Jul
+         return tz2 || (tz2=Rule.Timezone(14400,"AST"));
+      // St George's
+      return tz1 || (tz1=Rule.Timezone(14820,"LMT"));
+   }
+}
+
+class America_Guadeloupe
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-1848254032) // from 1911 Jun  8
+         return tz2 || (tz2=Rule.Timezone(14400,"AST"));
+      // Pointe-à-Pitre
+      return tz1 || (tz1=Rule.Timezone(14768,"LMT"));
+   }
+}
+
+class America_Montreal
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=126212400) // from 1974
+         return tz3 || (tz3=TZrules.Canada(18000,"E%sT"));
+      if (ux>=-757400400) // from 1946
+         return tz2 || (tz2=TZrules.Mont(18000,"E%sT"));
+      if (ux>=-880218000) // from 1942 Feb  9  2:00s
+         return tz3 || (tz3=TZrules.Canada(18000,"E%sT"));
+      if (ux>=-1609477200) // from 1919
+         return tz2 || (tz2=TZrules.Mont(18000,"E%sT"));
+      if (ux>=-1641013200) // from 1918
+         return tz3 || (tz3=TZrules.Canada(18000,"E%sT"));
+      if (ux>=-2713892744) // from 1884
+         return tz2 || (tz2=TZrules.Mont(18000,"E%sT"));
+      return tz1 || (tz1=Rule.Timezone(17656,"LMT"));
+   }
+}
+
+class America_Montserrat
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-1846266608) // from 1911 Jul  1  0:01
+         return tz2 || (tz2=Rule.Timezone(14400,"AST"));
+      // Cork Hill
+      return tz1 || (tz1=Rule.Timezone(14932,"LMT"));
+   }
+}
+
+class America_Nassau
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=189284400) // from 1976
+         return tz3 || (tz3=TZrules.US(18000,"E%sT"));
+      if (ux>=-1825095030) // from 1912 Mar 2
+         return tz2 || (tz2=TZrules.Bahamas(18000,"E%sT"));
+      return tz1 || (tz1=Rule.Timezone(18570,"LMT"));
+   }
+}
+
+class America_Nipigon
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-880218000) // from 1942 Feb  9  2:00s
+         return tz2 || (tz2=TZrules.Canada(18000,"E%sT"));
+      if (ux>=-923288400) // from 1940 Sep 29
+         return tz3 || (tz3=Rule.Timezone(14400,"EDT"));
+      if (ux>=-2366734016) // from 1895
+         return tz2 || (tz2=TZrules.Canada(18000,"E%sT"));
+      return tz1 || (tz1=Rule.Timezone(21184,"LMT"));
+   }
+}
+
+class America_Pangnirtung
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3,tz4;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=972766800) // from 2000 Oct 29  2:00
+         return tz4 || (tz4=TZrules.Canada(18000,"E%sT"));
+      if (ux>=941320800) // from 1999 Oct 31  2:00
+         return tz3 || (tz3=TZrules.Canada(21600,"C%sT"));
+      if (ux>=-1546300800) // from 1921
+         return tz2 || (tz2=TZrules.NT_YK(18000,"E%sT"));
+      // trading post est.
+      return tz1 || (tz1=Rule.Timezone(0,"-00"));
+   }
+}
+
+class America_Port_of_Spain
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-1825098836) // from 1912 Mar 2
+         return tz2 || (tz2=Rule.Timezone(14400,"AST"));
+      return tz1 || (tz1=Rule.Timezone(14764,"LMT"));
+   }
+}
+constant America_Marigot=America_Port_of_Spain;
+constant America_St_Barthelemy=America_Port_of_Spain;
+
+class America_Rainy_River
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-880214400) // from 1942 Feb  9  2:00s
+         return tz2 || (tz2=TZrules.Canada(21600,"C%sT"));
+      if (ux>=-923292000) // from 1940 Sep 29
+         return tz3 || (tz3=Rule.Timezone(18000,"CDT"));
+      if (ux>=-2366732504) // from 1895
+         return tz2 || (tz2=TZrules.Canada(21600,"C%sT"));
+      return tz1 || (tz1=Rule.Timezone(22696,"LMT"));
+   }
+}
+
+class America_Rosario
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=952027200) // from 2000 Mar  3  0:00
+         return tz6 || (tz6=Rule.Timezone(10800,"-03"));
+      if (ux>=938919600) // from 1999 Oct  3  0:00
+         return tz4 || (tz4=TZrules.Arg(14400,"-04/-03"));
+      if (ux>=678315600) // from 1991 Jul
+         return tz6 || (tz6=Rule.Timezone(10800,"-03"));
+      if (ux>=-7617600) // from 1969 Oct  5
+         return tz5 || (tz5=TZrules.Arg(10800,"-03/-02"));
+      if (ux>=-1233432000) // from 1930 Dec
+         return tz4 || (tz4=TZrules.Arg(14400,"-04/-03"));
+      if (ux>=-1567453396) // from 1920 May
+         return tz3 || (tz3=Rule.Timezone(14400,"-04"));
+      if (ux>=-2372011040) // from 1894 Nov
+         return tz2 || (tz2=Rule.Timezone(15404,"CMT"));
+      return tz1 || (tz1=Rule.Timezone(14560,"LMT"));
+   }
+}
+
+class America_St_Kitts
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-1825098548) // from 1912 Mar  2
+         return tz2 || (tz2=Rule.Timezone(14400,"AST"));
+      // Basseterre
+      return tz1 || (tz1=Rule.Timezone(15052,"LMT"));
+   }
+}
+
+class America_St_Lucia
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-1830369360) // from 1912
+         return tz3 || (tz3=Rule.Timezone(14400,"AST"));
+      if (ux>=-2524506960) // from 1890 Castries Mean Time
+         return tz2 || (tz2=Rule.Timezone(14640,"CMT"));
+      // Castries
+      return tz1 || (tz1=Rule.Timezone(14640,"LMT"));
+   }
+}
+
+class America_St_Thomas
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-1846266016) // from 1911 Jul
+         return tz2 || (tz2=Rule.Timezone(14400,"AST"));
+      // Charlotte Amalie
+      return tz1 || (tz1=Rule.Timezone(15584,"LMT"));
+   }
+}
+constant America_Virgin=America_St_Thomas;
+
+class America_St_Vincent
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-1830369304) // from 1912
+         return tz3 || (tz3=Rule.Timezone(14400,"AST"));
+      if (ux>=-2524506904) // from 1890 Kingstown Mean Time
+         return tz2 || (tz2=Rule.Timezone(14696,"KMT"));
+      // Kingstown
+      return tz1 || (tz1=Rule.Timezone(14696,"LMT"));
+   }
+}
+
+class America_Thunder_Bay
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3,tz4,tz5;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=126212400) // from 1974
+         return tz4 || (tz4=TZrules.Canada(18000,"E%sT"));
+      if (ux>=-18000) // from 1970
+         return tz5 || (tz5=TZrules.Toronto(18000,"E%sT"));
+      if (ux>=-883594800) // from 1942
+         return tz4 || (tz4=TZrules.Canada(18000,"E%sT"));
+      if (ux>=-1893434400) // from 1910
+         return tz3 || (tz3=Rule.Timezone(18000,"EST"));
+      if (ux>=-2366733780) // from 1895
+         return tz2 || (tz2=Rule.Timezone(21600,"CST"));
+      return tz1 || (tz1=Rule.Timezone(21420,"LMT"));
+   }
+}
+
+class America_Tortola
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-1846266092) // from 1911 Jul
+         return tz2 || (tz2=Rule.Timezone(14400,"AST"));
+      // Road Town
+      return tz1 || (tz1=Rule.Timezone(15508,"LMT"));
+   }
+}
+
+class America_Yellowknife
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=315507600) // from 1980
+         return tz3 || (tz3=TZrules.Canada(25200,"M%sT"));
+      if (ux>=-1104537600) // from 1935
+         return tz2 || (tz2=TZrules.NT_YK(25200,"M%sT"));
+      // Yellowknife founded?
+      return tz1 || (tz1=Rule.Timezone(0,"-00"));
+   }
+}
+
+class Antarctica_DumontDUrville
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-415497600) // from 1956 Nov
+         return tz2 || (tz2=Rule.Timezone(-36000,"+10"));
+      if (ux>=-566992800) // from 1952 Jan 14
+         return tz1 || (tz1=Rule.Timezone(0,"-00"));
+      if (ux>=-725846400) // from 1947
+         return tz2 || (tz2=Rule.Timezone(-36000,"+10"));
+      return tz1 || (tz1=Rule.Timezone(0,"-00"));
+   }
+}
+
+class Antarctica_McMurdo
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-441849600) // from 1956
+         return tz2 || (tz2=TZrules.NZ(-43200,"NZ%sT"));
+      return tz1 || (tz1=Rule.Timezone(0,"-00"));
+   }
+}
+constant Antarctica_South_Pole=Antarctica_McMurdo;
+
+class Antarctica_Syowa
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-407808000) // from 1957 Jan 29
+         return tz2 || (tz2=Rule.Timezone(-10800,"+03"));
+      return tz1 || (tz1=Rule.Timezone(0,"-00"));
+   }
+}
+
+class Asia_Aden
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-631162794) // from 1950
+         return tz2 || (tz2=Rule.Timezone(-10800,"+03"));
+      return tz1 || (tz1=Rule.Timezone(-10794,"LMT"));
+   }
+}
+
+class Asia_Bahrain
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3,tz4;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=76190400) // from 1972 Jun
+         return tz4 || (tz4=Rule.Timezone(-10800,"+03"));
+      if (ux>=-820553400) // from 1944 Jan  1
+         return tz3 || (tz3=Rule.Timezone(-14400,"+04"));
+      if (ux>=-897880940) // from 1941 Jul 20
+         return tz2 || (tz2=Rule.Timezone(-12600,"+0330"));
+      // Manamah
+      return tz1 || (tz1=Rule.Timezone(-12140,"LMT"));
+   }
+}
+
+class Asia_Brunei
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-1167636600) // from 1933
+         return tz3 || (tz3=Rule.Timezone(-28800,"+08"));
+      if (ux>=-1383464380) // from 1926 Mar
+         return tz2 || (tz2=Rule.Timezone(-27000,"+0730"));
+      // Bandar Seri Begawan
+      return tz1 || (tz1=Rule.Timezone(-27580,"LMT"));
+   }
+}
+
+class Asia_Chongqing
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=325962000) // from 1980 May
+         return tz3 || (tz3=TZrules.PRC(-28800,"C%sT"));
+      if (ux>=-1325487980) // from 1928
+         return tz2 || (tz2=Rule.Timezone(-25200,"+07"));
+      // or Chungking
+      return tz1 || (tz1=Rule.Timezone(-25580,"LMT"));
+   }
+}
+constant Asia_Chungking=Asia_Chongqing;
+
+class Asia_Hanoi
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3,tz4,tz5;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-481363200) // from 1954 Oct
+         return tz3 || (tz3=Rule.Timezone(-25200,"+07"));
+      if (ux>=-718095600) // from 1947 Apr  1
+         return tz4 || (tz4=Rule.Timezone(-28800,"+08"));
+      if (ux>=-767869200) // from 1945 Sep  2
+         return tz3 || (tz3=Rule.Timezone(-25200,"+07"));
+      if (ux>=-782643600) // from 1945 Mar 14 23:00
+         return tz5 || (tz5=Rule.Timezone(-32400,"+09"));
+      if (ux>=-852105600) // from 1942 Dec 31 23:00
+         return tz4 || (tz4=Rule.Timezone(-28800,"+08"));
+      if (ux>=-1851577590) // from 1911 May  1
+         return tz3 || (tz3=Rule.Timezone(-25200,"+07"));
+      if (ux>=-2004073404) // from 1906 Jul  1
+         return tz2 || (tz2=Rule.Timezone(-25590,"PLMT"));
+      return tz1 || (tz1=Rule.Timezone(-25404,"LMT"));
+   }
+}
+
+class Asia_Harbin
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3,tz4,tz5;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=325956600) // from 1980 May
+         return tz5 || (tz5=TZrules.PRC(-28800,"C%sT"));
+      if (ux>=-115894800) // from 1966 May
+         return tz2 || (tz2=Rule.Timezone(-30600,"+0830"));
+      if (ux>=-946800000) // from 1940
+         return tz4 || (tz4=Rule.Timezone(-32400,"+09"));
+      if (ux>=-1194078600) // from 1932 Mar
+         return tz3 || (tz3=Rule.Timezone(-28800,"CST"));
+      if (ux>=-1325492804) // from 1928
+         return tz2 || (tz2=Rule.Timezone(-30600,"+0830"));
+      // or Haerbin
+      return tz1 || (tz1=Rule.Timezone(-30404,"LMT"));
+   }
+}
+
+class Asia_Kashgar
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3,tz4;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=325969200) // from 1980 May
+         return tz4 || (tz4=TZrules.PRC(-28800,"C%sT"));
+      if (ux>=-946791000) // from 1940
+         return tz3 || (tz3=Rule.Timezone(-18000,"+05"));
+      if (ux>=-1325480636) // from 1928
+         return tz2 || (tz2=Rule.Timezone(-19800,"+0530"));
+      // or Kashi or Kaxgar
+      return tz1 || (tz1=Rule.Timezone(-18236,"LMT"));
+   }
+}
+
+class Asia_Kuala_Lumpur
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6,tz7;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=378662400) // from 1981 Dec 31 16:00u
+         return tz7 || (tz7=Rule.Timezone(-28800,"+08"));
+      if (ux>=-767005200) // from 1945 Sep 12
+         return tz5 || (tz5=Rule.Timezone(-27000,"+0730"));
+      if (ux>=-879665400) // from 1942 Feb 16
+         return tz6 || (tz6=Rule.Timezone(-32400,"+09"));
+      if (ux>=-894180000) // from 1941 Sep  1
+         return tz5 || (tz5=Rule.Timezone(-27000,"+0730"));
+      if (ux>=-1073028000) // from 1936 Jan  1
+         return tz4 || (tz4=Rule.Timezone(-26400,"+0720"));
+      if (ux>=-1167634800) // from 1933 Jan  1
+         return tz4 || (tz4=Rule.Timezone(-26400,"+0720"));
+      if (ux>=-2038200925) // from 1905 Jun  1
+         return tz3 || (tz3=Rule.Timezone(-25200,"+07"));
+      if (ux>=-2177477206) // from 1901 Jan  1 Singapore M.T.
+         return tz2 || (tz2=Rule.Timezone(-24925,"SMT"));
+      return tz1 || (tz1=Rule.Timezone(-24406,"LMT"));
+   }
+}
+
+class Asia_Kuwait
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-631163516) // from 1950
+         return tz2 || (tz2=Rule.Timezone(-10800,"+03"));
+      return tz1 || (tz1=Rule.Timezone(-11516,"LMT"));
+   }
+}
+
+class Asia_Muscat
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-1577937264) // from 1920
+         return tz2 || (tz2=Rule.Timezone(-14400,"+04"));
+      return tz1 || (tz1=Rule.Timezone(-14064,"LMT"));
+   }
+}
+
+class Asia_Phnom_Penh
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3,tz4,tz5;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-767869200) // from 1945 Sep  2
+         return tz3 || (tz3=Rule.Timezone(-25200,"+07"));
+      if (ux>=-782643600) // from 1945 Mar 14 23:00
+         return tz5 || (tz5=Rule.Timezone(-32400,"+09"));
+      if (ux>=-852105600) // from 1942 Dec 31 23:00
+         return tz4 || (tz4=Rule.Timezone(-28800,"+08"));
+      if (ux>=-1851577590) // from 1911 May  1
+         return tz3 || (tz3=Rule.Timezone(-25200,"+07"));
+      if (ux>=-2004073180) // from 1906 Jul  1
+         return tz2 || (tz2=Rule.Timezone(-25590,"PLMT"));
+      return tz1 || (tz1=Rule.Timezone(-25180,"LMT"));
+   }
+}
+
+class Asia_Tel_Aviv
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-1641003660) // from 1918
+         return tz3 || (tz3=TZrules.Zion(-7200,"I%sT"));
+      if (ux>=-2840149144) // from 1880
+         return tz2 || (tz2=Rule.Timezone(-8460,"JMT"));
+      return tz1 || (tz1=Rule.Timezone(-8344,"LMT"));
+   }
+}
+
+class Asia_Vientiane
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3,tz4,tz5;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-464428800) // from 1955 Apr 15
+         return tz3 || (tz3=Rule.Timezone(-25200,"+07"));
+      if (ux>=-718095600) // from 1947 Apr  1
+         return tz4 || (tz4=Rule.Timezone(-28800,"+08"));
+      if (ux>=-767869200) // from 1945 Sep  2
+         return tz3 || (tz3=Rule.Timezone(-25200,"+07"));
+      if (ux>=-782643600) // from 1945 Mar 14 23:00
+         return tz5 || (tz5=Rule.Timezone(-32400,"+09"));
+      if (ux>=-852105600) // from 1942 Dec 31 23:00
+         return tz4 || (tz4=Rule.Timezone(-28800,"+08"));
+      if (ux>=-1851577590) // from 1911 May  1
+         return tz3 || (tz3=Rule.Timezone(-25200,"+07"));
+      if (ux>=-2004072624) // from 1906 Jul  1
+         return tz2 || (tz2=Rule.Timezone(-25590,"PLMT"));
+      return tz1 || (tz1=Rule.Timezone(-24624,"LMT"));
+   }
+}
+
+class Atlantic_Reykjavik
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-54770400) // from 1968 Apr  7  1:00s
+         return tz3 || (tz3=Rule.Timezone(0,"GMT"));
+      if (ux>=-1956609120) // from 1908
+         return tz2 || (tz2=TZrules.Iceland(3600,"-01/+00"));
+      return tz1 || (tz1=Rule.Timezone(5280,"LMT"));
+   }
+}
+constant Iceland=Atlantic_Reykjavik;
+
+class Atlantic_St_Helena
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-599614632) // from 1951
+         return tz3 || (tz3=Rule.Timezone(0,"GMT"));
+      if (ux>=-2524520232) // from 1890 Jamestown Mean Time
+         return tz2 || (tz2=Rule.Timezone(1368,"JMT"));
+      // Jamestown
+      return tz1 || (tz1=Rule.Timezone(1368,"LMT"));
+   }
+}
+
+class Australia_Currie
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-38239200) // from 1968 Oct 15
+         return tz2 || (tz2=TZrules.AT(-36000,"AE%sT"));
+      if (ux>=-1583848800) // from 1919 Oct 24
+         return tz3 || (tz3=TZrules.Aus(-36000,"AE%sT"));
+      if (ux>=-2345794528) // from 1895 Sep
+         return tz2 || (tz2=TZrules.AT(-36000,"AE%sT"));
+      return tz1 || (tz1=Rule.Timezone(-34528,"LMT"));
+   }
+}
+
+class Europe_Amsterdam
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=220928400) // from 1977
+         return tz6 || (tz6=TZrules.EU(-3600,"CE%sT"));
+      if (ux>=-781045200) // from 1945 Apr  2  2:00
+         return tz5 || (tz5=TZrules.Neth(-3600,"CE%sT"));
+      if (ux>=-935019600) // from 1940 May 16  0:00
+         return tz4 || (tz4=TZrules.C_Eur(-3600,"CE%sT"));
+      if (ux>=-1025736028) // from 1937 Jul  1
+         return tz3 || (tz3=TZrules.Neth(-1200,"+0020/+0120"));
+      if (ux>=-4260212372) // from 1835
+         return tz2 || (tz2=TZrules.Neth(-1172,"%s"));
+      return tz1 || (tz1=Rule.Timezone(-1172,"LMT"));
+   }
+}
+
+class Europe_Belfast
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=820454400) // from 1996
+         return tz6 || (tz6=TZrules.EU(0,"GMT/BST"));
+      if (ux>=57722400) // from 1971 Oct 31  2:00u
+         return tz4 || (tz4=TZrules.GB_Eire(0,"%s"));
+      if (ux>=-37234800) // from 1968 Oct 27
+         return tz5 || (tz5=Rule.Timezone(-3600,"BST"));
+      if (ux>=-1680471279) // from 1916 Oct  1  2:00s
+         return tz4 || (tz4=TZrules.GB_Eire(0,"%s"));
+      if (ux>=-1691962479) // from 1916 May 21  2:00
+         return tz3 || (tz3=Rule.Timezone(-2079,"IST"));
+      if (ux>=-2821649780) // from 1880 Aug  2
+         return tz2 || (tz2=Rule.Timezone(1521,"DMT"));
+      return tz1 || (tz1=Rule.Timezone(1420,"LMT"));
+   }
+}
+
+class Europe_Copenhagen
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3,tz4,tz5;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=315536400) // from 1980
+         return tz5 || (tz5=TZrules.EU(-3600,"CE%sT"));
+      if (ux>=-781045200) // from 1945 Apr  2  2:00
+         return tz3 || (tz3=TZrules.Denmark(-3600,"CE%sT"));
+      if (ux>=-857257200) // from 1942 Nov  2  2:00s
+         return tz4 || (tz4=TZrules.C_Eur(-3600,"CE%sT"));
+      if (ux>=-2398294220) // from 1894 Jan  1
+         return tz3 || (tz3=TZrules.Denmark(-3600,"CE%sT"));
+      if (ux>=-2524524620) // from 1890 Copenhagen MT
+         return tz2 || (tz2=Rule.Timezone(-3020,"CMT"));
+      return tz1 || (tz1=Rule.Timezone(-3020,"LMT"));
+   }
+}
+
+class Europe_Guernsey
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3,tz4,tz5;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=820454400) // from 1996
+         return tz5 || (tz5=TZrules.EU(0,"GMT/BST"));
+      if (ux>=57722400) // from 1971 Oct 31  2:00u
+         return tz2 || (tz2=TZrules.GB_Eire(0,"%s"));
+      if (ux>=-37234800) // from 1968 Oct 27
+         return tz4 || (tz4=Rule.Timezone(-3600,"BST"));
+      if (ux>=-777938400) // from 1945 May  8
+         return tz2 || (tz2=TZrules.GB_Eire(0,"%s"));
+      if (ux>=-930956400) // from 1940 Jul  2
+         return tz3 || (tz3=TZrules.C_Eur(-3600,"CE%sT"));
+      if (ux>=-1784245791) // from 1913 Jun 18
+         return tz2 || (tz2=TZrules.GB_Eire(0,"%s"));
+      return tz1 || (tz1=Rule.Timezone(609,"LMT"));
+   }
+}
+
+class Europe_Isle_of_Man
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3,tz4;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=820454400) // from 1996
+         return tz4 || (tz4=TZrules.EU(0,"GMT/BST"));
+      if (ux>=57722400) // from 1971 Oct 31  2:00u
+         return tz2 || (tz2=TZrules.GB_Eire(0,"%s"));
+      if (ux>=-37234800) // from 1968 Oct 27
+         return tz3 || (tz3=Rule.Timezone(-3600,"BST"));
+      if (ux>=-2737842125) // from 1883 Mar 30  0:00s
+         return tz2 || (tz2=TZrules.GB_Eire(0,"%s"));
+      return tz1 || (tz1=Rule.Timezone(1075,"LMT"));
+   }
+}
+
+class Europe_Jersey
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3,tz4,tz5;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=820454400) // from 1996
+         return tz5 || (tz5=TZrules.EU(0,"GMT/BST"));
+      if (ux>=57722400) // from 1971 Oct 31  2:00u
+         return tz2 || (tz2=TZrules.GB_Eire(0,"%s"));
+      if (ux>=-37234800) // from 1968 Oct 27
+         return tz4 || (tz4=Rule.Timezone(-3600,"BST"));
+      if (ux>=-777938400) // from 1945 May  8
+         return tz2 || (tz2=TZrules.GB_Eire(0,"%s"));
+      if (ux>=-930956400) // from 1940 Jul  2
+         return tz3 || (tz3=TZrules.C_Eur(-3600,"CE%sT"));
+      if (ux>=-2258092800) // from 1898 Jun 11 16:00u
+         return tz2 || (tz2=TZrules.GB_Eire(0,"%s"));
+      return tz1 || (tz1=Rule.Timezone(506,"LMT"));
+   }
+}
+
+class Europe_Ljubljana
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3,tz4,tz5;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=407199600) // from 1982 Nov 27
+         return tz5 || (tz5=TZrules.EU(-3600,"CE%sT"));
+      if (ux>=-766623600) // from 1945 Sep 16  2:00s
+         return tz2 || (tz2=Rule.Timezone(-3600,"CET"));
+      if (ux>=-777942000) // from 1945 May  8  2:00s
+         return tz4 || (tz4=Rule.Timezone(-7200,"CEST"));
+      if (ux>=-905824800) // from 1941 Apr 18 23:00
+         return tz3 || (tz3=TZrules.C_Eur(-3600,"CE%sT"));
+      if (ux>=-2713913884) // from 1884
+         return tz2 || (tz2=Rule.Timezone(-3600,"CET"));
+      return tz1 || (tz1=Rule.Timezone(-3484,"LMT"));
+   }
+}
+
+class Europe_Luxembourg
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6,tz7;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=220928400) // from 1977
+         return tz7 || (tz7=TZrules.EU(-3600,"CE%sT"));
+      if (ux>=-797972400) // from 1944 Sep 18  3:00
+         return tz6 || (tz6=TZrules.Belgium(-3600,"CE%sT"));
+      if (ux>=-935179200) // from 1940 May 14  3:00
+         return tz5 || (tz5=TZrules.C_Eur(-3600,"WE%sT"));
+      if (ux>=-1269813600) // from 1929 Oct  6  2:00s
+         return tz4 || (tz4=TZrules.Belgium(0,"WE%sT"));
+      if (ux>=-1612652400) // from 1918 Nov 25
+         return tz3 || (tz3=TZrules.Lux(0,"WE%sT"));
+      if (ux>=-2069713476) // from 1904 Jun
+         return tz2 || (tz2=TZrules.Lux(-3600,"CE%sT"));
+      return tz1 || (tz1=Rule.Timezone(-1476,"LMT"));
+   }
+}
+
+class Europe_Monaco
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3,tz4,tz5;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=220928400) // from 1977
+         return tz5 || (tz5=TZrules.EU(-3600,"CE%sT"));
+      if (ux>=-766609200) // from 1945 Sep 16  3:00
+         return tz4 || (tz4=TZrules.France(-3600,"CE%sT"));
+      if (ux>=-1854403761) // from 1911 Mar 29
+         return tz3 || (tz3=TZrules.France(0,"WE%sT"));
+      if (ux>=-2448318572) // from 1892 Jun  1 Paris Mean Time
+         return tz2 || (tz2=Rule.Timezone(-561,"PMT"));
+      return tz1 || (tz1=Rule.Timezone(-1772,"LMT"));
+   }
+}
+
+class Europe_Oslo
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3,tz4;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=315536400) // from 1980
+         return tz4 || (tz4=TZrules.EU(-3600,"CE%sT"));
+      if (ux>=-781045200) // from 1945 Apr  2  2:00
+         return tz2 || (tz2=TZrules.Norway(-3600,"CE%sT"));
+      if (ux>=-927504000) // from 1940 Aug 10 23:00
+         return tz3 || (tz3=TZrules.C_Eur(-3600,"CE%sT"));
+      if (ux>=-2366757780) // from 1895 Jan  1
+         return tz2 || (tz2=TZrules.Norway(-3600,"CE%sT"));
+      return tz1 || (tz1=Rule.Timezone(-2580,"LMT"));
+   }
+}
+constant Arctic_Longyearbyen=Europe_Oslo;
+
+class Europe_Sarajevo
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3,tz4,tz5;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=407199600) // from 1982 Nov 27
+         return tz5 || (tz5=TZrules.EU(-3600,"CE%sT"));
+      if (ux>=-766623600) // from 1945 Sep 16  2:00s
+         return tz2 || (tz2=Rule.Timezone(-3600,"CET"));
+      if (ux>=-777942000) // from 1945 May  8  2:00s
+         return tz4 || (tz4=Rule.Timezone(-7200,"CEST"));
+      if (ux>=-905824800) // from 1941 Apr 18 23:00
+         return tz3 || (tz3=TZrules.C_Eur(-3600,"CE%sT"));
+      if (ux>=-2713914820) // from 1884
+         return tz2 || (tz2=Rule.Timezone(-3600,"CET"));
+      return tz1 || (tz1=Rule.Timezone(-4420,"LMT"));
+   }
+}
+
+class Europe_Skopje
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3,tz4,tz5;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=407199600) // from 1982 Nov 27
+         return tz5 || (tz5=TZrules.EU(-3600,"CE%sT"));
+      if (ux>=-766623600) // from 1945 Sep 16  2:00s
+         return tz2 || (tz2=Rule.Timezone(-3600,"CET"));
+      if (ux>=-777942000) // from 1945 May  8  2:00s
+         return tz4 || (tz4=Rule.Timezone(-7200,"CEST"));
+      if (ux>=-905824800) // from 1941 Apr 18 23:00
+         return tz3 || (tz3=TZrules.C_Eur(-3600,"CE%sT"));
+      if (ux>=-2713915544) // from 1884
+         return tz2 || (tz2=Rule.Timezone(-3600,"CET"));
+      return tz1 || (tz1=Rule.Timezone(-5144,"LMT"));
+   }
+}
+
+class Europe_Stockholm
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3,tz4,tz5;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=315529200) // from 1980
+         return tz5 || (tz5=TZrules.EU(-3600,"CE%sT"));
+      if (ux>=-1680483600) // from 1916 Oct  1  1:00
+         return tz3 || (tz3=Rule.Timezone(-3600,"CET"));
+      if (ux>=-1692496800) // from 1916 May 14 23:00
+         return tz4 || (tz4=Rule.Timezone(-7200,"CEST"));
+      if (ux>=-2208992414) // from 1900 Jan  1
+         return tz3 || (tz3=Rule.Timezone(-3600,"CET"));
+      if (ux>=-2871681132) // from 1879 Jan  1 Swedish Time
+         return tz2 || (tz2=Rule.Timezone(-3614,"SET"));
+      return tz1 || (tz1=Rule.Timezone(-4332,"LMT"));
+   }
+}
+
+class Europe_Tiraspol
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6,tz7,tz8;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=695793600) // from 1992 Jan 19  2:00
+         return tz7 || (tz7=TZrules.Russia(-10800,"MSK/MSD"));
+      if (ux>=670395600) // from 1991 Mar 31  2:00
+         return tz8 || (tz8=TZrules.Russia(-7200,"EE%sT"));
+      if (ux>=-800143200) // from 1944 Aug 24
+         return tz7 || (tz7=TZrules.Russia(-10800,"MSK/MSD"));
+      if (ux>=-898138800) // from 1941 Jul 17
+         return tz6 || (tz6=TZrules.C_Eur(-3600,"CE%sT"));
+      if (ux>=-927151200) // from 1940 Aug 15
+         return tz5 || (tz5=Rule.Timezone(-10800,"EEST"));
+      if (ux>=-1213148664) // from 1931 Jul 24
+         return tz4 || (tz4=TZrules.Romania(-7200,"EE%sT"));
+      if (ux>=-1637114100) // from 1918 Feb 15 Bucharest MT
+         return tz3 || (tz3=Rule.Timezone(-6264,"BMT"));
+      if (ux>=-2840147912) // from 1880 Chisinau MT
+         return tz2 || (tz2=Rule.Timezone(-6900,"CMT"));
+      return tz1 || (tz1=Rule.Timezone(-7112,"LMT"));
+   }
+}
+
+class Europe_Uzhgorod
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6,tz7,tz8,tz9;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=831956400) // from 1996 May 13
+         return tz9 || (tz9=TZrules.EU(-7200,"EE%sT"));
+      if (ux>=701042400) // from 1992 Mar 20
+         return tz8 || (tz8=TZrules.C_Eur(-7200,"EE%sT"));
+      if (ux>=670384800) // from 1991 Mar 31  3:00
+         return tz7 || (tz7=Rule.Timezone(-7200,"EET"));
+      if (ux>=646786800) // from 1990 Jul  1  2:00
+         return tz2 || (tz2=Rule.Timezone(-3600,"CET"));
+      if (ux>=631162800) // from 1990
+         return tz6 || (tz6=Rule.Timezone(-10800,"MSK"));
+      if (ux>=-773456400) // from 1945 Jun 29
+         return tz5 || (tz5=TZrules.Russia(-10800,"MSK/MSD"));
+      if (ux>=-794714400) // from 1944 Oct 26
+         return tz2 || (tz2=Rule.Timezone(-3600,"CET"));
+      if (ux>=-796860000) // from 1944 Oct
+         return tz4 || (tz4=Rule.Timezone(-7200,"CEST"));
+      if (ux>=-946774800) // from 1940
+         return tz3 || (tz3=TZrules.C_Eur(-3600,"CE%sT"));
+      if (ux>=-2500939752) // from 1890 Oct
+         return tz2 || (tz2=Rule.Timezone(-3600,"CET"));
+      return tz1 || (tz1=Rule.Timezone(-5352,"LMT"));
+   }
+}
+
+class Europe_Vaduz
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=347158800) // from 1981
+         return tz3 || (tz3=TZrules.EU(-3600,"CE%sT"));
+      if (ux>=-2385247084) // from 1894 Jun
+         return tz2 || (tz2=TZrules.Swiss(-3600,"CE%sT"));
+      return tz1 || (tz1=Rule.Timezone(-2284,"LMT"));
+   }
+}
+
+class Europe_Zagreb
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3,tz4,tz5;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=407199600) // from 1982 Nov 27
+         return tz5 || (tz5=TZrules.EU(-3600,"CE%sT"));
+      if (ux>=-766623600) // from 1945 Sep 16  2:00s
+         return tz2 || (tz2=Rule.Timezone(-3600,"CET"));
+      if (ux>=-777942000) // from 1945 May  8  2:00s
+         return tz4 || (tz4=Rule.Timezone(-7200,"CEST"));
+      if (ux>=-905824800) // from 1941 Apr 18 23:00
+         return tz3 || (tz3=TZrules.C_Eur(-3600,"CE%sT"));
+      if (ux>=-2713914232) // from 1884
+         return tz2 || (tz2=Rule.Timezone(-3600,"CET"));
+      return tz1 || (tz1=Rule.Timezone(-3832,"LMT"));
+   }
+}
+
+class Europe_Zaporozhye
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3,tz4,tz5,tz6,tz7,tz8,tz9;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=831956400) // from 1996 May 13
+         return tz9 || (tz9=TZrules.EU(-7200,"EE%sT"));
+      if (ux>=701056800) // from 1992 Mar 20
+         return tz8 || (tz8=TZrules.C_Eur(-7200,"EE%sT"));
+      if (ux>=670395600) // from 1991 Mar 31  2:00
+         return tz7 || (tz7=TZrules.E_Eur(-7200,"EE%sT"));
+      if (ux>=-826412400) // from 1943 Oct 25
+         return tz6 || (tz6=TZrules.Russia(-10800,"MSK/MSD"));
+      if (ux>=-894769200) // from 1941 Aug 25
+         return tz5 || (tz5=TZrules.C_Eur(-3600,"CE%sT"));
+      if (ux>=-1247536800) // from 1930 Jun 21
+         return tz4 || (tz4=Rule.Timezone(-10800,"MSK"));
+      if (ux>=-1441160400) // from 1924 May  2
+         return tz3 || (tz3=Rule.Timezone(-7200,"EET"));
+      if (ux>=-2840149240) // from 1880
+         return tz2 || (tz2=Rule.Timezone(-8400,"+0220"));
+      return tz1 || (tz1=Rule.Timezone(-8440,"LMT"));
+   }
+}
+
+class Indian_Antananarivo
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-492062400) // from 1954 May 29 23:00s
+         return tz2 || (tz2=Rule.Timezone(-10800,"EAT"));
+      if (ux>=-499924800) // from 1954 Feb 27 23:00s
+         return tz3 || (tz3=Rule.Timezone(-14400,"EAST"));
+      if (ux>=-1846293004) // from 1911 Jul
+         return tz2 || (tz2=Rule.Timezone(-10800,"EAT"));
+      return tz1 || (tz1=Rule.Timezone(-11404,"LMT"));
+   }
+}
+
+class Indian_Christmas
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-2364102172) // from 1895 Feb
+         return tz2 || (tz2=Rule.Timezone(-25200,"+07"));
+      return tz1 || (tz1=Rule.Timezone(-25372,"LMT"));
+   }
+}
+
+class Indian_Cocos
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-2209012060) // from 1900
+         return tz2 || (tz2=Rule.Timezone(-23400,"+0630"));
+      return tz1 || (tz1=Rule.Timezone(-23260,"LMT"));
+   }
+}
+
+class Indian_Comoro
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-1846291984) // from 1911 Jul
+         return tz2 || (tz2=Rule.Timezone(-10800,"EAT"));
+      // Moroni, Gran Comoro
+      return tz1 || (tz1=Rule.Timezone(-10384,"LMT"));
+   }
+}
+
+class Indian_Kerguelen
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-631152000) // from 1950
+         return tz2 || (tz2=Rule.Timezone(-18000,"+05"));
+      // Port-aux-Français
+      return tz1 || (tz1=Rule.Timezone(0,"-00"));
+   }
+}
+
+class Indian_Mahe
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-1988163708) // from 1907 Jan  1
+         return tz2 || (tz2=Rule.Timezone(-14400,"+04"));
+      // Victoria
+      return tz1 || (tz1=Rule.Timezone(-13308,"LMT"));
+   }
+}
+
+class Indian_Mayotte
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-1846292456) // from 1911 Jul
+         return tz2 || (tz2=Rule.Timezone(-10800,"EAT"));
+      // Mamoutzou
+      return tz1 || (tz1=Rule.Timezone(-10856,"LMT"));
+   }
+}
+
+class Indian_Reunion
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-1848886912) // from 1911 Jun
+         return tz2 || (tz2=Rule.Timezone(-14400,"+04"));
+      // Saint-Denis
+      return tz1 || (tz1=Rule.Timezone(-13312,"LMT"));
+   }
+}
+
+class Pacific_Chuuk
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3,tz4;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-770634000) // from 1945 Aug
+         return tz3 || (tz3=Rule.Timezone(-36000,"+10"));
+      if (ux>=-907408800) // from 1941 Apr  1
+         return tz4 || (tz4=Rule.Timezone(-32400,"+09"));
+      if (ux>=-1606813200) // from 1919 Feb  1
+         return tz3 || (tz3=Rule.Timezone(-36000,"+10"));
+      if (ux>=-1743674400) // from 1914 Oct
+         return tz4 || (tz4=Rule.Timezone(-32400,"+09"));
+      if (ux>=-2177489228) // from 1901
+         return tz3 || (tz3=Rule.Timezone(-36000,"+10"));
+      if (ux>=-3944628428) // from 1844 Dec 31
+         return tz2 || (tz2=Rule.Timezone(-36428,"LMT"));
+      return tz1 || (tz1=Rule.Timezone(49972,"LMT"));
+   }
+}
+constant Pacific_Truk=Pacific_Chuuk;
+constant Pacific_Yap=Pacific_Chuuk;
+
+class Pacific_Enderbury
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-880200000) // from 1942 Feb  9
+         return tz1 || (tz1=Rule.Timezone(0,"-00"));
+      if (ux>=-1004313600) // from 1938 Mar  6
+         return tz3 || (tz3=Rule.Timezone(43200,"-12"));
+      if (ux>=-2682246940) // from 1885
+         return tz1 || (tz1=Rule.Timezone(0,"-00"));
+      if (ux>=-3471292800) // from 1860
+         return tz2 || (tz2=Rule.Timezone(41060,"LMT"));
+      return tz1 || (tz1=Rule.Timezone(0,"-00"));
+   }
+}
+
+class Pacific_Funafuti
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-2177495812) // from 1901
+         return tz2 || (tz2=Rule.Timezone(-43200,"+12"));
+      return tz1 || (tz1=Rule.Timezone(-43012,"LMT"));
+   }
+}
+
+class Pacific_Majuro
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3,tz4,tz5;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-7988400) // from 1969 Oct
+         return tz5 || (tz5=Rule.Timezone(-43200,"+12"));
+      if (ux>=-818067600) // from 1944 Jan 30
+         return tz2 || (tz2=Rule.Timezone(-39600,"+11"));
+      if (ux>=-907408800) // from 1941 Apr  1
+         return tz3 || (tz3=Rule.Timezone(-32400,"+09"));
+      if (ux>=-1041418800) // from 1937
+         return tz4 || (tz4=Rule.Timezone(-36000,"+10"));
+      if (ux>=-1606813200) // from 1919 Feb  1
+         return tz2 || (tz2=Rule.Timezone(-39600,"+11"));
+      if (ux>=-1743678000) // from 1914 Oct
+         return tz3 || (tz3=Rule.Timezone(-32400,"+09"));
+      if (ux>=-2177493888) // from 1901
+         return tz2 || (tz2=Rule.Timezone(-39600,"+11"));
+      return tz1 || (tz1=Rule.Timezone(-41088,"LMT"));
+   }
+}
+
+class Pacific_Midway
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3,tz4;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-420645600) // from 1956 Sep  2 S=Samoa
+         return tz4 || (tz4=Rule.Timezone(39600,"SST"));
+      if (ux>=-428504400) // from 1956 Jun  3
+         return tz3 || (tz3=Rule.Timezone(36000,"-10"));
+      if (ux>=-2177410232) // from 1901
+         return tz2 || (tz2=Rule.Timezone(39600,"-11"));
+      return tz1 || (tz1=Rule.Timezone(42568,"LMT"));
+   }
+}
+
+class Pacific_Pohnpei
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3,tz4,tz5;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-770634000) // from 1945 Aug
+         return tz3 || (tz3=Rule.Timezone(-39600,"+11"));
+      if (ux>=-907408800) // from 1941 Apr  1
+         return tz4 || (tz4=Rule.Timezone(-32400,"+09"));
+      if (ux>=-1041418800) // from 1937
+         return tz5 || (tz5=Rule.Timezone(-36000,"+10"));
+      if (ux>=-1606813200) // from 1919 Feb  1
+         return tz3 || (tz3=Rule.Timezone(-39600,"+11"));
+      if (ux>=-1743678000) // from 1914 Oct
+         return tz4 || (tz4=Rule.Timezone(-32400,"+09"));
+      if (ux>=-2177490772) // from 1901
+         return tz3 || (tz3=Rule.Timezone(-39600,"+11"));
+      if (ux>=-3944629972) // from 1844 Dec 31
+         return tz2 || (tz2=Rule.Timezone(-37972,"LMT"));
+      // Kolonia
+      return tz1 || (tz1=Rule.Timezone(48428,"LMT"));
+   }
+}
+constant Pacific_Ponape=Pacific_Pohnpei;
+
+class Pacific_Saipan
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2,tz3,tz4,tz5;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=977565600) // from 2000 Dec 23 Chamorro Standard Time
+         return tz5 || (tz5=Rule.Timezone(-36000,"ChST"));
+      if (ux>=-804157200) // from 1944 Jul  9
+         return tz4 || (tz4=TZrules.Guam(-36000,"G%sT"));
+      if (ux>=-2177487780) // from 1901
+         return tz3 || (tz3=Rule.Timezone(-32400,"+09"));
+      if (ux>=-3944626980) // from 1844 Dec 31
+         return tz2 || (tz2=Rule.Timezone(-34980,"LMT"));
+      return tz1 || (tz1=Rule.Timezone(51420,"LMT"));
+   }
+}
+
+class Pacific_Wake
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-2177492788) // from 1901
+         return tz2 || (tz2=Rule.Timezone(-43200,"+12"));
+      return tz1 || (tz1=Rule.Timezone(-39988,"LMT"));
+   }
+}
+
+class Pacific_Wallis
+{
+   inherit TZHistory;
+   Rule.Timezone tz1,tz2;
+   Rule.Timezone whatrule(int ux)
+   {
+      if (ux>=-2177496920) // from 1901
+         return tz2 || (tz2=Rule.Timezone(-43200,"+12"));
+      return tz1 || (tz1=Rule.Timezone(-44120,"LMT"));
    }
 }
 

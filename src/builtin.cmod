@@ -2911,6 +2911,15 @@ PIKEFUN program|zero function_program(program|function func)
   push_int(0);
 }
 
+#ifdef PIKE_DEBUG
+PIKEFUN void __dump_program_tables(program p)
+  efun;
+{
+  dump_program_tables(p, 0);
+  pop_n_elems(args);
+}
+#endif
+
 /*! @class RandomInterface
  */
 PIKECLASS RandomInterface
