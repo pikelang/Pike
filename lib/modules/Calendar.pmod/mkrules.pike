@@ -513,20 +513,32 @@ class Zone (string id)
 	 int until = (a[5] == "forever")?0x7fffffff:(int)a[5];
 	 foreach(a[2]/"/", string fmt) {
 	    MyRule rule = global::rules[a[1]];
-	    if (rule) {
-	       foreach(indices(rule->symbols), string sym) {
-		  if ((sizeof(sym) > 2) && (fmt != "%s")) continue;
-		  add_abbr(sprintf(fmt, sym), id, until);
-	       }
-	    } else if (a[1] == "Romania") {
+            multiset(string) symbols = rule && rule->symbols;
+            if (!rule) {
 	       // Kludge for forward reference in tzdata2012c/europe
 	       // for Europe/Chisinau to the Romania rule.
-	       foreach(({ "", "S" }), string sym) {
+              symbols = ([
+                "Romania": (< "", "S" >),
+              ])[a[1]];
+            }
+            if (has_value(fmt, "%s")) {
+               if (!symbols) {
+                  werror("Warning: Rule %O not found (yet).\n", a[1]);
+                  symbols = (< "" >);
+               }
+               foreach(indices(symbols), string sym) {
+                  if (fmt == "%s") {
+                     // Heuristic: sym should be a full abbreviation.
+                     if (sizeof(sym) < 3) continue;
+                  } else {
+                     // Heuristic: sym should be a DST or similar abbreviation.
+                     if (sizeof(sym) > 2) continue;
+                  }
 		  add_abbr(sprintf(fmt, sym), id, until);
 	       }
-	    } else {
+            } else {
 	       add_abbr(fmt, id, until);
-	    }
+            }
 	 }
       }
 
@@ -754,31 +766,26 @@ int main(int ac,array(string) am)
       werror("defaulting to reading zonefiles from %s...",
 	     combine_path(__FILE__, "../tzdata"));
       files = get_dir(combine_path(__FILE__, "../tzdata"));
-      files = map(sort(files),
-		  lambda(string fname) {
-		    if ((< ".gitignore", "Makefile", "Theory", "calendars",
-			   "leapseconds", "version", >)[fname] ||
-			(upper_case(fname) == fname) ||
-			has_prefix(fname, "solar") ||
-                        has_suffix(fname, ".1") ||
-                        has_suffix(fname, ".3") ||
-                        has_suffix(fname, ".5") ||
-                        has_suffix(fname, ".8") ||
-			has_suffix(fname, ".awk") ||
-                        has_suffix(fname, ".c") ||
-                        has_suffix(fname, ".h") ||
-			has_suffix(fname, ".html") ||
-                        has_suffix(fname, ".ksh") ||
-			has_suffix(fname, ".list") ||
-			has_suffix(fname, ".pl") ||
-			has_suffix(fname, ".sh") ||
-                        has_suffix(fname, ".tab") ||
-                        has_suffix(fname, ".txt") ||
-                        has_suffix(fname, ".tzs") ||
-                        has_suffix(fname, ".zi")
-                        ) return 0;
-		    return combine_path(__FILE__, "../tzdata", fname);
-		  }) - ({ 0 });
+      files = filter(files,
+                     lambda(string fname) {
+                        if ((< ".gitignore", "Makefile", "Theory", "calendars",
+                               "leapseconds", "version", >)[fname] ||
+                            (upper_case(fname) == fname) ||
+                            has_value(fname, ".") ||
+                            has_prefix(fname, "solar")) {
+                           return 0;
+                        }
+                        return 1;
+                     });
+      // Sort and move backzone to last as it references
+      // rules defined in the other files.
+      files = sort(files);
+      if (has_value(files, "backzone")) {
+         files = (files - ({ "backzone" })) + ({ "backzone" });
+      }
+      files = map(files, lambda(string fname) {
+         return combine_path(__FILE__, "../tzdata", fname);
+      });
    }
    map(files, collect_rules);
 
