@@ -947,7 +947,7 @@ PMOD_EXPORT int low_is_equal(const struct svalue *a,
     case T_FUNCTION:
       {
 	/* Consider functions the same if they are references to the same
-	 * identifier in the same class.
+         * identifier in the same class and the objects are equal.
 	 */
 	struct object *a_obj = NULL, *b_obj = NULL;
 	int a_fun = SUBTYPEOF(*a), b_fun = SUBTYPEOF(*b);
@@ -971,6 +971,7 @@ PMOD_EXPORT int low_is_equal(const struct svalue *a,
 	  b_obj = b_tramp->frame->current_object;
 	  b_fun = b_tramp->func;
 	}
+        if (!object_equal_p(a_obj, b_obj, proc)) return 0;
 	if (a_obj->prog == b_obj->prog) {
 	  /* Common case. */
 	  if (a_fun == b_fun) return 1;

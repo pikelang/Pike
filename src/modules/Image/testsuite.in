@@ -153,6 +153,10 @@ test_true( arrayp(indices(Image.Color)) )
 test_true( stringp(indices(Image.Color)[0]) )
 test_true( sizeof(indices(Image.Color))>8 )
 
+dnl Test bug in equal() triggered by the compiler.
+test_equal(({Image.Color.red->hex(),Image.Color.green->hex(),Image.Color.blue->hex()}),
+           ({ "#ff0000", "#00ff00", "#0000ff" }))
+
 test_true( arrayp(values(Image.Color)) )
 test_true( objectp(values(Image.Color)[0]) )
 test_eq( sizeof(indices(Image.Color)), sizeof(values(Image.Color)) )
