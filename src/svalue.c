@@ -971,13 +971,20 @@ PMOD_EXPORT int low_is_equal(const struct svalue *a,
 	  b_obj = b_tramp->frame->current_object;
 	  b_fun = b_tramp->func;
 	}
-        if (!object_equal_p(a_obj, b_obj, proc)) return 0;
+        ref_push_object(a_obj);
+        ref_push_object(b_obj);
+        if (!low_is_equal(Pike_sp-2, Pike_sp-1, proc)) {
+          pop_n_elems(2);
+          return 0;
+        }
+        pop_n_elems(2);
 	if (a_obj->prog == b_obj->prog) {
 	  /* Common case. */
 	  if (a_fun == b_fun) return 1;
 	}
 	/* Consider a and b the same if they are the same identifier. */
-	return ID_FROM_INT(a_obj->prog, a_fun) == ID_FROM_INT(b_obj->prog, b_fun);
+        return ID_FROM_INT(a_obj->prog, a_fun) ==
+          ID_FROM_INT(b_obj->prog, b_fun);
       }
 
     case T_TYPE:
