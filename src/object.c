@@ -2474,7 +2474,11 @@ union anything *object_get_item_ptr(struct object *o,
   return 0;
 }
 
-
+/**
+ *  Low-level equal relation.
+ *
+ *  Note: Does NOT consider LFUN::_equal()!
+ */
 PMOD_EXPORT int object_equal_p(struct object *a, struct object *b, struct processing *p)
 {
   struct processing curr;

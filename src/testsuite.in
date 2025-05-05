@@ -2304,7 +2304,7 @@ test_any([[
   return equal(A()->a, A()->a);
 ]], 1)
 test_any([[
-  class A { int a(){} }
+  class A { int a(){} protected int _equal(mixed other) { return 1; } }
   class B { inherit A; }
   return equal(A()->a, B()->a);
 ]], 1)
