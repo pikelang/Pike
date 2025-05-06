@@ -398,9 +398,9 @@ static void report_child(int pid,
 #endif
 
 
-#ifdef USE_SIGCHILD
 static RETSIGTYPE receive_sigchild(int signum);
 
+#ifdef USE_SIGCHILD
 typedef struct wait_data_s {
   pid_t pid;
   WAITSTATUSTYPE status;
@@ -954,7 +954,7 @@ static void f_signal(int args)
 
     switch(signum)
     {
-#ifdef USE_SIGCHILD
+#ifdef SIGCHLD
       case SIGCHLD:
 	func=receive_sigchild;
 	break;
@@ -981,7 +981,7 @@ static void f_signal(int args)
       func=(sigfunctype) SIG_IGN;
     }else{
       func=receive_signal;
-#ifdef USE_SIGCHILD
+#ifdef SIGCHLD
       if(signum == SIGCHLD)
 	func=receive_sigchild;
 #endif
@@ -1162,8 +1162,6 @@ void forkd(int fd)
 #endif
 
 
-#ifdef USE_SIGCHILD
-
 #ifdef SIGNAL_ONESHOT
 static RETSIGTYPE receive_sigchild(int signum)
 #else
@@ -1184,6 +1182,8 @@ static RETSIGTYPE receive_sigchild(int UNUSED(signum))
 #endif
 
   SAFE_FIFO_DEBUG_BEGIN();
+
+#ifdef USE_SIGCHILD
 
  try_reap_again:
   /* We carefully reap what we saw */
@@ -1208,6 +1208,8 @@ static RETSIGTYPE receive_sigchild(int UNUSED(signum))
   }
   PROC_FPRINTF("[%d] receive_sigchild: No more dead children.\n",
                getpid());
+#endif
+
   register_signal(SIGCHLD);
 
   SAFE_FIFO_DEBUG_END();
@@ -1217,7 +1219,6 @@ static RETSIGTYPE receive_sigchild(int UNUSED(signum))
    * and cause a bit of trouble there. Let's leave errno as we found it. */
   errno = masked_errno;
 }
-#endif
 
 
 #define PROCESS_UNKNOWN		-1
@@ -5058,7 +5059,7 @@ PMOD_EXPORT void restore_signal_handler(int sig)
   if ((TYPEOF(signal_callbacks[sig]) != PIKE_T_INT) || default_signals[sig])
   {
     sigfunctype func = receive_signal;
-#ifdef USE_SIGCHILD
+#ifdef SIGCHLD
     if (sig == SIGCHLD) {
       func = receive_sigchild;
     }
@@ -5069,11 +5070,7 @@ PMOD_EXPORT void restore_signal_handler(int sig)
       /* SIGCHLD */
 #ifdef SIGCHLD
     case SIGCHLD:
-#ifdef USE_SIGCHILD
       my_signal(sig, receive_sigchild);
-#else
-      my_signal(sig, SIG_DFL);
-#endif
       break;
 #endif
 
