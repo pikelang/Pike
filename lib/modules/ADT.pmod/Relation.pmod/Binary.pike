@@ -278,7 +278,10 @@ protected void create(void|mixed id,
 {
   this::id = id;
   if (objectp(initial) && initial->is_binary_relation)
-    initial->map(lambda (LeftType left, RightType right) { add(left, right); });
+    ([object]initial)->map(lambda (LeftType left, RightType right) {
+      add(left, right);
+      return 0;
+    });
   else if (mappingp(initial))
     foreach([mapping]initial; LeftType left; RightType right)
       add(left, right);
