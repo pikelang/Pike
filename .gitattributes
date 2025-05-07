@@ -726,7 +726,6 @@ Makefile.rl -space_indent tab_indent
 /src/modules/_WhiteFish/tests.pike mixed_indent
 /src/modules/_WhiteFish/whitefish.c mixed_indent
 /src/modules/_math/math.c mixed_indent
-/src/modules/common_module_makefile.in mixed_indent
 /src/modules/dynamic_module_makefile.in mixed_indent
 /src/modules/semidynamic_module_makefile.in mixed_indent
 /src/modules/static_module_makefile.in mixed_indent
