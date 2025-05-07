@@ -1162,6 +1162,7 @@ void forkd(int fd)
 #endif
 
 
+#ifdef SIGCHLD
 #ifdef SIGNAL_ONESHOT
 static RETSIGTYPE receive_sigchild(int signum)
 #else
@@ -1220,6 +1221,7 @@ static RETSIGTYPE receive_sigchild(int UNUSED(signum))
   errno = masked_errno;
 }
 
+#endif /* SIGCHLD */
 
 #define PROCESS_UNKNOWN		-1
 #define PROCESS_RUNNING		0
