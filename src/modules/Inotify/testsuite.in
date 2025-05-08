@@ -53,8 +53,22 @@ test_any([[
 #else
 	i->add_watch(".", System.Inotify.IN_CREATE);
 #endif
+        // NB: In FreeBSD 15.0 notifications will be generated
+        //     for any pre-existing files.
+        i->poll();
+        a = 0;
 	Stdio.write_file(testfile, "test");
 	i->poll();
+        int count;
+        while (!a) {
+          count++;
+          if (!(count & (count-1))) {
+            // werror("No event yet!\n");
+            if (count > 1000) break;
+          }
+          sleep(0.001);
+          i->poll();
+        }
 	return a[3] == "conftest" && a[1] == System.Inotify.IN_CREATE;
 ]], 1)
 
