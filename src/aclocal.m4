@@ -357,6 +357,11 @@ AC_DEFUN([PIKE_USE_SYSTEM_EXTENSIONS],
 #ifndef _NETBSD_SOURCE
 #undef _NETBSD_SOURCE
 #endif
+/* Enable non-POSIX declarations on OpenBSD. */
+#ifndef _BSD_SOURCE
+# undef _BSD_SOURCE
+#endif
+/* Force non-POSIX declarations to be visible on FreeBSD (and OpenBSD). */
 #ifndef __BSD_VISIBLE
 #undef __BSD_VISIBLE
 #endif
@@ -396,6 +401,7 @@ AC_DEFUN([PIKE_USE_SYSTEM_EXTENSIONS],
 
   AC_DEFINE(_DARWIN_C_SOURCE)
   AC_DEFINE(_NETBSD_SOURCE)
+  AC_DEFINE(_BSD_SOURCE)
   # Enable non-POSIX types in <sys/types.h> on FreeBSD 10.3.
   AC_DEFINE(__BSD_VISIBLE, 1)
 ])
