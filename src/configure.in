@@ -4396,6 +4396,7 @@ AC_CHECK_FUNCS( \
  chroot \
  closefrom \
  crypt \
+ crypt_checkpass \
  crypt_r \
  fchdir \
  fdwalk \
@@ -5075,6 +5076,16 @@ if test $ac_cv_func_crypt$ac_cv_func__crypt = nono ; then
   fi
 ])
 
+fi
+if test $ac_cv_func_crypt_checkpass = yes ; then
+    # crypt_checkpass(3) was added 2014-11-20 in OpenBSD.
+    # Support for DES passwords was removed 2015-04-06.
+    if test -f "$srcdir/crypt.c"; then
+        AC_MSG_RESULT([Recent OpenBSD crypt(3) detected.])
+        EXTRA_OBJS="${EXTRA_OBJS} crypt.o"
+        AC_DEFINE(USE_CRYPT_C)
+        AC_DEFINE(USE_CRYPT_C_DES_CRYPT_ONLY)
+    fi
 fi
 
 #############################################################################
