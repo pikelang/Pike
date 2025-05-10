@@ -3710,6 +3710,12 @@ PMOD_EXPORT void f_crypt(INT32 args)
   THREADS_ALLOW();
 #endif
   ret = (char *)crypt(pwd, saltp);
+#ifdef USE_PIKE_DES_CRYPT_ONLY
+  if (!ret && (errno == EINVAL)) {
+    /* Fallback for eg OpenBSD where crypt(3) does not support DES anymore. */
+    ret = pike_des_crypt(pwd, salt);
+  }
+#endif
 #ifdef SOLARIS
   THREADS_DISALLOW();
 #endif

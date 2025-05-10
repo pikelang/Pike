@@ -347,6 +347,9 @@
 /* define if you are using crypt.c. */
 #undef USE_CRYPT_C
 
+/* define if you are using crypt.c AND only need pike_des_crypt(). */
+#undef USE_PIKE_DES_CRYPT_ONLY
+
 /* Define if we can declare 'extern char **environ' */
 #undef DECLARE_ENVIRON
 
