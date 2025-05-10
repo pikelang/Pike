@@ -5,6 +5,8 @@
 || for more information.
 */
 
+#include <errno.h>
+
 /*
  *      From Andy Tanenbaum's book "Computer Networks",
  *      rewritten in C
