@@ -5084,7 +5084,7 @@ if test $ac_cv_func_crypt_checkpass = yes ; then
         AC_MSG_RESULT([Recent OpenBSD crypt(3) detected.])
         EXTRA_OBJS="${EXTRA_OBJS} crypt.o"
         AC_DEFINE(USE_CRYPT_C)
-        AC_DEFINE(USE_CRYPT_C_DES_CRYPT_ONLY)
+        AC_DEFINE(USE_PIKE_DES_CRYPT_ONLY)
     fi
 fi
 
