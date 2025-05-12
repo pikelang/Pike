@@ -44,13 +44,13 @@ static const char *control_codes[64] = {
 /* Make lexers for shifts 0, 1 and 2. */
 
 #define SHIFT	0
-#include "lexer.h"
+#include "lexer0.h"
 #undef SHIFT
 #define SHIFT	1
-#include "lexer.h"
+#include "lexer1.h"
 #undef SHIFT
 #define SHIFT	2
-#include "lexer.h"
+#include "lexer2.h"
 #undef SHIFT
 
 int parse_esc_seq_pcharp (PCHARP buf, p_wchar2 *chr, ptrdiff_t *len)

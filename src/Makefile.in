@@ -711,7 +711,7 @@ clean_here: tidy doc_clean
 	-rm -rf test-install test-pike tpike tpike.* *.pdb
 	-rm -f TAGS tags yacc.acts yacc.debug yacc.tmp *.debug.log a.out pike.tmp
 	-rm -f master.pike compiler-warnings dumpmodule.log
-	-rm -f interpreter_debug.h
+	-rm -f interpreter_debug.h lexer?.h
 	-rm -f import-stamp master-stamp headerfiles-stamp
 	-rm -f static-modules-stamp dynamic-modules-stamp post-modules-stamp
 	-rm -f post-module-pike-stamp pike-complete-stamp
@@ -1112,7 +1112,32 @@ $(SRCDIR)/treeopt.h: $(SRCDIR)/treeopt.in $(TMP_BINDIR)/mktreeopt.pike
 
 las.o: $(SRCDIR)/treeopt.h
 
-interpret.o: $(SRCDIR)/interpret_functions_fixed.h
+# This dependency is here to make sure that lexer[012].h are generated.
+# The reason for the split is that some compilers (read cl) generate
+# better code then. Strange, but true.
+# "[B]etter" == not broken for clang 16 on OpenBSD (as of OpenBSD 7.7).
+# The bug is triggered by eg the path_info syntax error test in the
+# main testsuite.
+lex.o: lexer0.h lexer1.h lexer2.h
+
+lex.protos: lexer0.h lexer1.h lexer2.h
+
+lexer0.h: lexer.h
+	cp "$(SRCDIR)/lexer.h" "$@"
+
+lexer1.h: lexer.h
+	cp "$(SRCDIR)/lexer.h" "$@"
+
+lexer2.h: lexer.h
+	cp "$(SRCDIR)/lexer.h" "$@"
+
+
+# unbug needs interpreter_nd.h to be able to
+# set separate breakpoints in eval_instruction_with/without_debug
+interpreter_debug.h: interpreter.h
+	cp "$(SRCDIR)/interpreter.h" "$@"
+
+interpret.o: interpreter_debug.h $(SRCDIR)/interpret_functions_fixed.h
 
 # make dependencies
 depend: $(SRC_TARGETS)
