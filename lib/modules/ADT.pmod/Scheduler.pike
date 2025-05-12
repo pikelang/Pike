@@ -3,8 +3,10 @@
 #charset utf-8
 #pike __REAL_VERSION__
 
+//! Type for items to be scheduled.
 __generic__ ValueType;
 
+//!
 protected inherit .Heap (< ValueType >);
 
 //! This class implements a quantized resource scheduler.
