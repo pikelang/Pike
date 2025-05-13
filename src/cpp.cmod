@@ -304,11 +304,11 @@ PIKECLASS define
    */
   PIKEVAR string name;
 
-  /*! @decl array(string|int|function(mixed...:string))|zero parts;
+  /*! @decl array(string|CppDefArgFlags|function(mixed...:string))|zero parts;
    *!
    *!   Macro expansion rule.
    */
-  PIKEVAR array(string|int)|zero parts;
+  PIKEVAR array(string|int(24bit))|zero parts;
 
   CVAR magic_define_fun magic;       /* Mostly unused. */
   CVAR int args;
@@ -333,10 +333,10 @@ PIKECLASS define
   }
 
   /*! @decl void create(string name, int num_args, @
-   *!                   array(string|int|function(mixed|void...:string)) parts)
+   *!                   array(string|CppDefArgFlags|function(mixed|void...:string)) parts)
    */
   PIKEFUN void create(string name, int num_args,
-		      array(string|int|function(mixed|void...:string)) parts)
+                      array(string|int(24bit)|function(mixed|void...:string)) parts)
     flags ID_PROTECTED;
   {
     if (THIS->name) free_string(THIS->name);
@@ -376,6 +376,8 @@ PIKECLASS define
 
   /*! @decl string `()(array(string)|void arguments, CPP|void context, @
    *!                  CppFlags|void flags)
+   *!
+   *!   Apply the macro with the specified arguments.
    *!
    *! @param arguments
    *!   Array of arguments to the macro. Zero if no parenthesis.
@@ -5815,7 +5817,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
 /*! @endnamespace */
 
  /*! @decl void create(string|void current_file, @
-  *!                   int|string|void charset, object|void handler, @
+  *!                   int(0..1)|string|void charset, object|void handler, @
   *!                   void|int compat_major, void|int compat_minor, @
   *!                   void|int picky_cpp)
   *! @decl void create(mapping(string:mixed) options)
@@ -5831,7 +5833,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
   *!   	 @member string "current_file"
   *!       Name of the current file. It is used for generating
   *!       #line directives and for locating include files.
-  *!   	 @member int|string "charset"
+  *!   	 @member int(0..1)|string "charset"
   *!       Charset to use when processing @expr{data@}.
   *!   	 @member object "handler"
   *!       Compilation handler.
@@ -5867,7 +5869,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
   *!   @[compile()]
   */
   PIKEFUN void create(mapping|string|void opts_or_file,
-		      int|string|void charset_sv,
+                      int(0..1)|string|void charset_sv,
 		      object|void handler,
 		      int|void compat_major_sv,
 		      int|void compat_minor_sv,
@@ -6228,7 +6230,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
   }
 
   /*! @decl void define_multiple_macros(mapping(string: @
-   *!     string|function|object|array(string|int))|void predefs)
+   *!     string|function|object|array(string|CppDefArgFlags))|void predefs)
    *!
    *!   Define multiple macros in one operation.
    *!
@@ -6244,7 +6246,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
    *!   @[_take_over_initial_predefines()]
    */
   PIKEFUN void define_multiple_macros(mapping(string:
-                 string|function|object|array(string|int))|void predefs)
+                 string|function|object|array(string|int(24bit)))|void predefs)
   {
     struct CPP_struct *this = THIS;
     struct keypair *k;
@@ -6268,7 +6270,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
     }
   }
 
-  /*! @decl mapping(string:string|function|object|array(string|int)) get_predefines()
+  /*! @decl mapping(string:string|function|object|array(string|CppDefArgFlags)) get_predefines()
    *!
    *!   Get the predefined macros for this preprocessor.
    *!
@@ -6288,7 +6290,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
    *!   @[init_pike_cpp()], @[define_multiple_macros()],
    *!   @[_take_over_initial_predefines()], @[defines]
    */
-PIKEFUN mapping(string:string|function|object|array(string|int)) get_predefines()
+PIKEFUN mapping(string:string|function|object|array(string|int(24bit))) get_predefines()
   {
 #ifndef SUPPORT_HANDLERS
     apply_external(1, f_get_predefines_fun_num, args);
@@ -6364,7 +6366,7 @@ PIKEFUN mapping(string:string|function|object|array(string|int)) get_predefines(
  */
 
 /*! @decl string cpp(string data, mapping|string|void current_file, @
- *!                  int|string|void charset, object|void handler, @
+ *!                  int(0..1)|string|void charset, object|void handler, @
  *!                  void|int compat_major, void|int compat_minor, @
  *!                  void|int picky_cpp)
  *!
@@ -6382,7 +6384,7 @@ PIKEFUN mapping(string:string|function|object|array(string|int)) get_predefines(
  *! 	@member string "current_file"
  *!             Name of the current file. It is used for generating
  *!             #line directives and for locating include files.
- *! 	@member int|string "charset"
+ *! 	@member int(0..1)|string "charset"
  *!             Charset to use when processing @expr{data@}.
  *! 	@member object "handler"
  *!             Compilation handler.
@@ -6411,7 +6413,7 @@ PIKEFUN mapping(string:string|function|object|array(string|int)) get_predefines(
 
 PIKEFUN string cpp(string data,
 		   mapping|string|void opts_or_file,
-		   int|string|void charset_sv,
+                   int(0..1)|string|void charset_sv,
 		   object|void handler,
 		   int|void compat_major_sv,
 		   int|void compat_minor_sv,
