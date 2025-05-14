@@ -4729,8 +4729,10 @@ static void f_kill(INT32 args)
   PROC_FPRINTF("[%d] kill: pid=%d, signum=%d\n", getpid(), pid, signum);
 
   THREADS_ALLOW_UID();
-  res = !kill(pid, signum);
-  save_errno = errno;
+  do {
+    res = !kill(pid, signum);
+    save_errno = errno;
+  } while (!res && (save_errno == EINTR));
   THREADS_DISALLOW_UID();
 
   check_signals(0,0,0);
