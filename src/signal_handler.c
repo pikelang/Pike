@@ -1497,18 +1497,29 @@ static TH_RETURN_TYPE wait_thread(void *UNUSED(data))
     PROC_FPRINTF("[%d] wait_thread: getting the lock.\n", getpid());
 
     mt_lock(&wait_thread_mutex);
-    pid=MY_WAIT_ANY(&status, WNOHANG|WUNTRACED);
 
-    err = errno;
+    do {
+      /* NB: Wait with NOHANG since we have the above lock. */
+      pid = MY_WAIT_ANY(&status, WNOHANG|WUNTRACED);
 
-    if(pid < 0 && err == ECHILD)
-    {
-      PROC_FPRINTF("[%d] wait_thread: sleeping\n", getpid());
+      err = errno;
 
-      co_wait(&start_wait_thread, &wait_thread_mutex);
+      if(pid < 0) {
+        if (err == ECHILD) {
+          /* There are no active child processes, so wait for
+           * some to be created.
+           */
+          PROC_FPRINTF("[%d] wait_thread: sleeping\n", getpid());
 
-      PROC_FPRINTF("[%d] wait_thread: waking up\n", getpid());
-    }
+          co_wait(&start_wait_thread, &wait_thread_mutex);
+
+          PROC_FPRINTF("[%d] wait_thread: waking up\n", getpid());
+          continue;
+        }
+        if (err == EINTR) continue;
+      }
+      break;
+    } while (1);
 
     PROC_FPRINTF("[%d] wait_thread: releasing the lock.\n", getpid());
 
@@ -1517,17 +1528,20 @@ static TH_RETURN_TYPE wait_thread(void *UNUSED(data))
 #ifdef ENODEV
     do {
 #endif
-      errno = 0;
-      if(pid <= 0) pid=MY_WAIT_ANY(&status, 0|WUNTRACED);
+      errno = err = 0;
+      if(pid < 0) {
+        pid = MY_WAIT_ANY(&status, 0|WUNTRACED);
+        err = errno;
+      }
 
-      PROC_FPRINTF("[%d] wait thread: pid=%d status=%d errno=%d\n",
-                   getpid(), pid, status, errno);
+      PROC_FPRINTF("[%d] wait thread: pid=%d status=%d errno=%d (%d)\n",
+                   getpid(), pid, status, errno, err);
 
 #ifdef ENODEV
       /* FreeBSD threads are broken, and sometimes
        * signals status 0, errno ENODEV on living processes.
        */
-    } while (UNLIKELY(errno == ENODEV));
+    } while (UNLIKELY(err == ENODEV));
 #endif
 
     if(pid>0)
@@ -4715,8 +4729,10 @@ static void f_kill(INT32 args)
   PROC_FPRINTF("[%d] kill: pid=%d, signum=%d\n", getpid(), pid, signum);
 
   THREADS_ALLOW_UID();
-  res = !kill(pid, signum);
-  save_errno = errno;
+  do {
+    res = !kill(pid, signum);
+    save_errno = errno;
+  } while (!res && (save_errno == EINTR));
   THREADS_DISALLOW_UID();
 
   check_signals(0,0,0);
