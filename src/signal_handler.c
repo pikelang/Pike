@@ -1207,6 +1207,7 @@ static RETSIGTYPE receive_sigchild(int UNUSED(signum))
     wait_push(wd);
     goto try_reap_again;
   }
+  if (errno == EINTR) goto try_reap_again;
   PROC_FPRINTF("[%d] receive_sigchild: No more dead children.\n",
                getpid());
 #endif
@@ -1529,7 +1530,7 @@ static TH_RETURN_TYPE wait_thread(void *UNUSED(data))
     do {
 #endif
       errno = err = 0;
-      if(pid < 0) {
+      if(pid <= 0) {
         pid = MY_WAIT_ANY(&status, 0|WUNTRACED);
         err = errno;
       }
