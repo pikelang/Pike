@@ -1208,7 +1208,7 @@ static RETSIGTYPE receive_sigchild(int UNUSED(signum))
     wait_push(wd);
     goto try_reap_again;
   }
-  if (errno == EINTR) goto try_reap_again;
+  if (pid < 0 && errno == EINTR) goto try_reap_again;
   PROC_FPRINTF("[%d] receive_sigchild: No more dead children.\n",
                getpid());
 #endif
