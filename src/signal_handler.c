@@ -20,6 +20,7 @@
 #include "signal_handler.h"
 #include "module_support.h"
 #include "operators.h"
+#include "sprintf.h"
 #include "builtin_functions.h"
 #include "main.h"
 #include "time_stuff.h"
@@ -1907,6 +1908,49 @@ static void f_pid_status_set_priority(INT32 args)
   push_int(r);
 }
 
+/*! @decl protected string(7bit)|zero _sprintf(int(8bit) c)
+ */
+static void f_pid_status__sprintf(INT32 args)
+{
+  int c = 'O';
+  int state = PROCESS_UNKNOWN;
+  get_all_args(NULL, args, "%d.", &c);
+  if (c != 'O') {
+    push_undefined();
+    return;
+  }
+  push_constant_text("Process.Process(%d /* %s */)");
+  push_int(THIS->pid);
+#ifdef __NT__
+  {
+    DWORD x;
+    if(GetExitCodeProcess(THIS->handle, &x))
+    {
+      state = ( x == STILL_ACTIVE ? PROCESS_RUNNING : PROCESS_EXITED);
+    }else{
+      state = PROCESS_UNKNOWN;
+    }
+  }
+#else
+  state = THIS->state;
+#endif
+  switch(state) {
+  case PROCESS_RUNNING:
+    push_constant_text("Running");
+    break;
+  case PROCESS_EXITED:
+    push_constant_text("Exited");
+    break;
+  case PROCESS_STOPPED:
+    push_constant_text("Stopped");
+    break;
+  case PROCESS_UNKNOWN:
+  default:
+    push_constant_text("Unknown");
+    break;
+  }
+  f_sprintf(3);
+}
 
 /*! @endclass
  */
@@ -5226,6 +5270,9 @@ void init_signals(void)
 #endif /* HAVE_KILL */
   /* function(array(string),void|mapping(string:mixed):object) */
   ADD_FUNCTION("create",f_create_process,tFunc(tArr(tStr) tOr(tVoid,tMap(tStr,tMix)),tObj),0);
+  /* function(int(8bit):string(7bit)|zero) */
+  ADD_FUNCTION("_sprintf", f_pid_status__sprintf,
+               tFunc(tInt8bit, tOr(tStr7, tZero)), ID_PROTECTED);
 
   pid_status_program=end_program();
   add_program_constant("create_process",pid_status_program,0);
