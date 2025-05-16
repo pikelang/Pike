@@ -194,7 +194,10 @@ long long gethrtime(void);
 #endif
 
 #ifdef USE_CRYPT_C
+char *pike_des_crypt(const char *, const char *);
+#ifndef USE_PIKE_DES_CRYPT_ONLY
 char *crypt(const char *, const char *);
+#endif
 #endif /* USE_CRYPT_C */
 
 #endif
