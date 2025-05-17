@@ -3130,6 +3130,7 @@ static int call_delayed_decode(struct Supporter *s, int finish)
     data->support_compilation = cc;
     SET_SVAL(data->counter, T_INT, NUMBER_NUMBER, integer, COUNTER_START);
     data->ptr=4; /* Skip 182 'k' 'e' '0' */
+    data->skip_values=0;
 #ifdef ENCODE_DEBUG
     data->debug_ptr = 0;
     if (data->debug && !data->debug_buf) {
@@ -4822,13 +4823,13 @@ static void decode_value2(struct decode_data *data)
             STACK_LEVEL_CHECK(1);
 	  }
 
+          if (delay)
+            data->skip_values = 1;
+
 	  /* Decode the actual constants
 	   *
 	   * This must be done after the program has been ended.
 	   */
-          {
-          int old_skip_values = data->skip_values;
-          data->skip_values |= delay;
 	  for (e=0; e<local_num_constants; e++) {
 	    struct program_constant *constant = p->constants+e;
 	    if ((TYPEOF(constant->sval) != T_INT) ||
@@ -4853,8 +4854,6 @@ static void decode_value2(struct decode_data *data)
 			data->depth, "",
 			e, get_name_of_type(TYPEOF(constant->sval))));
 	  }
-          data->skip_values = old_skip_values;
-          }
 
 #ifdef ENCODE_DEBUG
 	  if (!data->debug)
