@@ -2415,6 +2415,9 @@ else
 fi
 export EXTRA_PATH
 
+EXTRA_SBIN_PATH=`echo "$PATH:$EXTRA_PATH" | sed -e 's|/bin:|/sbin:|g' -e 's|/bin/|/sbin/|g' -e 's|/bin$|/sbin|'`
+export EXTRA_SBIN_PATH
+
 #Restore preprocessor warning sensitivity
 ac_c_preproc_warn_flag="$OLD_ac_c_preproc_warn_flag"
 
@@ -2595,8 +2598,10 @@ AC_SUBST(AR)
 
 # PaX flags control (NetBSD).
 if test "x${PAXCTL-}" = x ; then
-  AC_PATH_PROG(PAXCTL, paxctl, , $PATH:$EXTRA_PATH)
-  export PAXCTL
+    # Linux:  /sbin/paxctl
+    # NetBSD: /usr/sbin/paxctl
+    AC_PATH_PROG(PAXCTL, paxctl, , $PATH:$EXTRA_PATH:$EXTRA_SBIN_PATH)
+    export PAXCTL
 fi
 AC_SUBST(PAXCTL)
 
