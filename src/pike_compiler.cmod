@@ -302,6 +302,8 @@ int unlink_current_supporter(struct Supporter *c)
 
 void free_supporter(struct Supporter *c)
 {
+  if (c == current_supporter)
+    unlink_current_supporter(c);
   verify_supporters();
   if (c->depends_on) {
     struct Supporter **s;
