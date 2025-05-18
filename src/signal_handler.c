@@ -1955,6 +1955,43 @@ static void f_pid_status__sprintf(INT32 args)
 /*! @endclass
  */
 
+#ifdef __NetBSD__
+/* kill(2) on NetBSD 10.1 (and probably earlier) sometimes
+ * claims that it has sent signal 9 successfully, but the
+ * other process does not actually receive it.
+ */
+static int netbsd_kill_wrapper(pid_t pid, int sig)
+{
+  int ret = kill(pid, sig);
+  if (!ret && (sig == 9)) {
+    /* Successfull kill claimed, but we need to validate...
+     *
+     * For eg tlib/modules/testsuite test 1004 on
+     * NetBSD 10.1/Intel i7/3.5GHz ~11% of the kill 9's
+     * appear to not propagate.
+     *
+     * The observed max number of loops needed is 13.
+     *
+     * 64 ought to be enough for everyone; if the process
+     * is still around after 64 kill 9's it's probably
+     * stuck in device-wait.
+     */
+    int loop = 64;
+    do {
+      usleep(1);	/* Attempt to force a process yield. */
+      ret = kill(pid, sig);
+    } while (!ret && loop--);
+    if (errno == ESRCH) {
+      /* Process has actually died! */
+      return 0;
+    }
+    /* Propagate other failures as is. */
+  }
+  return ret;
+}
+#define kill(PID, SIG)	netbsd_kill_wrapper((PID), (SIG))
+#endif /* __NetBSD__ */
+
 #ifdef HAVE_PTRACE
 
 /*! @class TraceProcess
