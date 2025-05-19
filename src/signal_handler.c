@@ -381,6 +381,10 @@
 #pragma GCC optimize "-Os"
 #endif
 
+/* Hide some popular symbols that are not Async-Signal-Safe. */
+#define ASYNC_SIGNAL_SAFE() \
+  int PIKE_UNUSED_ATTRIBUTE fprintf = 0, pthread_mutex_lock = 0
+
 extern int fd_from_object(struct object *o);
 static int set_priority( int pid, char *to );
 
@@ -399,6 +403,7 @@ static void report_child(int pid,
 #endif
 
 
+/* NB: Async-Signal-Safe! */
 static RETSIGTYPE receive_sigchild(int signum);
 
 #ifdef USE_SIGCHILD
@@ -720,14 +725,18 @@ void process_done(pid_t UNUSED(pid), const char *UNUSED(from)) { }
 #endif /* PIKE_DEBUG */
 
 
+/* NB: Async-Signal-Safe! */
 static void register_signal(int signum)
 {
+  ASYNC_SIGNAL_SAFE();
   sig_push(signum);
   wake_up_backend();
 }
 
+/* NB: Async-Signal-Safe! */
 static RETSIGTYPE receive_signal(int signum)
 {
+  ASYNC_SIGNAL_SAFE();
   SAFE_FIFO_DEBUG_BEGIN();
   if ((signum < 0) || (signum >= MAX_SIGNALS)) {
     /* Some OSs (Solaris 2.6) send a bad signum sometimes.
@@ -749,9 +758,14 @@ static RETSIGTYPE receive_signal(int signum)
 }
 
 /* This function is intended to work like signal(), but better :) */
+/* NB: Must be Async-Signal-Safe when SIGNAL_ONESHOT! */
 void my_signal(int sig, sigfunctype fun)
 {
+#ifndef SIGNAL_ONESHOT
   PROC_FPRINTF("[%d] my_signal(%d, 0x%p)\n", getpid(), sig, (void *)fun);
+#else
+  ASYNC_SIGNAL_SAFE();
+#endif
 #ifdef HAVE_SIGACTION
   {
     struct sigaction action;
@@ -1163,6 +1177,7 @@ void forkd(int fd)
 #endif
 
 
+/* NB: Async-Signal-Safe! */
 #ifdef SIGCHLD
 #ifdef SIGNAL_ONESHOT
 static RETSIGTYPE receive_sigchild(int signum)
@@ -1170,11 +1185,25 @@ static RETSIGTYPE receive_sigchild(int signum)
 static RETSIGTYPE receive_sigchild(int UNUSED(signum))
 #endif
 {
+  ASYNC_SIGNAL_SAFE();
   pid_t pid;
   WAITSTATUSTYPE status;
   int masked_errno = errno;
-
-  PROC_FPRINTF("[%d] receive_sigchild\n", getpid());
+#ifdef PROC_DEBUG
+  char debug_prefix[] = {
+    '[',
+    '0' + (getpid()/100000)%10,
+    '0' + (getpid()/10000)%10,
+    '0' + (getpid()/1000)%10,
+    '0' + (getpid()/100)%10,
+    '0' + (getpid()/10)%10,
+    '0' + getpid()%10,
+    ']',
+    ' ',
+  };
+  write(2, debug_prefix, sizeof(debug_prefix));
+  write(2, "receive_sigchild\n", 17);
+#endif /* PROC_DEBUG */
 
 #ifdef SIGNAL_ONESHOT
   /* Reregister the signal early, so that we don't
@@ -1200,8 +1229,22 @@ static RETSIGTYPE receive_sigchild(int UNUSED(signum))
     memset(&wd, 0, sizeof(wd));
 #endif
 
-    PROC_FPRINTF("[%d] receive_sigchild got pid %d\n",
-                 getpid(), pid);
+#ifdef PROC_DEBUG
+    {
+      char pid_str[] = {
+        '0' + (pid/100000)%10,
+        '0' + (pid/10000)%10,
+        '0' + (pid/1000)%10,
+        '0' + (pid/100)%10,
+        '0' + (pid/10)%10,
+        '0' + pid()%10,
+        '\n',
+      };
+      write(2, debug_prefix, sizeof(debug_prefix));
+      write(2, "receive_sigchild got pid ", 25);
+      write(2, pid_str, sizeof(pid_str));
+    }
+#endif
 
     wd.pid=pid;
     wd.status=status;
@@ -1209,8 +1252,11 @@ static RETSIGTYPE receive_sigchild(int UNUSED(signum))
     goto try_reap_again;
   }
   if (pid < 0 && errno == EINTR) goto try_reap_again;
-  PROC_FPRINTF("[%d] receive_sigchild: No more dead children.\n",
-               getpid());
+
+#ifdef PROC_DEBUG
+  write(2, debug_prefix, sizeof(debug_prefix));
+  write(2, "receive_sigchild: No more dead children.\n", 41);
+#endif
 #endif
 
   register_signal(SIGCHLD);
@@ -4086,6 +4132,10 @@ void f_create_process(INT32 args)
        * NB: Avoid calling any functions in libc here, since
        *     internal mutexes may be held by other nonforked
        *     threads.
+       *     Only functions that are async-signal-safe should
+       *     be called (cf signal-safety(7) (Linux),
+       *     sigaction(2) (BSDs), attributes(7) (Solaris)).
+       *     .
        */
 #ifdef DECLARE_ENVIRON
       extern char **environ;
@@ -4814,6 +4864,9 @@ static void f_kill(INT32 args)
   do {
     res = !kill(pid, signum);
     save_errno = errno;
+
+    PROC_FPRINTF("[%d] kill: pid=%d, signum=%d, res: %d, errno: %d: %s\n",
+                 getpid(), pid, signum, res, save_errno, strerror(save_errno));
   } while (!res && (save_errno == EINTR));
   THREADS_DISALLOW_UID();
 
