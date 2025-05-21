@@ -265,7 +265,31 @@ define([MY_AC_PROG_CC],
 ])
 
 dnl Not available before Autoconf 2.60.
-ifdef([AC_USE_SYSTEM_EXTENSIONS],[],[
+ifdef([AC_USE_SYSTEM_EXTENSIONS],[
+  dnl Version	Notes:
+  dnl -------	----------------------------------------------------------
+  dnl 2.60	__EXTENSIONS__ and _POSIX_PTHREAD_SEMANTICS.
+  dnl 2.61	_TANDEM_SOURCE added.
+  dnl 2.62	_ALL_SOURCE and _GNU_SOURCE added.
+  dnl 2.63	No changes.
+  dnl 2.64	No changes.
+  dnl 2.65	No changes.
+  dnl 2.67	No changes.
+  dnl 2.68	No changes.
+  dnl 2.69	No changes.
+  dnl 2.71	_DARWIN_C_SOURCE, _HPUX_ALT_XOPEN_SOCKET_API, (_MINIX),
+  dnl     	_NETBSD_SOURCE, _OPENBSD_SOURCE, _POSIX_SOURCE,
+  dnl     	_POSIX_1_SOURCE, __STCD_WANT_IEC_60559_ATTRIBS_EXT__,
+  dnl     	__STDC_WANT_IEC_60559_BFP_EXT__,
+  dnl     	__STDC_WANT_IEC_60559_DFP_EXT__,
+  dnl     	__STDC_WANT_IEC_60559_FUNCS_EXT__,
+  dnl     	__STDC_WANT_IEC_60559_TYPES_EXT__, __STDC_WANT_LIB_EXT2__,
+  dnl     	__STDC_WANT_MATH_SPEC_FUNCS__ and _XOPEN_SOURCE added.
+  dnl 2.72	No changes.
+  dnl
+  dnl NB: _XOPEN_SOURCE is defined to 500. We override this with
+  dnl     a proper value in PIKE_USE_SYSTEM_EXTENSIONS below.
+],[
   m4_defun([AC_USE_SYSTEM_EXTENSIONS], [
     AH_VERBATIM([USE_SYSTEM_EXTENSIONS],
 [/* Enable GNU extensions on systems that have them.  */
@@ -274,6 +298,7 @@ ifdef([AC_USE_SYSTEM_EXTENSIONS],[],[
 #endif
 /* Enable non-POSIX declarations on Darwin. */
 #ifndef _DARWIN_C_SOURCE
+/* Overrides disabling of non-posix symbols by _POSIX_C_SOURCE on Darwin. */
 # undef _DARWIN_C_SOURCE
 #endif
 /* Enable non-POSIX declarations on NetBSD. */
@@ -323,15 +348,23 @@ AC_DEFUN([PIKE_USE_SYSTEM_EXTENSIONS],
 #include <sys/socket.h>
 #endif
   /* Version of POSIX that we want to support.
+   *
    * Note that POSIX.1-2001 and later require C99, and the earlier
    * require C89.
-   *	undef		Not POSIX.
-   *	1		POSIX.1-1990
-   *	2		POSIX.2-1992
-   *	199309L		POSIX.1b-1993 (Real Time)
-   *	199506L		POSIX.1c-1995 (POSIX Threads)
-   *	200112L		POSIX.1-2001 (Austin Group Revision)
-   *	200809L		POSIX.1-2008
+   * Note that POSIX.1-2024 and later require C17 (2.1.4.2).
+   *
+   *	undef	Cstd	Not POSIX.
+   *	1	 C89	POSIX.1-1990
+   *	2	 C89	POSIX.2-1992
+   *	199309L	 C89	POSIX.1b-1993 (Real Time)
+   *	199506L	 C89	POSIX.1c-1995 (POSIX Threads)
+   *	200112L	 C99	POSIX.1-2001 (Austin Group Revision)
+   *	200809L	 C99	POSIX.1-2008 (IEEE Std 1003.1-2008/OGSBS Issue 7)
+   *			POSIX.1-2008 also has revisions for 2013, 1016
+   *                    and 2017/2018. They all use 200809L.
+   *	202405L	 C17	POSIX.1-2024 (IEEE Std 1003.1-2024/OGSBS Issue 8)
+   *
+   * Cf https://pubs.opengroup.org/onlinepubs/9799919799/ for POSIX.1-2024.
    */
 # undef _POSIX_C_SOURCE
 #endif
@@ -343,6 +376,7 @@ AC_DEFUN([PIKE_USE_SYSTEM_EXTENSIONS],
    *	500		XPG 5 (POSIX.1c-1995).
    *	600		XPG 6 (POSIX.1-2001).
    *	700		XPG 7 (POSIX.1-2008).
+   *	800		XPG 8 (POSIX.1-2024).
    */
 # undef _XOPEN_SOURCE
 
@@ -363,7 +397,7 @@ AC_DEFUN([PIKE_USE_SYSTEM_EXTENSIONS],
 #endif
 /* Force non-POSIX declarations to be visible on FreeBSD (and OpenBSD). */
 #ifndef __BSD_VISIBLE
-#undef __BSD_VISIBLE
+# undef __BSD_VISIBLE
 #endif
 ])
 
@@ -374,7 +408,7 @@ AC_DEFUN([PIKE_USE_SYSTEM_EXTENSIONS],
     ORIG_CPPFLAGS="$CPPFLAGS"
     # NB: Older Solaris fails on attempts to enable newer POSIX
     #     than supported.
-    for pike_cv_posix_c_source in 200809L 200112L 199506L 199309L 2 1; do
+    for pike_cv_posix_c_source in 202405L 200809L 200112L 199506L 199309L 2 1; do
       CPPFLAGS="$ORIG_CPPFLAGS -D_POSIX_C_SOURCE=$pike_cv_posix_c_source"
       AC_TRY_CPP([
 #include <stdio.h>
@@ -387,7 +421,9 @@ AC_DEFUN([PIKE_USE_SYSTEM_EXTENSIONS],
   AC_DEFINE_UNQUOTED(_POSIX_C_SOURCE, $pike_cv_posix_c_source)
 
   # NB: _XOPEN_SOURCE overrides _POSIX_C_SOURCE on FreeBSD 10.3.
-  if test "$pike_cv_posix_c_source" = "200809L"; then
+  if test "$pike_cv_posix_c_source" = "202405L"; then
+    AC_DEFINE(_XOPEN_SOURCE, 800)
+  elif test "$pike_cv_posix_c_source" = "200809L"; then
     AC_DEFINE(_XOPEN_SOURCE, 700)
   elif test "$pike_cv_posix_c_source" = "200112L"; then
     AC_DEFINE(_XOPEN_SOURCE, 600)
