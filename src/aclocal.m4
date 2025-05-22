@@ -1592,14 +1592,26 @@ AC_DEFUN(PIKE_CHECK_FILE_ABI,
       # Shell scripts do not have an ABI
       $1=noarch
       ;;
+    *"script text"*)
+      # Eg: "a /usr/bin/perl script text executable"
+      # These do not have an ABI
+      $1=noarch
+      ;;
+    *"ASCII text"*)
+      # Eg: "C source, ASCII text"
+      # These do not have an ABI
+      $1=noarch
+      ;;
     *)
       # Unknown. Probably cross-compiling.
-      PIKE_MSG_WARN([Unrecognized object file format: $PIKE_filetype:$PIKE_filetype_L])
+      $1=noarch
       if dd if="$2" count=2 bs=1 2>/dev/null | \
 	grep 'L' >/dev/null; then
 	# A common case is rntcl...
 	# If the file begins with 0x4c 0x01 it's a 80386 COFF executable.
 	$1=32
+      else
+        PIKE_MSG_WARN([Unrecognized object file format: $PIKE_filetype:$PIKE_filetype_L])
       fi
       ;;
   esac
