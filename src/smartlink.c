@@ -8,7 +8,7 @@
  * smartlink - A smarter linker.
  * Based on the /bin/sh script smartlink 1.23.
  *
- * Henrik Grubbstr�m 1999-03-04
+ * Henrik Grubbström 1999-03-04
  */
 
 #ifdef __MINGW32__
@@ -164,6 +164,7 @@ int main(int argc, char **argv)
   /* 50 rpath args should be enough... */
     if (!(darwin_argv = malloc(sizeof(char *)*(argc + 50)))) {
     fatal("Out of memory (6)!\n");
+    darwin_arg[0] = 0;
   }
 #endif
 
@@ -219,6 +220,7 @@ int main(int argc, char **argv)
            {
              fatal("Out of memory (7)!\n");
            }
+           darwin_arg[0] = 0;
            darwin_arg = strcat(darwin_arg, "-Wl,-rpath,");
            darwin_arg = strcat(darwin_arg, argv[i]);
            darwin_argv[darwin_argc++] = darwin_arg;
@@ -231,6 +233,7 @@ int main(int argc, char **argv)
           {
             fatal("Out of memory (7.5)!\n");
           }
+          darwin_arg[0] = 0;
           darwin_arg = strcat(darwin_arg, "-Wl,-rpath,");
           darwin_arg = strcat(darwin_arg, argv[i] + 2);
           darwin_argv[darwin_argc++] = darwin_arg;
