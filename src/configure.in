@@ -675,7 +675,7 @@ AC_CACHE_VAL(pike_cv_ld_so_run_path_method, [
         pike_cv_run_path_method=yp_
       fi
     ;;
-    Darwin\ *|NetBSD\ *)
+    Darwin\ *|NetBSD\ *|FreeBSD\ *|OpenBSD\ *)
       pike_cv_run_path_method=darwin_rpath
     ;;
     Haiku\ *|BeOS\ *)
@@ -7929,10 +7929,91 @@ then
 	esac
 fi
 AC_MSG_RESULT($SO)
+
+# CCSHARED are the C *flags* used to create objects to go into a shared
+# library -- this is only needed for a few systems
+AC_MSG_CHECKING(CCSHARED)
+AC_CACHE_VAL(pike_cv_sys_ccshared,[
+  if test -z "$CCSHARED" ; then
+    if test "$GCC" = yes ; then
+      case "$pike_cv_sys_os" in
+        BSD/OS*)
+          case "`uname -r`" in
+            4.*) CCSHARED="-fPIC";;
+            *) CCSHARED="";;
+          esac
+        ;;
+        Darwin*)
+          CCSHARED="-fPIC"
+        ;;
+        Haiku*|BeOS*)
+          CCSHARED="-fPIC"
+        ;;
+        Solaris*)
+          # The Image module runs out of symbol reference space unless we
+          # use the large PIC model:
+          # ld: fatal: too many symbols require `small' PIC references:
+          # 	have 2205, maximum 2048 -- recompile some modules -K PIC.
+          CCSHARED="-fPIC"
+        ;;
+        *)
+          AC_SYS_COMPILER_FLAG(-fPIC, fPIC, CCSHARED, [
+            AC_SYS_COMPILER_FLAG(-fpic, fpic, CCSHARED)
+          ])
+        ;;
+      esac
+    else
+      case "$pike_cv_sys_os" in
+        Darwin*)
+          CCSHARED="-fPIC"
+        ;;
+        Haiku*|BeOS*)
+          CCSHARED="-fPIC"
+        ;;
+        hp*|HP*) CCSHARED="+z"; ;;
+        FreeBSD*) CCSHARED="-fpic";;
+        SCO_SV*) CCSHARED="-KPIC -dy -Bdynamic";;
+        UnixWare*|OpenUNIX*) CCSHARED="-KPIC -dy -Bdynamic";;
+        Solaris*)
+          CCSHARED="-KPIC -Bdynamic"
+          # Note: The Image module fails with
+          #   Failed to load library: ld.so.1: pike: fatal:
+          #   relocation error: R_AMD64_PC32: file Image.so:
+          #   symbol really_free_svalue: value 0x28001ca5b2d does not fit
+          # if the module is compiled with the default model.
+          AC_SYS_COMPILER_FLAG(-xmodel=medium, xmodel_medium, CCSHARED)
+        ;;
+        Windows_NT*) CCSHARED="-shared" ;;
+      esac
+    fi
+  fi
+  OLD_CFLAGS="$CFLAGS"
+  CFLAGS="$CFLAGS $CCSHARED"
+  AC_TRY_COMPILE([#include <stdlib.h>
+    ], [exit(0);],
+    pike_cv_sys_ccshared="$CCSHARED", pike_cv_sys_ccshared='')
+  CFLAGS="$OLD_CFLAGS"
+])
+CCSHARED="$pike_cv_sys_ccshared"
+AC_MSG_RESULT($CCSHARED)
+
 # LDSHARED is the ld *command* used to create shared library
 # -- "ld" on SunOS 4.x.x, "ld -G" on SunOS 5.x
 AC_MSG_CHECKING(LDSHARED)
 if test -z "$LDSHARED" ; then
+  # Notes:
+  #
+  #   * For gcc "$REALCC -shared" will work on many platforms.
+  #
+  #   * For clang "$REALCC -shared" will also work on most platforms
+  #     (albeit undocumented).
+  #
+  #   * Try to avoid using "$REALCC -Wl,-Bshareable" or similar as
+  #     it will not inform the compiler wrapper that it is about
+  #     to link a shared module, and thus may cause it to provide
+  #     extraneous files to the linker (causing warnings like
+  #     "cannot find entry symbol __start; not setting start address".
+
   ldshared_is_cc=yes
   case "$pike_cv_sys_os" in
     AIX*)
@@ -7979,9 +8060,9 @@ if test -z "$LDSHARED" ; then
     Linux*) LDSHARED="$REALCC -shared";;
     GNU/kFreeBSD*) LDSHARED="$REALCC -shared";;
     GNU*) LDSHARED="$REALCC -Wl,-Bshareable";;
-    FreeBSD*) LDSHARED="$REALCC -Wl,-Bshareable";;
-    NetBSD*) LDSHARED="$REALCC -Wl,-Bshareable";;
-    OpenBSD*) LDSHARED="$REALCC -Wl,-Bshareable";;
+    FreeBSD*) LDSHARED="$REALCC -shared";;
+    NetBSD*) LDSHARED="$REALCC -shared";;
+    OpenBSD*) LDSHARED="$REALCC -shared";;
     Haiku*|BeOS*) LDSHARED="$REALCC -shared";;
     BSD/OS*)
       case "`uname -r`" in
@@ -8019,82 +8100,22 @@ if test -z "$LDSHARED" ; then
       ldshared_is_cc=no
       ;;
   esac
-  if test "$GCC:$ldshared_is_cc" = "yes:yes" ; then
-    # On some architectures gcc attempts to link the shared object with
-    # the standard startup files (crt0.o et al), which may fail due to
-    # relocation errors. The flag -nostartfiles exists in gcc since at
-    # least version 3.3.2 from 2003, so this should be safe.
-    LDSHARED="$LDSHARED -nostartfiles"
+  if test "$ldshared_is_cc" = "yes" ; then
+    # On architectures where the shared linker is the C compiler,
+    # options such as -fpic or -fPIC must sometimes also be supplied.
+    # Make sure to use the same flavor as when compiling the object files.
+    LDSHARED="$LDSHARED $CCSHARED"
+
+    if test "$GCC" = "yes" ; then
+      # On some architectures gcc attempts to link the shared object with
+      # the standard startup files (crt0.o et al), which may fail due to
+      # relocation errors. The flag -nostartfiles exists in gcc since at
+      # least version 3.3.2 from 2003, so this should be safe.
+      LDSHARED="$LDSHARED -nostartfiles"
+    fi
   fi
 fi
 AC_MSG_RESULT($LDSHARED)
-
-# CCSHARED are the C *flags* used to create objects to go into a shared
-# library -- this is only needed for a few systems
-AC_MSG_CHECKING(CCSHARED)
-AC_CACHE_VAL(pike_cv_sys_ccshared,[
-  if test -z "$CCSHARED" ; then
-    if test "$GCC" = yes ; then
-      case "$pike_cv_sys_os" in
-	BSD/OS*)
-         case "`uname -r`" in
-           4.*) CCSHARED="-fPIC";;
-           *) CCSHARED="";;
-         esac
-	;;
-	Darwin*)
-	  CCSHARED="-fPIC"
-	;;
-        Haiku*|BeOS*)
-          CCSHARED="-fPIC"
-        ;;
-	Solaris*)
-	  # The Image module runs out of symbol reference space unless we
-	  # use the large PIC model:
-	  # ld: fatal: too many symbols require `small' PIC references:
-	  # 	have 2205, maximum 2048 -- recompile some modules -K PIC.
-	  CCSHARED="-fPIC"
-	;;
-	*)
-	  AC_SYS_COMPILER_FLAG(-fPIC, fPIC, CCSHARED, [
-	    AC_SYS_COMPILER_FLAG(-fpic, fpic, CCSHARED)
-	  ])
-	;;
-      esac
-    else
-      case "$pike_cv_sys_os" in
-	Darwin*)
-	  CCSHARED="-fPIC"
-	;;
-        Haiku*|BeOS*)
-          CCSHARED="-fPIC"
-        ;;
-        hp*|HP*) CCSHARED="+z"; ;;
-	FreeBSD*) CCSHARED="-fpic";;
-	SCO_SV*) CCSHARED="-KPIC -dy -Bdynamic";;
-        UnixWare*|OpenUNIX*) CCSHARED="-KPIC -dy -Bdynamic";;
-	Solaris*)
-	  CCSHARED="-KPIC -Bdynamic"
-	  # Note: The Image module fails with
-	  #   Failed to load library: ld.so.1: pike: fatal:
-	  #   relocation error: R_AMD64_PC32: file Image.so:
-	  #   symbol really_free_svalue: value 0x28001ca5b2d does not fit
-	  # if the module is compiled with the default model.
-	  AC_SYS_COMPILER_FLAG(-xmodel=medium, xmodel_medium, CCSHARED)
-	;;
-	Windows_NT*) CCSHARED="-shared" ;;
-      esac
-    fi
-  fi
-  OLD_CFLAGS="$CFLAGS"
-  CFLAGS="$CFLAGS $CCSHARED"
-  AC_TRY_COMPILE([#include <stdlib.h>
-    ], [exit(0);],
-    pike_cv_sys_ccshared="$CCSHARED", pike_cv_sys_ccshared='')
-  CFLAGS="$OLD_CFLAGS"
-])
-CCSHARED="$pike_cv_sys_ccshared"
-AC_MSG_RESULT($CCSHARED)
 
 AC_MSG_CHECKING(LINKFORSHARED)
 
@@ -8349,14 +8370,21 @@ case "x$pike_cv_sys_os" in
     signal_handler="custom AmigaOS"
   ;;
 
-  xLinux | *kFreeBSD*)
+  xLinux | *kFreeBSD)
     # Linux's stupid thread implementation doesn't survive USE_WAIT_THREAD.
+    # Does not work on FreeBSD 15.0, NetBSD 10.1 or OpenBSD 7.7; the
+    # lib/modules/testsuite.in testsuite has several tests they fail with:
+    #   "Lost track of a child (pid 19799, errno from wait 10)."
     signal_handler="SIGCHILD"
     AC_DEFINE(USE_SIGCHILD)
   ;;
 
   *)
     # This is valid for at least Solaris, AIX and Darwin.
+    #
+    # Note that all of FreeBSD 15.0, NetBSD 10.1 and OpenBSD 7.7 have
+    # a waitpid(2) that intermittently fails with errno == 0. This is
+    # however better than losing track of children (see above).
     if grep _REENTRANT confdefs.h >/dev/null 2>&1; then
       signal_handler="wait thread"
       AC_DEFINE(USE_WAIT_THREAD)
