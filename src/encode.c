@@ -2437,12 +2437,6 @@ void f_encode_value_canonic(INT32 args)
 }
 
 
-struct unfinished_prog_link
-{
-  struct unfinished_prog_link *next;
-  struct program *prog;
-};
-
 struct unfinished_obj_link
 {
   struct unfinished_obj_link *next;
@@ -2457,7 +2451,6 @@ struct decode_data
   ptrdiff_t len;
   ptrdiff_t ptr;
   struct mapping *decoded;
-  struct unfinished_prog_link *unfinished_programs;
   struct unfinished_obj_link *unfinished_objects;
   struct unfinished_obj_link *unfinished_placeholders;
   struct svalue counter;
@@ -3172,12 +3165,6 @@ static int call_delayed_decode(struct Supporter *s, int finish)
       free_svalue(&throw_value);
       mark_free_svalue (&throw_value);
     } else {
-      while(data->unfinished_programs)
-	{
-	  struct unfinished_prog_link *tmp=data->unfinished_programs;
-	  data->unfinished_programs=tmp->next;
-	  free(tmp);
-	}
 
       while(data->unfinished_objects)
 	{
@@ -4964,8 +4951,6 @@ static void free_decode_data (struct decode_data *data, int delay,
 
 #ifdef PIKE_DEBUG
   if (!free_after_error && !data->delay_counter) {
-    if(data->unfinished_programs)
-      Pike_fatal("We have unfinished programs left in decode()!\n");
     if(data->unfinished_objects)
       Pike_fatal("We have unfinished objects left in decode()!\n");
     if(data->unfinished_placeholders)
@@ -4974,13 +4959,6 @@ static void free_decode_data (struct decode_data *data, int delay,
 #endif
 
   if (data->codec) free_object (data->codec);
-
-  while(data->unfinished_programs)
-  {
-    struct unfinished_prog_link *tmp=data->unfinished_programs;
-    data->unfinished_programs=tmp->next;
-    free(tmp);
-  }
 
   while(data->unfinished_objects)
   {
@@ -5085,8 +5063,7 @@ static INT32 my_decode(struct pike_string *tmp,
   data->explicit_codec = explicit_codec;
   data->pickyness=0;
   data->pass=1;
-  data->unfinished_programs=0;
-  data->unfinished_objects=0;
+  data->unfinished_objects = NULL;
   data->unfinished_placeholders = NULL;
   data->delay_counter = 0;
   data->support_delay_counter = 0;
