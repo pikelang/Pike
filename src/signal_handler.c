@@ -1521,7 +1521,7 @@ static void do_bi_do_da_lock(void)
   PROC_FPRINTF("[%d] wait thread: This is your wakeup call!\n",
                getpid());
 
-  co_signal(&start_wait_thread);
+  co_broadcast(&start_wait_thread);
 
   PROC_FPRINTF("[%d] fork: releasing the lock.\n", getpid());
 
