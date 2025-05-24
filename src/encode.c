@@ -4722,11 +4722,7 @@ static void decode_value2(struct decode_data *data)
 	  data->depth-=2;
 #endif
 
-          p->flags |= PROGRAM_PASS_1_DONE;
-
           /* Decode the actual constants
-           *
-           * This must be done after pass 1 has ended.
            */
           for (e=0; e<local_num_constants; e++) {
             struct program_constant *constant = p->constants+e;

@@ -491,7 +491,12 @@ struct object *decode_value_clone_object(struct svalue *prog)
   struct program *p=program_from_svalue(prog);
   if(!p) return NULL;
 
-  o=low_clone(p);
+  if ((p->flags & PROGRAM_AVOID_CHECK) && !(p->flags & PROGRAM_PASS_1_DONE)) {
+    p->flags |= PROGRAM_PASS_1_DONE;
+    o=low_clone(p);
+    p->flags &= ~PROGRAM_PASS_1_DONE;
+  } else
+    o=low_clone(p);
   SET_ONERROR(tmp, do_free_object, o);
   debug_malloc_touch(o);
 
