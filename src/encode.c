@@ -2996,6 +2996,32 @@ static void restore_current_file(void *save_current_file)
   c->lex.current_file = save_current_file;
 }
 
+static void init_decoded_object(struct decode_data *data)
+{
+  struct object *o = Pike_sp[-2].u.object;
+  int fun = find_identifier("decode_object", decoder_codec (data)->prog);
+  if (fun < 0)
+    decode_error(data, Pike_sp - 1,
+                 "Cannot decode objects without a "
+                 "\"decode_object\" function in the codec.\n");
+  apply_low(data->codec,fun,2);
+  if ((TYPEOF(Pike_sp[-1]) == T_ARRAY) && o->prog &&
+      ((fun = FIND_LFUN(o->prog, LFUN_CREATE)) != -1)) {
+    /* Call lfun::create(@args). */
+    INT32 args;
+    Pike_sp--;
+    args = Pike_sp->u.array->size;
+    if (args) {
+      /* Note: Eats reference */
+      push_array_items(Pike_sp->u.array);
+    } else {
+      free_array(Pike_sp->u.array);
+    }
+    apply_low(o, fun, args);
+  }
+  pop_stack();
+}
+
 /* Decode bytecode string @[string_no].
  * Returns resulting offset in p->program.
  */
@@ -3536,7 +3562,6 @@ static void decode_value2(struct decode_data *data)
 
 	case 1:
 	  {
-	    int fun;
 	    /* decode_value_clone_object does not call __INIT, so
 	     * we want to do that ourselves...
 	     */
@@ -3599,27 +3624,7 @@ static void decode_value2(struct decode_data *data)
 	    ref_push_object(o);
 	    decode_value2(data);
 
-	    fun = find_identifier("decode_object", decoder_codec (data)->prog);
-	    if (fun < 0)
-	      decode_error(data, Pike_sp - 1,
-			   "Cannot decode objects without a "
-			   "\"decode_object\" function in the codec.\n");
-	    apply_low(data->codec,fun,2);
-	    if ((TYPEOF(Pike_sp[-1]) == T_ARRAY) && o->prog &&
-		((fun = FIND_LFUN(o->prog, LFUN_CREATE)) != -1)) {
-	      /* Call lfun::create(@args). */
-	      INT32 args;
-	      Pike_sp--;
-	      args = Pike_sp->u.array->size;
-	      if (args) {
-		/* Note: Eats reference */
-		push_array_items(Pike_sp->u.array);
-	      } else {
-		free_array(Pike_sp->u.array);
-	      }
-	      apply_low(o, fun, args);
-	    }
-	    pop_stack();
+            init_decoded_object(data);
 	  }
 
 	  break;
@@ -4863,7 +4868,7 @@ static void decode_value2(struct decode_data *data)
 
 	  if (!data->delay_counter) {
 	    /* Call the Pike initializers for the delayed placeholders. */
-	    struct unfinished_obj_link *up;
+	    struct unfinished_obj_link *up, *op, *opchain;
 
 	    while ((up = data->unfinished_placeholders)) {
 	      struct object *o;
@@ -4873,6 +4878,29 @@ static void decode_value2(struct decode_data *data)
 	      call_pike_initializers(o, 0);
 	      pop_stack();
 	    }
+
+            opchain = NULL;
+            while ((op = data->unfinished_objects)) {
+              struct object *o = op->o;
+              data->unfinished_objects = op->next;
+              if (!(o->prog && (o->prog->flags & PROGRAM_FINISHED))) {
+                op->next = opchain;
+                opchain = op;
+              } else {
+                int lfun = FIND_LFUN(o->prog, LFUN___INIT);
+                if (lfun >= 0) {
+                  apply_low(o, lfun, 0);
+                  pop_stack();
+                }
+                ref_push_object(o);
+                push_svalue(&op->decode_arg);
+                init_decoded_object(data);
+                free_svalue(&op->decode_arg);
+                free_object(o);
+                free(op);
+              }
+            }
+            data->unfinished_objects = opchain;
 	  }
 
 #ifdef ENCODE_DEBUG
@@ -4939,7 +4967,7 @@ static void free_decode_data (struct decode_data *data, int delay,
   }
 
 #ifdef PIKE_DEBUG
-  if (!free_after_error) {
+  if (!free_after_error && !data->delay_counter) {
     if(data->unfinished_programs)
       Pike_fatal("We have unfinished programs left in decode()!\n");
     if(data->unfinished_objects)
