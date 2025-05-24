@@ -3123,7 +3123,7 @@ static INT32 decode_portable_bytecode(struct decode_data *data, INT32 string_no)
 }
 
 static void low_do_decode (struct decode_data *data);
-static void free_decode_data (struct decode_data *data, int delay,
+static void free_decode_data (struct decode_data *data,
 			      int DEBUGUSED(free_after_error));
 
 static int call_delayed_decode(struct Supporter *s, int finish)
@@ -3218,7 +3218,7 @@ static void exit_delayed_decode(struct Supporter *s)
   if (s->data != NULL) {
     struct decode_data *data = s->data;
     --data->support_delay_counter;
-    free_decode_data(data, 0, 0);
+    free_decode_data(data, 0);
   }
 }
 
@@ -4920,14 +4920,9 @@ decode_done:;
 
 static struct decode_data *current_decode = NULL;
 
-static void free_decode_data (struct decode_data *data, int delay,
+static void free_decode_data (struct decode_data *data,
 			      int DEBUGUSED(free_after_error))
 {
-#ifdef PIKE_DEBUG
-  int e;
-  struct keypair *k;
-#endif
-
   debug_malloc_touch(data);
 
   if (current_decode == data) {
@@ -4942,7 +4937,7 @@ static void free_decode_data (struct decode_data *data, int delay,
     }
   }
 
-  if(delay || data->support_delay_counter)
+  if(data->support_delay_counter)
   {
     debug_malloc_touch(data);
     /* We have been delayed */
@@ -5001,14 +4996,12 @@ static void low_do_decode (struct decode_data *data)
 
 static void error_free_decode_data (struct decode_data *data)
 {
-  int delay;
   debug_malloc_touch (data);
-  delay = 0;
   if (data->debug_buf) {
     free_string_builder(data->debug_buf);
     data->debug_buf = NULL;
   }
-  free_decode_data (data, delay, 1);
+  free_decode_data (data, 1);
 }
 
 #ifdef ENCODE_DEBUG
@@ -5137,11 +5130,7 @@ static INT32 my_decode(struct pike_string *tmp,
   }
 #endif
 
-  {
-    int delay;
-    delay = 0;
-    free_decode_data (data, delay, 0);
-  }
+  free_decode_data (data, 0);
 
   STACK_LEVEL_DONE(1);
 
