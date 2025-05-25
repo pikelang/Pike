@@ -109,7 +109,7 @@ protected
   this::map_cb = map_cb;
   res = .FutureResult(db, q, bindings);
   discardover = maxresults = -1;
-  if (res->status_command_complete = catch(((function)(db->streaming_typed_query))(q, bindings)
+  if (res->status_command_complete = catch(db->streaming_typed_query(q, bindings)
                                     ->set_result_array_callback(result_cb)))
     failed(res->status_command_complete);
 }

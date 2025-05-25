@@ -2437,12 +2437,6 @@ void f_encode_value_canonic(INT32 args)
 }
 
 
-struct unfinished_prog_link
-{
-  struct unfinished_prog_link *next;
-  struct program *prog;
-};
-
 struct unfinished_obj_link
 {
   struct unfinished_obj_link *next;
@@ -2457,7 +2451,6 @@ struct decode_data
   ptrdiff_t len;
   ptrdiff_t ptr;
   struct mapping *decoded;
-  struct unfinished_prog_link *unfinished_programs;
   struct unfinished_obj_link *unfinished_objects;
   struct unfinished_obj_link *unfinished_placeholders;
   struct svalue counter;
@@ -2996,6 +2989,32 @@ static void restore_current_file(void *save_current_file)
   c->lex.current_file = save_current_file;
 }
 
+static void init_decoded_object(struct decode_data *data)
+{
+  struct object *o = Pike_sp[-2].u.object;
+  int fun = find_identifier("decode_object", decoder_codec (data)->prog);
+  if (fun < 0)
+    decode_error(data, Pike_sp - 1,
+                 "Cannot decode objects without a "
+                 "\"decode_object\" function in the codec.\n");
+  apply_low(data->codec,fun,2);
+  if ((TYPEOF(Pike_sp[-1]) == T_ARRAY) && o->prog &&
+      ((fun = FIND_LFUN(o->prog, LFUN_CREATE)) != -1)) {
+    /* Call lfun::create(@args). */
+    INT32 args;
+    Pike_sp--;
+    args = Pike_sp->u.array->size;
+    if (args) {
+      /* Note: Eats reference */
+      push_array_items(Pike_sp->u.array);
+    } else {
+      free_array(Pike_sp->u.array);
+    }
+    apply_low(o, fun, args);
+  }
+  pop_stack();
+}
+
 /* Decode bytecode string @[string_no].
  * Returns resulting offset in p->program.
  */
@@ -3104,7 +3123,7 @@ static INT32 decode_portable_bytecode(struct decode_data *data, INT32 string_no)
 }
 
 static void low_do_decode (struct decode_data *data);
-static void free_decode_data (struct decode_data *data, int delay,
+static void free_decode_data (struct decode_data *data,
 			      int DEBUGUSED(free_after_error));
 
 static int call_delayed_decode(struct Supporter *s, int finish)
@@ -3146,12 +3165,6 @@ static int call_delayed_decode(struct Supporter *s, int finish)
       free_svalue(&throw_value);
       mark_free_svalue (&throw_value);
     } else {
-      while(data->unfinished_programs)
-	{
-	  struct unfinished_prog_link *tmp=data->unfinished_programs;
-	  data->unfinished_programs=tmp->next;
-	  free(tmp);
-	}
 
       while(data->unfinished_objects)
 	{
@@ -3205,7 +3218,7 @@ static void exit_delayed_decode(struct Supporter *s)
   if (s->data != NULL) {
     struct decode_data *data = s->data;
     --data->support_delay_counter;
-    free_decode_data(data, 0, 0);
+    free_decode_data(data, 0);
   }
 }
 
@@ -3536,7 +3549,6 @@ static void decode_value2(struct decode_data *data)
 
 	case 1:
 	  {
-	    int fun;
 	    /* decode_value_clone_object does not call __INIT, so
 	     * we want to do that ourselves...
 	     */
@@ -3599,27 +3611,7 @@ static void decode_value2(struct decode_data *data)
 	    ref_push_object(o);
 	    decode_value2(data);
 
-	    fun = find_identifier("decode_object", decoder_codec (data)->prog);
-	    if (fun < 0)
-	      decode_error(data, Pike_sp - 1,
-			   "Cannot decode objects without a "
-			   "\"decode_object\" function in the codec.\n");
-	    apply_low(data->codec,fun,2);
-	    if ((TYPEOF(Pike_sp[-1]) == T_ARRAY) && o->prog &&
-		((fun = FIND_LFUN(o->prog, LFUN_CREATE)) != -1)) {
-	      /* Call lfun::create(@args). */
-	      INT32 args;
-	      Pike_sp--;
-	      args = Pike_sp->u.array->size;
-	      if (args) {
-		/* Note: Eats reference */
-		push_array_items(Pike_sp->u.array);
-	      } else {
-		free_array(Pike_sp->u.array);
-	      }
-	      apply_low(o, fun, args);
-	    }
-	    pop_stack();
+            init_decoded_object(data);
 	  }
 
 	  break;
@@ -4717,11 +4709,7 @@ static void decode_value2(struct decode_data *data)
 	  data->depth-=2;
 #endif
 
-          p->flags |= PROGRAM_PASS_1_DONE;
-
           /* Decode the actual constants
-           *
-           * This must be done after pass 1 has ended.
            */
           for (e=0; e<local_num_constants; e++) {
             struct program_constant *constant = p->constants+e;
@@ -4863,7 +4851,7 @@ static void decode_value2(struct decode_data *data)
 
 	  if (!data->delay_counter) {
 	    /* Call the Pike initializers for the delayed placeholders. */
-	    struct unfinished_obj_link *up;
+	    struct unfinished_obj_link *up, *op, *opchain;
 
 	    while ((up = data->unfinished_placeholders)) {
 	      struct object *o;
@@ -4873,6 +4861,29 @@ static void decode_value2(struct decode_data *data)
 	      call_pike_initializers(o, 0);
 	      pop_stack();
 	    }
+
+            opchain = NULL;
+            while ((op = data->unfinished_objects)) {
+              struct object *o = op->o;
+              data->unfinished_objects = op->next;
+              if (!(o->prog && (o->prog->flags & PROGRAM_FINISHED))) {
+                op->next = opchain;
+                opchain = op;
+              } else {
+                int lfun = FIND_LFUN(o->prog, LFUN___INIT);
+                if (lfun >= 0) {
+                  apply_low(o, lfun, 0);
+                  pop_stack();
+                }
+                ref_push_object(o);
+                push_svalue(&op->decode_arg);
+                init_decoded_object(data);
+                free_svalue(&op->decode_arg);
+                free_object(o);
+                free(op);
+              }
+            }
+            data->unfinished_objects = opchain;
 	  }
 
 #ifdef ENCODE_DEBUG
@@ -4909,14 +4920,9 @@ decode_done:;
 
 static struct decode_data *current_decode = NULL;
 
-static void free_decode_data (struct decode_data *data, int delay,
+static void free_decode_data (struct decode_data *data,
 			      int DEBUGUSED(free_after_error))
 {
-#ifdef PIKE_DEBUG
-  int e;
-  struct keypair *k;
-#endif
-
   debug_malloc_touch(data);
 
   if (current_decode == data) {
@@ -4931,7 +4937,7 @@ static void free_decode_data (struct decode_data *data, int delay,
     }
   }
 
-  if(delay || data->support_delay_counter)
+  if(data->support_delay_counter)
   {
     debug_malloc_touch(data);
     /* We have been delayed */
@@ -4939,9 +4945,7 @@ static void free_decode_data (struct decode_data *data, int delay,
   }
 
 #ifdef PIKE_DEBUG
-  if (!free_after_error) {
-    if(data->unfinished_programs)
-      Pike_fatal("We have unfinished programs left in decode()!\n");
+  if (!free_after_error && !data->delay_counter) {
     if(data->unfinished_objects)
       Pike_fatal("We have unfinished objects left in decode()!\n");
     if(data->unfinished_placeholders)
@@ -4950,13 +4954,6 @@ static void free_decode_data (struct decode_data *data, int delay,
 #endif
 
   if (data->codec) free_object (data->codec);
-
-  while(data->unfinished_programs)
-  {
-    struct unfinished_prog_link *tmp=data->unfinished_programs;
-    data->unfinished_programs=tmp->next;
-    free(tmp);
-  }
 
   while(data->unfinished_objects)
   {
@@ -4999,14 +4996,12 @@ static void low_do_decode (struct decode_data *data)
 
 static void error_free_decode_data (struct decode_data *data)
 {
-  int delay;
   debug_malloc_touch (data);
-  delay = 0;
   if (data->debug_buf) {
     free_string_builder(data->debug_buf);
     data->debug_buf = NULL;
   }
-  free_decode_data (data, delay, 1);
+  free_decode_data (data, 1);
 }
 
 #ifdef ENCODE_DEBUG
@@ -5061,8 +5056,7 @@ static INT32 my_decode(struct pike_string *tmp,
   data->explicit_codec = explicit_codec;
   data->pickyness=0;
   data->pass=1;
-  data->unfinished_programs=0;
-  data->unfinished_objects=0;
+  data->unfinished_objects = NULL;
   data->unfinished_placeholders = NULL;
   data->delay_counter = 0;
   data->support_delay_counter = 0;
@@ -5136,11 +5130,7 @@ static INT32 my_decode(struct pike_string *tmp,
   }
 #endif
 
-  {
-    int delay;
-    delay = 0;
-    free_decode_data (data, delay, 0);
-  }
+  free_decode_data (data, 0);
 
   STACK_LEVEL_DONE(1);
 
