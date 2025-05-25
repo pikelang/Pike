@@ -3157,12 +3157,12 @@ static int call_delayed_decode(struct Supporter *s, int finish)
     data->depth = -2;
 #endif
 
+    data->pass++;
+
     if (SETJMP(recovery)) {
       handle_compile_exception(NULL);
       UNSETJMP(recovery);
     } else {
-
-      data->pass=1;
 
       low_do_decode (data);
 
@@ -3176,6 +3176,7 @@ static int call_delayed_decode(struct Supporter *s, int finish)
       data->debug_buf = NULL;
     }
 #endif
+    --data->pass;
     data->support_compilation = prevcc;
     pop_n_elems(Pike_sp-osp);
   }
