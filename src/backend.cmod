@@ -5182,12 +5182,13 @@ PIKECLASS SelectBackend
 
   static void sb_update_fd_set (struct Backend_struct *me,
 				struct SelectBackend_struct *sb, int fd,
-				int old_events, int new_events)
+                                int old_events, int new_events,
+                                int PDUNUSED(flags))
   {
     int changed_events = old_events ^ new_events;
 
-    PDWERR("[%d]BACKEND[%d]: sb_update_fd_set(.., %d, %d, %d):\n",
-           THR_NO, me->id, fd, old_events, new_events);
+    PDWERR("[%d]BACKEND[%d]: sb_update_fd_set(.., %d, %d, %d, 0x%04x):\n",
+           THR_NO, me->id, fd, old_events, new_events, flags);
 #ifdef __NT__
     PDWERR("[%d]BACKEND[%d]: handle: 0x%08lx\n",
 	   THR_NO, me->id, (unsigned long)da_handle[fd]);
@@ -5280,7 +5281,7 @@ PIKECLASS SelectBackend
 #ifdef __NT__
       int i;
       for (i = 0; i < 3; i++) {
-	int j;
+        unsigned int j;
 	for (j = 0; j < sb->set.sets[i].fd_count; j++) {
 	  SOCKET s = sb->set.sets[i].fd_array[j];
 	  for (e = 0; e < FD_SETSIZE; e++) {
