@@ -3162,23 +3162,6 @@ static int call_delayed_decode(struct Supporter *s, int finish)
       UNSETJMP(recovery);
     } else {
 
-      while(data->unfinished_objects)
-	{
-	  struct unfinished_obj_link *tmp=data->unfinished_objects;
-	  data->unfinished_objects=tmp->next;
-	  free_svalue(&tmp->decode_arg);
-	  free_object(tmp->o);
-	  free(tmp);
-	}
-
-      while(data->unfinished_placeholders)
-	{
-	  struct unfinished_obj_link *tmp=data->unfinished_placeholders;
-	  data->unfinished_placeholders=tmp->next;
-	  free_object(tmp->o);
-	  free(tmp);
-	}
-
       data->pass=1;
 
       low_do_decode (data);
@@ -3934,7 +3917,16 @@ static void decode_value2(struct decode_data *data)
 	  }
 	  else if (data->support_compilation) {
 	    struct svalue *val = low_mapping_lookup (data->decoded, &entry_id);
-	    if (val == NULL)
+	    if (val == NULL ||
+		/* Multiple supporters can exist for the same decode,
+		   so this program may have been fixed on a previous
+		   supporter pass... */
+		(TYPEOF(*val) == T_PROGRAM &&
+		 (val->u.program->flags &
+		  (PROGRAM_OPTIMIZED | PROGRAM_FIXED |
+		   PROGRAM_FINISHED | PROGRAM_PASS_1_DONE)) ==
+		 (PROGRAM_OPTIMIZED | PROGRAM_FIXED |
+		  PROGRAM_FINISHED | PROGRAM_PASS_1_DONE)))
 	      p = NULL;
 	    else {
 	      if (TYPEOF(*val) != T_PROGRAM ||
@@ -4040,7 +4032,10 @@ static void decode_value2(struct decode_data *data)
 
 	  SET_ONERROR(err2, restore_current_file, save_current_file);
 
-	  if (!delayed_enc_val) {
+	  if (delayed_enc_val) {
+	    data->delay_counter--;
+          } else if (!data->support_compilation ||
+                     !low_mapping_lookup (data->decoded, &entry_id)) {
 	    struct svalue prog;
 	    SET_SVAL(prog, T_PROGRAM, 0, program, p);
 	    EDB(2,fprintf(stderr, "%*sDecoding a program to <%ld>: ",
@@ -4049,8 +4044,6 @@ static void decode_value2(struct decode_data *data)
 		fputc('\n', stderr););
 	    mapping_insert(data->decoded, &entry_id, &prog);
 	    debug_malloc_touch(p);
-	  } else {
-	    data->delay_counter--;
 	  }
 
 	  debug_malloc_touch(p);
