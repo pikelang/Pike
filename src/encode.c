@@ -3158,12 +3158,8 @@ static int call_delayed_decode(struct Supporter *s, int finish)
 #endif
 
     if (SETJMP(recovery)) {
-      push_svalue (&throw_value);
-      SAFE_APPLY_MASTER ("describe_error", 1);
-      pop_stack();
+      handle_compile_exception(NULL);
       UNSETJMP(recovery);
-      free_svalue(&throw_value);
-      mark_free_svalue (&throw_value);
     } else {
 
       while(data->unfinished_objects)
