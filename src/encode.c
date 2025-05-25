@@ -2474,6 +2474,12 @@ struct decode_data
 #endif
 };
 
+struct support_data {
+  struct decode_data *data;
+  ptrdiff_t ptr;
+  struct svalue entry_id, counter;
+};
+
 static struct object *decoder_codec (struct decode_data *data)
 {
   struct pike_string *decoder_str;
@@ -3129,11 +3135,12 @@ static void free_decode_data (struct decode_data *data,
 static int call_delayed_decode(struct Supporter *s, int finish)
 {
   JMP_BUF recovery;
-  struct decode_data *data = s->data;
+  struct decode_data *data;
+  struct support_data *sd = s->data;
   struct compilation *cc = (struct compilation *)s;
   volatile int ok = 0;
 
-  if (!data)
+  if (!sd || !(data = sd->data))
     return 0;
 
   debug_malloc_touch(cc);
@@ -3145,9 +3152,11 @@ static int call_delayed_decode(struct Supporter *s, int finish)
 #endif
     struct svalue *osp = Pike_sp;
     struct compilation *prevcc = data->support_compilation;
+    ptrdiff_t prevptr = data->ptr;
+    struct svalue prevcounter = data->counter;
     data->support_compilation = cc;
-    SET_SVAL(data->counter, T_INT, NUMBER_NUMBER, integer, COUNTER_START);
-    data->ptr=4; /* Skip 182 'k' 'e' '0' */
+    data->counter = sd->counter;
+    data->ptr=sd->ptr;
 #ifdef ENCODE_DEBUG
     data->debug_ptr = 0;
     if (data->debug && !data->debug_buf) {
@@ -3164,7 +3173,7 @@ static int call_delayed_decode(struct Supporter *s, int finish)
       UNSETJMP(recovery);
     } else {
 
-      low_do_decode (data);
+      decode_value2(data);
 
       UNSETJMP(recovery);
       ok = 1;
@@ -3177,6 +3186,8 @@ static int call_delayed_decode(struct Supporter *s, int finish)
     }
 #endif
     --data->pass;
+    data->ptr = prevptr;
+    data->counter = prevcounter;
     data->support_compilation = prevcc;
     pop_n_elems(Pike_sp-osp);
   }
@@ -3195,10 +3206,14 @@ static int call_delayed_decode(struct Supporter *s, int finish)
 
 static void exit_delayed_decode(struct Supporter *s)
 {
-  if (s->data != NULL) {
-    struct decode_data *data = s->data;
-    --data->support_delay_counter;
-    free_decode_data(data, 0);
+  struct support_data *sd = s->data;
+  if (sd != NULL) {
+    struct decode_data *data = sd->data;
+    if (data != NULL) {
+      --data->support_delay_counter;
+      free_decode_data(data, 0);
+    }
+    free(sd);
   }
 }
 
@@ -3215,6 +3230,7 @@ static void decode_value2(struct decode_data *data)
   INT64 num;
   struct svalue entry_id, *tmp2;
   struct svalue *delayed_enc_val;
+  ptrdiff_t start_ptr = data->ptr;
 
   STACK_LEVEL_START(0);
 
@@ -3242,6 +3258,7 @@ static void decode_value2(struct decode_data *data)
 		      "for delay encoded program <%pO>: %pO\n",
 		      &entry_id, delayed_enc_val);
       }
+      start_ptr = data->ptr;
       DECODE ("decode_value2");
       break;
 
@@ -3260,9 +3277,17 @@ static void decode_value2(struct decode_data *data)
       goto decode_done;
 
     default:
-      entry_id = data->counter;
-      if ((what & TAG_MASK) != TAG_TYPE) {
-        data->counter.u.integer++;
+      if (data->support_compilation &&
+	  data->support_compilation->supporter.data &&
+	  start_ptr == ((struct support_data *)data->support_compilation->
+			supporter.data)->ptr)
+	entry_id = ((struct support_data *)data->support_compilation->
+		    supporter.data)->entry_id;
+      else {
+	entry_id = data->counter;
+	if ((what & TAG_MASK) != TAG_TYPE) {
+	  data->counter.u.integer++;
+	}
       }
       EDB (2, fprintf(stderr, "%*sDecoding to <%ld>: TAG%d (%ld)\n",
 		      data->depth, "", entry_id.u.integer,
@@ -3831,21 +3856,25 @@ static void decode_value2(struct decode_data *data)
 	  break;
 
 	case 5: {		/* Forward reference for new-style encoding. */
-          struct program *p = low_allocate_program(0);
           ETRACE({
 	      DECODE_WERR(".entry   program, 5");
 	    });
+          if (data->pass > 1 &&
+	      (tmp2=low_mapping_lookup(data->decoded, & entry_id))) {
+            push_svalue(tmp2);
+          } else {
+            struct program *p = low_allocate_program(0);
 
-	  push_program (p);
-	  EDB(2,
-	      fprintf (stderr, "%*sInited an embryo for a delay encoded program "
-		       "to <%ld>: ",
-		       data->depth, "", entry_id.u.integer);
-	      print_svalue (stderr, Pike_sp - 1);
-	      fputc ('\n', stderr););
+            push_program (p);
+            EDB(2,
+                fprintf (stderr, "%*sInited an embryo for a delay encoded program "
+                         "to <%ld>: ",
+                         data->depth, "", entry_id.u.integer);
+                print_svalue (stderr, Pike_sp - 1);
+                fputc ('\n', stderr););
 
-	  data->delay_counter++;
-
+            data->delay_counter++;
+          }
           STACK_LEVEL_CHECK(1);
 	  break;
 	}
@@ -3868,6 +3897,7 @@ static void decode_value2(struct decode_data *data)
           int init_placeholder = 0;
 	  INT_TYPE save_current_line;
           int delay;
+	  struct svalue start_counter = data->counter;
 #define FOO(NUMTYPE,Y,ARGTYPE,NAME) \
           NUMTYPE PIKE_CONCAT(local_num_, NAME) = 0;
 #include "program_areas.h"
@@ -3918,16 +3948,7 @@ static void decode_value2(struct decode_data *data)
 	  }
 	  else if (data->support_compilation) {
 	    struct svalue *val = low_mapping_lookup (data->decoded, &entry_id);
-	    if (val == NULL ||
-		/* Multiple supporters can exist for the same decode,
-		   so this program may have been fixed on a previous
-		   supporter pass... */
-		(TYPEOF(*val) == T_PROGRAM &&
-		 (val->u.program->flags &
-		  (PROGRAM_OPTIMIZED | PROGRAM_FIXED |
-		   PROGRAM_FINISHED | PROGRAM_PASS_1_DONE)) ==
-		 (PROGRAM_OPTIMIZED | PROGRAM_FIXED |
-		  PROGRAM_FINISHED | PROGRAM_PASS_1_DONE)))
+	    if (val == NULL)
 	      p = NULL;
 	    else {
 	      if (TYPEOF(*val) != T_PROGRAM ||
@@ -4729,8 +4750,13 @@ static void decode_value2(struct decode_data *data)
           delay = unlink_current_supporter(& c->supporter);
 
 	  if (delay) {
+	    struct support_data *sd = xalloc(sizeof(struct support_data));
+	    sd->data = data;
+	    sd->ptr = start_ptr;
+	    sd->counter = start_counter;
+	    sd->entry_id = entry_id;
 	    data->support_delay_counter++;
-	    c->supporter.data = data;
+	    c->supporter.data = sd;
 	  }
 
           UNSET_ONERROR(err);
