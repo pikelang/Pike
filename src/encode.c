@@ -33,6 +33,7 @@
 #include "pike_float.h"
 #include "sprintf.h"
 #include "modules/Gmp/my_gmp.h"
+#include "cyclic.h"
 
 /* #define ENCODE_DEBUG */
 
@@ -4934,24 +4935,10 @@ decode_done:;
   STACK_LEVEL_DONE(1);
 }
 
-static struct decode_data *current_decode = NULL;
-
 static void free_decode_data (struct decode_data *data,
 			      int DEBUGUSED(free_after_error))
 {
   debug_malloc_touch(data);
-
-  if (current_decode == data) {
-    current_decode = data->next;
-  } else {
-    struct decode_data *d;
-    for (d = current_decode; d; d=d->next) {
-      if (d->next == data) {
-	d->next = d->next->next;
-	break;
-      }
-    }
-  }
 
   if(data->support_delay_counter)
   {
@@ -5000,8 +4987,6 @@ static void free_decode_data (struct decode_data *data,
 
 static void low_do_decode (struct decode_data *data)
 {
-  current_decode = data;
-
   decode_value2(data);
 
   while (data->ptr < data->len) {
@@ -5037,32 +5022,28 @@ static INT32 my_decode(struct pike_string *tmp,
 #ifdef ENCODE_DEBUG
   struct string_builder buf;
 #endif
+  DECLARE_CYCLIC();
 
   STACK_LEVEL_START(0);
 
-  /* FIXME: Why not use CYCLIC? */
-  /* Attempt to avoid infinite recursion on circular structures. */
-  for (data = current_decode; data; data=data->next) {
-    if (data->raw == tmp &&
-	(codec ? data->codec == codec : !data->explicit_codec)
-#ifdef PIKE_THREADS
-	&& data->thread_state == Pike_interpreter.thread_state
-#endif
-       ) {
-      struct svalue *res;
-      struct svalue val = SVALUE_INIT_INT (COUNTER_START);
-      if ((res = low_mapping_lookup(data->decoded, &val))) {
-	push_svalue(res);
-
-        STACK_LEVEL_CHECK(1);
-	return 1;
-      }
-      /* Possible recursion detected. */
-      /* return 0; */
+  if ((data=BEGIN_CYCLIC(tmp, (codec? codec :
+			       (void *)(ptrdiff_t)explicit_codec)))) {
+    struct svalue *res;
+    struct svalue val = SVALUE_INIT_INT (COUNTER_START);
+    if (data->decoded && (res = low_mapping_lookup(data->decoded, &val))) {
+      push_svalue(res);
+      STACK_LEVEL_CHECK(1);
+      END_CYCLIC();
+      return 1;
     }
+    /* Possible recursion detected. */
+    /* END_CYCLIC(); */
+    /* return 0; */
   }
 
   data=ALLOC_STRUCT(decode_data);
+  data->decoded = NULL;
+  SET_CYCLIC_RET(data);
   SET_SVAL(data->counter, T_INT, NUMBER_NUMBER, integer, COUNTER_START);
   data->data_str = tmp;
   data->data=(unsigned char *)tmp->str;
@@ -5078,7 +5059,6 @@ static INT32 my_decode(struct pike_string *tmp,
   data->support_delay_counter = 0;
   data->support_compilation = NULL;
   data->raw = tmp;
-  data->next = current_decode;
   data->debug_buf = debug_buf;
   data->debug_ptr = 0;
 #ifdef PIKE_THREADS
@@ -5102,6 +5082,7 @@ static INT32 my_decode(struct pike_string *tmp,
       GETC() != '0')
   {
     free( (char *) data);
+    END_CYCLIC();
     return 0;
   }
 
@@ -5150,6 +5131,7 @@ static INT32 my_decode(struct pike_string *tmp,
 
   STACK_LEVEL_DONE(1);
 
+  END_CYCLIC();
   return 1;
 }
 
@@ -5311,36 +5293,36 @@ static INT32 my_decode(struct pike_string *tmp,
 
 /* Compatibility decoder */
 
-static unsigned char extract_char(char **v, ptrdiff_t *l)
+static unsigned char extract_char(struct decode_data *data, char **v, ptrdiff_t *l)
 {
-  if(!*l) decode_error(current_decode, NULL, "Not enough place for char.\n");
+  if(!*l) decode_error(data, NULL, "Not enough place for char.\n");
   else (*l)--;
   (*v)++;
   return ((unsigned char *)(*v))[-1];
 }
 
-static ptrdiff_t extract_int(char **v, ptrdiff_t *l)
+static ptrdiff_t extract_int(struct decode_data *data, char **v, ptrdiff_t *l)
 {
   INT32 j;
   ptrdiff_t i;
 
-  j=extract_char(v,l);
+  j=extract_char(data,v,l);
   if(j & 0x80) return (j & 0x7f);
 
   if((j & ~8) > 4)
-    decode_error(current_decode, NULL, "Invalid integer.\n");
+    decode_error(data, NULL, "Invalid integer.\n");
   i=0;
-  while(j & 7) { i=(i<<8) | extract_char(v,l); j--; }
+  while(j & 7) { i=(i<<8) | extract_char(data,v,l); j--; }
   if(j & 8) return -i;
   return i;
 }
 
-static void rec_restore_value(char **v, ptrdiff_t *l, int no_codec)
+static void rec_restore_value(struct decode_data *data, char **v, ptrdiff_t *l, int no_codec)
 {
   ptrdiff_t t, i;
 
-  i = extract_int(v,l);
-  t = extract_int(v,l);
+  i = extract_int(data,v,l);
+  t = extract_int(data,v,l);
   switch(i)
   {
   case TAG_INT:
@@ -5349,59 +5331,59 @@ static void rec_restore_value(char **v, ptrdiff_t *l, int no_codec)
 
   case TAG_FLOAT:
     if(sizeof(ptrdiff_t) < sizeof(FLOAT_TYPE))  /* FIXME FIXME FIXME FIXME */
-      decode_error(current_decode, NULL, "Float architecture not supported.\n");
+      decode_error(data, NULL, "Float architecture not supported.\n");
     push_int(t);
     SET_SVAL_TYPE(Pike_sp[-1], T_FLOAT);
     return;
 
   case TAG_TYPE:
     {
-      decode_error(current_decode, NULL, "TAG_TYPE not supported yet.\n");
+      decode_error(data, NULL, "TAG_TYPE not supported yet.\n");
     }
     return;
 
   case TAG_STRING:
-    if(t<0) decode_error(current_decode, NULL,
+    if(t<0) decode_error(data, NULL,
 			 "length of string is negative.\n");
-    if(*l < t) decode_error(current_decode, NULL, "string too short\n");
+    if(*l < t) decode_error(data, NULL, "string too short\n");
     push_string(make_shared_binary_string(*v, t));
     (*l)-= t;
     (*v)+= t;
     return;
 
   case TAG_ARRAY:
-    if(t<0) decode_error(current_decode, NULL,
+    if(t<0) decode_error(data, NULL,
 			 "length of array is negative.\n");
     check_stack(t);
-    for(i=0;i<t;i++) rec_restore_value(v,l,no_codec);
+    for(i=0;i<t;i++) rec_restore_value(data,v,l,no_codec);
     f_aggregate(t); /* FIXME: Unbounded stack consumption. */
     return;
 
   case TAG_MULTISET:
-    if(t<0) decode_error(current_decode, NULL,
+    if(t<0) decode_error(data, NULL,
 			 "length of multiset is negative.\n");
     check_stack(t);
-    for(i=0;i<t;i++) rec_restore_value(v,l,no_codec);
+    for(i=0;i<t;i++) rec_restore_value(data,v,l,no_codec);
     f_aggregate_multiset(t); /* FIXME: Unbounded stack consumption. */
     return;
 
   case TAG_MAPPING:
-    if(t<0) decode_error(current_decode, NULL,
+    if(t<0) decode_error(data, NULL,
 			 "length of mapping is negative.\n");
     check_stack(t*2);
     for(i=0;i<t;i++)
     {
-      rec_restore_value(v,l,no_codec);
-      rec_restore_value(v,l,no_codec);
+      rec_restore_value(data,v,l,no_codec);
+      rec_restore_value(data,v,l,no_codec);
     }
     f_aggregate_mapping(t*2); /* FIXME: Unbounded stack consumption. */
     return;
 
   case TAG_OBJECT:
     if (no_codec) Pike_error("%s", DECODING_NEEDS_CODEC_ERROR);
-    if(t<0) decode_error(current_decode, NULL,
+    if(t<0) decode_error(data, NULL,
 			 "length of object is negative.\n");
-    if(*l < t) decode_error(current_decode, NULL, "string too short\n");
+    if(*l < t) decode_error(data, NULL, "string too short\n");
     push_string(make_shared_binary_string(*v, t));
     (*l) -= t; (*v) += t;
     APPLY_MASTER("objectof", 1);
@@ -5409,9 +5391,9 @@ static void rec_restore_value(char **v, ptrdiff_t *l, int no_codec)
 
   case TAG_FUNCTION:
     if (no_codec) Pike_error("%s", DECODING_NEEDS_CODEC_ERROR);
-    if(t<0) decode_error(current_decode, NULL,
+    if(t<0) decode_error(data, NULL,
 			 "length of function is negative.\n");
-    if(*l < t) decode_error(current_decode, NULL, "string too short\n");
+    if(*l < t) decode_error(data, NULL, "string too short\n");
     push_string(make_shared_binary_string(*v, t));
     (*l) -= t; (*v) += t;
     APPLY_MASTER("functionof", 1);
@@ -5419,23 +5401,18 @@ static void rec_restore_value(char **v, ptrdiff_t *l, int no_codec)
 
   case TAG_PROGRAM:
     if (no_codec) Pike_error("%s", DECODING_NEEDS_CODEC_ERROR);
-    if(t<0) decode_error(current_decode, NULL,
+    if(t<0) decode_error(data, NULL,
 			 "length of program is negative.\n");
-    if(*l < t) decode_error(current_decode, NULL, "string too short\n");
+    if(*l < t) decode_error(data, NULL, "string too short\n");
     push_string(make_shared_binary_string(*v, t));
     (*l) -= t; (*v) += t;
     APPLY_MASTER("programof", 1);
     return;
 
   default:
-    decode_error(current_decode, NULL, "Unknown type tag %ld:%ld\n",
+    decode_error(data, NULL, "Unknown type tag %ld:%ld\n",
                  (long)i, (long)t);
   }
-}
-
-static void restore_current_decode (struct decode_data *old_data)
-{
-  current_decode = old_data;
 }
 
 /* Defined in builtin.cmod. */
@@ -5561,13 +5538,9 @@ void f_decode_value(INT32 args)
     char *v=s->str;
     ptrdiff_t l=s->len;
     struct decode_data data;
-    ONERROR uwp;
     memset (&data, 0, sizeof (data));
     data.data_str = s;		/* Not refcounted. */
-    SET_ONERROR (uwp, restore_current_decode, current_decode);
-    current_decode = &data;
-    rec_restore_value(&v, &l, !codec && explicit_codec);
-    CALL_AND_UNSET_ONERROR (uwp);
+    rec_restore_value(&data, &v, &l, !codec && explicit_codec);
   }
 
   STACK_LEVEL_CHECK(args + 1);
