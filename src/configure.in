@@ -1233,36 +1233,6 @@ MY_AC_ARG_WITH(compiler-trace, MY_DESCR([--with-compiler-trace],
 					[enable tracing of the compiler]),
 	       [AC_DEFINE(YYDEBUG)])
 
-AC_ARG_WITH(machine-code,
-	MY_DESCR([--without-machine-code],
-		 [do not try to use of machine code on supported architectures.]),
-	[], [
-          case "x$pike_cv_sys_os" in
-            xOpenBSD*)
-              PIKE_MSG_WARN([OpenBSD detected, disabling machine code.
-  Use --with-machine-code to force usage of machine code support.])
-              with_machine_code="no"
-            ;;
-            xFreeBSD*)
-              PIKE_MSG_WARN([FreeBSD detected, disabling machine code.
-  Use --with-machine-code to force usage of machine code support.])
-              with_machine_code="no"
-            ;;
-
-          esac
-
-          if test "x${with_machine_code-}" = x; then
-            with_machine_code="yes"
-          fi
-
-	])
-AC_ARG_WITH(small-eval-instruction,
-	MY_DESCR([--with-small-eval-instruction],
-		 [attempt to reduce the size of eval_instruction (EXPERIMENTAL).]), [
-	  AC_DEFINE(PIKE_SMALL_EVAL_INSTRUCTION)
-	  with_machine_code="no"
-	])
-
 MY_AC_ARG_WITH(keypair-loop,
 	MY_DESCR([--with-keypair-loop],
 		 [enable use of keypair mapping loop method.]),
@@ -2645,6 +2615,45 @@ if test "x${RCEXE-}" = x ; then
   export RCEXE
 fi
 AC_SUBST(RCEXE)
+
+#############################################################################
+
+AC_ARG_WITH(small-eval-instruction,
+        MY_DESCR([--with-small-eval-instruction],
+                 [attempt to reduce the size of eval_instruction (EXPERIMENTAL).]), [
+  PIKE_MSG_WARN([Small eval_instruction requested. Note that this disables
+runtime machine-code generation.])
+  AC_DEFINE(PIKE_SMALL_EVAL_INSTRUCTION)
+  with_machine_code="no"
+        ])
+AC_ARG_WITH(machine-code,
+        MY_DESCR([--without-machine-code],
+                 [do not try to use machine code on supported architectures.]),
+        [], [
+  if test "x${with_machine_code-}" = x; then
+    case "x$pike_cv_sys_os:${PAXCTL-no}" in
+      xOpenBSD*)
+        PIKE_MSG_WARN([OpenBSD detected, disabling machine code.
+Use --with-machine-code to force use of machine code support.])
+        with_machine_code="no"
+        ;;
+      xFreeBSD*)
+        PIKE_MSG_WARN([FreeBSD detected, disabling machine code.
+Use --with-machine-code to force use of machine code support.])
+        with_machine_code="no"
+        ;;
+      xNetBSD*:no)
+        PIKE_MSG_WARN([NetBSD detected and no paxctl(8), disabling machine code.
+Use --with-machine-code to force use of machine code support.])
+        with_machine_code="no"
+        ;;
+      *)
+        with_machine_code="yes"
+        ;;
+    esac
+  fi
+
+        ])
 
 #############################################################################
 
