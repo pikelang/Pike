@@ -1530,12 +1530,6 @@ static void do_bi_do_da_lock(void)
 
 static TH_RETURN_TYPE wait_thread(void *UNUSED(data))
 {
-  if(th_atfork(do_da_lock,do_bi_do_da_lock,0))
-  {
-    perror("pthread atfork");
-    exit(1);
-  }
-
   while(1)
   {
     WAITSTATUSTYPE status;
@@ -5311,6 +5305,12 @@ void init_signals(void)
   co_init(& process_status_change);
   co_init(& start_wait_thread);
   mt_init(& wait_thread_mutex);
+
+  if(pthread_atfork(do_da_lock, do_bi_do_da_lock, 0))
+  {
+    perror("pthread atfork");
+    exit(1);
+  }
 #endif
 
 #if 0
