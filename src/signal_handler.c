@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.150 1999/08/30 06:23:48 hubbe Exp $");
+RCSID("$Id$");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1014,12 +1014,6 @@ static void do_bi_do_da_lock(void)
 
 static TH_RETURN_TYPE wait_thread(void *data)
 {
-  if(th_atfork(do_da_lock,do_bi_do_da_lock,0))
-  {
-    perror("pthread atfork");
-    exit(1);
-  }
-  
   while(1)
   {
     WAITSTATUSTYPE status;
@@ -3098,6 +3092,12 @@ void init_signals(void)
     co_init(& process_status_change);
     co_init(& start_wait_thread);
     mt_init(& wait_thread_mutex);
+
+    if(th_atfork(do_da_lock, do_bi_do_da_lock, 0))
+    {
+      perror("pthread atfork");
+      exit(1);
+    }
 
     if (th_create_small(&foo,wait_thread,0)) {
       fatal("wait thread: Failed to create thread!\n"
