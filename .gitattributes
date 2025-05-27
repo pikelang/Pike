@@ -400,7 +400,6 @@ testfont binary
 /src/run_autoconfig foreign_ident
 /src/rusage.c foreign_ident
 /src/rusage.h foreign_ident
-/src/signal_handler.c foreign_ident
 /src/signal_handler.h foreign_ident
 /src/stralloc.c foreign_ident
 /src/stralloc.h foreign_ident
