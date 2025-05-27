@@ -5306,7 +5306,7 @@ void init_signals(void)
   co_init(& start_wait_thread);
   mt_init(& wait_thread_mutex);
 
-  if(pthread_atfork(do_da_lock, do_bi_do_da_lock, 0))
+  if(th_atfork(do_da_lock, do_bi_do_da_lock, 0))
   {
     perror("pthread atfork");
     exit(1);
