@@ -467,9 +467,11 @@ int yylex(struct lex *lex, YYSTYPE *yylval)
   t=low_yylex(lex, yylval);
   if(t<256)
   {
-    fprintf(stderr,"YYLEX: '%c' (%d) at %s:%d\n",t,t,lex.current_file->str,lex.current_line);
+    fprintf(stderr,"YYLEX: '%c' (%d) at %s:%ld\n",
+            t, t, lex->current_file->str, (long)lex->current_line);
   }else{
-    fprintf(stderr,"YYLEX: token #%d at %s:%d\n",t,lex.current_file->str,lex.current_line);
+    fprintf(stderr,"YYLEX: token #%d at %s:%ld\n",
+            t, lex->current_file->str, (long)lex->current_line);
   }
   return t;
 }
@@ -1033,7 +1035,7 @@ unknown_directive:
 					   lex->pos,
 					   &lex->pos,
 					   base,
-					   0,
+                                           (lex->end - lex->pos)>>SHIFT,
 					   SHIFT);
 	dmalloc_touch_svalue(&sval);
 	yylval->n = mksvaluenode(&sval);
@@ -1068,7 +1070,7 @@ unknown_directive:
 					 lex->pos,
 					 &p2,
 					 0,
-					 0,
+                                         (lex->end - lex->pos)>>SHIFT,
 					 SHIFT);
       if(p1>p2)
       {
@@ -1085,7 +1087,7 @@ unknown_directive:
 					     p2,
 					     &p3,
 					     0,
-					     0,
+                                             (lex->end - p2)>>SHIFT,
 					     SHIFT);
 	  dmalloc_touch_svalue(&sval);
 	  if ((TYPEOF(sval) == PIKE_T_INT) && (p3 > p2)) {
