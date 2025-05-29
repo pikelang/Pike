@@ -1111,8 +1111,13 @@ INPUT_IS_WIDE(								 \
 	    /* All integer formats were signed in Pike 8.0 */		 \
 	    if (base < 0) base = -base;					 \
 	  }								 \
+                                                                         \
+          if (field_length <= 0) {                                       \
+            field_length = input_len-eye;                                \
+            if (field_length < 0) field_length = 0;                      \
+          }                                                              \
 									 \
-	  wide_string_to_svalue_inumber(&sval, input+eye, &t,		 \
+          wide_string_to_svalue_inumber(&sval, t = (input + eye), &t,    \
 					base, field_length,		 \
 					INPUT_SHIFT);			 \
 									 \

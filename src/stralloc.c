@@ -2725,6 +2725,8 @@ PMOD_EXPORT int pcharp_to_svalue_inumber(struct svalue *r,
   int c;
   int xx, neg = 0, add_limit, overflow = 0;
 
+  if (maxlength <= 0) return 0; /* DWIM max length not supported anymore. */
+
   maxlength--;   /* max_length <= 0 means no max length. */
   str_start = str;
 
@@ -2853,7 +2855,8 @@ PMOD_EXPORT int convert_stack_top_string_to_inumber(int base)
   if(TYPEOF(Pike_sp[-1]) != T_STRING)
     Pike_error("Cannot convert stack top to integer number.\n");
 
-  i=pcharp_to_svalue_inumber(&r, MKPCHARP_STR(Pike_sp[-1].u.string), 0, base, 0);
+  i = pcharp_to_svalue_inumber(&r, MKPCHARP_STR(Pike_sp[-1].u.string), NULL,
+                               base, Pike_sp[-1].u.string->len);
 
   free_string(Pike_sp[-1].u.string);
   Pike_sp[-1] = r;
