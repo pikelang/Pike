@@ -3298,7 +3298,8 @@ static ptrdiff_t calcC(struct CPP_struct *this, const PCHARP data,
       PCHARP p = data;
       INC_PCHARP(p,pos + 2);
       push_int(0);
-      safe_wide_string_to_svalue_inumber(Pike_sp-1, p.ptr, &p.ptr, 16, 0, p.shift);
+      safe_wide_string_to_svalue_inumber(Pike_sp-1, p.ptr, &p.ptr, 16,
+                                         len - 2, p.shift);
       if(!OUTP()) pop_stack();
       pos = SUBTRACT_PCHARP(p,data);
       break;

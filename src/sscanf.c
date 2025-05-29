@@ -1121,8 +1121,13 @@ INPUT_IS_WIDE(								 \
               plus_flag = -1;                                            \
             }                                                            \
           }                                                              \
+                                                                         \
+          if (field_length <= 0) {                                       \
+            field_length = input_len-eye;                                \
+            if (field_length < 0) field_length = 0;                      \
+          }                                                              \
 									 \
-	  wide_string_to_svalue_inumber(&sval, input+eye, &t,		 \
+          wide_string_to_svalue_inumber(&sval, t = (input + eye), &t,    \
 					base, field_length,		 \
 					INPUT_SHIFT);			 \
 									 \
