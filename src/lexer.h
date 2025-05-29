@@ -490,6 +490,15 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
   check_sfltable();
 #endif
 
+  if (lex->pos >= lex->end) {
+#ifdef TOK_LEX_EOF
+    return TOK_LEX_EOF;
+#else /* !TOK_LEX_EOF */
+    return 0;
+#endif /* TOK_LEX_EOF */
+    Pike_fatal("Invalid lexer state.\n");
+  }
+
   while(1)
   {
     c = GETC();
@@ -1067,7 +1076,7 @@ unknown_directive:
       SET_SVAL(sval, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
 
       safe_wide_string_to_svalue_inumber(&sval,
-					 lex->pos,
+                                         p2 = lex->pos,
 					 &p2,
 					 0,
                                          (lex->end - lex->pos)>>SHIFT,
