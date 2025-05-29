@@ -496,7 +496,6 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 #else /* !TOK_LEX_EOF */
     return 0;
 #endif /* TOK_LEX_EOF */
-    Pike_fatal("Invalid lexer state.\n");
   }
 
   while(1)
