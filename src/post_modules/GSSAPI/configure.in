@@ -13,8 +13,8 @@ AC_ARG_WITH(gssapi,
 if test x$with_gssapi = xyes; then
 
 PIKE_FEATURE(GSSAPI, [no (gssapi.h not found)])
-AC_CHECK_HEADERS(gssapi.h gssapi/gssapi.h gssglue/gssapi/gssapi.h, break)
-AC_CHECK_HEADERS(gssapi_krb5.h gssapi/gssapi_krb5.h gssglue/gssapi/gssapi_krb5.h, break)
+AC_CHECK_HEADERS(gssapi/gssapi.h gssapi.h gssglue/gssapi/gssapi.h, break)
+AC_CHECK_HEADERS(gssapi/gssapi_krb5.h gssapi_krb5.h gssglue/gssapi/gssapi_krb5.h, break)
 
 if test x$ac_cv_header_gssapi_h = xyes -o \
 	x$ac_cv_header_gssapi_gssapi_h = xyes -o \
