@@ -1689,6 +1689,25 @@ if test "$cflags_is_set" = "no"; then
       # Maybe should remove the -g flag if this succeeds.
       AC_SYS_COMPILER_FLAG(-g3,g3,CFLAGS)
       AC_SYS_COMPILER_FLAG(-trapuv,trapuv,WARN)
+
+      # Consider forcing a dwarf level supported by gdb (if found).
+      #
+      # For GDB the first version that supported that version of DWARF.
+      # For the compilers, the first version with it as default.
+      # In either case the version where the support was removed may
+      # also be listed (typically DWARF-1).
+      #
+      #   Year	DWARF	GDB	GCC	CLANG	Note
+      #   2017	5	8.0	11	14	Experimental?
+      #   2010	4	7.0	4.8	3?
+      #   2005	3	5.2?	-
+      #   1993	2	5.1.1	3.1		Draft
+      #   ????	1	3.3-6.7	?-4.1		Experimental?
+      #
+      # Forcing the dwarf level is mostly an issue on platforms that
+      # insist on having old and broken compiler enviroments, like
+      # eg OpenBSD 7.7 which has a fairly recent clang and lldb (16)
+      # but lldb is broken, and an old gdb (6.3).
     fi
 
     # Solaris

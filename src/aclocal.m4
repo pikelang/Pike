@@ -335,7 +335,7 @@ AC_DEFUN([PIKE_USE_SYSTEM_EXTENSIONS],
 #endif
 
 #ifndef POSIX_SOURCE
- /* We must define this *always* */
+ /* We must define this *always*. POSIX.1-1990 */
 # define POSIX_SOURCE	1
 #endif
 #ifndef _POSIX_C_SOURCE
@@ -354,6 +354,7 @@ AC_DEFUN([PIKE_USE_SYSTEM_EXTENSIONS],
    * Note that POSIX.1-2024 and later require C17 (2.1.4.2).
    *
    *	undef	Cstd	Not POSIX.
+   *	0	 C89	POSIX.1-1988
    *	1	 C89	POSIX.1-1990
    *	2	 C89	POSIX.2-1992
    *	199309L	 C89	POSIX.1b-1993 (Real Time)
@@ -373,8 +374,9 @@ AC_DEFUN([PIKE_USE_SYSTEM_EXTENSIONS],
    * Note that this interacts with _POSIX_C_SOURCE above.
    *	undef		Not XPG (X Open Group).
    *	1		XPG 3 or 4 or 4v2 (see below).
-   *	500		XPG 5 (POSIX.1c-1995).
-   *	600		XPG 6 (POSIX.1-2001).
+   *	500		XPG 5 (POSIX.1c-1995) (aka UNIX 95).
+   *	520		XPG 5.2 (POSIX.1c-1995) (aka UNIX 98).
+   *	600		XPG 6 (POSIX.1-2001) (aka UNIX 03).
    *	700		XPG 7 (POSIX.1-2008).
    *	800		XPG 8 (POSIX.1-2024).
    */
@@ -388,16 +390,16 @@ AC_DEFUN([PIKE_USE_SYSTEM_EXTENSIONS],
 #  undef _XOPEN_SOURCE_EXTENDED
 # endif
 #endif
+/* Inhibit complaints about _BSD_SOURCE and _SVID_SOURCE on Linux. */
+#ifndef _DEFAULT_SOURCE
+# undef _DEFAULT_SOURCE
+#endif
 #ifndef _NETBSD_SOURCE
 #undef _NETBSD_SOURCE
 #endif
 /* Enable non-POSIX declarations on OpenBSD. */
 #ifndef _BSD_SOURCE
 # undef _BSD_SOURCE
-#endif
-/* Force non-POSIX declarations to be visible on FreeBSD (and OpenBSD). */
-#ifndef __BSD_VISIBLE
-# undef __BSD_VISIBLE
 #endif
 ])
 
@@ -436,10 +438,9 @@ AC_DEFUN([PIKE_USE_SYSTEM_EXTENSIONS],
   fi
 
   AC_DEFINE(_DARWIN_C_SOURCE)
+  AC_DEFINE(_DEFAULT_SOURCE, 1)
   AC_DEFINE(_NETBSD_SOURCE)
   AC_DEFINE(_BSD_SOURCE)
-  # Enable non-POSIX types in <sys/types.h> on FreeBSD 10.3.
-  AC_DEFINE(__BSD_VISIBLE, 1)
 ])
 
 dnl Use before the first AC_CHECK_HEADER/AC_CHECK_FUNC call if the
