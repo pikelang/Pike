@@ -401,6 +401,10 @@ AC_DEFUN([PIKE_USE_SYSTEM_EXTENSIONS],
 #ifndef _BSD_SOURCE
 # undef _BSD_SOURCE
 #endif
+/* Force non-POSIX declarations to be visible on FreeBSD (and OpenBSD). */
+#ifndef __BSD_VISIBLE
+# undef __BSD_VISIBLE
+#endif
 ])
 
   AC_DEFINE(POSIX_SOURCE, 1)
@@ -441,6 +445,12 @@ AC_DEFUN([PIKE_USE_SYSTEM_EXTENSIONS],
   AC_DEFINE(_DEFAULT_SOURCE, 1)
   AC_DEFINE(_NETBSD_SOURCE)
   AC_DEFINE(_BSD_SOURCE)
+  # Kludge: Enable non-POSIX types in <sys/types.h> on FreeBSD 10.3.
+  #         The <sys/cdefs.h> header file is broken in FreeBSD 10.3 and does not
+  #         set __BSD_VISIBLE at all when _POSIX_C_SOURCE or _XOPEN_SOURCE.
+  AC_DEFINE(__BSD_VISIBLE, 1)
+  # FIXME: Consider defining __STDC_WANT_LIB_EXT1__ (C11 extensions).
+  #        This symbol is likely defined by C11 (and later) compilers.
 ])
 
 dnl Use before the first AC_CHECK_HEADER/AC_CHECK_FUNC call if the
