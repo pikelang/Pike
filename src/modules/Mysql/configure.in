@@ -55,6 +55,7 @@ else
   else
       MYSQL_CONFIG=no
   fi
+
   if test "x${MARIADB_CONFIG}${MYSQL_CONFIG}" = "xnono"; then
 
   AC_MSG_CHECKING(for Mysql directory prefix)
@@ -448,7 +449,7 @@ define([AC_CHECK_SQLLIB],
 ])
 
   TRY_MYSQLCLIENT="yes"
-  if test "x${MARIADB_CONFIG}" = "xno"; then :; else
+  if test "x$with_mariadb" = "xno"; then :; else
     # Try the MariaDB client libraries.
     # NB: These are distributed separately from the MariaDB server.
     TRY_MYSQLCLIENT="no"
