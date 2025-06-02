@@ -2935,6 +2935,8 @@ struct program *low_id_to_program(INT32 id, int inhibit_module_load)
   struct program_state *state;
   struct program *p;
   INT32 h;
+
+ loop:
   if(!id) return 0;
 
   /* fprintf(stderr, "id_to_program(%d)... ", id); */
@@ -2961,6 +2963,30 @@ struct program *low_id_to_program(INT32 id, int inhibit_module_load)
   for (state = Pike_compiler; state; state = state->previous) {
     if (state->new_program && state->new_program->id == id) {
       return state->new_program;
+    }
+  }
+
+  if ((id > 0) && (id < PROG_GENERICS_ID_START)) {
+    /* Some classes have been renumbered due to now using generics.
+     *
+     * Ordered by their appearances in program_id.h.
+     */
+    switch(id) {
+    case OLD_PROG_THREAD_LOCAL_ID:
+      id = PROG_THREAD_LOCAL_ID;
+      goto loop;
+    case OLD_PROG_STRING_SPLIT_ITERATOR_ID:
+      id = PROG_STRING_SPLIT_ITERATOR_ID;
+      goto loop;
+    case OLD_PROG_LIST_ID:
+      id = PROG_LIST_ID;
+      goto loop;
+    case OLD_PROG_LIST__GET_ITERATOR_ID:
+      id = PROG_LIST_ITERATOR_ID;
+      goto loop;
+    case OLD_PROG_STACK_ID:
+      id = PROG_STACK_ID;
+      goto loop;
     }
   }
 
