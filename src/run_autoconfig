@@ -65,7 +65,7 @@ if [ "$autoconf:$autoheader" = ":" ]; then
     autoconf=autoconf
     autoheader=autoheader
     # Try supported versions in priority order.
-    for ver in $AUTOCONF_VERSION 2.71 2.69 2.64 2.59 2.52 2.50; do
+    for ver in $AUTOCONF_VERSION 2.72 2.71 2.69 2.64 2.59 2.52 2.50; do
         if findprog "autoconf-$ver" && findprog "autoheader-$ver"; then
             autoconf="autoconf-$ver"
             autoheader="autoheader-$ver"
