@@ -3020,7 +3020,7 @@ static LOCATION low_dynamic_location(char type, const char *file,
 				     unsigned int bin_data_len)
 {
   struct dmalloc_string **prev, *str;
-  size_t len=strlen(file), name_len;
+  size_t len=strlen(file), name_len = 0;
   unsigned long h,hval=hashmem((const unsigned char *) file,len,64)+line;
 
   if (name) {
