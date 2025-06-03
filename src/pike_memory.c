@@ -1509,7 +1509,7 @@ void *fake_calloc(size_t x, size_t y)
 #endif
 
 
-static struct memhdr *my_find_memhdr(void *, int);
+static struct memhdr *my_find_memhdr(const void *, int);
 static void dump_location_bt (LOCATION l, int indent, const char *prefix);
 
 
@@ -1847,6 +1847,7 @@ static inline unsigned long lhash(struct memhdr *m, LOCATION location)
     }							\
 							\
     X->locations=ml->next;				\
+    ml->next = NULL;                                    \
     DO_IF_TRACE_MEMLOC(					\
       if (ml == DMALLOC_TRACE_MEMLOC) {			\
         fprintf(stderr, "EXIT:Freeing memloc %p location "	\
@@ -1874,7 +1875,7 @@ PTR_HASH_ALLOC_FILL_PAGES(memhdr, 128)
 
 
 
-static struct memhdr *my_find_memhdr(void *p, int already_gone)
+static struct memhdr *my_find_memhdr(const void *p, int already_gone)
 {
   struct memhdr *mh;
 
@@ -2000,7 +2001,7 @@ static void add_location(struct memhdr *mh,
 
 PMOD_EXPORT LOCATION dmalloc_default_location=0;
 
-static struct memhdr *low_make_memhdr(void *p, int s, LOCATION location
+static struct memhdr *low_make_memhdr(const void *p, int s, LOCATION location
 #ifdef DMALLOC_C_STACK_TRACE
 				      , c_stack_frame *bt, int bt_len
 #endif
@@ -2061,7 +2062,7 @@ static struct memhdr *low_make_memhdr(void *p, int s, LOCATION location
   return mh;
 }
 
-PMOD_EXPORT void dmalloc_trace(void *p)
+PMOD_EXPORT void dmalloc_trace(const void *p)
 {
   struct memhdr *mh = my_find_memhdr(p, 0);
   if (mh) {
@@ -2069,7 +2070,7 @@ PMOD_EXPORT void dmalloc_trace(void *p)
   }
 }
 
-PMOD_EXPORT void dmalloc_register(void *p, int s, LOCATION location)
+PMOD_EXPORT void dmalloc_register(const void *p, int s, LOCATION location)
 {
   struct memhdr *mh;
   GET_ALLOC_BT (bt);
@@ -2086,7 +2087,7 @@ PMOD_EXPORT void dmalloc_register(void *p, int s, LOCATION location)
   }
 }
 
-PMOD_EXPORT void dmalloc_accept_leak(void *p)
+PMOD_EXPORT void dmalloc_accept_leak(const void *p)
 {
   if(p)
   {
@@ -2107,7 +2108,7 @@ static void low_add_marks_to_memhdr(struct memhdr *to,
     add_location(to, l->location);
 }
 
-void add_marks_to_memhdr(struct memhdr *to, void *ptr)
+void add_marks_to_memhdr(struct memhdr *to, const void *ptr)
 {
   mt_lock(&debug_malloc_mutex);
 
@@ -2132,7 +2133,7 @@ static void unregister_memhdr(struct memhdr *mh, int already_gone)
   }
 }
 
-static int low_dmalloc_unregister(void *p, int already_gone)
+static int low_dmalloc_unregister(const void *p, int already_gone)
 {
   struct memhdr *mh=find_memhdr(p);
   if(mh)
@@ -2143,7 +2144,7 @@ static int low_dmalloc_unregister(void *p, int already_gone)
   return 0;
 }
 
-PMOD_EXPORT int dmalloc_unregister(void *p, int already_gone)
+PMOD_EXPORT int dmalloc_unregister(const void *p, int already_gone)
 {
   int ret;
   mt_lock(&debug_malloc_mutex);
@@ -2167,7 +2168,7 @@ PMOD_EXPORT void dmalloc_unregister_all(struct block_allocator *a)
   mt_unlock(&debug_malloc_mutex);
 }
 
-static int low_dmalloc_mark_as_free(void *p, int UNUSED(already_gone))
+static int low_dmalloc_mark_as_free(const void *p, int UNUSED(already_gone))
 {
   struct memhdr *mh=find_memhdr(p);
   if(mh)
@@ -2186,7 +2187,7 @@ static int low_dmalloc_mark_as_free(void *p, int UNUSED(already_gone))
   return 0;
 }
 
-PMOD_EXPORT int dmalloc_mark_as_free(void *p, int already_gone)
+PMOD_EXPORT int dmalloc_mark_as_free(const void *p, int already_gone)
 {
   int ret;
   mt_lock(&debug_malloc_mutex);
@@ -2570,7 +2571,8 @@ void dump_memhdr_locations(struct memhdr *from,
 static void low_dmalloc_describe_location(struct memhdr *mh, int offset, int indent);
 
 
-static void find_references_to(void *block, int indent, int depth, int flags)
+static void find_references_to(const void *block, int indent,
+                               int depth, int flags)
 {
   unsigned long h;
   struct memhdr *m;
@@ -2679,7 +2681,8 @@ void *dmalloc_find_memblock_base(void *ptr)
 }
 
 /* FIXME: lock the mutex */
-PMOD_EXPORT void debug_malloc_dump_references(void *x, int indent, int depth, int flags)
+PMOD_EXPORT void debug_malloc_dump_references(const void *x, int indent,
+                                              int depth, int flags)
 {
   struct memhdr *mh=my_find_memhdr(x,0);
   if(!mh) return;
@@ -2972,7 +2975,7 @@ static void initialize_dmalloc(void)
   }
 }
 
-PMOD_EXPORT void * debug_malloc_update_location(void *p,LOCATION location)
+PMOD_EXPORT void * debug_malloc_update_location(const void *p,LOCATION location)
 {
   if(p)
   {
@@ -2986,16 +2989,17 @@ PMOD_EXPORT void * debug_malloc_update_location(void *p,LOCATION location)
 
     mt_unlock(&debug_malloc_mutex);
   }
-  return p;
+  return (void *)p;
 }
 
-PMOD_EXPORT void * debug_malloc_update_location_ptr(void *p,
+PMOD_EXPORT void * debug_malloc_update_location_ptr(const void *p,
 						    ptrdiff_t offset,
 						    LOCATION location)
 {
   if(p)
-    debug_malloc_update_location(*(void **)(((char *)p)+offset), location);
-  return p;
+    debug_malloc_update_location(*(const void **)(((const char *)p)+offset),
+                                 location);
+  return (void *)p;
 }
 
 
@@ -3106,7 +3110,8 @@ PMOD_EXPORT LOCATION dynamic_location(const char *file, INT_TYPE line)
 }
 
 
-PMOD_EXPORT void * debug_malloc_name(void *p,const char *file, INT_TYPE line)
+PMOD_EXPORT void *debug_malloc_name(const void *p, const char *file,
+                                    INT_TYPE line)
 {
   if(p)
   {
@@ -3120,7 +3125,7 @@ PMOD_EXPORT void * debug_malloc_name(void *p,const char *file, INT_TYPE line)
 
     mt_unlock(&debug_malloc_mutex);
   }
-  return p;
+  return (void *)p;
 }
 
 /*
@@ -3154,7 +3159,7 @@ PMOD_EXPORT int debug_malloc_copy_names(void *p, void *p2)
   return names;
 }
 
-const char *dmalloc_find_name(void *p)
+const char *dmalloc_find_name(const void *p)
 {
   const char *name=0;
   if(p)
@@ -3180,7 +3185,8 @@ const char *dmalloc_find_name(void *p)
   return name;
 }
 
-PMOD_EXPORT void *debug_malloc_update_location_bt (void *p, const char *file,
+PMOD_EXPORT void *debug_malloc_update_location_bt (const void *p,
+                                                   const char *file,
 						   INT_TYPE line,
 						   const char *name)
 {

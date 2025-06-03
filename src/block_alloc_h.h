@@ -29,10 +29,10 @@ void PIKE_CONCAT3(count_memory_in_,DATA,s)(size_t *num, size_t *size);
 BLOCK_ALLOC(DATA,BSIZE);					\
 extern struct DATA **PIKE_CONCAT(DATA,_hash_table);		\
 extern size_t PIKE_CONCAT(DATA,_hash_table_size);		\
-struct DATA *PIKE_CONCAT(find_,DATA)(void *ptr);		\
-struct DATA *PIKE_CONCAT(make_,DATA)(void *ptr);		\
-struct DATA *PIKE_CONCAT(get_,DATA)(void *ptr);			\
-int PIKE_CONCAT3(check_,DATA,_semaphore)(void *ptr);		\
+struct DATA *PIKE_CONCAT(find_,DATA)(const void *ptr);		\
+struct DATA *PIKE_CONCAT(make_,DATA)(const void *ptr);		\
+struct DATA *PIKE_CONCAT(get_,DATA)(const void *ptr);		\
+int PIKE_CONCAT3(check_,DATA,_semaphore)(const void *ptr);	\
 void PIKE_CONCAT(move_,DATA)(struct DATA *block, void *new_ptr); \
 int PIKE_CONCAT(remove_,DATA)(void *ptr);
 

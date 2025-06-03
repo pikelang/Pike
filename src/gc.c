@@ -4694,14 +4694,14 @@ static void stop_mc(void)
   UNLOCK_IMUTEX(&mc_mutex);
 }
 
-static struct mc_marker *my_make_mc_marker (void *thing,
+static struct mc_marker *my_make_mc_marker (const void *thing,
 					    visit_thing_fn *visit_fn,
 					    void *extra)
 {
   struct mc_marker *m = make_mc_marker (thing);
   assert (thing);
   assert (visit_fn);
-  m->thing = thing;
+  m->thing = (void *)thing;
   m->visit_fn = visit_fn;
   m->extra = extra;
   m->int_refs = m->la_refs = m->flags = 0;
@@ -5240,8 +5240,10 @@ static void pass_lookahead_visit_ref (void *thing, int ref_type,
     MC_DEBUG_MSG (ref_to, "not enqueued");
 }
 
-static void pass_mark_external_visit_ref (void *thing, int UNUSED(ref_type),
-					  visit_thing_fn *UNUSED(visit_fn), void *UNUSED(extra))
+static void pass_mark_external_visit_ref (void *thing,
+                                          int UNUSED(ref_type),
+                                          visit_thing_fn *UNUSED(visit_fn),
+                                          void *UNUSED(extra))
 {
   struct mc_marker *ref_to = find_mc_marker (thing);
 
@@ -5342,7 +5344,7 @@ static void ignore_visit_leave(void *UNUSED(thing), int UNUSED(type), void *UNUS
 {
 }
 
-PMOD_EXPORT int mc_count_bytes (void *thing)
+PMOD_EXPORT int mc_count_bytes (const void *thing)
 {
   if (mc_pass == MC_PASS_LOOKAHEAD) {
     struct mc_marker *m = find_mc_marker (thing);
@@ -6162,7 +6164,8 @@ void identify_loop_visit_ref(void *dst, int UNUSED(ref_type),
   }
 }
 
-void identify_loop_visit_leave(void *UNUSED(thing), int type, void *UNUSED(extra))
+void identify_loop_visit_leave(void *UNUSED(thing), int type,
+                               void *UNUSED(extra))
 {
   if (type < T_VOID) {
     /* Valid svalue type. */
