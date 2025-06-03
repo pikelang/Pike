@@ -386,6 +386,7 @@ static void push_wap_type0_image_data( struct image *i )
   }
   push_string( make_shared_binary_string( (char *)data,
 					  i->ysize * (i->xsize+7)/8 ) );
+  free(data);
 }
 
 /*! @decl string encode(object image, void|mapping args)
