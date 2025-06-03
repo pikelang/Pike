@@ -777,7 +777,7 @@ static inline void PIKE_UNUSED_ATTRIBUTE visit_svalue (struct svalue *s, int ref
 
 PMOD_EXPORT extern int mc_pass;
 PMOD_EXPORT extern size_t mc_counted_bytes;
-PMOD_EXPORT int mc_count_bytes (void *thing);
+PMOD_EXPORT int mc_count_bytes(const void *thing);
 
 void init_mc(void);
 void exit_mc(void);
