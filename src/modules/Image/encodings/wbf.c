@@ -234,7 +234,7 @@ static void low_image_f_wbf_decode( int args, int mode )
      {
       case 2: /* Image only */
         low_image_f_wbf_decode_type0( &wh, &buff );
-        return;
+        break;
 
       case 1: /* Image and header */
         push_static_text( "image" );
@@ -386,6 +386,7 @@ static void push_wap_type0_image_data( struct image *i )
   }
   push_string( make_shared_binary_string( (char *)data,
 					  i->ysize * (i->xsize+7)/8 ) );
+  free(data);
 }
 
 /*! @decl string encode(object image, void|mapping args)

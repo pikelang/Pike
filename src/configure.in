@@ -1308,7 +1308,7 @@ fi
 if test "x$with_dmalloc" = "x"; then
   :;
 elif test "x$with_rtldebug" = "xyes"; then :; else
-  PIKE_MSG_WARN([Debug malloc requires rtldebug. Enabling rtldebug.])
+  PIKE_MSG_NOTE([Debug malloc requires rtldebug. Enabling rtldebug.])
   with_rtldebug=yes
 fi
 

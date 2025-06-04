@@ -344,7 +344,7 @@ string allocate_string(string orig_str)
   }
   int str_id = last_str_id++;
   stradd += ({
-    sprintf("module_strings[%d] = \n"
+    sprintf("module_strings[%d] =\n"
 	    "  make_shared_binary_string(%s,\n"
 	    "                            CONSTANT_STRLEN(%s));\n",
 	    str_id,
@@ -3694,6 +3694,7 @@ array resolve_obj_defines()
                 "   if( tmp ) {\n"
                 "      ___cmod_ext_used[i].from = %d;\n"
                 "      ___cmod_ext_used[i].to = tmp->id;\n"
+                "      ___cmod_ext_used[i].p = tmp;\n"
                 "      i++;\n"
                 "   }\n"
                 "}\n"
@@ -4025,7 +4026,7 @@ int main(int argc, array(string) argv)
   if( sizeof( need_obj_defines ) )
   {
     tmp->declarations += ({
-      "static struct { INT32 from;INT32 to; } ___cmod_ext_used[" +
+      "static struct { INT32 from;INT32 to;struct program *p; } ___cmod_ext_used[" +
       sizeof( need_obj_defines ) + "];\n"
     });
 
@@ -4040,6 +4041,18 @@ int main(int argc, array(string) argv)
       "    }\n"
       "  }\n"
     });
+
+    tmp->exitfuncs = ({
+      "\n#ifdef CMOD_MAP_PROGRAM_IDS_DEFINED\n"
+      "  {\n"
+      "    int i;\n"
+      "    for (i = 0; i < " + sizeof(need_obj_defines) + "; i++) {\n"
+      "      struct program *p = ___cmod_ext_used[i].p;\n"
+      "      if (p) free_program(p);\n"
+      "    }\n"
+      "  }\n"
+      "#endif /* CMOD_MAP_PROGRAM_IDS_DEFINED */\n"
+    }) + tmp->exitfuncs;
   }
   x += ({
     "  return 0;\n"
