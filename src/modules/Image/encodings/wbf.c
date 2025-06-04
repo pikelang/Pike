@@ -234,7 +234,7 @@ static void low_image_f_wbf_decode( int args, int mode )
      {
       case 2: /* Image only */
         low_image_f_wbf_decode_type0( &wh, &buff );
-        return;
+        break;
 
       case 1: /* Image and header */
         push_static_text( "image" );
