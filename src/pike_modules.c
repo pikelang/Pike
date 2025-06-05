@@ -365,7 +365,7 @@ struct static_module
   int semidynamic;
 };
 
-static const struct static_module module_list[] = {
+static struct static_module module_list[] = {
   { "Builtin", init_builtin_modules, exit_builtin_modules, 0 }
 #include "modules/modlist.h"
 #ifndef PRE_PIKE
@@ -529,6 +529,10 @@ void exit_modules(void)
     else {
       TRACE("Exiting static module #%d: \"%s\"...\n",
             e, module_list[e].name);
+
+      /* Protect against double exit. */
+      module_list[e].semidynamic = 1;
+
       module_list[e].exit();
     }
     UNSETJMP(recovery);
