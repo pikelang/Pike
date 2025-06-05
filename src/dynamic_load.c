@@ -654,7 +654,24 @@ void init_dynamic_load(void)
 #endif
 }
 
-/* Call the pike_module_exit() callbacks for the dynamic modules. */
+/* Call the pike_module_exit() callbacks for the dynamic modules.
+ *
+ * NB: Typically only called once, but multiple threads may call
+ *     exit() concurrently. This is triggered by the following
+ *     testsuite test when running --with-dmalloc on some platforms:
+ *
+ *     int main()
+ *     {
+ *       Thread.Mutex m = Thread.Mutex();
+ *       Thread.MutexKey l = m->lock();
+ *       Thread.thread_create (lambda () {m->lock(); exit (0);});
+ *       call_out (destruct, 0, l);
+ *       return -1;
+ *     }
+ *
+ *     Where exit(0) is first called by the thread, and
+ *     then exit(-1) is called by the backend thread.
+ */
 void exit_dynamic_load(void)
 {
 #ifdef USE_DYNAMIC_MODULES
@@ -682,8 +699,10 @@ void exit_dynamic_load(void)
       free_program(tmp->module_prog);
       tmp->module_prog = NULL;
     }
-    free_string(tmp->name);
-    tmp->name = NULL;
+    if (tmp->name) {
+      free_string(tmp->name);
+      tmp->name = NULL;
+    }
   }
 #endif
 }
