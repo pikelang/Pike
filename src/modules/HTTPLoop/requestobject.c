@@ -690,8 +690,8 @@ static void actually_send(struct send_args *a)
     fprintf(stderr, "cork... \n");
 #endif
     {
-      int true=1;
-      setsockopt( a->to->fd, SOL_TCP, TCP_CORK, &true, 4 );
+      int true_value=1;
+      setsockopt( a->to->fd, SOL_TCP, TCP_CORK, &true_value, 4 );
     }
 #endif
     fail = WRITE(a->to->fd, (char *)data, data_len);
@@ -793,8 +793,8 @@ static void actually_send(struct send_args *a)
 #endif
 #if defined(TCP_CORK) && defined(SOL_TCP)
   {
-    int false = 0;
-    setsockopt( a->to->fd, SOL_TCP, TCP_CORK, &false, 4 );
+    int false_value = 0;
+    setsockopt( a->to->fd, SOL_TCP, TCP_CORK, &false_value, 4 );
   }
 #endif
   {
