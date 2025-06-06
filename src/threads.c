@@ -419,6 +419,8 @@ struct thread_local_var
 
 static volatile IMUTEX_T *interleave_list = NULL;
 
+#define OBJ2THREADSTATE(X) \
+  ((struct thread_state *)((X)->storage + thread_storage_offset))
 #define THREADSTATE2OBJ(X) ((X)->thread_obj)
 
 #ifdef PIKE_DEBUG
@@ -1221,6 +1223,8 @@ PMOD_EXPORT struct object *thread_for_id(THREAD_T tid)
      by incrementing refcount though. */
 }
 
+static struct object *backend_thread_obj = NULL;
+
 static inline void CALL_WITH_ERROR_HANDLING(struct thread_state *state,
                                             void (*func)(void *ctx),
                                             void *ctx)
@@ -1229,23 +1233,41 @@ static inline void CALL_WITH_ERROR_HANDLING(struct thread_state *state,
 
   if(SETJMP(back))
   {
-    if(throw_severity <= THROW_ERROR) {
-      if (state->thread_obj) {
-	/* Copy the thrown exit value to the thread_state here,
-	 * if the thread hasn't been destructed. */
-	assign_svalue(&state->result, &throw_value);
-      }
-
-      call_handle_error();
+    if (state->thread_obj) {
+      /* Copy the thrown exit value to the state here,
+       * if the thread hasn't been destructed. */
+      assign_svalue(&state->result, &throw_value);
     }
-
-    if(throw_severity == THROW_EXIT)
-    {
+    if(throw_severity <= THROW_ERROR) {
+      call_handle_error();
+    } else if (throw_severity <= THROW_THREAD_EXIT) {
+      /* Just propagate the thrown value to the result (cf above). */
+    } if(throw_severity == THROW_EXIT) {
       /* This is too early to get a clean exit if DO_PIKE_CLEANUP is
        * active. Otoh it cannot be done later since it requires the
        * evaluator stacks in the gc calls. It's difficult to solve
-       * without handing over the cleanup duty to the main thread. */
+       * without handing over the cleanup duty to the main thread.
+       */
+#if defined(UNIX_THREADS) || defined(POSIX_THREADS)
+      /* Working th_kill(). */
+      /*
+       * Propagate the exit code to the result for the backend thread,
+       * and terminate the backend thread.
+       */
+      push_svalue(&throw_value);
+      safe_apply(backend_thread_obj, "kill", 1);
+#else /* !UNIX_THREADS && !POSIX_THREADS */
+      /* th_kill() is just a noop. */
+      /*
+       * This usually "works" (even for DO_PIKE_CLEANUP)
+       * as cleanup_all_other_threads() will typically
+       * not succeed in waking up the other threads.
+       *
+       * Note that in the case that the threads do wake up
+       * there is a risk of the also calling pike_do_exit().
+       */
       pike_do_exit(throw_value.u.integer);
+#endif /* UNIX_THREADS || POSIX_THREADS */
     }
   } else {
     back.severity=THROW_EXIT;
@@ -1299,8 +1321,7 @@ PMOD_EXPORT void call_with_interpreter(void (*func)(void *ctx), void *ctx)
     Pike_interpreter.stack_top=((char *)&state)+ (thread_stack_size-16384) * STACK_DIRECTION;
     Pike_interpreter.recoveries = NULL;
     thread_obj = fast_clone_object(thread_id_prog);
-    INIT_THREAD_STATE((struct thread_state *)(thread_obj->storage +
-                                              thread_storage_offset));
+    INIT_THREAD_STATE(OBJ2THREADSTATE(thread_obj));
     num_threads++;
     thread_table_insert(Pike_interpreter.thread_state);
 
@@ -1819,23 +1840,41 @@ TH_RETURN_TYPE new_thread_func(void *data)
 
   if(SETJMP(back))
   {
-    if(throw_severity <= THROW_ERROR) {
-      if (thread_state->thread_obj) {
-	/* Copy the thrown exit value to the thread_state here,
-	 * if the thread hasn't been destructed. */
-	assign_svalue(&thread_state->result, &throw_value);
-      }
-
-      call_handle_error();
+    if (thread_state->thread_obj) {
+      /* Copy the thrown exit value to the thread_state here,
+       * if the thread hasn't been destructed. */
+      assign_svalue(&thread_state->result, &throw_value);
     }
-
-    if(throw_severity == THROW_EXIT)
-    {
+    if(throw_severity <= THROW_ERROR) {
+      call_handle_error();
+    } else if (throw_severity <= THROW_THREAD_EXIT) {
+      /* Just propagate the thrown value to the result (cf above). */
+    } else if(throw_severity == THROW_EXIT) {
       /* This is too early to get a clean exit if DO_PIKE_CLEANUP is
        * active. Otoh it cannot be done later since it requires the
        * evaluator stacks in the gc calls. It's difficult to solve
-       * without handing over the cleanup duty to the main thread. */
+       * without handing over the cleanup duty to the main thread.
+       */
+#if defined(UNIX_THREADS) || defined(POSIX_THREADS)
+      /* Working th_kill(). */
+      /*
+       * Propagate the exit code to the result for the backend thread,
+       * and terminate the backend thread.
+       */
+      push_svalue(&throw_value);
+      safe_apply(backend_thread_obj, "kill", 1);
+#else /* !UNIX_THREADS && !POSIX_THREADS */
+      /* th_kill() is just a noop. */
+      /*
+       * This usually "works" (even for DO_PIKE_CLEANUP)
+       * as cleanup_all_other_threads() will typically
+       * not succeed in waking up the other threads.
+       *
+       * Note that in the case that the threads do wake up
+       * there is a risk of the also calling pike_do_exit().
+       */
       pike_do_exit(throw_value.u.integer);
+#endif /* UNIX_THREADS || POSIX_THREADS */
     }
 
     thread_state->status = THREAD_ABORTED;
@@ -4175,7 +4214,7 @@ static void check_thread_interrupt(struct callback *foo,
     if (throw_severity == THROW_ERROR) {
       Pike_error("Interrupted.\n");
     } else {
-      push_int(-1);
+      push_svalue(&Pike_interpreter.thread_state->result);
       assign_svalue(&throw_value, Pike_sp-1);
       pike_throw();
     }
@@ -4231,9 +4270,10 @@ static void low_thread_kill (struct thread_state *th)
   th->flags |= THREAD_FLAG_TERM;
 }
 
-/*! @decl void kill()
+/*! @decl void kill(int|void exit_value)
  *!
- *! Interrupt the thread, and terminate it.
+ *! Interrupt the thread, and terminate it as if it had
+ *! terminated with the value @[exit_value].
  *!
  *! @note
  *!   Interrupts are asynchronous, and are currently not queued.
@@ -4241,9 +4281,20 @@ static void low_thread_kill (struct thread_state *th)
  *! @note
  *!   Due to the asynchronous nature of interrupts, it may take
  *!   some time before the thread reacts to the interrupt.
+ *!
+ *! @note
+ *!   Killing the backend thread (aka the main thread) is
+ *!   equivalent to calling @[predef::kill()].
  */
 static void f_thread_id_kill(INT32 args)
 {
+  if (!args) {
+    push_int(-1); /* Traditional return value. */
+    args++;
+  } else if (TYPEOF(Pike_sp[-args]) != PIKE_T_INT) {
+    SIMPLE_BAD_ARG_ERROR("kill", 1, "int");
+  }
+  assign_svalue(&THIS_THREAD->result, Pike_sp-args);
   pop_n_elems(args);
   low_thread_kill (THIS_THREAD);
 }
@@ -4342,7 +4393,7 @@ static void thread_was_checked(struct object *UNUSED(o))
  *! Type for the value to be stored in the thread local storage.
  */
 
-void init_thread_local(struct object *ignored)
+void init_thread_local(struct object *UNUSED(ignored))
 {
   static INT32 thread_local_id = 0;
   ((struct thread_local_var *)CURRENT_STORAGE)->id =
@@ -4626,8 +4677,6 @@ void low_th_init(void)
   th_running = 1;
 }
 
-static struct object *backend_thread_obj = NULL;
-
 static struct Pike_interpreter_struct *original_interpreter = NULL;
 
 void th_init(void)
@@ -4824,8 +4873,7 @@ void th_init(void)
 
   original_interpreter = Pike_interpreter_pointer;
   backend_thread_obj = fast_clone_object(thread_id_prog);
-  INIT_THREAD_STATE((struct thread_state *)(backend_thread_obj->storage +
-					    thread_storage_offset));
+  INIT_THREAD_STATE(OBJ2THREADSTATE(backend_thread_obj));
   thread_table_insert(Pike_interpreter.thread_state);
 }
 
@@ -4834,6 +4882,12 @@ void cleanup_all_other_threads (void)
 {
   int i, num_kills = num_pending_interrupts;
   time_t timeout = time (NULL) + 2;
+
+#if defined(UNIX_THREADS) || defined(POSIX_THREADS)
+  if (THREADSTATE2OBJ(Pike_interpreter.thread_state) != backend_thread_obj) {
+    Pike_fatal("Thread cleanup from other thread than the backend thread!\n");
+  }
+#endif
 
   mt_lock (&thread_table_lock);
   for (i = 0; i < THREAD_TABLE_SIZE; i++) {
