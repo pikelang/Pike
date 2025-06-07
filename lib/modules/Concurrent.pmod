@@ -1011,15 +1011,46 @@ class Promise(<ValueType>)
   private string orig_backtrace =
     sprintf("%s\n------\n", describe_backtrace(backtrace()));
 
-  protected void _destruct()
+  protected void _destruct(int when)
   {
+    // Complain about promises being destructed before fullfillment.
+    //
     // NB: Don't complain about dropping STATE_NO_FUTURE on the floor.
-    if (state == STATE_PENDING)
-      try_failure(({ sprintf("%O: Promise broken.\n%s",
-			     this, orig_backtrace),
-		     backtrace() }));
-    if ((state == STATE_REJECTED) && global_on_failure)
+    if (state == STATE_PENDING) {
+      // NB: Inlined failure(). We are probably in a signal context.
+      mixed key;
+      if (when == Object.DESTRUCT_NO_REFS) {
+        // Common case, we should be the only ones having access to the object.
+        // No locking!!!
+      } else if (Pike.signal_contextp()) {
+        // Unlikely, but...
+        key = _disable_threads();
+      } else {
+        // Synchronous destruct(). Also unlikely.
+        key = mux->lock();
+      }
+      if (state == STATE_PENDING) {
+        // We are still pending after the potential locking above.
+        state = STATE_REJECTED;
+        result = ({
+          sprintf("%O: Promise broken.\n%s", this, orig_backtrace),
+          backtrace(),
+        });
+        if (sizeof(failure_cbs)) {
+          foreach(failure_cbs; ; array cb) {
+            if (cb) {
+              call_callback(cb[0], result, @cb[1..]);
+            }
+          }
+          state = STATE_REJECTION_REPORTED;
+          failure_cbs = success_cbs = ({});
+        }
+      }
+    }
+    if ((state == STATE_REJECTED) && global_on_failure) {
+      // Complain if there were no failure callbacks.
       call_callback(global_on_failure, result);
+    }
     result = UNDEFINED;
   }
 }
