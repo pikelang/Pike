@@ -1018,6 +1018,7 @@ class Promise(<ValueType>)
     // NB: Don't complain about dropping STATE_NO_FUTURE on the floor.
     if (state == STATE_PENDING) {
       // NB: Inlined failure(). We are probably in a signal context.
+#if constant(_disable_threads)	// Survive --without-threads.
       mixed key;
       if (when == Object.DESTRUCT_NO_REFS) {
         // Common case, we should be the only ones having access to the object.
@@ -1029,6 +1030,7 @@ class Promise(<ValueType>)
         // Synchronous destruct(). Also unlikely.
         key = mux->lock();
       }
+#endif
       if (state == STATE_PENDING) {
         // We are still pending after the potential locking above.
         state = STATE_REJECTED;
