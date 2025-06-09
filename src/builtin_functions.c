@@ -4853,13 +4853,23 @@ static struct pike_string *replace_many(struct pike_string *str,
  *! @decl string replace(string s, array(string) from, array(string) to)
  *! @decl string replace(string s, array(string) from, string to)
  *! @decl string replace(string s, mapping(string:string) replacements)
- *! @decl array replace(array a, mixed from, mixed to)
- *! @decl mapping replace(mapping a, mixed from, mixed to)
  *!
- *!   Generic replace function.
+ *!   Generic replace function (strings).
  *!
- *!   This function can do several kinds replacement operations, the
- *!   different syntaxes do different things as follows:
+ *! @param s
+ *!   Source string to perform the replacements on.
+ *!
+ *! @param from
+ *!   Sub-string or strings to match verbatim.
+ *!
+ *! @param to
+ *!   String or strings that @[from] in @[s] should be replaced with.
+ *!
+ *! @param replacements
+ *!   Instead of the arrays @[from] and @[to] a mapping equivalent to
+ *!   @expr{@[mkmapping](@[from], @[to])@} can be used.
+ *!
+ *!   Replaces all occurrances of @[from] in @[s] with the corresponding @[to].
  *!
  *!   If all the arguments are strings, a copy of @[s] with every
  *!   occurrence of @[from] replaced with @[to] will be returned.
@@ -4868,9 +4878,12 @@ static struct pike_string *replace_many(struct pike_string *str,
  *!
  *!   If the first argument is a string, and the others array(string), a string
  *!   with every occurrance of @[from][@i{i@}] in @[s] replaced with
- *!   @[to][@i{i@}] will be returned. Instead of the arrays @[from] and @[to]
- *!   a mapping equivalent to @expr{@[mkmapping](@[from], @[to])@} can be
- *!   used.
+ *!   @[to][@i{i@}] will be returned.
+ */
+/*! @decl array replace(array a, mixed from, mixed to)
+ *! @decl mapping replace(mapping a, mixed from, mixed to)
+ *!
+ *!   Generic replace function (arrays and mappings).
  *!
  *!   If the first argument is an array or mapping, the values of @[a] which
  *!   are @[`==()] with @[from] will be replaced with @[to] destructively.
@@ -4984,6 +4997,9 @@ node *optimize_replace(node *n)
      */
     n->node_info |= OPT_SIDE_EFFECT;
     n->tree_info |= OPT_SIDE_EFFECT;
+
+    free_type(array_zero);
+    free_type(mapping_zero);
   } else {
     /* First argument is not an array or mapping,
      *
@@ -4996,6 +5012,9 @@ node *optimize_replace(node *n)
      * so it needs to be volatile to prevent it from being globbered.
      */
     struct program * volatile replace_compiler = NULL;
+
+    free_type(array_zero);
+    free_type(mapping_zero);
 
     if (arg1 && ((pike_types_le((*arg1)->type, array_type_string, 0, 0) &&
 		  arg2 &&
@@ -5061,9 +5080,6 @@ node *optimize_replace(node *n)
 
 	  UNSETJMP(tmp);
 	  pop_n_elems(Pike_sp - save_sp);
-
-	  free_type(array_zero);
-	  free_type(mapping_zero);
 	  return ret;
 	}
       }
@@ -5072,9 +5088,6 @@ node *optimize_replace(node *n)
       pop_n_elems(Pike_sp - save_sp);
     }
   }
-
-  free_type(array_zero);
-  free_type(mapping_zero);
 
   return NULL;
 }

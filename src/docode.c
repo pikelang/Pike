@@ -1183,12 +1183,7 @@ static int do_docode2(node *n, int flags)
   }
 
   /* Stack check */
-  {
-    ptrdiff_t x_= ((char *)&x_) - Pike_interpreter.stack_top +
-      STACK_DIRECTION * (32768);
-    x_*=STACK_DIRECTION;
-    if(x_>0)
-    {
+  low_check_c_stack(32768, {
       yyerror("Too deep recursion in compiler. (please report this)");
 
       emit1(F_NUMBER,0);
@@ -1198,8 +1193,7 @@ static int do_docode2(node *n, int flags)
 	return 2;
       }
       return 1;
-    }
-  }
+    });
 
   switch(n->token)
   {

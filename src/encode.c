@@ -49,8 +49,10 @@
 #ifndef PIKE_DEBUG
 #define dump_program_tables(P, DEPTH)
 #endif
+#define EDUNUSED(X)	X
 #else
 #define EDB(N,X) do { debug_malloc_touch(data); } while (0)
+#define EDUNUSED(X)	UNUSED(X)
 #endif
 
 /* Use this macro to guard sections of code that should only
@@ -5015,7 +5017,7 @@ static void error_debug_free_decode_data (struct decode_data *data)
 
 static INT32 my_decode(struct pike_string *tmp,
                        struct object *codec, int explicit_codec,
-                       int debug, struct string_builder *debug_buf)
+                       int EDUNUSED(debug), struct string_builder *debug_buf)
 {
   struct decode_data *data;
   ONERROR err;
