@@ -3914,7 +3914,6 @@ size_t do_gc(int explicit_call)
 
 #ifdef PIKE_DEBUG
   if (gc_extra_refs) {
-    size_t e;
     fprintf (stderr, "Lost track of %d extra refs to things in gc.\n"
 	     "Searching for marker(s) with extra refs:\n", gc_extra_refs);
     fprintf (stderr, "========================================\n"
@@ -4067,9 +4066,9 @@ size_t do_gc(int explicit_call)
       new_threshold = (double)(alloc_threshold + start_allocs);
 #endif
 
-    if(new_threshold < GC_MIN_ALLOC_THRESHOLD)
+    if(new_threshold < (double)GC_MIN_ALLOC_THRESHOLD)
       alloc_threshold = GC_MIN_ALLOC_THRESHOLD;
-    else if(new_threshold > GC_MAX_ALLOC_THRESHOLD)
+    else if(new_threshold > (double)GC_MAX_ALLOC_THRESHOLD)
       alloc_threshold = GC_MAX_ALLOC_THRESHOLD;
     else
       alloc_threshold = (ALLOC_COUNT_TYPE) new_threshold;
