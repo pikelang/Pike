@@ -2388,28 +2388,9 @@ PMOD_EXPORT void really_free_pike_frame( struct pike_frame *X )
 
 struct pike_frame *alloc_pike_frame(void)
 {
-    struct pike_frame *res;
-    if( free_pike_frame )
-    {
-      res = free_pike_frame;
-      PIKE_MEMPOOL_ALLOC(&free_pike_frame, res, sizeof(struct pike_frame));
-      PIKE_MEM_RW_RANGE(&res->next, sizeof(void*));
-      free_pike_frame = res->next;
-      PIKE_MEM_WO_RANGE(&res->next, sizeof(void*));
-      memset(res, 0, sizeof(struct pike_frame));
-      gc_init_marker(res);
-      res->refs=0;
-      add_ref(res);	/* For DMALLOC... */
-      res->flags=0;
-      res->next=0;
-      res->scope=0;
-      res->pc = NULL;
-
-      return res;
-    }
-
-    /* Need to allocate more. */
-    {
+    struct pike_frame *res = NULL;
+    while (UNLIKELY(!free_pike_frame)) {
+      /* Need to allocate more. */
       unsigned int i;
 #define FRAMES_PER_CHUNK ((4096*4-8-sizeof(struct pike_frame_chunk))/sizeof(struct pike_frame))
 #define FRAME_CHUNK_SIZE (FRAMES_PER_CHUNK*sizeof(struct pike_frame))+sizeof(struct pike_frame_chunk)
@@ -2427,7 +2408,22 @@ struct pike_frame *alloc_pike_frame(void)
       res->next = NULL;
       num_pike_frames+=FRAMES_PER_CHUNK;
     }
-    return alloc_pike_frame();
+
+    res = free_pike_frame;
+    PIKE_MEMPOOL_ALLOC(&free_pike_frame, res, sizeof(struct pike_frame));
+    PIKE_MEM_RW_RANGE(&res->next, sizeof(void*));
+    free_pike_frame = res->next;
+    PIKE_MEM_WO_RANGE(&res->next, sizeof(void*));
+    memset(res, 0, sizeof(struct pike_frame));
+    gc_init_marker(res);
+    res->refs=0;
+    add_ref(res);	/* For DMALLOC... */
+    res->flags=0;
+    res->next=0;
+    res->scope=0;
+    res->pc = NULL;
+
+    return res;
 }
 
 void describe_stack(void)
