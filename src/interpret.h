@@ -237,6 +237,11 @@ PMOD_EXPORT extern void check_c_stack_margin(void);
 #define SET_SVAL_TYPE_CHECKER(S,T) SET_SVAL_TYPE_DC(S,T)
 #endif
 
+#define steal_stack() do {                              \
+    Pike_sp--;                                          \
+    dmalloc_touch_svalue_named(Pike_sp, "steal_stack"); \
+    debug_check_stack();                                \
+  } while(0)
 #define pop_stack() do{ free_svalue(--Pike_sp); debug_check_stack(); }while(0)
 #define pop_2_elems() do { pop_stack(); pop_stack(); }while(0)
 
