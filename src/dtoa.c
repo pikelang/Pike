@@ -1,3 +1,4 @@
+/* -*- mode: C; c-basic-offset: 8; indent-tabs-mode: t; -*- */
 /****************************************************************
  *
  * The author of this software is David M. Gay.
