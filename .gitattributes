@@ -35,6 +35,7 @@ Makefile.in -space_indent tab_indent
 Makefile.rl -space_indent tab_indent
 /lib/modules/Calendar.pmod/tzdata/** -space_indent -tab_indent mixed_indent
 /packaging/debian/rules -space_indent tab_indent
+/src/code/README.txt -space_indent tab_indent
 /src/crypt.c -space_indent tab_indent
 /src/dtoa.c -space_indent tab_indent
 /src/modules/common_module_makefile.in -space_indent tab_indent
@@ -478,7 +479,6 @@ Makefile.rl -space_indent tab_indent
 /src/builtin_functions.h mixed_indent
 /src/callback.c mixed_indent
 /src/callback.h mixed_indent
-/src/code/README.txt mixed_indent
 /src/code/amd64.c mixed_indent
 /src/code/amd64.h mixed_indent
 /src/code/arm32.c mixed_indent
