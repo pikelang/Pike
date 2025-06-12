@@ -1199,7 +1199,7 @@ static void check_message(struct msghdr *msg)
 #endif
 }
 
-#ifndef HAVE_STRUCT_MSGHDR_MSG_CONTROL
+#if !defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL) && !defined(CMSG_LEN)
 /* BSD */
 #define CMSG_LEN(x)	(x)
 #endif
@@ -6109,8 +6109,8 @@ static TH_RETURN_TYPE proxy_thread(void * data)
   while (fd_close(p->from) && errno == EINTR) {}
   low_mt_lock_interpreter();	/* Can run even if threads_disabled. */
   num_threads--;
+  free(p);	/* Needs to be guarded by the interpreter lock if dmalloc. */
   mt_unlock_interpreter();
-  free(p);
   th_exit(0);
   return 0;
 }
