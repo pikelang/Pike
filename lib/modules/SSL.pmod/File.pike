@@ -1058,7 +1058,8 @@ int write(string|array(string) data, mixed... args)
 
   foreach(data, string frag) {
     if (String.width(frag) > 8) {
-      error("String fragment is wide: %O.\n", frag);
+      data = "<CENSORED>";
+      error("String fragment is wide.\n");
     }
   }
 
