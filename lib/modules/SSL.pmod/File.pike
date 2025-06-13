@@ -1064,6 +1064,12 @@ int write(string|array(string) data, mixed... args)
     data = ({ data });
   }
 
+  foreach(data, string frag) {
+    if (String.width(frag) > 8) {
+      error("String fragment is wide: %O.\n", frag);
+    }
+  }
+
   if (user_write_buffer) {
     user_write_buffer->__set_on_write(0);
     if (sizeof(user_write_buffer)) {
