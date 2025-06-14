@@ -800,6 +800,20 @@ this_program thread_request(string server, int port, string query,
    }
 
    request=query+"\r\n"+headers+"\r\n"+data;
+   if (String.width(request) > 8) {
+     if (String.width(query) > 8) {
+       error("Query is wide: %O.\n", query);
+     }
+     if (String.width(headers) > 8) {
+       foreach(headers/"\r\n", string head) {
+         if (String.width(head) > 8) {
+           error("Header %O is wide.\n", (head/":")[0]);
+         }
+       }
+       // Not reached.
+     }
+     error("Request data is wide.\n");
+   }
 
    conthread=thread_create(connect,ips,port,1);
 
@@ -890,6 +904,20 @@ this_program sync_request(string server, int port, string query,
   }
 
   request = query + "\r\n" + http_headers + "\r\n" + (data||"");
+  if (String.width(request) > 8) {
+    if (String.width(query) > 8) {
+      error("Query is wide: %O.\n", query);
+    }
+    if (String.width(http_headers) > 8) {
+      foreach(http_headers/"\r\n", string head) {
+        if (String.width(head) > 8) {
+          error("Header %O is wide.\n", (head/":")[0]);
+        }
+      }
+      // Not reached.
+    }
+    error("Request data is wide.\n");
+  }
 
   if(kept_alive)
   {
@@ -943,7 +971,23 @@ this_program async_request(string server,int port,string query,
       headers=headers_encode(headers);
    }
 
-   send_buffer = Stdio.Buffer(request = query+"\r\n"+headers+"\r\n"+(data||""));
+   request = query+"\r\n"+headers+"\r\n"+(data||"");
+   if (String.width(request) > 8) {
+     if (String.width(query) > 8) {
+       error("Query is wide: %O.\n", query);
+     }
+     if (String.width(headers) > 8) {
+       foreach(headers/"\r\n", string head) {
+         if (String.width(head) > 8) {
+           error("Header %O is wide.\n", (head/":")[0]);
+         }
+       }
+       // Not reached.
+     }
+     error("Request data is wide.\n");
+   }
+
+   send_buffer = Stdio.Buffer(request);
 
    errno = ok = protocol = this::headers = status_desc = status =
      discarded_bytes = datapos = 0;
