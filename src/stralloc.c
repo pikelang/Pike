@@ -713,6 +713,9 @@ PMOD_EXPORT struct pike_string *debug_begin_wide_shared_string(size_t len, enum 
   /* we mark the string as static here, to avoid double free if the
    * allocations fail
    */
+#ifdef __CHECKER__
+  memset(t, 0, sizeof(struct pike_string));
+#endif
 #ifdef PIKE_DEBUG
   gc_init_marker(t);
 #endif
@@ -2338,6 +2341,12 @@ void init_shared_string_table(void)
 PMOD_EXPORT struct shared_string_location *all_shared_string_locations;
 #endif
 
+#ifdef DEBUG_MALLOC
+static void walk_unregister_string(struct ba_iterator *it, void *UNUSED(data))
+{
+  dmalloc_unregister(it->cur, 0);
+}
+#endif
 
 void cleanup_shared_string_table(void)
 {
@@ -2386,6 +2395,13 @@ void cleanup_shared_string_table(void)
   base_table=0;
   num_strings=0;
 
+#ifdef DEBUG_MALLOC
+  /* We need to remove all memhdrs for the remaining strings.
+   * Otherwise find_references_to() may attempt to index the
+   * memory and trigger a SEGV if it has been unmapped.
+   */
+  ba_walk(&string_allocator, walk_unregister_string, NULL);
+#endif
 #ifdef DO_PIKE_CLEANUP
   ba_destroy(&string_allocator);
 #endif /* DO_PIKE_CLEANUP */
