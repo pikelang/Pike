@@ -1679,8 +1679,8 @@ PMOD_EXPORT ptrdiff_t my_quick_strcmp(const struct pike_string *a,
 }
 
 
-struct pike_string *realloc_unlinked_string(struct pike_string *a,
-                                           ptrdiff_t size)
+struct pike_string *debug_realloc_unlinked_string(struct pike_string *a,
+                                                  ptrdiff_t size)
 {
   char * s = NULL;
   size_t nbytes = (size_t)(size+1) << a->size_shift;
@@ -1738,7 +1738,9 @@ static struct pike_string *realloc_shared_string(struct pike_string *a,
   }
 }
 
-struct pike_string *new_realloc_shared_string(struct pike_string *a, INT32 size, enum size_shift shift)
+struct pike_string *debug_new_realloc_shared_string(struct pike_string *a,
+                                                    INT32 size,
+                                                    enum size_shift shift)
 {
   struct pike_string *r;
   if(shift == a->size_shift) return realloc_shared_string(a,size);
