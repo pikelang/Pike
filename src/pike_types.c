@@ -5948,6 +5948,25 @@ struct pike_type *soft_cast(struct pike_type *soft_type,
 	  /* Failure. */
 	  break;
 	}
+        if ((soft_type->type == T_MANY) &&
+            (soft_type->car->type == T_OR) &&
+            (soft_type->cdr->type == T_OR) &&
+            (((soft_type->car->car->type == T_VOID) &&
+              (soft_type->car->cdr->type == PIKE_T_ZERO)) ||
+             ((soft_type->car->car->type == PIKE_T_ZERO) &&
+              (soft_type->car->cdr->type == T_VOID))) &&
+            (((soft_type->cdr->car->type == T_VOID) &&
+              (soft_type->cdr->cdr->type == T_MIXED)) ||
+             ((soft_type->cdr->car->type == T_MIXED) &&
+              (soft_type->cdr->cdr->type == T_VOID)))) {
+          /* Special case: Soft cast to function(void|zero...:void|mixed).
+           * We know that orig_type is a function, so just return it.
+           *
+           * FIXME: Handle array_cnt.
+           */
+          copy_pike_type(res, orig_type);
+          break;
+        }
 	type_stack_mark();
 	while((soft_type->type == T_FUNCTION) ||
 	      (orig_type->type == T_FUNCTION)) {
