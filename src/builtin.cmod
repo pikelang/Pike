@@ -3271,7 +3271,7 @@ PIKEFUN string|mapping|zero _getenv (void|string var)
 #ifdef DECLARE_ENVIRON
     extern char **environ;
 #endif
-    struct mapping *m, *new_env_allocs;
+    struct mapping *m, *new_env_allocs = NULL;
     int n;
 
     /* Iterate the environment backwards below so that earlier
