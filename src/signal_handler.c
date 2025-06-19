@@ -1518,7 +1518,7 @@ static void do_da_lock(void)
 
 static void do_bi_do_da_lock(void)
 {
-  PROC_FPRINTF("[%d] wait thread: This is your wakeup call!\n",
+  PROC_FPRINTF("[%d] fork: wait thread: This is your wakeup call!\n",
                getpid());
 
   co_broadcast(&start_wait_thread);
@@ -1546,6 +1546,11 @@ static TH_RETURN_TYPE wait_thread(void *UNUSED(data))
 
       err = errno;
 
+      if (!pid) {
+        /* There exist child processes, but none of them
+         * have a wait state available yet.
+         */
+      }
       if(pid < 0) {
         if (err == ECHILD) {
           /* There are no active child processes, so wait for
@@ -1664,6 +1669,8 @@ static TH_RETURN_TYPE wait_thread(void *UNUSED(data))
       }
     }
   }
+
+  UNREACHABLE();
 }
 #endif
 
@@ -3814,9 +3821,12 @@ void f_create_process(INT32 args)
 
     PROC_FPRINTF("[%d] control_pipe: %d, %d\n",
                  getpid(), control_pipe[0], control_pipe[1]);
+
 #ifdef USE_WAIT_THREAD
     if (!wait_thread_running) {
       THREAD_T foo;
+      PROC_FPRINTF("[%d] fork: Spawning wait_thread.\n", getpid());
+
       if (th_create_small(&foo, wait_thread, 0)) {
 	Pike_error("Failed to create wait thread!\n"
 		   "errno: %d\n", errno);
@@ -4635,7 +4645,7 @@ void Pike_f_fork(INT32 args)
   /* This section is disabled, since fork1() isn't usefull if
    * you aren't about do an exec().
    * In addition any helper threads (like the wait thread) would
-   * disappear, so the child whould be crippled.
+   * disappear, so the child would be crippled.
    *	/grubba 1999-03-07
    *
    * Reenabled since fork() usually performs a fork1() anyway.
