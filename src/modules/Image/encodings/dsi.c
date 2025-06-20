@@ -35,6 +35,7 @@
 #include "image.h"
 #include "colortable.h"
 
+#include "encodings.h"
 
 #define sp Pike_sp
 
