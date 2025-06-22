@@ -181,7 +181,8 @@ void throw_error(string str, mixed ... args)
 
 //! Namespace aware parser.
 class XMLNSParser {
-  ADT.Stack namespace_stack = ADT.Stack();
+  ADT.Stack(<mapping(string:string)>) namespace_stack =
+    ADT.Stack(<mapping(string:string)>)();
 
   protected void create()
   {
@@ -1686,7 +1687,8 @@ class XMLParser
 
   this_program doctype_node;
 
-  protected ADT.Stack container_stack = ADT.Stack();
+  protected ADT.Stack(<AbstractNode>) container_stack =
+    ADT.Stack(<AbstractNode>)();
 
   void parse(string data,
              void|mapping predefined_entities,
@@ -1724,7 +1726,7 @@ class XMLParser
 	}
       }
       catch( data=xp->autoconvert(data) );
-      container_stack = ADT.Stack();
+      container_stack = ADT.Stack(<AbstractNode>)();
       foreach(xp->parse(data, parse_xml_callback,
                         sizeof(extras) && extras),
               this_program child)
