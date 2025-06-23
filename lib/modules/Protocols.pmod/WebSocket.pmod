@@ -144,7 +144,7 @@ mapping(string:mapping) parse_websocket_extensions(string header) {
   if (!header)
     return retval;
   foreach (MIME.decode_headerfield_params(header); ;
-           ADT.OrderedMapping m) {
+           ADT.OrderedMapping(<mapping(string:string)>) m) {
     string mainopt;
     mapping subopt = ([]);
     foreach (m; string key; string sv)

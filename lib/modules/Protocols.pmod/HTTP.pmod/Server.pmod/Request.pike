@@ -506,7 +506,7 @@ protected void finalize()
   {
     if (request_headers->cookie)
       foreach (MIME.decode_headerfield_params(request_headers->cookie); ;
-               ADT.OrderedMapping m)
+               ADT.OrderedMapping(<mapping(string:string)>) m)
 	foreach (m; string key; string value)
           if (value)
             cookies[key] = value;
