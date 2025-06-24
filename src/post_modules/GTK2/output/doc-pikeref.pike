@@ -268,6 +268,15 @@ protected void output_class( Class cls, int lvl )
                     basename(cls->file));
   result += make_pike_refdoc( cls->doc, cls->signals );
 
+  if (cls->name == "GTK2.SourceMark") {
+    // Get rid of circular dependency.
+    cls->inherits =
+      filter(cls->inherits,
+             lambda(Class inh) {
+               return inh->name != "GTK2.SourceMarker";
+             });
+  }
+
   foreach( cls->inherits, Class i )
     result += "\ninherit "+i->doc_name()+";\n//!\n";
   result += "\n";
