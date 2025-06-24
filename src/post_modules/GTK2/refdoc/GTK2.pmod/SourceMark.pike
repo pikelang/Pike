@@ -5,9 +5,6 @@
 //!
 //!
 
-inherit GTK2.SourceMarker;
-//!
-
 inherit GTK2.TextMark;
 //!
 

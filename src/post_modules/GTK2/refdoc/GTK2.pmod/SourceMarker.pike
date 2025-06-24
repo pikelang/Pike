@@ -1,7 +1,11 @@
 // Automatically generated from "gtksourcemarker.pre".
 // Do NOT edit.
 
+//! Deprecated. This class was renamed to @@[GTK2.SourceMark]
+//! in gtksourceview-2.0.
 //!
+//! @@seealso
+//!   @@[GTK2.SourceMark]
 //!
 //!
 
