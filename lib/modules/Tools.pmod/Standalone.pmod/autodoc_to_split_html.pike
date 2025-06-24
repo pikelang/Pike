@@ -985,12 +985,21 @@ class Node
     // First find all the inherits and assign the appropriate weights.
     mapping(string:int) closure = ([]);
     ADT.Queue q = ADT.Queue();
-    q->put(({ 1, "", this_ref, this_ref }));
+    q->put(({ 1, (<>), "", this_ref, this_ref }));
     while(sizeof(q)) {
-      [int weight, string name, string text, string ref] = q->get();
+      [int weight, multiset(string) seen,
+       string name, string text, string ref] = q->get();
       if (!ref) ref = text;
       if (!names[ref]) names[ref] = text;
       if (closure[ref] >= weight) continue; // Already handled.
+      if (seen[ref]) {
+        // Circular dependency.
+        if (verbosity && (ref == this_ref)) {
+          werror("Circular inherit of %s.\n", ref);
+        }
+        continue;   // Infinite loop averted.
+      }
+      seen += (< ref >);
 
       closure[ref] = weight;
       Node n = refs[ref];
@@ -1002,14 +1011,7 @@ class Node
       multiset(string) inhs = (<>);
       if (sizeof(n->inherits)) {
         foreach(n->inherits, array(string) entry) {
-          if ((entry[2] || entry[1]) == ref) {
-            if (verbosity && (ref == this_ref)) {
-              werror("Circular inherit in %s.\n", ref);
-            }
-            continue;   // Infinite loop averted.
-          }
-
-          q->put(({ weight + 1 }) + entry);
+          q->put(({ weight + 1, seen }) + entry);
           inhs[entry[2]||entry[1]] = 1;
         }
         foreach(inhs; string inh_ref;) {
