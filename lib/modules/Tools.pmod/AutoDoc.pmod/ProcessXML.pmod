@@ -1488,10 +1488,15 @@ class NScope
 		   type, name, sizeof(symbols), sizeof(inherits||([])));
   }
 
-  string|zero lookup(array(string) path, int(0..1)|void no_imports )
+  string|zero lookup(array(string) path, int(0..1)|void no_imports,
+                     multiset(NScope) seen = (<>))
   {
     if( !sizeof(path) )
       return name;
+
+    if (seen[this]) return 0;
+
+    seen[this] = 1;
 
     int(1..1)|NScope scope =
       symbols[path[0]] || symbols["/precompiled/"+path[0]];
@@ -1500,7 +1505,7 @@ class NScope
       if (inherits) {
 	foreach(inherits; string inh; scope) {
 	  if (objectp(scope)) {
-	    string res = scope->lookup(path, 1);
+            string res = scope->lookup(path, 1, seen);
 	    if (res) return res;
 	  }
 	}
@@ -1508,7 +1513,7 @@ class NScope
       if (imports && !no_imports) {
 	foreach(imports; scope; ) {
 	  if (objectp(scope)) {
-	    string res = scope->lookup(path, 1);
+            string res = scope->lookup(path, 1, seen);
 	    if (res) return res;
 	  }
 	}
