@@ -1,3 +1,6 @@
+// Automatically generated from "gtkscale.pre".
+// Do NOT edit.
+
 //! The GTK2.Scale widget is an abstract class, used only for deriving
 //! the subclasses GTK2.Hscale and GTK2.Vscale.
 //! 
@@ -18,6 +21,7 @@
 //!
 
 inherit GTK2.Range;
+//!
 
 GTK2.Scale add_mark( float value, int pos, string|void markup );
 // Adds a mark at @[value].
@@ -45,7 +49,7 @@ int get_draw_value( );
 //!
 //!
 
-GTK2.Pango.Layout get_layout( );
+Pango.Layout get_layout( );
 //! Gets the Pango.Layout used to display the scale.
 //!
 //!

@@ -1,11 +1,15 @@
+// Automatically generated from "gtkseparatortoolitem.pre".
+// Do NOT edit.
+
 //! Properties:
 //! int draw
 //!
 //!
 
 inherit GTK2.ToolItem;
+//!
 
-protected GTK2.SeparatorToolItem create( mapping|void props );
+protected void create( void props );
 //! Create a new GTK2.SeparatorToolItem.
 //!
 //!

@@ -1,8 +1,14 @@
+// Automatically generated from "gtksourcelanguagesmanager.pre".
+// Do NOT edit.
+
+//!
+//!
 //!
 
 inherit G.Object;
+//!
 
-protected GTK2.SourceLanguagesManager create( );
+protected void create( );
 //! Create a new language manager.
 //!
 //!

@@ -1,3 +1,6 @@
+// Automatically generated from "gtkprogressbar.pre".
+// Do NOT edit.
+
 //! A simple progress bar. Useful when you are doing things that take a long
 //! time. Try to always have an 'abort' button whenever it makes sence.
 //!@expr{ GTK2.ProgressBar()->set_fraction(0.1)@}
@@ -23,8 +26,9 @@
 //!
 
 inherit GTK2.Progress;
+//!
 
-protected GTK2.ProgressBar create( mapping|void props );
+protected void create( void props );
 //! Create a new progress bar.
 //! The default values are:
 //! Min 0.0, max 1.0, current 0.0

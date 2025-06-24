@@ -1,3 +1,6 @@
+// Automatically generated from "gtkvbox.pre".
+// Do NOT edit.
+
 //! Most packing is done by creating boxes. These are invisible widget
 //! containers that we can pack our widgets into which come in two
 //! forms, a horizontal box, and a vertical box. This is the vertical
@@ -18,8 +21,9 @@
 //!
 
 inherit GTK2.Box;
+//!
 
-protected GTK2.Vbox create( int|mapping uniformp_or_props, int|void padding );
+protected void create( void uniformp_or_props, void padding );
 //! Create a new vertical box widget.
 //! If all_same_size is true, all widgets will have exactly the same size.
 //! padding is added to the top and bottom of the children.

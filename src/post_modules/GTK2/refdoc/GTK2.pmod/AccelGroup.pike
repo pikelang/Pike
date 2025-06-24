@@ -1,3 +1,6 @@
+// Automatically generated from "gtkaccelgroup.pre".
+// Do NOT edit.
+
 //! An AccelGroup stores keybindings.
 //! A group is automatically created by W(MenuFactory)
 //!
@@ -11,6 +14,7 @@
 //!
 
 inherit G.Object;
+//!
 
 GTK2.AccelGroup connect( int accel_key, int accel_mods, int accel_flags, function cb, mixed user_data );
 //! Installs an accelerator in this group.
@@ -23,7 +27,7 @@ GTK2.AccelGroup connect_by_path( string accel_path, function cb, mixed user_data
 //!
 //!
 
-protected GTK2.AccelGroup create( );
+protected void create( );
 //! Create a new accelerator group
 //!
 //!

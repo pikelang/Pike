@@ -1,3 +1,6 @@
+// Automatically generated from "gtksocket.pre".
+// Do NOT edit.
+
 //! Together with W(Plug), GTK2.Socket provides the ability to embed
 //! widgets from one process into another process in a fashion that is
 //! transparent to the user. One process creates a GTK2.Socket widget
@@ -27,13 +30,14 @@
 //!
 
 inherit GTK2.Container;
+//!
 
 GTK2.Socket add_id( int wid );
 //! Adds an XEMBED client, such as a W(Plug), to the W(Socket).
 //!
 //!
 
-protected GTK2.Socket create( mapping|void props );
+protected void create( void props );
 //! Create a new GTK2.Socket.
 //!
 //!

@@ -1,6 +1,0 @@
-//! PangoContext.
-//!
-//!
-
-inherit G.Object;
-

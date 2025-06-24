@@ -1,3 +1,6 @@
+// Automatically generated from "gtkeditable.pre".
+// Do NOT edit.
+
 //! Interface for text-editing widgets.
 //!
 //!

@@ -1,3 +1,6 @@
+// Automatically generated from "gtktogglebutton.pre".
+// Do NOT edit.
+
 //! Toggle buttons are derived from normal buttons and are very
 //! similar, except they will always be in one of two states,
 //! alternated by a click. They may be depressed, and when you click
@@ -22,8 +25,9 @@
 //!
 
 inherit GTK2.Button;
+//!
 
-protected GTK2.ToggleButton create( string|mapping label_or_props, int|void mnemonic );
+protected void create( void label_or_props, void mnemonic );
 //! If you supply a string, a label will be created and inserted in the button.
 //! Otherwise, use -&gt;add(widget) to create the contents of the button.
 //!

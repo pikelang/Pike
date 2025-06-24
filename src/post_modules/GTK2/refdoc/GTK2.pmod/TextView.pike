@@ -1,3 +1,6 @@
+// Automatically generated from "gtktextview.pre".
+// Do NOT edit.
+
 //! Properties:
 //! int accepts-tab
 //! GTK2.TextBuffer buffer
@@ -51,6 +54,7 @@
 //!
 
 inherit GTK2.Container;
+//!
 
 GTK2.TextView add_child_at_anchor( GTK2.Widget child, GTK2.TextChildAnchor anchor );
 //! Adds a child widget in the text buffer, at the given anchor.
@@ -91,7 +95,7 @@ array buffer_to_window_coords( int wintype, int buffer_x, int buffer_y );
 //!
 //!
 
-protected GTK2.TextView create( GTK2.TextBuffer buffer_or_props );
+protected void create( void buffer_or_props );
 //! Create a new W(TextView).  
 //!
 //!
@@ -162,7 +166,7 @@ GTK2.TextIter get_iter_at_position( int x, int y );
 //!
 //!
 
-GTK2.GdkRectangle get_iter_location( GTK2.TextIter iter );
+GDK2.Rectangle get_iter_location( GTK2.TextIter iter );
 //! Gets a rectangle which roughly contains the character at iter.  The
 //! rectangle position is in buffer coordinates; use buffer_to_window_coords()
 //! to convert these coordinates to coordinates for one of the windows in
@@ -219,20 +223,20 @@ int get_right_margin( );
 //!
 //!
 
-GTK2.Pango.TabArray get_tabs( );
+Pango.TabArray get_tabs( );
 //! Gets the default tabs.  Tags in the buffer may override the defaults.
 //! The return value will be 0 if "standard" (8-space) tabs are used.
 //!
 //!
 
-GTK2.GdkRectangle get_visible_rect( );
+GDK2.Rectangle get_visible_rect( );
 //! Returns a rectangle with the currently-visible region of the buffer,
 //! in buffer coordinates.  Convert to window coordinates with
 //! buffer_to_window_coords().
 //!
 //!
 
-GTK2.GdkWindow get_window( int wintype );
+GDK2.Window get_window( int wintype );
 //! Retrieves the GDK2.Window corresponding to an area of the text view;
 //! possible windows include the overall widget window, child windows on the
 //! left, right, top, bottom, and the window that displays the text buffer.
@@ -241,7 +245,7 @@ GTK2.GdkWindow get_window( int wintype );
 //!
 //!
 
-int get_window_type( GTK2.GdkWindow window );
+int get_window_type( GDK2.Window window );
 //! Usually used to find out which window an event corresponds to.  If you
 //! connect to an event signal, this function should be called on
 //! event->window to see which window it was.  One of @[TEXT_WINDOW_BOTTOM], @[TEXT_WINDOW_LEFT], @[TEXT_WINDOW_PRIVATE], @[TEXT_WINDOW_RIGHT], @[TEXT_WINDOW_TEXT], @[TEXT_WINDOW_TOP] and @[TEXT_WINDOW_WIDGET].
@@ -382,7 +386,7 @@ GTK2.TextView set_right_margin( int margin );
 //!
 //!
 
-GTK2.TextView set_tabs( GTK2.Pango.TabArray tabs );
+GTK2.TextView set_tabs( Pango.TabArray tabs );
 //! Sets the default tab stops for paragraphs.  Tags in the buffer may
 //! override the default.
 //!

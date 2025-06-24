@@ -5,6 +5,8 @@ not gtksourceview20;
 class GTK2.StringTag;
 inherit GTK2.SourceTag;
 
+//!
+
 %{
 #include "gtksourceview/gtksourceview.h"
 %}

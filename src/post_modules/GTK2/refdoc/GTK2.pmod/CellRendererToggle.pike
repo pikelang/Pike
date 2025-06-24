@@ -1,3 +1,6 @@
+// Automatically generated from "gtkcellrenderertoggle.pre".
+// Do NOT edit.
+
 //! Properties:
 //! int activatable
 //!   The toggle button can be activated.
@@ -15,8 +18,9 @@
 //!
 
 inherit GTK2.CellRenderer;
+//!
 
-protected GTK2.CellRendererToggle create( mapping|void props );
+protected void create( void props );
 //! Creates a new W(CellRendererToggle).  Adjust rendering parameters using
 //! object properties.  Object properties can be set globally with
 //! set().

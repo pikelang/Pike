@@ -1,3 +1,6 @@
+// Automatically generated from "gtktreemodel.pre".
+// Do NOT edit.
+
 //! The tree interface used by TreeView.
 //!
 //!

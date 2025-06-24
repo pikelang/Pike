@@ -1,3 +1,6 @@
+// Automatically generated from "gtkfilechooserbutton.pre".
+// Do NOT edit.
+
 //! Properties:
 //! GTK2.FileChooserDialog dialog
 //! int focus-on-click
@@ -7,10 +10,12 @@
 //!
 
 inherit GTK2.Hbox;
+//!
 
 inherit GTK2.FileChooser;
+//!
 
-protected GTK2.FileChooserButton create( string|mapping title_or_props, int|void action );
+protected void create( void title_or_props, void action );
 //! Create a new file-selecting button widget.
 //! action is one of @[FILE_CHOOSER_ACTION_CREATE_FOLDER], @[FILE_CHOOSER_ACTION_OPEN], @[FILE_CHOOSER_ACTION_SAVE] and @[FILE_CHOOSER_ACTION_SELECT_FOLDER]
 //!

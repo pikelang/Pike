@@ -1,3 +1,6 @@
+// Automatically generated from "gtknotebook.pre".
+// Do NOT edit.
+
 //! The NoteBook Widget is a collection of 'pages' that overlap each
 //! other, each page contains different information. This widget has
 //! become more common lately in GUI programming, and it is a good way
@@ -57,6 +60,7 @@
 //!
 
 inherit GTK2.Container;
+//!
 
 GTK2.Notebook append_page( GTK2.Widget contents, GTK2.Widget label );
 //! Add a new 'page' to the notebook. The first argument is the contents of
@@ -71,7 +75,7 @@ GTK2.Notebook append_page_menu( GTK2.Widget contents, GTK2.Widget label, GTK2.Wi
 //!
 //!
 
-protected GTK2.Notebook create( mapping|void props );
+protected void create( void props );
 //! Create a W(Notebook) widget with no pages.
 //!
 //!

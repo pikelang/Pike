@@ -1,3 +1,6 @@
+// Automatically generated from "gtkcellrendereraccel.pre".
+// Do NOT edit.
+
 //! Properties:
 //! int accel-key
 //! int accel-mode
@@ -12,8 +15,9 @@
 //!
 
 inherit GTK2.CellRendererText;
+//!
 
-protected GTK2.CellRendererAccel create( mapping|void props );
+protected void create( void props );
 //! Create a new GTK2.CellRendererAccel.
 //!
 //!

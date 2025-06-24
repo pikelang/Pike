@@ -3,6 +3,8 @@ require not_now;
 class GTK2.PrintBackend;
 inherit G.Object;
 
+//!
+
 void add_printer(GTK2.Printer printer);
 //!
 

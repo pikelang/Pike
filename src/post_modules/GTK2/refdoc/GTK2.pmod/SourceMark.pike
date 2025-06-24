@@ -1,8 +1,15 @@
+// Automatically generated from "gtksourcemark.pre".
+// Do NOT edit.
+
 //!
 //!
 //!
 
+inherit GTK2.SourceMarker;
+//!
+
 inherit GTK2.TextMark;
+//!
 
 string get_category( );
 //! Gets the category type of this marker.

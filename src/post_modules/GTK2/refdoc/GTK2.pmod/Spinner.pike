@@ -1,3 +1,6 @@
+// Automatically generated from "gtkspinner.pre".
+// Do NOT edit.
+
 //! A @@[Spinner] widget displays an icon-size spinning animation. It
 //! is often used as an alternative to a GtkProgressBar for displaying
 //! indefinite activity, instead of actual progress.
@@ -9,8 +12,9 @@
 //!
 
 inherit GTK2.DrawingArea;
+//!
 
-protected GTK2.Spinner create( );
+protected void create( );
 //!
 //!
 //!

@@ -1,3 +1,6 @@
+// Automatically generated from "gtkcellrenderer.pre".
+// Do NOT edit.
+
 //! Properties:
 //! string cell-background
 //! GDK2.Color cell-background-gdk
@@ -22,8 +25,9 @@
 //!
 
 inherit GTK2.Data;
+//!
 
-int activate( GTK2.GdkEvent event, GTK2.Widget widget, string path, GTK2.GdkRectangle background_area, GTK2.GdkRectangle cell_area, int flags );
+int activate( GDK2.Event event, GTK2.Widget widget, string path, GDK2.Rectangle background_area, GDK2.Rectangle cell_area, int flags );
 //! Passes an activate event to the cell renderer for possible processing.
 //! Some cell renderers may use events; for example, W(CellRendererToggle)
 //! toggles when it gets a mouse click.
@@ -35,7 +39,7 @@ mapping get_fixed_size( );
 //!
 //!
 
-mapping get_size( GTK2.Widget widget, GTK2.GdkRectangle cell_area );
+mapping get_size( GTK2.Widget widget, GDK2.Rectangle cell_area );
 //! Obtains the width and heigh needed to render the cell.  Used by widgets
 //! to determine the appropriate size for the cell_area passed to render().
 //! If cell_area is present, fills in the x and y offset of the cell relative
@@ -45,7 +49,7 @@ mapping get_size( GTK2.Widget widget, GTK2.GdkRectangle cell_area );
 //!
 //!
 
-GTK2.CellRenderer render( GTK2.GdkWindow window, GTK2.Widget widget, GTK2.GdkRectangle background_area, GTK2.GdkRectangle cell_area, GTK2.GdkRectangle expose_area, int flags );
+GTK2.CellRenderer render( GDK2.Window window, GTK2.Widget widget, GDK2.Rectangle background_area, GDK2.Rectangle cell_area, GDK2.Rectangle expose_area, int flags );
 //! Invokes the virtual render function of the W(CellRenderer).  The three
 //! passed-in rectangles are areas of window.  Most renderers will draw within
 //! cell_area; the xalign, yalign, xpad, and ypad fields of the W(CellRenderer)
@@ -62,7 +66,7 @@ GTK2.CellRenderer set_fixed_size( int width, int height );
 //!
 //!
 
-GTK2.CellRenderer start_editing( GTK2.GdkEvent event, GTK2.Widget widget, string path, GTK2.GdkRectangle background_area, GTK2.GdkRectangle cell_area, int flags );
+GTK2.CellRenderer start_editing( GDK2.Event event, GTK2.Widget widget, string path, GDK2.Rectangle background_area, GDK2.Rectangle cell_area, int flags );
 //! Passes an activate event to the cell renderer for possible processing.
 //!
 //!

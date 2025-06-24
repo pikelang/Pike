@@ -1,15 +1,21 @@
+// Automatically generated from "gtkcomboboxentry.pre".
+// Do NOT edit.
+
 //! Properties:
 //! int text-column
 //!
 //!
 
 inherit GTK2.ComboBox;
+//!
 
 inherit GTK2.CellLayout;
+//!
 
 inherit GTK2.CellEditable;
+//!
 
-protected GTK2.ComboBoxEntry create( string|TreeModel|mapping model, int|void text_column );
+protected void create( void model, void text_column );
 //! Create a new ComboBoxEntry, either empty or with a model.
 //!
 //!

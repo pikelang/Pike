@@ -970,6 +970,10 @@ constant GDK_PIXBUF_ERROR_BAD_OPTION;
 //!
 
 
+constant GDK_PIXBUF_ERROR_BAD_OPTION_VALUE;
+//!
+
+
 constant GDK_PIXBUF_ERROR_CORRUPT_IMAGE;
 //!
 
@@ -4670,6 +4674,10 @@ constant PANGO_ATTR_INVALID;
 //!
 
 
+constant PANGO_ATTR_LANG;
+//!
+
+
 constant PANGO_ATTR_LANGUAGE;
 //!
 
@@ -4910,9 +4918,12 @@ constant TRUE;
 //!
 
 
+// Automatically generated from "global.pre".
+// Do NOT edit.
+
 //!
 
-void add_builtin_icon( string name, int size, GTK2.GdkPixbuf pixbuf );
+void add_builtin_icon( string name, int size, GDK2.Pixbuf pixbuf );
 //! Registers a built-in icon for icon theme lookups.  The idea of build-in
 //! icons is to allow an application or library that uses themed icons to
 //! function requiring files to be present in the file system.  For instance,
@@ -4962,6 +4973,11 @@ array gnome_init( string app_id, string app_version, array argv );
 //! corba initialization is done as well as gnome initialization.
 //! corba_init_flags is 0 or more of GNORBA_INIT_SERVER_FUNC (1),
 //! GNORBA_INIT_DISABLE_COOKIES (2) and GNORBA_INIT_CORBA_PRIO_HIGH (4)
+//!
+//!
+
+void gnome_vfs_init( );
+//! Initialize gnome-vfs.  Usually done automatically by gnome_init().
 //!
 //!
 
@@ -5030,7 +5046,7 @@ void move_cursor( int dx, int dy );
 //!
 //!
 
-void move_cursor_abs( GTK2.GdkWindow w, int dx, int dy );
+void move_cursor_abs( GDK2.Window w, int dx, int dy );
 //! Move the mouse-cursor to x,y, relative to the upper left corner of
 //! the specified window. This will generate a normal motion event.
 //!
@@ -5044,7 +5060,7 @@ void parse_rc( string rc );
 //!
 //!
 
-GTK2.GdkWindow root_window( );
+GDK2.Window root_window( );
 //! Returns the root window of the current display
 //!
 //!
@@ -5073,7 +5089,7 @@ void set_auto_startup_notification( int setting );
 //!
 //!
 
-void set_default_icon( GTK2.GdkPixbuf pix );
+void set_default_icon( GDK2.Pixbuf pix );
 //! Sets an icon to be used as fallback for windows that haven't had
 //! set_icon() called on them.
 //!

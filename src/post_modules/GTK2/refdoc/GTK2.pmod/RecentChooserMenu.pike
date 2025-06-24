@@ -1,14 +1,20 @@
+// Automatically generated from "gtkrecentchoosermenu.pre".
+// Do NOT edit.
+
 //!
 //!
 //!
 
 inherit GTK2.Menu;
+//!
 
 inherit GTK2.RecentChooser;
+//!
 
 inherit GTK2.Activatable;
+//!
 
-protected GTK2.RecentChooserMenu create( mapping|RecentManager props );
+protected void create( void props );
 //! Create a new GTK2.RecentChooserMenu.
 //!
 //!

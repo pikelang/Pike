@@ -1,3 +1,6 @@
+// Automatically generated from "gtksourcetagtable.pre".
+// Do NOT edit.
+
 //! Derived from GTK2.TextTagTable
 //!
 //!
@@ -6,6 +9,7 @@
 //!
 
 inherit GTK2.TextTagTable;
+//!
 
 GTK2.SourceTagTable add_tags( array tags );
 //! Adds a list of tags to the table.  The added tags are assigned the highest
@@ -16,7 +20,7 @@ GTK2.SourceTagTable add_tags( array tags );
 //!
 //!
 
-protected GTK2.SourceTagTable create( );
+protected void create( );
 //! Creates a new table.  The table contains no tags be default.
 //!
 //!

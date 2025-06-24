@@ -1,3 +1,6 @@
+// Automatically generated from "gtkaction.pre".
+// Do NOT edit.
+
 //! Properties:
 //! GTK2.ActionGroup action-group
 //! int hide-if-empty
@@ -19,6 +22,7 @@
 //!
 
 inherit G.Object;
+//!
 
 GTK2.Action activate( );
 //! Emits the "activate" signal, if it isn't insensitive.
@@ -44,7 +48,7 @@ GTK2.Action connect_proxy( GTK2.Widget proxy );
 //!
 //!
 
-protected GTK2.Action create( string|mapping name_or_props, string|void label, string|void tooltip, string|void stock_id );
+protected void create( void name_or_props, void label, void tooltip, void stock_id );
 //! Creates a new object.
 //!
 //!

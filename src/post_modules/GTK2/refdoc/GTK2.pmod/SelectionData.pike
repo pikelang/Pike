@@ -1,3 +1,6 @@
+// Automatically generated from "gtkselectiondata.pre".
+// Do NOT edit.
+
 //! Drag-and-drop selection data transport object.
 //! Most commonly accessed from selection handler callbacks.
 //!

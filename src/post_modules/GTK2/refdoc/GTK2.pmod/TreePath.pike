@@ -1,6 +1,10 @@
+// Automatically generated from "gtktreepath.pre".
+// Do NOT edit.
+
 //! TreePath.
 //!
 //!
+
 
 
 GTK2.TreePath append_index( int index );
@@ -20,11 +24,10 @@ GTK2.TreePath copy( );
 //!
 //!
 
-protected GTK2.TreePath create( string|void path );
+protected void create( void path );
 //! Creates a new GTK2.TreePath.
 //!
 //!
-
 
 GTK2.TreePath down( );
 //! Moves path to point to the first child of the current path.

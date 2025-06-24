@@ -1,8 +1,12 @@
+// Automatically generated from "gtkfilefilter.pre".
+// Do NOT edit.
+
 //! A filter for selecting a file subset.
 //!
 //!
 
 inherit GTK2.Data;
+//!
 
 GTK2.FileFilter add_mime_type( string mime_type );
 //! Adds a rule allowing a given mime type.
@@ -19,7 +23,7 @@ GTK2.FileFilter add_pixbuf_formats( );
 //!
 //!
 
-protected GTK2.FileFilter create( );
+protected void create( );
 //! Creates a new W(FileFilter) with no rules added to it.  Such a filter
 //! doesn't accept any files, so is not particularly useful until you add rules
 //! with add_mime_type(), add_pattern(), or add_custom().  To create a filter

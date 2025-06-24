@@ -1,3 +1,6 @@
+// Automatically generated from "gtktreeviewcolumn.pre".
+// Do NOT edit.
+
 //! Properties:
 //! float alignment
 //! int clickable
@@ -22,8 +25,10 @@
 //!
 
 inherit GTK2.Data;
+//!
 
 inherit GTK2.CellLayout;
+//!
 
 GTK2.TreeViewColumn add_attribute( GTK2.CellRenderer cell_renderer, string attribute, int column );
 //! Adds an attribute mapping to the list.  The column is the column of the
@@ -40,7 +45,7 @@ mapping cell_get_position( GTK2.CellRenderer cell_renderer );
 //!
 //!
 
-mapping cell_get_size( GTK2.GdkRectangle cell_area );
+mapping cell_get_size( GDK2.Rectangle cell_area );
 //! Obtains the width and height needed to render the column.
 //!
 //!
@@ -76,7 +81,7 @@ GTK2.TreeViewColumn clicked( );
 //!
 //!
 
-protected GTK2.TreeViewColumn create( string|mapping title_or_props, GTK2.CellRenderer renderer, string property, int col, int|string... moreprops );
+protected void create( void title_or_props, void renderer, void property, void col, void moreprops );
 //! Creates a new W(TreeViewColumn). At least one property/col pair must be
 //! specified; any number of additional pairs can also be given.
 //!

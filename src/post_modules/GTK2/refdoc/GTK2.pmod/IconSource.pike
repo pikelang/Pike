@@ -1,8 +1,11 @@
+// Automatically generated from "gtkiconsource.pre".
+// Do NOT edit.
+
 //! Iconsource.
 //!
 //!
 
-protected GTK2.IconSource create( );
+protected void create( );
 //! Creates a new GTK2.IconSource.  A GTK2.IconSource contains a GDK2.Pixbuf (or
 //! image filename) that serves as the base image for one or more of the icons
 //! in a GTK2.IconSet, along with a specification for which icons in the icon
@@ -53,7 +56,7 @@ string get_icon_name( );
 //!
 //!
 
-GTK2.GdkPixbuf get_pixbuf( );
+GDK2.Pixbuf get_pixbuf( );
 //! Retrieves the source pixbuf, or 0.  In addition, if a filename source is in
 //! use, this function in some cases will return the pixbuf loaded from the
 //! filename.  This is, for example, true for the GTK2.IconSource passed to the
@@ -117,7 +120,7 @@ GTK2.IconSource set_icon_name( string name );
 //!
 //!
 
-GTK2.IconSource set_pixbuf( GTK2.GdkPixbuf pixbuf );
+GTK2.IconSource set_pixbuf( GDK2.Pixbuf pixbuf );
 //! Sets a pixbuf to use as a base image.
 //!
 //!

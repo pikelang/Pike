@@ -1,3 +1,6 @@
+// Automatically generated from "gtkentry.pre".
+// Do NOT edit.
+
 //! Use this widget when you want the user to input a single line of text.
 //!@expr{ GTK2.Entry()->set_text("Hello world")->set_editable(1)@}
 //!@xml{<image>../images/gtk2_entry.png</image>@}
@@ -45,12 +48,15 @@
 //!
 
 inherit GTK2.Widget;
+//!
 
 inherit GTK2.CellEditable;
+//!
 
 inherit GTK2.Editable;
+//!
 
-protected GTK2.Entry create( int|mapping maxlen_or_props );
+protected void create( void maxlen_or_props );
 //! Create a new W(Entry) widget.
 //!
 //!
@@ -91,7 +97,7 @@ int get_invisible_char( );
 //!
 //!
 
-GTK2.Pango.Layout get_layout( );
+Pango.Layout get_layout( );
 //! Gets the Pango.Layout used to display the entry.  The layout is useful to
 //! e.g. convert text positions to pixel positions, in combination with
 //! get_layout_offsets().
@@ -180,7 +186,7 @@ GTK2.Entry set_has_frame( int setting );
 //!
 //!
 
-GTK2.Entry set_icon_from_pixbuf( int icon_pos, GTK2.GdkPixbuf b );
+GTK2.Entry set_icon_from_pixbuf( int icon_pos, GDK2.Pixbuf b );
 //! Set the icon from the given in-memory image, or 0 to remove the icon at
 //! that position.
 //!

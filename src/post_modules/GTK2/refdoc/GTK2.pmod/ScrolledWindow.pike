@@ -1,3 +1,6 @@
+// Automatically generated from "gtkscrolledwindow.pre".
+// Do NOT edit.
+
 //! Scrolled windows are used to create a scrollable area with another
 //! widget inside it.  You may insert any type of widget into a scrolled
 //! window, and it will be accessible regardless of its size by using
@@ -36,6 +39,7 @@
 //!
 
 inherit GTK2.Bin;
+//!
 
 GTK2.ScrolledWindow add( GTK2.Widget victim );
 //! Add a widget to this container.
@@ -50,7 +54,7 @@ GTK2.ScrolledWindow add( GTK2.Widget victim );
 //!
 //!
 
-protected GTK2.ScrolledWindow create( GTK2.Adjustment hadjustment_or_props, GTK2.Adjustment vadjustments );
+protected void create( void hadjustment_or_props, void vadjustments );
 //! The two adjustments are most commonly set to 0.
 //!
 //!
@@ -118,5 +122,11 @@ GTK2.ScrolledWindow set_shadow_type( int type );
 
 GTK2.ScrolledWindow set_vadjustment( GTK2.Adjustment vadjustment );
 //! Set the vertical adjustment object.
+//!
+//!
+
+GTK2.ScrolledWindow unset_placement( );
+//! Unsets the placement of the contents with respect to the scrollbars for
+//! the scrolled window.
 //!
 //!

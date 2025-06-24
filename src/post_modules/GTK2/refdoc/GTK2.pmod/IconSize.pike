@@ -1,3 +1,6 @@
+// Automatically generated from "gtkiconsize.pre".
+// Do NOT edit.
+
 //! Iconsize.
 //!
 //!

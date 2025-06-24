@@ -1,3 +1,6 @@
+// Automatically generated from "gtktoolitem.pre".
+// Do NOT edit.
+
 //! Properties:
 //! int is-important
 //! int visible-horizontal
@@ -13,10 +16,12 @@
 //!
 
 inherit GTK2.Bin;
+//!
 
 inherit GTK2.Activatable;
+//!
 
-protected GTK2.ToolItem create( mapping|void props );
+protected void create( void props );
 //! Creates a new GTK2.ToolItem.
 //!
 //!

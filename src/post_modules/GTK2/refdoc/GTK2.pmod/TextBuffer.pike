@@ -1,3 +1,6 @@
+// Automatically generated from "gtktextbuffer.pre".
+// Do NOT edit.
+
 //! Properties:
 //! int cursor-position
 //! int has-selection
@@ -32,6 +35,7 @@
 //!
 
 inherit G.Object;
+//!
 
 GTK2.TextBuffer add_selection_clipboard( GTK2.Clipboard clipboard );
 //! Adds clipboard to the list of clipboards in which the selection contents
@@ -88,7 +92,7 @@ GTK2.TextBuffer copy_clipboard( GTK2.Clipboard clipboard );
 //!
 //!
 
-protected GTK2.TextBuffer create( GTK2.TextTagTable table_or_props );
+protected void create( void table_or_props );
 //! Creates a new text buffer.
 //!
 //!
@@ -360,7 +364,7 @@ int insert_interactive_at_cursor( string text, int len, int default_editable );
 //!
 //!
 
-GTK2.TextBuffer insert_pixbuf( GTK2.TextIter iter, GTK2.GdkPixbuf pixbuf );
+GTK2.TextBuffer insert_pixbuf( GTK2.TextIter iter, GDK2.Pixbuf pixbuf );
 //! Inserts an image into the text buffer at iter.  The image will be
 //! counted as one character in character counts, and when obtaining the
 //! contents as a string, will be represented by the Unicode

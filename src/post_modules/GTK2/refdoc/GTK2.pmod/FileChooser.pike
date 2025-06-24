@@ -1,3 +1,6 @@
+// Automatically generated from "gtkfilechooser.pre".
+// Do NOT edit.
+
 //! Properties:
 //! int action
 //! GTK2.Widget extra-widget

@@ -1,3 +1,6 @@
+// Automatically generated from "gtkcontainer.pre".
+// Do NOT edit.
+
 //! The basic container class.
 //! Properties:
 //! int border-width
@@ -22,6 +25,7 @@
 //!
 
 inherit GTK2.Widget;
+//!
 
 GTK2.Container add( GTK2.Widget widget );
 //! Add a subwidget to the container. Don't forget to call show() in

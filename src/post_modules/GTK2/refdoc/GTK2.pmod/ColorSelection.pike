@@ -1,3 +1,6 @@
+// Automatically generated from "gtkcolorselection.pre".
+// Do NOT edit.
+
 //! The color selection widget is, not surprisingly, a widget for
 //! interactive selection of colors.  This composite widget lets the
 //! user select a color by manipulating RGB (Red, Green, Blue) and HSV
@@ -26,8 +29,9 @@
 //!
 
 inherit GTK2.Vbox;
+//!
 
-protected GTK2.ColorSelection create( mapping|void props );
+protected void create( void props );
 //! Create a new color selection.
 //!
 //!

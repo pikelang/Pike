@@ -1,3 +1,6 @@
+// Automatically generated from "gtksettings.pre".
+// Do NOT edit.
+
 //! Properties:
 //! int gtk-alternative-button-order
 //! int gtk-button-images
@@ -38,8 +41,9 @@
 //!
 
 inherit G.Object;
+//!
 
-protected GTK2.Settings create( );
+protected void create( );
 //! Get the default GTK2.Settings object
 //!
 //!

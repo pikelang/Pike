@@ -1,3 +1,6 @@
+// Automatically generated from "gtkcellrendererprogress.pre".
+// Do NOT edit.
+
 //! Properties:
 //! int orientation
 //! int pulse
@@ -9,8 +12,9 @@
 //!
 
 inherit GTK2.CellRenderer;
+//!
 
-protected GTK2.CellRendererProgress create( mapping|void props );
+protected void create( void props );
 //! Create a new W(CellRendererProgress).
 //!
 //!

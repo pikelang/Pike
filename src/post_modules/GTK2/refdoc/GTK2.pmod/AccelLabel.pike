@@ -1,3 +1,6 @@
+// Automatically generated from "gtkaccellabel.pre".
+// Do NOT edit.
+
 //! A label for accelerators.
 //! Properties:
 //! GTK2.Widget accel-widget
@@ -5,8 +8,9 @@
 //!
 
 inherit GTK2.Label;
+//!
 
-protected GTK2.AccelLabel create( string|mapping text_or_props );
+protected void create( void text_or_props );
 //! Creates a new W(AccelLabel).
 //!
 //!

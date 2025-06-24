@@ -1,10 +1,14 @@
+// Automatically generated from "gtkseparatormenuitem.pre".
+// Do NOT edit.
+
 //! A separator menu item.
 //!
 //!
 
 inherit GTK2.MenuItem;
+//!
 
-protected GTK2.SeparatorMenuItem create( mapping|void props );
+protected void create( void props );
 //! Create a new GTK2.SeparatorMenuItem.
 //!
 //!

@@ -1,3 +1,6 @@
+// Automatically generated from "gtkicontheme.pre".
+// Do NOT edit.
+
 //! Looking up icons by name.
 //!
 //!
@@ -6,13 +9,14 @@
 //!
 
 inherit G.Object;
+//!
 
 GTK2.IconTheme append_search_path( string path );
 //! Appends a directory to the search path.
 //!
 //!
 
-protected GTK2.IconTheme create( );
+protected void create( );
 //! Creates a new icon theme object.  Icon theme objects are used to lookup
 //! an icon by name in a particular icon theme.  Usually you'll want to use
 //! get_default() rather than creating a new icon theme object from scratch.
@@ -50,7 +54,7 @@ array list_icons( string|void context );
 //!
 //!
 
-GTK2.GdkPixbuf load_icon( string name, int size, int flags );
+GDK2.Pixbuf load_icon( string name, int size, int flags );
 //! Looks up an icon in an icon theme, scales it to the given size and renders
 //! it into a pixbuf.
 //!

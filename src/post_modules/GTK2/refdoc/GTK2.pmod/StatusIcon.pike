@@ -1,3 +1,6 @@
+// Automatically generated from "gtkstatusicon.pre".
+// Do NOT edit.
+
 //! The "system tray" or notification area is normally used for transient
 //! icons that indicate some special state. For example, a system tray icon
 //! might appear to tell the user that they have new mail, or have an
@@ -39,8 +42,9 @@
 //!
 
 inherit G.Object;
+//!
 
-protected GTK2.StatusIcon create( mapping|GdkPixbuf|string arg );
+protected void create( void arg );
 //! Create a new GTK2.StatusIcon.
 //!
 //!
@@ -55,7 +59,7 @@ string get_icon_name( );
 //!
 //!
 
-GTK2.GdkPixbuf get_pixbuf( );
+GDK2.Pixbuf get_pixbuf( );
 //! Get the pixbuf.
 //!
 //!
@@ -100,7 +104,7 @@ GTK2.StatusIcon set_from_icon_name( string icon_name );
 //!
 //!
 
-GTK2.StatusIcon set_from_pixbuf( GTK2.GdkPixbuf pixbuf );
+GTK2.StatusIcon set_from_pixbuf( GDK2.Pixbuf pixbuf );
 //! Set the icon from pixbuf.
 //!
 //!

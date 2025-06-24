@@ -1,3 +1,6 @@
+// Automatically generated from "gtktable.pre".
+// Do NOT edit.
+
 //! The GTK2.Table allows the programmer to arrange widgets in rows and
 //! columns, making it easy to align many widgets next to each other,
 //! horizontally and vertically.
@@ -29,6 +32,7 @@
 //!
 
 inherit GTK2.Container;
+//!
 
 GTK2.Table attach( GTK2.Widget subwidget, int left, int right, int top, int bottom, int xoptions, int yoptions, int xpad, int ypad );
 //! The left and right attach arguments specify where to place the
@@ -74,7 +78,7 @@ GTK2.Table attach_defaults( GTK2.Widget subwidget, int left, int right, int top,
 //!
 //!
 
-protected GTK2.Table create( int|mapping width_or_props, int|void height, int|void homogeneousp );
+protected void create( void width_or_props, void height, void homogeneousp );
 //! Used to create a new table widget. An initial size must be given by
 //! specifying how many rows and columns the table should have,
 //! although this can be changed later with resize().

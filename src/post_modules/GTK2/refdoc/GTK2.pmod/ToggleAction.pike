@@ -1,3 +1,6 @@
+// Automatically generated from "gtktoggleaction.pre".
+// Do NOT edit.
+
 //! Properties
 //! int active
 //! int draw-as-radio
@@ -8,8 +11,9 @@
 //!
 
 inherit GTK2.Action;
+//!
 
-protected GTK2.ToggleAction create( string|mapping name_or_props, string|void label, string|void tooltip, string|void stock_id );
+protected void create( void name_or_props, void label, void tooltip, void stock_id );
 //! Creates a new GTK2.ToggleAction object.
 //!
 //!

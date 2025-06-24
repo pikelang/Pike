@@ -1,3 +1,6 @@
+// Automatically generated from "gtkimage.pre".
+// Do NOT edit.
+
 //! An image is a image object stored in client, not X server, memory.
 //! A pixmap, on the other hand, is a image object stored in the X-server.
 //! See GDK2.Image and GDK2.Pixmap.
@@ -23,18 +26,19 @@
 //!
 
 inherit GTK2.Misc;
+//!
 
 GTK2.Image clear( );
 //! Resets the image to be empty.
 //!
 //!
 
-protected GTK2.Image create( string|GdkPixbuf|GdkPixbufAnimation|GdkImage|GdkPixmap|mapping file_or_props, GTK2.GdkBitmap mask_or_size );
+protected void create( void file_or_props, void mask_or_size );
 //! Create a new W(Image) from either a file or a GDK2.Pixbuf.
 //!
 //!
 
-GTK2.GdkPixbufAnimation get_animation( );
+GDK2.PixbufAnimation get_animation( );
 //! Gets the GDK2.PixbufAnimation being displayed.
 //!
 //!
@@ -49,7 +53,7 @@ mapping get_image( );
 //!
 //!
 
-GTK2.GdkPixbuf get_pixbuf( );
+GDK2.Pixbuf get_pixbuf( );
 //! Gets the GDK2.Pixbuf being displayed.  The storage type of the image must
 //! be GTK2.IMAGE_EMPTY or GTK2.IMAGE_PIXBUF).
 //!
@@ -77,7 +81,7 @@ int get_storage_type( );
 //!
 //!
 
-GTK2.Image set_from_animation( GTK2.GdkPixbufAnimation anim );
+GTK2.Image set_from_animation( GDK2.PixbufAnimation anim );
 //! Causes the W(Image) to display the given animation.
 //!
 //!
@@ -97,17 +101,17 @@ GTK2.Image set_from_icon_set( GTK2.IconSet icon_set, int size );
 //!
 //!
 
-GTK2.Image set_from_image( GTK2.GdkImage gdk_image, GTK2.GdkBitmap mask );
+GTK2.Image set_from_image( GDK2.Image gdk_image, GDK2.Bitmap mask );
 //! Set this image from a GDK2.Image plus optional mask.
 //!
 //!
 
-GTK2.Image set_from_pixbuf( GTK2.GdkPixbuf pixbuf );
+GTK2.Image set_from_pixbuf( GDK2.Pixbuf pixbuf );
 //! Set image from a pixbuf
 //!
 //!
 
-GTK2.Image set_from_pixmap( GTK2.GdkPixmap pixmap, GTK2.GdkBitmap mask );
+GTK2.Image set_from_pixmap( GDK2.Pixmap pixmap, GDK2.Bitmap mask );
 //! Set this image from a GDK2.Pixmap plus optional mask.
 //!
 //!

@@ -1,19 +1,22 @@
+// Automatically generated from "gtktreerowreference.pre".
+// Do NOT edit.
+
 //! A TreeRowReference.
 //!
 //!
+
 
 GTK2.TreeRowReference copy( );
 //! Copies a GTK2.TreeRowReference.
 //!
 //!
 
-protected GTK2.TreeRowReference create( GTK2.TreeModel model, GTK2.TreePath path );
+protected void create( void model, void path );
 //! Creates a row reference based on path.  This reference
 //! will keep pointing to the node pointed to by path, so
 //! long as it exists.
 //!
 //!
-
 
 GTK2.TreeModel get_model( );
 //! Returns the model which this references is monitoring.

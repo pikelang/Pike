@@ -1,3 +1,6 @@
+// Automatically generated from "gtkprogress.pre".
+// Do NOT edit.
+
 //! Properties:
 //! int activity-mode
 //! int show-text
@@ -7,4 +10,5 @@
 //!
 
 inherit GTK2.Widget;
+//!
 

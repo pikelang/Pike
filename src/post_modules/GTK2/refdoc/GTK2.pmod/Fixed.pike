@@ -1,3 +1,6 @@
+// Automatically generated from "gtkfixed.pre".
+// Do NOT edit.
+
 //! A fixed container is a container that keeps it's children at fixed
 //! locations and give them fixed sizes, both given in pixels.
 //! 
@@ -13,8 +16,9 @@
 //!
 
 inherit GTK2.Container;
+//!
 
-protected GTK2.Fixed create( mapping|void props );
+protected void create( void props );
 //! Create a new fixed widget
 //!
 //!
