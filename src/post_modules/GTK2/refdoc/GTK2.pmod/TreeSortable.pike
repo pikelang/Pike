@@ -1,3 +1,6 @@
+// Automatically generated from "gtktreesortable.pre".
+// Do NOT edit.
+
 //! The interface for sortable models used by TreeView.
 //!
 //!

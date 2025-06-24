@@ -1,3 +1,6 @@
+// Automatically generated from "gtkmenu.pre".
+// Do NOT edit.
+
 //! A GTK2.Menu is a W(MenuShell) that implements a drop down menu
 //! consisting of a list of W(MenuItem) objects which can be navigated
 //! and activated by the user to perform application functions.
@@ -45,6 +48,7 @@
 //!
 
 inherit GTK2.MenuShell;
+//!
 
 GTK2.Menu attach( GTK2.Widget child, int left_attach, int right_attach, int top_attach, int bottom_attach );
 //! Adds a new W(MenuItem) to a (table) menu.  The number of 'cells'
@@ -55,7 +59,7 @@ GTK2.Menu attach( GTK2.Widget child, int left_attach, int right_attach, int top_
 //!
 //!
 
-protected GTK2.Menu create( mapping|void props );
+protected void create( void props );
 //! Creates a new GTK2.Menu widget.
 //!
 //!
@@ -132,7 +136,7 @@ GTK2.Menu set_active( int activep );
 //!
 //!
 
-GTK2.Menu set_screen( GTK2.GdkScreen screen );
+GTK2.Menu set_screen( GDK2.Screen screen );
 //! Sets the screen on which the menu is displayed.
 //!
 //!

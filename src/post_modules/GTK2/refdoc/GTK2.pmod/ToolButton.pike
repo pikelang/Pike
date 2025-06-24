@@ -1,3 +1,6 @@
+// Automatically generated from "gtktoolbutton.pre".
+// Do NOT edit.
+
 //! Properties that can be notified:
 //! icon-widget
 //! label
@@ -11,8 +14,9 @@
 //!
 
 inherit GTK2.ToolItem;
+//!
 
-protected GTK2.ToolButton create( GTK2.Widget icon, string|void label );
+protected void create( void icon, void label );
 //! Create a new GTK2.ToolButton.
 //! If icon is a string, label should be omitted.  If it isn't,
 //! it will be ignored.  The result will be a button from

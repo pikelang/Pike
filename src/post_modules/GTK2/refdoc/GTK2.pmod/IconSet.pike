@@ -1,6 +1,10 @@
+// Automatically generated from "gtkiconset.pre".
+// Do NOT edit.
+
 //! Iconset.  A single icon.
 //!
 //!
+
 
 GTK2.IconSet add_source( GTK2.IconSource source );
 //! Icon sets have a list of GTK2.IconSource, which they use as base icons for
@@ -32,7 +36,7 @@ GTK2.IconSet copy( );
 //!
 //!
 
-protected GTK2.IconSet create( GTK2.GdkPixbuf pixbuf );
+protected void create( void pixbuf );
 //! Create a new GTK2.IconSet.  A GTK2.IconSet represents a single icon in
 //! various sizes and widget states.  It can provide a GDK2.Pixbuf for a given
 //! size and state on request, and automatically caches some of the rendered
@@ -43,7 +47,6 @@ protected GTK2.IconSet create( GTK2.GdkPixbuf pixbuf );
 //! create application-specific icon sets to place in a GTK2.IconFactory.
 //!
 //!
-
 
 array get_sizes( );
 //! Obtains a list of icon sizes this icon set can render.

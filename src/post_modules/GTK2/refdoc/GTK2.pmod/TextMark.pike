@@ -1,9 +1,12 @@
+// Automatically generated from "gtktextmark.pre".
+// Do NOT edit.
+
 //! Marks for the text.
 //!
 //!
 
 inherit G.Object;
-
+//!
 
 GTK2.TextBuffer get_buffer( );
 //! Gets the buffer this mark is located inside, or empty if the mark

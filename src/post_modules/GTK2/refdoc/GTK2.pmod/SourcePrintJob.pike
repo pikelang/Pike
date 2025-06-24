@@ -1,3 +1,6 @@
+// Automatically generated from "gtksourceprintjob.pre".
+// Do NOT edit.
+
 //! Properties:
 //! GTK2.SourceBuffer buffer
 //! Gnome.PrintConfig config
@@ -22,6 +25,7 @@
 //!
 
 inherit G.Object;
+//!
 
 GTK2.SourcePrintJob cancel( );
 //! Cancels an asynchronous printing operation.  This will remove any pending
@@ -29,7 +33,7 @@ GTK2.SourcePrintJob cancel( );
 //!
 //!
 
-protected GTK2.SourcePrintJob create( GTK2.SourceBuffer buffer );
+protected void create( void buffer );
 //! Creates a new print job object.
 //!
 //!
@@ -39,10 +43,27 @@ GTK2.SourceBuffer get_buffer( );
 //!
 //!
 
+Pango.FontDescription get_font_desc( );
+//! Determines the default font to be used for the printed text.  The returned
+//! string is of the form "Fontfamily Style Size", for example
+//! "Monospace Regular 10.0".
+//!
+//!
+
+Pango.FontDescription get_header_footer_font_desc( );
+//! Determines the font to be used for the header and footer.
+//!
+//!
+
 int get_highlight( );
 //! Determines if the job is configured to print the text highlighted with
 //! colors and font styles.  Note that highlighting will happen only if the
 //! buffer to print has highlighting activated.
+//!
+//!
+
+Pango.FontDescription get_numbers_font_desc( );
+//! Determines the font to be used for the line numbers.
 //!
 //!
 
@@ -130,8 +151,19 @@ GTK2.SourcePrintJob set_buffer( GTK2.SourceBuffer buffer );
 //!
 //!
 
+GTK2.SourcePrintJob set_font_desc( Pango.FontDescription desc );
+//! Sets the default font for the printed text.
+//!
+//!
+
 GTK2.SourcePrintJob set_footer_format( string|void left, string|void center, string|void right, int separator );
 //! Like set_header_format(), but for the footer.
+//!
+//!
+
+GTK2.SourcePrintJob set_header_footer_font_desc( Pango.FontDescription desc );
+//! Sets the font for printing headers and footers.  If omitted, the default
+//! font (i.e. the one being used for the text) will be used instead.
 //!
 //!
 
@@ -154,6 +186,13 @@ GTK2.SourcePrintJob set_header_format( string|void left, string|void center, str
 GTK2.SourcePrintJob set_highlight( int setting );
 //! Sets whether the printed text will be highlighted according to the buffer
 //! rules.  Both color and font style are applied.
+//!
+//!
+
+GTK2.SourcePrintJob set_numbers_font_desc( Pango.FontDescription desc );
+//! Sets the font for printing line numbers on the left margin.  If omitted,
+//! the default font (i.e. the one being used for the text) will be used
+//! instead.
 //!
 //!
 

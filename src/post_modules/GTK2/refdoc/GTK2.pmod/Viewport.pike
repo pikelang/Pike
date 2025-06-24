@@ -1,3 +1,6 @@
+// Automatically generated from "gtkviewport.pre".
+// Do NOT edit.
+
 //! This is a container that can be scrolled around, but it has no scrollbars.
 //! You can connect scrollbars to it using the adjustment objects.
 //!@expr{ GTK2.Viewport(GTK2.Adjustment(),GTK2.Adjustment())->set_size_request(100,100)@}
@@ -23,8 +26,9 @@
 //!
 
 inherit GTK2.Bin;
+//!
 
-protected GTK2.Viewport create( GTK2.Adjustment xscroll_or_props, GTK2.Adjustment yscroll );
+protected void create( void xscroll_or_props, void yscroll );
 //! Create a new viewport.  The adjustments are used to select what
 //! part of the viewport to view to the user. They are normally
 //! connected to a scrollbar or something similar.

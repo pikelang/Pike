@@ -3,6 +3,8 @@ require not_now;
 class GTK2.PrintOperationPreview;
 mixin_for G.Object;
 
+//!
+
 void end_preview();
 //! Ends a preview.
 

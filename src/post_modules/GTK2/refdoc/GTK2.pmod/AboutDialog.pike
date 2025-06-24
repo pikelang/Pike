@@ -1,3 +1,6 @@
+// Automatically generated from "gtkaboutdialog.pre".
+// Do NOT edit.
+
 //! Properties:
 //! array(string) artists
 //! array(string) authors
@@ -19,8 +22,9 @@
 //!
 
 inherit GTK2.Dialog;
+//!
 
-protected GTK2.AboutDialog create( mapping|void props );
+protected void create( void props );
 //! Create a new GTK2.AboutDialog.
 //!
 //!
@@ -58,13 +62,18 @@ string get_license( );
 //!
 //!
 
-GTK2.GdkPixbuf get_logo( );
+GDK2.Pixbuf get_logo( );
 //! Returns the pixbuf displayed as logo.
 //!
 //!
 
 string get_logo_icon_name( );
 //! Returns the icon name.
+//!
+//!
+
+string get_name( );
+//! Returns the program name.
 //!
 //!
 
@@ -136,13 +145,18 @@ GTK2.AboutDialog set_license( string license );
 //!
 //!
 
-GTK2.AboutDialog set_logo( GTK2.GdkPixbuf logo );
+GTK2.AboutDialog set_logo( GDK2.Pixbuf logo );
 //! Sets the pixbuf to be displayed as the logo.
 //!
 //!
 
 GTK2.AboutDialog set_logo_icon_name( string name );
 //! Sets the icon name.
+//!
+//!
+
+GTK2.AboutDialog set_name( string name );
+//! Sets the name to display.
 //!
 //!
 

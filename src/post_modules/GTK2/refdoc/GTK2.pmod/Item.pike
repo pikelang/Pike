@@ -1,3 +1,6 @@
+// Automatically generated from "gtkitem.pre".
+// Do NOT edit.
+
 //! This class is inherited by all 'item' type of widgets.
 //!
 //!
@@ -10,6 +13,7 @@
 //!
 
 inherit GTK2.Bin;
+//!
 
 GTK2.Item deselect( );
 //! Emulate a 'deselect' event.

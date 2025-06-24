@@ -1,3 +1,6 @@
+// Automatically generated from "gtkpapersize.pre".
+// Do NOT edit.
+
 //! A Paper Size.
 //!
 //!
@@ -12,7 +15,7 @@ GTK2.PaperSize copy( );
 //!
 //!
 
-protected GTK2.PaperSize create( string|void name, string|void ppd_display_name, float|void width, float|void height, int|void unit );
+protected void create( void name, void ppd_display_name, void width, void height, void unit );
 //! Create a new GTK2.PaperSize object by parsing a PWG 5101.1-2002 PWG paper
 //! name.
 //!

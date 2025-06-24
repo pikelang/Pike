@@ -1,8 +1,12 @@
+// Automatically generated from "gtkrecentfilter.pre".
+// Do NOT edit.
+
 //! A filter for selecting a subset of recently used files.
 //!
 //!
 
 inherit GTK2.Object;
+//!
 
 GTK2.RecentFilter add_age( int days );
 //! Adds a rule that allows resources based on their age - that is, the
@@ -38,7 +42,7 @@ GTK2.RecentFilter add_pixbuf_formats( );
 //!
 //!
 
-protected GTK2.RecentFilter create( mapping|void props );
+protected void create( void props );
 //! Create a new GTK2.RecentFilter.
 //!
 //!

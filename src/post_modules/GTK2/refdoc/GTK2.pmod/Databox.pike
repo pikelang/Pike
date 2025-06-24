@@ -1,3 +1,6 @@
+// Automatically generated from "gtkdatabox.pre".
+// Do NOT edit.
+
 //! GtkDatabox is designed to display large amounts of numerical data
 //! fast and easy. Thousands of data points (X and Y coordinate) may be
 //! displayed without any problems, zooming and scrolling as well as
@@ -26,18 +29,19 @@
 //!
 
 inherit GTK2.Vbox;
+//!
 
-protected GTK2.Databox create( );
+protected void create( );
 //! Create a new databox widget
 //!
 //!
 
-int data_add( int nelems, array x, array y, GTK2.GdkColor color, int type, int dot_size );
+int data_add( int nelems, array x, array y, GDK2.Color color, int type, int dot_size );
 //! Type is one of @[DATABOX_BARS], @[DATABOX_CROSS_SIMPLE], @[DATABOX_GRID], @[DATABOX_LINES], @[DATABOX_NOT_DISPLAYED] and @[DATABOX_POINTS]
 //!
 //!
 
-GTK2.GdkColor data_get_color( int index );
+GDK2.Color data_get_color( int index );
 //! Get the color at index.
 //!
 //!
@@ -77,7 +81,7 @@ int data_remove_all( );
 //!
 //!
 
-int data_set_color( int index, GTK2.GdkColor color );
+int data_set_color( int index, GDK2.Color color );
 //! Set the color at index.
 //!
 //!
@@ -142,7 +146,7 @@ GTK2.Databox rescale_with_values( float minx, float miny, float maxx, float maxy
 //!
 //!
 
-GTK2.Databox set_background_color( GTK2.GdkColor color );
+GTK2.Databox set_background_color( GDK2.Color color );
 //! Set the background color.
 //!
 //!

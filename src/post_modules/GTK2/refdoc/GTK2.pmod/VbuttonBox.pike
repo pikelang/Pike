@@ -1,3 +1,6 @@
+// Automatically generated from "gtkvbuttonbox.pre".
+// Do NOT edit.
+
 //! A Vbutton_box is very similar to a Vbox.
 //! The major diffference is that the button box
 //! is made to pack buttons in, and has a few convenience function for
@@ -22,8 +25,9 @@
 //!
 
 inherit GTK2.ButtonBox;
+//!
 
-protected GTK2.VbuttonBox create( mapping|void props );
+protected void create( void props );
 //! Create a new vertical button box
 //!
 //!

@@ -1,3 +1,6 @@
+// Automatically generated from "gtkcellrenderercombo.pre".
+// Do NOT edit.
+
 //! Properties:
 //! int has-entry
 //! GTK2.TreeModel model
@@ -6,8 +9,9 @@
 //!
 
 inherit GTK2.CellRendererText;
+//!
 
-protected GTK2.CellRendererCombo create( mapping|void props );
+protected void create( void props );
 //! Creates a new W(CellRendererCombo).
 //!
 //!

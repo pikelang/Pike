@@ -1,3 +1,6 @@
+// Automatically generated from "gtkcelleditable.pre".
+// Do NOT edit.
+
 //! Interface for widgets which are used for editing cells.
 //!
 //!
@@ -19,7 +22,7 @@ GTK2.CellEditable remove_widget( );
 //!
 //!
 
-GTK2.CellEditable start_editing( GTK2.GdkEvent event );
+GTK2.CellEditable start_editing( GDK2.Event event );
 //! Begins editing.  event is the GDK2.Event that began the editing process.
 //! It may be empty, in the instance that editing was initiated through
 //! programmatic means.

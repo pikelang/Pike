@@ -1,3 +1,6 @@
+// Automatically generated from "gladexml.pre".
+// Do NOT edit.
+
 //! Glade is a free GUI builder for GTK2+ and Gnome.  It's normally used to
 //! create C-code, but can also produce code for other languages.  Libglade
 //! is a utility library that builds the GI from the Glade XML save files.
@@ -7,8 +10,9 @@
 //!
 
 inherit G.Object;
+//!
 
-protected GTK2.GladeXML create( string filename_or_buffer, int|void size, string|void root, string|void domain );
+protected void create( void filename_or_buffer, void size, void root, void domain );
 //! Creates a new GladeXML object (and the corresponding widgets) from the
 //! XML file.  Optionally it will only build the interface from the widget
 //! node root.  This feature is useful if you only want to build say a

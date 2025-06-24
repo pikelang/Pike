@@ -1,3 +1,6 @@
+// Automatically generated from "gtkhandlebox.pre".
+// Do NOT edit.
+
 //! The contents of a handle box can be 'dragged' out of the box by the user.
 //! The contents will then be placed in a separate window.
 //!@expr{ GTK2.HandleBox()->add(GTK2.Label("The contents"))@}
@@ -22,8 +25,9 @@
 //!
 
 inherit GTK2.Bin;
+//!
 
-protected GTK2.HandleBox create( mapping|void props );
+protected void create( void props );
 //! Create a new handle box widget.
 //!
 //!

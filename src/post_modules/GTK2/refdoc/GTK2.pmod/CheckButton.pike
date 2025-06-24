@@ -1,3 +1,6 @@
+// Automatically generated from "gtkcheckbutton.pre".
+// Do NOT edit.
+
 //! Check buttons inherent many properties and functions from the the
 //! toggle buttons, but look a little different. Rather than
 //! being buttons with text inside them, they are small squares with
@@ -13,8 +16,9 @@
 //!
 
 inherit GTK2.ToggleButton;
+//!
 
-protected GTK2.CheckButton create( string|mapping label_or_props, int|void mnemonic );
+protected void create( void label_or_props, void mnemonic );
 //! The argument, if specified, is the label of the item.
 //! If no label is specified, use object->add() to add some
 //! other widget (such as an pixmap or image widget)

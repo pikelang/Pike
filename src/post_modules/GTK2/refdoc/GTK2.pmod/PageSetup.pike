@@ -1,3 +1,6 @@
+// Automatically generated from "gtkpagesetup.pre".
+// Do NOT edit.
+
 //! A GtkPageSetup object stores the page size, orientation and margins.
 //! The idea is that you can get one of these from the page setup dialog
 //! and then pass it to the GTK2.PrintOperation when printing. The benefit
@@ -8,13 +11,14 @@
 //!
 
 inherit G.Object;
+//!
 
 GTK2.PageSetup copy( );
 //! Returns a copy of this GTK2.PageSetup.
 //!
 //!
 
-protected GTK2.PageSetup create( mapping|void props );
+protected void create( void props );
 //! Create a new GTK2.PageSetup.
 //!
 //!

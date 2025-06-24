@@ -1,3 +1,6 @@
+// Automatically generated from "gtktreedragdest.pre".
+// Do NOT edit.
+
 //!
 //!
 //!

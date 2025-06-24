@@ -1,3 +1,6 @@
+// Automatically generated from "gtkdialog.pre".
+// Do NOT edit.
+
 //! A dialog is a window with a few default widgets added.
 //! The 'vbox' is the main content area of the widget. The
 //! 'action_area' is allocated for buttons (ok, cancel etc)
@@ -17,6 +20,7 @@
 //!
 
 inherit GTK2.Window;
+//!
 
 GTK2.Dialog add_action_widget( GTK2.Widget child, int response_id );
 //! Adds an activatable widget to the action area, connecting
@@ -32,7 +36,7 @@ GTK2.Widget add_button( string button_text, int response_id );
 //!
 //!
 
-protected GTK2.Dialog create( mapping|void props );
+protected void create( void props );
 //! Create a new dialog widget.
 //!
 //!

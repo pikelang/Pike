@@ -1,3 +1,6 @@
+// Automatically generated from "gtkcellrendererpixbuf.pre".
+// Do NOT edit.
+
 //! Properties:
 //! GDK2.Pixbuf pixbuf
 //! GDK2.Pixbuf pixbuf-expander-closed
@@ -9,8 +12,9 @@
 //!
 
 inherit GTK2.CellRenderer;
+//!
 
-protected GTK2.CellRendererPixbuf create( mapping|void props );
+protected void create( void props );
 //! Creates a new W(CellRendererPixbuf).  Adjust rendering parameters using
 //! object properties.  Object properties can be set globally with
 //! G.Object->set().  Also, with W(TreeViewColumn), you can bind a property

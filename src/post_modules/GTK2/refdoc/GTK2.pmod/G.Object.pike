@@ -1,3 +1,6 @@
+// Automatically generated from "gobject.pre".
+// Do NOT edit.
+
 //! The base object.  All GDK and GTK classes inherit from this.
 //! The Pango classes also inherit from this class.
 //!

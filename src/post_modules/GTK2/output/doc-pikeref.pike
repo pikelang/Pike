@@ -164,22 +164,17 @@ protected string make_pike_refdoc( string pgtkdoc,
 
 protected string module_name( Class cls )
 {
-  /*
-  if( has_prefix( cls->name, "Gnome." ) ) return "Gnome";
-  if( has_prefix( cls->name, "GDK." ) )   return "GDK";
-  */
-  return "GTK2";
+  string mn = (cls->name/".")[0];
+  if (mn == "G") mn = "GTK2";
+  return mn;
 }
 
 protected string class_name( Class cls, int|void nmn )
 {
-  string mn="";
-  if(!nmn)
-    mn = module_name( cls )+".";
-  if( has_prefix( cls->name, "Gnome2." ) ) return mn+"Gnome2"+cls->name[7..];
-  if( has_prefix( cls->name, "GDK2." ) )   return mn+"Gdk"+cls->name[5..];
-  if( has_prefix( cls->name, "GTK2." ) )   return mn+cls->name[5..];
-  return mn+cls->name;
+  array(string) a = cls->name/".";
+  if ((a[0] == "G") || (sizeof(a) == 1)) a = ({ "GTK2" }) + a;
+  if (nmn) a = a[1..];
+  return a * ".";
 }
 
 
@@ -192,6 +187,7 @@ protected string make_function_doc( GtkFunction f, Class c )
   string vtype;
   string pike_type_name( Type t )
   {
+    if( f->pike_name() == "create" ) return "void";
     if( t->name == "void" )
       return vtype;
     if( parent->classes[ t->name ] )
@@ -266,10 +262,14 @@ protected void output_class( Class cls, int lvl )
     werror("Warning: "+cls->file+":"+cls->line+": "
 	   +cls->name+" not documented\n" );
 
-  result =  make_pike_refdoc( cls->doc, cls->signals );
+  result += sprintf("// Automatically generated from %q.\n"
+                    "// Do NOT edit.\n"
+                    "\n",
+                    basename(cls->file));
+  result += make_pike_refdoc( cls->doc, cls->signals );
 
   foreach( cls->inherits, Class i )
-    result += "\ninherit "+i->doc_name()+";\n";
+    result += "\ninherit "+i->doc_name()+";\n//!\n";
   result += "\n";
 
   foreach( indices( cls->functions ), string fun )

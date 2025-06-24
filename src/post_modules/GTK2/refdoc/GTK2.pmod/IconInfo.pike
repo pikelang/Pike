@@ -1,12 +1,15 @@
+// Automatically generated from "gtkiconinfo.pre".
+// Do NOT edit.
+
 //! Contains information found when looking up an icon in an icon theme.
 //!
 //!
+
 
 GTK2.IconInfo copy( );
 //! Make a copy.
 //!
 //!
-
 
 int get_base_size( );
 //! Gets the base size for the icon.  The base size is a size for the icon that
@@ -17,7 +20,7 @@ int get_base_size( );
 //!
 //!
 
-GTK2.GdkPixbuf get_builtin_pixbuf( );
+GDK2.Pixbuf get_builtin_pixbuf( );
 //! Gets the built-in image for this icon, if any.  To allow GTK2+ to use
 //! built-in icon images, you must pass the GTK2.ICON_LOOKUP_USE_BUILTIN to
 //! GTK2.IconTheme->lookup_icon().
@@ -31,7 +34,7 @@ string get_filename( );
 //!
 //!
 
-GTK2.GdkPixbuf load_icon( );
+GDK2.Pixbuf load_icon( );
 //! Renders an icon previously looked up in an icon theme using 
 //! GTK2.IconTheme->lookup_icon(); the size will be based on the size passed to
 //! GTK2.IconTheme->lookup_icon().  Note that the resulting pixbuf may not be

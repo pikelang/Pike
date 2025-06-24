@@ -1,3 +1,6 @@
+// Automatically generated from "gtkassistant.pre".
+// Do NOT edit.
+
 //! Properties:
 //! 
 //! int complete
@@ -27,6 +30,7 @@
 //!
 
 inherit GTK2.Window;
+//!
 
 GTK2.Assistant add_action_widget( GTK2.Widget child );
 //! Adds a widget to the action area.
@@ -38,7 +42,7 @@ int append_page( GTK2.Widget page );
 //!
 //!
 
-protected GTK2.Assistant create( mapping|void props );
+protected void create( void props );
 //! Create a new assistant.
 //!
 //!
@@ -64,12 +68,12 @@ int get_page_complete( GTK2.Widget page );
 //!
 //!
 
-GTK2.GdkPixbuf get_page_header_image( GTK2.Widget page );
+GDK2.Pixbuf get_page_header_image( GTK2.Widget page );
 //! Gets the header image for page.
 //!
 //!
 
-GTK2.GdkPixbuf get_page_side_image( GTK2.Widget page );
+GDK2.Pixbuf get_page_side_image( GTK2.Widget page );
 //! Gets the side image for page.
 //!
 //!
@@ -116,13 +120,13 @@ GTK2.Assistant set_page_complete( GTK2.Widget page, int complete );
 //!
 //!
 
-GTK2.Assistant set_page_header_image( GTK2.Widget page, GTK2.GdkPixbuf pixbuf );
+GTK2.Assistant set_page_header_image( GTK2.Widget page, GDK2.Pixbuf pixbuf );
 //! Sets a header image for page.  This image is displayed in the header area
 //! of the assistant when page is the current page.
 //!
 //!
 
-GTK2.Assistant set_page_side_image( GTK2.Widget page, GTK2.GdkPixbuf pixbuf );
+GTK2.Assistant set_page_side_image( GTK2.Widget page, GDK2.Pixbuf pixbuf );
 //! Sets a side image for page. This image is displayed in the side area of
 //! the assistant when page is the current page.
 //!

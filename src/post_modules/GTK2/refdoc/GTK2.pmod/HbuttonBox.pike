@@ -1,3 +1,6 @@
+// Automatically generated from "gtkhbuttonbox.pre".
+// Do NOT edit.
+
 //! A HbuttonBox is very similar to a Hbox.
 //! The major diffference is that the button box
 //! is made to pack buttons in, and has a few convenience function for
@@ -22,8 +25,9 @@
 //!
 
 inherit GTK2.ButtonBox;
+//!
 
-protected GTK2.HbuttonBox create( mapping|void props );
+protected void create( void props );
 //! Create a new horizontal button box
 //!
 //!

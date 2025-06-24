@@ -1,3 +1,6 @@
+// Automatically generated from "gtktoggletoolbutton.pre".
+// Do NOT edit.
+
 //! A ToolItem containing a toggle button.
 //!
 //!
@@ -6,8 +9,9 @@
 //!
 
 inherit GTK2.ToolButton;
+//!
 
-protected GTK2.ToggleToolButton create( string|mapping stock_id );
+protected void create( void stock_id );
 //! Creates a new toggle tool button, with or without
 //! a stock id.
 //!

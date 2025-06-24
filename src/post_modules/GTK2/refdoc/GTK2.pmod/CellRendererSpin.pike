@@ -1,3 +1,6 @@
+// Automatically generated from "gtkcellrendererspin.pre".
+// Do NOT edit.
+
 //! Properties:
 //! int digits
 //! GTK2.Adjustment adjustment
@@ -6,8 +9,9 @@
 //!
 
 inherit GTK2.CellRendererText;
+//!
 
-protected GTK2.CellRendererSpin create( mapping|void props );
+protected void create( void props );
 //! Create a new GTK2.CellRendererSpin.
 //!
 //!

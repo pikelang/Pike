@@ -1,3 +1,6 @@
+// Automatically generated from "gtkcellview.pre".
+// Do NOT edit.
+
 //! Properties:
 //! string background
 //! GDK2.Color background-gdk
@@ -6,10 +9,12 @@
 //!
 
 inherit GTK2.Widget;
+//!
 
 inherit GTK2.CellLayout;
+//!
 
-protected GTK2.CellView create( string|GdkPixbuf|mapping text, int|void markup );
+protected void create( void text, void markup );
 //! Create a new W(CellView) widget.
 //!
 //!
@@ -31,7 +36,7 @@ mapping get_size_of_row( GTK2.TreePath path );
 //!
 //!
 
-GTK2.CellView set_background_color( GTK2.GdkColor color );
+GTK2.CellView set_background_color( GDK2.Color color );
 //! Sets the background color.
 //!
 //!

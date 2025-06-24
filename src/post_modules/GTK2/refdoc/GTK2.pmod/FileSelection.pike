@@ -1,3 +1,6 @@
+// Automatically generated from "gtkfileselection.pre".
+// Do NOT edit.
+
 //! GtkFileSelection should be used to retrieve file or directory names
 //! from the user. It will create a new dialog window containing a
 //! directory list, and a file list corresponding to the current
@@ -30,6 +33,7 @@
 //!
 
 inherit GTK2.Dialog;
+//!
 
 GTK2.FileSelection complete( string pattern );
 //! Will attempt to match pattern to a valid filename in the current
@@ -40,7 +44,7 @@ GTK2.FileSelection complete( string pattern );
 //!
 //!
 
-protected GTK2.FileSelection create( string|mapping title_or_props );
+protected void create( void title_or_props );
 //! Creates a new file selection dialog box. By default it will list
 //! the files in the current working directory. Operation buttons
 //! allowing the user to create a directory, delete files, and rename

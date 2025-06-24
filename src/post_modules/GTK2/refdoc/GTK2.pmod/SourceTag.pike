@@ -1,3 +1,6 @@
+// Automatically generated from "gtksourcetag.pre".
+// Do NOT edit.
+
 //! Properties:
 //! string id
 //! GTK2.SourceTagStyle tag-style
@@ -5,6 +8,7 @@
 //!
 
 inherit GTK2.TextTag;
+//!
 
 mapping get_style( );
 //! Gets the style associated with this tag.

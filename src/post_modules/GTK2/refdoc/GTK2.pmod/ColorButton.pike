@@ -1,3 +1,6 @@
+// Automatically generated from "gtkcolorbutton.pre".
+// Do NOT edit.
+
 //! Properties:
 //! int alpha
 //! GDK2.Color color
@@ -12,8 +15,9 @@
 //!
 
 inherit GTK2.Button;
+//!
 
-protected GTK2.ColorButton create( GTK2.GdkColor red_or_props, int|void green, int|void blue );
+protected void create( void red_or_props, void green, void blue );
 //! Create a new W(ColorButton).
 //!
 //!
@@ -23,7 +27,7 @@ int get_alpha( );
 //!
 //!
 
-GTK2.GdkColor get_color( );
+GDK2.Color get_color( );
 //! Returns the current color.
 //!
 //!

@@ -1,3 +1,6 @@
+// Automatically generated from "gtkradiomenuitem.pre".
+// Do NOT edit.
+
 //! Exactly like W(RadioButton), but it is an menu item.
 //!@expr{ GTK2.RadioMenuItem("Menu item")@}
 //!@xml{<image>../images/gtk2_radiomenuitem.png</image>@}
@@ -12,8 +15,9 @@
 //!
 
 inherit GTK2.CheckMenuItem;
+//!
 
-protected GTK2.RadioMenuItem create( string|mapping title, GTK2.RadioMenuItem groupmember );
+protected void create( void title, void groupmember );
 //! object GTK2.RadioMenuItem(string title) - First button (with label)
 //! object GTK2.RadioMenuItem()->add(widget) - First button (with widget)
 //! object GTK2.RadioMenuItem(title, another_radio_button) - Second to n:th button (with title)

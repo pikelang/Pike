@@ -3,6 +3,8 @@ require not_now;
 class GTK2.PageSetupUnixDialog;
 inherit GTK2.Dialog;
 
+//!
+
 void create(string|mapping(string:mixed) title_or_props, ?GTK2.Window parent)
 //! Create a new page setup dialog.
 {

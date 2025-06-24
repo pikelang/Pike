@@ -1,3 +1,6 @@
+// Automatically generated from "gtkwindow.pre".
+// Do NOT edit.
+
 //! The basic window. Nothing much to say about it. It can only contain
 //! one child widget. Show the main window last to avoid annoying
 //! flashes when the subwidget (and it's subwidgets) are added to it,
@@ -49,6 +52,7 @@
 //!
 
 inherit GTK2.Bin;
+//!
 
 int activate_default( );
 //! Activates the default widget, unless the current focused widget has been
@@ -88,7 +92,7 @@ GTK2.Window begin_resize_drag( int edge, int button, int root_x, int root_y, int
 //!
 //!
 
-protected GTK2.Window create( int|mapping props );
+protected void create( void props );
 //! Argument is one of @[WINDOW_POPUP] and @[WINDOW_TOPLEVEL], or a mapping of allowed properties.
 //!
 //!
@@ -154,7 +158,7 @@ GTK2.WindowGroup get_group( );
 //!
 //!
 
-GTK2.GdkPixbuf get_icon( );
+GDK2.Pixbuf get_icon( );
 //! Gets the value set by set_icon().
 //!
 //!
@@ -512,7 +516,7 @@ GTK2.Window set_gravity( int gravity );
 //!
 //!
 
-GTK2.Window set_icon( GTK2.GdkPixbuf icon );
+GTK2.Window set_icon( GDK2.Pixbuf icon );
 //! Sets up the icon representing this window.  This icon is used when the
 //! window is minimized (also know as iconified).  Some window managers or
 //! desktop environments may also place it in the window frame, or display it

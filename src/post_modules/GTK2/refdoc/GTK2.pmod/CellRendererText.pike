@@ -1,3 +1,6 @@
+// Automatically generated from "gtkcellrenderertext.pre".
+// Do NOT edit.
+
 //! Properties:
 //! int alignment
 //! Pango.AttrList attributes
@@ -47,8 +50,9 @@
 //!
 
 inherit GTK2.CellRenderer;
+//!
 
-protected GTK2.CellRendererText create( mapping|void props );
+protected void create( void props );
 //! Creates a new W(CellRendererText).  Adjust how text is drawn using object
 //! properties.  Object properties can be set globally (with G.Object->set()).
 //! Also, with W(TreeViewColumn), you can bind a property to a value in a

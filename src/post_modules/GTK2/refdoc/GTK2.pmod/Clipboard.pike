@@ -1,31 +1,35 @@
+// Automatically generated from "gtkclipboard.pre".
+// Do NOT edit.
+
 //! Clipboard implementation.
 //!
 //!
 
 inherit G.Object;
+//!
+
 
 GTK2.Clipboard clear( );
 //! Clears the contents of the clipboard.
 //!
 //!
 
-
 GTK2.Clipboard get( GDK2.Atom selection );
 //! Returns the clipboard object for the given selection.
 //!
 //!
 
-GTK2.GdkDisplay get_display( );
+GDK2.Display get_display( );
 //! Gets the GDK2.Display associated with this clipboard.
 //!
 //!
 
-GTK2.Clipboard get_for_display( GTK2.GdkDisplay display, GDK2.Atom selection );
+GTK2.Clipboard get_for_display( GDK2.Display display, GDK2.Atom selection );
 //! Returns the clipboard object for the given selection.
 //!
 //!
 
-GTK2.Clipboard set_image( GTK2.GdkPixbuf pixbuf );
+GTK2.Clipboard set_image( GDK2.Pixbuf pixbuf );
 //! Sets the contents of the clipboard to the given GDK2(Pixbuf).
 //!
 //!
@@ -36,7 +40,7 @@ GTK2.Clipboard set_text( sprintf_format text, sprintf_args... fmt );
 //!
 //!
 
-GTK2.GdkPixbuf wait_for_image( );
+GDK2.Pixbuf wait_for_image( );
 //! Requests the contents of the clipboard as image and converts the result
 //! to a GDK2.Pixbuf.
 //!

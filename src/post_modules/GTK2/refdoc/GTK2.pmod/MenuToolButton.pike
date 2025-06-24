@@ -1,3 +1,6 @@
+// Automatically generated from "gtkmenutoolbutton.pre".
+// Do NOT edit.
+
 //! Properties to be notified.
 //! GTK2.Menu menu
 //!
@@ -7,8 +10,9 @@
 //!
 
 inherit GTK2.ToolButton;
+//!
 
-protected GTK2.MenuToolButton create( GTK2.Widget icon, string|void label );
+protected void create( void icon, void label );
 //! Create a new GTK2.MenuToolButton.
 //! If icon is a string, label should be omitted.  If it isn't,
 //! it will be igrnored.  The result will be a button from

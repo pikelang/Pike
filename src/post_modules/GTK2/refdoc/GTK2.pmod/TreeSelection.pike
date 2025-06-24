@@ -1,3 +1,6 @@
+// Automatically generated from "gtktreeselection.pre".
+// Do NOT edit.
+
 //! Selections on a treestore.
 //!
 //!
@@ -6,6 +9,7 @@
 //!
 
 inherit G.Object;
+//!
 
 int count_selected_rows( );
 //! Returns the number of rows that have been selected.

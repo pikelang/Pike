@@ -1,3 +1,6 @@
+// Automatically generated from "gtktoolbar.pre".
+// Do NOT edit.
+
 //! Toolbars are usually used to group some number of widgets in order
 //! to simplify customization of their look and layout. Typically a
 //! toolbar consists of buttons with icons, labels and tooltips, but
@@ -42,8 +45,9 @@
 //!
 
 inherit GTK2.Container;
+//!
 
-protected GTK2.Toolbar create( mapping|void props );
+protected void create( void props );
 //! Creates a new toolbar.
 //!
 //!

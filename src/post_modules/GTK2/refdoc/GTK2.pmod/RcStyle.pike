@@ -1,15 +1,19 @@
+// Automatically generated from "gtkrcstyle.pre".
+// Do NOT edit.
+
 //! RC settings.
 //!
 //!
 
 inherit G.Object;
+//!
 
 GTK2.RcStyle copy( );
 //! Makes a copy.
 //!
 //!
 
-protected GTK2.RcStyle create( );
+protected void create( );
 //! Creates a new W(Rc).
 //!
 //!

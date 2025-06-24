@@ -1,3 +1,6 @@
+// Automatically generated from "gtkcheckmenuitem.pre".
+// Do NOT edit.
+
 //! A check menu item is more or less identical to a check button, but it
 //! should be used in menus.
 //!@expr{ GTK2.CheckMenuItem("Hi there")@}
@@ -22,8 +25,9 @@
 //!
 
 inherit GTK2.MenuItem;
+//!
 
-protected GTK2.CheckMenuItem create( string|mapping label_or_props );
+protected void create( void label_or_props );
 //! The argument, if specified, is the label of the item.
 //! If no label is specified, use object->add() to add some
 //! other widget (such as an pixmap or image widget)

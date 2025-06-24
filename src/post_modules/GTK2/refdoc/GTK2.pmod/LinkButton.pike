@@ -1,3 +1,6 @@
+// Automatically generated from "gtklinkbutton.pre".
+// Do NOT edit.
+
 //! Properties:
 //! 
 //! string uri
@@ -8,8 +11,9 @@
 //!
 
 inherit GTK2.Button;
+//!
 
-protected GTK2.LinkButton create( string|mapping uri_or_props, string|void label );
+protected void create( void uri_or_props, void label );
 //! Creates a new LinkButton.
 //!
 //!

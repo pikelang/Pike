@@ -1,3 +1,6 @@
+// Automatically generated from "gtklabel.pre".
+// Do NOT edit.
+
 //! A simple text label.
 //!@expr{ GTK2.Label("A simple text label")@}
 //!@xml{<image>../images/gtk2_label.png</image>@}
@@ -39,8 +42,9 @@
 //!
 
 inherit GTK2.Misc;
+//!
 
-protected GTK2.Label create( string|mapping text_or_props );
+protected void create( void text_or_props );
 //! Creates a new label.
 //!
 //!
@@ -66,7 +70,7 @@ string get_label( );
 //!
 //!
 
-GTK2.Pango.Layout get_layout( );
+Pango.Layout get_layout( );
 //! Gets the Pango.Layout used to display the label.  The layout is useful to
 //! e.g. convert text positions to pixel positions, in combination with
 //! get_layout_offsets().

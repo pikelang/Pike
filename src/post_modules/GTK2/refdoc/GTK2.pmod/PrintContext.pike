@@ -1,16 +1,25 @@
+// Automatically generated from "gtkprintcontext.pre".
+// Do NOT edit.
+
 //!
 //!
 //!
 
 inherit G.Object;
+//!
 
-GTK2.Pango.Context create_pango_context( );
+Pango.Context create_pango_context( );
 //! Creates a new Pango.Context that can be used with this PrintContext.
 //!
 //!
 
-GTK2.Pango.Layout create_pango_layout( );
+Pango.Layout create_pango_layout( );
 //! Creates a new Pango.Layout that is suitable for use with this PrintContext.
+//!
+//!
+
+object get_cairo_context( );
+//! Obtains the cairo context that is associated with this PrintContext.
 //!
 //!
 

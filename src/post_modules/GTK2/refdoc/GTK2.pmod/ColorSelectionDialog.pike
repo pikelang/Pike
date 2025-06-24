@@ -1,10 +1,14 @@
+// Automatically generated from "gtkcolorselectiondialog.pre".
+// Do NOT edit.
+
 //! Color Selection Dialog
 //!
 //!
 
 inherit GTK2.Dialog;
+//!
 
-protected GTK2.ColorSelectionDialog create( string|mapping title_or_props );
+protected void create( void title_or_props );
 //! Create a new Color Selection Dialog
 //!
 //!

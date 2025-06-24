@@ -1,3 +1,6 @@
+// Automatically generated from "gtkcalendar.pre".
+// Do NOT edit.
+
 //! A calendar widget.
 //!@expr{ GTK2.Calendar();@}
 //!@xml{<image>../images/gtk2_calendar.png</image>@}
@@ -32,13 +35,14 @@
 //!
 
 inherit GTK2.Widget;
+//!
 
 GTK2.Calendar clear_marks( );
 //! Remove all day markers
 //!
 //!
 
-protected GTK2.Calendar create( mapping|void props );
+protected void create( void props );
 //! Create a new calendar widget
 //!
 //!

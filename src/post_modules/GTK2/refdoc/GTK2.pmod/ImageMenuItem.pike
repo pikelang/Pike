@@ -1,11 +1,15 @@
+// Automatically generated from "gtkimagemenuitem.pre".
+// Do NOT edit.
+
 //! Properties:
 //! GTK2.Widget image
 //!
 //!
 
 inherit GTK2.MenuItem;
+//!
 
-protected GTK2.ImageMenuItem create( string|mapping label );
+protected void create( void label );
 //! Create a new ImageMenuItem.
 //!
 //!

@@ -1,3 +1,6 @@
+// Automatically generated from "gtkfontselectiondialog.pre".
+// Do NOT edit.
+
 //! The GtkFontSelectionDialog widget is a dialog box for selecting a font.
 //! 
 //! To set the font which is initially selected, use set_font_name().
@@ -14,8 +17,9 @@
 //!
 
 inherit GTK2.Dialog;
+//!
 
-protected GTK2.FontSelectionDialog create( string title );
+protected void create( void title );
 //! Create a new font selection dialog with the specified window title
 //!
 //!

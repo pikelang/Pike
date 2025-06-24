@@ -1,3 +1,6 @@
+// Automatically generated from "gtkbuttonbox.pre".
+// Do NOT edit.
+
 //! More or less equivalent to a normal box, but you can set a few
 //! layout schemes that are not available for normal boxes.
 //! See the hbox and vbox documentation for examples.
@@ -16,6 +19,7 @@
 //!
 
 inherit GTK2.Box;
+//!
 
 int get_child_secondary( GTK2.Widget child );
 //! Returns whether child should appear in a secondary group of children.
