@@ -3,4 +3,7 @@
 
 constant Object = GTK2.GObject;
 
+#if constant(GTK2.GInitiallyUnowned)
+// GTK 2.10 and later.
 constant InitiallyUnowned = GTK2.GInitiallyUnowned;
+#endif
