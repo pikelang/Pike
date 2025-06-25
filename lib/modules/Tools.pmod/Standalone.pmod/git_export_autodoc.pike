@@ -694,7 +694,10 @@ bool has_doc_commits( string commit )
                 return true;
 	    if (has_value(x, "inherit")) return true;
         }
-        else if( has_prefix( x, "diff ") &&  has_autodoc_filename( x ) )
+        else if( has_prefix( x, "diff ") && has_autodoc_filename( x ) )
+            return true;
+        else if( has_prefix( x, "rename from ") &&
+                 has_autodoc_filename(replace(x, "rename from ", "diff a/")) )
             return true;
     }
     return false;
