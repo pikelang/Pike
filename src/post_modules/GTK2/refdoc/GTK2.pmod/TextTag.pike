@@ -84,7 +84,7 @@ protected void create( void name_or_props );
 //!
 //!
 
-int event( GTK2.G.Object event_object, GDK2.Event event, GTK2.TextIter iter );
+int event( G.Object event_object, GDK2.Event event, GTK2.TextIter iter );
 //! Emits the 'event' signal.
 //!
 //!
