@@ -165,14 +165,13 @@ protected string make_pike_refdoc( string pgtkdoc,
 protected string module_name( Class cls )
 {
   string mn = (cls->name/".")[0];
-  if (mn == "G") mn = "GTK2";
   return mn;
 }
 
 protected string class_name( Class cls, int|void nmn )
 {
   array(string) a = cls->name/".";
-  if ((a[0] == "G") || (sizeof(a) == 1)) a = ({ "GTK2" }) + a;
+  if (sizeof(a) == 1) a = ({ "GTK2" }) + a;
   if (nmn) a = a[1..];
   return a * ".";
 }
