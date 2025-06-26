@@ -12,37 +12,43 @@ protected string imgfilename( string w )
 
 // Output pike refdoc-style documentation from the full code-tree.
 // Also generates nice readable 'source-code' as a bonus. :-)
-protected string make_example_image( string data, int toplevel )
+protected string make_example_image( string data, int toplevel,
+                                     int|void inhibited )
 {
   string tim = replace( imgfile, "#", (string)(++ifcnt[imgfile]));
   tim = replace( tim, "_1", "" );
 
-  if( !file_stat( dir+"/"+tim ) )
-    Process.create_process( ({master()->_pike_file_name,
-			      "-DNOT_INSTALLED",
-			      "-DPRECOMPILED_SEARCH_MORE",
-			      "-m"+master()->_master_file_name,
-			      combine_path(__FILE__,
-					   "../../make_example_image.pike"),
-			      replace(data, "@@", "@"),
-			      toplevel?"TOP":"SUB",
-			      dir, tim
-			    }),
-			    ([ "stderr":Stdio.stderr,
-			       "stdout":Stdio.stdout ]) )->wait();
+  if( !file_stat( dir+"/"+tim ) ) {
+    if (inhibited) {
+      werror("Warning: Image %O missing!\n", tim);
+    } else {
+      Process.create_process( ({master()->_pike_file_name,
+                                "-DNOT_INSTALLED",
+                                "-DPRECOMPILED_SEARCH_MORE",
+                                "-m"+master()->_master_file_name,
+                                combine_path(__FILE__,
+                                             "../../make_example_image.pike"),
+                                replace(data, "@@", "@"),
+                                toplevel?"TOP":"SUB",
+                                dir, tim
+                              }),
+                              ([ "stderr":Stdio.stderr,
+                                 "stdout":Stdio.stdout ]) )->wait();
+    }
+  }
   return ("@expr{" + data + "@}\n"
 	  "@xml{<image>../"+tim+"</image>@}\n");
 }
 
-protected string fix_images( string data )
+protected string fix_images( string data, int|void inhibited )
 {
   string res = "";
   foreach( data /"\n", string d )
   {
     if( sscanf( d, "%*sTIMG:%s", d ) )
-      res += make_example_image( d,1 )+"\n";
+      res += make_example_image( d, 1, inhibited )+"\n";
     else if( sscanf( d, "%*sIMG:%s", d ) )
-      res += make_example_image( d,0 )+"\n";
+      res += make_example_image( d, 0, inhibited )+"\n";
     else
       res += d+"\n";
   }
@@ -131,13 +137,15 @@ protected string trim_xml( string what )
 
 
 protected string make_pike_refdoc( string pgtkdoc,
-				mapping|void signals)
+                                   mapping|void signals,
+                                   int|void inhibited)
 {
   string res =  "";
-  if( !pgtkdoc || !sizeof(pgtkdoc) )
+  if( !pgtkdoc || !sizeof(pgtkdoc) ) {
     return "//!\n";
+  }
 
-  pgtkdoc = fix_images( fix_const( trim_xml(pgtkdoc) ) );
+  pgtkdoc = fix_images( fix_const( trim_xml(pgtkdoc) ), inhibited );
   foreach( pgtkdoc/"\n", string s )
   {
     if( !sizeof(s) )
@@ -155,7 +163,7 @@ protected string make_pike_refdoc( string pgtkdoc,
     foreach( sort( indices(signals) ), string sig )
     {
       res += "//! @b{"+signals[sig]->pike_name()+"@}\n"+
-	     make_pike_refdoc( signals[sig]->doc, 0 );
+        make_pike_refdoc( signals[sig]->doc, 0, inhibited );
     }
   }
   return res;
@@ -234,9 +242,11 @@ protected string make_function_doc( GtkFunction f, Class c )
   imgfile=imgfilename(c->name+"_"+f->name);
   if( !f->doc || !sizeof( f->doc ) )
   {
-    werror("Warning: "+f->file+":"+f->line+": "
-	   +c->name+"->"+f->name+" not documented\n" );
-    res += "//!\n";
+    if (!f->inhibited) {
+      werror("Warning: "+f->file+":"+f->line+": "
+             +c->name+"->"+f->name+" not documented\n" );
+      res += "//!\n";
+    }
   }
   else
   {
@@ -245,7 +255,7 @@ protected string make_function_doc( GtkFunction f, Class c )
       res += ("//" + (f->doc/"\n")[*])*"\n" + "\n";
     }
     else
-      res += make_pike_refdoc( f->doc, 0 );
+      res += make_pike_refdoc( f->doc, 0, f->inhibited );
   }
   //  res += "{\n  // defined in\n  // "+f->file+":"+f->line+"\n}";
   return res;
@@ -265,7 +275,7 @@ protected void output_class( Class cls, int lvl )
                     "// Do NOT edit.\n"
                     "\n",
                     basename(cls->file));
-  result += make_pike_refdoc( cls->doc, cls->signals );
+  result += make_pike_refdoc( cls->doc, cls->signals, cls->inhibited );
 
   if (cls->name == "GTK2.SourceMark") {
     // Get rid of circular dependency.
@@ -318,7 +328,7 @@ protected void output_constant( Constant c )
 {
   imgfile=imgfilename("const_"+c->name);
   constants += "constant "+c->pike_name()+";\n"+
-            make_pike_refdoc( c->doc, 0 )+"\n\n";
+    make_pike_refdoc( c->doc, 0, c->inhibited ) + "\n\n";
 }
 
 array(string) output( mapping(string:Class) classes,

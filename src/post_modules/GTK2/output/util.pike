@@ -101,6 +101,10 @@ void traverse_class_tree( mapping(string:Class) classes, function cb )
     if( !sizeof(classes[cls]->inherits) ) {
       output_class( classes[cls], 0,({classes[cls]}) );
     }  else {
+      if (has_suffix(classes[cls]->file, "/gtksourcemark.pre")) {
+        // NB: Break the circular inherit that exists for compat reasons.
+        output_class( classes[cls], 0, ({classes[cls]}) );
+      }
 //      write("class==%s  inherits==%O\n",cls,classes[cls]->inherits);
     }
   }
