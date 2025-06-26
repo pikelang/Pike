@@ -3550,15 +3550,17 @@ void fixate_program(void)
       }
     }
 
-    lfuns = malloc(sizeof(INT16) * ((NUM_LFUNS >> 4) + num_lfuns + 1));
+    lfuns = malloc(sizeof(INT16) * ((NUM_LFUNS >> 4) + 1 + num_lfuns));
     lfuns[0] = (NUM_LFUNS >> 4) + 1;	/* Always space for __INIT et al. */
-    for (i = 1; i <= (NUM_LFUNS >> 4); i++) {
+    for (i = 1; i <= (NUM_LFUNS >> 4); i++) { /* Note <=! */
       lfuns[i] = 0;
     }
     memset(lfuns + ((NUM_LFUNS >> 4) + 1), 0xff,
 	   sizeof(INT16) * num_lfuns);				/* -1 */
 
-    /* Copy __INIT from original lfuns. */
+    /* Copy __INIT from original lfuns.
+     * We *know* that LFUN___INIT is 0!
+     */
     num_lfuns = (NUM_LFUNS>>4) + 1;
     lfuns[num_lfuns] = p->lfuns[num_lfuns];
     num_lfuns++;
@@ -4334,6 +4336,7 @@ static void exit_program_struct(struct program *p)
 
   if (p->lfuns) {
     free(p->lfuns);
+    p->lfuns = NULL;
   }
 
   EXIT_PIKE_MEMOBJ(p);
