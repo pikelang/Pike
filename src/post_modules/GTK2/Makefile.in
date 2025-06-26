@@ -33,7 +33,7 @@ doc0:
 
 doc1: options
 	$(RUNPIKE) $(SRCDIR)/build_pgtk.pike --source='$(SRCDIR)/source/'\
-		   --destination="$(SRCDIR)/refdoc/" \
+		   --destination="$(SRCDIR)/refdoc/" --force-all \
 		   $(SRCDIR)/output/doc-pikeref.pike
 
 doc2: doc1

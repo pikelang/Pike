@@ -153,11 +153,13 @@ class GtkFunction(Class parent,
 		  array require,
 		  string doc,
 		  string file,
-		  int line)
+                  int line,
+                  int|void inhibited)
 {
   protected string _sprintf(int fmt)
   {
-    return fmt=='O' && sprintf("GtkFunction( %O, %O )",name, return_type );
+    return fmt=='O' && sprintf("GtkFunction( %O, %O %s)",name, return_type,
+                               inhibited?"/* Inhibited */ ":"");
   }
 
   string|zero pike_type( )
@@ -408,7 +410,8 @@ string function_type( string what )
 }
 
 class Member( string name, Type type, int set,
-              string file, int line, Class parent )
+              string file, int line, Class parent,
+              int|void inhibited )
 {
   string doc = "";
 
@@ -480,12 +483,14 @@ class Member( string name, Type type, int set,
 
   protected string _sprintf(int fmt)
   {
-    return fmt=='O' && sprintf("Member( %O /* %O */ )",name,type );
+    return fmt=='O' && sprintf("Member( %O /* %O %s*/ )",name,type,
+                               inhibited?"inhibited ":"");
   }
 }
 
 class Property( string name, Type type, int set,
-		string file, int line, Class parent )
+                string file, int line, Class parent,
+                int|void inhibited )
 {
   inherit Member;
 
@@ -1093,7 +1098,8 @@ class Type
 
 int last_class_id = 2000;
 
-class Class( string name, string|zero file, int line )
+class Class( string name, string|zero file, int line,
+             int|void inhibited )
 {
   array(Class) inherits = ({});
   mapping(string:GtkFunction) functions = ([]);
@@ -1353,9 +1359,10 @@ class Class( string name, string|zero file, int line )
 
   protected string _sprintf(int fmt)
   {
-    return fmt=='O' && sprintf("Class( %O /* %d funcs. */ )",name,
+    return fmt=='O' && sprintf("Class( %O /* %d funcs. %s*/ )", name,
 			       sizeof(functions)+sizeof(members)+
-			       sizeof(properties));
+                               sizeof(properties),
+                               inhibited?"inhibited ":"");
   }
 
   class Ref( string file, int line, Class c ) {  }
@@ -1409,7 +1416,8 @@ mapping(string:Class) classes = ([]);
 mapping(string:Constant) constants = ([]);
 array global_pre = ({});
 
-class Constant( string name, Type type, string file, int line )
+class Constant( string name, Type type, string file, int line,
+                int|void inhibited )
 {
   string doc = "";
 
@@ -1444,7 +1452,8 @@ class Constant( string name, Type type, string file, int line )
   }
 }
 
-Constant get_constant_def( string name, Type t, string file, int line )
+Constant get_constant_def( string name, Type t, string file, int line,
+                           int|void inhibited )
 {
   Constant res;
   if( res = constants[ name ] )
@@ -1454,7 +1463,7 @@ Constant get_constant_def( string name, Type t, string file, int line )
            res->file+":"+res->line+"\n");
     exit(1);
   }
-  return constants[name] = Constant( name, t, file, line );
+  return constants[name] = Constant( name, t, file, line, inhibited );
 }
 
 Class get_class_ref( string name, string file, int line,
@@ -1468,7 +1477,7 @@ Class get_class_ref( string name, string file, int line,
   return res;
 }
 
-Class get_class_define( string name, string file, int line )
+Class get_class_define( string name, string file, int line, int|void inhibited )
 {
   Class res = classes[name];
   if( res )
@@ -1484,7 +1493,7 @@ Class get_class_define( string name, string file, int line )
     res->line = line;
   }
   else
-    res = classes[name] = Class(name,file,line);
+    res = classes[name] = Class(name, file, line, inhibited);
   return res;
 }
 
@@ -1554,9 +1563,11 @@ int is_identifier( object t )
   return 1;
 }
 
+int force_all = 0;
 multiset options;
 int verify_required( array r )
 {
+  if (force_all) return 1;
   if(!options)
     options = mkmultiset( ((Stdio.read_bytes( destination_dir+"options" )||"")
                            -" ")/"\n" );
@@ -1663,6 +1674,7 @@ string parse_pre_file( string file )
     array(string) arg_names;
     mixed tk,token = GOBBLE();
     string doc = "";
+    int inhibited = 0;
 
     if( objectp( token ) )
     {
@@ -1693,8 +1705,13 @@ string parse_pre_file( string file )
       }
     }
     if( !verify_required( current_require ) ||
-	(sizeof( current_unrequire ) && verify_required(current_unrequire)))
-      continue;
+        (sizeof( current_unrequire ) && verify_required(current_unrequire))) {
+      if (!force_all) {
+        continue;
+      }
+
+      inhibited = 1;
+    }
 
     if( objectp( token ) )
     {
@@ -1706,7 +1723,8 @@ string parse_pre_file( string file )
            tk = ({ tk, GOBBLE() });
          if(!arrayp(tk)) tk = ({ tk });
          current_scope=current_class=
-           get_class_define(Array.flatten(tk)->text*"",file,tk[-1]->line);
+           get_class_define(Array.flatten(tk)->text * "", file, tk[-1]->line,
+                            inhibited);
          SEMICOLON("class");
          break;
        case "property":
@@ -1716,7 +1734,8 @@ string parse_pre_file( string file )
 	 SEMICOLON("property");
 	 current_class->add_property( current_scope =
 				    Property( name->text, type, 0,
-					    file, tk->line, current_class) );
+                                              file, tk->line, current_class,
+                                              inhibited) );
 	 break;
        case "setproperty":
 	 NEED_CLASS("property");
@@ -1725,7 +1744,8 @@ string parse_pre_file( string file )
 	 SEMICOLON("setproperty");
 	 current_class->add_property( current_scope =
 				    Property( "set_"+name->text,type, 1,
-					    file, tk->line, current_class) );
+                                              file, tk->line, current_class,
+                                              inhibited) );
 	 break;
        case "member":
          NEED_CLASS("member");
@@ -1734,7 +1754,8 @@ string parse_pre_file( string file )
          SEMICOLON("member");
          current_class->add_member( current_scope =
                                     Member( name->text, type, 0,
-                                            file, tk->line, current_class) );
+                                            file, tk->line, current_class,
+                                            inhibited) );
          break;
        case "setmember":
          NEED_CLASS("member");
@@ -1743,7 +1764,8 @@ string parse_pre_file( string file )
          SEMICOLON("setmember");
          current_class->add_member( current_scope =
                                     Member( "set_"+name->text,type, 1,
-                                            file, tk->line, current_class) );
+                                            file, tk->line, current_class,
+                                            inhibited) );
          break;
 
        case "signal":
@@ -1757,7 +1779,8 @@ string parse_pre_file( string file )
          TYPE("constant");  type = tk;
          IDENTIFIER("constant"); name = tk;
          SEMICOLON("constant");
-         current_scope = get_constant_def( name->text,type,file,name->line );
+         current_scope = get_constant_def( name->text, type, file, name->line,
+                                           inhibited);
 //         werror("Got constant: %O %O\n",type,name);
          break;
 
@@ -1891,8 +1914,9 @@ string parse_pre_file( string file )
          if( arrayp(body) )
            make_strings(body);
          GtkFunction f = GtkFunction( current_class, name->text, type,
-                                arg_types, arg_names, body, 
-                                current_require, doc, file, token->line );
+                                      arg_types, arg_names, body,
+                                      current_require, doc, file, token->line,
+                                      inhibited);
          current_class->add_function( f );
          current_scope = f;
       }
@@ -2003,12 +2027,16 @@ void main(int argc, array argv)
 #" %s [--help] [--sources=directory] plugin.pike
 
    --help: This help
+   --force-all: Inhibit requirement checks.
    --source: Specify another directory for the source files.
               The default is source/
    --destination: Specify another directory for the destination files.
                   The default is the current directory
 ", argv[0] );
       exit(1);
+    }
+    else if ( option == "--force-all" ) {
+      force_all = 1;
     }
     else
       output = option;
