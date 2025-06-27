@@ -7849,7 +7849,7 @@ PIKECLASS List
      *!   @[append()], @[delete()], @[set()]
      */
     PIKEFUN void insert(mixed val)
-      rawtype tFunc(tListIterValueType, tNone);
+      rawtype tFunc(tListIterValueType, tVoid);
     {
       struct pike_list_node *new_node;
       if (!THIS->cur->prev) {
@@ -7923,7 +7923,7 @@ PIKECLASS List
      *!   @[insert()], @[append()], @[delete()]
      */
     PIKEFUN void set(mixed val)
-      rawtype tFunc(tListIterValueType, tNone);
+      rawtype tFunc(tListIterValueType, tVoid);
     {
       if (!THIS->cur->next || !THIS->cur->prev) {
 	Pike_error("Attempt to set a sentinel.\n");
