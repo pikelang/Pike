@@ -140,6 +140,25 @@ class Future
     return res;
   }
 
+  //! Call the callback function @[cb] in a safe manner.
+  //!
+  //! Reports if it fails via @[global_on_failure()] and
+  //! updates rejection state if needed.
+  protected void do_call_callback(function cb, mixed ... args)
+  {
+    if (cb) {
+      mixed err = catch {
+          cb(@args);
+          if (state == STATE_REJECTED) {
+            // We assume that this was a rejection callback.
+            state = STATE_REJECTION_REPORTED;
+          }
+          return;
+        };
+      if (err) global_on_failure(err);
+    }
+  }
+
   //! Call a callback function.
   //!
   //! @param cb
@@ -148,16 +167,15 @@ class Future
   //! @param args
   //!   Arguments to call @[cb] with.
   //!
-  //! The default implementation calls @[cb] via the
-  //! backend set via @[set_backend()] (if any), and
-  //! otherwise falls back the the mode set by
-  //! @[use_backend()].
+  //! The default implementation calls @[cb] via @[do_call_callback()]
+  //! via the backend set via @[set_backend()] (if any), and otherwise
+  //! falls back to the the mode set by @[use_backend()].
   //!
   //! @seealso
   //!   @[set_backend()], @[use_backend()]
   protected void call_callback(function cb, mixed ... args)
   {
-    (backend ? backend->call_out : callout)(cb, 0, @args);
+    (backend ? backend->call_out : callout)(do_call_callback, 0, cb, @args);
   }
 
   //! Wait for fulfillment.
@@ -188,6 +206,7 @@ class Future
     wait();
 
     if (state >= STATE_REJECTED) {
+      state = STATE_REJECTION_REPORTED;
       throw(result);
     }
     return result;
@@ -209,6 +228,7 @@ class Future
     case ..STATE_PENDING:
       return UNDEFINED;
     case STATE_REJECTED..:
+      state = STATE_REJECTION_REPORTED;
       throw(result);
     default:
       return result;
@@ -276,11 +296,11 @@ class Future
   //!   @[on_success()], @[query_failure_callbacks()]
   this_program on_failure(function(mixed, mixed ... : void) cb, mixed ... extra)
   {
+    if (!cb) return this_program::this;
+
     Thread.MutexKey key = mux->lock();
     switch (state) {
       case STATE_REJECTED:
-	state = STATE_REJECTION_REPORTED;
-	// FALL_THROUGH
       case STATE_REJECTION_REPORTED:
 	key = 0;
         call_callback(cb, result, @extra);
@@ -1006,9 +1026,6 @@ class Promise
         foreach(cbs; ; array cb)
           if (cb)
             call_callback(cb[0], value, @cb[1..]);
-	if (newstate == STATE_REJECTED) {
-	  state = STATE_REJECTION_REPORTED;
-	}
       }
       failure_cbs = success_cbs = ({});		// Free memory and references
     }
