@@ -2103,7 +2103,7 @@ static void low_add_marks_to_memhdr(struct memhdr *to,
 				    struct memhdr *from)
 {
   struct memloc *l;
-  if(!from) return;
+  if(!from || (from == to)) return;
   for(l=from->locations;l;l=l->next)
     add_location(to, l->location);
 }
