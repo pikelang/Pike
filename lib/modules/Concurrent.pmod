@@ -142,20 +142,31 @@ class Future
 
   //! Call the callback function @[cb] in a safe manner.
   //!
-  //! Reports if it fails via @[global_on_failure()] and
+  //! Reports if it fails via @[report_failure()] and
   //! updates rejection state if needed.
-  protected void do_call_callback(function cb, mixed ... args)
+  //!
+  //! @note
+  //!   @[report_failure] is typically the same as @[global_on_failure],
+  //!   but if the object is destructed attempts to access it via the
+  //!   parent pointer will fail.
+  protected void do_call_callback(function cb,
+                                  function(mixed : void) report_failure,
+                                  mixed ... args)
   {
     if (cb) {
       mixed err = catch {
           cb(@args);
-          if (state == STATE_REJECTED) {
-            // We assume that this was a rejection callback.
-            state = STATE_REJECTION_REPORTED;
-          }
+          // NB: We may be destructed here, so accessing
+          //     of object variables may fail.
+          catch {
+            if (state == STATE_REJECTED) {
+              // We assume that this was a rejection callback.
+              state = STATE_REJECTION_REPORTED;
+            }
+          };
           return;
         };
-      if (err) global_on_failure(err);
+      if (err) (report_failure || master()->handle_failure)(err);
     }
   }
 
@@ -175,7 +186,8 @@ class Future
   //!   @[set_backend()], @[use_backend()]
   protected void call_callback(function cb, mixed ... args)
   {
-    (backend ? backend->call_out : callout)(do_call_callback, 0, cb, @args);
+    (backend ? backend->call_out : callout)(do_call_callback, 0,
+                                            global_on_failure, cb, @args);
   }
 
   //! Wait for fulfillment.
@@ -1279,8 +1291,8 @@ class Promise
       try_failure(({ sprintf("%O: Promise broken.\n%s",
 			     this, orig_backtrace),
 		     backtrace() }));
-    if ((state == STATE_REJECTED) && global_on_failure)
-      call_callback(global_on_failure, result);
+    if (state == STATE_REJECTED)
+      call_callback(global_on_failure || master()->handle_error, result);
     result = UNDEFINED;
   }
 }
