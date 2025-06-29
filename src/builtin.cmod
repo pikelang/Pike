@@ -4418,7 +4418,9 @@ PIKECLASS LiveBacktraceFrame
 PIKEFUN mapping(string:int|string) get_runtime_info()
   optflags OPT_TRY_OPTIMIZE;
 {
+  struct svalue *save_sp;
   pop_n_elems(args);
+  save_sp = Pike_sp;
   push_static_text("bytecode_method");
   push_text(PIKE_BYTECODE_METHOD_NAME);
   push_static_text("abi");
@@ -4433,7 +4435,15 @@ PIKEFUN mapping(string:int|string) get_runtime_info()
   push_int(sizeof(FLOAT_TYPE) * 8);
   push_static_text("auto_bignum");
   push_int(1);
-  f_aggregate_mapping(7*2);
+#ifdef PIKE_DEBUG
+  push_static_text("rtl_debug");
+  push_int(1);
+#endif
+#ifdef DEBUG_MALLOC
+  push_static_text("debug_malloc");
+  push_int(1);
+#endif
+  f_aggregate_mapping(Pike_sp - save_sp);
 }
 
 /*! @decl int(0..1) signal_contextp()
