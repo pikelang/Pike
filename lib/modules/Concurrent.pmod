@@ -70,6 +70,27 @@ private mixed
   return 0;
 }
 
+//! Call the callback function @[cb] in a safe manner
+//! when the originating @[Promise] may have been lost.
+//!
+//! @note
+//!   Only called for failure callbacks.
+//!
+//! If the callback fails, @[global_on_failure()] will
+//! be called twice; once with the error from the failing
+//! call, and once with the original error.
+protected void do_signal_call_callback(function cb, mixed ... args)
+{
+  if (cb) {
+    mixed err = catch {
+        cb(@args);
+        return;
+      };
+    if (err) global_on_failure(err);
+    global_on_failure(args[0]);
+  }
+}
+
 private void auto_use_backend()
 {
   callout = call_out;
@@ -188,6 +209,29 @@ class Future
   {
     (backend ? backend->call_out : callout)(do_call_callback, 0,
                                             global_on_failure, cb, @args);
+  }
+
+  //! Call a callback function from a signal handler.
+  //!
+  //! @param cb
+  //!   Callback function to call.
+  //!
+  //! @param args
+  //!   Arguments to call @[cb] with.
+  //!
+  //! The default implementation calls @[cb] via @[do_signal_call_callback()]
+  //! via the backend set by @[set_backend()] (if any), and otherwise
+  //! via @[predef::call_out()].
+  //!
+  //! @seealso
+  //!   @[set_backend()], @[call_callback()]
+  protected void signal_call_callback(function cb, mixed ... args)
+  {
+#ifdef CONCURRENT_DEBUG
+    werror("%O->call_callback(%O%{, %O%})\n", this, cb, args/({}));
+#endif
+    (backend ? backend->call_out : predef::call_out)
+      (do_signal_call_callback, 0, cb, @args);
   }
 
   //! Wait for fulfillment.
@@ -1284,15 +1328,48 @@ class Promise
   private string orig_backtrace =
     sprintf("%s\n------\n", describe_backtrace(backtrace()));
 
-  protected void destroy()
+  protected void destroy(int|void when)
   {
+    // Complain about promises being destructed before fullfillment.
+    //
     // NB: Don't complain about dropping STATE_NO_FUTURE on the floor.
-    if (state == STATE_PENDING)
-      try_failure(({ sprintf("%O: Promise broken.\n%s",
-			     this, orig_backtrace),
-		     backtrace() }));
-    if (state == STATE_REJECTED)
-      call_callback(global_on_failure || master()->handle_error, result);
+    if (state == STATE_PENDING) {
+      // NB: Inlined signal-safe variant of failure().
+      //     We are probably in a signal context.
+#if constant(_disable_threads)	// Survive --without-threads.
+      mixed key;
+      if (when == Object.DESTRUCT_NO_REFS) {
+        // Common case, we should be the only ones having access to the object.
+        // No locking!!!
+      } else {
+        // Synchronous destruct(). Unlikely.
+        catch {
+          key = mux->try_lock();
+        };
+      }
+#endif
+      if (state == STATE_PENDING) {
+        // We are still pending after the potential locking above.
+        state = STATE_REJECTED;
+        result = ({
+          sprintf("%O: Promise broken.\n%s", this, orig_backtrace),
+          backtrace(),
+        });
+        if (sizeof(failure_cbs)) {
+          foreach(failure_cbs; ; array cb) {
+            if (cb) {
+              signal_call_callback(cb[0], result, @cb[1..]);
+              state = STATE_REJECTION_REPORTED;
+            }
+          }
+          failure_cbs = success_cbs = ({});
+        }
+      }
+    }
+    if ((state == STATE_REJECTED) && global_on_failure) {
+      // Complain if there were no failure callbacks.
+      signal_call_callback(global_on_failure, result);
+    }
     result = UNDEFINED;
   }
 }
