@@ -170,8 +170,8 @@ class Future
   //!   @[report_failure] is typically the same as @[global_on_failure],
   //!   but if the object is destructed attempts to access it via the
   //!   parent pointer will fail.
-  protected void do_call_callback(function cb,
-                                  function(mixed : void) report_failure,
+  protected void do_call_callback(function(mixed : void) report_failure,
+                                  function cb,
                                   mixed ... args)
   {
     if (cb) {
