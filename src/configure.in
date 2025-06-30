@@ -648,6 +648,23 @@ RAWCC="`echo $REALCC|sed -e 's/ .*//g'`"
 
 
 # FIXME: Add proper tests
+#
+# Supported methods:
+#
+#   Environment variable based:
+#     ld_library_path:	LD_LIBRARY_PATH=<rpath>
+#
+#   Compiler option based:
+#     qoption:		-Qoption,ld,-rpath,<rpath>
+#     r:		-R<rpath>
+#     rpath:		-rpath <rpath>
+#     wl:		-Wl,-rpath,<rpath>
+#     wl_r:		-Wl,-R<rpath>
+#     darwin_rpath:	-Wl,-rpath,<rpath>
+#     plus_b:		+b <rpath>
+#     yp_:		-YP, <rpath>
+#     xlinker_yp_:	-Xlinker -YP, -Xlinker <rpath>
+
 AC_MSG_CHECKING([for ld.so run path method])
 AC_CACHE_VAL(pike_cv_ld_so_run_path_method, [
   case "$UNAME" in
@@ -660,7 +677,10 @@ AC_CACHE_VAL(pike_cv_ld_so_run_path_method, [
     SunOS\ 5.*)
       pike_cv_run_path_method=r
     ;;
-    Linux\ 2.* | GNU/kFreeBSD* )
+    Linux\ 1.*)
+      pike_cv_run_path_method=ld_library_path
+    ;;
+    Linux* | GNU/kFreeBSD* )
       if test "$ICC" = "yes"; then
         # icc or ecc.
         pike_cv_run_path_method=qoption
