@@ -81,7 +81,12 @@ protected void do_signal_call_callback(function cb, mixed ... args)
 {
   if (cb) {
     mixed err = catch {
-        cb(@args);
+        mixed x = cb(@args);
+        if (x) {
+          catch {
+            master()->runtime_warning("concurrent", "Ignored return value.", x);
+          };
+        }
         return;
       };
     if (err) global_on_failure(err);
@@ -172,7 +177,12 @@ class Future(<ValueType>)
   {
     if (cb) {
       mixed err = catch {
-          cb(@args);
+          mixed x = cb(@args);
+          if (x) {
+            catch {
+              master()->runtime_warning("concurrent", "Ignored return value.", x);
+            };
+          }
           if (state == STATE_REJECTED) {
             // We assume that this was a rejection callback.
             state = STATE_REJECTION_REPORTED;
