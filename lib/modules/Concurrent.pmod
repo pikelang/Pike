@@ -83,7 +83,12 @@ protected void do_signal_call_callback(function cb, mixed ... args)
 {
   if (cb) {
     mixed err = catch {
-        cb(@args);
+        mixed x = cb(@args);
+        if (x) {
+          catch {
+            master()->runtime_warning("concurrent", "Ignored return value.", x);
+          };
+        }
         return;
       };
     if (err) global_on_failure(err);
@@ -176,7 +181,12 @@ class Future
   {
     if (cb) {
       mixed err = catch {
-          cb(@args);
+          mixed x = cb(@args);
+          if (x) {
+            catch {
+              master()->runtime_warning("concurrent", "Ignored return value.", x);
+            };
+          }
           // NB: We may be destructed here, so accessing
           //     of object variables may fail.
           catch {
