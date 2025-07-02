@@ -84,7 +84,8 @@ protected void do_signal_call_callback(function cb, mixed ... args)
         mixed x = cb(@args);
         if (x) {
           catch {
-            master()->runtime_warning("concurrent", "Ignored return value.", x);
+            master()->runtime_warning("concurrent", "Ignored return value.",
+                                      x, cb);
           };
         }
         return;
@@ -180,7 +181,8 @@ class Future(<ValueType>)
           mixed x = cb(@args);
           if (x) {
             catch {
-              master()->runtime_warning("concurrent", "Ignored return value.", x);
+              master()->runtime_warning("concurrent", "Ignored return value.",
+                                        x, cb, Future::this);
             };
           }
           if (state == STATE_REJECTED) {
