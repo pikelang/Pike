@@ -179,7 +179,13 @@ class Future(<ValueType>)
     if (cb) {
       mixed err = catch {
           mixed x = cb(@args);
-          if (x) {
+          if (x &&
+              // NB: Do not warn for success() and failure()
+              //     (which return their corresponding Future).
+              !(objectp(x) && functionp(cb) && functionp(x->success) &&
+                // NB: x is typically sub-typed to Future, while
+                //     function_object(cb) is not (ie typically to Promise).
+                (function_object(cb) == function_object(x->success)))) {
             catch {
               master()->runtime_warning("concurrent", "Ignored return value.",
                                         x, cb, Future::this);
