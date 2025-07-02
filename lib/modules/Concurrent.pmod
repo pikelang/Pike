@@ -229,9 +229,10 @@ class Future
   //! @param args
   //!   Arguments to call @[cb] with.
   //!
-  //! The default implementation calls @[cb] via @[do_signal_call_callback()]
-  //! via the backend set by @[set_backend()] (if any), and otherwise
-  //! via @[predef::call_out()].
+  //! @note
+  //!   The default implementation calls @[cb] via @[do_signal_call_callback()]
+  //!   via @[predef::call_out()] (ie the backend set by @[set_backend()]
+  //!   is intentionally NOT used).
   //!
   //! @seealso
   //!   @[set_backend()], @[call_callback()]
@@ -240,8 +241,8 @@ class Future
 #ifdef CONCURRENT_DEBUG
     werror("%O->call_callback(%O%{, %O%})\n", this, cb, args/({}));
 #endif
-    (backend ? backend->call_out : predef::call_out)
-      (do_signal_call_callback, 0, cb, @args);
+    // NB: Do not use the backend object as it may not be signal-safe.
+    predef::call_out(do_signal_call_callback, 0, cb, @args);
   }
 
   //! Wait for fulfillment.
