@@ -155,6 +155,9 @@ esac
 
 NTTOOLS=$NT_TOOL_PATH/lib
 
+# Force use of our pkg-config.
+PKG_CONFIG="$NT_TOOL_PATH/pkg-config"
+
 num=
 MNTREPLACE=""
 while [ x"$num" = x -o x"$num" = x1 -o x"`eval echo \\$NTMOUNT$num`" != x ]; do
@@ -172,7 +175,7 @@ done
 IFS='
 	 '
 
-export NTHOST NTCC CC CXX PATH NTTOOLS MNTREPLACE
+export NTHOST NTCC CC CXX PATH NTTOOLS MNTREPLACE PKG_CONFIG
 export NTPORT USE_SPRSH IFS REMOTE_METHOD watcom INCLUDE
 export NT_TOOL_PATH NTCOMPILER PIKE_PATH_TRANSLATE NTLD_LIBRARY_PATH
 
