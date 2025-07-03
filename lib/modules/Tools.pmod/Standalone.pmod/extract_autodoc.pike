@@ -727,8 +727,8 @@ string|zero extract(string filename, string imgdest,
       name = root[-1];
       root = root[..sizeof(root)-2];
       if(name == "module" && type != "class") {
-	if(sizeof(root)<2)
-	  error("Unknown module parent name.\n");
+        if(sizeof(root)<1)
+          error("Unknown module parent name for file %q.\n", filename);
 	name = root[-1];
 	root = root[..sizeof(root)-2];
       } else if ((name == "__default") && (sizeof(root) == 1)) {
@@ -747,7 +747,7 @@ string|zero extract(string filename, string imgdest,
   if (err) {
     if (!verbosity)
       ;
-    werror("\nERROR: %s\n", describe_error(err));
+    werror("\nERROR: %s\n", describe_backtrace(err));
 
     return 0;
   }
