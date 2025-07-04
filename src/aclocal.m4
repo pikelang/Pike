@@ -2252,6 +2252,8 @@ AC_DEFUN(PIKE_FIND_LIB_INCLUDE,
 
 AC_DEFUN(PIKE_PROG_PKG_CONFIG,
 [
+  AC_REQUIRE([PIKE_SELECT_ABI])dnl
+
   # NB: pkg-config does not have native support for multiple ABIs.
   MY_AC_PATH_PROGS(PKG_CONFIG, ${pike_cv_tool_prefix}pkg-config ${ac_tool_prefix}pkg-config, no)
   if test "$pike_cv_sys_os:$pike_cv_abi:$PKG_CONFIG:$PKG_CONFIG_LIBDIR" = \
