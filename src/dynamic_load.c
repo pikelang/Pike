@@ -150,7 +150,7 @@ static char * dlerror(void)
   case ERROR_MOD_NOT_FOUND:
     return "The specified module could not be found.";
   default:
-    sprintf(buffer,"LoadLibrary failed with error: %d",GetLastError());
+    sprintf(buffer,"LoadLibrary failed with error: %d",err);
   }
   return buffer;
 }
