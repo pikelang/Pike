@@ -173,11 +173,11 @@ static void dlclose(void *module)
 #else
 static int dlinit(void)
 {
-  extern void __ImageBase;
+  extern char __ImageBase[];
   HMODULE pike_exe = LoadLibrary(TEXT("pike.exe"));
   if (pike_exe)
     FreeLibrary(pike_exe);
-  if (pike_exe == &__ImageBase)
+  if (pike_exe == (void *)__ImageBase)
     /* LoadLibrary on pike.exe refers back to us, module loading will work */
     return 1;
 
