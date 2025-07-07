@@ -684,7 +684,7 @@ PMOD_EXPORT void pike_swap_in_current_thread (struct thread_state *ts
   if (!th_equal (ts->id, self))
     pike_fatal_dloc ("Swapped in thread state %p into wrong thread "
 		     "%"PRINTSIZET"x - should be %"PRINTSIZET"x.\n",
-		     ts, th_self(), ts->id);
+                     ts, (size_t)th_self(), (size_t)ts->id);
 #endif
 
   pike_swap_in_thread (ts COMMA_DLOC_ARGS_OPT);
