@@ -168,7 +168,23 @@ static void dlclose(void *module)
   FreeLibrary((HMODULE)module);
 }
 
+#ifdef TESTING
 #define dlinit()	1
+#else
+static int dlinit(void)
+{
+  extern void __ImageBase;
+  HMODULE pike_exe = LoadLibrary(TEXT("pike.exe"));
+  if (pike_exe)
+    FreeLibrary(pike_exe);
+  if (pike_exe == &__ImageBase)
+    /* LoadLibrary on pike.exe refers back to us, module loading will work */
+    return 1;
+
+  fprintf(stderr, "The main binary module name is not pike.exe (invoked through a symlink?)!\n");
+  return 0;
+}
+#endif
 
 #endif /* USE_LOADLIBRARY */
 
