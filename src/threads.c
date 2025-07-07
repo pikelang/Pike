@@ -4412,8 +4412,10 @@ PMOD_EXPORT void f_thread_local(INT32 args)
  *!
  *! Get the thread local value.
  *!
- *! This returns the value prevoiusly stored in the @[Local] object by
- *! the @[set()] method by this thread.
+ *! @returns
+ *!   Returns the value prevoiusly stored in the @[Local] object by
+ *!   the @[set()] method by this thread (if set). Returns @[UNDEFINED]
+ *!   if no value has been set by the current thread.
  *!
  *! @seealso
  *!   @[set()]
