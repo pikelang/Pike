@@ -3477,7 +3477,7 @@ if test "x$with_long_double_precision" = x -a \
 	"x$with_double_precision" = x ; then
   # Choose the longest available float that fits in a pointer.
   if test "$ac_cv_sizeof_long_double" != 0 -a \
-	  "$ac_cv_sizeof_long_double" -le "$sizeof_anything" ; then
+          "$ac_cv_sizeof_long_double" -le "$sizeof_anything" ; then
     with_long_double_precision=yes
   elif test "$ac_cv_sizeof_double" -le "$sizeof_anything" ; then
     with_double_precision=yes
@@ -3514,16 +3514,10 @@ if test "x$with_long_long_int" = x -a \
 	"x$with_int_int" = x -a \
 	"x$with_short_int" = x ; then
   # Choose the longest available integer that fits in a pointer.
-#  if test $ac_cv_sizeof_long_long != 0 -a \
-#	   $ac_cv_sizeof_long_long -le $ac_cv_sizeof_char_p ; then
-#    # This isn't a good idea on architectures where
-#    # sizeof(long int) < sizeof(INT64).
-#    # This is due to the gmp mpz api's using long int instead of
-#    # mp_limb_{signed_}t.
-#    #with_long_long_int=yes
-#    :
-#  fi
-  if test "$ac_cv_sizeof_long" -le "$sizeof_anything" ; then
+  if test "$ac_cv_sizeof_long_long" -gt "$ac_cv_sizeof_long" -a \
+	   "$ac_cv_sizeof_long_long" -le "$sizeof_anything" ; then
+    with_long_long_int=yes
+  elif test "$ac_cv_sizeof_long" -le "$sizeof_anything" ; then
     with_long_int=yes
   else
     with_int_int=yes
