@@ -8,6 +8,8 @@
 #define NO_PIKE_INCLUDES
 #define CREATE_MAIN
 #define NO_PIKE_GUTS
+#define xalloc malloc
+#define EXTRACT_UCHAR(p) (*(const unsigned char *)(p))
 #endif
 
 #ifndef NO_PIKE_INCLUDES

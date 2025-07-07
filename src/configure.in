@@ -8128,13 +8128,21 @@ if test -z "$LDSHARED" ; then
     ;;
     Windows_NT*|NT*)
       if test x$with_dynamic_modules != xno; then
+        if test "x${GCC-}" = xyes ; then
+          LDSHARED="$REALCC -shared"
+          LDSHARED_BASE_REQS=pike.exe
+          LDSHARED_MODULE_ARGS="`pwd`/pike.exe"
+          LDSHARED_MODULE_REQS="`pwd`/pike.exe"
+          LC_REQ=""
+        else
 	  # It's important that we use $(CC) unexpanded here so that any
 	  # -MD/-MDd flags also gets passed to the linker.
 	  LDSHARED='$(CC) -shared'
 	  LDSHARED_BASE_REQS=pike.lib
 	  LDSHARED_MODULE_ARGS="-l`pwd`/pike"
 	  LDSHARED_MODULE_REQS="`pwd`/pike.lib"
-	LDSHARED_MODULE_ARGS="$LDSHARED_MODULE_ARGS -pdb:\$\$modname.pdb"
+          LDSHARED_MODULE_ARGS="$LDSHARED_MODULE_ARGS -pdb:\$\$modname.pdb"
+        fi
       fi
     ;;
     *)
@@ -8148,7 +8156,7 @@ if test -z "$LDSHARED" ; then
     # Make sure to use the same flavor as when compiling the object files.
     LDSHARED="$LDSHARED $CCSHARED"
 
-    if test "$GCC" = "yes" ; then
+    if test "$GCC" = "yes" -a "$pike_cv_is_mingw" != "yes" ; then
       # On some architectures gcc attempts to link the shared object with
       # the standard startup files (crt0.o et al), which may fail due to
       # relocation errors. The flag -nostartfiles exists in gcc since at
@@ -8262,9 +8270,34 @@ else :; fi
 AC_MSG_CHECKING(if dynamic loading works)
 AC_CACHE_VAL(pike_cv_sys_dynamic_loading,
 [
+  mybase=""
+  case "$LDSHARED_MODULE_ARGS" in
+    *pike.exe)
+      AC_TRY_LINK([
+#if __GNUC__ >= 4
+__attribute__ ((visibility("default")))
+# endif
+__declspec(dllexport) void testfunc2(void) { }
+      ], [ return 0; ], [
+        mybase=mybase.exe
+        mv conftest$ac_exeext $mybase
+      ])
+      if ! -z "$mybase" ; then
+        mv "$mybase" conftest$ac_exeext
+        ln -s conftest$ac_exeext "$mybase"
+      fi
+      ;;
+  esac
+
   cat >conftest.c <<EOF
+#if (defined(__WINNT__) || defined(__WIN32__)) && !defined(__NT__)
+#define __NT__
+#endif
 #include <stdio.h>
 #include <stdlib.h>
+#ifdef __NT__
+__declspec(dllimport)
+#endif
 extern void testfunc2(void);
 #if __GNUC__ >= 4
 __attribute__ ((visibility("default")))
@@ -8280,8 +8313,9 @@ EOF
   echo $CC -c $CFLAGS $CCSHARED conftest.c -o conftest.o 1>&AC_FD_CC
   $CC -c $CFLAGS $CCSHARED conftest.c -o conftest.o 1>&AC_FD_CC 2>&AC_FD_CC
 
-  echo $BINDIR/smartlink $LDSHARED $LDFLAGS conftest.o -o conftest.$SO 1>&AC_FD_CC
-  $BINDIR/smartlink $LDSHARED $LDFLAGS conftest.o -o conftest.$SO 1>&AC_FD_CC 2>&AC_FD_CC
+  echo LDSHARED_MODULE_ARGS=$LDSHARED_MODULE_ARGS
+  echo $BINDIR/smartlink $LDSHARED $LDFLAGS conftest.o $mybase -o conftest.$SO 1>&AC_FD_CC
+  $BINDIR/smartlink $LDSHARED $LDFLAGS conftest.o $mybase -o conftest.$SO 1>&AC_FD_CC 2>&AC_FD_CC
 
   if test -f conftest.$SO ; then
     mv conftest.$SO myconftest.so
@@ -8296,12 +8330,21 @@ EOF
       ;;
     esac
     AC_TRY_RUN([
+#if (defined(__WINNT__) || defined(__WIN32__)) && !defined(__NT__)
+#define __NT__
+#endif
 #include <stdlib.h>
 #define TESTING
+#ifdef __NT__
+#define USE_DLL
+#endif
 #include "dynamic_load.c"
 #if __GNUC__ >= 4
 __attribute__ ((visibility("default")))
 # endif
+#ifdef __NT__
+__declspec(dllexport)
+#endif
 void testfunc2(void) { exit(0); }
 ], pike_cv_sys_dynamic_loading=yes, pike_cv_sys_dynamic_loading=no, pike_cv_sys_dynamic_loading=no)
     CFLAGS="$OLD_CFLAGS"
@@ -8309,7 +8352,7 @@ void testfunc2(void) { exit(0); }
   else
     pike_cv_sys_dynamic_loading=no
   fi
-  rm -f myconftest.so >/dev/null 2>/dev/null
+  rm -f myconftest.so $mybase >/dev/null 2>/dev/null
 ])
 AC_MSG_RESULT($pike_cv_sys_dynamic_loading)
 
