@@ -163,7 +163,7 @@ protected string decode_html(string html)
   });
 }
 
-//! TeX encode special characters eg @tt{#&\\} etc
+//! TeX encode special characters eg @tt{#&\\@} etc
 protected string encode_tex(string str)
 {
   return replace(str, ([

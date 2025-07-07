@@ -3347,7 +3347,7 @@ void fixate_program(void)
       if (((size_t)fun->func.offset) >= inh->prog->num_program) {
 	Pike_fatal("Function %s offset (%ld) out of whack (max: %ld)!\n",
 		   fun->name?fun->name->str:"<no-name>",
-		   fun->func.const_info.offset,
+                   (long)fun->func.const_info.offset,
 		   (long)inh->prog->num_program);
       }
       break;

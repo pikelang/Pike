@@ -684,7 +684,7 @@ PMOD_EXPORT void pike_swap_in_current_thread (struct thread_state *ts
   if (!th_equal (ts->id, self))
     pike_fatal_dloc ("Swapped in thread state %p into wrong thread "
 		     "%"PRINTSIZET"x - should be %"PRINTSIZET"x.\n",
-		     ts, th_self(), ts->id);
+                     ts, (size_t)th_self(), (size_t)ts->id);
 #endif
 
   pike_swap_in_thread (ts COMMA_DLOC_ARGS_OPT);
@@ -4412,8 +4412,10 @@ PMOD_EXPORT void f_thread_local(INT32 args)
  *!
  *! Get the thread local value.
  *!
- *! This returns the value prevoiusly stored in the @[Local] object by
- *! the @[set()] method by this thread.
+ *! @returns
+ *!   Returns the value prevoiusly stored in the @[Local] object by
+ *!   the @[set()] method by this thread (if set). Returns @[UNDEFINED]
+ *!   if no value has been set by the current thread.
  *!
  *! @seealso
  *!   @[set()]
