@@ -825,7 +825,11 @@ verify: testsuites tinstall
 	if test "$(TESTARGS)" = "" ; then args="$(TESTARGS_FORK)" ; else \
 	  args="$(TESTARGS)" ; fi; \
 	if test -f ./test-pike ; then \
-	  ./test-pike -DNOT_INSTALLED $(PIKEOPTS) -x test_pike $$args ; \
+	  if test -f ./test-install/pike/*/bin/pike.exe ; then \
+	    ./test-install/pike/*/bin/pike.exe -DNOT_INSTALLED $(PIKEOPTS) -x test_pike $$args ; \
+	  else \
+	    ./test-pike -DNOT_INSTALLED $(PIKEOPTS) -x test_pike $$args ; \
+	  fi \
 	else \
 	  if test -f some-sprsh-test ; then \
 	    sprsh `pwd`/test-install/pike/*/bin/pike.exe -DNOT_INSTALLED $(PIKEOPTS) -x test_pike $$args ; \
@@ -839,14 +843,22 @@ valgrind_verify: testsuites tinstall
 	if test "$(TESTARGS)" = "" ; then args="$(TESTARGS_NOFORK)" ; else \
 	  args="$(TESTARGS)" ; fi; \
 	if test -f ./test-pike ; then \
-	  $(VALGRIND) $(VALGRINDARGS) ./test-pike -DNOT_INSTALLED $(PIKEOPTS) -x test_pike --subproc-start="$(VALGRIND) $(VALGRINDARGS)" $$args ; \
+	  if test -f ./test-install/pike/*/bin/pike.exe ; then \
+	    $(VALGRIND) $(VALGRINDARGS) ./test-install/pike/*/bin/pike.exe -DNOT_INSTALLED $(PIKEOPTS) -x test_pike --subproc-start="$(VALGRIND) $(VALGRINDARGS)" $$args ; \
+	  else \
+	    $(VALGRIND) $(VALGRINDARGS) ./test-pike -DNOT_INSTALLED $(PIKEOPTS) -x test_pike --subproc-start="$(VALGRIND) $(VALGRINDARGS)" $$args ; \
+	  fi \
 	else \
 	  sprsh `pwd`/test-install/pike/*/bin/pike.exe -DNOT_INSTALLED $(PIKEOPTS) -x test_pike $$args ; \
 	fi
 
 bench: tinstall
 	if test -f ./test-pike ; then \
-	  ./test-pike -DNOT_INSTALLED $(PIKEOPTS) -x benchmark; \
+	  if test -f ./test-install/pike/*/bin/pike.exe ; then \
+	    ./test-install/pike/*/bin/pike.exe -DNOT_INSTALLED $(PIKEOPTS) -x benchmark; \
+	  else \
+	    ./test-pike -DNOT_INSTALLED $(PIKEOPTS) -x benchmark; \
+	  fi \
 	else \
 	  if test -f some-sprsh-test ; then \
 	    sprsh `pwd`/test-install/pike/*/bin/pike.exe -DNOT_INSTALLED $(PIKEOPTS) -x benchmark ; \
@@ -912,7 +924,11 @@ fast_verify_testsuite: testsuite
 	if test "$(TESTARGS)" = "" ; then args="$(TESTARGS_FORK)" ; \
 	else args="$(TESTARGS)" ; fi; \
 	if test -f ./test-pike ; then \
-	  ./test-pike -DNOT_INSTALLED $(PIKEOPTS) -x test_pike $$args ; \
+	  if test -f ./test-install/pike/*/bin/pike.exe ; then \
+	    ./test-install/pike/*/bin/pike.exe -DNOT_INSTALLED $(PIKEOPTS) -x test_pike $$args ; \
+	  else \
+	    ./test-pike -DNOT_INSTALLED $(PIKEOPTS) -x test_pike $$args ; \
+	  fi \
 	else \
 	  sprsh `pwd`/test-install/pike/*/bin/pike.exe -DNOT_INSTALLED \
 	    $(PIKEOPTS) -x test_pike $$args ; \

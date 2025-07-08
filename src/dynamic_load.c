@@ -8,6 +8,8 @@
 #define NO_PIKE_INCLUDES
 #define CREATE_MAIN
 #define NO_PIKE_GUTS
+#define xalloc malloc
+#define EXTRACT_UCHAR(p) (*(const unsigned char *)(p))
 #endif
 
 #ifndef NO_PIKE_INCLUDES
@@ -150,7 +152,7 @@ static char * dlerror(void)
   case ERROR_MOD_NOT_FOUND:
     return "The specified module could not be found.";
   default:
-    sprintf(buffer,"LoadLibrary failed with error: %d",GetLastError());
+    sprintf(buffer,"LoadLibrary failed with error: %d",err);
   }
   return buffer;
 }
@@ -166,7 +168,23 @@ static void dlclose(void *module)
   FreeLibrary((HMODULE)module);
 }
 
+#ifdef TESTING
 #define dlinit()	1
+#else
+static int dlinit(void)
+{
+  extern char __ImageBase[];
+  HMODULE pike_exe = LoadLibrary(TEXT("pike.exe"));
+  if (pike_exe)
+    FreeLibrary(pike_exe);
+  if (pike_exe == (void *)__ImageBase)
+    /* LoadLibrary on pike.exe refers back to us, module loading will work */
+    return 1;
+
+  fprintf(stderr, "The main binary module name is not pike.exe (invoked through a symlink?)!\n");
+  return 0;
+}
+#endif
 
 #endif /* USE_LOADLIBRARY */
 
