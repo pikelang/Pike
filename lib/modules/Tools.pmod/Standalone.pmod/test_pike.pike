@@ -894,8 +894,13 @@ int main(int argc, array(string) argv)
   add_constant ("log_msg_cont", log_msg_cont);
   add_constant ("log_status", log_status);
 
-  if(!subprocess)
-    log_msg("Begin tests at %s (pid %d)\n", ctime(time())[..<1], getpid());
+  if(!subprocess) {
+    int t = time();
+    mapping(string:int) lt = localtime(t);
+    log_msg("%02d:%02d:%02d: Begin tests at %s (pid %d)\n",
+            lt->hour, lt->min, lt->sec,
+            ctime(t)[..<1], getpid());
+  }
 
   foreach(Getopt.get_args(argv, 1)[1..], string ts) {
     array(string) tests = find_test(ts);
@@ -965,7 +970,9 @@ int main(int argc, array(string) argv)
       if (!objectp(tests) || !sizeof(tests))
 	continue;
 
-      log_msg("Doing tests in %s (%s)\n",
+      mapping(string:int) lt = localtime(time());
+      log_msg("%02d:%02d:%02d: Doing tests in %s (%s)\n",
+              lt->hour, lt->min, lt->sec,
               tests->name ? tests->name() : testsuite,
               ({sizeof(tests) + " tests",
                 0 && subprocess && ("pid " + getpid())}) * ", ");
@@ -1571,14 +1578,21 @@ int main(int argc, array(string) argv)
   if (!subprocess) {
     log_status ("");
 
+    int t = time();
+    mapping(string:int) lt = localtime(t);
     if(errors || verbose>1)
     {
-      log_msg("Failed tests: "+errors+".        \n");
+      log_msg("%02d:%02d:%02d: Failed tests: %d.        \n",
+              lt->hour, lt->min, lt->sec,
+              errors);
     }
 
-    log_msg("Total tests: %d (%d tests skipped)\n", successes+errors, skipped);
+    log_msg("%02d:%02d:%02d: Total tests: %d (%d tests skipped)\n",
+            lt->hour, lt->min, lt->sec,
+            successes + errors, skipped);
     if(verbose)
-      log_msg("Finished tests at "+ctime(time()));
+      log_msg("%02d:%02d:%02d: Finished tests at " + ctime(t),
+              lt->hour, lt->min, lt->sec);
   }
   else {
     // Clear the output buffer in the watchdog so that
