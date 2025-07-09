@@ -8295,7 +8295,7 @@ __declspec(dllexport) void testfunc2(void) { }
         mybase=mybase.exe
         mv conftest$ac_exeext $mybase
       ])
-      if ! -z "$mybase" ; then
+      if test ! -z "$mybase" ; then
         mv "$mybase" conftest$ac_exeext
         ln -s conftest$ac_exeext "$mybase"
       fi
@@ -8326,7 +8326,6 @@ EOF
   echo $CC -c $CFLAGS $CCSHARED conftest.c -o conftest.o 1>&AC_FD_CC
   $CC -c $CFLAGS $CCSHARED conftest.c -o conftest.o 1>&AC_FD_CC 2>&AC_FD_CC
 
-  echo LDSHARED_MODULE_ARGS=$LDSHARED_MODULE_ARGS
   echo $BINDIR/smartlink $LDSHARED $LDFLAGS conftest.o $mybase -o conftest.$SO 1>&AC_FD_CC
   $BINDIR/smartlink $LDSHARED $LDFLAGS conftest.o $mybase -o conftest.$SO 1>&AC_FD_CC 2>&AC_FD_CC
 
