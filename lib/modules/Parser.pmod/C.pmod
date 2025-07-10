@@ -244,7 +244,7 @@ protected constant global_groupings = ([ "{":"}", "(":")", "[":"]" ]);
 array(Token|array) group(array(string|Token) tokens,
 			 void|mapping(string:string) groupings)
 {
-  ADT.Stack stack=ADT.Stack();
+  ADT.Stack(<array(Token)>) stack = ADT.Stack(<array(Token)>)();
   array(Token) ret=({});
   mapping actions=([]);
 
