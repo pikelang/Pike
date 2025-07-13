@@ -163,7 +163,8 @@ array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
 
     protected array(array(string)|string) words = ({ });
     protected array(array(string)|string) glob_words = ({ });
-    protected ADT.Stack stack = ADT.Stack();
+    protected ADT.Stack(<Search.ResultSet>) stack =
+      ADT.Stack(<Search.ResultSet>)();
     protected function(Search.ResultSet:void) push;
     protected function(void:Search.ResultSet) pop;
 
