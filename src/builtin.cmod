@@ -4413,6 +4413,12 @@ PIKECLASS LiveBacktraceFrame
  *!     @member int(1..1) "auto_bignum"
  *!       Integers larger than the native size are now always
  *!       automatically converted into bignums.
+ *!     @member int(1..1) "rtl_debug"
+ *!       The runtime has been compiled --with-rtldebug.
+ *!     @member int(1..1) "debug_malloc"
+ *!       The runtime has been compiled --with-debug-malloc.
+ *!     @member int(0..) "running_on_valgrind"
+ *!       The number of nested valgrinds the runtime is running under.
  *!   @endmapping
  */
 PIKEFUN mapping(string:int|string) get_runtime_info()
@@ -4442,6 +4448,10 @@ PIKEFUN mapping(string:int|string) get_runtime_info()
 #ifdef DEBUG_MALLOC
   push_static_text("debug_malloc");
   push_int(1);
+#endif
+#ifdef RUNNING_ON_VALGRIND
+  push_static_text("running_on_valgrind");
+  push_int(RUNNING_ON_VALGRIND);
 #endif
   f_aggregate_mapping(Pike_sp - save_sp);
 }
