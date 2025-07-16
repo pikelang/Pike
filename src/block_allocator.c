@@ -302,7 +302,7 @@ PMOD_EXPORT void * ba_alloc(struct block_allocator * a) {
     } else {
 #ifdef PIKE_DEBUG
         if (ptr->next)
-            ba_check_ptr(a, a->alloc, ptr->next, ptr, __LINE__ BA_CHECK_FREE);
+            ba_check_ptr(a, a->alloc, ptr->next, ptr, __LINE__);
 #endif
 	p->h.first = ptr->next;
     }
