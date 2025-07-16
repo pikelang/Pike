@@ -1,3 +1,4 @@
+/* -*- mode: C; c-basic-offset: 4; -*- */
 /*
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
@@ -12,9 +13,11 @@
 #include "block_allocator.h"
 #include "bitvector.h"
 
-#define BA_BLOCKN(l, p, n) ((struct ba_block_header *)((char*)(p) + sizeof(struct ba_page) + (n)*((l).block_size)))
-#define BA_LASTBLOCK(l, p) ((struct ba_block_header*)((char*)(p) + sizeof(struct ba_page) + (l).offset))
-#define BA_CHECK_PTR(l, p, ptr)	((size_t)((char*)(ptr) - (char*)(p)) <= (l).offset + sizeof(struct ba_page))
+#define BA_FIRSTBLOCK(l, p)	((char*)(p) + sizeof(struct ba_page))
+
+#define BA_BLOCKN(l, p, n) ((struct ba_block_header *)(BA_FIRSTBLOCK(l, p) + (n)*((l).block_size)))
+#define BA_LASTBLOCK(l, p) ((struct ba_block_header *)(BA_FIRSTBLOCK(l, p) + (l).offset))
+#define BA_CHECK_PTR(l, p, ptr)	((size_t)((char*)(ptr) - BA_FIRSTBLOCK(l, p)) <= (size_t)(l).offset)
 
 #define BA_ONE	((struct ba_block_header *)1)
 #define BA_FLAG_SORTED 1u
@@ -24,15 +27,19 @@ static void print_allocator(const struct block_allocator * a);
 #endif
 
 #ifdef PIKE_DEBUG
-static void ba_check_ptr(struct block_allocator * a, int page, void * ptr, struct ba_block_header *loc,
-                         int ln);
+static void ba_check_ptr(struct block_allocator * a, int page, void * ptr,
+                         struct ba_block_header *loc, int ln);
 #endif
 
-static inline unsigned INT32 ba_block_number(const struct ba_layout * l, const struct ba_page * p,
+static inline unsigned INT32 ba_block_number(const struct ba_layout * l,
+                                             const struct ba_page * p,
                                              const void * ptr) {
     return ((const char*)ptr - (char*)BA_BLOCKN(*l, p, 0)) / l->block_size;
 }
 
+/**
+ * Step a ba_layout from one page to the page #i backward.
+ */
 static inline void ba_dec_layout(struct ba_layout * l, int i) {
     l->blocks >>= i;
     l->offset += l->block_size;
@@ -40,6 +47,9 @@ static inline void ba_dec_layout(struct ba_layout * l, int i) {
     l->offset -= l->block_size;
 }
 
+/**
+ * Step a ba_layout from one page to the page #i forward.
+ */
 static inline void ba_inc_layout(struct ba_layout * l, int i) {
     l->blocks <<= i;
     l->offset += l->block_size;
@@ -47,14 +57,25 @@ static inline void ba_inc_layout(struct ba_layout * l, int i) {
     l->offset -= l->block_size;
 }
 
+/**
+ * Step a ba_layout from one page to the next.
+ */
 static inline void ba_double_layout(struct ba_layout * l) {
     ba_inc_layout(l, 1);
 }
 
+/**
+ * Step a ba_layout from one page to the previous.
+ */
 static inline void ba_half_layout(struct ba_layout * l) {
     ba_dec_layout(l, 1);
 }
 
+/**
+ * Get the layout for page number #i
+ *
+ * Note that this returns a struct and NOT a pointer!
+ */
 static inline struct ba_layout ba_get_layout(const struct block_allocator * a, int i) {
     struct ba_layout l = a->l;
     ba_inc_layout(&l, i);
@@ -65,13 +86,17 @@ struct ba_block_header {
     struct ba_block_header * next;
 };
 
-static inline void ba_clear_page(struct block_allocator * VALGRINDUSED(a), struct ba_page * p, struct ba_layout * l) {
+static inline void ba_clear_page(struct block_allocator * VALGRINDUSED(a),
+                                 struct ba_page * p, struct ba_layout * l)
+{
+    struct ba_block_header *b;
     p->h.used = 0;
     p->h.flags = BA_FLAG_SORTED;
-    p->h.first = BA_BLOCKN(*l, p, 0);
-    PIKE_MEMPOOL_ALLOC(a, p->h.first, l->block_size);
-    p->h.first->next = BA_ONE;
-    PIKE_MEMPOOL_FREE(a, p->h.first, l->block_size);
+    b = BA_BLOCKN(*l, p, 0);
+    PIKE_MEMPOOL_ALLOC(a, b, l->block_size);
+    b->next = BA_ONE;
+    PIKE_MEMPOOL_FREE(a, b, l->block_size);
+    p->h.first = b;
 }
 
 static struct ba_page * ba_alloc_page(struct block_allocator * a, int i) {
@@ -101,7 +126,7 @@ static struct ba_page * ba_alloc_page(struct block_allocator * a, int i) {
 	p = xalloc(n);
 #endif
     }
-    ba_clear_page(a, p, &a->l);
+    ba_clear_page(a, p, &l);
     PIKE_MEM_NA_RANGE((char*)p + sizeof(struct ba_page), n - sizeof(struct ba_page));
     return p;
 }
@@ -174,7 +199,11 @@ PMOD_EXPORT void ba_free_all(struct block_allocator * a) {
     if (!a->size) return;
 
     for (i = 0; i < a->size; i++) {
+#ifdef DEBUG_MALLOC
+        system_free(a->pages[i]);
+#else
         free(a->pages[i]);
+#endif
         a->pages[i] = NULL;
     }
     a->size = 0;
@@ -257,17 +286,27 @@ PMOD_EXPORT void * ba_alloc(struct block_allocator * a) {
 
     if (ptr->next == BA_ONE) {
 	struct ba_layout l = ba_get_layout(a, a->alloc);
-	p->h.first = (struct ba_block_header*)((char*)ptr + a->l.block_size);
-	PIKE_MEMPOOL_ALLOC(a, p->h.first, a->l.block_size);
-	p->h.first->next = (struct ba_block_header*)(ptrdiff_t)!(p->h.first == BA_LASTBLOCK(l, p));
+        struct ba_block_header *b =
+            (struct ba_block_header*)((char*)ptr + a->l.block_size);
+#ifdef PIKE_DEBUG
+        ba_check_ptr(a, a->alloc, b, NULL, __LINE__);
+#endif
+        PIKE_MEMPOOL_ALLOC(a, b, a->l.block_size);
+        if (b == BA_LASTBLOCK(l, p)) {
+            b->next = NULL;
+        } else {
+            b->next = BA_ONE;
+        }
+        p->h.first = b;
 	PIKE_MEMPOOL_FREE(a, p->h.first, a->l.block_size);
     } else {
 #ifdef PIKE_DEBUG
         if (ptr->next)
-            ba_check_ptr(a, a->alloc, ptr->next, ptr, __LINE__);
+            ba_check_ptr(a, a->alloc, ptr->next, ptr, __LINE__ BA_CHECK_FREE);
 #endif
 	p->h.first = ptr->next;
     }
+
     PIKE_MEM_WO_RANGE(ptr, sizeof(struct ba_block_header));
 
     return ptr;
@@ -295,6 +334,7 @@ found:
 
     if (p) {
 	struct ba_block_header * b = (struct ba_block_header*)ptr;
+
 #ifdef PIKE_DEBUG
 	if (!p->h.used) {
 	    print_allocator(a);
@@ -337,8 +377,8 @@ static void print_allocator(const struct block_allocator * a) {
 #define Pike_nfatal(n) \
     (fprintf(stderr,msg_fatal_error,__FILE__,(long)(n)),debug_fatal)
 
-static void ba_check_ptr(struct block_allocator * a, int page, void * ptr, struct ba_block_header * loc,
-                         int ln) {
+static void ba_check_ptr(struct block_allocator * a, int page, void * ptr,
+                         struct ba_block_header * loc, int ln) {
     struct ba_layout l = ba_get_layout(a, page);
     struct ba_page * p = a->pages[page];
 
