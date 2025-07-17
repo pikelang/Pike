@@ -605,10 +605,14 @@ static void compiler_environment_lock_event_handler(int e)
 {
   switch(e) {
   case PROG_EVENT_INIT:
+    Pike_fp->current_storage[0] = 0;
     lock_pike_compiler();
+    Pike_fp->current_storage[0] = 1;
     break;
   case PROG_EVENT_EXIT:
-    unlock_pike_compiler();
+    if (Pike_fp->current_storage[0]) {
+      unlock_pike_compiler();
+    }
     break;
   }
 }
@@ -3574,6 +3578,8 @@ static void compile_compiler(void)
   Pike_compiler->new_program->event_handler =
     compiler_environment_lock_event_handler;
   Pike_compiler->new_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;
+  /* Flag to indicate whether the lock has been taken. */
+  low_add_storage(1, 1, 0);
   end_class("lock", 0);
 
   init_cpp_compilerenv_classes();
