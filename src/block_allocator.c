@@ -36,7 +36,18 @@ static void print_allocator(const struct block_allocator * a);
 
 #ifdef PIKE_DEBUG
 static void ba_check_ptr(struct block_allocator * a, int page, void * ptr,
-                         struct ba_block_header *loc, int ln);
+                         struct ba_block_header *loc, int ln
+#ifdef BLOCK_ALLOC_BITMAP
+                         , int expect_free
+#define BA_CHECK_UNKNOWN	,2
+#define BA_CHECK_FREE		,0
+#define BA_CHECK_INUSE		,1
+#else
+#define BA_CHECK_UNKNOWN
+#define BA_CHECK_FREE
+#define BA_CHECK_INUSE
+#endif
+                         );
 #endif
 
 static inline unsigned INT32 ba_block_number(const struct ba_layout * l,
@@ -314,7 +325,7 @@ PMOD_EXPORT void * ba_alloc(struct block_allocator * a) {
     p->h.used++;
 
 #ifdef PIKE_DEBUG
-    ba_check_ptr(a, a->alloc, ptr, NULL, __LINE__);
+    ba_check_ptr(a, a->alloc, ptr, NULL, __LINE__ BA_CHECK_FREE);
 #endif
 
 #ifdef BLOCK_ALLOC_BITMAP
@@ -333,7 +344,7 @@ PMOD_EXPORT void * ba_alloc(struct block_allocator * a) {
         struct ba_block_header *b =
             (struct ba_block_header*)((char*)ptr + a->l.block_size);
 #ifdef PIKE_DEBUG
-        ba_check_ptr(a, a->alloc, b, NULL, __LINE__);
+        ba_check_ptr(a, a->alloc, b, NULL, __LINE__ BA_CHECK_FREE);
 #endif
         PIKE_MEMPOOL_ALLOC(a, b, a->l.block_size);
         if (b == BA_LASTBLOCK(l, p)) {
@@ -346,7 +357,7 @@ PMOD_EXPORT void * ba_alloc(struct block_allocator * a) {
     } else {
 #ifdef PIKE_DEBUG
         if (ptr->next)
-            ba_check_ptr(a, a->alloc, ptr->next, ptr, __LINE__);
+            ba_check_ptr(a, a->alloc, ptr->next, ptr, __LINE__ BA_CHECK_FREE);
 #endif
 	p->h.first = ptr->next;
     }
@@ -384,7 +395,7 @@ found:
 	    print_allocator(a);
 	    Pike_fatal("freeing from empty page %p\n", p);
 	}
-        ba_check_ptr(a, a->last_free, ptr, NULL, __LINE__);
+        ba_check_ptr(a, a->last_free, ptr, NULL, __LINE__ BA_CHECK_INUSE);
 #endif
 
 #ifdef BLOCK_ALLOC_BITMAP
@@ -441,7 +452,7 @@ static void print_allocator(const struct block_allocator * a) {
             for (n = 0; extra; n++, extra -= SIZEOF_LONG) {
                 unsigned int i = SIZEOF_LONG<<3;
                 unsigned long val = bitmap[n];
-                fprintf(stderr, "  %04d: ", n);
+                fprintf(stderr, "  %04lu: ", (unsigned long)n);
                 while (i--) {
                     fputc((val & (1UL << i))?'1':'0', stderr);
                 }
@@ -456,7 +467,11 @@ static void print_allocator(const struct block_allocator * a) {
     (fprintf(stderr,msg_fatal_error,__FILE__,(long)(n)),debug_fatal)
 
 static void ba_check_ptr(struct block_allocator * a, int page, void * ptr,
-                         struct ba_block_header * loc, int ln) {
+                         struct ba_block_header * loc, int ln
+#ifdef BLOCK_ALLOC_BITMAP
+                         , int expect_free
+#endif
+                         ) {
     struct ba_layout l = ba_get_layout(a, page);
     struct ba_page * p = a->pages[page];
 
@@ -473,6 +488,36 @@ static void ba_check_ptr(struct block_allocator * a, int page, void * ptr,
         if (loc) fprintf(stderr, "In block %p:\n", loc);
         Pike_nfatal(ln)("Free-List corruption. Block %p does not belong to page %p\n", ptr, p);
     }
+
+#ifdef BLOCK_ALLOC_BITMAP
+    if (expect_free != 2) {
+        unsigned long *bitmap = BA_BITMAP(l, p);
+        size_t n = ba_block_number(&l, p, ptr);
+        unsigned long mask;
+
+        bitmap += n/(sizeof(unsigned long) * 8);
+        mask = (1UL<<(n & ((sizeof(unsigned long) * 8) - 1)));
+        if ((!((*bitmap) & mask)) == expect_free) {
+            print_allocator(a);
+            fprintf(stderr, "ptr: %p (first: %p)\n", ptr, BA_FIRSTBLOCK(l, p));
+            fprintf(stderr,
+                    "offset: 0x%08lx\n"
+                    "n: 0x%08lx (0x%04x blocks) ==> 0x%08lx\n",
+                    (unsigned long)(((char *)ptr) - BA_FIRSTBLOCK(l, p)),
+                    (unsigned long)n, l.block_size,
+                    (unsigned long)(n * l.block_size));
+            fprintf(stderr, "bitmap: %p[%ld]: 0x%08lx\n",
+                    BA_BITMAP(l, p), bitmap - BA_BITMAP(l, p), *bitmap);
+            fprintf(stderr, "mask: 0x%08lx\n", mask);
+            fprintf(stderr, "expect free: %d\n", expect_free);
+            if (expect_free) {
+                Pike_fatal("Free block %p marked in allocation bitmap.\n", p);
+            } else {
+                Pike_fatal("Block %p not marked in allocation bitmap.\n", p);
+            }
+        }
+    }
+#endif
 }
 #endif
 
@@ -735,8 +780,9 @@ void ba_walk(struct block_allocator * a, ba_walk_callback cb, void * data) {
 #endif
                 if ((char*)it.end != (char*)it.cur) {
 #ifdef PIKE_DEBUG
-                    ba_check_ptr(a, i, it.cur, NULL, __LINE__);
-                    ba_check_ptr(a, i, (char*)it.end - it.l.block_size, NULL, __LINE__);
+                    ba_check_ptr(a, i, it.cur, NULL, __LINE__ BA_CHECK_UNKNOWN);
+                    ba_check_ptr(a, i, (char*)it.end - it.l.block_size,
+                                 NULL, __LINE__ BA_CHECK_UNKNOWN);
 #endif
                     cb(&it, data);
                 }
