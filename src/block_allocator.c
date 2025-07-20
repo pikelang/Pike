@@ -53,7 +53,10 @@ static void ba_check_ptr(struct block_allocator * a, int page, void * ptr,
 static inline unsigned INT32 ba_block_number(const struct ba_layout * l,
                                              const struct ba_page * p,
                                              const void * ptr) {
-    return ((const char*)ptr - (char*)BA_BLOCKN(*l, p, 0)) / l->block_size;
+    /* Equivalent to (ptr - p)/block_size. */
+    return (unsigned INT32)
+        (((((const char*)ptr - BA_FIRSTBLOCK(*l, p)) +
+           l->block_size - 1) * (unsigned INT64)l->inverse_block_size) >> 32);
 }
 
 /**
@@ -206,6 +209,9 @@ static void ba_low_init(struct block_allocator * a) {
     } else if (!a->l.blocks) a->l.blocks = 1;
     a->l.block_size = block_size;
     a->l.offset = block_size * (a->l.blocks-1);
+    /* Multiplicative inverse (1/x). */
+    a->l.inverse_block_size =
+        (unsigned INT32)((((unsigned INT64)1)<<32)/block_size);
 }
 
 PMOD_EXPORT void ba_init(struct block_allocator * a, unsigned INT32 block_size,
