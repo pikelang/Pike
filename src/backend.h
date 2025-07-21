@@ -93,6 +93,7 @@ PMOD_EXPORT void wake_up_backend(void);
 void init_backend(void);
 void do_debug(void);
 void backend(void);
+void exit_default_backend(void);
 void exit_backend(void);
 PMOD_EXPORT int write_to_stderr(char *a, size_t len);
 PMOD_EXPORT struct callback *debug_add_backend_callback(callback_func call,

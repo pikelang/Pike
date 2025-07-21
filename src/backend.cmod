@@ -2550,20 +2550,20 @@ PIKECLASS Backend
 #endif
   }
 
-  EXIT
-    gc_trivial;
+  /*! @decl void _m_clear()
+   *!
+   *! Clear all registrations with this backend
+   *! (ie unlink all files and pending call_outs).
+   */
+  PIKEFUN void _m_clear()
+    flags ID_PROTECTED;
   {
     struct Backend_struct *me=THIS;
     int e;
 
-    PDWERR("[%d]BACKEND[%d]: exit\n", THR_NO, me->id);
+    PDWERR("[%d]BACKEND[%d]: _m_clear\n", THR_NO, me->id);
 
     free_callback_list(& THIS->backend_callbacks);
-
-    if (THIS->wakeup_cb_box.fd >= 0)
-      fd_close(THIS->wakeup_cb_box.fd);
-    if (me->wakeup_pipe_send_fd >= 0)
-      fd_close(THIS->wakeup_pipe_send_fd);
 
     if (me->fd_boxes) {
       FOR_EACH_ACTIVE_FD_BOX (me, box) {
@@ -2616,13 +2616,36 @@ PIKECLASS Backend
 
     /* CALL OUT */
     backend_verify_call_outs(me);
-    for(e=0;e<me->num_pending_calls;e++)
+    while (me->num_pending_calls--)
     {
+      struct object *o;
+      e = me->num_pending_calls;
       CALL(e)->pos = -1;
-      if (CALL(e)->this)
-	free_object(CALL(e)->this);
+      o = CALL(e)->this;
+      CALL(e)->this = NULL;
+      CALL_(e) = NULL;
+      if (o)
+        free_object(o);
     }
     me->num_pending_calls=0;
+  }
+
+  EXIT
+    gc_trivial;
+  {
+    struct Backend_struct *me=THIS;
+
+    PDWERR("[%d]BACKEND[%d]: high exit\n", THR_NO, me->id);
+
+    f_Backend_cq__m_clear(0);
+
+    PDWERR("[%d]BACKEND[%d]: low exit\n", THR_NO, me->id);
+
+    if (THIS->wakeup_cb_box.fd >= 0)
+      fd_close(THIS->wakeup_cb_box.fd);
+    if (me->wakeup_pipe_send_fd >= 0)
+      fd_close(THIS->wakeup_pipe_send_fd);
+
     if(me->call_heap) free(me->call_heap);
     me->call_heap = NULL;
     if(me->call_hash) free(me->call_hash);
@@ -6104,6 +6127,14 @@ void init_backend(void)
 }
 
 #ifdef DO_PIKE_CLEANUP
+void exit_default_backend(void)
+{
+  if (default_backend_obj) {
+    ref_push_object(default_backend_obj);
+    f_m_clear(1);
+  }
+}
+
 void exit_backend(void)
 {
   /* Note: The mem_callback has already been freed
