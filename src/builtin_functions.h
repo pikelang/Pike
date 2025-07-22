@@ -204,6 +204,7 @@ PMOD_EXPORT struct program *proxy_factory(struct program *p,
 					  int program_id);
 PMOD_EXPORT void f_string_width(INT32 args);
 PMOD_EXPORT void f_m_delete(INT32 args);
+PMOD_EXPORT void f_m_clear(INT32 args);
 PMOD_EXPORT void f_get_weak_flag(INT32 args);
 PMOD_EXPORT void f_function_name(INT32 args);
 PMOD_EXPORT void f_function_object(INT32 args);
