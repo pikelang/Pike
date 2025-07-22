@@ -490,6 +490,12 @@ void exit_modules(void)
 #ifdef PIKE_THREADS
     cleanup_all_other_threads();
 #endif
+
+    /* First perform some nice cleanup. */
+    exit_default_backend();
+    do_gc(1);
+
+    /* Then destruct everything left. */
     gc_destruct_everything = 1;
     count = do_gc (1);
     while (count) {
