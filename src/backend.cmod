@@ -2552,8 +2552,12 @@ PIKECLASS Backend
 
   /*! @decl void _m_clear()
    *!
-   *! Clear all registrations with this backend
-   *! (ie unlink all files and pending call_outs).
+   *! Clear all active registrations with this backend
+   *! (ie unlink all file event callbacks and pending call_outs).
+   *!
+   *! @note
+   *!   Files are still registered with the backend (albeit the
+   *!   backend does no longer hold any references to them).
    */
   PIKEFUN void _m_clear()
     flags ID_PROTECTED;
@@ -2576,19 +2580,9 @@ PIKECLASS Backend
 		      box->fd, get_backend_for_fd (box->fd), me);
 #endif
 
-	if (box->callback == compat_box_dispatcher) {
-          DWERR("[%d]BACKEND[%d]: "
-                "Compat callbacks left at exit for fd %d: 0x%x\n",
-                THR_NO, me->id, box->fd, box->events);
-          really_free_compat_cb_box ((struct compat_cb_box *) box);
-	}
-
-	unhook_fd_callback_box(box);
+        /* Free the reference via box->ref_obj (if any). */
+        set_fd_callback_events(box, 0, 0);
       }
-
-      free(me->fd_boxes);
-      me->fd_boxes = NULL;
-      me->fd_boxes_start = me->fd_boxes_size = 0;
     }
 
     if (me->inactive_boxes) {
@@ -2599,19 +2593,9 @@ PIKECLASS Backend
 	  Pike_fatal ("Got inactive callback in compat interface.\n");
 #endif
 
-	unhook_fd_callback_box(box);
+        /* Free the reference via box->ref_obj (if any). */
+        set_fd_callback_events(box, 0, 0);
       }
-
-      free(me->inactive_boxes);
-      me->inactive_boxes = me->free_inactive_box = NULL;
-      me->inactive_boxes_size = 0;
-    }
-
-    /* Make sure we aren't referenced any more. */
-    /* FIXME: Ought to keep better track of our fds so that we don't
-     * need to do this loop. /mast */
-    for (e = 0; e < fd_map_size; e++) {
-      if (fd_map[e] == me) fd_map[e] = NULL;
     }
 
     /* CALL OUT */
@@ -2634,12 +2618,65 @@ PIKECLASS Backend
     gc_trivial;
   {
     struct Backend_struct *me=THIS;
+    int e;
 
     PDWERR("[%d]BACKEND[%d]: high exit\n", THR_NO, me->id);
 
     f_Backend_cq__m_clear(0);
 
     PDWERR("[%d]BACKEND[%d]: low exit\n", THR_NO, me->id);
+
+    if (me->fd_boxes) {
+      FOR_EACH_ACTIVE_FD_BOX (me, box) {
+        check_box (box, INT_MAX);
+
+#ifdef PIKE_DEBUG
+        if (get_backend_for_fd (box->fd) != me)
+          Pike_fatal ("Inconsistency in global fd map for fd %d: "
+                      "backend is %p, expected %p.\n",
+                      box->fd, get_backend_for_fd (box->fd), me);
+#endif
+
+        if (box->callback == compat_box_dispatcher) {
+          DWERR("[%d]BACKEND[%d]: "
+                "Compat callbacks left at exit for fd %d: 0x%x\n",
+                THR_NO, me->id, box->fd, box->events);
+          really_free_compat_cb_box ((struct compat_cb_box *) box);
+        }
+
+        unhook_fd_callback_box(box);
+      }
+
+      free(me->fd_boxes);
+      me->fd_boxes = NULL;
+      me->fd_boxes_start = me->fd_boxes_size = 0;
+    }
+
+    if (me->inactive_boxes) {
+      FOR_EACH_INACTIVE_FD_BOX (me, box) {
+        check_box (box, INT_MAX);
+#ifdef PIKE_DEBUG
+        if (box->callback == compat_box_dispatcher)
+          Pike_fatal ("Got inactive callback in compat interface.\n");
+#endif
+
+        unhook_fd_callback_box(box);
+      }
+
+      free(me->inactive_boxes);
+      me->inactive_boxes = me->free_inactive_box = NULL;
+      me->inactive_boxes_size = 0;
+    }
+
+    /* Paranoia in case any _destroy() or similar has registered something. */
+    free_callback_list(& THIS->backend_callbacks);
+
+    /* Make sure we aren't referenced any more. */
+    /* FIXME: Ought to keep better track of our fds so that we don't
+     * need to do this loop. /mast */
+    for (e = 0; e < fd_map_size; e++) {
+      if (fd_map[e] == me) fd_map[e] = NULL;
+    }
 
     if (THIS->wakeup_cb_box.fd >= 0)
       fd_close(THIS->wakeup_cb_box.fd);
