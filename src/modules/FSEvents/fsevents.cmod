@@ -23,7 +23,7 @@
 } while(0);
 
 #ifdef HAVE_FRAMEWORK_CORESERVICES
-#import <CoreServices/CoreServices.h>
+#include <CoreServices/CoreServices.h>
 #endif /* HAVE_FRAMEWORK_CORESERVICES */
 
 DECLARATIONS
@@ -614,6 +614,10 @@ PIKE_MODULE_INIT
 #endif
 
 #if HAVE_DECL_KFSEVENTSTREAMEVENTIDSINCENOW
+  /* FIXME: (unsigned INT64)~0.
+   *
+   * Value truncated on 32-bit!
+   */
   ADD_ICONST(kFSEventStreamEventIdSinceNow);
 #endif
 
