@@ -4006,6 +4006,10 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
       else
       {
           amd64_load_sp_reg();
+          /* Make valgrind happy; the type_subtype field may be padded
+           * with uninitialized data.
+           */
+          PIKE_MEM_RW(cval->tu.type_subtype);
           mov_imm_mem(cval->tu.type_subtype, sp_reg, SVAL(0).type);
           if( TYPEOF(*cval) >= MIN_REF_TYPE )
           {
