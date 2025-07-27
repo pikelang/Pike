@@ -111,7 +111,7 @@ struct svalue gc_done_cb;
  */
 
 /* The gc will free all things with no external nonweak references
- * that isn't referenced by live objects. An object is considered
+ * that aren't referenced by live objects. An object is considered
  * "live" if it contains code that must be executed when it is
  * destructed; see gc_object_is_live for details. Live objects without
  * external references are then destructed and garbage collected with
@@ -150,8 +150,8 @@ struct svalue gc_done_cb;
  * references.
  *
  * Things that have only weak external references at the start of the
- * gc pass will be freed. That's done before the live object destruct
- * pass. Internal weak references are however still intact.
+ * gc pass will be freed. This is done before the live object destruct
+ * pass. Internal weak references are however still kept intact.
  *
  * Note: Keep the doc for lfun::_destruct up-to-date with the above.
  */
@@ -293,7 +293,7 @@ static struct gc_rec_frame *kill_list = &sentinel_frame;
  * stack. If the frame is part of a cycle that isn't finished at that
  * point, it's not freed but instead linked onto the cycle piece list
  * in gc_rec_frame.cycle_piece of the parent rec frame (which
- * necessarily is part of the same cycle). That is done to detect
+ * necessarily is part of the same cycle). This is done to detect
  * cyclic refs that end up at the popped frame later on.
  *
  * The cycle_id pointers for frames on cycle piece lists point back
@@ -305,7 +305,7 @@ static struct gc_rec_frame *kill_list = &sentinel_frame;
  * The current tentative destruct order is described by the order on
  * the stack and the attached cycle piece lists: The thing that's
  * deepest in the stack is destructed first and the recursion stack
- * has precedence over the cycle piece list (the reason for that is
+ * has precedence over the cycle piece list (the reason for this is
  * explained later). To illustrate:
  *                                   ,- stack_top
  *                                  v
@@ -347,6 +347,8 @@ static struct gc_rec_frame *kill_list = &sentinel_frame;
  *    other, and the second (the one being referenced by the strong
  *    ref) has the GC_PREV_STRONG bit set. A rotation never breaks the
  *    list inside a sequence of strong refs.
+ *    FIXME: What about when there are multiple strong references to
+ *           an object?
  *
  * o  The GC_PREV_WEAK bit is set in the next frame for every link on
  *    the stack where no preceding frame reference any following frame
@@ -363,7 +365,7 @@ static struct gc_rec_frame *kill_list = &sentinel_frame;
  * belongs to). Therefore weak refs never occur inside cycles.
  *
  * Several separate cycles may be present on the stack simultaneously.
- * That happens when a subcycle which is referenced one way from an
+ * This happens when a subcycle which is referenced one way from an
  * earlier cycle is encountered. E.g.
  *
  *                          L--.        L--.
@@ -401,7 +403,7 @@ static struct gc_rec_frame *kill_list = &sentinel_frame;
  * Since the link frames are kept in substacks attached to the rec
  * frames, they get rotated with the rec frames. This has the effect
  * that the links from the top rec frame on the stack always are
- * tested first. That is necessary to avoid clobbering weak ref
+ * tested first. This is necessary to avoid clobbering weak ref
  * partitions. Example:
  *
  *                             weak          weak
@@ -716,6 +718,7 @@ char *fatal_after_gc=0;
 #define DESCRIBE_MEM 1
 #define DESCRIBE_SHORT 4
 #define DESCRIBE_NO_DMALLOC 8
+#define DESCRIBE_DESTRUCTED 16
 
 /* type == -1 means that memblock is a char* and should be
  * really be printed..
@@ -1164,6 +1167,7 @@ again:
 
     case T_OBJECT:
       p=((struct object *)a)->prog;
+      fprintf(stderr, "%*s**Program: %p\n", indent, "", p);
       if(p && (p->flags & PROGRAM_USES_PARENT))
       {
 	fprintf(stderr,"%*s**Parent identifier: %d\n",indent,"",PARENT_INFO( ((struct object *)a) )->parent_identifier);
@@ -1196,6 +1200,7 @@ again:
 
       if(!p)
       {
+        flags |= DESCRIBE_DESTRUCTED;
 	p=id_to_program(((struct object *)a)->program_id);
 	if(p)
 	  fprintf(stderr,"%*s**The object is destructed but program found from id.\n",
@@ -1205,7 +1210,8 @@ again:
 		  indent,"");
       }
 
-      if (p == pike_trampoline_program && ((struct object *) a)->refs > 0) {
+      if (p == pike_trampoline_program && ((struct object *) a)->refs > 0 &&
+          !(flags & DESCRIBE_DESTRUCTED)) {
 	/* Special hack to get something useful out of trampolines.
 	 * Ought to have an event hook for this sort of thing. */
 	struct pike_trampoline *t =
@@ -1221,6 +1227,7 @@ again:
 	if (!p) {
 	  fprintf (stderr, "%*s**The trampoline function's object "
 		   "is destructed.\n", indent, "");
+          flags |= DESCRIBE_DESTRUCTED;
 	  p = id_to_program (o->program_id);
 	}
 
@@ -1310,14 +1317,18 @@ again:
 		fprintf (stderr, "  off: %4"PRINTPTRDIFFT"d  value: ",
 			 inh->storage_offset + id->func.offset);
 
-		ptr = PIKE_OBJ_STORAGE ((struct object *) a) +
-		  inh->storage_offset + id->func.offset;
-		if (id->run_time_type == T_MIXED)
-		  safe_print_svalue_compact (stderr, (struct svalue *) ptr);
-		else
-		  safe_print_short_svalue_compact (stderr,
-						   (union anything *) ptr,
-						   id->run_time_type);
+                if (flags & DESCRIBE_DESTRUCTED) {
+                  fputs("(none)", stderr);
+                } else {
+                  ptr = PIKE_OBJ_STORAGE ((struct object *) a) +
+                    inh->storage_offset + id->func.offset;
+                  if (id->run_time_type == T_MIXED)
+                    safe_print_svalue_compact (stderr, (struct svalue *) ptr);
+                  else
+                    safe_print_short_svalue_compact (stderr,
+                                                     (union anything *) ptr,
+                                                     id->run_time_type);
+                }
 
 		fputc ('\n', stderr);
 		var_count++;
