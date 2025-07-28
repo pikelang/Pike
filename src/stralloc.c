@@ -910,6 +910,11 @@ struct pike_string *low_end_shared_string(struct pike_string *s)
     s = s2;
     add_ref(s);
   }else{
+    if (!len) {
+      s->string_is_utf8 = 1;
+      s->min = s->max = 0;	/* Not really, but... */
+      s->flags |= STRING_CONTENT_CHECKED;
+    }
     link_pike_string(s, h);
   }
 
@@ -2689,7 +2694,7 @@ int wide_string_to_svalue_inumber(struct svalue *r,
 {
   PCHARP tmp;
   int ret=pcharp_to_svalue_inumber(r,
-				   MKPCHARP(str,shift),
+                                   tmp = MKPCHARP(str,shift),
 				   &tmp,
 				   base,
 				   maxlength);
