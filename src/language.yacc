@@ -998,10 +998,8 @@ def: modifiers optional_attributes simple_type optional_constant
   | modifiers enum { free_node($2); }
   | annotation ';'
   {
-    if (Pike_compiler->compiler_pass == COMPILER_PASS_FIRST) {
-      $1 = mknode(F_COMMA_EXPR, $1, NULL);
-      compiler_add_program_annotations(0, $1);
-    }
+    $1 = mknode(F_COMMA_EXPR, $1, NULL);
+    compiler_add_program_annotations(0, $1);
     free_node($1);
   }
   | '@' TOK_CONSTANT ';'
