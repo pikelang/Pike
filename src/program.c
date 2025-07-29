@@ -5177,7 +5177,7 @@ PMOD_EXPORT void add_program_annotation(int inh, struct svalue *val)
   }
   if (val) {
     if (inherit->annotations) {
-      multiset_add(inherit->annotations, val);
+      multiset_insert(inherit->annotations, val);
     } else {
       push_svalue(val);
       f_aggregate_multiset(1);
