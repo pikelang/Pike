@@ -3012,7 +3012,7 @@ class WixExportInstallHandler {
       add_child(Parser.XML.Tree.SimpleHeaderNode((["version":"1.0",
 						   "encoding":"utf-8"])))->
       add_child(WixNode("Wix", ([
-			  "xmlns":"http://schemas.microsoft.com/wix/2003/01/wi",
+			  "xmlns":"http://schemas.microsoft.com/wix/2006/wi",
 			]))->
 		add_child(WixNode("Fragment", ([
 				    "Id":"PikeUI",
@@ -3057,7 +3057,7 @@ class WixExportInstallHandler {
       add_child(Parser.XML.Tree.SimpleHeaderNode((["version":"1.0",
 						   "encoding":"utf-8"])))->
       add_child(WixNode("Wix", ([
-			  "xmlns":"http://schemas.microsoft.com/wix/2003/01/wi",
+			  "xmlns":"http://schemas.microsoft.com/wix/2006/wi",
 			]))->
 		add_child(fragment_list));
 
@@ -3205,7 +3205,7 @@ class WixExportInstallHandler {
       add_child(Parser.XML.Tree.SimpleHeaderNode((["version":"1.0",
 						   "encoding":"utf-8"])))->
       add_child(WixNode("Wix", ([
-			  "xmlns":"http://schemas.microsoft.com/wix/2003/01/wi",
+			  "xmlns":"http://schemas.microsoft.com/wix/2006/wi",
 			]))->add_child(product_node));
 
     Stdio.write_file(export_base_name+".wxs", xml_root->render_xml());

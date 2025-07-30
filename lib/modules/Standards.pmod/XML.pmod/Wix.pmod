@@ -8,7 +8,7 @@
 //! @seealso
 //!   @[Parser.XML.Tree.SimpleNode]
 
-constant wix_ns = "http://schemas.microsoft.com/wix/2003/01/wi";
+constant wix_ns = "http://schemas.microsoft.com/wix/2006/wi";
 
 Parser.XML.Tree.SimpleTextNode line_feed =
   Parser.XML.Tree.SimpleTextNode("\n");
