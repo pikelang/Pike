@@ -122,7 +122,7 @@ static void get_master_key(HKEY cat)
 		       "PIKE_MASTER",
 		       0,
 		       &type,
-		       buffer,
+		       (LPBYTE)buffer,
 		       &len)==ERROR_SUCCESS)
     {
       /* FIXME: Look at len? UNICODE? */

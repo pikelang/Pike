@@ -3183,7 +3183,7 @@ void f_create_process(INT32 args)
        *       operations on it.
        */
 
-      command_line = pike_dwim_utf8_to_utf16(buffer_get_string(&buf));
+      command_line = pike_dwim_utf8_to_utf16((const p_wchar0 *) buffer_get_string(&buf));
       buffer_free(&buf);
     }
 
@@ -3318,7 +3318,7 @@ void f_create_process(INT32 args)
 	    /* NB: The environment string contains lots of NUL characters,
 	     *     so we must use the low-level variant here.
 	     */
-	    env = low_dwim_utf8_to_utf16(Pike_sp[-1].u.string->str,
+	    env = low_dwim_utf8_to_utf16(STR0(Pike_sp[-1].u.string),
 					 Pike_sp[-1].u.string->len);
 	    pop_stack();
 	  }

@@ -401,7 +401,7 @@ void f_RegGetValue(INT32 args)
   SET_ONERROR(tmp, do_regclosekey, new_key);
 
   utf16 = pike_string_to_utf16(ind, 1);
-  ret = RegQueryValueExW(new_key, utf16, 0, &type, buffer, &len);
+  ret = RegQueryValueExW(new_key, utf16, 0, &type, (LPBYTE)buffer, &len);
   free(utf16);
 
   CALL_AND_UNSET_ONERROR(tmp);
@@ -602,7 +602,7 @@ void f_RegGetValues(INT32 args)
     buf->flags |= STRING_CONVERT_SURROGATES;
 
     THREADS_ALLOW();
-    ret = RegEnumValueW(new_key, i, STR1(buf), &len, 0, &type, buffer, &buflen);
+    ret = RegEnumValueW(new_key, i, STR1(buf), &len, 0, &type, (LPBYTE)buffer, &buflen);
     THREADS_DISALLOW();
     switch(ret)
     {
@@ -997,7 +997,7 @@ static void low_encode_user_info_2(USER_INFO_2 *tmp)
   push_int(tmp->usri2_units_per_week);
 
   if(tmp->usri2_logon_hours)
-   push_string(make_shared_binary_string(tmp->usri2_logon_hours,21));
+   push_string(make_shared_binary_string((const char *)tmp->usri2_logon_hours,21));
   else
    push_int(0);
 
@@ -1048,7 +1048,7 @@ static void low_encode_user_info_11(USER_INFO_11 *tmp)
   push_int(tmp->usri11_units_per_week);
 
   if(tmp->usri11_logon_hours)
-   push_string(make_shared_binary_string(tmp->usri11_logon_hours,21));
+   push_string(make_shared_binary_string((const char *)tmp->usri11_logon_hours,21));
   else
    push_int(0);
 
@@ -2785,7 +2785,7 @@ static void f_GetFileAttributes(INT32 args)
   p_wchar1 *file_utf16;
   DWORD ret;
   get_all_args(NULL, args, "%c", &file);
-  file_utf16 = pike_dwim_utf8_to_utf16(file);
+  file_utf16 = pike_dwim_utf8_to_utf16((const p_wchar0 *)file);
   ret = GetFileAttributesW(file_utf16);
   free(file_utf16);
   pop_stack();
@@ -2810,7 +2810,7 @@ static void f_SetFileAttributes(INT32 args)
   INT_TYPE attr, ret;
   DWORD tmp;
   get_all_args(NULL, args, "%c%i", &file, &attr);
-  file_utf16 = pike_dwim_utf8_to_utf16(file);
+  file_utf16 = pike_dwim_utf8_to_utf16((const p_wchar0 *) file);
   tmp=attr;
   ret = SetFileAttributesW(file_utf16, tmp);
   free(file_utf16);
@@ -3624,7 +3624,7 @@ static void f_sctx_gencontext(INT32 args)
   if (in->size_shift != 0)
     Pike_error("Wide strings is not allowed.\n");
   sctx->cBuf = sctx->cbMaxMessage;
-  if (!GenServerContext (in->str, in->len, sctx->buf, &sctx->cBuf,
+  if (!GenServerContext ((BYTE *)in->str, in->len, sctx->buf, &sctx->cBuf,
                          &sctx->done, !sctx->hctxt_alloced))
   {
     pop_n_elems(args);
@@ -3635,7 +3635,7 @@ static void f_sctx_gencontext(INT32 args)
   pop_n_elems(args);
 
   push_int(sctx->done?1:0);
-  push_string(make_shared_binary_string(sctx->buf, sctx->cBuf));
+  push_string(make_shared_binary_string((const char *)sctx->buf, sctx->cBuf));
   f_aggregate(2);
 }
 
@@ -3651,7 +3651,7 @@ static void f_sctx_getlastcontext(INT32 args)
     return;
   }
   push_int(sctx->done?1:0);
-  push_string(make_shared_binary_string(sctx->buf, sctx->cBuf));
+  push_string(make_shared_binary_string((const char *)sctx->buf, sctx->cBuf));
   f_aggregate(2);
 }
 
