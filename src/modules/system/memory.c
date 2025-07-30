@@ -427,6 +427,9 @@ static void memory__mmap(INT32 args,int complain,int private)
    RETURN(1); /* ok */
 
 #else /* HAVE_MMAP */
+   (void) args;
+   (void) complain;
+   (void) private;
    Pike_error("System has no mmap() (sorry).\n");
 #endif
 }

@@ -134,7 +134,7 @@ static TCHAR *convert_string(const char *str, ptrdiff_t len)
   return ret;
 }
 
-static void *dlopen(const char *foo, int how)
+static void *dlopen(const char *foo, int UNUSED(how))
 {
   TCHAR *tmp;
   HINSTANCE ret;

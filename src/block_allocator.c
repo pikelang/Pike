@@ -111,6 +111,7 @@ struct ba_block_header {
 static inline void ba_clear_page(struct block_allocator * VALGRINDUSED(a),
                                  struct ba_page * p, struct ba_layout * l)
 {
+    (void) l;
     struct ba_block_header *b;
     p->h.used = 0;
     p->h.flags = BA_FLAG_SORTED;

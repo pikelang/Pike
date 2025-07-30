@@ -2555,7 +2555,7 @@ void f_mutex_trylock(INT32 args)
  *!   pending concurrently in the same conceptual thread as this will
  *!   likely cause dead-locks.
  */
-static void f_mutex_future_lock(INT32 args)
+static void f_mutex_future_lock(INT32 UNUSED(args))
 {
   struct object *promise;
 
@@ -2996,7 +2996,7 @@ void f_mutex_try_shared_lock(INT32 args)
  *!   pending concurrently in the same conceptual thread as this will
  *!   likely cause dead-locks.
  */
-static void f_mutex_future_shared_lock(INT32 args)
+static void f_mutex_future_shared_lock(INT32 UNUSED(args))
 {
   struct object *promise;
 

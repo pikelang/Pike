@@ -584,7 +584,7 @@ static void cval_push_result(INT32 args, int flags)
   return;
 }
 
-static void init_cval_struct(struct object *o)
+static void init_cval_struct(struct object *UNUSED(o))
 {
   struct cval_storage *cval = THIS_CVAL;
 
@@ -592,7 +592,7 @@ static void init_cval_struct(struct object *o)
   cval->method = NULL;
 }
 
-static void exit_cval_struct(struct object *o)
+static void exit_cval_struct(struct object *UNUSED(o))
 {
   struct cval_storage *cval = THIS_CVAL;
 
@@ -609,7 +609,7 @@ static void exit_cval_struct(struct object *o)
 }
 
 /*   ADD_FUNCTION("_value", f_cval_value, tFunc(tVoid,tMix), 0); */
-static void f_cval__value(INT32 args)
+static void f_cval__value(INT32 UNUSED(args))
 {
   cval_push_result(0, DISPATCH_PROPERTYGET);
 }
@@ -931,7 +931,7 @@ static void f_cobj_create(INT32 args)
 
 }
 
-static void init_cobj_struct(struct object *o)
+static void init_cobj_struct(struct object *UNUSED(o))
 {
   struct cobj_storage *cobj = THIS_COBJ;
 
@@ -939,7 +939,7 @@ static void init_cobj_struct(struct object *o)
   cobj->method_map = NULL;
 }
 
-static void exit_cobj_struct(struct object *o)
+static void exit_cobj_struct(struct object *UNUSED(o))
 {
   struct cobj_storage *cobj = THIS_COBJ;
 

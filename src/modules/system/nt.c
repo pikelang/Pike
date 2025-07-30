@@ -642,7 +642,7 @@ void f_RegGetValues(INT32 args)
  *!   0 on success, non-zero otherwise.
  */
 #ifdef HAVE_FREECONSOLE
-void f_freeconsole(INT32 args)
+void f_freeconsole(INT32 UNUSED(args))
 {
   int rv;
 
@@ -663,7 +663,7 @@ void f_freeconsole(INT32 args)
  *!   0 on success, non-zero otherwise.
  */
 #ifdef HAVE_ALLOCCONSOLE
-void f_allocconsole(INT32 args)
+void f_allocconsole(INT32 UNUSED(args))
 {
   int rv;
 
@@ -742,12 +742,12 @@ HINSTANCE advapilib;
  */
 #define THIS_PSID (*(PSID *)CURRENT_STORAGE)
 static struct program *sid_program;
-static void init_sid(struct object *o)
+static void init_sid(struct object *UNUSED(o))
 {
   THIS_PSID=0;
 }
 
-static void exit_sid(struct object *o)
+static void exit_sid(struct object *UNUSED(o))
 {
   if(THIS_PSID)
   {
@@ -947,12 +947,12 @@ void f_LogonUser(INT32 args)
   }
 }
 
-static void init_token(struct object *o)
+static void init_token(struct object *UNUSED(o))
 {
   THIS_TOKEN = INVALID_HANDLE_VALUE;
 }
 
-static void exit_token(struct object *o)
+static void exit_token(struct object *UNUSED(o))
 {
   CloseHandle(THIS_TOKEN);
   THIS_TOKEN = INVALID_HANDLE_VALUE;
@@ -3449,14 +3449,14 @@ struct sctx_storage {
 
 #define THIS_SCTX ((struct sctx_storage *)CURRENT_STORAGE)
 static struct program *sctx_program;
-static void init_sctx(struct object *o)
+static void init_sctx(struct object *UNUSED(o))
 {
   struct sctx_storage *sctx = THIS_SCTX;
 
   memset(sctx, 0, sizeof(struct sctx_storage));
 }
 
-static void exit_sctx(struct object *o)
+static void exit_sctx(struct object *UNUSED(o))
 {
   struct sctx_storage *sctx = THIS_SCTX;
 

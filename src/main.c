@@ -157,6 +157,7 @@ static void set_default_master(const char *bin_name)
   }
 
 #ifdef __NT__
+  (void) bin_name;
   if (!(*mp == '/' || *mp == '\\' || (isalpha (*mp) && mp[1] == ':'))) {
     char exepath[MAXPATHLEN];
     if (!*mp) set_master("master.pike");

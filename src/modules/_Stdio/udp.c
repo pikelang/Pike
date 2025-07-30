@@ -1471,7 +1471,7 @@ static void udp_query_address(INT32 args)
  *!   IP and UDP headers, so that it should be usable without
  *!   further adjustment unless further IP options are in use.
  */
-static void udp_query_mtu(INT32 args)
+static void udp_query_mtu(INT32 UNUSED(args))
 {
   int mtu = -1;
   PIKE_SOCKADDR addr;

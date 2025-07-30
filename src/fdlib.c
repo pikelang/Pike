@@ -707,6 +707,7 @@ PMOD_EXPORT int debug_fd_query_properties(int fd, int guess)
   int type;
 
   FDDEBUG(fprintf(stderr, "fd_query_properties(%d, %d)...\n", fd, guess));
+  (void) guess;
 
   if (fd_to_handle(fd, &type, NULL, 0) < 0) return 0;
   release_fd(fd);
@@ -3195,8 +3196,8 @@ PMOD_EXPORT const char *debug_fd_inet_ntop(int af, const void *addr,
 }
 
 PMOD_EXPORT int debug_fd_openpty(int *master, int *slave,
-				 char *ignored_name,
-				 void *ignored_term,
+				 char *UNUSED(ignored_name),
+				 void *UNUSED(ignored_term),
 				 struct winsize *winp)
 {
   struct my_pty *master_pty = NULL;
