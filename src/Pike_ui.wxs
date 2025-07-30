@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
-  <Fragment Id="PikeUI"> <!-- Local edit -->
+  <Fragment>
     <CustomAction Id="DIRCA_TARGETDIR" Property="TARGETDIR" Value="[ProgramFilesFolder][ProductName]" Execute="firstSequence" />
     <CustomAction Id="ERRCA_CANCELNEWERVERSION" Error="[VSDVERSIONMSG]" />
     <CustomAction Id="ERRCA_UIANDADVERTISED" Error="[VSDUIANDADVERTISED]" />
     <CustomAction Id="VSDCA_FolderForm_AllUsers" Property="FolderForm_AllUsers" Value="ALL" />
-    <UI>
+    <UI Id="PikeUI"> <!-- Local edit -->
       <Property Id="DefaultUIFont"><![CDATA[VsdDefaultUIFont.524F4245_5254_5341_4C45_534153783400]]></Property>
       <Property Id="ErrorDialog"><![CDATA[ErrorDialog]]></Property>
       <TextStyle Id="VSI_MS_Sans_Serif13.0_0_0" FaceName="MS Sans Serif" Size="9" Red="0" Green="0" Blue="0" />

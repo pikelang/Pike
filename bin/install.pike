@@ -2217,7 +2217,7 @@ an extra CRT instance.\n");
 						      ])))->
 				    add_child(line_feed))->
 			  add_child(line_feed)->
-			  add_child(WixNode("FragmentRef", ([
+			  add_child(WixNode("UIRef", ([
 					      "Id":"PikeUI",
 					    ])))->
 			  add_child(line_feed))->
