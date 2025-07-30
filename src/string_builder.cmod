@@ -1130,6 +1130,10 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 	  }
 	  continue;
 
+        case 'L':
+          flags |= APPEND_WIDTH_LONG_LONG;
+          continue;
+
 	case 't':	/* ptrdiff_t */
 	case 'z':	/* size_t */
 	  flags = (flags & ~APPEND_WIDTH_MASK) | APPEND_WIDTH_PTR;
@@ -1359,7 +1363,9 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 	case 'g':
 	case 'G':
 	  {
-	    double val = va_arg(args, double);
+            double val =
+              ((flags & APPEND_WIDTH_MASK) == APPEND_WIDTH_LONG_LONG?
+               va_arg(args, long double) : va_arg(args, double));
 	    size_t bytes;
 	    char nfmt[] = { '%', fmt[-1], 0 };
 
