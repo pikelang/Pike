@@ -981,14 +981,14 @@ To install in this folder, click "Next". To install to a different folder, enter
     <Property Id="VSDNETMSG"><![CDATA[This setup requires the .NET Framework version [1].  Please install the .NET Framework and run this setup again.]]></Property>
     <Property Id="SFF_UpFldrBtn"><![CDATA[UpFldrBtn]]></Property>
     <AdvertiseExecuteSequence>
-      <Custom Action="DIRCA_TARGETDIR" Before="CostInitialize"><![CDATA[TARGETDIR=""]]></Custom>
+      <Custom Action="DIRCA_TARGETDIR" Before="CostInitialize" Overridable='yes'><![CDATA[TARGETDIR=""]]></Custom>
     </AdvertiseExecuteSequence>
     <AdminExecuteSequence>
-      <Custom Action="DIRCA_TARGETDIR" Before="CostInitialize"><![CDATA[TARGETDIR=""]]></Custom>
+      <Custom Action="DIRCA_TARGETDIR" Before="CostInitialize" Overridable='yes'><![CDATA[TARGETDIR=""]]></Custom>
     </AdminExecuteSequence>
     <InstallExecuteSequence>
-      <RemoveExistingProducts After="InstallInitialize" />
-      <Custom Action="DIRCA_TARGETDIR" After="ValidateProductID"><![CDATA[TARGETDIR=""]]></Custom>
+      <RemoveExistingProducts After="InstallInitialize" Overridable='yes' />
+      <Custom Action="DIRCA_TARGETDIR" After="ValidateProductID" Overridable='yes'><![CDATA[TARGETDIR=""]]></Custom>
       <Custom Action="ERRCA_CANCELNEWERVERSION" After="FindRelatedProducts"><![CDATA[NEWERPRODUCTFOUND AND NOT Installed]]></Custom>
     </InstallExecuteSequence>
     <Binary Id="UpFldrBtn" SourceFile="UpFldrBtn.ibd" />
