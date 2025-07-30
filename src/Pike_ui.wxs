@@ -1,7 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
   <Fragment>
-    <CustomAction Id="DIRCA_TARGETDIR" Property="TARGETDIR" Value="[ProgramFilesFolder][ProductName]" Execute="firstSequence" />
+    <?if $(sys.BUILDARCH) = "x64" Or $(sys.BUILDARCH) ~= "Arm64"?>
+    <?define ProgramFilesFolder = "ProgramFiles64Folder"?>
+    <?else?>
+    <?define ProgramFilesFolder = "ProgramFilesFolder"?>
+    <?endif?>
+    <CustomAction Id="DIRCA_TARGETDIR" Property="TARGETDIR" Value="[$(var.ProgramFilesFolder)][ProductName]" Execute="firstSequence" />
     <CustomAction Id="ERRCA_CANCELNEWERVERSION" Error="[VSDVERSIONMSG]" />
     <CustomAction Id="ERRCA_UIANDADVERTISED" Error="[VSDUIANDADVERTISED]" />
     <CustomAction Id="VSDCA_FolderForm_AllUsers" Property="FolderForm_AllUsers" Value="ALL" />
