@@ -190,8 +190,8 @@ class Directory
     {
       mapping(string:string) attrs = ([
 	"Id":id,
-	"Name":gen_8dot3(name),
-	"LongName":name,
+	"ShortName":gen_8dot3(name),
+	"Name":name,
 	"Vital":"yes",
 	//      "KeyPath":"yes",
 	//      "DiskId":"1",
@@ -236,8 +236,8 @@ class Directory
     {
       mapping(string:string) attrs = ([
 	"Id":id,
-	"Name":gen_8dot3(name),
-	"LongName":name,
+	"ShortName":gen_8dot3(name),
+	"Name":name,
 	"Directory":directory,
 	"Show":show,
       ]);
@@ -284,8 +284,7 @@ class Directory
     {
       mapping(string:string) attrs = ([
 	"Id":id,
-	"Name":gen_8dot3(name),
-	"LongName":name,
+	"Name":name,
 	"On":"uninstall",
       ]);
       return WixNode("RemoveFile", attrs);
@@ -437,12 +436,12 @@ class Directory
     parent += "/" + name;
 
     mapping(string:string) attrs = ([
-      "Name":short_name||name,
+      "Name":name,
       "Id":id,
     ]);
     if (short_name && (short_name != name)) {
       // Win32 stupidity...
-      attrs->LongName = name;
+      attrs->ShortName = short_name;
     }
     if (source) {
       attrs->src = replace(source+"/", "/", "\\");
