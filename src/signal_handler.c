@@ -2401,7 +2401,7 @@ static HANDLE get_inheritable_handle(struct mapping *optional,
 			  DUPLICATE_SAME_ACCESS)) {
 	release_fd(fd);
 	/* This could cause handle-leaks */
-	Pike_error("Failed to duplicate handle %d.\n", GetLastError());
+	Pike_error("Failed to duplicate handle %lu.\n", (unsigned long)GetLastError());
       }
       release_fd(fd);
     }

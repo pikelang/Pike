@@ -6173,7 +6173,7 @@ PMOD_EXPORT void create_proxy_pipe(struct object *o, int for_reading)
   push_int(fd_INTERPROCESSABLE);
   apply(n,"pipe",1);
   if(TYPEOF(Pike_sp[-1]) != PIKE_T_OBJECT)
-    Pike_error("Failed to create proxy pipe (errno=%ld)!\n",
+    Pike_error("Failed to create proxy pipe (errno=%"PRINTPIKEINT"d)!\n",
                get_file_storage(n)->my_errno);
   n2=Pike_sp[-1].u.object;
   /* Stack is now: pipe(read), pipe(write) */

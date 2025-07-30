@@ -605,7 +605,7 @@ static inline void *mexec_do_alloc (void *start, size_t length)
 			PAGE_EXECUTE_READWRITE);
     if (!blk) {
       fprintf (stderr, "VirtualAlloc of %"PRINTSIZET"u bytes failed. "
-	       "Error code: %d\n", length, GetLastError());
+	       "Error code: %lu\n", length, (unsigned long)GetLastError());
       return NULL;
     }
   }

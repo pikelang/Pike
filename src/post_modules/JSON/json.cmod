@@ -321,7 +321,7 @@ static void json_encode_recur (struct encode_context *ctx, struct svalue *val)
            * cause a compliant JCS implementation to terminate with an
            * appropriate error.
            */
-          Pike_error("Value %g is not valid in canonical JSON.\n", f);
+          Pike_error("Value %"PRINTPIKEFLOAT"g is not valid in canonical JSON.\n", f);
         }
         string_builder_strcat(&ctx->buf, "null");
         break;

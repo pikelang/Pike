@@ -382,7 +382,7 @@ void f_RegGetValue(INT32 args)
   get_all_args(NULL, args, "%i%t%t.%i", &hkey_num, &key, &ind, &no_expand);
 
   if ((hkey_num < 0) || ((unsigned int)hkey_num >= NELEM(hkeys))) {
-    Pike_error("Unknown hkey: %d.\n", hkey_num);
+    Pike_error("Unknown hkey: %"PRINTPIKEINT"d.\n", hkey_num);
   }
 
   utf16 = pike_string_to_utf16(key, 1);
@@ -465,7 +465,7 @@ void f_RegGetKeyNames(INT32 args)
   get_all_args(NULL, args, "%i%t", &hkey_num, &key);
 
   if ((hkey_num < 0) || ((unsigned int)hkey_num >= NELEM(hkeys))) {
-    Pike_error("Unknown hkey: %d.\n", hkey_num);
+    Pike_error("Unknown hkey: %"PRINTPIKEINT"d.\n", hkey_num);
   }
 
   key_utf16 = pike_string_to_utf16(key, 1);
@@ -572,7 +572,7 @@ void f_RegGetValues(INT32 args)
   get_all_args(NULL, args, "%i%t.%i", &hkey_num, &key, &no_expand);
 
   if ((hkey_num < 0) || ((unsigned int)hkey_num >= NELEM(hkeys))) {
-    Pike_error("Unknown hkey: %d.\n", hkey_num);
+    Pike_error("Unknown hkey: %"PRINTPIKEINT"d.\n", hkey_num);
   }
 
   key_utf16 = pike_string_to_utf16(key, 1);
@@ -2573,7 +2573,7 @@ static void f_NetSessionEnum(INT32 args)
       /* valid levels */
       break;
     default:
-      Pike_error("Unsupported level: %d.\n", level);
+      Pike_error("Unsupported level: %lu.\n", (unsigned long)level);
   }
 
 
@@ -2655,7 +2655,7 @@ static void f_NetWkstaUserEnum(INT32 args)
   level=sp[1-args].u.integer;
 
   if (level != 0 && level != 1)
-      Pike_error("Unsupported level: %d.\n", level);
+    Pike_error("Unsupported level: %lu.\n", (unsigned long)level);
 
   while(1)
   {
@@ -2994,7 +2994,7 @@ static PACL decode_acl(struct array *arr)
       case ( 'd' << 8 ) + 'e': size += sizeof(ACCESS_DENIED_ACE); break;
       case ( 'a' << 8 ) + 'u': size += sizeof(SYSTEM_AUDIT_ACE); break;
       default:
-	Pike_error("ACE[%d][0] is not a known ACE type.\n");
+	Pike_error("ACE[%d][0] is not a known ACE type.\n",a);
     }
     size += getlengthsid( *sid ) - sizeof(DWORD);
   }
@@ -3224,7 +3224,7 @@ static void f_nt_uname(INT32 args)
 
   osversion.dwOSVersionInfoSize=sizeof(osversion);
   if(!GetVersionEx(&osversion))
-    Pike_error("GetVersionEx failed with errno %d\n",GetLastError());
+    Pike_error("GetVersionEx failed with errno %lu\n",(unsigned long)GetLastError());
 
   GetSystemInfo(&sysinfo);
 
@@ -3499,8 +3499,8 @@ static void f_sctx_create(INT32 args)
 
   if (!SEC_SUCCESS(ss))
   {
-    Pike_error("Could not query package info for %pS, error 0x%08x.\n",
-               pkgName, ss);
+    Pike_error("Could not query package info for %pS, error 0x%08lx.\n",
+               pkgName, (long)ss);
   }
 
   sctx->cbMaxMessage = pkgInfo->cbMaxToken;
@@ -3525,7 +3525,7 @@ static void f_sctx_create(INT32 args)
 
   if (!SEC_SUCCESS (ss))
   {
-    Pike_error("AcquireCreds failed: 0x%08x.\n", ss);
+    Pike_error("AcquireCreds failed: 0x%08lx.\n", (long)ss);
   }
   sctx->hcred_alloced = 1;
 }

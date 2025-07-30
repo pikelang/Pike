@@ -238,7 +238,7 @@ static void memory_shm( INT32 args )
   {
     HANDLE handle;
     char id[4711];
-    sprintf( id, "pike.%ld", Pike_sp[-args].u.integer );
+    sprintf( id, "pike.%"PRINTPIKEINT"d", Pike_sp[-args].u.integer );
     THIS->size = Pike_sp[1-args].u.integer;
     THIS->flags = MEM_READ|MEM_WRITE|MEM_FREE_SHMDEL;
     pop_n_elems(args);

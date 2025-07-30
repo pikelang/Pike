@@ -3163,7 +3163,7 @@ PMOD_EXPORT const char *debug_fd_inet_ntop(int af, const void *addr,
 	char *buf = cp;
 	int got_zeros = 0;
 	for (i=0; i < 8; i++) {
-	  size_t val = (q[0]<<8) | q[1];
+	  unsigned val = (q[0]<<8) | q[1];
 	  if (!val) {
 	    if (!got_zeros) {
 	      snprintf(buf, sz, ":");

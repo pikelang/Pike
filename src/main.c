@@ -149,10 +149,13 @@ static void set_default_master(const char *bin_name)
   {
     char tmp[CONSTANT_STRLEN( DEFAULT_MASTER ) + 10 + 10 + 10];
     snprintf (tmp, sizeof(tmp)-1,
-	      DEFAULT_MASTER,
-	      PIKE_MAJOR_VERSION,
-	      PIKE_MINOR_VERSION,
-	      PIKE_BUILD_VERSION);
+              DEFAULT_MASTER
+#if !defined(__NT__) && !defined(__amigaos__)
+              ,PIKE_MAJOR_VERSION
+              ,PIKE_MINOR_VERSION
+              ,PIKE_BUILD_VERSION
+#endif
+              );
     set_master( tmp );
   }
 
@@ -163,8 +166,8 @@ static void set_default_master(const char *bin_name)
     if (!*mp) set_master("master.pike");
 
     if (!GetModuleFileName (NULL, exepath, _MAX_PATH))
-      fprintf (stderr, "Failed to get path to exe file: %d\n",
-	       GetLastError());
+      fprintf (stderr, "Failed to get path to exe file: %lu\n",
+	       (unsigned long)GetLastError());
     else {
       char tmp[MAXPATHLEN * 2];
       char *p = strrchr (exepath, '\\');
