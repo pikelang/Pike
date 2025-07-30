@@ -2623,6 +2623,19 @@ AC_SUBST(RNTANY)
 # Wix compiler
 if test "x${CANDLE-}" = x ; then
   PIKE_NT_PROG(CANDLE, candle, , $PATH:$EXTRA_PATH)
+  case "${PROCESSOR_ARCHITECTURE}" in
+    AMD64|EM64T) CANDLE="${CANDLE} -arch x64";;
+    IA64) CANDLE="${CANDLE} -arch ia64";;
+    ARM64) CANDLE="${CANDLE} -arch arm64";;
+    X86) CANDLE="${CANDLE} -arch x86";;
+    ARM) CANDLE="${CANDLE} -arch arm";;
+    *) case "`uname -m 2>/dev/null`" in
+      x86_64) CANDLE="${CANDLE} -arch x64";;
+      i*86) CANDLE="${CANDLE} -arch x86";;
+      [Aa][Rr][Mm]64|aarch64) CANDLE="${CANDLE} -arch arm64";;
+      [Aa][Rr][Mm]) CANDLE="${CANDLE} -arch arm";;
+    esac;;
+  esac
   export CANDLE
 fi
 AC_SUBST(CANDLE)

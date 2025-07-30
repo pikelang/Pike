@@ -565,7 +565,6 @@ Parser.XML.Tree.SimpleRootNode get_xml_node()
 						   "Languages":"1033",
 						   "Compressed":"yes",
 						   "InstallerVersion":"200",
-						   "Platforms":"Intel",
 						   "SummaryCodepage":"1252",
 						   "Id":product_id,
 						 ])))));

@@ -2183,7 +2183,6 @@ an extra CRT instance.\n");
 					      "Languages":"1033",
 					      "Compressed":"yes",
 					      "InstallerVersion":"300",
-					      "Platforms":"Intel",
 					      "SummaryCodepage":"1252",
 					      "Id":version_guid,
 					    ])))->
@@ -3085,7 +3084,6 @@ class WixExportInstallHandler {
 			  "Manufacturer":"IDA",
 			  "Languages":"1033",
 			  "InstallerVersion":"300",
-			  "Platforms":"Intel",
 			  "Id":Standards.UUID.make_version1(-1)->str(),
 			  "Compressed":"yes",
 			  "SummaryCodepage":"1252",
