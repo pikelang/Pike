@@ -461,12 +461,13 @@ PMOD_EXPORT void exit_on_error(const void *msg)
 #ifdef __NT__
 /* Wrapper around abort() to avoid interactive requesters on NT. */
 int fnordel=0;
-static void do_abort()
+DECLSPEC(noreturn) static void do_abort()
 {
   if (!d_flag && !getenv("PIKE_DEBUG")) {
     exit(-6);	/* -SIGIOT */
   }
   fnordel=999/fnordel;
+  abort();
 }
 #else /* !__NT__ */
 #define do_abort()	abort()
