@@ -8403,8 +8403,6 @@ static struct pike_type *low_match_types(struct pike_type *a,
   struct pike_type *ret = NULL;
   DECLARE_CYCLIC();
 #ifdef PIKE_TYPE_DEBUG
-  int e;
-  char *s;
 
   if (l_flag>2) {
     fprintf(stderr, "%*slow_match_types(", indent*2, "");

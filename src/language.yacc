@@ -5460,7 +5460,7 @@ static int compiler_define_function(int modifiers,
                                     struct pike_type *fun_type,
                                     node *block,
                                     int num_args, int num_create_args,
-                                    int opt_flags)
+                                    int UNUSED(opt_flags))
 {
   int e;
   if(block)

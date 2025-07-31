@@ -711,6 +711,7 @@ PMOD_EXPORT int debug_fd_query_properties(int fd, int guess)
   int type;
 
   FDDEBUG(fprintf(stderr, "fd_query_properties(%d, %d)...\n", fd, guess));
+  (void) guess;
 
   if (fd_to_handle(fd, &type, NULL, 0) < 0) return 0;
   release_fd(fd);
@@ -1113,7 +1114,7 @@ p_wchar1 *low_dwim_utf8_to_utf16(const p_wchar0 *str, size_t len)
 
 PMOD_EXPORT p_wchar1 *pike_dwim_utf8_to_utf16(const p_wchar0 *str)
 {
-  return low_dwim_utf8_to_utf16(str, strlen(str));
+  return low_dwim_utf8_to_utf16(str, strlen((const char *) str));
 }
 
 PMOD_EXPORT p_wchar0 *pike_utf16_to_utf8(const p_wchar1 *str)
@@ -1226,7 +1227,7 @@ PMOD_EXPORT int debug_fd_stat(const char *file, PIKE_STAT_T *buf)
     return(-1);
   }
 
-  fname = pike_dwim_utf8_to_utf16(file);
+  fname = pike_dwim_utf8_to_utf16((const p_wchar0 *) file);
   if (!fname) {
     errno = ENOMEM;
     return -1;
@@ -1529,7 +1530,7 @@ PMOD_EXPORT int debug_fd_lstat(const char *file, PIKE_STAT_T *st)
 
 PMOD_EXPORT int debug_fd_utime(const char *file, struct fd_utimbuf *times)
 {
-  p_wchar1 *fname = pike_dwim_utf8_to_utf16(file);
+  p_wchar1 *fname = pike_dwim_utf8_to_utf16((const p_wchar0 *) file);
   int ret;
 
   if (!fname) {
@@ -1550,7 +1551,7 @@ PMOD_EXPORT int debug_fd_utime(const char *file, struct fd_utimbuf *times)
 
 PMOD_EXPORT int debug_fd_truncate(const char *file, INT64 len)
 {
-  p_wchar1 *fname = pike_dwim_utf8_to_utf16(file);
+  p_wchar1 *fname = pike_dwim_utf8_to_utf16((const p_wchar0 *) file);
   HANDLE h;
   LONG high;
 
@@ -1597,7 +1598,7 @@ PMOD_EXPORT int debug_fd_link(const char *oldpath, const char *newpath)
   }
 
   {
-    p_wchar1 *oname = pike_dwim_utf8_to_utf16(oldpath);
+    p_wchar1 *oname = pike_dwim_utf8_to_utf16((const p_wchar0 *) oldpath);
     ONERROR uwp;
     p_wchar1 *nname;
     int ret = 0;
@@ -1607,7 +1608,7 @@ PMOD_EXPORT int debug_fd_link(const char *oldpath, const char *newpath)
     /* FIXME: Consider prefixing with "\\\\?\\" (4 characters)
      *        to allow paths longer than 260 characters.
      */
-    nname = pike_dwim_utf8_to_utf16(newpath);
+    nname = pike_dwim_utf8_to_utf16((const p_wchar0 *) newpath);
 
     if (!Pike_NT_CreateHardLinkW(nname, oname, NULL)) {
       set_errno_from_win32_error(GetLastError());
@@ -1629,7 +1630,7 @@ PMOD_EXPORT int debug_fd_symlink(const char *target, const char *linkpath)
   }
 
   {
-    p_wchar1 *tname = pike_dwim_utf8_to_utf16(target);
+    p_wchar1 *tname = pike_dwim_utf8_to_utf16((const p_wchar0 *) target);
     ONERROR uwp;
     p_wchar1 *lnk;
     int ret = 0;
@@ -1639,7 +1640,7 @@ PMOD_EXPORT int debug_fd_symlink(const char *target, const char *linkpath)
     /* FIXME: Consider prefixing with "\\\\?\\" (4 characters)
      *        to allow paths longer than 260 characters.
      */
-    lnk = pike_dwim_utf8_to_utf16(linkpath);
+    lnk = pike_dwim_utf8_to_utf16((const p_wchar0 *) linkpath);
 
     if (!Pike_NT_CreateSymbolicLinkW(lnk, tname,
                                      SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE) &&
@@ -1661,7 +1662,7 @@ PMOD_EXPORT int debug_fd_symlink(const char *target, const char *linkpath)
 PMOD_EXPORT ptrdiff_t debug_fd_readlink(const char *file,
                                         char *buf, size_t bufsiz)
 {
-  p_wchar1 *fname = pike_dwim_utf8_to_utf16(file);
+  p_wchar1 *fname = pike_dwim_utf8_to_utf16((const p_wchar0 *) file);
   HANDLE h;
   DWORD bytes = 0;
   int ret = -1;
@@ -1719,8 +1720,8 @@ PMOD_EXPORT ptrdiff_t debug_fd_readlink(const char *file,
           utf8_buf = pike_utf16_to_utf8(dest);
 
           if (utf8_buf) {
-            strncpy(buf, utf8_buf, bufsiz);
-            ret = strlen(utf8_buf) + 1;	/* Include NUL. */
+            strncpy(buf, (const char *) utf8_buf, bufsiz);
+            ret = strlen((const char *) utf8_buf) + 1;	/* Include NUL. */
             if ((size_t)ret > bufsiz) ret = bufsiz;
             e = 0;
 
@@ -1744,7 +1745,7 @@ PMOD_EXPORT ptrdiff_t debug_fd_readlink(const char *file,
 
 PMOD_EXPORT int debug_fd_rmdir(const char *dir)
 {
-  p_wchar1 *dname = pike_dwim_utf8_to_utf16(dir);
+  p_wchar1 *dname = pike_dwim_utf8_to_utf16((const p_wchar0 *) dir);
   int ret;
 
   if (!dname) {
@@ -1777,7 +1778,7 @@ PMOD_EXPORT int debug_fd_rmdir(const char *dir)
 
 PMOD_EXPORT int debug_fd_unlink(const char *file)
 {
-  p_wchar1 *fname = pike_dwim_utf8_to_utf16(file);
+  p_wchar1 *fname = pike_dwim_utf8_to_utf16((const p_wchar0 *) file);
   int ret;
 
   if (!fname) {
@@ -1810,7 +1811,7 @@ PMOD_EXPORT int debug_fd_unlink(const char *file)
 
 PMOD_EXPORT int debug_fd_mkdir(const char *dir, int mode)
 {
-  p_wchar1 *dname = pike_dwim_utf8_to_utf16(dir);
+  p_wchar1 *dname = pike_dwim_utf8_to_utf16((const p_wchar0 *) dir);
   int ret;
   int mask;
 
@@ -1832,7 +1833,7 @@ PMOD_EXPORT int debug_fd_mkdir(const char *dir, int mode)
 
 PMOD_EXPORT int debug_fd_rename(const char *old, const char *new)
 {
-  p_wchar1 *oname = pike_dwim_utf8_to_utf16(old);
+  p_wchar1 *oname = pike_dwim_utf8_to_utf16((const p_wchar0 *) old);
   p_wchar1 *nname;
   int ret;
 
@@ -1841,7 +1842,7 @@ PMOD_EXPORT int debug_fd_rename(const char *old, const char *new)
     return -1;
   }
 
-  nname = pike_dwim_utf8_to_utf16(new);
+  nname = pike_dwim_utf8_to_utf16((const p_wchar0 *) new);
   if (!nname) {
     free(oname);
     errno = ENOMEM;
@@ -1895,7 +1896,7 @@ PMOD_EXPORT int debug_fd_rename(const char *old, const char *new)
 
 PMOD_EXPORT int debug_fd_chdir(const char *dir)
 {
-  p_wchar1 *dname = pike_dwim_utf8_to_utf16(dir);
+  p_wchar1 *dname = pike_dwim_utf8_to_utf16((const p_wchar0 *) dir);
   int ret;
 
   if (!dname) {
@@ -1932,12 +1933,12 @@ PMOD_EXPORT char *debug_fd_get_current_dir_name(void)
     return NULL;
   }
 
-  return utf8buffer;
+  return (char *) utf8buffer;
 }
 
 PMOD_EXPORT char *debug_fd_normalize_path(const char *path)
 {
-  p_wchar1 *pname = pike_dwim_utf8_to_utf16(path);
+  p_wchar1 *pname = pike_dwim_utf8_to_utf16((const p_wchar0 *) path);
   p_wchar1 *buffer;
   char *res;
   size_t len;
@@ -2032,7 +2033,7 @@ PMOD_EXPORT char *debug_fd_normalize_path(const char *path)
     }
   }
 
-  res = pike_utf16_to_utf8(buffer);
+  res = (char *) pike_utf16_to_utf8(buffer);
   free(buffer);
   if (!res) {
     errno = ENOMEM;
@@ -2067,7 +2068,7 @@ PMOD_EXPORT FD debug_fd_open(const char *file, int open_mode, int create_mode)
     return -1;
   }
 
-  fname = pike_dwim_utf8_to_utf16(file);
+  fname = pike_dwim_utf8_to_utf16((const p_wchar0 *)file);
   if (!fname) {
     errno = ENOMEM;
     return -1;
@@ -3216,7 +3217,7 @@ PMOD_EXPORT const char *debug_fd_inet_ntop(int af, const void *addr,
 	char *buf = cp;
 	int got_zeros = 0;
 	for (i=0; i < 8; i++) {
-	  size_t val = (q[0]<<8) | q[1];
+	  unsigned val = (q[0]<<8) | q[1];
 	  if (!val) {
 	    if (!got_zeros) {
 	      snprintf(buf, sz, ":");
@@ -3249,8 +3250,8 @@ PMOD_EXPORT const char *debug_fd_inet_ntop(int af, const void *addr,
 }
 
 PMOD_EXPORT int debug_fd_openpty(int *master, int *slave,
-				 char *ignored_name,
-				 void *ignored_term,
+				 char *UNUSED(ignored_name),
+				 void *UNUSED(ignored_term),
 				 struct winsize *winp)
 {
   struct my_pty *master_pty = NULL;

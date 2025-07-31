@@ -12,6 +12,7 @@ static void LM_FUNC(rgb_group *s,rgb_group *l,rgb_group *d,
 {
    union { COLORTYPE r,g,b; } tz,*t=&tz;
 
+   (void) sa;
 #ifndef L_LOGIC
    if (alpha==0.0)
    {

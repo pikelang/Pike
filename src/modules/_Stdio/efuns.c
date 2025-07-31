@@ -538,7 +538,7 @@ void f_filesystem_stat( INT32 args )
 
   get_all_args( "filesystem_stat", args, "%c", &path );
 
-  root = pike_dwim_utf8_to_utf16(path);
+  root = pike_dwim_utf8_to_utf16((const p_wchar0 *) path);
   if (root[0] && root[1] == ':') {
     root[2] = '\\';
     root[3] = 0;
@@ -1004,7 +1004,7 @@ void f_get_dir(INT32 args)
     return;
   }
 
-  pattern = pike_dwim_utf8_to_utf16(str->str);
+  pattern = pike_dwim_utf8_to_utf16(STR0(str));
 
   if (!pattern) {
     SIMPLE_OUT_OF_MEMORY_ERROR("get_dir", (str->len + 4) * sizeof(p_wchar1));
@@ -1075,7 +1075,7 @@ void f_get_dir(INT32 args)
       }
 
       SET_ONERROR(uwp, free, utf8_fname);
-      push_text(utf8_fname);
+      push_text((const char *) utf8_fname);
       CALL_AND_UNSET_ONERROR(uwp);
 
       DO_AGGREGATE_ARRAY(120);
@@ -1631,7 +1631,7 @@ static void f_access( INT32 args )
        DWORD attrs = 0;
        p_wchar1 *wpath;
 
-       wpath = pike_dwim_utf8_to_utf16(path);
+       wpath = pike_dwim_utf8_to_utf16((const p_wchar0 *) path);
 
        res = -1;
        attrs = GetFileAttributesW(wpath);

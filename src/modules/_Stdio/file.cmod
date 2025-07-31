@@ -4867,7 +4867,7 @@ extern int errno;
 #endif /* !errno */
 
 static int socketpair_fd = -1;
-int my_socketpair(int family, int type, int protocol, int sv[2])
+int my_socketpair(int family, int type, int UNUSED(protocol), int sv[2])
 {
   static struct sockaddr_in my_addr;
   struct sockaddr_in addr,addr2;
@@ -6002,7 +6002,7 @@ static void file_query_address(INT32 args)
  *!       Returns a positive value with the mtu on success.
  *!   @endint
  */
-static void file_query_mtu(INT32 args)
+static void file_query_mtu(INT32 UNUSED(args))
 {
   int mtu = -1;
   PIKE_SOCKADDR addr;
@@ -6173,7 +6173,7 @@ PMOD_EXPORT void create_proxy_pipe(struct object *o, int for_reading)
   push_int(fd_INTERPROCESSABLE);
   apply(n,"pipe",1);
   if(TYPEOF(Pike_sp[-1]) != PIKE_T_OBJECT)
-    Pike_error("Failed to create proxy pipe (errno=%ld)!\n",
+    Pike_error("Failed to create proxy pipe (errno=%"PRINTPIKEINT"d)!\n",
                get_file_storage(n)->my_errno);
   n2=Pike_sp[-1].u.object;
   /* Stack is now: pipe(read), pipe(write) */
