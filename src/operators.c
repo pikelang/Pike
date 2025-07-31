@@ -232,7 +232,11 @@ PMOD_EXPORT void o_cast_to_int(void)
         Pike_error("Can't cast infinites or NaN to int.\n");
       /* should perhaps convert to Int.Inf now that we have them? */
 
-      if (UNLIKELY(f > MAX_INT_TYPE || f < MIN_INT_TYPE)) {
+      /* Note: MAX_INT_TYPE may contain more 1:s than will fit in the
+         mantissa of FLOAT_TYPE.  Use MAX_INT_TYPE+1 instead to get a
+         power of two (zero mantissa bits needed).  This works because
+         if f is e.g. MAX_INT_TYPE+0.9 it gets rounded down anyway.  */
+      if (UNLIKELY(f >= 1+(unsigned INT_TYPE)MAX_INT_TYPE || f < MIN_INT_TYPE)) {
         convert_stack_top_to_bignum();
       } else {
         SET_SVAL(Pike_sp[-1], T_INT, NUMBER_NUMBER, integer, f);
