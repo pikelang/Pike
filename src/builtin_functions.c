@@ -6395,6 +6395,12 @@ static int get_tm(const char *fname, int args, struct tm *date)
   date->tm_mon = mon;
   date->tm_year = year;
   date->tm_isdst = isdst;
+#ifdef STRUCT_TM_HAS_GMTOFF
+  date->tm_gmtoff = -tz;
+#endif
+#ifdef STRUCT_TM_HAS___TM_GMTOFF
+  date->__tm_gmtoff = -tz;
+#endif
 #ifdef NULL_IS_SPECIAL
   date->tm_zone = NULL;
 #endif

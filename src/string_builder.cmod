@@ -1805,19 +1805,19 @@ PMOD_EXPORT void string_builder_strftime(struct string_builder *s,
           {
             int minutes = (
 #ifdef STRUCT_TM_HAS_GMTOFF
-                           -tm->tm_gmtoff
+                           tm->tm_gmtoff
 #elif defined(STRUCT_TM_HAS___TM_GMTOFF)
-                           -tm->__tm_gmtoff
+                           tm->__tm_gmtoff
 #elif defined(HAVE_EXTERNAL_TIMEZONE)
                            /* Assume dst is one hour. */
-                           timezone - 3600*tm->tm_isdst
+                           -timezone + 3600*tm->tm_isdst
 #else
                            /* Assume dst is one hour. */
-                           -3600*tm->tm_isdst
+                           3600*tm->tm_isdst
 #endif
                            ) / 60;
             minutes += (minutes/60) * 40;
-            string_builder_sprintf(s, "%+05d", minutes);
+            string_builder_sprintf(s, "%+04d", minutes);
           }
           break;
 
