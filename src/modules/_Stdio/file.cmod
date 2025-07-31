@@ -3022,7 +3022,7 @@ static int do_close(int flags)
   }
 }
 
-#if !defined(HAVE_POSIX_OPENPT) && defined(PTY_MASTER_PATHNAME)
+#if !defined(HAVE_POSIX_OPENPT) && defined(PTY_MASTER_PATHNAME) && !defined(__NT__)
 static int my_posix_openpt(int flags)
 {
   return open(PTY_MASTER_PATHNAME, flags);

@@ -189,21 +189,6 @@ static void exit_pike_sendfile(struct object *UNUSED(o))
 }
 
 /*
- * Fallback code
- */
-
-#ifndef HAVE_WRITEV
-#define writev my_writev
-static size_t writev(int fd, struct iovec *iov, int n)
-{
-  if (n) {
-    return fd_write(fd, iov->iov_base, iov->iov_len);
-  }
-  return 0;
-}
-#endif /* !HAVE_WRITEV */
-
-/*
  * Helper functions
  */
 

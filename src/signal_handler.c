@@ -403,8 +403,10 @@ static void report_child(int pid,
 #endif
 
 
+#ifdef SIGCHLD
 /* NB: Async-Signal-Safe! */
 static RETSIGTYPE receive_sigchild(int signum);
+#endif
 
 #ifdef USE_SIGCHILD
 typedef struct wait_data_s {
