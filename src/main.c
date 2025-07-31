@@ -145,7 +145,7 @@ static void set_default_master(const char *bin_name)
   if(!*mp) get_master_key(HKEY_LOCAL_MACHINE);
 #endif
 
-  if(!*mp && strncmp(DEFAULT_MASTER, "NONE/", 5))
+  if(!*mp && strncmp(DEFAULT_MASTER, "NONE/", 5) != 0)
   {
     char tmp[CONSTANT_STRLEN( DEFAULT_MASTER ) + 10 + 10 + 10];
     snprintf (tmp, sizeof(tmp)-1,
