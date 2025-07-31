@@ -268,7 +268,7 @@ PIKECLASS Buffer
     {
       /* Actually grow the buffer. */
 
-      if (UNLIKELY(io->child)) {
+      if (UNLIKELY(io->child != NULL)) {
         /*
          * Growing a locked buffer goes in steps:
          * - Copy the unconsumed content of the locked buffer to new space
@@ -286,7 +286,7 @@ PIKECLASS Buffer
         void *ptmp;
         {
           Buffer *cp = io, *lc;
-          while (UNLIKELY(lc = cp->child)) {
+          while (UNLIKELY((lc = cp->child) != NULL)) {
             if (UNLIKELY(lc == io))
               Pike_error("Readonly buffer cannot be extended.");
             cp = lc;
@@ -1152,7 +1152,7 @@ PIKECLASS Buffer
 
     if( TYPEOF(*f) == PIKE_T_OBJECT ) {
       struct program *p = f->u.object->prog;
-      if (LIKELY(p)) {
+      if (LIKELY(p != NULL)) {
 	struct inherit *inh = p->inherits + SUBTYPEOF(*f);
 	p = inh->prog;
 	if ((write_fun_num = find_identifier("write", p)) == -1) {
@@ -1986,7 +1986,7 @@ PIKECLASS Buffer
 	  const char * start = (char*)io_read_pointer(io);
 	  const char * end = memchr(start, csentinel, io_len(io));
 
-	  if ( LIKELY(end) )
+	  if ( LIKELY(end != NULL) )
 	  {
 	    push_string(io_read_string(io, end - start));
 	    io_read_byte_uc(io);  /* consume the terminating sentinel byte */
@@ -2002,11 +2002,11 @@ PIKECLASS Buffer
 	  const char * start = (char*)io_read_pointer(io);
 	  const char * end = memchr(start, csentinel, io_len(io));
 
-	  if ( LIKELY(end) )
+	  if ( LIKELY(end != NULL) )
 	  {
 	    /* Check if we have any escaped characters. */
 	    const char * esc = start;
-	    while (UNLIKELY(esc = memchr(esc, cescape, end - esc))) {
+	    while (UNLIKELY((esc = memchr(esc, cescape, end - esc)) != NULL)) {
 	      esc += 2;
 	      if (end + 1 == esc) {
 		/* NB: The following is integer underflow safe;
@@ -2599,7 +2599,7 @@ PIKECLASS Buffer
     struct pike_string *s;
     Pike_sp--;
     s = io_read_string(THIS, bytes);
-    if (LIKELY(s))
+    if (LIKELY(s != NULL))
       push_string(s);
     else
       push_undefined();
