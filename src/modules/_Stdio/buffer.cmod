@@ -1585,7 +1585,7 @@ PIKECLASS Buffer
 
     io_unwrite_on_error(io, &e);
 
-#if SIZEOF_LONG == 4
+#if SIZEOF_CHAR_P == 4
       if( DO_INT32_MUL_OVERFLOW( l, bpi, &n ) )
 #else
       if( DO_INT64_MUL_OVERFLOW( l, bpi, &n ) )

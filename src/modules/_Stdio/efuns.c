@@ -1446,7 +1446,7 @@ void f_exece(INT32 args)
 
   do_set_close_on_exec();
 
-#ifdef __NT__
+#if defined(__NT__) && !defined(__MINGW32__)
 #define DOCAST(X) ((const char * const *)(X))
 #else
 #define DOCAST(X) (X)
