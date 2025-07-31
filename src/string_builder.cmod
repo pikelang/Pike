@@ -1803,11 +1803,19 @@ PMOD_EXPORT void string_builder_strftime(struct string_builder *s,
 
         case 'z': /* Time zone as hour offset from UTC. */
           {
-            int minutes = (
+            int minutes;
+#if defined(HAVE__GET_TIMEZONE)
+            long tzsec;
+            _get_timezone (&tzsec);
+#endif
+            minutes = (
 #ifdef STRUCT_TM_HAS_GMTOFF
                            tm->tm_gmtoff
 #elif defined(STRUCT_TM_HAS___TM_GMTOFF)
                            tm->__tm_gmtoff
+#elif defined(HAVE__GET_TIMEZONE)
+                           /* Assume dst is one hour. */
+                           -tzsec + 3600*tm->tm_isdst
 #elif defined(HAVE_EXTERNAL_TIMEZONE)
                            /* Assume dst is one hour. */
                            -timezone + 3600*tm->tm_isdst
