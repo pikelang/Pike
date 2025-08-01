@@ -555,6 +555,7 @@ PMOD_EXPORT void string_builder_append_integer(struct string_builder *s,
 {
   UINT64 tmp;
   size_t len = 1;
+  char sign = 0;
   const char *numbers = "0123456789abcdef";
   if ((base < 2) || (base > 16)) {
     Pike_fatal("string_builder_append_int(): Unsupported base %u.\n", base);
@@ -563,11 +564,11 @@ PMOD_EXPORT void string_builder_append_integer(struct string_builder *s,
     numbers = "0123456789ABCDEF";
   }
   if ((flags & APPEND_SIGNED) && (val < 0)) {
-    string_builder_putchar(s, '-');
+    sign = '-';
     val = -val;
     if (min_width) --min_width;
   } else if (flags & APPEND_POSITIVE) {
-    string_builder_putchar(s, '+');
+    sign = '+';
     if (min_width) --min_width;
   }
   if ((flags & APPEND_ZERO_PAD) && (precision < min_width)) {
@@ -597,6 +598,9 @@ PMOD_EXPORT void string_builder_append_integer(struct string_builder *s,
       }
       min_width = 0;
     }
+
+    if (sign)
+      string_builder_putchar(s, sign);
 
     cnt = len;
 
@@ -660,6 +664,9 @@ PMOD_EXPORT void string_builder_append_integer(struct string_builder *s,
 			  4, 0);
       min_width = 0;
     }
+
+    if (sign)
+      string_builder_putchar(s, sign);
 
     while(shift) {
       shift -= delta;
