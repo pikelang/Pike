@@ -2627,19 +2627,11 @@ if test "x${CANDLE-}" = x ; then
 fi
 AC_SUBST(CANDLE)
 if test "x${CANDLE-}" != x -a "x${CANDLE_ARCH-}" = x ; then
-  case "${PROCESSOR_ARCHITECTURE}" in
-    AMD64|EM64T) CANDLE_ARCH="x64";;
-    IA64) CANDLE_ARCH="ia64";;
-    ARM64) CANDLE_ARCH="arm64";;
-    X86) CANDLE_ARCH="x86";;
-    ARM) CANDLE_ARCH="arm";;
-    *) case "`uname -m 2>/dev/null`" in
-      x86_64) CANDLE_ARCH="x64";;
-      i*86) CANDLE_ARCH="x86";;
-      [Aa][Rr][Mm]64|aarch64) CANDLE_ARCH="arm64";;
-      [Aa][Rr][Mm]) CANDLE_ARCH="arm";;
-    esac;;
-  esac
+  AC_CHECK_DECL([_M_AMD64], [CANDLE_ARCH="x64"],,[#include <windows.h>])
+  AC_CHECK_DECL([_M_ARM],   [CANDLE_ARCH="arm"],,[#include <windows.h>])
+  AC_CHECK_DECL([_M_ARM64], [CANDLE_ARCH="arm64"],,[#include <windows.h>])
+  AC_CHECK_DECL([_M_IA64],  [CANDLE_ARCH="ia64"],,[#include <windows.h>])
+  AC_CHECK_DECL([_M_IX86],  [CANDLE_ARCH="x86"],,[#include <windows.h>])
   export CANDLE_ARCH
 fi
 AC_SUBST(CANDLE_ARCH)
