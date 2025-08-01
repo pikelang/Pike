@@ -565,8 +565,10 @@ PMOD_EXPORT void string_builder_append_integer(struct string_builder *s,
   if ((flags & APPEND_SIGNED) && (val < 0)) {
     string_builder_putchar(s, '-');
     val = -val;
+    if (min_width) --min_width;
   } else if (flags & APPEND_POSITIVE) {
     string_builder_putchar(s, '+');
+    if (min_width) --min_width;
   }
   if ((flags & APPEND_ZERO_PAD) && (precision < min_width)) {
     precision = min_width;
@@ -1825,7 +1827,7 @@ PMOD_EXPORT void string_builder_strftime(struct string_builder *s,
 #endif
                            ) / 60;
             minutes += (minutes/60) * 40;
-            string_builder_sprintf(s, "%+04d", minutes);
+            string_builder_sprintf(s, "%+05d", minutes);
           }
           break;
 
