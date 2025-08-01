@@ -56,6 +56,9 @@
 
 #ifdef HAVE_WINSOCK_H
 
+/* The #define of SIZE_T in global.h conflicts with a Windows typedef */
+#undef SIZE_T
+
 #define HAVE_FD_FLOCK
 
 
@@ -390,7 +393,8 @@ PMOD_EXPORT void closedir(DIR *dir);
 
 #endif /* EMULATE_DIRECT */
 
-
+/* Restore definition of SIZE_T from global.h */
+#define SIZE_T unsigned INT32
 
 #else /* HAVE_WINSOCK_H */
 

@@ -193,12 +193,6 @@ static void f_cp(INT32 args)
 /*! @module System
  */
 
-static void push_tchar(const TCHAR *buf, DWORD len)
-{
-  push_string(make_shared_binary_pcharp(
-    MKPCHARP(buf,my_log2(sizeof(TCHAR))),len));
-}
-
 static void push_regvalue(DWORD type, char* buffer, DWORD len, int no_expand)
 {
   struct pike_string *str;

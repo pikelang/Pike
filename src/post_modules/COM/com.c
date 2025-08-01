@@ -1548,6 +1548,8 @@ char * GetTypeKindName( TYPEKIND typekind )
     CASE_STRING( TKIND_COCLASS );
     CASE_STRING( TKIND_ALIAS );
     CASE_STRING( TKIND_UNION );
+  default:
+    break;
   }
 
   return s;

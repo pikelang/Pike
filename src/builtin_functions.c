@@ -5913,11 +5913,18 @@ static void encode_struct_tm(const struct tm *tm, int gmtoffset)
 
 static void encode_tm_tz(const struct tm*tm)
 {
+#if defined(HAVE__GET_TIMEZONE)
+  long tzsec;
+  _get_timezone (&tzsec);
+#endif
   encode_struct_tm(tm,
 #ifdef STRUCT_TM_HAS_GMTOFF
    -tm->tm_gmtoff
 #elif defined(STRUCT_TM_HAS___TM_GMTOFF)
    -tm->__tm_gmtoff
+#elif defined(HAVE__GET_TIMEZONE)
+   /* Assume dst is one hour. */
+   tzsec - 3600*tm->tm_isdst
 #elif defined(HAVE_EXTERNAL_TIMEZONE)
    /* Assume dst is one hour. */
    timezone - 3600*tm->tm_isdst
@@ -6399,6 +6406,12 @@ static int get_tm(const char *fname, int args, struct tm *date)
   date->tm_mon = mon;
   date->tm_year = year;
   date->tm_isdst = isdst;
+#ifdef STRUCT_TM_HAS_GMTOFF
+  date->tm_gmtoff = -tz;
+#endif
+#ifdef STRUCT_TM_HAS___TM_GMTOFF
+  date->__tm_gmtoff = -tz;
+#endif
 #ifdef NULL_IS_SPECIAL
   date->tm_zone = NULL;
 #endif

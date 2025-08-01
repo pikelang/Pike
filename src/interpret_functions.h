@@ -2895,7 +2895,7 @@ OPCODE1(F_LTOSVAL_CALL_BUILTIN_AND_ASSIGN_POP,
   new_frame->flags=PIKE_FRAME_RETURN_INTERNAL | XFLAGS;			   \
 									   \
   if (UNLIKELY(Pike_interpreter.trace_level > 3)) {                        \
-    fprintf(stderr, "-    Addr = 0x%lx\n", (unsigned long) addr);	   \
+    fprintf(stderr, "-    Addr = %p\n", addr);	                           \
   }									   \
 									   \
   FETCH;								   \

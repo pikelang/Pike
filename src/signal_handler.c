@@ -25,6 +25,11 @@
 #include "main.h"
 #include "time_stuff.h"
 
+#ifdef __NT__
+/* We need the typdef provided by Windows, not the #define from global.h */
+#undef SIZE_T
+#endif
+
 #include <signal.h>
 #include <errno.h>
 
@@ -403,8 +408,10 @@ static void report_child(int pid,
 #endif
 
 
+#ifdef SIGCHLD
 /* NB: Async-Signal-Safe! */
 static RETSIGTYPE receive_sigchild(int signum);
+#endif
 
 #ifdef USE_SIGCHILD
 typedef struct wait_data_s {

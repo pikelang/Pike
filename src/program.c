@@ -9399,7 +9399,7 @@ static void insert_small_number(INT_TYPE a)
     add_to_linenumbers(a>>8);
     add_to_linenumbers(a);
 #ifdef INT_TYPE_INT32_CONVERSION
-  } else if (a < -0x80000000L || a > 0x7fffffffL) {
+  } else if (a < -0x7fffffffL-1 || a > 0x7fffffffL) {
     /* Overload 16-bit zero as marker for 64-bit. */
     fprintf(stderr, "Saving huge linenumber: %lld\n", (long long)a);
     add_to_linenumbers(-127);
@@ -9454,7 +9454,7 @@ static void ext_insert_small_number (char **ptr, INT_TYPE a)
     *(*ptr)++ = a>>8;
     *(*ptr)++ = a;
 #ifdef INT_TYPE_INT32_CONVERSION
-  } else if (a < -0x80000000L || a > 0x7fffffffL) {
+  } else if (a < -0x7fffffffL-1 || a > 0x7fffffffL) {
     /* Overload 16-bit zero as marker for 64-bit. */
     *(*ptr)++ = -127;
     *(*ptr)++ = 0;

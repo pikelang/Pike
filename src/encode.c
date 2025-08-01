@@ -1273,7 +1273,8 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
       if (data->canonic)
 	Pike_error("Canonical encoding of programs not supported.\n");
       if (!(val->u.program->flags & PROGRAM_FIXED))
-	Pike_error("Encoding of unfixated programs not supported.\n");
+        Pike_error("Encoding of programs that have not completed "
+                   "compilation not supported.\n");
       check_stack(1);
       push_svalue(val);
       apply(encoder_codec (data),"nameof", 1);

@@ -892,7 +892,8 @@ static time_t local_time_to_utc (time_t t)
  * Might return -1 if the time is outside the valid range.
  */
 {
-  int tz_secs, dl_secs;
+  long tz_secs;
+  int dl_secs;
 
   /* First adjust for the time zone. */
 #ifdef HAVE__GET_TIMEZONE
@@ -2337,14 +2338,15 @@ SOCKFUN1(listen, int)
 
 PMOD_EXPORT int debug_fd_connect (FD fd, struct sockaddr *a, int len)
 {
-  SOCKET ret;
+  int ret;
+  SOCKET s;
 
   FDDEBUG(fprintf(stderr, "fd_connect(%d, %p, %d)...\n", fd, a, len));
 
-  if (fd_to_socket(fd, &ret, 0) < 0) return -1;
+  if (fd_to_socket(fd, &s, 0) < 0) return -1;
 
   FDDEBUG(fprintf(stderr, "connect on %d (%ld)\n",
-                  fd, (long)(ptrdiff_t)ret);
+                  fd, (long)(ptrdiff_t)s);
 	  {
 	    int i;
 	    for(i = 0 ; i < len ; i++)
@@ -2353,13 +2355,13 @@ PMOD_EXPORT int debug_fd_connect (FD fd, struct sockaddr *a, int len)
 	  }
   );
 
-  ret=connect(ret,a,len);
+  ret=connect(s,a,len);
 
   release_fd(fd);
 
   if(ret == SOCKET_ERROR) set_errno_from_win32_error (WSAGetLastError());
   FDDEBUG(fprintf(stderr, "connect returned %d (%d)\n",ret,errno));
-  return (int)ret;
+  return ret;
 }
 
 static int low_fd_close(FD fd)

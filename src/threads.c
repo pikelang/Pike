@@ -754,7 +754,7 @@ PMOD_EXPORT void pike_threads_allow (struct thread_state *ts COMMA_DLOC_DECL)
     cpu_time_t now = get_real_time();
 
     if (UNLIKELY((now - ts->interval_start) > thread_quanta) &&
-	LIKELY(ts->thread_obj)) {
+	LIKELY(ts->thread_obj != NULL)) {
       ref_push_object(ts->thread_obj);
       push_int64(now - ts->interval_start);
       ts->interval_start = now;
@@ -824,7 +824,7 @@ PMOD_EXPORT void pike_threads_allow_ext (struct thread_state *ts
     cpu_time_t now = get_real_time();
 
     if (UNLIKELY((now - ts->interval_start) > thread_quanta) &&
-	LIKELY(ts->thread_obj)) {
+	LIKELY(ts->thread_obj != NULL)) {
       ref_push_object(ts->thread_obj);
       push_int64(now - ts->interval_start);
       ts->interval_start = now;
