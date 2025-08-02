@@ -25,11 +25,6 @@
 #include "main.h"
 #include "time_stuff.h"
 
-#ifdef __NT__
-/* We need the typdef provided by Windows, not the #define from global.h */
-#undef SIZE_T
-#endif
-
 #include <signal.h>
 #include <errno.h>
 

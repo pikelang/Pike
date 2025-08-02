@@ -343,6 +343,11 @@ PMOD_EXPORT void * ba_alloc(struct block_allocator * a) {
 
         bitmap += n/(sizeof(unsigned long) * 8);
         *bitmap |= (1UL<<(n & ((sizeof(unsigned long) * 8) - 1)));
+
+#ifdef PIKE_DEBUG
+        ba_check_ptr(a, a->alloc, ptr, NULL, __LINE__ BA_CHECK_INUSE);
+#endif
+
     }
 #endif
 
@@ -418,6 +423,10 @@ found:
             }
             *bitmap &= (unsigned long)~(long)mask;
         }
+
+#ifdef PIKE_DEBUG
+        ba_check_ptr(a, a->last_free, ptr, NULL, __LINE__ BA_CHECK_FREE);
+#endif
 #endif
 
         b->next = p->h.first;

@@ -1893,10 +1893,10 @@ PMOD_EXPORT void safe_describe_svalue (struct byte_buffer *buf, const struct sva
 PMOD_EXPORT void print_svalue (FILE *out, const struct svalue *s)
 {
   struct byte_buffer str = BUFFER_INIT();
-  SIZE_T off = 0;
+  size_t off = 0;
   describe_svalue (&str, s, 0, NULL);
   while (off < buffer_content_length(&str)) {
-    SIZE_T num = fwrite ((char*)buffer_ptr(&str) + off, 1, buffer_content_length(&str) - off, out);
+    size_t num = fwrite ((char*)buffer_ptr(&str) + off, 1, buffer_content_length(&str) - off, out);
     if (num) off += num;
     else break;
   }

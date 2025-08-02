@@ -365,8 +365,6 @@ void *alloca();
 /* Get INT64, INT32, INT16, INT8, et al. */
 #include "pike_int_types.h"
 
-#define SIZE_T unsigned INT32
-
 #define TYPE_T unsigned int
 #define TYPE_FIELD unsigned INT16
 
