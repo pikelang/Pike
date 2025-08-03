@@ -2368,7 +2368,6 @@ void describe_array_low(struct byte_buffer *buf, struct array *a, struct process
 #ifdef PIKE_DEBUG
 void simple_describe_array(struct array *a)
 {
-  char *s;
   if (!a) {
     fputs("NULL-array\n", stderr);
   } else if (a->size) {
