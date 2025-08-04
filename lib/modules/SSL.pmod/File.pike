@@ -917,7 +917,7 @@ protected void _destruct()
       if (close_state == STREAM_OPEN &&
 	  // Don't bother with closing nicely if there's an error from
 	  // an earlier operation. close() will throw an error for it.
-	  !close_errno) {
+          !close_errno && !Pike.signal_contextp()) {
 	// Clear the user callbacks, and make sure not to block.
 	set_nonblocking();
 	close (0, 0, 1);
