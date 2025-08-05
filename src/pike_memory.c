@@ -3252,11 +3252,13 @@ PMOD_EXPORT void debug_malloc_accept_leak_fd(int fd)
 PMOD_EXPORT int debug_malloc_close_fd(int fd, LOCATION UNUSED(location))
 {
   if(fd==-1) return fd;
+  mt_lock(&debug_malloc_mutex);
 #ifdef DMALLOC_TRACK_FREE
   dmalloc_mark_as_free( FD2PTR(fd), 1 );
 #else /* !DMALLOC_TRACK_FREE */
   remove_memhdr(FD2PTR(fd));
 #endif /* DMALLOC_TRACK_FREE */
+  mt_unlock(&debug_malloc_mutex);
   return fd;
 }
 
