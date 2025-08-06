@@ -10,7 +10,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.65 2000/04/15 05:05:28 hubbe Exp $");
+RCSID("$Id$");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -1518,7 +1518,6 @@ void *dmalloc_find_memblock_base(void *ptr)
       {
 	if( p <= lookfor && lookfor < p + m->size)
 	{
-	  mt_unlock(&debug_malloc_mutex);
 	  return m->data;
 	}
       }
