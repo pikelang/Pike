@@ -615,6 +615,7 @@ Pike_module.msm: PikeWin32Installer.vbs
 Pike_module.wxs: pike-complete-stamp $(TMP_BINDIR)/install.pike Makefile
 	@no_autodoc="--no-autodoc"; \
 	if [ -f autodoc.xml ]; then no_autodoc=""; fi; \
+	$(RUNPIKE) $(TMP_BINDIR)/gather_dlls.pike pike@EXEEXT@ lib/modules; \
 	$(RUNPIKE) $(TMP_BINDIR)/install.pike --wix-module $$no_autodoc \
 	$(INSTALL_EXPORT_ARGS) \
 	exec_prefix="$(bindir)" lib_prefix="$(lib_prefix)" \
