@@ -2670,7 +2670,6 @@ void *dmalloc_find_memblock_base(void *ptr)
       {
 	if( p <= lookfor && lookfor < p + m->size)
 	{
-	  mt_unlock(&debug_malloc_mutex);
 	  return m->data;
 	}
       }
