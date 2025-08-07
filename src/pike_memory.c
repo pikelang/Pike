@@ -2573,14 +2573,6 @@ void dump_memhdr_locations(struct memhdr *from,
   }
 }
 
-void dump_memhdr_locations(struct memhdr *from,
-                           struct memhdr *notfrom,
-                           int indent)
-{
-  mt_lock(&debug_malloc_mutex);
-  dump_memhdr_locations_unlocked(from, notfrom, indent);
-  mt_unlock(&debug_malloc_mutex);
-}
 
 static void low_dmalloc_describe_location(struct memhdr *mh, int offset, int indent);
 
