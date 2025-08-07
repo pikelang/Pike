@@ -1509,7 +1509,7 @@ void *fake_calloc(size_t x, size_t y)
 #endif
 
 
-static struct memhdr *my_find_memhdr(const void *, int);
+static struct memhdr *find_memhdr_internal_unlocked(const void *, int);
 static void dump_location_bt (LOCATION l, int indent, const char *prefix);
 
 
@@ -1875,7 +1875,7 @@ PTR_HASH_ALLOC_FILL_PAGES(memhdr, 128)
 
 
 
-static struct memhdr *my_find_memhdr(const void *p, int already_gone)
+static struct memhdr *find_memhdr_internal_unlocked(const void *p, int already_gone)
 {
   struct memhdr *mh;
 
@@ -1938,8 +1938,8 @@ static struct memloc *find_location(struct memhdr *mh, LOCATION location)
   return NULL;
 }
 
-static void add_location(struct memhdr *mh,
-			 LOCATION location)
+static void add_location_unlocked(struct memhdr *mh,
+                                  LOCATION location)
 {
   struct memloc *ml;
   unsigned long l=lhash(mh,location);
@@ -1959,7 +1959,7 @@ static void add_location(struct memhdr *mh,
 #endif
 
   if (mh->flags & MEM_TRACE) {
-    fprintf(stderr, "add_location(0x%p, %s)\n", mh, location);
+    fprintf(stderr, "add_location_unlocked(0x%p, %s)\n", mh, location);
   }
 
 #ifdef DMALLOC_PROFILE
@@ -2001,9 +2001,11 @@ static void add_location(struct memhdr *mh,
 
 PMOD_EXPORT LOCATION dmalloc_default_location=0;
 
-static struct memhdr *low_make_memhdr(const void *p, int s, LOCATION location
+static struct memhdr *make_memhdr_internal_unlocked(const void *p, int s,
+                                                    LOCATION location
 #ifdef DMALLOC_C_STACK_TRACE
-				      , c_stack_frame *bt, int bt_len
+                                                    , c_stack_frame *bt,
+                                                    int bt_len
 #endif
 				     )
 {
@@ -2058,13 +2060,13 @@ static struct memhdr *low_make_memhdr(const void *p, int s, LOCATION location
 #endif /* DMALLOC_TRACE_MEMLOC */
 
   if(dmalloc_default_location)
-    add_location(mh, dmalloc_default_location);
+    add_location_unlocked(mh, dmalloc_default_location);
   return mh;
 }
 
 PMOD_EXPORT void dmalloc_trace(const void *p)
 {
-  struct memhdr *mh = my_find_memhdr(p, 0);
+  struct memhdr *mh = find_memhdr_internal_unlocked(p, 0);
   if (mh) {
     mh->flags |= MEM_TRACE;
   }
@@ -2075,9 +2077,9 @@ PMOD_EXPORT void dmalloc_register(const void *p, int s, LOCATION location)
   struct memhdr *mh;
   GET_ALLOC_BT (bt);
   mt_lock(&debug_malloc_mutex);
-  mh = my_find_memhdr(p, 0);
+  mh = find_memhdr_internal_unlocked(p, 0);
   if (!mh) {
-    low_make_memhdr(p, s, location BT_ARGS (bt));
+    make_memhdr_internal_unlocked(p, s, location BT_ARGS(bt));
   }
   mt_unlock(&debug_malloc_mutex);
   if (mh) {
@@ -2093,36 +2095,36 @@ PMOD_EXPORT void dmalloc_accept_leak(const void *p)
   {
     struct memhdr *mh;
     mt_lock(&debug_malloc_mutex);
-    if((mh=my_find_memhdr(p,0)))
+    if((mh = find_memhdr_internal_unlocked(p, 0)))
       mh->flags |= MEM_IGNORE_LEAK;
     mt_unlock(&debug_malloc_mutex);
   }
 }
 
-static void low_add_marks_to_memhdr(struct memhdr *to,
-				    struct memhdr *from)
+static void add_marks_to_memhdr_unlocked(struct memhdr *to,
+                                         struct memhdr *from)
 {
   struct memloc *l;
   if(!from || (from == to)) return;
   for(l=from->locations;l;l=l->next)
-    add_location(to, l->location);
+    add_location_unlocked(to, l->location);
 }
 
 void add_marks_to_memhdr(struct memhdr *to, const void *ptr)
 {
   mt_lock(&debug_malloc_mutex);
 
-  low_add_marks_to_memhdr(to,my_find_memhdr(ptr,0));
+  add_marks_to_memhdr_unlocked(to, find_memhdr_internal_unlocked(ptr, 0));
 
   mt_unlock(&debug_malloc_mutex);
 }
 
-static void unregister_memhdr(struct memhdr *mh, int already_gone)
+static void unregister_memhdr_unlocked(struct memhdr *mh, int already_gone)
 {
   if(mh->size < 0) mh->size=~mh->size;
   if(!already_gone) check_pad(mh,0);
   if(!(mh->flags & MEM_LOCS_ADDED_TO_NO_LEAKS))
-    low_add_marks_to_memhdr(&no_leak_memlocs, mh);
+    add_marks_to_memhdr_unlocked(&no_leak_memlocs, mh);
   if (mh->flags & MEM_TRACE) {
     fprintf(stderr, "Removing memhdr %p\n", mh);
   }
@@ -2133,12 +2135,12 @@ static void unregister_memhdr(struct memhdr *mh, int already_gone)
   }
 }
 
-static int low_dmalloc_unregister(const void *p, int already_gone)
+static int dmalloc_unregister_unlocked(const void *p, int already_gone)
 {
   struct memhdr *mh=find_memhdr(p);
   if(mh)
   {
-    unregister_memhdr(mh, already_gone);
+    unregister_memhdr_unlocked(mh, already_gone);
     return 1;
   }
   return 0;
@@ -2148,27 +2150,27 @@ PMOD_EXPORT int dmalloc_unregister(const void *p, int already_gone)
 {
   int ret;
   mt_lock(&debug_malloc_mutex);
-  ret=low_dmalloc_unregister(p,already_gone);
+  ret = dmalloc_unregister_unlocked(p, already_gone);
   mt_unlock(&debug_malloc_mutex);
   return ret;
 }
 
-static void dmalloc_ba_walk_unregister_cb(struct ba_iterator *it,
-					  void *UNUSED(ignored))
+static void ba_walk_dmalloc_unregister_unlocked_cb(struct ba_iterator *it,
+                                                   void *UNUSED(ignored))
 {
   do {
-    low_dmalloc_unregister(ba_it_val(it), 0);
+    dmalloc_unregister_unlocked(ba_it_val(it), 0);
   } while (ba_it_step(it));
 }
 
 PMOD_EXPORT void dmalloc_unregister_all(struct block_allocator *a)
 {
   mt_lock(&debug_malloc_mutex);
-  ba_walk(a, dmalloc_ba_walk_unregister_cb, NULL);
+  ba_walk(a, ba_walk_dmalloc_unregister_unlocked_cb, NULL);
   mt_unlock(&debug_malloc_mutex);
 }
 
-static int low_dmalloc_mark_as_free(const void *p, int UNUSED(already_gone))
+static int dmalloc_mark_as_free_unlocked(const void *p, int UNUSED(already_gone))
 {
   struct memhdr *mh=find_memhdr(p);
   if(mh)
@@ -2180,7 +2182,7 @@ static int low_dmalloc_mark_as_free(const void *p, int UNUSED(already_gone))
     {
       mh->size=~mh->size;
       mh->flags |= MEM_FREE | MEM_IGNORE_LEAK | MEM_LOCS_ADDED_TO_NO_LEAKS;
-      low_add_marks_to_memhdr(&no_leak_memlocs, mh);
+      add_marks_to_memhdr_unlocked(&no_leak_memlocs, mh);
     }
     return 1;
   }
@@ -2191,22 +2193,22 @@ PMOD_EXPORT int dmalloc_mark_as_free(const void *p, int already_gone)
 {
   int ret;
   mt_lock(&debug_malloc_mutex);
-  ret=low_dmalloc_mark_as_free(p,already_gone);
+  ret = dmalloc_mark_as_free_unlocked(p, already_gone);
   mt_unlock(&debug_malloc_mutex);
   return ret;
 }
 
-static void flush_blocks_to_free(void)
+static void flush_blocks_to_free_unlocked(void)
 {
   int i;
 
   if(verbose_debug_malloc)
-    fprintf(stderr, "flush_blocks_to_free()\n");
+    fprintf(stderr, "flush_blocks_to_free_unlocked()\n");
 
   for (i=0; i < FREE_DELAY; i++) {
     void *p;
     if ((p = blocks_to_free[i])) {
-      struct memhdr *mh = my_find_memhdr(p, 1);
+      struct memhdr *mh = find_memhdr_internal_unlocked(p, 1);
       if (!mh) {
 	fprintf(stderr, "Lost track of a freed memory block: %p!\n", p);
 	abort();
@@ -2217,7 +2219,7 @@ static void flush_blocks_to_free(void)
       PIKE_MEM_RW_RANGE((char *) p - DEBUG_MALLOC_PAD,
 			(mh->size > 0 ? mh->size : ~mh->size) + 2 * DEBUG_MALLOC_PAD);
 #ifdef DMALLOC_TRACK_FREE
-      unregister_memhdr(mh,0);
+      unregister_memhdr_unlocked(mh, 0);
 #else /* !DMALLOC_TRACK_FREE */
       remove_memhdr(p);
 #endif /* DMALLOC_TRACK_FREE */
@@ -2256,13 +2258,15 @@ PMOD_EXPORT void *debug_malloc(size_t s, LOCATION location)
   {
     GET_ALLOC_BT (bt);
     m=do_pad(m, s);
-    low_make_memhdr(m, s, location BT_ARGS (bt))->flags|=MEM_PADDED;
+    make_memhdr_internal_unlocked(m, s, location BT_ARGS(bt))->flags |=
+      MEM_PADDED;
   } else {
-    flush_blocks_to_free();
+    flush_blocks_to_free_unlocked();
     if ((m=(char *)real_malloc(s + DEBUG_MALLOC_PAD*2))) {
       GET_ALLOC_BT (bt);
       m=do_pad(m, s);
-      low_make_memhdr(m, s, location BT_ARGS (bt))->flags|=MEM_PADDED;
+      make_memhdr_internal_unlocked(m, s, location BT_ARGS(bt))->flags |=
+        MEM_PADDED;
     }
   }
 
@@ -2293,7 +2297,7 @@ PMOD_EXPORT void *debug_realloc(void *p, size_t s, LOCATION location)
   struct memhdr *mh = 0;
   mt_lock(&debug_malloc_mutex);
 
-  if (p && (mh = my_find_memhdr(p,0))) {
+  if (p && (mh = find_memhdr_internal_unlocked(p, 0))) {
     base = (char *) p - DEBUG_MALLOC_PAD;
     PIKE_MEM_RW_RANGE(base, mh->size + 2 * DEBUG_MALLOC_PAD);
   }
@@ -2305,12 +2309,13 @@ PMOD_EXPORT void *debug_realloc(void *p, size_t s, LOCATION location)
     m=do_pad(m, s);
     if (mh) {
       mh->size = s;
-      add_location(mh, location);
+      add_location_unlocked(mh, location);
       move_memhdr(mh, m);
     }
     else {
       GET_ALLOC_BT (bt);
-      low_make_memhdr(m, s, location BT_ARGS (bt))->flags|=MEM_PADDED;
+      make_memhdr_internal_unlocked(m, s, location BT_ARGS (bt))->flags |=
+        MEM_PADDED;
     }
   }
   if(verbose_debug_malloc)
@@ -2330,7 +2335,7 @@ PMOD_EXPORT void debug_free(void *p, LOCATION location, int mustfind)
   mustfind=1;
 #endif
 
-  mh=my_find_memhdr(p,0);
+  mh = find_memhdr_internal_unlocked(p, 0);
 
   if(verbose_debug_malloc || (mh && (mh->flags & MEM_WARN_ON_FREE)))
     fprintf(stderr, "free(%p) (%s)\n", p, LOCATION_NAME(location));
@@ -2350,7 +2355,7 @@ PMOD_EXPORT void debug_free(void *p, LOCATION location, int mustfind)
       memset(p, 0x55, mh->size);
     if(mh->size < MAX_UNFREE_MEM/FREE_DELAY)
     {
-      add_location(mh, location);
+      add_location_unlocked(mh, location);
       mh->size = ~mh->size;
       mh->flags|=MEM_FREE | MEM_IGNORE_LEAK;
       blocks_to_free_ptr++;
@@ -2359,7 +2364,7 @@ PMOD_EXPORT void debug_free(void *p, LOCATION location, int mustfind)
       blocks_to_free[blocks_to_free_ptr]=p;
       if((p=p2))
       {
-	mh=my_find_memhdr(p,1);
+        mh = find_memhdr_internal_unlocked(p, 1);
 	if(!mh)
 	{
 	  fprintf(stderr,"Lost track of a freed memory block: %p!\n",p);
@@ -2376,7 +2381,7 @@ PMOD_EXPORT void debug_free(void *p, LOCATION location, int mustfind)
     PIKE_MEM_RW_RANGE((char *) p - DEBUG_MALLOC_PAD,
 		      (mh->size > 0 ? mh->size : ~mh->size) + 2 * DEBUG_MALLOC_PAD);
 #ifdef DMALLOC_TRACK_FREE
-    unregister_memhdr(mh,0);
+    unregister_memhdr_unlocked(mh, 0);
 #else /* !DMALLOC_TRACK_FREE */
     remove_memhdr(p);
 #endif /* DMALLOC_TRACK_FREE */
@@ -2397,7 +2402,7 @@ PMOD_EXPORT int dmalloc_check_allocated (void *p, int must_be_freed)
   int res;
   struct memhdr *mh;
   mt_lock(&debug_malloc_mutex);
-  mh=my_find_memhdr(p,0);
+  mh = find_memhdr_internal_unlocked(p, 0);
   res = mh && mh->size>=0;
   if (res && must_be_freed)
     res = !(mh->flags & MEM_IGNORE_LEAK);
@@ -2564,15 +2569,24 @@ void dump_memhdr_locations(struct memhdr *from,
     dump_location_bt (l->location, indent + 4, "| ");
 
     /* Allow linked memhdrs */
-/*    dump_memhdr_locations(my_find_memhdr(l,0),notfrom,indent+2); */
+/*    dump_memhdr_locations_unlocked(find_memhdr_internal_unlocked(l, 0), notfrom, indent+2); */
   }
+}
+
+void dump_memhdr_locations(struct memhdr *from,
+                           struct memhdr *notfrom,
+                           int indent)
+{
+  mt_lock(&debug_malloc_mutex);
+  dump_memhdr_locations_unlocked(from, notfrom, indent);
+  mt_unlock(&debug_malloc_mutex);
 }
 
 static void low_dmalloc_describe_location(struct memhdr *mh, int offset, int indent);
 
 
-static void find_references_to(const void *block, int indent,
-                               int depth, int flags)
+static void find_references_to_unlocked(const void *block, int indent,
+                                        int depth, int flags)
 {
   unsigned long h;
   struct memhdr *m;
@@ -2648,7 +2662,7 @@ static void find_references_to(const void *block, int indent,
 void dmalloc_find_references_to(void *block)
 {
   mt_lock(&debug_malloc_mutex);
-  find_references_to(block, 2, 1, 0);
+  find_references_to_unlocked(block, 2, 1, 0);
   mt_unlock(&debug_malloc_mutex);
 }
 
@@ -2683,7 +2697,7 @@ void *dmalloc_find_memblock_base(void *ptr)
 PMOD_EXPORT void debug_malloc_dump_references(const void *x, int indent,
                                               int depth, int flags)
 {
-  struct memhdr *mh=my_find_memhdr(x,0);
+  struct memhdr *mh = find_memhdr_internal_unlocked(x, 0);
   if(!mh) return;
 
 #ifdef DMALLOC_C_STACK_TRACE
@@ -2708,7 +2722,7 @@ PMOD_EXPORT void debug_malloc_dump_references(const void *x, int indent,
     {
       fprintf(stderr,"%*s<<<Possibly referenced>>>\n",indent,"");
       if(!(flags & 2))
-	find_references_to(x,indent+2,depth-1,flags);
+        find_references_to_unlocked(x, indent+2, depth-1, flags);
     }
     else
     {
@@ -2746,7 +2760,7 @@ PMOD_EXPORT void list_open_fds(void)
   mt_unlock(&debug_malloc_mutex);
 }
 
-static void low_search_all_memheaders_for_references(void)
+static void search_all_memheaders_for_references_unlocked(void)
 {
   unsigned long h;
   struct memhdr *m;
@@ -2790,7 +2804,7 @@ static void low_search_all_memheaders_for_references(void)
 void search_all_memheaders_for_references(void)
 {
   mt_lock(&debug_malloc_mutex);
-  low_search_all_memheaders_for_references();
+  search_all_memheaders_for_references_unlocked();
   mt_unlock(&debug_malloc_mutex);
 }
 
@@ -2808,7 +2822,7 @@ static void cleanup_memhdrs(void)
       {
 	PIKE_MEM_RW_RANGE((char *) p - DEBUG_MALLOC_PAD,
 			  ~mh->size + 2 * DEBUG_MALLOC_PAD);
-	unregister_memhdr(mh,0);
+        unregister_memhdr_unlocked(mh, 0);
 	real_free( ((char *)p) - DEBUG_MALLOC_PAD );
       }else{
 	fake_free(p);
@@ -2821,7 +2835,7 @@ static void cleanup_memhdrs(void)
   if (exit_with_cleanup)
   {
     int first=1;
-    low_search_all_memheaders_for_references();
+    search_all_memheaders_for_references_unlocked();
 
     for(h=0;h<(unsigned long)memhdr_hash_table_size;h++)
     {
@@ -2872,7 +2886,7 @@ static void cleanup_memhdrs(void)
 	  break;
 	}
 
-	find_references_to(p,0,0,0);
+        find_references_to_unlocked(p, 0, 0, 0);
 	dump_memhdr_locations(m, 0,0);
       }
     }
@@ -2983,8 +2997,8 @@ PMOD_EXPORT void * debug_malloc_update_location(const void *p,LOCATION location)
 #ifdef DMALLOC_REMEMBER_LAST_LOCATION
     th_setspecific(dmalloc_last_seen_location, location);
 #endif
-    if((mh=my_find_memhdr(p,0)))
-      add_location(mh, location);
+    if((mh = find_memhdr_internal_unlocked(p, 0)))
+      add_location_unlocked(mh, location);
 
     mt_unlock(&debug_malloc_mutex);
   }
@@ -3119,8 +3133,8 @@ PMOD_EXPORT void *debug_malloc_name(const void *p, const char *file,
 
     mt_lock(&debug_malloc_mutex);
 
-    if((mh=my_find_memhdr(p,0)))
-      add_location(mh, loc);
+    if((mh = find_memhdr_internal_unlocked(p, 0)))
+      add_location_unlocked(mh, loc);
 
     mt_unlock(&debug_malloc_mutex);
   }
@@ -3140,14 +3154,15 @@ PMOD_EXPORT int debug_malloc_copy_names(void *p, void *p2)
     struct memhdr *mh,*from;
     mt_lock(&debug_malloc_mutex);
 
-    if((from=my_find_memhdr(p2,0)) && (mh=my_find_memhdr(p,0)))
+    if((from = find_memhdr_internal_unlocked(p2, 0)) &&
+       (mh = find_memhdr_internal_unlocked(p, 0)))
     {
       struct memloc *l;
       for(l=from->locations;l;l=l->next)
       {
 	if(LOCATION_IS_DYNAMIC(l->location))
 	{
-	  add_location(mh, l->location);
+          add_location_unlocked(mh, l->location);
 	  names++;
 	}
       }
@@ -3166,7 +3181,7 @@ const char *dmalloc_find_name(const void *p)
     struct memhdr *mh;
     mt_lock(&debug_malloc_mutex);
 
-    if((mh=my_find_memhdr(p,0)))
+    if((mh = find_memhdr_internal_unlocked(p, 0)))
     {
       struct memloc *l;
       for(l=mh->locations;l;l=l->next)
@@ -3253,7 +3268,7 @@ PMOD_EXPORT int debug_malloc_close_fd(int fd, LOCATION UNUSED(location))
   if(fd==-1) return fd;
   mt_lock(&debug_malloc_mutex);
 #ifdef DMALLOC_TRACK_FREE
-  low_dmalloc_mark_as_free( FD2PTR(fd), 1 );
+  dmalloc_mark_as_free_unlocked( FD2PTR(fd), 1 );
 #else /* !DMALLOC_TRACK_FREE */
   remove_memhdr(FD2PTR(fd));
 #endif /* DMALLOC_TRACK_FREE */
@@ -3345,14 +3360,15 @@ void dmalloc_set_mmap_from_template(void *p, void *p2)
     struct memhdr *mh,*from;
     mt_lock(&debug_malloc_mutex);
 
-    if((from=my_find_memhdr(p2,0)) && (mh=my_find_memhdr(p,0)))
+    if((from = find_memhdr_internal_unlocked(p2, 0)) &&
+       (mh = find_memhdr_internal_unlocked(p, 0)))
     {
       struct memloc *l;
       for(l=from->locations;l;l=l->next)
       {
 	if(LOCATION_TYPE (l->location) == 'T')
 	{
-	  add_location(mh, l->location+1);
+          add_location_unlocked(mh, l->location+1);
 	  names++;
 	}
       }
@@ -3411,7 +3427,7 @@ void dmalloc_describe_location(void *p, int offset, int indent)
   {
     struct memhdr *mh;
 
-    if((mh=my_find_memhdr(p,0)))
+    if((mh = find_memhdr_internal_unlocked(p, 0)))
       low_dmalloc_describe_location(mh, offset, indent);
   }
 }
@@ -3460,7 +3476,7 @@ void dmalloc_add_mmap_entry(struct memory_map *m,
 
 int dmalloc_is_invalid_memory_block(void *block)
 {
-  struct memhdr *mh=my_find_memhdr(block,1);
+  struct memhdr *mh = find_memhdr_internal_unlocked(block, 1);
   if(!mh) return -1; /* no such known block */
   if(mh->size < 0) return -2; /* block has been freed */
   return 0; /* block is valid */
