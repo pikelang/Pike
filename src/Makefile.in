@@ -116,6 +116,7 @@ CONFIG_HEADERS=@CONFIG_HEADERS@
 CANDLE=@CANDLE@ -nologo
 LIGHT=@LIGHT@ -nologo
 RCEXE=@RCEXE@
+WINDRES=@WINDRES@
 
 FALLBACK_CC=@FALLBACK_CC@
 
@@ -668,7 +669,8 @@ pike.ico: $(PACKAGINGDIR)/windows/pike.ico
 
 pike_icon.res: pike.ico
 	echo 'pike ICON pike.ico' > pike_icon.rc
-	$(RCEXE) /fo $@ pike_icon.rc
+	if test "$(RCEXE)" = "" ; then $(WINDRES) -o $@ pike_icon.rc ; \
+	else $(RCEXE) /fo $@ pike_icon.rc ; fi
 
 # install
 install: pike-complete-stamp
