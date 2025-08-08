@@ -306,6 +306,7 @@ if_autoconf(2,50,[
 # ABI selection.
 
 PIKE_SELECT_ABI
+ABI=${pike_cv_abi}
 
 #############################################################################
 
@@ -8752,6 +8753,7 @@ AC_SUBST(RANLIB)
 AC_SUBST(DEBUGDEF)
 AC_SUBST(EXTRA_MODULE_REQUIREMENTS)
 AC_SUBST(DTRACE_REQUIREMENTS)
+AC_SUBST(ABI)
 
 pike_cv_prog_CC="${CC}"
 

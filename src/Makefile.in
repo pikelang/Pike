@@ -110,6 +110,7 @@ CC=@CC@
 CXX=@CXX@
 CPP=@CPP@
 GDB=gdb
+ABI=@ABI@
 
 CONFIG_HEADERS=@CONFIG_HEADERS@
 
@@ -647,8 +648,8 @@ wix: Pike.msi
 
 wix_export: Pike.msi
 	VER=`$(RUNPIKE) --dumpversion` ;\
-	cp Pike.msi $(BASEDIR)/Pike-v$(VER)-win32.msi ;\
-	cp config.info $(BASEDIR)/Pike-v$(VER)-win32.info
+	cp Pike.msi $(BASEDIR)/Pike-v$${VER}-win$(ABI).msi ;\
+	cp config.info $(BASEDIR)/Pike-v$${VER}-win$(ABI).info
 
 amigaos_export:
 	@$(RUNPIKE) $(TMP_BINDIR)/install.pike --export-amigaos \
