@@ -1636,7 +1636,7 @@ static int add_location_duplicate=0;  /* Used in AD_HOC mode */
 #endif
 
 #if DEBUG_MALLOC_PAD - 0 > 0
-char *do_pad(char *mem, long size)
+static char *do_pad_unlocked(char *mem, long size)
 {
   mem+=DEBUG_MALLOC_PAD;
 
@@ -1680,7 +1680,7 @@ char *do_pad(char *mem, long size)
 #define PTR2FD(X) (((ptrdiff_t)(X))>>2)
 
 
-void check_pad(struct memhdr *mh, int freeok)
+static void check_pad_unlocked(struct memhdr *mh, int freeok)
 {
   static int out_biking=0;
   unsigned long q,e;
@@ -1789,8 +1789,8 @@ void check_pad(struct memhdr *mh, int freeok)
   LOW_END_CYCLIC();
 }
 #else
-#define do_pad(X,Y) (X)
-#define check_pad(M,X)
+#define do_pad_unlocked(X, Y) (X)
+#define check_pad_unlocked(M,X)
 #endif
 
 
@@ -1887,7 +1887,7 @@ static struct memhdr *find_memhdr_internal_unlocked(const void *p, int already_g
     {
       for(mh=memhdr_hash_table[h]; mh; mh=mh->next)
       {
-	check_pad(mh,1);
+        check_pad_unlocked(mh, 1);
       }
     }
   }
@@ -1900,7 +1900,7 @@ static struct memhdr *find_memhdr_internal_unlocked(const void *p, int already_g
     }
 #endif
     if(!already_gone)
-      check_pad(mh,0);
+      check_pad_unlocked(mh, 0);
   }
 
   return mh;
@@ -2122,7 +2122,7 @@ void add_marks_to_memhdr(struct memhdr *to, const void *ptr)
 static void unregister_memhdr_unlocked(struct memhdr *mh, int already_gone)
 {
   if(mh->size < 0) mh->size=~mh->size;
-  if(!already_gone) check_pad(mh,0);
+  if(!already_gone) check_pad_unlocked(mh, 0);
   if(!(mh->flags & MEM_LOCS_ADDED_TO_NO_LEAKS))
     add_marks_to_memhdr_unlocked(&no_leak_memlocs, mh);
   if (mh->flags & MEM_TRACE) {
@@ -2257,14 +2257,14 @@ PMOD_EXPORT void *debug_malloc(size_t s, LOCATION location)
   if(m)
   {
     GET_ALLOC_BT (bt);
-    m=do_pad(m, s);
+    m = do_pad_unlocked(m, s);
     make_memhdr_internal_unlocked(m, s, location BT_ARGS(bt))->flags |=
       MEM_PADDED;
   } else {
     flush_blocks_to_free_unlocked();
     if ((m=(char *)real_malloc(s + DEBUG_MALLOC_PAD*2))) {
       GET_ALLOC_BT (bt);
-      m=do_pad(m, s);
+      m = do_pad_unlocked(m, s);
       make_memhdr_internal_unlocked(m, s, location BT_ARGS(bt))->flags |=
         MEM_PADDED;
     }
@@ -2306,7 +2306,7 @@ PMOD_EXPORT void *debug_realloc(void *p, size_t s, LOCATION location)
   m=fake_realloc(base, s+DEBUG_MALLOC_PAD*2);
 
   if(m) {
-    m=do_pad(m, s);
+    m = do_pad_unlocked(m, s);
     if (mh) {
       mh->size = s;
       add_location_unlocked(mh, location);
