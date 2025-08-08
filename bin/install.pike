@@ -2184,7 +2184,6 @@ an extra CRT instance.\n");
 					      "Compressed":"yes",
 					      "InstallerVersion":"300",
 					      "SummaryCodepage":"1252",
-					      "Id":version_guid,
 					    ])))->
 			  add_child(line_feed)->
 			  add_child(WixNode("Media", ([

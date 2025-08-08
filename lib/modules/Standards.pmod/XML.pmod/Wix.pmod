@@ -492,7 +492,6 @@ WixNode get_module_xml(Directory dir, string id, string version,
   mapping(string:string) package_attrs = ([
     "Id":guid,
     "InstallerVersion": installer_version || "200",
-    "Compressed":"yes",
   ]);
   if (manufacturer) {
     package_attrs->Manufacturer = manufacturer;
@@ -518,7 +517,6 @@ WixNode get_module_xml(Directory dir, string id, string version,
     add_child(WixNode("Wix", ([	"xmlns":wix_ns ]), "\n")->
 	      add_child(WixNode("Module", ([
 				  "Id":id,
-				  "Guid":guid,
 				  "Language":"1033",
 				  "Version":version,
 				]), "\n")->
