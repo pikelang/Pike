@@ -67,7 +67,7 @@ class RegistryEntry
       "Value":value,
     ]);
     if (name) attrs->Name = name;
-    return WixNode("Registry", attrs);
+    return WixNode("RegistryValue", attrs);
   }
 }
 
@@ -88,7 +88,7 @@ class Merge
   {
     mapping(string:string) attrs = ([
       "Id":id,
-      "src":source,
+      "SourceFile":source,
       "Language": language || "1033",
       "DiskId":"1",
       "FileCompression": "yes",
@@ -197,7 +197,7 @@ class Directory
 	//      "DiskId":"1",
       ]);
       if (source) {
-	attrs->src = replace(source, "/", "\\");
+	attrs->Source = replace(source, "/", "\\");
 	if (has_suffix(lower_case(source), ".ttf")) {
 	  // Orca doesn't like us otherwise...
 	  attrs->DefaultLanguage="1033";
@@ -444,7 +444,7 @@ class Directory
       attrs->ShortName = short_name;
     }
     if (source) {
-      attrs->src = replace(source+"/", "/", "\\");
+      attrs->FileSource = replace(source+"/", "/", "\\");
     }
     WixNode root = WixNode("Directory", attrs, "\n");
     WixNode node = root;

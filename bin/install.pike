@@ -2984,7 +2984,7 @@ class WixExportInstallHandler {
       add_child(line_feed)->
       add_child(WixNode("Binary", ([
 			  "Id":"PikeInstaller",
-			  "src":"PikeWin32Installer.vbs",
+			  "SourceFile":"PikeWin32Installer.vbs",
 			])))->
       add_child(line_feed)->
       add_child(WixNode("InstallExecuteSequence", ([]), "\n")->
@@ -3019,7 +3019,7 @@ class WixExportInstallHandler {
 			  add_child(UI()->gen_xml())->
 			  add_child(WixNode("Binary", ([
 					      "Id":"Pike_banner",
-					      "src":"Pike_banner.bmp"
+					      "SourceFile":"Pike_banner.bmp"
 					    ])))));
 
     Stdio.write_file(/*export_base_name*/"Pike"+"_ui.wxs",
