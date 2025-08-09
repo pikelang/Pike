@@ -110,12 +110,14 @@ CC=@CC@
 CXX=@CXX@
 CPP=@CPP@
 GDB=gdb
+ABI=@ABI@
 
 CONFIG_HEADERS=@CONFIG_HEADERS@
 
 CANDLE=@CANDLE@ -nologo
 LIGHT=@LIGHT@ -nologo
 RCEXE=@RCEXE@
+WINDRES=@WINDRES@
 
 FALLBACK_CC=@FALLBACK_CC@
 
@@ -648,8 +650,8 @@ wix: Pike.msi
 
 wix_export: Pike.msi
 	VER=`$(RUNPIKE) --dumpversion` ;\
-	cp Pike.msi $(BASEDIR)/Pike-v$(VER)-win32.msi ;\
-	cp config.info $(BASEDIR)/Pike-v$(VER)-win32.info
+	cp Pike.msi $(BASEDIR)/Pike-v$${VER}-win$(ABI).msi ;\
+	cp config.info $(BASEDIR)/Pike-v$${VER}-win$(ABI).info
 
 amigaos_export:
 	@$(RUNPIKE) $(TMP_BINDIR)/install.pike --export-amigaos \
@@ -670,7 +672,8 @@ pike.ico: $(PACKAGINGDIR)/windows/pike.ico
 
 pike_icon.res: pike.ico
 	echo 'pike ICON pike.ico' > pike_icon.rc
-	$(RCEXE) /fo $@ pike_icon.rc
+	if test "$(RCEXE)" = "" ; then $(WINDRES) -o $@ pike_icon.rc ; \
+	else $(RCEXE) /fo $@ pike_icon.rc ; fi
 
 # install
 install: pike-complete-stamp

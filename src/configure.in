@@ -306,6 +306,7 @@ if_autoconf(2,50,[
 # ABI selection.
 
 PIKE_SELECT_ABI
+ABI=${pike_cv_abi}
 
 #############################################################################
 
@@ -2667,6 +2668,11 @@ if test "x${RCEXE-}" = x ; then
   export RCEXE
 fi
 AC_SUBST(RCEXE)
+if test "x${WINDRES-}" = x ; then
+  AC_PATH_PROG(WINDRES, windres, , $PATH:$EXTRA_PATH)
+  export WINDRES
+fi
+AC_SUBST(WINDRES)
 
 #############################################################################
 
@@ -8685,9 +8691,11 @@ fi
 
 AC_SUBST(MT_FIX_PIKE_EXE)
 
-if test "x$RCEXE" != x; then
-  # Windows icon
-  PIKE_ICON_RES=pike_icon.res
+if test "x$pike_cv_sys_os" = xWindows_NT; then
+  if test "x$RCEXE$WINDRES" != x; then
+    # Windows icon
+    PIKE_ICON_RES=pike_icon.res
+  fi
 fi
 AC_SUBST(PIKE_ICON_RES)
 
@@ -8758,6 +8766,7 @@ AC_SUBST(RANLIB)
 AC_SUBST(DEBUGDEF)
 AC_SUBST(EXTRA_MODULE_REQUIREMENTS)
 AC_SUBST(DTRACE_REQUIREMENTS)
+AC_SUBST(ABI)
 
 pike_cv_prog_CC="${CC}"
 
