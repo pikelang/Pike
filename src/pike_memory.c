@@ -1865,7 +1865,21 @@ static inline unsigned long lhash(struct memhdr *m, LOCATION location)
 #undef BLOCK_ALLOC_HSIZE_SHIFT
 #define BLOCK_ALLOC_HSIZE_SHIFT 1
 
+#define count_memory_in_memhdrs count_memory_in_memhdrs_unlocked
+#define move_memhdr move_memhdr_unlocked
+#define remove_memhdr remove_memhdr_unlocked
+
 PTR_HASH_ALLOC_FILL_PAGES(memhdr, 128)
+
+#undef remove_memhdr
+#undef move_memhdr
+#undef count_memory_in_memhdrs
+void count_memory_in_memhdrs(size_t *num_, size_t *size_)
+{
+  mt_lock(&debug_malloc_mutex);
+  count_memory_in_memhdrs_unlocked(num_, size_);
+  mt_unlock(&debug_malloc_mutex);
+}
 
 #undef INIT_BLOCK
 #undef EXIT_BLOCK
@@ -2128,9 +2142,9 @@ static void unregister_memhdr_unlocked(struct memhdr *mh, int already_gone)
   if (mh->flags & MEM_TRACE) {
     fprintf(stderr, "Removing memhdr %p\n", mh);
   }
-  if (!remove_memhdr(mh->data)) {
+  if (!remove_memhdr_unlocked(mh->data)) {
 #ifdef DMALLOC_VERIFY_INTERNALS
-    Pike_fatal("remove_memhdr(%p) returned false.\n", mh->data);
+    Pike_fatal("remove_memhdr_unlocked(%p) returned false.\n", mh->data);
 #endif
   }
 }
@@ -2221,7 +2235,7 @@ static void flush_blocks_to_free_unlocked(void)
 #ifdef DMALLOC_TRACK_FREE
       unregister_memhdr_unlocked(mh, 0);
 #else /* !DMALLOC_TRACK_FREE */
-      remove_memhdr(p);
+      remove_memhdr_unlocked(p);
 #endif /* DMALLOC_TRACK_FREE */
       real_free( ((char *)p) - DEBUG_MALLOC_PAD );
     }
@@ -2310,7 +2324,7 @@ PMOD_EXPORT void *debug_realloc(void *p, size_t s, LOCATION location)
     if (mh) {
       mh->size = s;
       add_location_unlocked(mh, location);
-      move_memhdr(mh, m);
+      move_memhdr_unlocked(mh, m);
     }
     else {
       GET_ALLOC_BT (bt);
@@ -2383,7 +2397,7 @@ PMOD_EXPORT void debug_free(void *p, LOCATION location, int mustfind)
 #ifdef DMALLOC_TRACK_FREE
     unregister_memhdr_unlocked(mh, 0);
 #else /* !DMALLOC_TRACK_FREE */
-    remove_memhdr(p);
+    remove_memhdr_unlocked(p);
 #endif /* DMALLOC_TRACK_FREE */
     real_free( ((char *)p) - DEBUG_MALLOC_PAD );
   }
@@ -3262,7 +3276,7 @@ PMOD_EXPORT int debug_malloc_close_fd(int fd, LOCATION UNUSED(location))
 #ifdef DMALLOC_TRACK_FREE
   dmalloc_mark_as_free_unlocked( FD2PTR(fd), 1 );
 #else /* !DMALLOC_TRACK_FREE */
-  remove_memhdr(FD2PTR(fd));
+  remove_memhdr_unlocked(FD2PTR(fd));
 #endif /* DMALLOC_TRACK_FREE */
   mt_unlock(&debug_malloc_mutex);
   return fd;
