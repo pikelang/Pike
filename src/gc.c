@@ -3427,18 +3427,18 @@ static void warn_bad_cycles(void)
   SET_ONERROR(tmp, free_obj_arr, obj_arr_);
 
   {
-    struct gc_pop_frame *p;
-    unsigned cycle = 0;
+    struct gc_rec_frame *p;
+    struct gc_rec_frame *cycle = NULL;
     *obj_arr_ = allocate_array(0);
 
-    for (p = kill_list; p;) {
-      if ((cycle = p->cycle)) {
+    for (p = kill_list; p != &sentinel_frame;) {
+      if ((cycle = p->cycle_id)) {
 	push_object((struct object *) p->data);
 	dmalloc_touch_svalue(Pike_sp-1);
 	*obj_arr_ = append_array(*obj_arr_, --Pike_sp);
       }
       p = p->next;
-      if (p ? ((unsigned)(p->cycle != cycle)) : cycle) {
+      if (p ? ((unsigned)(p->cycle_id != cycle)) : !!cycle) {
 	if ((*obj_arr_)->size >= 2) {
 	  push_static_text("gc");
 	  push_static_text("bad_cycle");
