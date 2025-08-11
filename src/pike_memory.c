@@ -1635,6 +1635,10 @@ static int add_location_cache_hits=0;
 static int add_location_duplicate=0;  /* Used in AD_HOC mode */
 #endif
 
+static void dump_memhdr_locations_unlocked(struct memhdr *from,
+                                           struct memhdr *notfrom,
+                                           int indent);
+
 #if DEBUG_MALLOC_PAD - 0 > 0
 static char *do_pad_unlocked(char *mem, long size)
 {
@@ -1703,7 +1707,7 @@ static void check_pad_unlocked(struct memhdr *mh, int freeok)
     if(!freeok)
     {
       fprintf(stderr,"Access to free block: %p (size %ld)!\n",mem, ~mh->size);
-      dump_memhdr_locations(mh, 0, 0);
+      dump_memhdr_locations_unlocked(mh, 0, 0);
       debug_malloc_atfatal();
       locate_references(mem);
       describe(mem);
@@ -1832,7 +1836,7 @@ static inline unsigned long lhash(struct memhdr *m, LOCATION location)
       ml = ml->next;					\
     }							\
     if (times != X->times) {				\
-      dump_memhdr_locations(X, 0, 0);			\
+      dump_memhdr_locations_unlocked(X, 0, 0);		\
       Pike_fatal("%p: Dmalloc lost locations for block at %p? " \
 		 "total:%d  !=  accumulated:%d\n",	\
 		 X, X->data, X->times, times);		\
@@ -2028,7 +2032,7 @@ static struct memhdr *make_memhdr_internal_unlocked(const void *p, int s,
   unsigned long l;
 
   if (mh->locations) {
-    dump_memhdr_locations(mh, NULL, 0);
+    dump_memhdr_locations_unlocked(mh, NULL, 0);
     Pike_fatal("New block at %p already has locations.\n"
 	       "location: %s\n", p, location);
   }
@@ -2545,9 +2549,9 @@ static void sort_locations (struct memhdr *hdr)
   }
 }
 
-void dump_memhdr_locations(struct memhdr *from,
-			   struct memhdr *notfrom,
-			   int indent)
+static void dump_memhdr_locations_unlocked(struct memhdr *from,
+                                           struct memhdr *notfrom,
+                                           int indent)
 {
   struct memloc *l;
   if(!from) return;
@@ -2587,6 +2591,14 @@ void dump_memhdr_locations(struct memhdr *from,
   }
 }
 
+void dump_memhdr_locations(struct memhdr *from,
+                           struct memhdr *notfrom,
+                           int indent)
+{
+  mt_lock(&debug_malloc_mutex);
+  dump_memhdr_locations_unlocked(from, notfrom, indent);
+  mt_unlock(&debug_malloc_mutex);
+}
 
 static void low_dmalloc_describe_location(struct memhdr *mh, int offset, int indent);
 
@@ -2717,7 +2729,7 @@ PMOD_EXPORT void debug_malloc_dump_references(const void *x, int indent,
   }
 #endif
 
-  dump_memhdr_locations(mh,0, indent);
+  dump_memhdr_locations_unlocked(mh, 0, indent);
   if(memheader_references_located)
   {
     if(mh->flags & MEM_IGNORE_LEAK)
@@ -2758,7 +2770,7 @@ PMOD_EXPORT void list_open_fds(void)
 	{
 	  fprintf(stderr,"Filedescriptor %ld\n", (long) PTR2FD(p));
 
-	  dump_memhdr_locations(m, 0, 0);
+          dump_memhdr_locations_unlocked(m, 0, 0);
 	}
       }
     }
@@ -2789,7 +2801,7 @@ static void search_all_memheaders_for_references_unlocked(void)
       if (m->flags & MEM_SCANNED) {
 	fprintf(stderr, "Found memhdr %p: (%p) several times in hash-table!\n",
 		m, m->data);
-	dump_memhdr_locations(m, 0, 0);
+        dump_memhdr_locations_unlocked(m, 0, 0);
 	continue;
       }
       m->flags |= MEM_SCANNED;
@@ -2893,7 +2905,7 @@ static void cleanup_memhdrs(void)
 	}
 
         find_references_to_unlocked(p, 0, 0, 0);
-	dump_memhdr_locations(m, 0,0);
+        dump_memhdr_locations_unlocked(m, 0, 0);
       }
     }
 
