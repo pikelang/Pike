@@ -793,6 +793,13 @@ static void close_fd(int quiet)
 	   */
 	  break;
 #endif
+#ifdef WSAECONNRESET
+        case WSAECONNRESET:
+          /* NT: The peer shut down the connection before all pending data
+           *     was delivered.
+           */
+          break;
+#endif
 
 	case EBADF:
 	  if (olde) {
