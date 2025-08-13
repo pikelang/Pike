@@ -751,6 +751,7 @@ string ifconfig( string command )
  * IPv6 is not installed.
  *
  */
+                case GenericIFConfig:
                 default:
                  {
                      string data = Process.run(({ _binary, "-a" }))->stdout;
