@@ -595,7 +595,6 @@ private Method find_method() {
             ret = LinuxIFConfig;
         }
     }
-    werror("Binary: %O (%O)\n", _binary, ret);
     return _binary ? ret : Unsupported;
 #endif
 }
