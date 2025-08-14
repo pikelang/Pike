@@ -753,7 +753,11 @@ int close (void|string how, void|int clean_close, void|int dont_throw)
       if (dont_throw) {
 	RETURN (0);
       }
-      else if (!(< 0, System.EPIPE, System.ECONNRESET, >)[err]) {
+      else if (!(< 0, System.EPIPE, System.ECONNRESET,
+#ifdef __NT__
+                   System.WSAECONNRESET,
+#endif
+               >)[err]) {
 	// Errors are normally thrown from close().
         error ("Failed to close SSL connection: %s.\n", strerror (err));
       }

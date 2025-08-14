@@ -595,7 +595,6 @@ private Method find_method() {
             ret = LinuxIFConfig;
         }
     }
-    werror("Binary: %O (%O)\n", _binary, ret);
     return _binary ? ret : Unsupported;
 #endif
 }
@@ -751,6 +750,7 @@ string ifconfig( string command )
  * IPv6 is not installed.
  *
  */
+                case GenericIFConfig:
                 default:
                  {
                      string data = Process.run(({ _binary, "-a" }))->stdout;
