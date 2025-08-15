@@ -18,6 +18,7 @@
  */
 
 #include "global.h"
+#define FDLIB_INTERNALS 1
 #include "fdlib.h"
 #include "backend.h"
 #include "pike_error.h"
@@ -189,8 +190,16 @@ static const unsigned long pike_doserrtab[][2] = {
   {  ERROR_HANDLE_EOF,			EPIPE,		}, /* 38 */
   {  ERROR_HANDLE_DISK_FULL,		ENOSPC,		}, /* 39 */
   /* 40-49 Reserved */
+#ifdef EOPNOTSUPP
   {  ERROR_NOT_SUPPORTED,		EOPNOTSUPP,	}, /* 50 */
+#else
+  {  ERROR_NOT_SUPPORTED,		EINVAL,		}, /* 50 */
+#endif
+#ifdef ECONNREFUSED
   {  ERROR_REM_NOT_LIST,		ECONNREFUSED,	}, /* 51 */
+#else
+  {  ERROR_REM_NOT_LIST,		WSAECONNREFUSED,}, /* 51 */
+#endif
   {  ERROR_DUP_NAME,			EADDRINUSE,	}, /* 52 */
   {  ERROR_BAD_NETPATH,			ENOENT,		}, /* 53 */
   {  ERROR_NETWORK_ACCESS_DENIED,	EACCES,		}, /* 65 */
@@ -277,8 +286,8 @@ static const unsigned long pike_doserrtab[][2] = {
 #ifdef EAFNOSUPPORT
   {  WSAEAFNOSUPPORT,			EAFNOSUPPORT,		}, /* 10047 */
 #endif
-#ifdef EADDRINUSE
   {  WSAEADDRINUSE,			EADDRINUSE,		}, /* 10048 */
+#ifdef EADDRNOTAVAIL
   {  WSAEADDRNOTAVAIL,			EADDRNOTAVAIL,		}, /* 10049 */
   {  WSAENETDOWN,			ENETDOWN,		}, /* 10050 */
   {  WSAENETUNREACH,			ENETUNREACH,		}, /* 10051 */
@@ -2503,10 +2512,11 @@ PMOD_EXPORT ptrdiff_t debug_fd_write(FD fd, void *buf, ptrdiff_t len)
 	if(ret<0)
 	{
 	  set_errno_from_win32_error (WSAGetLastError());
-	  FDDEBUG(fprintf(stderr, "Write on %d failed (%d)\n", fd, errno));
-	  if (errno == 1) {
+          FDDEBUG(fprintf(stderr, "Write on %d failed (%lu: %d)\n",
+                          fd, (unsigned long)WSAGetLastError(), errno));
+          if (errno == EPERM) {
 	    /* UGLY kludge */
-	    errno = WSAEWOULDBLOCK;
+            errno = EAGAIN;
 	  }
 	  return -1;
 	}
