@@ -526,7 +526,7 @@ void count_memory_in_ba_mixed_frames(size_t *num, size_t * size) {
   ba_count_all(&ba_mixed_frame_allocator, num, size);
 }
 
-static inline struct link_frame *alloc_link_frame()
+static inline struct link_frame *alloc_link_frame(void)
 {
   struct ba_mixed_frame *f = ba_alloc(&ba_mixed_frame_allocator);
   if (++link_frames > max_link_frames)
@@ -534,7 +534,7 @@ static inline struct link_frame *alloc_link_frame()
   return (struct link_frame *) f;
 }
 
-static inline struct free_extra_frame *alloc_free_extra_frame()
+static inline struct free_extra_frame *alloc_free_extra_frame(void)
 {
   struct ba_mixed_frame *f = ba_alloc(&ba_mixed_frame_allocator);
   free_extra_frames++;
@@ -2674,7 +2674,7 @@ static struct gc_rec_frame *gc_cycle_enqueue_rec (void *data)
   return r;
 }
 
-void gc_cycle_run_queue()
+void gc_cycle_run_queue(void)
 {
 #ifdef PIKE_DEBUG
   if (Pike_in_gc != GC_PASS_CYCLE)
@@ -3120,7 +3120,7 @@ mark_live:
   return 1;
 }
 
-static void gc_cycle_pop()
+static void gc_cycle_pop(void)
 {
 #ifdef PIKE_DEBUG
   if (Pike_in_gc != GC_PASS_CYCLE)
@@ -4888,7 +4888,7 @@ static unsigned INT32 mc_wq_size, mc_wq_used;
 #define CHECK_WQ() do {} while (0)
 #endif
 
-static struct mc_marker *mc_wq_dequeue()
+static struct mc_marker *mc_wq_dequeue(void)
 {
   struct mc_marker *m;
 

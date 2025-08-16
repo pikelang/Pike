@@ -8,11 +8,29 @@
 #define FDLIB_H
 
 #include "global.h"
+
+#include <errno.h>
+
+#ifndef FDLIB_INTERNALS
+#ifdef __NT__
+/* Recent versions of NT define EWOULDBLOCK (to 140) just to
+ * be nominally POSIX compliant.
+ *
+ * Note that Cygwin and Mingw appear to have proper definitions
+ * of EWOULDBLOCK.
+ */
+#if EAGAIN != EWOULDBLOCK
+#undef EWOULDBLOCK
+#endif
+#ifndef EWOULDBLOCK
+#define EWOULDBLOCK EAGAIN
+#endif
+#endif
+#endif
+
 #include "pike_macros.h"
 
 #include "pike_netlib.h"
-
-#include <errno.h>
 
 #ifdef HAVE_SYS_SELECT_H
 #include <sys/select.h>
