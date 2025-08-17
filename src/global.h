@@ -220,6 +220,10 @@ struct timeval;
 #endif /* HAVE_OSERROR && !errno */
 #endif /* _SGI_SPROC_THREADS */
 
+#ifndef __has_attribute
+#  define __has_attribute(X) 0
+#endif
+
 #ifdef HAVE_FUNCTION_ATTRIBUTES
 #define ATTRIBUTE(X) __attribute__ (X)
 #else
@@ -626,6 +630,19 @@ typedef struct p_wchar_p
 # if (__GNUC__ >= 8)
 #  define HAVE_PRAGMA_GCC_UNROLL
 # endif
+#endif
+
+/* The nonstring attribute indicates that a string (ie const char *)
+ * may contain binary data, and inhibits the warning about losing
+ * the NUL terminator when assigning to constant size arrays.
+ * Cf the MIME module.
+ */
+#if defined(__GCC__) && (__GCC__ >= 8)
+#  define PIKE_NONSTRING_ATTRIBUTE	ATTRIBUTE((nonstring))
+#elif __has_attribute(nonstring)
+#  define PIKE_NONSTRING_ATTRIBUTE	ATTRIBUTE((nonstring))
+#else
+#  define PIKE_NONSTRING_ATTRIBUTE
 #endif
 
 #ifdef __GNUC__

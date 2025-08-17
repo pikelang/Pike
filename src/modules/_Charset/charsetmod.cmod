@@ -110,8 +110,8 @@ struct std16e_stor {
 static size_t std16e_stor_offs = 0;
 
 static SIGNED char rev64t['z'-'+'+1];
-static char fwd64t[64]=
-"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+static char fwd64t[64] PIKE_NONSTRING_ATTRIBUTE =
+  "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
 /* Start std_cs */
 
