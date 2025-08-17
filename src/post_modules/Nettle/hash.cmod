@@ -236,7 +236,7 @@ PIKECLASS Hash
   }
 
   /* NOTE: This is NOT the MIME base64 table! */
-  static const char b64tab[64] =
+  static const char b64tab[64] PIKE_NONSTRING_ATTRIBUTE =
     "./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
   static inline void b64enc(char *dest, int a, int b, int c, int sz)

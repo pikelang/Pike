@@ -53,17 +53,22 @@ static void f_quote_labled( INT32 args );
 
 /** Global tables **/
 
-static const char base64tab[64] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-static const char base64urltab[64] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
-static const char base32tab[32] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
-static const char base32hextab[32] = "0123456789ABCDEFGHIJKLMNOPQRSTUV";
-static const char crypt64tab[64] = "./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+static const char base64tab[64] PIKE_NONSTRING_ATTRIBUTE =
+  "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+static const char base64urltab[64] PIKE_NONSTRING_ATTRIBUTE =
+  "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+static const char base32tab[32] PIKE_NONSTRING_ATTRIBUTE =
+  "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+static const char base32hextab[32] PIKE_NONSTRING_ATTRIBUTE =
+  "0123456789ABCDEFGHIJKLMNOPQRSTUV";
+static const char crypt64tab[64] PIKE_NONSTRING_ATTRIBUTE =
+  "./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 static SIGNED char base64rtab[(1<<(CHAR_BIT-1))-' '];
 static SIGNED char base64urlrtab[(1<<(CHAR_BIT-1))-' '];
 static SIGNED char base32rtab[(1<<(CHAR_BIT-1))-' '];
 static SIGNED char base32hexrtab[(1<<(CHAR_BIT-1))-' '];
 static SIGNED char crypt64rtab[(1<<(CHAR_BIT-1))-' '];
-static const char qptab[16] = "0123456789ABCDEF";
+static const char qptab[16] PIKE_NONSTRING_ATTRIBUTE = "0123456789ABCDEF";
 static SIGNED char qprtab[(1<<(CHAR_BIT-1))-'0'];
 
 #define CT_CTL     0
