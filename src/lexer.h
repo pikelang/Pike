@@ -1074,8 +1074,9 @@ unknown_directive:
 
       SET_SVAL(sval, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
 
+      p2 = lex->pos;
       safe_wide_string_to_svalue_inumber(&sval,
-                                         p2 = lex->pos,
+                                         p2,
 					 &p2,
 					 0,
                                          (lex->end - lex->pos)>>SHIFT,
