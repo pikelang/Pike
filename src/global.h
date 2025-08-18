@@ -623,7 +623,7 @@ typedef struct p_wchar_p
 #  define HAVE_PRAGMA_GCC_PUSH_POP_OPTIONS
 #  define HAVE_PRAGMA_GCC_RESET_OPTIONS
 # endif
-# if (__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)
+# if (__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6) || (__clang_major__ > 2)
    /* #pragma GCC diagnostic was added in GCC 4.6. */
 #  define HAVE_PRAGMA_GCC_DIAGNOSTIC
 # endif
