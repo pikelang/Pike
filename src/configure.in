@@ -1620,6 +1620,9 @@ if test "$cflags_is_set" = "no"; then
       AC_SYS_COMPILER_FLAG(-read_only_relocs warning, ro_relocs_warn, LDFLAGS)
     fi
 
+    # Silence warnings about duplicate libraries
+    AC_SYS_COMPILER_FLAG([-Wl,-no_warn_duplicate_libraries], Wlno_warn_duplicate_libraries, LDFLAGS)
+
     # Tune based on processor family
     case "`machine`" in
       i486)
@@ -8078,6 +8081,9 @@ if test -z "$LDSHARED" ; then
       else
         # Mac OS X prior to 10.3 need -flat_namespace to support dynamic modules
         LDSHARED="$REALCC $CFLAGS -bundle -bind_at_load -flat_namespace -undefined suppress"
+      fi
+      if test x"$pike_cv_option_Wlno_warn_duplicate_libraries" = "xyes" ; then
+         LDSHARED="$LDSHARED -Wl,-no_warn_duplicate_libraries"
       fi
     ;;
     SunOS*)
