@@ -82,7 +82,7 @@ static ptrdiff_t _parse_JSON5_mapping(PCHARP str, ptrdiff_t p, ptrdiff_t pe, str
     int c = 0;
     struct string_builder s;
     ptrdiff_t eof = pe;
-    ptrdiff_t identifier_start;
+    ptrdiff_t identifier_start = 0;
 
     const int validate = !(state->flags&JSON5_VALIDATE);
 
