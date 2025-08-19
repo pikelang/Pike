@@ -323,11 +323,18 @@ static void decode_base32( INT32 args, const char *name, const SIGNED char *tab)
 
   init_string_builder( &buf, 0 );
 
+#if SIZEOF_LONG >= 8
+#define CONST64_HEX(HIGH, LOW)	(0x##HIGH##LOW##UL)
+#else
+  /* Make a 64 bit unsigned literal on ILP32. */
+#define CONST64_HEX(HIGH, LOW)	((((unsigned INT64)0x##HIGH##UL)<<32)|(0x##LOW##UL))
+#endif
+
   for (src = (SIGNED char *)sp[-1].u.string->str, cnt = sp[-1].u.string->len;
        cnt--; src++)
     if(*src>=' ' && tab[*src-' ']>=0) {
       /* 5 more bits to put into d */
-      if((d=(d<<5)|tab[*src-' '])>=0x10000000000) {
+      if ((d = (d<<5) | tab[*src-' ']) >= CONST64_HEX(100, 00000000)) {
         /* d now contains 40 valid bits.  Put them in the buffer */
         string_builder_putchar( &buf, (d>>32)&0xff );
         string_builder_putchar( &buf, (d>>24)&0xff );
@@ -342,18 +349,18 @@ static void decode_base32( INT32 args, const char *name, const SIGNED char *tab)
     }
 
   /* If data size not an even multiple of 5 bytes, output remaining data */
-  if (d & 0x1f0000000000) {
+  if (d & CONST64_HEX(1f00, 00000000)) {
     /* 40 bits received. */
     /* NOT_REACHED, but here for symmetry. */
     /* 1  aaaa aaaa  bbbb bbbb  cccc cccc  dddd dddd  eeee eeee */
     pads = 0;
-  } else if (d & 0xf800000000) {
+  } else if (d & CONST64_HEX(f8, 00000000)) {
     /* 35 bits received. */
     /* 0  0000 1aaa  aaaa abbb  bbbb bccc  cccc cddd  dddd dxxx */
     pads = 1;
     /* Remove unused bits from d. */
     d >>= 3;
-  } else if (d & 0xec0000000) {
+  } else if (d & CONST64_HEX(e, c0000000)) {
     /* 30 bits received (irregular). */
     /* 0  0000 0000  01aa aaaa  aabb bbbb  bbcc cccc  ccxx xxxx */
     pads = 2;

@@ -3147,7 +3147,16 @@ void f_daemon(INT32 args)
 {
    INT_TYPE a, b;
    get_all_args("daemon", args, "%i%i", &a, &b);
+#ifdef HAVE_PRAGMA_GCC_DIAGNOSTIC
+   /* Ignore deprecation warnings about daemon; when it is removed
+      we will detect that and not compile this function anymore... */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
    push_int( daemon( a, b) );
+#ifdef HAVE_PRAGMA_GCC_DIAGNOSTIC
+#pragma GCC diagnostic pop
+#endif
 }
 #endif /* HAVE_DAEMON */
 

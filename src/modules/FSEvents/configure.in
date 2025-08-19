@@ -91,6 +91,7 @@ if test "x$ac_cv_framework_CoreServices_FSEventStreamCreate" = "xyes"; then
                     kFSEventStreamEventIdSinceNow],[],[],
                    [#import <CoreServices/CoreServices.h>])
 
+    AC_CHECK_FUNCS(FSEventStreamSetDispatchQueue)
 fi
 
 AC_SUBST(CMOD_CFLAGS)

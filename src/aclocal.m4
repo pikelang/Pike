@@ -1424,7 +1424,7 @@ AC_DEFUN(AC_SYS_COMPILER_FLAG,
 [
   dnl AC_REQUIRE(AC_SYS_COMPILER_FLAG_REQUIREMENTS)
 
-  AC_MSG_CHECKING($1)
+  AC_MSG_CHECKING([$1])
   if test "x[$]pike_disabled_option_$2" = "xyes"; then
     AC_MSG_RESULT(disabled)
     $4
