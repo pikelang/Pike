@@ -70,13 +70,13 @@ module.so: $(MODULE_ARCHIVES) $(OBJS) $(LDSHARED_MODULE_REQS)
 	fi; \
 	echo "Linking $(MODNAME)" ;\
 	modname="$(MODNAME)"; \
-	if $(TMP_BINDIR)/smartlink $(MOD_LDSHARED) $(LDFLAGS) -o module.@SO@ \
+	if $(SMARTLINK) $(MOD_LDSHARED) $(LDFLAGS) -o module.@SO@ \
 	  $(OBJS) $(MODULE_ARCHIVES) $(MODULE_LDFLAGS) \
 	  $(LIBGCC) $(LC_REQ) $(LIBGCC) ; then \
 	  if test @SO@ != so ; then mv module.@SO@ module.so ; else :; fi ;\
 	else \
 	  echo "Linking failed:" >&2; \
-	  echo $(TMP_BINDIR)/smartlink $(MOD_LDSHARED) $(LDFLAGS) -o module.@SO@ $(OBJS) $(MODULE_ARCHIVES) $(MODULE_LDFLAGS) $(LIBGCC) $(LC_REQ) $(LIBGCC) >&2 ;\
+	  echo $(SMARTLINK) $(MOD_LDSHARED) $(LDFLAGS) -o module.@SO@ $(OBJS) $(MODULE_ARCHIVES) $(MODULE_LDFLAGS) $(LIBGCC) $(LC_REQ) $(LIBGCC) >&2 ;\
 	  exit 1; \
 	fi
 	$(MT_FIX_MODULE_SO)
