@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -85,7 +86,7 @@ int main(int argc, char **argv)
   int i;
   int buf_size;
   char *path;
-  char *buffer;
+  char *buffer = NULL;
   char *lpath;
   char *rpath;
   int rpath_in_use = 0;
