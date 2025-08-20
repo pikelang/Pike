@@ -100,6 +100,7 @@ int main(int argc, char **argv)
   int n32 = 0;
   int linking = 1;	/* Maybe */
   int compiling = 1;	/* Maybe */
+  int is_ld = 0;
 
   int verbose = !!getenv("SMARTLINK_DEBUG");
 
@@ -192,6 +193,12 @@ int main(int argc, char **argv)
     linking = 0;
   }
 
+  {
+    int len=strlen(argv[1]);
+    if(len > 1 && argv[1][len-2]=='l' && argv[1][len-1]=='d')
+      is_ld = 1;
+  }
+
   /* NOTE: Skip arg 1 */
   for(i=2; i<argc; i++) {
     if (argv[i][0] == '-') {
@@ -251,7 +258,26 @@ int main(int argc, char **argv)
 		 (!argv[i][2])) {
 	/* Not linking */
 	linking = 0;
+#ifndef USE_Wl
+      }	else if (is_ld && (argv[i][1] == 'W') && (argv[i][2] == 'l') &&
+                 (argv[i][3] == ',')) {
+        /* This code strips '-Wl,' from arguments if the
+         * linker is '*ld'
+         */
+        char *ptr;
+        new_argv[new_argc++] = argv[i] + 4;
+
+        while((ptr = strchr(new_argv[new_argc-1], ',')))
+        {
+          int e;
+          *ptr=0;
+          new_argv[new_argc++] = ptr+1;
+          i++;
+        }
+        continue;	/* Now handled. */
+#endif
       }
+
     } else {
       int len = strlen(argv[i]);
       if (((len > 2) &&
@@ -293,37 +319,6 @@ int main(int argc, char **argv)
       new_argv[new_argc++] = new_argv[i];
     }
   }
-
-#ifndef USE_Wl
-  /* This code strips '-Wl,' from arguments if the
-   * linker is '*ld'
-   */
-  if(linking)
-  {
-    int len=strlen(argv[1]);
-    if(strchr(argv[1],' ')) len=strchr(argv[1],' ') - argv[1];
-    if(len > 1 && argv[1][len-2]=='l' && argv[1][len-1]=='d')
-    {
-      for(i=2; i<argc; i++) {
-	if (new_argv[i][0] == '-' && new_argv[i][1]=='W' &&
-	    new_argv[i][2]=='l' && new_argv[i][3]==',')
-	{
-	  char *ptr;
-	  new_argv[i]=new_argv[i]+4;
-
-	  while((ptr=strchr(new_argv[i],',')))
-	  {
-	    int e;
-	    *ptr=0;
-	    for(e=argc;e>=i;e--) new_argv[e+1]=new_argv[e];
-	    new_argv[i+1]=ptr+1;
-	    i++;
-	  }
-	}
-      }
-    }
-  }
-#endif
 
   if (n32) {
     i = new_argc++;
