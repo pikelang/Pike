@@ -940,7 +940,14 @@ LD='$(CC) $(CFLAGS)'
 LC_REQ="-lc"
 
 case "$pike_cv_sys_os" in
-  Darwin*)
+  Darwin*|Haiku*|BeOS*)
+    # According to Clang source the protected behavior is ELF-specific
+    # and not applicable to OS X.
+    #
+    # BeOS and Haiku similarly do not like protected symbols.
+    AC_DEFINE(DISABLE_ATTRIBUTE_VISIBILITY_PROTECTED, 1,
+              [Disable use of __attribute__ ((visibility("protected"))).])
+
       ;;
   SCO*)
      case "$CFLAGS" in

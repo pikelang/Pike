@@ -673,6 +673,12 @@ typedef struct p_wchar_p
 #endif
 
 /* PMOD_EXPORT exports a function / variable vfsh. */
+#ifdef __clang__
+#elif defined(__GNUC__) && (__GNUC__ >= 4)
+#else
+#undef DISABLE_ATTRIBUTE_VISIBILITY
+#define DISABLE_ATTRIBUTE_VISIBILITY 1
+#endif
 #ifndef PMOD_EXPORT
 # if defined (__NT__) && defined (USE_DLL)
 #  ifdef DYNAMIC_MODULE
@@ -683,18 +689,20 @@ typedef struct p_wchar_p
  * themselves, unless they are compiled statically. */
 #   define PMOD_EXPORT __declspec(dllexport)
 #  endif
-# elif defined(__clang__) && (defined(MAC_OS_X_VERSION_MIN_REQUIRED) || defined(__ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__))
+# elif defined(DISABLE_ATTRIBUTE_VISIBILITY)
+#  define PMOD_EXPORT
+# elif defined(DISABLE_ATTRIBUTE_VISIBILITY_PROTECTED)
+/* Force default visibility in all cases. */
 /* According to Clang source the protected behavior is ELF-specific and not
    applicable to OS X. */
 #  define PMOD_EXPORT    __attribute__ ((visibility("default")))
-# elif __GNUC__ >= 4 && !defined(DISABLE_ATTRIBUTE_VISIBILITY)
+# else
+/* Gcc or clang. */
 #  if defined(DYNAMIC_MODULE) || defined(__HAIKU__)
 #    define PMOD_EXPORT  __attribute__ ((visibility("default")))
 #  else
 #    define PMOD_EXPORT  __attribute__ ((visibility("protected")))
 #  endif
-# else
-#  define PMOD_EXPORT
 # endif
 #endif
 
