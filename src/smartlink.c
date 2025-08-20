@@ -37,6 +37,11 @@
 #include <sys/stat.h>
 #endif /* HAVE_SYS_STAT_H */
 
+#ifdef USE_OSX_TWOLEVEL_NAMESPACE
+/* We know that MacOS 10.3 or later has uname(3). */
+#include <sys/utsname.h>
+#endif
+
 char *prog_name;
 
 void fatal(char *message)
@@ -419,6 +424,50 @@ int main(int argc, char **argv)
       }
     }
   }
+
+#ifdef USE_OSX_TWOLEVEL_NAMESPACE
+  /* NB: Configure has determined that the OS is Darwin 7 or later. */
+  if (!getenv("MACOSX_DEPLOYMENT_TARGET")) {
+    struct utsname buf;
+    int err = 0;
+
+    /* NB: We need to set MACOSX_DEPLOYMENT_TARGET to a suitable
+     *     value to make ld accept the "-undefined dynamic_lookup"
+     *     option without complaining.
+     *
+     *     The value needs to be 10.3 or better for ld to accept
+     *     "-undefined dynamic_lookup".
+     *
+     *     The value needs to be 10.9 or better for C++ name-mangling.
+     */
+    while ((err = uname(&buf)) && (errno == EINTR))
+      ;
+
+    while (!err) {
+      if (buf.release[1] == '.') {
+        if (buf.release[0] < 7) {
+          /* Ancient Mac OS X. */
+        } else {
+          /* Darwin 7-9 (aka Mac OS X 10.3, 10.4 or 10.5.). */
+          if (putenv("MACOSX_DEPLOYMENT_TARGET=10.3")) {
+            fatal("Out of memory (8)!\n");
+          }
+        }
+      } else if (buf.release[2] == '.' &&
+                 (strncmp(buf.release, "13.", 3) < 0)) {
+        /* Darwin 10-12 (aka Mac OS X 10.6, 10.7 or 10.8). */
+        if (putenv("MACOSX_DEPLOYMENT_TARGET=10.3")) {
+          fatal("Out of memory (8)!\n");
+        }
+      } else {
+        /* Darwin 13 or later (aka MacOS X 10.9 or later). */
+        if (putenv("MACOSX_DEPLOYMENT_TARGET=10.9")) {
+          fatal("Out of memory (8)!\n");
+        }
+      }
+    }
+  }
+#endif
 
   if (getenv("SMARTLINK_DEBUG")) {
     int i = 0;
