@@ -756,16 +756,16 @@ if test "$pike_cv_sys_os" = "Darwin" ; then
 
   AC_CACHE_VAL(pike_cv_osx_deployment_target, [
     case "`uname -r`" in
-      [1-6].*)
+      [[1-6]].*)
         pike_cv_osx_deployment_target=no
       ;;
-      [7-9].*|1[0-2].*)
+      [[7-9]].*|1[[0-2]].*)
         # Darwin 7 - 12 (aka Mac OS X 10.3 - 10.8).
         # Needs to be 10.3 or better for ld to accept
         # "-undefined dynamic_lookup"
         pike_cv_osx_deployment_target=10.3
       ;;
-      1[3-9].*)
+      1[[3-9]].*)
         # Darwin 13 - 19 (aka Mac OS X 10.9 - 10.15).
         # C++ Name mangling changed here, need to be able to interoperate
         # with modern libs
@@ -1000,7 +1000,7 @@ case "$pike_cv_sys_os" in
   ;;
   BSD/OS*)
     case "`uname -r`" in
-      [4-9].*) ;;
+      [[4-9]].*) ;;
       *) LD="$BINDIR/smartlink shlicc";;
     esac
   ;;
@@ -3843,7 +3843,7 @@ int main(int argc, char **argv)
       #
       AC_MSG_CHECKING([whether Darwin dislikes threads and mach includes])
       case "`uname -r`" in
-        [1-9].*)
+        [[1-9]].*)
           AC_MSG_RESULT([no (10.5 or older)])
       	  ;;
         *)
