@@ -770,6 +770,7 @@ if test "$pike_cv_sys_os" = "Darwin" ; then
         # C++ Name mangling changed here, need to be able to interoperate
         # with modern libs
         pike_cv_osx_deployment_target=10.9
+      ;;
       *)
         # Darwin 20 or later (aka Mac OS X 11.0 or later).
         # Third party libraries are typically compiled for the major.0.
