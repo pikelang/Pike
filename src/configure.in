@@ -783,7 +783,8 @@ if test "$pike_cv_sys_os" = "Darwin" ; then
       AC_MSG_RESULT([flat (10.2 or older)])
   else
       AC_MSG_RESULT([two-level (${pike_cv_osx_deployment_target} or newer)])
-      AC_DEFINE(USE_OSX_TWOLEVEL_NAMESPACE, ${pike_cv_osx_deployment_target})
+      AC_DEFINE_UNQUOTED(USE_OSX_TWOLEVEL_NAMESPACE,
+                         ${pike_cv_osx_deployment_target})
   fi
 fi
 
