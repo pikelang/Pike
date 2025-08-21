@@ -80,7 +80,7 @@ int main(int argc, char **argv)
   int i;
   int buf_size;
   char *path;
-  char *buffer;
+  char *buffer = NULL;
   char *lpath;
   char *rpath;
   int rpath_in_use = 0;
@@ -427,6 +427,19 @@ int main(int argc, char **argv)
       }
     }
   }
+
+#ifdef USE_OSX_TWOLEVEL_NAMESPACE
+  /* NB: Configure has determined that the OS is Darwin 7 or later. */
+#define TOSTR(X)        #X
+#define DEFINETOSTR(X)  TOSTR(X)
+
+  if (!getenv("MACOSX_DEPLOYMENT_TARGET")) {
+    if (putenv("MACOSX_DEPLOYMENT_TARGET="
+               DEFINETOSTR(USE_OSX_TWOLEVEL_NAMESPACE))) {
+      fatal("Out of memory (8)!\n");
+    }
+  }
+#endif
 
   if (verbose) {
     int i = 0;
