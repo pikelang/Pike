@@ -27,6 +27,12 @@ DECLARATIONS
 #define KRB_FPRINTF(X)
 /* Don't complain about us using krb5_get_init_creds_opt_init(). */
 #define KRB5_DEPRECATED_FUNCTION(X)
+/* MacOS X warns about lots of the KRB5 functions being deprecated.
+ *
+ * FIXME: Consider using the new API (cf #10196).
+ */
+#undef KERBEROS_APPLE_DEPRECATED
+#define KERBEROS_APPLE_DEPRECATED(X)
 #endif /* KRB_DEBUG */
 
 #ifdef HAVE_KRB5

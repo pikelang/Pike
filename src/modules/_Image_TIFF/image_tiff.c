@@ -36,11 +36,25 @@
  */
 #define TIFF_DISABLE_DEPRECATED
 
+/* Work around old versions of <tiffconf.h> defining conflicting
+ * values for SIZEOF_LONG (and SIZEOF_INT).
+ * This silences the warning about redefining them.
+ *
+ * Cf libtiff 3.8.2.
+ */
+#undef SIZEOF_INT
+#undef SIZEOF_LONG
 #include <tiff.h>
 #ifdef HAVE_TIFFIOP_H
 #include <tiffiop.h>
 #endif
 #include <tiffio.h>
+
+/* The values for these possibly provided by old <tiffconf.h>
+ * can not be trusted.
+ */
+#undef SIZEOF_INT
+#undef SIZEOF_LONG
 
 #ifdef TIFF_GCC_DEPRECATED
 /* Recent version of libtiff. We use old-style types below,

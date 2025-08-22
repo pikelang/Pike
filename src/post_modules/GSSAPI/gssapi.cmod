@@ -65,6 +65,13 @@ DECLARATIONS
 #undef HAVE_SYS_TYPES_H
 #undef HAVE_STDLIB_H
 
+/* MacOS X warns about lots of the GSSAPI functions being deprecated.
+ *
+ * FIXME: Consider using the new API (cf #10196).
+ */
+#undef GSSKRB_APPLE_DEPRECATED
+#define GSSKRB_APPLE_DEPRECATED(X)
+
 #ifdef HAVE_GSSAPI_GSSAPI_H
 #include <gssapi/gssapi.h>
 #elif defined (HAVE_GSSAPI_H)
