@@ -2702,35 +2702,48 @@ int wide_string_to_svalue_inumber(struct svalue *r,
   return ret;
 }
 
-int safe_wide_string_to_svalue_inumber(struct svalue *r,
-				       void * str,
-				       void *ptr,
-				       int base,
-				       ptrdiff_t maxlength,
-				       enum size_shift shift)
-/* For use from the lexer where we can't let errors be thrown. */
+/* NOTE: Extracted from safe_wide_string_to_svalue_inumber() to work
+ *       around bugs in some versions of gcc that complain about
+ *       tmp in MKPCHARP() being clobbered (due to inlineing).
+ *       Seen with gcc 3.4.3/x86/Solaris 10.
+ */
+static int safe_pcharp_to_svalue_inumber(struct svalue *r,
+                                         PCHARP str,
+                                         PCHARP *ptr,
+                                         int base,
+                                         ptrdiff_t maxlength)
 {
-  PCHARP tmp;
   JMP_BUF recovery;
   int ret = 0;
 
-  free_svalue (&throw_value);
-  mark_free_svalue (&throw_value);
+  free_svalue(&throw_value);
+  mark_free_svalue(&throw_value);
 
-  if (SETJMP (recovery)) {
+  if (SETJMP(recovery)) {
+    UNSETJMP(recovery);
     /* We know that pcharp_to_svalue_inumber has initialized the
      * svalue before any error might be thrown. */
     call_handle_error();
     ret = 0;
   }
   else
-    ret = pcharp_to_svalue_inumber(r,
-				   MKPCHARP(str,shift),
-				   &tmp,
-				   base,
-				   maxlength);
+    ret = pcharp_to_svalue_inumber(r, str, ptr, base, maxlength);
   UNSETJMP (recovery);
-  if(ptr) *(p_wchar0 **)ptr=tmp.ptr;
+  return ret;
+}
+
+int safe_wide_string_to_svalue_inumber(struct svalue *r,
+                                       void * str,
+                                       void *ptr,
+                                       int base,
+                                       ptrdiff_t maxlength,
+                                       enum size_shift shift)
+/* For use from the lexer where we can't let errors be thrown. */
+{
+  PCHARP tmp;
+  int ret = safe_pcharp_to_svalue_inumber(r, MKPCHARP(str,shift),
+                                          &tmp, base, maxlength);
+  if (ptr && ret) *(p_wchar0 **)ptr = tmp.ptr;
   return ret;
 }
 

@@ -3357,10 +3357,41 @@ PMOD_EXPORT void call_handle_error(void)
   Pike_interpreter.flags = save_iflags;
 }
 
+/* NOTE: Extracted from apply_low_safe_and_stupid() to work around
+ *       bugs in some versions of gcc that complain about res in
+ *       alloc_pike_frame() being clobbered (due to inlineing).
+ *       Seen with gcc 7.3.0/x86/Solaris 11.
+ */
+static int do_apply_low_safe_and_stupid(struct pike_frame *new_frame,
+                                        struct program *prog,
+                                        INT32 offset)
+{
+  int ret;
+  JMP_BUF tmp;
+  if(SETJMP(tmp))
+  {
+    ret=1;
+  }else{
+    int tmp;
+    new_frame->save_mark_sp=Pike_mark_sp;
+    tmp=eval_instruction(prog->program + offset);
+    Pike_mark_sp=new_frame->save_mark_sp;
+
+#ifdef PIKE_DEBUG
+    if (tmp != -1)
+      Pike_fatal ("Unexpected return value from eval_instruction: %d\n", tmp);
+    if(Pike_sp<Pike_interpreter.evaluator_stack)
+      Pike_fatal("Stack error (simple).\n");
+#endif
+    ret=0;
+  }
+  UNSETJMP(tmp);
+  return ret;
+}
+
 /* NOTE: This function may only be called from the compiler! */
 int apply_low_safe_and_stupid(struct object *o, INT32 offset)
 {
-  JMP_BUF tmp;
   struct pike_frame *new_frame=alloc_pike_frame();
   int ret;
   volatile int use_dummy_reference = 1;
@@ -3435,24 +3466,7 @@ int apply_low_safe_and_stupid(struct object *o, INT32 offset)
   saved_jmpbuf = Pike_interpreter.catching_eval_jmpbuf;
   Pike_interpreter.catching_eval_jmpbuf = NULL;
 
-  if(SETJMP(tmp))
-  {
-    ret=1;
-  }else{
-    int tmp;
-    new_frame->save_mark_sp=Pike_mark_sp;
-    tmp=eval_instruction(prog->program + offset);
-    Pike_mark_sp=new_frame->save_mark_sp;
-
-#ifdef PIKE_DEBUG
-    if (tmp != -1)
-      Pike_fatal ("Unexpected return value from eval_instruction: %d\n", tmp);
-    if(Pike_sp<Pike_interpreter.evaluator_stack)
-      Pike_fatal("Stack error (simple).\n");
-#endif
-    ret=0;
-  }
-  UNSETJMP(tmp);
+  ret = do_apply_low_safe_and_stupid(new_frame, prog, offset);
 
   Pike_interpreter.catching_eval_jmpbuf = saved_jmpbuf;
   Pike_compiler->compiler_pass = save_compiler_pass;
