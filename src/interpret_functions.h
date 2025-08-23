@@ -85,7 +85,7 @@
 #endif
 
 #ifndef MACHINE_CODE_FORCE_FP
-#define MACHINE_CODE_FORCE_FP()	0
+#define MACHINE_CODE_FORCE_FP()
 #endif
 
 #ifndef OVERRIDE_JUMPS

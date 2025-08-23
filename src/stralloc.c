@@ -576,7 +576,7 @@ static void free_string_content(struct pike_string * s)
 static void free_unlinked_pike_string(struct pike_string * s)
 {
   free_string_content(s);
-  dmalloc_unregister(s, 0);
+  (void)dmalloc_unregister(s, 0);
   switch(s->struct_type)
   {
    case STRING_STRUCT_STRING:

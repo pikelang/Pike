@@ -99,7 +99,7 @@ unordered:
 #undef CHECK_ALIGNED
 
 #ifdef HANDLES_UNALIGNED_MEMORY_ACCESS
-#define CHECK_ALIGNED(X)	0
+#define CHECK_ALIGNED(X)
 #else
 #define CHECK_ALIGNED(X)			\
  if ((ptrdiff_t)memory & ((X)-1)) goto unaligned

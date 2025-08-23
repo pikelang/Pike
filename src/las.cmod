@@ -525,7 +525,7 @@ void really_free_node_s(node * n) {
     Pike_fatal("Attempt to free a node with no active compiler.\n");
   }
 #endif
-  dmalloc_unregister(n, 0);
+  (void)dmalloc_unregister(n, 0);
   ba_free(&Pike_compiler->compiler->node_allocator, n);
 }
 

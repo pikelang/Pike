@@ -459,8 +459,8 @@ static void f__check_threads_swaps (INT32 UNUSED(args))
 
 #else
 
-#define SET_LOCKING_THREAD 0
-#define UNSET_LOCKING_THREAD 0
+#define SET_LOCKING_THREAD
+#define UNSET_LOCKING_THREAD
 
 #endif /* PIKE_DEBUG */
 
@@ -3366,7 +3366,7 @@ void exit_mutex_key_obj(struct object *UNUSED(o))
          *     this mutex.
          */
         if (nodeno >= 0) {
-          for (nodeno; nodeno >= 0;
+          for (; nodeno >= 0;
                nodeno = multiset_next(pending, nodeno)) {
             struct array *a;
             push_multiset_index(pending, nodeno);
