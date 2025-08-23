@@ -26,7 +26,6 @@
 #include "cpp.h"
 #include "lex.h"
 #include "sprintf.h"
-#include "pike_compiler.h"
 
 #include <ctype.h>
 
