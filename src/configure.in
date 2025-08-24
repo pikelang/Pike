@@ -8113,15 +8113,15 @@ if test -z "$LDSHARED" ; then
       ldshared_is_cc=no
     ;;
     Darwin*)
-      if test "$pike_cv_osx_twolevel_namespace" = yes ; then
+      if test "$pike_cv_osx_deployment_target" = no ; then
+        # Mac OS X prior to 10.3 need -flat_namespace to support dynamic modules
+        LDSHARED="$REALCC $CFLAGS -bundle -bind_at_load -flat_namespace -undefined suppress"
+      else
         # 10.3 or newer take advantage of two-level namespaces to avoid
         # symbol collisions for e.g. libjpeg which is referenced from both
         # _Image_JPEG and _Image_TIFF. It requires MACOSX_DEPLOYMENT_TARGET
         # which is initialized in smartlink to 10.3.
         LDSHARED="$REALCC $CFLAGS -bundle -bind_at_load -undefined dynamic_lookup"
-      else
-        # Mac OS X prior to 10.3 need -flat_namespace to support dynamic modules
-        LDSHARED="$REALCC $CFLAGS -bundle -bind_at_load -flat_namespace -undefined suppress"
       fi
       if test x"$pike_cv_option_Wlno_warn_duplicate_libraries" = "xyes" ; then
          LDSHARED="$LDSHARED -Wl,-no_warn_duplicate_libraries"

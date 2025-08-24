@@ -27,7 +27,7 @@ DECLARATIONS;
     }							\
   } while(0)
 #else
-#define ASSERT(X)	0
+#define ASSERT(X)
 #endif
 
 /*! @decl string(8bit) huffman_encode(string(8bit) str)

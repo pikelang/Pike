@@ -9901,7 +9901,7 @@ static node *fix_map_node_info(node *n)
     argno = 0;
   }
 
-  for (argno; (cb_ = my_get_arg(&_CDR(n), argno)); argno++) {
+  for (; (cb_ = my_get_arg(&_CDR(n), argno)); argno++) {
     node *cb = *cb_;
 
     if ((cb->token == F_CONSTANT) &&

@@ -55,7 +55,7 @@ struct program * alloc_program(void) {
 
 void really_free_program(struct program * p) {
     exit_program_struct(p);
-    dmalloc_unregister(p, 0);
+    (void)dmalloc_unregister(p, 0);
     ba_free(&program_allocator, p);
 }
 

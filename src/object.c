@@ -238,7 +238,7 @@ PMOD_EXPORT struct object *low_clone(struct program *p)
       Pike_fatal("Frame stack out of whack.\n"); \
   } while(0)
 #else
-#define CHECK_FRAME()	0
+#define CHECK_FRAME()
 #endif
 
 #define POP_FRAME()				\

@@ -520,6 +520,7 @@ static ptrdiff_t reduce_recurse(struct nct_flat_entry *src,
       case SORT_R: HALFSORT(r); break;
       case SORT_G: HALFSORT(g); break;
       case SORT_B: HALFSORT(b); break;
+     default: /* Not reached, but simplifies code analysis. */
       case SORT_GREY:
          while (left<right)
 	 {

@@ -340,7 +340,7 @@ static void internal_parse_type(const char **s);
 static struct block_allocator type_allocator = BA_INIT(sizeof(struct pike_type), 128);
 
 PMOD_EXPORT void really_free_pike_type(struct pike_type * t) {
-    dmalloc_unregister(t, 0);
+    (void)dmalloc_unregister(t, 0);
     ba_free(&type_allocator, t);
 }
 
@@ -3759,7 +3759,7 @@ static void simple_describe_remap_state(struct remap_state *remap)
   }
 }
 #else
-#define simple_describe_remap_state(X)	do { (X); } while(0)
+#define simple_describe_remap_state(X)	do { (void)(X); } while(0)
 #endif
 
 static int alloc_remap_marker(struct remap_state *remap, int marker,
