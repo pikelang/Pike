@@ -6273,9 +6273,9 @@ time_t mktime_zone(struct tm *date, int other_timezone, int tz)
       const char *orig_tz = getenv("TZ");
       char tzbuf[20];
       ONERROR uwp;
-      char *tzsgn = tz < 0 ? "-" : "+";
-      unsigned tzu = (tz < 0? -tz : tz);
-      sprintf(tzbuf, "TZ=UTC%s%02u:%02u:%02u",
+      char tzsgn = tz < 0 ? '-' : '+';
+      unsigned short tzu = (tz < 0? -tz : tz);
+      sprintf(tzbuf, "TZ=UTC%c%02u:%02u:%02u",
 	      tzsgn,
 	      tzu/3600,
 	      (tzu/60)%60,
