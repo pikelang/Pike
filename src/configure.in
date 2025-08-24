@@ -1431,6 +1431,12 @@ if test "$cflags_is_set" = "no"; then
     AC_SYS_COMPILER_FLAG(-Wchar-subscripts,Wchar_subscripts,WARN)
     AC_SYS_COMPILER_FLAG(-Wno-long-long,Wno_long_long,WARN)
     AC_SYS_COMPILER_FLAG(-Wno-unknown-attributes,Wno_unknown_attributes,WARN)
+    # Solaris 10 has system header files (like eg <X/Xlib.h>) that contain
+    # #pragma ident "..." statements that gcc 3.4.3 complains about.
+    # Gcc 3.4.3 does not support #pragma GCC diagnostic, so we must
+    # unfortunately disable the warning globally.
+    AC_SYS_OS_COMPILER_FLAG(Solaris, -Wno-unknown-pragmas,
+                            Wno_unknown_pragmas, WARN)
 
     if test "x${with_static_linking-}" = "xyes" ; then
       AC_SYS_COMPILER_FLAG(-static,link_static,CFLAGS)
