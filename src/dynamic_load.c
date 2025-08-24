@@ -77,13 +77,17 @@ typedef void (*modfun)(void);
 
 #ifdef USE_STATIC_MODULES
 
+static int invalid_semidynamic_module = 0;
+
 static void *dlopen(const char *foo, int UNUSED(how))
 {
   struct pike_string *s = low_read_file(foo);
   char *name, *end;
   void *res;
 
+  invalid_semidynamic_module = 0;
   if (!s) return NULL;
+  invalid_semidynamic_module = 1;
   if (strncmp(s->str, "PMODULE=\"", 9)) {
     free_string(s);
     return NULL;
@@ -94,6 +98,7 @@ static void *dlopen(const char *foo, int UNUSED(how))
     return NULL;
   }
 
+  invalid_semidynamic_module = 0;
   res = (void *)find_semidynamic_module(name, end - name);
   free_string(s);
   return res;
@@ -101,7 +106,8 @@ static void *dlopen(const char *foo, int UNUSED(how))
 
 static char *dlerror(void)
 {
-  return "Invalid dynamic module.";
+  return invalid_semidynamic_module ? "Invalid dynamic module." :
+    "The specified module could not be found.";
 }
 
 static void *dlsym(void *module, char *function)
