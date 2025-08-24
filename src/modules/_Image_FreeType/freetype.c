@@ -8,24 +8,6 @@
 #include "config.h"
 
 #ifdef HAVE_LIBFT2
-/* Freetype 2.6 defines a conflicting TYPEOF() macro. */
-#undef TYPEOF
-
-#ifndef HAVE_FT_FT2BUILD
-#include <freetype/freetype.h>
-#include <freetype/ftsnames.h>
-#include <freetype/ttnameid.h>
-#else
-#include <ft2build.h>
-#include FT_FREETYPE_H
-#include FT_SFNT_NAMES_H
-#include FT_TRUETYPE_IDS_H
-#endif
-
-/* Restore the Pike TYPEOF() macro. */
-#undef TYPEOF
-#define TYPEOF(SVAL)	PIKE_TYPEOF(SVAL)
-#endif /* HAVE_LIBFT2 */
 
 #include "pike_compiler.h"
 #include "pike_error.h"
@@ -38,6 +20,35 @@
 #include "operators.h"
 #include "sprintf.h"
 #include "../Image/image.h"
+
+/* Freetype 2.6 defines a conflicting TYPEOF() macro. */
+#undef TYPEOF
+
+/* Some versions of Freetype define a SIZEOF_LONG that may be invalid.
+ * Seen with /usr/sfw/include/freetype2/freetype/config/ftconfig.h
+ * on Solaris 10.
+ */
+#undef SIZEOF_LONG
+
+#ifndef HAVE_FT_FT2BUILD
+#include <freetype/freetype.h>
+#include <freetype/ftsnames.h>
+#include <freetype/ttnameid.h>
+#else
+#include <ft2build.h>
+#include FT_FREETYPE_H
+#include FT_SFNT_NAMES_H
+#include FT_TRUETYPE_IDS_H
+#endif
+
+#undef SIZEOF_LONG
+/* Bad values for SIZEOF_LONG may cause bad values for FT_INT64. */
+#undef FT_INT64
+
+/* Restore the Pike TYPEOF() macro. */
+#undef TYPEOF
+#define TYPEOF(SVAL)	PIKE_TYPEOF(SVAL)
+#endif /* HAVE_LIBFT2 */
 
 
 #ifdef HAVE_LIBFT2
