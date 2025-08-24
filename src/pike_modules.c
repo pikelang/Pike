@@ -365,10 +365,25 @@ struct static_module
   int semidynamic;
 };
 
+#ifdef PRE_PIKE
+static void dummy_module_init(void)
+{
+  HIDE_MODULE();
+}
+
+static void dummy_module_exit(void)
+{
+}
+#endif
+
 static const struct static_module module_list[] = {
   { "Builtin", init_builtin_modules, exit_builtin_modules, 0 }
 #include "modules/modlist.h"
-#ifndef PRE_PIKE
+#ifdef PRE_PIKE
+  /* Fake empty modules to get rid of warnings */
+  ,{ "._ADT", dummy_module_init, dummy_module_exit, 1 } 
+  ,{ ".Unicode", dummy_module_init, dummy_module_exit, 1 } 
+#else
 #include "post_modules/modlist.h"
 #endif
 };
