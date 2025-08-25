@@ -123,6 +123,9 @@ else
       LIBS="-lOpenGL32 $LIBS"
     elif test x"$ac_cv_lib_MesaGL_glOrtho" = xyes; then
       LIBS="-lMesaGL $LIBS $X_LIBS $X_PRE_LIBS -lXext -lX11 $X_EXTRA_LIBS"
+    else test x"$with_static_linking" = xyes; then
+      AC_MSG_NOTE([No static GL or MesaGL libraries, disabling GL support.])
+      tmp_gl_fail=yes
     else
       AC_MSG_WARN([No GL or MesaGL libraries, disabling GL support.])
       tmp_gl_fail=yes
