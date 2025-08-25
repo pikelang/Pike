@@ -6273,14 +6273,14 @@ time_t mktime_zone(struct tm *date, int other_timezone, int tz)
       const char *orig_tz = getenv("TZ");
       char tzbuf[20];
       ONERROR uwp;
-      char *tzsgn = tz < 0 ? "-" : "+";
-      if (tz < 0) tz = -tz;
-      if (tz) {
-        sprintf(tzbuf, "TZ=UTC%s%02d:%02d:%02d",
+      char tzsgn = tz < 0 ? '-' : '+';
+      unsigned short tzu = (tz < 0? -tz : tz);
+      if (tzu) {
+        sprintf(tzbuf, "TZ=UTC%c%02u:%02u:%02u",
                 tzsgn,
-                tz/3600,
-                (tz/60)%60,
-                tz % 60);
+                tzu/3600,
+                (tzu/60)%60,
+                tzu % 60);
       } else {
         sprintf(tzbuf, "TZ=UTC");
       }

@@ -15,12 +15,20 @@
 #include "threads.h"
 #include "pike_types.h"
 #include "builtin_functions.h"
+#include "bignum.h"
 
 #include "fsevents_config.h"
 
 #define ADD_ICONST(name) do {                   \
         add_integer_constant(#name, name, 0);   \
-} while(0);
+} while(0)
+
+#define ADD_ULONGESTCONST(name) do {            \
+        struct svalue tmp;                      \
+        ulongest_to_svalue_no_free(&tmp, name); \
+        simple_add_constant(#name, &tmp, 0);    \
+        free_svalue(&tmp);                      \
+} while(0)
 
 #ifdef HAVE_FRAMEWORK_CORESERVICES
 #include <CoreServices/CoreServices.h>
@@ -139,16 +147,17 @@ PIKEFUN void flush_sync()
  *! Flags that modify the behavior of the stream being created. See Apple's FSEvents documentation
  *! for details of the various flags available.
  */
-PIKEFUN void create(array paths, float latency, int|void sinceWhen, int|void flags)
+PIKEFUN void create(array paths, float latency, int|object(bignum)|void sinceWhen, int|void flags)
 {
   int idx = 0, cnt = 0;
+  INT64 sw;
 
   THIS->isRunning = 0;
   THIS->_latency = latency;
 
-  if(sinceWhen && TYPEOF(*sinceWhen) == T_INT)
+  if(sinceWhen && int64_from_svalue(&sw, sinceWhen))
   {
-    THIS->_sinceWhen = sinceWhen->u.integer;
+    THIS->_sinceWhen = sw;
   }
   else
   {
@@ -372,7 +381,7 @@ static void do_event_callback(struct event_callback_ctx * ctx)
 	 push_string(str);
 	 f_utf8_to_string(1);
 	 push_int(ctx->eventFlags[cnt]);
-	 push_int(ctx->eventIds[cnt]);
+	 push_int64(ctx->eventIds[cnt]);
 	 eventStreamObj = (struct FSEvents_EventStream_struct *)(ctx->clientCallBackInfo);
  	 apply_svalue(&eventStreamObj->callback_func, 3);
   }
@@ -629,11 +638,7 @@ PIKE_MODULE_INIT
 #endif
 
 #if HAVE_DECL_KFSEVENTSTREAMEVENTIDSINCENOW
-  /* FIXME: (unsigned INT64)~0.
-   *
-   * Value truncated on 32-bit!
-   */
-  ADD_ICONST(kFSEventStreamEventIdSinceNow);
+  ADD_ULONGESTCONST(kFSEventStreamEventIdSinceNow);
 #endif
 
 }

@@ -115,6 +115,21 @@ PMOD_EXPORT JMP_BUF *init_recovery(JMP_BUF *r, size_t stack_pop_levels DEBUG_INI
   return r;
 }
 
+#ifdef __NT__
+/* Wrapper around abort() to avoid interactive requesters on NT. */
+int fnordel=0;
+DECLSPEC(noreturn) static void do_abort()
+{
+  if (!d_flag && !getenv("PIKE_DEBUG")) {
+    exit(-6);	/* -SIGIOT */
+  }
+  fnordel=999/fnordel;
+  abort();
+}
+#else /* !__NT__ */
+#define do_abort()	abort()
+#endif /* __NT__ */
+
 /* coverity[+kill] */
 PMOD_EXPORT DECLSPEC(noreturn) void pike_throw(void) ATTRIBUTE((noreturn))
 {
@@ -244,6 +259,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void pike_throw(void) ATTRIBUTE((noreturn))
   else
 #endif /* OPCODE_INLINE_CATCH */
     LOW_LONGJMP(Pike_interpreter.recoveries->recovery,1);
+  do_abort();
 }
 
 static void push_error(const char *description)
@@ -457,21 +473,6 @@ PMOD_EXPORT void exit_on_error(const void *msg)
 
   exit(1);
 }
-
-#ifdef __NT__
-/* Wrapper around abort() to avoid interactive requesters on NT. */
-int fnordel=0;
-DECLSPEC(noreturn) static void do_abort()
-{
-  if (!d_flag && !getenv("PIKE_DEBUG")) {
-    exit(-6);	/* -SIGIOT */
-  }
-  fnordel=999/fnordel;
-  abort();
-}
-#else /* !__NT__ */
-#define do_abort()	abort()
-#endif /* __NT__ */
 
 PMOD_EXPORT void fatal_on_error(const void *msg)
 {
