@@ -8129,7 +8129,11 @@ if test -z "$LDSHARED" ; then
           #
           # There we instead use -bundle_loader $pike_bin analogous
           # to the way it is done on NT.
-          LDSHARED="$REALCC $CFLAGS -bundle -bind_at_load"
+          #
+          # On MacOS X 15.0 and later the linker complains about
+          # -bind_at_load if -bundle_loader is specified. The
+          # flag appears to be redundant, so skip it.
+          LDSHARED="$REALCC $CFLAGS -bundle"
           LDSHARED_BASE_REQS="pike"
           LDSHARED_MODULE_ARGS="-bundle_loader `pwd`/pike"
           LDSHARED_MODULE_REQS="`pwd`/pike"
