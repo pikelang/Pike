@@ -8106,16 +8106,35 @@ if test -z "$LDSHARED" ; then
       ldshared_is_cc=no
     ;;
     Darwin*)
-      if test "$pike_cv_osx_deployment_target" = no ; then
-        # Mac OS X prior to 10.3 need -flat_namespace to support dynamic modules
-        LDSHARED="$REALCC $CFLAGS -bundle -bind_at_load -flat_namespace -undefined suppress"
-      else
-        # 10.3 or newer take advantage of two-level namespaces to avoid
-        # symbol collisions for e.g. libjpeg which is referenced from both
-        # _Image_JPEG and _Image_TIFF. It requires MACOSX_DEPLOYMENT_TARGET
-        # which is initialized in smartlink to 10.3.
-        LDSHARED="$REALCC $CFLAGS -bundle -bind_at_load -undefined dynamic_lookup"
-      fi
+      case "$pike_cv_osx_deployment_target" in
+        no)
+          # Mac OS X prior to 10.3 need -flat_namespace to support
+          # dynamic modules
+          LDSHARED="$REALCC $CFLAGS -bundle -bind_at_load -flat_namespace -undefined suppress"
+        ;;
+        10.*|11.*)
+          # 10.3 or newer take advantage of two-level namespaces to avoid
+          # symbol collisions for e.g. libjpeg which is referenced from both
+          # _Image_JPEG and _Image_TIFF. It requires MACOSX_DEPLOYMENT_TARGET
+          # which is initialized in smartlink to 10.3.
+          LDSHARED="$REALCC $CFLAGS -bundle -bind_at_load -undefined dynamic_lookup"
+        ;;
+        *)
+          # MacOS X 12.0 and later.
+          # More recent X-code complains about use of
+          # -undefined dynamic_lookup:
+          #
+          #   ld: warning: -undefined dynamic_lookup may not work
+          #   with chained fixups
+          #
+          # There we instead use -bundle_loader $pike_bin analogous
+          # to the way it is done on NT.
+          LDSHARED="$REALCC $CFLAGS -bundle -bind_at_load"
+          LDSHARED_BASE_REQS="pike"
+          LDSHARED_MODULE_ARGS="-bundle_loader `pwd`/pike"
+          LDSHARED_MODULE_REQS="`pwd`/pike"
+        ;;
+      esac
       if test x"$pike_cv_option_Wlno_warn_duplicate_libraries" = "xyes" ; then
          LDSHARED="$LDSHARED -Wl,-no_warn_duplicate_libraries"
       fi
@@ -8208,7 +8227,7 @@ if test -z "$LDSHARED" ; then
     fi
   fi
 fi
-AC_MSG_RESULT($LDSHARED)
+AC_MSG_RESULT($LDSHARED $LDSHARED_MODULE_ARGS)
 
 AC_MSG_CHECKING(LINKFORSHARED)
 
@@ -8315,6 +8334,23 @@ AC_CACHE_VAL(pike_cv_sys_dynamic_loading,
 [
   mybase=""
   case "$LDSHARED_MODULE_ARGS" in
+    *-bundle_loader*)
+      AC_TRY_LINK([
+#if __GNUC__ >= 4
+__attribute__ ((visibility("default")))
+# endif
+void testfunc2(void) { }
+      ], [ return 0; ], [
+        mybase=mybase
+        mv conftest$ac_exeext $mybase
+      ])
+      if test ! -z "$mybase" ; then
+        mv "$mybase" conftest$ac_exeext
+        ln -s conftest$ac_exeext "$mybase"
+        mybase="-bundle_loader $mybase"
+      fi
+      ;;
+
     *pike.exe)
       AC_TRY_LINK([
 #if __GNUC__ >= 4
