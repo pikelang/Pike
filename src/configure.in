@@ -2703,7 +2703,7 @@ AC_SUBST(WINDRES)
 AC_ARG_WITH(small-eval-instruction,
         MY_DESCR([--with-small-eval-instruction],
                  [attempt to reduce the size of eval_instruction (EXPERIMENTAL).]), [
-  PIKE_MSG_WARN([Small eval_instruction requested. Note that this disables
+  PIKE_MSG_NOTE([Small eval_instruction requested. Note that this disables
 runtime machine-code generation.])
   AC_DEFINE(PIKE_SMALL_EVAL_INSTRUCTION)
   with_machine_code="no"
@@ -2715,17 +2715,17 @@ AC_ARG_WITH(machine-code,
   if test "x${with_machine_code-}" = x; then
     case "x$pike_cv_sys_os:${PAXCTL-no}" in
       xOpenBSD*)
-        PIKE_MSG_WARN([OpenBSD detected, disabling machine code.
+        PIKE_MSG_NOTE([OpenBSD detected, disabling machine code.
 Use --with-machine-code to force use of machine code support.])
         with_machine_code="no"
         ;;
       xFreeBSD*)
-        PIKE_MSG_WARN([FreeBSD detected, disabling machine code.
+        PIKE_MSG_NOTE([FreeBSD detected, disabling machine code.
 Use --with-machine-code to force use of machine code support.])
         with_machine_code="no"
         ;;
       xNetBSD*:no)
-        PIKE_MSG_WARN([NetBSD detected and no paxctl(8), disabling machine code.
+        PIKE_MSG_NOTE([NetBSD detected and no paxctl(8), disabling machine code.
 Use --with-machine-code to force use of machine code support.])
         with_machine_code="no"
         ;;
