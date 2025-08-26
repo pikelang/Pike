@@ -3598,10 +3598,6 @@ PMOD_EXPORT INT64 pike_writev(int fd, struct iovec *iov, int iovcnt)
   return sent;
 }
 
-#ifdef HAVE_SYS_UIO_H
-#include <sys/uio.h>
-#endif /* HAVE_SYS_UIO_H */
-
 #ifdef HAVE_NETINET_TCP_H
 #include <netinet/tcp.h>
 #endif /* HAVE_NETINET_TCP_H */
