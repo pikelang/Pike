@@ -16,6 +16,10 @@
 #include "siphash24.h"
 #include "cyclic.h"
 
+#ifdef HAVE_SYS_PROCCTL_H
+#include <sys/procctl.h>
+#endif
+
 #ifdef HAVE_SYS_MMAN_H
 #include <sys/mman.h>
 #endif
@@ -3571,6 +3575,21 @@ PMOD_EXPORT void secure_zero(void *p, size_t n)
 
 void init_pike_memory (void)
 {
+#ifdef HAVE_PROCCTL
+  {
+    pid_t pid = getpid();
+    int permit = PROC_WX_MAPPINGS_PERMIT;
+    int fail = 0;
+    while (((fail = procctl(P_PID, pid, PROC_WXMAP_CTL, &permit) < 0)) &&
+           (errno == EINTR))
+      ;
+    if (fail) {
+      Pike_fatal("procctl(2) failed with error %s (%d)\n",
+                 strerror(errno), errno);
+    }
+  }
+#endif
+
   init_hashmem();
 #ifdef HAVE_GETPAGESIZE
   page_size = getpagesize();

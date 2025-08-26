@@ -2643,7 +2643,7 @@ if test "x${AR-}" = x ; then
 fi
 AC_SUBST(AR)
 
-# PaX flags control (NetBSD).
+# PaX flags control (NetBSD or Linux).
 if test "x${PAXCTL-}" = x ; then
     # Linux:  /sbin/paxctl
     # NetBSD: /usr/sbin/paxctl
@@ -2716,7 +2716,7 @@ AC_SUBST(WINDRES)
 AC_ARG_WITH(small-eval-instruction,
         MY_DESCR([--with-small-eval-instruction],
                  [attempt to reduce the size of eval_instruction (EXPERIMENTAL).]), [
-  PIKE_MSG_WARN([Small eval_instruction requested. Note that this disables
+  PIKE_MSG_NOTE([Small eval_instruction requested. Note that this disables
 runtime machine-code generation.])
   AC_DEFINE(PIKE_SMALL_EVAL_INSTRUCTION)
   with_machine_code="no"
@@ -2725,20 +2725,29 @@ AC_ARG_WITH(machine-code,
         MY_DESCR([--without-machine-code],
                  [do not try to use machine code on supported architectures.]),
         [], [
+  if test "x${with_machine_code-yes}:${PAXCTL-no}" = x"yes:no"; then
+      # Check if there are other methods to enable RWX mapping of memory.
+      # FreeBSD: procctl(2)
+      AC_CHECK_HEADERS(sys/procctl.h)
+      AC_CHECK_FUNCS(procctl)
+      if test "x${with_machine_code-}:$ac_cv_have_procctl" = x":yes"; then
+          with_machine_code="yes"
+      fi
+  fi
   if test "x${with_machine_code-}" = x; then
     case "x$pike_cv_sys_os:${PAXCTL-no}" in
       xOpenBSD*)
-        PIKE_MSG_WARN([OpenBSD detected, disabling machine code.
+        PIKE_MSG_NOTE([OpenBSD detected, disabling machine code.
 Use --with-machine-code to force use of machine code support.])
         with_machine_code="no"
         ;;
       xFreeBSD*)
-        PIKE_MSG_WARN([FreeBSD detected, disabling machine code.
+        PIKE_MSG_NOTE([FreeBSD detected, disabling machine code.
 Use --with-machine-code to force use of machine code support.])
         with_machine_code="no"
         ;;
       xNetBSD*:no)
-        PIKE_MSG_WARN([NetBSD detected and no paxctl(8), disabling machine code.
+        PIKE_MSG_NOTE([NetBSD detected and no paxctl(8), disabling machine code.
 Use --with-machine-code to force use of machine code support.])
         with_machine_code="no"
         ;;
@@ -8142,7 +8151,11 @@ if test -z "$LDSHARED" ; then
           #
           # There we instead use -bundle_loader $pike_bin analogous
           # to the way it is done on NT.
-          LDSHARED="$REALCC $CFLAGS -bundle -bind_at_load"
+          #
+          # On MacOS X 15.0 and later the linker complains about
+          # -bind_at_load if -bundle_loader is specified. The
+          # flag appears to be redundant, so skip it.
+          LDSHARED="$REALCC $CFLAGS -bundle"
           LDSHARED_BASE_REQS="pike"
           LDSHARED_MODULE_ARGS="-bundle_loader `pwd`/pike"
           LDSHARED_MODULE_REQS="`pwd`/pike"
