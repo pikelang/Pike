@@ -2712,17 +2712,17 @@ AC_ARG_WITH(machine-code,
         MY_DESCR([--without-machine-code],
                  [do not try to use machine code on supported architectures.]),
         [], [
-  if test "x${with_machine_code-yes}:${PAXCTL-no}" = x"yes:no"; then
+  if test "x${with_machine_code:-yes}:${PAXCTL:-no}" = x"yes:no"; then
       # Check if there are other methods to enable RWX mapping of memory.
       # FreeBSD: procctl(2)
       AC_CHECK_HEADERS(sys/procctl.h)
       AC_CHECK_FUNCS(procctl)
-      if test "x${with_machine_code-}:$ac_cv_have_procctl" = x":yes"; then
+      if test "x${with_machine_code:-}:$ac_cv_func_procctl" = x":yes"; then
           with_machine_code="yes"
       fi
   fi
-  if test "x${with_machine_code-}" = x; then
-    case "x$pike_cv_sys_os:${PAXCTL-no}" in
+  if test "x${with_machine_code:-}" = x; then
+    case "x$pike_cv_sys_os:${PAXCTL:-no}" in
       xOpenBSD*)
         PIKE_MSG_NOTE([OpenBSD detected, disabling machine code.
 Use --with-machine-code to force use of machine code support.])
