@@ -1816,6 +1816,11 @@ void debug_check_rb_tree (struct rb_node_hdr *root, dump_data_fn *dump_data, voi
     if (root->flags & RB_RED) custom_rb_fatal (root, dump_data, extra,
 					       "Root node not black.\n");
 
+#ifdef _MSVC_VER
+  /* Disable C4102: 'leave_1' : unreferenced label */
+#pragma warning(push)
+#pragma warning(disable: 4102)
+#endif
     LOW_RB_TRAVERSE (
       1, rbstack, node,
       {				/* Push. */
@@ -1885,6 +1890,10 @@ void debug_check_rb_tree (struct rb_node_hdr *root, dump_data_fn *dump_data, voi
 	if (!(node->flags & RB_RED)) blacks--;
 	depth--;
       });
+#ifdef _MSVC_VER
+  /* Reenable C4102: 'leave_1' : unreferenced label */
+#pragma warning(pop)
+#endif
   }
 }
 
