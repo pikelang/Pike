@@ -217,7 +217,7 @@ void debug_check_rbstack (struct rb_node_hdr *root, struct rbstack_ptr rbstack);
       }									\
       while (1) {							\
         /* Make sure that the label is used. Inhibits warnings. */      \
-        /* if (0) goto PIKE_CONCAT (leave_, label); */                  \
+        if (0) goto PIKE_CONCAT (leave_, label);                        \
 	PIKE_CONCAT (leave_, label):					\
 	DO_IF_RB_STATS (rb_num_traverse_ops++);				\
 	{pop;}								\
