@@ -166,7 +166,7 @@
 	SPARC_XOR(reg_, reg_, (val_ & 0x3ff)|0x1c00, 1);		\
       } else {								\
 	/* FIXME: SPARC64 */						\
-	Pike_fatal("Value out of range: %p\n", (void *)val_);		\
+        Pike_fatal("Value out of range: 0x%" PRINTINT64 "x\n", val_);   \
       }									\
     } else {								\
       if (val_ <= 0x7fffffffLL) {					\
@@ -185,7 +185,7 @@
 	}								\
       } else {								\
 	/* FIXME: SPARC64 */						\
-	Pike_fatal("Value out of range: %p\n", (void *)val_);		\
+        Pike_fatal("Value out of range: 0x%" PRINTINT64 "x\n", val_);   \
       }									\
     }									\
   } while(0)
