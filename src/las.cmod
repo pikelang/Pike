@@ -2575,7 +2575,10 @@ static void low_describe_node_tree(struct string_builder *s,
 
   fatal_check_c_stack(16384);
 
-  switch(l_flag > 99 ? -1 : foo->token)
+  /* NB: Cast to int to inhibit signed/unsigned warning
+   *     from some versions of gcc (eg gcc 3.4.3/Solaris 10).
+   */
+  switch(l_flag > 99 ? -1 : (int)foo->token)
   {
   case USHRT_MAX:
     string_builder_strcat(s, "FREED_NODE");
