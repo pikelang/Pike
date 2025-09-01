@@ -544,7 +544,7 @@ static void ora_error_handler(OCIError *err, sword rc, char *func)
   push_int(2);
   f_unicode_to_string(2);
 #else
-  push_text(msgbuf);
+  push_text((char *)msgbuf);
 #endif
 
   /* Note that the error string as returned by Oracle ends with a linefeed,
