@@ -869,34 +869,6 @@ AC_DEFUN(PIKE_AC_DEBUG, [
   echo "DEBUG: ++++++++++++++++++++++++++++++++++" 1>&AC_FD_CC
 ])
 
-# Convenience function for querying Frameworks
-AC_DEFUN([AC_CHECK_FRAMEWORK],
-[m4_ifval([$3], , [AH_CHECK_FRAMEWORK([$1])])dnl
-AS_LITERAL_IF([$1],
-         [AS_VAR_PUSHDEF([ac_Framework], [ac_cv_framework_$1_$2])],
-         [AS_VAR_PUSHDEF([ac_Framework], [ac_cv_framework_$1''_$2])])dnl
-AC_CACHE_CHECK([for $2 in $1 framework], ac_Framework,
-[ac_check_framework_save_LIBS=$LIBS
-LIBS="-framework $1 $5 $LIBS"
-AC_LINK_IFELSE([AC_LANG_CALL([], [$2])],
-          [AS_VAR_SET(ac_Framework, yes)],
-          [AS_VAR_SET(ac_Framework, no)])
-LIBS=$ac_check_framework_save_LIBS])
-AS_IF([test AS_VAR_GET(ac_Framework) = yes],
-      [m4_default([$3], [AC_DEFINE_UNQUOTED(AS_TR_CPP(HAVE_FRAMEWORK_$1))
-  LIBS="-framework $1 $LIBS"
-])],
-      [$4])dnl
-AS_VAR_POPDEF([ac_Framework])dnl
-])# AC_CHECK_FRAMEWORK
-
-# AH_CHECK_FRAMEWORK(FRAMEWORK)
-# ---------------------
-m4_define([AH_CHECK_FRAMEWORK],
-[AH_TEMPLATE(AS_TR_CPP(HAVE_FRAMEWORK_$1),
-        [Define to 1 if you have the `]$1[' framework (-framework ]$1[).])])
-dnl '`
-
 
 PIKE_AC_DEBUG
 
