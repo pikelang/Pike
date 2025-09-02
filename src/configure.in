@@ -755,29 +755,33 @@ if test "$pike_cv_sys_os" = "Darwin" ; then
   AC_MSG_CHECKING([for Darwin linker namespace])
 
   AC_CACHE_VAL(pike_cv_osx_deployment_target, [
-    case "`uname -r`" in
-      [[1-6]].*)
-        pike_cv_osx_deployment_target=no
-      ;;
-      [[7-9]].*|1[[0-2]].*)
-        # Darwin 7 - 12 (aka Mac OS X 10.3 - 10.8).
-        # Needs to be 10.3 or better for ld to accept
-        # "-undefined dynamic_lookup"
-        pike_cv_osx_deployment_target=10.3
-      ;;
-      1[[3-9]].*)
-        # Darwin 13 - 19 (aka Mac OS X 10.9 - 10.15).
-        # C++ Name mangling changed here, need to be able to interoperate
-        # with modern libs
-        pike_cv_osx_deployment_target=10.9
-      ;;
-      *)
-        # Darwin 20 or later (aka Mac OS X 11.0 or later).
-        # Third party libraries are typically compiled for the major.0.
-        # This is also what the compiler typically defaults to.
-        pike_cv_osx_deployment_target="`sw_vers -productVersion | cut -d. -f1`.0"
-      ;;
-    esac
+    if test "x$MACOSX_DEPLOYMENT_TARGET" = "x"; then
+      case "`uname -r`" in
+        [[1-6]].*)
+          pike_cv_osx_deployment_target=no
+        ;;
+        [[7-9]].*|1[[0-2]].*)
+          # Darwin 7 - 12 (aka Mac OS X 10.3 - 10.8).
+          # Needs to be 10.3 or better for ld to accept
+          # "-undefined dynamic_lookup"
+          pike_cv_osx_deployment_target=10.3
+        ;;
+        1[[3-9]].*)
+          # Darwin 13 - 19 (aka Mac OS X 10.9 - 10.15).
+          # C++ Name mangling changed here, need to be able to interoperate
+          # with modern libs
+          pike_cv_osx_deployment_target=10.9
+        ;;
+        *)
+          # Darwin 20 or later (aka Mac OS X 11.0 or later).
+          # Third party libraries are typically compiled for the major.0.
+          # This is also what the compiler typically defaults to.
+          pike_cv_osx_deployment_target="`sw_vers -productVersion | cut -d. -f1`.0"
+        ;;
+      esac
+    else
+        pike_cv_osx_deployment_target="$MACOSX_DEPLOYMENT_TARGET"
+    fi
   ])
   if test "x$pike_cv_osx_deployment_target" = "xno"; then
       AC_MSG_RESULT([flat (10.2 or older)])
@@ -868,34 +872,6 @@ AC_DEFUN(PIKE_AC_DEBUG, [
   ulimit -a 1>&AC_FD_CC
   echo "DEBUG: ++++++++++++++++++++++++++++++++++" 1>&AC_FD_CC
 ])
-
-# Convenience function for querying Frameworks
-AC_DEFUN([AC_CHECK_FRAMEWORK],
-[m4_ifval([$3], , [AH_CHECK_FRAMEWORK([$1])])dnl
-AS_LITERAL_IF([$1],
-         [AS_VAR_PUSHDEF([ac_Framework], [ac_cv_framework_$1_$2])],
-         [AS_VAR_PUSHDEF([ac_Framework], [ac_cv_framework_$1''_$2])])dnl
-AC_CACHE_CHECK([for $2 in $1 framework], ac_Framework,
-[ac_check_framework_save_LIBS=$LIBS
-LIBS="-framework $1 $5 $LIBS"
-AC_LINK_IFELSE([AC_LANG_CALL([], [$2])],
-          [AS_VAR_SET(ac_Framework, yes)],
-          [AS_VAR_SET(ac_Framework, no)])
-LIBS=$ac_check_framework_save_LIBS])
-AS_IF([test AS_VAR_GET(ac_Framework) = yes],
-      [m4_default([$3], [AC_DEFINE_UNQUOTED(AS_TR_CPP(HAVE_FRAMEWORK_$1))
-  LIBS="-framework $1 $LIBS"
-])],
-      [$4])dnl
-AS_VAR_POPDEF([ac_Framework])dnl
-])# AC_CHECK_FRAMEWORK
-
-# AH_CHECK_FRAMEWORK(FRAMEWORK)
-# ---------------------
-m4_define([AH_CHECK_FRAMEWORK],
-[AH_TEMPLATE(AS_TR_CPP(HAVE_FRAMEWORK_$1),
-        [Define to 1 if you have the `]$1[' framework (-framework ]$1[).])])
-dnl '`
 
 
 PIKE_AC_DEBUG
@@ -2742,9 +2718,22 @@ Use --with-machine-code to force use of machine code support.])
         with_machine_code="no"
         ;;
       xFreeBSD*)
-        PIKE_MSG_NOTE([FreeBSD detected, disabling machine code.
+        # uname -K was added in FreeBSD 10.0.
+        # The semantics of the output of uname -K is not
+        # documented properly, but appears to be <major><minor:2><build:3>.
+        # Eg:
+        #   FreeBSD 11.0 --> 1100512
+        #   FreeBSD 11.1 --> 1101505
+        #   FreeBSD 15.0 --> 1500039
+        if uname -K >/dev/null && [ "`uname -K`" -ge 1301000 ]; then
+            # PROC_WXMAP_CTL was added in september of 2021
+            # to FreeBSD 13.1 and later. Enforcement was added later.
+            PIKE_MSG_NOTE([FreeBSD detected, disabling machine code.
 Use --with-machine-code to force use of machine code support.])
-        with_machine_code="no"
+            with_machine_code="no"
+        else
+            with_machine_code="yes"
+        fi
         ;;
       xNetBSD*:no)
         PIKE_MSG_NOTE([NetBSD detected and no paxctl(8), disabling machine code.
