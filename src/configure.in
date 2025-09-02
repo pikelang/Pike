@@ -2705,9 +2705,22 @@ Use --with-machine-code to force use of machine code support.])
         with_machine_code="no"
         ;;
       xFreeBSD*)
-        PIKE_MSG_NOTE([FreeBSD detected, disabling machine code.
+        # uname -K was added in FreeBSD 10.0.
+        # The semantics of the output of uname -K is not
+        # documented properly, but appears to be <major><minor:2><build:3>.
+        # Eg:
+        #   FreeBSD 11.0 --> 1100512
+        #   FreeBSD 11.1 --> 1101505
+        #   FreeBSD 15.0 --> 1500039
+        if uname -K >/dev/null && [ "`uname -K`" -ge 1301000 ]; then
+            # PROC_WXMAP_CTL was added in september of 2021
+            # to FreeBSD 13.1 and later. Enforcement was added later.
+            PIKE_MSG_NOTE([FreeBSD detected, disabling machine code.
 Use --with-machine-code to force use of machine code support.])
-        with_machine_code="no"
+            with_machine_code="no"
+        else
+            with_machine_code="yes"
+        fi
         ;;
       xNetBSD*:no)
         PIKE_MSG_NOTE([NetBSD detected and no paxctl(8), disabling machine code.
