@@ -24,6 +24,7 @@ if test x$ac_cv_header_GSS_GSS_h = xyes -o \
 
   # Check for gss_wrap since it only exists in GSS-API version 2.
   AC_CHECK_FRAMEWORK(GSS, gss_wrap, [
+    AH_CHECK_FRAMEWORK(GSS)
     AC_DEFINE(HAVE_FRAMEWORK_GSS)
     LIBS="-framework GSS $LIBS"
     AC_DEFINE(HAVE_GSSAPI)
