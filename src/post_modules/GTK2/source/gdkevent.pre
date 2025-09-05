@@ -7,7 +7,7 @@ class GDK2.Event;
 #define GTK_GDKEVENT(X) ((GdkEvent *)X)
 
 #define RETURN_NIL() do{ pgtk2_pop_n_elems( args );push_undefined();return; } while(0)
-#define RETURN_INT(X) do { pgtk2_pop_n_elems( args );push_int( X ); return; } while(0)
+#define RETURN_INT(X) do { pgtk2_pop_n_elems( args );push_int64( X ); return; } while(0)
 #define RETURN_FLOAT(X) do { pgtk2_pop_n_elems( args );push_float( X ); return; } while(0)
 #define REF_RETURN_STRING(X) do { pgtk2_pop_n_elems( args );ref_push_string( X ); return; } while(0)
 #define RETURN_STRING(X) do { pgtk2_pop_n_elems( args );push_string( X ); return; } while(0)
@@ -149,7 +149,9 @@ mixed _index(string ind)
      if( is_same_string(index,_STR("selection")) ) RETURN_ATOM( e->selection.selection );
      if( is_same_string(index,_STR("target")) ) RETURN_ATOM( e->selection.target );
      if( is_same_string(index,_STR("property")) ) RETURN_ATOM( e->selection.property );
-     if( is_same_string(index,_STR("requestor")) ) RETURN_INT( e->selection.requestor );
+     if( is_same_string(index,_STR("requestor")) ) {
+       RETURN_INT( (ptrdiff_t)e->selection.requestor );
+     }
      break;
 
    case GDK_PROXIMITY_IN:
@@ -422,7 +424,7 @@ mapping cast(string to)
      ref_push_string(_STR("selection")); push_atom( e->selection.selection );
      ref_push_string(_STR("target"));    push_atom( e->selection.target );
      ref_push_string(_STR("property"));  push_atom( e->selection.property );
-     ref_push_string(_STR("requestor")); push_int( e->selection.requestor );
+     ref_push_string(_STR("requestor")); push_int64( (ptrdiff_t)e->selection.requestor );
      break;
 
    case GDK_PROXIMITY_IN:
