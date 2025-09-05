@@ -51,13 +51,33 @@ int id()
   push_int64 (wid);
 }
 
-void add_id(int wid);
+void add_id(int wid)
 //! Adds an XEMBED client, such as a W(Plug), to the W(Socket).
+{
+  /* NB: GdkNativeWindow is a pointer type on NT and MacOS X. */
+  GdkNativeWindow a0;
+  if( args < 1 )
+    SIMPLE_WRONG_NUM_ARGS_ERROR(NULL, 1);
+  a0 = (GdkNativeWindow)(ptrdiff_t)PGTK_GETINT(&Pike_sp[0-args]);
+  pgtk2_verify_inited();
+  gtk_socket_add_id( GTK_SOCKET(THIS->obj), a0 );
+  RETURN_THIS();
+}
 
-int get_id();
+int get_id()
 //! Gets the window id of a W(Socket) widget, which can then be used
 //! to create a client embedded inside the socket, for instance with
 //! GTK2.Plug->create().
+{
+  pgtk2_verify_inited();
+  {
+    /* NB: GdkNativeWindow is a pointer type on NT and MacOS X. */
+    GdkNativeWindow a1;
+    a1 = gtk_socket_get_id( GTK_SOCKET(THIS->obj) );
+    my_pop_n_elems(args);
+    PGTK_PUSH_INT( (ptrdiff_t)a1 );
+  }
+}
 
 /*
 int has_plug()
