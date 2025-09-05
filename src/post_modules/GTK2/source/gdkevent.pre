@@ -251,6 +251,17 @@ mixed _index(string ind)
      if( is_same_string(index,_STR("implicit")) ) RETURN_INT(e->grab_broken.implicit);
      break;
 #endif
+#ifdef HAVE_GTK214
+   case GDK_DAMAGE:
+     if( index == literal_type_string ) REF_RETURN_STRING(_STR("damage"));
+     break;
+#endif
+#ifdef HAVE_GTK218
+   case GDK_EVENT_LAST:
+     /* Typically not reached, but... */
+     if( index == literal_type_string ) REF_RETURN_STRING(_STR("event_last"));
+     break;
+#endif
   }
   RETURN_NIL();
 }
@@ -490,6 +501,36 @@ mapping cast(string to)
      ref_push_string(_STR("context"));push_gdkobject( e->dnd.context, drag_context, 0);
      break;
 
+  case GDK_SCROLL:
+     ref_push_string(literal_type_string); ref_push_string(_STR("scroll"));
+     break;
+  case GDK_WINDOW_STATE:
+     ref_push_string(literal_type_string); ref_push_string(_STR("window_state"));
+     break;
+  case GDK_SETTING:
+     ref_push_string(literal_type_string); ref_push_string(_STR("setting"));
+     break;
+#ifdef HAVE_GTK26
+  case GDK_OWNER_CHANGE:
+     ref_push_string(literal_type_string); ref_push_string(_STR("owner_change"));
+     break;
+#endif
+#ifdef HAVE_GTK28
+  case GDK_GRAB_BROKEN:
+     ref_push_string(literal_type_string); ref_push_string(_STR("grab_broken"));
+     break;
+#endif
+#ifdef HAVE_GTK214
+  case GDK_DAMAGE:
+     ref_push_string(literal_type_string); ref_push_string(_STR("damage"));
+     break;
+#endif
+#ifdef HAVE_GTK218
+  case GDK_EVENT_LAST:
+     /* Typically not reached, but... */
+     ref_push_string(literal_type_string); ref_push_string(_STR("event_last"));
+     break;
+#endif
   }
   f_aggregate_mapping( Pike_sp - osp );
 }
