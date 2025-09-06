@@ -20,6 +20,7 @@
 #include "builtin_functions.h"
 #include "module_support.h"
 #include "pike_types.h"
+#include "port.h"
 
 #include "image.h"
 

@@ -117,6 +117,11 @@ PMOD_EXPORT void GETTIMEOFDAY(struct timeval *t);
 #  endif
 #endif
 
+#ifdef HAVE_ARC4RANDOM
+/* Make OpenBSDs linker shut up about rand() possibly being deterministic. */
+#define rand()	arc4random()
+#endif
+
 #if !defined(HAVE_SNPRINTF) && defined(HAVE__SNPRINTF)
 /* In WIN32 snprintf is known as _snprintf... */
 #define snprintf _snprintf
