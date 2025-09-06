@@ -4593,6 +4593,7 @@ AC_CHECK_FUNCS( \
  SetErrorMode \
  thread_info \
  host_get_clock_service \
+ arc4random \
 )
 
 if test "x$with_poll:$ac_cv_func_poll" = "xyes:yes"; then
