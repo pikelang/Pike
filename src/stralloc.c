@@ -1360,9 +1360,9 @@ struct pike_string *add_string_status(int verbose)
     }
   }
 /*
-  sprintf(b,"Searches: %ld    Average search length: %6.3f\n",
-      (long)num_str_searches, (double)search_len / num_str_searches);
-  my_strcat(b);
+  string_builder_sprintf(&s, "Searches: %ld    Average search length: %6.3f\n",
+                         (long)num_str_searches,
+                         (double)search_len / num_str_searches);
 */
   return finish_string_builder(&s);
 }
@@ -3025,10 +3025,12 @@ PMOD_EXPORT double STRTOD_PCHARP(const PCHARP nptr, PCHARP *endptr)
   for (; COMPARE_PCHARP(sdigits,<,sdigitsend); INC_PCHARP(sdigits,1))
   {
     char ch = EXTRACT_PCHARP(sdigits);
-    if (ch != '.')
+    if (ch != '.') {
       *p++ = ch;
-  }  
-  sprintf(p, "E%ld", exponent);
+      buf_len--;
+    }
+  }
+  snprintf(p, buf_len, "E%ld", exponent);
 
   num = strtod(buf, NULL);
   if (free_buf)
@@ -3179,10 +3181,12 @@ PMOD_EXPORT long double STRTOLD_PCHARP(const PCHARP nptr, PCHARP *endptr)
   for (; COMPARE_PCHARP(sdigits,<,sdigitsend); INC_PCHARP(sdigits,1))
   {
     char ch = EXTRACT_PCHARP(sdigits);
-    if (ch != '.')
+    if (ch != '.') {
       *p++ = ch;
-  }  
-  sprintf(p, "E%ld", exponent);
+      buf_len--;
+    }
+  }
+  snprintf(p, buf_len, "E%ld", exponent);
 
   num = strtold(buf, NULL);
   if (free_buf)

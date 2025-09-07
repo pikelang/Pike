@@ -3227,7 +3227,7 @@ static void f_nt_uname(INT32 args)
   switch(sysinfo.wProcessorArchitecture)
   {
     case PROCESSOR_ARCHITECTURE_INTEL:
-      sprintf(buf, "i%ld", sysinfo.dwProcessorType);
+      snprintf(buf, sizeof(buf), "i%ld", sysinfo.dwProcessorType);
       push_text(buf);
       machine = "i86pc";
       break;
@@ -3712,7 +3712,7 @@ static void f_sctx_getlasterror(INT32 args)
                 0,
                 NULL
                 );
-  sprintf(buf, "0x%04x: ", sctx->lastError);
+  snprintf(buf, sizeof(buf), "0x%04x: ", sctx->lastError);
   push_text(buf);
   push_text(lpMsgBuf);
   f_add(2);

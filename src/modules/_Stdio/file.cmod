@@ -5980,7 +5980,9 @@ static void file_query_address(INT32 args)
     return;
   }
 #endif
-  sprintf(buffer+strlen(buffer)," %d",(int)(ntohs(addr.ipv4.sin_port)));
+  len = strlen(buffer);
+  snprintf(buffer + len, sizeof(buffer) - len,
+           " %d", (int)(ntohs(addr.ipv4.sin_port)));
 
   /* NOTE: IPv6-mapped IPv4 addresses may only connect to other IPv4 addresses.
    *
@@ -6766,7 +6768,7 @@ static void fd__sprintf(INT32 args)
     {
       /* NB: A signed 64-bit int maxes out at 21 characters. */
       char buf[30];
-      sprintf (buf, "Fd(%ld)", (long)FD);
+      snprintf (buf, sizeof(buf), "Fd(%ld)", (long)FD);
       push_text(buf);
       return;
     }

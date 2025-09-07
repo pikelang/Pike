@@ -2269,7 +2269,7 @@ static BPTR get_amigados_handle(struct mapping *optional, char *name, int fd)
   if((ext = fcntl(fd, F_EXTERNALIZE, 0)) < 0)
     Pike_error("File for %s can not be externalized.\n", name);
 
-  sprintf(buf, "IXPIPE:%lx", ext);
+  snprintf(buf, sizeof(buf), "IXPIPE:%lx", ext);
 
   /* It's a kind of magic... */
   if((b = Open(buf, 0x4242)) == 0)

@@ -1955,7 +1955,8 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port,
      *     cf [bug 7599] and https://bugs.python.org/issue17269 .
      */
     hints.ai_flags |= AI_NUMERICSERV;
-    sprintf(service = servnum_buf, "%"PRINTPIKEINT"d", port & 0xffff);
+    snprintf(service = servnum_buf, sizeof(servnum_buf),
+             "%"PRINTPIKEINT"d", port & 0xffff);
   }
 
 #if AI_NUMERICHOST != 0

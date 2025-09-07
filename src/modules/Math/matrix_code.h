@@ -1,3 +1,4 @@
+/* -*- mode: C; c-basic-offset: 3; -*- */
 /*
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
@@ -347,8 +348,8 @@ void matrixX(__sprintf)(INT32 args)
 	 if (THIS->ysize>80 || THIS->xsize>80 ||
 	     THIS->xsize*THIS->ysize > 500)
 	 {
-	    sprintf(buf,"Math." PNAME "( %d x %d elements )",
-		    THIS->xsize,THIS->ysize);
+            snprintf(buf, sizeof(buf), "Math." PNAME "( %d x %d elements )",
+                     THIS->xsize, THIS->ysize);
 	    push_text(buf);
 	    stack_pop_n_elems_keep_top(args);
 	    return;
@@ -360,8 +361,8 @@ void matrixX(__sprintf)(INT32 args)
 	 {
 	    for (x=0; x<THIS->xsize; x++)
 	    {
-	       sprintf(buf,"%6.4g%s",(double)(*((m++))),
-		       (x<THIS->xsize-1)?", ":"");
+               snprintf(buf, sizeof(buf), "%6.4g%s", (double)(*((m++))),
+                        (x<THIS->xsize-1)?", ":"");
 	       push_text(buf); n++;
 	    }
 	    if (y<THIS->ysize-1)

@@ -1697,8 +1697,8 @@ static void image_png_encode(INT32 args)
       }
    }
 
-   sprintf(buf,"%c%c%c%c%c%c%c%c",
-	   137,'P','N','G',13,10,26,10);
+   snprintf(buf, sizeof(buf), "%c%c%c%c%c%c%c%c",
+            137,'P','N','G',13,10,26,10);
    push_string(make_shared_binary_string(buf,8));
    n++;
 
@@ -1718,16 +1718,16 @@ static void image_png_encode(INT32 args)
    else
       bpp=8;
 
-   sprintf(buf,"%c%c%c%c%c%c%c%c%c%c%c%c%c",
-	   (char)((img->xsize>>24)&255),(char)((img->xsize>>16)&255),
-	   (char)((img->xsize>>8)&255), (char)((img->xsize)&255),
-	   (char)((img->ysize>>24)&255),(char)((img->ysize>>16)&255),
-	   (char)((img->ysize>>8)&255), (char)((img->ysize)&255),
-	   bpp /* bpp */,
-	   ct?3:(alpha?6:2) /* type (P/(RGBA/RGB)) */,
-	   0 /* compression, 0=deflate */,
-	   0 /* filter, 0=per line filter */,
-	   0 /* interlace */);
+   snprintf(buf, sizeof(buf), "%c%c%c%c%c%c%c%c%c%c%c%c%c",
+            (char)((img->xsize>>24)&255),(char)((img->xsize>>16)&255),
+            (char)((img->xsize>>8)&255), (char)((img->xsize)&255),
+            (char)((img->ysize>>24)&255),(char)((img->ysize>>16)&255),
+            (char)((img->ysize>>8)&255), (char)((img->ysize)&255),
+            bpp /* bpp */,
+            ct?3:(alpha?6:2) /* type (P/(RGBA/RGB)) */,
+            0 /* compression, 0=deflate */,
+            0 /* filter, 0=per line filter */,
+            0 /* interlace */);
    push_string(make_shared_binary_string(buf,13));
 
    push_png_chunk("IHDR",NULL);

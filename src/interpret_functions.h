@@ -98,9 +98,10 @@
 
 #define GET_JUMP() (backlog[backlogp].arg=(			\
   (Pike_interpreter.trace_level>3 ?				\
-     sprintf(trace_buffer, "-    Target = %+ld\n",		\
-             (long)LOW_GET_JUMP()),				\
-     write_to_stderr(trace_buffer,strlen(trace_buffer)) : 0),	\
+   snprintf(trace_buffer, sizeof(trace_buffer),                 \
+            "-    Target = %+ld\n",                             \
+            (long)LOW_GET_JUMP()),				\
+   write_to_stderr(trace_buffer,strlen(trace_buffer)) : 0),	\
   LOW_GET_JUMP()))
 
 #define SKIPJUMP() (GET_JUMP(), LOW_SKIPJUMP())

@@ -612,7 +612,7 @@ OCIError *get_global_error_handle(void)
       flags ID_PROTECTED;
     {
       char tmp[100];
-      sprintf(tmp, "Oracle.LOB(%p)", THIS_DBLOB->lob);
+      snprintf(tmp, sizeof(tmp), "Oracle.LOB(%p)", THIS_DBLOB->lob);
       pop_n_elems(args);
       push_text(tmp);
     }

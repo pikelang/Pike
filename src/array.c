@@ -2405,16 +2405,16 @@ void describe_array(struct byte_buffer *buffer,struct array *a,struct processing
   {
     if(p->pointer_a == (void *)a)
     {
-      sprintf(buf,"@%ld",(long)e);
+      snprintf(buf, sizeof(buf), "@%ld", (long)e);
       buffer_add_str(buffer, buf);
       return;
     }
   }
 
   if (a->size == 1) {
-    sprintf(buf, "({ /* 1 element */\n");
+    snprintf(buf, sizeof(buf), "({ /* 1 element */\n");
   } else {
-    sprintf(buf, "({ /* %ld elements */\n", (long)a->size);
+    snprintf(buf, sizeof(buf), "({ /* %ld elements */\n", (long)a->size);
   }
   buffer_add_str(buffer, buf);
   describe_array_low(buffer,a,&doing,indent);
