@@ -3111,20 +3111,23 @@ static LOCATION low_dynamic_location(char type, const char *file,
     size_t l;
 
     snprintf(line_str, sizeof(line_str), "%ld", (long)line);
+    /* Space for type(1), file(len) and line_str(strlen + 1). */
     l = len + strlen (line_str) + 2;
-    if (name) l += name_len + 1;
+    if (name) l += name_len + 1; /* Space for ' ' and name. */
+    /* NB: Space for the NUL terminator comes from the [1] in the struct. */
     str=malloc (sizeof (struct dmalloc_string) + l +
 		(bin_data ? bin_data_len + 2 : 0));
 
     if (name)
-      snprintf(str->str, str->len, "%c%s:%s %s", type, file, line_str, name);
+      snprintf(str->str, l+1, "%c%s:%s %s", type, file, line_str, name);
     else
-      snprintf(str->str, str->len, "%c%s:%s", type, file, line_str);
+      snprintf(str->str, l+1, "%c%s:%s", type, file, line_str);
 
     if (bin_data) {
       unsigned INT16 bl = (unsigned INT16) bin_data_len;
       if (bl != bin_data_len)
 	Pike_fatal ("Too long bin_data blob: %u\n", bin_data_len);
+      /* FIXME: This looks suspicious. Is l off by 1? */
       ((unsigned char *) str->str)[l + 1] = ((unsigned char *) &bl)[0];
       ((unsigned char *) str->str)[l + 2] = ((unsigned char *) &bl)[1];
       memcpy (str->str + l + 3, bin_data, bin_data_len);
