@@ -96,6 +96,6 @@
  * bytes. See format_pike_float. */
 #define MAX_FLOAT_SPRINTF_LEN (10 + PIKEFLOAT_DIG + MAX_FLOAT_EXP_LEN)
 
-PMOD_EXPORT void format_pike_float (char *buf, FLOAT_TYPE f);
+PMOD_EXPORT void format_pike_float(char *buf, size_t buflen, FLOAT_TYPE f);
 
 #endif	/* !PIKE_FLOAT_H */

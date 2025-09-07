@@ -1830,7 +1830,8 @@ PMOD_EXPORT void describe_svalue(struct byte_buffer *buf, const struct svalue *s
     }
 
     case T_FLOAT:
-      format_pike_float (buffer_ensure_space(buf, MAX_FLOAT_SPRINTF_LEN), s->u.float_number);
+      format_pike_float(buffer_ensure_space(buf, MAX_FLOAT_SPRINTF_LEN),
+                        MAX_FLOAT_SPRINTF_LEN, s->u.float_number);
       /* Advance buffer ptr until null byte */
       buffer_advance(buf, strlen(buffer_dst(buf)));
       break;

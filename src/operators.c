@@ -384,7 +384,7 @@ PMOD_EXPORT void o_cast_to_string(void)
   case T_FLOAT:
     {
       char buf[MAX_FLOAT_SPRINTF_LEN+1];
-      format_pike_float (buf, Pike_sp[-1].u.float_number);
+      format_pike_float(buf, sizeof(buf), Pike_sp[-1].u.float_number);
       s = make_shared_string(buf);
       break;
     }
