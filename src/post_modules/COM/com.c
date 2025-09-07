@@ -846,12 +846,16 @@ static void f_cval__sprintf(INT32 args)
     case 's':
 /*     case 't': */
       p = buf;
-      p += sprintf(p, "%%%s", flag_left?"-":"");
+      p += snprintf(p, sizeof(buf),
+                    "%%%s", flag_left?"-":"");
       if (!width_undecided)
-        p += sprintf(p, "%"PRINTPIKEINT"d", width);
+        p += snprintf(p, sizeof(buf) - (p - buf),
+                      "%"PRINTPIKEINT"d", width);
       if (!precision_undecided)
-        p += sprintf(p, ".%"PRINTPIKEINT"d", precision);
-      p += sprintf(p, "%c", (char)method);
+        p += snprintf(p, sizeof(buf) - (p - buf),
+                     ".%"PRINTPIKEINT"d", precision);
+      p += snprintf(p, sizeof(buf) - (p - buf),
+                    "%c", (char)method);
       push_text(buf);
 
       cval_push_result(0, DISPATCH_PROPERTYGET);

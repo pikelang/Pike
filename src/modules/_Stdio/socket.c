@@ -714,7 +714,9 @@ static void socket_query_address(INT32 args)
     return;
   }
 #endif
-  sprintf(buffer+strlen(buffer)," %d",(int)(ntohs(addr.ipv4.sin_port)));
+  len = strlen(buffer);
+  snprintf(buffer + len, sizeof(buffer) - len, " %d",
+           (int)(ntohs(addr.ipv4.sin_port)));
 
   push_text(buffer);
 }

@@ -2841,10 +2841,10 @@ anon_class: TOK_CLASS line_number_info
   {
     struct pike_string *s;
     char buffer[42];
-    sprintf(buffer,"__class_%ld_%ld_line_%d",
-	    (long)Pike_compiler->new_program->id,
-	    (long)Pike_compiler->local_class_counter++,
-	    (int) $2->line_number);
+    snprintf(buffer, sizeof(buffer), "__class_%ld_%ld_line_%d",
+             (long)Pike_compiler->new_program->id,
+             (long)Pike_compiler->local_class_counter++,
+             (int) $2->line_number);
     s = make_shared_string(buffer);
     $<n>$ = mkstrnode(s);
     free_string(s);
@@ -2939,10 +2939,10 @@ named_class: TOK_CLASS line_number_info simple_identifier
     {
       struct pike_string *s;
       char buffer[42];
-      sprintf(buffer,"__class_%ld_%ld_line_%d",
-	      (long)Pike_compiler->new_program->id,
-	      (long)Pike_compiler->local_class_counter++,
-	      (int) $2->line_number);
+      snprintf(buffer, sizeof(buffer), "__class_%ld_%ld_line_%d",
+               (long)Pike_compiler->new_program->id,
+               (long)Pike_compiler->local_class_counter++,
+               (int) $2->line_number);
       s=make_shared_string(buffer);
       $3=mkstrnode(s);
       free_string(s);
@@ -5799,10 +5799,10 @@ struct pike_string *get_new_name(struct pike_string *prefix)
 {
   char buf[40];
   /* Generate a name for a global symbol... */
-  sprintf(buf,"__lambda_%ld_%ld_line_%d",
-	  (long)Pike_compiler->new_program->id,
-	  (long)(Pike_compiler->local_class_counter++ & 0xffffffff), /* OSF/1 cc bug. */
-	  (int) THIS_COMPILATION->lex.current_line);
+  snprintf(buf, sizeof(buf), "__lambda_%ld_%ld_line_%d",
+           (long)Pike_compiler->new_program->id,
+           (long)(Pike_compiler->local_class_counter++ & 0xffffffff), /* OSF/1 cc bug. */
+           (int) THIS_COMPILATION->lex.current_line);
   if (prefix) {
     struct string_builder sb;
     init_string_builder_alloc(&sb, prefix->len + strlen(buf) + 1,

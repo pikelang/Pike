@@ -755,7 +755,7 @@ static void sprintf_error(struct format_stack *fs,
   va_start(args,s);
   free_sprintf_strings(fs);
 
-  sprintf(buf,"sprintf: %s",s);
+  snprintf(buf, sizeof(buf), "sprintf: %s", s);
   va_error(buf,args);
   va_end(args);
 }
@@ -1630,13 +1630,15 @@ cont_2:
 	int base = 0, mask_size = 0;
        char *x;
 	INT_TYPE val;
+        size_t len;
 
 	GET_INT(val);
 
 	if(fsp->precision != SPRINTF_UNDECIDED && fsp->precision > 0)
 	  mask_size = fsp->precision;
 
-	x=(char *)sa_alloc(&fs->a, sizeof(val)*CHAR_BIT + 4 + mask_size);
+        len = sizeof(val)*CHAR_BIT + 4 + mask_size;
+        x = (char *)sa_alloc(&fs->a, len);
 	fsp->b=MKPCHARP(x,0);
 
 	switch(mode)
@@ -1682,9 +1684,9 @@ cont_2:
 	  }
 	}
 	else if(mode == 'u')
-	  sprintf(x, "%"PRINTPIKEINT"u", (unsigned INT_TYPE) val);
+          snprintf(x, len, "%"PRINTPIKEINT"u", (unsigned INT_TYPE) val);
 	else
-	  sprintf(x, "%"PRINTPIKEINT"d", val);
+          snprintf(x, len, "%"PRINTPIKEINT"d", val);
 
 	fsp->len=strlen(x);
 	break;
@@ -1697,6 +1699,7 @@ cont_2:
       case 'G':
       {
 	char *x;
+        size_t len;
 	GET_FLOAT(tf);
 
 	/* Special casing for infinity and not a number,
@@ -1724,10 +1727,11 @@ cont_2:
 	/* FIXME: The constant (320) is good for IEEE double precision
 	 * float, but will definitely fail for bigger precision! --aldem
 	 */
-	x=(char *)xalloc(320+MAXIMUM(fsp->precision,3));
+        len = 320 + MAXIMUM(fsp->precision, 3);
+        x = (char *)xalloc(len);
 	fsp->fi_free_string=x;
 	fsp->b=MKPCHARP(x,0);
-	sprintf(buffer,"%%*.*"PRINTPIKEFLOAT"%c", mode);
+        snprintf(buffer, sizeof(buffer), "%%*.*"PRINTPIKEFLOAT"%c", mode);
 
 	if(fsp->precision<0) {
 #if SIZEOF_FLOAT_TYPE > SIZEOF_DOUBLE
@@ -1746,7 +1750,7 @@ cont_2:
         }
 
 	debug_malloc_touch(x);
-	sprintf(x,buffer,1,fsp->precision<0?0:fsp->precision,tf);
+        snprintf(x, len, buffer, 1, fsp->precision<0?0:fsp->precision, tf);
 	debug_malloc_touch(x);
 	fsp->len=strlen(x);
 

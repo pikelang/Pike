@@ -11,7 +11,7 @@
 #include <stdio.h>
 #include <string.h>
 
-PMOD_EXPORT void format_pike_float (char *buf, FLOAT_TYPE f)
+PMOD_EXPORT void format_pike_float(char *buf, size_t buflen, FLOAT_TYPE f)
 /* Writes a formatted float to the given buffer, which must be at
  * least MAX_FLOAT_SPRINTF_LEN chars long.
  *
@@ -54,7 +54,7 @@ PMOD_EXPORT void format_pike_float (char *buf, FLOAT_TYPE f)
     return;
   }
 
-  sprintf (buf, "%.*"PRINTPIKEFLOAT"g", PIKEFLOAT_DIG, f);
+  snprintf(buf, buflen, "%.*"PRINTPIKEFLOAT"g", PIKEFLOAT_DIG, f);
 
   for (p = buf; *p; p++)
     if (*p != '-' && (*p < '0' || *p > '9')) break;

@@ -6271,18 +6271,18 @@ time_t mktime_zone(struct tm *date, int other_timezone, int tz)
     if (other_timezone) {
       /* NB: This happens for times near {MIN,MAX}_TIME_T. */
       const char *orig_tz = getenv("TZ");
-      char tzbuf[20];
+      char tzbuf[32];
       ONERROR uwp;
       char tzsgn = tz < 0 ? '-' : '+';
       unsigned short tzu = (tz < 0? -tz : tz);
       if (tzu) {
-        sprintf(tzbuf, "TZ=UTC%c%02u:%02u:%02u",
-                tzsgn,
-                tzu/3600,
-                (tzu/60)%60,
-                tzu % 60);
+        snprintf(tzbuf, sizeof(tzbuf), "TZ=UTC%c%02u:%02u:%02u",
+                 tzsgn,
+                 tzu/3600,
+                 (tzu/60)%60,
+                 tzu % 60);
       } else {
-        sprintf(tzbuf, "TZ=UTC");
+        snprintf(tzbuf, sizeof(tzbuf), "TZ=UTC");
       }
       if (orig_tz) {
         /* NB: orig_tz may point into the buffer that putenv()

@@ -139,6 +139,9 @@ PMOD_EXPORT int STRCASECMP(const char *a,const char *b);
 #  define STRCASECMP(A,B) strcasecmp(A,B)
 #endif
 
+/* NB: snprintf is in C99 and SUSv2 and POSIX.1-2001.
+ *     All relevant platforms have snprintf (or _snprintf).
+ */
 #define SNPRINTF snprintf
 
 #define HAVE_STRCHR 1

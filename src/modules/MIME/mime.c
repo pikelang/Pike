@@ -1200,7 +1200,7 @@ static void f_encode_uue( INT32 args )
     dest = str->str;
 
     /* Write the begin line containing the filename */
-    sprintf(dest, "begin 644 %s\r\n", filename);
+    snprintf(dest, str->len, "begin 644 %s\r\n", filename);
     dest += 12 + strlen(filename);
 
     if (groups) {

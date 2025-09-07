@@ -93,8 +93,8 @@ static inline void cb_print_tree(struct string_builder *buf,
     memset(spaces, ' ', depth);
     spaces[depth] = 0;
     if (tree->key.len.bits) {
-	sprintf(fmt, "%%s-> %%.%ds %%0%dd \n",
-		tree->key.len.chars, tree->key.len.bits);
+        snprintf(fmt, sizeof(fmt), "%%s-> %%.%ds %%0%dd \n",
+                 tree->key.len.chars, tree->key.len.bits);
 	i.chars = tree->key.len.chars;
 	i.bits = 0;
 
@@ -104,7 +104,7 @@ static inline void cb_print_tree(struct string_builder *buf,
 	}
 	printf(fmt, spaces, tree->key->str, binary);
     } else {
-	sprintf(fmt, "%%s-> %%.%ds \n", tree->key.len.chars);
+        snprintf(fmt, sizeof(fmt), "%%s-> %%.%ds \n", tree->key.len.chars);
 	printf(fmt, spaces, tree->key->str);
     }
     free(spaces);

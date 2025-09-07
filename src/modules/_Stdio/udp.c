@@ -1437,7 +1437,9 @@ static void udp_query_address(INT32 args)
   strncpy(buffer,q,sizeof(buffer)-20);
   buffer[sizeof(buffer)-20]=0;
 #endif
-  sprintf(buffer+strlen(buffer)," %d",(int)(ntohs(addr.ipv4.sin_port)));
+  len = strlen(buffer);
+  snprintf(buffer + len, sizeof(buffer) - len,
+           " %d", (int)(ntohs(addr.ipv4.sin_port)));
 
   /* NOTE: IPv6-mapped IPv4 addresses may only connect to other IPv4 addresses.
    *

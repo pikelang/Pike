@@ -1469,7 +1469,7 @@ again:
 	  if (id_ref->id_flags & ID_VARIANT)   strcat (prot, ",var");
 	  if (id_ref->id_flags & ID_USED)      strcat (prot, ",use");
 
-	  sprintf (descr, "%s: %s", type, prot + 1);
+          snprintf (descr, sizeof(descr), "%s: %s", type, prot + 1);
 	  fprintf (stderr, "%*s**%*s%-3"PRINTPTRDIFFT"d %-18s name: ",
 		   indent, "", id_inh->inherit_level + 1, "", id_idx, descr);
 
@@ -4126,7 +4126,7 @@ size_t do_gc(int explicit_call)
     {
       char timestr[40];
       if (last_gc_time != (cpu_time_t) -1)
-	sprintf (timestr, ", %ld ms",
+        snprintf(timestr, sizeof(timestr), ", %ld ms",
 		 (long) (last_gc_time / (CPU_TIME_TICKS / 1000)));
       else
 	timestr[0] = 0;

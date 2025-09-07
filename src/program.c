@@ -3760,7 +3760,7 @@ void fixate_program(void)
       }
       else if(!(tmp2 = find_program_name(i->prog, &line)))
       {
-	sprintf(buffer,"inherit[%d]",e);
+        snprintf(buffer, sizeof(buffer), "inherit[%d]", e);
 	tmp=buffer;
       } else {
 	tmp = tmp2->str;
@@ -9734,7 +9734,7 @@ static char *make_plain_file (struct pike_string *filename, int malloced)
 
       if(chr > 255)
       {
-	sprintf(buffer+ptr,"\\u%04X",chr);
+        snprintf(buffer + ptr, sizeof(buffer) - ptr, "\\u%04X", chr);
 	ptr+=strlen(buffer+ptr);
       }else{
 	buffer[ptr++]=chr;
@@ -11860,15 +11860,15 @@ PMOD_EXPORT void string_builder_append_pike_opcode(struct string_builder *s,
   char buf[3][32];
   const char *params[3] = { NULL, NULL, NULL };
   const struct instr *instr = &instrs[op - F_OFFSET];
-  sprintf(buf[0], "%d", arg1);
-  sprintf(buf[1], "%d", arg2);
+  snprintf(buf[0], sizeof(buf[0]), "%d", arg1);
+  snprintf(buf[1], sizeof(buf[1]), "%d", arg2);
   if (instr->flags & I_HASARG) {
     params[0] = buf[0];
   }
   if (instr->flags & I_HASARG2) {
     params[1] = buf[1];
   }
-  sprintf(buf[2], "# %s", instr->name);
+  snprintf(buf[2], sizeof(buf[2]), "# %s", instr->name);
   string_builder_append_disassembly(s, (size_t)addr, addr, addr,
 				    buf[2], params, NULL);
 }

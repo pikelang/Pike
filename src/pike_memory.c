@@ -1278,7 +1278,7 @@ void debug_output(char *x, void *p)
 {
   char buf[120];
   write(2,x,strlen(x));
-  sprintf(buf," (%p %d)\n",p,p);
+  snprintf(buf, sizeof(buf), " (%p %d)\n", p, p);
   write(2,buf,strlen(buf));
 }
 
@@ -3110,16 +3110,16 @@ static LOCATION low_dynamic_location(char type, const char *file,
     char line_str[30];
     size_t l;
 
-    sprintf (line_str, "%ld", (long)line);
+    snprintf(line_str, sizeof(line_str), "%ld", (long)line);
     l = len + strlen (line_str) + 2;
     if (name) l += name_len + 1;
     str=malloc (sizeof (struct dmalloc_string) + l +
 		(bin_data ? bin_data_len + 2 : 0));
 
     if (name)
-      sprintf(str->str, "%c%s:%s %s", type, file, line_str, name);
+      snprintf(str->str, str->len, "%c%s:%s %s", type, file, line_str, name);
     else
-      sprintf(str->str, "%c%s:%s", type, file, line_str);
+      snprintf(str->str, str->len, "%c%s:%s", type, file, line_str);
 
     if (bin_data) {
       unsigned INT16 bl = (unsigned INT16) bin_data_len;
@@ -3467,7 +3467,7 @@ struct memory_map *dmalloc_alloc_mmap(char *name, INT_TYPE line)
   m->refs=0;
 
   if(strlen(m->name)+12<sizeof(m->name))
-    sprintf(m->name+strlen(m->name), ":%ld", (long)line);
+    snprintf(m->name+strlen(m->name), 12, ":%ld", (long)line);
 
   m->entries=0;
   mt_unlock(&debug_malloc_mutex);

@@ -295,7 +295,7 @@ static void set_error (char * newerror)
 
 	if (port_no > 0) {
 	  if (port_no < 65536) {
-	    sprintf(port = port_buffer, "%d", port_no);
+            snprintf(port = port_buffer, sizeof(port_buffer), "%d", port_no);
 	  } else {
 	    SIMPLE_ARG_TYPE_ERROR("create", 5, "int(0..65535)");
 	  }
@@ -785,7 +785,8 @@ PIKEFUN string host_info()
 
 	if (PQstatus(THIS->dblink)!=CONNECTION_BAD) {
 		char buf[64];
-		sprintf(buf,"TCP/IP %p connection to ",THIS->dblink);
+                snprintf(buf, sizeof(buf),
+                         "TCP/IP %p connection to ", THIS->dblink);
 		push_text(buf);
 		pgdebug("adding reason\n");
 		if(PQhost(THIS->dblink))

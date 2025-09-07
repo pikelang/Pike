@@ -401,8 +401,8 @@ PMOD_EXPORT DECLSPEC(noreturn) void new_error(const char *name,
       push_svalue(oldsp + i);
     } else {
       char buffer[50];
-      sprintf(buffer, "<Svalue:0x%04x:0x%04x:%p>",
-	      TYPEOF(oldsp[i]), SUBTYPEOF(oldsp[i]), oldsp[i].u.ptr);
+      snprintf(buffer, sizeof(buffer), "<Svalue:0x%04x:0x%04x:%p>",
+               TYPEOF(oldsp[i]), SUBTYPEOF(oldsp[i]), oldsp[i].u.ptr);
       push_text(buffer);
     }
   }
