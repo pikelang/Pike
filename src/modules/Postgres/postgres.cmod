@@ -526,8 +526,8 @@ PIKEFUN object big_query(string query_, array|void bnds)
 	  if(qlen>LIMITLENSC && strcmp(query+qlen-LIMITLENSC,LIMIT1STRSC)
 	     && strcmp(query+qlen-LIMITLEN,LIMIT1STR)
 	     &&(nquery=malloc(CPREFLEN+qlen))) {
-	    strcpy(nquery,CURSORPREFIX);
-	    strcpy(nquery+CPREFLEN-1,query);
+            strlcpy(nquery, CURSORPREFIX, CPREFLEN + qlen);
+            strlcpy(nquery + CPREFLEN-1, query, qlen+1);
 	    if(lastcommit)
 	      goto yupbegin;
 	    res=PQexecParams(conn,nquery,

@@ -1180,7 +1180,7 @@ static char *regprop(char *op)
     static char     buf[50];
     size_t len;
 
-    strcpy(buf, ":");
+    strlcpy(buf, ":", sizeof(buf));
 
     switch (OP(op)) {
     case BOL:
