@@ -4517,6 +4517,8 @@ AC_CHECK_FUNCS( \
  tzset \
  snprintf \
  _snprintf \
+ strlcat \
+ strlcpy \
  wait3 \
  wait4 \
  waitpid \

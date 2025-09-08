@@ -446,7 +446,7 @@ static void bind_unix(INT32 args)
     sizeof(addr->sun_path);
   addr = xalloc(addr_len);
 
-  strcpy(addr->sun_path, path->str);
+  strlcpy(addr->sun_path, path->str, path->len + 1);
   addr->sun_family = AF_UNIX;
 #ifdef HAVE_STRUCT_SOCKADDR_UN_SUN_LEN
   /* Length including NUL. */

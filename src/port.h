@@ -127,6 +127,37 @@ PMOD_EXPORT void GETTIMEOFDAY(struct timeval *t);
 #define snprintf _snprintf
 #endif
 
+#ifndef HAVE_STRLCPY
+static inline size_t PIKE_UNUSED_ATTRIBUTE strlcpy(char *dst,
+                                                   const char *src,
+                                                   size_t dstsz)
+{
+  size_t ret = 0;
+  if (!dstsz) return 0;
+  while (--dstsz) {
+    if (!(*(dst++) = *(src++))) return ret;
+    ret++;
+  }
+  *dst = 0;
+  return ret;
+}
+#endif
+
+#ifndef HAVE_STRLCAT
+static inline size_t PIKE_UNUSED_ATTRIBUTE strlcat(char *dst,
+                                                   const char *src,
+                                                   size_t dstsz)
+{
+  size_t ret = 0;
+  while(dstsz && *dst) {
+    dst++;
+    dstsz--;
+    ret++;
+  }
+  return ret + strlcpy(dst, src, dstsz);
+}
+#endif
+
 #ifndef HAVE_RINT
 #define rintf(X) floorf ((X) + 0.5)
 #define rint(X) floor( (X) + 0.5 )
