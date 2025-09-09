@@ -1,0 +1,51 @@
+subject: Pike 8.0: Sync with Pike 8.0.2024/Roxen 8.2.441 release 2, Concurrent.Future fixes, Updated to tzdb-2025b.
+from: 23918d9f4e8f5ed7300b86d2f4f225d686f77413
+to: 91b8fee6891ef9c0872ea4e1bd7b306468becbce
+originator: Henrik Grubbström (Grubba) <grubba@grubba.org>
+depends: 2025-04-29T124414|pike/8.0.1984
+restart: true
+
+Multiple changes:
+
+• Concurrent.Future: Improved signal-safety.
+
+signal_call_callback() now always calls the callback via predef::call_out().
+
+• Concurrent: Add runtime warning about ignoring return values from callbacks.
+
+This should help catching errors like eg using on_failure() where
+recover() or recover_with() was intended.
+
+• Concurrent.Promise: Backported some destroy() handling from Pike 9.0.
+
+• Concurrent.Promise: Improved robustness against being destructed.
+
+• Concurrent.Promise: Increase paranoia regarding reporting of rejections.
+
+Do not regard a rejection as reported before we are reasonably certain
+that the user has received the rejection.
+
+Also: Getting the rejection via get() or try_get() now also
+counts as the rejection having been reported.
+
+• Calendar.TZnames: Regenerated with the new mkrules script.
+
+• Calendar.mkrules: Fix issues with %s in zone abbreviation.
+
+• Calendar.Timezone: Support backzone properly.
+
+The zones in backzone now overide the aliases (links)
+from the other zone files.
+
+Previously eg the Europe/Stockholm zone in backzone
+was zapped by the alias to Europe/Berlin in europe.
+
+Fixes testsuite failure.
+
+• Updated to tzdb-2025b.
+
+• Calendar.mkrules: Support %z as timezone abbreviation.
+
+Preparation for supporting of tzdb-2025a and later.
+
+Needed for #10178.
