@@ -183,11 +183,11 @@ static void set_default_master(const char *bin_name)
     if (strlen(bin_name) + CONSTANT_STRLEN("master.pike") < MAXPATHLEN) {
       char tmp[MAXPATHLEN];
       char *p;
-      strcpy(tmp, bin_name);
+      strlcpy(tmp, bin_name, sizeof(tmp));
       p = strrchr(tmp, '/');
       if (!p) p = tmp;
       else p++;
-      strcpy(p, "master.pike");
+      strlcpy(p, "master.pike", sizeof(tmp) - (p - tmp));
       set_master( tmp );
     }
   }

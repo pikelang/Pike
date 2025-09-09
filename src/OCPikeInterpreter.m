@@ -14,7 +14,7 @@ static void set_master(const char *file)
             file, MAXPATHLEN*2 );
     exit(1);
   }
-//  strcpy(master_location, file);
+//  strlcpy(master_location, file, sizeof(_master_location) - CONSTANT_STRLEN(MASTER_COOKIE));
 }
 
  void set_default_master(void)

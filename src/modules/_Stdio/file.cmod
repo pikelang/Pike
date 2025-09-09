@@ -5687,7 +5687,8 @@ static void file_connect_unix( INT32 args )
   name = xalloc(addr_len);
 
   name->sun_family=AF_UNIX;
-  strcpy( name->sun_path, Pike_sp[-args].u.string->str );
+  strlcpy(name->sun_path, Pike_sp[-args].u.string->str,
+          Pike_sp[-args].u.string->len + 1);
 #ifdef HAVE_STRUCT_SOCKADDR_UN_SUN_LEN
   /* Length including NUL. */
   name->sun_len = Pike_sp[-args].u.string->len + 1;
@@ -6828,7 +6829,7 @@ static void f_gethostip(INT32 args) {
       struct ifreq ifr2;
       i += sizeof(struct ifreq);
 
-      strcpy( ifr2.ifr_name, ifr->ifr_name );
+      strlcpy(ifr2.ifr_name, ifr->ifr_name, IFNAMSIZ);
       if( ioctl( fd, SIOCGIFFLAGS, &ifr2 )<0 )
 	Pike_error("gethostip: Query failed.\n");
 

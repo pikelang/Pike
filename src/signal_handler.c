@@ -2623,7 +2623,7 @@ static int set_priority( int pid, char *to )
     memset(&params, 0, sizeof(params));
     memset(&foo, 0, sizeof(foo));
 
-    strcpy(foo.pc_clname, "RT");
+    strlcpy(foo.pc_clname, "RT", sizeof(foo.pc_clname));
     if( priocntl((idtype_t)0, (id_t)0, PC_GETCID, (void *)(&foo)) == -1)
       return 0;
     params.pc_cid = foo.pc_cid;
@@ -2648,7 +2648,7 @@ static int set_priority( int pid, char *to )
 
     memset(&params, 0, sizeof(params));
     memset(&foo, 0, sizeof(foo));
-    strcpy(foo.pc_clname, "TS");
+    strlcpy(foo.pc_clname, "TS", sizeof(foo.pc_clname));
     if( priocntl((idtype_t)0, (id_t)0, PC_GETCID, (void *)(&foo)) == -1)
       return 0;
     params.pc_cid = foo.pc_cid;

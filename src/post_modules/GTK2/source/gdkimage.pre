@@ -59,7 +59,7 @@ string get_pnm()
   len=strlen(header)+i->width*i->height*3;
   res=begin_shared_string(len);
   p=res->str;
-  strcpy(p,header);
+  strlcpy(p, header, len + 1);
   p+=strlen(header);
 
   for (y=0; y<i->height; y++)
