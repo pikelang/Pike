@@ -279,11 +279,15 @@ if test "x$enable_binary" != "xno"; then
   AC_MINIX
 fi
 
+SLOW_PIKE=""
 if_autoconf(2,50,[
   # echo;echo;echo End timeout at: `date`; echo; echo
   kill "$timeout_pid" 2>/dev/null
-  if test "x$cache_file$force_config_cache" = "x/dev/nullyes"; then
+  if test "x$force_config_cache" = "xyes"; then
       PIKE_MSG_NOTE([Slow configure detected.])
+      SLOW_PIKE="yes"
+  fi
+  if test "x$cache_file$force_config_cache" = "x/dev/nullyes"; then
       PIKE_MSG_NOTE([Enabling the configure cache for performance reasons.])
       if test "x$CONFIG_CACHE_FILE" = "x"; then
           cache_file=./config.cache
@@ -300,6 +304,7 @@ if_autoconf(2,50,[
       fi
   fi
 ])
+AC_SUBST(SLOW_PIKE)
 
 #############################################################################
 

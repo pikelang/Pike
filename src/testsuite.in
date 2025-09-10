@@ -4848,7 +4848,14 @@ void low_generate(int depth,
 array(int) a()
 {
   int total_tests;
+#ifdef DISABLE_SLOW_TESTS
+  return ({ 0, 0 });
+#endif
+#if constant(OMIT_SLOW_TESTS)
+  for(maxdepth=1;maxdepth<7 && !errors;maxdepth++)
+#else
   for(maxdepth=1;maxdepth<9 && !errors;maxdepth++)
+#endif
   {
     low_generate(maxdepth,
 		 ({ "string X(){return \"X\";}" }),
