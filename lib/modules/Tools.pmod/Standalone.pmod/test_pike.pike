@@ -830,6 +830,7 @@ int main(int argc, array(string) argv)
     if (mem) forked += ({ "--memory" });
     // auto already handled.
     if (failed_cond) forked += ({ "--failed-cond" });
+    if (all_constants()["OMIT_SLOW_TESTS"]) forked += ({ "--omit-slow-tests" });
     forked += ({"--subprocess"});
     // debug port not propagated.
     //log_msg("forked:%O\n", forked);
