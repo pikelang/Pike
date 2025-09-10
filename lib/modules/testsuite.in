@@ -2049,7 +2049,12 @@ cond([[ file_stat("/bin/cat") && file_stat("/dev/null") && has_value(cpp("__NT__
 #ifdef DISABLE_SLOW_TESTS
     return -1;
 #endif
-    for(int x=0;x<10;x++) { for(int e=0;e<100;e++) if(Process.create_process(({"/bin/cat","/dev/null"}))->wait()) return e; __signal_watchdog(); } return -1;]],-1)
+#if constant(OMIT_SLOW_TESTS)
+    for(int x=0;x<5;x++) { for(int e=0;e<25;e++) if(Process.create_process(({"/bin/cat","/dev/null"}))->wait()) return e; __signal_watchdog(); } return -1;
+#else
+    for(int x=0;x<10;x++) { for(int e=0;e<100;e++) if(Process.create_process(({"/bin/cat","/dev/null"}))->wait()) return e; __signal_watchdog(); } return -1;
+#endif
+  ]],-1)
 ]])
 
 cond([[ file_stat("/bin/cat") && file_stat("/dev/null") && all_constants()->thread_create && has_value(cpp("__NT__"), "__NT__") ]],
@@ -2061,7 +2066,11 @@ cond([[ file_stat("/bin/cat") && file_stat("/dev/null") && all_constants()->thre
     return allocate(10, thread_create) (
       lambda() {
 	for (int x=0; x<10; x++) {
+#if constant(OMIT_SLOW_TESTS)
+          for (int e=0; e<5; e++)
+#else
 	  for (int e=0; e<50; e++)
+#endif
 	    if (Process.create_process(({"/bin/cat","/dev/null"}))->wait())
 	      return e;
 	  __signal_watchdog();
@@ -2077,7 +2086,11 @@ cond([[ file_stat("/bin/cat") && file_stat("/dev/null") && all_constants()->thre
 #ifdef DISABLE_SLOW_TESTS
     return 0;
 #endif
+#if constant(OMIT_SLOW_TESTS)
+  for(int q=0;q<10;q++)
+#else
   for(int q=0;q<100;q++)
+#endif
   {
     array fnord=({});
     Thread.Fifo fifo=Thread.Fifo();
@@ -2111,7 +2124,11 @@ int gnapp(int t)
   int e;
   for(e=0;e<7;e++)
   {
+#if constant(OMIT_SLOW_TESTS)
+    for(int d=0;d<15;d++)
+#else
     for(int d=0;d<150;d++)
+#endif
     {
       object o=Process.create_process(({"/bin/sleep","99999"}));
       kill( o->pid(), 9 );
