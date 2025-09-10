@@ -37,6 +37,10 @@ BUILD_BASE=
 # The precompiler API level used by cmod files in the src root directory.
 PRECOMPILER_ARGS=--api=3
 
+# Set to yes if the configure script has determined
+# that the build system is slow.
+SLOW_PIKE=@SLOW_PIKE@
+
 #
 # RPM and package builders, listen up, because this is your only
 # documentation! This variable is prepended to the install path.
@@ -387,6 +391,9 @@ tpike@EXEEXT@: master-stamp
 #
 # @LDSHARED_BASE_REQS@ expands to pike.lib if dynamic DLL modules are
 # used on NT.
+#
+# @LDSHARED_BASE_REQS@ expands to pike if dynamic modules are used
+# on MacOS X 12.0 or later.
 pike@EXEEXT@ pike.lib: main.o $(OBJ) master-stamp pike.syms modules/linker_options @STATIC_POST_MODULES_LINKOPTS@ @PIKE_ICON_RES@
 	-@if [ -f pike.old.exe ] ; then rm -f pike.old.exe || : ; else : ; fi
 	-@if [ -f pike.old ] ; then rm -f pike.old || : ; else : ; fi
@@ -769,11 +776,15 @@ testsuites:
 just_verify: testsuites master-stamp
 	if test "x$(TESTARGS)" = x ; then args="$(TESTARGS_FORK)" ; \
 	else args="$(TESTARGS)" ; fi; \
+	if test "x$(SLOW_PIKE)" = x ; then :; \
+	else args="--omit-slow-tests $$args" ; fi; \
 	$(RUNPIKE) -x test_pike $$args
 
 valgrind_just_verify: testsuites master-stamp
 	if test "x$(TESTARGS)" = x ; then args="$(TESTARGS_NOFORK)" ; \
 	else args="$(TESTARGS)" ; fi; \
+	if test "x$(SLOW_PIKE)" = x ; then :; \
+	else args="--omit-slow-tests $$args" ; fi; \
 	$(VALGRIND) $(VALGRINDARGS) $(RUNPIKE) -x test_pike --subproc-start="$(VALGRIND) $(VALGRINDARGS)" $$args
 
 dtrace_probes.h: $(SRCDIR)/dtrace/dtrace_probes.d
@@ -823,6 +834,8 @@ verify: testsuites tinstall
 	PIKE_MODULE_PATH=""; PIKE_INCLUDE_PATH=""; \
 	if test "$(TESTARGS)" = "" ; then args="$(TESTARGS_FORK)" ; else \
 	  args="$(TESTARGS)" ; fi; \
+	if test "x$(SLOW_PIKE)" = x ; then :; \
+	else args="--omit-slow-tests $$args" ; fi; \
 	if test -f ./test-pike ; then \
 	  if test -f ./test-install/pike/*/bin/pike.exe ; then \
 	    ./test-install/pike/*/bin/pike.exe -DNOT_INSTALLED $(PIKEOPTS) -x test_pike $$args ; \
@@ -841,6 +854,8 @@ valgrind_verify: testsuites tinstall
 	PIKE_MODULE_PATH=""; PIKE_INCLUDE_PATH=""; \
 	if test "$(TESTARGS)" = "" ; then args="$(TESTARGS_NOFORK)" ; else \
 	  args="$(TESTARGS)" ; fi; \
+	if test "x$(SLOW_PIKE)" = x ; then :; \
+	else args="--omit-slow-tests $$args" ; fi; \
 	if test -f ./test-pike ; then \
 	  if test -f ./test-install/pike/*/bin/pike.exe ; then \
 	    $(VALGRIND) $(VALGRINDARGS) ./test-install/pike/*/bin/pike.exe -DNOT_INSTALLED $(PIKEOPTS) -x test_pike --subproc-start="$(VALGRIND) $(VALGRINDARGS)" $$args ; \
@@ -869,6 +884,8 @@ bench: tinstall
 verify_installed: testsuites master-stamp
 	if test "$(TESTARGS)" = "" ; then args="$(TESTARGS_FORK)" ; else \
 	  args="$(TESTARGS)" ; fi; \
+	if test "x$(SLOW_PIKE)" = x ; then :; \
+	else args="--omit-slow-tests $$args" ; fi; \
 	$(bindir)/pike $(PIKEOPTS) -x test_pike $$args
 
 check: verify
@@ -878,6 +895,8 @@ sure: verify
 # verify / debug verbose
 verbose_verify: testsuites master-stamp
 	if test "$(TESTARGS)" = "" ; then args="$(TESTARGS_FORK)" ; else args="$(TESTARGS)" ; fi; \
+	if test "x$(SLOW_PIKE)" = x ; then :; \
+	else args="--omit-slow-tests $$args" ; fi; \
 	$(RUNPIKE) -x test_pike -v $$args
 
 # verify & debug VERBOSE
@@ -895,6 +914,8 @@ gdb_verify: testsuites master-stamp
 	@echo >>.gdbinit break abort
 	@if test "$(TESTARGS)" = "" ; then args="$(TESTARGS_NOFORK) -v" ; else \
 	  args="$(TESTARGS)" ; fi;  \
+	if test "x$(SLOW_PIKE)" = x ; then :; \
+	else args="--omit-slow-tests $$args" ; fi; \
 	echo >>.gdbinit set args \
 	  -m`echo "$(TMP_BUILDDIR)/master.pike" | ./posix_to_native.sh` \
 	  $(PIKEOPTS) -x test_pike --no-watchdog $$args
@@ -922,6 +943,8 @@ fast_verify_testsuite: testsuite
 	PIKE_MODULE_PATH=""; PIKE_INCLUDE_PATH=""; \
 	if test "$(TESTARGS)" = "" ; then args="$(TESTARGS_FORK)" ; \
 	else args="$(TESTARGS)" ; fi; \
+	if test "x$(SLOW_PIKE)" = x ; then :; \
+	else args="--omit-slow-tests $$args" ; fi; \
 	if test -f ./test-pike ; then \
 	  if test -f ./test-install/pike/*/bin/pike.exe ; then \
 	    ./test-install/pike/*/bin/pike.exe -DNOT_INSTALLED $(PIKEOPTS) -x test_pike $$args ; \

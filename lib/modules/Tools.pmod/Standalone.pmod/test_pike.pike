@@ -661,6 +661,7 @@ int main(int argc, array(string) argv)
     ({"loop",Getopt.HAS_ARG,({"-l","--loop"})}),
     ({"trace",Getopt.HAS_ARG,({"-t","--trace"})}),
     ({"check",Getopt.MAY_HAVE_ARG,({"-c","--check"})}),
+    ({"omit-slow-tests",Getopt.NO_ARG,({"-S","--omit-slow-tests"})}),
 #if constant(Debug.assembler_debug)
     ({"asm",Getopt.MAY_HAVE_ARG,({"--assembler-debug"})}),
 #endif
@@ -698,6 +699,10 @@ int main(int argc, array(string) argv)
 	case "help":
 	  write(doc);
 	  return EXIT_OK;
+
+        case "omit-slow-tests":
+          add_constant("OMIT_SLOW_TESTS", 1);
+          break;
 
 	case "verbose": verbose+=foo(opt[1]); break;
 	case "prompt": prompt+=foo(opt[1]); break;
