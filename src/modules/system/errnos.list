@@ -295,7 +295,7 @@ EBUSY				Device or resource busy
 ECALLDENIED			No permission for system call (Minix)
 ECANCELED			Operation cancelled
 ECANTEXTENT	#Irix
-ECAPMODE	#FreeBSD
+ECAPMODE			Not permitted in capability mode (FreeBSD)
 ECASECLASH	#Cygwin
 ECELLDOWN	#Irix
 ECHILD				No child processes
@@ -323,7 +323,6 @@ EDESTROYED	#Irix
 EDEVERR				Device error, e.g. paper out
 EDIED		#Hurd
 EDIRCORRUPTED	#Irix
-EDIRIOCTL	#FreeBSD
 EDIRTY				Mounting a dirty file system with out force
 EDISJOINT	#Irix
 EDIST		#AIX
@@ -361,6 +360,7 @@ EILSEQ				Invalid wide character
 EINIT		#Irix
 EINPROG				Operation (now) in progress
 EINPROGRESS			Operation now in progress
+EINTEGRITY			Integrity check failed (FreeBSD)
 EINTR				Interrupted system call
 EINVAL				Invalid argument
 EINVALMODE	#Irix
@@ -372,7 +372,6 @@ EISCONN				Transport endpoint is already connected
 EISDIR				Is a directory
 EISNAM				Is a named type file
 EJOINED		#Irix
-EJUSTRETURN	#FreeBSD
 EKEYEXPIRED			Key has expired
 EKEYREJECTED			Key was rejected by service
 EKEYREVOKED			Key has been revoked
@@ -388,7 +387,7 @@ ELIBMAX				Attempting to link in too many shared libraries
 ELIBSCN				.lib section in a.out corrupted
 ELNRNG				Link number out of range
 ELOCKED				Can't send message due to deadlock (Minix)
-ELOCKUNMAPPED	#Solaris
+ELOCKUNMAPPED			Locked lock was unmapped (Solaris)
 ELOGINLIM	#Irix
 ELOOP				Too many symbolic links encountered
 EMEDIA				Media surface error
@@ -426,7 +425,6 @@ ENOENT				No such file or directory
 ENOEXEC				Exec format error
 ENOEXIST	#Irix
 ENOINTRGROUP	#Irix
-ENOIOCTL	#FreeBSD
 ENOIOCTLCMD
 ENOKEY				Required key not available
 ENOLCK				No record locks available
@@ -455,9 +453,9 @@ ENOSR				Out of STREAM resources
 ENOSTR				Device not a STREAM
 ENOSYM				Symbol does not exist in executable
 ENOSYS				Invalid system call number
-ENOTACTIVE	#Solaris
+ENOTACTIVE			Facility is not active (Solaris)
 ENOTBLK				Block device required
-ENOTCAPABLE	#FreeBSD
+ENOTCAPABLE			Capabilities insufficient (FreeBSD)
 ENOTCONN			Transport endpoint is not connected
 ENOTCONTROLLER	#Irix
 ENOTDIR				Not a directory
@@ -502,13 +500,11 @@ ERANGE				Math result not representable
 EREFUSED			Double define for NFS
 ERELOC				Object file error in loading kernel module
 ERELOCATED	#OSF/1
-ERELOOKUP	#FreeBSD
 EREMCHG				Remote address changed
 EREMDEV		#Irix
 EREMOTE				Object is remote
 EREMOTEIO			Remote I/O error
 EREMOTERELEASE			Remote peer released connection
-ERESTART			Interrupted system call should be restarted
 ERESTARTNOHAND
 ERESTARTNOINTR
 ERESTARTSYS
