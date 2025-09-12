@@ -76,13 +76,27 @@ o Syntax for declaring and using generic types added.
 
     bar->z = 1.0;
 
-o Several modules have been updated to use generics.
+o Several modules have been updated to use generic types.
+
+  - ADT.CircularList
 
   - ADT.Heap
 
+  - ADT.List
+
+  - ADT.LowLevelStack
+
+  - ADT.Scheduler
+
+  - ADT.Set
+
   - ADT.Stack
 
-  - Concurrent
+  - ADT.Trie
+
+  - Concurrent.Future
+
+  - Concurrent.Promise
 
   They all default their generics to mixed in order to be backward-compatible.
 
