@@ -50,7 +50,7 @@ PIKECLASS CircularList
    */
 
   CVAR int pos;
-  CVAR struct array *a;
+  PIKEVAR array(mixed) a flags ID_PRIVATE;
   CVAR int size;
 
 #define ASSERT_INITIALIZED()	do {                 \
@@ -728,7 +728,7 @@ PIKECLASS CircularList
        *      pos                   (pos+nelem)                 a->size
        */
       struct array *a;
-      a=allocate_array_no_init(size,  (THIS->a->size >> 1) + 4);
+      a = allocate_array_no_init(size, (THIS->a->size >> 1) + 4);
       a->type_field = THIS->a->type_field | BIT_INT;
       if (THIS->size >0)
       {
@@ -777,7 +777,7 @@ PIKECLASS CircularList
     rawtype tFunc(tStr, tArr(tCircularListValueType));
   {
     ASSERT_INITIALIZED();
-    pop_n_elems(args); /* type as at least one more reference. */
+    pop_n_elems(args); /* type has at least one more reference. */
     if (type == literal_array_string)
     {
       struct array *a;
@@ -1216,14 +1216,6 @@ PIKECLASS CircularList
     THIS->size=0;
   }
 #endif
-
-  EXIT
-    gc_trivial;
-  {
-    if( THIS->a )
-      free_array(THIS->a);
-  }
-
 
 
   /*! @class CircularListIterator

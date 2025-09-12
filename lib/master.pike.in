@@ -1697,6 +1697,21 @@ protected mapping(program:string) rev_programs = ([]);
 protected mapping(object:program) rev_objects = ([]);
 protected mapping(mixed:string) rev_fc = ([]);
 
+//! Called by the runtime in clean up on exit mode
+//! in order to get a reasonable destruction order.
+void zap_all_caches()
+{
+  m_clear(programs);
+  m_clear(documentation);
+  source_cache && m_clear(source_cache);
+  m_clear(objects);
+  m_clear(fc);
+  m_clear(rev_programs);
+  m_clear(rev_objects);
+  m_clear(rev_fc);
+  zap_getcwd_cache();
+}
+
 string programs_reverse_lookup (program prog)
 //! Returns the path for @[prog] in @[programs], if it got any.
 {

@@ -507,6 +507,7 @@ void exit_modules(void)
 #endif
 
     /* First perform some nice cleanup. */
+    SAFE_APPLY_MASTER("zap_all_caches", 0);
     exit_default_backend();
     do_gc(1);
 
