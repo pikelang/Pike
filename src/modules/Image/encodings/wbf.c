@@ -213,7 +213,7 @@ static void low_image_f_wbf_decode( int args, int mode )
 
   buff.len = s->len;
   buff.str = (unsigned char *)s->str;
-  sp--; /* Evil me */
+  steal_stack(); /* Evil me */
 
   wh = decode_header( &buff );
 
@@ -420,7 +420,6 @@ static void image_f_wbf_encode( int args )
       Pike_error("Wrong type for argument 2.\n");
     options = sp[-args+1].u.mapping;
   }
-  sp-=args;
 
   num_strings=0;
   push_wap_integer( 0 ); num_strings++; /* type */
@@ -429,8 +428,6 @@ static void image_f_wbf_encode( int args )
   push_wap_integer( i->ysize ); num_strings++;
   push_wap_type0_image_data( i ); num_strings++;
   f_add( num_strings );
-  if( options ) free_mapping( options );
-  free_object( o );
 }
 
 /*! @endmodule
