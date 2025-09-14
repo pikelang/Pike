@@ -462,6 +462,16 @@ class Test
   //!     the warning from the set of ignored warnings. When popped
   //!     the same number of times as it has been pushed, the warning
   //!     is no longer ignored.
+  //!   @value "PUSH_EXPECTED_COMPILE_ERROR"
+  //!     Evaluate the method a and take the resulting string and push
+  //!     it to the set of expected compilation errors. The same error
+  //!     can be pushed multiple times, but must also be popped the same
+  //!     number of times.
+  //!   @value "POP_EXPECTED_COMPILE_ERROR"
+  //!     Evaluate the method a and take the resulting string and pop
+  //!     the expected compilation error from the set of expected compilation
+  //!     errors. When popped a testsuite failure is logged if the
+  //!     compilation error was not triggered since it was pushed.
   //!   @value "RUN"
   //!     Compiles and evaluates method a of the source, but ignores
   //!     the result.

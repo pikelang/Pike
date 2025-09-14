@@ -3454,12 +3454,12 @@ static void low_or_pike_types(struct pike_type *t1,
     }
   } else if ((t1->type == PIKE_T_ATTRIBUTE) &&
              (t2->type != PIKE_T_ATTRIBUTE) &&
-             (t1->cdr->type == t2->type)) {
+             (!t1->cdr || (t1->cdr->type == t2->type))) {
     /* Pop the attribute. */
     low_or_pike_types(t1->cdr, t2, zero_implied);
   } else if ((t2->type == PIKE_T_ATTRIBUTE) &&
              (t1->type != PIKE_T_ATTRIBUTE) &&
-             (t2->cdr->type == t1->type)) {
+             (!t2->cdr || (t2->cdr->type == t1->type))) {
     /* Pop the attribute. */
     low_or_pike_types(t1, t2->cdr, zero_implied);
   }
