@@ -123,9 +123,12 @@ object(Testsuite)|zero read_tests( string fn ) {
   return 0;
 }
 
-mapping(string:int) pushed_warnings = ([]);
+class Counter(this_program|void prev) { int counter; }
 
-class WarningFlag {
+mapping(string:int) pushed_warnings = ([]);
+mapping(string:Counter) expected_compilation_errors = ([]);
+
+class WarningFlag (int|void inhibit_errors) {
   int(0..1) warning;
   array(string) warnings = ({});
 
@@ -144,6 +147,12 @@ class WarningFlag {
   }
 
   void compile_error(string file, int line, string text) {
+    Counter e = expected_compilation_errors[text];
+    if (e) {
+      e->counter++;
+      return;
+    }
+    if (inhibit_errors) return;
     log_msg("%s:%d: Error: %s\n", file,line,text);
   }
 }
@@ -1173,6 +1182,8 @@ int main(int argc, array(string) argv)
 	  break;
 
 	case "COMPILE_ERROR":
+          wf = WarningFlag(1);
+          test->inhibit_errors = wf;
           test->compile();
           if(test->compilation_error)
 	  {
@@ -1337,8 +1348,10 @@ int main(int argc, array(string) argv)
 	      log_msg(fname + " failed.\n");
 	      print_code(source);
 	      log_msg_result("o->a(): %O\n", a);
+              errors++;
 	    } else {
 	      pushed_warnings[a]++;
+              successes++;
 	    }
 	    break;
 
@@ -1348,17 +1361,60 @@ int main(int argc, array(string) argv)
 	      log_msg(fname + " failed.\n");
 	      print_code(source);
 	      log_msg_result("o->a(): %O\n", a);
+              errors++;
 	    } else if (pushed_warnings[a]) {
 	      if (!--pushed_warnings[a]) {
 		m_delete(pushed_warnings, a);
 	      }
+              successes++;
 	    } else {
 	      watchdog_show_last_test();
 	      log_msg(fname + " failed.\n");
 	      print_code(source);
 	      log_msg_result("o->a(): %O not pushed!\n", a);
+              errors++;
 	    }
 	    break;
+
+          case "PUSH_EXPECTED_COMPILE_ERROR":
+            if (!stringp(a)) {
+              watchdog_show_last_test();
+              log_msg(fname + " failed.\n");
+              print_code(source);
+              log_msg_result("o->a(): %O\n", a);
+              errors++;
+            } else {
+              expected_compilation_errors[a] =
+                Counter(expected_compilation_errors[a]);
+              successes++;
+            }
+            break;
+
+          case "POP_EXPECTED_COMPILE_ERROR":
+            if (!stringp(a)) {
+              watchdog_show_last_test();
+              log_msg(fname + " failed.\n");
+              print_code(source);
+              log_msg_result("o->a(): %O\n", a);
+              errors++;
+            } else if (Counter e = expected_compilation_errors[a]) {
+              expected_compilation_errors[a] = e->prev;
+              if (!e->counter) {
+                log_msg(fname + " failed.\n");
+                log_msg_result("Previous test(s) did not trigger the "
+                               "expected compilation error: %O.\n", a);
+                errors++;
+              } else {
+                successes++;
+              }
+            } else {
+              watchdog_show_last_test();
+              log_msg(fname + " failed.\n");
+              print_code(source);
+              log_msg_result("o->a(): %O not pushed!\n", a);
+              errors++;
+            }
+            break;
 
 	  case "RUN":
 	    successes++;

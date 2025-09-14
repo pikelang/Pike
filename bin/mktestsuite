@@ -127,6 +127,16 @@ DOTEST(POP_WARNING,dnl
 mixed a() { return [[\$1]]; })
 ]])
 
+define(expect_compile_error, dnl
+checkarg([[expect_compile_error]],1)dnl
+checkarg([[expect_compile_error]],2)dnl
+[[DOTEST(PUSH_EXPECTED_COMPILE_ERROR,dnl
+mixed a() { return [[\$1]]; })
+\$2
+DOTEST(POP_EXPECTED_COMPILE_ERROR,dnl
+mixed a() { return [[\$1]]; })
+]])
+
 define(test_any, [[DOTEST(EQ,dnl
 mixed a() { [[\$1]]; }
 mixed b() { return [[\$2]]; })]])
