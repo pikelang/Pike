@@ -6466,10 +6466,13 @@ test_compile(foreach(({}),mixed i){i;})
 
 dnl sscanf("", ...) triggers this warning.
 ignore_warning("Indexing the empty string.", [[
-test_compile(sscanf("","%O",mixed foo);foo;)
-test_compile_error(sscanf("","",mixed foo);)
-test_compile_error(sscanf("","%f",float))
-test_compile_error(sscanf("",float))
+  test_compile(sscanf("","%O",mixed foo);foo;)
+  test_compile_error(sscanf("","",mixed foo);)
+  test_compile_error(sscanf("","%f",float))
+  test_compile_error(sscanf("",float))
+  expect_compile_error("Too few arguments to sscanf (got 3).", [[
+    test_compile_error(sscanf("", "%s %s", string foo);)
+  ]])
 ]])
 
 // ++

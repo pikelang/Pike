@@ -4540,7 +4540,9 @@ void fix_type_field(node *n)
       if (sscanf_type) {
 	if (!(n->type = new_get_return_type(sscanf_type, &cs, 0))) {
 	  struct pike_type *expected;
-	  if ((expected = get_first_arg_type(sscanf_type, CALL_NOT_LAST_ARG))) {
+          if ((expected =
+               get_first_arg_type(sscanf_type,
+                                  CALL_NOT_LAST_ARG|CALL_ARG_LVALUE))) {
 	    yytype_report(REPORT_ERROR,
 			  NULL, 0, expected,
 			  NULL, 0, NULL,
