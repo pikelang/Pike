@@ -1368,7 +1368,7 @@ protected class ParserState(Evaluator evaluator) {
 //! accessible both from __ and ___Hilfe->history in Hilfe expressions.
 protected class HilfeHistory {
 
-  inherit ADT.History;
+  inherit ADT.History (< mixed >);
 
   // Add content overview
   string status() {
