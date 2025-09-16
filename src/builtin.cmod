@@ -4441,6 +4441,10 @@ PIKEFUN mapping(string:int|string) get_runtime_info()
   push_int(sizeof(FLOAT_TYPE) * 8);
   push_static_text("auto_bignum");
   push_int(1);
+  push_static_text("cpu_time_method");
+  push_text(get_cpu_time_impl);
+  push_static_text("real_time_method");
+  push_text(get_real_time_impl);
 #ifdef PIKE_DEBUG
   push_static_text("rtl_debug");
   push_int(1);
