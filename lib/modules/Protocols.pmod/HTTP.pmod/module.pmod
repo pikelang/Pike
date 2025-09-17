@@ -708,7 +708,7 @@ array(string)|zero
     if(!c) return 0;
     if(c->status==302)
       url = Standards.URI(c->headers->location, url);
-  } while( c->status!=200 );
+  } while( c->status/100 != 2 );
   return ({ c->headers["content-type"], c->data() });
 }
 
