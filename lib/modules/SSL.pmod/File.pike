@@ -151,11 +151,6 @@ protected int alert_cb_called;
 protected constant epipe_errnos = (<
   System.EPIPE,
   System.ECONNRESET,
-#if constant(System.WSAECONNRESET)
-  // The following is returned by winsock on windows.
-  // Pike ought to map it to System.ECONNRESET.
-  System.WSAECONNRESET,
-#endif
 >);
 // Multiset containing the errno codes that can occur if the remote
 // end has closed the connection.
@@ -753,11 +748,7 @@ int close (void|string how, void|int clean_close, void|int dont_throw)
       if (dont_throw) {
 	RETURN (0);
       }
-      else if (!(< 0, System.EPIPE, System.ECONNRESET,
-#ifdef __NT__
-                   System.WSAECONNRESET,
-#endif
-               >)[err]) {
+      else if (!(< 0, System.EPIPE, System.ECONNRESET, >)[err]) {
 	// Errors are normally thrown from close().
         error ("Failed to close SSL connection: %s.\n", strerror (err));
       }
