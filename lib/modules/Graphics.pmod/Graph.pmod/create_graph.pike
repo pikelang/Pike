@@ -236,7 +236,7 @@ mapping(string:mixed) init(mapping(string:mixed) diagram_data)
   if ( diagram_data->linewidth< 0.01)
      diagram_data->linewidth=1.0;
 
-  //Oulinecolors
+  //Outlinecolors
   if ((diagram_data->backdatacolors==0)&&
       (diagram_data->backlinewidth))
   {
@@ -781,6 +781,14 @@ mapping set_legend_size(mapping diagram_data)
 			    diagram_data->legendfontsize);
 		
 	    plupps[i]->setcolor(255,255,255);
+
+            // NB: We need a valid diagram_data->linewidth below,
+            //     and setinitcolors() has not been called yet.
+            //     Cf #4059.
+            diagram_data->linewidth = (float)diagram_data->linewidth;
+            if ( diagram_data->linewidth< 0.01)
+              diagram_data->linewidth = 1.0;
+
 	    if ( (diagram_data->linewidth*1.5
 		  < (float)diagram_data->legendfontsize)
 		 && (diagram_data->subtype=="line")
