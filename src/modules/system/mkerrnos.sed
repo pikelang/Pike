@@ -5,16 +5,24 @@
 # Comments added 2025-08-13.
 
 # Add a warning at the begining of the output.
-1i/* Generated from errnos.list by mkerrnos.sed. Do NOT edit. */
-1i
+1i\
+/* Generated from errnos.list by mkerrnos.sed. Do NOT edit. */
+1i\
+
 
 # Alias ELAST and LASTERRNO.
-$a
-$a#if !defined(ELAST) && defined(LASTERRNO)
-$aADD_ERRNO(LASTERRNO, "ELAST", "")
-$a#elif !defined(LASTERRNO) && defined(ELAST)
-$aADD_ERRNO(ELAST, "LASTERRNO", "")
-$a#endif
+$a\
+
+$a\
+#if !defined(ELAST) && defined(LASTERRNO)
+$a\
+ADD_ERRNO(LASTERRNO, "ELAST", "")
+$a\
+#elif !defined(LASTERRNO) && defined(ELAST)
+$a\
+ADD_ERRNO(ELAST, "LASTERRNO", "")
+$a\
+#endif
 
 # Hold the input line.
 h
