@@ -23,6 +23,15 @@ o Syntax for using multi-assign in function calls.
 Bug fixes
 ---------
 
+o predef::{en,de}code_value()
+
+  Several fixes related to encoding and decoding of programs.
+
+o Cpp
+
+  Fixed line numbering issue when handling multi-line comments
+  in arguments to macros.
+
 o Compiler
 
 o Runtime
