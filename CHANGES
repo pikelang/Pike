@@ -246,6 +246,29 @@ o Syntax for generator (and restartable) functions added.
   is a function that will be called at the yield point. resume_cb
   may be used to eg behave as if yield() had thrown an error.
 
+  Eg:
+
+    __generator__ int foo(int count) {
+      while (--count) continue return count;
+    }
+
+  Behaves similar to (resume handling not provided):
+
+    function(:int) foo(int count) {
+      int state;
+      return lambda() {
+        switch(state) {
+          case 0:
+            while(--count) return count;
+            state = 1;
+            return 0;
+            break;
+          default:
+            return UNDEFINED;
+        }
+      };
+    }
+
 o Syntax for asynchronous functions added.
 
   - Added the new modifier __async__, which causes such functions
@@ -291,6 +314,36 @@ o Syntax for asynchronous functions added.
       f->on_await(continue::this_function);
       mixed x = yield(0);
 
+o Simplified the Iterator API.
+
+  - Renamed Iterator API functions and made them LFUNs:
+
+    o index() ==> iterator_index()
+
+    o value() ==> iterator_value()
+
+    o next() ==> iterator_next()
+
+  - Iterators now start at the position before the first element
+    to be iterated over. This position may be the the same
+    position as after the last element.
+
+  - The only function that is required for an Iterator is
+    iterator_next(). It should advance the iterator one
+    element, and return UNDEFINED if the position is now
+    after the last element. It may return any other value
+    otherwise. The returned value will be used in place of
+    the values returned by iterator_index() and/or
+    iterator_value() if they do not exist.
+
+  - Restartable functions (or any other functions that have state)
+    may be used as iterators:
+
+      __generator__ int foo(int count) {
+        while (--count) continue return count;
+      }
+      foreach(foo(2);; int val) { werror("val: %d\n", val); }
+
 o Machine code support for more architectures.
 
   There's now machine code support for arm32 and arm64.
@@ -324,6 +377,15 @@ o Added the unary +-operator (noop).
 Bug fixes
 ---------
 
+o predef::{en,de}code_value()
+
+  Several fixes related to encoding and decoding of programs.
+
+o Cpp
+
+  Fixed line numbering issue when handling multi-line comments
+  in arguments to macros.
+
 o Compiler
 
   - Constant integers outside the 32-bit signed range no longer
@@ -348,8 +410,14 @@ o Compiler
 
 o Runtime
 
-  The runtime could get confused by PROGRAM_DESTRUCT_IMMEDIATE
-  objects having destruct callbacks under some circumstances.
+  - The runtime could get confused by PROGRAM_DESTRUCT_IMMEDIATE
+    objects having destruct callbacks under some circumstances.
+
+  - A signal handler for SIGCHLD is now always installed. On some
+    operating systems (eg FreeBSD) system calls are apparently
+    not interrupted when ignored signals are received. By always
+    installing a SIGCHLD signal handler, we can guarantee that
+    pthread_kill(THREAD, SIGCHLD) will interrupt the specified thread.
 
 o Operator functions
 
@@ -371,6 +439,14 @@ o Operator functions
 
   - Most operators that use LFUNs now have types that check
     that the arguments to the corresponding LFUN are correct.
+
+o ADT.OrderedMapping
+
+  Adding duplicate keys now replaces the existing keys.
+
+o GTK2
+
+  Support GTK2.8 and earlier again.
 
 o Pike.Backend
 
@@ -415,9 +491,13 @@ o Stdio.File: Support concurrent close() during read() and write().
 
   Previously this had an inconsistent behavior.
 
-o ADT.OrderedMapping
+o Tools.Standalone.autodoc_to_split_html:
 
-  Adding duplicate keys now replaces the existing keys.
+  - Fixed some navigation issues for enums.
+
+  - Fixed rendering of non-inherited symbols when there is a circular inherit.
+
+  - Avoid invalid simplification of references.
 
 
 Incompatible changes
@@ -437,27 +517,7 @@ o As mentioned above; variables that may be set to 0 or UNDEFINED
 o The new stricter type checker may expose old bugs that the
   old type checker did not find.
 
-o Simplified the Iterator API.
-
-  - Renamed Iterator API functions and made them LFUNs:
-
-    o index() ==> iterator_index()
-
-    o value() ==> iterator_value()
-
-    o next() ==> iterator_next()
-
-  - Iterators now start at the position before the first element
-    to be iterated over. This position may be the the same
-    position as after the last element.
-
-  - The only function that is required for an Iterator is
-    iterator_next(). It should advance the iterator one
-    element, and return UNDEFINED if the position is now
-    after the last element. It may return any other value
-    otherwise. The returned value will be used in place of
-    the values returned by iterator_index() and/or
-    iterator_value() if they do not exist.
+o Iterator API changed. See "Simplified the Iterator API" above.
 
 o Sql.Sql is no longer a wrapper class, but a function.
 
@@ -503,6 +563,12 @@ o Anonymous classes are always expressions.
 
   It used to be possible (but typically not useful) to define
   an anonymous class as a statement. Add a name for the class.
+
+o Errorcodes on NT are now unified.
+
+  In cases where there is both an errorcode System.Exxx and a
+  System.WSAExxx the runtime will now always return the former.
+  This applies to eg System.ECONNRESET/System.WSAECONNRESET.
 
 o Gz.crc32 and Nettle.crc32c now only return positive results.
 
@@ -725,6 +791,16 @@ o predef::m_delete()
 
   - m_delete() now supports atomic test and remove.
 
+o predef::sprintf %x
+
+  %X and %x can now be used on 8-bit wide strings to get a hexadecimal
+  representation of their contents. Just calling sprintf("%x",data) is
+  the same as calling String.string2hex(data).
+
+o ADT.CircularList
+
+  Added replace_{back,front}().
+
 o ADT.Heap
 
   - An indirection object ADT.Heap.Element has been added to make it
@@ -734,12 +810,29 @@ o ADT.Heap
 
 o Calendar
 
+  - Timezone data updated to tzdb-2025b.
+
   - The timezone expert system has been updated for the first time
     in quite a while.
+
+o Calendar.mkrules
+
+  - Support %z as timezone abbreviation. This is needed to support
+    tzdb-2025a and later.
+
+  - Fix issue with %s in zone abbreviation.
 
 o CompilerEnvironment()->lock()
 
   Access to the compiler lock.
+
+o Concurent.Future
+
+  - Improved signal-safety.
+
+  - Runtime warning about ignoring return values from callbacks added.
+    This should help catching errors like eg using on_failure() where
+    recover() or recover_with() was intended.
 
 o Crypto & Nettle
 
@@ -762,13 +855,38 @@ o Gmp
 
   - Improved support for GMP 5.0 and later.
 
+o Graphics.Graph
+
+  Fix rendering of line-style legend plupps.
+
 o GTK2
 
   Multiple runtime fixes.
 
 o Image.ANY
 
-  Fixed detection of XWD.
+  - Fixed detection of XWD.
+
+  - Added detection of NEOChrome format.
+
+o Image.DSI
+
+  Add support for encoding.
+
+o Image.Image
+
+  Add quantize_colors() that quantizes the colors of an image
+  to the specified number of bits per channel.
+
+o Image.NEO
+
+  Add encode().
+
+o Image.TIM
+
+  - Add support for 24bit format.
+
+  - Add support for encoding of 15bit and 24bit images.
 
 o Image.X
 
@@ -776,7 +894,9 @@ o Image.X
 
 o Image.XWD
 
-  Added support for XY format.
+  - Added support for XY format.
+
+  - Add support for encoding to 24bit TrueColor ZPixmap.
 
 o JOSE (JSON Object Signing and Encryption)
 
@@ -816,6 +936,11 @@ o Mysql.SqlTable
     This makes it easier to make wrappers for db_conn that wrap
     big_query() et al.
 
+o Netutils
+
+  Support ip(8) in addition to ifconfig(8). Some distributions of Linux
+  no longer provide ifconfig(8) by default, so support ip(8) too.
+
 o Nettle.BlockCipher16
 
   - Add support for RFC 5649-style key wrapping.
@@ -824,9 +949,26 @@ o Nettle.BlockCipher16
 
   - The submodule KW is no more. Its API was not suitable for use.
 
+o Parset.Markdown
+
+  Added a simple LaTeX renderer.
+
 o Parser.Pike
 
   Support new language features.
+
+o Pike.get_runtime_info
+
+  Added several new fields:
+
+  - "debug_malloc" indicates that the runtime has been built
+    --with-debug-malloc.
+
+  - "rtl_debug" indicates that the runtime has been built
+    --with-rtldebug (or equivalent).
+
+  - "running_on_valgrind" contains the number of nested valgrinds
+    the runtime is running under (if any).
 
 o Protocols.DNS
 
@@ -1009,6 +1151,10 @@ o Thread
     that they are used together with. This ensures that the correct
     Thread.Mutex is aways used.
 
+o Thread.Farm
+
+  Errors thrown via run_async() are now reported.
+
 o Thread.Mutex
 
   Add future_{,shared_}lock().
@@ -1016,11 +1162,17 @@ o Thread.Mutex
   These return a Concurrent.Future(<Thread.MutexKey>) corresponding
   to the respective {,shared_}lock().
 
-o sprintf %x
+o Tools.Hilfe
 
-  %X and %x can now be used on 8-bit wide strings to get a hexadecimal
-  representation of their contents. Just calling sprintf("%x",data) is
-  the same as calling String.string2hex(data).
+  Support __generator__ and __async__ modifiers.
+
+o Tools.Standalone.precompile
+
+  - Program identifiers can now be preallocated, allowing method prototypes
+    to reference classes defined further down in the cmod.
+
+  - Attempt to keep comments in place for EXTRA. This fixes some issues
+    where autodoc comments were moved around.
 
 o Unicode 10.0.0.
 
