@@ -26,6 +26,14 @@ o Syntax for specifying default values for function arguments added.
 
     class foo(string bar = "bar") {}
 
+o Syntax for specifying default values with multi-assign.
+
+  The statement
+
+    [int a, int b = a] = ({ 5 });
+
+  will assign the value 5 to both of the variables a and b.
+
 o Syntax for using multi-assign in function calls.
 
   The function definition
@@ -144,6 +152,9 @@ o Syntax for specifying the type of named constants.
 o Backward-compatible syntax for specifying the type of named constants.
 
   Eg constant flag = [int(0..1)](mixed)0, other = [int(0..1)](mixed)1;
+
+  This syntax is intended for use by code that needs to be backward-
+  compatible with Pike 8.0 and earlier.
 
 o ** operator added. It's exponentiation and works with most
   combination of numerical types (int,float,Gmp.mpq,Gmp.mpf,Gmp.mpz)
@@ -309,10 +320,15 @@ o Syntax for asynchronous functions added.
 
       mixed x = await(f);
 
-   Behaves similar to:
+    Behaves similar to:
 
       f->on_await(continue::this_function);
       mixed x = yield(0);
+
+  - The main() function may return a Concurrent.Future (ie it may
+    be declared __async__) in which case the master object will
+    enter asynchronous mode, and stay around until the object is
+    fulfilled. This is thus similar to main() returning negative.
 
 o Simplified the Iterator API.
 
@@ -1275,3 +1291,22 @@ o C99 assumed
 
   The configure tests will not check for functions defined in C99
   anymore and C99 compiler support is assumed.
+
+
+Issues fixed
+------------
+
+Github pikelang/pike: #16, #25
+
+Lysator pikelang/pike: #1694, #2100, #2315, #3150, #3681, #4312, #4934,
+  #5466, #7363, #7831, #8042, #10003, #10004, #10006, #10012, #10017,
+  #10018, #10021, #10022, #10023, #10026, #10027, #10028, #10029, #10033,
+  #10035, #10037, #10039, #10040, #10041, #10042, #10043, #10045, #10046,
+  #10047, #10048, #10050, #10055, #10059, #10065, #10072, #10077, #10083,
+  #10085, #10086, #10089, #10090, #10094, #10096, #10097, #10098, #10100,
+  #10104, #10105, #10107, #10109, #10111, #10113, #10114, #10118, #10119,
+  #10125, #10127, #10128, #10129, #10130, #10131, #10133, #10134, #10135,
+  #10136, #10137, #10139, #10142, #10143, #10144, #10146, #10147, #10150,
+  #10151, #10154, #10155, #10156, #10158, #10160, #10161, #10162, #10163,
+  #10164, #10170, #10171, #10173, #10175, #10177, #10178, #10180, #10181,
+  #10183, #10187, #10188, #10195, #10196, #10197, #10198
