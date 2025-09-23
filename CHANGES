@@ -9,11 +9,14 @@ o Syntax for default values in multi-assignment.
   It is now possible to specify default values in multi-
   assignment.
 
-    [int a, int b = 4] = ({ 1 });
+    [int a, int b = a + 4] = ({ 1 });
 
   or
 
-    [int a, int b = 4] = ({ 1, UNDEFINED });
+    [int a, int b = a + 4] = ({ 1, UNDEFINED });
+
+  Both of the above statements will assign the value 1 to
+  the variable a, and the value 5 to the variable b.
 
 o Syntax for using multi-assign in function calls.
 

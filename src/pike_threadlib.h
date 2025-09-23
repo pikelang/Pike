@@ -332,11 +332,40 @@ PMOD_EXPORT extern pthread_attr_t small_pattr;
 
 #define PIKE_MUTEX_T HANDLE
 #define mt_init(X) LOW_THREAD_CHECK_ZERO_ERROR ((*(X)=CreateMutex(NULL, 0, NULL)))
-#define mt_lock(X)							\
-  LOW_THREAD_CHECK_ZERO_ERROR (						\
-    WaitForSingleObject(CheckValidHandle(*(X)), INFINITE) == WAIT_OBJECT_0)
-#define mt_trylock(X)							\
-  (WaitForSingleObject(CheckValidHandle(*(X)), 0) != WAIT_FAILED)
+static inline void PIKE_UNUSED_ATTRIBUTE mt_lock(PIKE_MUTEX_T mux,
+                                                 const char *file, int line)
+{
+  DWORD ret = WaitForSingleObject(mux, INFINITE);
+  if (ret == WAIT_OBJECT_0) return;
+  if (ret == WAIT_ABANDONED) {
+    /* Owning thread has died.
+     * Consider adding a diagnostic here.
+     */
+    return;
+  }
+  thread_low_error(GetLastError(),
+                   "WaitForSingleObject(mux, INFINITE)",
+                   file, line);
+}
+#define mt_lock(X) mt_lock(CheckValidHandle(*(X)), __FILE__, __LINE__)
+static inline int PIKE_UNUSED_ATTRIBUTE mt_trylock(PIKE_MUTEX_T mux,
+                                                   const char *file, int line)
+{
+  DWORD ret = WaitForSingleObject(mux, 0);
+  if (ret == WAIT_OBJECT_0) return 1;
+  if (ret == WAIT_ABANDONED) {
+    /* Owning thread has died.
+     * Consider adding a diagnostic here.
+     */
+    return 1;
+  }
+  if (ret == WAIT_TIMEOUT) return 0;
+  /* WAIT_FAILED */
+  thread_low_error(GetLastError(),
+                   "WaitForSingleObject(mux, 0)",
+                   file, line);
+}
+#define mt_trylock(X) mt_trylock(CheckValidHandle(*(X)), __FILE__, __LINE__)
 #define mt_unlock(X) LOW_THREAD_CHECK_ZERO_ERROR (ReleaseMutex(CheckValidHandle(*(X))))
 #define mt_destroy(X) LOW_THREAD_CHECK_ZERO_ERROR (CloseHandle(CheckValidHandle(*(X))))
 
