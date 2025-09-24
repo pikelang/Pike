@@ -2193,8 +2193,6 @@ int foreach_iterate(struct object *o)
 
       apply_svalue(&(i->fun), 0);
 
-      pike_fprintf(stderr, "ret: %pO\n", Pike_sp-1);
-
       if (IS_UNDEFINED(Pike_sp-1)) {
         /* Terminate. */
         free_svalue(&(i->fun));
