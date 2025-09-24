@@ -111,8 +111,11 @@ PMOD_EXPORT extern struct program *thread_id_prog;
 PMOD_EXPORT extern int num_threads;
 PMOD_EXPORT extern size_t thread_stack_size;
 
-PMOD_EXPORT void thread_low_error (int errcode, const char *cmd,
-				   const char *fname, int lineno);
+PMOD_EXPORT DECLSPEC(noreturn) void thread_low_error (int errcode,
+                                                      const char *cmd,
+                                                      const char *fname,
+                                                      int lineno)
+     ATTRIBUTE((noreturn));
 
 #define LOW_THREAD_CHECK_NONZERO_ERROR(CALL) do {			\
     int thread_errcode_ = (CALL);					\
