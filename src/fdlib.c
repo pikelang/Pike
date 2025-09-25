@@ -3577,7 +3577,9 @@ static INT64 fallback_sendfile(int to_fd,
 
     if (hd_iov && hd_cnt) {
       sent = pike_writev(to_fd, hd_iov, hd_cnt);
-      if (sent < 0) return sent;
+      if (sent < 0) {
+        return sent;
+      }
     }
   }
 
@@ -3597,7 +3599,9 @@ static INT64 fallback_sendfile(int to_fd,
         /* Compat with Pike 8.x and earlier. */
         offsetp = NULL;
       } else {
-        if (fd_lseek(from_fd, offset, SEEK_SET) < 0) goto failed;
+        if (fd_lseek(from_fd, offset, SEEK_SET) < 0) {
+          goto failed;
+        }
       }
 #endif
     }
@@ -3634,7 +3638,9 @@ static INT64 fallback_sendfile(int to_fd,
 
       if (buflen <= 0) {
         free(buffer);
-        if (buflen < 0) goto failed;
+        if (buflen < 0) {
+          goto failed;
+        }
         break;
       }
 
@@ -3820,11 +3826,15 @@ static INT64 low_pike_sendfile(int to_fd,
 
     if (hd_iov && hd_cnt) {
       sent = pike_writev(to_fd, hd_iov, hd_cnt);
-      if (sent < 0) return sent;
+      if (sent < 0) {
+        return sent;
+      }
     }
   }
 
-  if (!len || (from_fd < 0)) goto send_trailers;
+  if (!len || (from_fd < 0)) {
+    goto send_trailers;
+  }
 
   if (len < 0) {
     PIKE_STAT_T st;
@@ -3847,7 +3857,9 @@ static INT64 low_pike_sendfile(int to_fd,
       bytes = sendfile(to_fd, from_fd, NULL, len);
     }
     if (bytes <= 0) {
-      if (bytes < 0) goto sendfile_failed;
+      if (bytes < 0) {
+        goto sendfile_failed;
+      }
       break;	/* Typically EOF on from_fd and unknown length. */
     }
     sent += bytes;
@@ -3876,7 +3888,7 @@ static INT64 low_pike_sendfile(int to_fd,
   return sent;
 
  sendfile_failed:
-  if ((errno == EINVAL) || (errno == ENOSYS)) {
+  if ((errno == EINVAL) || (errno == ENOSYS) || (errno == ESPIPE)) {
     /* sendfile(2) operation not supported for from_fd
      * or sendfile(2) not implemented.
      *
