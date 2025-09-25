@@ -957,7 +957,7 @@ o Nettle.BlockCipher16
 
   - The submodule KW is no more. Its API was not suitable for use.
 
-o Parset.Markdown
+o Parser.Markdown
 
   Added a simple LaTeX renderer.
 
