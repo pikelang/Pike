@@ -791,7 +791,7 @@ static inline u_longlong_t PIKE_UNUSED_ATTRIBUTE pike_uint64_to_ulonglong(unsign
 #undef HAVE_MACOSX_SENDFILE
 #endif
 
-#include "port.h"
+#include "pike_port.h"
 #include "dmalloc.h"
 
 /* Either this include must go or the include of threads.h in

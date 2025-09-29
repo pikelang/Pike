@@ -15,7 +15,6 @@
 #include "pike_cpulib.h"
 #include "siphash24.h"
 #include "cyclic.h"
-#include "port.h"
 
 #ifdef HAVE_SYS_PROCCTL_H
 #include <sys/procctl.h>
