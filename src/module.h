@@ -7,7 +7,7 @@
 #ifndef MODULE_H
 #define MODULE_H
 
-/* global.h includes machine.h, pike_int_type.h, port.h, dmalloc.h,
+/* global.h includes machine.h, pike_int_type.h, pike_port.h, dmalloc.h,
    <stdio.h>, <stdarg.h>, <stdlib.h>, <stddef.h>, <string.h>,
    <limits.h>, <float.h>, <assert.h> and <alloca.h> */
 #include "global.h"

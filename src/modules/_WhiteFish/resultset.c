@@ -16,7 +16,6 @@
 #include "module_support.h"
 #include "fsort.h"
 #include "pike_types.h"
-#include "port.h"
 
 #include "config.h"
 

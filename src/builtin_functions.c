@@ -41,7 +41,7 @@
 #include "lex.h"
 #include "pike_float.h"
 #include "pike_compiler.h"
-#include "port.h"
+#include "pike_port.h"
 #include "siphash24.h"
 
 #include <errno.h>

@@ -23,7 +23,6 @@
 #include "backend.h"
 #include "pike_error.h"
 #include <math.h>
-#include "port.h"
 #include <assert.h>
 
 #ifdef HAVE_DIRECT_H

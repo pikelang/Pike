@@ -772,7 +772,6 @@ Makefile.rl -space_indent tab_indent
 /src/pike_threadlib.h mixed_indent
 /src/pike_types.cmod mixed_indent
 /src/pike_types.h mixed_indent
-/src/port.c mixed_indent
 /src/post_modules/BSON/bson.cmod mixed_indent
 /src/post_modules/Bz2/configure.in mixed_indent
 /src/post_modules/Bz2/libbzip2mod.cmod mixed_indent
