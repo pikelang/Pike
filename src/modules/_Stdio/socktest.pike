@@ -630,12 +630,33 @@ void finish(program Socket)
       case 2:
 	log_status("Testing accept");
 	string data1 = long_random_string;
+        num_running++;	// Don't let finish end before the loop is done.
 	for(int e=0;e<10;e++)
 	{
-	  sock1=Socket();
-	  sock1->o->connect(LOOPBACK, portno1);
-	  sock1->output_buffer=data1;
+          do {
+            sock1=Socket();
+            if (sock1->o->connect(LOOPBACK, portno1)) break;
+
+            log_status("Socket %d: Connection failed with error %d: %s\n",
+                       sock1->num, sock1->errno(), strerror(sock1->errno()));
+            if (sock1->errno() == System.EADDRINUSE) {
+              log_msg("#### Socket %d fd=%d: Connect failed: Address in use. Dropping socket.\n",
+                      sock1->num,
+                      sock1->o->query_fd?sock1->o->query_fd():sock1->o);
+              // This is supposed to let go of the socket and consider this
+              // socket a success
+              sock1->input_finished = sock1->output_finished = 1;
+              sock1->cleanup();	// Does a num_done++
+            }
+            sleep(0.1);
+          } while(1);
+          DEBUG_WERR("Socket %d fd=%O: local: %s, remote: %s\n",
+                     sock1->num,
+                     sock1->o->query_fd?sock1->o->query_fd():sock1->o,
+                     sock1->o->query_address(1), sock1->o->query_address());
+          sock1->output_buffer = data1;
 	}
+        call_out(finish, 0, Socket);	// Matching the num_running++ above.
 	break;
 	
       case 3:
