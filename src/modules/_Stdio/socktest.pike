@@ -656,7 +656,10 @@ void finish(program Socket)
                      sock1->o->query_address(1), sock1->o->query_address());
           sock1->output_buffer = data1;
 	}
-        call_out(finish, 0, Socket);	// Matching the num_running++ above.
+#ifdef BACKEND
+        backend->
+#endif
+          call_out(finish, 0, Socket);	// Matching the num_running++ above.
 	break;
 	
       case 3:

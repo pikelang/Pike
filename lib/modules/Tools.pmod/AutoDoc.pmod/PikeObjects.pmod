@@ -871,7 +871,9 @@ class _Class_or_Module {
     {
       foreach( doge->objects; int subindex; PikeObject o )
       {
-	if( lfuns[o->name] == "NOTIMPL" && objtype != "namespace")
+        if (!o->name) {
+          werror("WARNING: No name for documentation object %O!\n", o);
+        } else if( lfuns[o->name] == "NOTIMPL" && objtype != "namespace")
 	{
 	  werror("WARNING: Dropping documentation for %s. "
 		 "There is no such operator\n"
@@ -916,6 +918,8 @@ class _Class_or_Module {
 	  extra = "Write only";
 	else
 	  extra = "Read only";
+
+        extra = "<group><note/><text><p>" + extra + ".</p>\n</text></group>";
       }
       nvar->name = key;
       nvar->type = o[0]->returntype;
@@ -923,37 +927,31 @@ class _Class_or_Module {
       outdoc->position = o[0]->position;
 
       mapping(string:Documentation) doc = docs[key];
-      if( doc->?set->?text && doc->?get->?text &&
-	  strlen(doc->set->text) && strlen(doc->get->text) &&
-	  doc->set->text != doc->get->text )
+      if( doc->?set->?xml && doc->?get->?xml &&
+          strlen(doc->set->xml) && strlen(doc->get->xml) &&
+          doc->set->xml != doc->get->xml )
       {
-        outdoc->text = "Getting\n\n"
-          "\n"+doc->get->text+"\n\n"+
-          "Setting\n\n"+
-          doc->get->text+"\n\n";
+        outdoc->xml =
+          "<text><p><b>Getting</b></p>\n\n</text>"
+          "\n"+doc->get->xml+"\n\n"+
+          "<text><p><b>Setting</b></p>\n\n</text>"+
+          doc->set->xml+"\n\n";
       }
       else
       {
-	if( doc->?set->?text && strlen(doc->set->text) )
+        if( doc->?set->?xml && strlen(doc->set->xml) )
 	{
-	  outdoc->text = doc->set->text;
+          outdoc->xml = doc->set->xml;
 	}
-	else if( doc->?get->?text && strlen(doc->get->text) )
+        else if( doc->?get->?xml && strlen(doc->get->xml) )
 	{
-	  outdoc->text = doc->get->text;
+          outdoc->xml = doc->get->xml;
 	}
 	else
-	  outdoc->text="";
+          outdoc->xml = "";
       }
       if( extra )
-	outdoc->text += "\n@note\n"+extra;
-
-      object p = master()->resolv("Tools.AutoDoc.DocParser.Parse")
-	(outdoc->text,
-	 SourcePosition(__FILE__, __LINE__, __LINE__));
-
-      p->metadata();
-      outdoc->xml = p->doc("_method");
+        outdoc->xml += extra;
     }
   }
 
@@ -1063,7 +1061,7 @@ class _Class_or_Module {
   {
     switch(c) {
     case 's': return xml();
-    case 'O': return sprintf("%O(%O)", this_program, name);
+    case 'O': return sprintf("%O:%O(%O)", position, this_program, name);
     }
   }
 }
