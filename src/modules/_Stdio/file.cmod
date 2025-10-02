@@ -1726,7 +1726,8 @@ PIKEFUN int(0..) read(object o, int(0..)|void offset)
  *!       @[read()] will not block.
  *!
  *!     @value 0
- *!       There is no data available (ie timeout).
+ *!       There is no data available (ie timeout), or the wait
+ *!       was interrupted.
  *!
  *!     @value -1
  *!       Error condition. The error code returned by @[errno()]
@@ -1734,7 +1735,7 @@ PIKEFUN int(0..) read(object o, int(0..)|void offset)
  *!   @endint
  *!
  *! @seealso
- *!   @[errno()], @[read()]
+ *!   @[errno()], @[poke()], @[read()]
  *!
  *! @note
  *!    The function may be interrupted prematurely
@@ -1782,8 +1783,12 @@ PIKEFUN int(-1..1) peek(int|float|void timeout_sval, int|void not_eof_sval)
 
     if(ret < 0)
     {
-      ERRNO=errno;
-      ret=-1;
+      if (errno == EINTR) {
+        ret = 0;
+      } else {
+        ERRNO = errno;
+        ret = -1;
+      }
     } else if (fds.revents & POLLERR) {
       int err = EPIPE;	/* Value in case of non-socket. */
       ACCEPT_SIZE_T len = sizeof(err);
@@ -1835,10 +1840,164 @@ PIKEFUN int(-1..1) peek(int|float|void timeout_sval, int|void not_eof_sval)
 
     if(ret < 0)
     {
-      ERRNO=errno;
-      ret=-1;
+      if (errno == EINTR) {
+        ret = 0;
+      } else {
+        ERRNO = errno;
+        ret = -1;
+      }
     }else{
       ret = (ret > 0) && fd_FD_ISSET(FD, &tmp);
+    }
+#endif
+  }
+  pop_n_elems(args);
+  push_int(ret);
+}
+
+/*! @decl int(-1..1) poke()
+ *! @decl int(-1..1) poke(int|float timeout)
+ *! @decl int(-1..1) poke(int|float timeout)
+ *!
+ *! Check if there is buffer space available to write data,
+ *! or wait some time for available space.
+ *!
+ *! More specifically, a later nonblocking call to @[write()]
+ *! will succeed in writing some data, or indicate some error
+ *! (eg if a nonblocking socket failed to connect).
+ *!
+ *! @param timeout
+ *!   Timeout in seconds.
+ *!
+ *! @returns
+ *!   @int
+ *!     @value 1
+ *!       There is buffer space available, or nonblocking @[connect()] has
+ *!       completed.
+ *!
+ *!     @value 0
+ *!       There is no data available (ie timeout), or the call was
+ *!       interrupted by a signal.
+ *!
+ *!     @value -1
+ *!       Error condition. The error code returned by @[errno()]
+ *!       has been updated (eg a nonblocking @[connect()] has failed).
+ *!   @endint
+ *!
+ *! @seealso
+ *!   @[errno()], @[connect()], @[write()], @[peek()]
+ *!
+ *! @note
+ *!    The function may be interrupted prematurely
+ *!    of the timeout (due to signals);
+ *!    check the timing manually if this is imporant.
+ */
+PIKEFUN int(-1..1) poke(int|float|void timeout_sval)
+{
+  int ret;
+
+  {
+#ifdef HAVE_AND_USE_POLL
+    struct pollfd fds;
+    int timeout = 0;
+
+    if (timeout_sval) {
+      /* ignore overflow for now */
+      if (TYPEOF(*timeout_sval) == T_FLOAT) {
+        timeout = (int)(timeout_sval->u.float_number * 1000);
+      } else {
+        timeout = timeout_sval->u.integer * 1000;
+      }
+    }
+
+    fds.fd = FD;
+    fds.events = POLLOUT;
+    fds.revents = 0;
+
+    mark_file_busy(THIS);
+
+    if (timeout) {
+      THREADS_ALLOW();
+      ret = poll(&fds, 1, timeout);
+      THREADS_DISALLOW();
+    } else {
+      ret = poll(&fds, 1, 0);
+    }
+
+    mark_file_idle(THIS);
+
+    if(ret < 0)
+    {
+      if (errno == EINTR) {
+        ret = 0;
+      } else {
+        ERRNO = errno;
+        ret = -1;
+      }
+    } else if (fds.revents & POLLERR) {
+      int err = EPIPE;	/* Value in case of non-socket. */
+      ACCEPT_SIZE_T len = sizeof(err);
+      ret = -1;
+      getsockopt(FD, SOL_SOCKET, SO_ERROR, (void *)&err, &len);
+      ERRNO = err;
+    } else if (fds.revents & POLLNVAL) {
+      ret = -1;
+      errno = EINVAL;
+    } else {
+      ret = (ret > 0) && (fds.revents & POLLOUT);
+    }
+#else
+    fd_set tmp;
+    fd_set tmp2;
+    struct timeval tv;
+
+    tv.tv_usec = 0;
+    tv.tv_sec = 0;
+    fd_FD_ZERO(&tmp);
+    fd_FD_SET(FD, &tmp);
+    fd_FD_ZERO(&tmp2);
+    fd_FD_SET(FD, &tmp2);
+    ret = FD;
+
+    if (timeout_sval) {
+      /* ignore overflow for now */
+      if (TYPEOF(*timeout_sval) == T_FLOAT) {
+        tv.tv_sec = (int)timeout_sval->u.float_number;
+        tv.tv_usec = (int)(1000000*(timeout_sval->u.float_number - tv.tv_sec));
+      } else {
+        tv.tv_sec = timeout_sval->u.integer;
+      }
+    }
+
+    mark_file_busy(THIS);
+
+    /* FIXME: Handling of EOF and not_eof */
+
+    if (tv.tv_sec || tv.tv_usec) {
+      THREADS_ALLOW();
+      ret = fd_select(ret+1, 0, &tmp, &tmp2, &tv);
+      THREADS_DISALLOW();
+    }
+    else
+      ret = fd_select(ret+1, 0, &tmp, &tmp2, &tv);
+
+    mark_file_idle(THIS);
+
+    if (ret < 0) {
+      if (errno == EINTR) {
+        ret = 0;
+      } else {
+        ERRNO = errno;
+        ret = -1;
+      }
+    } else if (ret > 0) {
+      int err = ENOTSOCK;	/* Value in case of exception on non-socket. */
+      ACCEPT_SIZE_T len = sizeof(err);
+      if ((!getsockopt(FD, SOL_SOCKET, SO_ERROR, (void *)&err, &len) && err) ||
+          fd_FD_ISSET(FD, &tmp2)) {
+        ret = -1;
+        ERRNO = err;
+      }
     }
 #endif
   }
@@ -7071,6 +7230,11 @@ PIKE_MODULE_INIT
 #ifdef HAVE_OPENAT
   add_integer_constant("__HAVE_OPENAT__",1,0);
 #endif
+
+  /*! @decl constant __HAVE_POKE__
+   *! Indicates that this version of Pike has @[Stdio.File()->poke()].
+   */
+  add_integer_constant("__HAVE_POKE__",1,0);
 
 #ifdef HAVE_FSTATAT
   add_integer_constant("__HAVE_STATAT__",1,0);
