@@ -340,7 +340,7 @@ static const unsigned long pike_doserrtab[][2] = {
  *
  * Extended to also handle WSA error codes.
  */
-static inline void pike_dosmaperr(unsigned long err)
+static inline int pike_dosmaperr(unsigned long err)
 {
   unsigned int l = 0, h = NELEM(pike_doserrtab);
   while (l < h) {
@@ -372,7 +372,7 @@ static inline void pike_dosmaperr(unsigned long err)
    *       100-140. The WSA errnos are in the range 10000-11999.
    *       Facility error codes start at 65536 (facility #1 (RPC)).
    */
-  errno = (err <= 1000) ? EINVAL : err;
+  return (err <= 1000) ? EINVAL : err;
 }
 
 PMOD_EXPORT void set_errno_from_win32_error (unsigned long err)
@@ -383,7 +383,7 @@ PMOD_EXPORT void set_errno_from_win32_error (unsigned long err)
    * including the winsock codes. This differs from the behavior of
    * _dosmaperr.
    */
-  pike_dosmaperr (err);
+  errno = pike_dosmaperr (err);
 }
 
 /* Dynamic load of functions that don't exist in all Windows versions. */
@@ -2372,7 +2372,40 @@ PMOD_EXPORT int PIKE_CONCAT(debug_fd_,NAME) X1 { \
 
 
 SOCKFUN2(bind, struct sockaddr *, int)
-SOCKFUN4(getsockopt,int,int,void*,ACCEPT_SIZE_T *)
+PMOD_EXPORT int debug_fd_getsockopt(FD fd, int a, int b, void *c,
+                                    ACCEPT_SIZE_T *d)
+{
+  SOCKET s;
+  int ret;
+  int err;
+  FDDEBUG(fprintf(stderr, "fd_getsockopt(%d, ...)...\n", fd));
+  if (fd_to_socket(fd, &s, 0) < 0) return -1;
+  FDDEBUG(fprintf(stderr, #NAME " on %d (%ld)\n", fd, (long)(ptrdiff_t)s));
+  ret = getsockopt(s, a, b, c, d);
+  err = WSAGetLastError();
+  release_fd(fd);
+  if (ret == SOCKET_ERROR) {
+    set_errno_from_win32_error (err);
+    ret = -1;
+  } else if ((a == SOL_SOCKET) && (b == SO_ERROR)) {
+#if PIKE_BYTEORDER == 1234
+    /* Remap socket errors. */
+    unsigned INT64 raw = 0;
+    memcpy(&raw, c, (*d < sizeof(raw))?*d:sizeof(raw));
+    if (raw >= WSABASEERR) {
+      raw = pike_dosmaperr(raw);
+      memset(c, 0, *d);
+      memcpy(c, &raw, (*d < sizeof(raw))?*d:sizeof(raw));
+    }
+#else
+#warning Socket error remapping only supported for little-endian.
+#endif
+  }
+  FDDEBUG(fprintf(stderr, #NAME " returned %d (%d:%d)\n", ret, err, errno));
+  return ret;
+}
+
+/* FIXME: Support setsockopt(SO_ERROR) with remapping to WSA-errnos? */
 SOCKFUN4(setsockopt,int,int,void*,int)
 SOCKFUN3(recv,void *,int,int)
 SOCKFUN2(getsockname,struct sockaddr *,ACCEPT_SIZE_T *)
