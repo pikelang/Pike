@@ -325,9 +325,6 @@ static void port_bind(INT32 args)
 #ifdef EINVAL
        && (errno != EINVAL)
 #endif
-#ifdef WSAENOPROTOOPT
-       && (errno != WSAENOPROTOOPT)
-#endif
        ){
       p->my_errno=errno;
       while (fd_close(fd) && errno == EINTR) {}

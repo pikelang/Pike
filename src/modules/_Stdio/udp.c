@@ -71,14 +71,6 @@
 
 #endif /* HAVE_POLL */
 
-#if ! defined(EWOULDBLOCK) && defined(WSAEWOULDBLOCK)
-#define EWOULDBLOCK WSAEWOULDBLOCK
-#endif
-#if ! defined(EADDRINUSE) && defined(WSAEADDRINUSE)
-#define EADDRINUSE WSAEADDRINUSE
-#endif
-
-
 #ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
@@ -944,9 +936,6 @@ void udp_read(INT32 args)
   {
     switch(e)
     {
-#ifdef WSAEBADF
-       case WSAEBADF:
-#endif
        case EBADF:
 	  if (THIS->box.backend)
 	    set_fd_callback_events (&THIS->box, 0, 0);

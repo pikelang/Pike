@@ -4245,20 +4245,11 @@ else
 	Pike_fatal("Invalid timeout to select().\n");
 	break;
 
-#ifdef WSAEINTR
-      case WSAEINTR:
-#endif
       case EINTR:		/* ignore */
 	break;
 
-#ifdef WSAEBADF
-      case WSAEBADF:
-#endif
 #ifdef ENOTSOCK
       case ENOTSOCK:
-#endif
-#ifdef WSAENOTSOCK
-      case WSAENOTSOCK:
 #endif
       case EBADF:
 	/* TODO: Fix poll version! */
@@ -5048,20 +5039,11 @@ PIKECLASS PollBackend
 	Pike_fatal("Invalid timeout to select().\n");
 	break;
 
-#ifdef WSAEINTR
-      case WSAEINTR:
-#endif
       case EINTR:		/* ignore */
 	break;
 
-#ifdef WSAEBADF
-      case WSAEBADF:
-#endif
 #ifdef ENOTSOCK
       case ENOTSOCK:
-#endif
-#ifdef WSAENOTSOCK
-      case WSAENOTSOCK:
 #endif
       case EBADF:
 	/* TODO: Fix poll version! */
@@ -5540,20 +5522,11 @@ PIKECLASS SelectBackend
 	Pike_fatal("Invalid timeout to select().\n");
 	break;
 
-#ifdef WSAEINTR
-      case WSAEINTR:
-#endif
       case EINTR:		/* ignore */
 	break;
 
-#ifdef WSAEBADF
-      case WSAEBADF:
-#endif
 #ifdef ENOTSOCK
       case ENOTSOCK:
-#endif
-#ifdef WSAENOTSOCK
-      case WSAENOTSOCK:
 #endif
       case EBADF:
 	/* TODO: Fix poll version! */
@@ -5566,14 +5539,8 @@ PIKECLASS SelectBackend
 	{
 	  switch(errno)
 	  {
-#ifdef WSAEBADF
-	  case WSAEBADF:
-#endif
 #ifdef ENOTSOCK
 	  case ENOTSOCK:
-#endif
-#ifdef WSAENOTSOCK
-	  case WSAENOTSOCK:
 #endif
 	  case EBADF:
 	    {
@@ -5600,14 +5567,8 @@ PIKECLASS SelectBackend
 		  default:
 #endif
 		  case EBADF:
-#ifdef WSAEBADF
-		  case WSAEBADF:
-#endif
 #ifdef ENOTSOCK
 		  case ENOTSOCK:
-#endif
-#ifdef WSAENOTSOCK
-		  case WSAENOTSOCK:
 #endif
 
 #ifdef DEBUG_MALLOC
