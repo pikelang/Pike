@@ -94,15 +94,6 @@
 #include <AvailabilityMacros.h>
 #endif
 
-#if defined(HAVE_WINSOCK_H) || defined(HAVE_WINSOCK2_H)
-#ifndef EWOULDBLOCK
-#define EWOULDBLOCK WSAEWOULDBLOCK
-#endif
-#ifndef EADDRINUSE
-#define EADDRINUSE WSAEADDRINUSE
-#endif
-#endif
-
 #ifdef HAVE_SYS_STREAM_H
 #include <sys/stream.h>
 #endif
@@ -790,12 +781,8 @@ static void close_fd(int quiet)
         case ECONNRESET:
 	  /* FreeBSD: The peer shut down the connection before all pending data
 	   *          was delivered.
-	   */
-	  break;
-#endif
-#ifdef WSAECONNRESET
-        case WSAECONNRESET:
-          /* NT: The peer shut down the connection before all pending data
+           *
+           * NT: The peer shut down the connection before all pending data
            *     was delivered.
            */
           break;
@@ -5128,11 +5115,7 @@ retry_connect:
 /*    fprintf(stderr,"errno=%d (%d)\n",errno,EWOULDBLOCK); */
     SP_DEBUG((stderr, "my_socketpair:fd_connect() failed, errno:%d (%d)\n",
 	      errno, EWOULDBLOCK));
-    if((errno != EWOULDBLOCK)
-#ifdef WSAEWOULDBLOCK
-       && (errno != WSAEWOULDBLOCK)
-#endif /* WSAEWOULDBLOCK */
-       )
+    if (errno != EWOULDBLOCK)
     {
       int tmp2;
       for(tmp2=0;tmp2<20;tmp2++)
@@ -5631,9 +5614,6 @@ static void file_open_socket(INT32 args)
 #ifdef EINVAL
        && (errno != EINVAL)
 #endif
-#ifdef WSAENOPROTOOPT
-       && (errno != WSAENOPROTOOPT)
-#endif
        ){
       ERRNO=errno;
       while (fd_close(fd) && errno == EINTR) {}
@@ -5696,9 +5676,6 @@ static void file_open_socket(INT32 args)
 #endif
 #ifdef EINVAL
        && (errno != EINVAL)
-#endif
-#ifdef WSAENOPROTOOPT
-       && (errno != WSAENOPROTOOPT)
 #endif
        ){
       ERRNO=errno;
@@ -5819,8 +5796,7 @@ static void file_setsockopt(INT32 args)
  *!
  *! @note
  *!   In nonblocking mode @expr{0@} (zero) may be returned and @[errno()] set
- *!   to @tt{EWOULDBLOCK@} or @tt{WSAEWOULDBLOCK@}. This should not be regarded
- *!   as a connection failure.
+ *!   to @tt{EWOULDBLOCK@}. This should not be regarded as a connection failure.
  *!
  *! @note
  *!   @[path] had a quite restrictive length limit (~100 characters)
@@ -5906,8 +5882,7 @@ static void file_connect_unix( INT32 args )
  *!
  *! @note
  *!   In nonblocking mode @expr{0@} (zero) may be returned and @[errno()] set
- *!   to @tt{EWOULDBLOCK@} or @tt{WSAEWOULDBLOCK@}. This should not be regarded
- *!   as a connection failure.
+ *!   to @tt{EWOULDBLOCK@}. This should not be regarded as a connection failure.
  *!
  *! @seealso
  *!   @[open_socket()]
@@ -6028,12 +6003,11 @@ static void file_connect(INT32 args)
 
   if(tmp < 0
 #ifdef EINPROGRESS
+     /* Linux & Solaris: Asynchronous connect() now in progress. */
      && !(errno == EINPROGRESS && nb_mode)
 #endif
-#ifdef WSAEWOULDBLOCK
-     && !(errno == WSAEWOULDBLOCK && nb_mode)
-#endif
 #ifdef EWOULDBLOCK
+     /* NT: Asynchronous connect() now in progress. */
      && !(errno == EWOULDBLOCK && nb_mode)
 #endif
     )

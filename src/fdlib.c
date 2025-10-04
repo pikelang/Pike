@@ -65,8 +65,16 @@
 #define INVALID_SET_FILE_POINTER ((DWORD)-1)
 #endif
 
+#ifndef EADDRINUSE
+#define EADDRINUSE	WSAEADDRINUSE
+#endif
+
 #ifndef ENOTSOCK
 #define ENOTSOCK	WSAENOTSOCK
+#endif
+
+#ifndef EOPNOTSUPP
+#define EOPNOTSUPP	WSAEOPNOTSUPP
 #endif
 
 #ifndef ERROR_DIRECTORY_NOT_SUPPORTED
@@ -348,8 +356,7 @@ static inline int pike_dosmaperr(unsigned long err)
     unsigned long e = pike_doserrtab[m][0];
 
     if (e == err) {
-      errno = pike_doserrtab[m][1];
-      return;
+      return pike_doserrtab[m][1];
     }
 
     if (e < err) {
@@ -1609,7 +1616,7 @@ PMOD_EXPORT int debug_fd_truncate(const char *file, INT64 len)
 PMOD_EXPORT int debug_fd_link(const char *oldpath, const char *newpath)
 {
   if (!Pike_NT_CreateHardLinkW) {
-    errno = ENOTSUPP;
+    errno = EOPNOTSUPP;
     return -1;
   }
 
@@ -1641,7 +1648,7 @@ PMOD_EXPORT int debug_fd_link(const char *oldpath, const char *newpath)
 PMOD_EXPORT int debug_fd_symlink(const char *target, const char *linkpath)
 {
   if (!Pike_NT_CreateSymbolicLinkW) {
-    errno = ENOTSUPP;
+    errno = EOPNOTSUPP;
     return -1;
   }
 
@@ -2581,7 +2588,7 @@ PMOD_EXPORT ptrdiff_t debug_fd_write(FD fd, void *buf, ptrdiff_t len)
       }
 
     default:
-      errno=ENOTSUPP;
+      errno = EOPNOTSUPP;
       release_fd(fd);
       return -1;
   }
@@ -2669,7 +2676,7 @@ PMOD_EXPORT ptrdiff_t debug_fd_read(FD fd, void *to, size_t len)
       break;
 
     default:
-      errno=ENOTSUPP;
+      errno = EOPNOTSUPP;
       release_fd(fd);
       return -1;
   }
@@ -2797,7 +2804,7 @@ PMOD_EXPORT int debug_fd_ftruncate(FD fd, PIKE_OFF_T len)
   if(type != FD_FILE)
   {
     release_fd(fd);
-    errno=ENOTSUPP;
+    errno = EOPNOTSUPP;
     return -1;
   }
 
@@ -2857,7 +2864,7 @@ PMOD_EXPORT int debug_fd_flock(FD fd, int oper)
   if(type != FD_FILE)
   {
     release_fd(fd);
-    errno=ENOTSUPP;
+    errno = EOPNOTSUPP;
     return -1;
   }
 
@@ -3343,7 +3350,7 @@ PMOD_EXPORT int debug_fd_openpty(int *master, int *slave,
   int slave_fd = -1;
 
   if (!Pike_NT_CreatePseudoConsole) {
-    errno = ENOTSUPP;
+    errno = EOPNOTSUPP;
     return -1;
   }
 

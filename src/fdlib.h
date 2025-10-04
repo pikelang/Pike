@@ -25,6 +25,7 @@
 #ifndef EWOULDBLOCK
 #define EWOULDBLOCK EAGAIN
 #endif
+#include "errno_remap.h"
 #endif
 #endif
 
@@ -280,18 +281,6 @@ PMOD_EXPORT int debug_fd_openpty(int *master, int *slave,
 #undef SOCKFUN3
 #undef SOCKFUN4
 #undef SOCKFUN5
-
-#ifndef EWOULDBLOCK
-#define EWOULDBLOCK WSAEWOULDBLOCK
-#endif
-
-#ifndef EADDRINUSE
-#define EADDRINUSE WSAEADDRINUSE
-#endif
-
-#ifndef ENOTSUPP
-#define ENOTSUPP WSAEOPNOTSUPP
-#endif
 
 #define fd_RDONLY 1
 #define fd_WRONLY 2
