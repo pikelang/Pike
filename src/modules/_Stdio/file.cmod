@@ -5858,12 +5858,14 @@ static void file_connect_unix( INT32 args )
 }
 #endif /* HAVE_SYS_UN_H */
 
-/*! @decl int(0..1) connect(string dest_addr, int dest_port)
- *! @decl int(0..1) connect(string dest_addr, int dest_port, @
- *!                         string src_addr, int src_port)
- *! @decl string(0..255)|int(0..0) connect(string dest_addr, int dest_port, @
- *!                         string|int(0..0) src_addr, int|int(0..0) src_port, @
- *!                         string(0..255) data)
+/*! @decl int(-1..1) connect(string(8bit) dest_addr, int dest_port)
+ *! @decl int(-1..1) connect(string(8bit) dest_addr, int dest_port, @
+ *!                          string(8bit) src_addr, int src_port)
+ *! @decl string(0..255)|int(-1..0) connect(string(8bit) dest_addr, @
+ *!                                         int dest_port, @
+ *!                                         string(8bit)|void src_addr, @
+ *!                                         int|void src_port, @
+ *!                                         string(0..255) data)
  *!
  *!   Open a TCP/IP connection to the specified destination.
  *!
@@ -5877,12 +5879,26 @@ static void file_connect_unix( INT32 args )
  *!   option) or 0 if the connection failed immediately.
  *!
  *! @returns
- *!  Returns @expr{1@} or the remaining @expr{data@} on success, and
- *!  @expr{0@} on failure.
+ *!   Returns one of
+ *!   @mixed
+ *!     @type string(8bit)
+ *!       @[data] that did not fit into the initial connection packet.
+ *!     @type int(0..0)
+ *!       Returns @expr{0@} on (synchronous) connection failure.
+ *!     @type int(1..1)
+ *!       Returns @expr{1@} if there was no @[data] to send.
+ *!     @type int(-1..-1)
+ *!       Returns @expr{-1@} if the connection has not yet been established.
+ *!       Use eg @[poke()] or @[query_address()] to wait or check for when
+ *!       the connection completes.
+ *!   @endmixed
  *!
  *! @note
- *!   In nonblocking mode @expr{0@} (zero) may be returned and @[errno()] set
- *!   to @tt{EWOULDBLOCK@}. This should not be regarded as a connection failure.
+ *!   Note that in versions of Pike prior to 9.0 expr{1@} was returned
+ *!   also in the not yet established case.
+ *!
+ *!   Note that @expr{-1@} may be returned also for sockets in blocking
+ *!   mode if the connect(3N) system call was interrupted.
  *!
  *! @seealso
  *!   @[open_socket()]
@@ -5957,8 +5973,6 @@ static void file_connect(INT32 args)
     pop_stack();
   }
 
-  nb_mode = !!(THIS->open_mode & FILE_NONBLOCKING);
-
   /* Inhibit the backend for this fd while connect(2) is running. */
   if ((old_events = THIS->box.events)) {
     set_fd_callback_events(&(THIS->box), 0, THIS->box.flags);
@@ -5966,22 +5980,16 @@ static void file_connect(INT32 args)
 
   fd = FD;
   THREADS_ALLOW();
-  for(;;)
-  {
 #ifdef MSG_FASTOPEN
-    if( data )
-    {
-      tmp = sendto(fd, data->str, data->len, MSG_FASTOPEN,
-                   (struct sockaddr *)&addr, addr_len );
-    }
-    else
+  if( data )
+  {
+    tmp = fd_sendto(fd, data->str, data->len, MSG_FASTOPEN,
+                    (struct sockaddr *)&addr, addr_len );
+  }
+  else
 #endif
-    {
-      tmp=fd_connect(fd, (struct sockaddr *)&addr, addr_len);
-    }
-    if( tmp<0 && (errno==EINTR))
-      continue;
-    break;
+  {
+    tmp=fd_connect(fd, (struct sockaddr *)&addr, addr_len);
   }
   THREADS_DISALLOW();
 
@@ -6001,31 +6009,41 @@ static void file_connect(INT32 args)
    *     they may have been changed since before the fd_connect() call.
    */
 
-  if(tmp < 0
+  if (tmp < 0) {
+    /* something went wrong */
+    if ((errno == EINTR)
+        /* FIXME: According to connect(3C) on Solaris 11, EINTR
+         *        means that the connection will be established
+         *        asynchronously.
+         *        Retrying the connect() will fail with EALREADY.
+         */
 #ifdef EINPROGRESS
-     /* Linux & Solaris: Asynchronous connect() now in progress. */
-     && !(errno == EINPROGRESS && nb_mode)
+        /* Linux & Solaris: Asynchronous connect() now in progress. */
+        || (errno == EINPROGRESS)
 #endif
 #ifdef EWOULDBLOCK
-     /* NT: Asynchronous connect() now in progress. */
-     && !(errno == EWOULDBLOCK && nb_mode)
+        /* NT: Asynchronous connect() now in progress. */
+        || (errno == EWOULDBLOCK)
 #endif
-    )
-  {
-    /* something went wrong */
-    ERRNO=errno;
-    if (was_closed) {
-      while (fd_close (FD) && errno == EINTR) {}
-      change_fd_for_box (&THIS->box, -1);
-      errno = ERRNO;
+        ) {
+      /* Connection not yet established. */
+      pop_n_elems(args);
+      push_int(-1);
+    } else {
+      ERRNO=errno;
+      if (was_closed) {
+        while (fd_close (FD) && errno == EINTR) {}
+        change_fd_for_box (&THIS->box, -1);
+        errno = ERRNO;
+      }
+      pop_n_elems(args);
+      push_int(0);
     }
-    pop_n_elems(args);
-    push_int(0);
   }else{
     ERRNO=0;
-    if( data )
+    if (data)
     {
-      push_string( make_shared_binary_string( data->str + tmp, data->len-tmp ) );
+      push_string(make_shared_binary_string(data->str + tmp, data->len - tmp));
       stack_pop_n_elems_keep_top( args );
     }
     else
