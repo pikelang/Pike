@@ -2452,11 +2452,11 @@ PMOD_EXPORT int debug_fd_getsockopt(FD fd, int a, int b, void *c,
 #if PIKE_BYTEORDER == 1234
     /* Remap socket errors. */
     unsigned INT64 raw = 0;
-    memcpy(&raw, c, (*d < sizeof(raw))?*d:sizeof(raw));
+    memcpy(&raw, c, (*d < (ACCEPT_SIZE_T)sizeof(raw))?*d:sizeof(raw));
     if (raw >= WSABASEERR) {
       raw = pike_dosmaperr(raw);
       memset(c, 0, *d);
-      memcpy(c, &raw, (*d < sizeof(raw))?*d:sizeof(raw));
+      memcpy(c, &raw, (*d < (ACCEPT_SIZE_T)sizeof(raw))?*d:sizeof(raw));
     }
 #else
 #warning Socket error remapping only supported for little-endian.
