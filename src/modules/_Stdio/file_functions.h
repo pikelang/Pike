@@ -136,7 +136,7 @@ FILE_FUNC("connect", file_connect,
           tOr3(tFunc(tStr8 tOr(tInt, tStr8), tInt_11),
                tFunc(tStr8 tOr(tInt, tStr8) tStr8 tOr(tInt, tStr8), tInt_11),
                tFunc(tStr8 tOr(tInt, tStr8) tStr8 tOr(tInt, tStr8) tStr8,
-                     tOr(tStr8, tInt_10)))
+                     tOr(tStr8, tInt_10))))
 #ifdef HAVE_SYS_UN_H
 /* function(string:int) */
 FILE_FUNC("connect_unix",file_connect_unix, tFunc(tStr,tInt))
