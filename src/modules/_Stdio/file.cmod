@@ -5873,7 +5873,7 @@ static void file_connect_unix( INT32 args )
  *!   and failure with the close-callback or the read_oob-callback.
  *!
  *!   If the @[data] argument is included the socket will use
- *!   TCP_FAST_OPEN if available, if not the data will @i{not be
+ *!   @tt{TCP_FAST_OPEN@} if available, if not the data will @i{not be
  *!   sent@}. In the data case the function either returns the data
  *!   that has not been sent (only one packet can be sent with this
  *!   option) or 0 if the connection failed immediately.
@@ -5883,6 +5883,7 @@ static void file_connect_unix( INT32 args )
  *!   @mixed
  *!     @type string(8bit)
  *!       @[data] that did not fit into the initial connection packet.
+ *!       Note that the connection may not have been established yet.
  *!     @type int(0..0)
  *!       Returns @expr{0@} on (synchronous) connection failure.
  *!     @type int(1..1)
@@ -5901,7 +5902,7 @@ static void file_connect_unix( INT32 args )
  *!   mode if the connect(3N) system call was interrupted.
  *!
  *! @seealso
- *!   @[open_socket()]
+ *!   @[open_socket()], @[poke()]
  */
 static void file_connect(INT32 args)
 {
@@ -5915,7 +5916,6 @@ static void file_connect(INT32 args)
 
   int tmp, was_closed = FD < 0;
   int fd, sent = 0;
-  int nb_mode;
   int old_events;
   int e;
 
