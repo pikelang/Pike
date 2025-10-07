@@ -154,8 +154,8 @@ struct node_s
   struct pike_string *name;
   struct node_s *parent;
   INT_TYPE line_number;
-  unsigned INT16 node_info;
-  unsigned INT16 tree_info;
+  unsigned INT32 node_info;
+  unsigned INT32 tree_info;
   unsigned INT16 pad;
   /* The stuff from this point on is hashed. */
 #ifdef PIKE_DEBUG
