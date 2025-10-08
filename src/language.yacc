@@ -1956,7 +1956,7 @@ new_name: TOK_IDENTIFIER
 #endif /* PIKE_DEBUG */
         if(Pike_compiler->compiler_frame->current_type->type == PIKE_T_AUTO)
         {
-          // auto variable type needs to be updated.
+          /* Auto variable type needs to be updated. */
           fix_type_field( $4 );
           fix_auto_variable_type( $<number>3, $4->type );
         }
@@ -1966,12 +1966,13 @@ new_name: TOK_IDENTIFIER
     }
     if ($4) {
       node *n;
-      // this is done in both passes to get somewhat better handling
-      // of auto types.
-      //
-      // an example is: auto a  = typeof(b); auto b = (["foo":"bar"]);
-      // if this is only done in the second pass the type of a will be
-      // type(auto), not type(mapping(..))
+      /* This is done in both passes to get somewhat better handling
+       * of auto types.
+       *
+       * an example is: auto a  = typeof(b); auto b = (["foo":"bar"]);
+       * if this is only done in the second pass the type of a will be
+       * type(auto), not type(mapping(..))
+       */
       if( Pike_compiler->compiler_frame->current_type->type == PIKE_T_AUTO )
       {
         fix_type_field( $4 );
@@ -1981,8 +1982,9 @@ new_name: TOK_IDENTIFIER
 		     mknode(F_ASSIGN,
 			    mkidentifiernode($<number>3), $4));
       if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
-	// This makes sure that #pragma {no_,}deprecation_warnings
-	// works as expected.
+        /* This makes sure that #pragma {no_,}deprecation_warnings
+         * works as expected.
+         */
 	optimize_node(n);
       }
       Pike_compiler->init_node=mknode(F_COMMA_EXPR,Pike_compiler->init_node,
