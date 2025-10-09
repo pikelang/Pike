@@ -3967,6 +3967,10 @@ class CompatResolver
   //! encountered. It receives the argument for #include and should
   //! return the file name of the file to include.
   //!
+  //! @returns
+  //!   Returns a path suitable for @[read_include()] if the file was
+  //!   found and @expr{0@} if it was not found.
+  //!
   //! @seealso
   //!   @[read_include()]
   string|zero handle_include(string f,
@@ -3975,8 +3979,9 @@ class CompatResolver
   {
     if(local_include)
     {
-      if(IS_ABSOLUTE_PATH(f)) return combine_path(f);
-      return combine_path_with_cwd(dirname(current_file), f);
+      f = (IS_ABSOLUTE_PATH(f)? combine_path(f):
+           combine_path_with_cwd(dirname(current_file), f));
+      if (master_file_stat(f)) return f;
     }
     else
     {
