@@ -1440,11 +1440,12 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
  *!
  *!   Strings may also be indexed with the @tt{[]@} index operator.
  *!   Finally there are three special "functions" available in @[#if]
- *!   expressions; @[defined()], @[efun()] and @[constant()].
+ *!   expressions; @[defined()], @[efun()], @[constant()] and
+ *!   @[__has_include()].
  *!
  *! @seealso
  *!   @[#ifdef], @[#ifndef], @[#elif], @[#else], @[#endif],
- *!   @[defined()], @[constant()], @[efun()]
+ *!   @[defined()], @[constant()], @[efun()], @[__has_include()]
  */
 
 /*! @directive #ifdef
@@ -1584,7 +1585,8 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
  *!   @endcode
  *!
  *! @seealso
- *!   @[#if], @[#ifdef], @[#else], @[defined()], @[constant()]
+ *!   @[#if], @[#ifdef], @[#else], @[defined()], @[constant()],
+ *!   @[__has_include()]
  */
 
 /*! @directive #elifdef
@@ -1628,7 +1630,8 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
  *!   @endcode
  *!
  *! @seealso
- *!   @[#if], @[#ifdef], @[#else], @[defined()], @[constant()]
+ *!   @[#if], @[#ifdef], @[#else], @[defined()], @[constant()],
+ *!   @[__has_include()]
  */
 
 /*! @directive #elifndef
@@ -1672,7 +1675,8 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
  *!   @endcode
  *!
  *! @seealso
- *!   @[#if], @[#ifdef], @[#else], @[defined()], @[constant()]
+ *!   @[#if], @[#ifdef], @[#else], @[defined()], @[constant()],
+ *!   @[__has_include()]
  */
 
   /*! @directive #error
@@ -1750,6 +1754,9 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
  *!
  *!   It is also possible to include a file whose path is defined in a
  *!   preprocessor macro, e.g. @tt{#include USER_SETTINGS@}.
+ *!
+ *! @seealso
+ *!   @[#string], @[__has_include()]
  */
 
 /*! @directive #line
@@ -1884,7 +1891,7 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
  *!   @endcode
  *!
  *! @seealso
- *!   @[#include]
+ *!   @[#include], @[__has_include()]
  */
 
   /*! @directive #pragma
@@ -1965,7 +1972,7 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
  *!   @tt{#ifdef MY_DEF@}.
  *!
  *! @seealso
- *!   @[#if], @[#ifdef], @[constant()]
+ *!   @[#if], @[#ifdef], @[constant()], @[__has_include()]
  */
 static void check_defined(struct object *cpp_obj,
 			  struct define_struct *UNUSED(def),
@@ -2018,7 +2025,7 @@ static int do_safe_index_call(struct CPP_struct *this, struct pike_string *s)
  *!   Check whether the argument resolves to a constant or not.
  *!
  *! @seealso
- *!   @[#if], @[defined()]
+ *!   @[#if], @[defined()], @[__has_include()]
  */
 static void cpp_constant(struct CPP_struct *this, int value)
 {
@@ -4270,6 +4277,140 @@ static void parse_define_body(struct CPP_struct *this,
 }
 
 /**
+ * Parse the argument to #include et al.
+ *
+ * @param data
+ *   IN: Data to parse.
+ *
+ * @param len
+ *   IN: Length of data.
+ *
+ * @param posp
+ *   IN/OUT: Position in the data stream.
+ *
+ * @param include_mode
+ *   IN: Flags indicating type of directive.
+ *
+ * @param flags
+ *   IN: Cpp flags.
+ *
+ * @param charset
+ *   IN: Character set.
+ *
+ * Note: On entry data[*posp] is not whitespace.
+ *
+ * On successful return arguments suitable for handle_include() have
+ * been pushed on the pike stack.
+ */
+static void parse_include_param(struct CPP_struct *this,
+                                const PCHARP data,
+                                ptrdiff_t len,
+                                ptrdiff_t *posp,
+                                int include_mode,
+                                int flags,
+                                struct pike_string *charset)
+{
+  ptrdiff_t pos = *posp;
+
+  check_stack(3);
+
+  switch(DATA(pos++))
+  {
+  case '"':
+    {
+      struct string_builder nf;
+      init_string_builder(&nf, 0);
+      pos--;
+      READSTRING(nf);
+      push_string(finish_string_builder(&nf));
+      /* In Pike 7.7 and later filenames belonging to Pike
+       * are assumed to be encoded according to UTF-8.
+       */
+      f_string_to_utf8(1);
+      ref_push_string(this->current_file);
+      push_int(1);
+      break;
+    }
+
+  case '<':
+    {
+      ptrdiff_t tmp = pos;
+      while(DATA(pos)!='>')
+      {
+        if(DATA(pos)=='\n')
+        {
+          cpp_error(this, "Expecting '>' in include.");
+          break;
+        }
+        pos++;
+      }
+      push_string(make_shared_binary_pcharp(ADD_PCHARP(data,tmp), pos-tmp));
+      /* In Pike 7.7 and later filenames belonging to Pike
+       * are assumed to be encoded according to UTF-8.
+       */
+      f_string_to_utf8(1);
+      ref_push_string(this->current_file);
+      pos++;
+      push_int(0);
+      break;
+    }
+
+  default:
+    if (include_mode & 2) {
+      /* Macro expanding didn't help... */
+      cpp_error(this, "Expected file to include.");
+      break;
+    } else {
+      /* Try macro expanding (Bug 2440). */
+      struct string_builder save = this->buf, tmp;
+      INT_TYPE save_line = this->current_line;
+      init_string_builder(&this->buf, 0);
+
+      /* Prefix the buffer with the corresponding *_recur
+       * directive, to avoid infinite loops.
+       */
+      if (include_mode & 1) {
+        string_builder_strcat(&this->buf, "#string_recur ");
+      } else {
+        string_builder_strcat(&this->buf, "#include_recur ");
+      }
+
+      pos--;
+      pos += low_cpp(this, ADD_PCHARP(data,pos), len - pos,
+                     CPP_END_AT_NEWLINE,
+                     charset);
+
+      string_builder_putchar(&this->buf, '\n');
+
+      tmp = this->buf;
+      this->buf = save;
+
+      /* We now have a #include-recur or #string-recur directive
+       * in tmp. Preprocess it.
+       */
+
+      /* We're processing the line twice. */
+      this->current_line = save_line;
+      low_cpp(this, MKPCHARP_STR(tmp.s), tmp.s->len,
+              flags, charset);
+      free_string_builder(&tmp);
+
+      this->current_line = save_line;
+      string_builder_sprintf(&this->buf, "\n#line %ld ",
+                             (long)save_line);
+      PUSH_STRING_SHIFT(this->current_file->str,
+                        this->current_file->len,
+                        this->current_file->size_shift,
+                        &this->buf);
+      string_builder_putchar(&this->buf, '\n');
+    }
+    break;
+  }
+
+  *posp = pos;
+}
+
+/**
  * Preprocess template.
  *
  * NB: There are two basic cases where this function is called:
@@ -4736,102 +4877,11 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
               do_include:
                 {
                   struct svalue *save_sp=Pike_sp;
+
                   SKIPSPACE();
 
-                  check_stack(3);
-
-                  switch(DATA(pos++))
-                  {
-                    case '"':
-                      {
-                        struct string_builder nf;
-                        init_string_builder(&nf, 0);
-                        pos--;
-                        READSTRING(nf);
-                        push_string(finish_string_builder(&nf));
-                        /* In Pike 7.7 and later filenames belonging to Pike
-                         * are assumed to be encoded according to UTF-8.
-                         */
-                        f_string_to_utf8(1);
-                        ref_push_string(this->current_file);
-                        push_int(1);
-                        break;
-                      }
-
-                    case '<':
-                      {
-                        ptrdiff_t tmp = pos;
-                        while(DATA(pos)!='>')
-                        {
-                          if(DATA(pos)=='\n')
-                          {
-                            cpp_error(this, "Expecting '>' in include.");
-                            break;
-                          }
-                          pos++;
-                        }
-                        push_string(make_shared_binary_pcharp(ADD_PCHARP(data,tmp), pos-tmp));
-                        /* In Pike 7.7 and later filenames belonging to Pike
-                         * are assumed to be encoded according to UTF-8.
-                         */
-                        f_string_to_utf8(1);
-                        ref_push_string(this->current_file);
-                        pos++;
-                        push_int(0);
-                        break;
-                      }
-
-                    default:
-                      if (include_mode & 2) {
-                        /* Macro expanding didn't help... */
-                        cpp_error(this, "Expected file to include.");
-                        break;
-                      } else {
-                        /* Try macro expanding (Bug 2440). */
-                        struct string_builder save = this->buf, tmp;
-                        INT_TYPE save_line = this->current_line;
-                        init_string_builder(&this->buf, 0);
-
-                        /* Prefix the buffer with the corresponding *_recur
-                         * directive, to avoid infinite loops.
-                         */
-                        if (include_mode & 1) {
-                          string_builder_strcat(&this->buf, "#string_recur ");
-                        } else {
-                          string_builder_strcat(&this->buf, "#include_recur ");
-                        }
-
-                        pos--;
-                        pos += low_cpp(this, ADD_PCHARP(data,pos), len - pos,
-                                       CPP_END_AT_NEWLINE,
-                                       charset);
-
-                        string_builder_putchar(&this->buf, '\n');
-
-                        tmp = this->buf;
-                        this->buf = save;
-
-                        /* We now have a #include-recur or #string-recur directive
-                         * in tmp. Preprocess it.
-                         */
-
-                        /* We're processing the line twice. */
-                        this->current_line = save_line;
-                        low_cpp(this, MKPCHARP_STR(tmp.s), tmp.s->len,
-                                flags, charset);
-                        free_string_builder(&tmp);
-
-                        this->current_line = save_line;
-                        string_builder_sprintf(&this->buf, "\n#line %ld ",
-                                               (long)save_line);
-                        PUSH_STRING_SHIFT(this->current_file->str,
-                                          this->current_file->len,
-                                          this->current_file->size_shift,
-                                          &this->buf);
-                        string_builder_putchar(&this->buf, '\n');
-                      }
-                      break;
-                  }
+                  parse_include_param(this, data, len, &pos, include_mode,
+                                      flags, charset);
 
                   if(Pike_sp==save_sp) {
                     break;
@@ -5654,6 +5704,58 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
     f_sprintf(2);
   }
 
+/*! @decl int(0..1) __has_include(mixed identifier)
+ *!
+ *!   This macro checks whether @[symbol] is a valid argument
+ *!   to @[#include] or not.
+ *!
+ *! @returns
+ *!   @[__has_include] returns @expr{1} if the symbol given as argument
+ *!   is valid as an argument to @[#include] and @expr{0@} otherwise.
+ *!
+ *! @note
+ *!   Not available prior to Pike 9.0.
+ *!
+ *! @seealso
+ *!   @[#if], @[#ifdef], @[constant()], @[defined()]
+ */
+PIKEFUN string macro___has_include(string arg)
+{
+  struct CPP_struct *this = THIS;
+  struct svalue *savesp = Pike_sp;
+  int res = 0;
+
+  if (arg) {
+    const PCHARP data = MKPCHARP_STR(arg);
+    ptrdiff_t pos = 0;
+
+    pike_fprintf(stderr, "macro___has_include(%pq)\n", arg);
+
+    /* NB: include_mode 2 inhibits use of the flags and charset arguments. */
+    parse_include_param(this, data, arg->len, &pos, 2, 0, NULL);
+
+    SKIPSPACE();
+
+    if ((savesp == Pike_sp) || (pos != arg->len)) {
+      cpp_error_sprintf(this, "Invalid argument to __has_include(): %pS.", arg);
+      pop_n_elems(Pike_sp - savesp);
+      return;
+    }
+
+    if (safe_apply_current(f_CPP_handle_include_fun_num, Pike_sp - savesp) &&
+        (TYPEOF(Pike_sp[-1]) == PIKE_T_STRING)) {
+      pop_stack();
+      push_text(" 1 ");
+      return;
+    }
+  } else {
+    cpp_error_sprintf(this, "Missing argument to __has_include().");
+  }
+
+  push_text(" 0 ");
+}
+
+
   /* _Pragma(STRING) */
   /*! @decl void _Pragma(string directive)
    *!
@@ -6169,6 +6271,9 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
 
     /* These are from the 201x C standard. */
     DO_MAGIC_DEFINE_FUNC(_Pragma, 1, CPP_MACRO_KEEP_NL);
+
+    /* These are from the 2023 C standard. */
+    DO_MAGIC_DEFINE_FUNC(__has_include, 1, 0);
 
     simple_add_define(this, "static_assert", "_Static_assert");
   }
