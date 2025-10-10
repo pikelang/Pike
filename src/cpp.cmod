@@ -4270,6 +4270,140 @@ static void parse_define_body(struct CPP_struct *this,
 }
 
 /**
+ * Parse the argument to #include et al.
+ *
+ * @param data
+ *   IN: Data to parse.
+ *
+ * @param len
+ *   IN: Length of data.
+ *
+ * @param posp
+ *   IN/OUT: Position in the data stream.
+ *
+ * @param include_mode
+ *   IN: Flags indicating type of directive.
+ *
+ * @param flags
+ *   IN: Cpp flags.
+ *
+ * @param charset
+ *   IN: Character set.
+ *
+ * Note: On entry data[*posp] is not whitespace.
+ *
+ * On successful return arguments suitable for handle_include() have
+ * been pushed on the pike stack.
+ */
+static void parse_include_param(struct CPP_struct *this,
+                                const PCHARP data,
+                                ptrdiff_t len,
+                                ptrdiff_t *posp,
+                                int include_mode,
+                                int flags,
+                                struct pike_string *charset)
+{
+  ptrdiff_t pos = *posp;
+
+  check_stack(3);
+
+  switch(DATA(pos++))
+  {
+  case '"':
+    {
+      struct string_builder nf;
+      init_string_builder(&nf, 0);
+      pos--;
+      READSTRING(nf);
+      push_string(finish_string_builder(&nf));
+      /* In Pike 7.7 and later filenames belonging to Pike
+       * are assumed to be encoded according to UTF-8.
+       */
+      f_string_to_utf8(1);
+      ref_push_string(this->current_file);
+      push_int(1);
+      break;
+    }
+
+  case '<':
+    {
+      ptrdiff_t tmp = pos;
+      while(DATA(pos)!='>')
+      {
+        if(DATA(pos)=='\n')
+        {
+          cpp_error(this, "Expecting '>' in include.");
+          break;
+        }
+        pos++;
+      }
+      push_string(make_shared_binary_pcharp(ADD_PCHARP(data,tmp), pos-tmp));
+      /* In Pike 7.7 and later filenames belonging to Pike
+       * are assumed to be encoded according to UTF-8.
+       */
+      f_string_to_utf8(1);
+      ref_push_string(this->current_file);
+      pos++;
+      push_int(0);
+      break;
+    }
+
+  default:
+    if (include_mode & 2) {
+      /* Macro expanding didn't help... */
+      cpp_error(this, "Expected file to include.");
+      break;
+    } else {
+      /* Try macro expanding (Bug 2440). */
+      struct string_builder save = this->buf, tmp;
+      INT_TYPE save_line = this->current_line;
+      init_string_builder(&this->buf, 0);
+
+      /* Prefix the buffer with the corresponding *_recur
+       * directive, to avoid infinite loops.
+       */
+      if (include_mode & 1) {
+        string_builder_strcat(&this->buf, "#string_recur ");
+      } else {
+        string_builder_strcat(&this->buf, "#include_recur ");
+      }
+
+      pos--;
+      pos += low_cpp(this, ADD_PCHARP(data,pos), len - pos,
+                     CPP_END_AT_NEWLINE,
+                     charset);
+
+      string_builder_putchar(&this->buf, '\n');
+
+      tmp = this->buf;
+      this->buf = save;
+
+      /* We now have a #include-recur or #string-recur directive
+       * in tmp. Preprocess it.
+       */
+
+      /* We're processing the line twice. */
+      this->current_line = save_line;
+      low_cpp(this, MKPCHARP_STR(tmp.s), tmp.s->len,
+              flags, charset);
+      free_string_builder(&tmp);
+
+      this->current_line = save_line;
+      string_builder_sprintf(&this->buf, "\n#line %ld ",
+                             (long)save_line);
+      PUSH_STRING_SHIFT(this->current_file->str,
+                        this->current_file->len,
+                        this->current_file->size_shift,
+                        &this->buf);
+      string_builder_putchar(&this->buf, '\n');
+    }
+    break;
+  }
+
+  *posp = pos;
+}
+
+/**
  * Preprocess template.
  *
  * NB: There are two basic cases where this function is called:
@@ -4736,102 +4870,11 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
               do_include:
                 {
                   struct svalue *save_sp=Pike_sp;
+
                   SKIPSPACE();
 
-                  check_stack(3);
-
-                  switch(DATA(pos++))
-                  {
-                    case '"':
-                      {
-                        struct string_builder nf;
-                        init_string_builder(&nf, 0);
-                        pos--;
-                        READSTRING(nf);
-                        push_string(finish_string_builder(&nf));
-                        /* In Pike 7.7 and later filenames belonging to Pike
-                         * are assumed to be encoded according to UTF-8.
-                         */
-                        f_string_to_utf8(1);
-                        ref_push_string(this->current_file);
-                        push_int(1);
-                        break;
-                      }
-
-                    case '<':
-                      {
-                        ptrdiff_t tmp = pos;
-                        while(DATA(pos)!='>')
-                        {
-                          if(DATA(pos)=='\n')
-                          {
-                            cpp_error(this, "Expecting '>' in include.");
-                            break;
-                          }
-                          pos++;
-                        }
-                        push_string(make_shared_binary_pcharp(ADD_PCHARP(data,tmp), pos-tmp));
-                        /* In Pike 7.7 and later filenames belonging to Pike
-                         * are assumed to be encoded according to UTF-8.
-                         */
-                        f_string_to_utf8(1);
-                        ref_push_string(this->current_file);
-                        pos++;
-                        push_int(0);
-                        break;
-                      }
-
-                    default:
-                      if (include_mode & 2) {
-                        /* Macro expanding didn't help... */
-                        cpp_error(this, "Expected file to include.");
-                        break;
-                      } else {
-                        /* Try macro expanding (Bug 2440). */
-                        struct string_builder save = this->buf, tmp;
-                        INT_TYPE save_line = this->current_line;
-                        init_string_builder(&this->buf, 0);
-
-                        /* Prefix the buffer with the corresponding *_recur
-                         * directive, to avoid infinite loops.
-                         */
-                        if (include_mode & 1) {
-                          string_builder_strcat(&this->buf, "#string_recur ");
-                        } else {
-                          string_builder_strcat(&this->buf, "#include_recur ");
-                        }
-
-                        pos--;
-                        pos += low_cpp(this, ADD_PCHARP(data,pos), len - pos,
-                                       CPP_END_AT_NEWLINE,
-                                       charset);
-
-                        string_builder_putchar(&this->buf, '\n');
-
-                        tmp = this->buf;
-                        this->buf = save;
-
-                        /* We now have a #include-recur or #string-recur directive
-                         * in tmp. Preprocess it.
-                         */
-
-                        /* We're processing the line twice. */
-                        this->current_line = save_line;
-                        low_cpp(this, MKPCHARP_STR(tmp.s), tmp.s->len,
-                                flags, charset);
-                        free_string_builder(&tmp);
-
-                        this->current_line = save_line;
-                        string_builder_sprintf(&this->buf, "\n#line %ld ",
-                                               (long)save_line);
-                        PUSH_STRING_SHIFT(this->current_file->str,
-                                          this->current_file->len,
-                                          this->current_file->size_shift,
-                                          &this->buf);
-                        string_builder_putchar(&this->buf, '\n');
-                      }
-                      break;
-                  }
+                  parse_include_param(this, data, len, &pos, include_mode,
+                                      flags, charset);
 
                   if(Pike_sp==save_sp) {
                     break;
