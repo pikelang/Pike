@@ -23,6 +23,7 @@
 #include "pike_macros.h"
 #include "module_support.h"
 #include "builtin_functions.h"
+#include "pike_types.h"
 
 #ifdef HAVE_WORKING_LIBFFMPEG
 
