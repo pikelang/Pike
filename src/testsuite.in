@@ -11324,6 +11324,48 @@ test_eval_error([[
 
 test_true( Stdio.write_file("conftest.h", "return 17;\n") )
 
+dnl __has_include().
+test_any([[
+#if __has_include("conftest.h")
+  return 1;
+#endif
+]], 1)
+test_any([[
+#if !__has_include(<conftest.h>)
+  return 1;
+#endif
+]], 1)
+test_any([[
+#if !__has_include("profiling.h")
+  return 1;
+#endif
+]], 1)
+test_any([[
+#if __has_include(<profiling.h>)
+  return 1;
+#endif
+]], 1)
+test_compile_error([[
+#if __has_include(conftest.h>)
+  return 1;
+#endif
+]])
+test_compile_error([[
+#if __has_include(<conftest.h)
+  return 1;
+#endif
+]])
+test_compile_error([[
+#if __has_include("conftest.h" limit(1))
+  return 1;
+#endif
+]])
+test_compile_error([[
+#if __has_include(<conftest.h> limit(1))
+  return 1;
+#endif
+]])
+
 test_any([[
 #include "conftest.h"
 ]],17)
