@@ -34,7 +34,8 @@ if test x$with_ffmpeg = xyes ; then
   fi
 
   AC_CHECK_HEADERS([avcodec.h ffmpeg/avcodec.h libffmpeg/avcodec.h \
-                    libavcodec/avcodec.h libavutil/avutil.h])
+                    libavcodec/avcodec.h libavutil/avutil.h \
+                    libavutil/attributes.h])
 
 dnl ffmpeg and avcodec are the same libs... with 2 differents..
 dnl don't ask me why.

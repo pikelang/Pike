@@ -60,6 +60,11 @@
 #define FF_API_AUDIO_OLD 1
 #define FF_API_VIDEO_OLD 1
 
+#ifdef HAVE_LIBAVUTIL_ATTRIBUTES_H
+#include <libavutil/attributes.h>
+#undef attribute_deprecated
+#define attribute_deprecated
+#endif
 #ifdef HAVE_LIBAVCODEC_AVCODEC_H
 #include <libavcodec/avcodec.h>
 #else
@@ -678,7 +683,7 @@ static void f_list_codecs(INT32 args) {
 /*! @endmodule
  */
 
-static void init_ffmpeg_data(struct object *obj) {
+static void init_ffmpeg_data(struct object *UNUSED(obj)) {
 
 
   THIS->codec = NULL;
@@ -691,7 +696,7 @@ static void init_ffmpeg_data(struct object *obj) {
 #endif
 }
 
-static void exit_ffmpeg_data(struct object *obj) {
+static void exit_ffmpeg_data(struct object *UNUSED(obj)) {
 
   if(THIS->codec_context != NULL) {
 #ifdef USE_ALLOC_CONTEXT
