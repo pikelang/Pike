@@ -162,16 +162,19 @@ static void f_create(INT32 args)
 	Pike_error("Invalid argument 5, expected int.\n");
       chns = (u_short)Pike_sp[-1].u.integer;
       Pike_sp--;
+      /* FALLTHRU */
     case 4:
       if(TYPEOF(Pike_sp[-1]) != T_INT)
 	Pike_error("Invalid argument 4, expected int.\n");
       wide = (u_short)Pike_sp[-1].u.integer;
       Pike_sp--;
+      /* FALLTHRU */
     case 3:
       if(TYPEOF(Pike_sp[-1]) != T_INT)
 	Pike_error("Invalid argument 3, expected int.\n");
       rate = (u_short)Pike_sp[-1].u.integer;
       Pike_sp--;
+      /* FALLTHRU */
 
     case 2:
       if(TYPEOF(Pike_sp[-1]) != T_INT)
