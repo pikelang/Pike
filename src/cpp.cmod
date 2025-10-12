@@ -41,6 +41,12 @@
 #define CPP_END_AT_NEWLINE 16	/* Halt at end of line. */
 #define CPP_DO_IF 32
 #define CPP_NO_EXPAND 64
+#define CPP_NO_DIRECTIVES 128	/* Do not parse #-directives. */
+#define CPP_FLAGS_MASK	255	/* All of the above. */
+
+/* The type for the above. */
+#cmod_define tCppFlags	tName("CppFlags", tInt8bit)
+#cmod_define CppFlags_t	int(8bit)
 
 #define OUTP() (!(flags & (CPP_NO_OUTPUT | CPP_REALLY_NO_OUTPUT)))
 #define PUTNL() string_builder_putchar(&this->buf, '\n')
@@ -150,7 +156,7 @@ EXTRA {
    *!   Flags for @[CPP()->low_cpp()] and directives.
    */
   type_stack_mark();
-  push_int_type(0, 0x7f);
+  push_int_type(0, CPP_FLAGS_MASK);
   push_type_value(pop_unfinished_type());
   simple_add_constant("CppFlags", Pike_sp-1, ID_LOCAL);
   pop_stack();
@@ -196,6 +202,12 @@ EXTRA {
    *!   Reserved.
    */
   add_integer_constant("CPP_NO_EXPAND", CPP_NO_EXPAND, ID_LOCAL);
+
+  /*! @decl constant CPP_NO_DIRECTIVES = 128
+   *!
+   *!   Disable parsing of #-directives.
+   */
+  add_integer_constant("CPP_NO_DIRECTIVES", CPP_NO_DIRECTIVES, ID_LOCAL);
 
   /*! @endenum
    */
@@ -390,7 +402,7 @@ PIKECLASS define
    *!   on failure (typically due to invalid @[arguments]).
    */
   PIKEFUN string `()(array(string)|void arguments, object(CPP)|void context_obj,
-                     int(7bit)|void flags_sval)
+                     CppFlags_t|void flags_sval)
     flags ID_PROTECTED;
   {
     struct define_struct *d = THIS;
@@ -1492,7 +1504,7 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
    *! @seealso
    *!   @[#if]
    */
-  PIKEFUN string(0..0) directive_require(int(7bit) flags, string line)
+  PIKEFUN string(0..0) directive_require(CppFlags_t flags, string line)
   {
     struct CPP_struct *this = THIS;
 
@@ -1701,7 +1713,7 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
    *! @seealso
    *!   @[#warning]
    */
-  PIKEFUN string(0..0) directive_error(int(7bit) flags, string line)
+  PIKEFUN string(0..0) directive_error(CppFlags_t flags, string line)
   {
     struct CPP_struct *this = THIS;
 
@@ -1728,7 +1740,7 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
    *! @seealso
    *!   @[#error]
    */
-  PIKEFUN string(0..0) directive_warning(int(7bit) flags, string line)
+  PIKEFUN string(0..0) directive_warning(CppFlags_t flags, string line)
   {
     struct CPP_struct *this = THIS;
 
@@ -1806,7 +1818,7 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
    *!   #pike __REAL_VERSION__
    *!   @endcode
    */
-  PIKEFUN string(0..0) directive_pike(int(7bit) flags, string line)
+  PIKEFUN string(0..0) directive_pike(CppFlags_t flags, string line)
   {
     struct CPP_struct *this = THIS;
 
@@ -1942,7 +1954,7 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
    *!       Disable disassembly output (default).
    *!   @endstring
    */
-  PIKEFUN string(0..0) directive_pragma(int(7bit) flags, string line)
+  PIKEFUN string(0..0) directive_pragma(CppFlags_t flags, string line)
   {
     struct CPP_struct *this = THIS;
 
@@ -4739,6 +4751,13 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
         break;
 
       case '#':
+        if (flags & CPP_NO_DIRECTIVES) {
+          /* This is typically used when macro expanding
+           * the remainder of a directive line.
+           */
+          PUTC('#');
+          break;
+        }
         if(GOBBLE('!'))
         {
           FIND_EOL();
@@ -5392,7 +5411,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
    *! @seealso
    *!   @[cpp()], @[high_cpp()], @[drain()]
    */
-  PIKEFUN void low_cpp(string data, int(7bit) flags)
+  PIKEFUN void low_cpp(string data, CppFlags_t flags)
   {
     struct CPP_struct *this = THIS;
 #ifdef PIKE_DEBUG
@@ -5417,7 +5436,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
    *! @seealso
    *!   @[low_cpp()], @[high_cpp()]
    */
-  PIKEFUN string cpp(string data, int(7bit)|void flags)
+  PIKEFUN string cpp(string data, CppFlags_t|void flags)
   {
     struct CPP_struct *this = THIS;
     struct string_builder save_buf = this->buf;
