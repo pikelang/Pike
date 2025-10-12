@@ -256,7 +256,7 @@ static void f_create(INT32 args)
     /* case 1: */
       if(TYPEOF(Pike_sp[-1]) != T_INT)
 	Pike_error("Invalid argument 1, expected int.\n");
-      codec_id = (u_short)Pike_sp[-1].u.integer;
+      codec_id = (int)Pike_sp[-1].u.integer;
       Pike_sp--;
       if(THIS->encoder) {
         codec = avcodec_find_encoder(codec_id);
