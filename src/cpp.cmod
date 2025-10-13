@@ -3264,9 +3264,6 @@ static const char define_[] = { 'd', 'e', 'f', 'i', 'n', 'e' };
 static const char undef_[] = { 'u', 'n', 'd', 'e', 'f' };
 static const char undefine_[] = { 'u', 'n', 'd', 'e', 'f', 'i', 'n', 'e' };
 static const char charset_[] = { 'c', 'h', 'a', 'r', 's', 'e', 't' };
-static const char pragma_[] = { 'p', 'r', 'a', 'g', 'm', 'a' };
-static const char pike_[] = { 'p', 'i', 'k', 'e' };
-static const char require_[] = { 'r', 'e', 'q', 'u', 'i', 'r', 'e' };
 static const char lsh_[] = { '<', '<' };
 static const char rsh_[] = { '>', '>' };
 
