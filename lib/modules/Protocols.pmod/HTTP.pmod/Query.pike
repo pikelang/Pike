@@ -99,6 +99,23 @@ void remove_async_timeout()
 
 /****** internal stuff *********************************************/
 
+//! Attempt to read the result header block from @[buf] and @[con].
+//!
+//! @returns
+//!   @int
+//!     @value 0
+//!       Returns @expr{0@} if the header block has not yet been
+//!       received.
+//!     @value 1
+//!       Sets @[headerbuf] to the raw header block and @[headers]
+//!       to the parsed header block, calls the @[request_ok] callback
+//!       (if any) and returns @expr{1@} on successful read of the
+//!       header block.
+//!   @endint
+//!
+//! @note
+//!   The data part of the result may still be pending on
+//!   @expr{1@} return.
 protected int ponder_answer( int|void start_position )
 {
    // read until we have all headers
@@ -1069,7 +1086,7 @@ string data(int|void max_length)
      {
        DBG ("<- data() read 5\n");
        while ((l > 0) && con) {
-         string s = con->read(l);
+         string s = con->read(l, 1);
          if (!s || !sizeof(s)) {
            // Error or EOF.
            if (!s && (strlen(buf) <= datapos)) {
@@ -1082,6 +1099,8 @@ string data(int|void max_length)
              DBG ("<- (read error: %s)\n", strerror (errno));
              return 0;
            }
+           DBG("Truncated result. Got %d bytes of %d (missing %d).\n",
+               sizeof(buf) - datapos, sizeof(buf) + l - datapos, l);
            break;
          }
          buf += s;
