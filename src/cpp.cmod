@@ -3264,9 +3264,6 @@ static const char define_[] = { 'd', 'e', 'f', 'i', 'n', 'e' };
 static const char undef_[] = { 'u', 'n', 'd', 'e', 'f' };
 static const char undefine_[] = { 'u', 'n', 'd', 'e', 'f', 'i', 'n', 'e' };
 static const char charset_[] = { 'c', 'h', 'a', 'r', 's', 'e', 't' };
-static const char pragma_[] = { 'p', 'r', 'a', 'g', 'm', 'a' };
-static const char pike_[] = { 'p', 'i', 'k', 'e' };
-static const char require_[] = { 'r', 'e', 'q', 'u', 'i', 'r', 'e' };
 static const char lsh_[] = { '<', '<' };
 static const char rsh_[] = { '>', '>' };
 
@@ -3921,7 +3918,8 @@ static ptrdiff_t calc(struct CPP_struct *this, const PCHARP data,
  *       in MKPCHARP() being clobbered (due to inlineing).
  *       Seen with gcc 3.4.3/x86/Solaris 10.
  */
-static int safe_apply_define(struct define_struct *d)
+static int safe_apply_define(struct CPP_struct *this,
+                             struct define_struct *d)
 {
   JMP_BUF uwp;
   if (!SETJMP(uwp)) {
@@ -3930,6 +3928,7 @@ static int safe_apply_define(struct define_struct *d)
     UNSETJMP(uwp);
     return 1;
   }
+  cpp_handle_exception(this, "Error expanding macro.");
   UNSETJMP(uwp);
   return 0;
 }
@@ -3962,7 +3961,7 @@ static void apply_define(struct CPP_struct *this,
   ref_push_object(Pike_fp->current_object);
   push_int(flags);
 
-  if (safe_apply_define(d) &&
+  if (safe_apply_define(this, d) &&
       (TYPEOF(Pike_sp[-1]) == PIKE_T_STRING)) {
     int save_flags = d->flags;
     d->flags |= CPP_MACRO_DISABLED;

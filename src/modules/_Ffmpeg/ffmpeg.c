@@ -120,12 +120,14 @@
 static int avcodec_decode_audio4(AVCodecContext *avctx, AVFrame *frame,
                                  int *got_frame_ptr, const AVPacket *avpkt)
 {
-  int ret = avcodec_receive_frame(avctx, frame);
-  if (ret == 0)
-    *got_frame_ptr = 1;
-  if (ret == 0 || ret == AVERROR(EAGAIN))
-    ret = avcodec_send_packet(avctx, avpkt);
-  return ret == AVERROR(EAGAIN)? 0 : ret;
+  int ret = avcodec_send_packet(avctx, avpkt);
+  int n = ret? 0 : avpkt->size;
+  if (ret == 0 || ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
+    ret = avcodec_receive_frame(avctx, frame);
+    if (ret == 0)
+      *got_frame_ptr = 1;
+  }
+  return n;
 }
 #endif
 #endif
@@ -256,7 +258,7 @@ static void f_create(INT32 args)
     /* case 1: */
       if(TYPEOF(Pike_sp[-1]) != T_INT)
 	Pike_error("Invalid argument 1, expected int.\n");
-      codec_id = (u_short)Pike_sp[-1].u.integer;
+      codec_id = (int)Pike_sp[-1].u.integer;
       Pike_sp--;
       if(THIS->encoder) {
         codec = avcodec_find_encoder(codec_id);
