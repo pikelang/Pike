@@ -3918,7 +3918,8 @@ static ptrdiff_t calc(struct CPP_struct *this, const PCHARP data,
  *       in MKPCHARP() being clobbered (due to inlineing).
  *       Seen with gcc 3.4.3/x86/Solaris 10.
  */
-static int safe_apply_define(struct define_struct *d)
+static int safe_apply_define(struct CPP_struct *this,
+                             struct define_struct *d)
 {
   JMP_BUF uwp;
   if (!SETJMP(uwp)) {
@@ -3927,6 +3928,7 @@ static int safe_apply_define(struct define_struct *d)
     UNSETJMP(uwp);
     return 1;
   }
+  cpp_handle_exception(this, "Error expanding macro.");
   UNSETJMP(uwp);
   return 0;
 }
@@ -3959,7 +3961,7 @@ static void apply_define(struct CPP_struct *this,
   ref_push_object(Pike_fp->current_object);
   push_int(flags);
 
-  if (safe_apply_define(d) &&
+  if (safe_apply_define(this, d) &&
       (TYPEOF(Pike_sp[-1]) == PIKE_T_STRING)) {
     int save_flags = d->flags;
     d->flags |= CPP_MACRO_DISABLED;
