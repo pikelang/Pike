@@ -118,13 +118,12 @@ void attach_fd(Stdio.NonblockingStream _fd, Port server,
    headerparser = .HeaderParser();
    request_callback=_request_callback;
    error_callback = _error_callback;
-
+   if (already_data && strlen(already_data)) {
+      read_cb(0,already_data);
+   }
    my_fd->set_nonblocking(read_cb,0,close_cb);
 
    call_out(connection_timeout,connection_timeout_delay);
-
-   if (already_data)
-      read_cb(0,already_data);
 }
 
 
@@ -146,7 +145,7 @@ constant singular_headers = ({
 constant singular_use_headers = ({
     "cookie",
     "cookie2",
-});    
+});
 
 protected void flatten_headers()
 {
@@ -168,6 +167,7 @@ protected void read_cb(mixed dummy,string s)
 {
     if( !strlen( raw ) )
     {
+        // Strip initial whitespace (and whitespace between requests).
 	while( strlen(s) && (<' ','\t','\n','\r'>)[s[0]] )
 	    s = s[1..];
 	if( !strlen( s ) )
@@ -767,12 +767,13 @@ void finish(int clean)
    my_fd=0; // and drop this object
 }
 
-private int sent;
-private string send_buf="";
-private int send_pos;
-private Stdio.File send_fd=0;
-private int send_stop;
-private int keep_alive=0;
+constant has_protected_send_buf = 1;
+protected int sent;
+protected string send_buf="";
+protected int send_pos;
+protected Stdio.File send_fd=0;
+protected int send_stop;
+protected int keep_alive=0;
 
 //! Returns the amount of data sent.
 int sent_data()
