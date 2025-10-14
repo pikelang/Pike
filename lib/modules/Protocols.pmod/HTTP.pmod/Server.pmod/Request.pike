@@ -108,6 +108,24 @@ int connection_timeout_delay=180;
 function(this_program:void) request_callback;
 function(this_program,array:void) error_callback;
 
+//! Main entry point for the class.
+//!
+//! @param _fd
+//!   Newly accepted connection.
+//!
+//! @param server
+//!   @[Protocols.HTTP.Server.Port] that accepted the connection.
+//!
+//! @param _request_callback
+//!   Callback function registered with @[Protocols.HTTP.Server.Port()].
+//!
+//! @param already_data
+//!   Data that has already been received from @[_fd].
+//!
+//! @param _error_callback
+//!   Callback function called when an error is detected.
+//!
+//! Typically called from @[Protocols.HTTP.Server.Port()->new_connection()].
 void attach_fd(Stdio.NonblockingStream _fd, Port server,
 	       function(this_program:void) _request_callback,
 	       void|string already_data,
