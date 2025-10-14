@@ -5908,11 +5908,16 @@ void init_operators(void)
   ADD_EFUN2("`!",f_not,tFuncV(tMix,tVoid,tInt01),
 	    OPT_TRY_OPTIMIZE,optimize_not,generate_not);
 
-#define CMP_TYPE "!function(!(object|mixed)...:mixed)&function(mixed...:int(0..1))|function(int|float...:int(0..1))|function(string...:int(0..1))|function(type|program,type|program,type|program...:int(0..1))"
-  add_efun2("`<", f_lt,CMP_TYPE,OPT_TRY_OPTIMIZE,0,generate_comparison);
-  add_efun2("`<=",f_le,CMP_TYPE,OPT_TRY_OPTIMIZE,0,generate_comparison);
-  add_efun2("`>", f_gt,CMP_TYPE,OPT_TRY_OPTIMIZE,0,generate_comparison);
-  add_efun2("`>=",f_ge,CMP_TYPE,OPT_TRY_OPTIMIZE,0,generate_comparison);
+#define CMP_TYPE tOr4(tIfexists(tObj, tFuncV(tNone, tMix, tInt01)), \
+                      tFuncV(tNone, tOr(tInt, tFloat), tInt01),     \
+                      tFuncV(tNone, tStr, tInt01),                  \
+                      tFuncV(tOr(tType(tMix), tPrg(tObj))           \
+                             tOr(tType(tMix), tPrg(tObj)),          \
+                             tOr(tType(tMix), tPrg(tObj)), tInt01))
+  ADD_EFUN2("`<", f_lt, CMP_TYPE, OPT_TRY_OPTIMIZE, 0, generate_comparison);
+  ADD_EFUN2("`<=", f_le, CMP_TYPE, OPT_TRY_OPTIMIZE, 0, generate_comparison);
+  ADD_EFUN2("`>", f_gt, CMP_TYPE, OPT_TRY_OPTIMIZE, 0, generate_comparison);
+  ADD_EFUN2("`>=", f_ge, CMP_TYPE, OPT_TRY_OPTIMIZE, 0, generate_comparison);
 
   ADD_EFUN2("`+", f_add,
 	    tTransitive(tFunc(tSetvar(0, tOr7(tObj, tInt, tFloat, tStr,
