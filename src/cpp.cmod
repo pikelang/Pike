@@ -2356,7 +2356,7 @@ static ptrdiff_t find_end_of_comment( struct CPP_struct *this,
 
   while(INDEX_PCHARP(data,pos)!='*' || INDEX_PCHARP(data,pos+1)!='/')
   {
-    if(pos+2>=len)
+    if(pos+2 > len)
     {
       cpp_error(this,"End of file in comment.");
       break;
@@ -2436,7 +2436,7 @@ static ptrdiff_t find_end_parenthesis(struct CPP_struct *this,
   INT_TYPE start_line = this->current_line;
   while(1)
   {
-    if(pos+1>=len)
+    if(pos+1 > len)
     {
       INT_TYPE save_line = this->current_line;
       this->current_line = start_line;
@@ -2473,7 +2473,7 @@ static ptrdiff_t find_end_brace(struct CPP_struct *this,
   INT_TYPE start_line = this->current_line;
   while(1)
   {
-    if(pos+1>=len)
+    if(pos+1 > len)
     {
       INT_TYPE save_line = this->current_line;
       this->current_line = start_line;
