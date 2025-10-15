@@ -5921,7 +5921,7 @@ void init_operators(void)
   ADD_EFUN2("`!",f_not,tFuncV(tMix,tVoid,tInt01),
 	    OPT_TRY_OPTIMIZE,optimize_not,generate_not);
 
-#define CMP_TYPE tOr4(tIfexists(tObj, tFuncV(tNone, tMix, tInt01)), \
+#define CMP_TYPE tOr4(tIfexists(tMix, tFuncV(tNone, tMix, tInt01)), \
                       tFuncV(tNone, tOr(tInt, tFloat), tInt01),     \
                       tFuncV(tNone, tStr, tInt01),                  \
                       tFuncV(tOr(tType(tMix), tPrg(tObj))           \

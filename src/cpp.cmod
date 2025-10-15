@@ -4299,6 +4299,9 @@ static void parse_define_body(struct CPP_struct *this,
  * @param posp
  *   IN/OUT: Position in the data stream.
  *
+ * @param directive
+ *   IN: Directive that is being parsed (eg "include" or "string").
+ *
  * @param include_mode
  *   IN: Flags indicating type of directive.
  *
@@ -4306,22 +4309,26 @@ static void parse_define_body(struct CPP_struct *this,
  *   IN: Cpp flags.
  *
  * @param charset
- *   IN: Character set.
+ *   IN: Character set (optional).
  *
- * Note: On entry data[*posp] is not whitespace.
- *
- * On successful return arguments suitable for handle_include() have
- * been pushed on the pike stack.
+ * On successful return the return value from a call of handle_include()
+ * is on the stack. This value may be zero to indicate that the file
+ * was not found. Otherwise it should be an argument suitable for
+ * read_include(). On syntax error nothing is pushed.
  */
-static void parse_include_param(struct CPP_struct *this,
-                                const PCHARP data,
-                                ptrdiff_t len,
-                                ptrdiff_t *posp,
-                                int include_mode,
-                                int flags,
-                                struct pike_string *charset)
+static void low_parse_include_param(struct CPP_struct *this,
+                                    const PCHARP data,
+                                    ptrdiff_t len,
+                                    ptrdiff_t *posp,
+                                    const char *directive,
+                                    int include_mode,
+                                    int flags,
+                                    struct pike_string *charset)
 {
+  struct svalue *save_sp = Pike_sp;
   ptrdiff_t pos = *posp;
+
+  SKIPSPACE();
 
   check_stack(3);
 
@@ -4346,79 +4353,106 @@ static void parse_include_param(struct CPP_struct *this,
   case '<':
     {
       ptrdiff_t tmp = pos;
-      while(DATA(pos)!='>')
+      while(DATA(pos) != '>')
       {
-        if(DATA(pos)=='\n')
-        {
-          cpp_error(this, "Expecting '>' in include.");
+        if ((pos == len) || (DATA(pos)=='\n')) {
+          cpp_error_sprintf(this, "Expecting '>' in #%s.", directive);
           break;
         }
         pos++;
       }
-      push_string(make_shared_binary_pcharp(ADD_PCHARP(data,tmp), pos-tmp));
+
+      push_string(make_shared_binary_pcharp(ADD_PCHARP(data, tmp), pos - tmp));
       /* In Pike 7.7 and later filenames belonging to Pike
        * are assumed to be encoded according to UTF-8.
        */
       f_string_to_utf8(1);
       ref_push_string(this->current_file);
-      pos++;
+      if (pos < len) pos++;
       push_int(0);
       break;
     }
 
   default:
+    pos--;
+    break;
+  }
+
+  if ((save_sp != Pike_sp) && OUTP()) {
+    safe_apply_current(f_CPP_handle_include_fun_num, 3);
+  } else {
+    /* Keep the raw filename in order to not indicate a syntax error. */
+    pop_n_elems(2);
+  }
+
+  if (pos < len) {
+    SKIPSPACE();
+  }
+
+  *posp = pos;
+}
+
+static void parse_include_param(struct CPP_struct *this,
+                                const PCHARP data,
+                                ptrdiff_t len,
+                                ptrdiff_t *posp,
+                                const char *directive,
+                                int include_mode,
+                                int flags,
+                                struct pike_string *charset)
+{
+  struct svalue *save_sp = Pike_sp;
+  ptrdiff_t pos = *posp;
+
+  low_parse_include_param(this, data, len, &pos, directive, include_mode,
+                          flags, charset);
+
+  if (save_sp == Pike_sp) {
     if (include_mode & 2) {
       /* Macro expanding didn't help... */
-      cpp_error(this, "Expected file to include.");
-      break;
+      cpp_error_sprintf(this, "Expected file for #%s.", directive);
+      return;
     } else {
       /* Try macro expanding (Bug 2440). */
       struct string_builder save = this->buf, tmp;
       INT_TYPE save_line = this->current_line;
+      ptrdiff_t pos = *posp;
+
+      /* Buffer for the preprocessed directive line. */
       init_string_builder(&this->buf, 0);
 
-      /* Prefix the buffer with the corresponding *_recur
-       * directive, to avoid infinite loops.
-       */
-      if (include_mode & 1) {
-        string_builder_strcat(&this->buf, "#string_recur ");
-      } else {
-        string_builder_strcat(&this->buf, "#include_recur ");
-      }
-
-      pos--;
-      pos += low_cpp(this, ADD_PCHARP(data,pos), len - pos,
-                     CPP_END_AT_NEWLINE,
+      pos += low_cpp(this, ADD_PCHARP(data, pos), len - pos,
+                     CPP_END_AT_NEWLINE|CPP_NO_DIRECTIVES,
                      charset);
+      *posp = pos;
 
       string_builder_putchar(&this->buf, '\n');
 
       tmp = this->buf;
       this->buf = save;
+      pos = 0;
 
-      /* We now have a #include-recur or #string-recur directive
-       * in tmp. Preprocess it.
+      /* We now have the preparsed directive arguments in tmp.
+       * Attempt to parse them again.
        */
+      low_parse_include_param(this, MKPCHARP_STR(tmp.s), tmp.s->len, &pos,
+                              directive, include_mode|2, flags, charset);
 
-      /* We're processing the line twice. */
-      this->current_line = save_line;
-      low_cpp(this, MKPCHARP_STR(tmp.s), tmp.s->len,
-              flags, charset);
+      if (Pike_sp != save_sp) {
+        if (pos < tmp.s->len) {
+          cpp_error_sprintf(this, "Junk after #%pS%s%s%s directive.",
+                            this->prefix?this->prefix:empty_pike_string,
+                            this->prefix?"_":"",
+                            directive,
+                            (include_mode & 2)?"_recur":"");
+        }
+      }
+
       free_string_builder(&tmp);
-
-      this->current_line = save_line;
-      string_builder_sprintf(&this->buf, "\n#line %ld ",
-                             (long)save_line);
-      PUSH_STRING_SHIFT(this->current_file->str,
-                        this->current_file->len,
-                        this->current_file->size_shift,
-                        &this->buf);
-      string_builder_putchar(&this->buf, '\n');
     }
-    break;
+  } else {
+    *posp = pos;
   }
-
-  *posp = pos;
 }
 
 /**
@@ -4898,8 +4932,9 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
 
                   SKIPSPACE();
 
-                  parse_include_param(this, data, len, &pos, include_mode,
-                                      flags, charset);
+                  parse_include_param(this, data, len, &pos,
+                                      (include_mode & 1)?"string":"include",
+                                      include_mode, flags, charset);
 
                   if(Pike_sp==save_sp) {
                     break;
@@ -4909,8 +4944,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
                   {
                     struct pike_string *new_file;
 
-                    if (!safe_apply_current(f_CPP_handle_include_fun_num, 3) ||
-			 (TYPEOF(Pike_sp[-1]) != PIKE_T_STRING)) {
+                    if (TYPEOF(Pike_sp[-1]) != PIKE_T_STRING) {
                       cpp_handle_exception (this, "Couldn't find include file.");
                       pop_n_elems(Pike_sp-save_sp);
                       break;
@@ -5747,10 +5781,8 @@ PIKEFUN string macro___has_include(string arg)
     const PCHARP data = MKPCHARP_STR(arg);
     ptrdiff_t pos = 0;
 
-    pike_fprintf(stderr, "macro___has_include(%pq)\n", arg);
-
     /* NB: include_mode 2 inhibits use of the flags and charset arguments. */
-    parse_include_param(this, data, arg->len, &pos, 2, 0, NULL);
+    parse_include_param(this, data, arg->len, &pos, "include", 2, 0, NULL);
 
     SKIPSPACE();
 
@@ -5760,8 +5792,7 @@ PIKEFUN string macro___has_include(string arg)
       return;
     }
 
-    if (safe_apply_current(f_CPP_handle_include_fun_num, Pike_sp - savesp) &&
-        (TYPEOF(Pike_sp[-1]) == PIKE_T_STRING)) {
+    if (TYPEOF(Pike_sp[-1]) == PIKE_T_STRING) {
       pop_stack();
       push_text(" 1 ");
       return;
