@@ -4426,8 +4426,6 @@ static void parse_include_param(struct CPP_struct *this,
                      charset);
       *posp = pos;
 
-      string_builder_putchar(&this->buf, '\n');
-
       tmp = this->buf;
       this->buf = save;
       pos = 0;
