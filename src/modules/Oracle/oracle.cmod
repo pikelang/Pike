@@ -519,6 +519,7 @@ PIKECLASS oracle
 
 /************/
 
+static void DECLSPEC(noreturn) ora_error_handler(OCIError *err, sword rc, char *func) ATTRIBUTE((noreturn));
 static void ora_error_handler(OCIError *err, sword rc, char *func)
 {
   /* FIXME: we might need to do switch(rc) */
