@@ -4302,14 +4302,8 @@ static void parse_define_body(struct CPP_struct *this,
  * @param directive
  *   IN: Directive that is being parsed (eg "include" or "string").
  *
- * @param include_mode
- *   IN: Flags indicating type of directive.
- *
  * @param flags
  *   IN: Cpp flags.
- *
- * @param charset
- *   IN: Character set (optional).
  *
  * On successful return the return value from a call of handle_include()
  * is on the stack. This value may be zero to indicate that the file
@@ -4321,9 +4315,7 @@ static void low_parse_include_param(struct CPP_struct *this,
                                     ptrdiff_t len,
                                     ptrdiff_t *posp,
                                     const char *directive,
-                                    int include_mode,
-                                    int flags,
-                                    struct pike_string *charset)
+                                    int flags)
 {
   struct svalue *save_sp = Pike_sp;
   ptrdiff_t pos = *posp;
@@ -4380,7 +4372,7 @@ static void low_parse_include_param(struct CPP_struct *this,
 
   if ((save_sp != Pike_sp) && OUTP()) {
     safe_apply_current(f_CPP_handle_include_fun_num, 3);
-  } else {
+  } else if (save_sp != Pike_sp) {
     /* Keep the raw filename in order to not indicate a syntax error. */
     pop_n_elems(2);
   }
@@ -4404,8 +4396,7 @@ static void parse_include_param(struct CPP_struct *this,
   struct svalue *save_sp = Pike_sp;
   ptrdiff_t pos = *posp;
 
-  low_parse_include_param(this, data, len, &pos, directive, include_mode,
-                          flags, charset);
+  low_parse_include_param(this, data, len, &pos, directive, flags);
 
   if (save_sp == Pike_sp) {
     if (include_mode & 2) {
@@ -4426,8 +4417,6 @@ static void parse_include_param(struct CPP_struct *this,
                      charset);
       *posp = pos;
 
-      string_builder_putchar(&this->buf, '\n');
-
       tmp = this->buf;
       this->buf = save;
       pos = 0;
@@ -4436,16 +4425,15 @@ static void parse_include_param(struct CPP_struct *this,
        * Attempt to parse them again.
        */
       low_parse_include_param(this, MKPCHARP_STR(tmp.s), tmp.s->len, &pos,
-                              directive, include_mode|2, flags, charset);
+                              directive, flags);
 
-      if (Pike_sp != save_sp) {
-        if (pos < tmp.s->len) {
-          cpp_error_sprintf(this, "Junk after #%pS%s%s%s directive.",
-                            this->prefix?this->prefix:empty_pike_string,
-                            this->prefix?"_":"",
-                            directive,
-                            (include_mode & 2)?"_recur":"");
-        }
+      /* NB: Code is valid after #string. */
+      if (!(include_mode & 1) && (Pike_sp != save_sp) && (pos < tmp.s->len)) {
+        cpp_error_sprintf(this, "Junk after #%pS%s%s%s directive.",
+                          this->prefix?this->prefix:empty_pike_string,
+                          this->prefix?"_":"",
+                          directive,
+                          (include_mode & 2)?"_recur":"");
       }
 
       free_string_builder(&tmp);

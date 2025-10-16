@@ -551,7 +551,7 @@ static int pf_utimens(const char *path, const struct timespec tv[2])
     struct dispatch_struct dinfo;
 
     dinfo.id = PF_UTIMENS;
-    dinfo.sig.pf_utimens.path;
+    dinfo.sig.pf_utimens.path = path;
     dinfo.sig.pf_utimens.tv = tv;
     call_with_interpreter(low_dispatch, &dinfo);
 
