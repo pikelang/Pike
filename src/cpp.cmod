@@ -825,6 +825,13 @@ static struct define_struct *find_define(struct CPP_struct *this, struct pike_st
 static ptrdiff_t calc(struct CPP_struct *this, const PCHARP data,
                       ptrdiff_t len, ptrdiff_t tmp, int flags);
 
+static void parse_embed_param(struct CPP_struct *this,
+                              const PCHARP data,
+                              ptrdiff_t len,
+                              ptrdiff_t *posp);
+
+static void add_quoted_string( const void *str, ptrdiff_t len, int shift,
+                               struct string_builder *dst );
 
   /*! @decl void report(SeverityLevel severity, @
    *!                   string filename, int(0..) linenumber, @
@@ -1452,12 +1459,13 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
  *!
  *!   Strings may also be indexed with the @tt{[]@} index operator.
  *!   Finally there are three special "functions" available in @[#if]
- *!   expressions; @[defined()], @[efun()], @[constant()] and
- *!   @[__has_include()].
+ *!   expressions; @[defined()], @[efun()], @[constant()],
+ *!   @[__has_embed()] and @[__has_include()].
  *!
  *! @seealso
  *!   @[#ifdef], @[#ifndef], @[#elif], @[#else], @[#endif],
- *!   @[defined()], @[constant()], @[efun()], @[__has_include()]
+ *!   @[defined()], @[constant()], @[efun()], @[__has_embed()],
+ *!   @[__has_include()]
  */
 
 /*! @directive #ifdef
@@ -1598,7 +1606,7 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
  *!
  *! @seealso
  *!   @[#if], @[#ifdef], @[#else], @[defined()], @[constant()],
- *!   @[__has_include()]
+ *!   @[__has_embed()], @[__has_include()]
  */
 
 /*! @directive #elifdef
@@ -1643,7 +1651,7 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
  *!
  *! @seealso
  *!   @[#if], @[#ifdef], @[#else], @[defined()], @[constant()],
- *!   @[__has_include()]
+ *!   @[__has_embed()], @[__has_include()]
  */
 
 /*! @directive #elifndef
@@ -1688,8 +1696,106 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
  *!
  *! @seealso
  *!   @[#if], @[#ifdef], @[#else], @[defined()], @[constant()],
- *!   @[__has_include()]
+ *!   @[__has_embed()], @[__has_include()]
  */
+
+  /*! @directive #embed
+   *!
+   *!   Include a file as a list of items.
+   *!
+   *!   By default the items are @epxr{int(8bit@}.
+   *!
+   *! @seealso
+   *!   @[#include], @[#string]
+   */
+  PIKEFUN string(0..0) directive_embed(CppFlags_t flags, string line)
+  {
+    struct CPP_struct *this = THIS;
+    PCHARP data = MKPCHARP_STR(line);
+    ptrdiff_t pos = 0;
+    ptrdiff_t prevpos = 0;
+    struct svalue *save_sp = Pike_sp;
+
+    parse_embed_param(this, data, line->len, &pos);
+
+    if ((Pike_sp == save_sp) || (TYPEOF(*save_sp) != PIKE_T_STRING)) {
+      push_empty_string();
+      return;
+    }
+
+    if (OUTP()) {
+      struct pike_string *filename = save_sp->u.string;
+      struct string_builder buf;
+      struct pike_string *data;
+      size_t i;
+
+      ref_push_string(filename);
+      if (!safe_apply_current(f_CPP_read_include_fun_num, 1) ||
+          !((1<<TYPEOF(Pike_sp[-1])) & (BIT_STRING|BIT_INT))) {
+        cpp_handle_exception (this, "Couldn't read include file.");
+        push_empty_string();
+        return;
+      } else if (TYPEOF(Pike_sp[-1]) == PIKE_T_INT) {
+        cpp_error_sprintf(this, "Couldn't read include file %pq.",
+                          filename);
+        push_empty_string();
+        return;
+      }
+
+      data = Pike_sp[-1].u.string;
+
+      if (!data->len) {
+        push_empty_string();
+        return;
+      }
+
+      init_string_builder(&buf, 0);
+
+      if (data->size_shift == eightbit) {
+        for (i = 0; (i < limit) && (i < (size_t)data->len); i++) {
+          if (i) {
+            string_builder_putchar(&buf, ',');
+            if (i & 15) {
+              string_builder_putchar(&buf, ' ');
+            } else {
+              string_builder_sprintf(&buf, "\n#line %ld ",
+                                     (long)this->current_line);
+              add_quoted_string(this->current_file->str,
+                                this->current_file->len,
+                                this->current_file->size_shift,
+                                &buf);
+              string_builder_putchar(&buf, '\n');
+            }
+          }
+          string_builder_append_integer(&buf, data->str[i], 10, 0, 0, 0);
+        }
+      } else {
+        for (i = 0; (i < limit) && (i < (size_t)data->len); i++) {
+          if (i) {
+            string_builder_putchar(&buf, ',');
+            if ((i & 3) || ((i & 4) && (data->size_shift == sixteenbit))) {
+              string_builder_putchar(&buf, ' ');
+            } else {
+              string_builder_sprintf(&buf, "\n#line %ld ",
+                                     (long)this->current_line);
+              add_quoted_string(this->current_file->str,
+                                this->current_file->len,
+                                this->current_file->size_shift,
+                                &buf);
+              string_builder_putchar(&buf, '\n');
+            }
+          }
+          string_builder_append_integer(&buf, index_shared_string(data, i),
+                                        10, 0, 0, 0);
+        }
+      }
+
+      push_string(finish_string_builder(&buf));
+      return;
+    }
+
+    push_empty_string();	/* For now. */
+  }
 
   /*! @directive #error
    *!
@@ -1984,7 +2090,7 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
  *!   @tt{#ifdef MY_DEF@}.
  *!
  *! @seealso
- *!   @[#if], @[#ifdef], @[constant()], @[__has_include()]
+ *!   @[#if], @[#ifdef], @[constant()], @[__has_embed()], @[__has_include()]
  */
 static void check_defined(struct object *cpp_obj,
 			  struct define_struct *UNUSED(def),
@@ -2037,7 +2143,7 @@ static int do_safe_index_call(struct CPP_struct *this, struct pike_string *s)
  *!   Check whether the argument resolves to a constant or not.
  *!
  *! @seealso
- *!   @[#if], @[defined()], @[__has_include()]
+ *!   @[#if], @[defined()], @[__has_embed()], @[__has_include()]
  */
 static void cpp_constant(struct CPP_struct *this, int value)
 {
@@ -4300,7 +4406,7 @@ static void parse_define_body(struct CPP_struct *this,
  *   IN/OUT: Position in the data stream.
  *
  * @param directive
- *   IN: Directive that is being parsed (eg "include" or "string").
+ *   IN: Directive that is being parsed (eg "include", "string" or "embed").
  *
  * @param flags
  *   IN: Cpp flags.
@@ -4441,6 +4547,97 @@ static void parse_include_param(struct CPP_struct *this,
   } else {
     *posp = pos;
   }
+}
+
+/**
+ * Parse the argument to #embed et al.
+ *
+ * @param data
+ *   IN: Data to parse.
+ *
+ * @param len
+ *   IN: Length of data.
+ *
+ * @param posp
+ *   IN/OUT: Position in the data stream.
+ *
+ * Note: On entry data[*posp] may be whitespace.
+ *
+ * On successful return arguments suitable for handle_embed() have
+ * been pushed on the pike stack.
+ */
+static void parse_embed_param(struct CPP_struct *this,
+                              const PCHARP data,
+                              ptrdiff_t len,
+                              ptrdiff_t *posp)
+{
+  ptrdiff_t pos = 0;
+  struct svalue *save_sp = Pike_sp;
+  /* Try macro expanding (Bug 2440). */
+  struct string_builder save = this->buf, tmp;
+  INT_TYPE save_line = this->current_line;
+
+  SKIPSPACE();
+
+  check_stack(3);
+
+  low_parse_include_param(this, data, len, posp, "embed", 0);
+
+  SKIPSPACE();
+
+  if ((save_sp != Pike_sp) && (*posp == len)) {
+    /* No parameters. */
+    f_aggregate_mapping(0);
+    return;
+  }
+
+  /* Buffer for the preprocessed directive line. */
+  init_string_builder(&this->buf, 0);
+
+  pos = *posp;
+  pos += low_cpp(this, ADD_PCHARP(data, pos), len - pos,
+                 CPP_END_AT_NEWLINE|CPP_NO_DIRECTIVES, NULL);
+  *posp = pos;
+
+  tmp = this->buf;
+  this->buf = save;
+  pos = 0;
+
+  {
+    PCHARP data = MKPCHARP_STR(tmp.s);
+    len = tmp.s->len;
+
+    if (save_sp == Pike_sp) {
+      /* The first call to low_parse_include_param() failed.
+       *
+       * We now have the preparsed directive arguments in tmp.
+       * Atempt to parse them again.
+       */
+      low_parse_include_param(this, data, len, &pos, "embed", 0);
+
+      if (Pike_sp == save_sp) {
+        /* Macro expanding didn't help... */
+        cpp_error(this, "Expected file for #embed.");
+
+        free_string_builder(&tmp);
+        return;
+      }
+    }
+
+    /* Invariant: Pike_sp == save_sp + 1. */
+    if (TYPEOF(Pike_sp[-1]) != PIKE_T_STRING) {
+      cpp_handle_error(this, "Couldn't find include file.");
+      pop_n_elems(Pike_sp-save_sp);
+      return;
+    }
+
+    /* FIXME: Parse the optional parameters. */
+    save_sp = Pike_sp;
+  }
+
+  free_string_builder(&tmp);
+
+  f_aggregate_mapping(Pike_sp - save_sp);
 }
 
 /**
@@ -5744,9 +5941,9 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
     f_sprintf(2);
   }
 
-/*! @decl int(0..1) __has_include(mixed identifier)
+/*! @decl int(0..1) __has_include(mixed identifiers)
  *!
- *!   This macro checks whether @[symbol] is a valid argument
+ *!   This macro checks whether the set of @[identifiers] is a valid argument
  *!   to @[#include] or not.
  *!
  *! @returns
@@ -5757,7 +5954,8 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
  *!   Not available prior to Pike 9.0.
  *!
  *! @seealso
- *!   @[#if], @[#ifdef], @[constant()], @[defined()]
+ *!   @[#if], @[#ifdef], @[constant()], @[defined()], @[#include],
+ *!   @[#string], @[__has_embed()]
  */
 PIKEFUN string macro___has_include(string arg)
 {
@@ -5769,14 +5967,13 @@ PIKEFUN string macro___has_include(string arg)
     const PCHARP data = MKPCHARP_STR(arg);
     ptrdiff_t pos = 0;
 
-    /* NB: include_mode 2 inhibits use of the flags and charset arguments. */
-    parse_include_param(this, data, arg->len, &pos, "include", 2, 0, NULL);
+    low_parse_include_param(this, data, arg->len, &pos, "include", 0);
 
     SKIPSPACE();
 
     if ((savesp == Pike_sp) || (pos != arg->len)) {
       cpp_error_sprintf(this, "Invalid argument to __has_include(): %pS.", arg);
-      pop_n_elems(Pike_sp - savesp);
+      push_text(" 0 ");
       return;
     }
 
@@ -5787,6 +5984,55 @@ PIKEFUN string macro___has_include(string arg)
     }
   } else {
     cpp_error_sprintf(this, "Missing argument to __has_include().");
+  }
+
+  push_text(" 0 ");
+}
+
+/*! @decl int(0..1) __has_embed(mixed identifiers)
+ *!
+ *!   This macro checks whether the set of @[identifiers] is a valid argument
+ *!   to @[#embed] or not.
+ *!
+ *! @returns
+ *!   @[__has_embed] returns @expr{1} if the set of identifiers given as
+ *!   argument is valid as an argument to @[#embed] and @expr{0@} otherwise.
+ *!   Note that the set of identifiers may contain preprocessor parameters.
+ *!
+ *! @note
+ *!   Not available prior to Pike 9.0.
+ *!
+ *! @seealso
+ *!   @[#if], @[#ifdef], @[constant()], @[defined()], @[#embed],
+ *!   @[__has_include()]
+ */
+PIKEFUN string macro___has_embed(string arg)
+{
+  struct CPP_struct *this = THIS;
+  struct svalue *savesp = Pike_sp;
+  int res = 0;
+
+  if (arg) {
+    const PCHARP data = MKPCHARP_STR(arg);
+    ptrdiff_t pos = 0;
+
+    parse_embed_param(this, data, arg->len, &pos);
+
+    SKIPSPACE();
+
+    if ((savesp == Pike_sp) || (pos != arg->len)) {
+      cpp_error_sprintf(this, "Invalid argument to __has_embed(): %pS.", arg);
+      push_text(" 0 ");
+      return;
+    }
+
+    /* On success, parse_embed_param() pushes a string and a mapping. */
+    if (TYPEOF(Pike_sp[-2]) == PIKE_T_STRING) {
+      push_text(" 1 ");
+      return;
+    }
+  } else {
+    cpp_error_sprintf(this, "Missing argument to __has_embed().");
   }
 
   push_text(" 0 ");
@@ -6311,6 +6557,7 @@ PIKEFUN string macro___has_include(string arg)
 
     /* These are from the 2023 C standard. */
     DO_MAGIC_DEFINE_FUNC(__has_include, 1, 0);
+    DO_MAGIC_DEFINE_FUNC(__has_embed, 1, 0);
 
     simple_add_define(this, "static_assert", "_Static_assert");
   }
