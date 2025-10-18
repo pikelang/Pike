@@ -4626,7 +4626,7 @@ static void parse_embed_param(struct CPP_struct *this,
 
     /* Invariant: Pike_sp == save_sp + 1. */
     if (TYPEOF(Pike_sp[-1]) != PIKE_T_STRING) {
-      cpp_handle_error(this, "Couldn't find include file.");
+      cpp_error(this, "Couldn't find include file.");
       pop_n_elems(Pike_sp-save_sp);
       return;
     }
