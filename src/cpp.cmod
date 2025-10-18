@@ -1770,7 +1770,7 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
           string_builder_append_integer(&buf, data->str[i], 10, 0, 0, 0);
         }
       } else {
-        for (i = 0; (i < limit) && (i < (size_t)data->len); i++) {
+        for (i = 0; (i < (size_t)data->len); i++) {
           if (i) {
             string_builder_putchar(&buf, ',');
             if ((i & 3) || ((i & 4) && (data->size_shift == sixteenbit))) {
