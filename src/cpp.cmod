@@ -1752,7 +1752,7 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
       init_string_builder(&buf, 0);
 
       if (data->size_shift == eightbit) {
-        for (i = 0; (i < limit) && (i < (size_t)data->len); i++) {
+        for (i = 0; (i < (size_t)data->len); i++) {
           if (i) {
             string_builder_putchar(&buf, ',');
             if (i & 15) {
@@ -1770,7 +1770,7 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
           string_builder_append_integer(&buf, data->str[i], 10, 0, 0, 0);
         }
       } else {
-        for (i = 0; (i < limit) && (i < (size_t)data->len); i++) {
+        for (i = 0; (i < (size_t)data->len); i++) {
           if (i) {
             string_builder_putchar(&buf, ',');
             if ((i & 3) || ((i & 4) && (data->size_shift == sixteenbit))) {
@@ -4626,7 +4626,7 @@ static void parse_embed_param(struct CPP_struct *this,
 
     /* Invariant: Pike_sp == save_sp + 1. */
     if (TYPEOF(Pike_sp[-1]) != PIKE_T_STRING) {
-      cpp_handle_error(this, "Couldn't find include file.");
+      cpp_error(this, "Couldn't find include file.");
       pop_n_elems(Pike_sp-save_sp);
       return;
     }
