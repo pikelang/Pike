@@ -1752,7 +1752,7 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
       init_string_builder(&buf, 0);
 
       if (data->size_shift == eightbit) {
-        for (i = 0; (i < limit) && (i < (size_t)data->len); i++) {
+        for (i = 0; (i < (size_t)data->len); i++) {
           if (i) {
             string_builder_putchar(&buf, ',');
             if (i & 15) {
