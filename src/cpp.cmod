@@ -134,6 +134,8 @@ DECLARATIONS;
  *
  *     string directive_*(...);
  *
+ *     mixed parse_param_*(string sym, string arg);
+ *
  *     void cpp(string data);
  *
  *     Context clone();
@@ -1699,6 +1701,56 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
  *!   @[__has_embed()], @[__has_include()]
  */
 
+  /*! @decl protected int(0..) parse_param_limit(string sym, string arg)
+   *!
+   *! Parse the argument to @expr{limit()@} and/or @expr{__limit__()@}.
+   *!
+   *! @seealso
+   *!   @[#embed], C23 6.10.3.2
+   */
+  PIKEFUN int(0..) parse_param_limit(string sym, string arg)
+    flags ID_PROTECTED;
+  {
+    /* FIXME: Need to support eg arg == "2 + 2" (Cf 6.10.3.2.6). */
+    o_cast_to_int();
+  }
+
+  /*! @decl protected string parse_param_prefix(string sym, string arg)
+   *!
+   *! Parse the argument to @expr{prefix()@} and/or @expr{__prefix__()@}.
+   *!
+   *! @seealso
+   *!   @[#embed], C23 6.10.3.4
+   */
+  PIKEFUN string parse_param_prefix(string sym, string arg)
+    flags ID_PROTECTED;
+  {
+  }
+
+  /*! @decl protected string parse_param_suffix(string sym, string arg)
+   *!
+   *! Parse the argument to @expr{suffix()@} and/or @expr{__suffix__()@}.
+   *!
+   *! @seealso
+   *!   @[#embed], C23 6.10.3.3
+   */
+  PIKEFUN string parse_param_suffix(string sym, string arg)
+    flags ID_PROTECTED;
+  {
+  }
+
+  /*! @decl protected string parse_param_if_empty(string sym, string arg)
+   *!
+   *! Parse the argument to @expr{if_empty()@} and/or @expr{__if_empty__()@}.
+   *!
+   *! @seealso
+   *!   @[#embed], C23 6.10.3.5
+   */
+  PIKEFUN string parse_param_if_empty(string sym, string arg)
+    flags ID_PROTECTED;
+  {
+  }
+
   /*! @directive #embed
    *!
    *!   Include a file as a list of items.
@@ -1725,9 +1777,12 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
 
     if (OUTP()) {
       struct pike_string *filename = save_sp->u.string;
+      struct mapping *params = save_sp[1].u.mapping;
       struct string_builder buf;
+      struct svalue *sval;
       struct pike_string *data;
       size_t i;
+      size_t limit = (size_t)~0;
 
       ref_push_string(filename);
       if (!safe_apply_current(f_CPP_read_include_fun_num, 1) ||
@@ -1745,14 +1800,28 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
       data = Pike_sp[-1].u.string;
 
       if (!data->len) {
-        push_empty_string();
+        sval = low_mapping_string_lookup(params, MK_STRING("if_empty"));
+        if (sval && (TYPEOF(*sval) == PIKE_T_STRING)) {
+          ref_push_string(sval->u.string);
+        } else {
+          push_empty_string();
+        }
         return;
       }
 
       init_string_builder(&buf, 0);
 
+      sval = low_mapping_string_lookup(params, MK_STRING("prefix"));
+      if (sval && (TYPEOF(*sval) == PIKE_T_STRING)) {
+        string_builder_shared_strcat(&buf, sval->u.string);
+      }
+
+      sval = low_mapping_string_lookup(params, MK_STRING("limit"));
+      if (sval && (TYPEOF(*sval) == PIKE_T_INT) && (sval->u.integer >= 0)) {
+        limit = (size_t)sval->u.integer;
+      }
       if (data->size_shift == eightbit) {
-        for (i = 0; (i < (size_t)data->len); i++) {
+        for (i = 0; (i < limit) && (i < (size_t)data->len); i++) {
           if (i) {
             string_builder_putchar(&buf, ',');
             if (i & 15) {
@@ -1788,6 +1857,11 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
           string_builder_append_integer(&buf, index_shared_string(data, i),
                                         10, 0, 0, 0);
         }
+      }
+
+      sval = low_mapping_string_lookup(params, MK_STRING("suffix"));
+      if (sval && (TYPEOF(*sval) == PIKE_T_STRING)) {
+        string_builder_shared_strcat(&buf, sval->u.string);
       }
 
       push_string(finish_string_builder(&buf));
@@ -4550,6 +4624,161 @@ static void parse_include_param(struct CPP_struct *this,
 }
 
 /**
+ * Convert a reserved __symbol__ into a canonical symbol.
+ *
+ * Cf C23 6.10.5: In all aspects, a preprocessor standard parameter
+ *   specified by this document as an identifier pp_param and an
+ *   identifier of the form __pp_param__ shall behave the same when
+ *   used as a preprocessor parameter, except for the spelling.
+ *
+ * Note: Steals a reference from sym.
+ */
+static struct pike_string *canonical_pp_param(struct pike_string *sym)
+{
+  if (!sym || (sym->len < 5)) return sym;
+  if ((index_shared_string(sym, 0) == '_') &&
+      (index_shared_string(sym, 1) == '_') &&
+      (index_shared_string(sym, sym->len - 2) == '_') &&
+      (index_shared_string(sym, sym->len - 1) == '_')) {
+    struct pike_string *ret = string_slice(sym, 2, sym->len - 4);
+    free_string(sym);
+    return ret;
+  }
+  return sym;
+}
+
+/**
+ * Parse the optional parameters to #embed et al.
+ *
+ * @param data
+ *   IN: Data to parse.
+ *
+ * @param len
+ *   IN: Length of data.
+ *
+ * @param posp
+ *   IN/OUT: Position in the data stream.
+ *
+ * Note: On entry data[*posp] may be whitespace.
+ *
+ * On successful return a pairs of arguments suitable for
+ * f_aggregate_mkmapping() to generate the last argument
+ * for handle_embed() have been pushed on the pike stack,
+ * and *posp has been advanced to the position after the
+ * parameter.
+ */
+static void low_parse_embed_param(struct CPP_struct *this,
+                                  const PCHARP data,
+                                  ptrdiff_t len,
+                                  ptrdiff_t *posp)
+{
+  ptrdiff_t pos = *posp;
+  struct svalue *save_sp = Pike_sp;
+  struct pike_string *sym;
+
+  check_stack(3);
+
+  SKIPSPACE();
+
+  /* FIXME: Parse a pp-parameter here. */
+  sym = canonical_pp_param(gobble_identifier(this, data, &pos));
+  if (sym) {
+    int parser_id = -1;
+    struct svalue sv, *parser_fun = NULL;
+
+    ref_push_string(sym);
+
+    SKIPSPACE();
+
+    if ((DATA(pos) == ':') && (DATA(pos + 1) == ':')) {
+      struct pike_string *pp_prefix = sym;
+
+      pos += 2;
+      SKIPSPACE();
+
+      sym = canonical_pp_param(gobble_identifier(this, data, &pos));
+
+      if (!sym) {
+        cpp_error_sprintf(this, "Expected symbol after '%pS::'.", pp_prefix);
+        pop_stack();
+        free_string(pp_prefix);
+        pos = find_end_of_line(this, data, len, pos, 1);
+        *posp = pos;
+        return;
+      }
+
+      push_text("::");
+      ref_push_string(sym);
+      f_add(3);
+
+      stack_dup();
+
+      push_text("parse_param_");
+      push_string(pp_prefix);
+      push_text("_");
+      push_string(sym);
+      f_add(4);
+
+      SKIPSPACE();
+    } else {
+      stack_dup();
+
+      push_text("parse_param_");
+      push_string(sym);
+      f_add(2);
+    }
+
+    sym = Pike_sp[-1].u.string;
+    add_ref(sym);
+    pop_stack();
+
+    if (DATA(pos) == '(') {
+      ptrdiff_t start_paren = pos++;
+      pos = find_end_parenthesis(this, data, len, pos);
+
+      push_string(make_shared_binary_pcharp(ADD_PCHARP(data, start_paren + 1),
+                                            pos - (start_paren + 2)));
+      pike_fprintf(stderr, "pp_param: %pq\n", Pike_sp[-1].u.string);
+     } else {
+      push_undefined();
+    }
+
+    parser_id =
+      really_low_find_shared_string_identifier(sym, Pike_fp->current_program,
+                                               SEE_PROTECTED);
+
+    free_string(sym);
+    if (parser_id < 0) {
+      /* Unsupported pp_param.
+       *
+       * Do not report here as this function is also used from __has_embed().
+       *
+       * The stack at this point holds:
+       *
+       *   <sym>
+       *   <sym>
+       *   <arg>
+       */
+      pop_n_elems(3);
+      /* NB: Not advancing posp indicates error. */
+      return;
+    }
+
+    safe_apply_current(parser_id, 2);
+
+    if (IS_UNDEFINED(Pike_sp-1)) {
+      cpp_error_sprintf(this, "Invalid argument to %pS().\n",
+                        Pike_sp[-2].u.string);
+      pop_n_elems(2);
+      /* NB: Not advancing posp indicates error. */
+      return;
+    }
+  }
+
+  *posp = pos;
+}
+
+/**
  * Parse the argument to #embed et al.
  *
  * @param data
@@ -4631,8 +4860,19 @@ static void parse_embed_param(struct CPP_struct *this,
       return;
     }
 
-    /* FIXME: Parse the optional parameters. */
+    /* Parse the optional parameters. */
     save_sp = Pike_sp;
+
+    while (pos < len) {
+      ptrdiff_t prevpos = pos;
+      low_parse_embed_param(this, data, len, &pos);
+      if (prevpos == pos) {
+        cpp_error_sprintf(this, "Unsupported #embed parameter syntax.");
+        free_string_builder(&tmp);
+        pop_n_elems(Pike_sp + 1 - save_sp);
+        return;
+      }
+    }
   }
 
   free_string_builder(&tmp);
