@@ -830,7 +830,8 @@ static ptrdiff_t calc(struct CPP_struct *this, const PCHARP data,
 static void parse_embed_param(struct CPP_struct *this,
                               const PCHARP data,
                               ptrdiff_t len,
-                              ptrdiff_t *posp);
+                              ptrdiff_t *posp,
+                              int flags);
 
 static void add_quoted_string( const void *str, ptrdiff_t len, int shift,
                                struct string_builder *dst );
@@ -1817,7 +1818,7 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
     ptrdiff_t prevpos = 0;
     struct svalue *save_sp = Pike_sp;
 
-    parse_embed_param(this, data, line->len, &pos);
+    parse_embed_param(this, data, line->len, &pos, CPP_END_AT_NEWLINE);
 
     if ((Pike_sp == save_sp) || (TYPEOF(*save_sp) != PIKE_T_STRING)) {
       push_empty_string();
@@ -2569,6 +2570,11 @@ static ptrdiff_t find_end_of_line( struct CPP_struct *this, const PCHARP data,
 {
   while(pos < len) {
     switch (INDEX_PCHARP(data,pos++)) {
+    case '\r':
+      if (INDEX_PCHARP(data,pos) != '\n') {
+        break;
+      }
+      /* FALLTHRU */
     case '\n':
       return pos-1;
     case '\\':
@@ -4857,7 +4863,8 @@ static void low_parse_embed_param(struct CPP_struct *this,
 static void parse_embed_param(struct CPP_struct *this,
                               const PCHARP data,
                               ptrdiff_t len,
-                              ptrdiff_t *posp)
+                              ptrdiff_t *posp,
+                              int flags)
 {
   ptrdiff_t pos = 0;
   struct svalue *save_sp = Pike_sp;
@@ -4884,7 +4891,7 @@ static void parse_embed_param(struct CPP_struct *this,
 
   pos = *posp;
   pos += low_cpp(this, ADD_PCHARP(data, pos), len - pos,
-                 CPP_END_AT_NEWLINE|CPP_NO_DIRECTIVES, NULL);
+                 flags | CPP_END_AT_NEWLINE|CPP_NO_DIRECTIVES, NULL);
   *posp = pos;
 
   tmp = this->buf;
@@ -4926,6 +4933,13 @@ static void parse_embed_param(struct CPP_struct *this,
       ptrdiff_t prevpos = pos;
       low_parse_embed_param(this, data, len, &pos);
       if (prevpos == pos) {
+        if ((flags & CPP_END_AT_NEWLINE) &&
+            ((INDEX_PCHARP(data, pos) == '\n') ||
+             ((INDEX_PCHARP(data, pos) == '\r') &&
+              (INDEX_PCHARP(data, pos+1) == '\n')))) {
+          break;
+        }
+        /* NB: Complains if the __has_embed() expression contains newlines. */
         cpp_error_sprintf(this, "Unsupported #embed parameter syntax.");
         free_string_builder(&tmp);
         pop_n_elems(Pike_sp + 1 - save_sp);
@@ -6315,7 +6329,7 @@ PIKEFUN string macro___has_embed(string arg)
     const PCHARP data = MKPCHARP_STR(arg);
     ptrdiff_t pos = 0;
 
-    parse_embed_param(this, data, arg->len, &pos);
+    parse_embed_param(this, data, arg->len, &pos, 0);
 
     SKIPSPACE();
 
