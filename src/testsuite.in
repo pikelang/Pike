@@ -11421,7 +11421,7 @@ test_any([[
 // bug 2440 (a)
 #define FILENAME "conftest.h"
 return #string FILENAME;
-]], "return 17;\n")
+]], "return 021;\n")
 
 test_any([[
 // bug 2440 (b)
@@ -11434,7 +11434,7 @@ test_any([[
 string FILENAME = "";
 #define FILENAME "conftest.h"	 + FILENAME
 return #string FILENAME;
-]], "return 17;\n")
+]], "return 021;\n")
 
 test_true( rm("conftest.h") )
 
