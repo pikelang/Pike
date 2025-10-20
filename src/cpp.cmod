@@ -4745,7 +4745,6 @@ static void low_parse_embed_param(struct CPP_struct *this,
   sym = canonical_pp_param(gobble_identifier(this, data, &pos));
   if (sym) {
     int parser_id = -1;
-    struct svalue sv, *parser_fun = NULL;
 
     ref_push_string(sym);
 
@@ -4799,7 +4798,6 @@ static void low_parse_embed_param(struct CPP_struct *this,
 
       push_string(make_shared_binary_pcharp(ADD_PCHARP(data, start_paren + 1),
                                             pos - (start_paren + 2)));
-      pike_fprintf(stderr, "pp_param: %pq\n", Pike_sp[-1].u.string);
      } else {
       push_undefined();
     }
