@@ -11330,7 +11330,8 @@ test_eval_error([[
   cpp ("x y z", "-", 0, handler());
 ]]);
 
-test_true( Stdio.write_file("conftest.h", "return 17;\n") )
+dnl NB: File length needs to be a multiple of 4.
+test_true( Stdio.write_file("conftest.h", "return 021;\n") )
 
 dnl __has_include().
 test_any([[
@@ -11373,6 +11374,49 @@ test_compile_error([[
   return 1;
 #endif
 ]])
+
+dnl #embed and __has_ember().
+test_any_equal([[
+#if __has_embed("conftest.h" prefix(16,) limit(4) suffix(,16) if_empty(0))
+  return ({
+#embed "conftest.h" prefix(16,) limit(4) suffix(,16) if_empty(0)
+  });
+#endif
+]], ({ 16, 'r', 'e', 't', 'u', 16 }))
+
+dnl FIXME: Add test of the above with an empty file.
+
+test_any_equal([[
+#if __has_embed("conftest.h" __pike__::__charset__(ucs2))
+  return ({
+#embed "conftest.h" __pike__::__charset__(ucs2)
+  });
+#endif
+]], ({ 're', 'tu', 'rn', ' 0', '21', ';\n' }))
+
+test_any_equal([[
+#if __has_embed("conftest.h" __pike__::__charset__(ucs2le))
+  return ({
+#embed "conftest.h" __pike__::__charset__(ucs2le)
+  });
+#endif
+]], ({ 'er', 'ut', 'nr', '0 ', '12', '\n;' }))
+
+test_any_equal([[
+#if __has_embed("conftest.h" __pike__::__charset__(ucs4))
+  return ({
+#embed "conftest.h" __pike__::__charset__(ucs4)
+  });
+#endif
+]], ({ 'retu', 'rn 0', '21;\n' }))
+
+test_any_equal([[
+#if __has_embed("conftest.h" __pike__::__charset__(ucs4le))
+  return ({
+#embed "conftest.h" __pike__::__charset__(ucs4le)
+  });
+#endif
+]], ({ 'uter', '0 nr', '\n;12' }))
 
 test_any([[
 #include "conftest.h"

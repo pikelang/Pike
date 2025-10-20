@@ -1751,6 +1751,55 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
   {
   }
 
+  /*! @decl protected type(mixed) parse_param_pike_charset(string sym, string arg)
+   *!
+   *!   Parse the argument for the @[#embed] parameters @expr{pike::charset()@}
+   *!   and/or @expr{__pike__::__charset__()@}.
+   *!
+   *!   This @[#embed] parameter is used to specify the character encoding for
+   *!   the embedded file. If this is not specified, the default encoding
+   *!   (ie @expr{iso-8859-1@}) will be used.
+   *!
+   *!   Some commonly used charsets here are:
+   *!
+   *!   @ul
+   *!     @item UCS-2
+   *!       16-bit quantities in big-endian byte order.
+   *!     @item UCS-2le
+   *!       16-bit quantities in little-endian byte order.
+   *!     @item UCS-4
+   *!       32-bit quantities in big-endian byte order.
+   *!     @item UCS-4be
+   *!       32-bit quantities in little-endian byte order.
+   *!     @item UTF-8
+   *!       Text in UTF-8.
+   *!     @item UTF-16
+   *!       Text in UTF-16.
+   *!     @item UTF-16le
+   *!       Text in UTF-16le.
+   *!   @endul
+   *!
+   *! @seealso
+   *!   @[#embed]
+   */
+  PIKEFUN string parse_param_pike_charset(string sym, string arg)
+    flags ID_PROTECTED;
+  {
+    /* NB: We assume that the empty string is valid input in all
+     *     (relevant) encodings.
+     */
+    push_empty_string();
+    ref_push_string(arg);
+    if (safe_apply_current(f_CPP_decode_charset_fun_num, 2) &&
+        (TYPEOF(Pike_sp[-1]) == PIKE_T_STRING)) {
+      /* Valid character set. */
+      pop_stack();
+      /* NB: arg is at the top of the stack. */
+      return;
+    }
+    push_undefined();
+  }
+
   /*! @directive #embed
    *!
    *!   Include a file as a list of items.
@@ -1795,6 +1844,18 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
                           filename);
         push_empty_string();
         return;
+      }
+
+      sval = low_mapping_string_lookup(params, MK_STRING("pike::charset"));
+      if (sval && (TYPEOF(*sval) == PIKE_T_STRING)) {
+        ref_push_string(sval->u.string);
+
+        if (!safe_apply_current(f_CPP_decode_charset_fun_num, 2) ||
+            (TYPEOF(Pike_sp[-1]) != PIKE_T_STRING)) {
+          cpp_error(this, "Invalid encoding for embedded file.\n");
+          push_empty_string();
+          return;
+        }
       }
 
       data = Pike_sp[-1].u.string;
@@ -4684,7 +4745,6 @@ static void low_parse_embed_param(struct CPP_struct *this,
   sym = canonical_pp_param(gobble_identifier(this, data, &pos));
   if (sym) {
     int parser_id = -1;
-    struct svalue sv, *parser_fun = NULL;
 
     ref_push_string(sym);
 
@@ -4738,7 +4798,6 @@ static void low_parse_embed_param(struct CPP_struct *this,
 
       push_string(make_shared_binary_pcharp(ADD_PCHARP(data, start_paren + 1),
                                             pos - (start_paren + 2)));
-      pike_fprintf(stderr, "pp_param: %pq\n", Pike_sp[-1].u.string);
      } else {
       push_undefined();
     }
