@@ -1741,7 +1741,7 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
     if (Pike_sp[-1].u.integer < 0) {
       cpp_error_sprintf(this,
                         "Bad value for limit() expression, expected int(0..), "
-                        "got %lld.", (INT64)Pike_sp[-1].u.integer);
+                        "got %"PRINTPIKEINT"d.", Pike_sp[-1].u.integer);
       push_int(0);
     }
 
