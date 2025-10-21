@@ -826,6 +826,8 @@ static struct define_struct *find_define(struct CPP_struct *this, struct pike_st
 
 static ptrdiff_t calc(struct CPP_struct *this, const PCHARP data,
                       ptrdiff_t len, ptrdiff_t tmp, int flags);
+static ptrdiff_t skipspace(struct CPP_struct *this, const PCHARP data,
+                           ptrdiff_t pos, int emit);
 
 static void parse_embed_param(struct CPP_struct *this,
                               const PCHARP data,
@@ -1712,8 +1714,41 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
   PIKEFUN int(0..) parse_param_limit(string sym, string arg)
     flags ID_PROTECTED;
   {
-    /* FIXME: Need to support eg arg == "2 + 2" (Cf 6.10.3.2.6). */
-    o_cast_to_int();
+    struct CPP_struct *this = THIS;
+    struct string_builder save = this->buf;
+    INT_TYPE save_line = this->current_line;
+    PCHARP data = MKPCHARP_STR(arg);
+    ptrdiff_t pos = 0;
+
+    /* Buffer for the calculated expression. */
+    init_string_builder(&this->buf, 0);
+
+    pos = calc(this, data, arg->len, 0, 0);
+
+    /* NB: SKIPSPACE() macro is not available here. */
+    pos = skipspace(this, data, pos, 1);
+    if (pos < arg->len) {
+      cpp_error(this, "Invalid syntax in limit() expression.");
+    }
+
+    /* NB: The evaluated value is already on the stack. */
+    if (TYPEOF(Pike_sp[-1]) != PIKE_T_INT) {
+      cpp_error_sprintf(this,
+                        "Bad type for limit() expression, expected int(0..), "
+                        "got %s.", get_name_of_type(TYPEOF(Pike_sp[-1])));
+      push_int(0);
+    }
+    if (Pike_sp[-1].u.integer < 0) {
+      cpp_error_sprintf(this,
+                        "Bad value for limit() expression, expected int(0..), "
+                        "got %lld.", (INT64)Pike_sp[-1].u.integer);
+      push_int(0);
+    }
+
+    /* Restore preprocessor context. */
+    free_string_builder(&this->buf);
+    this->buf = save;
+    this->current_line = save_line;
   }
 
   /*! @decl protected string parse_param_prefix(string sym, string arg)
