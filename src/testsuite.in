@@ -11367,7 +11367,7 @@ test_compile_error([[
 #endif
 ]])
 
-dnl #embed and __has_ember().
+dnl #embed and __has_embed().
 test_any_equal([[
 #if __has_embed("conftest.h" prefix(16,) limit(4) suffix(,16) if_empty(0))
   return ({
@@ -11375,6 +11375,23 @@ test_any_equal([[
   });
 #endif
 ]], ({ 16, 'r', 'e', 't', 'u', 16 }))
+
+test_any_equal([[
+#if __has_embed("conftest.h" prefix(16,) limit(4+2) suffix(,16) if_empty(0))
+  return ({
+#embed "conftest.h" prefix(16,) limit(4) suffix(,16) if_empty(0)
+  });
+#endif
+]], ({ 16, 'r', 'e', 't', 'u', 'r', 'n', 16 }))
+
+test_any_equal([[
+#define EMBED_LIMIT	4+2
+#if __has_embed("conftest.h" prefix(16,) limit(EMBED_LIMIT) suffix(,16) if_empty(0))
+  return ({
+#embed "conftest.h" prefix(16,) limit(EMBED_LIMIT) suffix(,16) if_empty(0)
+  });
+#endif
+]], ({ 16, 'r', 'e', 't', 'u', 'r', 'n', 16 }))
 
 dnl FIXME: Add test of the above with an empty file.
 
@@ -11435,6 +11452,18 @@ string FILENAME = "";
 #define FILENAME "conftest.h"	 + FILENAME
 return #string FILENAME;
 ]], "return 021;\n")
+
+dnl Tests with empty file.
+test_true( Stdio.write_file("conftest.h", "") )
+
+dnl #embed and __has_embed().
+test_any_equal([[
+#if __has_embed("conftest.h" prefix(16,) limit(4+2) suffix(,16) if_empty(0))
+  return ({
+#embed "conftest.h" prefix(16,) limit(4) suffix(,16) if_empty(0)
+  });
+#endif
+]], ({ 0 }))
 
 test_true( rm("conftest.h") )
 
