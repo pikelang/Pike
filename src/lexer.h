@@ -644,6 +644,9 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	case TWO_CHAR('w','h'):
 	  if(ISWORD("while")) return TOK_WHILE;
 	  break;
+        case TWO_CHAR('_','G'):
+          if(ISWORD("_Generic")) return TOK__GENERIC;
+          break;
 	case TWO_CHAR('_','S'):
 	  if(ISWORD("_Static_assert")) return TOK_STATIC_ASSERT;
 	  break;
