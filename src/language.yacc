@@ -76,6 +76,7 @@
 %token TOK_FUNCTION_ID "function"
 %token TOK_GAUGE "gauge"
 %token TOK_GENERIC "__generic__"
+%token TOK__GENERIC "_Generic"
 %token TOK_GENERATOR "__generator__"
 %token TOK_GLOBAL "global"
 %token TOK_IDENTIFIER "identifier"
@@ -429,6 +430,10 @@ int yylex(YYSTYPE *yylval);
 %type <n> for_expr
 %type <n> foreach
 %type <n> gauge
+%type <n> generic_association
+%type <n> generic_assoc_list
+%type <n> generic_selection
+%type <n> generic_type_spec
 %type <n> labeled_statement
 %type <n> lambda
 %type <n> local_name_list
@@ -1270,6 +1275,7 @@ magic_identifiers3:
   | TOK_FOREACH    { $$ = "foreach"; }
   | TOK_CATCH      { $$ = "catch"; }
   | TOK_GAUGE      { $$ = "gauge"; }
+  | TOK__GENERIC   { $$ = "_Generic"; }
   | TOK_CLASS      { $$ = "class"; }
   | TOK_BREAK      { $$ = "break"; }
   | TOK_CASE       { $$ = "case"; }
@@ -3713,9 +3719,45 @@ safe_chain_expr: TOK_SAFE_START_INDEX line_number_info assignment_expr ']'
   }
   ;
 
+generic_type_spec: full_type
+  {
+    struct pike_type *t = compiler_pop_type();
+    $$ = mktypenode(t);
+    free_type(t);
+  }
+  | TOK_DEFAULT
+  {
+    $$ = mktypenode(any_type_string);
+  }
+  ;
+
+generic_association: generic_type_spec ':' assignment_expr
+  {
+    $$ = mknode(':', $1, $3);
+  }
+  ;
+
+generic_assoc_list: generic_association
+  {
+    $$ = mknode(F_ARG_LIST, $1, NULL);
+  }
+  | generic_assoc_list ',' generic_association
+  {
+    $$ = mknode(F_ARG_LIST, $1, $3);
+  }
+  ;
+
+generic_selection: TOK__GENERIC open_paren_with_line_info
+  assignment_expr ',' generic_assoc_list ')'
+  {
+    $$ = mkgeneric_selection($3, $5);
+  }
+  ;
+
 primary_expr: literal_expr
   | catch
   | gauge
+  | generic_selection
   | typeof
   | sscanf
   | static_assertion { $$ = mknewintnode(0); }
@@ -4721,6 +4763,8 @@ bad_const_expr_ident: bad_expr_ident
   { yyerror_reserved("__FUNCTION__");}
   | TOK_GAUGE
   { yyerror_reserved("gauge"); }
+  | TOK__GENERIC
+  { yyerror_reserved("_Generic"); }
   | TOK_IF
   { yyerror_reserved("if"); }
   | TOK_IMPORT

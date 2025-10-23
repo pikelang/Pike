@@ -15381,6 +15381,35 @@ test_false([[class { string test(string|zero foo) { catch { return lower_case(fo
 test_true([[catch (1.0 / 0.0)]])
 test_true([[catch {float f = 1.0 / 0.0;}]])
 
+// - _Generic
+test_any_equal([[
+  int a, b, c, d;
+#define FOO(X) _Generic((X), int(7bit):a, int(8bit):b, default:c, float:d)
+  FOO(5) = 5;
+  FOO(200) = 200;
+  FOO(1000) = 1000;
+  FOO(12.8) = 128;
+  return ({ FOO(1), FOO(129), FOO("bar"), FOO(0.5) });
+]], ({ 5, 200, 1000, 128 }))
+test_compile_error([[
+  int a, b, c, d;
+#define FOO(X) _Generic((X), int(7bit):a, int(8bit):b, float:d)
+  FOO(5) = 5;
+  FOO(200) = 200;
+  FOO(1000) = 1000;	// This will fail as int(1000) does not match.
+  FOO(12.8) = 128;
+  return ({ FOO(1), FOO(129), FOO("bar"), FOO(0.5) });
+]])
+test_compile_error([[
+  int a, b, c, d;
+#define FOO(X) _Generic((X), int(7bit):a, int(8bit):b, int:c, float:d)
+  FOO(5) = 5;
+  FOO(200) = 200;
+  FOO(1000) = 1000;
+  FOO(12.8) = 128;
+  return ({ FOO(1), FOO(129), FOO("bar"), FOO(0.5) });
+]])
+
 
 // Pike modules
 

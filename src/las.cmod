@@ -1213,6 +1213,45 @@ node *mkbindnode(node *expr, struct pike_type *type)
   return expr;
 }
 
+node *mkgeneric_selection(node *expr, node *assocs)
+{
+  struct pike_type *t = expr? expr->type: NULL;
+  node *best = NULL;
+  struct pike_type *best_type = any_type_string;
+  node *n = assocs;
+
+  while (n) {
+    /* NB: Tree-opt has reversed the nesting-order for the F_ARG_LIST nodes. */
+    node *nn = (n->token == F_ARG_LIST)?CDR(n):n;
+    struct pike_type *nt = nn?CAR(nn)->u.sval.u.type:NULL;
+    if (nt == t) {
+      best = CDR(nn);
+      add_ref(best);
+      free_node(expr);
+      free_node(assocs);
+      return best;
+    }
+    if (pike_types_le(t, nt, 0, 0) &&
+        pike_types_le(nt, best_type, 0, 0)) {
+      best = CDR(nn);
+      best_type = nt;
+    }
+
+    if (n->token != F_ARG_LIST) break;
+    n = CAR(n);
+  }
+
+  if (best) {
+    add_ref(best);
+    free_node(expr);
+    free_node(assocs);
+  } else if (assocs) {
+    yytype_error("Bad _Generic(). None of the associations match.", t, NULL, 0);
+  }
+
+  return best;
+}
+
 node *debug_mkstrnode(struct pike_string *str)
 {
   node *res = mkemptynode();
