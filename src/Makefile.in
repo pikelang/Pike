@@ -233,6 +233,7 @@ SRC_TARGETS= \
  $(SRCDIR)/interpret_functions_fixed.h \
  $(SRCDIR)/peep_engine.c \
  $(SRCDIR)/case_info.h \
+ $(SRCDIR)/pike_unicode.h \
  $(SRCDIR)/errno_remap.h \
  $(SRCDIR)/whitespace.h \
  $(SRCDIR)/treeopt.h $(PMOD_TARGETS)
@@ -1144,6 +1145,10 @@ $(SRCDIR)/case_info.h: $(SRCDIR)/UnicodeData.txt $(TMP_BINDIR)/make_ci.pike
 	./precompile.sh $(TMP_BINDIR)/make_ci.pike $(SRCDIR)/case_info.h \
 	  <$(SRCDIR)/UnicodeData.txt
 
+$(SRCDIR)/pike_unicode.h: $(SRCDIR)/UnicodeData-ReadMe.txt $(TMP_BINDIR)/make_unicode.h.pike
+	./precompile.sh $(TMP_BINDIR)/make_unicode.h.pike \
+	  $(SRCDIR)/pike_unicode.h <$(SRCDIR)/UnicodeData-ReadMe.txt
+
 $(SRCDIR)/errno_remap.h : $(SRCDIR)/modules/system/errnos.list $(SRCDIR)/mkerrno_remap.sed
 	sed -n -f $(SRCDIR)/mkerrno_remap.sed \
 	  <$(SRCDIR)/modules/system/errnos.list >$(SRCDIR)/errno_remap.h
@@ -1331,7 +1336,7 @@ $(SRCDIR)/interpret_functions_fixed.h: $(SRCDIR)/interpret_functions.h precompil
 # UnixWare make needs help to find the source file...
 builtin.o: $(SRCDIR)/builtin.c $(SRCDIR)/whitespace.h
 
-cpp.o: $(SRCDIR)/cpp.c
+cpp.o: $(SRCDIR)/cpp.c $(SRCDIR)/pike_unicode.h
 
 iterators.o: $(SRCDIR)/iterators.c
 
