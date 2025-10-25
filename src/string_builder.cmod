@@ -1150,6 +1150,11 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 	  flags = (flags & ~APPEND_WIDTH_MASK) | APPEND_WIDTH_PTR;
 	  continue;
 
+        case 'N':	/* node * */
+          /* FIXME: Doesn't care about field or integer widths yet. */
+          describe_node_tree(s, va_arg(args, node *));
+          break;
+
 	case 'T':	/* struct pike_type */
 	  /* FIXME: Doesn't care about field or integer widths yet. */
 	  low_describe_type(s, va_arg(args, struct pike_type *));
@@ -1181,10 +1186,6 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
             string_builder_binary_strcat(s, buffer_ptr(&buf), buffer_content_length(&buf));
             buffer_free(&buf);
           }
-          break;
-        case 'N':	/* struct node_s */
-          /* FIXME: Doesn't care about field or integer widths yet. */
-          describe_node_tree(s, va_arg(args, node *));
           break;
 	case 'O':
 	  {
