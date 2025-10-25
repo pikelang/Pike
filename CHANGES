@@ -76,6 +76,8 @@ o Syntax for declaring and using generic types added.
 
     bar->z = 1.0;
 
+o Support for _Generic() special form added from C23.
+
 o Several modules have been updated to use generic types.
 
   - ADT.CircularList
@@ -173,17 +175,56 @@ o Three pass compiler.
   resolve types in forward referring expressions, and is only run when
   needed.
 
-o #pragma disassemble
+o The preprocessor (aka cpp()) has several new features:
 
-  This directive is now available even in pikes compiled --without-debug.
+  - It is now possible to customize the preprocessor and eg add
+    custom directives.
 
-  The byte code output is now interleaved with the generated machine code
-  on selected architectures.
+  - Improved white-space fidelity.
 
-o #pragma no_strict_types
+    White space characters that aren't '\r' are now kept unmodified in the
+    output. '\r' characters are removed if they are followed immediately
+    by a '\n' character, and are otherwise kept. This change makes cpp()
+    keep indentations, and improves the readability of the output from
+    Tools.Standalone.precompile.
 
-  It is now possible to turn off the strict types mode for a section
-  of code.
+  - Support for C99-style varargs macros.
+
+  - Warn about redefining macros.
+
+    The preprocessor now warns if a macro is redefined with a non-equivalent
+    definition.
+
+  - #elifdef and #elseifdef
+
+    These work as a combined @[#else] and @[#ifdef] without
+    adding an extra level of nesting. Added from C23.
+
+  - #if __has_include()
+
+    This checks whether an include file is available. Added from C23.
+
+  - #embed and #if __has_embed()
+
+    This embeds integers read from an include file and checks whether
+    it is available respectively. Added from C23.
+
+  - #pragma disassemble
+
+    This directive is now available even in pikes compiled --without-debug.
+
+    The byte code output is now interleaved with the generated machine code
+    on selected architectures.
+
+  - #pragma experimental_warnings and #pragma no_experimental_warnings
+
+    These enable/disable warnings for use of experimental symbols
+    (default: enabled).
+
+  - #pragma no_strict_types
+
+    It is now possible to turn off the strict types mode for a section
+    of code.
 
 o Complain about redundant backslash escapes.
 
@@ -1302,4 +1343,4 @@ Lysator pikelang/pike: #1694, #2100, #2315, #3150, #3681, #4312, #4934,
   #10147, #10150, #10151, #10154, #10155, #10156, #10158, #10160, #10161,
   #10162, #10163, #10164, #10170, #10171, #10173, #10175, #10177, #10178,
   #10179, #10180, #10181, #10183, #10187, #10188, #10191, #10192, #10195,
-  #10196, #10197, #10198
+  #10196, #10197, #10198, #10202, #10203, #10204
