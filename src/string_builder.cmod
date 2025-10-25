@@ -1184,7 +1184,7 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
           break;
         case 'N':	/* struct node_s */
           /* FIXME: Doesn't care about field or integer widths yet. */
-          describe_node(s, va_arg(args, node *));
+          describe_node_tree(s, va_arg(args, node *));
           break;
 	case 'O':
 	  {
