@@ -2573,6 +2573,255 @@ node **is_call_to(node *n, c_fun f)
 }
 
 /* FIXME: Ought to use parent pointer to avoid recursion. */
+static void low_describe_node(struct string_builder *s, node *n, int needlval)
+{
+  if(!n) return;
+
+  fatal_check_c_stack(16384);
+
+  /* NB: Cast to int to inhibit signed/unsigned warning
+   *     from some versions of gcc (eg gcc 3.4.3/Solaris 10).
+   */
+  switch(l_flag > 99 ? -1 : (int)n->token)
+  {
+  case USHRT_MAX:
+    string_builder_strcat(s, "FREED_NODE");
+    break;
+  case F_LOCAL:
+  case F_LOCAL_INDIRECT:
+    if (needlval) string_builder_putchar(s, '&');
+    if (n->token == F_LOCAL_INDIRECT) string_builder_putchar(s, '$');
+    if (n->u.integer.b)
+    {
+      string_builder_sprintf(s, "$<%ld>%ld",
+                             (long)n->u.integer.b,
+                             (long)n->u.integer.a);
+    } else {
+      string_builder_sprintf(s, "$%ld", (long)n->u.integer.a);
+    }
+    break;
+
+  case '?':
+    string_builder_putchar(s, '(');
+    low_describe_node(s, _CAR(n), 0);
+    string_builder_strcat(s, ")?(");
+    if (_CDR(n)) {
+      low_describe_node(s, _CADR(n), 0);
+      string_builder_strcat(s, "):(");
+      low_describe_node(s, _CDDR(n), 0);
+    } else {
+      string_builder_strcat(s, "0:0");
+    }
+    string_builder_putchar(s, ')');
+    break;
+
+  case F_EXTERNAL:
+  case F_GET_SET:
+    if(needlval) string_builder_putchar(s, '&');
+    {
+      struct program_state *state = Pike_compiler;
+      char *name = "?";
+      int program_id = n->u.integer.a;
+      int level = 0;
+      int id_no = n->u.integer.b;
+      while(state && (state->new_program->id != program_id)) {
+        state = state->previous;
+        level++;
+      }
+      if (id_no == IDREF_MAGIC_THIS)
+        name = "this";
+      else if (state) {
+        struct identifier *id = ID_FROM_INT(state->new_program, id_no);
+        if (id && id->name) {
+          name = id->name->str;
+        }
+      }
+      string_builder_sprintf(s, "ext(%d:%s)", level, name);
+    }
+    break;
+
+  case F_TRAMPOLINE:
+    if (Pike_compiler->new_program) {
+      string_builder_sprintf(s, "trampoline<%s>",
+                             ID_FROM_INT(Pike_compiler->new_program,
+                                         n->u.trampoline.ident)->name->str);
+    } else {
+      string_builder_strcat(s, "trampoline<unknown identifier>");
+    }
+    break;
+
+  case F_CLEAR_LOCAL:
+    low_describe_node(s, _CAR(n), 1);
+    string_builder_sprintf(s, "=0");
+    break;
+
+  case F_ASSIGN:
+  case F_INITIALIZE:
+    low_describe_node(s, _CAR(n), 1);
+    string_builder_putchar(s, '=');
+    low_describe_node(s, _CDR(n), 0);
+    break;
+
+  case F_ASSIGN_SELF:
+    low_describe_node(s, _CAR(n), 1);
+    string_builder_putchar(s, ':');
+    string_builder_putchar(s, '=');
+    low_describe_node(s, _CDR(n), 0);
+    break;
+
+  case F_POP_VALUE:
+    string_builder_putchar(s, '{');
+    low_describe_node(s, _CAR(n), 0);
+    string_builder_putchar(s, '}');
+    break;
+
+  case F_CAST:
+  {
+    string_builder_sprintf(s, "(%pT){%pN}", n->type, _CAR(n));
+    break;
+  }
+
+  case F_SOFT_CAST:
+  {
+    string_builder_sprintf(s, "[%pT(%pN)]{%pN}", n->type, _CDR(n), _CAR(n));
+    break;
+  }
+
+  case F_COMMA_EXPR:
+    low_describe_node(s, _CAR(n), 0);
+    if(_CAR(n) && _CDR(n))
+    {
+      if(_CAR(n)->type == void_type_string &&
+         _CDR(n)->type == void_type_string)
+        string_builder_strcat(s, ";\n");
+      else
+        string_builder_strcat(s, ",\n");
+    }
+    low_describe_node(s, _CDR(n), needlval);
+    return;
+
+  case F_ARG_LIST:
+    low_describe_node(s, _CAR(n), 0);
+    if(_CAR(n) && _CDR(n))
+    {
+      if(_CAR(n)->type == void_type_string &&
+         _CDR(n)->type == void_type_string)
+        string_builder_strcat(s, ";\n");
+      else
+        string_builder_putchar(s, ',');
+    }
+    low_describe_node(s, _CDR(n), needlval);
+    return;
+
+    case F_ARRAY_LVALUE:
+      string_builder_putchar(s, '[');
+      low_describe_node(s, _CAR(n), 1);
+      string_builder_putchar(s, ']');
+      break;
+
+  case F_LVALUE_LIST:
+    low_describe_node(s, _CAR(n), 1);
+    if(_CAR(n) && _CDR(n)) string_builder_putchar(s, ',');
+    low_describe_node(s, _CDR(n), 1);
+    return;
+
+  case F_CONSTANT:
+  {
+    struct byte_buffer buf = BUFFER_INIT();
+    describe_svalue(&buf, & n->u.sval, 0, 0);
+    string_builder_sprintf(s, "const(%s)",buffer_get_string(&buf));
+    buffer_free(&buf);
+    break;
+  }
+
+  case F_VAL_LVAL:
+  case F_FOREACH_VAL_LVAL:
+    low_describe_node(s, _CAR(n), 0);
+    string_builder_strcat(s, ",&");
+    low_describe_node(s, _CDR(n), 0);
+    return;
+
+  case F_AUTO_MAP:
+    string_builder_strcat(s, "__automap__ ");
+    low_describe_node(s, _CAR(n), 0);
+    string_builder_putchar(s, '(');
+    low_describe_node(s, _CDR(n), 0);
+    string_builder_putchar(s, ')');
+    return;
+  case F_AUTO_MAP_MARKER:
+    low_describe_node(s, _CAR(n), 0);
+    string_builder_strcat(s, "[*]");
+    return;
+  case F_APPLY:
+    low_describe_node(s, _CAR(n), 0);
+    string_builder_putchar(s, '(');
+    low_describe_node(s, _CDR(n), 0);
+    string_builder_putchar(s, ')');
+    return;
+
+  case F_NORMAL_STMT_LABEL:
+  case F_CUSTOM_STMT_LABEL:
+    string_builder_sprintf(s, "%s:", _CAR(n)->u.sval.u.string->str);
+    low_describe_node(s, _CDR(n), 0);
+    return;
+
+  case F_LOOP:
+    string_builder_strcat(s, "loop(");
+    if(car_is_node(n)) low_describe_node(s, _CAR(n), 0);
+    string_builder_strcat(s, ",{");
+    if(cdr_is_node(n)) low_describe_node(s, _CDR(n), 0);
+    string_builder_strcat(s, "})");
+    return;
+
+  case F_VOLATILE_RETURN:
+    string_builder_strcat(s, "volatile_");
+    /* FALLTHRU */
+  case F_RETURN:
+    switch(CDR(n) ? CDR(n)->u.sval.u.integer : 0) {
+    case 2:
+      string_builder_strcat(s, "yield");
+      break;
+
+    case 1:
+      string_builder_strcat(s, "continue_return");
+      break;
+
+    default:
+      string_builder_strcat(s, "return");
+      break;
+    }
+    string_builder_putchar(s, '(');
+    if(car_is_node(n)) low_describe_node(s, _CAR(n), 0);
+    string_builder_putchar(s, ')');
+    return;
+
+  default:
+    if(!car_is_node(n) && !cdr_is_node(n))
+    {
+      string_builder_strcat(s, get_token_name(n->token));
+      return;
+    }
+    if(n->token<256)
+    {
+      string_builder_putchar(s, n->token);
+    }else{
+      string_builder_strcat(s, get_token_name(n->token));
+    }
+    string_builder_putchar(s, '(');
+    if(car_is_node(n)) low_describe_node(s, _CAR(n), 0);
+    if(car_is_node(n) && cdr_is_node(n))
+      string_builder_putchar(s, ',');
+    if(cdr_is_node(n)) low_describe_node(s, _CDR(n), 0);
+    string_builder_putchar(s, ')');
+    return;
+  }
+}
+void describe_node(struct string_builder *s, node *n)
+{
+  low_describe_node(s, n, 0);
+}
+
+/* FIXME: Ought to use parent pointer to avoid recursion. */
 static void low_print_tree(node *foo,int needlval)
 {
   if(!foo) return;
