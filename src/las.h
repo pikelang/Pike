@@ -20,6 +20,7 @@ typedef void (*c_fun)(INT32);
 #define YYTE_IS_WARNING	1
 
 struct compiler_frame;		/* Avoid gcc warning. */
+struct string_builder;		/* Avoid gcc warning. */
 
 /*
  * Prototypes for functions in language.yacc.
