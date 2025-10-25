@@ -27,6 +27,7 @@
 #include "lex.h"
 #include "sprintf.h"
 #include "pike_compiler.h"
+#include "pike_unicode.h"
 
 #include <ctype.h>
 
@@ -6224,6 +6225,45 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
     f_sprintf(2);
   }
 
+  /*! @decl constant __STDC_ISO_10646__
+   *!
+   *!   This macro expands to the year and date (6 digits) of the Unicode
+   *!   standard that the Pike runtime supports.
+   *!
+   *!   Note that this differs slightly from the corresponding macro
+   *!   in the C23 standard in that it does NOT have an ending @expr{'L'@}.
+   *!
+   *! @seealso
+   *!   @[__UNICODE_VERSION__]
+   */
+  PIKEFUN string macro___STDC_ISO_10646__()
+  {
+    push_text(" %04d%02d ");
+    push_int(PIKE_UNICODE_YEAR);
+    push_int(PIKE_UNICODE_MONTH);
+    f_sprintf(3);
+  }
+
+  /*! @decl constant __UNICODE_VERSION__
+   *!
+   *!   This macro expands to a decimal representation of the version of
+   *!   the Unicode standard that the Pike runtime supports. It is
+   *!   formated with the @[sprintf]-format @expr{%d%02d%02d@} with
+   *!   the values major, minor and revision in order. Version 12.1 thus
+   *!   results in the value @expr{120100@}.
+   *!
+   *! @seealso
+   *!   @[__STDC_ISO_10646__]
+   */
+  PIKEFUN string macro___UNICODE_VERSION__()
+  {
+    push_text(" %d%02d%02d ");
+    push_int(PIKE_UNICODE_MAJOR);
+    push_int(PIKE_UNICODE_MINOR);
+    push_int(PIKE_UNICODE_REVISION);
+    f_sprintf(4);
+  }
+
   /*! @decl constant __VERSION__
    *!
    *! This define contains the current Pike version as a float. If
@@ -6904,6 +6944,7 @@ PIKEFUN string macro___has_embed(string arg)
     DO_MAGIC_DEFINE_FUNC(_Pragma, 1, CPP_MACRO_KEEP_NL);
 
     /* These are from the 2023 C standard. */
+    DO_MAGIC_DEFINE(__STDC_ISO_10646__);
     DO_MAGIC_DEFINE_FUNC(__has_include, 1, 0);
     DO_MAGIC_DEFINE_FUNC(__has_embed, 1, 0);
 
@@ -6974,6 +7015,8 @@ PIKEFUN string macro___has_embed(string arg)
                       DEFINETOSTR(SIZEOF_INT));
     simple_add_define(this, "SIZEOF_FLOAT",
                       DEFINETOSTR(SIZEOF_FLOAT));
+
+    DO_MAGIC_DEFINE(__UNICODE_VERSION__);
   }
 
   /*! @decl void define_multiple_macros(mapping(string: @
