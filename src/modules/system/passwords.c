@@ -28,7 +28,7 @@
 #include "module_support.h"
 #include "interpret.h"
 #include "stralloc.h"
-#include "threads.h"
+#include "pike_threads.h"
 #include "svalue.h"
 #include "builtin_functions.h"
 #include "constants.h"

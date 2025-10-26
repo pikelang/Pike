@@ -23,7 +23,7 @@
 #include "pike_error.h"
 #include "signal_handler.h"
 #include "pike_types.h"
-#include "threads.h"
+#include "pike_threads.h"
 #include "bignum.h"
 
 #include "module_support.h"

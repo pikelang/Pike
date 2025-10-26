@@ -7,7 +7,7 @@
 #include "module.h"
 #include "interpret.h"
 #include "operators.h"
-#include "threads.h"
+#include "pike_threads.h"
 #include "pike_compiler.h"
 #include "module_support.h"
 

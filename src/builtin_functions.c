@@ -25,7 +25,7 @@
 #include "backend.h"
 #include "main.h"
 #include "pike_memory.h"
-#include "threads.h"
+#include "pike_threads.h"
 #include "time_stuff.h"
 #include "version.h"
 #include "encode.h"

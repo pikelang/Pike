@@ -24,7 +24,7 @@
 #include "pike_memory.h"
 #include "pike_types.h"
 #include "gc.h"
-#include "threads.h"
+#include "pike_threads.h"
 #include "operators.h"
 #include "sprintf.h"
 

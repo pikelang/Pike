@@ -11,7 +11,7 @@
 #include "module_support.h"
 #include "interpret.h"
 #include "svalue.h"
-#include "threads.h"
+#include "pike_threads.h"
 #include "mapping.h"
 #include "pike_error.h"
 #include "stralloc.h"

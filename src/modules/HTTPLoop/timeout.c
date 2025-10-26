@@ -6,8 +6,8 @@
 
 #include "config.h"
 #if !defined(__NT__) && !defined(__WIN32__)
-#include <global.h>
-#include <threads.h>
+#include "global.h"
+#include "pike_threads.h"
 #include <signal.h>
 
 #ifdef _REENTRANT

@@ -34,7 +34,7 @@
 #include "fd_control.h"
 #include "object.h"
 #include "array.h"
-#include "threads.h"
+#include "pike_threads.h"
 #include "interpret.h"
 #include "svalue.h"
 #include "callback.h"

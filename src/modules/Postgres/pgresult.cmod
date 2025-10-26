@@ -67,7 +67,7 @@
 /* Pike includes */
 #include "stralloc.h"
 #include "object.h"
-#include "threads.h"
+#include "pike_threads.h"
 #include "array.h"
 #include "mapping.h"
 #include "builtin_functions.h"

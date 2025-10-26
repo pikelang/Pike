@@ -8,7 +8,7 @@
 #include "pike_compiler.h"
 #include "pike_macros.h"
 #include "pike_error.h"
-#include "threads.h"
+#include "pike_threads.h"
 #include "builtin_functions.h"
 #include "main.h"
 #include "interpret.h"

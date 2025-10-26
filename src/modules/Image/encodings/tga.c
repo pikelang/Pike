@@ -53,7 +53,7 @@
 #include "stralloc.h"
 #include "operators.h"
 #include "pike_memory.h"
-#include "threads.h"
+#include "pike_threads.h"
 #include "module_support.h"
 #include "builtin_functions.h"
 #include "pike_types.h"

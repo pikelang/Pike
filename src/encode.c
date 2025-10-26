@@ -21,7 +21,7 @@
 #include "builtin_functions.h"
 #include "module_support.h"
 #include "fsort.h"
-#include "threads.h"
+#include "pike_threads.h"
 #include "version.h"
 #include "bignum.h"
 #include "pikecode.h"

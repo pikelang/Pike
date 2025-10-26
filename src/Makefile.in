@@ -204,7 +204,7 @@ CORE_OBJ= \
  stralloc.o \
  string_builder.o \
  svalue.o \
- threads.o \
+ pike_threads.o \
  version.o \
  @EXTRA_OBJS@
 
@@ -1504,7 +1504,7 @@ HFILES=						\
   svalue.protos					\
   dynamic_load.protos				\
   module_support.protos				\
-  threads.protos				\
+  pike_threads.protos				\
   multiset.protos				\
   encode.protos					\
   object.protos					\

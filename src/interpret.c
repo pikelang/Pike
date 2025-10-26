@@ -24,7 +24,7 @@
 #include "builtin_functions.h"
 #include "signal_handler.h"
 #include "gc.h"
-#include "threads.h"
+#include "pike_threads.h"
 #include "callback.h"
 #include "fd_control.h"
 #include "bignum.h"

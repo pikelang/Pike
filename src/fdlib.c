@@ -93,7 +93,7 @@
 #define FSCTL_GET_REPARSE_POINT				0x0900a8
 #endif
 
-#include "threads.h"
+#include "pike_threads.h"
 #include "signal_handler.h"
 
 /* Mutex protecting da_handle, fd_type, fd_busy and first_free_handle. */

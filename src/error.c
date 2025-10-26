@@ -18,7 +18,7 @@
 #include "backend.h"
 #include "operators.h"
 #include "module_support.h"
-#include "threads.h"
+#include "pike_threads.h"
 #include "gc.h"
 #include "pike_types.h"
 #include "sprintf.h"

@@ -7787,7 +7787,7 @@ be unreliable.
   exit 1
 fi
 
-AC_MSG_CHECKING(if threads.c works in CONFIGURE_TEST mode)
+AC_MSG_CHECKING(if pike_threads.c works in CONFIGURE_TEST mode)
 AC_CACHE_VAL(pike_cv_configure_test_threads_c, [
   AC_TRY_RUN([
 #define POSIX_SOURCE	1
@@ -7805,7 +7805,7 @@ AC_CACHE_VAL(pike_cv_configure_test_threads_c, [
 #define ARRAY_H
 
 #include "pike_port.c"		/* Tested earlier, but might be required. */
-#include "threads.c"
+#include "pike_threads.c"
 
 int main(void)
 {
@@ -7819,7 +7819,7 @@ AC_MSG_RESULT($pike_cv_configure_test_threads_c)
 if test "x$pike_cv_configure_test_threads_c" = xno; then
   AC_MSG_ERROR([
 
-threads.c does not work in CONFIGURE_TEST mode. This is an internal
+pike_threads.c does not work in CONFIGURE_TEST mode. This is an internal
 problem in Pike. configure aborted since further configure tests will
 be unreliable.
 ])
@@ -7851,7 +7851,7 @@ AC_CACHE_VAL(pike_cv_thread_local_cpu_time, [
 
 #include "pike_port.c"
 #include "rusage.c"
-#include "threads.c"
+#include "pike_threads.c"
 
 PIKE_MUTEX_T m;
 COND_T c;
@@ -7947,7 +7947,8 @@ int main(void)
 	AC_MSG_ERROR([
 
 Test failed to compile or execute.
-Problems in pike_port.c, rusage.c or threads.c with CONFIGURE_TEST is defined?
+Problems in pike_port.c, rusage.c or pike_threads.c when CONFIGURE_TEST
+is defined?
 ])
         # Don't set pike_cv_thread_local_cpu_time here so that the
         # failure doesn't get cached.
