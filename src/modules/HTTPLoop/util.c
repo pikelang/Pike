@@ -4,12 +4,12 @@
 || for more information.
 */
 
-#include <global.h>
+#include "global.h"
 
 #include "config.h"
 
-#include <threads.h>
-#include <fdlib.h>
+#include "pike_threads.h"
+#include "fdlib.h"
 
 #ifdef _REENTRANT
 #include <errno.h>

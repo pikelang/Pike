@@ -119,7 +119,7 @@ extern const unsigned char image_default_font[];
 #include "object.h"
 #include "interpret.h"
 #include "svalue.h"
-#include "threads.h"
+#include "pike_threads.h"
 #include "builtin_functions.h"
 #include "module_support.h"
 

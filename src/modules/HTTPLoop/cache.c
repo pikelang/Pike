@@ -5,9 +5,9 @@
 */
 
 #include "config.h"
-#include <global.h>
-#include <threads.h>
-#include <stralloc.h>
+#include "global.h"
+#include "pike_threads.h"
+#include "stralloc.h"
 
 #ifdef _REENTRANT
 #include <errno.h>

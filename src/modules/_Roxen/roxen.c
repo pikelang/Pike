@@ -26,7 +26,7 @@
 #include "builtin_functions.h"
 #include "module_support.h"
 #include "backend.h"
-#include "threads.h"
+#include "pike_threads.h"
 #include "operators.h"
 #include "bitvector.h"
 

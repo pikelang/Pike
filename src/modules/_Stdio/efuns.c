@@ -13,7 +13,7 @@
 #include "mapping.h"
 #include "pike_macros.h"
 #include "fd_control.h"
-#include "threads.h"
+#include "pike_threads.h"
 #include "module_support.h"
 #include "constants.h"
 #include "backend.h"

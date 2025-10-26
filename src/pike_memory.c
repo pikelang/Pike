@@ -1184,7 +1184,7 @@ int exit_cleanup_in_progress = 0;
 #define DO_IF_NOT_DMALLOC(X) X
 
 
-#include "threads.h"
+#include "pike_threads.h"
 
 #ifdef _REENTRANT
 static PIKE_MUTEX_T debug_malloc_mutex;

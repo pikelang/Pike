@@ -15,7 +15,7 @@
 #include "pike_macros.h"
 #include "backend.h"
 #include "fd_control.h"
-#include "threads.h"
+#include "pike_threads.h"
 #include "program_id.h"
 #include "module_support.h"
 #include "time_stuff.h"

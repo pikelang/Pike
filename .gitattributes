@@ -1048,8 +1048,6 @@ Makefile.rl -space_indent tab_indent
 /src/test_gc.pike mixed_indent
 /src/test_resolve.pike mixed_indent
 /src/testsuite.in mixed_indent
-/src/threads.c mixed_indent
-/src/threads.h mixed_indent
 /src/time_stuff.h mixed_indent
 /src/treeopt.in mixed_indent
 /src/uncompressor.c mixed_indent

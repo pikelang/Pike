@@ -24,7 +24,7 @@
 #include "pike_macros.h"
 #include "constants.h"
 #include "interpret.h"
-#include "threads.h"
+#include "pike_threads.h"
 #include "pike_error.h"
 #include "builtin_functions.h"
 #include "operators.h"

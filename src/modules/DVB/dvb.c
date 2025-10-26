@@ -70,7 +70,7 @@
 
 #include "interpret.h"
 #include "pike_macros.h"
-#include "threads.h"
+#include "pike_threads.h"
 #include "fd_control.h"
 #include "builtin_functions.h"
 #include "operators.h"

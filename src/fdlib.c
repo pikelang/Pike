@@ -97,7 +97,7 @@
 #define S_IFLNK		0xa000
 #endif
 
-#include "threads.h"
+#include "pike_threads.h"
 #include "signal_handler.h"
 
 /* Mutex protecting da_handle, fd_type, fd_busy and first_free_handle. */

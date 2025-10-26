@@ -8,7 +8,7 @@
 #include "program.h"
 #include "pike_error.h"
 #include "builtin_functions.h"
-#include "threads.h"
+#include "pike_threads.h"
 
 #include <mpi.h>
 

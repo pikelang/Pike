@@ -16,7 +16,7 @@
 #include "pike_error.h"
 #include "callback.h"
 #include "mapping.h"
-#include "threads.h"
+#include "pike_threads.h"
 #include "signal_handler.h"
 #include "module_support.h"
 #include "operators.h"

@@ -52,7 +52,7 @@
 
 #include "program.h"
 #include "stralloc.h"
-#include "threads.h"
+#include "pike_threads.h"
 #include "module_support.h"
 #include "array.h"
 #include "mapping.h"

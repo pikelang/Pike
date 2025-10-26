@@ -8,7 +8,7 @@
 #include "bignum.h"
 #include "object.h"
 #include "interpret.h"
-#include "threads.h"
+#include "pike_threads.h"
 
 #include "fdlib.h"
 #include "fd_control.h"

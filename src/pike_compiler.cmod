@@ -20,7 +20,7 @@
 #include "main.h"
 #include "pike_memory.h"
 #include "gc.h"
-#include "threads.h"
+#include "pike_threads.h"
 #include "constants.h"
 #include "operators.h"
 #include "builtin_functions.h"

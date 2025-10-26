@@ -10,7 +10,7 @@
 #include "global.h"
 #include "callback.h"
 #include "queue.h"
-#include "threads.h"
+#include "pike_threads.h"
 #include "interpret.h"
 #include "pike_rusage.h"
 #include "gc_header.h"

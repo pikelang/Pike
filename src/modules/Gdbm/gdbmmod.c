@@ -6,7 +6,7 @@
 
 #include "module.h"
 #include "gdbm_machine.h"
-#include "threads.h"
+#include "pike_threads.h"
 
 /* Todo: make sure only one thread accesses the same gdbmmod */
 

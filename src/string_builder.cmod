@@ -1182,7 +1182,7 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 	  continue;
 
         case 'N':	/* node * */
-          /* FIXME: Does not care about field or integer widths yet. */
+          /* FIXME: Doesn't care about field or integer widths yet. */
           describe_node_tree(s, va_arg(args, node *));
           break;
 

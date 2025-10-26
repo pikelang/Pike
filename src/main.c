@@ -10,7 +10,7 @@
 #include "object.h"
 #include "lex.h"
 #include "pike_types.h"
-#include "threads.h"
+#include "pike_threads.h"
 #include "builtin_functions.h"
 #include "array.h"
 #include "stralloc.h"

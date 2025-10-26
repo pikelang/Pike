@@ -14,7 +14,7 @@
 #include "object.h"
 #include "program.h"
 #include "pike_macros.h"
-#include "threads.h"
+#include "pike_threads.h"
 #include "module_support.h"
 #include "builtin_functions.h"
 
