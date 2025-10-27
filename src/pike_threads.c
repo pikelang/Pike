@@ -307,7 +307,7 @@ PMOD_EXPORT int co_wait_timeout(COND_T *c, PIKE_MUTEX_T *m, long s, long nanos)
   /* Solaris extension: relative timeout. */
   timeout.tv_sec = s;
   timeout.tv_nsec = nanos;
-  return c_reltimedwait(c, m, &timeout);
+  return co_reltimedwait(c, m, &timeout);
 #else /* !co_reltimedwait */
   /* Absolute timeout. */
   ACCURATE_GETTIMEOFDAY(&ct);
