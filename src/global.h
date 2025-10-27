@@ -794,7 +794,7 @@ static inline u_longlong_t PIKE_UNUSED_ATTRIBUTE pike_uint64_to_ulonglong(unsign
 #include "pike_port.h"
 #include "dmalloc.h"
 
-/* Either this include must go or the include of threads.h in
+/* Either this include must go or the include of pike_threads.h in
  * pike_cpulib.h. Otherwise we get pesky include loops. */
 /* #include "pike_cpulib.h" */
 
