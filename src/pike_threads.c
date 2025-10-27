@@ -301,14 +301,14 @@ PMOD_EXPORT int co_destroy(COND_T *c)
 PMOD_EXPORT int co_wait_timeout(COND_T *c, PIKE_MUTEX_T *m, long s, long nanos)
 {
   struct timeval ct;
-#ifdef POSIX_THREADS
+#if defined(co_timedwait) || defined(co_reltimedwait)
   struct timespec timeout;
-#ifdef HAVE_PTHREAD_COND_RELTIMEDWAIT_NP
+#ifdef co_reltimedwait
   /* Solaris extension: relative timeout. */
   timeout.tv_sec = s;
   timeout.tv_nsec = nanos;
-  return pthread_cond_reltimedwait_np(c, m, &timeout);
-#else /* !HAVE_PTHREAD_COND_RELTIMEDWAIT_NP */
+  return c_reltimedwait(c, m, &timeout);
+#else /* !co_reltimedwait */
   /* Absolute timeout. */
   ACCURATE_GETTIMEOFDAY(&ct);
   timeout.tv_sec = ct.tv_sec + s;
@@ -318,11 +318,11 @@ PMOD_EXPORT int co_wait_timeout(COND_T *c, PIKE_MUTEX_T *m, long s, long nanos)
     timeout.tv_sec += s;
     timeout.tv_nsec -= s * 1000000000;
   }
-  return pthread_cond_timedwait(c, m, &timeout);
-#endif /* HAVE_PTHREAD_COND_RELTIMEDWAIT_NP */
-#else /* !POSIX_THREADS */
+  return co_timedwait(c, m, &timeout);
+#endif /* co_reltimedwait */
+#else /* !(co_timedwait || co_reltimedwait) */
 #error co_wait_timeout does not support this thread model.
-#endif /* POSIX_THREADS */
+#endif /* co_timedwait || co_reltimedwait */
 }
 #endif /* !CONFIGURE_TEST */
 

@@ -234,6 +234,11 @@ PMOD_EXPORT extern pthread_attr_t small_pattr;
 #endif /* HAVE_PTHREAD_CONDATTR_DEFAULT_AIX */
 
 #define co_wait(COND, MUTEX) pthread_cond_wait((COND), (MUTEX))
+#define co_timedwait(COND, MUTEX, TIMESPEC) pthread_cond_timedwait((COND), (MUTEX), (TIMESPEC))
+#ifdef HAVE_PTHREAD_COND_RELTIMEDWAIT_NP
+/* Solaris extension: relative timeout. */
+#define co_reltimedwait(COND, MUTEX, TIMESPEC) pthread_cond_reltimedwait_np((COND), (MUTEX), (TIMESPEC));
+#endif
 #define co_signal(X) pthread_cond_signal(X)
 #define co_broadcast(X) pthread_cond_broadcast(X)
 #define co_destroy(X) LOW_THREAD_CHECK_NONZERO_ERROR (pthread_cond_destroy(X))
