@@ -1425,12 +1425,31 @@ if test "$cflags_is_set" = "no"; then
       :
     fi
 
+    # Attempt to set the C standard to support.
+    #
     # NB: Both $CPP and $CC need to be configured to support
     #     the same version of the C standard. Otherwise there
     #     will be build failures on eg Solaris.
-    AC_SYS_OS_COMPILER_FLAG(Solaris, -std=c99, std_c99, CPP)
-    AC_SYS_OS_COMPILER_FLAG(Solaris, -std=c99, std_c99, CC)
-    AC_SYS_COMPILER_FLAG(-std=c99, std_c99, CFLAGS)
+    AC_SYS_COMPILER_FLAG(-std=c23, std_c23, CFLAGS, [
+      AC_SYS_COMPILER_FLAG(-std=c17, std_c17, CFLAGS, [
+        AC_SYS_COMPILER_FLAG(-std=c11, std_c11, CFLAGS, [
+          AC_SYS_COMPILER_FLAG(-std=c99, std_c99, CFLAGS, [
+          ], [
+            AC_SYS_OS_COMPILER_FLAG(Solaris, -std=c99, std_c99, CPP)
+            AC_SYS_OS_COMPILER_FLAG(Solaris, -std=c99, std_c99, CC)
+          ])
+        ], [
+          AC_SYS_OS_COMPILER_FLAG(Solaris, -std=c11, std_c11, CPP)
+          AC_SYS_OS_COMPILER_FLAG(Solaris, -std=c11, std_c11, CC)
+        ])
+      ], [
+        AC_SYS_OS_COMPILER_FLAG(Solaris, -std=c17, std_c17, CPP)
+        AC_SYS_OS_COMPILER_FLAG(Solaris, -std=c17, std_c17, CC)
+      ])
+    ], [
+      AC_SYS_OS_COMPILER_FLAG(Solaris, -std=c23, std_c23, CPP)
+      AC_SYS_OS_COMPILER_FLAG(Solaris, -std=c23, std_c23, CC)
+    ])
     if test "x$with_gcov" = "xyes"; then
       # Support for gcov
       AC_SYS_COMPILER_FLAG(-fprofile-arcs, fprofile_arcs, CFLAGS)
