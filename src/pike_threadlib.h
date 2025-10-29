@@ -33,11 +33,16 @@
 /*
  * Decide which type of threads to use
  *
+ * C11_THREADS       : C11 standard threads
  * UNIX_THREADS      : Unix international threads
  * POSIX_THREADS     : POSIX standard threads
  * SGI_SPROC_THREADS : SGI sproc() based threads
  * NT_THREADS        : NT threads
  */
+
+#ifdef C11_THREADS
+#include <threads.h>
+#endif /* C11_THREADS */
 
 #ifdef _UNIX_THREADS
 #ifdef HAVE_THREAD_H
@@ -131,6 +136,43 @@ PMOD_EXPORT DECLSPEC(noreturn) void thread_low_error (int errcode,
 #endif
 
 #define DEFINE_MUTEX(X) PIKE_MUTEX_T X
+
+
+#ifdef C11_THREADS
+
+#define THREAD_T thrd_t
+#define TH_RETURN_TYPE int
+/* #define PTHREAD_MUTEX_INITIALIZER DEFAULTMUTEX */
+#define PIKE_MUTEX_T mtx_t
+#define mt_init(X) LOW_THREAD_CHECK_NONZERO_ERROR(mtx_init((X), mtx_plain))
+#define mt_lock(X) LOW_THREAD_CHECK_NONZERO_ERROR(mtx_lock(X))
+#define mt_trylock(X) mtx_trylock(X)
+#define mt_unlock(X) LOW_THREAD_CHECK_NONZERO_ERROR (mtx_unlock(X))
+#define mt_destroy(X) mtx_destroy(X)
+
+/* #define th_setconcurrency(X) thrd_setconcurrency(X) */
+
+#define th_create(ID, fun, arg) thrd_create(ID, fun, arg)
+#define th_create_small(ID, fun, arg) thrd_create(ID, fun, arg) /* FIXME */
+#define th_exit(foo) thrd_exit(foo)
+#define th_self() thrd_current()
+#define th_kill(ID,sig)
+#define low_th_yield() thrd_yield()
+
+#define COND_T cnd_t
+#define co_init(X) cnd_init((X))
+#define co_wait(COND, MUTEX) cnd_wait((COND), (MUTEX))
+#define co_timedwait(COND, MUTEX, TIMESPEC) cnd_timedwait((COND), (MUTEX), (TIMESPEC))
+#define co_signal(X) cnd_signal(X)
+#define co_broadcast(X) cnd_broadcast(X)
+#define co_destroy(X) cnd_destroy(X)
+
+int th_atfork(void (*)(void),void (*)(void),void (*)(void));
+void th_atfork_prepare(void);
+void th_atfork_parent(void);
+void th_atfork_child(void);
+
+#endif /* C11_THREADS */
 
 
 #ifdef POSIX_THREADS
@@ -272,6 +314,16 @@ PMOD_EXPORT extern pthread_attr_t small_pattr;
 #define COND_T cond_t
 #define co_init(X) cond_init((X),USYNC_THREAD,0)
 #define co_wait(COND, MUTEX) cond_wait((COND), (MUTEX))
+/* NB: SVr4 has a different names for struct timespec and timespec_t:
+ *     struct timestruc and timestruc_t. It har the same field names,
+ *     so it should not be an issue, but there is a potential for it
+ *     triggering compilation warnings.
+ */
+#define co_timedwait(COND, MUTEX, TIMESPEC) cond_timedwait((COND), (MUTEX), (TIMESPEC))
+#ifdef HAVE_COND_RELTIMEDWAIT
+/* Solaris extension: relative timeout. */
+#define co_reltimedwait(COND, MUTEX, TIMESPEC) cond_reltimedwait((COND), (MUTEX), (TIMESPEC))
+#endif
 #define co_signal(X) cond_signal(X)
 #define co_broadcast(X) cond_broadcast(X)
 #define co_destroy(X) cond_destroy(X)
