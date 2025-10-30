@@ -174,6 +174,9 @@ static FLOAT_TYPE lex_strtod(char *buf, char **end)
  *
  * Sequence		Character
  *   \\			backslash
+ *   \'			single quote
+ *   \"			double quote
+ *   \?			question mark
  *   \[0-7]*		octal escape
  *   \a			alert (BEL)
  *   \b			backspace (BS)
@@ -225,6 +228,19 @@ int parse_esc_seq (WCHAR *buf, p_wchar2 *chr, ptrdiff_t *len)
 
     case '0': case '1': case '2': case '3':
     case '4': case '5': case '6': case '7': {
+      /* FIXME: The C23 standard limits octal escapes to 3 digits.
+       *        Cf 6.4.4.4.18:
+       *          EXAMPLE 3 Even if eight bits are used for objects that have
+       *          type char, the construction '\x123' specifies an integer
+       *          character constant containing only one character, since a
+       *          hexadecimal escape sequence is terminated only by a non-
+       *          hexadecimal character. To specify an integer character
+       *          constant containing the two characters whose values are
+       *          '\x12' and '3' , the construction '\0223' can be used,
+       *          since an octal escape sequence is terminated after three
+       *          octal digits. (The value of this two-character integer
+       *          character constant is implementation-defined.)
+       */
       unsigned INT32 n = c-'0';
       for (l = 1; buf[l] >= '0' && buf[l] < '8'; l++) {
 	if (DO_UINT32_MUL_OVERFLOW(n, 8, &n))
@@ -344,7 +360,7 @@ int parse_esc_seq (WCHAR *buf, p_wchar2 *chr, ptrdiff_t *len)
       c = (p_wchar2)n;
       break;
     }
-  case '\\': case '\'': case '\"':
+  case '\\': case '\'': case '\"': case '?':
     break;
   default:
     /* Warn about this as it is commonly due to broken escaping,
