@@ -3321,8 +3321,8 @@ AC_CHECK_FUNCS(sigsetjmp _setjmp siglongjmp _longjmp)
 default_backend_method=select
 # Make it possible to disable use of /dev/poll.
 if test "x$with_devpoll" = "xno"; then :; else
-  AC_CHECK_HEADERS(sys/devpoll.h sys/event.h sys/epoll.h)
-  AC_CHECK_FUNCS(kqueue)
+  AC_CHECK_HEADERS(sys/port.h sys/devpoll.h sys/event.h sys/epoll.h)
+  AC_CHECK_FUNCS(port_create kqueue)
   AC_CHECK_FRAMEWORK(CoreServices, CFRunLoopRunInMode)
   AC_CHECK_FUNCS(CFRunLoopRunInMode)
   AC_MSG_CHECKING(for poll device)
@@ -3364,6 +3364,10 @@ if test "x$with_devpoll" = "xno"; then :; else
 
   if test "x$ac_cv_func_kqueue" = "xyes"; then
     default_backend_method=kqueue
+  fi
+
+  if test "x$ac_cv_func_port_create" = "xyes"; then
+    default_backend_method=port_create
   fi
 
   if test "x$ac_cv_header_sys_epoll_h" = "xyes"; then
