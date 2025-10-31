@@ -13,8 +13,16 @@
 /*
  * POLL/SELECT selection
  */
-
-#if defined(HAVE_SYS_DEVPOLL_H) && defined(PIKE_POLL_DEVICE)
+#if defined(HAVE_SYS_PORT_H) && defined(HAVE_PORT_CREATE)
+/*
+ * Backend using port_create-style poll device.
+ *
+ * Used on:
+ *   Solaris 10 and later.
+ */
+#define BACKEND_USES_POLL_DEVICE
+#define BACKEND_USES_PORT_CREATE
+#elif defined(HAVE_SYS_DEVPOLL_H) && defined(PIKE_POLL_DEVICE)
 /*
  * Backend using /dev/poll-style poll device.
  *
