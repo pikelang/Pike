@@ -258,6 +258,7 @@ static struct gc_rec_frame sentinel_frame = {
 };
 static struct gc_rec_frame *stack_top = &sentinel_frame;
 static struct gc_rec_frame *kill_list = &sentinel_frame;
+static struct gc_rec_frame *kill_list_last = NULL;
 
 /* Cycle checking
  *
@@ -3241,9 +3242,20 @@ static void gc_cycle_pop(void)
 	  popped->cycle_piece = popped->u.last_cycle_piece =
 	    (struct gc_rec_frame *) (ptrdiff_t) -1;
 #endif
+#if 1
+          popped->next = &sentinel_frame;
+          // popped->prev = sentinel_frame.prev;
+          if (kill_list == &sentinel_frame) {
+            kill_list = popped;
+          } else {
+            kill_list_last->next = popped;
+          }
+          kill_list_last = popped;
+#else
 	  popped->next = *kill_list_ptr;
 	  *kill_list_ptr = popped;
 	  kill_list_ptr = &popped->next;
+#endif
 	  popped->rf_flags |= GC_ON_KILL_LIST;
 
 	  /* Ensure that the frames on the kill list have a valid
