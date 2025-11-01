@@ -13,7 +13,7 @@
 /*
  * POLL/SELECT selection
  */
-#if defined(HAVE_SYS_PORT_H) && defined(HAVE_PORT_CREATE)
+#if 0 && defined(HAVE_SYS_PORT_H) && defined(HAVE_PORT_CREATE)
 /*
  * Backend using port_create-style poll device.
  *

@@ -3208,6 +3208,9 @@ static void pb_copy_selectors(struct pb_selectors *to,
 #ifndef PDB_GET_FLAGS
 #define PDB_GET_FLAGS(EVENT)	0
 #endif
+#ifndef PB_GET_FLAGS
+#define PB_GET_FLAGS(EVENT)	0
+#endif
 
 #elif defined(BACKEND_USES_KQUEUE)
 /*
@@ -5016,7 +5019,7 @@ PIKECLASS PollBackend
 	check_box (box, fd);
 
 #if 0
-    if(PDB_CHECK_EVENT(poll_fds[i], MY_POLLSIGNAL))
+    if(PB_CHECK_EVENT(pb->active_set.poll_fds[i], MY_POLLSIGNAL))
     {
       fprintf(stderr, "SIGNAL EVENT RECEIVED!\n");
     }
@@ -5059,10 +5062,10 @@ PIKECLASS PollBackend
 	    box->revents |= PIKE_BIT_FD_WRITE;
 	    DO_IF_DEBUG(handled = 1);
 	  }
-	  if (PDB_CHECK_EVENT(pb->active_set.poll_fds[i], MY_POLLFSEVENT)) {
+          if (PB_CHECK_EVENT(pb->active_set.poll_fds[i], MY_POLLFSEVENT)) {
             PDWERR("[%d]BACKEND[%d]: POLLFSEVENT on %d\n",
                    THR_NO, me->id, fd);
-	    box->rflags = PDB_GET_FLAGS(poll_fds[i]);
+            box->rflags = PB_GET_FLAGS(pb->active_set.poll_fds[i]);
 	    box->revents |= PIKE_BIT_FD_FS_EVENT;
 	    DO_IF_DEBUG(handled = 1);
 	  }
