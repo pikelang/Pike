@@ -2080,6 +2080,11 @@ PIKECLASS string_split_iterator
 PIKEFUN object(Iterator) get_iterator(function|object|array|mapping|multiset|string data,
 				      mixed ... extra)
   efun;
+  rawtype tOr4(tFuncArg(tSetvar(0, tObj), tFindLFun(tVar(0), "_get_iterator")),
+               tFunc(tSetvar(0, tObjImpl_ITERATOR), tVar(0)),
+               tFunc(tFunc(tNone, tSetvar(0, tMix)), tFunctionIter(tVar(0))),
+               tFunc(tOr4(tArr(tMix),tMap(tMix, tMix),tSet(tMix),tStr),
+                     tObjImpl_ITERATOR));
 {
   if (extra && (TYPEOF(*data) != PIKE_T_OBJECT)) {
     SIMPLE_WRONG_NUM_ARGS_ERROR("get_iterator", 1);
@@ -2187,8 +2192,6 @@ int foreach_iterate(struct object *o)
       }
 
       apply_svalue(&(i->fun), 0);
-
-      pike_fprintf(stderr, "ret: %pO\n", Pike_sp-1);
 
       if (IS_UNDEFINED(Pike_sp-1)) {
         /* Terminate. */

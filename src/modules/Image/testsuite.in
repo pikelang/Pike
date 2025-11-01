@@ -153,6 +153,10 @@ test_true( arrayp(indices(Image.Color)) )
 test_true( stringp(indices(Image.Color)[0]) )
 test_true( sizeof(indices(Image.Color))>8 )
 
+dnl Test bug in equal() triggered by the compiler.
+test_equal(({Image.Color.red->hex(),Image.Color.green->hex(),Image.Color.blue->hex()}),
+           ({ "#ff0000", "#00ff00", "#0000ff" }))
+
 test_true( arrayp(values(Image.Color)) )
 test_true( objectp(values(Image.Color)[0]) )
 test_eq( sizeof(indices(Image.Color)), sizeof(values(Image.Color)) )
@@ -871,6 +875,18 @@ test_encoding(DSI,[[
         c[1] = 0x04;
       }
       img->setpixel(x, y, @c);
+    }
+  }
+  /* FIXME: Move to test_pike? */
+  object imgx = Image.DSI.decode(Image.DSI.encode(img));
+  if (imgx != img) {
+    for (int y = 0; y < 100; y++) {
+      for (int x = 0; x < 100; x++) {
+        array(int) c = img->getpixel(x, y);
+        array(int) cx = imgx->getpixel(x, y);
+        if (equal(c, cx)) continue;
+        werror("Pixel (%d, %x): 0x%{%02x%} != 0x%{%02x%}\n", x, y, c, cx);
+      }
     }
   }
 ]])

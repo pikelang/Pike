@@ -1,3 +1,6 @@
+// Automatically generated from "gtkarrow.pre".
+// Do NOT edit.
+
 //! An arrow pointing in one of four directions. The 'etched' shadow
 //! types does not work.
 //!@expr{ GTK2.Arrow(GTK2.ARROW_UP, GTK2.SHADOW_OUT)@}
@@ -19,8 +22,9 @@
 //!
 
 inherit GTK2.Misc;
+//!
 
-protected GTK2.Arrow create( int|mapping arrow_type_or_props, int|void shadow_type );
+protected void create( void arrow_type_or_props, void shadow_type );
 //! First argument is one of @[ARROW_DOWN], @[ARROW_LEFT], @[ARROW_RIGHT] and @[ARROW_UP], second one of @[SHADOW_ETCHED_IN], @[SHADOW_ETCHED_OUT], @[SHADOW_IN], @[SHADOW_NONE] and @[SHADOW_OUT].
 //!
 //!

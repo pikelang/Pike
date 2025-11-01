@@ -1,3 +1,6 @@
+// Automatically generated from "gtkhscrollbar.pre".
+// Do NOT edit.
+
 //! A horizontal scrollbar.
 //! General documentation: See W(Scrollbar)
 //!@expr{ GTK2.HScrollbar(GTK2.Adjustment())->set_size_request(300,15)@}
@@ -8,8 +11,9 @@
 //!
 
 inherit GTK2.Scrollbar;
+//!
 
-protected GTK2.HScrollbar create( GTK2.Adjustment adjustment_or_props );
+protected void create( void adjustment_or_props );
 //! Used to create a new hscrollbar widget.
 //!
 //!

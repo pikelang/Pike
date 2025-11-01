@@ -8,7 +8,7 @@
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "interpret.h"
-#include "threads.h"
+#include "pike_threads.h"
 #include "program.h"
 #include "program_id.h"
 #include "object.h"

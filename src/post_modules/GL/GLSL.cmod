@@ -8,7 +8,6 @@
 
 #include "global.h"
 #include "interpret.h"
-#include "port.h"
 #include "mapping.h"
 #include "array.h"
 #include "builtin_functions.h"

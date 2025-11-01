@@ -1088,6 +1088,27 @@ class Runtime_timezone_compiler
    {
       array rules=({});
 
+      protected string fmt_z(int offset)
+      {
+         int hour = offset/60;
+         int min = hour % 60;
+         string ret = "+";
+         if (hour < 0) {
+            hour = -hour;
+            if (min) {
+               min = 60 - min;
+               hour -= 60;
+            }
+            ret = "-";
+         }
+         hour /= 60;
+         ret += sprintf("%02d", hour);
+         if (min) {
+            ret += sprintf("%02d", min);
+         }
+         return ret;
+      }
+
       void add(string line)
       {
 	 array a= array_sscanf(line, replace("%s %s %s %s",
@@ -1100,6 +1121,11 @@ class Runtime_timezone_compiler
 		   a[2], // string
 		   a[3],
 		   0, 0, "tz", 0}); // until
+
+         if (a[2] == "%z") {
+            a[2] = fmt_z(a[0]) + "/" + fmt_z(a[0] + 3600);
+         }
+
 	 a[5]=rule_shift(a);
 	 a[4]=clone_rule(a);
 

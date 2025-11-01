@@ -1,3 +1,6 @@
+// Automatically generated from "gtkfilechooserdialog.pre".
+// Do NOT edit.
+
 //! GtkFileChooserDialog should be used to retrieve file or directory names
 //! from the user. It will create a new dialog window containing a
 //! directory list, and a file list corresponding to the current
@@ -26,10 +29,12 @@
 //!
 
 inherit GTK2.Dialog;
+//!
 
 inherit GTK2.FileChooser;
+//!
 
-protected GTK2.FileChooserDialog create( string title, GTK2.Window parent, int mode, array buttons );
+protected void create( void title, void parent, void mode, void buttons );
 //! Creates a new file selection dialog box. By default it will list
 //! the files in the current working directory. Operation buttons
 //! allowing the user to create a directory, delete files, and rename

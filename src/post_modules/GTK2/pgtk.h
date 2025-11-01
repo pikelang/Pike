@@ -7,20 +7,20 @@
 /* Sort of unnessesary, and decreases code-size with 140Kb */
 #define GTK_NO_CHECK_CASTS
 #include "pgtk_config.h"
-#include <program.h>
-#include <pike_types.h>
-#include <interpret.h>
-#include <module_support.h>
-#include <array.h>
-#include <backend.h>
-#include <stralloc.h>
-#include <mapping.h>
-#include <object.h>
-#include <bignum.h>
-#include <threads.h>
-#include <builtin_functions.h>
-#include <operators.h>
-#include <sprintf.h>
+#include "program.h"
+#include "pike_types.h"
+#include "interpret.h"
+#include "module_support.h"
+#include "array.h"
+#include "backend.h"
+#include "stralloc.h"
+#include "mapping.h"
+#include "object.h"
+#include "bignum.h"
+#include "pike_threads.h"
+#include "builtin_functions.h"
+#include "operators.h"
+#include "sprintf.h"
 
 /*
 #include <glib.h>

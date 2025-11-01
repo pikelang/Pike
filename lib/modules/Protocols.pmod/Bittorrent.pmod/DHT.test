@@ -479,6 +479,14 @@ void run_tests() {
   case 999:
 
   default:
+#ifndef NO_BITTORRENT_DHT_GC_KLUDGE
+    // Kludge to workaround gc bug where DHT objects could be destructed
+    // before DHTNode objects (which thus lose their parents).
+    // Typically triggered --with-pike-cleanup (or --with-debug-malloc).
+    foreach(dhts->dht, object dht) {
+      dht->rt = 0;
+    }
+#endif // NO_BITTORRENT_DHT_GC_KLUDGE
     Tools.Testsuite.report_result(good,bad);
     exit(0);
   }

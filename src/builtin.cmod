@@ -18,7 +18,7 @@
 #include "multiset.h"
 #include "pike_types.h"
 #include "pike_memory.h"
-#include "threads.h"
+#include "pike_threads.h"
 #include "module_support.h"
 #include "cyclic.h"
 #include "bignum.h"
@@ -2911,6 +2911,15 @@ PIKEFUN program|zero function_program(program|function func)
   push_int(0);
 }
 
+#ifdef PIKE_DEBUG
+PIKEFUN void __dump_program_tables(program p)
+  efun;
+{
+  dump_program_tables(p, 0);
+  pop_n_elems(args);
+}
+#endif
+
 /*! @class RandomInterface
  */
 PIKECLASS RandomInterface
@@ -3262,7 +3271,7 @@ PIKEFUN string|mapping|zero _getenv (void|string var)
 #ifdef DECLARE_ENVIRON
     extern char **environ;
 #endif
-    struct mapping *m, *new_env_allocs;
+    struct mapping *m, *new_env_allocs = NULL;
     int n;
 
     /* Iterate the environment backwards below so that earlier
@@ -4404,12 +4413,20 @@ PIKECLASS LiveBacktraceFrame
  *!     @member int(1..1) "auto_bignum"
  *!       Integers larger than the native size are now always
  *!       automatically converted into bignums.
+ *!     @member int(1..1) "rtl_debug"
+ *!       The runtime has been compiled --with-rtldebug.
+ *!     @member int(1..1) "debug_malloc"
+ *!       The runtime has been compiled --with-debug-malloc.
+ *!     @member int(0..) "running_on_valgrind"
+ *!       The number of nested valgrinds the runtime is running under.
  *!   @endmapping
  */
 PIKEFUN mapping(string:int|string) get_runtime_info()
   optflags OPT_TRY_OPTIMIZE;
 {
+  struct svalue *save_sp;
   pop_n_elems(args);
+  save_sp = Pike_sp;
   push_static_text("bytecode_method");
   push_text(PIKE_BYTECODE_METHOD_NAME);
   push_static_text("abi");
@@ -4424,7 +4441,23 @@ PIKEFUN mapping(string:int|string) get_runtime_info()
   push_int(sizeof(FLOAT_TYPE) * 8);
   push_static_text("auto_bignum");
   push_int(1);
-  f_aggregate_mapping(7*2);
+  push_static_text("cpu_time_method");
+  push_text(get_cpu_time_impl);
+  push_static_text("real_time_method");
+  push_text(get_real_time_impl);
+#ifdef PIKE_DEBUG
+  push_static_text("rtl_debug");
+  push_int(1);
+#endif
+#ifdef DEBUG_MALLOC
+  push_static_text("debug_malloc");
+  push_int(1);
+#endif
+#ifdef RUNNING_ON_VALGRIND
+  push_static_text("running_on_valgrind");
+  push_int(RUNNING_ON_VALGRIND);
+#endif
+  f_aggregate_mapping(Pike_sp - save_sp);
 }
 
 /*! @decl int(0..1) signal_contextp()
@@ -6940,7 +6973,11 @@ PMOD_EXPORT void append_list_node(struct pike_list_node *node,
  *!   Linked list of values.
  */
 PIKECLASS List
+  num_generics 1;
 {
+  /*! @decl __generic__ ValueType
+   */
+
   CVAR struct pike_list_node *head;
   CVAR INT32 head_sentinel_refs;
   CVAR struct pike_list_node *tail;		/* Always NULL. */
@@ -7114,7 +7151,7 @@ PIKECLASS List
     stack_pop_n_elems_keep_top(args);
   }
 
-  /*! @decl protected List _reverse()
+  /*! @decl protected List(<ValueType>) _reverse()
    *!
    *!   Reverse the list.
    *!
@@ -7122,6 +7159,7 @@ PIKECLASS List
    *!   @[reverse()]
    */
   PIKEFUN List _reverse()
+    rawtype tFunc(tNone, tList(tListValueType));
     flags ID_PROTECTED;
   {
     struct object *res = clone_object(List_program, 0);
@@ -7141,7 +7179,7 @@ PIKECLASS List
     }
   }
 
-  /*! @decl mixed head()
+  /*! @decl ValueType head()
    *!
    *!   Get the element at the head of the list.
    *!
@@ -7152,6 +7190,7 @@ PIKECLASS List
    *!   @[is_empty()], @[tail()], @[pop()]
    */
   PIKEFUN mixed head()
+    rawtype tFunc(tNone, tListValueType);
   {
     if (THIS->head->next) {
       push_svalue(&THIS->head->val);
@@ -7160,7 +7199,7 @@ PIKECLASS List
     }
   }
 
-  /*! @decl mixed tail()
+  /*! @decl ValueType tail()
    *!
    *!   Get the element at the tail of the list.
    *!
@@ -7171,6 +7210,7 @@ PIKECLASS List
    *!   @[is_empty()], @[head()], @[pop_back()]
    */
   PIKEFUN mixed tail()
+    rawtype tFunc(tNone, tListValueType);
   {
     struct pike_list_node * node = TAIL_SENTINEL(THIS);
     if (THIS->head->next) {
@@ -7190,7 +7230,7 @@ PIKECLASS List
     THIS->num_elems--;
   }
 
-  /*! @decl mixed pop()
+  /*! @decl ValueType pop()
    *!
    *!   Pop the element at the head of the list from the list.
    *!
@@ -7201,6 +7241,7 @@ PIKECLASS List
    *!   @[is_empty()], @[head()], @[tail()], @[pop_back()]
    */
   PIKEFUN mixed pop()
+    rawtype tFunc(tNone, tListValueType);
   {
     if (THIS->head->next) {
       pop_node(THIS->head);
@@ -7209,7 +7250,7 @@ PIKECLASS List
     }
   }
 
-  /*! @decl mixed pop_back()
+  /*! @decl ValueType pop_back()
    *!
    *!   Pop the element at the tail of the list from the list.
    *!
@@ -7220,6 +7261,7 @@ PIKECLASS List
    *!   @[is_empty()], @[head()], @[tail()], @[pop()]
    */
   PIKEFUN mixed pop_back()
+    rawtype tFunc(tNone, tListValueType);
   {
     const struct pike_list_node * node = TAIL_SENTINEL(THIS);
     if (THIS->head->next) {
@@ -7229,11 +7271,12 @@ PIKECLASS List
     }
   }
 
-  /*! @decl array _values()
+  /*! @decl array(ValueType) _values()
    *!
    *! 	Returns an array of elements in the list.
    */
   PIKEFUN array _values()
+    rawtype tFunc(tNone, tArr(tListValueType));
     flags ID_PROTECTED;
   {
       struct array *a = allocate_array(THIS->num_elems);
@@ -7251,12 +7294,13 @@ PIKECLASS List
       array_fix_type_field(a);
   }
 
-  /*! @decl array|zero cast(string type)
+  /*! @decl array(ValueType)|zero cast(string type)
    *!
    *! 	Cast the lists. @expr{array@} is the only
    *! 	supported type.
    */
   PIKEFUN array|zero cast(string type)
+    rawtype tFunc(tStr, tOr(tArr(tListValueType), tZero));
     flags ID_PROTECTED;
   {
     pop_stack(); /* type as at least one more reference. */
@@ -7267,25 +7311,29 @@ PIKECLASS List
   }
 
 
-  /*! @decl mixed `[](mixed key) */
-  PIKEFUN mixed `[](mixed key)
+  /*! @decl ValueType `[](int key)
+   */
+  PIKEFUN mixed `[](int n)
+    rawtype tFunc(tInt, tListValueType);
     flags ID_PROTECTED;
   {
       struct pike_list_node *node;
-      INT_TYPE n;
-      if (TYPEOF(*key) != PIKE_T_INT) SIMPLE_ARG_TYPE_ERROR("`[]", 1, "int");
+      int reverse = 0;
 
-      n = key->u.integer;
-      if (n < 0) n = -(n+1);
+      if (n < 0) {
+        reverse = 1;
+        n = -(n+1);
+      }
 
       if (n >= THIS->num_elems) Pike_error("out of bounds");
 
-      if (n >= THIS->num_elems >> 1) { /* use shorter direction */
+      if (n >= THIS->num_elems >> 1) {
+        /* Use shorter direction. */
 	n = THIS->num_elems - n - 1;
-	key->u.integer = - key->u.integer - 1;
+        reverse = !reverse;
       }
 
-      if (key->u.integer < 0) {
+      if (reverse) {
 	node = TAIL_SENTINEL(THIS)->prev;
 	while (n--) node = node->prev;
       } else {
@@ -7297,7 +7345,7 @@ PIKECLASS List
       push_svalue(&node->val);
   }
 
-  /*! @decl void append(mixed ... values)
+  /*! @decl void append(ValueType ... values)
    *!
    *!   Append @[values] to the end of the list.
    *!
@@ -7305,6 +7353,7 @@ PIKECLASS List
    *!   @[insert()]
    */
   PIKEFUN void append(mixed ... values)
+    rawtype tFuncV(tNone, tListValueType, tVoid);
   {
     struct pike_list_node *node = TAIL_SENTINEL(THIS);
     while (args--) {
@@ -7316,7 +7365,7 @@ PIKECLASS List
     }
   }
 
-  /*! @decl void insert(mixed ... values)
+  /*! @decl void insert(ValueType ... values)
    *!
    *!   Insert @[values] at the front of the list.
    *!
@@ -7324,6 +7373,7 @@ PIKECLASS List
    *!   @[append()]
    */
   PIKEFUN void insert(mixed ... values)
+    rawtype tFuncV(tNone, tListValueType, tVoid);
   {
     struct pike_list_node *node = THIS->head;
     while (args--) {
@@ -7351,11 +7401,12 @@ PIKECLASS List
     }
   }
 
-  /*! @decl protected void create(mixed ... values)
+  /*! @decl protected void create(ValueType ... values)
    *!
    *!   Create a new @[List], and initialize it with @[values].
    */
   PIKEFUN void create(mixed ... values)
+    rawtype tFuncV(tNone, tListValueType, tVoid);
     flags ID_PROTECTED;
   {
     if (THIS->num_elems)
@@ -7363,22 +7414,26 @@ PIKECLASS List
     apply_current(f_List_append_fun_num, args);
   }
 
-  /*! @class _get_iterator
+  /*! @class Iterator
    *!
-   *!   @[Iterator] that loops over the @[List].
+   *!   @[predef::Iterator] that loops over the @[List].
    */
-  PIKECLASS _get_iterator
+  PIKECLASS Iterator
     program_flags PROGRAM_USES_PARENT;
     flags ID_PROTECTED;
+    num_generics 1;
   {
+    /*! @decl __generic__ ValueType
+     */
+
     CVAR struct pike_list_node *cur;
-    CVAR INT32 ind;		/* Not meaningful, but requred by the API. */
+    CVAR INT32 ind;		/* Not meaningful, but required by the API. */
 
     /* NOTE: cur may never refer to an unlinked node.
      *       cur may however refer to a detached node, or to sentinels.
      */
 
-    static struct List_struct *List__get_iterator_find_parent(void)
+    static struct List_struct *List_Iterator_find_parent(void)
     {
       struct external_variable_context loc;
 
@@ -7392,7 +7447,7 @@ PIKECLASS List
 
     INIT
     {
-      add_ref(THIS->cur = HEAD_SENTINEL(List__get_iterator_find_parent()));
+      add_ref(THIS->cur = HEAD_SENTINEL(List_Iterator_find_parent()));
       THIS->ind = -1;
     }
 
@@ -7405,19 +7460,20 @@ PIKECLASS List
       }
     }
 
-    /*! @decl object(_get_iterator) copy_iterator()
+    /*! @decl object(Iterator)(<ValueType>) copy_iterator()
      *!
      *! @returns
      *!   Returns a copy of the iterator at its current position.
      */
     PIKEFUN object copy_iterator()
+      rawtype tFunc(tNone, tListIterator(tListIterValueType));
     {
       struct object *ret;
 
-      if (Pike_fp->current_object->prog != List_cq__get_iterator_program)
+      if (Pike_fp->current_object->prog != List_Iterator_program)
         Pike_error("Cannot copy overloaded iterators.\n");
 
-      ret = low_clone(List_cq__get_iterator_program);
+      ret = low_clone(List_Iterator_program);
 
       pop_n_elems(args);
 
@@ -7426,8 +7482,8 @@ PIKECLASS List
       PARENT_INFO(ret)->parent_identifier =
           PARENT_INFO(Pike_fp->current_object)->parent_identifier;
 
-      add_ref(OBJ2_LIST_CQ__GET_ITERATOR(ret)->cur = THIS->cur);
-      OBJ2_LIST_CQ__GET_ITERATOR(ret)->ind = THIS->ind;
+      add_ref(OBJ2_LIST_ITERATOR(ret)->cur = THIS->cur);
+      OBJ2_LIST_ITERATOR(ret)->ind = THIS->ind;
 
       push_object(ret);
     }
@@ -7569,12 +7625,13 @@ PIKECLASS List
       }
     }
 
-    /*! @decl protected mixed _iterator_value()
+    /*! @decl protected ValueType _iterator_value()
      *!
      *! @returns
      *!   Returns the value at the current position.
      */
     PIKEFUN mixed _iterator_value()
+      rawtype tFunc(tNone, tListIterValueType);
       flags ID_PROTECTED;
     {
       pop_n_elems(args);
@@ -7585,12 +7642,13 @@ PIKECLASS List
       }
     }
 
-    /*! @decl mixed value()
+    /*! @decl ValueType value()
      *!
      *! @returns
      *!   Returns the value at the current position.
      */
     PIKEFUN mixed value()		/* Compat. */
+      rawtype tFunc(tNone, tListIterValueType);
     {
       pop_n_elems(args);
       if (THIS->cur->next && THIS->cur->prev) {
@@ -7633,7 +7691,7 @@ PIKECLASS List
       }
     }
 
-    /*! @decl protected mixed _iterator_next()
+    /*! @decl protected int(0..1) _iterator_next()
      *!
      *!   Advance to the next element in the list.
      *!
@@ -7644,7 +7702,7 @@ PIKECLASS List
      *! @seealso
      *!   @[_iterator_prev()]
      */
-    PIKEFUN mixed _iterator_next()
+    PIKEFUN int(0..1) _iterator_next()
       flags ID_PROTECTED;
     {
       struct pike_list_node *orig = THIS->cur;
@@ -7652,7 +7710,7 @@ PIKECLASS List
 
       if (!orig || !(next = orig->next)) {
         /* We were at the tail sentinel. Move to the head sentinel. */
-        struct List_struct *list = List__get_iterator_find_parent();
+        struct List_struct *list = List_Iterator_find_parent();
         next = HEAD_SENTINEL(list)->next;
         THIS->ind = -1;
       }
@@ -7673,7 +7731,7 @@ PIKECLASS List
       }
     }
 
-    /*! @decl mixed _iterator_prev()
+    /*! @decl ValueType|zero _iterator_prev()
      *!
      *!   Retrace to the previous element in the list.
      *!
@@ -7685,6 +7743,7 @@ PIKECLASS List
      *!   @[_iterator_next()]
      */
     PIKEFUN mixed _iterator_prev()
+      rawtype tFunc(tNone, tOr(tListIterValueType, tZero));
       flags ID_PROTECTED;
     {
       struct pike_list_node *orig = THIS->cur;
@@ -7692,7 +7751,7 @@ PIKECLASS List
 
       if (!orig || !(prev = orig->prev)) {
         /* We were at the head sentinel. Move to the tail sentinel. */
-        struct List_struct *list = List__get_iterator_find_parent();
+        struct List_struct *list = List_Iterator_find_parent();
         prev = TAIL_SENTINEL(list)->prev;
         THIS->ind = list->num_elems;
       }
@@ -7728,7 +7787,7 @@ PIKECLASS List
     {
       struct pike_list_node *next;
       if (!THIS->cur) {
-	add_ref(THIS->cur = next = List__get_iterator_find_parent()->head);
+        add_ref(THIS->cur = next = List_Iterator_find_parent()->head);
 	THIS->ind = 0;
       } else if ((next = THIS->cur->next)) {
         add_ref(next);
@@ -7761,7 +7820,7 @@ PIKECLASS List
     {
       struct pike_list_node *prev;
       if (!THIS->cur) {
-        struct List_struct *list = List__get_iterator_find_parent();
+        struct List_struct *list = List_Iterator_find_parent();
         add_ref(THIS->cur = prev = list->tail_pred);
         THIS->ind = list->num_elems-1;
       } else if ((prev = THIS->cur->prev)) {
@@ -7780,7 +7839,7 @@ PIKECLASS List
       RETURN 0;
     }
 
-    /*! @decl Iterator `+=(int steps)
+    /*! @decl Iterator(<ValueType>) `+=(int steps)
      *!
      *!   Advance or retrace the specified number of @[steps].
      *!
@@ -7788,16 +7847,17 @@ PIKECLASS List
      *!   @[next()], @[prev]
      */
     PIKEFUN Iterator `+=(int steps)
+      rawtype tFunc(tNone, tListIterator(tListIterValueType));
     {
       if (!steps) return;
       if (steps > 0) {
 	while (steps--) {
-	  apply_current(f_List_cq__get_iterator_next_fun_num, 0);
+          apply_current(f_List_Iterator_next_fun_num, 0);
 	  pop_stack();
 	}
       } else {
 	while (steps++) {
-	  apply_current(f_List_cq__get_iterator_prev_fun_num, 0);
+          apply_current(f_List_Iterator_prev_fun_num, 0);
 	  pop_stack();
 	}
       }
@@ -7805,7 +7865,7 @@ PIKECLASS List
       ref_push_object(Pike_fp->current_object);
     }
 
-    /*! @decl void insert(mixed val)
+    /*! @decl void insert(ValueType val)
      *!
      *!   Insert @[val] at the current position.
      *!
@@ -7813,6 +7873,7 @@ PIKECLASS List
      *!   @[append()], @[delete()], @[set()]
      */
     PIKEFUN void insert(mixed val)
+      rawtype tFunc(tListIterValueType, tVoid);
     {
       struct pike_list_node *new_node;
       if (!THIS->cur->prev) {
@@ -7823,10 +7884,10 @@ PIKECLASS List
       prepend_list_node(THIS->cur, new_node);
       free_list_node(THIS->cur);
       THIS->cur = new_node;
-      List__get_iterator_find_parent()->num_elems++;
+      List_Iterator_find_parent()->num_elems++;
     }
 
-    /*! @decl void append(mixed val)
+    /*! @decl void append(ValueType val)
      *!
      *!   Append @[val] after the current position.
      *!
@@ -7834,6 +7895,7 @@ PIKECLASS List
      *!   @[insert()], @[delete()], @[set()]
      */
     PIKEFUN void append(mixed val)
+      rawtype tFunc(tListIterValueType, tVoid);
     {
       struct pike_list_node *new_node;
       if (!THIS->cur->next) {
@@ -7843,7 +7905,7 @@ PIKECLASS List
       assign_svalue_no_free(&new_node->val, val);
       append_list_node(THIS->cur, new_node);
       free_list_node(new_node);
-      List__get_iterator_find_parent()->num_elems++;
+      List_Iterator_find_parent()->num_elems++;
     }
 
     /*! @decl void delete()
@@ -7871,13 +7933,13 @@ PIKECLASS List
 	  /* There's some other iterator holding references to this node. */
 	  detach_list_node(THIS->cur);
 	}
-	List__get_iterator_find_parent()->num_elems--;
+        List_Iterator_find_parent()->num_elems--;
       }
       free_list_node(THIS->cur);
       THIS->cur = next;
     }
 
-    /*! @decl void set(mixed val)
+    /*! @decl void set(ValueType val)
      *!
      *!   Set the value of the current position to @[val].
      *!
@@ -7885,6 +7947,7 @@ PIKECLASS List
      *!   @[insert()], @[append()], @[delete()]
      */
     PIKEFUN void set(mixed val)
+      rawtype tFunc(tListIterValueType, tVoid);
     {
       if (!THIS->cur->next || !THIS->cur->prev) {
 	Pike_error("Attempt to set a sentinel.\n");
@@ -7894,6 +7957,15 @@ PIKECLASS List
   }
   /*! @endclass
    */
+
+  /*! @decl protected Iterator(<ValueType>) _get_iterator()
+   */
+  PIKEFUN object _get_iterator()
+    rawtype tFunc(tNone, tListIterator(tListValueType));
+    flags ID_PROTECTED;
+  {
+    apply_current(List_Iterator_program_fun_num, 0);
+  }
 
   PIKEFUN int(1bit) _equal(mixed other)
   {
@@ -7921,13 +7993,7 @@ PIKECLASS List
 /*! @endclass
  */
 
-/*! @endmodule
- */
-
-/*! @module __builtin
- */
-
-/*! @class Stack
+/*! @class LowLevelStack
  *! This class implements a simple stack. Instead of adding and removing
  *! elements to an array, and thus making it vary in size for every push
  *! and pop operation, this stack tries to keep the stack size constant.
@@ -7935,17 +8001,22 @@ PIKECLASS List
  *! current size, i.e. pushing an element on an full 32 slot stack will
  *! result in a 64 slot stack with 33 elements.
  *!
- *! @note
- *!   This class is usually accessed as @[ADT.LowLevelStack].
+ *! @seealso
+ *!   @[ADT.Stack]
  */
 PIKECLASS Stack
+  num_generics 1;
 {
-  PIKEVAR array arr;
+  /*! @decl __generic__ ValueType
+   */
 
-  /*! @decl void push(mixed val)
+  PIKEVAR array arr rawtype tArr(tStackValueType);
+
+  /*! @decl void push(ValueType val)
    *! Push an element on the top of the stack.
    */
   PIKEFUN void push(mixed val)
+    rawtype tFunc(tStackValueType, tVoid);
   {
     if (!THIS->arr) {
       THIS->arr = real_allocate_array(1, 31);
@@ -7956,13 +8027,14 @@ PIKECLASS Stack
     push_int(0);
   }
 
-  /*! @decl mixed top()
+  /*! @decl ValueType top()
    *! Returns the top element from the stack, without
    *! popping it.
    *! @throws
    *!   Throws an error if called on an empty stack.
    */
   PIKEFUN mixed top()
+    rawtype tFunc(tNone, tStackValueType);
   {
     if (THIS->arr && THIS->arr->size) {
       push_svalue(ITEM(THIS->arr) + THIS->arr->size - 1);
@@ -7971,37 +8043,43 @@ PIKECLASS Stack
     Pike_error("Stack underflow\n");
   }
 
-  /*! @decl mixed pop(void|int val)
-   *! Pops and returns entry @[val] from the stack, counting
-   *! from the top. If no value is given the top element is
-   *! popped and returned. All popped entries are freed from
-   *! the stack.
+  /*! @decl ValueType pop(void|zero val)
+   *! @decl array(ValueType) pop(int(1..) val)
+   *!
+   *! Pops and returns the top @[val] entries from the stack.
+   *! If no value is given or @[val] is @expr{0@}, the top
+   *! element is popped and returned. All popped entries are
+   *! freed from the stack.
+   *!
+   *! @note
+   *!   If the stack is empty an error will be thrown.
    *!
    *! @seealso
-   *!   @[quick_pop()], @[pop_to()]
+   *!   @[quick_pop()], @[pop_to()], @[ADT.Stack]
    */
-  PIKEFUN mixed pop(void|int val)
+  PIKEFUN mixed pop(void|int(0..) val)
+    rawtype tOr(tFunc(tOr(tZero, tVoid), tStackValueType),
+                tFunc(tInt1Plus, tArr(tStackValueType)));
   {
     if (!THIS->arr || !THIS->arr->size) {
       Pike_error("Stack underflow\n");
     }
 
     if (val && (val->u.integer > 0)) {
+      /* FIXME: This does NOT behave like ADT.Stack()->pop(val)! */
+      struct array *a;
       ptrdiff_t new_size;
-      ptrdiff_t old_size;
+      ptrdiff_t count;
 
       new_size = THIS->arr->size - val->u.integer;
       if (new_size < 0) new_size = 0;
 
-      /* NB: Steal reference from the array element. */
-      *Pike_sp = ITEM(THIS->arr)[new_size];
-      old_size = THIS->arr->size;
-      THIS->arr->size = new_size;
-      Pike_sp++;
+      count = THIS->arr->size - new_size;
 
-      /* NB: +1 to skip freeing the returned element. */
-      free_svalues(ITEM(THIS->arr) + new_size + 1, old_size - (new_size + 1),
-		   THIS->arr->type_field);
+      /* NB: Steals references from THIS->arr. */
+      push_array(a = allocate_array(count));
+      memcpy(ITEM(a), ITEM(THIS->arr) + new_size, count);
+      THIS->arr->size = new_size;
     } else {
       /* NB: Steal reference from the array element. */
       THIS->arr->size--;
@@ -8010,21 +8088,21 @@ PIKECLASS Stack
     }
   }
 
-  /*! @decl void quick_pop(void|int val)
+  /*! @decl void quick_pop(void|int(0..) val)
    *! Pops @[val] entries from the stack, or one entry
-   *! if no value is given. The popped entries are not
+   *! if no value or @expr{0@} (zero) is given. The popped entries are not
    *! returned.
    *!
    *! @seealso
    *!   @[pop()], @[pop_to()]
    */
-  PIKEFUN void quick_pop(void|int val)
+  PIKEFUN void quick_pop(void|int(0..) val)
   {
     apply_current(f_Stack_pop_fun_num, args);
     push_int(0);
   }
 
-  /*! @decl void pop_to(int depth)
+  /*! @decl void pop_to(int(0..) depth)
    *!
    *! Pops entries from the stack until it reaches the specified depth.
    *!
@@ -8037,7 +8115,7 @@ PIKECLASS Stack
    *! @seealso
    *!   @[pop()], @[quick_pop()]
    */
-  PIKEFUN void pop_to(int depth)
+  PIKEFUN void pop_to(int(0..) depth)
   {
     ptrdiff_t old_size;
 
@@ -8065,14 +8143,14 @@ PIKECLASS Stack
 		 THIS->arr->type_field);
   }
 
-  /*! @decl void reset(int|void initial_size)
+  /*! @decl void reset(int(0..)|void initial_size)
    *! Empties the stack, resets the stack pointer
    *! and shrinks the stack size to the given value
-   *! or 32 if none is given.
+   *! or @expr{32@} if none or @expr{0@} (zero) is given.
    *! @seealso
    *!   @[create]
    */
-  PIKEFUN void reset(int|void initial_size)
+  PIKEFUN void reset(int(0..)|void initial_size)
   {
     ptrdiff_t size = 32;
     if (initial_size && (initial_size->u.integer > 0)) {
@@ -8089,20 +8167,21 @@ PIKECLASS Stack
     THIS->arr->size = 0;
   }
 
-  /*! @decl void create(int|void initial_size)
+  /*! @decl void create(int(0..)|void initial_size)
    *! An initial stack size can be given when
    *! a stack is cloned. The default value is
-   *! 32.
+   *! @expr{32@}.
    */
   PIKEFUN void create(int|void initial_size)
   {
     apply_current(f_Stack_reset_fun_num, args);
   }
 
-  /*! @decl void set_stack(array stack)
+  /*! @decl void set_stack(array(ValueType) stack)
    *! Sets the stacks content to the provided array.
    */
   PIKEFUN void set_stack(array stack)
+    rawtype tFunc(tArr(tStackValueType), tVoid);
   {
     if (THIS->arr) {
       free_array(THIS->arr);
@@ -8110,21 +8189,22 @@ PIKECLASS Stack
     add_ref(THIS->arr = stack);
   }
 
-  /*! @decl int _sizeof()
+  /*! @decl int(0..) _sizeof()
    *! @[sizeof] on a stack returns the number of entries
    *! in the stack.
    */
-  PIKEFUN int _sizeof()
+  PIKEFUN int(0..) _sizeof()
     flags ID_PROTECTED;
   {
     push_int(THIS->arr ? THIS->arr->size : 0);
   }
 
-  /*! @decl array _values()
+  /*! @decl array(ValueType) _values()
    *! @[values] on a stack returns all the entries in
    *! the stack, in order.
    */
   PIKEFUN array _values()
+    rawtype tFunc(tNone, tArr(tStackValueType));
     flags ID_PROTECTED;
   {
     if (THIS->arr) {
@@ -8134,13 +8214,14 @@ PIKECLASS Stack
     }
   }
 
-  /*! @decl int _search(mixed item)
+  /*! @decl int(-1..) _search(ValueType item)
    *! Return the stack-depth to @[item].
    *!
    *! This function makes it possible to use
    *! eg @[search()] and @[has_value()] on the stack.
    */
   PIKEFUN int _search(mixed item)
+    rawtype tFunc(tStackValueType, tOr(tInt_1,tIntPos));
     flags ID_PROTECTED;
   {
     if (!THIS->arr || !THIS->arr->size) {

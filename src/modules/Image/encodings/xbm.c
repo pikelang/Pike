@@ -15,7 +15,7 @@
 #include "mapping.h"
 #include "stralloc.h"
 #include "operators.h"
-#include "threads.h"
+#include "pike_threads.h"
 #include "module_support.h"
 #include "builtin_functions.h"
 
@@ -157,25 +157,22 @@ static struct pike_string *save_xbm( struct image *i, struct pike_string *name )
         ccat( "image" );                                      \
    } while(0)                                                 \
 
-
-
 #define OUTPUT_BYTE(X) do{                                              \
       if(!++first)                                                      \
-        sprintf( size, " 0x%02x", (X) );                                \
+        snprintf( size, sizeof(size), " 0x%02x", (X) );                 \
       else                                                              \
-        sprintf( size, ",%s0x%02x", (first%12?" ":"\n "), (X) );        \
+        snprintf( size, sizeof(size), ",%s0x%02x", (first%12?" ":"\n "), (X) ); \
       (X)=0;                                                            \
       buffer_add_str( &buf, size );                                     \
   } while(0)
 
-
   buffer_init(&buf);
   ccat( "#define ");  cname();  ccat( "_width " );
-  sprintf( size, "%"PRINTPIKEINT"d\n", i->xsize );
+  snprintf( size, sizeof(size), "%"PRINTPIKEINT"d\n", i->xsize );
   buffer_add_str( &buf, size );
 
   ccat( "#define ");  cname();  ccat( "_height " );
-  sprintf( size, "%"PRINTPIKEINT"d\n", i->ysize );
+  snprintf( size, sizeof(size), "%"PRINTPIKEINT"d\n", i->ysize );
   buffer_add_str( &buf, size );
 
   ccat( "static char " );  cname();  ccat( "_bits[] = {\n" );

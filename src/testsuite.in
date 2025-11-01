@@ -2304,7 +2304,7 @@ test_any([[
   return equal(A()->a, A()->a);
 ]], 1)
 test_any([[
-  class A { int a(){} }
+  class A { int a(){} protected int _equal(mixed other) { return 1; } }
   class B { inherit A; }
   return equal(A()->a, B()->a);
 ]], 1)
@@ -4840,7 +4840,14 @@ void low_generate(int depth,
 array(int) a()
 {
   int total_tests;
+#ifdef DISABLE_SLOW_TESTS
+  return ({ 0, 0 });
+#endif
+#if constant(OMIT_SLOW_TESTS)
+  for(maxdepth=1;maxdepth<7 && !errors;maxdepth++)
+#else
   for(maxdepth=1;maxdepth<9 && !errors;maxdepth++)
+#endif
   {
     low_generate(maxdepth,
 		 ({ "string X(){return \"X\";}" }),
@@ -6459,10 +6466,13 @@ test_compile(foreach(({}),mixed i){i;})
 
 dnl sscanf("", ...) triggers this warning.
 ignore_warning("Indexing the empty string.", [[
-test_compile(sscanf("","%O",mixed foo);foo;)
-test_compile_error(sscanf("","",mixed foo);)
-test_compile_error(sscanf("","%f",float))
-test_compile_error(sscanf("",float))
+  test_compile(sscanf("","%O",mixed foo);foo;)
+  test_compile_error(sscanf("","",mixed foo);)
+  test_compile_error(sscanf("","%f",float))
+  test_compile_error(sscanf("",float))
+  expect_compile_error("Too few arguments to sscanf (got 3).", [[
+    test_compile_error(sscanf("", "%s %s", string foo);)
+  ]])
 ]])
 
 // ++
@@ -11312,7 +11322,110 @@ test_eval_error([[
   cpp ("x y z", "-", 0, handler());
 ]]);
 
-test_true( Stdio.write_file("conftest.h", "return 17;\n") )
+dnl NB: File length needs to be a multiple of 4.
+test_true( Stdio.write_file("conftest.h", "return 021;\n") )
+
+dnl __has_include().
+test_any([[
+#if __has_include("conftest.h")
+  return 1;
+#endif
+]], 1)
+test_any([[
+#if !__has_include(<conftest.h>)
+  return 1;
+#endif
+]], 1)
+test_any([[
+#if !__has_include("profiling.h")
+  return 1;
+#endif
+]], 1)
+test_any([[
+#if __has_include(<profiling.h>)
+  return 1;
+#endif
+]], 1)
+test_compile_error([[
+#if __has_include(conftest.h>)
+  return 1;
+#endif
+]])
+test_compile_error([[
+#if __has_include(<conftest.h)
+  return 1;
+#endif
+]])
+test_compile_error([[
+#if __has_include("conftest.h" limit(1))
+  return 1;
+#endif
+]])
+test_compile_error([[
+#if __has_include(<conftest.h> limit(1))
+  return 1;
+#endif
+]])
+
+dnl #embed and __has_embed().
+test_any_equal([[
+#if __has_embed("conftest.h" prefix(16,) limit(4) suffix(,16) if_empty(0))
+  return ({
+#embed "conftest.h" prefix(16,) limit(4) suffix(,16) if_empty(0)
+  });
+#endif
+]], ({ 16, 'r', 'e', 't', 'u', 16 }))
+
+test_any_equal([[
+#if __has_embed("conftest.h" prefix(16,) limit(4+2) suffix(,16) if_empty(0))
+  return ({
+#embed "conftest.h" prefix(16,) limit(4+2) suffix(,16) if_empty(0)
+  });
+#endif
+]], ({ 16, 'r', 'e', 't', 'u', 'r', 'n', 16 }))
+
+test_any_equal([[
+#define EMBED_LIMIT	4+2
+#if __has_embed("conftest.h" prefix(16,) limit(EMBED_LIMIT) suffix(,16) if_empty(0))
+  return ({
+#embed "conftest.h" prefix(16,) limit(EMBED_LIMIT) suffix(,16) if_empty(0)
+  });
+#endif
+]], ({ 16, 'r', 'e', 't', 'u', 'r', 'n', 16 }))
+
+dnl FIXME: Add test of the above with an empty file.
+
+test_any_equal([[
+#if __has_embed("conftest.h" __pike__::__charset__(ucs2))
+  return ({
+#embed "conftest.h" __pike__::__charset__(ucs2)
+  });
+#endif
+]], ({ 're', 'tu', 'rn', ' 0', '21', ';\n' }))
+
+test_any_equal([[
+#if __has_embed("conftest.h" __pike__::__charset__(ucs2le))
+  return ({
+#embed "conftest.h" __pike__::__charset__(ucs2le)
+  });
+#endif
+]], ({ 'er', 'ut', 'nr', '0 ', '12', '\n;' }))
+
+test_any_equal([[
+#if __has_embed("conftest.h" __pike__::__charset__(ucs4))
+  return ({
+#embed "conftest.h" __pike__::__charset__(ucs4)
+  });
+#endif
+]], ({ 'retu', 'rn 0', '21;\n' }))
+
+test_any_equal([[
+#if __has_embed("conftest.h" __pike__::__charset__(ucs4le))
+  return ({
+#embed "conftest.h" __pike__::__charset__(ucs4le)
+  });
+#endif
+]], ({ 'uter', '0 nr', '\n;12' }))
 
 test_any([[
 #include "conftest.h"
@@ -11325,7 +11438,7 @@ test_any([[
 // bug 2440 (a)
 #define FILENAME "conftest.h"
 return #string FILENAME;
-]], "return 17;\n")
+]], "return 021;\n")
 
 test_any([[
 // bug 2440 (b)
@@ -11338,7 +11451,19 @@ test_any([[
 string FILENAME = "";
 #define FILENAME "conftest.h"	 + FILENAME
 return #string FILENAME;
-]], "return 17;\n")
+]], "return 021;\n")
+
+dnl Tests with empty file.
+test_false( Stdio.write_file("conftest.h", "") )
+
+dnl #embed and __has_embed().
+test_any_equal([[
+#if __has_embed("conftest.h" prefix(16,) limit(4+2) suffix(,16) if_empty(0))
+  return ({
+#embed "conftest.h" prefix(16,) limit(4) suffix(,16) if_empty(0)
+  });
+#endif
+]], ({ 0 }))
 
 test_true( rm("conftest.h") )
 
@@ -15255,6 +15380,35 @@ test_eq(a,this_object()->a)
 test_false([[class { string test(string|zero foo) { catch { return lower_case(foo); }; return foo; }}()->test(0); ]])
 test_true([[catch (1.0 / 0.0)]])
 test_true([[catch {float f = 1.0 / 0.0;}]])
+
+// - _Generic
+test_any_equal([[
+  int a, b, c, d;
+#define FOO(X) _Generic((X), int(7bit):a, int(8bit):b, default:c, float:d)
+  FOO(5) = 5;
+  FOO(200) = 200;
+  FOO(1000) = 1000;
+  FOO(12.8) = 128;
+  return ({ FOO(1), FOO(129), FOO("bar"), FOO(0.5) });
+]], ({ 5, 200, 1000, 128 }))
+test_compile_error([[
+  int a, b, c, d;
+#define FOO(X) _Generic((X), int(7bit):a, int(8bit):b, float:d)
+  FOO(5) = 5;
+  FOO(200) = 200;
+  FOO(1000) = 1000;	// This will fail as int(1000) does not match.
+  FOO(12.8) = 128;
+  return ({ FOO(1), FOO(129), FOO("bar"), FOO(0.5) });
+]])
+test_compile_error([[
+  int a, b, c, d;
+#define FOO(X) _Generic((X), int(7bit):a, int(8bit):b, int:c, float:d)
+  FOO(5) = 5;
+  FOO(200) = 200;
+  FOO(1000) = 1000;
+  FOO(12.8) = 128;
+  return ({ FOO(1), FOO(129), FOO("bar"), FOO(0.5) });
+]])
 
 
 // Pike modules

@@ -2546,7 +2546,7 @@ void describe_mapping(struct byte_buffer *b, struct mapping *m,struct processing
   {
     if(p->pointer_a == (void *)m)
     {
-      sprintf(buf,"@%ld",(long)e);
+      snprintf(buf, sizeof(buf), "@%ld", (long)e);
       buffer_add_str(b, buf);
       return;
     }
@@ -2560,7 +2560,8 @@ void describe_mapping(struct byte_buffer *b, struct mapping *m,struct processing
     if (m->data->size == 1) {
       buffer_add_str(b, "([ /* 1 element */\n");
     } else {
-      sprintf(buf, "([ /* %ld elements */\n", (long)m->data->size);
+      snprintf(buf, sizeof(buf), "([ /* %ld elements */\n",
+               (long)m->data->size);
       buffer_add_str(b, buf);
     }
 
@@ -2592,7 +2593,8 @@ void describe_mapping(struct byte_buffer *b, struct mapping *m,struct processing
     if (m->data->size == 1) {
       buffer_add_str(b, "([ /* 1 element */\n");
     } else {
-      sprintf(buf, "([ /* %ld elements */\n", (long)m->data->size);
+      snprintf(buf, sizeof(buf), "([ /* %ld elements */\n",
+               (long)m->data->size);
       buffer_add_str(b, buf);
     }
 

@@ -2,7 +2,11 @@
 
 #pike __REAL_VERSION__
 
-inherit .Scheduler;
+//! Type for items to be scheduled.
+__generic__ ValueType;
+
+//!
+inherit .Scheduler(< ValueType >);
 
 //! This class implements an hierarchial quantized resource scheduler.
 //!
@@ -25,15 +29,15 @@ inherit .Scheduler;
 //! are no longer to be used.
 //!
 //! Active consumers are kept in a (min-)@[Heap].
-class Consumer
+class Consumer(< ValueType >)
 {
-  inherit ::this_program;
+  inherit ::this_program(< ValueType >);
 
   //! @[Consumer] that we depend on.
-  object(Consumer)|zero parent;
+  object(Consumer(< ValueType >))|zero parent;
 
   //! @[Consumer]s that depend on us.
-  array(Consumer) children = ({});
+  array(Consumer(< ValueType >)) children = ({});
 
   // Total weight of all direct children.
   float children_weight = 0.0;
@@ -75,7 +79,8 @@ class Consumer
   }
 
   //!
-  protected void create(int|float weight, mixed v, Consumer|void parent)
+  protected void create(int|float weight, ValueType v,
+                        Consumer(<ValueType>)|void parent)
   {
     weight_ = weight;
     value = v;
@@ -152,7 +157,7 @@ class Consumer
   //!
   //! @seealso
   //!   @[detach()], @[remove()], @[create()], @[reparent_siblings()]
-  void set_parent(Consumer new_parent, int|float weight)
+  void set_parent(Consumer(< ValueType >) new_parent, int|float weight)
   {
     if (!new_parent) new_parent = root;
 
@@ -163,7 +168,7 @@ class Consumer
 
     // If the new parent is a child to us, we
     // need to reparent it to our old parent.
-    Consumer npp = new_parent;
+    Consumer(< ValueType >) npp = new_parent;
     while (npp) {
       if (npp == this) {
 	// The new parent is a child to us, so reparent
@@ -212,7 +217,7 @@ class Consumer
     if (sizeof(parent->children) == 1) return;
 
     float weight_factor = children_weight/weight;
-    foreach(parent->children, Consumer c) {
+    foreach(parent->children, Consumer(< ValueType >) c) {
       if (c == this) continue;
       c->set_parent(this, c->weight * weight_factor);
     }
@@ -230,7 +235,7 @@ class Consumer
     if (state & STATE_ACTIVE) {
       remove(this);
     }
-    Consumer parent = this_program::parent;
+    Consumer(< ValueType >) parent = this_program::parent;
     this_program::parent = UNDEFINED;
 
     parent->children -= ({ this });
@@ -240,7 +245,7 @@ class Consumer
       //     the heap will not change. The only reason for it to change
       //     is due to depth changes for nodes with the same priority.
       parent->children += children;
-      foreach(children, Consumer c) {
+      foreach(children, Consumer(< ValueType >) c) {
 	c->parent = parent;
 	c->weight *= weight/children_weight;
 	parent->children_weight += c->weight;
@@ -258,7 +263,7 @@ class Consumer
       detach();
     } else {
       // Already detached, or we are the root.
-      foreach(children, Consumer c) {
+      foreach(children, Consumer(< ValueType >) c) {
 	c->parent = UNDEFINED;
 	c->set_depth(depth);
       }
@@ -285,9 +290,10 @@ class Consumer
 
 //! Create a @[Consumer] depending on @[parent] with the weight @[weight]
 //! for the value @[val], and add it to the Scheduler.
-variant Consumer add(int|float weight, mixed val, Consumer parent)
+variant Consumer(< ValueType >) add(int|float weight, mixed val,
+                                    Consumer(< ValueType >) parent)
 {
-  return add(Consumer(weight, val, parent));
+  return add(Consumer(< ValueType >)(weight, val, parent));
 }
 
 //! The root of the @[Customer] dependency tree.
@@ -296,7 +302,7 @@ variant Consumer add(int|float weight, mixed val, Consumer parent)
 //!   Note that the root is never active (ie added to the Scheduler).
 //!
 //! @[Customer]s that don't have an explicit dependency depend on @[root].
-object(Consumer)|zero root = Consumer(1.0, "root");
+object(Consumer(< ValueType >))|zero root = Consumer(< ValueType >)(1.0, "root");
 
 protected string _sprintf(int c)
 {
@@ -305,10 +311,10 @@ protected string _sprintf(int c)
   .Stack todo = .Stack();
   todo->push(0);	// End sentinel.
   todo->push(root);
-  Consumer child;
+  Consumer(< ValueType >) child;
   while (child = todo->pop()) {
     buf->sprintf("  %*s%O\n", child->depth * 2, "", child);
-    foreach(reverse(child->children), Consumer cc) {
+    foreach(reverse(child->children), Consumer(< ValueType >) cc) {
       todo->push(cc);
     }
   }
@@ -323,7 +329,7 @@ protected void _destruct()
   todo->push(0);	// End sentinel.
   todo->push(root);
   root = UNDEFINED;
-  Consumer child;
+  Consumer(< ValueType >) child;
   while (child = todo->pop()) {
     foreach(child->children, Consumer cc) {
       todo->push(cc);

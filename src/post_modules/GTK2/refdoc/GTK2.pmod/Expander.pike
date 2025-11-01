@@ -1,3 +1,6 @@
+// Automatically generated from "gtkexpander.pre".
+// Do NOT edit.
+
 //! Properties:
 //! int expanded
 //! string label
@@ -16,8 +19,9 @@
 //!
 
 inherit GTK2.Bin;
+//!
 
-protected GTK2.Expander create( string|mapping label );
+protected void create( void label );
 //! Create a new GTK2.Expander.  Set mnemonic to 1
 //! for a mnemonic expander, otherwise omitting it
 //! creates a regular expander.

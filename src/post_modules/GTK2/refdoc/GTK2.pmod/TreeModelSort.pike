@@ -1,15 +1,22 @@
+// Automatically generated from "gtktreemodelsort.pre".
+// Do NOT edit.
+
 //! Properties:
 //! GTK2.TreeModel model
 //!
 //!
 
 inherit G.Object;
+//!
 
 inherit GTK2.TreeModel;
+//!
 
 inherit GTK2.TreeDragSource;
+//!
 
 inherit GTK2.TreeSortable;
+//!
 
 GTK2.TreeIter convert_child_iter_to_iter( GTK2.TreeIter child_iter );
 //! Returns an iter pointing to the row in this model that corresponds
@@ -35,7 +42,7 @@ GTK2.TreePath convert_path_to_child_path( GTK2.TreePath sorted_path );
 //!
 //!
 
-protected GTK2.TreeModelSort create( GTK2.TreeModel model );
+protected void create( void model );
 //! Create a new GTK2.TreeModel, with model as the child model.
 //!
 //!

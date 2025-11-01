@@ -14,9 +14,9 @@ void create(GDK2.Window|int parent, mapping|void attributes)
   if (TYPEOF(Pike_sp[-args]) == PIKE_T_INT)
   {
     GdkWindow *w;
-    INT_TYPE id;
-    get_all_args(NULL,args,"%i",&id);
-    w=gdk_window_foreign_new(id);
+    INT64 id;
+    get_all_args(NULL,args,"%l",&id);
+    w=gdk_window_foreign_new((GdkNativeWindow)(ptrdiff_t)id);
     THIS->obj=G_OBJECT(w);
     if (!THIS->obj)
       Pike_error("The window with id 0x%lx does not exist\n",

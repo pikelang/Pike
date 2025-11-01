@@ -1,3 +1,6 @@
+// Automatically generated from "gtkhbox.pre".
+// Do NOT edit.
+
 //! Most packing is done by creating boxes. These are invisible widget
 //! containers that we can pack our widgets into which come in two
 //! forms, a horizontal box, and a vertical box. This is the horizontal
@@ -18,8 +21,9 @@
 //!
 
 inherit GTK2.Box;
+//!
 
-protected GTK2.Hbox create( int|mapping uniformp_or_props, int|void hpadding );
+protected void create( void uniformp_or_props, void hpadding );
 //! Create a new horizontal box widget.
 //! If all_same_size is true, all widgets will have exactly the same size.
 //! hpadding is added to the left and right of the children.

@@ -11,7 +11,7 @@ __generic__ ValueType;
 int offset;
 int(0..0)|ValueType value = UNDEFINED;
 string|array(int) path = ({});
-mapping(int:this_program) trie;
+mapping(int:this_program(<ValueType>)) trie;
 
 protected array(int) index;
 protected string|array(int) iterator_position;
@@ -23,13 +23,13 @@ protected void create(string|array(int)|void key, int|void offset)
   path = path[..this::offset-1];
 }
 
-protected void low_merge(int key, this_program o)
+protected void low_merge(int key, this_program(<ValueType>) o)
 {
   if (!trie) {
     trie = ([ key : o ]);
     return;
   }
-  this_program old = trie[key];
+  this_program(<ValueType>) old = trie[key];
   if (!old) {
     trie[key] = o;
     index = 0;
@@ -61,21 +61,21 @@ protected void low_merge(int key, this_program o)
       return;
     }
   }
-  this_program new = ADT.Trie(o->path[..split-1]);
+  this_program(<ValueType>) new = ADT.Trie(<ValueType>)(o->path[..split-1]);
   new->merge(old);
   new->merge(o);
   trie[new->path[offset]] = new;
 }
 
-protected void merge_trie(mapping(int:this_program) other_trie)
+protected void merge_trie(mapping(int:this_program(<ValueType>)) other_trie)
 {
   if (!other_trie) return;
-  foreach(other_trie; int key; this_program o) {
+  foreach(other_trie; int key; this_program(<ValueType>) o) {
     low_merge(key, o);
   }
 }
 
-void merge(this_program o)
+void merge(this_program(<ValueType>) o)
 {
   if (o->offset < offset) {
     error("Problem!\n");
@@ -92,15 +92,15 @@ void merge(this_program o)
 
 void insert(string|array(int) key, ValueType val)
 {
-  this_program o;
+  this_program(<ValueType>) o;
   if (undefinedp(val)) return;
   if (sizeof(key) == offset) {
     value = val;
   } else if (!trie) {
-    trie = ([ key[offset]: (o = ADT.Trie(key)) ]);
+    trie = ([ key[offset]: (o = ADT.Trie(<ValueType>)(key)) ]);
     o->value = val;
   } else if (!(o = trie[key[offset]])) {
-    trie[key[offset]] = o = ADT.Trie(key);
+    trie[key[offset]] = o = ADT.Trie(<ValueType>)(key);
     o->value = val;
     index = 0;	// Invalidated.
   } else {
@@ -117,7 +117,7 @@ void insert(string|array(int) key, ValueType val)
       }
     }
     if (split > -1) {
-      this_program new_o = ADT.Trie(key, split);
+      this_program(<ValueType>) new_o = ADT.Trie(<ValueType>)(key, split);
       new_o->trie = ([ o->path[split] : o ]);
       o = trie[key[offset]] = new_o;
     }
@@ -128,7 +128,7 @@ void insert(string|array(int) key, ValueType val)
 ValueType remove(string|array(int) key)
 {
   ValueType val;
-  this_program o;
+  this_program(<ValueType>) o;
   if (sizeof(key) == offset) {
     val = value;
     value = UNDEFINED;
@@ -174,7 +174,7 @@ ValueType lookup(string|array(int) key)
     return value;
   }
   if (!trie) return UNDEFINED;
-  this_program o = trie[key[offset]];
+  this_program(<ValueType>) o = trie[key[offset]];
   if (!o) return UNDEFINED;
   return o->lookup(key);
 }
@@ -190,7 +190,7 @@ protected string|array(int) _first()
 {
   if (!trie) return UNDEFINED;
   update_index();
-  this_program o = trie[index[0]];
+  this_program(<ValueType>) o = trie[index[0]];
   if (undefinedp(o->value)) return o->first();
   return o->path;
 }
@@ -207,7 +207,7 @@ string|array(int) next(string|array(int) base)
   if (sizeof(base) <= offset) {
     return _first();
   }
-  this_program o = trie[base[offset]];
+  this_program(<ValueType>) o = trie[base[offset]];
   if (o) {
     for (int i = offset+1; i < o->offset; i++) {
       if ((i >= sizeof(base)) || (o->path[i] > base[i])) {
@@ -268,7 +268,7 @@ protected string _sprintf(int c, mapping|void attrs)
     string res = sprintf("ADT.Trie(%s, ([", render_path());
     if (trie) {
       res += "\n";
-      foreach(trie || ([]); int key; this_program o) {
+      foreach(trie || ([]); int key; this_program(<ValueType>) o) {
 	res += sprintf("  %O: %O,\n", key, o);
       }
     }

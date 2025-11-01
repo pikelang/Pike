@@ -1272,7 +1272,7 @@ protected mapping(string:Monitor) monitors = ([]);
 //! Heap containing active @[Monitor]s that need polling.
 //!
 //! The heap is sorted on @[Monitor()->next_poll].
-protected ADT.Heap monitor_queue = ADT.Heap();
+protected ADT.Heap(<Monitor>) monitor_queue = ADT.Heap(<Monitor>)();
 
 //! Mutex controlling access to @[monitor_queue].
 protected Thread.Mutex monitor_mutex = Thread.Mutex();
@@ -1320,7 +1320,7 @@ void clear()
 {
   mixed key = monitor_mutex->lock();
   monitors = ([]);
-  monitor_queue = ADT.Heap();
+  monitor_queue = ADT.Heap(<Monitor>)();
 #if HAVE_EVENTSTREAM
   eventstream = 0;
 #elseif HAVE_INOTIFY

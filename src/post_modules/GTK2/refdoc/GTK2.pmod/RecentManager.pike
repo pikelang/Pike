@@ -1,8 +1,12 @@
+// Automatically generated from "gtkrecentmanager.pre".
+// Do NOT edit.
+
 //!
 //!
 //!
 
 inherit G.Object;
+//!
 
 int add_item( string uri );
 //! Adds a new resource, pointed by uri, into the recently used
@@ -10,7 +14,7 @@ int add_item( string uri );
 //!
 //!
 
-protected GTK2.RecentManager create( mapping|int|GdkScreen props_or_def );
+protected void create( void props_or_def );
 //! Create a new GTK2.RecentManager.
 //!
 //!
@@ -61,7 +65,7 @@ GTK2.RecentManager set_limit( int limit );
 //!
 //!
 
-GTK2.RecentManager set_screen( GTK2.GdkScreen screen );
+GTK2.RecentManager set_screen( GDK2.Screen screen );
 //! Sets the screen for a recent manager; the screen is used to track the
 //! user's currently configured recently used documents storage.
 //!

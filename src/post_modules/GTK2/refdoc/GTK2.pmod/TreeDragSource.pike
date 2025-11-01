@@ -1,3 +1,6 @@
+// Automatically generated from "gtktreedragsource.pre".
+// Do NOT edit.
+
 //!
 //!
 //!

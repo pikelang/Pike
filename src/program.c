@@ -20,7 +20,7 @@
 #include "main.h"
 #include "pike_memory.h"
 #include "gc.h"
-#include "threads.h"
+#include "pike_threads.h"
 #include "constants.h"
 #include "operators.h"
 #include "builtin_functions.h"
@@ -55,7 +55,7 @@ struct program * alloc_program(void) {
 
 void really_free_program(struct program * p) {
     exit_program_struct(p);
-    dmalloc_unregister(p, 0);
+    (void)dmalloc_unregister(p, 0);
     ba_free(&program_allocator, p);
 }
 
@@ -2935,6 +2935,8 @@ struct program *low_id_to_program(INT32 id, int inhibit_module_load)
   struct program_state *state;
   struct program *p;
   INT32 h;
+
+ loop:
   if(!id) return 0;
 
   /* fprintf(stderr, "id_to_program(%d)... ", id); */
@@ -2961,6 +2963,30 @@ struct program *low_id_to_program(INT32 id, int inhibit_module_load)
   for (state = Pike_compiler; state; state = state->previous) {
     if (state->new_program && state->new_program->id == id) {
       return state->new_program;
+    }
+  }
+
+  if ((id > 0) && (id < PROG_GENERICS_ID_START)) {
+    /* Some classes have been renumbered due to now using generics.
+     *
+     * Ordered by their appearances in program_id.h.
+     */
+    switch(id) {
+    case OLD_PROG_THREAD_LOCAL_ID:
+      id = PROG_THREAD_LOCAL_ID;
+      goto loop;
+    case OLD_PROG_STRING_SPLIT_ITERATOR_ID:
+      id = PROG_STRING_SPLIT_ITERATOR_ID;
+      goto loop;
+    case OLD_PROG_LIST_ID:
+      id = PROG_LIST_ID;
+      goto loop;
+    case OLD_PROG_LIST__GET_ITERATOR_ID:
+      id = PROG_LIST_ITERATOR_ID;
+      goto loop;
+    case OLD_PROG_STACK_ID:
+      id = PROG_STACK_ID;
+      goto loop;
     }
   }
 
@@ -3322,7 +3348,7 @@ void fixate_program(void)
       if (((size_t)fun->func.offset) >= inh->prog->num_program) {
 	Pike_fatal("Function %s offset (%ld) out of whack (max: %ld)!\n",
 		   fun->name?fun->name->str:"<no-name>",
-		   fun->func.const_info.offset,
+                   (long)fun->func.const_info.offset,
 		   (long)inh->prog->num_program);
       }
       break;
@@ -3524,15 +3550,17 @@ void fixate_program(void)
       }
     }
 
-    lfuns = malloc(sizeof(INT16) * ((NUM_LFUNS >> 4) + num_lfuns + 1));
+    lfuns = malloc(sizeof(INT16) * ((NUM_LFUNS >> 4) + 1 + num_lfuns));
     lfuns[0] = (NUM_LFUNS >> 4) + 1;	/* Always space for __INIT et al. */
-    for (i = 1; i <= (NUM_LFUNS >> 4); i++) {
+    for (i = 1; i <= (NUM_LFUNS >> 4); i++) { /* Note <=! */
       lfuns[i] = 0;
     }
     memset(lfuns + ((NUM_LFUNS >> 4) + 1), 0xff,
 	   sizeof(INT16) * num_lfuns);				/* -1 */
 
-    /* Copy __INIT from original lfuns. */
+    /* Copy __INIT from original lfuns.
+     * We *know* that LFUN___INIT is 0!
+     */
     num_lfuns = (NUM_LFUNS>>4) + 1;
     lfuns[num_lfuns] = p->lfuns[num_lfuns];
     num_lfuns++;
@@ -3729,7 +3757,7 @@ void fixate_program(void)
       }
       else if(!(tmp2 = find_program_name(i->prog, &line)))
       {
-	sprintf(buffer,"inherit[%d]",e);
+        snprintf(buffer, sizeof(buffer), "inherit[%d]", e);
 	tmp=buffer;
       } else {
 	tmp = tmp2->str;
@@ -4308,6 +4336,7 @@ static void exit_program_struct(struct program *p)
 
   if (p->lfuns) {
     free(p->lfuns);
+    p->lfuns = NULL;
   }
 
   EXIT_PIKE_MEMOBJ(p);
@@ -5132,7 +5161,7 @@ PMOD_EXPORT void add_program_annotation(int inh, struct svalue *val)
   }
   if (val) {
     if (inherit->annotations) {
-      multiset_add(inherit->annotations, val);
+      multiset_insert(inherit->annotations, val);
     } else {
       push_svalue(val);
       f_aggregate_multiset(1);
@@ -9337,7 +9366,7 @@ static void insert_small_number(INT_TYPE a)
     add_to_linenumbers(a>>8);
     add_to_linenumbers(a);
 #ifdef INT_TYPE_INT32_CONVERSION
-  } else if (a < -0x80000000L || a > 0x7fffffffL) {
+  } else if (a < -0x7fffffffL-1 || a > 0x7fffffffL) {
     /* Overload 16-bit zero as marker for 64-bit. */
     fprintf(stderr, "Saving huge linenumber: %lld\n", (long long)a);
     add_to_linenumbers(-127);
@@ -9392,7 +9421,7 @@ static void ext_insert_small_number (char **ptr, INT_TYPE a)
     *(*ptr)++ = a>>8;
     *(*ptr)++ = a;
 #ifdef INT_TYPE_INT32_CONVERSION
-  } else if (a < -0x80000000L || a > 0x7fffffffL) {
+  } else if (a < -0x7fffffffL-1 || a > 0x7fffffffL) {
     /* Overload 16-bit zero as marker for 64-bit. */
     *(*ptr)++ = -127;
     *(*ptr)++ = 0;
@@ -9672,7 +9701,7 @@ static char *make_plain_file (struct pike_string *filename, int malloced)
 
       if(chr > 255)
       {
-	sprintf(buffer+ptr,"\\u%04X",chr);
+        snprintf(buffer + ptr, sizeof(buffer) - ptr, "\\u%04X", chr);
 	ptr+=strlen(buffer+ptr);
       }else{
 	buffer[ptr++]=chr;
@@ -11719,15 +11748,15 @@ PMOD_EXPORT void string_builder_append_pike_opcode(struct string_builder *s,
   char buf[3][32];
   const char *params[3] = { NULL, NULL, NULL };
   const struct instr *instr = &instrs[op - F_OFFSET];
-  sprintf(buf[0], "%d", arg1);
-  sprintf(buf[1], "%d", arg2);
+  snprintf(buf[0], sizeof(buf[0]), "%d", arg1);
+  snprintf(buf[1], sizeof(buf[1]), "%d", arg2);
   if (instr->flags & I_HASARG) {
     params[0] = buf[0];
   }
   if (instr->flags & I_HASARG2) {
     params[1] = buf[1];
   }
-  sprintf(buf[2], "# %s", instr->name);
+  snprintf(buf[2], sizeof(buf[2]), "# %s", instr->name);
   string_builder_append_disassembly(s, (size_t)addr, addr, addr,
 				    buf[2], params, NULL);
 }

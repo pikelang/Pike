@@ -23,6 +23,7 @@
 #include "pike_macros.h"
 #include "module_support.h"
 #include "builtin_functions.h"
+#include "pike_types.h"
 
 #ifdef HAVE_WORKING_LIBFFMPEG
 
@@ -59,6 +60,11 @@
 #define FF_API_AUDIO_OLD 1
 #define FF_API_VIDEO_OLD 1
 
+#ifdef HAVE_LIBAVUTIL_ATTRIBUTES_H
+#include <libavutil/attributes.h>
+#undef attribute_deprecated
+#define attribute_deprecated
+#endif
 #ifdef HAVE_LIBAVCODEC_AVCODEC_H
 #include <libavcodec/avcodec.h>
 #else
@@ -98,29 +104,93 @@
 #define uint8_t unsigned char
 #endif
 
+#ifndef HAVE_AVCODEC_OPEN
+#define avcodec_open(a, b) avcodec_open2(a, b, NULL)
+#endif
+
+#ifndef HAVE_AVCODEC_DECODE_AUDIO
+#define avcodec_decode_audio avcodec_decode_audio2
+#ifndef HAVE_AVCODEC_DECODE_AUDIO2
+#define avcodec_decode_audio2 avcodec_decode_audio3
+#define USE_AVPACKET_FOR_DECODE
+#ifndef HAVE_AVCODEC_DECODE_AUDIO3
+#define avcodec_decode_audio3 avcodec_decode_audio4
+#define USE_AVFRAME_FOR_DECODE
+#ifndef HAVE_AVCODEC_DECODE_AUDIO4
+static int avcodec_decode_audio4(AVCodecContext *avctx, AVFrame *frame,
+                                 int *got_frame_ptr, const AVPacket *avpkt)
+{
+  int ret = avcodec_send_packet(avctx, avpkt);
+  int n = ret? 0 : avpkt->size;
+  if (ret == 0 || ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
+    ret = avcodec_receive_frame(avctx, frame);
+    if (ret == 0)
+      *got_frame_ptr = 1;
+  }
+  return n;
+}
+#endif
+#endif
+#endif
+#endif
+
+#ifndef HAVE_AVCODEC_ALLOC_FRAME
+#define avcodec_alloc_frame av_frame_alloc
+#endif
+#ifndef HAVE_AVCODEC_FREE_FRAME
+#define avcodec_free_frame av_frame_free
+#endif
+#ifndef HAVE_AVCODEC_GET_FRAME_DEFAULTS
+#define avcodec_get_frame_defaults av_frame_unref
+#endif
+
+#ifdef HAVE_AVCODECCONTEXT_CH_LAYOUT
+#define channels ch_layout.nb_channels
+#endif
+
+#if defined(HAVE_AVCODEC_ALLOC_CONTEXT) || defined(HAVE_AVCODEC_ALLOC_CONTEXT2) || defined(HAVE_AVCODEC_ALLOC_CONTEXT3)
+#define USE_ALLOC_CONTEXT
+#ifndef HAVE_AVCODEC_ALLOC_CONTEXT3
+#define avcodec_alloc_context3(codec) avcodec_alloc_context2((codec)->type)
+#endif
+#ifndef HAVE_AVCODEC_ALLOC_CONTEXT2
+#define avcodec_alloc_context2(avmediatype) avcodec_alloc_context()
+#endif
+#endif
+
+#ifndef HAVE_AV_CODEC_IS_ENCODER
+#ifdef HAVE_AVCODEC_ENCODE2
+#define av_codec_is_encoder(codec) ((codec)->encode2)
+#else
+#define av_codec_is_encoder(codec) ((codec)->encode)
+#endif
+#endif
+
+#ifndef HAVE_AV_CODEC_IS_DECODER
+#define av_codec_is_decoder(codec) ((codec)->decode)
+#endif
+
 static struct program *ffmpeg_program;
 
 typedef struct {
-  AVCodec		*codec;
-  AVCodecContext	 codec_context;
+  const AVCodec		*codec;
+  AVCodecContext	*codec_context;
   int			 encoder;
+#ifdef USE_AVFRAME_FOR_DECODE
+  AVFrame               *outbuf;
+#else
   uint8_t		*outbuf;
+#endif
 } ffmpeg_data;
 
 #define THIS	((ffmpeg_data *)Pike_fp->current_storage)
 
-int encoder_flg(AVCodec *codec) {
+int encoder_flg(const AVCodec *codec) {
   int flg = -1;
 
-  if( codec->
-#ifdef HAVE_AVCODEC_ENCODE2
-      encode2
-#else
-      encode
-#endif
-      )
+  if( av_codec_is_encoder(codec) )
     flg = 1;
-  else if( codec->decode )
+  else if( av_codec_is_decoder(codec) )
     flg = 0;
   return(flg);
 }
@@ -148,8 +218,12 @@ int encoder_flg(AVCodec *codec) {
  */
 static void f_create(INT32 args)
 {
-  AVCodec *codec = NULL;
+  const AVCodec *codec = NULL;
+#ifdef CODEC_ID_MP2
   int codec_id = CODEC_ID_MP2;
+#else
+  int codec_id = AV_CODEC_ID_MP2;
+#endif
   int rate, wide, chns;
 
   if(THIS->codec != NULL)
@@ -161,16 +235,19 @@ static void f_create(INT32 args)
 	Pike_error("Invalid argument 5, expected int.\n");
       chns = (u_short)Pike_sp[-1].u.integer;
       Pike_sp--;
+      /* FALLTHRU */
     case 4:
       if(TYPEOF(Pike_sp[-1]) != T_INT)
 	Pike_error("Invalid argument 4, expected int.\n");
       wide = (u_short)Pike_sp[-1].u.integer;
       Pike_sp--;
+      /* FALLTHRU */
     case 3:
       if(TYPEOF(Pike_sp[-1]) != T_INT)
 	Pike_error("Invalid argument 3, expected int.\n");
       rate = (u_short)Pike_sp[-1].u.integer;
       Pike_sp--;
+      /* FALLTHRU */
 
     case 2:
       if(TYPEOF(Pike_sp[-1]) != T_INT)
@@ -181,7 +258,7 @@ static void f_create(INT32 args)
     /* case 1: */
       if(TYPEOF(Pike_sp[-1]) != T_INT)
 	Pike_error("Invalid argument 1, expected int.\n");
-      codec_id = (u_short)Pike_sp[-1].u.integer;
+      codec_id = (int)Pike_sp[-1].u.integer;
       Pike_sp--;
       if(THIS->encoder) {
         codec = avcodec_find_encoder(codec_id);
@@ -193,16 +270,30 @@ static void f_create(INT32 args)
 	  Pike_error("Codec for decoder 0x%02x not found.\n", codec_id);
       }
 
-      memset(&THIS->codec_context, 0, sizeof(THIS->codec_context));
-      /* FIXME: Use avcodec_open2() if available. */
-      if (avcodec_open(&THIS->codec_context, codec) < 0)
+#ifdef USE_ALLOC_CONTEXT
+      THIS->codec_context = avcodec_alloc_context3(codec);
+      if (!THIS->codec_context)
+        Pike_error("Failed to allocate codec context.\n");
+#else
+      THIS->codec_context = FF_ALLOC(sizeof(*THIS->codec_context));
+      if (!THIS->codec_context)
+        Pike_error("Malloc of codec context failed.\n");
+      memset(THIS->codec_context, 0, sizeof(*THIS->codec_context));
+#endif
+      if (avcodec_open(THIS->codec_context, codec) < 0)
         Pike_error("Could not open codec.\n");
       THIS->codec = codec;
 
+#ifdef USE_AVFRAME_FOR_DECODE
+      if(THIS->outbuf != NULL)
+        avcodec_free_frame(&THIS->outbuf);
+      THIS->outbuf = avcodec_alloc_frame();
+#else
       if(THIS->outbuf != NULL)
         FF_FREE(THIS->outbuf);
       THIS->outbuf = FF_ALLOC(AVCODEC_MAX_AUDIO_FRAME_SIZE);
       /* FIXME: we really want so big buffer? */
+#endif
       if(THIS->outbuf == NULL)
 	Pike_error("Malloc of internal buffer failed.\n");
       break;
@@ -262,7 +353,7 @@ static void f_set_codec_param(INT32 args) {
     if(TYPEOF(Pike_sp[-1]) != T_INT)
       Pike_error("Invalid argument 2, expected integer.\n");
     /* FIXME: test correct value of bit rate argument */
-    THIS->codec_context.bit_rate = Pike_sp[-1].u.integer;
+    THIS->codec_context->bit_rate = Pike_sp[-1].u.integer;
     pop_n_elems(args);
     push_int(1);
     return;
@@ -273,7 +364,7 @@ static void f_set_codec_param(INT32 args) {
     if(TYPEOF(Pike_sp[-1]) != T_INT)
       Pike_error("Invalid argument 2, expected integer.\n");
     /* FIXME: test correct value of bit rate argument */
-    THIS->codec_context.sample_rate = Pike_sp[-1].u.integer;
+    THIS->codec_context->sample_rate = Pike_sp[-1].u.integer;
     pop_n_elems(args);
     push_int(1);
     return;
@@ -284,7 +375,7 @@ static void f_set_codec_param(INT32 args) {
     if(TYPEOF(Pike_sp[-1]) != T_INT)
       Pike_error("Invalid argument 2, expected integer.\n");
     /* FIXME: test correct value of bit rate argument */
-    THIS->codec_context.channels = (u_short)Pike_sp[-1].u.integer;
+    THIS->codec_context->channels = (u_short)Pike_sp[-1].u.integer;
     pop_n_elems(args);
     push_int(1);
     return;
@@ -314,7 +405,7 @@ static void f_get_codec_status(INT32 args) {
   ref_push_string(literal_type_string);		push_int( THIS->codec->type );
   push_static_text("id");		push_int( THIS->codec->id );
   push_static_text("encoder_flg");	push_int( encoder_flg(THIS->codec) );
-  push_static_text("flags");		push_int( THIS->codec_context.flags );
+  push_static_text("flags");		push_int( THIS->codec_context->flags );
   cnt = 5;
 
 #ifdef USE_AVMEDIA_TYPE_ENUM
@@ -323,8 +414,8 @@ static void f_get_codec_status(INT32 args) {
   if(THIS->codec->type == CODEC_TYPE_AUDIO) {
 #endif
     /* audio only */
-    push_static_text("sample_rate");	push_int( THIS->codec_context.sample_rate );
-    push_static_text("channels");	push_int( THIS->codec_context.channels );
+    push_static_text("sample_rate");	push_int( THIS->codec_context->sample_rate );
+    push_static_text("channels");	push_int( THIS->codec_context->channels );
     cnt += 2;
   }
 
@@ -337,29 +428,18 @@ static void f_get_codec_status(INT32 args) {
     push_static_text("frame_rate");
 #ifdef HAVE_AVCODECCONTEXT_FRAME_RATE
     /* avcodec.h 1.392 (LIBAVCODEC_BUILD 4753) and earlier. */
-    push_int(THIS->codec_context.frame_rate);
+    push_int(THIS->codec_context->frame_rate);
 #else /* !HAVE_AVCODECCONTEXT_FRAME_RATE */
     /* avcodec.h 1.393 (LIBAVCODEC_BUILD 4754) and later. */
-    push_int(THIS->codec_context.time_base.den/
-	     THIS->codec_context.time_base.num);
+    push_int(THIS->codec_context->time_base.den/
+             THIS->codec_context->time_base.num);
 #endif /* HAVE_AVCODECCONTEXT_FRAME_RATE */
-    push_static_text("width");		push_int( THIS->codec_context.width );
+    push_static_text("width");		push_int( THIS->codec_context->width );
     cnt += 2;
   }
 
   f_aggregate_mapping(2 * cnt);
 }
-
-#ifndef HAVE_AVCODEC_DECODE_AUDIO
-#define avcodec_decode_audio avcodec_decode_audio2
-#ifndef HAVE_AVCODEC_DECODE_AUDIO2
-#define avcodec_decode_audio2 avcodec_decode_audio3
-#define USE_AVPACKET_FOR_DECODE
-#ifndef HAVE_AVCODEC_DECODE_AUDIO3
-  /* FIXME: Support avcodec_decode_audio4(). */
-#endif
-#endif
-#endif
 
 /*! @decl mapping|int decode(string data)
  *!
@@ -386,9 +466,15 @@ static void f_decode(INT32 args) {
   int len, samples_size;
   struct svalue feeder;
 #ifdef USE_AVPACKET_FOR_DECODE
-  AVPacket avp;
+  AVPacket *avp;
+#ifndef HAVE_AV_PACKET_ALLOC
+  AVPacket avpacket;
 #endif
-
+#endif
+#ifdef USE_AVFRAME_FOR_DECODE
+  int frame_decoded = 0;
+#endif
+  
   if(TYPEOF(Pike_sp[-args]) != T_STRING)
     Pike_error("Invalid argument 1, expected string.\n");
 
@@ -421,14 +507,37 @@ static void f_decode(INT32 args) {
 
   /* one pass decoding */
 #ifdef USE_AVPACKET_FOR_DECODE
-  av_init_packet(&avp);
-  avp.data = STR0(idata);
-  avp.size = idata->len;
-  len = avcodec_decode_audio(&THIS->codec_context,
-			     (short *)THIS->outbuf, &samples_size,
-			     &avp);
+#ifdef HAVE_AV_PACKET_ALLOC
+  avp = av_packet_alloc();
 #else
-  len = avcodec_decode_audio(&THIS->codec_context,
+  av_init_packet(&avpacket);
+  avp = &avpacket;
+#endif
+  avp->data = STR0(idata);
+  avp->size = idata->len;
+#ifdef USE_AVFRAME_FOR_DECODE
+  avcodec_get_frame_defaults(THIS->outbuf);
+  len = avcodec_decode_audio(THIS->codec_context,
+                             THIS->outbuf, &frame_decoded,
+                             avp);
+  if (len >= 0 && frame_decoded)
+    samples_size = av_samples_get_buffer_size(NULL,
+                                              THIS->codec_context->channels,
+                                              THIS->outbuf->nb_samples,
+                                              THIS->codec_context->sample_fmt,
+                                              1);
+  else
+    samples_size = 0;
+#else
+  len = avcodec_decode_audio(THIS->codec_context,
+                             (short *)THIS->outbuf, &samples_size,
+                             avp);
+#endif
+#ifdef HAVE_AV_PACKET_ALLOC
+  av_packet_free(&avp);
+#endif
+#else
+  len = avcodec_decode_audio(THIS->codec_context,
 			     (short *)THIS->outbuf, &samples_size,
 		  	     STR0(idata), idata->len);
 #endif
@@ -438,7 +547,11 @@ static void f_decode(INT32 args) {
     /* frame was decoded */
     pop_n_elems(args);
     push_static_text("data");
+#ifdef USE_AVFRAME_FOR_DECODE
+    push_string(make_shared_binary_string((char *)THIS->outbuf->data[0], samples_size));
+#else
     push_string(make_shared_binary_string((char *)THIS->outbuf, samples_size));
+#endif
     push_static_text("decoded");
     push_int(len);
     f_aggregate_mapping( 2*2 );
@@ -478,14 +591,24 @@ static void f_encode(INT32 args) {
  */
 static void f_list_codecs(INT32 args) {
   int cnt = 0;
-  AVCodec *codec;
+  const AVCodec *codec;
+#ifdef HAVE_AV_CODEC_ITERATE
+  void *iter;
+#endif
 
+#ifdef HAVE_AVCODEC_REGISTER_ALL
   avcodec_register_all();
+#endif
 
   pop_n_elems(args);
-#ifdef HAVE_AV_CODEC_NEXT
+#if defined(HAVE_AV_CODEC_NEXT) || defined(HAVE_AV_CODEC_ITERATE)
+#ifdef HAVE_AV_CODEC_ITERATE
+  iter = NULL;
+  while ((codec = av_codec_iterate(&iter))) {
+#else
   codec = NULL;
   while ((codec = av_codec_next(codec))) {
+#endif
     cnt++;
     push_static_text("name");		push_text( codec->name );
     ref_push_string(literal_type_string);		push_int( codec->type );
@@ -493,7 +616,7 @@ static void f_list_codecs(INT32 args) {
     push_static_text("encoder_flg");	push_int( encoder_flg(codec) );
     f_aggregate_mapping( 2*4 );
   }
-#else /* !HAVE_AV_CODEC_NEXT */
+#else /* !HAVE_AV_CODEC_NEXT && !HAVE_AV_CODEC_ITERATE */
   if(first_avcodec == NULL) {
     push_int(0);
     return;
@@ -509,7 +632,7 @@ static void f_list_codecs(INT32 args) {
     codec = codec->next;
     f_aggregate_mapping( 2*4 );
   }
-#endif /* HAVE_AV_CODEC_NEXT */
+#endif /* HAVE_AV_CODEC_NEXT && !HAVE_AV_CODEC_ITERATE */
   push_array(aggregate_array( cnt ));
 }
 
@@ -562,22 +685,36 @@ static void f_list_codecs(INT32 args) {
 /*! @endmodule
  */
 
-static void init_ffmpeg_data(struct object *obj) {
+static void init_ffmpeg_data(struct object *UNUSED(obj)) {
 
 
   THIS->codec = NULL;
+  THIS->codec_context = NULL;
   THIS->outbuf = NULL;
   THIS->encoder = 0;
 
+#ifdef HAVE_AVCODEC_REGISTER_ALL
   avcodec_register_all(); /* FIXME: register only "interesting" codec ? */
+#endif
 }
 
-static void exit_ffmpeg_data(struct object *obj) {
+static void exit_ffmpeg_data(struct object *UNUSED(obj)) {
 
-  if(THIS->codec != NULL)
-    avcodec_close(&THIS->codec_context);
+  if(THIS->codec_context != NULL) {
+#ifdef USE_ALLOC_CONTEXT
+    avcodec_free_context(&THIS->codec_context);
+#else
+    if (THIS->codec != NULL)
+      avcodec_close(THIS->codec_context);
+    FF_FREE(THIS->codec_context);
+#endif
+  }
   if(THIS->outbuf != NULL)
+#ifdef USE_AVFRAME_FOR_DECODE
+    avcodec_free_frame(&THIS->outbuf);
+#else
     FF_FREE(THIS->outbuf);
+#endif
 }
 
 /*

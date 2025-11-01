@@ -1,3 +1,6 @@
+// Automatically generated from "gtkpaned.pre".
+// Do NOT edit.
+
 //! GTK2.Paned is the base class for widgets with two panes, arranged
 //! either horizontally (W(HPaned)) or vertically (W(VPaned)). Child
 //! widgets are added to the panes of the widget with pack1() and
@@ -53,6 +56,7 @@
 //!
 
 inherit GTK2.Container;
+//!
 
 GTK2.Paned add1( GTK2.Widget left_or_top );
 //! Set the left or topmost item.

@@ -55,7 +55,7 @@
 #include "pike_error.h"
 #include "builtin_functions.h"
 #include "las.h"
-#include "threads.h"
+#include "pike_threads.h"
 #include "multiset.h"
 #include "bignum.h"
 #include "module_support.h"
@@ -84,12 +84,24 @@
 #endif
 #ifndef FIELD_TYPE_BIT
 #define FIELD_TYPE_BIT 16
+#define NEED_FIELD_TYPE_CAST
 #endif
 #ifndef FIELD_TYPE_NEWDECIMAL
 #define FIELD_TYPE_NEWDECIMAL 246
+#define NEED_FIELD_TYPE_CAST
 #endif
 #ifndef FIELD_TYPE_GEOMETRY
 #define FIELD_TYPE_GEOMETRY 255
+#define NEED_FIELD_TYPE_CAST
+#endif
+
+#ifdef NEED_FIELD_TYPE_CAST
+/* NB: Cast to int to inhibit warning about values not present
+ *     in *old* mysqlclient (like eg FIELD_TYPE_BIT) cf above.
+ */
+#define FIELD_TYPE_CAST(X)	((int)(X))
+#else
+#define FIELD_TYPE_CAST(X)	(X)
 #endif
 
 /*
@@ -172,7 +184,7 @@ void mysqlmod_parse_field(MYSQL_FIELD *field, int support_default)
       }
     }
     push_static_text("type");
-    switch(field->type) {
+    switch(FIELD_TYPE_CAST(field->type)) {
     case FIELD_TYPE_DECIMAL:
       push_static_text("decimal");
       break;
@@ -644,7 +656,7 @@ PIKEFUN int|array(string) fetch_row()
 
 	if (PIKE_MYSQL_RES->typed_mode &&
 	    (field = mysql_fetch_field(PIKE_MYSQL_RES->result))) {
-	  switch (field->type) {
+          switch (FIELD_TYPE_CAST(field->type)) {
 	    /* Integer types */
           case FIELD_TYPE_LONGLONG:
 	    if (

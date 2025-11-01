@@ -8,6 +8,11 @@
 
 #if defined(__arch64__) || defined(__sparcv9)
 #define PIKE_BYTECODE_SPARC64
+#define IF_SPARC32(X)
+#define IF_SPARC64(X)	X
+#else
+#define IF_SPARC32(X)	X
+#define IF_SPARC64(X)
 #endif
 
 #define REGISTER_ASSIGN(R,V)	({__asm__ (""::"r"(R=(V))); R;})

@@ -1,3 +1,6 @@
+// Automatically generated from "gtktexttagtable.pre".
+// Do NOT edit.
+
 //! Table of text tags.
 //!
 //!
@@ -10,6 +13,7 @@
 //!
 
 inherit G.Object;
+//!
 
 GTK2.TextTagTable add( GTK2.TextTag tag );
 //! Add a tag to the table.  The tag is assigned the highest priority
@@ -17,7 +21,7 @@ GTK2.TextTagTable add( GTK2.TextTag tag );
 //!
 //!
 
-protected GTK2.TextTagTable create( );
+protected void create( );
 //! Creates a new W(TextTagTable).
 //!
 //!

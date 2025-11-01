@@ -1,3 +1,6 @@
+// Automatically generated from "gtkbox.pre".
+// Do NOT edit.
+
 //! A box is a container that can contain more than one child.
 //! The basic 'Box' class cannot be instantiated, it is a virtual class
 //! that only defines some common 'Box' functions shared with all other
@@ -16,6 +19,7 @@
 //!
 
 inherit GTK2.Container;
+//!
 
 int get_homogeneous( );
 //! Returns whether the box is homogeneous.

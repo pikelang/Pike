@@ -669,10 +669,10 @@ static void image_color_hex(INT32 args)
 
       sh=4*(sizeof(COLORTYPE)*2-i);
       if (sh>0)
-	 sprintf(buf,"#%0*x%0*x%0*x",
-		 (int)i,(unsigned)(THIS->rgb.r>>sh),
-		 (int)i,(unsigned)(THIS->rgb.g>>sh),
-		 (int)i,(unsigned)(THIS->rgb.b>>sh));
+         snprintf(buf, sizeof(buf), "#%0*x%0*x%0*x",
+                  (int)i, (unsigned)(THIS->rgb.r>>sh),
+                  (int)i, (unsigned)(THIS->rgb.g>>sh),
+                  (int)i, (unsigned)(THIS->rgb.b>>sh));
       else
       {
 	 unsigned INT32 r=THIS->rgbl.r;
@@ -686,23 +686,26 @@ static void image_color_hex(INT32 args)
 	    b=(b<<-sh)+(b>>(COLORLBITS+sh));
 	    sh=0;
 	 }
-	 sprintf(buf,"#%0*x%0*x%0*x",
-		 (int)i,(unsigned)(r>>sh),
-		 (int)i,(unsigned)(g>>sh),
-		 (int)i,(unsigned)(b>>sh));
+         snprintf(buf, sizeof(buf), "#%0*x%0*x%0*x",
+                  (int)i, (unsigned)(r>>sh),
+                  (int)i, (unsigned)(g>>sh),
+                  (int)i, (unsigned)(b>>sh));
       }
    }
    else
       switch (sizeof(COLORTYPE)) /* constant */
       {
 	 case 1:
-	    sprintf(buf,"#%02x%02x%02x",THIS->rgb.r,THIS->rgb.g,THIS->rgb.b);
+            snprintf(buf, sizeof(buf), "#%02x%02x%02x",
+                     THIS->rgb.r, THIS->rgb.g, THIS->rgb.b);
 	    break;
 	 case 2:
-	    sprintf(buf,"#%04x%04x%04x",THIS->rgb.r,THIS->rgb.g,THIS->rgb.b);
+            snprintf(buf, sizeof(buf), "#%04x%04x%04x",
+                     THIS->rgb.r, THIS->rgb.g, THIS->rgb.b);
 	    break;
 	 case 4:
-	    sprintf(buf,"#%08x%08x%08x",THIS->rgb.r,THIS->rgb.g,THIS->rgb.b);
+            snprintf(buf, sizeof(buf), "#%08x%08x%08x",
+                     THIS->rgb.r, THIS->rgb.g, THIS->rgb.b);
 	    break;
 	 default:
 	    Pike_error("unknown size of colortype\n");

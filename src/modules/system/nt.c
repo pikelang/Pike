@@ -52,7 +52,7 @@
 
 #include "program.h"
 #include "stralloc.h"
-#include "threads.h"
+#include "pike_threads.h"
 #include "module_support.h"
 #include "array.h"
 #include "mapping.h"
@@ -192,12 +192,6 @@ static void f_cp(INT32 args)
 
 /*! @module System
  */
-
-static void push_tchar(const TCHAR *buf, DWORD len)
-{
-  push_string(make_shared_binary_pcharp(
-    MKPCHARP(buf,my_log2(sizeof(TCHAR))),len));
-}
 
 static void push_regvalue(DWORD type, char* buffer, DWORD len, int no_expand)
 {
@@ -382,7 +376,7 @@ void f_RegGetValue(INT32 args)
   get_all_args(NULL, args, "%i%t%t.%i", &hkey_num, &key, &ind, &no_expand);
 
   if ((hkey_num < 0) || ((unsigned int)hkey_num >= NELEM(hkeys))) {
-    Pike_error("Unknown hkey: %d.\n", hkey_num);
+    Pike_error("Unknown hkey: %"PRINTPIKEINT"d.\n", hkey_num);
   }
 
   utf16 = pike_string_to_utf16(key, 1);
@@ -401,7 +395,7 @@ void f_RegGetValue(INT32 args)
   SET_ONERROR(tmp, do_regclosekey, new_key);
 
   utf16 = pike_string_to_utf16(ind, 1);
-  ret = RegQueryValueExW(new_key, utf16, 0, &type, buffer, &len);
+  ret = RegQueryValueExW(new_key, utf16, 0, &type, (LPBYTE)buffer, &len);
   free(utf16);
 
   CALL_AND_UNSET_ONERROR(tmp);
@@ -465,7 +459,7 @@ void f_RegGetKeyNames(INT32 args)
   get_all_args(NULL, args, "%i%t", &hkey_num, &key);
 
   if ((hkey_num < 0) || ((unsigned int)hkey_num >= NELEM(hkeys))) {
-    Pike_error("Unknown hkey: %d.\n", hkey_num);
+    Pike_error("Unknown hkey: %"PRINTPIKEINT"d.\n", hkey_num);
   }
 
   key_utf16 = pike_string_to_utf16(key, 1);
@@ -572,7 +566,7 @@ void f_RegGetValues(INT32 args)
   get_all_args(NULL, args, "%i%t.%i", &hkey_num, &key, &no_expand);
 
   if ((hkey_num < 0) || ((unsigned int)hkey_num >= NELEM(hkeys))) {
-    Pike_error("Unknown hkey: %d.\n", hkey_num);
+    Pike_error("Unknown hkey: %"PRINTPIKEINT"d.\n", hkey_num);
   }
 
   key_utf16 = pike_string_to_utf16(key, 1);
@@ -602,7 +596,7 @@ void f_RegGetValues(INT32 args)
     buf->flags |= STRING_CONVERT_SURROGATES;
 
     THREADS_ALLOW();
-    ret = RegEnumValueW(new_key, i, STR1(buf), &len, 0, &type, buffer, &buflen);
+    ret = RegEnumValueW(new_key, i, STR1(buf), &len, 0, &type, (LPBYTE)buffer, &buflen);
     THREADS_DISALLOW();
     switch(ret)
     {
@@ -642,7 +636,7 @@ void f_RegGetValues(INT32 args)
  *!   0 on success, non-zero otherwise.
  */
 #ifdef HAVE_FREECONSOLE
-void f_freeconsole(INT32 args)
+void f_freeconsole(INT32 UNUSED(args))
 {
   int rv;
 
@@ -663,7 +657,7 @@ void f_freeconsole(INT32 args)
  *!   0 on success, non-zero otherwise.
  */
 #ifdef HAVE_ALLOCCONSOLE
-void f_allocconsole(INT32 args)
+void f_allocconsole(INT32 UNUSED(args))
 {
   int rv;
 
@@ -742,12 +736,12 @@ HINSTANCE advapilib;
  */
 #define THIS_PSID (*(PSID *)CURRENT_STORAGE)
 static struct program *sid_program;
-static void init_sid(struct object *o)
+static void init_sid(struct object *UNUSED(o))
 {
   THIS_PSID=0;
 }
 
-static void exit_sid(struct object *o)
+static void exit_sid(struct object *UNUSED(o))
 {
   if(THIS_PSID)
   {
@@ -947,12 +941,12 @@ void f_LogonUser(INT32 args)
   }
 }
 
-static void init_token(struct object *o)
+static void init_token(struct object *UNUSED(o))
 {
   THIS_TOKEN = INVALID_HANDLE_VALUE;
 }
 
-static void exit_token(struct object *o)
+static void exit_token(struct object *UNUSED(o))
 {
   CloseHandle(THIS_TOKEN);
   THIS_TOKEN = INVALID_HANDLE_VALUE;
@@ -997,7 +991,7 @@ static void low_encode_user_info_2(USER_INFO_2 *tmp)
   push_int(tmp->usri2_units_per_week);
 
   if(tmp->usri2_logon_hours)
-   push_string(make_shared_binary_string(tmp->usri2_logon_hours,21));
+   push_string(make_shared_binary_string((const char *)tmp->usri2_logon_hours,21));
   else
    push_int(0);
 
@@ -1048,7 +1042,7 @@ static void low_encode_user_info_11(USER_INFO_11 *tmp)
   push_int(tmp->usri11_units_per_week);
 
   if(tmp->usri11_logon_hours)
-   push_string(make_shared_binary_string(tmp->usri11_logon_hours,21));
+   push_string(make_shared_binary_string((const char *)tmp->usri11_logon_hours,21));
   else
    push_int(0);
 
@@ -2573,7 +2567,7 @@ static void f_NetSessionEnum(INT32 args)
       /* valid levels */
       break;
     default:
-      Pike_error("Unsupported level: %d.\n", level);
+      Pike_error("Unsupported level: %lu.\n", (unsigned long)level);
   }
 
 
@@ -2655,7 +2649,7 @@ static void f_NetWkstaUserEnum(INT32 args)
   level=sp[1-args].u.integer;
 
   if (level != 0 && level != 1)
-      Pike_error("Unsupported level: %d.\n", level);
+    Pike_error("Unsupported level: %lu.\n", (unsigned long)level);
 
   while(1)
   {
@@ -2785,7 +2779,7 @@ static void f_GetFileAttributes(INT32 args)
   p_wchar1 *file_utf16;
   DWORD ret;
   get_all_args(NULL, args, "%c", &file);
-  file_utf16 = pike_dwim_utf8_to_utf16(file);
+  file_utf16 = pike_dwim_utf8_to_utf16((const p_wchar0 *)file);
   ret = GetFileAttributesW(file_utf16);
   free(file_utf16);
   pop_stack();
@@ -2810,7 +2804,7 @@ static void f_SetFileAttributes(INT32 args)
   INT_TYPE attr, ret;
   DWORD tmp;
   get_all_args(NULL, args, "%c%i", &file, &attr);
-  file_utf16 = pike_dwim_utf8_to_utf16(file);
+  file_utf16 = pike_dwim_utf8_to_utf16((const p_wchar0 *) file);
   tmp=attr;
   ret = SetFileAttributesW(file_utf16, tmp);
   free(file_utf16);
@@ -2994,7 +2988,7 @@ static PACL decode_acl(struct array *arr)
       case ( 'd' << 8 ) + 'e': size += sizeof(ACCESS_DENIED_ACE); break;
       case ( 'a' << 8 ) + 'u': size += sizeof(SYSTEM_AUDIT_ACE); break;
       default:
-	Pike_error("ACE[%d][0] is not a known ACE type.\n");
+	Pike_error("ACE[%d][0] is not a known ACE type.\n",a);
     }
     size += getlengthsid( *sid ) - sizeof(DWORD);
   }
@@ -3224,7 +3218,7 @@ static void f_nt_uname(INT32 args)
 
   osversion.dwOSVersionInfoSize=sizeof(osversion);
   if(!GetVersionEx(&osversion))
-    Pike_error("GetVersionEx failed with errno %d\n",GetLastError());
+    Pike_error("GetVersionEx failed with errno %lu\n",(unsigned long)GetLastError());
 
   GetSystemInfo(&sysinfo);
 
@@ -3233,7 +3227,7 @@ static void f_nt_uname(INT32 args)
   switch(sysinfo.wProcessorArchitecture)
   {
     case PROCESSOR_ARCHITECTURE_INTEL:
-      sprintf(buf, "i%ld", sysinfo.dwProcessorType);
+      snprintf(buf, sizeof(buf), "i%ld", sysinfo.dwProcessorType);
       push_text(buf);
       machine = "i86pc";
       break;
@@ -3449,14 +3443,14 @@ struct sctx_storage {
 
 #define THIS_SCTX ((struct sctx_storage *)CURRENT_STORAGE)
 static struct program *sctx_program;
-static void init_sctx(struct object *o)
+static void init_sctx(struct object *UNUSED(o))
 {
   struct sctx_storage *sctx = THIS_SCTX;
 
   memset(sctx, 0, sizeof(struct sctx_storage));
 }
 
-static void exit_sctx(struct object *o)
+static void exit_sctx(struct object *UNUSED(o))
 {
   struct sctx_storage *sctx = THIS_SCTX;
 
@@ -3499,8 +3493,8 @@ static void f_sctx_create(INT32 args)
 
   if (!SEC_SUCCESS(ss))
   {
-    Pike_error("Could not query package info for %pS, error 0x%08x.\n",
-               pkgName, ss);
+    Pike_error("Could not query package info for %pS, error 0x%08lx.\n",
+               pkgName, (long)ss);
   }
 
   sctx->cbMaxMessage = pkgInfo->cbMaxToken;
@@ -3525,7 +3519,7 @@ static void f_sctx_create(INT32 args)
 
   if (!SEC_SUCCESS (ss))
   {
-    Pike_error("AcquireCreds failed: 0x%08x.\n", ss);
+    Pike_error("AcquireCreds failed: 0x%08lx.\n", (long)ss);
   }
   sctx->hcred_alloced = 1;
 }
@@ -3624,7 +3618,7 @@ static void f_sctx_gencontext(INT32 args)
   if (in->size_shift != 0)
     Pike_error("Wide strings is not allowed.\n");
   sctx->cBuf = sctx->cbMaxMessage;
-  if (!GenServerContext (in->str, in->len, sctx->buf, &sctx->cBuf,
+  if (!GenServerContext ((BYTE *)in->str, in->len, sctx->buf, &sctx->cBuf,
                          &sctx->done, !sctx->hctxt_alloced))
   {
     pop_n_elems(args);
@@ -3635,7 +3629,7 @@ static void f_sctx_gencontext(INT32 args)
   pop_n_elems(args);
 
   push_int(sctx->done?1:0);
-  push_string(make_shared_binary_string(sctx->buf, sctx->cBuf));
+  push_string(make_shared_binary_string((const char *)sctx->buf, sctx->cBuf));
   f_aggregate(2);
 }
 
@@ -3651,7 +3645,7 @@ static void f_sctx_getlastcontext(INT32 args)
     return;
   }
   push_int(sctx->done?1:0);
-  push_string(make_shared_binary_string(sctx->buf, sctx->cBuf));
+  push_string(make_shared_binary_string((const char *)sctx->buf, sctx->cBuf));
   f_aggregate(2);
 }
 
@@ -3718,7 +3712,7 @@ static void f_sctx_getlasterror(INT32 args)
                 0,
                 NULL
                 );
-  sprintf(buf, "0x%04x: ", sctx->lastError);
+  snprintf(buf, sizeof(buf), "0x%04x: ", sctx->lastError);
   push_text(buf);
   push_text(lpMsgBuf);
   f_add(2);

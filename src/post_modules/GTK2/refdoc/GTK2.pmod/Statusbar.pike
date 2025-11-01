@@ -1,3 +1,6 @@
+// Automatically generated from "gtkstatusbar.pre".
+// Do NOT edit.
+
 //! Statusbars are simple widgets used to display a text message. They
 //! keep a stack of the messages pushed onto them, so that popping the
 //! current message will re-display the previous text message.
@@ -30,8 +33,9 @@
 //!
 
 inherit GTK2.Hbox;
+//!
 
-protected GTK2.Statusbar create( mapping|void props );
+protected void create( void props );
 //! Create a new statusbar widget
 //!
 //!

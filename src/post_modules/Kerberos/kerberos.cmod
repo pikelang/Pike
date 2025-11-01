@@ -27,6 +27,12 @@ DECLARATIONS
 #define KRB_FPRINTF(X)
 /* Don't complain about us using krb5_get_init_creds_opt_init(). */
 #define KRB5_DEPRECATED_FUNCTION(X)
+/* MacOS X warns about lots of the KRB5 functions being deprecated.
+ *
+ * FIXME: Consider using the new API (cf #10196).
+ */
+#undef KERBEROS_APPLE_DEPRECATED
+#define KERBEROS_APPLE_DEPRECATED(X)
 #endif /* KRB_DEBUG */
 
 #ifdef HAVE_KRB5
@@ -43,12 +49,30 @@ DECLARATIONS
 #undef HAVE_SYS_TYPES_H
 #undef HAVE_STDLIB_H
 
-#ifdef HAVE_KRB5_H
-#include <krb5.h>
-#else
-#ifdef HAVE_KERBEROSV5_KRB5_H
-#include <kerberosv5/krb5.h>
+#ifdef HAVE_KERBEROS_KERBEROS_H
+/* The best we can do to avoid complaints on MacOS X is to use
+ * the Kerberos framework. It does however appear to be deprecated
+ * in favor of the GSS framework (which we also support).
+ *
+ * We "solve" this by stripping the attributes from the prototypes
+ * in the header file. Note that this also strips some other
+ * non-essential attributes (sentinel, __format__)).
+ */
+#ifdef __APPLE__
+#undef __attribute__
+#define __attribute__(X)
 #endif
+
+#include <Kerberos/Kerberos.h>
+
+#ifdef __APPLE__
+#undef __attribute__
+#endif
+
+#elif defined(HAVE_KRB5_H)
+#include <krb5.h>
+#elif defined(HAVE_KERBEROSV5_KRB5_H)
+#include <kerberosv5/krb5.h>
 #endif
 
 /*! @module Kerberos

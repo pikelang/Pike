@@ -142,6 +142,23 @@ protected array(function) co_maxtime;
     remove_call_out(async_timeout);           \
   } while (0)
 
+//! Attempt to read the result header block from @[buf] and @[con].
+//!
+//! @returns
+//!   @int
+//!     @value 0
+//!       Returns @expr{0@} if the header block has not yet been
+//!       received.
+//!     @value 1
+//!       Sets @[headerbuf] to the raw header block and @[headers]
+//!       to the parsed header block, calls the @[request_ok] callback
+//!       (if any) and returns @expr{1@} on successful read of the
+//!       header block.
+//!   @endint
+//!
+//! @note
+//!   The data part of the result may still be pending on
+//!   @expr{1@} return.
 protected int ponder_answer( int|void start_position )
 {
    // read until we have all headers
@@ -800,6 +817,20 @@ this_program thread_request(string server, int port, string query,
    }
 
    request=query+"\r\n"+headers+"\r\n"+data;
+   if (String.width(request) > 8) {
+     if (String.width(query) > 8) {
+       error("Query is wide: %O.\n", query);
+     }
+     if (String.width(headers) > 8) {
+       foreach(headers/"\r\n", string head) {
+         if (String.width(head) > 8) {
+           error("Header %O is wide.\n", (head/":")[0]);
+         }
+       }
+       // Not reached.
+     }
+     error("Request data is wide.\n");
+   }
 
    conthread=thread_create(connect,ips,port,1);
 
@@ -890,6 +921,20 @@ this_program sync_request(string server, int port, string query,
   }
 
   request = query + "\r\n" + http_headers + "\r\n" + (data||"");
+  if (String.width(request) > 8) {
+    if (String.width(query) > 8) {
+      error("Query is wide: %O.\n", query);
+    }
+    if (String.width(http_headers) > 8) {
+      foreach(http_headers/"\r\n", string head) {
+        if (String.width(head) > 8) {
+          error("Header %O is wide.\n", (head/":")[0]);
+        }
+      }
+      // Not reached.
+    }
+    error("Request data is wide.\n");
+  }
 
   if(kept_alive)
   {
@@ -943,7 +988,23 @@ this_program async_request(string server,int port,string query,
       headers=headers_encode(headers);
    }
 
-   send_buffer = Stdio.Buffer(request = query+"\r\n"+headers+"\r\n"+(data||""));
+   request = query+"\r\n"+headers+"\r\n"+(data||"");
+   if (String.width(request) > 8) {
+     if (String.width(query) > 8) {
+       error("Query is wide: %O.\n", query);
+     }
+     if (String.width(headers) > 8) {
+       foreach(headers/"\r\n", string head) {
+         if (String.width(head) > 8) {
+           error("Header %O is wide.\n", (head/":")[0]);
+         }
+       }
+       // Not reached.
+     }
+     error("Request data is wide.\n");
+   }
+
+   send_buffer = Stdio.Buffer(request);
 
    errno = ok = protocol = this::headers = status_desc = status =
      discarded_bytes = datapos = 0;
@@ -1139,7 +1200,7 @@ string data(int|void max_length)
      {
        DBG ("<- data() read 5\n");
        while ((l > 0) && con) {
-         string s = con->read(l);
+         string s = con->read(l, 1);
          TOUCH_TIMEOUT_WATCHDOG();
          if (!s || !sizeof(s)) {
            // Error or EOF.
@@ -1153,6 +1214,8 @@ string data(int|void max_length)
              DBG ("<- (read error: %s)\n", strerror (errno));
              return 0;
            }
+           DBG("Truncated result. Got %d bytes of %d (missing %d).\n",
+               sizeof(buf) - datapos, sizeof(buf) + l - datapos, l);
            break;
          }
          buf += s;

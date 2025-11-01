@@ -1,3 +1,6 @@
+// Automatically generated from "gtkentrycompletion.pre".
+// Do NOT edit.
+
 //! Properties:
 //! int inline-completion
 //! int minimum-key-length
@@ -16,8 +19,10 @@
 //!
 
 inherit G.Object;
+//!
 
 inherit GTK2.CellLayout;
+//!
 
 GTK2.EntryCompletion complete( );
 //! Requests a completion operation, or in other words a refiltering of the
@@ -26,7 +31,7 @@ GTK2.EntryCompletion complete( );
 //!
 //!
 
-protected GTK2.EntryCompletion create( mapping|void props );
+protected void create( void props );
 //! Creates a new widget.
 //!
 //!

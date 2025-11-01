@@ -1,1 +1,18 @@
+START_MARKER
+cond_begin([[ master()->resolv("_Ffmpeg")->CODEC_ID_MP2 ]])
 
+test_any_equal([[
+  // One frame @ 32kbps: 144 bytes = 36 milliseconds ->
+  //   1152 samples @ 32kHz = 2304 bytes
+  string indata = MIME.decode_base64(#"
+//0YxFNoMgkmjP/EITlxUsYw0cxeqc0gyexe962LY+WxrWta971sWx8tjWta1ztr7aTVj6lhJQ9m
+k5dny2Na1raPUTS4HXgQxlnYHxXVszt80w3zHlMnLYtcalCOfGSCQWxK4xrLtDQuIoTWiECGe9ZL
+skZXFDE0We8G1KcMikWRNOd27Fsyzh0VkQw30AAA");
+  object dec = _Ffmpeg.ffmpeg(_Ffmpeg.CODEC_ID_MP2, 0);
+  mapping result = dec->decode(indata);
+  return rows(dec->get_codec_status(), ({"name", "sample_rate", "channels"})) +
+         ({ result->decoded, strlen(result->data) });
+]], ({"mp2", 32000, 1, 144, 2304}))
+
+cond_end
+END_MARKER

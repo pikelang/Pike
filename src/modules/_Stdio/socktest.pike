@@ -11,7 +11,7 @@
 #endif
 
 #ifdef SOCK_DEBUG
-#define DEBUG_WERR(X...)	log_msg(X)
+#define DEBUG_WERR(X...)	log_msg((string)gethrtime() + ": " + X)
 #else /* !SOCK_DEBUG */
 #define DEBUG_WERR(X...)
 #endif /* SOCK_DEBUG */
@@ -41,7 +41,7 @@ Pike.BACKEND backend = Pike.BACKEND();
 // RTL debug enabled Pike.
 #define SOCKTEST_TIMEOUT	60
 #else
-#define SOCKTEST_TIMEOUT	2
+#define SOCKTEST_TIMEOUT	10
 #endif
 #endif
 
@@ -56,6 +56,7 @@ void log_status (string msg, mixed... args)
   if (sizeof (args)) msg = sprintf (msg, @args);
   if (msg != "")
     msg = log_prefix + msg;
+  DEBUG_WERR(msg);
   Tools.Testsuite.log_status (msg);
 }
 
@@ -112,11 +113,12 @@ class Socket {
 
   void cleanup()
   {
-    DEBUG_WERR("Cleanup: Input: %d, Output: %d\n",
-	       input_finished, output_finished);
+    DEBUG_WERR("Socket %d: Cleanup: Input: %d, Output: %d\n",
+               num, input_finished, output_finished);
     if(input_finished && output_finished)
     {
-      DEBUG_WERR("Closing fd:%O\n", o->query_fd?o->query_fd():o);
+      DEBUG_WERR("Socket %d: Closing fd:%O\n",
+                 num, o->query_fd?o->query_fd():o);
       o->close();
       o->set_blocking();
       destruct(o);
@@ -133,12 +135,13 @@ class Socket {
   void close_callback()
   {
     int err=o->errno();
-    DEBUG_WERR("close_callback[%O]\n", o->query_fd?o->query_fd():o);
+    DEBUG_WERR("Socket %d: close_callback[%O]\n",
+               num, o->query_fd?o->query_fd():o);
     got_callback();
     if(input_buffer != expected_data)
     {
-      log_msg("Failed to read complete data, errno=%d, %O.\n",
-	      err, strerror(err));
+      log_msg("Socket %d: Failed to read complete data, errno=%d, %O.\n",
+              num, err, strerror(err));
       log_msg(num+":Input buffer: "+cap_size(input_buffer)+"\n");
       log_msg(num+":Expected data: "+cap_size(expected_data)+"\n");
       exit_test(1);
@@ -152,17 +155,18 @@ class Socket {
   {
     DO_IF_BACKEND(o->set_backend(backend));
     got_callback();
-    DEBUG_WERR("write_callback[%O]: output_buffer: %O\n",
-               o->query_fd?o->query_fd():o, sizeof(output_buffer));
+    DEBUG_WERR("Socket %d: write_callback[%O]: output_buffer: %O\n",
+               num, o->query_fd?o->query_fd():o, sizeof(output_buffer));
     if(sizeof(output_buffer))
     {
       int tmp=o->write(output_buffer);
-      DEBUG_WERR("write_callback(): Wrote %d bytes.\n", tmp /*, output_buffer*/);
+      DEBUG_WERR("Socket %d: write_callback(): Wrote %d bytes.\n",
+                 num, tmp /*, output_buffer*/);
       if(tmp >= 0)
       {
 	output_buffer=output_buffer[tmp..];
       } else {
-	log_msg("Failed to write all data.\n");
+        log_msg("Socket %d: Failed to write all data.\n", num);
 	exit_test(1);
       }
     }else{
@@ -176,20 +180,23 @@ class Socket {
   void read_callback(mixed id, string foo)
   {
     got_callback();
-    DEBUG_WERR("read_callback[%O]: Got %O\n", o->query_fd?o->query_fd():o, foo);
+    DEBUG_WERR("Socket %d: read_callback[%O]: Got %d bytes\n",
+               num, o->query_fd?o->query_fd():o, foo?sizeof(foo):-1);
     if( !sizeof(foo) )
-      fd_fail("Got empty read callback.\n");
+      fd_fail("Socket %d: Got empty read callback.\n", num);
     input_buffer+=foo;
   }
 
   void read_oob_callback(mixed id, string foo)
   {
     got_callback();
-    fd_fail("Got unexpected out of band data on %O: %O", o->query_fd?o->query_fd():o, foo);
+    fd_fail("Socket %d: Got unexpected out of band data on %O: %O",
+            num, o->query_fd?o->query_fd():o, foo);
   }
 
   protected void create(object|void o)
   {
+    DEBUG_WERR("Socket %d starting...\n", num);
     got_callback();
     start();
     if(o)
@@ -199,9 +206,11 @@ class Socket {
       this_program::o = o = Stdio.File();
       if(!o->open_socket(0, ANY))
       {
-	fd_fail("Failed to open socket: "+strerror(o->errno())+"\n");
+        fd_fail("Socket %d: Failed to open socket: %s\n",
+                num, strerror(o->errno()));
       }
     }
+    DEBUG_WERR("Socket %d: fd: %O\n", num, o->query_fd?o->query_fd():o);
     DO_IF_BACKEND(o->set_backend(backend));
     o->set_id(0);
     o->set_nonblocking(read_callback,write_callback,close_callback,
@@ -229,7 +238,7 @@ class Socket2
       {
 	output_buffer=output_buffer[tmp..];
       } else {
-	log_msg("Failed to write all data.\n");
+        log_msg("Socket %d: Failed to write all data.\n", num);
 	exit_test(1);
       }
     }else{
@@ -248,8 +257,8 @@ class BufferSocket {
   {
     DO_IF_BACKEND(set_backend(backend));
     got_callback();
-    DEBUG_WERR("write_callback[%O]: output_buffer: %O\n",
-               o->query_fd?o->query_fd():o, sizeof(output_buffer));
+    DEBUG_WERR("Socket %d: write_callback[%O]: output_buffer: %O\n",
+               num, o->query_fd?o->query_fd():o, sizeof(output_buffer));
     if(sizeof(output_buffer))
     {
       if(out) {
@@ -258,12 +267,12 @@ class BufferSocket {
       } else {
 	// Probably a FakeFile...
 	int bytes = o->write(output_buffer);
-	DEBUG_WERR("Wrote %d bytes.\n", bytes);
+        DEBUG_WERR("Socket %d: Wrote %d bytes.\n", num, bytes);
 	output_buffer = output_buffer[bytes..];
       }
     }else{
       if (!out || !sizeof(out)) {
-	  DEBUG_WERR("Closing write end.\n");
+        DEBUG_WERR("Socket %d: Closing write end.\n", num);
           o->set_write_callback(0);
           o->close("w");
           output_finished++;
@@ -275,9 +284,10 @@ class BufferSocket {
   void read_callback(mixed id, Stdio.Buffer|string in)
   {
     got_callback();
-    DEBUG_WERR("read_callback[%O]: Got %O\n", o->query_fd(), in);
+    DEBUG_WERR("Socket %d: read_callback[%O]: Got %O\n",
+               num, o->query_fd?o->query_fd():o, in);
     if( !sizeof(in) )
-      fd_fail("Got empty read callback.\n");
+      fd_fail("Socket %d: Got empty read callback.\n", num);
     if (stringp(in)) {
       input_buffer += in;
     } else {
@@ -288,7 +298,8 @@ class BufferSocket {
   void read_oob_callback(mixed id, string foo)
   {
     got_callback();
-    fd_fail("Got unexpected out of band data on %O: %O", o->query_fd(), foo);
+    fd_fail("Socket %d: Got unexpected out of band data on %O: %O",
+            num, o->query_fd?o->query_fd():o, foo);
   }
 
   protected void create(object|void o)
@@ -329,11 +340,13 @@ void got_callback()
 }
 
 int num_running;
+int num_done;
 int _tests;
 
 void start()
 {
   num_running++;
+  DEBUG_WERR("Incremented num_running to %d.\n", num_running);
 }
 
 
@@ -436,12 +449,15 @@ array(object) stdtest(program Socket)
   {
     got_callback();
     DEBUG_WERR("Connecting to %O port %d...\n", LOOPBACK, portno2);
+    int e;
     if (sock->o->connect(LOOPBACK, portno2)) {
       protocol_supported = 1;
       break;
+    } else {
+      e = sock->errno();
     }
 #if constant(System.EADDRNOTAVAIL)
-    if (sock->errno() == System.EADDRNOTAVAIL) {
+    if (e == System.EADDRNOTAVAIL) {
       if (attempt++ < 10) {
 	// connect(2) on Linux intermittently fails with EADDRNOTAVAIL.
 	// A retry usually solves the problem.
@@ -453,7 +469,7 @@ array(object) stdtest(program Socket)
 #ifdef IPV6
     if (!protocol_supported) {
 #if constant(System.ENETUNREACH)
-      if (sock->errno() == System.ENETUNREACH) {
+      if (e == System.ENETUNREACH) {
 	/* No IPv6 support on this machine (Solaris). */
 	log_msg("Connect failed: Network unreachable.\n"
 		"IPv6 not configured?\n");
@@ -461,7 +477,7 @@ array(object) stdtest(program Socket)
       }
 #endif /* ENETUNREACH */
 #if constant(System.EADDRNOTAVAIL)
-      if (sock->errno() == System.EADDRNOTAVAIL) {
+      if (e == System.EADDRNOTAVAIL) {
 	/* No IPv6 support on this machine (OSF/1). */
 	log_msg("Connect failed: Address not available.\n"
 		"IPv6 not configured?\n");
@@ -470,18 +486,18 @@ array(object) stdtest(program Socket)
 #endif /* ENETUNREACH */
     }
 #endif /* IPV6 */
-    if (sock->errno() == System.EADDRINUSE) {
+    if (e == System.EADDRINUSE) {
       /* Out of sockets on the loopback interface? */
       log_msg("Connect failed: Address in use. Dropping socket.\n");
       // This is supposed to let go of the socket and consider this
       // socket a success
       sock->input_finished=sock->output_finished=1;
       num_running++;	// Don't let finish end just yet.
-      sock->cleanup();
+      sock->cleanup();	// Does a num_done++
       if (attempt++ < 10) {
 	log_msg("Retrying.\n");
 	sleep(0.1);
-	num_running--;
+        num_done++;
 	sock = Socket();
 	continue;
       }
@@ -580,10 +596,12 @@ int last_num_failed;
 
 void finish(program Socket)
 {
+  DEBUG_WERR("Finish %d/%d/%d: %O\n", _tests, num_running, num_done, Socket);
   gc();
+  DEBUG_WERR("GC done %d/%d/%d: %O\n", _tests, num_running, num_done, Socket);
   sleep(0.01);	// Allow eg Solaris some time to recycle closed fds.
-  num_running--;
-  if(!num_running)
+  num_done++;
+  if(num_running == num_done)
   {
     object sock1, sock2;
     array(object) socks;
@@ -612,18 +630,42 @@ void finish(program Socket)
       case 2:
 	log_status("Testing accept");
 	string data1 = long_random_string;
+        num_running++;	// Don't let finish end before the loop is done.
 	for(int e=0;e<10;e++)
 	{
-	  sock1=Socket();
-	  sock1->o->connect(LOOPBACK, portno1);
-	  sock1->output_buffer=data1;
+          do {
+            sock1=Socket();
+            if (sock1->o->connect(LOOPBACK, portno1)) break;
+
+            log_status("Socket %d: Connection failed with error %d: %s\n",
+                       sock1->num, sock1->errno(), strerror(sock1->errno()));
+            if (sock1->errno() == System.EADDRINUSE) {
+              log_msg("#### Socket %d fd=%d: Connect failed: Address in use. Dropping socket.\n",
+                      sock1->num,
+                      sock1->o->query_fd?sock1->o->query_fd():sock1->o);
+              // This is supposed to let go of the socket and consider this
+              // socket a success
+              sock1->input_finished = sock1->output_finished = 1;
+              sock1->cleanup();	// Does a num_done++
+            }
+            sleep(0.1);
+          } while(1);
+          DEBUG_WERR("Socket %d fd=%O: local: %s, remote: %s\n",
+                     sock1->num,
+                     sock1->o->query_fd?sock1->o->query_fd():sock1->o,
+                     sock1->o->query_address(1), sock1->o->query_address());
+          sock1->output_buffer = data1;
 	}
+#ifdef BACKEND
+        backend->
+#endif
+          call_out(finish, 0, Socket);	// Matching the num_running++ above.
 	break;
 	
       case 3:
 	log_status("Testing uni-directional shutdown on socket");
 	socks=spair(0);
-	num_running=1;
+        num_running++;
 	socks[1]->set_id(socks);
 	socks[1]->set_nonblocking(lambda() {},lambda(){},
 				  lambda(array(Stdio.File) socks) {
@@ -638,7 +680,7 @@ void finish(program Socket)
       case 4:
 	log_status("Testing uni-directional shutdown on pipe");
 	socks=spair(1);
-	num_running=1;
+        num_running++;
 	socks[1]->set_id(socks);
 	socks[1]->set_nonblocking(lambda() {},lambda(){},
 				  lambda(array(Stdio.File) socks) {
@@ -653,7 +695,7 @@ void finish(program Socket)
       case 5:
 	log_status("Testing uni-directional shutdown on fake pipe");
 	socks=spair(2);
-	num_running=1;
+        num_running++;
 	socks[1]->set_id(socks);
 	socks[1]->set_nonblocking(lambda() {},lambda(){},
 				  lambda(array(Stdio.File) socks) {
@@ -834,6 +876,7 @@ void accept_callback()
     fd_fail("Accept failed, errno: %d, %O\n",
 	    port1::errno(), strerror(port1::errno()));
   }
+  DEBUG_WERR("Accept fd %O\n", o->query_fd?o->query_fd():o);
   DO_IF_BACKEND(o->set_backend(backend));
   o=Socket(o);
   o->expected_data = long_random_string;

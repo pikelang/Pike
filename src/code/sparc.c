@@ -168,7 +168,7 @@
 	SPARC_XOR(reg_, reg_, (val_ & 0x3ff)|0x1c00, 1);		\
       } else {								\
 	/* FIXME: SPARC64 */						\
-	Pike_fatal("Value out of range: %p\n", (void *)val_);		\
+        Pike_fatal("Value out of range: 0x%" PRINTINT64 "x\n", val_);   \
       }									\
     } else {								\
       if (val_ <= 0x7fffffffLL) {					\
@@ -200,7 +200,7 @@
 	}								\
       } else {								\
 	/* FIXME: SPARC64 */						\
-	Pike_fatal("Value out of range: %p\n", (void *)val_);		\
+        Pike_fatal("Value out of range: 0x%" PRINTINT64 "x\n", val_);   \
       }									\
     }									\
   } while(0)
@@ -229,13 +229,13 @@
       add_to_relocations(off_);						\
     } else {								\
       size_t ptr_val_ = (size_t)ptr_;					\
-      if (ptr_val_ <= 0xffffffffLL) {					\
+      IF_SPARC64(if (ptr_val_ <= 0xffffffffLL)) {			\
 	/* NOTE: Top 32 bits are zero! */				\
 	/* sethi %hi(ptr_val_), %o7 */					\
 	SPARC_SETHI(SPARC_REG_O7, ptr_val_);				\
 	/* call %o7 + %lo(ptr_val_) */					\
 	SPARC_JMPL(SPARC_REG_O7, SPARC_REG_O7, ptr_val_ & 0x3ff, 1);	\
-      } else if (ptr_val_ <= 0x3ffffffffLL) {				\
+      } IF_SPARC64(else if (ptr_val_ <= 0x3ffffffffLL) {		\
 	/* NOTE: Top 30 bits are zero! */				\
 	/* sethi %hi(ptr_val_>>2), %o7 */				\
 	SPARC_SETHI(SPARC_REG_O7, ptr_val_>>2);				\
@@ -257,7 +257,7 @@
 	SPARC_JMPL(SPARC_REG_O7, SPARC_REG_O7, ptr_val_ & 0xfff, 1);	\
       } else {								\
 	Pike_fatal("Address out of range: %p\n", (void *)ptr_);		\
-      }									\
+      })								\
     }									\
     add_to_program(delay_);						\
     sparc_last_pc = off_;	/* Value in %o7. */			\

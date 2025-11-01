@@ -8,6 +8,8 @@
 #define NO_PIKE_INCLUDES
 #define CREATE_MAIN
 #define NO_PIKE_GUTS
+#define xalloc malloc
+#define EXTRACT_UCHAR(p) (*(const unsigned char *)(p))
 #endif
 
 #ifndef NO_PIKE_INCLUDES
@@ -75,13 +77,17 @@ typedef void (*modfun)(void);
 
 #ifdef USE_STATIC_MODULES
 
+static int invalid_semidynamic_module = 0;
+
 static void *dlopen(const char *foo, int UNUSED(how))
 {
   struct pike_string *s = low_read_file(foo);
   char *name, *end;
   void *res;
 
+  invalid_semidynamic_module = 0;
   if (!s) return NULL;
+  invalid_semidynamic_module = 1;
   if (strncmp(s->str, "PMODULE=\"", 9)) {
     free_string(s);
     return NULL;
@@ -92,6 +98,7 @@ static void *dlopen(const char *foo, int UNUSED(how))
     return NULL;
   }
 
+  invalid_semidynamic_module = 0;
   res = (void *)find_semidynamic_module(name, end - name);
   free_string(s);
   return res;
@@ -99,7 +106,8 @@ static void *dlopen(const char *foo, int UNUSED(how))
 
 static char *dlerror(void)
 {
-  return "Invalid dynamic module.";
+  return invalid_semidynamic_module ? "Invalid dynamic module." :
+    "The specified module could not be found.";
 }
 
 static void *dlsym(void *module, char *function)
@@ -136,6 +144,7 @@ static void *dlopen(const char *foo, int how)
 {
   TCHAR *tmp;
   HINSTANCE ret;
+  (void) how;
   tmp=convert_string(foo, strlen(foo));
   ret=LoadLibrary(tmp);
   free(tmp);
@@ -150,7 +159,7 @@ static char * dlerror(void)
   case ERROR_MOD_NOT_FOUND:
     return "The specified module could not be found.";
   default:
-    sprintf(buffer,"LoadLibrary failed with error: %d",GetLastError());
+    snprintf(buffer, sizeof(buffer), "LoadLibrary failed with error: %d", err);
   }
   return buffer;
 }
@@ -166,7 +175,23 @@ static void dlclose(void *module)
   FreeLibrary((HMODULE)module);
 }
 
+#ifdef TESTING
 #define dlinit()	1
+#else
+static int dlinit(void)
+{
+  extern char __ImageBase[];
+  HMODULE pike_exe = LoadLibrary(TEXT("pike.exe"));
+  if (pike_exe)
+    FreeLibrary(pike_exe);
+  if (pike_exe == (void *)__ImageBase)
+    /* LoadLibrary on pike.exe refers back to us, module loading will work */
+    return 1;
+
+  fprintf(stderr, "The main binary module name is not pike.exe (invoked through a symlink?)!\n");
+  return 0;
+}
+#endif
 
 #endif /* USE_LOADLIBRARY */
 
@@ -654,7 +679,24 @@ void init_dynamic_load(void)
 #endif
 }
 
-/* Call the pike_module_exit() callbacks for the dynamic modules. */
+/* Call the pike_module_exit() callbacks for the dynamic modules.
+ *
+ * NB: Typically only called once, but multiple threads may call
+ *     exit() concurrently. This is triggered by the following
+ *     testsuite test when running --with-dmalloc on some platforms:
+ *
+ *     int main()
+ *     {
+ *       Thread.Mutex m = Thread.Mutex();
+ *       Thread.MutexKey l = m->lock();
+ *       Thread.thread_create (lambda () {m->lock(); exit (0);});
+ *       call_out (destruct, 0, l);
+ *       return -1;
+ *     }
+ *
+ *     Where exit(0) is first called by the thread, and
+ *     then exit(-1) is called by the backend thread.
+ */
 void exit_dynamic_load(void)
 {
 #ifdef USE_DYNAMIC_MODULES
@@ -682,8 +724,10 @@ void exit_dynamic_load(void)
       free_program(tmp->module_prog);
       tmp->module_prog = NULL;
     }
-    free_string(tmp->name);
-    tmp->name = NULL;
+    if (tmp->name) {
+      free_string(tmp->name);
+      tmp->name = NULL;
+    }
   }
 #endif
 }

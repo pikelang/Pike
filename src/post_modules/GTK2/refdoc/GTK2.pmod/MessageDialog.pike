@@ -1,3 +1,6 @@
+// Automatically generated from "gtkmessagedialog.pre".
+// Do NOT edit.
+
 //! A dialog with an image representing the type of message (Error, Question).
 //! alongside some message text.  It's simply a convenience widget; you could
 //! construct the equivalent of GTK2.MessageDialog from GTK2.Dialog without too
@@ -15,8 +18,9 @@
 //!
 
 inherit GTK2.Dialog;
+//!
 
-protected GTK2.MessageDialog create( mapping|int flags, int|void type, int|void buttons, string|void message, GTK2.Window parent );
+protected void create( void flags, void type, void buttons, void message, void parent );
 //! Creates a new message dialog, which is a simple dialog with an icon
 //! indicating the dialog type (error, warning, etc) and some text the user
 //! may want to see.  When the user clicks a button a "response" signal is

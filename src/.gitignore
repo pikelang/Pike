@@ -20,6 +20,7 @@ autom4te.cache
 /cpp.c
 /dependencies
 /dumpmodule.log
+/errno_remap.h
 /hsort_template.h
 /interpret_functions_fixed.h
 /interpret_protos.h
@@ -36,6 +37,9 @@ autom4te.cache
 /language.h_src
 /language.h_src.nolines
 /las.c
+/lexer0.h
+/lexer1.h
+/lexer2.h
 /lib
 /machine.h
 /machine.h.in
@@ -51,6 +55,7 @@ autom4te.cache
 /pike.tmp
 /pike_compiler.c
 /pike_types.c
+/pike_unicode.h
 /posix_to_native.sh
 /precompile
 /precompile-method

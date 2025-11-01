@@ -27,6 +27,7 @@
 #include "lex.h"
 #include "sprintf.h"
 #include "pike_compiler.h"
+#include "pike_unicode.h"
 
 #include <ctype.h>
 
@@ -41,6 +42,12 @@
 #define CPP_END_AT_NEWLINE 16	/* Halt at end of line. */
 #define CPP_DO_IF 32
 #define CPP_NO_EXPAND 64
+#define CPP_NO_DIRECTIVES 128	/* Do not parse #-directives. */
+#define CPP_FLAGS_MASK	255	/* All of the above. */
+
+/* The type for the above. */
+#cmod_define tCppFlags	tName("CppFlags", tInt8bit)
+#cmod_define CppFlags_t	int(8bit)
 
 #define OUTP() (!(flags & (CPP_NO_OUTPUT | CPP_REALLY_NO_OUTPUT)))
 #define PUTNL() string_builder_putchar(&this->buf, '\n')
@@ -128,6 +135,8 @@ DECLARATIONS;
  *
  *     string directive_*(...);
  *
+ *     mixed parse_param_*(string sym, string arg);
+ *
  *     void cpp(string data);
  *
  *     Context clone();
@@ -150,7 +159,7 @@ EXTRA {
    *!   Flags for @[CPP()->low_cpp()] and directives.
    */
   type_stack_mark();
-  push_int_type(0, 0x7f);
+  push_int_type(0, CPP_FLAGS_MASK);
   push_type_value(pop_unfinished_type());
   simple_add_constant("CppFlags", Pike_sp-1, ID_LOCAL);
   pop_stack();
@@ -196,6 +205,12 @@ EXTRA {
    *!   Reserved.
    */
   add_integer_constant("CPP_NO_EXPAND", CPP_NO_EXPAND, ID_LOCAL);
+
+  /*! @decl constant CPP_NO_DIRECTIVES = 128
+   *!
+   *!   Disable parsing of #-directives.
+   */
+  add_integer_constant("CPP_NO_DIRECTIVES", CPP_NO_DIRECTIVES, ID_LOCAL);
 
   /*! @endenum
    */
@@ -304,11 +319,11 @@ PIKECLASS define
    */
   PIKEVAR string name;
 
-  /*! @decl array(string|int|function(mixed...:string))|zero parts;
+  /*! @decl array(string|CppDefArgFlags|function(mixed...:string))|zero parts;
    *!
    *!   Macro expansion rule.
    */
-  PIKEVAR array(string|int)|zero parts;
+  PIKEVAR array(string|int(24bit))|zero parts;
 
   CVAR magic_define_fun magic;       /* Mostly unused. */
   CVAR int args;
@@ -333,10 +348,10 @@ PIKECLASS define
   }
 
   /*! @decl void create(string name, int num_args, @
-   *!                   array(string|int|function(mixed|void...:string)) parts)
+   *!                   array(string|CppDefArgFlags|function(mixed|void...:string)) parts)
    */
   PIKEFUN void create(string name, int num_args,
-		      array(string|int|function(mixed|void...:string)) parts)
+                      array(string|int(24bit)|function(mixed|void...:string)) parts)
     flags ID_PROTECTED;
   {
     if (THIS->name) free_string(THIS->name);
@@ -377,6 +392,8 @@ PIKECLASS define
   /*! @decl string `()(array(string)|void arguments, CPP|void context, @
    *!                  CppFlags|void flags)
    *!
+   *!   Apply the macro with the specified arguments.
+   *!
    *! @param arguments
    *!   Array of arguments to the macro. Zero if no parenthesis.
    *!
@@ -388,7 +405,7 @@ PIKECLASS define
    *!   on failure (typically due to invalid @[arguments]).
    */
   PIKEFUN string `()(array(string)|void arguments, object(CPP)|void context_obj,
-                     int(7bit)|void flags_sval)
+                     CppFlags_t|void flags_sval)
     flags ID_PROTECTED;
   {
     struct define_struct *d = THIS;
@@ -810,7 +827,17 @@ static struct define_struct *find_define(struct CPP_struct *this, struct pike_st
 
 static ptrdiff_t calc(struct CPP_struct *this, const PCHARP data,
                       ptrdiff_t len, ptrdiff_t tmp, int flags);
+static ptrdiff_t skipspace(struct CPP_struct *this, const PCHARP data,
+                           ptrdiff_t pos, int emit);
 
+static void parse_embed_param(struct CPP_struct *this,
+                              const PCHARP data,
+                              ptrdiff_t len,
+                              ptrdiff_t *posp,
+                              int flags);
+
+static void add_quoted_string( const void *str, ptrdiff_t len, int shift,
+                               struct string_builder *dst );
 
   /*! @decl void report(SeverityLevel severity, @
    *!                   string filename, int(0..) linenumber, @
@@ -1438,11 +1465,13 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
  *!
  *!   Strings may also be indexed with the @tt{[]@} index operator.
  *!   Finally there are three special "functions" available in @[#if]
- *!   expressions; @[defined()], @[efun()] and @[constant()].
+ *!   expressions; @[defined()], @[efun()], @[constant()],
+ *!   @[__has_embed()] and @[__has_include()].
  *!
  *! @seealso
  *!   @[#ifdef], @[#ifndef], @[#elif], @[#else], @[#endif],
- *!   @[defined()], @[constant()], @[efun()]
+ *!   @[defined()], @[constant()], @[efun()], @[__has_embed()],
+ *!   @[__has_include()]
  */
 
 /*! @directive #ifdef
@@ -1489,7 +1518,7 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
    *! @seealso
    *!   @[#if]
    */
-  PIKEFUN string(0..0) directive_require(int(7bit) flags, string line)
+  PIKEFUN string(0..0) directive_require(CppFlags_t flags, string line)
   {
     struct CPP_struct *this = THIS;
 
@@ -1582,7 +1611,8 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
  *!   @endcode
  *!
  *! @seealso
- *!   @[#if], @[#ifdef], @[#else], @[defined()], @[constant()]
+ *!   @[#if], @[#ifdef], @[#else], @[defined()], @[constant()],
+ *!   @[__has_embed()], @[__has_include()]
  */
 
 /*! @directive #elifdef
@@ -1626,7 +1656,8 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
  *!   @endcode
  *!
  *! @seealso
- *!   @[#if], @[#ifdef], @[#else], @[defined()], @[constant()]
+ *!   @[#if], @[#ifdef], @[#else], @[defined()], @[constant()],
+ *!   @[__has_embed()], @[__has_include()]
  */
 
 /*! @directive #elifndef
@@ -1670,8 +1701,273 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
  *!   @endcode
  *!
  *! @seealso
- *!   @[#if], @[#ifdef], @[#else], @[defined()], @[constant()]
+ *!   @[#if], @[#ifdef], @[#else], @[defined()], @[constant()],
+ *!   @[__has_embed()], @[__has_include()]
  */
+
+  /*! @decl protected int(0..) parse_param_limit(string sym, string arg)
+   *!
+   *! Parse the argument to @expr{limit()@} and/or @expr{__limit__()@}.
+   *!
+   *! @seealso
+   *!   @[#embed], C23 6.10.3.2
+   */
+  PIKEFUN int(0..) parse_param_limit(string sym, string arg)
+    flags ID_PROTECTED;
+  {
+    struct CPP_struct *this = THIS;
+    struct string_builder save = this->buf;
+    INT_TYPE save_line = this->current_line;
+    PCHARP data = MKPCHARP_STR(arg);
+    ptrdiff_t pos = 0;
+
+    /* Buffer for the calculated expression. */
+    init_string_builder(&this->buf, 0);
+
+    pos = calc(this, data, arg->len, 0, 0);
+
+    /* NB: SKIPSPACE() macro is not available here. */
+    pos = skipspace(this, data, pos, 1);
+    if (pos < arg->len) {
+      cpp_error(this, "Invalid syntax in limit() expression.");
+    }
+
+    /* NB: The evaluated value is already on the stack. */
+    if (TYPEOF(Pike_sp[-1]) != PIKE_T_INT) {
+      cpp_error_sprintf(this,
+                        "Bad type for limit() expression, expected int(0..), "
+                        "got %s.", get_name_of_type(TYPEOF(Pike_sp[-1])));
+      push_int(0);
+    }
+    if (Pike_sp[-1].u.integer < 0) {
+      cpp_error_sprintf(this,
+                        "Bad value for limit() expression, expected int(0..), "
+                        "got %"PRINTPIKEINT"d.", Pike_sp[-1].u.integer);
+      push_int(0);
+    }
+
+    /* Restore preprocessor context. */
+    free_string_builder(&this->buf);
+    this->buf = save;
+    this->current_line = save_line;
+  }
+
+  /*! @decl protected string parse_param_prefix(string sym, string arg)
+   *!
+   *! Parse the argument to @expr{prefix()@} and/or @expr{__prefix__()@}.
+   *!
+   *! @seealso
+   *!   @[#embed], C23 6.10.3.4
+   */
+  PIKEFUN string parse_param_prefix(string sym, string arg)
+    flags ID_PROTECTED;
+  {
+  }
+
+  /*! @decl protected string parse_param_suffix(string sym, string arg)
+   *!
+   *! Parse the argument to @expr{suffix()@} and/or @expr{__suffix__()@}.
+   *!
+   *! @seealso
+   *!   @[#embed], C23 6.10.3.3
+   */
+  PIKEFUN string parse_param_suffix(string sym, string arg)
+    flags ID_PROTECTED;
+  {
+  }
+
+  /*! @decl protected string parse_param_if_empty(string sym, string arg)
+   *!
+   *! Parse the argument to @expr{if_empty()@} and/or @expr{__if_empty__()@}.
+   *!
+   *! @seealso
+   *!   @[#embed], C23 6.10.3.5
+   */
+  PIKEFUN string parse_param_if_empty(string sym, string arg)
+    flags ID_PROTECTED;
+  {
+  }
+
+  /*! @decl protected type(mixed) parse_param_pike_charset(string sym, string arg)
+   *!
+   *!   Parse the argument for the @[#embed] parameters @expr{pike::charset()@}
+   *!   and/or @expr{__pike__::__charset__()@}.
+   *!
+   *!   This @[#embed] parameter is used to specify the character encoding for
+   *!   the embedded file. If this is not specified, the default encoding
+   *!   (ie @expr{iso-8859-1@}) will be used.
+   *!
+   *!   Some commonly used charsets here are:
+   *!
+   *!   @ul
+   *!     @item UCS-2
+   *!       16-bit quantities in big-endian byte order.
+   *!     @item UCS-2le
+   *!       16-bit quantities in little-endian byte order.
+   *!     @item UCS-4
+   *!       32-bit quantities in big-endian byte order.
+   *!     @item UCS-4be
+   *!       32-bit quantities in little-endian byte order.
+   *!     @item UTF-8
+   *!       Text in UTF-8.
+   *!     @item UTF-16
+   *!       Text in UTF-16.
+   *!     @item UTF-16le
+   *!       Text in UTF-16le.
+   *!   @endul
+   *!
+   *! @seealso
+   *!   @[#embed]
+   */
+  PIKEFUN string parse_param_pike_charset(string sym, string arg)
+    flags ID_PROTECTED;
+  {
+    /* NB: We assume that the empty string is valid input in all
+     *     (relevant) encodings.
+     */
+    push_empty_string();
+    ref_push_string(arg);
+    if (safe_apply_current(f_CPP_decode_charset_fun_num, 2) &&
+        (TYPEOF(Pike_sp[-1]) == PIKE_T_STRING)) {
+      /* Valid character set. */
+      pop_stack();
+      /* NB: arg is at the top of the stack. */
+      return;
+    }
+    push_undefined();
+  }
+
+  /*! @directive #embed
+   *!
+   *!   Include a file as a list of items.
+   *!
+   *!   By default the items are @epxr{int(8bit@}.
+   *!
+   *! @seealso
+   *!   @[#include], @[#string]
+   */
+  PIKEFUN string(0..0) directive_embed(CppFlags_t flags, string line)
+  {
+    struct CPP_struct *this = THIS;
+    PCHARP data = MKPCHARP_STR(line);
+    ptrdiff_t pos = 0;
+    ptrdiff_t prevpos = 0;
+    struct svalue *save_sp = Pike_sp;
+
+    parse_embed_param(this, data, line->len, &pos, CPP_END_AT_NEWLINE);
+
+    if ((Pike_sp == save_sp) || (TYPEOF(*save_sp) != PIKE_T_STRING)) {
+      push_empty_string();
+      return;
+    }
+
+    if (OUTP()) {
+      struct pike_string *filename = save_sp->u.string;
+      struct mapping *params = save_sp[1].u.mapping;
+      struct string_builder buf;
+      struct svalue *sval;
+      struct pike_string *data;
+      size_t i;
+      size_t limit = (size_t)~0;
+
+      ref_push_string(filename);
+      if (!safe_apply_current(f_CPP_read_include_fun_num, 1) ||
+          !((1<<TYPEOF(Pike_sp[-1])) & (BIT_STRING|BIT_INT))) {
+        cpp_handle_exception (this, "Couldn't read include file.");
+        push_empty_string();
+        return;
+      } else if (TYPEOF(Pike_sp[-1]) == PIKE_T_INT) {
+        cpp_error_sprintf(this, "Couldn't read include file %pq.",
+                          filename);
+        push_empty_string();
+        return;
+      }
+
+      sval = low_mapping_string_lookup(params, MK_STRING("pike::charset"));
+      if (sval && (TYPEOF(*sval) == PIKE_T_STRING)) {
+        ref_push_string(sval->u.string);
+
+        if (!safe_apply_current(f_CPP_decode_charset_fun_num, 2) ||
+            (TYPEOF(Pike_sp[-1]) != PIKE_T_STRING)) {
+          cpp_error(this, "Invalid encoding for embedded file.\n");
+          push_empty_string();
+          return;
+        }
+      }
+
+      data = Pike_sp[-1].u.string;
+
+      if (!data->len) {
+        sval = low_mapping_string_lookup(params, MK_STRING("if_empty"));
+        if (sval && (TYPEOF(*sval) == PIKE_T_STRING)) {
+          ref_push_string(sval->u.string);
+        } else {
+          push_empty_string();
+        }
+        return;
+      }
+
+      init_string_builder(&buf, 0);
+
+      sval = low_mapping_string_lookup(params, MK_STRING("prefix"));
+      if (sval && (TYPEOF(*sval) == PIKE_T_STRING)) {
+        string_builder_shared_strcat(&buf, sval->u.string);
+      }
+
+      sval = low_mapping_string_lookup(params, MK_STRING("limit"));
+      if (sval && (TYPEOF(*sval) == PIKE_T_INT) && (sval->u.integer >= 0)) {
+        limit = (size_t)sval->u.integer;
+      }
+      if (data->size_shift == eightbit) {
+        for (i = 0; (i < limit) && (i < (size_t)data->len); i++) {
+          if (i) {
+            string_builder_putchar(&buf, ',');
+            if (i & 15) {
+              string_builder_putchar(&buf, ' ');
+            } else {
+              string_builder_sprintf(&buf, "\n#line %ld ",
+                                     (long)this->current_line);
+              add_quoted_string(this->current_file->str,
+                                this->current_file->len,
+                                this->current_file->size_shift,
+                                &buf);
+              string_builder_putchar(&buf, '\n');
+            }
+          }
+          string_builder_append_integer(&buf, data->str[i], 10, 0, 0, 0);
+        }
+      } else {
+        for (i = 0; (i < (size_t)data->len); i++) {
+          if (i) {
+            string_builder_putchar(&buf, ',');
+            if ((i & 3) || ((i & 4) && (data->size_shift == sixteenbit))) {
+              string_builder_putchar(&buf, ' ');
+            } else {
+              string_builder_sprintf(&buf, "\n#line %ld ",
+                                     (long)this->current_line);
+              add_quoted_string(this->current_file->str,
+                                this->current_file->len,
+                                this->current_file->size_shift,
+                                &buf);
+              string_builder_putchar(&buf, '\n');
+            }
+          }
+          string_builder_append_integer(&buf, index_shared_string(data, i),
+                                        10, 0, 0, 0);
+        }
+      }
+
+      sval = low_mapping_string_lookup(params, MK_STRING("suffix"));
+      if (sval && (TYPEOF(*sval) == PIKE_T_STRING)) {
+        string_builder_shared_strcat(&buf, sval->u.string);
+      }
+
+      push_string(finish_string_builder(&buf));
+      return;
+    }
+
+    push_empty_string();	/* For now. */
+  }
 
   /*! @directive #error
    *!
@@ -1695,7 +1991,7 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
    *! @seealso
    *!   @[#warning]
    */
-  PIKEFUN string(0..0) directive_error(int(7bit) flags, string line)
+  PIKEFUN string(0..0) directive_error(CppFlags_t flags, string line)
   {
     struct CPP_struct *this = THIS;
 
@@ -1722,7 +2018,7 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
    *! @seealso
    *!   @[#error]
    */
-  PIKEFUN string(0..0) directive_warning(int(7bit) flags, string line)
+  PIKEFUN string(0..0) directive_warning(CppFlags_t flags, string line)
   {
     struct CPP_struct *this = THIS;
 
@@ -1748,6 +2044,9 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
  *!
  *!   It is also possible to include a file whose path is defined in a
  *!   preprocessor macro, e.g. @tt{#include USER_SETTINGS@}.
+ *!
+ *! @seealso
+ *!   @[#string], @[__has_include()]
  */
 
 /*! @directive #line
@@ -1797,7 +2096,7 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
    *!   #pike __REAL_VERSION__
    *!   @endcode
    */
-  PIKEFUN string(0..0) directive_pike(int(7bit) flags, string line)
+  PIKEFUN string(0..0) directive_pike(CppFlags_t flags, string line)
   {
     struct CPP_struct *this = THIS;
 
@@ -1882,7 +2181,7 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
  *!   @endcode
  *!
  *! @seealso
- *!   @[#include]
+ *!   @[#include], @[__has_include()]
  */
 
   /*! @directive #pragma
@@ -1933,7 +2232,7 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
    *!       Disable disassembly output (default).
    *!   @endstring
    */
-  PIKEFUN string(0..0) directive_pragma(int(7bit) flags, string line)
+  PIKEFUN string(0..0) directive_pragma(CppFlags_t flags, string line)
   {
     struct CPP_struct *this = THIS;
 
@@ -1963,7 +2262,7 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
  *!   @tt{#ifdef MY_DEF@}.
  *!
  *! @seealso
- *!   @[#if], @[#ifdef], @[constant()]
+ *!   @[#if], @[#ifdef], @[constant()], @[__has_embed()], @[__has_include()]
  */
 static void check_defined(struct object *cpp_obj,
 			  struct define_struct *UNUSED(def),
@@ -2016,7 +2315,7 @@ static int do_safe_index_call(struct CPP_struct *this, struct pike_string *s)
  *!   Check whether the argument resolves to a constant or not.
  *!
  *! @seealso
- *!   @[#if], @[defined()]
+ *!   @[#if], @[defined()], @[__has_embed()], @[__has_include()]
  */
 static void cpp_constant(struct CPP_struct *this, int value)
 {
@@ -2307,6 +2606,11 @@ static ptrdiff_t find_end_of_line( struct CPP_struct *this, const PCHARP data,
 {
   while(pos < len) {
     switch (INDEX_PCHARP(data,pos++)) {
+    case '\r':
+      if (INDEX_PCHARP(data,pos) != '\n') {
+        break;
+      }
+      /* FALLTHRU */
     case '\n':
       return pos-1;
     case '\\':
@@ -2335,7 +2639,7 @@ static ptrdiff_t find_end_of_comment( struct CPP_struct *this,
 
   while(INDEX_PCHARP(data,pos)!='*' || INDEX_PCHARP(data,pos+1)!='/')
   {
-    if(pos+2>=len)
+    if(pos+2 > len)
     {
       cpp_error(this,"End of file in comment.");
       break;
@@ -2415,7 +2719,7 @@ static ptrdiff_t find_end_parenthesis(struct CPP_struct *this,
   INT_TYPE start_line = this->current_line;
   while(1)
   {
-    if(pos+1>=len)
+    if(pos+1 > len)
     {
       INT_TYPE save_line = this->current_line;
       this->current_line = start_line;
@@ -2452,7 +2756,7 @@ static ptrdiff_t find_end_brace(struct CPP_struct *this,
   INT_TYPE start_line = this->current_line;
   while(1)
   {
-    if(pos+1>=len)
+    if(pos+1 > len)
     {
       INT_TYPE save_line = this->current_line;
       this->current_line = start_line;
@@ -3243,9 +3547,6 @@ static const char define_[] = { 'd', 'e', 'f', 'i', 'n', 'e' };
 static const char undef_[] = { 'u', 'n', 'd', 'e', 'f' };
 static const char undefine_[] = { 'u', 'n', 'd', 'e', 'f', 'i', 'n', 'e' };
 static const char charset_[] = { 'c', 'h', 'a', 'r', 's', 'e', 't' };
-static const char pragma_[] = { 'p', 'r', 'a', 'g', 'm', 'a' };
-static const char pike_[] = { 'p', 'i', 'k', 'e' };
-static const char require_[] = { 'r', 'e', 'q', 'u', 'i', 'r', 'e' };
 static const char lsh_[] = { '<', '<' };
 static const char rsh_[] = { '>', '>' };
 
@@ -3296,7 +3597,8 @@ static ptrdiff_t calcC(struct CPP_struct *this, const PCHARP data,
       PCHARP p = data;
       INC_PCHARP(p,pos + 2);
       push_int(0);
-      safe_wide_string_to_svalue_inumber(Pike_sp-1, p.ptr, &p.ptr, 16, 0, p.shift);
+      safe_wide_string_to_svalue_inumber(Pike_sp-1, p.ptr, &p.ptr, 16,
+                                         len - 2, p.shift);
       if(!OUTP()) pop_stack();
       pos = SUBTRACT_PCHARP(p,data);
       break;
@@ -3894,6 +4196,26 @@ static ptrdiff_t calc(struct CPP_struct *this, const PCHARP data,
   return pos;
 }
 
+/* NOTE: Extracted from apply_define() to work around bugs
+ *       in some versions of gcc that complain about tmp
+ *       in MKPCHARP() being clobbered (due to inlineing).
+ *       Seen with gcc 3.4.3/x86/Solaris 10.
+ */
+static int safe_apply_define(struct CPP_struct *this,
+                             struct define_struct *d)
+{
+  JMP_BUF uwp;
+  if (!SETJMP(uwp)) {
+    apply_lfun(d->self.u.object, LFUN_CALL, 3);
+
+    UNSETJMP(uwp);
+    return 1;
+  }
+  cpp_handle_exception(this, "Error expanding macro.");
+  UNSETJMP(uwp);
+  return 0;
+}
+
 /* NB: This function is only called from low_cpp(), which
  *     means that Pike_fp->current_object is an object(CPP).
  *
@@ -3906,43 +4228,34 @@ static void apply_define(struct CPP_struct *this,
 			 struct pike_string *charset)
 {
   struct svalue *save_sp = Pike_sp;
-  JMP_BUF uwp;
 
   /* Keep d around... */
   push_svalue(&d->self);
 
   stack_swap();
 
-  if (!SETJMP(uwp)) {
-    if ((d->args == 1) && !Pike_sp[-1].u.array->size &&
-	!(d->flags & CPP_MACRO_VARARGS)) {
-      // Allow a single argument to be left out.
-      pop_stack();
-      ref_push_string(empty_pike_string);
-      f_aggregate(1);
-    }
-    ref_push_object(Pike_fp->current_object);
-    push_int(flags);
-    apply_lfun(d->self.u.object, LFUN_CALL, 3);
+  if ((d->args == 1) && !Pike_sp[-1].u.array->size &&
+      !(d->flags & CPP_MACRO_VARARGS)) {
+    // Allow a single argument to be left out.
+    pop_stack();
+    ref_push_string(empty_pike_string);
+    f_aggregate(1);
+  }
+  ref_push_object(Pike_fp->current_object);
+  push_int(flags);
 
-    UNSETJMP(uwp);
+  if (safe_apply_define(this, d) &&
+      (TYPEOF(Pike_sp[-1]) == PIKE_T_STRING)) {
+    int save_flags = d->flags;
+    d->flags |= CPP_MACRO_DISABLED;
 
-    if (TYPEOF(Pike_sp[-1]) == PIKE_T_STRING) {
-      int save_flags = d->flags;
-      d->flags |= CPP_MACRO_DISABLED;
+    /* NB: We're executing in the CPP context object. */
+    low_cpp(this, MKPCHARP_STR(Pike_sp[-1].u.string), Pike_sp[-1].u.string->len,
+            flags & ~(CPP_EXPECT_ENDIF | CPP_EXPECT_ELSE),
+            charset);
 
-      /* NB: We're executing in the CPP context object. */
-      low_cpp(this, MKPCHARP_STR(Pike_sp[-1].u.string), Pike_sp[-1].u.string->len,
-	      flags & ~(CPP_EXPECT_ENDIF | CPP_EXPECT_ELSE),
-	      charset);
-
-      d->flags = save_flags;
-    } else {
-      this->compile_errors++;
-    }
+    d->flags = save_flags;
   } else {
-    UNSETJMP(uwp);
-
     this->compile_errors++;
   }
 
@@ -4255,6 +4568,425 @@ static void parse_define_body(struct CPP_struct *this,
   *posp = pos;
 
   f_aggregate(Pike_sp - partbase);
+}
+
+/**
+ * Parse the argument to #include et al.
+ *
+ * @param data
+ *   IN: Data to parse.
+ *
+ * @param len
+ *   IN: Length of data.
+ *
+ * @param posp
+ *   IN/OUT: Position in the data stream.
+ *
+ * @param directive
+ *   IN: Directive that is being parsed (eg "include", "string" or "embed").
+ *
+ * @param flags
+ *   IN: Cpp flags.
+ *
+ * On successful return the return value from a call of handle_include()
+ * is on the stack. This value may be zero to indicate that the file
+ * was not found. Otherwise it should be an argument suitable for
+ * read_include(). On syntax error nothing is pushed.
+ */
+static void low_parse_include_param(struct CPP_struct *this,
+                                    const PCHARP data,
+                                    ptrdiff_t len,
+                                    ptrdiff_t *posp,
+                                    const char *directive,
+                                    int flags)
+{
+  struct svalue *save_sp = Pike_sp;
+  ptrdiff_t pos = *posp;
+
+  SKIPSPACE();
+
+  check_stack(3);
+
+  switch(DATA(pos++))
+  {
+  case '"':
+    {
+      struct string_builder nf;
+      init_string_builder(&nf, 0);
+      pos--;
+      READSTRING(nf);
+      push_string(finish_string_builder(&nf));
+      /* In Pike 7.7 and later filenames belonging to Pike
+       * are assumed to be encoded according to UTF-8.
+       */
+      f_string_to_utf8(1);
+      ref_push_string(this->current_file);
+      push_int(1);
+      break;
+    }
+
+  case '<':
+    {
+      ptrdiff_t tmp = pos;
+      while(DATA(pos) != '>')
+      {
+        if ((pos == len) || (DATA(pos)=='\n')) {
+          cpp_error_sprintf(this, "Expecting '>' in #%s.", directive);
+          break;
+        }
+        pos++;
+      }
+
+      push_string(make_shared_binary_pcharp(ADD_PCHARP(data, tmp), pos - tmp));
+      /* In Pike 7.7 and later filenames belonging to Pike
+       * are assumed to be encoded according to UTF-8.
+       */
+      f_string_to_utf8(1);
+      ref_push_string(this->current_file);
+      if (pos < len) pos++;
+      push_int(0);
+      break;
+    }
+
+  default:
+    pos--;
+    break;
+  }
+
+  if ((save_sp != Pike_sp) && OUTP()) {
+    safe_apply_current(f_CPP_handle_include_fun_num, 3);
+  } else if (save_sp != Pike_sp) {
+    /* Keep the raw filename in order to not indicate a syntax error. */
+    pop_n_elems(2);
+  }
+
+  if (pos < len) {
+    SKIPSPACE();
+  }
+
+  *posp = pos;
+}
+
+static void parse_include_param(struct CPP_struct *this,
+                                const PCHARP data,
+                                ptrdiff_t len,
+                                ptrdiff_t *posp,
+                                const char *directive,
+                                int include_mode,
+                                int flags,
+                                struct pike_string *charset)
+{
+  struct svalue *save_sp = Pike_sp;
+  ptrdiff_t pos = *posp;
+
+  low_parse_include_param(this, data, len, &pos, directive, flags);
+
+  if (save_sp == Pike_sp) {
+    if (include_mode & 2) {
+      /* Macro expanding didn't help... */
+      cpp_error_sprintf(this, "Expected file for #%s.", directive);
+      return;
+    } else {
+      /* Try macro expanding (Bug 2440). */
+      struct string_builder save = this->buf, tmp;
+      INT_TYPE save_line = this->current_line;
+      ptrdiff_t pos = *posp;
+
+      /* Buffer for the preprocessed directive line. */
+      init_string_builder(&this->buf, 0);
+
+      pos += low_cpp(this, ADD_PCHARP(data, pos), len - pos,
+                     CPP_END_AT_NEWLINE|CPP_NO_DIRECTIVES,
+                     charset);
+      *posp = pos;
+
+      tmp = this->buf;
+      this->buf = save;
+      pos = 0;
+
+      /* We now have the preparsed directive arguments in tmp.
+       * Attempt to parse them again.
+       */
+      low_parse_include_param(this, MKPCHARP_STR(tmp.s), tmp.s->len, &pos,
+                              directive, flags);
+
+      /* NB: Code is valid after #string. */
+      if (!(include_mode & 1) && (Pike_sp != save_sp) && (pos < tmp.s->len)) {
+        cpp_error_sprintf(this, "Junk after #%pS%s%s%s directive.",
+                          this->prefix?this->prefix:empty_pike_string,
+                          this->prefix?"_":"",
+                          directive,
+                          (include_mode & 2)?"_recur":"");
+      }
+
+      free_string_builder(&tmp);
+    }
+  } else {
+    *posp = pos;
+  }
+}
+
+/**
+ * Convert a reserved __symbol__ into a canonical symbol.
+ *
+ * Cf C23 6.10.5: In all aspects, a preprocessor standard parameter
+ *   specified by this document as an identifier pp_param and an
+ *   identifier of the form __pp_param__ shall behave the same when
+ *   used as a preprocessor parameter, except for the spelling.
+ *
+ * Note: Steals a reference from sym.
+ */
+static struct pike_string *canonical_pp_param(struct pike_string *sym)
+{
+  if (!sym || (sym->len < 5)) return sym;
+  if ((index_shared_string(sym, 0) == '_') &&
+      (index_shared_string(sym, 1) == '_') &&
+      (index_shared_string(sym, sym->len - 2) == '_') &&
+      (index_shared_string(sym, sym->len - 1) == '_')) {
+    struct pike_string *ret = string_slice(sym, 2, sym->len - 4);
+    free_string(sym);
+    return ret;
+  }
+  return sym;
+}
+
+/**
+ * Parse the optional parameters to #embed et al.
+ *
+ * @param data
+ *   IN: Data to parse.
+ *
+ * @param len
+ *   IN: Length of data.
+ *
+ * @param posp
+ *   IN/OUT: Position in the data stream.
+ *
+ * Note: On entry data[*posp] may be whitespace.
+ *
+ * On successful return a pairs of arguments suitable for
+ * f_aggregate_mkmapping() to generate the last argument
+ * for handle_embed() have been pushed on the pike stack,
+ * and *posp has been advanced to the position after the
+ * parameter.
+ */
+static void low_parse_embed_param(struct CPP_struct *this,
+                                  const PCHARP data,
+                                  ptrdiff_t len,
+                                  ptrdiff_t *posp)
+{
+  ptrdiff_t pos = *posp;
+  struct svalue *save_sp = Pike_sp;
+  struct pike_string *sym;
+
+  check_stack(3);
+
+  SKIPSPACE();
+
+  /* FIXME: Parse a pp-parameter here. */
+  sym = canonical_pp_param(gobble_identifier(this, data, &pos));
+  if (sym) {
+    int parser_id = -1;
+
+    ref_push_string(sym);
+
+    SKIPSPACE();
+
+    if ((DATA(pos) == ':') && (DATA(pos + 1) == ':')) {
+      struct pike_string *pp_prefix = sym;
+
+      pos += 2;
+      SKIPSPACE();
+
+      sym = canonical_pp_param(gobble_identifier(this, data, &pos));
+
+      if (!sym) {
+        cpp_error_sprintf(this, "Expected symbol after '%pS::'.", pp_prefix);
+        pop_stack();
+        free_string(pp_prefix);
+        pos = find_end_of_line(this, data, len, pos, 1);
+        *posp = pos;
+        return;
+      }
+
+      push_text("::");
+      ref_push_string(sym);
+      f_add(3);
+
+      stack_dup();
+
+      push_text("parse_param_");
+      push_string(pp_prefix);
+      push_text("_");
+      push_string(sym);
+      f_add(4);
+
+      SKIPSPACE();
+    } else {
+      stack_dup();
+
+      push_text("parse_param_");
+      push_string(sym);
+      f_add(2);
+    }
+
+    sym = Pike_sp[-1].u.string;
+    add_ref(sym);
+    pop_stack();
+
+    if (DATA(pos) == '(') {
+      ptrdiff_t start_paren = pos++;
+      pos = find_end_parenthesis(this, data, len, pos);
+
+      push_string(make_shared_binary_pcharp(ADD_PCHARP(data, start_paren + 1),
+                                            pos - (start_paren + 2)));
+     } else {
+      push_undefined();
+    }
+
+    parser_id =
+      really_low_find_shared_string_identifier(sym, Pike_fp->current_program,
+                                               SEE_PROTECTED);
+
+    free_string(sym);
+    if (parser_id < 0) {
+      /* Unsupported pp_param.
+       *
+       * Do not report here as this function is also used from __has_embed().
+       *
+       * The stack at this point holds:
+       *
+       *   <sym>
+       *   <sym>
+       *   <arg>
+       */
+      pop_n_elems(3);
+      /* NB: Not advancing posp indicates error. */
+      return;
+    }
+
+    safe_apply_current(parser_id, 2);
+
+    if (IS_UNDEFINED(Pike_sp-1)) {
+      cpp_error_sprintf(this, "Invalid argument to %pS().\n",
+                        Pike_sp[-2].u.string);
+      pop_n_elems(2);
+      /* NB: Not advancing posp indicates error. */
+      return;
+    }
+  }
+
+  *posp = pos;
+}
+
+/**
+ * Parse the argument to #embed et al.
+ *
+ * @param data
+ *   IN: Data to parse.
+ *
+ * @param len
+ *   IN: Length of data.
+ *
+ * @param posp
+ *   IN/OUT: Position in the data stream.
+ *
+ * Note: On entry data[*posp] may be whitespace.
+ *
+ * On successful return arguments suitable for handle_embed() have
+ * been pushed on the pike stack.
+ */
+static void parse_embed_param(struct CPP_struct *this,
+                              const PCHARP data,
+                              ptrdiff_t len,
+                              ptrdiff_t *posp,
+                              int flags)
+{
+  ptrdiff_t pos = 0;
+  struct svalue *save_sp = Pike_sp;
+  /* Try macro expanding (Bug 2440). */
+  struct string_builder save = this->buf, tmp;
+  INT_TYPE save_line = this->current_line;
+
+  SKIPSPACE();
+
+  check_stack(3);
+
+  low_parse_include_param(this, data, len, posp, "embed", 0);
+
+  SKIPSPACE();
+
+  if ((save_sp != Pike_sp) && (*posp == len)) {
+    /* No parameters. */
+    f_aggregate_mapping(0);
+    return;
+  }
+
+  /* Buffer for the preprocessed directive line. */
+  init_string_builder(&this->buf, 0);
+
+  pos = *posp;
+  pos += low_cpp(this, ADD_PCHARP(data, pos), len - pos,
+                 flags | CPP_END_AT_NEWLINE|CPP_NO_DIRECTIVES, NULL);
+  *posp = pos;
+
+  tmp = this->buf;
+  this->buf = save;
+  pos = 0;
+
+  {
+    PCHARP data = MKPCHARP_STR(tmp.s);
+    len = tmp.s->len;
+
+    if (save_sp == Pike_sp) {
+      /* The first call to low_parse_include_param() failed.
+       *
+       * We now have the preparsed directive arguments in tmp.
+       * Atempt to parse them again.
+       */
+      low_parse_include_param(this, data, len, &pos, "embed", 0);
+
+      if (Pike_sp == save_sp) {
+        /* Macro expanding didn't help... */
+        cpp_error(this, "Expected file for #embed.");
+
+        free_string_builder(&tmp);
+        return;
+      }
+    }
+
+    /* Invariant: Pike_sp == save_sp + 1. */
+    if (TYPEOF(Pike_sp[-1]) != PIKE_T_STRING) {
+      cpp_error(this, "Couldn't find include file.");
+      pop_n_elems(Pike_sp-save_sp);
+      return;
+    }
+
+    /* Parse the optional parameters. */
+    save_sp = Pike_sp;
+
+    while (pos < len) {
+      ptrdiff_t prevpos = pos;
+      low_parse_embed_param(this, data, len, &pos);
+      if (prevpos == pos) {
+        if ((flags & CPP_END_AT_NEWLINE) &&
+            ((INDEX_PCHARP(data, pos) == '\n') ||
+             ((INDEX_PCHARP(data, pos) == '\r') &&
+              (INDEX_PCHARP(data, pos+1) == '\n')))) {
+          break;
+        }
+        /* NB: Complains if the __has_embed() expression contains newlines. */
+        cpp_error_sprintf(this, "Unsupported #embed parameter syntax.");
+        free_string_builder(&tmp);
+        pop_n_elems(Pike_sp + 1 - save_sp);
+        return;
+      }
+    }
+  }
+
+  free_string_builder(&tmp);
+
+  f_aggregate_mapping(Pike_sp - save_sp);
 }
 
 /**
@@ -4586,6 +5318,13 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
         break;
 
       case '#':
+        if (flags & CPP_NO_DIRECTIVES) {
+          /* This is typically used when macro expanding
+           * the remainder of a directive line.
+           */
+          PUTC('#');
+          break;
+        }
         if(GOBBLE('!'))
         {
           FIND_EOL();
@@ -4724,102 +5463,12 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
               do_include:
                 {
                   struct svalue *save_sp=Pike_sp;
+
                   SKIPSPACE();
 
-                  check_stack(3);
-
-                  switch(DATA(pos++))
-                  {
-                    case '"':
-                      {
-                        struct string_builder nf;
-                        init_string_builder(&nf, 0);
-                        pos--;
-                        READSTRING(nf);
-                        push_string(finish_string_builder(&nf));
-                        /* In Pike 7.7 and later filenames belonging to Pike
-                         * are assumed to be encoded according to UTF-8.
-                         */
-                        f_string_to_utf8(1);
-                        ref_push_string(this->current_file);
-                        push_int(1);
-                        break;
-                      }
-
-                    case '<':
-                      {
-                        ptrdiff_t tmp = pos;
-                        while(DATA(pos)!='>')
-                        {
-                          if(DATA(pos)=='\n')
-                          {
-                            cpp_error(this, "Expecting '>' in include.");
-                            break;
-                          }
-                          pos++;
-                        }
-                        push_string(make_shared_binary_pcharp(ADD_PCHARP(data,tmp), pos-tmp));
-                        /* In Pike 7.7 and later filenames belonging to Pike
-                         * are assumed to be encoded according to UTF-8.
-                         */
-                        f_string_to_utf8(1);
-                        ref_push_string(this->current_file);
-                        pos++;
-                        push_int(0);
-                        break;
-                      }
-
-                    default:
-                      if (include_mode & 2) {
-                        /* Macro expanding didn't help... */
-                        cpp_error(this, "Expected file to include.");
-                        break;
-                      } else {
-                        /* Try macro expanding (Bug 2440). */
-                        struct string_builder save = this->buf, tmp;
-                        INT_TYPE save_line = this->current_line;
-                        init_string_builder(&this->buf, 0);
-
-                        /* Prefix the buffer with the corresponding *_recur
-                         * directive, to avoid infinite loops.
-                         */
-                        if (include_mode & 1) {
-                          string_builder_strcat(&this->buf, "#string_recur ");
-                        } else {
-                          string_builder_strcat(&this->buf, "#include_recur ");
-                        }
-
-                        pos--;
-                        pos += low_cpp(this, ADD_PCHARP(data,pos), len - pos,
-                                       CPP_END_AT_NEWLINE,
-                                       charset);
-
-                        string_builder_putchar(&this->buf, '\n');
-
-                        tmp = this->buf;
-                        this->buf = save;
-
-                        /* We now have a #include-recur or #string-recur directive
-                         * in tmp. Preprocess it.
-                         */
-
-                        /* We're processing the line twice. */
-                        this->current_line = save_line;
-                        low_cpp(this, MKPCHARP_STR(tmp.s), tmp.s->len,
-                                flags, charset);
-                        free_string_builder(&tmp);
-
-                        this->current_line = save_line;
-                        string_builder_sprintf(&this->buf, "\n#line %ld ",
-                                               (long)save_line);
-                        PUSH_STRING_SHIFT(this->current_file->str,
-                                          this->current_file->len,
-                                          this->current_file->size_shift,
-                                          &this->buf);
-                        string_builder_putchar(&this->buf, '\n');
-                      }
-                      break;
-                  }
+                  parse_include_param(this, data, len, &pos,
+                                      (include_mode & 1)?"string":"include",
+                                      include_mode, flags, charset);
 
                   if(Pike_sp==save_sp) {
                     break;
@@ -4829,8 +5478,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
                   {
                     struct pike_string *new_file;
 
-                    if (!safe_apply_current(f_CPP_handle_include_fun_num, 3) ||
-			 (TYPEOF(Pike_sp[-1]) != PIKE_T_STRING)) {
+                    if (TYPEOF(Pike_sp[-1]) != PIKE_T_STRING) {
                       cpp_handle_exception (this, "Couldn't find include file.");
                       pop_n_elems(Pike_sp-save_sp);
                       break;
@@ -5330,7 +5978,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
    *! @seealso
    *!   @[cpp()], @[high_cpp()], @[drain()]
    */
-  PIKEFUN void low_cpp(string data, int(7bit) flags)
+  PIKEFUN void low_cpp(string data, CppFlags_t flags)
   {
     struct CPP_struct *this = THIS;
 #ifdef PIKE_DEBUG
@@ -5355,7 +6003,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
    *! @seealso
    *!   @[low_cpp()], @[high_cpp()]
    */
-  PIKEFUN string cpp(string data, int(7bit)|void flags)
+  PIKEFUN string cpp(string data, CppFlags_t|void flags)
   {
     struct CPP_struct *this = THIS;
     struct string_builder save_buf = this->buf;
@@ -5577,6 +6225,45 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
     f_sprintf(2);
   }
 
+  /*! @decl constant __STDC_ISO_10646__
+   *!
+   *!   This macro expands to the year and date (6 digits) of the Unicode
+   *!   standard that the Pike runtime supports.
+   *!
+   *!   Note that this differs slightly from the corresponding macro
+   *!   in the C23 standard in that it does NOT have an ending @expr{'L'@}.
+   *!
+   *! @seealso
+   *!   @[__UNICODE_VERSION__]
+   */
+  PIKEFUN string macro___STDC_ISO_10646__()
+  {
+    push_text(" %04d%02d ");
+    push_int(PIKE_UNICODE_YEAR);
+    push_int(PIKE_UNICODE_MONTH);
+    f_sprintf(3);
+  }
+
+  /*! @decl constant __UNICODE_VERSION__
+   *!
+   *!   This macro expands to a decimal representation of the version of
+   *!   the Unicode standard that the Pike runtime supports. It is
+   *!   formated with the @[sprintf]-format @expr{%d%02d%02d@} with
+   *!   the values major, minor and revision in order. Version 12.1 thus
+   *!   results in the value @expr{120100@}.
+   *!
+   *! @seealso
+   *!   @[__STDC_ISO_10646__]
+   */
+  PIKEFUN string macro___UNICODE_VERSION__()
+  {
+    push_text(" %d%02d%02d ");
+    push_int(PIKE_UNICODE_MAJOR);
+    push_int(PIKE_UNICODE_MINOR);
+    push_int(PIKE_UNICODE_REVISION);
+    f_sprintf(4);
+  }
+
   /*! @decl constant __VERSION__
    *!
    *! This define contains the current Pike version as a float. If
@@ -5641,6 +6328,104 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
     push_int(this->compat_major);
     f_sprintf(2);
   }
+
+/*! @decl int(0..1) __has_include(mixed identifiers)
+ *!
+ *!   This macro checks whether the set of @[identifiers] is a valid argument
+ *!   to @[#include] or not.
+ *!
+ *! @returns
+ *!   @[__has_include] returns @expr{1} if the symbol given as argument
+ *!   is valid as an argument to @[#include] and @expr{0@} otherwise.
+ *!
+ *! @note
+ *!   Not available prior to Pike 9.0.
+ *!
+ *! @seealso
+ *!   @[#if], @[#ifdef], @[constant()], @[defined()], @[#include],
+ *!   @[#string], @[__has_embed()]
+ */
+PIKEFUN string macro___has_include(string arg)
+{
+  struct CPP_struct *this = THIS;
+  struct svalue *savesp = Pike_sp;
+  int res = 0;
+
+  if (arg) {
+    const PCHARP data = MKPCHARP_STR(arg);
+    ptrdiff_t pos = 0;
+
+    low_parse_include_param(this, data, arg->len, &pos, "include", 0);
+
+    SKIPSPACE();
+
+    if ((savesp == Pike_sp) || (pos != arg->len)) {
+      cpp_error_sprintf(this, "Invalid argument to __has_include(): %pS.", arg);
+      push_text(" 0 ");
+      return;
+    }
+
+    if (TYPEOF(Pike_sp[-1]) == PIKE_T_STRING) {
+      pop_stack();
+      push_text(" 1 ");
+      return;
+    }
+  } else {
+    cpp_error_sprintf(this, "Missing argument to __has_include().");
+  }
+
+  push_text(" 0 ");
+}
+
+/*! @decl int(0..1) __has_embed(mixed identifiers)
+ *!
+ *!   This macro checks whether the set of @[identifiers] is a valid argument
+ *!   to @[#embed] or not.
+ *!
+ *! @returns
+ *!   @[__has_embed] returns @expr{1} if the set of identifiers given as
+ *!   argument is valid as an argument to @[#embed] and @expr{0@} otherwise.
+ *!   Note that the set of identifiers may contain preprocessor parameters.
+ *!
+ *! @note
+ *!   Not available prior to Pike 9.0.
+ *!
+ *! @seealso
+ *!   @[#if], @[#ifdef], @[constant()], @[defined()], @[#embed],
+ *!   @[__has_include()]
+ */
+PIKEFUN string macro___has_embed(string arg)
+{
+  struct CPP_struct *this = THIS;
+  struct svalue *savesp = Pike_sp;
+  int res = 0;
+
+  if (arg) {
+    const PCHARP data = MKPCHARP_STR(arg);
+    ptrdiff_t pos = 0;
+
+    parse_embed_param(this, data, arg->len, &pos, 0);
+
+    SKIPSPACE();
+
+    if ((savesp == Pike_sp) || (pos != arg->len)) {
+      cpp_error_sprintf(this, "Invalid argument to __has_embed(): %pS.", arg);
+      push_text(" 0 ");
+      return;
+    }
+
+    /* On success, parse_embed_param() pushes a string and a mapping. */
+    if (TYPEOF(Pike_sp[-2]) == PIKE_T_STRING) {
+      push_text(" 1 ");
+      return;
+    }
+  } else {
+    cpp_error_sprintf(this, "Missing argument to __has_embed().");
+  }
+
+  push_text(" 0 ");
+}
+
 
   /* _Pragma(STRING) */
   /*! @decl void _Pragma(string directive)
@@ -5815,7 +6600,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
 /*! @endnamespace */
 
  /*! @decl void create(string|void current_file, @
-  *!                   int|string|void charset, object|void handler, @
+  *!                   int(0..1)|string|void charset, object|void handler, @
   *!                   void|int compat_major, void|int compat_minor, @
   *!                   void|int picky_cpp)
   *! @decl void create(mapping(string:mixed) options)
@@ -5831,7 +6616,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
   *!   	 @member string "current_file"
   *!       Name of the current file. It is used for generating
   *!       #line directives and for locating include files.
-  *!   	 @member int|string "charset"
+  *!   	 @member int(0..1)|string "charset"
   *!       Charset to use when processing @expr{data@}.
   *!   	 @member object "handler"
   *!       Compilation handler.
@@ -5867,7 +6652,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
   *!   @[compile()]
   */
   PIKEFUN void create(mapping|string|void opts_or_file,
-		      int|string|void charset_sv,
+                      int(0..1)|string|void charset_sv,
 		      object|void handler,
 		      int|void compat_major_sv,
 		      int|void compat_minor_sv,
@@ -6158,6 +6943,11 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
     /* These are from the 201x C standard. */
     DO_MAGIC_DEFINE_FUNC(_Pragma, 1, CPP_MACRO_KEEP_NL);
 
+    /* These are from the 2023 C standard. */
+    DO_MAGIC_DEFINE(__STDC_ISO_10646__);
+    DO_MAGIC_DEFINE_FUNC(__has_include, 1, 0);
+    DO_MAGIC_DEFINE_FUNC(__has_embed, 1, 0);
+
     simple_add_define(this, "static_assert", "_Static_assert");
   }
 
@@ -6225,10 +7015,12 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
                       DEFINETOSTR(SIZEOF_INT));
     simple_add_define(this, "SIZEOF_FLOAT",
                       DEFINETOSTR(SIZEOF_FLOAT));
+
+    DO_MAGIC_DEFINE(__UNICODE_VERSION__);
   }
 
   /*! @decl void define_multiple_macros(mapping(string: @
-   *!     string|function|object|array(string|int))|void predefs)
+   *!     string|function|object|array(string|CppDefArgFlags))|void predefs)
    *!
    *!   Define multiple macros in one operation.
    *!
@@ -6244,7 +7036,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
    *!   @[_take_over_initial_predefines()]
    */
   PIKEFUN void define_multiple_macros(mapping(string:
-                 string|function|object|array(string|int))|void predefs)
+                 string|function|object|array(string|int(24bit)))|void predefs)
   {
     struct CPP_struct *this = THIS;
     struct keypair *k;
@@ -6268,7 +7060,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
     }
   }
 
-  /*! @decl mapping(string:string|function|object|array(string|int)) get_predefines()
+  /*! @decl mapping(string:string|function|object|array(string|CppDefArgFlags)) get_predefines()
    *!
    *!   Get the predefined macros for this preprocessor.
    *!
@@ -6288,7 +7080,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
    *!   @[init_pike_cpp()], @[define_multiple_macros()],
    *!   @[_take_over_initial_predefines()], @[defines]
    */
-PIKEFUN mapping(string:string|function|object|array(string|int)) get_predefines()
+PIKEFUN mapping(string:string|function|object|array(string|int(24bit))) get_predefines()
   {
 #ifndef SUPPORT_HANDLERS
     apply_external(1, f_get_predefines_fun_num, args);
@@ -6364,7 +7156,7 @@ PIKEFUN mapping(string:string|function|object|array(string|int)) get_predefines(
  */
 
 /*! @decl string cpp(string data, mapping|string|void current_file, @
- *!                  int|string|void charset, object|void handler, @
+ *!                  int(0..1)|string|void charset, object|void handler, @
  *!                  void|int compat_major, void|int compat_minor, @
  *!                  void|int picky_cpp)
  *!
@@ -6382,7 +7174,7 @@ PIKEFUN mapping(string:string|function|object|array(string|int)) get_predefines(
  *! 	@member string "current_file"
  *!             Name of the current file. It is used for generating
  *!             #line directives and for locating include files.
- *! 	@member int|string "charset"
+ *! 	@member int(0..1)|string "charset"
  *!             Charset to use when processing @expr{data@}.
  *! 	@member object "handler"
  *!             Compilation handler.
@@ -6411,7 +7203,7 @@ PIKEFUN mapping(string:string|function|object|array(string|int)) get_predefines(
 
 PIKEFUN string cpp(string data,
 		   mapping|string|void opts_or_file,
-		   int|string|void charset_sv,
+                   int(0..1)|string|void charset_sv,
 		   object|void handler,
 		   int|void compat_major_sv,
 		   int|void compat_minor_sv,

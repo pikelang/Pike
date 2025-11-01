@@ -1,3 +1,6 @@
+// Automatically generated from "gtkscalebutton.pre".
+// Do NOT edit.
+
 //! Properties:
 //! GTK2.Adjustment adjustment
 //! string icons
@@ -16,8 +19,9 @@
 //!
 
 inherit GTK2.Button;
+//!
 
-protected GTK2.ScaleButton create( int|void size_or_props, float|void min, float|void max, float|void step, array|void icons );
+protected void create( void size_or_props, void min, void max, void step, void icons );
 //! Create a new W(ScaleButton).
 //!
 //!

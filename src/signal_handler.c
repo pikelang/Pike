@@ -16,10 +16,11 @@
 #include "pike_error.h"
 #include "callback.h"
 #include "mapping.h"
-#include "threads.h"
+#include "pike_threads.h"
 #include "signal_handler.h"
 #include "module_support.h"
 #include "operators.h"
+#include "sprintf.h"
 #include "builtin_functions.h"
 #include "main.h"
 #include "time_stuff.h"
@@ -380,6 +381,10 @@
 #pragma GCC optimize "-Os"
 #endif
 
+/* Hide some popular symbols that are not Async-Signal-Safe. */
+#define ASYNC_SIGNAL_SAFE() \
+  int PIKE_UNUSED_ATTRIBUTE fprintf = 0, pthread_mutex_lock = 0
+
 extern int fd_from_object(struct object *o);
 static int set_priority( int pid, char *to );
 
@@ -398,9 +403,12 @@ static void report_child(int pid,
 #endif
 
 
-#ifdef USE_SIGCHILD
+#ifdef SIGCHLD
+/* NB: Async-Signal-Safe! */
 static RETSIGTYPE receive_sigchild(int signum);
+#endif
 
+#ifdef USE_SIGCHILD
 typedef struct wait_data_s {
   pid_t pid;
   WAITSTATUSTYPE status;
@@ -719,14 +727,18 @@ void process_done(pid_t UNUSED(pid), const char *UNUSED(from)) { }
 #endif /* PIKE_DEBUG */
 
 
+/* NB: Async-Signal-Safe! */
 static void register_signal(int signum)
 {
+  ASYNC_SIGNAL_SAFE();
   sig_push(signum);
   wake_up_backend();
 }
 
+/* NB: Async-Signal-Safe! */
 static RETSIGTYPE receive_signal(int signum)
 {
+  ASYNC_SIGNAL_SAFE();
   SAFE_FIFO_DEBUG_BEGIN();
   if ((signum < 0) || (signum >= MAX_SIGNALS)) {
     /* Some OSs (Solaris 2.6) send a bad signum sometimes.
@@ -748,9 +760,14 @@ static RETSIGTYPE receive_signal(int signum)
 }
 
 /* This function is intended to work like signal(), but better :) */
+/* NB: Must be Async-Signal-Safe when SIGNAL_ONESHOT! */
 void my_signal(int sig, sigfunctype fun)
 {
+#ifndef SIGNAL_ONESHOT
   PROC_FPRINTF("[%d] my_signal(%d, 0x%p)\n", getpid(), sig, (void *)fun);
+#else
+  ASYNC_SIGNAL_SAFE();
+#endif
 #ifdef HAVE_SIGACTION
   {
     struct sigaction action;
@@ -954,7 +971,7 @@ static void f_signal(int args)
 
     switch(signum)
     {
-#ifdef USE_SIGCHILD
+#ifdef SIGCHLD
       case SIGCHLD:
 	func=receive_sigchild;
 	break;
@@ -981,7 +998,7 @@ static void f_signal(int args)
       func=(sigfunctype) SIG_IGN;
     }else{
       func=receive_signal;
-#ifdef USE_SIGCHILD
+#ifdef SIGCHLD
       if(signum == SIGCHLD)
 	func=receive_sigchild;
 #endif
@@ -1162,19 +1179,33 @@ void forkd(int fd)
 #endif
 
 
-#ifdef USE_SIGCHILD
-
+/* NB: Async-Signal-Safe! */
+#ifdef SIGCHLD
 #ifdef SIGNAL_ONESHOT
 static RETSIGTYPE receive_sigchild(int signum)
 #else
 static RETSIGTYPE receive_sigchild(int UNUSED(signum))
 #endif
 {
+  ASYNC_SIGNAL_SAFE();
   pid_t pid;
   WAITSTATUSTYPE status;
   int masked_errno = errno;
-
-  PROC_FPRINTF("[%d] receive_sigchild\n", getpid());
+#ifdef PROC_DEBUG
+  char debug_prefix[] = {
+    '[',
+    '0' + (getpid()/100000)%10,
+    '0' + (getpid()/10000)%10,
+    '0' + (getpid()/1000)%10,
+    '0' + (getpid()/100)%10,
+    '0' + (getpid()/10)%10,
+    '0' + getpid()%10,
+    ']',
+    ' ',
+  };
+  write(2, debug_prefix, sizeof(debug_prefix));
+  write(2, "receive_sigchild\n", 17);
+#endif /* PROC_DEBUG */
 
 #ifdef SIGNAL_ONESHOT
   /* Reregister the signal early, so that we don't
@@ -1184,6 +1215,8 @@ static RETSIGTYPE receive_sigchild(int UNUSED(signum))
 #endif
 
   SAFE_FIFO_DEBUG_BEGIN();
+
+#ifdef USE_SIGCHILD
 
  try_reap_again:
   /* We carefully reap what we saw */
@@ -1198,16 +1231,36 @@ static RETSIGTYPE receive_sigchild(int UNUSED(signum))
     memset(&wd, 0, sizeof(wd));
 #endif
 
-    PROC_FPRINTF("[%d] receive_sigchild got pid %d\n",
-                 getpid(), pid);
+#ifdef PROC_DEBUG
+    {
+      char pid_str[] = {
+        '0' + (pid/100000)%10,
+        '0' + (pid/10000)%10,
+        '0' + (pid/1000)%10,
+        '0' + (pid/100)%10,
+        '0' + (pid/10)%10,
+        '0' + pid()%10,
+        '\n',
+      };
+      write(2, debug_prefix, sizeof(debug_prefix));
+      write(2, "receive_sigchild got pid ", 25);
+      write(2, pid_str, sizeof(pid_str));
+    }
+#endif
 
     wd.pid=pid;
     wd.status=status;
     wait_push(wd);
     goto try_reap_again;
   }
-  PROC_FPRINTF("[%d] receive_sigchild: No more dead children.\n",
-               getpid());
+  if (pid < 0 && errno == EINTR) goto try_reap_again;
+
+#ifdef PROC_DEBUG
+  write(2, debug_prefix, sizeof(debug_prefix));
+  write(2, "receive_sigchild: No more dead children.\n", 41);
+#endif
+#endif
+
   register_signal(SIGCHLD);
 
   SAFE_FIFO_DEBUG_END();
@@ -1217,8 +1270,8 @@ static RETSIGTYPE receive_sigchild(int UNUSED(signum))
    * and cause a bit of trouble there. Let's leave errno as we found it. */
   errno = masked_errno;
 }
-#endif
 
+#endif /* SIGCHLD */
 
 #define PROCESS_UNKNOWN		-1
 #define PROCESS_RUNNING		0
@@ -1467,10 +1520,10 @@ static void do_da_lock(void)
 
 static void do_bi_do_da_lock(void)
 {
-  PROC_FPRINTF("[%d] wait thread: This is your wakeup call!\n",
+  PROC_FPRINTF("[%d] fork: wait thread: This is your wakeup call!\n",
                getpid());
 
-  co_signal(&start_wait_thread);
+  co_broadcast(&start_wait_thread);
 
   PROC_FPRINTF("[%d] fork: releasing the lock.\n", getpid());
 
@@ -1479,12 +1532,6 @@ static void do_bi_do_da_lock(void)
 
 static TH_RETURN_TYPE wait_thread(void *UNUSED(data))
 {
-  if(th_atfork(do_da_lock,do_bi_do_da_lock,0))
-  {
-    perror("pthread atfork");
-    exit(1);
-  }
-
   while(1)
   {
     WAITSTATUSTYPE status;
@@ -1494,18 +1541,34 @@ static TH_RETURN_TYPE wait_thread(void *UNUSED(data))
     PROC_FPRINTF("[%d] wait_thread: getting the lock.\n", getpid());
 
     mt_lock(&wait_thread_mutex);
-    pid=MY_WAIT_ANY(&status, WNOHANG|WUNTRACED);
 
-    err = errno;
+    do {
+      /* NB: Wait with NOHANG since we have the above lock. */
+      pid = MY_WAIT_ANY(&status, WNOHANG|WUNTRACED);
 
-    if(pid < 0 && err == ECHILD)
-    {
-      PROC_FPRINTF("[%d] wait_thread: sleeping\n", getpid());
+      err = errno;
 
-      co_wait(&start_wait_thread, &wait_thread_mutex);
+      if (!pid) {
+        /* There exist child processes, but none of them
+         * have a wait state available yet.
+         */
+      }
+      if(pid < 0) {
+        if (err == ECHILD) {
+          /* There are no active child processes, so wait for
+           * some to be created.
+           */
+          PROC_FPRINTF("[%d] wait_thread: sleeping\n", getpid());
 
-      PROC_FPRINTF("[%d] wait_thread: waking up\n", getpid());
-    }
+          co_wait(&start_wait_thread, &wait_thread_mutex);
+
+          PROC_FPRINTF("[%d] wait_thread: waking up\n", getpid());
+          continue;
+        }
+        if (err == EINTR) continue;
+      }
+      break;
+    } while (1);
 
     PROC_FPRINTF("[%d] wait_thread: releasing the lock.\n", getpid());
 
@@ -1514,17 +1577,20 @@ static TH_RETURN_TYPE wait_thread(void *UNUSED(data))
 #ifdef ENODEV
     do {
 #endif
-      errno = 0;
-      if(pid <= 0) pid=MY_WAIT_ANY(&status, 0|WUNTRACED);
+      errno = err = 0;
+      if(pid <= 0) {
+        pid = MY_WAIT_ANY(&status, 0|WUNTRACED);
+        err = errno;
+      }
 
-      PROC_FPRINTF("[%d] wait thread: pid=%d status=%d errno=%d\n",
-                   getpid(), pid, status, errno);
+      PROC_FPRINTF("[%d] wait thread: pid=%d status=%d errno=%d (%d)\n",
+                   getpid(), pid, status, errno, err);
 
 #ifdef ENODEV
       /* FreeBSD threads are broken, and sometimes
        * signals status 0, errno ENODEV on living processes.
        */
-    } while (UNLIKELY(errno == ENODEV));
+    } while (UNLIKELY(err == ENODEV));
 #endif
 
     if(pid>0)
@@ -1605,6 +1671,8 @@ static TH_RETURN_TYPE wait_thread(void *UNUSED(data))
       }
     }
   }
+
+  UNREACHABLE();
 }
 #endif
 
@@ -1889,9 +1957,89 @@ static void f_pid_status_set_priority(INT32 args)
   push_int(r);
 }
 
+/*! @decl protected string(7bit)|zero _sprintf(int(8bit) c)
+ */
+static void f_pid_status__sprintf(INT32 args)
+{
+  int c = 'O';
+  int state = PROCESS_UNKNOWN;
+  get_all_args(NULL, args, "%d.", &c);
+  if (c != 'O') {
+    push_undefined();
+    return;
+  }
+  push_constant_text("Process.Process(%d /* %s */)");
+  push_int(THIS->pid);
+#ifdef __NT__
+  {
+    DWORD x;
+    if(GetExitCodeProcess(THIS->handle, &x))
+    {
+      state = ( x == STILL_ACTIVE ? PROCESS_RUNNING : PROCESS_EXITED);
+    }else{
+      state = PROCESS_UNKNOWN;
+    }
+  }
+#else
+  state = THIS->state;
+#endif
+  switch(state) {
+  case PROCESS_RUNNING:
+    push_constant_text("Running");
+    break;
+  case PROCESS_EXITED:
+    push_constant_text("Exited");
+    break;
+  case PROCESS_STOPPED:
+    push_constant_text("Stopped");
+    break;
+  case PROCESS_UNKNOWN:
+  default:
+    push_constant_text("Unknown");
+    break;
+  }
+  f_sprintf(3);
+}
 
 /*! @endclass
  */
+
+#ifdef __NetBSD__
+/* kill(2) on NetBSD 10.1 (and probably earlier) sometimes
+ * claims that it has sent signal 9 successfully, but the
+ * other process does not actually receive it.
+ */
+static int netbsd_kill_wrapper(pid_t pid, int sig)
+{
+  int ret = kill(pid, sig);
+  if (!ret && (sig == 9)) {
+    /* Successfull kill claimed, but we need to validate...
+     *
+     * For eg tlib/modules/testsuite test 1004 on
+     * NetBSD 10.1/Intel i7/3.5GHz ~11% of the kill 9's
+     * appear to not propagate.
+     *
+     * The observed max number of loops needed is 13.
+     *
+     * 64 ought to be enough for everyone; if the process
+     * is still around after 64 kill 9's it's probably
+     * stuck in device-wait.
+     */
+    int loop = 64;
+    do {
+      usleep(1);	/* Attempt to force a process yield. */
+      ret = kill(pid, sig);
+    } while (!ret && loop--);
+    if (errno == ESRCH) {
+      /* Process has actually died! */
+      return 0;
+    }
+    /* Propagate other failures as is. */
+  }
+  return ret;
+}
+#define kill(PID, SIG)	netbsd_kill_wrapper((PID), (SIG))
+#endif /* __NetBSD__ */
 
 #ifdef HAVE_PTRACE
 
@@ -2121,7 +2269,7 @@ static BPTR get_amigados_handle(struct mapping *optional, char *name, int fd)
   if((ext = fcntl(fd, F_EXTERNALIZE, 0)) < 0)
     Pike_error("File for %s can not be externalized.\n", name);
 
-  sprintf(buf, "IXPIPE:%lx", ext);
+  snprintf(buf, sizeof(buf), "IXPIPE:%lx", ext);
 
   /* It's a kind of magic... */
   if((b = Open(buf, 0x4242)) == 0)
@@ -2255,7 +2403,7 @@ static HANDLE get_inheritable_handle(struct mapping *optional,
 			  DUPLICATE_SAME_ACCESS)) {
 	release_fd(fd);
 	/* This could cause handle-leaks */
-	Pike_error("Failed to duplicate handle %d.\n", GetLastError());
+	Pike_error("Failed to duplicate handle %lu.\n", (unsigned long)GetLastError());
       }
       release_fd(fd);
     }
@@ -2475,7 +2623,7 @@ static int set_priority( int pid, char *to )
     memset(&params, 0, sizeof(params));
     memset(&foo, 0, sizeof(foo));
 
-    strcpy(foo.pc_clname, "RT");
+    strlcpy(foo.pc_clname, "RT", sizeof(foo.pc_clname));
     if( priocntl((idtype_t)0, (id_t)0, PC_GETCID, (void *)(&foo)) == -1)
       return 0;
     params.pc_cid = foo.pc_cid;
@@ -2500,7 +2648,7 @@ static int set_priority( int pid, char *to )
 
     memset(&params, 0, sizeof(params));
     memset(&foo, 0, sizeof(foo));
-    strcpy(foo.pc_clname, "TS");
+    strlcpy(foo.pc_clname, "TS", sizeof(foo.pc_clname));
     if( priocntl((idtype_t)0, (id_t)0, PC_GETCID, (void *)(&foo)) == -1)
       return 0;
     params.pc_cid = foo.pc_cid;
@@ -3037,7 +3185,7 @@ void f_create_process(INT32 args)
        *       operations on it.
        */
 
-      command_line = pike_dwim_utf8_to_utf16(buffer_get_string(&buf));
+      command_line = pike_dwim_utf8_to_utf16((const p_wchar0 *) buffer_get_string(&buf));
       buffer_free(&buf);
     }
 
@@ -3172,7 +3320,7 @@ void f_create_process(INT32 args)
 	    /* NB: The environment string contains lots of NUL characters,
 	     *     so we must use the low-level variant here.
 	     */
-	    env = low_dwim_utf8_to_utf16(Pike_sp[-1].u.string->str,
+	    env = low_dwim_utf8_to_utf16(STR0(Pike_sp[-1].u.string),
 					 Pike_sp[-1].u.string->len);
 	    pop_stack();
 	  }
@@ -3675,9 +3823,12 @@ void f_create_process(INT32 args)
 
     PROC_FPRINTF("[%d] control_pipe: %d, %d\n",
                  getpid(), control_pipe[0], control_pipe[1]);
+
 #ifdef USE_WAIT_THREAD
     if (!wait_thread_running) {
       THREAD_T foo;
+      PROC_FPRINTF("[%d] fork: Spawning wait_thread.\n", getpid());
+
       if (th_create_small(&foo, wait_thread, 0)) {
 	Pike_error("Failed to create wait thread!\n"
 		   "errno: %d\n", errno);
@@ -3987,6 +4138,10 @@ void f_create_process(INT32 args)
        * NB: Avoid calling any functions in libc here, since
        *     internal mutexes may be held by other nonforked
        *     threads.
+       *     Only functions that are async-signal-safe should
+       *     be called (cf signal-safety(7) (Linux),
+       *     sigaction(2) (BSDs), attributes(7) (Solaris)).
+       *     .
        */
 #ifdef DECLARE_ENVIRON
       extern char **environ;
@@ -4492,7 +4647,7 @@ void Pike_f_fork(INT32 args)
   /* This section is disabled, since fork1() isn't usefull if
    * you aren't about do an exec().
    * In addition any helper threads (like the wait thread) would
-   * disappear, so the child whould be crippled.
+   * disappear, so the child would be crippled.
    *	/grubba 1999-03-07
    *
    * Reenabled since fork() usually performs a fork1() anyway.
@@ -4712,8 +4867,13 @@ static void f_kill(INT32 args)
   PROC_FPRINTF("[%d] kill: pid=%d, signum=%d\n", getpid(), pid, signum);
 
   THREADS_ALLOW_UID();
-  res = !kill(pid, signum);
-  save_errno = errno;
+  do {
+    res = !kill(pid, signum);
+    save_errno = errno;
+
+    PROC_FPRINTF("[%d] kill: pid=%d, signum=%d, res: %d, errno: %d: %s\n",
+                 getpid(), pid, signum, res, save_errno, strerror(save_errno));
+  } while (!res && (save_errno == EINTR));
   THREADS_DISALLOW_UID();
 
   check_signals(0,0,0);
@@ -5058,7 +5218,7 @@ PMOD_EXPORT void restore_signal_handler(int sig)
   if ((TYPEOF(signal_callbacks[sig]) != PIKE_T_INT) || default_signals[sig])
   {
     sigfunctype func = receive_signal;
-#ifdef USE_SIGCHILD
+#ifdef SIGCHLD
     if (sig == SIGCHLD) {
       func = receive_sigchild;
     }
@@ -5069,11 +5229,7 @@ PMOD_EXPORT void restore_signal_handler(int sig)
       /* SIGCHLD */
 #ifdef SIGCHLD
     case SIGCHLD:
-#ifdef USE_SIGCHILD
       my_signal(sig, receive_sigchild);
-#else
-      my_signal(sig, SIG_DFL);
-#endif
       break;
 #endif
 
@@ -5161,6 +5317,12 @@ void init_signals(void)
   co_init(& process_status_change);
   co_init(& start_wait_thread);
   mt_init(& wait_thread_mutex);
+
+  if(th_atfork(do_da_lock, do_bi_do_da_lock, 0))
+  {
+    perror("pthread atfork");
+    exit(1);
+  }
 #endif
 
 #if 0
@@ -5210,6 +5372,9 @@ void init_signals(void)
 #endif /* HAVE_KILL */
   /* function(array(string),void|mapping(string:mixed):object) */
   ADD_FUNCTION("create",f_create_process,tFunc(tArr(tStr) tOr(tVoid,tMap(tStr,tMix)),tObj),0);
+  /* function(int(8bit):string(7bit)|zero) */
+  ADD_FUNCTION("_sprintf", f_pid_status__sprintf,
+               tFunc(tInt8bit, tOr(tStr7, tZero)), ID_PROTECTED);
 
   pid_status_program=end_program();
   add_program_constant("create_process",pid_status_program,0);

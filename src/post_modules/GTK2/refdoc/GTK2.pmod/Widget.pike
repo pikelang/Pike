@@ -1,3 +1,6 @@
+// Automatically generated from "gtkwidget.pre".
+// Do NOT edit.
+
 //! The basic widget, inherited (directly or indirectly) by all widgets.  Thus,
 //! all functions and signals defined in this widget work on all widgets.
 //! 
@@ -265,6 +268,7 @@
 //!
 
 inherit GTK2.Object;
+//!
 
 GTK2.Widget APP_PAINTABLE( );
 //! Returns if the GTK2.APP_PAINTABLE flag has been set on this widget.
@@ -427,13 +431,13 @@ string class_path( );
 //!
 //!
 
-GTK2.Pango.Context create_pango_context( );
+Pango.Context create_pango_context( );
 //! Creates a new Pango.Context with the appropriate colormap, font
 //! description, and base direction for drawing text for this widget.
 //!
 //!
 
-GTK2.Pango.Layout create_pango_layout( string text );
+Pango.Layout create_pango_layout( string text );
 //! Creates a new Pango.Layout with the appropriate colormap, font
 //! description, and base direction for drawing text.
 //!
@@ -496,7 +500,7 @@ int get_direction( );
 //!
 //!
 
-GTK2.GdkDisplay get_display( );
+GDK2.Display get_display( );
 //! Get the GDK2.Display for the toplevel window associated with this widget.
 //! This function can only be called after the widget has been added to a
 //! widget hierarchy with a GTK2.Window at the top.
@@ -528,7 +532,7 @@ int get_no_show_all( );
 //!
 //!
 
-GTK2.Pango.Context get_pango_context( );
+Pango.Context get_pango_context( );
 //! Gets a Pango.Context with the appropriate colormap, font description, and
 //! base direction for this widget.
 //!
@@ -539,7 +543,7 @@ GTK2.Widget get_parent( );
 //!
 //!
 
-GTK2.GdkWindow get_parent_window( );
+GDK2.Window get_parent_window( );
 //! Get the parent window.
 //!
 //!
@@ -549,12 +553,12 @@ mapping get_pointer( );
 //!
 //!
 
-GTK2.GdkWindow get_root_window( );
+GDK2.Window get_root_window( );
 //! Get the root window.
 //!
 //!
 
-GTK2.GdkScreen get_screen( );
+GDK2.Screen get_screen( );
 //! Get the GDK2.Screen from the toplevel window associated with this widget.
 //!
 //!
@@ -574,7 +578,7 @@ mapping get_size_request( );
 //!
 //!
 
-GTK2.GdkPixmap get_snapshot( GTK2.GdkRectangle clip_rect );
+GDK2.Pixmap get_snapshot( GDK2.Rectangle clip_rect );
 //! Create a GDK2.Pixmap of the contents of the widget and its children
 //!
 //! Works even if the widget is obscured.  The depth and visual of the
@@ -629,10 +633,7 @@ GTK2.Widget get_toplevel( );
 //!
 //!
 
-GTK2.GdkWindow get_window( );
-//! Returns the widget's window if it is realized, other NULL.
-//!
-//!
+GDK2.Window get_window( );
 
 GTK2.Widget grab_default( );
 //! Causes this widget to become the default widget.
@@ -666,7 +667,7 @@ int hide_on_delete( );
 //!
 //!
 
-GTK2.Widget input_shape_combine_mask( GTK2.GdkBitmap shape_mask, int offset_x, int offset_y );
+GTK2.Widget input_shape_combine_mask( GDK2.Bitmap shape_mask, int offset_x, int offset_y );
 //! Sets an input shape for this widget's GDK2.Window.
 //!
 //!
@@ -729,31 +730,31 @@ int mnemonic_activate( int group_cycling );
 //!
 //!
 
-GTK2.Widget modify_base( int state, GTK2.GdkColor color );
+GTK2.Widget modify_base( int state, GDK2.Color color );
 //! Sets the base color of the widget in a particular state.
 //! See modify_fg().
 //!
 //!
 
-GTK2.Widget modify_bg( int state, GTK2.GdkColor color );
+GTK2.Widget modify_bg( int state, GDK2.Color color );
 //! Sets the background color of the widget in a particular state.
 //! See modify_fg().
 //!
 //!
 
-GTK2.Widget modify_cursor( GTK2.GdkColor primary, GTK2.GdkColor secondary );
+GTK2.Widget modify_cursor( GDK2.Color primary, GDK2.Color secondary );
 //! Sets the cursor color to use in a widget.
 //!
 //!
 
-GTK2.Widget modify_fg( int state, GTK2.GdkColor color );
+GTK2.Widget modify_fg( int state, GDK2.Color color );
 //! Sets the foreground color of the widget in a particular state.
 //! state is one of @[STATE_ACTIVE], @[STATE_INSENSITIVE], @[STATE_NORMAL], @[STATE_PRELIGHT] and @[STATE_SELECTED].
 //! color can be omitted to undo the effect of a previous call.
 //!
 //!
 
-GTK2.Widget modify_font( GTK2.Pango.FontDescription font );
+GTK2.Widget modify_font( Pango.FontDescription font );
 //! Sets the font.
 //!
 //!
@@ -763,7 +764,7 @@ GTK2.Widget modify_style( GTK2.RcStyle style );
 //!
 //!
 
-GTK2.Widget modify_text( int state, GTK2.GdkColor color );
+GTK2.Widget modify_text( int state, GDK2.Color color );
 //! Sets the text color of the widget in a particular state.
 //! See modify_fg().
 //!
@@ -814,7 +815,7 @@ GTK2.Widget remove_mnemonic_label( GTK2.Widget label );
 //!
 //!
 
-GTK2.GdkPixbuf render_icon( string stock_id, int size, string detail );
+GDK2.Pixbuf render_icon( string stock_id, int size, string detail );
 //! A convenience function that uses the theme engine and rc file settings
 //! to look up stock_id and render it to a pixbuf.  stock_id should be a
 //! stock icon ID such as GTK2.STOCK_OPEN or GTK2.STOCK_OK.  size should be a
@@ -900,7 +901,7 @@ GTK2.Widget set_parent( GTK2.Widget parent );
 //!
 //!
 
-GTK2.Widget set_parent_window( GTK2.GdkWindow parent );
+GTK2.Widget set_parent_window( GDK2.Window parent );
 //! Sets a non default parent window for this widget.
 //!
 //!
@@ -970,7 +971,7 @@ GTK2.Widget set_tooltip_window( GTK2.Window window );
 //!
 //!
 
-GTK2.Widget shape_combine_mask( GTK2.GdkBitmap shape_mask, int offset_x, int offset_y );
+GTK2.Widget shape_combine_mask( GDK2.Bitmap shape_mask, int offset_x, int offset_y );
 //! Sets a shape for a widget's GDK2.Window.  This allows for transparent
 //! window, etc.
 //!

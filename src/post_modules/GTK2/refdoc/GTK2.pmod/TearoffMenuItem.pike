@@ -1,3 +1,6 @@
+// Automatically generated from "gtktearoffmenuitem.pre".
+// Do NOT edit.
+
 //! A GTK2.TearoffMenuItem is a special W(MenuItem) which is used to
 //! tear off and reattach its menu.
 //! 
@@ -18,10 +21,12 @@
 //!
 
 inherit GTK2.MenuItem;
+//!
 
 inherit GTK2.Activatable;
+//!
 
-protected GTK2.TearoffMenuItem create( mapping|void props );
+protected void create( void props );
 //! Create a new tearoff menu item
 //!
 //!

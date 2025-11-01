@@ -15,7 +15,7 @@
 #include "pike_error.h"
 #include "bignum.h"
 
-#include "threads.h"
+#include "pike_threads.h"
 #include <fcntl.h>
 
 

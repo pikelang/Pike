@@ -39,7 +39,7 @@
 #include "pike_macros.h"
 #include "constants.h"
 #include "interpret.h"
-#include "threads.h"
+#include "pike_threads.h"
 #include "pike_error.h"
 #include "pike_types.h"
 
@@ -256,16 +256,16 @@ void image_gif_header_block(INT32 args)
 
    while ((1<<bpp)<numcolors+alphaentry) bpp++;
 
-   sprintf(buf,"GIF8%ca%c%c%c%c%c%c%c",
-	   gif87a?'7':'9',
-	   xs&255, (xs>>8)&255, /* width */
-	   ys&255, (ys>>8)&255, /* height */
-	   ((globalpalette<<7)
-	    | ((bpp-1)<<4) /* color resolution = 2^bpp */
-	    | (0 <<3) /* palette is sorted, most used first */
-	    | ((bpp)-1)), /* palette size = 2^bpp */
-	   bkgi,
-	   aspect);
+   snprintf(buf, sizeof(buf), "GIF8%ca%c%c%c%c%c%c%c",
+            gif87a?'7':'9',
+            xs&255, (xs>>8)&255, /* width */
+            ys&255, (ys>>8)&255, /* height */
+            ((globalpalette<<7)
+             | ((bpp-1)<<4) /* color resolution = 2^bpp */
+             | (0 <<3) /* palette is sorted, most used first */
+             | ((bpp)-1)), /* palette size = 2^bpp */
+            bkgi,
+            aspect);
 
    push_string(make_shared_binary_string(buf,13));
 
@@ -367,18 +367,18 @@ static void image_gif__gce_block(INT32 args)
        TYPEOF(sp[3-args]) != T_INT ||
        TYPEOF(sp[4-args]) != T_INT)
       Pike_error("Image.GIF._gce_block(): Illegal argument(s)\n");
-   sprintf(buf,"%c%c%c%c%c%c%c%c",
-	   0x21, /* extension intruder */
-	   0xf9, /* gce extension */
-	   4, /* block size */
-	   ((((int) sp[4-args].u.integer & 7)<<2) /* disposal */
-	    | ((!!(int) sp[3-args].u.integer)<<1) /* user input */
-	    | (!!(int) sp[-args].u.integer)), /* transparency */
-	   (int) sp[2-args].u.integer & 255, /* delay, ls8 */
-	   ((int) sp[2-args].u.integer>>8) & 255, /* delay, ms8 */
-	   (int) sp[1-args].u.integer & 255, /* transparency index */
-	   0 /* end block */
-	   );
+   snprintf(buf, sizeof(buf), "%c%c%c%c%c%c%c%c",
+            0x21, /* extension intruder */
+            0xf9, /* gce extension */
+            4, /* block size */
+            ((((int) sp[4-args].u.integer & 7)<<2) /* disposal */
+             | ((!!(int) sp[3-args].u.integer)<<1) /* user input */
+             | (!!(int) sp[-args].u.integer)), /* transparency */
+            (int) sp[2-args].u.integer & 255, /* delay, ls8 */
+            ((int) sp[2-args].u.integer>>8) & 255, /* delay, ms8 */
+            (int) sp[1-args].u.integer & 255, /* transparency index */
+            0 /* end block */
+            );
 
    pop_n_elems(args);
    push_string(make_shared_binary_string(buf,8));
@@ -471,18 +471,18 @@ CHRONO("gif _render_block begun");
 
 /*** write image rendering header */
 
-   sprintf(buf,"%c%c%c%c%c%c%c%c%c%c",
-	   0x2c, /* render block initiator */
-	   xpos&255, (xpos>>8)&255, /* left position */
-	   ypos&255, (ypos>>8)&255, /* top position */
-	   xs&255, (xs>>8)&255, /* width */
-	   ys&255, (ys>>8)&255, /* height */
-	   /* packed field */
-	   ((localpalette<<7)
-	    | (interlace<<6)
-	    | (0 <<5) /* palette is sorted, most used first */
-	    | ((bpp)-1)) /* palette size = 2^bpp */
-           );
+   snprintf(buf, sizeof(buf), "%c%c%c%c%c%c%c%c%c%c",
+            0x2c, /* render block initiator */
+            xpos&255, (xpos>>8)&255, /* left position */
+            ypos&255, (ypos>>8)&255, /* top position */
+            xs&255, (xs>>8)&255, /* width */
+            ys&255, (ys>>8)&255, /* height */
+            /* packed field */
+            ((localpalette<<7)
+             | (interlace<<6)
+             | (0 <<5) /* palette is sorted, most used first */
+             | ((bpp)-1)) /* palette size = 2^bpp */
+            );
    push_string(make_shared_binary_string(buf,10));
    numstrings++;
 
@@ -497,9 +497,9 @@ CHRONO("gif _render_block begun");
 
    /* write lzw minimum code size */
    if (bpp<2)
-      sprintf(buf,"%c",2);
+      snprintf(buf, sizeof(buf), "%c", 2);
    else
-      sprintf(buf,"%c",bpp);
+      snprintf(buf, sizeof(buf), "%c", bpp);
 
    push_string(make_shared_binary_string(buf,1));
    numstrings++;
@@ -1248,8 +1248,8 @@ void image_gif_netscape_loop_block(INT32 args)
       loops=65535;
    pop_n_elems(args);
 
-   sprintf(buf,"%c%c%cNETSCAPE2.0%c%c%c%c%c",
-	   33,255,11,3,1,(loops>>8)&255,loops&255,0);
+   snprintf(buf, sizeof(buf), "%c%c%cNETSCAPE2.0%c%c%c%c%c",
+            33, 255, 11, 3, 1, (loops>>8)&255, loops&255, 0);
 
    push_string(make_shared_binary_string(buf,19));
 }
@@ -2412,7 +2412,7 @@ void image_gif__encode_extension(INT32 args)
    add_ref(a);
    pop_n_elems(args);
 
-   sprintf(buf,"%c%c",0x21,(int) a->item[1].u.integer);
+   snprintf(buf, sizeof(buf), "%c%c", 0x21, (int)a->item[1].u.integer);
    push_string(make_shared_binary_string(buf,2));
 
    n=1;

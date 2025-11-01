@@ -51,7 +51,7 @@
 #define low_yylex low_yylex0
 #define lex_atoi atoi
 #define lex_strtol strtol
-#define lex_strtod my_strtod
+#define lex_strtod lex_strtod0
 #define lex_isidchar isidchar
 
 #else /* SHIFT != 0 */
@@ -141,6 +141,8 @@ static long lex_strtol(char *buf, char **end, int base)
   return ret;
 }
 
+#endif /* SHIFT == 0 */
+
 static FLOAT_TYPE lex_strtod(char *buf, char **end)
 {
   PCHARP foo;
@@ -154,8 +156,6 @@ static FLOAT_TYPE lex_strtod(char *buf, char **end)
   if(end) end[0]=(char *)foo.ptr;
   return ret;
 }
-
-#endif /* SHIFT == 0 */
 
 #define GOT_NUL(WHERE) do {                             \
     if (lex->pos > lex->end) {                          \
@@ -174,6 +174,9 @@ static FLOAT_TYPE lex_strtod(char *buf, char **end)
  *
  * Sequence		Character
  *   \\			backslash
+ *   \'			single quote
+ *   \"			double quote
+ *   \?			question mark
  *   \[0-7]*		octal escape
  *   \a			alert (BEL)
  *   \b			backspace (BS)
@@ -225,6 +228,19 @@ int parse_esc_seq (WCHAR *buf, p_wchar2 *chr, ptrdiff_t *len)
 
     case '0': case '1': case '2': case '3':
     case '4': case '5': case '6': case '7': {
+      /* FIXME: The C23 standard limits octal escapes to 3 digits.
+       *        Cf 6.4.4.4.18:
+       *          EXAMPLE 3 Even if eight bits are used for objects that have
+       *          type char, the construction '\x123' specifies an integer
+       *          character constant containing only one character, since a
+       *          hexadecimal escape sequence is terminated only by a non-
+       *          hexadecimal character. To specify an integer character
+       *          constant containing the two characters whose values are
+       *          '\x12' and '3' , the construction '\0223' can be used,
+       *          since an octal escape sequence is terminated after three
+       *          octal digits. (The value of this two-character integer
+       *          character constant is implementation-defined.)
+       */
       unsigned INT32 n = c-'0';
       for (l = 1; buf[l] >= '0' && buf[l] < '8'; l++) {
 	if (DO_UINT32_MUL_OVERFLOW(n, 8, &n))
@@ -344,7 +360,7 @@ int parse_esc_seq (WCHAR *buf, p_wchar2 *chr, ptrdiff_t *len)
       c = (p_wchar2)n;
       break;
     }
-  case '\\': case '\'': case '\"':
+  case '\\': case '\'': case '\"': case '?':
     break;
   default:
     /* Warn about this as it is commonly due to broken escaping,
@@ -467,9 +483,11 @@ int yylex(struct lex *lex, YYSTYPE *yylval)
   t=low_yylex(lex, yylval);
   if(t<256)
   {
-    fprintf(stderr,"YYLEX: '%c' (%d) at %s:%d\n",t,t,lex.current_file->str,lex.current_line);
+    fprintf(stderr,"YYLEX: '%c' (%d) at %s:%ld\n",
+            t, t, lex->current_file->str, (long)lex->current_line);
   }else{
-    fprintf(stderr,"YYLEX: token #%d at %s:%d\n",t,lex.current_file->str,lex.current_line);
+    fprintf(stderr,"YYLEX: token #%d at %s:%ld\n",
+            t, lex->current_file->str, (long)lex->current_line);
   }
   return t;
 }
@@ -487,6 +505,14 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 #ifdef MALLOC_DEBUG
   check_sfltable();
 #endif
+
+  if (lex->pos >= lex->end) {
+#ifdef TOK_LEX_EOF
+    return TOK_LEX_EOF;
+#else /* !TOK_LEX_EOF */
+    return 0;
+#endif /* TOK_LEX_EOF */
+  }
 
   while(1)
   {
@@ -634,6 +660,9 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	case TWO_CHAR('w','h'):
 	  if(ISWORD("while")) return TOK_WHILE;
 	  break;
+        case TWO_CHAR('_','G'):
+          if(ISWORD("_Generic")) return TOK__GENERIC;
+          break;
 	case TWO_CHAR('_','S'):
 	  if(ISWORD("_Static_assert")) return TOK_STATIC_ASSERT;
 	  break;
@@ -1033,7 +1062,7 @@ unknown_directive:
 					   lex->pos,
 					   &lex->pos,
 					   base,
-					   0,
+                                           (lex->end - lex->pos)>>SHIFT,
 					   SHIFT);
 	dmalloc_touch_svalue(&sval);
 	yylval->n = mksvaluenode(&sval);
@@ -1064,11 +1093,12 @@ unknown_directive:
 
       SET_SVAL(sval, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
 
+      p2 = lex->pos;
       safe_wide_string_to_svalue_inumber(&sval,
-					 lex->pos,
+                                         p2,
 					 &p2,
 					 0,
-					 0,
+                                         (lex->end - lex->pos)>>SHIFT,
 					 SHIFT);
       if(p1>p2)
       {
@@ -1085,7 +1115,7 @@ unknown_directive:
 					     p2,
 					     &p3,
 					     0,
-					     0,
+                                             (lex->end - p2)>>SHIFT,
 					     SHIFT);
 	  dmalloc_touch_svalue(&sval);
 	  if ((TYPEOF(sval) == PIKE_T_INT) && (p3 > p2)) {
@@ -1113,6 +1143,8 @@ unknown_directive:
 	}
 	return TOK_FLOAT;
       }else{
+        if (p2 == lex->pos)
+          Pike_fatal("Numeric literal could be parsed as neither int nor float\n");
 	dmalloc_touch_svalue(&sval);
 	yylval->n = mksvaluenode(&sval);
 	free_svalue(&sval);

@@ -35,7 +35,25 @@ Makefile.in -space_indent tab_indent
 Makefile.rl -space_indent tab_indent
 /lib/modules/Calendar.pmod/tzdata/** -space_indent -tab_indent mixed_indent
 /packaging/debian/rules -space_indent tab_indent
+/src/code/README.txt -space_indent tab_indent
+/src/crypt.c -space_indent tab_indent
 /src/dtoa.c -space_indent tab_indent
+/src/modules/common_module_makefile.in -space_indent tab_indent
+/src/modules/dynamic_module_makefile.in -space_indent tab_indent
+/src/modules/semidynamic_module_makefile.in -space_indent tab_indent
+/src/modules/static_module_makefile.in -space_indent tab_indent
+/src/post_modules/JSON/json_array.c -space_indent tab_indent
+/src/post_modules/JSON/json_mapping.c -space_indent tab_indent
+/src/post_modules/JSON/json_number.c -space_indent tab_indent
+/src/post_modules/JSON/json_parser.c -space_indent tab_indent
+/src/post_modules/JSON/json_string.c -space_indent tab_indent
+/src/post_modules/JSON/json_string_utf8.c -space_indent tab_indent
+/src/post_modules/JSON5/json5_array.c -space_indent tab_indent
+/src/post_modules/JSON5/json5_mapping.c -space_indent tab_indent
+/src/post_modules/JSON5/json5_number.c -space_indent tab_indent
+/src/post_modules/JSON5/json5_parser.c -space_indent tab_indent
+/src/post_modules/JSON5/json5_string.c -space_indent tab_indent
+/src/post_modules/JSON5/json5_string_utf8.c -space_indent tab_indent
 # List of files that currently have lines indented with tab or
 # a mix of tabs and spaces.
 # Remove when they no longer have any initial tabs.
@@ -473,7 +491,6 @@ Makefile.rl -space_indent tab_indent
 /src/builtin_functions.h mixed_indent
 /src/callback.c mixed_indent
 /src/callback.h mixed_indent
-/src/code/README.txt mixed_indent
 /src/code/amd64.c mixed_indent
 /src/code/amd64.h mixed_indent
 /src/code/arm32.c mixed_indent
@@ -722,10 +739,6 @@ Makefile.rl -space_indent tab_indent
 /src/modules/_WhiteFish/tests.pike mixed_indent
 /src/modules/_WhiteFish/whitefish.c mixed_indent
 /src/modules/_math/math.c mixed_indent
-/src/modules/common_module_makefile.in mixed_indent
-/src/modules/dynamic_module_makefile.in mixed_indent
-/src/modules/semidynamic_module_makefile.in mixed_indent
-/src/modules/static_module_makefile.in mixed_indent
 /src/modules/sybase/configure.in mixed_indent
 /src/modules/sybase/sybase.cmod mixed_indent
 /src/modules/system/configure.in mixed_indent
@@ -759,7 +772,6 @@ Makefile.rl -space_indent tab_indent
 /src/pike_threadlib.h mixed_indent
 /src/pike_types.cmod mixed_indent
 /src/pike_types.h mixed_indent
-/src/port.c mixed_indent
 /src/post_modules/BSON/bson.cmod mixed_indent
 /src/post_modules/Bz2/configure.in mixed_indent
 /src/post_modules/Bz2/libbzip2mod.cmod mixed_indent
@@ -940,12 +952,6 @@ Makefile.rl -space_indent tab_indent
 /src/post_modules/HPack/testsuite.in mixed_indent
 /src/post_modules/JSON/JSON.pmod.in mixed_indent
 /src/post_modules/JSON/json.cmod mixed_indent
-/src/post_modules/JSON/json_array.c mixed_indent
-/src/post_modules/JSON/json_mapping.c mixed_indent
-/src/post_modules/JSON/json_number.c mixed_indent
-/src/post_modules/JSON/json_parser.c mixed_indent
-/src/post_modules/JSON/json_string.c mixed_indent
-/src/post_modules/JSON/json_string_utf8.c mixed_indent
 /src/post_modules/JSON/rl/json_array.rl mixed_indent
 /src/post_modules/JSON/rl/json_mapping.rl mixed_indent
 /src/post_modules/JSON/rl/json_number.rl mixed_indent
@@ -955,12 +961,6 @@ Makefile.rl -space_indent tab_indent
 /src/post_modules/JSON/testsuite.in mixed_indent
 /src/post_modules/JSON5/JSON5.pmod.in mixed_indent
 /src/post_modules/JSON5/json5.cmod mixed_indent
-/src/post_modules/JSON5/json5_array.c mixed_indent
-/src/post_modules/JSON5/json5_mapping.c mixed_indent
-/src/post_modules/JSON5/json5_number.c mixed_indent
-/src/post_modules/JSON5/json5_parser.c mixed_indent
-/src/post_modules/JSON5/json5_string.c mixed_indent
-/src/post_modules/JSON5/json5_string_utf8.c mixed_indent
 /src/post_modules/JSON5/rl/json5_array.rl mixed_indent
 /src/post_modules/JSON5/rl/json5_defaults.rl mixed_indent
 /src/post_modules/JSON5/rl/json5_mapping.rl mixed_indent
@@ -1048,8 +1048,6 @@ Makefile.rl -space_indent tab_indent
 /src/test_gc.pike mixed_indent
 /src/test_resolve.pike mixed_indent
 /src/testsuite.in mixed_indent
-/src/threads.c mixed_indent
-/src/threads.h mixed_indent
 /src/time_stuff.h mixed_indent
 /src/treeopt.in mixed_indent
 /src/uncompressor.c mixed_indent

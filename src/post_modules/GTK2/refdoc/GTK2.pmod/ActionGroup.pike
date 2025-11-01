@@ -1,3 +1,6 @@
+// Automatically generated from "gtkactiongroup.pre".
+// Do NOT edit.
+
 //! Actions are organized into groups.  An action group is essentially a map
 //! from names to GTK2.Action objects.
 //! 
@@ -33,6 +36,7 @@
 //!
 
 inherit G.Object;
+//!
 
 GTK2.ActionGroup add_action( GTK2.Action action, string|void accelerator );
 //! Adds an action object to the action group and sets up the accelerator.
@@ -95,7 +99,7 @@ GTK2.ActionGroup add_toggle_actions( array entries );
 //!
 //!
 
-protected GTK2.ActionGroup create( string|mapping name_or_props );
+protected void create( void name_or_props );
 //! Creates a new GTK2.ActionGroup object.  The name of the action group is
 //! used when associating keybindings with the actions.
 //!

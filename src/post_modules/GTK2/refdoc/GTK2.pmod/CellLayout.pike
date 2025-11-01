@@ -1,3 +1,6 @@
+// Automatically generated from "gtkcelllayout.pre".
+// Do NOT edit.
+
 //! An interface for packing cells.
 //!
 //!

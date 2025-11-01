@@ -8,7 +8,7 @@
 #define CYCLIC_H
 
 #include "pike_error.h"
-#include "threads.h"
+#include "pike_threads.h"
 
 /* #define CYCLIC_DEBUG */
 

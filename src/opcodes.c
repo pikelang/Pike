@@ -253,7 +253,7 @@ const char *low_get_f_name(int n, struct program *p)
   {
     if ((n >= F_OFFSET) && instrs[n-F_OFFSET].name)
       return instrs[n-F_OFFSET].name;
-    sprintf(buf, "<OTHER %d>", n);
+    snprintf(buf, sizeof(buf), "<OTHER %d>", n);
     return buf;
   }
 
@@ -265,7 +265,7 @@ const char *low_get_f_name(int n, struct program *p)
     return p->constants[n-F_MAX_OPCODE].sval.u.efun->name->str;
   }
 
-  sprintf(buf, "Call efun %d", n - F_MAX_OPCODE);
+  snprintf(buf, sizeof(buf), "Call efun %d", n - F_MAX_OPCODE);
   return buf;
 }
 
@@ -285,9 +285,9 @@ const char *get_token_name(int n)
   {
     return instrs[n-F_OFFSET].name;
   } else if ((n >= ' ') && (n <= 0x7f)) {
-    sprintf(buf, "<OTHER '%c'>", n);
+    snprintf(buf, sizeof(buf), "<OTHER '%c'>", n);
   }else{
-    sprintf(buf, "<OTHER %d>", n);
+    snprintf(buf, sizeof(buf), "<OTHER %d>", n);
   }
   return buf;
 }

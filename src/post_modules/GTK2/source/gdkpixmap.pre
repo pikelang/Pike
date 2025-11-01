@@ -58,7 +58,7 @@ void create(int|object image)
     if (f)
       g_object_unref(i);
   } else if (args && TYPEOF(Pike_sp[-1]) == PIKE_T_INT) {
-    gp=gdk_pixmap_foreign_new(Pike_sp[-1].u.integer);
+    gp=gdk_pixmap_foreign_new((GdkNativeWindow)(ptrdiff_t)Pike_sp[-1].u.integer);
     THIS->obj=G_OBJECT(gp);
     if (!THIS->obj)
       Pike_error("Failed to find remote pixmap\n");

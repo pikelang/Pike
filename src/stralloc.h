@@ -350,9 +350,9 @@ PMOD_EXPORT int c_compare_string(const struct pike_string *s,
                                  const char *foo, int len) ATTRIBUTE((pure));
 PMOD_EXPORT ptrdiff_t my_quick_strcmp(const struct pike_string *a,
 				      const struct pike_string *b) ATTRIBUTE((pure));
-struct pike_string *realloc_unlinked_string(struct pike_string *a,
+struct pike_string *debug_realloc_unlinked_string(struct pike_string *a,
                                             ptrdiff_t size);
-struct pike_string *new_realloc_shared_string(struct pike_string *a, INT32 size, enum size_shift shift) ATTRIBUTE((malloc));
+struct pike_string *debug_new_realloc_shared_string(struct pike_string *a, INT32 size, enum size_shift shift) ATTRIBUTE((malloc));
 struct pike_string *modify_shared_string(struct pike_string *a,
                                          INT32 position,
                                          INT32 c);
@@ -530,6 +530,11 @@ static inline enum size_shift PIKE_UNUSED_ATTRIBUTE min_magnitude(const unsigned
 #define make_shared_binary_pcharp(X,Y) \
  ((struct pike_string *)debug_malloc_pass(debug_make_shared_binary_pcharp((X),(Y))))
 
+#define realloc_unlinked_string(A, SZ) \
+  ((struct pike_string *)debug_malloc_pass(debug_realloc_unlinked_string(debug_malloc_pass(A),(SZ))))
+#define new_realloc_shared_string(A, SZ, SHIFT) \
+  ((struct pike_string *)debug_malloc_pass(debug_new_realloc_shared_string(debug_malloc_pass(A),(SZ), (SHIFT))))
+
 #else
 #define make_shared_string(s) (STATIC_IS_CONSTANT(s)                                     \
                                ? make_shared_static_string(s, strlen(s), eightbit)       \
@@ -552,6 +557,9 @@ static inline enum size_shift PIKE_UNUSED_ATTRIBUTE min_magnitude(const unsigned
 
 #define make_shared_pcharp debug_make_shared_pcharp
 #define make_shared_binary_pcharp debug_make_shared_binary_pcharp
+
+#define realloc_unlinked_string debug_realloc_unlinked_string
+#define new_realloc_shared_string debug_new_realloc_shared_string
 
 #endif
 

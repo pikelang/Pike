@@ -8,8 +8,27 @@
 #include "config.h"
 
 #ifdef HAVE_LIBFT2
+
+#include "pike_compiler.h"
+#include "pike_error.h"
+#include "pike_macros.h"
+#include "constants.h"
+#include "interpret.h"
+#include "pike_threads.h"
+#include "builtin_functions.h"
+#include "module_support.h"
+#include "operators.h"
+#include "sprintf.h"
+#include "../Image/image.h"
+
 /* Freetype 2.6 defines a conflicting TYPEOF() macro. */
 #undef TYPEOF
+
+/* Some versions of Freetype define a SIZEOF_LONG that may be invalid.
+ * Seen with /usr/sfw/include/freetype2/freetype/config/ftconfig.h
+ * on Solaris 10.
+ */
+#undef SIZEOF_LONG
 
 #ifndef HAVE_FT_FT2BUILD
 #include <freetype/freetype.h>
@@ -22,22 +41,14 @@
 #include FT_TRUETYPE_IDS_H
 #endif
 
+#undef SIZEOF_LONG
+/* Bad values for SIZEOF_LONG may cause bad values for FT_INT64. */
+#undef FT_INT64
+
 /* Restore the Pike TYPEOF() macro. */
 #undef TYPEOF
 #define TYPEOF(SVAL)	PIKE_TYPEOF(SVAL)
 #endif /* HAVE_LIBFT2 */
-
-#include "pike_compiler.h"
-#include "pike_error.h"
-#include "pike_macros.h"
-#include "constants.h"
-#include "interpret.h"
-#include "threads.h"
-#include "builtin_functions.h"
-#include "module_support.h"
-#include "operators.h"
-#include "sprintf.h"
-#include "../Image/image.h"
 
 
 #ifdef HAVE_LIBFT2

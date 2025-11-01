@@ -1,3 +1,6 @@
+// Automatically generated from "gtkiconview.pre".
+// Do NOT edit.
+
 //! GTK2.IconView provides an alternative view on a list model.  It
 //! displays the model as a grid of icons with labels.  Like GTK2.TreeView,
 //! it allows to select one or multiple items (depending on the selection
@@ -44,8 +47,9 @@
 //!
 
 inherit GTK2.Container;
+//!
 
-protected GTK2.IconView create( GTK2.TreeModel model_or_props );
+protected void create( void model_or_props );
 //! Creates a new GTK2.IconView widget
 //! Not implemented yet.
 //!

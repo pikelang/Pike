@@ -23,7 +23,7 @@
 #include "pike_error.h"
 #include "signal_handler.h"
 #include "pike_types.h"
-#include "threads.h"
+#include "pike_threads.h"
 #include "bignum.h"
 
 #include "module_support.h"
@@ -70,14 +70,6 @@
 #endif
 
 #endif /* HAVE_POLL */
-
-#if ! defined(EWOULDBLOCK) && defined(WSAEWOULDBLOCK)
-#define EWOULDBLOCK WSAEWOULDBLOCK
-#endif
-#if ! defined(EADDRINUSE) && defined(WSAEADDRINUSE)
-#define EADDRINUSE WSAEADDRINUSE
-#endif
-
 
 #ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
@@ -944,9 +936,6 @@ void udp_read(INT32 args)
   {
     switch(e)
     {
-#ifdef WSAEBADF
-       case WSAEBADF:
-#endif
        case EBADF:
 	  if (THIS->box.backend)
 	    set_fd_callback_events (&THIS->box, 0, 0);
@@ -1437,7 +1426,9 @@ static void udp_query_address(INT32 args)
   strncpy(buffer,q,sizeof(buffer)-20);
   buffer[sizeof(buffer)-20]=0;
 #endif
-  sprintf(buffer+strlen(buffer)," %d",(int)(ntohs(addr.ipv4.sin_port)));
+  len = strlen(buffer);
+  snprintf(buffer + len, sizeof(buffer) - len,
+           " %d", (int)(ntohs(addr.ipv4.sin_port)));
 
   /* NOTE: IPv6-mapped IPv4 addresses may only connect to other IPv4 addresses.
    *
@@ -1471,7 +1462,7 @@ static void udp_query_address(INT32 args)
  *!   IP and UDP headers, so that it should be usable without
  *!   further adjustment unless further IP options are in use.
  */
-static void udp_query_mtu(INT32 args)
+static void udp_query_mtu(INT32 UNUSED(args))
 {
   int mtu = -1;
   PIKE_SOCKADDR addr;

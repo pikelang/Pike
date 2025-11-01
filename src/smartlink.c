@@ -8,7 +8,7 @@
  * smartlink - A smarter linker.
  * Based on the /bin/sh script smartlink 1.23.
  *
- * Henrik Grubbstr�m 1999-03-04
+ * Henrik Grubbström 1999-03-04
  */
 
 #ifdef __MINGW32__
@@ -80,7 +80,7 @@ int main(int argc, char **argv)
   int i;
   int buf_size;
   char *path;
-  char *buffer;
+  char *buffer = NULL;
   char *lpath;
   char *rpath;
   int rpath_in_use = 0;
@@ -100,6 +100,7 @@ int main(int argc, char **argv)
   int n32 = 0;
   int linking = 1;	/* Maybe */
   int compiling = 1;	/* Maybe */
+  int is_ld = 0;
 
   prog_name = argv[0];
 
@@ -162,6 +163,7 @@ int main(int argc, char **argv)
   /* 50 rpath args should be enough... */
     if (!(darwin_argv = malloc(sizeof(char *)*(argc + 50)))) {
     fatal("Out of memory (6)!\n");
+    darwin_arg[0] = 0;
   }
 #endif
 
@@ -187,6 +189,12 @@ int main(int argc, char **argv)
   if (!strcmp(argv[1], "cpp")) {
     /* Not linking */
     linking = 0;
+  }
+
+  {
+    int len=strlen(argv[1]);
+    if(len > 1 && argv[1][len-2]=='l' && argv[1][len-1]=='d')
+      is_ld = 1;
   }
 
   /* NOTE: Skip arg 1 */
@@ -219,6 +227,7 @@ int main(int argc, char **argv)
            {
              fatal("Out of memory (7)!\n");
            }
+           darwin_arg[0] = 0;
            darwin_arg = strcat(darwin_arg, "-Wl,-rpath,");
            darwin_arg = strcat(darwin_arg, argv[i]);
            darwin_argv[darwin_argc++] = darwin_arg;
@@ -231,6 +240,7 @@ int main(int argc, char **argv)
           {
             fatal("Out of memory (7.5)!\n");
           }
+          darwin_arg[0] = 0;
           darwin_arg = strcat(darwin_arg, "-Wl,-rpath,");
           darwin_arg = strcat(darwin_arg, argv[i] + 2);
           darwin_argv[darwin_argc++] = darwin_arg;
@@ -246,7 +256,26 @@ int main(int argc, char **argv)
 		 (!argv[i][2])) {
 	/* Not linking */
 	linking = 0;
+#ifndef USE_Wl
+      }	else if (is_ld && (argv[i][1] == 'W') && (argv[i][2] == 'l') &&
+                 (argv[i][3] == ',')) {
+        /* This code strips '-Wl,' from arguments if the
+         * linker is '*ld'
+         */
+        char *ptr;
+        new_argv[new_argc++] = argv[i] + 4;
+
+        while((ptr = strchr(new_argv[new_argc-1], ',')))
+        {
+          int e;
+          *ptr=0;
+          new_argv[new_argc++] = ptr+1;
+          i++;
+        }
+        continue;	/* Now handled. */
+#endif
       }
+
     } else {
       int len = strlen(argv[i]);
       if (((len > 2) &&
@@ -288,37 +317,6 @@ int main(int argc, char **argv)
       new_argv[new_argc++] = new_argv[i];
     }
   }
-
-#ifndef USE_Wl
-  /* This code strips '-Wl,' from arguments if the
-   * linker is '*ld'
-   */
-  if(linking)
-  {
-    int len=strlen(argv[1]);
-    if(strchr(argv[1],' ')) len=strchr(argv[1],' ') - argv[1];
-    if(len > 1 && argv[1][len-2]=='l' && argv[1][len-1]=='d')
-    {
-      for(i=2; i<argc; i++) {
-	if (new_argv[i][0] == '-' && new_argv[i][1]=='W' &&
-	    new_argv[i][2]=='l' && new_argv[i][3]==',')
-	{
-	  char *ptr;
-	  new_argv[i]=new_argv[i]+4;
-
-	  while((ptr=strchr(new_argv[i],',')))
-	  {
-	    int e;
-	    *ptr=0;
-	    for(e=argc;e>=i;e--) new_argv[e+1]=new_argv[e];
-	    new_argv[i+1]=ptr+1;
-	    i++;
-	  }
-	}
-      }
-    }
-  }
-#endif
 
   if (n32) {
     i = new_argc++;
@@ -421,6 +419,19 @@ int main(int argc, char **argv)
       }
     }
   }
+
+#ifdef USE_OSX_TWOLEVEL_NAMESPACE
+  /* NB: Configure has determined that the OS is Darwin 7 or later. */
+#define TOSTR(X)        #X
+#define DEFINETOSTR(X)  TOSTR(X)
+
+  if (!getenv("MACOSX_DEPLOYMENT_TARGET")) {
+    if (putenv("MACOSX_DEPLOYMENT_TARGET="
+               DEFINETOSTR(USE_OSX_TWOLEVEL_NAMESPACE))) {
+      fatal("Out of memory (8)!\n");
+    }
+  }
+#endif
 
   if (getenv("SMARTLINK_DEBUG")) {
     int i = 0;

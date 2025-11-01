@@ -1,8 +1,14 @@
+// Automatically generated from "gtkpatterntag.pre".
+// Do NOT edit.
+
+//!
+//!
 //!
 
 inherit GTK2.SourceTag;
+//!
 
-protected GTK2.PatternTag create( string id, string name, string pattern );
+protected void create( void id, void name, void pattern );
 //! Creates a new pattern tag object with the provided arguments.
 //!
 //!

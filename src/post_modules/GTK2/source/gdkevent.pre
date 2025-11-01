@@ -7,7 +7,7 @@ class GDK2.Event;
 #define GTK_GDKEVENT(X) ((GdkEvent *)X)
 
 #define RETURN_NIL() do{ pgtk2_pop_n_elems( args );push_undefined();return; } while(0)
-#define RETURN_INT(X) do { pgtk2_pop_n_elems( args );push_int( X ); return; } while(0)
+#define RETURN_INT(X) do { pgtk2_pop_n_elems( args );push_int64( X ); return; } while(0)
 #define RETURN_FLOAT(X) do { pgtk2_pop_n_elems( args );push_float( X ); return; } while(0)
 #define REF_RETURN_STRING(X) do { pgtk2_pop_n_elems( args );ref_push_string( X ); return; } while(0)
 #define RETURN_STRING(X) do { pgtk2_pop_n_elems( args );push_string( X ); return; } while(0)
@@ -149,7 +149,9 @@ mixed _index(string ind)
      if( is_same_string(index,_STR("selection")) ) RETURN_ATOM( e->selection.selection );
      if( is_same_string(index,_STR("target")) ) RETURN_ATOM( e->selection.target );
      if( is_same_string(index,_STR("property")) ) RETURN_ATOM( e->selection.property );
-     if( is_same_string(index,_STR("requestor")) ) RETURN_INT( e->selection.requestor );
+     if( is_same_string(index,_STR("requestor")) ) {
+       RETURN_INT( (ptrdiff_t)e->selection.requestor );
+     }
      break;
 
    case GDK_PROXIMITY_IN:
@@ -247,6 +249,17 @@ mixed _index(string ind)
      if( index == literal_type_string ) REF_RETURN_STRING(_STR("setting"));
      if( is_same_string(index,_STR("keyboard")) ) RETURN_INT(e->grab_broken.keyboard);
      if( is_same_string(index,_STR("implicit")) ) RETURN_INT(e->grab_broken.implicit);
+     break;
+#endif
+#ifdef HAVE_GTK214
+   case GDK_DAMAGE:
+     if( index == literal_type_string ) REF_RETURN_STRING(_STR("damage"));
+     break;
+#endif
+#ifdef HAVE_GTK218
+   case GDK_EVENT_LAST:
+     /* Typically not reached, but... */
+     if( index == literal_type_string ) REF_RETURN_STRING(_STR("event_last"));
      break;
 #endif
   }
@@ -422,7 +435,7 @@ mapping cast(string to)
      ref_push_string(_STR("selection")); push_atom( e->selection.selection );
      ref_push_string(_STR("target"));    push_atom( e->selection.target );
      ref_push_string(_STR("property"));  push_atom( e->selection.property );
-     ref_push_string(_STR("requestor")); push_int( e->selection.requestor );
+     ref_push_string(_STR("requestor")); push_int64( (ptrdiff_t)e->selection.requestor );
      break;
 
    case GDK_PROXIMITY_IN:
@@ -488,6 +501,36 @@ mapping cast(string to)
      ref_push_string(_STR("context"));push_gdkobject( e->dnd.context, drag_context, 0);
      break;
 
+  case GDK_SCROLL:
+     ref_push_string(literal_type_string); ref_push_string(_STR("scroll"));
+     break;
+  case GDK_WINDOW_STATE:
+     ref_push_string(literal_type_string); ref_push_string(_STR("window_state"));
+     break;
+  case GDK_SETTING:
+     ref_push_string(literal_type_string); ref_push_string(_STR("setting"));
+     break;
+#ifdef HAVE_GTK26
+  case GDK_OWNER_CHANGE:
+     ref_push_string(literal_type_string); ref_push_string(_STR("owner_change"));
+     break;
+#endif
+#ifdef HAVE_GTK28
+  case GDK_GRAB_BROKEN:
+     ref_push_string(literal_type_string); ref_push_string(_STR("grab_broken"));
+     break;
+#endif
+#ifdef HAVE_GTK214
+  case GDK_DAMAGE:
+     ref_push_string(literal_type_string); ref_push_string(_STR("damage"));
+     break;
+#endif
+#ifdef HAVE_GTK218
+  case GDK_EVENT_LAST:
+     /* Typically not reached, but... */
+     ref_push_string(literal_type_string); ref_push_string(_STR("event_last"));
+     break;
+#endif
   }
   f_aggregate_mapping( Pike_sp - osp );
 }

@@ -1727,19 +1727,15 @@ test_any(_ADT.CircularList l = _ADT.CircularList(({1,2,3,4}));
 
 ************************ test has_next **********************************
 
-test_true(_ADT.CircularList.CircularListIterator i =
-	  get_iterator(_ADT.CircularList(({1,2,3,4})))->has_next())
+test_true(get_iterator(_ADT.CircularList(({1,2,3,4})))->has_next())
 
 
-test_false(_ADT.CircularList.CircularListIterator i =
-	   (get_iterator(_ADT.CircularList(({1,2,3,4}))) - 1)->has_next())
+test_false((get_iterator(_ADT.CircularList(({1,2,3,4}))) - 1)->has_next())
 
 
-test_true(_ADT.CircularList.CircularListIterator i =
-	  get_iterator(_ADT.CircularList(({1,2,3,4})))->has_next(2))
+test_true(get_iterator(_ADT.CircularList(({1,2,3,4})))->has_next(2))
 
-test_false(_ADT.CircularList.CircularListIterator i =
-	  get_iterator(_ADT.CircularList(({1,2,3,4})))->has_next(5))
+test_false(get_iterator(_ADT.CircularList(({1,2,3,4})))->has_next(5))
 
 
 test_any(_ADT.CircularList.CircularListIterator i =
@@ -1767,8 +1763,7 @@ test_any(_ADT.CircularList l = _ADT.CircularList(10);
 ********************** test has_previous *********************************
 
 
-test_true(_ADT.CircularList.CircularListIterator i =
-	  get_iterator(_ADT.CircularList(({1,2,3,4})))->has_previous())
+test_true(get_iterator(_ADT.CircularList(({1,2,3,4})))->has_previous())
 
 
 test_any(_ADT.CircularList.CircularListIterator i =
@@ -1777,12 +1772,10 @@ test_any(_ADT.CircularList.CircularListIterator i =
 	   return i->has_previous(), 0)
 
 
-test_true(_ADT.CircularList.CircularListIterator i =
-	  get_iterator(_ADT.CircularList(({1,2,3,4})))->has_previous(2))
+test_true(get_iterator(_ADT.CircularList(({1,2,3,4})))->has_previous(2))
 
 
-test_false(_ADT.CircularList.CircularListIterator i =
-	   get_iterator(_ADT.CircularList(({1,2,3,4})))->has_previous(5))
+test_false(get_iterator(_ADT.CircularList(({1,2,3,4})))->has_previous(5))
 
 
 test_any(_ADT.CircularList.CircularListIterator i =

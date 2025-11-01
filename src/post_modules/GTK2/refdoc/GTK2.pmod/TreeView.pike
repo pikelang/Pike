@@ -1,3 +1,6 @@
+// Automatically generated from "gtktreeview.pre".
+// Do NOT edit.
+
 //! Properties:
 //! int enable-search
 //! GTK2.TreeViewColumn expander-column
@@ -60,6 +63,7 @@
 //!
 
 inherit GTK2.Container;
+//!
 
 GTK2.TreeView append_column( GTK2.TreeViewColumn column );
 //! Appends column to the list of columns.  If this tree view has
@@ -115,12 +119,12 @@ mapping convert_widget_to_tree_coords( int wx, int wy );
 //!
 //!
 
-protected GTK2.TreeView create( GTK2.TreeModel model_or_props );
+protected void create( void model_or_props );
 //! Create a new W(TreeView), with or without a default model.
 //!
 //!
 
-GTK2.GdkPixmap create_row_drag_icon( GTK2.TreePath path );
+GDK2.Pixmap create_row_drag_icon( GTK2.TreePath path );
 //! Creates a GDK2.Pixmap representation of the row at path.  This image is
 //! used for a drag icon.
 //!
@@ -152,7 +156,7 @@ GTK2.TreeView expand_to_path( GTK2.TreePath path );
 //!
 //!
 
-GTK2.GdkRectangle get_background_area( GTK2.TreePath path, GTK2.TreeViewColumn column );
+GDK2.Rectangle get_background_area( GTK2.TreePath path, GTK2.TreeViewColumn column );
 //! Similar to get_cell_area().  The returned rectangle is equivalent to the
 //! background_area passed to GTK2.CellRenderer->render().  These background
 //! area tiles to cover the entire tree window (except for the area used for
@@ -161,14 +165,14 @@ GTK2.GdkRectangle get_background_area( GTK2.TreePath path, GTK2.TreeViewColumn c
 //!
 //!
 
-GTK2.GdkWindow get_bin_window( );
+GDK2.Window get_bin_window( );
 //! Returns the window that this view renders to.  This is used primarily to
 //! compare to event->window to confirm that the event on this view is on the
 //! right window.
 //!
 //!
 
-GTK2.GdkRectangle get_cell_area( GTK2.TreePath path, GTK2.TreeViewColumn column );
+GDK2.Rectangle get_cell_area( GTK2.TreePath path, GTK2.TreeViewColumn column );
 //! Fills the bounding rectangle in tree window coordinates for the cell at
 //! the row specified by path and the column specified by column.  If path is
 //! omitted or 0, or points to a path not currently displayed, the y and
@@ -342,7 +346,7 @@ array get_visible_range( );
 //!
 //!
 
-GTK2.GdkRectangle get_visible_rect( );
+GDK2.Rectangle get_visible_rect( );
 //! Returns a GDK2.Rectangle with the currently-visible region of the buffer,
 //! in tree coordinates.  Conver to widget coordinates with 
 //! tree_to_widget_coords().  Tree coordinates start at 0,0 for row 0 of the
@@ -579,6 +583,12 @@ GTK2.TreeView set_vadjustment( GTK2.Adjustment vadj );
 //!
 //!
 
+mapping tree_to_widget_coords( int tx, int ty );
+//! Converts tree coordinates (coordinates in full scrollable area of the tree)
+//! to widget coordinates.
+//!
+//!
+
 GTK2.TreeView unset_rows_drag_dest( );
 //! Undoes the effect of enable_model_drag_dest().
 //!
@@ -586,5 +596,11 @@ GTK2.TreeView unset_rows_drag_dest( );
 
 GTK2.TreeView unset_rows_drag_source( );
 //! Undoes the effect of enable_model_drag_source().
+//!
+//!
+
+mapping widget_to_tree_coords( int wx, int wy );
+//! converts widget coordinates to coordinates for the tree window (the full
+//! scrollable area of the tree).
 //!
 //!

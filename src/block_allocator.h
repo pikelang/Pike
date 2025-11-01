@@ -1,3 +1,4 @@
+/* -*- mode: C; c-basic-offset: 4; -*- */
 /*
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
@@ -15,9 +16,13 @@ struct ba_layout {
     unsigned INT32 offset;
     unsigned INT32 block_size;
     unsigned INT32 blocks;
+    unsigned INT32 inverse_block_size;
 };
 
-#define BA_LAYOUT_INIT(block_size, blocks)  { 0, (block_size), (blocks) }
+#define BA_LAYOUT_INIT(block_size, blocks)  {                       \
+        0, (block_size), (blocks),                                  \
+        (unsigned INT32)((((unsigned INT64)1)<<32)/(block_size))    \
+    }
 
 struct ba_page_header {
     struct ba_block_header * first;

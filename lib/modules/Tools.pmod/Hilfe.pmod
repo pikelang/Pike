@@ -819,9 +819,14 @@ local {
 protected constant whitespace = (< ' ', '\n' ,'\r', '\t' >);
 protected constant termblock = (< "catch", "do", "gauge", "lambda",
                                   "class stop" >);
-protected constant modifier = (< "extern", "final", "inline", "local",
-                                 "optional", "private", "protected",
-                                 "public", "static", "variant", "deprecated" >);
+protected constant unsupported_modifier = (<
+  "extern", "final", "inline", "local",
+  "optional", "private", "protected",
+  "public", "static", "variant", "deprecated",
+>);
+protected constant supported_modifier = (<
+  "__generator__", "__async__",
+>);
 
 protected constant types = (< "string", "int", "float", "array", "mapping",
                               "multiset", "mixed", "object", "program",
@@ -975,7 +980,7 @@ class Expression {
   //!   contains a forbidden modifier, otherwise @expr{0@}.
   string|zero check_modifiers() {
     foreach(sort(values(positions)), int pos)
-      if(modifier[tokens[pos]])
+      if(unsupported_modifier[tokens[pos]])
 	return "Hilfe Error: Modifier \"" + tokens[pos] +
 	  "\" not allowed on top level in Hilfe.\n";
       else
@@ -993,6 +998,10 @@ class Expression {
   //! token or tokens from @[position] can not be a type declaration.
   int(-1..) endoftype(int(-1..) position) {
     string t = `[](position);
+    while(supported_modifier[t]) {
+      position++;
+      t = `[](position);
+    }
     if(types[ t ] ) {
       // We are in a type declaration.
       position++;
@@ -1368,7 +1377,7 @@ protected class ParserState(Evaluator evaluator) {
 //! accessible both from __ and ___Hilfe->history in Hilfe expressions.
 protected class HilfeHistory {
 
-  inherit ADT.History;
+  inherit ADT.History (< mixed >);
 
   // Add content overview
   string status() {

@@ -187,7 +187,7 @@ class simple
   //! @seealso
   //! @[send()], @[disconnect()]
   //!
-  ADT.Queue send_q = ADT.Queue();
+  ADT.Queue(<string|zero>) send_q = ADT.Queue(<string|zero>)();
 
   protected string write_buffer = "";
   protected void write_callback(mixed ignored)

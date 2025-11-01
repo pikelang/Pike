@@ -232,7 +232,11 @@ PMOD_EXPORT void o_cast_to_int(void)
         Pike_error("Can't cast infinites or NaN to int.\n");
       /* should perhaps convert to Int.Inf now that we have them? */
 
-      if (UNLIKELY(f > MAX_INT_TYPE || f < MIN_INT_TYPE)) {
+      /* Note: MAX_INT_TYPE may contain more 1:s than will fit in the
+         mantissa of FLOAT_TYPE.  Use MAX_INT_TYPE+1 instead to get a
+         power of two (zero mantissa bits needed).  This works because
+         if f is e.g. MAX_INT_TYPE+0.9 it gets rounded down anyway.  */
+      if (UNLIKELY(f >= 1+(unsigned INT_TYPE)MAX_INT_TYPE || f < MIN_INT_TYPE)) {
         convert_stack_top_to_bignum();
       } else {
         SET_SVAL(Pike_sp[-1], T_INT, NUMBER_NUMBER, integer, f);
@@ -380,7 +384,7 @@ PMOD_EXPORT void o_cast_to_string(void)
   case T_FLOAT:
     {
       char buf[MAX_FLOAT_SPRINTF_LEN+1];
-      format_pike_float (buf, Pike_sp[-1].u.float_number);
+      format_pike_float(buf, sizeof(buf), Pike_sp[-1].u.float_number);
       s = make_shared_string(buf);
       break;
     }
@@ -5904,11 +5908,16 @@ void init_operators(void)
   ADD_EFUN2("`!",f_not,tFuncV(tMix,tVoid,tInt01),
 	    OPT_TRY_OPTIMIZE,optimize_not,generate_not);
 
-#define CMP_TYPE "!function(!(object|mixed)...:mixed)&function(mixed...:int(0..1))|function(int|float...:int(0..1))|function(string...:int(0..1))|function(type|program,type|program,type|program...:int(0..1))"
-  add_efun2("`<", f_lt,CMP_TYPE,OPT_TRY_OPTIMIZE,0,generate_comparison);
-  add_efun2("`<=",f_le,CMP_TYPE,OPT_TRY_OPTIMIZE,0,generate_comparison);
-  add_efun2("`>", f_gt,CMP_TYPE,OPT_TRY_OPTIMIZE,0,generate_comparison);
-  add_efun2("`>=",f_ge,CMP_TYPE,OPT_TRY_OPTIMIZE,0,generate_comparison);
+#define CMP_TYPE tOr4(tIfexists(tMix, tFuncV(tNone, tMix, tInt01)), \
+                      tFuncV(tNone, tOr(tInt, tFloat), tInt01),     \
+                      tFuncV(tNone, tStr, tInt01),                  \
+                      tFuncV(tOr(tType(tMix), tPrg(tObj))           \
+                             tOr(tType(tMix), tPrg(tObj)),          \
+                             tOr(tType(tMix), tPrg(tObj)), tInt01))
+  ADD_EFUN2("`<", f_lt, CMP_TYPE, OPT_TRY_OPTIMIZE, 0, generate_comparison);
+  ADD_EFUN2("`<=", f_le, CMP_TYPE, OPT_TRY_OPTIMIZE, 0, generate_comparison);
+  ADD_EFUN2("`>", f_gt, CMP_TYPE, OPT_TRY_OPTIMIZE, 0, generate_comparison);
+  ADD_EFUN2("`>=", f_ge, CMP_TYPE, OPT_TRY_OPTIMIZE, 0, generate_comparison);
 
   ADD_EFUN2("`+", f_add,
 	    tTransitive(tFunc(tSetvar(0, tOr7(tObj, tInt, tFloat, tStr,

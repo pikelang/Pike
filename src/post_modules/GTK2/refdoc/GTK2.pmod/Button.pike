@@ -1,3 +1,6 @@
+// Automatically generated from "gtkbutton.pre".
+// Do NOT edit.
+
 //! A container that can only contain one child, and accepts events.
 //! draws a bevelbox around itself.
 //!@expr{ GTK2.Button("A button")@}
@@ -55,15 +58,17 @@
 //!
 
 inherit GTK2.Bin;
+//!
 
 inherit GTK2.Activatable;
+//!
 
 GTK2.Button clicked( );
 //! Emulate a 'clicked' event (press followed by release).
 //!
 //!
 
-protected GTK2.Button create( string|mapping label_or_props );
+protected void create( void label_or_props );
 //! If a string is supplied, a W(Label) is created and added to the button.
 //!
 //!

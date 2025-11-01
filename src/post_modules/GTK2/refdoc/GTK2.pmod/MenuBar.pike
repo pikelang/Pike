@@ -1,3 +1,6 @@
+// Automatically generated from "gtkmenubar.pre".
+// Do NOT edit.
+
 //! Basically a horizontal W(Menu).
 //! The menu image cannot be
 //! grabbed automatically, but this is how you would create a menu all
@@ -17,8 +20,9 @@
 //!
 
 inherit GTK2.MenuShell;
+//!
 
-protected GTK2.MenuBar create( mapping|void props );
+protected void create( void props );
 //! Create a new menu bar.
 //!
 //!

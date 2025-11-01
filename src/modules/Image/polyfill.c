@@ -12,7 +12,7 @@
 
 #include "interpret.h"
 #include "svalue.h"
-#include "threads.h"
+#include "pike_threads.h"
 
 #include "image.h"
 

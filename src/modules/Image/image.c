@@ -113,7 +113,7 @@
 #include "interpret.h"
 #include "gc.h"
 #include "svalue.h"
-#include "threads.h"
+#include "pike_threads.h"
 #include "array.h"
 #include "pike_error.h"
 #include "module_support.h"

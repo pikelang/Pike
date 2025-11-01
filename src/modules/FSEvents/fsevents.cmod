@@ -12,18 +12,26 @@
 
 #include "module.h"
 #include "interpret.h"
-#include "threads.h"
+#include "pike_threads.h"
 #include "pike_types.h"
 #include "builtin_functions.h"
+#include "bignum.h"
 
 #include "fsevents_config.h"
 
 #define ADD_ICONST(name) do {                   \
         add_integer_constant(#name, name, 0);   \
-} while(0);
+} while(0)
+
+#define ADD_ULONGESTCONST(name) do {            \
+        struct svalue tmp;                      \
+        ulongest_to_svalue_no_free(&tmp, name); \
+        simple_add_constant(#name, &tmp, 0);    \
+        free_svalue(&tmp);                      \
+} while(0)
 
 #ifdef HAVE_FRAMEWORK_CORESERVICES
-#import <CoreServices/CoreServices.h>
+#include <CoreServices/CoreServices.h>
 #endif /* HAVE_FRAMEWORK_CORESERVICES */
 
 DECLARATIONS
@@ -56,7 +64,9 @@ static void event_callback(ConstFSEventStreamRef streamRef,
 
 PIKECLASS EventStream
 {
+#ifndef HAVE_FSEVENTSTREAMSETDISPATCHQUEUE
   CVAR CFRunLoopRef runLoop;
+#endif
   CVAR FSEventStreamRef stream;
   CVAR int isRunning;
   CVAR CFArrayRef _paths;
@@ -137,16 +147,17 @@ PIKEFUN void flush_sync()
  *! Flags that modify the behavior of the stream being created. See Apple's FSEvents documentation
  *! for details of the various flags available.
  */
-PIKEFUN void create(array paths, float latency, int|void sinceWhen, int|void flags)
+PIKEFUN void create(array paths, float latency, int|object(bignum)|void sinceWhen, int|void flags)
 {
   int idx = 0, cnt = 0;
+  INT64 sw;
 
   THIS->isRunning = 0;
   THIS->_latency = latency;
 
-  if(sinceWhen && TYPEOF(*sinceWhen) == T_INT)
+  if(sinceWhen && int64_from_svalue(&sw, sinceWhen))
   {
-    THIS->_sinceWhen = sinceWhen->u.integer;
+    THIS->_sinceWhen = sw;
   }
   else
   {
@@ -253,8 +264,10 @@ PIKEFUN void start()
 
   if(CFArrayGetCount(THIS->_paths))
   {
+#ifndef HAVE_FSEVENTSTREAMSETDISPATCHQUEUE
     THIS->runLoop = CFRunLoopGetCurrent();
     CFRetain(THIS->runLoop);
+#endif
 
     context.version = 0;
     context.info = THIS;
@@ -273,7 +286,11 @@ PIKEFUN void start()
     );
 
     THIS->isRunning = 1;
+#ifdef HAVE_FSEVENTSTREAMSETDISPATCHQUEUE
+    FSEventStreamSetDispatchQueue(THIS->stream, dispatch_get_main_queue());
+#else
     FSEventStreamScheduleWithRunLoop(THIS->stream, THIS->runLoop, kCFRunLoopDefaultMode);
+#endif
     FSEventStreamStart(THIS->stream);
   }
   else
@@ -295,10 +312,17 @@ void low_stop(void)
   if(THIS->isRunning)
   {
     FSEventStreamStop(THIS->stream);
+#ifdef HAVE_FSEVENTSTREAMSETDISPATCHQUEUE
+    // Apple docs say we should not do this before calling FSEventStreamInvalidate:
+    // FSEventStreamSetDispatchQueue(THIS->stream, NULL);
+#else
     FSEventStreamUnscheduleFromRunLoop(THIS->stream, THIS->runLoop, kCFRunLoopDefaultMode);
+#endif
 	FSEventStreamInvalidate(THIS->stream);
   	FSEventStreamRelease(THIS->stream);
+#ifndef HAVE_FSEVENTSTREAMSETDISPATCHQUEUE
     CFRelease(THIS->runLoop);
+#endif
     THIS->isRunning = 0;
   }
 }
@@ -357,7 +381,7 @@ static void do_event_callback(struct event_callback_ctx * ctx)
 	 push_string(str);
 	 f_utf8_to_string(1);
 	 push_int(ctx->eventFlags[cnt]);
-	 push_int(ctx->eventIds[cnt]);
+	 push_int64(ctx->eventIds[cnt]);
 	 eventStreamObj = (struct FSEvents_EventStream_struct *)(ctx->clientCallBackInfo);
  	 apply_svalue(&eventStreamObj->callback_func, 3);
   }
@@ -614,7 +638,7 @@ PIKE_MODULE_INIT
 #endif
 
 #if HAVE_DECL_KFSEVENTSTREAMEVENTIDSINCENOW
-  ADD_ICONST(kFSEventStreamEventIdSinceNow);
+  ADD_ULONGESTCONST(kFSEventStreamEventIdSinceNow);
 #endif
 
 }

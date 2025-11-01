@@ -1,3 +1,6 @@
+// Automatically generated from "gtkrange.pre".
+// Do NOT edit.
+
 //! The category of range widgets includes the ubiquitous scrollbar
 //! widget and the less common "scale" widget. Though these two types
 //! of widgets are generally used for different purposes, they are
@@ -71,6 +74,7 @@
 //!
 
 inherit GTK2.Widget;
+//!
 
 GTK2.Adjustment get_adjustment( );
 //! Gets the W(Adjustment) which is the "model" object for W(Range).

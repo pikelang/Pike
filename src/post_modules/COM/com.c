@@ -24,7 +24,7 @@
 #include "pike_memory.h"
 #include "pike_types.h"
 #include "gc.h"
-#include "threads.h"
+#include "pike_threads.h"
 #include "operators.h"
 #include "sprintf.h"
 
@@ -132,8 +132,8 @@ static void com_throw_error2(HRESULT hr, EXCEPINFO excep)
   if (hr==DISP_E_EXCEPTION && excep.bstrDescription)
   {
     push_utf16_text(excep.bstrDescription);
-    Pike_error("Server Error: Run-time error %d:\n\n %pS\n",
-	       excep.scode & 0x0000FFFF,  //Lower 16-bits of SCODE
+    Pike_error("Server Error: Run-time error %u:\n\n %pS\n",
+	       (unsigned)(excep.scode & 0x0000FFFF),  //Lower 16-bits of SCODE
                Pike_sp[-1].u.string);     //Text error description
   }
   else
@@ -200,18 +200,15 @@ static void set_variant_arg(VARIANT *v, struct svalue *sv)
 
       /* TODO: Convert array to SAFEARRAY ? */
     case PIKE_T_ARRAY:
-      Pike_error("Com: create_variant: Pike array can't be converted!\n",
-                 TYPEOF(*sv));
+      Pike_error("Com: create_variant: Pike array can't be converted!\n");
       break;
 
     case PIKE_T_MAPPING:
-      Pike_error("Com: create_variant: Pike mapping can't be converted!\n",
-                 TYPEOF(*sv));
+      Pike_error("Com: create_variant: Pike mapping can't be converted!\n");
       break;
 
     case PIKE_T_MULTISET:
-      Pike_error("Com: create_variant: Pike multiset can't be converted!\n",
-                 TYPEOF(*sv));
+      Pike_error("Com: create_variant: Pike multiset can't be converted!\n");
       break;
 
     default:
@@ -584,7 +581,7 @@ static void cval_push_result(INT32 args, int flags)
   return;
 }
 
-static void init_cval_struct(struct object *o)
+static void init_cval_struct(struct object *UNUSED(o))
 {
   struct cval_storage *cval = THIS_CVAL;
 
@@ -592,7 +589,7 @@ static void init_cval_struct(struct object *o)
   cval->method = NULL;
 }
 
-static void exit_cval_struct(struct object *o)
+static void exit_cval_struct(struct object *UNUSED(o))
 {
   struct cval_storage *cval = THIS_CVAL;
 
@@ -609,7 +606,7 @@ static void exit_cval_struct(struct object *o)
 }
 
 /*   ADD_FUNCTION("_value", f_cval_value, tFunc(tVoid,tMix), 0); */
-static void f_cval__value(INT32 args)
+static void f_cval__value(INT32 UNUSED(args))
 {
   cval_push_result(0, DISPATCH_PROPERTYGET);
 }
@@ -829,8 +826,8 @@ static void f_cval__sprintf(INT32 args)
   {
     case 'O':
       init_string_builder(&s, 0);
-      string_builder_sprintf(&s, "Com.cval(%pq %d %x)",
-			     cval->method, cval->dispid, cval->pIDispatch);
+      string_builder_sprintf(&s, "Com.cval(%pq %ld %px)",
+			     cval->method, (long)cval->dispid, cval->pIDispatch);
       push_string(finish_string_builder(&s));
       stack_pop_n_elems_keep_top(args);
       return;
@@ -849,12 +846,16 @@ static void f_cval__sprintf(INT32 args)
     case 's':
 /*     case 't': */
       p = buf;
-      p += sprintf(p, "%%%s", flag_left?"-":"");
+      p += snprintf(p, sizeof(buf),
+                    "%%%s", flag_left?"-":"");
       if (!width_undecided)
-        p += sprintf(p, "%d", width);
+        p += snprintf(p, sizeof(buf) - (p - buf),
+                      "%"PRINTPIKEINT"d", width);
       if (!precision_undecided)
-        p += sprintf(p, ".%d", precision);
-      p += sprintf(p, "%c", method);
+        p += snprintf(p, sizeof(buf) - (p - buf),
+                     ".%"PRINTPIKEINT"d", precision);
+      p += snprintf(p, sizeof(buf) - (p - buf),
+                    "%c", (char)method);
       push_text(buf);
 
       cval_push_result(0, DISPATCH_PROPERTYGET);
@@ -931,7 +932,7 @@ static void f_cobj_create(INT32 args)
 
 }
 
-static void init_cobj_struct(struct object *o)
+static void init_cobj_struct(struct object *UNUSED(o))
 {
   struct cobj_storage *cobj = THIS_COBJ;
 
@@ -939,7 +940,7 @@ static void init_cobj_struct(struct object *o)
   cobj->method_map = NULL;
 }
 
-static void exit_cobj_struct(struct object *o)
+static void exit_cobj_struct(struct object *UNUSED(o))
 {
   struct cobj_storage *cobj = THIS_COBJ;
 
@@ -1551,6 +1552,8 @@ char * GetTypeKindName( TYPEKIND typekind )
     CASE_STRING( TKIND_COCLASS );
     CASE_STRING( TKIND_ALIAS );
     CASE_STRING( TKIND_UNION );
+  default:
+    break;
   }
 
   return s;
@@ -1679,10 +1682,10 @@ static void f_get_typeinfo(INT32 args)
 
   ptinfo->lpVtbl->GetTypeAttr(ptinfo, &ptattr);
 
-  fprintf(stderr, " cbSizeInstance=%d\n typekind=%ls\n cFuncs=%d\n"
+  fprintf(stderr, " cbSizeInstance=%lu\n typekind=%s\n cFuncs=%d\n"
           " cVars=%d\n cImplTypes=%d\n cbSizeVft=%d\n cbAlignment=%d\n"
           " wMajorVerNum=%d\n wMinorVerNum=%d\n",
-          ptattr->cbSizeInstance,
+          (unsigned long)ptattr->cbSizeInstance,
           GetTypeKindName(ptattr->typekind),
           ptattr->cFuncs,
           ptattr->cVars, ptattr->cImplTypes,

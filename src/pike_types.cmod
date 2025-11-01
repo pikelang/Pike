@@ -340,7 +340,7 @@ static void internal_parse_type(const char **s);
 static struct block_allocator type_allocator = BA_INIT(sizeof(struct pike_type), 128);
 
 PMOD_EXPORT void really_free_pike_type(struct pike_type * t) {
-    dmalloc_unregister(t, 0);
+    (void)dmalloc_unregister(t, 0);
     ba_free(&type_allocator, t);
 }
 
@@ -3454,12 +3454,12 @@ static void low_or_pike_types(struct pike_type *t1,
     }
   } else if ((t1->type == PIKE_T_ATTRIBUTE) &&
              (t2->type != PIKE_T_ATTRIBUTE) &&
-             (t1->cdr->type == t2->type)) {
+             (!t1->cdr || (t1->cdr->type == t2->type))) {
     /* Pop the attribute. */
     low_or_pike_types(t1->cdr, t2, zero_implied);
   } else if ((t2->type == PIKE_T_ATTRIBUTE) &&
              (t1->type != PIKE_T_ATTRIBUTE) &&
-             (t2->cdr->type == t1->type)) {
+             (!t2->cdr || (t2->cdr->type == t1->type))) {
     /* Pop the attribute. */
     low_or_pike_types(t1, t2->cdr, zero_implied);
   }
@@ -3759,7 +3759,7 @@ static void simple_describe_remap_state(struct remap_state *remap)
   }
 }
 #else
-#define simple_describe_remap_state(X)	do { (X); } while(0)
+#define simple_describe_remap_state(X)	do { (void)(X); } while(0)
 #endif
 
 static int alloc_remap_marker(struct remap_state *remap, int marker,
@@ -8393,8 +8393,6 @@ static struct pike_type *low_match_types(struct pike_type *a,
   struct pike_type *ret = NULL;
   DECLARE_CYCLIC();
 #ifdef PIKE_TYPE_DEBUG
-  int e;
-  char *s;
 
   if (l_flag>2) {
     fprintf(stderr, "%*slow_match_types(", indent*2, "");

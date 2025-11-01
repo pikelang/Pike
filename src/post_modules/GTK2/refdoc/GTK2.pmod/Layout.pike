@@ -1,3 +1,6 @@
+// Automatically generated from "gtklayout.pre".
+// Do NOT edit.
+
 //! Properties:
 //! GTK2.Adjustment hadjustment
 //! int height
@@ -14,8 +17,9 @@
 //!
 
 inherit GTK2.Container;
+//!
 
-protected GTK2.Layout create( GTK2.Adjustment hadjustment_or_props, GTK2.Adjustment vadjustment );
+protected void create( void hadjustment_or_props, void vadjustment );
 //! Creates a new GTK2.Layout.
 //!
 //!

@@ -25,7 +25,7 @@
 #include "backend.h"
 #include "main.h"
 #include "pike_memory.h"
-#include "threads.h"
+#include "pike_threads.h"
 #include "time_stuff.h"
 #include "version.h"
 #include "encode.h"
@@ -41,7 +41,7 @@
 #include "lex.h"
 #include "pike_float.h"
 #include "pike_compiler.h"
-#include "port.h"
+#include "pike_port.h"
 #include "siphash24.h"
 
 #include <errno.h>
@@ -3710,6 +3710,12 @@ PMOD_EXPORT void f_crypt(INT32 args)
   THREADS_ALLOW();
 #endif
   ret = (char *)crypt(pwd, saltp);
+#ifdef USE_PIKE_DES_CRYPT_ONLY
+  if (!ret && (errno == EINVAL)) {
+    /* Fallback for eg OpenBSD where crypt(3) does not support DES anymore. */
+    ret = pike_des_crypt(pwd, salt);
+  }
+#endif
 #ifdef SOLARIS
   THREADS_DISALLOW();
 #endif
@@ -4847,13 +4853,23 @@ static struct pike_string *replace_many(struct pike_string *str,
  *! @decl string replace(string s, array(string) from, array(string) to)
  *! @decl string replace(string s, array(string) from, string to)
  *! @decl string replace(string s, mapping(string:string) replacements)
- *! @decl array replace(array a, mixed from, mixed to)
- *! @decl mapping replace(mapping a, mixed from, mixed to)
  *!
- *!   Generic replace function.
+ *!   Generic replace function (strings).
  *!
- *!   This function can do several kinds replacement operations, the
- *!   different syntaxes do different things as follows:
+ *! @param s
+ *!   Source string to perform the replacements on.
+ *!
+ *! @param from
+ *!   Sub-string or strings to match verbatim.
+ *!
+ *! @param to
+ *!   String or strings that @[from] in @[s] should be replaced with.
+ *!
+ *! @param replacements
+ *!   Instead of the arrays @[from] and @[to] a mapping equivalent to
+ *!   @expr{@[mkmapping](@[from], @[to])@} can be used.
+ *!
+ *!   Replaces all occurrances of @[from] in @[s] with the corresponding @[to].
  *!
  *!   If all the arguments are strings, a copy of @[s] with every
  *!   occurrence of @[from] replaced with @[to] will be returned.
@@ -4862,9 +4878,12 @@ static struct pike_string *replace_many(struct pike_string *str,
  *!
  *!   If the first argument is a string, and the others array(string), a string
  *!   with every occurrance of @[from][@i{i@}] in @[s] replaced with
- *!   @[to][@i{i@}] will be returned. Instead of the arrays @[from] and @[to]
- *!   a mapping equivalent to @expr{@[mkmapping](@[from], @[to])@} can be
- *!   used.
+ *!   @[to][@i{i@}] will be returned.
+ */
+/*! @decl array replace(array a, mixed from, mixed to)
+ *! @decl mapping replace(mapping a, mixed from, mixed to)
+ *!
+ *!   Generic replace function (arrays and mappings).
  *!
  *!   If the first argument is an array or mapping, the values of @[a] which
  *!   are @[`==()] with @[from] will be replaced with @[to] destructively.
@@ -4978,6 +4997,9 @@ node *optimize_replace(node *n)
      */
     n->node_info |= OPT_SIDE_EFFECT;
     n->tree_info |= OPT_SIDE_EFFECT;
+
+    free_type(array_zero);
+    free_type(mapping_zero);
   } else {
     /* First argument is not an array or mapping,
      *
@@ -4990,6 +5012,9 @@ node *optimize_replace(node *n)
      * so it needs to be volatile to prevent it from being globbered.
      */
     struct program * volatile replace_compiler = NULL;
+
+    free_type(array_zero);
+    free_type(mapping_zero);
 
     if (arg1 && ((pike_types_le((*arg1)->type, array_type_string, 0, 0) &&
 		  arg2 &&
@@ -5055,9 +5080,6 @@ node *optimize_replace(node *n)
 
 	  UNSETJMP(tmp);
 	  pop_n_elems(Pike_sp - save_sp);
-
-	  free_type(array_zero);
-	  free_type(mapping_zero);
 	  return ret;
 	}
       }
@@ -5066,9 +5088,6 @@ node *optimize_replace(node *n)
       pop_n_elems(Pike_sp - save_sp);
     }
   }
-
-  free_type(array_zero);
-  free_type(mapping_zero);
 
   return NULL;
 }
@@ -5894,11 +5913,18 @@ static void encode_struct_tm(const struct tm *tm, int gmtoffset)
 
 static void encode_tm_tz(const struct tm*tm)
 {
+#if defined(HAVE__GET_TIMEZONE)
+  long tzsec;
+  _get_timezone (&tzsec);
+#endif
   encode_struct_tm(tm,
 #ifdef STRUCT_TM_HAS_GMTOFF
    -tm->tm_gmtoff
 #elif defined(STRUCT_TM_HAS___TM_GMTOFF)
    -tm->__tm_gmtoff
+#elif defined(HAVE__GET_TIMEZONE)
+   /* Assume dst is one hour. */
+   tzsec - 3600*tm->tm_isdst
 #elif defined(HAVE_EXTERNAL_TIMEZONE)
    /* Assume dst is one hour. */
    timezone - 3600*tm->tm_isdst
@@ -6245,15 +6271,15 @@ time_t mktime_zone(struct tm *date, int other_timezone, int tz)
     if (other_timezone) {
       /* NB: This happens for times near {MIN,MAX}_TIME_T. */
       const char *orig_tz = getenv("TZ");
-      char tzbuf[20];
+      char tzbuf[32];
       ONERROR uwp;
-      char *tzsgn = tz < 0 ? "-" : "+";
-      if (tz < 0) tz = -tz;
-      sprintf(tzbuf, "TZ=UTC%s%02d:%02d:%02d",
-	      tzsgn,
-	      tz/3600,
-	      (tz/60)%60,
-	      tz % 60);
+      char tzsgn = tz < 0 ? '-' : '+';
+      unsigned short tzu = (tz < 0? -tz : tz);
+      snprintf(tzbuf, sizeof(tzbuf), "TZ=UTC%c%02u:%02u:%02u",
+               tzsgn,
+               tzu/3600,
+               (tzu/60)%60,
+               tzu % 60);
       if (orig_tz) {
         /* NB: orig_tz may point into the buffer that putenv()
          *     writes to, so we need to make a copy here.
@@ -6376,6 +6402,12 @@ static int get_tm(const char *fname, int args, struct tm *date)
   date->tm_mon = mon;
   date->tm_year = year;
   date->tm_isdst = isdst;
+#ifdef STRUCT_TM_HAS_GMTOFF
+  date->tm_gmtoff = -tz;
+#endif
+#ifdef STRUCT_TM_HAS___TM_GMTOFF
+  date->__tm_gmtoff = -tz;
+#endif
 #ifdef NULL_IS_SPECIAL
   date->tm_zone = NULL;
 #endif
@@ -9764,7 +9796,7 @@ static node *fix_map_node_info(node *n)
     argno = 0;
   }
 
-  for (argno; (cb_ = my_get_arg(&_CDR(n), argno)); argno++) {
+  for (; (cb_ = my_get_arg(&_CDR(n), argno)); argno++) {
     node *cb = *cb_;
 
     if ((cb->token == F_CONSTANT) &&

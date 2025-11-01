@@ -1,3 +1,6 @@
+// Automatically generated from "gtkspinbutton.pre".
+// Do NOT edit.
+
 //! The Spin Button widget is generally used to allow the user to
 //! select a value from a range of numeric values. It consists of a
 //! text entry box with up and down arrow buttons attached to the
@@ -56,17 +59,20 @@
 //!
 
 inherit GTK2.Entry;
+//!
 
 inherit GTK2.CellEditable;
+//!
 
 inherit GTK2.Editable;
+//!
 
 GTK2.SpinButton configure( GTK2.Adjustment range, float climb_rate, int precision );
 //! Adjustment (with the lower/upper/increse values), climb_rate and digits
 //!
 //!
 
-protected GTK2.SpinButton create( GTK2.Adjustment range_or_min_or_props, float climb_rate_or_max, int|float precision_or_step );
+protected void create( void range_or_min_or_props, void climb_rate_or_max, void precision_or_step );
 //!  The climb_rate argument take a value between 0.0 and 1.0 and
 //!  indicates the amount of acceleration that the Spin Button has. The
 //!  digits argument specifies the number of decimal places to which

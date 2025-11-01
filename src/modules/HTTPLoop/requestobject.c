@@ -17,7 +17,7 @@
 #include "constants.h"
 #include "stralloc.h"
 #include "svalue.h"
-#include "threads.h"
+#include "pike_threads.h"
 #include "fdlib.h"
 #include "fd_control.h"
 #include "builtin_functions.h"

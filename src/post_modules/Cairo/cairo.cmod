@@ -3,7 +3,7 @@
 #include "module.h"
 #include "interpret.h"
 #include "module_support.h"
-#include "threads.h"
+#include "pike_threads.h"
 #include "pike_cpulib.h"
 #include "sprintf.h"
 #include "builtin_functions.h"
@@ -61,7 +61,7 @@ static cairo_status_t strm_read_func(void *closure, unsigned char *data,
   if (safe_apply_low2(ctx->obj, ctx->func_id, 1, "read") &&
       PIKE_TYPEOF(Pike_sp[-1]) == PIKE_T_STRING &&
       !Pike_sp[-1].u.string->size_shift &&
-      Pike_sp[-1].u.string->len == length) {
+      (size_t)Pike_sp[-1].u.string->len == length) {
     memcpy(data, STR0(Pike_sp[-1].u.string), length);
     ret = CAIRO_STATUS_SUCCESS;
   }
@@ -77,7 +77,7 @@ static cairo_status_t strm_write_func(void *closure, const unsigned char *data,
   push_string(make_shared_binary_string((const char *)data, length));
   if (safe_apply_low2(ctx->obj, ctx->func_id, 1, "write") &&
       PIKE_TYPEOF(Pike_sp[-1]) == PIKE_T_INT &&
-      Pike_sp[-1].u.integer == length)
+      (size_t)Pike_sp[-1].u.integer == length)
     ret = CAIRO_STATUS_SUCCESS;
   pop_stack();
   return ret;

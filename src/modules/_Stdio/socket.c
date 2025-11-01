@@ -15,7 +15,7 @@
 #include "pike_macros.h"
 #include "backend.h"
 #include "fd_control.h"
-#include "threads.h"
+#include "pike_threads.h"
 #include "program_id.h"
 #include "module_support.h"
 #include "time_stuff.h"
@@ -325,9 +325,6 @@ static void port_bind(INT32 args)
 #ifdef EINVAL
        && (errno != EINVAL)
 #endif
-#ifdef WSAENOPROTOOPT
-       && (errno != WSAENOPROTOOPT)
-#endif
        ){
       p->my_errno=errno;
       while (fd_close(fd) && errno == EINTR) {}
@@ -446,7 +443,7 @@ static void bind_unix(INT32 args)
     sizeof(addr->sun_path);
   addr = xalloc(addr_len);
 
-  strcpy(addr->sun_path, path->str);
+  strlcpy(addr->sun_path, path->str, path->len + 1);
   addr->sun_family = AF_UNIX;
 #ifdef HAVE_STRUCT_SOCKADDR_UN_SUN_LEN
   /* Length including NUL. */
@@ -708,7 +705,9 @@ static void socket_query_address(INT32 args)
     return;
   }
 #endif
-  sprintf(buffer+strlen(buffer)," %d",(int)(ntohs(addr.ipv4.sin_port)));
+  len = strlen(buffer);
+  snprintf(buffer + len, sizeof(buffer) - len, " %d",
+           (int)(ntohs(addr.ipv4.sin_port)));
 
   push_text(buffer);
 }

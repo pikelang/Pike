@@ -1,3 +1,6 @@
+// Automatically generated from "gtkrecentchooser.pre".
+// Do NOT edit.
+
 //!
 //!
 //!

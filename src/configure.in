@@ -279,11 +279,15 @@ if test "x$enable_binary" != "xno"; then
   AC_MINIX
 fi
 
+SLOW_PIKE=""
 if_autoconf(2,50,[
   # echo;echo;echo End timeout at: `date`; echo; echo
   kill "$timeout_pid" 2>/dev/null
-  if test "x$cache_file$force_config_cache" = "x/dev/nullyes"; then
+  if test "x$force_config_cache" = "xyes"; then
       PIKE_MSG_NOTE([Slow configure detected.])
+      SLOW_PIKE="yes"
+  fi
+  if test "x$cache_file$force_config_cache" = "x/dev/nullyes"; then
       PIKE_MSG_NOTE([Enabling the configure cache for performance reasons.])
       if test "x$CONFIG_CACHE_FILE" = "x"; then
           cache_file=./config.cache
@@ -300,12 +304,14 @@ if_autoconf(2,50,[
       fi
   fi
 ])
+AC_SUBST(SLOW_PIKE)
 
 #############################################################################
 
 # ABI selection.
 
 PIKE_SELECT_ABI
+ABI=${pike_cv_abi}
 
 #############################################################################
 
@@ -648,6 +654,23 @@ RAWCC="`echo $REALCC|sed -e 's/ .*//g'`"
 
 
 # FIXME: Add proper tests
+#
+# Supported methods:
+#
+#   Environment variable based:
+#     ld_library_path:	LD_LIBRARY_PATH=<rpath>
+#
+#   Compiler option based:
+#     qoption:		-Qoption,ld,-rpath,<rpath>
+#     r:		-R<rpath>
+#     rpath:		-rpath <rpath>
+#     wl:		-Wl,-rpath,<rpath>
+#     wl_r:		-Wl,-R<rpath>
+#     darwin_rpath:	-Wl,-rpath,<rpath>
+#     plus_b:		+b <rpath>
+#     yp_:		-YP, <rpath>
+#     xlinker_yp_:	-Xlinker -YP, -Xlinker <rpath>
+
 AC_MSG_CHECKING([for ld.so run path method])
 AC_CACHE_VAL(pike_cv_ld_so_run_path_method, [
   case "$UNAME" in
@@ -660,7 +683,10 @@ AC_CACHE_VAL(pike_cv_ld_so_run_path_method, [
     SunOS\ 5.*)
       pike_cv_run_path_method=r
     ;;
-    Linux\ 2.* | GNU/kFreeBSD* )
+    Linux\ 1.*)
+      pike_cv_run_path_method=ld_library_path
+    ;;
+    Linux* | GNU/kFreeBSD* )
       if test "$ICC" = "yes"; then
         # icc or ecc.
         pike_cv_run_path_method=qoption
@@ -675,7 +701,7 @@ AC_CACHE_VAL(pike_cv_ld_so_run_path_method, [
         pike_cv_run_path_method=yp_
       fi
     ;;
-    Darwin\ *|NetBSD\ *)
+    Darwin\ *|NetBSD\ *|FreeBSD\ *|OpenBSD\ *)
       pike_cv_run_path_method=darwin_rpath
     ;;
     Haiku\ *|BeOS\ *)
@@ -732,19 +758,44 @@ esac
 # Smartlink needs to know if OS X uses flat or two-level namespace
 if test "$pike_cv_sys_os" = "Darwin" ; then
   AC_MSG_CHECKING([for Darwin linker namespace])
-  case "`uname -r`" in
-    [1-6].*)
-      AC_MSG_RESULT([flat (10.2 or older)])
-      pike_cv_osx_twolevel_namespace=no
-    ;;
-    *)
-      AC_DEFINE(USE_OSX_TWOLEVEL_NAMESPACE)
-      AC_MSG_RESULT([two-level (10.3 or newer)])
-      pike_cv_osx_twolevel_namespace=yes
-    ;;
-  esac
-fi
 
+  AC_CACHE_VAL(pike_cv_osx_deployment_target, [
+    if test "x$MACOSX_DEPLOYMENT_TARGET" = "x"; then
+      case "`uname -r`" in
+        [[1-6]].*)
+          pike_cv_osx_deployment_target=no
+        ;;
+        [[7-9]].*|1[[0-2]].*)
+          # Darwin 7 - 12 (aka Mac OS X 10.3 - 10.8).
+          # Needs to be 10.3 or better for ld to accept
+          # "-undefined dynamic_lookup"
+          pike_cv_osx_deployment_target=10.3
+        ;;
+        1[[3-9]].*)
+          # Darwin 13 - 19 (aka Mac OS X 10.9 - 10.15).
+          # C++ Name mangling changed here, need to be able to interoperate
+          # with modern libs
+          pike_cv_osx_deployment_target=10.9
+        ;;
+        *)
+          # Darwin 20 or later (aka Mac OS X 11.0 or later).
+          # Third party libraries are typically compiled for the major.0.
+          # This is also what the compiler typically defaults to.
+          pike_cv_osx_deployment_target="`sw_vers -productVersion | cut -d. -f1`.0"
+        ;;
+      esac
+    else
+        pike_cv_osx_deployment_target="$MACOSX_DEPLOYMENT_TARGET"
+    fi
+  ])
+  if test "x$pike_cv_osx_deployment_target" = "xno"; then
+      AC_MSG_RESULT([flat (10.2 or older)])
+  else
+      AC_MSG_RESULT([two-level (${pike_cv_osx_deployment_target} or newer)])
+      AC_DEFINE_UNQUOTED(USE_OSX_TWOLEVEL_NAMESPACE,
+                         ${pike_cv_osx_deployment_target})
+  fi
+fi
 
 # Fix a smartlink
 SMARTLINK="$BUILDDIR/smartlink"
@@ -827,34 +878,6 @@ AC_DEFUN(PIKE_AC_DEBUG, [
   echo "DEBUG: ++++++++++++++++++++++++++++++++++" 1>&AC_FD_CC
 ])
 
-# Convenience function for querying Frameworks
-AC_DEFUN([AC_CHECK_FRAMEWORK],
-[m4_ifval([$3], , [AH_CHECK_FRAMEWORK([$1])])dnl
-AS_LITERAL_IF([$1],
-         [AS_VAR_PUSHDEF([ac_Framework], [ac_cv_framework_$1_$2])],
-         [AS_VAR_PUSHDEF([ac_Framework], [ac_cv_framework_$1''_$2])])dnl
-AC_CACHE_CHECK([for $2 in $1 framework], ac_Framework,
-[ac_check_framework_save_LIBS=$LIBS
-LIBS="-framework $1 $5 $LIBS"
-AC_LINK_IFELSE([AC_LANG_CALL([], [$2])],
-          [AS_VAR_SET(ac_Framework, yes)],
-          [AS_VAR_SET(ac_Framework, no)])
-LIBS=$ac_check_framework_save_LIBS])
-AS_IF([test AS_VAR_GET(ac_Framework) = yes],
-      [m4_default([$3], [AC_DEFINE_UNQUOTED(AS_TR_CPP(HAVE_FRAMEWORK_$1))
-  LIBS="-framework $1 $LIBS"
-])],
-      [$4])dnl
-AS_VAR_POPDEF([ac_Framework])dnl
-])# AC_CHECK_FRAMEWORK
-
-# AH_CHECK_FRAMEWORK(FRAMEWORK)
-# ---------------------
-m4_define([AH_CHECK_FRAMEWORK],
-[AH_TEMPLATE(AS_TR_CPP(HAVE_FRAMEWORK_$1),
-        [Define to 1 if you have the `]$1[' framework (-framework ]$1[).])])
-dnl '`
-
 
 PIKE_AC_DEBUG
 
@@ -919,7 +942,14 @@ LD='$(CC) $(CFLAGS)'
 LC_REQ="-lc"
 
 case "$pike_cv_sys_os" in
-  Darwin*)
+  Darwin*|Haiku*|BeOS*)
+    # According to Clang source the protected behavior is ELF-specific
+    # and not applicable to OS X.
+    #
+    # BeOS and Haiku similarly do not like protected symbols.
+    AC_DEFINE(DISABLE_ATTRIBUTE_VISIBILITY_PROTECTED, 1,
+              [Disable use of __attribute__ ((visibility("protected"))).])
+
       ;;
   SCO*)
      case "$CFLAGS" in
@@ -952,7 +982,7 @@ case "$pike_cv_sys_os" in
   ;;
   BSD/OS*)
     case "`uname -r`" in
-      [4-9].*) ;;
+      [[4-9]].*) ;;
       *) LD="$BINDIR/smartlink shlicc";;
     esac
   ;;
@@ -1233,36 +1263,6 @@ MY_AC_ARG_WITH(compiler-trace, MY_DESCR([--with-compiler-trace],
 					[enable tracing of the compiler]),
 	       [AC_DEFINE(YYDEBUG)])
 
-AC_ARG_WITH(machine-code,
-	MY_DESCR([--without-machine-code],
-		 [do not try to use of machine code on supported architectures.]),
-	[], [
-          case "x$pike_cv_sys_os" in
-            xOpenBSD*)
-              PIKE_MSG_WARN([OpenBSD detected, disabling machine code.
-  Use --with-machine-code to force usage of machine code support.])
-              with_machine_code="no"
-            ;;
-            xFreeBSD*)
-              PIKE_MSG_WARN([FreeBSD detected, disabling machine code.
-  Use --with-machine-code to force usage of machine code support.])
-              with_machine_code="no"
-            ;;
-
-          esac
-
-          if test "x${with_machine_code-}" = x; then
-            with_machine_code="yes"
-          fi
-
-	])
-AC_ARG_WITH(small-eval-instruction,
-	MY_DESCR([--with-small-eval-instruction],
-		 [attempt to reduce the size of eval_instruction (EXPERIMENTAL).]), [
-	  AC_DEFINE(PIKE_SMALL_EVAL_INSTRUCTION)
-	  with_machine_code="no"
-	])
-
 MY_AC_ARG_WITH(keypair-loop,
 	MY_DESCR([--with-keypair-loop],
 		 [enable use of keypair mapping loop method.]),
@@ -1338,7 +1338,7 @@ fi
 if test "x$with_dmalloc" = "x"; then
   :;
 elif test "x$with_rtldebug" = "xyes"; then :; else
-  PIKE_MSG_WARN([Debug malloc requires rtldebug. Enabling rtldebug.])
+  PIKE_MSG_NOTE([Debug malloc requires rtldebug. Enabling rtldebug.])
   with_rtldebug=yes
 fi
 
@@ -1412,6 +1412,12 @@ if test "$cflags_is_set" = "no"; then
     AC_SYS_COMPILER_FLAG(-Wchar-subscripts,Wchar_subscripts,WARN)
     AC_SYS_COMPILER_FLAG(-Wno-long-long,Wno_long_long,WARN)
     AC_SYS_COMPILER_FLAG(-Wno-unknown-attributes,Wno_unknown_attributes,WARN)
+    # Solaris 10 has system header files (like eg <X/Xlib.h>) that contain
+    # #pragma ident "..." statements that gcc 3.4.3 complains about.
+    # Gcc 3.4.3 does not support #pragma GCC diagnostic, so we must
+    # unfortunately disable the warning globally.
+    AC_SYS_OS_COMPILER_FLAG(Solaris, -Wno-unknown-pragmas,
+                            Wno_unknown_pragmas, WARN)
 
     if test "x${with_static_linking-}" = "xyes" ; then
       AC_SYS_COMPILER_FLAG(-static,link_static,CFLAGS)
@@ -1419,12 +1425,31 @@ if test "$cflags_is_set" = "no"; then
       :
     fi
 
+    # Attempt to set the C standard to support.
+    #
     # NB: Both $CPP and $CC need to be configured to support
     #     the same version of the C standard. Otherwise there
     #     will be build failures on eg Solaris.
-    AC_SYS_OS_COMPILER_FLAG(Solaris, -std=c99, std_c99, CPP)
-    AC_SYS_OS_COMPILER_FLAG(Solaris, -std=c99, std_c99, CC)
-    AC_SYS_COMPILER_FLAG(-std=c99, std_c99, CFLAGS)
+    AC_SYS_COMPILER_FLAG(-std=c23, std_c23, CFLAGS, [
+      AC_SYS_COMPILER_FLAG(-std=c17, std_c17, CFLAGS, [
+        AC_SYS_COMPILER_FLAG(-std=c11, std_c11, CFLAGS, [
+          AC_SYS_COMPILER_FLAG(-std=c99, std_c99, CFLAGS, [
+          ], [
+            AC_SYS_OS_COMPILER_FLAG(Solaris, -std=c99, std_c99, CPP)
+            AC_SYS_OS_COMPILER_FLAG(Solaris, -std=c99, std_c99, CC)
+          ])
+        ], [
+          AC_SYS_OS_COMPILER_FLAG(Solaris, -std=c11, std_c11, CPP)
+          AC_SYS_OS_COMPILER_FLAG(Solaris, -std=c11, std_c11, CC)
+        ])
+      ], [
+        AC_SYS_OS_COMPILER_FLAG(Solaris, -std=c17, std_c17, CPP)
+        AC_SYS_OS_COMPILER_FLAG(Solaris, -std=c17, std_c17, CC)
+      ])
+    ], [
+      AC_SYS_OS_COMPILER_FLAG(Solaris, -std=c23, std_c23, CPP)
+      AC_SYS_OS_COMPILER_FLAG(Solaris, -std=c23, std_c23, CC)
+    ])
     if test "x$with_gcov" = "xyes"; then
       # Support for gcov
       AC_SYS_COMPILER_FLAG(-fprofile-arcs, fprofile_arcs, CFLAGS)
@@ -1629,6 +1654,9 @@ if test "$cflags_is_set" = "no"; then
       AC_SYS_COMPILER_FLAG(-read_only_relocs warning, ro_relocs_warn, LDFLAGS)
     fi
 
+    # Silence warnings about duplicate libraries
+    AC_SYS_COMPILER_FLAG([-Wl,-no_warn_duplicate_libraries], Wlno_warn_duplicate_libraries, LDFLAGS)
+
     # Tune based on processor family
     case "`machine`" in
       i486)
@@ -1719,6 +1747,25 @@ if test "$cflags_is_set" = "no"; then
       # Maybe should remove the -g flag if this succeeds.
       AC_SYS_COMPILER_FLAG(-g3,g3,CFLAGS)
       AC_SYS_COMPILER_FLAG(-trapuv,trapuv,WARN)
+
+      # Consider forcing a dwarf level supported by gdb (if found).
+      #
+      # For GDB the first version that supported that version of DWARF.
+      # For the compilers, the first version with it as default.
+      # In either case the version where the support was removed may
+      # also be listed (typically DWARF-1).
+      #
+      #   Year	DWARF	GDB	GCC	CLANG	Note
+      #   2017	5	8.0	11	14	Experimental?
+      #   2010	4	7.0	4.8	3?
+      #   2005	3	5.2?	-
+      #   1993	2	5.1.1	3.1		Draft
+      #   ????	1	3.3-6.7	?-4.1		Experimental?
+      #
+      # Forcing the dwarf level is mostly an issue on platforms that
+      # insist on having old and broken compiler enviroments, like
+      # eg OpenBSD 7.7 which has a fairly recent clang and lldb (16)
+      # but lldb is broken, and an old gdb (6.3).
     fi
 
     # Solaris
@@ -2415,6 +2462,9 @@ else
 fi
 export EXTRA_PATH
 
+EXTRA_SBIN_PATH=`echo "$PATH:$EXTRA_PATH" | sed -e 's|/bin:|/sbin:|g' -e 's|/bin/|/sbin/|g' -e 's|/bin$|/sbin|'`
+export EXTRA_SBIN_PATH
+
 #Restore preprocessor warning sensitivity
 ac_c_preproc_warn_flag="$OLD_ac_c_preproc_warn_flag"
 
@@ -2593,10 +2643,12 @@ if test "x${AR-}" = x ; then
 fi
 AC_SUBST(AR)
 
-# PaX flags control (NetBSD).
+# PaX flags control (NetBSD or Linux).
 if test "x${PAXCTL-}" = x ; then
-  AC_PATH_PROG(PAXCTL, paxctl, , $PATH:$EXTRA_PATH)
-  export PAXCTL
+    # Linux:  /sbin/paxctl
+    # NetBSD: /usr/sbin/paxctl
+    AC_PATH_PROG(PAXCTL, paxctl, , $PATH:$EXTRA_PATH:$EXTRA_SBIN_PATH)
+    export PAXCTL
 fi
 AC_SUBST(PAXCTL)
 
@@ -2640,6 +2692,72 @@ if test "x${RCEXE-}" = x ; then
   export RCEXE
 fi
 AC_SUBST(RCEXE)
+if test "x${WINDRES-}" = x ; then
+  AC_PATH_PROG(WINDRES, windres, , $PATH:$EXTRA_PATH)
+  export WINDRES
+fi
+AC_SUBST(WINDRES)
+
+#############################################################################
+
+AC_ARG_WITH(small-eval-instruction,
+        MY_DESCR([--with-small-eval-instruction],
+                 [attempt to reduce the size of eval_instruction (EXPERIMENTAL).]), [
+  PIKE_MSG_NOTE([Small eval_instruction requested. Note that this disables
+runtime machine-code generation.])
+  AC_DEFINE(PIKE_SMALL_EVAL_INSTRUCTION)
+  with_machine_code="no"
+        ])
+AC_ARG_WITH(machine-code,
+        MY_DESCR([--without-machine-code],
+                 [do not try to use machine code on supported architectures.]),
+        [], [
+  if test "x${with_machine_code:-yes}:${PAXCTL:-no}" = x"yes:no"; then
+      # Check if there are other methods to enable RWX mapping of memory.
+      # FreeBSD: procctl(2)
+      AC_CHECK_HEADERS(sys/procctl.h)
+      AC_CHECK_FUNCS(procctl)
+      if test "x${with_machine_code:-}:$ac_cv_func_procctl" = x":yes"; then
+          with_machine_code="yes"
+      fi
+  fi
+  if test "x${with_machine_code:-}" = x; then
+    case "x$pike_cv_sys_os:${PAXCTL:-no}" in
+      xOpenBSD*)
+        PIKE_MSG_NOTE([OpenBSD detected, disabling machine code.
+Use --with-machine-code to force use of machine code support.])
+        with_machine_code="no"
+        ;;
+      xFreeBSD*)
+        # uname -K was added in FreeBSD 10.0.
+        # The semantics of the output of uname -K is not
+        # documented properly, but appears to be <major><minor:2><build:3>.
+        # Eg:
+        #   FreeBSD 11.0 --> 1100512
+        #   FreeBSD 11.1 --> 1101505
+        #   FreeBSD 15.0 --> 1500039
+        if uname -K >/dev/null && [ "`uname -K`" -ge 1301000 ]; then
+            # PROC_WXMAP_CTL was added in september of 2021
+            # to FreeBSD 13.1 and later. Enforcement was added later.
+            PIKE_MSG_NOTE([FreeBSD detected, disabling machine code.
+Use --with-machine-code to force use of machine code support.])
+            with_machine_code="no"
+        else
+            with_machine_code="yes"
+        fi
+        ;;
+      xNetBSD*:no)
+        PIKE_MSG_NOTE([NetBSD detected and no paxctl(8), disabling machine code.
+Use --with-machine-code to force use of machine code support.])
+        with_machine_code="no"
+        ;;
+      *)
+        with_machine_code="yes"
+        ;;
+    esac
+  fi
+
+        ])
 
 #############################################################################
 
@@ -2984,7 +3102,7 @@ AC_CHECK_HEADERS(winsock2.h sys/rusage.h sys/time.h \
                  memory.h strings.h stdalign.h float.h \
 		 fcntl.h sys/filio.h sys/sockio.h crypt.h \
 		 sys/select.h net/socket.h sys/param.h io.h \
-		 sys/mman.h sys/user.h pthread.h \
+                 sys/mman.h sys/user.h pthread.h threads.h \
 		 sys/id.h mach-o/dyld.h sys/ptrace.h \
 		 thread.h dlfcn.h dld.h dl.h sys/times.h sched.h \
 		 sys/procfs.h sys/socket.h sys/uio.h fcntl.h \
@@ -3190,8 +3308,8 @@ AC_CHECK_FUNCS(sigsetjmp _setjmp siglongjmp _longjmp)
 default_backend_method=select
 # Make it possible to disable use of /dev/poll.
 if test "x$with_devpoll" = "xno"; then :; else
-  AC_CHECK_HEADERS(sys/devpoll.h sys/event.h sys/epoll.h)
-  AC_CHECK_FUNCS(kqueue)
+  AC_CHECK_HEADERS(sys/port.h sys/devpoll.h sys/event.h sys/epoll.h)
+  AC_CHECK_FUNCS(port_create kqueue)
   AC_CHECK_FRAMEWORK(CoreServices, CFRunLoopRunInMode)
   AC_CHECK_FUNCS(CFRunLoopRunInMode)
   AC_MSG_CHECKING(for poll device)
@@ -3233,6 +3351,10 @@ if test "x$with_devpoll" = "xno"; then :; else
 
   if test "x$ac_cv_func_kqueue" = "xyes"; then
     default_backend_method=kqueue
+  fi
+
+  if test "x$ac_cv_func_port_create" = "xyes"; then
+    default_backend_method=port_create
   fi
 
   if test "x$ac_cv_header_sys_epoll_h" = "xyes"; then
@@ -3424,7 +3546,7 @@ if test "x$with_long_double_precision" = x -a \
 	"x$with_double_precision" = x ; then
   # Choose the longest available float that fits in a pointer.
   if test "$ac_cv_sizeof_long_double" != 0 -a \
-	  "$ac_cv_sizeof_long_double" -le "$sizeof_anything" ; then
+          "$ac_cv_sizeof_long_double" -le "$sizeof_anything" ; then
     with_long_double_precision=yes
   elif test "$ac_cv_sizeof_double" -le "$sizeof_anything" ; then
     with_double_precision=yes
@@ -3461,16 +3583,10 @@ if test "x$with_long_long_int" = x -a \
 	"x$with_int_int" = x -a \
 	"x$with_short_int" = x ; then
   # Choose the longest available integer that fits in a pointer.
-#  if test $ac_cv_sizeof_long_long != 0 -a \
-#	   $ac_cv_sizeof_long_long -le $ac_cv_sizeof_char_p ; then
-#    # This isn't a good idea on architectures where
-#    # sizeof(long int) < sizeof(INT64).
-#    # This is due to the gmp mpz api's using long int instead of
-#    # mp_limb_{signed_}t.
-#    #with_long_long_int=yes
-#    :
-#  fi
-  if test "$ac_cv_sizeof_long" -le "$sizeof_anything" ; then
+  if test "$ac_cv_sizeof_long_long" -gt "$ac_cv_sizeof_long" -a \
+	   "$ac_cv_sizeof_long_long" -le "$sizeof_anything" ; then
+    with_long_long_int=yes
+  elif test "$ac_cv_sizeof_long" -le "$sizeof_anything" ; then
     with_long_int=yes
   else
     with_int_int=yes
@@ -3626,7 +3742,6 @@ if test "x$pike_cv_sys_os" = "xWindows_NT" ; then
 
   AC_DEFINE(_REENTRANT)
   AC_DEFINE(_THREAD_SAFE)
-  AC_DEFINE(_UNIX_THREADS)
   AC_DEFINE(NT_THREADS)
   AC_DEFINE(PIKE_THREADS)
   using_threads="yes (nt)"
@@ -3635,7 +3750,9 @@ if test "x$pike_cv_sys_os" = "xWindows_NT" ; then
 
 else
 
-  # Test for POSIX threads
+  # Test for POSIX threads.
+  #
+  # This API was first specified in POSIX.1c (aka IEEE 1003.1c-1995).
 
   if test "x$with_thread_library" != "xno"; then
     AC_MSG_CHECKING([for thread library])
@@ -3760,7 +3877,7 @@ int main(int argc, char **argv)
       #
       AC_MSG_CHECKING([whether Darwin dislikes threads and mach includes])
       case "`uname -r`" in
-        [1-9].*)
+        [[1-9]].*)
           AC_MSG_RESULT([no (10.5 or older)])
       	  ;;
         *)
@@ -4094,7 +4211,68 @@ extern pthread_t bar;
 
     # No POSIX threads.
 
-    # Try UNIX threads instead
+    # Try C11 threads instead
+    AC_MSG_CHECKING(C11 threads)
+    AC_CACHE_VAL(pike_cv_c11_threads, [
+      AC_TRY_COMPILE([
+/* The following should cause a preprocessor (or compiler) failure when
+ * C11 threads are not supported.
+ */
+#if !defined(__STDC_VERSION__)
+#error "Not C94 or later."
+#elif __STDC_VERSION__ - 0 < 201112
+#error "Not C11 or later."
+#elif defined(__STDC_NO_THREADS__)
+#error "C11 threads not supported."
+#endif
+#include <threads.h>
+],[ return 0; ], [
+        pike_cv_c11_threads=maybe
+], [pike_cv_c11_threads=no])
+                 ])
+
+    if test "x$pike_cv_c11_threads" = "xmaybe"; then
+        # NB: The RESULT and CHECKING here are due to SEARCH_LIBS
+        #     having its own output. This is also the reason for
+        #     the existence of the maybe value.
+        AC_MSG_RESULT(maybe)
+        AC_SEARCH_LIBS(thrd_create, [threads pthread],
+                       [pike_cv_c11_threads=yes],[pike_cv_c11_threads=no])
+        AC_MSG_CHECKING(C11 threads again)
+    fi
+
+    if test "x$pike_cv_c11_threads" = "xyes"; then
+        AC_MSG_RESULT(yes)
+        AC_DEFINE(_REENTRANT)
+        AC_DEFINE(_THREAD_SAFE)
+        AC_DEFINE(C11_THREADS,1,
+                  [Define this if you want the C11 (or later) taste of threads])
+        AC_DEFINE(PIKE_THREADS)
+        using_threads="yes (C11 or later)"
+
+        AC_MSG_CHECKING([behaviour of the thrd_t type])
+        AC_CACHE_VAL(pike_cv_thread_t_type, [
+          AC_TRY_COMPILE([
+#include <sys/types.h>
+#include <stdlib.h>
+#include <stddef.h>
+#include <threads.h>
+extern thrd_t bar;
+          ], [
+            void *foo = (void *)(ptrdiff_t)bar;
+            return 0;
+          ], [ pike_cv_thread_t_type=integer ], [
+               pike_cv_thread_t_type=pointer ])
+        ])
+        AC_MSG_RESULT($pike_cv_thread_t_type)
+
+    else
+        AC_MSG_RESULT(no)
+
+    # Try UNIX threads instead.
+    #
+    # These where the precursor to posix threads (aka pthreads) further above.
+    # Typically used on OSes of the same vintage as Solaris 2.4 (ie ~1994).
 
     AC_MSG_CHECKING(unix threads)
     case "x$pike_cv_sys_os" in
@@ -4115,7 +4293,7 @@ extern pthread_t bar;
       AC_TRY_RUN([
 #define _REENTRANT
 #define _THREAD_SAFE
-#define _MIT_POSIX_THREADS 1
+#define _UNIX_THREADS 1
 #include <stdlib.h>
 #include <thread.h>
 #ifdef _UNIXWARE_THREADS_
@@ -4144,6 +4322,7 @@ int main(void)
       AC_DEFINE(_UNIX_THREADS)
       AC_DEFINE(PIKE_THREADS)
       using_threads="yes (unix)"
+      AC_CHECK_FUNCS(cond_reltimedwait)
     else
       AC_MSG_RESULT(no)
       LIBS="$OLDLIBS"
@@ -4168,6 +4347,7 @@ int main(void)
       #   :
       # fi
     fi # UNIX threads
+    fi # C11 threads
 
     pike_cv_thread_t_type=integer
   fi # POSIX threads
@@ -4396,6 +4576,7 @@ AC_CHECK_FUNCS( \
  chroot \
  closefrom \
  crypt \
+ crypt_checkpass \
  crypt_r \
  fchdir \
  fdwalk \
@@ -4428,6 +4609,8 @@ AC_CHECK_FUNCS( \
  tzset \
  snprintf \
  _snprintf \
+ strlcat \
+ strlcpy \
  wait3 \
  wait4 \
  waitpid \
@@ -4491,6 +4674,7 @@ AC_CHECK_FUNCS( \
  SetErrorMode \
  thread_info \
  host_get_clock_service \
+ arc4random \
 )
 
 if test "x$with_poll:$ac_cv_func_poll" = "xyes:yes"; then
@@ -5075,6 +5259,16 @@ if test $ac_cv_func_crypt$ac_cv_func__crypt = nono ; then
   fi
 ])
 
+fi
+if test $ac_cv_func_crypt_checkpass = yes ; then
+    # crypt_checkpass(3) was added 2014-11-20 in OpenBSD.
+    # Support for DES passwords was removed 2015-04-06.
+    if test -f "$srcdir/crypt.c"; then
+        AC_MSG_RESULT([Recent OpenBSD crypt(3) detected.])
+        EXTRA_OBJS="${EXTRA_OBJS} crypt.o"
+        AC_DEFINE(USE_CRYPT_C)
+        AC_DEFINE(USE_PIKE_DES_CRYPT_ONLY)
+    fi
 fi
 
 #############################################################################
@@ -7495,8 +7689,8 @@ fi
 
 #############################################################################
 
-AC_MSG_CHECKING(if port.c works in CONFIGURE_TEST mode)
-AC_CACHE_VAL(pike_cv_configure_test_port_c, [
+AC_MSG_CHECKING(if pike_port.c works in CONFIGURE_TEST mode)
+AC_CACHE_VAL(pike_cv_configure_test_pike_port_c, [
   AC_TRY_RUN([
 #include <stdio.h>
 
@@ -7507,21 +7701,21 @@ AC_CACHE_VAL(pike_cv_configure_test_port_c, [
 #define SVALUE_H
 #define ARRAY_H
 
-#include "port.c"
+#include "pike_port.c"
 
 int main(void)
 {
   return 0;
 }
-  ], pike_cv_configure_test_port_c=yes,
-     pike_cv_configure_test_port_c=no,
-     pike_cv_configure_test_port_c=unknown)
+  ], pike_cv_configure_test_pike_port_c=yes,
+     pike_cv_configure_test_pike_port_c=no,
+     pike_cv_configure_test_pike_port_c=unknown)
 ])
-AC_MSG_RESULT($pike_cv_configure_test_port_c)
-if test "x$pike_cv_configure_test_port_c" = xno; then
+AC_MSG_RESULT($pike_cv_configure_test_pike_port_c)
+if test "x$pike_cv_configure_test_pike_port_c" = xno; then
   AC_MSG_ERROR([
 
-port.c does not work in CONFIGURE_TEST mode. This is an internal
+pike_port.c does not work in CONFIGURE_TEST mode. This is an internal
 problem in Pike. configure aborted since further configure tests will
 be unreliable.
 ])
@@ -7611,7 +7805,7 @@ if test "x$ac_cv_func_gethrvtime" = xyes; then
 #define SVALUE_H
 #define ARRAY_H
 
-#include "port.c"
+#include "pike_port.c"
 
 int main(void)
 {
@@ -7644,7 +7838,9 @@ AC_MSG_CHECKING(if rusage.c works in CONFIGURE_TEST mode)
 AC_CACHE_VAL(pike_cv_configure_test_rusage_c, [
   AC_TRY_RUN([
 #define POSIX_SOURCE	1
+#ifndef _POSIX_C_SOURCE
 #define _POSIX_C_SOURCE	200112L
+#endif
 
 #include <stdio.h>
 
@@ -7655,7 +7851,7 @@ AC_CACHE_VAL(pike_cv_configure_test_rusage_c, [
 #define SVALUE_H
 #define ARRAY_H
 
-#include "port.c"		/* Tested earlier, but might be required. */
+#include "pike_port.c"		/* Tested earlier, but might be required. */
 #include "rusage.c"
 
 int main(void)
@@ -7678,11 +7874,13 @@ be unreliable.
   exit 1
 fi
 
-AC_MSG_CHECKING(if threads.c works in CONFIGURE_TEST mode)
+AC_MSG_CHECKING(if pike_threads.c works in CONFIGURE_TEST mode)
 AC_CACHE_VAL(pike_cv_configure_test_threads_c, [
   AC_TRY_RUN([
 #define POSIX_SOURCE	1
+#ifndef _POSIX_C_SOURCE
 #define _POSIX_C_SOURCE	200112L
+#endif
 
 #include <stdio.h>
 
@@ -7693,8 +7891,8 @@ AC_CACHE_VAL(pike_cv_configure_test_threads_c, [
 #define SVALUE_H
 #define ARRAY_H
 
-#include "port.c"		/* Tested earlier, but might be required. */
-#include "threads.c"
+#include "pike_port.c"		/* Tested earlier, but might be required. */
+#include "pike_threads.c"
 
 int main(void)
 {
@@ -7708,7 +7906,7 @@ AC_MSG_RESULT($pike_cv_configure_test_threads_c)
 if test "x$pike_cv_configure_test_threads_c" = xno; then
   AC_MSG_ERROR([
 
-threads.c does not work in CONFIGURE_TEST mode. This is an internal
+pike_threads.c does not work in CONFIGURE_TEST mode. This is an internal
 problem in Pike. configure aborted since further configure tests will
 be unreliable.
 ])
@@ -7722,7 +7920,9 @@ AC_CACHE_VAL(pike_cv_thread_local_cpu_time, [
   rm -f confdefs.out.2 2>/dev/null
   AC_TRY_RUN([
 #define POSIX_SOURCE	1
+#ifndef _POSIX_C_SOURCE
 #define _POSIX_C_SOURCE	200112L
+#endif
 
 #include <stdio.h>
 
@@ -7736,9 +7936,9 @@ AC_CACHE_VAL(pike_cv_thread_local_cpu_time, [
 #define SVALUE_H
 #define ARRAY_H
 
-#include "port.c"
+#include "pike_port.c"
 #include "rusage.c"
-#include "threads.c"
+#include "pike_threads.c"
 
 PIKE_MUTEX_T m;
 COND_T c;
@@ -7834,7 +8034,8 @@ int main(void)
 	AC_MSG_ERROR([
 
 Test failed to compile or execute.
-Problems in port.c, rusage.c or threads.c with CONFIGURE_TEST is defined?
+Problems in pike_port.c, rusage.c or pike_threads.c when CONFIGURE_TEST
+is defined?
 ])
         # Don't set pike_cv_thread_local_cpu_time here so that the
         # failure doesn't get cached.
@@ -7907,10 +8108,91 @@ then
 	esac
 fi
 AC_MSG_RESULT($SO)
+
+# CCSHARED are the C *flags* used to create objects to go into a shared
+# library -- this is only needed for a few systems
+AC_MSG_CHECKING(CCSHARED)
+AC_CACHE_VAL(pike_cv_sys_ccshared,[
+  if test -z "$CCSHARED" ; then
+    if test "$GCC" = yes ; then
+      case "$pike_cv_sys_os" in
+        BSD/OS*)
+          case "`uname -r`" in
+            4.*) CCSHARED="-fPIC";;
+            *) CCSHARED="";;
+          esac
+        ;;
+        Darwin*)
+          CCSHARED="-fPIC"
+        ;;
+        Haiku*|BeOS*)
+          CCSHARED="-fPIC"
+        ;;
+        Solaris*)
+          # The Image module runs out of symbol reference space unless we
+          # use the large PIC model:
+          # ld: fatal: too many symbols require `small' PIC references:
+          # 	have 2205, maximum 2048 -- recompile some modules -K PIC.
+          CCSHARED="-fPIC"
+        ;;
+        *)
+          AC_SYS_COMPILER_FLAG(-fPIC, fPIC, CCSHARED, [
+            AC_SYS_COMPILER_FLAG(-fpic, fpic, CCSHARED)
+          ])
+        ;;
+      esac
+    else
+      case "$pike_cv_sys_os" in
+        Darwin*)
+          CCSHARED="-fPIC"
+        ;;
+        Haiku*|BeOS*)
+          CCSHARED="-fPIC"
+        ;;
+        hp*|HP*) CCSHARED="+z"; ;;
+        FreeBSD*) CCSHARED="-fpic";;
+        SCO_SV*) CCSHARED="-KPIC -dy -Bdynamic";;
+        UnixWare*|OpenUNIX*) CCSHARED="-KPIC -dy -Bdynamic";;
+        Solaris*)
+          CCSHARED="-KPIC -Bdynamic"
+          # Note: The Image module fails with
+          #   Failed to load library: ld.so.1: pike: fatal:
+          #   relocation error: R_AMD64_PC32: file Image.so:
+          #   symbol really_free_svalue: value 0x28001ca5b2d does not fit
+          # if the module is compiled with the default model.
+          AC_SYS_COMPILER_FLAG(-xmodel=medium, xmodel_medium, CCSHARED)
+        ;;
+        Windows_NT*) CCSHARED="-shared" ;;
+      esac
+    fi
+  fi
+  OLD_CFLAGS="$CFLAGS"
+  CFLAGS="$CFLAGS $CCSHARED"
+  AC_TRY_COMPILE([#include <stdlib.h>
+    ], [exit(0);],
+    pike_cv_sys_ccshared="$CCSHARED", pike_cv_sys_ccshared='')
+  CFLAGS="$OLD_CFLAGS"
+])
+CCSHARED="$pike_cv_sys_ccshared"
+AC_MSG_RESULT($CCSHARED)
+
 # LDSHARED is the ld *command* used to create shared library
 # -- "ld" on SunOS 4.x.x, "ld -G" on SunOS 5.x
 AC_MSG_CHECKING(LDSHARED)
 if test -z "$LDSHARED" ; then
+  # Notes:
+  #
+  #   * For gcc "$REALCC -shared" will work on many platforms.
+  #
+  #   * For clang "$REALCC -shared" will also work on most platforms
+  #     (albeit undocumented).
+  #
+  #   * Try to avoid using "$REALCC -Wl,-Bshareable" or similar as
+  #     it will not inform the compiler wrapper that it is about
+  #     to link a shared module, and thus may cause it to provide
+  #     extraneous files to the linker (causing warnings like
+  #     "cannot find entry symbol __start; not setting start address".
+
   ldshared_is_cc=yes
   case "$pike_cv_sys_os" in
     AIX*)
@@ -7918,19 +8200,41 @@ if test -z "$LDSHARED" ; then
       ldshared_is_cc=no
     ;;
     Darwin*)
-      if test "$pike_cv_osx_twolevel_namespace" = yes ; then
-        # 10.3 or newer take advantage of two-level namespaces to avoid
-        # symbol collisions for e.g. libjpeg which is referenced from both
-        # _Image_JPEG and _Image_TIFF. It requires MACOSX_DEPLOYMENT_TARGET
-        # which is initialized in smartlink to 10.3.
-        LDSHARED="$REALCC $CFLAGS -bundle -bind_at_load"
-        case "$MACOSX_DEPLOYMENT_TARGET" in
-          13.*) ;; # -undefined dynamic_lookup is deprecated
-          *) LDSHARED="$LDSHARED -undefined dynamic_lookup";;
-        esac
-      else
-        # Mac OS X prior to 10.3 need -flat_namespace to support dynamic modules
-        LDSHARED="$REALCC $CFLAGS -bundle -bind_at_load -flat_namespace -undefined suppress"
+      case "$pike_cv_osx_deployment_target" in
+        no)
+          # Mac OS X prior to 10.3 need -flat_namespace to support
+          # dynamic modules
+          LDSHARED="$REALCC $CFLAGS -bundle -bind_at_load -flat_namespace -undefined suppress"
+        ;;
+        10.*|11.*)
+          # 10.3 or newer take advantage of two-level namespaces to avoid
+          # symbol collisions for e.g. libjpeg which is referenced from both
+          # _Image_JPEG and _Image_TIFF. It requires MACOSX_DEPLOYMENT_TARGET
+          # which is initialized in smartlink to 10.3.
+          LDSHARED="$REALCC $CFLAGS -bundle -bind_at_load -undefined dynamic_lookup"
+        ;;
+        *)
+          # MacOS X 12.0 and later.
+          # More recent X-code complains about use of
+          # -undefined dynamic_lookup:
+          #
+          #   ld: warning: -undefined dynamic_lookup may not work
+          #   with chained fixups
+          #
+          # There we instead use -bundle_loader $pike_bin analogous
+          # to the way it is done on NT.
+          #
+          # On MacOS X 15.0 and later the linker complains about
+          # -bind_at_load if -bundle_loader is specified. The
+          # flag appears to be redundant, so skip it.
+          LDSHARED="$REALCC $CFLAGS -bundle"
+          LDSHARED_BASE_REQS="pike"
+          LDSHARED_MODULE_ARGS="-bundle_loader `pwd`/pike"
+          LDSHARED_MODULE_REQS="`pwd`/pike"
+        ;;
+      esac
+      if test x"$pike_cv_option_Wlno_warn_duplicate_libraries" = "xyes" ; then
+         LDSHARED="$LDSHARED -Wl,-no_warn_duplicate_libraries"
       fi
     ;;
     SunOS*)
@@ -7957,9 +8261,9 @@ if test -z "$LDSHARED" ; then
     Linux*) LDSHARED="$REALCC -shared";;
     GNU/kFreeBSD*) LDSHARED="$REALCC -shared";;
     GNU*) LDSHARED="$REALCC -Wl,-Bshareable";;
-    FreeBSD*) LDSHARED="$REALCC -Wl,-Bshareable";;
-    NetBSD*) LDSHARED="$REALCC -Wl,-Bshareable";;
-    OpenBSD*) LDSHARED="$REALCC -Wl,-Bshareable";;
+    FreeBSD*) LDSHARED="$REALCC -shared";;
+    NetBSD*) LDSHARED="$REALCC -shared";;
+    OpenBSD*) LDSHARED="$REALCC -shared";;
     Haiku*|BeOS*) LDSHARED="$REALCC -shared";;
     BSD/OS*)
       case "`uname -r`" in
@@ -7983,13 +8287,21 @@ if test -z "$LDSHARED" ; then
     ;;
     Windows_NT*|NT*)
       if test x$with_dynamic_modules != xno; then
+        if test "x${GCC-}" = xyes ; then
+          LDSHARED="$REALCC -shared"
+          LDSHARED_BASE_REQS=pike.exe
+          LDSHARED_MODULE_ARGS="`pwd`/pike.exe"
+          LDSHARED_MODULE_REQS="`pwd`/pike.exe"
+          LC_REQ=""
+        else
 	  # It's important that we use $(CC) unexpanded here so that any
 	  # -MD/-MDd flags also gets passed to the linker.
 	  LDSHARED='$(CC) -shared'
 	  LDSHARED_BASE_REQS=pike.lib
 	  LDSHARED_MODULE_ARGS="-l`pwd`/pike"
 	  LDSHARED_MODULE_REQS="`pwd`/pike.lib"
-	LDSHARED_MODULE_ARGS="$LDSHARED_MODULE_ARGS -pdb:\$\$modname.pdb"
+          LDSHARED_MODULE_ARGS="$LDSHARED_MODULE_ARGS -pdb:\$\$modname.pdb"
+        fi
       fi
     ;;
     *)
@@ -7997,82 +8309,23 @@ if test -z "$LDSHARED" ; then
       ldshared_is_cc=no
       ;;
   esac
-  if test "$GCC:$ldshared_is_cc" = "yes:yes" ; then
-    # On some architectures gcc attempts to link the shared object with
-    # the standard startup files (crt0.o et al), which may fail due to
-    # relocation errors. The flag -nostartfiles exists in gcc since at
-    # least version 3.3.2 from 2003, so this should be safe.
-    LDSHARED="$LDSHARED -nostartfiles"
-  fi
-fi
-AC_MSG_RESULT($LDSHARED)
+  if test "$ldshared_is_cc" = "yes" ; then
+    # On architectures where the shared linker is the C compiler,
+    # options such as -fpic or -fPIC must sometimes also be supplied.
+    # Make sure to use the same flavor as when compiling the object files.
+    LDSHARED="$LDSHARED $CCSHARED"
 
-# CCSHARED are the C *flags* used to create objects to go into a shared
-# library -- this is only needed for a few systems
-AC_MSG_CHECKING(CCSHARED)
-AC_CACHE_VAL(pike_cv_sys_ccshared,[
-  if test -z "$CCSHARED" ; then
-    if test "$GCC" = yes ; then
-      case "$pike_cv_sys_os" in
-	BSD/OS*)
-         case "`uname -r`" in
-           4.*) CCSHARED="-fPIC";;
-           *) CCSHARED="";;
-         esac
-	;;
-	Darwin*)
-	  CCSHARED="-fPIC"
-	;;
-        Haiku*|BeOS*)
-          CCSHARED="-fPIC"
-        ;;
-	Solaris*)
-	  # The Image module runs out of symbol reference space unless we
-	  # use the large PIC model:
-	  # ld: fatal: too many symbols require `small' PIC references:
-	  # 	have 2205, maximum 2048 -- recompile some modules -K PIC.
-	  CCSHARED="-fPIC"
-	;;
-	*)
-	  AC_SYS_COMPILER_FLAG(-fPIC, fPIC, CCSHARED, [
-	    AC_SYS_COMPILER_FLAG(-fpic, fpic, CCSHARED)
-	  ])
-	;;
-      esac
-    else
-      case "$pike_cv_sys_os" in
-	Darwin*)
-	  CCSHARED="-fPIC"
-	;;
-        Haiku*|BeOS*)
-          CCSHARED="-fPIC"
-        ;;
-        hp*|HP*) CCSHARED="+z"; ;;
-	FreeBSD*) CCSHARED="-fpic";;
-	SCO_SV*) CCSHARED="-KPIC -dy -Bdynamic";;
-        UnixWare*|OpenUNIX*) CCSHARED="-KPIC -dy -Bdynamic";;
-	Solaris*)
-	  CCSHARED="-KPIC -Bdynamic"
-	  # Note: The Image module fails with
-	  #   Failed to load library: ld.so.1: pike: fatal:
-	  #   relocation error: R_AMD64_PC32: file Image.so:
-	  #   symbol really_free_svalue: value 0x28001ca5b2d does not fit
-	  # if the module is compiled with the default model.
-	  AC_SYS_COMPILER_FLAG(-xmodel=medium, xmodel_medium, CCSHARED)
-	;;
-	Windows_NT*) CCSHARED="-shared" ;;
-      esac
+    if test "$GCC" = "yes" -a "$pike_cv_is_mingw" != "yes" -a \
+            "$pike_cv_sys_os" != "Darwin" ; then
+      # On some architectures gcc attempts to link the shared object with
+      # the standard startup files (crt0.o et al), which may fail due to
+      # relocation errors. The flag -nostartfiles exists in gcc since at
+      # least version 3.3.2 from 2003, so this should be safe.
+      LDSHARED="$LDSHARED -nostartfiles"
     fi
   fi
-  OLD_CFLAGS="$CFLAGS"
-  CFLAGS="$CFLAGS $CCSHARED"
-  AC_TRY_COMPILE([#include <stdlib.h>
-    ], [exit(0);],
-    pike_cv_sys_ccshared="$CCSHARED", pike_cv_sys_ccshared='')
-  CFLAGS="$OLD_CFLAGS"
-])
-CCSHARED="$pike_cv_sys_ccshared"
-AC_MSG_RESULT($CCSHARED)
+fi
+AC_MSG_RESULT($LDSHARED $LDSHARED_MODULE_ARGS)
 
 AC_MSG_CHECKING(LINKFORSHARED)
 
@@ -8177,9 +8430,51 @@ else :; fi
 AC_MSG_CHECKING(if dynamic loading works)
 AC_CACHE_VAL(pike_cv_sys_dynamic_loading,
 [
+  mybase=""
+  case "$LDSHARED_MODULE_ARGS" in
+    *-bundle_loader*)
+      AC_TRY_LINK([
+#if __GNUC__ >= 4
+__attribute__ ((visibility("default")))
+# endif
+void testfunc2(void) { }
+      ], [ return 0; ], [
+        mybase=mybase
+        mv conftest$ac_exeext $mybase
+      ])
+      if test ! -z "$mybase" ; then
+        mv "$mybase" conftest$ac_exeext
+        ln -s conftest$ac_exeext "$mybase"
+        mybase="-bundle_loader $mybase"
+      fi
+      ;;
+
+    *pike.exe)
+      AC_TRY_LINK([
+#if __GNUC__ >= 4
+__attribute__ ((visibility("default")))
+# endif
+__declspec(dllexport) void testfunc2(void) { }
+      ], [ return 0; ], [
+        mybase=mybase.exe
+        mv conftest$ac_exeext $mybase
+      ])
+      if test ! -z "$mybase" ; then
+        mv "$mybase" conftest$ac_exeext
+        ln -s conftest$ac_exeext "$mybase"
+      fi
+      ;;
+  esac
+
   cat >conftest.c <<EOF
+#if (defined(__WINNT__) || defined(__WIN32__)) && !defined(__NT__)
+#define __NT__
+#endif
 #include <stdio.h>
 #include <stdlib.h>
+#ifdef __NT__
+__declspec(dllimport)
+#endif
 extern void testfunc2(void);
 #if __GNUC__ >= 4
 __attribute__ ((visibility("default")))
@@ -8195,8 +8490,8 @@ EOF
   echo $CC -c $CFLAGS $CCSHARED conftest.c -o conftest.o 1>&AC_FD_CC
   $CC -c $CFLAGS $CCSHARED conftest.c -o conftest.o 1>&AC_FD_CC 2>&AC_FD_CC
 
-  echo $BINDIR/smartlink $LDSHARED $LDFLAGS conftest.o -o conftest.$SO 1>&AC_FD_CC
-  $BINDIR/smartlink $LDSHARED $LDFLAGS conftest.o -o conftest.$SO 1>&AC_FD_CC 2>&AC_FD_CC
+  echo $BINDIR/smartlink $LDSHARED $LDFLAGS conftest.o $mybase -o conftest.$SO 1>&AC_FD_CC
+  $BINDIR/smartlink $LDSHARED $LDFLAGS conftest.o $mybase -o conftest.$SO 1>&AC_FD_CC 2>&AC_FD_CC
 
   if test -f conftest.$SO ; then
     mv conftest.$SO myconftest.so
@@ -8211,12 +8506,21 @@ EOF
       ;;
     esac
     AC_TRY_RUN([
+#if (defined(__WINNT__) || defined(__WIN32__)) && !defined(__NT__)
+#define __NT__
+#endif
 #include <stdlib.h>
 #define TESTING
+#ifdef __NT__
+#define USE_DLL
+#endif
 #include "dynamic_load.c"
 #if __GNUC__ >= 4
 __attribute__ ((visibility("default")))
 # endif
+#ifdef __NT__
+__declspec(dllexport)
+#endif
 void testfunc2(void) { exit(0); }
 ], pike_cv_sys_dynamic_loading=yes, pike_cv_sys_dynamic_loading=no, pike_cv_sys_dynamic_loading=no)
     CFLAGS="$OLD_CFLAGS"
@@ -8224,7 +8528,7 @@ void testfunc2(void) { exit(0); }
   else
     pike_cv_sys_dynamic_loading=no
   fi
-  rm -f myconftest.so >/dev/null 2>/dev/null
+  rm -f myconftest.so $mybase >/dev/null 2>/dev/null
 ])
 AC_MSG_RESULT($pike_cv_sys_dynamic_loading)
 
@@ -8327,14 +8631,21 @@ case "x$pike_cv_sys_os" in
     signal_handler="custom AmigaOS"
   ;;
 
-  xLinux | *kFreeBSD*)
+  xLinux | *kFreeBSD)
     # Linux's stupid thread implementation doesn't survive USE_WAIT_THREAD.
+    # Does not work on FreeBSD 15.0, NetBSD 10.1 or OpenBSD 7.7; the
+    # lib/modules/testsuite.in testsuite has several tests they fail with:
+    #   "Lost track of a child (pid 19799, errno from wait 10)."
     signal_handler="SIGCHILD"
     AC_DEFINE(USE_SIGCHILD)
   ;;
 
   *)
     # This is valid for at least Solaris, AIX and Darwin.
+    #
+    # Note that all of FreeBSD 15.0, NetBSD 10.1 and OpenBSD 7.7 have
+    # a waitpid(2) that intermittently fails with errno == 0. This is
+    # however better than losing track of children (see above).
     if grep _REENTRANT confdefs.h >/dev/null 2>&1; then
       signal_handler="wait thread"
       AC_DEFINE(USE_WAIT_THREAD)
@@ -8538,9 +8849,11 @@ fi
 
 AC_SUBST(MT_FIX_PIKE_EXE)
 
-if test "x$RCEXE" != x; then
-  # Windows icon
-  PIKE_ICON_RES=pike_icon.res
+if test "x$pike_cv_sys_os" = xWindows_NT; then
+  if test "x$RCEXE$WINDRES" != x; then
+    # Windows icon
+    PIKE_ICON_RES=pike_icon.res
+  fi
 fi
 AC_SUBST(PIKE_ICON_RES)
 
@@ -8611,6 +8924,7 @@ AC_SUBST(RANLIB)
 AC_SUBST(DEBUGDEF)
 AC_SUBST(EXTRA_MODULE_REQUIREMENTS)
 AC_SUBST(DTRACE_REQUIREMENTS)
+AC_SUBST(ABI)
 
 pike_cv_prog_CC="${CC}"
 

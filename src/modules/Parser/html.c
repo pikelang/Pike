@@ -12,7 +12,7 @@
 #include "constants.h"
 #include "interpret.h"
 #include "svalue.h"
-#include "threads.h"
+#include "pike_threads.h"
 #include "array.h"
 #include "pike_error.h"
 #include "operators.h"
@@ -466,8 +466,8 @@ static void debug_mark_spot(char *desc,struct piece *feed,int c)
 	 fprintf(stderr,"%c",ch);
    }
 
-   sprintf(buf,"(%ld) %p:%d/%ld    ^",
-           (long)i0, (void *)feed, c, (long)feed->s->len);
+   snprintf(buf, sizeof(buf), "(%ld) %p:%d/%ld    ^",
+            (long)i0, (void *)feed, c, (long)feed->s->len);
    fprintf(stderr,"`\n%*s\n", (int)(l+c-i0+3), buf);
 }
 

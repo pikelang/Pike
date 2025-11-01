@@ -23,7 +23,7 @@
 #include "svalue.h"
 #include "array.h"
 #include "mapping.h"
-#include "threads.h"
+#include "pike_threads.h"
 #include "builtin_functions.h"
 #include "operators.h"
 #include "module_support.h"

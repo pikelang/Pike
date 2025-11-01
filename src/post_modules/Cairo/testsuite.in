@@ -8,5 +8,5 @@ test_any([[
   return v;
 ]], Cairo.cairo_version())
 
-cond_end // GTK2.version
+cond_end // Cairo.cairo_version
 END_MARKER

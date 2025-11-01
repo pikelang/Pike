@@ -7,7 +7,7 @@
 
 #include "module.h"
 #include "config.h"
-#include "threads.h"
+#include "pike_threads.h"
 #include "pike_macros.h"
 #include "constants.h"
 #include "interpret.h"

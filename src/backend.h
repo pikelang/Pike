@@ -13,8 +13,16 @@
 /*
  * POLL/SELECT selection
  */
-
-#if defined(HAVE_SYS_DEVPOLL_H) && defined(PIKE_POLL_DEVICE)
+#if 0 && defined(HAVE_SYS_PORT_H) && defined(HAVE_PORT_CREATE)
+/*
+ * Backend using port_create-style poll device.
+ *
+ * Used on:
+ *   Solaris 10 and later.
+ */
+#define BACKEND_USES_POLL_DEVICE
+#define BACKEND_USES_PORT_CREATE
+#elif defined(HAVE_SYS_DEVPOLL_H) && defined(PIKE_POLL_DEVICE)
 /*
  * Backend using /dev/poll-style poll device.
  *
@@ -93,6 +101,7 @@ PMOD_EXPORT void wake_up_backend(void);
 void init_backend(void);
 void do_debug(void);
 void backend(void);
+void exit_default_backend(void);
 void exit_backend(void);
 PMOD_EXPORT int write_to_stderr(char *a, size_t len);
 PMOD_EXPORT struct callback *debug_add_backend_callback(callback_func call,

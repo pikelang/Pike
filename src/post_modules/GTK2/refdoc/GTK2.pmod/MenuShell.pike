@@ -1,3 +1,6 @@
+// Automatically generated from "gtkmenushell.pre".
+// Do NOT edit.
+
 //! A GTK2.MenuShell is the abstract base class used to derive the
 //! W(Menu) and W(MenuBar) subclasses.
 //! 
@@ -39,6 +42,7 @@
 //!
 
 inherit GTK2.Container;
+//!
 
 GTK2.MenuShell activate_item( GTK2.Widget menu_item, int force_deactivate );
 //! Activates the menu item within the menu shell.

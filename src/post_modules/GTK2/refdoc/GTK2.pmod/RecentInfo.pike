@@ -1,3 +1,6 @@
+// Automatically generated from "gtkrecentinfo.pre".
+// Do NOT edit.
+
 //!
 //!
 //!
@@ -42,7 +45,7 @@ array get_groups( );
 //!
 //!
 
-GTK2.GdkPixbuf get_icon( int size );
+GDK2.Pixbuf get_icon( int size );
 //! Retrieves the icon of size size associated to the resource MIME type.
 //!
 //!

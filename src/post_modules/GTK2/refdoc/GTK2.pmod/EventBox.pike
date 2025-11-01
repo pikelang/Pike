@@ -1,3 +1,6 @@
+// Automatically generated from "gtkeventbox.pre".
+// Do NOT edit.
+
 //! Some gtk widgets don't have associated X windows, so they just draw
 //! on their parents. Because of this, they cannot receive events and
 //! if they are incorrectly sized, they don't clip so you can get messy
@@ -29,8 +32,9 @@
 //!
 
 inherit GTK2.Bin;
+//!
 
-protected GTK2.EventBox create( mapping|void props );
+protected void create( void props );
 //! Create a new event box widget
 //!
 //!

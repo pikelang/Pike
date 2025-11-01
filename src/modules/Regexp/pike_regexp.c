@@ -1178,8 +1178,9 @@ static char *regprop(char *op)
 {
     char  *p;
     static char     buf[50];
+    size_t len;
 
-    strcpy(buf, ":");
+    strlcpy(buf, ":", sizeof(buf));
 
     switch (OP(op)) {
     case BOL:
@@ -1224,13 +1225,15 @@ static char *regprop(char *op)
     default:
         if(OP(op) >= OPEN && OP(op) < OPEN+NSUBEXP)
 	{
-	  sprintf(buf + strlen(buf), "OPEN%d", OP(op) - OPEN);
+          len = strlen(buf);
+          snprintf(buf + len, sizeof(buf) - len, "OPEN%d", OP(op) - OPEN);
 	  p = NULL;
 	  break;
 	}
         if(OP(op) >= CLOSE && OP(op) < CLOSE+NSUBEXP)
 	{
-	  sprintf(buf + strlen(buf), "CLOSE%d", OP(op) - CLOSE);
+          len = strlen(buf);
+          snprintf(buf + len, sizeof(buf) - len, "CLOSE%d", OP(op) - CLOSE);
 	  p = NULL;
 	  break;
 	}

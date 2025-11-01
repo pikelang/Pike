@@ -151,11 +151,6 @@ protected int alert_cb_called;
 protected constant epipe_errnos = (<
   System.EPIPE,
   System.ECONNRESET,
-#if constant(System.WSAECONNRESET)
-  // The following is returned by winsock on windows.
-  // Pike ought to map it to System.ECONNRESET.
-  System.WSAECONNRESET,
-#endif
 >);
 // Multiset containing the errno codes that can occur if the remote
 // end has closed the connection.
@@ -917,7 +912,7 @@ protected void _destruct()
       if (close_state == STREAM_OPEN &&
 	  // Don't bother with closing nicely if there's an error from
 	  // an earlier operation. close() will throw an error for it.
-	  !close_errno) {
+          !close_errno && !Pike.signal_contextp()) {
 	// Clear the user callbacks, and make sure not to block.
 	set_nonblocking();
 	close (0, 0, 1);
@@ -1054,6 +1049,13 @@ int write(string|array(string) data, mixed... args)
     data = ({ sprintf (arrayp (data) ? data * "" : data, @args) });
   } else if (stringp(data)) {
     data = ({ data });
+  }
+
+  foreach(data, string frag) {
+    if (String.width(frag) > 8) {
+      data = "<CENSORED>";
+      error("String fragment is wide.\n");
+    }
   }
 
   if (user_write_buffer) {

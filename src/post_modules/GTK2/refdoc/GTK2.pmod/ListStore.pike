@@ -1,16 +1,24 @@
+// Automatically generated from "gtkliststore.pre".
+// Do NOT edit.
+
 //! A list-like data structure that can be used with W(TreeView).
 //!
 //!
 
 inherit G.Object;
+//!
 
 inherit GTK2.TreeModel;
+//!
 
 inherit GTK2.TreeSortable;
+//!
 
 inherit GTK2.TreeDragSource;
+//!
 
 inherit GTK2.TreeDragDest;
+//!
 
 GTK2.TreeIter append( );
 //! Append a new row.
@@ -22,7 +30,7 @@ GTK2.ListStore clear( );
 //!
 //!
 
-protected GTK2.ListStore create( array types );
+protected void create( void types );
 //! Create a new list store with as many columns as there are items in the
 //! array. A type is either a string representing a type name, such as "int" or
 //! "float", or an actual widget.  If it is a widget, the column in question

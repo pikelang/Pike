@@ -1,3 +1,6 @@
+// Automatically generated from "gtktooltips.pre".
+// Do NOT edit.
+
 //! Tooltips are the messages that appear next to a widget when the
 //! mouse pointer is held over it for a short amount of time. They are
 //! especially helpful for adding more verbose descriptions of things
@@ -22,8 +25,9 @@
 //!
 
 inherit GTK2.Data;
+//!
 
-protected GTK2.Tooltips create( );
+protected void create( );
 //! Creates an empty group of tooltips. This function initialises a
 //! GTK2.Tooltips structure. Without at least one such structure, you
 //! can not add tips to your application.

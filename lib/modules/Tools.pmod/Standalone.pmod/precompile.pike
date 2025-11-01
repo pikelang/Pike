@@ -344,7 +344,7 @@ string allocate_string(string orig_str)
   }
   int str_id = last_str_id++;
   stradd += ({
-    sprintf("module_strings[%d] = \n"
+    sprintf("module_strings[%d] =\n"
 	    "  make_shared_binary_string(%s,\n"
 	    "                            CONSTANT_STRLEN(%s));\n",
 	    str_id,
@@ -3696,6 +3696,7 @@ array resolve_obj_defines()
                 "   if( tmp ) {\n"
                 "      ___cmod_ext_used[i].from = %d;\n"
                 "      ___cmod_ext_used[i].to = tmp->id;\n"
+                "      ___cmod_ext_used[i].p = tmp;\n"
                 "      i++;\n"
                 "   }\n"
                 "}\n"
@@ -3886,8 +3887,15 @@ int main(int argc, array(string) argv)
     "static int ___cmod_map_program_ids(int id) PIKE_UNUSED_ATTRIBUTE;\n" +
     (dynamic_id?
      sprintf("static int ___cmod_dynamic_program_ids[%d] PIKE_UNUSED_ATTRIBUTE;\n", dynamic_id) : "") +
-    "#ifndef TYPEOF\n"
     "/* Compat with older Pikes. */\n"
+    "#if !defined(string_has_null) && !defined(STRING_CONTENT_CHECKED)\n"
+    "/* This symbol was added as a macro in Pike 7.7.20, and is an\n"
+    " * inline function in Pike 7.9.4 and later, at which time the\n"
+    " * flag STRING_CONTENT_CHECKED was added.\n"
+    " */\n"
+    "#define string_has_null(X) (strlen((X)->str)!=(size_t)(X)->len)\n"
+    "#endif\n"
+    "#ifndef TYPEOF /* Before Pike 7.9.6. */\n"
     "#define TYPEOF(SVAL)\t((SVAL).type)\n"
     "#define SUBTYPEOF(SVAL)\t((SVAL).subtype)\n"
     "#define SET_SVAL_TYPE(SVAL, TYPE)\t(TYPEOF(SVAL) = TYPE)\n"
@@ -3900,15 +3908,14 @@ int main(int argc, array(string) argv)
     "    SET_SVAL_SUBTYPE((SVAL), (SUBTYPE));\t\t\\\n"
     "  } while(0)\n"
     "#endif /* !TYPEOF */\n"
-    "#ifndef PIKE_UNUSED\n"
-    "/* Compat with Pike 7.8 and earlier. */\n"
+    "#ifndef PIKE_UNUSED /* Before Pike 8.0.6. */\n"
     "/* NB: Not strictly correct; PIKE_UNUSED was added the\n"
     " *     day after set_program_id_to_id(), but good enough.\n"
     " */\n"
-    "#ifndef UNUSED\n"
+    "#ifndef UNUSED /* Before Pike 7.9.6. */\n"
     "#define UNUSED(X)	X\n"
     "#endif\n"
-    "#ifndef set_program_id_to_id\n"
+    "#ifndef set_program_id_to_id /* Before Pike 7.8.932. */\n"
     "/* NB: Recent Pike 7.8 has a #define that conflicts with\n"
     " *     the following declaration.\n"
     " */\n"
@@ -3917,12 +3924,19 @@ int main(int argc, array(string) argv)
     "#else /* */\n"
     "PMOD_EXPORT void set_program_id_to_id( int (*to)(int) );\n"
     "#endif /* !PIKE_UNUSED */\n"
-    "#if !defined(string_has_null) && !defined(STRING_CONTENT_CHECKED)\n"
-    "/* This symbol was added as a macro in Pike 7.7.20, and is an\n"
-    " * inline function in Pike 7.9.4 and later, at which time the\n"
-    " * flag STRING_CONTENT_CHECKED was added.\n"
-    " */\n"
-    "#define string_has_null(X) (strlen((X)->str)!=(size_t)(X)->len)\n"
+    "#ifndef STATIC_ASSUME /* Before Pike 8.1.7. */\n"
+    "#define STATIC_ASSUME(X)\n"
+    "#endif\n"
+    "#ifndef tUnknown /* Before Pike 8.1.14. */\n"
+    "#define tUnknown tZero\n"
+    "#endif\n"
+    "#ifndef start_new_program_id /* Before Pike 9.0.10. */\n"
+    "#define allocate_program_id() 0\n"
+    "#define start_new_program_id(ID) do { \\\n"
+    "    int id__ = (ID); \\\n"
+    "    start_new_program(); \\\n"
+    "    if (id__) Pike_compiler->new_program->id = id__; \\\n"
+    "  } while(0)\n"
     "#endif\n"
     "\n\n",
 
@@ -4014,7 +4028,7 @@ int main(int argc, array(string) argv)
   if( sizeof( need_obj_defines ) )
   {
     tmp->declarations += ({
-      "static struct { INT32 from;INT32 to; } ___cmod_ext_used[" +
+      "static struct { INT32 from;INT32 to;struct program *p; } ___cmod_ext_used[" +
       sizeof( need_obj_defines ) + "];\n"
     });
 
@@ -4029,6 +4043,18 @@ int main(int argc, array(string) argv)
       "    }\n"
       "  }\n"
     });
+
+    tmp->exitfuncs = ({
+      "\n#ifdef CMOD_MAP_PROGRAM_IDS_DEFINED\n"
+      "  {\n"
+      "    int i;\n"
+      "    for (i = 0; i < " + sizeof(need_obj_defines) + "; i++) {\n"
+      "      struct program *p = ___cmod_ext_used[i].p;\n"
+      "      if (p) free_program(p);\n"
+      "    }\n"
+      "  }\n"
+      "#endif /* CMOD_MAP_PROGRAM_IDS_DEFINED */\n"
+    }) + tmp->exitfuncs;
   }
   x += ({
     "  return 0;\n"

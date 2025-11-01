@@ -16,7 +16,8 @@
 
   inherit .EventStream;
 
-  protected ADT.Queue received_events = ADT.Queue();
+protected ADT.Queue(<mapping(string:string|int)>) received_events =
+  ADT.Queue(<mapping(string:string|int)>)();
 
   protected void bfse_callback(string path, int flags, int event_id)
   {

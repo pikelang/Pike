@@ -646,8 +646,15 @@ array(int) a() {
 
     int n = 1;
     for (int f = sizeof (obj_names); f > 1; f--) n *= f;
-    log_status ("GC destruct order test %d, %d permutations", test, n);
     tests += n;
+#if constant(OMIT_SLOW_TESTS)
+    if (n > 50) {
+      log_status ("GC destruct order test %d, %d permutations (skip)",
+                  test, n);
+      continue;
+    }
+#endif
+    log_status ("GC destruct order test %d, %d permutations", test, n);
 
     while (n--) {
       log_twiddler();

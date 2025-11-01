@@ -559,10 +559,11 @@ decode_words_tokenized_labled_remapped(string phrase, int|void flags)
 //!
 //! @seealso
 //! @[encode_headerfield_params]
-array(ADT.OrderedMapping) decode_headerfield_params (string s)
+array(ADT.OrderedMapping(<string, string>)) decode_headerfield_params (string s)
 {
-  array(mapping(string:string)|ADT.OrderedMapping) totres = ({});
-  ADT.OrderedMapping mapres = ADT.OrderedMapping();
+  array(ADT.OrderedMapping(<string, string>)) totres = ({});
+  ADT.OrderedMapping(<string, string>) mapres =
+    ADT.OrderedMapping(<string, string>)();
   string key, goteq;
   int nextset;	   // Fake a terminating ',' to ensure proper post-processing
   foreach (MIME.tokenize(s) + ({ ',' }); ; int|string token) {
@@ -585,7 +586,8 @@ array(ADT.OrderedMapping) decode_headerfield_params (string s)
     if (key)
       mapres[key] = token, key = 0;
     if (nextset && sizeof(mapres))
-      totres += ({ mapres }), mapres = ADT.OrderedMapping();
+      totres += ({ mapres }),
+        mapres = ADT.OrderedMapping(<string, string>)();
     nextset = 0;
   }
   return totres;
@@ -795,12 +797,14 @@ string encode_words_quoted_labled_remapped(array(array(string|int)) phrase,
 //!
 //! @seealso
 //! @[decode_headerfield_params]
-string encode_headerfield_params(array(mapping|ADT.OrderedMapping) params)
+string encode_headerfield_params(array(mapping(string:string)|
+                                       ADT.OrderedMapping(<string, string>)) params)
 {
   array res = ({});
   int sep;
-  foreach (params; ; mapping(string:string)|ADT.OrderedMapping m) {
-    foreach (m; mixed key; mixed value) {
+  foreach (params; ;
+           mapping(string:string)|ADT.OrderedMapping(<string, string>) m) {
+    foreach (m; string key; string value) {
       if (sep)
         res += ({ sep });
       res += ({ (string)key });

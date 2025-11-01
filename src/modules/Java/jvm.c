@@ -26,7 +26,7 @@
 #include "module_support.h"
 #include "pike_memory.h"
 #include "gc.h"
-#include "threads.h"
+#include "pike_threads.h"
 #include "operators.h"
 #include "signal_handler.h"
 #include "pike_types.h"
@@ -85,7 +85,7 @@ static struct program *method_program = NULL, *static_method_program = NULL;
 static struct program *field_program = NULL, *static_field_program = NULL;
 static struct program *natives_program = NULL, *attachment_program = NULL;
 static struct program *monitor_program = NULL;
-static SIZE_T jarray_stor_offs = 0;
+static size_t jarray_stor_offs = 0;
 
 struct jvm_storage {
   JavaVM *jvm;			/* Denotes a Java VM */

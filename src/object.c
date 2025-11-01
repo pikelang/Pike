@@ -238,7 +238,7 @@ PMOD_EXPORT struct object *low_clone(struct program *p)
       Pike_fatal("Frame stack out of whack.\n"); \
   } while(0)
 #else
-#define CHECK_FRAME()	0
+#define CHECK_FRAME()
 #endif
 
 #define POP_FRAME()				\
@@ -491,7 +491,12 @@ struct object *decode_value_clone_object(struct svalue *prog)
   struct program *p=program_from_svalue(prog);
   if(!p) return NULL;
 
-  o=low_clone(p);
+  if ((p->flags & PROGRAM_AVOID_CHECK) && !(p->flags & PROGRAM_PASS_1_DONE)) {
+    p->flags |= PROGRAM_PASS_1_DONE;
+    o=low_clone(p);
+    p->flags &= ~PROGRAM_PASS_1_DONE;
+  } else
+    o=low_clone(p);
   SET_ONERROR(tmp, do_free_object, o);
   debug_malloc_touch(o);
 
@@ -2474,7 +2479,11 @@ union anything *object_get_item_ptr(struct object *o,
   return 0;
 }
 
-
+/**
+ *  Low-level equal relation.
+ *
+ *  Note: Does NOT consider LFUN::_equal()!
+ */
 PMOD_EXPORT int object_equal_p(struct object *a, struct object *b, struct processing *p)
 {
   struct processing curr;

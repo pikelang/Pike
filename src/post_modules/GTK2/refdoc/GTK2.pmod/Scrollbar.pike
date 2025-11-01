@@ -1,3 +1,6 @@
+// Automatically generated from "gtkscrollbar.pre".
+// Do NOT edit.
+
 //!  These are your standard, run-of-the-mill scrollbars. These should
 //!  be used only for scrolling some other widget, such as a list, a
 //!  text box, or a viewport (and it's generally easier to use the
@@ -15,4 +18,5 @@
 //!
 
 inherit GTK2.Range;
+//!
 

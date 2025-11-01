@@ -85,7 +85,7 @@
 #endif
 
 #ifndef MACHINE_CODE_FORCE_FP
-#define MACHINE_CODE_FORCE_FP()	0
+#define MACHINE_CODE_FORCE_FP()
 #endif
 
 #ifndef OVERRIDE_JUMPS
@@ -98,9 +98,10 @@
 
 #define GET_JUMP() (backlog[backlogp].arg=(			\
   (Pike_interpreter.trace_level>3 ?				\
-     sprintf(trace_buffer, "-    Target = %+ld\n",		\
-             (long)LOW_GET_JUMP()),				\
-     write_to_stderr(trace_buffer,strlen(trace_buffer)) : 0),	\
+   snprintf(trace_buffer, sizeof(trace_buffer),                 \
+            "-    Target = %+ld\n",                             \
+            (long)LOW_GET_JUMP()),				\
+   write_to_stderr(trace_buffer,strlen(trace_buffer)) : 0),	\
   LOW_GET_JUMP()))
 
 #define SKIPJUMP() (GET_JUMP(), LOW_SKIPJUMP())
@@ -2895,7 +2896,7 @@ OPCODE1(F_LTOSVAL_CALL_BUILTIN_AND_ASSIGN_POP,
   new_frame->flags=PIKE_FRAME_RETURN_INTERNAL | XFLAGS;			   \
 									   \
   if (UNLIKELY(Pike_interpreter.trace_level > 3)) {                        \
-    fprintf(stderr, "-    Addr = 0x%lx\n", (unsigned long) addr);	   \
+    fprintf(stderr, "-    Addr = %p\n", addr);	                           \
   }									   \
 									   \
   FETCH;								   \

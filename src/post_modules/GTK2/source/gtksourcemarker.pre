@@ -2,7 +2,12 @@
 require gtksourceview;
 
 class GTK2.SourceMarker;
+//! Deprecated. This class was renamed to @[GTK2.SourceMark]
+//! in gtksourceview-2.0.
 //!
+//! @seealso
+//!   @[GTK2.SourceMark]
+
 require gtksourceview20;
 /* Backward compat. */
 inherit GTK2.SourceMark;
@@ -43,3 +48,5 @@ GTK2.SourceMarker next();
 
 GTK2.SourceMarker prev();
 //! Gets the previous marker before this.
+
+endnot;

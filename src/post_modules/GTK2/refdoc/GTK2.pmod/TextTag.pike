@@ -1,3 +1,6 @@
+// Automatically generated from "gtktexttag.pre".
+// Do NOT edit.
+
 //! Properties:
 //! string background
 //! int background-full-height
@@ -74,13 +77,14 @@
 //!
 
 inherit G.Object;
+//!
 
-protected GTK2.TextTag create( string|mapping name_or_props );
+protected void create( void name_or_props );
 //! Creates a new text tag.
 //!
 //!
 
-int event( GTK2.G.Object event_object, GTK2.GdkEvent event, GTK2.TextIter iter );
+int event( G.Object event_object, GDK2.Event event, GTK2.TextIter iter );
 //! Emits the 'event' signal.
 //!
 //!

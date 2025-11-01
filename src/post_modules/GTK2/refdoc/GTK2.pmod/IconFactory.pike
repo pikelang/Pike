@@ -1,8 +1,12 @@
+// Automatically generated from "gtkiconfactory.pre".
+// Do NOT edit.
+
 //! Icon factory, for holding icon sets.
 //!
 //!
 
 inherit G.Object;
+//!
 
 GTK2.IconFactory add( string stock_id, GTK2.IconSet icon_set );
 //! Adds the given icon_set to the icon factory, under the name of stock_id.
@@ -26,7 +30,7 @@ GTK2.IconFactory add_default( );
 //!
 //!
 
-protected GTK2.IconFactory create( );
+protected void create( );
 //! Creates a new GTK2.IconFactory.  An icon factory manages a collection of
 //! GTK2.IconSets; a GTK2.IconSet manages a set of variants of a particular icon
 //! (i.e. a GTK2.IconSet contains variants for different sizes and widget

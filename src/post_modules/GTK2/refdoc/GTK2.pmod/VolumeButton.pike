@@ -1,10 +1,14 @@
+// Automatically generated from "gtkvolumebutton.pre".
+// Do NOT edit.
+
 //! Volume Button
 //!
 //!
 
 inherit GTK2.ScaleButton;
+//!
 
-protected GTK2.VolumeButton create( mapping|void props );
+protected void create( void props );
 //! Create a new W(VolumeButton).
 //!
 //!

@@ -76,13 +76,29 @@ o Syntax for declaring and using generic types added.
 
     bar->z = 1.0;
 
-o Several modules have been updated to use generics.
+o Support for _Generic() special form added from C23.
+
+o Several modules have been updated to use generic types.
+
+  - ADT.CircularList
 
   - ADT.Heap
 
+  - ADT.List
+
+  - ADT.LowLevelStack
+
+  - ADT.Scheduler
+
+  - ADT.Set
+
   - ADT.Stack
 
-  - Concurrent
+  - ADT.Trie
+
+  - Concurrent.Future
+
+  - Concurrent.Promise
 
   They all default their generics to mixed in order to be backward-compatible.
 
@@ -131,6 +147,9 @@ o Backward-compatible syntax for specifying the type of named constants.
 
   Eg constant flag = [int(0..1)](mixed)0, other = [int(0..1)](mixed)1;
 
+  This syntax is intended for use by code that needs to be backward-
+  compatible with Pike 8.0 and earlier.
+
 o ** operator added. It's exponentiation and works with most
   combination of numerical types (int,float,Gmp.mpq,Gmp.mpf,Gmp.mpz)
 
@@ -156,17 +175,56 @@ o Three pass compiler.
   resolve types in forward referring expressions, and is only run when
   needed.
 
-o #pragma disassemble
+o The preprocessor (aka cpp()) has several new features:
 
-  This directive is now available even in pikes compiled --without-debug.
+  - It is now possible to customize the preprocessor and eg add
+    custom directives.
 
-  The byte code output is now interleaved with the generated machine code
-  on selected architectures.
+  - Improved white-space fidelity.
 
-o #pragma no_strict_types
+    White space characters that aren't '\r' are now kept unmodified in the
+    output. '\r' characters are removed if they are followed immediately
+    by a '\n' character, and are otherwise kept. This change makes cpp()
+    keep indentations, and improves the readability of the output from
+    Tools.Standalone.precompile.
 
-  It is now possible to turn off the strict types mode for a section
-  of code.
+  - Support for C99-style varargs macros.
+
+  - Warn about redefining macros.
+
+    The preprocessor now warns if a macro is redefined with a non-equivalent
+    definition.
+
+  - #elifdef and #elseifdef
+
+    These work as a combined @[#else] and @[#ifdef] without
+    adding an extra level of nesting. Added from C23.
+
+  - #if __has_include()
+
+    This checks whether an include file is available. Added from C23.
+
+  - #embed and #if __has_embed()
+
+    This embeds integers read from an include file and checks whether
+    it is available respectively. Added from C23.
+
+  - #pragma disassemble
+
+    This directive is now available even in pikes compiled --without-debug.
+
+    The byte code output is now interleaved with the generated machine code
+    on selected architectures.
+
+  - #pragma experimental_warnings and #pragma no_experimental_warnings
+
+    These enable/disable warnings for use of experimental symbols
+    (default: enabled).
+
+  - #pragma no_strict_types
+
+    It is now possible to turn off the strict types mode for a section
+    of code.
 
 o Complain about redundant backslash escapes.
 
@@ -232,6 +290,29 @@ o Syntax for generator (and restartable) functions added.
   is a function that will be called at the yield point. resume_cb
   may be used to eg behave as if yield() had thrown an error.
 
+  Eg:
+
+    __generator__ int foo(int count) {
+      while (--count) continue return count;
+    }
+
+  Behaves similar to (resume handling not provided):
+
+    function(:int) foo(int count) {
+      int state;
+      return lambda() {
+        switch(state) {
+          case 0:
+            while(--count) return count;
+            state = 1;
+            return 0;
+            break;
+          default:
+            return UNDEFINED;
+        }
+      };
+    }
+
 o Syntax for asynchronous functions added.
 
   - Added the new modifier __async__, which causes such functions
@@ -272,10 +353,45 @@ o Syntax for asynchronous functions added.
 
       mixed x = await(f);
 
-   Behaves similar to:
+    Behaves similar to:
 
       f->on_await(continue::this_function);
       mixed x = yield(0);
+
+  - The main() function may return a Concurrent.Future (ie it may
+    be declared __async__) in which case the master object will
+    enter asynchronous mode, and stay around until the object is
+    fulfilled. This is thus similar to main() returning negative.
+
+o Simplified the Iterator API.
+
+  - Renamed Iterator API functions and made them LFUNs:
+
+    o index() ==> iterator_index()
+
+    o value() ==> iterator_value()
+
+    o next() ==> iterator_next()
+
+  - Iterators now start at the position before the first element
+    to be iterated over. This position may be the the same
+    position as after the last element.
+
+  - The only function that is required for an Iterator is
+    iterator_next(). It should advance the iterator one
+    element, and return UNDEFINED if the position is now
+    after the last element. It may return any other value
+    otherwise. The returned value will be used in place of
+    the values returned by iterator_index() and/or
+    iterator_value() if they do not exist.
+
+  - Restartable functions (or any other functions that have state)
+    may be used as iterators:
+
+      __generator__ int foo(int count) {
+        while (--count) continue return count;
+      }
+      foreach(foo(2);; int val) { werror("val: %d\n", val); }
 
 o Machine code support for more architectures.
 
@@ -310,6 +426,15 @@ o Added the unary +-operator (noop).
 Bug fixes
 ---------
 
+o predef::{en,de}code_value()
+
+  Several fixes related to encoding and decoding of programs.
+
+o Cpp
+
+  Fixed line numbering issue when handling multi-line comments
+  in arguments to macros.
+
 o Compiler
 
   - Constant integers outside the 32-bit signed range no longer
@@ -334,8 +459,14 @@ o Compiler
 
 o Runtime
 
-  The runtime could get confused by PROGRAM_DESTRUCT_IMMEDIATE
-  objects having destruct callbacks under some circumstances.
+  - The runtime could get confused by PROGRAM_DESTRUCT_IMMEDIATE
+    objects having destruct callbacks under some circumstances.
+
+  - A signal handler for SIGCHLD is now always installed. On some
+    operating systems (eg FreeBSD) system calls are apparently
+    not interrupted when ignored signals are received. By always
+    installing a SIGCHLD signal handler, we can guarantee that
+    pthread_kill(THREAD, SIGCHLD) will interrupt the specified thread.
 
 o Operator functions
 
@@ -357,6 +488,14 @@ o Operator functions
 
   - Most operators that use LFUNs now have types that check
     that the arguments to the corresponding LFUN are correct.
+
+o ADT.OrderedMapping
+
+  Adding duplicate keys now replaces the existing keys.
+
+o GTK2
+
+  Support GTK2.8 and earlier again.
 
 o Pike.Backend
 
@@ -401,9 +540,13 @@ o Stdio.File: Support concurrent close() during read() and write().
 
   Previously this had an inconsistent behavior.
 
-o ADT.OrderedMapping
+o Tools.Standalone.autodoc_to_split_html:
 
-  Adding duplicate keys now replaces the existing keys.
+  - Fixed some navigation issues for enums.
+
+  - Fixed rendering of non-inherited symbols when there is a circular inherit.
+
+  - Avoid invalid simplification of references.
 
 
 Incompatible changes
@@ -423,27 +566,7 @@ o As mentioned above; variables that may be set to 0 or UNDEFINED
 o The new stricter type checker may expose old bugs that the
   old type checker did not find.
 
-o Simplified the Iterator API.
-
-  - Renamed Iterator API functions and made them LFUNs:
-
-    o index() ==> iterator_index()
-
-    o value() ==> iterator_value()
-
-    o next() ==> iterator_next()
-
-  - Iterators now start at the position before the first element
-    to be iterated over. This position may be the the same
-    position as after the last element.
-
-  - The only function that is required for an Iterator is
-    iterator_next(). It should advance the iterator one
-    element, and return UNDEFINED if the position is now
-    after the last element. It may return any other value
-    otherwise. The returned value will be used in place of
-    the values returned by iterator_index() and/or
-    iterator_value() if they do not exist.
+o Iterator API changed. See "Simplified the Iterator API" above.
 
 o Sql.Sql is no longer a wrapper class, but a function.
 
@@ -489,6 +612,12 @@ o Anonymous classes are always expressions.
 
   It used to be possible (but typically not useful) to define
   an anonymous class as a statement. Add a name for the class.
+
+o Errorcodes on NT are now unified.
+
+  In cases where there is both an errorcode System.Exxx and a
+  System.WSAExxx the runtime will now always return the former.
+  This applies to eg System.ECONNRESET/System.WSAECONNRESET.
 
 o Gz.crc32 and Nettle.crc32c now only return positive results.
 
@@ -711,6 +840,16 @@ o predef::m_delete()
 
   - m_delete() now supports atomic test and remove.
 
+o predef::sprintf %x
+
+  %X and %x can now be used on 8-bit wide strings to get a hexadecimal
+  representation of their contents. Just calling sprintf("%x",data) is
+  the same as calling String.string2hex(data).
+
+o ADT.CircularList
+
+  Added replace_{back,front}().
+
 o ADT.Heap
 
   - An indirection object ADT.Heap.Element has been added to make it
@@ -720,12 +859,29 @@ o ADT.Heap
 
 o Calendar
 
+  - Timezone data updated to tzdb-2025b.
+
   - The timezone expert system has been updated for the first time
     in quite a while.
+
+o Calendar.mkrules
+
+  - Support %z as timezone abbreviation. This is needed to support
+    tzdb-2025a and later.
+
+  - Fix issue with %s in zone abbreviation.
 
 o CompilerEnvironment()->lock()
 
   Access to the compiler lock.
+
+o Concurent.Future
+
+  - Improved signal-safety.
+
+  - Runtime warning about ignoring return values from callbacks added.
+    This should help catching errors like eg using on_failure() where
+    recover() or recover_with() was intended.
 
 o Crypto & Nettle
 
@@ -748,13 +904,38 @@ o Gmp
 
   - Improved support for GMP 5.0 and later.
 
+o Graphics.Graph
+
+  Fix rendering of line-style legend plupps.
+
 o GTK2
 
   Multiple runtime fixes.
 
 o Image.ANY
 
-  Fixed detection of XWD.
+  - Fixed detection of XWD.
+
+  - Added detection of NEOChrome format.
+
+o Image.DSI
+
+  Add support for encoding.
+
+o Image.Image
+
+  Add quantize_colors() that quantizes the colors of an image
+  to the specified number of bits per channel.
+
+o Image.NEO
+
+  Add encode().
+
+o Image.TIM
+
+  - Add support for 24bit format.
+
+  - Add support for encoding of 15bit and 24bit images.
 
 o Image.X
 
@@ -762,7 +943,9 @@ o Image.X
 
 o Image.XWD
 
-  Added support for XY format.
+  - Added support for XY format.
+
+  - Add support for encoding to 24bit TrueColor ZPixmap.
 
 o JOSE (JSON Object Signing and Encryption)
 
@@ -802,6 +985,11 @@ o Mysql.SqlTable
     This makes it easier to make wrappers for db_conn that wrap
     big_query() et al.
 
+o Netutils
+
+  Support ip(8) in addition to ifconfig(8). Some distributions of Linux
+  no longer provide ifconfig(8) by default, so support ip(8) too.
+
 o Nettle.BlockCipher16
 
   - Add support for RFC 5649-style key wrapping.
@@ -810,9 +998,26 @@ o Nettle.BlockCipher16
 
   - The submodule KW is no more. Its API was not suitable for use.
 
+o Parser.Markdown
+
+  Added a simple LaTeX renderer.
+
 o Parser.Pike
 
   Support new language features.
+
+o Pike.get_runtime_info
+
+  Added several new fields:
+
+  - "debug_malloc" indicates that the runtime has been built
+    --with-debug-malloc.
+
+  - "rtl_debug" indicates that the runtime has been built
+    --with-rtldebug (or equivalent).
+
+  - "running_on_valgrind" contains the number of nested valgrinds
+    the runtime is running under (if any).
 
 o Protocols.DNS
 
@@ -995,6 +1200,10 @@ o Thread
     that they are used together with. This ensures that the correct
     Thread.Mutex is aways used.
 
+o Thread.Farm
+
+  Errors thrown via run_async() are now reported.
+
 o Thread.Mutex
 
   Add future_{,shared_}lock().
@@ -1002,11 +1211,17 @@ o Thread.Mutex
   These return a Concurrent.Future(<Thread.MutexKey>) corresponding
   to the respective {,shared_}lock().
 
-o sprintf %x
+o Tools.Hilfe
 
-  %X and %x can now be used on 8-bit wide strings to get a hexadecimal
-  representation of their contents. Just calling sprintf("%x",data) is
-  the same as calling String.string2hex(data).
+  Support __generator__ and __async__ modifiers.
+
+o Tools.Standalone.precompile
+
+  - Program identifiers can now be preallocated, allowing method prototypes
+    to reference classes defined further down in the cmod.
+
+  - Attempt to keep comments in place for EXTRA. This fixes some issues
+    where autodoc comments were moved around.
 
 o Unicode 10.0.0.
 
@@ -1109,3 +1324,23 @@ o C99 assumed
 
   The configure tests will not check for functions defined in C99
   anymore and C99 compiler support is assumed.
+
+
+Issues fixed
+------------
+
+Github pikelang/pike: #16, #25, #40
+
+Lysator pikelang/pike: #1694, #2100, #2315, #3150, #3681, #4312, #4934,
+  #5466, #7363, #7831, #8042, #10003, #10004, #10006, #10012, #10017,
+  #10018, #10021, #10022, #10023, #10026, #10027, #10028, #10029, #10033,
+  #10035, #10037, #10039, #10040, #10041, #10042, #10043, #10045, #10046,
+  #10047, #10048, #10050, #10055, #10059, #10065, #10072, #10077, #10083,
+  #10085, #10086, #10089, #10090, #10094, #10096, #10097, #10098, #10104,
+  #10105, #10107, #10109, #10111, #10112, #10113, #10114, #10117, #10118,
+  #10119, #10122, #10125, #10127, #10128, #10129, #10130, #10131, #10133,
+  #10134, #10135, #10136, #10137, #10139, #10142, #10143, #10144, #10146,
+  #10147, #10150, #10151, #10154, #10155, #10156, #10158, #10160, #10161,
+  #10162, #10163, #10164, #10170, #10171, #10173, #10175, #10177, #10178,
+  #10179, #10180, #10181, #10183, #10187, #10188, #10191, #10192, #10195,
+  #10196, #10197, #10198, #10202, #10203, #10204

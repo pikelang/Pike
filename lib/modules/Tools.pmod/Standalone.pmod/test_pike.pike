@@ -123,9 +123,12 @@ object(Testsuite)|zero read_tests( string fn ) {
   return 0;
 }
 
-mapping(string:int) pushed_warnings = ([]);
+class Counter(this_program|void prev) { int counter; }
 
-class WarningFlag {
+mapping(string:int) pushed_warnings = ([]);
+mapping(string:Counter) expected_compilation_errors = ([]);
+
+class WarningFlag (int|void inhibit_errors) {
   int(0..1) warning;
   array(string) warnings = ({});
 
@@ -144,6 +147,12 @@ class WarningFlag {
   }
 
   void compile_error(string file, int line, string text) {
+    Counter e = expected_compilation_errors[text];
+    if (e) {
+      e->counter++;
+      return;
+    }
+    if (inhibit_errors) return;
     log_msg("%s:%d: Error: %s\n", file,line,text);
   }
 }
@@ -661,6 +670,7 @@ int main(int argc, array(string) argv)
     ({"loop",Getopt.HAS_ARG,({"-l","--loop"})}),
     ({"trace",Getopt.HAS_ARG,({"-t","--trace"})}),
     ({"check",Getopt.MAY_HAVE_ARG,({"-c","--check"})}),
+    ({"omit-slow-tests",Getopt.NO_ARG,({"-S","--omit-slow-tests"})}),
 #if constant(Debug.assembler_debug)
     ({"asm",Getopt.MAY_HAVE_ARG,({"--assembler-debug"})}),
 #endif
@@ -698,6 +708,10 @@ int main(int argc, array(string) argv)
 	case "help":
 	  write(doc);
 	  return EXIT_OK;
+
+        case "omit-slow-tests":
+          add_constant("OMIT_SLOW_TESTS", 1);
+          break;
 
 	case "verbose": verbose+=foo(opt[1]); break;
 	case "prompt": prompt+=foo(opt[1]); break;
@@ -825,6 +839,7 @@ int main(int argc, array(string) argv)
     if (mem) forked += ({ "--memory" });
     // auto already handled.
     if (failed_cond) forked += ({ "--failed-cond" });
+    if (all_constants()["OMIT_SLOW_TESTS"]) forked += ({ "--omit-slow-tests" });
     forked += ({"--subprocess"});
     // debug port not propagated.
     //log_msg("forked:%O\n", forked);
@@ -894,8 +909,13 @@ int main(int argc, array(string) argv)
   add_constant ("log_msg_cont", log_msg_cont);
   add_constant ("log_status", log_status);
 
-  if(!subprocess)
-    log_msg("Begin tests at %s (pid %d)\n", ctime(time())[..<1], getpid());
+  if(!subprocess) {
+    int t = time();
+    mapping(string:int) lt = localtime(t);
+    log_msg("%02d:%02d:%02d: Begin tests at %s (pid %d)\n",
+            lt->hour, lt->min, lt->sec,
+            ctime(t)[..<1], getpid());
+  }
 
   foreach(Getopt.get_args(argv, 1)[1..], string ts) {
     array(string) tests = find_test(ts);
@@ -965,7 +985,9 @@ int main(int argc, array(string) argv)
       if (!objectp(tests) || !sizeof(tests))
 	continue;
 
-      log_msg("Doing tests in %s (%s)\n",
+      mapping(string:int) lt = localtime(time());
+      log_msg("%02d:%02d:%02d: Doing tests in %s (%s)\n",
+              lt->hour, lt->min, lt->sec,
               tests->name ? tests->name() : testsuite,
               ({sizeof(tests) + " tests",
                 0 && subprocess && ("pid " + getpid())}) * ", ");
@@ -1160,6 +1182,8 @@ int main(int argc, array(string) argv)
 	  break;
 
 	case "COMPILE_ERROR":
+          wf = WarningFlag(1);
+          test->inhibit_errors = wf;
           test->compile();
           if(test->compilation_error)
 	  {
@@ -1324,8 +1348,10 @@ int main(int argc, array(string) argv)
 	      log_msg(fname + " failed.\n");
 	      print_code(source);
 	      log_msg_result("o->a(): %O\n", a);
+              errors++;
 	    } else {
 	      pushed_warnings[a]++;
+              successes++;
 	    }
 	    break;
 
@@ -1335,17 +1361,60 @@ int main(int argc, array(string) argv)
 	      log_msg(fname + " failed.\n");
 	      print_code(source);
 	      log_msg_result("o->a(): %O\n", a);
+              errors++;
 	    } else if (pushed_warnings[a]) {
 	      if (!--pushed_warnings[a]) {
 		m_delete(pushed_warnings, a);
 	      }
+              successes++;
 	    } else {
 	      watchdog_show_last_test();
 	      log_msg(fname + " failed.\n");
 	      print_code(source);
 	      log_msg_result("o->a(): %O not pushed!\n", a);
+              errors++;
 	    }
 	    break;
+
+          case "PUSH_EXPECTED_COMPILE_ERROR":
+            if (!stringp(a)) {
+              watchdog_show_last_test();
+              log_msg(fname + " failed.\n");
+              print_code(source);
+              log_msg_result("o->a(): %O\n", a);
+              errors++;
+            } else {
+              expected_compilation_errors[a] =
+                Counter(expected_compilation_errors[a]);
+              successes++;
+            }
+            break;
+
+          case "POP_EXPECTED_COMPILE_ERROR":
+            if (!stringp(a)) {
+              watchdog_show_last_test();
+              log_msg(fname + " failed.\n");
+              print_code(source);
+              log_msg_result("o->a(): %O\n", a);
+              errors++;
+            } else if (Counter e = expected_compilation_errors[a]) {
+              expected_compilation_errors[a] = e->prev;
+              if (!e->counter) {
+                log_msg(fname + " failed.\n");
+                log_msg_result("Previous test(s) did not trigger the "
+                               "expected compilation error: %O.\n", a);
+                errors++;
+              } else {
+                successes++;
+              }
+            } else {
+              watchdog_show_last_test();
+              log_msg(fname + " failed.\n");
+              print_code(source);
+              log_msg_result("o->a(): %O not pushed!\n", a);
+              errors++;
+            }
+            break;
 
 	  case "RUN":
 	    successes++;
@@ -1571,14 +1640,21 @@ int main(int argc, array(string) argv)
   if (!subprocess) {
     log_status ("");
 
+    int t = time();
+    mapping(string:int) lt = localtime(t);
     if(errors || verbose>1)
     {
-      log_msg("Failed tests: "+errors+".        \n");
+      log_msg("%02d:%02d:%02d: Failed tests: %d.        \n",
+              lt->hour, lt->min, lt->sec,
+              errors);
     }
 
-    log_msg("Total tests: %d (%d tests skipped)\n", successes+errors, skipped);
+    log_msg("%02d:%02d:%02d: Total tests: %d (%d tests skipped)\n",
+            lt->hour, lt->min, lt->sec,
+            successes + errors, skipped);
     if(verbose)
-      log_msg("Finished tests at "+ctime(time()));
+      log_msg("%02d:%02d:%02d: Finished tests at " + ctime(t),
+              lt->hour, lt->min, lt->sec);
   }
   else {
     // Clear the output buffer in the watchdog so that

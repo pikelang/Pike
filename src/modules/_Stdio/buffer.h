@@ -45,6 +45,12 @@ PMOD_EXPORT Buffer *io_buffer_from_object(struct object *o);
 PIKE_UNUSED_ATTRIBUTE
 static size_t io_len( Buffer *io )
 {
+#ifdef PIKE_DEBUG
+  if (io->offset > io->len) {
+    Pike_fatal("Invalid offset for buffer: %ld > %ld\n",
+               (long)io->offset, (long)io->len);
+  }
+#endif
   return io->len - io->offset;
 }
 

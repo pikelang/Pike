@@ -947,7 +947,7 @@ PMOD_EXPORT int low_is_equal(const struct svalue *a,
     case T_FUNCTION:
       {
 	/* Consider functions the same if they are references to the same
-	 * identifier in the same class.
+         * identifier in the same class and the objects are equal.
 	 */
 	struct object *a_obj = NULL, *b_obj = NULL;
 	int a_fun = SUBTYPEOF(*a), b_fun = SUBTYPEOF(*b);
@@ -971,12 +971,20 @@ PMOD_EXPORT int low_is_equal(const struct svalue *a,
 	  b_obj = b_tramp->frame->current_object;
 	  b_fun = b_tramp->func;
 	}
+        ref_push_object(a_obj);
+        ref_push_object(b_obj);
+        if (!low_is_equal(Pike_sp-2, Pike_sp-1, proc)) {
+          pop_n_elems(2);
+          return 0;
+        }
+        pop_n_elems(2);
 	if (a_obj->prog == b_obj->prog) {
 	  /* Common case. */
 	  if (a_fun == b_fun) return 1;
 	}
 	/* Consider a and b the same if they are the same identifier. */
-	return ID_FROM_INT(a_obj->prog, a_fun) == ID_FROM_INT(b_obj->prog, b_fun);
+        return ID_FROM_INT(a_obj->prog, a_fun) ==
+          ID_FROM_INT(b_obj->prog, b_fun);
       }
 
     case T_TYPE:
@@ -1339,9 +1347,9 @@ static void dsv_add_string_to_buf (struct byte_buffer *buf, struct pike_string *
 	   * the preceding backslash to avoid that. */
 	  buffer_add_str_unsafe(buf, "u005c");	/* The starting backslash is already there. */
 	if (j > 0xffff)
-	  buffer_advance(buf, sprintf(buffer_dst(buf), "\\U%08x", j));
+          buffer_advance(buf, snprintf(buffer_dst(buf), 11, "\\U%08x", j));
 	else
-	  buffer_advance(buf, sprintf(buffer_dst(buf), "\\u%04x", j));
+          buffer_advance(buf, snprintf(buffer_dst(buf), 11, "\\u%04x", j));
       }
       backslashes = 0;
     }
@@ -1373,8 +1381,9 @@ PMOD_EXPORT void describe_svalue(struct byte_buffer *buf, const struct svalue *s
   {
     case T_INT:
       {
-        int len = sprintf(buffer_ensure_space(buf, INT_SPRINTF_SIZE(INT_TYPE)),
-                          "%"PRINTPIKEINT"d", s->u.integer);
+        int len = snprintf(buffer_ensure_space(buf, INT_SPRINTF_SIZE(INT_TYPE)),
+                           INT_SPRINTF_SIZE(INT_TYPE),
+                           "%"PRINTPIKEINT"d", s->u.integer);
         buffer_advance(buf, len);
         break;
       }
@@ -1462,7 +1471,7 @@ PMOD_EXPORT void describe_svalue(struct byte_buffer *buf, const struct svalue *s
 		  /* Use octal escapes for eight bit chars since
 		   * they're more compact than unicode escapes. */
 		  int char_after = index_shared_string(s->u.string,i+1);
-		  int len = sprintf(buffer_dst(buf), "\\%o",j);
+                  int len = snprintf(buffer_dst(buf), 11, "\\%o",j);
                   buffer_advance(buf, len);
 		  if (char_after >= '0' && char_after <= '9') {
 		    /* Strictly speaking we don't need to do this if
@@ -1479,9 +1488,11 @@ PMOD_EXPORT void describe_svalue(struct byte_buffer *buf, const struct svalue *s
 		 * double quote trickery. Also, hex is easier to read
 		 * than octal. */
                 if (((unsigned INT32)j) > 0xffff)
-		  buffer_advance(buf, sprintf (buffer_dst(buf), "\\U%08x", j));
+                  buffer_advance(buf, snprintf(buffer_dst(buf), 11,
+                                               "\\U%08x", j));
 		else
-		  buffer_advance(buf, sprintf (buffer_dst(buf), "\\u%04x", j));
+                  buffer_advance(buf, snprintf(buffer_dst(buf), 11,
+                                               "\\u%04x", j));
 	      }
 	  }
         }
@@ -1597,8 +1608,9 @@ PMOD_EXPORT void describe_svalue(struct byte_buffer *buf, const struct svalue *s
 	      free(file);
 	      if (line) {
                 buffer_advance(buf,
-                               sprintf(buffer_ensure_space(buf, INT_SPRINTF_SIZE(long)+1),
-                                       ":%ld", (long)line));
+                               snprintf(buffer_ensure_space(buf, INT_SPRINTF_SIZE(long)+1),
+                                        INT_SPRINTF_SIZE(long)+1,
+                                        ":%ld", (long)line));
 	      }
 	      buffer_add_char(buf, ')');
 	      break;
@@ -1738,8 +1750,9 @@ PMOD_EXPORT void describe_svalue(struct byte_buffer *buf, const struct svalue *s
 	    free(file);
 	    if (line) {
               buffer_advance(buf,
-                             sprintf(buffer_ensure_space(buf, INT_SPRINTF_SIZE(long)+1),
-                                     ":%ld", (long)line));
+                             snprintf(buffer_ensure_space(buf, INT_SPRINTF_SIZE(long)+1),
+                                      INT_SPRINTF_SIZE(long)+1,
+                                      ":%ld", (long)line));
 	    }
 	    buffer_add_char(buf, ')');
 	    break;
@@ -1809,8 +1822,9 @@ PMOD_EXPORT void describe_svalue(struct byte_buffer *buf, const struct svalue *s
 	  free(file);
 	  if (line) {
             buffer_advance(buf,
-                           sprintf(buffer_ensure_space(buf, INT_SPRINTF_SIZE(long)+1),
-                                   ":%ld", (long)line));
+                           snprintf(buffer_ensure_space(buf, INT_SPRINTF_SIZE(long)+1),
+                                    INT_SPRINTF_SIZE(long)+1,
+                                    ":%ld", (long)line));
 	  }
 	  buffer_add_char(buf, ')');
 	  break;
@@ -1822,7 +1836,8 @@ PMOD_EXPORT void describe_svalue(struct byte_buffer *buf, const struct svalue *s
     }
 
     case T_FLOAT:
-      format_pike_float (buffer_ensure_space(buf, MAX_FLOAT_SPRINTF_LEN), s->u.float_number);
+      format_pike_float(buffer_ensure_space(buf, MAX_FLOAT_SPRINTF_LEN),
+                        MAX_FLOAT_SPRINTF_LEN, s->u.float_number);
       /* Advance buffer ptr until null byte */
       buffer_advance(buf, strlen(buffer_dst(buf)));
       break;
@@ -1852,7 +1867,8 @@ PMOD_EXPORT void describe_svalue(struct byte_buffer *buf, const struct svalue *s
       break;
 
     case T_SVALUE_PTR:
-      buffer_advance(buf, sprintf(buffer_ensure_space(buf, 50), "<Svalue %p>", s->u.lval));
+      buffer_advance(buf, snprintf(buffer_ensure_space(buf, 50), 50,
+                                   "<Svalue %p>", s->u.lval));
       break;
 
     case PIKE_T_ARRAY_LVALUE:
@@ -1860,7 +1876,8 @@ PMOD_EXPORT void describe_svalue(struct byte_buffer *buf, const struct svalue *s
       break;
 
     default:
-      buffer_advance(buf, sprintf(buffer_ensure_space(buf, 50), "<Unknown %d>", TYPEOF(*s)));
+      buffer_advance(buf, snprintf(buffer_ensure_space(buf, 50), 50,
+                                   "<Unknown %d>", TYPEOF(*s)));
       break;
   }
 }
@@ -1878,10 +1895,10 @@ PMOD_EXPORT void safe_describe_svalue (struct byte_buffer *buf, const struct sva
 PMOD_EXPORT void print_svalue (FILE *out, const struct svalue *s)
 {
   struct byte_buffer str = BUFFER_INIT();
-  SIZE_T off = 0;
+  size_t off = 0;
   describe_svalue (&str, s, 0, NULL);
   while (off < buffer_content_length(&str)) {
-    SIZE_T num = fwrite ((char*)buffer_ptr(&str) + off, 1, buffer_content_length(&str) - off, out);
+    size_t num = fwrite ((char*)buffer_ptr(&str) + off, 1, buffer_content_length(&str) - off, out);
     if (num) off += num;
     else break;
   }

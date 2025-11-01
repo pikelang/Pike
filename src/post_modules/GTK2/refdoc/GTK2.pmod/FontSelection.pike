@@ -1,3 +1,6 @@
+// Automatically generated from "gtkfontselection.pre".
+// Do NOT edit.
+
 //! The W(FontSelection) widget lists the available fonts, styles and sizes,
 //! allowing the user to select a font.  It is used in W(FontSelectionDialog).
 //!@expr{ GTK2.FontSelection();@}
@@ -10,8 +13,9 @@
 //!
 
 inherit GTK2.Vbox;
+//!
 
-protected GTK2.FontSelection create( mapping|void props );
+protected void create( void props );
 //! Create a new GTK2.FontSelection widget.
 //!
 //!

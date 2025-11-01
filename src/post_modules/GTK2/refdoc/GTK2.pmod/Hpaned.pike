@@ -1,3 +1,6 @@
+// Automatically generated from "gtkhpaned.pre".
+// Do NOT edit.
+
 //! The paned window widgets are useful when you want to divide an area
 //! into two parts, with the relative size of the two parts controlled
 //! by the user. A groove is drawn between the two portions with a
@@ -14,8 +17,9 @@
 //!
 
 inherit GTK2.Paned;
+//!
 
-protected GTK2.Hpaned create( mapping|void props );
+protected void create( void props );
 //! Create a new W(Hpaned) widget.
 //!
 //!

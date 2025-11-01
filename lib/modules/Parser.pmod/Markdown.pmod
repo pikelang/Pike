@@ -163,6 +163,24 @@ protected string decode_html(string html)
   });
 }
 
+//! TeX encode special characters eg @tt{#&\\@} etc
+protected string encode_tex(string str)
+{
+  return replace(str, ([
+    "#": "\\#",
+    "%": "\\%",
+    "&": "\\&",
+    "$": "\\$",
+    "_": "\\_",
+    "{": "\\{",
+    "}": "\\}",
+    "~": "\\~",
+    "^": "\\^",
+    "\"" : "\\ensuremath{{}^{\\prime\\prime}}",
+    "'": "\\ensuremath{{}^{\\prime}}",
+  ]));
+}
+
 protected constant default_options = ([
   "gfm"           : true,
   "tables"        : true,
@@ -1057,7 +1075,7 @@ class InlineLexer
       // text
       if (cap = rules->text->split2(src)) {
         SRC_SUBSTR();
-        add(renderer->text(encode_html(smartypants(cap[0])), ([])));
+        add(renderer->text(cap[0], ([])));
         continue;
       }
 
@@ -1066,32 +1084,6 @@ class InlineLexer
     }
 
     return buf->get();
-  }
-
-  protected string smartypants(string text)
-  {
-    if (!options->smartypants) return text;
-
-    // em-dashes, en-dashes
-    text = replace(text, ([ "---" : "&mdash;", "--" : "&ndash;" ]));
-    // opening singles
-    text = REGX("(^|[-—/(\\[{\"\\s])'")->replace(text,
-                                                lambda (string a, string b) {
-                                                  return b + "&lsquo;";
-                                                });
-    // closing singles & apostrophes
-    text = replace(text, "'", "&rsquo;");
-    // opening doubles
-    text = REGX("(^|[-—/(\\[{‘\\s])\"")->replace(text,
-                                                 lambda (string a, string b) {
-                                                   return b + "&ldquo;";
-                                                 });
-    // closing doubles
-    text = replace(text, "\"", "&rdquo;");
-    // ellipses
-    text = REGX("\\.{3}")->replace(text, "&hellip;");
-
-    return text;
   }
 
   protected string output_link(array cap, mapping link)
@@ -1248,12 +1240,38 @@ class Renderer
 
   //!
   string html(string text, mapping token)  { return text; }
-  string text(string t, mapping token)     { return t; }
+  string text(string t, mapping token)     { return encode_html(smartypants(t)); }
   string strong(string t, mapping token)   { return sprintf("<strong%s>%s</strong>", attrs(token), t); }
   string em(string t, mapping token)       { return sprintf("<em%s>%s</em>", attrs(token), t); }
   string del(string t, mapping token)      { return sprintf("<del%s>%s</del>", attrs(token), t); }
   string codespan(string t, mapping token) { return sprintf("<code%s>%s</code>", attrs(token), t); }
   string br(mapping token)                 { return options->xhtml ? "<br/>" : "<br>"; }
+
+  protected string smartypants(string text)
+  {
+    if (!options->smartypants) return text;
+
+    // em-dashes, en-dashes
+    text = replace(text, ([ "---" : "&mdash;", "--" : "&ndash;" ]));
+    // opening singles
+    text = REGX("(^|[-—/(\\[{\"\\s])'")->replace(text,
+                                                lambda (string a, string b) {
+                                                  return b + "&lsquo;";
+                                                });
+    // closing singles & apostrophes
+    text = replace(text, "'", "&rsquo;");
+    // opening doubles
+    text = REGX("(^|[-—/(\\[{‘\\s])\"")->replace(text,
+                                                 lambda (string a, string b) {
+                                                   return b + "&ldquo;";
+                                                 });
+    // closing doubles
+    text = replace(text, "\"", "&rdquo;");
+    // ellipses
+    text = REGX("\\.{3}")->replace(text, "&hellip;");
+
+    return text;
+  }
 
   //!
   string link(string href, string|zero title, string text, mapping token)
@@ -1285,5 +1303,150 @@ class Renderer
     string i = sprintf("<img src='%s' alt='%s'", url, text);
     if (text) i += sprintf(" title='%s'", text);
     return i + (options->xhtml ? "/>" : ">");
+  }
+}
+
+//!
+class LaTeXRenderer
+{
+  //! Markdown renderer to LaTeX fragment. Does not generate a complete document;
+  //! this can be inserted into a document.
+
+  inherit Renderer;
+
+  //! Attributes are currently not supported and will be ignored.
+  string attrs(mapping token, mapping|void dflt)
+  {
+    return "";
+  }
+
+  //!
+  string code(string code, string lang, bool escaped, mapping token)
+  {
+    if (options->highlight) {
+      string out = options->highlight(code, lang);
+      if (out && out != code) {
+        code = out;
+        escaped = true;
+      }
+    }
+
+    if (!lang) {
+      return sprintf("\\begin{verbatim}\n%s\n\\end{verbatim}",
+                     !escaped ? encode_tex(code) : code);
+    }
+
+    return sprintf(
+      "\\begin[%s%s]{verbatim}\n%s\n\\end{verbatim}",
+      options->lang_prefix,
+      encode_tex(lang),
+      !escaped ? encode_tex(code) : code,
+    );
+  }
+
+  //!
+  string blockquote(string text, mapping token)
+  {
+    return sprintf("\\begin{quotation}\n%s\\end{quotation}\n", text);
+  }
+
+  //!
+  string hr() { return "\\hrulefill\n"; }
+
+  //!
+  string heading(string text, int level, string raw, mapping token)
+  {
+    array levels = ({
+      "\\huge",
+      "\\Large",
+      "\\large",
+      "\\normalsize",
+      "\\small",
+    });
+    return sprintf("\\vspace{10pt}\\%s{\\textbf{%s %s}}\\vspace{2pt}\n",
+      options->heading_sections ? "section" : "par",
+      levels[limit(0, level - 1, sizeof(levels) - 1)],
+      text,
+    );
+  }
+
+  //!
+  string list(string body, void|bool ordered, mapping token)
+  {
+    return sprintf("\\begin{itemize}\n%s\\end{itemize}\n", body);
+  }
+
+  //!
+  string listitem(string text, mapping token)
+  {
+    return sprintf("\\item %s\n", text);
+  }
+
+  //!
+  string paragraph(string text, mapping token)
+  {
+    return sprintf("\\par{%s}\n", text);
+  }
+
+  //!
+  string table(string header, string body, mapping token)
+  {
+    return sprintf(
+      "\\par{\\begin{tabular}{|%{l|%}}\n\\hline\n%s%s\n\\end{tabular}}\n",
+      token->header, header, body
+    );
+  }
+
+  //!
+  string tablerow(string row, mapping token)
+  {
+    // A row will consist of a series of cells with ampersands after them.
+    // Strip off the last ampersand and put a pair of backslashes instead.
+    return row[..<2] + "\\\\\n\\hline\n";
+  }
+
+  //!
+  string tablecell(string cell, mapping flags, mapping token)
+  {
+    return flags->header ? "\\textbf{" + cell + "} & " : cell + " & ";
+  }
+
+  //!
+  string html(string text, mapping token)  { return text; }
+  string text(string t, mapping token)     { return encode_tex(t); }
+  string strong(string t, mapping token)   { return sprintf("\\textbf{%s}", t); }
+  string em(string t, mapping token)       { return sprintf("\\textit{%s}", t); }
+  string del(string t, mapping token)      { return sprintf("\\st{%s}", t); }
+  string codespan(string t, mapping token) { return sprintf("\\texttt{%s}", t); }
+  string br(mapping token)                 { return "\\setlength{\\fboxsep}{5pt}"; }
+
+  //!
+  string link(string href, string|zero title, string text, mapping token)
+  {
+    if (options->sanitize) {
+      mixed e = catch {
+        string t = Protocols.HTTP.uri_decode(decode_html(href));
+        t = REGX("[^\\w:]")->replace(t, "");
+        if (has_prefix(t, "javascript:") || has_prefix(t, "vbscript:")) {
+          return "";
+        }
+      };
+
+      if (e) {
+        return "";
+      }
+    }
+
+    return sprintf(
+      "\\href{%s}{%s}",
+      href,
+      text
+    );
+  }
+
+  //!
+  string image(string url, string title, string text, mapping token)
+  {
+    return sprintf("\\includegraphics{%s}}", url);
   }
 }

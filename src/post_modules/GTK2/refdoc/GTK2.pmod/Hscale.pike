@@ -1,3 +1,6 @@
+// Automatically generated from "gtkhscale.pre".
+// Do NOT edit.
+
 //! The GTK2.HScale widget is used to allow the user to select a value
 //! using a horizontal slider. A GTK2.Adjustment is used to set the
 //! initial value, the lower and upper bounds, and the step and page
@@ -16,8 +19,9 @@
 //!
 
 inherit GTK2.Scale;
+//!
 
-protected GTK2.Hscale create( GTK2.Adjustment settings_or_min_props, float|void max, float|void step );
+protected void create( void settings_or_min_props, void max, void step );
 //! Used to create a new hscale widget.
 //! Either pass an W(Adjustment), or three floats representing min, max, and
 //! step values.

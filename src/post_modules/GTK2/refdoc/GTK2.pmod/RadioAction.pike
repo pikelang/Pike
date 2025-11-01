@@ -1,3 +1,6 @@
+// Automatically generated from "gtkradioaction.pre".
+// Do NOT edit.
+
 //! Properties
 //! int current-value
 //! GTK2.RadioAction group
@@ -9,8 +12,9 @@
 //!
 
 inherit GTK2.ToggleAction;
+//!
 
-protected GTK2.RadioAction create( string|mapping name_or_props, string|void label, string|void tooltip, string|void stock_id, int|void value );
+protected void create( void name_or_props, void label, void tooltip, void stock_id, void value );
 //! Creates a new GTK2.ToggleAction object.
 //!
 //!

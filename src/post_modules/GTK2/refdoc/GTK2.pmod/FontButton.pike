@@ -1,3 +1,6 @@
+// Automatically generated from "gtkfontbutton.pre".
+// Do NOT edit.
+
 //! Properties:
 //! string font-name
 //! int show-size
@@ -12,8 +15,9 @@
 //!
 
 inherit GTK2.Button;
+//!
 
-protected GTK2.FontButton create( string|mapping font_or_props );
+protected void create( void font_or_props );
 //! Create a new font picker widget.  If font is specified, it will be
 //! displayed in the font selection dialog.
 //!

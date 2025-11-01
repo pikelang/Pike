@@ -21,7 +21,7 @@
 
 /* Pike includes */
 #include "las.h"
-#include "threads.h"
+#include "pike_threads.h"
 #include "operators.h"
 
 #include "pgresult.h"
@@ -295,7 +295,7 @@ static void set_error (char * newerror)
 
 	if (port_no > 0) {
 	  if (port_no < 65536) {
-	    sprintf(port = port_buffer, "%d", port_no);
+            snprintf(port = port_buffer, sizeof(port_buffer), "%d", port_no);
 	  } else {
 	    SIMPLE_ARG_TYPE_ERROR("create", 5, "int(0..65535)");
 	  }
@@ -526,8 +526,8 @@ PIKEFUN object big_query(string query_, array|void bnds)
 	  if(qlen>LIMITLENSC && strcmp(query+qlen-LIMITLENSC,LIMIT1STRSC)
 	     && strcmp(query+qlen-LIMITLEN,LIMIT1STR)
 	     &&(nquery=malloc(CPREFLEN+qlen))) {
-	    strcpy(nquery,CURSORPREFIX);
-	    strcpy(nquery+CPREFLEN-1,query);
+            strlcpy(nquery, CURSORPREFIX, CPREFLEN + qlen);
+            strlcpy(nquery + CPREFLEN-1, query, qlen+1);
 	    if(lastcommit)
 	      goto yupbegin;
 	    res=PQexecParams(conn,nquery,
@@ -785,7 +785,8 @@ PIKEFUN string host_info()
 
 	if (PQstatus(THIS->dblink)!=CONNECTION_BAD) {
 		char buf[64];
-		sprintf(buf,"TCP/IP %p connection to ",THIS->dblink);
+                snprintf(buf, sizeof(buf),
+                         "TCP/IP %p connection to ", THIS->dblink);
 		push_text(buf);
 		pgdebug("adding reason\n");
 		if(PQhost(THIS->dblink))

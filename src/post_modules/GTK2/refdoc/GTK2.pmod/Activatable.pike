@@ -1,3 +1,6 @@
+// Automatically generated from "gtkactivatable.pre".
+// Do NOT edit.
+
 //! Activatable widgets can be connected to a GTK.Action and reflects
 //! the state of its action. A GTK.Activatable can also provide
 //! feedback through its action, as they are responsible for

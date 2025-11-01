@@ -576,7 +576,7 @@ static void free_string_content(struct pike_string * s)
 static void free_unlinked_pike_string(struct pike_string * s)
 {
   free_string_content(s);
-  dmalloc_unregister(s, 0);
+  (void)dmalloc_unregister(s, 0);
   switch(s->struct_type)
   {
    case STRING_STRUCT_STRING:
@@ -713,6 +713,9 @@ PMOD_EXPORT struct pike_string *debug_begin_wide_shared_string(size_t len, enum 
   /* we mark the string as static here, to avoid double free if the
    * allocations fail
    */
+#ifdef __CHECKER__
+  memset(t, 0, sizeof(struct pike_string));
+#endif
 #ifdef PIKE_DEBUG
   gc_init_marker(t);
 #endif
@@ -907,6 +910,11 @@ struct pike_string *low_end_shared_string(struct pike_string *s)
     s = s2;
     add_ref(s);
   }else{
+    if (!len) {
+      s->string_is_utf8 = 1;
+      s->min = s->max = 0;	/* Not really, but... */
+      s->flags |= STRING_CONTENT_CHECKED;
+    }
     link_pike_string(s, h);
   }
 
@@ -1352,9 +1360,9 @@ struct pike_string *add_string_status(int verbose)
     }
   }
 /*
-  sprintf(b,"Searches: %ld    Average search length: %6.3f\n",
-      (long)num_str_searches, (double)search_len / num_str_searches);
-  my_strcat(b);
+  string_builder_sprintf(&s, "Searches: %ld    Average search length: %6.3f\n",
+                         (long)num_str_searches,
+                         (double)search_len / num_str_searches);
 */
   return finish_string_builder(&s);
 }
@@ -1676,8 +1684,8 @@ PMOD_EXPORT ptrdiff_t my_quick_strcmp(const struct pike_string *a,
 }
 
 
-struct pike_string *realloc_unlinked_string(struct pike_string *a,
-                                           ptrdiff_t size)
+struct pike_string *debug_realloc_unlinked_string(struct pike_string *a,
+                                                  ptrdiff_t size)
 {
   char * s = NULL;
   size_t nbytes = (size_t)(size+1) << a->size_shift;
@@ -1735,7 +1743,9 @@ static struct pike_string *realloc_shared_string(struct pike_string *a,
   }
 }
 
-struct pike_string *new_realloc_shared_string(struct pike_string *a, INT32 size, enum size_shift shift)
+struct pike_string *debug_new_realloc_shared_string(struct pike_string *a,
+                                                    INT32 size,
+                                                    enum size_shift shift)
 {
   struct pike_string *r;
   if(shift == a->size_shift) return realloc_shared_string(a,size);
@@ -2338,6 +2348,12 @@ void init_shared_string_table(void)
 PMOD_EXPORT struct shared_string_location *all_shared_string_locations;
 #endif
 
+#ifdef DEBUG_MALLOC
+static void walk_unregister_string(struct ba_iterator *it, void *UNUSED(data))
+{
+  dmalloc_unregister(it->cur, 0);
+}
+#endif
 
 void cleanup_shared_string_table(void)
 {
@@ -2386,6 +2402,13 @@ void cleanup_shared_string_table(void)
   base_table=0;
   num_strings=0;
 
+#ifdef DEBUG_MALLOC
+  /* We need to remove all memhdrs for the remaining strings.
+   * Otherwise find_references_to() may attempt to index the
+   * memory and trigger a SEGV if it has been unmapped.
+   */
+  ba_walk(&string_allocator, walk_unregister_string, NULL);
+#endif
 #ifdef DO_PIKE_CLEANUP
   ba_destroy(&string_allocator);
 #endif /* DO_PIKE_CLEANUP */
@@ -2671,7 +2694,7 @@ int wide_string_to_svalue_inumber(struct svalue *r,
 {
   PCHARP tmp;
   int ret=pcharp_to_svalue_inumber(r,
-				   MKPCHARP(str,shift),
+                                   tmp = MKPCHARP(str,shift),
 				   &tmp,
 				   base,
 				   maxlength);
@@ -2679,35 +2702,48 @@ int wide_string_to_svalue_inumber(struct svalue *r,
   return ret;
 }
 
-int safe_wide_string_to_svalue_inumber(struct svalue *r,
-				       void * str,
-				       void *ptr,
-				       int base,
-				       ptrdiff_t maxlength,
-				       enum size_shift shift)
-/* For use from the lexer where we can't let errors be thrown. */
+/* NOTE: Extracted from safe_wide_string_to_svalue_inumber() to work
+ *       around bugs in some versions of gcc that complain about
+ *       tmp in MKPCHARP() being clobbered (due to inlineing).
+ *       Seen with gcc 3.4.3/x86/Solaris 10.
+ */
+static int safe_pcharp_to_svalue_inumber(struct svalue *r,
+                                         PCHARP str,
+                                         PCHARP *ptr,
+                                         int base,
+                                         ptrdiff_t maxlength)
 {
-  PCHARP tmp;
   JMP_BUF recovery;
   int ret = 0;
 
-  free_svalue (&throw_value);
-  mark_free_svalue (&throw_value);
+  free_svalue(&throw_value);
+  mark_free_svalue(&throw_value);
 
-  if (SETJMP (recovery)) {
+  if (SETJMP(recovery)) {
+    UNSETJMP(recovery);
     /* We know that pcharp_to_svalue_inumber has initialized the
      * svalue before any error might be thrown. */
     call_handle_error();
     ret = 0;
   }
   else
-    ret = pcharp_to_svalue_inumber(r,
-				   MKPCHARP(str,shift),
-				   &tmp,
-				   base,
-				   maxlength);
+    ret = pcharp_to_svalue_inumber(r, str, ptr, base, maxlength);
   UNSETJMP (recovery);
-  if(ptr) *(p_wchar0 **)ptr=tmp.ptr;
+  return ret;
+}
+
+int safe_wide_string_to_svalue_inumber(struct svalue *r,
+                                       void * str,
+                                       void *ptr,
+                                       int base,
+                                       ptrdiff_t maxlength,
+                                       enum size_shift shift)
+/* For use from the lexer where we can't let errors be thrown. */
+{
+  PCHARP tmp;
+  int ret = safe_pcharp_to_svalue_inumber(r, MKPCHARP(str,shift),
+                                          &tmp, base, maxlength);
+  if (ptr && ret) *(p_wchar0 **)ptr = tmp.ptr;
   return ret;
 }
 
@@ -2724,6 +2760,8 @@ PMOD_EXPORT int pcharp_to_svalue_inumber(struct svalue *r,
   unsigned INT_TYPE val, mul_limit;
   int c;
   int xx, neg = 0, add_limit, overflow = 0;
+
+  if (maxlength <= 0) return 0; /* DWIM max length not supported anymore. */
 
   maxlength--;   /* max_length <= 0 means no max length. */
   str_start = str;
@@ -2853,7 +2891,8 @@ PMOD_EXPORT int convert_stack_top_string_to_inumber(int base)
   if(TYPEOF(Pike_sp[-1]) != T_STRING)
     Pike_error("Cannot convert stack top to integer number.\n");
 
-  i=pcharp_to_svalue_inumber(&r, MKPCHARP_STR(Pike_sp[-1].u.string), 0, base, 0);
+  i = pcharp_to_svalue_inumber(&r, MKPCHARP_STR(Pike_sp[-1].u.string), NULL,
+                               base, Pike_sp[-1].u.string->len);
 
   free_string(Pike_sp[-1].u.string);
   Pike_sp[-1] = r;
@@ -2986,10 +3025,12 @@ PMOD_EXPORT double STRTOD_PCHARP(const PCHARP nptr, PCHARP *endptr)
   for (; COMPARE_PCHARP(sdigits,<,sdigitsend); INC_PCHARP(sdigits,1))
   {
     char ch = EXTRACT_PCHARP(sdigits);
-    if (ch != '.')
+    if (ch != '.') {
       *p++ = ch;
-  }  
-  sprintf(p, "E%ld", exponent);
+      buf_len--;
+    }
+  }
+  snprintf(p, buf_len, "E%ld", exponent);
 
   num = strtod(buf, NULL);
   if (free_buf)
@@ -3140,10 +3181,12 @@ PMOD_EXPORT long double STRTOLD_PCHARP(const PCHARP nptr, PCHARP *endptr)
   for (; COMPARE_PCHARP(sdigits,<,sdigitsend); INC_PCHARP(sdigits,1))
   {
     char ch = EXTRACT_PCHARP(sdigits);
-    if (ch != '.')
+    if (ch != '.') {
       *p++ = ch;
-  }  
-  sprintf(p, "E%ld", exponent);
+      buf_len--;
+    }
+  }
+  snprintf(p, buf_len, "E%ld", exponent);
 
   num = strtold(buf, NULL);
   if (free_buf)

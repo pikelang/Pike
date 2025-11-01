@@ -1,6 +1,10 @@
+// Automatically generated from "gtktextiter.pre".
+// Do NOT edit.
+
 //! A TextIter.
 //!
 //!
+
 
 int backward_char( );
 //! Moves backward by one character offset.  Returns true if the movement
@@ -141,7 +145,6 @@ int compare( GTK2.TextIter rhs );
 //! in the buffer.
 //!
 //!
-
 
 int editable( int default_setting );
 //! Returns whether the character at this location is within an editable
@@ -418,7 +421,7 @@ int get_offset( );
 //!
 //!
 
-GTK2.GdkPixbuf get_pixbuf( );
+GDK2.Pixbuf get_pixbuf( );
 //! If the element at iter is a pixbuf, it is returned.
 //!
 //!

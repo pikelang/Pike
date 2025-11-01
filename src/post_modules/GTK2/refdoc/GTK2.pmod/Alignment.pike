@@ -1,3 +1,6 @@
+// Automatically generated from "gtkalignment.pre".
+// Do NOT edit.
+
 //! The W(Alignment) widget controls the alignment and size of its
 //! child widget. It has four settings: xscale, yscale, xalign, and
 //! yalign.
@@ -27,8 +30,9 @@
 //!
 
 inherit GTK2.Bin;
+//!
 
-protected GTK2.Alignment create( float|mapping xalign_or_props, float|void yalign, float|void xscale, float|void yscale );
+protected void create( void xalign_or_props, void yalign, void xscale, void yscale );
 //! @xml{<matrix>@}
 //! @xml{<r>@}@xml{<c>@}xalign :@xml{</c>@}
 //! @xml{<c>@}the horizontal alignment of the child widget, from 0 (left) to 1 (right).@xml{</c>@}@xml{</r>@}

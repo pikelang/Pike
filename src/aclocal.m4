@@ -10,6 +10,10 @@ ifdef([_AC_OUTPUT_SUBDIRS], ,
       [define([_AC_OUTPUT_SUBDIRS],
 	      [AC_OUTPUT_SUBDIRS(AC_LIST_SUBDIRS)])])
 
+dnl Autoconf 2.71 and 2.72 insist on attempting to force C11/CXX11.
+m4_defun([_AC_PROG_CC_STDC_EDITION], [])
+m4_defun([_AC_PROG_CXX_STDCXX_EDITION], [])
+
 dnl Autoconf 2.71+ has put AC_REQUIRE[AC_CANONICAL_HOST] everywhere...
 m4_copy([AC_CANONICAL_HOST], [ORIG_AC_CANONICAL_HOST])
 m4_defun([AC_CANONICAL_HOST], [])
@@ -261,7 +265,31 @@ define([MY_AC_PROG_CC],
 ])
 
 dnl Not available before Autoconf 2.60.
-ifdef([AC_USE_SYSTEM_EXTENSIONS],[],[
+ifdef([AC_USE_SYSTEM_EXTENSIONS],[
+  dnl Version	Notes:
+  dnl -------	----------------------------------------------------------
+  dnl 2.60	__EXTENSIONS__ and _POSIX_PTHREAD_SEMANTICS.
+  dnl 2.61	_TANDEM_SOURCE added.
+  dnl 2.62	_ALL_SOURCE and _GNU_SOURCE added.
+  dnl 2.63	No changes.
+  dnl 2.64	No changes.
+  dnl 2.65	No changes.
+  dnl 2.67	No changes.
+  dnl 2.68	No changes.
+  dnl 2.69	No changes.
+  dnl 2.71	_DARWIN_C_SOURCE, _HPUX_ALT_XOPEN_SOCKET_API, (_MINIX),
+  dnl     	_NETBSD_SOURCE, _OPENBSD_SOURCE, _POSIX_SOURCE,
+  dnl     	_POSIX_1_SOURCE, __STCD_WANT_IEC_60559_ATTRIBS_EXT__,
+  dnl     	__STDC_WANT_IEC_60559_BFP_EXT__,
+  dnl     	__STDC_WANT_IEC_60559_DFP_EXT__,
+  dnl     	__STDC_WANT_IEC_60559_FUNCS_EXT__,
+  dnl     	__STDC_WANT_IEC_60559_TYPES_EXT__, __STDC_WANT_LIB_EXT2__,
+  dnl     	__STDC_WANT_MATH_SPEC_FUNCS__ and _XOPEN_SOURCE added.
+  dnl 2.72	No changes.
+  dnl
+  dnl NB: _XOPEN_SOURCE is defined to 500. We override this with
+  dnl     a proper value in PIKE_USE_SYSTEM_EXTENSIONS below.
+],[
   m4_defun([AC_USE_SYSTEM_EXTENSIONS], [
     AH_VERBATIM([USE_SYSTEM_EXTENSIONS],
 [/* Enable GNU extensions on systems that have them.  */
@@ -270,6 +298,7 @@ ifdef([AC_USE_SYSTEM_EXTENSIONS],[],[
 #endif
 /* Enable non-POSIX declarations on Darwin. */
 #ifndef _DARWIN_C_SOURCE
+/* Overrides disabling of non-posix symbols by _POSIX_C_SOURCE on Darwin. */
 # undef _DARWIN_C_SOURCE
 #endif
 /* Enable non-POSIX declarations on NetBSD. */
@@ -306,7 +335,7 @@ AC_DEFUN([PIKE_USE_SYSTEM_EXTENSIONS],
 #endif
 
 #ifndef POSIX_SOURCE
- /* We must define this *always* */
+ /* We must define this *always*. POSIX.1-1990 */
 # define POSIX_SOURCE	1
 #endif
 #ifndef _POSIX_C_SOURCE
@@ -319,15 +348,24 @@ AC_DEFUN([PIKE_USE_SYSTEM_EXTENSIONS],
 #include <sys/socket.h>
 #endif
   /* Version of POSIX that we want to support.
+   *
    * Note that POSIX.1-2001 and later require C99, and the earlier
    * require C89.
-   *	undef		Not POSIX.
-   *	1		POSIX.1-1990
-   *	2		POSIX.2-1992
-   *	199309L		POSIX.1b-1993 (Real Time)
-   *	199506L		POSIX.1c-1995 (POSIX Threads)
-   *	200112L		POSIX.1-2001 (Austin Group Revision)
-   *	200809L		POSIX.1-2008
+   * Note that POSIX.1-2024 and later require C17 (2.1.4.2).
+   *
+   *	undef	Cstd	Not POSIX.
+   *	0	 C89	POSIX.1-1988
+   *	1	 C89	POSIX.1-1990
+   *	2	 C89	POSIX.2-1992
+   *	199309L	 C89	POSIX.1b-1993 (Real Time)
+   *	199506L	 C89	POSIX.1c-1995 (POSIX Threads)
+   *	200112L	 C99	POSIX.1-2001 (Austin Group Revision)
+   *	200809L	 C99	POSIX.1-2008 (IEEE Std 1003.1-2008/OGSBS Issue 7)
+   *			POSIX.1-2008 also has revisions for 2013, 1016
+   *                    and 2017/2018. They all use 200809L.
+   *	202405L	 C17	POSIX.1-2024 (IEEE Std 1003.1-2024/OGSBS Issue 8)
+   *
+   * Cf https://pubs.opengroup.org/onlinepubs/9799919799/ for POSIX.1-2024.
    */
 # undef _POSIX_C_SOURCE
 #endif
@@ -336,9 +374,11 @@ AC_DEFUN([PIKE_USE_SYSTEM_EXTENSIONS],
    * Note that this interacts with _POSIX_C_SOURCE above.
    *	undef		Not XPG (X Open Group).
    *	1		XPG 3 or 4 or 4v2 (see below).
-   *	500		XPG 5 (POSIX.1c-1995).
-   *	600		XPG 6 (POSIX.1-2001).
+   *	500		XPG 5 (POSIX.1c-1995) (aka UNIX 95).
+   *	520		XPG 5.2 (POSIX.1c-1995) (aka UNIX 98).
+   *	600		XPG 6 (POSIX.1-2001) (aka UNIX 03).
    *	700		XPG 7 (POSIX.1-2008).
+   *	800		XPG 8 (POSIX.1-2024).
    */
 # undef _XOPEN_SOURCE
 
@@ -350,11 +390,20 @@ AC_DEFUN([PIKE_USE_SYSTEM_EXTENSIONS],
 #  undef _XOPEN_SOURCE_EXTENDED
 # endif
 #endif
+/* Inhibit complaints about _BSD_SOURCE and _SVID_SOURCE on Linux. */
+#ifndef _DEFAULT_SOURCE
+# undef _DEFAULT_SOURCE
+#endif
 #ifndef _NETBSD_SOURCE
 #undef _NETBSD_SOURCE
 #endif
+/* Enable non-POSIX declarations on OpenBSD. */
+#ifndef _BSD_SOURCE
+# undef _BSD_SOURCE
+#endif
+/* Force non-POSIX declarations to be visible on FreeBSD (and OpenBSD). */
 #ifndef __BSD_VISIBLE
-#undef __BSD_VISIBLE
+# undef __BSD_VISIBLE
 #endif
 ])
 
@@ -365,7 +414,7 @@ AC_DEFUN([PIKE_USE_SYSTEM_EXTENSIONS],
     ORIG_CPPFLAGS="$CPPFLAGS"
     # NB: Older Solaris fails on attempts to enable newer POSIX
     #     than supported.
-    for pike_cv_posix_c_source in 200809L 200112L 199506L 199309L 2 1; do
+    for pike_cv_posix_c_source in 202405L 200809L 200112L 199506L 199309L 2 1; do
       CPPFLAGS="$ORIG_CPPFLAGS -D_POSIX_C_SOURCE=$pike_cv_posix_c_source"
       AC_TRY_CPP([
 #include <stdio.h>
@@ -378,7 +427,9 @@ AC_DEFUN([PIKE_USE_SYSTEM_EXTENSIONS],
   AC_DEFINE_UNQUOTED(_POSIX_C_SOURCE, $pike_cv_posix_c_source)
 
   # NB: _XOPEN_SOURCE overrides _POSIX_C_SOURCE on FreeBSD 10.3.
-  if test "$pike_cv_posix_c_source" = "200809L"; then
+  if test "$pike_cv_posix_c_source" = "202405L"; then
+    AC_DEFINE(_XOPEN_SOURCE, 800)
+  elif test "$pike_cv_posix_c_source" = "200809L"; then
     AC_DEFINE(_XOPEN_SOURCE, 700)
   elif test "$pike_cv_posix_c_source" = "200112L"; then
     AC_DEFINE(_XOPEN_SOURCE, 600)
@@ -391,9 +442,15 @@ AC_DEFUN([PIKE_USE_SYSTEM_EXTENSIONS],
   fi
 
   AC_DEFINE(_DARWIN_C_SOURCE)
+  AC_DEFINE(_DEFAULT_SOURCE, 1)
   AC_DEFINE(_NETBSD_SOURCE)
-  # Enable non-POSIX types in <sys/types.h> on FreeBSD 10.3.
+  AC_DEFINE(_BSD_SOURCE)
+  # Kludge: Enable non-POSIX types in <sys/types.h> on FreeBSD 10.3.
+  #         The <sys/cdefs.h> header file is broken in FreeBSD 10.3 and does not
+  #         set __BSD_VISIBLE at all when _POSIX_C_SOURCE or _XOPEN_SOURCE.
   AC_DEFINE(__BSD_VISIBLE, 1)
+  # FIXME: Consider defining __STDC_WANT_LIB_EXT1__ (C11 extensions).
+  #        This symbol is likely defined by C11 (and later) compilers.
 ])
 
 dnl Use before the first AC_CHECK_HEADER/AC_CHECK_FUNC call if the
@@ -1367,7 +1424,7 @@ AC_DEFUN(AC_SYS_COMPILER_FLAG,
 [
   dnl AC_REQUIRE(AC_SYS_COMPILER_FLAG_REQUIREMENTS)
 
-  AC_MSG_CHECKING($1)
+  AC_MSG_CHECKING([$1])
   if test "x[$]pike_disabled_option_$2" = "xyes"; then
     AC_MSG_RESULT(disabled)
     $4
@@ -1542,18 +1599,30 @@ AC_DEFUN(PIKE_CHECK_FILE_ABI,
       #   Mach-O object ppc
       $1=32
       ;;
-    *"POSIX shell script"*)
+    *"shell script"*)
       # Shell scripts do not have an ABI
+      $1=noarch
+      ;;
+    *"script text"*)
+      # Eg: "a /usr/bin/perl script text executable"
+      # These do not have an ABI
+      $1=noarch
+      ;;
+    *"ASCII text"*)
+      # Eg: "C source, ASCII text"
+      # These do not have an ABI
       $1=noarch
       ;;
     *)
       # Unknown. Probably cross-compiling.
-      PIKE_MSG_WARN([Unrecognized object file format: $PIKE_filetype:$PIKE_filetype_L])
+      $1=noarch
       if dd if="$2" count=2 bs=1 2>/dev/null | \
 	grep 'L' >/dev/null; then
 	# A common case is rntcl...
 	# If the file begins with 0x4c 0x01 it's a 80386 COFF executable.
 	$1=32
+      else
+        PIKE_MSG_WARN([Unrecognized object file format: $PIKE_filetype:$PIKE_filetype_L])
       fi
       ;;
   esac
@@ -1782,9 +1851,10 @@ AC_DEFUN(PIKE_SELECT_ABI,
       SAVE_IFS="$IFS"
       IFS=":"
       file_abi=""
+      pike_cv_tool_prefix=no
       for d in $PATH; do
 	IFS="$SAVE_IFS"
-	for f in "$d/"*-pkg-config"$exeext"; do
+	for f in "$d/pkg-config$exeext" "$d/"*-pkg-config"$exeext"; do
 	  if test -f "$f"; then
 	    PIKE_CHECK_FILE_ABI(file_abi, "$f")
 	    if test "x$file_abi" = "x$pike_cv_abi"; then
@@ -1805,18 +1875,22 @@ AC_DEFUN(PIKE_SELECT_ABI,
                if test "x$file_abi" = "x$pike_cv_abi"; then
                  pike_cv_tool_prefix=`echo "$link_target" | sed -e 's|.*/||g' -e 's|pkg-config.*||'`
                fi;;
+            *-pkgconf"$exeext")
+               PIKE_CHECK_FILE_ABI(file_abi, "$link_target")
+               if test "x$file_abi" = "x$pike_cv_abi"; then
+                 pike_cv_tool_prefix=`echo "$link_target" | sed -e 's|.*/||g' -e 's|pkgconf.*||'`
+               fi;;
           esac
         fi
-        if test "x$pike_cv_tool_prefix" = x; then :; else
+        if test "x$pike_cv_tool_prefix" = xno; then :; else
 	  break;
 	fi
       done
       IFS="$SAVE_IFS"
     ])
-    if test "x$pike_cv_tool_prefix" = "x"; then
-      AC_MSG_RESULT(no)
-    else
-      AC_MSG_RESULT($pike_cv_tool_prefix)
+    AC_MSG_RESULT($pike_cv_tool_prefix)
+    if test "x$pike_cv_tool_prefix" = "xno"; then
+      pike_cv_tool_prefix=""
     fi
   else
     pike_cv_tool_prefix="$ac_tool_prefix"
@@ -2178,6 +2252,8 @@ AC_DEFUN(PIKE_FIND_LIB_INCLUDE,
 
 AC_DEFUN(PIKE_PROG_PKG_CONFIG,
 [
+  AC_REQUIRE([PIKE_SELECT_ABI])dnl
+
   # NB: pkg-config does not have native support for multiple ABIs.
   MY_AC_PATH_PROGS(PKG_CONFIG, ${pike_cv_tool_prefix}pkg-config ${ac_tool_prefix}pkg-config, no)
   if test "$pike_cv_sys_os:$pike_cv_abi:$PKG_CONFIG:$PKG_CONFIG_LIBDIR" = \
@@ -2308,3 +2384,57 @@ AC_DEFUN([PIKE_DYNAMIC_CONFIG_SUBDIRS], [PIKE_DIVERT_BEFORE_HELP([
   ac_subdirs_all=''
   PIKE_FOREACH_CONFIG_SUBDIR([a], [ac_subdirs_all="$ac_subdirs_all $a"])
 ])])
+
+# AC_CHECK_FRAMEWORK(FRAMEWORK, FUNCTION,
+#              [ACTION-IF-FOUND], [ACTION-IF-NOT-FOUND],
+#              [OTHER-LIBRARIES])
+# ------------------------------------------------------
+#
+# Use a cache variable name containing both the framework and function name,
+# because the test really is for framework $1 defining function $2, not
+# just for framework $1.  Separate tests with the same $1 and different $2s
+# may have different results.
+#
+# Note that using directly AS_VAR_PUSHDEF([ac_Framework], [ac_cv_framework_$1_$2])
+# is asking for troubles, since AC_CHECK_FRAMEWORK($framework, fun) would give
+# ac_cv_framework_$framework_fun, which is definitely not what was meant.  Hence
+# the AS_LITERAL_IF indirection.
+#
+# FIXME: This macro is extremely suspicious.  It DEFINEs unconditionally,
+# whatever the FUNCTION, in addition to not being a *S macro.  Note
+# that the cache does depend upon the function we are looking for.
+#
+# It is on purpose we used `ac_check_framework_save_LIBS' and not just
+# `ac_save_LIBS': there are many macros which don't want to see `LIBS'
+# changed but still want to use AC_CHECK_FRAMEWORK, so they save `LIBS'.
+# And ``ac_save_LIBS' is too tempting a name, so let's leave them some
+# freedom.
+AC_DEFUN([AC_CHECK_FRAMEWORK],
+[m4_ifval([$3], , [AH_CHECK_FRAMEWORK([$1])])dnl
+AS_LITERAL_IF([$1],
+         [AS_VAR_PUSHDEF([ac_Framework], [ac_cv_framework_$1_$2])],
+         [AS_VAR_PUSHDEF([ac_Framework], [ac_cv_framework_$1''_$2])])dnl
+AC_CACHE_CHECK([for $2 in $1 framework], ac_Framework,
+[ac_check_framework_save_LIBS=$LIBS
+LIBS="-framework $1 $5 $LIBS"
+AC_LINK_IFELSE([AC_LANG_CALL([], [$2])],
+          [AS_VAR_SET(ac_Framework, yes)],
+          [AS_VAR_SET(ac_Framework, no)])
+LIBS=$ac_check_framework_save_LIBS])
+AS_IF([test AS_VAR_GET(ac_Framework) = yes],
+      [m4_default([$3], [AC_DEFINE_UNQUOTED(AS_TR_CPP(HAVE_FRAMEWORK_$1))
+  LIBS="-framework $1 $LIBS"
+])],
+      [$4])dnl
+AS_VAR_POPDEF([ac_Framework])dnl
+])# AC_CHECK_FRAMEWORK
+
+# AH_CHECK_FRAMEWORK(FRAMEWORK)
+# ---------------------
+m4_define([AH_CHECK_FRAMEWORK],
+[AH_TEMPLATE(AS_TR_CPP(HAVE_FRAMEWORK_$1),
+        [Define to 1 if you have the `]$1[' framework (-framework ]$1[).])])
+
+# '` Balance quotes.
+# End support functionality
+#

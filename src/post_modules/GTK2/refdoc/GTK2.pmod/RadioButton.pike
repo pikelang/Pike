@@ -1,3 +1,6 @@
+// Automatically generated from "gtkradiobutton.pre".
+// Do NOT edit.
+
 //! Radio buttons are similar to check buttons except they are grouped
 //! so that only one may be selected/depressed at a time. This is good
 //! for places in your application where you need to select from a
@@ -17,8 +20,9 @@
 //!
 
 inherit GTK2.CheckButton;
+//!
 
-protected GTK2.RadioButton create( string|mapping title, GTK2.RadioButton groupmember, int|void mnemonic );
+protected void create( void title, void groupmember, void mnemonic );
 //!  Normal creation:
 //! object GTK2.RadioButton(string title) - First button (with label)
 //! object GTK2.RadioButton()->add(widget) - First button (with widget)

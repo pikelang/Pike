@@ -219,7 +219,7 @@ class Display
 
   mapping pending_requests; /* Pending requests */
 
-  object pending_actions;   /* Actions awaiting handling */
+  ADT.Queue(<array>) pending_actions;   /* Actions awaiting handling */
 
 #ifdef XDEBUG
   mapping debug_requests = ([ ]);
@@ -821,7 +821,7 @@ class Display
     buffer = "";
     received = rec_buffer();
     pending_requests = ([]);
-    pending_actions = ADT.Queue();
+    pending_actions = ADT.Queue(<array>)();
     sequence_number = 1;
 
     /* Always uses network byteorder (big endian) */

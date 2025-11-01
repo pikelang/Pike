@@ -1,3 +1,6 @@
+// Automatically generated from "gtkuimanager.pre".
+// Do NOT edit.
+
 //! Constructing menus and toolbars from an XML description.
 //! Properties:
 //! int add-tearoffs
@@ -57,6 +60,7 @@
 //!
 
 inherit G.Object;
+//!
 
 GTK2.UiManager add_ui( int merge_id, string path, string name, string action, int type, int top );
 //! Adds a ui element to the current contents.
@@ -79,7 +83,7 @@ int add_ui_from_string( string buffer );
 //!
 //!
 
-protected GTK2.UiManager create( mapping|void props );
+protected void create( void props );
 //! Creates a new ui manager object.
 //!
 //!

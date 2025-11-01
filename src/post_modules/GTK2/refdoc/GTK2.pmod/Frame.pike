@@ -1,3 +1,6 @@
+// Automatically generated from "gtkframe.pre".
+// Do NOT edit.
+
 //! The frame widget is a Bin that surrounds its child with a
 //! decorative frame and an optional label. If present, the label is
 //! drawn in a gap in the top side of the frame. The position of the
@@ -26,8 +29,9 @@
 //!
 
 inherit GTK2.Bin;
+//!
 
-protected GTK2.Frame create( string|mapping label_or_props );
+protected void create( void label_or_props );
 //! Create a new W(Frame) widget.
 //!
 //!

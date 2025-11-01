@@ -111,7 +111,7 @@ struct svalue gc_done_cb;
  */
 
 /* The gc will free all things with no external nonweak references
- * that isn't referenced by live objects. An object is considered
+ * that aren't referenced by live objects. An object is considered
  * "live" if it contains code that must be executed when it is
  * destructed; see gc_object_is_live for details. Live objects without
  * external references are then destructed and garbage collected with
@@ -150,8 +150,8 @@ struct svalue gc_done_cb;
  * references.
  *
  * Things that have only weak external references at the start of the
- * gc pass will be freed. That's done before the live object destruct
- * pass. Internal weak references are however still intact.
+ * gc pass will be freed. This is done before the live object destruct
+ * pass. Internal weak references are however still kept intact.
  *
  * Note: Keep the doc for lfun::_destruct up-to-date with the above.
  */
@@ -293,7 +293,7 @@ static struct gc_rec_frame *kill_list = &sentinel_frame;
  * stack. If the frame is part of a cycle that isn't finished at that
  * point, it's not freed but instead linked onto the cycle piece list
  * in gc_rec_frame.cycle_piece of the parent rec frame (which
- * necessarily is part of the same cycle). That is done to detect
+ * necessarily is part of the same cycle). This is done to detect
  * cyclic refs that end up at the popped frame later on.
  *
  * The cycle_id pointers for frames on cycle piece lists point back
@@ -305,7 +305,7 @@ static struct gc_rec_frame *kill_list = &sentinel_frame;
  * The current tentative destruct order is described by the order on
  * the stack and the attached cycle piece lists: The thing that's
  * deepest in the stack is destructed first and the recursion stack
- * has precedence over the cycle piece list (the reason for that is
+ * has precedence over the cycle piece list (the reason for this is
  * explained later). To illustrate:
  *                                   ,- stack_top
  *                                  v
@@ -347,6 +347,8 @@ static struct gc_rec_frame *kill_list = &sentinel_frame;
  *    other, and the second (the one being referenced by the strong
  *    ref) has the GC_PREV_STRONG bit set. A rotation never breaks the
  *    list inside a sequence of strong refs.
+ *    FIXME: What about when there are multiple strong references to
+ *           an object?
  *
  * o  The GC_PREV_WEAK bit is set in the next frame for every link on
  *    the stack where no preceding frame reference any following frame
@@ -363,7 +365,7 @@ static struct gc_rec_frame *kill_list = &sentinel_frame;
  * belongs to). Therefore weak refs never occur inside cycles.
  *
  * Several separate cycles may be present on the stack simultaneously.
- * That happens when a subcycle which is referenced one way from an
+ * This happens when a subcycle which is referenced one way from an
  * earlier cycle is encountered. E.g.
  *
  *                          L--.        L--.
@@ -401,7 +403,7 @@ static struct gc_rec_frame *kill_list = &sentinel_frame;
  * Since the link frames are kept in substacks attached to the rec
  * frames, they get rotated with the rec frames. This has the effect
  * that the links from the top rec frame on the stack always are
- * tested first. That is necessary to avoid clobbering weak ref
+ * tested first. This is necessary to avoid clobbering weak ref
  * partitions. Example:
  *
  *                             weak          weak
@@ -524,7 +526,7 @@ void count_memory_in_ba_mixed_frames(size_t *num, size_t * size) {
   ba_count_all(&ba_mixed_frame_allocator, num, size);
 }
 
-static inline struct link_frame *alloc_link_frame()
+static inline struct link_frame *alloc_link_frame(void)
 {
   struct ba_mixed_frame *f = ba_alloc(&ba_mixed_frame_allocator);
   if (++link_frames > max_link_frames)
@@ -532,7 +534,7 @@ static inline struct link_frame *alloc_link_frame()
   return (struct link_frame *) f;
 }
 
-static inline struct free_extra_frame *alloc_free_extra_frame()
+static inline struct free_extra_frame *alloc_free_extra_frame(void)
 {
   struct ba_mixed_frame *f = ba_alloc(&ba_mixed_frame_allocator);
   free_extra_frames++;
@@ -716,6 +718,7 @@ char *fatal_after_gc=0;
 #define DESCRIBE_MEM 1
 #define DESCRIBE_SHORT 4
 #define DESCRIBE_NO_DMALLOC 8
+#define DESCRIBE_DESTRUCTED 16
 
 /* type == -1 means that memblock is a char* and should be
  * really be printed..
@@ -1164,6 +1167,7 @@ again:
 
     case T_OBJECT:
       p=((struct object *)a)->prog;
+      fprintf(stderr, "%*s**Program: %p\n", indent, "", p);
       if(p && (p->flags & PROGRAM_USES_PARENT))
       {
 	fprintf(stderr,"%*s**Parent identifier: %d\n",indent,"",PARENT_INFO( ((struct object *)a) )->parent_identifier);
@@ -1196,6 +1200,7 @@ again:
 
       if(!p)
       {
+        flags |= DESCRIBE_DESTRUCTED;
 	p=id_to_program(((struct object *)a)->program_id);
 	if(p)
 	  fprintf(stderr,"%*s**The object is destructed but program found from id.\n",
@@ -1205,7 +1210,8 @@ again:
 		  indent,"");
       }
 
-      if (p == pike_trampoline_program && ((struct object *) a)->refs > 0) {
+      if (p == pike_trampoline_program && ((struct object *) a)->refs > 0 &&
+          !(flags & DESCRIBE_DESTRUCTED)) {
 	/* Special hack to get something useful out of trampolines.
 	 * Ought to have an event hook for this sort of thing. */
 	struct pike_trampoline *t =
@@ -1221,6 +1227,7 @@ again:
 	if (!p) {
 	  fprintf (stderr, "%*s**The trampoline function's object "
 		   "is destructed.\n", indent, "");
+          flags |= DESCRIBE_DESTRUCTED;
 	  p = id_to_program (o->program_id);
 	}
 
@@ -1310,14 +1317,18 @@ again:
 		fprintf (stderr, "  off: %4"PRINTPTRDIFFT"d  value: ",
 			 inh->storage_offset + id->func.offset);
 
-		ptr = PIKE_OBJ_STORAGE ((struct object *) a) +
-		  inh->storage_offset + id->func.offset;
-		if (id->run_time_type == T_MIXED)
-		  safe_print_svalue_compact (stderr, (struct svalue *) ptr);
-		else
-		  safe_print_short_svalue_compact (stderr,
-						   (union anything *) ptr,
-						   id->run_time_type);
+                if (flags & DESCRIBE_DESTRUCTED) {
+                  fputs("(none)", stderr);
+                } else {
+                  ptr = PIKE_OBJ_STORAGE ((struct object *) a) +
+                    inh->storage_offset + id->func.offset;
+                  if (id->run_time_type == T_MIXED)
+                    safe_print_svalue_compact (stderr, (struct svalue *) ptr);
+                  else
+                    safe_print_short_svalue_compact (stderr,
+                                                     (union anything *) ptr,
+                                                     id->run_time_type);
+                }
 
 		fputc ('\n', stderr);
 		var_count++;
@@ -1458,7 +1469,7 @@ again:
 	  if (id_ref->id_flags & ID_VARIANT)   strcat (prot, ",var");
 	  if (id_ref->id_flags & ID_USED)      strcat (prot, ",use");
 
-	  sprintf (descr, "%s: %s", type, prot + 1);
+          snprintf (descr, sizeof(descr), "%s: %s", type, prot + 1);
 	  fprintf (stderr, "%*s**%*s%-3"PRINTPTRDIFFT"d %-18s name: ",
 		   indent, "", id_inh->inherit_level + 1, "", id_idx, descr);
 
@@ -2663,7 +2674,7 @@ static struct gc_rec_frame *gc_cycle_enqueue_rec (void *data)
   return r;
 }
 
-void gc_cycle_run_queue()
+void gc_cycle_run_queue(void)
 {
 #ifdef PIKE_DEBUG
   if (Pike_in_gc != GC_PASS_CYCLE)
@@ -3109,7 +3120,7 @@ mark_live:
   return 1;
 }
 
-static void gc_cycle_pop()
+static void gc_cycle_pop(void)
 {
 #ifdef PIKE_DEBUG
   if (Pike_in_gc != GC_PASS_CYCLE)
@@ -3403,18 +3414,18 @@ static void warn_bad_cycles(void)
   SET_ONERROR(tmp, free_obj_arr, obj_arr_);
 
   {
-    struct gc_pop_frame *p;
-    unsigned cycle = 0;
+    struct gc_rec_frame *p;
+    struct gc_rec_frame *cycle = NULL;
     *obj_arr_ = allocate_array(0);
 
-    for (p = kill_list; p;) {
-      if ((cycle = p->cycle)) {
+    for (p = kill_list; p != &sentinel_frame;) {
+      if ((cycle = p->cycle_id)) {
 	push_object((struct object *) p->data);
 	dmalloc_touch_svalue(Pike_sp-1);
 	*obj_arr_ = append_array(*obj_arr_, --Pike_sp);
       }
       p = p->next;
-      if (p ? ((unsigned)(p->cycle != cycle)) : cycle) {
+      if (p ? ((unsigned)(p->cycle_id != cycle)) : !!cycle) {
 	if ((*obj_arr_)->size >= 2) {
 	  push_static_text("gc");
 	  push_static_text("bad_cycle");
@@ -3914,7 +3925,6 @@ size_t do_gc(int explicit_call)
 
 #ifdef PIKE_DEBUG
   if (gc_extra_refs) {
-    size_t e;
     fprintf (stderr, "Lost track of %d extra refs to things in gc.\n"
 	     "Searching for marker(s) with extra refs:\n", gc_extra_refs);
     fprintf (stderr, "========================================\n"
@@ -4067,9 +4077,9 @@ size_t do_gc(int explicit_call)
       new_threshold = (double)(alloc_threshold + start_allocs);
 #endif
 
-    if(new_threshold < GC_MIN_ALLOC_THRESHOLD)
+    if(new_threshold < (double)GC_MIN_ALLOC_THRESHOLD)
       alloc_threshold = GC_MIN_ALLOC_THRESHOLD;
-    else if(new_threshold > GC_MAX_ALLOC_THRESHOLD)
+    else if(new_threshold > (double)GC_MAX_ALLOC_THRESHOLD)
       alloc_threshold = GC_MAX_ALLOC_THRESHOLD;
     else
       alloc_threshold = (ALLOC_COUNT_TYPE) new_threshold;
@@ -4103,7 +4113,7 @@ size_t do_gc(int explicit_call)
     {
       char timestr[40];
       if (last_gc_time != (cpu_time_t) -1)
-	sprintf (timestr, ", %ld ms",
+        snprintf(timestr, sizeof(timestr), ", %ld ms",
 		 (long) (last_gc_time / (CPU_TIME_TICKS / 1000)));
       else
 	timestr[0] = 0;
@@ -4694,14 +4704,14 @@ static void stop_mc(void)
   UNLOCK_IMUTEX(&mc_mutex);
 }
 
-static struct mc_marker *my_make_mc_marker (void *thing,
+static struct mc_marker *my_make_mc_marker (const void *thing,
 					    visit_thing_fn *visit_fn,
 					    void *extra)
 {
   struct mc_marker *m = make_mc_marker (thing);
   assert (thing);
   assert (visit_fn);
-  m->thing = thing;
+  m->thing = (void *)thing;
   m->visit_fn = visit_fn;
   m->extra = extra;
   m->int_refs = m->la_refs = m->flags = 0;
@@ -4865,7 +4875,7 @@ static unsigned INT32 mc_wq_size, mc_wq_used;
 #define CHECK_WQ() do {} while (0)
 #endif
 
-static struct mc_marker *mc_wq_dequeue()
+static struct mc_marker *mc_wq_dequeue(void)
 {
   struct mc_marker *m;
 
@@ -5240,8 +5250,10 @@ static void pass_lookahead_visit_ref (void *thing, int ref_type,
     MC_DEBUG_MSG (ref_to, "not enqueued");
 }
 
-static void pass_mark_external_visit_ref (void *thing, int UNUSED(ref_type),
-					  visit_thing_fn *UNUSED(visit_fn), void *UNUSED(extra))
+static void pass_mark_external_visit_ref (void *thing,
+                                          int UNUSED(ref_type),
+                                          visit_thing_fn *UNUSED(visit_fn),
+                                          void *UNUSED(extra))
 {
   struct mc_marker *ref_to = find_mc_marker (thing);
 
@@ -5342,7 +5354,7 @@ static void ignore_visit_leave(void *UNUSED(thing), int UNUSED(type), void *UNUS
 {
 }
 
-PMOD_EXPORT int mc_count_bytes (void *thing)
+PMOD_EXPORT int mc_count_bytes (const void *thing)
 {
   if (mc_pass == MC_PASS_LOOKAHEAD) {
     struct mc_marker *m = find_mc_marker (thing);
@@ -6162,7 +6174,8 @@ void identify_loop_visit_ref(void *dst, int UNUSED(ref_type),
   }
 }
 
-void identify_loop_visit_leave(void *UNUSED(thing), int type, void *UNUSED(extra))
+void identify_loop_visit_leave(void *UNUSED(thing), int type,
+                               void *UNUSED(extra))
 {
   if (type < T_VOID) {
     /* Valid svalue type. */

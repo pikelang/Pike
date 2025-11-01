@@ -1,3 +1,6 @@
+// Automatically generated from "gtkcombobox.pre".
+// Do NOT edit.
+
 //! Properties:
 //! int active
 //! int add-tearoffs
@@ -20,10 +23,13 @@
 //!
 
 inherit GTK2.Bin;
+//!
 
 inherit GTK2.CellLayout;
+//!
 
 inherit GTK2.CellEditable;
+//!
 
 GTK2.ComboBox append_text( string text );
 //! Appends text to the list of strings stored in this combo box.
@@ -32,7 +38,7 @@ GTK2.ComboBox append_text( string text );
 //!
 //!
 
-protected GTK2.ComboBox create( GTK2.TreeModel model_or_props );
+protected void create( void model_or_props );
 //! Create a new ComboBox, either empty or with a model.  If a string is passed
 //! int instead, it will create a new W(ComboBox) with only text strings.
 //! If you do so, you should only manipulate it with the following functions:

@@ -18,7 +18,7 @@
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_error.h"
-#include "threads.h"
+#include "pike_threads.h"
 
 #include "image.h"
 #include "image_machine.h"

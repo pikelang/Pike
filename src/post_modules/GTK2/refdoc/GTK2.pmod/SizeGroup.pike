@@ -1,3 +1,6 @@
+// Automatically generated from "gtksizegroup.pre".
+// Do NOT edit.
+
 //! Provides a mechanism for grouping a number of widgets together so they all
 //! request the same amount of space.  This is typically usefull when you want
 //! a column of widgets to have the same size, but you can't use a W(Table)
@@ -37,6 +40,7 @@
 //!
 
 inherit G.Object;
+//!
 
 GTK2.SizeGroup add_widget( GTK2.Widget widget );
 //! Adds a widget to the group.  In the future, the requisition of the widget
@@ -46,7 +50,7 @@ GTK2.SizeGroup add_widget( GTK2.Widget widget );
 //!
 //!
 
-protected GTK2.SizeGroup create( int|mapping mode_or_props );
+protected void create( void mode_or_props );
 //! Create a new group.
 //!
 //!

@@ -105,7 +105,7 @@
 /* Define this if your ld doesn't have an option to set the run path */
 #undef USE_LD_LIBRARY_PATH
 
-/* Define this on OS X to get two-level namespace support in ld */
+/* Define this on OS X to a suitable version get two-level namespace support in ld */
 #undef USE_OSX_TWOLEVEL_NAMESPACE
 
 @TOP@
@@ -346,6 +346,9 @@
 
 /* define if you are using crypt.c. */
 #undef USE_CRYPT_C
+
+/* define if you are using crypt.c AND only need pike_des_crypt(). */
+#undef USE_PIKE_DES_CRYPT_ONLY
 
 /* Define if we can declare 'extern char **environ' */
 #undef DECLARE_ENVIRON

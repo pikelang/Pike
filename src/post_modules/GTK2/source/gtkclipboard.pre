@@ -119,7 +119,7 @@ string wait_for_rich_text(GTK2.TextBuffer buffer)
 			GTK_TEXT_BUFFER(get_gobject(o1)),&a,&len);
     pgtk2_pop_n_elems(args);
     if (res)
-      push_string(make_shared_binary_string(res,len));
+      push_string(make_shared_binary_string((char *)res,len));
     else
       push_string(empty_pike_string);
   }
