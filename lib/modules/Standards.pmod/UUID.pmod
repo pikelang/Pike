@@ -106,7 +106,11 @@ class UUID {
 	      2 : "DCE security",
 	      3 : "Name-based (MD5)",
 	      4 : "Random",
-              5 : "Name-based (SHA)"])[version] || "Unknown";
+              5 : "Name-based (SHA)",
+              6 : "Reordered time-based",
+              7 : "Posix time",
+              8 : "Vendor-specific",
+    ])[version] || "Unknown";
   }
 
   //! The variant of the UUID.
@@ -117,7 +121,7 @@ class UUID {
   string str_variant() {
     switch(var) {
     case 0: return "Reserved, NCS backward compatibility";
-    case 1: return "IETF draft variant";
+    case 1: return "IETF variant";
     case 2: return "Reserved, Microsoft Corporation backward compatibility";
     default: return "Illegal variant";
     }
