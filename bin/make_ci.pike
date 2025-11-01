@@ -17,7 +17,7 @@
 #define CIM_LONGUPPERDELTA 5    /* Upper-case, delta + 0x7fff. */
 #define CIM_LONGLOWERDELTA 6    /* Lower-case, delta + 0x7fff. */
 
-int main(int argc, array(string) argv)
+int main(int argc, array(string(8bit)) argv)
 {
   int lineno;
   array(array(int)) ci = ({({ 0, CIM_NONE, 0 })});
