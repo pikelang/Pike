@@ -200,6 +200,7 @@ class DynamicImporter {
       protected mixed `[](string index) { return attrs[index]; }
       protected mixed `->(string index) { return attrs[index]; }
       protected program cast(string type) { return type=="program" && Instance; }
+      protected mixed `()(mixed ...);
     }
 
     class Struct
