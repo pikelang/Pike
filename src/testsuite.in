@@ -13799,6 +13799,8 @@ test_equal(lower_case("Foo\x13000"),"foo\x13000")
 test_equal(lower_case("Foo1234-*~\n\x13000"),"foo1234-*~\n\x13000")
 test_equal(lower_case("Foo\x178"),"foo\xff")
 test_equal(lower_case("Foo\x39c"),"foo\x3bc")
+test_eq(__STDC_ISO_10646__, 202508) // Unicode release year and month 2025-08.
+test_eq(__UNICODE_VERSION__, 170000) // Unicode version 17.0.0.
 test_equal(lower_case((string) ({
 // These characters correspond to the cases in case_info.h
 // Please update this and the corresponding upper_case table
