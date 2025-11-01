@@ -1,0 +1,420 @@
+#pike __REAL_VERSION__
+
+inherit @module@ : GI;
+
+#if constant(@module@.Repository)
+
+class DynamicImporter {
+
+  constant magic_remaps = ([
+    "cairo" : ([ "Context" : "Cairo.Context" ])
+  ]);
+
+  protected Repository repository = get_default_repository();
+
+  class IntrospectionModule {
+
+    protected string namespace;
+    protected mapping(BaseInfo:mixed) wrap_special = ([]);
+
+    class Function(protected FunctionInfo info)
+    {
+      protected mixed `()(mixed ... args)
+      {
+        return info->invoke(@args);
+      }
+
+      protected string _sprintf(int mode)
+      {
+        return mode == 'O' && sprintf("%O.%s",
+                                      IntrospectionModule::this,
+                                      info->get_name());
+      }
+    }
+
+    class Object
+    {
+      protected ObjectInfo info;
+      protected mapping(string:mixed) attrs = ([]);
+
+      class Method
+      {
+        inherit Function;
+
+        class BoundMethod(protected object obj)
+        {
+          protected mixed `()(mixed ... args) {
+            return Function::`()(obj, @args);
+          }
+          protected string _sprintf(int mode) {
+            return mode == 'O' && sprintf("%O->%s", obj, info->get_name());
+          }
+        }
+
+        protected string _sprintf(int mode)
+        {
+          return mode == 'O' && sprintf("%O.%s", Object::this,
+                                        info->get_name());
+        }
+      }
+
+      class Instance {
+        inherit GObject;
+
+        protected string _sprintf(int mode)
+        {
+          return mode == 'O' && sprintf("%O()", Object::this);
+        }
+        
+        protected private mixed bind(mixed value)
+        {
+          if (objectp(value) && object_program(value) == Method)
+            return value->BoundMethod(this);
+        }
+
+        protected array(string) _indices() { return Object::_indices(); }
+        protected array(mixed) _values() { return Object::_values(); }
+        protected mixed `[](string index) { return bind(Object::`[](index)); }
+        protected mixed `->(string index, object|void o, int|void n) {
+          if (o != Instance::this) {
+            mixed real_value = ::`->(index, this);
+            if(real_value != UNDEFINED) return real_value;
+          }
+          return bind(Object::`->(index));
+        }
+
+        protected void create(mapping(string:mixed)|void properties)
+        {
+          ::create(info, properties);
+        }
+      };
+
+      protected string _sprintf(int mode)
+      {
+        return mode == 'O' && sprintf("%O.%s",
+                                      IntrospectionModule::this,
+                                      info->get_name());
+      }
+
+      protected void create(ObjectInfo oi)
+      {
+        info = oi;
+        while (oi) {
+          array(FunctionInfo) methods = oi->get_methods();
+          attrs = mkmapping(methods->get_name(), map(methods, Method))
+            + attrs;
+          oi = oi->get_parent();
+        }
+        foreach(info->get_interfaces(); ; InterfaceInfo ii) {
+          array(FunctionInfo) methods = ii->get_methods();
+          attrs += mkmapping(methods->get_name(), map(methods, Method));
+        }
+      }
+
+      protected array(string) _indices() { return indices(attrs); }
+      protected array(mixed) _values() { return values(attrs); }
+      protected mixed `[](string index) { return attrs[index]; }
+      protected mixed `->(string index) { return attrs[index]; }
+      protected program cast(string type) { return type=="program" && Instance; }
+
+      protected Instance `()(mapping(string:mixed)|void properties)
+      {
+        return Instance(properties);
+      }
+    }
+
+    class Interface
+    {
+      protected InterfaceInfo info;
+      protected mapping(string:mixed) attrs = ([]);
+
+      class Method
+      {
+        inherit Function;
+
+        class BoundMethod(protected object obj)
+        {
+          protected mixed `()(mixed ... args) {
+            return Function::`()(obj, @args);
+          }
+          protected string _sprintf(int mode) {
+            return mode == 'O' && sprintf("%O->%s", obj, info->get_name());
+          }
+        }
+
+        protected string _sprintf(int mode)
+        {
+          return mode == 'O' && sprintf("%O.%s", Interface::this,
+                                        info->get_name());
+        }
+      }
+
+      class Instance {
+        inherit GObject;
+
+        protected string _sprintf(int mode)
+        {
+          return mode == 'O' && sprintf("%O()", Interface::this);
+        }
+
+        protected private mixed bind(mixed value)
+        {
+          if (objectp(value) && object_program(value) == Method)
+            return value->BoundMethod(this);
+        }
+
+        protected array(string) _indices() { return Interface::_indices(); }
+        protected array(mixed) _values() { return Interface::_values(); }
+        protected mixed `[](string index) { return bind(Interface::`[](index)); }
+        protected mixed `->(string index, object|void o, int|void n) {
+          if (o != Instance::this) {
+            mixed real_value = ::`->(index, this);
+            if(real_value != UNDEFINED) return real_value;
+          }
+          return bind(Interface::`->(index));
+        }
+
+        protected void create(mapping(string:mixed)|void properties)
+        {
+          ::create(info, properties);
+        }
+      };
+
+      protected string _sprintf(int mode)
+      {
+        return mode == 'O' && sprintf("%O.%s",
+                                      IntrospectionModule::this,
+                                      info->get_name());
+      }
+
+      protected void create(InterfaceInfo oi)
+      {
+        info = oi;
+        array(FunctionInfo) methods = oi->get_methods();
+        attrs = mkmapping(methods->get_name(), map(methods, Method))
+          + attrs;
+      }
+
+      protected array(string) _indices() { return indices(attrs); }
+      protected array(mixed) _values() { return values(attrs); }
+      protected mixed `[](string index) { return attrs[index]; }
+      protected mixed `->(string index) { return attrs[index]; }
+      protected program cast(string type) { return type=="program" && Instance; }
+      protected mixed `()(mixed ...);
+    }
+
+    class Struct
+    {
+      protected StructInfo info;
+      protected mapping(string:FieldInfo) fields = ([]);
+      protected mapping(string:Method) methods = ([]);
+
+      protected string _sprintf(int mode)
+      {
+        return mode == 'O' && sprintf("%O.%s",
+                                      IntrospectionModule::this,
+                                      info->get_name());
+      }
+
+      class Method
+      {
+        inherit Function;
+
+        class BoundMethod(protected object box)
+        {
+          protected mixed `()(mixed ... args) {
+            return Function::`()(box, @args);
+          }
+          protected string _sprintf(int mode) {
+            return mode == 'O' && sprintf("%O->%s", box, info->get_name());
+          }
+        }
+
+        protected string _sprintf(int mode)
+        {
+          return mode == 'O' && sprintf("%O.%s", Struct::this,
+                                        info->get_name());
+        }
+      }
+
+      class Instance {
+        inherit GBoxed;
+
+        protected private string format_fields()
+        {
+          string|zero s = 0;
+          foreach(fields; string name; FieldInfo info)
+            s = s? sprintf("%s, %s=%O", s, name, info->get_field(this)) :
+              sprintf("%s=%O", name, info->get_field(this));
+          return s || "";
+        }
+
+        protected string _sprintf(int mode)
+        {
+          return mode == 'O' && sprintf("%O(%s)", Struct::this, format_fields());
+        }
+
+        protected private mixed bind(mixed value)
+        {
+          if (objectp(value) && object_program(value) == FieldInfo)
+            return value->get_field(this);
+          if (objectp(value) && object_program(value) == Method)
+            return value->BoundMethod(this);
+        }
+
+        protected array(string) _indices() { return indices(fields)+Struct::_indices(); }
+        protected array(mixed) _values() { return values(fields)->get_field(this)+Struct::_values(); }
+        protected mixed `[](string index) { return bind(fields[index] || Struct::`[](index)); }
+        protected mixed `->(string index, object|void o, int|void n) {
+          if (o != Instance::this) {
+            mixed real_value = ::`->(index, this);
+            if(real_value != UNDEFINED) return real_value;
+          }
+          return bind(fields[index] || Struct::`[](index));
+        }
+        protected void `->=(string index, mixed value, object|void o, int|void n) {
+          if(fields[index])
+            fields[index]->set_field(this, value);
+          else
+            ::`->=(index, value);
+        }
+        protected mixed `[]=(string index, mixed value) {
+          if(fields[index])
+            fields[index]->set_field(this, value);
+        }
+
+        protected void create(mapping(string:mixed)|void properties)
+        {
+          ::create(info, properties);
+        }
+      }
+
+      protected array(string) _indices() { return indices(methods); }
+      protected array(mixed) _values() { return values(methods); }
+      protected mixed `[](string index) { return methods[index]; }
+      protected mixed `->(string index) { return methods[index]; }
+      protected program cast(string type) { return type=="program" && Instance; }
+
+      protected void create(StructInfo si)
+      {
+        info = si;
+        array(FieldInfo) fs = si->get_fields();
+        array(FunctionInfo) ms = si->get_methods();
+        fields = mkmapping(fs->get_name(), fs);
+        methods = mkmapping(ms->get_name(), map(ms, Method));
+      }
+
+      protected Instance `()(mapping(string:mixed)|void properties)
+      {
+        return Instance(properties);
+      }
+    }
+
+    class Enum
+    {
+      protected EnumInfo info;
+      protected mapping(string:int) map;
+
+      protected string _sprintf(int mode)
+      {
+        return mode == 'O' && sprintf("%O.%s",
+                                      IntrospectionModule::this,
+                                      info->get_name());
+      }
+
+      protected void create(EnumInfo ei)
+      {
+        info = ei;
+        array(ObjectInfo) vals = info->get_values();
+        map = mkmapping(upper_case(vals->get_name()[*]), vals->get_value());
+      }
+
+      protected array(string) _indices() { return indices(map); }
+      protected array(int) _values() { return values(map); }
+      protected mixed `[](string index) { return map[index]; }
+      protected mixed `->(string index) { return map[index]; }
+    }
+
+    protected void create(string namespace_, string|void version)
+    {
+      namespace = namespace_;
+      repository->require(namespace, version);
+      if (magic_remaps[namespace])
+        foreach (magic_remaps[namespace]; string from; string to) {
+          BaseInfo ctx1 = repository->find_by_name(namespace, from);
+          program ctx2 = master()->resolv(to);
+          if (ctx1 && ctx2)
+            wrap_special[ctx1] = ctx2;
+        }
+    }
+
+    protected string _sprintf(int mode)
+    {
+      return mode == 'O' && sprintf("%O.%s", DynamicImporter::this, namespace);
+    }
+
+    protected mixed wrap(BaseInfo info)
+    {
+      if (sizeof(wrap_special) && wrap_special[info])
+        return wrap_special[info];
+      else if (object_program(info) == ObjectInfo)
+        return Object([object(ObjectInfo)]info);
+      else if (object_program(info) == InterfaceInfo)
+        return Interface([object(InterfaceInfo)]info);
+      else if (object_program(info) == FunctionInfo)
+        return Function([object(FunctionInfo)]info);
+      else if (object_program(info) == EnumInfo)
+        return Enum([object(EnumInfo)]info);
+      else if (object_program(info) == StructInfo)
+        return Struct([object(StructInfo)]info);
+      else if (object_program(info) == ConstantInfo)
+        return ([object(ConstantInfo)]info)->get();
+      /* FIXME */
+      return info;
+    }
+
+    protected mixed `[](string name)
+    {
+      BaseInfo info = repository->find_by_name(namespace, name);
+      if (!info) return UNDEFINED;
+      return wrap(info);
+    }
+
+    protected array(string) _indices()
+    {
+      return Array.uniq(repository->get_infos(namespace)->get_name());
+    }
+
+    protected array(mixed) _values()
+    {
+      return rows(this, _indices());
+    }
+  };
+
+  protected mapping(string:mixed) cache = ([]);
+
+  protected mixed `[](string namespace)
+  {
+    string|zero version = 0;
+    int colon = search(namespace, ":");
+    if (colon > 0) {
+      version = namespace[colon+1..];
+      namespace = namespace[..colon-1];
+    }
+    if (cache[namespace])
+      return cache[namespace];
+    if (!repository->enumerate_versions(namespace))
+      return UNDEFINED;
+    IntrospectionModule m = IntrospectionModule(namespace, version);
+    if (m)
+      cache[namespace] = m;
+    return m;
+  }
+
+  protected array(string) _indices() { return indices(cache); }
+  protected array(mixed) _values() { return values(cache); }
+}
+
+DynamicImporter repository = DynamicImporter();
+
+#endif
