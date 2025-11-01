@@ -11,7 +11,7 @@
 #include "bignum.h"
 #include "operators.h"
 #include "mapping.h"
-#include "threads.h"
+#include "pike_threads.h"
 #include "sprintf.h"
 #include "gimod_config.h"
 
