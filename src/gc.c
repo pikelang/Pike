@@ -3242,9 +3242,10 @@ static void gc_cycle_pop(void)
 	  popped->cycle_piece = popped->u.last_cycle_piece =
 	    (struct gc_rec_frame *) (ptrdiff_t) -1;
 #endif
-#if 1
+#if 0
+          /* Enqueue elements after any previous elements. */
           popped->next = &sentinel_frame;
-          // popped->prev = sentinel_frame.prev;
+          /* popped->prev = sentinel_frame.prev; */
           if (kill_list == &sentinel_frame) {
             kill_list = popped;
           } else {
@@ -3252,6 +3253,9 @@ static void gc_cycle_pop(void)
           }
           kill_list_last = popped;
 #else
+          /* NB: Elements are enqueued before the previous cycle,
+           * but after the previous elements in the same cycle.
+           */
 	  popped->next = *kill_list_ptr;
 	  *kill_list_ptr = popped;
 	  kill_list_ptr = &popped->next;
