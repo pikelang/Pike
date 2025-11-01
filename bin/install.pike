@@ -3132,6 +3132,10 @@ class WixExportInstallHandler {
 			])))
       ->
       add_child(WixNode("InstallExecuteSequence", ([]))->
+                add_child(WixNode("RemoveExistingProducts", ({
+                                    "Before":"InstallInitialize",
+                                    ]))
+                ->
 		add_child(WixNode("Custom", ([
 				    "Action":"QueryTarget",
 				    "Before":"InstallFiles",
