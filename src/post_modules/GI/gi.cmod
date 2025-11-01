@@ -62,7 +62,7 @@ struct signal_data {
   GISignalInfo *siginfo;
 };
 
-static void free_signal_data(struct signal_data *s, GClosure *gcl)
+static void free_signal_data(struct signal_data *s, GClosure *UNUSED(gcl))
 {
   free_svalue(&s->cb);
   free_svalue(&s->extra_args);
@@ -75,7 +75,7 @@ static void marshaller(GClosure *closure,
                        GValue *return_value,
                        guint n_params,
                        const GValue *param_values,
-                       gpointer invocation_hint,
+                       gpointer UNUSED(invocation_hint),
                        gpointer marshal_data)
 {
   typedef void (*marshal_func)(gpointer data1,
@@ -165,7 +165,7 @@ static void invoke_signal_func(void *arg)
 }
 
 static void signal_func_wrapper(struct signal_data *d,
-                                gpointer go,
+                                gpointer UNUSED(go),
                                 guint n_params,
                                 const GValue *param_values,
                                 GValue *return_value)
@@ -1033,7 +1033,7 @@ static void push_ffi_argument(void *arg, GIArgInfo *ai)
   push_ffi_argument_type(arg, &ti);
 }
 
-static void cb_closure_handler(ffi_cif *cif, void *result,
+static void cb_closure_handler(ffi_cif *UNUSED(cif), void *UNUSED(result),
                                void **args, void *data)
 {
   struct gi_callback_context *cbc = (struct gi_callback_context *)data;
