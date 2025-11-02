@@ -226,6 +226,9 @@ o The preprocessor (aka cpp()) has several new features:
     It is now possible to turn off the strict types mode for a section
     of code.
 
+  - Some macros regarding the version of Unicode used by Pike have
+    been added: __STDC_ISO_10646__ and __UNICODE_VERSION__.
+
 o Complain about redundant backslash escapes.
 
   The compiler now complains about redundant backslash escapes
@@ -809,6 +812,12 @@ o Command-line options
 
       $ pike '-DFOO(X)=X'
 
+o Runtime support for C11-threads
+
+  - The runtime will now use C11 threads on non NT if pthreads
+    are not available. This is mostly relevant for platforms
+    that are both not NT and not POSIX-based.
+
 o predef::backtrace()
 
   predef::backtrace() now takes an optional argument that causes it
@@ -1297,6 +1306,17 @@ o The GC marker hash table has been removed. For types which require
 
   This change significantly improves GC performance (up to a factor
   of 2 in some situations).
+
+o Several header files have been renamed to avoid conflicts with
+  system header files:
+
+  - port.h renamed to pike_port.h
+
+    Conflicted with <port.h> on Solaris.
+
+  - threads.h renamed to pike_threads.h.
+
+    Conflicted with <threads.h> from C11.
 
 
 Documentation
