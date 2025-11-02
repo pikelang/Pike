@@ -2095,11 +2095,12 @@ return 0;
 
 # Check for compiler builtins/intrinsics.
 #
+# C23:  <stdbit.h>
 # ECC:  <emmintrin.h>
 # ICC:  <immintrin.h>
 # IBMC: <builtins.h>
 # MSVC: <intrin.h>
-AC_CHECK_HEADERS(intrin.h emmintrin.h immintrin.h builtins.h \
+AC_CHECK_HEADERS(stdbit.h intrin.h emmintrin.h immintrin.h builtins.h \
                  machine/bswap.h sys/endian.h util.h)
 
 # RDRND hardware random support

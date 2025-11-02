@@ -2731,6 +2731,8 @@ sprintf("        } else {\n"
 				     funcname)) });
 	} else {
 	  ret+=DEFINE(ev_handler_define);
+          ret += ({ PC.Token(sprintf("static void %s(int ev);\n",
+                                     mkname(base, "event", "handler"))) });
 	  ret+=({ PC.Token(sprintf("static void %s(void)\n",funcname)) });
 	  ev_handler+=IFDEF(define,({
 	    sprintf("  case PROG_EVENT_%s: %s(); break;\n",

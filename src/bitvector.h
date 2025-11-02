@@ -10,6 +10,10 @@
 #include "machine.h"
 #include "global.h"
 
+#ifdef HAVE_STDBIT_H
+#include <stdbit.h>
+#endif
+
 #if defined(HAS__BITSCANFORWARD) || defined(HAS__BITSCANFORWARD64) || defined(HAS__BITSCANREVERSE) || defined(HAS__BITSCANREVERSE64)
 # include <intrin.h>
 #endif
@@ -31,7 +35,9 @@ static const char logTable[256] = {
  * integer. Returns a value between 0 and 32.
  */
 static inline unsigned INT32 PIKE_UNUSED_ATTRIBUTE clz32(unsigned INT32 i) {
-#ifdef HAS___BUILTIN_CLZ
+#ifdef HAVE_STDBIT_H
+  return i ? stdc_leading_zeros(i) : 32;
+#elif defined(HAS___BUILTIN_CLZ)
     return i ? __builtin_clz(i) : 32;
 #elif defined(HAS__BIT_SCAN_REVERSE)
     return i ? _bit_scan_reverse(i) : 32;
@@ -67,7 +73,9 @@ static inline unsigned INT32 PIKE_UNUSED_ATTRIBUTE clz32(unsigned INT32 i) {
  * integer. Returns a value between 0 and 32.
  */
 static inline unsigned INT32 PIKE_UNUSED_ATTRIBUTE ctz32(unsigned INT32 i) {
-#ifdef HAS___BUILTIN_CTZ
+#ifdef HAVE_STDBIT_H
+  return i ? stdc_trailing_zeros(i) : 32;
+#elif defined(HAS___BUILTIN_CTZ)
     return i ? __builtin_ctz(i) : 32;
 #elif defined(HAS__BIT_SCAN_FORWARD)
     return i ? _bit_scan_forward(i) : 32;
@@ -96,6 +104,7 @@ static inline unsigned INT32 PIKE_UNUSED_ATTRIBUTE ctz32(unsigned INT32 i) {
  * Reverses the bytes in the 32-bit integer x.
  */
 static inline unsigned INT32 PIKE_UNUSED_ATTRIBUTE bswap32(unsigned INT32 x) {
+  /* FIXME: Is there a C23 variant? */
 #ifdef HAS___BUILTIN_BSWAP32
     return __builtin_bswap32(x);
 #elif defined(HAS__BSWAP)
@@ -114,7 +123,9 @@ static inline unsigned INT32 PIKE_UNUSED_ATTRIBUTE bswap32(unsigned INT32 x) {
  * integer. Returns a value between 0 and 64.
  */
 static inline unsigned INT32 PIKE_UNUSED_ATTRIBUTE clz64(UINT64 i) {
-# if SIZEOF_LONG == 8 && defined(HAS___BUILTIN_CLZL)
+# ifdef HAVE_STDBIT_H
+  return i ? stdc_leading_zeros(i) : 64;
+# elif SIZEOF_LONG == 8 && defined(HAS___BUILTIN_CLZL)
     return i ? __builtin_clzl(i) : 64;
 # elif SIZEOF_LONG_LONG == 8 && defined(HAS___BUILTIN_CLZLL)
     return i ? __builtin_clzll(i) : 64;
@@ -155,7 +166,9 @@ static inline unsigned INT32 PIKE_UNUSED_ATTRIBUTE clz64(UINT64 i) {
  * integer. Returns a value between 0 and 64.
  */
 static inline unsigned INT32 PIKE_UNUSED_ATTRIBUTE ctz64(UINT64 i) {
-# if SIZEOF_LONG == 8 && defined(HAS___BUILTIN_CTZL)
+# ifdef HAVE_STDBIT_H
+  return i ? stdc_trailing_zeros(i) : 64;
+# elif SIZEOF_LONG == 8 && defined(HAS___BUILTIN_CTZL)
     return i ? __builtin_ctzl(i) : 64;
 # elif SIZEOF_LONG_LONG == 8 && defined(HAS___BUILTIN_CTZLL)
     return i ? __builtin_ctzll(i) : 64;
@@ -183,6 +196,7 @@ static inline unsigned INT32 PIKE_UNUSED_ATTRIBUTE ctz64(UINT64 i) {
  * Reverses the bytes in the 64-bit integer x.
  */
 static inline UINT64 PIKE_UNUSED_ATTRIBUTE bswap64(UINT64 x) {
+  /* FIXME: Is there a C23 variant? */
 #ifdef HAS___BUILTIN_BSWAP64
     return __builtin_bswap64(x);
 #elif defined(HAS__BSWAP64)
@@ -201,7 +215,9 @@ static inline UINT64 PIKE_UNUSED_ATTRIBUTE bswap64(UINT64 x) {
  * integer. Returns a value between 0 and 128.
  */
 static inline unsigned INT32 PIKE_UNUSED_ATTRIBUTE clz128(unsigned __int128 i) {
-# if SIZEOF_LONG == 16 && defined(HAS___BUILTIN_CLZL)
+# ifdef HAVE_STDBIT_H
+  return i ? stdc_leading_zeros(i) : 128;
+# elif SIZEOF_LONG == 16 && defined(HAS___BUILTIN_CLZL)
     return i ? __builtin_clzl(i) : 128;
 # elif SIZEOF_LONG_LONG == 16 && defined(HAS___BUILTIN_CLZLL)
     return i ? __builtin_clzll(i) : 128;
