@@ -30,6 +30,7 @@ if test x$with_gi = xyes ; then
   AC_CHECK_FUNC(g_irepository_get_default, [gi_lib_ok=yes])
 
   if test xyesyes = "x$gi_header_ok$gi_lib_ok" ; then
+    AC_CHECK_FUNCS(g_callable_info_create_closure)
     AC_DEFINE(HAVE_GI, 1, [Define if GI is available and to be built])
     PIKE_FEATURE_OK(GI)
   else

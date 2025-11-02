@@ -1270,7 +1270,7 @@ static void low_invoke(GIBaseInfo *callable,
           cinfo = iinfo;
         }
         cbc->callable = cinfo;
-#if GI_CHECK_VERSION (1, 72, 0)
+#ifdef HAVE_G_CALLABLE_INFO_CREATE_CLOSURE
         cbc->closure =
           g_callable_info_create_closure(cinfo, &cbc->cif, cb_closure_handler, cbc);
         in_args[num_in_args++].v_pointer = (cbc->closure? g_callable_info_get_closure_native_address(cinfo, cbc->closure) : NULL);
