@@ -2443,6 +2443,11 @@ PMOD_EXPORT int mapping_equal_p(struct mapping *a, struct mapping *b, struct pro
 
   if (a->data == b->data) return 1;
 
+  if (!m_sizeof(a) && !m_sizeof(b) &&
+      !((a->data->flags ^ b->data->flags) & MAPPING_WEAK)) {
+    return 1;	/* Empty weak mappings are equal. */
+  }
+
   /* If either is weak, they're different. */
   if ((a->data->flags | b->data->flags) & MAPPING_WEAK) return 0;
 
