@@ -153,6 +153,15 @@ DECLARATIONS;
  * }
  */
 
+/* FIXME:
+ *
+ *  * Support comment tokens broken up by escaped newlines.
+ *    Cf C23 6.4.9.3:
+ *
+ *      /\
+ *      / j();			// part of a two-line comment
+ */
+
 EXTRA {
   /*! @enum CppFlags
    *!
@@ -1841,7 +1850,7 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
    *!
    *!   Include a file as a list of items.
    *!
-   *!   By default the items are @epxr{int(8bit@}.
+   *!   By default the items are @expr{int(8bit)@}.
    *!
    *! @seealso
    *!   @[#include], @[#string]
@@ -5371,6 +5380,21 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
                 goto unknown_preprocessor_directive;
               }
             }
+            if ((DATA(pos) < '0') || (DATA(pos) > '9')) {
+              /* FIXME: C23 6.10.5.6:
+               *        A preprocessing directive of the form
+               *            # line pp-tokens new-line
+               *        (that does not match one of the two previous forms)
+               *        is permitted. The preprocessing tokens after
+               *        line on the directive are processed just as in normal
+               *        text (each identifier currently defined as a
+               *        macro name is replaced by its replacement list of
+               *        preprocessing tokens). The directive resulting after
+               *        all replacements shall match one of the two previous
+               *        forms and is then processed as appropriate.
+               */
+              cpp_warning(this, "Unsupported #line directive.");
+            }
 	    /* FALLTHRU */
           case '0': case '1': case '2': case '3': case '4':
           case '5': case '6': case '7': case '8': case '9':
@@ -6335,7 +6359,7 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
  *!   to @[#include] or not.
  *!
  *! @returns
- *!   @[__has_include] returns @expr{1} if the symbol given as argument
+ *!   @[__has_include] returns @expr{1@} if the symbol given as argument
  *!   is valid as an argument to @[#include] and @expr{0@} otherwise.
  *!
  *! @note
@@ -6383,7 +6407,7 @@ PIKEFUN string macro___has_include(string arg)
  *!   to @[#embed] or not.
  *!
  *! @returns
- *!   @[__has_embed] returns @expr{1} if the set of identifiers given as
+ *!   @[__has_embed] returns @expr{1@} if the set of identifiers given as
  *!   argument is valid as an argument to @[#embed] and @expr{0@} otherwise.
  *!   Note that the set of identifiers may contain preprocessor parameters.
  *!

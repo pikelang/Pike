@@ -1381,13 +1381,6 @@ static void low_invoke(GIBaseInfo *callable,
   if(!ok)
     Pike_error("Function not invoked\n");
 
-  while ((cbc = cbclist)) {
-    cbclist = cbc->next;
-    cbc->next = NULL;
-    if (cbc->scope == GI_SCOPE_TYPE_CALL)
-      cb_destroy_notify((gpointer)cbc);
-  }
-
   pop_n_elems(Pike_sp - mark);
 
   ti = g_callable_info_get_return_type(callable);
