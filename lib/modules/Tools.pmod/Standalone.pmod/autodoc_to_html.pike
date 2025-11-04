@@ -807,8 +807,8 @@ string parse_text(Node n, void|String.Buffer ret,
       rows = ({});
       foreach(c->get_elements("group"), Node d)
 	rows += ({ ({
-	  ({ parse_type(get_first_element(d->get_first_element("type"))) }),
-	  parse_text(d->get_first_element("text"))
+          map(map(d->get_elements("type"), get_first_element), parse_type),
+          parse_text(d->get_first_element("text")),
 	}) });
       nicebox(rows, ret);
       break;
@@ -1064,7 +1064,7 @@ string parse_type(Node n, void|string debug) {
     break;
 
   case "type":
-    ret += "<code class='type'>type</code>";
+    ret += "<code class='datatype'>type</code>";
     if (n->count_children() && (c = get_first_element(n)) &&
 	(c->get_any_name() != "mixed")) {
       ret += "(" + parse_type(c) + ")";

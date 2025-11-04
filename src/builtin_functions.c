@@ -61,7 +61,7 @@
 /* #define DIFF_DEBUG */
 /* #define ENABLE_DYN_DIFF */
 
-/*! @decl int equal(mixed a, mixed b)
+/*! @decl int(0..1) equal(mixed a, mixed b)
  *!
  *!   This function checks if the values @[a] and @[b] are equivalent.
  *!
@@ -86,17 +86,21 @@
  *!     @type multiset
  *!     @type object
  *!       The contents of @[a] and @[b] are checked recursively, and
- *!       if all their contents are @[equal] and in the same place,
+ *!       if all their contents are @[equal] and in the same place
+ *!       and have the same @[set_weak_flag()] flags,
  *!       they are considered equal.
  *!
  *!       Note that for objects this case is only reached if neither
  *!       @[a] nor @[b] implements @[lfun::_equal()].
+ *!     @type function
+ *!       Two functions are equal if they refer to the same identifier
+ *!       in the same class and their objects are equal.
  *!     @type type
  *!       Returns @expr{(a <= b) && (b <= a)@}.
  *!  @endmixed
  *!
  *! @seealso
- *!   @[copy_value()], @[`==()]
+ *!   @[copy_value()], @[get_weak_flag()], @[set_weak_flag()], @[`==()]
  */
 PMOD_EXPORT void f_equal(INT32 args)
 {
@@ -454,7 +458,7 @@ static void f_hash_8_0(INT32 args)
  *!
  *! @note
  *!   This hash function differs from the one provided by @[hash_value()],
- *!   in that @[hash_value()] returns a process specific value.
+ *!   in that @[hash_value()] returns a process-specific value.
  *!
  *! @seealso
  *!   @[hash_7_0()], @[hash_7_4()], @[hash_8_0()], @[hash_value]
