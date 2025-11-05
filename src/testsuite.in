@@ -6350,7 +6350,7 @@ test_any([[
 	     all_constants()->blatinka);
     gc();
     return all_constants()->blatinka;
-  }]], ({0}));
+  }]], set_weak_flag (({0})));
 
 test_do(add_constant("kablutt");)
 test_do(add_constant("blatinka");)
