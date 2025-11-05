@@ -2982,7 +2982,7 @@ PMOD_EXPORT int multiset_equal_p (struct multiset *a, struct multiset *b,
   rd.a_msd = a->msd, rd.b_msd = b->msd;
 
   if (multiset_sizeof (a) != multiset_sizeof (b) ||
-      rd.a_msd->flags || rd.b_msd->flags ||
+      ((rd.a_msd->flags ^ rd.b_msd->flags) & MULTISET_WEAK) ||
       !SAME_CMP_LESS (rd.a_msd, rd.b_msd))
     return 0;
 
