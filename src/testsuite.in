@@ -7693,7 +7693,7 @@ test_any([[
       array a = set_weak_flag (({({17})}), 1);
       protected void create() {g = ({this});}
       protected void _destruct() {
-	if (!equal (a, ({({17})})))
+        if (!equal (a, set_weak_flag (({({17})}), 1)))
 	  error ("Contents in weak array zapped: %O.\n", a);
       }
     }();
@@ -7709,7 +7709,7 @@ test_any([[
     }();
     o = 0;
     gc();
-    if (!equal (all_constants()->blatinka, ({({17})})))
+    if (!equal (all_constants()->blatinka, set_weak_flag (({({17})}), 1)))
       error ("Contents in saved weak array zapped: %O.\n",
 	     all_constants()->blatinka);
     gc();
