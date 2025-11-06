@@ -9170,6 +9170,27 @@ PMOD_EXPORT void f__describe(INT32 args)
   pop_n_elems(args-1);
 }
 
+/*! @decl int num_pending_destructs()
+ *! @belongs Debug
+ *!
+ *!   Returns the number of objects will be destructed in
+ *!   the next destruct pass.
+ *!
+ *! @note
+ *!   This function only exists if the Pike runtime has been compiled
+ *!   with RTL debug.
+ */
+PMOD_EXPORT void f__num_pending_destructs(INT32 args)
+{
+  int count = 0;
+  struct object *o = objects_to_destruct;
+  while(o) {
+    count++;
+    o = o->next;
+  }
+  push_int(count);
+}
+
 /*! @decl void gc_set_watch(array|multiset|mapping|object|function|program|string x)
  *! @belongs Debug
  *!
@@ -10890,6 +10911,8 @@ void init_builtin_efuns(void)
 	   tFunc(tSetvar(1,tMix),tVar(1)),OPT_SIDE_EFFECT);
   ADD_EFUN("_describe",f__describe,
 	   tFunc(tSetvar(1,tMix),tVar(1)),OPT_SIDE_EFFECT);
+  ADD_EFUN("_num_pending_destructs", f__num_pending_destructs,
+           tFunc(tNone, tInt), OPT_EXTERNAL_DEPEND);
   ADD_EFUN("_gc_set_watch", f__gc_set_watch,
 	   tFunc(tComplex,tVoid), OPT_SIDE_EFFECT);
   ADD_EFUN("_dump_backlog", f__dump_backlog,

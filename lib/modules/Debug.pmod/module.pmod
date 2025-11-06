@@ -34,6 +34,9 @@ constant disassemble = Builtin._disassemble;
 constant dump_program_tables = _dump_program_tables;
 constant locate_references = _locate_references;
 constant describe = _describe;
+#if constant(_num_pending_destructs)
+constant num_pending_destructs = _num_pending_destructs;
+#endif
 constant gc_set_watch = _gc_set_watch;
 constant dump_backlog = _dump_backlog;
 #endif
