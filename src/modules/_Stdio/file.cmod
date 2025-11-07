@@ -5895,7 +5895,7 @@ static void file_connect_unix( INT32 args )
  *!   @endmixed
  *!
  *! @note
- *!   Note that in versions of Pike prior to 9.0 expr{1@} was returned
+ *!   Note that in versions of Pike prior to 9.0 @expr{1@} was returned
  *!   also in the not yet established case.
  *!
  *!   Note that @expr{-1@} may be returned also for sockets in blocking
