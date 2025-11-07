@@ -36,26 +36,99 @@ xenofarm_post_build() {
   log_end $?
   [ $LASTERR = 0 ] || POST_RESULT=$LASTERR
 
-  log_start benchmark
-  $MAKE benchmark > xenofarm_result/benchmark.txt 2>&1
-  log_end $?
-  [ $LASTERR = 0 ] || POST_RESULT=$LASTERR
+  if [ "x$SKIP_BENCHMARK" = "x" ]; then
+      log_start benchmark
+      $MAKE benchmark > xenofarm_result/benchmark.txt 2>&1
+      log_end $?
+      [ $LASTERR = 0 ] || POST_RESULT=$LASTERR
+  fi
 
-  log_start verify
-  # Note: verify and valgrind_verify perform the same actions
-  #       if not compiled --with-valgrind.
-  $MAKE METATARGET=valgrind_verify TESTARGS="-a -T -F" > \
-    xenofarm_result/verifylog.txt 2>&1
-  log_end $?
-  [ $LASTERR = 0 ] || return 1
+  if [ "x$SKIP_VERIFY" = "x" ]; then
+      log_start verify
+      # Note: verify and valgrind_verify perform the same actions
+      #       if not compiled --with-valgrind.
+      $MAKE METATARGET=valgrind_verify TESTARGS="-a -T -F" > \
+            xenofarm_result/verifylog.txt 2>&1
+      log_end $?
+      [ $LASTERR = 0 ] || POST_RESULT=$LASTERR
+  fi
+
+  if [ "x$MAKE_DOC" = "x" ]; then :; else
+      log_start doc
+      DOC_RESULT=0
+      while :; do
+          log_start extract_autodoc
+          $MAKE METATARGET=autodoc.xml \
+                >xenofarm_result/extract_autodoc.txt 2>&1
+          log_end $?
+          if [ $LASTERR = 0 ]; then :; else
+              DOC_RESULT=$LASTERR
+              break;
+          fi
+
+          log_start assemble_autodoc
+          ASSEMBLE_RESULT=0
+          log_start assemble_modref
+          $MAKE METATARGET=modref.xml \
+                >xenofarm_result/assemble_modref.txt 2>&1
+          log_end $?
+          [ $LASTERR = 0 ] || ASSEMBLE_RESULT=$LASTERR
+
+          log_start assemble_onepage
+          $MAKE METATARGET=onepage.xml \
+                >xenofarm_result/assemble_onepage.txt 2>&1
+          log_end $?
+          [ $LASTERR = 0 ] || ASSEMBLE_RESULT=$LASTERR
+
+          log_start assemble_traditional
+          $MAKE METATARGET=traditional.xml \
+                >xenofarm_result/assemble_traditional.txt 2>&1
+          log_end $?
+          [ $LASTERR = 0 ] || ASSEMBLE_RESULT=$LASTERR
+          log_end $ASSEMBLE_RESULT
+
+          if [ $LASTERR = 0 ]; then :; else
+              DOC_RESULT=$LASTERR
+              break;
+          fi
+
+          log_start render_autodoc
+          RENDER_RESULT=0
+          log_start render_modref
+          DOCTARGET=modref $MAKE METATARGET=documentation \
+                           >xenofarm_result/render_modref.txt 2>&1
+          log_end $?
+          [ $LASTERR = 0 ] || RENDER_RESULT=$LASTERR
+
+          log_start render_onepage
+          DOCTARGET=onepage $MAKE METATARGET=documentation \
+                           >xenofarm_result/render_onepage.txt 2>&1
+          log_end $?
+          [ $LASTERR = 0 ] || RENDER_RESULT=$LASTERR
+          log_start render_traditional
+          DOCTARGET=traditional $MAKE METATARGET=documentation \
+                           >xenofarm_result/render_traditional.txt 2>&1
+          log_end $?
+          [ $LASTERR = 0 ] || RENDER_RESULT=$LASTERR
+
+          log_end $RENDER_RESULT
+          [ $LASTERR = 0 ] || DOC_RESULT=$LASTERR
+
+          break;
+      done
+      log_end $DOC_RESULT
+      [ $LASTERR = 0 ] || POST_RESULT=$LASTERR
+  fi
   
-  log_start export
-  PIKE_VERSION_SUFFIX="`sed -e 's/^revision:\(.......\).*/-\1/p' -ed buildid.txt`"
-  export PIKE_VERSION_SUFFIX
-  $MAKE bin_export INSTALLER_DESTDIR="`pwd`/xenofarm_result" > \
-    xenofarm_result/exportlog.txt 2>&1
-  log_end $?
-  [ $LASTERR = 0 ] || return 1
+  if [ "x$SKIP_EXPORT" = "x" ]; then
+      log_start export
+      PIKE_VERSION_SUFFIX="`sed -e 's/^revision:\(.......\).*/-\1/p' -ed buildid.txt`"
+      export PIKE_VERSION_SUFFIX
+      $MAKE bin_export INSTALLER_DESTDIR="`pwd`/xenofarm_result" > \
+            xenofarm_result/exportlog.txt 2>&1
+      log_end $?
+      [ $LASTERR = 0 ] || return 1
+  fi
   return $POST_RESULT
 }
 
