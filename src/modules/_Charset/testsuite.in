@@ -14,6 +14,19 @@ test_eq([[Charset.encoder("ASCII", "?", lambda(string ch) { return "&#" + ch[0] 
 test_eq([[Charset.decoder("iso646-se")->feed("}{|][\\")->drain()]],"åäöÅÄÖ")
 test_eq([[Charset.decoder("iso-ir-126")->feed("abcåäö")->drain()]],
 	"abc\x3b5\x3b4\x3c6")
+test_eq([[Charset.decoder("iso-ir-129")->
+            feed((string)(Array.enumerate(32, 1, 0xa0) +
+                          Array.enumerate(32, 1, 0xe0)))->drain()]],
+        (string)(({ 0xa0 }) + Array.enumerate(20, 1, 0x1fb00) +
+                 ({ 0x258c }) + Array.enumerate(20, 1, 0x1fb14) +
+                 ({ 0x2590 }) + Array.enumerate(20, 1, 0x1fb28) +
+                 ({ 0x2588 })))
+test_eq([[Charset.encoder("iso-ir-129")->
+            feed((string)(({ 0xa0 }) + Array.enumerate(20, 1, 0x1fb00) +
+                          ({ 0x258c }) + Array.enumerate(20, 1, 0x1fb14) +
+                          ({ 0x2590 }) + Array.enumerate(20, 1, 0x1fb28) +
+                          ({ 0x2588 })))->drain()]],
+        (string)(Array.enumerate(32, 1, 0xa0) + Array.enumerate(32, 1, 0xe0)))
 
 // Charset.ISO2022
 test_eq([[Charset.decoder("iso-2022")->
