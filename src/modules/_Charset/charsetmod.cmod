@@ -2192,6 +2192,7 @@ static void feed_std8e(struct std8e_stor *s8, struct string_builder *sb,
 	  REPLACE_CHAR(c, feed_std8e, s8, str, p - STR2(str) - 1);
         }
       next_char:
+        ;
       }
     }
     break;
