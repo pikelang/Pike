@@ -124,6 +124,7 @@ static size_t std8e_stor_offs = 0;
 
 struct std16e_stor {
   p_wchar1 *revtab;
+  p_wchar2 *non_bmp_revtab;	/* Characters outside of the BMP (if any). */
   unsigned lowtrans;
   int lo, hi;
   int sshift;
@@ -1419,7 +1420,9 @@ static struct std8e_stor *push_std_8bite(int args, int allargs, int lo, int hi,
   return s8;
 }
 
-static struct std16e_stor *push_std_16bite(int args, int allargs, int lo, int hi)
+static struct std16e_stor *push_std_16bite(int args, int allargs,
+                                           int lo, int hi,
+                                           int num_non_bmp)
 {
   struct std16e_stor *s16;
   struct object *o = clone_object(std_16bite_program, args);
@@ -1430,7 +1433,12 @@ static struct std16e_stor *push_std_16bite(int args, int allargs, int lo, int hi
   pop_n_elems(allargs);
   push_object(o);
   s16 = (struct std16e_stor *)(Pike_sp[-1].u.object->storage+std16e_stor_offs);
-  s16->revtab = xcalloc(hi-lo, sizeof(p_wchar1));
+  s16->revtab = xcalloc(num_non_bmp + hi-lo, sizeof(p_wchar1));
+  if (num_non_bmp) {
+    /* NB: One extra entry to keep track of num_non_bmp. */
+    s16->non_bmp_revtab = xcalloc(num_non_bmp + 1, sizeof(p_wchar2));
+    s16->non_bmp_revtab[0] = num_non_bmp;
+  }
   s16->lo = lo;
   s16->hi = hi;
   s16->lowtrans = 0;
@@ -2220,6 +2228,7 @@ static void std_16bite_init_stor(struct object *UNUSED(o))
     (struct std16e_stor *)(Pike_fp->current_storage+std16e_stor_offs);
 
   s16->revtab = NULL;
+  s16->non_bmp_revtab = NULL;
   s16->lowtrans = 32;
   s16->lo = 0;
   s16->hi = 0;
@@ -2286,7 +2295,7 @@ static void feed_std16e(struct std16e_stor *s16, struct string_builder *sb,
   case 2:
     {
       p_wchar2 c, *p = STR2(str);
-      while(l--)
+      while(l--) {
 	if((unsigned INT32) (c=*p++)<lowtrans)
 	  string_builder_putchar(sb, c);
 	else if(c>=lo && c<hi && (ch=tab[c-lo])!=0) {
@@ -2297,8 +2306,31 @@ static void feed_std16e(struct std16e_stor *s16, struct string_builder *sb,
 	  if(ch > 0xff)
 	    string_builder_putchar(sb, (ch>>8)&0xff);
 	  string_builder_putchar(sb, ch&0xff);
-	} else
+        } else {
+          if (s16->non_bmp_revtab && (c & ~0xffff)) {
+            /* FIXME: Use binary search. */
+            int num_non_bmp = s16->non_bmp_revtab[0];
+            /* NB: Off by one. */
+            while (num_non_bmp > 0) {
+              if (s16->non_bmp_revtab[num_non_bmp] == c) {
+                ch = s16->revtab[num_non_bmp + hi - lo];
+                if(sshift && !(ch & 0x80)) {
+                  ch |= 0x80;
+                  string_builder_putchar(sb, (ch > 0xff? 0x8f : 0x8e));
+                }
+                if(ch > 0xff)
+                  string_builder_putchar(sb, (ch>>8)&0xff);
+                string_builder_putchar(sb, ch&0xff);
+                goto next_char;
+              }
+              num_non_bmp--;
+            }
+          }
 	  REPLACE_CHAR(c, feed_std16e, s16, str, p - STR2(str) - 1);
+        }
+      next_char:
+        ;
+      }
     }
     break;
   }
@@ -2380,19 +2412,71 @@ PIKEFUN object rfc1345(string charset, int|void encoder, string|void rep,
 
 	if(hi2) {
 	  struct std16e_stor *s16;
-	  s16 = push_std_16bite((args>2? args-2:0), args, lowtrans, 65536);
+          int num_non_bmp = 0;
+
+          for (z = 0, i = lo; i <= hi; i++, z += (hi2-lo2+1)) {
+            for (j=lo2; j<=hi2; j++) {
+              if ((charset_map[mid].table[z+j-lo2] & 0xf800) == 0xd800) {
+                num_non_bmp++;
+              }
+            }
+          }
+
+          s16 = push_std_16bite((args>2? args-2:0), args, lowtrans, 65536,
+                                num_non_bmp);
 
 	  s16->lowtrans = lowtrans;
 	  s16->lo = lowtrans;
 	  s16->hi = lowtrans;
 
+          num_non_bmp = 0;
 	  for(z=0, i=lo; i<=hi; i++, z+=(hi2-lo2+1))
 	    for(j=lo2; j<=hi2; j++)
 	      if((c=charset_map[mid].table[z+j-lo2])!=0xfffd && c>=s16->lo) {
-		s16->revtab[c-s16->lo]=(i<<8)|j;
-		if(c>=s16->hi)
-		  s16->hi = c+1;
+                if ((c & 0xf800) == 0xd800) {
+                  /* FIXME: Does not check NUL-termination. */
+                  p_wchar2 cc;
+                  c &= 0x3ff;
+                  c += 1 + hi - lo;
+                  cc = 0x10000 + ((charset_map[mid].table[c++] & 0x3ff) << 10);
+                  cc |= charset_map[mid].table[c] & 0x3ff;
+#if 0
+                  fprintf(stderr, "0x%04x ==> Offset 0x%03x\n", i, c-1);
+                  fprintf(stderr, "    Pair: 0x%04x, 0x%04x\n",
+                          charset_map[mid].table[c-1],
+                          charset_map[mid].table[c]);
+                  fprintf(stderr, "    Char: 0x%04x\n", cc);
+#endif
+                  s16->non_bmp_revtab[++num_non_bmp] = cc;	/* NB: Off by one! */
+                  s16->revtab[num_non_bmp + s16->hi - s16->lo] = (i<<8) | j;
+                } else {
+                  s16->revtab[c-s16->lo]=(i<<8)|j;
+                  if(c>=s16->hi)
+                    s16->hi = c+1;
+                }
 	      }
+
+          if (num_non_bmp) {
+#ifdef PIKE_DEBUG
+            /* FIXME: Validate that s16->non_bmp_revtab[0] == num_non_bmp
+             *        when num_non_bmp is not zero.
+             */
+#endif
+            /* FIXME: Sort s16->revtab[65536 - s16->lo .. 65535 + num_non_bmp]
+             *        and s16->non_bmp_revtab[1 .. num_non_bmp] on the latter.
+             *
+             * This would make it possible to do a binary search on
+             * the non_bmp_revtab.
+             */
+#if 0
+            fprintf(stderr, "Num non BMP: %d\n", num_non_bmp);
+            for (i = 1; i <= num_non_bmp; i++) {	/* NB: Off by one! */
+              fprintf(stderr, "0x%04x ==> 0x%04x\n",
+                      s16->non_bmp_revtab[i],
+                      s16->revtab[i + 65535 - s16->lo]);
+            }
+#endif
+          }
 	} else {
 	  struct std8e_stor *s8;
           int num_non_bmp = 0;
