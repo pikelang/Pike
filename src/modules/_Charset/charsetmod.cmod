@@ -2240,6 +2240,9 @@ static void std_16bite_exit_stor(struct object *UNUSED(o))
   struct std16e_stor *s16 =
     (struct std16e_stor *)(Pike_fp->current_storage+std16e_stor_offs);
 
+  if(s16->non_bmp_revtab)
+    free(s16->non_bmp_revtab);
+
   if(s16->revtab)
     free(s16->revtab);
 }
