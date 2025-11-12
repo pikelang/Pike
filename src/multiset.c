@@ -2976,6 +2976,11 @@ PMOD_EXPORT int multiset_equal_p (struct multiset *a, struct multiset *b,
 
   if (a->msd == b->msd) return 1;
 
+  if ((a->msd->flags ^ b->msd->flags) & MULTISET_WEAK) {
+    /* Weak flag differs. */
+    return 0;
+  }
+
   check_multiset_for_destruct (a);
   check_multiset_for_destruct (b);
 
