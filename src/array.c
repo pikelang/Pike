@@ -1930,6 +1930,10 @@ PMOD_EXPORT int array_equal_p(struct array *a, struct array *b, struct processin
   if(a == b) return 1;
   if(!a || !b) return 0;
   if(a->size != b->size) return 0;
+  if ((a->flags ^ b->flags) & ARRAY_WEAK_FLAG) {
+    /* Weak flag differs. */
+    return 0;
+  }
   if(!a->size) return 1;
 
   if ((a->flags ^ b->flags) & ARRAY_WEAK_FLAG) return 0;
