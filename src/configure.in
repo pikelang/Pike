@@ -2053,9 +2053,10 @@ fi
 
 # test for several buildins
 
+dnl fun, arg, code, special_case, special_case_descr
 define(TEST_BUILTIN, [
-    AC_MSG_CHECKING(for $1)
-    AC_CACHE_VAL(translit([pike_cv_builtin_$1], [A-Z], [a-z]), [
+    AC_MSG_CHECKING([for $1]ifelse([$5],,,[ that supports $5]))
+    AC_CACHE_VAL(translit([pike_cv_builtin_$1$4], [A-Z], [a-z]), [
     AC_TRY_LINK([
 $3
 ],[
@@ -2064,19 +2065,20 @@ volatile int foo = 0;
 foo = (int)$1($2);
 return 0;
 ],
-    translit([pike_cv_builtin_$1], [A-Z], [a-z])="yes",
-    translit([pike_cv_builtin_$1], [A-Z], [a-z])="no")
+    translit([pike_cv_builtin_$1$4], [A-Z], [a-z])="yes",
+    translit([pike_cv_builtin_$1$4], [A-Z], [a-z])="no")
     ])
-    AC_MSG_RESULT($translit([pike_cv_builtin_$1], [A-Z], [a-z]))
-    if test "$translit([pike_cv_builtin_$1], [A-Z], [a-z])" = "yes"; then
-      AC_DEFINE(translit([HAS_$1], [a-z], [A-Z]), 1, [Whether $1 is available])
+    AC_MSG_RESULT($translit([pike_cv_builtin_$1$4], [A-Z], [a-z]))
+    if test "$translit([pike_cv_builtin_$1$4], [A-Z], [a-z])" = "yes"; then
+        AC_DEFINE(translit([HAS_$1$4], [a-z], [A-Z]), 1,
+                  [Whether $1 is available]ifelse([$5],,,[ and supports $5]))
     fi
 ])
 
-
+dnl fun, arg, code, special_case, special_case_descr
 define(TEST_BUILTIN_VOID, [
-    AC_MSG_CHECKING(for $1)
-    AC_CACHE_VAL(translit([pike_cv_builtin_$1], [A-Z], [a-z]), [
+    AC_MSG_CHECKING([for $1]ifelse([$5],,,[ that supports $5]))
+    AC_CACHE_VAL(translit([pike_cv_builtin_$1$4], [A-Z], [a-z]), [
     AC_TRY_LINK([
 $3
 ],[
@@ -2084,12 +2086,13 @@ unsigned long lint;
 $1($2);
 return 0;
 ],
-    translit([pike_cv_builtin_$1], [A-Z], [a-z])="yes",
-    translit([pike_cv_builtin_$1], [A-Z], [a-z])="no")
+    translit([pike_cv_builtin_$1$4], [A-Z], [a-z])="yes",
+    translit([pike_cv_builtin_$1$4], [A-Z], [a-z])="no")
     ])
-    AC_MSG_RESULT($translit([pike_cv_builtin_$1], [A-Z], [a-z]))
-    if test "$translit([pike_cv_builtin_$1], [A-Z], [a-z])" = "yes"; then
-      AC_DEFINE(translit([HAS_$1], [a-z], [A-Z]), 1, [Whether $1 is available])
+    AC_MSG_RESULT($translit([pike_cv_builtin_$1$4], [A-Z], [a-z]))
+    if test "$translit([pike_cv_builtin_$1$4], [A-Z], [a-z])" = "yes"; then
+        AC_DEFINE(translit([HAS_$1$4], [a-z], [A-Z]), 1,
+                  [Whether $1 is available]ifelse([$5],,,[ and supports $5]))
     fi
 ])
 
@@ -2168,6 +2171,12 @@ TEST_BUILTIN(__cnttz4, 23, [
 TEST_BUILTIN(__cnttz8, 23, [
     #include <builtins.h>
 ])
+# C23 intrinsics
+dnl SmartOS/Solaris 5.11/x86_64 apparently has a stdc_leading_zeros()
+dnl that does not support __int128.
+TEST_BUILTIN(stdc_leading_zeros, [(unsigned __int128)0], [
+#include <stdbit.h>
+], [_int128], [__int128])
 
 
 #############################################################################
