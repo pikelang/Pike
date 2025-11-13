@@ -216,7 +216,16 @@ static inline UINT64 PIKE_UNUSED_ATTRIBUTE bswap64(UINT64 x) {
  */
 static inline unsigned INT32 PIKE_UNUSED_ATTRIBUTE clz128(unsigned __int128 i) {
 # ifdef HAVE_STDBIT_H
+#  ifdef HAS_STDC_LEADING_ZEROS_INT128
   return i ? stdc_leading_zeros(i) : 128;
+#  else
+  /* The generic stdc_leading_zeros() does not support __int128.
+   * Do it with int64 instead.
+   */
+  UINT64 hi = i >> 64;
+  return i ? hi ? stdc_leading_zeros(hi) :
+    (64 + stdc_leading_zeros((INT64)i)) : 128;
+#  endif
 # elif SIZEOF_LONG == 16 && defined(HAS___BUILTIN_CLZL)
     return i ? __builtin_clzl(i) : 128;
 # elif SIZEOF_LONG_LONG == 16 && defined(HAS___BUILTIN_CLZLL)
