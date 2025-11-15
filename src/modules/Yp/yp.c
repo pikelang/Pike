@@ -18,6 +18,15 @@
 #ifdef HAVE_RPC_CLNT_H
 #include <rpc/clnt.h>
 #endif /* HAVE_RPC_CLNT_H */
+
+/* NB: Some <rpcsvc/yp_prot.h> (eg SmartOS/Solaris 5.11) contain
+ *     the declaration
+ *
+ *       typedef unsigned int bool;
+ *
+ *     it is invalid in C23 or later as bool is a keyword.
+ */
+#define bool pike_yp_bool
 #include <rpcsvc/yp_prot.h>
 #include <rpcsvc/ypclnt.h>
 
