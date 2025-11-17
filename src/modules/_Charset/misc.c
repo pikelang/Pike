@@ -1948,6 +1948,93 @@ static const p_wchar1 map_gsm_03_38_ext[] = {
   0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
 };
 
+/* Commodore +4/16/116/64 PETSCII.
+ *
+ * NB: Traditionally they have reverse video versions at 128-255.
+ *
+ * Note also that lots of code points do not (yet) have proper
+ * equivalents in Unicode. The tables thus have lots of 0xfffd
+ * positions.
+ *
+ * Cf "C=16/+4/116/64 Character Generator and Unicode"
+ *    https://litwr2.github.io/plus4/c16cg.pdf
+ *
+ * For the -se variants see the annotations to
+ * the Handic C64 PETSCII Screen Code scans at
+ * https://www.df.lth.se/~triad/krad/recode/petscii.html
+ */
+static const p_wchar1 map_petscii_set1[] = {
+  '@', 'A', 'B', 'C', 'D', 'E', 'F', 'G',
+  'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O',
+  'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W',
+  'X', 'Y', 'Z', '[', 0x00a3, ']', 0x2191, 0x2190,
+  0x0020, '!', '\"', '#', '$', '%', '&', '\'',
+  '(', ')', '`', '+', ',', '-', '.', '/',
+  '0', '1', '2', '3', '4', '5', '6', '7',
+  '8', '9', ':', ';', '<', '=', '>', '?',
+  0x2501, 0x2660, 0x2503, 0x2501, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
+  0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
+  0xfffd, 0x25cf, 0xfffd, 0x2665, 0xfffd, 0xfffd, 0xfffd, 0x25cb,
+  0x2663, 0xfffd, 0x2666, 0x254b, 0xfffd, 0x2503, 0x03c0, 0x25e5,
+  ' ', 0x258c, 0x2584, 0x2594, 0x2581, 0x258e, 0xfffd, 0xfffd,
+  0xfffd, 0x25e4, 0xfffd, 0x2523, 0x2597, 0x2517, 0x2513, 0x2582,
+  0x250f, 0x253b, 0x2533, 0x252b, 0x258e, 0x258d, 0xfffd, 0xfffd,
+  0xfffd, 0x2583, 0xfffd, 0x2596, 0x259d, 0x251b, 0x2598, 0x259a,
+};
+static const p_wchar1 map_petscii_set2[] = {
+  '@', 'a', 'b', 'c', 'd', 'e', 'f', 'g',
+  'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o',
+  'p', 'q', 'r', 's', 't', 'u', 'v', 'w',
+  'x', 'y', 'z', '[', 0xa3, ']', 0x2191, 0x2190,
+  ' ', '!', '"', '#', '$', '%', '&', '\'',
+  '(', ')', '*', '+', ',', '-', '.', '/',
+  '0', '1', '2', '3', '4', '5', '6', '7',
+  '8', '9', ':', ';', '<', '=', '>', '?',
+  0x2501, 'A', 'B', 'C', 'D', 'E', 'F', 'G',
+  'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O',
+  'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W',
+  'X', 'Y', 'Z', 0x254b, 0xfffd, 0x2503, 0xfffd, 0xfffd,
+  ' ', 0x258c, 0x2584, 0x2594, 0x2581, 0x258e, 0xfffd, 0xfffd,
+  0xfffd, 0xfffd, 0xfffd, 0x2523, 0x2597, 0x2517, 0x2513, 0x2582,
+  0x250f, 0x253b, 0x2533, 0x252b, 0x258e, 0x258d, 0xfffd, 0xfffd,
+  0xfffd, 0x2583, 0x221a, 0x2596, 0x259d, 0x251b, 0x2598, 0x259a,
+};
+static const p_wchar1 map_petscii_se_set1[] = {
+  '@', 'A', 'B', 'C', 'D', 'E', 'F', 'G',
+  'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O',
+  'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W',
+  'X', 'Y', 'Z', 0xc4, 0xd6, 0xc5, 0x2191, 0x2190,
+  0x0020, '!', '\"', '#', '$', '%', '&', '\'',
+  '(', ')', '`', '+', ',', '-', '.', '/',
+  '0', '1', '2', '3', '4', '5', '6', '7',
+  '8', '9', ':', ';', '<', '=', '>', '?',
+  0x2501, 0x2660, 0x2503, 0x2501, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
+  0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
+  0xfffd, 0x25cf, 0xfffd, 0x2665, 0xfffd, 0xfffd, 0xfffd, 0x25cb,
+  0x2663, 0xfffd, 0x2666, 0x254b, 0xfffd, 0x2503, 0x03c0, 0x25e5,
+  ' ', 0x258c, 0x2584, 0x2594, 0x2581, 0x258e, 0xfffd, 0xfffd,
+  0xfffd, 0x25e4, 0xfffd, 0x2523, 0x2597, 0x2517, 0x2513, 0x2582,
+  0x250f, 0x253b, 0x2533, 0x252b, 0x258e, 0x258d, 0xfffd, 0xfffd,
+  0xfffd, 0x2583, 0xfffd, 0x2596, 0x259d, 0x251b, 0x2598, 0x259a,
+};
+static const p_wchar1 map_petscii_se_set2[] = {
+  '@', 'a', 'b', 'c', 'd', 'e', 'f', 'g',
+  'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o',
+  'p', 'q', 'r', 's', 't', 'u', 'v', 'w',
+  'x', 'y', 'z', 0xe4, 0xf6, 0xe5, 0x2191, 0x2190,
+  ' ', '!', '"', '#', '$', '%', '&', '\'',
+  '(', ')', '*', '+', ',', '-', '.', '/',
+  '0', '1', '2', '3', '4', '5', '6', '7',
+  '8', '9', ':', ';', '<', '=', '>', '?',
+  0x2501, 'A', 'B', 'C', 'D', 'E', 'F', 'G',
+  'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O',
+  'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W',
+  'X', 'Y', 'Z', 0xc4, 0xd6, 0xc5, 0xfffd, 0xfffd,
+  ' ', 0x258c, 0x2584, 0x2594, 0x2581, 0x258e, 0xfffd, 0xfffd,
+  0xfffd, 0xfffd, 0xfffd, 0x2523, 0x2597, 0x2517, 0x2513, 0x2582,
+  0x250f, 0x253b, 0x2533, 0x252b, 0x258e, 0x258d, 0xfffd, 0xfffd,
+  0xfffd, 0x2583, 0x221a, 0x2596, 0x269d, 0x251b, 0x2598, 0x259a,
+};
 
 static const struct {
   const char *name;
@@ -2006,6 +2093,12 @@ static const struct {
   { "918", map_IBM918, 32, 255 },                                     /* :: ibm918 */
   { "ansix31101983", map_ANSI_X3_110_1983, 33, 255 },                 /* :: ansi_x3.110-1983 */
   { "at5001983", map_ANSI_X3_110_1983, 33, 255 },                     /* :: csa_t500-1983 */
+  { "c64", map_petscii_set1, 0, 127 },
+  { "c64se", map_petscii_se_set1, 0, 127 },
+  { "c64seset1", map_petscii_se_set1, 0, 127 },
+  { "c64seset2", map_petscii_se_set2, 0, 127 },
+  { "c64set1", map_petscii_set1, 0, 127 },
+  { "c64set2", map_petscii_set2, 0, 127 },
   { "cpar", map_IBM868, 128, 255 },                                   /* :: cp-ar */
   { "cpgr", map_IBM869, 128, 255 },                                   /* :: cp-gr */
   { "cpis", map_IBM861, 128, 255 },                                   /* :: cp-is */
@@ -2095,6 +2188,12 @@ static const struct {
   { "pc862latinhebrew", map_IBM862, 128, 255 },
   { "pc8codepage437", map_IBM437, 128, 255 },
   { "pcp852", map_IBM852, 128, 255 },
+  { "petscii", map_petscii_set1, 0, 127 },
+  { "petsciise", map_petscii_se_set1, 0, 127 },
+  { "petsciiseset1", map_petscii_se_set1, 0, 127 },
+  { "petsciiseset2", map_petscii_se_set2, 0, 127 },
+  { "petsciiset1", map_petscii_set1, 0, 127 },
+  { "petsciiset2", map_petscii_set2, 0, 127 },
   { "r8", map_hp_roman8, 161, 255 },                                  /* :: r8 */
   { "ref", map_ISO_646_basic_1983, 35, 122 },                         /* :: ref */
   { "roman8", map_hp_roman8, 161, 255 },                              /* :: roman8 */
