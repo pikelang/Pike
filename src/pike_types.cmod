@@ -29,6 +29,7 @@
 #include "block_allocator.h"
 #include "bitvector.h"
 #include "gc_header.h"
+#include "builtin_functions.h"
 
 #ifdef PIKE_DEBUG
 #define PIKE_TYPE_DEBUG
@@ -2019,9 +2020,19 @@ static void internal_parse_typeA(const char **_s)
 	  } else {
 	    min = MIN_INT32;
 	  }
-	  if(s[0][0]=='.' && s[0][1]=='.')
+          if(s[0][0]=='.' && s[0][1]=='.') {
 	    s[0]+=2;
-	  else {
+          } else if (!strncmp((const char *)*s, "bit", 3)) {
+            s[0] += 3;
+            if (min < 32) {
+              max = (1<<min) - 1;
+            } else {
+              max = MAX_INT32;
+            }
+            min = 0;
+            while(isspace(**s)) ++*s;
+            goto expect_end_paren;
+          } else {
 	    yyerror("Missing .. in integer type.");
 	  }
 
@@ -2033,6 +2044,7 @@ static void internal_parse_typeA(const char **_s)
 	    max = MAX_INT32;
 	  }
 
+        expect_end_paren:
 	  if(**s != ')') yyerror("Missing ')' in integer range.");
 	  else
 	    ++*s;
