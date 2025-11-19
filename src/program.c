@@ -521,8 +521,8 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *! @item
  *!   Strong references are those from objects to the objects of their
  *!   lexically surrounding classes. There can never be a cycle
- *!   consisting only of strong references. (This means the gc never
- *!   destructs a parent object before all children have been
+ *!   consisting only of strong references. (This means that the gc
+ *!   never destructs a parent object before all children have been
  *!   destructed.)
  *! @endul
  *!
@@ -6575,6 +6575,9 @@ void lower_inherit(struct program *p,
  *
  * @param name
  *   Optional rename of the inherit.
+ *
+ * @param bindings
+ *   Bindings to apply if p has generics.
  */
 PMOD_EXPORT void low_inherit(struct program *p,
 			     struct object *parent,

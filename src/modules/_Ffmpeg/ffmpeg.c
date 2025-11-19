@@ -204,7 +204,9 @@ int encoder_flg(const AVCodec *codec) {
  *! You can find more info about it at @url{http://ffmpeg.sf.net/@}.
  */
 
-/*! @decl void create(int codec_name, int encoder)
+/*! @decl void create(int codec_name, int(1bit) encoder, @
+ *!                   int(16bit)|void rate, int(16bit)|void wide, @
+ *!                   int(16bit)|void chns)
  *!
  *! Create decoder or encoder object.
  *!
