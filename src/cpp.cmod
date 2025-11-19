@@ -6254,8 +6254,8 @@ static ptrdiff_t low_cpp(struct CPP_struct *this,
    *!   This macro expands to the year and date (6 digits) of the Unicode
    *!   standard that the Pike runtime supports.
    *!
-   *!   Note that this differs slightly from the corresponding macro
-   *!   in the C23 standard in that it does NOT have an ending @expr{'L'@}.
+   *!   Note that this differs slightly from the corresponding macro in
+   *!   the C11 standard in that it does NOT have an ending @expr{'L'@}.
    *!
    *! @seealso
    *!   @[__UNICODE_VERSION__]
