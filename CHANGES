@@ -433,6 +433,12 @@ o predef::{en,de}code_value()
 
   Several fixes related to encoding and decoding of programs.
 
+o Charset
+
+  - Updated Unicode translation table for ISO IR-181 to follow n1818.
+
+  - The encoders now support encoding of characters outside the BMP.
+
 o Cpp
 
   Fixed line numbering issue when handling multi-line comments
