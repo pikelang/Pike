@@ -1625,8 +1625,17 @@ static ptrdiff_t feed_8bit(struct pike_string *str, struct std_cs_stor *s)
       string_builder_putchar(&s->strbuild, x);
     else if(x>hi)
       string_builder_putchar(&s->strbuild, DEFCHAR);
-    else
-      string_builder_putchar(&s->strbuild, table[x-lo]);
+    else {
+      UNICHAR uc = table[x-lo];
+      if ((uc & 0xf800) == 0xd800) {
+        /* We use the surrogate block as an offset after the base table
+         * to a NUL-terminated string of UNICHARs, for the case where
+         * the mapping doesn't fit in a single UNICHAR. */
+        string_builder_utf16_strcat(&s->strbuild,
+                                    table + hi + 1 - lo + (uc & 0x07ff));
+      } else
+        string_builder_putchar(&s->strbuild, uc);
+    }
   }
   return 0;
 }
