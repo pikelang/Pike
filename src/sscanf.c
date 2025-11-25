@@ -22,6 +22,7 @@
 #include "sscanf.h"
 #include "bitvector.h"
 #include "pike_search.h"
+#include "lex.h"
 
 /*
  * helper functions for sscanf %O
@@ -108,7 +109,6 @@ static void skip_to_token( PCHARP *str, ptrdiff_t *len )
 static int pcharp_to_svalue_rec(PCHARP *str,
 				ptrdiff_t *len)
 {
-  extern int parse_esc_seq_pcharp (PCHARP buf, p_wchar2 *chr, ptrdiff_t *len);
   struct svalue *begin = Pike_sp;
   PCHARP start = *str;
   check_stack(100);

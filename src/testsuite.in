@@ -156,6 +156,8 @@ test_compile_error("\x109a27bc69e256c83deaa34c26b4")
 test_compile_error('\x109a27bc69e256c83deaa34c26b4')
 test_compile_error('\u17fo')
 test_compile_error("\u17fo")
+test_compile_error('\u{17fo}')
+test_compile_error("\u{17fo}")
 
 test_eq('012456789abcdefghijklmnopqrstuvwxyz'->digits(256),
         "012456789abcdefghijklmnopqrstuvwxyz")
@@ -165,6 +167,9 @@ test_eq('\u117f', 0x117f)
 test_eq("\u117foo", "\10577oo")
 test_eq("\u1117foo", "\10427foo")
 test_eq("\uuuu117foo", "\\uuu117foo")
+test_eq('\u{117f}', 0x117f)
+test_eq("\u{117f}oo", "\10577oo")
+test_eq("\u{1117}foo", "\10427foo")
 test_compile_error('\U117f')
 test_compile_error("\U117f")
 test_compile_error("\UdEaDbEaT")
@@ -172,6 +177,8 @@ test_eq("\UUdEaDbEaT", "\\UdEaDbEaT")
 test_eq('\UDeaDBeEF', -559038737)
 test_eq("\UDeaDBeEFFF", "\33653337357FF")
 test_eq("\UUDeaDBeEFFF", "\\UDeaDBeEFFF")
+test_eq('\U{DeaDBeEF}', -559038737)
+test_eq("\U{DeaDBeEF}FF", "\33653337357FF")
 
 test_do([[
   // bug 2677
