@@ -189,7 +189,9 @@ static FLOAT_TYPE lex_strtod(char *buf, char **end)
  *   \v			vertical-tab (VT)
  *   \x[0-9a-fA-F]*	hexadecimal escape
  *   \u+[0-9a-fA-F]{4,4} 16 bit unicode style escape
+ *   \u+{[0-9a-fA-F]+}	Variable-length unicode escape
  *   \U+[0-9a-fA-F]{8,8} 32 bit unicode style escape
+ *   \U+{[0-9a-fA-F]+}	Variable-length unicode escape
  *
  * If there are more than one u or U in the unicode style escapes, one
  * is removed and the escape remains otherwise intact.
@@ -205,7 +207,10 @@ int parse_esc_seq (WCHAR *buf, p_wchar2 *chr, ptrdiff_t *len)
  * 5: Too large hexadecimal escape. *len is gobbled to the end of it all.
  * 6: Too large decimal escape. *len is gobbled to the end of it all.
  * 7: Not 4 digits in \u escape. *len is up to the last found digit.
- * 8: Not 8 digits in \U escape. *len is up to the last found digit. */
+ * 8: Not 8 digits in \U escape. *len is up to the last found digit.
+ * 9: Missing end } in \u{xxx} escape. *len is up to the last found digit.
+ * 10: Missing end } in \U{xxx} escape. *len is up to the last found digit.
+ */
 {
   ptrdiff_t l = 1;
   p_wchar2 c;
@@ -341,6 +346,11 @@ int parse_esc_seq (WCHAR *buf, p_wchar2 *chr, ptrdiff_t *len)
 	stop = l + 8;
 	longq = 1;
       }
+      if (buf[1] == '{') {
+        stop = 0x7fffffff;
+        longq += 2;
+        l++;
+      }
       for (; l < stop; l++)
 	switch (buf[l]) {
 	  case '0': case '1': case '2': case '3': case '4':
@@ -353,9 +363,17 @@ int parse_esc_seq (WCHAR *buf, p_wchar2 *chr, ptrdiff_t *len)
 	  case 'A': case 'B': case 'C': case 'D': case 'E': case 'F':
 	    n = 16 * n + buf[l] - 'A' + 10;
 	    break;
+          case '}':
+            if (longq == 2) {
+              l++;
+              *len = l;
+              *chr = (p_wchar2)n;
+              return 0;
+            }
+            /* FALLTHRU */
 	  default:
 	    *len = l;
-	    return longq ? 8 : 7;
+            return 7 + longq;
 	}
       c = (p_wchar2)n;
       break;
@@ -407,6 +425,14 @@ static p_wchar2 char_const(struct lex *lex)
     case 8:
       if( Pike_compiler->compiler_pass == COMPILER_PASS_FIRST )
         yyerror ("Too few hex digits in \\U escape.");
+      return '\\';
+    case 9:
+      if( Pike_compiler->compiler_pass == COMPILER_PASS_FIRST )
+        yyerror("Missing end brace in \\u{xxx} escape.");
+      return '\\';
+    case 10:
+      if( Pike_compiler->compiler_pass == COMPILER_PASS_FIRST )
+        yyerror("Missing end brace in \\U{xxx} escape.");
       return '\\';
   }
   SKIPN (l);
