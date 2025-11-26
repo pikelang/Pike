@@ -2446,7 +2446,9 @@ PIKEFUN object rfc1345(string charset, int|void encoder, string|void rep,
 	    for(j=lo2; j<=hi2; j++)
 	      if((c=charset_map[mid].table[z+j-lo2])!=0xfffd && c>=s16->lo) {
                 if ((c & 0xf800) == 0xd800) {
-                  /* FIXME: Does not check NUL-termination. */
+                  /* FIXME: Does not check NUL-termination.
+                   * FIXME: Does not check that the escapes are surrogates.
+                   */
                   p_wchar2 cc;
                   c &= 0x3ff;
                   c += 1 + hi - lo;
@@ -2511,7 +2513,9 @@ PIKEFUN object rfc1345(string charset, int|void encoder, string|void rep,
           for(i=lo; i<=hi; i++) {
 	    if((c=charset_map[mid].table[i-lo])!=0xfffd && c>=s8->lo) {
               if ((c & 0xf800) == 0xd800) {
-                /* FIXME: Does not check NUL-termination. */
+                /* FIXME: Does not check NUL-termination.
+                 * FIXME: Does not check that the escapes are surrogates.
+                 */
                 p_wchar2 cc;
                 c &= 0x3ff;
                 c += 1 + hi - lo;
@@ -2590,19 +2594,44 @@ PIKEFUN object rfc1345(string charset, int|void encoder, string|void rep,
     if(encoder && encoder->u.integer) {
       struct std8e_stor *s8;
       int i, c;
+      int num_non_bmp = 0;
 
-      /* FIXME: Support non BMP. */
+      for (i = lo; i <= hi; i++) {
+        if (((c = charset_map[mid].table[i-lo]) != 0xfffd) &&
+            ((c & 0xf800) == 0xd800)) {
+          num_non_bmp++;
+        }
+      }
 
-      s8 = push_std_8bite((args>2? args-2:0), args, lo, 65536, 0);
+      s8 = push_std_8bite((args>2? args-2:0), args, lo, 65536, num_non_bmp);
       s8->lowtrans = lo;
       s8->lo = lo;
       s8->hi = lo;
       s8->zero_char = 0xfffd;
       for(i=lo; i<=hi; i++) {
 	if((c=tabl[i-lo])!=0xfffd && c>=s8->lo) {
-	  s8->revtab[c-lo]=i;
-	  if(c>=s8->hi)
-	    s8->hi = c+1;
+          if ((c & 0xf800) == 0xd800) {
+            /* FIXME: Does not check NUL-termination.
+             * FIXME: Does not check that the escapes are surrogates.
+             */
+            p_wchar2 cc;
+            c &= 0x3ff;
+            c += 1 + hi - lo;
+            cc = 0x10000 + ((charset_map[mid].table[c++] & 0x3ff) << 10);
+            cc |= tbl[c++] & 0x3ff;
+#if 0
+            fprintf(stderr, "0x%04x ==> Offset 0x%03x\n", i, c-1);
+            fprintf(stderr, "    Pair: 0x%04x, 0x%04x\n",
+                    tabl[c-1], tabl[c]);
+            fprintf(stderr, "    Char: 0x%04x\n", cc);
+#endif
+            s8->non_bmp_revtab[++num_non_bmp] = cc;	/* NB: Off by one! */
+            s8->revtab[num_non_bmp + 65535 - s8->lo] = i;
+          } else {
+            s8->revtab[c-lo]=i;
+            if(c>=s8->hi)
+              s8->hi = c+1;
+          }
 	}
       }
       if (!lo && (c=tabl[0])!=0xfffd && c>=s8->lo) {
@@ -2615,6 +2644,29 @@ PIKEFUN object rfc1345(string charset, int|void encoder, string|void rep,
 	 */
 	s8->zero_char = c;
       }
+
+      if (num_non_bmp) {
+#ifdef PIKE_DEBUG
+        /* FIXME: Validate that s8->non_bmp_revtab[0] == num_non_bmp
+         *        when num_non_bmp is not zero.
+         */
+#endif
+        /* FIXME: Sort s8->revtab[65536 - s16->lo .. 65535 + num_non_bmp]
+         *        and s8->non_bmp_revtab[1 .. num_non_bmp] on the latter.
+         *
+         * This would make it possible to do a binary search on
+         * the non_bmp_revtab.
+         */
+#if 0
+        fprintf(stderr, "Num non BMP: %d\n", num_non_bmp);
+        for (i = 1; i <= num_non_bmp; i++) {	/* NB: Off by one! */
+          fprintf(stderr, "0x%04x ==> 0x%04x\n",
+                  s8->non_bmp_revtab[i],
+                  s8->revtab[i + 65535 - s8->lo]);
+        }
+#endif
+      }
+
       return;
     }
 
