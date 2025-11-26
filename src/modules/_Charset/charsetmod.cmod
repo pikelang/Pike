@@ -2597,8 +2597,7 @@ PIKEFUN object rfc1345(string charset, int|void encoder, string|void rep,
       int num_non_bmp = 0;
 
       for (i = lo; i <= hi; i++) {
-        if (((c = charset_map[mid].table[i-lo]) != 0xfffd) &&
-            ((c & 0xf800) == 0xd800)) {
+        if (((c = tabl[i-lo]) != 0xfffd) && ((c & 0xf800) == 0xd800)) {
           num_non_bmp++;
         }
       }
@@ -2617,8 +2616,8 @@ PIKEFUN object rfc1345(string charset, int|void encoder, string|void rep,
             p_wchar2 cc;
             c &= 0x3ff;
             c += 1 + hi - lo;
-            cc = 0x10000 + ((charset_map[mid].table[c++] & 0x3ff) << 10);
-            cc |= tbl[c++] & 0x3ff;
+            cc = 0x10000 + ((tabl[c++] & 0x3ff) << 10);
+            cc |= tabl[c++] & 0x3ff;
 #if 0
             fprintf(stderr, "0x%04x ==> Offset 0x%03x\n", i, c-1);
             fprintf(stderr, "    Pair: 0x%04x, 0x%04x\n",
