@@ -919,7 +919,8 @@ PIKECLASS Simple
    *!
    *! @string
    *!   @value "7.2"
-   *!     Allow more data after the root element.
+   *!     Allow more data (or tags) after the root element.
+   *!     Implies @expr{"7.6"@} compat too.
    *!   @value "7.6"
    *!     Allow multiple and invalidly placed "<?xml ... ?>" and
    *!     "<!DOCTYPE ... >" declarations (invalid "<?xml ... ?>"
