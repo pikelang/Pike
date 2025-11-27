@@ -125,8 +125,8 @@ enum ParseFlags {
 #define PARSE_ENABLE_NAMESPACES		0x4
 
   //! Disallow RXML-style entities.
-  //! @note
-  //!   Negated flag for compatibility.
+  //!
+  //! Note that this flag is negated for compatibility.
   PARSE_DISALLOW_RXML_ENTITIES =	0x8,
 #define PARSE_DISALLOW_RXML_ENTITIES	0x8
 

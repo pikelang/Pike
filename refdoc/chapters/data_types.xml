@@ -291,7 +291,8 @@ construction too much.</p>
      <tt>"foobargazonk"</tt>.</dd>
 <dd> It is also possible to multiply a string with a positive integer, in
      which case the result will be tse string concatenated the specified
-     number of times. Eg <tt>"foo"*4</foo> results in <tt>"foofoofoofoo"</tt>.
+     number of times. Eg <tt>"foo"*4</tt> results in
+     <tt>"foofoofoofoo"</tt>.</dd>
 <dt> Modulo</dt>
 <dd> To complement the division operator, you can do <tt>string</tt> % <tt>int</tt>.
      This operator will simply return the part of the string that was not
