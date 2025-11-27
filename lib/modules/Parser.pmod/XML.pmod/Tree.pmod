@@ -19,64 +19,70 @@
 //!
 //!   There are some more subtle differences between
 //!   the two. Please read the documentation carefully.
+//!
+//! @seealso
+//!   @[simple_parse_node()], @[parse_node()]
 
 //!
 constant STOP_WALK = -1;
-
-//!
-constant XML_ROOT     = 0x0001;
-
-//!
-constant XML_ELEMENT  = 0x0002;
-
-//!
-constant XML_TEXT     = 0x0004;
-
-//!
-constant XML_HEADER   = 0x0008;
-
-//!
-constant XML_PI       = 0x0010;
-
-//!
-constant XML_COMMENT  = 0x0020;
-
-//!
-constant XML_DOCTYPE  = 0x0040;
-
-//! Attribute nodes are created on demand
-constant XML_ATTR     = 0x0080;    //  Attribute nodes are created on demand
-
-//!
-constant DTD_ENTITY   = 0x0100;
-
-//!
-constant DTD_ELEMENT  = 0x0200;
-
-//!
-constant DTD_ATTLIST  = 0x0400;
-
-//!
-constant DTD_NOTATION = 0x0800;
-
-//!
-constant XML_NODE     = (XML_ROOT | XML_ELEMENT | XML_TEXT |
-                       XML_PI | XML_COMMENT | XML_ATTR);
 #define STOP_WALK  -1
+
+//! Type of @[Node] or @[SimpleNode].
+enum NodeType {
+  //!
+  XML_ROOT     = 0x0001,
 #define  XML_ROOT     0x0001
+
+  //!
+  XML_ELEMENT  = 0x0002,
 #define  XML_ELEMENT  0x0002
+
+  //!
+  XML_TEXT     = 0x0004,
 #define  XML_TEXT     0x0004
+
+  //!
+  XML_HEADER   = 0x0008,
 #define  XML_HEADER   0x0008
+
+  //!
+  XML_PI       = 0x0010,
 #define  XML_PI       0x0010
+
+  //!
+  XML_COMMENT  = 0x0020,
 #define  XML_COMMENT  0x0020
+
+  //!
+  XML_DOCTYPE  = 0x0040,
 #define  XML_DOCTYPE  0x0040
-#define  XML_ATTR     0x0080     //  Attribute nodes are created on demand
+
+  //! Attribute nodes are created on demand
+  XML_ATTR     = 0x0080,
+#define  XML_ATTR     0x0080
+
+  //!
+  DTD_ENTITY   = 0x0100,
 #define  DTD_ENTITY   0x0100
+
+  //!
+  DTD_ELEMENT  = 0x0200,
 #define  DTD_ELEMENT  0x0200
+
+  //!
+  DTD_ATTLIST  = 0x0400,
 #define  DTD_ATTLIST  0x0400
+
+  //!
+  DTD_NOTATION = 0x0800,
 #define  DTD_NOTATION 0x0800
+
+  //!
+  XML_NODE     = (XML_ROOT | XML_ELEMENT | XML_TEXT |
+                  XML_PI | XML_COMMENT | XML_ATTR),
 #define  XML_NODE     (XML_ROOT | XML_ELEMENT | XML_TEXT |    \
-					   XML_PI | XML_COMMENT | XML_ATTR)
+                       XML_PI | XML_COMMENT | XML_ATTR)
+}
 
 constant type_names = ([
     XML_ROOT : "ROOT",
@@ -93,7 +99,8 @@ constant type_names = ([
     DTD_NOTATION: "!NOTATION",
 ]);
 
-string get_type_name(int type)
+//! Describe a @[NodeType].
+string get_type_name(NodeType type)
 {
     if( type_names[type] ) return type_names[type];
     return (string)type;
@@ -101,22 +108,42 @@ string get_type_name(int type)
 
 //! Flags used together with @[simple_parse_input()] and
 //! @[simple_parse_file()].
+//!
+//! @seealso
+//!   @[Parser.XML.Simple()->compat_allow_errors()]
 enum ParseFlags {
+  //! Add XML context to error messages.
   PARSE_WANT_ERROR_CONTEXT =		0x1,
 #define PARSE_WANT_ERROR_CONTEXT	0x1
+
+  //! Force all tag names to lower-case.
   PARSE_FORCE_LOWERCASE =		0x2,
 #define PARSE_FORCE_LOWERCASE		0x2
+
+  //! Enable namespace parser.
   PARSE_ENABLE_NAMESPACES =		0x4,
 #define PARSE_ENABLE_NAMESPACES		0x4
-  // Negated flag for compatibility.
+
+  //! Disallow RXML-style entities.
+  //! @note
+  //!   Negated flag for compatibility.
   PARSE_DISALLOW_RXML_ENTITIES =	0x8,
 #define PARSE_DISALLOW_RXML_ENTITIES	0x8
 
+  //! Allow more data (or tags) after the root element.
+  //! Implies @[PARSE_COMPAT_ALLOW_ERRORS_7_6].
   PARSE_COMPAT_ALLOW_ERRORS_7_2 =	0x10,
 #define PARSE_COMPAT_ALLOW_ERRORS_7_2	0x10
+
+  //! Allow multiple and invalidly placed @expr{"<?xml ... ?>"@} and
+  //! @expr{"<!DOCTYPE ... >"@} declarations (invalid @expr{"<?xml ... ?>"@}
+  //! declarations are otherwise treated as normal PI:s). Allow
+  //! @expr{"<![CDATA[ ... ]]>"@} outside the root element. Allow the root
+  //! element to be absent.
   PARSE_COMPAT_ALLOW_ERRORS_7_6 =	0x20,
 #define PARSE_COMPAT_ALLOW_ERRORS_7_6	0x20
-  // The following exists for compatibility only.
+
+  //! This exists for compatibility only.
   PARSE_CHECK_ALL_ERRORS =		0,
 }
 
@@ -172,7 +199,7 @@ string roxen_attribute_quote(string data, void|string ignore)
   return replace(roxen_text_quote(data), m);
 }
 
-void throw_error(string str, mixed ... args)
+protected void throw_error(string str, mixed ... args)
 {
   //  Put message in debug log and throw exception
   str = "Parser.XML.Tree: " + str;
@@ -181,9 +208,11 @@ void throw_error(string str, mixed ... args)
 
 //! Namespace aware parser.
 class XMLNSParser {
+  //!
   ADT.Stack(<mapping(string:string)>) namespace_stack =
     ADT.Stack(<mapping(string:string)>)();
 
+  //!
   protected void create()
   {
     // Sentinel and default namespaces.
@@ -195,8 +224,16 @@ class XMLNSParser {
 
   //! Check @[attrs] for namespaces.
   //!
+  //! @param attrs
+  //!   Attributes for an element node.
+  //!
+  //! The new namespace state is pushed on the @[namespace_stack].
+  //!
   //! @returns
   //!   Returns the namespace expanded version of @[attrs].
+  //!
+  //! @seealso
+  //!   @[Leave()]
   mapping(string:string) Enter(mapping(string:string) attrs)
   {
     mapping(string:string) namespaces = namespace_stack->top() + ([]);
@@ -242,6 +279,12 @@ class XMLNSParser {
     return result;
   }
 
+  //! Return the full canonical (ie namespace-prefixed) name
+  //! given a local @[name]. This is the reverse operation
+  //! of @[Encode()].
+  //!
+  //! @seealso
+  //!   @[Encode()]
   string Decode(string name)
   {
     int i = search(name, ":");
@@ -267,6 +310,12 @@ class XMLNSParser {
     return prefix + name;
   }
 
+  //! Return a local name given a full canonical
+  //! (ie namespace-prefixed) @[name]. This is
+  //! the reverse operation of @[Decode].
+  //!
+  //! @seealso
+  //!   @[Decode()]
   string Encode(string name)
   {
     string longest;
@@ -286,6 +335,10 @@ class XMLNSParser {
     return name;
   }
 
+  //! Leave the most recent entered namespace.
+  //!
+  //! @seealso
+  //!   @[Enter()]
   void Leave()
   {
     namespace_stack->pop();
@@ -600,7 +653,7 @@ class AbstractSimpleNode {
   //! @note
   //!   In Pike 8.0 and earlier this function was only called in
   //!   root nodes.
-  optional this_program node_factory(int type, string name,
+  optional this_program node_factory(NodeType type, string name,
 				     mapping attr, string text);
 }
 
@@ -902,7 +955,7 @@ class AbstractNode {
 //!  Node in XML tree
 protected class VirtualNode {
   //  Member variables for this node type
-  protected int            mNodeType;
+  protected NodeType       mNodeType;
   protected string		mShortNamespace = "";	// Namespace prefix
   protected string		mNamespace;	// Resolved namespace
   protected string         mTagName;
@@ -961,7 +1014,7 @@ protected class VirtualNode {
   }
 
   //! Returns the node type. See defined node type constants.
-  int get_node_type()        { return (mNodeType); }
+  NodeType get_node_type()        { return (mNodeType); }
 
   //! Returns text content in node.
   string|zero get_text()          { return (mText); }
@@ -1017,7 +1070,7 @@ protected class VirtualNode {
   }
 
   //!
-  protected void create(int type, string|zero name, mapping|zero attr,
+  protected void create(NodeType type, string|zero name, mapping|zero attr,
 			string|zero text)
   {
     if (name) {
@@ -1683,13 +1736,14 @@ class WrappedSimple
 class XMLParser
 {
   this_program add_child(this_program);
-  void create(int, string, mapping, string);
+  protected void create(int, string, mapping, string);
 
   this_program doctype_node;
 
   protected ADT.Stack(<AbstractNode>) container_stack =
     ADT.Stack(<AbstractNode>)();
 
+  //! Parse a string of XML data.
   void parse(string data,
              void|mapping predefined_entities,
              ParseFlags|void flags,
@@ -1796,14 +1850,14 @@ class XMLParser
   //!
   //! @seealso
   //!   @[node_factory_dispatch()], @[AbstractSimpleNode()->node_factory()]
-  protected AbstractSimpleNode node_factory(int type, string name,
+  protected AbstractSimpleNode node_factory(NodeType type, string name,
 					    mapping attr, string text);
 
   //! Dispatcher of @[node_factory()].
   //!
   //! This function finds a suitable @[node_factory()] given the
   //! current parser context to call with the same arguments.
-  protected AbstractSimpleNode node_factory_dispatch(int type, string name,
+  protected AbstractSimpleNode node_factory_dispatch(NodeType type, string name,
 						     mapping|zero attr, string text)
   {
     foreach(reverse(values(container_stack)), AbstractNode n) {
@@ -1964,6 +2018,15 @@ class XMLParser
 //
 
 //! Takes an XML string and produces a @[SimpleNode] tree.
+//!
+//! @param data
+//! @param predefined_entities
+//! @param flags
+//! @param default_namespace
+//!   The arguments are passed along to @[SimpleRootNode()->create()]
+//!
+//! @seealso
+//!   @[simple_parse_file()]
 SimpleRootNode simple_parse_input(string data,
 				  void|mapping predefined_entities,
 				  ParseFlags|void flags,
@@ -1975,6 +2038,9 @@ SimpleRootNode simple_parse_input(string data,
 
 //! Loads the XML file @[path], creates a @[SimpleNode] tree representation and
 //! returns the root node.
+//!
+//! @seealso
+//!   @[simple_parse_input()]
 SimpleRootNode simple_parse_file(string path,
 				 void|mapping predefined_entities,
 				 ParseFlags|void flags,
@@ -1996,15 +2062,31 @@ SimpleRootNode simple_parse_file(string path,
 
 //! Takes an XML string and produces a node tree.
 //!
-//! @note
-//! @[flags] is not used for @[PARSE_WANT_ERROR_CONTEXT],
-//! @[PARSE_FORCE_LOWERCASE] or @[PARSE_ENABLE_NAMESPACES] since they
-//! are covered by the separate flag arguments.
+//! @param data
+//!   String to parse.
+//!
+//! @param no_fallback
+//!   Equivalent to the @[flag] bit @[PARSE_WANT_ERROR_CONTEXT].
+//!
+//! @param force_lowercase
+//!   Equivalent to the @[flag] bit @[PARSE_FORCE_LOWERCASE].
+//!
+//! @param parse_namespaces
+//!   Equivalent to the @[flag] bit @[PARSE_ENABLE_NAMESPACES].
+//!
+//! @param predefined_entities
+//! @param flags
+//! @param default_namespace
+//!   The other arguments are passed along to @[RootNode()->create()].
+//!
+//! @seealso
+//!   @[parse_file()]
 RootNode parse_input(string data, void|int(0..1) no_fallback,
 		     void|int(0..1) force_lowercase,
 		     void|mapping(string:string) predefined_entities,
 		     void|int(0..1) parse_namespaces,
-		     ParseFlags|void flags)
+                     ParseFlags|void flags,
+                     string|void default_namespace)
 {
     if(no_fallback)
         flags |= PARSE_WANT_ERROR_CONTEXT;
@@ -2015,12 +2097,23 @@ RootNode parse_input(string data, void|int(0..1) no_fallback,
     if(parse_namespaces)
         flags |= PARSE_ENABLE_NAMESPACES;
 
-    return RootNode(data, predefined_entities, flags);
+    return RootNode(data, predefined_entities, flags, default_namespace);
 }
 
 //! Loads the XML file @[path], creates a node tree representation and
 //! returns the root node.
-Node parse_file(string path, int(0..1)|void parse_namespaces)
+//!
+//! Most of the arguments are passed along to @[parse_input()].
+//!
+//! @throws
+//!   Throws an error if the file could not be read.
+//!
+//! @seealso
+//!   @[parse_input()]
+RootNode parse_file(string path,
+                    int(0..1)|void parse_namespaces,
+                    ParseFlags|void flags,
+                    string|void default_namespace)
 {
   Stdio.File  file = Stdio.File(path, "r");
   string      data;
@@ -2032,7 +2125,8 @@ Node parse_file(string path, int(0..1)|void parse_namespaces)
   })
     throw_error("Could not read XML file %O.\n", path);
   else
-    return parse_input(data, 0, 0, 0, parse_namespaces);
+    return parse_input(data, 0, 0, 0, parse_namespaces,
+                       flags, default_namespace);
 }
 
 protected class DTDElementHelper
@@ -2142,7 +2236,7 @@ class SimpleRootNode
     return SimpleRootNode();
   }
 
-  protected SimpleNode node_factory(int type, string name,
+  protected SimpleNode node_factory(NodeType type, string name,
 				    mapping attr, string|array text)
   {
     switch(type) {
@@ -2160,7 +2254,17 @@ class SimpleRootNode
     }
   }
 
+  //! Create an XML root node.
   //!
+  //! @param data
+  //! @param predefined_entities
+  //! @param flags
+  //! @param default_namespace
+  //!   The arguments are passed along to @[parse()] if
+  //!   @[data] is not @[UNDEFINED].
+  //!
+  //! @seealso
+  //!   @[simple_parse_input()], @[simple_parse_file()], @[parse()]
   protected void create(string|void data,
 		     mapping|void predefined_entities,
 		     ParseFlags|void flags,
@@ -2437,7 +2541,7 @@ class RootNode
     return RootNode();
   }
 
-  protected Node node_factory(int type, string name,
+  protected Node node_factory(NodeType type, string name,
 			      mapping attr, string|array text)
   {
     switch(type) {
@@ -2455,14 +2559,24 @@ class RootNode
     }
   }
 
+  //! Create an XML root node.
   //!
+  //! @param data
+  //! @param predefined_entities
+  //! @param flags
+  //!   The arguments are passed along to @[parse()] if
+  //!   @[data] is not @[UNDEFINED].
+  //!
+  //! @seealso
+  //!   @[parse_input()], @[parse_file()], @[parse()]
   protected void create(string|void data,
-		     mapping|void predefined_entities,
-		     ParseFlags|void flags)
+                        mapping|void predefined_entities,
+                        ParseFlags|void flags,
+                        string|void default_namespace)
   {
     ::create(XML_ROOT, "", 0, "");
     if (data) {
-      parse(data, predefined_entities, flags);
+      parse(data, predefined_entities, flags, default_namespace);
     }
   }
 }
