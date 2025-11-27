@@ -290,7 +290,7 @@ construction too much.</p>
      <tt>({"f","","bargaz","nk"}) * "o"</tt> the result would be
      <tt>"foobargazonk"</tt>.</dd>
 <dd> It is also possible to multiply a string with a positive integer, in
-     which case the result will be tse string concatenated the specified
+     which case the result will be the string concatenated the specified
      number of times. Eg <tt>"foo"*4</tt> results in
      <tt>"foofoofoofoo"</tt>.</dd>
 <dt> Modulo</dt>
