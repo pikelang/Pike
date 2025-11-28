@@ -364,7 +364,7 @@ int parse_esc_seq (WCHAR *buf, p_wchar2 *chr, ptrdiff_t *len)
 	    n = 16 * n + buf[l] - 'A' + 10;
 	    break;
           case '}':
-            if (longq == 2) {
+            if (longq >= 2) {
               l++;
               *len = l;
               *chr = (p_wchar2)n;
