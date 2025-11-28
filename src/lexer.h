@@ -434,6 +434,11 @@ static p_wchar2 char_const(struct lex *lex)
       if( Pike_compiler->compiler_pass == COMPILER_PASS_FIRST )
         yyerror("Missing end brace in \\U{xxx} escape.");
       return '\\';
+    default:
+#ifdef PIKE_DEBUG
+      Pike_fatal("Default case in char_const() reached.\n");
+#endif /* PIKE_DEBUG */
+      return '\\';
   }
   SKIPN (l);
   return c;
