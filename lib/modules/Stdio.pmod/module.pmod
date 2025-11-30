@@ -2968,7 +2968,7 @@ int append_file(string filename, string str, int|void access)
 int file_size(string filename, int(1bit)|void do_not_follow_symlinks)
 {
   Stat stat;
-  stat = file_stat(filename, no_symlinks);
+  stat = file_stat(filename, do_not_follow_symlinks);
   if(!stat) return -1;
   // Please note that stat->size is not always the same thing as stat[1]. /mast
   return [int]stat[1];
