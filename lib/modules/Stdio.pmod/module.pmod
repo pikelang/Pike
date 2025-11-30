@@ -2672,6 +2672,16 @@ protected void register_close_file (int id)
   }
 }
 
+//! Return an array of @[describe_backtrace()] results for the
+//! places that currently have a @[File()] or @[FILE()] object
+//! open for the path @[file].
+//!
+//! @note
+//!   Only available when the Pike runtime has been started
+//!   with @tt{-DTRACK_OPEN_FILES@}.
+//!
+//! @seealso
+//!   @[report_file_open_places()]
 array(string)|zero file_open_places (string file)
 {
   file = combine_path (getcwd(), file);
@@ -2683,6 +2693,16 @@ array(string)|zero file_open_places (string file)
   return 0;
 }
 
+//! Print a list of @[describe_backtrace()] results for the
+//! places that currently have a @[File()] or @[FILE()] object
+//! open for the path @[file] to @[stderr].
+//!
+//! @note
+//!   Only available when the Pike runtime has been started
+//!   with @tt{-DTRACK_OPEN_FILES@}.
+//!
+//! @seealso
+//!   @[file_open_places()]
 void report_file_open_places (string file)
 {
   array(string) places = file_open_places (file);
@@ -2915,18 +2935,40 @@ int append_file(string filename, string str, int|void access)
   return ret;
 }
 
-//! Give the size of a file. Size -1 indicates that the file either
-//! does not exist, or that it is not readable by you. Size -2
-//! indicates that it is a directory, -3 that it is a symlink and -4
-//! that it is a device.
+//! Give the size of a file.
+//!
+//! @param filename
+//!   Path to file to check.
+//!
+//! @param do_not_follow_symlinks
+//!   Set this to @expr{1@} to inhibit following of symlinks.
+//!
+//! @returns
+//!   Returns one of:
+//!   @int
+//!     @value 0..
+//!       A non-negative value is the length (aka size) of
+//!       the regular file.
+//!     @value -1
+//!       A size of @expr{-1@} indicates that the file either
+//!       does not exist, or that it is not readable by you.
+//!     @value -2
+//!       Size @expr{-2@} indicates that it is a directory.
+//!     @value -3
+//!       @expr{-3@} means that it is a symlink. Note that
+//!       this is only returned for broken symlinks unless
+//!       @[do_not_follow_symlinks] is @expr{1@}.
+//!     @value -4
+//!       @[filename] is a device node.
+//!   @endint
 //!
 //! @seealso
 //! @[file_stat()], @[write_file()], @[read_bytes()]
 //!
-int file_size(string filename)
+int file_size(string filename, int(1bit)|void do_not_follow_symlinks)
 {
   Stat stat;
-  stat = file_stat(filename);
+  stat = file_stat(filename, no_symlinks);
   if(!stat) return -1;
   // Please note that stat->size is not always the same thing as stat[1]. /mast
   return [int]stat[1];
@@ -3015,7 +3057,13 @@ void perror(string s)
  * Predicates.
  */
 
-//! Check if a @[path] is a file.
+//! Check if a @[path] is a regular file.
+//!
+//! @param path
+//!   Path to check.
+//!
+//! @param no_symlinks
+//!   Return @expr{0@} also if @[path] is a symlink to a regular file.
 //!
 //! @returns
 //! Returns true if the given path is a regular file, otherwise false.
@@ -3023,13 +3071,19 @@ void perror(string s)
 //! @seealso
 //! @[exist()], @[is_dir()], @[is_link()], @[file_stat()]
 //!
-int is_file(string path)
+int is_file(string path, int(1bit)|void no_symlinks)
 {
-  if (Stat s = file_stat (path)) return [int]s->isreg;
+  if (Stat s = file_stat(path, no_symlinks)) return [int]s->isreg;
   return 0;
 }
 
 //! Check if a @[path] is a directory.
+//!
+//! @param path
+//!   Path to check.
+//!
+//! @param no_symlinks
+//!   Return @expr{0@} also if @[path] is a symlink to a directory.
 //!
 //! @returns
 //! Returns true if the given path is a directory, otherwise false.
@@ -3037,9 +3091,9 @@ int is_file(string path)
 //! @seealso
 //! @[exist()], @[is_file()], @[is_link()], @[file_stat()]
 //!
-int is_dir(string path)
+int is_dir(string path, int(1bit)|void no_symlinks)
 {
-  if (Stat s = file_stat (path)) return [int]s->isdir;
+  if (Stat s = file_stat(path, no_symlinks)) return [int]s->isdir;
   return 0;
 }
 
@@ -3059,6 +3113,12 @@ int is_link(string path)
 
 //! Check if a @[path] exists.
 //!
+//! @param path
+//!   Filesystem path to check.
+//!
+//! @param do_not_follow_symlinks
+//!   Return @expr{1@} also for broken symlinks.
+//!
 //! @returns
 //! Returns true if the given path exists (is a directory or file),
 //! otherwise false.
@@ -3069,9 +3129,9 @@ int is_link(string path)
 //!
 //! @seealso
 //! @[is_dir()], @[is_file()], @[is_link()], @[file_stat()]
-int exist(string(8bit) path)
+int exist(string(8bit) path, int(1bit)|void do_not_follow_symlinks)
 {
-  return !!file_stat(path);
+  return !!file_stat(path, do_not_follow_symlinks);
 }
 
 //! Convert the mode_string string as returned by Stdio.Stat object
