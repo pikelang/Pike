@@ -21,7 +21,7 @@
 //!   the two. Please read the documentation carefully.
 //!
 //! @seealso
-//!   @[simple_parse_node()], @[parse_node()]
+//!   @[simple_parse_input()], @[parse_input()]
 
 //!
 constant STOP_WALK = -1;
@@ -965,7 +965,7 @@ protected class VirtualNode {
   protected string|zero    mText;
   protected int            mDocOrder;
 
-  // Functions implemented via multiple inheritance.
+  // Functions implemented via mixin inheritance.
   array(AbstractNode) get_children();
   int walk_preorder(function(AbstractSimpleNode, mixed ...:int|void) callback,
 		    mixed ... args);
@@ -1064,6 +1064,7 @@ protected class VirtualNode {
     return mNamespace + mTagName;
   }
 
+  //! Return the short name of the element node.
   string get_short_name()
   {
     return mShortNamespace + mTagName;
@@ -1337,11 +1338,11 @@ protected class VirtualNode {
     }
   }
 
-  // Get the encoding from the XML-header (if any).
-  //
-  // Create a new XML-header if there's none.
-  //
-  // Add an encoding attribute if there is none.
+  //! Get the encoding from the XML-header (if any).
+  //!
+  //! Create a new XML-header if there's none.
+  //!
+  //! Add an encoding attribute if there is none.
   protected string get_encoding()
   {
     Node xml_header;
@@ -1356,6 +1357,7 @@ protected class VirtualNode {
     return "utf-8";
   }
 
+  //! Set the namespace lookup tables.
   void set_short_namespaces(void|mapping(string:string) forward_lookup,
 			    void|mapping(string:string) backward_lookup)
   {
@@ -1511,6 +1513,7 @@ protected class VirtualNode {
     get_children()->set_short_namespaces(forward_lookup, backward_lookup);
   }
 
+  //!
   protected Charset.Encoder get_encoder(string encoding)
   {
     return Charset.encoder(encoding)->set_replacement_callback(lambda(string c)
@@ -1596,6 +1599,7 @@ protected class VirtualNode {
     mText += str;
   }
 
+  //!
   protected string _sprintf(int t) {
     return t=='O' && sprintf("%O(#%d:%s,%O)", this_program, mDocOrder,
 			     get_type_name(get_node_type()), get_full_name());
@@ -1700,6 +1704,7 @@ class Node
   }
 }
 
+//!
 string report_error_context(string data, int ofs)
 {
   string pre = reverse(data[..ofs - 1]);
@@ -1710,11 +1715,12 @@ string report_error_context(string data, int ofs)
   return "\nContext: " + pre + post + "\n";
 }
 
-// Used for debugging...
+//! Used for debugging.
 class WrappedSimple
 {
   inherit .Simple;
 
+  //!
   string lookup_entity(string entity)
   {
     string ret = ::lookup_entity(entity);
@@ -1722,6 +1728,7 @@ class WrappedSimple
     return ret;
   }
 
+  //!
   void define_entity_raw(string entity, string raw)
   {
     werror("define_entity_raw(%O, %O)\n", entity, raw);
@@ -1738,8 +1745,10 @@ class XMLParser
   this_program add_child(this_program);
   protected void create(int, string, mapping, string);
 
+  //!
   this_program doctype_node;
 
+  //!
   protected ADT.Stack(<AbstractNode>) container_stack =
     ADT.Stack(<AbstractNode>)();
 
@@ -2129,6 +2138,7 @@ RootNode parse_file(string path,
                        flags, default_namespace);
 }
 
+//!
 protected class DTDElementHelper
 {
   array expression;
@@ -2254,7 +2264,7 @@ class SimpleRootNode
     }
   }
 
-  //! Create an XML root node.
+  //! Create an @[XML_ROOT] node.
   //!
   //! @param data
   //! @param predefined_entities
@@ -2289,6 +2299,7 @@ class SimpleTextNode
     return SimpleTextNode(get_text());
   }
 
+  //! Create an @[XML_TEXT] node.
   //!
   protected void create(string text)
   {
@@ -2308,6 +2319,7 @@ class SimpleCommentNode
     return SimpleCommentNode(get_text());
   }
 
+  //! Create an @[XML_COMMENT] node.
   //!
   protected void create(string comment)
   {
@@ -2327,6 +2339,7 @@ class SimpleHeaderNode
     return SimpleHeaderNode(get_attributes());
   }
 
+  //! Create an @[XML_HEADER] node.
   //!
   protected void create(mapping(string:string) attrs)
   {
@@ -2346,6 +2359,7 @@ class SimplePINode
     return SimplePINode(get_full_name(), get_attributes(), get_text());
   }
 
+  //! Create an @[XML_PI] node.
   //!
   protected void create(string name, mapping(string:string) attrs,
 		     string contents)
@@ -2366,6 +2380,7 @@ class SimpleDoctypeNode
     return SimpleDoctypeNode(get_full_name(), get_attributes(), 0);
   }
 
+  //! Create an @[XML_DOCTYPE] node.
   //!
   protected void create(string name, mapping(string:string) attrs,
 		     array|zero contents)
@@ -2389,6 +2404,7 @@ class SimpleDTDEntityNode
     return SimpleDTDEntityNode(get_full_name(), get_attributes(), get_text());
   }
 
+  //! Create a @[DTD_ENTITY] node.
   //!
   protected void create(string name, mapping(string:string) attrs,
 		     string contents)
@@ -2411,6 +2427,7 @@ class SimpleDTDElementNode
     return SimpleDTDElementNode(get_full_name(), get_expression());
   }
 
+  //! Create a @[DTD_ELEMENT] node.
   //!
   protected void create(string name, array expression)
   {
@@ -2431,6 +2448,7 @@ class SimpleDTDAttlistNode
     return SimpleDTDAttlistNode(get_full_name(), get_attributes(), get_text());
   }
 
+  //! Create a @[DTD_ATTLIST] node.
   //!
   protected void create(string name, mapping(string:string) attrs,
 		     string contents)
@@ -2451,6 +2469,7 @@ class SimpleDTDNotationNode
     return SimpleDTDNotationNode(get_full_name(), get_attributes(), get_text());
   }
 
+  //! Create a @[DTD_NOTATION] node.
   //!
   protected void create(string name, mapping(string:string) attrs,
 		     string contents)
@@ -2471,6 +2490,7 @@ class SimpleElementNode
     return SimpleElementNode(get_full_name(), get_attributes());
   }
 
+  //! Create an @[XML_ELEMENT] node.
   //!
   protected void create(string name, mapping(string:string) attrs)
   {
@@ -2559,7 +2579,7 @@ class RootNode
     }
   }
 
-  //! Create an XML root node.
+  //! Create an @[XML_ROOT] node.
   //!
   //! @param data
   //! @param predefined_entities
@@ -2593,6 +2613,7 @@ class TextNode
     return TextNode(get_text());
   }
 
+  //! Create an @[XML_TEXT] node.
   //!
   protected void create(string text)
   {
@@ -2612,6 +2633,7 @@ class CommentNode
     return CommentNode(get_text());
   }
 
+  //! Create an @[XML_COMMENT] node.
   //!
   protected void create(string text)
   {
@@ -2631,6 +2653,7 @@ class HeaderNode
     return HeaderNode(get_attributes());
   }
 
+  //! Create an @[XML_HEADER] node.
   //!
   protected void create(mapping(string:string) attrs)
   {
@@ -2650,6 +2673,7 @@ class PINode
     return PINode(get_full_name(), get_attributes(), get_text());
   }
 
+  //! Create an @[XML_PI] node.
   //!
   protected void create(string name, mapping(string:string) attrs,
 		     string contents)
@@ -2670,6 +2694,7 @@ class DoctypeNode
     return DoctypeNode(get_full_name(), get_attributes(), 0);
   }
 
+  //! Create an @[XML_DOCTYPE] node.
   //!
   protected void create(string name, mapping(string:string) attrs,
 		     array|zero contents)
@@ -2693,6 +2718,7 @@ class DTDEntityNode
     return DTDEntityNode(get_full_name(), get_attributes(), get_text());
   }
 
+  //! Create a @[DTD_ENTITY] node.
   //!
   protected void create(string name, mapping(string:string) attrs,
 		     string contents)
@@ -2715,6 +2741,7 @@ class DTDElementNode
     return DTDElementNode(get_full_name(), get_expression());
   }
 
+  //! Create a @[DTD_ELEMENT] node.
   //!
   protected void create(string name, array expression)
   {
@@ -2735,6 +2762,7 @@ class DTDAttlistNode
     return DTDAttlistNode(get_full_name(), get_attributes(), get_text());
   }
 
+  //! Create a @[DTD_ATTLIST] node.
   //!
   protected void create(string name, mapping(string:string) attrs,
 		     string contents)
@@ -2755,6 +2783,7 @@ class DTDNotationNode
     return DTDNotationNode(get_full_name(), get_attributes(), get_text());
   }
 
+  //! Create a @[DTD_NOTATION] node.
   //!
   protected void create(string name, mapping(string:string) attrs,
 		     string contents)
@@ -2775,6 +2804,7 @@ class ElementNode
     return ElementNode(get_full_name(), get_attributes());
   }
 
+  //! Create an @[XML_ELEMENT] node.
   //!
   protected void create(string name, mapping(string:string) attrs)
   {
@@ -2794,6 +2824,7 @@ class AttributeNode
     return AttributeNode(get_full_name(), get_text());
   }
 
+  //! Create an @[XML_ATTR] node.
   //!
   protected void create(string name, string value)
   {

@@ -83,11 +83,13 @@ protected class Element {
   array(function) content_matcher;
   mapping(string:array) attributes;
 
+  //!
   protected string _sprintf(int mode)
   {
     return mode=='O' && sprintf("%O(%O)", this_program, name);
   }
 
+  //!
   int accept_element(string|zero name)
   {
     array(function) step = (content_matcher(name)-({0}))*({});
@@ -98,6 +100,7 @@ protected class Element {
     return 1;
   }
 
+  //!
   void check_attributes(mapping(string:string) c_attrs,
 			function(string|zero, string, __unknown__ ...:mixed) xmlerror)
   {
@@ -165,6 +168,7 @@ protected class Element {
     };
   }
 
+  //!
   protected void create(string _name)
   {
     content_matcher = __element_content[name = _name];
