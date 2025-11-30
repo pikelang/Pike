@@ -8,8 +8,12 @@
 
 #pike __REAL_VERSION__
 
+//!
 Stdio.FILE _in;
+
+//!
 int _eol;
+
 private int prefetch=1024;	 // TODO: Document and make this available
 				 // through compile().
 private String.Buffer alread=String.Buffer(prefetch);
@@ -119,6 +123,7 @@ private string gets(int n)
   return s;
 }
 
+//!
 class _checkpoint
 {
   inherit Pike.DestructImmediate;
@@ -160,6 +165,7 @@ class _checkpoint
 
 #define FETCHAR(c,buf,i)	(catch((c)=(buf)[(i)++])?((c)=-1):(c))
 
+//!
 string _getdelimword(mapping m)
 {
   multiset delim=m->delim;
