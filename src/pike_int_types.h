@@ -182,4 +182,10 @@
 # define MIN_TIME_T MIN_INT32
 #endif
 
+/* Space for sign + decimal_digits + NUL.
+ * Valid for unsigned integers of length 1, 2, 4 and 8 bytes.
+ * Valid for signed integers of length 1, 2, and 4 bytes.
+ * For other sizes of integers the value may have space for
+ * one extra character.
+ */
 #define INT_SPRINTF_SIZE(a) (2 + (sizeof(a) * 5 + 1)/2)
