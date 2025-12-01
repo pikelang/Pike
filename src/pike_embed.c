@@ -41,6 +41,10 @@
 #include <dlfcn.h>
 #endif
 
+#if defined(HAVE_GETRCTL) && defined(HAVE_RCTL_H)
+#include <rctl.h>
+#endif
+
 #include "las.h"
 
 #include <errno.h>
@@ -273,6 +277,35 @@ void init_pike_runtime(void (*exit_cb)(int))
 	  &exit_cb, Pike_interpreter.stack_top, STACK_DIRECTION);
 #endif /* STACK_DEBUG */
 #endif /* HAVE_GETRLIMIT && RLIMIT_STACK */
+
+#if defined(HAVE_GETRLIMIT) && defined(RLIMIT_NOFILE) && defined(HAVE_GETRCTL)
+  {
+    struct rlimit lim;
+    if(!getrlimit(RLIMIT_NOFILE, &lim))
+    {
+      unsigned INT64 max = lim.rlim_max;
+      rctlblk_t *rctlblk = alloca(rctlblk_size());;
+
+      if(max > 131072) {
+        max = 131072;
+      } else if (max < 65536) {
+        /* This appears to be the default soft event limit in Solaris 11. */
+        max = 65536;
+      }
+
+      /* Raise the event limit to the number of fds. */
+      if (!getrctl("process.max-port-events", NULL, rctlblk, RCTL_FIRST)) {
+        unsigned INT64 cur = rctlblk_get_value(rctlblk);
+        if (cur < max) {
+          unsigned INT64 cur_max = rctlblk_get_enforced_value(rctlblk);
+          if ((cur_max >= cur) && (cur_max < max)) max = cur_max;
+          rctlblk_set_value(rctlblk, max);
+          setrctl("process.max-port-events", NULL, rctlblk, RCTL_OVERWRITE);
+        }
+      }
+    }
+  }
+#endif
 
   TRACE((stderr, "Init time...\n"));
   UPDATE_CURRENT_TIME();
