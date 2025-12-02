@@ -3135,7 +3135,7 @@ AC_CHECK_HEADERS(winsock2.h sys/rusage.h sys/time.h \
 		 sys/priocntl.h sys/sched.h winbase.h \
 		 sys/termio.h termios.h sys/termios.h \
                  sys/sendfile.h utime.h sys/utime.h \
-                 xmath.h ymath.h \
+                 rctl.h xmath.h ymath.h \
 		 ws2tcpip.h valgrind/memcheck.h memcheck.h valgrind.h \
 		 sys/prctl.h sys/ioctl.h mach/task_info.h mach/task.h \
 		 mach/mach_init.h syscall.h sys/syscall.h devices/timer.h \
@@ -4607,6 +4607,7 @@ AC_CHECK_FUNCS( \
  getauxval \
  gethrtime \
  gethrvtime \
+ getrctl \
  getrlimit \
  getrusage \
  gettimeofday \

@@ -1,4 +1,5 @@
 #charset iso-8859-1
+// -*- mode: C; c-basic-offset: 3; -*-
 #pike __REAL_VERSION__
 inherit Tools.Shoot.Test;
 
