@@ -112,10 +112,11 @@ put in the decimals or write it in the exponential form:</p>
 
 <p>Of course you can have any number of decimals to increase the accuracy.
 Usually digits after the ninth digit are ignored, but on some architectures
-<expr>float</expr> might have higher accuracy than that. In the exponential
+<tt>float</tt> may have higher accuracy than this. In the exponential
 form, <expr>e</expr> means "times 10 to the power of", so <expr>1.0e9</expr>
-is equal to "1.0 times 10 to the power of 9". <fixme>float and int is not
-compatible and no implicit cast like in C++</fixme></p>
+is equal to "1.0 times 10 to the power of 9". <note><tt>float</tt> and
+<tt>int</tt> are not compatible and are not implicit casted like in
+C and C++</note></p>
 
 <p>All the arithmetic and comparison operators can be used on floats.
 Also, these functions operates on floats:</p>
