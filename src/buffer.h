@@ -168,7 +168,6 @@ MACRO void buffer_add_str(struct byte_buffer *b, const char * str) {
     buffer_memcpy(b, str, strlen(str));
 }
 
-MALLOC_FUNCTION
 MACRO void* buffer_alloc_unsafe(struct byte_buffer *b, size_t len) {
     char * dst = buffer_dst(b);
 
@@ -179,7 +178,6 @@ MACRO void* buffer_alloc_unsafe(struct byte_buffer *b, size_t len) {
     return dst;
 }
 
-MALLOC_FUNCTION
 MACRO void* buffer_alloc(struct byte_buffer *b, size_t len) {
     buffer_ensure_space(b, len);
     return buffer_alloc_unsafe(b, len);
