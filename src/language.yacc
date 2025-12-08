@@ -3755,8 +3755,7 @@ generic_assoc_list: generic_association
   }
   ;
 
-generic_selection: TOK__GENERIC open_paren_with_line_info
-  assignment_expr ',' generic_assoc_list ')'
+generic_selection: TOK__GENERIC '(' assignment_expr ',' generic_assoc_list ')'
   {
     $$ = mkgeneric_selection($3, $5);
   }
