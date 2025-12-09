@@ -1018,6 +1018,9 @@ static void free_compilation(struct compilation *c)
      *     during the ba_walk(), so that really_free_node_s(), and
      *     count_memory_in_node_ss() can find the node_allocator.
      */
+#ifdef PIKE_DEBUG
+    size_t n = 0, s = 0;
+#endif
     struct program_state fake_compiler, *orig_compiler = Pike_compiler;
     memset(&fake_compiler, 0, sizeof(fake_compiler));
     fake_compiler.compiler = c;
@@ -1033,21 +1036,21 @@ static void free_compilation(struct compilation *c)
     fake_compiler.pike_type_mark_stackp = orig_compiler->pike_type_mark_stackp;
 
     if (!c->cumulative_parse_error) {
+      ba_count_all(&c->node_allocator, &n, &s);
+    }
+
+    if (n) {
       ba_walk(&c->node_allocator, &node_marker, c);
 
       ba_walk(&c->node_allocator, &node_reporter, c);
+
+      Pike_fatal("Failed to free %"PRINTSIZET"d nodes when compiling!\n", n);
     }
 #endif
 
     ba_walk(&c->node_allocator, &node_walker, c);
 
 #ifdef PIKE_DEBUG
-    if(!c->cumulative_parse_error) {
-      size_t n, s;
-      ba_count_all(&c->node_allocator, &n, &s);
-      if (n)
-	Pike_fatal("Failed to free %"PRINTSIZET"d nodes when compiling!\n",n);
-    }
 
     if ((fake_compiler.type_stackp != orig_compiler->type_stackp) ||
         (fake_compiler.pike_type_mark_stackp !=
