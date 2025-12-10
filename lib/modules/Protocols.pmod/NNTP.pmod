@@ -3,6 +3,8 @@
 #pike __REAL_VERSION__
 
 //! NNTP - The Network News Transfer Protocol.
+//!
+//! An implementation of @rfc{977@} and @rfc{2980@}.
 
 //! helper class for protocol implementations.
 //! @seealso
@@ -24,6 +26,10 @@ class protocol
   inherit protocolhelper;
 
   string rest;
+
+  // Auth
+  string user;
+  string pass;
 
   //! reads the server result code for last request
   //!  used internally by command().
@@ -90,21 +96,52 @@ class protocol
   }
 
   //! send a command and require an ok response (200 series).
-  //! throws an error if the command result was not success.
+  //!
+  //! If the command failed with code 480 (Authentication required)
+  //! and there is athentication information available, an attempt
+  //! to authenticate will be performed, and the command retried.
+  //!
+  //! Throws an error if the command result was not success (200-series).
+  //!
+  //! @returns
+  //!   Returns the result code.
   int failsafe_command(string cmd)
   {
-    if(command(cmd)/100 != 2)
+    int code = command(cmd);
+    if (code/100 == 2) return code;
+    if ((code == 480) && user) {
+      // RFC 2980 3.1.1 (NNTP V1 auth) or
+      // RFC 2980 3.1.3 (AUTHINFO GENERIC auth, not supported).
+      code = command("AUTHINFO USER " + user);
+      if ((code == 381) && pass) {
+        code = command("AUTHINFO PASS " + pass);
+      }
+      if (code == 281) {
+        code = command(cmd);
+      }
+    } else if ((code == 450) && user && pass) {
+      // RFC 2980 3.1.2 (NNTP V2 auth).
+      code = command("AUTHINFO SIMPLE");
+      if (code == 350) {
+        code = command(user + " " + pass);
+        if (code == 250) {
+          code = command(cmd);
+        }
+      }
+    }
+    if(code/100 != 2)
       error(cmd+" failed.\n");
+    return code;
   }
 
-  //! send a command that should return a message body.
+  //! Send a command that should return a message body.
   //!
   //! @returns
   //!  the message body
   string do_cmd_with_body(string cmd)
   {
-    failsafe_command(cmd);
-    return readreturnbody();
+    int code = failsafe_command(cmd);
+    return (< 215, 220, 221, 222, 230, 231 >)[code]? readreturnbody(): "";
   }
 }
 
@@ -337,30 +374,30 @@ class client
   //!
   string head(void|int|string x)
   {
-    failsafe_command("head"+(x?" "+x:""));
-    return readreturnbody();
+    return do_cmd_with_body("head"+(x?" "+x:""));
   }
 
   //!
   string body(void|int|string x)
   {
-    failsafe_command("body"+(x?" "+x:""));
-    return readreturnbody();
+    return do_cmd_with_body("body"+(x?" "+x:""));
   }
 
   //!
   string article(void|int|string x)
   {
-    failsafe_command("article"+(x?" "+x:""));
-    return readreturnbody();
+    return do_cmd_with_body("article"+(x?" "+x:""));
   }
 
   //! @param server
   //!   NNTP server to connect to.
   //!   Defaults to the server specified by
   //!   the environment variable @expr{NNTPSERVER@}.
-  protected void create(string|void server)
+  protected void create(string|void server, string|void user, string|void pass)
   {
+    protocol::user = user;
+    protocol::pass = pass;
+
     if(!server)
     {
       server=getenv("NNTPSERVER");
@@ -377,7 +414,6 @@ class client
     if(readreturncode()/100 != 2)
       error("Connection refused by NNTP server.\n");
 
-    if(command("mode reader")/100 !=2)
-      error("Mode reader failed.\n");
+    failsafe_command("mode reader");
   }
 }
