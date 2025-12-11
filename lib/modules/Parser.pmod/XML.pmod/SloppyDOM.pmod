@@ -199,7 +199,7 @@ class Node
 #define WS "%*[ \t\n\r]"
 #define NAME "%[^][ \t\n\r/@(){},=.]"
 
-  void simple_path_error (string msg, mixed... args)
+  protected void simple_path_error (string msg, mixed... args)
   {
     if (sizeof (args)) msg = sprintf (msg, @args);
     msg += sprintf ("%s node%s.\n", class_name,
