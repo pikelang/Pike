@@ -84,7 +84,7 @@ enum NodeType {
                        XML_PI | XML_COMMENT | XML_ATTR)
 }
 
-constant type_names = ([
+protected constant type_names = ([
     XML_ROOT : "ROOT",
     XML_ELEMENT : "ELEMENT",
     XML_TEXT : "TEXT",
