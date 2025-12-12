@@ -4662,6 +4662,12 @@ void fix_type_field(node *n)
       if (sscanf_type) {
 	if (!(n->type = new_get_return_type(sscanf_type, &cs, 0))) {
 	  struct pike_type *expected;
+          /* NB: CALL_ARG_LVALUE should only be passed for arguments
+           *     3 and later, but this ought to be safe as missing
+           *     argument 1 or 2 should be handled by the grammar
+           *     and/or the initial if-statement, so cs.argno should
+           *     always be at least 2 here.
+           */
           if ((expected =
                get_first_arg_type(sscanf_type,
                                   CALL_NOT_LAST_ARG|CALL_ARG_LVALUE))) {

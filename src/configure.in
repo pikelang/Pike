@@ -8963,9 +8963,10 @@ if_autoconf(2,50,[
 
   if test "x$enable_binary" = "xno"; then
     # --disable-binary
-    # LIBS contains lots of junk, which is likely to confuse the real
-    # compiler when the sub-configures run AC_PROG_CC.
+    # LIBS and LDFLAGS contain lots of junk, which is likely to confuse
+    # the real compiler when the sub-configures run AC_PROG_CC.
     LIBS=""
+    LDFLAGS=""
   fi
 ])
 

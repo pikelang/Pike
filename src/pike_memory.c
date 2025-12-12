@@ -556,6 +556,10 @@ PMOD_EXPORT char *debug_xstrdup(const char *src)
  * mexec_*()
  *
  * Allocation of executable memory.
+ *
+ * FIXME: Consider supporting the double-mmap(2) approach.
+ *        This is probably required on eg OpenBSD.
+ *        Cf https://nullprogram.com/blog/2016/04/10/
  */
 
 #ifdef MEXEC_USES_MMAP

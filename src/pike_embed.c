@@ -278,9 +278,8 @@ void init_pike_runtime(void (*exit_cb)(int))
 #endif /* STACK_DEBUG */
 #endif /* HAVE_GETRLIMIT && RLIMIT_STACK */
 
-  /* NB: RCTL_OVERWRITE does not exist in Solaris 10 and early
-   *     versions of Solaris 11 (like eg Solaris 11.0). It does
-   *     exist in Solaris 11.4.
+  /* NB: RCTL_OVERWRITE does not exist in Solaris 11.3 and earlier
+   *     versions of Solaris. It does exist in Solaris 11.4.
    */
 #if defined(HAVE_GETRLIMIT) && defined(RLIMIT_NOFILE) && defined(HAVE_GETRCTL) && defined(RCTL_OVERWRITE)
   {

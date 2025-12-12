@@ -14163,6 +14163,11 @@ struct mapping *mkbindings(struct program *p, struct array *b,
     yywarning("Too many bindings for %pP.", p);
   }
 
+  /* FIXME: Consider warning in strict types mode when
+   *        b is NULL and not inhibit_defaults:
+   *        "Unbound generics".
+   */
+
   /* The types may contain generics from the parent class. */
   ret = mkbindings(p->parent, NULL, inhibit_defaults);
 
