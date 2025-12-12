@@ -119,7 +119,7 @@ struct pike_frame
 
 #ifdef PROFILING
   cpu_time_t children_base;	/** Accounted time when the frame started. */
-  cpu_time_t start_time;	/** Adjusted time when thr frame started. */
+  cpu_time_t start_time;	/** Adjusted time when the frame started. */
 #endif /* PROFILING */
 };
 
@@ -326,6 +326,7 @@ PMOD_EXPORT extern const char msg_pop_neg[];
 #define push_obj_index(I) do{						\
     int _=(I);								\
     struct svalue *_sp_ = Pike_sp++;					\
+    debug_malloc_touch(_);                                              \
     SET_SVAL_TYPE_CHECKER(*_sp_, T_OBJ_INDEX);				\
     _sp_->u.identifier=_;						\
   }while(0)
@@ -506,6 +507,7 @@ PMOD_EXPORT extern void push_utf16_text(const p_wchar1 *x);
 #define push_svalue(S) do {						\
     const struct svalue *_=(S);						\
     struct svalue *_sp_ = Pike_sp;					\
+    debug_malloc_touch(_);                                              \
     assign_svalue_no_free(_sp_,_);					\
     Pike_sp = _sp_ + 1;                                                 \
   }while(0)
@@ -515,8 +517,10 @@ PMOD_EXPORT extern void push_utf16_text(const p_wchar1 *x);
 #define stack_swap() do {						\
     struct svalue *_sp_ = Pike_sp;					\
     struct svalue _=_sp_[-1];						\
+    dmalloc_touch_svalue_named(_sp_-2, "swap up");                      \
     _sp_[-1]=_sp_[-2];							\
     _sp_[-2]=_;								\
+    dmalloc_touch_svalue_named(_sp_-2, "swap down");                    \
   } while(0)
 
 #define stack_revroll(args) do {					\
@@ -668,11 +672,12 @@ PMOD_EXPORT extern int fast_check_threads_counter;
       fast_check_threads_counter = 0;					\
       low_check_threads_etc();						\
     }									\
-    else if (objects_to_destruct)					\
+    else if (objects_to_destruct) {					\
       /* De facto pike semantics requires that freed objects are */	\
       /* destructed before function calls. Otherwise done through */	\
       /* evaluator_callbacks. */					\
       destruct_objects_to_destruct_cb();				\
+    }                                                                   \
   } while (0)
 
 /* Used before any sort of backward branch. This is only a safeguard

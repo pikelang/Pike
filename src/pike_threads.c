@@ -1264,7 +1264,7 @@ static inline void CALL_WITH_ERROR_HANDLING(struct thread_state *state,
        * not succeed in waking up the other threads.
        *
        * Note that in the case that the threads do wake up
-       * there is a risk of the also calling pike_do_exit().
+       * there is a risk of them also calling pike_do_exit().
        */
       pike_do_exit(throw_value.u.integer);
 #endif /* UNIX_THREADS || POSIX_THREADS */
@@ -1871,7 +1871,7 @@ TH_RETURN_TYPE new_thread_func(void *data)
        * not succeed in waking up the other threads.
        *
        * Note that in the case that the threads do wake up
-       * there is a risk of the also calling pike_do_exit().
+       * there is a risk of them also calling pike_do_exit().
        */
       pike_do_exit(throw_value.u.integer);
 #endif /* UNIX_THREADS || POSIX_THREADS */

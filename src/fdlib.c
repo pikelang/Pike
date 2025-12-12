@@ -3974,7 +3974,8 @@ static INT64 low_pike_sendfile(int to_fd,
  *    function returns (though it may be during operation).
  *
  *  @param len
- *    Number of bytes to send from from_fd.
+ *    Number of bytes to send from from_fd. If negative, send
+ *    the entire file.
  *
  *  @param tr_iov
  *  @param tr_cnt

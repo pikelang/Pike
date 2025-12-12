@@ -1,4 +1,4 @@
-/*
+/* -*- mode: c; encoding: utf-8; -*-
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
@@ -82,7 +82,8 @@ struct svalue gc_done_cb;
  *   in the marker.
  *
  * GC_PASS_CYCLE
- *   Identify cycles in the unmarked objects.
+ *   Identify cycles in the unmarked objects. The unmarked objects
+ *   are the objects that are still on the gc_internal_* lists.
  *
  * GC_PASS_ZAP_WEAK
  *   Zap weak references to unmarked objects.
@@ -3610,7 +3611,7 @@ size_t do_gc(int explicit_call)
   Pike_in_gc=GC_PASS_MARK;
 
   /* Anything after and including gc_internal_* in the linked lists
-   * are considered to lack external references. The mark pass move
+   * are considered to lack external references. The mark pass moves
    * externally referenced things in front of these pointers. */
   gc_internal_array = first_array;
   gc_internal_multiset = first_multiset;
