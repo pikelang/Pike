@@ -12,7 +12,10 @@ AC_CHECK_LIB(nsl, gethostbyname)
 AC_CHECK_LIB(net, __get_socket_descriptor)
 
 AC_CHECK_HEADERS(poll.h sys/poll.h sys/socket.h netinet/in.h arpa/inet.h \
-		 asm/unistd.h sys/uio.h sys/types.h winsock2.h ws2tcpip.h)
+                 asm/unistd.h sys/uio.h sys/types.h winsock2.h ws2tcpip.h,,,[
+/* Needed for <sys/socket.h> on FreeBSD 4.9. */
+#include <sys/types.h>
+])
 
 if test "$ac_cv_header_winsock2_h" = "yes"; then :; else
   # Note: This header file interferes with winsock2.h.
@@ -22,79 +25,6 @@ fi
 AC_CHECK_FUNCS(poll gmtime_r gmtime sendfile inet_ntoa inet_ntop)
 
 AC_SUBST(RANLIB)
-
-#
-# NOTE: The test for sendfile is a duplicate of the test in the files module.
-# It should probably be moved to the main configure-script.
-# Note also that the test in the files module is more complete than this one.
-#	/grubba 2000-03-26
-#
-if test "$ac_cv_func_sendfile" = "yes"; then
-  AC_MSG_CHECKING(if sendfile takes 4(Linux) or 7(FreeBSD) arguments)
-  AC_CACHE_VAL(pike_cv_freebsd_sendfile, [
-    AC_TRY_COMPILE([
-#include <sys/types.h>
-#ifdef HAVE_SYS_SOCKET_H
-#include <sys/socket.h>
-#endif /* HAVE_SYS_SOCKET_H */
-#ifdef HAVE_SYS_UIO_H
-#include <sys/uio.h>
-#endif /* HAVE_SYS_UIO_H */
-    ], [
-      return sendfile(0,0,0,0,(void *)0,(void *)0,0);
-    ], [
-      # Probably FreeBSD-style, but we need to check that
-      # we indeed have a prototype...
-      AC_TRY_COMPILE([
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif /* HAVE_SYS_TYPES_H */
-#ifdef HAVE_SYS_SOCKET_H
-#include <sys/socket.h>
-#endif /* HAVE_SYS_SOCKET_H */
-#ifdef HAVE_SYS_UIO_H
-#include <sys/uio.h>
-#endif /* HAVE_SYS_UIO_H */
-      ], [
-        /* This should fail on FreeBSD
-         * If it succeeds, we don't have a prototype,
-         * which would indicate Linux.
-         */
-        return sendfile(0,0,(void *)0,0);
-      ], [ pike_cv_freebsd_sendfile=no ], [ pike_cv_freebsd_sendfile=yes ])
-    ], [ pike_cv_freebsd_sendfile=no ])
-  ])
-  if test "$pike_cv_freebsd_sendfile" = "yes"; then
-    AC_MSG_RESULT([7 - FreeBSD style])
-    AC_DEFINE(HAVE_FREEBSD_SENDFILE)
-
-    AC_MSG_CHECKING([if sendfile looks thread-safe])
-    AC_CACHE_VAL(pike_cv_freebsd_sendfile_threadsafe, [
-      # We're optimistic -- default to assuming it works.
-      pike_cv_freebsd_sendfile_threadsafe="yes"
-      if test -f /usr/lib/libc_r.so; then
-        if /usr/bin/nm -D /usr/lib/libc_r.so 2>&1 | grep _thread_sys >/dev/null 2>&1; then
-	  # Ok, looks like we can perform the test.
-	  # Assume we have a broken sendfile(2).
-          pike_cv_freebsd_sendfile_threadsafe="no"
-	  if /usr/bin/nm -D /usr/lib/libc_r.so 2>&1 | grep _thread_sys_sendfile >/dev/null 2>&1; then
-	    # Wee! They have actually added a wrapper for sendfile(2)!
-	    pike_cv_freebsd_sendfile_threadsafe="yes"
-	  else :; fi
-	else :; fi
-      else :; fi
-    ])
-
-    if test "$pike_cv_freebsd_sendfile_threadsafe" = "yes"; then
-      AC_MSG_RESULT(yes)
-    else
-      AC_MSG_RESULT(no - disabling use of sendfile)
-      AC_DEFINE(HAVE_BROKEN_SENDFILE)
-    fi
-  else
-    AC_MSG_RESULT([4 - Linux style])
-  fi
-fi
 
 if test x"$pike_cv_sys_os" = xWindows_NT ; then
   # FIXME: These look suspiciouly much like 32bit versions.

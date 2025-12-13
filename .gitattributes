@@ -568,7 +568,6 @@ Makefile.rl -space_indent tab_indent
 /src/modules/HTTPLoop/accept_and_parse.c mixed_indent
 /src/modules/HTTPLoop/cache.c mixed_indent
 /src/modules/HTTPLoop/cache.h mixed_indent
-/src/modules/HTTPLoop/configure.in mixed_indent
 /src/modules/HTTPLoop/log.c mixed_indent
 /src/modules/HTTPLoop/requestobject.c mixed_indent
 /src/modules/HTTPLoop/timeout.c mixed_indent
