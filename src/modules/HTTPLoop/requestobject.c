@@ -57,29 +57,6 @@
 #define DWERROR(...)
 #endif
 
-/* All current implementations of sendfile(2) are broken. */
-#ifndef HAVE_BROKEN_SENDFILE
-#define HAVE_BROKEN_SENDFILE
-#endif /* !HAVE_BROKEN_SENDFILE */
-
-#ifdef HAVE_BROKEN_SENDFILE
-#ifdef HAVE_SENDFILE
-#undef HAVE_SENDFILE
-#endif /* HAVE_SENDFILE */
-#ifdef HAVE_FREEBSD_SENDFILE
-#undef HAVE_FREEBSD_SENDFILE
-#endif /* HAVE_FREEBSD_SENDFILE */
-#ifdef CAN_HAVE_SENDFILE
-#undef CAN_HAVE_SENDFILE
-#endif /* CAN_HAVE_SENDFILE */
-#ifdef CAN_HAVE_LINUX_SYSCALL4
-#undef CAN_HAVE_LINUX_SYSCALL4
-#endif /* CAN_HAVE_LINUX_SYSCALL4 */
-#ifdef CAN_HAVE_NONSHARED_LINUX_SYSCALL4
-#undef CAN_HAVE_NONSHARED_LINUX_SYSCALL4
-#endif /* CAN_HAVE_NONSHARED_LINUX_SYSCALL4 */
-#endif /* HAVE_BROKEN_SENDFILE */
-
 /* Define local global string variables ... */
 #define STRING(X,Y) /*extern*/ struct pike_string *X
 #include "static_strings.h"
@@ -540,207 +517,91 @@ static void actually_send(struct send_args *a)
 {
   int first=0;
   int oldbulkmode = 0;
-  char foo[10];
-  unsigned char *data = NULL;
-  ptrdiff_t fail, data_len = 0;
-  foo[9]=0; foo[6]=0;
+  char foo[32] = {
+    /* Buffer containing the first line of the reply message. */
+    'H', 'T', 'T', 'P', '/', '1', '.', '0',
+    ' ', '5', '0', '0', ' ', 'I', 'n', 't',
+    'e', 'r', 'n', 'a', 'l', ' ', 'S', 'e',
+    'r', 'v', 'e', 'r', ' ', 'E', 'r', '\0',
+  };
+  struct iovec data = { NULL, 0 };
+  struct iovec *data_ptr = NULL;
+  ptrdiff_t fail;
+  INT64 sent = 0;
+  foo[9] = 0;
+
+  /* Save the first few bytes of the reply in foo[],
+   * so that we can extract the result code later.
+   *
+   * FIXME: The following is NOT robust, and assumes that the reply is:
+   *
+   *  * Properly formatted.
+   *
+   *  * Either fully in a->data if a->data is present,
+   *
+   *  * Or fully in the a->from_fd file.
+   *
+   * NOTE: For a properly formatted http reply, eg:
+   *
+   *         HTTP/1.0 500 Internal Server Error.
+   *         01234567890123456789012345678901234
+   *
+   *       The result code starts at offset 9 and ends
+   *       with the space at offset 12. See the atoi()
+   *       call in the LOG() call further below.
+   */
   if( a->data )
   {
-    data = (unsigned char *)a->data->str;
-    data_len = a->data->len;
-  }
-#ifdef HAVE_FREEBSD_SENDFILE
-  if (a->len)
-  {
-    struct iovec vec;
-    struct sf_hdtr headers = { NULL, 0, NULL, 0 };
-    off_t off = 0;
-    off_t sent = 0;
-    size_t len = a->len;
-
-    DWERROR("sendfile... \n");
-
-    if (data) {
-      /* Set up the iovec */
-      vec.iov_base = data;
-      vec.iov_len = data_len;
-      headers.headers = &vec;
-      headers.hdr_cnt = 1;
+    size_t l = MINIMUM((size_t)a->data->len, sizeof(foo)-1);
+    data.iov_base = a->data->str;
+    data.iov_len = a->data->len;
+    data_ptr = &data;
+    if (l >= 12) {
+      memcpy(foo, a->data->str, l);
     }
-
-    if (a->len < 0) {
-      /* Negative: Send all */
-      len = 0;
-    }
-
-    if ((off = lseek(a->from_fd, 0, SEEK_CUR)) < 0) {
-      /* Probably a pipe, so sendfile() will probably fail anyway,
-       * but it doesn't hurt to try...
-       */
-      off = 0;
-    }
-
-    if (sendfile(a->from_fd, a->to->fd, off, len,
-		 &headers, &sent, 0) < 0) {
-      /* FIXME: We aren't looking very hard at the errno, since
-       * sent usually tells us what to do.
-       */
-      switch(errno) {
-      case EBADF:	/* Either of the fds is invalid */
-      case ENOTSOCK:	/* to_fd is not a socket */
-      case EINVAL:	/* from_fd is not a file, to_fd not a SOCK_STREAM,
-			 * or offset is negative or out of range.
-			 */
-      case ENOTCONN:	/* to_fd is not a connected socket */
-      case EPIPE:	/* to_fd is closed at the other end */
-      case EIO:		/* Error reading from from_fd */
-	if (!sent) {
-	  /* Probably a bad fd-combo. Try sending by hand. */
-	  goto send_data;
-	}
-	break;
-      case EFAULT:	/* Invalid address specified as arg */
-	/* NOTE: Can't use Pike_fatal(), since we're not in a valid Pike context. */
-        FATAL("FreeBSD-style sendfile() returned EFAULT.\n");
-	abort();
-	break;
-      case EAGAIN:	/* socket in nonblocking mode, sent is valid */
-	break;
+  } else if (a->len) {
+    /* No data. Read the first few bytes into foo[], and use it as data. */
+    if (a->len > 0) {
+      size_t l = MINIMUM((size_t)a->len, sizeof(foo)-1);
+      ptrdiff_t bytes = fd_read(a->from_fd, foo, l);
+      if (bytes >= 0) {
+        foo[bytes] = '\0';
+        a->len -= bytes;
+        data.iov_base = foo;
+        data.iov_len = bytes;
+        data_ptr = &data;
       }
-    }
-
-    /* At this point sent will always contain the actual number
-     * of bytes sent.
-     */
-    a->sent += sent;
-
-    if (data) {
-      if (sent < data_len) {
-	data += sent;
-	data_len -= sent;
-	sent = 0;
-
-	/* Make sure we don't terminate early due to len being 0. */
-	goto send_data;
-      } else {
-	sent -= data_len;
-	data = NULL;
-	data_len = 0;
-      }
-    }
-
-    if (len) {
-      a->len -= sent;
-      if (!a->len) {
-	goto end;
-      }
-      goto normal;
     } else {
-      /* Assume all was sent */
-      a->len = 0;
-      goto end;
-    }
-  }
-
- send_data:
-#endif /* !HAVE_FREEBSD_SENDFILE */
-
-  DWERROR("actually_send... \n");
-  if(data)
-  {
-    memcpy(foo, data+MINIMUM((data_len-4),9), 4);
-    first=1;
-    DWERROR("cork... \n");
-    oldbulkmode = bulkmode_start(a->to->fd);
-    fail = WRITE(a->to->fd, (char *)data, data_len);
-    a->sent += fail;
-    if(fail != data_len)
-      goto end;
-  }
-  fail = 0;
-
-#if !defined(HAVE_FREEBSD_SENDFILE) && defined(HAVE_SENDFILE)
-  if(a->len)
-  {
-    DWERROR("pre sendfile... \n");
-    if(!first)
-    {
-      first=1;
-      fail = fd_read(a->from_fd, foo, 10);
-      if(fail < 0)
-        goto end;
-      WRITE( a->to->fd, foo, fail );
-      a->len -= fail;
-    }
-    DWERROR("sendfile... \n");
-    switch(fail = sendfile(a->to->fd, a->from_fd, NULL, a->len ))
-    {
-     case -ENOSYS:
-       DWERROR("syscall does not exist.\n");
-       goto normal;
-     default:
-       if(fail != a->len)
-         fprintf(stderr, "sendfile returned %ld; len=%ld\n",
-                 (long)fail, (long)a->len);
-    }
-    goto end;
-  }
-#endif /* HAVE_SENDFILE && !HAVE_FREEBSD_SENDFILE */
-
-#if defined(HAVE_FREEBSD_SENDFILE) || defined(HAVE_SENDFILE)
- normal:
-#endif /* HAVE_FREEBSD_SENDFILE || HAVE_SENDFILE */
-
-  DWERROR("using normal fallback... \n");
-#ifdef DIRECTIO_ON
-  if(a->len > (65536*4))
-    directio(a->from_fd, DIRECTIO_ON);
-#endif
-
-  /*
-   * Ugly optimization...
-   * Removes the sign-bit from the len.
-   * => -1 => 0x7fffffff, which means that cgi will work.
-   *
-   *	/grubba 1998-08-30
-   */
-  a->len &= 0x7fffffff;
-
-  while(a->len)
-  {
-    ptrdiff_t nread, written=0;
-    nread = fd_read(a->from_fd, a->buffer, MINIMUM(BUFFER,a->len));
-    DWERROR("writing %d bytes... \n", nread);
-    if(!first)
-    {
-      first=1;
-      memcpy(foo,a->buffer+9,5);
-    }
-    if(nread <= 0)
-    {
-      if((nread < 0) && (errno == EINTR))
-	continue;
-      else
-      {
-	/* CGI's will come here at eof (nread == 0),
-	 * and get keep-alive disabled.
-	 */
-	fail = 1;
-	break;
+      size_t l = sizeof(foo)-1;
+      ptrdiff_t bytes = fd_read(a->from_fd, foo, l);
+      if (bytes >= 0) {
+        foo[bytes] = '\0';
+        data.iov_base = foo;
+        data.iov_len = bytes;
+        data_ptr = &data;
       }
     }
-    if(fail || ((written=WRITE(a->to->fd, a->buffer, nread)) != nread))
-      goto end;
-    a->len -= nread;
-    a->sent += written;
   }
 
- end:
+  DWERROR("cork... \n");
+  oldbulkmode = bulkmode_start(a->to->fd);
+
+  fail = -1;
+  sent = pike_sendfile(a->to->fd, data_ptr, !!data_ptr,
+                       a->len ? a->from_fd: -1, NULL, a->len,
+                       NULL, 0);
+
+  if (sent >= 0) {
+    a->sent += sent;
+    fail = 0;
+  }
+
   DWERROR("all written.. \n");
   bulkmode_restore(a->to->fd, oldbulkmode);
   {
     struct args *arg = a->to;
-    LOG(a->sent, a->to, atoi(foo));
+    foo[12] = 0;
+    LOG(a->sent, a->to, atoi(foo + 9));
     free_send_args( a );
 
     if(!fail &&

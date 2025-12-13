@@ -326,7 +326,6 @@ PMOD_EXPORT extern const char msg_pop_neg[];
 #define push_obj_index(I) do{						\
     int _=(I);								\
     struct svalue *_sp_ = Pike_sp++;					\
-    debug_malloc_touch(_);                                              \
     SET_SVAL_TYPE_CHECKER(*_sp_, T_OBJ_INDEX);				\
     _sp_->u.identifier=_;						\
   }while(0)
