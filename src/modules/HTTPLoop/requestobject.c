@@ -524,8 +524,8 @@ static void actually_send(struct send_args *a)
     'e', 'r', 'n', 'a', 'l', ' ', 'S', 'e',
     'r', 'v', 'e', 'r', ' ', 'E', 'r', '\0',
   };
-  struct iovec data = { NULL, 0 };
-  struct iovec *data_ptr = NULL;
+  struct iovec headers[1] = { { NULL, 0 } };
+  size_t num_headers = 0;
   ptrdiff_t fail;
   INT64 sent = 0;
   foo[9] = 0;
@@ -553,9 +553,9 @@ static void actually_send(struct send_args *a)
   if( a->data )
   {
     size_t l = MINIMUM((size_t)a->data->len, sizeof(foo)-1);
-    data.iov_base = a->data->str;
-    data.iov_len = a->data->len;
-    data_ptr = &data;
+    headers[0].iov_base = a->data->str;
+    headers[0].iov_len = a->data->len;
+    num_headers = 1;
     if (l >= 12) {
       memcpy(foo, a->data->str, l);
     }
@@ -567,18 +567,18 @@ static void actually_send(struct send_args *a)
       if (bytes >= 0) {
         foo[bytes] = '\0';
         a->len -= bytes;
-        data.iov_base = foo;
-        data.iov_len = bytes;
-        data_ptr = &data;
+        headers[0].iov_base = foo;
+        headers[0].iov_len = bytes;
+        num_headers = 1;
       }
     } else {
       size_t l = sizeof(foo)-1;
       ptrdiff_t bytes = fd_read(a->from_fd, foo, l);
       if (bytes >= 0) {
         foo[bytes] = '\0';
-        data.iov_base = foo;
-        data.iov_len = bytes;
-        data_ptr = &data;
+        headers[0].iov_base = foo;
+        headers[0].iov_len = bytes;
+        num_headers = 1;
       }
     }
   }
@@ -587,7 +587,7 @@ static void actually_send(struct send_args *a)
   oldbulkmode = bulkmode_start(a->to->fd);
 
   fail = -1;
-  sent = pike_sendfile(a->to->fd, data_ptr, !!data_ptr,
+  sent = pike_sendfile(a->to->fd, num_headers? headers: NULL, num_headers,
                        a->len ? a->from_fd: -1, NULL, a->len,
                        NULL, 0);
 
