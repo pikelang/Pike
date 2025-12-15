@@ -15344,8 +15344,16 @@ void yyexplain_nonmatching_types(int severity_level,
   implements_b=0;
   implements_mode=0;
 
+  /* !!!!!!!!! FIXME !!!!!!!!!
+   *
+   * This code ought to use type_binop()!
+   *
+   * For now it has an inlined call to the old implementation
+   * of pike_types_le(type_b, type_a)!
+   */
   /* Note the argument order. */
-  pike_types_le(type_b, type_a, 0, 0);
+  clear_markers();
+  low_pike_types_le(type_b, type_a, 0, 0);
 
 #if 0
   if(!(implements_a && implements_b &&
