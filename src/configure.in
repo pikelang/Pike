@@ -2673,14 +2673,24 @@ if test "x${CANDLE-}" = x ; then
   PIKE_NT_PROG(CANDLE, candle, , $PATH:$EXTRA_PATH)
   export CANDLE
 fi
+if test "x${CANDLE-}" = x ; then :; else
+    CANDLE_VERSION="`$CANDLE -\? | head -1 | sed -e 's/.*[vV]ersion //'`"
+    export CANDLE_VERSION
+fi
 AC_SUBST(CANDLE)
+AC_SUBST(CANDLE_VERSION)
 
 # Wix linker
 if test "x${LIGHT-}" = x ; then
   PIKE_NT_PROG(LIGHT, light, , $PATH:$EXTRA_PATH)
   export LIGHT
 fi
+if test "x${LIGHT-}" = x ; then :; else
+    LIGHT_VERSION="`$LIGHT -\? | head -1 | sed -e 's/.*[vV]ersion //'`"
+    export LIGHT_VERSION
+fi
 AC_SUBST(LIGHT)
+AC_SUBST(LIGHT_VERSION)
 
 # Wix tool
 # This one doesn't exist any more in WiX 3.x.

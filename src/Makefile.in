@@ -119,7 +119,9 @@ ABI=@ABI@
 CONFIG_HEADERS=@CONFIG_HEADERS@
 
 CANDLE=@CANDLE@ -nologo
+CANDLE_VERSION=@CANDLE_VERSION@
 LIGHT=@LIGHT@ -nologo
+LIGHT_VERSION=@LIGHT_VERSION@
 RCEXE=@RCEXE@
 WINDRES=@WINDRES@
 
@@ -626,7 +628,7 @@ Pike_module.wxs: pike-complete-stamp $(TMP_BINDIR)/install.pike Makefile
 	if [ -f autodoc.xml ]; then no_autodoc=""; fi; \
 	$(RUNPIKE) $(TMP_BINDIR)/gather_dlls.pike pike@EXEEXT@ lib/modules; \
 	$(RUNPIKE) $(TMP_BINDIR)/install.pike --wix-module $$no_autodoc \
-	$(INSTALL_EXPORT_ARGS) \
+	--wix-version=$(CANDLE_VERSION) $(INSTALL_EXPORT_ARGS) \
 	exec_prefix="$(bindir)" lib_prefix="$(lib_prefix)" \
 	TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" \
 	SRCDIR="$(SRCDIR)" prefix="$(prefix)" DOCDIR_SRC="$(DOCDIR_SRC)" \
@@ -639,7 +641,7 @@ Pike.wxs: $(TMP_BINDIR)/install.pike Makefile
 	@no_autodoc="--no-autodoc"; \
 	if [ -f autodoc.xml ]; then no_autodoc=""; fi; \
 	$(RUNPIKE) $(TMP_BINDIR)/install.pike --wix $$no_autodoc \
-	$(INSTALL_EXPORT_ARGS) \
+	--wix-version=$(CANDLE_VERSION) $(INSTALL_EXPORT_ARGS) \
 	exec_prefix="$(bindir)" lib_prefix="$(lib_prefix)" \
 	TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" \
 	SRCDIR="$(SRCDIR)" prefix="$(prefix)" DOCDIR_SRC="$(DOCDIR_SRC)" \
