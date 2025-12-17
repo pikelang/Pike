@@ -2687,8 +2687,10 @@ if test "x${CANDLE-}" = x ; then
   export CANDLE
 fi
 if test "x${CANDLE-}" = x ; then :; else
+    AC_MSG_CHECKING([Candle version])
     CANDLE_VERSION="`$CANDLE -\? | head -1 | sed -e 's/.*[vV]ersion //'`"
     export CANDLE_VERSION
+    AC_MSG_RESULT([$CANDLE_VERSION])
 fi
 AC_SUBST(CANDLE)
 AC_SUBST(CANDLE_VERSION)
@@ -2699,8 +2701,10 @@ if test "x${LIGHT-}" = x ; then
   export LIGHT
 fi
 if test "x${LIGHT-}" = x ; then :; else
+    AC_MSG_CHECKING([Light version])
     LIGHT_VERSION="`$LIGHT -\? | head -1 | sed -e 's/.*[vV]ersion //'`"
     export LIGHT_VERSION
+    AC_MSG_RESULT([$LIGHT_VERSION])
 fi
 AC_SUBST(LIGHT)
 AC_SUBST(LIGHT_VERSION)
