@@ -6613,6 +6613,26 @@ PMOD_EXPORT void f_strptime (INT32 args)
  *!
  *! Convert the structure to a string.
  *!
+ *! Escaped characters:
+ *!
+ *!   @item %%
+ *!     An escaped @expr{%@} character.
+ *!
+ *!   @item %n
+ *!     A newline character. (SU)
+ *!
+ *!   @item %t
+ *!     A tab character. (SU)
+ *!
+ *! Modifiers:
+ *!
+ *!   @item %E
+ *!     Modifier: use alternative format, see below.
+ *!
+ *!   @item %O
+ *!     Modifier: use alternative format, see below. (SU)
+ *!
+ *! Formats:
  *! @dl
  *!   @item %a
  *!     The abbreviated weekday name according to the current locale
@@ -6645,11 +6665,12 @@ PMOD_EXPORT void f_strptime (INT32 args)
  *!     Like @expr{%d@}, the day of the month as a decimal number,
  *!     but a leading zero is replaced by a space.
  *!
- *!   @item %E
- *!     Modifier: use alternative format, see below.
- *!
  *!   @item %F
  *!     Equivalent to %Y-%m-%d (the ISO 8601 date format). (C99)
+ *!
+ *!   @item %g
+ *!     Like @expr{%G@}, but without century, that is,
+ *!     with a 2-digit year (00-99). (TZ)
  *!
  *!   @item %G
  *!     The ISO 8601 week-based year (see NOTES) with century as a
@@ -6657,10 +6678,6 @@ PMOD_EXPORT void f_strptime (INT32 args)
  *!     week number (see @expr{%V@}). This has the same format and
  *!     value as @expr{%Y@}, except that if the ISO week number
  *!     belongs to the previous or next year, that year is used instead.
- *!
- *!   @item %g
- *!     Like @expr{%G@}, but without century, that is,
- *!     with a 2-digit year (00-99). (TZ)
  *!
  *!   @item %h
  *!     Equivalent to %b.
@@ -6674,17 +6691,19 @@ PMOD_EXPORT void f_strptime (INT32 args)
  *!   @item %j
  *!     The day of the year as a decimal number (range 001 to 366).
  *!
+ *!   @item %k
+ *!     The hour as a decimal number using a 24-hour clock (range 0 to 23);
+ *!     single digits are prefixed by a space. See also @expr{%H@}.
+ *!
+ *!   @item %l
+ *!     The hour as a decimal number using a 12-hour clock (range 1 to 12).
+ *!     single digits are prefixed by a space. See also @expr{%I@}.
+ *!
  *!   @item %m
  *!     The month as a decimal number (range 01 to 12).
  *!
  *!   @item %M
  *!     The minute as a decimal number (range 00 to 59).
- *!
- *!   @item %n
- *!     A newline character. (SU)
- *!
- *!   @item %O
- *!     Modifier: use alternative format, see below. (SU)
  *!
  *!   @item %p
  *!     Either @expr{"AM"@} or @expr{"PM"@} according to the given time
@@ -6694,6 +6713,9 @@ PMOD_EXPORT void f_strptime (INT32 args)
  *!   @item %P
  *!     Like @expr{%p@} but in lowercase: @expr{"am"@} or @expr{"pm"@}
  *!     or a corresponding string for the current locale.
+ *!
+ *!   @item %q
+ *!     Quarter number (Roxen-style).
  *!
  *!   @item %r
  *!     The time in a.m. or p.m. notation. In the POSIX locale this is
@@ -6710,9 +6732,6 @@ PMOD_EXPORT void f_strptime (INT32 args)
  *!   @item %S
  *!     The second as a decimal number (range 00 to 60).
  *!     (The range is up to 60 to allow for occasional leap seconds.)
- *!
- *!   @item %t
- *!     A tab character. (SU)
  *!
  *!   @item %T
  *!     The time in 24-hour notation (@expr{%H:%M:%S@}). (SU)
@@ -6734,6 +6753,28 @@ PMOD_EXPORT void f_strptime (INT32 args)
  *!   @item %w
  *!     The day of the week as a decimal, range 0 to 6, Sunday being 0.
  *!     See also @expr{%u@}.
+ *!
+ *!   @item %W
+ *!     The week number of year as a decimal number (range 00 to 53),
+ *!     with Monday as the the first day of week 1.
+ *!
+ *!   @item %x
+ *!     Date in locale preferred format.
+ *!
+ *!   @item %x
+ *!     Time in locale preferred format.
+ *!
+ *!   @item %y
+ *!     Year with two digits (range 00 to 99).
+ *!
+ *!   @item %Y
+ *!     Year with four digits (range 0000 to 9999).
+ *!
+ *!   @item %z
+ *!     Time zone as hour offset from UTC.
+ *!
+ *!   @item %Z
+ *!     Time zone name abbreviation, or no bytes if unknown.
  *! @enddl
  *!
  *! @seealso
