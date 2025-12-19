@@ -6615,6 +6615,7 @@ PMOD_EXPORT void f_strptime (INT32 args)
  *!
  *! Escaped characters:
  *!
+ *! @dl
  *!   @item %%
  *!     An escaped @expr{%@} character.
  *!
@@ -6623,14 +6624,17 @@ PMOD_EXPORT void f_strptime (INT32 args)
  *!
  *!   @item %t
  *!     A tab character. (SU)
+ *! @enddl
  *!
  *! Modifiers:
  *!
+ *! @dl
  *!   @item %E
  *!     Modifier: use alternative format, see below.
  *!
  *!   @item %O
  *!     Modifier: use alternative format, see below. (SU)
+ *! @enddl
  *!
  *! Formats:
  *! @dl
