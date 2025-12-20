@@ -5952,7 +5952,7 @@ static void encode_tm_tz(const struct tm*tm)
  *!
  *! @seealso
  *!   @[localtime()], @[time()], @[ctime()], @[mktime()],
- *!   @[strptime()]
+ *!   @[strftime()], @[strptime()]
  */
 PMOD_EXPORT void f_gmtime(INT32 args)
 {
@@ -6089,7 +6089,7 @@ PMOD_EXPORT void f_gmtime(INT32 args)
  *!
  *! @seealso
  *!   @[Calendar], @[gmtime()], @[time()], @[ctime()], @[mktime()],
- *!   @[strptime()]
+ *!   @[strftime()], @[strptime()]
  */
 PMOD_EXPORT void f_localtime(INT32 args)
 {
@@ -6605,180 +6605,197 @@ PMOD_EXPORT void f_strptime (INT32 args)
       push_int(0);
 }
 
-/*! @decl string(1..255) strftime( string(1..255) format, mapping(string:int) tm)
+/*! @decl string(1..255) strftime(string(1..255) format, mapping(string:int) tm)
  *!
- *! Convert the structure to a string.
+ *! Convert a timestamp mapping into a string.
  *!
- *! Escaped characters:
+ *! This function is similar to @[sprintf()], but formats
+ *! a single timestamp mapping.
  *!
- *! @dl
- *!   @item %%
- *!     An escaped @expr{%@} character.
+ *! @param format
+ *!   Formatting string. This is similar to a @[sprintf_format] string,
+ *!   but the @expr{%@}-escapes are different, see below.
  *!
- *!   @item %n
- *!     A newline character. (SU)
+ *! @param tm
+ *!   Timestamp mapping to format. See @[localtime()] for a description
+ *!   of the fields.
  *!
- *!   @item %t
- *!     A tab character. (SU)
- *! @enddl
+ *! @section Escaped characters:
+ *!   @string
+ *!     @item "%%"
+ *!       An escaped @expr{%@} character.
  *!
- *! Modifiers:
+ *!     @item "%n"
+ *!       A newline character. (SU)
  *!
- *! @dl
- *!   @item %E
- *!     Modifier: use alternative format, see below.
+ *!     @item "%t"
+ *!       A tab character. (SU)
+ *!   @endstring
+ *! @endsection
  *!
- *!   @item %O
- *!     Modifier: use alternative format, see below. (SU)
- *! @enddl
+ *! @section Modifiers:
+ *!   @string
+ *!     @item "%E"
+ *!       Modifier: use alternative format, see below.
  *!
- *! Formats:
- *! @dl
- *!   @item %a
- *!     The abbreviated weekday name according to the current locale
+ *!     @item "%O"
+ *!       Modifier: use alternative format, see below. (SU)
+ *!   @endstring
+ *! @endsection
  *!
- *!   @item %A
- *!     The full weekday name according to the current locale.
+ *! @section Formats:
+ *!   @string
+ *!     @item "%a"
+ *!       The abbreviated weekday name according to the current locale
  *!
- *!   @item %b
- *!     The abbreviated month name according to the current locale.
+ *!     @item "%A"
+ *!       The full weekday name according to the current locale.
  *!
- *!   @item %B
- *!     The full month name according to the current locale.
+ *!     @item "%b"
+ *!       The abbreviated month name according to the current locale.
  *!
- *!   @item %c
- *!     The preferred date and time representation for the current locale.
+ *!     @item "%B"
+ *!       The full month name according to the current locale.
  *!
- *!   @item %C
- *!     The century number (year/100) as a 2-digit integer.
+ *!     @item "%c"
+ *!       The preferred date and time representation for the current locale.
  *!
- *!   @item %d
- *!     The day of the month as a decimal number (range 01 to 31).
+ *!     @item "%C"
+ *!       The century number (year/100) as a 2-digit integer (range 00 to 99).
  *!
- *!   @item %D
- *!     Equivalent to @expr{%m/%d/%y@}. (for Americans only.
- *!     Americans should note that in other countries @expr{%d/%m/%y@}
- *!     is rather common. This means that in international context
- *!     this format is ambiguous and should not be used.)
+ *!     @item "%d"
+ *!       The day of the month as a decimal number (range 01 to 31).
  *!
- *!   @item %e
- *!     Like @expr{%d@}, the day of the month as a decimal number,
- *!     but a leading zero is replaced by a space.
+ *!     @item "%D"
+ *!       Equivalent to @expr{%m/%d/%y@}. (for Americans only.
+ *!       Americans should note that in other countries @expr{%d/%m/%y@}
+ *!       is rather common. This means that in international context
+ *!       this format is ambiguous and should not be used.)
  *!
- *!   @item %F
- *!     Equivalent to %Y-%m-%d (the ISO 8601 date format). (C99)
+ *!     @item "%e"
+ *!       Like @expr{%d@}, the day of the month as a decimal number,
+ *!       but a leading zero is replaced by a space.
  *!
- *!   @item %g
- *!     Like @expr{%G@}, but without century, that is,
- *!     with a 2-digit year (00-99). (TZ)
+ *!     @item "%F"
+ *!       Equivalent to %Y-%m-%d (the ISO 8601 date format). (C99)
  *!
- *!   @item %G
- *!     The ISO 8601 week-based year (see NOTES) with century as a
- *!     decimal number. The 4-digit year corresponding to the ISO
- *!     week number (see @expr{%V@}). This has the same format and
- *!     value as @expr{%Y@}, except that if the ISO week number
- *!     belongs to the previous or next year, that year is used instead.
+ *!     @item "%g"
+ *!       Like @expr{%G@}, but without century, that is,
+ *!       with a 2-digit year (00-99). (TZ)
  *!
- *!   @item %h
- *!     Equivalent to %b.
+ *!     @item "%G"
+ *!       The ISO 8601 week-based year (see NOTES) with century as a
+ *!       decimal number. The 4-digit year corresponding to the ISO
+ *!       week number (see @expr{%V@}). This has the same format and
+ *!       value as @expr{%Y@}, except that if the ISO week number
+ *!       belongs to the previous or next year, that year is used instead.
  *!
- *!   @item %H
- *!     The hour as a decimal number using a 24-hour clock (range 00 to 23).
+ *!     @item "%h"
+ *!       Equivalent to %b.
  *!
- *!   @item %I
- *!     The hour as a decimal number using a 12-hour clock (range 01 to 12).
+ *!     @item "%H"
+ *!       The hour as a decimal number using a 24-hour clock (range 00 to 23).
  *!
- *!   @item %j
- *!     The day of the year as a decimal number (range 001 to 366).
+ *!     @item "%I"
+ *!       The hour as a decimal number using a 12-hour clock (range 01 to 12).
  *!
- *!   @item %k
- *!     The hour as a decimal number using a 24-hour clock (range 0 to 23);
- *!     single digits are prefixed by a space. See also @expr{%H@}.
+ *!     @item "%j"
+ *!       The day of the year as a decimal number (range 001 to 366).
  *!
- *!   @item %l
- *!     The hour as a decimal number using a 12-hour clock (range 1 to 12).
- *!     single digits are prefixed by a space. See also @expr{%I@}.
+ *!     @item "%k"
+ *!       The hour as a decimal number using a 24-hour clock (range 0 to 23);
+ *!       single digits are prefixed by a space. See also @expr{%H@}.
  *!
- *!   @item %m
- *!     The month as a decimal number (range 01 to 12).
+ *!     @item "%l"
+ *!       The hour as a decimal number using a 12-hour clock (range 1 to 12).
+ *!       single digits are prefixed by a space. See also @expr{%I@}.
  *!
- *!   @item %M
- *!     The minute as a decimal number (range 00 to 59).
+ *!     @item "%m"
+ *!       The month as a decimal number (range 01 to 12).
  *!
- *!   @item %p
- *!     Either @expr{"AM"@} or @expr{"PM"@} according to the given time
- *!     value, or the corresponding strings for the current locale.
- *!     Noon is treated as @expr{"PM"@} and midnight as @expr{"AM"@}.
+ *!     @item "%M"
+ *!       The minute as a decimal number (range 00 to 59).
  *!
- *!   @item %P
- *!     Like @expr{%p@} but in lowercase: @expr{"am"@} or @expr{"pm"@}
- *!     or a corresponding string for the current locale.
+ *!     @item "%p"
+ *!       Either @expr{"AM"@} or @expr{"PM"@} according to the given time
+ *!       value, or the corresponding strings for the current locale.
+ *!       Noon is treated as @expr{"PM"@} and midnight as @expr{"AM"@}.
  *!
- *!   @item %q
- *!     Quarter number (Roxen-style).
+ *!     @item "%P"
+ *!       Like @expr{%p@} but in lowercase: @expr{"am"@} or @expr{"pm"@}
+ *!       or a corresponding string for the current locale.
  *!
- *!   @item %r
- *!     The time in a.m. or p.m. notation. In the POSIX locale this is
- *!     equivalent to @expr{%I:%M:%S %p@}.
+ *!     @item "%q"
+ *!       Quarter number (Roxen-style).
  *!
- *!   @item %R
- *!     The time in 24-hour notation (@expr{%H:%M@}). (SU)
- *!     For a version including the seconds, see @expr{%T@} below.
+ *!     @item "%r"
+ *!       The time in a.m. or p.m. notation. In the POSIX locale this is
+ *!       equivalent to @expr{%I:%M:%S %p@}.
  *!
- *!   @item %s
- *!     The number of seconds since the Epoch,
- *!     1970-01-01 00:00:00 +0000 (UTC). (TZ)
+ *!     @item "%R"
+ *!       The time in 24-hour notation (@expr{%H:%M@}). (SU)
+ *!       For a version including the seconds, see @expr{%T@} below.
  *!
- *!   @item %S
- *!     The second as a decimal number (range 00 to 60).
- *!     (The range is up to 60 to allow for occasional leap seconds.)
+ *!     @item "%s"
+ *!       The number of seconds since the Epoch,
+ *!       1970-01-01 00:00:00 +0000 (UTC). (TZ)
  *!
- *!   @item %T
- *!     The time in 24-hour notation (@expr{%H:%M:%S@}). (SU)
+ *!     @item "%S"
+ *!       The second as a decimal number (range 00 to 60).
+ *!       (The range is up to 60 to allow for occasional leap seconds.)
  *!
- *!   @item %u
- *!     The day of the week as a decimal, range 1 to 7, Monday being 1.
- *!     See also @expr{%w@}. (SU)
+ *!     @item "%T"
+ *!       The time in 24-hour notation (@expr{%H:%M:%S@}). (SU)
  *!
- *!   @item %U
- *!     The week number of the current year as a decimal number,
- *!     range 00 to 53, starting with the first Sunday as the first
- *!     day of week 01. See also @expr{%V@} and @expr{%W@}.
+ *!     @item "%u"
+ *!       The day of the week as a decimal, range 1 to 7, Monday being 1.
+ *!       See also @expr{%w@}. (SU)
  *!
- *!   @item %V
- *!     The ISO 8601 week number of the current year as a decimal number,
- *!     range 01 to 53, where week 1 is the first week that has at least
- *!     4 days in the new year. See also @expr{%U@} and @expr{%W@}.
+ *!     @item "%U"
+ *!       The week number of the current year as a decimal number,
+ *!       range 00 to 53, starting with the first Sunday as the first
+ *!       day of week 01. See also @expr{%V@} and @expr{%W@}.
  *!
- *!   @item %w
- *!     The day of the week as a decimal, range 0 to 6, Sunday being 0.
- *!     See also @expr{%u@}.
+ *!     @item "%V"
+ *!       The ISO 8601 week number of the current year as a decimal number,
+ *!       range 01 to 53, where week 1 is the first week that has at least
+ *!       4 days in the new year. See also @expr{%U@} and @expr{%W@}.
  *!
- *!   @item %W
- *!     The week number of year as a decimal number (range 00 to 53),
- *!     with Monday as the the first day of week 1.
+ *!     @item "%w"
+ *!       The day of the week as a decimal, range 0 to 6, Sunday being 0.
+ *!       See also @expr{%u@}.
  *!
- *!   @item %x
- *!     Date in locale preferred format.
+ *!     @item "%W"
+ *!       The week number of year as a decimal number (range 00 to 53),
+ *!       with Monday as the the first day of week 1.
  *!
- *!   @item %x
- *!     Time in locale preferred format.
+ *!     @item "%x"
+ *!       Date in locale preferred format.
  *!
- *!   @item %y
- *!     Year with two digits (range 00 to 99).
+ *!     @item "%X"
+ *!       Time in locale preferred format.
  *!
- *!   @item %Y
- *!     Year with four digits (range 0000 to 9999).
+ *!     @item "%y"
+ *!       Year with two digits (range 00 to 99).
  *!
- *!   @item %z
- *!     Time zone as hour offset from UTC.
+ *!     @item "%Y"
+ *!       Year with four digits (range 0000 to 9999).
  *!
- *!   @item %Z
- *!     Time zone name abbreviation, or no bytes if unknown.
- *! @enddl
+ *!     @item "%z"
+ *!       Time zone as hour offset from UTC.
+ *!
+ *!     @item "%Z"
+ *!       Time zone name abbreviation, or empty if unknown.
+ *!   @endstring
+ *! @endsection
+ *!
+ *! @fixme
+ *!   This function does not support @[format] strings containing wide
+ *!   characters or the @tt{NUL@} character.
  *!
  *! @seealso
- *!  @[ctime()], @[mktime()], @[strptime()], @[Gettext.setlocale]
+ *!   @[ctime()], @[gmtime()], @[localtime()], @[mktime()], @[strptime()],
+ *!   @[Gettext.setlocale()]
  */
 PMOD_EXPORT void f_strftime (INT32 args)
 {
