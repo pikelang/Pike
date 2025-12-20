@@ -6622,169 +6622,169 @@ PMOD_EXPORT void f_strptime (INT32 args)
  *!
  *! @section Escaped characters:
  *!   @string
- *!     @item "%%"
+ *!     @value "%%"
  *!       An escaped @expr{%@} character.
  *!
- *!     @item "%n"
+ *!     @value "%n"
  *!       A newline character. (SU)
  *!
- *!     @item "%t"
+ *!     @value "%t"
  *!       A tab character. (SU)
  *!   @endstring
  *! @endsection
  *!
  *! @section Modifiers:
  *!   @string
- *!     @item "%E"
+ *!     @value "%E"
  *!       Modifier: use alternative format, see below.
  *!
- *!     @item "%O"
+ *!     @value "%O"
  *!       Modifier: use alternative format, see below. (SU)
  *!   @endstring
  *! @endsection
  *!
  *! @section Formats:
  *!   @string
- *!     @item "%a"
+ *!     @value "%a"
  *!       The abbreviated weekday name according to the current locale
  *!
- *!     @item "%A"
+ *!     @value "%A"
  *!       The full weekday name according to the current locale.
  *!
- *!     @item "%b"
+ *!     @value "%b"
  *!       The abbreviated month name according to the current locale.
  *!
- *!     @item "%B"
+ *!     @value "%B"
  *!       The full month name according to the current locale.
  *!
- *!     @item "%c"
+ *!     @value "%c"
  *!       The preferred date and time representation for the current locale.
  *!
- *!     @item "%C"
+ *!     @value "%C"
  *!       The century number (year/100) as a 2-digit integer (range 00 to 99).
  *!
- *!     @item "%d"
+ *!     @value "%d"
  *!       The day of the month as a decimal number (range 01 to 31).
  *!
- *!     @item "%D"
+ *!     @value "%D"
  *!       Equivalent to @expr{%m/%d/%y@}. (for Americans only.
  *!       Americans should note that in other countries @expr{%d/%m/%y@}
  *!       is rather common. This means that in international context
  *!       this format is ambiguous and should not be used.)
  *!
- *!     @item "%e"
+ *!     @value "%e"
  *!       Like @expr{%d@}, the day of the month as a decimal number,
  *!       but a leading zero is replaced by a space.
  *!
- *!     @item "%F"
+ *!     @value "%F"
  *!       Equivalent to %Y-%m-%d (the ISO 8601 date format). (C99)
  *!
- *!     @item "%g"
+ *!     @value "%g"
  *!       Like @expr{%G@}, but without century, that is,
  *!       with a 2-digit year (00-99). (TZ)
  *!
- *!     @item "%G"
+ *!     @value "%G"
  *!       The ISO 8601 week-based year (see NOTES) with century as a
  *!       decimal number. The 4-digit year corresponding to the ISO
  *!       week number (see @expr{%V@}). This has the same format and
  *!       value as @expr{%Y@}, except that if the ISO week number
  *!       belongs to the previous or next year, that year is used instead.
  *!
- *!     @item "%h"
+ *!     @value "%h"
  *!       Equivalent to %b.
  *!
- *!     @item "%H"
+ *!     @value "%H"
  *!       The hour as a decimal number using a 24-hour clock (range 00 to 23).
  *!
- *!     @item "%I"
+ *!     @value "%I"
  *!       The hour as a decimal number using a 12-hour clock (range 01 to 12).
  *!
- *!     @item "%j"
+ *!     @value "%j"
  *!       The day of the year as a decimal number (range 001 to 366).
  *!
- *!     @item "%k"
+ *!     @value "%k"
  *!       The hour as a decimal number using a 24-hour clock (range 0 to 23);
  *!       single digits are prefixed by a space. See also @expr{%H@}.
  *!
- *!     @item "%l"
+ *!     @value "%l"
  *!       The hour as a decimal number using a 12-hour clock (range 1 to 12).
  *!       single digits are prefixed by a space. See also @expr{%I@}.
  *!
- *!     @item "%m"
+ *!     @value "%m"
  *!       The month as a decimal number (range 01 to 12).
  *!
- *!     @item "%M"
+ *!     @value "%M"
  *!       The minute as a decimal number (range 00 to 59).
  *!
- *!     @item "%p"
+ *!     @value "%p"
  *!       Either @expr{"AM"@} or @expr{"PM"@} according to the given time
  *!       value, or the corresponding strings for the current locale.
  *!       Noon is treated as @expr{"PM"@} and midnight as @expr{"AM"@}.
  *!
- *!     @item "%P"
+ *!     @value "%P"
  *!       Like @expr{%p@} but in lowercase: @expr{"am"@} or @expr{"pm"@}
  *!       or a corresponding string for the current locale.
  *!
- *!     @item "%q"
+ *!     @value "%q"
  *!       Quarter number (Roxen-style).
  *!
- *!     @item "%r"
+ *!     @value "%r"
  *!       The time in a.m. or p.m. notation. In the POSIX locale this is
  *!       equivalent to @expr{%I:%M:%S %p@}.
  *!
- *!     @item "%R"
+ *!     @value "%R"
  *!       The time in 24-hour notation (@expr{%H:%M@}). (SU)
  *!       For a version including the seconds, see @expr{%T@} below.
  *!
- *!     @item "%s"
+ *!     @value "%s"
  *!       The number of seconds since the Epoch,
  *!       1970-01-01 00:00:00 +0000 (UTC). (TZ)
  *!
- *!     @item "%S"
+ *!     @value "%S"
  *!       The second as a decimal number (range 00 to 60).
  *!       (The range is up to 60 to allow for occasional leap seconds.)
  *!
- *!     @item "%T"
+ *!     @value "%T"
  *!       The time in 24-hour notation (@expr{%H:%M:%S@}). (SU)
  *!
- *!     @item "%u"
+ *!     @value "%u"
  *!       The day of the week as a decimal, range 1 to 7, Monday being 1.
  *!       See also @expr{%w@}. (SU)
  *!
- *!     @item "%U"
+ *!     @value "%U"
  *!       The week number of the current year as a decimal number,
  *!       range 00 to 53, starting with the first Sunday as the first
  *!       day of week 01. See also @expr{%V@} and @expr{%W@}.
  *!
- *!     @item "%V"
+ *!     @value "%V"
  *!       The ISO 8601 week number of the current year as a decimal number,
  *!       range 01 to 53, where week 1 is the first week that has at least
  *!       4 days in the new year. See also @expr{%U@} and @expr{%W@}.
  *!
- *!     @item "%w"
+ *!     @value "%w"
  *!       The day of the week as a decimal, range 0 to 6, Sunday being 0.
  *!       See also @expr{%u@}.
  *!
- *!     @item "%W"
+ *!     @value "%W"
  *!       The week number of year as a decimal number (range 00 to 53),
  *!       with Monday as the the first day of week 1.
  *!
- *!     @item "%x"
+ *!     @value "%x"
  *!       Date in locale preferred format.
  *!
- *!     @item "%X"
+ *!     @value "%X"
  *!       Time in locale preferred format.
  *!
- *!     @item "%y"
+ *!     @value "%y"
  *!       Year with two digits (range 00 to 99).
  *!
- *!     @item "%Y"
+ *!     @value "%Y"
  *!       Year with four digits (range 0000 to 9999).
  *!
- *!     @item "%z"
+ *!     @value "%z"
  *!       Time zone as hour offset from UTC.
  *!
- *!     @item "%Z"
+ *!     @value "%Z"
  *!       Time zone name abbreviation, or empty if unknown.
  *!   @endstring
  *! @endsection
