@@ -97,6 +97,8 @@ enum pt_remap_flags
     PT_FLAG_REMAP_INHIBIT =		0x80,	/* Inhibit remapping */
     /*PT_FLAG_REMAP_ALTERNATE =		0x100,*/	/* Use C & D */
     PT_FLAG_REMAP_TRACE =		0x200,	/* Trace the operations */
+
+    PT_FLAG_REMAP_TRACK_MISMATCHES =	0x1000,	/* Push mismatch contexts. */
   };
 
 /*

@@ -30,6 +30,7 @@
 #include "bitvector.h"
 #include "gc_header.h"
 #include "builtin_functions.h"
+#include "sprintf.h"
 
 #ifdef PIKE_DEBUG
 #define PIKE_TYPE_DEBUG
@@ -109,10 +110,6 @@ struct pike_type_location *all_pike_type_locations = NULL;
 #endif /* DO_PIKE_CLEANUP */
 
 static struct pike_type *a_markers[10], *b_markers[10];
-
-static struct program *implements_a;
-static struct program *implements_b;
-static int implements_mode;
 
 DECLARATIONS
 
@@ -4705,6 +4702,7 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
   struct pike_type *aret = NULL, *bret = NULL;
   struct compilation *c = MAYBE_THIS_COMPILATION;
   enum pt_cmp_flags tmp_flags;
+  struct svalue *save_sp = Pike_sp;
 
  recur:
   switch(op) {
@@ -4991,6 +4989,9 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
     tmp2 = low_type_binop(op, a->cdr, b, remap, aflags, bflags, remap_flags);
     if (!tmp2) {
       free_type(tmp);
+      if (remap_flags & PT_FLAG_REMAP_TRACK_MISMATCHES) {
+        pop_n_elems(Pike_sp - save_sp);
+      }
       return NULL;
     }
 
@@ -5062,6 +5063,9 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	    do_free_mapping(remap->markers[marker_set]);
 	    remap->markers[marker_set] = orig_markers;
 	  }
+          if (remap_flags & PT_FLAG_REMAP_TRACK_MISMATCHES) {
+            pop_n_elems(Pike_sp - save_sp);
+          }
 	  return NULL;
 	}
       }
@@ -5092,6 +5096,9 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	}
 	ret = low_type_binop(op, tmp, tmp2, remap, aflags, bflags,
 			     remap_flags | PT_FLAG_REMAP_INHIBIT);
+        if (!ret && (remap_flags & PT_FLAG_REMAP_TRACK_MISMATCHES)) {
+          pop_n_elems(Pike_sp - save_sp);
+        }
 	if (remap_flags & PT_FLAG_REMAP_TRACE) {
 	  fprintf(stderr, "tmp op tmp2: ");
 	  simple_describe_type(ret);
@@ -5107,8 +5114,8 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
       }
       /* op		secondary
        * 0  0000	0		0000
-       * 1  0001	7		0111
-       * 2  0010	1	        0001
+       * 1  0001	7		0111	AND OR
+       * 2  0010	1	        0001	MINUS AND
        * 3  0011	1, 3, 5, 7	0011
        * 4  0100	7		0111
        * 5  0101	7		0111
@@ -5165,8 +5172,8 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
   case T_AND:
     /* op	secondary
      * 0  0000	0		0000
-     * 1  0001	1		0001
-     * 2  0010	7		0111
+     * 1  0001	1		0001	AND AND
+     * 2  0010	7		0111	MINUS OR
      * 3  0011	1, 3, 5, 7	0011
      * 4  0100	1		0001
      * 5  0101	1		0001
@@ -5472,6 +5479,15 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 
       tmp2 = low_type_binop(op, tmp, b, remap, aflags, bflags, remap_flags);
 
+      if (tmp2 && (remap_flags & PT_FLAG_REMAP_TRACK_MISMATCHES)) {
+        ref_push_type_value(tmp);
+        ref_push_type_value(b);
+        push_constant_text("Generic %O did not match.");
+        ref_push_type_value(a);
+        f_sprintf(2);
+        f_aggregate(3);
+      }
+
       free_type(tmp);
 
       if (!tmp2) {
@@ -5561,6 +5577,15 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
       }
 
       tmp2 = low_type_binop(op, a, tmp, remap, aflags, bflags, remap_flags);
+
+      if (tmp2 && (remap_flags & PT_FLAG_REMAP_TRACK_MISMATCHES)) {
+        ref_push_type_value(a);
+        ref_push_type_value(tmp);
+        push_constant_text("Generic %O did not match.");
+        ref_push_type_value(b);
+        f_sprintf(2);
+        f_aggregate(3);
+      }
 
       free_type(tmp);
 
@@ -5821,6 +5846,7 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
   case TWOT(T_MANY, T_FUNCTION):
   case TWOT(T_MANY, T_MANY):
     {
+      /* Compare two function types. */
       int nargs;
       struct pike_type *ai = a;
       struct pike_type *bi = b;
@@ -5846,6 +5872,12 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	  return remap_markers(b, remap,
 			       remap_flags ^ PT_FLAG_REMAP_SWAP_MARKERS);
 	}
+        if (remap_flags & PT_FLAG_REMAP_TRACK_MISMATCHES) {
+          ref_push_type_value(a);
+          ref_push_type_value(b);
+          push_constant_text("The NULL function is not compatible.");
+          f_aggregate(3);
+        }
 	add_ref(a);
 	return a;
       }
@@ -6041,6 +6073,9 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	       * argument list here (void matched), and a implicitly
 	       * ignores any further arguments.
 	       */
+              if (remap_flags & PT_FLAG_REMAP_TRACK_MISMATCHES) {
+                pop_n_elems(Pike_sp - save_sp);
+              }
 	      free_type(tmp);
 	      tmp = NULL;
 	    } else {
@@ -6049,6 +6084,22 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 		pop_stack_mark();
 		free_type(tmp);
 
+                if (remap_flags & PT_FLAG_REMAP_TRACK_MISMATCHES) {
+                  if (bi->car == void_type_string) {
+                    pop_n_elems(Pike_sp - save_sp);
+                    ref_push_type_value(ai->car);
+                    ref_push_type_value(void_type_string);
+                    push_constant_text("Function needs more arguments.");
+                    f_aggregate(3);
+                  } else if (ai->car == void_type_string) {
+                    pop_n_elems(Pike_sp - save_sp);
+                    ref_push_type_value(void_type_string);
+                    ref_push_type_value(bi->car);
+                    push_constant_text("Function supports too few arguments.");
+                    f_aggregate(3);
+                  }
+                }
+
 		return remap_markers(ai, remap, remap_flags);
 	      }
 	      free_type(tmp);
@@ -6056,7 +6107,8 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	      tmp = low_type_binop(PT_BINOP_MINUS, ai->car, bi->car, remap,
 				   avoidable | PT_FLAG_CMP_INSEPARABLE,
 				   bvoidable | PT_FLAG_CMP_INSEPARABLE,
-				   remap_flags);
+                                   remap_flags &
+                                   ~PT_FLAG_REMAP_TRACK_MISMATCHES);
 
 	      if (tmp == ai->car) {
 		/* No overlap.
@@ -6075,6 +6127,9 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	      push_type(ai->type);
 	      free_type(tmp);
 	      tmp = NULL;
+              if (remap_flags & PT_FLAG_REMAP_TRACK_MISMATCHES) {
+                pop_n_elems(Pike_sp - save_sp);
+              }
 	    }
 	  }
 	}
@@ -6440,6 +6495,13 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
     case PT_BINOP_MINUS:
     case PT_BINOP_A:
       push_remap_markers(a, remap, remap_flags);
+
+      if (remap_flags & PT_FLAG_REMAP_TRACK_MISMATCHES) {
+        ref_push_type_value(a);
+        ref_push_type_value(b);
+        push_constant_text("Type mismatch.");
+        f_aggregate(3);
+      }
       break;
     case PT_BINOP_NOT_A:
     case PT_BINOP_NOT_A_OR_B:
@@ -6697,6 +6759,13 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	fprintf(stderr, "\n");
       }
 
+      if (remap_flags & PT_FLAG_REMAP_TRACK_MISMATCHES) {
+        ref_push_type_value(a);
+        ref_push_type_value(b);
+        push_constant_text("Integer ranges do not overlap.");
+        f_aggregate(3);
+      }
+
       return pop_unfinished_type();
     }
 
@@ -6776,6 +6845,12 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
       free_type(tmp);
       free_type(tmp2);
     }
+    if (peek_type_stack() && (remap_flags & PT_FLAG_REMAP_TRACK_MISMATCHES)) {
+      ref_push_type_value(a);
+      ref_push_type_value(b);
+      push_constant_text("Type mismatch.");
+      f_aggregate(3);
+    }
     return pop_unfinished_type();
 
   case T_MULTISET:
@@ -6794,6 +6869,13 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 			   subflags, subflags, remap_flags);
       if (!tmp && ((op != PT_BINOP_AND) || (a->car && b->car))) {
 	return NULL;
+      }
+
+      if (remap_flags & PT_FLAG_REMAP_TRACK_MISMATCHES) {
+        ref_push_type_value(a);
+        ref_push_type_value(b);
+        push_constant_text("Type mismatch.");
+        f_aggregate(3);
       }
     }
 
@@ -6865,6 +6947,12 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	  /* This is only possible if a->cdr == b->cdr, but that is
 	   * handled above.
 	   */
+          if (remap_flags & PT_FLAG_REMAP_TRACK_MISMATCHES) {
+            ref_push_type_value(a);
+            ref_push_type_value(b);
+            push_constant_text("Object type mismatch.");
+            f_aggregate(3);
+          }
 	  add_ref(a);
 	  return a;
 	}
@@ -6876,13 +6964,30 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	    return NULL;
 	  }
 	  if (!is_compatible(ap, bp)) {
+            if (remap_flags & PT_FLAG_REMAP_TRACK_MISMATCHES) {
+              ref_push_type_value(a);
+              ref_push_type_value(b);
+              push_constant_text("Objects are not compatible.");
+              f_aggregate(3);
+            }
 	    add_ref(a);
 	    return a;
 	  }
+          if (remap_flags & PT_FLAG_REMAP_TRACK_MISMATCHES) {
+            ref_push_type_value(a);
+            ref_push_type_value(b);
+            f_aggregate(2);
+          }
 	}
       }
       break;
     default:
+      if (remap_flags & PT_FLAG_REMAP_TRACK_MISMATCHES) {
+        ref_push_type_value(a);
+        ref_push_type_value(b);
+        push_constant_text("Type mismatch.");
+        f_aggregate(3);
+      }
       break;
     }
 
@@ -9316,9 +9421,7 @@ static struct pike_type *low_match_types2(struct pike_type *a,
 
       if(!ap || !bp) break;
 
-      implements_mode = 0;
-
-      if (!is_compatible(implements_a=ap,implements_b=bp)) {
+      if (!is_compatible(ap, bp)) {
 	return 0;
       }
     }
@@ -10247,19 +10350,17 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
 	return 0;
       }
       if ((flags & LE_WEAK_OBJECTS) && !a->car) {
-	implements_mode = 0;
 #if 0
 	fprintf(stderr, "  is_compat(%p(%d), %p(%d))\n",
 		ap, ap->id, bp, bp->id);
 #endif /* 0 */
-	return is_compatible(implements_a=ap, implements_b=bp);
+        return is_compatible(ap, bp);
       }
-      implements_mode = 1;
 #if 0
       fprintf(stderr, "  implements(%p(%d), %p(%d))\n",
 	      ap, ap->id, bp, bp->id);
 #endif /* 0 */
-      return implements(implements_a=ap, implements_b=bp);
+      return implements(ap, bp);
     }
     break;
 
@@ -15330,44 +15431,19 @@ int type_may_overload(struct pike_type *type, int lfun)
 }
 
 
+/* FIXME: Code duplication! Cf string_builder_explain_nonmatching_types(). */
 void yyexplain_nonmatching_types(int severity_level,
 				 struct pike_string *a_file,
 				 INT32 a_line,
-				 struct pike_type *type_a,
+                                 struct pike_type *type_a,	/* Expected */
 				 struct pike_string *b_file,
 				 INT32 b_line,
-				 struct pike_type *type_b)
+                                 struct pike_type *type_b)	/* Got */
 {
+  struct svalue *save_sp = Pike_sp;
+  struct pike_type *ret_type;
+
   DECLARE_CYCLIC();
-
-  implements_a=0;
-  implements_b=0;
-  implements_mode=0;
-
-  /* !!!!!!!!! FIXME !!!!!!!!!
-   *
-   * This code ought to use type_binop()!
-   *
-   * For now it has an inlined call to the old implementation
-   * of pike_types_le(type_b, type_a)!
-   */
-  /* Note the argument order. */
-  clear_markers();
-  low_pike_types_le(type_b, type_a, 0, 0);
-
-#if 0
-  if(!(implements_a && implements_b &&
-       type_a->str[0]==T_OBJECT &&
-       type_b->str[0]==T_OBJECT))
-#endif /* 0 */
-  {
-    ref_push_type_value(type_a);
-    yytype_report(severity_level, NULL, 0, NULL, a_file, a_line, NULL,
-                  1, "Expected: %O.");
-    ref_push_type_value(type_b);
-    yytype_report(severity_level, NULL, 0, NULL, b_file, b_line, NULL,
-                  1, "Got     : %O.");
-  }
 
   /* Protect against circularities. */
   if (BEGIN_CYCLIC(type_a, type_b)) {
@@ -15376,43 +15452,63 @@ void yyexplain_nonmatching_types(int severity_level,
   }
   SET_CYCLIC_RET(1);
 
-  if(implements_a && implements_b) {
-    if (implements_mode) {
-      yyexplain_not_implements(severity_level, implements_a, implements_b);
-    } else {
-      yyexplain_not_compatible(severity_level, implements_a, implements_b);
-    }
+  /* Note the argument order. */
+  ret_type =
+    type_binop(PT_BINOP_MINUS, type_b, type_a, 0, 0,
+               PT_FLAG_REMAP_TRACK_MISMATCHES);
+
+  free_type(ret_type);
+
+  if ((Pike_sp == save_sp) ||
+      (ITEM(Pike_sp[-1].u.array)[0].u.type != type_b) ||
+      (ITEM(Pike_sp[-1].u.array)[1].u.type != type_a)) {
+    /* Note the argument order. */
+    ref_push_type_value(type_b);
+    ref_push_type_value(type_a);
+    push_constant_text("");
+    f_aggregate(3);
   }
+
+  while(Pike_sp > save_sp) {
+    struct array *entry = Pike_sp[-1].u.array;
+    if ((entry->size > 2) && (TYPEOF(ITEM(entry)[2]) == PIKE_T_STRING) &&
+        ITEM(entry)[2].u.string->len) {
+      yytype_report(severity_level, NULL, 0, NULL, b_file, b_line, NULL,
+                    0, "%pS", ITEM(entry)[2].u.string);
+    }
+    yytype_report(severity_level, NULL, 0, NULL, a_file, a_line, NULL,
+                  0, "Expected: %pT.", ITEM(entry)[1].u.type);
+    yytype_report(severity_level, NULL, 0, NULL, b_file, b_line, NULL,
+                  0, "Got     : %pT.", ITEM(entry)[0].u.type);
+    if (ITEM(entry)[0].u.type && ITEM(entry)[1].u.type &&
+        (ITEM(entry)[0].u.type->type == PIKE_T_OBJECT) &&
+        (ITEM(entry)[1].u.type->type == PIKE_T_OBJECT)) {
+      struct program *got_prog =
+        id_to_program(CDR_TO_INT(ITEM(entry)[0].u.type));
+      struct program *expected_prog =
+        id_to_program(CDR_TO_INT(ITEM(entry)[1].u.type));
+      if (ITEM(entry)[0].u.type->car || ITEM(entry)[1].u.type->car) {
+        yyexplain_not_implements(severity_level, got_prog, expected_prog);
+      } else {
+        yyexplain_not_compatible(severity_level, got_prog, expected_prog);
+      }
+    }
+    pop_stack();
+  }
+
   END_CYCLIC();
 }
 
-/* FIXME: Code duplication! */
-void string_builder_explain_nonmatching_types(struct string_builder *s,
-					      struct pike_type *type_a,
-					      struct pike_type *type_b)
+/* FIXME: Code duplication! Cf yyexplain_nonmatching_types(). */
+void string_builder_explain_nonmatching_types(
+        struct string_builder *s,
+        struct pike_type *type_a,	/* Expected */
+        struct pike_type *type_b)	/* Got */
 {
+  struct svalue *save_sp = Pike_sp;
+  struct pike_type *ret_type;
+
   DECLARE_CYCLIC();
-
-  implements_a=0;
-  implements_b=0;
-  implements_mode=0;
-
-  /* Note the argument order. */
-  pike_types_le(type_b, type_a, 0, 0);
-
-#if 0
-  if(!(implements_a && implements_b &&
-       type_a->str[0]==T_OBJECT &&
-       type_b->str[0]==T_OBJECT))
-#endif /* 0 */
-  {
-    ref_push_type_value(type_a);
-    ref_push_type_value(type_b);
-    string_builder_sprintf(s,
-                           "Expected: %pO.\n"
-                           "Got     : %pO.\n",
-			   Pike_sp-2, Pike_sp-1);
-  }
 
   /* Protect against circularities. */
   if (BEGIN_CYCLIC(type_a, type_b)) {
@@ -15421,13 +15517,50 @@ void string_builder_explain_nonmatching_types(struct string_builder *s,
   }
   SET_CYCLIC_RET(1);
 
-  if(implements_a && implements_b) {
-    if (implements_mode) {
-      string_builder_explain_not_implements(s, implements_a, implements_b);
-    } else {
-      string_builder_explain_not_compatible(s, implements_a, implements_b);
-    }
+  /* Note the argument order. */
+  ret_type =
+    type_binop(PT_BINOP_MINUS, type_b, type_a, 0, 0,
+               PT_FLAG_REMAP_TRACK_MISMATCHES);
+
+  free_type(ret_type);
+
+  if ((Pike_sp == save_sp) ||
+      (ITEM(Pike_sp[-1].u.array)[0].u.type != type_b) ||
+      (ITEM(Pike_sp[-1].u.array)[1].u.type != type_a)) {
+    /* Note the argument order. */
+    ref_push_type_value(type_b);
+    ref_push_type_value(type_a);
+    push_constant_text("");
+    f_aggregate(3);
   }
+
+  while(Pike_sp > save_sp) {
+    struct array *entry = Pike_sp[-1].u.array;
+    if ((entry->size > 2) && (TYPEOF(ITEM(entry)[2]) == PIKE_T_STRING) &&
+        ITEM(entry)[2].u.string->len) {
+      string_builder_sprintf(s, "%pS\n", ITEM(entry)[2].u.string);
+    }
+    string_builder_sprintf(s,
+                           "Expected: %pT.\n"
+                           "Got     : %pT.\n",
+                           ITEM(entry)[1].u.type,
+                           ITEM(entry)[0].u.type);
+    if (ITEM(entry)[0].u.type && ITEM(entry)[1].u.type &&
+        (ITEM(entry)[0].u.type->type == PIKE_T_OBJECT) &&
+        (ITEM(entry)[1].u.type->type == PIKE_T_OBJECT)) {
+      struct program *got_prog =
+        id_to_program(CDR_TO_INT(ITEM(entry)[0].u.type));
+      struct program *expected_prog =
+        id_to_program(CDR_TO_INT(ITEM(entry)[1].u.type));
+      if (ITEM(entry)[0].u.type->car || ITEM(entry)[1].u.type->car) {
+        string_builder_explain_not_implements(s, got_prog, expected_prog);
+      } else {
+        string_builder_explain_not_compatible(s, got_prog, expected_prog);
+      }
+    }
+    pop_stack();
+  }
+
   END_CYCLIC();
 }
 
