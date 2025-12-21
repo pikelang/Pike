@@ -3099,6 +3099,72 @@ static const p_wchar1 map_petscii_se_set2_1982[] = {
   0xd83e, 0xdf83, 0x0000,
 };
 
+/* C64OS uses a version of PETSCII that has been
+ * modified to be more compatible with modern ASCII.
+ *
+ * Cf https://c64os.com/post/petsciiasciiconversion
+ *
+ * CAVEAT EMPTOR:
+ *   The tables are rather unclear about what the characters
+ *   in range 0xa0-0xbf (aka block 6) are. There are likely
+ *   errors among the code points in the range.
+ */
+static const p_wchar1 map_c64os_2022[] = {
+  /* Block 2: Numbers and Symbols */
+  ' ', '!', '"', '#', '$', '%', '&', '\'',
+  '(', ')', '*', '+', ',', '-', '.', '/',
+  '0', '1', '2', '3', '4', '5', '6', '7',
+  '8', '9', ':', ';', '<', '=', '>', '?',
+
+  /* Block 3: Symbols and Lowercase Letters */
+  '@', 'a', 'b', 'c', 'd', 'e', 'f', 'g',
+  'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o',
+  'p', 'q', 'r', 's', 't', 'u', 'v', 'w',
+  'x', 'y', 'z', '[', '\\', ']', '^', '_',
+
+  /* Block 4: Undefined. */
+  0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
+  0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
+  0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
+  0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
+
+  /* Block 5: Control Codes High */
+  0x0080, 0x0081, 0x0082, 0x0083, 0x0084, 0x0085, 0x0086, 0x0087,
+  0x0088, 0x0089, 0x008a, 0x008b, 0x008c, 0x008d, 0x008e, 0x008f,
+  0x0090, 0x0091, 0x0092, 0x0093, 0x0094, 0x0095, 0x0096, 0x0097,
+  0x0098, 0x0099, 0x009a, 0x009b, 0x009c, 0x009d, 0x009e, 0x009f,
+
+  /* Block 6: Graphics Symbols */
+  0x00a0, '@', 0x25b3, 0x25bd, 0x25c1, 0x22bb, 0x23f2, 0x2b82,
+  0x2026, 0x25a8, 0xd800, 0x251c, 0x25cb, 0x2299, 0x2510, 0x2582,
+  0x00a9, 0x2534, 0x252c, 0x2524, 0x258e, 0x258d, 0xd803, 0xd806,
+  0xd809, 0x2583, 0x221a, 0x2596, 0x259d, 0x2518, 0x2598, 0x259a,
+
+  /* Block 7: Symbols and Uppercase Letters */
+  '`', 'A', 'B', 'C', 'D', 'E', 'F', 'G',
+  'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O',
+  'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W',
+  'X', 'Y', 'Z', '{', '|', '}', '~', 0x25a7,
+
+  /* Block 8: MText Codes. */
+  0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
+  0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
+  0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
+  0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
+
+  /* Characters in the Unicode Symbols for Legacy Computing segment follow. */
+  /* 0x6a: 0x1fb87 RIGHT ONE QUARTER BLOCK ** */
+  0xd83e, 0xdf87, 0x0000,
+
+  /* 0x76: 0x1fb88 RIGHT THREE EIGHTHS BLOCK ** */
+  0xd83e, 0xdf88, 0x0000,
+  /* 0x77: 0x1fb82 UPPER ONE QUARTER BLOCK ** */
+  0xd83e, 0xdf82, 0x0000,
+
+  /* 0x78: 0x1fb83 UPPER THREE EIGHTHS BLOCK ** */
+  0xd83e, 0xdf83, 0x0000,
+};
+
 static const struct {
   const char *name;
   p_wchar1 const * table;
@@ -3160,6 +3226,7 @@ static const struct {
   { "c64en", map_petscii_set1_1982, 32, 255 },
   { "c64enset1", map_petscii_set1_1982, 32, 255 },
   { "c64enset2", map_petscii_set2_1982, 32, 255 },
+  { "c64os", map_c64os_2022, 32, 255 },
   { "c64se", map_petscii_se_set1_1982, 32, 255 },
   { "c64seset1", map_petscii_se_set1_1982, 32, 255 },
   { "c64seset2", map_petscii_se_set2_1982, 32, 255 },
