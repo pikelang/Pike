@@ -11416,6 +11416,8 @@ void yyexplain_not_compatible(int severity_level,
   struct pike_string *b_file;
   DECLARE_CYCLIC();
 
+  if (!a || !b) return;
+
   /* Optimize the loop somewhat */
   if (a->num_identifier_references < b->num_identifier_references) {
     struct program *tmp = a;
@@ -11493,6 +11495,8 @@ void yyexplain_not_implements(int severity_level,
   struct pike_string *a_file;
   struct pike_string *b_file;
   DECLARE_CYCLIC();
+
+  if (!a || !b) return;
 
   if (BEGIN_CYCLIC(a, b)) {
     END_CYCLIC();
