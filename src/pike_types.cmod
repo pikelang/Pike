@@ -5310,6 +5310,14 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	      (!Pike_sp[-1].u.integer)) {
 	    /* Forced mismatch. */
 	    pop_stack();
+            if (remap_flags & PT_FLAG_REMAP_TRACK_MISMATCHES) {
+              ref_push_type_value(a);
+              ref_push_type_value(b);
+              push_constant_text("Attribute %q does not match.");
+              ref_push_string((struct pike_string *)a->car);
+              f_sprintf(2);
+              f_aggregate(3);
+            }
 	    return remap_markers(a, remap, remap_flags);
 	  }
 	  if (TYPEOF(Pike_sp[-1]) == PIKE_T_TYPE) {
@@ -5382,6 +5390,14 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	    (!Pike_sp[-1].u.integer)) {
 	  /* Forced mismatch. */
 	  pop_stack();
+          if (remap_flags & PT_FLAG_REMAP_TRACK_MISMATCHES) {
+            ref_push_type_value(a);
+            ref_push_type_value(b);
+            push_constant_text("Attribute %q does not match.");
+            ref_push_string((struct pike_string *)b->car);
+            f_sprintf(2);
+            f_aggregate(3);
+          }
 	  return remap_markers(a, remap, remap_flags);
 	}
 	if (TYPEOF(Pike_sp[-1]) == PIKE_T_TYPE) {
@@ -6110,6 +6126,13 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
                                    remap_flags &
                                    ~PT_FLAG_REMAP_TRACK_MISMATCHES);
 
+              if (tmp && (remap_flags & PT_FLAG_REMAP_TRACK_MISMATCHES)) {
+                ref_push_type_value(bi->car);
+                ref_push_type_value(ai->car);
+                push_constant_text("Argument type mismatch.");
+                f_aggregate(3);
+              }
+
 	      if (tmp == ai->car) {
 		/* No overlap.
 		 *
@@ -6158,7 +6181,8 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	  if (!bret) bret = bi->cdr;
 
 	  /* NB: Ignore the return type if matching against void or mixed. */
-	  if ((bret != void_type_string) && (bret != mixed_type_string)) {
+          if ((bret != void_type_string) && (bret != mixed_type_string) &&
+              (bret != any_type_string)) {
 	    tmp = low_type_binop(PT_BINOP_MINUS, aret, bret, remap,
 				 PT_FLAG_CMP_VOIDABLE|PT_FLAG_CMP_VOID_IS_ZERO,
 				 0, remap_flags);
@@ -6169,6 +6193,12 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
 	      push_remap_markers(ai->car, remap, remap_flags);
 	      push_type(T_MANY);
 	      free_type(tmp);
+              if (remap_flags & PT_FLAG_REMAP_TRACK_MISMATCHES) {
+                ref_push_type_value(aret);
+                ref_push_type_value(bret);
+                push_constant_text("Return type mismatch.");
+                f_aggregate(3);
+              }
 	    } else {
 	      push_type(PIKE_T_UNKNOWN);
 	    }
@@ -6495,13 +6525,6 @@ static struct pike_type *lower_type_binop(enum pt_binop op,
     case PT_BINOP_MINUS:
     case PT_BINOP_A:
       push_remap_markers(a, remap, remap_flags);
-
-      if (remap_flags & PT_FLAG_REMAP_TRACK_MISMATCHES) {
-        ref_push_type_value(a);
-        ref_push_type_value(b);
-        push_constant_text("Type mismatch.");
-        f_aggregate(3);
-      }
       break;
     case PT_BINOP_NOT_A:
     case PT_BINOP_NOT_A_OR_B:

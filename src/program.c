@@ -11496,7 +11496,7 @@ void yyexplain_not_implements(int severity_level,
   struct pike_string *b_file;
   DECLARE_CYCLIC();
 
-  if (!a || !b) return;
+  if (!b) return;
 
   if (BEGIN_CYCLIC(a, b)) {
     END_CYCLIC();
@@ -11504,7 +11504,7 @@ void yyexplain_not_implements(int severity_level,
   }
   SET_CYCLIC_RET(1);
 
-  a_file = get_program_line(a, &a_line);
+  a_file = a ? get_program_line(a, &a_line) : NULL;
   b_file = get_program_line(b, &b_line);
 
   for(e=0;e<b->num_identifier_references;e++)
@@ -11519,7 +11519,7 @@ void yyexplain_not_implements(int severity_level,
       continue;		/* Skip protected & hidden */
     bid = ID_FROM_INT(b,e);
     if(lfun_strings[LFUN___INIT] == bid->name) continue; /* Skip __INIT */
-    i = find_shared_string_identifier(bid->name,a);
+    i = a ? find_shared_string_identifier(bid->name, a): -1;
     if (i == -1) {
       INT_TYPE bid_line = b_line;
       struct pike_string *bid_file;
@@ -11531,6 +11531,7 @@ void yyexplain_not_implements(int severity_level,
 		    bid_file, bid_line, bid->type,
 		    a_file, a_line, NULL,
                     0, "Missing identifier %pS.", bid->name);
+      if (!a) break;
       continue;
     }
 
@@ -11601,7 +11602,7 @@ void yyexplain_not_implements(int severity_level,
     }
   }
   free_string(b_file);
-  free_string(a_file);
+  if (a_file) free_string(a_file);
   END_CYCLIC();
 }
 
