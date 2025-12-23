@@ -567,7 +567,7 @@ class Test
 
   Error.Compilation compilation_error;
 
-  //! Set the error mode according to @[inhibi_errors], applies any
+  //! Set the error mode according to @[inhibit_errors], applies any
   //! source code plugins by calling @[prepare_source] and finally
   //! compiles the result. Any resulting compilation errors will be
   //! stored in @[compilation_error]. The error mode will be set to
