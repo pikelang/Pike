@@ -1346,6 +1346,39 @@ node *debug_mkefuncallnode(char *function, node *args)
   }
   UNSET_FORCE_RESOLVE(orig_flags);
   n = mkapplynode(n, args);
+
+  /* Special case cf bug #218. */
+  if (is_const(n) && (n->token == F_APPLY) &&
+      (CAR(n)->token == F_CONSTANT) &&
+      (TYPEOF(CAR(n)->u.sval) == T_FUNCTION) &&
+      (SUBTYPEOF(CAR(n)->u.sval) == FUNCTION_BUILTIN)) {
+    /* Applying an efun that returns a constant result. */
+    struct svalue *save_sp = Pike_sp;
+    node *arg = args;
+    while (arg && (arg->token == F_ARG_LIST)) {
+      if (CAR(arg)) {
+        if (CAR(arg)->token != F_CONSTANT) {
+          break;
+        }
+        push_svalue(&CAR(arg)->u.sval);
+      }
+      arg = CDR(arg);
+    }
+    if (!arg || (arg->token == F_CONSTANT)) {
+      /* All the arguments are constants. */
+      if (arg) {
+        push_svalue(&arg->u.sval);
+      }
+      safe_apply_svalue(&CAR(n)->u.sval, Pike_sp - save_sp, 0);
+      if ((Pike_sp != save_sp) && !SAFE_IS_ZERO(Pike_sp-1)) {
+        /* Apply succeeded. */
+        free_node(n);
+        n = mkconstantsvaluenode(Pike_sp-1);
+      }
+    }
+    pop_n_elems(Pike_sp - save_sp);
+  }
+
   return n;
 }
 
