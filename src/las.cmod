@@ -1351,8 +1351,13 @@ node *debug_mkefuncallnode(char *function, node *args)
   if (is_const(n) && (n->token == F_APPLY) &&
       (CAR(n)->token == F_CONSTANT) &&
       (TYPEOF(CAR(n)->u.sval) == T_FUNCTION) &&
-      (SUBTYPEOF(CAR(n)->u.sval) == FUNCTION_BUILTIN)) {
-    /* Applying an efun that returns a constant result. */
+      (SUBTYPEOF(CAR(n)->u.sval) == FUNCTION_BUILTIN) &&
+      CAR(n)->u.sval.u.efun->function) {
+    /* Applying an efun that returns a constant result.
+     *
+     * Note: The test that the function is not NULL is required
+     *       due to eg the implementation of _Static_assert().
+     */
     struct svalue *save_sp = Pike_sp;
     node *arg = args;
     while (arg && (arg->token == F_ARG_LIST)) {
