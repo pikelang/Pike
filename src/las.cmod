@@ -1377,8 +1377,17 @@ node *debug_mkefuncallnode(char *function, node *args)
       safe_apply_svalue(&CAR(n)->u.sval, Pike_sp - save_sp, 0);
       if ((Pike_sp != save_sp) && !SAFE_IS_ZERO(Pike_sp-1)) {
         /* Apply succeeded. */
+        struct pike_type *orig_type;
+        struct pike_type *new_type;
+        fix_type_field(n);
+        orig_type = n->type;
+        add_ref(orig_type);
         free_node(n);
         n = mkconstantsvaluenode(Pike_sp-1);
+        new_type = soft_cast(orig_type, n->type, 0);
+        free_type(n->type);
+        n->type = new_type;
+        free_type(orig_type);
       }
     }
     pop_n_elems(Pike_sp - save_sp);
