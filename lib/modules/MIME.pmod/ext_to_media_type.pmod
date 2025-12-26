@@ -146,18 +146,72 @@ protected mapping ext2type = ([
   "wtx"     : "audio/x-wtx",
 
 
+// -------------------- Font ----------------------
+
+  "ttc"     : "font/collection",
+  "otf"     : "font/otf",
+// font/sfnt
+  "ttf"     : "font/ttf",
+  "woff"    : "font/woff",
+  "woff2"   : "font/woff2",
+
+
+// ------------------- Haptics --------------------
+
+  "ivs"     : "haptics/ivs",
+  "hjif"    : "haptics/hjif",
+  "hmpg"    : "haptics/hmpg",
+
+
 // -------------------- Image ---------------------
 
 // IANA registered
 
+// image/aces
+// image/apng
+// image/avci
+// image/avcs
+  "avif"    : "image/avif",
+  "bmp"     : "image/bmp",
+  "dib"     : "image/bmp",
   "cgm"     : "image/cgm",
+// image/dicom-rle
+// image/dpx
+  "emf"     : "image/emf",
+// image/example
+// image/fits
 // image/g3fax
   // (shortcut)  "gif"     : "image/gif",
+  "heic"    : "image/heic",
+// image/heic-sequence
+  "heif"    : "image/heif",
+// image/heif-sequence
+// image/hej2k
   "ief"     : "image/ief",
+// image/j2c
+// image/jaii
+// image/jais
   "jfif"    : "image/jpeg",
+// image/jls
+// image/jp2
   "jpe"     : "image/jpeg",
   // (shortcut)  "jpeg"    : "image/jpeg",
   // (shortcut)  "jpg"     : "image/jpeg",
+// image/jph
+// image/jphc
+// image/jpm
+// image/jpx
+// image/jxl
+// image/jxr
+// image/jxrA
+// image/jxrS
+// image/jxs
+// image/jxsc
+// image/jxsi
+// image/jxss
+// image/ktx
+// image/ktx2
+// image/naplps
   "pjp"     : "image/jpeg",
   "pjpg"    : "image/jpeg",
 // image/naplps
@@ -165,8 +219,11 @@ protected mapping ext2type = ([
   "btif"    : "image/prs.btif",
   "btf"     : "image/prs.btif",
   "pti"     : "image/prs.pti",
+// image/pwg-raster
+// image/t38
   "tif"     : "image/tiff",
   "tiff"    : "image/tiff",
+// image/tiff-fx
 // image/vnd.cns.inf2
   "djvu"    : "image/vnd.djvu",
   "djv"     : "image/vnd.djvu",
@@ -189,7 +246,6 @@ protected mapping ext2type = ([
 
 // Other
 
-  "bmp"     : "image/x-MS-bmp",
   "cmx"     : "image/x-cmx",
   "clp"     : "image/x-clp",
   "cod"     : "image/cis-cod",
@@ -229,6 +285,8 @@ protected mapping ext2type = ([
   "rs"      : "image/x-sun-raster",
   "svh"     : "image/svh",
   "tga"     : "image/x-targa",
+  "webp"    : "image/webp",
+  "wmf"     : "image/wmf",
   "wi"      : "image/wavelet",
   "xbm"     : "image/x-xbitmap",
   "xpm"     : "image/x-xpixmap",
@@ -1427,8 +1485,6 @@ protected mapping ext2type = ([
   "otf"         : "application/x-font-otf",
   "pcf"         : "application/x-font-pcf",
   "snf"         : "application/x-font-snf",
-  "ttf"         : "application/x-font-ttf",
-  "ttc"         : "application/x-font-ttf",
   "pfa"         : "application/x-font-type1",
   "pfb"         : "application/x-font-type1",
   "pfm"         : "application/x-font-type1",
@@ -1456,7 +1512,6 @@ protected mapping ext2type = ([
   "mvb"         : "application/x-msmediaview",
   "m13"         : "application/x-msmediaview",
   "m14"         : "application/x-msmediaview",
-  "wmf"         : "application/x-msmetafile",
   "wmz"         : "application/x-msmetafile",
   "emz"         : "application/x-msmetafile",
   "mny"         : "application/x-msmoney",
