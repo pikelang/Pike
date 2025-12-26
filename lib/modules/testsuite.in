@@ -1581,7 +1581,7 @@ test_equal(Colors.parse_color("@0,255,255"),({255,0,0}))
 test_equal(Colors.parse_color("%0,100,100,0"),({255,0,0}))
 
 test_eq(Colors.color_name(0),"-")
-test_eq(Colors.color_name( ({0,0}) ), "-")
+test_eq(Colors.color_name( (mixed)({0, 0}) ), "-")
 test_eq(Colors.color_name( ({255,0,0}) ), "red")
 test_eq(Colors.color_name( ({255,61,61}) ), "#ff3d3d")
 test_eq(Colors.color_name( ({105,105,105}) ), "dimgrey")
