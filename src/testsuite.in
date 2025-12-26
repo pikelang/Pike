@@ -9295,8 +9295,9 @@ test_eq(sprintf("%O", typeof(all_constants()["all_constants"])),"mixed")
 dnl The following does test not currently work as typeof("hej3") includes
 dnl character values between '4' and 'd'. Test the parts instead.
 dnl test_true(typeof("hej"+3) >= typeof("hej3"))
-test_true(typeof("hej"+3) >= typeof("hej"))
-test_true(typeof("hej"+3) >= typeof("3"))
+dnl Pranoia: Make sure that the length of the strings are equal.
+test_true(typeof("hej"+3) >= typeof("hejj"))
+test_true(typeof("hej"+3) >= typeof("3333"))
 
 // _typeof
 test_eq(sprintf("%O", _typeof(1)),"int(1)")
