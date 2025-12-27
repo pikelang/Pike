@@ -3,6 +3,11 @@
 # This file scripts the xenofarm actions and creates a result package
 # to send back.
 
+# Simplify informing various scripts that they should apply
+# Xenofarm defaults.
+PIKE_XENOFARM_DEFAULTS="yes"
+export PIKE_XENOFARM_DEFAULTS
+
 log() {
   echo $1 | tee -a xenofarm_result/mainlog.txt
 }
@@ -61,6 +66,9 @@ xenofarm_post_build() {
           $MAKE METATARGET=autodoc.xml \
                 >xenofarm_result/extract_autodoc.txt 2>&1
           log_end $?
+          if [ -f "$BUILDDIR/resolution.log" ]; then
+              cp "$BUILDDIR/resolution.log" xenofarm_result/
+          fi
           if [ $LASTERR = 0 ]; then :; else
               DOC_RESULT=$LASTERR
               break;

@@ -1429,8 +1429,8 @@ test_equal([[ typeof(sprintf("foo%c", 17)); ]],
 test_equal([[ typeof(sprintf("%2c\n", 'a')); ]],
 	   [[ typeof([string(8bit)](mixed)""); ]]);
 dnl Note the following tests the return type of int2char().
-test_equal([[ typeof(sprintf("%c",  1023)); ]],
-	   [[ typeof([string(1023)](mixed)""); ]]);
+test_equal([[ typeof([string(1:)]sprintf("%c",  1023)); ]],
+           [[ typeof("\u03ff"); ]]);
 test_equal([[ typeof(sprintf("%c\n",  1023)); ]],
 	   [[ typeof([string(10 | 1023)](mixed)""); ]]);
 dnl The following is due to (string & sprintf_result) == sprintf_result.
