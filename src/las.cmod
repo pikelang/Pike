@@ -4252,7 +4252,8 @@ void fix_type_field(node *n)
       if (!(lval_list = CAR(n))) {
 	copy_pike_type(n->type, mixed_type_string);
       } else {
-	struct pike_type *t;
+        int count = 0;
+        struct pike_type *t = NULL;
 	node *n2;
 
 	if (lval_list->token == F_LVALUE_LIST) {
@@ -4263,8 +4264,7 @@ void fix_type_field(node *n)
 
 	if (n2) {
 	  copy_pike_type(t, n2->type);
-	} else {
-	  copy_pike_type(t, zero_type_string);
+          count++;
 	}
 	while ((n2 != lval_list) && (lval_list = CDR(lval_list))) {
 	  if (lval_list->token == F_LVALUE_LIST) {
@@ -4276,11 +4276,13 @@ void fix_type_field(node *n)
 	    struct pike_type *tmp = or_pike_types(t, n2->type, 1);
 	    free_type(t);
 	    t = tmp;
+            count++;
 	  }
 	}
 	type_stack_mark();
+        push_int_type(count, count);
 	push_finished_type(t);
-	push_unlimited_array_type(T_ARRAY);
+        push_type(T_ARRAY);
 	free_type(t);
 	n->type = pop_unfinished_type();
       }
@@ -4455,7 +4457,7 @@ void fix_type_field(node *n)
 				  CALL_NOT_LAST_ARG))) {
 	yytype_report(REPORT_ERROR, NULL, 0, s,
 		      NULL, 0, NULL,
-		      0, "Too few arguments to %S (got %d).",
+                      0, "Too few arguments to %pS (got %d).",
 		      name, cs.argno);
 	free_type(s);
 	yytype_report(REPORT_ERROR, NULL, 0, NULL,
@@ -4464,7 +4466,7 @@ void fix_type_field(node *n)
       } else {
 	yytype_report(REPORT_ERROR, NULL, 0, function_type_string,
 		      NULL, 0, f,
-		      0, "Attempt to call a non function value %S.",
+                      0, "Attempt to call a non function value %pS.",
 		      name);
       }
       free_type(f);
