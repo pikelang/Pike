@@ -4280,8 +4280,8 @@ void fix_type_field(node *n)
 	  }
 	}
 	type_stack_mark();
-        push_int_type(count, count);
 	push_finished_type(t);
+        push_int_type(count, count);
         push_type(T_ARRAY);
 	free_type(t);
 	n->type = pop_unfinished_type();
