@@ -8166,7 +8166,7 @@ PMOD_EXPORT void f_permute( INT32 args )
   }
 }
 
-/*! @decl array(array(array)) diff(array a, array b)
+/*! @decl array(2:array(array)) diff(array a, array b)
  *!
  *!   Calculates which parts of the arrays that are common to both, and
  *!   which parts that are not.
@@ -10974,7 +10974,7 @@ void init_builtin_efuns(void)
   /* function(array(0=mixed),array(1=mixed):array(array(array(0)|array(1))) */
   ADD_FUNCTION2("diff", f_diff,
 		tFunc(tArr(tSetvar(0,tMix)) tArr(tSetvar(1,tMix)),
-		      tArr(tArr(tOr(tArr(tVar(0)),tArr(tVar(1)))))), 0,
+                      tLArr(tInt2, tArr(tOr(tArr(tVar(0)),tArr(tVar(1)))))), 0,
 		OPT_TRY_OPTIMIZE);
 
   ADD_FUNCTION2("permute", f_permute, tFunc(tArray tIntPos,tArray), 0,

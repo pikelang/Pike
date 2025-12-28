@@ -297,7 +297,7 @@ array(array) columns(array x, array ind)
 //!
 //! @seealso
 //!   @[Array.diff()], @[Array.diff_longest_sequence()]
-array(array(array)) diff3 (array a, array b, array c)
+array(3: array(array)) diff3 (array a, array b, array c)
 {
   // This does not necessarily produce the optimal sequence between
   // all three arrays. A diff_longest_sequence() that takes any number
@@ -462,7 +462,7 @@ array(array(array)) diff3 (array a, array b, array c)
     ares += ({apart}), bres += ({bpart}), cres += ({cpart});
   }
 
-  return ({ares, bres, cres});
+  return [array(3:)]({ ares, bres, cres });
 }
 
 #if 0
@@ -658,7 +658,8 @@ int(-1..1) oid_sort_func(string a, string b)
     return oid_sort_func(a_rest, b_rest);
 }
 
-protected array(array(array)) low_greedy_diff(array(array) d1, array(array) d2)
+protected array(2: array(array)) low_greedy_diff(array(array) d1,
+                                                 array(array) d2)
 {
   array(array) r1 = ({}), r2 = ({});
   int at, last, seen;
@@ -693,8 +694,8 @@ out:if(sizeof(yb) > sizeof(b))
     }
   }
   if(!seen)
-    return ({ d1, d2 });	// No change.
-  return ({ r1 + d1[seen..], r2 + d2[seen..] });
+    return [array(2:)]({ d1, d2 });	// No change.
+  return [array(2:)]({ r1 + d1[seen..], r2 + d2[seen..] });
 }
 
 //! Like @[Array.diff], but tries to generate bigger continuous chunks of the
@@ -705,7 +706,7 @@ out:if(sizeof(yb) > sizeof(b))
 //! into the somewhat shorter diff arrays
 //! @expr{({ ..., A, Z,     B+C, ... })@}
 //! @expr{({ ..., A, X+B+Y, B+C, ... })@}
-array(array(array)) greedy_diff(array from, array to)
+array(2: array(array)) greedy_diff(array from, array to)
 {
   [array(array) d1, array(array) d2] = diff(from, to);
   [d2, d1] = low_greedy_diff(d2, d1);
