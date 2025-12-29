@@ -40,8 +40,8 @@ int(0..3) extract_cls(int(0..) i) { return [int(0..3)](i & 3); }
 // Class definitions
 
 #define CODEC(X) \
-  array _encode() { return ({ cls, tag, value }); } \
-  void _decode(array(X) x) { [ cls, tag, value ] = x; }
+  array(3: int(0..)|X) _encode() { return [array(3:)]({ cls, tag, value }); } \
+  void _decode(array(3: int(0..)|X) x) { [ cls, tag, value ] = x; }
 
 //! Generic, abstract base class for ASN1 data types.
 class Object

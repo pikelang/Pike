@@ -27,7 +27,7 @@ class Primitive (int cls, int tag, string(8bit) raw)
     return ({ cls, tag, raw });
   }
 
-  void _decode(array(int|string(8bit)) x)
+  void _decode(array(3: int|string(8bit)) x)
   {
     [ cls, tag, raw ] = x;
   }
@@ -60,15 +60,15 @@ protected int read_varint(Stdio.Buffer data,
 
 // @returns
 // @array
-//   @elem int 1
+//   @elem int 0
 //     Class
-//   @elem bool 2
+//   @elem bool 1
 //     Constructed
-//   @elem int 3
+//   @elem int 2
 //     Tag
 // @endarray
-protected array(int) read_identifier(Stdio.Buffer data,
-                                     void|int(0..1) secure)
+protected array(3: int) read_identifier(Stdio.Buffer data,
+                                        void|int(0..1) secure)
 {
   int byte = data->read_int8();
 
@@ -83,7 +83,7 @@ protected array(int) read_identifier(Stdio.Buffer data,
     }
   }
 
-  return ({ cls, constructed, tag });
+  return [array(3:)]({ cls, constructed, tag });
 }
 
 //! @param data
