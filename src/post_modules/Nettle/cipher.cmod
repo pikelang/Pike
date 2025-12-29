@@ -3688,7 +3688,7 @@ PIKECLASS BlockCipher16
      *!
      *! @note
      *!   @rfc{6931:2.6.3@} indicates that the @rfc{3394@} algorithm
-     *!   is also appropriate for @[Camellia].
+     *!   is also appropriate for @[CAMELLIA].
      *!
      *! @seealso
      *!   @[unwrap_key()]
@@ -3831,7 +3831,7 @@ PIKECLASS BlockCipher16
      *!
      *! @note
      *!   @rfc{6931:2.6.3@} indicates that the @rfc{3394@} algorithm
-     *!   is also appropriate for @[Camellia].
+     *!   is also appropriate for @[CAMELLIA].
      *!
      *! @seealso
      *!   @[wrap_key()]
