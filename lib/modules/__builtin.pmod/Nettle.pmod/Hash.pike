@@ -1398,7 +1398,7 @@ class SCRAM
     catch {
       first = line[3..];
       [username, string(8bit) r] =
-	[array(string(8bit))]array_sscanf(line, format);
+        [array(2: string(8bit))]array_sscanf(line, format);
       if (!(nonce = validate_nonce(r)))
 	return 0;
       username = [string]Standards.IDNA.to_unicode(username);
@@ -1447,7 +1447,7 @@ class SCRAM
     string(7bit)|zero validated_r;
     string(7bit)|zero response;
     if (!catch([string(8bit)|zero r, string(8bit) salt, int iters] =
-	       [array(string(8bit)|int)]array_sscanf(line, format))
+               [array(3: string(8bit)|int)]array_sscanf(line, format))
 	&& iters > 0
 	&& (validated_r = validate_nonce(r))
 	&& has_prefix(r, nonce)) {
@@ -1489,7 +1489,7 @@ class SCRAM
     constant format = "c=biws,r=%s,p=%s";
     string(7bit)|zero ret;
     if (!catch([string(8bit) r, string(8bit) p] =
-	       [array(string(8bit))]array_sscanf(line, format))
+               [array(2: string(8bit))]array_sscanf(line, format))
 	&& r == nonce) {
       first += [string(8bit)]sprintf("c=biws,r=%s", r);
       ret = p == clientproof(salted_password) && sprintf("v=%s", server_signature);
