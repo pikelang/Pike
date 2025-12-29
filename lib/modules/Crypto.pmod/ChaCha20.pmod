@@ -15,7 +15,7 @@ inherit Nettle.CHACHA;
 
 //! @module POLY1305
 //!
-//! This is an @[AEAD] cipher consisting of the @[CHACHA] cipher
+//! This is an @[AEAD] cipher consisting of the @[Nettle.CHACHA] cipher
 //! and a @[MAC] based on the POLY1305 algorithm.
 //!
 //! @note

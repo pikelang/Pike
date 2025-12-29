@@ -67,7 +67,7 @@ xenofarm_post_build() {
                 >xenofarm_result/extract_autodoc.txt 2>&1
           log_end $?
           if [ -f "$BUILDDIR/resolution.log" ]; then
-              cp "$BUILDDIR/resolution.log" xenofarm_result/
+              cp "$BUILDDIR/resolution.log" xenofarm_result/resolution_log.txt
           fi
           if [ $LASTERR = 0 ]; then :; else
               DOC_RESULT=$LASTERR
