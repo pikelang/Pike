@@ -4252,7 +4252,7 @@ void fix_type_field(node *n)
       if (!(lval_list = CAR(n))) {
 	copy_pike_type(n->type, mixed_type_string);
       } else {
-        int count = 0;
+        int min = 0, max = 0;
         struct pike_type *t = NULL;
 	node *n2;
 
@@ -4262,26 +4262,48 @@ void fix_type_field(node *n)
 	  n2 = lval_list;
 	}
 
-	if (n2) {
-	  copy_pike_type(t, n2->type);
-          count++;
-	}
-	while ((n2 != lval_list) && (lval_list = CDR(lval_list))) {
-	  if (lval_list->token == F_LVALUE_LIST) {
-	    n2 = CAR(lval_list);
-	  } else {
-	    n2 = lval_list;
-	  }
-	  if (n2) {
-	    struct pike_type *tmp = or_pike_types(t, n2->type, 1);
-	    free_type(t);
-	    t = tmp;
-            count++;
-	  }
-	}
+        do {
+          if (n2) {
+            copy_pike_type(t, n2->type);
+            if (n2->token == F_DOT_DOT_DOT) {
+              max = MAX_INT32;
+              break;
+            }
+            max++;
+            /* NB: Cf docode.c: count_required_multi_assign(). */
+            if ((n2->token != F_ASSIGN) &&
+                (n2->token != F_GET_SET_LVALUE) &&
+                (n2->token != F_COMMA_EXPR)) {
+              min = max;
+            }
+          }
+          while ((n2 != lval_list) && (lval_list = CDR(lval_list))) {
+            if (lval_list->token == F_LVALUE_LIST) {
+              n2 = CAR(lval_list);
+            } else {
+              n2 = lval_list;
+            }
+            if (n2) {
+              struct pike_type *tmp = or_pike_types(t, n2->type, 1);
+              free_type(t);
+              t = tmp;
+              if (n2->token == F_DOT_DOT_DOT) {
+                max = MAX_INT32;
+                break;
+              }
+              max++;
+              /* NB: Cf docode.c: count_required_multi_assign(). */
+              if ((n2->token != F_ASSIGN) &&
+                  (n2->token != F_GET_SET_LVALUE) &&
+                  (n2->token != F_COMMA_EXPR)) {
+                min = max;
+              }
+            }
+          }
+        } while(0);
 	type_stack_mark();
 	push_finished_type(t);
-        push_int_type(count, count);
+        push_int_type(min, max);
         push_type(T_ARRAY);
 	free_type(t);
 	n->type = pop_unfinished_type();
