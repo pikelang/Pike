@@ -134,7 +134,7 @@ class State {
 
   // The (slow) NIST method of generating a DSA prime pair. Algorithm
   // 4.56 of Handbook of Applied Cryptography.
-  protected array(Gmp.mpz) nist_primes(int l)
+  protected array(2: Gmp.mpz) nist_primes(int l)
   {
     if ( (l < 0) || (l > 8) )
       error( "Unsupported key size.\n" );
@@ -389,7 +389,7 @@ class State {
 
   //! Sign the message @[h]. Returns the signature as two @[Gmp.mpz]
   //! objects.
-  array(Gmp.mpz) raw_sign(Gmp.mpz h, Gmp.mpz k = random_exponent())
+  array(2: Gmp.mpz) raw_sign(Gmp.mpz h, Gmp.mpz k = random_exponent())
   {
     Gmp.mpz r = [object(Gmp.mpz)](g->powm(k, p) % q);
     Gmp.mpz s = [object(Gmp.mpz)]((k->invert(q) * (h + [object(Gmp.mpz)](x*r))) % q);

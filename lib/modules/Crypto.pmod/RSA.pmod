@@ -174,7 +174,7 @@ protected class LowState {
 
     if(bits<89) error("Too small key length.\n");
 
-    array(Gmp.mpz) key = Nettle.rsa_generate_keypair(bits, e, random);
+    array(4: Gmp.mpz) key = Nettle.rsa_generate_keypair(bits, e, random);
     if(!key) error("Error generating key.\n");
     [ n, d, p, q ] = key;
     this::e = Gmp.mpz(e);

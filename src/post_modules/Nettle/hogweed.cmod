@@ -41,7 +41,7 @@ static void random_func_wrapper(void *f, pike_nettle_size_t num, uint8_t *out)
   pop_stack();
 }
 
-/*! @decl array(object(Gmp.mpz)) @
+/*! @decl array(5: object(Gmp.mpz)) @
  *!         dsa_generate_keypair(int p_bits, int q_bits, @
  *!                              function(int(0..):string(0..255)) rnd)
  *!
@@ -72,7 +72,7 @@ static void random_func_wrapper(void *f, pike_nettle_size_t num, uint8_t *out)
  *!       The value x, the private value.
  *!   @endarray
  */
-PIKEFUN array(object(Gmp.mpz))
+PIKEFUN array(5: object(Gmp.mpz))
   dsa_generate_keypair(int p_bits, int q_bits, function(int(0..):string(0..255)) rnd)
 {
 #ifdef dsa_params_init
@@ -140,7 +140,7 @@ PIKEFUN array(object(Gmp.mpz))
   stack_pop_n_elems_keep_top(args); /* Remove p_bits, q_bits and rnd. */
 }
 
-/*! @decl array(object(Gmp.mpz)) @
+/*! @decl array(4: object(Gmp.mpz)) @
  *!         rsa_generate_keypair(int bits, int e, @
  *!                              function(int(0..):string(0..255)) rnd)
  *!
@@ -159,7 +159,7 @@ PIKEFUN array(object(Gmp.mpz))
  *!       The value q, a prime.
  *!   @endarray
  */
-PIKEFUN array(object(Gmp.mpz))
+PIKEFUN array(4: object(Gmp.mpz))
   rsa_generate_keypair(int bits, int e, function(int(0..):string(0..255)) rnd)
 {
   struct rsa_public_key pub;
@@ -281,7 +281,7 @@ program_flags PROGRAM_CLEAR_STORAGE;
     }
   }
 
-  /*! @decl array(Gmp.mpz) generate_keypair(function(int(0..):string(8bit)) rnd)
+  /*! @decl array(2: Gmp.mpz) generate_keypair(function(int(0..):string(8bit)) rnd)
    *!
    *! Generate a Diffie-Hellman key pair.
    *!
@@ -294,7 +294,7 @@ program_flags PROGRAM_CLEAR_STORAGE;
    *!       The corresponding private key.
    *!   @endarray
    */
-  PIKEFUN array(Gmp_mpz) generate_keypair(function(int(0..):string(8bit)) rnd)
+  PIKEFUN array(2: Gmp_mpz) generate_keypair(function(int(0..):string(8bit)) rnd)
   {
     int psgn = mpz_sgn(THIS->params.p);
     mpz_t pub;
@@ -1201,12 +1201,12 @@ PIKECLASS ECC_Curve
       RETURN ret;
     }
 
-    /*! @decl array(Gmp.mpz) raw_sign(string(8bit) digest)
+    /*! @decl array(2: Gmp.mpz) raw_sign(string(8bit) digest)
      *!
      *! Sign the message digest @[digest]. Returns the signature
      *! as two @[Gmp.mpz] objects.
      */
-    PIKEFUN array(object(Gmp.mpz)) raw_sign(string(8bit) digest)
+    PIKEFUN array(2: object(Gmp.mpz)) raw_sign(string(8bit) digest)
     {
       struct dsa_signature sig;
 
@@ -1299,12 +1299,12 @@ PIKECLASS ECC_Curve
       RETURN ret;
     }
 
-    /*! @decl array(Gmp.mpz) raw_sign(string(8bit) digest)
+    /*! @decl array(2: Gmp.mpz) raw_sign(string(8bit) digest)
      *!
      *! Sign the message digest @[digest]. Returns the signature
      *! as two @[Gmp.mpz] objects.
      */
-    PIKEFUN array(object(Gmp.mpz)) raw_sign(string(8bit) digest)
+    PIKEFUN array(2: object(Gmp.mpz)) raw_sign(string(8bit) digest)
     {
       struct dsa_signature sig;
       struct object *r, *s;
