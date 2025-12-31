@@ -63,7 +63,7 @@
 #include "constants.h"
 #include "interpret.h"
 #include "svalue.h"
-#include "threads.h"
+#include "pike_threads.h"
 #include "array.h"
 #include "mapping.h"
 #include "pike_error.h"
@@ -182,6 +182,7 @@ static void memory_create(INT32 args)
  *!	PROT_READ|PROT_WRITE, readable and writable, but if it fails
  *!	it will try once more in PROT_READ only.
  */
+#ifdef HAVE_MMAP
 static inline off_t file_size(int fd)
 {
   PIKE_STAT_T tmp;
@@ -190,6 +191,7 @@ static inline off_t file_size(int fd)
      return (off_t)tmp.st_size;
   return -1;
 }
+#endif
 
 #define RETURN(ZERO)							\
    do									\
@@ -238,7 +240,8 @@ static void memory_shm( INT32 args )
   {
     HANDLE handle;
     char id[4711];
-    sprintf( id, "pike.%ld", Pike_sp[-args].u.integer );
+    snprintf( id, sizeof(id),
+              "pike.%"PRINTPIKEINT"d", Pike_sp[-args].u.integer );
     THIS->size = Pike_sp[1-args].u.integer;
     THIS->flags = MEM_READ|MEM_WRITE|MEM_FREE_SHMDEL;
     pop_n_elems(args);
@@ -427,6 +430,9 @@ static void memory__mmap(INT32 args,int complain,int private)
    RETURN(1); /* ok */
 
 #else /* HAVE_MMAP */
+   (void) args;
+   (void) complain;
+   (void) private;
    Pike_error("System has no mmap() (sorry).\n");
 #endif
 }

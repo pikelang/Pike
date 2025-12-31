@@ -25,6 +25,9 @@
 /* Define if you have the avformat library (-lavformat).  */
 #undef HAVE_LIBAVFORMAT
 
+/* Define if you have the avutil library (-lavutil).  */
+#undef HAVE_LIBAVUTIL
+
 /* Define if you have the libmp3lame library (-lmp3lame).  */
 #undef HAVE_LIBMP3LAME
 
@@ -39,6 +42,9 @@
 
 /* Define if AVCodecContext contains the field frame_rate. */
 #undef HAVE_AVCODECCONTEXT_FRAME_RATE
+
+/* Define if AVCodecContext contains the field ch_layout. */
+#undef HAVE_AVCODECCONTEXT_CH_LAYOUT
 
 /* Define if AVCodec contains the field encode2. */
 #undef HAVE_AVCODEC_ENCODE2

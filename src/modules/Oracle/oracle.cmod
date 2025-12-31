@@ -27,7 +27,7 @@
 #include "operators.h"
 #include "pike_compiler.h"
 #include "pike_types.h"
-#include "threads.h"
+#include "pike_threads.h"
 #include "module_support.h"
 #include "builtin_functions.h"
 #include "pike_macros.h"
@@ -519,6 +519,7 @@ PIKECLASS oracle
 
 /************/
 
+static void DECLSPEC(noreturn) ora_error_handler(OCIError *err, sword rc, char *func) ATTRIBUTE((noreturn));
 static void ora_error_handler(OCIError *err, sword rc, char *func)
 {
   /* FIXME: we might need to do switch(rc) */
@@ -544,7 +545,7 @@ static void ora_error_handler(OCIError *err, sword rc, char *func)
   push_int(2);
   f_unicode_to_string(2);
 #else
-  push_text(msgbuf);
+  push_text((char *)msgbuf);
 #endif
 
   /* Note that the error string as returned by Oracle ends with a linefeed,
@@ -612,7 +613,7 @@ OCIError *get_global_error_handle(void)
       flags ID_PROTECTED;
     {
       char tmp[100];
-      sprintf(tmp, "Oracle.LOB(%p)", THIS_DBLOB->lob);
+      snprintf(tmp, sizeof(tmp), "Oracle.LOB(%p)", THIS_DBLOB->lob);
       pop_n_elems(args);
       push_text(tmp);
     }

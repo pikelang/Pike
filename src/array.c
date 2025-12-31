@@ -1930,7 +1930,13 @@ PMOD_EXPORT int array_equal_p(struct array *a, struct array *b, struct processin
   if(a == b) return 1;
   if(!a || !b) return 0;
   if(a->size != b->size) return 0;
+  if ((a->flags ^ b->flags) & ARRAY_WEAK_FLAG) {
+    /* Weak flag differs. */
+    return 0;
+  }
   if(!a->size) return 1;
+
+  if ((a->flags ^ b->flags) & ARRAY_WEAK_FLAG) return 0;
 
 #ifdef PIKE_DEBUG
   if(d_flag > 1)
@@ -2368,7 +2374,6 @@ void describe_array_low(struct byte_buffer *buf, struct array *a, struct process
 #ifdef PIKE_DEBUG
 void simple_describe_array(struct array *a)
 {
-  char *s;
   if (!a) {
     fputs("NULL-array\n", stderr);
   } else if (a->size) {
@@ -2406,16 +2411,16 @@ void describe_array(struct byte_buffer *buffer,struct array *a,struct processing
   {
     if(p->pointer_a == (void *)a)
     {
-      sprintf(buf,"@%ld",(long)e);
+      snprintf(buf, sizeof(buf), "@%ld", (long)e);
       buffer_add_str(buffer, buf);
       return;
     }
   }
 
   if (a->size == 1) {
-    sprintf(buf, "({ /* 1 element */\n");
+    snprintf(buf, sizeof(buf), "({ /* 1 element */\n");
   } else {
-    sprintf(buf, "({ /* %ld elements */\n", (long)a->size);
+    snprintf(buf, sizeof(buf), "({ /* %ld elements */\n", (long)a->size);
   }
   buffer_add_str(buffer, buf);
   describe_array_low(buffer,a,&doing,indent);

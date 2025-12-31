@@ -17,7 +17,7 @@
 #define __PIKE_SYBASE_SYBASE_H
 #ifdef HAVE_SYBASE
 
-#include "threads.h"
+#include "pike_threads.h"
 
 #ifdef HAVE_SYBASEOPENCLIENT_SYBASEOPENCLIENT_H
 #include <SybaseOpenClient/SybaseOpenClient.h>

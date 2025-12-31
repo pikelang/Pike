@@ -279,11 +279,15 @@ if test "x$enable_binary" != "xno"; then
   AC_MINIX
 fi
 
+SLOW_PIKE=""
 if_autoconf(2,50,[
   # echo;echo;echo End timeout at: `date`; echo; echo
   kill "$timeout_pid" 2>/dev/null
-  if test "x$cache_file$force_config_cache" = "x/dev/nullyes"; then
+  if test "x$force_config_cache" = "xyes"; then
       PIKE_MSG_NOTE([Slow configure detected.])
+      SLOW_PIKE="yes"
+  fi
+  if test "x$cache_file$force_config_cache" = "x/dev/nullyes"; then
       PIKE_MSG_NOTE([Enabling the configure cache for performance reasons.])
       if test "x$CONFIG_CACHE_FILE" = "x"; then
           cache_file=./config.cache
@@ -300,12 +304,14 @@ if_autoconf(2,50,[
       fi
   fi
 ])
+AC_SUBST(SLOW_PIKE)
 
 #############################################################################
 
 # ABI selection.
 
 PIKE_SELECT_ABI
+ABI=${pike_cv_abi}
 
 #############################################################################
 
@@ -752,19 +758,44 @@ esac
 # Smartlink needs to know if OS X uses flat or two-level namespace
 if test "$pike_cv_sys_os" = "Darwin" ; then
   AC_MSG_CHECKING([for Darwin linker namespace])
-  case "`uname -r`" in
-    [1-6].*)
-      AC_MSG_RESULT([flat (10.2 or older)])
-      pike_cv_osx_twolevel_namespace=no
-    ;;
-    *)
-      AC_DEFINE(USE_OSX_TWOLEVEL_NAMESPACE)
-      AC_MSG_RESULT([two-level (10.3 or newer)])
-      pike_cv_osx_twolevel_namespace=yes
-    ;;
-  esac
-fi
 
+  AC_CACHE_VAL(pike_cv_osx_deployment_target, [
+    if test "x$MACOSX_DEPLOYMENT_TARGET" = "x"; then
+      case "`uname -r`" in
+        [[1-6]].*)
+          pike_cv_osx_deployment_target=no
+        ;;
+        [[7-9]].*|1[[0-2]].*)
+          # Darwin 7 - 12 (aka Mac OS X 10.3 - 10.8).
+          # Needs to be 10.3 or better for ld to accept
+          # "-undefined dynamic_lookup"
+          pike_cv_osx_deployment_target=10.3
+        ;;
+        1[[3-9]].*)
+          # Darwin 13 - 19 (aka Mac OS X 10.9 - 10.15).
+          # C++ Name mangling changed here, need to be able to interoperate
+          # with modern libs
+          pike_cv_osx_deployment_target=10.9
+        ;;
+        *)
+          # Darwin 20 or later (aka Mac OS X 11.0 or later).
+          # Third party libraries are typically compiled for the major.0.
+          # This is also what the compiler typically defaults to.
+          pike_cv_osx_deployment_target="`sw_vers -productVersion | cut -d. -f1`.0"
+        ;;
+      esac
+    else
+        pike_cv_osx_deployment_target="$MACOSX_DEPLOYMENT_TARGET"
+    fi
+  ])
+  if test "x$pike_cv_osx_deployment_target" = "xno"; then
+      AC_MSG_RESULT([flat (10.2 or older)])
+  else
+      AC_MSG_RESULT([two-level (${pike_cv_osx_deployment_target} or newer)])
+      AC_DEFINE_UNQUOTED(USE_OSX_TWOLEVEL_NAMESPACE,
+                         ${pike_cv_osx_deployment_target})
+  fi
+fi
 
 # Fix a smartlink
 SMARTLINK="$BUILDDIR/smartlink"
@@ -847,34 +878,6 @@ AC_DEFUN(PIKE_AC_DEBUG, [
   echo "DEBUG: ++++++++++++++++++++++++++++++++++" 1>&AC_FD_CC
 ])
 
-# Convenience function for querying Frameworks
-AC_DEFUN([AC_CHECK_FRAMEWORK],
-[m4_ifval([$3], , [AH_CHECK_FRAMEWORK([$1])])dnl
-AS_LITERAL_IF([$1],
-         [AS_VAR_PUSHDEF([ac_Framework], [ac_cv_framework_$1_$2])],
-         [AS_VAR_PUSHDEF([ac_Framework], [ac_cv_framework_$1''_$2])])dnl
-AC_CACHE_CHECK([for $2 in $1 framework], ac_Framework,
-[ac_check_framework_save_LIBS=$LIBS
-LIBS="-framework $1 $5 $LIBS"
-AC_LINK_IFELSE([AC_LANG_CALL([], [$2])],
-          [AS_VAR_SET(ac_Framework, yes)],
-          [AS_VAR_SET(ac_Framework, no)])
-LIBS=$ac_check_framework_save_LIBS])
-AS_IF([test AS_VAR_GET(ac_Framework) = yes],
-      [m4_default([$3], [AC_DEFINE_UNQUOTED(AS_TR_CPP(HAVE_FRAMEWORK_$1))
-  LIBS="-framework $1 $LIBS"
-])],
-      [$4])dnl
-AS_VAR_POPDEF([ac_Framework])dnl
-])# AC_CHECK_FRAMEWORK
-
-# AH_CHECK_FRAMEWORK(FRAMEWORK)
-# ---------------------
-m4_define([AH_CHECK_FRAMEWORK],
-[AH_TEMPLATE(AS_TR_CPP(HAVE_FRAMEWORK_$1),
-        [Define to 1 if you have the `]$1[' framework (-framework ]$1[).])])
-dnl '`
-
 
 PIKE_AC_DEBUG
 
@@ -939,7 +942,14 @@ LD='$(CC) $(CFLAGS)'
 LC_REQ="-lc"
 
 case "$pike_cv_sys_os" in
-  Darwin*)
+  Darwin*|Haiku*|BeOS*)
+    # According to Clang source the protected behavior is ELF-specific
+    # and not applicable to OS X.
+    #
+    # BeOS and Haiku similarly do not like protected symbols.
+    AC_DEFINE(DISABLE_ATTRIBUTE_VISIBILITY_PROTECTED, 1,
+              [Disable use of __attribute__ ((visibility("protected"))).])
+
       ;;
   SCO*)
      case "$CFLAGS" in
@@ -972,7 +982,7 @@ case "$pike_cv_sys_os" in
   ;;
   BSD/OS*)
     case "`uname -r`" in
-      [4-9].*) ;;
+      [[4-9]].*) ;;
       *) LD="$BINDIR/smartlink shlicc";;
     esac
   ;;
@@ -1402,6 +1412,12 @@ if test "$cflags_is_set" = "no"; then
     AC_SYS_COMPILER_FLAG(-Wchar-subscripts,Wchar_subscripts,WARN)
     AC_SYS_COMPILER_FLAG(-Wno-long-long,Wno_long_long,WARN)
     AC_SYS_COMPILER_FLAG(-Wno-unknown-attributes,Wno_unknown_attributes,WARN)
+    # Solaris 10 has system header files (like eg <X/Xlib.h>) that contain
+    # #pragma ident "..." statements that gcc 3.4.3 complains about.
+    # Gcc 3.4.3 does not support #pragma GCC diagnostic, so we must
+    # unfortunately disable the warning globally.
+    AC_SYS_OS_COMPILER_FLAG(Solaris, -Wno-unknown-pragmas,
+                            Wno_unknown_pragmas, WARN)
 
     if test "x${with_static_linking-}" = "xyes" ; then
       AC_SYS_COMPILER_FLAG(-static,link_static,CFLAGS)
@@ -1409,12 +1425,31 @@ if test "$cflags_is_set" = "no"; then
       :
     fi
 
+    # Attempt to set the C standard to support.
+    #
     # NB: Both $CPP and $CC need to be configured to support
     #     the same version of the C standard. Otherwise there
     #     will be build failures on eg Solaris.
-    AC_SYS_OS_COMPILER_FLAG(Solaris, -std=c99, std_c99, CPP)
-    AC_SYS_OS_COMPILER_FLAG(Solaris, -std=c99, std_c99, CC)
-    AC_SYS_COMPILER_FLAG(-std=c99, std_c99, CFLAGS)
+    AC_SYS_COMPILER_FLAG(-std=c23, std_c23, CFLAGS, [
+      AC_SYS_COMPILER_FLAG(-std=c17, std_c17, CFLAGS, [
+        AC_SYS_COMPILER_FLAG(-std=c11, std_c11, CFLAGS, [
+          AC_SYS_COMPILER_FLAG(-std=c99, std_c99, CFLAGS, [
+          ], [
+            AC_SYS_OS_COMPILER_FLAG(Solaris, -std=c99, std_c99, CPP)
+            AC_SYS_OS_COMPILER_FLAG(Solaris, -std=c99, std_c99, CC)
+          ])
+        ], [
+          AC_SYS_OS_COMPILER_FLAG(Solaris, -std=c11, std_c11, CPP)
+          AC_SYS_OS_COMPILER_FLAG(Solaris, -std=c11, std_c11, CC)
+        ])
+      ], [
+        AC_SYS_OS_COMPILER_FLAG(Solaris, -std=c17, std_c17, CPP)
+        AC_SYS_OS_COMPILER_FLAG(Solaris, -std=c17, std_c17, CC)
+      ])
+    ], [
+      AC_SYS_OS_COMPILER_FLAG(Solaris, -std=c23, std_c23, CPP)
+      AC_SYS_OS_COMPILER_FLAG(Solaris, -std=c23, std_c23, CC)
+    ])
     if test "x$with_gcov" = "xyes"; then
       # Support for gcov
       AC_SYS_COMPILER_FLAG(-fprofile-arcs, fprofile_arcs, CFLAGS)
@@ -1618,6 +1653,9 @@ if test "$cflags_is_set" = "no"; then
     if test "x$with_abi" != "x64"; then
       AC_SYS_COMPILER_FLAG(-read_only_relocs warning, ro_relocs_warn, LDFLAGS)
     fi
+
+    # Silence warnings about duplicate libraries
+    AC_SYS_COMPILER_FLAG([-Wl,-no_warn_duplicate_libraries], Wlno_warn_duplicate_libraries, LDFLAGS)
 
     # Tune based on processor family
     case "`machine`" in
@@ -2015,9 +2053,10 @@ fi
 
 # test for several buildins
 
+dnl fun, arg, code, special_case, special_case_descr
 define(TEST_BUILTIN, [
-    AC_MSG_CHECKING(for $1)
-    AC_CACHE_VAL(translit([pike_cv_builtin_$1], [A-Z], [a-z]), [
+    AC_MSG_CHECKING([for $1]ifelse([$5],,,[ that supports $5]))
+    AC_CACHE_VAL(translit([pike_cv_builtin_$1$4], [A-Z], [a-z]), [
     AC_TRY_LINK([
 $3
 ],[
@@ -2026,19 +2065,20 @@ volatile int foo = 0;
 foo = (int)$1($2);
 return 0;
 ],
-    translit([pike_cv_builtin_$1], [A-Z], [a-z])="yes",
-    translit([pike_cv_builtin_$1], [A-Z], [a-z])="no")
+    translit([pike_cv_builtin_$1$4], [A-Z], [a-z])="yes",
+    translit([pike_cv_builtin_$1$4], [A-Z], [a-z])="no")
     ])
-    AC_MSG_RESULT($translit([pike_cv_builtin_$1], [A-Z], [a-z]))
-    if test "$translit([pike_cv_builtin_$1], [A-Z], [a-z])" = "yes"; then
-      AC_DEFINE(translit([HAS_$1], [a-z], [A-Z]), 1, [Whether $1 is available])
+    AC_MSG_RESULT($translit([pike_cv_builtin_$1$4], [A-Z], [a-z]))
+    if test "$translit([pike_cv_builtin_$1$4], [A-Z], [a-z])" = "yes"; then
+        AC_DEFINE(translit([HAS_$1$4], [a-z], [A-Z]), 1,
+                  [Whether $1 is available]ifelse([$5],,,[ and supports $5]))
     fi
 ])
 
-
+dnl fun, arg, code, special_case, special_case_descr
 define(TEST_BUILTIN_VOID, [
-    AC_MSG_CHECKING(for $1)
-    AC_CACHE_VAL(translit([pike_cv_builtin_$1], [A-Z], [a-z]), [
+    AC_MSG_CHECKING([for $1]ifelse([$5],,,[ that supports $5]))
+    AC_CACHE_VAL(translit([pike_cv_builtin_$1$4], [A-Z], [a-z]), [
     AC_TRY_LINK([
 $3
 ],[
@@ -2046,22 +2086,24 @@ unsigned long lint;
 $1($2);
 return 0;
 ],
-    translit([pike_cv_builtin_$1], [A-Z], [a-z])="yes",
-    translit([pike_cv_builtin_$1], [A-Z], [a-z])="no")
+    translit([pike_cv_builtin_$1$4], [A-Z], [a-z])="yes",
+    translit([pike_cv_builtin_$1$4], [A-Z], [a-z])="no")
     ])
-    AC_MSG_RESULT($translit([pike_cv_builtin_$1], [A-Z], [a-z]))
-    if test "$translit([pike_cv_builtin_$1], [A-Z], [a-z])" = "yes"; then
-      AC_DEFINE(translit([HAS_$1], [a-z], [A-Z]), 1, [Whether $1 is available])
+    AC_MSG_RESULT($translit([pike_cv_builtin_$1$4], [A-Z], [a-z]))
+    if test "$translit([pike_cv_builtin_$1$4], [A-Z], [a-z])" = "yes"; then
+        AC_DEFINE(translit([HAS_$1$4], [a-z], [A-Z]), 1,
+                  [Whether $1 is available]ifelse([$5],,,[ and supports $5]))
     fi
 ])
 
 # Check for compiler builtins/intrinsics.
 #
+# C23:  <stdbit.h>
 # ECC:  <emmintrin.h>
 # ICC:  <immintrin.h>
 # IBMC: <builtins.h>
 # MSVC: <intrin.h>
-AC_CHECK_HEADERS(intrin.h emmintrin.h immintrin.h builtins.h \
+AC_CHECK_HEADERS(stdbit.h intrin.h emmintrin.h immintrin.h builtins.h \
                  machine/bswap.h sys/endian.h util.h)
 
 # RDRND hardware random support
@@ -2129,6 +2171,12 @@ TEST_BUILTIN(__cnttz4, 23, [
 TEST_BUILTIN(__cnttz8, 23, [
     #include <builtins.h>
 ])
+# C23 intrinsics
+dnl SmartOS/Solaris 5.11/x86_64 apparently has a stdc_leading_zeros()
+dnl that does not support __int128.
+TEST_BUILTIN(stdc_leading_zeros, [(unsigned __int128)0], [
+#include <stdbit.h>
+], [_int128], [__int128])
 
 
 #############################################################################
@@ -2605,7 +2653,7 @@ if test "x${AR-}" = x ; then
 fi
 AC_SUBST(AR)
 
-# PaX flags control (NetBSD).
+# PaX flags control (NetBSD or Linux).
 if test "x${PAXCTL-}" = x ; then
     # Linux:  /sbin/paxctl
     # NetBSD: /usr/sbin/paxctl
@@ -2625,23 +2673,61 @@ if test "x${CANDLE-}" = x ; then
   PIKE_NT_PROG(CANDLE, candle, , $PATH:$EXTRA_PATH)
   export CANDLE
 fi
-AC_SUBST(CANDLE)
-if test "x${CANDLE-}" != x -a "x${CANDLE_ARCH-}" = x ; then
-  AC_CHECK_DECL([_M_AMD64], [CANDLE_ARCH="x64"],,[#include <windows.h>])
-  AC_CHECK_DECL([_M_ARM],   [CANDLE_ARCH="arm"],,[#include <windows.h>])
-  AC_CHECK_DECL([_M_ARM64], [CANDLE_ARCH="arm64"],,[#include <windows.h>])
-  AC_CHECK_DECL([_M_IA64],  [CANDLE_ARCH="ia64"],,[#include <windows.h>])
-  AC_CHECK_DECL([_M_IX86],  [CANDLE_ARCH="x86"],,[#include <windows.h>])
-  export CANDLE_ARCH
+if test "x${CANDLE-}" = x ; then :; else
+    AC_MSG_CHECKING([Candle version])
+    CANDLE_VERSION="`$CANDLE -\? | head -1 | sed -e 's/.*[[vV]]ersion //'`"
+    export CANDLE_VERSION
+    AC_MSG_RESULT([$CANDLE_VERSION])
+    if test "x${CANDLE_ARCH-}" = x ; then
+        AC_MSG_CHECKING([Candle target architecture])
+        AC_CHECK_DECL([_M_AMD64], [CANDLE_ARCH="x64"],,[#include <windows.h>])
+        AC_CHECK_DECL([_M_ARM],   [CANDLE_ARCH="arm"],,[#include <windows.h>])
+        AC_CHECK_DECL([_M_ARM64], [CANDLE_ARCH="arm64"],,[#include <windows.h>])
+        AC_CHECK_DECL([_M_IA64],  [CANDLE_ARCH="ia64"],,[#include <windows.h>])
+        AC_CHECK_DECL([_M_IX86],  [CANDLE_ARCH="x86"],,[#include <windows.h>])
+        export CANDLE_ARCH
+        AC_MSG_RESULT([$CANDLE_ARCH])
+    fi
+
+    case "$CANDLE_VERSION" in
+        2.*)
+            ;;
+        *)
+            # Wix 3 or later.
+            CANDLE_OPTS="-arch $CANDLE_ARCH"
+            ;;
+    esac
+    export CANDLE_OPTS
 fi
+AC_SUBST(CANDLE)
+AC_SUBST(CANDLE_VERSION)
 AC_SUBST(CANDLE_ARCH)
+AC_SUBST(CANDLE_OPTS)
 
 # Wix linker
 if test "x${LIGHT-}" = x ; then
   PIKE_NT_PROG(LIGHT, light, , $PATH:$EXTRA_PATH)
   export LIGHT
 fi
+if test "x${LIGHT-}" = x ; then :; else
+    AC_MSG_CHECKING([Light version])
+    LIGHT_VERSION="`$LIGHT -\? | head -1 | sed -e 's/.*[[vV]]ersion //'`"
+    export LIGHT_VERSION
+    AC_MSG_RESULT([$LIGHT_VERSION])
+
+    case "$LIGHT_VERSION" in
+        2.*)
+            ;;
+        *)
+            # Wix 3 or later.
+            LIGHT_OPTS="-sice:ICE39"
+            ;;
+    esac
+    export LIGHT_OPTS
+fi
 AC_SUBST(LIGHT)
+AC_SUBST(LIGHT_VERSION)
+AC_SUBST(LIGHT_OPTS)
 
 # Wix tool
 # This one doesn't exist any more in WiX 3.x.
@@ -2663,13 +2749,18 @@ if test "x${RCEXE-}" = x ; then
   export RCEXE
 fi
 AC_SUBST(RCEXE)
+if test "x${WINDRES-}" = x ; then
+  AC_PATH_PROG(WINDRES, windres, , $PATH:$EXTRA_PATH)
+  export WINDRES
+fi
+AC_SUBST(WINDRES)
 
 #############################################################################
 
 AC_ARG_WITH(small-eval-instruction,
         MY_DESCR([--with-small-eval-instruction],
                  [attempt to reduce the size of eval_instruction (EXPERIMENTAL).]), [
-  PIKE_MSG_WARN([Small eval_instruction requested. Note that this disables
+  PIKE_MSG_NOTE([Small eval_instruction requested. Note that this disables
 runtime machine-code generation.])
   AC_DEFINE(PIKE_SMALL_EVAL_INSTRUCTION)
   with_machine_code="no"
@@ -2678,20 +2769,42 @@ AC_ARG_WITH(machine-code,
         MY_DESCR([--without-machine-code],
                  [do not try to use machine code on supported architectures.]),
         [], [
-  if test "x${with_machine_code-}" = x; then
-    case "x$pike_cv_sys_os:${PAXCTL-no}" in
+  if test "x${with_machine_code:-yes}:${PAXCTL:-no}" = x"yes:no"; then
+      # Check if there are other methods to enable RWX mapping of memory.
+      # FreeBSD: procctl(2)
+      AC_CHECK_HEADERS(sys/procctl.h)
+      AC_CHECK_FUNCS(procctl)
+      if test "x${with_machine_code:-}:$ac_cv_func_procctl" = x":yes"; then
+          with_machine_code="yes"
+      fi
+  fi
+  if test "x${with_machine_code:-}" = x; then
+    case "x$pike_cv_sys_os:${PAXCTL:-no}" in
       xOpenBSD*)
-        PIKE_MSG_WARN([OpenBSD detected, disabling machine code.
+        PIKE_MSG_NOTE([OpenBSD detected, disabling machine code.
 Use --with-machine-code to force use of machine code support.])
         with_machine_code="no"
         ;;
       xFreeBSD*)
-        PIKE_MSG_WARN([FreeBSD detected, disabling machine code.
+        # uname -K was added in FreeBSD 10.0.
+        # The semantics of the output of uname -K is not
+        # documented properly, but appears to be <major><minor:2><build:3>.
+        # Eg:
+        #   FreeBSD 11.0 --> 1100512
+        #   FreeBSD 11.1 --> 1101505
+        #   FreeBSD 15.0 --> 1500039
+        if uname -K >/dev/null && [ "`uname -K`" -ge 1301000 ]; then
+            # PROC_WXMAP_CTL was added in september of 2021
+            # to FreeBSD 13.1 and later. Enforcement was added later.
+            PIKE_MSG_NOTE([FreeBSD detected, disabling machine code.
 Use --with-machine-code to force use of machine code support.])
-        with_machine_code="no"
+            with_machine_code="no"
+        else
+            with_machine_code="yes"
+        fi
         ;;
       xNetBSD*:no)
-        PIKE_MSG_WARN([NetBSD detected and no paxctl(8), disabling machine code.
+        PIKE_MSG_NOTE([NetBSD detected and no paxctl(8), disabling machine code.
 Use --with-machine-code to force use of machine code support.])
         with_machine_code="no"
         ;;
@@ -2741,7 +2854,7 @@ esac
 AC_MSG_CHECKING(for yacc clone that handles %pure_parser)
 AC_CACHE_VAL(pike_cv_prog_working_yacc,
 [
-for YACC in pyacc "byacc -s" "bison -y" yacc "None"; do
+for YACC in pyacc "byacc -s" "bison -y -Wno-deprecated -Wno-yacc" "bison -y -Wno-deprecated" "bison -y -Wno-yacc" "bison -y" yacc "None"; do
   set dummy $YACC; ac_word=$2
   has_it=no
   IFS="${IFS= 	}"; ac_save_ifs="$IFS"; IFS="${IFS}:"
@@ -2759,7 +2872,7 @@ cat >conftest.y<<\EOF
 %pure_parser
 %{
 #include <stdlib.h>
-#define YYSTYPE void
+#define YYSTYPE unsigned char
 int yylex(YYSTYPE *yylval);
 void parse(void);
 void yyerror(char *);
@@ -2826,11 +2939,10 @@ pike_cv_prog_working_yacc="$YACC"
 
 YACC="$pike_cv_prog_working_yacc"
 
+AC_MSG_RESULT($YACC)
 if test "x$YACC" = "xNone" ; then
-  AC_MSG_RESULT([Get bison if you want to do "make export"])
+  AC_MSG_WARN([Get bison if you want to do "make export"])
   YACC="bison -y"
-else
-  AC_MSG_RESULT($YACC)
 fi
 
 #############################################################################
@@ -2841,6 +2953,7 @@ AC_CACHE_VAL(pike_cv_short_use,
   pike_cv_short_use=unknown
   for short_use in CT_SHORT CT_SHORT_INT; do
     cat >conftest.y <<EOF
+%pure_parser
 %{
 #define $short_use
 #ifdef CT_SHORT
@@ -2848,7 +2961,7 @@ AC_CACHE_VAL(pike_cv_short_use,
 #else
 #define short
 #endif
-#define YYSTYPE void
+#define YYSTYPE unsigned char
 int yylex(YYSTYPE *yylval);
 void parse(void);
 void yyerror(char *);
@@ -3046,7 +3159,7 @@ AC_CHECK_HEADERS(winsock2.h sys/rusage.h sys/time.h \
                  memory.h strings.h stdalign.h float.h \
 		 fcntl.h sys/filio.h sys/sockio.h crypt.h \
 		 sys/select.h net/socket.h sys/param.h io.h \
-		 sys/mman.h sys/user.h pthread.h \
+                 sys/mman.h sys/user.h pthread.h threads.h \
 		 sys/id.h mach-o/dyld.h sys/ptrace.h \
 		 thread.h dlfcn.h dld.h dl.h sys/times.h sched.h \
 		 sys/procfs.h sys/socket.h sys/uio.h fcntl.h \
@@ -3056,7 +3169,7 @@ AC_CHECK_HEADERS(winsock2.h sys/rusage.h sys/time.h \
 		 sys/priocntl.h sys/sched.h winbase.h \
 		 sys/termio.h termios.h sys/termios.h \
                  sys/sendfile.h utime.h sys/utime.h \
-                 xmath.h ymath.h \
+                 rctl.h xmath.h ymath.h \
 		 ws2tcpip.h valgrind/memcheck.h memcheck.h valgrind.h \
 		 sys/prctl.h sys/ioctl.h mach/task_info.h mach/task.h \
 		 mach/mach_init.h syscall.h sys/syscall.h devices/timer.h \
@@ -3252,8 +3365,8 @@ AC_CHECK_FUNCS(sigsetjmp _setjmp siglongjmp _longjmp)
 default_backend_method=select
 # Make it possible to disable use of /dev/poll.
 if test "x$with_devpoll" = "xno"; then :; else
-  AC_CHECK_HEADERS(sys/devpoll.h sys/event.h sys/epoll.h)
-  AC_CHECK_FUNCS(kqueue)
+  AC_CHECK_HEADERS(sys/port.h sys/devpoll.h sys/event.h sys/epoll.h)
+  AC_CHECK_FUNCS(port_create kqueue)
   AC_CHECK_FRAMEWORK(CoreServices, CFRunLoopRunInMode)
   AC_CHECK_FUNCS(CFRunLoopRunInMode)
   AC_MSG_CHECKING(for poll device)
@@ -3295,6 +3408,10 @@ if test "x$with_devpoll" = "xno"; then :; else
 
   if test "x$ac_cv_func_kqueue" = "xyes"; then
     default_backend_method=kqueue
+  fi
+
+  if test "x$ac_cv_func_port_create" = "xyes"; then
+    default_backend_method=port_create
   fi
 
   if test "x$ac_cv_header_sys_epoll_h" = "xyes"; then
@@ -3682,7 +3799,6 @@ if test "x$pike_cv_sys_os" = "xWindows_NT" ; then
 
   AC_DEFINE(_REENTRANT)
   AC_DEFINE(_THREAD_SAFE)
-  AC_DEFINE(_UNIX_THREADS)
   AC_DEFINE(NT_THREADS)
   AC_DEFINE(PIKE_THREADS)
   using_threads="yes (nt)"
@@ -3691,7 +3807,9 @@ if test "x$pike_cv_sys_os" = "xWindows_NT" ; then
 
 else
 
-  # Test for POSIX threads
+  # Test for POSIX threads.
+  #
+  # This API was first specified in POSIX.1c (aka IEEE 1003.1c-1995).
 
   if test "x$with_thread_library" != "xno"; then
     AC_MSG_CHECKING([for thread library])
@@ -3816,7 +3934,7 @@ int main(int argc, char **argv)
       #
       AC_MSG_CHECKING([whether Darwin dislikes threads and mach includes])
       case "`uname -r`" in
-        [1-9].*)
+        [[1-9]].*)
           AC_MSG_RESULT([no (10.5 or older)])
       	  ;;
         *)
@@ -4150,7 +4268,68 @@ extern pthread_t bar;
 
     # No POSIX threads.
 
-    # Try UNIX threads instead
+    # Try C11 threads instead
+    AC_MSG_CHECKING(C11 threads)
+    AC_CACHE_VAL(pike_cv_c11_threads, [
+      AC_TRY_COMPILE([
+/* The following should cause a preprocessor (or compiler) failure when
+ * C11 threads are not supported.
+ */
+#if !defined(__STDC_VERSION__)
+#error "Not C94 or later."
+#elif __STDC_VERSION__ - 0 < 201112
+#error "Not C11 or later."
+#elif defined(__STDC_NO_THREADS__)
+#error "C11 threads not supported."
+#endif
+#include <threads.h>
+],[ return 0; ], [
+        pike_cv_c11_threads=maybe
+], [pike_cv_c11_threads=no])
+                 ])
+
+    if test "x$pike_cv_c11_threads" = "xmaybe"; then
+        # NB: The RESULT and CHECKING here are due to SEARCH_LIBS
+        #     having its own output. This is also the reason for
+        #     the existence of the maybe value.
+        AC_MSG_RESULT(maybe)
+        AC_SEARCH_LIBS(thrd_create, [threads pthread],
+                       [pike_cv_c11_threads=yes],[pike_cv_c11_threads=no])
+        AC_MSG_CHECKING(C11 threads again)
+    fi
+
+    if test "x$pike_cv_c11_threads" = "xyes"; then
+        AC_MSG_RESULT(yes)
+        AC_DEFINE(_REENTRANT)
+        AC_DEFINE(_THREAD_SAFE)
+        AC_DEFINE(C11_THREADS,1,
+                  [Define this if you want the C11 (or later) taste of threads])
+        AC_DEFINE(PIKE_THREADS)
+        using_threads="yes (C11 or later)"
+
+        AC_MSG_CHECKING([behaviour of the thrd_t type])
+        AC_CACHE_VAL(pike_cv_thread_t_type, [
+          AC_TRY_COMPILE([
+#include <sys/types.h>
+#include <stdlib.h>
+#include <stddef.h>
+#include <threads.h>
+extern thrd_t bar;
+          ], [
+            void *foo = (void *)(ptrdiff_t)bar;
+            return 0;
+          ], [ pike_cv_thread_t_type=integer ], [
+               pike_cv_thread_t_type=pointer ])
+        ])
+        AC_MSG_RESULT($pike_cv_thread_t_type)
+
+    else
+        AC_MSG_RESULT(no)
+
+    # Try UNIX threads instead.
+    #
+    # These where the precursor to posix threads (aka pthreads) further above.
+    # Typically used on OSes of the same vintage as Solaris 2.4 (ie ~1994).
 
     AC_MSG_CHECKING(unix threads)
     case "x$pike_cv_sys_os" in
@@ -4171,7 +4350,7 @@ extern pthread_t bar;
       AC_TRY_RUN([
 #define _REENTRANT
 #define _THREAD_SAFE
-#define _MIT_POSIX_THREADS 1
+#define _UNIX_THREADS 1
 #include <stdlib.h>
 #include <thread.h>
 #ifdef _UNIXWARE_THREADS_
@@ -4200,6 +4379,7 @@ int main(void)
       AC_DEFINE(_UNIX_THREADS)
       AC_DEFINE(PIKE_THREADS)
       using_threads="yes (unix)"
+      AC_CHECK_FUNCS(cond_reltimedwait)
     else
       AC_MSG_RESULT(no)
       LIBS="$OLDLIBS"
@@ -4224,6 +4404,7 @@ int main(void)
       #   :
       # fi
     fi # UNIX threads
+    fi # C11 threads
 
     pike_cv_thread_t_type=integer
   fi # POSIX threads
@@ -4460,6 +4641,7 @@ AC_CHECK_FUNCS( \
  getauxval \
  gethrtime \
  gethrvtime \
+ getrctl \
  getrlimit \
  getrusage \
  gettimeofday \
@@ -4485,6 +4667,8 @@ AC_CHECK_FUNCS( \
  tzset \
  snprintf \
  _snprintf \
+ strlcat \
+ strlcpy \
  wait3 \
  wait4 \
  waitpid \
@@ -4548,6 +4732,7 @@ AC_CHECK_FUNCS( \
  SetErrorMode \
  thread_info \
  host_get_clock_service \
+ arc4random \
 )
 
 if test "x$with_poll:$ac_cv_func_poll" = "xyes:yes"; then
@@ -7562,8 +7747,8 @@ fi
 
 #############################################################################
 
-AC_MSG_CHECKING(if port.c works in CONFIGURE_TEST mode)
-AC_CACHE_VAL(pike_cv_configure_test_port_c, [
+AC_MSG_CHECKING(if pike_port.c works in CONFIGURE_TEST mode)
+AC_CACHE_VAL(pike_cv_configure_test_pike_port_c, [
   AC_TRY_RUN([
 #include <stdio.h>
 
@@ -7574,21 +7759,21 @@ AC_CACHE_VAL(pike_cv_configure_test_port_c, [
 #define SVALUE_H
 #define ARRAY_H
 
-#include "port.c"
+#include "pike_port.c"
 
 int main(void)
 {
   return 0;
 }
-  ], pike_cv_configure_test_port_c=yes,
-     pike_cv_configure_test_port_c=no,
-     pike_cv_configure_test_port_c=unknown)
+  ], pike_cv_configure_test_pike_port_c=yes,
+     pike_cv_configure_test_pike_port_c=no,
+     pike_cv_configure_test_pike_port_c=unknown)
 ])
-AC_MSG_RESULT($pike_cv_configure_test_port_c)
-if test "x$pike_cv_configure_test_port_c" = xno; then
+AC_MSG_RESULT($pike_cv_configure_test_pike_port_c)
+if test "x$pike_cv_configure_test_pike_port_c" = xno; then
   AC_MSG_ERROR([
 
-port.c does not work in CONFIGURE_TEST mode. This is an internal
+pike_port.c does not work in CONFIGURE_TEST mode. This is an internal
 problem in Pike. configure aborted since further configure tests will
 be unreliable.
 ])
@@ -7678,7 +7863,7 @@ if test "x$ac_cv_func_gethrvtime" = xyes; then
 #define SVALUE_H
 #define ARRAY_H
 
-#include "port.c"
+#include "pike_port.c"
 
 int main(void)
 {
@@ -7724,7 +7909,7 @@ AC_CACHE_VAL(pike_cv_configure_test_rusage_c, [
 #define SVALUE_H
 #define ARRAY_H
 
-#include "port.c"		/* Tested earlier, but might be required. */
+#include "pike_port.c"		/* Tested earlier, but might be required. */
 #include "rusage.c"
 
 int main(void)
@@ -7747,7 +7932,7 @@ be unreliable.
   exit 1
 fi
 
-AC_MSG_CHECKING(if threads.c works in CONFIGURE_TEST mode)
+AC_MSG_CHECKING(if pike_threads.c works in CONFIGURE_TEST mode)
 AC_CACHE_VAL(pike_cv_configure_test_threads_c, [
   AC_TRY_RUN([
 #define POSIX_SOURCE	1
@@ -7764,8 +7949,8 @@ AC_CACHE_VAL(pike_cv_configure_test_threads_c, [
 #define SVALUE_H
 #define ARRAY_H
 
-#include "port.c"		/* Tested earlier, but might be required. */
-#include "threads.c"
+#include "pike_port.c"		/* Tested earlier, but might be required. */
+#include "pike_threads.c"
 
 int main(void)
 {
@@ -7779,7 +7964,7 @@ AC_MSG_RESULT($pike_cv_configure_test_threads_c)
 if test "x$pike_cv_configure_test_threads_c" = xno; then
   AC_MSG_ERROR([
 
-threads.c does not work in CONFIGURE_TEST mode. This is an internal
+pike_threads.c does not work in CONFIGURE_TEST mode. This is an internal
 problem in Pike. configure aborted since further configure tests will
 be unreliable.
 ])
@@ -7809,9 +7994,9 @@ AC_CACHE_VAL(pike_cv_thread_local_cpu_time, [
 #define SVALUE_H
 #define ARRAY_H
 
-#include "port.c"
+#include "pike_port.c"
 #include "rusage.c"
-#include "threads.c"
+#include "pike_threads.c"
 
 PIKE_MUTEX_T m;
 COND_T c;
@@ -7907,7 +8092,8 @@ int main(void)
 	AC_MSG_ERROR([
 
 Test failed to compile or execute.
-Problems in port.c, rusage.c or threads.c with CONFIGURE_TEST is defined?
+Problems in pike_port.c, rusage.c or pike_threads.c when CONFIGURE_TEST
+is defined?
 ])
         # Don't set pike_cv_thread_local_cpu_time here so that the
         # failure doesn't get cached.
@@ -8072,19 +8258,41 @@ if test -z "$LDSHARED" ; then
       ldshared_is_cc=no
     ;;
     Darwin*)
-      if test "$pike_cv_osx_twolevel_namespace" = yes ; then
-        # 10.3 or newer take advantage of two-level namespaces to avoid
-        # symbol collisions for e.g. libjpeg which is referenced from both
-        # _Image_JPEG and _Image_TIFF. It requires MACOSX_DEPLOYMENT_TARGET
-        # which is initialized in smartlink to 10.3.
-        LDSHARED="$REALCC $CFLAGS -bundle -bind_at_load"
-        case "$MACOSX_DEPLOYMENT_TARGET" in
-          13.*) ;; # -undefined dynamic_lookup is deprecated
-          *) LDSHARED="$LDSHARED -undefined dynamic_lookup";;
-        esac
-      else
-        # Mac OS X prior to 10.3 need -flat_namespace to support dynamic modules
-        LDSHARED="$REALCC $CFLAGS -bundle -bind_at_load -flat_namespace -undefined suppress"
+      case "$pike_cv_osx_deployment_target" in
+        no)
+          # Mac OS X prior to 10.3 need -flat_namespace to support
+          # dynamic modules
+          LDSHARED="$REALCC $CFLAGS -bundle -bind_at_load -flat_namespace -undefined suppress"
+        ;;
+        10.*|11.*)
+          # 10.3 or newer take advantage of two-level namespaces to avoid
+          # symbol collisions for e.g. libjpeg which is referenced from both
+          # _Image_JPEG and _Image_TIFF. It requires MACOSX_DEPLOYMENT_TARGET
+          # which is initialized in smartlink to 10.3.
+          LDSHARED="$REALCC $CFLAGS -bundle -bind_at_load -undefined dynamic_lookup"
+        ;;
+        *)
+          # MacOS X 12.0 and later.
+          # More recent X-code complains about use of
+          # -undefined dynamic_lookup:
+          #
+          #   ld: warning: -undefined dynamic_lookup may not work
+          #   with chained fixups
+          #
+          # There we instead use -bundle_loader $pike_bin analogous
+          # to the way it is done on NT.
+          #
+          # On MacOS X 15.0 and later the linker complains about
+          # -bind_at_load if -bundle_loader is specified. The
+          # flag appears to be redundant, so skip it.
+          LDSHARED="$REALCC $CFLAGS -bundle"
+          LDSHARED_BASE_REQS="pike"
+          LDSHARED_MODULE_ARGS="-bundle_loader `pwd`/pike"
+          LDSHARED_MODULE_REQS="`pwd`/pike"
+        ;;
+      esac
+      if test x"$pike_cv_option_Wlno_warn_duplicate_libraries" = "xyes" ; then
+         LDSHARED="$LDSHARED -Wl,-no_warn_duplicate_libraries"
       fi
     ;;
     SunOS*)
@@ -8165,7 +8373,8 @@ if test -z "$LDSHARED" ; then
     # Make sure to use the same flavor as when compiling the object files.
     LDSHARED="$LDSHARED $CCSHARED"
 
-    if test "$GCC" = "yes" -a "$pike_cv_is_mingw" != "yes" ; then
+    if test "$GCC" = "yes" -a "$pike_cv_is_mingw" != "yes" -a \
+            "$pike_cv_sys_os" != "Darwin" ; then
       # On some architectures gcc attempts to link the shared object with
       # the standard startup files (crt0.o et al), which may fail due to
       # relocation errors. The flag -nostartfiles exists in gcc since at
@@ -8174,7 +8383,7 @@ if test -z "$LDSHARED" ; then
     fi
   fi
 fi
-AC_MSG_RESULT($LDSHARED)
+AC_MSG_RESULT($LDSHARED $LDSHARED_MODULE_ARGS)
 
 AC_MSG_CHECKING(LINKFORSHARED)
 
@@ -8281,6 +8490,23 @@ AC_CACHE_VAL(pike_cv_sys_dynamic_loading,
 [
   mybase=""
   case "$LDSHARED_MODULE_ARGS" in
+    *-bundle_loader*)
+      AC_TRY_LINK([
+#if __GNUC__ >= 4
+__attribute__ ((visibility("default")))
+# endif
+void testfunc2(void) { }
+      ], [ return 0; ], [
+        mybase=mybase
+        mv conftest$ac_exeext $mybase
+      ])
+      if test ! -z "$mybase" ; then
+        mv "$mybase" conftest$ac_exeext
+        ln -s conftest$ac_exeext "$mybase"
+        mybase="-bundle_loader $mybase"
+      fi
+      ;;
+
     *pike.exe)
       AC_TRY_LINK([
 #if __GNUC__ >= 4
@@ -8681,9 +8907,11 @@ fi
 
 AC_SUBST(MT_FIX_PIKE_EXE)
 
-if test "x$RCEXE" != x; then
-  # Windows icon
-  PIKE_ICON_RES=pike_icon.res
+if test "x$pike_cv_sys_os" = xWindows_NT; then
+  if test "x$RCEXE$WINDRES" != x; then
+    # Windows icon
+    PIKE_ICON_RES=pike_icon.res
+  fi
 fi
 AC_SUBST(PIKE_ICON_RES)
 
@@ -8754,6 +8982,7 @@ AC_SUBST(RANLIB)
 AC_SUBST(DEBUGDEF)
 AC_SUBST(EXTRA_MODULE_REQUIREMENTS)
 AC_SUBST(DTRACE_REQUIREMENTS)
+AC_SUBST(ABI)
 
 pike_cv_prog_CC="${CC}"
 
@@ -8768,9 +8997,10 @@ if_autoconf(2,50,[
 
   if test "x$enable_binary" = "xno"; then
     # --disable-binary
-    # LIBS contains lots of junk, which is likely to confuse the real
-    # compiler when the sub-configures run AC_PROG_CC.
+    # LIBS and LDFLAGS contain lots of junk, which is likely to confuse
+    # the real compiler when the sub-configures run AC_PROG_CC.
     LIBS=""
+    LDFLAGS=""
   fi
 ])
 

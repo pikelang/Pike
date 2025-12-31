@@ -35,6 +35,10 @@
 #endif
 #endif
 
+#if !constant(zero)
+typedef int(0..0) zero;
+#endif
+
 // #define GENERATE_WIX_UI
 // #define GENERATE_WIX_ACTIONS
 // #define WIX_DEBUG
@@ -57,6 +61,7 @@ string version_guid = Standards.UUID.make_version3(version_str,
 Directory root = Directory("SourceDir",
 			   Standards.UUID.UUID(version_guid)->encode(),
 			   "TARGETDIR");
+string|zero wix_version;
 #else /* !constant(Standards.UUID.make_version3) */
 #warning Standards.UUID.make_version3 not available.
 #warning Wix support disabled.
@@ -3542,6 +3547,7 @@ int main(int argc, array(string) argv)
     ({"--export",Getopt.NO_ARG,({"--export"})}),
     ({"--wix", Getopt.NO_ARG, ({ "--wix" })}),
     ({"--wix-module", Getopt.NO_ARG, ({ "--wix-module" })}),
+    ({"--wix-version", Getopt.HAS_ARG, ({ "--wix-version" })}),
     ({"--export-amigaos",Getopt.NO_ARG,({"--export-amigaos"})}),
     ({"--traditional",Getopt.NO_ARG,({"--traditional"})}),
     ({"--verbose",Getopt.NO_ARG,({"--verbose"})}),
@@ -3598,6 +3604,10 @@ int main(int argc, array(string) argv)
 				       target, errno());
 			});
 	  return 0;
+
+        case "--wix-version":
+          wix_version = opt[1];
+          break;
 
 	default:
 	  install_type=opt[0];

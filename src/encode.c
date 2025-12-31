@@ -21,7 +21,7 @@
 #include "builtin_functions.h"
 #include "module_support.h"
 #include "fsort.h"
-#include "threads.h"
+#include "pike_threads.h"
 #include "version.h"
 #include "bignum.h"
 #include "pikecode.h"
@@ -789,7 +789,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 
           code_entry(TAG_OBJECT, 2, data);
           ETRACE({
-	      ENCODE_WERR(".bignum  %*s# %ld", 20, "", i);
+	      ENCODE_WERR(".bignum  %*s# %"PRINTPIKEINT"d", 20, "", i);
 	    });
 
           /* Note: conversion to base 36 could be done directly here
@@ -822,7 +822,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
           code_entry(TAG_INT, i, data);
 
           ETRACE({
-	      ENCODE_WERR(".integer %ld", i);
+	      ENCODE_WERR(".integer %"PRINTPIKEINT"d", i);
 	    });
 	}
       }
@@ -1273,7 +1273,8 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
       if (data->canonic)
 	Pike_error("Canonical encoding of programs not supported.\n");
       if (!(val->u.program->flags & PROGRAM_FIXED))
-	Pike_error("Encoding of unfixated programs not supported.\n");
+        Pike_error("Encoding of programs that have not completed "
+                   "compilation not supported.\n");
       check_stack(1);
       push_svalue(val);
       apply(encoder_codec (data),"nameof", 1);
@@ -3298,7 +3299,7 @@ static void decode_value2(struct decode_data *data)
       ETRACE({
 	  ptrdiff_t save_ptr = data->ptr;
 	  data->ptr = data->debug_ptr;
-	  DECODE_WERR("# Decoding to tag #%ld", entry_id.u.integer);
+	  DECODE_WERR("# Decoding to tag #%"PRINTPIKEINT"d", entry_id.u.integer);
 	  data->ptr = save_ptr;
 	});
       /* Types are added to the encoded mapping AFTER they have been

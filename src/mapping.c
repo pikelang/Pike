@@ -2443,8 +2443,10 @@ PMOD_EXPORT int mapping_equal_p(struct mapping *a, struct mapping *b, struct pro
 
   if (a->data == b->data) return 1;
 
-  /* If either is weak, they're different. */
-  if ((a->data->flags | b->data->flags) & MAPPING_WEAK) return 0;
+  if ((a->data->flags ^ b->data->flags) & MAPPING_WEAK) {
+    /* Weak flags differ. */
+    return 0;
+  }
 
   check_mapping_for_destruct(a);
   check_mapping_for_destruct(b);
@@ -2546,7 +2548,7 @@ void describe_mapping(struct byte_buffer *b, struct mapping *m,struct processing
   {
     if(p->pointer_a == (void *)m)
     {
-      sprintf(buf,"@%ld",(long)e);
+      snprintf(buf, sizeof(buf), "@%ld", (long)e);
       buffer_add_str(b, buf);
       return;
     }
@@ -2560,7 +2562,8 @@ void describe_mapping(struct byte_buffer *b, struct mapping *m,struct processing
     if (m->data->size == 1) {
       buffer_add_str(b, "([ /* 1 element */\n");
     } else {
-      sprintf(buf, "([ /* %ld elements */\n", (long)m->data->size);
+      snprintf(buf, sizeof(buf), "([ /* %ld elements */\n",
+               (long)m->data->size);
       buffer_add_str(b, buf);
     }
 
@@ -2592,7 +2595,8 @@ void describe_mapping(struct byte_buffer *b, struct mapping *m,struct processing
     if (m->data->size == 1) {
       buffer_add_str(b, "([ /* 1 element */\n");
     } else {
-      sprintf(buf, "([ /* %ld elements */\n", (long)m->data->size);
+      snprintf(buf, sizeof(buf), "([ /* %ld elements */\n",
+               (long)m->data->size);
       buffer_add_str(b, buf);
     }
 

@@ -34,7 +34,7 @@
 
 #include "pike_macros.h"
 #include "interpret.h"
-#include "threads.h"
+#include "pike_threads.h"
 #include "pike_error.h"
 
 #include "image.h"
@@ -819,7 +819,8 @@ static void image_x_decode_truecolor(INT32 args)
    if (rshift>=bpp || rshift<0 ||
        gshift>=bpp || gshift<0 ||
        bshift>=bpp || bshift<0)
-	 Pike_error("Image.X.decode_truecolor: illegal colorshifts\n");
+      Pike_error("Image.X.decode_truecolor: illegal colorshifts (%d, %d, %d), bpp: %d\n",
+                 rshift, gshift, bshift, bpp);
 
    if (rbits < 0 || gbits < 0 || bbits < 0 ||
        rbits > 24 || gbits > 24 || bbits > 24 ||

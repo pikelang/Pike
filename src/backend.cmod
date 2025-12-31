@@ -22,7 +22,7 @@
 #include "fd_control.h"
 #include "main.h"
 #include "callback.h"
-#include "threads.h"
+#include "pike_threads.h"
 #include "array.h"
 #include <math.h>
 #include "bignum.h"
@@ -86,6 +86,16 @@
 #ifdef HAVE_CORESERVICES_CORESERVICES_H
 #include <CoreServices/CoreServices.h>
 #endif /* HAVE_CORESERVICES_CORESERVICES_H */
+
+#ifdef BACKEND_USES_PORT_CREATE
+/* For port_create(3C) */
+#ifdef HAVE_SYS_PORT_H
+/* NB: <sys/port.h> does not contain the prototypes for port_*().
+ * <port.h> includes <sys/port.h>
+ */
+#include <port.h>
+#endif
+#endif
 
 /* The following are used on Linux'es that have an old libc. */
 #ifdef HAVE_SYSCALL_H
@@ -2906,6 +2916,60 @@ int POLL_DEVICE_SET_EVENTS(struct Backend_struct *me,
   return e;
 }
 
+#elif defined(BACKEND_USES_PORT_CREATE)
+/*
+ * Backend using port_create-style poll device.
+ *
+ * Used on:
+ *   Solaris 10 and later.
+ */
+
+#ifndef PIKE_POLL_DEVICE
+#define PIKE_POLL_DEVICE	"port_create"
+#endif
+
+#define POLL_EVENT		port_event_t
+#define PDB_GET_FD(EVENT)	EVENT.portev_object
+#define PDB_GET_EVENTS(EVENT)	EVENT.portev_events
+
+#define OPEN_POLL_DEVICE(X)	port_create()
+
+#define DECLARE_POLL_EXTRAS		\
+  POLL_EVENT poll_fds[POLL_SET_SIZE];   \
+  uint_t num_fds = 1
+
+#undef TIMEOUT_IS_MILLISECONDS
+#define TIMEOUT_IS_TIMESPEC
+#define PDB_POLL(PFD, TIMEOUT)                                          \
+  ((port_getn(PFD, poll_fds, POLL_SET_SIZE, &num_fds, &TIMEOUT) < 0)?    \
+   -1:(int)num_fds)
+
+int POLL_DEVICE_SET_EVENTS(struct Backend_struct *UNUSED(me),
+                           int pfd, int fd, INT32 events)
+{
+  int e;
+
+  if (events) {
+    PDWERR("port_associate(%d, PORT_SOURCE_FD, %d, 0x%08x, NULL)\n",
+           pfd, fd, events);
+    e = port_associate(pfd, PORT_SOURCE_FD, fd, events, NULL);
+  } else {
+    PDWERR("port_dissociate(%d, PORT_SOURCE_FD, %d)\n", pfd, fd);
+    e = port_dissociate(pfd, PORT_SOURCE_FD, fd);
+  }
+  if (e < 0) {
+    PDWERR("port_%sssociate() failed with errno: %d\n", events?"a":"di", errno);
+    if (!events && (e < 0) && (errno == EINVAL)) {
+      /* File already closed. */
+      e = 0;
+    }
+  }
+
+  return e;
+}
+
+#define PDB_EVENTS_ARE_ONESHOT
+
 #elif defined(BACKEND_USES_DEVEPOLL)
 /*
  * Backend using /dev/epoll-style poll device.
@@ -3143,6 +3207,9 @@ static void pb_copy_selectors(struct pb_selectors *to,
 #endif
 #ifndef PDB_GET_FLAGS
 #define PDB_GET_FLAGS(EVENT)	0
+#endif
+#ifndef PB_GET_FLAGS
+#define PB_GET_FLAGS(EVENT)	0
 #endif
 
 #elif defined(BACKEND_USES_KQUEUE)
@@ -3700,7 +3767,10 @@ PIKECLASS PollDeviceBackend
            THR_NO, me->id, fd, old_events, new_events, flags);
 
 
+#ifndef PDB_EVENTS_ARE_ONESHOT
+    /* Eg port_create(3C) uses one-shot events... */
     if (changed_events) {
+#endif
 
 #ifdef BACKEND_USES_POLL_DEVICE
 
@@ -3836,7 +3906,9 @@ PIKECLASS PollDeviceBackend
       if (new_events & ~old_events)
 	/* New events were added. */
 	backend_wake_up_backend(me);
+#ifndef PDB_EVENTS_ARE_ONESHOT
     }
+#endif
   }
 
   /* Mapping of events to flags and callbacks.
@@ -3879,7 +3951,7 @@ PIKECLASS PollDeviceBackend
   {
 #ifdef BACKEND_USES_KQUEUE
     fprintf(stderr, "[%d]BACKEND[%d]: fd:%d filter:%d flags:0x%08x",
-	    THR_NO, me->id, PDB_GET_FD(event), PDB_GET_EVENTS(event),
+            THR_NO, me->id, (int)PDB_GET_FD(event), PDB_GET_EVENTS(event),
 	    event.flags);
     if (PDB_CHECK_EVENT(event, MY_POLLIN)) {
       fprintf(stderr, "  EVFILT_READ");
@@ -3902,7 +3974,7 @@ PIKECLASS PollDeviceBackend
     fprintf(stderr, "(%d)\n", event.data);
 #else /* !BACKEND_USES_KQUEUE */
     fprintf(stderr, "[%d]BACKEND[%d]: fd:%d events:0x%04x",
-	    THR_NO, me->id, PDB_GET_FD(event), PDB_GET_EVENTS(event));
+            THR_NO, me->id, (int)PDB_GET_FD(event), PDB_GET_EVENTS(event));
     if (PDB_CHECK_EVENT(event, MY_POLLNVAL)) {
       fprintf(stderr, "  POLLNVAL");
     }
@@ -4002,27 +4074,37 @@ PIKECLASS PollDeviceBackend
       /* Note: The arguments to MY_POLL may be evaluated multiple times. */
 
 #ifdef BACKEND_USES_CFRUNLOOP
-    if(pdb->go_cf)
-    {
-      cf_timeout = next_timeout->tv_sec + (next_timeout->tv_usec / 1000000.0);
+      if(pdb->go_cf)
+      {
+        cf_timeout = next_timeout->tv_sec + (next_timeout->tv_usec / 1000000.0);
 
-      pdb->event_count = 0;
-      pdb->poll_fds = (poll_fds);
+        pdb->event_count = 0;
+        pdb->poll_fds = (poll_fds);
 
-      CFFileDescriptorEnableCallBacks(pdb->fdref,
-				      kCFFileDescriptorReadCallBack);
-      CFRunLoopAddSource(CFRunLoopGetCurrent(), pdb->source,
-			 kCFRunLoopDefaultMode);
-      CFRunLoopRunInMode(kCFRunLoopDefaultMode, cf_timeout, true);
+        CFFileDescriptorEnableCallBacks(pdb->fdref,
+                                        kCFFileDescriptorReadCallBack);
+        CFRunLoopAddSource(CFRunLoopGetCurrent(), pdb->source,
+                           kCFRunLoopDefaultMode);
+        CFRunLoopRunInMode(kCFRunLoopDefaultMode, cf_timeout, true);
 
-      i = pdb->event_count;
-      pdb->poll_fds = NULL;
-}
-else
+        i = pdb->event_count;
+        pdb->poll_fds = NULL;
+      }
+      else
 #endif /* BACKEND_USES_CFRUNLOOP */
-      i = PDB_POLL(pdb->set, poll_timeout);
+        i = PDB_POLL(pdb->set, poll_timeout);
 
-      PDWERR(" => %d (timeout was: %d)\n", i, poll_timeout);
+#ifdef TIMEOUT_IS_MILLISECONDS
+      PDWERR(" => %d (timeout was: %dms)\n", i, poll_timeout);
+#elif defined(TIMEOUT_IS_TIMEVAL)
+      PDWERR(" => %d (timeout was: %ldms)\n",
+             i, poll_timeout.tv_sec * 1000 + poll_timeout.tv_usec/1000);
+#elif defined(TIMEOUT_IS_TIMESPEC)
+      PDWERR(" => %d (timeout was: %ldms)\n",
+             i, poll_timeout.tv_sec * 1000 + poll_timeout.tv_nsec/1000000);
+#else
+#error Unknown timeout method.
+#endif
 
       THREADS_DISALLOW();
       check_threads_etc();
@@ -4245,20 +4327,11 @@ else
 	Pike_fatal("Invalid timeout to select().\n");
 	break;
 
-#ifdef WSAEINTR
-      case WSAEINTR:
-#endif
       case EINTR:		/* ignore */
 	break;
 
-#ifdef WSAEBADF
-      case WSAEBADF:
-#endif
 #ifdef ENOTSOCK
       case ENOTSOCK:
-#endif
-#ifdef WSAENOTSOCK
-      case WSAENOTSOCK:
 #endif
       case EBADF:
 	/* TODO: Fix poll version! */
@@ -4946,7 +5019,7 @@ PIKECLASS PollBackend
 	check_box (box, fd);
 
 #if 0
-    if(PDB_CHECK_EVENT(poll_fds[i], MY_POLLSIGNAL))
+    if(PB_CHECK_EVENT(pb->active_set.poll_fds[i], MY_POLLSIGNAL))
     {
       fprintf(stderr, "SIGNAL EVENT RECEIVED!\n");
     }
@@ -4989,10 +5062,10 @@ PIKECLASS PollBackend
 	    box->revents |= PIKE_BIT_FD_WRITE;
 	    DO_IF_DEBUG(handled = 1);
 	  }
-	  if (PDB_CHECK_EVENT(pb->active_set.poll_fds[i], MY_POLLFSEVENT)) {
+          if (PB_CHECK_EVENT(pb->active_set.poll_fds[i], MY_POLLFSEVENT)) {
             PDWERR("[%d]BACKEND[%d]: POLLFSEVENT on %d\n",
                    THR_NO, me->id, fd);
-	    box->rflags = PDB_GET_FLAGS(poll_fds[i]);
+            box->rflags = PB_GET_FLAGS(pb->active_set.poll_fds[i]);
 	    box->revents |= PIKE_BIT_FD_FS_EVENT;
 	    DO_IF_DEBUG(handled = 1);
 	  }
@@ -5048,20 +5121,11 @@ PIKECLASS PollBackend
 	Pike_fatal("Invalid timeout to select().\n");
 	break;
 
-#ifdef WSAEINTR
-      case WSAEINTR:
-#endif
       case EINTR:		/* ignore */
 	break;
 
-#ifdef WSAEBADF
-      case WSAEBADF:
-#endif
 #ifdef ENOTSOCK
       case ENOTSOCK:
-#endif
-#ifdef WSAENOTSOCK
-      case WSAENOTSOCK:
 #endif
       case EBADF:
 	/* TODO: Fix poll version! */
@@ -5540,20 +5604,11 @@ PIKECLASS SelectBackend
 	Pike_fatal("Invalid timeout to select().\n");
 	break;
 
-#ifdef WSAEINTR
-      case WSAEINTR:
-#endif
       case EINTR:		/* ignore */
 	break;
 
-#ifdef WSAEBADF
-      case WSAEBADF:
-#endif
 #ifdef ENOTSOCK
       case ENOTSOCK:
-#endif
-#ifdef WSAENOTSOCK
-      case WSAENOTSOCK:
 #endif
       case EBADF:
 	/* TODO: Fix poll version! */
@@ -5566,14 +5621,8 @@ PIKECLASS SelectBackend
 	{
 	  switch(errno)
 	  {
-#ifdef WSAEBADF
-	  case WSAEBADF:
-#endif
 #ifdef ENOTSOCK
 	  case ENOTSOCK:
-#endif
-#ifdef WSAENOTSOCK
-	  case WSAENOTSOCK:
 #endif
 	  case EBADF:
 	    {
@@ -5600,14 +5649,8 @@ PIKECLASS SelectBackend
 		  default:
 #endif
 		  case EBADF:
-#ifdef WSAEBADF
-		  case WSAEBADF:
-#endif
 #ifdef ENOTSOCK
 		  case ENOTSOCK:
-#endif
-#ifdef WSAENOTSOCK
-		  case WSAENOTSOCK:
 #endif
 
 #ifdef DEBUG_MALLOC

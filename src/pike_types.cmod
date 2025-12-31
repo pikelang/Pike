@@ -29,6 +29,7 @@
 #include "block_allocator.h"
 #include "bitvector.h"
 #include "gc_header.h"
+#include "builtin_functions.h"
 
 #ifdef PIKE_DEBUG
 #define PIKE_TYPE_DEBUG
@@ -340,7 +341,7 @@ static void internal_parse_type(const char **s);
 static struct block_allocator type_allocator = BA_INIT(sizeof(struct pike_type), 128);
 
 PMOD_EXPORT void really_free_pike_type(struct pike_type * t) {
-    dmalloc_unregister(t, 0);
+    (void)dmalloc_unregister(t, 0);
     ba_free(&type_allocator, t);
 }
 
@@ -2019,9 +2020,19 @@ static void internal_parse_typeA(const char **_s)
 	  } else {
 	    min = MIN_INT32;
 	  }
-	  if(s[0][0]=='.' && s[0][1]=='.')
+          if(s[0][0]=='.' && s[0][1]=='.') {
 	    s[0]+=2;
-	  else {
+          } else if (!strncmp((const char *)*s, "bit", 3)) {
+            s[0] += 3;
+            if (min < 32) {
+              max = (1<<min) - 1;
+            } else {
+              max = MAX_INT32;
+            }
+            min = 0;
+            while(isspace(**s)) ++*s;
+            goto expect_end_paren;
+          } else {
 	    yyerror("Missing .. in integer type.");
 	  }
 
@@ -2033,6 +2044,7 @@ static void internal_parse_typeA(const char **_s)
 	    max = MAX_INT32;
 	  }
 
+        expect_end_paren:
 	  if(**s != ')') yyerror("Missing ')' in integer range.");
 	  else
 	    ++*s;
@@ -3454,12 +3466,12 @@ static void low_or_pike_types(struct pike_type *t1,
     }
   } else if ((t1->type == PIKE_T_ATTRIBUTE) &&
              (t2->type != PIKE_T_ATTRIBUTE) &&
-             (t1->cdr->type == t2->type)) {
+             (!t1->cdr || (t1->cdr->type == t2->type))) {
     /* Pop the attribute. */
     low_or_pike_types(t1->cdr, t2, zero_implied);
   } else if ((t2->type == PIKE_T_ATTRIBUTE) &&
              (t1->type != PIKE_T_ATTRIBUTE) &&
-             (t2->cdr->type == t1->type)) {
+             (!t2->cdr || (t2->cdr->type == t1->type))) {
     /* Pop the attribute. */
     low_or_pike_types(t1, t2->cdr, zero_implied);
   }
@@ -3759,7 +3771,7 @@ static void simple_describe_remap_state(struct remap_state *remap)
   }
 }
 #else
-#define simple_describe_remap_state(X)	do { (X); } while(0)
+#define simple_describe_remap_state(X)	do { (void)(X); } while(0)
 #endif
 
 static int alloc_remap_marker(struct remap_state *remap, int marker,
@@ -8393,8 +8405,6 @@ static struct pike_type *low_match_types(struct pike_type *a,
   struct pike_type *ret = NULL;
   DECLARE_CYCLIC();
 #ifdef PIKE_TYPE_DEBUG
-  int e;
-  char *s;
 
   if (l_flag>2) {
     fprintf(stderr, "%*slow_match_types(", indent*2, "");
@@ -14118,6 +14128,11 @@ struct mapping *mkbindings(struct program *p, struct array *b,
     yywarning("Too many bindings for %pP.", p);
   }
 
+  /* FIXME: Consider warning in strict types mode when
+   *        b is NULL and not inhibit_defaults:
+   *        "Unbound generics".
+   */
+
   /* The types may contain generics from the parent class. */
   ret = mkbindings(p->parent, NULL, inhibit_defaults);
 
@@ -15293,8 +15308,16 @@ void yyexplain_nonmatching_types(int severity_level,
   implements_b=0;
   implements_mode=0;
 
+  /* !!!!!!!!! FIXME !!!!!!!!!
+   *
+   * This code ought to use type_binop()!
+   *
+   * For now it has an inlined call to the old implementation
+   * of pike_types_le(type_b, type_a)!
+   */
   /* Note the argument order. */
-  pike_types_le(type_b, type_a, 0, 0);
+  clear_markers();
+  low_pike_types_le(type_b, type_a, 0, 0);
 
 #if 0
   if(!(implements_a && implements_b &&

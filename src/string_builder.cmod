@@ -25,6 +25,7 @@
 #include "builtin_functions.h"
 #include "multiset.h"
 #include "pike_dtoa.h"
+#include "las.h"
 
 #include <errno.h>
 
@@ -555,6 +556,7 @@ PMOD_EXPORT void string_builder_append_integer(struct string_builder *s,
 {
   UINT64 tmp;
   size_t len = 1;
+  char sign = 0;
   const char *numbers = "0123456789abcdef";
   if ((base < 2) || (base > 16)) {
     Pike_fatal("string_builder_append_int(): Unsupported base %u.\n", base);
@@ -563,10 +565,12 @@ PMOD_EXPORT void string_builder_append_integer(struct string_builder *s,
     numbers = "0123456789ABCDEF";
   }
   if ((flags & APPEND_SIGNED) && (val < 0)) {
-    string_builder_putchar(s, '-');
+    sign = '-';
     val = -val;
+    if (min_width) --min_width;
   } else if (flags & APPEND_POSITIVE) {
-    string_builder_putchar(s, '+');
+    sign = '+';
+    if (min_width) --min_width;
   }
   if ((flags & APPEND_ZERO_PAD) && (precision < min_width)) {
     precision = min_width;
@@ -595,6 +599,9 @@ PMOD_EXPORT void string_builder_append_integer(struct string_builder *s,
       }
       min_width = 0;
     }
+
+    if (sign)
+      string_builder_putchar(s, sign);
 
     cnt = len;
 
@@ -658,6 +665,9 @@ PMOD_EXPORT void string_builder_append_integer(struct string_builder *s,
 			  4, 0);
       min_width = 0;
     }
+
+    if (sign)
+      string_builder_putchar(s, sign);
 
     while(shift) {
       shift -= delta;
@@ -1045,6 +1055,7 @@ static INT64 pike_va_int(VA_LIST_PTR args, int flags)
  *   'A'	Insert description of a struct array *.
  *   'm'	Insert description of a struct mapping *.
  *   'M'	Insert description of a struct multiset *.
+ *   'N'	Insert description of a node *.
  *   'O'	Insert description of a struct svalue *.
  *   'P'	Insert description of a struct program *.
  *   'q'	Insert quoted struct pike_string *.
@@ -1130,10 +1141,19 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 	  }
 	  continue;
 
+        case 'L':
+          flags |= APPEND_WIDTH_LONG_LONG;
+          continue;
+
 	case 't':	/* ptrdiff_t */
 	case 'z':	/* size_t */
 	  flags = (flags & ~APPEND_WIDTH_MASK) | APPEND_WIDTH_PTR;
 	  continue;
+
+        case 'N':	/* node * */
+          /* FIXME: Doesn't care about field or integer widths yet. */
+          describe_node_tree(s, va_arg(args, node *));
+          break;
 
 	case 'T':	/* struct pike_type */
 	  /* FIXME: Doesn't care about field or integer widths yet. */
@@ -1312,8 +1332,8 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 	  break;
 	case 'p':
           if ((*fmt == 'A') || (*fmt == 'm') || (*fmt == 'M') ||
-              (*fmt == 'O') || (*fmt == 'P') || (*fmt == 'q') ||
-              (*fmt == 'S') || (*fmt == 'T')) {
+              (*fmt == 'N') || (*fmt == 'O') || (*fmt == 'P') ||
+              (*fmt == 'q') || (*fmt == 'S') || (*fmt == 'T')) {
             /* Pike sprintf formatting extension. */
             continue;
           }
@@ -1359,7 +1379,9 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 	case 'g':
 	case 'G':
 	  {
-	    double val = va_arg(args, double);
+            double val =
+              ((flags & APPEND_WIDTH_MASK) == APPEND_WIDTH_LONG_LONG?
+               va_arg(args, long double) : va_arg(args, double));
 	    size_t bytes;
 	    char nfmt[] = { '%', fmt[-1], 0 };
 
@@ -1797,17 +1819,25 @@ PMOD_EXPORT void string_builder_strftime(struct string_builder *s,
 
         case 'z': /* Time zone as hour offset from UTC. */
           {
-            int minutes = (
+            int minutes;
+#if defined(HAVE__GET_TIMEZONE)
+            long tzsec;
+            _get_timezone (&tzsec);
+#endif
+            minutes = (
 #ifdef STRUCT_TM_HAS_GMTOFF
-                           -tm->tm_gmtoff
+                           tm->tm_gmtoff
 #elif defined(STRUCT_TM_HAS___TM_GMTOFF)
-                           -tm->__tm_gmtoff
+                           tm->__tm_gmtoff
+#elif defined(HAVE__GET_TIMEZONE)
+                           /* Assume dst is one hour. */
+                           -tzsec + 3600*tm->tm_isdst
 #elif defined(HAVE_EXTERNAL_TIMEZONE)
                            /* Assume dst is one hour. */
-                           timezone - 3600*tm->tm_isdst
+                           -timezone + 3600*tm->tm_isdst
 #else
                            /* Assume dst is one hour. */
-                           -3600*tm->tm_isdst
+                           3600*tm->tm_isdst
 #endif
                            ) / 60;
             minutes += (minutes/60) * 40;

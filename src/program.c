@@ -20,7 +20,7 @@
 #include "main.h"
 #include "pike_memory.h"
 #include "gc.h"
-#include "threads.h"
+#include "pike_threads.h"
 #include "constants.h"
 #include "operators.h"
 #include "builtin_functions.h"
@@ -55,7 +55,7 @@ struct program * alloc_program(void) {
 
 void really_free_program(struct program * p) {
     exit_program_struct(p);
-    dmalloc_unregister(p, 0);
+    (void)dmalloc_unregister(p, 0);
     ba_free(&program_allocator, p);
 }
 
@@ -521,8 +521,8 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *! @item
  *!   Strong references are those from objects to the objects of their
  *!   lexically surrounding classes. There can never be a cycle
- *!   consisting only of strong references. (This means the gc never
- *!   destructs a parent object before all children have been
+ *!   consisting only of strong references. (This means that the gc
+ *!   never destructs a parent object before all children have been
  *!   destructed.)
  *! @endul
  *!
@@ -3757,7 +3757,7 @@ void fixate_program(void)
       }
       else if(!(tmp2 = find_program_name(i->prog, &line)))
       {
-	sprintf(buffer,"inherit[%d]",e);
+        snprintf(buffer, sizeof(buffer), "inherit[%d]", e);
 	tmp=buffer;
       } else {
 	tmp = tmp2->str;
@@ -6575,6 +6575,9 @@ void lower_inherit(struct program *p,
  *
  * @param name
  *   Optional rename of the inherit.
+ *
+ * @param bindings
+ *   Bindings to apply if p has generics.
  */
 PMOD_EXPORT void low_inherit(struct program *p,
 			     struct object *parent,
@@ -9366,7 +9369,7 @@ static void insert_small_number(INT_TYPE a)
     add_to_linenumbers(a>>8);
     add_to_linenumbers(a);
 #ifdef INT_TYPE_INT32_CONVERSION
-  } else if (a < -0x80000000L || a > 0x7fffffffL) {
+  } else if (a < -0x7fffffffL-1 || a > 0x7fffffffL) {
     /* Overload 16-bit zero as marker for 64-bit. */
     fprintf(stderr, "Saving huge linenumber: %lld\n", (long long)a);
     add_to_linenumbers(-127);
@@ -9421,7 +9424,7 @@ static void ext_insert_small_number (char **ptr, INT_TYPE a)
     *(*ptr)++ = a>>8;
     *(*ptr)++ = a;
 #ifdef INT_TYPE_INT32_CONVERSION
-  } else if (a < -0x80000000L || a > 0x7fffffffL) {
+  } else if (a < -0x7fffffffL-1 || a > 0x7fffffffL) {
     /* Overload 16-bit zero as marker for 64-bit. */
     *(*ptr)++ = -127;
     *(*ptr)++ = 0;
@@ -9701,7 +9704,7 @@ static char *make_plain_file (struct pike_string *filename, int malloced)
 
       if(chr > 255)
       {
-	sprintf(buffer+ptr,"\\u%04X",chr);
+        snprintf(buffer + ptr, sizeof(buffer) - ptr, "\\u%04X", chr);
 	ptr+=strlen(buffer+ptr);
       }else{
 	buffer[ptr++]=chr;
@@ -11748,15 +11751,15 @@ PMOD_EXPORT void string_builder_append_pike_opcode(struct string_builder *s,
   char buf[3][32];
   const char *params[3] = { NULL, NULL, NULL };
   const struct instr *instr = &instrs[op - F_OFFSET];
-  sprintf(buf[0], "%d", arg1);
-  sprintf(buf[1], "%d", arg2);
+  snprintf(buf[0], sizeof(buf[0]), "%d", arg1);
+  snprintf(buf[1], sizeof(buf[1]), "%d", arg2);
   if (instr->flags & I_HASARG) {
     params[0] = buf[0];
   }
   if (instr->flags & I_HASARG2) {
     params[1] = buf[1];
   }
-  sprintf(buf[2], "# %s", instr->name);
+  snprintf(buf[2], sizeof(buf[2]), "# %s", instr->name);
   string_builder_append_disassembly(s, (size_t)addr, addr, addr,
 				    buf[2], params, NULL);
 }

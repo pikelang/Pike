@@ -147,6 +147,7 @@ class NSNode {
 
   // Override old stuff
 
+  //!
   protected void create(int type, string name, mapping|zero attr, string text,
 			void|NSNode parent) {
 
@@ -230,6 +231,7 @@ class NSNode {
     ::create(type, name, attr, text);
   }
 
+  //!
   void set_parent(NSNode parent) {
     if( nss ) {
       foreach(parent->get_defined_nss(); string sym; string ns) {
@@ -241,23 +243,27 @@ class NSNode {
     ::set_parent(parent);
   }
 
+  //!
   NSNode add_child(NSNode c) {
     c->set_parent(this);
     return ::add_child(c);
   }
 
+  //!
   NSNode add_child_before (NSNode c, NSNode old)
   {
     c->set_parent (this);
     return ::add_child_before (c, old);
   }
 
+  //!
   NSNode add_child_after (NSNode c, NSNode old)
   {
     c->set_parent (this);
     return ::add_child_after (c, old);
   }
 
+  //!
   NSNode replace_child (NSNode old, NSNode|array(NSNode) new) {
     ::replace_child(old, new);
     new->set_parent (this);
@@ -268,11 +274,13 @@ class NSNode {
   //! space issues. To properly remove all the parents name spaces
   //! from the chid, call @[remove_node] in the child.
 
+  //!
   void remove_node() {
     nss = diff_namespaces();
     ::remove_node();
   }
 
+  //!
   NSNode clone(void|int(-1..1) direction) {
     Node n = NSNode(get_node_type(), get_ns()+":"+get_tag_name(),
 		    get_attributes(), get_text(), mParent);
@@ -402,6 +410,7 @@ class NSNode {
     return get_encoder(encoding||"utf-8")->feed((string)data)->drain();
   }
 
+  //!
   protected string _sprintf(int t) {
     if(t=='O') {
       mapping nt = ([ XML_ROOT:"ROOT",

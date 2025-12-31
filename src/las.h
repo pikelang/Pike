@@ -20,6 +20,7 @@ typedef void (*c_fun)(INT32);
 #define YYTE_IS_WARNING	1
 
 struct compiler_frame;		/* Avoid gcc warning. */
+struct string_builder;		/* Avoid gcc warning. */
 
 /*
  * Prototypes for functions in language.yacc.
@@ -154,8 +155,8 @@ struct node_s
   struct pike_string *name;
   struct node_s *parent;
   INT_TYPE line_number;
-  unsigned INT16 node_info;
-  unsigned INT16 tree_info;
+  unsigned INT32 node_info;
+  unsigned INT32 tree_info;
   unsigned INT16 pad;
   /* The stuff from this point on is hashed. */
 #ifdef PIKE_DEBUG
@@ -185,6 +186,7 @@ node *debug_mknode(int token,node *a,node *b);
 node *mknestednodes(int token, ...);
 void set_node_name(node *n, struct pike_string *name);
 node *mkbindnode(node *expr, struct pike_type *type);
+node *mkgeneric_selection(node *expr, node *assocs);
 node *debug_mkstrnode(struct pike_string *str);
 node *debug_mkintnode(INT_TYPE nr);
 node *debug_mknewintnode(INT_TYPE nr);
@@ -224,6 +226,7 @@ int node_may_overload(node *n, int lfun);
 node **last_cmd(node **a);
 node **my_get_arg(node **a,int n);
 node **is_call_to(node *n, c_fun f);
+void describe_node_tree(struct string_builder *s, node *n);
 void print_tree(node *n);
 struct used_vars;
 void fix_auto_node(node *n, struct pike_type *type);

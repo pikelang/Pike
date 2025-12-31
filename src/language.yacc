@@ -76,6 +76,7 @@
 %token TOK_FUNCTION_ID "function"
 %token TOK_GAUGE "gauge"
 %token TOK_GENERIC "__generic__"
+%token TOK__GENERIC "_Generic"
 %token TOK_GENERATOR "__generator__"
 %token TOK_GLOBAL "global"
 %token TOK_IDENTIFIER "identifier"
@@ -429,6 +430,10 @@ int yylex(YYSTYPE *yylval);
 %type <n> for_expr
 %type <n> foreach
 %type <n> gauge
+%type <n> generic_association
+%type <n> generic_assoc_list
+%type <n> generic_selection
+%type <n> generic_type_spec
 %type <n> labeled_statement
 %type <n> lambda
 %type <n> local_name_list
@@ -1270,6 +1275,7 @@ magic_identifiers3:
   | TOK_FOREACH    { $$ = "foreach"; }
   | TOK_CATCH      { $$ = "catch"; }
   | TOK_GAUGE      { $$ = "gauge"; }
+  | TOK__GENERIC   { $$ = "_Generic"; }
   | TOK_CLASS      { $$ = "class"; }
   | TOK_BREAK      { $$ = "break"; }
   | TOK_CASE       { $$ = "case"; }
@@ -1946,7 +1952,7 @@ new_name: TOK_IDENTIFIER
 #endif /* PIKE_DEBUG */
         if(Pike_compiler->compiler_frame->current_type->type == PIKE_T_AUTO)
         {
-          // auto variable type needs to be updated.
+          /* Auto variable type needs to be updated. */
           fix_type_field( $4 );
           fix_auto_variable_type( $<number>3, $4->type );
         }
@@ -1956,12 +1962,13 @@ new_name: TOK_IDENTIFIER
     }
     if ($4) {
       node *n;
-      // this is done in both passes to get somewhat better handling
-      // of auto types.
-      //
-      // an example is: auto a  = typeof(b); auto b = (["foo":"bar"]);
-      // if this is only done in the second pass the type of a will be
-      // type(auto), not type(mapping(..))
+      /* This is done in both passes to get somewhat better handling
+       * of auto types.
+       *
+       * an example is: auto a  = typeof(b); auto b = (["foo":"bar"]);
+       * if this is only done in the second pass the type of a will be
+       * type(auto), not type(mapping(..))
+       */
       if( Pike_compiler->compiler_frame->current_type->type == PIKE_T_AUTO )
       {
         fix_type_field( $4 );
@@ -1971,8 +1978,9 @@ new_name: TOK_IDENTIFIER
 		     mknode(F_ASSIGN,
 			    mkidentifiernode($<number>3), $4));
       if (Pike_compiler->compiler_pass == COMPILER_PASS_LAST) {
-	// This makes sure that #pragma {no_,}deprecation_warnings
-	// works as expected.
+        /* This makes sure that #pragma {no_,}deprecation_warnings
+         * works as expected.
+         */
 	optimize_node(n);
       }
       Pike_compiler->init_node=mknode(F_COMMA_EXPR,Pike_compiler->init_node,
@@ -2832,10 +2840,10 @@ anon_class: TOK_CLASS line_number_info
   {
     struct pike_string *s;
     char buffer[42];
-    sprintf(buffer,"__class_%ld_%ld_line_%d",
-	    (long)Pike_compiler->new_program->id,
-	    (long)Pike_compiler->local_class_counter++,
-	    (int) $2->line_number);
+    snprintf(buffer, sizeof(buffer), "__class_%ld_%ld_line_%d",
+             (long)Pike_compiler->new_program->id,
+             (long)Pike_compiler->local_class_counter++,
+             (int) $2->line_number);
     s = make_shared_string(buffer);
     $<n>$ = mkstrnode(s);
     free_string(s);
@@ -2930,10 +2938,10 @@ named_class: TOK_CLASS line_number_info simple_identifier
     {
       struct pike_string *s;
       char buffer[42];
-      sprintf(buffer,"__class_%ld_%ld_line_%d",
-	      (long)Pike_compiler->new_program->id,
-	      (long)Pike_compiler->local_class_counter++,
-	      (int) $2->line_number);
+      snprintf(buffer, sizeof(buffer), "__class_%ld_%ld_line_%d",
+               (long)Pike_compiler->new_program->id,
+               (long)Pike_compiler->local_class_counter++,
+               (int) $2->line_number);
       s=make_shared_string(buffer);
       $3=mkstrnode(s);
       free_string(s);
@@ -3711,9 +3719,44 @@ safe_chain_expr: TOK_SAFE_START_INDEX line_number_info assignment_expr ']'
   }
   ;
 
+generic_type_spec: full_type
+  {
+    struct pike_type *t = compiler_pop_type();
+    $$ = mktypenode(t);
+    free_type(t);
+  }
+  | TOK_DEFAULT
+  {
+    $$ = mktypenode(any_type_string);
+  }
+  ;
+
+generic_association: generic_type_spec ':' assignment_expr
+  {
+    $$ = mknode(':', $1, $3);
+  }
+  ;
+
+generic_assoc_list: generic_association
+  {
+    $$ = mknode(F_ARG_LIST, $1, NULL);
+  }
+  | generic_assoc_list ',' generic_association
+  {
+    $$ = mknode(F_ARG_LIST, $1, $3);
+  }
+  ;
+
+generic_selection: TOK__GENERIC '(' assignment_expr ',' generic_assoc_list ')'
+  {
+    $$ = mkgeneric_selection($3, $5);
+  }
+  ;
+
 primary_expr: literal_expr
   | catch
   | gauge
+  | generic_selection
   | typeof
   | sscanf
   | static_assertion { $$ = mknewintnode(0); }
@@ -4719,6 +4762,8 @@ bad_const_expr_ident: bad_expr_ident
   { yyerror_reserved("__FUNCTION__");}
   | TOK_GAUGE
   { yyerror_reserved("gauge"); }
+  | TOK__GENERIC
+  { yyerror_reserved("_Generic"); }
   | TOK_IF
   { yyerror_reserved("if"); }
   | TOK_IMPORT
@@ -5390,7 +5435,7 @@ static int compiler_define_function(int modifiers,
                                     struct pike_type *fun_type,
                                     node *block,
                                     int num_args, int num_create_args,
-                                    int opt_flags)
+                                    int UNUSED(opt_flags))
 {
   int e;
   if(block)
@@ -5729,10 +5774,10 @@ struct pike_string *get_new_name(struct pike_string *prefix)
 {
   char buf[40];
   /* Generate a name for a global symbol... */
-  sprintf(buf,"__lambda_%ld_%ld_line_%d",
-	  (long)Pike_compiler->new_program->id,
-	  (long)(Pike_compiler->local_class_counter++ & 0xffffffff), /* OSF/1 cc bug. */
-	  (int) THIS_COMPILATION->lex.current_line);
+  snprintf(buf, sizeof(buf), "__lambda_%ld_%ld_line_%d",
+           (long)Pike_compiler->new_program->id,
+           (long)(Pike_compiler->local_class_counter++ & 0xffffffff), /* OSF/1 cc bug. */
+           (int) THIS_COMPILATION->lex.current_line);
   if (prefix) {
     struct string_builder sb;
     init_string_builder_alloc(&sb, prefix->len + strlen(buf) + 1,

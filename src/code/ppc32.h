@@ -247,8 +247,8 @@ void ppc32_decode_program(struct program *p);
 			:						    \
 			: "r" (pc), "r" (Pike_interpreter_pointer)	    \
 			: "ctr", "lr", "cc", "memory", "r29", "r0",	    \
-			  "r3", "r4", "r5", "r6", "r7", "r8", "r9",	    \
-			  "r10", "r11", "r12")
+			  "r2", "r3", "r4", "r5", "r6", "r7", "r8",	    \
+			  "r9", "r10", "r11", "r12")
 
 #define OPCODE_INLINE_BRANCH
 #define OPCODE_RETURN_JUMPADDR

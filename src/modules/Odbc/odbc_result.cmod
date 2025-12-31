@@ -24,7 +24,7 @@
 
 #include "interpret.h"
 #include "object.h"
-#include "threads.h"
+#include "pike_threads.h"
 #include "stralloc.h"
 #include "mapping.h"
 #include "array.h"

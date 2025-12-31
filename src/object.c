@@ -238,7 +238,7 @@ PMOD_EXPORT struct object *low_clone(struct program *p)
       Pike_fatal("Frame stack out of whack.\n"); \
   } while(0)
 #else
-#define CHECK_FRAME()	0
+#define CHECK_FRAME()
 #endif
 
 #define POP_FRAME()				\
@@ -3053,9 +3053,9 @@ PMOD_EXPORT void real_gc_cycle_check_object(struct object *o, int weak)
       GC_UNSET_CALL_FRAME();
 
       /* Even though it's essential that the program isn't freed
-       * before the object, it doesn't need a strong link. That since
-       * programs can't be destructed before they run out of
-       * references. */
+       * before the object, it doesn't need a strong link. This
+       * is because programs can't be destructed before they run
+       * out of references. */
       gc_cycle_check_program (p, 0);
 
       /* Strong ref follows. It must be last. */

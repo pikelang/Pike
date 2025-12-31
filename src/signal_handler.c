@@ -16,7 +16,7 @@
 #include "pike_error.h"
 #include "callback.h"
 #include "mapping.h"
-#include "threads.h"
+#include "pike_threads.h"
 #include "signal_handler.h"
 #include "module_support.h"
 #include "operators.h"
@@ -403,8 +403,10 @@ static void report_child(int pid,
 #endif
 
 
+#ifdef SIGCHLD
 /* NB: Async-Signal-Safe! */
 static RETSIGTYPE receive_sigchild(int signum);
+#endif
 
 #ifdef USE_SIGCHILD
 typedef struct wait_data_s {
@@ -2267,7 +2269,7 @@ static BPTR get_amigados_handle(struct mapping *optional, char *name, int fd)
   if((ext = fcntl(fd, F_EXTERNALIZE, 0)) < 0)
     Pike_error("File for %s can not be externalized.\n", name);
 
-  sprintf(buf, "IXPIPE:%lx", ext);
+  snprintf(buf, sizeof(buf), "IXPIPE:%lx", ext);
 
   /* It's a kind of magic... */
   if((b = Open(buf, 0x4242)) == 0)
@@ -2401,7 +2403,7 @@ static HANDLE get_inheritable_handle(struct mapping *optional,
 			  DUPLICATE_SAME_ACCESS)) {
 	release_fd(fd);
 	/* This could cause handle-leaks */
-	Pike_error("Failed to duplicate handle %d.\n", GetLastError());
+	Pike_error("Failed to duplicate handle %lu.\n", (unsigned long)GetLastError());
       }
       release_fd(fd);
     }
@@ -2621,7 +2623,7 @@ static int set_priority( int pid, char *to )
     memset(&params, 0, sizeof(params));
     memset(&foo, 0, sizeof(foo));
 
-    strcpy(foo.pc_clname, "RT");
+    strlcpy(foo.pc_clname, "RT", sizeof(foo.pc_clname));
     if( priocntl((idtype_t)0, (id_t)0, PC_GETCID, (void *)(&foo)) == -1)
       return 0;
     params.pc_cid = foo.pc_cid;
@@ -2646,7 +2648,7 @@ static int set_priority( int pid, char *to )
 
     memset(&params, 0, sizeof(params));
     memset(&foo, 0, sizeof(foo));
-    strcpy(foo.pc_clname, "TS");
+    strlcpy(foo.pc_clname, "TS", sizeof(foo.pc_clname));
     if( priocntl((idtype_t)0, (id_t)0, PC_GETCID, (void *)(&foo)) == -1)
       return 0;
     params.pc_cid = foo.pc_cid;
@@ -3183,7 +3185,7 @@ void f_create_process(INT32 args)
        *       operations on it.
        */
 
-      command_line = pike_dwim_utf8_to_utf16(buffer_get_string(&buf));
+      command_line = pike_dwim_utf8_to_utf16((const p_wchar0 *) buffer_get_string(&buf));
       buffer_free(&buf);
     }
 
@@ -3318,7 +3320,7 @@ void f_create_process(INT32 args)
 	    /* NB: The environment string contains lots of NUL characters,
 	     *     so we must use the low-level variant here.
 	     */
-	    env = low_dwim_utf8_to_utf16(Pike_sp[-1].u.string->str,
+	    env = low_dwim_utf8_to_utf16(STR0(Pike_sp[-1].u.string),
 					 Pike_sp[-1].u.string->len);
 	    pop_stack();
 	  }

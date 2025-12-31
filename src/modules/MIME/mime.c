@@ -53,17 +53,22 @@ static void f_quote_labled( INT32 args );
 
 /** Global tables **/
 
-static const char base64tab[64] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-static const char base64urltab[64] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
-static const char base32tab[32] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
-static const char base32hextab[32] = "0123456789ABCDEFGHIJKLMNOPQRSTUV";
-static const char crypt64tab[64] = "./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+static const char base64tab[64] PIKE_NONSTRING_ATTRIBUTE =
+  "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+static const char base64urltab[64] PIKE_NONSTRING_ATTRIBUTE =
+  "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+static const char base32tab[32] PIKE_NONSTRING_ATTRIBUTE =
+  "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+static const char base32hextab[32] PIKE_NONSTRING_ATTRIBUTE =
+  "0123456789ABCDEFGHIJKLMNOPQRSTUV";
+static const char crypt64tab[64] PIKE_NONSTRING_ATTRIBUTE =
+  "./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 static SIGNED char base64rtab[(1<<(CHAR_BIT-1))-' '];
 static SIGNED char base64urlrtab[(1<<(CHAR_BIT-1))-' '];
 static SIGNED char base32rtab[(1<<(CHAR_BIT-1))-' '];
 static SIGNED char base32hexrtab[(1<<(CHAR_BIT-1))-' '];
 static SIGNED char crypt64rtab[(1<<(CHAR_BIT-1))-' '];
-static const char qptab[16] = "0123456789ABCDEF";
+static const char qptab[16] PIKE_NONSTRING_ATTRIBUTE = "0123456789ABCDEF";
 static SIGNED char qprtab[(1<<(CHAR_BIT-1))-'0'];
 
 #define CT_CTL     0
@@ -318,11 +323,18 @@ static void decode_base32( INT32 args, const char *name, const SIGNED char *tab)
 
   init_string_builder( &buf, 0 );
 
+#if SIZEOF_LONG >= 8
+#define CONST64_HEX(HIGH, LOW)	(0x##HIGH##LOW##UL)
+#else
+  /* Make a 64 bit unsigned literal on ILP32. */
+#define CONST64_HEX(HIGH, LOW)	((((unsigned INT64)0x##HIGH##UL)<<32)|(0x##LOW##UL))
+#endif
+
   for (src = (SIGNED char *)sp[-1].u.string->str, cnt = sp[-1].u.string->len;
        cnt--; src++)
     if(*src>=' ' && tab[*src-' ']>=0) {
       /* 5 more bits to put into d */
-      if((d=(d<<5)|tab[*src-' '])>=0x10000000000) {
+      if ((d = (d<<5) | tab[*src-' ']) >= CONST64_HEX(100, 00000000)) {
         /* d now contains 40 valid bits.  Put them in the buffer */
         string_builder_putchar( &buf, (d>>32)&0xff );
         string_builder_putchar( &buf, (d>>24)&0xff );
@@ -337,18 +349,18 @@ static void decode_base32( INT32 args, const char *name, const SIGNED char *tab)
     }
 
   /* If data size not an even multiple of 5 bytes, output remaining data */
-  if (d & 0x1f0000000000) {
+  if (d & CONST64_HEX(1f00, 00000000)) {
     /* 40 bits received. */
     /* NOT_REACHED, but here for symmetry. */
     /* 1  aaaa aaaa  bbbb bbbb  cccc cccc  dddd dddd  eeee eeee */
     pads = 0;
-  } else if (d & 0xf800000000) {
+  } else if (d & CONST64_HEX(f8, 00000000)) {
     /* 35 bits received. */
     /* 0  0000 1aaa  aaaa abbb  bbbb bccc  cccc cddd  dddd dxxx */
     pads = 1;
     /* Remove unused bits from d. */
     d >>= 3;
-  } else if (d & 0xec0000000) {
+  } else if (d & CONST64_HEX(e, c0000000)) {
     /* 30 bits received (irregular). */
     /* 0  0000 0000  01aa aaaa  aabb bbbb  bbcc cccc  ccxx xxxx */
     pads = 2;
@@ -1188,7 +1200,7 @@ static void f_encode_uue( INT32 args )
     dest = str->str;
 
     /* Write the begin line containing the filename */
-    sprintf(dest, "begin 644 %s\r\n", filename);
+    snprintf(dest, str->len, "begin 644 %s\r\n", filename);
     dest += 12 + strlen(filename);
 
     if (groups) {

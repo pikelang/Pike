@@ -430,6 +430,27 @@ PIKEFUN mixed describe(mixed x)
   debug_describe_svalue(debug_malloc_pass(&Pike_sp[-1]));
 }
 
+/*! @decl int(0..) num_pending_destructs()
+ *! @belongs Debug
+ *!
+ *!   Returns the number of objects that will be destructed in
+ *!   the next destruct pass.
+ *!
+ *! @note
+ *!   This function only exists if the Pike runtime has been compiled
+ *!   with RTL debug.
+ */
+PIKEFUN int(0..) num_pending_destructs()
+{
+  int count = 0;
+  struct object *o = objects_to_destruct;
+  while(o) {
+    count++;
+    o = o->next;
+  }
+  push_int(count);
+}
+
 /*! @decl void gc_set_watch(array|multiset|mapping|object|function|program|string x)
  *! @belongs Debug
  *!

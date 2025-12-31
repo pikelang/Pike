@@ -24,7 +24,7 @@
 #include "builtin_functions.h"
 #include "signal_handler.h"
 #include "gc.h"
-#include "threads.h"
+#include "pike_threads.h"
 #include "callback.h"
 #include "fd_control.h"
 #include "bignum.h"
@@ -637,7 +637,7 @@ static inline void pike_trace(int level,char *fmt, ...)
   {
     va_list args;
     va_start(args,fmt);
-    vsprintf(trace_buffer,fmt,args);
+    vsnprintf(trace_buffer, sizeof(trace_buffer), fmt, args);
     va_end(args);
     write_to_stderr(trace_buffer,strlen(trace_buffer));
   }
@@ -1090,15 +1090,17 @@ static inline void low_debug_instr_prologue (PIKE_INSTR_T instr)
 #define DEBUG_LOG_ARG(ARG)					\
   (backlog[backlogp].arg = (ARG),				\
    (Pike_interpreter.trace_level>3 ?				\
-    sprintf(trace_buffer, "-    Arg = %ld\n",			\
-	    (long) backlog[backlogp].arg),			\
+    snprintf(trace_buffer, sizeof(trace_buffer),                \
+             "-    Arg = %ld\n",                                \
+             (long) backlog[backlogp].arg),			\
     write_to_stderr(trace_buffer,strlen(trace_buffer)) : 0))
 
 #define DEBUG_LOG_ARG2(ARG2)					\
   (backlog[backlogp].arg2 = (ARG2),				\
    (Pike_interpreter.trace_level>3 ?				\
-    sprintf(trace_buffer, "-    Arg2 = %ld\n",			\
-	    (long) backlog[backlogp].arg2),			\
+    snprintf(trace_buffer, sizeof(trace_buffer),                \
+             "-    Arg2 = %ld\n",                               \
+             (long) backlog[backlogp].arg2),			\
     write_to_stderr(trace_buffer,strlen(trace_buffer)) : 0))
 
 PMOD_EXPORT void dump_backlog(void)
@@ -1326,7 +1328,7 @@ PIKE_OPCODE_T *inter_return_opcode_F_CATCH(PIKE_OPCODE_T *addr)
   if (d_flag || Pike_interpreter.trace_level > 2) {
     low_debug_instr_prologue (F_CATCH - F_OFFSET);
     if (Pike_interpreter.trace_level>3) {
-      sprintf(trace_buffer, "-    Addr = %p\n", addr);
+      snprintf(trace_buffer, sizeof(trace_buffer), "-    Addr = %p\n", addr);
       write_to_stderr(trace_buffer,strlen(trace_buffer));
     }
   }
@@ -1463,7 +1465,7 @@ PIKE_OPCODE_T *inter_return_opcode_F_CATCH_AT(PIKE_OPCODE_T *addr)
   if (d_flag || Pike_interpreter.trace_level > 2) {
     low_debug_instr_prologue (F_CATCH - F_OFFSET);
     if (Pike_interpreter.trace_level>3) {
-      sprintf(trace_buffer, "-    Addr = %p\n", addr);
+      snprintf(trace_buffer, sizeof(trace_buffer), "-    Addr = %p\n", addr);
       write_to_stderr(trace_buffer,strlen(trace_buffer));
     }
   }
@@ -1607,7 +1609,7 @@ PIKE_OPCODE_T *setup_catch_context(PIKE_OPCODE_T *addr)
   if (d_flag || Pike_interpreter.trace_level > 2) {
     low_debug_instr_prologue (F_CATCH - F_OFFSET);
     if (Pike_interpreter.trace_level>3) {
-      sprintf(trace_buffer, "-    Addr = %p\n", addr);
+      snprintf(trace_buffer, sizeof(trace_buffer), "-    Addr = %p\n", addr);
       write_to_stderr(trace_buffer,strlen(trace_buffer));
     }
   }
@@ -1646,7 +1648,7 @@ PIKE_OPCODE_T *setup_catch_at_context(PIKE_OPCODE_T *addr)
   if (d_flag || Pike_interpreter.trace_level > 2) {
     low_debug_instr_prologue (F_CATCH - F_OFFSET);
     if (Pike_interpreter.trace_level>3) {
-      sprintf(trace_buffer, "-    Addr = %p\n", addr);
+      snprintf(trace_buffer, sizeof(trace_buffer), "-    Addr = %p\n", addr);
       write_to_stderr(trace_buffer,strlen(trace_buffer));
     }
   }
@@ -2229,7 +2231,7 @@ static void do_trace_function_call(const struct object *o, const struct identifi
   struct byte_buffer buffer = BUFFER_INIT();
   char buf[50];
 
-  sprintf(buf, "%lx->", (long) PTR_TO_INT (o));
+  snprintf(buf, sizeof(buf), "%lx->", (long)PTR_TO_INT(o));
   buffer_add_str(&buffer, buf);
   if (function->name->size_shift)
     buffer_add_str (&buffer, "[widestring function name]");
@@ -2264,7 +2266,7 @@ static void do_trace_func_return (int got_retval, struct object *o, int fun)
     if (o->prog) {
       struct identifier *id = ID_FROM_INT (o->prog, fun);
       char buf[50];
-      sprintf(buf, "%lx->", (long) PTR_TO_INT (o));
+      snprintf(buf, sizeof(buf), "%lx->", (long)PTR_TO_INT(o));
       buffer_add_str(&b, buf);
       if (id->name->size_shift)
 	buffer_add_str (&b, "[widestring function name]");
@@ -3357,10 +3359,41 @@ PMOD_EXPORT void call_handle_error(void)
   Pike_interpreter.flags = save_iflags;
 }
 
+/* NOTE: Extracted from apply_low_safe_and_stupid() to work around
+ *       bugs in some versions of gcc that complain about res in
+ *       alloc_pike_frame() being clobbered (due to inlineing).
+ *       Seen with gcc 7.3.0/x86/Solaris 11.
+ */
+static int do_apply_low_safe_and_stupid(struct pike_frame *new_frame,
+                                        struct program *prog,
+                                        INT32 offset)
+{
+  int ret;
+  JMP_BUF tmp;
+  if(SETJMP(tmp))
+  {
+    ret=1;
+  }else{
+    int tmp;
+    new_frame->save_mark_sp=Pike_mark_sp;
+    tmp=eval_instruction(prog->program + offset);
+    Pike_mark_sp=new_frame->save_mark_sp;
+
+#ifdef PIKE_DEBUG
+    if (tmp != -1)
+      Pike_fatal ("Unexpected return value from eval_instruction: %d\n", tmp);
+    if(Pike_sp<Pike_interpreter.evaluator_stack)
+      Pike_fatal("Stack error (simple).\n");
+#endif
+    ret=0;
+  }
+  UNSETJMP(tmp);
+  return ret;
+}
+
 /* NOTE: This function may only be called from the compiler! */
 int apply_low_safe_and_stupid(struct object *o, INT32 offset)
 {
-  JMP_BUF tmp;
   struct pike_frame *new_frame=alloc_pike_frame();
   int ret;
   volatile int use_dummy_reference = 1;
@@ -3435,24 +3468,7 @@ int apply_low_safe_and_stupid(struct object *o, INT32 offset)
   saved_jmpbuf = Pike_interpreter.catching_eval_jmpbuf;
   Pike_interpreter.catching_eval_jmpbuf = NULL;
 
-  if(SETJMP(tmp))
-  {
-    ret=1;
-  }else{
-    int tmp;
-    new_frame->save_mark_sp=Pike_mark_sp;
-    tmp=eval_instruction(prog->program + offset);
-    Pike_mark_sp=new_frame->save_mark_sp;
-
-#ifdef PIKE_DEBUG
-    if (tmp != -1)
-      Pike_fatal ("Unexpected return value from eval_instruction: %d\n", tmp);
-    if(Pike_sp<Pike_interpreter.evaluator_stack)
-      Pike_fatal("Stack error (simple).\n");
-#endif
-    ret=0;
-  }
-  UNSETJMP(tmp);
+  ret = do_apply_low_safe_and_stupid(new_frame, prog, offset);
 
   Pike_interpreter.catching_eval_jmpbuf = saved_jmpbuf;
   Pike_compiler->compiler_pass = save_compiler_pass;

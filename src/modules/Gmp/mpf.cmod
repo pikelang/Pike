@@ -274,7 +274,7 @@ PIKECLASS mpf
 	  memcpy(out,in,len-1);
 	  out+=len-1;
 	  in+=len+1;
-	  sprintf(out,"e%ld",(long)(expptr-1));
+          snprintf(out, ret->len - (out-outbase), "e%ld", (long)(expptr-1));
 	  out+=strlen(out);
 	}else{
 	  /* NNNNNNN.NNNNNNN */

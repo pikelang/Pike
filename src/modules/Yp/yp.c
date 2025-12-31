@@ -18,6 +18,42 @@
 #ifdef HAVE_RPC_CLNT_H
 #include <rpc/clnt.h>
 #endif /* HAVE_RPC_CLNT_H */
+
+#ifdef bool
+/* NB: Some <rpcsvc/yp_prot.h> (eg SmartOS/Solaris 5.11) contain
+ *     the declaration
+ *
+ *       #ifndef BOOL_DEFINED
+ *           typedef unsigned int bool;
+ *       #endif
+ *
+ *     it is invalid in C11 and later when there is an active
+ *
+ *       #define bool _Bool
+ *
+ *     from eg <stdbool.h>.
+ */
+#ifndef BOOL_DEFINED
+#define BOOL_DEFINED
+#endif
+#endif
+#if __STDC_VERSION__ - 0 >= 202311
+/* NB: Some <rpcsvc/yp_prot.h> (eg SmartOS/Solaris 5.11) contain
+ *     the declaration
+ *
+ *       #ifndef BOOL_DEFINED
+ *           typedef unsigned int bool;
+ *       #endif
+ *
+ *     it is invalid in C23 or later as bool is a keyword.
+ *
+ *     Cf https://github.com/TritonDataCenter/illumos-joyent/blob/master
+ *        /usr/src/head/rpcsvc/yp_prot.h
+ */
+#ifndef BOOL_DEFINED
+#define BOOL_DEFINED
+#endif
+#endif
 #include <rpcsvc/yp_prot.h>
 #include <rpcsvc/ypclnt.h>
 

@@ -763,7 +763,7 @@ static void rv_maybe_regenerate_millicode(void)
 void riscv_ins_f_byte(unsigned int opcode)
 {
   int flags = instrs[opcode-F_OFFSET].flags;
-  INT32 rel_addr;
+  INT32 rel_addr = rel_addr;
 
   switch (opcode) {
 

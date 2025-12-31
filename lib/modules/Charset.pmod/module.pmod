@@ -20,6 +20,13 @@ protected private inherit _Charset;
 //! encodings of Unicode:
 //!
 //! @ul
+//!   @item ucs2
+//!   @item ucs2be
+//!   @item ucs2le
+//!   @item ucs4
+//!   @item ucs4be
+//!   @item ucs4le
+//!     Universal Coded Character Set encodings.
 //!   @item utf7
 //!   @item utf8
 //!   @item utf16
@@ -30,7 +37,7 @@ protected private inherit _Charset;
 //!   @item utf32le
 //!   @item utf75
 //!   @item utf7Ω
-//!     UTF encodings
+//!     Unicode Transformation Format (aka UTF) encodings.
 //!   @item shiftjis
 //!   @item euc-kr
 //!   @item euc-cn
@@ -111,16 +118,23 @@ protected private inherit _Charset;
 //!   In Pike 7.8 and earlier this module was named @[Locale.Charset].
 
 //! Virtual base class for charset decoders.
+//!
+//!   Decoders take a stream of bytes and convert them to
+//!   a (possibly wide) string of Unicode code points.
+//!
 //! @example
-//!   string win1252_to_string( string data )
+//!   string win1252_to_string( string(8bit) data )
 //!   {
 //!     return Charset.decoder("windows-1252")->feed( data )->drain();
 //!   }
+//!
+//! @seealso
+//!   @[decoder()], @[Encoder]
 class Decoder
 {
   //! @decl string charset;
   //!
-  //! Name of the charset - giving this name to @[decoder] returns an
+  //! Canonical name of the charset - giving this name to @[decoder] returns an
   //! instance of the same class as this object.
   //!
   //! @note
@@ -132,10 +146,17 @@ class Decoder
   //! @param s
   //!   String to be decoded.
   //!
+  //! @param buf
+  //!   @[Stdio.Buffer] containing data to be decoded.
+  //!
   //! @returns
   //!   Returns the current object, to allow for chaining
   //!   of calls.
-  this_program feed(string s);
+  this_program feed(string(8bit) s);
+  variant this_program feed(Stdio.Buffer buf)
+  {
+    return feed(buf->read());
+  }
 
   // FIXME: There ought to be a finish(string s) function. Now it's
   // possible that certain kinds of coding errors are simply ignored
@@ -159,14 +180,22 @@ class Decoder
 }
 
 //! Virtual base class for charset encoders.
+//!
+//!   Encoders take a stream of Unicode code points and
+//!   converts them to a string of 8-bit bytes.
+//!
+//! @seealso
+//!   @[encoder()], @[Decoder]
 class Encoder
 {
   //! An encoder only differs from a decoder in that it has an extra function.
+  //! And in that @[feed()] accepts wide strings and @[drain()] returns only
+  //! 8-bit strings.
   inherit Decoder;
 
   //! @decl string charset;
   //!
-  //! Name of the charset - giving this name to @[encoder] returns
+  //! Canonical name of the charset - giving this name to @[encoder] returns
   //! an instance of the same class as this one.
   //!
   //! @note
@@ -183,6 +212,12 @@ class Encoder
   //!   Returns the current object to allow for chaining
   //!   of calls.
   this_program set_replacement_callback(function(string:string) rc);
+
+  //! Similar to @[::feed()], but accepts wide strings.
+  this_program feed(string|String.Buffer s);
+
+  //! Similar to @[::drain()], but always returns 8-bit strings.
+  string(8bit) drain();
 }
 
 private class ASCIIDec
@@ -190,22 +225,84 @@ private class ASCIIDec
   @Pike.Annotations.Implements(Decoder);
 
   constant charset = "iso88591";
-  protected private string s = "";
-  this_program feed(string ss)
+  protected Stdio.Buffer buf = Stdio.Buffer();
+  this_program feed(string(8bit)|Stdio.Buffer ss)
   {
-    s += ss;
+    buf->add(ss);
     return this;
   }
-  string drain()
+  string(8bit) drain()
   {
-    string ss = s;
-    s = "";
-    return ss;
+    return buf->read();
   }
   this_program clear()
   {
-    s = "";
+    buf = Stdio.Buffer();
     return this;
+  }
+}
+
+private class UCS2dec
+{
+  @Pike.Annotations.Implements(Decoder);
+
+  inherit ASCIIDec;
+  constant charset = "ucs2";
+  string(16bit) drain() {
+    if (sizeof(buf) < 2) return "";
+    String.Buffer outbuf = String.Buffer();
+    while (sizeof(buf) & ~1) {
+      outbuf->putchar(buf->read_int16());
+    }
+    return [string(16bit)]outbuf->get();
+  }
+}
+
+private class UCS2LEdec
+{
+  @Pike.Annotations.Implements(Decoder);
+
+  inherit UCS2dec;
+  constant charset = "ucs2le";
+  string drain() {
+    if (sizeof(buf) < 2) return "";
+    String.Buffer outbuf = String.Buffer();
+    while (sizeof(buf) & ~1) {
+      outbuf->putchar(buf->read_le_int(2));
+    }
+    return outbuf->get();
+  }
+}
+
+private class UCS4dec
+{
+  @Pike.Annotations.Implements(Decoder);
+
+  inherit ASCIIDec;
+  constant charset = "ucs4";
+  string drain() {
+    if (sizeof(buf) < 4) return "";
+    String.Buffer outbuf = String.Buffer();
+    while (sizeof(buf) & ~3) {
+      outbuf->putchar(buf->read_int32());
+    }
+    return outbuf->get();
+  }
+}
+
+private class UCS4LEdec
+{
+  @Pike.Annotations.Implements(Decoder);
+
+  inherit UCS4dec;
+  constant charset = "ucs4le";
+  string drain() {
+    if (sizeof(buf) < 4) return "";
+    String.Buffer outbuf = String.Buffer();
+    while (sizeof(buf) & ~3) {
+      outbuf->putchar(buf->read_le_int(4));
+    }
+    return outbuf->get();
   }
 }
 
@@ -217,12 +314,10 @@ private class UTF16dec
   constant charset = "utf16";
   protected int check_bom=1, le=0;
   string drain() {
-    string(8bit) s = [string(8bit)]::drain();
-    if(sizeof(s)&1) {
-      feed(s[sizeof(s)-1..]);
-      s = s[..<1];
-    }
-    if(check_bom && sizeof(s))
+    int bytes = sizeof(buf);
+    string(8bit) s = buf->read(bytes & ~1);
+    if (!sizeof(s)) return "";
+    if(check_bom)
       switch(s[..1]) {
        case "\xfe\xff":
        case "\xff\xfe":
@@ -254,11 +349,9 @@ private class UTF32dec
   constant charset = "utf32";
   string drain()
   {
-    string s = ::drain();
-    if (sizeof(s) & 3) {
-      feed(s[<sizeof(s) & 3..]);
-      s = s[..sizeof(s) & 3];
-    }
+    int bytes = sizeof(buf);
+    string(8bit) s = buf->read(bytes & ~3);
+    if (!sizeof(s)) return "";
     return (string)(array_sscanf(s, "%{%4c%}")[0]*({}));
   }
 }
@@ -271,11 +364,9 @@ private class UTF32LEdec
   constant charset = "utf32le";
   string drain()
   {
-    string s = ::drain();
-    if (sizeof(s) & 3) {
-      feed(s[<sizeof(s) & 3..]);
-      s = s[..sizeof(s) & 3];
-    }
+    int bytes = sizeof(buf);
+    string(8bit) s = buf->read(bytes & ~3);
+    if (!sizeof(s)) return "";
     return (string)(array_sscanf(s, "%{%-4c%}")[0]*({}));
   }
 }
@@ -316,9 +407,14 @@ private class ISO6937dec
     return (string)chars;
 #endif
   }
-  this_program feed(string s)
+  this_program feed(string(8bit) s)
   {
     decoder->feed(s);
+    return this;
+  }
+  variant this_program feed(Stdio.Buffer buf)
+  {
+    decoder->feed(buf->read());
     return this;
   }
   this_program clear()
@@ -349,9 +445,14 @@ private class GSM03_38dec
     if (sizeof(res) && res[-1] == '\e') trailer = "\e";
     return replace(res, "\e", "");
   }
-  this_program feed(string s)
+  this_program feed(string(8bit) s)
   {
     decoder->feed(s);
+    return this;
+  }
+  variant this_program feed(Stdio.Buffer buf)
+  {
+    decoder->feed(buf->read());
     return this;
   }
   this_program clear()
@@ -375,7 +476,7 @@ private class HZ_dec
   {
     return decoder->drain();
   }
-  protected void low_feed(string frag)
+  protected void low_feed(string(8bit) frag)
   {
     if (mode & HZ_MODE_SHIFT) {
       frag |= "\x80"*sizeof(frag);
@@ -384,14 +485,14 @@ private class HZ_dec
     }
     decoder->feed(frag);
   }
-  this_program feed(string s)
+  this_program feed(string(8bit) s)
   {
-    array(string) fragments = s/"~";
+    array(string(8bit)) fragments = s/"~";
     if (!mode & HZ_MODE_MARK) {
       low_feed(fragments[0]);
       fragments = fragments[1..];
     }
-    foreach(fragments, string frag) {
+    foreach(fragments, string(8bit) frag) {
       if (mode & HZ_MODE_MARK) {
 	mode &= ~HZ_MODE_MARK;
 	low_feed("~" + frag);
@@ -418,6 +519,11 @@ private class HZ_dec
 	low_feed(frag);
       }
     }
+    return this;
+  }
+  variant this_program feed(Stdio.Buffer buf)
+  {
+    decoder->feed(buf->read());
     return this;
   }
   this_program clear()
@@ -508,6 +614,12 @@ Decoder decoder(string|zero name)
     return ISO2022Dec();
 
   program(Decoder)|zero p = ([
+    "ucs2": UCS2dec,
+    "ucs2be": UCS2dec,
+    "ucs2le": UCS2LEdec,
+    "ucs4": UCS4dec,
+    "ucs4be": UCS4dec,
+    "ucs4le": UCS4LEdec,
     "utf7": UTF7dec,
     "utf8": UTF8dec,
     "utfebcdic": UTF_EBCDICdec,
@@ -616,6 +728,10 @@ private class ASCIIEnc
     s += low_convert(ss, replacement, repcb);
     return this;
   }
+  variant this_program feed(String.Buffer buf)
+  {
+    return feed(buf->get());
+  }
   string drain()
   {
     string ss = s;
@@ -673,6 +789,121 @@ private class USASCIIEnc
   }
 }
 
+private class UCS2enc
+{
+  @Pike.Annotations.Implements(Encoder);
+
+  inherit ASCIIEnc;
+  constant charset = "ucs2";
+  protected string low_convert(string s, string|void r,
+                               function(string:string)|void rc)
+  {
+    if (String.width(s) <= 16) return s;
+
+    String.Buffer res = String.Buffer();
+    function(string ...:void) add = res->add;
+
+    string|zero rr;
+    int l;
+    foreach(s; int i; int c) {
+      if(c > 65535) {
+        if (l < i)
+          add (s[l..i - 1]);
+        l = i + 1;
+        if(rc && (rr = rc(s[i..i])))
+          add(low_convert(rr, r));
+        else if(r)
+          add([string]r);
+        else
+          encode_error (s, i, charset, "Character unsupported by encoding.\n");
+      }
+    }
+    if (l < sizeof (s))
+      add (s[l..]);
+    return res->get();
+  }
+  string drain() {
+    string ss = s;
+    s = "";
+    Stdio.Buffer outbuf = Stdio.Buffer();
+    foreach(ss; ; int c) {
+      outbuf->putchar((c>>8) & 255);
+      outbuf->putchar(c & 255);
+    }
+    return outbuf->read();
+  }
+}
+
+private class UCS2LEenc
+{
+  @Pike.Annotations.Implements(Encoder);
+
+  inherit UCS2enc;
+  constant charset = "ucs2le";
+  string(8bit) drain() {
+    string ss = s;
+    s = "";
+    Stdio.Buffer outbuf = Stdio.Buffer();
+    foreach(ss; ; int c) {
+      outbuf->putchar(c & 255);
+      outbuf->putchar((c>>8) & 255);
+    }
+    return outbuf->read();
+  }
+}
+
+private class UCS4enc
+{
+  @Pike.Annotations.Implements(Encoder);
+
+  inherit ASCIIEnc;
+  constant charset = "ucs4";
+  protected private string low_convert(string s, string|void r,
+                                       function(string:string)|void rc)
+  {
+    return s;
+  }
+  this_program feed(string ss) {
+    s += ss;
+    return this;
+  }
+  variant this_program feed(String.Buffer buf) {
+    return feed(buf->get());
+  }
+  string(8bit) drain() {
+    string ss = s;
+    s = "";
+    Stdio.Buffer outbuf = Stdio.Buffer();
+    foreach(ss; ; int c) {
+      outbuf->putchar((c>>24) & 255);
+      outbuf->putchar((c>>16) & 255);
+      outbuf->putchar((c>>8) & 255);
+      outbuf->putchar(c & 255);
+    }
+    return outbuf->read();
+  }
+}
+
+private class UCS4LEenc
+{
+  @Pike.Annotations.Implements(Encoder);
+
+  inherit UCS4enc;
+  constant charset = "ucs4le";
+  string(8bit) drain() {
+    string ss = s;
+    s = "";
+    Stdio.Buffer outbuf = Stdio.Buffer();
+    foreach(ss; ; int c) {
+      outbuf->putchar(c & 255);
+      outbuf->putchar((c>>8) & 255);
+      outbuf->putchar((c>>16) & 255);
+      outbuf->putchar((c>>24) & 255);
+    }
+    return outbuf->read();
+  }
+}
+
 private class UTF16enc
 {
   @Pike.Annotations.Implements(Encoder);
@@ -710,7 +941,10 @@ private class UTF16enc
     s += ss;
     return this;
   }
-  string drain() {
+  variant this_program feed(String.Buffer buf) {
+    return feed(buf->get());
+  }
+  string(8bit) drain() {
     string ss = s;
     s = "";
     catch {
@@ -727,7 +961,7 @@ private class UTF16LEenc
 
   inherit UTF16enc;
   constant charset = "utf16le";
-  string drain() {
+  string(8bit) drain() {
     return map(::drain()/2, reverse)*"";
   }
 }
@@ -767,9 +1001,9 @@ private class ISO6937enc
     if (!replacement && !repcb) return;
     encoder = [object(Encoder)]rfc1345("iso6937", 1, replacement, repcb);
   }
-  string drain()
+  string(8bit) drain()
   {
-    return encoder->drain();
+    return [string(8bit)]encoder->drain();
   }
   this_program feed(string s)
   {
@@ -793,6 +1027,9 @@ private class ISO6937enc
     }
     encoder->feed(s);
     return this;
+  }
+  variant this_program feed(String.Buffer buf) {
+    feed(buf->get());
   }
   this_program clear()
   {
@@ -818,7 +1055,7 @@ private class GSM03_38enc
     if (!replacement && !repcb) return;
     encoder = [object(Encoder)]rfc1345("gsm0338", 1, replacement, repcb);
   }
-  string drain()
+  string(8bit) drain()
   {
     return encoder->drain();
   }
@@ -831,6 +1068,9 @@ private class GSM03_38enc
 		"\eÿ\e\u039b\e(\e)\e/\e<\e=\e>\e°\ee"/2);
     encoder->feed(s);
     return this;
+  }
+  variant this_program feed(String.Buffer buf) {
+    return feed(buf->get());
   }
   this_program clear()
   {
@@ -905,6 +1145,12 @@ Encoder encoder(string|zero name, string|void replacement,
     return ISO2022Enc(name[7..], replacement, repcb);
 
   program(Encoder)|zero p = ([
+    "ucs2": UCS2enc,
+    "ucs2be": UCS2enc,
+    "ucs2le": UCS2LEenc,
+    "ucs4": UCS4enc,
+    "ucs4be": UCS4enc,
+    "ucs4le": UCS4LEenc,
     "utf7": UTF7enc,
     "utf8": UTF8enc,
     "utfebcdic": UTF_EBCDICenc,

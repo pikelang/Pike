@@ -146,6 +146,24 @@ function(this_program,array:void) error_callback;
 
 System.Timer startt = System.Timer();
 
+//! Main entry point for the class.
+//!
+//! @param _fd
+//!   Newly accepted connection.
+//!
+//! @param server
+//!   @[Protocols.HTTP.Server.Port] that accepted the connection.
+//!
+//! @param _request_callback
+//!   Callback function registered with @[Protocols.HTTP.Server.Port()].
+//!
+//! @param already_data
+//!   Data that has already been received from @[_fd].
+//!
+//! @param _error_callback
+//!   Callback function called when an error is detected.
+//!
+//! Typically called from @[Protocols.HTTP.Server.Port()->new_connection()].
 void attach_fd(Stdio.NonblockingStream _fd, object(Port)|zero server,
 	       function(this_program:void) _request_callback,
 	       void|string already_data,
@@ -156,11 +174,12 @@ void attach_fd(Stdio.NonblockingStream _fd, object(Port)|zero server,
    headerparser = .HeaderParser();
    request_callback=_request_callback;
    error_callback = _error_callback;
+   if (already_data && strlen(already_data)) {
+      read_cb(0,already_data);
+   }
    my_fd->set_nonblocking(read_cb,0,close_cb);
    my_fd->set_nodelay(1);
    call_out(connection_timeout,connection_timeout_delay);
-   if (already_data && strlen(already_data))
-      read_cb(0,already_data);
 }
 
 constant SHUFFLER = 1;
@@ -185,11 +204,12 @@ constant singular_use_headers = ({
     "cookie2",
 });
 
-private int sent;
-private OutputBuffer send_buf = OutputBuffer(BLOCKSIZE);
-private object(Stdio.File)|zero send_fd = 0;
-private int send_stop;
-private int keep_alive=0;
+constant has_protected_send_buf = 1;
+protected int sent;
+protected OutputBuffer send_buf = OutputBuffer(BLOCKSIZE);
+protected object(Stdio.File)|zero send_fd = 0;
+protected int send_stop;
+protected int keep_alive=0;
 
 protected void flatten_headers()
 {
@@ -226,6 +246,7 @@ protected void read_cb(mixed dummy,string s)
        return;
      }
 
+      // Strip initial whitespace (and whitespace between requests).
       sscanf(s,"%*[ \t\n\r]%s", s );
       if( !strlen( s ) )
          return;

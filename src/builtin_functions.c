@@ -25,7 +25,7 @@
 #include "backend.h"
 #include "main.h"
 #include "pike_memory.h"
-#include "threads.h"
+#include "pike_threads.h"
 #include "time_stuff.h"
 #include "version.h"
 #include "encode.h"
@@ -41,7 +41,7 @@
 #include "lex.h"
 #include "pike_float.h"
 #include "pike_compiler.h"
-#include "port.h"
+#include "pike_port.h"
 #include "siphash24.h"
 
 #include <errno.h>
@@ -61,7 +61,7 @@
 /* #define DIFF_DEBUG */
 /* #define ENABLE_DYN_DIFF */
 
-/*! @decl int equal(mixed a, mixed b)
+/*! @decl int(0..1) equal(mixed a, mixed b)
  *!
  *!   This function checks if the values @[a] and @[b] are equivalent.
  *!
@@ -86,17 +86,21 @@
  *!     @type multiset
  *!     @type object
  *!       The contents of @[a] and @[b] are checked recursively, and
- *!       if all their contents are @[equal] and in the same place,
+ *!       if all their contents are @[equal] and in the same place
+ *!       and have the same @[set_weak_flag()] flags,
  *!       they are considered equal.
  *!
  *!       Note that for objects this case is only reached if neither
  *!       @[a] nor @[b] implements @[lfun::_equal()].
+ *!     @type function
+ *!       Two functions are equal if they refer to the same identifier
+ *!       in the same class and their objects are equal.
  *!     @type type
  *!       Returns @expr{(a <= b) && (b <= a)@}.
  *!  @endmixed
  *!
  *! @seealso
- *!   @[copy_value()], @[`==()]
+ *!   @[copy_value()], @[get_weak_flag()], @[set_weak_flag()], @[`==()]
  */
 PMOD_EXPORT void f_equal(INT32 args)
 {
@@ -454,7 +458,7 @@ static void f_hash_8_0(INT32 args)
  *!
  *! @note
  *!   This hash function differs from the one provided by @[hash_value()],
- *!   in that @[hash_value()] returns a process specific value.
+ *!   in that @[hash_value()] returns a process-specific value.
  *!
  *! @seealso
  *!   @[hash_7_0()], @[hash_7_4()], @[hash_8_0()], @[hash_value]
@@ -5913,11 +5917,18 @@ static void encode_struct_tm(const struct tm *tm, int gmtoffset)
 
 static void encode_tm_tz(const struct tm*tm)
 {
+#if defined(HAVE__GET_TIMEZONE)
+  long tzsec;
+  _get_timezone (&tzsec);
+#endif
   encode_struct_tm(tm,
 #ifdef STRUCT_TM_HAS_GMTOFF
    -tm->tm_gmtoff
 #elif defined(STRUCT_TM_HAS___TM_GMTOFF)
    -tm->__tm_gmtoff
+#elif defined(HAVE__GET_TIMEZONE)
+   /* Assume dst is one hour. */
+   tzsec - 3600*tm->tm_isdst
 #elif defined(HAVE_EXTERNAL_TIMEZONE)
    /* Assume dst is one hour. */
    timezone - 3600*tm->tm_isdst
@@ -6264,15 +6275,15 @@ time_t mktime_zone(struct tm *date, int other_timezone, int tz)
     if (other_timezone) {
       /* NB: This happens for times near {MIN,MAX}_TIME_T. */
       const char *orig_tz = getenv("TZ");
-      char tzbuf[20];
+      char tzbuf[32];
       ONERROR uwp;
-      char *tzsgn = tz < 0 ? "-" : "+";
-      if (tz < 0) tz = -tz;
-      sprintf(tzbuf, "TZ=UTC%s%02d:%02d:%02d",
-	      tzsgn,
-	      tz/3600,
-	      (tz/60)%60,
-	      tz % 60);
+      char tzsgn = tz < 0 ? '-' : '+';
+      unsigned short tzu = (tz < 0? -tz : tz);
+      snprintf(tzbuf, sizeof(tzbuf), "TZ=UTC%c%02u:%02u:%02u",
+               tzsgn,
+               tzu/3600,
+               (tzu/60)%60,
+               tzu % 60);
       if (orig_tz) {
         /* NB: orig_tz may point into the buffer that putenv()
          *     writes to, so we need to make a copy here.
@@ -6395,6 +6406,12 @@ static int get_tm(const char *fname, int args, struct tm *date)
   date->tm_mon = mon;
   date->tm_year = year;
   date->tm_isdst = isdst;
+#ifdef STRUCT_TM_HAS_GMTOFF
+  date->tm_gmtoff = -tz;
+#endif
+#ifdef STRUCT_TM_HAS___TM_GMTOFF
+  date->__tm_gmtoff = -tz;
+#endif
 #ifdef NULL_IS_SPECIAL
   date->tm_zone = NULL;
 #endif
@@ -9783,7 +9800,7 @@ static node *fix_map_node_info(node *n)
     argno = 0;
   }
 
-  for (argno; (cb_ = my_get_arg(&_CDR(n), argno)); argno++) {
+  for (; (cb_ = my_get_arg(&_CDR(n), argno)); argno++) {
     node *cb = *cb_;
 
     if ((cb->token == F_CONSTANT) &&

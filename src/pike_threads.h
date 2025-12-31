@@ -61,9 +61,9 @@ struct thread_state {
 
 /* Prototypes begin here */
 PMOD_EXPORT int low_nt_create_thread(unsigned stack_size,
-				     unsigned (TH_STDCALL *func)(void *),
-				     void *arg,
-				     unsigned *id);
+                                     unsigned (TH_STDCALL *func)(void *),
+                                     void *arg,
+                                     unsigned *id);
 struct thread_starter;
 struct thread_local_var;
 void low_init_threads_disable(void);

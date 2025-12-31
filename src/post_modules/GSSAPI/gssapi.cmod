@@ -36,13 +36,12 @@
 #include "gssapi_config.h"
 
 #include "bignum.h"
-#include "threads.h"
+#include "pike_threads.h"
 #include "builtin_functions.h"
 #include "interpret.h"
 #include "operators.h"
 #include "pike_error.h"
 #include "pike_threadlib.h"
-#include "threads.h"
 #include "version.h"
 #include "module_support.h"
 #include "sprintf.h"
@@ -65,7 +64,20 @@ DECLARATIONS
 #undef HAVE_SYS_TYPES_H
 #undef HAVE_STDLIB_H
 
-#ifdef HAVE_GSSAPI_GSSAPI_H
+/* MacOS X warns about lots of the GSSAPI functions being deprecated.
+ *
+ * FIXME: Consider using the new API (cf #10196).
+ */
+#undef GSSKRB_APPLE_DEPRECATED
+#define GSSKRB_APPLE_DEPRECATED(X)
+
+#ifdef HAVE_GSS_GSS_H
+/* MacOS X 10.7 or later GSS framework.
+ *
+ * Note that <GSS/GSS.h> pulls in all of GSSAPI.
+ */
+#include <GSS/GSS.h>
+#elif defined(HAVE_GSSAPI_GSSAPI_H)
 #include <gssapi/gssapi.h>
 #elif defined (HAVE_GSSAPI_H)
 #include <gssapi.h>
@@ -81,6 +93,7 @@ DECLARATIONS
   };									\
   static const gss_OID_desc * const NAME = &PIKE_CONCAT (NAME, _desc)
 
+#ifndef HAVE_GSS_GSS_H
 #ifdef HAVE_GSSAPI_GSSAPI_KRB5_H
 #include <gssapi/gssapi_krb5.h>
 #elif defined (HAVE_GSSAPI_KRB5_H)
@@ -93,6 +106,7 @@ DECLARATIONS
 DEFINE_STATIC_OID (GSS_KRB5_NT_PRINCIPAL_NAME,
 		   "\x2a\x86\x48\x86\xf7\x12\x01\x02\x02\x01");
 #define HAVE_GSS_KRB5_NT_PRINCIPAL_NAME
+#endif
 #endif
 
 #if defined (GSS_RFC_COMPLIANT_OIDS) && !GSS_RFC_COMPLIANT_OIDS

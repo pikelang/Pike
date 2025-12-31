@@ -77,13 +77,17 @@ typedef void (*modfun)(void);
 
 #ifdef USE_STATIC_MODULES
 
+static int invalid_semidynamic_module = 0;
+
 static void *dlopen(const char *foo, int UNUSED(how))
 {
   struct pike_string *s = low_read_file(foo);
   char *name, *end;
   void *res;
 
+  invalid_semidynamic_module = 0;
   if (!s) return NULL;
+  invalid_semidynamic_module = 1;
   if (strncmp(s->str, "PMODULE=\"", 9)) {
     free_string(s);
     return NULL;
@@ -94,6 +98,7 @@ static void *dlopen(const char *foo, int UNUSED(how))
     return NULL;
   }
 
+  invalid_semidynamic_module = 0;
   res = (void *)find_semidynamic_module(name, end - name);
   free_string(s);
   return res;
@@ -101,7 +106,8 @@ static void *dlopen(const char *foo, int UNUSED(how))
 
 static char *dlerror(void)
 {
-  return "Invalid dynamic module.";
+  return invalid_semidynamic_module ? "Invalid dynamic module." :
+    "The specified module could not be found.";
 }
 
 static void *dlsym(void *module, char *function)
@@ -138,6 +144,7 @@ static void *dlopen(const char *foo, int how)
 {
   TCHAR *tmp;
   HINSTANCE ret;
+  (void) how;
   tmp=convert_string(foo, strlen(foo));
   ret=LoadLibrary(tmp);
   free(tmp);
@@ -152,7 +159,7 @@ static char * dlerror(void)
   case ERROR_MOD_NOT_FOUND:
     return "The specified module could not be found.";
   default:
-    sprintf(buffer,"LoadLibrary failed with error: %d",err);
+    snprintf(buffer, sizeof(buffer), "LoadLibrary failed with error: %d", err);
   }
   return buffer;
 }

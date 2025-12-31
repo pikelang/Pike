@@ -120,11 +120,11 @@ PMOD_EXPORT void check_all_args(const char *fnname, int args, ... )
 	if(buf[0])
 	{
 	  if(tmp.expected & 0xffff & (0xffff << e))
-	    strcat(buf,", ");
+            strlcat(buf, ", ", 1000);
 	  else
-	    strcat(buf," or ");
+            strlcat(buf, " or ", 1000);
 	}
-	strcat(buf, get_name_of_type(e));
+        strlcat(buf, get_name_of_type(e), 1000);
       }
     }
 

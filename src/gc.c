@@ -1,4 +1,4 @@
-/*
+/* -*- mode: c; encoding: utf-8; -*-
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
@@ -82,7 +82,8 @@ struct svalue gc_done_cb;
  *   in the marker.
  *
  * GC_PASS_CYCLE
- *   Identify cycles in the unmarked objects.
+ *   Identify cycles in the unmarked objects. The unmarked objects
+ *   are the objects that are still on the gc_internal_* lists.
  *
  * GC_PASS_ZAP_WEAK
  *   Zap weak references to unmarked objects.
@@ -258,6 +259,7 @@ static struct gc_rec_frame sentinel_frame = {
 };
 static struct gc_rec_frame *stack_top = &sentinel_frame;
 static struct gc_rec_frame *kill_list = &sentinel_frame;
+static struct gc_rec_frame *kill_list_last = NULL;
 
 /* Cycle checking
  *
@@ -526,7 +528,7 @@ void count_memory_in_ba_mixed_frames(size_t *num, size_t * size) {
   ba_count_all(&ba_mixed_frame_allocator, num, size);
 }
 
-static inline struct link_frame *alloc_link_frame()
+static inline struct link_frame *alloc_link_frame(void)
 {
   struct ba_mixed_frame *f = ba_alloc(&ba_mixed_frame_allocator);
   if (++link_frames > max_link_frames)
@@ -534,7 +536,7 @@ static inline struct link_frame *alloc_link_frame()
   return (struct link_frame *) f;
 }
 
-static inline struct free_extra_frame *alloc_free_extra_frame()
+static inline struct free_extra_frame *alloc_free_extra_frame(void)
 {
   struct ba_mixed_frame *f = ba_alloc(&ba_mixed_frame_allocator);
   free_extra_frames++;
@@ -1469,7 +1471,7 @@ again:
 	  if (id_ref->id_flags & ID_VARIANT)   strcat (prot, ",var");
 	  if (id_ref->id_flags & ID_USED)      strcat (prot, ",use");
 
-	  sprintf (descr, "%s: %s", type, prot + 1);
+          snprintf (descr, sizeof(descr), "%s: %s", type, prot + 1);
 	  fprintf (stderr, "%*s**%*s%-3"PRINTPTRDIFFT"d %-18s name: ",
 		   indent, "", id_inh->inherit_level + 1, "", id_idx, descr);
 
@@ -2674,7 +2676,7 @@ static struct gc_rec_frame *gc_cycle_enqueue_rec (void *data)
   return r;
 }
 
-void gc_cycle_run_queue()
+void gc_cycle_run_queue(void)
 {
 #ifdef PIKE_DEBUG
   if (Pike_in_gc != GC_PASS_CYCLE)
@@ -3120,7 +3122,7 @@ mark_live:
   return 1;
 }
 
-static void gc_cycle_pop()
+static void gc_cycle_pop(void)
 {
 #ifdef PIKE_DEBUG
   if (Pike_in_gc != GC_PASS_CYCLE)
@@ -3241,9 +3243,24 @@ static void gc_cycle_pop()
 	  popped->cycle_piece = popped->u.last_cycle_piece =
 	    (struct gc_rec_frame *) (ptrdiff_t) -1;
 #endif
+#if 0
+          /* Enqueue elements after any previous elements. */
+          popped->next = &sentinel_frame;
+          /* popped->prev = sentinel_frame.prev; */
+          if (kill_list == &sentinel_frame) {
+            kill_list = popped;
+          } else {
+            kill_list_last->next = popped;
+          }
+          kill_list_last = popped;
+#else
+          /* NB: Elements are enqueued before the previous cycle,
+           * but after the previous elements in the same cycle.
+           */
 	  popped->next = *kill_list_ptr;
 	  *kill_list_ptr = popped;
 	  kill_list_ptr = &popped->next;
+#endif
 	  popped->rf_flags |= GC_ON_KILL_LIST;
 
 	  /* Ensure that the frames on the kill list have a valid
@@ -3414,18 +3431,18 @@ static void warn_bad_cycles(void)
   SET_ONERROR(tmp, free_obj_arr, obj_arr_);
 
   {
-    struct gc_pop_frame *p;
-    unsigned cycle = 0;
+    struct gc_rec_frame *p;
+    struct gc_rec_frame *cycle = NULL;
     *obj_arr_ = allocate_array(0);
 
-    for (p = kill_list; p;) {
-      if ((cycle = p->cycle)) {
+    for (p = kill_list; p != &sentinel_frame;) {
+      if ((cycle = p->cycle_id)) {
 	push_object((struct object *) p->data);
 	dmalloc_touch_svalue(Pike_sp-1);
 	*obj_arr_ = append_array(*obj_arr_, --Pike_sp);
       }
       p = p->next;
-      if (p ? ((unsigned)(p->cycle != cycle)) : cycle) {
+      if (p ? ((unsigned)(p->cycle_id != cycle)) : !!cycle) {
 	if ((*obj_arr_)->size >= 2) {
 	  push_static_text("gc");
 	  push_static_text("bad_cycle");
@@ -3594,7 +3611,7 @@ size_t do_gc(int explicit_call)
   Pike_in_gc=GC_PASS_MARK;
 
   /* Anything after and including gc_internal_* in the linked lists
-   * are considered to lack external references. The mark pass move
+   * are considered to lack external references. The mark pass moves
    * externally referenced things in front of these pointers. */
   gc_internal_array = first_array;
   gc_internal_multiset = first_multiset;
@@ -4113,7 +4130,7 @@ size_t do_gc(int explicit_call)
     {
       char timestr[40];
       if (last_gc_time != (cpu_time_t) -1)
-	sprintf (timestr, ", %ld ms",
+        snprintf(timestr, sizeof(timestr), ", %ld ms",
 		 (long) (last_gc_time / (CPU_TIME_TICKS / 1000)));
       else
 	timestr[0] = 0;
@@ -4875,7 +4892,7 @@ static unsigned INT32 mc_wq_size, mc_wq_used;
 #define CHECK_WQ() do {} while (0)
 #endif
 
-static struct mc_marker *mc_wq_dequeue()
+static struct mc_marker *mc_wq_dequeue(void)
 {
   struct mc_marker *m;
 

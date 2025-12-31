@@ -34,7 +34,7 @@
 #include "fd_control.h"
 #include "object.h"
 #include "array.h"
-#include "threads.h"
+#include "pike_threads.h"
 #include "interpret.h"
 #include "svalue.h"
 #include "callback.h"
@@ -187,21 +187,6 @@ static void exit_pike_sendfile(struct object *UNUSED(o))
   if (THIS->backend_callback)
     remove_callback (THIS->backend_callback);
 }
-
-/*
- * Fallback code
- */
-
-#ifndef HAVE_WRITEV
-#define writev my_writev
-static size_t writev(int fd, struct iovec *iov, int n)
-{
-  if (n) {
-    return fd_write(fd, iov->iov_base, iov->iov_len);
-  }
-  return 0;
-}
-#endif /* !HAVE_WRITEV */
 
 /*
  * Helper functions

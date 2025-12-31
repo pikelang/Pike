@@ -26,10 +26,10 @@ void create(int|mapping(string:mixed) socket_id_or_props)
   pgtk2_verify_setup();
   {
     if (TYPEOF(Pike_sp[-args]) == PIKE_T_INT) {
-      INT_TYPE id;
+      INT64 id;
       GtkWidget *gp;
-      get_all_args(NULL,args,"%i",&id);
-      gp=gtk_plug_new(id);
+      get_all_args(NULL, args, "%l", &id);
+      gp = gtk_plug_new((GdkNativeWindow)(ptrdiff_t)id);
       THIS->obj=G_OBJECT(gp);
     } else {
       INIT_WITH_PROPS(GTK_TYPE_PLUG);
@@ -39,6 +39,15 @@ void create(int|mapping(string:mixed) socket_id_or_props)
   pgtk2__init_this_object();
 }
 
-int get_id();
+int get_id()
 //! Gets the window id of this widget.
-
+{
+  pgtk2_verify_inited();
+  {
+    /* NB: GdkNativeWindow is a pointer type on NT and MacOS X. */
+    GdkNativeWindow a1;
+    a1 = gtk_plug_get_id( GTK_PLUG(THIS->obj) );
+    my_pop_n_elems(args);
+    PGTK_PUSH_INT( (ptrdiff_t)a1 );
+  }
+}

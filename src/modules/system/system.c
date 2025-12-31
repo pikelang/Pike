@@ -27,7 +27,7 @@
 #include "las.h"
 #include "interpret.h"
 #include "stralloc.h"
-#include "threads.h"
+#include "pike_threads.h"
 #include "svalue.h"
 #include "mapping.h"
 #include "builtin_functions.h"
@@ -1955,7 +1955,8 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port,
      *     cf [bug 7599] and https://bugs.python.org/issue17269 .
      */
     hints.ai_flags |= AI_NUMERICSERV;
-    sprintf(service = servnum_buf, "%"PRINTPIKEINT"d", port & 0xffff);
+    snprintf(service = servnum_buf, sizeof(servnum_buf),
+             "%"PRINTPIKEINT"d", port & 0xffff);
   }
 
 #if AI_NUMERICHOST != 0
@@ -3147,7 +3148,16 @@ void f_daemon(INT32 args)
 {
    INT_TYPE a, b;
    get_all_args("daemon", args, "%i%i", &a, &b);
+#ifdef HAVE_PRAGMA_GCC_DIAGNOSTIC
+   /* Ignore deprecation warnings about daemon; when it is removed
+      we will detect that and not compile this function anymore... */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
    push_int( daemon( a, b) );
+#ifdef HAVE_PRAGMA_GCC_DIAGNOSTIC
+#pragma GCC diagnostic pop
+#endif
 }
 #endif /* HAVE_DAEMON */
 

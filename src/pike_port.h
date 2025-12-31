@@ -117,9 +117,45 @@ PMOD_EXPORT void GETTIMEOFDAY(struct timeval *t);
 #  endif
 #endif
 
+#ifdef HAVE_ARC4RANDOM
+/* Make OpenBSDs linker shut up about rand() possibly being deterministic. */
+#define rand()	arc4random()
+#endif
+
 #if !defined(HAVE_SNPRINTF) && defined(HAVE__SNPRINTF)
 /* In WIN32 snprintf is known as _snprintf... */
 #define snprintf _snprintf
+#endif
+
+#ifndef HAVE_STRLCPY
+static inline size_t PIKE_UNUSED_ATTRIBUTE strlcpy(char *dst,
+                                                   const char *src,
+                                                   size_t dstsz)
+{
+  size_t ret = 0;
+  if (!dstsz) return 0;
+  while (--dstsz) {
+    if (!(*(dst++) = *(src++))) return ret;
+    ret++;
+  }
+  *dst = 0;
+  return ret;
+}
+#endif
+
+#ifndef HAVE_STRLCAT
+static inline size_t PIKE_UNUSED_ATTRIBUTE strlcat(char *dst,
+                                                   const char *src,
+                                                   size_t dstsz)
+{
+  size_t ret = 0;
+  while(dstsz && *dst) {
+    dst++;
+    dstsz--;
+    ret++;
+  }
+  return ret + strlcpy(dst, src, dstsz);
+}
 #endif
 
 #ifndef HAVE_RINT
@@ -134,6 +170,9 @@ PMOD_EXPORT int STRCASECMP(const char *a,const char *b);
 #  define STRCASECMP(A,B) strcasecmp(A,B)
 #endif
 
+/* NB: snprintf is in C99 and SUSv2 and POSIX.1-2001.
+ *     All relevant platforms have snprintf (or _snprintf).
+ */
 #define SNPRINTF snprintf
 
 #define HAVE_STRCHR 1

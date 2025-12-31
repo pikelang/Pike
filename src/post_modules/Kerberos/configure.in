@@ -20,20 +20,30 @@ if test x$with_krb5 = xyes ; then
 
   PIKE_FEATURE(Kerberos,[no (krb5.h not found)])
 
-  AC_CHECK_HEADERS(krb5.h kerberosv5/krb5.h)
+  AC_CHECK_HEADERS(Kerberos/Kerberos.h krb5.h kerberosv5/krb5.h)
 
-  if test "$ac_cv_header_krb5_h" = "yes" -o "$ac_cv_header_kerberosv5_krb5_h" = "yes"; then
+  if test "$ac_cv_header_Kerberos_Kerberos_h" = "yes" -o \
+          "$ac_cv_header_krb5_h" = "yes" -o \
+          "$ac_cv_header_kerberosv5_krb5_h" = "yes"; then
     dnl Checks for libraries.
 
     PIKE_FEATURE(Kerberos,[no (krb5 libraries not found)])
 
-    # Must use PIKE_SEARCH_LIBS since the lib in the Windows dist
-    # (KfW) uses __stdcall.
-    PIKE_SEARCH_LIBS(krb5_init_context, [
-      krb5_init_context (NULL);
-    ], krb5 krb5_32, [
-      AC_DEFINE(HAVE_KRB5,, [Defined if Kerberos 5 works.])
-      PIKE_FEATURE(Kerberos,[yes ($pike_cv_search_krb5_init_context)])
+    AC_CHECK_FRAMEWORK(GSS, krb5_init_context, [
+      AH_CHECK_FRAMEWORK(Kerberos)
+      AC_DEFINE(HAVE_FRAMEWORK_KERBEROS)
+      LIBS="-framework Kerberos $LIBS"
+      AC_DEFINE(HAVE_KRB5)
+      PIKE_FEATURE(Kerberos, [yes (framework Kerberos)])
+    ], [
+      # Must use PIKE_SEARCH_LIBS since the lib in the Windows dist
+      # (KfW) uses __stdcall.
+      PIKE_SEARCH_LIBS(krb5_init_context, [
+        krb5_init_context (NULL);
+      ], krb5 krb5_32, [
+        AC_DEFINE(HAVE_KRB5,, [Defined if Kerberos 5 works.])
+        PIKE_FEATURE(Kerberos,[yes ($pike_cv_search_krb5_init_context)])
+      ])
     ])
   fi
 fi

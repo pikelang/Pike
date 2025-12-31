@@ -199,7 +199,7 @@ class Node
 #define WS "%*[ \t\n\r]"
 #define NAME "%[^][ \t\n\r/@(){},=.]"
 
-  void simple_path_error (string msg, mixed... args)
+  protected void simple_path_error (string msg, mixed... args)
   {
     if (sizeof (args)) msg = sprintf (msg, @args);
     msg += sprintf ("%s node%s.\n", class_name,
@@ -958,6 +958,7 @@ class Document
   //DOMImplementation get_implementation();
   //DocumentType get_doctype();
 
+  //!
   Element get_document_element()
   {
     if (!document_element) {
@@ -1028,6 +1029,7 @@ class Document
   //! @note
   //! Not DOM compliant.
 
+  //!
   protected void create (void|string|array(string|Node) c, void|int raw_vals)
   {
     content = c;
@@ -1056,6 +1058,7 @@ class Document
 
 //class Attr {}
 
+//!
 class Element
 {
   inherit NodeWithChildElements;
@@ -1089,6 +1092,7 @@ class Element
 
   //void normalize();
 
+  //!
   protected void create (Document owner, string name, void|mapping(string:string) attr)
   {
     owner_document = owner;
@@ -1127,6 +1131,7 @@ class Element
   }
 }
 
+//!
 class CharacterData
 {
   inherit Node;
@@ -1160,6 +1165,7 @@ class CharacterData
     node_value = node_value[..offset - 1] + arg + node_value[offset + count..];
   }
 
+  //!
   mapping(string:string)|Node|array(mapping(string:string)|Node)|string
     simple_path (string path, void|int xml_format)
   {
@@ -1188,6 +1194,7 @@ class CharacterData
   protected string sprintf_content (int flag) {return sprintf ("%O", node_value);}
 }
 
+//!
 class Text
 {
   inherit CharacterData;
@@ -1198,6 +1205,7 @@ class Text
 
   //Text split_text (int offset);
 
+  //!
   protected void create (Document owner, string data)
   {
     owner_document = owner;
@@ -1218,6 +1226,7 @@ class Text
   }
 }
 
+//!
 class Comment
 {
   inherit CharacterData;
@@ -1226,6 +1235,7 @@ class Comment
   int get_node_type() { return COMMENT_NODE; }
   string get_node_name() { return "#comment"; }
 
+  //!
   mapping(string:string)|Node|array(mapping(string:string)|Node)|string
     simple_path (string path, void|int xml_format)
   {
@@ -1234,6 +1244,7 @@ class Comment
     return xml_format && "";
   }
 
+  //!
   protected void create (Document owner, string data)
   {
     owner_document = owner;
@@ -1250,6 +1261,7 @@ class Comment
   }
 }
 
+//!
 class CDATASection
 {
   inherit Text;
@@ -1258,6 +1270,7 @@ class CDATASection
   int get_node_type() { return CDATA_SECTION_NODE; }
   string get_node_name() { return "#cdata-section"; }
 
+  //!
   protected void create (Document owner, string data)
   {
     owner_document = owner;
@@ -1286,6 +1299,7 @@ class CDATASection
 //class Notation {}
 //class Entity {}
 
+//!
 class EntityReference
 {
   inherit Node;
@@ -1302,6 +1316,7 @@ class EntityReference
   //Node get_previous_sibling();
   //Node get_next_sibling();
 
+  //!
   mapping(string:string)|Node|array(mapping(string:string)|Node)|string
     simple_path (string path, void|int xml_format)
   {
@@ -1310,6 +1325,7 @@ class EntityReference
     return xml_format && "";
   }
 
+  //!
   protected void create (Document owner, string name)
   {
     owner_document = owner;
@@ -1340,6 +1356,7 @@ class EntityReference
   }
 }
 
+//!
 class ProcessingInstruction
 {
   inherit Node;
@@ -1356,6 +1373,7 @@ class ProcessingInstruction
   string get_data() {return node_value;}
   void set_data (string data) {node_value = data;}
 
+  //!
   mapping(string:string)|Node|array(mapping(string:string)|Node)|string
     simple_path (string path, void|int xml_format)
   {
@@ -1366,6 +1384,7 @@ class ProcessingInstruction
     return xml_format && "";
   }
 
+  //!
   protected void create (Document owner, string t, string data)
   {
     owner_document = owner;

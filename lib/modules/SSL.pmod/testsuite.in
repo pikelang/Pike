@@ -455,7 +455,11 @@ test_any([[
 cond_end // thread_create
 
 test_do([[
+#if constant(OMIT_SLOW_TESTS)
+  add_constant("client_msg", random_string(4079));
+#else
   add_constant("client_msg", random_string(65519));
+#endif
 ]])
 
 test_do([[

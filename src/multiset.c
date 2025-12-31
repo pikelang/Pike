@@ -2976,13 +2976,18 @@ PMOD_EXPORT int multiset_equal_p (struct multiset *a, struct multiset *b,
 
   if (a->msd == b->msd) return 1;
 
+  if ((a->msd->flags ^ b->msd->flags) & MULTISET_WEAK) {
+    /* Weak flag differs. */
+    return 0;
+  }
+
   check_multiset_for_destruct (a);
   check_multiset_for_destruct (b);
 
   rd.a_msd = a->msd, rd.b_msd = b->msd;
 
   if (multiset_sizeof (a) != multiset_sizeof (b) ||
-      rd.a_msd->flags || rd.b_msd->flags ||
+      ((rd.a_msd->flags ^ rd.b_msd->flags) & MULTISET_WEAK) ||
       !SAME_CMP_LESS (rd.a_msd, rd.b_msd))
     return 0;
 
@@ -3041,7 +3046,7 @@ void describe_multiset (struct byte_buffer *b, struct multiset *l, struct proces
   for (depth = 0; p; p = p->next, depth++)
     if (p->pointer_a == (void *) l) {
       char buf[20];
-      sprintf (buf, "@%d", depth);
+      snprintf(buf, sizeof(buf), "@%d", depth);
       buffer_add_str (b, buf);
       return;
     }
@@ -3062,7 +3067,7 @@ void describe_multiset (struct byte_buffer *b, struct multiset *l, struct proces
       buffer_add_str (b, "(< /* 1 element */\n");
     else {
       char buf[40];
-      sprintf (buf, "(< /* %ld elements */\n", (long) size);
+      snprintf(buf, sizeof(buf), "(< /* %ld elements */\n", (long)size);
       buffer_add_str (b, buf);
     }
 

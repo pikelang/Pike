@@ -110,7 +110,7 @@ if test x$with_postgres = xyes; then
     AC_CHECK_HEADERS(libpq-fe.h)
 
     if test "x$ac_cv_header_libpq_fe_h = xyes"; then
-      # Rational: OpenSolaris as of 20070128 includes a libpq-fe.h that
+      # Rationale: OpenSolaris as of 20070128 includes a libpq-fe.h that
       # includes openssl/ssl.h if server/pg_config.h is included before
       # that, but does not include openssl/ssl.h in the dist.
       AC_MSG_CHECKING(if libpq-fe.h works)
@@ -171,16 +171,21 @@ if test x$with_postgres = xyes; then
       LDFLAGS="$LDFLAGS -L$pike_cv_pgres_lib_dir -R$pike_cv_pgres_lib_dir"
     fi
     AC_CHECK_LIB(crypt, crypt)
+
+    # Note that eg Gentoo installs the pkg-config file for libpq as
+    # /usr/share/pkg-config/libpq.pc but it contains paths for the
+    # 64-bit library only. This check is thus needed to properly
+    # detect whether postgres is available for the selected ABI.
     AC_SEARCH_LIBS(PQclear, pq libpq)
   fi
-  if test x$ac_pike_postgres_works = xyes; then
+  if test x$ac_pike_postgres_works = xyes -a "x$ac_cv_search_PQclear" != xno; then
     AC_CHECK_FUNCS(PQsetdbLogin PQsetnonblocking PQunescapeBytea \
 		   PQescapeStringConn PQescapeString)
     if test x$ac_cv_func_PQsetdbLogin = xno; then
-      AC_MSG_WARN([No Login-related functions, username and password will be silently ignored])
+      PIKE_MSG_NOTE([No Postgres login-related functions, username and password will be silently ignored])
     fi
     if test x$ac_cv_func_PQescapeStringConn = xno; then
-      AC_MSG_WARN([Outdated postgresql version, using potentially unsafe string escaping function])
+      PIKE_MSG_NOTE([Outdated postgresql version, using potentially unsafe string escaping function])
     fi
   fi
 fi

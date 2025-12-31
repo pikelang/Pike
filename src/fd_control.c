@@ -122,6 +122,7 @@ PMOD_EXPORT int query_nonblocking(int fd)
   } while(ret <0 && errno==EINTR);
   return ret & FCNTL_NBFLAG;
 #else
+  (void) fd;
   return ret;
 #endif
 }

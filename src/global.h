@@ -220,6 +220,10 @@ struct timeval;
 #endif /* HAVE_OSERROR && !errno */
 #endif /* _SGI_SPROC_THREADS */
 
+#ifndef __has_attribute
+#  define __has_attribute(X) 0
+#endif
+
 #ifdef HAVE_FUNCTION_ATTRIBUTES
 #define ATTRIBUTE(X) __attribute__ (X)
 #else
@@ -364,8 +368,6 @@ void *alloca();
 
 /* Get INT64, INT32, INT16, INT8, et al. */
 #include "pike_int_types.h"
-
-#define SIZE_T unsigned INT32
 
 #define TYPE_T unsigned int
 #define TYPE_FIELD unsigned INT16
@@ -621,13 +623,26 @@ typedef struct p_wchar_p
 #  define HAVE_PRAGMA_GCC_PUSH_POP_OPTIONS
 #  define HAVE_PRAGMA_GCC_RESET_OPTIONS
 # endif
-# if (__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)
+# if (__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6) || (__clang_major__ > 2)
    /* #pragma GCC diagnostic was added in GCC 4.6. */
 #  define HAVE_PRAGMA_GCC_DIAGNOSTIC
 # endif
 # if (__GNUC__ >= 8)
 #  define HAVE_PRAGMA_GCC_UNROLL
 # endif
+#endif
+
+/* The nonstring attribute indicates that a string (ie const char *)
+ * may contain binary data, and inhibits the warning about losing
+ * the NUL terminator when assigning to constant size arrays.
+ * Cf the MIME module.
+ */
+#if defined(__GCC__) && (__GCC__ >= 8)
+#  define PIKE_NONSTRING_ATTRIBUTE	ATTRIBUTE((nonstring))
+#elif __has_attribute(nonstring)
+#  define PIKE_NONSTRING_ATTRIBUTE	ATTRIBUTE((nonstring))
+#else
+#  define PIKE_NONSTRING_ATTRIBUTE
 #endif
 
 #ifdef __GNUC__
@@ -658,6 +673,12 @@ typedef struct p_wchar_p
 #endif
 
 /* PMOD_EXPORT exports a function / variable vfsh. */
+#ifdef __clang__
+#elif defined(__GNUC__) && (__GNUC__ >= 4)
+#else
+#undef DISABLE_ATTRIBUTE_VISIBILITY
+#define DISABLE_ATTRIBUTE_VISIBILITY 1
+#endif
 #ifndef PMOD_EXPORT
 # if defined (__NT__) && defined (USE_DLL)
 #  ifdef DYNAMIC_MODULE
@@ -668,18 +689,20 @@ typedef struct p_wchar_p
  * themselves, unless they are compiled statically. */
 #   define PMOD_EXPORT __declspec(dllexport)
 #  endif
-# elif defined(__clang__) && (defined(MAC_OS_X_VERSION_MIN_REQUIRED) || defined(__ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__))
+# elif defined(DISABLE_ATTRIBUTE_VISIBILITY)
+#  define PMOD_EXPORT
+# elif defined(DISABLE_ATTRIBUTE_VISIBILITY_PROTECTED)
+/* Force default visibility in all cases. */
 /* According to Clang source the protected behavior is ELF-specific and not
    applicable to OS X. */
 #  define PMOD_EXPORT    __attribute__ ((visibility("default")))
-# elif __GNUC__ >= 4 && !defined(DISABLE_ATTRIBUTE_VISIBILITY)
+# else
+/* Gcc or clang. */
 #  if defined(DYNAMIC_MODULE) || defined(__HAIKU__)
 #    define PMOD_EXPORT  __attribute__ ((visibility("default")))
 #  else
 #    define PMOD_EXPORT  __attribute__ ((visibility("protected")))
 #  endif
-# else
-#  define PMOD_EXPORT
 # endif
 #endif
 
@@ -768,7 +791,7 @@ static inline u_longlong_t PIKE_UNUSED_ATTRIBUTE pike_uint64_to_ulonglong(unsign
 #undef HAVE_MACOSX_SENDFILE
 #endif
 
-#include "port.h"
+#include "pike_port.h"
 #include "dmalloc.h"
 
 /* Either this include must go or the include of threads.h in

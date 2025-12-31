@@ -28,7 +28,7 @@
 #include "pike_error.h"
 #include "signal_handler.h"
 #include "pike_types.h"
-#include "threads.h"
+#include "pike_threads.h"
 #include "program_id.h"
 #include "sprintf.h"
 
@@ -92,15 +92,6 @@
 
 #ifdef HAVE_AVAILABILITYMACROS_H
 #include <AvailabilityMacros.h>
-#endif
-
-#if defined(HAVE_WINSOCK_H) || defined(HAVE_WINSOCK2_H)
-#ifndef EWOULDBLOCK
-#define EWOULDBLOCK WSAEWOULDBLOCK
-#endif
-#ifndef EADDRINUSE
-#define EADDRINUSE WSAEADDRINUSE
-#endif
 #endif
 
 #ifdef HAVE_SYS_STREAM_H
@@ -790,8 +781,11 @@ static void close_fd(int quiet)
         case ECONNRESET:
 	  /* FreeBSD: The peer shut down the connection before all pending data
 	   *          was delivered.
-	   */
-	  break;
+           *
+           * NT: The peer shut down the connection before all pending data
+           *     was delivered.
+           */
+          break;
 #endif
 
 	case EBADF:
@@ -1719,7 +1713,8 @@ PIKEFUN int(0..) read(object o, int(0..)|void offset)
  *!       @[read()] will not block.
  *!
  *!     @value 0
- *!       There is no data available (ie timeout).
+ *!       There is no data available (ie timeout), or the wait
+ *!       was interrupted.
  *!
  *!     @value -1
  *!       Error condition. The error code returned by @[errno()]
@@ -1727,7 +1722,7 @@ PIKEFUN int(0..) read(object o, int(0..)|void offset)
  *!   @endint
  *!
  *! @seealso
- *!   @[errno()], @[read()]
+ *!   @[errno()], @[poke()], @[read()]
  *!
  *! @note
  *!    The function may be interrupted prematurely
@@ -1775,8 +1770,12 @@ PIKEFUN int(-1..1) peek(int|float|void timeout_sval, int|void not_eof_sval)
 
     if(ret < 0)
     {
-      ERRNO=errno;
-      ret=-1;
+      if (errno == EINTR) {
+        ret = 0;
+      } else {
+        ERRNO = errno;
+        ret = -1;
+      }
     } else if (fds.revents & POLLERR) {
       int err = EPIPE;	/* Value in case of non-socket. */
       ACCEPT_SIZE_T len = sizeof(err);
@@ -1828,10 +1827,164 @@ PIKEFUN int(-1..1) peek(int|float|void timeout_sval, int|void not_eof_sval)
 
     if(ret < 0)
     {
-      ERRNO=errno;
-      ret=-1;
+      if (errno == EINTR) {
+        ret = 0;
+      } else {
+        ERRNO = errno;
+        ret = -1;
+      }
     }else{
       ret = (ret > 0) && fd_FD_ISSET(FD, &tmp);
+    }
+#endif
+  }
+  pop_n_elems(args);
+  push_int(ret);
+}
+
+/*! @decl int(-1..1) poke()
+ *! @decl int(-1..1) poke(int|float timeout)
+ *! @decl int(-1..1) poke(int|float timeout)
+ *!
+ *! Check if there is buffer space available to write data,
+ *! or wait some time for available space.
+ *!
+ *! More specifically, a later nonblocking call to @[write()]
+ *! will succeed in writing some data, or indicate some error
+ *! (eg if a nonblocking socket failed to connect).
+ *!
+ *! @param timeout
+ *!   Timeout in seconds.
+ *!
+ *! @returns
+ *!   @int
+ *!     @value 1
+ *!       There is buffer space available, or nonblocking @[connect()] has
+ *!       completed.
+ *!
+ *!     @value 0
+ *!       There is no data available (ie timeout), or the call was
+ *!       interrupted by a signal.
+ *!
+ *!     @value -1
+ *!       Error condition. The error code returned by @[errno()]
+ *!       has been updated (eg a nonblocking @[connect()] has failed).
+ *!   @endint
+ *!
+ *! @seealso
+ *!   @[errno()], @[connect()], @[write()], @[peek()]
+ *!
+ *! @note
+ *!    The function may be interrupted prematurely
+ *!    of the timeout (due to signals);
+ *!    check the timing manually if this is imporant.
+ */
+PIKEFUN int(-1..1) poke(int|float|void timeout_sval)
+{
+  int ret;
+
+  {
+#ifdef HAVE_AND_USE_POLL
+    struct pollfd fds;
+    int timeout = 0;
+
+    if (timeout_sval) {
+      /* ignore overflow for now */
+      if (TYPEOF(*timeout_sval) == T_FLOAT) {
+        timeout = (int)(timeout_sval->u.float_number * 1000);
+      } else {
+        timeout = timeout_sval->u.integer * 1000;
+      }
+    }
+
+    fds.fd = FD;
+    fds.events = POLLOUT;
+    fds.revents = 0;
+
+    mark_file_busy(THIS);
+
+    if (timeout) {
+      THREADS_ALLOW();
+      ret = poll(&fds, 1, timeout);
+      THREADS_DISALLOW();
+    } else {
+      ret = poll(&fds, 1, 0);
+    }
+
+    mark_file_idle(THIS);
+
+    if(ret < 0)
+    {
+      if (errno == EINTR) {
+        ret = 0;
+      } else {
+        ERRNO = errno;
+        ret = -1;
+      }
+    } else if (fds.revents & POLLERR) {
+      int err = EPIPE;	/* Value in case of non-socket. */
+      ACCEPT_SIZE_T len = sizeof(err);
+      ret = -1;
+      getsockopt(FD, SOL_SOCKET, SO_ERROR, (void *)&err, &len);
+      ERRNO = err;
+    } else if (fds.revents & POLLNVAL) {
+      ret = -1;
+      errno = EINVAL;
+    } else {
+      ret = (ret > 0) && (fds.revents & POLLOUT);
+    }
+#else
+    fd_set tmp;
+    fd_set tmp2;
+    struct timeval tv;
+
+    tv.tv_usec = 0;
+    tv.tv_sec = 0;
+    fd_FD_ZERO(&tmp);
+    fd_FD_SET(FD, &tmp);
+    fd_FD_ZERO(&tmp2);
+    fd_FD_SET(FD, &tmp2);
+    ret = FD;
+
+    if (timeout_sval) {
+      /* ignore overflow for now */
+      if (TYPEOF(*timeout_sval) == T_FLOAT) {
+        tv.tv_sec = (int)timeout_sval->u.float_number;
+        tv.tv_usec = (int)(1000000*(timeout_sval->u.float_number - tv.tv_sec));
+      } else {
+        tv.tv_sec = timeout_sval->u.integer;
+      }
+    }
+
+    mark_file_busy(THIS);
+
+    /* FIXME: Handling of EOF and not_eof */
+
+    if (tv.tv_sec || tv.tv_usec) {
+      THREADS_ALLOW();
+      ret = fd_select(ret+1, 0, &tmp, &tmp2, &tv);
+      THREADS_DISALLOW();
+    }
+    else
+      ret = fd_select(ret+1, 0, &tmp, &tmp2, &tv);
+
+    mark_file_idle(THIS);
+
+    if (ret < 0) {
+      if (errno == EINTR) {
+        ret = 0;
+      } else {
+        ERRNO = errno;
+        ret = -1;
+      }
+    } else if (ret > 0) {
+      int err = ENOTSOCK;	/* Value in case of exception on non-socket. */
+      ACCEPT_SIZE_T len = sizeof(err);
+      if ((!getsockopt(FD, SOL_SOCKET, SO_ERROR, (void *)&err, &len) && err) ||
+          fd_FD_ISSET(FD, &tmp2)) {
+        ret = -1;
+        ERRNO = err;
+      }
     }
 #endif
   }
@@ -3022,7 +3175,7 @@ static int do_close(int flags)
   }
 }
 
-#if !defined(HAVE_POSIX_OPENPT) && defined(PTY_MASTER_PATHNAME)
+#if !defined(HAVE_POSIX_OPENPT) && defined(PTY_MASTER_PATHNAME) && !defined(__NT__)
 static int my_posix_openpt(int flags)
 {
   return open(PTY_MASTER_PATHNAME, flags);
@@ -4867,7 +5020,7 @@ extern int errno;
 #endif /* !errno */
 
 static int socketpair_fd = -1;
-int my_socketpair(int family, int type, int protocol, int sv[2])
+int my_socketpair(int family, int type, int UNUSED(protocol), int sv[2])
 {
   static struct sockaddr_in my_addr;
   struct sockaddr_in addr,addr2;
@@ -4962,11 +5115,7 @@ retry_connect:
 /*    fprintf(stderr,"errno=%d (%d)\n",errno,EWOULDBLOCK); */
     SP_DEBUG((stderr, "my_socketpair:fd_connect() failed, errno:%d (%d)\n",
 	      errno, EWOULDBLOCK));
-    if((errno != EWOULDBLOCK)
-#ifdef WSAEWOULDBLOCK
-       && (errno != WSAEWOULDBLOCK)
-#endif /* WSAEWOULDBLOCK */
-       )
+    if (errno != EWOULDBLOCK)
     {
       int tmp2;
       for(tmp2=0;tmp2<20;tmp2++)
@@ -5465,9 +5614,6 @@ static void file_open_socket(INT32 args)
 #ifdef EINVAL
        && (errno != EINVAL)
 #endif
-#ifdef WSAENOPROTOOPT
-       && (errno != WSAENOPROTOOPT)
-#endif
        ){
       ERRNO=errno;
       while (fd_close(fd) && errno == EINTR) {}
@@ -5530,9 +5676,6 @@ static void file_open_socket(INT32 args)
 #endif
 #ifdef EINVAL
        && (errno != EINVAL)
-#endif
-#ifdef WSAENOPROTOOPT
-       && (errno != WSAENOPROTOOPT)
 #endif
        ){
       ERRNO=errno;
@@ -5653,8 +5796,7 @@ static void file_setsockopt(INT32 args)
  *!
  *! @note
  *!   In nonblocking mode @expr{0@} (zero) may be returned and @[errno()] set
- *!   to @tt{EWOULDBLOCK@} or @tt{WSAEWOULDBLOCK@}. This should not be regarded
- *!   as a connection failure.
+ *!   to @tt{EWOULDBLOCK@}. This should not be regarded as a connection failure.
  *!
  *! @note
  *!   @[path] had a quite restrictive length limit (~100 characters)
@@ -5680,7 +5822,8 @@ static void file_connect_unix( INT32 args )
   name = xalloc(addr_len);
 
   name->sun_family=AF_UNIX;
-  strcpy( name->sun_path, Pike_sp[-args].u.string->str );
+  strlcpy(name->sun_path, Pike_sp[-args].u.string->str,
+          Pike_sp[-args].u.string->len + 1);
 #ifdef HAVE_STRUCT_SOCKADDR_UN_SUN_LEN
   /* Length including NUL. */
   name->sun_len = Pike_sp[-args].u.string->len + 1;
@@ -5715,12 +5858,14 @@ static void file_connect_unix( INT32 args )
 }
 #endif /* HAVE_SYS_UN_H */
 
-/*! @decl int(0..1) connect(string dest_addr, int dest_port)
- *! @decl int(0..1) connect(string dest_addr, int dest_port, @
- *!                         string src_addr, int src_port)
- *! @decl string(0..255)|int(0..0) connect(string dest_addr, int dest_port, @
- *!                         string|int(0..0) src_addr, int|int(0..0) src_port, @
- *!                         string(0..255) data)
+/*! @decl int(-1..1) connect(string(8bit) dest_addr, int dest_port)
+ *! @decl int(-1..1) connect(string(8bit) dest_addr, int dest_port, @
+ *!                          string(8bit) src_addr, int src_port)
+ *! @decl string(0..255)|int(-1..0) connect(string(8bit) dest_addr, @
+ *!                                         int dest_port, @
+ *!                                         string(8bit)|void src_addr, @
+ *!                                         int|void src_port, @
+ *!                                         string(0..255) data)
  *!
  *!   Open a TCP/IP connection to the specified destination.
  *!
@@ -5728,22 +5873,36 @@ static void file_connect_unix( INT32 args )
  *!   and failure with the close-callback or the read_oob-callback.
  *!
  *!   If the @[data] argument is included the socket will use
- *!   TCP_FAST_OPEN if available, if not the data will @i{not be
+ *!   @tt{TCP_FAST_OPEN@} if available, if not the data will @i{not be
  *!   sent@}. In the data case the function either returns the data
  *!   that has not been sent (only one packet can be sent with this
  *!   option) or 0 if the connection failed immediately.
  *!
  *! @returns
- *!  Returns @expr{1@} or the remaining @expr{data@} on success, and
- *!  @expr{0@} on failure.
+ *!   Returns one of
+ *!   @mixed
+ *!     @type string(8bit)
+ *!       @[data] that did not fit into the initial connection packet.
+ *!       Note that the connection may not have been established yet.
+ *!     @type int(0..0)
+ *!       Returns @expr{0@} on (synchronous) connection failure.
+ *!     @type int(1..1)
+ *!       Returns @expr{1@} if there was no @[data] to send.
+ *!     @type int(-1..-1)
+ *!       Returns @expr{-1@} if the connection has not yet been established.
+ *!       Use eg @[poke()] or @[query_address()] to wait or check for when
+ *!       the connection completes.
+ *!   @endmixed
  *!
  *! @note
- *!   In nonblocking mode @expr{0@} (zero) may be returned and @[errno()] set
- *!   to @tt{EWOULDBLOCK@} or @tt{WSAEWOULDBLOCK@}. This should not be regarded
- *!   as a connection failure.
+ *!   Note that in versions of Pike prior to 9.0 @expr{1@} was returned
+ *!   also in the not yet established case.
+ *!
+ *!   Note that @expr{-1@} may be returned also for sockets in blocking
+ *!   mode if the connect(3N) system call was interrupted.
  *!
  *! @seealso
- *!   @[open_socket()]
+ *!   @[open_socket()], @[poke()]
  */
 static void file_connect(INT32 args)
 {
@@ -5757,7 +5916,6 @@ static void file_connect(INT32 args)
 
   int tmp, was_closed = FD < 0;
   int fd, sent = 0;
-  int nb_mode;
   int old_events;
   int e;
 
@@ -5815,8 +5973,6 @@ static void file_connect(INT32 args)
     pop_stack();
   }
 
-  nb_mode = !!(THIS->open_mode & FILE_NONBLOCKING);
-
   /* Inhibit the backend for this fd while connect(2) is running. */
   if ((old_events = THIS->box.events)) {
     set_fd_callback_events(&(THIS->box), 0, THIS->box.flags);
@@ -5824,22 +5980,16 @@ static void file_connect(INT32 args)
 
   fd = FD;
   THREADS_ALLOW();
-  for(;;)
-  {
 #ifdef MSG_FASTOPEN
-    if( data )
-    {
-      tmp = sendto(fd, data->str, data->len, MSG_FASTOPEN,
-                   (struct sockaddr *)&addr, addr_len );
-    }
-    else
+  if( data )
+  {
+    tmp = fd_sendto(fd, data->str, data->len, MSG_FASTOPEN,
+                    (struct sockaddr *)&addr, addr_len );
+  }
+  else
 #endif
-    {
-      tmp=fd_connect(fd, (struct sockaddr *)&addr, addr_len);
-    }
-    if( tmp<0 && (errno==EINTR))
-      continue;
-    break;
+  {
+    tmp=fd_connect(fd, (struct sockaddr *)&addr, addr_len);
   }
   THREADS_DISALLOW();
 
@@ -5859,32 +6009,41 @@ static void file_connect(INT32 args)
    *     they may have been changed since before the fd_connect() call.
    */
 
-  if(tmp < 0
+  if (tmp < 0) {
+    /* something went wrong */
+    if ((errno == EINTR)
+        /* FIXME: According to connect(3C) on Solaris 11, EINTR
+         *        means that the connection will be established
+         *        asynchronously.
+         *        Retrying the connect() will fail with EALREADY.
+         */
 #ifdef EINPROGRESS
-     && !(errno == EINPROGRESS && nb_mode)
-#endif
-#ifdef WSAEWOULDBLOCK
-     && !(errno == WSAEWOULDBLOCK && nb_mode)
+        /* Linux & Solaris: Asynchronous connect() now in progress. */
+        || (errno == EINPROGRESS)
 #endif
 #ifdef EWOULDBLOCK
-     && !(errno == EWOULDBLOCK && nb_mode)
+        /* NT: Asynchronous connect() now in progress. */
+        || (errno == EWOULDBLOCK)
 #endif
-    )
-  {
-    /* something went wrong */
-    ERRNO=errno;
-    if (was_closed) {
-      while (fd_close (FD) && errno == EINTR) {}
-      change_fd_for_box (&THIS->box, -1);
-      errno = ERRNO;
+        ) {
+      /* Connection not yet established. */
+      pop_n_elems(args);
+      push_int(-1);
+    } else {
+      ERRNO=errno;
+      if (was_closed) {
+        while (fd_close (FD) && errno == EINTR) {}
+        change_fd_for_box (&THIS->box, -1);
+        errno = ERRNO;
+      }
+      pop_n_elems(args);
+      push_int(0);
     }
-    pop_n_elems(args);
-    push_int(0);
   }else{
     ERRNO=0;
-    if( data )
+    if (data)
     {
-      push_string( make_shared_binary_string( data->str + tmp, data->len-tmp ) );
+      push_string(make_shared_binary_string(data->str + tmp, data->len - tmp));
       stack_pop_n_elems_keep_top( args );
     }
     else
@@ -5973,7 +6132,9 @@ static void file_query_address(INT32 args)
     return;
   }
 #endif
-  sprintf(buffer+strlen(buffer)," %d",(int)(ntohs(addr.ipv4.sin_port)));
+  len = strlen(buffer);
+  snprintf(buffer + len, sizeof(buffer) - len,
+           " %d", (int)(ntohs(addr.ipv4.sin_port)));
 
   /* NOTE: IPv6-mapped IPv4 addresses may only connect to other IPv4 addresses.
    *
@@ -6002,7 +6163,7 @@ static void file_query_address(INT32 args)
  *!       Returns a positive value with the mtu on success.
  *!   @endint
  */
-static void file_query_mtu(INT32 args)
+static void file_query_mtu(INT32 UNUSED(args))
 {
   int mtu = -1;
   PIKE_SOCKADDR addr;
@@ -6173,7 +6334,7 @@ PMOD_EXPORT void create_proxy_pipe(struct object *o, int for_reading)
   push_int(fd_INTERPROCESSABLE);
   apply(n,"pipe",1);
   if(TYPEOF(Pike_sp[-1]) != PIKE_T_OBJECT)
-    Pike_error("Failed to create proxy pipe (errno=%ld)!\n",
+    Pike_error("Failed to create proxy pipe (errno=%"PRINTPIKEINT"d)!\n",
                get_file_storage(n)->my_errno);
   n2=Pike_sp[-1].u.object;
   /* Stack is now: pipe(read), pipe(write) */
@@ -6759,7 +6920,7 @@ static void fd__sprintf(INT32 args)
     {
       /* NB: A signed 64-bit int maxes out at 21 characters. */
       char buf[30];
-      sprintf (buf, "Fd(%ld)", (long)FD);
+      snprintf (buf, sizeof(buf), "Fd(%ld)", (long)FD);
       push_text(buf);
       return;
     }
@@ -6819,7 +6980,7 @@ static void f_gethostip(INT32 args) {
       struct ifreq ifr2;
       i += sizeof(struct ifreq);
 
-      strcpy( ifr2.ifr_name, ifr->ifr_name );
+      strlcpy(ifr2.ifr_name, ifr->ifr_name, IFNAMSIZ);
       if( ioctl( fd, SIOCGIFFLAGS, &ifr2 )<0 )
 	Pike_error("gethostip: Query failed.\n");
 
@@ -7061,6 +7222,11 @@ PIKE_MODULE_INIT
 #ifdef HAVE_OPENAT
   add_integer_constant("__HAVE_OPENAT__",1,0);
 #endif
+
+  /*! @decl constant __HAVE_POKE__
+   *! Indicates that this version of Pike has @[Stdio.File()->poke()].
+   */
+  add_integer_constant("__HAVE_POKE__",1,0);
 
 #ifdef HAVE_FSTATAT
   add_integer_constant("__HAVE_STATAT__",1,0);

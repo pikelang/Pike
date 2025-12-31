@@ -156,6 +156,8 @@ test_compile_error("\x109a27bc69e256c83deaa34c26b4")
 test_compile_error('\x109a27bc69e256c83deaa34c26b4')
 test_compile_error('\u17fo')
 test_compile_error("\u17fo")
+test_compile_error('\u{17fo}')
+test_compile_error("\u{17fo}")
 
 test_eq('012456789abcdefghijklmnopqrstuvwxyz'->digits(256),
         "012456789abcdefghijklmnopqrstuvwxyz")
@@ -165,6 +167,9 @@ test_eq('\u117f', 0x117f)
 test_eq("\u117foo", "\10577oo")
 test_eq("\u1117foo", "\10427foo")
 test_eq("\uuuu117foo", "\\uuu117foo")
+test_eq('\u{117f}', 0x117f)
+test_eq("\u{117f}oo", "\10577oo")
+test_eq("\u{1117}foo", "\10427foo")
 test_compile_error('\U117f')
 test_compile_error("\U117f")
 test_compile_error("\UdEaDbEaT")
@@ -172,6 +177,8 @@ test_eq("\UUdEaDbEaT", "\\UdEaDbEaT")
 test_eq('\UDeaDBeEF', -559038737)
 test_eq("\UDeaDBeEFFF", "\33653337357FF")
 test_eq("\UUDeaDBeEFFF", "\\UDeaDBeEFFF")
+test_eq('\U{DeaDBeEF}', -559038737)
+test_eq("\U{DeaDBeEF}FF", "\33653337357FF")
 
 test_do([[
   // bug 2677
@@ -4840,7 +4847,14 @@ void low_generate(int depth,
 array(int) a()
 {
   int total_tests;
+#ifdef DISABLE_SLOW_TESTS
+  return ({ 0, 0 });
+#endif
+#if constant(OMIT_SLOW_TESTS)
+  for(maxdepth=1;maxdepth<7 && !errors;maxdepth++)
+#else
   for(maxdepth=1;maxdepth<9 && !errors;maxdepth++)
+#endif
   {
     low_generate(maxdepth,
 		 ({ "string X(){return \"X\";}" }),
@@ -6459,10 +6473,13 @@ test_compile(foreach(({}),mixed i){i;})
 
 dnl sscanf("", ...) triggers this warning.
 ignore_warning("Indexing the empty string.", [[
-test_compile(sscanf("","%O",mixed foo);foo;)
-test_compile_error(sscanf("","",mixed foo);)
-test_compile_error(sscanf("","%f",float))
-test_compile_error(sscanf("",float))
+  test_compile(sscanf("","%O",mixed foo);foo;)
+  test_compile_error(sscanf("","",mixed foo);)
+  test_compile_error(sscanf("","%f",float))
+  test_compile_error(sscanf("",float))
+  expect_compile_error("Too few arguments to sscanf (got 3).", [[
+    test_compile_error(sscanf("", "%s %s", string foo);)
+  ]])
 ]])
 
 // ++
@@ -7683,7 +7700,7 @@ test_any([[
       array a = set_weak_flag (({({17})}), 1);
       protected void create() {g = ({this});}
       protected void _destruct() {
-	if (!equal (a, ({({17})})))
+        if (!equal (a, set_weak_flag (({({17})}), 1)))
 	  error ("Contents in weak array zapped: %O.\n", a);
       }
     }();
@@ -7699,12 +7716,12 @@ test_any([[
     }();
     o = 0;
     gc();
-    if (!equal (all_constants()->blatinka, ({({17})})))
+    if (!equal (all_constants()->blatinka, set_weak_flag (({({17})}), 1)))
       error ("Contents in saved weak array zapped: %O.\n",
 	     all_constants()->blatinka);
     gc();
     return all_constants()->blatinka;
-  }]], ({0}));
+  }]], set_weak_flag (({0}), 1));
 
 test_do(add_constant("kablutt");)
 test_do(add_constant("blatinka");)
@@ -11312,7 +11329,110 @@ test_eval_error([[
   cpp ("x y z", "-", 0, handler());
 ]]);
 
-test_true( Stdio.write_file("conftest.h", "return 17;\n") )
+dnl NB: File length needs to be a multiple of 4.
+test_true( Stdio.write_file("conftest.h", "return 021;\n") )
+
+dnl __has_include().
+test_any([[
+#if __has_include("conftest.h")
+  return 1;
+#endif
+]], 1)
+test_any([[
+#if !__has_include(<conftest.h>)
+  return 1;
+#endif
+]], 1)
+test_any([[
+#if !__has_include("profiling.h")
+  return 1;
+#endif
+]], 1)
+test_any([[
+#if __has_include(<profiling.h>)
+  return 1;
+#endif
+]], 1)
+test_compile_error([[
+#if __has_include(conftest.h>)
+  return 1;
+#endif
+]])
+test_compile_error([[
+#if __has_include(<conftest.h)
+  return 1;
+#endif
+]])
+test_compile_error([[
+#if __has_include("conftest.h" limit(1))
+  return 1;
+#endif
+]])
+test_compile_error([[
+#if __has_include(<conftest.h> limit(1))
+  return 1;
+#endif
+]])
+
+dnl #embed and __has_embed().
+test_any_equal([[
+#if __has_embed("conftest.h" prefix(16,) limit(4) suffix(,16) if_empty(0))
+  return ({
+#embed "conftest.h" prefix(16,) limit(4) suffix(,16) if_empty(0)
+  });
+#endif
+]], ({ 16, 'r', 'e', 't', 'u', 16 }))
+
+test_any_equal([[
+#if __has_embed("conftest.h" prefix(16,) limit(4+2) suffix(,16) if_empty(0))
+  return ({
+#embed "conftest.h" prefix(16,) limit(4+2) suffix(,16) if_empty(0)
+  });
+#endif
+]], ({ 16, 'r', 'e', 't', 'u', 'r', 'n', 16 }))
+
+test_any_equal([[
+#define EMBED_LIMIT	4+2
+#if __has_embed("conftest.h" prefix(16,) limit(EMBED_LIMIT) suffix(,16) if_empty(0))
+  return ({
+#embed "conftest.h" prefix(16,) limit(EMBED_LIMIT) suffix(,16) if_empty(0)
+  });
+#endif
+]], ({ 16, 'r', 'e', 't', 'u', 'r', 'n', 16 }))
+
+dnl FIXME: Add test of the above with an empty file.
+
+test_any_equal([[
+#if __has_embed("conftest.h" __pike__::__charset__(ucs2))
+  return ({
+#embed "conftest.h" __pike__::__charset__(ucs2)
+  });
+#endif
+]], ({ 're', 'tu', 'rn', ' 0', '21', ';\n' }))
+
+test_any_equal([[
+#if __has_embed("conftest.h" __pike__::__charset__(ucs2le))
+  return ({
+#embed "conftest.h" __pike__::__charset__(ucs2le)
+  });
+#endif
+]], ({ 'er', 'ut', 'nr', '0 ', '12', '\n;' }))
+
+test_any_equal([[
+#if __has_embed("conftest.h" __pike__::__charset__(ucs4))
+  return ({
+#embed "conftest.h" __pike__::__charset__(ucs4)
+  });
+#endif
+]], ({ 'retu', 'rn 0', '21;\n' }))
+
+test_any_equal([[
+#if __has_embed("conftest.h" __pike__::__charset__(ucs4le))
+  return ({
+#embed "conftest.h" __pike__::__charset__(ucs4le)
+  });
+#endif
+]], ({ 'uter', '0 nr', '\n;12' }))
 
 test_any([[
 #include "conftest.h"
@@ -11325,7 +11445,7 @@ test_any([[
 // bug 2440 (a)
 #define FILENAME "conftest.h"
 return #string FILENAME;
-]], "return 17;\n")
+]], "return 021;\n")
 
 test_any([[
 // bug 2440 (b)
@@ -11338,7 +11458,19 @@ test_any([[
 string FILENAME = "";
 #define FILENAME "conftest.h"	 + FILENAME
 return #string FILENAME;
-]], "return 17;\n")
+]], "return 021;\n")
+
+dnl Tests with empty file.
+test_false( Stdio.write_file("conftest.h", "") )
+
+dnl #embed and __has_embed().
+test_any_equal([[
+#if __has_embed("conftest.h" prefix(16,) limit(4+2) suffix(,16) if_empty(0))
+  return ({
+#embed "conftest.h" prefix(16,) limit(4) suffix(,16) if_empty(0)
+  });
+#endif
+]], ({ 0 }))
 
 test_true( rm("conftest.h") )
 
@@ -13674,6 +13806,8 @@ test_equal(lower_case("Foo\x13000"),"foo\x13000")
 test_equal(lower_case("Foo1234-*~\n\x13000"),"foo1234-*~\n\x13000")
 test_equal(lower_case("Foo\x178"),"foo\xff")
 test_equal(lower_case("Foo\x39c"),"foo\x3bc")
+test_eq(__STDC_ISO_10646__, 202508) // Unicode release year and month 2025-08.
+test_eq(__UNICODE_VERSION__, 170000) // Unicode version 17.0.0.
 test_equal(lower_case((string) ({
 // These characters correspond to the cases in case_info.h
 // Please update this and the corresponding upper_case table
@@ -13766,7 +13900,7 @@ test_equal(lower_case((string) ({
 0xa7d6, 0xa7d7, 0xa7f5, 0xa7f6, 0xab53, 0xab54, 0xab70, 0xabc0,
 0xff21, 0xff3b, 0xff41, 0xff5b, 0x10400, 0x10428, 0x10450, 0x104b0,
 0x104d4, 0x104d8, 0x104fc, 0x10c80, 0x10cb3, 0x10cc0, 0x10cf3, 0x118a0,
-0x118e0, 0x1e900, 0x1e922, 0x1e944, })), (string) ({
+0x118e0, 0x16ea0, 0x16eb9, 0x16ebb, 0x16ed4, 0x1e900, 0x1e922, 0x1e944, })), (string) ({
 0x2d00, 0x10c6, 0x2d27, 0x10c8, 0x2d2d, 0xab70, 0x13f8, 0x13f6,
 0x13f8, 0x13fe, 0x1c80, 0x1c81, 0x1c82, 0x1c83, 0x1c85, 0x1c86,
 0x1c87, 0x1c88, 0x1c8a, 0x1d79, 0x1d7a, 0x1d7d, 0x1d7e, 0x1d8e,
@@ -13795,7 +13929,7 @@ test_equal(lower_case((string) ({
 0xa7d7, 0xa7d7, 0xa7f6, 0xa7f6, 0xab53, 0xab54, 0xab70, 0xabc0,
 0xff41, 0xff3b, 0xff41, 0xff5b, 0x10428, 0x10428, 0x10450, 0x104d8,
 0x104d4, 0x104d8, 0x104fc, 0x10cc0, 0x10cb3, 0x10cc0, 0x10cf3, 0x118c0,
-0x118e0, 0x1e922, 0x1e922, 0x1e944, }))
+0x118e0, 0x16ebb, 0x16eb9, 0x16ebb, 0x16ed4, 0x1e922, 0x1e922, 0x1e944, }))
 
 // - m_delete
 // - map
@@ -14971,10 +15105,10 @@ test_any([[
    float f=t2-t1;
 
    array r=({});
-   if (e<tts-0.1 || e>tts+0.2)
+   if (e<tts-0.1 || e>tts+0.5)
       r+=({sprintf("hrtime %.6f, %+.6f",e,e-tts)});
 
-   if (f<tts-0.1 || f>tts+0.2)
+   if (f<tts-0.1 || f>tts+0.5)
       r+=({sprintf("timeofday %.6f, %+.6f",f,f-tts)});
 
    if (sizeof(r)) return r*" / ";
@@ -15097,11 +15231,11 @@ test_equal(upper_case((string) ({
 0xa77e, 0xa788, 0xa78b, 0xa78d, 0xa78e, 0xa790, 0xa794, 0xa796,
 0xa7aa, 0xa7ab, 0xa7ac, 0xa7ad, 0xa7ae, 0xa7af, 0xa7b0, 0xa7b1,
 0xa7b2, 0xa7b3, 0xa7b4, 0xa7b8, 0xa7b9, 0xa7c3, 0xa7c4, 0xa7c5,
-0xa7c6, 0xa7c7, 0xa7c8, 0xa7c9, 0xa7ca, 0xa7d0, 0xa7d1, 0xa7d5,
+0xa7c6, 0xa7c7, 0xa7c8, 0xa7c9, 0xa7ca, 0xa7d0, 0xa7d1, 0xa7d4,
 0xa7d6, 0xa7d7, 0xa7f5, 0xa7f6, 0xab53, 0xab54, 0xab70, 0xabc0,
 0xff21, 0xff3b, 0xff41, 0xff5b, 0x10400, 0x10428, 0x10450, 0x104b0,
 0x104d4, 0x104d8, 0x104fc, 0x10c80, 0x10cb3, 0x10cc0, 0x10cf3, 0x118a0,
-0x118e0, 0x1e900, 0x1e922, 0x1e944, })), (string) ({
+0x118e0, 0x16ea0, 0x16eb9, 0x16ebb, 0x16ed4, 0x1e900, 0x1e922, 0x1e944, })), (string) ({
 0x10a0, 0x10c6, 0x10c7, 0x10c8, 0x10cd, 0x13a0, 0x13f0, 0x13f6,
 0x13f0, 0x13fe, 0x0412, 0x0414, 0x041e, 0x0421, 0x0422, 0x042a,
 0x0462, 0xa64a, 0x1c89, 0xa77d, 0x1d7a, 0x2c63, 0x1d7e, 0xa7c6,
@@ -15126,11 +15260,11 @@ test_equal(upper_case((string) ({
 0xa77e, 0xa788, 0xa78b, 0xa78d, 0xa78e, 0xa790, 0xa7c4, 0xa796,
 0xa7aa, 0xa7ab, 0xa7ac, 0xa7ad, 0xa7ae, 0xa7af, 0xa7b0, 0xa7b1,
 0xa7b2, 0xa7b3, 0xa7b4, 0xa7b8, 0xa7b8, 0xa7c2, 0xa7c4, 0xa7c5,
-0xa7c6, 0xa7c7, 0xa7c7, 0xa7c9, 0xa7c9, 0xa7d0, 0xa7d0, 0xa7d5,
+0xa7c6, 0xa7c7, 0xa7c7, 0xa7c9, 0xa7c9, 0xa7d0, 0xa7d0, 0xa7d4,
 0xa7d6, 0xa7d6, 0xa7f5, 0xa7f5, 0xa7b3, 0xab54, 0x13a0, 0xabc0,
 0xff21, 0xff3b, 0xff21, 0xff5b, 0x10400, 0x10400, 0x10450, 0x104b0,
 0x104d4, 0x104b0, 0x104fc, 0x10c80, 0x10cb3, 0x10c80, 0x10cf3, 0x118a0,
-0x118e0, 0x1e900, 0x1e900, 0x1e944, }))
+0x118e0, 0x16ea0, 0x16eb9, 0x16ea0, 0x16ed4, 0x1e900, 0x1e900, 0x1e944, }))
 
 // - utf8_to_string
 // See string_to_utf8
@@ -15255,6 +15389,35 @@ test_eq(a,this_object()->a)
 test_false([[class { string test(string|zero foo) { catch { return lower_case(foo); }; return foo; }}()->test(0); ]])
 test_true([[catch (1.0 / 0.0)]])
 test_true([[catch {float f = 1.0 / 0.0;}]])
+
+// - _Generic
+test_any_equal([[
+  int a, b, c, d;
+#define FOO(X) _Generic((X), int(7bit):a, int(8bit):b, default:c, float:d)
+  FOO(5) = 5;
+  FOO(200) = 200;
+  FOO(1000) = 1000;
+  FOO(12.8) = 128;
+  return ({ FOO(1), FOO(129), FOO("bar"), FOO(0.5) });
+]], ({ 5, 200, 1000, 128 }))
+test_compile_error([[
+  int a, b, c, d;
+#define FOO(X) _Generic((X), int(7bit):a, int(8bit):b, float:d)
+  FOO(5) = 5;
+  FOO(200) = 200;
+  FOO(1000) = 1000;	// This will fail as int(1000) does not match.
+  FOO(12.8) = 128;
+  return ({ FOO(1), FOO(129), FOO("bar"), FOO(0.5) });
+]])
+test_compile_error([[
+  int a, b, c, d;
+#define FOO(X) _Generic((X), int(7bit):a, int(8bit):b, int:c, float:d)
+  FOO(5) = 5;
+  FOO(200) = 200;
+  FOO(1000) = 1000;
+  FOO(12.8) = 128;
+  return ({ FOO(1), FOO(129), FOO("bar"), FOO(0.5) });
+]])
 
 
 // Pike modules

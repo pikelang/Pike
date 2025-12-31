@@ -37,6 +37,10 @@ BUILD_BASE=
 # The precompiler API level used by cmod files in the src root directory.
 PRECOMPILER_ARGS=--api=3
 
+# Set to yes if the configure script has determined
+# that the build system is slow.
+SLOW_PIKE=@SLOW_PIKE@
+
 #
 # RPM and package builders, listen up, because this is your only
 # documentation! This variable is prepended to the install path.
@@ -110,12 +114,18 @@ CC=@CC@
 CXX=@CXX@
 CPP=@CPP@
 GDB=gdb
+ABI=@ABI@
 
 CONFIG_HEADERS=@CONFIG_HEADERS@
 
-CANDLE=@CANDLE@ -nologo -arch @CANDLE_ARCH@
-LIGHT=@LIGHT@ -nologo -sice:ICE39
+CANDLE=@CANDLE@ -nologo $(CANDLE_OPTS)
+CANDLE_VERSION=@CANDLE_VERSION@
+CANDLE_OPTS=@CANDLE_OPTS@
+LIGHT=@LIGHT@ -nologo $(LIGHT_OPTS)
+LIGHT_VERSION=@LIGHT_VERSION@
+LIGHT_OPTS=@LIGHT_OPTS@
 RCEXE=@RCEXE@
+WINDRES=@WINDRES@
 
 FALLBACK_CC=@FALLBACK_CC@
 
@@ -182,10 +192,10 @@ CORE_OBJ= \
  pike_embed.o \
  pike_float.o \
  pike_memory.o \
+ pike_port.o \
  pike_search.o \
  pike_types.o \
  pikecode.o \
- port.o \
  program.o \
  queue.o \
  rbtree.o \
@@ -198,7 +208,7 @@ CORE_OBJ= \
  stralloc.o \
  string_builder.o \
  svalue.o \
- threads.o \
+ pike_threads.o \
  version.o \
  @EXTRA_OBJS@
 
@@ -227,6 +237,8 @@ SRC_TARGETS= \
  $(SRCDIR)/interpret_functions_fixed.h \
  $(SRCDIR)/peep_engine.c \
  $(SRCDIR)/case_info.h \
+ $(SRCDIR)/pike_unicode.h \
+ $(SRCDIR)/errno_remap.h \
  $(SRCDIR)/whitespace.h \
  $(SRCDIR)/treeopt.h $(PMOD_TARGETS)
 
@@ -385,6 +397,9 @@ tpike@EXEEXT@: master-stamp
 #
 # @LDSHARED_BASE_REQS@ expands to pike.lib if dynamic DLL modules are
 # used on NT.
+#
+# @LDSHARED_BASE_REQS@ expands to pike if dynamic modules are used
+# on MacOS X 12.0 or later.
 pike@EXEEXT@ pike.lib: main.o $(OBJ) master-stamp pike.syms modules/linker_options @STATIC_POST_MODULES_LINKOPTS@ @PIKE_ICON_RES@
 	-@if [ -f pike.old.exe ] ; then rm -f pike.old.exe || : ; else : ; fi
 	-@if [ -f pike.old ] ; then rm -f pike.old || : ; else : ; fi
@@ -613,8 +628,9 @@ Pike_module.msm: PikeWin32Installer.vbs
 Pike_module.wxs: pike-complete-stamp $(TMP_BINDIR)/install.pike Makefile
 	@no_autodoc="--no-autodoc"; \
 	if [ -f autodoc.xml ]; then no_autodoc=""; fi; \
+	$(RUNPIKE) $(TMP_BINDIR)/gather_dlls.pike pike@EXEEXT@ lib/modules; \
 	$(RUNPIKE) $(TMP_BINDIR)/install.pike --wix-module $$no_autodoc \
-	$(INSTALL_EXPORT_ARGS) \
+	--wix-version=$(CANDLE_VERSION) $(INSTALL_EXPORT_ARGS) \
 	exec_prefix="$(bindir)" lib_prefix="$(lib_prefix)" \
 	TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" \
 	SRCDIR="$(SRCDIR)" prefix="$(prefix)" DOCDIR_SRC="$(DOCDIR_SRC)" \
@@ -627,7 +643,7 @@ Pike.wxs: $(TMP_BINDIR)/install.pike Makefile
 	@no_autodoc="--no-autodoc"; \
 	if [ -f autodoc.xml ]; then no_autodoc=""; fi; \
 	$(RUNPIKE) $(TMP_BINDIR)/install.pike --wix $$no_autodoc \
-	$(INSTALL_EXPORT_ARGS) \
+	--wix-version=$(CANDLE_VERSION) $(INSTALL_EXPORT_ARGS) \
 	exec_prefix="$(bindir)" lib_prefix="$(lib_prefix)" \
 	TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" \
 	SRCDIR="$(SRCDIR)" prefix="$(prefix)" DOCDIR_SRC="$(DOCDIR_SRC)" \
@@ -645,8 +661,8 @@ wix: Pike.msi
 
 wix_export: Pike.msi
 	VER=`$(RUNPIKE) --dumpversion` ;\
-	cp Pike.msi $(BASEDIR)/Pike-v$(VER)-win32.msi ;\
-	cp config.info $(BASEDIR)/Pike-v$(VER)-win32.info
+	cp Pike.msi $(BASEDIR)/Pike-v$${VER}-win$(ABI).msi ;\
+	cp config.info $(BASEDIR)/Pike-v$${VER}-win$(ABI).info
 
 amigaos_export:
 	@$(RUNPIKE) $(TMP_BINDIR)/install.pike --export-amigaos \
@@ -667,7 +683,8 @@ pike.ico: $(PACKAGINGDIR)/windows/pike.ico
 
 pike_icon.res: pike.ico
 	echo 'pike ICON pike.ico' > pike_icon.rc
-	$(RCEXE) /fo $@ pike_icon.rc
+	if test "$(RCEXE)" = "" ; then $(WINDRES) -o $@ pike_icon.rc ; \
+	else $(RCEXE) /fo $@ pike_icon.rc ; fi
 
 # install
 install: pike-complete-stamp
@@ -765,11 +782,15 @@ testsuites:
 just_verify: testsuites master-stamp
 	if test "x$(TESTARGS)" = x ; then args="$(TESTARGS_FORK)" ; \
 	else args="$(TESTARGS)" ; fi; \
+	if test "x$(SLOW_PIKE)" = x ; then :; \
+	else args="--omit-slow-tests $$args" ; fi; \
 	$(RUNPIKE) -x test_pike $$args
 
 valgrind_just_verify: testsuites master-stamp
 	if test "x$(TESTARGS)" = x ; then args="$(TESTARGS_NOFORK)" ; \
 	else args="$(TESTARGS)" ; fi; \
+	if test "x$(SLOW_PIKE)" = x ; then :; \
+	else args="--omit-slow-tests $$args" ; fi; \
 	$(VALGRIND) $(VALGRINDARGS) $(RUNPIKE) -x test_pike --subproc-start="$(VALGRIND) $(VALGRINDARGS)" $$args
 
 dtrace_probes.h: $(SRCDIR)/dtrace/dtrace_probes.d
@@ -785,8 +806,8 @@ dynloadtest.sh: $(SRCDIR)/test_dynamic_loading.in
 
 dynloadtest.c: dynamic_load.c
 
-dynloadtest@EXEEXT@: dynloadtest.o @EXTRA_OBJS@ fdlib.o port.o
-	$(LD) $(LDFLAGS) dynloadtest.o @EXTRA_OBJS@ fdlib.o port.o $(LIBS) -o $@
+dynloadtest@EXEEXT@: dynloadtest.o @EXTRA_OBJS@ fdlib.o pike_port.o
+	$(LD) $(LDFLAGS) dynloadtest.o @EXTRA_OBJS@ fdlib.o pike_port.o $(LIBS) -o $@
 
 
 tinstall: master-stamp
@@ -819,6 +840,8 @@ verify: testsuites tinstall
 	PIKE_MODULE_PATH=""; PIKE_INCLUDE_PATH=""; \
 	if test "$(TESTARGS)" = "" ; then args="$(TESTARGS_FORK)" ; else \
 	  args="$(TESTARGS)" ; fi; \
+	if test "x$(SLOW_PIKE)" = x ; then :; \
+	else args="--omit-slow-tests $$args" ; fi; \
 	if test -f ./test-pike ; then \
 	  if test -f ./test-install/pike/*/bin/pike.exe ; then \
 	    ./test-install/pike/*/bin/pike.exe -DNOT_INSTALLED $(PIKEOPTS) -x test_pike $$args ; \
@@ -837,6 +860,8 @@ valgrind_verify: testsuites tinstall
 	PIKE_MODULE_PATH=""; PIKE_INCLUDE_PATH=""; \
 	if test "$(TESTARGS)" = "" ; then args="$(TESTARGS_NOFORK)" ; else \
 	  args="$(TESTARGS)" ; fi; \
+	if test "x$(SLOW_PIKE)" = x ; then :; \
+	else args="--omit-slow-tests $$args" ; fi; \
 	if test -f ./test-pike ; then \
 	  if test -f ./test-install/pike/*/bin/pike.exe ; then \
 	    $(VALGRIND) $(VALGRINDARGS) ./test-install/pike/*/bin/pike.exe -DNOT_INSTALLED $(PIKEOPTS) -x test_pike --subproc-start="$(VALGRIND) $(VALGRINDARGS)" $$args ; \
@@ -865,6 +890,8 @@ bench: tinstall
 verify_installed: testsuites master-stamp
 	if test "$(TESTARGS)" = "" ; then args="$(TESTARGS_FORK)" ; else \
 	  args="$(TESTARGS)" ; fi; \
+	if test "x$(SLOW_PIKE)" = x ; then :; \
+	else args="--omit-slow-tests $$args" ; fi; \
 	$(bindir)/pike $(PIKEOPTS) -x test_pike $$args
 
 check: verify
@@ -874,6 +901,8 @@ sure: verify
 # verify / debug verbose
 verbose_verify: testsuites master-stamp
 	if test "$(TESTARGS)" = "" ; then args="$(TESTARGS_FORK)" ; else args="$(TESTARGS)" ; fi; \
+	if test "x$(SLOW_PIKE)" = x ; then :; \
+	else args="--omit-slow-tests $$args" ; fi; \
 	$(RUNPIKE) -x test_pike -v $$args
 
 # verify & debug VERBOSE
@@ -891,6 +920,8 @@ gdb_verify: testsuites master-stamp
 	@echo >>.gdbinit break abort
 	@if test "$(TESTARGS)" = "" ; then args="$(TESTARGS_NOFORK) -v" ; else \
 	  args="$(TESTARGS)" ; fi;  \
+	if test "x$(SLOW_PIKE)" = x ; then :; \
+	else args="--omit-slow-tests $$args" ; fi; \
 	echo >>.gdbinit set args \
 	  -m`echo "$(TMP_BUILDDIR)/master.pike" | ./posix_to_native.sh` \
 	  $(PIKEOPTS) -x test_pike --no-watchdog $$args
@@ -918,6 +949,8 @@ fast_verify_testsuite: testsuite
 	PIKE_MODULE_PATH=""; PIKE_INCLUDE_PATH=""; \
 	if test "$(TESTARGS)" = "" ; then args="$(TESTARGS_FORK)" ; \
 	else args="$(TESTARGS)" ; fi; \
+	if test "x$(SLOW_PIKE)" = x ; then :; \
+	else args="--omit-slow-tests $$args" ; fi; \
 	if test -f ./test-pike ; then \
 	  if test -f ./test-install/pike/*/bin/pike.exe ; then \
 	    ./test-install/pike/*/bin/pike.exe -DNOT_INSTALLED $(PIKEOPTS) -x test_pike $$args ; \
@@ -1116,6 +1149,14 @@ $(SRCDIR)/case_info.h: $(SRCDIR)/UnicodeData.txt $(TMP_BINDIR)/make_ci.pike
 	./precompile.sh $(TMP_BINDIR)/make_ci.pike $(SRCDIR)/case_info.h \
 	  <$(SRCDIR)/UnicodeData.txt
 
+$(SRCDIR)/pike_unicode.h: $(SRCDIR)/UnicodeData-ReadMe.txt $(TMP_BINDIR)/make_unicode.h.pike
+	./precompile.sh $(TMP_BINDIR)/make_unicode.h.pike \
+	  $(SRCDIR)/pike_unicode.h <$(SRCDIR)/UnicodeData-ReadMe.txt
+
+$(SRCDIR)/errno_remap.h : $(SRCDIR)/modules/system/errnos.list $(SRCDIR)/mkerrno_remap.sed
+	sed -n -f $(SRCDIR)/mkerrno_remap.sed \
+	  <$(SRCDIR)/modules/system/errnos.list >$(SRCDIR)/errno_remap.h
+
 builtin_functions.o: $(SRCDIR)/case_info.h $(SRCDIR)/combine_path.h
 
 $(SRCDIR)/treeopt.h: $(SRCDIR)/treeopt.in $(TMP_BINDIR)/mktreeopt.pike
@@ -1299,7 +1340,7 @@ $(SRCDIR)/interpret_functions_fixed.h: $(SRCDIR)/interpret_functions.h precompil
 # UnixWare make needs help to find the source file...
 builtin.o: $(SRCDIR)/builtin.c $(SRCDIR)/whitespace.h
 
-cpp.o: $(SRCDIR)/cpp.c
+cpp.o: $(SRCDIR)/cpp.c $(SRCDIR)/pike_unicode.h
 
 iterators.o: $(SRCDIR)/iterators.c
 
@@ -1467,7 +1508,7 @@ HFILES=						\
   svalue.protos					\
   dynamic_load.protos				\
   module_support.protos				\
-  threads.protos				\
+  pike_threads.protos				\
   multiset.protos				\
   encode.protos					\
   object.protos					\

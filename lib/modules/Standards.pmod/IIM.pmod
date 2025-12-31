@@ -412,8 +412,8 @@ mapping(string(7bit):array(string)) get_information(Stdio.InputStream fd)
     res->charset = ({ charset });
     Charset.Decoder decoder = Charset.decoder(charset);
     foreach(res; string(7bit) key; array(string) vals) {
-      res[key] = map(vals,
-		     lambda(string val, Charset.Decoder decoder) {
+      res[key] = map([array(string(8bit))]vals,
+                     lambda(string(8bit) val, Charset.Decoder decoder) {
 		       return decoder->feed(val)->drain();
 		     }, decoder);
     }

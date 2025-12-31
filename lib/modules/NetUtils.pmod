@@ -1,4 +1,4 @@
-/* -*- Mode: pike; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+/* -*- Mode: pike; c-basic-offset: 4 -*- */
 #pike __REAL_VERSION__
 
 //! Various networking-related utility functions.
@@ -567,44 +567,75 @@ void clear_cache()
 //--- FIXME: The part below this is OS dependend, and does not really
 //--- support anything except Linux.
 
-private string _ifconfig =
-    Process.locate_binary( ({ "/usr/sbin","/sbin" }), "ifconfig") ||
-    Process.search_path("ifconfig");
+private string|zero _binary;
 
-
-enum System {
-    Linux, NT, Other, Unsupported
+private enum Method {
+    Unsupported = 0,
+    NT,
+    GenericIFConfig,
+    LinuxIFConfig,
+    LinuxIP,
 };
 
-private System find_system() {
+private Method find_method() {
 #if defined(__NT__)
     return NT;
 #else
-    if( uname()->sysname == "Linux" ||
-        String.count(Process.run(({ _ifconfig, "-s" }))->stdout, "\n") > 1 )
-        return Linux;
-    return _ifconfig ? Other : Unsupported;
+    Method ret = LinuxIP;
+    foreach(({ "ip", "ifconfig" }), string bin) {
+        _binary =
+            Process.locate_binary( ({ "/usr/sbin","/sbin" }), bin) ||
+            Process.search_path(bin);
+        if (_binary) break;
+        ret = GenericIFConfig;
+    }
+    if (_binary && (ret == GenericIFConfig)) {
+        if( uname()->sysname == "Linux" ||
+            String.count(Process.run(({ _binary, "-s" }))->stdout, "\n") > 1 ) {
+            ret = LinuxIFConfig;
+        }
+    }
+    return _binary ? ret : Unsupported;
 #endif
 }
 
-private System system = find_system();
+private Method method = find_method();
 
 
 string ifconfig( string command )
 {
-    if( system == Unsupported ) {
-        error("This system is unfortunately not currentl supported\n");
+    if( method == Unsupported ) {
+        error("This system is unfortunately not currently supported.\n");
     }
     switch( command )
     {
         case "list if":
             // Return a '\n'-separated list of interface names.
-            switch( system )
+            switch( method )
             {
-                case Linux:
+                case LinuxIFConfig:
                 {
-                    string data = Process.run(({ _ifconfig, "-s" }))->stdout;
+                    string data = Process.run(({ _binary, "-s" }))->stdout;
                     return column(((data/"\n")[*]/" ")[1..<1],0)*"\n";
+                }
+                case LinuxIP:
+                    // Using ip link show up:
+/* $ ip link show up
+ * 1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000
+ *     link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+ * 2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP mode DEFAULT group default qlen 1000
+ *     link/ether aa:bb:cc:dd:ee:ff brd ff:ff:ff:ff:ff:ff
+ *     altname enp0s31f6
+ */
+                {
+                    string data =
+                        Process.run(({ _binary, "link", "show", "up" }))->
+                        stdout;
+                    array(string) a = data/"\n" - ({ "" });
+                    a = filter(a, lambda(string line) {
+                        return !has_prefix(line, " ");
+                    });
+                    return column((a[*]/": "), 1) * "\n";
                 }
                 case NT:
                     // Using netstat:
@@ -719,9 +750,10 @@ string ifconfig( string command )
  * IPv6 is not installed.
  *
  */
+                case GenericIFConfig:
                 default:
                  {
-                     string data = Process.run(({ _ifconfig, "-a" }))->stdout;
+                     string data = Process.run(({ _binary, "-a" }))->stdout;
                      array res = ({});
                      foreach( data/"\n", string x )
                      {
@@ -736,11 +768,17 @@ string ifconfig( string command )
                  }
             }
         case "all":
-            if( system == NT )
+            if( method == NT )
                 return Process.run(({ "ipconfig", "/all" }))->stdout;
-            return Process.run(({ _ifconfig, "-a" }))->stdout;
+            if (method == LinuxIP)
+                return Process.run(({ _binary, "address", "show", "up" }))->
+                    stdout;
+            return Process.run(({ _binary, "-a" }))->stdout;
         default:	// Usually the name of an interface.
-            return Process.run(({ _ifconfig, command }))->stdout;
+            if (method == LinuxIP)
+                return Process.run(({ _binary, "address", "show", }) +
+                                   (command/" "))->stdout;
+            return Process.run(({ _binary, command }))->stdout;
     }
 }
 
@@ -792,6 +830,27 @@ mapping(string:array(string)) local_interfaces()
                 ips += ({i+"/"+netmask_to_cidr(m)});
                 ips += ({ "::ffff:"+i+"/"+(96+netmask_to_cidr(m)) });
             }
+            else if ( (sscanf( q, "inet %[^ ] %*sscope %s", i, m) == 3) ) {
+/* $ ip address show eth0
+ * 2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP group default qlen 1000
+ *     link/ether aa:bb:cc:dd:ee:ff brd ff:ff:ff:ff:ff:ff
+ *     altname enp0s31f6
+ *     inet 192.168.0.2/24 brd 192.168.0.255 scope global eth0
+ *        valid_lft forever preferred_lft forever
+ *     inet6 8888:9999:aaaa:bbbb:cccc:dddd:eeee:ffff/64 scope global dynamic mngtmpaddr proto kernel_ra
+ *        valid_lft 2591705sec preferred_lft 604505sec
+ *     inet6 fe80::aabb:ccff:fedd:eeff/64 scope link proto kernel_ll
+ *        valid_lft forever preferred_lft forever
+ */
+                if (!has_prefix(m, "host") && !has_prefix(m, "global")) {
+                    // Skip link-local
+                    continue;
+                }
+                ips += ({ i });
+                int bits = -1;
+                sscanf(i, "%s/%d", i, bits);
+                ips += ({ "::ffff:" + i + "/" + (96 + bits) });
+            }
             else if( (sscanf( q, "inet6 addr: %[^ ] %s", i, m ) ) ||
                      (sscanf( q, "inet6 %[^ ] %s", i, m )) )
             {
@@ -814,7 +873,8 @@ mapping(string:array(string)) local_interfaces()
                 next__broadcast_addresses[iface] += ({ "ff02::1" });
             }
             if( (sscanf( q, "%*sBcast:%[^ ]", i ) == 2) ||
-                (sscanf( q, "%*sbroadcast %s", i ) == 2 ) )
+                (sscanf( q, "%*sbroadcast %s", i ) == 2 ) ||
+                (sscanf( q, "%*sbrd %s", i ) == 2 ) )
             {
                 next__broadcast_addresses[iface] += ({i});
             }
@@ -1076,29 +1136,41 @@ IpRangeLookup special_networks()
     return _special_networks;
 }
 
-//! Determine the network type of a given host
+//! Determine the network type of a given ip address.
 //!
 //! @param ipstr
 //!    IP address in string or numerical form
+//!
 //! @param separate_6
 //!    Adds a 'v6' to the category for ipv6 addresses (ie, "global" and "globalv6")
 //!
 //! @returns
-//!   "localhost", "local", "private", "multicast", "teredo", "6to4" or "global"
+//!   Returns one of:
+//!   @string
+//!     @value "localhost"
+//!       The local computer.
 //!
-//!  "localhost" is the local computer.
+//!     @value "local"
+//!       The local network.
 //!
-//!  "local" is the local network
+//!     @value "linklocal"
+//!       An unrouted local network (IPv6).
 //!
-//!  "private" is a private network, such as
-//!    10.0.0.0/8 or fc00::/7 that is not also a local network.
+//!     @value "private"
+//!       A private network, such as 10.0.0.0/8 or fc00::/7 that
+//!       is not also a local network.
 //!
-//!  "multicast" is a multicast address
+//!     @value "multicast"
+//!       A multicast address.
 //!
-//!  "teredo" and "6to4" is an address in the teredo and 6to4 tunneling
-//!     system, respectively.
+//!     @value "teredo"
+//!     @value "6to4"
+//!       An address in the @b{teredo@} or @b{6to4@} IPv6 tunneling
+//!       systems, respectively.
 //!
-//!  "global" is a global address that does not match any other category
+//!     @value "global"
+//!       A globally routable address that does not match any other category.
+//!   @endstring
 NetworkType get_network_type( int|string ipstr, bool|void separate_6  )
 {
     if( !ipstr ) return UNDEFINED;

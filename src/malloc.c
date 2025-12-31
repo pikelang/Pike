@@ -1147,8 +1147,15 @@ int mspace_mallopt(int, int);
 /*------------------------------ internal #includes ---------------------- */
 
 #ifdef WIN32
+#ifdef _MSC_VER /* PIKE change */
 #pragma warning( disable : 4146 ) /* no "unsigned" warnings */
+#endif          /* PIKE change */
 #endif /* WIN32 */
+#ifdef __clang__                                             /* PIKE change */
+#if __has_warning("-Wnull-pointer-arithmetic")               /* PIKE change */
+#pragma clang diagnostic ignored "-Wnull-pointer-arithmetic" /* PIKE change */
+#endif                                                       /* PIKE change */
+#endif                                                       /* PIKE change */
 
 #include <stdio.h>       /* for printing in malloc_stats */
 
