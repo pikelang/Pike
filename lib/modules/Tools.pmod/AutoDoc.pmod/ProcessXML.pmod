@@ -1837,7 +1837,7 @@ class NScopeStack
 	  if (path) {
 	    top->inherits[inh] = path;
 	    continue;
-          } else if (inh[0]) {
+          } else if (!sizeof(inh) || inh[0]) {
 	    warn("Failed to resolve inherit %O.\n"
 		 "  Top: %O\n"
 		 "  Scope: %O\n"
