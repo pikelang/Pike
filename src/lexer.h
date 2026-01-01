@@ -549,8 +549,10 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
   {
     c = GETC();
 
-    if((c>'9') && lex_isidchar(c))
-    {
+    if(((c>'9') ||
+        (lex->prev_token == '.') ||
+        (lex->prev_token == TOK_ARROW)) &&
+       lex_isidchar(c)) {
       lex->pos -= (1<<SHIFT);
       READBUF(lex_isidchar(C));
 
@@ -1067,10 +1069,11 @@ unknown_directive:
 	if(GOBBLE('.')) return TOK_DOT_DOT_DOT;
 	return TOK_DOT_DOT;
       }
-      if (((c = INDEX_CHARP(lex->pos, 0, SHIFT)) <= '9') &&
-	  (c >= '0')) {
+      if ((lex->prev_token != TOK_IDENTIFIER) &&
+          ((c = INDEX_CHARP(lex->pos, 0, SHIFT)) <= '9') &&
+          (c >= '0')) {
         lex->pos -= (1<<SHIFT);
-	goto read_float;
+        goto read_float;
       }
       return '.';
 
