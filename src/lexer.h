@@ -1070,10 +1070,33 @@ unknown_directive:
     {
       struct string_builder buf;
       struct pike_string *s;
+      int got_add = -1; /* Attempt to merge added strings. */
+      char *save_pos = lex->pos;
+      INT_TYPE save_line = 0;
+      struct pike_string *save_file = NULL;
+      unsigned INT16 prev_token = lex->prev_token;
+      int save_len = 0;
+
+      if ((prev_token == '-') || (prev_token == '*') ||
+          (prev_token == '%') || (prev_token == '/') ||
+          (prev_token == TOK_NOT) || (prev_token == '~') ||
+          (prev_token == TOK_POW) ||
+          (prev_token == TOK_INC) || (prev_token == TOK_DEC)) {
+        /* NB: Merging of adds is only valid if none of the operators
+         *     with higher or equal precedence to `+ preceeded the initial
+         *     string and if none of the higher priority binary operators
+         *     succeeds the string to be joined.
+         *
+         * Do not merge added strings.
+         */
+        got_add = 0;
+      }
 
       init_string_builder(&buf, 0);
 
       do {
+        p_wchar2 c;
+
         low_readstring(lex, &buf);
 
         /* Check whether another literal string follows directly,
@@ -1082,38 +1105,52 @@ unknown_directive:
         SKIPWHITE();
         if (GOBBLE('"')) {
           continue;
-        } else if (LOOK() == '+') {
-          char *save_pos = lex->pos;
-          INT_TYPE save_line = lex->current_line;
-          struct pike_string *save_file = lex->current_file;
-          unsigned INT16 prev_token = lex->prev_token;
-          if ((prev_token == '-') || (prev_token == '*') ||
-              (prev_token == '%') || (prev_token == '/') ||
-              (prev_token == TOK_NOT) || (prev_token == '~') ||
-              (prev_token == TOK_POW) ||
-              (prev_token == TOK_INC) || (prev_token == TOK_DEC)) {
-            /* NB: Only valid if none of the operators with higher
-             *     or equal precedence to `+ preceeded the initial
-             *     string.
-             */
-            break;
-          }
+        } else if (((c = LOOK()) == '+') && got_add) {
+          /* Attempt to join the next string.
+           *
+           * Save the state in case we need to backtrack.
+           */
+          if (save_file) free_string(save_file);
+          save_pos = lex->pos;
+          save_line = lex->current_line;
+          save_file = lex->current_file;
+          save_len = buf.s->len;
           add_ref(save_file);
+
           SKIP();
           SKIPWHITE();
+
           if (!GOBBLE('"')) {
-            /* Restore state to the position of the '+'. */
+            /* The operator was not '+' (unlikely), or the
+             * second argument was not a literal string.
+             * Restore state to the position of the '+',
+             * and break the join loop.
+             */
             lex->pos = save_pos;
             lex->current_line = save_line;
             free_string(lex->current_file);
             lex->current_file = save_file;
+            save_file = NULL;
             break;
           }
-          free_string(save_file);
+          got_add = 1;
           continue;
+        } else if ((got_add > 0) && ((c == '*') || (c == '%') || (c == '/'))) {
+          /* Added string was followed by a higher priority operator.
+           * Revert everything after the last '+'-operator and break the loop.
+           */
+          lex->pos = save_pos;
+          lex->current_line = save_line;
+          free_string(lex->current_file);
+          lex->current_file = save_file;
+          save_file = NULL;
+          buf.s->len = save_len;
+          break;
         }
         break;
       } while(1);
+
+      if (save_file) free_string(save_file);
 
       s = finish_string_builder(&buf);
       yylval->n=mkstrnode(s);
