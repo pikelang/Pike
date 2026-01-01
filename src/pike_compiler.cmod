@@ -1107,6 +1107,7 @@ static void run_init(struct compilation *c)
   }
 
   c->lex.pos=c->prog->str;
+  c->lex.prev_token = 0;
 }
 
 static void run_init2(struct compilation *c)
