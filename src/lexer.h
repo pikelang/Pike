@@ -19,7 +19,14 @@
 /* Generic */
 #define GOBBLE(c) (LOOK()==c?(SKIP(),1):0)
 #define SKIPSPACE() do { while(wide_isspace(LOOK()) && LOOK()!='\n') SKIP(); }while(0)
-#define SKIPWHITE() do { while(wide_isspace(LOOK())) SKIP(); }while(0)
+#define SKIPWHITE() do {          \
+    while(wide_isspace(LOOK())) { \
+      if (LOOK() == '\n') {       \
+        lex->current_line++;      \
+      }                           \
+      SKIP();                     \
+    }                             \
+  }while(0)
 #define SKIPUPTO(X) do { while(LOOK()!=(X) && LOOK()) SKIP(); }while(0)
 
 #if (SHIFT == 0)
@@ -81,6 +88,7 @@
 #define low_isword low_isword1
 #define parse_esc_seq parse_esc_seq1
 #define char_const char_const1
+#define low_readstring low_readstring1
 #define readstring readstring1
 #define yylex yylex1
 #define low_yylex low_yylex1
@@ -96,6 +104,7 @@
 #define low_isword low_isword2
 #define parse_esc_seq parse_esc_seq2
 #define char_const char_const2
+#define low_readstring low_readstring2
 #define readstring readstring2
 #define yylex yylex2
 #define low_yylex low_yylex2
@@ -444,15 +453,12 @@ static p_wchar2 char_const(struct lex *lex)
   return c;
 }
 
-static struct pike_string *readstring(struct lex *lex)
+static void low_readstring(struct lex *lex, struct string_builder *tmp)
 {
   int c;
-  struct string_builder tmp;
 #if (SHIFT != 0)
   PCHARP bufptr = { NULL, SHIFT };
 #endif /* SHIFT != 0 */
-
-  init_string_builder(&tmp,0);
 
   while(1)
   {
@@ -463,10 +469,10 @@ static struct pike_string *readstring(struct lex *lex)
 	     ((C != '"') && (C != '\\') && (C != '\n') && (C != '\r'))));
     if (len) {
 #if (SHIFT == 0)
-      string_builder_binary_strcat(&tmp, buf, len);
+      string_builder_binary_strcat(tmp, buf, len);
 #else /* SHIFT != 0 */
       bufptr.ptr = (p_wchar0 *)buf;
-      string_builder_append(&tmp, bufptr, len);
+      string_builder_append(tmp, bufptr, len);
 #endif /* SHIFT == 0 */
     }
     switch(c=GETC())
@@ -475,13 +481,15 @@ static struct pike_string *readstring(struct lex *lex)
       GOT_NUL("string");
       break;
 
-    case '\n': case '\r':
+    case '\n':
       lex->current_line++;
+      /* FALLTHRU */
+    case '\r':
       yyerror("Newline in string.");
       break;
 
     case '\\':
-      string_builder_putchar(&tmp, char_const(lex));
+      string_builder_putchar(tmp, char_const(lex));
       continue;
 
     case '"':
@@ -495,10 +503,17 @@ static struct pike_string *readstring(struct lex *lex)
     }
     break;
   }
-  return dmalloc_touch(struct pike_string *, finish_string_builder(&tmp));
 }
 
+static struct pike_string *readstring(struct lex *lex)
+{
+  struct string_builder tmp;
+  init_string_builder(&tmp,0);
 
+  low_readstring(lex, &tmp);
+
+  return dmalloc_touch(struct pike_string *, finish_string_builder(&tmp));
+}
 
 #if LEXDEBUG>4
 static int low_yylex(struct lex *lex, YYSTYPE *);
@@ -1053,7 +1068,54 @@ unknown_directive:
       break;
     case '"':
     {
-      struct pike_string *s=readstring(lex);
+      struct string_builder buf;
+      struct pike_string *s;
+
+      init_string_builder(&buf, 0);
+
+      do {
+        low_readstring(lex, &buf);
+
+        /* Check whether another literal string follows directly,
+         * or after an add. Cf bug #218.
+         */
+        SKIPWHITE();
+        if (GOBBLE('"')) {
+          continue;
+        } else if (LOOK() == '+') {
+          char *save_pos = lex->pos;
+          INT_TYPE save_line = lex->current_line;
+          struct pike_string *save_file = lex->current_file;
+          unsigned INT16 prev_token = lex->prev_token;
+          if ((prev_token == '-') || (prev_token == '*') ||
+              (prev_token == '%') || (prev_token == '/') ||
+              (prev_token == TOK_NOT) || (prev_token == '~') ||
+              (prev_token == TOK_POW) ||
+              (prev_token == TOK_INC) || (prev_token == TOK_DEC)) {
+            /* NB: Only valid if none of the operators with higher
+             *     or equal precedence to `+ preceeded the initial
+             *     string.
+             */
+            break;
+          }
+          add_ref(save_file);
+          SKIP();
+          SKIPWHITE();
+          if (!GOBBLE('"')) {
+            /* Restore state to the position of the '+'. */
+            lex->pos = save_pos;
+            lex->current_line = save_line;
+            free_string(lex->current_file);
+            lex->current_file = save_file;
+            break;
+          }
+          free_string(save_file);
+          continue;
+        }
+        break;
+      } while(1);
+
+      s = finish_string_builder(&buf);
       yylval->n=mkstrnode(s);
       free_string(s);
       return TOK_STRING;
@@ -1516,6 +1578,7 @@ unknown_directive:
 #undef parse_esc_seq
 #undef char_const
 #undef readstring
+#undef low_readstring
 #undef yylex
 #undef low_yylex
 #undef lex_atoi
