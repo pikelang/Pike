@@ -65,14 +65,14 @@ protected Gmp.mpz random_exponent()
 
 //! Sign the message @[h]. Returns the signature as two @[Gmp.mpz]
 //! objects.
-array(Gmp.mpz) raw_sign(Gmp.mpz h, void|Gmp.mpz k)
+array(2: Gmp.mpz) raw_sign(Gmp.mpz h, void|Gmp.mpz k)
 {
   if(!k) k = random_exponent();
 
   Gmp.mpz r = [object(Gmp.mpz)](g->powm(k, p) % q);
   Gmp.mpz s = [object(Gmp.mpz)]((k->invert(q) * (h + [object(Gmp.mpz)](x*r))) % q);
 
-  return ({ r, s });
+  return [array(2:)]({ r, s });
 }
 
 //! Verify the signature @[r],@[s] against the message @[h].
@@ -149,7 +149,7 @@ protected string nist_hash(Gmp.mpz x)
 
 //! The (slow) NIST method of generating a DSA prime pair. Algorithm
 //! 4.56 of Handbook of Applied Cryptography.
-array(Gmp.mpz) nist_primes(int l)
+array(2: Gmp.mpz) nist_primes(int l)
 {
   if ( (l < 0) || (l > 8) )
     error( "Unsupported key size.\n" );
@@ -196,7 +196,7 @@ array(Gmp.mpz) nist_primes(int l)
       if (!p->small_factor() && p->probably_prime_p())
       {
 	/* Done */
-	return ({ p, q });
+	return [array(2:)]({ p, q });
       }
     }
   }

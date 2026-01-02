@@ -394,7 +394,7 @@ class State {
     Gmp.mpz r = [object(Gmp.mpz)](g->powm(k, p) % q);
     Gmp.mpz s = [object(Gmp.mpz)]((k->invert(q) * (h + [object(Gmp.mpz)](x*r))) % q);
 
-    return ({ r, s });
+    return [array(2:)]({ r, s });
   }
 
   //! Verify the signature @[r],@[s] against the message @[h].
