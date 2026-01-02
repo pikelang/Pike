@@ -41,6 +41,10 @@ o Syntax for using multi-assign in function calls.
 
     add(({ 1, 2 }), 3);
 
+o Support for sub-modules with names with an initial digit.
+
+  This allows for module names like Standards.X.509.
+
 o Major changes to the compiler type checker.
 
   - The type for the value 0 or UNDEFINED now needs to be
