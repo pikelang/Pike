@@ -1,12 +1,13 @@
+#charset utf-8
 #pike __REAL_VERSION__
 
 //
-// 2004-11-01 Henrik Grubbström
+// 2004-11-01 Henrik GrubbstrÃ¶m
 
-//! Helper module for generating Windows Installer XML structures.
+//! Helper module for generating Windows Installer XML version 2 structures.
 //!
 //! @seealso
-//!   @[Parser.XML.Tree.SimpleNode]
+//!   @[9.0::Standards.XML.Wix], @[Parser.XML.Tree.SimpleNode]
 
 constant wix_ns = "http://schemas.microsoft.com/wix/2003/01/wi";
 
@@ -35,6 +36,49 @@ class WixNode
     if (text) {
       add_child(Parser.XML.Tree.SimpleTextNode(text));
     }
+  }
+}
+
+class PackageNode
+{
+  inherit WixNode;
+
+  protected void create(mapping(string:string) attrs)
+  {
+    attrs += ([]);
+    // This attribute is required in Wix 2.
+    // In Wix 3 it is typically provided as an argument to candle(1).
+    attrs->Platforms = attrs->Platforms || "Intel";
+    ::create("Package", attrs);
+  }
+}
+
+class BinaryNode
+{
+  inherit WixNode;
+
+  protected void create(mapping(string:string) attrs)
+  {
+    attrs += ([]);
+    // This attribute was renamed required in Wix 3.
+    attrs->src = m_delete(attrs, "SourceFile");
+    ::create("Binary", attrs);
+  }
+}
+
+class UIRefNode
+{
+  inherit WixNode;
+
+  protected void create(mapping(string:string) attrs)
+  {
+    attrs += ([]);
+    // The UIRef element did not exist in Wix 2.
+    // Instead the generic FragmentRef element was used.
+    // We also need to refer to the id of the Fragment element
+    // and not that of the UI element.
+    attrs->Id += "Frag";
+    ::create("FragmentRef", attrs);
   }
 }
 

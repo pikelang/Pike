@@ -1,12 +1,13 @@
+#charset utf-8
 #pike __REAL_VERSION__
 
 //
-// 2004-11-01 Henrik Grubbström
+// 2004-11-01 Henrik GrubbstrÃ¶m
 
-//! Helper module for generating Windows Installer XML structures.
+//! Helper module for generating Windows Installer XML version 3 structures.
 //!
 //! @seealso
-//!   @[Parser.XML.Tree.SimpleNode]
+//!   @[8.0::Standards.XML.Wix], @[Parser.XML.Tree.SimpleNode]
 
 constant wix_ns = "http://schemas.microsoft.com/wix/2006/wi";
 
@@ -35,6 +36,36 @@ class WixNode
     if (text) {
       add_child(Parser.XML.Tree.SimpleTextNode(text));
     }
+  }
+}
+
+class PackageNode
+{
+  inherit WixNode;
+
+  protected void create(mapping(string:string) attrs)
+  {
+    ::create("Package", attrs);
+  }
+}
+
+class BinaryNode
+{
+  inherit WixNode;
+
+  protected void create(mapping(string:string) attrs)
+  {
+    ::create("Binary", attrs);
+  }
+}
+
+class UIRefNode
+{
+  inherit WixNode;
+
+  protected void create(mapping(string:string) attrs)
+  {
+    ::create("UIRef", attrs);
   }
 }
 
