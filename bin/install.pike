@@ -46,8 +46,15 @@ typedef int(0..0) zero;
 constant pike_upgrade_guid = "6e40542b-dcfc-49fc-ad8a-b0f978e2935e";
 
 constant line_feed = Standards.XML.Wix.line_feed;
-constant WixNode = Standards.XML.Wix.WixNode;
-constant Directory = Standards.XML.Wix.Directory;
+constant WixModuleT = object_program(Standards.XML.Wix);
+constant WixNodeT = Standards.XML.Wix.WixNode;
+constant DirectoryT = Standards.XML.Wix.Directory;
+
+// Default to latest version of Wix.
+#pragma dynamic_dot
+WixModuleT Wix = Standards.XML.Wix;
+program(WixNodeT) WixNode = WixNodeT;
+program(DirectoryT) Directory = DirectoryT;
 
 string version_str = sprintf("%d.%d.%d%s",
 			     __REAL_MAJOR__,
@@ -58,9 +65,7 @@ string version_str = sprintf("%d.%d.%d%s",
 #define SUPPORT_WIX
 string version_guid = Standards.UUID.make_version3(version_str,
 						   pike_upgrade_guid)->str();
-Directory root = Directory("SourceDir",
-			   Standards.UUID.UUID(version_guid)->encode(),
-			   "TARGETDIR");
+DirectoryT root;
 string|zero wix_version;
 #else /* !constant(Standards.UUID.make_version3) */
 #warning Standards.UUID.make_version3 not available.
@@ -238,7 +243,7 @@ class Dialog
       return res;
     }
 
-    array(WixNode) get_children()
+    array(WixNodeT) get_children()
     {
       if (text) {
 	return ({
@@ -248,7 +253,7 @@ class Dialog
       return ({});
     }
 
-    WixNode gen_xml()
+    WixNodeT gen_xml()
     {
       mapping(string:string) attrs = get_attrs();
       foreach(attrs; string attr; string val) {
@@ -256,8 +261,8 @@ class Dialog
 	  error("Bad attributes for control: %O\n", attrs);
 	}
       }
-      WixNode res = WixNode("Control", attrs);
-      foreach(get_children(), WixNode subnode) {
+      WixNodeT res = WixNode("Control", attrs);
+      foreach(get_children(), WixNodeT subnode) {
 	res->add_child(subnode);
       }
       return res;
@@ -373,7 +378,7 @@ class Dialog
     string text = "< &Back";
     string id = "Prev";
 
-    array(WixNode) get_children()
+    array(WixNodeT) get_children()
     {
       string prev_dialog_prop = sprintf("%s_PrevArgs", Dialog::id);
       if (disabled) {
@@ -411,7 +416,7 @@ class Dialog
       return res;
     }
 
-    array(WixNode) get_children()
+    array(WixNodeT) get_children()
     {
       string next_dialog_prop = sprintf("%s_NextArgs", Dialog::id);
       if (disabled) {
@@ -443,7 +448,7 @@ class Dialog
     int width = 336;
     int height = 15;
     string text = "MsiProgressBar";
-    array(WixNode) get_children()
+    array(WixNodeT) get_children()
     {
       return ({
 	@::get_children(),
@@ -477,9 +482,9 @@ class Dialog
     ]);
   }
 
-  WixNode gen_xml()
+  WixNodeT gen_xml()
   {
-    WixNode res = WixNode("Dialog", get_attrs());
+    WixNodeT res = WixNode("Dialog", get_attrs());
     foreach(controls, Control c) {
       res->add_child(c->gen_xml());
     }
@@ -522,7 +527,7 @@ class ExitDialog
       return res;
     }
 
-    array(WixNode) get_children()
+    array(WixNodeT) get_children()
     {
       return ({
 	@::get_children(),
@@ -584,7 +589,7 @@ class FolderDialog
 
     int disabled = 0;
 
-    array(WixNode) get_children()
+    array(WixNodeT) get_children()
     {
       return ({
 	@::get_children(),
@@ -683,9 +688,9 @@ class UI
     ProgressDialog(),
   });
 
-  WixNode gen_xml()
+  WixNodeT gen_xml()
   {
-    WixNode res = WixNode("UI", ([]))->
+    WixNodeT res = WixNode("UI", ([]))->
       add_child(WixNode("Property", ([ "Id":"DefaultUIFont" ]),
 			"VsdDefaultUIFont.524F4245_5254_5341_4C45_534153783400"));
     //res->add_child(WixNode("Property", ([ "Id":"ErrorDialog" ]), "ErrorDialog"));
@@ -2008,7 +2013,7 @@ class WixInstallHandler {
     SimpleStatus::create();
   }
   
-  protected string add_msm (Directory root, string msm_glob, string descr,
+  protected string add_msm (DirectoryT root, string msm_glob, string descr,
 			    void|string targetdir, void|string language)
   {
     if (string msm_dir = getenv ("CRT_MSM_PATH")) {
@@ -2061,9 +2066,10 @@ class WixInstallHandler {
   // Create a versioned root wix file that installs Pike_module.msm.
   void make_wix()
   {
-    Directory root = Directory("SourceDir",
-			       Standards.UUID.UUID(version_guid)->encode(),
-			       "TARGETDIR");
+    DirectoryT root =
+      Directory("SourceDir",
+                Standards.UUID.UUID(version_guid)->encode(),
+                "TARGETDIR");
     /* Workaround for bug in light. */
     root->extra_ids["PIKE_TARGETDIR"] = 1;
 
@@ -2103,7 +2109,7 @@ class WixInstallHandler {
 #endif /* 1 */
       ;
 
-    WixNode feature_node =
+    WixNodeT feature_node =
       WixNode("Feature", ([
 		"ConfigurableDirectory":"TARGETDIR",
 		"Title":title,
@@ -2172,7 +2178,7 @@ an extra CRT instance.\n");
       Parser.XML.Tree.SimpleRootNode()->
       add_child(Parser.XML.Tree.SimpleHeaderNode((["version": "1.0",
 						   "encoding": "utf-8"])))->
-      add_child(WixNode("Wix", (["xmlns":Standards.XML.Wix.wix_ns]))->
+      add_child(WixNode("Wix", (["xmlns":Wix.wix_ns]))->
 		add_child(line_feed)->
 		add_child(WixNode("Product", ([
 				    "Manufacturer":"IDA",
@@ -2183,13 +2189,13 @@ an extra CRT instance.\n");
 				    "Version":version_str,
 				  ]))->
 			  add_child(line_feed)->
-			  add_child(WixNode("Package", ([
-					      "Manufacturer":"IDA",
-					      "Languages":"1033",
-					      "Compressed":"yes",
-					      "InstallerVersion":"300",
-					      "SummaryCodepage":"1252",
-					    ])))->
+                          add_child(Wix.PackageNode(([
+                                                      "Manufacturer":"IDA",
+                                                      "Languages":"1033",
+                                                      "Compressed":"yes",
+                                                      "InstallerVersion":"300",
+                                                      "SummaryCodepage":"1252",
+                                                    ])))->
 			  add_child(line_feed)->
 			  add_child(WixNode("Media", ([
 					      "Cabinet":"Pike.cab",
@@ -2220,9 +2226,9 @@ an extra CRT instance.\n");
 						      ])))->
 				    add_child(line_feed))->
 			  add_child(line_feed)->
-			  add_child(WixNode("UIRef", ([
-					      "Id":"PikeUI",
-					    ])))->
+                          add_child(Wix.UIRefNode(([
+                                                    "Id":"PikeUI",
+                                                  ])))->
 			  add_child(line_feed))->
 		add_child (line_feed))->
       add_child(line_feed);
@@ -2927,7 +2933,7 @@ class WixExportInstallHandler {
     global::root->install_regkey(path, root, key, name, value, id);
   }
 
-  protected void recurse_uninstall_file(Directory d, string pattern)
+  protected void recurse_uninstall_file(DirectoryT d, string pattern)
   {
     d->recurse_uninstall_file(pattern);
   }
@@ -2959,12 +2965,12 @@ class WixExportInstallHandler {
     root->extra_ids["PIKE_TARGETDIR"] = 1;
 
     // Generate the XML directory tree.
-    WixNode xml_root =
-      Standards.XML.Wix.get_module_xml(root, "Pike", version_str,
-				       "IDA", "Pike dist", version_guid,
-				       "Merge with this", "300");
+    WixNodeT xml_root =
+      Wix.get_module_xml(root, "Pike", version_str,
+                         "IDA", "Pike dist", version_guid,
+                         "Merge with this", "300");
 
-    WixNode module_node = xml_root->
+    WixNodeT module_node = xml_root->
       get_first_element("Wix")->
       get_first_element("Module");
 
@@ -2986,10 +2992,10 @@ class WixExportInstallHandler {
 			  "Impersonate": "no",
 			])))->
       add_child(line_feed)->
-      add_child(WixNode("Binary", ([
-			  "Id":"PikeInstaller",
-			  "SourceFile":"PikeWin32Installer.vbs",
-			])))->
+      add_child(Wix.BinaryNode(([
+                                 "Id":"PikeInstaller",
+                                 "SourceFile":"PikeWin32Installer.vbs",
+                               ])))->
       add_child(line_feed)->
       add_child(WixNode("InstallExecuteSequence", ([]), "\n")->
 		add_child(WixNode("Custom", ([
@@ -3015,16 +3021,16 @@ class WixExportInstallHandler {
       add_child(Parser.XML.Tree.SimpleHeaderNode((["version":"1.0",
 						   "encoding":"utf-8"])))->
       add_child(WixNode("Wix", ([
-			  "xmlns":"http://schemas.microsoft.com/wix/2006/wi",
+                          "xmlns":Wix.wix_ns,
 			]))->
 		add_child(WixNode("Fragment", ([
 				    "Id":"PikeUI",
 				  ]))->
 			  add_child(UI()->gen_xml())->
-			  add_child(WixNode("Binary", ([
-					      "Id":"Pike_banner",
-					      "SourceFile":"Pike_banner.bmp"
-					    ])))));
+                          add_child(Wix.BinaryNode(([
+                                                     "Id":"Pike_banner",
+                                                     "SourceFile":"Pike_banner.bmp"
+                                                   ])))));
 
     Stdio.write_file(/*export_base_name*/"Pike"+"_ui.wxs",
 		     xml_root->render_xml());
@@ -3041,7 +3047,7 @@ class WixExportInstallHandler {
       "bin\\pike -DNOT_INSTALLED"
       " -mbuild\\master.pike bin\\install.pike"
       " BASEDIR=.";
-    WixNode fragment_list =
+    WixNodeT fragment_list =
       WixNode("Fragment", ([
 		"Id":"PikeActions",
 	      ]))->
@@ -3073,25 +3079,26 @@ class WixExportInstallHandler {
 
     status("Creating", export_base_name+".wxs");
 
-    WixNode product_node = WixNode("Product", ([
-				     "Name":"Pike",
-				     "Language":"1033",
-				     "UpgradeCode":pike_upgrade_guid,
-				     "Id":Standards.UUID.make_version1(-1)->str(),
-				     "Version":sprintf("%d.%d.%d",
-						       __REAL_MAJOR__,
-						       __REAL_MINOR__,
-						       __REAL_BUILD__),
-				     "Manufacturer":"IDA",
-				   ]))->
-      add_child(WixNode("Package", ([
-			  "Manufacturer":"IDA",
-			  "Languages":"1033",
-			  "InstallerVersion":"300",
-			  "Id":Standards.UUID.make_version1(-1)->str(),
-			  "Compressed":"yes",
-			  "SummaryCodepage":"1252",
-			])))->
+    WixNodeT product_node =
+      WixNode("Product", ([
+                "Name":"Pike",
+                "Language":"1033",
+                "UpgradeCode":pike_upgrade_guid,
+                "Id":Standards.UUID.make_version1(-1)->str(),
+                "Version":sprintf("%d.%d.%d",
+                                  __REAL_MAJOR__,
+                                  __REAL_MINOR__,
+                                  __REAL_BUILD__),
+                "Manufacturer":"IDA",
+              ]))->
+      add_child(Wix.PackageNode(([
+                                  "Manufacturer":"IDA",
+                                  "Languages":"1033",
+                                  "InstallerVersion":"300",
+                                  "Id":Standards.UUID.make_version1(-1)->str(),
+                                  "Compressed":"yes",
+                                  "SummaryCodepage":"1252",
+                                ])))->
       add_child(WixNode("Media", ([
 			  "Id":"1",
 			  "EmbedCab":"yes",
@@ -3211,7 +3218,7 @@ class WixExportInstallHandler {
       add_child(Parser.XML.Tree.SimpleHeaderNode((["version":"1.0",
 						   "encoding":"utf-8"])))->
       add_child(WixNode("Wix", ([
-			  "xmlns":"http://schemas.microsoft.com/wix/2006/wi",
+                          "xmlns":Wix.wix_ns,
 			]))->add_child(product_node));
 
     Stdio.write_file(export_base_name+".wxs", xml_root->render_xml());
@@ -3607,6 +3614,15 @@ int main(int argc, array(string) argv)
 
         case "--wix-version":
           wix_version = opt[1];
+          if (wix_version < "3") {
+            // Pike 8.0 has Wix 2.x.
+            Wix = 8.0::Standards.XML.Wix;
+          } else {
+            // Pike 9.0 has Wix 3.x.
+            Wix = 9.0::Standards.XML.Wix;
+          }
+          WixNode = Wix.WixNode;
+          Directory = Wix.Directory;
           break;
 
 	default:
@@ -3636,6 +3652,13 @@ int main(int argc, array(string) argv)
     werror("No BASEDIR.\n");
     exit(1);
   }
+
+#ifdef SUPPORT_WIX
+  root =
+    Directory("SourceDir",
+              Standards.UUID.UUID(version_guid)->encode(),
+              "TARGETDIR");
+#endif
 
   // Some magic for the fakeroot stuff
   string tmp = m_delete(vars, "fakeroot");
