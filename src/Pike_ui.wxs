@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
-  <Fragment>
+  <Fragment Id="PikeUIFrag">
     <?if $(sys.BUILDARCH) = "x64" Or $(sys.BUILDARCH) ~= "Arm64"?>
     <?define ProgramFilesFolder = "ProgramFiles64Folder"?>
     <?else?>
