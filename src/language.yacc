@@ -4506,6 +4506,39 @@ range_bound:
 
 gauge: TOK_GAUGE catch_arg
   {
+    /*! @decl float gauge(mixed expression)
+     *!
+     *!   Gauge the time that the expression takes to evaluate.
+     *!
+     *! @param expression
+     *!   Expression to evaluate.
+     *!
+     *! Analogous to @[catch()], there are two syntaxes:
+     *!
+     *!   @code
+     *!     float elapsed = gauge(expression);
+     *!   @endcode
+     *!
+     *! and
+     *!
+     *!   @code
+     *!     float elapsed = gauge {
+     *!       // Code block
+     *!     };
+     *!   @endcode
+     *!
+     *! Where the latter is more versatile and more common.
+     *!
+     *! @returns
+     *!   Returns the time in seconds as a @tt{float@}.
+     *!
+     *! @note
+     *!   @[gauge] is not a @tt{function@}, but a special form. It is thus
+     *!   not valid to pass as a @tt{function@}.
+     *!
+     *! @seealso
+     *!   @[catch()], @[gethrvtime()]
+     */
     $$=mkopernode("`/",
 		  mkopernode("`-",
 			     mkopernode("`-",
@@ -4521,6 +4554,27 @@ gauge: TOK_GAUGE catch_arg
 
 typeof: TOK_TYPEOF '(' assignment_expr ')'
   {
+    /*! @decl type(mixed) typeof(mixed expression)
+     *!
+     *!   Return the compile-time type for the expression.
+     *!
+     *! @param expression
+     *!   Expression for which the type is to be returned.
+     *!
+     *!   This is similar to @[_typeof()], but returns the type
+     *!   that the type checker has derived for the expression.
+     *!   The expression is NOT evaluated.
+     *!
+     *! @returns
+     *!   Returns the derived type for the expression.
+     *!
+     *! @note
+     *!   @[typeof] is not a @tt{function@}, but a special form. It is thus
+     *!   not valid to pass as a @tt{function@}.
+     *!
+     *! @seealso
+     *!   @[_typeof()]
+     */
     $$ = mknode(F_TYPEOF, $3, 0);
   }
   | TOK_TYPEOF '(' error ')' { $$=0; yyerrok; }
@@ -4548,6 +4602,45 @@ catch_arg: '(' init_expr ')'  { $$=$2; }
 
 catch: TOK_CATCH
      {
+       /*! @decl mixed catch(mixed expression)
+        *!
+        *!   Catch run time errors or other thrown values triggered
+        *!   by the evaluation of the expression.
+        *!
+        *! @param expression
+        *!   Expression to evaluate.
+        *!
+        *! Analogous to @[gauge()], there are two syntaxes:
+        *!
+        *!   @code
+        *!     mixed err = catch(expression);
+        *!   @endcode
+        *!
+        *! and
+        *!
+        *!   @code
+        *!     mixed err = catch {
+        *!       // Code block
+        *!     };
+        *!   @endcode
+        *!
+        *! Where the latter is more versatile and more common.
+        *!
+        *! @returns
+        *!   Returns the value that was caught. If no value was caught
+        *!   @expr{0@} is returned.
+        *!
+        *! @note
+        *!   @[catch] is not a @tt{function@}, but a special form. It is thus
+        *!   not valid to pass as a @tt{function@}.
+        *!
+        *!   Note also that @[catch] does not perform any filtering of
+        *!   the caught values. If a caught value is not of interrest
+        *!   it is up to user code to re-@[throw] the value.
+        *!
+        *! @seealso
+        *!   @[gauge()], @[throw()]
+        */
        Pike_compiler->catch_level++;
      }
      catch_arg
