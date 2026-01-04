@@ -68,12 +68,6 @@
 #include <netinet/tcp.h>
 #endif /* HAVE_NETINET_TCP_H */
 
-#ifdef HAVE_SYS_SENDFILE_H
-#ifndef HAVE_BROKEN_SYS_SENDFILE_H
-#include <sys/sendfile.h>
-#endif /* !HAVE_BROKEN_SYS_SENDFILE_H */
-#endif /* HAVE_SYS_SENDFILE_H */
-
 #if 0
 #ifdef HAVE_SYS_MMAN_H
 #include <sys/mman.h>
@@ -124,31 +118,6 @@
 #define THIS	((struct pike_sendfile *)(Pike_fp->current_storage))
 
 /*
- * We assume sendfile(2) has been fixed on all OS's by now.
- * FIXME: Configure tests?
- *	/grubba 2004-03-30
- */
-#if 0
-/*
- * All known versions of sendfile(2) are broken.
- *	/grubba 2000-10-19
- */
-#ifndef HAVE_BROKEN_SENDFILE
-#define HAVE_BROKEN_SENDFILE
-#endif /* !HAVE_BROKEN_SENDFILE */
-#endif /* 0 */
-
-/*
- * Disable any use of sendfile(2) if HAVE_BROKEN_SENDFILE is defined.
- */
-#ifdef HAVE_BROKEN_SENDFILE
-#undef HAVE_SENDFILE
-#undef HAVE_FREEBSD_SENDFILE
-#undef HAVE_HPUX_SENDFILE
-#undef HAVE_MACOSX_SENDFILE
-#endif /* HAVE_BROKEN_SENDFILE */
-
-/*
  * Globals
  */
 
@@ -164,9 +133,6 @@ static void exit_pike_sendfile(struct object *UNUSED(o))
 
   if (THIS->iovs)
     free(THIS->iovs);
-
-  if (THIS->buffer)
-    free(THIS->buffer);
 
   if (THIS->headers)
     free_array(THIS->headers);
@@ -274,7 +240,7 @@ void low_do_sendfile(struct pike_sendfile *this)
 
   SF_DFPRINTF((stderr,
 	      "sendfile: Done. Setting up callback\n"
-	      "%d bytes sent\n", this->sent));
+               "%"PRINTINT64"d bytes sent\n", this->sent));
 
   /* FIXME: Restore non-blocking mode here? */
 }
@@ -503,7 +469,8 @@ static void sf_create(INT32 args)
     int i;
 
     for (i=0; i < a->size; i++) {
-      if ((TYPEOF(a->item[i]) != T_STRING) || (a->item[i].u.string->size_shift)) {
+      if ((TYPEOF(a->item[i]) != T_STRING) ||
+          (a->item[i].u.string->size_shift)) {
 	SIMPLE_ARG_TYPE_ERROR("sendfile", 1, "array(string)");
       }
     }
@@ -517,7 +484,8 @@ static void sf_create(INT32 args)
     int i;
 
     for (i=0; i < a->size; i++) {
-      if ((TYPEOF(a->item[i]) != T_STRING) || (a->item[i].u.string->size_shift)) {
+      if ((TYPEOF(a->item[i]) != T_STRING) ||
+          (a->item[i].u.string->size_shift)) {
 	SIMPLE_ARG_TYPE_ERROR("sendfile", 5, "array(string)");
       }
     }
@@ -527,26 +495,16 @@ static void sf_create(INT32 args)
 
   /* Set up the iovec's */
   if (iovcnt) {
-#ifdef HAVE_HPUX_SENDFILE
-    iovcnt = 2;
-#endif /* HAVE_HPUX_SENDFILE */
 
     sf.iovs = xalloc(sizeof(struct iovec) * iovcnt);
 
     sf.hd_iov = sf.iovs;
-#ifdef HAVE_HPUX_SENDFILE
-    sf.tr_iov = sf.iovs + 1;
-#else /* !HAVE_HPUX_SENDFILE */
     sf.tr_iov = sf.iovs + sf.hd_cnt;
-#endif /* HAVE_HPUX_SENDFILE */
 
     if (sf.headers) {
       int i;
       for (i = sf.hd_cnt; i--;) {
 	struct pike_string *s;
-#ifdef HAVE_HPUX_SENDFILE
-	ref_push_string(sf.headers->item[i].u.string);
-#else /* !HAVE_HPUX_SENDFILE */
 	if ((s = sf.headers->item[i].u.string)->len) {
 	  sf.hd_iov[i].iov_base = s->str;
 	  sf.hd_iov[i].iov_len = s->len;
@@ -554,31 +512,12 @@ static void sf_create(INT32 args)
 	  sf.hd_iov++;
 	  sf.hd_cnt--;
 	}
-#endif /* HAVE_HPUX_SENDFILE */
       }
-#ifdef HAVE_HPUX_SENDFILE
-      if (sf.hd_cnt) {
-	f_add(sf.hd_cnt);
-	sf.hd_cnt = 1;
-	free_string(sf.headers->item->u.string);
-	sf.headers->item->u.string = sp[-1].u.string;
-	sp--;
-	dmalloc_touch_svalue(sp);
-	sf.hd_iov->iov_base = sf.headers->item->u.string->str;
-	sf.hd_iov->iov_len = sf.headers->item->u.string->len;
-      } else {
-	sf.hd_iov->iov_base = NULL;
-	sf.hd_iov->iov_len = 0;
-      }
-#endif /* HAVE_HPUX_SENDFILE */
     }
     if (sf.trailers) {
       int i;
       for (i = sf.tr_cnt; i--;) {
 	struct pike_string *s;
-#ifdef HAVE_HPUX_SENDFILE
-	ref_push_string(sf.trailers->item[i].u.string);
-#else /* !HAVE_HPUX_SENDFILE */
 	if ((s = sf.trailers->item[i].u.string)->len) {
 	  sf.tr_iov[i].iov_base = s->str;
 	  sf.tr_iov[i].iov_len = s->len;
@@ -586,22 +525,7 @@ static void sf_create(INT32 args)
 	  sf.tr_iov++;
 	  sf.tr_cnt--;
 	}
-#endif /* HAVE_HPUX_SENDFILE */
       }
-#ifdef HAVE_HPUX_SENDFILE
-      if (sf.tr_cnt) {
-	f_add(sf.tr_cnt);
-	free_string(sf.trailers->item->u.string);
-	sf.trailers->item->u.string = sp[-1].u.string;
-	sp--;
-	dmalloc_touch_svalue(sp);
-	sf.tr_iov->iov_base = sf.trailers->item->u.string->str;
-	sf.tr_iov->iov_len = sf.trailers->item->u.string->len;
-      } else {
-	sf.tr_iov->iov_base = NULL;
-	sf.tr_iov->iov_len = 0;
-      }
-#endif /* HAVE_HPUX_SENDFILE */
     }
   }
 
@@ -612,7 +536,8 @@ static void sf_create(INT32 args)
   if ((sf.headers) && (sf.headers->refs > 1)) {
     struct array *a = copy_array(sf.headers);
 #ifdef PIKE_DEBUG
-    if ((TYPEOF(sp[-args]) != T_ARRAY) || (sp[-args].u.array != sf.headers)) {
+    if ((TYPEOF(sp[-args]) != T_ARRAY) ||
+        (sp[-args].u.array != sf.headers)) {
       Pike_fatal("sendfile: Stack out of sync(3).\n");
     }
 #endif /* PIKE_DEBUG */
@@ -623,22 +548,14 @@ static void sf_create(INT32 args)
   if ((sf.trailers) && (sf.trailers->refs > 1)) {
     struct array *a = copy_array(sf.trailers);
 #ifdef PIKE_DEBUG
-    if ((TYPEOF(sp[4-args]) != T_ARRAY) || (sp[4-args].u.array != sf.trailers)) {
+    if ((TYPEOF(sp[4-args]) != T_ARRAY) ||
+        (sp[4-args].u.array != sf.trailers)) {
       Pike_fatal("sendfile: Stack out of sync(4).\n");
     }
 #endif /* PIKE_DEBUG */
     free_array(sf.trailers);
     sp[4-args].u.array = a;
     sf.trailers = a;
-  }
-
-  if (sf.from_file) {
-    /* We may need a buffer to hold the data */
-    ONERROR tmp;
-    SET_ONERROR(tmp, free, sf.iovs);
-    sf.buffer = xalloc(BUF_SIZE);
-    UNSET_ONERROR(tmp);
-    sf.buf_size = BUF_SIZE;
   }
 
   {
@@ -651,13 +568,6 @@ static void sf_create(INT32 args)
       set_nonblocking(sf.from_fd, 0);
       sf.from->open_mode &= ~FILE_NONBLOCKING;
 
-      /* Fix offset */
-      if (sf.offset < 0) {
-	sf.offset = fd_lseek(sf.from_fd, 0, SEEK_CUR);
-	if (sf.offset < 0) {
-	  sf.offset = 0;
-	}
-      }
     }
     /* set_blocking */
     set_nonblocking(sf.to_fd, 0);
@@ -697,17 +607,6 @@ static void sf_create(INT32 args)
 
     /* The worker will have a ref. */
     th_farm(worker, THIS);
-#if 0
-    {
-      /* Failure */
-      sf.to->flags &= ~FILE_LOCK_FD;
-      if (sf.from) {
-	sf.from->flags &= ~FILE_LOCK_FD;
-      }
-      free_object(THIS->self);
-      Pike_error("Failed to create thread.\n");
-    }
-#endif /* 0 */
   }
   return;
 }

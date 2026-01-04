@@ -158,6 +158,7 @@ static unsigned int TOKENIZE(struct array **res, CHAR *data, unsigned int len)
       case '(': case ')':
       case ';':
       case ',': case '?':
+      case '$': /* Reserved for type variable expansion. */
       case '@': /* Hm. Pike specific if I ever saw one. */
 	break;  /* all done, one character token */
 

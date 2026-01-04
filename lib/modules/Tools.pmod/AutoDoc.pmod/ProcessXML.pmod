@@ -902,6 +902,18 @@ void handleAppears(SimpleNode root, .Flags|void flags)
 // RESOLVING REFERENCES
 //========================================================================
 
+constant pike_release_versions = ({
+  "7.0", "7.2", "7.4", "7.6", "7.8", "8.0", "9.0",
+});
+constant pike_devel_versions = ({
+  "0.7", "7.1", "7.3", "7.5", "7.7", "7.9", "8.1",
+});
+
+constant pike_release_to_devel_version =
+  mkmapping(pike_release_versions, pike_devel_versions);
+constant pike_devel_to_release_version =
+  mkmapping(pike_devel_versions, pike_release_versions);
+
 // Rather DWIM splitting of a string into a chain of identifiers:
 // "Module.Class->funct(int i)" ==> ({"Module","Class","func"})
 // "\"foo.pike\"" ==> ({ "\"foo.pike\"" })
@@ -1008,15 +1020,7 @@ protected class ScopeStack {
     if (type == "namespace") {
       namespaceStack += ({ ({ namespace, scopes[name] }) });
       scopes[namespace = name] = ({ Scope(type, name+"::") });
-      if (name = ([
-	    "predef":"8.1",
-	    "8.0":"7.9",
-	    "7.8":"7.7",
-	    "7.6":"7.5",
-	    "7.4":"7.3",
-	    "7.2":"7.1",
-	    "7.0":"0.7",
-	  ])[name]) {
+      if (name = pike_release_to_devel_version[name]) {
 	// Add an alias for development version.
 	scopes[name] = scopes[namespace];
       }
@@ -1733,17 +1737,6 @@ class NScopeStack
       default:
 	// Strip the trailing "::".
 	string inh = ref[0][..sizeof(ref[0])-3];
-	// Map intermediate version namespaces to existing.
-	// FIXME: This ought be done based on the set of namespaces.
-	inh = ([
-	  "0.7":"7.0",
-	  "7.1":"7.2",
-	  "7.3":"7.4",
-	  "7.5":"7.6",
-	  "7.7":"7.8",
-	  "7.9":"8.0",
-	  "8.1":"predef",
-	])[inh] || inh;
         if (inh == "global") {
         } else {
           while(pos) {
@@ -1844,7 +1837,7 @@ class NScopeStack
 	  if (path) {
 	    top->inherits[inh] = path;
 	    continue;
-          } else if (inh[0]) {
+          } else if (!sizeof(inh) || inh[0]) {
 	    warn("Failed to resolve inherit %O.\n"
 		 "  Top: %O\n"
 		 "  Scope: %O\n"
@@ -2073,6 +2066,30 @@ void resolveRefs(SimpleNode tree, string|void logfile, .Flags|void flags)
   if ((flags & .FLAG_VERB_MASK) >= .FLAG_VERBOSE)
     werror("Adding implicit inherits for compatibility modules...\n");
   scopestack->addImplicitInherits();
+  if ((flags & .FLAG_VERB_MASK) >= .FLAG_VERBOSE)
+    werror("Adding aliases for various version scopes...\n");
+  NScope prev = scopestack->scopes->symbols["predef::"];
+  foreach(reverse(pike_release_versions), string rel) {
+    NScope found = scopestack->scopes->symbols[rel + "::"];
+    if (found) {
+      prev = found;
+    } else {
+      if ((flags & .FLAG_VERB_MASK) >= .FLAG_VERBOSE)
+        werror("Aliasing %s:: to %s.\n", rel, prev->name);
+      scopestack->scopes->symbols[rel + "::"] = prev;
+    }
+  }
+  // Map intermediate version namespaces to existing.
+  foreach(pike_devel_to_release_version; string dev; string rel) {
+    NScope found = scopestack->scopes->symbols[dev + "::"];
+    if (found) continue;
+    found = scopestack->scopes->symbols[rel + "::"];
+    if (found) {
+      if ((flags & .FLAG_VERB_MASK) >= .FLAG_VERBOSE)
+        werror("Aliasing %s:: to %s.\n", dev, found->name);
+      scopestack->scopes->symbols[dev + "::"] = found;
+    }
+  }
   if ((flags & .FLAG_VERB_MASK) >= .FLAG_VERBOSE)
     werror("Resolving inherits...\n");
   scopestack->reset();

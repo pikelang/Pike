@@ -3,6 +3,11 @@
 # This file scripts the xenofarm actions and creates a result package
 # to send back.
 
+# Simplify informing various scripts that they should apply
+# Xenofarm defaults.
+PIKE_XENOFARM_DEFAULTS="yes"
+export PIKE_XENOFARM_DEFAULTS
+
 log() {
   echo $1 | tee -a xenofarm_result/mainlog.txt
 }
@@ -61,6 +66,9 @@ xenofarm_post_build() {
           $MAKE METATARGET=autodoc.xml \
                 >xenofarm_result/extract_autodoc.txt 2>&1
           log_end $?
+          if [ -f "$BUILDDIR/resolution.log" ]; then
+              cp "$BUILDDIR/resolution.log" xenofarm_result/resolution_log.txt
+          fi
           if [ $LASTERR = 0 ]; then :; else
               DOC_RESULT=$LASTERR
               break;
@@ -186,15 +194,16 @@ log_start response_assembly
     cp "$BUILDDIR/testsuite" xenofarm_result/testsuite.txt || true;
   fi
   # Core files
-  find . -name "core" -print -exec \
-    gdb --batch --nx --command=bin/xenofarm_gdb_cmd "$BUILDDIR/pike" {} >> \
-       xenofarm_result/_core.txt ";"
-  find . -name "*.core" -print -exec \
-    gdb --batch --nx --command=bin/xenofarm_gdb_cmd "$BUILDDIR/pike" {} >> \
-      xenofarm_result/_core.txt ";"
-  find . -name "core.*" -print -exec \
-    gdb --batch --nx --command=bin/xenofarm_gdb_cmd "$BUILDDIR/pike" {} >> \
-      xenofarm_result/_core.txt ";"
-log_end $?
+  # NB: Filter false positive for doc for Web.Api.Google.Analytics.V3.core.
+  (
+      find . -name "core" -print
+      find . -name "*.core" -print
+      find . -name "core.*" -print
+  ) | grep -v '/modref/' | while read f; do
+      echo "$f"
+      gdb --batch --nx --command=bin/xenofarm_gdb_cmd "$BUILDDIR/pike" {} \
+          >>xenofarm_result/_core.txt ";"
+  done
+  log_end $?
 
 log "END"

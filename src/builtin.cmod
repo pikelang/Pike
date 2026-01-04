@@ -997,15 +997,15 @@ PIKEFUN string(0..255) hex2string(string(8bit) hex, int(0..2)|void strict_mode)
   Pike_error("Illegal hex format.\n");
 }
 
-/*! @decl array(int) range(string s)
+/*! @decl array(2: int) range(string s)
  *! @appears String.range
  *!
- *! Returns the character range of a string in an array of two
+ *! Returns the character range of a string as an array of two
  *! elements. The first element contains the lower bound and the
- *! second the upper. The precision is only 8 bits, so for wide
- *! strings only character blocks are known.
+ *! second the upper (both inclusive). The precision is only 8 bits,
+ *! so for wide strings only character blocks are known.
  */
-PIKEFUN array(int) string_range(string s)
+PIKEFUN array(2: int) string_range(string s)
   errname range;
   optflags OPT_TRY_OPTIMIZE;
 {

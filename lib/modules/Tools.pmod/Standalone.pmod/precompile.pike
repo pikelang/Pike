@@ -936,8 +936,12 @@ class PikeType
 	  return ret;
 
 	case "array":
-	  ret=sprintf("tArr(%s)",args[0]->output_c_type());
-	  if(ret=="tArr(tMix)") return "tArray";
+          if (sizeof(args) == 1) {
+            ret=sprintf("tArr(%s)",args[0]->output_c_type());
+            if(ret=="tArr(tMix)") return "tArray";
+          } else {
+            ret = sprintf("tLArr(%s)", args->output_c_type()*",");
+          }
 	  return ret;
 
         case "__deprecated__":
@@ -1070,7 +1074,7 @@ class PikeType
 	case "multiset":
 	case "array":
 	{
-	  string tmp=args[0]->output_pike_type(0);
+          string tmp = args->output_pike_type(0) * ":";
 	  if(tmp=="mixed") return ret;
 	  return sprintf("%s(%s)",ret,tmp);
 	}
@@ -1176,6 +1180,46 @@ class PikeType
       }
     }
 
+  array(PikeType) parse_int_range(array(PC.Token) range)
+  {
+    string low = (string)(int)-0x80000000;
+    string high = (string)0x7fffffff;
+
+    array(array(PC.Token)) tmp = range/({".."});
+    if(sizeof(tmp)==1)
+    {
+      int bits;
+      array(PC.Token) q = tmp[0];
+      /* Support the string(Xbit) syntax too. */
+      if (sizeof(q) == 1 && sscanf((string)q[0], "%dbit", bits))
+      {
+        if (has_value((string)q[0], "bit")) {
+          low = "0";
+          high = sprintf("%d", (1 << bits) - 1);
+        } else {
+          // Shorthand for bits..bits.
+          low = high = (string)bits;
+        }
+      }
+      else if (sizeof(q) == 2 && q[1] == "bit")
+      {
+        // Parser.Pike from Pike 8.1.3 or earlier.
+        low = "0";
+        high = sprintf("%d", (1 << (int)(string)q[0]) - 1);
+      }
+      else
+      {
+        werror("%s:%d: Syntax error: %s is not a valid range.\n",
+               t->file, t->line, merge(range));
+        exit(1);
+      }
+    } else {
+      if(sizeof(tmp[0])) low=(array(string))tmp[0]*"";
+      if(sizeof(tmp[1])) high=(array(string))tmp[1]*"";
+    }
+    return ({ PikeType(PC.Token(low)), PikeType(PC.Token(high)) });
+  }
+
   /*
    * Possible ways to initialize a PikeType:
    * PikeType("array(array(int))")
@@ -1278,7 +1322,14 @@ class PikeType
 	      case "__deprecated__":
 	      case "array":
 	      case "multiset":
-		args=({ PikeType(tok[1..]) });
+                q = tok[1];
+                tmp = q[1..sizeof(q)-2]/({":"});
+                if (sizeof(tmp) > 1) {
+                  args = ({ PikeType(PC.Token("int"), parse_int_range(tmp[0])),
+                            PikeType(tmp[-1]) });
+                } else {
+                  args = ({ PikeType(tmp[0]) });
+                }
 		break;
 
 	      case "mapping":
@@ -1327,39 +1378,12 @@ class PikeType
 
 	      case "int":
 	      case "string":
-		string low = (string)(int)-0x80000000;
-		string high = (string)0x7fffffff;
-
-		if(arrayp(q=tok[1]))
+                if(arrayp(q = tok[1]))
 		{
-		  tmp=q[1..sizeof(q)-2]/({".."});
-		  if(sizeof(tmp)==1)
-                  {
-		    int bits;
-		    /* Support the string(Xbit) syntax too. */
-		    if (sizeof(q) == 3 && sscanf((string)q[1], "%dbit", bits))
-                    {
-		      low = "0";
-		      high = sprintf("%d", (1 << bits) - 1);
-		    }
-		    else if (sizeof(q) == 4 && q[2] == "bit")
-                    {
-		      // Parser.Pike from Pike 8.1.3 or earlier.
-		      low = "0";
-		      high = sprintf("%d", (1 << (int)(string)q[1]) - 1);
-		    }
-                    else
-                    {
-		      werror("%s:%d: Syntax error: %s is not a valid type.\n",
-                             t->file, t->line, merge(tok));
-                      exit(1);
-                    }
-		  } else {
-		    if(sizeof(tmp[0])) low=(array(string))tmp[0]*"";
-		    if(sizeof(tmp[1])) high=(array(string))tmp[1]*"";
-		  }
-		}
-		args=({PikeType(PC.Token(low)),PikeType(PC.Token(high))});
+                  args = parse_int_range(q[1..sizeof(q)-2]);
+                } else {
+                  args = parse_int_range(({}));
+                }
 		break;
 
 	      case "object":

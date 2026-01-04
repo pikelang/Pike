@@ -27,6 +27,7 @@ struct lex
   node *attributes;
   struct pike_string *current_file;
   int (*current_lexer)(struct lex *, YYSTYPE *);
+  unsigned INT32 prev_token;
 };
 
 /* Prototypes begin here */
