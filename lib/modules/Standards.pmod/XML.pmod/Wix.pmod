@@ -383,7 +383,7 @@ class Directory
   {
     Directory d = low_add_path(dest/"/");
 
-    foreach(get_dir(src), string fname) {
+    foreach(sort(get_dir(src)), string fname) {
       string fullname = combine_path(src, fname);
       Stdio.Stat stat = file_stat(fullname);
       if (stat->isdir) {
@@ -428,7 +428,7 @@ class Directory
   void recurse_uninstall_file(string pattern)
   {
     low_uninstall_file(pattern);
-    foreach(sub_dirs;; Directory d) {
+    foreach(map(sort(indices(sub_dirs)), sub_dirs), Directory d) {
       d->recurse_uninstall_file(pattern);
     }
   }
@@ -479,14 +479,14 @@ class Directory
     }
     WixNode root = WixNode("Directory", attrs, "\n");
     WixNode node = root;
-    foreach(extra_ids; string sub_id;) {
+    foreach(sort(indices(extra_ids)), string sub_id) {
       node->add_child(node = WixNode("Directory", ([
 				       "Id": sub_id,
 				       "Name":".",
 				     ]), "\n"))->
 	add_child(line_feed);
     }
-    foreach(sub_dirs;; object(Directory)|Merge d) {
+    foreach(map(sort(indices(sub_dirs)), sub_dirs), object(Directory)|Merge d) {
       root->add_child(d->gen_xml(parent, disk_id))->add_child(line_feed);
     }
     if (sizeof(files) || sizeof(other_entries)) {
@@ -500,10 +500,11 @@ class Directory
 				  (contains_dlls ? ([
 				    "SharedDllRefCount":"yes"
 				  ]):([])), "\n");
-      foreach(files;; File f) {
+      foreach(map(sort(indices(files)), files), File f) {
 	component->add_child(f->gen_xml())->add_child(line_feed);
       }
-      foreach(other_entries;; RegistryEntry r) {
+      foreach(map(sort(indices(other_entries)), other_entries),
+              RegistryEntry r) {
 	component->add_child(r->gen_xml())->add_child(line_feed);
       }
       node->add_child(component)->add_child(line_feed);
