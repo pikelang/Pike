@@ -2408,6 +2408,8 @@ struct node_s *find_predef_identifier(struct pike_string *ident)
 int low_resolve_identifier(struct pike_string *ident)
 {
   struct compilation *c = THIS_COMPILATION;
+  struct mapping *resolve_cache = c->resolve_cache;
+  struct svalue *tmp = NULL;
 
   /* Handle UNDEFINED */
   if (ident == UNDEFINED_string) {
@@ -2415,18 +2417,38 @@ int low_resolve_identifier(struct pike_string *ident)
     return 1;
   }
 
-  if(c->resolve_cache)
-  {
-    struct svalue *tmp=low_mapping_string_lookup(c->resolve_cache,ident);
-    if(tmp)
-    {
-      if(IS_UNDEFINED (tmp)) {
-	return 0;
-      }
+  if(!resolve_cache) {
+    c->resolve_cache = resolve_cache = allocate_mapping(10);
+  }
 
-      push_svalue(tmp);
-      return 1;
+  if ((Pike_compiler->compat_major != PIKE_MAJOR_VERSION) ||
+      (Pike_compiler->compat_minor != PIKE_MINOR_VERSION)) {
+    /* Compat lookup. */
+    struct svalue s;
+    SET_SVAL(s, PIKE_T_INT, NUMBER_NUMBER, integer,
+             Pike_compiler->compat_major * 0x10000 |
+             Pike_compiler->compat_minor);
+    tmp = low_mapping_lookup(resolve_cache, &s);
+    if (tmp && (TYPEOF(*tmp) == PIKE_T_MAPPING)) {
+      resolve_cache = tmp->u.mapping;
+    } else {
+      struct svalue v;
+      resolve_cache = allocate_mapping(10);
+      SET_SVAL(v, PIKE_T_MAPPING, 0, mapping, resolve_cache);
+      low_mapping_insert(c->resolve_cache, &s, &v, 1);
+      free_mapping(resolve_cache); /* Reference now held by main cache. */
     }
+  }
+
+  tmp = low_mapping_string_lookup(resolve_cache, ident);
+  if(tmp)
+  {
+    if(IS_UNDEFINED (tmp)) {
+      return 0;
+    }
+
+    push_svalue(tmp);
+    return 1;
   }
 
   CHECK_COMPILER();
@@ -2460,9 +2482,7 @@ int low_resolve_identifier(struct pike_string *ident)
                "when resolving '%pS'.",
 	       get_name_of_type (TYPEOF(Pike_sp[-1])), ident);
   } else {
-    if(!c->resolve_cache)
-      c->resolve_cache=dmalloc_touch(struct mapping *, allocate_mapping(10));
-    mapping_string_insert(c->resolve_cache,ident,Pike_sp-1);
+    mapping_string_insert(resolve_cache, ident, Pike_sp-1);
 
     if(!IS_UNDEFINED (Pike_sp-1))
     {
