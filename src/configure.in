@@ -2691,9 +2691,31 @@ if test "x${CANDLE-}" = x ; then :; else
     CANDLE_VERSION="`$CANDLE -\? | head -1 | sed -e 's/.*[[vV]]ersion //'`"
     export CANDLE_VERSION
     AC_MSG_RESULT([$CANDLE_VERSION])
+    if test "x${CANDLE_ARCH-}" = x ; then
+        AC_MSG_CHECKING([Candle target architecture])
+        AC_CHECK_DECL([_M_AMD64], [CANDLE_ARCH="x64"],,[#include <windows.h>])
+        AC_CHECK_DECL([_M_ARM],   [CANDLE_ARCH="arm"],,[#include <windows.h>])
+        AC_CHECK_DECL([_M_ARM64], [CANDLE_ARCH="arm64"],,[#include <windows.h>])
+        AC_CHECK_DECL([_M_IA64],  [CANDLE_ARCH="ia64"],,[#include <windows.h>])
+        AC_CHECK_DECL([_M_IX86],  [CANDLE_ARCH="x86"],,[#include <windows.h>])
+        export CANDLE_ARCH
+        AC_MSG_RESULT([$CANDLE_ARCH])
+    fi
+
+    case "$CANDLE_VERSION" in
+        2.*)
+            ;;
+        *)
+            # Wix 3 or later.
+            CANDLE_OPTS="-arch $CANDLE_ARCH"
+            ;;
+    esac
+    export CANDLE_OPTS
 fi
 AC_SUBST(CANDLE)
 AC_SUBST(CANDLE_VERSION)
+AC_SUBST(CANDLE_ARCH)
+AC_SUBST(CANDLE_OPTS)
 
 # Wix linker
 if test "x${LIGHT-}" = x ; then
@@ -2705,9 +2727,20 @@ if test "x${LIGHT-}" = x ; then :; else
     LIGHT_VERSION="`$LIGHT -\? | head -1 | sed -e 's/.*[[vV]]ersion //'`"
     export LIGHT_VERSION
     AC_MSG_RESULT([$LIGHT_VERSION])
+
+    case "$LIGHT_VERSION" in
+        2.*)
+            ;;
+        *)
+            # Wix 3 or later.
+            LIGHT_OPTS="-sice:ICE39"
+            ;;
+    esac
+    export LIGHT_OPTS
 fi
 AC_SUBST(LIGHT)
 AC_SUBST(LIGHT_VERSION)
+AC_SUBST(LIGHT_OPTS)
 
 # Wix tool
 # This one doesn't exist any more in WiX 3.x.
