@@ -4,12 +4,12 @@
 //
 // 2004-11-01 Henrik Grubbström
 
-//! Helper module for generating Windows Installer XML version 3 structures.
+//! Helper module for generating Windows Installer XML version 2 structures.
 //!
 //! @seealso
-//!   @[8.0::Standards.XML.Wix], @[Parser.XML.Tree.SimpleNode]
+//!   @[9.0::Standards.XML.Wix], @[Parser.XML.Tree.SimpleNode]
 
-constant wix_ns = "http://schemas.microsoft.com/wix/2006/wi";
+constant wix_ns = "http://schemas.microsoft.com/wix/2003/01/wi";
 
 Parser.XML.Tree.SimpleTextNode line_feed =
   Parser.XML.Tree.SimpleTextNode("\n");
@@ -28,7 +28,7 @@ class WixNode
   inherit Parser.XML.Tree.SimpleElementNode;
 
   protected void create(string name, mapping(string:string) attrs,
-		     string|void text)
+                        string|void text)
   {
     ::create(wix_ns + name, attrs);
     mTagName = name;
@@ -45,6 +45,10 @@ class PackageNode
 
   protected void create(mapping(string:string) attrs)
   {
+    attrs += ([]);
+    // This attribute is required in Wix 2.
+    // In Wix 3 it is typically provided as an argument to candle(1).
+    attrs->Platforms = attrs->Platforms || "Intel";
     ::create("Package", attrs);
   }
 }
@@ -55,6 +59,9 @@ class BinaryNode
 
   protected void create(mapping(string:string) attrs)
   {
+    attrs += ([]);
+    // This attribute was renamed required in Wix 3.
+    attrs->src = m_delete(attrs, "SourceFile");
     ::create("Binary", attrs);
   }
 }
@@ -65,7 +72,13 @@ class UIRefNode
 
   protected void create(mapping(string:string) attrs)
   {
-    ::create("UIRef", attrs);
+    attrs += ([]);
+    // The UIRef element did not exist in Wix 2.
+    // Instead the generic FragmentRef element was used.
+    // We also need to refer to the id of the Fragment element
+    // and not that of the UI element.
+    attrs->Id += "Frag";
+    ::create("FragmentRef", attrs);
   }
 }
 
@@ -78,7 +91,7 @@ class RegistryEntry
   string id;
 
   protected void create(string root, string key, string name, string value,
-		     string id)
+                        string id)
   {
     RegistryEntry::root = root;
     RegistryEntry::key = key;
@@ -98,7 +111,7 @@ class RegistryEntry
       "Value":value,
     ]);
     if (name) attrs->Name = name;
-    return WixNode("RegistryValue", attrs);
+    return WixNode("Registry", attrs);
   }
 }
 
@@ -119,7 +132,7 @@ class Merge
   {
     mapping(string:string) attrs = ([
       "Id":id,
-      "SourceFile":source,
+      "src":source,
       "Language": language || "1033",
       "DiskId":"1",
       "FileCompression": "yes",
@@ -144,7 +157,7 @@ class Directory
   int contains_dlls;
 
   protected void create(string name, string parent_guid,
-		     string|void id, string|void short_name)
+                        string|void id, string|void short_name)
   {
     guid = MK_UUID(name, parent_guid);
     if (!id) id = "_"+guid->str()-"-";
@@ -160,8 +173,8 @@ class Directory
     string base;
     long_name = upper_case(long_name);
     if (long_name != (base = replace(long_name,
-				     " +-,;=[]"/"",
-				     ({"", @("_______"/"")})))) {
+                                     " +-,;=[]"/"",
+                                     ({"", @("_______"/"")})))) {
       truncated = 1;
     }
     array(string) segs = base/".";
@@ -169,33 +182,33 @@ class Directory
     if (sizeof(segs) > 1) {
       extension = segs[-1];
       if (sizeof(segs) > 2) {
-	base = segs[..<1] * "";
-	truncated = 1;
+        base = segs[..<1] * "";
+        truncated = 1;
       } else {
-	base = segs[0];
+        base = segs[0];
       }
       if (sizeof(extension) > 3) {
-	extension = extension[..2];
-	truncated = 1;
+        extension = extension[..2];
+        truncated = 1;
       }
     }
     if ((sizeof(base) > 8) || truncated) {
       int cnt;
       for (cnt = 0; cnt < 1000; cnt++) {
-	if (cnt < 10) {
-	  if (!short_names[base = sprintf("%.6s_%.1d", base, cnt)]) {
-	    short_names[base] = 1;
-	    break;
-	  }
-	} else if (cnt < 100) {
-	  if (!short_names[base = sprintf("%.5s_%.2d", base, cnt)]) {
-	    short_names[base] = 1;
-	    break;
-	  }
-	} else if (!short_names[base = sprintf("%.4s_%.3d", base, cnt)]) {
-	  short_names[base] = 1;
-	  break;
-	}
+        if (cnt < 10) {
+          if (!short_names[base = sprintf("%.6s_%.1d", base, cnt)]) {
+            short_names[base] = 1;
+            break;
+          }
+        } else if (cnt < 100) {
+          if (!short_names[base = sprintf("%.5s_%.2d", base, cnt)]) {
+            short_names[base] = 1;
+            break;
+          }
+        } else if (!short_names[base = sprintf("%.4s_%.3d", base, cnt)]) {
+          short_names[base] = 1;
+          break;
+        }
       }
       if (cnt > 999) error("Too many like-named files: %O\n", long_name);
       //werror("gen_8dot3: %O ==> %O.%O\n", long_name, base, extension);
@@ -220,19 +233,19 @@ class Directory
     WixNode gen_xml()
     {
       mapping(string:string) attrs = ([
-	"Id":id,
-	"ShortName":gen_8dot3(name),
-	"Name":name,
-	"Vital":"yes",
-	//      "KeyPath":"yes",
-	//      "DiskId":"1",
+        "Id":id,
+        "Name":gen_8dot3(name),
+        "LongName":name,
+        "Vital":"yes",
+        //      "KeyPath":"yes",
+        //      "DiskId":"1",
       ]);
       if (source) {
-	attrs->Source = replace(source, "/", "\\");
-	if (has_suffix(lower_case(source), ".ttf")) {
-	  // Orca doesn't like us otherwise...
-	  attrs->DefaultLanguage="1033";
-	}
+        attrs->src = replace(source, "/", "\\");
+        if (has_suffix(lower_case(source), ".ttf")) {
+          // Orca doesn't like us otherwise...
+          attrs->DefaultLanguage="1033";
+        }
       }
       return WixNode("File", attrs);
     }
@@ -251,8 +264,8 @@ class Directory
     string arguments;
 
     protected void create(string name, string directory, string id,
-		       string|void target, string|void arguments,
-		       string|void working_dir, string|void show)
+                          string|void target, string|void arguments,
+                          string|void working_dir, string|void show)
     {
       Shortcut::name = name;
       Shortcut::directory = directory;
@@ -266,20 +279,20 @@ class Directory
     WixNode gen_xml()
     {
       mapping(string:string) attrs = ([
-	"Id":id,
-	"ShortName":gen_8dot3(name),
-	"Name":name,
-	"Directory":directory,
-	"Show":show,
+        "Id":id,
+        "Name":gen_8dot3(name),
+        "LongName":name,
+        "Directory":directory,
+        "Show":show,
       ]);
       if (target) {
-	attrs->Target = replace(target, "/", "\\");
+        attrs->Target = replace(target, "/", "\\");
       }
       if (arguments) {
-	attrs->Arguments = arguments;
+        attrs->Arguments = arguments;
       }
       if (working_dir) {
-	attrs->WorkingDirectory = replace(working_dir, "/", "\\");
+        attrs->WorkingDirectory = replace(working_dir, "/", "\\");
       }
       return WixNode("Shortcut", attrs);
     }
@@ -292,7 +305,7 @@ class Directory
     mapping(string:mapping(string:string)) contents;
 
     protected void create(string name, string id,
-		       mapping(string:mapping(string:string)) contents)
+                          mapping(string:mapping(string:string)) contents)
     {
       IniFile::id = id;
       IniFile::name = name;
@@ -314,9 +327,10 @@ class Directory
     WixNode gen_xml()
     {
       mapping(string:string) attrs = ([
-	"Id":id,
-	"Name":name,
-	"On":"uninstall",
+        "Id":id,
+        "Name":gen_8dot3(name),
+        "LongName":name,
+        "On":"uninstall",
       ]);
       return WixNode("RemoveFile", attrs);
     }
@@ -328,10 +342,10 @@ class Directory
     foreach(path; int i; string dir) {
       if (dir == ".") continue;
       d = (d->sub_dirs[dir] ||
-	   (d = d->sub_dirs[dir] =
-	    Directory(dir, d->guid->encode(),
-		      (i==sizeof(path)-1) && dir_id,
-		      d->gen_8dot3(dir))));
+           (d = d->sub_dirs[dir] =
+            Directory(dir, d->guid->encode(),
+                      (i==sizeof(path)-1) && dir_id,
+                      d->gen_8dot3(dir))));
     }
     if (dir_id && (d->id != dir_id)) {
       d->extra_ids[dir_id] = 1;
@@ -343,8 +357,8 @@ class Directory
   {
     if (!id) {
       id = "_" +
-	MK_UUID(dest, guid->encode())->str() -
-	"-";
+        MK_UUID(dest, guid->encode())->str() -
+        "-";
     }
     files[dest] = File(dest, src, id);
     if (has_suffix(src, "/"+dest)) {
@@ -354,13 +368,13 @@ class Directory
   }
 
   void low_add_shortcut(string dest, string directory, string|void id,
-			string|void target, string|void arguments,
-			string|void working_dir, string|void show)
+                        string|void target, string|void arguments,
+                        string|void working_dir, string|void show)
   {
     if (!id) {
       id = "_" +
-	MK_UUID(dest, guid->encode())->str() -
-	"-";
+        MK_UUID(dest, guid->encode())->str() -
+        "-";
     }
     other_entries[directory + "\\" + dest] =
       Shortcut(dest, directory, id, target, arguments, working_dir, show);
@@ -373,7 +387,7 @@ class Directory
   }
 
   void merge_module(string dest, string module, string id,
-		    string|void dir_id, void|string language)
+                    string|void dir_id, void|string language)
   {
     Directory d = low_add_path(dest/"/", dir_id);
     d->sub_dirs["/"+module] = Merge(module, id, language);
@@ -387,9 +401,9 @@ class Directory
       string fullname = combine_path(src, fname);
       Stdio.Stat stat = file_stat(fullname);
       if (stat->isdir) {
-	d->recurse_install_directory(fname, fullname);
+        d->recurse_install_directory(fname, fullname);
       } else {
-	d->low_install_file(fname, fullname);
+        d->low_install_file(fname, fullname);
       }
     }
   }
@@ -402,7 +416,7 @@ class Directory
   }
 
   void install_regkey(string path, string root, string key,
-		      string name, string value, string id)
+                      string name, string value, string id)
   {
     Directory d = low_add_path(path/"/");
     d->other_entries[root+"\\"+key+"\\:"+(name||"")] =
@@ -413,9 +427,9 @@ class Directory
   {
     other_entries[pattern] =
       UninstallFile(pattern,
-		    "RF_" +
-		    MK_UUID(pattern, guid->encode())->str() -
-		    "-");
+                    "RF_" +
+                    MK_UUID(pattern, guid->encode())->str() -
+                    "-");
   }
 
   void uninstall_file(string pattern)
@@ -438,9 +452,9 @@ class Directory
     foreach(sub_dirs; string dname; Directory d) {
       d->set_sources();
       if (d->source &&
-	  has_suffix(d->source, "/" + dname)) {
-	string sub_src = combine_path(d->source, "..");
-	sub_sources[sub_src] += d->sub_sources[d->source] + 1;
+          has_suffix(d->source, "/" + dname)) {
+        string sub_src = combine_path(d->source, "..");
+        sub_sources[sub_src] += d->sub_sources[d->source] + 1;
       }
     }
     if (sizeof(sub_sources)) {
@@ -449,14 +463,14 @@ class Directory
       sort(cnt, srcs);
       source = srcs[-1];
       foreach(sub_dirs; string dname; Directory d) {
-	if (d->source == source + "/" + dname) {
-	  d->source = 0;
-	}
+        if (d->source == source + "/" + dname) {
+          d->source = 0;
+        }
       }
       foreach(files; string fname; File f) {
-	if (f->source == source + "/" + fname) {
-	  f->source = 0;
-	}
+        if (f->source == source + "/" + fname) {
+          f->source = 0;
+        }
       }
     }
   }
@@ -467,45 +481,45 @@ class Directory
     parent += "/" + name;
 
     mapping(string:string) attrs = ([
-      "Name":name,
+      "Name":short_name||name,
       "Id":id,
     ]);
     if (short_name && (short_name != name)) {
       // Win32 stupidity...
-      attrs->ShortName = short_name;
+      attrs->LongName = name;
     }
     if (source) {
-      attrs->FileSource = replace(source+"/", "/", "\\");
+      attrs->src = replace(source+"/", "/", "\\");
     }
     WixNode root = WixNode("Directory", attrs, "\n");
     WixNode node = root;
     foreach(sort(indices(extra_ids)), string sub_id) {
       node->add_child(node = WixNode("Directory", ([
-				       "Id": sub_id,
-				       "Name":".",
-				     ]), "\n"))->
-	add_child(line_feed);
+                                       "Id": sub_id,
+                                       "Name":".",
+                                     ]), "\n"))->
+        add_child(line_feed);
     }
     foreach(map(sort(indices(sub_dirs)), sub_dirs), object(Directory)|Merge d) {
       root->add_child(d->gen_xml(parent, disk_id))->add_child(line_feed);
     }
     if (sizeof(files) || sizeof(other_entries)) {
       WixNode component = WixNode("Component", ([
-				    "Id": get_component_id(),
-				    "Guid":guid->str(),
-				  ]) +
-				  (disk_id ? ([
-				    "DiskId":disk_id
-				  ]):([])) +
-				  (contains_dlls ? ([
-				    "SharedDllRefCount":"yes"
-				  ]):([])), "\n");
+                                    "Id": get_component_id(),
+                                    "Guid":guid->str(),
+                                  ]) +
+                                  (disk_id ? ([
+                                    "DiskId":disk_id
+                                  ]):([])) +
+                                  (contains_dlls ? ([
+                                    "SharedDllRefCount":"yes"
+                                  ]):([])), "\n");
       foreach(map(sort(indices(files)), files), File f) {
-	component->add_child(f->gen_xml())->add_child(line_feed);
+        component->add_child(f->gen_xml())->add_child(line_feed);
       }
       foreach(map(sort(indices(other_entries)), other_entries),
               RegistryEntry r) {
-	component->add_child(r->gen_xml())->add_child(line_feed);
+        component->add_child(r->gen_xml())->add_child(line_feed);
       }
       node->add_child(component)->add_child(line_feed);
     }
@@ -516,14 +530,15 @@ class Directory
 //! @note
 //!   Modifies @[dir] if it contains files at the root level.
 WixNode get_module_xml(Directory dir, string id, string version,
-		       string|void manufacturer, string|void description,
-		       string|void guid, string|void comments,
-		       string|void installer_version)
+                       string|void manufacturer, string|void description,
+                       string|void guid, string|void comments,
+                       string|void installer_version)
 {
   guid = guid || Standards.UUID.make_version1(-1)->str();
   mapping(string:string) package_attrs = ([
     "Id":guid,
     "InstallerVersion": installer_version || "200",
+    "Compressed":"yes",
   ]);
   if (manufacturer) {
     package_attrs->Manufacturer = manufacturer;
@@ -545,18 +560,19 @@ WixNode get_module_xml(Directory dir, string id, string version,
   }
   return Parser.XML.Tree.SimpleRootNode()->
     add_child(Parser.XML.Tree.SimpleHeaderNode((["version":"1.0",
-						 "encoding":"utf-8"])))->
+                                                 "encoding":"utf-8"])))->
     add_child(WixNode("Wix", ([	"xmlns":wix_ns ]), "\n")->
-	      add_child(WixNode("Module", ([
-				  "Id":id,
-				  "Language":"1033",
-				  "Version":version,
-				]), "\n")->
-			add_child(WixNode("Package", package_attrs))->
-			add_child(line_feed)->
-			add_child(dir->gen_xml())->
-			add_child(line_feed))->
-	      add_child(line_feed))->
+              add_child(WixNode("Module", ([
+                                  "Id":id,
+                                  "Guid":guid,
+                                  "Language":"1033",
+                                  "Version":version,
+                                ]), "\n")->
+                        add_child(WixNode("Package", package_attrs))->
+                        add_child(line_feed)->
+                        add_child(dir->gen_xml())->
+                        add_child(line_feed))->
+              add_child(line_feed))->
     add_child(line_feed);
 }
 
@@ -580,24 +596,25 @@ Parser.XML.Tree.SimpleRootNode get_xml_node()
   Parser.XML.Tree.SimpleElementNode node;
   Parser.XML.Tree.SimpleRootNode root = Parser.XML.Tree.SimpleRootNode()->
     add_child(Parser.XML.Tree.SimpleHeaderNode((["version": "1.0",
-						 "encoding": "utf-8"])))->
+                                                 "encoding": "utf-8"])))->
     add_child(WixNode("Wix", (["xmlns":wix_ns]))->
-	      add_child(WixNode("Product", ([
-				  "Manufacturer":manufacturer,
-				  "Name":name,
-				  "Language":"1033",
-				  "UpgradeCode":upgrade_code,
-				  "Id":id,
-				  "Version":"1.0.0",
-				]))->
-			add_child(node = WixNode("Package", ([
-						   "Manufacturer":manufacturer,
-						   "Languages":"1033",
-						   "Compressed":"yes",
-						   "InstallerVersion":"200",
-						   "SummaryCodepage":"1252",
-						   "Id":product_id,
-						 ])))));
+              add_child(WixNode("Product", ([
+                                  "Manufacturer":manufacturer,
+                                  "Name":name,
+                                  "Language":"1033",
+                                  "UpgradeCode":upgrade_code,
+                                  "Id":id,
+                                  "Version":"1.0.0",
+                                ]))->
+                        add_child(node = WixNode("Package", ([
+                                                   "Manufacturer":manufacturer,
+                                                   "Languages":"1033",
+                                                   "Compressed":"yes",
+                                                   "InstallerVersion":"200",
+                                                   "Platforms":"Intel",
+                                                   "SummaryCodepage":"1252",
+                                                   "Id":product_id,
+                                                 ])))));
   node->add_child(targetdir->get_xml_node());
 
   return root;
