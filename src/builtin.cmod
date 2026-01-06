@@ -559,7 +559,7 @@ PIKECLASS TM
 /*! @endmodule
  */
 
-/*! @decl array(array(int|string|type)) describe_program(program p)
+/*! @decl array(array(7..:int|string|type)) describe_program(program p)
  *! @belongs Debug
  *!
  *! Debug function for showing the symbol table of a program.
@@ -593,7 +593,7 @@ PIKECLASS TM
  *!   symbols might be added.
  */
 PMOD_EXPORT
-PIKEFUN array(array(int|string)) _describe_program(mixed x)
+PIKEFUN array(array(7..:int|string)) _describe_program(mixed x)
      efun;
 {
   struct program *p;
@@ -2016,6 +2016,7 @@ static void f_proxy__sprintf(INT32 args)
 
 static struct mapping *proxy_lookup = NULL;
 /*! @decl program ProxyFactory(program p)
+ *! @belongs Pike
  *!
  *! Create a class that acts as a proxy for the specified program.
  *!
@@ -2912,6 +2913,14 @@ PIKEFUN program|zero function_program(program|function func)
 }
 
 #ifdef PIKE_DEBUG
+/*! @decl void __dump_program_tables(program p)
+ *!
+ *!   Dump program symbol tables to @[Stdio.strerr].
+ *!
+ *! @note
+ *!   Only available if the pike runtime has been compiled
+ *!   @tt{--with-rtl-debug@}.
+ */
 PIKEFUN void __dump_program_tables(program p)
   efun;
 {
@@ -2921,6 +2930,7 @@ PIKEFUN void __dump_program_tables(program p)
 #endif
 
 /*! @class RandomInterface
+ *! @belongs Builtin
  */
 PIKECLASS RandomInterface
 {
@@ -3144,6 +3154,7 @@ static HCRYPTPROV crypto_handle;
 static int random_fd = -1;
 #endif
 /*! @class RandomSystem
+ *! @belongs Builtin
  */
 PIKECLASS RandomSystem
 {
@@ -3235,9 +3246,16 @@ PIKECLASS RandomSystem
 static struct mapping *env_allocs = NULL;
 #endif
 
-/* Works exactly like the getenv efun defined in the master, but only
- * accesses the real environment. Everyone should use the caching
- * version in the master instead. */
+/*! @decl string|zero _getenv(string var)
+ *! @decl mapping(string:string) _getenv()
+ *!
+ *! Works exactly like the @[getenv()] defined in the master, but only
+ *! accesses the real environment. Everyone should use the caching
+ *! version in the master instead.
+ *!
+ *! @seealso
+ *!   @[getenv()], @[_putenv()]
+ */
 PIKEFUN string|mapping|zero _getenv (void|string var)
   rawtype tOr(tFunc(tStr, tOr(tString, tZero)),
 	      tFunc(tNone, tMap (tStr, tStr)));
@@ -3320,9 +3338,15 @@ PIKEFUN string|mapping|zero _getenv (void|string var)
   }
 }
 
-/* Works exactly like the putenv efun defined in the master, but only
- * updates the real environment. Everyone should use the version in
- * the master instead so that the cache doesn't get stale. */
+/*! @decl void _putenv(string var, void|string val)
+ *!
+ *! Works exactly like the @[putenv()] defined in the master, but only
+ *! updates the real environment. Everyone should use the version in
+ *! the master instead so that the cache doesn't get stale.
+ *!
+ *! @seealso
+ *!   @[_getenv()], @[putenv()]
+ */
 PIKEFUN void _putenv (string var, void|string val)
 {
 #ifndef USE_SETENV
@@ -3550,6 +3574,7 @@ PIKECLASS InhibitDestruct
  */
 
 /*! @class FakeObject
+ *! @belongs Builtin
  *!
  *! Used as a place holder in eg backtraces for objects that
  *! are unsuitable to have references to in backtraces.
@@ -8401,16 +8426,33 @@ PMOD_EXPORT struct program *get_sql_null_prog(void)
   return Null_program;
 }
 
+/*! @module Builtin
+ */
+
+/*! @class __Backtrace_Tester__
+ *!
+ *!   Class that throws an error during early initialization.
+ *!
+ *!   This class is only intended to be used by the Pike
+ *!   testsuite to test that errors triggered in that phase
+ *!   do not trigger bugs in the runtime.
+ */
 PIKECLASS __Backtrace_Tester__
 {
   INIT {
     Pike_error("__Backtrace_Tester__\n");
   }
 }
+/*! @endclass
+ */
 
 #undef DEFAULT_CMOD_STORAGE
 #define DEFAULT_CMOD_STORAGE	static
 
+/*! @class pike_trampoline
+ *!
+ *!   Internal class used to implement trampoline functions.
+ */
 PIKECLASS pike_trampoline
 {
   CVAR struct pike_trampoline trampoline;
@@ -8478,6 +8520,12 @@ PIKECLASS pike_trampoline
     push_string(buffer_finish_pike_string(&buf));
   }
 }
+
+/*! @endclass
+ */
+
+/*! @endmodule
+ */
 
 void init_builtin(void)
 {
