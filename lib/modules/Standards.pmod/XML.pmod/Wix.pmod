@@ -128,6 +128,7 @@ class Merge
   }
 }
 
+//!
 class Directory
 {
   string name;
