@@ -1,5 +1,5 @@
 #charset utf-8
-#pike __REAL_VERSION__
+#pike 9.0
 
 //
 // 2004-11-01 Henrik Grubbström
@@ -141,6 +141,7 @@ class Merge
   }
 }
 
+//!
 class Directory
 {
   string name;

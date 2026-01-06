@@ -83,27 +83,34 @@ mapping(string:string) split_header(string hdr) {
   return parts;
 }
 
-// Abstract class for hash algorithm.
+//! Abstract class for hash algorithm.
 class Digest {
   protected extern function(string(8bit):string(8bit)) hash_function;
 
-  // Perform hashing of the given strings.
+  //! Perform hash of the given strings.
+  //!
+  //! @returns
+  //!   Returns a hexadecimal string of at least 32 digits
+  //!   representing the hash.
   string(7bit) hash(string(8bit) ... args) {
     return sprintf("%032x", hash_function( args * ":" ));
   }
 }
 
+//! Digest mix-in using @[Crypto.MD5.hash()].
 class DigestMD5 {
   protected function(string(8bit):string(8bit)) hash_function=Crypto.MD5.hash;
   constant algorithm = "MD5";
 }
 
+//! Digest mix-in using @[Crypto.SHA256.hash()].
 class DigestSHA256 {
   protected function(string(8bit):string(8bit))
     hash_function=Crypto.SHA256.hash;
   constant algorithm = "SHA-256";
 }
 
+//! Digest mix-in using @[Crypto.SHA512.hash()].
 class DigestSHA512256 {
   protected string(8bit) hash_function(string(8bit) data) {
     return Crypto.SHA512.hash(data)[..31];
