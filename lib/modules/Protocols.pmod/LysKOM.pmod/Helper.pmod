@@ -2,30 +2,37 @@
 
 #pike __REAL_VERSION__
 
+//! Submodule containing various helper functions.
+
 constant CONNECTION_CLOSED=-100;
 
-string encode(mixed ... z) // encode arguments
+//! Encode arguments.
+string encode(mixed ... z)
 {
    return ((array(string))z)*" ";
 }
 
-string H(string what) // encode hollerith
+//! Encode hollerith.
+string H(string what)
 {
    return sizeof(what)+"H"+what;
 }
 
-string B(int(0..1) ... z) // encode bitfield
+//! Encode bitfield.
+string B(int(0..1) ... z)
 {
    string res="";
    res=((array(string))z)*"";
    return res;
 }
 
-array(string) A(array z) // encode array
+//! Encode array.
+array(string) A(array z)
 {
    return ({ ""+sizeof(z), "{ "+encode(@Array.flatten(z))+" }" });
 }
 
+//!
 class LysKOMError
 {
    constant iserror=1;
@@ -63,11 +70,13 @@ class LysKOMError
    }
 }
 
+//!
 LysKOMError lyskom_error(int no,void|int status)
 {
    return LysKOMError(@_lyskomerror[no],status);
 }
 
+//! Mapping from LysKOM error code to description.
 mapping _lyskomerror=
 ([
    0:({0,"no-error",
