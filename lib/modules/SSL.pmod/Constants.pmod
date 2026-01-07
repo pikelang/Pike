@@ -99,6 +99,7 @@ enum CipherType {
   CIPHER_block    = 1,
   CIPHER_aead     = 2,
 }
+
 constant CIPHER_types = (< CIPHER_stream, CIPHER_block, CIPHER_aead >);
 
 //! Cipher algorithms.
@@ -295,6 +296,7 @@ enum AlertLevel {
   ALERT_warning	= 1,	//! Warning alert.
   ALERT_fatal	= 2,	//! Error alert.
 }
+
 constant ALERT_levels = (< ALERT_warning, ALERT_fatal >);
 
 //! Alert messages
