@@ -23,10 +23,13 @@ Parser.XML.Tree.SimpleTextNode line_feed =
 #define MK_UUID(NAME, PARENT_UUID)	Standards.UUID.make_version1(-1)
 #endif /* constant(Standards.UUID.make_version3) */
 
+//! This class represents a single Wix XML element node.
 class WixNode
 {
+  //!
   inherit Parser.XML.Tree.SimpleElementNode;
 
+  //!
   protected void create(string name, mapping(string:string) attrs,
                         string|void text)
   {
@@ -39,6 +42,7 @@ class WixNode
   }
 }
 
+//! This class represents a Wix @tt{<Package/>@} node.
 class PackageNode
 {
   inherit WixNode;
@@ -53,6 +57,7 @@ class PackageNode
   }
 }
 
+//! This class represents a Wix @tt{<Binary/>@} node.
 class BinaryNode
 {
   inherit WixNode;
@@ -66,6 +71,12 @@ class BinaryNode
   }
 }
 
+//! This class represents a Wix @tt{<FragmentRef/>@} node that refers
+//! to a fragment containing a @tt{<UI>@} node.
+//!
+//! @note
+//!   Assumes that the Fragment id is the same as the UI id, but with
+//!   @expr{"Frag"@} appended.
 class UIRefNode
 {
   inherit WixNode;
@@ -82,6 +93,7 @@ class UIRefNode
   }
 }
 
+//! This class is used to generate Wix @tt{<Registry/>@} nodes.
 class RegistryEntry
 {
   string root;
@@ -115,6 +127,7 @@ class RegistryEntry
   }
 }
 
+//! This class is used to generate Wix @tt{<Merge/>@} nodes.
 class Merge
 {
   string source;
@@ -141,7 +154,7 @@ class Merge
   }
 }
 
-//!
+//! This class is used to generate Wix XML for a directory of files.
 class Directory
 {
   string name;

@@ -2414,7 +2414,7 @@ class async_client
   //! @returns
   //!   Returns a @[Request] object where progress can be observed
   //!   from the retries variable and the request can be cancelled
-  //!   using the @[cancel] method.
+  //!   using the @[Request()->cancel()] method.
   //!
   //! @seealso
   //!   @[host_to_ips]
@@ -2446,7 +2446,7 @@ class async_client
   //! @returns
   //!   Returns a @[Request] object where progress can be observed
   //!   from the retries variable and the request can be cancelled
-  //!   using the @[cancel] method.
+  //!   using the @[Request()->cancel()] method.
   Request host_to_ips(string host,
 		      function(string, array, __unknown__...:void) callback,
 		      mixed ... args)
@@ -2469,7 +2469,7 @@ class async_client
   //! @returns
   //!   Returns a @[Request] object where progress can be observed
   //!   from the retries variable and the request can be cancelled
-  //!   using the @[cancel] method.
+  //!   using the @[Request()->cancel()] method.
   Request ip_to_host(string ip, function(string,string,__unknown__...:void) callback, mixed ... args)
   {
     generic_query("PTR", ip, single_result, ip, callback, @args);
@@ -2493,7 +2493,7 @@ class async_client
   //! @returns
   //!   Returns a @[Request] object where progress can be observed
   //!   from the retries variable and the request can be cancelled
-  //!   using the @[cancel] method.
+  //!   using the @[Request()->cancel()] method.
   Request get_mx_all(string host, function(string,array(mapping(string:string|int)),__unknown__...:void) callback, mixed ... args)
   {
     if(sizeof(domains) && host[-1] != '.' && sizeof(host/".") < 3) {
@@ -2524,7 +2524,7 @@ class async_client
   //! @returns
   //!   Returns a @[Request] object where progress can be observed
   //!   from the retries variable and the request can be cancelled
-  //!   using the @[cancel] method.
+  //!   using the @[Request()->cancel()] method.
   Request get_mx(string host, function(array(string),__unknown__...:void) callback, mixed ... args)
   {
     return get_mx_all(host,
@@ -2685,6 +2685,7 @@ class async_tcp_client
       cancel();
     }
 
+    //! Cancel the current request.
     void cancel()
     {
       close();

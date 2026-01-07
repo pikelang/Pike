@@ -727,13 +727,13 @@ PIKEFUN string decode_charset(string data, string charset)
  *! These are typically the macros defined via the @tt{-D@} option
  *! when starting Pike.
  *!
- *! After @[_take_over_initial_predefines()] has been called, it
+ *! After @[Builtin._take_over_initial_predefines()] has been called, it
  *! instead calls @[master()->get_predefines()] and returns
  *! its result.
  *!
  *! @seealso
  *!   @[cpp()], @[CompilationHandler->get_predefines()],
- *!   @[_take_over_initial_predefines()]
+ *!   @[Builtin._take_over_initial_predefines()]
  */
 PIKEFUN mapping(string:string|function|object) get_predefines()
 {
@@ -7057,7 +7057,7 @@ PIKEFUN string macro___has_embed(string arg)
    *!
    *! @seealso
    *!   @[define_macro()], @[CompilationHandler()->get_predefines()],
-   *!   @[_take_over_initial_predefines()]
+   *!   @[Builtin._take_over_initial_predefines()]
    */
   PIKEFUN void define_multiple_macros(mapping(string:
                  string|function|object|array(string|int(24bit)))|void predefs)
@@ -7092,7 +7092,7 @@ PIKEFUN string macro___has_embed(string arg)
    *!   retrieve the set of macros to define at initialization.
    *!
    *!   The default implementation returns the internal set of
-   *!   predefined macros unless @[_take_over_initial_predefines()]
+   *!   predefined macros unless @[Builtin._take_over_initial_predefines()]
    *!   has been called, in which case it instead calls the
    *!   corresponding function in the master.
    *!
@@ -7102,7 +7102,7 @@ PIKEFUN string macro___has_embed(string arg)
    *!
    *! @seealso
    *!   @[init_pike_cpp()], @[define_multiple_macros()],
-   *!   @[_take_over_initial_predefines()], @[defines]
+   *!   @[Builtin._take_over_initial_predefines()], @[defines]
    */
 PIKEFUN mapping(string:string|function|object|array(string|int(24bit))) get_predefines()
   {
