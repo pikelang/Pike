@@ -519,7 +519,7 @@ array(int) get_suites(int(-1..)|void min_keylength,
 		      multiset(int)|void blacklisted_ciphers,
 		      multiset(KeyExchangeType)|void blacklisted_kes,
 		      multiset(HashAlgorithm)|void blacklisted_hashes,
-		      multiset(CipherModes)|void blacklisted_ciphermodes)
+                      multiset(CipherMode)|void blacklisted_ciphermodes)
 {
   if (!min_keylength) min_keylength = 128;	// Reasonable default.
 
