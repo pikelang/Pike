@@ -117,7 +117,7 @@ PIKEFUN string version()
  *!   Requires Nettle 2.7 or later.
  *!
  *! @seealso
- *!   @[Crypto.Password], @[Crypto.BLOWFISH]
+ *!   @[Crypto.Password], @[Crypto.Blowfish]
  */
 PIKEFUN string(7bit) bcrypt_hash(string(8bit) password, string(7bit) scheme,
  string(8bit)|void salt, int|void log2rounds)
@@ -161,7 +161,7 @@ PIKEFUN string(7bit) bcrypt_hash(string(8bit) password, string(7bit) scheme,
  *!   Requires Nettle 2.7 or later.
  *!
  *! @seealso
- *!   @[Crypto.Password], @[Crypto.BLOWFISH]
+ *!   @[Crypto.Password], @[Crypto.Blowfish]
  */
 PIKEFUN int bcrypt_verify(string(8bit) password, string(7bit) hashedpassword)
 {

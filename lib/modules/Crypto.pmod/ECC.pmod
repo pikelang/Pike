@@ -15,6 +15,7 @@
 class Curve {
   inherit Nettle.ECC_Curve;
 
+  //! @decl import Standards.ASN1.Types
 #define BitString Standards.ASN1.Types.BitString
 #define Identifier Standards.ASN1.Types.Identifier
 #define Integer Standards.ASN1.Types.Integer
@@ -509,6 +510,7 @@ class _Curve25519 {
   //! @decl inherit Nettle.Curve25519
   inherit Nettle.Curve25519;
 
+  //! @decl import Standards.ASN1.Types
 #define BitString Standards.ASN1.Types.BitString
 #define Identifier Standards.ASN1.Types.Identifier
 #define Integer Standards.ASN1.Types.Integer
@@ -838,6 +840,7 @@ class _Curve448 {
   //! @decl inherit Nettle.Curve448
   inherit Nettle.Curve448;
 
+  //! @decl import Standards.ASN1.Types
 #define BitString Standards.ASN1.Types.BitString
 #define Identifier Standards.ASN1.Types.Identifier
 #define Integer Standards.ASN1.Types.Integer

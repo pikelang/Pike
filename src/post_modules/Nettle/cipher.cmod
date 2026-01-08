@@ -1112,7 +1112,7 @@ PIKECLASS BlockCipher
    *! the parent class (@[Cipher]).
    *!
    *! @seealso
-   *!   @[Crypto.CBC], @[GCM]
+   *!   @[Crypto.CBC], @[BlockCipher16.GCM]
    */
   PIKEVAR object(Nettle_BlockCipher_cq__CBC) CBC;
 
@@ -1442,7 +1442,7 @@ PIKECLASS BlockCipher
    *! the parent class (@[Cipher]).
    *!
    *! @seealso
-   *!   @[CBC], @[GCM]
+   *!   @[CBC], @[BlockCipher16.GCM]
    */
   PIKEVAR object(Nettle_BlockCipher_cq__PCBC) PCBC;
 
@@ -1597,7 +1597,7 @@ PIKECLASS BlockCipher
    *! This is a mode of operation suggested in 1977 by C. Cambell.
    *!
    *! @seealso
-   *!   @[CBC], @[GCM], @[CFB]
+   *!   @[CBC], @[BlockCipher16.GCM], @[CFB]
    */
   PIKEVAR object(Nettle_Cipher) IGE;
 
@@ -1978,7 +1978,7 @@ PIKECLASS BlockCipher
    *! @[AES] by Lars R. Knudsen.
    *!
    *! @seealso
-   *!   @[CBC], @[GCM], @[CFB], @[IGE]
+   *!   @[CBC], @[BlockCipher16.GCM], @[CFB], @[IGE]
    */
   PIKEVAR object(Nettle_Cipher) ABC;
 
@@ -2361,7 +2361,7 @@ PIKECLASS BlockCipher
    *!   Requires Nettle 3.4 or later.
    *!
    *! @seealso
-   *!   @[CBC], @[GCM]
+   *!   @[CBC], @[BlockCipher16.GCM]
    */
   PIKEVAR object(Nettle_Cipher) CFB;
 
@@ -2821,7 +2821,7 @@ PIKECLASS BlockCipher
    *! Message Authentication Code (MAC).
    *!
    *! @seealso
-   *!   @[CBC], @[GCM], @[Buffer]
+   *!   @[CBC], @[BlockCipher16.GCM], @[Buffer]
    */
   PIKEVAR object(Nettle_Cipher) CTR;
 
@@ -3192,7 +3192,7 @@ PIKECLASS BlockCipher
    *! Message Authentication Code (MAC).
    *!
    *! @seealso
-   *!   @[CFB], @[CBC], @[CTR], @[GCM]
+   *!   @[CFB], @[CBC], @[CTR], @[BlockCipher16.GCM]
    */
   PIKEVAR object(Nettle_Cipher) OFB;
 
