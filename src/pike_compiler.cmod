@@ -469,7 +469,7 @@ static void do_yyparse(void)
  *!   In Pike 8.0 the fallback output was not UTF8-encoded.
  *!
  *! @seealso
- *!   @[PikeCompiler()->report()]
+ *!   @[CompilerEnvironment.PikeCompiler()->report()]
  */
 /* NOTE: This function MUST NOT use any storage in the Reporter program! */
 static void f_reporter_report(INT32 args)

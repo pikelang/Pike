@@ -2695,10 +2695,11 @@ PIKEFUN int get_weak_flag(multiset m)
  *!
  *! @returns
  *!   Returns a virgin (ie empty) program suitable as the target
- *!   argument to @[PikeCompiler()].
+ *!   argument to @[CompilerEnvironment.PikeCompiler()].
  *!
  *! @seealso
- *!   @[__null_program], @[PikeCompiler], @[compile_string()]
+ *!   @[__null_program], @[CompilerEnvironment.PikeCompiler],
+ *!   @[compile_string()]
  */
 PIKEFUN program __empty_program(int|zero|void line, string|void file)
   efun;
