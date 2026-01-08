@@ -848,7 +848,7 @@ string(8bit) openssl_pbkdf(string(8bit) password, string(8bit) salt,
 //! Make a PKCS-1 digest info block with the message @[s].
 //!
 //! @seealso
-//!   @[Standards.PKCS.build_digestinfo()]
+//!   @[Standards.PKCS.Signature.build_digestinfo()]
 string(8bit) pkcs_digest(object|string(8bit) s)
 {
   return [string(8bit)]
@@ -1315,8 +1315,8 @@ final void SCRAM_set_salted_password(string(8bit) SaltedPassword, string key) {
 //! @[server_3] -> @[client_3]
 //!
 //! @note
-//! If you are a client, you must use the @ref{client_*@} methods; if you are
-//! a server, you must use the @ref{server_*@} methods.
+//! If you are a client, you must use the @tt{client_*@} methods; if you are
+//! a server, you must use the @tt{server_*@} methods.
 //! You cannot mix both client and server methods in a single object.
 //!
 //! @note

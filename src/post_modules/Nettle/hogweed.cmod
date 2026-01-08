@@ -466,7 +466,7 @@ PIKECLASS ECC_Curve
   /*! @decl protected local int(0..1) `==(mixed x)
    *!
    *! @returns
-   *!   Returns @expr{1@} if @[x] is the same @[Curve],
+   *!   Returns @expr{1@} if @[x] is the same @[ECC_Curve],
    *!   and @expr{0@} (zero) otherwise.
    */
   PIKEFUN int(0..1) `==(mixed x)
@@ -829,7 +829,7 @@ PIKECLASS ECC_Curve
      *!
      *! @returns
      *!   Returns @expr{1@} if @[x] is a @[Point] on the same
-     *!   @[Curve] and has the same coordinates, and otherwise
+     *!   @[ECC_Curve] and has the same coordinates, and otherwise
      *!   returns @expr{0@} (zero).
      */
     PIKEFUN int(0..1) _equal(mixed x)
@@ -1355,13 +1355,13 @@ PIKECLASS ECC_Curve
  *!
  *! @note
  *!   The API for this curve differs somewhat from the API
- *!   used by the other @[Curve]s.
+ *!   used by the other @[ECC_Curve]s.
  *!
  *! @note
  *!   Requires Nettle 3.1 or later.
  *!
  *! @seealso
- *!   @[Curve], @[Curve448], @rfc{7748@}
+ *!   @[ECC_Curve], @[Curve448], @rfc{7748@}
  */
 PIKECLASS Curve25519
 {
@@ -1797,13 +1797,13 @@ PIKECLASS Curve25519
  *!
  *! @note
  *!   The API for this curve differs somewhat from the API
- *!   used by the other @[Curve]s.
+ *!   used by the other @[ECC_Curve]s.
  *!
  *! @note
  *!   Requires Nettle 3.6 or later.
  *!
  *! @seealso
- *!   @[Curve], @[Curve25519], @rfc{7748@}
+ *!   @[ECC_Curve], @[Curve25519], @rfc{7748@}
  */
 PIKECLASS Curve448
 {
