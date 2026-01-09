@@ -357,6 +357,7 @@ protected class LowState {
   this_program `PKCS1_5();
 }
 
+//! @decl import Standards.ASN1.Types
 #define Sequence Standards.ASN1.Types.Sequence
 
 private class PKCS_RSA_class {

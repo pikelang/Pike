@@ -379,6 +379,7 @@ mapping(Identifier:string(7bit)) reverse_qt_ids = REVERSE(qt_ids);
 
 Identifier kp_id = pkix_id->append(3);
 
+//! Key purposes
 mapping(string(7bit):Identifier) kp_ids =
 ([ "serverAuth"      : kp_id->append(1),
    "clientAuth"      : kp_id->append(2),
@@ -388,6 +389,7 @@ mapping(string(7bit):Identifier) kp_ids =
    "OCSPSigning"     : kp_id->append(9),
 ]);
 
+//! Reverse lookup of key purposes.
 mapping(Identifier:string(7bit)) reverse_kp_ids = REVERSE(kp_ids);
 
 /* Private extensions */

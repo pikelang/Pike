@@ -276,6 +276,7 @@ string get_dn_string(Sequence dnsequence)
   return dn;
 }
 
+//!
 class Attribute
 {
   inherit Sequence;
@@ -295,6 +296,7 @@ class Attribute
   }
 }
 
+//!
 class Attributes
 {
   inherit Set;
