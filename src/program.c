@@ -1536,14 +1536,14 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!   the ADT or range implied by the ADT.
  *!
  *! @param random_string
- *!   A @[RandomInterface()->random_string] function that returns
+ *!   A @[Builtin.RandomInterface()->random_string] function that returns
  *!   a string(8bit) of the specified length.
  *!
  *! @param random
- *!   A @[RandomInterface()->random] function.
+ *!   A @[Builtin.RandomInterface()->random] function.
  *!
  *! @seealso
- *!   @[predef::random()], @[RandomInterface]
+ *!   @[predef::random()], @[Builtin.RandomInterface]
  */
 
 /*! @decl object|int|float lfun::`**(int|float|object exp)

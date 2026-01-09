@@ -819,20 +819,6 @@ enum CipherSuite {
   SSL_rsa_with_3des_ede_cbc_md5			= 0xff83,
 }
 
-//! Cipher suite constants from SSL 2.0.
-//!
-//! These may appear in @[HANDSHAKE_hello_v2] and
-//! are here for informational purposes.
-enum CipherSuite_2_0 {
-  SSL2_ck_rc4_128_with_md5			= 0x010080,
-  SSL2_ck_rc4_128_export40_with_md5		= 0x020080,
-  SSL2_ck_rc2_128_cbc_with_md5			= 0x030080,
-  SSL2_ck_rc2_128_cbc_export40_with_md5		= 0x040080,
-  SSL2_ck_idea_128_cbc_with_md5			= 0x050080,
-  SSL2_ck_des_64_cbc_with_md5			= 0x060040,
-  SSL2_ck_des_192_ede3_cbc_with_md5		= 0x0700c0,
-}
-
 //! Return a descriptive name for a constant value.
 //!
 //! @param c
@@ -858,8 +844,7 @@ string fmt_cipher_suite(int suite)
 {
   if (!sizeof(suite_to_symbol)) {
     foreach([array(string)]indices(this), string id)
-      if( has_prefix(id, "SSL_") || has_prefix(id, "TLS_") ||
-	  has_prefix(id, "SSL2_") ) {
+      if( has_prefix(id, "SSL_") || has_prefix(id, "TLS_") ) {
 	suite_to_symbol[this[id]] = id;
       }
   }
@@ -1653,7 +1638,7 @@ constant ECC_CURVES = ([
 //! Lookup from @[NamedGroup] to @[Crypto.DH.Parameters] object.
 //!
 //! @seealso
-//!   @[ECC_GROUPS], @[MODP_GROUPS]
+//!   @[ECC_CURVES], @[MODP_GROUPS]
 constant FFDHE_GROUPS = ([
   GROUP_ffdhe2048: Crypto.DH.FFDHE2048,
   GROUP_ffdhe3072: Crypto.DH.FFDHE3072,
@@ -1669,7 +1654,7 @@ constant FFDHE_GROUPS = ([
 //! popular groups to use for DHE, we also allow them.
 //!
 //! @seealso
-//!   @[FFDHE_GROUPS], @[ECC_GROUPS]
+//!   @[FFDHE_GROUPS], @[ECC_CURVES]
 constant MODP_GROUPS = ([
   GROUP_ffdhe3072: Crypto.DH.MODPGroup15,
   GROUP_ffdhe4096: Crypto.DH.MODPGroup16,

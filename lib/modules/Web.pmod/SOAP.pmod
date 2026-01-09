@@ -60,7 +60,7 @@ final Concurrent.Future Promise(string wsdlurl, void|mapping headers) {
    ]))).map(Client);
 }
 
-//!
+//! A structure describing methods and arguments.
 class Arguments {
   private mapping values;
 

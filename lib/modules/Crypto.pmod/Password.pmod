@@ -392,7 +392,7 @@ int verify(string(8bit) password, string(7bit) hash)
 //!     @value "$2b$"
 //!     @value "$2x$"
 //!     @value "$2y$"
-//!       @[Nettle.bcrypt()] with 128 bits of salt and a default
+//!       @[Nettle.bcrypt_hash()] with 128 bits of salt and a default
 //!       of @expr{1024@} rounds.
 //!
 //!     @value "1"

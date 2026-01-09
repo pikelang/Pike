@@ -19,6 +19,7 @@ object readline;
 
 /* Lisp types */
 
+//! PLIS LISP object base class.
 class LObject
 {
 }
@@ -248,6 +249,7 @@ class Binding (object value)
   void set(object v) { value = v; }
 }
 
+//! PLIS evaluation environment.
 class Environment
 {
   inherit LObject;
@@ -296,6 +298,7 @@ class Environment
     }
 }
 
+//! Lambda function.
 class Lambda (object formals, // May be a dotted list
 	      object list     // expressions
 	      )

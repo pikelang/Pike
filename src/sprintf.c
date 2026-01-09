@@ -3069,8 +3069,9 @@ static void low_handle_sprintf_format(struct svalue *fmt_sval,
  *!   State mapping.
  *!
  *! This function is typically called from
- *! @[PikeCompiler()->apply_attribute_constant()] and is used to perform
- *! stricter compile-time argument checking of @[sprintf()]-style functions.
+ *! @[CompilerEnvironment.PikeCompiler()->apply_attribute_constant()] and
+ *! is used to perform stricter compile-time argument checking of
+ *! @[sprintf()]-style functions.
  *!
  *! It currently implements two operating modes depending on the value of
  *! @[attr]:
@@ -3089,7 +3090,8 @@ static void low_handle_sprintf_format(struct svalue *fmt_sval,
  *!   @expr{"sprintf_result"@} replaced by the resulting string type.
  *!
  *! @seealso
- *!   @[PikeCompiler()->apply_attribute_constant()], @[sprintf()]
+ *!   @[CompilerEnvironment.PikeCompiler()->apply_attribute_constant()],
+ *!   @[sprintf()]
  */
 void f___handle_sprintf_format(INT32 args)
 {
