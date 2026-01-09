@@ -1594,7 +1594,7 @@ constant ECC_CURVES = ([
 //! Lookup from @[NamedGroup] to @[Crypto.DH.Parameters] object.
 //!
 //! @seealso
-//!   @[ECC_GROUPS], @[MODP_GROUPS]
+//!   @[ECC_CURVES], @[MODP_GROUPS]
 constant FFDHE_GROUPS = ([
   GROUP_ffdhe2048: Crypto.DH.FFDHE2048,
   GROUP_ffdhe3072: Crypto.DH.FFDHE3072,
@@ -1610,7 +1610,7 @@ constant FFDHE_GROUPS = ([
 //! popular groups to use for DHE, we also allow them.
 //!
 //! @seealso
-//!   @[FFDHE_GROUPS], @[ECC_GROUPS]
+//!   @[FFDHE_GROUPS], @[ECC_CURVES]
 constant MODP_GROUPS = ([
   GROUP_ffdhe3072: Crypto.DH.MODPGroup15,
   GROUP_ffdhe4096: Crypto.DH.MODPGroup16,
