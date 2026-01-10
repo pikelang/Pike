@@ -1,7 +1,9 @@
 #cmod_ifdef ARRAY_CLASSIFY
 # cmod_undef ARRAY_CLASSIFY
+# cmod_undef PIKE_ARRAY_CLASSIFY
 #cmod_endif
 #cmod_define ARRAY_CLASSIFY(x...) cmod_CONCAT_EVAL(MPI_, name_prefix, ##x)
+#cmod_define PIKE_ARRAY_CLASSIFY(x...) cmod_CONCAT_EVAL(MPI., name_prefix, ##x)
 
     CVAR struct mpi_info i;
 
@@ -21,7 +23,7 @@
     }
 
 DOCSTART() @decl void clear()
- *! Sets all elements of the ARRAY_CLASSIFY(Array) to 0.
+ *! Sets all elements of the PIKE_ARRAY_CLASSIFY(Array) to 0.
 DOCEND()
     PIKEFUN void clear()
     {
@@ -29,7 +31,7 @@ DOCEND()
 	memset(THIS->i.data, 0, THIS->i.length * THIS->i.type_size);
     }
 
-DOCSTART() @decl void assign(ARRAY_CLASSIFY(Array) other)
+DOCSTART() @decl void assign(PIKE_ARRAY_CLASSIFY(Array) other)
  *! Assigns the first @expr{sizeof(other)@} entries from @expr{other@} to the
  *! respective entries in the current array.
  *!
@@ -49,7 +51,7 @@ DOCSTART() @decl void assign(ARRAY_CLASSIFY(Array) other)
     }
 
 DOCSTART() @decl pike_type `[](int idx)
- *! Gives the @expr{idx@}ths element of the ARRAY_CLASSIFY(Array).
+ *! Gives the @expr{idx@}ths element of the @[PIKE_ARRAY_CLASSIFY(Array)].
 DOCEND()
     PIKEFUN pike_type `[](int idx)
     flags ID_PROTECTED;
@@ -66,7 +68,7 @@ DOCEND()
     }
 
 DOCSTART() @decl pike_type `[]=(int idx, pike_type val)
- *! Sets the @expr{idx@}ths element of the ARRAY_CLASSIFY(Array) to
+ *! Sets the @expr{idx@}ths element of the @[PIKE_ARRAY_CLASSIFY(Array)] to
  *! @expr{val@}.
 DOCEND()
     PIKEFUN pike_type `[]=(int idx, pike_type val)
@@ -101,7 +103,7 @@ DOCEND()
 
 DOCSTART() @decl int _sizeof()
  *! @returns
- *! 	The number of entries in this ARRAY_CLASSIFY(Array).
+ *! 	The number of entries in this @[PIKE_ARRAY_CLASSIFY(Array)].
 DOCEND()
     PIKEFUN int _sizeof()
     flags ID_PROTECTED;
@@ -134,7 +136,8 @@ DOCEND()
     }
 
 DOCSTART() @decl mixed cast(string type)
- *! Supports casting (by copy) this ARRAY_CLASSIFY(Array) to a Pike array.
+ *! Supports casting (by copy) this @[PIKE_ARRAY_CLASSIFY(Array)]
+ *! to a Pike array.
  *!
  *! @example
  *! array pike_array = (array)typed_array;

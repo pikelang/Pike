@@ -1,4 +1,4 @@
-/* -*- c -*-
+/* -*- mode: c; c-basic-offset: 4; -*-
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
@@ -277,7 +277,7 @@ PMOD_EXPORT struct op_info {
 
 /*! @class Op
  *! Objects of this class represent MPI operations used in collective
- *! operations like @[MPI.Comm()->reduce()]. You can use operations
+ *! operations like @[MPI.Comm()->Reduce()]. You can use operations
  *! predefined by MPI or create your own.
  *!
  *! Other than that, @[Op]s are not that useful from Pike.
@@ -883,7 +883,7 @@ static inline int mpi_Gatherv(struct object *sendbuf, struct object *recvbuf,
 /*! @class Pointer
  *! A pointer like class. Because @[MPI.Comm->Recv()] et al do not return
  *! "results" but take references/pointers to the target storage, you need to
- *! pass a @[Pointer] to @[MPI.Comm()->recv()] in order to receive the string.
+ *! pass a @[Pointer] to @[MPI.Comm()->Recv()] in order to receive the string.
  *!
  *! @example
  *!int main() {
@@ -1099,6 +1099,9 @@ PIKECLASS Comm
 	}
     }
 
+    /*! @decl void Bcast(string buf, int root)
+     *! @decl void Bcast(object buf, int root)
+     */
     PIKEFUN void Bcast(string buf, int root)
     {
 	int rank;
@@ -1136,6 +1139,8 @@ PIKECLASS Comm
 
     }
 
+    /*! @decl void Reduce(object sendbuf, object recvbuf, object op, int root)
+     */
     PIKEFUN void Reduce(object sendbuf, object recvbuf, object op, int root)
     {
 	using_mpi("Reduce");
@@ -1239,6 +1244,9 @@ cmod_CONCAT_EVAL(ENSURE_SENTINEL,GATHER(##_OR_NULL))(recvbuf, #_name_, 2);  \
 #cmod_undef NONE
 #cmod_undef ID
 
+    /*! @decl void Scatterv(object|void sendbuf, object|void counts, @
+     *!                     object|void displ, object recvbuf, int root)
+     */
     PIKEFUN void Scatterv(object|void sendbuf, object|void counts,
 			  object|void displ, object recvbuf, int root)
     {
@@ -1255,6 +1263,10 @@ cmod_CONCAT_EVAL(ENSURE_SENTINEL,GATHER(##_OR_NULL))(recvbuf, #_name_, 2);  \
 	pop_n_elems(args);
     }
 
+    /*! @decl void Gatherv(object sendbuf, object|void recvbuf, @
+     *!                    object|void counts, object|void displ, @
+     *!                    int root)
+     */
     PIKEFUN void Gatherv(object sendbuf, object|void recvbuf,
 			 object|void counts, object|void displ,
 			 int root)
@@ -1271,6 +1283,8 @@ cmod_CONCAT_EVAL(ENSURE_SENTINEL,GATHER(##_OR_NULL))(recvbuf, #_name_, 2);  \
 	pop_n_elems(args);
     }
 
+    /*! @decl void Abort(int errorcode)
+     */
     PIKEFUN void Abort(int errorcode)
     {
 	using_mpi("Abort");
@@ -1278,6 +1292,8 @@ cmod_CONCAT_EVAL(ENSURE_SENTINEL,GATHER(##_OR_NULL))(recvbuf, #_name_, 2);  \
 	pop_n_elems(args);
     }
 
+    /*! @decl void Barrier()
+     */
     PIKEFUN void Barrier()
     {
 	using_mpi("Barrier");
@@ -1285,6 +1301,8 @@ cmod_CONCAT_EVAL(ENSURE_SENTINEL,GATHER(##_OR_NULL))(recvbuf, #_name_, 2);  \
 	MPI_Barrier(THIS->comm);
     }
 
+    /*! @decl int `rank()
+     */
     PIKEFUN int `rank()
     {
 	int rank;
@@ -1295,6 +1313,8 @@ cmod_CONCAT_EVAL(ENSURE_SENTINEL,GATHER(##_OR_NULL))(recvbuf, #_name_, 2);  \
 	push_int(rank);
     }
 
+    /*! @decl int `size()
+     */
     PIKEFUN int `size()
     {
 	int size;
@@ -1305,6 +1325,8 @@ cmod_CONCAT_EVAL(ENSURE_SENTINEL,GATHER(##_OR_NULL))(recvbuf, #_name_, 2);  \
 	push_int(size);
     }
 
+    /*! @decl object dup()
+     */
     PIKEFUN object dup() {
 	MPI_Comm comm;
 	struct object *o;
@@ -1461,8 +1483,14 @@ PIKE_MODULE_INIT
 
     INIT;
 
+    /*! @decl constant int ANY_SOURCE
+     */
     ADD_INT_CONSTANT("ANY_SOURCE", MPI_ANY_SOURCE, 0);
+    /*! @decl constant int ANY_TAG
+     */
     ADD_INT_CONSTANT("ANY_TAG", MPI_ANY_TAG, 0);
+    /*! @decl constant object(Comm) world
+     */
     add_object_constant("world", co = clone_object(MPI_Comm_program, 0), 0);
     OBJ2_MPI_COMM(co)->comm = MPI_COMM_WORLD;
 
