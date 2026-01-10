@@ -326,6 +326,7 @@ class client
 {
   inherit protocol;
 
+  //! News group.
   class Group
   {
     string group;

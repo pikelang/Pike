@@ -1944,7 +1944,7 @@ Stdio.File query_stream()
 .Connection query_connection()
 //! Return the SSL connection object.
 //!
-//! This returns the low-level @[SSL.connection] object.
+//! This returns the low-level @[SSL.Connection] object.
 {
   SSL3_DEBUG_MSG ("SSL.File->query_connection(): Called from %s:%d\n",
 		  backtrace()[-2][0], backtrace()[-2][1]);
