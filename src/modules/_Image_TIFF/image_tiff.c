@@ -541,7 +541,7 @@ void low_image_tiff_decode( struct buffer *buf,
   {
     char *stmp;
     float xres, yres, ftmp, *ftmpp;
-    uint16_t tmp16, tmp16b, *tmp16p, *tmp16p2, *tmp16p3;
+    uint16 tmp16, tmp16b, *tmp16p, *tmp16p2, *tmp16p3;
     int hasxres, hasyres;
     if ((hasxres = TIFFGetField(tif, TIFFTAG_XRESOLUTION, &xres)))
       { push_static_text( "xres" );   push_float( xres ); }
