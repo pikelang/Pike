@@ -217,6 +217,7 @@ object Placeholder = class
 {
 //! @endignore
 
+    //! Base class for @[Placeholder] arguments.
     class Base
     {
         constant _is_placeholder = true;
