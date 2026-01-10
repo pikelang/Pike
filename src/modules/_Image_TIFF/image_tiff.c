@@ -45,9 +45,6 @@
 #undef SIZEOF_INT
 #undef SIZEOF_LONG
 #include <tiff.h>
-#ifdef HAVE_TIFFIOP_H
-#include <tiffiop.h>
-#endif
 #include <tiffio.h>
 
 /* The values for these possibly provided by old <tiffconf.h>
@@ -542,71 +539,67 @@ void low_image_tiff_decode( struct buffer *buf,
   dmalloc_touch_svalue(sp);
   if(!image_only)
   {
-#ifdef HAVE_TIFFIOP_H
-    char *tmp;
-    TIFFDirectory *td = &tif->tif_dir;
-    if (TIFFFieldSet(tif,FIELD_RESOLUTION))
-    {
-      push_static_text( "xres" );   push_float( td->td_xresolution );
-      push_static_text( "yres" );   push_float( td->td_yresolution );
-      push_static_text( "unit" );
-      if (TIFFFieldSet(tif,FIELD_RESOLUTIONUNIT))
+    char *stmp;
+    float xres, yres, ftmp, *ftmpp;
+    uint16_t tmp16, tmp16b, *tmp16p, *tmp16p2, *tmp16p3;
+    int hasxres, hasyres;
+    if ((hasxres = TIFFGetField(tif, TIFFTAG_XRESOLUTION, &xres)))
+      { push_static_text( "xres" );   push_float( xres ); }
+    if ((hasyres = TIFFGetField(tif, TIFFTAG_YRESOLUTION, &yres)))
+      { push_static_text( "yres" );   push_float( yres ); }
+    if (TIFFGetField(tif, TIFFTAG_RESOLUTIONUNIT, &tmp16))
+      { push_static_text( "unit" );
+        switch(tmp16)
+          {
+          case RESUNIT_NONE:
+            push_static_text("unitless");
+            break;
+          case RESUNIT_INCH:
+            push_static_text("pixels/inch");
+            if (hasxres) { push_static_text( "xdpy" );   push_float( xres ); }
+            if (hasyres) { push_static_text( "ydpy" );   push_float( yres ); }
+            break;
+          case RESUNIT_CENTIMETER:
+            push_static_text("pixels/cm");
+            if (hasxres) { push_static_text( "xdpy" );   push_float( xres/2.5 ); }
+            if (hasyres) { push_static_text( "ydpy" );   push_float( yres/2.5 ); }
+            break;
+          default:
+            push_static_text( "unitless" );
+          }
+      }
+    if (TIFFGetField(tif, TIFFTAG_XPOSITION, &ftmp))
+      { push_static_text("xposition"); push_float(ftmp); }
+    if (TIFFGetField(tif, TIFFTAG_YPOSITION, &ftmp))
+      { push_static_text("yposition"); push_float(ftmp); }
+    if (TIFFGetField(tif, TIFFTAG_PHOTOMETRIC, &tmp16))
       {
-        switch(td->td_resolutionunit)
-        {
-         case RESUNIT_NONE:
-           push_static_text("unitless");
-           break;
-         case RESUNIT_INCH:
-           push_static_text("pixels/inch");
-           push_static_text( "xdpy" );   push_float( td->td_xresolution );
-           push_static_text( "ydpy" );   push_float( td->td_yresolution );
-           break;
-         case RESUNIT_CENTIMETER:
-           push_static_text("pixels/cm");
-           push_static_text( "xdpy" );   push_float( td->td_xresolution/2.5 );
-           push_static_text( "ydpy" );   push_float( td->td_yresolution/2.5 );
-           break;
-        }
-      } else
-        push_static_text( "unitless" );
-    }
-    if (TIFFFieldSet(tif,FIELD_POSITION))
-    {
-      push_static_text("xposition"); push_int(td->td_xposition);
-      push_static_text("yposition"); push_int(td->td_yposition);
-    }
-    if (TIFFFieldSet(tif,FIELD_PHOTOMETRIC))
-    {
-      push_static_text("photometric");
-      if (td->td_photometric < (sizeof (photoNames) / sizeof (photoNames[0])))
-        push_text( photoNames[td->td_photometric] );
-      else
-      {
-        switch (td->td_photometric) {
+        push_static_text("photometric");
+        if (tmp16 < (sizeof (photoNames) / sizeof (photoNames[0])))
+          push_text( photoNames[tmp16] );
+        else switch (tmp16) {
 #ifdef PHOTOMETRIC_LOGL
-         case PHOTOMETRIC_LOGL:
-           push_static_text("CIE Log2(L)");
-           break;
+          case PHOTOMETRIC_LOGL:
+            push_static_text("CIE Log2(L)");
+            break;
 #endif /* PHOTOMETRIC_LOGL */
 #ifdef PHOTOMETRIC_LOGLUV
-         case PHOTOMETRIC_LOGLUV:
-           push_static_text("CIE Log2(L) (u',v')");
-           break;
+          case PHOTOMETRIC_LOGLUV:
+            push_static_text("CIE Log2(L) (u',v')");
+            break;
 #endif /* PHOTOMETRIC_LOGLUV */
-         default:
-           push_static_text("unkown");
-           break;
-        }
+          default:
+            push_static_text("unkown");
+            break;
+          }
       }
-    }
 
-    if (TIFFFieldSet(tif,FIELD_EXTRASAMPLES) && td->td_extrasamples)
+    if (TIFFGetField(tif, TIFFTAG_EXTRASAMPLES, &tmp16, &tmp16p) && tmp16)
     {
       push_static_text( "extra_samples" );
-      for (i = 0; i < td->td_extrasamples; i++)
+      for (i = 0; i < tmp16; i++)
       {
-        switch (td->td_sampleinfo[i])
+        switch (tmp16p[i])
         {
          case EXTRASAMPLE_UNSPECIFIED:
            push_static_text("unspecified");
@@ -618,17 +611,17 @@ void low_image_tiff_decode( struct buffer *buf,
            push_static_text("unassoc-alpha");
            break;
          default:
-           push_int( td->td_sampleinfo[i] );
+           push_int( tmp16p[i] );
            break;
         }
       }
-      f_aggregate( td->td_extrasamples );
+      f_aggregate( tmp16 );
     }
 
-    if (TIFFFieldSet(tif,FIELD_THRESHHOLDING))
+    if (TIFFGetField(tif, TIFFTAG_THRESHHOLDING, &tmp16))
     {
       push_static_text( "threshholding" );
-      switch (td->td_threshholding) {
+      switch (tmp16) {
        case THRESHHOLD_BILEVEL:
          push_static_text( "bilevel art scan" );
          break;
@@ -643,113 +636,114 @@ void low_image_tiff_decode( struct buffer *buf,
          break;
       }
     }
-    if (TIFFFieldSet(tif,FIELD_HALFTONEHINTS))
+    if (TIFFGetField(tif, TIFFTAG_HALFTONEHINTS, &tmp16, &tmp16b))
     {
       push_static_text( "halftone_hints" );
-      push_int(td->td_halftonehints[0]);
-      push_int(td->td_halftonehints[1]);
+      push_int(tmp16);
+      push_int(tmp16b);
       f_aggregate(2);
     }
 
-    if(td->td_artist)
+    if (TIFFGetField(tif, TIFFTAG_ARTIST, &stmp))
     {
       push_static_text("artist");
-      push_text(td->td_artist);
+      push_text(stmp);
     }
-    if(td->td_datetime)
+    if (TIFFGetField(tif, TIFFTAG_DATETIME, &stmp))
     {
       push_static_text("datetime");
-      push_text(td->td_datetime);
+      push_text(stmp);
     }
-    if(td->td_hostcomputer)
+    if (TIFFGetField(tif, TIFFTAG_HOSTCOMPUTER, &stmp))
     {
       push_static_text("hostcomputer");
-      push_text(td->td_hostcomputer);
+      push_text(stmp);
     }
-    if(td->td_software)
+    if (TIFFGetField(tif, TIFFTAG_SOFTWARE, &stmp))
     {
       push_static_text("software");
-      push_text(td->td_software);
+      push_text(stmp);
     }
-    if(td->td_documentname)
+    if (TIFFGetField(tif, TIFFTAG_DOCUMENTNAME, &stmp))
     {
       push_static_text("name");
-      push_text(td->td_documentname);
+      push_text(stmp);
     }
 
-    if(td->td_imagedescription)
+    if (TIFFGetField(tif, TIFFTAG_IMAGEDESCRIPTION, &stmp))
     {
       push_static_text("comment");
-      push_text(td->td_imagedescription);
+      push_text(stmp);
     }
 
-    if(td->td_make)
+    if (TIFFGetField(tif, TIFFTAG_MAKE, &stmp))
     {
       push_static_text("make");
-      push_text(td->td_make);
+      push_text(stmp);
     }
 
-    if(td->td_model)
+    if (TIFFGetField(tif, TIFFTAG_MODEL, &stmp))
     {
       push_static_text("model");
-      push_text(td->td_model);
+      push_text(stmp);
     }
 
-    if(td->td_pagename)
+    if (TIFFGetField(tif, TIFFTAG_PAGENAME, &stmp))
     {
       push_static_text("page_name");
-      push_text(td->td_pagename);
+      push_text(stmp);
     }
 
-    if(TIFFFieldSet(tif,FIELD_PAGENUMBER))
+    if (TIFFGetField(tif, TIFFTAG_PAGENUMBER, &tmp16, &tmp16b))
     {
       push_static_text("page_number");
-      push_int(td->td_pagenumber[0]);
-      push_int(td->td_pagenumber[1]);
+      push_int(tmp16);
+      push_int(tmp16b);
       f_aggregate(2);
     }
 
-    if (TIFFFieldSet(tif,FIELD_COLORMAP))
+    if (TIFFGetField(tif, TIFFTAG_BITSPERSAMPLE, &tmp16) &&
+        TIFFGetField(tif, TIFFTAG_COLORMAP, &tmp16p, &tmp16p2, &tmp16p3))
     {
-      int l,n = 1L<<td->td_bitspersample;
+      int l,n = 1L<<tmp16;
       push_static_text("colormap");
       for (l = 0; l < n; l++)
       {
-        push_int( td->td_colormap[0][l] );
-        push_int( td->td_colormap[1][l] );
-        push_int( td->td_colormap[2][l] );
+        push_int( tmp16p[l] );
+        push_int( tmp16p2[l] );
+        push_int( tmp16p3[l] );
         f_aggregate(3);
       }
-      f_aggregate(1L<<td->td_bitspersample);
+      f_aggregate(1L<<tmp16);
       push_object(clone_object(image_colortable_program, 1 ));
     }
 #ifdef COLORIMETRY_SUPPORT
-    if (TIFFFieldSet(tif,FIELD_WHITEPOINT))
+    if (TIFFGetField(tif, TIFFTAG_WHITEPOINT, &ftmpp))
     {
       push_static_text("whitepoint");
-      push_float(td->td_whitepoint[0]);
-      push_float(td->td_whitepoint[1]);
+      push_float(ftmpp[0]);
+      push_float(ftmpp[1]);
       f_aggregate(2);
     }
-    if (TIFFFieldSet(tif,FIELD_PRIMARYCHROMAS))
+    if (TIFFGetField(tif, TIFFTAG_PRIMARYCHROMATICITIES, &ftmpp))
     {
       push_static_text("primary_chromaticities");
       for(i=0;i<6;i++)
-        push_float(td->td_primarychromas[i]);
+        push_float(ftmpp[i]);
       f_aggregate(6);
     }
-    if (TIFFFieldSet(tif,FIELD_REFBLACKWHITE))
+    if (TIFFGetField(tif, TIFFTAG_SAMPLESPERPIXEL, &tmp16) &&
+        TIFFGetField(tif, TIFFTAG_REFERENCEBLACKWHITE, &ftmpp))
     {
       push_static_text("reference_black_white");
-      for (i = 0; i < td->td_samplesperpixel; i++)
+      for (i = 0; i < tmp16; i++)
       {
-        push_float(td->td_refblackwhite[2*i+0]);
-        push_float(td->td_refblackwhite[2*i+1]);
+        push_float(ftmpp[2*i+0]);
+        push_float(ftmpp[2*i+1]);
         f_aggregate(2);
       }
-      f_aggregate(td->td_samplesperpixel);
+      f_aggregate(tmp16);
     }
-#endif
 #endif
   }
   TIFFClose(tif);
