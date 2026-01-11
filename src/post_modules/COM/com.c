@@ -956,6 +956,8 @@ static void exit_cobj_struct(struct object *UNUSED(o))
   }
 }
 
+/*! @decl mixed get_prop(string prop)
+ */
 static void f_cobj_getprop(INT32 args)
 {
   struct cobj_storage *cobj = THIS_COBJ;
@@ -996,6 +998,8 @@ static void f_cobj_getprop(INT32 args)
   return;
 }
 
+/*! @decl mixed set_prop(string prop, mixed val)
+ */
 static void f_cobj_setprop(INT32 args)
 {
   struct cobj_storage *cobj = THIS_COBJ;
@@ -1041,6 +1045,8 @@ static void f_cobj_setprop(INT32 args)
   return;
 }
 
+/*! @decl mixed call_method(string funname, mixed arg)
+ */
 static void f_cobj_call_method(INT32 args)
 {
   struct cobj_storage *cobj = THIS_COBJ;
