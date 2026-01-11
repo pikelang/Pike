@@ -4847,6 +4847,9 @@ PIKECLASS BlockCipher16
 	push_object(this_object());
       }
 
+      /*! @decl this_program set_iv(string(0..255) iv)
+       *! Set the initialization vector to @[iv].
+       */
       PIKEFUN object(Nettle_AEAD_State) set_iv(string(8bit) iv)
       {
 	pike_nettle_crypt_func func = pike_crypt_func;
@@ -6056,6 +6059,9 @@ PIKECLASS BlockCipher16
         push_object(this_object());
       }
 
+      /*! @decl this_program set_iv(string(0..255) iv)
+       *! Set the initialization vector to @[iv].
+       */
       PIKEFUN object(Nettle_AEAD_State) set_iv(string(8bit) iv,
                                                int(1..16)|void tag_length)
       {
