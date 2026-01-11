@@ -5,3 +5,5 @@
 */
 
 @TOP@
+
+#undef HAVE_GIREPOSITORY_H
