@@ -78,6 +78,8 @@ int WebPMemoryWrite(const uint8_t* data, size_t data_size,
     }
     return 1;
 }
+
+#define WebPFree free
 #endif
 
 
@@ -160,7 +162,7 @@ static size_t Encode(const uint8_t* rgba, int width, int height, int stride,
 
  if (!ok)
  {
-  free(wrt.mem);
+  WebPFree(wrt.mem);
   *output = NULL;
   switch( pic.error_code )
   {
@@ -556,7 +558,7 @@ PIKEFUN string(0..255) encode( object(Image.Image) i,
         Pike_error( "%s", (char *)result );
 
     push_string( make_shared_binary_string( (const char *)result, size ) );
-    free( result );
+    WebPFree( result );
 }
 
 EXIT {
