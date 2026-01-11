@@ -26,7 +26,7 @@ if test x$with_gi = xyes ; then
   CPPFLAGS="$GI_CFLAGS $CPPFLAGS"
   LIBS="$GI_LIBS $LIBS"
 
-  AC_CHECK_HEADER(girepository.h, [gi_header_ok=yes])
+  AC_CHECK_HEADER(girepository.h, [gi_header_ok=yes;AC_DEFINE_UNQUOTED(HAVE_GIREPOSITORY_H)])
   AC_CHECK_FUNC(g_irepository_get_default, [gi_lib_ok=yes])
 
   if test xyesyes = "x$gi_header_ok$gi_lib_ok" ; then

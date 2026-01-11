@@ -214,6 +214,9 @@ string preprocess_man(array(string) rows, string fn)
     foreach(indices(prots), string name)
       ref_alias[name] = new_name;
     prots = ([ new_name : prots[name] ]);
+  } else {
+    werror("Warning: New canonical name for %O not found.\n"
+           "Known names: %O\n", fn, names);
   }
 
   // Assemble result
@@ -388,7 +391,10 @@ void prefetch()
   if( !file_stat( "release/xc/doc/man/GL/gl/" ) )
   {
     werror( "Need OpenGL man pages unpacked in present working directory.\n"
-	    "Download ftp://ftp.sgi.com/sgi/opengl/doc/mangl.tar.Z first.\n" );
+            "Download ftp://ftp.sgi.com/sgi/opengl/doc/mangl.tar.Z first.\n"
+            "sgi.com is defunct there is still (2026-01-10) a mirror at\n"
+            "https://ftp.jurassic.nl/mirrors/ftp.sgi.com/opengl/doc/\n"
+            );
     exit( 1 );
   }
   foreach(glob("*.3gl", get_dir("release/xc/doc/man/GL/gl/")), string fn) {
@@ -484,7 +490,7 @@ void main()
     if( relevant && sizeof( relevant -= not_implemented ) )
     {
       array r = map(relevant, lambda(string in) { return "@[" + in + "]"; });
-      doc += sprintf( "/*!@decl constant %s %d\n *! Used in %s\n */\n\n",
+      doc += sprintf( "/*!@decl constant %s = %d\n *! Used in %s\n */\n\n",
 		      name, constants[name], String.implode_nicely( r ) );
     }
   }
@@ -496,6 +502,13 @@ void main()
 */\n\n/* AutoDoc generated from OpenGL man pages */"
     "\n\n" + first_page() + "\n\n" + doc +
     "\n/*! @endmodule\n */\n\n";
+
+  // Get rid of white space at end of line.
+  doc = replace(doc, "        \n", "\n");
+  doc = replace(doc, "    \n", "\n");
+  doc = replace(doc, "  \n", "\n");
+  doc = replace(doc, " \n", "\n");
+  doc = replace(doc, "\t\n", "\n");
 
   werror("Writing result file.\n");
   Stdio.write_file("autodoc.c", doc);
