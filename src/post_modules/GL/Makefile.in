@@ -15,4 +15,7 @@ auto.o: auto.c
 
 GLSL.o: $(SRCDIR)/GLSL.c
 
+$(SRCDIR)/autodoc.c : $(SRCDIR)/autodoc.pike
+	cd "$(SRCDIR)" && $(RUNPIKE) autodoc.pike
+
 @dependencies@

@@ -8,20 +8,22 @@
 
 /*!@module GL
  *!
- *!Not implemented OpenGL methods:
+ *!OpenGL glue. All method and constant names have been kept close to their low
+ *!level counterparts for easy adoption of OpenGL code from other languages and
+ *!examples off the web. Superfluous suffixes specifying the number and types of
+ *!arguments have been dropped, though.
+ *!
+ *!OpenGL methods still missing in the Pike API:
  *!
  *!@xml{<matrix>
  *!<r><c>glAreTexturesResident</c></r>
  *!<r><c>glBitmap</c></r>
  *!<r><c>glBlendColorEXT</c></r>
  *!<r><c>glCallLists</c></r>
- *!<r><c>glColorPointer</c></r>
  *!<r><c>glDeleteTextures</c></r>
  *!<r><c>glDrawElements</c></r>
- *!<r><c>glEdgeFlagPointer</c></r>
  *!<r><c>glEdgeFlagv</c></r>
  *!<r><c>glEvalMesh</c></r>
- *!<r><c>glFeedbackBuffer</c></r>
  *!<r><c>glGenTextures</c></r>
  *!<r><c>glGetBooleanv</c></r>
  *!<r><c>glGetClipPlane</c></r>
@@ -36,29 +38,36 @@
  *!<r><c>glGetPolygonStipple</c></r>
  *!<r><c>glGetTexEnv</c></r>
  *!<r><c>glGetTexGen</c></r>
- *!<r><c>glGetTexImage</c></r>
  *!<r><c>glGetTexLevelParameter</c></r>
  *!<r><c>glGetTexParameter</c></r>
- *!<r><c>glIndexPointer</c></r>
- *!<r><c>glInterleavedArrays</c></r>
  *!<r><c>glMap1</c></r>
  *!<r><c>glMap2</c></r>
  *!<r><c>glMapGrid</c></r>
- *!<r><c>glNormalPointer</c></r>
  *!<r><c>glPixelMap</c></r>
  *!<r><c>glPixelStore</c></r>
  *!<r><c>glPixelTransfer</c></r>
  *!<r><c>glPolygonStipple</c></r>
  *!<r><c>glPrioritizeTextures</c></r>
- *!<r><c>glReadPixels</c></r>
  *!<r><c>glRect</c></r>
- *!<r><c>glSelectBuffer</c></r>
- *!<r><c>glTexCoordPointer</c></r>
- *!<r><c>glTexImage1D</c></r>
- *!<r><c>glTexSubImage1D</c></r>
- *!<r><c>glVertexPointer</c></r>
  *!</matrix>@}
  *!
+ *!@fixme
+ *!Methods available, but lacking documentation:
+ *!@xml{<matrix>
+ *!<r><c>glClipPlane</c></r>
+ *!<r><c>glColorPointer</c></r>
+ *!<r><c>glEdgeFlagPointer</c></r>
+ *!<r><c>glEvalMesh</c></r>
+ *!<r><c>glFeedbackBuffer</c></r>
+ *!<r><c>glGetTexImage</c></r>
+ *!<r><c>glIndexPointer</c></r>
+ *!<r><c>glInterleavedArrays</c></r>
+ *!<r><c>glNormalPointer</c></r>
+ *!<r><c>glReadPixels</c></r>
+ *!<r><c>glSelectBuffer</c></r>
+ *!<r><c>glTexCoordPointer</c></r>
+ *!<r><c>glVertexPointer</c></r>
+ *!</matrix>@}
  */
 
 
@@ -879,7 +888,7 @@
  *!but not all, of the parameters specified by these three commands.
  *!
  *!@[glCopyPixels] copies values from each pixel with the lower left-hand corner at
- *!(@i{x@} + i, @i{y@} + j) for 0\(<=i<@i{width@}  and 0\(<=j<@i{height@}.
+ *!(@i{x@} + i, @i{y@} + j) for 0<=i<@i{width@}  and 0<=j<@i{height@}.
  *!This pixel is said to be the ith pixel in the jth row.
  *!Pixels are copied in row order from the lowest to the highest row,
  *!left to right in each row.
@@ -915,7 +924,7 @@
  *!The conversion maps the largest representable component value to 1.0,
  *!and component value 0 to 0.0.
  *!The resulting floating-point color values are then multiplied
- *!by GL_c_SCALE and added to GL_c_BIAS,
+ *!by <ref>GL_c_SCALE</ref> and added to <ref>GL_c_BIAS</ref>,
  *!where <i>c</i> is RED, GREEN, BLUE, and ALPHA
  *!for the respective color components.
  *!The results are clamped to the range [0,1].
@@ -1487,7 +1496,7 @@
  *!@[glDeleteLists] causes a contiguous group of display lists to be deleted.
  *!@i{list@} is the name of the first display list to be deleted,
  *!and @i{range@} is the number of display lists to delete.
- *!All display lists \fId\fP with @i{list@} \(<= \fId\fP \(<= @i{list@} + @i{range@} - 1
+ *!All display lists @i{d@} with @i{list@} <= @i{d@} <= @i{list@} + @i{range@} - 1
  *!are deleted.
  *!
  *!All storage locations allocated to the specified display lists are freed,
@@ -2459,85 +2468,6 @@
  *!
  */
 
-/*!@decl void glFrustum(float left, float right, float bottom, float top, float zNear, float zFar)
- *!
- *!@[glFrustum] describes a perspective matrix that produces a perspective projection.
- *!The current matrix (see @[glMatrixMode]) is multiplied by this matrix
- *!and the result replaces the current matrix, as if
- *!@[glMultMatrix] were called with the following matrix
- *!as its argument:
- *!
- *!.sp 5
- *!.ce
- *!.EQ
- *!down 130 {left ( ~~ matrix {
- *!   ccol { {{2 ~ "zNear"} over {"right" - "left"}} above 0 above 0 above 0 }
- *!   ccol { 0 above {{2 ~ "zNear"} over {"top" - "bottom"}} ~ above 0 above 0 }
- *!   ccol { A ~~~~ above B ~~~~ above C ~~~~ above -1 ~~~~}
- *!   ccol { 0 above 0 above D above 0}
- *!}  ~~~ right )}
- *!.EN
- *!.sp
- *!.ce
- *!.EQ
- *!down 130
- *!{A ~=~ {"right" + "left"} over {"right" - "left"}}
- *!.EN
- *!.sp
- *!.ce
- *!.EQ
- *!down 130
- *!{B ~=~ {"top" + "bottom"} over {"top" - "bottom"}}
- *!.EN
- *!.sp
- *!.ce
- *!.EQ
- *!down 130
- *!{C ~=~ -{{"zFar" + "zNear"} over {"zFar" - "zNear"}}}
- *!.EN
- *!.sp
- *!.ce
- *!.EQ
- *!down 130
- *!{D ~=~ -{{2 ~ "zFar" ~ "zNear"} over {"zFar" - "zNear"}}}
- *!.EN
- *!.sp
- *!
- *!Typically, the matrix mode is @[GL_PROJECTION], and
- *!(@i{left@}, @i{bottom@}, -@i{zNear@}) and (@i{right@}, @i{top@},  -@i{zNear@})
- *!specify the points on the near clipping plane that are mapped
- *!to the lower left and upper right corners of the window,
- *!assuming that the eye is located at (0, 0, 0).
- *!-@i{zFar@} specifies the location of the far clipping plane.
- *!Both @i{zNear@} and @i{zFar@} must be positive.
- *!
- *!Use @[glPushMatrix] and @[glPopMatrix] to save and restore
- *!the current matrix stack.
- *!
- *!@param left
- *!
- *!Specify the coordinates for the left and right vertical clipping planes.
- *!
- *!@param bottom
- *!
- *!Specify the coordinates for the bottom and top horizontal clipping planes.
- *!
- *!@param zNear
- *!
- *!Specify the distances to the near and far depth clipping planes.
- *!Both distances must be positive.
- *!
- *!@throws
- *!
- *!@[GL_INVALID_VALUE] is generated if @i{zNear@} or @i{zFar@} is not positive.
- *!
- *!@[GL_INVALID_OPERATION] is generated if @[glFrustum]
- *!is executed between the execution of @[glBegin]
- *!and the corresponding execution of @[glEnd].
- *!
- *!
- */
-
 /*!@decl int glGenLists(int range)
  *!
  *!@[glGenLists] has one argument, @i{range@}.
@@ -3000,7 +2930,7 @@
  *!
  *!@[glLight] sets the values of individual light source parameters.
  *!@i{light@} names the light and is a symbolic name of the form @[GL_LIGHT]i,
- *!where 0 \(<= i < @[GL_MAX_LIGHTS].
+ *!where 0 <= i < @[GL_MAX_LIGHTS].
  *!@i{pname@} specifies one of ten light source parameters,
  *!again by symbolic name.
  *!@i{params@} is either a single value or a pointer to an array that contains
@@ -3142,7 +3072,7 @@
  *!The number of lights depends on the implementation,
  *!but at least eight lights are supported.
  *!They are identified by symbolic names of the form @[GL_LIGHT]i
- *!where 0 \(<=  i  < @[GL_MAX_LIGHTS].
+ *!where 0 <=  i  < @[GL_MAX_LIGHTS].
  *!
  *!@param pname
  *!
@@ -3165,7 +3095,7 @@
  *!The number of lights depends on the implementation, but
  *!at least eight lights are supported.
  *!They are identified by symbolic names of the form @[GL_LIGHT]i
- *!where 0 \(<=  i  < @[GL_MAX_LIGHTS].
+ *!where 0 <=  i  < @[GL_MAX_LIGHTS].
  *!
  *!@param pname
  *!
@@ -4778,19 +4708,19 @@
  *!</c><c>Passes if ( <i>ref</i> &amp; <i>mask</i> ) &lt; ( <i>stencil</i> &amp; <i>mask</i> ).
  *!</c></r>
  *!<r><c><ref>GL_LEQUAL</ref>
- *!</c><c>Passes if ( <i>ref</i> &amp; <i>mask</i> ) \(&lt;= ( <i>stencil</i> &amp; <i>mask</i> ).
+ *!</c><c>Passes if ( <i>ref</i> &amp; <i>mask</i> ) &lt;= ( <i>stencil</i> &amp; <i>mask</i> ).
  *!</c></r>
  *!<r><c><ref>GL_GREATER</ref>
  *!</c><c>Passes if ( <i>ref</i> &amp; <i>mask</i> ) &gt; ( <i>stencil</i> &amp; <i>mask</i> ).
  *!</c></r>
  *!<r><c><ref>GL_GEQUAL</ref>
- *!</c><c>Passes if ( <i>ref</i> &amp; <i>mask</i> ) \(&gt;= ( <i>stencil</i> &amp; <i>mask</i> ).
+ *!</c><c>Passes if ( <i>ref</i> &amp; <i>mask</i> ) &gt;= ( <i>stencil</i> &amp; <i>mask</i> ).
  *!</c></r>
  *!<r><c><ref>GL_EQUAL</ref>
  *!</c><c>Passes if ( <i>ref</i> &amp; <i>mask</i> ) = ( <i>stencil</i> &amp; <i>mask</i> ).
  *!</c></r>
  *!<r><c><ref>GL_NOTEQUAL</ref>
- *!</c><c>Passes if ( <i>ref</i> &amp; <i>mask</i> ) \(!=  ( <i>stencil</i> &amp; <i>mask</i> ).
+ *!</c><c>Passes if ( <i>ref</i> &amp; <i>mask</i> ) !=  ( <i>stencil</i> &amp; <i>mask</i> ).
  *!</c></r>
  *!<r><c><ref>GL_ALWAYS</ref>
  *!</c><c>Always passes.
@@ -5664,6 +5594,306 @@
  *!
  */
 
+/*!@decl void glTexImage1D(int target, int level, int internalformat, object|mapping(string:object) width, int border, object|mapping(string:object) format, object|mapping(string:object) type, object|mapping(string:object) *pixels)
+ *!
+ *!Texturing maps a portion of a specified texture image
+ *!onto each graphical primitive for which texturing is enabled.
+ *!To enable and disable one-dimensional texturing, call @[glEnable]
+ *!and @[glDisable] with argument @[GL_TEXTURE_1D].
+ *!
+ *!Texture images are defined with @[glTexImage1D].
+ *!The arguments describe the parameters of the texture image,
+ *!such as width,
+ *!width of the border,
+ *!level-of-detail number
+ *!(see @[glTexParameter]),
+ *!and the internal resolution and format used to store the image.
+ *!The last three arguments describe how the image is represented in
+ *!memory; they are identical to the pixel formats used for
+ *!@[glDrawPixels].
+ *!
+ *!If @i{target@} is @[GL_PROXY_TEXTURE_1D], no data is read from @i{pixels@}, but
+ *!all of the texture image state is recalculated, checked for
+ *!consistency, and checked against the implementation's capabilities.
+ *!If the implementation cannot handle a texture of the
+ *!requested texture size, it sets all of the image state to 0,
+ *!but does not generate an error (see @[glGetError]). To query for an
+ *!entire mipmap array, use an image array level greater than or equal to
+ *!1.
+ *!
+ *!If @i{target@} is @[GL_TEXTURE_1D],
+ *!data is read from @i{pixels@} as a sequence of signed or unsigned bytes,
+ *!shorts,
+ *!or longs,
+ *!or single-precision floating-point values,
+ *!depending on @i{type@}.
+ *!These values are grouped into sets of one,
+ *!two,
+ *!three,
+ *!or four values,
+ *!depending on @i{format@},
+ *!to form elements.
+ *!If @i{type@} is @[GL_BITMAP],
+ *!the data is considered as a string of unsigned bytes
+ *!(and @i{format@} must be @[GL_COLOR_INDEX]).
+ *!Each data byte is treated as eight 1-bit elements,
+ *!with bit ordering determined by @[GL_UNPACK_LSB_FIRST]
+ *!(see @[glPixelStore]).
+ *!
+ *!The first element corresponds to the left end of the texture array.
+ *!Subsequent elements progress left-to-right through the remaining texels
+ *!in the texture array.
+ *!The final element corresponds to the right end of the texture array.
+ *!
+ *!@i{format@} determines the composition of each element in @i{pixels@}.
+ *!It can assume one of nine symbolic values:
+ *!
+ *!@xml{<matrix>
+ *!<r><c><ref>GL_COLOR_INDEX</ref>
+ *!</c><c>Each element is a single value,
+ *!a color index.
+ *!The GL converts it to fixed point
+ *!(with an unspecified number of zero bits to the right of the binary point),
+ *!shifted left or right depending on the value and sign of <ref>GL_INDEX_SHIFT</ref>,
+ *!and added to <ref>GL_INDEX_OFFSET</ref>
+ *!(see <ref>glPixelTransfer</ref>).
+ *!The resulting index is converted to a set of color components
+ *!using the
+ *!<ref>GL_PIXEL_MAP_I_TO_R</ref>,
+ *!<ref>GL_PIXEL_MAP_I_TO_G</ref>,
+ *!<ref>GL_PIXEL_MAP_I_TO_B</ref>, and
+ *!<ref>GL_PIXEL_MAP_I_TO_A</ref> tables,
+ *!and clamped to the range [0,1].
+ *!</c></r>
+ *!<r><c><ref>GL_RED</ref>
+ *!</c><c>Each element is a single red component.
+ *!The GL converts it to floating point and assembles it into an RGBA element
+ *!by attaching 0 for green and blue, and 1 for alpha.
+ *!Each component is then multiplied by the signed scale factor <ref>GL_c_SCALE</ref>,
+ *!added to the signed bias <ref>GL_c_BIAS</ref>,
+ *!and clamped to the range [0,1]
+ *!(see <ref>glPixelTransfer</ref>).
+ *!</c></r>
+ *!<r><c><ref>GL_GREEN</ref>
+ *!</c><c>Each element is a single green component.
+ *!The GL converts it to floating point and assembles it into an RGBA element
+ *!by attaching 0 for red and blue, and 1 for alpha.
+ *!Each component is then multiplied by the signed scale factor <ref>GL_c_SCALE</ref>,
+ *!added to the signed bias <ref>GL_c_BIAS</ref>,
+ *!and clamped to the range [0,1]
+ *!(see <ref>glPixelTransfer</ref>).
+ *!</c></r>
+ *!<r><c><ref>GL_BLUE</ref>
+ *!</c><c>Each element is a single blue component.
+ *!The GL converts it to floating point and assembles it into an RGBA element
+ *!by attaching 0 for red and green, and 1 for alpha.
+ *!Each component is then multiplied by the signed scale factor <ref>GL_c_SCALE</ref>,
+ *!added to the signed bias <ref>GL_c_BIAS</ref>,
+ *!and clamped to the range [0,1]
+ *!(see <ref>glPixelTransfer</ref>).
+ *!</c></r>
+ *!<r><c><ref>GL_ALPHA</ref>
+ *!</c><c>Each element is a single alpha component.
+ *!The GL converts it to floating point and assembles it into an RGBA element
+ *!by attaching 0 for red, green, and blue.
+ *!Each component is then multiplied by the signed scale factor <ref>GL_c_SCALE</ref>,
+ *!added to the signed bias <ref>GL_c_BIAS</ref>,
+ *!and clamped to the range [0,1]
+ *!(see <ref>glPixelTransfer</ref>).
+ *!</c></r>
+ *!<r><c><ref>GL_RGB</ref>
+ *!</c><c>Each element is an RGB triple.
+ *!The GL converts it to floating point and assembles it into an RGBA element
+ *!by attaching 1 for alpha.
+ *!Each component is then multiplied by the signed scale factor <ref>GL_c_SCALE</ref>,
+ *!added to the signed bias <ref>GL_c_BIAS</ref>,
+ *!and clamped to the range [0,1]
+ *!(see <ref>glPixelTransfer</ref>).
+ *!</c></r>
+ *!<r><c><ref>GL_RGBA</ref>
+ *!</c><c>Each element contains all four components.
+ *!Each component is then multiplied by the signed scale factor <ref>GL_c_SCALE</ref>,
+ *!added to the signed bias <ref>GL_c_BIAS</ref>,
+ *!and clamped to the range [0,1]
+ *!(see <ref>glPixelTransfer</ref>).
+ *!</c></r>
+ *!<r><c><ref>GL_LUMINANCE</ref>
+ *!</c><c>Each element is a single luminance value.
+ *!The GL converts it to floating point,
+ *!then assembles it into an RGBA element by replicating the luminance value
+ *!three times for red, green, and blue and attaching 1 for alpha.
+ *!Each component is then multiplied by the signed scale factor <ref>GL_c_SCALE</ref>,
+ *!added to the signed bias <ref>GL_c_BIAS</ref>,
+ *!and clamped to the range [0,1]
+ *!(see <ref>glPixelTransfer</ref>).
+ *!</c></r>
+ *!<r><c><ref>GL_LUMINANCE_ALPHA</ref>
+ *!</c><c>Each element is a luminance/alpha pair.
+ *!The GL converts it to floating point,
+ *!then assembles it into an RGBA element by replicating the luminance value
+ *!three times for red, green, and blue.
+ *!Each component is then multiplied by the signed scale factor <ref>GL_c_SCALE</ref>,
+ *!added to the signed bias <ref>GL_c_BIAS</ref>,
+ *!and clamped to the range [0,1] (see <ref>glPixelTransfer</ref>).
+ *!</c></r>
+ *!</matrix>@}
+ *!
+ *!If an application wants to store the texture at a certain
+ *!resolution or in a certain format, it can request the resolution
+ *!and format with @i{internalformat@}. The GL will choose an internal
+ *!representation that closely approximates that requested by @i{internalformat@}, but
+ *!it may not match exactly.
+ *!(The representations specified by @[GL_LUMINANCE], @[GL_LUMINANCE_ALPHA], @[GL_RGB],
+ *!and @[GL_RGBA] must match exactly. The numeric values 1, 2, 3, and 4 may also be used to
+ *!specify the preceding representations.)
+ *!
+ *!Use the @[GL_PROXY_TEXTURE_1D] target to try out a resolution and
+ *!format. The implementation will
+ *!update and recompute its best match for the requested storage resolution
+ *!and format. To query this state, call @[glGetTexLevelParameter].
+ *!If the texture cannot be accommodated, texture state is set to 0.
+ *!
+ *!A one-component texture image uses only the red component of the RGBA
+ *!color extracted from @i{pixels@}.
+ *!A two-component image uses the R and A values.
+ *!A three-component image uses the R, G, and B values.
+ *!A four-component image uses all of the RGBA components.
+ *!
+ *!@param target
+ *!
+ *!Specifies the target texture.
+ *!Must be @[GL_TEXTURE_1D] or @[GL_PROXY_TEXTURE_1D].
+ *!
+ *!@param level
+ *!
+ *!Specifies the level-of-detail number.
+ *!Level 0 is the base image level.
+ *!Level @i{n@} is the @i{n@}th mipmap reduction image.
+ *!
+ *!@param internalformat
+ *!
+ *!Specifies the number of color components in the texture.
+ *!Must be 1, 2, 3, or 4, or one of the following symbolic constants:
+ *!@[GL_ALPHA],
+ *!@[GL_ALPHA4],
+ *!@[GL_ALPHA8],
+ *!@[GL_ALPHA12],
+ *!@[GL_ALPHA16],
+ *!@[GL_LUMINANCE],
+ *!@[GL_LUMINANCE4],
+ *!@[GL_LUMINANCE8],
+ *!@[GL_LUMINANCE12],
+ *!@[GL_LUMINANCE16],
+ *!@[GL_LUMINANCE_ALPHA],
+ *!@[GL_LUMINANCE4_ALPHA4],
+ *!@[GL_LUMINANCE6_ALPHA2],
+ *!@[GL_LUMINANCE8_ALPHA8],
+ *!@[GL_LUMINANCE12_ALPHA4],
+ *!@[GL_LUMINANCE12_ALPHA12],
+ *!@[GL_LUMINANCE16_ALPHA16],
+ *!@[GL_INTENSITY],
+ *!@[GL_INTENSITY4],
+ *!@[GL_INTENSITY8],
+ *!@[GL_INTENSITY12],
+ *!@[GL_INTENSITY16],
+ *!@[GL_RGB],
+ *!@[GL_R3_G3_B2],
+ *!@[GL_RGB4],
+ *!@[GL_RGB5],
+ *!@[GL_RGB8],
+ *!@[GL_RGB10],
+ *!@[GL_RGB12],
+ *!@[GL_RGB16],
+ *!@[GL_RGBA],
+ *!@[GL_RGBA2],
+ *!@[GL_RGBA4],
+ *!@[GL_RGB5_A1],
+ *!@[GL_RGBA8],
+ *!@[GL_RGB10_A2],
+ *!@[GL_RGBA12], or
+ *!@[GL_RGBA16].
+ *!
+ *!@param width
+ *!
+ *!Specifies the width of the texture image.
+ *!Must be 2 sup n + 2 ( "border" ) for some integer n. All
+ *!implementations support texture images that are at least 64 texels
+ *!wide. The height of the 1D texture image is 1.
+ *!
+ *!@param border
+ *!
+ *!Specifies the width of the border.
+ *!Must be either 0 or 1.
+ *!
+ *!@param format
+ *!
+ *!Specifies the format of the pixel data.
+ *!The following symbolic values are accepted:
+ *!@[GL_COLOR_INDEX],
+ *!@[GL_RED],
+ *!@[GL_GREEN],
+ *!@[GL_BLUE],
+ *!@[GL_ALPHA],
+ *!@[GL_RGB],
+ *!@[GL_RGBA],
+ *!@[GL_LUMINANCE], and
+ *!@[GL_LUMINANCE_ALPHA].
+ *!
+ *!@param type
+ *!
+ *!Specifies the data type of the pixel data.
+ *!The following symbolic values are accepted:
+ *!@[GL_UNSIGNED_BYTE],
+ *!@[GL_BYTE],
+ *!@[GL_BITMAP],
+ *!@[GL_UNSIGNED_SHORT],
+ *!@[GL_SHORT],
+ *!@[GL_UNSIGNED_INT],
+ *!@[GL_INT], and
+ *!@[GL_FLOAT].
+ *!
+ *!@param pixels
+ *!
+ *!Specifies a pointer to the image data in memory.
+ *!
+ *!@throws
+ *!
+ *!@[GL_INVALID_ENUM] is generated if @i{target@} is not @[GL_TEXTURE_1D]
+ *!or @[GL_PROXY_TEXTURE_1D].
+ *!
+ *!@[GL_INVALID_ENUM] is generated if @i{format@} is not an accepted
+ *!format constant.
+ *!Format constants other than @[GL_STENCIL_INDEX] and @[GL_DEPTH_COMPONENT]
+ *!are accepted.
+ *!
+ *!@[GL_INVALID_ENUM] is generated if @i{type@} is not a type constant.
+ *!
+ *!@[GL_INVALID_ENUM] is generated if @i{type@} is @[GL_BITMAP] and
+ *!@i{format@} is not @[GL_COLOR_INDEX].
+ *!
+ *!@[GL_INVALID_VALUE] is generated if @i{level@} is less than 0.
+ *!.P
+ *!@[GL_INVALID_VALUE] may be generated if @i{level@} is greater than $log
+ *!sub 2$@i{max@},
+ *!where @i{max@} is the returned value of @[GL_MAX_TEXTURE_SIZE].
+ *!
+ *!@[GL_INVALID_VALUE] is generated if @i{internalformat@} is not 1, 2, 3, 4, or
+ *!one of the accepted resolution and format symbolic constants.
+ *!
+ *!@[GL_INVALID_VALUE] is generated if @i{width@} is less than 0
+ *!or greater than 2 + @[GL_MAX_TEXTURE_SIZE],
+ *!or if it cannot be represented as 2 sup n + 2("border")
+ *!for some integer value of @i{n@}.
+ *!
+ *!@[GL_INVALID_VALUE] is generated if @i{border@} is not 0 or 1.
+ *!
+ *!@[GL_INVALID_OPERATION] is generated if @[glTexImage1D]
+ *!is executed between the execution of @[glBegin]
+ *!and the corresponding execution of @[glEnd].
+ *!
+ *!
+ */
+
 /*!@decl void glTexParameter(int target, int pname, float|int|array(float|int) param)
  *!
  *!Texture mapping is a technique that applies an image onto an object's surface
@@ -5999,6 +6229,111 @@
  *!
  */
 
+/*!@decl void glTexSubImage1D(int target, int level, int xoffset, object|mapping(string:object) width, object|mapping(string:object) format, object|mapping(string:object) type, object|mapping(string:object) *pixels)
+ *!
+ *!Texturing maps a portion of a specified texture image
+ *!onto each graphical primitive for which texturing is enabled.
+ *!To enable or disable one-dimensional texturing, call @[glEnable]
+ *!and @[glDisable] with argument @[GL_TEXTURE_1D].
+ *!
+ *!@[glTexSubImage1D] redefines a contiguous subregion of an existing one-dimensional
+ *!texture image.
+ *!The texels referenced by @i{pixels@} replace the portion of the
+ *!existing texture array with x indices @i{xoffset@} and "xoffset"~+~"width"~-~1,
+ *!inclusive.
+ *!This region may not include any texels outside the range of the
+ *!texture array as it was originally specified.
+ *!It is not an error to specify a subtexture with width of 0, but
+ *!such a specification has no effect.
+ *!
+ *!@param target
+ *!
+ *!Specifies the target texture.
+ *!Must be @[GL_TEXTURE_1D].
+ *!
+ *!@param level
+ *!
+ *!Specifies the level-of-detail number.
+ *!Level 0 is the base image level.
+ *!Level @i{n@} is the @i{n@}th mipmap reduction image.
+ *!
+ *!@param xoffset
+ *!
+ *!Specifies a texel offset in the x direction within the texture array.
+ *!
+ *!@param width
+ *!
+ *!Specifies the width of the texture subimage.
+ *!
+ *!@param format
+ *!
+ *!Specifies the format of the pixel data.
+ *!The following symbolic values are accepted:
+ *!@[GL_COLOR_INDEX],
+ *!@[GL_RED],
+ *!@[GL_GREEN],
+ *!@[GL_BLUE],
+ *!@[GL_ALPHA],
+ *!@[GL_RGB],
+ *!@[GL_RGBA],
+ *!@[GL_LUMINANCE], and
+ *!@[GL_LUMINANCE_ALPHA].
+ *!
+ *!@param type
+ *!
+ *!Specifies the data type of the pixel data.
+ *!The following symbolic values are accepted:
+ *!@[GL_UNSIGNED_BYTE],
+ *!@[GL_BYTE],
+ *!@[GL_BITMAP],
+ *!@[GL_UNSIGNED_SHORT],
+ *!@[GL_SHORT],
+ *!@[GL_UNSIGNED_INT],
+ *!@[GL_INT], and
+ *!@[GL_FLOAT].
+ *!
+ *!@param pixels
+ *!
+ *!Specifies a pointer to the image data in memory.
+ *!
+ *!@throws
+ *!
+ *!@[GL_INVALID_ENUM] is generated if @i{target@} is not one of the
+ *!allowable values.
+ *!
+ *!@[GL_INVALID_OPERATION] is generated if the texture array has not
+ *!been defined by a previous @[glTexImage1D] operation.
+ *!
+ *!@[GL_INVALID_VALUE] is generated if @i{level@} is less than 0.
+ *!.P
+ *!@[GL_INVALID_VALUE] may be generated if @i{level@} is greater
+ *!than log sub 2@i{max@},
+ *!where @i{max@} is the returned value of @[GL_MAX_TEXTURE_SIZE].
+ *!
+ *!@[GL_INVALID_VALUE] is generated if "xoffset" ~<~ ~-b,
+ *!or if ("xoffset"~+~"width") ~>~ (w ~-~ b).
+ *!Where w is the @[GL_TEXTURE_WIDTH], and b is
+ *!the width of the @[GL_TEXTURE_BORDER]
+ *!of the texture image being modified.
+ *!Note that w includes twice the border width.
+ *!
+ *!@[GL_INVALID_VALUE] is generated if @i{width@} is less than 0.
+ *!
+ *!@[GL_INVALID_ENUM] is generated if @i{format@} is not an accepted
+ *!format constant.
+ *!
+ *!@[GL_INVALID_ENUM] is generated if @i{type@} is not a type constant.
+ *!
+ *!@[GL_INVALID_ENUM] is generated if @i{type@} is @[GL_BITMAP] and
+ *!@i{format@} is not @[GL_COLOR_INDEX].
+ *!
+ *!@[GL_INVALID_OPERATION] is generated if @[glTexSubImage1D] is executed
+ *!between the execution of @[glBegin] and the corresponding
+ *!execution of @[glEnd].
+ *!
+ *!
+ */
+
 /*!@decl void glTranslate(float|int|array(float|int) x, float|int|void y, float|int|void z)
  *!
  *!@[glTranslate] produces a translation by
@@ -6112,6 +6447,85 @@
  *!@[GL_INVALID_VALUE] is generated if either @i{width@} or @i{height@} is negative.
  *!
  *!@[GL_INVALID_OPERATION] is generated if @[glViewport]
+ *!is executed between the execution of @[glBegin]
+ *!and the corresponding execution of @[glEnd].
+ *!
+ *!
+ */
+
+/*!@decl void glFrustum(float left, float right, float bottom, float top, float zNear, float zFar)
+ *!
+ *!@[glFrustum] describes a perspective matrix that produces a perspective projection.
+ *!The current matrix (see @[glMatrixMode]) is multiplied by this matrix
+ *!and the result replaces the current matrix, as if
+ *!@[glMultMatrix] were called with the following matrix
+ *!as its argument:
+ *!
+ *!.sp 5
+ *!.ce
+ *!.EQ
+ *!down 130 {left ( ~~ matrix {
+ *!   ccol { {{2 ~ "zNear"} over {"right" - "left"}} above 0 above 0 above 0 }
+ *!   ccol { 0 above {{2 ~ "zNear"} over {"top" - "bottom"}} ~ above 0 above 0 }
+ *!   ccol { A ~~~~ above B ~~~~ above C ~~~~ above -1 ~~~~}
+ *!   ccol { 0 above 0 above D above 0}
+ *!}  ~~~ right )}
+ *!.EN
+ *!.sp
+ *!.ce
+ *!.EQ
+ *!down 130
+ *!{A ~=~ {"right" + "left"} over {"right" - "left"}}
+ *!.EN
+ *!.sp
+ *!.ce
+ *!.EQ
+ *!down 130
+ *!{B ~=~ {"top" + "bottom"} over {"top" - "bottom"}}
+ *!.EN
+ *!.sp
+ *!.ce
+ *!.EQ
+ *!down 130
+ *!{C ~=~ -{{"zFar" + "zNear"} over {"zFar" - "zNear"}}}
+ *!.EN
+ *!.sp
+ *!.ce
+ *!.EQ
+ *!down 130
+ *!{D ~=~ -{{2 ~ "zFar" ~ "zNear"} over {"zFar" - "zNear"}}}
+ *!.EN
+ *!.sp
+ *!
+ *!Typically, the matrix mode is @[GL_PROJECTION], and
+ *!(@i{left@}, @i{bottom@}, -@i{zNear@}) and (@i{right@}, @i{top@},  -@i{zNear@})
+ *!specify the points on the near clipping plane that are mapped
+ *!to the lower left and upper right corners of the window,
+ *!assuming that the eye is located at (0, 0, 0).
+ *!-@i{zFar@} specifies the location of the far clipping plane.
+ *!Both @i{zNear@} and @i{zFar@} must be positive.
+ *!
+ *!Use @[glPushMatrix] and @[glPopMatrix] to save and restore
+ *!the current matrix stack.
+ *!
+ *!@param left
+ *!
+ *!Specify the coordinates for the left and right vertical clipping planes.
+ *!
+ *!@param bottom
+ *!
+ *!Specify the coordinates for the bottom and top horizontal clipping planes.
+ *!
+ *!@param zNear
+ *!
+ *!Specify the distances to the near and far depth clipping planes.
+ *!Both distances must be positive.
+ *!
+ *!@throws
+ *!
+ *!@[GL_INVALID_VALUE] is generated if @i{zNear@} or @i{zFar@} is not positive.
+ *!
+ *!@[GL_INVALID_OPERATION] is generated if @[glFrustum]
  *!is executed between the execution of @[glBegin]
  *!and the corresponding execution of @[glEnd].
  *!
@@ -7707,7 +8121,7 @@
  *!If there are no right or back color buffers,
  *!only the front left color buffer is written.
  *!</c></r>
- *!<r><c>GL_AUX<i>i</i>
+ *!<r><c><ref>GL_AUX</ref><i>i</i>
  *!</c><c>Only auxiliary color buffer <i>i</i> is written.
  *!</c></r>
  *!</matrix>@}
@@ -7746,7 +8160,7 @@
  *!@[GL_LEFT],
  *!@[GL_RIGHT],
  *!@[GL_FRONT_AND_BACK], and
- *!GL_AUX@i{i@},
+ *!@[GL_AUX]@i{i@},
  *!where @i{i@} is between 0 and ``@[GL_AUX_BUFFERS]'' -1,
  *!are accepted (@[GL_AUX_BUFFERS] is not the upper limit; use @[glGet]
  *!to query the number of available aux buffers.)
@@ -8434,7 +8848,7 @@
  *!@[GL_BACK],
  *!@[GL_LEFT],
  *!@[GL_RIGHT], and
- *!GL_AUX@i{i@},
+ *!@[GL_AUX]@i{i@},
  *!where @i{i@} is between 0 and @[GL_AUX_BUFFERS] -1.
  *!
  *!@throws
@@ -8637,19 +9051,19 @@
  */
 
 /*!@decl constant GL_ACCUM = 256
- *! Used in @[glGetIntegerv], @[glPopAttrib], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv], @[glAccum], @[glGetDoublev] and @[glClear]
+ *! Used in @[glAccum], @[glPopAttrib], @[glClear] and @[glPushAttrib]
  */
 
 /*!@decl constant GL_ACCUM_ALPHA_BITS = 3419
- *! Used in @[glGetIntegerv], @[glGetBooleanv], @[glGetFloatv], @[glAccum] and @[glGetDoublev]
+ *! Used in @[glAccum]
  */
 
 /*!@decl constant GL_ACCUM_BLUE_BITS = 3418
- *! Used in @[glGetIntegerv], @[glGetBooleanv], @[glGetFloatv], @[glAccum] and @[glGetDoublev]
+ *! Used in @[glAccum]
  */
 
 /*!@decl constant GL_ACCUM_BUFFER_BIT = 512
- *! Used in @[glPopAttrib], @[glPushAttrib] and @[glClear]
+ *! Used in @[glPopAttrib], @[glClear] and @[glPushAttrib]
  */
 
 /*!@decl constant GL_ACCUM_CLEAR_VALUE = 2944
@@ -8657,11 +9071,11 @@
  */
 
 /*!@decl constant GL_ACCUM_GREEN_BITS = 3417
- *! Used in @[glGetIntegerv], @[glGetBooleanv], @[glGetFloatv], @[glAccum] and @[glGetDoublev]
+ *! Used in @[glAccum]
  */
 
 /*!@decl constant GL_ACCUM_RED_BITS = 3416
- *! Used in @[glGetIntegerv], @[glGetBooleanv], @[glGetFloatv], @[glAccum] and @[glGetDoublev]
+ *! Used in @[glAccum]
  */
 
 /*!@decl constant GL_ADD = 260
@@ -8673,27 +9087,27 @@
  */
 
 /*!@decl constant GL_ALPHA = 6406
- *! Used in @[glIsEnabled], @[glTexEnv], @[glGetIntegerv], @[glDrawPixels], @[glDisable], @[glCopyTexImage1D], @[glTexSubImage2D], @[glPopAttrib], @[glEnable], @[glPixelTransfer], @[glGetBooleanv], @[glGetTexImage], @[glPushAttrib], @[glGetFloatv], @[glGetDoublev], @[glAlphaFunc], @[glReadPixels], @[glCopyTexImage2D], @[glTexImage2D], @[glTexSubImage1D] and @[glTexImage1D]
+ *! Used in @[glTexSubImage2D], @[glPopAttrib], @[glTexImage2D], @[glIsEnabled], @[glTexSubImage1D], @[glDisable], @[glPushAttrib], @[glGetTexImage], @[glCopyTexImage1D], @[glAlphaFunc], @[glDrawPixels], @[glEnable], @[glReadPixels], @[glTexEnv], @[glCopyTexImage2D] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_ALPHA12 = 32829
- *! Used in @[glCopyTexImage1D], @[glCopyTexImage2D], @[glTexImage2D] and @[glTexImage1D]
+ *! Used in @[glTexImage2D], @[glCopyTexImage1D], @[glCopyTexImage2D] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_ALPHA16 = 32830
- *! Used in @[glCopyTexImage1D], @[glCopyTexImage2D], @[glTexImage2D] and @[glTexImage1D]
+ *! Used in @[glTexImage2D], @[glCopyTexImage1D], @[glCopyTexImage2D] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_ALPHA4 = 32827
- *! Used in @[glCopyTexImage1D], @[glCopyTexImage2D], @[glTexImage2D] and @[glTexImage1D]
+ *! Used in @[glTexImage2D], @[glCopyTexImage1D], @[glCopyTexImage2D] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_ALPHA8 = 32828
- *! Used in @[glCopyTexImage1D], @[glCopyTexImage2D], @[glTexImage2D] and @[glTexImage1D]
+ *! Used in @[glTexImage2D], @[glCopyTexImage1D], @[glCopyTexImage2D] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_ALPHA_BIAS = 3357
- *! Used in @[glGetIntegerv], @[glPopAttrib], @[glPixelTransfer], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv] and @[glGetDoublev]
+ *! Used in @[glPopAttrib] and @[glPushAttrib]
  */
 
 /*!@decl constant GL_ALPHA_BITS = 3413
@@ -8701,11 +9115,11 @@
  */
 
 /*!@decl constant GL_ALPHA_SCALE = 3356
- *! Used in @[glGetIntegerv], @[glPopAttrib], @[glPixelTransfer], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv] and @[glGetDoublev]
+ *! Used in @[glPopAttrib] and @[glPushAttrib]
  */
 
 /*!@decl constant GL_ALPHA_TEST = 3008
- *! Used in @[glIsEnabled], @[glGetIntegerv], @[glDisable], @[glPopAttrib], @[glEnable], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv], @[glGetDoublev] and @[glAlphaFunc]
+ *! Used in @[glPopAttrib], @[glIsEnabled], @[glDisable], @[glPushAttrib], @[glAlphaFunc] and @[glEnable]
  */
 
 /*!@decl constant GL_ALPHA_TEST_FUNC = 3009
@@ -8717,15 +9131,15 @@
  */
 
 /*!@decl constant GL_ALWAYS = 519
- *! Used in @[glGetIntegerv], @[glGetBooleanv], @[glGetFloatv], @[glGetDoublev], @[glAlphaFunc], @[glDepthFunc] and @[glStencilFunc]
+ *! Used in @[glStencilFunc], @[glDepthFunc] and @[glAlphaFunc]
  */
 
 /*!@decl constant GL_AMBIENT = 4608
- *! Used in @[glGetIntegerv], @[glColorMaterial], @[glGetLight], @[glGetBooleanv], @[glGetFloatv], @[glMaterial], @[glGetDoublev], @[glLight] and @[glGetMaterial]
+ *! Used in @[glColorMaterial], @[glMaterial] and @[glLight]
  */
 
 /*!@decl constant GL_AMBIENT_AND_DIFFUSE = 5634
- *! Used in @[glGetIntegerv], @[glColorMaterial], @[glGetBooleanv], @[glGetFloatv], @[glMaterial] and @[glGetDoublev]
+ *! Used in @[glColorMaterial] and @[glMaterial]
  */
 
 /*!@decl constant GL_AND = 5377
@@ -8745,7 +9159,7 @@
  */
 
 /*!@decl constant GL_AUTO_NORMAL = 3456
- *! Used in @[glIsEnabled], @[glGetIntegerv], @[glDisable], @[glPopAttrib], @[glEnable], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv], @[glGetDoublev] and @[glEvalCoord]
+ *! Used in @[glEvalCoord], @[glPopAttrib], @[glIsEnabled], @[glDisable], @[glPushAttrib] and @[glEnable]
  */
 
 /*!@decl constant GL_AUX0 = 1033
@@ -8763,14 +9177,14 @@
  */
 
 /*!@decl constant GL_AUX_BUFFERS = 3072
- *! Used in @[glGetIntegerv], @[glGetBooleanv], @[glGetFloatv], @[glReadBuffer], @[glGetDoublev] and @[glDrawBuffer]
+ *! Used in @[glReadBuffer] and @[glDrawBuffer]
  */
 
 /*!@decl constant GL_AVERAGE_EXT = 33589
  */
 
 /*!@decl constant GL_BACK = 1029
- *! Used in @[glGetIntegerv], @[glColorMaterial], @[glCullFace], @[glPolygonMode], @[glGetBooleanv], @[glGetFloatv], @[glReadBuffer], @[glMaterial], @[glGetDoublev], @[glDrawBuffer] and @[glGetMaterial]
+ *! Used in @[glCullFace], @[glColorMaterial], @[glReadBuffer], @[glPolygonMode], @[glMaterial] and @[glDrawBuffer]
  */
 
 /*!@decl constant GL_BACK_LEFT = 1026
@@ -8788,7 +9202,7 @@
  */
 
 /*!@decl constant GL_BITMAP = 6656
- *! Used in @[glDrawPixels], @[glTexSubImage2D], @[glGetTexImage], @[glReadPixels], @[glTexImage2D], @[glFeedbackBuffer], @[glGetPolygonStipple], @[glBitmap], @[glTexSubImage1D], @[glTexImage1D] and @[glPolygonStipple]
+ *! Used in @[glTexSubImage2D], @[glFeedbackBuffer], @[glTexImage2D], @[glTexSubImage1D], @[glGetTexImage], @[glDrawPixels], @[glReadPixels] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_BITMAP_TOKEN = 1796
@@ -8796,7 +9210,7 @@
  */
 
 /*!@decl constant GL_BLEND = 3042
- *! Used in @[glIsEnabled], @[glTexEnv], @[glGetIntegerv], @[glBlendColorEXT], @[glBlendFunc], @[glDisable], @[glPopAttrib], @[glEnable], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv] and @[glGetDoublev]
+ *! Used in @[glPopAttrib], @[glIsEnabled], @[glDisable], @[glPushAttrib], @[glEnable], @[glTexEnv] and @[glBlendFunc]
  */
 
 /*!@decl constant GL_BLEND_COLOR_EXT = 32773
@@ -8816,11 +9230,11 @@
  */
 
 /*!@decl constant GL_BLUE = 6405
- *! Used in @[glGetIntegerv], @[glDrawPixels], @[glTexSubImage2D], @[glPopAttrib], @[glPixelTransfer], @[glGetBooleanv], @[glGetTexImage], @[glPushAttrib], @[glGetFloatv], @[glGetDoublev], @[glReadPixels], @[glTexImage2D], @[glTexSubImage1D] and @[glTexImage1D]
+ *! Used in @[glTexSubImage2D], @[glPopAttrib], @[glTexImage2D], @[glTexSubImage1D], @[glPushAttrib], @[glGetTexImage], @[glDrawPixels], @[glReadPixels] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_BLUE_BIAS = 3355
- *! Used in @[glGetIntegerv], @[glPopAttrib], @[glPixelTransfer], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv] and @[glGetDoublev]
+ *! Used in @[glPopAttrib] and @[glPushAttrib]
  */
 
 /*!@decl constant GL_BLUE_BITS = 3412
@@ -8828,11 +9242,11 @@
  */
 
 /*!@decl constant GL_BLUE_SCALE = 3354
- *! Used in @[glGetIntegerv], @[glPopAttrib], @[glPixelTransfer], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv] and @[glGetDoublev]
+ *! Used in @[glPopAttrib] and @[glPushAttrib]
  */
 
 /*!@decl constant GL_BYTE = 5120
- *! Used in @[glDrawPixels], @[glColorPointer], @[glTexSubImage2D], @[glNormalPointer], @[glGetTexImage], @[glCallLists], @[glReadPixels], @[glTexImage2D], @[glTexSubImage1D] and @[glTexImage1D]
+ *! Used in @[glTexSubImage2D], @[glTexImage2D], @[glTexSubImage1D], @[glNormalPointer], @[glColorPointer], @[glGetTexImage], @[glDrawPixels], @[glReadPixels] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_C3F_V3F = 10788
@@ -8852,7 +9266,7 @@
  */
 
 /*!@decl constant GL_CCW = 2305
- *! Used in @[glGetIntegerv], @[glGetBooleanv], @[glGetFloatv], @[glGetDoublev] and @[glFrontFace]
+ *! Used in @[glFrontFace]
  */
 
 /*!@decl constant GL_CLAMP = 10496
@@ -8863,7 +9277,7 @@
  *! Used in @[glLogicOp]
  */
 
-/*!@decl constant GL_CLIENT_ALL_ATTRIB_BITS = 4294967295
+/*!@decl constant GL_CLIENT_ALL_ATTRIB_BITS = -1
  *! Used in @[glPopClientAttrib] and @[glPushClientAttrib]
  */
 
@@ -8902,11 +9316,11 @@
  */
 
 /*!@decl constant GL_COLOR = 6144
- *! Used in @[glIsEnabled], @[glGetIntegerv], @[glDrawElements], @[glDrawArrays], @[glColorMaterial], @[glDrawPixels], @[glDisable], @[glColorPointer], @[glTexSubImage2D], @[glPopAttrib], @[glEnable], @[glEnableClientState], @[glGetPointerv], @[glPixelTransfer], @[glLogicOp], @[glGetBooleanv], @[glGetTexImage], @[glPushAttrib], @[glGetFloatv], @[glMaterial], @[glGetDoublev], @[glReadPixels], @[glTexImage2D], @[glGetPolygonStipple], @[glBitmap], @[glCopyPixels], @[glLightModel], @[glDisableClientState], @[glTexSubImage1D], @[glTexImage1D], @[glGetMaterial], @[glClear] and @[glPolygonStipple]
+ *! Used in @[glTexSubImage2D], @[glDrawArrays], @[glDisableClientState], @[glColorMaterial], @[glLogicOp], @[glPopAttrib], @[glClear], @[glLightModel], @[glTexImage2D], @[glIsEnabled], @[glTexSubImage1D], @[glDisable], @[glCopyPixels], @[glColorPointer], @[glMaterial], @[glPushAttrib], @[glGetTexImage], @[glDrawPixels], @[glEnable], @[glEnableClientState], @[glReadPixels] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_COLOR_ARRAY = 32886
- *! Used in @[glIsEnabled], @[glGetIntegerv], @[glDrawElements], @[glDrawArrays], @[glColorPointer], @[glEnableClientState], @[glGetPointerv], @[glGetBooleanv], @[glGetFloatv], @[glGetDoublev] and @[glDisableClientState]
+ *! Used in @[glDrawArrays], @[glDisableClientState], @[glIsEnabled], @[glColorPointer] and @[glEnableClientState]
  */
 
 /*!@decl constant GL_COLOR_ARRAY_POINTER = 32912
@@ -8926,7 +9340,7 @@
  */
 
 /*!@decl constant GL_COLOR_BUFFER_BIT = 16384
- *! Used in @[glPopAttrib], @[glPushAttrib] and @[glClear]
+ *! Used in @[glPopAttrib], @[glClear] and @[glPushAttrib]
  */
 
 /*!@decl constant GL_COLOR_CLEAR_VALUE = 3106
@@ -8934,23 +9348,23 @@
  */
 
 /*!@decl constant GL_COLOR_INDEX = 6400
- *! Used in @[glDrawPixels], @[glTexSubImage2D], @[glPixelTransfer], @[glGetTexImage], @[glMaterial], @[glReadPixels], @[glTexImage2D], @[glGetPolygonStipple], @[glBitmap], @[glLightModel], @[glTexSubImage1D], @[glTexImage1D], @[glGetMaterial] and @[glPolygonStipple]
+ *! Used in @[glTexSubImage2D], @[glLightModel], @[glTexImage2D], @[glTexSubImage1D], @[glMaterial], @[glGetTexImage], @[glDrawPixels], @[glReadPixels] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_COLOR_INDEXES = 5635
- *! Used in @[glMaterial], @[glLightModel] and @[glGetMaterial]
+ *! Used in @[glLightModel] and @[glMaterial]
  */
 
 /*!@decl constant GL_COLOR_LOGIC_OP = 3058
- *! Used in @[glIsEnabled], @[glGetIntegerv], @[glDisable], @[glPopAttrib], @[glEnable], @[glLogicOp], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv] and @[glGetDoublev]
+ *! Used in @[glLogicOp], @[glPopAttrib], @[glIsEnabled], @[glDisable], @[glPushAttrib] and @[glEnable]
  */
 
 /*!@decl constant GL_COLOR_MATERIAL = 2903
- *! Used in @[glIsEnabled], @[glGetIntegerv], @[glColorMaterial], @[glDisable], @[glPopAttrib], @[glEnable], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv] and @[glGetDoublev]
+ *! Used in @[glColorMaterial], @[glPopAttrib], @[glIsEnabled], @[glDisable], @[glPushAttrib] and @[glEnable]
  */
 
 /*!@decl constant GL_COLOR_MATERIAL_FACE = 2901
- *! Used in @[glGetIntegerv], @[glPopAttrib], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv] and @[glGetDoublev]
+ *! Used in @[glPopAttrib] and @[glPushAttrib]
  */
 
 /*!@decl constant GL_COLOR_MATERIAL_PARAMETER = 2902
@@ -9008,11 +9422,15 @@
 /*!@decl constant GL_COMPRESSED_GEOM_VERSION_SUNX = 33233
  */
 
+/*!@decl constant GL_CONSTANT = 34166
+ *! Used in @[glLight]
+ */
+
 /*!@decl constant GL_CONSTANT_ALPHA_EXT = 32771
  */
 
 /*!@decl constant GL_CONSTANT_ATTENUATION = 4615
- *! Used in @[glGetLight] and @[glLight]
+ *! Used in @[glLight]
  */
 
 /*!@decl constant GL_CONSTANT_BORDER_HP = 33105
@@ -9049,7 +9467,7 @@
  */
 
 /*!@decl constant GL_COPY = 5379
- *! Used in @[glGetIntegerv], @[glLogicOp], @[glGetBooleanv], @[glGetFloatv], @[glGetDoublev] and @[glFeedbackBuffer]
+ *! Used in @[glLogicOp] and @[glFeedbackBuffer]
  */
 
 /*!@decl constant GL_COPY_INVERTED = 5388
@@ -9064,11 +9482,11 @@
  */
 
 /*!@decl constant GL_CULL_FACE = 2884
- *! Used in @[glIsEnabled], @[glGetIntegerv], @[glCullFace], @[glDisable], @[glPopAttrib], @[glEnable], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv], @[glGetDoublev] and @[glFrontFace]
+ *! Used in @[glCullFace], @[glPopAttrib], @[glIsEnabled], @[glDisable], @[glPushAttrib], @[glEnable] and @[glFrontFace]
  */
 
 /*!@decl constant GL_CULL_FACE_MODE = 2885
- *! Used in @[glGetIntegerv], @[glPopAttrib], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv] and @[glGetDoublev]
+ *! Used in @[glPopAttrib] and @[glPushAttrib]
  */
 
 /*!@decl constant GL_CURRENT_BIT = 1
@@ -9076,11 +9494,11 @@
  */
 
 /*!@decl constant GL_CURRENT_COLOR = 2816
- *! Used in @[glGetIntegerv], @[glGetBooleanv], @[glGetFloatv], @[glGetDoublev] and @[glRasterPos]
+ *! Used in @[glRasterPos]
  */
 
 /*!@decl constant GL_CURRENT_INDEX = 2817
- *! Used in @[glGetIntegerv], @[glGetBooleanv], @[glGetFloatv], @[glGetDoublev] and @[glRasterPos]
+ *! Used in @[glRasterPos]
  */
 
 /*!@decl constant GL_CURRENT_NORMAL = 2818
@@ -9088,31 +9506,31 @@
  */
 
 /*!@decl constant GL_CURRENT_RASTER_COLOR = 2820
- *! Used in @[glGetIntegerv], @[glGetBooleanv], @[glGetFloatv], @[glGetDoublev] and @[glRasterPos]
+ *! Used in @[glRasterPos]
  */
 
 /*!@decl constant GL_CURRENT_RASTER_DISTANCE = 2825
- *! Used in @[glGetIntegerv], @[glGetBooleanv], @[glGetFloatv], @[glGetDoublev] and @[glRasterPos]
+ *! Used in @[glRasterPos]
  */
 
 /*!@decl constant GL_CURRENT_RASTER_INDEX = 2821
- *! Used in @[glGetIntegerv], @[glGetBooleanv], @[glGetFloatv], @[glGetDoublev] and @[glRasterPos]
+ *! Used in @[glRasterPos]
  */
 
 /*!@decl constant GL_CURRENT_RASTER_POSITION = 2823
- *! Used in @[glGetIntegerv], @[glDrawPixels], @[glPopAttrib], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv], @[glGetDoublev] and @[glRasterPos]
+ *! Used in @[glPopAttrib], @[glPushAttrib], @[glRasterPos] and @[glDrawPixels]
  */
 
 /*!@decl constant GL_CURRENT_RASTER_POSITION_VALID = 2824
- *! Used in @[glGetIntegerv], @[glPopAttrib], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv], @[glGetDoublev] and @[glRasterPos]
+ *! Used in @[glPopAttrib], @[glPushAttrib] and @[glRasterPos]
  */
 
 /*!@decl constant GL_CURRENT_RASTER_TEXTURE_COORDS = 2822
- *! Used in @[glGetIntegerv], @[glGetBooleanv], @[glGetFloatv], @[glGetDoublev] and @[glRasterPos]
+ *! Used in @[glRasterPos]
  */
 
 /*!@decl constant GL_CURRENT_TEXTURE_COORDS = 2819
- *! Used in @[glGetIntegerv], @[glGetBooleanv], @[glGetFloatv], @[glGetDoublev] and @[glRasterPos]
+ *! Used in @[glRasterPos]
  */
 
 /*!@decl constant GL_CW = 2304
@@ -9128,11 +9546,11 @@
  */
 
 /*!@decl constant GL_DEPTH = 6145
- *! Used in @[glIsEnabled], @[glGetIntegerv], @[glDrawPixels], @[glDisable], @[glPopAttrib], @[glEnable], @[glPixelTransfer], @[glGetBooleanv], @[glGetTexImage], @[glPushAttrib], @[glGetFloatv], @[glGetDoublev], @[glReadPixels], @[glTexImage2D], @[glCopyPixels], @[glDepthFunc], @[glTexImage1D] and @[glClear]
+ *! Used in @[glPopAttrib], @[glClear], @[glTexImage2D], @[glIsEnabled], @[glDisable], @[glDepthFunc], @[glCopyPixels], @[glPushAttrib], @[glGetTexImage], @[glDrawPixels], @[glEnable], @[glReadPixels] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_DEPTH_BIAS = 3359
- *! Used in @[glGetIntegerv], @[glDrawPixels], @[glPopAttrib], @[glPixelTransfer], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv], @[glGetDoublev], @[glReadPixels] and @[glCopyPixels]
+ *! Used in @[glPopAttrib], @[glCopyPixels], @[glPushAttrib], @[glDrawPixels] and @[glReadPixels]
  */
 
 /*!@decl constant GL_DEPTH_BITS = 3414
@@ -9140,7 +9558,7 @@
  */
 
 /*!@decl constant GL_DEPTH_BUFFER_BIT = 256
- *! Used in @[glPopAttrib], @[glPushAttrib] and @[glClear]
+ *! Used in @[glPopAttrib], @[glClear] and @[glPushAttrib]
  */
 
 /*!@decl constant GL_DEPTH_CLEAR_VALUE = 2931
@@ -9148,7 +9566,7 @@
  */
 
 /*!@decl constant GL_DEPTH_COMPONENT = 6402
- *! Used in @[glDrawPixels], @[glGetTexImage], @[glReadPixels], @[glTexImage2D] and @[glTexImage1D]
+ *! Used in @[glTexImage2D], @[glGetTexImage], @[glDrawPixels], @[glReadPixels] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_DEPTH_FUNC = 2932
@@ -9160,23 +9578,23 @@
  */
 
 /*!@decl constant GL_DEPTH_SCALE = 3358
- *! Used in @[glGetIntegerv], @[glDrawPixels], @[glPopAttrib], @[glPixelTransfer], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv], @[glGetDoublev], @[glReadPixels] and @[glCopyPixels]
+ *! Used in @[glPopAttrib], @[glCopyPixels], @[glPushAttrib], @[glDrawPixels] and @[glReadPixels]
  */
 
 /*!@decl constant GL_DEPTH_TEST = 2929
- *! Used in @[glIsEnabled], @[glGetIntegerv], @[glDisable], @[glPopAttrib], @[glEnable], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv], @[glGetDoublev] and @[glDepthFunc]
+ *! Used in @[glPopAttrib], @[glIsEnabled], @[glDisable], @[glDepthFunc], @[glPushAttrib] and @[glEnable]
  */
 
 /*!@decl constant GL_DEPTH_WRITEMASK = 2930
- *! Used in @[glGetIntegerv], @[glPopAttrib], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv] and @[glGetDoublev]
+ *! Used in @[glPopAttrib] and @[glPushAttrib]
  */
 
 /*!@decl constant GL_DIFFUSE = 4609
- *! Used in @[glColorMaterial], @[glGetLight], @[glMaterial], @[glLight] and @[glGetMaterial]
+ *! Used in @[glColorMaterial], @[glMaterial] and @[glLight]
  */
 
 /*!@decl constant GL_DITHER = 3024
- *! Used in @[glIsEnabled], @[glGetIntegerv], @[glDisable], @[glPopAttrib], @[glEnable], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv] and @[glGetDoublev]
+ *! Used in @[glPopAttrib], @[glIsEnabled], @[glDisable], @[glPushAttrib] and @[glEnable]
  */
 
 /*!@decl constant GL_DOMAIN = 2562
@@ -9184,11 +9602,11 @@
  */
 
 /*!@decl constant GL_DONT_CARE = 4352
- *! Used in @[glGetIntegerv], @[glGetBooleanv], @[glGetFloatv], @[glGetDoublev] and @[glHint]
+ *! Used in @[glHint]
  */
 
 /*!@decl constant GL_DOUBLE = 5130
- *! Used in @[glGetIntegerv], @[glVertexPointer], @[glColorPointer], @[glNormalPointer], @[glGetBooleanv], @[glGetFloatv], @[glGetDoublev], @[glTexCoordPointer] and @[glIndexPointer]
+ *! Used in @[glIndexPointer], @[glNormalPointer], @[glVertexPointer], @[glColorPointer] and @[glTexCoordPointer]
  */
 
 /*!@decl constant GL_DOUBLEBUFFER = 3122
@@ -9196,7 +9614,7 @@
  */
 
 /*!@decl constant GL_DRAW_BUFFER = 3073
- *! Used in @[glGetIntegerv], @[glPopAttrib], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv] and @[glGetDoublev]
+ *! Used in @[glPopAttrib] and @[glPushAttrib]
  */
 
 /*!@decl constant GL_DRAW_PIXEL_TOKEN = 1797
@@ -9212,11 +9630,11 @@
  */
 
 /*!@decl constant GL_EDGE_FLAG = 2883
- *! Used in @[glIsEnabled], @[glGetIntegerv], @[glPopAttrib], @[glEnableClientState], @[glGetPointerv], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv], @[glEdgeFlagPointer], @[glGetDoublev] and @[glDisableClientState]
+ *! Used in @[glDisableClientState], @[glEdgeFlagPointer], @[glPopAttrib], @[glIsEnabled], @[glPushAttrib] and @[glEnableClientState]
  */
 
 /*!@decl constant GL_EDGE_FLAG_ARRAY = 32889
- *! Used in @[glIsEnabled], @[glGetIntegerv], @[glEnableClientState], @[glGetPointerv], @[glGetBooleanv], @[glGetFloatv], @[glEdgeFlagPointer], @[glGetDoublev] and @[glDisableClientState]
+ *! Used in @[glDisableClientState], @[glEdgeFlagPointer], @[glIsEnabled] and @[glEnableClientState]
  */
 
 /*!@decl constant GL_EDGE_FLAG_ARRAY_POINTER = 32915
@@ -9228,7 +9646,7 @@
  */
 
 /*!@decl constant GL_EMISSION = 5632
- *! Used in @[glColorMaterial], @[glMaterial] and @[glGetMaterial]
+ *! Used in @[glColorMaterial] and @[glMaterial]
  */
 
 /*!@decl constant GL_ENABLE_BIT = 8192
@@ -9236,7 +9654,7 @@
  */
 
 /*!@decl constant GL_EQUAL = 514
- *! Used in @[glAlphaFunc], @[glDepthFunc] and @[glStencilFunc]
+ *! Used in @[glStencilFunc], @[glDepthFunc] and @[glAlphaFunc]
  */
 
 /*!@decl constant GL_EQUIV = 5385
@@ -9248,7 +9666,7 @@
  */
 
 /*!@decl constant GL_EXP = 2048
- *! Used in @[glFog], @[glGetIntegerv], @[glGetBooleanv], @[glGetFloatv] and @[glGetDoublev]
+ *! Used in @[glFog]
  */
 
 /*!@decl constant GL_EXP2 = 2049
@@ -9287,15 +9705,15 @@
  */
 
 /*!@decl constant GL_EYE_LINEAR = 9216
- *! Used in @[glGetTexGen] and @[glTexGen]
+ *! Used in @[glTexGen]
  */
 
 /*!@decl constant GL_EYE_PLANE = 9474
- *! Used in @[glGetTexGen] and @[glTexGen]
+ *! Used in @[glTexGen]
  */
 
 /*!@decl constant GL_FALSE = 0
- *! Used in @[glIsEnabled], @[glDepthMask], @[glIsList], @[glAreTexturesResident], @[glGetIntegerv], @[glIsTexture], @[glDisable], @[glEdgeFlag], @[glEnable], @[glColorMask], @[glGetBooleanv], @[glGetFloatv], @[glGetDoublev] and @[glEdgeFlagv]
+ *! Used in @[glIsEnabled], @[glDisable], @[glIsList], @[glIsTexture], @[glColorMask], @[glEnable], @[glEdgeFlag] and @[glDepthMask]
  */
 
 /*!@decl constant GL_FASTEST = 4353
@@ -9303,7 +9721,7 @@
  */
 
 /*!@decl constant GL_FEEDBACK = 7169
- *! Used in @[glRenderMode], @[glPassThrough], @[glGetPointerv] and @[glFeedbackBuffer]
+ *! Used in @[glFeedbackBuffer], @[glRenderMode] and @[glPassThrough]
  */
 
 /*!@decl constant GL_FEEDBACK_BUFFER_POINTER = 3568
@@ -9317,7 +9735,7 @@
  */
 
 /*!@decl constant GL_FILL = 6914
- *! Used in @[glGetIntegerv], @[glDisable], @[glEnable], @[glPolygonMode], @[glGetBooleanv], @[glGetFloatv], @[glGetDoublev] and @[glEvalMesh]
+ *! Used in @[glPolygonMode], @[glDisable] and @[glEnable]
  */
 
 /*!@decl constant GL_FLAT = 7424
@@ -9325,11 +9743,11 @@
  */
 
 /*!@decl constant GL_FLOAT = 5126
- *! Used in @[glGetIntegerv], @[glDrawPixels], @[glVertexPointer], @[glColorPointer], @[glTexSubImage2D], @[glNormalPointer], @[glGetBooleanv], @[glGetTexImage], @[glGetFloatv], @[glGetDoublev], @[glCallLists], @[glReadPixels], @[glTexImage2D], @[glTexCoordPointer], @[glIndexPointer], @[glTexSubImage1D] and @[glTexImage1D]
+ *! Used in @[glTexSubImage2D], @[glTexImage2D], @[glIndexPointer], @[glTexSubImage1D], @[glNormalPointer], @[glVertexPointer], @[glColorPointer], @[glGetTexImage], @[glTexCoordPointer], @[glDrawPixels], @[glReadPixels] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_FOG = 2912
- *! Used in @[glIsEnabled], @[glFog], @[glGetIntegerv], @[glDisable], @[glPopAttrib], @[glEnable], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv], @[glGetDoublev] and @[glHint]
+ *! Used in @[glPopAttrib], @[glIsEnabled], @[glDisable], @[glPushAttrib], @[glFog], @[glHint] and @[glEnable]
  */
 
 /*!@decl constant GL_FOG_BIT = 128
@@ -9337,43 +9755,43 @@
  */
 
 /*!@decl constant GL_FOG_COLOR = 2918
- *! Used in @[glFog], @[glGetIntegerv], @[glGetBooleanv], @[glGetFloatv] and @[glGetDoublev]
+ *! Used in @[glFog]
  */
 
 /*!@decl constant GL_FOG_DENSITY = 2914
- *! Used in @[glFog], @[glGetIntegerv], @[glGetBooleanv], @[glGetFloatv] and @[glGetDoublev]
+ *! Used in @[glFog]
  */
 
 /*!@decl constant GL_FOG_END = 2916
- *! Used in @[glFog], @[glGetIntegerv], @[glGetBooleanv], @[glGetFloatv] and @[glGetDoublev]
+ *! Used in @[glFog]
  */
 
 /*!@decl constant GL_FOG_HINT = 3156
- *! Used in @[glGetIntegerv], @[glPopAttrib], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv], @[glGetDoublev] and @[glHint]
+ *! Used in @[glPopAttrib], @[glPushAttrib] and @[glHint]
  */
 
 /*!@decl constant GL_FOG_INDEX = 2913
- *! Used in @[glFog], @[glGetIntegerv], @[glGetBooleanv], @[glGetFloatv] and @[glGetDoublev]
+ *! Used in @[glFog]
  */
 
 /*!@decl constant GL_FOG_MODE = 2917
- *! Used in @[glFog], @[glGetIntegerv], @[glPopAttrib], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv] and @[glGetDoublev]
+ *! Used in @[glPopAttrib], @[glPushAttrib] and @[glFog]
  */
 
 /*!@decl constant GL_FOG_START = 2915
- *! Used in @[glFog], @[glGetIntegerv], @[glGetBooleanv], @[glGetFloatv] and @[glGetDoublev]
+ *! Used in @[glFog]
  */
 
 /*!@decl constant GL_FRONT = 1028
- *! Used in @[glGetIntegerv], @[glColorMaterial], @[glCullFace], @[glPopAttrib], @[glPolygonMode], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv], @[glReadBuffer], @[glMaterial], @[glGetDoublev], @[glDrawBuffer] and @[glGetMaterial]
+ *! Used in @[glCullFace], @[glColorMaterial], @[glPopAttrib], @[glReadBuffer], @[glPolygonMode], @[glMaterial], @[glPushAttrib] and @[glDrawBuffer]
  */
 
 /*!@decl constant GL_FRONT_AND_BACK = 1032
- *! Used in @[glGetIntegerv], @[glColorMaterial], @[glCullFace], @[glPolygonMode], @[glGetBooleanv], @[glGetFloatv], @[glMaterial], @[glGetDoublev] and @[glDrawBuffer]
+ *! Used in @[glCullFace], @[glColorMaterial], @[glPolygonMode], @[glMaterial] and @[glDrawBuffer]
  */
 
 /*!@decl constant GL_FRONT_FACE = 2886
- *! Used in @[glGetIntegerv], @[glPopAttrib], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv] and @[glGetDoublev]
+ *! Used in @[glPopAttrib] and @[glPushAttrib]
  */
 
 /*!@decl constant GL_FRONT_LEFT = 1024
@@ -9395,19 +9813,19 @@
  */
 
 /*!@decl constant GL_GEQUAL = 518
- *! Used in @[glAlphaFunc], @[glDepthFunc] and @[glStencilFunc]
+ *! Used in @[glStencilFunc], @[glDepthFunc] and @[glAlphaFunc]
  */
 
 /*!@decl constant GL_GREATER = 516
- *! Used in @[glAlphaFunc], @[glDepthFunc] and @[glStencilFunc]
+ *! Used in @[glStencilFunc], @[glDepthFunc] and @[glAlphaFunc]
  */
 
 /*!@decl constant GL_GREEN = 6404
- *! Used in @[glGetIntegerv], @[glDrawPixels], @[glTexSubImage2D], @[glPopAttrib], @[glPixelTransfer], @[glGetBooleanv], @[glGetTexImage], @[glPushAttrib], @[glGetFloatv], @[glGetDoublev], @[glReadPixels], @[glTexImage2D], @[glTexSubImage1D] and @[glTexImage1D]
+ *! Used in @[glTexSubImage2D], @[glPopAttrib], @[glTexImage2D], @[glTexSubImage1D], @[glPushAttrib], @[glGetTexImage], @[glDrawPixels], @[glReadPixels] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_GREEN_BIAS = 3353
- *! Used in @[glGetIntegerv], @[glPopAttrib], @[glPixelTransfer], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv] and @[glGetDoublev]
+ *! Used in @[glPopAttrib] and @[glPushAttrib]
  */
 
 /*!@decl constant GL_GREEN_BITS = 3411
@@ -9415,7 +9833,7 @@
  */
 
 /*!@decl constant GL_GREEN_SCALE = 3352
- *! Used in @[glGetIntegerv], @[glPopAttrib], @[glPixelTransfer], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv] and @[glGetDoublev]
+ *! Used in @[glPopAttrib] and @[glPushAttrib]
  */
 
 /*!@decl constant GL_HINT_BIT = 32768
@@ -9463,7 +9881,7 @@
  */
 
 /*!@decl constant GL_INDEX_ARRAY = 32887
- *! Used in @[glIsEnabled], @[glGetIntegerv], @[glEnableClientState], @[glGetPointerv], @[glGetBooleanv], @[glGetFloatv], @[glGetDoublev], @[glIndexPointer] and @[glDisableClientState]
+ *! Used in @[glDisableClientState], @[glIndexPointer], @[glIsEnabled] and @[glEnableClientState]
  */
 
 /*!@decl constant GL_INDEX_ARRAY_POINTER = 32913
@@ -9487,7 +9905,7 @@
  */
 
 /*!@decl constant GL_INDEX_LOGIC_OP = 3057
- *! Used in @[glIsEnabled], @[glGetIntegerv], @[glDisable], @[glPopAttrib], @[glEnable], @[glLogicOp], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv] and @[glGetDoublev]
+ *! Used in @[glLogicOp], @[glPopAttrib], @[glIsEnabled], @[glDisable], @[glPushAttrib] and @[glEnable]
  */
 
 /*!@decl constant GL_INDEX_MODE = 3120
@@ -9495,11 +9913,11 @@
  */
 
 /*!@decl constant GL_INDEX_OFFSET = 3347
- *! Used in @[glGetIntegerv], @[glDrawPixels], @[glPopAttrib], @[glPixelTransfer], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv], @[glGetDoublev], @[glReadPixels], @[glTexImage2D], @[glCopyPixels] and @[glTexImage1D]
+ *! Used in @[glPopAttrib], @[glTexImage2D], @[glCopyPixels], @[glPushAttrib], @[glDrawPixels], @[glReadPixels] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_INDEX_SHIFT = 3346
- *! Used in @[glGetIntegerv], @[glDrawPixels], @[glPopAttrib], @[glPixelTransfer], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv], @[glGetDoublev], @[glReadPixels], @[glTexImage2D], @[glCopyPixels] and @[glTexImage1D]
+ *! Used in @[glPopAttrib], @[glTexImage2D], @[glCopyPixels], @[glPushAttrib], @[glDrawPixels], @[glReadPixels] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_INDEX_WRITEMASK = 3105
@@ -9507,39 +9925,39 @@
  */
 
 /*!@decl constant GL_INT = 5124
- *! Used in @[glTexEnv], @[glDrawPixels], @[glVertexPointer], @[glColorPointer], @[glCopyTexImage1D], @[glTexSubImage2D], @[glNormalPointer], @[glGetTexImage], @[glCallLists], @[glReadPixels], @[glCopyTexImage2D], @[glTexImage2D], @[glTexCoordPointer], @[glIndexPointer], @[glTexSubImage1D] and @[glTexImage1D]
+ *! Used in @[glTexSubImage2D], @[glTexImage2D], @[glIndexPointer], @[glTexSubImage1D], @[glNormalPointer], @[glVertexPointer], @[glColorPointer], @[glGetTexImage], @[glTexCoordPointer], @[glCopyTexImage1D], @[glDrawPixels], @[glReadPixels], @[glTexEnv], @[glCopyTexImage2D] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_INTENSITY = 32841
- *! Used in @[glTexEnv], @[glCopyTexImage1D], @[glCopyTexImage2D], @[glTexImage2D] and @[glTexImage1D]
+ *! Used in @[glTexImage2D], @[glCopyTexImage1D], @[glTexEnv], @[glCopyTexImage2D] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_INTENSITY12 = 32844
- *! Used in @[glCopyTexImage1D], @[glCopyTexImage2D], @[glTexImage2D] and @[glTexImage1D]
+ *! Used in @[glTexImage2D], @[glCopyTexImage1D], @[glCopyTexImage2D] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_INTENSITY16 = 32845
- *! Used in @[glCopyTexImage1D], @[glCopyTexImage2D], @[glTexImage2D] and @[glTexImage1D]
+ *! Used in @[glTexImage2D], @[glCopyTexImage1D], @[glCopyTexImage2D] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_INTENSITY4 = 32842
- *! Used in @[glCopyTexImage1D], @[glCopyTexImage2D], @[glTexImage2D] and @[glTexImage1D]
+ *! Used in @[glTexImage2D], @[glCopyTexImage1D], @[glCopyTexImage2D] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_INTENSITY8 = 32843
- *! Used in @[glCopyTexImage1D], @[glCopyTexImage2D], @[glTexImage2D] and @[glTexImage1D]
+ *! Used in @[glTexImage2D], @[glCopyTexImage1D], @[glCopyTexImage2D] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_INVALID_ENUM = 1280
- *! Used in @[glMatrixMode], @[glPixelStore], @[glIsEnabled], @[glGetTexLevelParameter], @[glFog], @[glTexEnv], @[glMap1], @[glRenderMode], @[glGetTexGen], @[glGetIntegerv], @[glEnd], @[glDrawElements], @[glDrawArrays], @[glCopyTexSubImage2D], @[glColorMaterial], @[glBindTexture], @[glGetClipPlane], @[glCullFace], @[glGetError], @[glClipPlane], @[glDrawPixels], @[glBlendFunc], @[glVertexPointer], @[glGetLight], @[glDisable], @[glMap2], @[glColorPointer], @[glCopyTexImage1D], @[glGetPixelMap], @[glTexSubImage2D], @[glNormalPointer], @[glEnable], @[glEnableClientState], @[glGetPointerv], @[glPixelTransfer], @[glPolygonMode], @[glGetTexParameter], @[glLogicOp], @[glGetBooleanv], @[glGetTexImage], @[glPixelMap], @[glGetFloatv], @[glGetMap], @[glAccum], @[glReadBuffer], @[glMaterial], @[glEdgeFlagPointer], @[glGetDoublev], @[glCallLists], @[glInterleavedArrays], @[glAlphaFunc], @[glShadeModel], @[glNewList], @[glReadPixels], @[glCopyTexImage2D], @[glTexImage2D], @[glGetTexEnv], @[glFeedbackBuffer], @[glEndList], @[glBegin], @[glLight], @[glStencilOp], @[glTexCoordPointer], @[glCopyPixels], @[glDepthFunc], @[glLightModel], @[glIndexPointer], @[glGetString], @[glTexParameter], @[glDisableClientState], @[glTexSubImage1D], @[glDrawBuffer], @[glHint], @[glTexImage1D], @[glStencilFunc], @[glGetMaterial], @[glCopyTexSubImage1D], @[glFrontFace], @[glEvalMesh] and @[glTexGen]
+ *! Used in @[glTexSubImage2D], @[glDrawArrays], @[glStencilFunc], @[glDisableClientState], @[glEdgeFlagPointer], @[glCullFace], @[glColorMaterial], @[glLogicOp], @[glFeedbackBuffer], @[glAccum], @[glRenderMode], @[glLightModel], @[glNewList], @[glCopyTexSubImage1D], @[glTexImage2D], @[glIndexPointer], @[glReadBuffer], @[glIsEnabled], @[glGetError], @[glPolygonMode], @[glTexSubImage1D], @[glCopyTexSubImage2D], @[glEnd], @[glNormalPointer], @[glVertexPointer], @[glGetString], @[glStencilOp], @[glDisable], @[glDepthFunc], @[glCopyPixels], @[glColorPointer], @[glTexGen], @[glMaterial], @[glGetTexImage], @[glTexCoordPointer], @[glInterleavedArrays], @[glClipPlane], @[glTexParameter], @[glFog], @[glHint], @[glDrawBuffer], @[glBegin], @[glBindTexture], @[glCopyTexImage1D], @[glAlphaFunc], @[glMatrixMode], @[glDrawPixels], @[glEnable], @[glEnableClientState], @[glReadPixels], @[glEndList], @[glTexEnv], @[glLight], @[glCopyTexImage2D], @[glTexImage1D], @[glShadeModel], @[glBlendFunc] and @[glFrontFace]
  */
 
 /*!@decl constant GL_INVALID_OPERATION = 1282
- *! Used in @[glPolygonOffset], @[glPushMatrix], @[glMatrixMode], @[glLoadName], @[glPixelStore], @[glIsEnabled], @[glGetTexLevelParameter], @[glGenTextures], @[glFog], @[glTexEnv], @[glClearColor], @[glMap1], @[glPrioritizeTextures], @[glDepthMask], @[glPushName], @[glRenderMode], @[glMultMatrix], @[glIsList], @[glFrustum], @[glDepthRange], @[glAreTexturesResident], @[glDeleteTextures], @[glGetTexGen], @[glGetIntegerv], @[glEnd], @[glIsTexture], @[glDrawElements], @[glGenLists], @[glBlendColorEXT], @[glViewport], @[glDrawArrays], @[glCopyTexSubImage2D], @[glColorMaterial], @[glBindTexture], @[glGetClipPlane], @[glFinish], @[glCullFace], @[glGetError], @[glStencilMask], @[glClipPlane], @[glDrawPixels], @[glBlendFunc], @[glSelectBuffer], @[glGetLight], @[glInitNames], @[glPassThrough], @[glDisable], @[glMap2], @[glLineStipple], @[glCopyTexImage1D], @[glGetPixelMap], @[glTexSubImage2D], @[glPopAttrib], @[glEnable], @[glListBase], @[glColorMask], @[glPixelTransfer], @[glPolygonMode], @[glGetTexParameter], @[glPopName], @[glLogicOp], @[glIndexMask], @[glGetBooleanv], @[glGetTexImage], @[glPixelMap], @[glTranslate], @[glPushAttrib], @[glGetFloatv], @[glGetMap], @[glAccum], @[glReadBuffer], @[glGetDoublev], @[glClearDepth], @[glRasterPos], @[glAlphaFunc], @[glShadeModel], @[glNewList], @[glReadPixels], @[glCopyTexImage2D], @[glRect], @[glTexImage2D], @[glGetTexEnv], @[glClearIndex], @[glFeedbackBuffer], @[glRotate], @[glEndList], @[glBegin], @[glLight], @[glGetPolygonStipple], @[glStencilOp], @[glClearStencil], @[glBitmap], @[glScale], @[glCopyPixels], @[glFlush], @[glOrtho], @[glDepthFunc], @[glMapGrid], @[glLightModel], @[glGetString], @[glTexParameter], @[glScissor], @[glTexSubImage1D], @[glLoadIdentity], @[glPixelZoom], @[glDrawBuffer], @[glLineWidth], @[glHint], @[glTexImage1D], @[glStencilFunc], @[glGetMaterial], @[glClear], @[glCopyTexSubImage1D], @[glPopMatrix], @[glPointSize], @[glPolygonStipple], @[glFrontFace], @[glLoadMatrix], @[glEvalMesh], @[glTexGen], @[glClearAccum] and @[glDeleteLists]
+ *! Used in @[glStencilMask], @[glViewport], @[glTexSubImage2D], @[glDrawArrays], @[glStencilFunc], @[glCullFace], @[glColorMaterial], @[glLogicOp], @[glFeedbackBuffer], @[glAccum], @[glPopAttrib], @[glClear], @[glRenderMode], @[glLightModel], @[glPolygonOffset], @[glNewList], @[glCopyTexSubImage1D], @[glTexImage2D], @[glLineStipple], @[glDepthRange], @[glReadBuffer], @[glIsEnabled], @[glGetError], @[glPolygonMode], @[glPointSize], @[glTexSubImage1D], @[glPopMatrix], @[glCopyTexSubImage2D], @[glLineWidth], @[glEnd], @[glFrustum], @[glGetString], @[glStencilOp], @[glRotate], @[glDisable], @[glDepthFunc], @[glCopyPixels], @[glTexGen], @[glIsList], @[glClearStencil], @[glLoadIdentity], @[glPushAttrib], @[glPixelZoom], @[glGenLists], @[glTranslate], @[glGetTexImage], @[glDeleteLists], @[glLoadMatrix], @[glClipPlane], @[glClearIndex], @[glTexParameter], @[glFog], @[glFlush], @[glHint], @[glDrawBuffer], @[glBegin], @[glScale], @[glIsTexture], @[glFinish], @[glBindTexture], @[glMultMatrix], @[glColorMask], @[glCopyTexImage1D], @[glAlphaFunc], @[glRasterPos], @[glOrtho], @[glInitNames], @[glMatrixMode], @[glDrawPixels], @[glEnable], @[glSelectBuffer], @[glReadPixels], @[glEndList], @[glClearAccum], @[glPopName], @[glIndexMask], @[glClearColor], @[glTexEnv], @[glPushName], @[glScissor], @[glPassThrough], @[glLight], @[glCopyTexImage2D], @[glTexImage1D], @[glLoadName], @[glDepthMask], @[glShadeModel], @[glClearDepth], @[glBlendFunc], @[glPushMatrix], @[glListBase] and @[glFrontFace]
  */
 
 /*!@decl constant GL_INVALID_VALUE = 1281
- *! Used in @[glPixelStore], @[glGetTexLevelParameter], @[glGenTextures], @[glFog], @[glMap1], @[glPrioritizeTextures], @[glFrustum], @[glAreTexturesResident], @[glDeleteTextures], @[glDrawElements], @[glGenLists], @[glViewport], @[glDrawArrays], @[glCopyTexSubImage2D], @[glGetError], @[glDrawPixels], @[glVertexPointer], @[glSelectBuffer], @[glMap2], @[glColorPointer], @[glCopyTexImage1D], @[glTexSubImage2D], @[glNormalPointer], @[glGetTexImage], @[glPixelMap], @[glMaterial], @[glCallLists], @[glInterleavedArrays], @[glNewList], @[glReadPixels], @[glCopyTexImage2D], @[glTexImage2D], @[glFeedbackBuffer], @[glEndList], @[glLight], @[glBitmap], @[glTexCoordPointer], @[glCopyPixels], @[glMapGrid], @[glIndexPointer], @[glScissor], @[glTexSubImage1D], @[glLineWidth], @[glTexImage1D], @[glClear], @[glCopyTexSubImage1D], @[glPointSize] and @[glDeleteLists]
+ *! Used in @[glViewport], @[glTexSubImage2D], @[glDrawArrays], @[glFeedbackBuffer], @[glClear], @[glNewList], @[glCopyTexSubImage1D], @[glTexImage2D], @[glIndexPointer], @[glGetError], @[glPointSize], @[glTexSubImage1D], @[glCopyTexSubImage2D], @[glLineWidth], @[glNormalPointer], @[glVertexPointer], @[glFrustum], @[glCopyPixels], @[glColorPointer], @[glMaterial], @[glGenLists], @[glGetTexImage], @[glDeleteLists], @[glTexCoordPointer], @[glInterleavedArrays], @[glFog], @[glCopyTexImage1D], @[glDrawPixels], @[glSelectBuffer], @[glReadPixels], @[glEndList], @[glScissor], @[glLight], @[glCopyTexImage2D] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_INVERT = 5386
@@ -9547,7 +9965,7 @@
  */
 
 /*!@decl constant GL_KEEP = 7680
- *! Used in @[glGetIntegerv], @[glGetBooleanv], @[glGetFloatv], @[glGetDoublev] and @[glStencilOp]
+ *! Used in @[glStencilOp]
  */
 
 /*!@decl constant GL_LARGE_SUNX = 33235
@@ -9558,15 +9976,15 @@
  */
 
 /*!@decl constant GL_LEQUAL = 515
- *! Used in @[glAlphaFunc], @[glDepthFunc] and @[glStencilFunc]
+ *! Used in @[glStencilFunc], @[glDepthFunc] and @[glAlphaFunc]
  */
 
 /*!@decl constant GL_LESS = 513
- *! Used in @[glGetIntegerv], @[glGetBooleanv], @[glGetFloatv], @[glGetDoublev], @[glAlphaFunc], @[glDepthFunc] and @[glStencilFunc]
+ *! Used in @[glStencilFunc], @[glDepthFunc] and @[glAlphaFunc]
  */
 
 /*!@decl constant GL_LIGHT0 = 16384
- *! Used in @[glGetLight] and @[glLight]
+ *! Used in @[glLight]
  */
 
 /*!@decl constant GL_LIGHT1 = 16385
@@ -9591,7 +10009,7 @@
  */
 
 /*!@decl constant GL_LIGHTING = 2896
- *! Used in @[glIsEnabled], @[glGetIntegerv], @[glDisable], @[glPopAttrib], @[glEnable], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv], @[glGetDoublev] and @[glLight]
+ *! Used in @[glPopAttrib], @[glIsEnabled], @[glDisable], @[glPushAttrib], @[glEnable] and @[glLight]
  */
 
 /*!@decl constant GL_LIGHTING_BIT = 64
@@ -9599,27 +10017,27 @@
  */
 
 /*!@decl constant GL_LIGHT_MODEL_AMBIENT = 2899
- *! Used in @[glGetIntegerv], @[glGetBooleanv], @[glGetFloatv], @[glGetDoublev] and @[glLightModel]
+ *! Used in @[glLightModel]
  */
 
 /*!@decl constant GL_LIGHT_MODEL_LOCAL_VIEWER = 2897
- *! Used in @[glGetIntegerv], @[glPopAttrib], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv], @[glGetDoublev] and @[glLightModel]
+ *! Used in @[glPopAttrib], @[glLightModel] and @[glPushAttrib]
  */
 
 /*!@decl constant GL_LIGHT_MODEL_TWO_SIDE = 2898
- *! Used in @[glGetIntegerv], @[glPopAttrib], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv], @[glGetDoublev] and @[glLightModel]
+ *! Used in @[glPopAttrib], @[glLightModel] and @[glPushAttrib]
  */
 
 /*!@decl constant GL_LINE = 6913
- *! Used in @[glIsEnabled], @[glFog], @[glGetIntegerv], @[glEnd], @[glDrawElements], @[glDrawArrays], @[glGetLight], @[glDisable], @[glLineStipple], @[glEdgeFlag], @[glPopAttrib], @[glEnable], @[glPolygonMode], @[glGetTexParameter], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv], @[glGetDoublev], @[glFeedbackBuffer], @[glBegin], @[glLight], @[glTexParameter], @[glLineWidth], @[glHint], @[glEdgeFlagv] and @[glEvalMesh]
+ *! Used in @[glDrawArrays], @[glFeedbackBuffer], @[glPopAttrib], @[glLineStipple], @[glIsEnabled], @[glPolygonMode], @[glLineWidth], @[glEnd], @[glDisable], @[glPushAttrib], @[glTexParameter], @[glFog], @[glHint], @[glBegin], @[glEnable], @[glEdgeFlag] and @[glLight]
  */
 
 /*!@decl constant GL_LINEAR = 9729
- *! Used in @[glFog], @[glGetLight], @[glGetTexParameter], @[glLight] and @[glTexParameter]
+ *! Used in @[glTexParameter], @[glFog] and @[glLight]
  */
 
 /*!@decl constant GL_LINEAR_ATTENUATION = 4616
- *! Used in @[glGetLight] and @[glLight]
+ *! Used in @[glLight]
  */
 
 /*!@decl constant GL_LINEAR_MIPMAP_LINEAR = 9987
@@ -9631,7 +10049,7 @@
  */
 
 /*!@decl constant GL_LINES = 1
- *! Used in @[glEnd], @[glDrawElements], @[glDrawArrays], @[glLineStipple], @[glBegin] and @[glEvalMesh]
+ *! Used in @[glDrawArrays], @[glLineStipple], @[glEnd] and @[glBegin]
  */
 
 /*!@decl constant GL_LINE_BIT = 4
@@ -9639,7 +10057,7 @@
  */
 
 /*!@decl constant GL_LINE_LOOP = 2
- *! Used in @[glEnd], @[glDrawElements], @[glDrawArrays] and @[glBegin]
+ *! Used in @[glDrawArrays], @[glEnd] and @[glBegin]
  */
 
 /*!@decl constant GL_LINE_RESET_TOKEN = 1799
@@ -9647,15 +10065,15 @@
  */
 
 /*!@decl constant GL_LINE_SMOOTH = 2848
- *! Used in @[glIsEnabled], @[glGetIntegerv], @[glDisable], @[glPopAttrib], @[glEnable], @[glPolygonMode], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv], @[glGetDoublev], @[glLineWidth] and @[glHint]
+ *! Used in @[glPopAttrib], @[glIsEnabled], @[glPolygonMode], @[glLineWidth], @[glDisable], @[glPushAttrib], @[glHint] and @[glEnable]
  */
 
 /*!@decl constant GL_LINE_SMOOTH_HINT = 3154
- *! Used in @[glGetIntegerv], @[glPopAttrib], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv], @[glGetDoublev] and @[glHint]
+ *! Used in @[glPopAttrib], @[glPushAttrib] and @[glHint]
  */
 
 /*!@decl constant GL_LINE_STIPPLE = 2852
- *! Used in @[glIsEnabled], @[glGetIntegerv], @[glDisable], @[glLineStipple], @[glPopAttrib], @[glEnable], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv] and @[glGetDoublev]
+ *! Used in @[glPopAttrib], @[glLineStipple], @[glIsEnabled], @[glDisable], @[glPushAttrib] and @[glEnable]
  */
 
 /*!@decl constant GL_LINE_STIPPLE_PATTERN = 2853
@@ -9667,7 +10085,7 @@
  */
 
 /*!@decl constant GL_LINE_STRIP = 3
- *! Used in @[glEnd], @[glDrawElements], @[glDrawArrays], @[glBegin] and @[glEvalMesh]
+ *! Used in @[glDrawArrays], @[glEnd] and @[glBegin]
  */
 
 /*!@decl constant GL_LINE_TOKEN = 1794
@@ -9675,19 +10093,19 @@
  */
 
 /*!@decl constant GL_LINE_WIDTH = 2849
- *! Used in @[glGetIntegerv], @[glPolygonMode], @[glGetBooleanv], @[glGetFloatv], @[glGetDoublev] and @[glLineWidth]
+ *! Used in @[glPolygonMode] and @[glLineWidth]
  */
 
 /*!@decl constant GL_LINE_WIDTH_GRANULARITY = 2851
- *! Used in @[glGetIntegerv], @[glGetBooleanv], @[glGetFloatv], @[glGetDoublev] and @[glLineWidth]
+ *! Used in @[glLineWidth]
  */
 
 /*!@decl constant GL_LINE_WIDTH_RANGE = 2850
- *! Used in @[glGetIntegerv], @[glGetBooleanv], @[glGetFloatv], @[glGetDoublev] and @[glLineWidth]
+ *! Used in @[glLineWidth]
  */
 
 /*!@decl constant GL_LIST_BASE = 2866
- *! Used in @[glGetIntegerv], @[glPopAttrib], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv] and @[glGetDoublev]
+ *! Used in @[glPopAttrib] and @[glPushAttrib]
  */
 
 /*!@decl constant GL_LIST_BIT = 131072
@@ -9715,55 +10133,55 @@
  */
 
 /*!@decl constant GL_LUMINANCE = 6409
- *! Used in @[glTexEnv], @[glDrawPixels], @[glCopyTexImage1D], @[glTexSubImage2D], @[glGetTexImage], @[glReadPixels], @[glCopyTexImage2D], @[glTexImage2D], @[glTexSubImage1D] and @[glTexImage1D]
+ *! Used in @[glTexSubImage2D], @[glTexImage2D], @[glTexSubImage1D], @[glGetTexImage], @[glCopyTexImage1D], @[glDrawPixels], @[glReadPixels], @[glTexEnv], @[glCopyTexImage2D] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_LUMINANCE12 = 32833
- *! Used in @[glCopyTexImage1D], @[glCopyTexImage2D], @[glTexImage2D] and @[glTexImage1D]
+ *! Used in @[glTexImage2D], @[glCopyTexImage1D], @[glCopyTexImage2D] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_LUMINANCE12_ALPHA12 = 32839
- *! Used in @[glCopyTexImage1D], @[glCopyTexImage2D], @[glTexImage2D] and @[glTexImage1D]
+ *! Used in @[glTexImage2D], @[glCopyTexImage1D], @[glCopyTexImage2D] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_LUMINANCE12_ALPHA4 = 32838
- *! Used in @[glCopyTexImage1D], @[glCopyTexImage2D], @[glTexImage2D] and @[glTexImage1D]
+ *! Used in @[glTexImage2D], @[glCopyTexImage1D], @[glCopyTexImage2D] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_LUMINANCE16 = 32834
- *! Used in @[glCopyTexImage1D], @[glCopyTexImage2D], @[glTexImage2D] and @[glTexImage1D]
+ *! Used in @[glTexImage2D], @[glCopyTexImage1D], @[glCopyTexImage2D] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_LUMINANCE16_ALPHA16 = 32840
- *! Used in @[glCopyTexImage1D], @[glCopyTexImage2D], @[glTexImage2D] and @[glTexImage1D]
+ *! Used in @[glTexImage2D], @[glCopyTexImage1D], @[glCopyTexImage2D] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_LUMINANCE4 = 32831
- *! Used in @[glCopyTexImage1D], @[glCopyTexImage2D], @[glTexImage2D] and @[glTexImage1D]
+ *! Used in @[glTexImage2D], @[glCopyTexImage1D], @[glCopyTexImage2D] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_LUMINANCE4_ALPHA4 = 32835
- *! Used in @[glCopyTexImage1D], @[glCopyTexImage2D], @[glTexImage2D] and @[glTexImage1D]
+ *! Used in @[glTexImage2D], @[glCopyTexImage1D], @[glCopyTexImage2D] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_LUMINANCE6_ALPHA2 = 32836
- *! Used in @[glCopyTexImage1D], @[glCopyTexImage2D], @[glTexImage2D] and @[glTexImage1D]
+ *! Used in @[glTexImage2D], @[glCopyTexImage1D], @[glCopyTexImage2D] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_LUMINANCE8 = 32832
- *! Used in @[glCopyTexImage1D], @[glCopyTexImage2D], @[glTexImage2D] and @[glTexImage1D]
+ *! Used in @[glTexImage2D], @[glCopyTexImage1D], @[glCopyTexImage2D] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_LUMINANCE8_ALPHA8 = 32837
- *! Used in @[glCopyTexImage1D], @[glCopyTexImage2D], @[glTexImage2D] and @[glTexImage1D]
+ *! Used in @[glTexImage2D], @[glCopyTexImage1D], @[glCopyTexImage2D] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_LUMINANCE_ALPHA = 6410
- *! Used in @[glDrawPixels], @[glCopyTexImage1D], @[glTexSubImage2D], @[glGetTexImage], @[glReadPixels], @[glCopyTexImage2D], @[glTexImage2D], @[glTexSubImage1D] and @[glTexImage1D]
+ *! Used in @[glTexSubImage2D], @[glTexImage2D], @[glTexSubImage1D], @[glGetTexImage], @[glCopyTexImage1D], @[glDrawPixels], @[glReadPixels], @[glCopyTexImage2D] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_MAP1_COLOR_4 = 3472
- *! Used in @[glIsEnabled], @[glMap1], @[glGetIntegerv], @[glDisable], @[glEnable], @[glGetBooleanv], @[glGetFloatv], @[glGetMap], @[glGetDoublev] and @[glEvalCoord]
+ *! Used in @[glEvalCoord], @[glIsEnabled], @[glDisable] and @[glEnable]
  */
 
 /*!@decl constant GL_MAP1_GRID_DOMAIN = 3536
@@ -9775,39 +10193,39 @@
  */
 
 /*!@decl constant GL_MAP1_INDEX = 3473
- *! Used in @[glMap1], @[glGetIntegerv], @[glDisable], @[glEnable], @[glGetBooleanv], @[glGetFloatv], @[glGetMap], @[glGetDoublev] and @[glEvalCoord]
+ *! Used in @[glEvalCoord], @[glDisable] and @[glEnable]
  */
 
 /*!@decl constant GL_MAP1_NORMAL = 3474
- *! Used in @[glMap1], @[glGetIntegerv], @[glDisable], @[glEnable], @[glGetBooleanv], @[glGetFloatv], @[glGetMap], @[glGetDoublev] and @[glEvalCoord]
+ *! Used in @[glEvalCoord], @[glDisable] and @[glEnable]
  */
 
 /*!@decl constant GL_MAP1_TEXTURE_COORD_1 = 3475
- *! Used in @[glMap1], @[glGetIntegerv], @[glDisable], @[glEnable], @[glGetBooleanv], @[glGetFloatv], @[glGetMap], @[glGetDoublev] and @[glEvalCoord]
+ *! Used in @[glEvalCoord], @[glDisable] and @[glEnable]
  */
 
 /*!@decl constant GL_MAP1_TEXTURE_COORD_2 = 3476
- *! Used in @[glMap1], @[glGetIntegerv], @[glDisable], @[glEnable], @[glGetBooleanv], @[glGetFloatv], @[glGetMap], @[glGetDoublev] and @[glEvalCoord]
+ *! Used in @[glEvalCoord], @[glDisable] and @[glEnable]
  */
 
 /*!@decl constant GL_MAP1_TEXTURE_COORD_3 = 3477
- *! Used in @[glMap1], @[glGetIntegerv], @[glDisable], @[glEnable], @[glGetBooleanv], @[glGetFloatv], @[glGetMap], @[glGetDoublev] and @[glEvalCoord]
+ *! Used in @[glEvalCoord], @[glDisable] and @[glEnable]
  */
 
 /*!@decl constant GL_MAP1_TEXTURE_COORD_4 = 3478
- *! Used in @[glMap1], @[glGetIntegerv], @[glDisable], @[glEnable], @[glGetBooleanv], @[glGetFloatv], @[glGetMap], @[glGetDoublev] and @[glEvalCoord]
+ *! Used in @[glEvalCoord], @[glDisable] and @[glEnable]
  */
 
 /*!@decl constant GL_MAP1_VERTEX_3 = 3479
- *! Used in @[glMap1], @[glGetIntegerv], @[glDisable], @[glEnable], @[glGetBooleanv], @[glGetFloatv], @[glGetMap], @[glGetDoublev] and @[glEvalCoord]
+ *! Used in @[glEvalCoord], @[glDisable] and @[glEnable]
  */
 
 /*!@decl constant GL_MAP1_VERTEX_4 = 3480
- *! Used in @[glMap1], @[glGetIntegerv], @[glDisable], @[glEnable], @[glGetBooleanv], @[glGetFloatv], @[glGetMap], @[glGetDoublev] and @[glEvalCoord]
+ *! Used in @[glEvalCoord], @[glDisable] and @[glEnable]
  */
 
 /*!@decl constant GL_MAP2_COLOR_4 = 3504
- *! Used in @[glGetIntegerv], @[glDisable], @[glMap2], @[glEnable], @[glGetBooleanv], @[glGetFloatv], @[glGetMap], @[glGetDoublev] and @[glEvalCoord]
+ *! Used in @[glEvalCoord], @[glDisable] and @[glEnable]
  */
 
 /*!@decl constant GL_MAP2_GRID_DOMAIN = 3538
@@ -9819,47 +10237,51 @@
  */
 
 /*!@decl constant GL_MAP2_INDEX = 3505
- *! Used in @[glGetIntegerv], @[glDisable], @[glMap2], @[glEnable], @[glGetBooleanv], @[glGetFloatv], @[glGetMap], @[glGetDoublev] and @[glEvalCoord]
+ *! Used in @[glEvalCoord], @[glDisable] and @[glEnable]
  */
 
 /*!@decl constant GL_MAP2_NORMAL = 3506
- *! Used in @[glGetIntegerv], @[glDisable], @[glMap2], @[glEnable], @[glGetBooleanv], @[glGetFloatv], @[glGetMap], @[glGetDoublev] and @[glEvalCoord]
+ *! Used in @[glEvalCoord], @[glDisable] and @[glEnable]
  */
 
 /*!@decl constant GL_MAP2_TEXTURE_COORD_1 = 3507
- *! Used in @[glGetIntegerv], @[glDisable], @[glMap2], @[glEnable], @[glGetBooleanv], @[glGetFloatv], @[glGetMap], @[glGetDoublev] and @[glEvalCoord]
+ *! Used in @[glEvalCoord], @[glDisable] and @[glEnable]
  */
 
 /*!@decl constant GL_MAP2_TEXTURE_COORD_2 = 3508
- *! Used in @[glIsEnabled], @[glGetIntegerv], @[glDisable], @[glMap2], @[glEnable], @[glGetBooleanv], @[glGetFloatv], @[glGetMap], @[glGetDoublev] and @[glEvalCoord]
+ *! Used in @[glEvalCoord], @[glIsEnabled], @[glDisable] and @[glEnable]
  */
 
 /*!@decl constant GL_MAP2_TEXTURE_COORD_3 = 3509
- *! Used in @[glIsEnabled], @[glGetIntegerv], @[glDisable], @[glMap2], @[glEnable], @[glGetBooleanv], @[glGetFloatv], @[glGetMap], @[glGetDoublev] and @[glEvalCoord]
+ *! Used in @[glEvalCoord], @[glIsEnabled], @[glDisable] and @[glEnable]
  */
 
 /*!@decl constant GL_MAP2_TEXTURE_COORD_4 = 3510
- *! Used in @[glIsEnabled], @[glGetIntegerv], @[glDisable], @[glMap2], @[glEnable], @[glGetBooleanv], @[glGetFloatv], @[glGetMap], @[glGetDoublev] and @[glEvalCoord]
+ *! Used in @[glEvalCoord], @[glIsEnabled], @[glDisable] and @[glEnable]
  */
 
 /*!@decl constant GL_MAP2_VERTEX_3 = 3511
- *! Used in @[glIsEnabled], @[glGetIntegerv], @[glDisable], @[glMap2], @[glEnable], @[glGetBooleanv], @[glGetFloatv], @[glGetMap], @[glGetDoublev] and @[glEvalCoord]
+ *! Used in @[glEvalCoord], @[glIsEnabled], @[glDisable] and @[glEnable]
  */
 
 /*!@decl constant GL_MAP2_VERTEX_4 = 3512
- *! Used in @[glIsEnabled], @[glGetIntegerv], @[glDisable], @[glMap2], @[glEnable], @[glGetBooleanv], @[glGetFloatv], @[glGetMap], @[glGetDoublev] and @[glEvalCoord]
+ *! Used in @[glEvalCoord], @[glIsEnabled], @[glDisable] and @[glEnable]
  */
 
 /*!@decl constant GL_MAP_COLOR = 3344
- *! Used in @[glGetIntegerv], @[glDrawPixels], @[glPopAttrib], @[glPixelTransfer], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv], @[glGetDoublev], @[glReadPixels] and @[glCopyPixels]
+ *! Used in @[glPopAttrib], @[glCopyPixels], @[glPushAttrib], @[glDrawPixels] and @[glReadPixels]
  */
 
 /*!@decl constant GL_MAP_STENCIL = 3345
- *! Used in @[glGetIntegerv], @[glDrawPixels], @[glPopAttrib], @[glPixelTransfer], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv], @[glGetDoublev], @[glReadPixels] and @[glCopyPixels]
+ *! Used in @[glPopAttrib], @[glCopyPixels], @[glPushAttrib], @[glDrawPixels] and @[glReadPixels]
  */
 
 /*!@decl constant GL_MATRIX_MODE = 2976
- *! Used in @[glMatrixMode], @[glGetIntegerv], @[glPopAttrib], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv] and @[glGetDoublev]
+ *! Used in @[glPopAttrib], @[glPushAttrib] and @[glMatrixMode]
+ */
+
+/*!@decl constant GL_MAX = 32776
+ *! Used in @[glViewport], @[glTexSubImage2D], @[glPopAttrib], @[glCopyTexSubImage1D], @[glTexImage2D], @[glTexSubImage1D], @[glCopyTexSubImage2D], @[glPushAttrib], @[glGetTexImage], @[glClipPlane], @[glCopyTexImage1D], @[glPopName], @[glPushName], @[glLight], @[glCopyTexImage2D] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_MAX_3D_TEXTURE_SIZE_EXT = 32883
@@ -9874,7 +10296,7 @@
  */
 
 /*!@decl constant GL_MAX_CLIP_PLANES = 3378
- *! Used in @[glGetIntegerv], @[glGetClipPlane], @[glClipPlane], @[glGetBooleanv], @[glGetFloatv] and @[glGetDoublev]
+ *! Used in @[glClipPlane]
  */
 
 /*!@decl constant GL_MAX_CONVOLUTION_HEIGHT_EXT = 32795
@@ -9892,7 +10314,7 @@
  */
 
 /*!@decl constant GL_MAX_LIGHTS = 3377
- *! Used in @[glGetIntegerv], @[glGetLight], @[glPopAttrib], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv], @[glGetDoublev] and @[glLight]
+ *! Used in @[glPopAttrib], @[glPushAttrib] and @[glLight]
  */
 
 /*!@decl constant GL_MAX_LIST_NESTING = 2865
@@ -9904,7 +10326,7 @@
  */
 
 /*!@decl constant GL_MAX_NAME_STACK_DEPTH = 3383
- *! Used in @[glPushName], @[glGetIntegerv], @[glPopName], @[glGetBooleanv], @[glGetFloatv] and @[glGetDoublev]
+ *! Used in @[glPopName] and @[glPushName]
  */
 
 /*!@decl constant GL_MAX_PIXEL_MAP_TABLE = 3380
@@ -9919,7 +10341,7 @@
  */
 
 /*!@decl constant GL_MAX_TEXTURE_SIZE = 3379
- *! Used in @[glGetTexLevelParameter], @[glGetIntegerv], @[glCopyTexSubImage2D], @[glCopyTexImage1D], @[glTexSubImage2D], @[glGetBooleanv], @[glGetTexImage], @[glGetFloatv], @[glGetDoublev], @[glCopyTexImage2D], @[glTexImage2D], @[glTexSubImage1D], @[glTexImage1D] and @[glCopyTexSubImage1D]
+ *! Used in @[glTexSubImage2D], @[glCopyTexSubImage1D], @[glTexImage2D], @[glTexSubImage1D], @[glCopyTexSubImage2D], @[glGetTexImage], @[glCopyTexImage1D], @[glCopyTexImage2D] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_MAX_TEXTURE_STACK_DEPTH = 3385
@@ -9927,7 +10349,7 @@
  */
 
 /*!@decl constant GL_MAX_VIEWPORT_DIMS = 3386
- *! Used in @[glGetIntegerv], @[glViewport], @[glGetBooleanv], @[glGetFloatv] and @[glGetDoublev]
+ *! Used in @[glViewport]
  */
 
 /*!@decl constant GL_MINMAX_EXT = 32814
@@ -9944,7 +10366,7 @@
  */
 
 /*!@decl constant GL_MODELVIEW = 5888
- *! Used in @[glPushMatrix], @[glMatrixMode], @[glGetIntegerv], @[glGetBooleanv], @[glTranslate], @[glGetFloatv], @[glGetDoublev], @[glRotate], @[glScale] and @[glPopMatrix]
+ *! Used in @[glPopMatrix], @[glRotate], @[glTranslate], @[glScale], @[glMatrixMode] and @[glPushMatrix]
  */
 
 /*!@decl constant GL_MODELVIEW_MATRIX = 2982
@@ -9956,7 +10378,7 @@
  */
 
 /*!@decl constant GL_MODULATE = 8448
- *! Used in @[glTexEnv] and @[glGetTexEnv]
+ *! Used in @[glTexEnv]
  */
 
 /*!@decl constant GL_MULT = 259
@@ -9976,11 +10398,11 @@
  */
 
 /*!@decl constant GL_NEAREST = 9728
- *! Used in @[glGetTexParameter] and @[glTexParameter]
+ *! Used in @[glTexParameter]
  */
 
 /*!@decl constant GL_NEAREST_MIPMAP_LINEAR = 9986
- *! Used in @[glGetTexParameter] and @[glTexParameter]
+ *! Used in @[glTexParameter]
  */
 
 /*!@decl constant GL_NEAREST_MIPMAP_NEAREST = 9984
@@ -9988,7 +10410,7 @@
  */
 
 /*!@decl constant GL_NEVER = 512
- *! Used in @[glAlphaFunc], @[glDepthFunc] and @[glStencilFunc]
+ *! Used in @[glStencilFunc], @[glDepthFunc] and @[glAlphaFunc]
  */
 
 /*!@decl constant GL_NICEST = 4354
@@ -10004,15 +10426,15 @@
  */
 
 /*!@decl constant GL_NOR = 5384
- *! Used in @[glIsEnabled], @[glGetIntegerv], @[glDisable], @[glNormalPointer], @[glPopAttrib], @[glEnable], @[glEnableClientState], @[glGetPointerv], @[glLogicOp], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv], @[glGetDoublev], @[glNormal] and @[glDisableClientState]
+ *! Used in @[glDisableClientState], @[glLogicOp], @[glPopAttrib], @[glIsEnabled], @[glNormalPointer], @[glDisable], @[glPushAttrib], @[glEnable], @[glEnableClientState] and @[glNormal]
  */
 
 /*!@decl constant GL_NORMALIZE = 2977
- *! Used in @[glIsEnabled], @[glGetIntegerv], @[glDisable], @[glPopAttrib], @[glEnable], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv], @[glGetDoublev] and @[glNormal]
+ *! Used in @[glPopAttrib], @[glIsEnabled], @[glDisable], @[glPushAttrib], @[glEnable] and @[glNormal]
  */
 
 /*!@decl constant GL_NORMAL_ARRAY = 32885
- *! Used in @[glIsEnabled], @[glGetIntegerv], @[glNormalPointer], @[glEnableClientState], @[glGetPointerv], @[glGetBooleanv], @[glGetFloatv], @[glGetDoublev] and @[glDisableClientState]
+ *! Used in @[glDisableClientState], @[glIsEnabled], @[glNormalPointer] and @[glEnableClientState]
  */
 
 /*!@decl constant GL_NORMAL_ARRAY_POINTER = 32911
@@ -10028,7 +10450,7 @@
  */
 
 /*!@decl constant GL_NOTEQUAL = 517
- *! Used in @[glAlphaFunc], @[glDepthFunc] and @[glStencilFunc]
+ *! Used in @[glStencilFunc], @[glDepthFunc] and @[glAlphaFunc]
  */
 
 /*!@decl constant GL_NO_ERROR = 0
@@ -10040,7 +10462,7 @@
  */
 
 /*!@decl constant GL_OBJECT_PLANE = 9473
- *! Used in @[glGetTexGen] and @[glTexGen]
+ *! Used in @[glTexGen]
  */
 
 /*!@decl constant GL_OCCLUSION_RESULT_HP = 33126
@@ -10050,7 +10472,7 @@
  */
 
 /*!@decl constant GL_ONE = 1
- *! Used in @[glGetIntegerv], @[glBlendFunc], @[glGetBooleanv], @[glGetFloatv] and @[glGetDoublev]
+ *! Used in @[glBlendFunc]
  */
 
 /*!@decl constant GL_ONE_MINUS_CONSTANT_ALPHA_EXT = 32772
@@ -10076,7 +10498,7 @@
  */
 
 /*!@decl constant GL_OR = 5383
- *! Used in @[glLogicOp] and @[glGetMap]
+ *! Used in @[glLogicOp]
  */
 
 /*!@decl constant GL_ORDER = 2561
@@ -10092,18 +10514,18 @@
  */
 
 /*!@decl constant GL_OUT_OF_MEMORY = 1285
- *! Used in @[glGetError], @[glNewList] and @[glEndList]
+ *! Used in @[glNewList], @[glGetError] and @[glEndList]
  */
 
 /*!@decl constant GL_PACK_ALIGNMENT = 3333
- *! Used in @[glPixelStore], @[glGetIntegerv], @[glGetBooleanv], @[glGetTexImage], @[glGetFloatv] and @[glGetDoublev]
+ *! Used in @[glGetTexImage]
  */
 
 /*!@decl constant GL_PACK_IMAGE_HEIGHT_EXT = 32876
  */
 
 /*!@decl constant GL_PACK_LSB_FIRST = 3329
- *! Used in @[glPixelStore], @[glGetIntegerv], @[glGetBooleanv], @[glGetFloatv], @[glGetDoublev] and @[glReadPixels]
+ *! Used in @[glReadPixels]
  */
 
 /*!@decl constant GL_PACK_ROW_LENGTH = 3330
@@ -10122,15 +10544,15 @@
  */
 
 /*!@decl constant GL_PACK_SWAP_BYTES = 3328
- *! Used in @[glPixelStore], @[glGetIntegerv], @[glGetBooleanv], @[glGetFloatv], @[glGetDoublev] and @[glReadPixels]
+ *! Used in @[glReadPixels]
  */
 
 /*!@decl constant GL_PASS_THROUGH_TOKEN = 1792
- *! Used in @[glPassThrough] and @[glFeedbackBuffer]
+ *! Used in @[glFeedbackBuffer] and @[glPassThrough]
  */
 
 /*!@decl constant GL_PERSPECTIVE_CORRECTION_HINT = 3152
- *! Used in @[glGetIntegerv], @[glPopAttrib], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv], @[glGetDoublev] and @[glHint]
+ *! Used in @[glPopAttrib], @[glPushAttrib] and @[glHint]
  */
 
 /*!@decl constant GL_PIXEL_CUBIC_WEIGHT_EXT = 33587
@@ -10164,7 +10586,7 @@
  */
 
 /*!@decl constant GL_PIXEL_MAP_I_TO_A = 3189
- *! Used in @[glGetIntegerv], @[glDrawPixels], @[glGetPixelMap], @[glPixelTransfer], @[glGetBooleanv], @[glPixelMap], @[glGetFloatv], @[glGetDoublev], @[glReadPixels], @[glTexImage2D] and @[glTexImage1D]
+ *! Used in @[glTexImage2D], @[glDrawPixels], @[glReadPixels] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_PIXEL_MAP_I_TO_A_SIZE = 3253
@@ -10172,7 +10594,7 @@
  */
 
 /*!@decl constant GL_PIXEL_MAP_I_TO_B = 3188
- *! Used in @[glGetIntegerv], @[glDrawPixels], @[glGetPixelMap], @[glPixelTransfer], @[glGetBooleanv], @[glPixelMap], @[glGetFloatv], @[glGetDoublev], @[glReadPixels], @[glTexImage2D] and @[glTexImage1D]
+ *! Used in @[glTexImage2D], @[glDrawPixels], @[glReadPixels] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_PIXEL_MAP_I_TO_B_SIZE = 3252
@@ -10180,7 +10602,7 @@
  */
 
 /*!@decl constant GL_PIXEL_MAP_I_TO_G = 3187
- *! Used in @[glGetIntegerv], @[glDrawPixels], @[glGetPixelMap], @[glPixelTransfer], @[glGetBooleanv], @[glPixelMap], @[glGetFloatv], @[glGetDoublev], @[glReadPixels], @[glTexImage2D] and @[glTexImage1D]
+ *! Used in @[glTexImage2D], @[glDrawPixels], @[glReadPixels] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_PIXEL_MAP_I_TO_G_SIZE = 3251
@@ -10188,7 +10610,7 @@
  */
 
 /*!@decl constant GL_PIXEL_MAP_I_TO_I = 3184
- *! Used in @[glGetIntegerv], @[glDrawPixels], @[glGetPixelMap], @[glPixelTransfer], @[glGetBooleanv], @[glPixelMap], @[glGetFloatv], @[glGetDoublev], @[glReadPixels] and @[glCopyPixels]
+ *! Used in @[glCopyPixels], @[glDrawPixels] and @[glReadPixels]
  */
 
 /*!@decl constant GL_PIXEL_MAP_I_TO_I_SIZE = 3248
@@ -10196,7 +10618,7 @@
  */
 
 /*!@decl constant GL_PIXEL_MAP_I_TO_R = 3186
- *! Used in @[glGetIntegerv], @[glDrawPixels], @[glGetPixelMap], @[glPixelTransfer], @[glGetBooleanv], @[glPixelMap], @[glGetFloatv], @[glGetDoublev], @[glReadPixels], @[glTexImage2D] and @[glTexImage1D]
+ *! Used in @[glTexImage2D], @[glDrawPixels], @[glReadPixels] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_PIXEL_MAP_I_TO_R_SIZE = 3250
@@ -10212,7 +10634,7 @@
  */
 
 /*!@decl constant GL_PIXEL_MAP_S_TO_S = 3185
- *! Used in @[glGetIntegerv], @[glDrawPixels], @[glGetPixelMap], @[glPixelTransfer], @[glGetBooleanv], @[glPixelMap], @[glGetFloatv], @[glGetDoublev], @[glReadPixels] and @[glCopyPixels]
+ *! Used in @[glCopyPixels], @[glDrawPixels] and @[glReadPixels]
  */
 
 /*!@decl constant GL_PIXEL_MAP_S_TO_S_SIZE = 3249
@@ -10239,11 +10661,11 @@
  */
 
 /*!@decl constant GL_POINT = 6912
- *! Used in @[glIsEnabled], @[glGetIntegerv], @[glEnd], @[glDrawElements], @[glDrawArrays], @[glDisable], @[glEdgeFlag], @[glPopAttrib], @[glEnable], @[glPolygonMode], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv], @[glGetDoublev], @[glFeedbackBuffer], @[glBegin], @[glHint], @[glEdgeFlagv], @[glPointSize] and @[glEvalMesh]
+ *! Used in @[glDrawArrays], @[glFeedbackBuffer], @[glPopAttrib], @[glIsEnabled], @[glPolygonMode], @[glPointSize], @[glEnd], @[glDisable], @[glPushAttrib], @[glHint], @[glBegin], @[glEnable] and @[glEdgeFlag]
  */
 
 /*!@decl constant GL_POINTS = 0
- *! Used in @[glEnd], @[glDrawElements], @[glDrawArrays], @[glBegin] and @[glEvalMesh]
+ *! Used in @[glDrawArrays], @[glEnd] and @[glBegin]
  */
 
 /*!@decl constant GL_POINT_BIT = 2
@@ -10251,23 +10673,23 @@
  */
 
 /*!@decl constant GL_POINT_SIZE = 2833
- *! Used in @[glGetIntegerv], @[glPolygonMode], @[glGetBooleanv], @[glGetFloatv], @[glGetDoublev] and @[glPointSize]
+ *! Used in @[glPolygonMode] and @[glPointSize]
  */
 
 /*!@decl constant GL_POINT_SIZE_GRANULARITY = 2835
- *! Used in @[glGetIntegerv], @[glGetBooleanv], @[glGetFloatv], @[glGetDoublev] and @[glPointSize]
+ *! Used in @[glPointSize]
  */
 
 /*!@decl constant GL_POINT_SIZE_RANGE = 2834
- *! Used in @[glGetIntegerv], @[glGetBooleanv], @[glGetFloatv], @[glGetDoublev] and @[glPointSize]
+ *! Used in @[glPointSize]
  */
 
 /*!@decl constant GL_POINT_SMOOTH = 2832
- *! Used in @[glIsEnabled], @[glGetIntegerv], @[glDisable], @[glPopAttrib], @[glEnable], @[glPolygonMode], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv], @[glGetDoublev], @[glHint] and @[glPointSize]
+ *! Used in @[glPopAttrib], @[glIsEnabled], @[glPolygonMode], @[glPointSize], @[glDisable], @[glPushAttrib], @[glHint] and @[glEnable]
  */
 
 /*!@decl constant GL_POINT_SMOOTH_HINT = 3153
- *! Used in @[glGetIntegerv], @[glPopAttrib], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv], @[glGetDoublev] and @[glHint]
+ *! Used in @[glPopAttrib], @[glPushAttrib] and @[glHint]
  */
 
 /*!@decl constant GL_POINT_TOKEN = 1793
@@ -10275,7 +10697,7 @@
  */
 
 /*!@decl constant GL_POLYGON = 9
- *! Used in @[glPolygonOffset], @[glIsEnabled], @[glGetIntegerv], @[glEnd], @[glDrawElements], @[glDrawArrays], @[glDisable], @[glEdgeFlag], @[glPopAttrib], @[glEnable], @[glPolygonMode], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv], @[glGetDoublev], @[glRect], @[glFeedbackBuffer], @[glBegin], @[glHint], @[glEdgeFlagv] and @[glPolygonStipple]
+ *! Used in @[glDrawArrays], @[glFeedbackBuffer], @[glPopAttrib], @[glPolygonOffset], @[glIsEnabled], @[glPolygonMode], @[glEnd], @[glDisable], @[glPushAttrib], @[glHint], @[glBegin], @[glEnable] and @[glEdgeFlag]
  */
 
 /*!@decl constant GL_POLYGON_BIT = 8
@@ -10283,39 +10705,39 @@
  */
 
 /*!@decl constant GL_POLYGON_MODE = 2880
- *! Used in @[glGetIntegerv], @[glEdgeFlag], @[glPopAttrib], @[glPolygonMode], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv], @[glGetDoublev] and @[glEdgeFlagv]
+ *! Used in @[glPopAttrib], @[glPolygonMode], @[glPushAttrib] and @[glEdgeFlag]
  */
 
 /*!@decl constant GL_POLYGON_OFFSET_FACTOR = 32824
- *! Used in @[glGetIntegerv], @[glPopAttrib], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv] and @[glGetDoublev]
+ *! Used in @[glPopAttrib] and @[glPushAttrib]
  */
 
 /*!@decl constant GL_POLYGON_OFFSET_FILL = 32823
- *! Used in @[glIsEnabled], @[glGetIntegerv], @[glDisable], @[glPopAttrib], @[glEnable], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv] and @[glGetDoublev]
+ *! Used in @[glPopAttrib], @[glIsEnabled], @[glDisable], @[glPushAttrib] and @[glEnable]
  */
 
 /*!@decl constant GL_POLYGON_OFFSET_LINE = 10754
- *! Used in @[glIsEnabled], @[glGetIntegerv], @[glDisable], @[glPopAttrib], @[glEnable], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv] and @[glGetDoublev]
+ *! Used in @[glPopAttrib], @[glIsEnabled], @[glDisable], @[glPushAttrib] and @[glEnable]
  */
 
 /*!@decl constant GL_POLYGON_OFFSET_POINT = 10753
- *! Used in @[glIsEnabled], @[glGetIntegerv], @[glDisable], @[glPopAttrib], @[glEnable], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv] and @[glGetDoublev]
+ *! Used in @[glPopAttrib], @[glIsEnabled], @[glDisable], @[glPushAttrib] and @[glEnable]
  */
 
 /*!@decl constant GL_POLYGON_OFFSET_UNITS = 10752
- *! Used in @[glGetIntegerv], @[glPopAttrib], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv] and @[glGetDoublev]
+ *! Used in @[glPopAttrib] and @[glPushAttrib]
  */
 
 /*!@decl constant GL_POLYGON_SMOOTH = 2881
- *! Used in @[glIsEnabled], @[glGetIntegerv], @[glDisable], @[glPopAttrib], @[glEnable], @[glPolygonMode], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv], @[glGetDoublev] and @[glHint]
+ *! Used in @[glPopAttrib], @[glIsEnabled], @[glPolygonMode], @[glDisable], @[glPushAttrib], @[glHint] and @[glEnable]
  */
 
 /*!@decl constant GL_POLYGON_SMOOTH_HINT = 3155
- *! Used in @[glGetIntegerv], @[glPopAttrib], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv], @[glGetDoublev] and @[glHint]
+ *! Used in @[glPopAttrib], @[glPushAttrib] and @[glHint]
  */
 
 /*!@decl constant GL_POLYGON_STIPPLE = 2882
- *! Used in @[glIsEnabled], @[glGetIntegerv], @[glDisable], @[glPopAttrib], @[glEnable], @[glPolygonMode], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv], @[glGetDoublev] and @[glPolygonStipple]
+ *! Used in @[glPopAttrib], @[glIsEnabled], @[glPolygonMode], @[glDisable], @[glPushAttrib] and @[glEnable]
  */
 
 /*!@decl constant GL_POLYGON_STIPPLE_BIT = 16
@@ -10327,7 +10749,7 @@
  */
 
 /*!@decl constant GL_POSITION = 4611
- *! Used in @[glGetLight] and @[glLight]
+ *! Used in @[glLight]
  */
 
 /*!@decl constant GL_POST_CONVOLUTION_ALPHA_BIAS_EXT = 32803
@@ -10358,7 +10780,7 @@
  */
 
 /*!@decl constant GL_PROJECTION = 5889
- *! Used in @[glPushMatrix], @[glMatrixMode], @[glFrustum], @[glGetIntegerv], @[glGetBooleanv], @[glTranslate], @[glGetFloatv], @[glGetDoublev], @[glRotate], @[glScale], @[glOrtho] and @[glPopMatrix]
+ *! Used in @[glPopMatrix], @[glFrustum], @[glRotate], @[glTranslate], @[glScale], @[glOrtho], @[glMatrixMode] and @[glPushMatrix]
  */
 
 /*!@decl constant GL_PROJECTION_MATRIX = 2983
@@ -10382,11 +10804,11 @@
  */
 
 /*!@decl constant GL_PROXY_TEXTURE_1D = 32867
- *! Used in @[glGetTexLevelParameter], @[glGetIntegerv], @[glGetBooleanv], @[glGetFloatv], @[glGetDoublev], @[glNewList], @[glEndList] and @[glTexImage1D]
+ *! Used in @[glNewList], @[glEndList] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_PROXY_TEXTURE_2D = 32868
- *! Used in @[glGetTexLevelParameter], @[glGetIntegerv], @[glGetBooleanv], @[glGetFloatv], @[glGetDoublev], @[glNewList], @[glTexImage2D] and @[glEndList]
+ *! Used in @[glNewList], @[glTexImage2D] and @[glEndList]
  */
 
 /*!@decl constant GL_PROXY_TEXTURE_3D_EXT = 32880
@@ -10396,42 +10818,42 @@
  */
 
 /*!@decl constant GL_Q = 8195
- *! Used in @[glGetTexGen], @[glEnd], @[glDrawElements], @[glDrawArrays], @[glGetLight], @[glBegin], @[glLight], @[glEvalMesh] and @[glTexGen]
+ *! Used in @[glDrawArrays], @[glEnd], @[glTexGen], @[glBegin] and @[glLight]
  */
 
 /*!@decl constant GL_QUADRATIC_ATTENUATION = 4617
- *! Used in @[glGetLight] and @[glLight]
+ *! Used in @[glLight]
  */
 
 /*!@decl constant GL_QUADS = 7
- *! Used in @[glEnd], @[glDrawElements], @[glDrawArrays] and @[glBegin]
+ *! Used in @[glDrawArrays], @[glEnd] and @[glBegin]
  */
 
 /*!@decl constant GL_QUAD_STRIP = 8
- *! Used in @[glEnd], @[glDrawElements], @[glDrawArrays], @[glBegin] and @[glEvalMesh]
+ *! Used in @[glDrawArrays], @[glEnd] and @[glBegin]
  */
 
 /*!@decl constant GL_R = 8194
- *! Used in @[glPixelStore], @[glTexEnv], @[glRenderMode], @[glGetTexGen], @[glGetIntegerv], @[glCopyTexSubImage2D], @[glDrawPixels], @[glCopyTexImage1D], @[glTexSubImage2D], @[glPopAttrib], @[glPixelTransfer], @[glGetTexParameter], @[glGetBooleanv], @[glGetTexImage], @[glPushAttrib], @[glGetFloatv], @[glAccum], @[glReadBuffer], @[glGetDoublev], @[glReadPixels], @[glCopyTexImage2D], @[glTexImage2D], @[glStencilOp], @[glGetString], @[glTexParameter], @[glTexSubImage1D], @[glDrawBuffer], @[glTexImage1D], @[glCopyTexSubImage1D] and @[glTexGen]
+ *! Used in @[glTexSubImage2D], @[glAccum], @[glPopAttrib], @[glRenderMode], @[glCopyTexSubImage1D], @[glTexImage2D], @[glReadBuffer], @[glTexSubImage1D], @[glCopyTexSubImage2D], @[glGetString], @[glStencilOp], @[glTexGen], @[glPushAttrib], @[glGetTexImage], @[glTexParameter], @[glDrawBuffer], @[glCopyTexImage1D], @[glDrawPixels], @[glReadPixels], @[glTexEnv], @[glCopyTexImage2D] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_R3_G3_B2 = 10768
- *! Used in @[glCopyTexImage1D], @[glCopyTexImage2D], @[glTexImage2D] and @[glTexImage1D]
+ *! Used in @[glTexImage2D], @[glCopyTexImage1D], @[glCopyTexImage2D] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_READ_BUFFER = 3074
- *! Used in @[glGetIntegerv], @[glCopyTexSubImage2D], @[glCopyTexImage1D], @[glPopAttrib], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv], @[glGetDoublev], @[glCopyTexImage2D] and @[glCopyTexSubImage1D]
+ *! Used in @[glPopAttrib], @[glCopyTexSubImage1D], @[glCopyTexSubImage2D], @[glPushAttrib], @[glCopyTexImage1D] and @[glCopyTexImage2D]
  */
 
 /*!@decl constant GL_RED = 6403
- *! Used in @[glGetIntegerv], @[glDrawPixels], @[glTexSubImage2D], @[glPopAttrib], @[glPixelTransfer], @[glGetBooleanv], @[glGetTexImage], @[glPushAttrib], @[glGetFloatv], @[glGetDoublev], @[glReadPixels], @[glTexImage2D], @[glTexSubImage1D] and @[glTexImage1D]
+ *! Used in @[glTexSubImage2D], @[glPopAttrib], @[glTexImage2D], @[glTexSubImage1D], @[glPushAttrib], @[glGetTexImage], @[glDrawPixels], @[glReadPixels] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_REDUCE_EXT = 32790
  */
 
 /*!@decl constant GL_RED_BIAS = 3349
- *! Used in @[glGetIntegerv], @[glPopAttrib], @[glPixelTransfer], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv] and @[glGetDoublev]
+ *! Used in @[glPopAttrib] and @[glPushAttrib]
  */
 
 /*!@decl constant GL_RED_BITS = 3410
@@ -10439,11 +10861,11 @@
  */
 
 /*!@decl constant GL_RED_SCALE = 3348
- *! Used in @[glGetIntegerv], @[glPopAttrib], @[glPixelTransfer], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv] and @[glGetDoublev]
+ *! Used in @[glPopAttrib] and @[glPushAttrib]
  */
 
 /*!@decl constant GL_RENDER = 7168
- *! Used in @[glRenderMode], @[glGetIntegerv], @[glGetBooleanv], @[glGetFloatv], @[glGetDoublev] and @[glGetString]
+ *! Used in @[glRenderMode] and @[glGetString]
  */
 
 /*!@decl constant GL_RENDERER = 7937
@@ -10455,11 +10877,11 @@
  */
 
 /*!@decl constant GL_REPEAT = 10497
- *! Used in @[glGetTexParameter] and @[glTexParameter]
+ *! Used in @[glTexParameter]
  */
 
 /*!@decl constant GL_REPLACE = 7681
- *! Used in @[glTexEnv] and @[glStencilOp]
+ *! Used in @[glStencilOp] and @[glTexEnv]
  */
 
 /*!@decl constant GL_REPLICATE_BORDER_HP = 33107
@@ -10473,63 +10895,63 @@
  */
 
 /*!@decl constant GL_RGB = 6407
- *! Used in @[glPixelStore], @[glTexEnv], @[glGetIntegerv], @[glDrawPixels], @[glCopyTexImage1D], @[glTexSubImage2D], @[glGetBooleanv], @[glGetTexImage], @[glGetFloatv], @[glGetDoublev], @[glReadPixels], @[glCopyTexImage2D], @[glTexImage2D], @[glTexSubImage1D] and @[glTexImage1D]
+ *! Used in @[glTexSubImage2D], @[glTexImage2D], @[glTexSubImage1D], @[glGetTexImage], @[glCopyTexImage1D], @[glDrawPixels], @[glReadPixels], @[glTexEnv], @[glCopyTexImage2D] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_RGB10 = 32850
- *! Used in @[glCopyTexImage1D], @[glCopyTexImage2D], @[glTexImage2D] and @[glTexImage1D]
+ *! Used in @[glTexImage2D], @[glCopyTexImage1D], @[glCopyTexImage2D] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_RGB10_A2 = 32857
- *! Used in @[glCopyTexImage1D], @[glCopyTexImage2D], @[glTexImage2D] and @[glTexImage1D]
+ *! Used in @[glTexImage2D], @[glCopyTexImage1D], @[glCopyTexImage2D] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_RGB12 = 32851
- *! Used in @[glCopyTexImage1D], @[glCopyTexImage2D], @[glTexImage2D] and @[glTexImage1D]
+ *! Used in @[glTexImage2D], @[glCopyTexImage1D], @[glCopyTexImage2D] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_RGB16 = 32852
- *! Used in @[glCopyTexImage1D], @[glCopyTexImage2D], @[glTexImage2D] and @[glTexImage1D]
+ *! Used in @[glTexImage2D], @[glCopyTexImage1D], @[glCopyTexImage2D] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_RGB4 = 32847
- *! Used in @[glCopyTexImage1D], @[glCopyTexImage2D], @[glTexImage2D] and @[glTexImage1D]
+ *! Used in @[glTexImage2D], @[glCopyTexImage1D], @[glCopyTexImage2D] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_RGB5 = 32848
- *! Used in @[glCopyTexImage1D], @[glCopyTexImage2D], @[glTexImage2D] and @[glTexImage1D]
+ *! Used in @[glTexImage2D], @[glCopyTexImage1D], @[glCopyTexImage2D] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_RGB5_A1 = 32855
- *! Used in @[glCopyTexImage1D], @[glCopyTexImage2D], @[glTexImage2D] and @[glTexImage1D]
+ *! Used in @[glTexImage2D], @[glCopyTexImage1D], @[glCopyTexImage2D] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_RGB8 = 32849
- *! Used in @[glCopyTexImage1D], @[glCopyTexImage2D], @[glTexImage2D] and @[glTexImage1D]
+ *! Used in @[glTexImage2D], @[glCopyTexImage1D], @[glCopyTexImage2D] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_RGBA = 6408
- *! Used in @[glTexEnv], @[glGetIntegerv], @[glDrawPixels], @[glCopyTexImage1D], @[glTexSubImage2D], @[glGetBooleanv], @[glGetTexImage], @[glGetFloatv], @[glGetDoublev], @[glReadPixels], @[glCopyTexImage2D], @[glTexImage2D], @[glTexSubImage1D] and @[glTexImage1D]
+ *! Used in @[glTexSubImage2D], @[glTexImage2D], @[glTexSubImage1D], @[glGetTexImage], @[glCopyTexImage1D], @[glDrawPixels], @[glReadPixels], @[glTexEnv], @[glCopyTexImage2D] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_RGBA12 = 32858
- *! Used in @[glCopyTexImage1D], @[glCopyTexImage2D], @[glTexImage2D] and @[glTexImage1D]
+ *! Used in @[glTexImage2D], @[glCopyTexImage1D], @[glCopyTexImage2D] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_RGBA16 = 32859
- *! Used in @[glCopyTexImage1D], @[glCopyTexImage2D], @[glTexImage2D] and @[glTexImage1D]
+ *! Used in @[glTexImage2D], @[glCopyTexImage1D], @[glCopyTexImage2D] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_RGBA2 = 32853
- *! Used in @[glCopyTexImage1D], @[glCopyTexImage2D], @[glTexImage2D] and @[glTexImage1D]
+ *! Used in @[glTexImage2D], @[glCopyTexImage1D], @[glCopyTexImage2D] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_RGBA4 = 32854
- *! Used in @[glCopyTexImage1D], @[glCopyTexImage2D], @[glTexImage2D] and @[glTexImage1D]
+ *! Used in @[glTexImage2D], @[glCopyTexImage1D], @[glCopyTexImage2D] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_RGBA8 = 32856
- *! Used in @[glCopyTexImage1D], @[glCopyTexImage2D], @[glTexImage2D] and @[glTexImage1D]
+ *! Used in @[glTexImage2D], @[glCopyTexImage1D], @[glCopyTexImage2D] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_RGBA_MODE = 3121
@@ -10541,7 +10963,7 @@
  */
 
 /*!@decl constant GL_S = 8192
- *! Used in @[glPushMatrix], @[glLoadName], @[glIsEnabled], @[glPushName], @[glRenderMode], @[glGetTexGen], @[glGetIntegerv], @[glColorMaterial], @[glGetError], @[glDrawPixels], @[glBlendFunc], @[glVertexPointer], @[glSelectBuffer], @[glGetLight], @[glInitNames], @[glDisable], @[glColorPointer], @[glTexSubImage2D], @[glNormalPointer], @[glPopAttrib], @[glEnable], @[glGetPointerv], @[glPopName], @[glLogicOp], @[glGetBooleanv], @[glGetTexImage], @[glPushAttrib], @[glGetFloatv], @[glMaterial], @[glGetDoublev], @[glCallLists], @[glShadeModel], @[glReadPixels], @[glTexImage2D], @[glLight], @[glPopClientAttrib], @[glStencilOp], @[glTexCoordPointer], @[glCopyPixels], @[glIndexPointer], @[glPushClientAttrib], @[glScissor], @[glTexSubImage1D], @[glTexImage1D], @[glStencilFunc], @[glGetMaterial], @[glClear], @[glPopMatrix] and @[glTexGen]
+ *! Used in @[glTexSubImage2D], @[glStencilFunc], @[glColorMaterial], @[glLogicOp], @[glPopAttrib], @[glClear], @[glRenderMode], @[glPopClientAttrib], @[glTexImage2D], @[glIndexPointer], @[glIsEnabled], @[glGetError], @[glTexSubImage1D], @[glPopMatrix], @[glNormalPointer], @[glVertexPointer], @[glStencilOp], @[glDisable], @[glCopyPixels], @[glColorPointer], @[glTexGen], @[glMaterial], @[glPushAttrib], @[glGetTexImage], @[glTexCoordPointer], @[glInitNames], @[glDrawPixels], @[glEnable], @[glSelectBuffer], @[glReadPixels], @[glPopName], @[glPushName], @[glScissor], @[glPushClientAttrib], @[glLight], @[glTexImage1D], @[glLoadName], @[glShadeModel], @[glBlendFunc] and @[glPushMatrix]
  */
 
 /*!@decl constant GL_SCISSOR_BIT = 524288
@@ -10553,11 +10975,11 @@
  */
 
 /*!@decl constant GL_SCISSOR_TEST = 3089
- *! Used in @[glIsEnabled], @[glGetIntegerv], @[glDisable], @[glPopAttrib], @[glEnable], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv], @[glGetDoublev] and @[glScissor]
+ *! Used in @[glPopAttrib], @[glIsEnabled], @[glDisable], @[glPushAttrib], @[glEnable] and @[glScissor]
  */
 
 /*!@decl constant GL_SELECT = 7170
- *! Used in @[glLoadName], @[glPushName], @[glRenderMode], @[glSelectBuffer], @[glInitNames], @[glGetPointerv] and @[glPopName]
+ *! Used in @[glRenderMode], @[glInitNames], @[glSelectBuffer], @[glPopName], @[glPushName] and @[glLoadName]
  */
 
 /*!@decl constant GL_SELECTION_BUFFER_POINTER = 3571
@@ -10581,23 +11003,23 @@
  */
 
 /*!@decl constant GL_SHADE_MODEL = 2900
- *! Used in @[glGetIntegerv], @[glPopAttrib], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv] and @[glGetDoublev]
+ *! Used in @[glPopAttrib] and @[glPushAttrib]
  */
 
 /*!@decl constant GL_SHININESS = 5633
- *! Used in @[glMaterial] and @[glGetMaterial]
+ *! Used in @[glMaterial]
  */
 
 /*!@decl constant GL_SHORT = 5122
- *! Used in @[glDrawPixels], @[glVertexPointer], @[glColorPointer], @[glTexSubImage2D], @[glNormalPointer], @[glGetTexImage], @[glCallLists], @[glReadPixels], @[glTexImage2D], @[glTexCoordPointer], @[glIndexPointer], @[glTexSubImage1D] and @[glTexImage1D]
+ *! Used in @[glTexSubImage2D], @[glTexImage2D], @[glIndexPointer], @[glTexSubImage1D], @[glNormalPointer], @[glVertexPointer], @[glColorPointer], @[glGetTexImage], @[glTexCoordPointer], @[glDrawPixels], @[glReadPixels] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_SMOOTH = 7425
- *! Used in @[glGetIntegerv], @[glGetBooleanv], @[glGetFloatv], @[glGetDoublev] and @[glShadeModel]
+ *! Used in @[glShadeModel]
  */
 
 /*!@decl constant GL_SPECULAR = 4610
- *! Used in @[glColorMaterial], @[glGetLight], @[glMaterial], @[glLight] and @[glGetMaterial]
+ *! Used in @[glColorMaterial], @[glMaterial] and @[glLight]
  */
 
 /*!@decl constant GL_SPHERE_MAP = 9218
@@ -10605,15 +11027,15 @@
  */
 
 /*!@decl constant GL_SPOT_CUTOFF = 4614
- *! Used in @[glGetLight] and @[glLight]
+ *! Used in @[glLight]
  */
 
 /*!@decl constant GL_SPOT_DIRECTION = 4612
- *! Used in @[glGetLight] and @[glLight]
+ *! Used in @[glLight]
  */
 
 /*!@decl constant GL_SPOT_EXPONENT = 4613
- *! Used in @[glGetLight] and @[glLight]
+ *! Used in @[glLight]
  */
 
 /*!@decl constant GL_SRC_ALPHA = 770
@@ -10629,23 +11051,23 @@
  */
 
 /*!@decl constant GL_STACK_OVERFLOW = 1283
- *! Used in @[glPushMatrix], @[glPushName], @[glGetError], @[glPopAttrib], @[glPopName], @[glPushAttrib], @[glPopClientAttrib], @[glPushClientAttrib] and @[glPopMatrix]
+ *! Used in @[glPopAttrib], @[glPopClientAttrib], @[glGetError], @[glPopMatrix], @[glPushAttrib], @[glPopName], @[glPushName], @[glPushClientAttrib] and @[glPushMatrix]
  */
 
 /*!@decl constant GL_STACK_UNDERFLOW = 1284
- *! Used in @[glPushMatrix], @[glPushName], @[glGetError], @[glPopAttrib], @[glPopName], @[glPushAttrib], @[glPopClientAttrib], @[glPushClientAttrib] and @[glPopMatrix]
+ *! Used in @[glPopAttrib], @[glPopClientAttrib], @[glGetError], @[glPopMatrix], @[glPushAttrib], @[glPopName], @[glPushName], @[glPushClientAttrib] and @[glPushMatrix]
  */
 
 /*!@decl constant GL_STENCIL = 6146
- *! Used in @[glIsEnabled], @[glGetIntegerv], @[glDrawPixels], @[glDisable], @[glPopAttrib], @[glEnable], @[glGetBooleanv], @[glGetTexImage], @[glPushAttrib], @[glGetFloatv], @[glGetDoublev], @[glReadPixels], @[glTexImage2D], @[glStencilOp], @[glCopyPixels], @[glTexImage1D], @[glStencilFunc] and @[glClear]
+ *! Used in @[glStencilFunc], @[glPopAttrib], @[glClear], @[glTexImage2D], @[glIsEnabled], @[glStencilOp], @[glDisable], @[glCopyPixels], @[glPushAttrib], @[glGetTexImage], @[glDrawPixels], @[glEnable], @[glReadPixels] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_STENCIL_BITS = 3415
- *! Used in @[glGetIntegerv], @[glGetBooleanv], @[glGetFloatv], @[glGetDoublev] and @[glStencilOp]
+ *! Used in @[glStencilOp]
  */
 
 /*!@decl constant GL_STENCIL_BUFFER_BIT = 1024
- *! Used in @[glPopAttrib], @[glPushAttrib] and @[glClear]
+ *! Used in @[glPopAttrib], @[glClear] and @[glPushAttrib]
  */
 
 /*!@decl constant GL_STENCIL_CLEAR_VALUE = 2961
@@ -10661,7 +11083,7 @@
  */
 
 /*!@decl constant GL_STENCIL_INDEX = 6401
- *! Used in @[glDrawPixels], @[glGetTexImage], @[glReadPixels], @[glTexImage2D] and @[glTexImage1D]
+ *! Used in @[glTexImage2D], @[glGetTexImage], @[glDrawPixels], @[glReadPixels] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_STENCIL_PASS_DEPTH_FAIL = 2965
@@ -10677,7 +11099,7 @@
  */
 
 /*!@decl constant GL_STENCIL_TEST = 2960
- *! Used in @[glIsEnabled], @[glGetIntegerv], @[glDisable], @[glPopAttrib], @[glEnable], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv], @[glGetDoublev], @[glStencilOp] and @[glStencilFunc]
+ *! Used in @[glStencilFunc], @[glPopAttrib], @[glIsEnabled], @[glStencilOp], @[glDisable], @[glPushAttrib] and @[glEnable]
  */
 
 /*!@decl constant GL_STENCIL_VALUE_MASK = 2963
@@ -10712,7 +11134,7 @@
  */
 
 /*!@decl constant GL_T = 8193
- *! Used in @[glPushMatrix], @[glMatrixMode], @[glIsEnabled], @[glGetTexLevelParameter], @[glTexEnv], @[glIsList], @[glAreTexturesResident], @[glGetTexGen], @[glGetIntegerv], @[glEnd], @[glIsTexture], @[glDrawElements], @[glDrawArrays], @[glCopyTexSubImage2D], @[glBindTexture], @[glDisable], @[glCopyTexImage1D], @[glTexSubImage2D], @[glEdgeFlag], @[glPopAttrib], @[glEnable], @[glColorMask], @[glEnableClientState], @[glGetPointerv], @[glGetTexParameter], @[glGetBooleanv], @[glGetTexImage], @[glPushAttrib], @[glGetFloatv], @[glGetDoublev], @[glInterleavedArrays], @[glReadPixels], @[glCopyTexImage2D], @[glTexImage2D], @[glGetTexEnv], @[glBegin], @[glTexCoordPointer], @[glTexParameter], @[glDisableClientState], @[glTexSubImage1D], @[glEdgeFlagv], @[glTexImage1D], @[glCopyTexSubImage1D], @[glPopMatrix] and @[glTexGen]
+ *! Used in @[glTexSubImage2D], @[glDrawArrays], @[glDisableClientState], @[glPopAttrib], @[glCopyTexSubImage1D], @[glTexImage2D], @[glIsEnabled], @[glTexSubImage1D], @[glPopMatrix], @[glCopyTexSubImage2D], @[glEnd], @[glDisable], @[glTexGen], @[glIsList], @[glPushAttrib], @[glGetTexImage], @[glTexCoordPointer], @[glInterleavedArrays], @[glTexParameter], @[glBegin], @[glIsTexture], @[glBindTexture], @[glColorMask], @[glCopyTexImage1D], @[glMatrixMode], @[glEnable], @[glEnableClientState], @[glReadPixels], @[glTexEnv], @[glEdgeFlag], @[glCopyTexImage2D], @[glTexImage1D] and @[glPushMatrix]
  */
 
 /*!@decl constant GL_T2F_C3F_V3F = 10794
@@ -10747,15 +11169,15 @@
  */
 
 /*!@decl constant GL_TEXTURE = 5890
- *! Used in @[glPushMatrix], @[glMatrixMode], @[glIsEnabled], @[glGetTexLevelParameter], @[glTexEnv], @[glAreTexturesResident], @[glGetTexGen], @[glGetIntegerv], @[glCopyTexSubImage2D], @[glBindTexture], @[glDisable], @[glCopyTexImage1D], @[glTexSubImage2D], @[glPopAttrib], @[glEnable], @[glEnableClientState], @[glGetPointerv], @[glGetTexParameter], @[glGetBooleanv], @[glGetTexImage], @[glPushAttrib], @[glGetFloatv], @[glGetDoublev], @[glCopyTexImage2D], @[glTexImage2D], @[glGetTexEnv], @[glTexCoordPointer], @[glTexParameter], @[glDisableClientState], @[glTexSubImage1D], @[glTexImage1D], @[glCopyTexSubImage1D], @[glPopMatrix] and @[glTexGen]
+ *! Used in @[glTexSubImage2D], @[glDisableClientState], @[glPopAttrib], @[glCopyTexSubImage1D], @[glTexImage2D], @[glIsEnabled], @[glTexSubImage1D], @[glPopMatrix], @[glCopyTexSubImage2D], @[glDisable], @[glTexGen], @[glPushAttrib], @[glGetTexImage], @[glTexCoordPointer], @[glTexParameter], @[glBindTexture], @[glCopyTexImage1D], @[glMatrixMode], @[glEnable], @[glEnableClientState], @[glTexEnv], @[glCopyTexImage2D], @[glTexImage1D] and @[glPushMatrix]
  */
 
 /*!@decl constant GL_TEXTURE_1D = 3552
- *! Used in @[glIsEnabled], @[glGetTexLevelParameter], @[glGetIntegerv], @[glBindTexture], @[glDisable], @[glCopyTexImage1D], @[glPopAttrib], @[glEnable], @[glGetTexParameter], @[glGetBooleanv], @[glGetTexImage], @[glPushAttrib], @[glGetFloatv], @[glGetDoublev], @[glTexParameter], @[glTexSubImage1D], @[glTexImage1D] and @[glCopyTexSubImage1D]
+ *! Used in @[glPopAttrib], @[glCopyTexSubImage1D], @[glIsEnabled], @[glTexSubImage1D], @[glDisable], @[glPushAttrib], @[glGetTexImage], @[glTexParameter], @[glBindTexture], @[glCopyTexImage1D], @[glEnable] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_TEXTURE_2D = 3553
- *! Used in @[glIsEnabled], @[glGetTexLevelParameter], @[glGetIntegerv], @[glCopyTexSubImage2D], @[glBindTexture], @[glDisable], @[glTexSubImage2D], @[glPopAttrib], @[glEnable], @[glGetTexParameter], @[glGetBooleanv], @[glGetTexImage], @[glPushAttrib], @[glGetFloatv], @[glGetDoublev], @[glCopyTexImage2D], @[glTexImage2D] and @[glTexParameter]
+ *! Used in @[glTexSubImage2D], @[glPopAttrib], @[glTexImage2D], @[glIsEnabled], @[glCopyTexSubImage2D], @[glDisable], @[glPushAttrib], @[glGetTexImage], @[glTexParameter], @[glBindTexture], @[glEnable] and @[glCopyTexImage2D]
  */
 
 /*!@decl constant GL_TEXTURE_3D_EXT = 32879
@@ -10780,11 +11202,11 @@
  */
 
 /*!@decl constant GL_TEXTURE_BORDER = 4101
- *! Used in @[glGetTexLevelParameter], @[glCopyTexSubImage2D], @[glGetTexParameter], @[glTexParameter], @[glTexSubImage1D] and @[glCopyTexSubImage1D]
+ *! Used in @[glCopyTexSubImage1D], @[glTexSubImage1D], @[glCopyTexSubImage2D] and @[glTexParameter]
  */
 
 /*!@decl constant GL_TEXTURE_BORDER_COLOR = 4100
- *! Used in @[glGetTexParameter] and @[glTexParameter]
+ *! Used in @[glTexParameter]
  */
 
 /*!@decl constant GL_TEXTURE_COLOR_TABLE_SGI = 32956
@@ -10794,7 +11216,7 @@
  */
 
 /*!@decl constant GL_TEXTURE_COORD_ARRAY = 32888
- *! Used in @[glIsEnabled], @[glGetIntegerv], @[glEnableClientState], @[glGetPointerv], @[glGetBooleanv], @[glGetFloatv], @[glGetDoublev], @[glTexCoordPointer] and @[glDisableClientState]
+ *! Used in @[glDisableClientState], @[glIsEnabled], @[glTexCoordPointer] and @[glEnableClientState]
  */
 
 /*!@decl constant GL_TEXTURE_COORD_ARRAY_POINTER = 32914
@@ -10817,35 +11239,35 @@
  */
 
 /*!@decl constant GL_TEXTURE_ENV = 8960
- *! Used in @[glTexEnv] and @[glGetTexEnv]
+ *! Used in @[glTexEnv]
  */
 
 /*!@decl constant GL_TEXTURE_ENV_COLOR = 8705
- *! Used in @[glTexEnv] and @[glGetTexEnv]
+ *! Used in @[glTexEnv]
  */
 
 /*!@decl constant GL_TEXTURE_ENV_MODE = 8704
- *! Used in @[glTexEnv] and @[glGetTexEnv]
+ *! Used in @[glTexEnv]
  */
 
 /*!@decl constant GL_TEXTURE_GEN_MODE = 9472
- *! Used in @[glGetTexGen], @[glPopAttrib], @[glPushAttrib] and @[glTexGen]
+ *! Used in @[glPopAttrib], @[glTexGen] and @[glPushAttrib]
  */
 
 /*!@decl constant GL_TEXTURE_GEN_Q = 3171
- *! Used in @[glIsEnabled], @[glGetIntegerv], @[glDisable], @[glEnable], @[glGetBooleanv], @[glGetFloatv], @[glGetDoublev] and @[glTexGen]
+ *! Used in @[glIsEnabled], @[glDisable], @[glTexGen] and @[glEnable]
  */
 
 /*!@decl constant GL_TEXTURE_GEN_R = 3170
- *! Used in @[glIsEnabled], @[glGetIntegerv], @[glDisable], @[glEnable], @[glGetBooleanv], @[glGetFloatv], @[glGetDoublev] and @[glTexGen]
+ *! Used in @[glIsEnabled], @[glDisable], @[glTexGen] and @[glEnable]
  */
 
 /*!@decl constant GL_TEXTURE_GEN_S = 3168
- *! Used in @[glIsEnabled], @[glGetIntegerv], @[glDisable], @[glEnable], @[glGetBooleanv], @[glGetFloatv], @[glGetDoublev] and @[glTexGen]
+ *! Used in @[glIsEnabled], @[glDisable], @[glTexGen] and @[glEnable]
  */
 
 /*!@decl constant GL_TEXTURE_GEN_T = 3169
- *! Used in @[glIsEnabled], @[glGetIntegerv], @[glDisable], @[glEnable], @[glGetBooleanv], @[glGetFloatv], @[glGetDoublev] and @[glTexGen]
+ *! Used in @[glIsEnabled], @[glDisable], @[glTexGen] and @[glEnable]
  */
 
 /*!@decl constant GL_TEXTURE_GREEN_SIZE = 32861
@@ -10853,7 +11275,7 @@
  */
 
 /*!@decl constant GL_TEXTURE_HEIGHT = 4097
- *! Used in @[glGetTexLevelParameter], @[glCopyTexSubImage2D] and @[glTexSubImage2D]
+ *! Used in @[glTexSubImage2D] and @[glCopyTexSubImage2D]
  */
 
 /*!@decl constant GL_TEXTURE_INTENSITY_SIZE = 32865
@@ -10869,7 +11291,7 @@
  */
 
 /*!@decl constant GL_TEXTURE_MAG_FILTER = 10240
- *! Used in @[glGetTexParameter] and @[glTexParameter]
+ *! Used in @[glTexParameter]
  */
 
 /*!@decl constant GL_TEXTURE_MATRIX = 2984
@@ -10877,11 +11299,11 @@
  */
 
 /*!@decl constant GL_TEXTURE_MIN_FILTER = 10241
- *! Used in @[glGetTexParameter] and @[glTexParameter]
+ *! Used in @[glTexParameter]
  */
 
 /*!@decl constant GL_TEXTURE_PRIORITY = 32870
- *! Used in @[glGetTexParameter] and @[glTexParameter]
+ *! Used in @[glTexParameter]
  */
 
 /*!@decl constant GL_TEXTURE_RED_SIZE = 32860
@@ -10897,18 +11319,18 @@
  */
 
 /*!@decl constant GL_TEXTURE_WIDTH = 4096
- *! Used in @[glGetTexLevelParameter], @[glCopyTexSubImage2D], @[glTexSubImage2D], @[glTexSubImage1D] and @[glCopyTexSubImage1D]
+ *! Used in @[glTexSubImage2D], @[glCopyTexSubImage1D], @[glTexSubImage1D] and @[glCopyTexSubImage2D]
  */
 
 /*!@decl constant GL_TEXTURE_WRAP_R_EXT = 32882
  */
 
 /*!@decl constant GL_TEXTURE_WRAP_S = 10242
- *! Used in @[glGetTexParameter] and @[glTexParameter]
+ *! Used in @[glTexParameter]
  */
 
 /*!@decl constant GL_TEXTURE_WRAP_T = 10243
- *! Used in @[glGetTexParameter] and @[glTexParameter]
+ *! Used in @[glTexParameter]
  */
 
 /*!@decl constant GL_TRANSFORM_BIT = 4096
@@ -10916,30 +11338,30 @@
  */
 
 /*!@decl constant GL_TRIANGLES = 4
- *! Used in @[glEnd], @[glDrawElements], @[glDrawArrays] and @[glBegin]
+ *! Used in @[glDrawArrays], @[glEnd] and @[glBegin]
  */
 
 /*!@decl constant GL_TRIANGLE_FAN = 6
- *! Used in @[glEnd], @[glDrawElements], @[glDrawArrays] and @[glBegin]
+ *! Used in @[glDrawArrays], @[glEnd] and @[glBegin]
  */
 
 /*!@decl constant GL_TRIANGLE_STRIP = 5
- *! Used in @[glEnd], @[glDrawElements], @[glDrawArrays] and @[glBegin]
+ *! Used in @[glDrawArrays], @[glEnd] and @[glBegin]
  */
 
 /*!@decl constant GL_TRUE = 1
- *! Used in @[glIsEnabled], @[glIsList], @[glAreTexturesResident], @[glGetIntegerv], @[glIsTexture], @[glDisable], @[glEdgeFlag], @[glEnable], @[glColorMask], @[glGetTexParameter], @[glGetBooleanv], @[glGetFloatv], @[glGetDoublev], @[glReadPixels] and @[glEdgeFlagv]
+ *! Used in @[glIsEnabled], @[glDisable], @[glIsList], @[glIsTexture], @[glColorMask], @[glEnable], @[glReadPixels] and @[glEdgeFlag]
  */
 
 /*!@decl constant GL_UNPACK_ALIGNMENT = 3317
- *! Used in @[glPixelStore], @[glGetIntegerv], @[glDrawPixels], @[glGetBooleanv], @[glGetFloatv] and @[glGetDoublev]
+ *! Used in @[glDrawPixels]
  */
 
 /*!@decl constant GL_UNPACK_IMAGE_HEIGHT_EXT = 32878
  */
 
 /*!@decl constant GL_UNPACK_LSB_FIRST = 3313
- *! Used in @[glPixelStore], @[glGetIntegerv], @[glDrawPixels], @[glGetBooleanv], @[glGetFloatv], @[glGetDoublev], @[glTexImage2D], @[glTexImage1D] and @[glPolygonStipple]
+ *! Used in @[glTexImage2D], @[glDrawPixels] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_UNPACK_ROW_LENGTH = 3314
@@ -10962,11 +11384,11 @@
  */
 
 /*!@decl constant GL_UNSIGNED_BYTE = 5121
- *! Used in @[glDrawElements], @[glDrawPixels], @[glColorPointer], @[glTexSubImage2D], @[glGetTexImage], @[glCallLists], @[glReadPixels], @[glTexImage2D], @[glIndexPointer], @[glTexSubImage1D] and @[glTexImage1D]
+ *! Used in @[glTexSubImage2D], @[glTexImage2D], @[glIndexPointer], @[glTexSubImage1D], @[glColorPointer], @[glGetTexImage], @[glDrawPixels], @[glReadPixels] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_UNSIGNED_INT = 5125
- *! Used in @[glDrawElements], @[glDrawPixels], @[glColorPointer], @[glTexSubImage2D], @[glGetTexImage], @[glCallLists], @[glReadPixels], @[glTexImage2D], @[glTexSubImage1D] and @[glTexImage1D]
+ *! Used in @[glTexSubImage2D], @[glTexImage2D], @[glTexSubImage1D], @[glColorPointer], @[glGetTexImage], @[glDrawPixels], @[glReadPixels] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_UNSIGNED_INT_8_8_8_8 = 32821
@@ -10976,7 +11398,7 @@
  */
 
 /*!@decl constant GL_UNSIGNED_SHORT = 5123
- *! Used in @[glDrawElements], @[glDrawPixels], @[glColorPointer], @[glTexSubImage2D], @[glGetTexImage], @[glCallLists], @[glReadPixels], @[glTexImage2D], @[glTexSubImage1D] and @[glTexImage1D]
+ *! Used in @[glTexSubImage2D], @[glTexImage2D], @[glTexSubImage1D], @[glColorPointer], @[glGetTexImage], @[glDrawPixels], @[glReadPixels] and @[glTexImage1D]
  */
 
 /*!@decl constant GL_V2F = 10784
@@ -10999,7 +11421,7 @@
  */
 
 /*!@decl constant GL_VERTEX_ARRAY = 32884
- *! Used in @[glIsEnabled], @[glArrayElement], @[glGetIntegerv], @[glDrawElements], @[glDrawArrays], @[glVertexPointer], @[glEnableClientState], @[glGetPointerv], @[glGetBooleanv], @[glGetFloatv], @[glGetDoublev] and @[glDisableClientState]
+ *! Used in @[glDrawArrays], @[glDisableClientState], @[glIsEnabled], @[glVertexPointer], @[glArrayElement] and @[glEnableClientState]
  */
 
 /*!@decl constant GL_VERTEX_ARRAY_POINTER = 32910
@@ -11019,7 +11441,7 @@
  */
 
 /*!@decl constant GL_VIEWPORT = 2978
- *! Used in @[glGetIntegerv], @[glPopAttrib], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv] and @[glGetDoublev]
+ *! Used in @[glPopAttrib] and @[glPushAttrib]
  */
 
 /*!@decl constant GL_VIEWPORT_BIT = 2048
@@ -11034,15 +11456,15 @@
  */
 
 /*!@decl constant GL_ZERO = 0
- *! Used in @[glGetIntegerv], @[glBlendFunc], @[glGetBooleanv], @[glGetFloatv], @[glGetDoublev] and @[glStencilOp]
+ *! Used in @[glStencilOp] and @[glBlendFunc]
  */
 
 /*!@decl constant GL_ZOOM_X = 3350
- *! Used in @[glGetIntegerv], @[glDrawPixels], @[glPopAttrib], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv], @[glGetDoublev] and @[glCopyPixels]
+ *! Used in @[glPopAttrib], @[glCopyPixels], @[glPushAttrib] and @[glDrawPixels]
  */
 
 /*!@decl constant GL_ZOOM_Y = 3351
- *! Used in @[glGetIntegerv], @[glDrawPixels], @[glPopAttrib], @[glGetBooleanv], @[glPushAttrib], @[glGetFloatv], @[glGetDoublev] and @[glCopyPixels]
+ *! Used in @[glPopAttrib], @[glCopyPixels], @[glPushAttrib] and @[glDrawPixels]
  */
 
 
