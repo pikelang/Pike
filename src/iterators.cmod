@@ -255,6 +255,9 @@ PIKECLASS Iterator
   {}
 }
 
+/*! @endclass
+ */
+
 /*! @class CompatIterator
  *!
  *! Wrapper for iterators implementing the Pike 8.0 and
@@ -397,11 +400,9 @@ static unsigned INT_TYPE call_random(unsigned INT_TYPE limit)
   return value;
 }
 
-/*! @endclass
- */
-
 /*! @module Function
  */
+
 /*! @class Iterator
  *! @inherit predef::Iterator
  *!
