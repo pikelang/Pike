@@ -78,6 +78,10 @@ int WebPMemoryWrite(const uint8_t* data, size_t data_size,
     }
     return 1;
 }
+
+#define FreeMemoryWriterMem free
+#else
+#define FreeMemoryWriterMem WebPFree
 #endif
 
 
@@ -160,7 +164,7 @@ static size_t Encode(const uint8_t* rgba, int width, int height, int stride,
 
  if (!ok)
  {
-  free(wrt.mem);
+  FreeMemoryWriterMem(wrt.mem);
   *output = NULL;
   switch( pic.error_code )
   {
@@ -281,7 +285,7 @@ PIKEFUN mapping(string:object(Image.Image)|string) _decode( string data )
       *(ap++) = av;
     }
   }
-  free( res );
+  WebPFree( res );
 
   pop_n_elems(args);
 
@@ -556,7 +560,7 @@ PIKEFUN string(0..255) encode( object(Image.Image) i,
         Pike_error( "%s", (char *)result );
 
     push_string( make_shared_binary_string( (const char *)result, size ) );
-    free( result );
+    FreeMemoryWriterMem( result );
 }
 
 EXIT {
@@ -584,21 +588,21 @@ EXIT {
 */
 
 EXTRA {
-#define CONST(X)  add_integer_constant( #X, WEBP_##X, 0 );
-    CONST(PRESET_DEFAULT);
-    CONST(PRESET_PICTURE);
-    CONST(PRESET_PHOTO);
-    CONST(PRESET_DRAWING);
-    CONST(PRESET_ICON);
-    CONST(PRESET_TEXT);
+#define ICONST(X)  add_integer_constant( #X, WEBP_##X, 0 );
+    ICONST(PRESET_DEFAULT);
+    ICONST(PRESET_PICTURE);
+    ICONST(PRESET_PHOTO);
+    ICONST(PRESET_DRAWING);
+    ICONST(PRESET_ICON);
+    ICONST(PRESET_TEXT);
 
 #if WEBP_ENCODER_ABI_VERSION > 0x0200
-    CONST(HINT_DEFAULT);
-    CONST(HINT_PICTURE);
-    CONST(HINT_PHOTO);
-    CONST(HINT_GRAPH);
+    ICONST(HINT_DEFAULT);
+    ICONST(HINT_PICTURE);
+    ICONST(HINT_PHOTO);
+    ICONST(HINT_GRAPH);
 #endif
-#undef CONST
+#undef ICONST
 }
 #endif /* HAVE_LIBVPX */
 

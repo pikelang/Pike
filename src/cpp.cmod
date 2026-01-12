@@ -876,7 +876,7 @@ static void add_quoted_string( const void *str, ptrdiff_t len, int shift,
    *!   Extra arguments to @[sprintf()].
    *!
    *!   The default implementation just calls
-   *!   @[CompilerEnviroment::report()] in the parent with the
+   *!   @[CompilerEnvironment::report()] in the parent with the
    *!   same arguments.
    *!
    *! @seealso

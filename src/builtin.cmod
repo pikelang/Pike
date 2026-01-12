@@ -4543,14 +4543,14 @@ PIKEFUN int(0..1) signal_contextp()
 PIKECLASS Future
   num_generics 1;
 {
-  /*! @decl void set_backend(Backend backend)
+  /*! @decl void set_backend(Pike.Backend backend)
    */
   PIKEFUN void set_backend(Backend backend)
     prototype;
   {
   }
 
-  /*! @decl Backend get_backend()
+  /*! @decl Pike.Backend get_backend()
    */
   PIKEFUN Backend get_backend()
     prototype;
