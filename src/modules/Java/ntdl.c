@@ -30,7 +30,7 @@ static int open_nt_dll(void)
   DWORD l;
   HINSTANCE kernel;
   DWORD (WINAPI *getdlldir)(DWORD nBufferLength, WCHAR *lpBuffer) = NULL;
-  BOOL (WINAPI *setdlldir)(WCHAR *lpPathname) = NULL;
+  BOOL (WINAPI *setdlldir)(const WCHAR *lpPathname) = NULL;
 
   l = GetEnvironmentVariableW(L"PIKE_JRE_JVMDLL", buffer, len);
   if (l > 0) {
