@@ -785,10 +785,10 @@ class Revision
   //! @note
   //!   This field is straight from the RCS file, and has somewhat weird
   //!   semantics. Usually you will want to use one of the derived fields
-  //!   @[next] or @[prev] or possibly @[rcs_prev].
+  //!   @[next] or @[ancestor] or possibly @[rcs_prev].
   //!
   //! @seealso
-  //!   @[next], @[prev], @[rcs_prev]
+  //!   @[next], @[ancestor], @[rcs_prev]
   string|zero rcs_next;
 
   //! The revision that this revision is based on,

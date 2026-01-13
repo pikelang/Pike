@@ -22,14 +22,10 @@
  *!<r><c>glCallLists</c></r>
  *!<r><c>glDeleteTextures</c></r>
  *!<r><c>glDrawElements</c></r>
- *!<r><c>glEdgeFlagv</c></r>
  *!<r><c>glEvalMesh</c></r>
  *!<r><c>glGenTextures</c></r>
- *!<r><c>glGetBooleanv</c></r>
+ *!<r><c>glGet</c></r>
  *!<r><c>glGetClipPlane</c></r>
- *!<r><c>glGetDoublev</c></r>
- *!<r><c>glGetFloatv</c></r>
- *!<r><c>glGetIntegerv</c></r>
  *!<r><c>glGetLight</c></r>
  *!<r><c>glGetMap</c></r>
  *!<r><c>glGetMaterial</c></r>
@@ -54,19 +50,7 @@
  *!@fixme
  *!Methods available, but lacking documentation:
  *!@xml{<matrix>
- *!<r><c>glClipPlane</c></r>
- *!<r><c>glColorPointer</c></r>
- *!<r><c>glEdgeFlagPointer</c></r>
  *!<r><c>glEvalMesh</c></r>
- *!<r><c>glFeedbackBuffer</c></r>
- *!<r><c>glGetTexImage</c></r>
- *!<r><c>glIndexPointer</c></r>
- *!<r><c>glInterleavedArrays</c></r>
- *!<r><c>glNormalPointer</c></r>
- *!<r><c>glReadPixels</c></r>
- *!<r><c>glSelectBuffer</c></r>
- *!<r><c>glTexCoordPointer</c></r>
- *!<r><c>glVertexPointer</c></r>
  *!</matrix>@}
  */
 
@@ -87,7 +71,7 @@
  *!red, green, blue, and alpha values.
  *!The number of bits per component in the accumulation buffer
  *!depends on the implementation. You can examine this number
- *!by calling @[glGetIntegerv] four times,
+ *!by calling @[glGet] four times,
  *!with arguments @[GL_ACCUM_RED_BITS],
  *!@[GL_ACCUM_GREEN_BITS],
  *!@[GL_ACCUM_BLUE_BITS],
@@ -742,6 +726,63 @@
  *!@throws
  *!
  *!@[GL_INVALID_OPERATION] is generated if @[glClearStencil]
+ *!is executed between the execution of @[glBegin]
+ *!and the corresponding execution of @[glEnd].
+ *!
+ *!
+ */
+
+/*!@decl void glClipPlane(int plane, array(4:float) *equation)
+ *!@decl void glClipPlane(int plane, float equation_0, float equation_1, float equation_2, float equation_3)
+ *!
+ *!Geometry is always clipped against the boundaries of a six-plane frustum
+ *!in @i{x@}, @i{y@}, and @i{z@}.
+ *!@[glClipPlane] allows the specification of additional planes,
+ *!not necessarily perpendicular to the @i{x@}, @i{y@}, or @i{z@} axis,
+ *!against which all geometry is clipped.
+ *!To determine the maximum number of additional clipping planes, call
+ *!@[glGet] with argument @[GL_MAX_CLIP_PLANES]. All
+ *!implementations support at least six such clipping planes.
+ *!Because the resulting clipping region is the intersection
+ *!of the defined half-spaces,
+ *!it is always convex.
+ *!
+ *!@[glClipPlane] specifies a half-space using a four-component plane equation.
+ *!When @[glClipPlane] is called,
+ *!@i{equation@} is transformed by the inverse of the modelview matrix
+ *!and stored in the resulting eye coordinates.
+ *!Subsequent changes to the modelview matrix have no effect on the
+ *!stored plane-equation components.
+ *!If the dot product of the eye coordinates of a vertex with the
+ *!stored plane equation components is positive or zero,
+ *!the vertex is @i{in@} with respect to that clipping plane.
+ *!Otherwise, it is @i{out@}.
+ *!.P
+ *!To enable and disable clipping planes, call
+ *!@[glEnable] and @[glDisable] with the argument
+ *!@[GL_CLIP_PLANE]@i{i@},
+ *!where @i{i@} is the plane number.
+ *!
+ *!All clipping planes are initially defined as (0, 0, 0, 0) in eye coordinates
+ *!and are disabled.
+ *!
+ *!@param plane
+ *!
+ *!Specifies which clipping plane is being positioned.
+ *!Symbolic names of the form @[GL_CLIP_PLANE]@i{i@},
+ *!where @i{i@} is an integer between 0 and @[GL_MAX_CLIP_PLANES] -1,
+ *!are accepted.
+ *!
+ *!@param equation
+ *!
+ *!Specifies the address of an array of four double-precision floating-point values.
+ *!These values are interpreted as a plane equation.
+ *!
+ *!@throws
+ *!
+ *!@[GL_INVALID_ENUM] is generated if @i{plane@} is not an accepted value.
+ *!
+ *!@[GL_INVALID_OPERATION] is generated if @[glClipPlane]
  *!is executed between the execution of @[glBegin]
  *!and the corresponding execution of @[glEnd].
  *!
@@ -2652,6 +2693,1050 @@
  *!is executed between the execution of @[glBegin]
  *!and the corresponding execution of @[glEnd].
  *!
+ *!
+ *!
+ */
+
+/*!@decl void glGetTexImage(int target, int level, int format, int type, System.Memory pixels)
+ *!
+ *!@[glGetTexImage] returns a texture image into @i{pixels@}.
+ *!@i{target@} specifies whether the desired texture image is one specified by
+ *!@[glTexImage1D] (@[GL_TEXTURE_1D]) or by
+ *!@[glTexImage2D] (@[GL_TEXTURE_2D]).
+ *!@i{level@} specifies the level-of-detail number of the desired image.
+ *!@i{format@} and @i{type@} specify the format and type of the desired image array.
+ *!See the reference pages @[glTexImage1D] and @[glDrawPixels]
+ *!for a description of the acceptable values for the @i{format@} and @i{type@}
+ *!parameters, respectively.
+ *!
+ *!To understand the operation of @[glGetTexImage], consider the selected internal
+ *!four-component texture image to be an RGBA color buffer the size of the image.
+ *!The semantics of @[glGetTexImage] are then identical to those of @[glReadPixels]
+ *!called with the same @i{format@} and @i{type@},
+ *!with @i{x@} and @i{y@} set to 0,
+ *!@i{width@} set to the width of the texture image
+ *!(including border if one was specified),
+ *!and @i{height@} set to 1 for 1D images,
+ *!or to the height of the texture image
+ *!(including border if one was specified)
+ *!for 2D images.
+ *!Because the internal texture image is an RGBA image,
+ *!pixel formats @[GL_COLOR_INDEX],
+ *!@[GL_STENCIL_INDEX],
+ *!and @[GL_DEPTH_COMPONENT] are not accepted,
+ *!and pixel type @[GL_BITMAP] is not accepted.
+ *!
+ *!If the selected texture image does not contain four components,
+ *!the following mappings are applied.
+ *!Single-component textures are treated as RGBA buffers with red set
+ *!to the single-component value,
+ *!green set to 0,  blue set to 0, and alpha set to 1.
+ *!Two-component textures are treated as RGBA buffers with red set to
+ *!the value of component zero,
+ *!alpha set to the value of component one,
+ *!and green and blue set to 0.
+ *!Finally,
+ *!three-component textures are treated as RGBA buffers with red set to
+ *!component zero,
+ *!green set to component one,
+ *!blue set to component two,
+ *!and alpha set to 1.
+ *!
+ *!To determine the required size of @i{pixels@},
+ *!use @[glGetTexLevelParameter] to determine the dimensions of the
+ *!internal texture image,
+ *!then scale the required number of pixels by the storage required for
+ *!each pixel,
+ *!based on @i{format@} and @i{type@}.
+ *!Be sure to take the pixel storage parameters into account,
+ *!especially @[GL_PACK_ALIGNMENT].
+ *!
+ *!@param target
+ *!
+ *!Specifies which texture is to be obtained.
+ *!@[GL_TEXTURE_1D] and @[GL_TEXTURE_2D] are accepted.
+ *!
+ *!@param level
+ *!
+ *!Specifies the level-of-detail number of the desired image.
+ *!Level 0 is the base image level.
+ *!Level n is the nth mipmap reduction image.
+ *!
+ *!@param format
+ *!
+ *!Specifies a pixel format for the returned data.
+ *!The supported formats are
+ *!@[GL_RED],
+ *!@[GL_GREEN],
+ *!@[GL_BLUE],
+ *!@[GL_ALPHA],
+ *!@[GL_RGB],
+ *!@[GL_RGBA],
+ *!@[GL_LUMINANCE], and
+ *!@[GL_LUMINANCE_ALPHA].
+ *!
+ *!@param type
+ *!
+ *!Specifies a pixel type for the returned data.
+ *!The supported types are
+ *!@[GL_UNSIGNED_BYTE],
+ *!@[GL_BYTE],
+ *!@[GL_UNSIGNED_SHORT],
+ *!@[GL_SHORT],
+ *!@[GL_UNSIGNED_INT],
+ *!@[GL_INT], and
+ *!@[GL_FLOAT].
+ *!
+ *!@param pixels
+ *!
+ *!Returns the texture image.
+ *!Should be a pointer to an array of the type specified by @i{type@}.
+ *!
+ *!@throws
+ *!
+ *!@[GL_INVALID_ENUM] is generated if @i{target@}, @i{format@}, or @i{type@} is not
+ *!an accepted value.
+ *!
+ *!@[GL_INVALID_VALUE] is generated if @i{level@} is less than 0.
+ *!.P
+ *!@[GL_INVALID_VALUE] may be generated if @i{level@} is greater
+ *!than log sub 2 max,
+ *!where max is the returned value of @[GL_MAX_TEXTURE_SIZE].
+ *!
+ *!@[GL_INVALID_OPERATION] is generated if @[glGetTexImage]
+ *!is executed between the execution of @[glBegin]
+ *!and the corresponding execution of @[glEnd].
+ *!
+ *!
+ */
+
+/*!@decl void glReadPixels(int x, int y, int width, int height, int format, int type, System.Memory pixels)
+ *!
+ *!@[glReadPixels] returns pixel data from the frame buffer,
+ *!starting with the pixel whose lower left corner
+ *!is at location (@i{x@}, @i{y@}),
+ *!into client memory starting at location @i{pixels@}.
+ *!Several parameters control the processing of the pixel data before
+ *!it is placed into client memory.
+ *!These parameters are set with three commands:
+ *!@[glPixelStore],
+ *!@[glPixelTransfer], and
+ *!@[glPixelMap].
+ *!This reference page describes the effects on @[glReadPixels] of most,
+ *!but not all of the parameters specified by these three commands.
+ *!
+ *!@[glReadPixels] returns values from each pixel with lower left corner at
+ *!(@i{x@} + i, @i{y@} + j) for 0<=i<@i{width@}  and 0<=j<@i{height@}.
+ *!This pixel is said to be the ith pixel in the jth row.
+ *!Pixels are returned in row order from the lowest to the highest row,
+ *!left to right in each row.
+ *!
+ *!@i{format@} specifies the format for the returned pixel values;
+ *!accepted values are:
+ *!
+ *!@xml{<matrix>
+ *!<r><c><ref>GL_COLOR_INDEX</ref>
+ *!</c><c>Color indices are read from the color buffer
+ *!selected by <ref>glReadBuffer</ref>.
+ *!Each index is converted to fixed point,
+ *!shifted left or right depending on the value and sign of <ref>GL_INDEX_SHIFT</ref>,
+ *!and added to <ref>GL_INDEX_OFFSET</ref>.
+ *!If <ref>GL_MAP_COLOR</ref> is <ref>GL_TRUE</ref>,
+ *!indices are replaced by their mappings in the table <ref>GL_PIXEL_MAP_I_TO_I</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_STENCIL_INDEX</ref>
+ *!</c><c>Stencil values are read from the stencil buffer.
+ *!Each index is converted to fixed point,
+ *!shifted left or right depending on the value and sign of <ref>GL_INDEX_SHIFT</ref>,
+ *!and added to <ref>GL_INDEX_OFFSET</ref>.
+ *!If <ref>GL_MAP_STENCIL</ref> is <ref>GL_TRUE</ref>,
+ *!indices are replaced by their mappings in the table <ref>GL_PIXEL_MAP_S_TO_S</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_DEPTH_COMPONENT</ref>
+ *!</c><c>Depth values are read from the depth buffer.
+ *!Each component is converted to floating point such that the minimum depth
+ *!value maps to 0 and the maximum value maps to 1.
+ *!Each component is then multiplied by <ref>GL_DEPTH_SCALE</ref>,
+ *!added to <ref>GL_DEPTH_BIAS</ref>,
+ *!and finally clamped to the range [0,1].
+ *!</c></r>
+ *!<r><c><ref>GL_RED</ref>
+ *!</c><c></c></r>
+ *!<r><c><ref>GL_GREEN</ref>
+ *!</c><c></c></r>
+ *!<r><c><ref>GL_BLUE</ref>
+ *!</c><c></c></r>
+ *!<r><c><ref>GL_ALPHA</ref>
+ *!</c><c></c></r>
+ *!<r><c><ref>GL_RGB</ref>
+ *!</c><c></c></r>
+ *!<r><c><ref>GL_RGBA</ref>
+ *!</c><c></c></r>
+ *!<r><c><ref>GL_LUMINANCE</ref>
+ *!</c><c></c></r>
+ *!<r><c><ref>GL_LUMINANCE_ALPHA</ref>
+ *!</c><c>Processing differs depending on whether color buffers store color indices
+ *!or RGBA color components.
+ *!If color indices are stored,
+ *!they are read from the color buffer selected by <ref>glReadBuffer</ref>.
+ *!Each index is converted to fixed point,
+ *!shifted left or right depending on the value and sign of <ref>GL_INDEX_SHIFT</ref>,
+ *!and added to <ref>GL_INDEX_OFFSET</ref>.
+ *!Indices are then replaced by the red,
+ *!green,
+ *!blue,
+ *!and alpha values obtained by indexing the tables
+ *!<ref>GL_PIXEL_MAP_I_TO_R</ref>,
+ *!<ref>GL_PIXEL_MAP_I_TO_G</ref>,
+ *!<ref>GL_PIXEL_MAP_I_TO_B</ref>, and
+ *!<ref>GL_PIXEL_MAP_I_TO_A</ref>.
+ *!Each table must be of size 2^n, but n may be different for
+ *!different tables.
+ *!Before an index is used to look up a value in a table of
+ *!size 2^n, it must be masked against 2^n-1.
+ *!
+ *!If RGBA color components are stored in the color buffers,
+ *!they are read from the color buffer selected by <ref>glReadBuffer</ref>.
+ *!Each color component is converted to floating point such that zero intensity
+ *!maps to 0.0 and full intensity maps to 1.0.
+ *!Each component is then multiplied by <ref>GL_c_SCALE</ref> and
+ *!added to <ref>GL_c_BIAS</ref>,
+ *!where <i>c</i> is RED, GREEN, BLUE, or ALPHA.
+ *!Finally,
+ *!if <ref>GL_MAP_COLOR</ref> is <ref>GL_TRUE</ref>,
+ *!each component is clamped to the range [0,1],
+ *!scaled to the size of its corresponding table, and is then
+ *!replaced by its mapping in the table
+ *!<ref>GL_PIXEL_MAP_c_TO_c</ref>,
+ *!where <i>c</i> is R, G, B, or A.
+ *!
+ *!Unneeded data is then discarded.
+ *!For example,
+ *!<ref>GL_RED</ref> discards the green, blue, and alpha components,
+ *!while <ref>GL_RGB</ref> discards only the alpha component.
+ *!<ref>GL_LUMINANCE</ref> computes a single-component value as the sum of
+ *!the red,
+ *!green,
+ *!and blue components,
+ *!and <ref>GL_LUMINANCE_ALPHA</ref> does the same,
+ *!while keeping alpha as a second value.
+ *!The final values are clamped to the range [0,1].
+ *!</c></r>
+ *!</matrix>@}
+ *!
+ *!The shift,
+ *!scale,
+ *!bias,
+ *!and lookup factors just described are all specified by
+ *!
+ *!@[glPixelTransfer].
+ *!The lookup table contents themselves are specified by @[glPixelMap].
+ *!.P
+ *!Finally, the indices or components
+ *!are converted to the proper format,
+ *!as specified by @i{type@}.
+ *!If @i{format@} is @[GL_COLOR_INDEX] or @[GL_STENCIL_INDEX]
+ *!and @i{type@} is not @[GL_FLOAT],
+ *!each index is masked with the mask value given in the following table.
+ *!If @i{type@} is @[GL_FLOAT], then each integer index is converted to
+ *!single-precision floating-point format.
+ *!.P
+ *!If @i{format@} is
+ *!@[GL_RED],
+ *!@[GL_GREEN],
+ *!@[GL_BLUE],
+ *!@[GL_ALPHA],
+ *!@[GL_RGB],
+ *!@[GL_RGBA],
+ *!@[GL_LUMINANCE], or
+ *!@[GL_LUMINANCE_ALPHA] and @i{type@} is not @[GL_FLOAT],
+ *!each component is multiplied by the multiplier shown in the following table.
+ *!If type is @[GL_FLOAT], then each component is passed as is
+ *!(or converted to the client's single-precision floating-point format if
+ *!it is different from the one used by the GL).
+ *!
+ *!.TS
+ *!center box tab(:);
+ *!c | ci | ci
+ *!c | c | c .
+ *!@i{type@}:index mask:component conversion
+ *!=
+ *!.sp .5
+ *!@[GL_UNSIGNED_BYTE]:2"^"8 - 1:(2"^"8 - 1)  c
+ *!@[GL_BYTE]:2"^"7 - 1:[(2"^"8 - 1) c - 1] / 2
+ *!@[GL_BITMAP]:1:1
+ *!@[GL_UNSIGNED_SHORT]:2"^"16 - 1:(2"^"16 - 1) c
+ *!@[GL_SHORT]:2"^"15 - 1:[(2"^"16 - 1) c - 1] / 2
+ *!@[GL_UNSIGNED_INT]:2"^"32 - 1:(2"^"32 - 1) c
+ *!@[GL_INT]:2"^"31 - 1:[(2"^"32 - 1) c - 1] / 2
+ *!@[GL_FLOAT]:none:c
+ *!.TE
+ *!
+ *!Return values are placed in memory as follows.
+ *!If @i{format@} is
+ *!@[GL_COLOR_INDEX],
+ *!@[GL_STENCIL_INDEX],
+ *!@[GL_DEPTH_COMPONENT],
+ *!@[GL_RED],
+ *!@[GL_GREEN],
+ *!@[GL_BLUE],
+ *!@[GL_ALPHA], or
+ *!@[GL_LUMINANCE],
+ *!a single value is returned and the data for the ith pixel in the jth row
+ *!is placed in location (j)~"width"~+~i.
+ *!@[GL_RGB] returns three values,
+ *!@[GL_RGBA] returns four values,
+ *!and @[GL_LUMINANCE_ALPHA] returns two values for each pixel,
+ *!with all values corresponding to a single pixel occupying contiguous space
+ *!in @i{pixels@}.
+ *!Storage parameters set by @[glPixelStore],
+ *!such as @[GL_PACK_LSB_FIRST] and @[GL_PACK_SWAP_BYTES],
+ *!affect the way that data is written into memory.
+ *!See @[glPixelStore] for a description.
+ *!
+ *!@param x
+ *!
+ *!Specify the window coordinates of the first pixel
+ *!that is read from the frame buffer.
+ *!This location is the lower left corner of a rectangular block of pixels.
+ *!
+ *!@param width
+ *!
+ *!Specify the dimensions of the pixel rectangle.
+ *!@i{width@} and @i{height@} of one correspond to a single pixel.
+ *!
+ *!@param format
+ *!
+ *!Specifies the format of the pixel data.
+ *!The following symbolic values are accepted:
+ *!@[GL_COLOR_INDEX],
+ *!@[GL_STENCIL_INDEX],
+ *!@[GL_DEPTH_COMPONENT],
+ *!@[GL_RED],
+ *!@[GL_GREEN],
+ *!@[GL_BLUE],
+ *!@[GL_ALPHA],
+ *!@[GL_RGB],
+ *!@[GL_RGBA],
+ *!@[GL_LUMINANCE], and
+ *!@[GL_LUMINANCE_ALPHA].
+ *!
+ *!@param type
+ *!
+ *!Specifies the data type of the pixel data.
+ *!Must be one of
+ *!@[GL_UNSIGNED_BYTE],
+ *!@[GL_BYTE],
+ *!@[GL_BITMAP],
+ *!@[GL_UNSIGNED_SHORT],
+ *!@[GL_SHORT],
+ *!@[GL_UNSIGNED_INT],
+ *!@[GL_INT], or
+ *!@[GL_FLOAT].
+ *!
+ *!@param pixels
+ *!
+ *!Returns the pixel data.
+ *!
+ *!@throws
+ *!
+ *!@[GL_INVALID_ENUM] is generated if @i{format@} or @i{type@} is not an
+ *!accepted value.
+ *!
+ *!@[GL_INVALID_ENUM] is generated if @i{type@} is @[GL_BITMAP] and @i{format@} is
+ *!not @[GL_COLOR_INDEX] or @[GL_STENCIL_INDEX].
+ *!
+ *!@[GL_INVALID_VALUE] is generated if either @i{width@} or @i{height@} is negative.
+ *!
+ *!@[GL_INVALID_OPERATION] is generated if @i{format@} is @[GL_COLOR_INDEX]
+ *!and the color buffers store RGBA color components.
+ *!
+ *!@[GL_INVALID_OPERATION] is generated if @i{format@} is @[GL_STENCIL_INDEX]
+ *!and there is no stencil buffer.
+ *!
+ *!@[GL_INVALID_OPERATION] is generated if @i{format@} is @[GL_DEPTH_COMPONENT]
+ *!and there is no depth buffer.
+ *!
+ *!@[GL_INVALID_OPERATION] is generated if @[glReadPixels]
+ *!is executed between the execution of @[glBegin]
+ *!and the corresponding execution of @[glEnd].
+ *!
+ *!
+ */
+
+/*!@decl void glSelectBuffer(int size, System.Memory buffer)
+ *!
+ *!@[glSelectBuffer] has two arguments:
+ *!@i{buffer@} is a pointer to an array of unsigned integers,
+ *!and @i{size@} indicates the size of the array.
+ *!@i{buffer@} returns values from the name stack
+ *!(see @[glInitNames], @[glLoadName], @[glPushName])
+ *!when the rendering mode is @[GL_SELECT] (see @[glRenderMode]).
+ *!@[glSelectBuffer] must be issued before selection mode is enabled,
+ *!and it must not be issued while the rendering mode is @[GL_SELECT].
+ *!
+ *!A programmer can use selection to determine which primitives
+ *!are drawn into some region of a window.
+ *!The region is defined by the current modelview and perspective matrices.
+ *!
+ *!In selection mode, no pixel fragments are produced from rasterization.
+ *!Instead,
+ *!if a primitive or a raster position intersects the clipping
+ *!volume defined by the viewing frustum
+ *!and the user-defined clipping planes,
+ *!this primitive causes a selection hit.
+ *!(With polygons, no hit occurs if the polygon is culled.)
+ *!When a change is made to the name stack,
+ *!or when @[glRenderMode] is called,
+ *!a hit record is copied to @i{buffer@} if any hits have occurred since the
+ *!last such event
+ *!(name stack change or
+ *!@[glRenderMode] call).
+ *!The hit record consists of the number of names in the name stack at the
+ *!time of the event, followed by the minimum and maximum depth values
+ *!of all vertices that hit since the previous event,
+ *!followed by the name stack contents,
+ *!bottom name first.
+ *!
+ *!Depth values (which are in the range [0,1]) are multiplied by 2^32 - 1,
+ *!before being placed in the hit record.
+ *!
+ *!An internal index into @i{buffer@} is reset to 0 whenever selection mode
+ *!is entered.
+ *!Each time a hit record is copied into @i{buffer@},
+ *!the index is incremented to point to the cell just past the end
+ *!of the block of names - that is, to the next available cell.
+ *!If the hit record is larger than the number of remaining locations in @i{buffer@},
+ *!as much data as can fit is copied,
+ *!and the overflow flag is set.
+ *!If the name stack is empty when a hit record is copied,
+ *!that record consists of 0 followed by the minimum and maximum depth values.
+ *!
+ *!To exit selection mode, call @[glRenderMode] with an argument
+ *!other than @[GL_SELECT].
+ *!Whenever @[glRenderMode] is called while the render mode is @[GL_SELECT],
+ *!it returns the number of hit records copied to @i{buffer@},
+ *!resets the overflow flag and the selection buffer pointer,
+ *!and initializes the name stack to be empty.
+ *!If the overflow bit was set when @[glRenderMode] was called,
+ *!a negative hit record count is returned.
+ *!
+ *!@param size
+ *!
+ *!Specifies the size of @i{buffer@}.
+ *!
+ *!@param buffer
+ *!
+ *!Returns the selection data.
+ *!
+ *!@throws
+ *!
+ *!@[GL_INVALID_VALUE] is generated if @i{size@} is negative.
+ *!
+ *!@[GL_INVALID_OPERATION] is generated if @[glSelectBuffer] is called while the
+ *!render mode is @[GL_SELECT],
+ *!or if @[glRenderMode] is called with argument @[GL_SELECT] before
+ *!@[glSelectBuffer] is called at least once.
+ *!
+ *!@[GL_INVALID_OPERATION] is generated if @[glSelectBuffer]
+ *!is executed between the execution of @[glBegin]
+ *!and the corresponding execution of @[glEnd].
+ *!
+ *!
+ */
+
+/*!@decl void glFeedbackBuffer(int size, int type, System.Memory buffer)
+ *!
+ *!The @[glFeedbackBuffer] function controls feedback.
+ *!Feedback, like selection, is a GL mode.
+ *!The mode is selected by calling
+ *!@[glRenderMode] with @[GL_FEEDBACK].
+ *!When the GL is in feedback mode,
+ *!no pixels are produced by rasterization.
+ *!Instead, information about primitives that would have been
+ *!rasterized is fed back to the application using the GL.
+ *!
+ *!@[glFeedbackBuffer] has three arguments:
+ *!@i{buffer@} is a pointer to an array of floating-point values
+ *!into which feedback information is placed.
+ *!@i{size@} indicates the size of the array.
+ *!@i{type@} is a symbolic constant describing the information
+ *!that is fed back for each vertex.
+ *!@[glFeedbackBuffer] must be issued before feedback mode is enabled
+ *!(by calling @[glRenderMode] with argument @[GL_FEEDBACK]).
+ *!Setting @[GL_FEEDBACK] without establishing the feedback buffer,
+ *!or calling @[glFeedbackBuffer] while the GL is in feedback mode,
+ *!is an error.
+ *!
+ *!When @[glRenderMode] is called while in feedback mode, it returns the number of entries
+ *!placed in the feedback array, and resets the feedback array pointer to the base
+ *!of the feedback buffer. The returned value never exceeds @i{size@}. If the feedback
+ *!data required more room than was available in @i{buffer@},
+ *!@[glRenderMode] returns a negative value.
+ *!To take the GL out of feedback mode, call
+ *!@[glRenderMode] with a parameter value other than @[GL_FEEDBACK].
+ *!
+ *!While in feedback mode,
+ *!each primitive, bitmap, or pixel rectangle that would be rasterized
+ *!generates a block of values that are copied into the feedback array.
+ *!If doing so would cause the number of entries to exceed the maximum,
+ *!the block is partially written so as to fill the array
+ *!(if there is any room left at all),
+ *!and an overflow flag is set.
+ *!Each block begins with a code indicating the primitive type,
+ *!followed by values that describe the primitive's vertices and
+ *!associated data.
+ *!Entries are also written for bitmaps and pixel rectangles.
+ *!Feedback occurs after polygon culling and @[glPolygonMode] interpretation
+ *!of polygons has taken place,
+ *!so polygons that are culled are not returned in the feedback buffer.
+ *!It can also occur after polygons with more than three edges are broken up
+ *!into triangles,
+ *!if the GL implementation renders polygons by performing this decomposition.
+ *!
+ *!The @[glPassThrough] command can be used to insert a marker
+ *!into the feedback buffer.
+ *!See @[glPassThrough].
+ *!
+ *!Following is the grammar for the blocks of values written
+ *!into the feedback buffer.
+ *!Each primitive is indicated with a unique identifying value
+ *!followed by some number of vertices.
+ *!Polygon entries include an integer value indicating how many vertices follow.
+ *!A vertex is fed back as some number of floating-point values,
+ *!as determined by @i{type@}.
+ *!Colors are fed back as four values in RGBA mode and one value
+ *!in color index mode.
+ *!.RS
+ *!.na
+ *!.sp
+ *!feedbackList \(<- feedbackItem feedbackList | feedbackItem
+ *!.sp
+ *!feedbackItem \(<- point | lineSegment | polygon | bitmap | pixelRectangle | passThru
+ *!.sp
+ *!point \(<- @[GL_POINT_TOKEN] vertex
+ *!.sp
+ *!lineSegment \(<- @[GL_LINE_TOKEN] vertex vertex | @[GL_LINE_RESET_TOKEN] vertex vertex
+ *!.sp
+ *!polygon \(<- @[GL_POLYGON_TOKEN] n polySpec
+ *!.sp
+ *!polySpec \(<- polySpec vertex | vertex vertex vertex
+ *!.sp
+ *!bitmap \(<- @[GL_BITMAP_TOKEN] vertex
+ *!.sp
+ *!pixelRectangle \(<- @[GL_DRAW_PIXEL_TOKEN] vertex | @[GL_COPY_PIXEL_TOKEN] vertex
+ *!.sp
+ *!passThru \(<- @[GL_PASS_THROUGH_TOKEN] value
+ *!.sp
+ *!vertex \(<- 2d | 3d | 3dColor | 3dColorTexture | 4dColorTexture
+ *!.sp
+ *!2d \(<- value value
+ *!.sp
+ *!3d \(<- value value value
+ *!.sp
+ *!3dColor  \(<- value value value color
+ *!.sp
+ *!3dColorTexture \(<- value value value color tex
+ *!.sp
+ *!4dColorTexture \(<- value value value value color tex
+ *!.sp
+ *!color \(<- rgba | index
+ *!.sp
+ *!rgba \(<- value value value value
+ *!.sp
+ *!index \(<- value
+ *!.sp
+ *!tex \(<- value value value value
+ *!.sp
+ *!.RE
+ *!
+ *!.I value
+ *!is a floating-point number,
+ *!and
+ *!.I n
+ *!is a floating-point integer giving the number of vertices in the polygon.
+ *!@[GL_POINT_TOKEN],
+ *!@[GL_LINE_TOKEN],
+ *!@[GL_LINE_RESET_TOKEN],
+ *!@[GL_POLYGON_TOKEN],
+ *!@[GL_BITMAP_TOKEN],
+ *!@[GL_DRAW_PIXEL_TOKEN],
+ *!@[GL_COPY_PIXEL_TOKEN] and
+ *!@[GL_PASS_THROUGH_TOKEN] are symbolic floating-point constants.
+ *!@[GL_LINE_RESET_TOKEN] is returned whenever the line stipple pattern
+ *!is reset.
+ *!The data returned as a vertex depends on the feedback @i{type@}.
+ *!
+ *!The following table gives the correspondence between @i{type@}
+ *!and the number of values per vertex.
+ *!@i{k@} is 1 in color index mode and 4 in RGBA mode.
+ *!.sp
+ *!.ne
+ *!.TS
+ *!center box  tab(:) ;
+ *!c | ci | ci | ci | ci
+ *!c | c | c | c | c .
+ *!@i{type@}:coordinates:color:texture:total number of values
+ *!_
+ *!@[GL_2D]:@i{x@}, @i{y@}:::2
+ *!@[GL_3D]:@i{x@}, @i{y@}, @i{z@}:::3
+ *!@[GL_3D_COLOR]:@i{x@}, @i{y@}, @i{z@}:k::3 + k
+ *!@[GL_3D_COLOR_TEXTURE]:@i{x@}, @i{y@}, @i{z@},:k:4:7 + k
+ *!@[GL_4D_COLOR_TEXTURE]:@i{x@}, @i{y@}, @i{z@}, @i{w@}:k:4:8 + k
+ *!.TE
+ *!
+ *!
+ *!Feedback vertex coordinates are in window coordinates,
+ *!except @i{w@},
+ *!which is in clip coordinates.
+ *!Feedback colors are lighted, if lighting is enabled.
+ *!Feedback texture coordinates are generated,
+ *!if texture coordinate generation is enabled.
+ *!They are always transformed by the texture matrix.
+ *!
+ *!@param size
+ *!
+ *!Specifies the maximum number of values that can be written into @i{buffer@}.
+ *!
+ *!@param type
+ *!
+ *!Specifies a symbolic constant that describes the information
+ *!that will be returned for each vertex.
+ *!@[GL_2D],
+ *!@[GL_3D],
+ *!@[GL_3D_COLOR],
+ *!@[GL_3D_COLOR_TEXTURE], and
+ *!@[GL_4D_COLOR_TEXTURE] are accepted.
+ *!
+ *!@param buffer
+ *!
+ *!Returns the feedback data.
+ *!
+ *!@throws
+ *!
+ *!@[GL_INVALID_ENUM] is generated if @i{type@} is not an accepted value.
+ *!
+ *!@[GL_INVALID_VALUE] is generated if @i{size@} is negative.
+ *!
+ *!@[GL_INVALID_OPERATION] is generated if @[glFeedbackBuffer] is called while the
+ *!render mode is @[GL_FEEDBACK],
+ *!or if @[glRenderMode] is called with argument @[GL_FEEDBACK] before
+ *!@[glFeedbackBuffer] is called at least once.
+ *!
+ *!@[GL_INVALID_OPERATION] is generated if @[glFeedbackBuffer]
+ *!is executed between the execution of @[glBegin]
+ *!and the corresponding execution of @[glEnd].
+ *!
+ *!
+ */
+
+/*!@decl void glVertexPointer(int size, int type, int stride, System.Memory pointer)
+ *!
+ *!@[glVertexPointer] specifies the location and data format of an array of vertex coordinates
+ *!to use when rendering.
+ *!@i{size@} specifies the number of coordinates per vertex and
+ *!@i{type@} the data type of
+ *!the coordinates. @i{stride@} specifies the byte stride from one
+ *!vertex to the next allowing vertexes and attributes
+ *!to be packed into a single array or stored in separate arrays.
+ *!(Single-array storage may be more efficient on some implementations;
+ *!see @[glInterleavedArrays].)
+ *!When a vertex array is
+ *!specified, @i{size@}, @i{type@}, @i{stride@}, and @i{pointer@} are saved as client-side
+ *!state.
+ *!
+ *!To enable and disable the vertex array, call @[glEnableClientState] and
+ *!.br
+ *!@[glDisableClientState] with the argument @[GL_VERTEX_ARRAY]. If
+ *!enabled, the vertex array is used when
+ *!@[glDrawArrays], @[glDrawElements], or @[glArrayElement] is called.
+ *!
+ *!Use @[glDrawArrays] to construct a sequence of primitives (all of
+ *!the same type)
+ *!from prespecified vertex and vertex attribute arrays.
+ *!Use @[glArrayElement] to specify primitives
+ *!by indexing vertexes and vertex attributes  and @[glDrawElements] to
+ *!construct a sequence of primitives by indexing vertexes and vertex attributes.
+ *!
+ *!@param size
+ *!
+ *!Specifies the number of coordinates per vertex; must be 2, 3, or
+ *!4. The initial value is 4.
+ *!
+ *!@param type
+ *!
+ *!Specifies the data type of each coordinate in the array.
+ *!Symbolic constants
+ *!@[GL_SHORT],
+ *!@[GL_INT],
+ *!@[GL_FLOAT],
+ *!and @[GL_DOUBLE]
+ *!are accepted. The initial value is @[GL_FLOAT].
+ *!
+ *!@param stride
+ *!
+ *!Specifies the byte offset between consecutive
+ *!vertexes. If @i{stride@} is 0, the vertexes are understood to be tightly packed in
+ *!the array. The initial value
+ *!
+ *!is 0.
+ *!
+ *!@param pointer
+ *!
+ *!Specifies a pointer to the first coordinate of the first vertex in the array.
+ *!
+ *!@throws
+ *!
+ *!@[GL_INVALID_VALUE] is generated if @i{size@} is not 2, 3, or 4.
+ *!
+ *!@[GL_INVALID_ENUM] is generated if @i{type@} is is not an accepted value.
+ *!
+ *!@[GL_INVALID_VALUE] is generated if @i{stride@} is negative.
+ *!
+ *!
+ */
+
+/*!@decl void glInterleavedArrays(int format, int stride, System.Memory pointer)
+ *!
+ *!@[glInterleavedArrays] lets you specify and enable individual color,
+ *!normal,
+ *!texture and vertex
+ *!arrays whose elements are part of a larger aggregate array element.
+ *!For some implementations, this is more efficient than specifying the arrays
+ *!seperately.
+ *!
+ *!If @i{stride@} is 0, the aggregate elements are stored consecutively.
+ *!Otherwise, @i{stride@} bytes occur between the beginning of one
+ *!aggregate array element and the beginning of the next aggregate array
+ *!element.
+ *!
+ *!@i{format@} serves as a 'key'
+ *!describing the extraction of individual arrays from the aggregate array.
+ *!If @i{format@} contains a T, then texture coordinates are
+ *!extracted from the interleaved array.  If C is present, color values
+ *!are extracted. If N is present, normal coordinates are extracted.
+ *!Vertex coordinates are always extracted.
+ *!
+ *!The digits 2, 3, and 4 denote how many values are extracted.
+ *!F indicates that values are extracted as floating-point values.
+ *!Colors may also be extracted as 4 unsigned bytes if 4UB follows the
+ *!C.  If a color is extracted as 4 unsigned bytes, the vertex
+ *!array element which follows is located at the first possible
+ *!floating-point aligned address.
+ *!
+ *!@param format
+ *!
+ *!Specifies the type of array to enable. Symbolic constants
+ *!@[GL_V2F],
+ *!@[GL_V3F],
+ *!@[GL_C4UB_V2F],
+ *!@[GL_C4UB_V3F],
+ *!@[GL_C3F_V3F],
+ *!@[GL_N3F_V3F],
+ *!@[GL_C4F_N3F_V3F],
+ *!@[GL_T2F_V3F],
+ *!@[GL_T4F_V4F],
+ *!@[GL_T2F_C4UB_V3F],
+ *!@[GL_T2F_C3F_V3F],
+ *!@[GL_T2F_N3F_V3F],
+ *!@[GL_T2F_C4F_N3F_V3F],
+ *!and
+ *!@[GL_T4F_C4F_N3F_V4F]
+ *!are accepted.
+ *!
+ *!@param stride
+ *!
+ *!Specifies the offset in bytes between each aggregate array element.
+ *!
+ *!@throws
+ *!
+ *!@[GL_INVALID_ENUM] is generated if @i{format@} is not an accepted value.
+ *!
+ *!@[GL_INVALID_VALUE] is generated if @i{stride@} is negative.
+ *!
+ *!
+ */
+
+/*!@decl void glTexCoordPointer(int size, int type, int stride, System.Memory pointer)
+ *!
+ *!@[glTexCoordPointer] specifies the location and data format of an array of texture
+ *!coordinates to use when rendering.
+ *!@i{size@} specifies the number of coordinates per
+ *!element, and must be 1, 2, 3, or 4.
+ *!@i{type@} specifies the data type of each texture coordinate
+ *!and @i{stride@} specifies the byte stride from one
+ *!array element to the next allowing vertexes and attributes
+ *!to be packed into a single array or stored in separate arrays.
+ *!(Single-array storage may be more efficient on some implementations;
+ *!see
+ *!
+ *!@[glInterleavedArrays].)
+ *!When a texture
+ *!coordinate array is specified, @i{size@}, @i{type@}, @i{stride@}, and @i{pointer@}
+ *!are saved client-side state.
+ *!
+ *!To enable and disable the texture coordinate array, call
+ *!@[glEnableClientState] and @[glDisableClientState] with the argument
+ *!@[GL_TEXTURE_COORD_ARRAY]. If
+ *!enabled, the texture coordinate array is used
+ *!when @[glDrawArrays], @[glDrawElements] or
+ *!
+ *!@[glArrayElement] is called.
+ *!
+ *!Use @[glDrawArrays] to construct a sequence of primitives (all of the
+ *!same type) from prespecified vertex and vertex attribute arrays.
+ *!Use @[glArrayElement] to specify primitives
+ *!by indexing vertexes and vertex attributes and @[glDrawElements] to
+ *!construct a sequence of primitives by indexing vertexes and vertex attributes.
+ *!
+ *!@param size
+ *!
+ *!Specifies the number of coordinates per array element. Must be 1, 2, 3
+ *!or 4. The initial value is 4.
+ *!
+ *!@param type
+ *!
+ *!Specifies the data type of each texture coordinate.
+ *!Symbolic constants
+ *!@[GL_SHORT],
+ *!@[GL_INT],
+ *!@[GL_FLOAT],
+ *!or @[GL_DOUBLE]
+ *!are accepted. The initial value is @[GL_FLOAT].
+ *!
+ *!@param stride
+ *!
+ *!Specifies the byte offset between consecutive array elements.
+ *!If @i{stride@} is 0, the array elements are understood
+ *!to be tightly packed. The initial value is 0.
+ *!
+ *!@param pointer
+ *!
+ *!Specifies a pointer to the first coordinate of the first element in the
+ *!array.
+ *!
+ *!@throws
+ *!
+ *!@[GL_INVALID_VALUE] is generated if @i{size@} is not 1, 2, 3, or 4.
+ *!
+ *!@[GL_INVALID_ENUM] is generated if @i{type@} is not an accepted value.
+ *!
+ *!@[GL_INVALID_VALUE] is generated if @i{stride@} is negative.
+ *!
+ *!
+ */
+
+/*!@decl void glIndexPointer(int type, int stride, System.Memory pointer)
+ *!
+ *!@[glIndexPointer] specifies the location and data format of an array of color indexes
+ *!to use when rendering.
+ *!@i{type@} specifies the data type of
+ *!each color index and @i{stride@} gives the byte stride from one
+ *!color index to the next allowing vertexes and attributes
+ *!to be packed into a single array or stored in separate arrays.
+ *!(Single-array storage may be more efficient on some implementations;
+ *!see @[glInterleavedArrays].)
+ *!
+ *!@i{type@}, @i{stride@}, and @i{pointer@} are saved as client-side
+ *!state.
+ *!
+ *!The color index array is initially disabled. To enable and disable
+ *!the array, call @[glEnableClientState] and
+ *!@[glDisableClientState] with the argument @[GL_INDEX_ARRAY]. If
+ *!enabled, the color index array is used when @[glDrawArrays],
+ *!@[glDrawElements] or @[glArrayElement] is called.
+ *!
+ *!Use @[glDrawArrays] to construct a sequence of primitives (all of
+ *!the same type) from prespecified vertex and vertex attribute arrays.
+ *!Use @[glArrayElement] to specify primitives
+ *!by indexing vertexes and vertex attributes and @[glDrawElements] to
+ *!construct a sequence of primitives by indexing vertexes and vertex attributes.
+ *!
+ *!@param type
+ *!
+ *!Specifies the data type of each color index in the array.
+ *!Symbolic constants
+ *!@[GL_UNSIGNED_BYTE],
+ *!@[GL_SHORT],
+ *!@[GL_INT],
+ *!@[GL_FLOAT],
+ *!and @[GL_DOUBLE]
+ *!are accepted.
+ *!
+ *!@param stride
+ *!
+ *!Specifies the byte offset between consecutive color indexes.
+ *!If @i{stride@} is 0 (the initial value), the color indexes are understood to
+ *!be tightly packed in the array.
+ *!
+ *!@param pointer
+ *!
+ *!Specifies a pointer to the first index in the array.
+ *!
+ *!@throws
+ *!
+ *!@[GL_INVALID_ENUM] is generated if @i{type@} is not an accepted value.
+ *!
+ *!@[GL_INVALID_VALUE] is generated if @i{stride@} is negative.
+ *!
+ *!
+ */
+
+/*!@decl void glNormalPointer(int type, int stride, System.Memory pointer)
+ *!
+ *!@[glNormalPointer] specifies the location and data format of an array of normals
+ *!to use when rendering.
+ *!@i{type@} specifies the data type of
+ *!the normal coordinates and @i{stride@} gives the byte stride from one
+ *!normal to the next, allowing vertexes and attributes
+ *!to be packed into a single array or stored in separate arrays.
+ *!(Single-array storage may be more efficient on some implementations;
+ *!see @[glInterleavedArrays].)
+ *!When a normal array is specified, @i{type@}, @i{stride@}, and @i{pointer@} are
+ *!saved as client-side state.
+ *!
+ *!To enable and disable the normal array, call @[glEnableClientState] and
+ *!@[glDisableClientState] with the argument @[GL_NORMAL_ARRAY]. If
+ *!enabled, the normal array is used
+ *!when @[glDrawArrays], @[glDrawElements], or @[glArrayElement] is called.
+ *!
+ *!Use @[glDrawArrays] to construct a sequence of primitives (all of the
+ *!same type) from prespecified vertex and vertex attribute arrays.
+ *!Use @[glArrayElement] to specify primitives
+ *!by indexing vertexes and vertex attributes and @[glDrawElements] to
+ *!construct a sequence of primitives by indexing vertexes and vertex attributes.
+ *!
+ *!@param type
+ *!
+ *!Specifies the data type of each coordinate in the array.
+ *!Symbolic constants
+ *!@[GL_BYTE],
+ *!@[GL_SHORT],
+ *!@[GL_INT],
+ *!@[GL_FLOAT], and
+ *!@[GL_DOUBLE]
+ *!are accepted. The initial value is @[GL_FLOAT].
+ *!
+ *!@param stride
+ *!
+ *!Specifies the byte offset between consecutive normals. If @i{stride@} is 0-
+ *!the initial value-the normals are understood to be tightly packed in
+ *!the array.
+ *!
+ *!@param pointer
+ *!
+ *!Specifies a pointer to the first coordinate of the first normal in the array.
+ *!
+ *!@throws
+ *!
+ *!@[GL_INVALID_ENUM] is generated if @i{type@} is not an accepted value.
+ *!
+ *!@[GL_INVALID_VALUE] is generated if @i{stride@} is negative.
+ *!
+ *!
+ */
+
+/*!@decl void glColorPointer(int size, int type, int stride, System.Memory pointer)
+ *!
+ *!@[glColorPointer] specifies the location and data format of an array of color components
+ *!to use when rendering.
+ *!@i{size@} specifies the number of components per color, and must be 3 or 4.
+ *!@i{type@} specifies the data type of each color component, and @i{stride@}
+ *!specifies the byte stride from one color to the next allowing vertexes and
+ *!attributes to be packed into a single array or stored in separate arrays.
+ *!(Single-array storage may be more efficient on some implementations;
+ *!see @[glInterleavedArrays].)
+ *!
+ *!When a color array is specified,
+ *!@i{size@}, @i{type@}, @i{stride@}, and @i{pointer@} are saved as client-side
+ *!state.
+ *!
+ *!To enable and disable the color array, call @[glEnableClientState] and
+ *!
+ *!@[glDisableClientState] with the argument @[GL_COLOR_ARRAY]. If
+ *!enabled, the color array is used when @[glDrawArrays],
+ *!@[glDrawElements], or @[glArrayElement] is called.
+ *!
+ *!@param size
+ *!
+ *!Specifies the number of components per color. Must be 3 or 4.
+ *!
+ *!@param type
+ *!
+ *!Specifies the data type of each color component in the array.
+ *!Symbolic constants
+ *!@[GL_BYTE],
+ *!@[GL_UNSIGNED_BYTE],
+ *!@[GL_SHORT],
+ *!@[GL_UNSIGNED_SHORT],
+ *!@[GL_INT],
+ *!@[GL_UNSIGNED_INT],
+ *!@[GL_FLOAT],
+ *!and
+ *!@[GL_DOUBLE]
+ *!are accepted.
+ *!
+ *!@param stride
+ *!
+ *!Specifies the byte offset between consecutive colors.
+ *!If @i{stride@} is 0, (the initial value), the colors are understood to be
+ *!tightly packed in the array.
+ *!
+ *!@param pointer
+ *!
+ *!Specifies a pointer to the first component of the first color element
+ *!in the array.
+ *!
+ *!@throws
+ *!
+ *!@[GL_INVALID_VALUE] is generated if @i{size@} is not 3 or 4.
+ *!
+ *!@[GL_INVALID_ENUM] is generated if @i{type@} is not an accepted value.
+ *!
+ *!@[GL_INVALID_VALUE] is generated if @i{stride@} is negative.
+ *!
+ *!
+ */
+
+/*!@decl void glEdgeFlagPointer(int stride, System.Memory pointer)
+ *!
+ *!@[glEdgeFlagPointer] specifies the location and data format of an array of boolean edge
+ *!flags to use when rendering. @i{stride@} specifies the byte stride from one
+ *!edge flag to the next allowing vertexes and attributes
+ *!to be packed into a single array or stored in separate arrays.
+ *!(Single-array storage may be more efficient on some implementations;
+ *!see @[glInterleavedArrays].)
+ *!
+ *!When an edge flag array is
+ *!specified, @i{stride@} and @i{pointer@} are saved as client-side
+ *!state.
+ *!
+ *!To enable and disable the edge flag array, call @[glEnableClientState] and
+ *!
+ *!@[glDisableClientState] with
+ *!the argument @[GL_EDGE_FLAG_ARRAY]. If enabled, the edge flag array is used
+ *!when @[glDrawArrays], @[glDrawElements], or @[glArrayElement] is called.
+ *!
+ *!Use @[glDrawArrays] to construct a sequence of primitives (all of
+ *!the same type)
+ *!from prespecified vertex and vertex attribute arrays.
+ *!Use @[glArrayElement] to specify primitives
+ *!by indexing vertexes and vertex attributes and @[glDrawElements] to
+ *!construct a sequence of primitives by indexing vertexes and vertex attributes.
+ *!
+ *!@param stride
+ *!
+ *!Specifies the byte offset between consecutive edge flags.
+ *!If @i{stride@} is 0 (the initial value), the edge flags are understood
+ *!to be tightly packed in the array.
+ *!
+ *!@param pointer
+ *!
+ *!Specifies a pointer to the first edge flag in the array.
+ *!
+ *!@throws
+ *!
+ *!@[GL_INVALID_ENUM] is generated if @i{stride@} is negative.
  *!
  *!
  */

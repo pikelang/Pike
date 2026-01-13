@@ -203,7 +203,16 @@ string preprocess_man(array(string) rows, string fn)
   mapping names = mkmapping(map(indices(prots), lower_case), indices(prots));
   fn = "gl" + fn;
   string name, new_name;
-  if(name = names[fn+"4f"]) new_name = name[..sizeof(name)-3];
+  if (name = ([
+        "glget": "glGet",
+        "glevalmesh": "glEvalMesh",
+        "gledgeflag": "glEdgeFlag",
+      ])[fn]) {
+    // glGetFloatv et al ==> glGet (cf top.c).
+    // glEvalMesh1 et al ==> glEvalMesh.
+    new_name = name;
+    name = sort(indices(prots))[0];
+  } else if(name = names[fn+"4f"]) new_name = name[..sizeof(name)-3];
   else if(name = names[fn+"3f"]) new_name = name[..sizeof(name)-3];
   else if(name = names[fn+"2f"]) new_name = name[..sizeof(name)-3];
   else if(name = names[fn+"f"])  new_name = name[..sizeof(name)-2];
@@ -211,10 +220,13 @@ string preprocess_man(array(string) rows, string fn)
   else if(name = names[fn+"fv"]) new_name = name[..sizeof(name)-3];
 
   if(new_name) {
-    foreach(indices(prots), string name)
-      ref_alias[name] = new_name;
+    foreach(indices(prots), string name) {
+      if (name != new_name) {
+        ref_alias[name] = new_name;
+      }
+    }
     prots = ([ new_name : prots[name] ]);
-  } else {
+  } else if (sizeof(prots) > 1) {
     werror("Warning: New canonical name for %O not found.\n"
            "Known names: %O\n", fn, names);
   }
@@ -240,8 +252,18 @@ string process_man(string name, string prot_ret, array(string) prot_types) {
   [ args, doc ] = m_delete(docs, name);
 
 
-  if( sizeof(prot_types) != sizeof(args) )
-    error("Prototype argument types and names mismatch in size. %O %O\n", prot_types, args);
+  if( sizeof(prot_types) != sizeof(args) ) {
+    if (name == "glClipPlane") {
+      doc = "@decl " + prot_ret + " glClipPlane(" +
+        prot_types[0] + " " + args[0] + ", "
+        "float equation_0, float equation_1, float equation_2, "
+        "float equation_3)\n\n" + doc;
+      prot_types = ({ prot_types[0], "array(4:float)" });
+    } else {
+      error("Prototype argument types and names mismatch in size. %O %O\n",
+            prot_types, args);
+    }
+  }
   prot_types = (prot_types[*] + " ")[*] + args[*];
 
   return "@decl " + prot_ret + " " + name + "(" + (prot_types*", ") + ")\n\n" + doc;
@@ -376,8 +398,12 @@ string document(string name, string features)
       args += ({"object|mapping(string:object)"});
       break;
 
+    case '&':
+      args += ({ "System.Memory" });
+      break;
+
     default:
-      error("%s: Unknown parameter type '%c'.", name, features[i]);
+      error("%s: Unknown parameter type '%c'.\n", name, features[i]);
     }
   }
 
