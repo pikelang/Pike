@@ -1680,7 +1680,7 @@ static void *make_stub(struct cpu_context *ctx, void *data, int statc,
   if(*signature) signature++;
   rtype = get_ffi_type(*signature);
 
-#if defined (_WIN32) || defined (__WIN32__) || defined (WIN32)
+#if (defined (_WIN32) || defined (__WIN32__) || defined (WIN32)) && !defined(__WIN64__)
   abi = FFI_STDCALL;
 #else
   abi = FFI_DEFAULT_ABI;
