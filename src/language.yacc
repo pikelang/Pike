@@ -3239,6 +3239,55 @@ foreach_lvalues:  ',' safe_lvalue { $$=$2; }
 foreach: TOK_FOREACH save_block_level save_locals line_number_info
   '(' assignment_expr foreach_lvalues end_cond
   {
+    /*! @decl void foreach(array a, mixed lvalue)
+     *!
+     *!   Loop over an array or an @[Iterator] or a value
+     *!   supported by @[get_iterator()].
+     *!
+     *! @param a
+     *!   Array to loop over in sequence starting at index @expr{0@}.
+     *!
+     *! @param lvalue
+     *!   Variable or equivalent that will be assigned a value from
+     *!   the array.
+     *!
+     *!   There are two syntaxes, The classic array-style syntax:
+     *!
+     *!   @code
+     *!     foreach(({ 1, 2, 3 }), mixed val) {
+     *!       // This block of code will execute 3 times,
+     *!       // with val having the values 1, 2 and 3 in sequence.
+     *!     }
+     *!   @endcode
+     *!
+     *!   Note that the above syntax only supports looping over arrays.
+     *!
+     *!   And the @[Iterator]-style syntax:
+     *!
+     *!   @code
+     *!     Iterator|array|mapping|multiset|object|string iter;
+     *!     foreach(iter; mixed ind; mixed val) {
+     *!       // predef::get_iterator(iter) will be called once to create
+     *!       // an iterator if iter is not already an iterator, and then
+     *!       // this code clock will be looped over until
+     *!       // predef::iterator_next() returns false. The lvalues
+     *!       // ind and val will be assigned the values from
+     *!       // predef::iterator_index() and predef::iterator_value()
+     *!       // respectively. Either (or both) of ind and val may
+     *!       // be omitted.
+     *!     }
+     *!   @endcode
+     *!
+     *!   Note the semi-colons used to separate the parameters to
+     *!   @[foreach] above.
+     *!
+     *! @note
+     *!   @[foreach] is not a @tt{function@}, but a special form.
+     *!
+     *! @seealso
+     *!   @[Iterator], @[get_iterator()], @[lfun::_get_iterator()],
+     *!   @[iterator_next()], @[iterator_index()], @[Iterator_value()].
+     */
   }
   statement
   {
