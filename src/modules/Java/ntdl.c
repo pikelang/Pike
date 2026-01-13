@@ -199,7 +199,7 @@ static int open_nt_dll(void)
   }
   else {
     FARPROC proc;
-    if(proc=GetProcAddress(jvmdll, "JNI_CreateJavaVM"))
+    if((proc=GetProcAddress(jvmdll, "JNI_CreateJavaVM")))
       JNI_CreateJavaVM = (createjavavmtype)proc;
     else {
       if(FreeLibrary(jvmdll))
