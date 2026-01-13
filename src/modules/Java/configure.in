@@ -678,6 +678,12 @@ if test "x$with_java" = xyes; then
       # We'll do LoadLibrary ourselves instead of relying on jvm.lib to
       # do it for us.  That way we'll avoid nasty popup dialogs...
       JAVA_LIBS="-lkernel32 -lws2_32 -ladvapi32"
+      # We may still need libffi though...
+      if test "$pike_java_ffi" = yes; then
+        JAVA_LIBS="-lffi ${JAVA_LIBS}"
+      else
+        :
+      fi
     else
       :
     fi
