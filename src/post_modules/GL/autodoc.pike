@@ -119,8 +119,10 @@ string preprocess_man(array(string) rows, string fn)
       if(has_value(_args, "(") && has_value(_args, ")")) {
         sscanf(_args, "%*s\\f3%s\\fP(%s)", string spec_name, _args);
 	array args = ({});
-        while( sscanf(_args, "%*s\\fI%s\\fP%s", string arg, _args)==3 )
+        while( sscanf(_args, "%*s\\fI%s\\fP%s", string arg, _args)==3 ) {
+          if (has_prefix(arg, "*")) arg = arg[1..];
           args += ({ arg });
+        }
 	prots[spec_name] = args;
 	_args = "";
       }
@@ -437,22 +439,28 @@ OpenGL glue. All method and constant names have been kept close to their low
 level counterparts for easy adoption of OpenGL code from other languages and
 examples off the web. Superfluous suffixes specifying the number and types of
 arguments have been dropped, though.
-
+";
+  if (sizeof(not_implemented)) {
+    ret += #"
 OpenGL methods still missing in the Pike API:
 
 @xml{<matrix>
 ";
-  foreach( sort( (array)not_implemented ), string name )
-    ret += "<r><c>" + name + "</c></r>\n";
-  ret += #"</matrix>@}
-
+    foreach( sort( (array)not_implemented ), string name )
+      ret += "<r><c>" + name + "</c></r>\n";
+    ret += "</matrix>@}\n";
+  }
+  if (sizeof(not_documented)) {
+    ret += #"
 @fixme
 Methods available, but lacking documentation:
+
 @xml{<matrix>
 ";
-  foreach( sort( not_documented ), string name )
-    ret += "<r><c>" + name + "</c></r>\n";
-  ret += "</matrix>@}";
+    foreach( sort( not_documented ), string name )
+      ret += "<r><c>" + name + "</c></r>\n";
+    ret += "</matrix>@}";
+  }
   return comment(ret);
 }
 
@@ -515,7 +523,8 @@ void main()
     array relevant = refs[name];
     if( relevant && sizeof( relevant -= not_implemented ) )
     {
-      array r = map(relevant, lambda(string in) { return "@[" + in + "]"; });
+      array r = sort(map(relevant,
+                         lambda(string in) { return "@[" + in + "]"; }));
       doc += sprintf( "/*!@decl constant %s = %d\n *! Used in %s\n */\n\n",
 		      name, constants[name], String.implode_nicely( r ) );
     }
