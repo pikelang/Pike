@@ -67,6 +67,7 @@ if test x$with_postgres = xyes; then
 
   PIKE_FEATURE_NODEP(Postgres)
 
+  AC_CHECK_HEADERS(libpq-fe.h)
   PIKE_PKG_CONFIG(libpq, [
 		      AC_CHECK_FUNCS(PQclear)
 		      if test "x$ac_cv_func_PQclear" = "xno"; then
@@ -107,8 +108,6 @@ if test x$with_postgres = xyes; then
 
   if test x$ac_pike_postgres_works = xyes; then
     # Final check, just to be sure we did not mess up
-    AC_CHECK_HEADERS(libpq-fe.h)
-
     if test "x$ac_cv_header_libpq_fe_h = xyes"; then
       # Rationale: OpenSolaris as of 20070128 includes a libpq-fe.h that
       # includes openssl/ssl.h if server/pg_config.h is included before
