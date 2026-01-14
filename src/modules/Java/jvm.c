@@ -3542,7 +3542,7 @@ static void f_create(INT32 args)
          */
         throw_error_object(fast_clone_object(compilation_error_program), 0, 0,
                            "Failed to create virtual machine: %s (%d)\n",
-                           pike_jni_error(errcode), errcode);
+                           pike_jni_error(errcode), (int)errcode);
       }
     }
     j->env = vp;
