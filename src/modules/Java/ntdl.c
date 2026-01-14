@@ -30,7 +30,7 @@ static int open_nt_dll(void)
   DWORD l;
   HINSTANCE kernel;
   DWORD (WINAPI *getdlldir)(DWORD nBufferLength, WCHAR *lpBuffer) = NULL;
-  BOOL (WINAPI *setdlldir)(WCHAR *lpPathname) = NULL;
+  BOOL (WINAPI *setdlldir)(const WCHAR *lpPathname) = NULL;
 
   l = GetEnvironmentVariableW(L"PIKE_JRE_JVMDLL", buffer, len);
   if (l > 0) {
@@ -62,7 +62,7 @@ static int open_nt_dll(void)
       }
 
 #ifdef PIKE_DLL_DEBUG
-      fwprintf(stderr, L"JVM subkeyname: %s\r\n", subkeyname);
+      fwprintf(stderr, L"JVM subkeyname: %ls\r\n", subkeyname);
 #endif /* PIKE_DLL_DEBUG */
 
       if(RegOpenKeyExW(key, subkeyname, 0, KEY_READ, &subkey) ==
@@ -112,7 +112,7 @@ static int open_nt_dll(void)
   }
 
 #ifdef PIKE_DLL_DEBUG
-  fwprintf(stderr, L"JVM libname: %s\r\n", libname?libname:L"NULL");
+  fwprintf(stderr, L"JVM libname: %ls\r\n", libname?libname:L"NULL");
 #endif /* PIKE_DLL_DEBUG */
 
   if (!libname) {
@@ -169,7 +169,7 @@ static int open_nt_dll(void)
       }
 
 #ifdef PIKE_DLL_DEBUG
-      fwprintf(stderr, L"JVM dlldir: %s\r\n", libname);
+      fwprintf(stderr, L"JVM dlldir: %ls\r\n", libname);
 #endif /* PIKE_DLL_DEBUG */
 
       setdlldir(libname);
@@ -199,7 +199,7 @@ static int open_nt_dll(void)
   }
   else {
     FARPROC proc;
-    if(proc=GetProcAddress(jvmdll, "JNI_CreateJavaVM"))
+    if((proc=GetProcAddress(jvmdll, "JNI_CreateJavaVM")))
       JNI_CreateJavaVM = (createjavavmtype)proc;
     else {
       if(FreeLibrary(jvmdll))

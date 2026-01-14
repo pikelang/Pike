@@ -36,7 +36,7 @@ if test "x$with_java" = xyes; then
           5.*|6.*|7.*) pike_cv_java_sysos="solaris";
         esac
       ;;
-      *windows*)
+      *windows*|mingw*)
         pike_cv_java_sysos=windows_nt
       ;;
     esac
@@ -258,10 +258,15 @@ if test "x$with_java" = xyes; then
 	     "$java_arch_dir/$pike_cv_java_threads_type" \
              "$java_arch_dir/classic" "$java_arch_dir" \
 	     "." "../bin" "../bin/classic"; do
-      if test -d "$tmp_java_lib_dir/$i/." && "$LS" $tmp_java_lib_dir/$i/lib* >/dev/null 2>&1; then
-        pike_cv_java_lib_dir="$pike_cv_java_lib_dir$tmp_java_lib_dir/$i "
+      if test -d "$tmp_java_lib_dir/$i/."; then
+        if "$LS" $tmp_java_lib_dir/$i/lib* >/dev/null 2>&1 || \
+           "$LS" $tmp_java_lib_dir/$i/*.lib >/dev/null 2>&1; then
+          pike_cv_java_lib_dir="$pike_cv_java_lib_dir$tmp_java_lib_dir/$i "
+        else
+          :
+        fi
       else
-	:
+        :
       fi
     done
     if test -z "$pike_cv_java_lib_dir" ; then pike_cv_java_lib_dir=no; else
@@ -342,18 +347,22 @@ if test "x$with_java" = xyes; then
     if test "x$pike_cv_java_include_dir" = xno; then :; else
       echo "Adding $pike_cv_java_include_dir to the include search path."
       CPPFLAGS="-I$pike_cv_java_include_dir ${CPPFLAGS}"
-      if test -d "$pike_cv_java_include_dir/$pike_cv_java_sysos/."; then
+      if test -n "$pike_cv_java_sysos" -a -d "$pike_cv_java_include_dir/$pike_cv_java_sysos/."; then
 	echo "Adding $pike_cv_java_include_dir/$pike_cv_java_sysos to the include search path."
 	CPPFLAGS="-I$pike_cv_java_include_dir/$pike_cv_java_sysos ${CPPFLAGS}"
       else
 	:
       fi
-      for d in "$pike_cv_java_include_dir/$java_arch_dir/."; do
-	if test -d "$d"; then
-	  echo "Adding $d to the include search path."
-	  CPPFLAGS="-I$d ${CPPFLAGS}"
-	fi
-      done
+      if test "x$pike_cv_java_sysos" = xwindows_nt -a -d "$pike_cv_java_include_dir/win32/."; then
+        echo "Adding $pike_cv_java_include_dir/win32 to the include search path."
+        CPPFLAGS="-I$pike_cv_java_include_dir/win32 ${CPPFLAGS}"
+      else
+	:
+      fi
+      if test -n "$java_arch_dir" -a -d "$pike_cv_java_include_dir/$java_arch_dir"; then
+        echo "Adding $pike_cv_java_include_dir/$java_arch_dir to the include search path."
+        CPPFLAGS="-I$pike_cv_java_include_dir/$java_arch_dir ${CPPFLAGS}"
+      fi
     fi
   fi
 
@@ -558,7 +567,10 @@ if test "x$with_java" = xyes; then
     AC_CACHE_VAL(pike_cv_java_working, [
       OLD_CPPFLAGS="$CPPFLAGS"
       CPPFLAGS="-I$srcdir $OLD_CPPFLAGS"
-      AC_TRY_RUN([#ifdef HAVE_JNI_H
+      AC_TRY_RUN([#if (defined(__WINNT__) || defined(__WIN32__)) && !defined(__NT__)
+#define __NT__
+#endif
+#ifdef HAVE_JNI_H
 #include <jni.h>
 #endif
 #ifdef HAVE_JAVAVM_JNI_H
@@ -666,6 +678,12 @@ if test "x$with_java" = xyes; then
       # We'll do LoadLibrary ourselves instead of relying on jvm.lib to
       # do it for us.  That way we'll avoid nasty popup dialogs...
       JAVA_LIBS="-lkernel32 -lws2_32 -ladvapi32"
+      # We may still need libffi though...
+      if test "$pike_java_ffi" = yes; then
+        JAVA_LIBS="-lffi ${JAVA_LIBS}"
+      else
+        :
+      fi
     else
       :
     fi
