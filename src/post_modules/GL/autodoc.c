@@ -22,9 +22,7 @@
  *!<r><c>glCallLists</c></r>
  *!<r><c>glDeleteTextures</c></r>
  *!<r><c>glDrawElements</c></r>
- *!<r><c>glEvalMesh</c></r>
  *!<r><c>glGenTextures</c></r>
- *!<r><c>glGet</c></r>
  *!<r><c>glGetClipPlane</c></r>
  *!<r><c>glGetLight</c></r>
  *!<r><c>glGetMap</c></r>
@@ -47,11 +45,6 @@
  *!<r><c>glRect</c></r>
  *!</matrix>@}
  *!
- *!@fixme
- *!Methods available, but lacking documentation:
- *!@xml{<matrix>
- *!<r><c>glEvalMesh</c></r>
- *!</matrix>@}
  */
 
 
@@ -2161,9 +2154,11 @@
 
 /*!@decl void glEvalCoord(float|int|array(float|int) u, float|int|void v)
  *!
- *!@[glEvalCoord] evaluates enabled one-dimensional maps at argument
- *!@[u] or two-dimensional maps using two domain values,
- *!@[u] and @[v].
+ *!@[glEvalCoord1] evaluates enabled one-dimensional maps at argument
+ *!@i{u@}.
+ *!@[glEvalCoord2] does the same for two-dimensional maps using
+ *!two domain values,
+ *!@i{u@} and @i{v@}.
  *!To define a map, call @[glMap1] and @[glMap2]; to enable and
  *!disable it, call @[glEnable] and @[glDisable].
  *!
@@ -2229,7 +2224,7 @@
  *!
  *!If you have enabled automatic normal generation,
  *!by calling @[glEnable] with argument @[GL_AUTO_NORMAL],
- *!@[glEvalCoord] generates surface normals analytically,
+ *!@[glEvalCoord2] generates surface normals analytically,
  *!regardless of the contents or enabling of the @[GL_MAP2_NORMAL] map.
  *!Let
  *!.sp
@@ -2253,7 +2248,7 @@
  *!is used to produce a normal.
  *!If neither automatic normal generation nor a normal map is enabled,
  *!no normal is generated for
- *!@[glEvalCoord] commands.
+ *!@[glEvalCoord2] commands.
  *!
  *!@param u
  *!
@@ -2264,6 +2259,7 @@
  *!
  *!Specifies a value that is the domain coordinate v to the basis function
  *!defined in a previous @[glMap2] command.
+ *!This argument is not present in a @[glEvalCoord1] command.
  *!
  *!
  *!@param u
@@ -2271,17 +2267,18 @@
  *!Specifies a pointer to an array containing
  *!either one or two domain coordinates.
  *!The first coordinate is u.
- *!The second coordinate is v.
+ *!The second coordinate is v,
+ *!which is present only in @[glEvalCoord2] versions.
  *!
  *!
  */
 
 /*!@decl void glEvalPoint(int|array(int) i, int|void j)
  *!
- *!@[glMapGrid] and @[glEvalMesh] are used in tandem to efficiently
+ *!@[glMapGrid] and @[glEvalMesh1] and @[glEvalMesh2] are used in tandem to efficiently
  *!generate and evaluate a series of evenly spaced map domain values.
  *!@[glEvalPoint] can be used to evaluate a single grid point in the same gridspace
- *!that is traversed by @[glEvalMesh].
+ *!that is traversed by @[glEvalMesh1] and @[glEvalMesh2].
  *!Calling @[glEvalPoint] is equivalent to calling
  *!.nf
  *!
@@ -6356,6 +6353,340 @@
  *!
  */
 
+/*!@decl void glEvalMesh1(int mode, int i1, int i2)
+ *!
+ *!@[glMapGrid] and @[glEvalMesh1] and @[glEvalMesh2] are used in tandem to efficiently
+ *!generate and evaluate a series of evenly-spaced map domain values.
+ *!@[glEvalMesh1] and @[glEvalMesh2] steps through the integer domain of a one- or two-dimensional grid,
+ *!whose range is the domain of the evaluation maps specified by
+ *!@[glMap1] and @[glMap2].
+ *!@i{mode@} determines whether the resulting vertices are connected as
+ *!points,
+ *!lines,
+ *!or filled polygons.
+ *!
+ *!In the one-dimensional case,
+ *!@[glEvalMesh1],
+ *!the mesh is generated as if the following code fragment were executed:
+ *!.nf
+ *!
+ *!glBegin (@i{type@});
+ *!for (i = @i{i1@}; i <= @i{i2@}; i += 1)
+ *!     glEvalCoord1(i . DELTA u + u sub 1)
+ *!glEnd();
+ *!
+ *!.fi
+ *!where
+ *!.sp
+ *!.nf
+ *!DELTA u = (u  - u ) / 1
+ *!            2    1
+ *!.fi
+ *!.sp
+ *!.nf
+ *!and n, u, and u  are the arguments to the most recent
+ *!        1      2
+ *!
+ *!.fi
+ *!@[glMapGrid1] command.
+ *!@i{type@} is @[GL_POINTS] if @i{mode@} is @[GL_POINT],
+ *!or @[GL_LINES] if @i{mode@} is @[GL_LINE].
+ *!
+ *!The one absolute numeric requirement is that if i = n,
+ *!then the value computed from
+ *!.nf
+ *!
+ *!i . DELTA u + u
+ *!
+ *!is exactly u.
+ *!.fi               1            2
+ *!
+ *!In the two-dimensional case,
+ *!@[glEvalMesh2],
+ *!let
+ *!.sp
+ *!.nf
+ *!DELTA u = (u  - u )/n
+ *!            2    1
+ *!
+ *!DELTA v = (v - v )/m,
+ *!            2   1
+ *!
+ *!where n, u , u , m, v , and v
+ *!          1   2      1       2
+ *!.fi
+ *!are the arguments to the most recent @[glMapGrid2] command.
+ *!Then,
+ *!if @i{mode@} is @[GL_FILL],
+ *!the @[glEvalMesh2] command is equivalent to:
+ *!.nf
+ *!
+ *!for (j = @i{j1@};  j < @i{j2@}; j += 1) {
+ *!    glBegin (GL_QUAD_STRIP);
+ *!    for (i = @i{i1@}; i <= @i{i2@}; i += 1) {
+ *!        glEvalCoord2(i . DELTA u + u , j . DELTA v + v );
+ *!                                    1                 1
+ *!        glEvalCoord2(i . DELTA u + u , (j+1) . DELTA v + v );
+ *!                                    1                     1
+ *!    }
+ *!    glEnd();
+ *!}
+ *!
+ *!.fi
+ *!
+ *!If @i{mode@} is @[GL_LINE],
+ *!then a call to @[glEvalMesh2] is equivalent to:
+ *!.nf
+ *!
+ *!for (j = @i{j1@};  j <= @i{j2@}; j += 1) {
+ *!    glBegin(GL_LINE_STRIP);
+ *!    for (i = @i{i1@}; i <= @i{i2@}; i += 1)
+ *!        glEvalCoord2(i . DELTA u + u , j . DELTA v + v );
+ *!                                    1                 1
+ *!    glEnd();
+ *!}
+ *!for (i = @i{i1@};  i <= @i{i2@}; i += 1) {
+ *!    glBegin(GL_LINE_STRIP);
+ *!    for (j = @i{j1@}; j <= @i{j1@}; j += 1)
+ *!        glEvalCoord2)(i . DELTA u + u , j . DELTA v + v );
+ *!                                     1                 1
+ *!    glEnd();
+ *!}
+ *!
+ *!.fi
+ *!
+ *!And finally,
+ *!if @i{mode@} is @[GL_POINT],
+ *!then a call to @[glEvalMesh2] is equivalent to:
+ *!.nf
+ *!
+ *!glBegin (GL_POINTS);
+ *!for (j = @i{j1@};  j <= @i{j2@}; j += 1) {
+ *!    for (i = @i{i1@}; i <= @i{i2@}; i += 1) {
+ *!        glEvalCoord2(i . DELTA u + u , j . DELTA v + v );
+ *!                                    1                 1
+ *!    }
+ *!}
+ *!glEnd();
+ *!.fi
+ *!
+ *!In all three cases, the only absolute numeric requirements are that if i~=~n,
+ *!then the value computed from
+ *!.nf
+ *!i . DELTA u + u is exactly u ,
+ *!               1            2
+ *!and if j~=~m,
+ *!then the value computed from
+ *!j . DELTA v + v is exactly v .
+ *!               1            2
+ *!
+ *!@param mode
+ *!
+ *!In @[glEvalMesh1], specifies whether to compute a one-dimensional mesh of points or lines.
+ *!Symbolic constants
+ *!@[GL_POINT] and
+ *!@[GL_LINE] are accepted.
+ *!
+ *!@param i1
+ *!
+ *!Specify the first and last integer values for grid domain variable i.
+ *!
+ *!
+ *!@param mode
+ *!
+ *!In @[glEvalMesh2], specifies whether to compute a two-dimensional mesh of points, lines,
+ *!or polygons.
+ *!Symbolic constants
+ *!@[GL_POINT],
+ *!@[GL_LINE], and
+ *!@[GL_FILL] are accepted.
+ *!
+ *!@param i1
+ *!
+ *!Specify the first and last integer values for grid domain variable i.
+ *!
+ *!@param j1
+ *!
+ *!Specify the first and last integer values for grid domain variable j.
+ *!
+ *!@throws
+ *!
+ *!@[GL_INVALID_ENUM] is generated if @i{mode@} is not an accepted value.
+ *!
+ *!@[GL_INVALID_OPERATION] is generated if @[glEvalMesh1] and @[glEvalMesh2]
+ *!is executed between the execution of @[glBegin]
+ *!and the corresponding execution of @[glEnd].
+ *!
+ *!
+ */
+
+/*!@decl void glEvalMesh2(int mode, int i1, int i2, int j1, int j2)
+ *!
+ *!@[glMapGrid] and @[glEvalMesh1] and @[glEvalMesh2] are used in tandem to efficiently
+ *!generate and evaluate a series of evenly-spaced map domain values.
+ *!@[glEvalMesh1] and @[glEvalMesh2] steps through the integer domain of a one- or two-dimensional grid,
+ *!whose range is the domain of the evaluation maps specified by
+ *!@[glMap1] and @[glMap2].
+ *!@i{mode@} determines whether the resulting vertices are connected as
+ *!points,
+ *!lines,
+ *!or filled polygons.
+ *!
+ *!In the one-dimensional case,
+ *!@[glEvalMesh1],
+ *!the mesh is generated as if the following code fragment were executed:
+ *!.nf
+ *!
+ *!glBegin (@i{type@});
+ *!for (i = @i{i1@}; i <= @i{i2@}; i += 1)
+ *!     glEvalCoord1(i . DELTA u + u sub 1)
+ *!glEnd();
+ *!
+ *!.fi
+ *!where
+ *!.sp
+ *!.nf
+ *!DELTA u = (u  - u ) / 1
+ *!            2    1
+ *!.fi
+ *!.sp
+ *!.nf
+ *!and n, u, and u  are the arguments to the most recent
+ *!        1      2
+ *!
+ *!.fi
+ *!@[glMapGrid1] command.
+ *!@i{type@} is @[GL_POINTS] if @i{mode@} is @[GL_POINT],
+ *!or @[GL_LINES] if @i{mode@} is @[GL_LINE].
+ *!
+ *!The one absolute numeric requirement is that if i = n,
+ *!then the value computed from
+ *!.nf
+ *!
+ *!i . DELTA u + u
+ *!
+ *!is exactly u.
+ *!.fi               1            2
+ *!
+ *!In the two-dimensional case,
+ *!@[glEvalMesh2],
+ *!let
+ *!.sp
+ *!.nf
+ *!DELTA u = (u  - u )/n
+ *!            2    1
+ *!
+ *!DELTA v = (v - v )/m,
+ *!            2   1
+ *!
+ *!where n, u , u , m, v , and v
+ *!          1   2      1       2
+ *!.fi
+ *!are the arguments to the most recent @[glMapGrid2] command.
+ *!Then,
+ *!if @i{mode@} is @[GL_FILL],
+ *!the @[glEvalMesh2] command is equivalent to:
+ *!.nf
+ *!
+ *!for (j = @i{j1@};  j < @i{j2@}; j += 1) {
+ *!    glBegin (GL_QUAD_STRIP);
+ *!    for (i = @i{i1@}; i <= @i{i2@}; i += 1) {
+ *!        glEvalCoord2(i . DELTA u + u , j . DELTA v + v );
+ *!                                    1                 1
+ *!        glEvalCoord2(i . DELTA u + u , (j+1) . DELTA v + v );
+ *!                                    1                     1
+ *!    }
+ *!    glEnd();
+ *!}
+ *!
+ *!.fi
+ *!
+ *!If @i{mode@} is @[GL_LINE],
+ *!then a call to @[glEvalMesh2] is equivalent to:
+ *!.nf
+ *!
+ *!for (j = @i{j1@};  j <= @i{j2@}; j += 1) {
+ *!    glBegin(GL_LINE_STRIP);
+ *!    for (i = @i{i1@}; i <= @i{i2@}; i += 1)
+ *!        glEvalCoord2(i . DELTA u + u , j . DELTA v + v );
+ *!                                    1                 1
+ *!    glEnd();
+ *!}
+ *!for (i = @i{i1@};  i <= @i{i2@}; i += 1) {
+ *!    glBegin(GL_LINE_STRIP);
+ *!    for (j = @i{j1@}; j <= @i{j1@}; j += 1)
+ *!        glEvalCoord2)(i . DELTA u + u , j . DELTA v + v );
+ *!                                     1                 1
+ *!    glEnd();
+ *!}
+ *!
+ *!.fi
+ *!
+ *!And finally,
+ *!if @i{mode@} is @[GL_POINT],
+ *!then a call to @[glEvalMesh2] is equivalent to:
+ *!.nf
+ *!
+ *!glBegin (GL_POINTS);
+ *!for (j = @i{j1@};  j <= @i{j2@}; j += 1) {
+ *!    for (i = @i{i1@}; i <= @i{i2@}; i += 1) {
+ *!        glEvalCoord2(i . DELTA u + u , j . DELTA v + v );
+ *!                                    1                 1
+ *!    }
+ *!}
+ *!glEnd();
+ *!.fi
+ *!
+ *!In all three cases, the only absolute numeric requirements are that if i~=~n,
+ *!then the value computed from
+ *!.nf
+ *!i . DELTA u + u is exactly u ,
+ *!               1            2
+ *!and if j~=~m,
+ *!then the value computed from
+ *!j . DELTA v + v is exactly v .
+ *!               1            2
+ *!
+ *!@param mode
+ *!
+ *!In @[glEvalMesh1], specifies whether to compute a one-dimensional mesh of points or lines.
+ *!Symbolic constants
+ *!@[GL_POINT] and
+ *!@[GL_LINE] are accepted.
+ *!
+ *!@param i1
+ *!
+ *!Specify the first and last integer values for grid domain variable i.
+ *!
+ *!
+ *!@param mode
+ *!
+ *!In @[glEvalMesh2], specifies whether to compute a two-dimensional mesh of points, lines,
+ *!or polygons.
+ *!Symbolic constants
+ *!@[GL_POINT],
+ *!@[GL_LINE], and
+ *!@[GL_FILL] are accepted.
+ *!
+ *!@param i1
+ *!
+ *!Specify the first and last integer values for grid domain variable i.
+ *!
+ *!@param j1
+ *!
+ *!Specify the first and last integer values for grid domain variable j.
+ *!
+ *!@throws
+ *!
+ *!@[GL_INVALID_ENUM] is generated if @i{mode@} is not an accepted value.
+ *!
+ *!@[GL_INVALID_OPERATION] is generated if @[glEvalMesh1] and @[glEvalMesh2]
+ *!is executed between the execution of @[glBegin]
+ *!and the corresponding execution of @[glEnd].
+ *!
+ *!
+ */
+
 /*!@decl void glTexImage2D(int target, int level, int internalformat, object|mapping(string:object) width, object|mapping(string:object) height, int border, object|mapping(string:object) format, object|mapping(string:object) type, object|mapping(string:object) pixels)
  *!
  *!Texturing maps a portion of a specified texture image
@@ -7618,6 +7949,1365 @@
  *!
  */
 
+/*!@decl int|float|array(int)|array(float) glGet(int pname)
+ *!
+ *!This command returns values for simple state variables in GL.
+ *!@i{pname@} is a symbolic constant indicating the state variable to be returned.
+ *!
+ *!Type conversion is performed if @i{params@} has a different type than
+ *!the state variable value being requested.
+ *!If @[glGet] is called,
+ *!a floating-point (or integer) value is converted to @[GL_FALSE] if
+ *!and only if it is 0.0 (or 0).
+ *!Otherwise,
+ *!it is converted to @[GL_TRUE].
+ *!If @[glGet] is called, boolean values are returned as
+ *!@[GL_TRUE] or @[GL_FALSE], and most floating-point values are
+ *!rounded to the nearest integer value. Floating-point colors and
+ *!normals, however, are returned with a linear mapping that maps 1.0 to
+ *!the most positive representable integer value,
+ *!and -1.0 to the most negative representable integer value.
+ *!If @[glGet] or @[glGet] is called,
+ *!boolean values are returned as @[GL_TRUE] or @[GL_FALSE],
+ *!and integer values are converted to floating-point values.
+ *!
+ *!The following symbolic constants are accepted by @i{pname@}:
+ *!
+ *!@xml{<matrix>
+ *!<r><c><ref>GL_ACCUM_ALPHA_BITS</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the number of alpha bitplanes in the accumulation buffer.
+ *!</c></r>
+ *!<r><c><ref>GL_ACCUM_BLUE_BITS</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the number of blue bitplanes in the accumulation buffer.
+ *!</c></r>
+ *!<r><c><ref>GL_ACCUM_CLEAR_VALUE</ref>
+ *!</c><c><i>params</i> returns four values:
+ *!the red, green, blue, and alpha values used to clear the accumulation buffer.
+ *!Integer values,
+ *!if requested,
+ *!are linearly mapped from the internal floating-point representation such
+ *!that 1.0 returns the most positive representable integer value,
+ *!and -1.0 returns the most negative representable integer
+ *!value. The initial value is (0, 0, 0, 0).
+ *!See <ref>glClearAccum</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_ACCUM_GREEN_BITS</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the number of green bitplanes in the accumulation buffer.
+ *!</c></r>
+ *!<r><c><ref>GL_ACCUM_RED_BITS</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the number of red bitplanes in the accumulation buffer.
+ *!</c></r>
+ *!<r><c><ref>GL_ALPHA_BIAS</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the alpha bias factor used during pixel transfers. The initial value is 0.
+ *!See <ref>glPixelTransfer</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_ALPHA_BITS</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the number of alpha bitplanes in each color buffer.
+ *!</c></r>
+ *!<r><c><ref>GL_ALPHA_SCALE</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the alpha scale factor used during pixel transfers. The initial value is 1.
+ *!See <ref>glPixelTransfer</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_ALPHA_TEST</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether alpha testing
+ *!of fragments is enabled. The initial value is <ref>GL_FALSE</ref>.
+ *!See <ref>glAlphaFunc</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_ALPHA_TEST_FUNC</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the symbolic name of the alpha test function. The initial value is
+ *!<ref>GL_ALWAYS</ref>.
+ *!See <ref>glAlphaFunc</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_ALPHA_TEST_REF</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the reference value for the alpha test. The initial value is 0.
+ *!See <ref>glAlphaFunc</ref>.
+ *!An integer value,
+ *!if requested,
+ *!is linearly mapped from the internal floating-point representation such
+ *!that 1.0 returns the most positive representable integer value,
+ *!and -1.0 returns the most negative representable integer value.
+ *!</c></r>
+ *!<r><c><ref>GL_ATTRIB_STACK_DEPTH</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the depth of the attribute stack.
+ *!If the stack is empty,
+ *!0 is returned. The initial value is 0.
+ *!See <ref>glPushAttrib</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_AUTO_NORMAL</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether 2D map evaluation
+ *!automatically generates surface normals. The initial value is <ref>GL_FALSE</ref>.
+ *!See <ref>glMap2</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_AUX_BUFFERS</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the number of auxiliary color buffers. The initial value is 0.
+ *!</c></r>
+ *!<r><c><ref>GL_BLEND</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether blending is
+ *!enabled. The initial value is <ref>GL_FALSE</ref>.
+ *!See <ref>glBlendFunc</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_BLEND_COLOR_EXT</ref>
+ *!</c><c><i>params</i> returns four values,
+ *!the red, green, blue, and alpha values which are the components of
+ *!the blend color.
+ *!See <ref>glBlendColorEXT</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_BLEND_DST</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the symbolic constant identifying the destination blend
+ *!function. The initial value is <ref>GL_ZERO</ref>.
+ *!See <ref>glBlendFunc</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_BLEND_EQUATION_EXT</ref>
+ *!</c><c><i>params</i> returns one value, a symbolic constant indicating whether
+ *!the blend equation is <ref>GL_FUNC_ADD_EXT</ref>, <ref>GL_MIN_EXT</ref> or
+ *!<ref>GL_MAX_EXT</ref>. See <ref>glBlendEquationEXT</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_BLEND_SRC</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the symbolic constant identifying the source blend function. The initial
+ *!value is <ref>GL_ONE</ref>.
+ *!See <ref>glBlendFunc</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_BLUE_BIAS</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the blue bias factor used during pixel transfers. The initial value is 0.
+ *!See
+ *!<ref>glPixelTransfer</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_BLUE_BITS</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the number of blue bitplanes in each color buffer.
+ *!</c></r>
+ *!<r><c><ref>GL_BLUE_SCALE</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the blue scale factor used during pixel transfers. The initial value is 1.
+ *!See
+ *!<ref>glPixelTransfer</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_CLIENT_ATTRIB_STACK_DEPTH</ref>
+ *!</c><c><i>params</i> returns one value indicating the depth of the
+ *!attribute stack. The initial value is 0.
+ *!See <ref>glPushClientAttrib</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_CLIP_PLANE</ref><i>i</i>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether the specified
+ *!clipping plane is enabled. The initial value is <ref>GL_FALSE</ref>.
+ *!See <ref>glClipPlane</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_COLOR_ARRAY</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether the color array is enabled. The initial value is <ref>GL_FALSE</ref>.
+ *!See <ref>glColorPointer</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_COLOR_ARRAY_SIZE</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the number of components per color in the color array. The initial value
+ *!is 4. See <ref>glColorPointer</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_COLOR_ARRAY_STRIDE</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the byte offset between consecutive colors in the color array. The initial
+ *!value is 0.
+ *!See <ref>glColorPointer</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_COLOR_ARRAY_TYPE</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the data type of each component in the color array. The initial value
+ *!is <ref>GL_FLOAT</ref>. See <ref>glColorPointer</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_COLOR_CLEAR_VALUE</ref>
+ *!</c><c><i>params</i> returns four values:
+ *!the red, green, blue, and alpha values used to clear the color buffers.
+ *!Integer values,
+ *!if requested,
+ *!are linearly mapped from the internal floating-point representation such
+ *!that 1.0 returns the most positive representable integer value,
+ *!and -1.0 returns the most negative representable integer
+ *!value. The initial value is (0, 0, 0, 0).
+ *!See <ref>glClearColor</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_COLOR_LOGIC_OP</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether a fragment's
+ *!RGBA color values are merged into the framebuffer using a logical
+ *!operation. The initial value is <ref>GL_FALSE</ref>.
+ *!See <ref>glLogicOp</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_COLOR_MATERIAL</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether one or more
+ *!material parameters are tracking the current color. The initial value
+ *!is <ref>GL_FALSE</ref>.
+ *!See <ref>glColorMaterial</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_COLOR_MATERIAL_FACE</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!a symbolic constant indicating which materials have a parameter that is
+ *!tracking the current color. The initial value is <ref>GL_FRONT_AND_BACK</ref>.
+ *!See <ref>glColorMaterial</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_COLOR_MATERIAL_PARAMETER</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!a symbolic constant indicating which material parameters are
+ *!tracking the current color. The initial value is
+ *!<ref>GL_AMBIENT_AND_DIFFUSE</ref>.
+ *!See <ref>glColorMaterial</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_COLOR_WRITEMASK</ref>
+ *!</c><c><i>params</i> returns four boolean values:
+ *!the red, green, blue, and alpha write enables for the color
+ *!buffers. The initial value is (<ref>GL_TRUE</ref>, <ref>GL_TRUE</ref>,
+ *!<ref>GL_TRUE</ref>, <ref>GL_TRUE</ref>).
+ *!See <ref>glColorMask</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_CULL_FACE</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether polygon culling
+ *!is enabled. The initial value is <ref>GL_FALSE</ref>.
+ *!See <ref>glCullFace</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_CULL_FACE_MODE</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!a symbolic constant indicating which polygon faces are to be
+ *!culled. The initial value is <ref>GL_BACK</ref>.
+ *!See <ref>glCullFace</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_CURRENT_COLOR</ref>
+ *!</c><c><i>params</i> returns four values:
+ *!the red, green, blue, and alpha values of the current color.
+ *!Integer values,
+ *!if requested,
+ *!are linearly mapped from the internal floating-point representation such
+ *!that 1.0 returns the most positive representable integer value,
+ *!and -1.0 returns the most negative representable integer value.
+ *!See <ref>glColor</ref>. The initial value is (1, 1, 1, 1).
+ *!</c></r>
+ *!<r><c><ref>GL_CURRENT_INDEX</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the current color index. The initial value is 1.
+ *!See <ref>glIndex</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_CURRENT_NORMAL</ref>
+ *!</c><c><i>params</i> returns three values:
+ *!the <i>x</i>, <i>y</i>, and <i>z</i> values of the current normal.
+ *!Integer values,
+ *!if requested,
+ *!are linearly mapped from the internal floating-point representation such
+ *!that 1.0 returns the most positive representable integer value,
+ *!and -1.0 returns the most negative representable integer value.
+ *!The initial value is (0, 0, 1). See <ref>glNormal</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_CURRENT_RASTER_COLOR</ref>
+ *!</c><c><i>params</i> returns four values:
+ *!the red, green, blue, and alpha values of the current raster position.
+ *!Integer values,
+ *!if requested,
+ *!are linearly mapped from the internal floating-point representation such
+ *!that 1.0 returns the most positive representable integer value,
+ *!and -1.0 returns the most negative representable integer
+ *!value. The initial value is (1, 1, 1, 1).
+ *!See <ref>glRasterPos</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_CURRENT_RASTER_DISTANCE</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the distance from the eye to the current raster position. The initial
+ *!value is 0.
+ *!See <ref>glRasterPos</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_CURRENT_RASTER_INDEX</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the color index of the current raster position. The initial value is 1.
+ *!See <ref>glRasterPos</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_CURRENT_RASTER_POSITION</ref>
+ *!</c><c><i>params</i> returns four values:
+ *!the <i>x</i>, <i>y</i>, <i>z</i>, and <i>w</i> components of the current
+ *!raster position.
+ *!<i>x</i>, <i>y</i>, and <i>z</i> are in window coordinates,
+ *!and <i>w</i> is in clip coordinates. The initial value is (0, 0, 0, 1).
+ *!See <ref>glRasterPos</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_CURRENT_RASTER_POSITION_VALID</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether the current
+ *!raster position is valid. The initial value is <ref>GL_TRUE</ref>.
+ *!See <ref>glRasterPos</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_CURRENT_RASTER_TEXTURE_COORDS</ref>
+ *!</c><c><i>params</i> returns four values:
+ *!the <i>s</i>, <i>t</i>, <i>r</i>, and <i>q</i>
+ *!current raster texture coordinates. The initial value is (0, 0, 0, 1).
+ *!See <ref>glRasterPos</ref> and <ref>glTexCoord</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_CURRENT_TEXTURE_COORDS</ref>
+ *!</c><c><i>params</i> returns four values:
+ *!the <i>s</i>, <i>t</i>, <i>r</i>, and <i>q</i> current texture
+ *!coordinates. The initial value is (0, 0, 0, 1).
+ *!See
+ *!<ref>glTexCoord</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_DEPTH_BIAS</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the depth bias factor used during pixel transfers. The initial value is 0.
+ *!See <ref>glPixelTransfer</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_DEPTH_BITS</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the number of bitplanes in the depth buffer.
+ *!</c></r>
+ *!<r><c><ref>GL_DEPTH_CLEAR_VALUE</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the value that is used to clear the depth buffer.
+ *!Integer values,
+ *!if requested,
+ *!are linearly mapped from the internal floating-point representation such
+ *!that 1.0 returns the most positive representable integer value,
+ *!and -1.0 returns the most negative representable integer
+ *!value. The initial value is 1.
+ *!See <ref>glClearDepth</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_DEPTH_FUNC</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the symbolic constant that indicates the depth comparison
+ *!function. The initial value is <ref>GL_LESS</ref>.
+ *!See <ref>glDepthFunc</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_DEPTH_RANGE</ref>
+ *!</c><c><i>params</i> returns two values:
+ *!the near and far mapping limits for the depth buffer.
+ *!Integer values,
+ *!if requested,
+ *!are linearly mapped from the internal floating-point representation such
+ *!that 1.0 returns the most positive representable integer value,
+ *!and -1.0 returns the most negative representable integer
+ *!value. The initial value is (0, 1).
+ *!See <ref>glDepthRange</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_DEPTH_SCALE</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the depth scale factor used during pixel transfers. The initial value is 1.
+ *!See <ref>glPixelTransfer</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_DEPTH_TEST</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether depth testing
+ *!of fragments is enabled. The initial value is <ref>GL_FALSE</ref>.
+ *!See <ref>glDepthFunc</ref> and <ref>glDepthRange</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_DEPTH_WRITEMASK</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating if the depth buffer
+ *!is enabled for writing. The initial value is <ref>GL_TRUE</ref>.
+ *!See <ref>glDepthMask</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_DITHER</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether dithering of
+ *!fragment colors and indices is enabled. The initial value is <ref>GL_TRUE</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_DOUBLEBUFFER</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether double buffering
+ *!is supported.
+ *!</c></r>
+ *!<r><c><ref>GL_DRAW_BUFFER</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!a symbolic constant indicating which buffers are being drawn to.
+ *!See <ref>glDrawBuffer</ref>. The initial value is <ref>GL_BACK</ref> if there
+ *!are back buffers, otherwise it is <ref>GL_FRONT</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_EDGE_FLAG</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether the current
+ *!edge flag is <ref>GL_TRUE</ref> or <ref>GL_FALSE</ref>. The initial value is <ref>GL_TRUE</ref>.
+ *!See <ref>glEdgeFlag</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_EDGE_FLAG_ARRAY</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether the edge
+ *!flag array is enabled. The initial value is <ref>GL_FALSE</ref>.
+ *!See <ref>glEdgeFlagPointer</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_EDGE_FLAG_ARRAY_STRIDE</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the byte offset between consecutive edge flags in the edge flag
+ *!array. The initial value is 0.
+ *!See <ref>glEdgeFlagPointer</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_FOG</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether fogging is
+ *!enabled. The initial value is <ref>GL_FALSE</ref>.
+ *!See <ref>glFog</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_FOG_COLOR</ref>
+ *!</c><c><i>params</i> returns four values:
+ *!the red, green, blue, and alpha components of the fog color.
+ *!Integer values,
+ *!if requested,
+ *!are linearly mapped from the internal floating-point representation such
+ *!that 1.0 returns the most positive representable integer value,
+ *!and -1.0 returns the most negative representable integer
+ *!value. The initial value is (0, 0, 0, 0).
+ *!See <ref>glFog</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_FOG_DENSITY</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the fog density parameter. The initial value is 1.
+ *!See <ref>glFog</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_FOG_END</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the end factor for the linear fog equation. The initial value is 1.
+ *!See <ref>glFog</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_FOG_HINT</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!a symbolic constant indicating the mode of the fog hint. The initial value
+ *!is <ref>GL_DONT_CARE</ref>.
+ *!See <ref>glHint</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_FOG_INDEX</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the fog color index. The initial value is 0.
+ *!See <ref>glFog</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_FOG_MODE</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!a symbolic constant indicating which fog equation is selected. The initial
+ *!value is <ref>GL_EXP</ref>.
+ *!See <ref>glFog</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_FOG_START</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the start factor for the linear fog equation. The initial value is 0.
+ *!See <ref>glFog</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_FRONT_FACE</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!a symbolic constant indicating whether clockwise or counterclockwise
+ *!polygon winding is treated as front-facing. The initial value is
+ *!<ref>GL_CCW</ref>.
+ *!See <ref>glFrontFace</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_GREEN_BIAS</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the green bias factor used during pixel transfers. The initial value is 0.
+ *!</c></r>
+ *!<r><c><ref>GL_GREEN_BITS</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the number of green bitplanes in each color buffer.
+ *!</c></r>
+ *!<r><c><ref>GL_GREEN_SCALE</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the green scale factor used during pixel transfers. The initial value is 1.
+ *!See <ref>glPixelTransfer</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_INDEX_ARRAY</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether the color
+ *!index array is enabled. The initial value is <ref>GL_FALSE</ref>.
+ *!See <ref>glIndexPointer</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_INDEX_ARRAY_STRIDE</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the byte offset between consecutive color indexes in the color index
+ *!array. The initial value is 0.
+ *!See <ref>glIndexPointer</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_INDEX_ARRAY_TYPE</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the data type of indexes in the color index array. The initial value is
+ *!<ref>GL_FLOAT</ref>.
+ *!See <ref>glIndexPointer</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_INDEX_BITS</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the number of bitplanes in each color index buffer.
+ *!</c></r>
+ *!<r><c><ref>GL_INDEX_CLEAR_VALUE</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the color index used to clear the color index buffers. The initial value
+ *!is 0.
+ *!See <ref>glClearIndex</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_INDEX_LOGIC_OP</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether a fragment's index
+ *!values are merged into the framebuffer using a logical
+ *!operation. The initial value is <ref>GL_FALSE</ref>.
+ *!See <ref>glLogicOp</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_INDEX_MODE</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether the GL is in
+ *!color index mode (<ref>GL_TRUE</ref>) or RGBA mode (<ref>GL_FALSE</ref>).
+ *!</c></r>
+ *!<r><c><ref>GL_INDEX_OFFSET</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the offset added to color and stencil indices during pixel
+ *!transfers. The initial value is 0.
+ *!See <ref>glPixelTransfer</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_INDEX_SHIFT</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the amount that color and stencil indices are shifted during pixel
+ *!transfers. The initial value is 0.
+ *!See <ref>glPixelTransfer</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_INDEX_WRITEMASK</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!a mask indicating which bitplanes of each color index buffer can be
+ *!written. The initial value is all 1's.
+ *!See <ref>glIndexMask</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_LIGHT</ref><i>i</i>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether the specified
+ *!light is enabled. The initial value is <ref>GL_FALSE</ref>.
+ *!See <ref>glLight</ref> and <ref>glLightModel</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_LIGHTING</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether lighting is
+ *!enabled. The initial value is <ref>GL_FALSE</ref>.
+ *!See <ref>glLightModel</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_LIGHT_MODEL_AMBIENT</ref>
+ *!</c><c><i>params</i> returns four values:
+ *!the red, green, blue, and alpha components of the ambient intensity of
+ *!the entire scene.
+ *!Integer values,
+ *!if requested,
+ *!are linearly mapped from the internal floating-point representation such
+ *!that 1.0 returns the most positive representable integer value,
+ *!and -1.0 returns the most negative representable integer
+ *!value. The initial value is (0.2, 0.2, 0.2, 1.0).
+ *!See <ref>glLightModel</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_LIGHT_MODEL_LOCAL_VIEWER</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether specular reflection
+ *!calculations treat the viewer as being local to the scene. The initial
+ *!value is <ref>GL_FALSE</ref>.
+ *!See <ref>glLightModel</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_LIGHT_MODEL_TWO_SIDE</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether separate materials
+ *!are used to compute lighting for front- and back-facing
+ *!polygons. The initial value is <ref>GL_FALSE</ref>.
+ *!See <ref>glLightModel</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_LINE_SMOOTH</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether antialiasing of
+ *!lines is enabled. The initial value is <ref>GL_FALSE</ref>.
+ *!See <ref>glLineWidth</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_LINE_SMOOTH_HINT</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!a symbolic constant indicating the mode of the line antialiasing
+ *!hint. The initial value is <ref>GL_DONT_CARE</ref>.
+ *!See <ref>glHint</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_LINE_STIPPLE</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether stippling of lines
+ *!is enabled. The initial value is <ref>GL_FALSE</ref>.
+ *!See <ref>glLineStipple</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_LINE_STIPPLE_PATTERN</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the 16-bit line stipple pattern. The initial value is all 1's.
+ *!See <ref>glLineStipple</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_LINE_STIPPLE_REPEAT</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the line stipple repeat factor. The initial value is 1.
+ *!See <ref>glLineStipple</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_LINE_WIDTH</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the line width as specified with <ref>glLineWidth</ref>. The initial value is
+ *!1.
+ *!</c></r>
+ *!<r><c><ref>GL_LINE_WIDTH_GRANULARITY</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the width difference between adjacent supported widths for antialiased lines.
+ *!See <ref>glLineWidth</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_LINE_WIDTH_RANGE</ref>
+ *!</c><c><i>params</i> returns two values:
+ *!the smallest and largest supported widths for antialiased
+ *!lines.
+ *!See <ref>glLineWidth</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_LIST_BASE</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the base offset added to all names in arrays presented to
+ *!<ref>glCallLists</ref>. The initial value is 0.
+ *!See <ref>glListBase</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_LIST_INDEX</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the name of the display list currently under construction.
+ *!0 is returned if no display list is currently under
+ *!construction. The initial value is 0.
+ *!See <ref>glNewList</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_LIST_MODE</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!a symbolic constant indicating the construction mode of the display list
+ *!currently under construction. The initial value is 0.
+ *!See <ref>glNewList</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_LOGIC_OP_MODE</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!a symbolic constant indicating the selected logic operation
+ *!mode. The initial value is <ref>GL_COPY</ref>.
+ *!See <ref>glLogicOp</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_MAP1_COLOR_4</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether
+ *!1D evaluation generates colors. The initial value is <ref>GL_FALSE</ref>.
+ *!See <ref>glMap1</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_MAP1_GRID_DOMAIN</ref>
+ *!</c><c><i>params</i> returns two values:
+ *!the endpoints of the 1D map's grid domain. The initial value is (0, 1).
+ *!See <ref>glMapGrid</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_MAP1_GRID_SEGMENTS</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the number of partitions in the 1D map's grid domain. The initial value
+ *!is 1.
+ *!See <ref>glMapGrid</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_MAP1_INDEX</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether
+ *!1D evaluation generates color indices. The initial value is <ref>GL_FALSE</ref>.
+ *!See <ref>glMap1</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_MAP1_NORMAL</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether
+ *!1D evaluation generates normals. The initial value is <ref>GL_FALSE</ref>.
+ *!See <ref>glMap1</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_MAP1_TEXTURE_COORD_1</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether
+ *!1D evaluation generates 1D texture coordinates. The initial value is
+ *!<ref>GL_FALSE</ref>.
+ *!See <ref>glMap1</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_MAP1_TEXTURE_COORD_2</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether
+ *!1D evaluation generates 2D texture coordinates. The initial value is
+ *!<ref>GL_FALSE</ref>.
+ *!See <ref>glMap1</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_MAP1_TEXTURE_COORD_3</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether
+ *!1D evaluation generates 3D texture coordinates. The initial value is
+ *!<ref>GL_FALSE</ref>.
+ *!See <ref>glMap1</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_MAP1_TEXTURE_COORD_4</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether
+ *!1D evaluation generates 4D texture coordinates. The initial value is
+ *!<ref>GL_FALSE</ref>.
+ *!See <ref>glMap1</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_MAP1_VERTEX_3</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether
+ *!1D evaluation generates 3D vertex coordinates. The initial value is
+ *!<ref>GL_FALSE</ref>.
+ *!See <ref>glMap1</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_MAP1_VERTEX_4</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether
+ *!1D evaluation generates 4D vertex coordinates. The initial value is
+ *!<ref>GL_FALSE</ref>.
+ *!See <ref>glMap1</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_MAP2_COLOR_4</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether
+ *!2D evaluation generates colors. The initial value is <ref>GL_FALSE</ref>.
+ *!See <ref>glMap2</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_MAP2_GRID_DOMAIN</ref>
+ *!</c><c><i>params</i> returns four values:
+ *!the endpoints of the 2D map's i and j grid domains. The initial value
+ *!is (0,1; 0,1).
+ *!See <ref>glMapGrid</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_MAP2_GRID_SEGMENTS</ref>
+ *!</c><c><i>params</i> returns two values:
+ *!the number of partitions in the 2D map's i and j grid
+ *!domains. The initial value is (1,1).
+ *!See <ref>glMapGrid</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_MAP2_INDEX</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether
+ *!2D evaluation generates color indices. The initial value is <ref>GL_FALSE</ref>.
+ *!See <ref>glMap2</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_MAP2_NORMAL</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether
+ *!2D evaluation generates normals. The initial value is <ref>GL_FALSE</ref>.
+ *!See <ref>glMap2</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_MAP2_TEXTURE_COORD_1</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether
+ *!2D evaluation generates 1D texture coordinates. The initial value is
+ *!<ref>GL_FALSE</ref>.
+ *!See <ref>glMap2</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_MAP2_TEXTURE_COORD_2</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether
+ *!2D evaluation generates 2D texture coordinates. The initial value is
+ *!<ref>GL_FALSE</ref>.
+ *!See <ref>glMap2</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_MAP2_TEXTURE_COORD_3</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether
+ *!2D evaluation generates 3D texture coordinates. The initial value is
+ *!<ref>GL_FALSE</ref>.
+ *!See <ref>glMap2</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_MAP2_TEXTURE_COORD_4</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether
+ *!2D evaluation generates 4D texture coordinates. The initial value is
+ *!<ref>GL_FALSE</ref>.
+ *!See <ref>glMap2</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_MAP2_VERTEX_3</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether
+ *!2D evaluation generates 3D vertex coordinates. The initial value is
+ *!<ref>GL_FALSE</ref>.
+ *!See <ref>glMap2</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_MAP2_VERTEX_4</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether
+ *!2D evaluation generates 4D vertex coordinates. The initial value is
+ *!<ref>GL_FALSE</ref>.
+ *!See <ref>glMap2</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_MAP_COLOR</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating if colors and
+ *!color indices are to be replaced by table lookup during pixel
+ *!transfers. The initial value is <ref>GL_FALSE</ref>.
+ *!See <ref>glPixelTransfer</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_MAP_STENCIL</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating if stencil indices
+ *!are to be replaced by table lookup during pixel transfers. The initial
+ *!value is <ref>GL_FALSE</ref>.
+ *!See <ref>glPixelTransfer</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_MATRIX_MODE</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!a symbolic constant indicating which matrix stack is currently the
+ *!target of all matrix operations. The initial value is <ref>GL_MODELVIEW</ref>.
+ *!See <ref>glMatrixMode</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_MAX_CLIENT_ATTRIB_STACK_DEPTH</ref>
+ *!</c><c><i>params</i> returns one value indicating the maximum supported depth
+ *!of the client attribute stack.
+ *!See <ref>glPushClientAttrib</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_MAX_ATTRIB_STACK_DEPTH</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the maximum supported depth of the attribute stack. The value must be at least 16.
+ *!See <ref>glPushAttrib</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_MAX_CLIP_PLANES</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the maximum number of application-defined clipping planes. The value must be at least 6.
+ *!See <ref>glClipPlane</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_MAX_EVAL_ORDER</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the maximum equation order supported by 1D and 2D
+ *!evaluators. The value must be at least 8.
+ *!See <ref>glMap1</ref> and <ref>glMap2</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_MAX_LIGHTS</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the maximum number of lights. The value must be at least 8.
+ *!See <ref>glLight</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_MAX_LIST_NESTING</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the maximum recursion depth allowed during display-list
+ *!traversal. The value must be at least 64.
+ *!See <ref>glCallList</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_MAX_MODELVIEW_STACK_DEPTH</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the maximum supported depth of the modelview matrix stack. The value must
+ *!be at least 32.
+ *!See <ref>glPushMatrix</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_MAX_NAME_STACK_DEPTH</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the maximum supported depth of the selection name stack. The value must be at least 64.
+ *!See <ref>glPushName</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_MAX_PIXEL_MAP_TABLE</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the maximum supported size of a <ref>glPixelMap</ref> lookup table.
+ *!The value must be at least 32.
+ *!See <ref>glPixelMap</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_MAX_PROJECTION_STACK_DEPTH</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the maximum supported depth of the projection matrix stack. The value must be at least 2.
+ *!See <ref>glPushMatrix</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_MAX_TEXTURE_SIZE</ref>
+ *!</c><c><i>params</i> returns one value.
+ *!The value gives a rough estimate of the largest texture that
+ *!the GL can handle.
+ *!If the GL version is 1.1 or greater, use
+ *!<ref>GL_PROXY_TEXTURE_1D</ref> or <ref>GL_PROXY_TEXTURE_2D</ref>
+ *!to determine if a texture is too large.
+ *!See <ref>glTexImage1D</ref> and <ref>glTexImage2D</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_MAX_TEXTURE_STACK_DEPTH</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the maximum supported depth of the texture matrix stack. The value must be at least 2.
+ *!See <ref>glPushMatrix</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_MAX_VIEWPORT_DIMS</ref>
+ *!</c><c><i>params</i> returns two values:
+ *!the maximum supported width and height of the viewport.
+ *!These must be at least as large as the visible dimensions of the display
+ *!being rendered to.
+ *!See <ref>glViewport</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_MODELVIEW_MATRIX</ref>
+ *!</c><c><i>params</i> returns sixteen values:
+ *!the modelview matrix on the top of the modelview matrix stack. Initially
+ *!this matrix is the identity matrix. See <ref>glPushMatrix</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_MODELVIEW_STACK_DEPTH</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the number of matrices on the modelview matrix stack.
+ *!The initial value is 1.
+ *!See <ref>glPushMatrix</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_NAME_STACK_DEPTH</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the number of names on the selection name stack. The initial value is 0.
+ *!See <ref>glPushName</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_NORMAL_ARRAY</ref>
+ *!</c><c><i>params</i> returns a single boolean value, indicating whether the normal
+ *!array is enabled. The initial value is <ref>GL_FALSE</ref>.
+ *!See <ref>glNormalPointer</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_NORMAL_ARRAY_STRIDE</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the byte offset between consecutive normals in the normal
+ *!array. The initial value is 0.
+ *!See <ref>glNormalPointer</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_NORMAL_ARRAY_TYPE</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the data type of each coordinate in the normal array. The initial value is
+ *!<ref>GL_FLOAT</ref>.
+ *!See <ref>glNormalPointer</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_NORMALIZE</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether normals are
+ *!automatically scaled to unit length after they have been transformed to
+ *!eye coordinates. The initial value is <ref>GL_FALSE</ref>.
+ *!See <ref>glNormal</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_PACK_ALIGNMENT</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the byte alignment used for writing pixel data to memory. The initial
+ *!value is 4.
+ *!See <ref>glPixelStore</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_PACK_LSB_FIRST</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether single-bit
+ *!pixels being written to memory are written first to the least significant
+ *!bit of each unsigned byte. The initial value is <ref>GL_FALSE</ref>.
+ *!See <ref>glPixelStore</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_PACK_ROW_LENGTH</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the row length used for writing pixel data to memory. The initial value is
+ *!0.
+ *!See <ref>glPixelStore</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_PACK_SKIP_PIXELS</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the number of pixel locations skipped before the first pixel is written
+ *!into memory. The initial value is 0.
+ *!See <ref>glPixelStore</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_PACK_SKIP_ROWS</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the number of rows of pixel locations skipped before the first pixel is written
+ *!into memory. The initial value is 0.
+ *!See <ref>glPixelStore</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_PACK_SWAP_BYTES</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether the bytes of
+ *!two-byte and four-byte pixel indices and components are swapped before being
+ *!written to memory. The initial value is <ref>GL_FALSE</ref>.
+ *!See <ref>glPixelStore</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_PERSPECTIVE_CORRECTION_HINT</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!a symbolic constant indicating the mode of the perspective correction
+ *!hint. The initial value is <ref>GL_DONT_CARE</ref>.
+ *!See <ref>glHint</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_PIXEL_MAP_A_TO_A_SIZE</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the size of the alpha-to-alpha pixel translation table.
+ *!The initial value is 1.
+ *!See <ref>glPixelMap</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_PIXEL_MAP_B_TO_B_SIZE</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the size of the blue-to-blue pixel translation table.
+ *!The initial value is 1.
+ *!See <ref>glPixelMap</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_PIXEL_MAP_G_TO_G_SIZE</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the size of the green-to-green pixel translation table.
+ *!The initial value is 1.
+ *!See <ref>glPixelMap</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_PIXEL_MAP_I_TO_A_SIZE</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the size of the index-to-alpha pixel translation table.
+ *!The initial value is 1.
+ *!See <ref>glPixelMap</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_PIXEL_MAP_I_TO_B_SIZE</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the size of the index-to-blue pixel translation table.
+ *!The initial value is 1.
+ *!See <ref>glPixelMap</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_PIXEL_MAP_I_TO_G_SIZE</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the size of the index-to-green pixel translation table.
+ *!The initial value is 1.
+ *!See <ref>glPixelMap</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_PIXEL_MAP_I_TO_I_SIZE</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the size of the index-to-index pixel translation table.
+ *!The initial value is 1.
+ *!See <ref>glPixelMap</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_PIXEL_MAP_I_TO_R_SIZE</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the size of the index-to-red pixel translation table.
+ *!The initial value is 1.
+ *!See <ref>glPixelMap</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_PIXEL_MAP_R_TO_R_SIZE</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the size of the red-to-red pixel translation table.
+ *!The initial value is 1.
+ *!See <ref>glPixelMap</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_PIXEL_MAP_S_TO_S_SIZE</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the size of the stencil-to-stencil pixel translation table.
+ *!The initial value is 1.
+ *!See <ref>glPixelMap</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_POINT_SIZE</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the point size as specified by <ref>glPointSize</ref>. The initial value is 1.
+ *!</c></r>
+ *!<r><c><ref>GL_POINT_SIZE_GRANULARITY</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the size difference between adjacent supported sizes for antialiased points.
+ *!See <ref>glPointSize</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_POINT_SIZE_RANGE</ref>
+ *!</c><c><i>params</i> returns two values:
+ *!the smallest and largest supported sizes for antialiased
+ *!points. The smallest size must be at most 1, and the largest size must
+ *!be at least 1.
+ *!See <ref>glPointSize</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_POINT_SMOOTH</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether antialiasing of
+ *!points is enabled. The initial value is <ref>GL_FALSE</ref>.
+ *!See <ref>glPointSize</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_POINT_SMOOTH_HINT</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!a symbolic constant indicating the mode of the point antialiasing
+ *!hint. The initial value is <ref>GL_DONT_CARE</ref>.
+ *!See <ref>glHint</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_POLYGON_MODE</ref>
+ *!</c><c><i>params</i> returns two values:
+ *!symbolic constants indicating whether front-facing and back-facing polygons
+ *!are rasterized as points, lines, or filled polygons. The initial value is
+ *!<ref>GL_FILL</ref>.
+ *!See <ref>glPolygonMode</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_POLYGON_OFFSET_FACTOR</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the scaling factor used to determine the variable offset that is added
+ *!to the depth value of each fragment generated when a polygon is
+ *!rasterized. The initial value is 0.
+ *!See <ref>glPolygonOffset</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_POLYGON_OFFSET_UNITS</ref>
+ *!</c><c><i>params</i> returns one value.
+ *!This value is multiplied by an implementation-specific value and then
+ *!added to the depth value of each fragment
+ *!generated when a polygon is rasterized. The initial value is 0.
+ *!See <ref>glPolygonOffset</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_POLYGON_OFFSET_FILL</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether polygon offset
+ *!is enabled for polygons in fill mode. The initial value is <ref>GL_FALSE</ref>.
+ *!See <ref>glPolygonOffset</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_POLYGON_OFFSET_LINE</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether polygon offset
+ *!is enabled for polygons in line mode. The initial value is <ref>GL_FALSE</ref>.
+ *!See <ref>glPolygonOffset</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_POLYGON_OFFSET_POINT</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether polygon offset
+ *!is enabled for polygons in point mode. The initial value is <ref>GL_FALSE</ref>.
+ *!See <ref>glPolygonOffset</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_POLYGON_SMOOTH</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether antialiasing of
+ *!polygons is enabled. The initial value is <ref>GL_FALSE</ref>.
+ *!See <ref>glPolygonMode</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_POLYGON_SMOOTH_HINT</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!a symbolic constant indicating the mode of the polygon antialiasing
+ *!hint. The initial value is <ref>GL_DONT_CARE</ref>.
+ *!See <ref>glHint</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_POLYGON_STIPPLE</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether polygon
+ *!stippling is enabled. The initial value is <ref>GL_FALSE</ref>.
+ *!See <ref>glPolygonStipple</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_PROJECTION_MATRIX</ref>
+ *!</c><c><i>params</i> returns sixteen values:
+ *!the projection matrix on the top of the projection matrix
+ *!stack. Initially this matrix is the identity matrix.
+ *!See <ref>glPushMatrix</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_PROJECTION_STACK_DEPTH</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the number of matrices on the projection matrix stack.
+ *!The initial value is 1.
+ *!See <ref>glPushMatrix</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_READ_BUFFER</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!a symbolic constant indicating which color buffer is selected for
+ *!reading. The initial value is <ref>GL_BACK</ref> if there is a back buffer,
+ *!otherwise it is <ref>GL_FRONT</ref>.
+ *!See
+ *!<ref>glReadPixels</ref> and <ref>glAccum</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_RED_BIAS</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the red bias factor used during pixel transfers. The initial value is 0.
+ *!</c></r>
+ *!<r><c><ref>GL_RED_BITS</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the number of red bitplanes in each color buffer.
+ *!</c></r>
+ *!<r><c><ref>GL_RED_SCALE</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the red scale factor used during pixel transfers. The initial value is 1.
+ *!See <ref>glPixelTransfer</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_RENDER_MODE</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!a symbolic constant indicating whether the GL is in render,
+ *!select,
+ *!or feedback mode. The initial value is <ref>GL_RENDER</ref>.
+ *!See <ref>glRenderMode</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_RGBA_MODE</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether the GL is in RGBA
+ *!mode (true) or color index mode (false).
+ *!See <ref>glColor</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_SCISSOR_BOX</ref>
+ *!</c><c><i>params</i> returns four values:
+ *!the x and y window coordinates of the scissor box,
+ *!followed by its width and height.
+ *!Initially the x and y window coordinates are both 0 and the
+ *!width and height are set to the size of the window.
+ *!See <ref>glScissor</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_SCISSOR_TEST</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether scissoring is
+ *!enabled. The initial value is <ref>GL_FALSE</ref>.
+ *!See <ref>glScissor</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_SHADE_MODEL</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!a symbolic constant indicating whether the shading mode is flat or
+ *!smooth. The initial value is <ref>GL_SMOOTH</ref>.
+ *!See <ref>glShadeModel</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_STENCIL_BITS</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the number of bitplanes in the stencil buffer.
+ *!</c></r>
+ *!<r><c><ref>GL_STENCIL_CLEAR_VALUE</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the index to which the stencil bitplanes are cleared. The initial value is
+ *!0.
+ *!See <ref>glClearStencil</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_STENCIL_FAIL</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!a symbolic constant indicating what action is taken when the stencil
+ *!test fails. The initial value is <ref>GL_KEEP</ref>.
+ *!See <ref>glStencilOp</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_STENCIL_FUNC</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!a symbolic constant indicating what function is used to compare the
+ *!stencil reference value with the stencil buffer value. The initial value
+ *!is <ref>GL_ALWAYS</ref>.
+ *!See <ref>glStencilFunc</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_STENCIL_PASS_DEPTH_FAIL</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!a symbolic constant indicating what action is taken when the stencil
+ *!test passes,
+ *!but the depth test fails. The initial value is <ref>GL_KEEP</ref>.
+ *!See <ref>glStencilOp</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_STENCIL_PASS_DEPTH_PASS</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!a symbolic constant indicating what action is taken when the stencil
+ *!test passes and the depth test passes. The initial value is <ref>GL_KEEP</ref>.
+ *!See <ref>glStencilOp</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_STENCIL_REF</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the reference value that is compared with the contents of the stencil
+ *!buffer. The initial value is 0.
+ *!See <ref>glStencilFunc</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_STENCIL_TEST</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether stencil testing
+ *!of fragments is enabled. The initial value is <ref>GL_FALSE</ref>.
+ *!See <ref>glStencilFunc</ref> and <ref>glStencilOp</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_STENCIL_VALUE_MASK</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the mask that is used to mask both the stencil reference value and the
+ *!stencil buffer value before they are compared. The initial value is all 1's.
+ *!See <ref>glStencilFunc</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_STENCIL_WRITEMASK</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the mask that controls writing of the stencil bitplanes. The initial value
+ *!is all 1's. See <ref>glStencilMask</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_STEREO</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether stereo buffers
+ *!(left and right) are supported.
+ *!</c></r>
+ *!<r><c><ref>GL_SUBPIXEL_BITS</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!an estimate of the number of bits of subpixel resolution that are used to
+ *!position rasterized geometry in window coordinates. The initial value
+ *!is 4.
+ *!</c></r>
+ *!<r><c><ref>GL_TEXTURE_1D</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether 1D texture
+ *!mapping is enabled. The initial value is <ref>GL_FALSE</ref>.
+ *!See <ref>glTexImage1D</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_TEXTURE_1D_BINDING</ref>
+ *!</c><c><i>params</i> returns a single value, the name of the texture
+ *!currently bound to the target <ref>GL_TEXTURE_1D</ref>. The initial value is 0.
+ *!See <ref>glBindTexture</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_TEXTURE_2D</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether 2D texture
+ *!mapping is enabled. The initial value is <ref>GL_FALSE</ref>.
+ *!See <ref>glTexImage2D</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_TEXTURE_2D_BINDING</ref>
+ *!</c><c><i>params</i> returns a single value, the name of the texture
+ *!currently bound to the target <ref>GL_TEXTURE_2D</ref>. The initial value is 0.
+ *!See <ref>glBindTexture</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_TEXTURE_COORD_ARRAY</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether the texture
+ *!coordinate array is enabled. The initial value is <ref>GL_FALSE</ref>.
+ *!See <ref>glTexCoordPointer</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_TEXTURE_COORD_ARRAY_SIZE</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the number of coordinates per element in the texture coordinate
+ *!array. The initial value is 4.
+ *!See <ref>glTexCoordPointer</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_TEXTURE_COORD_ARRAY_STRIDE</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the byte offset between consecutive elements in the texture coordinate
+ *!array. The initial value is 0.
+ *!See <ref>glTexCoordPointer</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_TEXTURE_COORD_ARRAY_TYPE</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the data type of the coordinates in the texture coordinate
+ *!array. The initial value is <ref>GL_FLOAT</ref>.
+ *!See <ref>glTexCoordPointer</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_TEXTURE_GEN_Q</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether automatic generation
+ *!of the <i>q</i> texture coordinate is enabled. The initial value is <ref>GL_FALSE</ref>.
+ *!See <ref>glTexGen</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_TEXTURE_GEN_R</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether automatic generation
+ *!of the <i>r</i> texture coordinate is enabled. The initial value is <ref>GL_FALSE</ref>.
+ *!See <ref>glTexGen</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_TEXTURE_GEN_S</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether automatic generation
+ *!of the <i>S</i> texture coordinate is enabled. The initial value is <ref>GL_FALSE</ref>.
+ *!See <ref>glTexGen</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_TEXTURE_GEN_T</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether automatic generation
+ *!of the T texture coordinate is enabled. The initial value is <ref>GL_FALSE</ref>.
+ *!See <ref>glTexGen</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_TEXTURE_MATRIX</ref>
+ *!</c><c><i>params</i> returns sixteen values:
+ *!the texture matrix on the top of the texture matrix stack. Initially this
+ *!matrix is the identity matrix.
+ *!See <ref>glPushMatrix</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_TEXTURE_STACK_DEPTH</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the number of matrices on the texture matrix stack.
+ *!The initial value is 1.
+ *!See <ref>glPushMatrix</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_UNPACK_ALIGNMENT</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the byte alignment used for reading pixel data from memory. The initial
+ *!value is 4.
+ *!See <ref>glPixelStore</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_UNPACK_LSB_FIRST</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether single-bit
+ *!pixels being read from memory are read first from the least significant
+ *!bit of each unsigned byte. The initial value is <ref>GL_FALSE</ref>.
+ *!See <ref>glPixelStore</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_UNPACK_ROW_LENGTH</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the row length used for reading pixel data from memory. The initial value
+ *!is 0.
+ *!See <ref>glPixelStore</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_UNPACK_SKIP_PIXELS</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the number of pixel locations skipped before the first pixel is read
+ *!from memory. The initial value is 0.
+ *!See <ref>glPixelStore</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_UNPACK_SKIP_ROWS</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the number of rows of pixel locations skipped before the first pixel is read
+ *!from memory. The initial value is 0.
+ *!See <ref>glPixelStore</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_UNPACK_SWAP_BYTES</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether the bytes of
+ *!two-byte and four-byte pixel indices and components are swapped after being
+ *!read from memory. The initial value is <ref>GL_FALSE</ref>.
+ *!See <ref>glPixelStore</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_VERTEX_ARRAY</ref>
+ *!</c><c><i>params</i> returns a single boolean value indicating whether the vertex
+ *!array is enabled. The initial value is <ref>GL_FALSE</ref>.
+ *!See <ref>glVertexPointer</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_VERTEX_ARRAY_SIZE</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the number of coordinates per vertex in the vertex array. The initial
+ *!value is 4.
+ *!See <ref>glVertexPointer</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_VERTEX_ARRAY_STRIDE</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the byte offset between consecutive vertexes in the vertex
+ *!array. The initial value is 0.
+ *!See <ref>glVertexPointer</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_VERTEX_ARRAY_TYPE</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the data type of each coordinate in the vertex array. The initial value is
+ *!<ref>GL_FLOAT</ref>.
+ *!See <ref>glVertexPointer</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_VIEWPORT</ref>
+ *!</c><c><i>params</i> returns four values:
+ *!the x and y window coordinates of the viewport,
+ *!followed by its width and height.
+ *!Initially the x and y window coordinates are both set to 0,
+ *!and the width and height are set to the width and height of the window into
+ *!which the GL will do its rendering.
+ *!See <ref>glViewport</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_ZOOM_X</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the x pixel zoom factor. The initial value is 1.
+ *!See <ref>glPixelZoom</ref>.
+ *!</c></r>
+ *!<r><c><ref>GL_ZOOM_Y</ref>
+ *!</c><c><i>params</i> returns one value,
+ *!the y pixel zoom factor. The initial value is 1.
+ *!See <ref>glPixelZoom</ref>.
+ *!</c></r>
+ *!</matrix>@}
+ *!
+ *!Many of the boolean parameters can also be queried more easily using
+ *!@[glIsEnabled].
+ *!
+ *!@param pname
+ *!
+ *!Specifies the parameter value to be returned.
+ *!The symbolic constants in the list below are accepted.
+ *!
+ *!@param params
+ *!
+ *!Returns the value or values of the specified parameter.
+ *!
+ *!@throws
+ *!
+ *!@[GL_INVALID_ENUM] is generated if @i{pname@} is not an accepted value.
+ *!
+ *!@[GL_INVALID_OPERATION] is generated if @[glGet]
+ *!is executed between the execution of @[glBegin]
+ *!and the corresponding execution of @[glEnd].
+ *!
+ *!
+ *!
+ */
+
 /*!@decl void glEnd()
  *!
  *!@[glBegin] and @[glEnd] delimit the vertices that define a primitive or
@@ -8794,33 +10484,33 @@
  *!<r><c><ref>GL_MAP1_COLOR_4</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord</ref>,
+ *!<ref>glEvalCoord1</ref>,
  *!<ref>glEvalMesh1</ref>, and
- *!<ref>glEvalPoint</ref> generate RGBA values.
+ *!<ref>glEvalPoint1</ref> generate RGBA values.
  *!See <ref>glMap1</ref>.
  *!</c></r>
  *!<r><c><ref>GL_MAP1_INDEX</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord</ref>,
+ *!<ref>glEvalCoord1</ref>,
  *!<ref>glEvalMesh1</ref>, and
- *!<ref>glEvalPoint</ref> generate color indices.
+ *!<ref>glEvalPoint1</ref> generate color indices.
  *!See <ref>glMap1</ref>.
  *!</c></r>
  *!<r><c><ref>GL_MAP1_NORMAL</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord</ref>,
+ *!<ref>glEvalCoord1</ref>,
  *!<ref>glEvalMesh1</ref>, and
- *!<ref>glEvalPoint</ref> generate normals.
+ *!<ref>glEvalPoint1</ref> generate normals.
  *!See <ref>glMap1</ref>.
  *!</c></r>
  *!<r><c><ref>GL_MAP1_TEXTURE_COORD_1</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord</ref>,
+ *!<ref>glEvalCoord1</ref>,
  *!<ref>glEvalMesh1</ref>, and
- *!<ref>glEvalPoint</ref> generate
+ *!<ref>glEvalPoint1</ref> generate
  *!<i>s</i>
  *!texture coordinates.
  *!See <ref>glMap1</ref>.
@@ -8828,9 +10518,9 @@
  *!<r><c><ref>GL_MAP1_TEXTURE_COORD_2</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord</ref>,
+ *!<ref>glEvalCoord1</ref>,
  *!<ref>glEvalMesh1</ref>, and
- *!<ref>glEvalPoint</ref> generate
+ *!<ref>glEvalPoint1</ref> generate
  *!<i>s</i> and
  *!<i>t</i> texture coordinates.
  *!See <ref>glMap1</ref>.
@@ -8838,9 +10528,9 @@
  *!<r><c><ref>GL_MAP1_TEXTURE_COORD_3</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord</ref>,
+ *!<ref>glEvalCoord1</ref>,
  *!<ref>glEvalMesh1</ref>, and
- *!<ref>glEvalPoint</ref> generate
+ *!<ref>glEvalPoint1</ref> generate
  *!<i>s</i>,
  *!<i>t</i>, and
  *!<i>r</i> texture coordinates.
@@ -8849,9 +10539,9 @@
  *!<r><c><ref>GL_MAP1_TEXTURE_COORD_4</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord</ref>,
+ *!<ref>glEvalCoord1</ref>,
  *!<ref>glEvalMesh1</ref>, and
- *!<ref>glEvalPoint</ref> generate
+ *!<ref>glEvalPoint1</ref> generate
  *!<i>s</i>,
  *!<i>t</i>,
  *!<i>r</i>, and
@@ -8861,18 +10551,18 @@
  *!<r><c><ref>GL_MAP1_VERTEX_3</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord</ref>,
+ *!<ref>glEvalCoord1</ref>,
  *!<ref>glEvalMesh1</ref>, and
- *!<ref>glEvalPoint</ref> generate
+ *!<ref>glEvalPoint1</ref> generate
  *!<i>x</i>, <i>y</i>, and <i>z</i> vertex coordinates.
  *!See <ref>glMap1</ref>.
  *!</c></r>
  *!<r><c><ref>GL_MAP1_VERTEX_4</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord</ref>,
+ *!<ref>glEvalCoord1</ref>,
  *!<ref>glEvalMesh1</ref>, and
- *!<ref>glEvalPoint</ref> generate
+ *!<ref>glEvalPoint1</ref> generate
  *!homogeneous
  *!<i>x</i>,
  *!<i>y</i>,
@@ -8883,33 +10573,33 @@
  *!<r><c><ref>GL_MAP2_COLOR_4</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord</ref>,
+ *!<ref>glEvalCoord2</ref>,
  *!<ref>glEvalMesh2</ref>, and
- *!<ref>glEvalPoint</ref> generate RGBA values.
+ *!<ref>glEvalPoint2</ref> generate RGBA values.
  *!See <ref>glMap2</ref>.
  *!</c></r>
  *!<r><c><ref>GL_MAP2_INDEX</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord</ref>,
+ *!<ref>glEvalCoord2</ref>,
  *!<ref>glEvalMesh2</ref>, and
- *!<ref>glEvalPoint</ref> generate color indices.
+ *!<ref>glEvalPoint2</ref> generate color indices.
  *!See <ref>glMap2</ref>.
  *!</c></r>
  *!<r><c><ref>GL_MAP2_NORMAL</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord</ref>,
+ *!<ref>glEvalCoord2</ref>,
  *!<ref>glEvalMesh2</ref>, and
- *!<ref>glEvalPoint</ref> generate normals.
+ *!<ref>glEvalPoint2</ref> generate normals.
  *!See <ref>glMap2</ref>.
  *!</c></r>
  *!<r><c><ref>GL_MAP2_TEXTURE_COORD_1</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord</ref>,
+ *!<ref>glEvalCoord2</ref>,
  *!<ref>glEvalMesh2</ref>, and
- *!<ref>glEvalPoint</ref> generate
+ *!<ref>glEvalPoint2</ref> generate
  *!<i>s</i>
  *!texture coordinates.
  *!See <ref>glMap2</ref>.
@@ -8917,9 +10607,9 @@
  *!<r><c><ref>GL_MAP2_TEXTURE_COORD_2</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord</ref>,
+ *!<ref>glEvalCoord2</ref>,
  *!<ref>glEvalMesh2</ref>, and
- *!<ref>glEvalPoint</ref> generate
+ *!<ref>glEvalPoint2</ref> generate
  *!<i>s</i> and
  *!<i>t</i> texture coordinates.
  *!See <ref>glMap2</ref>.
@@ -8927,9 +10617,9 @@
  *!<r><c><ref>GL_MAP2_TEXTURE_COORD_3</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord</ref>,
+ *!<ref>glEvalCoord2</ref>,
  *!<ref>glEvalMesh2</ref>, and
- *!<ref>glEvalPoint</ref> generate
+ *!<ref>glEvalPoint2</ref> generate
  *!<i>s</i>,
  *!<i>t</i>, and
  *!<i>r</i> texture coordinates.
@@ -8938,9 +10628,9 @@
  *!<r><c><ref>GL_MAP2_TEXTURE_COORD_4</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord</ref>,
+ *!<ref>glEvalCoord2</ref>,
  *!<ref>glEvalMesh2</ref>, and
- *!<ref>glEvalPoint</ref> generate
+ *!<ref>glEvalPoint2</ref> generate
  *!<i>s</i>,
  *!<i>t</i>,
  *!<i>r</i>, and
@@ -8950,18 +10640,18 @@
  *!<r><c><ref>GL_MAP2_VERTEX_3</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord</ref>,
+ *!<ref>glEvalCoord2</ref>,
  *!<ref>glEvalMesh2</ref>, and
- *!<ref>glEvalPoint</ref> generate
+ *!<ref>glEvalPoint2</ref> generate
  *!<i>x</i>, <i>y</i>, and <i>z</i> vertex coordinates.
  *!See <ref>glMap2</ref>.
  *!</c></r>
  *!<r><c><ref>GL_MAP2_VERTEX_4</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord</ref>,
+ *!<ref>glEvalCoord2</ref>,
  *!<ref>glEvalMesh2</ref>, and
- *!<ref>glEvalPoint</ref> generate
+ *!<ref>glEvalPoint2</ref> generate
  *!homogeneous
  *!<i>x</i>,
  *!<i>y</i>,
@@ -9370,33 +11060,33 @@
  *!<r><c><ref>GL_MAP1_COLOR_4</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord</ref>,
+ *!<ref>glEvalCoord1</ref>,
  *!<ref>glEvalMesh1</ref>, and
- *!<ref>glEvalPoint</ref> generate RGBA values.
+ *!<ref>glEvalPoint1</ref> generate RGBA values.
  *!See <ref>glMap1</ref>.
  *!</c></r>
  *!<r><c><ref>GL_MAP1_INDEX</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord</ref>,
+ *!<ref>glEvalCoord1</ref>,
  *!<ref>glEvalMesh1</ref>, and
- *!<ref>glEvalPoint</ref> generate color indices.
+ *!<ref>glEvalPoint1</ref> generate color indices.
  *!See <ref>glMap1</ref>.
  *!</c></r>
  *!<r><c><ref>GL_MAP1_NORMAL</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord</ref>,
+ *!<ref>glEvalCoord1</ref>,
  *!<ref>glEvalMesh1</ref>, and
- *!<ref>glEvalPoint</ref> generate normals.
+ *!<ref>glEvalPoint1</ref> generate normals.
  *!See <ref>glMap1</ref>.
  *!</c></r>
  *!<r><c><ref>GL_MAP1_TEXTURE_COORD_1</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord</ref>,
+ *!<ref>glEvalCoord1</ref>,
  *!<ref>glEvalMesh1</ref>, and
- *!<ref>glEvalPoint</ref> generate
+ *!<ref>glEvalPoint1</ref> generate
  *!<i>s</i>
  *!texture coordinates.
  *!See <ref>glMap1</ref>.
@@ -9404,9 +11094,9 @@
  *!<r><c><ref>GL_MAP1_TEXTURE_COORD_2</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord</ref>,
+ *!<ref>glEvalCoord1</ref>,
  *!<ref>glEvalMesh1</ref>, and
- *!<ref>glEvalPoint</ref> generate
+ *!<ref>glEvalPoint1</ref> generate
  *!<i>s</i> and
  *!<i>t</i> texture coordinates.
  *!See <ref>glMap1</ref>.
@@ -9414,9 +11104,9 @@
  *!<r><c><ref>GL_MAP1_TEXTURE_COORD_3</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord</ref>,
+ *!<ref>glEvalCoord1</ref>,
  *!<ref>glEvalMesh1</ref>, and
- *!<ref>glEvalPoint</ref> generate
+ *!<ref>glEvalPoint1</ref> generate
  *!<i>s</i>,
  *!<i>t</i>, and
  *!<i>r</i> texture coordinates.
@@ -9425,9 +11115,9 @@
  *!<r><c><ref>GL_MAP1_TEXTURE_COORD_4</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord</ref>,
+ *!<ref>glEvalCoord1</ref>,
  *!<ref>glEvalMesh1</ref>, and
- *!<ref>glEvalPoint</ref> generate
+ *!<ref>glEvalPoint1</ref> generate
  *!<i>s</i>,
  *!<i>t</i>,
  *!<i>r</i>, and
@@ -9437,18 +11127,18 @@
  *!<r><c><ref>GL_MAP1_VERTEX_3</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord</ref>,
+ *!<ref>glEvalCoord1</ref>,
  *!<ref>glEvalMesh1</ref>, and
- *!<ref>glEvalPoint</ref> generate
+ *!<ref>glEvalPoint1</ref> generate
  *!<i>x</i>, <i>y</i>, and <i>z</i> vertex coordinates.
  *!See <ref>glMap1</ref>.
  *!</c></r>
  *!<r><c><ref>GL_MAP1_VERTEX_4</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord</ref>,
+ *!<ref>glEvalCoord1</ref>,
  *!<ref>glEvalMesh1</ref>, and
- *!<ref>glEvalPoint</ref> generate
+ *!<ref>glEvalPoint1</ref> generate
  *!homogeneous
  *!<i>x</i>,
  *!<i>y</i>,
@@ -9459,33 +11149,33 @@
  *!<r><c><ref>GL_MAP2_COLOR_4</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord</ref>,
+ *!<ref>glEvalCoord2</ref>,
  *!<ref>glEvalMesh2</ref>, and
- *!<ref>glEvalPoint</ref> generate RGBA values.
+ *!<ref>glEvalPoint2</ref> generate RGBA values.
  *!See <ref>glMap2</ref>.
  *!</c></r>
  *!<r><c><ref>GL_MAP2_INDEX</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord</ref>,
+ *!<ref>glEvalCoord2</ref>,
  *!<ref>glEvalMesh2</ref>, and
- *!<ref>glEvalPoint</ref> generate color indices.
+ *!<ref>glEvalPoint2</ref> generate color indices.
  *!See <ref>glMap2</ref>.
  *!</c></r>
  *!<r><c><ref>GL_MAP2_NORMAL</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord</ref>,
+ *!<ref>glEvalCoord2</ref>,
  *!<ref>glEvalMesh2</ref>, and
- *!<ref>glEvalPoint</ref> generate normals.
+ *!<ref>glEvalPoint2</ref> generate normals.
  *!See <ref>glMap2</ref>.
  *!</c></r>
  *!<r><c><ref>GL_MAP2_TEXTURE_COORD_1</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord</ref>,
+ *!<ref>glEvalCoord2</ref>,
  *!<ref>glEvalMesh2</ref>, and
- *!<ref>glEvalPoint</ref> generate
+ *!<ref>glEvalPoint2</ref> generate
  *!<i>s</i>
  *!texture coordinates.
  *!See <ref>glMap2</ref>.
@@ -9493,9 +11183,9 @@
  *!<r><c><ref>GL_MAP2_TEXTURE_COORD_2</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord</ref>,
+ *!<ref>glEvalCoord2</ref>,
  *!<ref>glEvalMesh2</ref>, and
- *!<ref>glEvalPoint</ref> generate
+ *!<ref>glEvalPoint2</ref> generate
  *!<i>s</i> and
  *!<i>t</i> texture coordinates.
  *!See <ref>glMap2</ref>.
@@ -9503,9 +11193,9 @@
  *!<r><c><ref>GL_MAP2_TEXTURE_COORD_3</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord</ref>,
+ *!<ref>glEvalCoord2</ref>,
  *!<ref>glEvalMesh2</ref>, and
- *!<ref>glEvalPoint</ref> generate
+ *!<ref>glEvalPoint2</ref> generate
  *!<i>s</i>,
  *!<i>t</i>, and
  *!<i>r</i> texture coordinates.
@@ -9514,9 +11204,9 @@
  *!<r><c><ref>GL_MAP2_TEXTURE_COORD_4</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord</ref>,
+ *!<ref>glEvalCoord2</ref>,
  *!<ref>glEvalMesh2</ref>, and
- *!<ref>glEvalPoint</ref> generate
+ *!<ref>glEvalPoint2</ref> generate
  *!<i>s</i>,
  *!<i>t</i>,
  *!<i>r</i>, and
@@ -9526,18 +11216,18 @@
  *!<r><c><ref>GL_MAP2_VERTEX_3</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord</ref>,
+ *!<ref>glEvalCoord2</ref>,
  *!<ref>glEvalMesh2</ref>, and
- *!<ref>glEvalPoint</ref> generate
+ *!<ref>glEvalPoint2</ref> generate
  *!<i>x</i>, <i>y</i>, and <i>z</i> vertex coordinates.
  *!See <ref>glMap2</ref>.
  *!</c></r>
  *!<r><c><ref>GL_MAP2_VERTEX_4</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord</ref>,
+ *!<ref>glEvalCoord2</ref>,
  *!<ref>glEvalMesh2</ref>, and
- *!<ref>glEvalPoint</ref> generate
+ *!<ref>glEvalPoint2</ref> generate
  *!homogeneous
  *!<i>x</i>,
  *!<i>y</i>,
