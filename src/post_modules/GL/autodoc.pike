@@ -53,7 +53,10 @@ string fix_xml_row(string in) {
 array(string) not_documented = ({});
 array(string) not_implemented = ({});
 mapping(string:array(array(string)|string)) docs = ([]);
-mapping(string:string) ref_alias = ([]);
+mapping(string:string) ref_alias = ([
+  "glColor3": "glColor",
+  "glColor4": "glColor",
+]);
 
 string preprocess_man(array(string) rows, string fn)
 {
@@ -202,18 +205,24 @@ string preprocess_man(array(string) rows, string fn)
     }
   }
 
+  if (fn == "evalmesh") {
+    werror("Raw prots: %O\n", prots);
+  }
+
   mapping names = mkmapping(map(indices(prots), lower_case), indices(prots));
   fn = "gl" + fn;
   string name, new_name;
   if (name = ([
         "glget": "glGet",
-        "glevalmesh": "glEvalMesh",
+        // "glevalmesh": "glEvalMesh",	// Documents EvalMesh1 and EvalMesh2.
         "gledgeflag": "glEdgeFlag",
       ])[fn]) {
     // glGetFloatv et al ==> glGet (cf top.c).
-    // glEvalMesh1 et al ==> glEvalMesh.
     new_name = name;
     name = sort(indices(prots))[0];
+  } else if ((< "glevalmesh" >)[fn]) {
+    // Keep as glEvalMesh1() and glEvalMesh2().
+    werror("Skip canonicalization for %O.\n", fn);
   } else if(name = names[fn+"4f"]) new_name = name[..sizeof(name)-3];
   else if(name = names[fn+"3f"]) new_name = name[..sizeof(name)-3];
   else if(name = names[fn+"2f"]) new_name = name[..sizeof(name)-3];
@@ -266,6 +275,17 @@ string process_man(string name, string prot_ret, array(string) prot_types) {
             prot_types, args);
     }
   }
+
+  // Zap arguments not used by Pike.
+  foreach(prot_types; int i; string prot_type) {
+    if (i && (prot_type == "void")) {
+      prot_types[i] = "";
+      args[i] = "";
+    }
+  }
+  prot_types -= ({ "" });
+  args -= ({ "" });
+
   prot_types = (prot_types[*] + " ")[*] + args[*];
 
   return "@decl " + prot_ret + " " + name + "(" + (prot_types*", ") + ")\n\n" + doc;
@@ -337,6 +357,13 @@ string document(string name, string features)
   case 'S':
     ret="string";
     break;
+  case '+':
+    if (has_prefix(features, "+Z") || has_prefix(features, "+Q")) {
+      ret = "int|float|array(int)|array(float)";
+      features = features[1..];	// Make later code happy.
+      break;
+    }
+    // FALL_THRU
   default:
     error("%s: Unknown return type '%c'.", name, features[0]);
   }
@@ -356,8 +383,11 @@ string document(string name, string features)
     case 'F':
       args += ({"float"});
       break;
-    case 'Z':
+    case 'Q': case 'Z':
       args += ({"float|int"});
+      break;
+    case 'V':
+      args += ({ "" });	// Argument ignored in Pike.
       break;
     case '+':
       int mi, mx;
@@ -502,7 +532,10 @@ void main()
   werror("Building documentation.\n");
   string doc = "";
 
-  foreach( func_misc + ({ ({"glFrustum", "VDDDDDD"}) }), array func)
+  foreach( func_misc + ({
+             ({"glFrustum", "VDDDDDD"}),
+             ({"glGet", "+QIV" }),
+           }), array func)
   {
     if(catch { doc += document(func[0], func[1]) + "\n"; })
     {
@@ -544,6 +577,9 @@ void main()
   doc = replace(doc, "  \n", "\n");
   doc = replace(doc, " \n", "\n");
   doc = replace(doc, "\t\n", "\n");
+  // doc = replace(doc, "\n\n\n", "\n\n");
+
+  doc = replace(doc, "@[glEvalMesh]", "@[glEvalMesh1] and @[glEvalMesh2]");
 
   werror("Writing result file.\n");
   Stdio.write_file("autodoc.c", doc);
