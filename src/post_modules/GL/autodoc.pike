@@ -516,8 +516,23 @@ void fix_refs() {
   werror("Finding constant references.\n");
   foreach(indices(constants), string name) {
     array r = ({});
-    foreach(docs; string func; array jox)
+    foreach(docs; string func; array jox) {
       if(has_value(jox[1], name)) r += ({ func });
+      foreach(({({ "GL_", "_BIAS", "GL_c_BIAS" }),
+                ({ "GL_", "_SCALE", "GL_c_SCALE" }),
+                ({ "GL_AUX", "", "GL_AUX" }),
+                ({ "GL_MAP1_", "", "GL_MAP1_" }),
+                ({ "GL_MAP2_", "", "GL_MAP2_" }),
+                ({ "GL_PIXEL_MAP_", "", "GL_PIXEL_MAP_c_TO_c" }),
+                ({ "GL_TEXTURE_GEN_", "", "GL_TEXTURE_GEN_" }),
+                ({ "glEvalMesh", "", "glEvalMesh" }),
+              }), [string prefix, string suffix, string alt_name]) {
+        if (has_prefix(name, prefix) && has_suffix(name, suffix) &&
+            has_value(jox[1], alt_name)) {
+          r += ({ func });
+        }
+      }
+    }
     if(sizeof(r))
       refs[name] = r;
   }
@@ -553,13 +568,17 @@ void main()
   not_implemented = indices(docs) - not_documented;
   foreach( sort(indices(constants)), string name )
   {
-    array relevant = refs[name];
-    if( relevant && sizeof( relevant -= not_implemented ) )
+    array relevant = refs[name] || ({});
+    relevant -= not_implemented;
+    // if( sizeof(relevant) )
     {
       array r = sort(map(relevant,
                          lambda(string in) { return "@[" + in + "]"; }));
-      doc += sprintf( "/*!@decl constant %s = %d\n *! Used in %s\n */\n\n",
-		      name, constants[name], String.implode_nicely( r ) );
+      doc += sprintf("/*!@decl constant %s = %d\n", name, constants[name]);
+      if (sizeof(r)) {
+        doc += sprintf(" *! Used in %s\n", String.implode_nicely(r));
+      }
+      doc += " */\n\n";
     }
   }
 
@@ -579,7 +598,18 @@ void main()
   doc = replace(doc, "\t\n", "\n");
   // doc = replace(doc, "\n\n\n", "\n\n");
 
-  doc = replace(doc, "@[glEvalMesh]", "@[glEvalMesh1] and @[glEvalMesh2]");
+  // Fixup various references.
+  doc = replace(doc, ([
+                  "@[glEvalMesh]": "@[glEvalMesh1] and @[glEvalMesh2]",
+                  "@[GL_AUX]": "@[GL_AUX0] through @[GL_AUX3]",
+                  "@[GL_MAP1_]@i{x@}": "@tt{GL_MAP1_@i{x@}@}",
+                  "@[GL_MAP2_]@i{x@}": "@tt{GL_MAP2_@i{x@}@}",
+                  "@[GL_TEXTURE_GEN_]@i{x@}": "@tt{GL_TEXTURE_GEN_@i{x@}@}",
+                  "<ref>GL_PIXEL_MAP_c_TO_c</ref>":
+                  "<tt>GL_PIXEL_MAP_<i>c</i>_TO_<i>c</i></tt>",
+                  "<ref>GL_c_BIAS</ref>": "<tt>GL_<i>c</i>_BIAS</tt>",
+                  "<ref>GL_c_SCALE</ref>": "<tt>GL_<i>c</i>_SCALE</tt>",
+                ]));
 
   werror("Writing result file.\n");
   Stdio.write_file("autodoc.c", doc);
