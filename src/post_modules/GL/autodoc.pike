@@ -521,9 +521,12 @@ void fix_refs() {
       foreach(({({ "GL_", "_BIAS", "GL_c_BIAS" }),
                 ({ "GL_", "_SCALE", "GL_c_SCALE" }),
                 ({ "GL_AUX", "", "GL_AUX" }),
+                ({ "GL_CLIP_PLANE", "", "GL_CLIP_PLANE" }),
+                ({ "GL_LIGHT", "", "GL_LIGHT" }),
                 ({ "GL_MAP1_", "", "GL_MAP1_" }),
                 ({ "GL_MAP2_", "", "GL_MAP2_" }),
                 ({ "GL_PIXEL_MAP_", "", "GL_PIXEL_MAP_c_TO_c" }),
+                ({ "GL_POLYGON_OFFSET", "", "GL_POLYGON_OFFSET" }),
                 ({ "GL_TEXTURE_GEN_", "", "GL_TEXTURE_GEN_" }),
                 ({ "glEvalMesh", "", "glEvalMesh" }),
               }), [string prefix, string suffix, string alt_name]) {
@@ -602,8 +605,17 @@ void main()
   doc = replace(doc, ([
                   "@[glEvalMesh]": "@[glEvalMesh1] and @[glEvalMesh2]",
                   "@[GL_AUX]": "@[GL_AUX0] through @[GL_AUX3]",
+                  "<ref>GL_AUX</ref>":
+                  "<ref>GL_AUX0</ref> through <ref>GL_AUX3</ref>",
                   "@[GL_MAP1_]@i{x@}": "@tt{GL_MAP1_@i{x@}@}",
                   "@[GL_MAP2_]@i{x@}": "@tt{GL_MAP2_@i{x@}@}",
+                  "@[GL_CLIP_PLANE]@i{i@}": "@tt{GL_CLIP_PLANE@i{i@}@}",
+                  "<ref>GL_CLIP_PLANE</ref><i>i</i>":
+                  "<tt>GL_CLIP_PLANE<i>i</i></tt>",
+                  "@[GL_LIGHT]@i{i@}": "@tt{GL_LIGHT@i{i@}@}",
+                  "<ref>GL_LIGHT</ref><i>i</i>": "<tt>GL_LIGHT<i>i</i></tt>",
+                  "@[GL_LIGHT]i": "@tt{GL_LIGHT@i{i@}@}",
+                  "@[GL_POLYGON_OFFSET]": "@tt{GL_POLYGON_OFFSET@}",
                   "@[GL_TEXTURE_GEN_]@i{x@}": "@tt{GL_TEXTURE_GEN_@i{x@}@}",
                   "<ref>GL_PIXEL_MAP_c_TO_c</ref>":
                   "<tt>GL_PIXEL_MAP_<i>c</i>_TO_<i>c</i></tt>",

@@ -754,7 +754,7 @@
  *!.P
  *!To enable and disable clipping planes, call
  *!@[glEnable] and @[glDisable] with the argument
- *!@[GL_CLIP_PLANE]@i{i@},
+ *!@tt{GL_CLIP_PLANE@i{i@}@},
  *!where @i{i@} is the plane number.
  *!
  *!All clipping planes are initially defined as (0, 0, 0, 0) in eye coordinates
@@ -763,7 +763,7 @@
  *!@param plane
  *!
  *!Specifies which clipping plane is being positioned.
- *!Symbolic names of the form @[GL_CLIP_PLANE]@i{i@},
+ *!Symbolic names of the form @tt{GL_CLIP_PLANE@i{i@}@},
  *!where @i{i@} is an integer between 0 and @[GL_MAX_CLIP_PLANES] -1,
  *!are accepted.
  *!
@@ -3915,7 +3915,7 @@
  *!@[GL_ALPHA_TEST]	@[glAlphaFunc]
  *!@[GL_AUTO_NORMAL]	@[glEvalCoord]
  *!@[GL_BLEND]	@[glBlendFunc], @[glLogicOp]
- *!@[GL_CLIP_PLANE]@i{i@}	@[glClipPlane]
+ *!@tt{GL_CLIP_PLANE@i{i@}@}	@[glClipPlane]
  *!@[GL_COLOR_ARRAY]	@[glColorPointer]
  *!@[GL_COLOR_LOGIC_OP]	@[glLogicOp]
  *!@[GL_COLOR_MATERIAL]	@[glColorMaterial]
@@ -3926,7 +3926,7 @@
  *!@[GL_FOG]	@[glFog]
  *!@[GL_INDEX_ARRAY]	@[glIndexPointer]
  *!@[GL_INDEX_LOGIC_OP]	@[glLogicOp]
- *!@[GL_LIGHT]@i{i@}	@[glLightModel], @[glLight]
+ *!@tt{GL_LIGHT@i{i@}@}	@[glLightModel], @[glLight]
  *!@[GL_LIGHTING]	@[glMaterial], @[glLightModel], @[glLight]
  *!@[GL_LINE_SMOOTH]	@[glLineWidth]
  *!@[GL_LINE_STIPPLE]	@[glLineStipple]
@@ -4012,7 +4012,7 @@
 /*!@decl void glLight(int light, int pname, float|int|array(float|int) param)
  *!
  *!@[glLight] sets the values of individual light source parameters.
- *!@i{light@} names the light and is a symbolic name of the form @[GL_LIGHT]i,
+ *!@i{light@} names the light and is a symbolic name of the form @tt{GL_LIGHT@i{i@}@},
  *!where 0 <= i < @[GL_MAX_LIGHTS].
  *!@i{pname@} specifies one of ten light source parameters,
  *!again by symbolic name.
@@ -4025,7 +4025,7 @@
  *!When it is enabled,
  *!light sources that are enabled contribute to the lighting calculation.
  *!Light source i is enabled and disabled using @[glEnable] and
- *!@[glDisable] with argument @[GL_LIGHT]i.
+ *!@[glDisable] with argument @tt{GL_LIGHT@i{i@}@}.
  *!
  *!The ten light parameters are as follows:
  *!
@@ -4154,7 +4154,7 @@
  *!Specifies a light.
  *!The number of lights depends on the implementation,
  *!but at least eight lights are supported.
- *!They are identified by symbolic names of the form @[GL_LIGHT]i
+ *!They are identified by symbolic names of the form @tt{GL_LIGHT@i{i@}@}
  *!where 0 <=  i  < @[GL_MAX_LIGHTS].
  *!
  *!@param pname
@@ -4177,7 +4177,7 @@
  *!Specifies a light.
  *!The number of lights depends on the implementation, but
  *!at least eight lights are supported.
- *!They are identified by symbolic names of the form @[GL_LIGHT]i
+ *!They are identified by symbolic names of the form @tt{GL_LIGHT@i{i@}@}
  *!where 0 <=  i  < @[GL_MAX_LIGHTS].
  *!
  *!@param pname
@@ -5172,7 +5172,7 @@
 
 /*!@decl void glPolygonOffset(float factor, float units)
  *!
- *!When @[GL_POLYGON_OFFSET] is enabled, each
+ *!When @tt{GL_POLYGON_OFFSET@} is enabled, each
  *!fragment's @i{depth@} value will be offset after it is interpolated
  *!from the @i{depth@} values of the appropriate vertices.
  *!The value of the offset is "factor" ~*~ DZ ~~+~~ r ~*~ "units",
@@ -5263,7 +5263,7 @@
  *!	@[GL_DEPTH_TEST] flag
  *!	@[GL_DITHER] flag
  *!	@[GL_FOG] flag
- *!	@[GL_LIGHT]@i{i@} where 0\ <= @i{i@}<@[GL_MAX_LIGHTS]
+ *!	@tt{GL_LIGHT@i{i@}@} where 0\ <= @i{i@}<@[GL_MAX_LIGHTS]
  *!	@[GL_LIGHTING] flag
  *!	@[GL_LINE_SMOOTH] flag
  *!	@[GL_LINE_STIPPLE] flag
@@ -8101,7 +8101,7 @@
  *!attribute stack. The initial value is 0.
  *!See <ref>glPushClientAttrib</ref>.
  *!</c></r>
- *!<r><c><ref>GL_CLIP_PLANE</ref><i>i</i>
+ *!<r><c><tt>GL_CLIP_PLANE<i>i</i></tt>
  *!</c><c><i>params</i> returns a single boolean value indicating whether the specified
  *!clipping plane is enabled. The initial value is <ref>GL_FALSE</ref>.
  *!See <ref>glClipPlane</ref>.
@@ -8458,7 +8458,7 @@
  *!written. The initial value is all 1's.
  *!See <ref>glIndexMask</ref>.
  *!</c></r>
- *!<r><c><ref>GL_LIGHT</ref><i>i</i>
+ *!<r><c><tt>GL_LIGHT<i>i</i></tt>
  *!</c><c><i>params</i> returns a single boolean value indicating whether the specified
  *!light is enabled. The initial value is <ref>GL_FALSE</ref>.
  *!See <ref>glLight</ref> and <ref>glLightModel</ref>.
@@ -9757,7 +9757,7 @@
  *!	@[GL_DEPTH_TEST] flag
  *!	@[GL_DITHER] flag
  *!	@[GL_FOG] flag
- *!	@[GL_LIGHT]@i{i@} where 0\ <= @i{i@}<@[GL_MAX_LIGHTS]
+ *!	@tt{GL_LIGHT@i{i@}@} where 0\ <= @i{i@}<@[GL_MAX_LIGHTS]
  *!	@[GL_LIGHTING] flag
  *!	@[GL_LINE_SMOOTH] flag
  *!	@[GL_LINE_STIPPLE] flag
@@ -10410,7 +10410,7 @@
  *!blend the incoming RGBA color values with the values in the color
  *!buffers. See <ref>glBlendFunc</ref>.
  *!</c></r>
- *!<r><c><ref>GL_CLIP_PLANE</ref><i>i</i>
+ *!<r><c><tt>GL_CLIP_PLANE<i>i</i></tt>
  *!</c><c>If enabled,
  *!clip geometry against user-defined clipping plane <i>i</i>.
  *!See <ref>glClipPlane</ref>.
@@ -10456,7 +10456,7 @@
  *!
  *!<ref>glLogicOp</ref>.
  *!</c></r>
- *!<r><c><ref>GL_LIGHT</ref><i>i</i>
+ *!<r><c><tt>GL_LIGHT<i>i</i></tt>
  *!</c><c>If enabled,
  *!include light <i>i</i> in the evaluation of the lighting
  *!equation. See <ref>glLightModel</ref> and <ref>glLight</ref>.
@@ -10897,7 +10897,7 @@
  *!If there are no right or back color buffers,
  *!only the front left color buffer is written.
  *!</c></r>
- *!<r><c><ref>GL_AUX</ref><i>i</i>
+ *!<r><c><ref>GL_AUX0</ref> through <ref>GL_AUX3</ref><i>i</i>
  *!</c><c>Only auxiliary color buffer <i>i</i> is written.
  *!</c></r>
  *!</matrix>@}
@@ -10986,7 +10986,7 @@
  *!blend the incoming RGBA color values with the values in the color
  *!buffers. See <ref>glBlendFunc</ref>.
  *!</c></r>
- *!<r><c><ref>GL_CLIP_PLANE</ref><i>i</i>
+ *!<r><c><tt>GL_CLIP_PLANE<i>i</i></tt>
  *!</c><c>If enabled,
  *!clip geometry against user-defined clipping plane <i>i</i>.
  *!See <ref>glClipPlane</ref>.
@@ -11032,7 +11032,7 @@
  *!
  *!<ref>glLogicOp</ref>.
  *!</c></r>
- *!<r><c><ref>GL_LIGHT</ref><i>i</i>
+ *!<r><c><tt>GL_LIGHT<i>i</i></tt>
  *!</c><c>If enabled,
  *!include light <i>i</i> in the evaluation of the lighting
  *!equation. See <ref>glLightModel</ref> and <ref>glLight</ref>.
@@ -12119,21 +12119,27 @@
  */
 
 /*!@decl constant GL_CLIP_PLANE0 = 12288
+ *! Used in @[glClipPlane], @[glDisable], @[glEnable], @[glGet] and @[glIsEnabled]
  */
 
 /*!@decl constant GL_CLIP_PLANE1 = 12289
+ *! Used in @[glClipPlane], @[glDisable], @[glEnable], @[glGet] and @[glIsEnabled]
  */
 
 /*!@decl constant GL_CLIP_PLANE2 = 12290
+ *! Used in @[glClipPlane], @[glDisable], @[glEnable], @[glGet] and @[glIsEnabled]
  */
 
 /*!@decl constant GL_CLIP_PLANE3 = 12291
+ *! Used in @[glClipPlane], @[glDisable], @[glEnable], @[glGet] and @[glIsEnabled]
  */
 
 /*!@decl constant GL_CLIP_PLANE4 = 12292
+ *! Used in @[glClipPlane], @[glDisable], @[glEnable], @[glGet] and @[glIsEnabled]
  */
 
 /*!@decl constant GL_CLIP_PLANE5 = 12293
+ *! Used in @[glClipPlane], @[glDisable], @[glEnable], @[glGet] and @[glIsEnabled]
  */
 
 /*!@decl constant GL_COEFF = 2560
@@ -12955,51 +12961,59 @@
  */
 
 /*!@decl constant GL_LIGHT0 = 16384
- *! Used in @[glLight]
+ *! Used in @[glDisable], @[glEnable], @[glGet], @[glIsEnabled], @[glLightModel], @[glLight], @[glLight], @[glPopAttrib] and @[glPushAttrib]
  */
 
 /*!@decl constant GL_LIGHT1 = 16385
+ *! Used in @[glDisable], @[glEnable], @[glGet], @[glIsEnabled], @[glLightModel], @[glLight], @[glPopAttrib] and @[glPushAttrib]
  */
 
 /*!@decl constant GL_LIGHT2 = 16386
+ *! Used in @[glDisable], @[glEnable], @[glGet], @[glIsEnabled], @[glLightModel], @[glLight], @[glPopAttrib] and @[glPushAttrib]
  */
 
 /*!@decl constant GL_LIGHT3 = 16387
+ *! Used in @[glDisable], @[glEnable], @[glGet], @[glIsEnabled], @[glLightModel], @[glLight], @[glPopAttrib] and @[glPushAttrib]
  */
 
 /*!@decl constant GL_LIGHT4 = 16388
+ *! Used in @[glDisable], @[glEnable], @[glGet], @[glIsEnabled], @[glLightModel], @[glLight], @[glPopAttrib] and @[glPushAttrib]
  */
 
 /*!@decl constant GL_LIGHT5 = 16389
+ *! Used in @[glDisable], @[glEnable], @[glGet], @[glIsEnabled], @[glLightModel], @[glLight], @[glPopAttrib] and @[glPushAttrib]
  */
 
 /*!@decl constant GL_LIGHT6 = 16390
+ *! Used in @[glDisable], @[glEnable], @[glGet], @[glIsEnabled], @[glLightModel], @[glLight], @[glPopAttrib] and @[glPushAttrib]
  */
 
 /*!@decl constant GL_LIGHT7 = 16391
+ *! Used in @[glDisable], @[glEnable], @[glGet], @[glIsEnabled], @[glLightModel], @[glLight], @[glPopAttrib] and @[glPushAttrib]
  */
 
 /*!@decl constant GL_LIGHTING = 2896
- *! Used in @[glDisable], @[glEnable], @[glGet], @[glIsEnabled], @[glLight], @[glPopAttrib] and @[glPushAttrib]
+ *! Used in @[glDisable], @[glDisable], @[glEnable], @[glEnable], @[glGet], @[glGet], @[glIsEnabled], @[glIsEnabled], @[glLightModel], @[glLight], @[glLight], @[glPopAttrib], @[glPopAttrib], @[glPushAttrib] and @[glPushAttrib]
  */
 
 /*!@decl constant GL_LIGHTING_BIT = 64
- *! Used in @[glPopAttrib] and @[glPushAttrib]
+ *! Used in @[glDisable], @[glEnable], @[glGet], @[glIsEnabled], @[glLightModel], @[glLight], @[glPopAttrib], @[glPopAttrib], @[glPushAttrib] and @[glPushAttrib]
  */
 
 /*!@decl constant GL_LIGHT_MODEL_AMBIENT = 2899
- *! Used in @[glGet] and @[glLightModel]
+ *! Used in @[glDisable], @[glEnable], @[glGet], @[glGet], @[glIsEnabled], @[glLightModel], @[glLightModel], @[glLight], @[glPopAttrib] and @[glPushAttrib]
  */
 
 /*!@decl constant GL_LIGHT_MODEL_COLOR_CONTROL = 33272
+ *! Used in @[glDisable], @[glEnable], @[glGet], @[glIsEnabled], @[glLightModel], @[glLight], @[glPopAttrib] and @[glPushAttrib]
  */
 
 /*!@decl constant GL_LIGHT_MODEL_LOCAL_VIEWER = 2897
- *! Used in @[glGet], @[glLightModel], @[glPopAttrib] and @[glPushAttrib]
+ *! Used in @[glDisable], @[glEnable], @[glGet], @[glGet], @[glIsEnabled], @[glLightModel], @[glLightModel], @[glLight], @[glPopAttrib], @[glPopAttrib], @[glPushAttrib] and @[glPushAttrib]
  */
 
 /*!@decl constant GL_LIGHT_MODEL_TWO_SIDE = 2898
- *! Used in @[glGet], @[glLightModel], @[glPopAttrib] and @[glPushAttrib]
+ *! Used in @[glDisable], @[glEnable], @[glGet], @[glGet], @[glIsEnabled], @[glLightModel], @[glLightModel], @[glLight], @[glPopAttrib], @[glPopAttrib], @[glPushAttrib] and @[glPushAttrib]
  */
 
 /*!@decl constant GL_LINE = 6913
@@ -13763,23 +13777,23 @@
  */
 
 /*!@decl constant GL_POLYGON_OFFSET_FACTOR = 32824
- *! Used in @[glGet], @[glPopAttrib] and @[glPushAttrib]
+ *! Used in @[glDisable], @[glEnable], @[glGet], @[glGet], @[glIsEnabled], @[glPolygonOffset], @[glPopAttrib], @[glPopAttrib], @[glPushAttrib] and @[glPushAttrib]
  */
 
 /*!@decl constant GL_POLYGON_OFFSET_FILL = 32823
- *! Used in @[glDisable], @[glEnable], @[glGet], @[glIsEnabled], @[glPopAttrib] and @[glPushAttrib]
+ *! Used in @[glDisable], @[glDisable], @[glEnable], @[glEnable], @[glGet], @[glGet], @[glIsEnabled], @[glIsEnabled], @[glPolygonOffset], @[glPopAttrib], @[glPopAttrib], @[glPushAttrib] and @[glPushAttrib]
  */
 
 /*!@decl constant GL_POLYGON_OFFSET_LINE = 10754
- *! Used in @[glDisable], @[glEnable], @[glGet], @[glIsEnabled], @[glPopAttrib] and @[glPushAttrib]
+ *! Used in @[glDisable], @[glDisable], @[glEnable], @[glEnable], @[glGet], @[glGet], @[glIsEnabled], @[glIsEnabled], @[glPolygonOffset], @[glPopAttrib], @[glPopAttrib], @[glPushAttrib] and @[glPushAttrib]
  */
 
 /*!@decl constant GL_POLYGON_OFFSET_POINT = 10753
- *! Used in @[glDisable], @[glEnable], @[glGet], @[glIsEnabled], @[glPopAttrib] and @[glPushAttrib]
+ *! Used in @[glDisable], @[glDisable], @[glEnable], @[glEnable], @[glGet], @[glGet], @[glIsEnabled], @[glIsEnabled], @[glPolygonOffset], @[glPopAttrib], @[glPopAttrib], @[glPushAttrib] and @[glPushAttrib]
  */
 
 /*!@decl constant GL_POLYGON_OFFSET_UNITS = 10752
- *! Used in @[glGet], @[glPopAttrib] and @[glPushAttrib]
+ *! Used in @[glDisable], @[glEnable], @[glGet], @[glGet], @[glIsEnabled], @[glPolygonOffset], @[glPopAttrib], @[glPopAttrib], @[glPushAttrib] and @[glPushAttrib]
  */
 
 /*!@decl constant GL_POLYGON_SMOOTH = 2881
@@ -14597,11 +14611,22 @@
  *! Used in @[glBindTexture], @[glCopyTexImage1D], @[glCopyTexSubImage1D], @[glDisable], @[glEnable], @[glGetTexImage], @[glGet], @[glIsEnabled], @[glPopAttrib], @[glPushAttrib], @[glTexImage1D], @[glTexParameter] and @[glTexSubImage1D]
  */
 
+/*!@decl constant GL_TEXTURE_1D_BINDING = 32872
+ *! Used in @[glGet]
+ */
+
 /*!@decl constant GL_TEXTURE_2D = 3553
  *! Used in @[glBindTexture], @[glCopyTexImage2D], @[glCopyTexSubImage2D], @[glDisable], @[glEnable], @[glGetTexImage], @[glGet], @[glIsEnabled], @[glPopAttrib], @[glPushAttrib], @[glTexImage2D], @[glTexParameter] and @[glTexSubImage2D]
  */
 
+/*!@decl constant GL_TEXTURE_2D_BINDING = 32873
+ *! Used in @[glGet], @[glPopAttrib] and @[glPushAttrib]
+ */
+
 /*!@decl constant GL_TEXTURE_3D = 32879
+ */
+
+/*!@decl constant GL_TEXTURE_3D_BINDING = 32874
  */
 
 /*!@decl constant GL_TEXTURE_3D_EXT = 32879
@@ -14611,15 +14636,6 @@
  */
 
 /*!@decl constant GL_TEXTURE_BASE_LEVEL = 33084
- */
-
-/*!@decl constant GL_TEXTURE_BINDING_1D = 32872
- */
-
-/*!@decl constant GL_TEXTURE_BINDING_2D = 32873
- */
-
-/*!@decl constant GL_TEXTURE_BINDING_3D = 32874
  */
 
 /*!@decl constant GL_TEXTURE_BINDING_CUBE_MAP = 34068
