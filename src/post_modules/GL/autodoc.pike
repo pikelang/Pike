@@ -56,6 +56,17 @@ mapping(string:array(array(string)|string)) docs = ([]);
 mapping(string:string) ref_alias = ([
   "glColor3": "glColor",
   "glColor4": "glColor",
+  "glEvalCoord1": "glEvalCoord",
+  "glEvalCoord2": "glEvalCoord",
+  "glEvalPoint1": "glEvalPoint",
+  "glEvalPoint2": "glEvalPoint",
+  "glRasterPos2": "glRasterPos",
+  "glRasterPos3": "glRasterPos",
+  "glRasterPos4": "glRasterPos",
+  "glTexCoord1": "glTexCoord",
+  "glTexCoord2": "glTexCoord",
+  "glTexCoord3": "glTexCoord",
+  "glTexCoord4": "glTexCoord",
 ]);
 
 string preprocess_man(array(string) rows, string fn)
@@ -599,7 +610,9 @@ void main()
   doc = replace(doc, "  \n", "\n");
   doc = replace(doc, " \n", "\n");
   doc = replace(doc, "\t\n", "\n");
-  // doc = replace(doc, "\n\n\n", "\n\n");
+  while (has_suffix(doc, "\n\n")) {
+    doc = doc[..<1];
+  }
 
   // Fixup various references.
   doc = replace(doc, ([

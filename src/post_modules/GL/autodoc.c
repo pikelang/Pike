@@ -2154,9 +2154,9 @@
 
 /*!@decl void glEvalCoord(float|int|array(float|int) u, float|int|void v)
  *!
- *!@[glEvalCoord1] evaluates enabled one-dimensional maps at argument
+ *!@[glEvalCoord] evaluates enabled one-dimensional maps at argument
  *!@i{u@}.
- *!@[glEvalCoord2] does the same for two-dimensional maps using
+ *!@[glEvalCoord] does the same for two-dimensional maps using
  *!two domain values,
  *!@i{u@} and @i{v@}.
  *!To define a map, call @[glMap1] and @[glMap2]; to enable and
@@ -2224,7 +2224,7 @@
  *!
  *!If you have enabled automatic normal generation,
  *!by calling @[glEnable] with argument @[GL_AUTO_NORMAL],
- *!@[glEvalCoord2] generates surface normals analytically,
+ *!@[glEvalCoord] generates surface normals analytically,
  *!regardless of the contents or enabling of the @[GL_MAP2_NORMAL] map.
  *!Let
  *!.sp
@@ -2248,7 +2248,7 @@
  *!is used to produce a normal.
  *!If neither automatic normal generation nor a normal map is enabled,
  *!no normal is generated for
- *!@[glEvalCoord2] commands.
+ *!@[glEvalCoord] commands.
  *!
  *!@param u
  *!
@@ -2259,7 +2259,7 @@
  *!
  *!Specifies a value that is the domain coordinate v to the basis function
  *!defined in a previous @[glMap2] command.
- *!This argument is not present in a @[glEvalCoord1] command.
+ *!This argument is not present in a @[glEvalCoord] command.
  *!
  *!
  *!@param u
@@ -2268,7 +2268,7 @@
  *!either one or two domain coordinates.
  *!The first coordinate is u.
  *!The second coordinate is v,
- *!which is present only in @[glEvalCoord2] versions.
+ *!which is present only in @[glEvalCoord] versions.
  *!
  *!
  */
@@ -5988,15 +5988,15 @@
  *!two,
  *!three, or
  *!four dimensions.
- *!@[glTexCoord1] sets the current texture coordinates to
+ *!@[glTexCoord] sets the current texture coordinates to
  *!(@i{s@}, 0, 0, 1);
  *!a call to
  *!
- *!@[glTexCoord2] sets them to
+ *!@[glTexCoord] sets them to
  *!(@i{s@}, @i{t@}, 0, 1).
- *!Similarly, @[glTexCoord3] specifies the texture coordinates as
+ *!Similarly, @[glTexCoord] specifies the texture coordinates as
  *!(@i{s@}, @i{t@}, @i{r@}, 1), and
- *!@[glTexCoord4] defines all four components explicitly as
+ *!@[glTexCoord] defines all four components explicitly as
  *!(@i{s@}, @i{t@}, @i{r@}, @i{q@}).
  *!
  *!The current texture coordinates are part of the data
