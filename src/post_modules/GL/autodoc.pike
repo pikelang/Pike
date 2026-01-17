@@ -524,6 +524,21 @@ void fix_refs() {
     jox[1] = out + in;
   }
 
+  foreach(docs; string func; array jox) {
+    string out = "";
+    string in = jox[1];
+    while( sscanf(in, "%s<ref>%s</ref>%s", string a, string b, string c)==3 ) {
+      if(ref_alias[b]) {
+        werror("Remapped %s (to %s)\n", b, func);
+        b = ref_alias[b];
+      }
+      // else if( !GL[b] ) werror( "Maybe not %s?\n", b );
+      out += a + "<ref>" + b + "</ref>";
+      in = c;
+    }
+    jox[1] = out + in;
+  }
+
   werror("Finding constant references.\n");
   foreach(indices(constants), string name) {
     array r = ({});
