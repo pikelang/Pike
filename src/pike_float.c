@@ -40,14 +40,15 @@ PMOD_EXPORT void format_pike_float(char *buf, size_t buflen, FLOAT_TYPE f)
    */
 
   char *p;
+  double d = f;
 
-  if (PIKE_ISNAN (f)) {
+  if (PIKE_ISNAN (d)) {
     strlcpy(buf, "nan", buflen);
     return;
   }
 
-  if (PIKE_ISINF (f)) {
-    if (f > 0.0)
+  if (PIKE_ISINF (d)) {
+    if (d > 0.0)
       strlcpy(buf, "inf", buflen);
     else
       strlcpy(buf, "-inf", buflen);

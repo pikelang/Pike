@@ -10484,33 +10484,33 @@
  *!<r><c><ref>GL_MAP1_COLOR_4</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord1</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh1</ref>, and
- *!<ref>glEvalPoint1</ref> generate RGBA values.
+ *!<ref>glEvalPoint</ref> generate RGBA values.
  *!See <ref>glMap1</ref>.
  *!</c></r>
  *!<r><c><ref>GL_MAP1_INDEX</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord1</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh1</ref>, and
- *!<ref>glEvalPoint1</ref> generate color indices.
+ *!<ref>glEvalPoint</ref> generate color indices.
  *!See <ref>glMap1</ref>.
  *!</c></r>
  *!<r><c><ref>GL_MAP1_NORMAL</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord1</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh1</ref>, and
- *!<ref>glEvalPoint1</ref> generate normals.
+ *!<ref>glEvalPoint</ref> generate normals.
  *!See <ref>glMap1</ref>.
  *!</c></r>
  *!<r><c><ref>GL_MAP1_TEXTURE_COORD_1</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord1</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh1</ref>, and
- *!<ref>glEvalPoint1</ref> generate
+ *!<ref>glEvalPoint</ref> generate
  *!<i>s</i>
  *!texture coordinates.
  *!See <ref>glMap1</ref>.
@@ -10518,9 +10518,9 @@
  *!<r><c><ref>GL_MAP1_TEXTURE_COORD_2</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord1</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh1</ref>, and
- *!<ref>glEvalPoint1</ref> generate
+ *!<ref>glEvalPoint</ref> generate
  *!<i>s</i> and
  *!<i>t</i> texture coordinates.
  *!See <ref>glMap1</ref>.
@@ -10528,9 +10528,9 @@
  *!<r><c><ref>GL_MAP1_TEXTURE_COORD_3</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord1</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh1</ref>, and
- *!<ref>glEvalPoint1</ref> generate
+ *!<ref>glEvalPoint</ref> generate
  *!<i>s</i>,
  *!<i>t</i>, and
  *!<i>r</i> texture coordinates.
@@ -10539,9 +10539,9 @@
  *!<r><c><ref>GL_MAP1_TEXTURE_COORD_4</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord1</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh1</ref>, and
- *!<ref>glEvalPoint1</ref> generate
+ *!<ref>glEvalPoint</ref> generate
  *!<i>s</i>,
  *!<i>t</i>,
  *!<i>r</i>, and
@@ -10551,18 +10551,18 @@
  *!<r><c><ref>GL_MAP1_VERTEX_3</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord1</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh1</ref>, and
- *!<ref>glEvalPoint1</ref> generate
+ *!<ref>glEvalPoint</ref> generate
  *!<i>x</i>, <i>y</i>, and <i>z</i> vertex coordinates.
  *!See <ref>glMap1</ref>.
  *!</c></r>
  *!<r><c><ref>GL_MAP1_VERTEX_4</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord1</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh1</ref>, and
- *!<ref>glEvalPoint1</ref> generate
+ *!<ref>glEvalPoint</ref> generate
  *!homogeneous
  *!<i>x</i>,
  *!<i>y</i>,
@@ -10573,33 +10573,33 @@
  *!<r><c><ref>GL_MAP2_COLOR_4</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord2</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh2</ref>, and
- *!<ref>glEvalPoint2</ref> generate RGBA values.
+ *!<ref>glEvalPoint</ref> generate RGBA values.
  *!See <ref>glMap2</ref>.
  *!</c></r>
  *!<r><c><ref>GL_MAP2_INDEX</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord2</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh2</ref>, and
- *!<ref>glEvalPoint2</ref> generate color indices.
+ *!<ref>glEvalPoint</ref> generate color indices.
  *!See <ref>glMap2</ref>.
  *!</c></r>
  *!<r><c><ref>GL_MAP2_NORMAL</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord2</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh2</ref>, and
- *!<ref>glEvalPoint2</ref> generate normals.
+ *!<ref>glEvalPoint</ref> generate normals.
  *!See <ref>glMap2</ref>.
  *!</c></r>
  *!<r><c><ref>GL_MAP2_TEXTURE_COORD_1</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord2</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh2</ref>, and
- *!<ref>glEvalPoint2</ref> generate
+ *!<ref>glEvalPoint</ref> generate
  *!<i>s</i>
  *!texture coordinates.
  *!See <ref>glMap2</ref>.
@@ -10607,9 +10607,9 @@
  *!<r><c><ref>GL_MAP2_TEXTURE_COORD_2</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord2</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh2</ref>, and
- *!<ref>glEvalPoint2</ref> generate
+ *!<ref>glEvalPoint</ref> generate
  *!<i>s</i> and
  *!<i>t</i> texture coordinates.
  *!See <ref>glMap2</ref>.
@@ -10617,9 +10617,9 @@
  *!<r><c><ref>GL_MAP2_TEXTURE_COORD_3</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord2</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh2</ref>, and
- *!<ref>glEvalPoint2</ref> generate
+ *!<ref>glEvalPoint</ref> generate
  *!<i>s</i>,
  *!<i>t</i>, and
  *!<i>r</i> texture coordinates.
@@ -10628,9 +10628,9 @@
  *!<r><c><ref>GL_MAP2_TEXTURE_COORD_4</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord2</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh2</ref>, and
- *!<ref>glEvalPoint2</ref> generate
+ *!<ref>glEvalPoint</ref> generate
  *!<i>s</i>,
  *!<i>t</i>,
  *!<i>r</i>, and
@@ -10640,18 +10640,18 @@
  *!<r><c><ref>GL_MAP2_VERTEX_3</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord2</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh2</ref>, and
- *!<ref>glEvalPoint2</ref> generate
+ *!<ref>glEvalPoint</ref> generate
  *!<i>x</i>, <i>y</i>, and <i>z</i> vertex coordinates.
  *!See <ref>glMap2</ref>.
  *!</c></r>
  *!<r><c><ref>GL_MAP2_VERTEX_4</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord2</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh2</ref>, and
- *!<ref>glEvalPoint2</ref> generate
+ *!<ref>glEvalPoint</ref> generate
  *!homogeneous
  *!<i>x</i>,
  *!<i>y</i>,
@@ -11060,33 +11060,33 @@
  *!<r><c><ref>GL_MAP1_COLOR_4</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord1</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh1</ref>, and
- *!<ref>glEvalPoint1</ref> generate RGBA values.
+ *!<ref>glEvalPoint</ref> generate RGBA values.
  *!See <ref>glMap1</ref>.
  *!</c></r>
  *!<r><c><ref>GL_MAP1_INDEX</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord1</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh1</ref>, and
- *!<ref>glEvalPoint1</ref> generate color indices.
+ *!<ref>glEvalPoint</ref> generate color indices.
  *!See <ref>glMap1</ref>.
  *!</c></r>
  *!<r><c><ref>GL_MAP1_NORMAL</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord1</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh1</ref>, and
- *!<ref>glEvalPoint1</ref> generate normals.
+ *!<ref>glEvalPoint</ref> generate normals.
  *!See <ref>glMap1</ref>.
  *!</c></r>
  *!<r><c><ref>GL_MAP1_TEXTURE_COORD_1</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord1</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh1</ref>, and
- *!<ref>glEvalPoint1</ref> generate
+ *!<ref>glEvalPoint</ref> generate
  *!<i>s</i>
  *!texture coordinates.
  *!See <ref>glMap1</ref>.
@@ -11094,9 +11094,9 @@
  *!<r><c><ref>GL_MAP1_TEXTURE_COORD_2</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord1</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh1</ref>, and
- *!<ref>glEvalPoint1</ref> generate
+ *!<ref>glEvalPoint</ref> generate
  *!<i>s</i> and
  *!<i>t</i> texture coordinates.
  *!See <ref>glMap1</ref>.
@@ -11104,9 +11104,9 @@
  *!<r><c><ref>GL_MAP1_TEXTURE_COORD_3</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord1</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh1</ref>, and
- *!<ref>glEvalPoint1</ref> generate
+ *!<ref>glEvalPoint</ref> generate
  *!<i>s</i>,
  *!<i>t</i>, and
  *!<i>r</i> texture coordinates.
@@ -11115,9 +11115,9 @@
  *!<r><c><ref>GL_MAP1_TEXTURE_COORD_4</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord1</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh1</ref>, and
- *!<ref>glEvalPoint1</ref> generate
+ *!<ref>glEvalPoint</ref> generate
  *!<i>s</i>,
  *!<i>t</i>,
  *!<i>r</i>, and
@@ -11127,18 +11127,18 @@
  *!<r><c><ref>GL_MAP1_VERTEX_3</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord1</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh1</ref>, and
- *!<ref>glEvalPoint1</ref> generate
+ *!<ref>glEvalPoint</ref> generate
  *!<i>x</i>, <i>y</i>, and <i>z</i> vertex coordinates.
  *!See <ref>glMap1</ref>.
  *!</c></r>
  *!<r><c><ref>GL_MAP1_VERTEX_4</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord1</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh1</ref>, and
- *!<ref>glEvalPoint1</ref> generate
+ *!<ref>glEvalPoint</ref> generate
  *!homogeneous
  *!<i>x</i>,
  *!<i>y</i>,
@@ -11149,33 +11149,33 @@
  *!<r><c><ref>GL_MAP2_COLOR_4</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord2</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh2</ref>, and
- *!<ref>glEvalPoint2</ref> generate RGBA values.
+ *!<ref>glEvalPoint</ref> generate RGBA values.
  *!See <ref>glMap2</ref>.
  *!</c></r>
  *!<r><c><ref>GL_MAP2_INDEX</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord2</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh2</ref>, and
- *!<ref>glEvalPoint2</ref> generate color indices.
+ *!<ref>glEvalPoint</ref> generate color indices.
  *!See <ref>glMap2</ref>.
  *!</c></r>
  *!<r><c><ref>GL_MAP2_NORMAL</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord2</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh2</ref>, and
- *!<ref>glEvalPoint2</ref> generate normals.
+ *!<ref>glEvalPoint</ref> generate normals.
  *!See <ref>glMap2</ref>.
  *!</c></r>
  *!<r><c><ref>GL_MAP2_TEXTURE_COORD_1</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord2</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh2</ref>, and
- *!<ref>glEvalPoint2</ref> generate
+ *!<ref>glEvalPoint</ref> generate
  *!<i>s</i>
  *!texture coordinates.
  *!See <ref>glMap2</ref>.
@@ -11183,9 +11183,9 @@
  *!<r><c><ref>GL_MAP2_TEXTURE_COORD_2</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord2</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh2</ref>, and
- *!<ref>glEvalPoint2</ref> generate
+ *!<ref>glEvalPoint</ref> generate
  *!<i>s</i> and
  *!<i>t</i> texture coordinates.
  *!See <ref>glMap2</ref>.
@@ -11193,9 +11193,9 @@
  *!<r><c><ref>GL_MAP2_TEXTURE_COORD_3</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord2</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh2</ref>, and
- *!<ref>glEvalPoint2</ref> generate
+ *!<ref>glEvalPoint</ref> generate
  *!<i>s</i>,
  *!<i>t</i>, and
  *!<i>r</i> texture coordinates.
@@ -11204,9 +11204,9 @@
  *!<r><c><ref>GL_MAP2_TEXTURE_COORD_4</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord2</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh2</ref>, and
- *!<ref>glEvalPoint2</ref> generate
+ *!<ref>glEvalPoint</ref> generate
  *!<i>s</i>,
  *!<i>t</i>,
  *!<i>r</i>, and
@@ -11216,18 +11216,18 @@
  *!<r><c><ref>GL_MAP2_VERTEX_3</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord2</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh2</ref>, and
- *!<ref>glEvalPoint2</ref> generate
+ *!<ref>glEvalPoint</ref> generate
  *!<i>x</i>, <i>y</i>, and <i>z</i> vertex coordinates.
  *!See <ref>glMap2</ref>.
  *!</c></r>
  *!<r><c><ref>GL_MAP2_VERTEX_4</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord2</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh2</ref>, and
- *!<ref>glEvalPoint2</ref> generate
+ *!<ref>glEvalPoint</ref> generate
  *!homogeneous
  *!<i>x</i>,
  *!<i>y</i>,
