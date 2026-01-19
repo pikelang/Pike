@@ -190,14 +190,19 @@ void report_os_error(const char *function_name)
  * efuns
  */
 
-/*! @module System
- *!
- *! This module embodies common operating system calls, making them
- *! available to the Pike programmer.
- */
-
 #if defined(HAVE_LINK) || defined(__NT__)
-/*! @decl void hardlink(string from, string to)
+/*! @decl void hardlink(string(8bit) from, string(8bit) to)
+ *!
+ *! Create a hardlink named @[to] from the file @[from].
+ *!
+ *! @note
+ *!   This function is not available on all platforms.
+ *!
+ *! @seealso
+ *!   @[symlink()], @[clonefile()], @[mv()], @[rm()]
+ */
+/*! @decl void hardlink(string(8bit) from, string(8bit) to)
+ *! @belongs System
  *!
  *! Create a hardlink named @[to] from the file @[from].
  *!
@@ -231,7 +236,18 @@ void f_hardlink(INT32 args)
 #endif /* HAVE_LINK || __NT__ */
 
 #if defined(HAVE_SYMLINK) || defined(__NT__)
-/*! @decl void symlink(string from, string to)
+/*! @decl void symlink(string(8bit) from, string(8bit) to)
+ *!
+ *! Create a symbolic link named @[to] that points to @[from].
+ *!
+ *! @note
+ *!   This function is not available on all platforms.
+ *!
+ *! @seealso
+ *!   @[hardlink()], @[readlink()], @[clonefile()], @[mv()], @[rm()]
+ */
+/*! @decl void symlink(string(8bit) from, string(8bit) to)
+ *! @belongs System
  *!
  *! Create a symbolic link named @[to] that points to @[from].
  *!
@@ -265,7 +281,18 @@ void f_symlink(INT32 args)
 #endif /* HAVE_SYMLINK || __NT__ */
 
 #if defined(HAVE_READLINK) || defined(__NT__)
-/*! @decl string readlink(string path)
+/*! @decl string(8bit) readlink(string(8bit) path)
+ *!
+ *! Returns what the symbolic link @[path] points to.
+ *!
+ *! @note
+ *!   This function is not available on all platforms.
+ *!
+ *! @seealso
+ *!   @[symlink()]
+ */
+/*! @decl string(8bit) readlink(string(8bit) path)
+ *! @belongs System
  *!
  *! Returns what the symbolic link @[path] points to.
  *!
@@ -301,9 +328,9 @@ void f_readlink(INT32 args)
     } while (1);
   } while(
 #ifdef ENAMETOOLONG
-	  ((err < 0) && (errno == ENAMETOOLONG)) ||
+          ((err < 0) && (errno == ENAMETOOLONG)) ||
 #endif /* ENAMETOOLONG */
-	  (err >= buflen - 1));
+          (err >= buflen - 1));
 
   if (err < 0) {
     report_os_error("readlink");
@@ -323,6 +350,21 @@ void f_readlink(INT32 args)
 
 #if defined(HAVE_RESOLVEPATH) || defined(HAVE_REALPATH)
 /*! @decl string(8bit) resolvepath(string(8bit) path)
+ *!
+ *!   Resolve all symbolic links of a pathname.
+ *!
+ *!   This function resolves all symbolic links, extra ``/'' characters and
+ *!   references to /./ and /../ in @[pathname], and returns the resulting
+ *!   absolute path, or @tt{0@} (zero) if an error occurs.
+ *!
+ *! @note
+ *!   This function is not available on all platforms.
+ *!
+ *! @seealso
+ *!   @[readlink()], @[symlink()]
+ */
+/*! @decl string(8bit) resolvepath(string(8bit) path)
+ *! @belongs System
  *!
  *!   Resolve all symbolic links of a pathname.
  *!
@@ -363,9 +405,9 @@ void f_resolvepath(INT32 args)
     } while (1);
   } while(
 #ifdef ENAMETOOLONG
-	  ((len < 0) && (errno == ENAMETOOLONG)) ||
+          ((len < 0) && (errno == ENAMETOOLONG)) ||
 #endif /* ENAMETOOLONG */
-	  (len >= buflen - 1));
+          (len >= buflen - 1));
 #elif defined(HAVE_REALPATH)
 #ifdef PATH_MAX
   buflen = PATH_MAX+1;
@@ -440,7 +482,8 @@ int clonefile(const char *from, const char *to, int flags)
 #endif
 
 #ifdef HAVE_CLONEFILE
-/*! @decl void clonefile(string from, string to)
+/*! @decl void clonefile(string(8bit) from, string(8bit) to)
+ *! @belongs System
  *!
  *! Copy a file @[from] with copy-on-write semantics to the destination named
  *! @[to].
@@ -485,6 +528,16 @@ void f_clonefile(INT32 args)
  *! @returns
  *!   Returns the old umask setting.
  */
+/*! @decl int umask(void|int mask)
+ *! @belongs System
+ *!
+ *! Set the current umask to @[mask].
+ *!
+ *! If @[mask] is not specified the current umask will not be changed.
+ *!
+ *! @returns
+ *!   Returns the old umask setting.
+ */
 void f_umask(INT32 args)
 {
   int oldmask;
@@ -504,6 +557,17 @@ void f_umask(INT32 args)
 }
 
 /*! @decl void chmod(string path, int mode)
+ *!
+ *! Sets the protection mode of the specified path.
+ *!
+ *! @note
+ *!   Throws errors on failure.
+ *!
+ *! @seealso
+ *!   @[Stdio.File->open()], @[errno()]
+ */
+/*! @decl void chmod(string path, int mode)
+ *! @belongs System
  *!
  *! Sets the protection mode of the specified path.
  *!
@@ -535,6 +599,22 @@ void f_chmod(INT32 args)
 
 #ifdef HAVE_CHOWN
 /*! @decl void chown(string path, int uid, int gid, void|int symlink)
+ *!
+ *! Sets the owner and group of the specified path.
+ *!
+ *! If @[symlink] is set and @[path] refers to a symlink, then the
+ *! owner and group for the symlink are set. Symlinks are dereferenced
+ *! otherwise.
+ *!
+ *! @note
+ *!   Throws errors on failure.
+ *!
+ *!   This function is not available on all platforms. On some
+ *!   platforms the @[symlink] flag isn't supported. In that case, the
+ *!   function does nothing if @[path] is a symlink.
+ */
+/*! @decl void chown(string path, int uid, int gid, void|int symlink)
+ *! @belongs System
  *!
  *! Sets the owner and group of the specified path.
  *!
@@ -613,6 +693,27 @@ void f_chown(INT32 args)
 
 #if defined (HAVE_UTIME) || defined (HAVE__UTIME)
 /*! @decl void utime(string path, int atime, int mtime, void|int symlink)
+ *!
+ *! Set the last access time and last modification time for the path
+ *! @[path] to @[atime] and @[mtime] repectively. They are specified
+ *! as unix timestamps with 1 second resolution.
+ *!
+ *! If @[symlink] is set and @[path] refers to a symlink, then the
+ *! timestamps for the symlink are set. Symlinks are dereferenced
+ *! otherwise.
+ *!
+ *! @note
+ *!   Throws errors on failure.
+ *!
+ *!   This function is not available on all platforms. On some
+ *!   platforms the @[symlink] flag isn't supported. In that case, the
+ *!   function does nothing if @[path] is a symlink.
+ *!
+ *! @seealso
+ *! @[System.set_file_atime], @[System.set_file_mtime]
+ */
+/*! @decl void utime(string path, int atime, int mtime, void|int symlink)
+ *! @belongs System
  *!
  *! Set the last access time and last modification time for the path
  *! @[path] to @[atime] and @[mtime] repectively. They are specified
@@ -732,20 +833,20 @@ static void sync(void)
       if (QueryDosDeviceA(driveletter, device, MAX_PATH*2)) {
         volfile = CreateFileA(device, GENERIC_WRITE|GENERIC_READ,
                               FILE_SHARE_WRITE|FILE_SHARE_READ,
-			      NULL, OPEN_EXISTING, 0, NULL);
-	if (volfile != INVALID_HANDLE_VALUE) {
+                              NULL, OPEN_EXISTING, 0, NULL);
+        if (volfile != INVALID_HANDLE_VALUE) {
           FlushFileBuffers(volfile);
-	  CloseHandle(volfile);
-	}
+          CloseHandle(volfile);
+        }
       }
 
       /* Flush the drive. */
       volfile = CreateFileA(drive, GENERIC_WRITE|GENERIC_READ,
                             FILE_SHARE_WRITE|FILE_SHARE_READ,
-			    NULL, OPEN_EXISTING, 0, NULL);
+                            NULL, OPEN_EXISTING, 0, NULL);
       if (volfile != INVALID_HANDLE_VALUE) {
         FlushFileBuffers(volfile);
-	CloseHandle(volfile);
+        CloseHandle(volfile);
       }
     }
     *driveletter++;
@@ -757,6 +858,7 @@ static void sync(void)
 
 #ifdef HAVE_SYNC
 /*! @decl void sync()
+ *! @belongs System
  *!
  *! Flush operating system disk buffers to permanent storage.
  *!
@@ -775,6 +877,22 @@ void f_sync(INT32 args)
 
 #ifdef HAVE_INITGROUPS
 /*! @decl void initgroups(string name, int base_gid)
+ *!
+ *! Initializes the supplemental group access list according to the system
+ *! group database. @[base_gid] is also added to the group access
+ *! list.
+ *!
+ *! @note
+ *!   Throws errors on failure.
+ *!
+ *!   This function is not available on all platforms.
+ *!
+ *! @seealso
+ *!   @[setuid()], @[getuid()], @[setgid()], @[getgid()], @[seteuid()],
+ *!   @[geteuid()], @[setegid()], @[getegid()], @[getgroups()], @[setgroups()]
+ */
+/*! @decl void initgroups(string name, int base_gid)
+ *! @belongs System
  *!
  *! Initializes the supplemental group access list according to the system
  *! group database. @[base_gid] is also added to the group access
@@ -817,6 +935,19 @@ void f_initgroups(INT32 args)
  *! @seealso
  *!   @[setgroups()], @[initgroups()], @[getgroups()]
  */
+/*! @decl void cleargroups()
+ *! @belongs System
+ *!
+ *! Clear the supplemental group access list.
+ *!
+ *! @note
+ *!   Throws errors on failure.
+ *!
+ *!   This function is not available on all platforms.
+ *!
+ *! @seealso
+ *!   @[setgroups()], @[initgroups()], @[getgroups()]
+ */
 void f_cleargroups(INT32 args)
 {
   static const gid_t gids[1]={ 65534 }; /* To safeguard against stupid OS's */
@@ -830,6 +961,20 @@ void f_cleargroups(INT32 args)
 }
 
 /*! @decl void setgroups(array(int) gids)
+ *!
+ *! Set the supplemental group access list for this process.
+ *!
+ *! @note
+ *!   Throws errors on failure.
+ *!
+ *!   This function is not available on all platforms.
+ *!
+ *! @seealso
+ *!   @[initgroups()], @[cleargroups()], @[getgroups()],
+ *!   @[getgid()], @[getgid()], @[getegid()], @[setegid()]
+ */
+/*! @decl void setgroups(array(int) gids)
+ *! @belongs System
  *!
  *! Set the supplemental group access list for this process.
  *!
@@ -889,6 +1034,20 @@ void f_setgroups(INT32 args)
  *!   @[setgroups()], @[cleargroups()], @[initgroups()],
  *!   @[getgid()], @[getgid()], @[getegid()], @[setegid()]
  */
+/*! @decl array(int) getgroups()
+ *! @belongs System
+ *!
+ *! Get the current supplemental group access list for this process.
+ *!
+ *! @note
+ *!   Throws errors on failure.
+ *!
+ *!   This function is not available on all platforms.
+ *!
+ *! @seealso
+ *!   @[setgroups()], @[cleargroups()], @[initgroups()],
+ *!   @[getgid()], @[getgid()], @[getegid()], @[setegid()]
+ */
 void f_getgroups(INT32 args)
 {
   gid_t *gids = NULL;
@@ -931,6 +1090,18 @@ void f_getgroups(INT32 args)
  *! @note
  *!  This function isn't available on all platforms.
  */
+/*! @decl int(0..1) innetgr(string netgroup, string|void machine, @
+ *!                   string|void user, string|void domain)
+ *! @belongs System
+ *!
+ *! Searches for matching entries in the netgroup database (usually
+ *! @tt{/etc/netgroup@}). If any of the @[machine], @[user] or @[domain]
+ *! arguments are zero or missing, those fields will match any
+ *! value in the selected @[netgroup].
+ *!
+ *! @note
+ *!  This function isn't available on all platforms.
+ */
 void f_innetgr(INT32 args)
 {
   char *strs[4] = { NULL, NULL, NULL, NULL };
@@ -938,12 +1109,12 @@ void f_innetgr(INT32 args)
   int res;
 
   check_all_args("innetgr", args, BIT_STRING, BIT_STRING|BIT_INT|BIT_VOID,
-		 BIT_STRING|BIT_INT|BIT_VOID, BIT_STRING|BIT_INT|BIT_VOID, 0);
+                 BIT_STRING|BIT_INT|BIT_VOID, BIT_STRING|BIT_INT|BIT_VOID, 0);
 
   for(i = 0; i < args; i++) {
     if (TYPEOF(sp[i-args]) == T_STRING) {
       if (sp[i-args].u.string->size_shift) {
-	SIMPLE_ARG_TYPE_ERROR("innetgr", i+1, "string (8bit)");
+        SIMPLE_ARG_TYPE_ERROR("innetgr", i+1, "string (8bit)");
       }
       strs[i] = sp[i-args].u.string->str;
     } else if (sp[i-args].u.integer) {
@@ -962,6 +1133,21 @@ void f_innetgr(INT32 args)
 
 #ifdef HAVE_SETUID
 /*! @decl int setuid(int uid)
+ *!
+ *! Sets the real user ID, effective user ID and saved user ID to @[uid].
+ *!
+ *! @returns
+ *!   Returns the current errno.
+ *!
+ *! @note
+ *!   This function isn't available on all platforms.
+ *!
+ *! @seealso
+ *!   @[getuid()], @[setgid()], @[getgid()], @[seteuid()], @[geteuid()],
+ *!   @[setegid()], @[getegid()]
+ */
+/*! @decl int setuid(int uid)
+ *! @belongs System
  *!
  *! Sets the real user ID, effective user ID and saved user ID to @[uid].
  *!
@@ -1016,6 +1202,25 @@ void f_setuid(INT32 args)
  *!   @[getuid()], @[setuid()], @[getgid()], @[seteuid()], @[geteuid()],
  *!   @[setegid()], @[getegid()]
  */
+/*! @decl int setgid(int gid)
+ *! @belongs System
+ *!
+ *! Sets the real group ID, effective group ID and saved group ID to @[gid].
+ *! If @[gid] is @expr{-1@} the uid for "nobody" will be used.
+ *!
+ *! @throws
+ *! Throws an error if no "nobody" user when @[gid] is @expr{-1@}.
+ *!
+ *! @returns
+ *!   Returns the current errno.
+ *!
+ *! @note
+ *!   This function is not available on all platforms.
+ *!
+ *! @seealso
+ *!   @[getuid()], @[setuid()], @[getgid()], @[seteuid()], @[geteuid()],
+ *!   @[setegid()], @[getegid()]
+ */
 void f_setgid(INT32 args)
 {
   int err;
@@ -1040,6 +1245,22 @@ void f_setgid(INT32 args)
 
 #if defined(HAVE_SETEUID) || defined(HAVE_SETRESUID)
 /*! @decl int seteuid(int euid)
+ *!
+ *! Set the effective user ID to @[euid]. If @[euid] is
+ *! @expr{-1@} the uid for "nobody" will be used.
+ *!
+ *! @returns
+ *! Returns the current errno.
+ *!
+ *! @throws
+ *! Throws an error if there is no
+ *! "nobody" user when @[euid] is @expr{-1@}.
+ *!
+ *! @note
+ *! This function isn't available on all platforms.
+ */
+/*! @decl int seteuid(int euid)
+ *! @belongs System
  *!
  *! Set the effective user ID to @[euid]. If @[euid] is
  *! @expr{-1@} the uid for "nobody" will be used.
@@ -1098,6 +1319,22 @@ void f_seteuid(INT32 args)
  *! @note
  *! This function isn't available on all platforms.
  */
+/*! @decl int setegid(int egid)
+ *! @belongs System
+ *!
+ *! Set the effective group ID to @[egid]. If @[egid] is
+ *! @expr{-1@} the uid for "nobody" will be used.
+ *!
+ *! @returns
+ *! Returns the current errno.
+ *!
+ *! @throws
+ *! Throws an error if there is no "nobody" user when
+ *! @[egid] is @expr{-1@}.
+ *!
+ *! @note
+ *! This function isn't available on all platforms.
+ */
 void f_setegid(INT32 args)
 {
   INT_TYPE id;
@@ -1129,6 +1366,21 @@ void f_setegid(INT32 args)
 
 #if defined(HAVE_GETPGID) || defined(HAVE_GETPGRP)
 /*! @decl int getpgrp(int|void pid)
+ *!
+ *! Get the process group id for the process @[pid].
+ *! With no argguments or with 'pid' equal to zero,
+ *! returns the process group ID of this process.
+ *!
+ *! @note
+ *!   Not all platforms support getting the process group for other processes.
+ *!
+ *!   Not supported on all platforms.
+ *!
+ *! @seealso
+ *!   @[getpid], @[getppid]
+ */
+/*! @decl int getpgrp(int|void pid)
+ *! @belongs System
  *!
  *! Get the process group id for the process @[pid].
  *! With no argguments or with 'pid' equal to zero,
@@ -1177,6 +1429,14 @@ void f_getpgrp(INT32 args)
  *! @note
  *!   Not supported on all platforms.
  */
+/*! @decl int setpgrp()
+ *! @belongs System
+ *!
+ *! Make this process a process group leader.
+ *!
+ *! @note
+ *!   Not supported on all platforms.
+ */
 void f_setpgrp(INT32 args)
 {
   int pid;
@@ -1199,6 +1459,18 @@ void f_setpgrp(INT32 args)
 
 #if defined(HAVE_GETSID)
 /*! @decl int getsid(int|void pid)
+ *!   Get the process session ID for the given process. If pid is
+ *!   not specified, the session ID for the current process will
+ *!   be returned.
+ *! @note
+ *!   This function is not available on all platforms.
+ *! @throws
+ *!   Throws an error if the system call fails.
+ *! @seealso
+ *!   @[getpid], @[getpgrp], @[setsid]
+ */
+/*! @decl int getsid(int|void pid)
+ *! @belongs System
  *!   Get the process session ID for the given process. If pid is
  *!   not specified, the session ID for the current process will
  *!   be returned.
@@ -1234,6 +1506,16 @@ void f_getsid(INT32 args)
  *! @seealso
  *!   @[getpid], @[setpgrp], @[getsid]
  */
+/*! @decl int setsid()
+ *! @belongs System
+ *!   Set a new process session ID for the current process, and return it.
+ *! @note
+ *!   This function isn't available on all platforms.
+ *! @throws
+ *!   Throws an error if the system call fails.
+ *! @seealso
+ *!   @[getpid], @[setpgrp], @[getsid]
+ */
 void f_setsid(INT32 args)
 {
   int pid;
@@ -1247,6 +1529,7 @@ void f_setsid(INT32 args)
 
 #if defined(HAVE_PRCTL) && defined(PR_SET_DUMPABLE)
 /*! @decl int(0..1) dumpable(int(0..1)|void val)
+ *! @belongs System
  *!   Get and/or set whether this process should be able to
  *!   dump core.
  *!
@@ -1283,7 +1566,7 @@ void f_dumpable(INT32 args)
     if (prctl(PR_SET_DUMPABLE, val) == -1) {
       int err = errno;
       Pike_error("Failed to set dumpable state to %"PRINTPIKEINT"d. "
-		 "errno:%d\n", val, err);
+                 "errno:%d\n", val, err);
     }
   }
   pop_n_elems(args);
@@ -1293,6 +1576,15 @@ void f_dumpable(INT32 args)
 
 #ifdef HAVE_SETRESUID
 /*! @decl int setresuid(int ruid, int euid, int suid)
+ *!
+ *! Sets the real, effective and saved set-user-ID to @[ruid],
+ *! @[euid] and @[suid] respectively.
+ *!
+ *! @returns
+ *! Returns zero on success and errno on failure.
+ */
+/*! @decl int setresuid(int ruid, int euid, int suid)
+ *! @belongs System
  *!
  *! Sets the real, effective and saved set-user-ID to @[ruid],
  *! @[euid] and @[suid] respectively.
@@ -1316,6 +1608,15 @@ void f_setresuid(INT32 args)
 
 #ifdef HAVE_SETRESGID
 /*! @decl int setresgid(int rgid, int egid, int sgid)
+ *!
+ *! Sets the real, effective and saved group ID to @[rgid],
+ *! @[egid] and @[sgid] respectively.
+ *!
+ *! @returns
+ *! Returns zero on success and errno on failure.
+ */
+/*! @decl int setresgid(int rgid, int egid, int sgid)
+ *! @belongs System
  *!
  *! Sets the real, effective and saved group ID to @[rgid],
  *! @[egid] and @[sgid] respectively.
@@ -1347,11 +1648,25 @@ void f_setresgid(INT32 args)
  *!   @[setuid], @[setgid], @[getgid], @[seteuid],
  *!   @[geteuid], @[setegid], @[getegid]
  */
+/*! @decl int getuid()
+ *! @belongs System
+ *!   Get the real user ID.
+ *! @seealso
+ *!   @[setuid], @[setgid], @[getgid], @[seteuid],
+ *!   @[geteuid], @[setegid], @[getegid]
+ */
 f_get(f_getuid, getuid)
 #endif
 
 #ifdef HAVE_GETGID
 /*! @decl int getgid()
+ *!   Get the real group ID.
+ *! @seealso
+ *!   @[setuid], @[getuid], @[setgid],
+ *!   @[seteuid], @[geteuid], @[getegid], @[setegid]
+ */
+/*! @decl int getgid()
+ *! @belongs System
  *!   Get the real group ID.
  *! @seealso
  *!   @[setuid], @[getuid], @[setgid],
@@ -1367,9 +1682,23 @@ f_get(f_getgid, getgid)
  *!   @[setuid], @[getuid], @[setgid], @[getgid],
  *!   @[seteuid], @[getegid], @[setegid]
  */
+/*! @decl int geteuid()
+ *! @belongs System
+ *!   Get the effective user ID.
+ *! @seealso
+ *!   @[setuid], @[getuid], @[setgid], @[getgid],
+ *!   @[seteuid], @[getegid], @[setegid]
+ */
 f_get(f_geteuid, geteuid)
 
 /*! @decl int getegid()
+ *!   Get the effective group ID.
+ *! @seealso
+ *!   @[setuid], @[getuid], @[setgid], @[getgid],
+ *!   @[seteuid], @[geteuid], @[setegid]
+ */
+/*! @decl int getegid()
+ *! @belongs System
  *!   Get the effective group ID.
  *! @seealso
  *!   @[setuid], @[getuid], @[setgid], @[getgid],
@@ -1379,6 +1708,7 @@ f_get(f_getegid, getegid)
 #endif
 
 /*! @decl int getpid()
+ *! @belongs System
  *!   Returns the process ID of this process.
  *! @seealso
  *!   @[getppid], @[getpgrp]
@@ -1391,6 +1721,12 @@ f_get(f_getpid, getpid)
  *! @seealso
  *!   @[getpid], @[getpgrp]
  */
+/*! @decl int getppid()
+ *! @belongs System
+ *!  Returns the process ID of the parent process.
+ *! @seealso
+ *!   @[getpid], @[getpgrp]
+ */
 f_get(f_getppid, getppid)
 #endif
 
@@ -1399,6 +1735,35 @@ f_get(f_getppid, getppid)
 #ifdef HAVE_CHROOT
 /*! @decl int chroot(string newroot)
  *! @decl int chroot(Stdio.File newroot)
+ *!
+ *! Changes the root directory for this process to the indicated directory.
+ *!
+ *! @returns
+ *!   A nonzero value is returned if the call is successful. If
+ *!   there's an error then zero is returned and @[errno] is set
+ *!   appropriately.
+ *!
+ *! @note
+ *!   Since this function modifies the directory structure as seen from
+ *!   Pike, you have to modify the environment variables PIKE_MODULE_PATH
+ *!   and PIKE_INCLUDE_PATH to compensate for the new root-directory.
+ *!
+ *!   This function only exists on systems that have the chroot(2)
+ *!   system call.
+ *!
+ *!   The second variant only works on systems that also have
+ *!   the fchroot(2) system call.
+ *!
+ *! @note
+ *!   On success the current working directory will be changed to
+ *!   the new @expr{"/"@}. This behavior was added in Pike 7.9.
+ *!
+ *! @note
+ *!   This function could be interrupted by signals prior to Pike 7.9.
+ */
+/*! @decl int chroot(string newroot)
+ *! @decl int chroot(Stdio.File newroot)
+ *! @belongs System
  *!
  *! Changes the root directory for this process to the indicated directory.
  *!
@@ -1441,11 +1806,11 @@ void f_chroot(INT32 args)
   {
 #endif /* HAVE_FCHROOT */
     while (((res = chroot((char *)sp[-args].u.string->str)) == -1) &&
-	   (errno == EINTR))
+           (errno == EINTR))
       ;
     if (!res) {
       while ((chdir("/") == -1) && (errno == EINTR))
-	;
+        ;
     }
     pop_n_elems(args);
     push_int(!res);
@@ -1461,7 +1826,7 @@ void f_chroot(INT32 args)
       ;
     if (!res) {
       while ((fchdir(fd) == -1) && (errno == EINTR))
-	;
+        ;
     }
     pop_n_elems(args);
     push_int(!res);
@@ -1564,6 +1929,45 @@ static const struct {
  *!
  *!   Only the first five elements are always available.
  */
+/*! @decl mapping(string:string) uname()
+ *! @belongs System
+ *!
+ *! Get operating system information.
+ *!
+ *! @returns
+ *!   The resulting mapping contains the following fields:
+ *!   @mapping
+ *!     @member string "sysname"
+ *!       Operating system name.
+ *!     @member string "nodename"
+ *!       Hostname.
+ *!     @member string "release"
+ *!       Operating system release.
+ *!     @member string "version"
+ *!       Operating system version.
+ *!     @member string "machine"
+ *!       Hardware architecture.
+ *!     @member string "architecture"
+ *!       Basic instruction set architecture.
+ *!     @member string "isalist"
+ *!       List of upported instruction set architectures.
+ *!       Usually space-separated.
+ *!     @member string "platform"
+ *!       Specific model of hardware.
+ *!     @member string "hw provider"
+ *!       Manufacturer of the hardware.
+ *!     @member string "hw serial"
+ *!       Serial number of the hardware.
+ *!     @member string "srpc domain"
+ *!       Secure RPC domain.
+ *!   @endmapping
+ *!
+ *! @note
+ *!   This function only exists on systems that have the uname(2) or
+ *!   sysinfo(2) system calls.
+ *!
+ *!   Only the first five elements are always available.
+ */
 void f_uname(INT32 args)
 {
   char buffer[PIKE_SI_BUFLEN];
@@ -1623,6 +2027,15 @@ void f_uname(INT32 args)
 #endif /* HAVE_SYSINFO */
 
 /*! @decl string gethostname()
+ *!
+ *! Returns a string with the name of the host.
+ *!
+ *! @note
+ *!   This function only exists on systems that have the gethostname(2)
+ *!   or uname(2) system calls.
+ */
+/*! @decl string gethostname()
+ *! @belongs System
  *!
  *! Returns a string with the name of the host.
  *!
@@ -1745,41 +2158,41 @@ int my_isipv6nr(char *s)
     case '5':case '6':case '7':case '8':case '9':
       has_value++;
       if (has_value > 4) {
-	/* Too long value field. */
-	return 0;
+        /* Too long value field. */
+        return 0;
       }
       break;
     case ':':
       if (s[i+1] == ':') {
-	if (compressed) {
-	  /* Only one compressed range is allowed. */
-	  return 0;
-	}
-	compressed++;
-	break;
+        if (compressed) {
+          /* Only one compressed range is allowed. */
+          return 0;
+        }
+        compressed++;
+        break;
       } else if (!has_value) {
-	/* The first value can only be left out if it starts with '::'. */
-	return 0;
+        /* The first value can only be left out if it starts with '::'. */
+        return 0;
       }
       is_hex = 0;
       has_value = 0;
       field++;
       if ((field + compressed) > 7) {
-	/* Too many fields */
-	return 0;
+        /* Too many fields */
+        return 0;
       }
       break;
     case '.':
       /* Dotted decimal. */
       if (is_hex || !has_value ||
-	  (!compressed && (field != 6)) ||
-	  (compressed && (field > 6))) {
-	/* Hex not allowed in dotted decimal section.
-	 * Must have a value before the first '.'.
-	 * Must have 6 fields or a compressed range with at most 6 fields
-	 * before the dotted decimal section.
-	 */
-	return 0;
+          (!compressed && (field != 6)) ||
+          (compressed && (field > 6))) {
+        /* Hex not allowed in dotted decimal section.
+         * Must have a value before the first '.'.
+         * Must have 6 fields or a compressed range with at most 6 fields
+         * before the dotted decimal section.
+         */
+        return 0;
       }
       return my_isipnr(s+i-1);
     default:
@@ -1979,7 +2392,7 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port,
     }
     if(found) {
       SOCKWERR("Got %d bytes (family: %d (%d))\n",
-	       addr_len, found->ai_addr->sa_family, found->ai_family);
+               addr_len, found->ai_addr->sa_family, found->ai_family);
       memcpy(addr, found->ai_addr, addr_len);
     }
     freeaddrinfo(res);
@@ -1989,7 +2402,7 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port,
     }
   } else {
     SOCKWERR("Failed with err: %d: %s, errno %d: %s, flags: %d\n",
-	     err, gai_strerror(err), errno, strerror(errno), hints.ai_flags);
+             err, gai_strerror(err), errno, strerror(errno), hints.ai_flags);
   }
   if (service == servnum_buf) service = NULL;
 #endif /* HAVE_GETADDRINFO */
@@ -2198,6 +2611,22 @@ static void describe_hostent(struct hostent *hp)
  *! @seealso
  *!   @[gethostbyname()]
  */
+/*! @decl array(string|array(string)) gethostbyaddr(string addr)
+ *! @belongs System
+ *!
+ *! Returns an array with information about the specified IP address.
+ *!
+ *! @returns
+ *!   The returned array contains the same information as that returned
+ *!   by @[gethostbyname()].
+ *!
+ *! @note
+ *!   This function only exists on systems that have the gethostbyaddr(2)
+ *!   or similar system call.
+ *!
+ *! @seealso
+ *!   @[gethostbyname()]
+ */
 void f_gethostbyaddr(INT32 args)
 {
   IN_ADDR_T addr;
@@ -2245,6 +2674,29 @@ void f_gethostbyaddr(INT32 args)
  *! @seealso
  *!   @[gethostbyaddr()]
  */
+/*! @decl array(string|array(string)) gethostbyname(string hostname)
+ *! @belongs System
+ *!
+ *! Returns an array with information about the specified host.
+ *!
+ *! @returns
+ *!   The returned array contains the following:
+ *!   @array
+ *!     @elem string hostname
+ *!       Name of the host.
+ *!     @elem array(string) ips
+ *!       Array of IP numbers for the host.
+ *!     @elem array(string) aliases
+ *!       Array of alternative names for the host.
+ *!   @endarray
+ *!
+ *! @note
+ *!   This function only exists on systems that have the gethostbyname(2)
+ *!   or similar system call.
+ *!
+ *! @seealso
+ *!   @[gethostbyaddr()]
+ */
 void f_gethostbyname(INT32 args)
 {
   char *name;
@@ -2268,6 +2720,11 @@ void f_gethostbyname(INT32 args)
 extern void init_passwd(void);
 extern void init_system_memory(void);
 
+/*! @module System
+ *!
+ *! This module embodies common operating system calls, making them
+ *! available to the Pike programmer.
+ */
 
 #ifdef HAVE_SLEEP
 
@@ -2718,12 +3175,12 @@ void f_system_setitimer(INT32 args)
    {
       switch (errno)
       {
-	 case EINVAL:
+         case EINVAL:
             Pike_error("Invalid timer %"PRINTPIKEINT"d.\n",what);
-	    break;
-	 default:
+            break;
+         default:
             Pike_error("Unknown error (errno=%d).\n",errno);
-	    break;
+            break;
       }
    }
 
@@ -2763,12 +3220,12 @@ void f_system_getitimer(INT32 args)
    {
       switch (errno)
       {
-	 case EINVAL:
+         case EINVAL:
             Pike_error("Invalid timer %"PRINTPIKEINT"d.\n",what);
-	    break;
-	 default:
+            break;
+         default:
             Pike_error("Unknown error (errno=%d).\n",errno);
-	    break;
+            break;
       }
    }
 
@@ -2816,7 +3273,7 @@ static void f_get_netinfo_property(INT32 args)
   unsigned int i, num_replies;
 
   get_all_args("get_netinfo_property", args, "%c%c%c",
-	       &domain_str, &path_str, &prop_str);
+               &domain_str, &path_str, &prop_str);
 
   /* open domain */
   num_replies = 0;
@@ -2826,11 +3283,11 @@ static void f_get_netinfo_property(INT32 args)
     if (res == NI_OK) {
       res = ni_lookupprop(dom, &dir, prop_str, &prop_list);
       if (res == NI_OK) {
-	for (i = 0; i < prop_list.ni_namelist_len; i++) {
-	  push_text(prop_list.ni_namelist_val[i]);
-	  num_replies++;
-	}
-	ni_namelist_free(&prop_list);
+        for (i = 0; i < prop_list.ni_namelist_len; i++) {
+          push_text(prop_list.ni_namelist_val[i]);
+          num_replies++;
+        }
+        ni_namelist_free(&prop_list);
       }
     }
     ni_free(dom);
@@ -3103,7 +3560,7 @@ static void f_getrusage(INT32 args)
 
    if (!pike_get_rusage(rusage_values))
      PIKE_ERROR("System.getrusage",
-		"System usage information not available.\n", Pike_sp, args);
+                "System usage information not available.\n", Pike_sp, args);
 
    pop_n_elems(args);
 
@@ -3278,6 +3735,8 @@ PIKE_MODULE_INIT
 {
   int sz;
 
+  INIT;
+
   /*
    * From this file:
    */
@@ -3287,8 +3746,10 @@ PIKE_MODULE_INIT
   if (Pike_NT_CreateHardLinkW) {
 #endif
     /* function(string, string:void) */
-    ADD_EFUN("hardlink", f_hardlink, tFunc(tStr tStr, tVoid), OPT_SIDE_EFFECT);
-    ADD_FUNCTION2("hardlink", f_hardlink, tFunc(tStr tStr, tVoid), 0, OPT_SIDE_EFFECT);
+    ADD_EFUN("hardlink", f_hardlink,
+             tFunc(tStr8 tStr8, tVoid), OPT_SIDE_EFFECT);
+    ADD_FUNCTION2("hardlink", f_hardlink,
+                  tFunc(tStr8 tStr8, tVoid), 0, OPT_SIDE_EFFECT);
 #ifdef __NT__
   }
 #endif
@@ -3299,8 +3760,9 @@ PIKE_MODULE_INIT
   if (Pike_NT_CreateSymbolicLinkW) {
 #endif
     /* function(string, string:void) */
-    ADD_EFUN("symlink", f_symlink, tFunc(tStr tStr, tVoid), OPT_SIDE_EFFECT);
-    ADD_FUNCTION2("symlink", f_symlink, tFunc(tStr tStr, tVoid), 0, OPT_SIDE_EFFECT);
+    ADD_EFUN("symlink", f_symlink, tFunc(tStr8 tStr8, tVoid), OPT_SIDE_EFFECT);
+    ADD_FUNCTION2("symlink", f_symlink,
+                  tFunc(tStr8 tStr8, tVoid), 0, OPT_SIDE_EFFECT);
 #ifdef __NT__
   }
 #endif
@@ -3308,8 +3770,9 @@ PIKE_MODULE_INIT
 #if defined(HAVE_READLINK) || defined(__NT__)
 
 /* function(string:string) */
-  ADD_EFUN("readlink", f_readlink,tFunc(tStr,tStr), OPT_EXTERNAL_DEPEND);
-  ADD_FUNCTION2("readlink", f_readlink,tFunc(tStr,tStr), 0, OPT_EXTERNAL_DEPEND);
+  ADD_EFUN("readlink", f_readlink, tFunc(tStr8, tStr8), OPT_EXTERNAL_DEPEND);
+  ADD_FUNCTION2("readlink", f_readlink,
+                tFunc(tStr8, tStr8), 0, OPT_EXTERNAL_DEPEND);
 #endif /* HAVE_READLINK || __NT__ */
 #if defined(HAVE_RESOLVEPATH) || defined(HAVE_REALPATH)
 
@@ -3322,7 +3785,8 @@ PIKE_MODULE_INIT
 
 #ifdef HAVE_CLONEFILE
 /* function(string, string:void) */
-  ADD_FUNCTION2("clonefile", f_clonefile,tFunc(tStr tStr,tVoid), 0, OPT_SIDE_EFFECT);
+  ADD_FUNCTION2("clonefile", f_clonefile,
+                tFunc(tStr8 tStr8, tVoid), 0, OPT_SIDE_EFFECT);
 #endif /* HAVE_CLONEFILE */
 
   /* function(int|void:int) */
@@ -3335,16 +3799,16 @@ PIKE_MODULE_INIT
 
 #ifdef HAVE_CHOWN
   ADD_EFUN("chown", f_chown, tFunc(tStr tInt tInt tOr(tVoid, tInt),tVoid),
-	   OPT_SIDE_EFFECT);
+           OPT_SIDE_EFFECT);
   ADD_FUNCTION2("chown", f_chown, tFunc(tStr tInt tInt tOr(tVoid, tInt),tVoid),
-		0, OPT_SIDE_EFFECT);
+                0, OPT_SIDE_EFFECT);
 #endif
 
 #if defined (HAVE_UTIME) || defined (HAVE__UTIME)
   ADD_EFUN("utime", f_utime,tFunc(tStr tInt tInt tOr(tVoid, tInt),tVoid),
-	   OPT_SIDE_EFFECT);
+           OPT_SIDE_EFFECT);
   ADD_FUNCTION2("utime", f_utime,tFunc(tStr tInt tInt tOr(tVoid, tInt),tVoid),
-		0, OPT_SIDE_EFFECT);
+                0, OPT_SIDE_EFFECT);
 #endif
 
 #ifdef HAVE_SYNC
@@ -3377,11 +3841,11 @@ PIKE_MODULE_INIT
 #ifdef HAVE_INNETGR
 /* function(string, string|void, string|void, string|void:int) */
   ADD_EFUN("innetgr", f_innetgr,
-	   tFunc(tStr tOr(tStr,tVoid) tOr(tStr,tVoid) tOr(tStr,tVoid), tInt01),
-	   OPT_EXTERNAL_DEPEND);
+           tFunc(tStr tOr(tStr,tVoid) tOr(tStr,tVoid) tOr(tStr,tVoid), tInt01),
+           OPT_EXTERNAL_DEPEND);
   ADD_FUNCTION2("innetgr", f_innetgr,
-	   tFunc(tStr tOr(tStr,tVoid) tOr(tStr,tVoid) tOr(tStr,tVoid), tInt),
-	   0, OPT_EXTERNAL_DEPEND);
+           tFunc(tStr tOr(tStr,tVoid) tOr(tStr,tVoid) tOr(tStr,tVoid), tInt),
+           0, OPT_EXTERNAL_DEPEND);
 #endif /* HAVE_INNETGR */
 #ifdef HAVE_SETUID
 
@@ -3464,9 +3928,9 @@ PIKE_MODULE_INIT
 
 #if defined(HAVE_SETPGID) || defined(HAVE_SETPGRP)
   ADD_EFUN("setpgrp", f_setpgrp, tFunc(tNone, tInt),
-	   OPT_SIDE_EFFECT);
+           OPT_SIDE_EFFECT);
   ADD_FUNCTION2("setpgrp", f_setpgrp, tFunc(tNone, tInt), 0,
-		OPT_SIDE_EFFECT);
+                OPT_SIDE_EFFECT);
 #endif
 
 #ifdef HAVE_GETSID
@@ -3478,26 +3942,26 @@ PIKE_MODULE_INIT
 
 #ifdef HAVE_SETSID
   ADD_EFUN("setsid", f_setsid, tFunc(tNone, tInt),
-	   OPT_SIDE_EFFECT);
+           OPT_SIDE_EFFECT);
   ADD_FUNCTION2("setsid", f_setsid, tFunc(tNone, tInt), 0,
-		OPT_SIDE_EFFECT);
+                OPT_SIDE_EFFECT);
 #endif
 
 #if defined(HAVE_PRCTL) && defined(PR_SET_DUMPABLE)
   ADD_FUNCTION2("dumpable", f_dumpable, tFunc(tOr(tInt01, tVoid), tInt01),
-		0, OPT_SIDE_EFFECT);
+                0, OPT_SIDE_EFFECT);
 #endif
 
 #ifdef HAVE_GETRLIMIT
   ADD_FUNCTION2("getrlimit", f_getrlimit, tFunc(tString, tArr(tInt)),
-		0, OPT_EXTERNAL_DEPEND);
+                0, OPT_EXTERNAL_DEPEND);
   ADD_FUNCTION2("getrlimits", f_getrlimits,
-		tFunc(tNone, tMap(tStr,tArr(tInt))),
-		0, OPT_EXTERNAL_DEPEND);
+                tFunc(tNone, tMap(tStr,tArr(tInt))),
+                0, OPT_EXTERNAL_DEPEND);
 #endif
 #ifdef HAVE_SETRLIMIT
   ADD_FUNCTION2("setrlimit", f_setrlimit, tFunc(tString tInt tInt, tInt01),
-		0, OPT_SIDE_EFFECT);
+                0, OPT_SIDE_EFFECT);
 #endif
 #ifdef HAVE_SETPROCTITLE
   ADD_FUNCTION2("setproctitle", f_setproctitle, tFuncV(tString, tMix, tVoid),
@@ -3567,12 +4031,12 @@ PIKE_MODULE_INIT
 #endif /* HAVE_SLEEP */
 #ifdef HAVE_NANOSLEEP
   ADD_FUNCTION("nanosleep",f_system_nanosleep,
-	       tFunc(tOr(tInt,tFloat),tFloat), 0);
+               tFunc(tOr(tInt,tFloat),tFloat), 0);
 #endif /* HAVE_SLEEP */
 
 /* there is always a pike_get_rusage */
   ADD_FUNCTION("getrusage", f_getrusage,
-	       tFunc(tNone, tMap(tStr,tInt)), 0);
+               tFunc(tNone, tMap(tStr,tInt)), 0);
 
 #ifdef ITIMER_TYPE_IS_02
 #define tITimer tInt02
@@ -3582,7 +4046,7 @@ PIKE_MODULE_INIT
 
 #ifdef HAVE_SETITIMER
   ADD_FUNCTION("setitimer",f_system_setitimer,
-	       tFunc(tITimer tOr(tIntPos,tFloat),tFloat),0);
+               tFunc(tITimer tOr(tIntPos,tFloat),tFloat),0);
 #ifdef ITIMER_REAL
    ADD_INT_CONSTANT("ITIMER_REAL",ITIMER_REAL,0);
 #endif
@@ -3595,26 +4059,26 @@ PIKE_MODULE_INIT
 
 #ifdef HAVE_GETITIMER
   ADD_FUNCTION("getitimer",f_system_getitimer,
-	       tFunc(tITimer,tArr(tFloat)),0);
+               tFunc(tITimer,tArr(tFloat)),0);
 #endif
 #endif
 
 #ifdef RDTSC
   ADD_FUNCTION("rdtsc",f_rdtsc,
-	       tFunc(tNone,tInt),0);
+               tFunc(tNone,tInt),0);
 #endif
 #ifdef HAVE_GETTIMEOFDAY
   ADD_FUNCTION("gettimeofday",f_gettimeofday,
-	       tFunc(tNone,tArr(tInt)),0);
+               tFunc(tNone,tArr(tInt)),0);
 #endif
 
   add_string_constant ("CPU_TIME_IS_THREAD_LOCAL",
-		       cpu_time_is_thread_local ? "yes" : "no", 0);
+                       cpu_time_is_thread_local ? "yes" : "no", 0);
   add_string_constant ("CPU_TIME_IMPLEMENTATION", get_cpu_time_impl, 0);
   add_integer_constant ("CPU_TIME_RESOLUTION", get_cpu_time_res(), 0);
 
   add_string_constant ("REAL_TIME_IS_MONOTONIC",
-		       real_time_is_monotonic ? "yes" : "no", 0);
+                       real_time_is_monotonic ? "yes" : "no", 0);
   add_string_constant ("REAL_TIME_IMPLEMENTATION", get_real_time_impl, 0);
   add_integer_constant ("REAL_TIME_RESOLUTION", get_real_time_res(), 0);
 
@@ -3622,7 +4086,7 @@ PIKE_MODULE_INIT
   /* array(string) get_netinfo_property(string domain, string path,
                                         string property) */
   ADD_FUNCTION("get_netinfo_property", f_get_netinfo_property,
-	       tFunc(tStr tStr tStr, tArray), 0);
+               tFunc(tStr tStr tStr, tArray), 0);
 #endif /* NETINFO */
 
 #ifdef HAVE_GETLOADAVG
@@ -3678,12 +4142,16 @@ PIKE_MODULE_INIT
 
 PIKE_MODULE_EXIT
 {
+  EXIT;
+
 #ifdef __NT__
   {
     extern void exit_nt_system_calls(void);
     exit_nt_system_calls();
   }
 #endif
-  free_mapping(strerror_lookup);
-  strerror_lookup = NULL;
+  if (strerror_lookup) {
+    free_mapping(strerror_lookup);
+    strerror_lookup = NULL;
+  }
 }

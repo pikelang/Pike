@@ -744,7 +744,6 @@ Makefile.rl -space_indent tab_indent
 /src/modules/system/memory.c mixed_indent
 /src/modules/system/nt.c mixed_indent
 /src/modules/system/passwords.c mixed_indent
-/src/modules/system/system.c mixed_indent
 /src/modules/system/testsuite.in mixed_indent
 /src/multiset.c mixed_indent
 /src/multiset.h mixed_indent

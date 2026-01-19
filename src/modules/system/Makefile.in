@@ -11,4 +11,6 @@ $(SRCDIR)/add-errnos.h : $(SRCDIR)/errnos.list $(SRCDIR)/mkerrnos.sed
 
 system.o : $(SRCDIR)/add-errnos.h
 
+system.o : $(SRCDIR)/system.c
+
 @dependencies@
