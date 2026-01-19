@@ -1,3 +1,4 @@
+// -*- mode: pike; c-basic-offset: 3; -*-
 #charset iso-8859-1
 
 #pike __REAL_VERSION__
@@ -484,14 +485,18 @@ array(string) fix_tag_nesting(Parser.HTML p, string value)
   // werror("fix_nesting(%O, %O)\n", p, value);
 
   if ((nesting->top() == "pre") && !has_prefix(value, "</pre>")) {
-    return ({ _Roxen.html_encode_string(value) });
+    value = _Roxen.html_encode_string(value);
+    // Restore <ref>...</ref> if any.
+    // NB: Does NOT handle <ref to=...>...</ref>.
+    value = replace(value, ([ "&lt;ref&gt;": "<ref>",
+                              "&lt;/ref&gt;": "</ref>",
+                    ]));
+    return ({ value });
   }
 
   string orig_value = value;
 
-  value = lower_case(value);
-
-  string tag = p->parse_tag_name(value[1..<1]);
+  string tag = p->parse_tag_name(lower_case(value[1..<1]));
 
   array(string) ret = ({});
 
