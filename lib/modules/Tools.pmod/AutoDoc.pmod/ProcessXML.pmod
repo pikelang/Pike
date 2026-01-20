@@ -997,7 +997,8 @@ protected string mergeRef(array(string) ref) {
   return s;
 }
 
-protected class Scope(string|void type, string|void name) {
+protected class Scope(string|void type, string|void name,
+                      int(1bit)|void is_global) {
   multiset(string) idents = (<>);
 
   multiset(string) failures = (<>);
@@ -1015,11 +1016,11 @@ protected class ScopeStack {
 
   array(array(string|array(Scope))) namespaceStack = ({});
 
-  void enter(string|void type, string|void name) {
+  void enter(string|void type, string|void name, int(1bit)|void is_global) {
     //werror("entering scope type(%O), name(%O)\n", type, name);
     if (type == "namespace") {
       namespaceStack += ({ ({ namespace, scopes[name] }) });
-      scopes[namespace = name] = ({ Scope(type, name+"::") });
+      scopes[namespace = name] = ({ Scope(type, name+"::", is_global) });
       if (name = pike_release_to_devel_version[name]) {
 	// Add an alias for development version.
 	scopes[name] = scopes[namespace];
@@ -1028,9 +1029,9 @@ protected class ScopeStack {
       if (!sizeof(scopes[namespace]||({}))) {
 	werror("WARNING: Implicit enter of namespace %s:: for %s %s\n",
 	       namespace, type, name||"");
-	scopes[namespace] = ({ Scope("namespace", namespace+"::") });
+        scopes[namespace] = ({ Scope("namespace", namespace+"::", is_global) });
       }
-      scopes[namespace] += ({ Scope(type, name) });
+      scopes[namespace] += ({ Scope(type, name, is_global) });
     }
   }
 
@@ -1173,7 +1174,8 @@ protected void fixupRefs(ScopeStack scopes, SimpleNode node) {
 protected void resolveFun(ScopeStack scopes, SimpleNode node) {
   if (node->get_any_name() == "namespace") {
     // Create the namespace.
-    scopes->enter("namespace", node->get_attributes()["name"]);
+    scopes->enter("namespace", node->get_attributes()["name"],
+                  !!node->get_attributes()["is_global"]);
   }
   // first collect the names of all things inside the scope
   foreach (node->get_children(), SimpleNode child) {
@@ -1211,7 +1213,8 @@ protected void resolveFun(ScopeStack scopes, SimpleNode node) {
 	  break;
         case "class":
         case "module":
-          scopes->enter(tag, child->get_attributes()["name"]);
+          scopes->enter(tag, child->get_attributes()["name"],
+                        !! child->get_attributes()["is_global"]);
           {
             resolveFun(scopes, child);
           }
@@ -1310,6 +1313,7 @@ protected class DummyNScope(string name)
 class NScope
 {
   string name;
+  int(1bit) is_global;
   string node_name;
   string type;
   string path;
@@ -1341,6 +1345,9 @@ class NScope
 	    type, name, path);
     }
     this::path = path;
+    if (tree->get_attributes()->is_global) {
+      is_global = 1;
+    }
     enterNode(tree);
   }
 
@@ -1738,6 +1745,18 @@ class NScopeStack
 	// Strip the trailing "::".
 	string inh = ref[0][..sizeof(ref[0])-3];
         if (inh == "global") {
+          pos = sizeof(stack);
+          current = top;
+          while(pos) {
+            /* Check whether the scope at pos is a global:: scope. */
+            if (current->is_global) {
+              string res = current->lookup(ref[1..]);
+              if (res) return res;
+            }
+            /* Go to the next lexical scope. */
+            pos--;
+            current = stack[pos];
+          }
         } else {
           while(pos) {
             string|NScope scope;

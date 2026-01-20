@@ -694,11 +694,11 @@ private class Extractor {
 //! @seealso
 //!   @[extractModule()], @[extractClass()]
 void extractNamespace(AutoDoc root, string s, void|string filename,
-		      void|string namespaceName, void|.Flags flags)
+                      void|string namespaceName, .Flags flags = .FLAG_NORMAL)
 {
-  if (undefinedp(flags)) flags = .FLAG_NORMAL;
   Extractor e = Extractor(s, filename, flags);
   NameSpace ns = NameSpace();
+  ns->is_global = 1;
   ns->name = namespaceName || filename;
   root->addChild(ns);
   Documentation doc = e->parseClassBody(root, ns, 0, filename);
@@ -710,11 +710,11 @@ void extractNamespace(AutoDoc root, string s, void|string filename,
 //! @seealso
 //!   @[extractNamespace()], @[extractClass()]
 void extractModule(AutoDoc root, Module parent, string s, void|string filename,
-		   void|string moduleName, void|.Flags flags)
+                   void|string moduleName, .Flags flags = .FLAG_NORMAL)
 {
-  if (undefinedp(flags)) flags = .FLAG_NORMAL;
   Extractor e = Extractor(s, filename, flags);
   Module m = Module();
+  m->is_global = 1;
   m->name = moduleName || filename;
   parent->addChild(m);
   Documentation doc = e->parseClassBody(root, m, 0, filename);
@@ -734,11 +734,11 @@ void extractModule(AutoDoc root, Module parent, string s, void|string filename,
 //! @seealso
 //!   @[extractNamespace()], @[extractModule()]
 void extractClass(AutoDoc root, Module parent, string s, void|string filename,
-		  void|string className, void|.Flags flags)
+                  void|string className, .Flags flags = .FLAG_NORMAL)
 {
-  if (undefinedp(flags)) flags = .FLAG_NORMAL;
   Extractor e = Extractor(s, filename, flags);
   Class c = Class();
+  c->is_global = 1;
   c->name = className || filename;
   parent->addChild(c);
   Documentation doc = e->parseClassBody(root, c, 0, filename);
