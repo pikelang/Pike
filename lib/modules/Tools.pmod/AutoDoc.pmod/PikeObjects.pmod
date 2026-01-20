@@ -845,6 +845,10 @@ class _Class_or_Module {
   string directory = 0;
   string file = 0;
 
+  //! Set to @expr{1@} if this is the top level class or module of a file.
+  //! Ie it indicates that @expr{global::@} refers here.
+  int(1bit) is_global;
+
   //! @note
   //!   The documentation appears as a child of the <class> or <module>
   Documentation documentation;
@@ -1030,6 +1034,7 @@ class _Class_or_Module {
     mapping(string:string) m = standardAttributes(flags);
     if (file) m["file"] = file;
     if (directory) m["directory"] = directory;
+    if (is_global) m["is_global"] = "";
     return "\n" + opentag(objtype, m) + contents + standardEnd(flags) + "\n";
   }
 
