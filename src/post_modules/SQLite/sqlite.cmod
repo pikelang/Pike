@@ -487,7 +487,7 @@ PIKECLASS Result
    *!   This was the behavior of @[query()] in Pike 8.0 and earlier.
    *!
    *! @seealso
-   *!   @[Sql.Sql()->query()], @[query()]
+   *!   @[Sql.Connection()->query()], @[query()]
    */
   PIKEFUN array|int typed_query(string query,
 				mapping(string|int:mixed)|void bindings)
@@ -570,7 +570,7 @@ PIKECLASS Result
    *!   In Pike 8.0 and earlier this function behaved as @[typed_query()].
    *!
    *! @seealso
-   *!   @[Sql.Sql()->query()], @[typed_query()]
+   *!   @[Sql.Connection()->query()], @[typed_query()]
    */
   PIKEFUN array|int query(string query,
 			  mapping(string|int:mixed)|void bindings)
@@ -653,7 +653,7 @@ PIKECLASS Result
    *!   This was the behavior of @[big_query()] in Pike 8.0 and earlier.
    *!
    *! @seealso
-   *!   @[Sql.Sql()->big_typed_query()], @[big_query()]
+   *!   @[Sql.Connection()->big_typed_query()], @[big_query()]
    */
   PIKEFUN object big_typed_query(string query,
 			         mapping(string|int:mixed)|void bindings)
@@ -710,7 +710,7 @@ PIKECLASS Result
    *!   In Pike 8.0 and earlier this function behaved as @[big_typed_query()].
    *!
    *! @seealso
-   *!   @[Sql.Sql()->big_query()], @[big_typed_query()]
+   *!   @[Sql.Connection()->big_query()], @[big_typed_query()]
    */
   PIKEFUN object big_query(string query,
 			   mapping(string|int:mixed)|void bindings)
@@ -799,7 +799,7 @@ PIKECLASS Result
    *! Get information about the SQLite library version.
    *!
    *! @seealso
-   *!   @[Sql.Sql()->server_info()]
+   *!   @[Sql.Connection()->server_info()]
    */
   PIKEFUN string server_info()
     optflags OPT_TRY_OPTIMIZE;
@@ -825,7 +825,7 @@ PIKECLASS Result
    *! Get the latest error message.
    *!
    *! @seealso
-   *!   @[Sql.Sql()->error()]
+   *!   @[Sql.Connection()->error()]
    */
   PIKEFUN string error(void|int clear)
     optflags OPT_EXTERNAL_DEPEND;
@@ -843,7 +843,7 @@ PIKECLASS Result
    *!   This operation is not supported for SQLite.
    *!
    *! @seealso
-   *!   @[Sql.Sql()->select_db()]
+   *!   @[Sql.Connection()->select_db()]
    */
   PIKEFUN void select_db(string db) {
     /* FIXME: This should be possible to support. */
@@ -856,7 +856,7 @@ PIKECLASS Result
    *!   This operation is not supported for SQLite.
    *!
    *! @seealso
-   *!   @[Sql.Sql()->create_db()]
+   *!   @[Sql.Connection()->create_db()]
    */
   PIKEFUN void create_db(string db) {
     /* FIXME: This should be possible to support. */
@@ -869,7 +869,7 @@ PIKECLASS Result
    *!   This operation is not supported for SQLite.
    *!
    *! @seealso
-   *!   @[Sql.Sql()->drop_db()]
+   *!   @[Sql.Connection()->drop_db()]
    */
   PIKEFUN void drop_db(string db) {
     /* FIXME: This should be possible to support. */
@@ -882,7 +882,7 @@ PIKECLASS Result
    *!   This operation is not supported for SQLite.
    *!
    *! @seealso
-   *!   @[Sql.Sql()->list_dbs()]
+   *!   @[Sql.Connection()->list_dbs()]
    */
   PIKEFUN array(string) list_dbs() {
     /* FIXME: This should be possible to support. */

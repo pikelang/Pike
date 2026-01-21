@@ -13,4 +13,6 @@ PRECOMPILER_ARGS="--base="
 # Compatibility with stupid makes..
 SDL.o:$(SRCDIR)/SDL.c
 
+$(SRCDIR)/SDL.c: $(SRCDIR)/constants.H
+
 @dependencies@
