@@ -308,12 +308,12 @@ local string handle_argspec(object(Sql.Sql)|zero db_conn, array argspec,
 //!
 //! Many functions in this class can take WHERE expressions etc either
 //! as plain strings or as arrays. In array form, they work like when
-//! @[Sql.Sql.query] is called with more than one argument:
+//! @[Sql.Connection()->query] is called with more than one argument:
 //!
 //! The first element in the array is a string containing the SQL
 //! snippet. If the second element is a mapping, it's taken as a
 //! bindings mapping, otherwise the remaining elements are formatted
-//! using the first in @expr{sprintf@} fashion. See @[Sql.Sql.query]
+//! using the first in @expr{sprintf@} fashion. See @[Sql.Connection()->query]
 //! for further details.
 //!
 //! This function reduces an argument on array form to a simple
@@ -521,10 +521,10 @@ Result select (string|array where, void|array(string) fields,
 //! expressive power to send any SELECT that is based on this table.
 //!
 //! The only functionality this function adds over
-//! @[Sql.big_typed_query] is conversion of TIMESTAMP values (see the
-//! class doc), and the (optional) handling of arbitrary properties in
-//! addition to the SQL columns. @[fields] may list such properties,
-//! and they are returned alongside the real columns. Properties
+//! @[Sql.Connection()->big_typed_query] is conversion of TIMESTAMP
+//! values (see the class doc), and the (optional) handling of arbitrary
+//! properties in addition to the SQL columns. @[fields] may list such
+//! properties, and they are returned alongside the real columns. Properties
 //! cannot be used in WHERE expressions etc, though.
 //!
 //! Joins with other tables are possible through @[table_refs], but
@@ -1198,13 +1198,13 @@ class Result
   //! Returns zero if there are no more records.
   //!
   //! The record is returned as a mapping. It is similar to the
-  //! mappings returned by @[Sql.query], except that native pike types
-  //! and @[Val.null] are used. If @[prop_col] is used then properties
-  //! from that column can be returned as mapping entries alongside
+  //! mappings returned by @[Sql.Connection()->query], except that native
+  //! pike types and @[Val.null] are used. If @[prop_col] is used then
+  //! properties from that column can be returned as mapping entries alongside
   //! the columns, and those values can be any pike data type.
   //!
-  //! As opposed to the @[Sql.query] mappings, the returned mapping
-  //! has a single entry for each field - there are no duplicate
+  //! As opposed to the @[Sql.Connection()->query] mappings, the returned
+  //! mapping has a single entry for each field - there are no duplicate
   //! entries prefixed with the table name.
   {
     if (cur_rec) cur_row++;

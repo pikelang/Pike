@@ -394,8 +394,8 @@ array(mapping(string:mixed)) list_fields (string table, void|string wild)
 //!
 //! It returns a postgres_result object (which conforms to the
 //! @[Sql.sql_result] standard interface for accessing data). I
-//! recommend using @[Sql.Sql()->query()] for simpler queries (because it is
-//! easier to handle, but stores all the result in memory), and
+//! recommend using @[Sql.Connection()->query()] for simpler queries
+//! (because it is easier to handle, but stores all the result in memory), and
 //! @[big_query()] for queries you expect to return huge amounts of
 //! data (it's harder to handle, but fetches results on demand).
 //!
