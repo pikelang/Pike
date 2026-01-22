@@ -798,6 +798,7 @@ protected void recurseAppears(string namespace,
   mapping attr = current->get_attributes() || ([]);
   if (attr["appears"] || attr["belongs"] || attr["global"]) {
     ReOrganizeTask t = ReOrganizeTask(current, parent);
+    parent->remove_child(current);
     array(string) a = ({});
     if (string attrRef = attr["appears"]) {
       a = splitRef(attrRef);
@@ -814,7 +815,7 @@ protected void recurseAppears(string namespace,
       if (a[0] != "top::")
 	namespace = a[0];
     } else {
-      // Prefix with the durrent namespace.
+      // Prefix with the current namespace.
       a = ({ namespace }) + a;
     }
     // Strip the :: from the namespace name.
@@ -860,6 +861,7 @@ void handleAppears(SimpleNode root, .Flags|void flags)
       if (flags & .FLAG_VERB_MASK)
 	werror("Couldn't find the new parent node: %O for fragment:\n%s\n",
 	       belongsRef*".", (string)n);
+      task->parent->add_child(n);	// Attempt to restore the doc node.
       continue;
     }
     if (type == "docgroup") {
@@ -883,8 +885,6 @@ void handleAppears(SimpleNode root, .Flags|void flags)
 
     m_delete(n->get_attributes(), "belongs");
     m_delete(n->get_attributes(), "appears");
-
-    task->parent->remove_child(n);
 
     // Perform a merge in case the destination already has some doc.
     if ((flags & .FLAG_VERB_MASK) >= .FLAG_VERBOSE) {
