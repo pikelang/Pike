@@ -10,7 +10,7 @@
      *! @seealso
      *! 	@[predef::Iterator] for a description of the interface.
     DOCEND()
-    PIKECLASS _get_iterator
+    PIKECLASS Iterator
 	program_flags PROGRAM_USES_PARENT;
 	flags ID_PROTECTED;
     {
@@ -307,3 +307,21 @@
 	}
     }
     DOCSTART() @endclass DOCEND()
+
+    DOCSTART() @decl Iterator _get_iterator(void|int step, @
+     *!                                     void|mixed start, @
+     *!                                     void|mixed stop)
+     *! Returns an @[Iterator] object that runs from @expr{start@} to
+     *! @expr{stop@} using a stepsize of @expr{step@}. The arguments
+     *! default to @expr{1@}, @expr{tree->first()@} and
+     *! @expr{tree->last()@}, respectively.
+    DOCEND()
+    PIKEFUN object _get_iterator(void|int step, void|mixed start,
+                                 void|mixed stop)
+        flags ID_PROTECTED;
+        rawtype tFunc(tOr(tInt, tVoid) tOr(tMixed, tVoid) tOr(tMixed, tVoid),
+                      tObjImpl_ITERATOR);
+    {
+        apply_current(cmod_CONCAT_EVAL(tree_class, _Iterator_program_fun_num),
+                      args);
+    }

@@ -43,7 +43,7 @@ class Point {
     return [int(16bit)]((size()+7)>>3);
   }
 
-  //! Set a new coordinate on the @[Curve] for the @[Point].
+  //! Set a new coordinate on the @[Crypto.ECC.Curve] for the @[Point].
   //!
   //! @note
   //!   Some curves (eg @[Crypto.ECC.Curve25519] do not support
@@ -150,12 +150,12 @@ class Point {
   //! via specifying the two coordinates explicitly, or via
   //! @mixed
   //!   @type Point
-  //!     A @[Point] on the same @[Curve] to copy.
+  //!     A @[Point] on the same @[Crypto.ECC.Curve] to copy.
   //!   @type mapping(string(7bit):int|Gmp.mpz)
   //!     A mapping with integer coordinates @expr{"x"@} and @expr{"y"@}.
   //!   @type mapping(string(7bit):string(7bit))
   //!     A mapping representing a JWK for the @[Point]
-  //!     on the same @[Curve].
+  //!     on the same @[Crypto.ECC.Curve].
   //!   @type mapping(string(7bit):string(8bit))
   //!     A mapping with coordinates @expr{"x"@} and @expr{"y"@}
   //!     in big-endian.
@@ -165,7 +165,7 @@ class Point {
   //! @endmixed
   //!
   //! @note
-  //!   Throws errors if the point isn't on the @[Curve].
+  //!   Throws errors if the point isn't on the @[Crypto.ECC.Curve].
   variant protected void create(string(8bit)|Stdio.Buffer data)
   {
     // FIXME: Perhaps we want to send the agreed upon point format as
