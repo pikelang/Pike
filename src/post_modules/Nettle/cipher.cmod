@@ -4269,7 +4269,7 @@ PIKECLASS BlockCipher16
        *!
        *! @returns
        *!   The default implementation returns the result from calling
-       *!   @[global::digest_size()], but overloading via inherit is supported,
+       *!   @[CCM::digest_size()], but overloading via inherit is supported,
        *!   and may return any even number in the range @expr{[4..16]@}.
        *!
        *! @note
@@ -4411,7 +4411,7 @@ PIKECLASS BlockCipher16
        *!   it doesn't simply imply a truncation.
        *!
        *! @seealso
-       *!   @[digest_size()], @[global::digest_size()]
+       *!   @[digest_size()], @[CCM::digest_size()]
        */
       PIKEFUN string(8bit) digest(int(4..16)|void bytes_p)
       {
@@ -4934,7 +4934,7 @@ PIKECLASS BlockCipher16
        *!   calling @[digest_size()] will be used.
        *!
        *! @seealso
-       *!   @[digest_size()], @[global::digest_size()]
+       *!   @[digest_size()], @[EAX::digest_size()]
        */
       PIKEFUN string(8bit) digest(int(1..16)|void bytes_p)
       {
@@ -6156,7 +6156,7 @@ PIKECLASS BlockCipher16
        *!   @[set_iv()].
        *!
        *! @seealso
-       *!   @[set_iv()], @[digest_size()], @[global::digest_size()]
+       *!   @[set_iv()], @[digest_size()], @[OCB::digest_size()]
        */
       PIKEFUN string(8bit) digest()
       {
