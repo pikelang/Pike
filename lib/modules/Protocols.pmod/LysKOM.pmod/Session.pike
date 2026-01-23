@@ -1188,10 +1188,7 @@ this_program logout()
 //!
 //! @note
 //!	The items above marked with '*' are only available on protocol 10
-//!	servers. A LysKOM error will be thrown if the call fails.
-//!
-//! @seealso
-//!   @[Conference.create_text()], @[Text.comment()], @[Text.footnote()]
+//!	or later servers. A LysKOM error will be thrown if the call fails.
 object|void create_text(string subject,string body,
 			mapping options = ([]),
 			void|function callback,
