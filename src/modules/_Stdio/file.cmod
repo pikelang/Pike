@@ -3081,7 +3081,7 @@ static void file_linger(INT32 args)
  *!   This operation is only valid on sockets.
  *!
  *! @seealso
- *!   setsockopt()
+ *!   @[setsockopt()]
  */
 static void file_nodelay(INT32 args)
 {
@@ -5700,7 +5700,8 @@ static void file_open_socket(INT32 args)
 
 /*! @decl int(0..1) set_keepalive(int(0..1) on_off)
  *!
- *! Equivalent to setsockopt(Stdio.SO_KEEPALIVE, on_off), but will set errno
+ *! Equivalent to @[setsockopt](@[Stdio.SO_KEEPALIVE], on_off),
+ *! but will set errno
  *! if SO_KEEPALIVE is not supported, rather than issuing a compilation error
  *! for the missing constant.
  */
@@ -7164,42 +7165,42 @@ PIKE_MODULE_INIT
 
 #ifdef SOL_SOCKET
   /*! @decl constant SOL_SOCKET
-   *! Used in @[File.setsockopt()] to set socket-level options
+   *! Used in @[Fd()->setsockopt()] to set socket-level options
    */
   add_integer_constant("SOL_SOCKET", SOL_SOCKET, 0);
 #endif
 
 #ifdef IPPROTO_IP
   /*! @decl constant IPPROTO_IP
-   *! Used in @[File.setsockopt()] to set IP-level options
+   *! Used in @[Fd()->setsockopt()] to set IP-level options
    */
   add_integer_constant("IPPROTO_IP", IPPROTO_IP, 0);
 #endif
 
 #ifdef IPPROTO_TCP
   /*! @decl constant IPPROTO_TCP
-   *! Used in @[File.setsockopt()] to set TCP-level options
+   *! Used in @[Fd()->setsockopt()] to set TCP-level options
    */
   add_integer_constant("IPPROTO_TCP", IPPROTO_TCP, 0);
 #endif
 
 #ifdef TCP_NODELAY
   /*! @decl constant TCP_NODELAY
-   *! Used in @[File.setsockopt()] to control Nagle's Algorithm.
+   *! Used in @[Fd()->setsockopt()] to control Nagle's Algorithm.
    */
   add_integer_constant("TCP_NODELAY", TCP_NODELAY, 0);
 #endif
 
 #ifdef SO_KEEPALIVE
   /*! @decl constant SO_KEEPALIVE
-   *! Used in @[File.setsockopt()] to control TCP/IP keep-alive packets.
+   *! Used in @[Fd()->setsockopt()] to control TCP/IP keep-alive packets.
    */
   add_integer_constant("SO_KEEPALIVE", SO_KEEPALIVE, 0);
 #endif
 
 #ifdef IP_TOS
   /*! @decl constant IP_TOS
-   *! Used in @[File.setsockopt()] to set Type Of Service
+   *! Used in @[Fd()->setsockopt()] to set Type Of Service
    */
   add_integer_constant("IP_TOS", IP_TOS, 0);
 #endif

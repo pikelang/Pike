@@ -571,6 +571,18 @@ static void port_create(INT32 args)
 
 extern struct program *file_program;
 
+
+/*! @decl Stdio.File fd_factory()
+ *!
+ *! Create a new @[Stdio.File] object.
+ *!
+ *! @returns
+ *!   Returns a new unopened @[Stdio.File] object.
+ *!
+ *! @seealso
+ *!   @[accept()], @[Stdio.File()->fd_factory()]
+ */
+
 static int port_fd_factory_fun_num = -1;
 static void port_fd_factory(INT32 args)
 {
