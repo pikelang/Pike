@@ -68,7 +68,7 @@ class DOMException(int code) {
 //!
 class DOMImplementation
 {
-  int has_feature(string feature, string|void version)
+  int(1bit) has_feature(string feature, string|void version)
   {
     return lower_case(feature)=="xml" && (version == "1.0" || !version);
   }
@@ -96,7 +96,7 @@ class NodeList
     return NodeList(values(this)+values(nl));
   }
   protected Node `[](int index) { return item(index); }
-  protected int _sizeof() { return get_length(); }
+  protected int(0..) _sizeof() { return get_length(); }
   protected array(Node) cast(string to)
   {
     if(to == "array")
@@ -104,17 +104,17 @@ class NodeList
     return UNDEFINED;
   }
 
-  Node item(int index)
+  Node item(int(0..) index)
   {
     return index >= 0 && index < sizeof(nodes) && nodes[index];
   }
 
-  int get_length()
+  int(0..) get_length()
   {
     return sizeof(nodes);
   }
 
-  protected array(int) _indices() { return indices(nodes); }
+  protected array(int(0..)) _indices() { return indices(nodes); }
   protected array(Node) _values() { return copy_value(nodes); }
   protected Array.Iterator _get_iterator() { return Array.Iterator(nodes); }
 
@@ -127,7 +127,7 @@ class NamedNodeMap
   protected Document owner_document;
   protected mapping(string:Node) map = ([]);
 
-  protected int is_readonly() { return 0; }
+  protected int(1bit) is_readonly() { return 0; }
   protected void bind(Node n) { }
   protected void unbind(Node n) { }
 
@@ -161,12 +161,12 @@ class NamedNodeMap
     return old;
   }
 
-  protected Node `[](int|string index)
+  protected Node `[](int(0..)|string index)
   {
     return stringp(index)? get_named_item(index) : item(index);
   }
 
-  protected int _sizeof() { return get_length(); }
+  protected int(0..) _sizeof() { return get_length(); }
   protected mapping(string:Node) cast(string to)
   {
     if(to == "mapping")
@@ -174,12 +174,12 @@ class NamedNodeMap
     return UNDEFINED;
   }
 
-  Node item(int index)
+  Node item(int(0..) index)
   {
     return values(this)[index];
   }
 
-  int get_length()
+  int(0..) get_length()
   {
     return sizeof(map);
   }
@@ -194,27 +194,28 @@ class NamedNodeMap
   }
 }
 
-//!
+//! Base class for DOM nodes.
 class Node
 {
-  // NodeType
-  constant ELEMENT_NODE                 = 1;
-  constant ATTRIBUTE_NODE               = 2;
-  constant TEXT_NODE                    = 3;
-  constant CDATA_SECTION_NODE           = 4;
-  constant ENTITY_REFERENCE_NODE        = 5;
-  constant ENTITY_NODE                  = 6;
-  constant PROCESSING_INSTRUCTION_NODE  = 7;
-  constant COMMENT_NODE                 = 8;
-  constant DOCUMENT_NODE                = 9;
-  constant DOCUMENT_TYPE_NODE           = 10;
-  constant DOCUMENT_FRAGMENT_NODE       = 11;
-  constant NOTATION_NODE                = 12;
+  enum NodeType {
+    ELEMENT_NODE                 = 1,
+    ATTRIBUTE_NODE               = 2,
+    TEXT_NODE                    = 3,
+    CDATA_SECTION_NODE           = 4,
+    ENTITY_REFERENCE_NODE        = 5,
+    ENTITY_NODE                  = 6,
+    PROCESSING_INSTRUCTION_NODE  = 7,
+    COMMENT_NODE                 = 8,
+    DOCUMENT_NODE                = 9,
+    DOCUMENT_TYPE_NODE           = 10,
+    DOCUMENT_FRAGMENT_NODE       = 11,
+    NOTATION_NODE                = 12,
+  }
 
   protected class NodeNodeList {
     inherit NodeList;
 
-    protected int search(Node n) { return predef::search(nodes, n); }
+    protected int(-1..) search(Node n) { return predef::search(nodes, n); }
     protected void insert_at(int pos, array(Node) ns) {
       nodes = nodes[..pos-1] + ns + nodes[pos..];
     }
@@ -227,7 +228,7 @@ class Node
   protected NodeNodeList child_nodes;
   protected Document owner_document;
 
-  protected int is_readonly() {
+  protected int(1bit) is_readonly() {
     return parent_node && parent_node->is_readonly();
   }
 
@@ -235,7 +236,7 @@ class Node
   void set_node_value(string value) { }
 
   string get_node_name();
-  int get_node_type();
+  NodeType get_node_type();
   Node get_parent_node() { return parent_node; }
 
   NodeList get_child_nodes()
@@ -274,9 +275,9 @@ class Node
   object(NamedNodeMap)|zero get_attributes() { return 0; }
   Document get_owner_document() { return owner_document; }
 
-  protected int child_is_allowed(Node child) { return 0; }
+  protected int(1bit) child_is_allowed(Node child) { return 0; }
 
-  protected int is_ancestor(Node node)
+  protected int(1bit) is_ancestor(Node node)
   {
     Node loc = this;
     while(loc) {
@@ -351,9 +352,9 @@ class Node
 
   Node append_child(Node new_child) { return insert_before(new_child, 0); }
 
-  int has_child_nodes() { return child_nodes && sizeof(child_nodes) > 0; }
+  int(1bit) has_child_nodes() { return child_nodes && sizeof(child_nodes) > 0; }
 
-  Node clone_node(int|void deep) {
+  Node clone_node(int(1bit)|void deep) {
     throw(DOMException(DOMException.NOT_SUPPORTED_ERR));
   }
 
@@ -369,11 +370,11 @@ class DocumentFragment
 {
   inherit Node;
 
-  int get_node_type() { return DOCUMENT_FRAGMENT_NODE; }
+  NodeType get_node_type() { return DOCUMENT_FRAGMENT_NODE; }
 
   string get_node_name() { return "#document-fragment"; }
 
-  Node clone_node(int|void deep) {
+  Node clone_node(int(1bit)|void deep) {
     Node new = owner_document->create_document_fragment();
     if(deep)
       foreach((array(Node))get_child_nodes(), Node n)
@@ -381,7 +382,7 @@ class DocumentFragment
     return new;
   }
 
-  protected int child_is_allowed(Node child)
+  protected int(1bit) child_is_allowed(Node child)
   {
     return (<ELEMENT_NODE,PROCESSING_INSTRUCTION_NODE,
 	     COMMENT_NODE,TEXT_NODE,CDATA_SECTION_NODE,
@@ -413,7 +414,7 @@ class Document
   // NB: Stored, but not used.
   protected string namespace_uri, qualified_name;
 
-  int get_node_type() { return DOCUMENT_NODE; }
+  NodeType get_node_type() { return DOCUMENT_NODE; }
   string get_node_name() { return "#document"; }
   object(Document)|zero get_owner_document() { return 0; }
   DOMImplementation get_implementation() { return implementation; }
@@ -479,7 +480,7 @@ class Document
     return get_document_element()->get_elements_by_tag_name(tagname);
   }
 
-  protected int child_is_allowed(Node child)
+  protected int(1bit) child_is_allowed(Node child)
   {
     if(child->get_node_type() == ELEMENT_NODE)
       return !get_document_element();
@@ -516,9 +517,9 @@ class CharacterData
   }
   string get_data() { return get_node_value(); }
   void set_data(string data) { set_node_value(data); }
-  int get_length() { return sizeof(get_data()); }
+  int(0..) get_length() { return sizeof(get_data()); }
 
-  string substring_data(int offset, int count)
+  string substring_data(int(0..) offset, int(0..) count)
   {
     if(offset < 0 || offset > get_length() || count < 0)
       throw(DOMException(DOMException.INDEX_SIZE_ERR));
@@ -530,13 +531,13 @@ class CharacterData
     set_data(get_data()+arg);
   }
 
-  void insert_data(int offset, string arg)
+  void insert_data(int(0..) offset, string arg)
   {
     set_data(substring_data(0, offset) + arg +
 	     substring_data(offset, get_length()));
   }
 
-  void delete_data(int offset, int count)
+  void delete_data(int(0..) offset, int(0..) count)
   {
     if(offset > get_length() || count < 0)
       throw(DOMException(DOMException.INDEX_SIZE_ERR));
@@ -547,7 +548,7 @@ class CharacterData
 	       substring_data(offset+count, get_length()));
   }
 
-  void replace_data(int offset, int count, string arg)
+  void replace_data(int(0..) offset, int(0..) count, string arg)
   {
     if(offset > get_length() || count < 0)
       throw(DOMException(DOMException.INDEX_SIZE_ERR));
@@ -572,15 +573,15 @@ class Attr
   inherit Node;
 
   protected string name;
-  protected int specified = 1;
+  protected int(1bit) specified = 1;
   protected Element bound_to;
 
-  int get_node_type() { return ATTRIBUTE_NODE; }
+  NodeType get_node_type() { return ATTRIBUTE_NODE; }
   string get_node_name() { return get_name(); }
   string get_name() { return name; }
   string get_value() { return get_node_value(); }
   void set_value(string value) { set_node_value(value); }
-  int get_specified() { return specified; }
+  int(1bit) get_specified() { return specified; }
 
   void set_node_value(string value)
   {
@@ -597,7 +598,7 @@ class Attr
     return ((array(string))get_child_nodes())*"";
   }
 
-  Node clone_node(int|void deep) {
+  Node clone_node(int(1bit)|void deep) {
     Node new = owner_document->create_attribute(get_name());
     if(deep)
       foreach((array(Node))get_child_nodes(), Node n)
@@ -614,7 +615,7 @@ class Attr
     bound_to = new_element;
   }
 
-  protected int child_is_allowed(Node child)
+  protected int(1bit) child_is_allowed(Node child)
   {
     return child->get_node_type() == TEXT_NODE ||
       child->get_node_type() == ENTITY_REFERENCE_NODE;
@@ -646,7 +647,7 @@ class Element
 
       inherit NamedNodeMap;
 
-      protected int is_readonly() { return node::is_readonly(); }
+      protected int(1bit) is_readonly() { return node::is_readonly(); }
       protected void bind(Node n)
       {
 	n->_bind(function_object(this_program));
@@ -658,7 +659,7 @@ class Element
     }(owner_document);
   }
 
-  int get_node_type() { return ELEMENT_NODE; }
+  NodeType get_node_type() { return ELEMENT_NODE; }
   string get_node_name() { return get_tag_name(); }
   string get_tag_name() { return tag_name; }
 
@@ -738,7 +739,7 @@ class Element
     low_normalize(get_first_child());
   }
 
-  Node clone_node(int|void deep) {
+  Node clone_node(int(1bit)|void deep) {
     Node new = owner_document->create_element(get_tag_name());
     if(deep)
       foreach((array(Node))get_child_nodes(), Node n)
@@ -746,7 +747,7 @@ class Element
     return new;
   }
 
-  protected int child_is_allowed(Node child)
+  protected int(1bit) child_is_allowed(Node child)
   {
     return (<ELEMENT_NODE,PROCESSING_INSTRUCTION_NODE,
 	     COMMENT_NODE,TEXT_NODE,CDATA_SECTION_NODE,
@@ -766,10 +767,10 @@ class Text
 {
   inherit CharacterData;
 
-  int get_node_type() { return TEXT_NODE; }
+  NodeType get_node_type() { return TEXT_NODE; }
   string get_node_name() { return "#text"; }
 
-  Text split_text(int offset)
+  Text split_text(int(0..) offset)
   {
     Text new = clone_node();
     new->set_data(substring_data(offset, get_length()));
@@ -778,7 +779,7 @@ class Text
 	    new);
   }
 
-  Node clone_node(int|void deep) {
+  Node clone_node(int(1bit)|void deep) {
     return owner_document->create_text_node(get_data());
   }
 
@@ -794,10 +795,10 @@ class Comment
 {
   inherit CharacterData;
 
-  int get_node_type() { return COMMENT_NODE; }
+  NodeType get_node_type() { return COMMENT_NODE; }
   string get_node_name() { return "#comment"; }
 
-  Node clone_node(int|void deep) {
+  Node clone_node(int(1bit)|void deep) {
     return owner_document->create_comment(get_data());
   }
 
@@ -813,10 +814,10 @@ class CDATASection
 {
   inherit Text;
 
-  int get_node_type() { return CDATA_SECTION_NODE; }
+  NodeType get_node_type() { return CDATA_SECTION_NODE; }
   string get_node_name() { return "#cdata-section"; }
 
-  Node clone_node(int|void deep) {
+  Node clone_node(int(1bit)|void deep) {
     return owner_document->create_cdata_section(get_data());
   }
 
@@ -836,7 +837,7 @@ class DocumentType
   protected NamedNodeMap entities, notations;
   protected DOMImplementation implementation;
 
-  int get_node_type() { return DOCUMENT_TYPE_NODE; }
+  NodeType get_node_type() { return DOCUMENT_TYPE_NODE; }
   string get_node_name() { return get_name(); }
   string get_name() { return name; }
   string get_public_id() { return public_id; }
@@ -873,11 +874,11 @@ class Notation
 
   protected string name, public_id, system_id;
 
-  int get_node_type() { return NOTATION_NODE; }
+  NodeType get_node_type() { return NOTATION_NODE; }
   string get_node_name() { return name; }
   string get_public_id() { return public_id; }
   string get_system_id() { return system_id; }
-  protected int is_readonly() { return 1; }
+  protected int(1bit) is_readonly() { return 1; }
 
   protected void create(Document owner, string _name, string p_id, string s_id)
   {
@@ -896,12 +897,12 @@ class Entity
   protected string name;
   protected string|zero public_id, system_id, notation_name;
 
-  int get_node_type() { return ENTITY_NODE; }
+  NodeType get_node_type() { return ENTITY_NODE; }
   string get_node_name() { return name; }
   string|zero get_public_id() { return public_id; }
   string|zero get_system_id() { return system_id; }
   string|zero get_notation_name() { return notation_name; }
-  protected int is_readonly() { return name != 0; }
+  protected int(1bit) is_readonly() { return name != 0; }
 
   protected string cast(string to)
   {
@@ -910,7 +911,7 @@ class Entity
     return UNDEFINED;
   }
 
-  protected int child_is_allowed(Node child)
+  protected int(1bit) child_is_allowed(Node child)
   {
     return (<ELEMENT_NODE,PROCESSING_INSTRUCTION_NODE,
 	     COMMENT_NODE,TEXT_NODE,CDATA_SECTION_NODE,
@@ -939,11 +940,11 @@ class EntityReference
   protected string name;
   protected Entity entity;
 
-  int get_node_type() { return ENTITY_REFERENCE_NODE; }
+  NodeType get_node_type() { return ENTITY_REFERENCE_NODE; }
   string get_node_name() { return name; }
-  protected int is_readonly() { return 1; }
+  protected int(1bit) is_readonly() { return 1; }
 
-  Node clone_node(int|void deep) {
+  Node clone_node(int(1bit)|void deep) {
     return owner_document->create_entity_reference(name);
   }
 
@@ -968,7 +969,7 @@ class EntityReference
       ::get_next_sibling();
   }
 
-  int has_child_nodes() { return entity && entity->has_child_nodes(); }
+  int(1bit) has_child_nodes() { return entity && entity->has_child_nodes(); }
 
   protected void create(Document owner, string _name, Entity|void _entity)
   {
@@ -985,7 +986,7 @@ class ProcessingInstruction
 
   protected string target, node_value;
 
-  int get_node_type() { return PROCESSING_INSTRUCTION_NODE; }
+  NodeType get_node_type() { return PROCESSING_INSTRUCTION_NODE; }
   string get_node_name() { return get_target(); }
   string get_target() { return target; }
   string get_node_value() { return node_value; }
@@ -998,7 +999,7 @@ class ProcessingInstruction
   string get_data() { return get_node_value(); }
   void set_data(string data) { set_node_value(data); }
 
-  Node clone_node(int|void deep) {
+  Node clone_node(int(1bit)|void deep) {
     return owner_document->create_processing_instruction(target, get_data());
   }
 
@@ -1250,7 +1251,7 @@ class DOMParser
   }
 
   string get_external_entity(string sysid, string|void pubid,
-			     int|void unparsed, InputSource input)
+                             int(1bit)|void unparsed, InputSource input)
   {
     InputSource is =
       InputSource(combine_path(combine_path(input->get_system_id(), ".."),

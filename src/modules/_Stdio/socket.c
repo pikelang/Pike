@@ -575,8 +575,15 @@ extern struct program *file_program;
  *!
  *! Factory creating empty @[Stdio.Fd] objects.
  *!
+ *! @returns
+ *!   Returns a new unopened @[Stdio.Fd] object.
+ *!
  *! The default implementation creates an empty @[Stdio.Fd] object.
+ *!
+ *! @seealso
+ *!   @[accept()], @[Stdio.File()->fd_factory()]
  */
+
 static int port_fd_factory_fun_num = -1;
 static void port_fd_factory(INT32 args)
 {

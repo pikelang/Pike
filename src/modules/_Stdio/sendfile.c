@@ -4,7 +4,7 @@
 || for more information.
 */
 
-/*! @module Stdio
+/*! @module _Stdio
  */
 
 /*! @class sendfile

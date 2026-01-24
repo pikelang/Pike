@@ -331,6 +331,7 @@ class BlockFile(<string StringType = string(8bit)>)
 //! @[Stdio.FILE]
 class File
 {
+  //!
   optional inherit Fd;
 
   //! @decl @Pike.Annotations.Implements(NonblockingStream)
