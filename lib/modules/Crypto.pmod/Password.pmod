@@ -114,7 +114,7 @@
 //!     The string is interpreted as a NetBSD-style @[SHA1.HMAC.crypt_hash()]
 //!     (aka @tt{crypt_sha1(3C)@}),
 //!     where @expr{RRRRR@} is the number of rounds (default 480000),
-//!     @expr{SSSSSSSS@} is a @[MIME.crypt64()] encoded salt. and the
+//!     @expr{SSSSSSSS@} is a @[MIME.encode_crypt64()] encoded salt. and the
 //!     @expr{XXX@} string is an @[SHA1.HMAC]-based hash created from
 //!     the password and the salt.
 //!
