@@ -1636,12 +1636,20 @@ mapping(string:program|NoValue) programs=(["/master":this_program]);
 mapping(program:object) documentation = ([]);
 mapping(program:string) source_cache;
 
+//! Mapping from program to singleton object.
+//!
+//! This mapping is used to hold objects returned
+//! from @[cast_to_object()].
 mapping (program:object|NoValue) objects=([
   this_program : this,
   object_program(_static_modules): _static_modules,
 ]);
 
-mapping(string:object|NoValue) fc=([]);
+//! Lookup from filesystem path to module object.
+//!
+//! This mapping is similar to the transitive fold of @[programs]
+//! and @[objects].
+mapping(string:object|program|NoValue) fc=([]);
 
 // Note: It's assumed that the mappings above never decrease in size
 // unless the reverse mappings above also are updated. no_value should
