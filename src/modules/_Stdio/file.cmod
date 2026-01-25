@@ -4736,13 +4736,13 @@ static void file_set_blocking(INT32 UNUSED(args))
  *! Marks the file as to be closed in spawned processes.
  *!
  *! This function determines whether this file will be closed when
- *! calling exec().
+ *! calling @[exece()].
  *!
  *! Default is that the file WILL be closed on exec except for
  *! stdin, stdout and stderr.
  *!
  *! @seealso
- *!   @[Process.create_process()], @[exec()]
+ *!   @[Process.create_process()], @[exece()]
  */
 static void file_set_close_on_exec(INT32 args)
 {
