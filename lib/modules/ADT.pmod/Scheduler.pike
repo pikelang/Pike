@@ -180,7 +180,7 @@ void remove(Consumer(< ValueType >) c)
 //! Returns the next @[Consumer] to consume some of the resource.
 //!
 //! @returns
-//!   Returns a @[Consumer] if there are any active @[Consumers]
+//!   Returns a @[Consumer] if there are any active @[Consumer]s
 //!   and @[UNDEFINED] otherwise.
 //!
 //! @note
