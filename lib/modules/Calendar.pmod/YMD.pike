@@ -1499,7 +1499,7 @@ class cYear
 //!	<tt>year-&gt;month("April")</tt>
 //!
 //!	The integer and no argument behavior is inherited
-//!	from <ref to=YMD.month>YMD</ref>().
+//!	from <ref to=YMD.month>month</ref>().
 
    cMonth month(int|string ... mp)
    {
@@ -1528,7 +1528,7 @@ class cYear
 //!	<tt>year-&gt;week("w17")</tt>
 //!
 //!	The integer and no argument behavior is inherited
-//!	from <ref to=YMD.week>YMD</ref>().
+//!	from <ref to=YMD.week>week</ref>().
 //!
 //!	This is useful, since the first week of a year
 //!	not always (about half the years, in the ISO calendar)
@@ -2160,7 +2160,7 @@ class cWeek
 //!	<tt>week-&gt;day("sunday")</tt>
 //!
 //!	The integer and no argument behavior is inherited
-//!	from <ref to=YMD.day>YMD</ref>().
+//!	from <ref to=YMD.day>day</ref>().
 //!
 //! note:
 //!	the weekday-from-string routine is language dependent.
