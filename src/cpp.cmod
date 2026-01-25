@@ -7218,7 +7218,7 @@ PIKEFUN mapping(string:string|function|object|array(string|int(24bit))) get_pred
  *! 		processed, @expr{#ifdef COND@} and @expr{__LINE__@} would not.
  *!     @member mapping(string:mixed) "predefines"
  *!             Mapping of predefined macros in addition to those
- *!             returned by @[CPP()->get_predefines()].
+ *!             returned by @[CompilerEnvironment()->CPP()->get_predefines()].
  *! @endmapping
  *!
  *! @seealso
