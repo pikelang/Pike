@@ -444,7 +444,7 @@ array(array(string)) decode_words_text( string txt )
 //! encoding.
 //!
 //! @seealso
-//! @[MIME.decode_words_tokenized_remapped]
+//! @[MIME.decode_words_quoted_remapped]
 //!
 string decode_words_text_remapped( string txt )
 {
