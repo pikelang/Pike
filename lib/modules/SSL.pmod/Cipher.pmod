@@ -1119,6 +1119,7 @@ class KeyExchangeDH
   }
 }
 
+//! Diffie-Hellman Ephemeral key-exchange.
 class KeyShareDHE
 {
   inherit KeyExchangeDHE;
@@ -1460,6 +1461,7 @@ class KeyExchangeECDH
   }
 }
 
+//! Elliptic Curve Diffie-Hellman Ephemeral key-exchange.
 class KeyShareECDHE
 {
   inherit KeyExchangeECDHE;

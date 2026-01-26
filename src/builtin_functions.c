@@ -939,11 +939,11 @@ void f_query_num_arg(INT32 args)
  *!
  *!       If @[haystack] is an object that doesn't implement @[lfun::_search()]
  *!       it is assumed to be an @[Iterator], and implement
- *!       @[Iterator()->index()], @[Iterator()->value()], and
- *!       @[Iterator()->next()]. @[search()] will then start comparing
- *!       elements with @[`==()] until a match with @[needle] is found.
- *!       If @[needle] is found @[haystack] will be advanced to the element,
- *!       and the iterator index will be returned. If @[needle] is not
+ *!       @[Iterator()->_iterator_index()], @[Iterator()->_iterator_value()],
+ *!       and @[Iterator()->_iterator_next()]. @[search()] will then start
+ *!       comparing elements with @[`==()] until a match with @[needle] is
+ *!       found. If @[needle] is found @[haystack] will be advanced to the
+ *!       element, and the iterator index will be returned. If @[needle] is not
  *!       found, @[haystack] will be advanced to the end.
  *!   @endmixed
  *!

@@ -444,7 +444,7 @@ array(array(string)) decode_words_text( string txt )
 //! encoding.
 //!
 //! @seealso
-//! @[MIME.decode_words_quoted_remapped]
+//! @[MIME.decode_words_tokenized_remapped]
 //!
 string decode_words_text_remapped( string txt )
 {
@@ -642,7 +642,7 @@ string encode_words_text(array(string|array(string)) phrase, string encoding)
 //!   The @[repcb] argument to use when calling @[Charset.encoder]
 //!
 //! @seealso
-//! @[MIME.encode_words_tokenized_remapped]
+//! @[MIME.encode_words_quoted_remapped]
 //!
 string encode_words_text_remapped(string text, string encoding,
 				  string|function(string:string) charset,

@@ -50,6 +50,7 @@ class Timezone
   int raw_utc_offset() { return offset_to_utc; }
 }
 
+//! Language translation interface class.
 class Language
 {
    constant is_language=1;
