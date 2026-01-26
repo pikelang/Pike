@@ -934,7 +934,7 @@ protected mapping(string(8bit):array(CertificatePair)) cert_chains_issuer = ([])
 protected mapping(string(8bit):array(CertificatePair)) cert_chains_domain = ([]);
 
 //! Look up a suitable set of certificates for the specified issuer.
-//! @[UNDEFIEND] if no certificate was found. Called only by the
+//! @[UNDEFINED] if no certificate was found. Called only by the
 //! ClientConnection as a response to a certificate request.
 array(CertificatePair)|zero find_cert_issuer(array(string) ders)
 {
