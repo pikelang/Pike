@@ -27,8 +27,8 @@
 //!	<tt>"CET"</tt> and some other standard abbreviations work too,
 //!	but not all of them (due to more then one country using them).
 //!
-//!	Do not call <ref to=Calendar.Time.set_timezone>set_timezone</ref>
-//!	too often, but remember the result if possible. It might take
+//!	Do not call <ref to=Calendar.Ruleset.set_timezone>set_timezone</ref>
+//!	too often, rather remember the result if possible. It may take
 //!	some time to initialize a timezone object.
 //!
 //!	There are about 504 timezones with 127 different daylight

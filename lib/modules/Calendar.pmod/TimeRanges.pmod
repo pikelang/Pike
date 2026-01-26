@@ -923,7 +923,7 @@ class TimeRange
 
 //! method TimeRange set_language(Rule.Language lang)
 //! method TimeRange set_language(string lang)
-//! method Language language()
+//! method Rule.Language language()
 //!	Set or get the current language rule.
 
    this_program set_language(string|Calendar.Rule.Language lang)
