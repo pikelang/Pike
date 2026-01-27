@@ -1081,16 +1081,17 @@ unknown_directive:
     {
       int base = 0;
 
-      if(GOBBLE('b') || GOBBLE('B'))
+      if(LOOK() == 'b' || LOOK() == 'B')
       {
 	base = 2;
 	goto read_based_number;
       }
-      else if(GOBBLE('x') || GOBBLE('X'))
+      else if(LOOK() == 'x' || LOOK() == 'X')
       {
 	struct svalue sval;
 	base = 16;
       read_based_number:
+        lex->pos -= (1<<SHIFT);
 	SET_SVAL(sval, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
 	safe_wide_string_to_svalue_inumber(&sval,
 					   lex->pos,
