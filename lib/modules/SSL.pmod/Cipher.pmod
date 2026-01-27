@@ -1644,7 +1644,7 @@ class KeyExchangeKRB
 }
 #endif /* GSSAPI */
 
-//! MAC using SHA.
+//! MAC using @[Crypto.SHA1].
 //!
 //! @note
 //!   Note: This uses the algorithm from the SSL 3.0 draft.
@@ -1699,7 +1699,7 @@ class MACsha
   }
 }
 
-//! MAC using MD5.
+//! MAC using @[Crypto.MD5].
 //!
 //! @note
 //!   Note: This uses the algorithm from the SSL 3.0 draft.
@@ -1712,7 +1712,7 @@ class MACmd5 {
   protected Crypto.Hash algorithm = Crypto.MD5;
 }
 
-//! HMAC using SHA.
+//! HMAC using @[Crypto.SHA1].
 //!
 //! This is the MAC algorithm used by TLS 1.0 and later.
 class MAChmac_sha {
@@ -1765,7 +1765,7 @@ class MAChmac_sha {
   }
 }
 
-//! HMAC using MD5.
+//! HMAC using @[Crypto.MD5].
 //!
 //! This is the MAC algorithm used by TLS 1.0 and later.
 class MAChmac_md5 {
@@ -1773,7 +1773,7 @@ class MAChmac_md5 {
   protected Crypto.Hash algorithm = Crypto.MD5;
 }
 
-//! HMAC using SHA256.
+//! HMAC using @[Crypto.SHA256].
 //!
 //! This is the MAC algorithm used by some cipher suites in TLS 1.2 and later.
 class MAChmac_sha256 {
@@ -1782,7 +1782,7 @@ class MAChmac_sha256 {
 }
 
 #if constant(Crypto.SHA384)
-//! HMAC using SHA384.
+//! HMAC using @[Crypto.SHA384].
 //!
 //! This is a MAC algorithm used by some cipher suites in TLS 1.2 and later.
 class MAChmac_sha384 {
@@ -1792,7 +1792,7 @@ class MAChmac_sha384 {
 #endif
 
 #if constant(Crypto.SHA512)
-//! HMAC using SHA512.
+//! HMAC using @[Crypto.SHA512].
 //!
 //! This is a MAC algorithm used by some cipher suites in TLS 1.2 and later.
 class MAChmac_sha512 {
@@ -1801,7 +1801,7 @@ class MAChmac_sha512 {
 }
 #endif
 
-//! Hashfn is either a @[Crypto.MD5], @[Crypto.SHA] or @[Crypto.SHA256].
+//! Hashfn is one of @[Crypto.MD5], @[Crypto.SHA1] or @[Crypto.SHA256].
 protected string(8bit) P_hash(Crypto.Hash hashfn,
                               string(8bit) secret,
                               string(8bit) seed, int len)
