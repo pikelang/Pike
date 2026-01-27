@@ -2823,7 +2823,7 @@ PMOD_EXPORT int pcharp_to_svalue_inumber(struct svalue *r,
   if(c == '0' &&
      ((base==16 && (INDEX_PCHARP(str,1)=='x' || INDEX_PCHARP(str,1)=='X')) ||
       (base==2 && (INDEX_PCHARP(str,1)=='b' || INDEX_PCHARP(str,1)=='B'))) &&
-     DIGIT(INDEX_PCHARP(str,2))<16 )
+     DIGIT(INDEX_PCHARP(str,2))<base )
   {
     /* Skip over leading "0x", "0X", "0b" or "0B". */
     INC_PCHARP(str,2);
