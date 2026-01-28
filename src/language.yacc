@@ -3286,7 +3286,7 @@ foreach: TOK_FOREACH save_block_level save_locals line_number_info
      *!
      *! @seealso
      *!   @[Iterator], @[get_iterator()], @[lfun::_get_iterator()],
-     *!   @[iterator_next()], @[iterator_index()], @[Iterator_value()].
+     *!   @[iterator_next()], @[iterator_index()], @[iterator_value()].
      */
   }
   statement
