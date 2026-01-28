@@ -1177,49 +1177,33 @@ unknown_directive:
       return '.';
 
     case '0':
-    {
-      int base = 0;
-
-      if(GOBBLE('b') || GOBBLE('B'))
       {
-	base = 2;
-	goto read_based_number;
-      }
-      else if(GOBBLE('x') || GOBBLE('X'))
-      {
-	struct svalue sval;
-	base = 16;
-      read_based_number:
-	SET_SVAL(sval, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
-	safe_wide_string_to_svalue_inumber(&sval,
-					   lex->pos,
-					   &lex->pos,
-					   base,
-                                           (lex->end - lex->pos)>>SHIFT,
-					   SHIFT);
-	dmalloc_touch_svalue(&sval);
-	yylval->n = mksvaluenode(&sval);
-	free_svalue(&sval);
-	return TOK_NUMBER;
-      }
-    }
-    /* FALLTHRU */
+        ptrdiff_t l = 0;
+        p_wchar2 c;
+        int maybe_bad = 0;
 
+        while (((c = INDEX_CHARP(lex->pos, l, SHIFT)) <= '9') && (c >= '0')) {
+          if (c >= '8') maybe_bad = 1;
+          l++;
+        }
+        if (maybe_bad && (c != '.') && (c != 'e') && (c != 'E')) {
+          /* Not a float, and found a digit out of the octal range. */
+          l = 0;
+          while(((c = INDEX_CHARP(lex->pos, l, SHIFT)) <= '9') && (c >= '0')) {
+            if (c >= '8') my_yyerror("Illegal octal digit '%c'.", c);
+            l++;
+          }
+        }
+      }
+      /* FALLTHRU */
     case '1': case '2': case '3': case '4':
     case '5': case '6': case '7': case '8': case '9':
     {
       char *p1, *p2;
       FLOAT_TYPE f;
-      long l;
       struct svalue sval;
 
       lex->pos -= (1<<SHIFT);
-      if(INDEX_CHARP(lex->pos, 0, SHIFT)=='0')
-	for(l=1;INDEX_CHARP(lex->pos, l, SHIFT)<='9' &&
-	      INDEX_CHARP(lex->pos, l, SHIFT)>='0';l++)
-	  if(INDEX_CHARP(lex->pos, l, SHIFT)>='8')
-	    my_yyerror("Illegal octal digit '%c'.",
-		       INDEX_CHARP(lex->pos, l, SHIFT));
 
     read_float:
       f=lex_strtod(lex->pos, &p1);
@@ -1252,6 +1236,7 @@ unknown_directive:
 					     SHIFT);
 	  dmalloc_touch_svalue(&sval);
 	  if ((TYPEOF(sval) == PIKE_T_INT) && (p3 > p2)) {
+            long l;
             for (l=0; wide_isspace(INDEX_CHARP(p3, l, SHIFT)); l++)
 	      ;
 	    if ((INDEX_CHARP(p3, l, SHIFT) == ':') &&

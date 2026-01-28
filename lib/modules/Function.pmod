@@ -45,7 +45,7 @@ mixed splice_call(array args, function f, mixed|void ... extra)
 }
 
 
-//! The dreaded fixpoint combinator "Y".
+//! The dreaded fixpoint combinator @tt{"Y"@}.
 //!
 //! The Y combinator is useful when writing recursive lambdas.  It
 //! converts a lambda that expects a self-reference as its first argument
@@ -163,8 +163,8 @@ function(mixed...:mixed) uncurry(function f)
 }
 
 //! Call a callback function, but send throws from the callback
-//! function (ie, errors) to master()->handle_error.
-//! Also accepts if f is zero (0) without error.
+//! function (ie, errors) to @[master()->handle_error()].
+//! Also accepts @[f] being zero (@expr{0@}) without error.
 //!
 //! @example
 //! @code
@@ -177,8 +177,8 @@ function(mixed...:mixed) uncurry(function f)
 //!      if (err) master()->handle_error(err);
 //!   }
 //! @endcode
-//! (Approximately, since call_callback also calls handle_error
-//! if 0 were thrown.)
+//! (Approximately, since @[call_callback] also calls @[master()->handle_error]
+//! if @expr{0@} were thrown.)
 void call_callback(function f,mixed ... args)
 {
    if (!f) return;
@@ -189,8 +189,8 @@ void call_callback(function f,mixed ... args)
 private function handle_error = master()->handle_error;
 
 //! Creates a composite function of the provided functions. The
-//! composition function of f() and g(), q(x)=f(g(x)), is created by
-//! @expr{function q = Function.composite(f, g);@}.
+//! composition function of @expr{f()@} and @expr{g()@}, @expr{q(x)=f(g(x))@},
+//! is created by @expr{function q = Function.composite(f, g);@}.
 //!
 //! @example
 //! @code
@@ -224,7 +224,7 @@ object Placeholder = class
     }
 
     class Arg(int num)
-    //! Arg(x) returns the value of argument X
+    //! @expr{Arg(x)@} returns the value of argument number @tt{X@}
     {
         inherit Base;
         protected string _sprintf(int c) {
@@ -305,18 +305,20 @@ object Placeholder = class
     //! @decl constant arg7;
     //! @decl constant arg8;
     //! @decl constant arg9;
-    //! arg<n> will return an instance of @[Arg] that returns the n:th arg.
-    //! For convenience for c++11 developers _0, _1 etc also works.
+    //! @tt{arg<n>@} will return an instance of @[Arg] that returns
+    //! the n:th arg. As a convenience for C++11 developers _0, _1, etc
+    //! also works.
     //!
-    //! Note that arg0 is the first argument, not arg1
+    //! @note
+    //!   Note that @[arg0] is the first argument, not @[arg1].
 
     class Expr(function func, void|bool _splice)
-    //! Expr(x) returns the result of calling @[x].
+    //! @expr{Expr(func)@} returns the result of calling @[func].
     //! The function will be passed the list of arguments.
     //!
     //! If _splice is true, zero or more argument is returned in an array
     //!
-    //! Function.Placeholder.arg1 is thus more or less equivalent to
+    //! @[Function.Placeholder.arg1] is thus more or less equivalent to
     //! @code
     //!  Expr(lambda(array args){return args[1];});
     //! @endcode

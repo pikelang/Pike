@@ -351,6 +351,7 @@ protected class DocParserClass {
     "item": itemArgHandler,
   ]);
 
+  // @member <value_type> <index_value>
   protected string memberArgHandler(string keyword, string arg) {
     //  werror("This is the @member arg handler ");
     .PikeParser parser = .PikeParser(arg, currentPosition);
@@ -371,6 +372,7 @@ protected class DocParserClass {
       + xmltag("index", xmlquote(s));
   }
 
+  // @elem <value_type> <index_range>
   protected string elemArgHandler(string keyword, string arg) {
     //  werror("This is the @elem arg handler\n");
     .PikeParser parser = .PikeParser(arg, currentPosition);
@@ -407,6 +409,7 @@ protected class DocParserClass {
     return type;
   }
 
+  // @index <index_value>
   protected string indexArgHandler(string keyword, string arg) {
     //  werror("indexArgHandler\n");
     .PikeParser parser = .PikeParser(arg, currentPosition);
@@ -445,6 +448,7 @@ protected class DocParserClass {
     return ([ "title" : String.trim (arg) ]);
   }
 
+  // @type <type_expression>
   protected string typeArgHandler(string keyword, string arg) {
     //  werror("This is the @type arg handler ");
     .PikeParser parser = .PikeParser(arg, currentPosition);
@@ -459,6 +463,7 @@ protected class DocParserClass {
     return t->xml();
   }
 
+  // @value <value_expression>
   protected string valueArgHandler(string keyword, string arg)
   {
     //  werror("This is the @value arg handler ");
@@ -491,6 +496,7 @@ protected class DocParserClass {
     return "";
   }
 
+  // @item <name_opt>
   protected string|mapping(string:string) itemArgHandler(string keyword, string arg)
   {
     arg = String.trim(arg);
