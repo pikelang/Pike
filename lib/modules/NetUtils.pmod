@@ -426,7 +426,7 @@ class IpRangeLookup
     }
 }
 
-//! Return the CIDR notation for the single host defined by @[x].
+//! Return the CIDR notation for the single host defined by @[ip].
 //!
 //! @param ip
 //!   The host ip in either string or raw form
