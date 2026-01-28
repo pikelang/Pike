@@ -3380,15 +3380,18 @@ switch: TOK_SWITCH save_block_level save_locals line_number_info
   }
   ;
 
+/* For syntax compatibility with C2Y we allow '...' here. */
+expected_range_op: TOK_DOT_DOT | TOK_DOT_DOT_DOT ;
+
 case: TOK_CASE safe_init_expr expected_colon
   {
     $$=mknode(F_CASE,$2,0);
   }
-  | TOK_CASE safe_init_expr expected_dot_dot optional_init_expr expected_colon
+  | TOK_CASE safe_init_expr expected_range_op optional_init_expr expected_colon
   {
      $$=mknode(F_CASE_RANGE,$2,$4);
   }
-  | TOK_CASE expected_dot_dot safe_init_expr expected_colon
+  | TOK_CASE expected_range_op safe_init_expr expected_colon
   {
      $$=mknode(F_CASE_RANGE,0,$3);
   }
