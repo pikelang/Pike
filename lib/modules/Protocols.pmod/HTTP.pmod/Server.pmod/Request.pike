@@ -2,9 +2,9 @@
 
 //! This class represents a connection from a client to the server.
 //!
-//! There are three different read callbacks that can be active, which
+//! There are three different read callbacks that may be active, which
 //! have the following call graphs. @[read_cb] is the default read
-//! callback, installed by @[attach_fd].
+//! callback, installed by @[attach_fd()].
 //!
 //! @code
 //!     | (Incoming data)
@@ -15,7 +15,10 @@
 //!   @[parse_request]
 //!     v
 //!   @[parse_variables]
-//!     | If callback isn't changed to @[read_cb_chunked] or @[read_cb_post]
+//!     | Depending on the request headers, the callback may get
+//!     | changed to @[read_cb_chunked] or @[read_cb_post]. If
+//!     | the callback does not get changed, control will propagate
+//!     | to @[finalize()]
 //!     v
 //!   @[finalize]
 //! @endcode
@@ -230,11 +233,11 @@ void opportunistic_tls(string s)
   close_cb();
 }
 
-// Appends data to raw and feeds the header parse with data. Once the
-// header parser has enough data parse_request() and parse_variables()
-// are called. If parse_variables() deems the request to be finished
-// finalize() is called. If not parse_variables() has replaced the
-// read callback.
+//! Appends data to raw and feeds the header parse with data. Once the
+//! header parser has enough data @[parse_request()] and @[parse_variables()]
+//! are called. If @[parse_variables()] deems the request to be finished
+//! @[finalize()] is called. If not @[parse_variables()] has replaced the
+//! read callback.
 protected void read_cb(mixed dummy,string s)
 {
    if( !sizeof( raw_buffer ) )
@@ -276,8 +279,8 @@ protected void connection_timeout()
    finish(0);
 }
 
-// Parses the request and populates request_type, protocol,
-// full_query, query and not_query.
+//! Parses the request and populates @[request_type], @[protocol],
+//! @[full_query], @[query] and @[not_query].
 protected void parse_request()
 {
    array v=request_raw/" ";
@@ -338,9 +341,9 @@ private string current_chunk = "";
 private Stdio.Buffer actual_data = Stdio.Buffer();
 private string trailers = "";
 
-// Appends data to raw and buf. Parses the data with the clunky-
-// chunky-algorithm and, when all data has been received, updates
-// body_raw and request_headers and calls finalize.
+//! Appends data to @[raw] and @[buf]. Parses the data with the clunky-
+//! chunky-algorithm and, when all data has been received, updates
+//! @[body_raw] and @[request_headers] and calls @[finalize()].
 private void read_cb_chunked( mixed dummy, string data )
 {
   raw_buffer->add(data);
@@ -437,6 +440,7 @@ private void read_cb_chunked( mixed dummy, string data )
   call_out(connection_timeout,connection_timeout_delay);
 }
 
+//! Parse @[query] into @[variables].
 protected int parse_variables()
 {
   if (query!="")
@@ -484,6 +488,7 @@ protected void update_mime_var(string name, string new)
   variables[name] += ({ new });
 }
 
+//! Parse any POST data into @[variables].
 protected void parse_post()
 {
   if ( request_headers["content-type"] &&
@@ -514,6 +519,8 @@ protected void parse_post()
   }
 }
 
+//! Parse the remainder of the request and call the
+//! @[request_callback] or @[error_callback] (if set).
 protected void finalize()
 {
   my_fd->set_blocking();
@@ -535,8 +542,8 @@ protected void finalize()
   }
 }
 
-// Adds incoming data to raw and buf. Once content-length or
-// max_request_size data has been received, finalize is called.
+//! Adds incoming data to raw and buf. Once @tt{content-length@} or
+//! @[max_request_size] data has been received, @[finalize()] is called.
 protected void read_cb_post(mixed dummy,string s)
 {
   raw_buffer->add(s);
@@ -573,7 +580,7 @@ protected string _sprintf(int t)
 // ----------------------------------------------------------------
 function log_cb;
 
-//! Make an HTTP header block from a response mapping.
+//! Make an HTTP response header block from a response mapping.
 //!
 //! @param m
 //!   Contains elements for generating a response to the client.
@@ -721,7 +728,7 @@ Stdio.Buffer low_make_response_header(mapping m, Stdio.Buffer res)
 }
 
 
-//! Return the IP address that originated the request, or 0 if
+//! Return the IP address that originated the request, or @expr{0@} if
 //! the IP address could not be determined. In the event of an
 //! error, @[my_fd]@tt{->errno()@} will be set.
 string|zero get_ip()

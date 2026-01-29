@@ -89,7 +89,9 @@ string host;
 string real_host; // the hostname passed during the call to *_request()
 int port;
 
-object con;
+//! Connection to HTTP(s) server.
+object(Stdio.File)|SSL.File con;
+
 string request;
 protected Stdio.Buffer send_buffer;
 

@@ -12,7 +12,7 @@ object|function|program request_program=.Request;
 //! a callback with @[request_program] objects.
 
 //!
-protected void create(function(.Request:void) callback,
+protected void create(function(.Request:void)|zero callback,
 		      void|int portno,
 		      void|string interface,
 		      void|int reuse_port)

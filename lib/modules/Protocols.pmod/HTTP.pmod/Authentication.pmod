@@ -9,9 +9,9 @@
 //!
 //! Server code should create an authentication class and inherit the
 //! concrete authentication scheme implementation. To add an actual
-//! user lookup, overload @[get_password] or
-//! @[get_hashed_password]. Hashed passwords must be hashed with the
-//! scheme appropriate digest.
+//! user lookup, overload @[DigestServer()->get_password] or
+//! @[DigestServer()->get_hashed_password]. Hashed passwords must be
+//! hashed with the scheme appropriate digest.
 //!
 //! @example
 //! class Auth {
