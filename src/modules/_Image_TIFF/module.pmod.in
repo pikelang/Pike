@@ -6,6 +6,7 @@
 inherit @module@;
 #endif
 
+//! Base class for TIFF tag types.
 private class Type {
 }
 
@@ -66,20 +67,18 @@ private Ascii ASCII = Ascii();
 private Short SHORT = Short();
 private Long LONG = Long();
 
-
-
-//! @decl mapping(int:mapping(string:mixed)) tiff_tags
+//! @decl private mapping(int:mapping(string:function|string|Type|array(Type))) tiff_tags
 //!   Defines TIFF tags to parse.
 //!
 //! @mapping
 //!   Lookup from integer TIFF tag to parse information:
-//!   @member mapping(string:string|TYPE|array(TYPE)) tag
+//!   @member mapping(string:function|string|Type|array(Type)) tag
 //!     For each supported TIFF tag the following information is kept:
 //!       @mapping
 //!         @member string "name"
 //!           Name of the tag. Currently only used to aid the programmer
 //!           when reading the rules.
-//!         @member TYPE|array(TYPE) "type"
+//!         @member Type|array(Type) "type"
 //!           Defines what types a tag can have.
 //!         @member string|array(string) "prop"
 //!           The property name that the value of tag will be displayed
