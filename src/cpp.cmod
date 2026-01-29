@@ -776,8 +776,25 @@ PIKECLASS CPP
   PIKEVAR object handler;
   PIKEVAR object compat_handler;
 #endif
+
+  /*! @decl int compat_major
+   *!
+   *! Compatibility major version.
+   *!
+   *! @seealso
+   *!   @[change_cpp_compatibility()], @[__MAJOR__]
+   */
   PIKEVAR int compat_major;
+
+  /*! @decl int compat_minor
+   *!
+   *! Compatibility minor version.
+   *!
+   *! @seealso
+   *!   @[change_cpp_compatibility()], @[__MINOR__]
+   */
   PIKEVAR int compat_minor;
+
   PIKEVAR string prefix;
   PIKEVAR int picky_cpp;
   PIKEVAR int keep_comments;
