@@ -76,7 +76,8 @@ protected inline constant FATAL = DefaultCompilerEnvironment.FATAL;
 //! granular tracing of the monitor state.
 //!
 //! The default implementation calls @[werror()] with
-//! @[format] and @[args] if @[level] is @[ERROR] or higher,
+//! @[format] and @[args] if @[level] is
+//! @[DefaultCompilerEnvironment.ERROR] or higher,
 //! or if @tt{FILESYSTEM_MONITOR_DEBUG@} has been defined.
 protected void report(SeverityLevel level, string(7bit) fun,
 		      sprintf_format format, sprintf_args ... args)
@@ -729,7 +730,7 @@ protected class Monitor(string path,
   //!     @value 0
   //!       Don't recurse.
   //!     @value 1
-  //!       Check all monitors for the entire subtree rooted in @[m].
+  //!       Check all monitors for the entire subtree rooted in this @[Monitor].
   //!   @endint
   //!
   //! This function is called by @[check()] for the @[Monitor]s
