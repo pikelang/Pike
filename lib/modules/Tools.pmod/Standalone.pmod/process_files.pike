@@ -3,7 +3,8 @@
 #pike __REAL_VERSION__
 
 #ifdef SUGGESTED_MODE_OF_USAGE
-inherit Toole.Standalone.process_files;
+//! @ignore
+inherit Tools.Standalone.process_files;
 string version =
  sprintf("%d.%d.%d",(int)__REAL_VERSION__,__REAL_MINOR__,__REAL_BUILD__);
 string description = "One-liner tool description for plain \"pike -x\" here.";
@@ -14,6 +15,7 @@ string process( string input, string arg1, string arg2 ) {
   if( has_value( input, arg1 ) ) // otherwise return 0 == didn't touch input
     return replace( input, arg1, arg2 );
 }
+//! @endignore
 #else
 
 //! Boilerplate to quickly whip up rsif-like hacks for creating file processing
@@ -56,14 +58,14 @@ int want_args = 0;
 //! your @[process] callback wants (beside the input file). By default 0.
 
 //! Gets called with the contents of a file (or stdin). Return your output, or
-//! 0 if you didn't do anything. @[args] are the first @[want_args]
+//! @expr{0@} if you didn't do anything. @[args] are the first @[want_args]
 //! command-line options provided, before the list of files to process.
 string process( string input, string ... args ) {
-  error("forgot to add your own implementation of process()!");
+  error("Implementation of process() missing!\n");
 }
 #endif
 
-// things you need not provide your own versions of below:
+// Things that you do not need to provide your own versions of below:
 
 int(0..) verbosity = 1; //! 0 in quiet mode, 1 by default, above = more output
 
@@ -82,7 +84,7 @@ string default_flag_docs = #"
 ";
 
 //! Takes the path to a file and the first @[want_args] command-line options
-//! provided, before the list of files to process. You might want to override
+//! provided, before the list of files to process. You may want to override
 //! this method if your tool needs to see file paths.
 //! @seealso
 //!   @[process_path]
@@ -110,7 +112,7 @@ int(0..1) process_file( string path, string ... args ) {
 
 //! Takes the path to a file or directory and the first @[want_args] first
 //! command-line options provided, before the list of files to process. You
-//! might want to override this method if your tool needs to see all paths.
+//! may want to override this method if your tool needs to see all paths.
 //! @seealso
 //!   @[process_file]
 int(0..) process_path( string path, string ... args ) {

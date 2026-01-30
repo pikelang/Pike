@@ -8,6 +8,8 @@
 
 constant description = "Extracts autodoc from Pike or C code.";
 
+//! Standalone program for extracting autodoc from Pike or C code.
+
 string imgsrc;
 string imgdir;
 

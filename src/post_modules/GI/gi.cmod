@@ -2267,7 +2267,7 @@ PIKECLASS Repository
       THIS->repository = NULL;
     }
 
-  /*! @decl array(string) enumerate_versions(strig namespace)
+  /*! @decl array(string) enumerate_versions(string namespace)
    */
   PIKEFUN array(string) enumerate_versions(string namespace)
   {

@@ -354,7 +354,7 @@ void f_readlink(INT32 args)
  *!   Resolve all symbolic links of a pathname.
  *!
  *!   This function resolves all symbolic links, extra ``/'' characters and
- *!   references to /./ and /../ in @[pathname], and returns the resulting
+ *!   references to /./ and /../ in @[path], and returns the resulting
  *!   absolute path, or @tt{0@} (zero) if an error occurs.
  *!
  *! @note
@@ -369,7 +369,7 @@ void f_readlink(INT32 args)
  *!   Resolve all symbolic links of a pathname.
  *!
  *!   This function resolves all symbolic links, extra ``/'' characters and
- *!   references to /./ and /../ in @[pathname], and returns the resulting
+ *!   references to /./ and /../ in @[path], and returns the resulting
  *!   absolute path, or @tt{0@} (zero) if an error occurs.
  *!
  *! @note

@@ -716,16 +716,13 @@ class AbstractNode {
     return (parent);
   }
 
-  //! Adds the node @[c] to the list of children of this node. The
-  //! node is added before the node @[old], which is assumed to be an
-  //! existing child of this node. The node is added first if @[old]
-  //! is zero.
+  //! Adds the node @[c] to the list of children of this node.
   //!
   //! @note
   //!   Returns the new child node, NOT the current node.
   //!
   //! @returns
-  //! The new child node is returned.
+  //!   The new child node (ie @[c]) is returned.
   AbstractNode add_child(AbstractNode c)
   {
     c->mParent = ::add_child(c);

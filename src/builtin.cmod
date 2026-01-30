@@ -2498,7 +2498,7 @@ PIKEFUN void m_clear(mapping|multiset|object map)
  *!   Returns the previous value for @[key]. If @[map] is a mapping and
  *!   there was no previous value @[UNDEFINED] is returned.
  *!
- *!   If @[map] is an object @[lfun::_m_replace()] will be called
+ *!   If @[map] is an object @[lfun::_atomic_get_set()] will be called
  *!   in it.
  *!
  *! @seealso

@@ -14,7 +14,7 @@
 //!
 //! @ul
 //! @item
-//!   Similar to @[Sql.big_typed_query], SQL integer and floating
+//!   Similar to @[Sql.Sql.big_typed_query()], SQL integer and floating
 //!   point columns are converted to/from pike ints and floats, and
 //!   SQL NULLs are converted to/from the @[Val.null] object.
 //!
@@ -678,13 +678,13 @@ Result get_multi (array(mixed) ids, void|array(string) fields)
 //! This function currently only works if the primary key is a single
 //! column.
 //!
-//! @param id
+//! @param ids
 //! Array containing primary key values.
 //!
 //! The number of returned records might be less than the number of
 //! entries here if some of them don't match any record. Also, the
 //! order of the returned records has no correlation to the order in
-//! the @[id] array.
+//! the @[ids] array.
 //!
 //! @param fields
 //! The fields to retrieve. All fields are retrieved if it's zero or
