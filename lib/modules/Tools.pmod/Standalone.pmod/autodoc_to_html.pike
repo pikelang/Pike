@@ -7,6 +7,8 @@
 
 constant description = "AutoDoc XML to HTML converter.";
 
+//! @decl import Parser.XML.Tree
+
 #define Node Parser.XML.Tree.SimpleNode
 #define XML_COMMENT Parser.XML.Tree.XML_COMMENT
 #define XML_ELEMENT Parser.XML.Tree.XML_ELEMENT
