@@ -105,7 +105,7 @@ protected function(function(__unknown__ ...:void), int|float, mixed ...:mixed)
 
 //! Value that will be provided asynchronously sometime in the
 //! future. A Future object is typically produced from a @[Promise]
-//! object by calling its @[future()] method.
+//! object by calling its @[Promise()->future()] method.
 //!
 //! @seealso
 //!   @[Promise]
@@ -1387,8 +1387,8 @@ class AggregatedPromise(<ValueType>)
   //!
   //! @param fun
   //!   Function to apply. The first argument is the result of
-  //!   one of the @[futures].  The second argument is the current value
-  //!   of the accumulator.
+  //!   one of the @[Future]s that have been added via @[depend()].
+  //!   The second argument is the current value of the accumulator.
   //!
   //! @param extra
   //!   Any extra context needed for @[fun]. They will be provided
@@ -1508,7 +1508,7 @@ class AggregatedPromise(<ValueType>)
 //!   propagated from the @[futures]. This must be done by hand.
 //!
 //! @seealso
-//!   @[race()], @[Promise.first_completed()]
+//!   @[race()], @[AggregatedPromise.first_completed()]
 variant Future first_completed(array(Future) futures)
 {
   return AggregatedPromise()->depend(futures)->first_completed()->future();
@@ -1525,7 +1525,7 @@ variant inline Future first_completed(Future ... futures)
 //!   propagated from the @[futures]. This must be done by hand.
 //!
 //! @seealso
-//!   @[first_completed()], @[Promise.first_completed()]
+//!   @[first_completed()], @[AggregatedPromise.first_completed()]
 //!   @url{https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/Promise@}
 variant inline Future race(array(Future) futures)
 {
@@ -1544,7 +1544,7 @@ variant inline Future race(Future ... futures)
 //!   propagated from the @[futures]. This must be done by hand.
 //!
 //! @seealso
-//!   @[all()], @[Promise.depend()]
+//!   @[all()], @[AggregatedPromise.depend()]
 variant Future results(array(Future) futures)
 {
   if(!sizeof(futures))
@@ -1564,7 +1564,7 @@ inline variant Future results(Future ... futures)
 //!   propagated from the @[futures]. This must be done by hand.
 //!
 //! @seealso
-//!   @[results()], @[Promise.depend()]
+//!   @[results()], @[AggregatedPromise.depend()]
 //!   @url{https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/Promise@}
 inline variant Future all(array(Future) futures)
 {
@@ -1591,8 +1591,9 @@ Future reject(mixed reason)
 
 //! @returns
 //! A new @[Future] that has already been fulfilled with @expr{value@}
-//! as result.  If @expr{value@} is an object which already
-//! has @[on_failure] and @[on_success] methods, return it unchanged.
+//! as result.  If @expr{value@} is an object which already has
+//! @[Future()->on_failure()] and @[Future()->on_success()] methods,
+//! return it unchanged.
 //!
 //! @note
 //! This function can be used to ensure values are futures.
