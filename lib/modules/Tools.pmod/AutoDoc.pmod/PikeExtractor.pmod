@@ -439,7 +439,8 @@ private class Extractor {
                                  what, m->name, m->name, m->objtype);
               }
               else {
-                m = what == "class" ? Class() : Module();
+                m = what == "class" ? Class() :
+                  (what == "namespace" ? NameSpace() : Module());
                 m->appears = meta->appears;
                 m->belongs = meta->belongs;
                 m->name = meta->name;
