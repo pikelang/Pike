@@ -342,7 +342,7 @@ void mysqlmod_parse_field(MYSQL_FIELD *field, int support_default)
 
 /*! @decl void create(int(0..1)|void typed_mode)
  *!
- *! Make a new @[Mysql.mysql_result] object.
+ *! Make a new @[Mysql.mysql.Result] object.
  *!
  *! @seealso
  *!   @[Mysql.mysql->big_query()], @[Mysql.mysql->list_dbs()],
@@ -871,7 +871,7 @@ static void json_escape(struct string_builder *res,
  *!   This function passes on string values without any charset
  *!   conversions. That means the result is correct JSON only if the
  *!   result charset is UTF-8 (which includes if unicode decode mode
- *!   is enabled - see @[set_unicode_decode_mode]).
+ *!   is enabled - see @[Sql.mysql.set_unicode_decode_mode()]).
  *!
  *!   For many other charsets it is possible to do charset conversion
  *!   afterwards on the result string, since all markup is in the
