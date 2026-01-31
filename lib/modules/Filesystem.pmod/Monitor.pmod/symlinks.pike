@@ -116,7 +116,7 @@ inherit "basic.pike" : basic;
 //! considered "stable".
 //!
 //! "Stable" in this case means that there have been no detected
-//! changes for at lease @[stable_time] seconds.
+//! changes for at least @[stable_time] seconds.
 //!
 //! @note
 //!   It differs from the @[Filesystem.Monitor.basic] version in that

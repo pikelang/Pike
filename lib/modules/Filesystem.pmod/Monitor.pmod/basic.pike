@@ -48,7 +48,12 @@ protected constant default_stable_time = 5;
 
 protected int max_dir_check_interval = default_max_dir_check_interval;
 protected int file_interval_factor = default_file_interval_factor;
+
+//! Minimum number of seconds without changes for a change
+//! to be regarded as stable (see @[stable_data_change()].
 protected int stable_time = default_stable_time;
+
+//! @decl import DefaultCompilerEnvironment
 
 protected inline constant SeverityLevel = DefaultCompilerEnvironment.SeverityLevel;
 protected inline constant NOTICE = DefaultCompilerEnvironment.NOTICE;
@@ -246,7 +251,9 @@ protected class Monitor(string path,
 {
   inherit ADT.Heap.Element(<Monitor>);
 
+  //! Time when to perform a @[check_monitor()]/@[check()] next.
   int next_poll;
+
   Stdio.Stat st;
   int last_change = 0x7fffffff;	// Future... Can be set to -0x7fffffff
 				// to indicate immediate stabilization
