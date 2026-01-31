@@ -1210,6 +1210,15 @@ string parse_type(Node n, void|string debug) {
   case "variant": // Not in XSLT
     ret += "<code class='modifier'>variant</code> ";
     break;
+  case "__async__": // Not in XSLT
+    ret += "<code class='modifier'>__async__</code> ";
+    break;
+  case "__generator__": // Not in XSLT
+    ret += "<code class='modifier'>__generator__</code> ";
+    break;
+  case "__weak__": // Not in XSLT
+    ret += "<code class='modifier'>__weak__</code> ";
+    break;
 
   default:
     error( "Illegal element " + n->get_any_name() + " in mode type.\n" );
