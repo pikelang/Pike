@@ -557,7 +557,10 @@ class Type
     switch( name )
     {
       case "uint":
+      case "uint64":
 	return "int(0..)"+optp;
+      case "int64":
+        return "int"+optp;
       case "bool":
 	return "int(0..1)"+optp;
       case "array":
@@ -1873,7 +1876,7 @@ string parse_pre_file( string file )
            else
              SYNTAX("Unexpected preprocessor code. Use %{ %}",token );
          }
-         if( sscanf( token->text, "//!%s", string doc ) )
+         if( sscanf( token->text, "/""/!%s", string doc ) )
          {
            NEED_CLASS("documentation");
            current_scope->doc += doc+"\n";
@@ -1900,7 +1903,7 @@ string parse_pre_file( string file )
            body = GOBBLE();
            if(!body || arrayp(body) )
              break;
-           if( body->text[..2] == "//!" )
+           if( body->text[..2] == "/""/!" )
              doc += body->text[2..]+"\n";
            else
              break;
