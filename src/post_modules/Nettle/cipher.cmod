@@ -2659,9 +2659,6 @@ PIKECLASS BlockCipher
        *!
        *! Neither the input or output data is not automatically memory
        *! scrubbed, unless @[String.secure] has been called on the data.
-       *!
-       *! @seealso
-       *!   @[update()], @[digest()]
        */
       PIKEFUN string(0..255) crypt(string(0..255) data)
       {
@@ -3115,9 +3112,6 @@ PIKECLASS BlockCipher
        *!
        *! Neither the input or output data is not automatically memory
        *! scrubbed, unless @[String.secure] has been called on the data.
-       *!
-       *! @seealso
-       *!   @[update()], @[digest()]
        */
       PIKEFUN string(0..255) crypt(string(0..255) data)
       {
@@ -3480,9 +3474,6 @@ PIKECLASS BlockCipher
        *!
        *! Neither the input or output data is not automatically memory
        *! scrubbed, unless @[String.secure] has been called on the data.
-       *!
-       *! @seealso
-       *!   @[update()], @[digest()]
        */
       PIKEFUN string(0..255) crypt(string(0..255) data)
       {
@@ -4195,7 +4186,10 @@ PIKECLASS BlockCipher16
           push_int(13);
       }
 
-
+      /*! @decl State update(string(8bit) public_data)
+       *!
+       *! Add some authenticated data.
+       */
       PIKEFUN object(Nettle_AEAD_State) update(string(8bit) public_data)
       {
 	if (!public_data->len) return;
