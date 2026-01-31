@@ -493,6 +493,7 @@ static void resolve_syms(void)
  *! @decl constant int BAD_NAMETYPE
  *! @decl constant int BAD_BINDINGS
  *! @decl constant int BAD_STATUS
+ *! @decl constant int BAD_MIC
  *! @decl constant int BAD_SIG
  *! @decl constant int NO_CRED
  *! @decl constant int NO_CONTEXT
@@ -526,6 +527,7 @@ static void resolve_syms(void)
  *! @item GSSAPI.BAD_STATUS
  *!   Invalid input status selector.
  *! @item GSSAPI.BAD_MIC
+ *! @item GSSAPI.BAD_SIG
  *!   Token had invalid integrity check.
  *! @item GSSAPI.CONTEXT_EXPIRED
  *!   Specified security context expired.
@@ -3308,7 +3310,7 @@ PIKECLASS Context
    *! This wraps @tt{GSS_Wrap_size_limit@} according to
    *! @rfc{2743:2.2.7@}.
    *!
-   *! @[with_confidentiality] and @[qop] are the same as in the call
+   *! @[encrypt] and @[qop] are the same as in the call
    *! to @[wrap].
    */
   PIKEFUN int(0..) wrap_size_limit (int(0..) output_size,
@@ -4339,6 +4341,7 @@ PIKE_MODULE_INIT
   add_integer_constant ("BAD_BINDINGS", GSS_S_BAD_BINDINGS, 0);
   add_integer_constant ("BAD_STATUS", GSS_S_BAD_STATUS, 0);
   add_integer_constant ("BAD_MIC", GSS_S_BAD_MIC, 0);
+  add_integer_constant ("BAD_SIG", GSS_S_BAD_SIG, 0);	/* Alias for BAD_MIC. */
   add_integer_constant ("NO_CRED", GSS_S_NO_CRED, 0);
   add_integer_constant ("NO_CONTEXT", GSS_S_NO_CONTEXT, 0);
   add_integer_constant ("DEFECTIVE_TOKEN", GSS_S_DEFECTIVE_TOKEN, 0);
