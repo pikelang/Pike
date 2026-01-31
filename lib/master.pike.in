@@ -191,7 +191,10 @@ void resolv_debug (sprintf_format fmt, sprintf_args... args)
 #define resolv_debug(X...) do {} while (0)
 #endif	// !RESOLV_DEBUG
 
+//! Marker indicating that a program is known not to exist.
 constant no_value = (<>);
+
+//! Type of the @[no_value] marker.
 constant NoValue = typeof (no_value);
 
 // Some API compatibility stuff.
@@ -512,6 +515,8 @@ protected class Pike_9_0_master
 protected inherit Pike_9_0_master;
 
 //! @namespace predef::
+
+//! @decl import MainProgram::
 
 //! Throws an error. A more readable version of the code
 //! @expr{throw( ({ sprintf(f, @@args), backtrace() }) )@}.
@@ -4195,9 +4200,84 @@ protected mixed main_resolv(string sym, CompatResolver|void resolver) {
   return v;
 };
 
+//! @namespace MainProgram::
+//!
+//! @note
+//!   This namespace only exists for documentation purposes.
+//!   It represents the Pike script provided by the user.
+
+//! @decl int|string|Concurrent.Future main(int argc, array(string) argv)
+//! @decl int|string|Concurrent.Future main(array(string) argv)
+//! @decl __async__ int|string main(int argc, array(string) argv)
+//! @decl __async__ int|string main(array(string) argv)
+//!
+//!   Main program entry point.
+//!
+//! @param argc
+//!   The number of elements in @[argv].
+//!
+//! @param argv
+//!   The arguments passed to the @tt{pike@} binary excluding
+//!   arguments intended for the master, but including the name
+//!   of the main program script.
+//!
+//! @note
+//!   This function is provided by the user.
+//!
+//! @returns
+//!   Returns one of:
+//!   @mixed
+//!     @type int(0..0)
+//!       Program completed successfully.
+//!
+//!     @type int(1..127)
+//!       Progam failed with the specified exit code.
+//!
+//!     @type int(..-1)
+//!       Enter backend mode. The program will complete when
+//!       @[exit()] or @[_exit()] is called.
+//!
+//!     @type string(8bit)
+//!       Program completed successfully with diagnostic on @[Stdio.stdout].
+//!
+//!     @type Concurrent.Future
+//!       Enter backend mode. The program will exit with code @expr{10@}
+//!       and an error message on @[Stdio.stderr] if the future fails.
+//!       Otherwise the success value of the future will be handled as
+//!       the return value of @[main()] recursively.
+//!   @endmixed
+//!
+//! @note
+//!   Support for omitting @[argc] was added to the master in Pike 8.0.0.
+//!
+//! @note
+//!   Support for return of @[Concurrent.Future]s was added in Pike 9.0.4.
+//!
+//! @seealso
+//!   @[MasterObject()->_main()]
+
+//! @endnamespace
+
+//! Low-level main entry point.
+//!
+//! @param orig_argv
+//!   These are the raw original arguments to the @tt{pike@} binary.
+//!
 //! This function is called when all the driver is done with all setup
 //! of modules, efuns, tables etc. etc. and is ready to start executing
 //! _real_ programs. It receives the arguments not meant for the driver.
+//!
+//! The default implementation of this function initializes
+//! the module system, loads and calls @[main()], and depending
+//! on the return value optionally starts looping over
+//! @[Builtin.__backend()] (ie enters backend mode).
+//!
+//! @note
+//!   You typically do not want to write @[_main()] yourself. User
+//!   code is normally strapped via @[main()].
+//!
+//! @seealso
+//!   @[main()]
 void _main(array(string(0..255)) orig_argv)
 {
   array(string) argv=copy_value(orig_argv);
@@ -4953,7 +5033,11 @@ class Describer
    * indirect references to stuff (like mutex keys) in backtraces,
    * via the ident mapping below.
    */
+  //! @decl inherit Pike.DestructImmediate
+
+  //! @ignore
   inherit _static_modules.Builtin.DestructImmediate;
+  //! @endignore
 
   int clipped=0;
   int canclip=0;

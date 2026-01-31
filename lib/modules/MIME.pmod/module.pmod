@@ -1110,7 +1110,7 @@ class Message {
   //! Do not use this method unless you know what you are doing.
   //!
   //! @seealso
-  //! @[getdata()], @[setencoded], @[data]
+  //! @[getdata()], @[setencoding()], @[data]
   //!
   void setdata( string data )
   {
@@ -1145,7 +1145,7 @@ class Message {
   //! be interpreted.
   //!
   //! @seealso
-  //! @[setdata()], @[getencoded()], @[data]
+  //! @[setdata()], @[getencoding()], @[data]
   //!
   string getdata( )
   {

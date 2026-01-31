@@ -1707,7 +1707,7 @@ protected mapping ext2type = ([
 
 //! @decl string ext_to_media_type(string extension)
 //! @belongs MIME
-//! Returns the MIME media type for the provided filename @[extension].
+//! Returns the MIME media type for the provided filename @tt{extension@}.
 //! Currently 469 file extensions are known to this method. Zero will
 //! be returned on unknown file extensions.
 

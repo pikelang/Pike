@@ -260,7 +260,9 @@ string eat(multiset(string) | string token) {
                  " , got " + quoteString(s));
     }
   }
-  else {
+  else if ((s == "...") && (token == "..")) {
+    // Do not complain.
+  } else {
     if (s != token)
       parseError("expected " + quoteString(token) +
                  ", got " + quoteString(s));
@@ -439,7 +441,7 @@ StringType|IntType lowParseRange(StringType|IntType s)
     eat("zero");
     s->min = s->max = "0";
     return s;
-  case "..":
+  case "..": case "...":
     break;
   default:
     s->min = eatLiteral();
@@ -452,6 +454,12 @@ StringType|IntType lowParseRange(StringType|IntType s)
       s->min = "0";
       return s;
     }
+  }
+
+  if ((<")", ",", ":">)[peekToken()]) {
+    // Short-hand for int(Val..Val).
+    s->max = s->min;
+    return s;
   }
 
   eat("..");

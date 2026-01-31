@@ -97,6 +97,7 @@ void mark(string marker)
   command("mark %s\n", marker);
 }
 
+//! Low-level data command.
 void data(string data)
 {
   command("data %d\n"
@@ -173,6 +174,44 @@ void feature(string feature, string|void arg)
 void option(string option)
 {
   command("option %s\n", option);
+}
+
+//! Format a committer info string.
+//!
+//! @param gecos
+//!   Display name of a person (eg @expr{"Com M Itter"@}).
+//!
+//! @param email
+//!   Email address of the person (eg @expr{"cm@@example.com"@}).
+//!
+//! @param timestamp
+//!   Either a properly formatted timestamp string, or the number
+//!   of seconds since the Unix epoch (ie 1970-01-01T00:00:00 UTC).
+//!
+//! @param tz_offset
+//!   Local timezone offset in minutes where the commit was performed.
+//!   This argument is ignored when @[timestamp] is a string.
+//!   Defaults to @expr{0@}.
+//!
+//! @returns
+//!   This function returns a string that indicates who made a commit and when.
+//!
+//! @seealso
+//!   @[commit()], @[tag()]
+string format_author(string gecos, string email,
+                     string|int timestamp, int|void tz_offset)
+{
+  if (intp(timestamp)) {
+    timestamp = timestamp + " ";
+    if (tz_offset < 0) {
+      timestamp += "-";
+      tz_offset = -tz_offset;
+    } else {
+      timestamp += "+";
+    }
+    timestamp += sprintf("%02d%02d", tz_offset/60, tz_offset % 60);
+  }
+  return sprintf("%s <%s> %s", gecos, email, timestamp);
 }
 
 //! Create an annotated tag referring to a specific commit.

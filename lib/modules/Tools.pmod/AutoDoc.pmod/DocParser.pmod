@@ -14,7 +14,7 @@ class MetaData {
   string type;
 
   //! If @[type] is one of @expr{"class"@}, @expr{"module"@},
-  //! @expr{"endmodule"@}, or @expr{"endclass"@}.
+  //! @expr{"namespace"@}, @expr{"endmodule"@}, or @expr{"endclass"@}.
   string name;
 
   //! Set of declarations.
