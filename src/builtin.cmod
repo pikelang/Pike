@@ -6232,7 +6232,7 @@ PMOD_EXPORT struct object *get_setter(struct object *o, int f)
   return res;
 }
 
-/*! @decl function(mixed_void)|zero _get_setter(object o, string varname)
+/*! @decl function(mixed:void)|zero _get_setter(object o, string varname)
  *!
  *! Get a setter for the variable named @[varname] in object @[o].
  *!

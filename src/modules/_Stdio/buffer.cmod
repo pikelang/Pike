@@ -1292,11 +1292,13 @@ PIKECLASS Buffer
     ref_push_object( io->this );
   }
 
+  /*! @decl private typedef System.Memory|Stdio.Buffer|String.Buffer BufferObject
+   */
+
+  /*! @decl private typedef BufferObject|string(8bit)|int(8bit)|array AddArgument
+   */
+
   /*! @decl Buffer add( AddArgument ... data )
-   *! @code
-   *!  private typedef @[System.Memory]|@[Stdio.Buffer]|@[String.Buffer] BufferObject;
-   *!  private typedef BufferObject|string(8bit)|int(8bit)|array(AddArgument) AddArgument;
-   *! @endcode
    *!
    *! Add the items in data to the end of the buffer.
    *!

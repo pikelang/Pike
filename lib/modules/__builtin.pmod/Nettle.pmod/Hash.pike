@@ -294,7 +294,7 @@ private void b64enc(String.Buffer dest, int a, int b, int c, int sz)
   }
 }
 
-//!   Password hashing function in @[crypt_md5()]-style.
+//!   Password hashing function in @[Nettle.crypt_md5()]-style.
 //!
 //!   Implements the algorithm described in
 //!   @url{http://www.akkadia.org/drepper/SHA-crypt.txt@}.
@@ -309,7 +309,7 @@ private void b64enc(String.Buffer dest, int a, int b, int c, int sz)
 //!   See @[crypt_hash_pike()] for details.
 //!
 //! @seealso
-//!   @[crypt_md5()], @[crypt_hash_pike()]
+//!   @[Nettle.crypt_md5()], @[crypt_hash_pike()]
 string(7bit) crypt_hash(string(8bit) password, string(8bit) salt,
                         int(0..) rounds)
 {
@@ -678,7 +678,7 @@ string(7bit) crypt_php(string(8bit) password, string(7bit) salt,
 //!   in the length of the generated keys.
 //!
 //! @seealso
-//!   @[hkdf()], @[pbkdf2()], @[openssl_pbkdf()], @[crypt_password()]
+//!   @[HKDF], @[pbkdf2()], @[openssl_pbkdf()], @[crypt_hash()]
 string(8bit) pbkdf1(string(8bit) password, string(8bit) salt, int rounds, int bytes)
 {
   if( bytes>digest_size() )
@@ -715,7 +715,7 @@ string(8bit) pbkdf1(string(8bit) password, string(8bit) salt, int rounds, int by
 //!   Returns the derived key.
 //!
 //! @seealso
-//!   @[hkdf()], @[pbkdf1()], @[openssl_pbkdf()], @[crypt_password()]
+//!   @[HKDF], @[pbkdf1()], @[openssl_pbkdf()], @[crypt_hash()]
 string(8bit) pbkdf2(string(8bit) password, string(8bit) salt,
 		    int rounds, int bytes)
 {
@@ -825,7 +825,7 @@ class HKDF
 //!   It seems to be related to PBKDF1 from @rfc{2898@}.
 //!
 //! @seealso
-//!   @[pbkdf1()], @[pbkdf2()], @[crypt_password()]
+//!   @[pbkdf1()], @[pbkdf2()], @[crypt_hash()]
 string(8bit) openssl_pbkdf(string(8bit) password, string(8bit) salt,
 			   int rounds, int bytes)
 {

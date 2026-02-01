@@ -3627,7 +3627,7 @@ PMOD_EXPORT void f_time(INT32 args)
  *!   The first syntax crypts the string @[password] into something that
  *!   is hopefully hard to decrypt.
  *!
- *!   The second syntax is used to verify @[typed_password] against
+ *!   The second syntax is used to verify @[input_password] against
  *!   @[crypted_password], and returns @expr{1@} if they match, and
  *!   @expr{0@} (zero) otherwise.
  *!
@@ -3635,8 +3635,8 @@ PMOD_EXPORT void f_time(INT32 args)
  *!   creating a string useful as a password.
  *!
  *! @note
- *!   Note that strings containing null characters will only be
- *!   processed up until the null character.
+ *!   Note that strings containing nul characters will only be
+ *!   processed up until the first nul character.
  */
 PMOD_EXPORT void f_crypt(INT32 args)
 {

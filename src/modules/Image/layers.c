@@ -7,7 +7,7 @@
 /*
 **! module Image
 **! class Layer
-**! see also: layers
+**! see also: Layers
 */
 
 #include "global.h"
