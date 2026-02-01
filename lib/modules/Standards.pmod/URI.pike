@@ -214,7 +214,7 @@ string combine_uri_path(string base, string rel, int(0..1)|void is_abs_path)
 //! @param base_uri
 //!   Set the new base URI to this.
 //! @throws
-//!   An exception is thrown if the @[uri] is a relative URI or only a
+//!   An exception is thrown if this URI is a relative URI or only a
 //!   fragment, and missing a @[base_uri].
 void reparse_uri(this_program|string|void base_uri)
 {
