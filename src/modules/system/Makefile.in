@@ -9,8 +9,13 @@ SRC_TARGETS=$(SRCDIR)/add-errnos.h
 $(SRCDIR)/add-errnos.h : $(SRCDIR)/errnos.list $(SRCDIR)/mkerrnos.sed
 	sed -n <$(SRCDIR)/errnos.list -f $(SRCDIR)/mkerrnos.sed >$(SRCDIR)/add-errnos.h
 
+$(SRCDIR)/add-errnos.pmod : $(SRCDIR)/errnos.list $(SRCDIR)/mkdocs.sed
+	sed -n <$(SRCDIR)/errnos.list -f $(SRCDIR)/mkdocs.sed >$(SRCDIR)/add-errnos.pmod
+
 system.o : $(SRCDIR)/add-errnos.h
 
 system.o : $(SRCDIR)/system.c
+
+docs: $(SRCDIR)/add-errnos.pmod
 
 @dependencies@

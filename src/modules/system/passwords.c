@@ -246,7 +246,7 @@ void push_grent(struct group *ent)
  *!   @endarray
  *!
  *! @seealso
- *!   @[getgrent()]
+ *!   @[System.getgrent()]
  *!   @[getgrnam()]
  */
 void f_getgrgid(INT32 args)
@@ -289,7 +289,7 @@ void f_getgrgid(INT32 args)
  *!   @endarray
  *!
  *! @seealso
- *!   @[getgrent()]
+ *!   @[System.getgrent()]
  *!   @[getgrgid()]
  */
 void f_getgrnam(INT32 args)
@@ -339,7 +339,7 @@ void f_getgrnam(INT32 args)
  *!
  *! @seealso
  *!   @[getpwuid()]
- *!   @[getpwent()]
+ *!   @[System.getpwent()]
  */
 void f_getpwnam(INT32 args)
 {
@@ -390,7 +390,7 @@ void f_getpwnam(INT32 args)
  *!
  *! @seealso
  *!   @[getpwnam()]
- *!   @[getpwent()]
+ *!   @[System.getpwent()]
  */
 void f_getpwuid(INT32 args)
 {
@@ -536,10 +536,10 @@ void f_getpwent(INT32 args)
  *! Returns an array with all users in the system.
  *!
  *! @returns
- *!   An array with arrays of userinfo as in @[getpwent].
+ *!   An array with arrays of userinfo as in @[System.getpwent].
  *!
  *! @seealso
- *!   @[getpwent()]
+ *!   @[System.getpwent()]
  *!   @[getpwnam()]
  *!   @[getpwuid()]
  */
@@ -683,7 +683,7 @@ void f_getgrent(INT32 args)
  *!
  *!   Returns an array of arrays with all groups in the system groups source.
  *!   Each element in the returned array has the same structure as in
- *!   @[getgrent] function.
+ *!   @[System.getgrent] function.
  *!
  *! @note
  *!   The groups source is system dependant. Refer to your system manuals for information
@@ -696,7 +696,7 @@ void f_getgrent(INT32 args)
  *!   @endarray
  *!
  *! @seealso
- *!   @[getgrent()]
+ *!   @[System.getgrent()]
  */
 void f_get_all_groups(INT32 args)
 {
