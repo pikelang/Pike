@@ -95,13 +95,16 @@ object(Stdio.File)|SSL.File|Stdio.UDP con;
 string request;
 protected Stdio.Buffer send_buffer;
 
+//! Input buffers.
 string buf="",headerbuf="";
+
 int datapos, discarded_bytes, cpos;
 
 #if constant(thread_create)
 object conthread;
 #endif
 
+//! Callbacks and arguments set by @[set_callbacks()].
 local function|zero request_ok,request_fail;
 array extra_args;
 

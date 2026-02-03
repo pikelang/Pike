@@ -43,10 +43,15 @@
 
 #define BLOCKSIZE	2048
 
+//! Current maximum request size set via @[set_max_request_size()].
 int max_request_size = 0;
 
 protected int _mode = 0;
 
+//! Adjust the maximum request size limit.
+//!
+//! @param size
+//!   Limit in bytes. A limit of @expr{0@} (zero) means unlimited.
 void set_max_request_size(int size)
 {
   max_request_size = size;
@@ -144,6 +149,7 @@ int send_timeout_delay=180;
 //! waiting for the correct headers:
 int connection_timeout_delay=180;
 
+//! Callback functions set via @[attach_fd()].
 function(this_program:void) request_callback;
 function(this_program,array:void) error_callback;
 
