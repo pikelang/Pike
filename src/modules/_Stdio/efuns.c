@@ -1521,7 +1521,7 @@ void f_mv(INT32 args)
   push_int(!i);
 }
 
-/*! @decl int errno()
+/*! @decl System.Errno errno()
  *!
  *! This function returns the system error from the last file operation.
  *!
@@ -1529,7 +1529,7 @@ void f_mv(INT32 args)
  *!   Note that you should normally use @[Stdio.File->errno()] instead.
  *!
  *! @seealso
- *!   @[Stdio.File->errno()], @[strerror()]
+ *!   @[Stdio.File->errno()], @[strerror()], @[System.Errno]
  */
 static void f_errno(INT32 args)
 {
@@ -1745,7 +1745,8 @@ void init_stdio_efuns(void)
 #endif /* HAVE_STATVFS || HAVE_STATFS */
 
 /* function(:int) */
-  ADD_EFUN("errno",f_errno,tFunc(tNone,tInt),OPT_EXTERNAL_DEPEND);
+  ADD_EFUN("errno", f_errno, tFunc(tNone, tName("Errno", tInt)),
+           OPT_EXTERNAL_DEPEND);
 
 /* function(string:int) */
   ADD_EFUN("rm",f_rm,tFunc(tStr,tInt),OPT_SIDE_EFFECT);

@@ -10,10 +10,14 @@
 \
 //! @module System\
 \
+//! @enum Errno\
+\
 
 
-# Alias ELAST and LASTERRNO.
+# Trailer.
 $a\
+\
+//! @endenum\
 \
 //! @endmodule\
 \

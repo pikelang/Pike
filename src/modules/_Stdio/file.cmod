@@ -414,7 +414,7 @@ static void fd_backtick__fd(INT32 args)
 			  Pike_fp->current_program->inherits);
 }
 
-/*! @decl protected int(0..) _errno
+/*! @decl protected System.Errno _errno
  *!
  *! Variable containing the internal value returned by @[errno()].
  *!
@@ -4563,9 +4563,12 @@ static void file_setxattr( INT32 args )
 }
 #endif
 
-/*! @decl int errno()
+/*! @decl System.Errno errno()
  *!
  *! Return the errno for the latest failed file operation.
+ *!
+ *! @seealso
+ *!   @[System.Errno]
  */
 static void file_errno(INT32 args)
 {
