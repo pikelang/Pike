@@ -4,6 +4,8 @@
 
 //! @module System
 
+//! @enum Errno
+
 
 /* Haiku/BeOS error codes and error base offsets. */
 //! @decl constant int B_ALREADY_RUNNING
@@ -3415,6 +3417,8 @@
 //! @decl constant int LASTERRNO
 //! Equal to the largest errno
 
+
+//! @endenum
 
 //! @endmodule
 
