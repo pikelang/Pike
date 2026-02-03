@@ -39,6 +39,11 @@ protected void _destruct() { close(); }
 
 // the port accept callback
 
+//! Internal accept-callback that will create a new clone of
+//! @[request_program] and call @[.Request()->attach_fd()] in it.
+//!
+//! @seealso
+//!   @[.Request()->attach_fd()]
 protected void new_connection()
 {
     while( Stdio.File fd=port->accept() )

@@ -4825,7 +4825,8 @@ void Pike_f_fork(INT32 args)
  *!     @value 1
  *!       Success.
  *!     @value 0
- *!       Failure. @[errno()] is set to EINVAL, EPERM or ESRCH.
+ *!       Failure. @[errno()] is set one of to @[System.EINVAL],
+ *!       @[System.EPERM] or @[System.ESRCH].
  *!   @endint
  *!
  *! @note
