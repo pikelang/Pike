@@ -12,7 +12,7 @@ inherit Stdio.Port : socket;
 //!
 inherit .context;
 
-//!
+//! Queue of new @[SSL.sslfile]s that have been negotiated.
 inherit ADT.Queue : accept_queue;
 
 constant sslfile = SSL.sslfile;

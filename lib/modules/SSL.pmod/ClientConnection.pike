@@ -19,6 +19,7 @@ protected string _sprintf(int t)
   if (t == 'O') return sprintf("SSL.ClientConnection(%s)", describe_state());
 }
 
+//! Generate a @[HANDSHAKE_client_hello] @[Packet].
 protected Packet client_hello(string(8bit)|void server_name,
                               array(Packet)|void early_data)
 {
