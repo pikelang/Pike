@@ -11,6 +11,10 @@
 //! @module System\
 \
 //! @enum Errno\
+//!   These are the values used to indicate various system call errors\
+//!   and are returned by eg @[errno()].\
+//! @seealso\
+//!   @[errno()], @[strerror()]\
 \
 
 
