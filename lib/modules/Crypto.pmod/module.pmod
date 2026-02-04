@@ -115,6 +115,7 @@ bool verify_crypt_md5(string(8bit) password, string(7bit) hash)
   return Nettle.crypt_md5(password, salt) == hash;
 }
 
+//! Alias for @[Nettle.Cipher.State].
 constant CipherState = Nettle.Cipher.State;
 
 //! Abstract class for crypto algorithms. Contains some tools useful

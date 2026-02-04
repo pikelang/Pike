@@ -47,6 +47,7 @@ constant PACKET_types = (< PACKET_change_cipher_spec,
 			   PACKET_heartbeat,
 >);
 
+//! Maximum SSL packet size (@expr{0x4000@}) in bytes.
 constant PACKET_MAX_SIZE = 0x4000;	// 2^14.
 
 //! Handshake states.

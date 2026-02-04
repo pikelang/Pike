@@ -910,6 +910,10 @@ array(array(string(8bit))) get_trusted_issuers()
   return trusted_issuers;
 }
 
+//! The set of trusted certificate issuers.
+//!
+//! This is set by @[set_trusted_issuers()] and retrieved
+//! by @[get_trusted_issuers()].
 protected array(array(string(8bit))) trusted_issuers = ({});
 
 //! Mapping from DER-encoded issuer to @[Standards.X509.Verifier]s
@@ -982,7 +986,7 @@ array(CertificatePair) get_certificates()
 //!
 //! This function is used on both servers and clients to add
 //! a key and chain of certificates to the set of certificate
-//! candidates to use in @[find_cert()].
+//! candidates to use in @[find_cert_domain()] and @[find_cert_issuer()].
 //!
 //! On a server these are used in the normal initial handshake,
 //! while on a client they are only used if a server requests
@@ -1023,7 +1027,7 @@ array(CertificatePair) get_certificates()
 //!   and @[certs], and throws errors if the validation fails.
 //!
 //! @seealso
-//!   @[find_cert()]
+//!   @[find_cert_domain()], @[find_cert_issuer()].
 void add_cert(Crypto.Sign.State key, array(string(8bit)) certs,
 	      array(string(8bit))|void extra_name_globs)
 {
