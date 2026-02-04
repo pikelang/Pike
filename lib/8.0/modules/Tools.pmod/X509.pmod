@@ -287,6 +287,7 @@ string make_selfsigned_rsa_certificate(Crypto.RSA rsa, int ttl, array name,
 		      serial, ttl, extensions);
 }
 
+//! Base class for certificate verifiers.
 class Verifier {
   constant type = "none";
   int(0..1) verify(object,string,string);
@@ -622,10 +623,10 @@ TBSCertificate verify_certificate(string s, mapping authorities)
 //!   @member int(0..1) "verified"
 //!     Non-zero if the certificate is verified.
 //!   @member string "authority"
-//!     @[Standards.ASN1.Sequence] of the authority RDN that verified
+//!     @[Standards.ASN1.Types.Sequence] of the authority RDN that verified
 //!     the chain.
 //!   @member string "cn"
-//!     @[Standards.ASN1.Sequence] of the common name RDN of the leaf
+//!     @[Standards.ASN1.Types.Sequence] of the common name RDN of the leaf
 //!     certificate.
 //! @endmapping
 //!
