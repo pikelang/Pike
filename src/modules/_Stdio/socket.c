@@ -127,6 +127,14 @@ static void do_close(struct port *p)
   }
 }
 
+/*! @decl protected mixed _id
+ *!
+ *! The id set via @[set_id()] (if any).
+ *!
+ *! @seealso
+ *!   @[query_id()], @[set_id()]
+ */
+
 /*! @decl mixed set_id(mixed id)
  *!
  *! This function sets the id used for accept_callback by this port.
