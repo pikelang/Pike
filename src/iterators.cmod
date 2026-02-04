@@ -1207,6 +1207,12 @@ PIKECLASS string_iterator
 /* Internal (for Stdio.File) class: Stdio.File->line_iterator.
  * Splits on lines, does only handle 8-bit characters.
  */
+/*! @module Stdio
+ */
+/*! @class LineIterator
+ *!
+ *! Splits on lines, does only handle 8-bit characters.
+ */
 PIKECLASS file_line_iterator
 {
   CVAR struct pike_string *buffer;
@@ -1374,6 +1380,12 @@ PIKECLASS file_line_iterator
       assert_free_svalue (&THIS->feed);
     }
 }
+
+/*! @endclass
+ */
+
+/*! @endmodule
+ */
 
 /*! @module String
  */
