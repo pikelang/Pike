@@ -296,12 +296,12 @@ variant Consumer(< ValueType >) add(int|float weight, mixed val,
   return add(Consumer(< ValueType >)(weight, val, parent));
 }
 
-//! The root of the @[Customer] dependency tree.
+//! The root of the @[Consumer] dependency tree.
 //!
 //! @note
 //!   Note that the root is never active (ie added to the Scheduler).
 //!
-//! @[Customer]s that don't have an explicit dependency depend on @[root].
+//! @[Consumer]s that don't have an explicit dependency depend on @[root].
 object(Consumer(< ValueType >))|zero root = Consumer(< ValueType >)(1.0, "root");
 
 protected string _sprintf(int c)
