@@ -1,5 +1,5 @@
 /* -*- mode: C; c-basic-offset: 4; -*- */
-    DOCSTART() @class _get_iterator
+    DOCSTART() @class Iterator
      *! Iterator class for tree_class trees. Supports iterating over ranges
      *! with arbitrary stepping and direction.
      *!
