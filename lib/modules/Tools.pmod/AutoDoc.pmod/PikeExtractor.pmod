@@ -328,7 +328,7 @@ private class Extractor {
   // at the beginning of the file, and then the return value is that
   // Documentation for the file.
   object(Documentation)|zero
-    parseClassBody(AutoDoc root, Class|Module c,
+    parseClassBody(AutoDoc root, Class|Module|Enum|NameSpace c,
                    array(string)|zero defModifiers,
                    void|string filename,
                    void|string inAt)
@@ -336,7 +336,7 @@ private class Extractor {
     object(Documentation)|zero filedoc = 0;
 
     object(Method)|zero implicit_create;
-    foreach(c->docGroups, DocGroup dg) {
+    foreach(c->docGroups || ({}), DocGroup dg) {
       foreach(dg->objects, PikeObject po) {
         if ((po->objtype == "method") && (po->name == "__create__")) {
           // Found.
@@ -425,6 +425,7 @@ private class Extractor {
               // if (c->objtype == "class" && what == "module")
               //   extractorError("@module not allowed in class files");
               // fall through
+            case "enum":
             case "class":
               if (sizeof(decls))
                 extractorError("@%s doc comment must stand alone", what);
@@ -439,8 +440,11 @@ private class Extractor {
                                  what, m->name, m->name, m->objtype);
               }
               else {
-                m = what == "class" ? Class() :
-                  (what == "namespace" ? NameSpace() : Module());
+                m = ([
+                  "module": Module,
+                  "enum": Enum,
+                  "class": Class,
+                  "namespace": NameSpace])[what]();
                 m->appears = meta->appears;
                 m->belongs = meta->belongs;
                 m->name = meta->name;
@@ -461,6 +465,7 @@ private class Extractor {
               continue mainloop;
 
             case "endclass":
+            case "endenum":
             case "endmodule":
             case "endnamespace":
               if (sizeof(decls))
