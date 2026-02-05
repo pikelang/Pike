@@ -24,7 +24,7 @@ Standards.ASN1.Types.Identifier pkcs_hash_id()
 //!   or specify as @expr{1000@}.
 //!
 //! @seealso
-//!   @[Nettle.Hash()->crypt_hash()], @[crypt_md5()]
+//!   @[Nettle.Hash()->crypt_hash()], @[Nettle.crypt_md5()]
 string(7bit) crypt_hash(string(8bit) password, string(7bit) salt,
                         int(0..)|void rounds)
 {
@@ -46,7 +46,7 @@ string(7bit) crypt_hash(string(8bit) password, string(7bit) salt,
 //!   Number of algorithm rounds. Default: @expr{1000@}.
 //!
 //! @seealso
-//!   @[Nettle.Hash()->crypt_hash()], @[crypt_md5()],
+//!   @[Nettle.Hash()->crypt_hash()], @[Nettle.crypt_md5()],
 //!   @url{https://fr.wikipedia.org/wiki/APR1@}
 string(7bit) crypt_hash_apr1(string(8bit) password, string(7bit) salt,
                              int(0..) rounds = 1000)
