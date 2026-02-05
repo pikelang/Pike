@@ -34,12 +34,14 @@ mapping(int:string) replycodes =
    554:"Transaction failed" ]);
 
 
+//! Base protocol implementation.
 class Protocol
 {
   // Maybe this should be the other way around?
   inherit Protocols.NNTP.protocol;
 }
 
+//! Base asynchronous protocol implementation.
 class AsyncProtocol
 {
   inherit Protocols.NNTP.asyncprotocol;
