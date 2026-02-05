@@ -191,6 +191,9 @@ void attach_fd(Stdio.NonblockingStream _fd, object(Port)|zero server,
    call_out(connection_timeout,connection_timeout_delay);
 }
 
+//! Flag for @[set_mode()] to enable @[Shuffler] mode.
+//! @seealso
+//!   @[set_mode()]
 constant SHUFFLER = 1;
 
 // Some (wap-gateways, specifically) servers send multiple
@@ -758,7 +761,7 @@ private array(string(8bit)) chunker(Shuffler.Shuffle sf, int amount) {
 //! @param mode
 //!  A number of integer flags bitwise ored together to determine
 //!  the mode of operation.
-//!   @[SHUFFLER]: Use the Shuffler to send out the data.
+//!   @[SHUFFLER]: Use the @[Shuffler] to send out the data.
 //!
 void set_mode(int mode) {
   _mode = mode;

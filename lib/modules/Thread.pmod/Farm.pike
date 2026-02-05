@@ -179,6 +179,11 @@ protected class ValueAdjuster( object r, object r2, int i, mapping v )
   }
 }
 
+//! Alias for @[Concurrent.Future].
+//!
+//! @note
+//!   In Pike 7.8 and earlier this was a custom class.
+constant Result = Concurrent.Future;
 
 //! Register multiple jobs.
 //!
@@ -201,6 +206,9 @@ protected class ValueAdjuster( object r, object r2, int i, mapping v )
 //!   and error, all of the accumulated results
 //!   (if any) will be dropped from the result, and
 //!   the first backtrace be provided.
+//!
+//! @note
+//!   In Pike 8.0 and earlier this function returned a @[Result] object.
 //!
 //! @seealso
 //!   @[run_multiple_async()]
@@ -237,7 +245,6 @@ void run_multiple_async( array fun_args )
     job_queue->write( ({ 0, fun_args[i] }) );
 }
 
-
 //! Register a job for the thread farm.
 //!
 //! @param f
@@ -248,12 +255,15 @@ void run_multiple_async( array fun_args )
 //!   The parameters for @[f].
 //!
 //! @returns
-//!   Returns a @[Result] object for the job.
+//!   Returns a @[Concurrent.Future] object for the job.
 //!
 //! @note
 //!   In Pike 7.8 and earlier this function
 //!   was broken and returned a @[Result]
 //!   object that wasn't connected to the job.
+//!
+//! @note
+//!   In Pike 8.0 and earlier this function returned a @[Result] object.
 //!
 //! @seealso
 //!   @[run_async()]

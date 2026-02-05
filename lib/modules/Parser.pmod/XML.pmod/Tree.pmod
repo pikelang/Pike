@@ -2072,13 +2072,13 @@ SimpleRootNode simple_parse_file(string path,
 //!   String to parse.
 //!
 //! @param no_fallback
-//!   Equivalent to the @[flag] bit @[PARSE_WANT_ERROR_CONTEXT].
+//!   Equivalent to the @[flags] bit @[PARSE_WANT_ERROR_CONTEXT].
 //!
 //! @param force_lowercase
-//!   Equivalent to the @[flag] bit @[PARSE_FORCE_LOWERCASE].
+//!   Equivalent to the @[flags] bit @[PARSE_FORCE_LOWERCASE].
 //!
 //! @param parse_namespaces
-//!   Equivalent to the @[flag] bit @[PARSE_ENABLE_NAMESPACES].
+//!   Equivalent to the @[flags] bit @[PARSE_ENABLE_NAMESPACES].
 //!
 //! @param predefined_entities
 //! @param flags
@@ -2135,7 +2135,7 @@ RootNode parse_file(string path,
                        flags, default_namespace);
 }
 
-//!
+//! DTD Element Parser Helper.
 protected class DTDElementHelper
 {
   array expression;

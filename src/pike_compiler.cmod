@@ -1956,7 +1956,7 @@ static void f_compilation_compile(INT32 args)
  *!   current @[PikeCompiler] context.
  *!
  *! @returns
- *!   Returns the value of @[sym] if found, and @[UNDEFINED] if not.
+ *!   Returns the value of @[identifier] if found, and @[UNDEFINED] if not.
  */
 static void f_compilation_resolv(INT32 args)
 {
