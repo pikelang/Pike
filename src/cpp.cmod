@@ -1018,7 +1018,7 @@ static void cpp_error_sprintf(struct CPP_struct *this, const char *fmt, ...)
    *!   @mixed
    *!     @type zero
    *!       Generate a cpp error using the default format (ie call
-   *!       @[master()->describe_error()], and replace any newlines
+   *!       @[MasterObject()->describe_error()], and replace any newlines
    *!       with spaces).
    *!     @type string
    *!       Cpp error message to @[report()]. The empty string
