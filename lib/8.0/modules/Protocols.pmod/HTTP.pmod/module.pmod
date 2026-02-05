@@ -1,6 +1,10 @@
 #pike 8.1
 
+//! @decl inherit Protocols.HTTP
+
+//! @ignore
 inherit Protocols.HTTP.module;
+//! @endignore
 
 string http_encode_string(string in)
 //! This is a deprecated alias for @[uri_encode], for compatibility
