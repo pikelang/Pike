@@ -21,6 +21,15 @@
 
 //! @decl inherit Builtin.__master
 
+//! @decl optional void report(SeverityLevel severity, @
+//!                            string filename, int(0..) linenumber, @
+//!                            string subsystem, @
+//!                            string message, mixed ... extra_args)
+//!   The master object may implement the @[Reporter] API
+//!   in lieu of @[compile_warning()] and @[compile_error()].
+//! @seealso
+//!   @[Reporter()->report()], @[compile_warning()], @[compile_error()]
+
 // --- Some configurable parameters
 
 #define PIKE_AUTORELOAD
@@ -4843,7 +4852,7 @@ function(string:string) set_trim_file_name_callback(function(string:string) s)
 //! @[err] is not newline terminated.
 //!
 //! @seealso
-//!   @[compile_warning()], @[compile_exception()],
+//!   @[report()], @[compile_warning()], @[compile_exception()],
 //!   @[get_inhibit_compile_errors()], @[set_inhibit_compile_errors()],
 void compile_error(string file,int line,string err)
 {
@@ -4871,7 +4880,7 @@ void compile_error(string file,int line,string err)
 //! line. @[err] is not newline terminated.
 //!
 //! @seealso
-//!   @[compile_error()], @[compile_exception()],
+//!   @[report()], @[compile_error()], @[compile_exception()],
 //!   @[get_inhibit_compile_errors()], @[set_inhibit_compile_errors()],
 void compile_warning(string file,int line,string err)
 {
