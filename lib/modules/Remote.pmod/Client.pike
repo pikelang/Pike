@@ -35,7 +35,7 @@ void client_close_callback()
 //!   Hostname and port for the @[Remote.Server].
 //!
 //! @param nice
-//!   If set, inhibits throwing of errors from @[call_sync()].
+//!   If set, inhibits throwing of errors from @[Connection()->call_sync()].
 //!
 //! @param timeout
 //!   Connection timeout in seconds.
