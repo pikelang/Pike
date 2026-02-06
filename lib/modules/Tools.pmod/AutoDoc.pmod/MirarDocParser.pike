@@ -3,8 +3,16 @@
 
 #pike __REAL_VERSION__
 
-/* MirarDoc documentation extractor.
- */
+//! MirarDoc documentation extractor.
+//!
+//! This module extracts an old markup format that currently is
+//! primarily used by the @[Image] and @[Calendar] modules.
+//!
+//! @deprecated PikeExtractor
+//! @deprecated CExtractor
+//!
+//! @note
+//!   Do NOT use this markup for any new code!
 
 string IMAGE_DIR;
 

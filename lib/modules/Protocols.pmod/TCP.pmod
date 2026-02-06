@@ -9,7 +9,7 @@
 #endif
 
 //! Establish a TCP/IP socket connection to the given host and port.
-//! If successful, resolves with an open @[File] object.
+//! If successful, resolves with an open @[Stdio.File] object.
 //! Follows the Happy Eyeballs algorithm as defined in RFC 8305.
 //! @example
 //!   @code

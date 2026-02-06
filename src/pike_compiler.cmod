@@ -561,8 +561,13 @@ static void f_reporter_report(INT32 args)
  *!   @[predef::compile()] is essentially an alias for the
  *!   @[CompilerEnvironment()->compile()] in this object.
  *!
+ *! @note
+ *!   The default @[MasterObject] replaces this object with
+ *!   an instance of @[HandlerCompilerEnvironment].
+ *!
  *! @seealso
- *!   @[CompilerEnvironment], @[predef::compile()]
+ *!   @[CompilerEnvironment], @[HandlerCompilerEnvironment],
+ *!   @[predef::compile()]
  */
 
 /*! @decl inherit CompilerEnvironment
@@ -581,6 +586,10 @@ static void f_reporter_report(INT32 args)
  *! @note
  *!   Prior to Pike 7.8 this sort of customization has to be done
  *!   either via custom master objects, or via @[CompilationHandler]s.
+ *!
+ *! @note
+ *!   The default @[MasterObject] replaces this class with
+ *!   @[HandlerCompilerEnvironment].
  *!
  *! @seealso
  *!   @[CompilationHandler], @[MasterObject], @[master()], @[replace_master()]

@@ -39,6 +39,10 @@ import Protocols.LDAP;
 //  /*private*/ int errno;
   int connected = 0;
 
+  //! @decl Stdio.Stream|SSL.File ldapfd
+  //!
+  //!   Helper fd.
+
 #if constant(SSL.Cipher)
   Stdio.Stream|SSL.File ldapfd;		        // helper fd
 #else
