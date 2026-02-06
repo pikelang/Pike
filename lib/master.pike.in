@@ -674,7 +674,11 @@ protected local class CompilationHandler
 }
 
 //! @[predef::CompilerEnvironment] that supports handlers.
-protected class CompilerEnvironment
+//!
+//! @note
+//!   The default @[MasterObject] replaces @[predef::CompilerEnvironment]
+//!   with this class.
+protected class HandlerCompilerEnvironment
 {
   //!
   inherit predef::CompilerEnvironment : OrigCompilerEnvironment;
@@ -732,7 +736,7 @@ protected class CompilerEnvironment
 	  return f(@args);
 	}
       }
-      return CompilerEnvironment::`->(fun)(@args);
+      return HandlerCompilerEnvironment::`->(fun)(@args);
     }
 
     //!
@@ -766,8 +770,8 @@ protected class CompilerEnvironment
 	  }
 	}
       }
-      CompilerEnvironment::report(severity, filename, linenumber,
-				  subsystem, message, @extra_args);
+      HandlerCompilerEnvironment::report(severity, filename, linenumber,
+                                         subsystem, message, @extra_args);
     }
 
     //!
@@ -874,7 +878,7 @@ protected class CompilerEnvironment
 	  return f(@args);
 	}
       }
-      return CompilerEnvironment::`->(fun)(@args);
+      return HandlerCompilerEnvironment::`->(fun)(@args);
     }
 
     //! @decl void report(SeverityLevel severity, @
@@ -1130,8 +1134,8 @@ protected class CompilerEnvironment
 #endif /* _static_modules.Builtin.__HAVE_COMPILER_NO_HANDLERS__ */
 }
 
-protected CompilerEnvironment DefaultCompilerEnvironment =
-  CompilerEnvironment();
+protected HandlerCompilerEnvironment DefaultCompilerEnvironment =
+  HandlerCompilerEnvironment();
 
 #if constant(_static_modules.Builtin.__HAVE_COMPILER_NO_HANDLERS__)
 //!
@@ -1158,7 +1162,7 @@ protected program compile(string source, CompilationHandler|void handler,
 //!   @[master()->get_compilation_handler()], @[CompilationHandler]
 protected object get_active_compilation_handler()
 {
-  CompilerEnvironment.PikeCompiler c = get_active_compiler();
+  HandlerCompilerEnvironment.PikeCompiler c = get_active_compiler();
   return c && c->compat_handler;
 }
 
@@ -1175,7 +1179,7 @@ protected object get_active_compilation_handler()
 //!   @[get_active_compilation_handler()], @[compile()], @[CompilationHandler]
 protected CompilationHandler get_active_error_handler()
 {
-  CompilerEnvironment.PikeCompiler c = get_active_compiler();
+  HandlerCompilerEnvironment.PikeCompiler c = get_active_compiler();
   return c && c->handler;
 }
 
@@ -1185,7 +1189,7 @@ protected string cpp(string data, mapping|string|void current_file,
 		     void|int compat_major, void|int compat_minor,
 		     void|int picky_cpp)
 {
-  CompilerEnvironment.CPP cpp_obj =
+  HandlerCompilerEnvironment.CPP cpp_obj =
     DefaultCompilerEnvironment->CPP(current_file, charset,
 				    handler || UNDEFINED,
 				    compat_major, compat_minor,
@@ -2515,7 +2519,8 @@ protected void add_constants()
   add_constant("get_active_compilation_handler", get_active_compilation_handler);
   add_constant("get_active_error_handler", get_active_error_handler);
   add_constant("CompilationHandler", CompilationHandler);
-  add_constant("CompilerEnvironment", CompilerEnvironment);
+  add_constant("HandlerCompilerEnvironment", HandlerCompilerEnvironment);
+  add_constant("CompilerEnvironment", HandlerCompilerEnvironment);
   add_constant("DefaultCompilerEnvironment", DefaultCompilerEnvironment);
   add_constant("cpp", cpp);
 
@@ -5533,10 +5538,30 @@ string|zero describe_function (function f)
 
 //! @namespace predef::
 
+//! @decl string describe_backtrace(mixed trace, void|int linewidth)
+//! @belongs MasterObject
+//!
 //! Return a readable message that describes where the backtrace
 //! @[trace] was made (by @[backtrace]).
 //!
-//! It may also be an error object or array (typically caught by a
+//! It may also be an error object or an array (typically caught by a
+//! @[catch]), in which case the error message also is included in the
+//! description.
+//!
+//! Pass @[linewidth] -1 to disable wrapping of the output.
+//!
+//! @note
+//!   For convenience this function is also made available as
+//!   @[predef::describe_backtrace()].
+//!
+//! @seealso
+//! @[backtrace()], @[describe_error()], @[catch()], @[throw()]
+//!
+
+//! Return a readable message that describes where the backtrace
+//! @[trace] was made (by @[backtrace]).
+//!
+//! It may also be an error object or an array (typically caught by a
 //! @[catch]), in which case the error message also is included in the
 //! description.
 //!
@@ -5780,6 +5805,24 @@ string describe_backtrace(mixed trace, void|int linewidth)
   return ret;
 }
 
+//! @decl string describe_error (mixed /* object|array */ err)
+//! @belongs MasterObject
+//!
+//! Return the error message from an error object or array (typically
+//! caught by a @[catch]). The type of the error is checked, hence
+//! @[err] is declared as @expr{mixed@} and not @expr{object|array@}.
+//!
+//! If an error message couldn't be obtained, a fallback message
+//! describing the failure is returned. No errors due to incorrectness
+//! in @[err] are thrown.
+//!
+//! @note
+//!   For convenience this function is also made available as
+//!   @[predef::describe_error()].
+//!
+//! @seealso
+//! @[describe_backtrace()], @[get_backtrace]
+
 //! Return the error message from an error object or array (typically
 //! caught by a @[catch]). The type of the error is checked, hence
 //! @[err] is declared as @expr{mixed@} and not @expr{object|array@}.
@@ -5828,6 +5871,21 @@ string describe_error (mixed /* object|array */ err)
   else
     return sprintf ("<Invalid error container: %O>\n", err);
 }
+
+//! @decl array get_backtrace (object|array err)
+//! @belongs MasterObject
+//!
+//! Return the backtrace array from an error object or array
+//! (typically caught by a @[catch]), or zero if there is none. Errors
+//! are thrown on if there are problems retrieving the backtrace.
+//!
+//! @note
+//!   For convenience this function is also made available as
+//!   @[predef::get_backtrace()].
+//!
+//! @seealso
+//! @[describe_backtrace()], @[describe_error()]
+//!
 
 //! Return the backtrace array from an error object or array
 //! (typically caught by a @[catch]), or zero if there is none. Errors
