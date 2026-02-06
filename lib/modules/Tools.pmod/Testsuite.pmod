@@ -561,7 +561,7 @@ class Test
 #endif
   }
 
-  //! This value will be sent to @[MasterObject.set_inhibit_errors]
+  //! This value will be sent to @[MasterObject.set_inhibit_compile_errors()]
   //! before compilation by @[compile()].
   int(0..1)|object inhibit_errors = 1;
 
