@@ -111,7 +111,14 @@ PIKECLASS Shuffle
    *!
   */
 
-  PIKEVAR function(object, int:array(string(8bit))) done_callback;
+  /*! @decl function(Shuffle, int: void) done_callback
+   *!
+   *! This function will be called when all sources have been processed,
+   *! or if an error occurs.
+   *!
+   *! Set via @[set_done_callback()].
+   */
+  PIKEVAR function(object, int: void) done_callback;
 
   PIKEVAR mixed request_arg;
 
@@ -453,7 +460,7 @@ PIKECLASS Shuffle
 
   PIKEFUN void set_done_callback( function(object, int:void)|zero cb )
    /*! @decl void set_done_callback( function(Shuffle,int:void) cb )
-    *! Sets the done callback. This function will be called when all
+    *! Sets the @[done_callback]. This function will be called when all
     *! sources have been processed, or if an error occurs.
     *!
     */
