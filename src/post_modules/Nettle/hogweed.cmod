@@ -659,7 +659,8 @@ PIKECLASS ECC_Curve
    *!   Randomness function to use as source.
    *!
    *! @returns
-   *!   Returns a random scalar suitable to use as an @[ECDSA] private key
+   *!   Returns a random scalar suitable to use as an
+   *!   @[ECC_Curve.ECDSA] private key
    *!   or as an ECDH secret factor.
    */
   PIKEFUN object(Gmp.mpz) new_scalar(function(int(0..):string(8bit)) rnd)
@@ -1412,7 +1413,7 @@ PIKECLASS Curve25519
    *!   Randomness function to use as source.
    *!
    *! @returns
-   *!   Returns a random scalar suitable to use as an @[ECDSA] private key
+   *!   Returns a random scalar suitable to use as an @[EdDSA] private key
    *!   or as an ECDH exponent.
    */
   PIKEFUN string(8bit) new_scalar(function(int(0..):string(8bit)) rnd)
@@ -1854,7 +1855,7 @@ PIKECLASS Curve448
    *!   Randomness function to use as source.
    *!
    *! @returns
-   *!   Returns a random scalar suitable to use as an @[ECDSA] private key
+   *!   Returns a random scalar suitable to use as an @[EdDSA] private key
    *!   or as an ECDH exponent.
    */
   PIKEFUN string(8bit) new_scalar(function(int(0..):string(8bit)) rnd)

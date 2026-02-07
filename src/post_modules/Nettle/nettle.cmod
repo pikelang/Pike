@@ -97,12 +97,12 @@ PIKEFUN string version()
  *! The minimal value for settings would be @expr{"$2y$"@}.
  *!
  *! @param salt
- *! The salt can be supplied as part of @[settings], or separately
+ *! The salt can be supplied as part of @[scheme], or separately
  *! as a 16-byte binary string.
  *!
  *! @param log2rounds
  *! The log2 number of encryption rounds.  If unspecified it is taken
- *! from the settings string, and if not specified there it defaults to
+ *! from the @[scheme] string, and if not specified there it defaults to
  *! @expr{10@} which equals 1024 encryption rounds.
  *!
  *! @returns
