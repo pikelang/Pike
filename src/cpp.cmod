@@ -1452,7 +1452,7 @@ static void cpp_warning(struct CPP_struct *this, const char *cpp_warn_fmt, ...)
  *!   default set of preprocessor macros are described here.
  *!
  *!   The preprocessor is usually accessed via
- *!   @[MasterObject->compile_file()] or @[MasterObject->compile_string()],
+ *!   @[compile_file()] or @[compile_string()],
  *!   but may be accessed directly by calling @[cpp()].
  *!
  *! @seealso
