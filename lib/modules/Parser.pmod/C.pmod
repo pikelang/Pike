@@ -345,7 +345,7 @@ string simple_reconstitute(array(string|object(Token)|array) tokens,
                            int(1bit)|void inhibit_trailing_ws)
 {
   string ret="";
-  token = Array.flatten(tokens);
+  tokens = Array.flatten(tokens);
   foreach(tokens; int i; mixed tok)
     {
       if(objectp(tok)) {
