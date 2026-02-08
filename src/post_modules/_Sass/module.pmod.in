@@ -75,8 +75,8 @@ class Compiler
 
   //! @decl protected string|array(string(8bit)) handle_sass_import(@
   //!                          string(8bit) path, @
-  //!                          void|string(8bit) absolute_path, @
-  //!                          void|string(8bit) relative_path)
+  //!                          void|string(8bit) abs_path, @
+  //!                          void|string(8bit) rel_path)
   //!
   //! Resolve imports in sass/scss files.
   //!
@@ -85,7 +85,7 @@ class Compiler
   //!  only necessary if the Sass files reside in a non-standard filesystem.
   //!
   //! @note
-  //!  If overloaded @[abs_path] and @[rel_path] is the absolute and relaive
+  //!  If overloaded @[abs_path] and @[rel_path] are the absolute and relative
   //!  paths of the file containing the import statement @[path].
   //!  If the Sass/SCSS files are located in a normal filesystem this method
   //!  can return the contents of @[path] as a string and @tt{libsass@} will
@@ -98,12 +98,12 @@ class Compiler
   //!
   //! @param path
   //!  This is the value of `path` in @tt{@@import 'path'@}.
-  //! @param absolute_path
+  //! @param abs_path
   //!  This is the absolute path of the file containing the @tt{@@import@}
   //!  statement.
-  //! @param relative_path
-  //!  The relative path of @[absolute_path] in relation to the prevoius
-  //!  @[absolute_path]
+  //! @param rel_path
+  //!  The relative path of @[abs_path] in relation to the previous
+  //!  @[abs_path]
   //!
   //! @returns
   //!  @mixed
