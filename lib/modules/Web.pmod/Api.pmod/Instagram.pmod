@@ -859,7 +859,7 @@ class V1
   //! The URI to the Instagram API
   protected constant API_URI = "https://api.instagram.com/v1";
 
-  //! Singleton @[User] object. Will be instantiated first time requested.
+  //! Singleton @[Users] object. Will be instantiated first time requested.
   private Users _users;
 
   //! Singleton @[Tags] object. Will be instantiated first time requested.

@@ -675,7 +675,7 @@ class Socket {
              ])));
   }
 
-  //! Send text @[string] or binary @[Stdio.Buffer] messages.
+  //! Send text @expr{string@} or binary @[Stdio.Buffer] messages.
   final void write(mapping(string:mixed) options,
    string|Stdio.Buffer ... msgs) {
     if (state >= SCLOSING)
