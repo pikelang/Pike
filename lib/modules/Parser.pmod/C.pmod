@@ -349,7 +349,7 @@ string simple_reconstitute(array(string|object(Token)|array) tokens,
   foreach(tokens; int i; mixed tok)
     {
       if(objectp(tok)) {
-        if (i + 1 < sizeof(tokens)) {
+        if ((i + 1 < sizeof(tokens)) || !inhibit_trailing_ws) {
           tok = tok->text + tok->trailing_whitespaces;
         } else {
           tok = tok->text;
