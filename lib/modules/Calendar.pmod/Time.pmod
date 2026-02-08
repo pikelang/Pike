@@ -2059,7 +2059,7 @@ TimeofDay now()
 
 //! method Calendar set_timezone(Timezone tz)
 //! method Calendar set_timezone(string|Timezone tz)
-//! method TimeZone timezone()
+//! method Timezone timezone()
 //!	Set or get the current timezone (including dst) rule.
 //!	<ref>set_timezone</ref> returns a new calendar object,
 //!	as the called calendar but with another set of rules.
