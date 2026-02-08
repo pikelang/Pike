@@ -891,7 +891,7 @@ void udp_wait(INT32 args)
  *!	])
  *!
  *! @seealso
- *!   @[set_read_callback()], @[MSG_OOB], @[MSG_PEEK]
+ *!   @[Stdio.UDP()->set_read_callback()], @[MSG_OOB], @[MSG_PEEK]
  */
 void udp_read(INT32 args)
 {
@@ -1602,7 +1602,7 @@ static void udp_get_type(INT32 args)
  *!   but it certainly helps to increase data transfer speed when it does.
  *!
  *! @seealso
- *!   @[open_socket()], @[accept()]
+ *!   @[Stdio.File()->open_socket()], @[Stdio.Port()->accept()]
  */
 static void udp_set_buffer(INT32 args)
 {

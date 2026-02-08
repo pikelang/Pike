@@ -176,7 +176,7 @@ static void port_set_id(INT32 args)
  *!   New accept callback.
  *!
  *! @seealso
- *!   @[bind()], @[listen()], @[set_id()]
+ *!   @[bind()], @[listen_fd()], @[set_id()]
  */
 static void port_set_accept_callback(INT32 args)
 {
