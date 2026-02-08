@@ -1509,8 +1509,18 @@ class NScope
 
     seen[this] = 1;
 
-    int(1..1)|NScope scope =
+    int(1bit)|NScope scope =
       symbols[path[0]] || symbols["/precompiled/"+path[0]];
+
+    if (!scope && has_prefix(path[0], "`") && !has_prefix(path[0], "``")) {
+      // Potential getter/setter.
+      string sym = path[0][1..];
+      if (has_suffix(path[0], "=")) {
+        sym = sym[..<1];
+      }
+      scope = symbols[sym];
+    }
+
     if (!scope) {
       // Not immediately available in this scope.
       if (inherits) {

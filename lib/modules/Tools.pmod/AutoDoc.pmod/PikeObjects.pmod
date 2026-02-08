@@ -587,6 +587,24 @@ class DocGroup {
     objects = objs;
   }
 
+  string normalize_getter_setter(string name)
+  {
+    if (!has_prefix(name, "`") || has_prefix(name, "``")) return name;
+
+    if ((upper_case(name) == lower_case(name)) && !has_value(name, "_")) {
+      // Probably an operator or lfun.
+      return name;
+    }
+
+    name = name[1..];
+
+    if (has_suffix(name, "=")) {
+      name = name[..<1];
+    }
+
+    return name;
+  }
+
   //! Relocation information.
   string appears = 0;
   string belongs = 0;
@@ -604,12 +622,13 @@ class DocGroup {
     foreach(objects, PikeObject obj) {
       types[obj->objtype] = 1;
       if (obj->name)
-        names[obj->name] = 1;
+        names[normalize_getter_setter(obj->name)] = 1;
     }
     if (sizeof(types) == 1) {
       m["homogen-type"] = indices(types)[0];
-      if (sizeof(names) == 1)
-        m["homogen-name"] = objects[0]->name;
+    }
+    if (sizeof(names) == 1) {
+      m["homogen-name"] = normalize_getter_setter(objects[0]->name);
     }
 
     string res = opentag("docgroup", m);
