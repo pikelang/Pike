@@ -73,7 +73,7 @@
       <section title="Status">
 	<insert-move entity="file_stat"/>
 	<insert-move entity="filesystem_stat"/>
-	<insert-move entity="Stdio.Stat"/>
+        <insert-move entity="_Stdio.Stat"/>
       </section>
       <section title="Error handling">
 	<insert-move entity="errno"/>
@@ -96,6 +96,7 @@
       </section>
       <section title="Other">
 	<insert-move entity="Stdio"/>
+        <insert-move entity="_Stdio"/>
       </section>
     </chapter>
   </file>
