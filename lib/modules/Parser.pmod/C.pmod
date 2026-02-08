@@ -337,13 +337,24 @@ array hide_whitespaces(array tokens)
 //! Reconstitutes the token array into a plain string again; essentially
 //! reversing @[split()] and whichever of the @[tokenize], @[group] and
 //! @[hide_whitespaces] methods may have been invoked.
-string simple_reconstitute(array(string|object(Token)|array) tokens)
+//!
+//! @param inhibit_trailing_ws
+//!   @expr{1@} indicates that hidden whitespaces in the last token of
+//!   @[tokens] should not be output (only applies to @[Token] objects).
+string simple_reconstitute(array(string|object(Token)|array) tokens,
+                           int(1bit)|void inhibit_trailing_ws)
 {
   string ret="";
-  foreach(Array.flatten(tokens), mixed tok)
+  token = Array.flatten(tokens);
+  foreach(tokens; int i; mixed tok)
     {
-      if(objectp(tok))
-	tok=tok->text + tok->trailing_whitespaces;
+      if(objectp(tok)) {
+        if (i + 1 < sizeof(tokens)) {
+          tok = tok->text + tok->trailing_whitespaces;
+        } else {
+          tok = tok->text;
+        }
+      }
       ret+=tok;
     }
 
