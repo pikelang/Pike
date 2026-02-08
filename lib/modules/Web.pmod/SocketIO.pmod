@@ -67,7 +67,7 @@
 //! @endcode
 //!
 //! @seealso
-//!  @[farm], @[Web.EngineIO], @[Protocols.WebSocket],
+//!  @[Universe.farm], @[Web.EngineIO], @[Protocols.WebSocket],
 //!  @url{http://github.com/socketio/socket.io-protocol@},
 //!  @url{http://socket.io/@}
 
@@ -151,6 +151,7 @@ private void exchangeoptions(Client client, function(mixed ...:void) ackcb,
     ackcb(ret);    // Inform the client about the lowest common denominator
 }
 
+//!
 class Universe {
   // All Socket.IO nsps with connected clients in this universe.
   private mapping(string:mapping(string|int: function(Client,

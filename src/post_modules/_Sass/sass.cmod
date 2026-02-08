@@ -545,7 +545,8 @@ PIKE_MODULE_INIT
    *! @decl constant STYLE_COMPACT = 1
    *! @decl constant STYLE_COMPRESSED = 1
    *!
-   *! Styling of output. Use as argument to @[Compiler.set_output_style()]
+   *! Styling of output. Use as value for @expr{"output_style"@} in
+   *! argument to @[Compiler.set_options()]
    *!
    *! @string
    *! @value STYLE_NESTED

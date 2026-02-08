@@ -3286,8 +3286,8 @@ static int fd_openpty(int *master, int *slave, void *PIKE_UNUSED(name),
  *! @returns
  *!   Returns the filename of the corresponding pts.
  *!
- *!  @note
- *!    This function is only available on some platforms.
+ *! @note
+ *!   This function is only available on some platforms.
  */
 #if defined(HAVE_GRANTPT)
 static void file_grantpt( INT32 args )
@@ -3718,7 +3718,7 @@ void file_sync(INT32 args)
  *!
  *! Seeking file data and holes
  *!
- *! Stdio.SEEK_DATA and Stdio.SEEK_HOLE are nonstandard extensions
+ *! @[Stdio.SEEK_DATA] and @[Stdio.SEEK_HOLE] are nonstandard extensions
  *! present in Linux, Solaris, FreeBSD, and DragonFly BSD; they are
  *! proposed for inclusion in the next POSIX revision.
  *! @string
@@ -3735,7 +3735,7 @@ void file_sync(INT32 args)
  *! (i.e., there is an implicit hole at the end of any file).
  *! @endstring
  *!
- *! In both of the above cases, seek() fails if offset points past the
+ *! In both of the above cases, @[seek()] fails if @[offset] points past the
  *! end of the file.
  *!
  *! These operations allow applications to map holes in a sparsely
@@ -3752,15 +3752,15 @@ void file_sync(INT32 args)
  *! to the underlying storage may or may not be reported as a hole.)
  *!
  *! In the simplest implementation, a filesystem can support the
- *! operations by making SEEK_HOLE always return the offset of the end
- *! of the file, and making SEEK_DATA always return offset (i.e., even
+ *! operations by making @[SEEK_HOLE] always return the offset of the end
+ *! of the file, and making @[SEEK_DATA] always return offset (i.e., even
  *! if the location referred to by offset is a hole, it can be
  *! considered to consist of data that is a sequence of zeros).
  *!
  *! @returns
- *! Upon successful completion, seek() returns the resulting offset
+ *! Upon successful completion, @[seek()] returns the resulting offset
  *! location as measured in bytes from the beginning of the file.  On
- *! error, the value (off_t) -1 is returned and @[errno] is set to
+ *! error, the value @expr{(off_t) -1@} is returned and @[errno] is set to
  *! indicate the error.
  *!
  *! @seealso
@@ -3772,11 +3772,12 @@ void file_sync(INT32 args)
  *!
  *! Seek to a specified offset in a file.
  *!
- *! If @[mult] or @[add] are specified, @[pos] is calculated as
- *! @expr{@[pos] = @[unit]*@[mult] + @[add]@}.
+ *! If @[mult] or @[add] are specified, the position is calculated as
+ *! @expr{pos = @[unit]*@[mult] + @[add]@}.
  *!
- *! If @[pos] is negative then it is relative to the end of the file,
- *! otherwise it's an absolute offset from the start of the file.
+ *! If the resulting position is negative then it is relative to
+ *! the end of the file, otherwise it's an absolute offset from
+ *! the start of the file.
  *!
  *! @returns
  *!   Returns the new offset, or @expr{-1@} on failure.
@@ -4639,7 +4640,10 @@ static void file_mode(INT32 args)
  *! Also, this object does not keep a reference to the backend.
  *!
  *! @seealso
- *!   @[query_backend], @[set_nonblocking], @[set_read_callback], @[set_write_callback], @[set_fs_event_callback]
+ *!   @[query_backend()], @[set_nonblocking()],
+ *!   @[Stdio.File()->set_read_callback()],
+ *!   @[Stdio.File()->set_write_callback()],
+ *!   @[Stdio.File()->set_fs_event_callback()]
  */
 static void file_set_backend (INT32 args)
 {
@@ -4934,7 +4938,7 @@ PMOD_EXPORT void push_new_fd_object(int factory_fun_num,
  *!   but it certainly helps to increase data transfer speed when it does.
  *!
  *! @seealso
- *!   @[open_socket()], @[accept()]
+ *!   @[open_socket()], @[Stdio.Port()->accept()]
  */
 static void file_set_buffer(INT32 args)
 {
@@ -5427,7 +5431,7 @@ static void low_dup(struct object *UNUSED(toob),
  *!   as this object.
  *!
  *! @seealso
- *!   @[assign()], @[dup()]
+ *!   @[Stdio.File()->assign()], @[dup()]
  */
 static void file_dup2(INT32 args)
 {
@@ -5803,7 +5807,7 @@ static void file_setsockopt(INT32 args)
  *!   to @tt{EWOULDBLOCK@}. This should not be regarded as a connection failure.
  *!
  *! @note
- *!   @[path] had a quite restrictive length limit (~100 characters)
+ *!   @[filename] had a quite restrictive length limit (~100 characters)
  *!   prior to Pike 7.8.334.
  */
 static void file_connect_unix( INT32 args )
@@ -6360,6 +6364,16 @@ PMOD_EXPORT void create_proxy_pipe(struct object *o, int for_reading)
 
 #if defined(HAVE_FD_FLOCK) || defined(HAVE_FD_LOCKF)
 
+/*! @class FileLockKey
+ *! @belongs Stdio
+ *!
+ *!   Holds the state of a lock returned from @[Fd()->lock()]
+ *!   or @[Fd()->try_lock()].
+ *!
+ *! @seealso
+ *!   @[Fd()->lock()], @[Fd()->try_lock()]
+ */
+
 static struct program * file_lock_key_program;
 
 struct file_lock_key_storage
@@ -6432,6 +6446,9 @@ static void low_file_lock(INT32 args, int flags)
     push_object(o);
   }
 }
+
+/*! @endclass
+ */
 
 /*! @decl Stdio.FileLockKey lock()
  *! @decl Stdio.FileLockKey lock(int(0..1) is_recursive)

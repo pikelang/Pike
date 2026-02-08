@@ -26,7 +26,7 @@
 #define sp Pike_sp
 #define fp Pike_fp
 
-/*! @module Stdio
+/*! @module _Stdio
  */
 /*! @class Stat
  *!
