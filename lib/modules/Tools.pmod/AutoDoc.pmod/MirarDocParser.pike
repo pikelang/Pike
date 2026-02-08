@@ -765,13 +765,13 @@ array(string) parse_decl(string raw_decl)
       tokens = tokens[..<1];
    }
    if (arrayp(tokens[-1])) {
-      params = Parser.Pike.simple_reconstitute(tokens[-1]);
+      params = Parser.Pike.simple_reconstitute(tokens[-1], 1);
       tokens = tokens[..<1];
    }
    name = objectp(tokens[-1])?tokens[-1]->text:tokens[-1];
    rv = "mixed";
    if (sizeof(tokens) > 1) {
-      rv = Parser.Pike.simple_reconstitute(tokens[..<1]);
+      rv = Parser.Pike.simple_reconstitute(tokens[..<1], 1);
    }
 
    if (params) {
