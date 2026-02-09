@@ -4,6 +4,11 @@
 // PARSING OF DOCUMENTATION COMMENTS
 //========================================================================
 
+//! Module for parsing of AutoDoc markup comments.
+//!
+//! @seealso
+//!   @[PikeExtractor], @[CExtractor]
+
 inherit .PikeObjects;
 
 #include "./debug.h"
