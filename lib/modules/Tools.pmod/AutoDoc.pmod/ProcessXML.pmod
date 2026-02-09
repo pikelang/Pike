@@ -1587,7 +1587,11 @@ class NScope
       if (stringp(inherits[inh])) {
         string sym = inherits[inh];
         m_delete(inherits, inh);	// Avoid infinite loop.
-        inherits[inh] = lookup(splitRef(sym));
+        if (!(inherits[inh] = lookup(splitRef(sym)))) {
+          inherits[inh] = sym;
+          werror("Failed to lookup inherited symbol %O.\n", sym);
+          return 0;
+        }
       }
       string|zero found = inherits[inh]->lookup(path);
       if (found) return ({ depth, found });
