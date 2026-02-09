@@ -373,7 +373,7 @@ class Bitfield
 
     return ret*" | ";
   }
-  void create(string ... n)
+  protected void create(string ... n)
     {
       names=n;
     }
@@ -612,8 +612,8 @@ class dumpfile
 #endif
       for(int e=0;e<numsections;e++)
       {
-	string caracter;
 #ifdef DEBUG
+	string caracter;
 	write("\n");
 	write("Name               : %s\n",getCOFFstring(pos));
 	write("Virtual Size       : %x\n",i4(pos+8));
@@ -1044,7 +1044,7 @@ class dumpfile
 #endif
     }
 
-  void create(string d, void|int p, void|int len, void|string f)
+  protected void create(string d, void|int p, void|int len, void|string f)
     {
       base=p;
       data=d;
@@ -1094,7 +1094,7 @@ int main(int argc, array(string) argv)
   string output="a.out";
 //  werror("%O\n",argv);
   werror("Pike Win32 partial linker.\n"
-	 "$Id: pntld,v 1.24 2008/07/14 14:03:26 mast Exp $\n"
+         "$Id$\n"
 	 "Written by Fredrik Hubinette 2000 - 2001\n");
 
   foreach(Getopt.find_all_options(argv,aggregate(

@@ -16,7 +16,7 @@ int verbose=0;
 int linking_failed;
 
 // Files to remove upon exit
-string *tmpfiles=({});
+array(string) tmpfiles=({});
 
 void exit(int code)
 {
@@ -32,12 +32,11 @@ string get_ext(string file)
   return reverse(file);
 }
 
-int compile(string *sources,
-	     string dest,
-	     string errorfile,
-	     string *cflags)
+int compile(array(string) sources,
+            string dest,
+            string errorfile,
+            array(string) cflags)
 {
-  int ret;
   mixed cmd;
   if(!dest)
   {
@@ -97,16 +96,16 @@ int main(int argc, array(string) argv)
 {
   string target;
   string operation="link";
-  string *cflags=({"-d__WIN32__","-d_WIN32"});
-  string *ldopts=({"OPTION","STACK=8m"});
-  string *libraries=({});
-  string *objects=({});
-  string *sources=({});
+  array(string) cflags=({"-d__WIN32__","-d_WIN32"});
+  array(string) ldopts=({"OPTION","STACK=8m"});
+  array(string) libraries=({});
+  array(string) objects=({});
+  array(string) sources=({});
   int debug,optimize;
   string output;
   int share=0;
 
-  mixed *opts=Getopt.find_all_options(argv, aggregate(
+  array opts=Getopt.find_all_options(argv, aggregate(
     ({"oper_pre",Getopt.NO_ARG, ({"-E"}) }),
     ({"oper_comp",Getopt.NO_ARG, ({"-c"}) }),	
     ({"verbose",Getopt.NO_ARG, ({"-v"}) }),	
@@ -123,7 +122,7 @@ int main(int argc, array(string) argv)
     ({"output",Getopt.HAS_ARG, ({"-o"}) }),
     ({"export",Getopt.HAS_ARG, ({"--export"}) })
     ));
-  foreach(opts, mixed *option)
+  foreach(opts, array option)
     {
       switch(option[0])
       {

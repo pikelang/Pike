@@ -80,7 +80,7 @@ void server(string host, int port)
 }
 
 
-void handle_connections(string *hosts)
+void handle_connections(array(string) hosts)
 {
   while(1)
   {
@@ -112,7 +112,7 @@ int main(int argc, array(string) argv)
     exit(1);
   }
 
-  string *hosts=({});
+  array(string) hosts = ({});
   for(int e=2;e<sizeof(argv);e++)
   {
     if(sscanf(argv[e],"%s:%d\n",string host, int port))

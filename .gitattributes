@@ -10,7 +10,6 @@ lib -text -crlf
 # Remove the corresponding line before committing
 # changes to these files.
 /NT/tools/install-sh foreign_ident
-/NT/tools/pntld foreign_ident
 /NT/tools/rntecl foreign_ident
 /lib/modules/MIME.pmod foreign_ident
 /lib/modules/Stdio.pmod foreign_ident
@@ -22,4 +21,3 @@ lib -text -crlf
 /src/modules/math/math.c foreign_ident
 /tools/install-sh foreign_ident
 /tools/isainfo foreign_ident
-/tools/pntld foreign_ident

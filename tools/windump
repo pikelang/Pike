@@ -27,7 +27,7 @@ class Bitfield
 
     return ret*" | ";
   }
-  void create(string ... n)
+  protected void create(string ... n)
     {
       names=n;
     }
@@ -652,7 +652,7 @@ class dumpfile
 	     
     }
 
-  void create(string d, void|int p, void|int len)
+  protected void create(string d, void|int p, void|int len)
     {
       base=p;
       data=d;
