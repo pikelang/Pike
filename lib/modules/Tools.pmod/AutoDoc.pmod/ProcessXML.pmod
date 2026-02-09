@@ -1387,6 +1387,19 @@ class NScope
     }
   }
 
+  array(SimpleNode) object_types_for_node(SimpleNode n)
+  {
+    switch(n->get_any_name()) {
+    case "returntype":
+    case "or": case "and":
+      return map(n->get_children(), object_types_for_node) * ({});
+    case "object":
+      return ({ n });
+    }
+
+    return ({});
+  }
+
   void enterNode(SimpleNode tree)
   {
     foreach(tree->get_children(), SimpleNode child) {
@@ -1475,18 +1488,30 @@ class NScope
 	}
 	break;
       case "arguments":
-	foreach(child->get_children(), SimpleNode arg) {
-	  if (arg->get_node_type() == XML_ELEMENT) {
-	    string arg_name = arg->get_attributes()->name;
-	    if (objectp(symbols[arg_name])) {
-	      werror("%s is both a %s scope and an argument!\n",
-		     path + arg_name, h_scope->type);
-	    } else {
-	      symbols[arg_name] = 1;
-	    }
+        foreach(child->get_elements("argument"), SimpleNode arg) {
+          string arg_name = arg->get_attributes()->name;
+          if (objectp(symbols[arg_name])) {
+            werror("%s is both a %s scope and an argument!\n",
+                   path + arg_name, h_scope->type);
+          } else {
+            symbols[arg_name] = 1;
 	  }
 	}
 	break;
+      case "returntype":
+        // Handle stuff like @[master()->report()].
+        // CAVEAT: This causes references to symbols from
+        //         the function doc to also follow the return
+        //         value's type. In practice this is likely
+        //         not a problem.
+        foreach(Array.uniq(object_types_for_node(child));
+                int i; SimpleNode obj_type) {
+          string obj_name = String.trim(obj_type->value_of_node());
+          if (!sizeof(obj_name)) continue;
+          if (!inherits) inherits = ([]);
+          inherits["\0" + obj_name] = obj_name;
+        }
+        break;
       default:
 	break;
       }
@@ -1559,6 +1584,11 @@ class NScope
   {
     if (!inherits || !sizeof(inherits)) return 0;
     if (inherits[inh]) {
+      if (stringp(inherits[inh])) {
+        string sym = inherits[inh];
+        m_delete(inherits, inh);	// Avoid infinite loop.
+        inherits[inh] = lookup(splitRef(sym));
+      }
       string|zero found = inherits[inh]->lookup(path);
       if (found) return ({ depth, found });
     }
