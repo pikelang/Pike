@@ -262,7 +262,7 @@ MK_HASHMEM(simple_hashmem2, p_wchar2)
  *!   This function is byte-order dependant for wide strings.
  *!
  *! @seealso
- *!   @[hash_7_6()], @[hash_7_0]
+ *!   @[hash_8_0()], @[hash_7_0]
  */
 static void f_hash_7_4(INT32 args)
 {
@@ -8757,7 +8757,7 @@ PMOD_EXPORT void f_replace_master(INT32 args)
   pop_n_elems(args);
 }
 
-/*! @decl object master();
+/*! @decl MasterObject|zero master();
  *!
  *!   Return the current master object.
  *!
