@@ -225,7 +225,7 @@ PIKECLASS TM
      *!
      *! @seealso
      *!  @[strptime()], @[predef::strftime()], @[predef::strptime()],
-     *!  @[Gettext.setlocale()]
+     *!  @[Locale.Gettext.setlocale()]
      */
     PIKEFUN string(1..255) strftime(string(1..255) format)
     {
@@ -317,7 +317,7 @@ PIKECLASS TM
      *!
      *! @note
      *!   In versions of Pike prior to Pike 8.0.1866 the exact format
-     *!   was very locale (see @[Gettext.setlocale]) and OS dependent.
+     *!   was very locale (see @[Locale.Gettext.setlocale]) and OS dependent.
      */
     PIKEFUN string asctime()
     {
