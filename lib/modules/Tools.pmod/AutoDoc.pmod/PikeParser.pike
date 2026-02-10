@@ -213,6 +213,11 @@ string peekToken(int | void with_newlines) {
   return tokens[at];
 }
 
+array(string) remainingTokens()
+{
+  return tokens[tokenPtr..];
+}
+
 protected int nReadDocComments = 0;
 
 //! @returns
