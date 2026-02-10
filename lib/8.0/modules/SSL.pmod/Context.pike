@@ -19,10 +19,10 @@ protected array(string(8bit)) compat_certificates;
 //!
 //! Compatibility, don't use.
 //!
-//! @deprecated find_cert
+//! @deprecated find_cert_issuer(), find_cert_domain()
 //!
 //! @seealso
-//!   @[`certificates], @[find_cert()]
+//!   @[`certificates], @[find_cert_issuer()], @[find_cert_domain()]
 Crypto.RSA.State `rsa()
 {
   return compat_rsa;
@@ -51,10 +51,10 @@ void `rsa=(Crypto.RSA.State k)
 //!
 //! Compatibility, don't use.
 //!
-//! @deprecated find_cert
+//! @deprecated find_cert_issuer(), find_cert_domain()
 //!
 //! @seealso
-//!   @[`rsa], @[find_cert()]
+//!   @[`rsa], @[find_cert_issuer()], @[find_cert_domain()]
 array(string(8bit)) `certificates()
 {
   return compat_certificates;
@@ -84,10 +84,10 @@ void `certificates=(array(string(8bit)) certs)
 //!
 //! Compatibility, don't use.
 //!
-//! @deprecated find_cert
+//! @deprecated find_cert_issuer(), find_cert_domain()
 //!
 //! @seealso
-//!   @[`certificates], @[find_cert()]
+//!   @[`certificates], @[find_cert_issuer()], @[find_cert_domain()]
 Crypto.RSA.State `client_rsa()
 {
   return compat_rsa;
@@ -116,10 +116,10 @@ void `client_rsa=(Crypto.RSA.State k)
 //!
 //! Compatibility, don't use.
 //!
-//! @deprecated find_cert
+//! @deprecated find_cert_issuer(), find_cert_domain()
 //!
 //! @seealso
-//!   @[`rsa], @[find_cert()]
+//!   @[`rsa], @[find_cert_issuer()], @[find_cert_domain()]
 array(array(string(8bit))) `client_certificates()
 {
   return compat_certificates && ({ compat_certificates });
@@ -148,7 +148,7 @@ void `client_certificates=(array(array(string(8bit))) certs)
 }
 
 //! Compatibility.
-//! @deprecated find_cert
+//! @deprecated find_cert_issuer(), find_cert_domain()
 Crypto.DSA.State `dsa()
 {
   return UNDEFINED;
