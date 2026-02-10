@@ -1045,9 +1045,14 @@ PikeObject|array(PikeObject)|Annotation parseDecl(mapping|void args) {
     } else {
       if (i->classname[0] != '"') {
 	// Keep just the last part.
-	i->name = (replace(i->classname,
-			   ({ "::", "->", "()" }),
-			   ({ ".", ".", "" }))/".")[-1];
+        if (has_suffix(i->classname, "::")) {
+          // Eg @decl inherit predef::
+          i->name = i->classname[..<2];
+        } else {
+          i->name = (replace(i->classname,
+                             ({ "::", "->", "()" }),
+                             ({ ".", ".", "" }))/".")[-1];
+        }
       }
     }
     i->bindings = parseOptionalBindings();
