@@ -1340,7 +1340,8 @@ class NScope
       error("Unsupported node type: %O, name: %O, path: %O\n",
 	    type, name, path);
     }
-    if (!(<"autodoc", "namespace", "module", "class", "method", "enum">)[type]) {
+    if (!(<"autodoc", "namespace", "module", "class", "method", "enum",
+            "variable", "constant" >)[type]) {
       error("Unsupported node type: %O, name: %O, path: %O\n",
 	    type, name, path);
     }
@@ -1390,7 +1391,7 @@ class NScope
   array(SimpleNode) object_types_for_node(SimpleNode n)
   {
     switch(n->get_any_name()) {
-    case "returntype":
+    case "type": case "returntype":
     case "or": case "and":
       return map(n->get_children(), object_types_for_node) * ({});
     case "object":
@@ -1412,6 +1413,12 @@ class NScope
 	  n = (thing->get_attributes() || ([]))->name;
 	  string subtype = thing->get_any_name();
 	  switch(subtype) {
+          case "variable":
+          case "constant":
+            // The above need a scope in case they are indexed via.
+            // Eg: SSL.Port()->ctx->add_cert().
+            //
+            // FALL_THROUGH
 	  case "method":
 	    if (n) {
 	      NScope scope = h_scope || symbols[n];
@@ -1498,14 +1505,16 @@ class NScope
 	  }
 	}
 	break;
+      case "type":
+        // Handle stuff like @[SSL.Port()->ctx->add_cert()].
+        // FALL_THROUGH
       case "returntype":
         // Handle stuff like @[master()->report()].
         // CAVEAT: This causes references to symbols from
         //         the function doc to also follow the return
         //         value's type. In practice this is likely
         //         not a problem.
-        foreach(Array.uniq(object_types_for_node(child));
-                int i; SimpleNode obj_type) {
+        foreach(Array.uniq(object_types_for_node(child)), SimpleNode obj_type) {
           string obj_name = String.trim(obj_type->value_of_node());
           if (!sizeof(obj_name)) continue;
           if (!inherits) inherits = ([]);
