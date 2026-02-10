@@ -441,8 +441,33 @@ protected class DocParserClass {
       if (!s) {
         parseError("@deprecated: expected list identifier, got %O", arg);
 	if (parser->peekToken() != ",") return res;
-      } else
+      } else {
+        string token = "";
+
+        while (!(< EOF, "," >)[token = parser->peekToken()]) {
+          switch(token) {
+          case "(":
+            parser->eat("(");
+            parser->eat(")");
+            s += "()";
+            continue;
+
+          case "->":
+            parser->eat("->");
+            string ss = parser->parseIdents();
+            if (!ss) break;
+            s += "->" + ss;
+            continue;
+          }
+          werror("Unexpected token: %O\n"
+                 "Tokens: %O\n",
+                 parser->peekToken(),
+                 parser->remainingTokens());
+          break;
+        }
+
 	res += xmltag("name", xmltag("ref", s));
+      }
       if (parser->peekToken() == EOF)
         return res;
       parser->eat(",");

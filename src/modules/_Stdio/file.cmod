@@ -3707,8 +3707,8 @@ void file_sync(INT32 args)
  *! The offset is set to the size of the file plus @[offset] bytes.
  *! @endstring
  *!
- *! If @[whence] is not specified it is SEEK_SET if @[offset] is
- *! positive, and if @[offset] is negative SEEK_END.
+ *! If @[whence] is not specified it is @[SEEK_SET] if @[offset] is
+ *! positive, and if @[offset] is negative @[SEEK_END].
  *!
  *! The seek() function on most operating systems allows the file
  *! offset to be set beyond the end of the file (but this does not
@@ -7174,11 +7174,40 @@ PIKE_MODULE_INIT
       SEEK_HOLE,0
 #endif
     };
+
+    /*! @decl constant int SEEK_CUR
+     *!   Used in @[Fd()->seek()] to specify an absolute offset
+     *!   from the beginning of the file.
+     */
     add_string_constant( "SEEK_CUR", seek_how+0, 0 );
+
+    /*! @decl constant int SEEK_SET
+     *!   Used in @[Fd()->seek()] to specify an offset relative
+     *!   to the current offset.
+     */
     add_string_constant( "SEEK_SET", seek_how+2, 0 );
+
+    /*! @decl constant int SEEK_END
+     *!   Used in @[Fd()->seek()] to specify an offset relative
+     *!   to the end of the file.
+     */
     add_string_constant( "SEEK_END", seek_how+4, 0 );
+
 #ifdef SEEK_DATA
+    /*! @decl constant int SEEK_DATA
+     *!   Used in @[Fd()->seek()] to specify an offset past the
+     *!   specified absolute offset that contains data (ie is
+     *!   not a hole). Seeking past the end of the file is not
+     *!   supported.
+     */
     add_string_constant( "SEEK_DATA", seek_how+6, 0 );
+
+    /*! @decl constant int SEEK_HOLE
+     *!   Used in @[Fd()->seek()] to specify an offset past the
+     *!   specified absolute offset that is a hole. There is an
+     *!   implicit hole at the end of the file. Seeking past the
+     *!   end of the file is not supported.
+     */
     add_string_constant( "SEEK_HOLE", seek_how+8, 0 );
 #endif
   };

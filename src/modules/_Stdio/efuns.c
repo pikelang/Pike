@@ -820,7 +820,7 @@ void f_filesystem_stat(INT32 args)
  *!   Returns @expr{0@} (zero) on failure, @expr{1@} otherwise.
  *!
  *! @note
- *!   May fail with @[errno()] set to @[EISDIR] or @[ENOTDIR]
+ *!   May fail with @[errno()] set to @[System.EISDIR] or @[System.ENOTDIR]
  *!   if the file has changed to a directory during the call
  *!   or the reverse.
  *!
