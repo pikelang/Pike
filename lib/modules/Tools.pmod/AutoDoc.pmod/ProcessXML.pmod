@@ -1368,15 +1368,20 @@ class NScope
       break;
     case "namespace":
       if (inherits && sizeof(inherits) == 1) {
-	foreach(symbols;;int(1..)|NScope scope) {
+        string inh = indices(inherits)[0];
+        if (has_prefix(inh, "\0")) break;
+        foreach(symbols;; int(1..)|NScope scope) {
 	  if (objectp(scope)) {
-	    scope->addImplicitInherits(indices(inherits)[0]);
+            scope->addImplicitInherits(inh);
 	  }
 	}
       }
       break;
     case "module":
       if (!inherits) inherits = ([]);
+      if (!has_suffix(fallback_namespace, "::")) {
+        fallback_namespace += "::";
+      }
       string inh = fallback_namespace + (name/"::")[-1];
       inherits["\0"+inh] = inh;
       foreach(symbols;;int(1..)|NScope scope) {
