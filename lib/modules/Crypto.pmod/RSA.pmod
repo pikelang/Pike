@@ -510,7 +510,7 @@ class PSSState {
     //! The initial default salt size is @expr{20@}.
     //!
     //! @seealso
-    //!   @[pkcs_signature_algorithm_id()], @[pkcs_sign()], @[get_salt_size()]
+    //!   @[pkcs_signature_algorithm_id()], @[pkcs_sign()], @[salt_size()]
     optional void set_salt_size(int(0..) salt_size)
     {
       default_salt_size = salt_size;
