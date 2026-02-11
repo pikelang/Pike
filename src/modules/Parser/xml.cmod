@@ -37,6 +37,9 @@ static struct svalue location_string_svalue;
 /*! @module Parser
  */
 
+/*! @module _parser
+ */
+
 /*! @module XML
  */
 
@@ -3447,6 +3450,9 @@ PIKEFUN string autoconvert(string s)
     pop_stack();
   }
 }
+
+/*! @endmodule
+ */
 
 /*! @endmodule
  */
