@@ -87,7 +87,7 @@ class DOMImplementation
   }
 }
 
-//!
+//! A list of @[Node]s.
 class NodeList
 {
   protected array(Node) nodes;
@@ -427,6 +427,7 @@ class Document
     return 0;
   }
 
+  //! Returns the document element.
   object(Element)|zero get_document_element()
   {
     foreach(values(get_child_nodes()), Node cn)
@@ -475,6 +476,8 @@ class Document
     return EntityReferenceImpl(this, name);
   }
 
+  //! Returns the list of elements with the specified @[tagname]
+  //! from the document element.
   NodeList get_elements_by_tag_name(string tagname)
   {
     return get_document_element()->get_elements_by_tag_name(tagname);
@@ -708,6 +711,8 @@ class Element
     return old_attr;
   }
 
+  //! Returns the list of elements with the specified @[tagname]
+  //! rooted in the current node.
   NodeList get_elements_by_tag_name(string name)
   {
     NodeList res = NodeList((name == "*" || name == get_tag_name()) &&
@@ -1094,7 +1099,7 @@ class InputSource {
   }
 }
 
-//!
+//! Base class for DOM parsers.
 class AbstractDOMParser
 {
   protected class ErrorHandler {

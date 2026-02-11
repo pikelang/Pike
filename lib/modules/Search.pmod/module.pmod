@@ -22,7 +22,7 @@ private void get_filters()
   }
 }
 
-//! @decl Search.Filer.Base get_filter(string mime_type)
+//! @decl Search.Filter.Base get_filter(string mime_type)
 //!
 //! Returns the appropriate filter object for the given mime
 //! type. This will be one of the objects in @[Search.Filter].

@@ -181,6 +181,9 @@ static void parser_magic_index(INT32 args)
 /*! @endmodule
  */
 
+/*! @decl inherit _parser
+ */
+
 /*! @endmodule
  */
 

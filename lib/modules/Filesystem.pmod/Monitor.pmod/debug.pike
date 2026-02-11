@@ -11,6 +11,8 @@
 
 inherit "symlinks.pike";
 
+//! @decl import DefaultCompilerEnvironment
+
 #define MON_WERR(X...)	report(NOTICE,	__func__, X)
 #define MON_WARN(X...)	report(WARNING,	__func__, X)
 #define MON_ERROR(X...)	report(ERROR,	__func__, X)
