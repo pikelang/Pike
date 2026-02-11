@@ -264,6 +264,7 @@ class Node
     content = sloppy_parse_fragment (content, this);
 #define NODE_AT(POS) (stringp (content[POS]) ? make_node (POS) : content[POS])
 
+//! Class that represents a subtree.
 protected class NodeWithChildren
 {
   inherit Node;
@@ -422,9 +423,9 @@ protected class NodeWithChildElements
 
   //NodeList get_elements_by_tag_name (string tag_name);
 
-  array(Element) get_elements (string name)
-  //! Lightweight variant of @[get_elements_by_tag_name] that returns
-  //! a simple array instead of a fancy live NodeList.
+  array(Element) get_elements(string name)
+  //! Lightweight variant of @[DOM.Node()->get_elements_by_tag_name()]
+  //! that returns a simple array instead of a fancy live NodeList.
   //!
   //! @note
   //! Not DOM compliant.
@@ -1004,9 +1005,9 @@ class Document
 
   array(Element) get_elements (string name)
   //! Note that this one looks among the top level elements, as
-  //! opposed to @[get_elements_by_tag_name]. This means that if the
-  //! document is correct, you can only look up the single top level
-  //! element here.
+  //! opposed to @[DOM.Node()->get_elements_by_tag_name()].
+  //! This means that if the document is correct, you can only look
+  //! up the single top level element here.
   //!
   //! @note
   //! Not DOM compliant.
