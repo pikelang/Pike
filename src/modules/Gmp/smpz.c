@@ -18,6 +18,18 @@
 #define THIS ((MP_INT *)(_fp->current_storage))
 #define THIS_PROGRAM (_fp->context->prog)
 
+/*! @module Gmp
+ */
+
+/*! @class smpz
+ *!
+ *! Variant of @[Gmp.mpz] where some functions have been
+ *! made side-channel resilient.
+ */
+
+/*! @decl inherit mpz
+ */
+
 static struct program *smpz_program = NULL;
 
 #ifdef HAVE_GMP5
@@ -100,13 +112,45 @@ void pike_init_smpz_module(void)
   low_inherit(mpzmod_program, NULL, -1, 0, 0, NULL, NULL);
 
 #ifdef HAVE_GMP5
+  /*! @decl constant int(1..1) sec_powm
+   *!
+   *! Constant indicating that @[powm()] is side-channel resilient.
+   */
   ADD_INT_CONSTANT("sec_powm", 1, 0);
+
+  /*! @decl Gmp.mpz powm(int|string|float|Gmp.mpz exp, @
+   *!                    int|string|float|Gmp.mpz mod)
+   *!
+   *! Return @expr{this->pow(exp) % mod@}.
+   *!
+   *! @note
+   *!   Potentially side-channel resilient.
+   *!
+   *! @seealso
+   *!   @[sec_powm], @[::powm()]
+   */
   ADD_FUNCTION("powm",smpz_powm,tFunc(tMpz_arg tMpz_arg,tMpz_ret),0);
 #endif
 
 #ifdef HAVE_GMP6
 #ifdef ENABLE_SMPZ_INVERT
+  /*! @decl constant int(1..1) sec_invert
+   *!
+   *! Constant indicating that @[invert()] is side-channel resilient.
+   */
   ADD_INT_CONSTANT("sec_invert", 1, 0);
+
+  /*! @decl Gmp.mpz invert(int|float|Gmp.mpz x)
+   *!
+   *! Returns the inverse of this mpz value modulo @[x].
+   *! The returned value satisfies @expr{0 <= result < x@}.
+   *!
+   *! @note
+   *!   Potentially side-channel resilient.
+   *!
+   *! @seealso
+   *!   @[sec_invert], @[::invert()]
+   */
   ADD_FUNCTION("invert", smpz_invert,tFunc(tMpz_arg,tMpz_ret),0);
 #endif /* ENABLE_SMPZ_INVERT */
 #endif
@@ -123,3 +167,9 @@ void pike_exit_smpz_module(void)
     smpz_program = NULL;
   }
 }
+
+/*! @endclass
+ */
+
+/*! @endmodule
+ */
