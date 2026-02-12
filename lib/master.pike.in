@@ -3194,6 +3194,13 @@ class dirnode (string dirname, CompilationHandler|void compilation_handler,
     return as=='O' && (name || sprintf("master()->dirnode(%O:%O)",
 				       dirname, module && module));
   }
+
+  protected mixed cast(string type)
+  {
+    if (type == "program" && module)
+      return (program)module;
+    return UNDEFINED;
+  }
 }
 
 //! Module node holding possibly multiple directories,
@@ -3459,6 +3466,17 @@ class joinnode (array(object|mapping) joined_modules,
   void _decode (array(object) joined_modules)
   {
     this::joined_modules = joined_modules;
+  }
+
+  protected mixed cast(string type)
+  {
+    if (type == "program")
+      foreach(joined_modules, object|mapping|program o) {
+        mixed v = (program)o;
+        if (!undefinedp(v))
+          return v;
+      }
+    return UNDEFINED;
   }
 }
 
