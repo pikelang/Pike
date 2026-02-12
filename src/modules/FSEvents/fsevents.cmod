@@ -7,7 +7,9 @@
 /*! @module System
  */
 
-/*! @module FSEvents
+/*! @module _FSEvents
+ *!
+ *!   Low-level code for @[System.FSEvents].
  */
 
 #include "module.h"
