@@ -96,7 +96,7 @@ Sequence build_public_key(Crypto.DSA dsa)
                   }));
 }
 
-//! Creates a PrivateKeyInfo ASN.1 sequence for the given @[rsa]
+//! Creates a PrivateKeyInfo ASN.1 sequence for the given @[dsa]
 //! object. See @rfc{5208:5@}.
 Sequence build_private_key(Crypto.DSA dsa)
 {
