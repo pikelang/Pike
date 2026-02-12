@@ -113,7 +113,7 @@ Boolean false = False();
 //! possible). Similarly, @[Val.false] is only considered equal to
 //! other @[False] instances.
 //!
-//! @[Protocols.JSON] uses these objects to represent the JSON
+//! @[Standards.JSON] uses these objects to represent the JSON
 //! literals @expr{true@} and @expr{false@}.
 //!
 //! @note
