@@ -110,7 +110,7 @@ protected void create(void|string client_id, void|string client_secret,
 //! derived from @[Web.Auth.OAuth2.Client].
 //!
 //! @seealso
-//!  @[Web.Auth.OAuth2.Client] or @[Web.Auth.OWeb.Auth.Client]
+//!  @[Web.Auth.OAuth2.Client] or @[Web.Auth.OAuth.Client]
 Web.Auth.OAuth2.Client `auth()
 {
   return _auth;

@@ -1120,8 +1120,8 @@ PIKECLASS Shuffler
      *! Create a new @[Shuffle] object.
      *!
      *! The destination has to support nonblocking I/O
-     *! through @[set_nonblocking_keep_callbacks] and @[set_write_callback]
-     *! member functions.
+     *! through @[Stdio.File()->set_nonblocking_keep_callbacks()] and
+     *! @[Stdio.File()->set_write_callback()] member functions.
      *!
      *! @note
      *!  For destinations that connect directly to a kernel-filedescriptor

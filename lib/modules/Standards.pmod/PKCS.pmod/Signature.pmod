@@ -21,7 +21,7 @@ import Standards.ASN1.Types;
 //! @param hash
 //!   crypto hash object such as @[Crypto.SHA1] or @[Crypto.MD5]
 //! @seealso
-//!   @[Crypto.RSA()->sign]
+//!   @[Crypto.RSA.State->sign]
 string(0..255) build_digestinfo(HashState|string(0..255) msg, HASH hash)
 {
   if(!hash->pkcs_hash_id) error("Unknown ASN.1 id for hash.\n");
@@ -66,7 +66,8 @@ class Signed
 
   //! Signing algorithm that will be used to sign with.
   //!
-  //! Typically the result of @[Crypto.Sign()->pkcs_signature_algorithm()].
+  //! Typically the result of
+  //! @[Crypto.Sign()->State()->pkcs_signature_algorithm()].
   //!
   //! @seealso
   //!   @[sign()]
@@ -87,7 +88,7 @@ class Signed
 
   //! The resulting signature from signing the DER of @[tbs] with @[algorithm].
   //!
-  //! Typically the result of @[Crypto.Sign()->pkcs_sign()].
+  //! Typically the result of @[Crypto.Sign()->State()->pkcs_sign()].
   //!
   //! @seealso
   //!   @[sign()]

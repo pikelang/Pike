@@ -12,6 +12,7 @@
 
 constant is_range = 1;
 
+//! Type for range endpoints.
 protected typedef int|float|string|object value_type;
 
 //!  The lower inclusive boundary.

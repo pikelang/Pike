@@ -164,7 +164,7 @@ PIKECLASS _Instance {
      *! Callback function that is called when an event is triggered.
      *!
      *! @seealso
-     *!   @[set_event_callback()], @[query_event_callback()]
+     *!   @[set_event_callback()], @[get_event_callback()]
      */
     PIKEVAR function(int, int, int, string:void) event_callback
       flags ID_PRIVATE;

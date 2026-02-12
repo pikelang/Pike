@@ -175,7 +175,6 @@ Makefile.rl -space_indent tab_indent
 /lib/modules/Filesystem.pmod/Tar.pmod mixed_indent
 /lib/modules/Filesystem.pmod/Zip.pmod mixed_indent
 /lib/modules/Filesystem.pmod/module.pmod mixed_indent
-/lib/modules/Filesystem.pmod/testsuite.in mixed_indent
 /lib/modules/Function.pmod mixed_indent
 /lib/modules/GL.pmod/GLSLUtils.pmod mixed_indent
 /lib/modules/GLU.pmod mixed_indent
