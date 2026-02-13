@@ -82,6 +82,8 @@ object(Port)|zero server_port;
 .HeaderParser headerparser;
 
 protected Stdio.Buffer content_buffer = Stdio.Buffer();
+
+//! Content buffer.
 string `buf()
 {
   return (string)content_buffer;    // content buffer
@@ -93,7 +95,7 @@ void `buf=(string(8bit) val)
 
 protected Stdio.Buffer raw_buffer = Stdio.Buffer();
 
-//! raw unparsed full request (headers and body)
+//! Raw unparsed full request (headers and body)
 string `raw()
 {
   return (string)raw_buffer;
