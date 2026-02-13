@@ -29,7 +29,7 @@ function(object, mixed|void:void) accept_callback;
 //!
 //! This function is installed as the @[SSL.sslfile] accept
 //! callback by @[ssl_callback()], and enqueues the newly
-//! negotiated @[SSL.sslfile] on the @[accept_queue].
+//! negotiated @[SSL.sslfile] on the @[accept_queue::].
 //!
 //! If there has been an @[accept_callback] installed by
 //! @[bind()] or @[listen_fd()], it will be called with

@@ -1515,7 +1515,7 @@ class KeyShareECDHE
 
 #if constant(GSSAPI)
 
-//! Key exchange for @[KE_krb].
+//! Key exchange for @[KE_krb5].
 //!
 //! @[KeyExchange] that uses Kerberos (@rfc{2712@}).
 class KeyExchangeKRB
