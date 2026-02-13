@@ -1490,7 +1490,7 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!                    function(function(mixed:void), @
  *!                             string, type: mixed) deserializer)
  *!
- *!   Dispatch function for @[Serialization.deserialize()].
+ *!   Dispatch function for @[Serializer.deserialize()].
  *!
  *! @param o
  *!   Object to serialize. Always a context of the current object.
