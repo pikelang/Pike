@@ -168,7 +168,7 @@ Null null = Null();
 //! of @[Null] (which should be avoided).
 //!
 //! This object is used by the @[Sql] module to represent SQL NULL,
-//! and it is used by @[Protocols.JSON] to represent the JSON literal
+//! and it is used by @[Standards.JSON] to represent the JSON literal
 //! @expr{null@}.
 //!
 //! @note

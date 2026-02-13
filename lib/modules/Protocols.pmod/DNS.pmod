@@ -1,12 +1,8 @@
 // Not yet finished -- Fredrik Hubinette
 
-  //inherit Stdio.UDP : udp;
-
 //! Support for the Domain Name System protocol.
 //!
 //! Implements @rfc{1034@}, @rfc{1035@} and @rfc{2308@}.
-
-protected void send_reply(mapping r, mapping q, mapping m, Stdio.UDP udp);
 
 #pike __REAL_VERSION__
 
@@ -959,6 +955,13 @@ class server_base
 
   array(Stdio.UDP|object) ports = ({ });
 
+  //! Format a reply.
+  //!
+  //!   Typically called from @[send_reply()] to generate
+  //!   the reply to send.
+  //!
+  //! @seealso
+  //!   @[send_reply()]
   protected string low_send_reply(mapping r, mapping q, mapping m)
   {
     if(!r)
@@ -1011,11 +1014,12 @@ class server_base
   //!           @endmapping
   //!       @endarray
   //!     @member array|void "qd"
-  //!       Question section, same format as @[an]; omit to return the original question
+  //!       Question section, same format as @expr{"an"@}.
+  //!       Omit to return the original question.
   //!     @member array|void "ns"
-  //!       Authority section (usually NS records), same format as @[an]
+  //!       Authority section (usually NS records), same format as @expr{"an"@}.
   //!     @member array|void "ar"
-  //!       Additional section, same format as @[an]
+  //!       Additional section, same format as @expr{"an"@}.
   //!     @member int "aa"
   //!       Set to 1 to include the Authoritative Answer bit in the response
   //!     @member int "tc"
@@ -1114,6 +1118,18 @@ class server_base
       handle_query(q, m, udp);
   }
 
+  //! Send a reply to the other endpoint.
+  //!
+  //! @note
+  //!   This is just a prototype, and needs to be overloaded.
+  //!
+  //!   This is typically overloaded by a function that calls
+  //!   @[low_send_reply()] and then sends the result to the
+  //!   other endpoint.
+  //!
+  //! @seealso
+  //!   @[server()->send_reply()], @[tcp_server()->send_reply()],
+  //!   @[dual_server()->send_reply()], @[low_send_reply()]
   protected void send_reply(mapping r, mapping q, mapping m,
 			    Stdio.UDP|object con);
 
@@ -1142,6 +1158,7 @@ class server
 
   //inherit Stdio.UDP : udp;
 
+  //! Send a reply synchronously via UDP.
   protected void send_reply(mapping r, mapping q, mapping m, Stdio.UDP udp) {
     udp->send(m->ip, m->port, low_send_reply(r, q, m));
   }
@@ -1290,6 +1307,7 @@ class tcp_server
     connections[Connection(port->accept())] = 1;
   }
 
+  //! Send a reply synchronously via TCP.
   protected void send_reply(mapping r, mapping q, mapping m, Connection con) {
     con->send(low_send_reply(r, q, m));
   }
@@ -1360,6 +1378,7 @@ class dual_server {
   inherit server : UDP;
   inherit tcp_server : TCP;
 
+  //! Send a reply synchronously over both TCP and UDP.
   protected void send_reply(mapping r, mapping q, mapping m,
 			    Connection|Stdio.UDP con) {
     string rpl = low_send_reply(r, q, m);

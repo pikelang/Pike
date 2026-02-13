@@ -28,7 +28,7 @@ Sequence get_certificate_issuer(string cert)
 //! A string containing an X509 certificate.
 //!
 //! Note that the certificate usually must be decoded using
-//! @[PEM.simpe_decode()].
+//! @[PEM.simple_decode()].
 //!
 //! @returns
 //!  An Standards.ASN1.Sequence object containing the certificate subject
