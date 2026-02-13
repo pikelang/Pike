@@ -5,16 +5,18 @@
 */
 
 
-/* Glue for DNS Service Discovery, which is built on top of e.g. Multicast
-   DNS (ZeroConf/Rendezvous/Bonjour). Using this API a Pike program can
-   register a service (e.g. a web server) and have other applications on
-   the local network detect it without additional configuration.
-
-   The specification can be found at <http://www.dns-sd.org/>.
-
-   The implementation requires either the dns_ds.h (found in Mac OS X
-   and SunOS 5.11+) or howl.h (part of libhowl on Linux).
-*/
+/*! @module _Protocols_DNS_SD
+ *!
+ *! Glue for DNS Service Discovery, which is built on top of e.g. Multicast
+ *! DNS (ZeroConf/Rendezvous/Bonjour). Using this API a Pike program can
+ *! register a service (e.g. a web server) and have other applications on
+ *! the local network detect it without additional configuration.
+ *!
+ *! The specification can be found at @url{http://www.dns-sd.org/@}.
+ *!
+ *! The implementation requires either the dns_ds.h (found in Mac OS X
+ *! and SunOS 5.11+) or howl.h (part of libhowl on Linux).
+ */
 
 
 #include "global.h"
@@ -59,6 +61,9 @@
 #endif
 
 #define IS_ERR(x) ((x) != kDNSServiceErr_NoError)
+
+/*! @class Service
+ */
 
 /* Include these for htons(3SOCKET) et al. */
 #ifdef HAVE_ARPA_INET_H
@@ -320,7 +325,10 @@ static void exit_howl_module(void)
 
 
 
-
+/*! @decl void update_txt(string txt_record)
+ *!
+ *! Update the TXT record for the service.
+ */
 static void f_update_txt(INT32 args)
 {
   check_all_args(NULL, args,
@@ -340,6 +348,11 @@ static void f_update_txt(INT32 args)
 }
 
 
+/*! @decl protected void create(string name, string service, string domain, @
+ *!                             int port, string|void txt_record)
+ *!
+ *!   Register a new service.
+ */
 static void f_create(INT32 args)
 {
   char                *name, *service, *domain, *txt;
@@ -381,6 +394,8 @@ static void exit_service_struct(struct object *UNUSED(o))
   stop_service(THIS);
 }
 
+/*! @endclass
+ */
 
 PIKE_MODULE_INIT
 {
@@ -419,3 +434,6 @@ PIKE_MODULE_INIT {}
 PIKE_MODULE_EXIT {}
 
 #endif /* defined(HAVE_DNS_SD) || defined(HAVE_HOWL) */
+
+/*! @endmodule
+ */
