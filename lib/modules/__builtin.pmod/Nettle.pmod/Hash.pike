@@ -439,7 +439,7 @@ string(7bit) crypt_hash(string(8bit) password, string(8bit) salt,
   return (string(7bit))ret;
 }
 
-//!   Password hashing function in @[crypt_md5()]-style.
+//!   Password hashing function in @[Nettle.crypt_md5()]-style.
 //!
 //!   Almost implements the algorithm described in
 //!   @url{http://www.akkadia.org/drepper/SHA-crypt.txt@}.
@@ -454,7 +454,7 @@ string(7bit) crypt_hash(string(8bit) password, string(8bit) salt,
 //!   Do not use unless you know what you are doing!
 //!
 //! @seealso
-//!   @[crypt_md5()], @[crypt_hash()]
+//!   @[Nettle.crypt_md5()], @[crypt_hash()]
 string(7bit) crypt_hash_pike(string(8bit) password, string(8bit) salt,
                              int(0..) rounds)
 {
