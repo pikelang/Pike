@@ -21,7 +21,7 @@
 //!	</tt>
 //!
 //! note
-//!	Do not confuse this module with <ref>Ruleset.Timezone</ref>,
+//!	Do not confuse this module with <ref>Rule.Timezone</ref>,
 //!	which is the base class of a timezone object.
 //!
 //!	<tt>"CET"</tt> and some other standard abbreviations work too,

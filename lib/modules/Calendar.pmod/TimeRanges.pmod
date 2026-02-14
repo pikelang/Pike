@@ -898,7 +898,7 @@ class TimeRange
 
 //! method TimeRange set_timezone(Timezone tz)
 //! method TimeRange set_timezone(string tz)
-//! method TimeZone timezone()
+//! method Timezone timezone()
 //!	Set or get the current timezone (including dst) rule.
 //!
 //! note:
@@ -908,7 +908,7 @@ class TimeRange
 //!	To get the time of day for a specified timezone,
 //!	select the timezone before getting the time of day:
 //!
-//!	<tt>Year(2003)-&gt;...-&gt;set_timezone(TimeZone.CET)-&gt;...-&gt;hour(14)-&gt;...</tt>
+//!	<tt>Year(2003)-&gt;...-&gt;set_timezone(Timezone.CET)-&gt;...-&gt;hour(14)-&gt;...</tt>
 //!
 
    this_program set_timezone(string|Calendar.Rule.Timezone tz)
@@ -964,6 +964,7 @@ class TimeRange
 
 //!
 //! module Calendar
+//! submodule TimeRanges
 //! class SuperTimeRange
 //!     This class handles the cases where you have a time
 //!	period with holes. These can be created by the
@@ -1162,6 +1163,7 @@ class cSuperTimeRange
 }
 
 //! module Calendar
+//! submodule TimeRanges
 //! constant TimeRange nulltimerange
 //!	This represents the null time range,
 //!	which, to differ from the zero time range
@@ -1172,6 +1174,9 @@ class cSuperTimeRange
 //!
 //! 	It has a constant, <tt>is_nulltimerange</tt>, which
 //!	is non-zero. <tt>`!</tt> on this timerange is true.
+
+//! class NullTimeRange
+//!	This is the class used for the <ref>nulltimerange</ref>.
 
 
 program NullTimeRange=cNullTimeRange;
