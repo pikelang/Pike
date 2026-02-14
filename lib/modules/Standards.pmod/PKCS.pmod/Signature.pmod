@@ -67,7 +67,7 @@ class Signed
   //! Signing algorithm that will be used to sign with.
   //!
   //! Typically the result of
-  //! @[Crypto.Sign()->State()->pkcs_signature_algorithm()].
+  //! @[Crypto.Sign()->State()->pkcs_signature_algorithm_id()].
   //!
   //! @seealso
   //!   @[sign()]
