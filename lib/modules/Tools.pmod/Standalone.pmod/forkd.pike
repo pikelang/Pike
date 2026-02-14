@@ -11,7 +11,7 @@
 //! considerable overhead in process creation.
 //!
 //! @seealso
-//!   @[Process.RemoteProcess], @[Process.create_process]
+//!   @[Process.Process], @[Process.create_process]
 
 constant description = "Light-weight daemon for spawning new processes.";
 
