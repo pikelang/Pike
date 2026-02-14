@@ -21,7 +21,7 @@
 
 //! @decl inherit Builtin.__master
 
-//! @decl optional void report(SeverityLevel severity, @
+//! @decl optional void report(Reporter.SeverityLevel severity, @
 //!                            string filename, int(0..) linenumber, @
 //!                            string subsystem, @
 //!                            string message, mixed ... extra_args)
@@ -6382,6 +6382,11 @@ class Encoder
     return UNDEFINED;
   }
 
+  //! Return a value that @[Decoder()->decode_object()] can use
+  //! to recreate the object @[x].
+  //!
+  //! @returns
+  //!   Returns the result of calling @expr{x->_encode()@}.
   mixed encode_object(object x)
   {
     DEC_MSG ("encode_object (%O)\n", x);
