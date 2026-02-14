@@ -780,7 +780,7 @@ static void f_compilation_env_get_compilation_handler(INT32 args)
  *!
  *! @note
  *!   This function is typically called by
- *!   @[Pike_compiler()->get_default_module()].
+ *!   @[PikeCompiler()->get_default_module()].
  *!
  *! @seealso
  *!   @[MasterObject()->get_default_module()].

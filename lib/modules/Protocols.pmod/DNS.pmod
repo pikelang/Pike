@@ -1227,6 +1227,7 @@ class tcp_server
 
   mapping(Connection:int(1..1)) connections = ([ ]);
 
+  //! A TCP connection from a DNS client..
   protected class Connection {
     constant tcp_connection = 1;
 

@@ -923,6 +923,128 @@ static void f_error_create(INT32 args)
 /*! @endclass
  */
 
+/*! @class Index
+ *!
+ *!   This error is thrown by various indexing operations when
+ *!   the index is invalid for the value being indexed.
+ */
+
+/*! @decl inherit Generic
+ */
+
+/*! @endclass
+ */
+
+/*! @class BadArgument
+ *!
+ *!   This error is thrown by many functions when they get
+ *!   called with invalid arguments.
+ */
+
+/*! @decl inherit Generic
+ */
+
+/*! @endclass
+ */
+
+/*! @class Math
+ *!
+ *!   This error typically indicates an attempt to divide by zero.
+ */
+
+/*! @decl inherit Generic
+ */
+
+/*! @endclass
+ */
+
+/*! @class Resource
+ *!
+ *!   This error indicates that the system has run out of a limited
+ *!   resource (typically memory).
+ */
+
+/*! @decl inherit Generic
+ */
+
+/*! @endclass
+ */
+
+/*! @class Permission
+ *!
+ *!   Error that used to be thrown by the internal security system.
+ *!
+ *!   The internal security system was removed in Pike 8.1.3.
+ */
+
+/*! @decl inherit Generic
+ */
+
+/*! @endclass
+ */
+
+/*! @class Decode
+ *!
+ *!   Error thrown by @[decode_value()] for invalid input.
+ */
+
+/*! @decl inherit Generic
+ */
+
+/*! @endclass
+ */
+
+/*! @class Cpp
+ *!
+ *!   Error thrown by @[cpp()] for invalid input.
+ */
+
+/*! @decl inherit Generic
+ */
+
+/*! @decl constant int is_cpp_or_compilation_error
+ */
+
+/*! @endclass
+ */
+
+/*! @class Compilation
+ *!
+ *!   This error is thrown on failure by @[compile()] et al.
+ */
+
+/*! @decl inherit Generic
+ */
+
+/*! @decl constant int is_cpp_or_compilation_error
+ */
+
+/*! @endclass
+ */
+
+/*! @class MasterLoad
+ *!
+ *!   This error is thrown when the @[MasterObject] fails to load.
+ */
+
+/*! @decl inherit Generic
+ */
+
+/*! @endclass
+ */
+
+/*! @class ModuleLoad
+ *!
+ *!   This error is thrown when a dynamically loaded binary module
+ *!   fails to load.
+ */
+
+/*! @decl inherit Generic
+ */
+
+/*! @endclass
+ */
+
 /*! @endmodule
  */
 

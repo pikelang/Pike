@@ -66,57 +66,57 @@ protected {
 
   //! Tokens that may occur in the answers from the server.
   enum Token {
-    TDS_ERROR			= 3,
-    TDS_DONT_RETURN		= 42,
+    TDS_ERROR			= 3,	//! 0x03
+    TDS_DONT_RETURN		= 42,	//! 0x2A
 
-    TDS5_PARAMFMT2_TOKEN	= 32,	/* 0x20 */
-    TDS_LANGUAGE_TOKEN		= 33,	/* 0x21    TDS 5.0 only              */
-    TDS_ORDERBY2_TOKEN		= 34,	/* 0x22 */
-    TDS_ROWFMT2_TOKEN		= 97,	/* 0x61    TDS 5.0 only              */
-    TDS_LOGOUT_TOKEN		= 113,	/* 0x71    TDS 5.0 only? ct_close()  */
-    TDS_RETURNSTATUS_TOKEN	= 121,	/* 0x79                              */
-    TDS_PROCID_TOKEN		= 124,	/* 0x7C    TDS 4.2 only - TDS_PROCID */
-    TDS7_RESULT_TOKEN		= 129,	/* 0x81    TDS 7.0 only              */
-    TDS7_COMPUTE_RESULT_TOKEN	= 136,	/* 0x88    TDS 7.0 only              */
-    TDS_COLNAME_TOKEN		= 160,	/* 0xA0    TDS 4.2 only              */
-    TDS_COLFMT_TOKEN		= 161,	/* 0xA1    TDS 4.2 only - TDS_COLFMT */
-    TDS_DYNAMIC2_TOKEN		= 163,	/* 0xA3 */
-    TDS_TABNAME_TOKEN		= 164,	/* 0xA4 */
-    TDS_COLINFO_TOKEN		= 165,	/* 0xA5 */
-    TDS_OPTIONCMD_TOKEN		= 166,	/* 0xA6 */
-    TDS_COMPUTE_NAMES_TOKEN	= 167,	/* 0xA7 */
-    TDS_COMPUTE_RESULT_TOKEN	= 168,	/* 0xA8 */
-    TDS_ORDERBY_TOKEN		= 169,	/* 0xA9    TDS_ORDER                 */
-    TDS_ERROR_TOKEN		= 170,	/* 0xAA                              */
-    TDS_INFO_TOKEN		= 171,	/* 0xAB                              */
-    TDS_PARAM_TOKEN		= 172,	/* 0xAC    RETURNVALUE?              */
-    TDS_LOGINACK_TOKEN		= 173,	/* 0xAD                              */
-    TDS_CONTROL_TOKEN		= 174,	/* 0xAE    TDS_CONTROL               */
-    TDS_ROW_TOKEN		= 209,	/* 0xD1                              */
-    TDS_CMP_ROW_TOKEN		= 211,	/* 0xD3                              */
-    TDS5_PARAMS_TOKEN		= 215,	/* 0xD7    TDS 5.0 only              */
-    TDS_CAPABILITY_TOKEN	= 226,	/* 0xE2                              */
-    TDS_ENVCHANGE_TOKEN		= 227,	/* 0xE3                              */
-    TDS_EED_TOKEN		= 229,	/* 0xE5                              */
-    TDS_DBRPC_TOKEN		= 230,	/* 0xE6                              */
-    TDS5_DYNAMIC_TOKEN		= 231,	/* 0xE7    TDS 5.0 only              */
-    TDS5_PARAMFMT_TOKEN		= 236,	/* 0xEC    TDS 5.0 only              */
-    TDS_AUTH_TOKEN		= 237,	/* 0xED                              */
-    TDS_RESULT_TOKEN		= 238,	/* 0xEE                              */
-    TDS_DONE_TOKEN		= 253,	/* 0xFD    TDS_DONE                  */
-    TDS_DONEPROC_TOKEN		= 254,	/* 0xFE    TDS_DONEPROC              */
-    TDS_DONEINPROC_TOKEN	= 255,	/* 0xFF    TDS_DONEINPROC            */
+    TDS5_PARAMFMT2_TOKEN	= 32,	//! 0x20
+    TDS_LANGUAGE_TOKEN		= 33,	//! 0x21    TDS 5.0 only
+    TDS_ORDERBY2_TOKEN		= 34,	//! 0x22
+    TDS_ROWFMT2_TOKEN		= 97,	//! 0x61    TDS 5.0 only
+    TDS_LOGOUT_TOKEN		= 113,	//! 0x71    TDS 5.0 only? ct_close()
+    TDS_RETURNSTATUS_TOKEN	= 121,	//! 0x79
+    TDS_PROCID_TOKEN		= 124,	//! 0x7C    TDS 4.2 only - TDS_PROCID
+    TDS7_RESULT_TOKEN		= 129,	//! 0x81    TDS 7.0 only
+    TDS7_COMPUTE_RESULT_TOKEN	= 136,	//! 0x88    TDS 7.0 only
+    TDS_COLNAME_TOKEN		= 160,	//! 0xA0    TDS 4.2 only
+    TDS_COLFMT_TOKEN		= 161,	//! 0xA1    TDS 4.2 only - TDS_COLFMT
+    TDS_DYNAMIC2_TOKEN		= 163,	//! 0xA3
+    TDS_TABNAME_TOKEN		= 164,	//! 0xA4
+    TDS_COLINFO_TOKEN		= 165,	//! 0xA5
+    TDS_OPTIONCMD_TOKEN		= 166,	//! 0xA6
+    TDS_COMPUTE_NAMES_TOKEN	= 167,	//! 0xA7
+    TDS_COMPUTE_RESULT_TOKEN	= 168,	//! 0xA8
+    TDS_ORDERBY_TOKEN		= 169,	//! 0xA9    TDS_ORDER
+    TDS_ERROR_TOKEN		= 170,	//! 0xAA
+    TDS_INFO_TOKEN		= 171,	//! 0xAB
+    TDS_PARAM_TOKEN		= 172,	//! 0xAC    RETURNVALUE?
+    TDS_LOGINACK_TOKEN		= 173,	//! 0xAD
+    TDS_CONTROL_TOKEN		= 174,	//! 0xAE    TDS_CONTROL
+    TDS_ROW_TOKEN		= 209,	//! 0xD1
+    TDS_CMP_ROW_TOKEN		= 211,	//! 0xD3
+    TDS5_PARAMS_TOKEN		= 215,	//! 0xD7    TDS 5.0 only
+    TDS_CAPABILITY_TOKEN	= 226,	//! 0xE2
+    TDS_ENVCHANGE_TOKEN		= 227,	//! 0xE3
+    TDS_EED_TOKEN		= 229,	//! 0xE5
+    TDS_DBRPC_TOKEN		= 230,	//! 0xE6
+    TDS5_DYNAMIC_TOKEN		= 231,	//! 0xE7    TDS 5.0 only
+    TDS5_PARAMFMT_TOKEN		= 236,	//! 0xEC    TDS 5.0 only
+    TDS_AUTH_TOKEN		= 237,	//! 0xED
+    TDS_RESULT_TOKEN		= 238,	//! 0xEE
+    TDS_DONE_TOKEN		= 253,	//! 0xFD    TDS_DONE
+    TDS_DONEPROC_TOKEN		= 254,	//! 0xFE    TDS_DONEPROC
+    TDS_DONEINPROC_TOKEN	= 255,	//! 0xFF    TDS_DONEINPROC
     /* CURSOR support: TDS 5.0 only*/
-    TDS_CURCLOSE_TOKEN		= 128,	/* 0x80    TDS 5.0 only              */
-    TDS_CURFETCH_TOKEN		= 130,	/* 0x82    TDS 5.0 only              */
-    TDS_CURINFO_TOKEN		= 131,	/* 0x83    TDS 5.0 only              */
-    TDS_CUROPEN_TOKEN		= 132,	/* 0x84    TDS 5.0 only              */
-    TDS_CURDECLARE_TOKEN	= 134,	/* 0x86    TDS 5.0 only              */
+    TDS_CURCLOSE_TOKEN		= 128,	//! 0x80    TDS 5.0 only
+    TDS_CURFETCH_TOKEN		= 130,	//! 0x82    TDS 5.0 only
+    TDS_CURINFO_TOKEN		= 131,	//! 0x83    TDS 5.0 only
+    TDS_CUROPEN_TOKEN		= 132,	//! 0x84    TDS 5.0 only
+    TDS_CURDECLARE_TOKEN	= 134,	//! 0x86    TDS 5.0 only
   };
 
   //! Environment types.
   //!
-  //! Used by @[TDS_ENV_CHANGE_TOKEN]
+  //! Used by @[TDS_ENVCHANGE_TOKEN]
   enum EnvType {
     /* environment type field */
     TDS_ENV_DATABASE		= 1,
