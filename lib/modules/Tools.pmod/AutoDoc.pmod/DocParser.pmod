@@ -1147,7 +1147,7 @@ protected class DocParserClass {
 //!
 //! @returns
 //!   Each of the arrays in the returned array can be fed to
-//!   @[Parse::create()]
+//!   @[Parse()->create()]
 array(array(Token)) splitDocBlock(string block, SourcePosition position) {
   array(Token) tokens = split(block, position);
   array(Token) current = ({ });
