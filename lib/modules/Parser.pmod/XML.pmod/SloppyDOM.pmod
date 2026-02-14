@@ -424,7 +424,7 @@ protected class NodeWithChildElements
   //NodeList get_elements_by_tag_name (string tag_name);
 
   array(Element) get_elements(string name)
-  //! Lightweight variant of @[DOM.Node()->get_elements_by_tag_name()]
+  //! Lightweight variant of @[DOM.Element()->get_elements_by_tag_name()]
   //! that returns a simple array instead of a fancy live NodeList.
   //!
   //! @note
@@ -1005,7 +1005,7 @@ class Document
 
   array(Element) get_elements (string name)
   //! Note that this one looks among the top level elements, as
-  //! opposed to @[DOM.Node()->get_elements_by_tag_name()].
+  //! opposed to @[DOM.Document()->get_elements_by_tag_name()].
   //! This means that if the document is correct, you can only look
   //! up the single top level element here.
   //!
