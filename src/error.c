@@ -645,7 +645,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_fatal(const char *fmt, ...) ATTRIBUTE(
  *!   @array
  *!     @elem string msg
  *!       Error message.
- *!     @elem array(backtrace_frame|array(mixed)) backtrace
+ *!     @elem array(BacktraceFrame|array(mixed)) backtrace
  *!       Backtrace to the point where the exception occurred.
  *!   @endarray
  *!
@@ -679,7 +679,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_fatal(const char *fmt, ...) ATTRIBUTE(
  *! error information.
  */
 
-/*! @decl array(backtrace_frame|array(mixed)) error_backtrace
+/*! @decl array(BacktraceFrame|array(mixed)) error_backtrace
  *!
  *! The backtrace as returned by @[backtrace] where the error
  *! occurred.
@@ -891,7 +891,7 @@ static void f_error__is_type(INT32 args)
 }
 
 /*! @decl void create(string message, @
- *!                   void|array(backtrace_frame|array(mixed)) backtrace)
+ *!                   void|array(BacktraceFrame|array(mixed)) backtrace)
  */
 static void f_error_create(INT32 args)
 {
