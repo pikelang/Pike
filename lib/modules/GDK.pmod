@@ -6,11 +6,14 @@
 //! GDK wrapper module.
 //!
 //! This is a convenience module that is identical to either
-//! either the @[GDK2] or the @[GDK1] module depending on
+//! either the @[GDK2] or the @expr{GDK1@} module depending on
 //! which (if any) of them is available.
 //!
+//! @note
+//!   The @expr{GDK1@} module was removed in Pike 9.0.
+//!
 //! @seealso
-//!   @[GDK1], @[GDK2]
+//!   @[GDK2]
 
 //! @decl import GTK
 
