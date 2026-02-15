@@ -1065,6 +1065,15 @@ string parse_type(Node n, void|string debug) {
     }
     break;
 
+  case "typeof":
+    if (c) {
+      ret += "<code class='datatype'>typeof</code>";
+      ret += "(" + parse_type(c) + ")";
+    } else {
+      ret += "<code class='datatype'>mixed</code>";
+    }
+    break;
+
   case "multiset":
     ret += "<code class='datatype'>multiset</code>";
     c = n->get_first_element("indextype");

@@ -429,6 +429,28 @@ class TypeType {
   }
 }
 
+//! The class for representing @expr{typeof@} types.
+//!
+//! @seealso
+//!   @[Type]
+class TypeofType {
+  //!
+  inherit Type;
+
+  //! The subtype of the type.
+  Type subtype = MixedType();
+
+  //!
+  protected void create() { ::create("typeof"); }
+
+  string print() {
+    return "typeof(" + subtype->print() + ")";
+  }
+  string xml(.Flags|void flags) {
+    return xmltag("typeof", subtype->xml(flags));
+  }
+}
+
 //! The class for representing the void type.
 //!
 //! @seealso

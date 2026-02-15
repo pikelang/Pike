@@ -658,6 +658,18 @@ TypeType parseTypeType()
   return t;
 }
 
+TypeofType parseTypeofType()
+{
+  eat("typeof");
+  TypeType t = TypeofType();
+  if (peekToken() == "(") {
+    readToken();
+    t->subtype = parseType();
+    eat(")");
+  }
+  return t;
+}
+
 AttributeType parseAttributeType()
 {
   eat("__attribute__");
@@ -759,6 +771,8 @@ object(Type)|zero parseType() {
       return parseProgram();
     case "type":
       return parseTypeType();
+    case "typeof":
+      return parseTypeofType();
     case "__attribute__":
       return parseAttributeType();
     case "__deprecated__":
