@@ -2916,7 +2916,7 @@ PIKEFUN program|zero function_program(program|function func)
 #ifdef PIKE_DEBUG
 /*! @decl void __dump_program_tables(program p)
  *!
- *!   Dump program symbol tables to @[Stdio.strerr].
+ *!   Dump program symbol tables to @[Stdio.stderr].
  *!
  *! @note
  *!   Only available if the pike runtime has been compiled
