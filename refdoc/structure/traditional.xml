@@ -248,7 +248,6 @@
       <insert-move entity="GLU"/>
       <insert-move entity="GLUE"/>
       <insert-move entity="GLUT"/>
-      <insert-move entity="GLSL"/>
     </chapter>
   </file>
   <file>
