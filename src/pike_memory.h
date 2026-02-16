@@ -238,7 +238,6 @@ PMOD_EXPORT size_t hashmem(const void *, size_t len, size_t mlen) ATTRIBUTE((pur
 #define MALLOC_FUNCTION  ATTRIBUTE((malloc)) PIKE_WARN_UNUSED_RESULT_ATTRIBUTE
 
 PMOD_EXPORT void *debug_xalloc(size_t size) MALLOC_FUNCTION;
-PMOD_EXPORT void *debug_xmalloc(size_t s) MALLOC_FUNCTION;
 PMOD_EXPORT void debug_xfree(void *mem);
 PMOD_EXPORT void *debug_xrealloc(void *m, size_t s) MALLOC_FUNCTION;
 PMOD_EXPORT void *debug_xcalloc(size_t n, size_t s) MALLOC_FUNCTION;
