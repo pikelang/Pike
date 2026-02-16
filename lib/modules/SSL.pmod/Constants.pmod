@@ -263,6 +263,9 @@ enum KeyExchangeType {
 
   // This was used during SSL 3.0 to test TLS 1.0.
   KE_rsa_fips	= 22,	//! Rivest-Shamir-Adelman with FIPS keys.
+
+  // Kerberos
+  KE_krb5       = 23,	//! Kerberos 5 (@rfc{2712@}).
 }
 
 constant KE_ecc_mask = (1<<KE_ecdh_ecdsa)|(1<<KE_ecdhe_ecdsa)|
