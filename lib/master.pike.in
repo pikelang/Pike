@@ -916,7 +916,8 @@ protected class HandlerCompilerEnvironment
     //!       call it with the same arguments.
     //!     @item
     //!       Otherwise if there's a handler which implements
-    //!       @[compile_warning()] or @[compile_error()] that matches
+    //!       @[CompilationHandler()->compile_warning()] or
+    //!       @[CompilationHandler()->compile_error()] that matches
     //!       @[severity], call it with suitable arguments.
     //!     @item
     //!       Otherwise if there's a compat handler, use it in the same
@@ -4240,11 +4241,11 @@ protected mixed main_resolv(string sym, CompatResolver|void resolver) {
 //! The default implementation of this function initializes
 //! the module system, loads and calls @[main()], and depending
 //! on the return value optionally starts looping over
-//! @[Builtin.__backend()] (ie enters backend mode).
+//! @[Pike.DefaultBackend()] (ie enters backend mode).
 //!
 //! @note
-//!   You typically do not want to write @[_main()] yourself. User
-//!   code is normally strapped via @[main()].
+//!   You typically do not want to write a @[MasterObject] and @[_main()]
+//!   yourself. User code is normally strapped via @[main()].
 //!
 //! @seealso
 //!   @[main()]
@@ -6584,6 +6585,7 @@ class Decoder(void|string fname,
     return res;
   }
 
+  //! Restore an object from from a dumped state.
   object objectof (string|array what)
   {
     DEC_MSG ("objectof (%O)\n", what);
@@ -6592,12 +6594,14 @@ class Decoder(void|string fname,
     DEC_RETURN ([object] thingof (what));
   }
 
+  //! Restore a function from from a dumped state.
   function functionof (string|array what)
   {
     DEC_MSG ("functionof (%O)\n", what);
     DEC_RETURN ([function] thingof (what));
   }
 
+  //! Restore a program from from a dumped state.
   program programof (string|array what)
   {
     DEC_MSG ("programof (%O)\n", what);
