@@ -31,7 +31,7 @@
 
 // All docs live in module.pmod.in This file, and Fuse, requires C99.
 
-/*! @module Fuse
+/*! @module ___Fuse
  */
 
 static struct object *global_fuse_obj; // There Can Be Only One
