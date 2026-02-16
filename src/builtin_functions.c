@@ -372,7 +372,7 @@ static void f_hash_7_0( INT32 args )
  *! @deprecated
  *!
  *!  Use @[hash_value()] for in-process hashing (eg, for implementing
- *!    @[lfun::_hash()]) or one of the cryptographic hash functions.
+ *!  @[lfun::__hash()]) or one of the cryptographic hash functions.
  *!
  *! @note
  *!  This function is really bad at hashing strings. Similar string
