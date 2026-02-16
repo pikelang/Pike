@@ -453,10 +453,10 @@ static void do_yyparse(void)
  *!         @value NOTICE
  *!           Ignored.
  *!         @value WARNING
- *!           Calls @[MasterObject()->compile_warning()].
+ *!           Calls @[master()->compile_warning()].
  *!         @value ERROR
  *!         @value FATAL
- *!           Calls @[MasterObject()->compile_error()].
+ *!           Calls @[master()->compile_error()].
  *!       @endint
  *!   @endul
  *!
@@ -1598,14 +1598,14 @@ static void compilation_event_handler(int e)
  *!
  *!   @ol
  *!     @item
- *!       Call handler->report().
+ *!       Call @tt{handler->report()@}.
  *!     @item
- *!       Call handler->compile_warning() or handler->compile_error()
- *!       depending on @[severity].
+ *!       Call @tt{handler->compile_warning()@} or
+ *!       @tt{handler->compile_error()@} depending on @[severity].
  *!     @item
- *!       Call compat->report().
+ *!       Call @tt{compat->report()@}.
  *!     @item
- *!       Call compat->compile_warning() or compat->compile_error()
+ *!       Call @tt{compat->compile_warning()@} or @tt{compat->compile_error()@}
  *!       depending on @[severity].
  *!     @item
  *!       Fallback: Call @[CompilerEnvironment()->report()]
@@ -1615,22 +1615,22 @@ static void compilation_event_handler(int e)
  *!   The arguments will be as follows:
  *!   @dl
  *!     @item report()
- *!       The report() function will be called with the same arguments
+ *!       The @tt{report()@} function will be called with the same arguments
  *!       as this function.
  *!     @item compile_warning()/compile_error()
- *!       Depending on the @[severity] either compile_warning()
- *!       or compile_error() will be called.
+ *!       Depending on the @[severity] either @tt{compile_warning()@}
+ *!       or @tt{compile_error()@} will be called.
  *!
  *!       They will be called with the @[filename], @[linenumber]
  *!       and formatted @[message] as arguments.
  *!
  *!       Note that these will not be called for the @[NOTICE] severity,
- *!       and that compile_error() will be used for both @[ERROR] and
+ *!       and that @tt{compile_error()@} will be used for both @[ERROR] and
  *!       @[FATAL].
  *!   @enddl
  *!
  *! @note
- *!   In Pike 7.8 and earlier the report() function was not called
+ *!   In Pike 7.8 and earlier the @tt{report()@} function was not called
  *!   in the handlers.
  *!
  *! @seealso
@@ -4095,15 +4095,17 @@ PIKECLASS AutoCodecClass
 /*! @endclass
  */
 
-/*! @decl constant AutoCodec = AutoCodecClass()
+/*! @decl constant AutoCodecClass AutoCodec = AutoCodecClass()
  *!
  *! This @[Annotation] causes the compiler to automatically
- *! add an implementation of @[_encode()] that returns
+ *! add an implementation of @tt{_encode()@} that returns
  *! an array with suitable arguments to @[lfun::create].
+ *! The generated @tt{_encode@} function is thus suitable for
+ *! @[Encoder()->encode_object()].
  *!
  *! @note
  *!   This annotation is only useful for classes that
- *!   use the implicit create()-syntax, or have a create()
+ *!   use the implicit @tt{create()@}-syntax, or have a @tt{create()@}
  *!   that doesn't need any arguments.
  */
 EXTRA
