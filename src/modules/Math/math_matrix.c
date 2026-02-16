@@ -272,6 +272,10 @@ extern PMOD_EXPORT struct object *mpi_ex_op(struct op_info (*create)(void *),
  *!     Returns the height of the matrix.
  */
 
+/*! @decl MPI.Sentinel get_sentinel()
+ *!     Returns an @[MPI.Sentinel] representing the matrix.
+ */
+
 /*! @endclass
  */
 

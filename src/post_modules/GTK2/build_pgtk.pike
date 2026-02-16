@@ -1148,6 +1148,7 @@ class Class( string name, string|zero file, int line,
   {
     if( sscanf(name, "GTK2.%s", string pn ) )
       return pn;
+    return name;
     return (replace(replace(name,"GDK2","Gdk"),"PANGO","Pango")-".");
   }
 

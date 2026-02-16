@@ -25,6 +25,9 @@
 
 #define UI(X) ((GLuint)X)
 
+/*! @module GL
+ */
+
 /*! @module GLSL
  *!
  *! Low-level functions needed to do 'modern' OpenGL rendering.
@@ -806,6 +809,9 @@ EXTRA
 }
 /*! @endmodule */
 #endif /* HAVE_GLSL */
+
+/*! @endmodule
+ */
 
 void init_pike_GLSL(void)
 {

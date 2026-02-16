@@ -177,8 +177,9 @@ class Operations
     }
 
     //! Open @[path]. @[mode] is as for the system call open.
-    //! (mode & O_ACCMODE) is one of O_RDONLY, O_WRONLY and O_RDWR.
-    //! The mode can also contain other flags, most notably O_APPEND.
+    //! @expr{(mode & O_ACCMODE)@} is one of @[O_RDONLY], @[O_WRONLY]
+    //! or @[O_RDWR].
+    //! The mode can also contain other flags, most notably @[O_APPEND].
     //! @note
     //! You do not really have to implement this function.
     //! It's useful to start prefetch and to cache open files, and
@@ -206,7 +207,7 @@ class Operations
     //!   is an error each time @tt{'df'@} is run.
     mapping(string:int) statfs( string path );
 
-    //! The inverse of open.
+    //! The inverse of @[open()].
     //! @note
     //! The file might very well be openend multiple times.
     //! Keep reference counts.
@@ -238,38 +239,44 @@ class Operations
     int access( string path, int mode );
 
     //! Lock, unlock or test for the existence of record locks (POSIX
-    //! file locking). The owner of the lock is identified by @[how->owner]
+    //! file locking). The owner of the lock is identified by
+    //! @expr{how->owner@}
     //!
     //! If you only need local file-locking on the computer the
     //! filesystem is mounted on you do not need to implement this
     //! interface. This is only needed for network filesystems that
     //! want locking to work over the network.
     //!
-    //! The operation mode depends on the mode argument.
+    //! The operation mode depends on the @[mode] argument.
     //!
-    //! F_SETLK
+    //! @int mode
+    //!   @value F_SETLK
     //!
-    //!  Acquire a lock (when @[how->type] is @[F_RDLCK] or @[F_WRLCK]) or
-    //!  release a lock (when @[how->type] is @[F_UNLCK]) on the bytes
-    //!  specified by the how->whence, how->start, and how->len fields
-    //!  of lock.  If a conflicting lock is held by another process,
-    //!  you should return EACCES or EAGAIN.
+    //!     Acquire a lock (when @expr{how->type@} is @[F_RDLCK] or @[F_WRLCK])
+    //!     or release a lock (when @expr{how->type@} is @[F_UNLCK]) on the
+    //!     bytes specified by the @expr{how->whence@}, @expr{how->start@},
+    //!     and @expr{how->len@} fields of lock.  If a conflicting lock is held
+    //!     by another process, you should return @[System.EACCES] or
+    //!     @[System.EAGAIN].
     //!
-    //! F_SETLKW
+    //!   @value F_SETLKW
     //!
-    //!  Identical to SETLK, but if a lock is held on the file, wait
-    //!  for it to be released before returning. You are allowed to
-    //!  return EINTR, to signal that the waiting has been interrupted
-    //!  and must be restarted.
+    //!     Identical to SETLK, but if a lock is held on the file, wait
+    //!     for it to be released before returning. You are allowed to
+    //!     return EINTR, to signal that the waiting has been interrupted
+    //!     and must be restarted.
     //!
-    //! F_GETLK
+    //!   @value F_GETLK
     //!
-    //!  Identical to SETLK, but do not actually aquire the lock if it
-    //!  can be aquired.  If one or more incompatible locks would
-    //!  prevent this lock being placed, then fcntl() returns details
-    //!  about one of these locks in the type, whence, start, and len
-    //!  fields of @[how] and set @[pid] to be the PID of the process
-    //!  holding that lock. Then return the mapping.
+    //!     Identical to SETLK, but do not actually aquire the lock if it
+    //!     can be aquired.  If one or more incompatible locks would
+    //!     prevent this lock being placed, then @[fcntl()] returns details
+    //!     about one of these locks in the @expr{"type"@}, @expr{"whence"@},
+    //!     @expr{start@}, and @expr{"len"@} fields of @[how] and sets
+    //!     the @expr{"pid"@} field to be the PID of the process
+    //!     holding that lock. Then return the mapping.
+    //!
+    //! @endint
     mapping(string:int)|int lock( string path, int mode, mapping(string:int) how );
 
     //! Write unwritten data.
@@ -280,8 +287,9 @@ class Operations
 //! Start fuse. Args is as in argv in main(). This function will not
 //! return.
 //!
-//! The first argument (argv[0], program name) is used as the filesystem name.
-//! The first non-flag argument after argv[0] is used as the mountpoint.
+//! The first argument (@expr{argv[0]@}, program name) is used as
+//! the filesystem name. The first non-flag argument after @expr{argv[0]@}
+//! is used as the mountpoint.
 //! Otherwise these arguments are supported:
 //! @pre{
 //!     -d                  enable debug output (implies -f)

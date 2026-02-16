@@ -264,7 +264,7 @@ class Curve {
     //!   on failure.
     //!
     //! @seealso
-    //!   @[pkcs_verify()], @[salt_size()], @rfc{7515@}
+    //!   @[pkcs_verify()], @[digest_size()], @rfc{7515@}
     string(7bit)|zero jose_sign(string(8bit) message, .Hash|void h,
 			   mapping(string(7bit):string(7bit)|int)|void headers)
     {
@@ -557,6 +557,8 @@ class _Curve25519 {
     inherit ::this_program;
     //! @endignore
 
+    //! @decl typeof(Curve25519) get_curve()
+    //!
     //! Return the curve.
     _Curve25519 get_curve()
     {
@@ -697,7 +699,7 @@ class _Curve25519 {
     //!   on failure.
     //!
     //! @seealso
-    //!   @[pkcs_verify()], @[salt_size()], @rfc{7515@}
+    //!   @[pkcs_verify()], @[digest_size()], @rfc{7515@}
     string(7bit)|zero
       jose_sign(string(8bit) message, .Hash|void h,
                 mapping(string(7bit):string(7bit)|int)|void headers)
@@ -814,9 +816,9 @@ class _Curve25519 {
       return jwk;
     }
   }
+//! @ignore
 }
 
-//! @ignore
 Nettle.Curve25519 Curve25519 = _Curve25519();
 //! @endignore
 
@@ -1027,7 +1029,7 @@ class _Curve448 {
     //!   on failure.
     //!
     //! @seealso
-    //!   @[pkcs_verify()], @[salt_size()], @rfc{7515@}
+    //!   @[pkcs_verify()], @[digest_size()], @rfc{7515@}
     string(7bit)|zero
       jose_sign(string(8bit) message, .Hash|void h,
                 mapping(string(7bit):string(7bit)|int)|void headers)
@@ -1144,7 +1146,6 @@ class _Curve448 {
       return jwk;
     }
   }
-
 //! @ignore
 }
 

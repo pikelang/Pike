@@ -106,7 +106,7 @@ GDK2.Drawable draw_rectangle( GDK2.GC gc, int filledp, int x1, int y1, int x2, i
 //!
 //!
 
-GDK2.Drawable draw_text( GDK2.GC gc, int x, int y, string|PangoLayout text );
+GDK2.Drawable draw_text( GDK2.GC gc, int x, int y, string|Pango.Layout text );
 //! y is used as the baseline for the text.
 //!
 //!
