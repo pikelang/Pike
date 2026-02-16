@@ -300,7 +300,7 @@ constant OutputBlockFileMixin = OutputStreamMixin;
 //! I/O is done with the object.
 //!
 //! @seealso
-//! @[Stream], @[NonblockingStream], @[InputBlockStream], @[File], @[FILE]
+//! @[Stream], @[NonblockingStream], @[InputBlockFile], @[File], @[FILE]
 //!
 class BlockFile(<string StringType = string(8bit)>)
 {
