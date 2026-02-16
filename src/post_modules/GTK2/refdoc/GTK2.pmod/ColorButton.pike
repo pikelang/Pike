@@ -47,7 +47,7 @@ GTK2.ColorButton set_alpha( int alpha );
 //!
 //!
 
-GTK2.ColorButton set_color( int|GdkColor red, int|void green, int|void blue );
+GTK2.ColorButton set_color( int|GDK2.Color red, int|void green, int|void blue );
 //! Sets the current color.
 //!
 //!
