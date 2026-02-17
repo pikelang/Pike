@@ -589,7 +589,7 @@ class Type
 
       default:
 	if( classes[ name ] )
-	  name = classes[ name ]->pike_name();
+          name = classes[ name ]->doc_name();
 	return name+optp;
     }
   }
@@ -1148,7 +1148,6 @@ class Class( string name, string|zero file, int line,
   {
     if( sscanf(name, "GTK2.%s", string pn ) )
       return pn;
-    return name;
     return (replace(replace(name,"GDK2","Gdk"),"PANGO","Pango")-".");
   }
 

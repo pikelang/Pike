@@ -19,10 +19,7 @@
  *!<r><c>glAreTexturesResident</c></r>
  *!<r><c>glBitmap</c></r>
  *!<r><c>glBlendColorEXT</c></r>
- *!<r><c>glCallLists</c></r>
- *!<r><c>glDeleteTextures</c></r>
  *!<r><c>glDrawElements</c></r>
- *!<r><c>glGenTextures</c></r>
  *!<r><c>glGetClipPlane</c></r>
  *!<r><c>glGetLight</c></r>
  *!<r><c>glGetMap</c></r>
@@ -7870,6 +7867,69 @@
  *!
  */
 
+/*!@decl void glCallLists(int ... lists)
+ *!
+ *!@[glCallLists] causes each display list in the list of names passed as @i{lists@}
+ *!to be executed.
+ *!As a result,
+ *!the commands saved in each display list are executed in order,
+ *!just as if they were called without using a display list.
+ *!Names of display lists that have not been defined are ignored.
+ *!
+ *!@[glCallLists] provides an efficient means for executing more than one display list.
+ *!
+ *!An additional level of indirection is made available with the
+ *!@[glListBase] command,
+ *!which specifies an unsigned offset that is added to each display-list
+ *!name specified in @i{lists@} before that display list is executed.
+ *!
+ *!@[glCallLists] can appear inside a display list.
+ *!To avoid the possibility of infinite recursion resulting from display lists
+ *!calling one another,
+ *!a limit is placed on the nesting level of display
+ *!lists during display-list execution.
+ *!This limit must be at least 64, and it depends on the implementation.
+ *!
+ *!GL state is not saved and restored across a call to @[glCallLists].
+ *!Thus,
+ *!changes made to GL state during the execution of the display lists
+ *!remain after execution is completed.
+ *!Use @[glPushAttrib],
+ *!@[glPopAttrib],
+ *!@[glPushMatrix],
+ *!and @[glPopMatrix] to preserve GL state across @[glCallLists] calls.
+ *!
+ *!@param lists
+ *!
+ *!Specifies the address of an array of name offsets in the display list.
+ *!
+ *!
+ */
+
+/*!@decl void glDeleteTextures(int ... textures)
+ *!
+ *!@[glDeleteTextures] deletes @i{n@} textures named by the elements of the array @i{textures@}.
+ *!After a texture is deleted, it has no contents or dimensionality,
+ *!and its name is free for reuse (for example by @[glGenTextures]).
+ *!If a texture that is currently bound is deleted, the binding reverts
+ *!to 0 (the default texture).
+ *!
+ *!@[glDeleteTextures] silently ignores 0's and names that do not correspond to
+ *!existing textures.
+ *!
+ *!@param textures
+ *!
+ *!Specifies the textures to be deleted.
+ *!
+ *!@throws
+ *!
+ *!@[GL_INVALID_OPERATION] is generated if @[glDeleteTextures] is executed
+ *!between the execution of @[glBegin] and the corresponding
+ *!execution of @[glEnd].
+ *!
+ *!
+ */
+
 /*!@decl void glFrustum(float left, float right, float bottom, float top, float zNear, float zFar)
  *!
  *!@[glFrustum] describes a perspective matrix that produces a perspective projection.
@@ -7945,6 +8005,36 @@
  *!@[GL_INVALID_OPERATION] is generated if @[glFrustum]
  *!is executed between the execution of @[glBegin]
  *!and the corresponding execution of @[glEnd].
+ *!
+ *!
+ */
+
+/*!@decl array(int) glGenTextures(int n)
+ *!
+ *!@[glGenTextures] returns @i{n@} texture names in an array.
+ *!There is no guarantee that the names form a contiguous set of integers;
+ *!however, it is guaranteed that none of the returned names was in use
+ *!immediately before the call to @[glGenTextures].
+ *!
+ *!The generated textures have no dimensionality; they assume the dimensionality
+ *!of the texture target to which they are first bound
+ *!(see @[glBindTexture]).
+ *!
+ *!Texture names returned by a call to @[glGenTextures] are not returned by
+ *!subsequent calls, unless they are first deleted with
+ *!@[glDeleteTextures].
+ *!
+ *!@param n
+ *!
+ *!Specifies the number of texture names to be generated.
+ *!
+ *!@throws
+ *!
+ *!@[GL_INVALID_VALUE] is generated if @i{n@} is negative.
+ *!
+ *!@[GL_INVALID_OPERATION] is generated if @[glGenTextures] is executed
+ *!between the execution of @[glBegin] and the corresponding
+ *!execution of @[glEnd].
  *!
  *!
  */
@@ -11796,6 +11886,7 @@
  */
 
 /*!@decl constant GL_2_BYTES = 5127
+ *! Used in @[glCallLists]
  */
 
 /*!@decl constant GL_3D = 1537
@@ -11811,6 +11902,7 @@
  */
 
 /*!@decl constant GL_3_BYTES = 5128
+ *! Used in @[glCallLists]
  */
 
 /*!@decl constant GL_4D_COLOR_TEXTURE = 1540
@@ -11818,6 +11910,7 @@
  */
 
 /*!@decl constant GL_4_BYTES = 5129
+ *! Used in @[glCallLists]
  */
 
 /*!@decl constant GL_ABGR_EXT = 32768
@@ -12059,7 +12152,7 @@
  */
 
 /*!@decl constant GL_BYTE = 5120
- *! Used in @[glColorPointer], @[glDrawPixels], @[glGetTexImage], @[glNormalPointer], @[glReadPixels], @[glTexImage1D], @[glTexImage2D], @[glTexSubImage1D] and @[glTexSubImage2D]
+ *! Used in @[glCallLists], @[glColorPointer], @[glDrawPixels], @[glGetTexImage], @[glNormalPointer], @[glReadPixels], @[glTexImage1D], @[glTexImage2D], @[glTexSubImage1D] and @[glTexSubImage2D]
  */
 
 /*!@decl constant GL_C3F_V3F = 10788
@@ -12681,7 +12774,7 @@
  */
 
 /*!@decl constant GL_FLOAT = 5126
- *! Used in @[glColorPointer], @[glDrawPixels], @[glGetTexImage], @[glGet], @[glIndexPointer], @[glNormalPointer], @[glReadPixels], @[glTexCoordPointer], @[glTexImage1D], @[glTexImage2D], @[glTexSubImage1D], @[glTexSubImage2D] and @[glVertexPointer]
+ *! Used in @[glCallLists], @[glColorPointer], @[glDrawPixels], @[glGetTexImage], @[glGet], @[glIndexPointer], @[glNormalPointer], @[glReadPixels], @[glTexCoordPointer], @[glTexImage1D], @[glTexImage2D], @[glTexSubImage1D], @[glTexSubImage2D] and @[glVertexPointer]
  */
 
 /*!@decl constant GL_FOG = 2912
@@ -12899,7 +12992,7 @@
  */
 
 /*!@decl constant GL_INT = 5124
- *! Used in @[glColorPointer], @[glCopyTexImage1D], @[glCopyTexImage2D], @[glDrawPixels], @[glGetTexImage], @[glIndexPointer], @[glNormalPointer], @[glReadPixels], @[glTexCoordPointer], @[glTexEnv], @[glTexImage1D], @[glTexImage2D], @[glTexSubImage1D], @[glTexSubImage2D] and @[glVertexPointer]
+ *! Used in @[glCallLists], @[glColorPointer], @[glCopyTexImage1D], @[glCopyTexImage2D], @[glDrawPixels], @[glGetTexImage], @[glIndexPointer], @[glNormalPointer], @[glReadPixels], @[glTexCoordPointer], @[glTexEnv], @[glTexImage1D], @[glTexImage2D], @[glTexSubImage1D], @[glTexSubImage2D] and @[glVertexPointer]
  */
 
 /*!@decl constant GL_INTENSITY = 32841
@@ -12926,15 +13019,15 @@
  */
 
 /*!@decl constant GL_INVALID_ENUM = 1280
- *! Used in @[glAccum], @[glAlphaFunc], @[glBegin], @[glBindTexture], @[glBlendFunc], @[glClipPlane], @[glColorMaterial], @[glColorPointer], @[glCopyPixels], @[glCopyTexImage1D], @[glCopyTexImage2D], @[glCopyTexSubImage1D], @[glCopyTexSubImage2D], @[glCullFace], @[glDepthFunc], @[glDisableClientState], @[glDisable], @[glDrawArrays], @[glDrawBuffer], @[glDrawPixels], @[glEdgeFlagPointer], @[glEnableClientState], @[glEnable], @[glEndList], @[glEnd], @[glEvalMesh1], @[glEvalMesh2], @[glFeedbackBuffer], @[glFog], @[glFrontFace], @[glGetError], @[glGetString], @[glGetTexImage], @[glGet], @[glHint], @[glIndexPointer], @[glInterleavedArrays], @[glIsEnabled], @[glLightModel], @[glLight], @[glLogicOp], @[glMaterial], @[glMatrixMode], @[glNewList], @[glNormalPointer], @[glPolygonMode], @[glReadBuffer], @[glReadPixels], @[glRenderMode], @[glShadeModel], @[glStencilFunc], @[glStencilOp], @[glTexCoordPointer], @[glTexEnv], @[glTexGen], @[glTexImage1D], @[glTexImage2D], @[glTexParameter], @[glTexSubImage1D], @[glTexSubImage2D] and @[glVertexPointer]
+ *! Used in @[glAccum], @[glAlphaFunc], @[glBegin], @[glBindTexture], @[glBlendFunc], @[glCallLists], @[glClipPlane], @[glColorMaterial], @[glColorPointer], @[glCopyPixels], @[glCopyTexImage1D], @[glCopyTexImage2D], @[glCopyTexSubImage1D], @[glCopyTexSubImage2D], @[glCullFace], @[glDepthFunc], @[glDisableClientState], @[glDisable], @[glDrawArrays], @[glDrawBuffer], @[glDrawPixels], @[glEdgeFlagPointer], @[glEnableClientState], @[glEnable], @[glEndList], @[glEnd], @[glEvalMesh1], @[glEvalMesh2], @[glFeedbackBuffer], @[glFog], @[glFrontFace], @[glGetError], @[glGetString], @[glGetTexImage], @[glGet], @[glHint], @[glIndexPointer], @[glInterleavedArrays], @[glIsEnabled], @[glLightModel], @[glLight], @[glLogicOp], @[glMaterial], @[glMatrixMode], @[glNewList], @[glNormalPointer], @[glPolygonMode], @[glReadBuffer], @[glReadPixels], @[glRenderMode], @[glShadeModel], @[glStencilFunc], @[glStencilOp], @[glTexCoordPointer], @[glTexEnv], @[glTexGen], @[glTexImage1D], @[glTexImage2D], @[glTexParameter], @[glTexSubImage1D], @[glTexSubImage2D] and @[glVertexPointer]
  */
 
 /*!@decl constant GL_INVALID_OPERATION = 1282
- *! Used in @[glAccum], @[glAlphaFunc], @[glBegin], @[glBindTexture], @[glBlendFunc], @[glClearAccum], @[glClearColor], @[glClearDepth], @[glClearIndex], @[glClearStencil], @[glClear], @[glClipPlane], @[glColorMask], @[glColorMaterial], @[glCopyPixels], @[glCopyTexImage1D], @[glCopyTexImage2D], @[glCopyTexSubImage1D], @[glCopyTexSubImage2D], @[glCullFace], @[glDeleteLists], @[glDepthFunc], @[glDepthMask], @[glDepthRange], @[glDisable], @[glDrawArrays], @[glDrawBuffer], @[glDrawPixels], @[glEnable], @[glEndList], @[glEnd], @[glEvalMesh1], @[glEvalMesh2], @[glFeedbackBuffer], @[glFinish], @[glFlush], @[glFog], @[glFrontFace], @[glFrustum], @[glGenLists], @[glGetError], @[glGetString], @[glGetTexImage], @[glGet], @[glHint], @[glIndexMask], @[glInitNames], @[glIsEnabled], @[glIsList], @[glIsTexture], @[glLightModel], @[glLight], @[glLineStipple], @[glLineWidth], @[glListBase], @[glLoadIdentity], @[glLoadMatrix], @[glLoadName], @[glLogicOp], @[glMatrixMode], @[glMultMatrix], @[glNewList], @[glOrtho], @[glPassThrough], @[glPixelZoom], @[glPointSize], @[glPolygonMode], @[glPolygonOffset], @[glPopAttrib], @[glPopMatrix], @[glPopName], @[glPushAttrib], @[glPushMatrix], @[glPushName], @[glRasterPos], @[glReadBuffer], @[glReadPixels], @[glRenderMode], @[glRotate], @[glScale], @[glScissor], @[glSelectBuffer], @[glShadeModel], @[glStencilFunc], @[glStencilMask], @[glStencilOp], @[glTexEnv], @[glTexGen], @[glTexImage1D], @[glTexImage2D], @[glTexParameter], @[glTexSubImage1D], @[glTexSubImage2D], @[glTranslate] and @[glViewport]
+ *! Used in @[glAccum], @[glAlphaFunc], @[glBegin], @[glBindTexture], @[glBlendFunc], @[glClearAccum], @[glClearColor], @[glClearDepth], @[glClearIndex], @[glClearStencil], @[glClear], @[glClipPlane], @[glColorMask], @[glColorMaterial], @[glCopyPixels], @[glCopyTexImage1D], @[glCopyTexImage2D], @[glCopyTexSubImage1D], @[glCopyTexSubImage2D], @[glCullFace], @[glDeleteLists], @[glDeleteTextures], @[glDepthFunc], @[glDepthMask], @[glDepthRange], @[glDisable], @[glDrawArrays], @[glDrawBuffer], @[glDrawPixels], @[glEnable], @[glEndList], @[glEnd], @[glEvalMesh1], @[glEvalMesh2], @[glFeedbackBuffer], @[glFinish], @[glFlush], @[glFog], @[glFrontFace], @[glFrustum], @[glGenLists], @[glGenTextures], @[glGetError], @[glGetString], @[glGetTexImage], @[glGet], @[glHint], @[glIndexMask], @[glInitNames], @[glIsEnabled], @[glIsList], @[glIsTexture], @[glLightModel], @[glLight], @[glLineStipple], @[glLineWidth], @[glListBase], @[glLoadIdentity], @[glLoadMatrix], @[glLoadName], @[glLogicOp], @[glMatrixMode], @[glMultMatrix], @[glNewList], @[glOrtho], @[glPassThrough], @[glPixelZoom], @[glPointSize], @[glPolygonMode], @[glPolygonOffset], @[glPopAttrib], @[glPopMatrix], @[glPopName], @[glPushAttrib], @[glPushMatrix], @[glPushName], @[glRasterPos], @[glReadBuffer], @[glReadPixels], @[glRenderMode], @[glRotate], @[glScale], @[glScissor], @[glSelectBuffer], @[glShadeModel], @[glStencilFunc], @[glStencilMask], @[glStencilOp], @[glTexEnv], @[glTexGen], @[glTexImage1D], @[glTexImage2D], @[glTexParameter], @[glTexSubImage1D], @[glTexSubImage2D], @[glTranslate] and @[glViewport]
  */
 
 /*!@decl constant GL_INVALID_VALUE = 1281
- *! Used in @[glClear], @[glColorPointer], @[glCopyPixels], @[glCopyTexImage1D], @[glCopyTexImage2D], @[glCopyTexSubImage1D], @[glCopyTexSubImage2D], @[glDeleteLists], @[glDrawArrays], @[glDrawPixels], @[glEndList], @[glFeedbackBuffer], @[glFog], @[glFrustum], @[glGenLists], @[glGetError], @[glGetTexImage], @[glIndexPointer], @[glInterleavedArrays], @[glLight], @[glLineWidth], @[glMaterial], @[glNewList], @[glNormalPointer], @[glPointSize], @[glReadPixels], @[glScissor], @[glSelectBuffer], @[glTexCoordPointer], @[glTexImage1D], @[glTexImage2D], @[glTexSubImage1D], @[glTexSubImage2D], @[glVertexPointer] and @[glViewport]
+ *! Used in @[glCallLists], @[glClear], @[glColorPointer], @[glCopyPixels], @[glCopyTexImage1D], @[glCopyTexImage2D], @[glCopyTexSubImage1D], @[glCopyTexSubImage2D], @[glDeleteLists], @[glDeleteTextures], @[glDrawArrays], @[glDrawPixels], @[glEndList], @[glFeedbackBuffer], @[glFog], @[glFrustum], @[glGenLists], @[glGenTextures], @[glGetError], @[glGetTexImage], @[glIndexPointer], @[glInterleavedArrays], @[glLight], @[glLineWidth], @[glMaterial], @[glNewList], @[glNormalPointer], @[glPointSize], @[glReadPixels], @[glScissor], @[glSelectBuffer], @[glTexCoordPointer], @[glTexImage1D], @[glTexImage2D], @[glTexSubImage1D], @[glTexSubImage2D], @[glVertexPointer] and @[glViewport]
  */
 
 /*!@decl constant GL_INVERT = 5386
@@ -14141,7 +14234,7 @@
  */
 
 /*!@decl constant GL_S = 8192
- *! Used in @[glBlendFunc], @[glClear], @[glColorMaterial], @[glColorPointer], @[glCopyPixels], @[glDisable], @[glDrawPixels], @[glEnable], @[glGetError], @[glGetTexImage], @[glGet], @[glIndexPointer], @[glInitNames], @[glIsEnabled], @[glLight], @[glLoadName], @[glLogicOp], @[glMaterial], @[glNormalPointer], @[glPopAttrib], @[glPopClientAttrib], @[glPopMatrix], @[glPopName], @[glPushAttrib], @[glPushClientAttrib], @[glPushMatrix], @[glPushName], @[glReadPixels], @[glRenderMode], @[glScissor], @[glSelectBuffer], @[glShadeModel], @[glStencilFunc], @[glStencilOp], @[glTexCoordPointer], @[glTexGen], @[glTexImage1D], @[glTexImage2D], @[glTexSubImage1D], @[glTexSubImage2D] and @[glVertexPointer]
+ *! Used in @[glBlendFunc], @[glCallLists], @[glClear], @[glColorMaterial], @[glColorPointer], @[glCopyPixels], @[glDisable], @[glDrawPixels], @[glEnable], @[glGetError], @[glGetTexImage], @[glGet], @[glIndexPointer], @[glInitNames], @[glIsEnabled], @[glLight], @[glLoadName], @[glLogicOp], @[glMaterial], @[glNormalPointer], @[glPopAttrib], @[glPopClientAttrib], @[glPopMatrix], @[glPopName], @[glPushAttrib], @[glPushClientAttrib], @[glPushMatrix], @[glPushName], @[glReadPixels], @[glRenderMode], @[glScissor], @[glSelectBuffer], @[glShadeModel], @[glStencilFunc], @[glStencilOp], @[glTexCoordPointer], @[glTexGen], @[glTexImage1D], @[glTexImage2D], @[glTexSubImage1D], @[glTexSubImage2D] and @[glVertexPointer]
  */
 
 /*!@decl constant GL_SAMPLES = 32937
@@ -14215,7 +14308,7 @@
  */
 
 /*!@decl constant GL_SHORT = 5122
- *! Used in @[glColorPointer], @[glDrawPixels], @[glGetTexImage], @[glIndexPointer], @[glNormalPointer], @[glReadPixels], @[glTexCoordPointer], @[glTexImage1D], @[glTexImage2D], @[glTexSubImage1D], @[glTexSubImage2D] and @[glVertexPointer]
+ *! Used in @[glCallLists], @[glColorPointer], @[glDrawPixels], @[glGetTexImage], @[glIndexPointer], @[glNormalPointer], @[glReadPixels], @[glTexCoordPointer], @[glTexImage1D], @[glTexImage2D], @[glTexSubImage1D], @[glTexSubImage2D] and @[glVertexPointer]
  */
 
 /*!@decl constant GL_SINGLE_COLOR = 33273
@@ -14887,7 +14980,7 @@
  */
 
 /*!@decl constant GL_UNSIGNED_BYTE = 5121
- *! Used in @[glColorPointer], @[glDrawPixels], @[glGetTexImage], @[glIndexPointer], @[glReadPixels], @[glTexImage1D], @[glTexImage2D], @[glTexSubImage1D] and @[glTexSubImage2D]
+ *! Used in @[glCallLists], @[glColorPointer], @[glDrawPixels], @[glGetTexImage], @[glIndexPointer], @[glReadPixels], @[glTexImage1D], @[glTexImage2D], @[glTexSubImage1D] and @[glTexSubImage2D]
  */
 
 /*!@decl constant GL_UNSIGNED_BYTE_2_3_3_REV = 33634
@@ -14897,7 +14990,7 @@
  */
 
 /*!@decl constant GL_UNSIGNED_INT = 5125
- *! Used in @[glColorPointer], @[glDrawPixels], @[glGetTexImage], @[glReadPixels], @[glTexImage1D], @[glTexImage2D], @[glTexSubImage1D] and @[glTexSubImage2D]
+ *! Used in @[glCallLists], @[glColorPointer], @[glDrawPixels], @[glGetTexImage], @[glReadPixels], @[glTexImage1D], @[glTexImage2D], @[glTexSubImage1D] and @[glTexSubImage2D]
  */
 
 /*!@decl constant GL_UNSIGNED_INT_10_10_10_2 = 32822
@@ -14913,7 +15006,7 @@
  */
 
 /*!@decl constant GL_UNSIGNED_SHORT = 5123
- *! Used in @[glColorPointer], @[glDrawPixels], @[glGetTexImage], @[glReadPixels], @[glTexImage1D], @[glTexImage2D], @[glTexSubImage1D] and @[glTexSubImage2D]
+ *! Used in @[glCallLists], @[glColorPointer], @[glDrawPixels], @[glGetTexImage], @[glReadPixels], @[glTexImage1D], @[glTexImage2D], @[glTexSubImage1D] and @[glTexSubImage2D]
  */
 
 /*!@decl constant GL_UNSIGNED_SHORT_1_5_5_5_REV = 33638

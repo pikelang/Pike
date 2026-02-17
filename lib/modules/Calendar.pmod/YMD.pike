@@ -968,6 +968,9 @@ class YMD
 		 { return Month("ymd_ym",rules,y,x,1); });
    }
 
+   //! method Month month()
+   //! method Month month(int n)
+
    cMonth month(int ... mp)
    {
       if (md==CALUNKNOWN) make_month();
@@ -1012,6 +1015,9 @@ class YMD
 		 lambda(int x)
 		 { return Week("ymd_yw",rules,wy,x,1); });
    }
+
+   //! method Week	week()
+   //! method Week	week(int n)
 
    cWeek week(int ... mp)
    {

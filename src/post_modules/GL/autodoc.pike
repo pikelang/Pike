@@ -289,7 +289,7 @@ string process_man(string name, string prot_ret, array(string) prot_types) {
 
   // Zap arguments not used by Pike.
   foreach(prot_types; int i; string prot_type) {
-    if (i && (prot_type == "void")) {
+    if (prot_type == "void") {
       prot_types[i] = "";
       args[i] = "";
     }
@@ -368,6 +368,14 @@ string document(string name, string features)
   case 'S':
     ret="string";
     break;
+  case '[':
+    if (features[1] == 'I') {
+      ret = "array(int)";
+    } else {
+      ret = "array";
+    }
+    features = features[1..];
+    break;
   case '+':
     if (has_prefix(features, "+Z") || has_prefix(features, "+Q")) {
       ret = "int|float|array(int)|array(float)";
@@ -398,7 +406,7 @@ string document(string name, string features)
       args += ({"float|int"});
       break;
     case 'V':
-      args += ({ "" });	// Argument ignored in Pike.
+      args += ({ "void" });	// Argument ignored in Pike.
       break;
     case '+':
       int mi, mx;
@@ -416,6 +424,9 @@ string document(string name, string features)
       }
       args += special_234(mi, mx, features[i+1..]);
       i=sizeof(features);
+      break;
+    case '-':
+      args[-1] += " ...";
       break;
     case '#':
     case '!':
@@ -577,7 +588,10 @@ void main()
   string doc = "";
 
   foreach( func_misc + ({
+             ({"glCallLists", "VVVI-"}),
+             ({"glDeleteTextures", "VVI-"}),
              ({"glFrustum", "VDDDDDD"}),
+             ({"glGenTextures", "[IIV"}),
              ({"glGet", "+QIV" }),
            }), array func)
   {
