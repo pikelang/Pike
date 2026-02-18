@@ -1426,6 +1426,20 @@ class NScope
             // FALL_THROUGH
 	  case "method":
 	    if (n) {
+              // NB: h_scope is used to join the scopes for the various
+              //     methods so that the documentation can refer to any
+              //     of the method arguments.
+              //     Cf: Stdio.File()->set_read_callback() et al.
+              //
+              // NB: Note that this will pollute the scope for methods
+              //     that have multiple documentation blocks where one
+              //     or more are non-homogenous. In practice this should
+              //     not be a problem.
+              //
+              // FIXME: The above also has the potential issue where there
+              //        are separate documentation blocks for two methods,
+              //        followed by a common documentation block. This will
+              //        cause one of the earlier scopes to be lost.
 	      NScope scope = h_scope || symbols[n];
 	      if (!scope) {
 		scope = NScope(thing, path);
@@ -1436,7 +1450,7 @@ class NScope
 	      } else {
 		scope->enterNode(thing);
 	      }
-	      symbols[n] = scope;
+              h_scope = symbols[n] = scope;
 	    }
 	    break;
 	  case "import":
