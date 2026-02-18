@@ -5150,7 +5150,7 @@ static INT32 my_decode(struct pike_string *tmp,
  *! function.
  *!
  *! @seealso
- *! @[Encoder], @[Pike.Encoder]
+ *! @[predef::Encoder], @[Pike.Encoder], @[Decoder]
  */
 
 /*! @decl program Decoder;
@@ -5162,7 +5162,7 @@ static INT32 my_decode(struct pike_string *tmp,
  *! @[Pike.Encoder.nameof].
  *!
  *! @seealso
- *! @[Decoder], @[Pike.Decoder]
+ *! @[predef::Encoder], @[Pike.Decoder], @[Encoder]
  */
 
 /*! @endclass
@@ -5183,8 +5183,8 @@ static INT32 my_decode(struct pike_string *tmp,
  *! @returns
  *!   Returns something encodable on success, typically a string.
  *!   The returned value will be passed to the corresponding
- *!   @[objectof()], @[functionof()] or @[programof()] by
- *!   @[decode_value()].
+ *!   @[Decoder()->objectof()], @[Decoder()->functionof()] or
+ *!   @[Decoder()->programof()] by @[decode_value()].
  *!
  *!   If it returns @[UNDEFINED] then @[encode_value] starts to encode
  *!   the thing recursively, so that @[decode_value] later will
@@ -5195,8 +5195,8 @@ static INT32 my_decode(struct pike_string *tmp,
  *!   functions and programs.
  *!
  *! @seealso
- *!   @[Decoder.objectof()], @[Decoder.functionof()],
- *!   @[Decoder.objectof()]
+ *!   @[Decoder()->objectof()], @[Decoder()->functionof()],
+ *!   @[Decoder()->programof()]
  */
 
 /*! @endclass
