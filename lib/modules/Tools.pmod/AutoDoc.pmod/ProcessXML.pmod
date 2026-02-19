@@ -1301,6 +1301,12 @@ void oldResolveRefs(SimpleNode tree) {
   scopes->leave();
 }
 
+protected inline enum LookupFlags {
+  LOOKUP_DEFAULT = 0,
+  LOOKUP_TRACE = 1,
+  LOOKUP_NO_IMPORTS = 2,
+}
+
 protected class DummyNScope(string name)
 {
   string|zero lookup(array(string) ref)
