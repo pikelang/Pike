@@ -154,7 +154,7 @@ class ForkStream
 //! capable @[Stdio.Fd] is sent over this fd, and a
 //! single byte of data is sent as payload.
 //!
-//! The sent fd will become a @[ForkFd] inside a @[ForkStream].
+//! The sent fd will become a @[ForkStream].
 class FdStream
 {
   inherit Stdio.File;

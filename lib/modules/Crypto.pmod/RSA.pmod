@@ -1063,7 +1063,7 @@ class PKCS1_5State
   }
 }
 
-//!
+//! Convenience class for @[PKCS1_5State].
 class State
 {
   inherit PKCS1_5State;
