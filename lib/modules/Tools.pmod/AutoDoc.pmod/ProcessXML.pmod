@@ -2238,7 +2238,7 @@ void resolveInherits(NScope root)
       }
       foreach((array)(scope->imports || (<>)), string|NScope sym) {
         if (stringp(sym)) {
-          werror("%O: import %O:%O\n", scope->name, sym);
+          werror("%O: import %O\n", scope->name, sym);
         }
       }
     }
