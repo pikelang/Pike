@@ -2298,19 +2298,29 @@ void cleanUndocumented(SimpleNode tree, .Flags|void flags)
     int num = sizeof(children);
     children = filter(children, map(children, check_node));
     if (sizeof(children) != num) {
+#if 0
+      werror("Removing empty children from %s %O: %O\n",
+             n->get_tag_name(), n->get_attributes()->name,
+             (array(string))(n->get_children() - children));
+#endif
       n->replace_children(children);
       check_node(n);
     }
 
     string name = n->get_tag_name();
     if(name!="class" && name!="module") return 1;
+    if (n->get_attributes()->keep) return 1;
 
     array ch = n->get_elements()->get_tag_name();
     ch -= ({ "modifiers" });
     ch -= ({ "source-position" });
     if(sizeof(ch)) return 1;
-    if ((flags & .FLAG_VERB_MASK) >= .FLAG_VERBOSE)
-      werror("Removed empty %s %O\n", name, n->get_attributes()->name);
+    if ((flags & .FLAG_VERB_MASK) >= .FLAG_VERBOSE) {
+      werror("Removed empty %s: %O\n", name, n->get_attributes()->name);
+      if ((flags & .FLAG_VERB_MASK) >= .FLAG_DEBUG) {
+        werror("%O\n", (string)n);
+      }
+    }
     return 0;
   };
 

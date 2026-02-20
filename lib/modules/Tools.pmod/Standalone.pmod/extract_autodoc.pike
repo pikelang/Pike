@@ -601,16 +601,16 @@ string|zero extract(string filename, string imgdest,
 		    "**""! class image\n"
 		    "**\n",
 		    "Calendar.pmod/Gregorian.pmod":
-		    "//! module Calendar\n"
+                    "//""! module Calendar\n"
 		    "//\n",
 		    "Calendar.pmod/Stardate.pmod":
-		    "//! module Calendar\n"
+                    "//""! module Calendar\n"
 		    "//\n",
 		    "Calendar_I.pmod/Gregorian.pmod":
-		    "//! module Calendar_I\n"
+                    "//""! module Calendar_I\n"
 		    "//\n",
 		    "Calendar_I.pmod/Stardate.pmod":
-		    "//! module Calendar_I\n"
+                    "//""! module Calendar_I\n"
 		    "//\n",
 		  ]); string suffix; string lines) {
 	    if (has_suffix(filename, suffix) &&
@@ -721,7 +721,9 @@ string|zero extract(string filename, string imgdest,
   mixed err = catch {
     if( suffix == "c" || suffix == "cc" || suffix == "cpp" || suffix == "yacc"
 	/* || suffix == "cmod" */)
-      result = Tools.AutoDoc.ProcessXML.extractXML(filename,0,0,0,root,flags);
+      result =
+        Tools.AutoDoc.ProcessXML.extractXML(filename, 0, 0, 0, root, flags |
+                                            Tools.AutoDoc.FLAG_KEEP_EMPTY);
     else {
       string type = ([ "pike":"class", "pmod":"module", ])[suffix];
       string name = (name_sans_suffix/"/")[-1];
