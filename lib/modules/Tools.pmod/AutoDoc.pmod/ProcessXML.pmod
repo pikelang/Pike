@@ -2163,6 +2163,7 @@ void doResolveNode(NScopeStack scopestack, SimpleNode tree)
 void resolveInherits(NScope root)
 {
   int loop_limit = 10;
+  int(0..2) state = 1;
 
   do {
     ADT.Queue(<NScope>) todo = pending_inherits;
@@ -2179,6 +2180,7 @@ void resolveInherits(NScope root)
           NScope val = scope->resolve(root, sym);
           if (objectp(val)) {
             scope->inherits[inh] = val;
+            state = 0;
 #if 0
             werror("%O: Resolved inherit %O:%O to %O\n",
                    scope->name, sym, inh, val->name);
@@ -2187,7 +2189,7 @@ void resolveInherits(NScope root)
           }
           // NB: Do not restore failed implicit inherits in the
           //     last pass as they may very well not exist.
-          if (loop_limit || !has_prefix(inh, "\0")) {
+          if ((state < 2) && (loop_limit || !has_prefix(inh, "\0"))) {
             scope->inherits[inh] = sym;	// Restore.
             scope_is_pending = 1;
           }
@@ -2201,6 +2203,7 @@ void resolveInherits(NScope root)
           NScope val = scope->resolve(root, sym);
           if (objectp(val)) {
             scope->imports[val] = 1;
+            state = 0;
 #if 0
             werror("%O: Resolved import %O to %O\n",
                    scope->name, sym, val->name);
@@ -2216,10 +2219,17 @@ void resolveInherits(NScope root)
         pending_inherits->put(scope);
       }
     }
+
+    if (state) {
+      // Failed to update any of the remaining pending inherits.
+      if (state == 2) break;
+    }
+    state++;
   } while (sizeof(pending_inherits) && loop_limit--);
 
   if (sizeof(pending_inherits)) {
-    werror("Failed to resolve all inherits for scopes:\n");
+    werror("Failed to resolve all inherits for scopes after %d passes:\n",
+           11 - loop_limit);
     foreach(Array.uniq(values(pending_inherits)), NScope scope) {
       foreach(scope->inherits || ([]); string inh; string|NScope sym) {
         if (stringp(sym)) {
