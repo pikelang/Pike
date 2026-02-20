@@ -605,7 +605,8 @@ static void exit_cval_struct(struct object *UNUSED(o))
   }
 }
 
-/*   ADD_FUNCTION("_value", f_cval_value, tFunc(tVoid,tMix), 0); */
+/*! @decl mixed _value()
+ */
 static void f_cval__value(INT32 UNUSED(args))
 {
   cval_push_result(0, DISPATCH_PROPERTYGET);
@@ -659,7 +660,8 @@ ROPERATOR(mod)
 #undef ROPERATOR
 
 
-/*   ADD_FUNCTION("__hash", f_cval___hash, tFunc(tMix,tMix), 0); */
+/*! @decl mixed __hash(mixed val)
+ */
 static void f_cval___hash(INT32 args)
 {
   cval_push_result(0, DISPATCH_PROPERTYGET);
@@ -668,7 +670,8 @@ static void f_cval___hash(INT32 args)
   f_hash(args);
 }
 
-/*   ADD_FUNCTION("cast", f_cval_cast, tFunc(tMix,tMix), 0); */
+/*! @decl mixed cast(mixed t)
+ */
 static void f_cval_cast(INT32 args)
 {
   struct cval_storage *cval = THIS_CVAL;
@@ -702,7 +705,8 @@ static void f_cval_cast(INT32 args)
 /*   f_index_assign(args); */
 /* } */
 
-/*   ADD_FUNCTION("`->", f_cval_aind, tFunc(tMix,tMix), 0); */
+/*! @decl mixed `->(string index)
+ */
 static void f_cval_arrow(INT32 args)
 {
   struct cval_storage *cval = THIS_CVAL;
@@ -730,7 +734,8 @@ static void f_cval_arrow(INT32 args)
   f_arrow(2);
 }
 
-/*   ADD_FUNCTION("`->=", f_cval_aindset, tFunc(tMix,tMix), 0); */
+/*! @decl mixed `->=(CObj cobj)
+ */
 static void f_cval_arrow_assign(INT32 args)
 {
   struct cval_storage *cval = THIS_CVAL;
@@ -764,7 +769,8 @@ static void f_cval_arrow_assign(INT32 args)
 /* { */
 /* } */
 
-/*   ADD_FUNCTION("`()", f_cval_func, tFunc(tMix,tMix), 0); */
+/*! @decl mixed `()(mixed arg)
+ */
 static void f_cval_func(INT32 args)
 {
   cval_push_result(args, DISPATCH_METHOD);
@@ -780,7 +786,8 @@ static void f_cval_func(INT32 args)
 /* { */
 /* } */
 
-/*   ADD_FUNCTION("_sprintf", f_cval__sprintf, tFunc(tMix,tMix), 0); */
+/*! @decl mixed _sprintf(int c, mapping opts)
+ */
 static void f_cval__sprintf(INT32 args)
 {
   struct cval_storage *cval = THIS_CVAL;
