@@ -6365,13 +6365,13 @@ PMOD_EXPORT void create_proxy_pipe(struct object *o, int for_reading)
 #if defined(HAVE_FD_FLOCK) || defined(HAVE_FD_LOCKF)
 
 /*! @class FileLockKey
- *! @belongs Stdio
+ *! @belongs _Stdio
  *!
  *!   Holds the state of a lock returned from @[Fd()->lock()]
- *!   or @[Fd()->try_lock()].
+ *!   or @[Fd()->trylock()].
  *!
  *! @seealso
- *!   @[Fd()->lock()], @[Fd()->try_lock()]
+ *!   @[Fd()->lock()], @[Fd()->trylock()]
  */
 
 static struct program * file_lock_key_program;
