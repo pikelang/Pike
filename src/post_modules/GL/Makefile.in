@@ -10,6 +10,8 @@ auto.c : $(SRCDIR)/auto.c.in $(SRCDIR)/features.pike $(SRCDIR)/constants.pike $(
 	$(RUNPIKE) $(SRCDIR)/gen.pike $(SRCDIR)/auto.c.in > auto.c.tmp
 	mv -f auto.c.tmp auto.c
 
+docs: $(SRCDIR)/autodoc.c
+
 # Compatibility with stupid makes..
 auto.o: auto.c
 
