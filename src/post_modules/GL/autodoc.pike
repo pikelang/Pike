@@ -63,6 +63,8 @@ mapping(string:string) ref_alias = ([
   "glRasterPos2": "glRasterPos",
   "glRasterPos3": "glRasterPos",
   "glRasterPos4": "glRasterPos",
+  "glMapGrid1": "glMapGrid",
+  "glMapGrid2": "glMapGrid",
   "glTexCoord1": "glTexCoord",
   "glTexCoord2": "glTexCoord",
   "glTexCoord3": "glTexCoord",
@@ -368,7 +370,7 @@ string document(string name, string features)
   case 'S':
     ret="string";
     break;
-  case '[':
+  case ']':
     if (features[1] == 'I') {
       ret = "array(int)";
     } else {
@@ -438,6 +440,14 @@ string document(string name, string features)
     case '@':
       args += special_234(1, 1, features[i+1..]);
       i=sizeof(features);
+      break;
+    case ']':
+      if (features[i+1] == 'I') {
+        args += ({ "array(int)" });
+      } else {
+        args += ({ "array" });
+      }
+      i++;
       break;
     case '[':
       sscanf(features[i+1..], "%d%s", int nn, string rst);
@@ -591,7 +601,8 @@ void main()
              ({"glCallLists", "VVVI-"}),
              ({"glDeleteTextures", "VVI-"}),
              ({"glFrustum", "VDDDDDD"}),
-             ({"glGenTextures", "[IIV"}),
+             ({"glGenTextures", "]IIV"}),
+             ({"glDrawElements", "VEVV]I"}),
              ({"glMapGrid", "VIFFIFF"}),
              ({"glGet", "+QIV" }),
            }), array func)

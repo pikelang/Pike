@@ -520,6 +520,9 @@ static void my_glFrustum(INT32 args);
 static void my_glDeleteTextures( INT32 args );
 static void my_glGenTextures( INT32 args );
 static void my_glCallLists( INT32 args );
+#ifdef HAVE_GLDRAWELEMENTS
+static void my_glDrawElements(INT32 args)
+#endif
 static void my_glMapGrid(INT32 args);
 
 static void pre_init(void)
@@ -534,9 +537,13 @@ static void pre_init(void)
 			OPT_SIDE_EFFECT);
   add_function_constant("glGenTextures", my_glGenTextures,
 			"function(int:array(int))", OPT_EXTERNAL_DEPEND);
+#ifdef HAVE_GLDRAWELEMENTS
+  add_function_constant("glDrawElements", my_glDrawElements,
+                        "function(int, array(int):void)", OPT_SIDE_EFFECT);
+#endif
   add_function_constant("glMapGrid", my_glMapGrid,
                         "function(int,float,float,int,float,float:void)|"
-                        "function(int,float,float:void)", OPT_EXTERNAL_DEPEND);
+                        "function(int,float,float:void)", OPT_SIDE_EFFECT);
 }
 
 static void post_init(void)
@@ -641,6 +648,30 @@ static void my_glFrustum(INT32 args)
   glMultMatrixd( m );
   pop_n_elems(args);
 }
+
+#ifdef HAVE_GLDRAWELEMENTS
+static void my_glDrawElements(INT32 args)
+{
+  INT_TYPE *mode;
+  struct array *indices;
+  int i;
+  unsigned int *vector = NULL;
+
+  get_all_args(NULL, args, "%i%a", &mode, &indices);
+
+  vector = alloca(indices->size * sizeof(unsigned int));
+  for (i = 0; i < indices->size; i++) {
+    if (TYPEOF(ITEM(indices)[i]) != PIKE_T_INT) {
+      SIMPLE_ARG_ERROR("glDrawElements", 2, "array(int)");
+    }
+    vector[i] = ITEM(indices)[i].u.integer;
+  }
+
+  /* NB: GL version 1.1 and later. */
+  glDrawElements(mode, indices->size, GL_UNSIGNED_INT, vector);
+  pop_n_elems(args);
+}
+#endif
 
 static void my_glMapGrid(INT32 args)
 {
