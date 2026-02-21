@@ -592,6 +592,7 @@ void main()
              ({"glDeleteTextures", "VVI-"}),
              ({"glFrustum", "VDDDDDD"}),
              ({"glGenTextures", "[IIV"}),
+             ({"glMapGrid", "VIFFIFF"}),
              ({"glGet", "+QIV" }),
            }), array func)
   {

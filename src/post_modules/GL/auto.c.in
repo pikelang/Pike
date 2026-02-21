@@ -520,6 +520,7 @@ static void my_glFrustum(INT32 args);
 static void my_glDeleteTextures( INT32 args );
 static void my_glGenTextures( INT32 args );
 static void my_glCallLists( INT32 args );
+static void my_glMapGrid(INT32 args);
 
 static void pre_init(void)
 {
@@ -533,6 +534,9 @@ static void pre_init(void)
 			OPT_SIDE_EFFECT);
   add_function_constant("glGenTextures", my_glGenTextures,
 			"function(int:array(int))", OPT_EXTERNAL_DEPEND);
+  add_function_constant("glMapGrid", my_glMapGrid,
+                        "function(int,float,float,int,float,float:void)|"
+                        "function(int,float,float:void)", OPT_EXTERNAL_DEPEND);
 }
 
 static void post_init(void)
@@ -635,5 +639,20 @@ static void my_glFrustum(INT32 args)
   m[14] = -2*away*close/(away-close);
 
   glMultMatrixd( m );
+  pop_n_elems(args);
+}
+
+static void my_glMapGrid(INT32 args)
+{
+  INT_TYPE un, vn;
+  FLOAT_TYPE u1, u2, v1 = 0.0, v2 = 0.0;
+  get_all_args(NULL, args, "%i%f%f.%i%f%f",
+               &un, &u1, &u2, &vn, &v1, &v2);
+
+  if (args > 3) {
+    glMapGrid2d(un, u1, u2, vn, v1, v2);
+  } else {
+    glMapGrid1d(un, u1, u2);
+  }
   pop_n_elems(args);
 }

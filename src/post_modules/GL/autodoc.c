@@ -33,7 +33,6 @@
  *!<r><c>glGetTexParameter</c></r>
  *!<r><c>glMap1</c></r>
  *!<r><c>glMap2</c></r>
- *!<r><c>glMapGrid</c></r>
  *!<r><c>glPixelMap</c></r>
  *!<r><c>glPixelStore</c></r>
  *!<r><c>glPixelTransfer</c></r>
@@ -2290,7 +2289,7 @@
  *!        1       2
  *!
  *!.fi
- *!are the arguments to the most recent @[glMapGrid1] command.
+ *!are the arguments to the most recent @[glMapGrid] command.
  *!The one absolute numeric requirement is that if i~=~n,
  *!then the value computed from
  *!.nf
@@ -2313,7 +2312,7 @@
  *!          1   2      1       2
  *!
  *!.fi
- *!are the arguments to the most recent @[glMapGrid2] command.
+ *!are the arguments to the most recent @[glMapGrid] command.
  *!Then the @[glEvalPoint] command is equivalent to calling
  *!.nf
  *!
@@ -6385,7 +6384,7 @@
  *!        1      2
  *!
  *!.fi
- *!@[glMapGrid1] command.
+ *!@[glMapGrid] command.
  *!@i{type@} is @[GL_POINTS] if @i{mode@} is @[GL_POINT],
  *!or @[GL_LINES] if @i{mode@} is @[GL_LINE].
  *!
@@ -6412,7 +6411,7 @@
  *!where n, u , u , m, v , and v
  *!          1   2      1       2
  *!.fi
- *!are the arguments to the most recent @[glMapGrid2] command.
+ *!are the arguments to the most recent @[glMapGrid] command.
  *!Then,
  *!if @i{mode@} is @[GL_FILL],
  *!the @[glEvalMesh2] command is equivalent to:
@@ -6552,7 +6551,7 @@
  *!        1      2
  *!
  *!.fi
- *!@[glMapGrid1] command.
+ *!@[glMapGrid] command.
  *!@i{type@} is @[GL_POINTS] if @i{mode@} is @[GL_POINT],
  *!or @[GL_LINES] if @i{mode@} is @[GL_LINE].
  *!
@@ -6579,7 +6578,7 @@
  *!where n, u , u , m, v , and v
  *!          1   2      1       2
  *!.fi
- *!are the arguments to the most recent @[glMapGrid2] command.
+ *!are the arguments to the most recent @[glMapGrid] command.
  *!Then,
  *!if @i{mode@} is @[GL_FILL],
  *!the @[glEvalMesh2] command is equivalent to:
@@ -8035,6 +8034,91 @@
  *!@[GL_INVALID_OPERATION] is generated if @[glGenTextures] is executed
  *!between the execution of @[glBegin] and the corresponding
  *!execution of @[glEnd].
+ *!
+ *!
+ */
+
+/*!@decl void glMapGrid(int un, float u1, float u2)
+ *!@decl void glMapGrid(int un, float u1, float u2, int vn, float v1, float v2)
+ *!
+ *!@[glMapGrid] and @[glEvalMesh1] and @[glEvalMesh2] are used together to efficiently
+ *!generate and evaluate a series of evenly-spaced map domain values.
+ *!@[glEvalMesh1] and @[glEvalMesh2] steps through the integer domain
+ *!of a one- or two-dimensional grid,
+ *!whose range is the domain of the evaluation maps specified by
+ *!@[glMap1] and @[glMap2].
+ *!
+ *!@[glMapGrid] specifies the linear grid mappings
+ *!between the i
+ *!(or i and j)
+ *!integer grid coordinates,
+ *!to the u
+ *!(or u and v)
+ *!floating-point evaluation map coordinates.
+ *!See @[glMap1] and @[glMap2] for details of how u and v coordinates
+ *!are evaluated.
+ *!
+ *!@[glMapGrid] with three arguments specifies a single linear mapping
+ *!such that integer grid coordinate 0 maps exactly to @i{u1@},
+ *!and integer grid coordinate @i{un@} maps exactly to @i{u2@}.
+ *!All other integer grid coordinates i are mapped so that
+ *!.sp
+ *!.ce
+ *!.EQ
+ *!u ~=~ i ("u2" - "u1") / "un" ~+~ "u1"
+ *!.EN
+ *!.sp
+ *!@[glMapGrid] with six arguments specifies two such linear mappings.
+ *!One maps integer grid coordinate i=0 exactly to @i{u1@},
+ *!and integer grid coordinate i="un" exactly to @i{u2@}.
+ *!The other maps integer grid coordinate j=0 exactly to @i{v1@},
+ *!and integer grid coordinate j="vn" exactly to @i{v2@}.
+ *!Other integer grid coordinates i and j are mapped such that
+ *!
+ *!.ce
+ *!.EQ
+ *!u ~=~ i ("u2" - "u1") / "un" ~+~ "u1"
+ *!.EN
+ *!
+ *!.ce
+ *!.EQ
+ *!v ~=~ j ("v2" - "v1") / "vn" ~+~ "v1"
+ *!.EN
+ *!
+ *!The mappings specified by @[glMapGrid] are used identically by
+ *!@[glEvalMesh1] and @[glEvalMesh2] and @[glEvalPoint].
+ *!
+ *!@param un
+ *!
+ *!Specifies the number of partitions in the grid range interval
+ *![@i{u1@}, @i{u2@}].
+ *!Must be positive.
+ *!
+ *!@param u1
+ *!
+ *!Specify the mappings for integer grid domain values i=0 and i="un".
+ *!
+ *!@param vn
+ *!
+ *!Specifies the number of partitions in the grid range interval
+ *![@i{v1@}, @i{v2@}]
+ *!
+ *!(Optional arguments).
+ *!
+ *!@param v1
+ *!
+ *!Specify the mappings for integer grid domain values j=0 and j="vn"
+ *!
+ *!(With six arguments only).
+ *!
+ *!@throws
+ *!
+ *!@[GL_INVALID_VALUE] is generated if either @i{un@} or @i{vn@} is not
+ *!positive.
+ *!
+ *!@[GL_INVALID_OPERATION] is generated if @[glMapGrid]
+ *!is executed between the execution of @[glBegin]
+ *!and the corresponding execution of @[glEnd].
  *!
  *!
  */
@@ -13023,11 +13107,11 @@
  */
 
 /*!@decl constant GL_INVALID_OPERATION = 1282
- *! Used in @[glAccum], @[glAlphaFunc], @[glBegin], @[glBindTexture], @[glBlendFunc], @[glClearAccum], @[glClearColor], @[glClearDepth], @[glClearIndex], @[glClearStencil], @[glClear], @[glClipPlane], @[glColorMask], @[glColorMaterial], @[glCopyPixels], @[glCopyTexImage1D], @[glCopyTexImage2D], @[glCopyTexSubImage1D], @[glCopyTexSubImage2D], @[glCullFace], @[glDeleteLists], @[glDeleteTextures], @[glDepthFunc], @[glDepthMask], @[glDepthRange], @[glDisable], @[glDrawArrays], @[glDrawBuffer], @[glDrawPixels], @[glEnable], @[glEndList], @[glEnd], @[glEvalMesh1], @[glEvalMesh2], @[glFeedbackBuffer], @[glFinish], @[glFlush], @[glFog], @[glFrontFace], @[glFrustum], @[glGenLists], @[glGenTextures], @[glGetError], @[glGetString], @[glGetTexImage], @[glGet], @[glHint], @[glIndexMask], @[glInitNames], @[glIsEnabled], @[glIsList], @[glIsTexture], @[glLightModel], @[glLight], @[glLineStipple], @[glLineWidth], @[glListBase], @[glLoadIdentity], @[glLoadMatrix], @[glLoadName], @[glLogicOp], @[glMatrixMode], @[glMultMatrix], @[glNewList], @[glOrtho], @[glPassThrough], @[glPixelZoom], @[glPointSize], @[glPolygonMode], @[glPolygonOffset], @[glPopAttrib], @[glPopMatrix], @[glPopName], @[glPushAttrib], @[glPushMatrix], @[glPushName], @[glRasterPos], @[glReadBuffer], @[glReadPixels], @[glRenderMode], @[glRotate], @[glScale], @[glScissor], @[glSelectBuffer], @[glShadeModel], @[glStencilFunc], @[glStencilMask], @[glStencilOp], @[glTexEnv], @[glTexGen], @[glTexImage1D], @[glTexImage2D], @[glTexParameter], @[glTexSubImage1D], @[glTexSubImage2D], @[glTranslate] and @[glViewport]
+ *! Used in @[glAccum], @[glAlphaFunc], @[glBegin], @[glBindTexture], @[glBlendFunc], @[glClearAccum], @[glClearColor], @[glClearDepth], @[glClearIndex], @[glClearStencil], @[glClear], @[glClipPlane], @[glColorMask], @[glColorMaterial], @[glCopyPixels], @[glCopyTexImage1D], @[glCopyTexImage2D], @[glCopyTexSubImage1D], @[glCopyTexSubImage2D], @[glCullFace], @[glDeleteLists], @[glDeleteTextures], @[glDepthFunc], @[glDepthMask], @[glDepthRange], @[glDisable], @[glDrawArrays], @[glDrawBuffer], @[glDrawPixels], @[glEnable], @[glEndList], @[glEnd], @[glEvalMesh1], @[glEvalMesh2], @[glFeedbackBuffer], @[glFinish], @[glFlush], @[glFog], @[glFrontFace], @[glFrustum], @[glGenLists], @[glGenTextures], @[glGetError], @[glGetString], @[glGetTexImage], @[glGet], @[glHint], @[glIndexMask], @[glInitNames], @[glIsEnabled], @[glIsList], @[glIsTexture], @[glLightModel], @[glLight], @[glLineStipple], @[glLineWidth], @[glListBase], @[glLoadIdentity], @[glLoadMatrix], @[glLoadName], @[glLogicOp], @[glMapGrid], @[glMatrixMode], @[glMultMatrix], @[glNewList], @[glOrtho], @[glPassThrough], @[glPixelZoom], @[glPointSize], @[glPolygonMode], @[glPolygonOffset], @[glPopAttrib], @[glPopMatrix], @[glPopName], @[glPushAttrib], @[glPushMatrix], @[glPushName], @[glRasterPos], @[glReadBuffer], @[glReadPixels], @[glRenderMode], @[glRotate], @[glScale], @[glScissor], @[glSelectBuffer], @[glShadeModel], @[glStencilFunc], @[glStencilMask], @[glStencilOp], @[glTexEnv], @[glTexGen], @[glTexImage1D], @[glTexImage2D], @[glTexParameter], @[glTexSubImage1D], @[glTexSubImage2D], @[glTranslate] and @[glViewport]
  */
 
 /*!@decl constant GL_INVALID_VALUE = 1281
- *! Used in @[glCallLists], @[glClear], @[glColorPointer], @[glCopyPixels], @[glCopyTexImage1D], @[glCopyTexImage2D], @[glCopyTexSubImage1D], @[glCopyTexSubImage2D], @[glDeleteLists], @[glDeleteTextures], @[glDrawArrays], @[glDrawPixels], @[glEndList], @[glFeedbackBuffer], @[glFog], @[glFrustum], @[glGenLists], @[glGenTextures], @[glGetError], @[glGetTexImage], @[glIndexPointer], @[glInterleavedArrays], @[glLight], @[glLineWidth], @[glMaterial], @[glNewList], @[glNormalPointer], @[glPointSize], @[glReadPixels], @[glScissor], @[glSelectBuffer], @[glTexCoordPointer], @[glTexImage1D], @[glTexImage2D], @[glTexSubImage1D], @[glTexSubImage2D], @[glVertexPointer] and @[glViewport]
+ *! Used in @[glCallLists], @[glClear], @[glColorPointer], @[glCopyPixels], @[glCopyTexImage1D], @[glCopyTexImage2D], @[glCopyTexSubImage1D], @[glCopyTexSubImage2D], @[glDeleteLists], @[glDeleteTextures], @[glDrawArrays], @[glDrawPixels], @[glEndList], @[glFeedbackBuffer], @[glFog], @[glFrustum], @[glGenLists], @[glGenTextures], @[glGetError], @[glGetTexImage], @[glIndexPointer], @[glInterleavedArrays], @[glLight], @[glLineWidth], @[glMapGrid], @[glMaterial], @[glNewList], @[glNormalPointer], @[glPointSize], @[glReadPixels], @[glScissor], @[glSelectBuffer], @[glTexCoordPointer], @[glTexImage1D], @[glTexImage2D], @[glTexSubImage1D], @[glTexSubImage2D], @[glVertexPointer] and @[glViewport]
  */
 
 /*!@decl constant GL_INVERT = 5386
