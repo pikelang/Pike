@@ -521,7 +521,7 @@ static void my_glDeleteTextures( INT32 args );
 static void my_glGenTextures( INT32 args );
 static void my_glCallLists( INT32 args );
 #ifdef HAVE_GLDRAWELEMENTS
-static void my_glDrawElements(INT32 args)
+static void my_glDrawElements(INT32 args);
 #endif
 static void my_glMapGrid(INT32 args);
 
@@ -652,7 +652,7 @@ static void my_glFrustum(INT32 args)
 #ifdef HAVE_GLDRAWELEMENTS
 static void my_glDrawElements(INT32 args)
 {
-  INT_TYPE *mode;
+  INT_TYPE mode;
   struct array *indices;
   int i;
   unsigned int *vector = NULL;
