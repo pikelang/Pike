@@ -2163,6 +2163,7 @@ void doResolveNode(NScopeStack scopestack, SimpleNode tree)
 void resolveInherits(NScope root)
 {
   int loop_limit = 10;
+  int(1bit) init_namespaces = 1;
   int(0..2) state = 1;
 
   do {
@@ -2173,9 +2174,36 @@ void resolveInherits(NScope root)
       NScope scope = todo->get();
       int(1bit) scope_is_pending;
 
+      if (sizeof(scope->imports || (<>))) {
+        foreach((array)scope->imports, string|NScope sym) {
+          if (objectp(sym)) continue;
+          if (init_namespaces && !has_suffix(sym, "::")) {
+            scope_is_pending = 1;
+            continue;
+          }
+          scope->imports[sym] = 0;	// Temporary removal.
+          NScope val = scope->resolve(root, sym);
+          if (objectp(val)) {
+            scope->imports[val] = 1;
+            state = 0;
+#if 0
+            werror("%O: Resolved import %O to %O\n",
+                   scope->name, sym, val->name);
+#endif
+            continue;
+          }
+          scope->imports[sym] = 1;	// Restore.
+          scope_is_pending = 1;
+        }
+      }
+
       if (sizeof(scope->inherits || ([]))) {
         foreach(scope->inherits; string inh; string|NScope sym) {
           if (objectp(sym)) continue;
+          if (init_namespaces && !has_suffix(sym, "::")) {
+            scope_is_pending = 1;
+            continue;
+          }
           m_delete(scope->inherits, inh);	// Temporary removal.
           NScope val = scope->resolve(root, sym);
           if (objectp(val)) {
@@ -2196,31 +2224,15 @@ void resolveInherits(NScope root)
         }
       }
 
-      if (sizeof(scope->imports || (<>))) {
-        foreach((array)scope->imports, string|NScope sym) {
-          if (objectp(sym)) continue;
-          scope->imports[sym] = 0;	// Temporary removal.
-          NScope val = scope->resolve(root, sym);
-          if (objectp(val)) {
-            scope->imports[val] = 1;
-            state = 0;
-#if 0
-            werror("%O: Resolved import %O to %O\n",
-                   scope->name, sym, val->name);
-#endif
-            continue;
-          }
-          scope->imports[sym] = 1;	// Restore.
-          scope_is_pending = 1;
-        }
-      }
-
       if (scope_is_pending) {
         pending_inherits->put(scope);
       }
     }
 
-    if (state) {
+    if (init_namespaces) {
+      init_namespaces = 0;
+      state = 0;
+    } else if (state) {
       // Failed to update any of the remaining pending inherits.
       if (state == 2) break;
     }
