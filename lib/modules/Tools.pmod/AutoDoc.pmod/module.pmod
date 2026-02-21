@@ -23,6 +23,10 @@ enum Flags {
   FLAG_NO_DYNAMIC = 16,	//! Reduce the amount of dynamic information
 			//! in the generated files (line numbers,
 			//! extractor version, extraction time, etc).
+  FLAG_KEEP_EMPTY = 32,	//! Set marker in XML to keep classes and modules
+                        //! even if they have empty documentation. This
+                        //! is used for C documentation, since someone
+                        //! has made the effort to document the existence.
 }
 
 protected int isDigit(int c) { return '0' <= c && c <= '9'; }

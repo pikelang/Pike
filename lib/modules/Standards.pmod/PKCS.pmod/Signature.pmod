@@ -21,7 +21,7 @@ import Standards.ASN1.Types;
 //! @param hash
 //!   crypto hash object such as @[Crypto.SHA1] or @[Crypto.MD5]
 //! @seealso
-//!   @[Crypto.RSA.State->sign]
+//!   @[Crypto.RSA.State->pkcs_sign()]
 string(0..255) build_digestinfo(HashState|string(0..255) msg, HASH hash)
 {
   if(!hash->pkcs_hash_id) error("Unknown ASN.1 id for hash.\n");

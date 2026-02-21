@@ -2295,7 +2295,7 @@ void f_encode_value(INT32 args)
 
 /*! @decl string(8bit) encode_value_canonic(mixed value, object|void codec)
  *! @decl string(8bit) encode_value_canonic(mixed value, object|void codec, @
- *!                                         String.buffer trace)
+ *!                                         String.Buffer trace)
  *! @decl string(8bit) encode_value_canonic(mixed value, object|void codec, @
  *!                                         int(0..) debug)
  *!

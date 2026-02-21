@@ -798,6 +798,7 @@ class PikeObject {
     if (name)    m->name = name;
     if (appears) m->appears = appears;
     if (belongs) m->belongs = belongs;
+    if (flags & .FLAG_KEEP_EMPTY) m["keep"] = "";
     return m;
   }
 

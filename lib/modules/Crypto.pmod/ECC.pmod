@@ -889,6 +889,7 @@ class _Curve448 {
     inherit ::this_program;
     //! @endignore
 
+    //! @decl typeof(Curve448) get_curve()
     //! Return the curve.
     _Curve448 get_curve()
     {

@@ -2163,6 +2163,7 @@ void doResolveNode(NScopeStack scopestack, SimpleNode tree)
 void resolveInherits(NScope root)
 {
   int loop_limit = 10;
+  int(1bit) init_namespaces = 1;
   int(0..2) state = 1;
 
   do {
@@ -2173,9 +2174,36 @@ void resolveInherits(NScope root)
       NScope scope = todo->get();
       int(1bit) scope_is_pending;
 
+      if (sizeof(scope->imports || (<>))) {
+        foreach((array)scope->imports, string|NScope sym) {
+          if (objectp(sym)) continue;
+          if (init_namespaces && !has_suffix(sym, "::")) {
+            scope_is_pending = 1;
+            continue;
+          }
+          scope->imports[sym] = 0;	// Temporary removal.
+          NScope val = scope->resolve(root, sym);
+          if (objectp(val)) {
+            scope->imports[val] = 1;
+            state = 0;
+#if 0
+            werror("%O: Resolved import %O to %O\n",
+                   scope->name, sym, val->name);
+#endif
+            continue;
+          }
+          scope->imports[sym] = 1;	// Restore.
+          scope_is_pending = 1;
+        }
+      }
+
       if (sizeof(scope->inherits || ([]))) {
         foreach(scope->inherits; string inh; string|NScope sym) {
           if (objectp(sym)) continue;
+          if (init_namespaces && !has_suffix(sym, "::")) {
+            scope_is_pending = 1;
+            continue;
+          }
           m_delete(scope->inherits, inh);	// Temporary removal.
           NScope val = scope->resolve(root, sym);
           if (objectp(val)) {
@@ -2196,31 +2224,15 @@ void resolveInherits(NScope root)
         }
       }
 
-      if (sizeof(scope->imports || (<>))) {
-        foreach((array)scope->imports, string|NScope sym) {
-          if (objectp(sym)) continue;
-          scope->imports[sym] = 0;	// Temporary removal.
-          NScope val = scope->resolve(root, sym);
-          if (objectp(val)) {
-            scope->imports[val] = 1;
-            state = 0;
-#if 0
-            werror("%O: Resolved import %O to %O\n",
-                   scope->name, sym, val->name);
-#endif
-            continue;
-          }
-          scope->imports[sym] = 1;	// Restore.
-          scope_is_pending = 1;
-        }
-      }
-
       if (scope_is_pending) {
         pending_inherits->put(scope);
       }
     }
 
-    if (state) {
+    if (init_namespaces) {
+      init_namespaces = 0;
+      state = 0;
+    } else if (state) {
       // Failed to update any of the remaining pending inherits.
       if (state == 2) break;
     }
@@ -2238,7 +2250,7 @@ void resolveInherits(NScope root)
       }
       foreach((array)(scope->imports || (<>)), string|NScope sym) {
         if (stringp(sym)) {
-          werror("%O: import %O:%O\n", scope->name, sym);
+          werror("%O: import %O\n", scope->name, sym);
         }
       }
     }
@@ -2298,19 +2310,29 @@ void cleanUndocumented(SimpleNode tree, .Flags|void flags)
     int num = sizeof(children);
     children = filter(children, map(children, check_node));
     if (sizeof(children) != num) {
+#if 0
+      werror("Removing empty children from %s %O: %O\n",
+             n->get_tag_name(), n->get_attributes()->name,
+             (array(string))(n->get_children() - children));
+#endif
       n->replace_children(children);
       check_node(n);
     }
 
     string name = n->get_tag_name();
     if(name!="class" && name!="module") return 1;
+    if (n->get_attributes()->keep) return 1;
 
     array ch = n->get_elements()->get_tag_name();
     ch -= ({ "modifiers" });
     ch -= ({ "source-position" });
     if(sizeof(ch)) return 1;
-    if ((flags & .FLAG_VERB_MASK) >= .FLAG_VERBOSE)
-      werror("Removed empty %s %O\n", name, n->get_attributes()->name);
+    if ((flags & .FLAG_VERB_MASK) >= .FLAG_VERBOSE) {
+      werror("Removed empty %s: %O\n", name, n->get_attributes()->name);
+      if ((flags & .FLAG_VERB_MASK) >= .FLAG_DEBUG) {
+        werror("%O\n", (string)n);
+      }
+    }
     return 0;
   };
 

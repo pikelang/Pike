@@ -65,6 +65,9 @@ class Consumer(< ValueType >)
     adjust();
   }
 
+  //! @decl float|int weight
+  //!   Weight of this Consumer (except its @[children]).
+
   void `weight=(float|int new_weight)
   {
     if (new_weight == weight_) return;
