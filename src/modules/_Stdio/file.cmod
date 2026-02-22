@@ -5415,9 +5415,10 @@ static void low_dup(struct object *UNUSED(toob),
  *!
  *! Duplicate a file over another.
  *!
- *! This function works similarly to @[assign()], but instead of making
- *! the argument a reference to the same file, it creates a new file
- *! with the same properties and places it in the argument.
+ *! This function works similarly to @[Stdio.File()->assign()],
+ *! but instead of making the argument a reference to the same file,
+ *! it creates a new file with the same properties and places it in
+ *! the argument.
  *!
  *! @returns
  *!   Returns @expr{1@} on success and @expr{0@} (zero) on failure.

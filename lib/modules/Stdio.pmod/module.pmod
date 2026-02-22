@@ -137,7 +137,7 @@ constant TCSAFLUSH = "TCSAFLUSH";
 //! The various read_callback signatures.
 //!
 //! The string (or void) version is used when buffer mode (see
-//! @[set_buffer_mode]) has not been enabled for reading.
+//! @[File()->set_buffer_mode()]) has not been enabled for reading.
 //!
 //! The @[Buffer] version is used when a @[Buffer] has been enabled
 //! for reading.
@@ -153,7 +153,7 @@ local typedef
 //! The various write_callback signatures.
 //!
 //! The void version is used when buffer mode (see
-//! @[set_buffer_mode]) has not been enabled for writing.
+//! @[File()->set_buffer_mode()]) has not been enabled for writing.
 //!
 //! The @[Buffer] version is used when a @[Buffer] has been enabled
 //! for writing, add data to that buffer to send it.
