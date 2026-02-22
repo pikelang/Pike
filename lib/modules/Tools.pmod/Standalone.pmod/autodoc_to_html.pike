@@ -3,7 +3,7 @@
 //! AutoDoc XML to HTML converter.
 //!
 //! @seealso
-//!    @[tree_split]
+//!    @[autodoc_to_split_html]
 
 constant description = "AutoDoc XML to HTML converter.";
 
