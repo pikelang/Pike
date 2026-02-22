@@ -2303,6 +2303,11 @@ void resolveRefs(SimpleNode tree, string|void logfile, .Flags|void flags)
     werror("Done.\n");
 }
 
+//! Filter nodes from @[tree] that are undocumented and
+//! do not have the attribute @tt{keep@} set.
+//!
+//! This is mainly used to filter undocumented classes that
+//! have been automatically added by the @[PikeExtractor].
 void cleanUndocumented(SimpleNode tree, .Flags|void flags)
 {
   int(0..1) check_node(SimpleNode n) {
