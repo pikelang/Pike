@@ -2801,34 +2801,58 @@ PMOD_EXPORT int pcharp_to_svalue_inumber(struct svalue *r,
     }
   }
 
+  /* C23: 7.24.1.7.3.2 (strtol(3C) et al):
+   *   If the value of base is 2, the characters 0b or 0B may optionally
+   *   precede the sequence of letters and digits, following the sign if
+   *   present. If the value of base is 16, the characters 0x or 0X may
+   *   optionally precede the sequence of letters and digits, following
+   *   the sign if present.
+   */
   if(base == 0)
   {
     if(c != '0')
       base = 10;
-    else if(INDEX_PCHARP(str,1) == 'x' || INDEX_PCHARP(str,1) == 'X')
+    else if(INDEX_PCHARP(str,1) == 'x' || INDEX_PCHARP(str,1) == 'X') {
       base = 16;
-    else if(INDEX_PCHARP(str,1) == 'b' || INDEX_PCHARP(str,1) == 'B')
+    } else if(INDEX_PCHARP(str,1) == 'b' || INDEX_PCHARP(str,1) == 'B') {
       base = 2;
-    else
+    } else if(INDEX_PCHARP(str,1) == 'o' || INDEX_PCHARP(str,1) == 'O') {
+      base = 8;
+    } else
       base = 8;
   }
 
   /*
    * For any base > 10, the digits incrementally following
    * 9 are assumed to be "abc...z" or "ABC...Z".
+   *
+   * C23: 7.24.1.7.3.2 (strtol(3C) et al):
+   *   The letters from a (or A) through z (or Z) are ascribed the
+   *   values 10 through 35; only letters and digits whose ascribed
+   *   values are less than that of base are permitted.
    */
   if(DIGIT(c) >= base)
     return 0;   /* No number formed. */
 
-  if(c == '0' &&
-     ((base==16 && (INDEX_PCHARP(str,1)=='x' || INDEX_PCHARP(str,1)=='X')) ||
-      (base==2 && (INDEX_PCHARP(str,1)=='b' || INDEX_PCHARP(str,1)=='B'))) &&
-     DIGIT(INDEX_PCHARP(str,2))<base )
-  {
-    /* Skip over leading "0x", "0X", "0b" or "0B". */
-    INC_PCHARP(str,2);
-    c=EXTRACT_PCHARP(str);
+  if (c == '0' && (DIGIT(INDEX_PCHARP(str, 2)) < base)) {
+    if ((base==16) &&
+        (INDEX_PCHARP(str,1)=='x' || INDEX_PCHARP(str,1)=='X')) {
+      /* Skip over leading "0x" or "0X". */
+      INC_PCHARP(str,2);
+      c=EXTRACT_PCHARP(str);
+    } else if ((base==2) &&
+               (INDEX_PCHARP(str,1)=='b' || INDEX_PCHARP(str,1)=='B')) {
+      /* Skip over leading "0b" or "0B". */
+      INC_PCHARP(str,2);
+      c=EXTRACT_PCHARP(str);
+    } else if ((base==8) &&
+               (INDEX_PCHARP(str,1)=='o' || INDEX_PCHARP(str,1)=='O')) {
+      /* Skip over leading "0o" or "0O". */
+      INC_PCHARP(str,2);
+      c=EXTRACT_PCHARP(str);
+    }
   }
+
   str_start=str;
 
   if (neg > 0) {

@@ -145,7 +145,7 @@ else
       AC_CHECK_LIB(GL, glCompileShader)
       # GL_GLEXT_PROTOTYPES needed to get the prototypes tested below.
       AC_DEFINE(GL_GLEXT_PROTOTYPES, [1], [Needed to get prototypes])
-      AC_CHECK_FUNCS([glGenFramebuffersEXT glGenRenderbuffersEXT glGenerateMipmapEXT glGenBuffers])
+      AC_CHECK_FUNCS([glGenFramebuffersEXT glGenRenderbuffersEXT glGenerateMipmapEXT glGenBuffers glDrawElements])
 
       AC_MSG_CHECKING(whether to enable GLSL)
       if test "x$ac_cv_header_GL_glext_h$ac_cv_lib_GL_glCompileShader" = "xyesyes"; then

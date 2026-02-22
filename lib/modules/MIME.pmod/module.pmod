@@ -1145,7 +1145,7 @@ class Message {
   //! be interpreted.
   //!
   //! @seealso
-  //! @[setdata()], @[getencoding()], @[data]
+  //! @[setdata()], @[setencoding()], @[data]
   //!
   string getdata( )
   {

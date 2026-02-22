@@ -193,10 +193,13 @@ static FLOAT_TYPE lex_strtod(char *buf, char **end)
  *   \e			escape (ESC)
  *   \f			form-feed (FF)
  *   \n			newline (LF)
+ *   \o[0-7]*		octal escape
+ *   \o{[0-7]*}		octal escape
  *   \r			carriage-return (CR)
  *   \t			tab (HT)
  *   \v			vertical-tab (VT)
  *   \x[0-9a-fA-F]*	hexadecimal escape
+ *   \x{[0-9a-fA-F]*}	hexadecimal escape
  *   \u+[0-9a-fA-F]{4,4} 16 bit unicode style escape
  *   \u+{[0-9a-fA-F]+}	Variable-length unicode escape
  *   \U+[0-9a-fA-F]{8,8} 32 bit unicode style escape
@@ -224,6 +227,7 @@ int parse_esc_seq (WCHAR *buf, p_wchar2 *chr, ptrdiff_t *len)
   ptrdiff_t l = 1;
   p_wchar2 c;
   int of = 0;
+  int brace_mode = 0;
 
   switch ((c = *buf))
   {
@@ -240,6 +244,20 @@ int parse_esc_seq (WCHAR *buf, p_wchar2 *chr, ptrdiff_t *len)
     case 'r': c = 13; break;	/* CR */
     case 'e': c = 27; break;	/* ESC */
 
+    case 'o':			/* C2Y-style octal escape. */
+      c = buf[1];
+      if (c == '{') {
+        brace_mode = 1;
+        c = buf[2];
+      }
+      if ((c < '0') || (c > '9')) {
+        yywarning("Invalid C2Y-style octal escape. "
+                  "'%c' is not a valid octal digit.", c);
+        c = 'o';
+        break;
+      }
+      buf += brace_mode + 1;
+      /* FALLTHRU */
     case '0': case '1': case '2': case '3':
     case '4': case '5': case '6': case '7': {
       /* FIXME: The C23 standard limits octal escapes to 3 digits.
@@ -262,6 +280,13 @@ int parse_esc_seq (WCHAR *buf, p_wchar2 *chr, ptrdiff_t *len)
 	else
 	  n += buf[l] - '0';
       }
+      if (brace_mode) {
+        if (buf[l] == '}') {
+          l++;
+        } else {
+          yywarning("Missing '}' in octal escape.");
+        }
+      }
       if (of) {
 	*len = l;
 	return 4;
@@ -272,12 +297,15 @@ int parse_esc_seq (WCHAR *buf, p_wchar2 *chr, ptrdiff_t *len)
 
     case '8': case '9':
       if( Pike_compiler->compiler_pass == COMPILER_PASS_FIRST )
-	yywarning("%c is not a valid octal digit.", c);
+        yywarning("'%c' is not a valid octal digit.", c);
       break;
 
     case 'x': {
       unsigned INT32 n=0;
-      for (l = 1;; l++) {
+      if (buf[1] == '{') {
+        brace_mode = 1;
+      }
+      for (l = 1 + brace_mode;; l++) {
 	switch (buf[l]) {
 	  case '0': case '1': case '2': case '3': case '4':
 	  case '5': case '6': case '7': case '8': case '9':
@@ -300,6 +328,13 @@ int parse_esc_seq (WCHAR *buf, p_wchar2 *chr, ptrdiff_t *len)
 	    continue;
 	}
 	break;
+      }
+      if (brace_mode) {
+        if (buf[l] == '}') {
+          l++;
+        } else {
+          yywarning("Missing '}' in hexadecimal escape.");
+        }
       }
       if (of) {
 	*len = l;
@@ -381,6 +416,9 @@ int parse_esc_seq (WCHAR *buf, p_wchar2 *chr, ptrdiff_t *len)
             }
             /* FALLTHRU */
 	  default:
+            if (longq >= 2) {
+              yywarning("Missing '}' in unicode escape.");
+            }
 	    *len = l;
             return 7 + longq;
 	}
@@ -406,7 +444,7 @@ int parse_esc_seq (WCHAR *buf, p_wchar2 *chr, ptrdiff_t *len)
 
 static p_wchar2 char_const(struct lex *lex)
 {
-  p_wchar2 c;
+  p_wchar2 c = 0;
   ptrdiff_t l;
   switch (parse_esc_seq ((WCHAR *)lex->pos, &c, &l)) {
     case 0:

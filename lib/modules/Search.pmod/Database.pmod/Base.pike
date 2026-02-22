@@ -28,7 +28,7 @@ int get_uri_id(string uri,  void|int do_not_create);
 //!   If non-zero, do not create the document.
 //! @returns
 //!   The non-zero numeric identifier if the document identified by @[uri]
-//!   and @[language_code] exists, or 0 otherwise.
+//!   and @[language] exists, or @expr{0@} otherwise.
 int get_document_id(string uri, void|string language, void|int do_not_create);
 
 // FIXME
@@ -103,7 +103,7 @@ mapping(int:string) get_special_metadata(array(int) doc_ids,
 //! @[mtime] (seconds since @tt{1970-01-01T00:00:00 UTC@}).
 void set_lastmodified(Standards.URI|string uri,
 		      void|string language,
-		      int when);
+                      int mtime);
 
 //! Get last modification time for @[uri], @[language].
 //!
@@ -214,4 +214,4 @@ int get_num_deleted_documents();
 array(array) get_most_common_words(void|int count);
 
 //! Calls @[cb] for all uri:s that match @[uri_prefix].
-void list_url_by_prefix(string url_prefix, function(string:void) cb);
+void list_url_by_prefix(string uri_prefix, function(string:void) cb);

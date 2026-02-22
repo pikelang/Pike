@@ -4,6 +4,8 @@ inherit .autodoc_to_html;
 
 constant description = "AutoDoc XML to splitted HTML converter.";
 
+//! AutoDoc XML to splitted HTML converter.
+
 /* Todo:
  *
  *   * List of classes (and modules?) that inherit the class (or module?).
@@ -120,6 +122,7 @@ multiset missing = (< "foreach", "catch", "throw", "sscanf", "gauge", "typeof" >
 
 ADT.Stack pending_inherits;
 
+//! Documentation node.
 class Node
 {
   string type;
