@@ -339,7 +339,7 @@ static void f_codec_info(INT32 args) {
  *!   Returns 1 on success, 0 otherwise (parameter not known).
  *!
  *! @seealso
- *!   @[get_codec_params()]
+ *!   @[get_codec_status()]
  */
 static void f_set_codec_param(INT32 args) {
   struct pike_string *pname;

@@ -1067,7 +1067,7 @@ test_equal(max($2,$1,$3), $3)
 
 
 //! Interface for source code plugins, added to a @[Test] by calling
-//! @[add_plugin].
+//! @[Test()->add_plugin()].
 class Plugin
 {
   //! Returns 1 if the plugin is active (i.e. should be called by the

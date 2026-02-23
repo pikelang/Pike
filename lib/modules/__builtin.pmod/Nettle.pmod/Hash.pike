@@ -190,6 +190,7 @@ protected class _HMAC
       return hash(okey + hash(ikey + text));
     }
 
+    //! Update state with @[data].
     this_program update(string(8bit) data)
     {
       if( !h )
