@@ -11,7 +11,7 @@
 //!
 //! You typically don't get a direct clone of this class,
 //! but of a class that inherits it, like @[sql_array_result]
-//! or @[sql_object_result].
+//! or @[Result].
 
 inherit __builtin.Sql.Result;
 
