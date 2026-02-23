@@ -461,10 +461,30 @@ bool is_ipv6( int|string ip )
 //! some other classes.
 class RemoteAddressObject
 {
+    //! @decl string query_address()
+    //! @decl string query_address(int(0..1) local)
+    //!
+    //! Get address and port of a socket end-point.
+    //!
+    //! @param local
+    //!   If the argument @[local] is not specified, or is @expr{0@}
+    //!   (zero), the remote end-point is returned. Otherwise, if @[local]
+    //!   is @expr{1@}, the local end-point is returned.
+    //!
+    //! @returns
+    //!   This function returns the address and port of a socket end-point
+    //!   on the form @expr{"x.x.x.x port"@} (IPv4) or
+    //!   @expr{"x:x:x:x:x:x:x:x port"@} (IPv6). IPv6 addresses
+    //!   may use the contracted syntax.
+    //!
+    //!   If this file is not a socket, is not connected, or some other
+    //!   error occurs, @expr{0@} (zero) is returned and @[errno()] will
+    //!   return the error code.
     string query_address(int|void l);
 }
 
-//! If the argument is an object with a @[query_address] method,
+//! If the argument is an object with a
+//! @[RemoteAddressObject()->query_address] method,
 //! return the IP# part of the string returned by calling that
 //! function with @[local_address] as the argument.
 //!
@@ -491,9 +511,10 @@ string ip_of( RemoteAddressObject|string|int(0..0) inc,
     return ip_and_port[0];
 }
 
-//! Similar to ip_of but instead of IP returns port number.
+//! Similar to @[ip_of] but instead of IP returns port number.
 //!
-//! If the argument is an object with a @[query_address] method,
+//! If the argument is an object with a
+//! @[RemoteAddressObject()->query_address] method,
 //! return the port# part of the string returned by calling that
 //! function with @[local_address] as the argument.
 //!
@@ -520,7 +541,7 @@ string port_of( RemoteAddressObject|string|int(0..0) inc,
     return ip_and_port[1];
 }
 
-//! Similar to ip_of. Returns 2-element array containing IP address
+//! Similar to @[ip_of]. Returns 2-element array containing IP address
 //! and port number.  Second element will be 0 if no port number can
 //! be retrieved.
 //!
