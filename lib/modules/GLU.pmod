@@ -152,7 +152,7 @@ void gluPerspective(float fovy, float aspect,
 //!   Does the NURB remark apply?
 //!
 //! @seealso
-//!   @[GL.glGet], @[gluLoadIdentity], @[gluMultMatrix], @[gluRenderMode],
+//!   @[GL.glGet], @[glLoadIdentity], @[glMultMatrix], @[glRenderMode],
 //!   @[gluPerspective]
 void gluPickMatrix(float x, float y,
 		   float width, float height,
